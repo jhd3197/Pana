@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#252137">
+  <meta name="description" content="Tres cambios. Un buscador. Una plaza llena de escondites. Juega Pana Hunt con tus panas o practica contra la máquina.">
+  <title>Escondidas · Pana Hunt</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Luckiest+Guy&family=Nunito:wght@600;700;800;900&display=swap">
+  <link rel="stylesheet" href="style.css">
+  <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}</script>
+</head>
+<body>
+  <canvas id="world" aria-label="Plaza Pana, escenario de Escondidas"></canvas>
+  <div class="vignette" aria-hidden="true"></div>
+  <header>
+    <a class="brand" href="/" aria-label="Volver a Pana"><span>ESCONDIDAS</span><b>PANA HUNT</b></a>
+    <nav aria-label="Opciones de juego">
+      <button id="invite" title="Copiar enlace de la sala">Invitar panas <span>↗</span></button>
+      <button id="sound" aria-label="Activar sonido" aria-pressed="false">Sonido: no</button>
+      <button id="menu" aria-label="Abrir menú">Menú <kbd>Esc</kbd></button>
+    </nav>
+  </header>
+  <div id="loading" class="loading" role="status">Abriendo la plaza…</div>
+  <section id="lobby" class="lobby hidden" aria-labelledby="intro-title">
+    <div class="location"><span></span> PLAZA PANA · MERCADO ESCONDIDO</div>
+    <h1 id="intro-title">Por aquí hay<br>un pana escondido.</h1>
+    <p class="intro-copy">Ese barril se acaba de mover…<br>Conviértete en un objeto y que no te pillen.</p>
+    <div class="rules"><div><b>3</b><span>cambios<br>por ronda</span></div><div><b>15s</b><span>para<br>esconderte</span></div><div><b>1:40</b><span>para<br>encontrarlos</span></div></div>
+    <fieldset class="role-picker"><legend>Primera ronda: quiero…</legend><button id="role-hide" type="button" class="selected" aria-pressed="true">Esconderme</button><button id="role-seek" type="button" aria-pressed="false">Ser buscador</button></fieldset>
+    <button id="start" class="primary" disabled>Entrando a la sala…</button>
+    <div id="roster" class="roster"></div>
+    <p id="connection" class="connection" role="status">Conectando…</p>
+    <button id="practice" class="text-button hidden">Practicar sin conexión</button>
+    <a class="back" href="/">← Todos los juegos</a>
+  </section>
+  <div id="scene-label" class="scene-label"><span>BIENVENIDO A</span><b>La Plaza Pana</b><small>Más panas, menos drama.</small></div>
+  <main id="hud" class="hidden">
+    <div class="clock-panel"><span id="phase">ESCÓNDETE</span><b id="timer">00:15</b><small id="round">RONDA 1 / 4</small></div>
+    <div class="seeker-panel"><div class="portrait"><img id="seeker-face" alt=""></div><div><small id="seeker-caption">BUSCADOR</small><b id="seeker-name">Coco</b><span id="remaining-players">3 panas escondidos</span></div></div>
+    <div id="center-message" class="center-message hidden"><b>Cuenta hasta quince…</b><span>Los panas se están escondiendo.</span></div>
+    <div id="crosshair" aria-hidden="true">+</div>
+    <section id="disguise-panel" class="disguise-panel" aria-label="Camuflaje">
+      <div class="disguise-heading"><div><small id="role-title">QUE NO TE PILLEN</small><h2 id="prop-name">Tu pana</h2></div><div class="charges"><span>Cambios</span><b id="charges" aria-label="3 cambios restantes">● ● ●</b></div></div>
+      <div id="prop-list" class="prop-list" role="group" aria-label="Elegir disfraz"></div>
+      <div class="disguise-footer"><p id="disguise-tip">Elige un objeto de la plaza.</p><button id="revert" type="button">Volver a pana <kbd>Q</kbd></button></div>
+    </section>
+    <div id="suspicion" class="suspicion hidden"><span>¡Te están viendo!</span><div><i id="suspicion-fill"></i></div></div>
+    <button id="action" class="action"><kbd>E</kbd> <span id="action-label">Copiar objeto cercano</span></button>
+    <aside class="map-wrap"><span>PLAZA PANA</span><canvas id="minimap" width="300" height="270" aria-label="Mapa: tu posición y la del buscador"></canvas><small id="map-note">Tú <i></i> · Buscador <i></i></small></aside>
+    <div class="controls"><span><kbd>W A S D</kbd> Moverte</span><span><kbd>Arrastrar</kbd> Mirar</span><span><kbd>Shift</kbd> Correr</span><span><kbd>1–5</kbd> Cambiar</span></div>
+    <div id="touch-controls" class="touch-controls"><button data-move="up" aria-label="Avanzar">▲</button><div><button data-move="left" aria-label="Izquierda">◀</button><button data-move="down" aria-label="Retroceder">▼</button><button data-move="right" aria-label="Derecha">▶</button></div></div>
+  </main>
+  <div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
+  <section id="results" class="overlay hidden" aria-labelledby="result-title"><div class="result-panel">
+    <span class="eyebrow" id="result-round">RONDA TERMINADA</span><h2 id="result-title">¡Bien escondidos!</h2><p id="result-copy"></p>
+    <div id="scores" class="scores"></div><button id="next" class="primary">Siguiente ronda →</button><a href="/" class="back">← Volver a Pana</a>
+  </div></section>
+  <section id="pause" class="overlay hidden" aria-labelledby="pause-title"><div class="pause-panel">
+    <h2 id="pause-title">Un momentico.</h2><p id="pause-copy">La ronda continúa para los demás panas.</p>
+    <p><b>WASD / flechas</b> para moverte. Arrastra para mirar.<br><b>1–5</b> para transformarte. <b>Q</b> para volver a pana.<br><b>E</b> copia el objeto cercano o busca a un pana.<br>Una revisión fallida espera 1,6 segundos.</p>
+    <button id="resume" class="primary">Volver a la plaza</button><button id="copy-room" class="secondary">Copiar invitación</button>
+    <label class="share-label hidden" id="share-label">Enlace de la sala<input id="share-url" readonly></label><a href="/" class="back">Salir a Pana</a>
+  </div></section>
+  <script type="module">
+    import('./game.js').catch(error => {
+      console.error(error);
+      document.getElementById('loading').textContent = 'No pudimos abrir la plaza. Comprueba tu conexión y que WebGL esté disponible, y recarga la página.';
+      document.getElementById('loading').classList.remove('hidden');
+    });
+  </script>
+</body>
+</html>

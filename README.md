@@ -6,6 +6,13 @@ First game: **Derrape** — a goofy toy-car race. Jump ramps, flip over, lose yo
 
 Second game: **Bululú**: a party board game on Mango Island. Roll the die, collect monedas, buy the *Mango de oro*, and win a minigame after every round.
 
+Third game: **Escondidas · Pana Hunt** — hide in a colorful market plaza as a
+barrel, crate, cooler, plant or bench. Three transformations per round; 15 seconds
+to hide, then 100 seconds to hunt. Play solo with bots or share a room with up to
+8 panas. Roles rotate, with four rounds for a small group and up to eight for a
+full room. Uses the same saved character, Bululú foliage, and market props now
+also featured in Derrape's Los Llanos track.
+
 ## Run it
 
 ```powershell
@@ -16,6 +23,7 @@ npm start            # or: npm run dev  /  Pana\dev.ps1
 - Hub: http://localhost:8461
 - Derrape: http://localhost:8461/g/derrape/
 - Bululú: http://localhost:8461/g/bululu/
+- Escondidas: http://localhost:8461/g/escondidas/
 - Friends on your network: the dev script prints your LAN URL.
 
 ## Repository layout
@@ -40,6 +48,7 @@ Pana/                  ← this repo
 
 - **Derrape** — toy-car race with goofy physics (playable now)
 - **Bululú**: party board game + minigames (playable now; more minigames coming)
+- **Escondidas**: prop hunt in Plaza Pana (playable now; solo bots + shared rooms)
 - **pana.sh** — public deploy
 
 ## Contributing / AI agents

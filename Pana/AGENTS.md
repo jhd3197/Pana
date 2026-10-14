@@ -33,6 +33,9 @@ clean: only `README.md` and `.gitignore` belong there. Everything else lives her
 - URLs: hub at `/`, games at `/g/<name>/`, API at `/api/*`, WebSocket at `/ws`.
 - Multiplayer model: clients simulate their own entity and broadcast state at ~20 Hz;
   the server relays. Rooms are ephemeral (`${game}:${code}`), max 8 players.
+- Escondidas uses a host-simulated round: clients send input/actions inside `v`,
+  and the oldest connected client broadcasts snapshots at 20 Hz. The server relay
+  is unchanged. See `../docs/knowledge/escondidas.md` for role and recovery rules.
 - Keep dependencies minimal. `ws` on the server; Three.js from CDN on the client.
 
 ## Dev workflow (Windows)

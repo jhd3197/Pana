@@ -78,7 +78,8 @@ flow bugs and check balance.
   units. The island is too big for one fixed shadow map.
 - **Foliage now uses smooth normals and vertex colors.** `bake()` must retain
   the color attribute and distinguish vertex-colored, flat/smooth and shadow
-  settings in its material key. Bululú's curved palms live in `flora.js`; the
+  settings in its material key. Bululú's curved palms now live in shared
+  `/engine/flora.js` (the game's `flora.js` re-exports it for compatibility); the
   shared `/engine/props.js` palm still serves the other games.
 - **Sky controls:** Día / Noche / Ciclo, or `L`, saved under
   `pana.bululu.sky`. `?sky=day|night|cycle` overrides the saved preference for

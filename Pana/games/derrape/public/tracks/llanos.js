@@ -5,6 +5,7 @@
 
 import * as THREE from 'three';
 import { M, mesh, box, canvasMat } from '../car-kit.js';
+import { marketStall, barrel, crate, cooler } from '/engine/plaza-props.js';
 
 // ---------- llanos-only props ----------
 // Small deterministic rng so every prop looks the same on every load.
@@ -228,6 +229,15 @@ export default {
     // roadside arepa stand facing the drivers
     const standP = kit.placeOnTrack(T, T.TOTAL * 0.14, T.HW + 6.5);
     at(group, kit.arepaStand(), standP, standP.h + Math.PI / 2);
+
+    // The same market kit used for scenery and disguises in Escondidas.
+    const marketP = kit.placeOnTrack(T, T.TOTAL * 0.18, T.HW + 9);
+    const market = new THREE.Group();
+    market.add(marketStall({ seed: 4 }));
+    for (const [prop, x, z] of [[barrel(), -3.5, 0], [crate(), 3.5, 0.4], [cooler(), 1.7, 2.1]]) {
+      prop.position.set(x, 0, z); market.add(prop);
+    }
+    at(group, market, marketP, marketP.h + Math.PI / 2);
 
     // ranch cluster inside the loop: red barn, white house, windmill
     at(group, barn(), { x: 30, z: -24, y: 0.1 }, 0.6);
