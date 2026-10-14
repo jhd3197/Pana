@@ -1,0 +1,651 @@
+// Derrape's garage: one builder per car. Shared parts live in car-kit.js; the
+// driver is the player's pana (see /engine/character.js).
+// Every car faces +Z, its left is +X, wheels touch y = 0.
+
+import * as THREE from 'three';
+import {
+  M, DECAL, CHROME, DARK, mesh, box, profile, tube, roundel, plate, bothSides, spot,
+  makeWheel, fender, rig, detachable, cabin, lightBar, spareWheel, roundLamp, venezuelaFlag, flower,
+} from './car-kit.js';
+
+export const CARS = [
+  {
+    id: 'chamo', num: 1, name: 'El Chamo', color: '#e0262f',
+    blurb: 'Chiquito, bravo y con tumbaburros. Arranca rápido y dobla en una moneda.',
+    stats: { Velocidad: 0.62, 'Aceleración': 0.92, Manejo: 0.88, Peso: 0.35 },
+    tune: { top: 33, accel: 26, turn: 2.6, mass: 0.8, grip: 7 },
+    horn: 'meep',
+    build: buildChamo,
+  },
+  {
+    id: 'lancha', num: 2, name: 'La Lancha', color: '#1f9e8e',
+    blurb: 'Larga, pesada y oxidada. Tarda en arrancar, pero en la recta no la para nadie.',
+    stats: { Velocidad: 0.9, 'Aceleración': 0.55, Manejo: 0.58, Peso: 0.9 },
+    tune: { top: 39, accel: 16, turn: 2.0, mass: 1.35, grip: 5 },
+    horn: 'cucaracha',
+    build: buildLancha,
+  },
+  {
+    id: 'machito', num: 3, name: 'El Machito', color: '#ffc629',
+    blurb: 'Un rústico de toda la vida: sin techo, con barra de luces y cauchos para el monte.',
+    stats: { Velocidad: 0.7, 'Aceleración': 0.75, Manejo: 0.7, Peso: 0.75 },
+    tune: { top: 35, accel: 21, turn: 2.3, mass: 1.15, grip: 6 },
+    horn: 'grave',
+    build: buildMachito,
+  },
+  {
+    id: 'bala', num: 4, name: 'La Bala', color: '#3d7bf2',
+    blurb: 'Hatchback de rally con alerón. La más rápida en la recta, pero se espanta en las curvas.',
+    stats: { Velocidad: 0.95, 'Aceleración': 0.8, Manejo: 0.62, Peso: 0.4 },
+    tune: { top: 40, accel: 22, turn: 2.2, mass: 0.85, grip: 5.5 },
+    horn: 'meep',
+    build: buildBala,
+  },
+  {
+    id: 'toro', num: 5, name: 'El Toro', color: '#ff7a2b',
+    blurb: 'Pick-up con cava en el cajón. Pesada: cuando choca, el otro sale volando.',
+    stats: { Velocidad: 0.72, 'Aceleración': 0.55, Manejo: 0.55, Peso: 1.0 },
+    tune: { top: 36, accel: 16, turn: 2.0, mass: 1.5, grip: 5.5 },
+    horn: 'grave',
+    build: buildToro,
+  },
+  {
+    id: 'familiar', num: 6, name: 'La Familiar', color: '#8ac926',
+    blurb: 'Va pa\u2019 la playa con maletas y olla en el techo. Si choca, llueven corotos.',
+    stats: { Velocidad: 0.66, 'Aceleración': 0.6, Manejo: 0.7, Peso: 0.8 },
+    tune: { top: 35, accel: 18, turn: 2.3, mass: 1.2, grip: 6 },
+    horn: 'cucaracha',
+    build: buildFamiliar,
+  },
+  {
+    id: 'rumbera', num: 7, name: 'La Rumbera', color: '#f15bb5',
+    blurb: 'Escarabajo con cornetas en el techo y la bandera al viento. Siempre de fiesta.',
+    stats: { Velocidad: 0.6, 'Aceleración': 0.85, Manejo: 0.92, Peso: 0.3 },
+    tune: { top: 33, accel: 25, turn: 2.7, mass: 0.75, grip: 7 },
+    horn: 'fiesta',
+    build: buildRumbera,
+  },
+  {
+    id: 'montanero', num: 8, name: 'El Montañero', color: '#b8d000',
+    blurb: 'Buggy camuflado con winche y jaula. Brinca las rampas como si nada.',
+    stats: { Velocidad: 0.78, 'Aceleración': 0.8, Manejo: 0.74, Peso: 0.7 },
+    tune: { top: 37, accel: 22, turn: 2.4, mass: 1.05, grip: 6.5 },
+    horn: 'grave',
+    build: buildMontanero,
+  },
+];
+
+// ---------- El Chamo ----------
+function buildChamo(avatar) {
+  const W = 2.3, red = '#e0262f';
+  const car = rig({
+    wheel: { r: 0.64, w: 0.58, style: 'spokes' },
+    wheelPos: [[W / 2 + 0.02, 1.32, true], [-W / 2 - 0.02, 1.32, true], [W / 2 + 0.02, -1.32, false], [-W / 2 - 0.02, -1.32, false]],
+  });
+  const c = car.chassis;
+  const paint = M(red);
+  const deep = M('#a8141c');
+  // lower body; with its bevel the top sits at y 1.56 and the nose at z 2.22
+  c.add(profile([[-1.95, 0.55], [1.95, 0.55], [2.08, 0.8], [2.02, 1.2], [1.1, 1.42], [-1.95, 1.42], [-2.06, 1.15]], W, paint, 0.14));
+  for (const [x, z] of [[W / 2 + 0.02, 1.32], [-W / 2 - 0.02, 1.32], [W / 2 + 0.02, -1.32], [-W / 2 - 0.02, -1.32]]) {
+    const f = fender(0.8, 0.68, red);
+    f.position.set(x, 0.64, z);
+    c.add(f);
+  }
+
+  cabin(car, {
+    glass: [[-1.86, 1.52], [0.95, 1.52], [0.3, 2.8], [-1.62, 2.82]],
+    roof: [[-1.72, 2.8], [0.38, 2.8], [0.28, 3.0], [-1.56, 3.04], [-1.82, 2.92]],
+    width: 2.04, bPillar: -0.62, pillar: paint, roofMat: paint,
+    interior: '#2b2b33', seat: '#18181d',
+    avatar, head: 0.5, seatY: 0.85, driverZ: -0.1, sill: 1.56,
+    hanging(p) {   // little pine air freshener
+      const tree = mesh(new THREE.ConeGeometry(0.09, 0.2, 4), M('#2fbf71'), 0, -0.32, 0);
+      p.add(tree);
+    },
+  });
+
+  // face
+  for (const s of [1, -1]) {
+    const lamp = mesh(new THREE.CylinderGeometry(0.25, 0.25, 0.12, 12), M('#ffd23f', { emissive: '#6b5200' }), s * 0.66, 1.0, 2.2);
+    lamp.rotation.x = Math.PI / 2;
+    c.add(lamp);
+    c.add(mesh(new THREE.TorusGeometry(0.27, 0.05, 6, 14), CHROME(), s * 0.66, 1.0, 2.26));
+    c.add(mesh(new THREE.SphereGeometry(0.08, 6, 4), M('#f77f00', { emissive: '#3a1d00' }), s * 0.66, 0.66, 2.22));
+    const fog = mesh(new THREE.CylinderGeometry(0.1, 0.1, 0.08, 8), M('#fff3c4', { emissive: '#4a4220' }), s * 0.32, 0.66, 2.24);
+    fog.rotation.x = Math.PI / 2;
+    c.add(fog);
+    const tail = mesh(new THREE.CylinderGeometry(0.17, 0.17, 0.1, 10), M('#d00000', { emissive: '#4a0000' }), s * 0.8, 1.08, -2.22);
+    tail.rotation.x = Math.PI / 2;
+    c.add(tail);
+    c.add(mesh(new THREE.TorusGeometry(0.18, 0.035, 5, 12), CHROME(), s * 0.8, 1.08, -2.26));
+    // mud flaps behind the rear wheels
+    c.add(box(0.46, 0.34, 0.04, DARK(), s * (W / 2 - 0.02), 0.42, -2.02));
+  }
+  c.add(box(0.86, 0.3, 0.06, DARK(), 0, 0.92, 2.23));
+  for (let i = 0; i < 3; i++) c.add(box(0.8, 0.035, 0.05, CHROME(), 0, 0.84 + i * 0.08, 2.27));
+  c.add(box(W - 0.2, 0.26, 0.3, DARK(), 0, 0.62, -2.18));
+  const pipe = mesh(new THREE.CylinderGeometry(0.08, 0.09, 0.4, 8), CHROME(), -0.6, 0.48, -2.34);
+  pipe.rotation.x = Math.PI / 2;
+  c.add(pipe);
+  const rearPlate = plate('PANA·01');
+  rearPlate.position.set(0, 0.95, -2.215);
+  rearPlate.rotation.y = Math.PI;
+  c.add(rearPlate);
+
+  // hood: two white stripes and two vents, following the slope
+  const slope = Math.atan2(1.42 - 1.2, 2.02 - 1.1);
+  for (const s of [1, -1]) {
+    const stripe = box(0.16, 0.012, 1.0, M('#fbf8f0', DECAL), s * 0.2, 1.47, 1.58);
+    stripe.rotation.x = slope;
+    c.add(stripe);
+    const vent = box(0.34, 0.05, 0.18, DARK(), s * 0.62, 1.5, 1.45);
+    vent.rotation.x = slope;
+    c.add(vent);
+  }
+  // doors: seams, handles, side skirts, number
+  for (const s of [1, -1]) {
+    const x = s * (W / 2 + 0.006);
+    c.add(box(0.012, 0.66, 0.025, DARK(), x, 1.2, 0.92));
+    c.add(box(0.012, 0.86, 0.025, DARK(), x, 1.1, -0.6));
+    c.add(box(0.03, 0.06, 0.2, CHROME(), s * (W / 2 + 0.02), 1.32, -0.38));
+    c.add(box(0.03, 0.12, 1.1, DARK(), s * (W / 2 + 0.015), 0.6, 0.15));
+  }
+  bothSides(c, () => roundel(1, 0.36), W / 2 + 0.012, 1.02, 0.15);
+  const top = roundel(1, 0.46);
+  top.rotation.x = -Math.PI / 2;
+  top.position.set(0, 3.05, -0.62);
+  c.add(top);
+
+  // detachable bits
+  const bar = new THREE.Group();
+  const steel = M('#202026', { roughness: 0.45, metalness: 0.3 });
+  for (const s of [1, -1]) bar.add(tube([s * 0.55, 0.42, 2.48], [s * 0.55, 1.36, 2.48], 0.08, steel));
+  bar.add(tube([0.55, 1.36, 2.48], [-0.55, 1.36, 2.48], 0.08, steel));
+  bar.add(box(1.72, 0.3, 0.26, steel, 0, 0.6, 2.5));
+  for (const s of [1, -1]) bar.add(tube([s * 0.55, 0.92, 2.48], [s * 0.55, 0.92, 2.15], 0.06, steel));
+  const frontPlate = plate('PANA·01');
+  frontPlate.position.set(0, 0.6, 2.64);
+  bar.add(frontPlate);
+  detachable(car, bar);
+  for (const s of [1, -1]) {
+    const m = new THREE.Group();
+    m.add(tube([s * 1.08, 1.56, 0.82], [s * 1.32, 1.74, 0.82], 0.03, DARK()));
+    m.add(mesh(new THREE.SphereGeometry(0.16, 8, 6), M('#1d1d23', { roughness: 0.35 }), s * 1.36, 1.78, 0.82));
+    detachable(car, m);
+  }
+  const antenna = new THREE.Group();
+  antenna.add(mesh(new THREE.CylinderGeometry(0.025, 0.04, 1.3, 6), DARK(), 0.72, 3.68, -1.2));
+  antenna.add(mesh(new THREE.SphereGeometry(0.07, 8, 6), DARK(), 0.72, 4.35, -1.2));
+  const flagShape = new THREE.Shape([new THREE.Vector2(0, 0), new THREE.Vector2(-0.62, -0.17), new THREE.Vector2(0, -0.36)]);
+  const flag = mesh(new THREE.ShapeGeometry(flagShape), M('#ffd23f', { side: THREE.DoubleSide }), 0.72, 4.25, -1.2);
+  flag.rotation.y = -Math.PI / 2;
+  antenna.add(flag);
+  detachable(car, antenna);
+  car.flag = flag;
+  // the spoiler lip over the hatch
+  c.add(box(2.0, 0.08, 0.36, deep, 0, 2.98, -1.82));
+  return car;
+}
+
+// ---------- La Lancha ----------
+function buildLancha(avatar) {
+  const W = 2.24, teal = '#1f9e8e', cream = '#f3e2bf';
+  const car = rig({
+    wheel: { r: 0.6, w: 0.54, style: 'hubcap' },
+    wheelPos: [[W / 2, 1.38, true], [-W / 2, 1.38, true], [W / 2, -1.38, false], [-W / 2, -1.38, false]],
+  });
+  const c = car.chassis;
+  const paint = M(teal);
+  const roof = M(cream);
+  // lower body; with its bevel the top sits at y 1.38 and the nose at z 2.22
+  c.add(profile([[-2.05, 0.52], [2.05, 0.52], [2.1, 1.12], [1.05, 1.24], [-1.95, 1.26], [-2.1, 1.08]], W, paint, 0.12));
+  for (const [x, z] of [[W / 2, 1.38], [-W / 2, 1.38], [W / 2, -1.38], [-W / 2, -1.38]]) {
+    const f = fender(0.76, 0.62, teal);
+    f.position.set(x, 0.6, z);
+    c.add(f);
+  }
+
+  cabin(car, {
+    glass: [[-1.42, 1.36], [0.72, 1.36], [0.12, 2.74], [-0.98, 2.76]],
+    roof: [[-1.08, 2.72], [0.2, 2.72], [0.1, 2.92], [-0.98, 2.94], [-1.18, 2.82]],
+    width: 2.0, bPillar: -0.36, pillar: roof, roofMat: roof,
+    interior: '#3b2a22', seat: '#7a4a2b',
+    avatar, head: 0.48, seatY: 0.58, driverZ: 0.02, sill: 1.38,
+    hanging(p) {   // fuzzy dice
+      for (const s of [1, -1]) {
+        const die = box(0.13, 0.13, 0.13, M('#fbf8f0'), s * 0.07, -0.3 - (s > 0 ? 0 : 0.05), 0);
+        die.rotation.set(0.4 * s, 0.5, 0.2);
+        die.add(box(0.03, 0.03, 0.14, M('#16161a'), 0, 0, 0));
+        p.add(die);
+      }
+    },
+  });
+
+  // face: chrome grille, four square lamps, hood ornament and latches
+  c.add(box(1.2, 0.36, 0.08, CHROME(), 0, 0.86, 2.23));
+  for (let i = 0; i < 4; i++) c.add(box(1.08, 0.04, 0.1, DARK(), 0, 0.74 + i * 0.08, 2.25));
+  for (const s of [1, -1]) {
+    for (const k of [0.68, 0.9]) {
+      c.add(box(0.22, 0.22, 0.06, CHROME(), s * k, 0.88, 2.24));
+      c.add(box(0.17, 0.17, 0.06, M('#f6e7a1', { emissive: '#4a4120' }), s * k, 0.88, 2.27));
+    }
+    c.add(box(0.16, 0.1, 0.06, M('#f77f00', { emissive: '#3a1d00' }), s * 1.0, 0.66, 2.22));
+    c.add(box(0.36, 0.14, 0.06, M('#d00000', { emissive: '#4a0000' }), s * 0.78, 0.98, -2.24));
+    c.add(box(0.1, 0.06, 0.16, CHROME(), s * 0.45, 1.4, 1.6));       // hood latches
+  }
+  c.add(mesh(new THREE.ConeGeometry(0.05, 0.16, 5), CHROME(), 0, 1.44, 2.05));
+  c.add(box(0.12, 0.08, 0.04, CHROME(), 0, 1.0, -2.23));                // trunk lock
+  const rearPlate = plate('LAN·CHA');
+  rearPlate.position.set(0, 0.78, -2.235);
+  rearPlate.rotation.y = Math.PI;
+  c.add(rearPlate);
+  const frontPlate = plate('LAN·CHA');
+  frontPlate.position.set(0, 0.56, 2.43);
+
+  // sides: chrome trim, seams, handles, number, tape, a bit of rust
+  for (const s of [1, -1]) {
+    const x = s * (W / 2 + 0.006);
+    c.add(box(0.02, 0.04, 4.0, CHROME(), s * (W / 2 + 0.012), 1.3, 0));
+    for (const z of [0.72, -0.36, -1.42]) c.add(box(0.012, 0.74, 0.025, DARK(), x, 1.0, z));
+    for (const z of [0.5, -0.62]) c.add(box(0.03, 0.05, 0.18, CHROME(), s * (W / 2 + 0.02), 1.18, z));
+    c.add(box(0.02, 0.03, 1.6, CHROME(), s * 1.03, 2.76, -0.42));     // roof drip rail
+  }
+  bothSides(c, () => roundel(2, 0.34), W / 2 + 0.012, 0.92, 0.18);
+  bothSides(c, () => new THREE.Mesh(new THREE.PlaneGeometry(0.46, 0.1), M('#c9ccd4', DECAL)), W / 2 + 0.014, 1.2, -0.85);
+  const rust = '#b4562a';
+  for (const [y, z, size] of [[0.66, -0.7, 0.09], [0.74, -1.0, 0.06], [0.62, 0.55, 0.07]]) {
+    bothSides(c, () => spot(size, rust), W / 2 + 0.013, y, z);
+  }
+  for (const [x, z, size] of [[0.55, 1.75, 0.12], [-0.3, 1.45, 0.08], [-0.45, -1.7, 0.11], [0.6, -1.55, 0.07]]) {
+    const r = spot(size, rust);
+    r.rotation.x = -Math.PI / 2;
+    r.position.set(x, 1.39, z);
+    c.add(r);
+  }
+
+  // detachable bumpers and mirrors
+  const rubber = M('#26262c', { roughness: 0.9 });
+  for (const z of [2.36, -2.36]) {
+    const b = new THREE.Group();
+    b.add(box(W + 0.16, 0.3, 0.3, rubber, 0, 0.55, z));
+    for (const s of [1, -1]) b.add(box(0.16, 0.5, 0.36, CHROME(), s * 0.55, 0.58, z));
+    if (z > 0) {
+      frontPlate.position.z = z + 0.16;
+      b.add(frontPlate);
+    }
+    detachable(car, b);
+  }
+  for (const s of [1, -1]) {
+    const m = new THREE.Group();
+    m.add(tube([s * 1.02, 1.42, 0.62], [s * 1.24, 1.56, 0.62], 0.03, CHROME()));
+    m.add(box(0.1, 0.2, 0.28, CHROME(), s * 1.28, 1.62, 0.62));
+    detachable(car, m);
+  }
+  return car;
+}
+
+// ---------- El Machito (yellow jeep) ----------
+function buildMachito(avatar) {
+  const W = 2.3, yellow = '#ffc629';
+  const car = rig({
+    wheel: { r: 0.74, w: 0.62, style: 'steel', rim: '#c9ccd4' },
+    wheelPos: [[W / 2 + 0.06, 1.35, true], [-W / 2 - 0.06, 1.35, true], [W / 2 + 0.06, -1.35, false], [-W / 2 - 0.06, -1.35, false]],
+  });
+  const c = car.chassis;
+  const paint = M(yellow);
+  // boxy tub; with its bevel the top sits at y 1.48 and the nose at z 2.1
+  c.add(profile([[-1.9, 0.62], [1.95, 0.62], [2.0, 1.3], [1.0, 1.38], [-1.9, 1.38]], W, paint, 0.1));
+  for (const [x, z] of [[W / 2 + 0.06, 1.35], [-W / 2 - 0.06, 1.35], [W / 2 + 0.06, -1.35], [-W / 2 - 0.06, -1.35]]) {
+    const f = fender(0.92, 0.74, '#2a2a30');
+    f.position.set(x, 0.74, z);
+    c.add(f);
+  }
+  cabin(car, {
+    open: true,
+    glass: [[-1.2, 1.48], [0.95, 1.48], [0.85, 2.42], [-1.2, 2.42]],
+    width: 2.06, pillar: paint,
+    interior: '#2b2b33', seat: '#1d1d23',
+    avatar, head: 0.5, seatY: 0.9, driverZ: -0.15, sill: 1.48,
+  });
+  // roll bar behind the seats
+  const cage = M('#1d1d23', { roughness: 0.5 });
+  for (const s of [1, -1]) {
+    c.add(tube([s * 0.95, 1.46, -0.8], [s * 0.95, 2.55, -0.8], 0.07, cage));
+    c.add(tube([s * 0.95, 2.55, -0.8], [s * 0.95, 2.25, -1.8], 0.06, cage));
+    c.add(tube([s * 0.95, 2.25, -1.8], [s * 0.95, 1.46, -1.8], 0.06, cage));
+  }
+  c.add(tube([0.95, 2.55, -0.8], [-0.95, 2.55, -0.8], 0.07, cage));
+  // face: seven-slot grille between round lamps
+  for (let i = 0; i < 7; i++) c.add(box(0.07, 0.42, 0.04, DARK(), (i - 3) * 0.12, 0.98, 2.11));
+  for (const s of [1, -1]) c.add(roundLamp(s * 0.72, 1.0, 2.1, 0.2));
+  // bolt-ons that can fly off
+  detachable(car, lightBar(4, 0.4, 2.52, 0.82));
+  const bumper = new THREE.Group();
+  bumper.add(box(W + 0.1, 0.26, 0.3, DARK(), 0, 0.58, 2.2));
+  for (const s of [1, -1]) {
+    const shackle = mesh(new THREE.TorusGeometry(0.08, 0.03, 6, 10), CHROME(), s * 0.5, 0.58, 2.4);
+    shackle.rotation.y = Math.PI / 2;
+    bumper.add(shackle);
+  }
+  detachable(car, bumper);
+  const spare = spareWheel(0.58, 0.5);
+  spare.position.set(0, 1.2, -2.25);
+  detachable(car, spare);
+  for (const s of [1, -1]) {
+    const m = new THREE.Group();
+    m.add(tube([s * 1.0, 1.9, 0.86], [s * 1.25, 1.95, 0.86], 0.03, DARK()));
+    m.add(box(0.08, 0.2, 0.26, DARK(), s * 1.3, 1.98, 0.86));
+    detachable(car, m);
+  }
+  return car;
+}
+
+// ---------- La Bala (blue rally hatch) ----------
+function buildBala(avatar) {
+  const W = 2.24, blue = '#3d7bf2';
+  const car = rig({
+    wheel: { r: 0.6, w: 0.56, style: 'spokes', rim: '#f3e9d7', cap: '#ff4b4b' },
+    wheelPos: [[W / 2 + 0.02, 1.3, true], [-W / 2 - 0.02, 1.3, true], [W / 2 + 0.02, -1.3, false], [-W / 2 - 0.02, -1.3, false]],
+  });
+  const c = car.chassis;
+  const paint = M(blue);
+  const white = M('#f3e9d7', { ...DECAL });
+  // low hatch; with its bevel the top sits at y 1.4 and the nose at z 2.22
+  c.add(profile([[-1.95, 0.5], [1.95, 0.5], [2.1, 0.85], [1.95, 1.12], [0.95, 1.28], [-1.9, 1.28], [-2.05, 1.02]], W, paint, 0.12));
+  for (const [x, z] of [[W / 2 + 0.02, 1.3], [-W / 2 - 0.02, 1.3], [W / 2 + 0.02, -1.3], [-W / 2 - 0.02, -1.3]]) {
+    const f = fender(0.76, 0.64, blue);
+    f.position.set(x, 0.6, z);
+    c.add(f);
+  }
+  cabin(car, {
+    glass: [[-1.8, 1.4], [0.9, 1.4], [0.3, 2.45], [-1.55, 2.48]],
+    roof: [[-1.65, 2.44], [0.38, 2.44], [0.28, 2.62], [-1.5, 2.66], [-1.75, 2.56]],
+    width: 2.0, bPillar: -0.55, pillar: paint, roofMat: paint,
+    interior: '#22222a', seat: '#18181d',
+    avatar, head: 0.5, seatY: 0.85, driverZ: -0.05, sill: 1.4,
+  });
+  // the white center stripe, over the hood and the roof
+  const hood = box(0.52, 0.012, 1.05, white, 0, 1.33, 1.45);
+  hood.rotation.x = Math.atan2(1.28 - 1.12, 1.95 - 0.95);
+  c.add(hood);
+  c.add(box(0.52, 0.012, 2.1, white, 0, 2.735, -0.62));
+  c.add(box(0.52, 0.3, 0.012, white, 0, 0.95, 2.215));
+  for (const s of [1, -1]) c.add(box(0.26, 0.16, 0.06, M('#fff3c4', { emissive: '#4a4220' }), s * 0.72, 1.0, 2.2));
+  const rear = plate('BALA·4');
+  rear.position.set(0, 0.9, -2.175);
+  rear.rotation.y = Math.PI;
+  c.add(rear);
+  // bolt-ons
+  detachable(car, lightBar(4, 0.36, 0.62, 2.28));
+  const wing = new THREE.Group();
+  for (const s of [1, -1]) wing.add(box(0.08, 0.3, 0.12, DARK(), s * 0.6, 2.76, -1.7));
+  wing.add(box(2.0, 0.08, 0.46, paint, 0, 2.94, -1.78));
+  for (const s of [1, -1]) wing.add(box(0.06, 0.24, 0.5, DARK(), s * 1.0, 2.94, -1.78));
+  detachable(car, wing);
+  for (const s of [1, -1]) {
+    const m = new THREE.Group();
+    m.add(tube([s * 1.02, 1.52, 0.78], [s * 1.24, 1.62, 0.78], 0.03, DARK()));
+    m.add(box(0.1, 0.16, 0.26, paint, s * 1.28, 1.66, 0.78));
+    detachable(car, m);
+  }
+  return car;
+}
+
+// ---------- El Toro (red and white pickup) ----------
+function buildToro(avatar) {
+  const W = 2.3, red = '#e0262f';
+  const car = rig({
+    wheel: { r: 0.66, w: 0.6, style: 'steel', rim: '#c9ccd4' },
+    wheelPos: [[W / 2 + 0.04, 1.45, true], [-W / 2 - 0.04, 1.45, true], [W / 2 + 0.04, -1.4, false], [-W / 2 - 0.04, -1.4, false]],
+  });
+  const c = car.chassis;
+  const paint = M(red);
+  // long body; with its bevel the top sits at y 1.48, nose z 2.25, tail z -2.25
+  c.add(profile([[-2.15, 0.6], [2.1, 0.6], [2.15, 1.25], [1.05, 1.38], [-2.15, 1.38]], W, paint, 0.1));
+  bothSides(c, () => new THREE.Mesh(new THREE.PlaneGeometry(4.3, 0.28), M('#f3e9d7', DECAL)), W / 2 + 0.008, 0.84, 0);
+  for (const [x, z] of [[W / 2 + 0.04, 1.45], [-W / 2 - 0.04, 1.45], [W / 2 + 0.04, -1.4], [-W / 2 - 0.04, -1.4]]) {
+    const f = fender(0.84, 0.72, red);
+    f.position.set(x, 0.66, z);
+    c.add(f);
+  }
+  cabin(car, {
+    glass: [[-0.6, 1.48], [0.85, 1.48], [0.4, 2.52], [-0.55, 2.54]],
+    roof: [[-0.68, 2.5], [0.48, 2.5], [0.4, 2.7], [-0.62, 2.72]],
+    width: 2.04, bPillar: -0.25, pillar: paint, roofMat: paint,
+    interior: '#2b2b33', seat: '#7a4a2b',
+    avatar, head: 0.5, seatY: 0.9, driverZ: 0.15, sill: 1.48,
+  });
+  // the bed: side walls and a tailgate
+  for (const s of [1, -1]) c.add(box(0.1, 0.34, 1.52, paint, s * (W / 2 - 0.06), 1.64, -1.45));
+  c.add(box(W - 0.1, 0.34, 0.1, paint, 0, 1.64, -2.2));
+  // face: black grille with chrome surround, square lamps
+  c.add(box(1.36, 0.46, 0.06, CHROME(), 0, 0.98, 2.25));
+  c.add(box(1.24, 0.36, 0.06, DARK(), 0, 0.98, 2.27));
+  for (const s of [1, -1]) c.add(box(0.3, 0.24, 0.06, M('#fff3c4', { emissive: '#4a4220' }), s * 0.86, 1.0, 2.26));
+  // bolt-ons
+  detachable(car, lightBar(3, 0.42, 2.8, 0.2));
+  const rails = new THREE.Group();
+  const wood = M('#9a6a3a', { roughness: 0.9 });
+  for (const s of [1, -1]) {
+    for (const z of [-0.72, -1.45, -2.18]) rails.add(box(0.08, 0.42, 0.08, wood, s * (W / 2 - 0.06), 2.0, z));
+    for (const y of [1.98, 2.18]) rails.add(box(0.06, 0.08, 1.56, wood, s * (W / 2 - 0.06), y, -1.45));
+  }
+  detachable(car, rails);
+  const cooler = new THREE.Group();
+  cooler.add(box(0.62, 0.4, 0.46, M('#ff4b4b'), 0.35, 1.68, -1.3));
+  cooler.add(box(0.64, 0.08, 0.48, M('#f3e9d7'), 0.35, 1.92, -1.3));
+  cooler.add(box(0.3, 0.05, 0.06, M('#f3e9d7'), 0.35, 1.99, -1.3));
+  detachable(car, cooler);
+  const bumper = new THREE.Group();
+  bumper.add(box(W + 0.1, 0.22, 0.26, CHROME(), 0, 0.62, 2.32));
+  const front = plate('TORO·5');
+  front.position.set(0, 0.62, 2.46);
+  bumper.add(front);
+  detachable(car, bumper);
+  for (const s of [1, -1]) {
+    const m = new THREE.Group();
+    m.add(tube([s * 1.04, 1.62, 0.7], [s * 1.26, 1.74, 0.7], 0.03, CHROME()));
+    m.add(box(0.1, 0.24, 0.3, CHROME(), s * 1.3, 1.8, 0.7));
+    detachable(car, m);
+  }
+  return car;
+}
+
+// ---------- La Familiar (green sedan with a loaded roof rack) ----------
+function buildFamiliar(avatar) {
+  const W = 2.24, green = '#3f9d4a';
+  const car = rig({
+    wheel: { r: 0.58, w: 0.52, style: 'hubcap' },
+    wheelPos: [[W / 2, 1.38, true], [-W / 2, 1.38, true], [W / 2, -1.38, false], [-W / 2, -1.38, false]],
+  });
+  const c = car.chassis;
+  const paint = M(green);
+  // with its bevel the top sits at y 1.36 and the nose at z 2.24
+  c.add(profile([[-2.1, 0.52], [2.1, 0.52], [2.12, 1.1], [1.1, 1.22], [-2.0, 1.24], [-2.12, 1.06]], W, paint, 0.12));
+  for (const [x, z] of [[W / 2, 1.38], [-W / 2, 1.38], [W / 2, -1.38], [-W / 2, -1.38]]) {
+    const f = fender(0.74, 0.6, green);
+    f.position.set(x, 0.58, z);
+    c.add(f);
+  }
+  cabin(car, {
+    glass: [[-1.5, 1.34], [0.78, 1.34], [0.2, 2.6], [-1.15, 2.62]],
+    roof: [[-1.22, 2.58], [0.3, 2.58], [0.2, 2.76], [-1.12, 2.78], [-1.32, 2.68]],
+    width: 2.0, bPillar: -0.4, pillar: paint, roofMat: paint,
+    interior: '#3b2a22', seat: '#c9b38a',
+    avatar, head: 0.48, seatY: 0.62, driverZ: 0.05, sill: 1.36,
+    hanging(p) {   // a rosary swinging from the mirror
+      const bead = M('#7a4a2b');
+      for (let i = 0; i < 8; i++) {
+        const a = (i / 8) * Math.PI * 2;
+        p.add(mesh(new THREE.SphereGeometry(0.025, 5, 4), bead, Math.sin(a) * 0.07, -0.3 + Math.cos(a) * 0.07, 0));
+      }
+      p.add(box(0.025, 0.12, 0.02, M('#d9a441'), 0, -0.44, 0));
+      p.add(box(0.07, 0.025, 0.02, M('#d9a441'), 0, -0.42, 0));
+    },
+  });
+  // face: chrome grille, square lamps; chrome side trim, seams and handles
+  c.add(box(1.24, 0.34, 0.08, CHROME(), 0, 0.86, 2.24));
+  for (let i = 0; i < 3; i++) c.add(box(1.1, 0.04, 0.1, DARK(), 0, 0.76 + i * 0.09, 2.26));
+  for (const s of [1, -1]) {
+    c.add(box(0.26, 0.2, 0.06, M('#fff3c4', { emissive: '#4a4220' }), s * 0.82, 0.88, 2.25));
+    const x = s * (W / 2 + 0.006);
+    c.add(box(0.02, 0.04, 4.0, CHROME(), s * (W / 2 + 0.012), 1.24, 0));
+    for (const z of [0.78, -0.4, -1.5]) c.add(box(0.012, 0.7, 0.025, DARK(), x, 0.98, z));
+    for (const z of [0.55, -0.66]) c.add(box(0.03, 0.05, 0.18, CHROME(), s * (W / 2 + 0.02), 1.12, z));
+  }
+  const rear = plate('FAM·6');
+  rear.position.set(0, 0.8, -2.245);
+  rear.rotation.y = Math.PI;
+  c.add(rear);
+  // roof rack (fixed) and the luggage on it (flies off)
+  const rack = DARK();
+  for (const s of [1, -1]) c.add(box(0.06, 0.06, 1.5, rack, s * 0.75, 2.86, -0.46));
+  for (const z of [0.2, -0.46, -1.12]) c.add(box(1.56, 0.05, 0.06, rack, 0, 2.86, z));
+  const suitcase = (w, h, d, color, x, y, z) => {
+    const g = new THREE.Group();
+    g.add(box(w, h, d, M(color), x, y, z));
+    g.add(box(w + 0.02, h + 0.02, 0.06, M('#2b1d14'), x, y, z));
+    g.add(box(0.2, 0.05, 0.08, M('#2b1d14'), x, y + h / 2 + 0.02, z));
+    return g;
+  };
+  detachable(car, suitcase(0.74, 0.32, 0.56, '#8b5a2b', -0.25, 3.05, -0.25));
+  detachable(car, suitcase(0.58, 0.26, 0.46, '#d9772b', -0.28, 3.34, -0.3));
+  const pot = new THREE.Group();
+  const steel = M('#c9ccd4', { metalness: 0.6, roughness: 0.3 });
+  pot.add(mesh(new THREE.CylinderGeometry(0.24, 0.22, 0.3, 12), steel, 0.48, 3.05, -0.8));
+  pot.add(mesh(new THREE.CylinderGeometry(0.26, 0.26, 0.04, 12), steel, 0.48, 3.22, -0.8));
+  pot.add(mesh(new THREE.SphereGeometry(0.05, 6, 4), DARK(), 0.48, 3.27, -0.8));
+  for (const s of [1, -1]) pot.add(box(0.1, 0.04, 0.05, DARK(), 0.48 + s * 0.28, 3.12, -0.8));
+  detachable(car, pot);
+  for (const z of [2.36, -2.36]) {
+    const b = new THREE.Group();
+    b.add(box(W + 0.16, 0.24, 0.26, CHROME(), 0, 0.55, z));
+    detachable(car, b);
+  }
+  for (const s of [1, -1]) {
+    const m = new THREE.Group();
+    m.add(tube([s * 1.02, 1.42, 0.66], [s * 1.24, 1.54, 0.66], 0.03, CHROME()));
+    m.add(box(0.1, 0.2, 0.28, CHROME(), s * 1.28, 1.6, 0.66));
+    detachable(car, m);
+  }
+  return car;
+}
+
+// ---------- La Rumbera (pink beetle with a sound system) ----------
+function buildRumbera(avatar) {
+  const W = 2.2, pink = '#ff4fa3';
+  const car = rig({
+    wheel: { r: 0.58, w: 0.52, style: 'steel', rim: '#ff8fc8' },
+    wheelPos: [[W / 2, 1.3, true], [-W / 2, 1.3, true], [W / 2, -1.3, false], [-W / 2, -1.3, false]],
+  });
+  const c = car.chassis;
+  const paint = M(pink);
+  // a rounded bug; with its bevel the top sits at y 1.46
+  c.add(profile([[-1.95, 0.55], [1.95, 0.55], [2.08, 0.75], [2.0, 1.0], [1.5, 1.22], [0.8, 1.32], [-1.0, 1.32],
+    [-1.7, 1.22], [-2.05, 0.95]], W, paint, 0.14));
+  for (const [x, z] of [[W / 2, 1.3], [-W / 2, 1.3], [W / 2, -1.3], [-W / 2, -1.3]]) {
+    const f = fender(0.82, 0.7, pink);
+    f.position.set(x, 0.58, z);
+    c.add(f);
+  }
+  cabin(car, {
+    glass: [[-1.2, 1.44], [0.7, 1.44], [0.12, 2.42], [-0.9, 2.44]],
+    roof: [[-0.98, 2.38], [0.22, 2.38], [0.1, 2.56], [-0.4, 2.62], [-0.88, 2.56], [-1.06, 2.46]],
+    width: 1.9, bPillar: -0.3, pillar: paint, roofMat: paint,
+    interior: '#2b2b33', seat: '#f3e9d7',
+    avatar, head: 0.48, seatY: 0.75, driverZ: 0.0, sill: 1.46,
+  });
+  // bug eyes on the front fenders, a chrome nose line, flowers on the doors
+  for (const s of [1, -1]) c.add(roundLamp(s * 0.74, 1.04, 1.98, 0.22, '#fff3c4'));
+  c.add(box(0.05, 0.5, 0.04, CHROME(), 0, 1.15, 1.98));
+  bothSides(c, () => flower(0.3), W / 2 + 0.012, 0.95, -0.25);
+  const rear = plate('RUM·BA');
+  rear.position.set(0, 0.8, -2.19);
+  rear.rotation.y = Math.PI;
+  c.add(rear);
+  // the sound system strapped to the roof (flies off)
+  const speakers = new THREE.Group();
+  speakers.add(box(1.4, 0.5, 0.56, M('#1d1d23'), 0, 2.92, -0.42));
+  speakers.add(box(0.9, 0.34, 0.44, M('#26262d'), -0.15, 3.34, -0.46));
+  for (const [x, y, r] of [[-0.42, 2.92, 0.17], [0.42, 2.92, 0.17], [-0.15, 3.34, 0.12]]) {
+    const cone = mesh(new THREE.CylinderGeometry(r, r * 0.7, 0.06, 12), M('#4a4a52'), x, y, -0.12);
+    cone.rotation.x = Math.PI / 2;
+    speakers.add(cone);
+  }
+  for (const s of [1, -1]) speakers.add(box(0.06, 0.6, 0.6, M('#ff8a1f'), s * 0.55, 2.94, -0.42));
+  detachable(car, speakers);
+  const flagGroup = new THREE.Group();
+  flagGroup.add(mesh(new THREE.CylinderGeometry(0.02, 0.025, 1.4, 6), DARK(), 0.82, 3.25, -0.95));
+  const flag = mesh(new THREE.PlaneGeometry(0.78, 0.52), venezuelaFlag(), 0.82, 3.66, -1.36);
+  flag.material.side = THREE.DoubleSide;
+  flag.rotation.y = Math.PI / 2;
+  flagGroup.add(flag);
+  detachable(car, flagGroup);
+  car.flag = flag;
+  return car;
+}
+
+// ---------- El Montañero (camo buggy) ----------
+function buildMontanero(avatar) {
+  const W = 2.3, olive = '#6b7a3a';
+  const car = rig({
+    wheel: { r: 0.76, w: 0.64, style: 'steel', rim: '#c9ccd4' },
+    wheelPos: [[W / 2 + 0.08, 1.32, true], [-W / 2 - 0.08, 1.32, true], [W / 2 + 0.08, -1.32, false], [-W / 2 - 0.08, -1.32, false]],
+  });
+  const c = car.chassis;
+  const paint = M(olive);
+  // low tub; with its bevel the top sits at y 1.38
+  c.add(profile([[-1.85, 0.66], [1.9, 0.66], [2.05, 1.15], [1.15, 1.28], [-1.85, 1.28]], W, paint, 0.1));
+  for (const [x, z] of [[W / 2 + 0.08, 1.32], [-W / 2 - 0.08, 1.32], [W / 2 + 0.08, -1.32], [-W / 2 - 0.08, -1.32]]) {
+    const f = fender(0.94, 0.76, '#4f5a2a');
+    f.position.set(x, 0.76, z);
+    c.add(f);
+  }
+  // camo: brown and dark green blobs on the sides and the hood
+  const camo = ['#4a3a1c', '#34401c', '#5e4a24'];
+  [[0.95, 0.6, 0.2], [0.85, -0.3, 0.16], [1.05, -1.1, 0.18], [0.8, 1.2, 0.12], [1.1, -0.7, 0.1]].forEach(([y, z, s], i) => {
+    bothSides(c, () => spot(s, camo[i % 3]), W / 2 + 0.012, y, z);
+  });
+  [[0.45, 1.6, 0.2], [-0.4, 1.75, 0.16], [0.1, 1.35, 0.12]].forEach(([x, z, s], i) => {
+    const sp = spot(s, camo[i % 3]);
+    sp.rotation.x = -Math.PI / 2;
+    sp.position.set(x, 1.385, z);
+    c.add(sp);
+  });
+  cabin(car, {
+    open: true,
+    glass: [[-1.2, 1.38], [0.95, 1.38], [0.8, 2.15], [-1.2, 2.15]],
+    width: 2.0, pillar: M('#1d1d23', { roughness: 0.5 }),
+    interior: '#2b2b33', seat: '#3a3a30',
+    avatar, head: 0.5, seatY: 0.82, driverZ: -0.2, sill: 1.38,
+  });
+  // the roll cage
+  const cage = M('#1d1d23', { roughness: 0.5 });
+  for (const s of [1, -1]) {
+    c.add(tube([s * 0.92, 2.15, 0.8], [s * 0.9, 2.62, 0.3], 0.07, cage));
+    c.add(tube([s * 0.9, 2.62, 0.3], [s * 0.92, 2.6, -1.25], 0.07, cage));
+    c.add(tube([s * 0.92, 2.6, -1.25], [s * 0.98, 1.36, -1.7], 0.07, cage));
+    c.add(tube([s * 0.92, 2.6, -1.25], [s * 0.98, 1.36, -0.9], 0.05, cage));
+  }
+  for (const z of [0.3, -1.25]) c.add(tube([0.9, 2.62, z], [-0.9, 2.62, z], 0.07, cage));
+  // bolt-ons
+  detachable(car, lightBar(2, 0.5, 2.66, 0.34));
+  const winch = new THREE.Group();
+  for (const s of [1, -1]) winch.add(tube([s * 0.6, 0.55, 2.3], [s * 0.6, 1.2, 2.3], 0.06, cage));
+  winch.add(tube([0.6, 1.2, 2.3], [-0.6, 1.2, 2.3], 0.06, cage));
+  winch.add(box(1.0, 0.24, 0.3, DARK(), 0, 0.68, 2.3));
+  const drum = mesh(new THREE.CylinderGeometry(0.12, 0.12, 0.5, 10), M('#c9ccd4', { metalness: 0.5, roughness: 0.4 }), 0, 0.68, 2.48);
+  drum.rotation.z = Math.PI / 2;
+  winch.add(drum);
+  winch.add(mesh(new THREE.TorusGeometry(0.07, 0.025, 5, 10, Math.PI * 1.4), M('#ff4b4b'), 0, 0.52, 2.58));
+  detachable(car, winch);
+  const can = new THREE.Group();
+  can.add(box(0.2, 0.46, 0.36, M('#e0262f'), -1.08, 1.6, -1.45));
+  can.add(box(0.06, 0.08, 0.12, DARK(), -1.08, 1.86, -1.36));
+  detachable(car, can);
+  const spare = spareWheel(0.6, 0.52);
+  spare.position.set(0, 1.4, -2.0);
+  detachable(car, spare);
+  return car;
+}

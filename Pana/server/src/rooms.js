@@ -18,7 +18,7 @@ export class RoomManager {
   }
 
   join(ws, msg) {
-    const game = String(msg.game || 'choque').slice(0, 24);
+    const game = String(msg.game || 'pana').slice(0, 24);
     const code = String(msg.room || 'lobby').slice(0, config.roomCodeMaxLength);
     const key = this.key(game, code);
 

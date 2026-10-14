@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Derrape — un juego de Pana</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Luckiest+Guy&display=swap">
+  <link rel="stylesheet" href="style.css">
+  <script type="importmap">
+    { "imports": {
+      "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+      "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+    } }
+  </script>
+</head>
+<body>
+  <!-- ---------- garage ---------- -->
+  <div id="garage" class="screen">
+    <header class="bar">
+      <div class="brand">DERRAPE <span>garaje</span></div>
+      <div class="hint">Arrastra para girar · rueda para acercar</div>
+    </header>
+
+    <aside class="card info">
+      <div class="num" id="car-num"></div>
+      <h1 id="car-name"></h1>
+      <p id="car-blurb"></p>
+      <p class="driver">Maneja: <b id="driver-name"></b> · <a href="/">cambiar mi pana</a></p>
+      <dl id="stats"></dl>
+      <div class="pick">
+        <button id="prev" aria-label="Carro anterior">‹</button>
+        <div id="dots"></div>
+        <button id="next" aria-label="Carro siguiente">›</button>
+      </div>
+      <button id="play" class="play">¡JUGAR!</button>
+    </aside>
+
+    <div class="tools">
+      <button id="cam" class="toggle">Ver piloto</button>
+      <button id="honk" class="toggle">¡Pita! <kbd>H</kbd></button>
+      <button id="spin" class="toggle on">Girar</button>
+    </div>
+  </div>
+
+  <!-- ---------- race ---------- -->
+  <div id="race" class="screen hidden">
+    <div class="hud">
+      <div><small>Vuelta</small><b id="lap">1/3</b></div>
+      <div><small>Puesto</small><b id="pos">1º</b></div>
+      <div><small>Tiempo</small><b id="time">0.0</b></div>
+      <div><small>Delante</small><b id="rival" class="small"></b></div>
+    </div>
+    <div id="count"></div>
+    <div class="keys">W A S D / flechas · <b>H</b> pitar · <b>M</b> sonido · Esc salir</div>
+
+    <div id="result" class="card result hidden">
+      <h1 id="result-title"></h1>
+      <p id="result-time"></p>
+      <div class="row">
+        <button id="again" class="play">Otra vez</button>
+        <button id="back">Garaje</button>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="game.js"></script>
+</body>
+</html>

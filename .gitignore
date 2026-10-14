@@ -11,3 +11,6 @@ Thumbs.db
 # Local planning and PR drafts (Faro convention)
 docs/plans/
 **/plans/
+
+# Local art: prompt studio, prompts, generated assets
+art/

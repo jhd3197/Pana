@@ -1,4 +1,5 @@
-// HTTP routing: /api/* -> JSON API, /g/<game>/* -> game statics, /* -> hub (web/).
+// HTTP routing: /api/* -> JSON API, /g/<game>/* -> game statics,
+// /engine/* -> shared game code, /* -> hub (web/).
 
 import fs from 'node:fs';
 import path from 'node:path';
@@ -30,6 +31,11 @@ export function createRequestHandler(rooms, startedAt) {
         return;
       }
       return serveStatic(res, baseDir, parts.join('/') || 'index.html');
+    }
+
+    // Shared code (characters, avatars) imported by the hub and the games
+    if (pathname.startsWith('/engine/')) {
+      return serveStatic(res, config.paths.engine, pathname.slice('/engine/'.length));
     }
 
     // Hub frontend

@@ -195,7 +195,7 @@ switch ($mode) {
 
         Write-Header "Pana dev server"
         Write-Host "  Hub (local):  http://localhost:$($resolved.Port)"
-        Write-Host "  Choque:       http://localhost:$($resolved.Port)/g/choque/"
+        Write-Host "  Derrape:      http://localhost:$($resolved.Port)/g/derrape/"
         Write-Host "  API health:   http://localhost:$($resolved.Port)/api/health"
         if ($lan) {
             Write-Host "  LAN (panas):  http://${lan}:$($resolved.Port)"

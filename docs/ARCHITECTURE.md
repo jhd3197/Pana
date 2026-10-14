@@ -15,12 +15,13 @@ Pana/
 │       ├── static.js    ← safe static file serving
 │       ├── rooms.js     ← RoomManager + WebSocket relay
 │       └── check.js     ← syntax check across the repo (npm run check)
-├── web/                 ← hub frontend (static, no build step)
+├── web/                 ← hub frontend: games, rooms, "Tu pana" character creator
 ├── games/
 │   └── <game>/
-│       ├── game.json    ← name, description, max players (optional but expected)
-│       └── public/      ← everything the browser needs (Three.js via CDN)
-├── engine/              ← shared game code, extracted only when 2+ games need it
+│       ├── game.json    ← name, description, max players, tile color
+│       └── public/      ← everything the browser needs (Three.js via CDN);
+│                          optional card.js draws live art on the hub tile
+├── engine/              ← shared code served at /engine/* (avatar.js, character.js)
 └── docs/
     ├── ARCHITECTURE.md  ← request flow, multiplayer model, WS protocol
     ├── DEPLOYMENT.md    ← local dev + going live on pana.sh
@@ -34,8 +35,16 @@ Pana/
 |---|---|---|
 | `/` | `web/` statics | Hub: game list, live rooms, name picker |
 | `/g/<game>/*` | `games/<game>/public` | A game's client |
+| `/engine/*` | `engine/` statics | Shared code: player avatar + 3D character |
 | `/api/*` | `api.js` | JSON: health, games, rooms |
 | `/ws` | `rooms.js` | WebSocket: join / state relay / leave |
+
+## Players
+
+A player is a name plus a look (`engine/avatar.js`), both kept in the browser's
+`localStorage` (`pana:name`, `pana:avatar`). The hub edits them; games read them
+on load. Games build the 3D pana with `engine/character.js`. Nothing about the
+player is stored on the server.
 
 ## Multiplayer model
 

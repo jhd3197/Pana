@@ -13,5 +13,6 @@ export const config = {
     root: rootDir,
     web: path.join(rootDir, 'web'),
     games: path.join(rootDir, 'games'),
+    engine: path.join(rootDir, 'engine'),
   },
 };

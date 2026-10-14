@@ -10,7 +10,8 @@ function sendJson(res, status, data) {
 }
 
 // A directory under games/ counts as a game when it has public/index.html.
-// Optional games/<id>/game.json provides display metadata.
+// Optional games/<id>/game.json provides display metadata (name, description,
+// players, color).
 export function listGames() {
   const games = [];
   let entries = [];
@@ -32,6 +33,9 @@ export function listGames() {
       name: meta.name || entry.name,
       description: meta.description || '',
       players: meta.players || config.maxPlayersPerRoom,
+      color: meta.color || null,
+      // optional public/card.js draws live art on the hub's game tile
+      card: fs.existsSync(path.join(dir, 'public', 'card.js')),
       url: `/g/${entry.name}/`,
     });
   }

@@ -9,22 +9,25 @@ clean: only `README.md` and `.gitignore` belong there. Everything else lives her
 ## Architecture
 
 - `server/` is the only backend (`pana-server`, an npm workspace). It serves the hub
-  (`web/`), every game (`games/<name>/public/`), the JSON API (`/api/*`) and the
-  WebSocket relay (`/ws`). Read `docs/ARCHITECTURE.md` before changing routing,
+  (`web/`), every game (`games/<name>/public/`), shared code (`/engine/*`), the JSON
+  API (`/api/*`) and the WebSocket relay (`/ws`). Read `docs/ARCHITECTURE.md` before changing routing,
   the WS protocol, or the room model.
-- `web/` is the hub frontend: game list, live rooms, name picker. Static, no build step.
+- `web/` is the hub frontend: game list, live rooms, and "Tu pana" (name + character
+  creator). Static, no build step.
 - Games live in `games/<name>/`: `game.json` (hub metadata) + `public/` (the client,
   Three.js via CDN import map). A game appears on the hub automatically once
   `public/index.html` exists. No build step. Ever.
-- `engine/` holds code shared between games. Only extract something into `engine/`
-  when a second game needs it — don't abstract early.
+- `engine/` holds code shared between games, served at `/engine/*`. Only extract
+  something into `engine/` when a second page needs it — don't abstract early.
+- Players are panas: every game should use the player's character
+  (`/engine/avatar.js` + `/engine/character.js`) instead of a faceless placeholder.
 - Browser is the only platform target. Friends join by opening a link; nothing to
   install, nothing to sign up for.
 
 ## Conventions
 
 - Default port is **8461** (env `PANA_PORT`). Never hardcode a different default.
-- Game names are Spanish words: `choque`, `derrape`, `bululú`. Lowercase folder names.
+- Game names are Spanish words: `derrape`, `bululú`, `trompo`. Lowercase folder names.
 - Player-facing strings are in Spanish (Venezuelan flavor welcome); code, comments and
   commit messages in English.
 - URLs: hub at `/`, games at `/g/<name>/`, API at `/api/*`, WebSocket at `/ws`.

@@ -2,7 +2,7 @@
 
 **Juega con tus panas.** A hub of free multiplayer browser games — share a link, friends join, no installs.
 
-First game: **Choque** — a car crash arena. Drive around, smash your panas, last car laughing wins.
+First game: **Derrape** — a goofy toy-car race. Jump ramps, flip over, lose your bumpers, honk *La Cucaracha*. Your pana (made in the hub) is the driver.
 
 ## Run it
 
@@ -12,7 +12,7 @@ npm start            # or: npm run dev  /  Pana\dev.ps1
 ```
 
 - Hub: http://localhost:8461
-- Choque: http://localhost:8461/g/choque/
+- Derrape: http://localhost:8461/g/derrape/
 - Friends on your network: the dev script prints your LAN URL.
 
 ## Repository layout
@@ -27,7 +27,7 @@ Pana/                  ← this repo
     ├── dev.ps1        ← Windows dev launcher (start / check / setup)
     ├── server/        ← pana-server: HTTP API + statics + WebSocket rooms
     ├── web/           ← hub frontend: game list, live rooms, name picker
-    ├── games/         ← one folder per game (choque, derrape, bululú…)
+    ├── games/         ← one folder per game (derrape, bululú…)
     ├── engine/        ← shared game code
     ├── docs/          ← architecture, deployment, plans/, knowledge/
     └── AGENTS.md      ← rules for AI coding agents working in the repo
@@ -35,8 +35,7 @@ Pana/                  ← this repo
 
 ## Roadmap
 
-- **Choque** — crash derby arena (playable now)
-- **Derrape** — drift racing mode
+- **Derrape** — toy-car race with goofy physics (playable now)
 - **Bululú** — minigame collection
 - **pana.sh** — public deploy
 

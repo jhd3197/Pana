@@ -4,35 +4,66 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Pana — juega con tus panas</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Luckiest+Guy&display=swap">
   <link rel="stylesheet" href="style.css">
+  <script type="importmap">
+    { "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js" } }
+  </script>
 </head>
 <body>
-  <header>
-    <h1>Pana</h1>
-    <p class="tagline">Juega con tus panas. Sin instalar nada.</p>
+  <header class="topbar">
+    <a class="logo" href="/">PANA</a>
+    <span class="topbar-tag">juega con tus panas</span>
+    <span class="live" id="live"><i></i><span id="live-count">0</span> jugando</span>
   </header>
 
   <main>
-    <section class="join-bar">
-      <label for="name">Tu nombre</label>
-      <input id="name" maxlength="16" placeholder="pana">
+    <!-- ---------- hero: your pana ---------- -->
+    <section class="hero">
+      <div class="stage">
+        <canvas id="pana-preview" aria-label="Tu pana en 3D. Arrástralo para girarlo, tócalo para que grite."></canvas>
+        <span class="stage-hint">Arrástralo · tócalo</span>
+      </div>
+
+      <div class="hero-side">
+        <h1 class="hello">¡Epa, <span id="hello-name">pana</span>!</h1>
+        <p class="lead">Arma tu capibara y llévalo a todos los juegos. Nada que instalar: comparte el link y listo.</p>
+
+        <div class="name-row">
+          <label for="name">Tu nombre</label>
+          <input id="name" maxlength="16" placeholder="pana" autocomplete="nickname">
+          <button id="pana-random" class="btn btn-ghost" type="button">¡Sorpréndeme!</button>
+        </div>
+
+        <div class="customizer">
+          <div class="tabs" id="pana-tabs" role="tablist"></div>
+          <div class="tab-body" id="pana-controls" role="tabpanel"></div>
+        </div>
+
+        <a id="play-featured" class="btn btn-play" href="/g/derrape/">¡JUGAR!</a>
+      </div>
     </section>
 
+    <!-- ---------- games ---------- -->
     <section>
-      <h2>Juegos</h2>
-      <div id="games" class="grid"></div>
+      <h2 class="section-title">Juegos</h2>
+      <div id="games" class="games"></div>
     </section>
 
+    <!-- ---------- live rooms ---------- -->
     <section>
-      <h2>Salas en vivo</h2>
+      <h2 class="section-title">Salas en vivo</h2>
       <div id="rooms" class="rooms"></div>
     </section>
   </main>
 
   <footer>
+    <span class="logo logo-small">PANA</span>
     <span id="status">conectando…</span>
   </footer>
 
   <script type="module" src="hub.js"></script>
+  <script type="module" src="pana.js"></script>
 </body>
 </html>
