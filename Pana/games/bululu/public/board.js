@@ -1,23 +1,25 @@
-// The board: a big night-time island (landform in island.js, plants in
+// The board: a tropical island (landform in island.js, plants in
 // flora.js, the world around it in scenery.js) with a looping path of tiles,
 // the hill shortcut, the Mango de oro cart, the panas and the dice.
 
 import * as THREE from 'three';
 import { buildCharacter } from '/engine/character.js';
 import { makeBubble } from '/engine/fx.js';
-import { M, mesh, box, canvasMat, rng, makeMango, woodSign, watchtower, flagPole, rock, palm } from '/engine/props.js';
-import { buildIsland, baseHeight, riverDist, landMask, fbm, SEA, PEAK, HILL } from './island.js';
-import { mangoTree, ceiba, pine, banana, bush, casita, bake } from './flora.js';
+import { M, mesh, box, canvasMat, rng, makeMango, woodSign, watchtower, flagPole, rock } from '/engine/props.js';
+import { buildIsland, baseHeight, riverDist, landMask, beachMask, fbm, SEA, PEAK, HILL } from './island.js';
+import { mangoTree, ceiba, pine, banana, bush, casita, bake, palm, foliage } from './flora.js';
 import { buildScenery } from './scenery.js';
+import { createAtmosphere } from './atmosphere.js';
+import { beachShade, beachHut, driftwood } from './beach.js';
 
-export const TILE_COUNT = 46;        // the main loop; the shortcut's tiles come after
+export const TILE_COUNT = 80;        // the coastal loop; the shortcut's tiles come after
 // the Atajo del cerro: leaves the loop near `start`, climbs over the hill
 // right under the big tree and rejoins it near `end`, up by the mountain.
 // from/to (tile indices) get filled in when the board is built.
 export const FORK = {
   toll: 5,
-  start: [-32, 24], end: [16, -35],
-  via: [[-20, 15], [-10, 6], [-4.5, -2.5], [1, -14], [8, -26]],
+  start: [-92, 48], end: [24, -36],
+  via: [[-65, 44], [-38, 25], [-18, 10], [-4.5, -2.5], [1, -14], [8, -26]],
   kinds: ['red', 'event', 'blue', 'event', 'red', 'blue'],
 };
 const TILE = 3.3;
@@ -194,10 +196,10 @@ function mangoTreeBig(gold = true) {
     branch.rotation.z = rot;
     g.add(branch);
   }
-  const leaf = M(0x2f8f3e, { roughness: 0.9 });
-  const leafDark = M(0x23702f, { roughness: 0.9 });
   for (const [x, y, z, r, dk] of [[0, 6.4, 0, 2.7, 0], [-2.2, 5.6, 0.4, 2, 1], [2.2, 5.7, 0.2, 2.1, 1], [0.4, 7.7, -0.4, 1.9, 0], [-1, 5.4, 1.7, 1.6, 0], [1.3, 5.3, 1.6, 1.5, 1], [0.2, 5.6, -1.8, 1.8, 1]]) {
-    g.add(mesh(new THREE.IcosahedronGeometry(r, 0), dk ? leafDark : leaf, x, y, z));
+    const leaves = foliage(r, Math.round(y * 10), dk ? 0x5b9e45 : 0x88b84f);
+    leaves.position.set(x, y, z);
+    g.add(leaves);
   }
   const hanging = [];
   for (const [x, y, z] of [[-1.6, 4.5, 1.9], [0.3, 4.4, 2.4], [1.9, 4.6, 1.5], [-2.8, 4.8, 0.6], [2.9, 4.9, 0.3], [-0.6, 4.6, -2.1], [1.6, 4.7, -1.6]]) {
@@ -337,65 +339,28 @@ function buildStand() {
 }
 
 // ---------- the island ----------
-export function createBoard(scene) {
+export function createBoard(scene, { skyMode = 'day' } = {}) {
   const rand = rng(7);
-
-  // night sky: purple at the horizon, deep navy overhead, a big moon and stars
-  const horizon = new THREE.Color(0x553a7e);
-  scene.background = horizon;
-  scene.fog = new THREE.Fog(horizon, 260, 780);
-  const domeGeo = new THREE.SphereGeometry(900, 24, 12);
-  const top = new THREE.Color(0x0e0b24);
-  const dc = [];
-  const dp = domeGeo.attributes.position;
-  for (let i = 0; i < dp.count; i++) {
-    const c = horizon.clone().lerp(top, Math.pow(Math.max(0, dp.getY(i) / 900), 0.5));
-    dc.push(c.r, c.g, c.b);
-  }
-  domeGeo.setAttribute('color', new THREE.Float32BufferAttribute(dc, 3));
-  scene.add(new THREE.Mesh(domeGeo, new THREE.MeshBasicMaterial({ vertexColors: true, side: THREE.BackSide, fog: false })));
-  const starPos = [];
-  for (let i = 0; i < 900; i++) {
-    const a = rand() * Math.PI * 2, e = 0.15 + rand() * 1.3;
-    starPos.push(Math.cos(a) * Math.cos(e) * 850, Math.sin(e) * 850, Math.sin(a) * Math.cos(e) * 850);
-  }
-  const starGeo = new THREE.BufferGeometry();
-  starGeo.setAttribute('position', new THREE.Float32BufferAttribute(starPos, 3));
-  scene.add(new THREE.Points(starGeo, new THREE.PointsMaterial({ color: 0xffffff, size: 2.2, fog: false })));
-  const moon = new THREE.Mesh(new THREE.IcosahedronGeometry(40, 2), new THREE.MeshBasicMaterial({ color: 0xfff1c4, fog: false }));
-  moon.position.set(300, 330, -620);
-  scene.add(moon);
-
-  scene.add(new THREE.HemisphereLight(0xc4ccff, 0x4a3a5a, 1.8));
-  const moonLight = new THREE.DirectionalLight(0xe2e6ff, 1.5);
-  moonLight.castShadow = true;
-  moonLight.shadow.mapSize.set(2048, 2048);
-  Object.assign(moonLight.shadow.camera, { left: -60, right: 60, top: 60, bottom: -60, near: 1, far: 260 });
-  moonLight.shadow.bias = -0.0005;
-  scene.add(moonLight, moonLight.target);
-  const warm = new THREE.DirectionalLight(0xffc89a, 0.9);   // warm front fill so the toys stay colorful
-  warm.position.set(40, 50, 90);
-  scene.add(warm);
 
   // the sea: see-through enough that the sandy shallows show
   const waterGeo = new THREE.PlaneGeometry(2400, 2400, 90, 90);
   waterGeo.rotateX(-Math.PI / 2);
   const sea = new THREE.Mesh(waterGeo, new THREE.MeshStandardMaterial({
-    color: 0x1d6aa0, roughness: 0.3, metalness: 0.1, flatShading: true, transparent: true, opacity: 0.8,
+    color: 0x279fba, roughness: 0.38, metalness: 0.08, transparent: true, opacity: 0.8,
   }));
   sea.position.y = SEA;
   scene.add(sea);
   const waterBase = Float32Array.from(waterGeo.attributes.position.array);
   const scenery = buildScenery(scene);
+  const atmosphere = createAtmosphere(scene, sea.material, skyMode);
 
   // ---- the path follows the land ----
-  const ctrl = [];
-  for (let i = 0; i < 14; i++) {
-    const a = (i / 14) * Math.PI * 2;
-    const rx = 50 * (1 + Math.sin(a * 3 + 0.4) * 0.07);
-    const rz = 34 * (1 + Math.cos(a * 2 + 0.3) * 0.08);
-    ctrl.push(new THREE.Vector3(Math.cos(a) * rx, 0, HILL.z - Math.sin(a) * rz));
-  }
+  // Start on the beach, follow the western river into the jungle, pass the
+  // tepui foothills, then return through the fishing harbor and coconut bay.
+  const ctrl = [[28, 94], [0, 97], [-35, 91], [-70, 75], [-92, 48],
+    [-103, 12], [-84, -18], [-49, -36], [-12, -34], [24, -36],
+    [63, -20], [95, 9], [108, 40], [84, 70], [58, 84]]
+    .map(([x, z]) => new THREE.Vector3(x, 0, z));
   const curve = new THREE.CatmullRomCurve3(ctrl, true, 'centripetal');
   const spaced = curve.getSpacedPoints(TILE_COUNT);
   const tiles = [];
@@ -405,7 +370,7 @@ export function createBoard(scene) {
     let inX = -t.z, inZ = t.x;
     if (inX * (HILL.x - p.x) + inZ * (HILL.z - p.z) < 0) { inX = -inX; inZ = -inZ; }
     const ground = baseHeight(p.x, p.z);
-    tiles.push({ i, kind: tileKind(i), x: p.x, z: p.z, inX, inZ, ground, y: ground + 0.6, bridge: riverDist(p.x, p.z) < 3.4, next: [(i + 1) % TILE_COUNT] });
+    tiles.push({ i, kind: tileKind(i), x: p.x, z: p.z, inX, inZ, ground, y: ground + 0.6, beach: beachMask(p.x, p.z) > 0.65, bridge: riverDist(p.x, p.z) < 3.4, next: [(i + 1) % TILE_COUNT] });
   }
   // the shortcut: from the front-left shore over the hill (right under the big
   // tree) to the back of the loop; tiles spaced evenly along it
@@ -414,7 +379,7 @@ export function createBoard(scene) {
   FORK.from = a0.i;
   FORK.to = a1.i;
   const forkCurve = new THREE.CatmullRomCurve3([[a0.x, a0.z], ...FORK.via, [a1.x, a1.z]].map(([x, z]) => new THREE.Vector3(x, 0, z)), false, 'centripetal');
-  const n = Math.round(forkCurve.getLength() / 5.6);
+  const n = Math.round(forkCurve.getLength() / (curve.getLength() / TILE_COUNT));
   const forkPts = forkCurve.getSpacedPoints(n);
   let treeTile = null;
   for (let k = 1; k < n; k++) {
@@ -450,7 +415,7 @@ export function createBoard(scene) {
     scene.add(m);
     t.mesh = m;
     // a stone slab under each tile, like the art
-    statics.add(mesh(new THREE.BoxGeometry(TILE + 0.5, 0.45, TILE + 0.5), stone, t.x, t.y - 0.5, t.z));
+    statics.add(mesh(new THREE.BoxGeometry(TILE + 0.5, 0.45, TILE + 0.5), t.beach ? plank : stone, t.x, t.y - 0.5, t.z));
     if (t.bridge) {
       // stilts down into the river, and a little rail
       const floor = groundAt(t.x, t.z);
@@ -471,6 +436,15 @@ export function createBoard(scene) {
     const yaw = Math.atan2(dx, dz);
     const dy = b.y - a.y;
     const overWater = a.bridge || b.bridge;
+    if (a.beach && b.beach && Math.abs(dy) < 0.6) {
+      const boards = Math.ceil(gap / 0.55);
+      for (let k = 0; k < boards; k++) {
+        const f = (k + 0.5) / boards;
+        const board = box(2.65, 0.18, gap / boards - 0.035, plank, x0 + ux * gap * f, a.y + dy * f - 0.15, z0 + uz * gap * f);
+        board.rotation.y = yaw; statics.add(board);
+      }
+      continue;
+    }
     const steps = Math.abs(dy) > 0.3 && !overWater ? Math.max(2, Math.round(Math.abs(dy) / 0.28)) : 1;
     for (let k = 0; k < steps; k++) {
       const f = (k + 0.5) / steps;
@@ -490,6 +464,9 @@ export function createBoard(scene) {
   // nothing tall between the camera (always in front, +z) and a tile
   const inShot = (x, z) => tiles.some((t) => z > t.z - 2 && z - t.z < 26 && Math.abs(x - t.x) < 9);
   const decor = [];   // where props stand, so the moving cart can avoid them
+  const harborHomes = [[115, 7], [121, 16], [119, 35]];
+  const harborSpace = (x, z) => harborHomes.some(([hx, hz]) => Math.hypot(hx - x, hz - z) < 5.5)
+    || (x > 103 && x < 135 && Math.abs(z - 24) < 3.4);
   const place = (obj, x, z, rot = rand() * 6, into = statics) => {
     decor.push({ x, z, obj });
     obj.position.set(x, groundAt(x, z), z);
@@ -499,16 +476,18 @@ export function createBoard(scene) {
   };
 
   // plants: what grows depends on where you are
-  for (let i = 0; i < 2600; i++) {
-    const x = (rand() - 0.5) * 260, z = -112 + rand() * 210;
+  for (let i = 0; i < 3400; i++) {
+    const x = (rand() - 0.5) * 310, z = -128 + rand() * 260;
     const y = groundAt(x, z);
-    if (y < 0.15 || !free(x, z, 4.6) || inShot(x, z)) continue;
+    if (y < 0.15 || !free(x, z, 4.6) || inShot(x, z) || harborSpace(x, z)) continue;
     const mtn = Math.hypot((x - PEAK.x) * 0.85, z - PEAK.z);
     const woods = fbm(x * 0.035 + 4, z * 0.035);
     const coast = landMask(x, z);
     const s = i + 1;
-    if (y > 25) continue;                                                  // bare rock up top
-    if (coast < 0.75) {
+    if (y > 25) continue;                                                  // open summit and cliff face
+    if (beachMask(x, z) > 0.45) {
+      if (rand() < 0.16 && z < 91) place(palm({ h: 6 + rand() * 3, seed: s }), x, z);
+    } else if (coast < 0.75) {
       if (rand() < 0.5) place(palm({ h: 6 + rand() * 4, seed: s }), x, z);
     } else if (mtn < 40 && y > 7) {
       if (rand() < 0.55) place(pine({ seed: s, h: 5 + rand() * 4 }), x, z);
@@ -526,23 +505,34 @@ export function createBoard(scene) {
       else place(rock(0.6 + rand() * 1.2, 0x8b8496, s), x, z);
     }
   }
+  // Beach furniture sits behind the promenade; open sand stays in front of
+  // the players. Low props near the water cannot obscure their camera line.
+  for (const [i, [x, z]] of [[-58,70],[-33,76],[6,82],[47,76],[76,64]].entries()) {
+    if (free(x, z, 6) && groundAt(x, z) > 0) place(beachShade(i % 2 ? 0x48a9aa : 0xe77950), x, z, 0.1);
+  }
+  if (free(-8, 77, 6)) place(beachHut(), -8, 77, 0.05);
+  for (const [x, z] of [[-44,101],[8,108],[65,94],[-81,85]]) {
+    if (groundAt(x, z) > SEA + 0.5 && free(x, z, 4)) place(driftwood(), x, z);
+  }
   for (let i = 0; i < 70; i++) {
     const x = (rand() - 0.5) * 220, z = -100 + rand() * 180;
-    if (groundAt(x, z) < 0.5 || !free(x, z, 4) || inShot(x, z)) continue;
+    if (groundAt(x, z) < 0.5 || !free(x, z, 4) || inShot(x, z) || harborSpace(x, z)) continue;
     place(rock(0.7 + rand() * 1.6, 0x8b8496, 500 + i), x, z);
   }
 
   // a fishing village on the right shore, with a dock and a rowboat
-  for (let i = 0; i < 7; i++) {
-    const a = 0.25 - i * 0.16;
-    const x = 78 + Math.cos(a) * 9 + (i % 2) * 3, z = 26 + Math.sin(a) * 18;
+  for (const [i, [x, z]] of harborHomes.entries()) {
     if (!free(x, z, 5) || inShot(x, z) || groundAt(x, z) < 0.3) continue;
-    place(casita({ seed: 40 + i }), x, z, -Math.PI / 2 + (rand() - 0.5) * 0.4);
+    place(casita({ seed: 200 + i * 17 }), x, z, Math.PI / 2 + (rand() - 0.5) * 0.2);
   }
-  const dockY = SEA + 1.4;
-  for (let k = 0; k < 9; k++) {
-    statics.add(box(2.6, 0.2, 1.4, plank, 96 + k * 1.5, dockY, 8));
-    if (k % 2 === 0) for (const s of [-1, 1]) statics.add(mesh(new THREE.CylinderGeometry(0.14, 0.14, 3, 6), post, 96 + k * 1.5, dockY - 1.3, 8 + s * 1.2));
+  const dockY = SEA + 2.7;
+  let dockStart = 112;
+  while (dockStart < 145 && groundAt(dockStart, 24) > dockY - 0.1) dockStart++;
+  // Find the actual shore so changes to the bay cannot leave a floating dock.
+  for (let x = 106, k = 0; x < 162; x += 1.5, k++) {
+    const y = Math.max(dockY, groundAt(x, 24) + 0.1);
+    statics.add(box(1.4, 0.2, 2.6, plank, x, y, 24));
+    if (x >= dockStart && k % 2 === 0) for (const s of [-1, 1]) statics.add(mesh(new THREE.CylinderGeometry(0.14, 0.14, 7.5, 6), post, x, y - 3.7, 24 + s * 1.1));
   }
 
   // signs that face the camera, near the path
@@ -550,6 +540,8 @@ export function createBoard(scene) {
     [['PANAS', 'JUEGAN', 'MEJOR ♥'], -62, -8],
     [['RISAS', 'MANGOS', 'PANAS', 'SIEMPRE ♥'], 60, -14],
     [['PICO', 'PANA', '4.765 m'], 14, -44],
+    [['PLAYA', 'COCOTERO'], 34, 80],
+    [['PUERTO', 'DE LOS PANAS'], 117, 43],
   ];
   const keep = new THREE.Group();   // things with textures or animation stay live
   scene.add(keep);
@@ -608,7 +600,7 @@ export function createBoard(scene) {
   const stand = buildStand();
   scene.add(stand.group);
   const board = {
-    tiles, curve, stand, standTile: 0, groundAt, highlight: [],
+    tiles, curve, stand, standTile: 0, groundAt, highlight: [], atmosphere,
     // beside tile i, on whichever side is further from the camera (so the
     // tile doesn't hide it), and never in the river or on another tile
     standSpot(i) {
@@ -652,14 +644,14 @@ export function createBoard(scene) {
         m.depthWrite = treeAlpha > 0.95;
       }
     },
-    // keep the moon's shadow box centered on what the camera looks at
+    // keep the sun/moon's shadow box centered on what the camera looks at
     follow(target) {
-      moonLight.position.set(target.x - 45, target.y + 90, target.z + 35);
-      moonLight.target.position.copy(target);
+      atmosphere.follow(target);
     },
     // for the minimap
     pathDist, groundAt, landMask,
     update(t, dt) {
+      atmosphere.update(dt);
       const wp = waterGeo.attributes.position;
       for (let i = 0; i < wp.count; i++) {
         const x = waterBase[i * 3], z = waterBase[i * 3 + 2];
@@ -667,11 +659,12 @@ export function createBoard(scene) {
       }
       wp.needsUpdate = true;
       island.update(t);
-      scenery.update(t, dt);
+      scenery.update(t, dt, atmosphere.daylight);
       // tiles you can pick at a fork bob up and down
       for (const tl of tiles) tl.mesh.position.y = tl.y - 0.2 + (board.highlight.includes(tl.i) ? 0.25 + Math.sin(t * 7) * 0.2 : 0);
       for (const [k, mg] of bigTree.hanging.entries()) mg.rotation.z = Math.sin(t * 1.8 + k) * 0.18;
-      treeGlow.intensity = 75 + Math.sin(t * 2) * 10;
+      treeGlow.intensity = (75 + Math.sin(t * 2) * 10) * (1 - atmosphere.daylight * 0.85);
+      bulbMat.emissiveIntensity = 0.35 + (1 - atmosphere.daylight) * 1.65;
       stand.keeper.update(dt, { look: Math.sin(t * 0.7) });
       stand.bubble.update(dt);
       stand.beam.material.opacity = 0.22 + Math.sin(t * 3) * 0.06;

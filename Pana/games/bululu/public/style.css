@@ -112,12 +112,54 @@ kbd {
   color: var(--cream);
 }
 .look.on { background: var(--yellow); color: #2a1a00; border-color: #8a6200; box-shadow: 0 4px 0 #8a6200; }
-body.in-mini .look, body.in-mini .minimap { display: none; }
+body.in-mini .look, body.in-mini .minimap, body.in-mini .sky-controls, body.in-mini .places { display: none; }
+
+.sky-controls {
+  position: fixed;
+  top: 66px; right: 18px;
+  z-index: 5;
+  display: flex;
+  width: 200px;
+  padding: 3px;
+  border: 2px solid #3d220f;
+  border-radius: 10px;
+  background: #352d37;
+  box-shadow: 0 3px 0 #3d220f;
+}
+.sky-controls button {
+  flex: 1;
+  min-height: 36px;
+  padding: 5px 7px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: #fdf6e3;
+  font-size: 13px;
+  font-weight: 900;
+}
+.sky-controls button:hover { background: #59494b; }
+.sky-controls button[aria-pressed="true"] { background: #ffc629; color: #35220d; }
+.sky-controls button:focus-visible { outline: 3px solid white; outline-offset: 2px; }
+.places {
+  position: fixed;
+  top: 302px; right: 18px;
+  z-index: 5;
+  width: 200px;
+  min-height: 40px;
+  padding: 7px 10px;
+  border: 2px solid #3d220f;
+  border-radius: 8px;
+  background: #352d37;
+  color: var(--cream);
+  font: 900 13px Nunito, system-ui, sans-serif;
+  cursor: pointer;
+}
+.places:focus-visible { outline: 3px solid var(--yellow); outline-offset: 2px; }
 
 /* ---------- minimap ---------- */
 .minimap {
   position: fixed;
-  inset: 66px 18px auto auto;   /* (the page-wide canvas rule pins canvases to 0) */
+  inset: 120px 18px auto auto;   /* (the page-wide canvas rule pins canvases to 0) */
   z-index: 5;
   width: 200px; height: 170px;
   border-radius: 14px;
@@ -457,6 +499,9 @@ body.in-mini .look, body.in-mini .minimap { display: none; }
   .timer { top: auto; bottom: 170px; }
   .prompt { bottom: 190px; }
   .keys { display: none; }
-  .minimap { width: 130px; height: 110px; inset: 60px 12px auto auto; }
+  .sky-controls { top: 64px; right: 12px; width: 174px; }
+  .sky-controls button { min-height: 40px; }
+  .minimap { width: 130px; height: 110px; inset: 122px 12px auto auto; }
+  .places { top: 244px; right: 12px; width: 174px; }
   .toast b { font-size: 30px; }
 }

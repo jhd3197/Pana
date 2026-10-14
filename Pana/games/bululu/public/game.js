@@ -5,9 +5,10 @@ import { loadAvatar, loadName, randomAvatar } from '/engine/avatar.js';
 import { buildCharacter } from '/engine/character.js';
 import { makeMango } from '/engine/props.js';
 import { createBoard, createToken, createDie, TILE_COUNT, FORK } from './board.js';
-import { RIVER, SEA } from './island.js';
+import { RIVER, SEA, MAP_BOUNDS, beachMask } from './island.js';
 import atrapa from './minigames/atrapa.js';
 import caigas from './minigames/caigas.js';
+import { SKY_MODES } from './atmosphere.js';
 
 // every tile, sign and bubble is drawn on a canvas in the cartoon font, so
 // load it before building anything (but never hang on it)
@@ -28,6 +29,9 @@ const DEBUG = QS.has('debug');
 const MINIGAMES = [atrapa, caigas];
 const FORCED = MINIGAMES.find((m) => m.id === QS.get('mini'));
 const ONLY = MINIGAMES.find((m) => m.id === QS.get('play'));
+let savedSky = 'day';
+try { savedSky = localStorage.getItem('pana.bululu.sky') || 'day'; } catch { /* Storage can be disabled. */ }
+const skyMode = QS.get('sky') || savedSky;
 
 const COLORS = ['#ff4b4b', '#3d7bf2', '#ffc629', '#2fbf4a'];
 const RIVALS = ['Don Pancho', 'La Chama', 'El Gocho', 'Tía Carmen', 'El Catire', 'Yoli', 'Chuchú', 'La Nena'];
@@ -66,8 +70,17 @@ document.body.prepend(renderer.domElement);
 
 // ---------- board scene ----------
 const boardScene = new THREE.Scene();
-const boardCam = new THREE.PerspectiveCamera(50, innerWidth / innerHeight, 0.1, 700);
-const board = createBoard(boardScene);
+const boardCam = new THREE.PerspectiveCamera(50, innerWidth / innerHeight, 0.1, 1800);
+const board = createBoard(boardScene, { skyMode });
+const skyButtons = [...document.querySelectorAll('[data-sky]')];
+function selectSky(mode, save = true) {
+  if (!SKY_MODES.includes(mode)) return;
+  board.atmosphere.setMode(mode);
+  for (const button of skyButtons) button.setAttribute('aria-pressed', String(button.dataset.sky === mode));
+  if (save) try { localStorage.setItem('pana.bululu.sky', mode); } catch { /* Keep the selection for this session. */ }
+}
+for (const button of skyButtons) button.addEventListener('click', () => selectSky(button.dataset.sky));
+selectSky(board.atmosphere.mode, false);
 const puffs = new Puffs(boardScene);
 // two dice, plus a floating counter for the steps left once they're rolled
 const dice = [createDie(), createDie()];
@@ -156,7 +169,7 @@ cam.look.copy(cam.wantLook);
 
 // "Ver tablero": drag to orbit, scroll to zoom, Tab or the button to return
 const looker = new OrbitControls(boardCam, renderer.domElement);
-Object.assign(looker, { enabled: false, enableDamping: true, maxPolarAngle: 1.32, minDistance: 6, maxDistance: 260 });
+Object.assign(looker, { enabled: false, enableDamping: true, maxPolarAngle: 1.42, minDistance: 6, maxDistance: 360 });
 let freeLook = false;
 function setFreeLook(on) {
   if (on && view !== boardView) return;
@@ -169,8 +182,23 @@ function setFreeLook(on) {
   }
   $('look').classList.toggle('on', on);
   $('look').innerHTML = on ? 'Volver <kbd>Tab</kbd>' : 'Ver tablero <kbd>Tab</kbd>';
+  if (!on) $('places').value = '';
 }
 $('look').onclick = () => setFreeLook(!freeLook);
+const SCENIC_SPOTS = {
+  island: { target: [0, 12, -12], camera: [0, 156, 285] },
+  beach: { target: [12, 2, 90], camera: [34, 24, 137] },
+  waterfall: { target: [130, 64, -310], camera: [245, 115, 15] },
+  harbor: { target: [123, 3, 24], camera: [162, 26, 66] },
+};
+$('places').addEventListener('change', (event) => {
+  const spot = SCENIC_SPOTS[event.target.value];
+  if (!spot || view !== boardView) return;
+  setFreeLook(true);
+  looker.target.set(...spot.target);
+  boardCam.position.set(...spot.camera);
+  looker.update();
+});
 
 const boardView = {
   scene: boardScene,
@@ -247,11 +275,16 @@ const held = {};
 let jumpPressed = false;
 let actionWaiters = [];
 addEventListener('keydown', (e) => {
+  // Let the atmosphere buttons retain native Space/Enter/Tab behavior.
+  if (e.target.closest?.('.sky-controls, .places')) return;
   const k = e.key.toLowerCase();
   if (k === ' ' || k.startsWith('arrow')) e.preventDefault();
   held[k] = true;
   if (!e.repeat && (k === ' ' || k === 'w' || k === 'arrowup')) jumpPressed = true;
   if (k === 'm') sound.muted = !sound.muted;
+  if (k === 'l' && !e.repeat && view === boardView) {
+    selectSky(SKY_MODES[(SKY_MODES.indexOf(board.atmosphere.mode) + 1) % SKY_MODES.length]);
+  }
   if (k === 'tab') {
     e.preventDefault();
     if (!e.repeat) setFreeLook(!freeLook);
@@ -394,7 +427,7 @@ function makePortraits() {
 // ======================================================================
 // minimap: the whole island at a glance; tap it to look there
 // ======================================================================
-const MAP = { x0: -135, x1: 135, z0: -126, z1: 104 };
+const MAP = MAP_BOUNDS;
 const mapEl = $('minimap');
 const mapCtx = mapEl.getContext('2d');
 const mapBase = document.createElement('canvas');
@@ -412,7 +445,7 @@ function drawMapBase() {
       let c;
       if (h < SEA - 2) c = '#1d4f80';
       else if (h < SEA + 0.2) c = '#3a8fb0';
-      else if (h < 0.4) c = '#e6c88c';
+      else if (h < 0.4 || beachMask(x, z) > 0.45) c = '#e6c88c';
       else if (h > 24) c = '#b4adbb';
       else if (h > 9) c = '#3f7f4a';
       else c = h > 4 ? '#55a04c' : '#66b356';

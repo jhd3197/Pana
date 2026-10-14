@@ -28,9 +28,21 @@
       <b id="timer-n">30</b>
     </div>
     <button id="look" class="look">Ver tablero <kbd>Tab</kbd></button>
+    <div class="sky-controls" role="group" aria-label="Luz de la isla">
+      <button type="button" data-sky="day" aria-pressed="true" title="Mantener la luz de día">Día</button>
+      <button type="button" data-sky="night" aria-pressed="false" title="Mantener la luz de noche">Noche</button>
+      <button type="button" data-sky="cycle" aria-pressed="false" title="Día y noche: un ciclo cada 10 minutos">Ciclo</button>
+    </div>
     <canvas id="minimap" class="minimap" width="400" height="340" title="Toca el mapa para mirar ahí"></canvas>
+    <select id="places" class="places" aria-label="Explorar una zona de la isla">
+      <option value="">Explorar isla…</option>
+      <option value="island">Toda la isla</option>
+      <option value="beach">Playa Cocotero</option>
+      <option value="waterfall">Salto del Tepuy</option>
+      <option value="harbor">Puerto de los Panas</option>
+    </select>
     <div id="cards" class="cards"></div>
-    <div class="keys">Espacio: tirar / saltar · A D: moverte · Tab: ver tablero · M: sonido</div>
+    <div class="keys">Espacio: tirar / saltar · A D: moverte · Tab: ver tablero · L: luz · M: sonido</div>
   </div>
 
   <div id="toast" class="toast hidden"></div>

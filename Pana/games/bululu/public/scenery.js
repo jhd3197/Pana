@@ -1,30 +1,14 @@
 // The world around the island, so it isn't floating in the middle of
-// nowhere: neighbor islands (one with a village, one a smoking volcano), a
-// mountain range on the horizon, a lighthouse, boats, and drifting clouds.
+// nowhere: forested coves, sandstone tepuis, waterfalls, a lighthouse,
+// fishing villages and drifting clouds.
 
 import * as THREE from 'three';
-import { M, mesh, rng, palm } from '/engine/props.js';
-import { casita, bake } from './flora.js';
+import { M, mesh, rng } from '/engine/props.js';
+import { casita, bake, palm } from './flora.js';
 import { SEA } from './island.js';
+import { createIslet, createTepui } from './landscape.js';
 
-// A low-poly mound of an island with a sandy rim.
-function isle(r, h, { seed = 1, color = 0x4f9d4a, sand = true } = {}) {
-  const rand = rng(seed);
-  const g = new THREE.Group();
-  const geo = new THREE.SphereGeometry(r, 18, 8, 0, Math.PI * 2, 0, Math.PI / 2);
-  const p = geo.attributes.position;
-  for (let i = 0; i < p.count; i++) {
-    const k = 0.85 + rand() * 0.3;
-    p.setXYZ(i, p.getX(i) * k, p.getY(i) * (h / r), p.getZ(i) * k);
-  }
-  geo.computeVertexNormals();
-  g.add(mesh(geo, M(color, { roughness: 1 }), 0, SEA - 0.4, 0));
-  if (sand) {
-    const rim = mesh(new THREE.CylinderGeometry(r * 1.08, r * 1.15, 1.2, 18), M(0xecd096, { roughness: 1 }), 0, SEA - 0.3, 0);
-    g.add(rim);
-  }
-  return g;
-}
+const dayCloud = new THREE.Color(0xffffff);
 
 function lighthouse() {
   const g = new THREE.Group();
@@ -49,6 +33,8 @@ function lighthouse() {
   pivot.add(beam);
   g.add(pivot);
   g.userData.pivot = pivot;
+  g.userData.beam = beam;
+  g.userData.lamp = lamp;
   return g;
 }
 
@@ -64,18 +50,41 @@ function sailboat(color = '#ff4b4b') {
   return g;
 }
 
-function cloud(seed) {
-  const r = rng(seed);
-  const g = new THREE.Group();
-  const mat = new THREE.MeshStandardMaterial({ color: 0xf3eefa, emissive: 0x2a2244, roughness: 1, flatShading: true });
-  const n = 4 + Math.floor(r() * 3);
-  for (let i = 0; i < n; i++) {
-    const s = new THREE.Mesh(new THREE.IcosahedronGeometry(3 + r() * 3, 1), mat);
-    s.position.set((i - n / 2) * 4 + r() * 2, r() * 2, (r() - 0.5) * 4);
-    s.scale.y = 0.6;
-    g.add(s);
+// Soft, shaded cumulus silhouettes. Four reusable textures replace dozens of
+// lit polyhedra; the alpha falloff gives a feathery edge from any camera angle.
+function cloudTexture(seed, smoke = false) {
+  const r = rng(seed), canvas = document.createElement('canvas');
+  canvas.width = 512; canvas.height = 256;
+  const ctx = canvas.getContext('2d');
+  const puff = (x, y, radius) => {
+    const gradient = ctx.createRadialGradient(x, y, 0, x, y, radius);
+    gradient.addColorStop(0, 'rgba(255,255,255,1)');
+    gradient.addColorStop(0.68, 'rgba(255,255,255,1)');
+    gradient.addColorStop(0.85, 'rgba(255,255,255,0.8)');
+    gradient.addColorStop(1, 'rgba(255,255,255,0)');
+    ctx.fillStyle = gradient;
+    ctx.fillRect(x - radius, y - radius, radius * 2, radius * 2);
+  };
+  if (smoke) puff(256, 128, 117);
+  else {
+    // High central towers and a broad low base, rather than a row of bubbles.
+    for (let i = 0; i < 7; i++) {
+      const t = i / 6;
+      puff(70 + t * 365, 157 - Math.sin(t * Math.PI) * (35 + r() * 35), 47 + Math.sin(t * Math.PI) * 28 + r() * 15);
+    }
+    for (let i = 0; i < 8; i++) puff(90 + i * 46, 171 + r() * 7, 40 + r() * 12);
   }
-  return g;
+  // Shade the unified silhouette, so overlapping puffs don't leave dark rings.
+  ctx.globalCompositeOperation = 'source-in';
+  const shade = ctx.createLinearGradient(0, 40, 0, 218);
+  shade.addColorStop(0, '#ffffff');
+  shade.addColorStop(0.45, '#f9fcff');
+  shade.addColorStop(1, '#bdcfde');
+  ctx.fillStyle = shade;
+  ctx.fillRect(0, 0, 512, 256);
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.colorSpace = THREE.SRGBColorSpace;
+  return texture;
 }
 
 export function buildScenery(scene) {
@@ -85,31 +94,32 @@ export function buildScenery(scene) {
 
   // neighbor islands, some with palms, one with a village
   const isles = [
-    { x: -190, z: -120, r: 34, h: 16, palms: 7 },
-    { x: 210, z: -90, r: 40, h: 22, palms: 6, village: true },
-    { x: 240, z: 90, r: 22, h: 9, palms: 5 },
-    { x: -230, z: 110, r: 28, h: 12, palms: 6, village: true },
-    { x: 60, z: 230, r: 18, h: 6, palms: 4 },
-    { x: -90, z: -260, r: 30, h: 26, palms: 3 },
+    { x: -240, z: -110, r: 53, h: 25, palms: 7 },
+    { x: 245, z: -35, r: 57, h: 33, palms: 8, village: true },
+    { x: 280, z: 150, r: 35, h: 13, palms: 5 },
+    { x: -270, z: 160, r: 49, h: 18, palms: 6, village: true },
+    { x: 20, z: 300, r: 30, h: 9, palms: 5 },
   ];
   for (const [k, d] of isles.entries()) {
-    const g = isle(d.r, d.h, { seed: k + 5 });
-    g.position.set(d.x, 0, d.z);
-    statics.add(g);
+    const island = createIslet({ radius: d.r, height: d.h, seed: k + 5 });
+    island.group.position.set(d.x, 0, d.z);
+    scene.add(island.group);
     for (let i = 0; i < d.palms; i++) {
-      const a = rand() * Math.PI * 2, rr = d.r * (0.55 + rand() * 0.4);
+      const a = rand() * Math.PI * 2, rr = d.r * (0.55 + rand() * 0.22);
       const p = palm({ h: 6 + rand() * 4, seed: 300 + k * 10 + i });
-      const y = SEA - 0.4 + d.h * Math.sqrt(Math.max(0, 1 - (rr / d.r) ** 2)) * 0.9;
-      p.position.set(d.x + Math.cos(a) * rr, y - 0.5, d.z + Math.sin(a) * rr);
+      const x = Math.cos(a) * rr, z = Math.sin(a) * rr * 0.85;
+      const y = island.heightAt(x, z);
+      p.position.set(d.x + x, y - 0.1, d.z + z);
       p.scale.setScalar(1.3);
       statics.add(p);
     }
     if (d.village) {
       for (let i = 0; i < 7; i++) {
-        const a = (i / 7) * Math.PI * 1.2 + 2.2, rr = d.r * 0.75;
+        const a = (i / 7) * Math.PI * 0.75 + 0.4, rr = d.r * 0.78;
         const h = casita({ seed: k * 20 + i });
-        const y = SEA - 0.4 + d.h * Math.sqrt(Math.max(0, 1 - (rr / d.r) ** 2)) * 0.85;
-        h.position.set(d.x + Math.cos(a) * rr, y - 0.4, d.z + Math.sin(a) * rr);
+        const x = Math.cos(a) * rr, z = Math.sin(a) * rr * 0.85;
+        const y = island.heightAt(x, z);
+        h.position.set(d.x + x, y, d.z + z);
         h.rotation.y = -a + Math.PI / 2;
         h.scale.setScalar(1.6);
         statics.add(h);
@@ -117,50 +127,34 @@ export function buildScenery(scene) {
     }
   }
 
-  // a volcano island with a lazy plume of smoke
-  const volcano = new THREE.Group();
-  volcano.position.set(150, 0, -260);
-  const cone = mesh(new THREE.CylinderGeometry(9, 55, 60, 14, 1, true), M(0x5a4a5e, { roughness: 1 }), 0, SEA + 28, 0);
-  volcano.add(cone);
-  const lava = new THREE.Mesh(new THREE.CircleGeometry(9, 14), new THREE.MeshBasicMaterial({ color: 0xff6a2a }));
-  lava.rotation.x = -Math.PI / 2;
-  lava.position.y = SEA + 57.5;
-  volcano.add(lava);
-  statics.add(volcano);
-  const smoke = [];
-  const smokeMat = new THREE.MeshStandardMaterial({ color: 0x9a90a8, roughness: 1, transparent: true, opacity: 0.7, flatShading: true });
-  for (let i = 0; i < 9; i++) {
-    const s = new THREE.Mesh(new THREE.IcosahedronGeometry(6, 1), smokeMat);
-    s.userData.k = i / 9;
-    scene.add(s);
-    smoke.push(s);
+  // A waterfall landmark backed by overlapping mesas and wooded ridgelines.
+  const tepuis = [];
+  for (const d of [
+    { x: 130, z: -310, width: 118, depth: 78, height: 135, seed: 8, waterfall: true },
+    { x: -230, z: -415, width: 180, depth: 100, height: 157, seed: 21 },
+    { x: 385, z: -445, width: 155, depth: 100, height: 105, seed: 44 },
+  ]) {
+    const tepui = createTepui(d);
+    tepui.group.position.set(d.x, 0, d.z);
+    scene.add(tepui.group); tepuis.push(tepui);
   }
-
-  // mountain ranges on the horizon: the mainland, far away
-  const far = M(0x3d3560, { roughness: 1 });
-  const farer = M(0x2f2a50, { roughness: 1 });
-  for (let i = 0; i < 26; i++) {
-    const a = (i / 26) * Math.PI * 2 + rand() * 0.1;
-    const d = 560 + rand() * 60;
-    const h = 60 + rand() * 90;
-    const m = mesh(new THREE.ConeGeometry(70 + rand() * 50, h, 6), i % 2 ? far : farer, Math.cos(a) * d, SEA + h / 2 - 4, Math.sin(a) * d);
-    m.castShadow = false;
-    m.receiveShadow = false;
-    statics.add(m);
+  for (const [x, z, radius, height, seed] of [[-480,-250,150,65,52],[530,-140,165,70,53],[-460,230,120,40,54],[430,360,125,45,55]]) {
+    const ridge = createIslet({ radius, height, seed });
+    ridge.group.position.set(x, 0, z); scene.add(ridge.group);
   }
 
   // the lighthouse on its rock, just off the right shore
-  const rockIsle = isle(9, 5, { seed: 77, color: 0x7d7488, sand: false });
-  rockIsle.position.set(112, 0, 44);
-  statics.add(rockIsle);
+  const rockIsle = createIslet({ radius: 12, height: 5, seed: 77, wooded: false });
+  rockIsle.group.position.set(168, 0, 65);
+  scene.add(rockIsle.group);
   const light = lighthouse();
-  light.position.set(112, SEA + 3.2, 44);
+  light.position.set(168, rockIsle.heightAt(0, 0), 65);
   scene.add(light);
   anim.push((t) => (light.userData.pivot.rotation.y = t * 0.6));
 
   // boats bobbing about
   const boats = [];
-  for (const [k, [x, z, c]] of [[90, 95, '#ff4b4b'], [-120, 70, '#ffc629'], [140, -20, '#2ad1b2'], [-60, 130, '#3d7bf2']].entries()) {
+  for (const [k, [x, z, c]] of [[100, 148, '#ff4b4b'], [-170, 85, '#ffc629'], [180, -20, '#2ad1b2'], [-60, 175, '#3d7bf2']].entries()) {
     const b = sailboat(c);
     b.position.set(x, SEA, z);
     b.rotation.y = rand() * 6;
@@ -171,12 +165,14 @@ export function buildScenery(scene) {
 
   // clouds drifting high up
   const clouds = [];
+  const cloudMats = Array.from({ length: 4 }, (_, i) => new THREE.SpriteMaterial({ map: cloudTexture(i + 20), color: 0xffffff, transparent: true, opacity: 0.94, depthWrite: false }));
   for (let i = 0; i < 16; i++) {
-    const c = cloud(i + 1);
-    const a = rand() * Math.PI * 2, d = 90 + rand() * 280;
-    c.position.set(Math.cos(a) * d, 55 + rand() * 45, Math.sin(a) * d);
-    c.scale.setScalar(1 + rand() * 1.4);
-    c.userData = { speed: 1 + rand() * 2 };
+    const c = new THREE.Sprite(cloudMats[i % cloudMats.length]);
+    const a = rand() * Math.PI * 2, d = 470 + rand() * 100;
+    c.position.set(Math.cos(a) * d, 150 + rand() * 55, Math.sin(a) * d);
+    const width = 35 + rand() * 35;
+    c.scale.set(width, width * 0.5, 1);
+    c.userData = { angle: a, radius: d, speed: 0.0015 + rand() * 0.002 };
     scene.add(c);
     clouds.push(c);
   }
@@ -184,22 +180,21 @@ export function buildScenery(scene) {
   scene.add(bake(statics));
 
   return {
-    update(t, dt) {
+    update(t, dt, daylight = 1) {
       for (const f of anim) f(t);
-      for (const s of smoke) {
-        const k = (s.userData.k + t * 0.03) % 1;
-        s.position.set(150 + k * 30, SEA + 60 + k * 70, -260 + Math.sin(k * 6) * 6);
-        s.scale.setScalar(0.6 + k * 2.4);
-      }
-      smokeMat.opacity = 0.55;
+      light.userData.beam.material.opacity = (1 - daylight) * 0.14;
+      light.userData.lamp.material.emissiveIntensity = 0.4 + (1 - daylight) * 2;
+      for (const mat of cloudMats) mat.color.set(0x7388b1).lerp(dayCloud, daylight);
+      for (const tepui of tepuis) tepui.update(t, daylight);
       for (const b of boats) {
         const u = b.userData;
         b.position.y = SEA - 0.1 + Math.sin(t * 1.3 + u.k) * 0.25;
         b.rotation.z = Math.sin(t * 1.1 + u.k) * 0.06;
       }
       for (const c of clouds) {
-        c.position.x += c.userData.speed * dt;
-        if (c.position.x > 400) c.position.x = -400;
+        c.userData.angle += c.userData.speed * dt;
+        c.position.x = Math.cos(c.userData.angle) * c.userData.radius;
+        c.position.z = Math.sin(c.userData.angle) * c.userData.radius;
       }
     },
   };
