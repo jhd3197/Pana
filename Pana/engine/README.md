@@ -11,7 +11,10 @@ Shared game code, served to browsers at `/engine/*`. Something moves here once a
 | `flora.js` | Bululú's curved palms, mango trees, ceibas, pines, bananas, bushes, houses and static mesh batching (`bake`). The original Bululú import path re-exports this module. | bululu, escondidas, shared market kit |
 | `plaza-catalog.js` | Renderer-independent prop IDs, Spanish labels, dimensions, collision radii and heights. | escondidas rules, shared market kit |
 | `plaza-props.js` | `barrel`, `crate`, `cooler`, `planter`, `bench`, `marketStall`, `streetLamp`, and `createPlazaProp(id)`. No gameplay state or game-specific imports. | escondidas, derrape (Los Llanos), hub |
-| `character.js` | `buildCharacter(avatar)`: the low-poly capybara pana in Three.js, with blinking eyes, a mouth that opens and dizzy stars. Call `update(dt, {open, dizzy, look})` every frame. Outfits are the torso's own color (no cloth layers), details sit flush on it. | hub, derrape, bululu, escondidas |
+| `plaza.js` | `createPlaza({cooking:false})`: the shared buildings, paving, fountain, greenery and market. Cooking clears the courtyard and moves the fountain behind the kitchen. | escondidas, cocina |
+| `plaza-layout.js` | Original hunt map data, collision, sight and navigation. Escondidas retains compatibility re-exports. | escondidas, plaza renderer |
+| `kitchen-props.js` | `food(id,{stage,plated})`, `corn`, `cheese`, `kitchenStation`, `sink`, `kitchenSign`. Actual 3D food also supplies the order-ticket thumbnails. | cocina, hub |
+| `character.js` | `buildCharacter(avatar,{seated,chef})`: articulated legs, expressive face, optional chef hat and apron. `update(dt,{open,dizzy,look,walk,carry,run})` animates the rig. `carry` is a hand-level attachment group. Existing `armL`, `armR`, `neck`, `head` APIs are preserved. Drivers explicitly use `seated:true`. | hub, derrape, bululu, escondidas, cocina |
 
 Import with absolute paths so it works from any page:
 
@@ -22,6 +25,12 @@ import { buildCharacter } from '/engine/character.js';   // needs "three" in the
 
 New avatar options go in `avatar.js` (`OPTIONS`, color lists) and get built in
 `character.js`. `normalizeAvatar()` keeps old saves working when options change.
+
+Characters use broad polygon facets, a continuous forward muzzle with small
+nostril slits on top, rounded ears, and a pear-shaped torso. Keep outfit details
+on `BODY_PROFILE` using `onTorso`; flat patches can disappear into the belly.
+Chef aprons follow the same facet boundaries. Standing and seated variants share
+the rig and avatar options; hats must fit both front and side views.
 
 ## Reusing the plaza kit
 

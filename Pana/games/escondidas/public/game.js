@@ -269,7 +269,7 @@ function frame(now) {
     const delta = Math.atan2(Math.sin(p.h - a.root.rotation.y), Math.cos(p.h - a.root.rotation.y));
     a.root.rotation.y += delta * Math.min(1, dt * 14);
     a.model.position.y = p.moving && active ? Math.abs(Math.sin(motionTime * 12)) * 0.08 : 0;
-    if (a.character) { a.character.update(dt, { open: p.moving }); a.character.armL.rotation.x = p.moving ? Math.sin(motionTime * 12) * 0.6 : 0; a.character.armR.rotation.x = -a.character.armL.rotation.x; }
+    if (a.character) a.character.update(dt, { open: p.moving, walk: p.moving ? 1 : 0 });
   }
   if (active && me && !me.spectator && !me.caught) {
     const p = actors.get(me.id)?.root.position || new THREE.Vector3(me.x, 0, me.z);

@@ -86,9 +86,9 @@ export function animateActor(a, dt, { moving = 0, open = false, dizzy = false, a
   const bob = Math.abs(Math.sin(a.t)) * 0.12 * Math.min(1, moving);
   a.pana.group.position.set(a.x, a.y + bob, a.z);
   const swing = Math.sin(a.t) * 0.5 * Math.min(1, moving);
+  a.pana.update(dt, { open, dizzy, look: 0, walk: moving });
   a.pana.armL.rotation.x = -0.55 - armsUp + swing;
   a.pana.armR.rotation.x = -0.55 - armsUp - swing;
-  a.pana.update(dt, { open, dizzy, look: 0 });
   a.bubble.sprite.position.set(a.x, a.y + 3.4, a.z);
   a.bubble.update(dt);
 }

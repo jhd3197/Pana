@@ -326,7 +326,7 @@ function cabin(car, o) {
   }
 
   // the driver
-  const pana = buildCharacter(o.avatar, { head: o.head });
+  const pana = buildCharacter(o.avatar, { head: o.head, seated: true });
   pana.group.position.set(0.45, o.seatY, o.driverZ);
   c.add(pana.group);
   // Seat the driver so the whole face clears the window sill; if a tall hat

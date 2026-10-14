@@ -33,14 +33,57 @@ const shade = (hex, k) => '#' + new THREE.Color(hex).multiplyScalar(k).getHexStr
 const PAW = '#2a1c16';
 const GOLD = () => M('#ffc629', { metalness: 0.5, roughness: 0.35, emissive: '#3a2a00' });
 
-// The torso is an ellipsoid; this puts a flat detail right on its surface.
-const TORSO = { c: new THREE.Vector3(0, 0.7, 0), r: new THREE.Vector3(0.56, 0.5, 0.48) };
-function onTorso(mesh, dx, dy, dz) {
-  const d = new THREE.Vector3(dx, dy, dz).normalize();
-  const p = d.clone().multiply(TORSO.r).multiplyScalar(0.985).add(TORSO.c);
-  const n = new THREE.Vector3(d.x / TORSO.r.x, d.y / TORSO.r.y, d.z / TORSO.r.z).normalize();
-  mesh.position.copy(p).addScaledVector(n, 0.01);
-  mesh.lookAt(mesh.position.clone().add(n));
+// Octagonal rings make broad readable facets instead of triangulated balls.
+// Each profile is [height, half-width, half-depth, corner cut].
+function profileGeometry(profile) {
+  const vertices = [], rings = profile.map(([y, x, z, c]) => [
+    [-x + c, y, -z], [x - c, y, -z], [x, y, -z + c], [x, y, z - c],
+    [x - c, y, z], [-x + c, y, z], [-x, y, z - c], [-x, y, -z + c],
+  ]);
+  const triangle = (a, b, c) => vertices.push(...a, ...b, ...c);
+  for (let j = 0; j < rings.length - 1; j++) for (let i = 0; i < 8; i++) {
+    const n = (i + 1) % 8;
+    triangle(rings[j][i], rings[j + 1][i], rings[j + 1][n]);
+    triangle(rings[j][i], rings[j + 1][n], rings[j][n]);
+  }
+  for (let i = 1; i < 7; i++) {
+    triangle(rings[0][0], rings[0][i], rings[0][i + 1]);
+    triangle(rings.at(-1)[0], rings.at(-1)[i + 1], rings.at(-1)[i]);
+  }
+  const geometry = new THREE.BufferGeometry();
+  geometry.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
+  geometry.computeVertexNormals(); return geometry;
+}
+function chunk(w, h, d, bevel = 0.08) {
+  const b = Math.min(bevel, w / 4, h / 3, d / 4), x = w / 2, z = d / 2;
+  return profileGeometry([
+    [-h / 2, x - b * 0.6, z - b * 0.6, b * 0.4],
+    [-h / 2 + b, x, z, b], [h / 2 - b, x, z, b],
+    [h / 2, x - b * 0.6, z - b * 0.6, b * 0.4],
+  ]);
+}
+
+// Outfit details follow the broad front plane of the pear-shaped torso.
+const BODY_PROFILE = [
+  [0.16, 0.34, 0.27, 0.15], [0.29, 0.51, 0.39, 0.23],
+  [0.56, 0.56, 0.41, 0.26], [0.82, 0.5, 0.39, 0.21],
+  [1.02, 0.38, 0.3, 0.15], [1.09, 0.3, 0.25, 0.12],
+];
+function torsoFront(x, y) {
+  const found = BODY_PROFILE.findIndex(row => row[0] >= y);
+  const i = found < 0 ? BODY_PROFILE.length - 1 : Math.max(1, found);
+  const a = BODY_PROFILE[i - 1], b = BODY_PROFILE[i];
+  const k = THREE.MathUtils.clamp((y - a[0]) / (b[0] - a[0]), 0, 1);
+  const width = THREE.MathUtils.lerp(a[1], b[1], k), depth = THREE.MathUtils.lerp(a[2], b[2], k), corner = THREE.MathUtils.lerp(a[3], b[3], k);
+  return depth - Math.max(0, Math.abs(x) - width + corner);
+}
+function onTorso(mesh, dx, dy) {
+  const positions = mesh.geometry.attributes.position;
+  for (let i = 0; i < positions.count; i++) {
+    const x = dx * 0.46 + positions.getX(i), y = 0.65 + dy * 0.42 + positions.getY(i);
+    positions.setXYZ(i, x, y, torsoFront(x, y) + positions.getZ(i) + 0.018);
+  }
+  positions.needsUpdate = true; mesh.geometry.computeVertexNormals();
   return mesh;
 }
 
@@ -63,24 +106,26 @@ function addHat(head, r, style, color) {
     case 'gorra':
     case 'gorra-atras': {
       const dir = style === 'gorra-atras' ? -1 : 1;
-      const crown = part(new THREE.SphereGeometry(r, 10, 5, 0, Math.PI * 2, 0, Math.PI / 2), m, 0, r * 0.38, -r * 0.04);
-      crown.scale.set(1.03, 0.8, 1.05);
+      const crown = part(new THREE.SphereGeometry(r, 10, 4, 0, Math.PI * 2, 0, Math.PI / 2), m, 0, r * 0.55, -r * 0.04);
+      crown.scale.set(1.14, 0.65, 1.03);
       head.add(crown);
-      const brim = part(new THREE.BoxGeometry(r * 1.05, r * 0.08, r * 0.85), dark, 0, r * 0.44, dir * r * 1.12);
-      brim.rotation.x = dir * 0.1;
+      const brim = part(chunk(r * 1.78, r * 0.1, r * 1.13, r * 0.15), m, 0, r * 0.58, dir * r * 1.01);
+      brim.rotation.x = dir * -0.07;
       head.add(brim);
+      head.add(part(chunk(r * 1.55, r * 0.035, r * 0.98, r * 0.12), dark, 0, r * 0.51, dir * r * 1.02));
+      head.add(part(blob(r * 0.09, 0), m, 0, r * 1.2, -r * 0.04));
       break;
     }
     case 'pesca':
-      head.add(part(new THREE.CylinderGeometry(r * 0.8, r * 0.95, r * 0.55, 9), m, 0, r * 0.8, 0));
+      head.add(part(new THREE.CylinderGeometry(r * 0.88, r * 1.13, r * 0.6, 10), m, 0, r * 0.82, 0));
       head.add(part(new THREE.CylinderGeometry(r * 1.38, r * 1.45, r * 0.08, 12), dark, 0, r * 0.52, 0));
       break;
     case 'lana': {
       const crown = part(new THREE.SphereGeometry(r, 10, 5, 0, Math.PI * 2, 0, Math.PI / 2), m, 0, r * 0.32, 0);
-      crown.scale.set(1.04, 0.95, 1.04);
+      crown.scale.set(1.21, 0.95, 1.14); crown.position.y = r * 0.41;
       head.add(crown);
-      const cuff = part(new THREE.TorusGeometry(r * 0.96, r * 0.12, 5, 14), dark, 0, r * 0.36, 0);
-      cuff.rotation.x = Math.PI / 2;
+      const cuff = part(new THREE.CylinderGeometry(r * 1.14, r * 1.16, r * 0.2, 12), dark, 0, r * 0.36, 0);
+      cuff.scale.z = 0.94;
       head.add(cuff);
       head.add(part(blob(r * 0.24, 0), M(shade(color, 1.15)), 0, r * 1.3, 0));   // pompom
       break;
@@ -95,8 +140,8 @@ function addHat(head, r, style, color) {
       break;
     }
     case 'llanero':
-      head.add(part(new THREE.CylinderGeometry(r * 0.62, r * 0.8, r * 0.62, 10), m, 0, r * 0.98, 0));
-      head.add(part(new THREE.CylinderGeometry(r * 0.82, r * 0.82, r * 0.13, 10), M('#2b2d42'), 0, r * 0.72, 0));
+      head.add(part(new THREE.CylinderGeometry(r * 0.7, r * 1.0, r * 0.62, 10), m, 0, r * 0.98, 0));
+      head.add(part(new THREE.CylinderGeometry(r * 0.96, r * 1.01, r * 0.13, 10), M('#2b2d42'), 0, r * 0.72, 0));
       head.add(part(new THREE.CylinderGeometry(r * 1.7, r * 1.7, r * 0.08, 14), m, 0, r * 0.64, 0));
       break;
     default:
@@ -106,19 +151,21 @@ function addHat(head, r, style, color) {
 // ---------- glasses: blocky shades with a red glint ----------
 function addGlasses(head, r, style) {
   if (style === 'none') return;
-  const y = r * 0.27, z = r * 0.84;   // sits on the face, over the eyes
+  const y = r * 0.22, z = r * 0.97;
   const frame = style === 'fiesta' ? M('#f15bb5', { roughness: 0.4 }) : M('#111114', { roughness: 0.3 });
   const lens = M('#0d0d10', { roughness: 0.1, metalness: 0.5 });
   for (const s of [1, -1]) {
-    head.add(part(new THREE.BoxGeometry(r * 0.52, r * 0.32, r * 0.1), frame, s * r * 0.31, y, z));
-    head.add(part(new THREE.BoxGeometry(r * 0.4, r * 0.2, r * 0.04), lens, s * r * 0.31, y, z + r * 0.05));
-    head.add(part(new THREE.BoxGeometry(r * 0.06, r * 0.08, r * 0.6), frame, s * r * 0.6, y, z - r * 0.32));   // temples
+    const framePart = part(chunk(r * 0.84, r * 0.42, r * 0.14, r * 0.045), frame, s * r * 0.49, y, z);
+    framePart.rotation.z = -s * 0.06; head.add(framePart);
+    head.add(part(chunk(r * 0.65, r * 0.26, r * 0.035, r * 0.025), lens, s * r * 0.49, y, z + r * 0.08));
+    head.add(part(new THREE.BoxGeometry(r * 0.09, r * 0.14, r * 0.85), frame, s * r * 0.92, y, z - r * 0.35));
+    const glint = part(new THREE.PlaneGeometry(r * 0.17, r * 0.065), M(style === 'fiesta' ? '#f38cce' : '#a93b25'), s * r * 0.35, y + r * 0.065, z + r * 0.105); glint.rotation.z = 0.2; head.add(glint);
   }
-  head.add(part(new THREE.BoxGeometry(r * 0.2, r * 0.08, r * 0.08), frame, 0, y + r * 0.06, z));
+  head.add(part(new THREE.BoxGeometry(r * 0.24, r * 0.12, r * 0.13), frame, 0, y + r * 0.06, z));
 }
 
 // ---------- the capybara ----------
-export function buildCharacter(input, { head: r = 0.58 } = {}) {
+export function buildCharacter(input, { head: r = 0.58, seated = false, chef = false } = {}) {
   const a = normalizeAvatar(input);
   const fur = M(a.fur);
   const paw = M(PAW);
@@ -126,91 +173,99 @@ export function buildCharacter(input, { head: r = 0.58 } = {}) {
   const cloth = dressed ? M(a.outfitColor) : fur;
   const trim = M('#f3e9d7');
   const group = new THREE.Group();
+  const body = new THREE.Group();
+  body.position.y = seated ? 0 : 0.29;
+  group.add(body);
+  const legs = [];
 
-  // body: one pear shape, widest at the bottom: the torso (outfit color)
-  // sinks into wide fur hips; chunky thighs and dark feet up front
-  const torso = part(blob(0.5, 2), cloth, TORSO.c.x, TORSO.c.y, TORSO.c.z);
-  torso.scale.set(1.12, 1.0, 0.96);
-  group.add(torso);
-  const hips = part(blob(0.5, 2), fur, 0, 0.3, 0.0);
-  hips.scale.set(1.18, 0.64, 1.05);
-  group.add(hips);
+  // One continuous pear silhouette. Clothing reaches the hips, so there is no
+  // separate exposed belly ring dividing the character into stacked spheres.
+  const torso = part(profileGeometry(BODY_PROFILE), cloth);
+  body.add(torso);
   for (const s of [1, -1]) {
-    const thigh = part(blob(0.21, 2), fur, s * 0.27, 0.2, 0.2);
-    thigh.scale.set(1, 0.9, 1.15);
-    group.add(thigh);
-    const foot = part(blob(0.15, 0), paw, s * 0.28, 0.07, 0.4);
-    foot.scale.set(1.1, 0.8, 1.2);
-    group.add(foot);
+    const leg = new THREE.Group();
+    leg.position.set(s * 0.29, seated ? 0.3 : 0.5, 0);
+    const thigh = part(chunk(0.3, seated ? 0.24 : 0.34, 0.32, 0.08), fur, 0, seated ? -0.16 : -0.13, seated ? 0.17 : 0);
+    const foot = part(chunk(0.35, 0.23, 0.47, 0.065), paw, 0, seated ? -0.185 : -0.375, seated ? 0.34 : 0.1);
+    leg.add(thigh, foot);
+    for (const toe of [-1, 1]) leg.add(part(new THREE.BoxGeometry(0.012, 0.025, 0.07), M('#140e0b'), toe * 0.065, seated ? -0.13 : -0.32, seated ? 0.55 : 0.31));
+    group.add(leg); legs.push(leg);
   }
 
   // outfit details, flush on the torso
   if (a.outfit === 'deportivo') {
-    group.add(onTorso(part(new THREE.PlaneGeometry(0.04, 0.5), trim), 0, 0.05, 1));   // zipper
+    body.add(onTorso(part(new THREE.PlaneGeometry(0.04, 0.5, 1, 12), trim), 0, 0.05));   // zipper
   } else if (a.outfit === 'hoodie') {
-    group.add(onTorso(part(new THREE.PlaneGeometry(0.36, 0.16), M(shade(a.outfitColor, 0.82))), 0, -0.35, 1));   // pocket
-    for (const s of [1, -1]) group.add(onTorso(part(new THREE.PlaneGeometry(0.03, 0.18), trim), s * 0.12, 0.55, 1));
+    body.add(onTorso(part(new THREE.PlaneGeometry(0.36, 0.16, 2, 4), M(shade(a.outfitColor, 0.82))), 0, -0.35));   // pocket
+    for (const s of [1, -1]) body.add(onTorso(part(new THREE.PlaneGeometry(0.03, 0.18), trim), s * 0.12, 0.55, 1));
     const hood = part(new THREE.TorusGeometry(0.28, 0.1, 5, 10), cloth, 0, 1.0, -0.14);
     hood.rotation.x = Math.PI / 2 + 0.45;
-    group.add(hood);
+    body.add(hood);
   } else if (a.outfit === 'hawaiana') {
     const flower = M('#ffc629', { side: THREE.DoubleSide });
     for (const [x, y] of [[0.5, 0.2], [-0.55, 0.45], [0.35, 0.7], [-0.3, -0.2], [0.95, 0.1], [-0.95, 0.25], [0.1, -0.45]]) {
-      group.add(onTorso(part(new THREE.CircleGeometry(0.075, 5), flower), x, y, 1));
+      body.add(onTorso(part(new THREE.CircleGeometry(0.075, 5), flower), x, y, 1));
     }
-    group.add(onTorso(part(new THREE.CircleGeometry(0.13, 3), trim), 0, 0.75, 1));   // undershirt V
+    body.add(onTorso(part(new THREE.CircleGeometry(0.13, 3), trim), 0, 0.75, 1));   // undershirt V
   }
   if (a.extra === 'cadena') {
-    group.add(onTorso(part(new THREE.CircleGeometry(0.075, 8), GOLD()), 0, 0.25, 1));
+    body.add(onTorso(part(new THREE.CircleGeometry(0.075, 8), GOLD()), 0, 0.25, 1));
     for (let i = -3; i <= 3; i++) {
       if (i === 0) continue;
-      group.add(onTorso(part(new THREE.CircleGeometry(0.025, 5), GOLD()), i * 0.13, 0.62 - Math.abs(i) * 0.03, 1));
+      body.add(onTorso(part(new THREE.CircleGeometry(0.025, 5), GOLD()), i * 0.13, 0.62 - Math.abs(i) * 0.03, 1));
     }
   }
 
-  // arms: short rounded limbs that grow out of the body's sides (the pivot
-  // sits inside the torso, so there's no visible joint) and rest forward on
-  // the belly, ending in a big dark paw
+  // Short sleeves, visible forearms and solid mitten paws. Pivots remain inside
+  // the shoulder so waving, carrying and existing game poses all share the rig.
   const arms = [];
   for (const s of [1, -1]) {
     const shoulder = new THREE.Group();
-    shoulder.position.set(s * 0.38, 0.82, 0.08);
-    shoulder.rotation.set(-0.55, 0, s * 0.32);
-    const limb = part(new THREE.CapsuleGeometry(0.135, 0.2, 2, 7), cloth, 0, -0.2, 0);
-    shoulder.add(limb);
-    if (a.outfit === 'deportivo') shoulder.add(part(new THREE.BoxGeometry(0.02, 0.26, 0.06), trim, s * 0.13, -0.2, 0));
-    const hand = part(blob(0.15, 1), paw, 0, -0.42, 0.02);
-    hand.scale.set(1.05, 0.95, 1.1);
+    shoulder.position.set(s * 0.44, 0.88, 0.02);
+    shoulder.rotation.set(-0.3, 0, s * 0.22);
+    const sleeve = part(chunk(0.31, 0.29, 0.32, 0.065), cloth, 0, -0.13, 0);
+    const forearm = part(chunk(0.25, 0.24, 0.27, 0.06), fur, 0, -0.33, 0.015);
+    shoulder.add(sleeve, forearm);
+    if (a.outfit === 'deportivo') shoulder.add(part(new THREE.BoxGeometry(0.02, 0.19, 0.06), trim, s * 0.157, -0.15, 0));
+    const hand = part(chunk(0.28, 0.25, 0.3, 0.065), paw, 0, -0.47, 0.04);
     shoulder.add(hand);
-    group.add(shoulder);
+    body.add(shoulder);
     arms.push(shoulder);
   }
 
-  // head: rounded block, wide snout with a darker muzzle, little ears
+  // Broad cheeks and a forward, squared capybara muzzle. The nose is part of
+  // that silhouette, rather than a circular bear-like patch stuck to the face.
   const neck = new THREE.Group();
-  neck.position.y = 0.92;
-  group.add(neck);
+  neck.position.y = 1.02;
+  body.add(neck);
   const head = new THREE.Group();
-  head.position.y = r * 0.52;   // the big head sinks into the shoulders
+  head.position.y = r * 0.45;
   neck.add(head);
-  const skull = part(blob(r, 2), fur);
-  skull.scale.set(0.96, 1.0, 1.0);
+  const skull = part(profileGeometry([
+    [-0.85, 0.58, 0.57, 0.28], [-0.58, 0.87, 0.8, 0.44],
+    [-0.05, 1.0, 0.88, 0.51], [0.4, 0.97, 0.83, 0.47],
+    [0.72, 0.77, 0.65, 0.35], [0.9, 0.48, 0.46, 0.22],
+  ].map(ring => ring.map(value => value * r))), fur);
   head.add(skull);
-  // capybara snout: a big rounded block, its flat front a darker muzzle
-  // patch with the nose on top
-  const snout = part(blob(r * 0.55, 2), fur, 0, -r * 0.14, r * 0.62);
-  snout.scale.set(1.1, 1.05, 1.12);
+  // The muzzle grows forward out of the cheeks as one long wedge. A separate
+  // raised nose disc reads as a pig; capybara nostrils sit flush near its end.
+  const muzzleGeometry = profileGeometry([
+    [0.45, 0.76, 0.52, 0.3], [0.92, 0.69, 0.5, 0.28],
+    [1.48, 0.53, 0.4, 0.21], [1.57, 0.45, 0.33, 0.17],
+  ].map(ring => ring.map(value => value * r)));
+  muzzleGeometry.rotateX(Math.PI / 2);
+  const snout = part(muzzleGeometry, M(shade(a.fur, 0.93)), 0, -r * 0.23, 0);
   head.add(snout);
-  const muzzle = part(blob(r * 0.4, 2), M(shade(a.fur, 0.66)), 0, -r * 0.12, r * 1.05);
-  muzzle.scale.set(1.2, 1.0, 0.42);
-  head.add(muzzle);
-  const nose = part(blob(r * 0.17, 1), M('#3b2416', { roughness: 0.5 }), 0, r * 0.04, r * 1.19);
-  nose.scale.set(1.5, 0.62, 0.5);
-  head.add(nose);
+  const earHeight = chef || a.hat === 'none' || a.hat === 'corona' ? 0.73 : 0.48;
   for (const s of [1, -1]) {
-    const ear = part(blob(r * 0.16, 0), M(shade(a.fur, 0.78)), s * r * 0.52, r * 0.8, -r * 0.12);
-    ear.scale.set(1, 1.1, 0.6);
+    const nostril = part(new THREE.SphereGeometry(r * 0.06, 7, 5), M('#654025'), s * r * 0.27, r * 0.205, r * 1.36);
+    nostril.scale.set(0.6, 0.16, 1.2); nostril.rotation.y = -s * 0.3; head.add(nostril);
+    const ear = part(new THREE.SphereGeometry(r * 0.22, 8, 6), fur, s * r * 0.84, r * earHeight, -r * 0.28);
+    ear.scale.set(0.85, 1, 0.52);
+    ear.rotation.z = -s * 0.15;
     head.add(ear);
+    const inner = part(new THREE.SphereGeometry(r * 0.135, 8, 5), M(shade(a.fur, 0.63)), s * r * 0.84, r * (earHeight + 0.02), -r * 0.17);
+    inner.scale.set(0.8, 1, 0.12); inner.rotation.z = -s * 0.15; head.add(inner);
   }
 
   // eyes: black beads, happy arcs or big cartoon eyes
@@ -218,11 +273,12 @@ export function buildCharacter(input, { head: r = 0.58 } = {}) {
   const arcEyes = a.face === 'feliz';
   for (const s of [1, -1]) {
     const eye = new THREE.Group();
-    eye.position.set(s * r * 0.4, r * 0.26, r * 0.78);
+    eye.position.set(s * r * 0.64, r * 0.26, r * 0.8);
+    eye.rotation.y = s * 0.25;
     if (arcEyes) {
       eye.add(part(new THREE.TorusGeometry(r * 0.1, r * 0.03, 4, 8, Math.PI), M('#16100c')));
     } else if (a.face === 'ojazos') {
-      const white = part(new THREE.SphereGeometry(r * 0.2, 10, 8), M('#ffffff', { roughness: 0.3 }));
+      const white = part(new THREE.SphereGeometry(r * 0.19, 10, 8), M('#fff9e8', { roughness: 0.3 }));
       white.scale.z = 0.6;
       eye.add(white);
       eye.add(part(new THREE.SphereGeometry(r * 0.1, 8, 6), M('#16100c', { roughness: 0.2 }), r * 0.02, 0, r * 0.1));
@@ -234,34 +290,57 @@ export function buildCharacter(input, { head: r = 0.58 } = {}) {
     eyes.push(eye);
   }
 
-  // mouth: depends on the face; an open "O" when yelling
-  const mouthAt = new THREE.Vector3(0, -r * 0.28, r * 1.2);
+  // Graphic smiles remain legible at game scale. Teeth/tongue are simple inset
+  // shapes, and the open mouth stretches when celebrating or shouting.
+  const mouthAt = new THREE.Vector3(0, -r * 0.31, r * 1.578);
   const rest = new THREE.Group();
   rest.position.copy(mouthAt);
   head.add(rest);
+  const smileShape = new THREE.Shape();
   if (a.face === 'cool') {
-    const line = part(new THREE.BoxGeometry(r * 0.26, r * 0.04, r * 0.04), M('#2a1810'), r * 0.04, 0, 0);
-    line.rotation.z = 0.18;
-    rest.add(line);
+    smileShape.moveTo(-r * 0.24, -r * 0.05); smileShape.quadraticCurveTo(0, -r * 0.16, r * 0.25, -r * 0.025);
+    smileShape.quadraticCurveTo(r * 0.13, -r * 0.24, -r * 0.24, -r * 0.05);
   } else {
-    const smile = part(new THREE.TorusGeometry(r * 0.13, r * 0.03, 4, 8, Math.PI), M('#2a1810'));
-    smile.rotation.z = Math.PI;
-    rest.add(smile);
-    if (a.face === 'lengua') {
-      const tongue = part(new THREE.BoxGeometry(r * 0.18, r * 0.06, r * 0.26), M('#ff6f8a'), 0, -r * 0.1, r * 0.1);
-      tongue.rotation.x = 0.7;
-      rest.add(tongue);
-    }
+    smileShape.moveTo(-r * 0.3, r * 0.025); smileShape.quadraticCurveTo(0, -r * 0.1, r * 0.3, r * 0.05);
+    smileShape.quadraticCurveTo(r * 0.23, -r * 0.25, 0, -r * 0.25); smileShape.quadraticCurveTo(-r * 0.23, -r * 0.24, -r * 0.3, r * 0.025);
+  }
+  rest.add(part(new THREE.ShapeGeometry(smileShape, 5), M('#2e1916')));
+  if (a.face === 'cool') rest.rotation.z = -0.08;
+  else for (const s of [-1, 1]) rest.add(part(chunk(r * 0.1, r * 0.07, r * 0.035, r * 0.015), trim, s * r * 0.07, -r * 0.055, r * 0.02));
+  if (a.face === 'lengua') {
+    const tongue = part(chunk(r * 0.24, r * 0.19, r * 0.12, r * 0.06), M('#ee7c83'), r * 0.05, -r * 0.22, r * 0.035); tongue.rotation.z = -0.15; rest.add(tongue);
   }
   const open = new THREE.Group();
   open.position.copy(mouthAt);
-  const hole = part(new THREE.SphereGeometry(r * 0.16, 8, 6), M('#3a0f12'));
-  hole.scale.z = 0.4;
-  open.add(hole);
+  const hole = part(new THREE.CircleGeometry(r * 0.26, 12), M('#30171a'), 0, -r * 0.07, r * 0.025);
+  hole.scale.set(1.1, 1, 1); open.add(hole);
+  open.add(part(chunk(r * 0.28, r * 0.13, r * 0.04, r * 0.04), M('#ed8183'), 0, -r * 0.22, r * 0.045));
+  for (const s of [-1, 1]) open.add(part(chunk(r * 0.1, r * 0.09, r * 0.025, r * 0.015), trim, s * r * 0.07, r * 0.1, r * 0.045));
   open.visible = false;
   head.add(open);
 
-  addHat(head, r, a.hat, a.hatColor);
+  if (chef) {
+    head.add(part(new THREE.CylinderGeometry(r * 0.77, r * 0.99, r * 0.4, 12), trim, 0, r * 0.88, 0));
+    for (const [x, y, z] of [[-0.4, 1.18, 0], [0.4, 1.18, 0], [0, 1.32, -0.14], [0, 1.16, 0.32]]) {
+      const puff = part(blob(r * 0.48, 2), M('#fff9e9'), x * r, y * r, z * r); puff.scale.y = 0.85; head.add(puff);
+    }
+    // Match the torso's facet boundaries so cloth triangles never cut through
+    // a convex corner, even when the cook leans or carries a dish.
+    const apronVertices = [], apronIndices = [];
+    for (const y of [0.26, 0.29, 0.56, 0.82, 0.95]) {
+      const width = THREE.MathUtils.lerp(0.38, 0.21, (y - 0.26) / 0.69);
+      const edge = Math.min(width * 0.99, 1 - (torsoFront(0, y) - torsoFront(1, y)));
+      for (const x of [-width, -edge, 0, edge, width]) apronVertices.push(x, y, torsoFront(x, y) + 0.018);
+    }
+    for (let row = 0; row < 4; row++) for (let col = 0; col < 4; col++) {
+      const i = row * 5 + col; apronIndices.push(i, i + 1, i + 6, i, i + 6, i + 5);
+    }
+    const apronGeometry = new THREE.BufferGeometry();
+    apronGeometry.setAttribute('position', new THREE.Float32BufferAttribute(apronVertices, 3)); apronGeometry.setIndex(apronIndices);
+    apronGeometry.computeVertexNormals(); body.add(part(apronGeometry, trim));
+    body.add(part(chunk(0.26, 0.16, 0.025, 0.02), M(a.outfitColor), 0, 0.48, 0.46));
+    for (const s of [-1, 1]) { const strap = part(new THREE.BoxGeometry(0.055, 0.25, 0.035), trim, s * 0.18, 0.98, 0.35); strap.rotation.x = -0.65; body.add(strap); }
+  } else addHat(head, r, a.hat, a.hatColor);
   addGlasses(head, r, a.glasses);
 
   const stars = new THREE.Group();
@@ -279,10 +358,24 @@ export function buildCharacter(input, { head: r = 0.58 } = {}) {
   // ---------- animation ----------
   let nextBlink = 1 + Math.random() * 3;
   let openK = 0;
+  let gait = 0, stride = 0, age = 0;
+  const carry = new THREE.Group(); carry.position.set(0, 0.76, 0.92); body.add(carry);
   return {
-    group, neck, head, arms, avatar: a,
+    group, body, neck, head, arms, legs, carry, avatar: a,
     armL: arms[0], armR: arms[1],
     update(dt, s = {}) {
+      age += dt;
+      if (!seated) {
+        stride += ((s.walk ? Math.min(1.4, Number(s.walk)) : 0) - stride) * Math.min(1, dt * 12);
+        gait += dt * (s.run ? 18 : 12);
+        legs.forEach((leg, i) => { leg.rotation.x = Math.sin(gait + i * Math.PI) * 0.8 * stride; leg.rotation.z = (i ? -1 : 1) * stride * 0.08; });
+        body.position.y = 0.29 + Math.abs(Math.sin(gait)) * 0.07 * stride;
+        body.rotation.z = Math.sin(gait) * 0.085 * stride;
+        body.rotation.x = s.run ? -0.1 * stride : 0;
+        head.rotation.z = Math.sin(gait + 0.5) * 0.035 * stride;
+        head.rotation.y = Math.sin(age * 0.9) * 0.035 * (1 - Math.min(1, stride)) + (s.look || 0) * 0.07;
+        if ('walk' in s || 'carry' in s) arms.forEach((arm, i) => { arm.rotation.x = s.carry ? -1.35 : -0.25 + Math.sin(gait + i * Math.PI) * stride * 0.75; });
+      }
       nextBlink -= dt;
       let lid = 1;
       if (nextBlink < 0) {
@@ -291,7 +384,7 @@ export function buildCharacter(input, { head: r = 0.58 } = {}) {
       }
       for (const e of eyes) {
         e.scale.y = arcEyes ? 1 : (s.dizzy ? 0.4 : lid);
-        e.position.x = Math.sign(e.position.x) * r * 0.4 + (s.look || 0) * r * 0.03;
+        e.position.x = Math.sign(e.position.x) * r * 0.64 + (s.look || 0) * r * 0.03;
       }
       const yelling = s.open || a.face === 'wow';
       openK += ((yelling ? 1 : 0) - openK) * Math.min(1, dt * 14);

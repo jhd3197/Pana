@@ -13,6 +13,13 @@ to hide, then 100 seconds to hunt. Play solo with bots or share a room with up t
 full room. Uses the same saved character, Bululú foliage, and market props now
 also featured in Derrape's Los Llanos track.
 
+Fourth game: **Pana Cocina** — a cooperative three-minute cooking rush in the
+same Plaza Pana. Collect ingredients, prepare arepas, cachapas, tequeños and
+empanadas, mind the stoves, and serve before orders expire. Play with two bot
+helpers or invite up to 8 panas. Includes touch controls, shared counters,
+fire recovery, team scores and replay. Panas now have animated legs, and the
+kitchen crew wears chef hats and aprons over their saved outfits.
+
 ## Run it
 
 ```powershell
@@ -24,6 +31,7 @@ npm start            # or: npm run dev  /  Pana\dev.ps1
 - Derrape: http://localhost:8461/g/derrape/
 - Bululú: http://localhost:8461/g/bululu/
 - Escondidas: http://localhost:8461/g/escondidas/
+- Cocina: http://localhost:8461/g/cocina/
 - Friends on your network: the dev script prints your LAN URL.
 
 ## Repository layout
@@ -49,6 +57,7 @@ Pana/                  ← this repo
 - **Derrape** — toy-car race with goofy physics (playable now)
 - **Bululú**: party board game + minigames (playable now; more minigames coming)
 - **Escondidas**: prop hunt in Plaza Pana (playable now; solo bots + shared rooms)
+- **Cocina**: cooperative Venezuelan cooking in Plaza Pana (playable now; helpers + shared rooms)
 - **pana.sh** — public deploy
 
 ## Contributing / AI agents

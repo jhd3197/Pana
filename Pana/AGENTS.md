@@ -36,6 +36,14 @@ clean: only `README.md` and `.gitignore` belong there. Everything else lives her
 - Escondidas uses a host-simulated round: clients send input/actions inside `v`,
   and the oldest connected client broadcasts snapshots at 20 Hz. The server relay
   is unchanged. See `../docs/knowledge/escondidas.md` for role and recovery rules.
+- Cocina also uses a host simulation at 20 Hz (`cocina-v1`). Host migration
+  restores the last kitchen snapshot, including orders and active food. See
+  `../docs/knowledge/cocina.md`. Plaza scenery and the original hunt layout now
+  live in `engine/plaza.js` and `engine/plaza-layout.js`; cooking has its own
+  station layout and collision rules. Existing Escondidas paths re-export them.
+- Characters stand on articulated legs by default. Pass `{ seated: true }` for
+  vehicle drivers, `{ chef: true }` for cooking attire, and `walk` / `carry` /
+  `run` in `update()` to animate the shared rig.
 - Keep dependencies minimal. `ws` on the server; Three.js from CDN on the client.
 
 ## Dev workflow (Windows)
