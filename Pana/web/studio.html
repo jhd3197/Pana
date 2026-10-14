@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#f5f6f4"><title>Pana Studio · Inventario</title>
+  <link rel="icon" href="data:,"><link rel="stylesheet" href="/studio/studio.css">
+  <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}</script>
+</head>
+<body>
+  <section id="startup" class="startup" aria-label="Cargando Pana Studio" aria-busy="true">
+    <div class="startup-content">
+      <div class="brand">PANA<span>studio</span></div>
+      <p id="startup-message" role="status">Despertando a los panas…</p>
+      <progress id="startup-progress" value="0" max="1" aria-label="Preparando recursos"></progress>
+      <div class="startup-progress-label"><span id="startup-phase">Abriendo el estudio</span><span id="startup-count"></span></div>
+      <div id="startup-error" hidden><p id="startup-error-message" role="alert"></p><details><summary>Ver detalle</summary><pre id="startup-error-detail"></pre></details><div class="startup-actions"><button id="startup-retry">Reintentar</button><button id="startup-continue" hidden>Abrir los disponibles</button><a href="/studio/settings.html">Ajustes</a></div></div>
+      <noscript>Activa JavaScript para abrir Pana Studio.</noscript>
+    </div>
+  </section>
+  <div id="studio-app" class="studio-app" inert aria-hidden="true">
+  <a class="skip-link" href="#asset-list">Ir a los recursos</a>
+  <header><a class="brand" href="/studio.html">PANA<span>studio</span></a><nav aria-label="Estudio"><a href="/studio.html" aria-current="page">Inventario</a><a href="/personaje.html">Personaje</a><a href="/">Juegos</a><a class="guide-link" href="/studio/guide.html">Guía</a></nav><a id="settings-link" class="settings-link" href="/studio/settings.html">Ajustes</a></header>
+  <main>
+    <aside class="library" aria-label="Biblioteca de recursos">
+      <h1 class="sr-only">Inventario</h1>
+      <div class="library-toolbar"><label class="search"><span>Buscar recurso</span><input id="search" type="search" placeholder="Buscar por nombre, ID, juego o archivo" autocomplete="off"><kbd>/</kbd></label><button id="export" title="Descargar el inventario completo en JSON">Exportar JSON</button></div>
+      <div id="categories" class="categories" aria-label="Categorías"></div>
+      <div class="list-caption"><span id="result-count" role="status"></span><label>Orden <select id="sort"><option value="catalog">Catálogo</option><option value="name">Nombre</option><option value="triangles">Triángulos</option></select></label><div class="view-toggle" role="group" aria-label="Vista de inventario"><button id="view-grid" aria-pressed="true">Miniaturas</button><button id="view-list" aria-pressed="false">Lista</button></div></div>
+      <div id="asset-list" class="asset-list" aria-label="Recursos" tabindex="-1"></div>
+      <p id="empty" hidden>No hay recursos con esa búsqueda. <button id="clear-search">Limpiar filtros</button></p>
+    </aside>
+    <section class="workbench" aria-label="Vista previa y ficha">
+      <div class="stage">
+        <div class="stage-heading"><div><h2 id="asset-name">Cargando recurso…</h2><p><span id="asset-category"></span> <code id="asset-id"></code></p></div><a id="edit-character" href="/personaje.html">Editar personaje</a></div>
+        <canvas id="preview" tabindex="0" aria-label="Vista 3D del recurso. Arrastra para girar y usa la rueda para acercar."></canvas>
+        <p id="preview-status" role="status">Preparando la vista 3D…</p>
+        <div class="stage-controls"><select id="camera-view" aria-label="Vista de cámara"><option value="perspective">Perspectiva</option><option value="front">Frontal</option><option value="side">Lateral</option><option value="top">Superior</option></select><button id="frame" title="Encuadrar el recurso (F)">Encuadrar</button><button id="grid" aria-pressed="true">Cuadrícula</button><button id="wireframe" aria-pressed="false">Malla</button><button id="animate" aria-pressed="false">Animación</button><button id="rotate" aria-pressed="false">Girar</button></div>
+        <div class="viewport-status"><span id="grid-scale"></span><span id="draw-calls"></span></div>
+      </div>
+      <div class="details">
+        <section><h3>Inspector</h3><p id="description"></p><dl><dt>Usado en</dt><dd id="used-by"></dd><dt>Tamaño XYZ</dt><dd id="dimensions" class="numeric"></dd><dt>Geometría</dt><dd id="geometry" class="numeric"></dd><dt>Vértices</dt><dd id="vertices" class="numeric"></dd><dt>Materiales</dt><dd id="materials" class="numeric"></dd><dt>Texturas</dt><dd id="textures" class="numeric"></dd></dl><a id="open-game" hidden>Abrir juego</a></section>
+        <section><h3>Fuente</h3><a id="source" target="_blank" rel="noopener"></a><code id="factory"></code><p class="source-note">Modelo del proyecto. Los cambios se hacen en este archivo.</p><div class="source-actions"><button id="copy-context">Copiar contexto para agente</button><button id="copy-path">Copiar ruta</button></div><p id="copy-status" role="status"></p></section>
+      </div>
+    </section>
+  </main>
+  </div>
+  <script type="module" src="/studio/startup.js"></script>
+</body>
+</html>

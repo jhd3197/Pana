@@ -34,6 +34,8 @@ Pana/
 | URL | Handler | Purpose |
 |---|---|---|
 | `/` | `web/` statics | Hub: game list, live rooms, name picker |
+| `/studio.html` | `web/` statics | Pana Studio: reusable asset catalog and live previews |
+| `/personaje.html` | `web/` statics | Full character and wardrobe editor; saves the game avatar |
 | `/g/<game>/*` | `games/<game>/public` | A game's client |
 | `/engine/*` | `engine/` statics | Shared code: player avatar + 3D character |
 | `/api/*` | `api.js` | JSON: health, games, rooms |
@@ -45,6 +47,11 @@ A player is a name plus a look (`engine/avatar.js`), both kept in the browser's
 `localStorage` (`pana:name`, `pana:avatar`). The hub edits them; games read them
 on load. Games build the 3D pana with `engine/character.js`. Nothing about the
 player is stored on the server.
+
+The character sculpt is shared under `engine/soft-character/`. The game adapter
+in `engine/character.js` preserves game-world scale, seated/carry poses and saved
+avatars while using a lighter geometry profile. Pana Studio registers existing
+asset constructors in `web/studio/catalog.js`; no additional backend is needed.
 
 ## Multiplayer model
 

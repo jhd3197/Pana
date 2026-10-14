@@ -21,6 +21,18 @@ clean: only `README.md` and `.gitignore` belong there. Everything else lives her
   something into `engine/` when a second page needs it — don't abstract early.
 - Players are panas: every game should use the player's character
   (`/engine/avatar.js` + `/engine/character.js`) instead of a faceless placeholder.
+- Pana Studio at `/studio.html` catalogs existing props, maps, vehicles and
+  characters. Register new resources in `web/studio/catalog.js` using their real
+  constructors; do not duplicate models in the preview. See
+  `../docs/knowledge/pana-studio.md` for the registration and agent workflow.
+  Thumbnail images live only in browser IndexedDB. Declare extra factory
+  dependencies in the catalog for cache invalidation, and run the studio cache
+  browser suite when changing its generation or persistence behavior.
+- The character sculpt lives in `engine/soft-character/`; `engine/character.js`
+  adapts it to saved avatars and gameplay. The full editor stays at
+  `/personaje.html`; its old model module URLs only re-export shared sources.
+  Games use the lighter sampling profile and must call `character.dispose()`
+  when removing a character (detach shared carried props first).
 - Browser is the only platform target. Friends join by opening a link; nothing to
   install, nothing to sign up for.
 
@@ -33,6 +45,32 @@ clean: only `README.md` and `.gitignore` belong there. Everything else lives her
 - URLs: hub at `/`, games at `/g/<name>/`, API at `/api/*`, WebSocket at `/ws`.
 - Multiplayer model: clients simulate their own entity and broadcast state at ~20 Hz;
   the server relays. Rooms are ephemeral (`${game}:${code}`), max 8 players.
+- Escondidas uses a host-simulated round: clients send input/actions inside `v`,
+  and the oldest connected client broadcasts snapshots at 20 Hz. The server relay
+  is unchanged. See `../docs/knowledge/escondidas.md` for role and recovery rules.
+- Cocina also uses a host simulation at 20 Hz (`cocina-v1`). Host migration
+  restores the last kitchen snapshot, including orders and active food. See
+  `../docs/knowledge/cocina.md`. Plaza scenery and the original hunt layout now
+  live in `engine/plaza.js` and `engine/plaza-layout.js`; cooking has its own
+  station layout and collision rules. Existing Escondidas paths re-export them.
+- Derrape's eight circuits include Plaza Pana and Isla Bululú. All trees come
+  from `engine/flora.js`; the obsolete `props.js` palm has been removed.
+  `createPlazaEnvironment()` provides scenery without lights, while
+  `createIslandEnvironment()` shares Bululú's vegetation, harbor, sea and
+  landmarks. Island terrain/scenery/beach modules now live in `engine/`;
+  old Bululú paths re-export them. Keep gameplay in the games, and pass route
+  clearance to the shared environment instead of copying its assets.
+  Race routes are 1.09–2.11 km with bends in both directions. Plaza extends
+  the shared courtyard into a pueblo; the race island uses expanded geography
+  with normal-sized assets. Keep those options opt-in for the original games.
+- Characters stand on articulated legs by default. Pass `{ seated: true }` for
+  vehicle drivers, `{ chef: true }` for cooking attire, and `walk` / `carry` /
+  `run` in `update()` to animate the shared rig.
+- Derrape's local race uses two item slots, coin trails and breakable wooden
+  crates. Inventory/defense/speed rules live in `games/derrape/public/item-rules.js`;
+  `fragments.js` owns reusable prop bursts. See `../docs/knowledge/derrape-items.md`
+  for controls, ownership and regression commands. Keep these game-local until
+  another game actually needs them. Garage cards render the real vehicle models.
 - Keep dependencies minimal. `ws` on the server; Three.js from CDN on the client.
 
 ## Dev workflow (Windows)
@@ -41,6 +79,7 @@ clean: only `README.md` and `.gitignore` belong there. Everything else lives her
 .\dev.ps1          # start the server (auto-installs deps, resolves busy ports)
 .\dev.ps1 check    # syntax-check every .js in server/, web/, games/
 .\dev.ps1 setup    # first-run: npm install
+.\dev.ps1 studio   # open Pana Studio; reuse the running server
 ```
 
 ## When you finish a task

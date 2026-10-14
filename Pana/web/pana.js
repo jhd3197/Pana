@@ -29,8 +29,8 @@ renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(30, 1, 0.1, 50);
-camera.position.set(0, 1.55, 5.2);
-camera.lookAt(0, 1.0, 0);
+camera.position.set(0, 1.8, 6.0);
+camera.lookAt(0, 1.18, 0);
 // bright, soft studio light so the fur reads warm caramel, not dark brown
 scene.add(new THREE.HemisphereLight(0xffffff, 0xd9b48a, 2.2));
 scene.add(new THREE.AmbientLight(0xffffff, 0.5));
@@ -58,6 +58,7 @@ scene.add(turn);
 
 let pana = null;
 function rebuild() {
+  pana?.dispose();
   turn.clear();
   pana = buildCharacter(avatar);
   turn.add(pana.group);

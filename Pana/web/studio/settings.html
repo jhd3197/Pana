@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#f5f6f4"><title>Ajustes · Pana Studio</title>
+  <link rel="icon" href="data:,"><link rel="stylesheet" href="/studio/studio.css">
+</head>
+<body>
+  <header><a class="brand" href="/studio.html">PANA<span>studio</span></a><nav aria-label="Estudio"><a id="inventory-link" href="/studio.html">Inventario</a><a href="/personaje.html">Personaje</a><a href="/">Juegos</a><a class="guide-link" href="/studio/guide.html">Guía</a></nav><a class="settings-link" href="/studio/settings.html" aria-current="page">Ajustes</a></header>
+  <main class="settings-page">
+    <h1>Ajustes</h1>
+    <section aria-labelledby="cache-heading">
+      <h2 id="cache-heading">Miniaturas locales</h2>
+      <p>Se preparan al abrir el estudio y se reutilizan en las siguientes visitas. Solo se guardan en este navegador.</p>
+      <dl class="settings-metrics"><dt>Guardadas</dt><dd id="cache-count">—</dd><dt>Espacio ocupado</dt><dd id="cache-size">—</dd><dt>Última generación</dt><dd id="cache-updated">—</dd><dt>Formato</dt><dd>WebP · 320 × 240 px</dd></dl>
+      <div class="settings-row"><div><h3>Reconstruir miniaturas</h3><p>Borra las imágenes guardadas y abre el estudio para generarlas de nuevo.</p></div><button id="cache-rebuild" disabled>Reconstruir</button></div>
+      <div class="settings-row"><div><h3>Vaciar caché</h3><p>Libera este espacio. Las miniaturas se crearán la próxima vez que abras el inventario.</p></div><button id="cache-clear" disabled>Vaciar</button></div>
+      <p id="cache-status" class="settings-status" role="status">Consultando almacenamiento…</p>
+    </section>
+  </main>
+  <script type="module" src="/studio/settings.js"></script>
+</body>
+</html>

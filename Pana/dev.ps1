@@ -8,10 +8,11 @@
 
     .\dev.ps1                 Start the Pana server (default)
     .\dev.ps1 server          Start the Pana server only
+    .\dev.ps1 studio          Open Pana Studio; reuse an existing server
     .\dev.ps1 check           Syntax-check every .js in server/, web/ and games/
     .\dev.ps1 setup           First-run setup: npm install
 
-    Options: -Port 8461 -NoAutoPort
+    Options: -Port 8461 -NoAutoPort -NoBrowser
     Environment: PANA_PORT, PANA_HOST, PANA_KILL_PORTS=0 to disable port cleanup.
 .EXAMPLE
     .\dev.ps1
@@ -33,7 +34,7 @@ function Write-Header($text) {
 
 function Get-DevMode {
     foreach ($arg in $args) {
-        if ($arg -in @('start', 'server', 'check', 'setup')) {
+        if ($arg -in @('start', 'server', 'studio', 'check', 'setup')) {
             return $arg
         }
     }
@@ -66,6 +67,7 @@ function Test-NoAutoPort([string[]]$ArgList) {
 }
 
 function Test-PortFree([int]$Port) {
+    if (Get-NetTCPConnection -LocalPort $Port -State Listen -ErrorAction SilentlyContinue) { return $false }
     $listener = $null
     try {
         $listener = New-Object System.Net.Sockets.TcpListener([System.Net.IPAddress]::Loopback, $Port)
@@ -154,15 +156,26 @@ if ($isHelp) {
 }
 
 function Start-PanaServer {
-    param([int]$Port)
+    param([int]$Port, [bool]$OpenStudio = $false, [bool]$NoBrowser = $false)
 
     Ensure-Packages
     $env:PANA_PORT = "$Port"
-    $proc = Start-Process -FilePath 'node.exe' -NoNewWindow -PassThru -WorkingDirectory $AppRoot `
+    $proc = Start-Process -FilePath 'node.exe' -WindowStyle Hidden -PassThru -WorkingDirectory $AppRoot `
         -ArgumentList @('server\src\index.js')
 
     Write-Host 'Press Ctrl+C to stop...' -ForegroundColor DarkGray
     try {
+        if ($OpenStudio) {
+            $ready = $false
+            for ($attempt = 0; $attempt -lt 30 -and -not $proc.HasExited; $attempt++) {
+                try { $health = Invoke-RestMethod -Uri "http://localhost:$Port/api/health" -TimeoutSec 3; $ready = $health.ok } catch { }
+                if ($ready) { break }
+                Start-Sleep -Milliseconds 200
+                $proc.Refresh()
+            }
+            if (-not $ready) { throw 'Pana did not become ready. Check the port and Node installation.' }
+            if (-not $NoBrowser) { Start-Process "http://localhost:$Port/studio.html" }
+        }
         while (-not $proc.HasExited) {
             Start-Sleep -Milliseconds 500
             $proc.Refresh()
@@ -176,6 +189,27 @@ function Start-PanaServer {
 }
 
 switch ($mode) {
+    'studio' {
+        $noBrowser = $args -contains '-NoBrowser' -or $args -contains '--no-browser'
+        $existing = $false
+        try {
+            $health = Invoke-RestMethod -Uri "http://localhost:$port/api/health" -TimeoutSec 5
+            $page = Invoke-WebRequest -UseBasicParsing -Uri "http://localhost:$port/studio.html" -TimeoutSec 5
+            $existing = $health.ok -and $page.Content.Contains('Pana Studio')
+        } catch { }
+        if ($existing) {
+            Write-Header 'Pana Studio'
+            Write-Host "  Reusing Pana: http://localhost:$port/studio.html"
+            if (-not $noBrowser) { Start-Process "http://localhost:$port/studio.html" }
+            exit 0
+        }
+        # Studio must never terminate a running game or an unrelated listener.
+        $resolved = Resolve-DevPort -Name 'Pana Studio' -Preferred $port -NoAutoPort $noAutoPort
+        Write-Header 'Pana Studio'
+        Write-Host "  Studio:       http://localhost:$($resolved.Port)/studio.html"
+        Write-Host "  Character:    http://localhost:$($resolved.Port)/personaje.html"
+        Start-PanaServer -Port $resolved.Port -OpenStudio $true -NoBrowser $noBrowser
+    }
     'check' {
         Write-Header 'Pana checks'
         & node.exe (Join-Path $AppRoot 'server\src\check.js')

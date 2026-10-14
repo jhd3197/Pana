@@ -8,7 +8,6 @@ const featured = document.getElementById('play-featured');
 // Not playable yet; shown so the hub feels like a place that's growing.
 const SOON = [
   { name: 'Dominó', description: 'La partida del sábado, con tus panas y un cafecito.', glyph: '6:6' },
-  { name: 'Bululú', description: 'Minijuegos locos para jugar en grupo.', glyph: '?!' },
 ];
 
 try { nameInput.value = localStorage.getItem('pana:name') || ''; } catch { /* storage off */ }

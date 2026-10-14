@@ -4,18 +4,56 @@
 
 First game: **Derrape** — a goofy toy-car race. Jump ramps, flip over, lose your bumpers, honk *La Cucaracha*. Your pana (made in the hub) is the driver.
 
+Choose from eight circuits, including **Plaza Pana** and **Isla Bululú**.
+Collect coins for up to 8% extra speed, smash wooden supply crates and carry two
+items. Throw forward with **Space**, backward with **X**, and switch with **Q**
+or **1/2**. Keep a mango equipped to block an incoming mango; each block spends
+one mango. The garage previews all eight detailed cars, and touch controls are
+available on phones.
+The plaza buildings, island terrain, trees and scenery use the same shared
+sources as the other games, so asset improvements carry through everywhere.
+
+Second game: **Bululú**: a party board game on Mango Island. Roll the die, collect monedas, buy the *Mango de oro*, and win a minigame after every round.
+
+Third game: **Escondidas · Pana Hunt** — hide in a colorful market plaza as a
+barrel, crate, cooler, plant or bench. Three transformations per round; 15 seconds
+to hide, then 100 seconds to hunt. Play solo with bots or share a room with up to
+8 panas. Roles rotate, with four rounds for a small group and up to eight for a
+full room. Uses the same saved character, Bululú foliage, and market props now
+also featured in Derrape's Los Llanos track.
+
+Fourth game: **Pana Cocina** — a cooperative three-minute cooking rush in the
+same Plaza Pana. Collect ingredients, prepare arepas, cachapas, tequeños and
+empanadas, mind the stoves, and serve before orders expire. Play with two bot
+helpers or invite up to 8 panas. Includes touch controls, shared counters,
+fire recovery, team scores and replay. Panas now have animated legs, and the
+kitchen crew wears chef hats and aprons over their saved outfits.
+
 ## Run it
 
 ```powershell
 npm install
 npm start            # or: npm run dev  /  Pana\dev.ps1
+.\Pana\dev.ps1 studio # Pana Studio: character editor and asset library
 ```
 
 - Hub: http://localhost:8461
 - Derrape: http://localhost:8461/g/derrape/
+- Bululú: http://localhost:8461/g/bululu/
+- Escondidas: http://localhost:8461/g/escondidas/
+- Cocina: http://localhost:8461/g/cocina/
+- Pana Studio: http://localhost:8461/studio.html
+- Character editor: http://localhost:8461/personaje.html
 - Friends on your network: the dev script prints your LAN URL.
 
 ## Repository layout
+
+Pana Studio preserves the character editor and catalogs shared objects, scenery,
+vehicles and maps with live previews and source paths. **Usar en los juegos**
+saves an outfit for the shared character used by all games. Agents add assets
+through the existing factories and `Pana/web/studio/catalog.js`; see
+[the studio guide](docs/knowledge/pana-studio.md). The catalog is managed in code;
+it is not yet a visual map-placement editor.
 
 The repo root stays clean on purpose — everything lives in [`Pana/`](Pana/):
 
@@ -36,7 +74,9 @@ Pana/                  ← this repo
 ## Roadmap
 
 - **Derrape** — toy-car race with goofy physics (playable now)
-- **Bululú** — minigame collection
+- **Bululú**: party board game + minigames (playable now; more minigames coming)
+- **Escondidas**: prop hunt in Plaza Pana (playable now; solo bots + shared rooms)
+- **Cocina**: cooperative Venezuelan cooking in Plaza Pana (playable now; helpers + shared rooms)
 - **pana.sh** — public deploy
 
 ## Contributing / AI agents
