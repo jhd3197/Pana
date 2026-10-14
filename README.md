@@ -29,6 +29,7 @@ kitchen crew wears chef hats and aprons over their saved outfits.
 ```powershell
 npm install
 npm start            # or: npm run dev  /  Pana\dev.ps1
+.\Pana\dev.ps1 studio # Pana Studio: character editor and asset library
 ```
 
 - Hub: http://localhost:8461
@@ -36,9 +37,18 @@ npm start            # or: npm run dev  /  Pana\dev.ps1
 - Bululú: http://localhost:8461/g/bululu/
 - Escondidas: http://localhost:8461/g/escondidas/
 - Cocina: http://localhost:8461/g/cocina/
+- Pana Studio: http://localhost:8461/studio.html
+- Character editor: http://localhost:8461/personaje.html
 - Friends on your network: the dev script prints your LAN URL.
 
 ## Repository layout
+
+Pana Studio preserves the character editor and catalogs shared objects, scenery,
+vehicles and maps with live previews and source paths. **Usar en los juegos**
+saves an outfit for the shared character used by all games. Agents add assets
+through the existing factories and `Pana/web/studio/catalog.js`; see
+[the studio guide](docs/knowledge/pana-studio.md). The catalog is managed in code;
+it is not yet a visual map-placement editor.
 
 The repo root stays clean on purpose — everything lives in [`Pana/`](Pana/):
 

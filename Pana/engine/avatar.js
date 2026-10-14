@@ -1,5 +1,5 @@
 // A player's look: picked once in the hub, saved in the browser, read by
-// every game. Every pana is a low-poly capybara. Plain data only (no
+// every game. Every pana uses the shared studio sculpt. Plain data only (no
 // Three.js) so any page can import it.
 
 const KEY = 'pana:avatar';
@@ -17,11 +17,13 @@ export const PALETTE = {
 };
 
 // warm caramel tones, brightest first (matches the character art)
-export const FURS = ['#d4914f', '#e0a463', '#c47f42', '#e8b97f', '#b06d3b', '#9a6038'];
+export const FURS = ['#cf7d22', '#d4914f', '#e0a463', '#c47f42', '#e8b97f', '#b06d3b', '#9a6038'];
 export const COLORS = ['#ff4b4b', '#ffc629', '#2ad1b2', '#3d7bf2', '#8e4de8', '#f15bb5', '#ff8a1f', '#5fc93a', '#f3e9d7', '#2b2d42'];
 
 export const OPTIONS = {
   hat: [
+    { id: 'chef', label: 'Gorro de chef' },
+    { id: 'band', label: 'Cinta deportiva' },
     { id: 'gorra', label: 'Gorra' },
     { id: 'gorra-atras', label: 'Gorra al revés' },
     { id: 'pesca', label: 'Pescador' },
@@ -31,6 +33,7 @@ export const OPTIONS = {
     { id: 'none', label: 'Nada' },
   ],
   glasses: [
+    { id: 'redondos', label: 'Redondos' },
     { id: 'sol', label: 'De sol' },
     { id: 'fiesta', label: 'De fiesta' },
     { id: 'none', label: 'Nada' },
@@ -40,28 +43,29 @@ export const OPTIONS = {
     { id: 'deportivo', label: 'Deportivo' },
     { id: 'hoodie', label: 'Hoodie' },
     { id: 'hawaiana', label: 'Playera' },
-    { id: 'nada', label: 'Al natural' },
+    { id: 'chef', label: 'Delantal de chef' },
   ],
   face: [
     { id: 'cool', label: 'Tranquilo' },
     { id: 'feliz', label: 'Feliz' },
-    { id: 'lengua', label: 'Lengua' },
+    { id: 'lengua', label: 'Hablar' },
     { id: 'ojazos', label: 'Ojazos' },
-    { id: 'wow', label: '¡Wow!' },
+    { id: 'wow', label: 'Reír' },
   ],
   extra: [
     { id: 'none', label: 'Nada' },
     { id: 'cadena', label: 'Cadena' },
+    { id: 'pulseras', label: 'Muñequeras' },
   ],
 };
 
 export const DEFAULT_AVATAR = {
   fur: FURS[0],
-  hat: 'gorra',
+  hat: 'none',
   hatColor: PALETTE.coral,
-  glasses: 'sol',
+  glasses: 'none',
   outfit: 'franela',
-  outfitColor: PALETTE.coral,
+  outfitColor: '#ee3024',
   face: 'cool',
   extra: 'none',
 };
@@ -83,6 +87,7 @@ export function randomAvatar(rnd = Math.random) {
 
 // Fill in anything missing or unknown, so old saves never break a game.
 export function normalizeAvatar(a = {}) {
+  if (!a || typeof a !== 'object') a = {};
   const out = { ...DEFAULT_AVATAR };
   for (const key of Object.keys(out)) {
     const v = a[key];
@@ -105,7 +110,8 @@ export function loadAvatar() {
 export function saveAvatar(avatar) {
   try {
     localStorage.setItem(KEY, JSON.stringify(normalizeAvatar(avatar)));
-  } catch { /* private mode: the look just won't persist */ }
+    return true;
+  } catch { return false; /* private mode: the look just won't persist */ }
 }
 
 export function loadName() {

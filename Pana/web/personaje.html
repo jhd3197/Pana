@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#f7f5ee">
+  <title>Personaje · Pana Studio</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="/character/studio.css">
+  <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}</script>
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="/studio.html" aria-label="Pana Studio, biblioteca">pana<span>®</span></a>
+    <span class="page-name">Pana Studio · Personaje</span>
+    <a class="back" href="/studio.html">Biblioteca <span aria-hidden="true">↗</span></a>
+  </header>
+  <main>
+    <section class="viewer" aria-label="Vista previa del personaje">
+      <div class="viewer-heading"><div><span class="eyebrow">EL ORIGINAL</span><h1>Un pana.<br>Mil aventuras.</h1></div><span class="version">Modelo base · v01</span></div>
+      <canvas id="character-canvas" tabindex="0" aria-label="Capibara 3D. Arrastra para girar, usa la rueda para acercar o las flechas del teclado para cambiar el ángulo."></canvas>
+      <p id="load-status" role="status">Preparando tu pana…</p>
+      <div class="viewbar" aria-label="Ángulo de cámara">
+        <button type="button" data-view="front" aria-pressed="false">Frente</button>
+        <button type="button" data-view="three-quarter" aria-pressed="true">¾</button>
+        <button type="button" data-view="side" aria-pressed="false">Perfil</button>
+        <button type="button" data-view="back" aria-pressed="false">Espalda</button>
+      </div>
+      <div class="viewer-footer"><span>Arrastra para girar · Acerca con la rueda</span><button id="rotate" type="button" aria-pressed="false">Giro automático <span aria-hidden="true">↻</span></button></div>
+    </section>
+    <aside class="inspector" aria-label="Controles del personaje">
+      <div class="inspector-intro"><h2>Conoce a tu pana.</h2><p>Elige un conjunto o combina<br>la ropa y los accesorios a tu gusto.</p></div>
+      <fieldset class="expression-controls"><legend>Expresión</legend><div class="expressions">
+        <button type="button" data-expression="natural" aria-pressed="true">Natural</button><button type="button" data-expression="smile" aria-pressed="false">Sonreír</button>
+        <button type="button" data-expression="talk" aria-pressed="false">Hablar</button><button type="button" data-expression="laugh" aria-pressed="false">Reír</button>
+      </div><p id="expression-hint" class="expression-hint">Descansa con la boca cerrada y sonríe de vez en cuando.</p></fieldset>
+      <fieldset class="wardrobe-controls"><legend>Conjuntos</legend><div class="outfits">
+        <button type="button" data-outfit="shirt" aria-pressed="true">Franela</button><button type="button" data-outfit="chef" aria-pressed="false">Chef</button>
+        <button type="button" data-outfit="hoodie" aria-pressed="false">Suéter</button><button type="button" data-outfit="tropical" aria-pressed="false">Tropical</button>
+        <button type="button" data-outfit="sport" aria-pressed="false">Deportivo</button>
+      </div>
+        <p class="mix-status" id="customization-status" role="status" hidden>Combinación personalizada</p>
+        <div class="garment-row"><label for="garment">Ropa</label><select id="garment">
+          <option value="shirt">Franela</option><option value="chef">Delantal de chef</option><option value="hoodie">Suéter con capucha</option><option value="tropical">Camisa tropical</option><option value="sport">Camiseta deportiva</option>
+        </select></div>
+        <div class="color-row"><span id="color-label">Rojo original</span><div class="swatches" id="clothing-swatches" aria-label="Color de la ropa">
+          <button type="button" data-color="#ee3024" data-label="Rojo original" style="--swatch:#ee3024" aria-label="Rojo original" aria-pressed="true"></button>
+          <button type="button" data-color="#3479cb" data-label="Azul" style="--swatch:#3479cb" aria-label="Azul" aria-pressed="false"></button>
+          <button type="button" data-color="#7da941" data-label="Verde" style="--swatch:#7da941" aria-label="Verde" aria-pressed="false"></button>
+          <button type="button" data-color="#e5b32d" data-label="Amarillo" style="--swatch:#e5b32d" aria-label="Amarillo" aria-pressed="false"></button>
+          <button type="button" data-color="#9165b4" data-label="Morado" style="--swatch:#9165b4" aria-label="Morado" aria-pressed="false"></button>
+        </div></div>
+      </fieldset>
+      <fieldset class="headwear-controls"><legend>Cabeza</legend><div class="headwear">
+        <button type="button" data-headwear="none" aria-pressed="true">Sin accesorio</button><button type="button" data-headwear="cap" aria-pressed="false">Gorra</button>
+        <button type="button" data-headwear="chef" aria-pressed="false">Gorro de chef</button><button type="button" data-headwear="band" aria-pressed="false">Cinta deportiva</button>
+      </div><div class="color-row headwear-colors" id="headwear-colors" hidden><span id="headwear-color-label">Azul</span><div class="swatches" id="headwear-swatches" aria-label="Color del accesorio de cabeza">
+        <button type="button" data-headwear-color="#ee3024" data-label="Rojo" style="--swatch:#ee3024" aria-label="Rojo para la cabeza" aria-pressed="false"></button>
+        <button type="button" data-headwear-color="#3479cb" data-label="Azul" style="--swatch:#3479cb" aria-label="Azul para la cabeza" aria-pressed="false"></button>
+        <button type="button" data-headwear-color="#7da941" data-label="Verde" style="--swatch:#7da941" aria-label="Verde para la cabeza" aria-pressed="false"></button>
+        <button type="button" data-headwear-color="#e5b32d" data-label="Amarillo" style="--swatch:#e5b32d" aria-label="Amarillo para la cabeza" aria-pressed="false"></button>
+        <button type="button" data-headwear-color="#9165b4" data-label="Morado" style="--swatch:#9165b4" aria-label="Morado para la cabeza" aria-pressed="false"></button>
+      </div></div></fieldset>
+      <fieldset class="eyewear-controls"><legend>Lentes y extras</legend><div class="eyewear" aria-label="Lentes">
+        <button type="button" data-glasses="none" aria-pressed="true">Sin lentes</button><button type="button" data-glasses="round" aria-pressed="false">Redondos</button><button type="button" data-glasses="sun" aria-pressed="false">De sol</button>
+      </div><label class="wrist-toggle"><input type="checkbox" id="wristbands">Muñequeras <small>Combinan con la ropa</small></label></fieldset>
+      <fieldset><legend>En movimiento</legend><div class="poses">
+        <button type="button" data-pose="idle" aria-pressed="true">Quieto</button><button type="button" data-pose="wave" aria-pressed="false">Saludar</button><button type="button" data-pose="walk" aria-pressed="false">Caminar</button><button type="button" data-pose="run" aria-pressed="false">Correr</button>
+      </div><button class="pause" id="pause" type="button" aria-pressed="false">Pausar animación <span aria-hidden="true">Ⅱ</span></button></fieldset>
+      <section class="reference" aria-labelledby="reference-title"><div class="section-label"><h3 id="reference-title">La referencia</h3><div class="reference-tabs"><button type="button" data-reference="front" aria-label="Referencia frontal" aria-pressed="true">Frente</button><button type="button" data-reference="three-quarter" aria-label="Referencia tres cuartos" aria-pressed="false">¾</button></div></div>
+        <button type="button" class="reference-image" id="expand-reference" aria-label="Ampliar imagen de referencia"><img id="reference-image" src="/character/references/front.png" alt="Referencia original del capibara dorado con franela roja, visto de frente"><span aria-hidden="true">↗</span></button>
+        <p>Ojos ovalados, hocico ancho,<br>patitas oscuras y una gran sonrisa.</p>
+      </section>
+      <div class="actions"><button type="button" id="capture">Guardar imagen <span aria-hidden="true">↓</span></button><button type="button" id="reset" aria-label="Restablecer personaje y cámara">Reiniciar</button></div>
+      <button type="button" id="save-avatar">Usar en los juegos ↗</button>
+      <p class="prototype-note" id="save-status" role="status">El mismo personaje en el estudio y en los juegos. Guarda esta combinación para jugar con ella.</p>
+    </aside>
+  </main>
+  <dialog id="reference-dialog"><form method="dialog"><button aria-label="Cerrar referencia">Cerrar ×</button></form><img id="large-reference" src="/character/references/front.png" alt="Referencia del personaje ampliada"></dialog>
+  <script type="module" src="/character/studio.js"></script>
+</body>
+</html>

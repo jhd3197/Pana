@@ -34,7 +34,8 @@ function preview(object, character = false) {
   previewRenderer.render(s, c);
   const data = previewRenderer.domElement.toDataURL();
   // Materials are cached by the shared kit; dispose only temporary geometries.
-  const geos = new Set(); object.traverse(o => { if (o.geometry) geos.add(o.geometry); }); geos.forEach(g => g.dispose());
+  if (object.userData.dispose) object.userData.dispose();
+  else { const geos = new Set(); object.traverse(o => { if (o.geometry) geos.add(o.geometry); }); geos.forEach(g => g.dispose()); }
   return data;
 }
 for (const def of PLAZA_PROPS) previews.set(def.id, preview(createPlazaProp(def.id)));
@@ -62,6 +63,7 @@ function getMe() { return state.players.find(p => p.id === room.id); }
 
 function disposeActor(actor) {
   scene.remove(actor.root);
+  if (actor.character) { actor.character.dispose(); return; }
   const geometries = new Set(); actor.root.traverse(o => { if (o.geometry) geometries.add(o.geometry); });
   geometries.forEach(g => g.dispose());
 }

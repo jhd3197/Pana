@@ -58,6 +58,7 @@ scene.add(turn);
 
 let pana = null;
 function rebuild() {
+  pana?.dispose();
   turn.clear();
   pana = buildCharacter(avatar);
   turn.add(pana.group);

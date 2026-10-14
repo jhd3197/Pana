@@ -62,7 +62,7 @@ function removeActor(a) {
   scene.remove(a.root);
   a.label.material.map.dispose(); a.label.material.dispose();
   // Carried foods share baked geometry. Only the character owns its geometry.
-  a.character.group.traverse(o => { if (o.geometry && !a.character.carry.children.some(c => c === o || c.getObjectById(o.id))) o.geometry.dispose(); });
+  a.character.carry.clear(); a.character.dispose();
 }
 function syncActors() {
   for (const [id, a] of actors) if (!state.players.some(p => p.id === id)) { removeActor(a); actors.delete(id); }

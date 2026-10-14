@@ -247,10 +247,22 @@ export function bake(root, { cellSize = Infinity } = {}) {
   root.updateMatrixWorld(true);
   const buckets = new Map();
   const keep = [];
-  root.traverse((m) => {
+  root.traverseVisible((m) => {
     if (!m.isMesh) return;
-    if (m.material.map || Array.isArray(m.material) || m.material.transparent) { keep.push(m); return; }
-    let geo = m.geometry.index ? m.geometry.toNonIndexed() : m.geometry.clone();
+    let geo = m.geometry.clone();
+    // Static statues can use the shared animated character. Freeze the current
+    // skin/morph pose before batching; never merge bind poses or hidden outfits.
+    if (m.isSkinnedMesh || m.geometry.morphAttributes.position?.length) {
+      const positions = geo.attributes.position, point = new THREE.Vector3();
+      for (let i = 0; i < positions.count; i++) { m.getVertexPosition(i, point); positions.setXYZ(i, point.x, point.y, point.z); }
+      geo.computeVertexNormals();
+    }
+    geo.morphAttributes = {}; geo.deleteAttribute('skinIndex'); geo.deleteAttribute('skinWeight');
+    if (m.material.map || m.material.bumpMap || Array.isArray(m.material) || m.material.transparent) {
+      const clone = new THREE.Mesh(geo, m.material); clone.castShadow = m.castShadow; clone.receiveShadow = m.receiveShadow;
+      m.matrixWorld.decompose(clone.position, clone.quaternion, clone.scale); keep.push(clone); return;
+    }
+    if (geo.index) { const indexed = geo; geo = indexed.toNonIndexed(); indexed.dispose(); }
     for (const name of Object.keys(geo.attributes)) if (!['position', 'normal', 'color'].includes(name)) geo.deleteAttribute(name);
     if (!geo.attributes.normal) geo.computeVertexNormals();
     geo.applyMatrix4(m.matrixWorld);
@@ -272,11 +284,6 @@ export function bake(root, { cellSize = Infinity } = {}) {
     out.add(merged);
     for (const g of geos) g.dispose();
   }
-  for (const m of keep) {
-    m.updateMatrixWorld(true);
-    const clone = m.clone();
-    m.matrixWorld.decompose(clone.position, clone.quaternion, clone.scale);
-    out.add(clone);
-  }
+  keep.forEach(m => out.add(m));
   return out;
 }

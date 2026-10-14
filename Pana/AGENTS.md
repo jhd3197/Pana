@@ -21,6 +21,15 @@ clean: only `README.md` and `.gitignore` belong there. Everything else lives her
   something into `engine/` when a second page needs it — don't abstract early.
 - Players are panas: every game should use the player's character
   (`/engine/avatar.js` + `/engine/character.js`) instead of a faceless placeholder.
+- Pana Studio at `/studio.html` catalogs existing props, maps, vehicles and
+  characters. Register new resources in `web/studio/catalog.js` using their real
+  constructors; do not duplicate models in the preview. See
+  `../docs/knowledge/pana-studio.md` for the registration and agent workflow.
+- The character sculpt lives in `engine/soft-character/`; `engine/character.js`
+  adapts it to saved avatars and gameplay. The full editor stays at
+  `/personaje.html`; its old model module URLs only re-export shared sources.
+  Games use the lighter sampling profile and must call `character.dispose()`
+  when removing a character (detach shared carried props first).
 - Browser is the only platform target. Friends join by opening a link; nothing to
   install, nothing to sign up for.
 
@@ -62,6 +71,7 @@ clean: only `README.md` and `.gitignore` belong there. Everything else lives her
 .\dev.ps1          # start the server (auto-installs deps, resolves busy ports)
 .\dev.ps1 check    # syntax-check every .js in server/, web/, games/
 .\dev.ps1 setup    # first-run: npm install
+.\dev.ps1 studio   # open Pana Studio; reuse the running server
 ```
 
 ## When you finish a task

@@ -10,7 +10,7 @@ export function mount(canvas) {
   const stove = bake(kitchenStation({ type: 'stove', w: 2.7, d: 2.2 })); stove.position.set(1.3, 0, -0.8); stove.scale.setScalar(0.8); scene.add(stove);
   const meal = bake(food('cachapa')); meal.position.set(1.3, 1.45, -0.8); meal.scale.setScalar(0.7); scene.add(meal);
   let pana;
-  function build(a) { if (pana) { scene.remove(pana.group); pana.group.traverse(o => o.geometry?.dispose()); } pana = buildCharacter(a, { chef: true }); const held = food('arepa'); held.scale.setScalar(0.65); pana.carry.add(held); pana.group.position.set(-0.5, 0, 0.6); pana.group.rotation.y = 0.4; scene.add(pana.group); }
+  function build(a) { if (pana) { pana.carry.clear(); pana.dispose(); } pana = buildCharacter(a, { chef: true }); const held = food('arepa'); held.scale.setScalar(0.65); pana.carry.add(held); pana.group.position.set(-0.5, 0, 0.6); pana.group.rotation.y = 0.4; scene.add(pana.group); }
   build(loadAvatar()); const update = e => build(e.detail); addEventListener('pana:avatar', update); let previous = performance.now();
   function frame(now) {
     if (!canvas.isConnected) { renderer.dispose(); removeEventListener('pana:avatar', update); return; }

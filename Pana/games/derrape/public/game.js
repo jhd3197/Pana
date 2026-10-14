@@ -113,6 +113,7 @@ const garage = {
 function showCar(i) {
   garage.index = (i + CARS.length) % CARS.length;
   const def = CARS[garage.index];
+  garage.car?.driver.dispose();
   garage.turn.clear();
   garage.car = def.build(ME.avatar);
   garage.turn.add(garage.car.root);
@@ -393,6 +394,7 @@ function progressOf(c) {
 
 function clearRace() {
   for (const c of race.cars) {
+    c.car.driver.dispose();
     race.scene.remove(c.car.root);
     race.scene.remove(c.bubble.sprite);
   }

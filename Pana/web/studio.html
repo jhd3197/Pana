@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#f7f5ee"><title>Pana Studio · Biblioteca</title>
+  <link rel="icon" href="data:,"><link rel="stylesheet" href="/studio/studio.css">
+  <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}</script>
+</head>
+<body>
+  <header><a class="brand" href="/studio.html">pana<span>studio</span></a><nav aria-label="Estudio"><a href="/studio.html" aria-current="page">Biblioteca</a><a href="/personaje.html">Personaje</a><a href="/">Jugar ↗</a></nav></header>
+  <main>
+    <aside class="library" aria-label="Biblioteca de recursos">
+      <div class="library-heading"><h1>Biblioteca</h1><span id="total"></span></div>
+      <label class="search"><span>Buscar recurso</span><input id="search" type="search" placeholder="Nombre, juego o archivo…" autocomplete="off"></label>
+      <div id="categories" class="categories" aria-label="Categorías"></div>
+      <div class="list-caption"><span id="result-count" role="status"></span><button id="export" title="Descargar el inventario completo en JSON">Exportar ↓</button></div>
+      <div id="asset-list" class="asset-list" aria-label="Recursos"></div>
+      <p id="empty" hidden>No hay recursos con esa búsqueda. <button id="clear-search">Limpiar filtros</button></p>
+      <a class="guide" href="/studio/guide.html">Añadir recursos con un agente <span>↗</span></a>
+    </aside>
+    <section class="workbench" aria-label="Vista previa y ficha">
+      <div class="stage">
+        <div class="stage-heading"><div><p id="asset-category"></p><h2 id="asset-name">Cargando biblioteca…</h2></div><a id="edit-character" href="/personaje.html">Personalizar ↗</a></div>
+        <canvas id="preview" tabindex="0" aria-label="Vista 3D del recurso. Arrastra para girar y usa la rueda para acercar."></canvas>
+        <p id="preview-status" role="status">Preparando la vista 3D…</p>
+        <div class="stage-controls"><span>Arrastra para girar · Rueda para acercar</span><button id="rotate" aria-pressed="false">Girar</button><button id="frame">Encuadrar</button><button id="wireframe" aria-pressed="false">Malla</button></div>
+      </div>
+      <div class="details">
+        <section><h3>Recurso compartido</h3><p id="description"></p><dl><dt>Usado en</dt><dd id="used-by"></dd><dt>Dimensiones</dt><dd id="dimensions"></dd><dt>Geometría</dt><dd id="geometry"></dd></dl><a id="open-game" hidden>Abrir juego ↗</a></section>
+        <section><h3>Fuente</h3><a id="source" target="_blank" rel="noopener"></a><code id="factory"></code><div class="source-actions"><button id="copy-context">Copiar contexto para agente</button><button id="copy-path">Copiar ruta</button></div><p id="copy-status" role="status"></p></section>
+      </div>
+    </section>
+  </main>
+  <script type="module" src="/studio/studio.js"></script>
+</body>
+</html>

@@ -1,0 +1,97 @@
+# Pana Studio
+
+Run `Pana/dev.ps1 studio` from the repository root (or `./dev.ps1 studio`
+inside `Pana/`). It opens `/studio.html`, reuses a healthy Pana server and does
+not kill a running game. `-NoBrowser` prints the address without opening a tab;
+`-Port` selects a server port. If another application occupies that port, the
+normal port fallback applies. `-NoAutoPort` makes that conflict explicit.
+
+## Library and extension contract
+
+`web/studio/catalog.js` is the curated registration point, initially 60 resources.
+It derives props from `PLAZA_PROPS`, recipes/stations from Cocina's definitions,
+vehicles from `CARS`, and circuits from `TRACKS`. Other shared factories have
+explicit entries. This is a development asset catalog, not player inventory or
+a visual level editor. New exported functions are not automatically registered.
+
+Each entry has a unique stable `id`, Spanish `name`, `category`, browser `source`
+URL, `factory`, `usedBy`, and asynchronous `build()`. Optional fields include
+`description`, `tags`, `dimensions` and a `game` link. Build returns:
+
+```js
+{ group, update: (elapsedSeconds, deltaSeconds) => {}, dispose: () => {}, bounds }
+```
+
+Only `group` is mandatory. `bounds` is an optional THREE.Box3 for camera framing;
+large maps use playable bounds rather than background hills/ocean. Reuse the
+existing constructor, never paste geometry into the catalog. Shared resources
+live under `engine/`; assets with one game consumer can stay in that game. Origin,
+scale, orientation, collision contracts and lifecycle belong to the source.
+
+The studio uses one WebGL context, releases previews on selection, and ignores
+stale asynchronous builds. It copies materials before enabling wireframe so
+cached game materials are not mutated. Factories with owned skeletons/textures
+must supply `dispose`; detach shared carried props before disposing a character.
+For the kitchen preview, `createKitchenScene({labelsRoot:null})` avoids attaching
+game HUD labels. Camera presets reserve the current asset's space.
+
+The list supports accent-insensitive search by name, game, ID and source,
+category filters, deep links (`/studio.html#barrel`), JSON inventory export,
+copying the repo path, and copying an agent brief. The on-page guide explains
+how to ask any coding agent for a new asset. The catalog is code managed;
+preview controls do not write source files or place objects in maps.
+
+Agent workflow: read `Pana/AGENTS.md`, inspect the closest existing asset, extend
+its source, register the entry, inspect its actual 3D preview and affected games,
+run `npm run check`, and record any non-obvious conventions here.
+
+## One character source
+
+`engine/soft-character/` owns the approved capybara sculpt, smooth connected
+garments, exposed-body topology, expressions and eyewear. `/personaje.html`
+retains the full editor. Old `web/character/*.js` model URLs are re-exports only;
+do not edit a second implementation there. The editor and games use the same
+surfaces and rig. `engine/character.js` adapts that model to saved avatar data
+and the established `buildCharacter()` game API.
+
+The game adapter places a 0.60 conversion scale on an inner group, so game-owned
+root scaling does not destroy proportions. A seated character bends its legs
+forward and offsets the inner group to the seat; manual arm/neck poses are
+preserved for steering and celebrations. Walk/carry inputs animate the shared
+rig; `open` and `dizzy` retain their gameplay effects. Named body/neck/head/arm
+pivots and the carry attachment remain available. Games call `dispose()` on
+removal. The character has independently owned geometry/materials/skeletons.
+
+`quality:'game'` reduces implicit-field resolution, surface sampling, garment
+subdivision and tiny curve tessellation. It changes detail rather than design.
+`quality:'studio'` keeps the full reference quality. These construction profiles
+are scoped synchronously and restored with `finally`; no per-frame rebuilding.
+The expensive apron depth grid is cached once per profile because avatar colors
+do not alter the torso shape. Bounded body/garment caches keep CPU templates;
+each instance clones geometry so colors, bones and disposal remain independent.
+Both profiles have the corrected extended-arm
+bind pose, avoiding underarm webbing.
+
+Old hat types remain supported; `nada` clothing migrates to the default franela.
+Chef hats, sports bands, round glasses and wristbands now have saved avatar IDs.
+The editor's **Usar en los juegos** action explicitly writes its combination to
+the existing `pana:avatar` localStorage key. Games read it when opened/reloaded;
+it does not overwrite an active multiplayer actor mid-session.
+
+Static scenery can include character statues. `flora.bake()` now freezes visible
+skin/morph poses before merging, strips animation attributes, and preserves UVs
+for bump-mapped surfaces. Merging animated bind poses or hidden clothes creates
+bad geometry and incompatible morph arrays; do not restore the old traversal.
+
+## Verification
+
+`web/studio/tests/studio.browser.js` opens every registered preview, checks unique
+IDs, source links, filters, empty results, inventory export and mobile overflow,
+then saves a mixed wardrobe and checks the standing/seated game adapter.
+Run with the same optional Playwright package and browser executable arguments
+as `web/character/tests/proportions.browser.js`.
+
+The character proportions suite verifies stable camera/body size across wardrobe
+changes. Cocina and Escondidas browser suites use real two-client sessions for
+movement, gameplay, host departure and mobile behavior; they also smoke test
+Derrape, Bululú and hub artwork. Preview screenshots are in ignored `art/studio/`.

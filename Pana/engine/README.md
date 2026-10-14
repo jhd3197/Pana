@@ -29,11 +29,11 @@ import { buildCharacter } from '/engine/character.js';   // needs "three" in the
 New avatar options go in `avatar.js` (`OPTIONS`, color lists) and get built in
 `character.js`. `normalizeAvatar()` keeps old saves working when options change.
 
-Characters use broad polygon facets, a continuous forward muzzle with small
-nostril slits on top, rounded ears, and a pear-shaped torso. Keep outfit details
-on `BODY_PROFILE` using `onTorso`; flat patches can disappear into the belly.
-Chef aprons follow the same facet boundaries. Standing and seated variants share
-the rig and avatar options; hats must fit both front and side views.
+Characters use the sculpt in `soft-character/`, shared with Pana Studio. The
+game adapter preserves avatar data, game-world size, seated drivers and carrying.
+The editor uses full tessellation; games sample the same surfaces more sparsely.
+Use `character.dispose()` when removing one. Detach shared carried props first.
+See `docs/knowledge/pana-studio.md` for the catalog and extension workflow.
 
 ## Reusing the plaza kit
 

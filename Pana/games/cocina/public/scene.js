@@ -13,7 +13,7 @@ export function mealModel(id, stage = 'cooked', plated = true) {
   if (!foodCache.has(key)) foodCache.set(key, bake(food(id, { stage, plated })));
   return foodCache.get(key).clone();
 }
-export function createKitchenScene() {
+export function createKitchenScene({ labelsRoot = document.getElementById('station-labels') } = {}) {
   const plaza = createPlaza({ cooking: true }), { scene } = plaza, set = new THREE.Group();
   set.add(box(25, 0.15, 19, M('#b97c53'), -0.5, 0, 4));
   const colors = ['#c68259', '#ca8d61', '#c17d55', '#d19366', '#d69b6b'];
@@ -71,13 +71,14 @@ export function createKitchenScene() {
       const puff = mesh(new THREE.IcosahedronGeometry(0.19, 1), new THREE.MeshBasicMaterial({ color: '#fff8e9', transparent: true, opacity: 0.4, depthWrite: false }));
       puff.castShadow = false; steam.add(puff);
     }
-    const tag = document.createElement('div'); tag.className = 'station-tag hidden'; document.getElementById('station-labels').append(tag);
+    const tag = document.createElement('div'); tag.className = 'station-tag hidden'; labelsRoot?.append(tag);
     stations.set(def.id, { def, holder, effects, steam, tag, itemKey: '', progress: 0 });
   }
   const ring = mesh(new THREE.RingGeometry(0.9, 1.04, 40), new THREE.MeshBasicMaterial({ color: '#fff3a0', transparent: true, opacity: 0.85, depthWrite: false })); ring.rotation.x = -Math.PI / 2; scene.add(ring);
   const target = new THREE.Vector3();
   return {
     scene, ring,
+    dispose() { stations.forEach(v => v.tag.remove()); demoChefs.forEach(chef => { chef.carry.clear(); chef.dispose(); }); },
     update(t, state, camera, nearest, showLabels) {
       plaza.update(t);
       demo.visible = state.phase === 'lobby';

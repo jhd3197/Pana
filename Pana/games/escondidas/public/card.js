@@ -14,7 +14,7 @@ export function mount(canvas) {
   const b = barrel(), c = crate(), p = planter();
   b.position.set(0.9, 0, 0.5); c.position.set(-0.8, 0, -0.3); p.position.set(1.5, 0, -1.2); scene.add(b, c, p);
   let pana = buildCharacter(loadAvatar()); scene.add(pana.group);
-  const update = e => { scene.remove(pana.group); pana = buildCharacter(e.detail); scene.add(pana.group); };
+  const update = e => { pana.dispose(); pana = buildCharacter(e.detail); scene.add(pana.group); };
   addEventListener('pana:avatar', update);
   let previous = performance.now();
   function frame(now) {

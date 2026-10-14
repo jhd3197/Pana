@@ -36,7 +36,7 @@ export function mount(canvas) {
 
   let pana = null;
   function build(avatar) {
-    if (pana) stage.remove(pana.group);
+    if (pana) pana.dispose();
     pana = buildCharacter(avatar);
     pana.group.position.y = 0.35;
     stage.add(pana.group);

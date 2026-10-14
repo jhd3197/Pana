@@ -418,7 +418,7 @@ function makePortraits() {
     scene.add(c.group);
     pr.render(scene, pcam);
     p.portrait = pr.domElement.toDataURL();
-    scene.remove(c.group);
+    c.dispose();
   }
   pr.dispose();
   pr.forceContextLoss();
