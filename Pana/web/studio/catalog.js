@@ -8,10 +8,10 @@ import { Box3, Vector3 } from 'three';
 
 const shared = ['Bululú', 'Derrape', 'Escondidas', 'Cocina'];
 const object = (id, name, category, source, factory, usedBy, options) => ({
-  id, name, category, source, factory, usedBy,
+  id, name, category, source, factory, usedBy, previewOptions: options ?? null,
   async build() { const module = await import(source); return { group: module[factory](options) }; },
 });
-const character = (id, name, options = {}) => ({ id, name, category: 'Personajes', source: '/engine/character.js', factory: 'buildCharacter', usedBy: shared,
+const character = (id, name, options = {}) => ({ id, name, category: 'Personajes', source: '/engine/character.js', factory: 'buildCharacter', usedBy: shared, previewOptions: options,
   async build() { const { buildCharacter } = await import('/engine/character.js'); const model = buildCharacter(DEFAULT_AVATAR, { quality: 'studio', ...options }); return { group: model.group, update: (t, dt) => model.update(dt), dispose: () => model.dispose() }; },
 });
 export const ASSETS = [
@@ -52,7 +52,7 @@ export const ASSETS = [
   { id: 'isla', name: 'Isla Bululú', category: 'Mapas', source: '/engine/island-terrain.js', factory: 'buildIsland', usedBy: ['Bululú', 'Derrape'], game: '/g/bululu/', description: 'Terreno compartido de la isla. Cada juego añade sus rutas y decoraciones.',
     async build() { const { buildIsland } = await import('/engine/island-terrain.js'); return buildIsland([], []); },
   },
-  ...TRACKS.map(track => ({ id: `track-${track.id}`, name: `Circuito · ${track.name}`, category: 'Mapas', source: `/g/derrape/tracks/${track.id}.js`, factory: 'makeTrack(definition).build', usedBy: ['Derrape'], description: track.blurb, game: '/g/derrape/',
+  ...TRACKS.map(track => ({ id: `track-${track.id}`, name: `Circuito · ${track.name}`, category: 'Mapas', source: `/g/derrape/tracks/${track.id}.js`, dependencies: ['/g/derrape/tracks.js'], factory: 'makeTrack(definition).build', usedBy: ['Derrape'], description: track.blurb, game: '/g/derrape/',
     async build() { const model = makeTrack(track); return { group: model.build(), bounds: new Box3(new Vector3(-model.bounds.x - 20, 0, -model.bounds.z - 20), new Vector3(model.bounds.x + 20, 35, model.bounds.z + 20)), update: (t, dt) => model.animated.forEach(o => o.userData.tick?.(t, dt)) }; },
   })),
 ];

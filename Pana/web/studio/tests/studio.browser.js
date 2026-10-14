@@ -13,6 +13,8 @@ try {
   page.on('console', m => { if (m.type() === 'error' && !m.text().includes('404')) errors.push(m.text()); });
   await page.goto(`${base}/studio.html`);
   await page.waitForFunction(() => window.panaLibrary?.current && document.querySelector('#preview-status').hidden, null, { timeout: 60000 });
+  // Cache generation has its own complete suite; keep this preview regression deterministic.
+  await page.locator('#cache-pause').click();
   const assets = await page.evaluate(() => panaLibrary.assets.map(({ id, source, category }) => ({ id, source, category })));
   assert.ok(assets.length >= 50); assert.equal(new Set(assets.map(a => a.id)).size, assets.length);
   await page.screenshot({ path: `${output}/library.png` });

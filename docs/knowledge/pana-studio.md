@@ -28,7 +28,7 @@ existing constructor, never paste geometry into the catalog. Shared resources
 live under `engine/`; assets with one game consumer can stay in that game. Origin,
 scale, orientation, collision contracts and lifecycle belong to the source.
 
-The studio uses one WebGL context, releases previews on selection, and ignores
+The live inspector uses one WebGL context, releases previews on selection, and ignores
 stale asynchronous builds. It copies materials before enabling wireframe so
 cached game materials are not mutated. Factories with owned skeletons/textures
 must supply `dispose`; detach shared carried props before disposing a character.
@@ -40,6 +40,38 @@ category filters, deep links (`/studio.html#barrel`), JSON inventory export,
 copying the repo path, and copying an agent brief. The on-page guide explains
 how to ask any coding agent for a new asset. The catalog is code managed;
 preview controls do not write source files or place objects in maps.
+
+## Technical inventory and local thumbnails
+
+The inventory has thumbnail/list views, sorting by name or triangle count,
+source IDs, and actual visible-mesh metrics. The inspector reports complete mesh
+bounds, vertex/triangle/mesh/material/texture counts and the live viewport's draw
+calls (including its grid). Map camera framing can use playable bounds instead;
+the reported dimensions still include all visible terrain/background geometry.
+Perspective, front, side and top cameras, a world-unit grid, wireframe and optional
+animation are inspection controls. `/` focuses search and `F` frames the model.
+Static previews render on demand, avoiding continuous GPU work on large maps.
+
+`thumbnails.js` generates one real 320×240 WebP preview at a time, with a separate
+reused renderer. The queue yields between builds, prioritizes selected/filtered
+assets and defers while the user interacts or the document is hidden. Model
+construction is synchronous on the main thread, so complex assets can briefly
+pause interaction on the first pass. Pause/continue and regenerate are explicit
+controls. The first pass builds all registered resources; later visits read the
+images and metrics from IndexedDB `pana-studio-previews`, store `assets`.
+No images are written into the repository, exported JSON or server filesystem.
+Storage failure falls back to session memory and is shown in the footer.
+
+`fingerprints.js` hashes local source text and follows local static imports,
+re-exports and literal dynamic imports. Each asset may declare `dependencies`
+for constructors outside its primary source (circuits include `tracks.js`).
+`previewOptions` records factory inputs. Catalog/render-recipe/import-map changes
+invalidate the full set; other source changes invalidate dependent assets.
+Reload after editing source. Regenerate also reloads if it detects changed source,
+because an already imported ES module cannot be replaced within the page.
+Old versions overwrite the same asset key; removed IDs are pruned. Failures are
+reported per resource and can be retried. This is a browser cache per origin,
+not a shared asset database; another browser or port warms its own cache.
 
 Agent workflow: read `Pana/AGENTS.md`, inspect the closest existing asset, extend
 its source, register the entry, inspect its actual 3D preview and affected games,
@@ -95,3 +127,8 @@ The character proportions suite verifies stable camera/body size across wardrobe
 changes. Cocina and Escondidas browser suites use real two-client sessions for
 movement, gameplay, host departure and mobile behavior; they also smoke test
 Derrape, Bululú and hub artwork. Preview screenshots are in ignored `art/studio/`.
+
+`web/studio/tests/cache.browser.js` covers a complete cold pass, zero thumbnail
+builds on a warm reload, shared-source invalidation, pause/resume/regenerate,
+disabled storage, real controls, grid/list sizing, sort order, render-on-demand
+and mobile overflow. It uses the same CLI arguments as the other browser tests.

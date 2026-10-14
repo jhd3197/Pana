@@ -2,32 +2,39 @@
 <html lang="es">
 <head>
   <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-  <meta name="theme-color" content="#f7f5ee"><title>Pana Studio · Biblioteca</title>
+  <meta name="theme-color" content="#f5f6f4"><title>Pana Studio · Inventario</title>
   <link rel="icon" href="data:,"><link rel="stylesheet" href="/studio/studio.css">
   <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}</script>
 </head>
 <body>
-  <header><a class="brand" href="/studio.html">pana<span>studio</span></a><nav aria-label="Estudio"><a href="/studio.html" aria-current="page">Biblioteca</a><a href="/personaje.html">Personaje</a><a href="/">Jugar ↗</a></nav></header>
+  <a class="skip-link" href="#asset-list">Ir a los recursos</a>
+  <header><a class="brand" href="/studio.html">pana<span>studio</span></a><nav aria-label="Estudio"><a href="/studio.html" aria-current="page">Inventario</a><a href="/personaje.html">Personaje</a><a href="/">Juegos</a><a href="/studio/guide.html">Guía</a></nav><span class="header-context">Proyecto / Pana</span></header>
   <main>
     <aside class="library" aria-label="Biblioteca de recursos">
-      <div class="library-heading"><h1>Biblioteca</h1><span id="total"></span></div>
-      <label class="search"><span>Buscar recurso</span><input id="search" type="search" placeholder="Nombre, juego o archivo…" autocomplete="off"></label>
+      <div class="library-heading"><h1>Recursos</h1><span id="total"></span><button id="export" title="Descargar el inventario completo en JSON">Exportar JSON</button></div>
+      <label class="search"><span>Buscar recurso</span><input id="search" type="search" placeholder="Buscar por nombre, ID, juego o archivo" autocomplete="off"><kbd>/</kbd></label>
       <div id="categories" class="categories" aria-label="Categorías"></div>
-      <div class="list-caption"><span id="result-count" role="status"></span><button id="export" title="Descargar el inventario completo en JSON">Exportar ↓</button></div>
-      <div id="asset-list" class="asset-list" aria-label="Recursos"></div>
+      <div class="list-caption"><span id="result-count" role="status"></span><label>Orden <select id="sort"><option value="catalog">Catálogo</option><option value="name">Nombre</option><option value="triangles">Triángulos</option></select></label><div class="view-toggle" role="group" aria-label="Vista de inventario"><button id="view-grid" aria-pressed="true">Miniaturas</button><button id="view-list" aria-pressed="false">Lista</button></div></div>
+      <div id="asset-list" class="asset-list" aria-label="Recursos" tabindex="-1"></div>
       <p id="empty" hidden>No hay recursos con esa búsqueda. <button id="clear-search">Limpiar filtros</button></p>
-      <a class="guide" href="/studio/guide.html">Añadir recursos con un agente <span>↗</span></a>
+      <section class="cache-panel" aria-label="Caché local de miniaturas">
+        <div class="cache-heading"><strong>Miniaturas locales</strong><span id="cache-count">0 / 0</span></div>
+        <progress id="cache-progress" value="0" max="60" aria-label="Miniaturas generadas"></progress>
+        <div class="cache-actions"><span id="cache-status" role="status">Validando caché…</span><button id="cache-pause">Pausar</button><button id="cache-rebuild" title="Borrar las miniaturas locales y volver a generarlas">Regenerar</button></div>
+        <p id="cache-activity">Las imágenes se guardan en este navegador.</p>
+      </section>
     </aside>
     <section class="workbench" aria-label="Vista previa y ficha">
       <div class="stage">
-        <div class="stage-heading"><div><p id="asset-category"></p><h2 id="asset-name">Cargando biblioteca…</h2></div><a id="edit-character" href="/personaje.html">Personalizar ↗</a></div>
+        <div class="stage-heading"><div><h2 id="asset-name">Cargando recurso…</h2><p><span id="asset-category"></span> <code id="asset-id"></code></p></div><a id="edit-character" href="/personaje.html">Editar personaje</a></div>
         <canvas id="preview" tabindex="0" aria-label="Vista 3D del recurso. Arrastra para girar y usa la rueda para acercar."></canvas>
         <p id="preview-status" role="status">Preparando la vista 3D…</p>
-        <div class="stage-controls"><span>Arrastra para girar · Rueda para acercar</span><button id="rotate" aria-pressed="false">Girar</button><button id="frame">Encuadrar</button><button id="wireframe" aria-pressed="false">Malla</button></div>
+        <div class="stage-controls"><select id="camera-view" aria-label="Vista de cámara"><option value="perspective">Perspectiva</option><option value="front">Frontal</option><option value="side">Lateral</option><option value="top">Superior</option></select><button id="frame" title="Encuadrar el recurso (F)">Encuadrar</button><button id="grid" aria-pressed="true">Cuadrícula</button><button id="wireframe" aria-pressed="false">Malla</button><button id="animate" aria-pressed="false">Animación</button><button id="rotate" aria-pressed="false">Girar</button></div>
+        <div class="viewport-status"><span id="grid-scale"></span><span id="draw-calls"></span></div>
       </div>
       <div class="details">
-        <section><h3>Recurso compartido</h3><p id="description"></p><dl><dt>Usado en</dt><dd id="used-by"></dd><dt>Dimensiones</dt><dd id="dimensions"></dd><dt>Geometría</dt><dd id="geometry"></dd></dl><a id="open-game" hidden>Abrir juego ↗</a></section>
-        <section><h3>Fuente</h3><a id="source" target="_blank" rel="noopener"></a><code id="factory"></code><div class="source-actions"><button id="copy-context">Copiar contexto para agente</button><button id="copy-path">Copiar ruta</button></div><p id="copy-status" role="status"></p></section>
+        <section><h3>Inspector</h3><p id="description"></p><dl><dt>Usado en</dt><dd id="used-by"></dd><dt>Tamaño XYZ</dt><dd id="dimensions" class="numeric"></dd><dt>Geometría</dt><dd id="geometry" class="numeric"></dd><dt>Vértices</dt><dd id="vertices" class="numeric"></dd><dt>Materiales</dt><dd id="materials" class="numeric"></dd><dt>Texturas</dt><dd id="textures" class="numeric"></dd></dl><a id="open-game" hidden>Abrir juego</a></section>
+        <section><h3>Fuente</h3><a id="source" target="_blank" rel="noopener"></a><code id="factory"></code><p class="source-note">Modelo del proyecto. Los cambios se hacen en este archivo.</p><div class="source-actions"><button id="copy-context">Copiar contexto para agente</button><button id="copy-path">Copiar ruta</button></div><p id="copy-status" role="status"></p></section>
       </div>
     </section>
   </main>

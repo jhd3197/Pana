@@ -25,6 +25,9 @@ clean: only `README.md` and `.gitignore` belong there. Everything else lives her
   characters. Register new resources in `web/studio/catalog.js` using their real
   constructors; do not duplicate models in the preview. See
   `../docs/knowledge/pana-studio.md` for the registration and agent workflow.
+  Thumbnail images live only in browser IndexedDB. Declare extra factory
+  dependencies in the catalog for cache invalidation, and run the studio cache
+  browser suite when changing its generation or persistence behavior.
 - The character sculpt lives in `engine/soft-character/`; `engine/character.js`
   adapts it to saved avatars and gameplay. The full editor stays at
   `/personaje.html`; its old model module URLs only re-export shared sources.
