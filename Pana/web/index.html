@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pana — juega con tus panas</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header>
+    <h1>Pana</h1>
+    <p class="tagline">Juega con tus panas. Sin instalar nada.</p>
+  </header>
+
+  <main>
+    <section class="join-bar">
+      <label for="name">Tu nombre</label>
+      <input id="name" maxlength="16" placeholder="pana">
+    </section>
+
+    <section>
+      <h2>Juegos</h2>
+      <div id="games" class="grid"></div>
+    </section>
+
+    <section>
+      <h2>Salas en vivo</h2>
+      <div id="rooms" class="rooms"></div>
+    </section>
+  </main>
+
+  <footer>
+    <span id="status">conectando…</span>
+  </footer>
+
+  <script type="module" src="hub.js"></script>
+</body>
+</html>

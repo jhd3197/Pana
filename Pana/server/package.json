@@ -1,0 +1,11 @@
+{
+  "name": "pana-server",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Pana backend: HTTP API, static hosting for web + games, WebSocket rooms.",
+  "type": "module",
+  "main": "src/index.js",
+  "dependencies": {
+    "ws": "^8.18.0"
+  }
+}
