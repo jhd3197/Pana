@@ -5,6 +5,7 @@ import { loadAvatar, loadName, randomAvatar } from '/engine/avatar.js';
 import { buildCharacter } from '/engine/character.js';
 import { makeMango } from '/engine/props.js';
 import { createBoard, createToken, createDie, TILE_COUNT, FORK } from './board.js';
+import { RIVER, SEA } from './island.js';
 import atrapa from './minigames/atrapa.js';
 import caigas from './minigames/caigas.js';
 
@@ -68,10 +69,45 @@ const boardScene = new THREE.Scene();
 const boardCam = new THREE.PerspectiveCamera(50, innerWidth / innerHeight, 0.1, 700);
 const board = createBoard(boardScene);
 const puffs = new Puffs(boardScene);
-const die = createDie();
-die.mesh.visible = false;
-boardScene.add(die.mesh);
-board.setStand(6);   // close to the start, so the first mango is up for grabs early
+// two dice, plus a floating counter for the steps left once they're rolled
+const dice = [createDie(), createDie()];
+for (const d of dice) {
+  d.mesh.visible = false;
+  boardScene.add(d.mesh);
+}
+const counter = (() => {
+  const c = document.createElement('canvas');
+  c.width = c.height = 128;
+  const tex = new THREE.CanvasTexture(c);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, depthTest: false }));
+  sprite.scale.set(1.7, 1.7, 1);
+  sprite.renderOrder = 11;
+  sprite.visible = false;
+  return {
+    sprite,
+    set(n) {
+      const g = c.getContext('2d');
+      g.clearRect(0, 0, 128, 128);
+      g.fillStyle = '#ffc629';
+      g.strokeStyle = '#16161a';
+      g.lineWidth = 8;
+      g.beginPath();
+      g.arc(64, 64, 56, 0, Math.PI * 2);
+      g.fill();
+      g.stroke();
+      g.fillStyle = '#16161a';
+      g.font = '72px "Luckiest Guy", system-ui, sans-serif';
+      g.textAlign = 'center';
+      g.textBaseline = 'middle';
+      g.fillText(String(n), 64, 72);
+      tex.needsUpdate = true;
+      sprite.visible = true;
+    },
+  };
+})();
+boardScene.add(counter.sprite);
+board.setStand(7);   // close to the start, so the first mango is up for grabs early
 
 for (const p of players) {
   p.token = createToken(p, p.i);
@@ -100,7 +136,7 @@ for (const p of players) p.token.group.position.copy(p.token.rest);
 // back and nothing tall stands between the camera and the path.
 const cam = { pos: new THREE.Vector3(), look: new THREE.Vector3(), wantPos: new THREE.Vector3(), wantLook: new THREE.Vector3() };
 const SHOTS = {
-  overview: [0, 41, 43],   // the whole island
+  far: [0, 30, 36],        // a big chunk of the island (the minimap shows all of it)
   mid: [0, 14, 17],        // a pana and its neighborhood
   close: [0, 8, 10.5],     // buying, events, the winner
 };
@@ -110,11 +146,9 @@ function focus(at, kind = 'mid') {
   cam.wantLook.set(at.x, at.y + 1, at.z);
   cam.wantPos.set(at.x + o[0], at.y + o[1], at.z + o[2]);
 }
-// whole board, leaning a little toward whoever is playing
-function overview(lean) {
-  const c = new THREE.Vector3(0, 1, 5);   // a bit forward: the cards cover the bottom
-  if (lean) c.lerp(lean, 0.22);
-  focus(c, 'overview');
+// pull back for the start of a round, around whoever goes first
+function overview(at = players[0].token.rest) {
+  focus(at, 'far');
 }
 overview();
 cam.pos.copy(cam.wantPos);
@@ -122,7 +156,7 @@ cam.look.copy(cam.wantLook);
 
 // "Ver tablero": drag to orbit, scroll to zoom, Tab or the button to return
 const looker = new OrbitControls(boardCam, renderer.domElement);
-Object.assign(looker, { enabled: false, enableDamping: true, maxPolarAngle: 1.32, minDistance: 8, maxDistance: 95 });
+Object.assign(looker, { enabled: false, enableDamping: true, maxPolarAngle: 1.32, minDistance: 6, maxDistance: 260 });
 let freeLook = false;
 function setFreeLook(on) {
   if (on && view !== boardView) return;
@@ -159,12 +193,15 @@ const boardView = {
       tk.pin.scale.set(0.95 * s, 1.04 * s, 1);
       tk.pin.position.y = 3.1 + s * 0.4 + Math.sin(t * 2.5 + p.i) * 0.1;
     }
-    if (die.mesh.visible && die.rolling) die.spin(dt);
-    if (die.mesh.visible && !die.rolling) {
-      // settle with the shown face toward the camera
-      const q = new THREE.Quaternion().setFromRotationMatrix(new THREE.Matrix4().lookAt(boardCam.position, die.mesh.position, new THREE.Vector3(0, 1, 0)));
-      q.multiply(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), Math.PI));
-      die.mesh.quaternion.slerp(q, Math.min(1, dt * 12));
+    for (const die of dice) {
+      if (!die.mesh.visible) continue;
+      if (die.rolling) die.spin(dt);
+      else {
+        // settle with the shown face toward the camera
+        const q = new THREE.Quaternion().setFromRotationMatrix(new THREE.Matrix4().lookAt(boardCam.position, die.mesh.position, new THREE.Vector3(0, 1, 0)));
+        q.multiply(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), Math.PI));
+        die.mesh.quaternion.slerp(q, Math.min(1, dt * 12));
+      }
     }
     puffs.update(dt);
     if (freeLook) looker.update();
@@ -176,8 +213,10 @@ const boardView = {
     }
     // in the overview every tile counts; up close just the panas and the target
     const spots = [cam.look, ...players.map((p) => p.token.group.position)];
-    if (cam.kind === 'overview' || freeLook) for (const tl of board.tiles) spots.push(tl.mesh.position);
+    if (cam.kind === 'far' || freeLook) for (const tl of board.tiles) spots.push(tl.mesh.position);
     board.seeThrough(boardCam.position, spots, dt);
+    board.follow(freeLook ? looker.target : cam.look);
+    drawMap(dt, t);
   },
 };
 
@@ -353,6 +392,114 @@ function makePortraits() {
 }
 
 // ======================================================================
+// minimap: the whole island at a glance; tap it to look there
+// ======================================================================
+const MAP = { x0: -135, x1: 135, z0: -126, z1: 104 };
+const mapEl = $('minimap');
+const mapCtx = mapEl.getContext('2d');
+const mapBase = document.createElement('canvas');
+mapBase.width = mapEl.width;
+mapBase.height = mapEl.height;
+const toMap = (x, z) => [(x - MAP.x0) / (MAP.x1 - MAP.x0) * mapEl.width, (z - MAP.z0) / (MAP.z1 - MAP.z0) * mapEl.height];
+const TILE_COLORS = { blue: '#3d7bf2', red: '#ff4b4b', event: '#ffd23f', start: '#2ad1b2', tree: '#8e4de8' };
+function drawMapBase() {
+  const g = mapBase.getContext('2d');
+  const W = mapBase.width, H = mapBase.height, step = 4;
+  for (let py = 0; py < H; py += step) {
+    for (let px = 0; px < W; px += step) {
+      const x = MAP.x0 + (px / W) * (MAP.x1 - MAP.x0), z = MAP.z0 + (py / H) * (MAP.z1 - MAP.z0);
+      const h = board.groundAt(x, z);
+      let c;
+      if (h < SEA - 2) c = '#1d4f80';
+      else if (h < SEA + 0.2) c = '#3a8fb0';
+      else if (h < 0.4) c = '#e6c88c';
+      else if (h > 24) c = '#b4adbb';
+      else if (h > 9) c = '#3f7f4a';
+      else c = h > 4 ? '#55a04c' : '#66b356';
+      g.fillStyle = c;
+      g.fillRect(px, py, step, step);
+    }
+  }
+  g.strokeStyle = '#45bde0';
+  g.lineWidth = 5;
+  g.lineJoin = g.lineCap = 'round';
+  g.beginPath();
+  RIVER.forEach(([x, z], i) => (i ? g.lineTo(...toMap(x, z)) : g.moveTo(...toMap(x, z))));
+  g.stroke();
+  // the path, then the tiles on it
+  g.strokeStyle = 'rgba(255, 240, 210, 0.7)';
+  g.lineWidth = 4;
+  for (const t of board.tiles) for (const n of t.next) {
+    const u = board.tiles[n];
+    g.beginPath();
+    g.moveTo(...toMap(t.x, t.z));
+    g.lineTo(...toMap(u.x, u.z));
+    g.stroke();
+  }
+  for (const t of board.tiles) {
+    const [x, y] = toMap(t.x, t.z);
+    g.fillStyle = TILE_COLORS[t.kind];
+    g.fillRect(x - 4, y - 4, 8, 8);
+  }
+}
+drawMapBase();
+let mapT = 0;
+function drawMap(dt, t) {
+  mapT -= dt;
+  if (mapT > 0) return;
+  mapT = 0.1;
+  const g = mapCtx;
+  g.drawImage(mapBase, 0, 0);
+  // where the camera is looking
+  const [cx, cy] = toMap(cam.look.x, cam.look.z);
+  g.strokeStyle = 'rgba(255, 255, 255, 0.6)';
+  g.lineWidth = 3;
+  g.strokeRect(cx - 34, cy - 24, 68, 48);
+  // the cart: a pulsing gold star
+  const sp = board.stand.group.position;
+  const [sx, sy] = toMap(sp.x, sp.z);
+  const pulse = 1 + Math.sin(t * 6) * 0.15;
+  g.fillStyle = '#ffc629';
+  g.strokeStyle = '#6b4200';
+  g.lineWidth = 3;
+  g.beginPath();
+  for (let k = 0; k < 10; k++) {
+    const r = (k % 2 ? 6 : 14) * pulse, a = (k / 10) * Math.PI * 2 - Math.PI / 2;
+    g.lineTo(sx + Math.cos(a) * r, sy + Math.sin(a) * r);
+  }
+  g.closePath();
+  g.fill();
+  g.stroke();
+  // the panas
+  for (const p of players) {
+    const pos = p.token.group.position;
+    const [x, y] = toMap(pos.x, pos.z);
+    const r = turnOf === p.i ? 11 + Math.sin(t * 8) * 2 : 9;
+    g.fillStyle = p.color;
+    g.strokeStyle = '#fff';
+    g.lineWidth = 3;
+    g.beginPath();
+    g.arc(x, y, r, 0, Math.PI * 2);
+    g.fill();
+    g.stroke();
+    g.fillStyle = '#fff';
+    g.font = '14px "Luckiest Guy", system-ui, sans-serif';
+    g.textAlign = 'center';
+    g.textBaseline = 'middle';
+    g.fillText(String(p.i + 1), x, y + 1);
+  }
+}
+mapEl.addEventListener('click', (e) => {
+  const r = mapEl.getBoundingClientRect();
+  const x = MAP.x0 + ((e.clientX - r.left) / r.width) * (MAP.x1 - MAP.x0);
+  const z = MAP.z0 + ((e.clientY - r.top) / r.height) * (MAP.z1 - MAP.z0);
+  if (!freeLook) setFreeLook(true);
+  const y = board.groundAt(x, z);
+  looker.target.set(x, y, z);
+  boardCam.position.set(x, y + 34, z + 40);
+});
+
+// ======================================================================
 // board turns
 // ======================================================================
 let round = 1;
@@ -372,15 +519,15 @@ async function hop(p, to) {
   await tween(0.3, (k) => {
     tk.group.position.lerpVectors(from, dest, ease(k));
     tk.group.position.y = from.y + (dest.y - from.y) * ease(k) + Math.sin(k * Math.PI) * 1.3;
-    die.mesh.position.set(tk.group.position.x, tk.group.position.y + 4.8, tk.group.position.z);
+    counter.sprite.position.set(tk.group.position.x, tk.group.position.y + 4.6, tk.group.position.z);
   });
   tk.hopping = false;
   puffs.spawn(dest.clone().setY(dest.y + 0.2), { color: 0xffffff, count: 2, spread: 0.8, size: 0.4, rise: 0.6, life: 0.4 });
 }
 
-async function moveSteps(p, n, { withDie = false } = {}) {
+async function moveSteps(p, n, { counted = false } = {}) {
   for (let left = n; left > 0; left--) {
-    if (withDie) die.show(left);
+    if (counted) counter.set(left);
     const next = board.tiles[p.tile].next;
     const to = next.length > 1 ? await chooseRoute(p, next) : next[0];
     await hop(p, to);
@@ -487,12 +634,17 @@ async function visitStand(p, landed) {
 async function moveStand(p) {
   const st = board.stand;
   const taken = new Set(players.map((o) => o.tile));
-  const options = [];
+  // somewhere the panas will reach soon: ahead of them on average, but not
+  // right under anyone's nose (the board is big; behind them is a whole lap)
+  const options = [], fallback = [];
   for (let i = 0; i < TILE_COUNT; i++) {
-    const d = Math.min(Math.abs(i - board.standTile), TILE_COUNT - Math.abs(i - board.standTile));
-    if (d >= 5 && !taken.has(i) && board.standSpot(i).bad < 30) options.push(i);
+    if (i === board.standTile || taken.has(i) || board.standSpot(i).bad >= 30) continue;
+    const steps = players.map((o) => stepsTo(o.tile, i));
+    const avg = steps.reduce((a, b) => a + b, 0) / steps.length;
+    fallback.push(i);
+    if (Math.min(...steps) >= 4 && avg >= 8 && avg <= 24) options.push(i);
   }
-  const next = pick(options.length ? options : [(board.standTile + 12) % TILE_COUNT]);
+  const next = pick(options.length ? options : fallback);
   puffs.spawn(st.group.position.clone().setY(2), { color: 0xffffff, count: 14, spread: 4, size: 1.2, rise: 2, life: 1 });
   sound.whoosh();
   await tween(0.4, (k) => st.group.scale.setScalar(Math.max(0.01, 1 - k)));
@@ -584,21 +736,37 @@ async function takeTurn(p) {
   focus(tk.rest);
   await toast(p.human ? '¡Tu turno!' : `Turno de ${escapeHtml(p.name)}`, '', 1, `p${p.i}`);
 
-  die.mesh.visible = true;
-  die.rolling = true;
+  // two dice spin over the pana's head
+  dice.forEach((d, k) => {
+    d.mesh.visible = true;
+    d.rolling = true;
+    d.mesh.position.set(tk.rest.x + (k ? 0.95 : -0.95), tk.rest.y + 4.8, tk.rest.z);
+  });
   tk.pin.visible = false;
-  die.mesh.position.set(tk.rest.x, tk.rest.y + 4.8, tk.rest.z);
   sound.unlock();
-  if (isHuman(p)) await ask('¡Tira el dado!', [{ label: '¡Tirar!', key: ' ' }]);
+  if (isHuman(p)) await ask('¡Tira los dados!', [{ label: '¡Tirar!', key: ' ' }]);
   else await wait(0.9);
-  const n = 1 + Math.floor(Math.random() * 6);
-  die.rolling = false;
-  die.show(n);
+  const roll = () => 1 + Math.floor(Math.random() * 6);
+  const a = roll(), b = roll(), n = a + b;
+  dice[0].rolling = false;
+  dice[0].show(a);
   sound.boing();
-  tk.bubble.say(n >= 5 ? pick(['¡Epa!', '¡Dale!', `¡${n}!`]) : n === 1 ? pick(['¿Uno?', '¡Qué pava!']) : `¡${n}!`, 0.9);
-  await wait(0.8);
-  await moveSteps(p, n, { withDie: true });
-  die.mesh.visible = false;
+  await wait(0.35);
+  dice[1].rolling = false;
+  dice[1].show(b);
+  sound.boing();
+  const doubles = a === b;
+  tk.bubble.say(doubles ? '¡DOBLES!' : n >= 10 ? pick(['¡Epa!', '¡Dale!', `¡${n}!`]) : n <= 3 ? pick(['¿Nada más?', '¡Qué pava!']) : `¡${n}!`, 0.9);
+  await wait(0.9);
+  if (doubles) {
+    sound.horn('fiesta');
+    await toast('¡Dobles!', '+5 monedas de premio', 1.2, 'gold');
+    await give(p, 5);
+  }
+  for (const d of dice) d.mesh.visible = false;
+  counter.sprite.position.set(tk.rest.x, tk.rest.y + 4.6, tk.rest.z);
+  await moveSteps(p, n, { counted: true });
+  counter.sprite.visible = false;
   tk.pin.visible = true;
   focus(tk.rest);
   await landOn(p);
@@ -796,7 +964,7 @@ async function fastForward(seconds, dt = 1 / 30) {
     await null;   // let the turn logic's awaits run
   }
 }
-if (DEBUG) Object.assign(window, { players, board, MINIGAMES, layoutTokens, fastForward });
+if (DEBUG) Object.assign(window, { players, board, MINIGAMES, layoutTokens, fastForward, renderer, boardScene, boardCam });
 
 frame();
 main();

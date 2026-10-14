@@ -1,8 +1,10 @@
 # Bululú notes
 
-The game is in `games/bululu/public/`: `game.js` (turn flow, camera, HUD, minigame
-runner), `board.js` (tiles, the shortcut, cart, decor, die, tokens), `island.js`
-(landform: heightmap, plateau, hill, river, cliffs, shallows) and `minigames/*.js`.
+The game is in `games/bululu/public/`: `game.js` (turn flow, camera, HUD, minimap,
+minigame runner), `board.js` (tiles, the shortcut, cart, decor, dice, tokens),
+`island.js` (one smooth heightfield: coast, meadows, plateau, Pico Pana, hill,
+river, waterfalls), `flora.js` (tree types + `bake()`), `scenery.js` (neighbor
+islands, volcano, mainland ridge, lighthouse, boats, clouds) and `minigames/*.js`.
 
 ## Test switches
 
@@ -53,3 +55,23 @@ flow bugs and check balance.
   `create` returns `{ scene, camera, update(dt, {x, jump}), outro(dt, winners),
   scores(), over?(), winners?() }`. The runner handles the intro, countdown,
   timer, prizes and cards.
+- **Terrain is one smooth grid** (270×240 world units, ~41k vertices, smooth
+  normals, vertex colors blended per vertex). Faceted per-face colors on a radial
+  grid read as "diamonds"; don't go back to that. Sand comes from `landMask` (the
+  distance to the coast), not from height. Underwater vertices are colored as
+  shallows, and the sea is 80% opaque, so the shore fades out naturally. A flat
+  seafloor plane at -6.1 continues past the grid so the open sea has no edge.
+- **Bake static scenery** (`flora.js` `bake()`): it merges meshes into one mesh
+  per material *look* (not per material object, since `makeMango` makes fresh
+  materials every call). That's about 600k triangles and ~1000 draw calls for the
+  whole island. Textured or transparent meshes (signs, the see-through tree) are
+  kept as they are. Props that move or animate go in the `keep` group, never in
+  `statics`.
+- **The moon's shadow box follows the camera target** (`board.follow`), ±60
+  units. The island is too big for one fixed shadow map.
+- **Moving the cart on a big board**: it now goes 8–24 steps ahead of the panas
+  on average (`moveStand` uses `stepsTo`). Picking any tile ≥ 7 away often put it
+  just behind everyone, a whole lap off: 1 mango per game and 40–50 unspent
+  coins. With "ahead" it's 6–7 mangos per game.
+- **Two dice**: a sum of 2–12, doubles give +5 monedas, and a gold counter sprite
+  counts down the steps.

@@ -112,7 +112,20 @@ kbd {
   color: var(--cream);
 }
 .look.on { background: var(--yellow); color: #2a1a00; border-color: #8a6200; box-shadow: 0 4px 0 #8a6200; }
-body.in-mini .look { display: none; }
+body.in-mini .look, body.in-mini .minimap { display: none; }
+
+/* ---------- minimap ---------- */
+.minimap {
+  position: fixed;
+  inset: 66px 18px auto auto;   /* (the page-wide canvas rule pins canvases to 0) */
+  z-index: 5;
+  width: 200px; height: 170px;
+  border-radius: 14px;
+  border: 3px solid #3d220f;
+  box-shadow: 0 4px 0 #3d220f, 0 10px 22px rgba(0, 0, 0, .4);
+  background: #1d4f80;
+  cursor: crosshair;
+}
 
 /* ---------- player cards ---------- */
 .cards {
@@ -444,5 +457,6 @@ body.in-mini .look { display: none; }
   .timer { top: auto; bottom: 170px; }
   .prompt { bottom: 190px; }
   .keys { display: none; }
+  .minimap { width: 130px; height: 110px; inset: 60px 12px auto auto; }
   .toast b { font-size: 30px; }
 }
