@@ -220,10 +220,10 @@ kbd {
   box-shadow: 0 4px 0 rgba(0, 0, 0, 0.35);
   pointer-events: none;
 }
-.mm-head { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 4px; }
+.mm-head { display: flex; flex-direction: column; gap: 3px; max-width: 200px; margin-bottom: 6px; }
 .mm-head b { font-family: 'Luckiest Guy', system-ui, sans-serif; font-weight: 400; font-size: 14px; color: #ffd23f; letter-spacing: 1px; }
 .mm-head small { color: #9a9ab0; font-size: 10px; text-transform: uppercase; letter-spacing: 1px; }
-#mm { display: block; }
+#mm { display: block; position: static; }
 
 /* standings, left side */
 #board {

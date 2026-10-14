@@ -256,7 +256,10 @@ function rig(spec) {
 // nicely when they fly off.
 function detachable(car, obj) {
   const center = new THREE.Box3().setFromObject(obj).getCenter(new THREE.Vector3());
-  for (const child of obj.children) child.position.sub(center);
+  // Children use local coordinates. Subtracting the world center moved
+  // pre-positioned accessories (notably spare wheels) into the car's origin.
+  const localCenter = obj.worldToLocal(center.clone());
+  for (const child of obj.children) child.position.sub(localCenter);
   obj.position.copy(center);
   car.chassis.add(obj);
   car.detachables.push(obj);

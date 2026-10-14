@@ -41,6 +41,16 @@ clean: only `README.md` and `.gitignore` belong there. Everything else lives her
   `../docs/knowledge/cocina.md`. Plaza scenery and the original hunt layout now
   live in `engine/plaza.js` and `engine/plaza-layout.js`; cooking has its own
   station layout and collision rules. Existing Escondidas paths re-export them.
+- Derrape's eight circuits include Plaza Pana and Isla Bululú. All trees come
+  from `engine/flora.js`; the obsolete `props.js` palm has been removed.
+  `createPlazaEnvironment()` provides scenery without lights, while
+  `createIslandEnvironment()` shares Bululú's vegetation, harbor, sea and
+  landmarks. Island terrain/scenery/beach modules now live in `engine/`;
+  old Bululú paths re-export them. Keep gameplay in the games, and pass route
+  clearance to the shared environment instead of copying its assets.
+  Race routes are 1.09–2.11 km with bends in both directions. Plaza extends
+  the shared courtyard into a pueblo; the race island uses expanded geography
+  with normal-sized assets. Keep those options opt-in for the original games.
 - Characters stand on articulated legs by default. Pass `{ seated: true }` for
   vehicle drivers, `{ chef: true }` for cooking attire, and `walk` / `carry` /
   `run` in `update()` to animate the shared rig.

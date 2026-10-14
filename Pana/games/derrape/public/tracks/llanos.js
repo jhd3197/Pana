@@ -179,11 +179,10 @@ function reedTuft({ seed = 7 } = {}) {
 export default {
   id: 'llanos',
   name: 'Los Llanos',
-  blurb: 'Sabana dorada, morichales y chigüires en la Hacienda Pana.',
-  points: [
-    [-62, 30], [-30, 50], [10, 48], [44, 50], [66, 26], [60, -16],
-    [38, -42], [0, -50], [-38, -44], [-62, -28], [-76, -2],
-  ],
+  blurb: "Del corral a los esteros: rectas de sabana y curvas entre morichales.",
+  points: [[-70,40],[-15,60],[50,45],[90,0],[150,15],[215,65],[275,30],[285,-40],[230,-90],[170,-85],[130,-140],[60,-190],[-25,-180],[-60,-120],[-125,-110],[-170,-50],[-150,15]],
+  rounded: true,
+  sectors: [[0,"Hacienda Pana"],[0.25,"Camino del hato"],[0.5,"Los esteros"],[0.75,"Morichal"]],
   hw: 9,
   lineU: 0.06,
   ramps: [
@@ -191,7 +190,7 @@ export default {
     { u: 0.78, len: 9, h: 2.2, hw: 4.2 },
   ],
   items: {
-    boxes: [0.16, 0.58],
+    boxes: [0.12, 0.31, 0.51, 0.72, 0.91],
     boxLanes: [-6, -2, 2, 6],
     pads: [
       { u: 0.41, off: 0 },
@@ -211,10 +210,19 @@ export default {
     ground: 0xd8c26a,
     track: 0xa87b4a,
     dune: 0.4,
-    fog: [90, 280],
+    fog: [100, 420],
   },
 
   scenery(group, kit, T) {
+    kit.routeLandscape(group,T,{seed:111,color:0x999b50,tree:'palm',height:12});
+    for (const u of [0.3,0.52,0.76]) {
+      const p=kit.placeOnTrack(T,T.TOTAL*u,T.HW+25);
+      kit.at(group,barn(),{...p,y:T.terrainAt(p.x,p.z)},p.h+Math.PI/2);
+      for(let i=0;i<4;i++) {
+        const q=kit.placeOnTrack(T,T.TOTAL*u+i*6,T.HW+14);
+        kit.at(group,brahmanCow({seed:i+70}),q,q.h);
+      }
+    }
     const { at } = kit;
 
     // entrance: name sign + Venezuelan flag by the start line
@@ -302,8 +310,8 @@ export default {
     // moriche palms: scattered along the road + clustered at the marshes
     const avoid = ponds.map((p) => ({ x: p.x, z: p.z, r: Math.max(p.rx, p.rz) + 5 }))
       .concat([{ x: 30, z: -24, r: 10 }, { x: 40, z: -16, r: 9 }, { x: 2, z: -14, r: 7 }]);
-    for (const p of kit.scatter(T, { seed: 60, count: 14, min: T.HW + 4, max: T.HW + 28, avoid })) {
-      at(group, kit.palm({ h: 6 + p.k * 4, seed: 70 + p.s, leaf: 0x4a9a3f }), p, p.rot);
+    for (const p of kit.scatter(T, { seed: 60, count: 39, min: T.HW + 4, max: T.HW + 28, avoid })) {
+      at(group, kit.palm({ h: 6 + p.k * 4, seed: 70 + Math.floor(p.s) }), p, p.rot);
     }
     const marshPalms = [
       { x: -26, z: 26 }, { x: 6, z: 24 }, { x: -46, z: -6 },
@@ -312,6 +320,6 @@ export default {
     marshPalms.forEach((m, i) => at(group, kit.palm({ h: 7 + (i % 3), seed: 90 + i }), m, i * 1.1));
 
     // distant flat-topped tepui hills, low and far
-    at(group, kit.distantMountains({ r: 240, count: 10, color: 0x7d8f6a, seed: 3, hMin: 18, hMax: 35 }), { x: -5, z: 0 });
+    at(group, kit.distantMountains({ r: Math.max(T.bounds.x,T.bounds.z) + 180, count: 10, color: 0x7d8f6a, seed: 3, hMin: 18, hMax: 35 }), { x: -5, z: 0 });
   },
 };

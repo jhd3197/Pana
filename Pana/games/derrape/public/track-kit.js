@@ -3,14 +3,25 @@
 // low-poly geometry and canvas textures, no asset files.
 // Props sit on y = 0 and face +Z unless they take an explicit transform.
 // Anything with userData.tick(t, dt) gets collected by makeTrack and
-// animated during the race. Generic props (palm, rock, signs, flag pole,
-// watchtower) live in /engine/props.js and are re-exported from here.
+// animated during the race. Generic props live in /engine/props.js;
+// all trees and leafy plants use the current /engine/flora.js builders.
 
 import * as THREE from 'three';
 import { M, mesh, box, tube, canvasMat } from './car-kit.js';
-import { rng, woodSign as mapSign, watchtower, flagPole, rock, palm } from '/engine/props.js';
+import { rng, woodSign as mapSign, watchtower, flagPole, rock } from '/engine/props.js';
+import * as flora from '/engine/flora.js';
 import { buildCharacter } from '/engine/character.js';
 import { randomAvatar } from '/engine/avatar.js';
+
+// Use the canonical foliage and batch its many leaflets before placement.
+// Cloning the source geometry in bake keeps shared assets safe on map switches.
+const { bake } = flora;
+const palm = options => bake(flora.palm(options));
+const mangoTree = options => bake(flora.mangoTree(options));
+const ceiba = options => bake(flora.ceiba(options));
+const pine = options => bake(flora.pine(options));
+const banana = options => bake(flora.banana(options));
+const bush = options => bake(flora.bush(options));
 
 // ---------- placement helpers ----------
 // A point on the track plus the heading along it. Positive off is the
@@ -18,7 +29,7 @@ import { randomAvatar } from '/engine/avatar.js';
 function placeOnTrack(T, s, off = 0) {
   const p = T.pointAt(s), p2 = T.pointAt(s + 0.5);
   const tx = p2.x - p.x, tz = p2.y - p.y, l = Math.hypot(tx, tz) || 1;
-  return { x: p.x - tz / l * off, z: p.y + tx / l * off, h: Math.atan2(tx, tz) };
+  return { x: p.x - tz / l * off, y: T.heightAtS(s), z: p.y + tx / l * off, h: Math.atan2(tx, tz) };
 }
 
 // Random spots beside the track, clear of the asphalt corridor.
@@ -33,13 +44,13 @@ function scatter(T, { seed = 1, count, min = T.HW + 4, max = T.HW + 30, sides = 
     const p = placeOnTrack(T, s, off);
     if (Math.abs(T.offsetOf(p.x, p.z)) < T.HW + 2.5) continue;   // never on the road
     if (avoid.some((a) => Math.hypot(p.x - a.x, p.z - a.z) < a.r)) continue;
-    out.push({ ...p, s, rot: r() * Math.PI * 2, k: r() });
+    out.push({ ...p, y: T.terrainAt(p.x, p.z), s, rot: r() * Math.PI * 2, k: r() });
   }
   return out;
 }
 
 function at(group, obj, p, rotY = null) {
-  obj.position.set(p.x, p.y ?? 0, p.z);
+  obj.position.set(p.x, p.y ?? group.userData.groundAt?.(p.x, p.z) ?? 0, p.z);
   obj.rotation.y = rotY ?? p.h ?? 0;
   group.add(obj);
   return obj;
@@ -58,7 +69,7 @@ function tireWall(group, T, { step = 1.32 } = {}) {
       prev = p;
       if (acc < step) continue;
       acc = 0;
-      spots.push([p.x, p.z, n++]);
+      spots.push([p.x, p.y, p.z, n++]);
     }
   }
   const tireGeo = new THREE.CylinderGeometry(0.66, 0.66, 0.52, 9);
@@ -66,9 +77,9 @@ function tireWall(group, T, { step = 1.32 } = {}) {
   const red = new THREE.InstancedMesh(tireGeo, M(0xe63946, { roughness: 0.8 }), spots.length);
   const white = new THREE.InstancedMesh(tireGeo, M(0xf6f1e4, { roughness: 0.8 }), spots.length);
   const holes = new THREE.InstancedMesh(holeGeo, M(0x1c1c22), spots.length * 2);
-  spots.forEach(([x, z, n], i) => {
-    const low = new THREE.Matrix4().makeTranslation(x, 0.26, z);
-    const top = new THREE.Matrix4().makeTranslation(x, 0.78, z);
+  spots.forEach(([x, y, z, n], i) => {
+    const low = new THREE.Matrix4().makeTranslation(x, y + 0.26, z);
+    const top = new THREE.Matrix4().makeTranslation(x, y + 0.78, z);
     const lowRed = n % 2 === 0;
     red.setMatrixAt(i, lowRed ? low : top);
     white.setMatrixAt(i, lowRed ? top : low);
@@ -103,7 +114,7 @@ function fenceRing(group, T, { off = T.HW + 3, every = 4.4, skip = [] } = {}) {
   }
   const postGeo = new THREE.BoxGeometry(0.22, 1.15, 0.22);
   const postIM = new THREE.InstancedMesh(postGeo, M(0x8a5a33, { roughness: 0.9 }), posts.length);
-  posts.forEach((p, i) => postIM.setMatrixAt(i, new THREE.Matrix4().makeTranslation(p.x, 0.55, p.z)));
+  posts.forEach((p, i) => postIM.setMatrixAt(i, new THREE.Matrix4().makeTranslation(p.x, p.y + 0.55, p.z)));
   postIM.castShadow = true;
   postIM.receiveShadow = true;
   group.add(postIM);
@@ -117,7 +128,7 @@ function fenceRing(group, T, { off = T.HW + 3, every = 4.4, skip = [] } = {}) {
     q.setFromAxisAngle(new THREE.Vector3(0, 1, 0), ang - Math.PI / 2);
     for (const [j, y] of [0.55, 0.92].entries()) {
       sc.set(len, 1, 1);
-      m4.compose(new THREE.Vector3((a.x + b.x) / 2, y, (a.z + b.z) / 2), q, sc);
+      m4.compose(new THREE.Vector3((a.x + b.x) / 2, (a.y + b.y) / 2 + y, (a.z + b.z) / 2), q, sc);
       railIM.setMatrixAt(i * 2 + j, m4);
     }
   });
@@ -199,15 +210,32 @@ function startLine(group, T) {
   const tex = new THREE.CanvasTexture(c);
   tex.magFilter = THREE.NearestFilter;
   tex.colorSpace = THREE.SRGBColorSpace;
-  const line = new THREE.Mesh(new THREE.PlaneGeometry(2, T.HW * 2),
+  const line = new THREE.Mesh(new THREE.PlaneGeometry(2, T.HW * 2, 2, 16),
     new THREE.MeshStandardMaterial({ map: tex }));
-  const p = T.pointAt(T.LINE);
-  const p2 = T.pointAt(T.LINE + 1);
-  line.rotation.x = -Math.PI / 2;
-  line.rotation.z = Math.atan2(p2.y - p.y, p2.x - p.x) + Math.PI / 2;
-  line.position.set(p.x, 0.05, p.y);
+  const pos = line.geometry.attributes.position;
+  // Local X is distance along the road; local Y spans its full width.
+  // Construct in world coordinates so no Euler rotation can turn it lengthwise.
+  for (let i = 0; i < pos.count; i++) {
+    const p = placeOnTrack(T, T.LINE + pos.getX(i), -pos.getY(i));
+    pos.setXYZ(i, p.x, p.y + (T.def.environment ? 0.17 : 0.07), p.z);
+  }
+  line.geometry.computeVertexNormals();
+  line.name = 'finish-stripe';
   line.receiveShadow = true;
   group.add(line);
+  const p = placeOnTrack(T, T.LINE);
+  const gantry = new THREE.Group();
+  for (const side of [-1, 1]) gantry.add(box(0.55, 7, 0.55, M(0x384d50), side * (T.HW + 2), 3.5, 0));
+  const banner = canvasMat(1024, 128, ctx => {
+    ctx.fillStyle = '#f8df9b'; ctx.fillRect(0, 0, 1024, 128);
+    ctx.fillStyle = '#263b40'; ctx.font = '900 85px sans-serif';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText('META', 512, 68);
+    for (let x = 0; x < 6; x++) for (let y = 0; y < 4; y++) if ((x + y) % 2) {
+      ctx.fillRect(x * 32, y * 32, 32, 32); ctx.fillRect(832 + x * 32, y * 32, 32, 32);
+    }
+  });
+  gantry.add(mesh(new THREE.BoxGeometry(T.HW * 2 + 4.6, 1.4, 0.3), banner, 0, 7, 0));
+  at(group, gantry, p, p.h);
 }
 
 // Jump ramps: yellow wedge, black sides.
@@ -221,7 +249,7 @@ function buildRamps(group, T) {
     const p = T.pointAt(r.s0), p2 = T.pointAt(r.s0 + 1);
     const dir = Math.atan2(-(p2.y - p.y), p2.x - p.x);
     ramp.rotation.y = dir;
-    ramp.position.set(p.x - Math.sin(dir) * r.hw, 0.02, p.y - Math.cos(dir) * r.hw);
+    ramp.position.set(p.x - Math.sin(dir) * r.hw, T.heightAtS(r.s0) + 0.02, p.y - Math.cos(dir) * r.hw);
     ramp.castShadow = true;
     ramp.receiveShadow = true;
     group.add(ramp);
@@ -342,11 +370,11 @@ function flankBridge(group, T, s0, s1) {
     let prev = null;
     for (let s = s0; s <= s1; s += 2.6) {
       const p = placeOnTrack(T, s, off);
-      group.add(box(0.22, 1.6, 0.22, wood, p.x, 0.8, p.z));
+      group.add(box(0.22, 1.6, 0.22, wood, p.x, p.y + 0.8, p.z));
       if (prev) {
         const len = Math.hypot(p.x - prev.x, p.z - prev.z);
         const rail = box(len, 0.12, 0.1, M(0x8a5a33, { roughness: 0.9 }),
-          (p.x + prev.x) / 2, 1.35, (p.z + prev.z) / 2);
+          (p.x + prev.x) / 2, (p.y + prev.y) / 2 + 1.35, (p.z + prev.z) / 2);
         rail.rotation.y = Math.atan2(p.x - prev.x, p.z - prev.z) - Math.PI / 2;
         group.add(rail);
       }
@@ -544,12 +572,47 @@ function capybara({ seed = 1 } = {}) {
   return pana.group;
 }
 
+function sectorSigns(group, T) {
+  for (const [u, name] of T.def.sectors || []) {
+    const p = placeOnTrack(T, T.TOTAL * u, T.HW + 6);
+    at(group, mapSign(name.toUpperCase().split(' ').reduce((lines, word) => {
+      if (!lines.length || (lines[lines.length-1] + word).length > 15) lines.push(word);
+      else lines[lines.length-1] += ' ' + word;
+      return lines;
+    }, [])), p, p.h + Math.PI);
+  }
+}
+
+// Landscape along extended stretches, placed relative to the road rather
+// than confined to the center of the old small maps.
+function routeLandscape(group, T, { seed = 91, color = 0x67854e, tree = 'mango', height = 26, snow = false } = {}) {
+  const terrain = new THREE.Group();
+  for (const p of scatter(T, { seed, count: 20, min: T.HW+55, max: T.HW+110 })) {
+    const radius = 24+p.k*18;
+    if (Math.abs(T.offsetOf(p.x,p.z)) < T.HW+radius+8) continue;
+    const hill = mesh(new THREE.IcosahedronGeometry(1, 1), M(color,{roughness:1}));
+    hill.scale.set(radius,height*(0.7+p.k),radius*0.85);
+    at(terrain,hill,{...p,y:p.y-6},p.rot);
+    if (snow) {
+      const cap=mesh(new THREE.IcosahedronGeometry(1,1),M(0xe3e6de));
+      cap.scale.set(radius*0.5,height*0.26,radius*0.42);
+      at(terrain,cap,{...p,y:p.y+height*(0.7+p.k)*0.72},p.rot);
+    }
+  }
+  const make = tree==='pine' ? pine : tree==='palm' ? palm : tree==='ceiba' ? ceiba : mangoTree;
+  if (tree) for(const p of scatter(T,{seed:seed+1,count:100,min:T.HW+12,max:T.HW+42})) {
+    at(terrain,make({seed:Math.floor(p.s),h:6+p.k*7}),p,p.rot);
+  }
+  group.add(bake(terrain,{cellSize:100}));
+}
+
 export {
+  sectorSigns, routeLandscape,
   rng, placeOnTrack, scatter, at,
   tireWall, fenceRing, chevrons, startLine, buildRamps, mapSign,
   watchtower, flagPole, rock,
   waterPond, waterRibbon, waterfall,
   bridge, flankBridge,
-  palm, windmill, arepaStand, dock, rowboat, sailboat, distantMountains,
+  palm, mangoTree, ceiba, pine, banana, bush, bake, windmill, arepaStand, dock, rowboat, sailboat, distantMountains,
   buildBird, capybara,
 };

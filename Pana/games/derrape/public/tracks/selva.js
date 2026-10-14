@@ -30,37 +30,6 @@ function ruinsGate() {
   return g;
 }
 
-// Giant ceiba: fat trunk, buttress-root fins, broad dark canopy, vines.
-function ceiba() {
-  const g = new THREE.Group();
-  const bark = M(0x8a7a5e, { roughness: 1 });
-  g.add(mesh(new THREE.CylinderGeometry(1.7, 2.5, 14, 10), bark, 0, 7, 0));
-  for (let i = 0; i < 6; i++) {
-    const holder = new THREE.Group();
-    holder.rotation.y = -(i / 6) * Math.PI * 2 - 0.4;   // local +X points outward
-    const fin = mesh(new THREE.ConeGeometry(1.0, 4.6, 4), bark, 2.0, 1.7, 0);
-    fin.scale.set(1, 1, 0.35);
-    fin.rotation.z = -0.5;                              // lean outward
-    holder.add(fin);
-    g.add(holder);
-  }
-  const leafCols = [0x1b5e20, 0x2e7d32, 0x256428];
-  const canopy = [
-    [0, 14.6, 0, 4.6], [3.6, 13.4, 1.2, 3.6], [-3.4, 13.6, -1, 3.8],
-    [1, 13.2, -3.4, 3.2], [-1.2, 13.4, 3.4, 3.4],
-  ];
-  canopy.forEach(([x, y, z, r], i) => {
-    const c = mesh(new THREE.SphereGeometry(r, 9, 7), M(leafCols[i % 3], { roughness: 0.95 }), x, y, z);
-    c.scale.set(1, 0.55, 1);
-    g.add(c);
-  });
-  const vineM = M(0x3d7a34, { roughness: 1 });
-  for (const [x, y, z, len] of [[3.2, 13.2, 1.0, 6.5], [-3.0, 13.4, -0.8, 7.5], [0.8, 13.0, -3.0, 8], [-1.0, 13.2, 3.0, 6], [1.8, 14.0, 2.4, 8.5]]) {
-    g.add(tube([x, y, z], [x + 0.3, y - len, z + 0.2], 0.05, vineM));
-  }
-  return g;
-}
-
 // Wooden hut on stilts over the river.
 function stiltHut() {
   const g = new THREE.Group();
@@ -93,25 +62,6 @@ function cliff(rock, seed) {
   return g;
 }
 
-// Monstera cluster: stems + big flattened tilted leaves.
-function monstera({ seed = 1 } = {}) {
-  let n = 0;
-  const rand = () => { const v = Math.sin(seed * 127.1 + ++n * 311.7) * 43758.5453; return v - Math.floor(v); };
-  const g = new THREE.Group();
-  const leafM = M(0x2a6e2e, { roughness: 0.9 });
-  for (let i = 0; i < 3; i++) {
-    const a = rand() * Math.PI * 2;
-    g.add(tube([0, 0, 0], [Math.cos(a) * 0.5, 0.8 + rand() * 0.4, Math.sin(a) * 0.5], 0.04, leafM));
-    const leaf = mesh(new THREE.SphereGeometry(0.8 + rand() * 0.5, 8, 6), leafM,
-      Math.cos(a) * 0.9, 1.1 + rand() * 0.5, Math.sin(a) * 0.9);
-    leaf.scale.set(1.4, 0.25, 1);
-    leaf.rotation.set((rand() - 0.5) * 0.6, rand() * Math.PI, (rand() - 0.5) * 0.6);
-    g.add(leaf);
-  }
-  return g;
-}
-
-// Heliconia: stem with a zigzag stack of red/yellow bracts.
 function heliconia({ seed = 1 } = {}) {
   const rand = (n) => { const v = Math.sin(seed * 91.7 + n * 47.3) * 43758.5453; return v - Math.floor(v); };
   const g = new THREE.Group();
@@ -156,11 +106,10 @@ function perch() {
 export default {
   id: 'selva',
   name: 'Pana Selva',
-  blurb: 'Río turquesa, ruinas con musgo y la ceiba gigante.',
-  points: [
-    [-76, 28], [-46, 52], [-8, 62], [30, 50], [58, 36], [66, -2],
-    [58, -36], [36, -60], [0, -60], [-34, -56], [-58, -38], [-78, -10],
-  ],
+  blurb: "Curvas de río, ruinas y un largo regreso bajo las ceibas.",
+  points: [[-76,28],[-40,60],[15,65],[65,30],[85,-30],[145,-45],[185,0],[230,-15],[270,-80],[240,-145],[175,-155],[120,-115],[70,-145],[25,-210],[-45,-225],[-115,-180],[-120,-105],[-85,-65],[-110,-15]],
+  rounded: true,
+  sectors: [[0,"Río turquesa"],[0.25,"Ruinas del jaguar"],[0.5,"Bosque de ceibas"],[0.75,"Quebrada escondida"]],
   hw: 9,
   lineU: 0.06,
   ramps: [
@@ -168,7 +117,7 @@ export default {
     { u: 0.82, len: 9, h: 2.2, hw: 4.2 },
   ],
   items: {
-    boxes: [0.16, 0.55],
+    boxes: [0.12, 0.31, 0.51, 0.72, 0.91],
     boxLanes: [-6, -2, 2, 6],
     pads: [
       { u: 0.26, off: 0 },
@@ -177,7 +126,7 @@ export default {
   },
   walls: true,
   // fence skips the two river causeways so posts don't fight the rails
-  fence: { skip: [[372, 420], [252, 300]] },
+  fence: false,
   palette: {
     horizon: 0xb8dcc8,
     skyTop: 0x6fb8d8,
@@ -189,10 +138,11 @@ export default {
     ground: 0x4a7a3a,
     track: 0x9a6b42,
     dune: 0.7,
-    fog: [50, 200],
+    fog: [100, 420],
   },
 
   scenery(group, kit, T) {
+    kit.routeLandscape(group,T,{seed:127,color:0x4c7940,tree:'ceiba',height:42});
     const { at } = kit;
 
     // the river: meanders across the inside of the loop, exits west + south
@@ -223,7 +173,8 @@ export default {
     at(group, ruinsGate(), gateP, gateP.h);
 
     // giant ceiba inside the loop
-    at(group, ceiba(), { x: -14, z: 24 });
+    const giant = kit.ceiba({ seed: 8 }); giant.scale.setScalar(1.8);
+    at(group, giant, { x: -14, z: 24 });
 
     // stilt hut over the river + tied-up rowboat
     at(group, stiltHut(), { x: -4, z: 2, y: -0.2 }, 0.5);
@@ -238,8 +189,8 @@ export default {
 
     // cliffs with waterfalls + plunge ponds at the loop edges
     const cliffSpots = [
-      { x: -104, z: 16, rot: Math.PI / 2, fall: [-95, 16], pond: [-92, 16] },   // west, faces east
-      { x: 90, z: -20, rot: -Math.PI / 2, fall: [81, -20], pond: [78, -20] },   // east, faces west
+      { x: -145, z: 5, rot: Math.PI / 2, fall: [-136, 5], pond: [-133, 5] },   // west, faces east
+      { x: 120, z: 22, rot: -Math.PI / 2, fall: [111, 22], pond: [108, 22] },   // east, faces west
       { x: 16, z: -90, rot: Math.PI, fall: [16, -81], pond: [16, -78] },        // south, faces north
     ];
     for (const [i, c] of cliffSpots.entries()) {
@@ -264,23 +215,22 @@ export default {
     const avoid = [
       { x: -14, z: 24, r: 12 }, { x: -4, z: 2, r: 10 }, { x: 2, z: -13, r: 12 },
       { x: -56, z: 6, r: 12 }, { x: -28, z: 16, r: 12 }, { x: 8, z: -28, r: 12 },
-      { x: -104, z: 16, r: 18 }, { x: 90, z: -20, r: 18 }, { x: 16, z: -90, r: 18 },
+      { x: -145, z: 5, r: 18 }, { x: 120, z: 22, r: 18 }, { x: 16, z: -90, r: 18 },
     ];
-    const leafCols = [0x2e7d32, 0x388e3c, 0x1b5e20];
-    for (const [i, p] of kit.scatter(T, { seed: 21, count: 14, min: T.HW + 4, max: T.HW + 26, avoid }).entries()) {
-      at(group, kit.palm({ h: 6.5 + p.k * 3.5, fronds: 6, coconuts: i % 2 === 0, seed: 60 + p.s, leaf: leafCols[i % 3] }), p, p.rot);
+    for (const [i, p] of kit.scatter(T, { seed: 21, count: 39, min: T.HW + 7, max: T.HW + 26, avoid }).entries()) {
+      at(group, kit.palm({ h: 6.5 + p.k * 3.5, seed: 60 + Math.floor(p.s) }), p, p.rot);
     }
-    for (const p of kit.scatter(T, { seed: 22, count: 10, min: T.HW + 3.5, max: T.HW + 14, avoid })) {
-      at(group, monstera({ seed: 70 + p.s }), p, p.rot);
+    for (const p of kit.scatter(T, { seed: 22, count: 28, min: T.HW + 3.5, max: T.HW + 14, avoid })) {
+      at(group, kit.banana({ seed: 70 + Math.floor(p.s) }), p, p.rot);
     }
-    for (const p of kit.scatter(T, { seed: 23, count: 8, min: T.HW + 3.5, max: T.HW + 16, avoid })) {
+    for (const p of kit.scatter(T, { seed: 23, count: 22, min: T.HW + 3.5, max: T.HW + 16, avoid })) {
       at(group, heliconia({ seed: 80 + p.s }), p, p.rot);
     }
-    for (const p of kit.scatter(T, { seed: 24, count: 8, min: T.HW + 6, max: T.HW + 34, avoid })) {
+    for (const p of kit.scatter(T, { seed: 24, count: 22, min: T.HW + 6, max: T.HW + 34, avoid })) {
       at(group, kit.rock(0.9 + p.k * 1.8, 0x6f7a66, p.s), p, p.rot);
     }
 
     // misty jungle hills on the horizon
-    at(group, kit.distantMountains({ r: 230, count: 9, color: 0x5f8a72, seed: 30, hMin: 22, hMax: 48 }), { x: -8, z: 0 });
+    at(group, kit.distantMountains({ r: Math.max(T.bounds.x,T.bounds.z) + 180, count: 9, color: 0x5f8a72, seed: 30, hMin: 22, hMax: 48 }), { x: -8, z: 0 });
   },
 };

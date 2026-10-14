@@ -219,7 +219,7 @@ const groundAt = (x, z) => T.groundAt(x, z);
 
 const race = {
   scene: new THREE.Scene(),
-  camera: new THREE.PerspectiveCamera(60, innerWidth / innerHeight, 0.1, 600),
+  camera: new THREE.PerspectiveCamera(60, innerWidth / innerHeight, 0.1, 1800),
   cars: [],
   state: 'off',
   keys: {},
@@ -232,7 +232,7 @@ race.debris = new Debris(race.scene);
   s.background = new THREE.Color(0xffd6a0);
   s.fog = new THREE.Fog(0xffd6a0, 80, 260);
   // sky dome: warm at the horizon, blue overhead (recolored per track)
-  const domeGeo = new THREE.SphereGeometry(420, 24, 12);
+  const domeGeo = new THREE.SphereGeometry(1200, 24, 12);
   race.dome = new THREE.Mesh(domeGeo, new THREE.MeshBasicMaterial({ vertexColors: true, side: THREE.BackSide, fog: false }));
   s.add(race.dome);
   race.hemi = new THREE.HemisphereLight(0xfff1d6, 0xc08a5a, 1.6);
@@ -262,7 +262,7 @@ function applyPalette(pal) {
   const col = [];
   const horizon = new THREE.Color(pal.horizon), top = new THREE.Color(pal.skyTop);
   for (let i = 0; i < dp.count; i++) {
-    const c = horizon.clone().lerp(top, Math.pow(Math.max(0, dp.getY(i) / 420), 0.6));
+    const c = horizon.clone().lerp(top, Math.pow(Math.max(0, dp.getY(i) / 1200), 0.6));
     col.push(c.r, c.g, c.b);
   }
   race.dome.geometry.setAttribute('color', new THREE.Float32BufferAttribute(col, 3));
@@ -289,9 +289,9 @@ function buildTrack(id) {
     standings: () => standings(),
   });
   $('track-name').textContent = def.name;
-  $('track-blurb').textContent = def.blurb;
+  $('track-blurb').textContent = `${(T.TOTAL / 1000).toFixed(2)} km por vuelta · ${LAPS} vueltas. ${def.blurb}`;
   $('mm-track').textContent = def.name;
-  $('mm-sub').textContent = `Circuito ${trackIndex + 1}`;
+  $('mm-sub').textContent = `${(T.TOTAL / 1000).toFixed(2)} km por vuelta`;
   buildMinimap();
 }
 
@@ -316,8 +316,10 @@ function buildMinimap() {
   const raw = [];
   for (let i = 0; i < N; i++) raw.push(T.pointAt((i / N) * T.TOTAL));
   const margin = 16;
-  const scale = Math.min((mm.width - margin * 2) / (T.bounds.x * 2), (mm.height - margin * 2) / (T.bounds.z * 2));
-  mmPts = raw.map((p) => [mm.width / 2 + p.x * scale, mm.height / 2 + p.y * scale]);
+  const minX = Math.min(...raw.map(p=>p.x)), maxX = Math.max(...raw.map(p=>p.x));
+  const minZ = Math.min(...raw.map(p=>p.y)), maxZ = Math.max(...raw.map(p=>p.y));
+  const scale = Math.min((mm.width-margin*2)/(maxX-minX), (mm.height-margin*2)/(maxZ-minZ));
+  mmPts = raw.map(p=>[mm.width/2+(p.x-(minX+maxX)/2)*scale,mm.height/2+(p.y-(minZ+maxZ)/2)*scale]);
 }
 
 function drawMinimap() {
@@ -381,6 +383,7 @@ function placeRacer(c, lane, row) {
     lane, x: p.x - tz / l * lane, z: p.y + tx / l * lane, y: 0, h: Math.atan2(tx, tz),
     vx: 0, vz: 0, vy: 0, vf: 0, lap: 0, done: false, time: 0,
   });
+  c.y = groundAt(c.x, c.z);
   c.prog = progressOf(c);
 }
 
@@ -551,7 +554,8 @@ function stepCar(c, input, dt) {
   // ---- vertical: ramps, jumps, tumbles ----
   const g = groundAt(c.x, c.z);
   if (c.onGround) {
-    if (g >= c.y - 0.08) {
+    const followingTerrain = Math.abs(c.y - T.surfaceAt(c.x - c.vx * dt, c.z - c.vz * dt)) < 0.15;
+    if (g >= c.y - 0.08 || (followingTerrain && Math.abs(g - c.y) < 1.2)) {
       c.vy = (g - c.y) / dt;
       c.y = g;
       const ahead = groundAt(c.x + fx, c.z + fz), behind = groundAt(c.x - fx, c.z - fz);
@@ -591,7 +595,7 @@ function stepCar(c, input, dt) {
       } else {
         // cartoon bounce that sets the car back on its wheels
         sound.bonk(1.2);
-        race.puffs.spawn(new THREE.Vector3(c.x, 0.3, c.z), { color: 0xe0b07a, count: 7, spread: 2.5, rise: 0.8 });
+        race.puffs.spawn(new THREE.Vector3(c.x, g + 0.3, c.z), { color: 0xe0b07a, count: 7, spread: 2.5, rise: 0.8 });
         c.vy = 7.5;
         const flight = 2 * c.vy / G;
         c.rollV = (Math.round(c.roll / (Math.PI * 2)) * Math.PI * 2 - c.roll) / flight;
@@ -802,6 +806,9 @@ function updateRace(dt) {
   if (race.boardT <= 0) {
     race.boardT = 0.2;
     renderBoard(order, p);
+    const u = paramOf(p.x, p.z) / T.TOTAL;
+    const sector = T.def.sectors?.filter(([start]) => u >= start).at(-1);
+    if (sector) $('mm-sub').textContent = sector[1];
   }
   drawMinimap();
 
@@ -819,8 +826,8 @@ function updateRace(dt) {
     race.camera.fov += (fov - race.camera.fov) * Math.min(1, dt * 5);
     race.camera.updateProjectionMatrix();
   }
-  race.sun.position.set(p.x - 30, 40, p.z + 25);
-  race.sun.target.position.set(p.x, 0, p.z);
+  race.sun.position.set(p.x - 30, p.y + 40, p.z + 25);
+  race.sun.target.position.set(p.x, p.y, p.z);
 }
 
 // Item slot: spins through icons while rolling, then shows what you got.
@@ -896,7 +903,7 @@ addEventListener('resize', () => {
   renderer.setSize(innerWidth, innerHeight);
 });
 
-if (DEBUG) Object.assign(window, { race, garage, crash, startRace, ITEMS, TRACKS, buildTrack });
+if (DEBUG) Object.assign(window, { race, garage, renderer, crash, startRace, updateRace, toGarage, ITEMS, TRACKS, buildTrack, getActiveTrack: () => T });
 
 // ?track=desierto wins; otherwise the last pick, otherwise the estadio
 let savedTrack = 'estadio';

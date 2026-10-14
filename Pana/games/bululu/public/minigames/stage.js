@@ -4,7 +4,8 @@
 import * as THREE from 'three';
 import { buildCharacter } from '/engine/character.js';
 import { makeBubble } from '/engine/fx.js';
-import { M, mesh, rng, palm, rock } from '/engine/props.js';
+import { palm } from '/engine/flora.js';
+import { M, mesh, rng, rock } from '/engine/props.js';
 
 export const rand = (a, b) => a + Math.random() * (b - a);
 export const pick = (list) => list[Math.floor(Math.random() * list.length)];

@@ -243,7 +243,7 @@ export function casita({ seed = 1 } = {}) {
 // Merge every static mesh under `root` into one mesh per material.
 // Meshes with texture maps keep their own (signs are few); everything else is
 // vertex colors are retained for the foliage's top-to-bottom color variation.
-export function bake(root) {
+export function bake(root, { cellSize = Infinity } = {}) {
   root.updateMatrixWorld(true);
   const buckets = new Map();
   const keep = [];
@@ -256,7 +256,11 @@ export function bake(root) {
     geo.applyMatrix4(m.matrixWorld);
     // same look = same bucket, even when two builders made separate materials
     const mt = m.material;
-    const key = [mt.type, mt.color?.getHex(), mt.emissive?.getHex(), mt.emissiveIntensity, mt.roughness, mt.metalness, mt.side, mt.flatShading, mt.vertexColors, !!geo.attributes.color, m.castShadow, m.receiveShadow].join('|');
+    // Optional spatial buckets let large race environments cull distant
+    // vegetation instead of submitting every tree in the world each frame.
+    const cellX = Math.floor(m.matrixWorld.elements[12] / cellSize);
+    const cellZ = Math.floor(m.matrixWorld.elements[14] / cellSize);
+    const key = [cellX, cellZ, mt.type, mt.color?.getHex(), mt.emissive?.getHex(), mt.emissiveIntensity, mt.roughness, mt.metalness, mt.side, mt.flatShading, mt.vertexColors, !!geo.attributes.color, m.castShadow, m.receiveShadow].join('|');
     if (!buckets.has(key)) buckets.set(key, { mat: mt, geos: [], castShadow: m.castShadow, receiveShadow: m.receiveShadow });
     buckets.get(key).geos.push(geo);
   });

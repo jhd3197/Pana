@@ -4,6 +4,10 @@
 
 First game: **Derrape** — a goofy toy-car race. Jump ramps, flip over, lose your bumpers, honk *La Cucaracha*. Your pana (made in the hub) is the driver.
 
+Choose from eight circuits, including **Plaza Pana** and **Isla Bululú**.
+The plaza buildings, island terrain, trees and scenery use the same shared
+sources as the other games, so asset improvements carry through everywhere.
+
 Second game: **Bululú**: a party board game on Mango Island. Roll the die, collect monedas, buy the *Mango de oro*, and win a minigame after every round.
 
 Third game: **Escondidas · Pana Hunt** — hide in a colorful market plaza as a

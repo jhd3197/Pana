@@ -137,13 +137,17 @@ export function createItems(hooks) {
   const padMat = new THREE.MeshStandardMaterial({ map: padTex, emissive: 0xff7b1c, emissiveIntensity: 0.35, roughness: 0.6 });
   const pads = padDefs.map((def) => {
     const a = along(def.s, def.off);
-    const m = new THREE.Mesh(padGeo, padMat);
-    m.position.set(a.x, 0.06, a.z);
-    m.rotation.y = a.h;
+    const geo = padGeo.clone();
+    geo.rotateY(a.h); geo.translate(a.x, 0, a.z);
+    const pos = geo.attributes.position;
+    for (let i = 0; i < pos.count; i++) pos.setY(i, groundAt(pos.getX(i), pos.getZ(i)) + (T.def.environment ? 0.16 : 0.06));
+    geo.computeVertexNormals();
+    const m = new THREE.Mesh(geo, padMat);
     m.receiveShadow = true;
     scene.add(m);
     return a;
   });
+  padGeo.dispose();
 
   // ---- "?" boxes ----
   const boxGeo = new THREE.BoxGeometry(1.5, 1.5, 1.5);
@@ -155,7 +159,7 @@ export function createItems(hooks) {
       const m = new THREE.Mesh(boxGeo, boxMat);
       m.castShadow = true;
       scene.add(m);
-      boxes.push({ x: a.x, z: a.z, m, down: 0, phase: Math.random() * 6 });
+      boxes.push({ x: a.x, z: a.z, y: groundAt(a.x, a.z), m, down: 0, phase: Math.random() * 6 });
     }
   }
 
@@ -273,7 +277,7 @@ export function createItems(hooks) {
       const s = b.m.scale.x + (grow - b.m.scale.x) * Math.min(1, dt * 8);
       b.m.scale.setScalar(Math.max(0.001, s));
       b.m.visible = s > 0.02;
-      b.m.position.set(b.x, 1.4 + Math.sin(t * 2.5 + b.phase) * 0.25, b.z);
+      b.m.position.set(b.x, b.y + 1.4 + Math.sin(t * 2.5 + b.phase) * 0.25, b.z);
       b.m.rotation.set(0.5, t * 1.4 + b.phase, 0.3);
     }
     if (!racing) return;
@@ -290,7 +294,7 @@ export function createItems(hooks) {
 
       // grab a box
       for (const b of boxes) {
-        if (b.down > 0 || c.y > 3) continue;
+        if (b.down > 0 || Math.abs(c.y - b.y) > 3) continue;
         if (Math.hypot(c.x - b.x, c.z - b.z) < 2.3) {
           b.down = BOX_RESPAWN;
           puffs.spawn(b.m.position, { color: 0xffffff, count: 5, spread: 1.2, size: 0.6, rise: 1.5, life: 0.5 });

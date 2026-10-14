@@ -213,43 +213,8 @@ function rock(r, color = 0x8d8d96, seed = 1) {
   return mesh(geo, M(color, { roughness: 1 }));
 }
 
-// Palm tree: curved trunk, drooping fronds, optional coconuts.
-function palm({ h = 7, fronds = 7, coconuts = true, seed = 1, leaf = 0x3d9142 } = {}) {
-  const rand = rng(seed);
-  const g = new THREE.Group();
-  const lean = (rand() - 0.5) * 0.35;
-  const trunk = M(0x9c7248, { roughness: 1 });
-  let x = 0, z = 0;
-  const segs = 4;
-  for (let i = 0; i < segs; i++) {
-    const sh = h / segs;
-    const nx = x + Math.sin(lean) * sh, nz = z + Math.sin(lean * 0.7) * sh * 0.6;
-    g.add(tube([x, i * sh, z], [nx, (i + 1) * sh, nz], 0.32 - i * 0.045, trunk));
-    x = nx; z = nz;
-  }
-  const top = new THREE.Group();
-  top.position.set(x, h, z);
-  for (let i = 0; i < fronds; i++) {
-    const a = (i / fronds) * Math.PI * 2 + rand() * 0.4;
-    const f = mesh(new THREE.ConeGeometry(0.5, 3.4, 4), M(leaf, { roughness: 0.9 }));
-    f.scale.set(1, 1, 0.28);
-    f.position.set(Math.cos(a) * 1.5, -0.35, Math.sin(a) * 1.5);
-    f.rotation.set(Math.sin(a) * 1.25, 0, -Math.cos(a) * 1.25);
-    f.rotation.y = -a;
-    top.add(f);
-  }
-  if (coconuts) {
-    for (let i = 0; i < 3; i++) {
-      top.add(mesh(new THREE.SphereGeometry(0.22, 7, 6), M(0x6b4a2a, { roughness: 1 }),
-        Math.cos(i * 2.1) * 0.35, -0.15, Math.sin(i * 2.1) * 0.35));
-    }
-  }
-  g.add(top);
-  return g;
-}
-
 export {
   M, mesh, box, tube, canvasMat, DECAL, rng,
   venezuelaFlag, makeMango,
-  woodSign, watchtower, flagPole, rock, palm,
+  woodSign, watchtower, flagPole, rock,
 };

@@ -87,12 +87,11 @@ function beachBall() {
 export default {
   id: 'playa',
   name: 'Playa Pana',
-  blurb: 'Cocadas, palmeras y el faro encendido al caer el sol.',
-  island: { rx: 100, rz: 82, color: 0xe8cf9a },
-  points: [
-    [-68, 20], [-40, 48], [-2, 55], [38, 50], [64, 30], [70, -8],
-    [50, -40], [12, -52], [-32, -48], [-62, -22],
-  ],
+  blurb: "Del faro a la bahía: arena, palmeras y curvas junto al mar.",
+  island: { rx: 390, rz: 300, color: 0xe8cf9a },
+  points: [[-85,25],[-35,65],[30,65],[80,30],[100,-25],[155,-65],[220,-40],[255,20],[230,85],[170,100],[140,155],[65,205],[-15,190],[-45,130],[-110,115],[-155,75],[-170,15],[-140,-35],[-95,-25]],
+  rounded: true,
+  sectors: [[0,"Paseo de cocadas"],[0.25,"Cabo del faro"],[0.5,"Bahía de las palmas"],[0.75,"Curvas de la laguna"]],
   hw: 9,
   lineU: 0.06,
   ramps: [
@@ -100,7 +99,7 @@ export default {
     { u: 0.8, len: 9, h: 2.0, hw: 4.2 },
   ],
   items: {
-    boxes: [0.16, 0.58],
+    boxes: [0.12, 0.31, 0.51, 0.72, 0.91],
     boxLanes: [-6, -2, 2, 6],
     pads: [
       { u: 0.34, off: 0 },
@@ -121,13 +120,14 @@ export default {
     ground: 0x166e85,   // deep teal sea
     track: 0xd9b878,    // packed sand
     dune: 0.25,
-    fog: [60, 230],
+    fog: [100, 420],
   },
 
   scenery(group, kit, T) {
+    kit.routeLandscape(group,T,{seed:113,color:0xbca97c,tree:'palm',height:18});
     const { at } = kit;
     // sand test: keep hand-placed props on the island ellipse
-    const onSand = (x, z) => (x / 96) ** 2 + (z / 80) ** 2 < 0.85;
+    const onSand = (x, z) => (x / 390) ** 2 + (z / 300) ** 2 < 0.85;
 
     // entrance: name sign + flag by the start line
     at(group, kit.mapSign(['Playa', 'Pana']), kit.placeOnTrack(T, T.LINE - 12, T.HW + 7), Math.PI * 0.5);
@@ -156,14 +156,14 @@ export default {
         M(0xffe066, { emissive: 0xffc94d, emissiveIntensity: 1.8 }), -1.2, 2.3, 0.8));
       at(group, s, p, rot);
     };
-    kiosk({ color: '#2a9d8f', label: 'CACAO' }, { x: -65, z: 53 }, 2.4);
+    kiosk({ color: '#2a9d8f', label: 'CACAO' }, { x: -65, z: 80 }, 2.4);
     kiosk({ color: '#e9c46a', label: 'PIÑA COLADA' }, { x: 40, z: -18 }, 1.25);
     kiosk({ color: '#e76f51', label: 'COCADA' }, { x: 34, z: 26 }, -2.7);
 
     // umbrellas on the south shore + two by the lagoon, volleyball court
-    at(group, umbrella({ color: '#e8452c', tilt: 0.14 }), { x: 16, z: 68 }, 0.7);
-    at(group, umbrella({ color: '#2a9d8f' }), { x: -22, z: 68 }, 2.9);
-    at(group, umbrella({ color: '#e9c46a', tilt: -0.12 }), { x: -36, z: 65 }, 1.8);
+    at(group, umbrella({ color: '#e8452c', tilt: 0.14 }), { x: 16, z: 90 }, 0.7);
+    at(group, umbrella({ color: '#2a9d8f' }), { x: -22, z: 90 }, 2.9);
+    at(group, umbrella({ color: '#e9c46a', tilt: -0.12 }), { x: -36, z: 88 }, 1.8);
     at(group, umbrella({ color: '#e8452c', tilt: 0.08 }), { x: 24, z: 8 }, 4.4);
     at(group, umbrella({ color: '#f4a259' }), { x: 38, z: 21 }, 5.6);
     at(group, volleyballNet(), { x: 28, z: 14 }, 0.4);
@@ -196,8 +196,8 @@ export default {
       { x: 24, z: 8, r: 5 }, { x: 38, z: 21, r: 6 },
     ];
     const palmSpots = [];
-    for (const p of kit.scatter(T, { seed: 21, count: 40, min: T.HW + 4, max: T.HW + 22, avoid })) {
-      if (palmSpots.length >= 12) break;
+    for (const p of kit.scatter(T, { seed: 21, count: 112, min: T.HW + 4, max: T.HW + 22, avoid })) {
+      if (palmSpots.length >= 90) break;
       if (!onSand(p.x, p.z)) continue;
       if (palmSpots.some((q) => Math.hypot(p.x - q.x, p.z - q.z) < 7)) continue;   // no stacked palms
       palmSpots.push(p);

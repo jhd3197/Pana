@@ -7,11 +7,14 @@ Shared game code, served to browsers at `/engine/*`. Something moves here once a
 |---|---|---|
 | `avatar.js` | A player's look (fur, hat, glasses, outfit, face, extra) + name, saved in `localStorage`. Plain data, no Three.js. Brand palette lives here too. | hub, derrape, bululu, escondidas |
 | `fx.js` | WebAudio `sound` (horns, bonks, pickups, whooshes…, no files), `Puffs` (smoke/dust), `Debris` (parts that pop off), `makeBubble()` (cartoon speech bubble sprite). | derrape, bululu |
-| `props.js` | Low-poly builders, no asset files: `makeMango({gold})`, `palm`, `rock`, `woodSign(lines)`, `flagPole`, `watchtower`, `venezuelaFlag`, plus the helpers they use (`M`, `mesh`, `box`, `tube`, `canvasMat`, `rng`). Props sit on y = 0 and face +Z; `userData.tick(t, dt)` wants animating. | derrape, bululu |
-| `flora.js` | Bululú's curved palms, mango trees, ceibas, pines, bananas, bushes, houses and static mesh batching (`bake`). The original Bululú import path re-exports this module. | bululu, escondidas, shared market kit |
+| `props.js` | Low-poly builders, no asset files: `makeMango({gold})`, `rock`, `woodSign(lines)`, `flagPole`, `watchtower`, `venezuelaFlag`, plus the helpers they use (`M`, `mesh`, `box`, `tube`, `canvasMat`, `rng`). Props sit on y = 0 and face +Z; `userData.tick(t, dt)` wants animating. | derrape, bululu |
+| `flora.js` | The canonical curved palms, mango trees, ceibas, pines, bananas, bushes, houses and static mesh batching (`bake`). The original Bululú import path re-exports this module. | all games and shared market kit |
 | `plaza-catalog.js` | Renderer-independent prop IDs, Spanish labels, dimensions, collision radii and heights. | escondidas rules, shared market kit |
 | `plaza-props.js` | `barrel`, `crate`, `cooler`, `planter`, `bench`, `marketStall`, `streetLamp`, and `createPlazaProp(id)`. No gameplay state or game-specific imports. | escondidas, derrape (Los Llanos), hub |
-| `plaza.js` | `createPlaza({cooking:false})`: the shared buildings, paving, fountain, greenery and market. Cooking clears the courtyard and moves the fountain behind the kitchen. | escondidas, cocina |
+| `plaza.js` | `createPlaza({cooking:false})`: the shared buildings, paving, fountain, greenery and market. `createPlazaEnvironment({clearance})` returns geometry and water animation without lights, for embedding in another game. | escondidas, cocina, derrape |
+| `island-environment.js` | `ISLAND_LOOP` and `createIslandEnvironment(scene,{island,pathDist,inShot,clearance})`: sea, biome vegetation, big mango tree, harbor, lanterns, signs and animation. No tiles, dice or race logic. | bululu, derrape |
+| `island-terrain.js` | Shared coastline, hill, Pico Pana, river and beach heightfield. `buildIsland(tiles,edges,{road})` optionally reserves a wider driving corridor and lowers the river below its deck. | bululu, derrape |
+| `island-scenery.js`, `island-landscape.js`, `terrain-material.js`, `beach-props.js` | Offshore islands, tepuis, lighthouse, boats, clouds, terrain shading and beach furniture. Old Bululú URLs re-export these sources. | bululu, derrape |
 | `plaza-layout.js` | Original hunt map data, collision, sight and navigation. Escondidas retains compatibility re-exports. | escondidas, plaza renderer |
 | `kitchen-props.js` | `food(id,{stage,plated})`, `corn`, `cheese`, `kitchenStation`, `sink`, `kitchenSign`. Actual 3D food also supplies the order-ticket thumbnails. | cocina, hub |
 | `character.js` | `buildCharacter(avatar,{seated,chef})`: articulated legs, expressive face, optional chef hat and apron. `update(dt,{open,dizzy,look,walk,carry,run})` animates the rig. `carry` is a hand-level attachment group. Existing `armL`, `armR`, `neck`, `head` APIs are preserved. Drivers explicitly use `seated:true`. | hub, derrape, bululu, escondidas, cocina |
@@ -49,3 +52,29 @@ map scenery use identical factories. Keep moving objects outside `bake()`.
 Builders share cached materials: dispose owned geometry when removing an object,
 but do not dispose shared materials while another scene still uses the kit.
 Include `three/addons/` in the page's import map for the foliage batcher.
+
+## Reusing whole worlds
+
+Edit foliage in `flora.js`, Plaza models in `plaza.js` / `plaza-props.js`, and
+island scenery in `island-environment.js` and its neighboring modules. Changes
+reach every consumer on reload. Do not add a second tree implementation in a
+game folder or put game rules in an environment builder.
+
+Environment `clearance(x,z,radius)` uses local world units and returns true
+where scenery can stand. Derrape converts Plaza coordinates by its 2.0 scale
+and reserves the driving corridor before static batching. Bululú supplies its
+board-camera `inShot` rule; the racer leaves that rule off. Each game owns its
+lights and camera. Call the returned `update` once per frame; do not also tick
+the same environment's animated children. Keep instanced offshore vegetation
+out of `bake()`. Derrape batches individual shared trees before placement.
+
+`createPlazaEnvironment({town:true, clearance})` opens the courtyard's side
+streets and front garden where the race passes. The default courtyard for the
+other games is unchanged. `house()` is exported for extending the same pueblo.
+
+The race island expands local geography by 3.2 horizontally and 1.7 vertically.
+Pass those values as `layoutScale` and `heightScale` to the island environment
+before applying the same transform to its group; placed trees and houses keep
+their original dimensions. Convert road queries and clearance into local units.
+The board uses the defaults of 1. `bake(root,{cellSize})` optionally separates
+material batches into spatial cells so distant parts can be culled.

@@ -27,7 +27,7 @@ export const CARS = [
   },
   {
     id: 'machito', num: 3, name: 'El Machito', color: '#ffc629',
-    blurb: 'Un rústico de toda la vida: sin techo, con barra de luces y cauchos para el monte.',
+    blurb: 'El rústico de techo duro: carrocería corta, parrilla ancha y repuesto atrás.',
     stats: { Velocidad: 0.7, 'Aceleración': 0.75, Manejo: 0.7, Peso: 0.75 },
     tune: { top: 35, accel: 21, turn: 2.3, mass: 1.15, grip: 6 },
     horn: 'grave',
@@ -285,59 +285,58 @@ function buildLancha(avatar) {
   return car;
 }
 
-// ---------- El Machito (yellow jeep) ----------
+// ---------- El Machito (short-wheelbase hardtop utility 4x4) ----------
 function buildMachito(avatar) {
-  const W = 2.3, yellow = '#ffc629';
+  const W = 2.18;
   const car = rig({
-    wheel: { r: 0.74, w: 0.62, style: 'steel', rim: '#c9ccd4' },
-    wheelPos: [[W / 2 + 0.06, 1.35, true], [-W / 2 - 0.06, 1.35, true], [W / 2 + 0.06, -1.35, false], [-W / 2 - 0.06, -1.35, false]],
+    wheel: { r: 0.65, w: 0.48, style: 'steel', rim: '#d4d2c6' },
+    wheelPos: [[1.12,1.25,true],[-1.12,1.25,true],[1.12,-1.25,false],[-1.12,-1.25,false]],
   });
-  const c = car.chassis;
-  const paint = M(yellow);
-  // boxy tub; with its bevel the top sits at y 1.48 and the nose at z 2.1
-  c.add(profile([[-1.9, 0.62], [1.95, 0.62], [2.0, 1.3], [1.0, 1.38], [-1.9, 1.38]], W, paint, 0.1));
-  for (const [x, z] of [[W / 2 + 0.06, 1.35], [-W / 2 - 0.06, 1.35], [W / 2 + 0.06, -1.35], [-W / 2 - 0.06, -1.35]]) {
-    const f = fender(0.92, 0.74, '#2a2a30');
-    f.position.set(x, 0.74, z);
-    c.add(f);
+  const c = car.chassis, paint = M('#ffc629'), trim = M('#ede4cf'), rubber = DARK();
+  // Upright rear body, long flat bonnet and compact wheelbase.
+  c.add(profile([[-2.03,0.57],[2.12,0.57],[2.12,1.32],[1.88,1.53],
+    [0.7,1.57],[-2.03,1.57]],W,paint,0.06));
+  for(const x of [-1.12,1.12]) for(const z of [-1.25,1.25]) {
+    const arch=fender(0.8,0.52,'#333638'); arch.position.set(x,0.65,z); c.add(arch);
   }
-  cabin(car, {
-    open: true,
-    glass: [[-1.2, 1.48], [0.95, 1.48], [0.85, 2.42], [-1.2, 2.42]],
-    width: 2.06, pillar: paint,
-    interior: '#2b2b33', seat: '#1d1d23',
-    avatar, head: 0.5, seatY: 0.9, driverZ: -0.15, sill: 1.48,
+  cabin(car,{
+    glass:[[-1.9,1.64],[0.65,1.64],[0.45,2.5],[-1.88,2.5]],
+    roof:[[-2,2.52],[0.5,2.52],[0.5,2.6],[-2,2.6]],
+    width:2.05,bPillar:-0.62,pillar:paint,roofMat:trim,
+    interior:'#3b3c39',seat:'#494b44',avatar,head:0.47,seatY:0.94,driverZ:-0.2,sill:1.64,
   });
-  // roll bar behind the seats
-  const cage = M('#1d1d23', { roughness: 0.5 });
-  for (const s of [1, -1]) {
-    c.add(tube([s * 0.95, 1.46, -0.8], [s * 0.95, 2.55, -0.8], 0.07, cage));
-    c.add(tube([s * 0.95, 2.55, -0.8], [s * 0.95, 2.25, -1.8], 0.06, cage));
-    c.add(tube([s * 0.95, 2.25, -1.8], [s * 0.95, 1.46, -1.8], 0.06, cage));
+  // Continuous rain gutter and stamped door seams distinguish the hardtop.
+  for(const side of [-1,1]) {
+    c.add(box(0.055,0.07,2.64,trim,side*1.1,2.52,-0.75));
+    c.add(box(0.035,0.62,0.035,rubber,side*1.13,1.22,-0.63));
+    c.add(box(0.06,0.07,0.27,rubber,side*1.14,1.45,-0.43));
+    c.add(box(0.3,0.12,1.55,rubber,side*1.18,0.49,-0.08));
+    c.add(box(0.04,0.12,1.92,trim,side*1.14,0.91,-0.94));
+    c.add(box(0.22,0.3,0.08,M('#d64130'),side*0.84,1.02,-2.11));
+    const mirror=new THREE.Group();
+    mirror.add(tube([side*1.03,1.92,0.52],[side*1.3,2.01,0.54],0.035,rubber));
+    mirror.add(box(0.1,0.28,0.3,rubber,side*1.35,2.04,0.54));
+    detachable(car,mirror);
   }
-  c.add(tube([0.95, 2.55, -0.8], [-0.95, 2.55, -0.8], 0.07, cage));
-  // face: seven-slot grille between round lamps
-  for (let i = 0; i < 7; i++) c.add(box(0.07, 0.42, 0.04, DARK(), (i - 3) * 0.12, 0.98, 2.11));
-  for (const s of [1, -1]) c.add(roundLamp(s * 0.72, 1.0, 2.1, 0.2));
-  // bolt-ons that can fly off
-  detachable(car, lightBar(4, 0.4, 2.52, 0.82));
-  const bumper = new THREE.Group();
-  bumper.add(box(W + 0.1, 0.26, 0.3, DARK(), 0, 0.58, 2.2));
-  for (const s of [1, -1]) {
-    const shackle = mesh(new THREE.TorusGeometry(0.08, 0.03, 6, 10), CHROME(), s * 0.5, 0.58, 2.4);
-    shackle.rotation.y = Math.PI / 2;
-    bumper.add(shackle);
+  // Broad horizontal grille and square headlamp surrounds, no vertical slots.
+  c.add(box(1.35,0.48,0.1,rubber,0,1.17,2.2));
+  for(const y of [1.02,1.14,1.26,1.38]) c.add(box(1.32,0.035,0.035,CHROME(),0,y,2.27));
+  c.add(box(0.26,0.12,0.04,trim,0,1.19,2.3));
+  for(const side of [-1,1]) {
+    c.add(box(0.47,0.46,0.12,trim,side*0.85,1.19,2.19));
+    c.add(box(0.34,0.29,0.05,M('#f4f0d8',{emissive:'#615528'}),side*0.85,1.24,2.27));
+    c.add(box(0.33,0.09,0.05,M('#ef9c2a'),side*0.85,1.02,2.27));
   }
-  detachable(car, bumper);
-  const spare = spareWheel(0.58, 0.5);
-  spare.position.set(0, 1.2, -2.25);
-  detachable(car, spare);
-  for (const s of [1, -1]) {
-    const m = new THREE.Group();
-    m.add(tube([s * 1.0, 1.9, 0.86], [s * 1.25, 1.95, 0.86], 0.03, DARK()));
-    m.add(box(0.08, 0.2, 0.26, DARK(), s * 1.3, 1.98, 0.86));
-    detachable(car, m);
-  }
+  const bumper=new THREE.Group();
+  bumper.add(box(2.4,0.28,0.3,rubber,0,0.66,2.26));
+  bumper.add(box(0.65,0.22,0.28,M('#697273'),0,0.87,2.35));
+  detachable(car,bumper);
+  c.add(box(2.28,0.22,0.25,rubber,0,0.61,-2.14));
+  const spare=spareWheel(0.59,0.38); spare.position.set(0.35,1.37,-2.27); detachable(car,spare);
+  const snorkel=new THREE.Group();
+  snorkel.add(tube([-1.13,1.4,0.98],[-1.13,2.45,0.53],0.085,rubber));
+  snorkel.add(box(0.25,0.22,0.3,rubber,-1.13,2.52,0.52));
+  detachable(car,snorkel);
   return car;
 }
 

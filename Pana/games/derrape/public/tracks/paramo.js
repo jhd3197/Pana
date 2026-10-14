@@ -149,12 +149,10 @@ function stoneSpan(group, kit, T, s0, s1) {
 export default {
   id: 'paramo',
   name: 'Pana Páramo',
-  blurb: 'Frailejones, laguna fría y el teleférico del Pico Pana.',
-  points: [
-    [-65, 39], [-28, 54], [11, 52], [48, 41], [70, 20],
-    [60, -6], [66, -32], [37, -50], [-7, -54], [-46, -43],
-    [-71, -20], [-78, 7],
-  ],
+  blurb: "Rodea la laguna y enlaza las curvas largas del valle del teleférico.",
+  points: [[-70,40],[-20,60],[40,50],[85,5],[100,-60],[160,-100],[220,-65],[255,-110],[240,-180],[180,-220],[110,-205],[60,-150],[10,-165],[-35,-230],[-105,-215],[-150,-150],[-135,-75],[-90,-25]],
+  rounded: true,
+  sectors: [[0,"Laguna fría"],[0.25,"Camino del teleférico"],[0.5,"Curvas de la cumbre"],[0.75,"Valle de frailejones"]],
   hw: 9,
   lineU: 0.06,
   ramps: [
@@ -162,7 +160,7 @@ export default {
     { u: 0.88, len: 9, h: 2.2, hw: 4.2 },
   ],
   items: {
-    boxes: [0.16, 0.52],
+    boxes: [0.12, 0.31, 0.51, 0.72, 0.91],
     boxLanes: [-6, -2, 2, 6],
     pads: [
       { u: 0.34, off: 0 },
@@ -183,10 +181,11 @@ export default {
     ground: 0x9aa06a,
     track: 0xb59a6a,
     dune: 1.4,
-    fog: [40, 170],
+    fog: [100, 420],
   },
 
   scenery(group, kit, T) {
+    kit.routeLandscape(group,T,{seed:131,color:0x797f71,tree:'pine',height:65,snow:true});
     const { at } = kit;
     const center = { x: -3, z: 0 };
     const laguna = { x: -16, z: 6 };
@@ -259,11 +258,14 @@ export default {
       { x: towerA.x, z: towerA.z, r: 8 }, { x: towerB.x, z: towerB.z, r: 8 },
       { x: -28, z: -70, r: 9 }, { x: 32, z: 18, r: 8 },
     ];
-    for (const p of kit.scatter(T, { seed: 21, count: 28, min: T.HW + 3, max: T.HW + 26, avoid })) {
+    for (const p of kit.scatter(T, { seed: 21, count: 78, min: T.HW + 3, max: T.HW + 26, avoid })) {
       at(group, frailejon({ h: 1 + p.k * 0.6, seed: 200 + p.s }), p, p.rot);
     }
-    for (const p of kit.scatter(T, { seed: 22, count: 12, min: T.HW + 5, max: T.HW + 34, avoid })) {
+    for (const p of kit.scatter(T, { seed: 22, count: 34, min: T.HW + 5, max: T.HW + 34, avoid })) {
       at(group, kit.rock(0.8 + p.k * 1.4, 0x8d8d96, p.s), p, p.rot);
+    }
+    for (const p of kit.scatter(T, { seed: 24, count: 45, min: T.HW + 8, max: T.HW + 30, avoid })) {
+      at(group, kit.pine({ h: 5 + p.k * 4, seed: Math.floor(p.s) }), p, p.rot);
     }
 
     // el cóndor pasa: circling slow and high over the moor
@@ -271,7 +273,7 @@ export default {
     condor.flyCircle(group, { cx: center.x, cz: center.z, cy: 30, r: 30, speed: 0.15 });
 
     // snow peaks looming close in the mist
-    at(group, kit.distantMountains({ r: 190, count: 12, color: 0x6a6a7a, snow: true, seed: 8, hMin: 50, hMax: 95 }),
+    at(group, kit.distantMountains({ r: Math.max(T.bounds.x,T.bounds.z) + 180, count: 12, color: 0x6a6a7a, snow: true, seed: 8, hMin: 50, hMax: 95 }),
       { x: center.x, z: center.z });
   },
 };

@@ -10,8 +10,10 @@ import llanos from './tracks/llanos.js';
 import playa from './tracks/playa.js';
 import selva from './tracks/selva.js';
 import paramo from './tracks/paramo.js';
+import plaza from './tracks/plaza.js';
+import bululu from './tracks/bululu.js';
 
-export const TRACKS = [estadio, desierto, llanos, playa, selva, paramo];
+export const TRACKS = [estadio, desierto, llanos, playa, selva, paramo, plaza, bululu];
 
 export function getTrack(id) {
   return TRACKS.find((t) => t.id === id) || TRACKS[0];
@@ -55,9 +57,19 @@ function ovalMath({ S, R }) {
 
 // Closed Catmull-Rom loop through control points, arc-length parameterized
 // over a dense sample table so queries stay cheap.
-function splineMath(points) {
+function splineMath(points, rounded = false) {
+  // Two corner-cutting passes preserve straights but leave room to drift
+  // around authored street junctions instead of creating needle hairpins.
+  if (rounded) for (let pass = 0; pass < 2; pass++) {
+    points = points.flatMap((a,i) => {
+      const b = points[(i+1)%points.length];
+      return [[a[0]*0.75+b[0]*0.25,a[1]*0.75+b[1]*0.25],
+        [a[0]*0.25+b[0]*0.75,a[1]*0.25+b[1]*0.75]];
+    });
+  }
   const curve = new THREE.CatmullRomCurve3(
     points.map(([x, z]) => new THREE.Vector3(x, 0, z)), true, 'centripetal');
+  curve.arcLengthDivisions = Math.max(1200, points.length * 40);
   const TOTAL = curve.getLength();
   const N = Math.max(800, Math.round(TOTAL * 2.5));
   const pts = curve.getSpacedPoints(N);   // N+1 entries, last == first
@@ -80,30 +92,36 @@ function splineMath(points) {
       const d = dx * dx + dz * dz;
       if (d < bestD) { bestD = d; best = i; }
     }
+    const coarse = best;
     for (let k = -stride; k <= stride; k++) {
-      const i = (best + k + N) % N;
+      const i = (coarse + k + N) % N;
       const dx = pts[i].x - x, dz = pts[i].z - z;
       const d = dx * dx + dz * dz;
       if (d < bestD) { bestD = d; best = i; }
     }
-    return best;
+    // Project onto the nearest segment, rather than snapping cars to a sample.
+    // Continuous progress also keeps terrain heights smooth while driving.
+    let result = null;
+    for (let k = -1; k <= 0; k++) {
+      const i = (best + k + N) % N, a = pts[i], b = pts[i + 1];
+      const dx = b.x - a.x, dz = b.z - a.z;
+      const u = THREE.MathUtils.clamp(((x - a.x) * dx + (z - a.z) * dz) / (dx * dx + dz * dz || 1), 0, 1);
+      const ox = x - a.x - dx * u, oz = z - a.z - dz * u;
+      const d = Math.hypot(ox, oz);
+      if (!result || d < result.d) result = { s: ((i + u) / N) * TOTAL, d, side: ox * -dz + oz * dx >= 0 ? 1 : -1 };
+    }
+    return result;
   }
 
   function paramOf(x, z) {
-    return (nearest(x, z) / N) * TOTAL;
+    return nearest(x, z).s % TOTAL;
   }
 
   // signed distance: positive on the (-tz, tx) side of the direction of
   // travel, matching the offset convention of placeOnTrack / items.js
   function offsetOf(x, z) {
-    const i = nearest(x, z);
-    const p = pts[i], p2 = pts[(i + 1) % N];
-    const tx = p2.x - p.x, tz = p2.z - p.z;
-    const l = Math.hypot(tx, tz) || 1;
-    const ox = x - p.x, oz = z - p.z;
-    const d = Math.hypot(ox, oz);
-    const side = (ox * -tz / l + oz * tx / l) >= 0 ? 1 : -1;
-    return d * side;
+    const p = nearest(x, z);
+    return p.d * p.side;
   }
 
   let bx = 0, bz = 0;
@@ -116,6 +134,15 @@ function splineMath(points) {
 
 // ---------- scenery base ----------
 // Low-poly ground with gentle dunes away from the track, vertex-colored.
+function terrainHeight(T, pal, x, z) {
+  // The beach's sand sits above a flat sea plane. Dunes in that plane
+  // otherwise poke blue patches through the expanded island.
+  if (T.def.island) return -0.08;
+  const v = Math.sin(x * 12.9898 + z * 78.233) * 43758.5453;
+  const far = Math.max(0, Math.abs(T.offsetOf(x, z)) - T.HW - 4);
+  return Math.min(1, far / 12) * (Math.sin(x * 0.07) * Math.cos(z * 0.05) * 2.2 + (v - Math.floor(v)) * 1.2) * (pal.dune ?? 1) - 0.05;
+}
+
 function buildGround(T, pal) {
   const size = Math.max(T.bounds.x, T.bounds.z) * 2 + 260;
   const hash = (x, z) => {
@@ -125,11 +152,9 @@ function buildGround(T, pal) {
   let ground = new THREE.PlaneGeometry(size, size, 90, 90);
   ground.rotateX(-Math.PI / 2);
   const gp = ground.attributes.position;
-  const dune = pal.dune ?? 1;
   for (let i = 0; i < gp.count; i++) {
     const x = gp.getX(i), z = gp.getZ(i);
-    const far = Math.max(0, Math.abs(T.offsetOf(x, z)) - T.HW - 4);
-    gp.setY(i, Math.min(1, far / 12) * (Math.sin(x * 0.07) * Math.cos(z * 0.05) * 2.2 + hash(x, z) * 1.2) * dune - 0.05);
+    gp.setY(i, T.terrainAt(x, z));
   }
   ground = ground.toNonIndexed();
   const colors = [];
@@ -149,7 +174,7 @@ function buildGround(T, pal) {
 // along the curve for spline tracks.
 function buildRibbon(T, pal) {
   let geo;
-  if (T.def.oval) {
+  if (T.def.oval && !T.def.elevation) {
     const { S, R } = T.def.oval;
     const HW = T.HW;
     const shape = new THREE.Shape();
@@ -170,7 +195,7 @@ function buildRibbon(T, pal) {
       const p = kit.placeOnTrack(T, s, 0);
       const tx = Math.sin(p.h), tz = Math.cos(p.h);
       // left edge (off +HW) = (-tz, tx) side, right edge = (tz, -tx)
-      verts.push(p.x - tz * T.HW, 0, p.z + tx * T.HW, p.x + tz * T.HW, 0, p.z - tx * T.HW);
+      verts.push(p.x - tz * T.HW, p.y, p.z + tx * T.HW, p.x + tz * T.HW, p.y, p.z - tx * T.HW);
       if (i < N) {
         const a = i * 2;
         idx.push(a, a + 1, a + 2, a + 1, a + 3, a + 2);
@@ -182,7 +207,7 @@ function buildRibbon(T, pal) {
     geo.computeVertexNormals();
   }
   const m = new THREE.Mesh(geo, new THREE.MeshStandardMaterial({ color: pal.track, roughness: 1, flatShading: true, side: THREE.DoubleSide }));
-  m.position.y = 0.03;
+  m.position.y = T.def.environment ? 0.12 : 0.03;
   m.receiveShadow = true;
   return m;
 }
@@ -200,7 +225,7 @@ function buildIsland(T, island) {
 
 // ---------- runtime ----------
 export function makeTrack(def) {
-  const geo = def.oval ? ovalMath(def.oval) : splineMath(def.points);
+  const geo = def.oval ? ovalMath(def.oval) : splineMath(def.points, def.rounded);
   const T = {
     def, id: def.id, name: def.name,
     HW: def.hw,
@@ -213,21 +238,38 @@ export function makeTrack(def) {
     ramps: (def.ramps || []).map((r) => ({ ...r, s0: r.u != null ? r.u * geo.TOTAL : r.s0 })),
     animated: [],
   };
+  T.heightAtS = def.elevation ? (s) => {
+    const p = geo.pointAt(s);
+    return def.elevation(p.x, p.y);
+  } : () => 0;
+  T.surfaceAt = def.elevation ? (x, z) => T.heightAtS(geo.paramOf(x, z)) : () => 0;
+  T.terrainAt = (x, z) => terrainHeight(T, def.palette, x, z);
   T.groundAt = (x, z) => {
+    const base = T.surfaceAt(x, z);
     const off = geo.offsetOf(x, z);
-    if (Math.abs(off) > 5) return 0;
+    if (Math.abs(off) > 5) return base;
     const s = geo.paramOf(x, z);
     for (const r of T.ramps) {
-      if (s >= r.s0 && s <= r.s0 + r.len && Math.abs(off) < r.hw) return r.h * (s - r.s0) / r.len;
+      const along = (s - r.s0 + T.TOTAL) % T.TOTAL;
+      if (along <= r.len && Math.abs(off) < r.hw) return base + r.h * along / r.len;
     }
-    return 0;
+    return base;
   };
 
   // Build every visual into a fresh group; caller adds it to the scene and
   // drops the old one when switching tracks.
   T.build = () => {
     const group = new THREE.Group();
-    group.add(buildGround(T, def.palette));
+    T.animated = [];
+    if (def.environment) {
+      const environment = def.environment(T);
+      environment.group.name = 'track-environment';
+      group.add(environment.group);
+      if (environment.groundAt) T.terrainAt = environment.groundAt;
+      // The environment owns its animation; don't also tick its children.
+      if (environment.update) T.animated.push({ userData: { tick: environment.update } });
+    } else group.add(buildGround(T, def.palette));
+    group.userData.groundAt = T.terrainAt;
     if (def.island) group.add(buildIsland(T, def.island));
     group.add(buildRibbon(T, def.palette));
     kit.startLine(group, T);
@@ -235,8 +277,14 @@ export function makeTrack(def) {
     if (def.fence) kit.fenceRing(group, T, def.fence);
     if (def.chevrons !== false) kit.chevrons(group, T);
     kit.buildRamps(group, T);
-    def.scenery?.(group, kit, T);
-    group.traverse((o) => { if (o.userData.tick) T.animated.push(o); });
+    // Shared environments are attached first; only collect track-owned ticks.
+    const scenery = new THREE.Group();
+    scenery.name = 'track-scenery';
+    scenery.userData.groundAt = T.terrainAt;
+    def.scenery?.(scenery, kit, T);
+    kit.sectorSigns(scenery, T);
+    scenery.traverse((o) => { if (o.userData.tick) T.animated.push(o); });
+    group.add(scenery);
     T.group = group;
     return group;
   };

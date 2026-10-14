@@ -146,11 +146,10 @@ function iguana() {
 export default {
   id: 'desierto',
   name: 'Pana Desierto',
-  blurb: 'Mesas rojas, cactus y el oasis de la Pana Gas.',
-  points: [
-    [-72, 42], [-28, 56], [18, 50], [58, 34], [76, 2],
-    [60, -32], [18, -50], [-30, -44], [-66, -26], [-82, -4],
-  ],
+  blurb: "Cruza el cañón, rodea las mesas y vuelve por las curvas del oasis.",
+  points: [[-72,42],[-28,56],[18,50],[65,40],[135,80],[200,75],[235,15],[195,-35],[120,-40],[110,-105],[170,-145],[160,-205],[85,-240],[0,-220],[-50,-160],[-38,-100],[-66,-60],[-95,-20]],
+  rounded: true,
+  sectors: [[0,"Pana Gas"],[0.23,"Cañón colorado"],[0.48,"Curvas del oasis"],[0.72,"Valle de las mesas"]],
   hw: 9,
   lineU: 0.06,
   ramps: [
@@ -158,7 +157,7 @@ export default {
     { u: 0.82, len: 9, h: 2.2, hw: 4.2 },
   ],
   items: {
-    boxes: [0.16, 0.58],
+    boxes: [0.12, 0.31, 0.51, 0.72, 0.91],
     boxLanes: [-6, -2, 2, 6],
     pads: [
       { u: 0.34, off: 0 },
@@ -179,10 +178,16 @@ export default {
     ground: 0xe8b57a,
     track: 0xb5763f,
     dune: 1.1,
-    fog: [80, 260],
+    fog: [100, 420],
   },
 
   scenery(group, kit, T) {
+    kit.routeLandscape(group,T,{seed:107,color:0xb96c48,tree:null,height:32});
+    for (let i=0;i<9;i++) {
+      const p=kit.placeOnTrack(T,T.TOTAL*(0.25+i*0.07),(i%2?1:-1)*(T.HW+37));
+      if(Math.abs(T.offsetOf(p.x,p.z))<T.HW+24) continue;
+      kit.at(group,mesa(23,18+i%3*6,{seed:i+40}),{...p,y:T.terrainAt(p.x,p.z)});
+    }
     const { at } = kit;
     const center = { x: -5, z: 2 };
 
@@ -226,19 +231,19 @@ export default {
       { x: center.x - 12, z: center.z - 14, r: 15 }, { x: center.x + 30, z: center.z - 8, r: 20 },
       { x: oasis.x, z: oasis.z, r: 20 },
     ];
-    for (const p of kit.scatter(T, { seed: 7, count: 26, min: T.HW + 4, max: T.HW + 26, avoid })) {
+    for (const p of kit.scatter(T, { seed: 7, count: 73, min: T.HW + 4, max: T.HW + 26, avoid })) {
       at(group, saguaro({ h: 4 + p.k * 3.5, seed: 100 + p.s }), p, p.rot);
     }
-    for (const p of kit.scatter(T, { seed: 8, count: 16, min: T.HW + 3.5, max: T.HW + 20, avoid })) {
+    for (const p of kit.scatter(T, { seed: 8, count: 45, min: T.HW + 3.5, max: T.HW + 20, avoid })) {
       at(group, p.k > 0.5 ? barrelCactus({ seed: p.s }) : agave({ seed: p.s }), p, p.rot);
     }
-    for (const p of kit.scatter(T, { seed: 9, count: 14, min: T.HW + 5, max: T.HW + 40, avoid })) {
+    for (const p of kit.scatter(T, { seed: 9, count: 39, min: T.HW + 5, max: T.HW + 40, avoid })) {
       at(group, kit.rock(0.8 + p.k * 1.6, 0xa86048, p.s), p, p.rot);
     }
 
     // critters: iguanas on rocks, skull sign, zamuros circling overhead
     at(group, skullSign(), kit.placeOnTrack(T, T.TOTAL * 0.75, T.HW + 5), -0.4);
-    const ig = kit.scatter(T, { seed: 11, count: 4, min: T.HW + 6, max: T.HW + 16, avoid });
+    const ig = kit.scatter(T, { seed: 11, count: 11, min: T.HW + 6, max: T.HW + 16, avoid });
     for (const p of ig) {
       const r = kit.rock(0.9, 0x9a6a50, p.s);
       at(group, r, p);
@@ -249,6 +254,6 @@ export default {
       bird.flyCircle(group, { cx: center.x, cz: center.z, cy: 22 + i * 3, r: 20 + i * 6, speed: 0.25, phase: i * 3 });
     }
 
-    at(group, kit.distantMountains({ r: 220, count: 9, color: 0xb0705a, seed: 12, hMin: 26, hMax: 55 }), { x: center.x, z: center.z });
+    at(group, kit.distantMountains({ r: Math.max(T.bounds.x,T.bounds.z) + 180, count: 9, color: 0xb0705a, seed: 12, hMin: 26, hMax: 55 }), { x: center.x, z: center.z });
   },
 };

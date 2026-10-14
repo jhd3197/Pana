@@ -80,7 +80,8 @@ flow bugs and check balance.
   the color attribute and distinguish vertex-colored, flat/smooth and shadow
   settings in its material key. Bululú's curved palms now live in shared
   `/engine/flora.js` (the game's `flora.js` re-exports it for compatibility); the
-  shared `/engine/props.js` palm still serves the other games.
+  old `/engine/props.js` palm has been removed. Derrape and minigame stages
+  also use the same improved foliage.
 - **Sky controls:** Día / Noche / Ciclo, or `L`, saved under
   `pana.bululu.sky`. `?sky=day|night|cycle` overrides the saved preference for
   testing. A cycle takes 600 seconds of board simulation and pauses in
