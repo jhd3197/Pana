@@ -3,25 +3,16 @@
 // low-poly geometry and canvas textures, no asset files.
 // Props sit on y = 0 and face +Z unless they take an explicit transform.
 // Anything with userData.tick(t, dt) gets collected by makeTrack and
-// animated during the race.
+// animated during the race. Generic props (palm, rock, signs, flag pole,
+// watchtower) live in /engine/props.js and are re-exported from here.
 
 import * as THREE from 'three';
-import { M, mesh, box, tube, canvasMat, venezuelaFlag } from './car-kit.js';
+import { M, mesh, box, tube, canvasMat } from './car-kit.js';
+import { rng, woodSign as mapSign, watchtower, flagPole, rock, palm } from '/engine/props.js';
 import { buildCharacter } from '/engine/character.js';
 import { randomAvatar } from '/engine/avatar.js';
 
 // ---------- placement helpers ----------
-// Deterministic rng so a track looks the same on every load.
-function rng(seed) {
-  let a = seed >>> 0;
-  return () => {
-    a |= 0; a = (a + 0x6d2b79f5) | 0;
-    let t = Math.imul(a ^ (a >>> 15), 1 | a);
-    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  };
-}
-
 // A point on the track plus the heading along it. Positive off is the
 // (-tz, tx) side — same convention as items.js.
 function placeOnTrack(T, s, off = 0) {
@@ -237,113 +228,6 @@ function buildRamps(group, T) {
   }
 }
 
-// The big wooden billboard with the map's name, like the concept art.
-function mapSign(lines, { w = 9, h = 4.4 } = {}) {
-  const g = new THREE.Group();
-  const wood = M(0x6b4226, { roughness: 0.9 });
-  g.add(box(0.5, h + 1.6, 0.5, wood, -w / 2 + 0.6, (h + 1.6) / 2, 0));
-  g.add(box(0.5, h + 1.6, 0.5, wood, w / 2 - 0.6, (h + 1.6) / 2, 0));
-  const panel = canvasMat(512, 256, (ctx) => {
-    ctx.fillStyle = '#7a4a2b';
-    ctx.fillRect(0, 0, 512, 256);
-    ctx.strokeStyle = '#4a2c17';
-    ctx.lineWidth = 10;
-    for (const y of [8, 90, 172, 248]) {
-      ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(512, y); ctx.stroke();
-    }
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    const [top, bottom] = lines;
-    ctx.font = '96px "Luckiest Guy", system-ui, sans-serif';
-    ctx.lineWidth = 14;
-    ctx.strokeStyle = '#16161a';
-    if (bottom) {
-      ctx.fillStyle = '#fdf6e3';
-      ctx.strokeText(top, 256, 82);
-      ctx.fillText(top, 256, 82);
-      ctx.fillStyle = '#ffd23f';
-      ctx.strokeText(bottom, 256, 180);
-      ctx.fillText(bottom, 256, 180);
-    } else {
-      ctx.fillStyle = '#ffd23f';
-      ctx.strokeText(top, 256, 136);
-      ctx.fillText(top, 256, 136);
-    }
-  });
-  const board = mesh(new THREE.BoxGeometry(w, h, 0.3), panel, 0, h / 2 + 1.1, 0.1);
-  g.add(board);
-  return g;
-}
-
-// ---------- structures ----------
-function watchtower({ h = 6.5, roof = 'thatch' } = {}) {
-  const g = new THREE.Group();
-  const wood = M(0x8a5a33, { roughness: 0.9 });
-  const dark = M(0x5c3a20, { roughness: 0.9 });
-  for (const [sx, sz] of [[1, 1], [1, -1], [-1, 1], [-1, -1]]) {
-    g.add(tube([sx * 1.5, 0, sz * 1.5], [sx * 1.05, h, sz * 1.05], 0.14, wood));
-  }
-  for (const y of [h * 0.35, h * 0.7]) {
-    g.add(box(2.6 - y * 0.12, 0.12, 0.12, dark, 0, y, 1.35 - y * 0.1));
-    g.add(box(2.6 - y * 0.12, 0.12, 0.12, dark, 0, y, -1.35 + y * 0.1));
-    g.add(box(0.12, 0.12, 2.6 - y * 0.12, dark, 1.35 - y * 0.1, y, 0));
-    g.add(box(0.12, 0.12, 2.6 - y * 0.12, dark, -1.35 + y * 0.1, y, 0));
-  }
-  g.add(box(3, 0.25, 3, wood, 0, h, 0));                      // platform
-  for (const [sx, sz] of [[1, 1], [1, -1], [-1, 1], [-1, -1]]) {
-    g.add(box(0.12, 1.1, 0.12, dark, sx * 1.35, h + 0.55, sz * 1.35));
-  }
-  g.add(box(2.9, 0.1, 0.1, dark, 0, h + 1.05, 1.35));
-  g.add(box(2.9, 0.1, 0.1, dark, 0, h + 1.05, -1.35));
-  g.add(box(0.1, 0.1, 2.9, dark, 1.35, h + 1.05, 0));
-  g.add(box(0.1, 0.1, 2.9, dark, -1.35, h + 1.05, 0));
-  if (roof === 'thatch') {
-    const r = mesh(new THREE.ConeGeometry(2.6, 1.5, 4), M(0xc2a35c, { roughness: 1 }), 0, h + 2, 0);
-    r.rotation.y = Math.PI / 4;
-    g.add(r);
-  } else {
-    g.add(box(3.4, 0.14, 3.4, M(0xb5462f, { roughness: 0.6 }), 0, h + 1.9, 0));
-  }
-  return g;
-}
-
-// Wooden flag pole with the Venezuelan flag waving.
-function flagPole({ h = 9 } = {}) {
-  const g = new THREE.Group();
-  g.add(mesh(new THREE.CylinderGeometry(0.12, 0.16, h, 8), M(0x8a8a92, { metalness: 0.4, roughness: 0.5 }), 0, h / 2, 0));
-  const flag = new THREE.Group();
-  flag.position.set(0, h - 0.8, 0);
-  const f = new THREE.Mesh(new THREE.PlaneGeometry(2.6, 1.7, 6, 1), venezuelaFlag());
-  f.position.x = 1.35;
-  flag.add(f);
-  g.add(flag);
-  g.userData.tick = (t) => {
-    const pos = f.geometry.attributes.position;
-    for (let i = 0; i < pos.count; i++) {
-      const x = pos.getX(i);
-      pos.setZ(i, Math.sin(t * 4 + x * 1.8) * 0.12 * (x + 1.3) / 2.6);
-    }
-    pos.needsUpdate = true;
-  };
-  return g;
-}
-
-// Rocky boulder: a displaced icosahedron.
-function rock(r, color = 0x8d8d96, seed = 1) {
-  const geo = new THREE.IcosahedronGeometry(r, 1);
-  const rand = rng(seed);
-  const pos = geo.attributes.position;
-  const seen = new Map();
-  for (let i = 0; i < pos.count; i++) {
-    const key = [pos.getX(i), pos.getY(i), pos.getZ(i)].map((v) => v.toFixed(3)).join(',');
-    if (!seen.has(key)) seen.set(key, 0.72 + rand() * 0.5);
-    const k = seen.get(key);
-    pos.setXYZ(i, pos.getX(i) * k, pos.getY(i) * k * 0.75, pos.getZ(i) * k);
-  }
-  geo.computeVertexNormals();
-  return mesh(geo, M(color, { roughness: 1 }));
-}
-
 // ---------- water ----------
 function waterPond(rx, rz, { color = 0x2e9db5, y = 0.04 } = {}) {
   const g = new THREE.Group();
@@ -469,42 +353,6 @@ function flankBridge(group, T, s0, s1) {
       prev = p;
     }
   }
-}
-
-// ---------- vegetation ----------
-// Palm tree: curved trunk, drooping fronds, optional coconuts.
-function palm({ h = 7, fronds = 7, coconuts = true, seed = 1, leaf = 0x3d9142 } = {}) {
-  const rand = rng(seed);
-  const g = new THREE.Group();
-  const lean = (rand() - 0.5) * 0.35;
-  const trunk = M(0x9c7248, { roughness: 1 });
-  let x = 0, z = 0;
-  const segs = 4;
-  for (let i = 0; i < segs; i++) {
-    const sh = h / segs;
-    const nx = x + Math.sin(lean) * sh, nz = z + Math.sin(lean * 0.7) * sh * 0.6;
-    g.add(tube([x, i * sh, z], [nx, (i + 1) * sh, nz], 0.32 - i * 0.045, trunk));
-    x = nx; z = nz;
-  }
-  const top = new THREE.Group();
-  top.position.set(x, h, z);
-  for (let i = 0; i < fronds; i++) {
-    const a = (i / fronds) * Math.PI * 2 + rand() * 0.4;
-    const f = mesh(new THREE.ConeGeometry(0.5, 3.4, 4), M(leaf, { roughness: 0.9 }));
-    f.scale.set(1, 1, 0.28);
-    f.position.set(Math.cos(a) * 1.5, -0.35, Math.sin(a) * 1.5);
-    f.rotation.set(Math.sin(a) * 1.25, 0, -Math.cos(a) * 1.25);
-    f.rotation.y = -a;
-    top.add(f);
-  }
-  if (coconuts) {
-    for (let i = 0; i < 3; i++) {
-      top.add(mesh(new THREE.SphereGeometry(0.22, 7, 6), M(0x6b4a2a, { roughness: 1 }),
-        Math.cos(i * 2.1) * 0.35, -0.15, Math.sin(i * 2.1) * 0.35));
-    }
-  }
-  g.add(top);
-  return g;
 }
 
 // Aermotor-style ranch windmill; the rotor spins.

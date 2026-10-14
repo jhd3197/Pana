@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { CARS } from './cars.js';
-import { sound, Puffs, Debris, makeBubble } from './fx.js';
+import { sound, Puffs, Debris, makeBubble } from '/engine/fx.js';
 import { createItems, ITEMS, SPIN } from './items.js';
 import { TRACKS, getTrack, makeTrack } from './tracks.js';
 import { loadAvatar, loadName, randomAvatar } from '/engine/avatar.js';

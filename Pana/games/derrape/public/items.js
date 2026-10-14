@@ -3,6 +3,7 @@
 // or drop the slippery peel.
 
 import * as THREE from 'three';
+import { makeMango } from '/engine/props.js';
 
 export const ITEMS = {
   mango: { icon: '🥭', name: 'Mango' },
@@ -39,23 +40,6 @@ const pick = (list) => list[Math.floor(Math.random() * list.length)];
 
 const mat = (color) => new THREE.MeshStandardMaterial({ color, flatShading: true, roughness: 0.7 });
 
-function makeMango() {
-  const g = new THREE.Group();
-  const body = new THREE.Mesh(new THREE.SphereGeometry(0.5, 10, 8), mat(0xffae2b));
-  body.scale.set(0.9, 0.85, 1.25);
-  const cheek = new THREE.Mesh(new THREE.SphereGeometry(0.4, 8, 6), mat(0xe8452c));
-  cheek.position.set(0.12, 0.14, 0.18);
-  const stem = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.05, 0.22, 5), mat(0x6b4226));
-  stem.position.set(0, 0.42, -0.42);
-  const leaf = new THREE.Mesh(new THREE.ConeGeometry(0.16, 0.6, 4), mat(0x3a9d3a));
-  leaf.scale.set(1, 1, 0.35);
-  leaf.position.set(0.18, 0.55, -0.5);
-  leaf.rotation.z = -1.1;
-  g.add(body, cheek, stem, leaf);
-  for (const m of g.children) m.castShadow = true;
-  g.scale.setScalar(1.5);
-  return g;
-}
 
 // a mango peeled in three strips: orange inside, green/red skin on the tips
 function makePeel() {

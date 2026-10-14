@@ -4,6 +4,7 @@
 
 import * as THREE from 'three';
 import { buildCharacter } from '/engine/character.js';
+import { venezuelaFlag } from '/engine/props.js';
 
 const mats = new Map();
 function M(color, extra = {}) {
@@ -389,23 +390,6 @@ function roundLamp(x, y, z, r = 0.22, color = '#ffd23f') {
   return g;
 }
 
-function venezuelaFlag() {
-  return canvasMat(192, 128, (g) => {
-    g.fillStyle = '#ffcc00';
-    g.fillRect(0, 0, 192, 43);
-    g.fillStyle = '#00247d';
-    g.fillRect(0, 43, 192, 42);
-    g.fillStyle = '#cf142b';
-    g.fillRect(0, 85, 192, 43);
-    g.fillStyle = '#ffffff';
-    for (let i = 0; i < 8; i++) {
-      const a = Math.PI * (0.18 + 0.64 * i / 7);
-      g.beginPath();
-      g.arc(96 - Math.cos(a) * 34, 78 - Math.sin(a) * 26, 3.4, 0, Math.PI * 2);
-      g.fill();
-    }
-  });
-}
 
 let flowerMat = null;
 function flower(size) {
