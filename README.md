@@ -5,6 +5,11 @@
 First game: **Derrape** — a goofy toy-car race. Jump ramps, flip over, lose your bumpers, honk *La Cucaracha*. Your pana (made in the hub) is the driver.
 
 Choose from eight circuits, including **Plaza Pana** and **Isla Bululú**.
+Collect coins for up to 8% extra speed, smash wooden supply crates and carry two
+items. Throw forward with **Space**, backward with **X**, and switch with **Q**
+or **1/2**. Keep a mango equipped to block an incoming mango; each block spends
+one mango. The garage previews all eight detailed cars, and touch controls are
+available on phones.
 The plaza buildings, island terrain, trees and scenery use the same shared
 sources as the other games, so asset improvements carry through everywhere.
 

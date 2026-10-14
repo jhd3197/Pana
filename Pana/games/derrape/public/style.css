@@ -147,6 +147,13 @@ dd i { display: block; height: 100%; background: var(--car, var(--accent)); bord
   color: var(--muted);
 }
 .toggle.on { color: var(--text); border-color: var(--muted); }
+.car-lineup { position: absolute; bottom: 22px; left: 354px; right: 24px; display: flex; gap: 7px; overflow-x: auto; padding: 4px 2px 8px; scrollbar-width: thin; }
+.car-choice { flex: 1 0 90px; min-width: 0; max-width: 150px; padding: 0 0 9px; background: #221a33; border: 1px solid #423150; border-radius: 9px; overflow: hidden; transition: border-color 150ms ease-out, background 150ms ease-out; }
+.car-choice img { display: block; width: 100%; height: auto; }
+.car-choice span { display: block; font-size: 11px; font-weight: 750; white-space: nowrap; }
+.car-choice[aria-pressed="true"] { border-color: var(--choice-color); background: #34243e; box-shadow: inset 0 -3px var(--choice-color); }
+.car-choice:active { transform: scale(.97); }
+@media (hover: hover) and (pointer: fine) { .car-choice:hover { border-color: #b5a3cc; background: #30243f; } }
 kbd {
   font: 11px system-ui, sans-serif;
   padding: 1px 5px;
@@ -265,46 +272,55 @@ kbd {
 #board li.me i { color: #b5121b; }
 #board li.me::before { content: '▶'; font-size: 9px; margin-left: -2px; }
 
-/* item slot: what you grabbed from a "?" box */
+/* Two real slots: selection and protection stay visible without idle motion. */
 .item {
-  position: absolute;
-  bottom: 18px; left: 18px;
-  display: grid;
-  justify-items: center;
-  gap: 4px;
-  pointer-events: none;
+  position: absolute; bottom: 22px; left: 22px; width: 300px;
+  padding: 14px; border: 1px solid #555067; border-radius: 14px;
+  background: rgba(22, 19, 36, .96);
 }
-.item .slot {
-  position: relative;
-  width: 84px; height: 84px;
-  display: grid;
-  place-items: center;
-  font-size: 50px;
-  line-height: 1;
-  background: rgba(22, 22, 38, 0.92);
-  border: 3px solid rgba(255, 255, 255, 0.1);
-  border-radius: 18px;
-  box-shadow: 0 4px 0 rgba(0, 0, 0, 0.35);
+.inventory { display: flex; align-items: center; gap: 10px; }
+.slot {
+  position: relative; flex: 1; min-width: 0; height: 92px;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 3px; border: 2px solid #514b65; border-radius: 10px; background: #2c263e;
+  color: #c2bcd0; padding: 8px 4px;
 }
-.item.ready .slot { border-color: #ffd23f; box-shadow: 0 0 0 4px rgba(255, 210, 63, .25), 0 4px 0 rgba(0,0,0,.35); animation: bob 1s ease-in-out infinite; }
-.item i {
-  position: absolute;
-  right: -8px; bottom: -8px;
-  font: 20px 'Luckiest Guy', system-ui, sans-serif;
-  font-style: normal;
-  color: #ffd23f;
-  -webkit-text-stroke: 1px #16161a;
+.slot.selected { border-color: #ffd23f; background: #3b3040; color: #fff8dd; }
+.slot:disabled { opacity: 1; cursor: default; }
+.slot .item-icon { font-size: 38px; line-height: 1; }
+.slot .slot-key { position: absolute; top: 4px; left: 7px; font: 700 11px system-ui; color: #bab2ca; }
+.slot small { max-width: 100%; font-size: 10px; font-weight: 700; white-space: nowrap; }
+.slot i { position: absolute; right: 6px; top: 5px; font: 800 13px system-ui; color: #ffd23f; }
+.swap { display: grid; justify-items: center; gap: 4px; border: 0; background: none; padding: 8px 0; color: #e0d8ec; }
+.swap span { font-size: 25px; line-height: 1; }
+.swap kbd { margin: 0; }
+#item-status { min-height: 30px; margin: 10px 0 7px; font-size: 12px; line-height: 1.3; color: #bfb8d0; }
+.protected #item-status { color: #ffe58b; }
+.item-actions { display: flex; gap: 8px; }
+.item-actions button {
+  flex: 1; min-height: 42px; padding: 7px 10px; display: flex; align-items: center;
+  justify-content: space-between; gap: 5px; border: 1px solid #676077;
+  border-radius: 7px; background: #40364f; color: #fff8e5; font-size: 12px; font-weight: 700;
 }
-.item small {
-  color: #fff;
-  font-size: 11px;
-  font-weight: 800;
-  letter-spacing: 2px;
-  text-transform: uppercase;
-  text-shadow: 0 1px 3px rgba(0, 0, 0, .7);
+.item-actions button:disabled, .swap:disabled { opacity: .4; cursor: default; }
+.item-actions kbd { font-size: 9px; padding: 2px 3px; margin: 0; border-color: #78677b; }
+.item button:active:not(:disabled) { transform: scale(.97); }
+button:focus-visible { outline: 3px solid #fff0a4; outline-offset: 3px; }
+.coins {
+  position: absolute; right: 22px; bottom: 22px;
+  display: flex; align-items: center; gap: 10px; min-width: 170px;
+  padding: 12px 16px; background: rgba(22, 19, 36, .96);
+  border: 1px solid #63552f; border-radius: 12px; pointer-events: none;
 }
-@keyframes bob { 50% { transform: scale(1.06); } }
-
+.coin-symbol { display: grid; place-items: center; width: 34px; height: 39px; border: 4px solid #f8bd37; border-radius: 50%; background: #d88a20; color: #ffed9a; font: 900 23px Georgia, serif; }
+.coins small { display: block; color: #d7cba8; font-size: 10px; letter-spacing: 1px; }
+.coins b { font-size: 27px; line-height: 1.1; color: #ffdf72; font-variant-numeric: tabular-nums; }
+.coin-cap { color: #aaa08c; font-size: 12px; }
+#coin-bonus { display: block; font-size: 11px; color: #d7cba8; }
+.coins.picked .coin-symbol { transform: scale(1.13); }
+.coins.full { border-color: #e3ae39; }
+.result p.result-coins { color: #ffdf72; font-size: 14px; }
+.touch-drive { display: none; }
 /* speedometer, bottom center */
 #speedo {
   position: absolute;
@@ -376,8 +392,11 @@ kbd {
 
 .keys {
   position: absolute;
-  bottom: 16px; left: 50%;
-  transform: translateX(-50%);
+  bottom: 128px; left: auto; right: 22px;
+  display: grid;
+  grid-template-columns: repeat(2, auto);
+  gap: 7px 14px;
+  transform: none;
   color: rgba(255, 255, 255, .8);
   font-size: 13px;
   text-shadow: 0 1px 3px rgba(0, 0, 0, .6);
@@ -403,10 +422,21 @@ kbd {
   font-weight: 700;
 }
 
+@media (max-width: 1100px) {
+  #logo { display: none; }
+  .hud-top .pill:last-child { display: none; }
+}
 @media (max-width: 760px) {
+  .car-lineup { left: 16px; right: 16px; bottom: 230px; }
+  .car-choice { flex-basis: 78px; padding-bottom: 5px; }
+  .car-choice span { font-size: 10px; }
   .hint { display: none; }
   .info { top: auto; bottom: 16px; left: 16px; right: 16px; width: auto; transform: none; padding: 16px; }
   .info p, dl { display: none; }
+  .info .num { display: none; }
+  .info h1 { font-size: 28px; margin: 0 0 7px; }
+  .info .pick { display: none; }
+  .info .track-pick { margin-bottom: 9px; padding: 6px 10px; }
   .tools { top: 56px; right: 16px; }
   #logo { font-size: 30px; }
   #board, .keys { display: none; }
@@ -414,4 +444,57 @@ kbd {
   .pill { min-width: 0; padding: 5px 10px 5px 8px; }
   .pill b { font-size: 17px; }
   #speedo b { font-size: 30px; }
+  #logo { display: none; }
+  .hud-top { gap: 5px; }
+  .hud-top .pill:nth-child(n+3) { display: none; }
+  .coins { top: 85px; bottom: auto; left: 14px; right: auto; min-width: 0; padding: 8px 10px; }
+  .coin-symbol { width: 24px; height: 28px; font-size: 16px; border-width: 3px; }
+  .coins b { font-size: 22px; }
+  .item { bottom: 14px; left: 12px; width: 252px; padding: 10px; }
+  .slot { height: 74px; }
+  .slot .item-icon { font-size: 32px; }
+  #item-status { font-size: 11px; }
+  #speedo { left: auto; right: 12px; bottom: 14px; transform: none; padding: 10px; }
+  #boost { gap: 2px; }
+  #boost i { width: 8px; }
+  .item-actions button { min-height: 44px; padding: 6px; }
+}
+
+@media (pointer: coarse) {
+  .touch-drive { position: absolute; bottom: 238px; left: 12px; right: 12px; display: flex; gap: 8px; }
+  .touch-drive button { min-width: 54px; height: 54px; border: 1px solid #807490; border-radius: 10px; background: rgba(29, 24, 43, .94); font-weight: 800; touch-action: none; user-select: none; }
+  .touch-drive button:nth-child(3) { margin-left: auto; }
+  .touch-drive button:last-child { background: #ffd23f; color: #362600; }
+  .item-actions kbd, .swap kbd { display: none; }
+  .keys { display: none; }
+}
+
+@media (max-height: 600px) and (min-width: 761px) {
+  .info { padding: 14px; top: 70px; bottom: 12px; transform: none; overflow-y: auto; }
+  .info .num, .info p.driver { display: none; }
+  .info h1 { margin-top: 0; }
+  .item { bottom: 12px; }
+}
+@media (max-width: 460px) {
+  .minimap { transform: scale(.55); }
+}
+@media (max-width: 380px) {
+  .item { width: calc(100vw - 116px); }
+  .slot small { font-size: 9px; }
+  #speedo { padding: 8px; }
+  #speedo b { font-size: 26px; }
+  #speedo .kmh small { font-size: 9px; letter-spacing: 0; }
+  #boost i { width: 6px; }
+  .pill { padding: 5px 7px; }
+  .pill .ic { display: none; }
+}
+@media (max-height: 540px) and (pointer: coarse) {
+  .touch-drive { bottom: 16px; left: 286px; }
+  #speedo, .keys, #board { display: none; }
+  .coins { top: 80px; bottom: auto; }
+  .item { bottom: 10px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .coins.picked .coin-symbol { transform: none; }
+  dd i, button { transition: none; }
 }

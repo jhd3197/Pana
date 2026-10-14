@@ -1,0 +1,42 @@
+// Pure inventory rules shared by the player, bots and combat.
+export const MAX_COINS = 10;
+export const COIN_SPEED = 0.008;
+export const SLOT_COUNT = 2;
+
+export const activeItem = c => c.inventory[c.selected];
+export const isMango = item => item?.kind === 'mango' || item?.kind === 'mango3';
+export const canBlock = c => !c.done && isMango(activeItem(c)) && activeItem(c).rolling <= 0;
+export const coinMultiplier = c => 1 + Math.min(MAX_COINS, Math.max(0, c.coins || 0)) * COIN_SPEED;
+
+export function addItem(c, kind, rolling = 0.65) {
+  const empty = c.inventory.indexOf(null);
+  if (empty < 0) return false;
+  const wasEmpty = !activeItem(c);
+  c.inventory[empty] = { kind, n: kind === 'mango3' ? 3 : 1, rolling };
+  if (wasEmpty) c.selected = empty;
+  return true;
+}
+
+export function selectItem(c, index) {
+  if (c.done || !Number.isInteger(index) || index < 0 || index >= SLOT_COUNT || !c.inventory[index]) return false;
+  c.selected = index;
+  return true;
+}
+
+export function consumeItem(c) {
+  const item = activeItem(c);
+  if (!item || item.rolling > 0) return false;
+  if (--item.n <= 0) {
+    c.inventory[c.selected] = null;
+    const next = c.inventory.findIndex(Boolean);
+    if (next >= 0) c.selected = next;
+  }
+  return true;
+}
+
+// Sweep a moving pickup/projectile against a circle, so turbo cannot skip it.
+export function segmentDistanceSq(px, pz, ax, az, bx, bz) {
+  const dx = bx - ax, dz = bz - az, length = dx * dx + dz * dz;
+  const t = length ? Math.max(0, Math.min(1, ((px - ax) * dx + (pz - az) * dz) / length)) : 0;
+  return (px - ax - t * dx) ** 2 + (pz - az - t * dz) ** 2;
+}

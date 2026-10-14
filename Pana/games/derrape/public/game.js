@@ -1,8 +1,10 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { CARS } from './cars.js';
+import { garageCards } from './garage-cards.js';
 import { sound, Puffs, Debris, makeBubble } from '/engine/fx.js';
 import { createItems, ITEMS, SPIN } from './items.js';
+import { activeItem, canBlock, coinMultiplier, COIN_SPEED, MAX_COINS } from './item-rules.js';
 import { TRACKS, getTrack, makeTrack } from './tracks.js';
 import { loadAvatar, loadName, randomAvatar } from '/engine/avatar.js';
 
@@ -45,7 +47,8 @@ renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
 renderer.setSize(innerWidth, innerHeight);
 renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-renderer.toneMapping = THREE.NoToneMapping;   // keep the toy colors saturated
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.22;
 document.body.prepend(renderer.domElement);
 
 // ======================================================================
@@ -66,11 +69,11 @@ const garage = {
   const s = garage.scene;
   s.background = new THREE.Color(0x1b1430);
   s.fog = new THREE.Fog(0x1b1430, 20, 45);
-  s.add(new THREE.HemisphereLight(0xfff4e6, 0x6a4a8a, 1.9));
+  s.add(new THREE.HemisphereLight(0xfff4e6, 0x4b3669, 1.35));
   const fill = new THREE.DirectionalLight(0xfff1e0, 1.1);   // soft front fill so faces stay bright
   fill.position.set(4, 3, 10);
   s.add(fill);
-  const key = new THREE.SpotLight(0xfff0d8, 320, 45, Math.PI / 5, 0.5, 1.6);
+  const key = new THREE.SpotLight(0xfff0d8, 220, 45, Math.PI / 5, 0.5, 1.6);
   key.position.set(6, 13, 8);
   key.castShadow = true;
   key.shadow.mapSize.set(2048, 2048);
@@ -81,16 +84,16 @@ const garage = {
   s.add(rim);
 
   const floor = new THREE.Mesh(new THREE.CircleGeometry(40, 48),
-    new THREE.MeshStandardMaterial({ color: 0x2a2045, roughness: 0.95, flatShading: true }));
+    new THREE.MeshStandardMaterial({ color: 0x191326, roughness: 0.95, flatShading: true }));
   floor.rotation.x = -Math.PI / 2;
   floor.receiveShadow = true;
   s.add(floor);
-  const table = new THREE.Mesh(new THREE.CylinderGeometry(4.6, 4.9, 0.4, 16),
-    new THREE.MeshStandardMaterial({ color: 0x3b2f63, roughness: 0.6, flatShading: true }));
+  const table = new THREE.Mesh(new THREE.CylinderGeometry(3.55, 3.8, 0.4, 16),
+    new THREE.MeshStandardMaterial({ color: 0x302340, roughness: 0.85, flatShading: true }));
   table.position.y = 0.2;
   table.receiveShadow = true;
   s.add(table);
-  garage.ring = new THREE.Mesh(new THREE.TorusGeometry(4.75, 0.09, 6, 32), new THREE.MeshBasicMaterial({ color: 0xe63946 }));
+  garage.ring = new THREE.Mesh(new THREE.TorusGeometry(3.58, 0.06, 6, 32), new THREE.MeshBasicMaterial({ color: 0xe63946 }));
   garage.ring.rotation.x = Math.PI / 2;
   garage.ring.position.y = 0.4;
   s.add(garage.ring);
@@ -113,7 +116,9 @@ const garage = {
 function showCar(i) {
   garage.index = (i + CARS.length) % CARS.length;
   const def = CARS[garage.index];
+  // Geometry belongs to the instance; cached paint/decal materials are shared.
   garage.car?.driver.dispose();
+  garage.car?.root.traverse(o => o.geometry?.dispose());
   garage.turn.clear();
   garage.car = def.build(ME.avatar);
   garage.turn.add(garage.car.root);
@@ -128,6 +133,7 @@ function showCar(i) {
     .join('');
   $('driver-name').textContent = ME.name;
   $('dots').innerHTML = CARS.map((_, j) => `<span class="${j === garage.index ? 'on' : ''}"></span>`).join('');
+  for (const [j, button] of [...$('car-lineup').children].entries()) button.setAttribute('aria-pressed', String(j === garage.index));
 }
 
 function garageHonk() {
@@ -276,6 +282,7 @@ function buildTrack(id) {
   trackIndex = TRACKS.indexOf(def);
   try { localStorage.setItem('derrape:track', def.id); } catch { /* private mode */ }
   if (race.trackGroup) {
+    race.items?.dispose();
     race.scene.remove(race.trackGroup);
     race.trackGroup.traverse((o) => o.geometry?.dispose());
   }
@@ -360,6 +367,9 @@ function makeRacer(index, isPlayer, name) {
   const def = CARS[index];
   const who = isPlayer ? ME : { name, avatar: randomAvatar() };
   const car = def.build(who.avatar);
+  // Retain ownership even after a bumper detaches and expires from the scene.
+  car.geometries = new Set();
+  car.root.traverse(o => { if (o.geometry) car.geometries.add(o.geometry); });
   race.scene.add(car.root);
   const bubble = makeBubble();
   race.scene.add(bubble.sprite);
@@ -371,7 +381,8 @@ function makeRacer(index, isPlayer, name) {
     heave: new Spring(), sp: new Spring(), sr: new Spring(), headLag: new Spring(),
     lap: 0, prog: 0, done: false, time: 0,
     dizzy: 0, scream: 0, honkT: 0, lost: 0, puffT: 0, aiHonk: rand(3, 8), airTime: 0,
-    item: null, rolling: 0, useT: 0, boost: 0, spin: 0,
+    inventory: [null, null], selected: 0, useT: 0, boost: 0, spin: 0,
+    coins: 0, coinsCollected: 0, coinFlash: 0, itemMessage: '', itemMessageT: 0,
   };
 }
 
@@ -393,10 +404,14 @@ function progressOf(c) {
 }
 
 function clearRace() {
+  resetInput();
   for (const c of race.cars) {
-    c.car.driver.dispose();
     race.scene.remove(c.car.root);
+    c.car.driver.dispose();
     race.scene.remove(c.bubble.sprite);
+    c.car.geometries.forEach(g => g.dispose());
+    c.bubble.sprite.material.map.dispose();
+    c.bubble.sprite.material.dispose();
   }
   race.cars = [];
   race.puffs.clear();
@@ -439,7 +454,33 @@ function toGarage() {
 
 $('again').onclick = () => startRace(race.playerIndex);
 $('back').onclick = toGarage;
+function itemAction(direction) {
+  if (mode === 'race' && race.state === 'go') race.items.use(race.player, direction);
+}
+function selectSlot(slot) {
+  if (mode === 'race' && race.state === 'go') race.items.select(race.player, slot);
+}
+$('throw-front').onclick = () => itemAction(1);
+$('throw-back').onclick = () => itemAction(-1);
+$('swap-item').onclick = () => selectSlot();
+for (let i = 0; i < 2; i++) $('item-slot-' + i).onclick = () => selectSlot(i);
+
+// Multi-touch keeps steering and throttle independent. Lost focus/capture
+// releases input, including a thumb dragged off a control or a cancelled touch.
+const pointers = new Map();
+function resetInput() { race.keys = {}; pointers.clear(); }
+for (const button of document.querySelectorAll('[data-drive]')) {
+  button.onpointerdown = e => {
+    e.preventDefault(); sound.unlock();
+    pointers.set(e.pointerId, button.dataset.drive);
+    button.setPointerCapture(e.pointerId);
+  };
+  button.onpointerup = button.onpointercancel = button.onlostpointercapture = e => pointers.delete(e.pointerId);
+}
+addEventListener('blur', resetInput);
+document.addEventListener('visibilitychange', () => { if (document.hidden) resetInput(); });
 addEventListener('keydown', (e) => {
+  if (e.target.closest('input, textarea, select, [contenteditable="true"]')) return;
   const k = e.key.toLowerCase();
   race.keys[k] = true;
   if (k === 'escape' && mode === 'race') toGarage();
@@ -450,14 +491,22 @@ addEventListener('keydown', (e) => {
   if (k === 'm') sound.muted = !sound.muted;
   if ((k === ' ' || k === 'e') && mode === 'race' && race.state === 'go' && race.player) {
     e.preventDefault();
-    if (!e.repeat) race.items.use(race.player);
+    if (!e.repeat) itemAction(race.keys.s || race.keys.arrowdown ? -1 : 1);
+  }
+  if (mode === 'race' && ['x', 'q', '1', '2'].includes(k)) {
+    e.preventDefault();
+    if (!e.repeat) {
+      if (k === 'x') itemAction(-1);
+      else selectSlot(k === 'q' ? undefined : Number(k) - 1);
+    }
   }
   if (e.key.startsWith('Arrow') && mode === 'race') e.preventDefault();
 });
 addEventListener('keyup', (e) => (race.keys[e.key.toLowerCase()] = false));
 
 function playerInput() {
-  const k = race.keys;
+  const k = { ...race.keys };
+  for (const key of pointers.values()) k[key] = true;
   return {
     throttle: (k.w || k.arrowup ? 1 : 0) - (k.s || k.arrowdown ? 1 : 0),
     steer: (k.a || k.arrowleft ? 1 : 0) - (k.d || k.arrowright ? 1 : 0),
@@ -517,7 +566,7 @@ function crash(c, power, side) {
 function stepCar(c, input, dt) {
   const t = c.def.tune;
   const boosting = c.boost > 0;
-  const top = t.top * c.skill;
+  const top = t.top * c.skill * coinMultiplier(c);
   if (c.spin > 0) input = { throttle: 0, steer: 0 };   // skidding on a peel: no control
   let fx = Math.sin(c.h), fz = Math.cos(c.h);
   let rx = -Math.cos(c.h), rz = Math.sin(c.h);
@@ -832,26 +881,39 @@ function updateRace(dt) {
   race.sun.target.position.set(p.x, p.y, p.z);
 }
 
-// Item slot: spins through icons while rolling, then shows what you got.
+// Each slot rolls independently: picking a reserve never locks the active item.
 const ICONS = Object.values(ITEMS).map((i) => i.icon);
 let lastItem = '';
 function showItem(p) {
-  let icon = '', label = 'Agarra una caja', n = 0;
-  if (p.rolling > 0) {
-    icon = ICONS[Math.floor(p.rolling * 14) % ICONS.length];
-    label = '¿Qué será?';
-  } else if (p.item) {
-    icon = ITEMS[p.item.kind].icon;
-    label = ITEMS[p.item.kind].name;
-    n = p.item.n;
-  }
-  const key = icon + label + n;
+  const key = JSON.stringify([p.inventory.map(i => i && [i.kind, i.n, Math.ceil(i.rolling * 12)]),
+    p.selected, p.itemMessageT > 0 ? p.itemMessage : '', p.coins, p.coinsCollected, p.coinFlash > 0, p.done, p.spin > 0]);
   if (key === lastItem) return;
   lastItem = key;
-  $('item-icon').innerHTML = icon;
-  $('item-n').textContent = n > 1 ? `×${n}` : '';
-  $('item-name').textContent = label;
-  $('item').classList.toggle('ready', !!p.item && !(p.rolling > 0));
+  p.inventory.forEach((item, i) => {
+    const selected = i === p.selected;
+    const label = item ? item.rolling > 0 ? 'Abriendo…' : ITEMS[item.kind].name : 'Vacío';
+    $('item-icon-' + i).innerHTML = item ? item.rolling > 0 ? ICONS[Math.floor(item.rolling * 12) % ICONS.length] : ITEMS[item.kind].icon : '+';
+    $('item-n-' + i).textContent = item?.n > 1 ? `×${item.n}` : '';
+    $('item-label-' + i).textContent = label;
+    const slot = $('item-slot-' + i);
+    slot.classList.toggle('selected', selected);
+    slot.setAttribute('aria-pressed', String(selected));
+    slot.setAttribute('aria-label', `Objeto ${i + 1}: ${label}${selected ? ', equipado' : ', seleccionar'}`);
+    slot.disabled = !item || p.done;
+  });
+  const item = activeItem(p), ready = item && item.rolling <= 0 && !p.done && p.spin <= 0;
+  const status = p.itemMessageT > 0 ? p.itemMessage : canBlock(p) ? 'Mango equipado · bloquea un mangazo' :
+    item ? 'Elige hacia dónde usarlo' : 'Rompe cajas de madera · guarda 2 objetos';
+  if ($('item-status').textContent !== status) $('item-status').textContent = status;
+  $('item').classList.toggle('protected', canBlock(p));
+  $('throw-front').disabled = $('throw-back').disabled = !ready;
+  $('throw-front').querySelector('span').textContent = item?.kind === 'jugo' ? 'Beber' : 'Adelante';
+  $('throw-back').disabled = !ready || item.kind === 'jugo';
+  $('swap-item').disabled = !p.inventory[1 - p.selected] || p.done;
+  $('coin-count').textContent = String(p.coins).padStart(2, '0');
+  $('coin-bonus').textContent = `+${Number((p.coins * COIN_SPEED * 100).toFixed(1)).toLocaleString('es-VE')}% velocidad`;
+  $('coins').classList.toggle('picked', p.coinFlash > 0);
+  $('coins').classList.toggle('full', p.coins === MAX_COINS);
 }
 
 // Finished cars by time, then everyone else by how far along they are.
@@ -872,6 +934,7 @@ function finish() {
   $('result-time').textContent = `${p.def.name} · ${p.time.toFixed(1)} s · ${p.lost} piezas perdidas`
     + (winner && place > 1 ? ` · ganó ${winner.name}` : '');
   $('result').classList.remove('hidden');
+  $('result-coins').textContent = `${p.coinsCollected} monedas recogidas · +${Number((p.coins * COIN_SPEED * 100).toFixed(1)).toLocaleString('es-VE')}% de velocidad`;
 }
 
 // ======================================================================
@@ -883,9 +946,12 @@ let acc = 0;
 function frame() {
   const dt = Math.min(clock.getDelta(), 0.25);
   if (mode === 'garage') {
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.05;
     updateGarage(dt);
     renderer.render(garage.scene, garage.camera);
   } else {
+    renderer.toneMapping = THREE.NoToneMapping;
     // fixed physics steps: same race speed at any frame rate
     acc += dt * SPEED;
     while (acc >= STEP && mode === 'race') {
@@ -897,13 +963,21 @@ function frame() {
   requestAnimationFrame(frame);
 }
 
-addEventListener('resize', () => {
+function resize() {
   for (const cam of [garage.camera, race.camera]) {
     cam.aspect = innerWidth / innerHeight;
     cam.updateProjectionMatrix();
   }
   renderer.setSize(innerWidth, innerHeight);
-});
+  // Make room for the information panel and the lineup, with a centered car
+  // above the compact garage controls on a phone.
+  const wide = innerWidth > 760;
+  garage.camera.zoom = wide ? 1 : Math.min(0.86, innerWidth / innerHeight * 1.3);
+  garage.camera.setViewOffset(innerWidth, innerHeight, wide ? -150 : 0,
+    wide ? 35 : innerHeight * 0.17, innerWidth, innerHeight);
+}
+addEventListener('resize', resize);
+resize();
 
 if (DEBUG) Object.assign(window, { race, garage, renderer, crash, startRace, updateRace, toGarage, ITEMS, TRACKS, buildTrack, getActiveTrack: () => T });
 
@@ -914,6 +988,7 @@ buildTrack(QS.get('track') || savedTrack);
 
 // bubbles use the cartoon font, so wait for it (but never block on it)
 Promise.race([document.fonts.ready, new Promise((r) => setTimeout(r, 1500))]).then(() => {
+  $('car-lineup').append(garageCards(CARS, ME.avatar, showCar));
   showCar(0);
   frame();
 });

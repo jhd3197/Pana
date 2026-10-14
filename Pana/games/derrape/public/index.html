@@ -50,6 +50,7 @@
       <button id="honk" class="toggle">¡Pita! <kbd>H</kbd></button>
       <button id="spin" class="toggle on">Girar</button>
     </div>
+    <nav id="car-lineup" class="car-lineup" aria-label="Elige tu carro"></nav>
   </div>
 
   <!-- ---------- race ---------- -->
@@ -70,10 +71,27 @@
 
     <ol id="board"></ol>
 
-    <div id="item" class="item">
-      <div class="slot"><span id="item-icon"></span><i id="item-n"></i></div>
-      <small id="item-name">OBJETO</small>
+    <div id="coins" class="coins" title="Cada moneda da +0,8% de velocidad, hasta 10. La posición decide quién gana.">
+      <span class="coin-symbol" aria-hidden="true">I</span>
+      <div><small>MONEDAS</small><b id="coin-count">00</b><span class="coin-cap"> / 10</span><span id="coin-bonus">+0% velocidad</span></div>
     </div>
+
+    <section id="item" class="item" aria-label="Objetos de carrera">
+      <div class="inventory">
+        <button id="item-slot-0" class="slot selected" aria-pressed="true" aria-label="Objeto 1 vacío">
+          <span class="slot-key">1</span><span id="item-icon-0" class="item-icon">+</span><i id="item-n-0"></i><small id="item-label-0">Vacío</small>
+        </button>
+        <button id="item-slot-1" class="slot" aria-pressed="false" aria-label="Objeto 2 vacío">
+          <span class="slot-key">2</span><span id="item-icon-1" class="item-icon">+</span><i id="item-n-1"></i><small id="item-label-1">Vacío</small>
+        </button>
+        <button id="swap-item" class="swap" title="Cambiar objeto (Q)"><span aria-hidden="true">⇄</span><kbd>Q</kbd></button>
+      </div>
+      <p id="item-status" role="status" aria-live="polite">Rompe cajas de madera · guarda 2 objetos</p>
+      <div class="item-actions">
+        <button id="throw-front"><span>Adelante</span><kbd>Espacio</kbd></button>
+        <button id="throw-back"><span>Atrás</span><kbd>X</kbd></button>
+      </div>
+    </section>
 
     <div id="speedo">
       <div class="kmh"><b id="speed">0</b><small>KM/H</small></div>
@@ -83,8 +101,16 @@
     <div class="keys">
       <span><kbd>W</kbd> Acelerar</span>
       <span><kbd>S</kbd> Frenar</span>
-      <span><kbd>Espacio</kbd> Objeto</span>
+      <span><kbd>A D</kbd> Girar</span>
       <span><kbd>H</kbd> Claxon</span>
+      <span><kbd>Esc</kbd> Garaje</span>
+    </div>
+
+    <div class="touch-drive" aria-label="Conducir">
+      <button data-drive="a" aria-label="Girar a la izquierda">←</button>
+      <button data-drive="d" aria-label="Girar a la derecha">→</button>
+      <button data-drive="s" aria-label="Frenar">Freno</button>
+      <button data-drive="w" aria-label="Acelerar">Gas</button>
     </div>
 
     <div id="count"></div>
@@ -92,6 +118,7 @@
     <div id="result" class="card result hidden">
       <h1 id="result-title"></h1>
       <p id="result-time"></p>
+      <p id="result-coins" class="result-coins"></p>
       <div class="row">
         <button id="again" class="play">Otra vez</button>
         <button id="back">Garaje</button>

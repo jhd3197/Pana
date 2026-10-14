@@ -66,6 +66,11 @@ clean: only `README.md` and `.gitignore` belong there. Everything else lives her
 - Characters stand on articulated legs by default. Pass `{ seated: true }` for
   vehicle drivers, `{ chef: true }` for cooking attire, and `walk` / `carry` /
   `run` in `update()` to animate the shared rig.
+- Derrape's local race uses two item slots, coin trails and breakable wooden
+  crates. Inventory/defense/speed rules live in `games/derrape/public/item-rules.js`;
+  `fragments.js` owns reusable prop bursts. See `../docs/knowledge/derrape-items.md`
+  for controls, ownership and regression commands. Keep these game-local until
+  another game actually needs them. Garage cards render the real vehicle models.
 - Keep dependencies minimal. `ws` on the server; Three.js from CDN on the client.
 
 ## Dev workflow (Windows)

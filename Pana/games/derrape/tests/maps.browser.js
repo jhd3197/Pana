@@ -95,17 +95,17 @@ try {
       const c = race.player;
       const grid = { x: c.x, y: c.y, z: c.z };
       const itemRows = race.items.boxes.every(b => {
-        race.items.clear(); c.item = null; c.rolling = 0;
+        race.items.clear(); c.inventory = [null, null]; c.selected = 0;
         Object.assign(c, { x: b.x, y: T.groundAt(b.x, b.z), z: b.z });
         race.items.update(1 / 60, [c], true);
-        return !!c.item && Math.abs(b.m.position.y - (b.y + 1.4)) < 0.26;
+        return c.inventory.some(Boolean) && Math.abs(b.m.position.y - (b.y + 0.86)) < 0.01;
       });
-      Object.assign(c, grid); c.item = null; c.rolling = 0; race.items.clear();
+      Object.assign(c, grid); c.inventory = [null, null]; race.items.clear();
       let pickups = 0, maxGroundError = 0;
       for (let i = 0; i < 24000 && race.state !== 'end'; i++) {
         updateRace(1 / 60);
         const c = race.player;
-        if (c.item) pickups++;
+        if (c.inventory.some(Boolean)) pickups++;
         if (c.onGround) maxGroundError = Math.max(maxGroundError, Math.abs(c.y - T.groundAt(c.x, c.z)));
       }
       return { id, length: T.TOTAL, roundtrip, minRadius, maxGrade, protrusion, finite, startHeights,

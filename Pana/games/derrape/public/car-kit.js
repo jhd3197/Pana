@@ -3,6 +3,7 @@
 // Every car faces +Z, its left is +X, wheels touch y = 0.
 
 import * as THREE from 'three';
+import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { buildCharacter } from '/engine/character.js';
 import { venezuelaFlag } from '/engine/props.js';
 
@@ -20,10 +21,10 @@ const CHROME = () => M('#dfe2e8', { metalness: 0.7, roughness: 0.25 });
 const DARK = () => M('#1d1d23', { roughness: 0.8 });
 
 const GLASS = new THREE.MeshStandardMaterial({
-  color: 0x6d8fae, transparent: true, opacity: 0.38, roughness: 0.05, metalness: 0.4,
+  color: 0x304b65, transparent: true, opacity: 0.19, roughness: 0.15, metalness: 0.2,
   side: THREE.DoubleSide, depthWrite: false,
 });
-const GLARE = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.35, side: THREE.DoubleSide, depthWrite: false });
+const GLARE = new THREE.MeshBasicMaterial({ color: 0xcde7ff, transparent: true, opacity: 0.12, side: THREE.DoubleSide, depthWrite: false });
 
 function mesh(geo, mat, x = 0, y = 0, z = 0) {
   const m = new THREE.Mesh(geo, mat);
@@ -34,6 +35,50 @@ function mesh(geo, mat, x = 0, y = 0, z = 0) {
 }
 
 const box = (w, h, d, mat, x, y, z) => mesh(new THREE.BoxGeometry(w, h, d), mat, x, y, z);
+
+// Broad chamfers on bumpers, cargo and lamp housings, rather than razor edges.
+function bevelBox(w, h, d, material, x = 0, y = 0, z = 0, bevel = 0.05) {
+  const b = Math.min(bevel, w / 5, h / 5, d / 5);
+  const m = profile([[-d / 2 + b, -h / 2 + b], [d / 2 - b, -h / 2 + b],
+    [d / 2 - b, h / 2 - b], [-d / 2 + b, h / 2 - b]], w, material, b);
+  m.position.set(x, y, z);
+  return m;
+}
+
+// Batch rigid details only; steering, drivers and detachable groups stay free.
+function batchParts(group) {
+  group.updateMatrixWorld(true);
+  const buckets = new Map(), originals = new Set();
+  group.traverse(part => {
+    if (!part.isMesh) return;
+    const g = part.geometry.index ? part.geometry.toNonIndexed() : part.geometry.clone();
+    g.applyMatrix4(part.matrixWorld);
+    if (!buckets.has(part.material)) buckets.set(part.material, []);
+    buckets.get(part.material).push(g); originals.add(part.geometry);
+  });
+  group.clear();
+  for (const [material, geos] of buckets) {
+    group.add(mesh(mergeGeometries(geos, false), material));
+    geos.forEach(g => g.dispose());
+  }
+  originals.forEach(g => g.dispose());
+  return group;
+}
+
+function squareLamp(w, h, x, y, z) {
+  const g = new THREE.Group();
+  g.add(bevelBox(w + 0.12, h + 0.12, 0.14, DARK(), x, y, z));
+  g.add(bevelBox(w + 0.045, h + 0.045, 0.06, CHROME(), x, y, z + 0.085, 0.018));
+  g.add(bevelBox(w, h, 0.04, M('#ffe4a0', { emissive: '#ffbb46', emissiveIntensity: 0.65 }), x, y, z + 0.12, 0.012));
+  return g;
+}
+
+function towLoop(x, y, z) {
+  const g = new THREE.Group();
+  g.add(bevelBox(0.22, 0.27, 0.16, M('#3b3e46'), x, y + 0.09, z));
+  g.add(mesh(new THREE.TorusGeometry(0.12, 0.045, 5, 8), CHROME(), x, y - 0.06, z + 0.11));
+  return g;
+}
 
 // Extrude a side profile [(z, y), ...] across the car's width. The bevel
 // grows the outline by `bevel` in every direction.
@@ -46,6 +91,30 @@ function profile(points, width, mat, bevel = 0.1) {
   geo.rotateY(-Math.PI / 2);   // shape x -> car z, extrusion -> car x
   geo.translate(depth / 2, 0, 0);
   return mesh(geo, mat);
+}
+
+// Cross sections [z, half width, sill, shoulder, crown] for bodies whose noses
+// narrow in plan view. Broad flat facets keep the same low-poly construction.
+function bodyShell(sections, material) {
+  const rings = sections.map(([z, w, sill, shoulder, crown]) => [
+    [-w, sill, z], [-w, shoulder, z], [-w * 0.72, crown, z],
+    [w * 0.72, crown, z], [w, shoulder, z], [w, sill, z],
+  ]);
+  const vertices = [];
+  const triangle = (a, b, c) => vertices.push(...a, ...b, ...c);
+  for (let k = 0; k < rings.length - 1; k++) for (let i = 0; i < 6; i++) {
+    const j = (i + 1) % 6;
+    triangle(rings[k][i], rings[k + 1][i], rings[k + 1][j]);
+    triangle(rings[k][i], rings[k + 1][j], rings[k][j]);
+  }
+  for (let i = 1; i < 5; i++) {
+    triangle(rings[0][0], rings[0][i], rings[0][i + 1]);
+    triangle(rings.at(-1)[0], rings.at(-1)[i + 1], rings.at(-1)[i]);
+  }
+  const geometry = new THREE.BufferGeometry();
+  geometry.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
+  geometry.computeVertexNormals();
+  return mesh(geometry, material);
 }
 
 // A box between two (z, y) points, e.g. a window pillar.
@@ -131,8 +200,9 @@ function roundel(num, size) {
   return new THREE.Mesh(new THREE.PlaneGeometry(size * 2, size * 2), roundelCache.get(num));
 }
 
+const plateCache = new Map();
 function plate(text) {
-  return new THREE.Mesh(new THREE.PlaneGeometry(0.62, 0.2), canvasMat(256, 84, (g) => {
+  if (!plateCache.has(text)) plateCache.set(text, canvasMat(256, 84, (g) => {
     g.fillStyle = '#f4f1e6';
     g.fillRect(0, 0, 256, 84);
     g.fillStyle = '#1d4e89';
@@ -145,6 +215,7 @@ function plate(text) {
     g.textAlign = 'center';
     g.fillText(text, 128, 70);
   }));
+  return new THREE.Mesh(new THREE.PlaneGeometry(0.62, 0.2), plateCache.get(text));
 }
 
 // Put the same flat decal on both sides of the car, facing out.
@@ -166,18 +237,20 @@ function makeWheel({ r, w, style, rim = '#c9ccd4', cap = '#d62828' }) {
   const g = new THREE.Group();
   const pts = [[0.6, -0.5], [0.9, -0.5], [1, -0.32], [1, 0.32], [0.9, 0.5], [0.6, 0.5]]
     .map(([rr, x]) => new THREE.Vector2(rr * r, x * w));
-  const tire = new THREE.LatheGeometry(pts, 14);
+  const tire = new THREE.LatheGeometry(pts, 12);
   tire.rotateZ(Math.PI / 2);
   g.add(mesh(tire, M('#1b1b20', { roughness: 0.95 })));
-  const knob = new THREE.BoxGeometry(w * 0.86, r * 0.16, r * 0.26);
-  for (let i = 0; i < 14; i++) {
-    const a = (i / 14) * Math.PI * 2;
-    const k = mesh(knob, M('#26262d', { roughness: 0.95 }), 0, Math.cos(a) * r, Math.sin(a) * r);
-    k.rotation.x = a;
-    g.add(k);
+  const knob = new THREE.BoxGeometry(w * 0.56, r * 0.2, r * 0.32);
+  for (let i = 0; i < 12; i++) {
+    for (const side of [-1, 1]) {
+      const a = (i / 12) * Math.PI * 2 + side * 0.07;
+      const k = mesh(knob, M('#25262d', { roughness: 0.95 }), side * w * 0.22, Math.cos(a) * r, Math.sin(a) * r);
+      k.rotation.set(a, side * 0.12, 0);
+      g.add(k);
+    }
   }
   const face = new THREE.Group();   // outer side, +X
-  face.position.x = w * 0.3;
+  face.position.x = w * 0.5;
   g.add(face);
   const disc = new THREE.CylinderGeometry(r * 0.6, r * 0.6, 0.06, 12);
   disc.rotateZ(Math.PI / 2);
@@ -198,6 +271,9 @@ function makeWheel({ r, w, style, rim = '#c9ccd4', cap = '#d62828' }) {
   } else if (style === 'steel') {
     // off-road steel wheel: dark dish, ring of lug holes, silver center
     face.add(mesh(disc, M('#2c2c33', { roughness: 0.6 })));
+    const lip = new THREE.TorusGeometry(r * 0.54, r * 0.075, 5, 12);
+    lip.rotateY(Math.PI / 2);
+    face.add(mesh(lip, M(rim, { metalness: 0.35, roughness: 0.5 }), 0.045, 0, 0));
     for (let i = 0; i < 6; i++) {
       const a = (i / 6) * Math.PI * 2;
       const hole = new THREE.CylinderGeometry(r * 0.07, r * 0.07, 0.08, 6);
@@ -216,13 +292,23 @@ function makeWheel({ r, w, style, rim = '#c9ccd4', cap = '#d62828' }) {
     white.rotateY(Math.PI / 2);
     face.add(mesh(white, M('#f4f1e6'), 0.06, 0, 0));
   }
-  return g;
+  const bead = new THREE.TorusGeometry(r * 0.72, r * 0.12, 4, 12);
+  bead.rotateY(Math.PI / 2);
+  face.add(mesh(bead, M('#1c1d23', { roughness: 0.95 }), -0.035, 0, 0));
+  return batchParts(g);
 }
 
 function fender(r, w, color) {
-  const geo = new THREE.CylinderGeometry(r, r, w, 12, 1, true, 0, Math.PI);
-  geo.rotateZ(Math.PI / 2);
-  return mesh(geo, new THREE.MeshStandardMaterial({ color, flatShading: true, roughness: 0.65, side: THREE.DoubleSide }));
+  const points = [], inner = r - 0.115;
+  for (let i = 0; i <= 8; i++) {
+    const a = i / 8 * Math.PI;
+    points.push([Math.cos(a) * r, Math.sin(a) * r]);
+  }
+  for (let i = 8; i >= 0; i--) {
+    const a = i / 8 * Math.PI;
+    points.push([Math.cos(a) * inner, Math.sin(a) * inner]);
+  }
+  return profile(points, w, M(color), 0.025);
 }
 
 // ---------- shared assembly ----------
@@ -280,7 +366,7 @@ function cabin(car, o) {
   const shield = pane(fb, ft, o.width - 0.08, GLASS);
   shield.renderOrder = 2;
   c.add(shield);
-  const glare = pane([fb[0] - 0.12, fb[1] + 0.35], [ft[0] + 0.25, ft[1] - 0.4], 0.16, GLARE);
+  const glare = pane([fb[0] - 0.12, fb[1] + 0.35], [ft[0] + 0.25, ft[1] - 0.4], 0.08, GLARE);
   glare.position.x = -0.35;
   glare.position.z += 0.02;
   glare.renderOrder = 3;
@@ -360,15 +446,15 @@ function cabin(car, o) {
 // ---------- extra parts for the bigger garage ----------
 
 // A row of round off-road lamps on a black bar, facing forward.
-function lightBar(n, gap, y, z) {
+function lightBar(n, gap, y, z, r = 0.21) {
   const g = new THREE.Group();
   g.add(box(n * gap + 0.12, 0.1, 0.14, DARK(), 0, y, z));
   for (let i = 0; i < n; i++) {
     const x = (i - (n - 1) / 2) * gap;
-    const housing = mesh(new THREE.CylinderGeometry(0.15, 0.15, 0.16, 10), DARK(), x, y + 0.14, z + 0.02);
+    const housing = mesh(new THREE.CylinderGeometry(r, r, 0.2, 10), DARK(), x, y + r, z + 0.02);
     housing.rotation.x = Math.PI / 2;
     g.add(housing);
-    const lamp = mesh(new THREE.CylinderGeometry(0.115, 0.115, 0.04, 10), M('#ffe066', { emissive: '#b08a00' }), x, y + 0.14, z + 0.11);
+    const lamp = mesh(new THREE.CylinderGeometry(r * 0.76, r * 0.76, 0.04, 10), M('#ffe7a1', { emissive: '#ffbf43', emissiveIntensity: 0.65 }), x, y + r, z + 0.13);
     lamp.rotation.x = Math.PI / 2;
     g.add(lamp);
   }
@@ -413,5 +499,6 @@ function flower(size) {
 }
 
 export {
+  bevelBox, squareLamp, towLoop, bodyShell,
   M, DECAL, CHROME, DARK, mesh, box, profile, strut, pane, tube, canvasMat, roundel, plate, bothSides, spot, makeWheel, fender, rig, detachable, cabin, lightBar, spareWheel, roundLamp, venezuelaFlag, flower,
 };
