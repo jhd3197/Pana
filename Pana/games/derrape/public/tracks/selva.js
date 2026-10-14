@@ -95,7 +95,8 @@ function cliff(rock, seed) {
 
 // Monstera cluster: stems + big flattened tilted leaves.
 function monstera({ seed = 1 } = {}) {
-  const rand = (n) => { const v = Math.sin(seed * 127.1 + n * 311.7) * 43758.5453; return v - Math.floor(v); };
+  let n = 0;
+  const rand = () => { const v = Math.sin(seed * 127.1 + ++n * 311.7) * 43758.5453; return v - Math.floor(v); };
   const g = new THREE.Group();
   const leafM = M(0x2a6e2e, { roughness: 0.9 });
   for (let i = 0; i < 3; i++) {
