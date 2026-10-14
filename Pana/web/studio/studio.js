@@ -3,6 +3,7 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { ASSETS, CATEGORIES, sourcePath, assetContext } from './catalog.js';
 import { createPreview, release, ownMaterials, inspect, fitCamera } from './preview.js';
 import { createThumbnails } from './thumbnails.js';
+import { updateStartup, previewSettled } from './startup.js';
 
 const $ = id => document.getElementById(id), canvas = $('preview');
 const stage = createPreview(canvas), { scene, camera, renderer } = stage;
@@ -86,6 +87,7 @@ function renderList() {
 async function select(id) {
   const asset = ASSETS.find(a => a.id === id) || ASSETS[0]; id = asset.id;
   const ticket = ++generation; selected = id; loading = true;
+  $('settings-link').href = '/studio/settings.html?asset=' + encodeURIComponent(id);
   history.replaceState(null, '', '#' + encodeURIComponent(id)); renderList();
   $('asset-category').textContent = asset.category; $('asset-id').textContent = asset.id; $('asset-name').textContent = asset.name;
   $('description').textContent = asset.description || ''; $('used-by').textContent = asset.usedBy.join(' · ');
@@ -111,28 +113,13 @@ async function select(id) {
     release(runtime); if (ticket !== generation) return; current = null;
     $('preview-status').classList.add('error'); $('preview-status').textContent = 'No se pudo abrir este recurso: ' + error.message;
     console.error(error);
-  } finally { if (ticket === generation) loading = false; }
+  } finally { if (ticket === generation) { loading = false; previewSettled(); } }
 }
 function cacheStatus(service) {
-  const state = service.state;
-  $('cache-count').textContent = state.ready + ' / ' + state.total;
-  $('cache-progress').max = state.total; $('cache-progress').value = state.ready;
-  const size = (state.bytes / 1048576).toFixed(2) + ' MB';
-  $('cache-status').textContent = state.validating ? 'Validando fuentes…' : size + (state.persistent ? ' locales' : ' · solo esta sesión');
-  $('cache-activity').textContent = state.validationError ? 'Sin validar: ' + state.validationError :
-    state.active ? 'Generando: ' + state.active :
-      state.paused ? 'Generación pausada. Las miniaturas listas siguen disponibles.' :
-        service.errors.size ? service.errors.size + ' recursos fallaron. Regenerar permite reintentarlos.' :
-          state.ready === state.total ? state.reused + ' reutilizadas · ' + state.generated + ' generadas. Guardadas solo en este navegador.' :
-            'Generando en segundo plano, un recurso a la vez.';
-  $('cache-pause').textContent = state.paused ? 'Continuar' : 'Pausar';
-  $('cache-pause').disabled = state.ready + service.errors.size === state.total && !state.active;
-  $('cache-rebuild').disabled = state.validating;
   updateThumbnails(service);
+  updateStartup(service);
   if ($('sort').value === 'triangles') renderList();
 }
-$('total').textContent = ASSETS.length + ' registrados';
-$('cache-count').textContent = '0 / ' + ASSETS.length;
 $('categories').replaceChildren(...CATEGORIES.map(name => {
   const button = document.createElement('button'); button.textContent = name; button.dataset.category = name;
   button.onclick = () => { category = name; renderList(); }; return button;
@@ -156,6 +143,7 @@ $('wireframe').onclick = () => {
 controls.addEventListener('change', () => { renderNeeded = true; });
 controls.addEventListener('start', () => { controls.autoRotate = false; $('rotate').setAttribute('aria-pressed', 'false'); });
 document.addEventListener('keydown', event => {
+  if ($('studio-app').inert) return;
   if (event.ctrlKey || event.metaKey || event.altKey || /INPUT|TEXTAREA|SELECT/.test(event.target.tagName)) return;
   if (event.key === '/') { event.preventDefault(); $('search').focus(); }
   if (event.key.toLowerCase() === 'f') { event.preventDefault(); frame(); }
@@ -193,7 +181,6 @@ function selectFromHash() {
 selectFromHash(); addEventListener('hashchange', selectFromHash);
 thumbnails = createThumbnails(ASSETS, { onChange: cacheStatus, isBusy: () => loading || performance.now() - lastInput < 700 });
 thumbnails.prioritize([selected, ...ASSETS.map(asset => asset.id)]);
-$('cache-pause').onclick = () => thumbnails.toggle(); $('cache-rebuild').onclick = () => thumbnails.regenerate();
 addEventListener('pagehide', event => {
   if (event.persisted) return;
   stopped = true; generation++; observer.disconnect(); controls.dispose(); release(current); thumbnails.dispose();

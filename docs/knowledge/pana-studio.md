@@ -54,13 +54,29 @@ Static previews render on demand, avoiding continuous GPU work on large maps.
 
 `thumbnails.js` generates one real 320×240 WebP preview at a time, with a separate
 reused renderer. The queue yields between builds, prioritizes selected/filtered
-assets and defers while the user interacts or the document is hidden. Model
-construction is synchronous on the main thread, so complex assets can briefly
-pause interaction on the first pass. Pause/continue and regenerate are explicit
-controls. The first pass builds all registered resources; later visits read the
-images and metrics from IndexedDB `pana-studio-previews`, store `assets`.
-No images are written into the repository, exported JSON or server filesystem.
-Storage failure falls back to session memory and is shown in the footer.
+assets and defers while the document is hidden. Startup keeps the inventory
+inert and visually hidden until every thumbnail is prepared, source validation
+has finished, and the selected live preview has settled. A full-screen loader
+shows real counts and rotating Spanish messages, without a minimum artificial
+wait. Visible thumbnail images are decoded before revealing the inventory.
+Model construction is synchronous on the main thread, so complex assets can
+briefly pause progress updates on the first pass.
+
+Later visits read images and metrics from IndexedDB `pana-studio-previews`, store
+`assets`. `cache-store.js` shares persistence with `/studio/settings.html`; that
+page reads counts, size and generation date without loading Three.js or models.
+Settings can clear storage or rebuild it by returning through startup, preserving
+the selected asset. Cache maintenance is absent from the inventory. No images
+are written into the repository, exported JSON or server filesystem. Storage
+failure falls back to session memory; settings explains unavailable storage.
+
+`startup.js` is independent of Three.js and dynamically loads the inspector, so
+module/GPU initialization failures show a retry action. Resource/source failures
+keep the gate closed and list diagnostics; users may explicitly open available
+previews or retry. Successful cached images survive a retry. Keep the hidden
+app in layout so the camera and thumbnail sizing work before reveal. Studio's
+wordmark uses the existing Luckiest Guy brand font, with plain UI typography
+for the tools.
 
 `fingerprints.js` hashes local source text and follows local static imports,
 re-exports and literal dynamic imports. Each asset may declare `dependencies`
@@ -129,6 +145,7 @@ movement, gameplay, host departure and mobile behavior; they also smoke test
 Derrape, Bululú and hub artwork. Preview screenshots are in ignored `art/studio/`.
 
 `web/studio/tests/cache.browser.js` covers a complete cold pass, zero thumbnail
-builds on a warm reload, shared-source invalidation, pause/resume/regenerate,
-disabled storage, real controls, grid/list sizing, sort order, render-on-demand
-and mobile overflow. It uses the same CLI arguments as the other browser tests.
+builds on a warm reload, startup gating and keyboard isolation, shared-source
+invalidation and retry, settings persistence/clear/rebuild, disabled storage,
+real controls, grid/list sizing, sort order, render-on-demand and mobile overflow.
+It uses the same CLI arguments as the other browser tests.
