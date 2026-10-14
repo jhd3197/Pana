@@ -4,6 +4,8 @@
 
 First game: **Derrape** — a goofy toy-car race. Jump ramps, flip over, lose your bumpers, honk *La Cucaracha*. Your pana (made in the hub) is the driver.
 
+Second game: **Bululú**: a party board game on Mango Island. Roll the die, collect monedas, buy the *Mango de oro*, and win a minigame after every round.
+
 ## Run it
 
 ```powershell
@@ -13,6 +15,7 @@ npm start            # or: npm run dev  /  Pana\dev.ps1
 
 - Hub: http://localhost:8461
 - Derrape: http://localhost:8461/g/derrape/
+- Bululú: http://localhost:8461/g/bululu/
 - Friends on your network: the dev script prints your LAN URL.
 
 ## Repository layout
@@ -36,7 +39,7 @@ Pana/                  ← this repo
 ## Roadmap
 
 - **Derrape** — toy-car race with goofy physics (playable now)
-- **Bululú** — minigame collection
+- **Bululú**: party board game + minigames (playable now; more minigames coming)
 - **pana.sh** — public deploy
 
 ## Contributing / AI agents
