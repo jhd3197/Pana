@@ -112,6 +112,38 @@ export const sound = {
     o.stop(t + 0.32);
   },
 
+  // a pitch glide: slide whistles, whooshes, turbos
+  sweep(f0, f1, dur, type = 'sine', vol = 0.1) {
+    if (!this.ctx || this.muted) return;
+    const t = this.ctx.currentTime;
+    const o = this.ctx.createOscillator();
+    const g = this.ctx.createGain();
+    o.type = type;
+    o.frequency.setValueAtTime(f0, t);
+    o.frequency.exponentialRampToValueAtTime(f1, t + dur);
+    g.gain.setValueAtTime(vol, t);
+    g.gain.exponentialRampToValueAtTime(0.001, t + dur);
+    o.connect(g).connect(this.ctx.destination);
+    o.start(t);
+    o.stop(t + dur + 0.02);
+  },
+
+  pickup() {
+    [523, 659, 784, 1047].forEach((f, i) => this.tone(f, i * 0.06, 0.08, 'square', 0.07));
+  },
+  tick() { this.tone(900 + Math.random() * 400, 0, 0.03, 'square', 0.04); },
+  whoosh() { this.sweep(700, 160, 0.3, 'triangle', 0.14); },
+  turbo() {
+    this.sweep(160, 900, 0.45, 'sawtooth', 0.07);
+    this.sweep(240, 1350, 0.45, 'square', 0.03);
+  },
+  plop() { this.sweep(500, 120, 0.15, 'sine', 0.18); },
+  slip() { this.sweep(1400, 260, 0.7, 'sine', 0.12); },
+  splat() {
+    this.bonk(0.8);
+    this.sweep(420, 70, 0.22, 'square', 0.06);
+  },
+
   startEngine() {
     if (!this.ctx || this.engine) return;
     const o = this.ctx.createOscillator();
@@ -269,7 +301,9 @@ export function makeBubble() {
       g.stroke();
       g.fillRect(222, 128, 66, 20);
       g.fillStyle = '#16161a';
-      g.font = '64px "Luckiest Guy", system-ui, sans-serif';
+      let size = 64;   // shrink long lines until they fit inside the bubble
+      do g.font = `${size}px "Luckiest Guy", system-ui, sans-serif`;
+      while (g.measureText(text).width > 440 && (size -= 4) > 28);
       g.textAlign = 'center';
       g.textBaseline = 'middle';
       g.fillText(text, 256, 84);
