@@ -8,9 +8,10 @@ normal port fallback applies. `-NoAutoPort` makes that conflict explicit.
 
 ## Library and extension contract
 
-`web/studio/catalog.js` is the curated registration point, currently 110 resources
+`web/studio/catalog.js` is the curated registration point, currently 115 resources
 including twenty-two vegetation models, nine Pana landmarks (`Emblemas`),
-ten Pueblo models, seven jungle structures (`Selva`) and eight Páramo structures.
+ten Pueblo models, seven jungle structures (`Selva`), eight Páramo structures
+and five thermal landmarks (`Termales`) used by Chi Chi.
 See `shared-props.md` and `pueblo-paramo-props.md`.
 It derives props from `PLAZA_PROPS`, recipes/stations from Cocina's definitions,
 vehicles from `CARS`, and circuits from `TRACKS`. Other shared factories have
@@ -44,6 +45,10 @@ scale, orientation, collision contracts and lifecycle belong to the source.
 Circuit definitions can provide `previewBounds: [[minX,minY,minZ],[maxX,maxY,maxZ]]`
 to include meaningful surrounding scenery. Plaza uses this to show its street
 network and hill; tracks without the field retain their route-based framing.
+Shared object factories can supply the same two-vector array in
+`group.userData.previewBounds`; the catalog converts it to a runtime Box3.
+Thermal props use this to frame solid models and their visible steam, independently
+of the conservative GPU culling bounds needed by displaced billboard geometry.
 
 The live inspector uses one WebGL context, releases previews on selection, and ignores
 stale asynchronous builds. It copies materials before enabling wireframe so

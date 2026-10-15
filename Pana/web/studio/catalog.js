@@ -9,12 +9,19 @@ import { Box3, Vector3 } from 'three';
 const shared = ['Bululú', 'Derrape', 'Escondidas', 'Cocina'];
 const object = (id, name, category, source, factory, usedBy, options) => ({
   id, name, category, source, factory, usedBy, previewOptions: options ?? null,
-  async build() { const module = await import(source), group = module[factory](options); return { group, update: group.userData.tick && ((t, dt) => group.userData.tick(t, dt)) }; },
+  async build() { const module = await import(source), group = module[factory](options), frame=group.userData.previewBounds; return { group, bounds:frame&&new Box3(new Vector3(...frame[0]),new Vector3(...frame[1])), update: group.userData.tick && ((t, dt) => group.userData.tick(t, dt)) }; },
 });
 const character = (id, name, options = {}) => ({ id, name, category: 'Personajes', source: '/engine/character.js', factory: 'buildCharacter', usedBy: shared, previewOptions: options,
   async build() { const { buildCharacter } = await import('/engine/character.js'); const model = buildCharacter(DEFAULT_AVATAR, { quality: 'studio', ...options }); return { group: model.group, update: (t, dt) => model.update(dt), dispose: () => model.dispose() }; },
 });
 export const ASSETS = [
+  ...[
+    ['hot-spring-pool','Poza termal','hotSpringPool','Agua mineral, borde de travertino, ondas y vapor.'],
+    ['steam-vent','Fumarola','steamVent','Respiradero de roca con una columna de vapor animada.'],
+    ['mineral-terraces','Terrazas minerales','mineralTerraces','Tres pozas escalonadas con pequeños reboses.'],
+    ['thermal-bathhouse','Casa de las termas','thermalBathhouse','Refugio de aguas termales con porche y tejado de barro.'],
+    ['thermal-lookout','Mirador de Chi Chi','thermalLookout','Plataforma de madera con escalera y barandas.'],
+  ].map(([id,name,factory,description])=>({...object(id,name,'Termales','/engine/thermal-props.js',factory,['Derrape']),description,dependencies:['/engine/thermal-steam.js','/engine/water-details.js','/engine/architecture-kit.js'],tags:['Chi Chi','aguas termales','montaña']})),
   character('pana', 'Pana original'),
   character('pana-chef', 'Pana cocinero', { chef: true }),
   character('pana-driver', 'Pana conductor', { seated: true }),
@@ -59,7 +66,7 @@ export const ASSETS = [
     ['018', 'rooftop-water-tank', 'Tanque de agua de azotea', 'rooftopWaterTank', 'Tanque estriado con soporte, escalera, tubería y válvula.', ['tanque','agua','azotea']],
     ['019', 'streetlight-pole', 'Farol de calle', 'streetlightPole', 'Poste curvado con brazo ornamental y lámpara cálida.', ['farol','calle','luz']],
     ['020', 'park-bench', 'Banco de parque', 'parkBench', 'Listones de madera, patas de hierro y apoyabrazos curvos.', ['banco','parque']],
-  ].map(([number,id,name,factory,description,tags])=>({...object(id,name,'Pueblo','/engine/pueblo-props.js',factory,['Pana Studio']),description,tags:[number,'pueblo',...tags]})),
+  ].map(([number,id,name,factory,description,tags])=>({...object(id,name,'Pueblo','/engine/pueblo-props.js',factory,['colonialHouse','cornerBodega','colonialChurch','streetFoodKiosk','parkBench'].includes(factory)?['Derrape']:['Pana Studio']),description,tags:[number,'pueblo',...tags]})),
   // Páramo 051–060: the two plants remain under Vegetación.
   ...[
     ['052', 'mountain-cabin', 'Cabaña de montaña', 'mountainCabin', 'Refugio de madera y piedra con porche, chimenea y techo de tejas.', ['cabaña','refugio']],
@@ -70,7 +77,7 @@ export const ASSETS = [
     ['058', 'mountain-tent', 'Carpa de montaña', 'mountainTent', 'Carpa abierta con vientos, estacas y dos colchonetas.', ['campamento','carpa']],
     ['059', 'mountain-suspension-bridge', 'Puente colgante de montaña', 'mountainSuspensionBridge', 'Tablero de madera, torres de acero, cables y accesos de piedra.', ['puente','cables']],
     ['060', 'mountain-signpost', 'Señal de senderos', 'mountainSignpost', 'Flechas de madera hacia el mirador, la laguna y el refugio.', ['sendero','señal']],
-  ].map(([number,id,name,factory,description,tags])=>({...object(id,name,'Páramo','/engine/mountain-props.js',factory,['Pana Studio']),description,tags:[number,'páramo','montaña',...tags]})),
+  ].map(([number,id,name,factory,description,tags])=>({...object(id,name,'Páramo','/engine/mountain-props.js',factory,['mountainCabin','stoneLookout','mountainTent','mountainSignpost'].includes(factory)?['Derrape']:['Pana Studio']),description,tags:[number,'páramo','montaña',...tags]})),
   // Pana signature landmarks shared by every game.
   ...[
     ['capybara-statue', 'Estatua gigante de capibara', '/engine/landmarks.js', 'capybaraStatue', 'El pana original en bronce, saludando sobre un pedestal.', ['estatua', 'capibara', 'monumento']],
@@ -120,7 +127,7 @@ export const ASSETS = [
     async build() { const model = makeTrack(track); return { group: model.build(), bounds: track.previewBounds ? new Box3(new Vector3(...track.previewBounds[0]), new Vector3(...track.previewBounds[1])) : new Box3(new Vector3(-model.bounds.x - 20, 0, -model.bounds.z - 20), new Vector3(model.bounds.x + 20, 35, model.bounds.z + 20)), update: (t, dt) => model.animated.forEach(o => o.userData.tick?.(t, dt)) }; },
   })),
 ];
-export const CATEGORIES = ['Todos', 'Personajes', 'Vestuario', 'Objetos', 'Emblemas', 'Pueblo', 'Selva', 'Páramo', 'Vegetación', 'Vehículos', 'Mapas'];
+export const CATEGORIES = ['Todos', 'Personajes', 'Vestuario', 'Objetos', 'Emblemas', 'Pueblo', 'Selva', 'Páramo', 'Termales', 'Vegetación', 'Vehículos', 'Mapas'];
 export function sourcePath(url) {
   return url.startsWith('/engine/') ? `Pana${url}` : url.replace(/^\/g\/([^/]+)\//, 'Pana/games/$1/public/');
 }

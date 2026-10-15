@@ -30,11 +30,11 @@ export function instances(parent,source,placements,name,cellSize=110) {
   prototype.traverse(o=>o.geometry?.dispose());
 }
 
-export function terrain(T,{bounds,base,color,name='world-terrain',step=5,carve=true}) {
+export function terrain(T,{bounds,base,color,name='world-terrain',step=5,carve=true,cut=(x,z,h)=>h}) {
   const [x0,z0,x1,z1]=bounds,nx=Math.ceil((x1-x0)/step),nz=Math.ceil((z1-z0)/step),dx=(x1-x0)/nx,dz=(z1-z0)/nz;
   const height=(x,z)=>{
-    const land=base(x,z);if(!carve)return land;
-    const d=Math.abs(T.offsetOf(x,z));return mix(T.surfaceAt(x,z)-.65,land,smooth(d,T.HW+9,T.HW+35));
+    const land=base(x,z);if(!carve)return cut(x,z,land);
+    const d=Math.abs(T.offsetOf(x,z));return cut(x,z,mix(T.surfaceAt(x,z)-.65,land,smooth(d,T.HW+9,T.HW+35)));
   };
   const positions=[],colors=[],indices=[];
   for(let j=0;j<=nz;j++)for(let i=0;i<=nx;i++){

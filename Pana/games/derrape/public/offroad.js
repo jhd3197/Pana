@@ -4,3 +4,8 @@ export function roughnessAt(T,x,z) {
   const t=Math.max(0,Math.min(1,(Math.abs(T.offsetOf(x,z))-T.HW+0.35)/T.def.offroad.fullAt));
   return t*t*(3-2*t);
 }
+
+// Local wet asphalt is independent of off-road drag and defaults to dry grip.
+export function roadGripAt(T,x,z) {
+  return Math.max(.4,Math.min(1,T.def.gripAt?.(x,z)??1));
+}

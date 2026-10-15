@@ -21,7 +21,7 @@ try {
   await page.waitForFunction(() => panaLibrary.selected === 'corn' && document.querySelector('#preview-status').hidden);
   await page.locator('#search').fill('zzzz-missing'); assert.equal(await page.locator('#empty').isVisible(), true);
   await page.locator('#clear-search').click();
-  for (const [category, count] of [['Pueblo', 10], ['Páramo', 8], ['Vegetación', 22]]) {
+  for (const [category, count] of [['Pueblo', 10], ['Páramo', 8], ['Termales', 5], ['Vegetación', 22]]) {
     await page.locator(`[data-category="${category}"]`).click();
     assert.equal(await page.locator('[data-asset]').count(), count, `${category} registrations`);
   }

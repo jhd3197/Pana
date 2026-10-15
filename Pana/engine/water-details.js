@@ -5,6 +5,7 @@ import * as THREE from 'three';
 export function addWaterMotion(root, impacts, curves = []) {
   const group = new THREE.Group(); group.name = 'Water ripples and droplets'; root.add(group);
   const material = new THREE.MeshStandardMaterial({ color: 0xc8f1e9, roughness: 0.25, transparent: true, opacity: 0.62, depthWrite: false });
+  group.userData.dispose = () => material.dispose();
   const rings = new THREE.InstancedMesh(new THREE.TorusGeometry(1, 0.016, 4, 28), material, impacts.length * 2);
   rings.frustumCulled = false; group.add(rings);
   const drops = curves.length ? new THREE.InstancedMesh(new THREE.SphereGeometry(0.045, 6, 4), material, curves.length * 5) : null;

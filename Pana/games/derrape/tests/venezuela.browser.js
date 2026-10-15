@@ -48,7 +48,7 @@ try{
     await page.screenshot({path:`${output}/${id}-overview.png`});
     await page.evaluate(()=>{const {stage,bounds,preview}=proof;preview.fitCamera(stage.camera,bounds,true,'top');stage.renderer.render(stage.scene,stage.camera);});
     await page.screenshot({path:`${output}/${id}-top.png`});
-    const detail={estadio:[[-200,48,215],[-15,8,85]],paramo:[[50,167,-180],[-35,130,-275]],bululu:[[-440,145,250],[-120,0,45]],chichi:[[-150,75,320],[-15,20,90]],plaza:[[650,110,560],[410,12,330]]}[id];
+    const detail={estadio:[[-200,48,215],[-15,8,85]],paramo:[[50,167,-180],[-35,130,-275]],bululu:[[-440,145,250],[-120,0,45]],chichi:[[-50,270,-265],[65,175,-408]],plaza:[[650,110,560],[410,12,330]]}[id];
     await page.evaluate(([position,target])=>{const {stage}=proof;stage.camera.position.set(...position);stage.camera.lookAt(...target);stage.camera.near=.1;stage.camera.updateProjectionMatrix();stage.renderer.render(stage.scene,stage.camera);},detail);
     await page.screenshot({path:`${output}/${id}-detail.png`});
   }

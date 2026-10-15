@@ -43,10 +43,17 @@ clean: only `README.md` and `.gitignore` belong there. Everything else lives her
   Pueblo 011–020 lives in `engine/pueblo-props.js`; Páramo structures 052–060
   live in `engine/mountain-props.js`. Both use `engine/architecture-kit.js`.
   Frailejón (051) and mountain pine (057) are re-exported by `flora.js` and
-  stay in Vegetación. All twenty new models are Studio-only until placed by a
-  game. Mountain bridges span 6–40 m, guardrails 2–30 m; their long axis is X.
+  stay in Vegetación. Several Pueblo and Páramo models now appear in Derrape;
+  keep Studio consumer metadata aligned with actual placements.
+  Mountain bridges span 6–40 m, guardrails 2–30 m; their long axis is X.
   Cliff end profiles must match across seeds. The clock and cable car use
   absolute-time `userData.tick(t)`; dispose owned sign textures when released.
+  Chi Chi's five thermal landmarks live in `engine/thermal-props.js` and the
+  Studio category `Termales`. `thermal-steam.js` uses instanced camera-facing
+  quads, seeded phases and absolute time. Keep its shader culling bounds broad;
+  `group.userData.previewBounds` supplies a tighter Studio framing box. Tick the
+  live shader material because Studio clones materials. Own ripple/steam material
+  disposal, and do not bake animated roots into static batches.
 - The character sculpt lives in `engine/soft-character/`; `engine/character.js`
   adapts it to saved avatars and gameplay. The full editor stays at
   `/personaje.html`; its old model module URLs only re-export shared sources.
@@ -81,7 +88,7 @@ clean: only `README.md` and `.gitignore` belong there. Everything else lives her
   landmarks. Island terrain/scenery/beach modules now live in `engine/`;
   old Bululú paths re-export them. Keep gameplay in the games, and pass route
   clearance to the shared environment instead of copying its assets.
-  Race routes are 1.09–2.60 km with bends in both directions. Plaza extends
+  Race routes are 1.09–4.88 km with bends in both directions. Plaza extends
   the shared courtyard into a pueblo. Its game-local `tracks/plaza-layout.js`
   owns the street grid and hill; `plaza-town.js` builds blocks independently of
   the racing line. Keep streets and buildings clear as well as the race lanes.
@@ -91,6 +98,10 @@ clean: only `README.md` and `.gitignore` belong there. Everything else lives her
   spatially instances shared flora. Do not pass instances through `bake()`.
   Páramo and Chi Chi use elevated, continuous roads over carved terrain;
   keep waterways below the road and inspect actual chase-camera views.
+  Chi Chi now spans 195 m of elevation, with springs, mountainside switchbacks,
+  forest, a dive village and river bridges. Its thermal shelf and bridge channels
+  use the optional post-carve terrain cut. Wet grip is opt-in through `def.gripAt`
+  and `roadGripAt()`; preserve dry defaults and normal road confinement elsewhere.
   See `../docs/knowledge/venezuela-circuits.md` for construction and validation.
   Selva's `selva-world.js` builds the river valley and shared forest assets;
   `selva-temple.js` sweeps a hollow tunnel along the road. Keep the terrain

@@ -7,7 +7,7 @@ import { sound, Puffs, Debris, makeBubble } from '/engine/fx.js';
 import { createItems, ITEMS, SPIN } from './items.js';
 import { activeItem, canBlock, coinMultiplier, COIN_SPEED, MAX_COINS } from './item-rules.js';
 import { TRACKS, getTrack, makeTrack } from './tracks.js';
-import { roughnessAt } from './offroad.js';
+import { roughnessAt,roadGripAt } from './offroad.js';
 import { loadAvatar, loadName, randomAvatar } from '/engine/avatar.js';
 
 const $ = (id) => document.getElementById(id);
@@ -679,6 +679,7 @@ function stepCar(c, input, dt) {
   const boosting = c.boost > 0;
   const top = t.top * c.skill * coinMultiplier(c);
   const rough=c.onGround?roughnessAt(T,c.x,c.z):0,terrain=T.def.offroad;
+  const grip=c.onGround?roadGripAt(T,c.x,c.z):1;
   const acceleration=t.accel*(1-rough*(1-(terrain?.accel??1)));
   const previous={x:c.x,z:c.z};
   if (c.spin > 0) input = { throttle: 0, steer: 0 };   // skidding on a peel: no control
@@ -691,7 +692,7 @@ function stepCar(c, input, dt) {
   if (c.onGround) {
     if (boosting) vf += acceleration * 2.5 * dt;
     else if (input.throttle > 0) vf += acceleration * input.throttle * dt;
-    else if (input.throttle < 0) vf -= (vf > 0 ? t.accel * 2.2 : acceleration * 0.6) * dt;
+    else if (input.throttle < 0) vf -= (vf > 0 ? t.accel * 2.2 * (.75+.25*grip) : acceleration * 0.6) * dt;
     else vf -= Math.sign(vf) * Math.min(Math.abs(vf), 6 * dt);
     // a turbo lifts the cap; when it ends the extra speed bleeds off instead of snapping
     const surfaceTop=top*(1-rough*(1-(terrain?.speed??1)));
@@ -700,7 +701,7 @@ function stepCar(c, input, dt) {
     const cap = rough>0?Math.max(surfaceTop*(boosting?1.5:1),prevVf-48*dt):boosting?top*1.5:Math.max(top,prevVf-20*dt);
     vf = Math.max(-surfaceTop * 0.4, Math.min(cap, vf));
     vf*=Math.exp(-rough*(terrain?.drag??0)*dt);
-    vr *= Math.exp(-t.grip * dt);          // tires bite, a bit of slide remains
+    vr *= Math.exp(-t.grip * grip * dt);   // mineral runoff leaves more lateral slip
     c.steer += (input.steer - c.steer) * Math.min(1, dt * 8);
     const turn = c.steer * t.turn * Math.max(-1, Math.min(1, vf / 10)) * (1 - Math.abs(vf) / top * 0.3);
     c.h += turn * dt;

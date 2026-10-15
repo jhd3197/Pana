@@ -104,7 +104,8 @@ try {
       });
       Object.assign(c, grid); c.inventory = [null, null]; race.items.clear();
       let pickups = 0, maxGroundError = 0;
-      for (let i = 0; i < 24000 && race.state !== 'end'; i++) {
+      const maxFrames=Math.max(24000,Math.ceil(T.TOTAL*3/20*60));
+      for (let i = 0; i < maxFrames && race.state !== 'end'; i++) {
         updateRace(1 / 60);
         const c = race.player;
         if (c.inventory.some(Boolean)) pickups++;
