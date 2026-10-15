@@ -1,5 +1,5 @@
 // Los Roques-inspired racing island. The Bululú board-game world stays independent.
-import { THREE,M,box,sign,smooth,hill,terrain,sea,put,foundation,scatter,instances,clear,finish,boat,edges } from './world-kit.js';
+import { THREE,M,box,sign,smooth,hill,terrain,sea,put,foundation,scatter,instances,clear,finish,edges } from './world-kit.js';
 import { palm,mangrove } from '/engine/flora.js';
 import { colonialHouse,colonialChurch,streetFoodKiosk } from '/engine/pueblo-props.js';
 import { waterAnimator } from '/engine/water-surface.js';
@@ -7,6 +7,7 @@ import { tideZone,tideWetness,tidalCrossing } from './bululu-tide.js';
 import { beachShade,beachHut,driftwood } from '/engine/beach-props.js';
 import { placeReefSchools } from '/engine/reef-fish.js';
 import { souvenirKiosk } from '/engine/landmarks.js';
+import { fishingBoat,coastalLighthouse,lifeguardTower,beachVolleyball,beachShower,rescueRingStand,fishingNetRack,fishCrates,channelBuoy,beachCrab,groundBeachCrab } from '/engine/coastal-props.js';
 const SCALE=1.23;
 const ROUTE=[[-260,80],[-260,155],[-170,210],[-70,220],[10,170],[15,100],[65,60],[140,75],[220,130],[300,110],[335,35],[300,-35],[230,-70],[170,-130],[90,-195],[-5,-215],[-90,-175],[-120,-100],[-185,-65],[-255,-20]].map(([x,z])=>[x*SCALE,z*SCALE]);
 const roadHeight=(x,z)=>(3.2+hill(x,z,-270,-120,120,95,7))*(1-tideZone(x,z))+.48*tideZone(x,z);
@@ -60,6 +61,25 @@ export default {
     detail('beachHut',beachHut,295,65,5,Math.PI);
     const kiosk=detail('souvenir-kiosk',souvenirKiosk,-180,135,4,Math.PI/2);
     for(const [x,z]of [[225,165],[290,150]])detail('driftwood',driftwood,x,z,3,.4);
+    const coast=new THREE.Group();coast.name='roques-coastal-props';group.add(coast);
+    const coastLand=(factory,x,z,radius,rotation=0)=>{
+      if(!clear(T,x,z,radius)||world.groundAt(x,z)<.6||occupied.some(([a,b])=>Math.hypot(x-a,z-b)<radius+10))return;
+      const object=foundation(coast,factory(),x,z,world.groundAt,{radius,rotation,color:0xd6c6a2});
+      object.userData.footprintRadius=radius;occupied.push([x,z]);return object;
+    };
+    coastLand(coastalLighthouse,-294,-155,2.7);
+    coastLand(lifeguardTower,285,110,3.5,Math.PI);
+    coastLand(beachVolleyball,260,20,10);
+    coastLand(beachShower,230,60,1.4);
+    coastLand(rescueRingStand,250,110,1.1,Math.PI);
+    coastLand(fishingNetRack,-185,10,2.5,Math.PI/2);
+    const coastAt=(factory,x,z,y,radius,rotation=0)=>{
+      const object=put(coast,factory(),x,z,y,rotation);object.userData.footprintRadius=radius;return object;
+    };
+    for(const [x,z] of [[-105,-8],[-88,85]])if(clear(T,x,z,1)&&world.groundAt(x,z)<-1)coastAt(channelBuoy,x,z,-.12,1);
+    for(const [i,[x,z]]of [[222,85],[224,87],[247,101],[249,99]].entries())if(clear(T,x,z,1.1)){
+      const crab=coastAt(beachCrab,x,z,world.groundAt(x,z),1.1);groundBeachCrab(crab,world.groundAt,i*1.7);
+    }
     const schools=placeReefSchools(group,{spots:[[-120,0],[-113,32],[-105,65],[-88,94],[175,20],[210,-5]],groundAt:world.groundAt,clearance:(x,z,r)=>clear(T,x,z,r)});
     const fixed=new THREE.Group();
     // Low jetties and peñeros populate the harbor without filling the beach.
@@ -68,20 +88,18 @@ export default {
       if(clear(T,x,z,7)){
         fixed.add(box(22,.4,2.6,M(0x9d8461),x+7,1,z));
         for(const dx of [-3,5,13,19])fixed.add(box(.3,3,.3,M(0x685b49),x+dx,-.2,z));
-        put(fixed,boat(colors[i%5]),x+14,z+6,.1,Math.PI/2);
+        const bx=x+14,bz=z+6;
+        if([-4,0,4].every(dx=>[-4,0,4].every(dz=>world.groundAt(bx+dx,bz+dz)<-.8)))coastAt(()=>fishingBoat({color:colors[i%5]}),bx,bz,-.32,4,Math.PI/2);
+        if(i===1||i===3)coastAt(fishCrates,x+4,z,1.2,1.3);
       }
     }
-    // Painted lighthouse on the dry rocky crest.
-    const lx=-294,lz=-155,ly=world.groundAt(lx,lz);
-    fixed.add(new THREE.Mesh(new THREE.CylinderGeometry(2,2.7,13,12),M(0xf2e4c6)));
-    const tower=fixed.children[fixed.children.length-1];tower.position.set(lx,ly+6.5,lz);
-    fixed.add(box(4.8,.4,4.8,M(0x397b85),lx,ly+13,lz),box(3.2,2,3.2,M(0x579ca7),lx,ly+14,lz));
     put(group,sign('ISLA BULULÚ',16,2.4,{background:'#317c82'}),-235,187,6.7,Math.PI);
     group.add(finish(fixed));
     instances(group,palm({seed:32,h:10}),scatter(T,world.groundAt,{seed:1032,count:58,bounds:[-350,-210,420,240],margin:9,minY:1,accept:(x,z,y)=>y<9&&!occupied.some(([a,b])=>Math.hypot(x-a,z-b)<14)}),'island-palms');
     instances(group,mangrove({seed:17}),scatter(T,world.groundAt,{seed:701,count:35,bounds:[-145,-45,0,150],margin:6,minY:-1.5,accept:(x,z,y)=>y<3}),'lagoon-mangroves');
     const animateWater=waterAnimator(group),tide=tidalCrossing(T);group.add(tide.group);
-    return {group,groundAt:world.groundAt,update:t=>{animateWater(t);tide.update(t);kiosk?.userData.tick(t);schools.forEach(o=>o.userData.tick(t));}};
+    const coastalTicks=coast.children.filter(o=>o.userData.tick);
+    return {group,groundAt:world.groundAt,update:t=>{animateWater(t);tide.update(t);kiosk?.userData.tick(t);schools.forEach(o=>o.userData.tick(t));coastalTicks.forEach(o=>o.userData.tick(t));}};
   },
   scenery(group,kit,T){edges(group,kit,T,{style:'rope',step:7,skip:(s)=>{const p=T.pointAt(s);return tideZone(p.x,p.y)>.01;}});},
 };

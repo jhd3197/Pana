@@ -7,6 +7,7 @@ import { riverDist, landMask, beachMask, fbm, SEA, PEAK, HILL } from './island-t
 import { buildScenery } from './island-scenery.js';
 import { beachShade, beachHut, driftwood } from './beach-props.js';
 import { placeReefSchools } from './reef-fish.js';
+import { fishingBoat,lifeguardTower,beachShower,rescueRingStand,fishingNetRack,fishCrates,channelBuoy,beachCrab,groundBeachCrab } from './coastal-props.js';
 
 export const ISLAND_LOOP = [[28, 94], [0, 97], [-35, 91], [-70, 75], [-92, 48],
   [-103, 12], [-84, -18], [-49, -36], [-12, -34], [24, -36],
@@ -76,6 +77,33 @@ export function createIslandEnvironment(scene, { island, pathDist = island.pathD
     return obj;
   };
   const schools=placeReefSchools(scene,{spots:[[138,22],[139,40],[146,58],[-52,119],[18,132]],groundAt,waterY:SEA,clearance:(x,z,r)=>pathDist(x,z)>r+4&&clearance(x,z,r)});
+  // Reserve coastal furniture before scattering plants. Keep each model root
+  // for animation, ownership and Studio placement inspection.
+  const coast=new THREE.Group();coast.name='island-coastal-props';scene.add(coast);
+  const coastalSpots=[];
+  const coastAt=(factory,x,z,y,radius,rotation=0)=>{
+    if(pathDist(x,z)<=radius+4||!clearance(x,z,radius))return;
+    const object=factory();object.position.set(x,y,z);object.rotation.y=rotation;
+    object.userData.footprintRadius=radius;coast.add(object);decor.push({x,z,obj:object});coastalSpots.push([x,z,radius]);return object;
+  };
+  const coastLand=(factory,x,z,radius,rotation=0)=>{
+    if(inShot(x,z)||groundAt(x,z)<.3||pathDist(x,z)<=radius+4||!clearance(x,z,radius))return;
+    const levels=[-radius,0,radius].flatMap(dx=>[-radius,0,radius].map(dz=>groundAt(x+dx,z+dz)));
+    const top=Math.max(...levels)+.06,bottom=Math.min(...levels)-.15;
+    coast.add(box(radius*2,top-bottom,radius*2,M(0xd6c6a2),x,(top+bottom)/2,z));
+    coastAt(factory,x,z,top,radius,rotation);
+  };
+  coastLand(lifeguardTower,17,75,3.5);
+  coastLand(beachShower,-18,73,1.4);
+  coastLand(fishingNetRack,113,-6,2.5,Math.PI/2);
+  // Dock height is SEA + 2.7; its planks are 0.2 m thick.
+  coastAt(fishCrates,133,24,SEA+2.8,1.3,Math.PI/2);
+  coastAt(rescueRingStand,154,24,SEA+2.8,1.1,Math.PI/2);
+  for(const [x,z] of [[143,31],[151,17]])if(groundAt(x,z)<SEA-1)coastAt(fishingBoat,x,z,SEA-.32,4,Math.PI/2);
+  for(const [x,z] of [[161,32],[157,9]])if(groundAt(x,z)<SEA-1)coastAt(channelBuoy,x,z,SEA-.12,1);
+  for(const [i,[x,z]]of [[10,109],[12,110],[65,96],[67,97]].entries())if(groundAt(x,z)>SEA+.6){
+    const crab=coastAt(beachCrab,x,z,groundAt(x,z),1.1);if(crab)groundBeachCrab(crab,groundAt,i*1.7);
+  }
   // Fruit and flowering gardens reuse the library behind the harbor houses.
   for(const [factory,x,z,seed] of [[hibiscus,112,1,87],[hibiscus,116,42,88],[papaya,112,37,89],[papaya,117,13,90]]) {
     if(groundAt(x,z)>.3&&free(x,z,5)&&!inShot(x,z))place(factory({seed}),x,z);
@@ -85,7 +113,7 @@ export function createIslandEnvironment(scene, { island, pathDist = island.pathD
   for (let i = 0; i < 3400 * layoutScale; i++) {
     const x = (rand() - 0.5) * 310, z = -128 + rand() * 260;
     const y = groundAt(x, z);
-    if (y < 0.15 || !free(x, z, 4.6) || inShot(x, z) || harborSpace(x, z)) continue;
+    if (y < 0.15 || !free(x, z, 4.6) || inShot(x, z) || harborSpace(x, z)||coastalSpots.some(([a,b,r])=>Math.hypot(x-a,z-b)<r+3)) continue;
     const mtn = Math.hypot((x - PEAK.x) * 0.85, z - PEAK.z);
     const woods = fbm(x * 0.035 + 4, z * 0.035);
     const coast = landMask(x, z);
@@ -122,7 +150,7 @@ export function createIslandEnvironment(scene, { island, pathDist = island.pathD
   }
   for (let i = 0; i < 70; i++) {
     const x = (rand() - 0.5) * 220, z = -100 + rand() * 180;
-    if (groundAt(x, z) < 0.5 || !free(x, z, 4) || inShot(x, z) || harborSpace(x, z)) continue;
+    if (groundAt(x, z) < 0.5 || !free(x, z, 4) || inShot(x, z) || harborSpace(x, z)||coastalSpots.some(([a,b,r])=>Math.hypot(x-a,z-b)<r+2)) continue;
     place(rock(0.7 + rand() * 1.6, 0x8b8496, 500 + i), x, z);
   }
 
@@ -218,6 +246,7 @@ export function createIslandEnvironment(scene, { island, pathDist = island.pathD
     },
     update(t, dt, daylight = 1) {
       schools.forEach(o=>o.userData.tick(t));
+      coast.children.forEach(o=>o.userData.tick?.(t));
       const wp = waterGeo.attributes.position;
       for (let i = 0; i < wp.count; i++) {
         const x = waterBase[i * 3], z = waterBase[i * 3 + 2];

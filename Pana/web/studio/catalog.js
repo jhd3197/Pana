@@ -133,6 +133,18 @@ export const ASSETS = [
     ['hollow-log', 'Tronco hueco', 'hollowLog', 'Tronco caído y hueco con hongos, musgo y bordes rotos.', ['tronco', 'obstáculo', 'túnel']],
   ].map(([id, name, factory, description, tags]) => ({ ...object(id, name, 'Selva', '/engine/jungle-props.js', factory, ['stoneTotem','hollowLog','vineArch'].includes(factory)?['Derrape']:['Pana Studio']), description, tags: ['selva', ...tags] })),
   ...[['beachShade', 'Sombrilla de playa'], ['beachHut', 'Rancho de playa'], ['driftwood', 'Tronco de playa']].map(([factory, name]) => object(factory, name, 'Objetos', '/engine/beach-props.js', factory, ['Bululú', 'Derrape'])),
+  ...[
+    ['fishing-boat','Peñero de pesca','fishingBoat','Casco abierto, bancos de madera, remos, motor fuera de borda y cabo de proa.',true],
+    ['coastal-lighthouse','Faro costero','coastalLighthouse','Torre pintada, balcón circular, linterna abierta y techo cónico.',false],
+    ['lifeguard-tower','Torre de salvavidas','lifeguardTower','Puesto elevado con escalinata, asiento, techo coral y aro de rescate.',true],
+    ['beach-volleyball','Cancha de voleibol de playa','beachVolleyball','Campo de arena delimitado, red abierta con caída y pelota.',false],
+    ['beach-shower','Ducha de playa','beachShower','Tarima de madera, tubería curva, rociador y válvula.',true],
+    ['rescue-ring-stand','Puesto de salvavidas','rescueRingStand','Aro con bandas, cuerda de rescate y señal sobre un poste.',true],
+    ['fishing-net-rack','Secadero de redes','fishingNetRack','Red tejida colgada entre postes, flotadores y cabo enrollado.',true],
+    ['fish-crates','Cajas de pesca','fishCrates','Cajas de listones apiladas con peces plateados.',true],
+    ['channel-buoy','Boya de canal','channelBuoy','Marcador costero que cabecea suavemente sobre el agua.',true],
+    ['beach-crab','Cangrejo de playa','beachCrab','Caparazón coral, ocho patas, ojos elevados y dos pinzas animadas.',true],
+  ].map(([id,name,factory,description,board])=>({...object(id,name,id==='beach-crab'?'Fauna':'Costa','/engine/coastal-props.js',factory,board?['Bululú','Derrape']:['Derrape']),description,tags:['costa','playa','puerto','Bululú'],dependencies:['/engine/architecture-kit.js','/engine/rural-kit.js']})),
   ...RECIPES.map(r => ({ ...object(`food-${r.id}`, r.name, 'Objetos', '/engine/kitchen-props.js', 'food', ['Cocina'], r.id), tags: ['comida', 'cocina'] })),
   object('corn', 'Mazorca', 'Objetos', '/engine/kitchen-props.js', 'corn', ['Cocina']),
   object('cheese', 'Queso', 'Objetos', '/engine/kitchen-props.js', 'cheese', ['Cocina']),
@@ -163,7 +175,7 @@ export const ASSETS = [
     async build() { const model = makeTrack(track); return { group: model.build(), groundAt:model.terrainAt, route:model, bounds: track.previewBounds ? new Box3(new Vector3(...track.previewBounds[0]), new Vector3(...track.previewBounds[1])) : new Box3(new Vector3(-model.bounds.x - 20, 0, -model.bounds.z - 20), new Vector3(model.bounds.x + 20, 35, model.bounds.z + 20)), update: (t, dt) => model.animated.forEach(o => o.userData.tick?.(t, dt)) }; },
   })),
 ];
-export const CATEGORIES = ['Todos', 'Personajes', 'Vestuario', 'Objetos', 'Fauna', 'Emblemas', 'Pueblo', 'Selva', 'Llanos', 'Páramo', 'Desierto', 'Termales', 'Vegetación', 'Vehículos', 'Mapas'];
+export const CATEGORIES = ['Todos', 'Personajes', 'Vestuario', 'Objetos', 'Fauna', 'Emblemas', 'Pueblo', 'Selva', 'Llanos', 'Páramo', 'Desierto', 'Termales', 'Costa', 'Vegetación', 'Vehículos', 'Mapas'];
 export function sourcePath(url) {
   return url.startsWith('/engine/') ? `Pana${url}` : url.replace(/^\/g\/([^/]+)\//, 'Pana/games/$1/public/');
 }

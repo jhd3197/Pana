@@ -15,7 +15,7 @@ try {
   const page = await context.newPage(); page.on('pageerror', e => errors.push(e.message));
   await page.goto(`${base}/studio.html#track-desierto`);
   await page.locator('#startup').waitFor({ state: 'hidden', timeout: 300000 });
-  assert.equal(await page.evaluate(() => panaLibrary.thumbnails.state.ready), 140);
+  assert.equal(await page.evaluate(() => panaLibrary.thumbnails.state.ready === panaLibrary.assets.length), true);
   const choose = async id => {
     await page.evaluate(id => { location.hash = id; }, id);
     await page.waitForFunction(id => panaLibrary.selected === id && document.querySelector('#preview-status').hidden, id, { timeout: 90000 });

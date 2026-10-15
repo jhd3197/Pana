@@ -8,11 +8,12 @@ normal port fallback applies. `-NoAutoPort` makes that conflict explicit.
 
 ## Library and extension contract
 
-`web/studio/catalog.js` is the curated registration point, currently 140 resources
+`web/studio/catalog.js` is the curated registration point, currently 150 resources
 including twenty-two vegetation models, nine Pana landmarks (`Emblemas`),
 ten Pueblo models, seven jungle structures (`Selva`), eight Páramo structures
 and five thermal landmarks (`Termales`) used by Chi Chi, plus ten Llanos and
-ten Desierto models, plus five `Fauna` entries (horse, chicken, cow, fish and school). See
+ten Desierto models, nine `Costa` objects, plus six `Fauna` entries (horse, chicken,
+cow, fish, school and crab). See `coastal-props.md` for the beach and harbor pack,
 `shared-props.md`, `pueblo-paramo-props.md`, `llanos-desert-props.md` and
 `procedural-farm-animals.md`.
 It derives props from `PLAZA_PROPS`, recipes/stations from Cocina's definitions,
@@ -112,7 +113,7 @@ to ordinary props, mobile layout and warm thumbnail reuse. Screenshots and route
 metrics go to ignored `art/studio/tours/`.
 
 The October 2026 rollout passed all eight routes and the interaction suite above,
-including a 390×844 expanded viewer, all 140 thumbnail preparations and a warm
+including a 390×844 expanded viewer, full-catalog thumbnail preparation and a warm
 reload with zero regenerated thumbnails. Camera stability assertions allow
 1e-8 metres for OrbitControls' spherical-coordinate roundoff. `npm run check`
 passed 176 files. Optional `PANA_QA_PROFILE` stores an isolated browser profile

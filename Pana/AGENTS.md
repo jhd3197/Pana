@@ -74,6 +74,12 @@ clean: only `README.md` and `.gitignore` belong there. Everything else lives her
   Keep their whole swimming envelope below waves and above the seabed, and pass
   path clearance to `placeReefSchools`. Do not bake animated fish. The Studio
   island preview uses the full Bululú board, including scenery and paths.
+  `engine/coastal-props.js` adds nine `Costa` models and the Fauna beach crab.
+  All ten appear in the Bululú circuit; eight types also appear on the board
+  island. Keep buoys/crabs outside static batches and tick absolute time.
+  Boat origins are at the keel: placements sit 0.32 m below mean water.
+  Reserve land furniture before scattering plants; keep dock cargo on its
+  actual deck height. See `../docs/knowledge/coastal-props.md` for coverage/proof.
   See `../docs/knowledge/map-asset-rollout.md` for actual map coverage and the
   remaining Studio-only models. New Plaza garden props must stay outside player
   movement bounds; the race town supplies separate road-safe positions.
