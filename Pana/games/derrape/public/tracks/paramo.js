@@ -15,7 +15,7 @@ export default {
   sectors:[[0,'Prado de frailejones'],[.23,'Las herraduras'],[.45,'Laguna del cielo'],[.67,'Estación cumbre'],[.84,'Bajada del cóndor']],
   items:{boxes:[.1,.29,.47,.66,.87],boxLanes:[-6,-2,2,6],pads:[{u:.19,off:0},{u:.42,off:4},{u:.74,off:-4},{u:.94,off:0}]},
   walls:false,chevrons:true,
-  palette:{horizon:0xc7dae0,skyTop:0x6fa9ce,hemiSky:0xe3eff5,hemiGround:0x899075,hemiInt:1.8,sun:0xffefd0,sunInt:2.6,ground:0x98a278,track:0x777e7c,dune:0,fog:[280,1100]},
+  palette:{skySeed:17,cloudCover:0.63,horizon:0xc7dae0,skyTop:0x6fa9ce,hemiSky:0xe3eff5,hemiGround:0x899075,hemiInt:1.8,sun:0xffefd0,sunInt:2.6,ground:0x98a278,track:0x777e7c,dune:0,fog:[280,1100]},
   environment(T){
     const group=new THREE.Group(),world=terrain(T,{bounds:[-620,-610,560,410],base:baseHeight,
       color:(x,z,y)=>new THREE.Color(0x7f925f).lerp(new THREE.Color(0x768b84),smooth(y,70,145)).lerp(new THREE.Color(0xdde7e4),smooth(y+Math.sin(x*.05)*7+Math.cos(z*.06)*6,145,175))});

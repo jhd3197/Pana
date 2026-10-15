@@ -2,6 +2,7 @@ import { THREE,M,box,smooth,mix,sign,put,finish,boat,clear } from './world-kit.j
 import { maracaiboBridge,canalVilla } from './world-landmarks.js';
 import { palm } from '/engine/models/vegetation/palm.js';
 import { waterSurface } from '/engine/models/effects/water-surface.js';
+import { extendWaterPlane } from './world-horizon.js';
 
 const FINGERS=[325,405,485,565];
 export function waterfrontHeight(x,z,land){
@@ -18,6 +19,7 @@ export const overWater=(x,z)=>x>270&&x<590&&z>365;
 export function createWaterfront(T){
   const group=new THREE.Group(),fixed=new THREE.Group(),houses=new THREE.Group();group.name='plaza-waterfront';
   const waterGeo=new THREE.PlaneGeometry(630,440,64,44);waterGeo.rotateX(-Math.PI/2);
+  extendWaterPlane(waterGeo,{nx:64,nz:44,bounds:[-315,-220,6000,6000]});
   const water=waterSurface(waterGeo,{kind:'canal',color:0x5e9f9b,depth:5,amplitude:.035});water.position.set(585,0,515);water.name='canal-water';group.add(water);
   const bridge=maracaiboBridge();bridge.position.set(420,0,405);group.add(bridge);
   const colors=[0xddc492,0x92b8b0,0xe2a38d,0xb4c2a5,0x7ca3ba];let count=0;

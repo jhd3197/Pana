@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import {createSky} from '/engine/sky.js';
 import {M,box,tube,rng} from '/engine/models/core/primitives.js';
 import {bake} from '/engine/models/core/static-batch.js';
 import {sign} from '/engine/models/core/architecture-kit.js';
@@ -111,14 +112,10 @@ export function createCourse(){
 export function createRaceScene(canvas){
   const renderer=new THREE.WebGLRenderer({canvas,antialias:true});renderer.setClearColor(0xc2d4be);renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.2;
   const scene=new THREE.Scene();scene.fog=new THREE.Fog(0xc2d4be,110,290);
-  const sky=new THREE.Mesh(new THREE.SphereGeometry(380,20,12),new THREE.ShaderMaterial({side:THREE.BackSide,depthWrite:false,
-    uniforms:{top:{value:new THREE.Color(0x91c4d8)},horizon:{value:new THREE.Color(0xd6dfc2)}},
-    vertexShader:'varying float height; void main(){height=position.y/380.0;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);}',
-    fragmentShader:'uniform vec3 top; uniform vec3 horizon; varying float height; void main(){gl_FragColor=vec4(mix(horizon,top,smoothstep(0.0,0.7,height)),1.0);\n#include <tonemapping_fragment>\n#include <colorspace_fragment>\n}'
-  }));sky.name='Llanos sky';scene.add(sky);
+  const sky=createSky({horizon:0xd6dfc2,skyTop:0x508fb9,cloudCover:.56,skySeed:19});scene.add(sky.mesh);
   scene.add(new THREE.HemisphereLight(0xffedce,0x647e45,2));
   const sun=new THREE.DirectionalLight(0xffd59a,2.5);sun.position.set(-50,70,35);sun.castShadow=true;sun.shadow.mapSize.set(1024,1024);sun.shadow.camera.left=-25;sun.shadow.camera.right=25;sun.shadow.camera.top=25;sun.shadow.camera.bottom=-25;sun.shadow.camera.far=180;sun.shadow.bias=-.0003;sun.shadow.normalBias=.035;scene.add(sun,sun.target);
   const course=createCourse();scene.add(course.group);
   const camera=new THREE.PerspectiveCamera(52,1,.1,450);
-  return {renderer,scene,camera,sun,course};
+  return {renderer,scene,camera,sun,course,sky};
 }

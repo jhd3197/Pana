@@ -1,5 +1,6 @@
 // Studio-only camera tour. The route is the same runtime used to build the map.
 import { Vector3, Color, Fog } from 'three';
+import { createSky } from '/engine/sky.js';
 
 export const TOUR_SPEED = 24; // metres per second at 1×
 function roadHeight(route, s) {
@@ -26,7 +27,7 @@ export function createTrackTour({ scene, camera, controls, canvas, invalidate, o
   const stage = canvas.parentElement, app = $('studio-app');
   const maxPolarAngle = controls.maxPolarAngle;
   const canvasLabel = canvas.getAttribute('aria-label');
-  let projection, atmosphere;
+  let projection, atmosphere, sky;
   let route = null, asset = null, active = false, playing = false, distance = 0, speed = 1;
   const clock = seconds => `${Math.floor(seconds / 60)}:${String(Math.floor(seconds % 60)).padStart(2, '0')}`;
   const length = () => route?.TOTAL || 0;
@@ -50,6 +51,7 @@ export function createTrackTour({ scene, camera, controls, canvas, invalidate, o
     const view = tourPose(route, distance);
     camera.position.copy(view.position); controls.target.copy(view.target); camera.lookAt(view.target);
     animate(distance / TOUR_SPEED, dt);
+    sky?.update(distance / TOUR_SPEED);
     invalidate();
   }
   function enter() {
@@ -57,6 +59,7 @@ export function createTrackTour({ scene, camera, controls, canvas, invalidate, o
     projection = { fov: camera.fov, near: camera.near, far: camera.far };
     atmosphere = { background: scene.background, fog: scene.fog };
     const palette = route.def.palette;
+    sky = createSky(palette);scene.add(sky.mesh);
     scene.background = new Color(palette.horizon);
     scene.fog = new Fog(palette.horizon, palette.fog?.[0] ?? 80, palette.fog?.[1] ?? 260);
     active = true; controls.autoRotate = false; $('rotate').setAttribute('aria-pressed', 'false');
@@ -80,6 +83,7 @@ export function createTrackTour({ scene, camera, controls, canvas, invalidate, o
   function leave() {
     active = false; playing = false; distance = 0; controls.enabled = true;
     if (projection) { Object.assign(camera, projection); camera.updateProjectionMatrix(); projection = null; }
+    sky?.dispose();sky = null;
     if (atmosphere) { Object.assign(scene, atmosphere); atmosphere = null; }
     controls.maxPolarAngle = maxPolarAngle;
     update(); invalidate();

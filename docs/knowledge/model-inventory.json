@@ -2,14 +2,14 @@
   "date": "2026-10-15",
   "scope": "Current production 3D resource/model families; catalog variants and scene assemblies are counted separately. No primitive-mesh count or deleted-history total.",
   "counts": {
-    "catalog": 155,
+    "catalog": 158,
     "categories": {
       "Fauna": 10,
       "Vegetación": 22,
       "Llanos": 10,
       "Desierto": 10,
       "Termales": 5,
-      "Objetos": 27,
+      "Objetos": 30,
       "Emblemas": 9,
       "Pueblo": 10,
       "Páramo": 8,
@@ -22,7 +22,7 @@
     },
     "previewOnly": 10,
     "uncatalogedFamilies": 31,
-    "sceneFamilies": 40,
+    "sceneFamilies": 44,
     "dormantFactories": 9
   },
   "assets": [
@@ -915,7 +915,67 @@
         "Cocina",
         "Derrape"
       ],
-      "previewOptions": null,
+      "previewOptions": {
+        "style": "tejas",
+        "h": 7.3
+      },
+      "status": "in-use"
+    },
+    {
+      "id": "house-balcony",
+      "name": "Casa con balcón",
+      "category": "Objetos",
+      "source": "Pana/engine/models/props/plaza-buildings.js",
+      "factory": "house",
+      "usedBy": [
+        "Escondidas",
+        "Cocina",
+        "Derrape"
+      ],
+      "previewOptions": {
+        "style": "balcon",
+        "color": 6069671,
+        "h": 7.8,
+        "seed": 11
+      },
+      "status": "in-use"
+    },
+    {
+      "id": "house-shop",
+      "name": "Bodeguita del pueblo",
+      "category": "Objetos",
+      "source": "Pana/engine/models/props/plaza-buildings.js",
+      "factory": "house",
+      "usedBy": [
+        "Escondidas",
+        "Cocina",
+        "Derrape"
+      ],
+      "previewOptions": {
+        "style": "tienda",
+        "color": 15177844,
+        "h": 7.8,
+        "seed": 11
+      },
+      "status": "in-use"
+    },
+    {
+      "id": "house-terrace",
+      "name": "Casa con terraza",
+      "category": "Objetos",
+      "source": "Pana/engine/models/props/plaza-buildings.js",
+      "factory": "house",
+      "usedBy": [
+        "Escondidas",
+        "Cocina",
+        "Derrape"
+      ],
+      "previewOptions": {
+        "style": "terraza",
+        "color": 9152374,
+        "h": 7.8,
+        "seed": 11
+      },
       "status": "in-use"
     },
     {
@@ -2113,7 +2173,7 @@
       "anchor": "function lighthouse",
       "where": "Bululú board",
       "note": "One tower with a rotating night beam. Not the Costa lighthouse used on the race island; preserve daylight behavior when replacing.",
-      "line": 15
+      "line": 14
     },
     {
       "name": "Offshore sailboat (older)",
@@ -2121,7 +2181,7 @@
       "anchor": "function sailboat",
       "where": "Bululú board",
       "note": "Four box-hull sailboats still bob offshore. Not the new peñero.",
-      "line": 43
+      "line": 42
     },
     {
       "name": "Golden mango landmark tree",
@@ -2137,7 +2197,7 @@
       "anchor": "function church",
       "where": "Escondidas; Cocina; Plaza circuit",
       "note": "Active small bell tower/chapel, distinct from colonialChurch.",
-      "line": 51
+      "line": 158
     },
     {
       "name": "Summit terminal",
@@ -2192,7 +2252,7 @@
       "source": "Pana/games/derrape/public/tracks/world-landmarks.js",
       "anchor": "function grandstand",
       "where": "Estadio",
-      "note": "Six stands with different dimensions/colors.",
+      "note": "Eight stands with different dimensions/colors, covering the infield and outer sectors.",
       "line": 95
     },
     {
@@ -2217,7 +2277,7 @@
       "anchor": "function boat",
       "where": "Plaza circuit; Chi Chi",
       "note": "Cabin option; different builder from the coast peñero and island sailboats.",
-      "line": 97
+      "line": 100
     },
     {
       "name": "Faceted boulder",
@@ -2225,7 +2285,7 @@
       "anchor": "function boulder",
       "where": "Páramo; Chi Chi; Desierto",
       "note": "Instanced geological scatter, separate from props.rock.",
-      "line": 107
+      "line": 110
     },
     {
       "name": "Catch basket",
@@ -2339,7 +2399,7 @@
       "anchor": "function createCourse",
       "where": "Galope; Studio map",
       "note": "Route-generated terrain, shallow water, jump logs, start gantry and trail markers. Shared ranch props and plants are counted separately.",
-      "line": 25
+      "line": 26
     },
     {
       "name": "Selva pyramid",
@@ -2347,7 +2407,7 @@
       "anchor": "function pyramid",
       "where": "Selva",
       "note": "Stepped landmark outside the driving tunnel.",
-      "line": 54
+      "line": 55
     },
     {
       "name": "Road temple tunnel and portals",
@@ -2363,7 +2423,7 @@
       "anchor": "const deck =",
       "where": "Selva",
       "note": "Road-warped planks, piers and flankBridge rails. Anchor spacing normalized by the audit.",
-      "line": 146
+      "line": 149
     },
     {
       "name": "Simple waterfall sheet",
@@ -2419,7 +2479,7 @@
       "anchor": "fisherman",
       "where": "Llanos",
       "note": "Dock planks and supports; capybaras now use shared wildlife.",
-      "line": 111
+      "line": 115
     },
     {
       "name": "Generic race edges",
@@ -2427,7 +2487,7 @@
       "anchor": "function edges",
       "where": "Multiple Derrape circuits",
       "note": "Steel, timber and kerb variants, generated along the route.",
-      "line": 77
+      "line": 80
     },
     {
       "name": "Chevrons/start line/sector signs/ramps",
@@ -2443,7 +2503,7 @@
       "anchor": "function terrain",
       "where": "Derrape",
       "note": "Terrain, sea and stream generators; each map supplies shape and palette.",
-      "line": 34
+      "line": 35
     },
     {
       "name": "Water surface system",
@@ -2486,12 +2546,12 @@
       "line": 115
     },
     {
-      "name": "Drifting cloud bank",
-      "source": "Pana/engine/island-scenery.js",
-      "anchor": "const clouds =",
-      "where": "Bululú board",
-      "note": "Sixteen cloud sprites; animation still accumulates dt and should gain deterministic scrubbing.",
-      "line": 169
+      "name": "Living sky and cloud layers",
+      "source": "Pana/engine/sky.js",
+      "anchor": "function createSky",
+      "where": "Derrape; Galope; Escondidas; Cocina; Bululú and minigames; Studio tours",
+      "note": "One procedural sky draw, seeded cumulus and wisps, absolute-time wind and day/night tint. Scene-owned, outside scenery bounds.",
+      "line": 5
     },
     {
       "name": "Island dock and village light strings",
@@ -2515,7 +2575,7 @@
       "anchor": "function createTown",
       "where": "Plaza circuit",
       "note": "Street surfaces, block gardens, lookout terrace and stairs; shared houses/trees counted separately.",
-      "line": 34
+      "line": 36
     },
     {
       "name": "Plaza waterfront canals and docks",
@@ -2523,7 +2583,39 @@
       "anchor": "function createWaterfront",
       "where": "Plaza circuit",
       "note": "Canal network and moorings around canalVilla.",
-      "line": 18
+      "line": 19
+    },
+    {
+      "name": "Continuous circuit surroundings",
+      "source": "Pana/games/derrape/public/tracks/world-horizon.js",
+      "anchor": "function extendTerrain",
+      "where": "All eight Derrape races",
+      "note": "Exact grid-edge joins to coarser outer terrain; coastal water keeps its detailed near grid and gains a far apron.",
+      "line": 14
+    },
+    {
+      "name": "Plaza outer neighborhoods",
+      "source": "Pana/games/derrape/public/tracks/plaza-outskirts.js",
+      "anchor": "function plazaOutskirts",
+      "where": "Plaza circuit",
+      "note": "Connected outer lanes, 51 additional houses, 26 planted courtyards and road-safe groves. Reuses existing house and plant factories.",
+      "line": 10
+    },
+    {
+      "name": "Llanos pastures and gallery woodland",
+      "source": "Pana/games/derrape/public/tracks/llanos-landscape.js",
+      "anchor": "function llanosLandscape",
+      "where": "Llanos",
+      "note": "Four pastures, repeated ranch fences, harvest bales, morichal palms and distant ceiba groves. Existing animals retain their space.",
+      "line": 9
+    },
+    {
+      "name": "Stadium venue grounds",
+      "source": "Pana/games/derrape/public/tracks/stadium-grounds.js",
+      "anchor": "function stadiumGrounds",
+      "where": "Estadio",
+      "note": "Entrance, perimeter, concourse, planted parking and infields. Parked copies reuse real garage vehicles with no driver.",
+      "line": 10
     },
     {
       "name": "Football pitch and goals",
@@ -2531,7 +2623,7 @@
       "anchor": "for(let i=0;i<10;i++)fixed.add",
       "where": "Estadio",
       "note": "Pitch stripes, markings and two goal frames.",
-      "line": 21
+      "line": 22
     },
     {
       "name": "Pit garages",
@@ -2539,7 +2631,7 @@
       "anchor": "Pit garages",
       "where": "Estadio",
       "note": "Eight inline garage blocks and numbered signs.",
-      "line": 44
+      "line": 45
     },
     {
       "name": "Floodlights and scoreboard",
@@ -2547,7 +2639,7 @@
       "anchor": "const score=",
       "where": "Estadio",
       "note": "Two inline landmark families.",
-      "line": 54
+      "line": 55
     },
     {
       "name": "Basketball court and banners",
@@ -2555,7 +2647,7 @@
       "anchor": "community half-court",
       "where": "Estadio",
       "note": "Court and sponsor panels; shared hoops already cataloged.",
-      "line": 68
+      "line": 69
     },
     {
       "name": "Chi Chi retaining walls and river bridges",
@@ -2579,7 +2671,7 @@
       "anchor": "function sunnyStage",
       "where": "Both Bululú minigames",
       "note": "Sky, ground, clouds and shared landscape props.",
-      "line": 15
+      "line": 16
     },
     {
       "name": "Raft and spinning striped log",
@@ -2839,9 +2931,9 @@
     ],
     [
       "Improve behavior",
-      "Deterministic offshore clouds and ambient perching/swimming routes",
+      "Ambient perching/swimming routes",
       "Shared environments",
-      "Make Studio pause/scrub match game motion across older scenery."
+      "Add more varied animal routes. Cloud wind now uses absolute time across the shared sky."
     ]
   ]
 }

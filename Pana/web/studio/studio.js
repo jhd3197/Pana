@@ -189,7 +189,7 @@ thumbnails = createThumbnails(ASSETS, { onChange: cacheStatus, isBusy: () => loa
 thumbnails.prioritize([selected, ...ASSETS.map(asset => asset.id)]);
 addEventListener('pagehide', event => {
   if (event.persisted) return;
-  stopped = true; generation++; observer.disconnect(); controls.dispose(); release(current); thumbnails.dispose();
+  stopped = true; generation++; observer.disconnect(); controls.dispose(); tour.setTrack(null,null); release(current); thumbnails.dispose();
   if (grid) { grid.geometry.dispose(); grid.material.dispose(); } stage.dispose();
 });
 window.panaLibrary = { assets: ASSETS, renderer, scene, camera, thumbnails, tour, get selected() { return selected; }, get current() { return current; } };

@@ -10,6 +10,7 @@ import { templeTunnel } from './selva-temple.js';
 import { jungleFlora } from './selva-flora.js';
 import { jungleDriving } from './selva-driving.js';
 import { stoneTotem, hollowLog, vineArch } from '/engine/models/props/jungle.js';
+import { extendTerrain } from './world-horizon.js';
 
 const smooth=THREE.MathUtils.smoothstep;
 const mix=THREE.MathUtils.lerp;
@@ -44,7 +45,7 @@ function meshHeight(land,fallback) {
   const p=land.geometry.attributes.position;
   return (x,z)=>{
     const gx=(x+390)/4,gz=(z+465)/4;
-    if(gx<0||gx>=220||gz<0||gz>=185)return fallback(x,z);
+    if(gx<0||gx>=220||gz<0||gz>=185)return land.children.find(o=>o.userData.worldContinuation)?.heightAt(x,z)??fallback(x,z);
     const ix=Math.floor(gx),iz=Math.floor(gz),tx=gx-ix,tz=gz-iz,a=iz*221+ix;
     const ha=p.getY(a),hb=p.getY(a+221),hc=p.getY(a+222),hd=p.getY(a+1);
     return tx+tz<=1?ha*(1-tx-tz)+hb*tz+hd*tx:hc*(tx+tz-1)+hb*(1-tx)+hd*(1-tz);
@@ -84,6 +85,8 @@ export function createJungle(T) {
     return mix(-1.7,mix(bank,24,terrace),smooth(river,8,13));
   }
   const terrain=groundMesh(groundAt),plantGround=meshHeight(terrain,groundAt);group.add(terrain);
+  extendTerrain(terrain,{bounds:[-390,-465,490,275],nx:220,nz:185,height:groundAt,
+    color:(x,z)=>new THREE.Color(0x31593e).lerp(new THREE.Color(0x6d8847),.46+.22*Math.sin(x*.026)*Math.cos(z*.021)),biome:'selva'});
   const river=kit.waterRibbon([...RIVER].reverse(),18,{color:0x529b8b,y:0.3});river.name='selva-river';group.add(river);animated.push(river);
   const tunnel=templeTunnel(T);group.add(tunnel);
   const foundation=[];

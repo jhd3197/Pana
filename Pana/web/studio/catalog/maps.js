@@ -11,7 +11,7 @@ export const MAPS = [
   { id: 'cocina', name: 'Cocina de la plaza', category: 'Mapas', source: '/g/cocina/scene.js', factory: 'createKitchenScene', usedBy: ['Cocina'], game: '/g/cocina/',
     async build() {
       const { createKitchenScene } = await import('/g/cocina/scene.js'); const model = createKitchenScene({ labelsRoot: null });
-      const lights = []; model.scene.traverse(o => { if (o.isLight) lights.push(o); }); lights.forEach(o => o.removeFromParent());
+      const lights = []; model.scene.traverse(o => { if (o.isLight || o.userData.isSky) lights.push(o); }); lights.forEach(o => { o.removeFromParent();if(o.userData.isSky){o.geometry.dispose();o.material.dispose();} });
       const state = { phase: 'lobby', stations: STATIONS.map(s => ({ id: s.id, item: null, fire: 0, progress: 0 })) };
       return { group: model.scene, bounds: new Box3(new Vector3(-28, 0, -24), new Vector3(28, 15, 28)), update: t => model.update(t, state, null, null, false), dispose: () => model.dispose() };
     },

@@ -57,7 +57,7 @@ export const SECTORS = [[0,'Hato Pana'],[.16,'Paso del estero'],[.32,'Potrero ab
 export function sector(s){const u=wrap(s,LENGTH)/LENGTH;return SECTORS.filter(([v])=>u>=v).at(-1)[1];}
 export function formatTime(seconds) {return `${Math.floor(seconds/60)}:${(seconds%60).toFixed(2).padStart(5,'0')}`;}
 // The Studio tour reads this same route; it owns no gameplay state.
-export const courseRoute={id:'galope',TOTAL:LENGTH,LINE:0,ramps:[],groundAt,offsetOf:(x,z)=>nearest(x,z).offset,def:{palette:{horizon:0xd6dfc2,fog:[110,290]}},
+export const courseRoute={id:'galope',TOTAL:LENGTH,LINE:0,ramps:[],groundAt,offsetOf:(x,z)=>nearest(x,z).offset,def:{palette:{horizon:0xd6dfc2,skyTop:0x508fb9,cloudCover:.56,skySeed:19,fog:[110,290]}},
   pointAt(s){const p=at(s);return {x:p.x,y:p.z};},
   heightAtS(s){const p=at(s);return groundAt(p.x,p.z);}
 };

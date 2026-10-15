@@ -473,7 +473,7 @@ export function createBoard(scene, { skyMode = 'day' } = {}) {
     // for the minimap
     pathDist, groundAt, landMask,
     update(t, dt) {
-      atmosphere.update(dt);
+      atmosphere.update(dt,t);
       environment.update(t, dt, atmosphere.daylight);
       // tiles you can pick at a fork bob up and down
       for (const tl of tiles) tl.mesh.position.y = tl.y - 0.2 + (board.highlight.includes(tl.i) ? 0.25 + Math.sin(t * 7) * 0.2 : 0);

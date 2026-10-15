@@ -6,6 +6,7 @@ import { terrainMaterial } from '/engine/terrain-material.js';
 import { sign as makeSign } from '/engine/models/core/architecture-kit.js';
 import { placeOnTrack } from '../track-kit.js';
 import { waterSurface, waterDepthMap, riverSurface } from '/engine/models/effects/water-surface.js';
+import { extendTerrain, extendWaterPlane } from './world-horizon.js';
 export { THREE, M, mesh, box, tube, rng, placeOnTrack };
 export function sign(...args){const panel=makeSign(...args);panel.userData.dispose=()=>panel.material.map.dispose();return panel;}
 export const smooth=THREE.MathUtils.smoothstep, mix=THREE.MathUtils.lerp;
@@ -44,9 +45,10 @@ export function terrain(T,{bounds,base,color,name='world-terrain',step=5,carve=t
   }
   const geo=new THREE.BufferGeometry();geo.setAttribute('position',new THREE.Float32BufferAttribute(positions,3));geo.setAttribute('color',new THREE.Float32BufferAttribute(colors,3));geo.setIndex(indices);geo.computeVertexNormals();
   const land=mesh(geo,terrainMaterial());land.name=name;
+  const horizon=extendTerrain(land,{bounds,nx,nz,height:(x,z)=>cut(x,z,base(x,z)),color,biome:T.def.id});
   // The actual triangular mesh is the placement surface, including steep banks.
   const groundAt=(x,z)=>{
-    const gx=(x-x0)/dx,gz=(z-z0)/dz,ix=Math.floor(gx),iz=Math.floor(gz);if(ix<0||iz<0||ix>=nx||iz>=nz)return height(x,z);
+    const gx=(x-x0)/dx,gz=(z-z0)/dz,ix=Math.floor(gx),iz=Math.floor(gz);if(ix<0||iz<0||ix>=nx||iz>=nz)return horizon.heightAt(x,z)??height(x,z);
     const a=iz*(nx+1)+ix,tx=gx-ix,tz=gz-iz,p=geo.attributes.position;
     return tx+tz<=1?p.getY(a)*(1-tx-tz)+p.getY(a+1)*tx+p.getY(a+nx+1)*tz:p.getY(a+nx+2)*(tx+tz-1)+p.getY(a+1)*(1-tz)+p.getY(a+nx+1)*(1-tx);
   };
@@ -55,6 +57,7 @@ export function terrain(T,{bounds,base,color,name='world-terrain',step=5,carve=t
 
 export function sea(base,{size=2200,y=0,opacity=1}={}) {
   const geo=new THREE.PlaneGeometry(size,size,90,90);geo.rotateX(-Math.PI/2);
+  extendWaterPlane(geo,{nx:90,nz:90,bounds:[-6000,-6000,6000,6000]});
   const water=waterSurface(geo,{depthMap:waterDepthMap(base,{size,y}),size,amplitude:.11,opacity});
   water.position.y=y;water.name='coastal-water';return water;
 }

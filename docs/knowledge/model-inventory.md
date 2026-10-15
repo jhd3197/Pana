@@ -2,7 +2,7 @@
 
 Audited 2026-10-15. Generated from the real Studio registry plus a reviewed source ledger.
 
-**155 Studio resources**, including **10 Fauna entries**, **22 vegetation entries**, **8 vehicles** and **12 maps**. **10 resources are preview-only.** The separate ledger identifies **31 active uncataloged model families**, **40 scene/effect families** and **9 dormant factories/hooks**. These numbers must not be added into a “unique 3D models” total: maps contain models, variants share geometry, and some ledger rows group multiple related props.
+**158 Studio resources**, including **10 Fauna entries**, **22 vegetation entries**, **8 vehicles** and **12 maps**. **10 resources are preview-only.** The separate ledger identifies **31 active uncataloged model families**, **44 scene/effect families** and **9 dormant factories/hooks**. These numbers must not be added into a “unique 3D models” total: maps contain models, variants share geometry, and some ledger rows group multiple related props.
 
 Scope: current production geometry in `engine/` and the four games, including Bululú minigames, gameplay props, embedded wardrobe options and map scenery. Individual meshes, geometry helpers, UI/SVG art, generated screenshots, dependency internals and historical deleted revisions are excluded. Catalog consumer labels identify games, not instance counts. Active uncataloged entries were traced to their placement sources; presence in source does not guarantee visibility from every camera. Legacy rows are retained explicitly instead of being presented as new content.
 
@@ -40,7 +40,7 @@ Flight faces its travel direction, and all new animation rewinds using absolute 
 | Build new | Pit tool cart, jack, cones and portable barriers | Estadio | Build a believable working paddock around existing garages. |
 | Build new | Waste bins, drain covers, utility poles and traffic signs | Plaza / Cocina streets | Small everyday details fill gaps between the buildings. |
 | Build new | Fishing baskets, anchor, mooring bollard and fish-drying table | Harbors | Complements the existing fishing boat, net rack and crates. |
-| Improve behavior | Deterministic offshore clouds and ambient perching/swimming routes | Shared environments | Make Studio pause/scrub match game motion across older scenery. |
+| Improve behavior | Ambient perching/swimming routes | Shared environments | Add more varied animal routes. Cloud wind now uses absolute time across the shared sky. |
 
 ## Available but not placed
 
@@ -67,21 +67,21 @@ These already exist. Their absence from a map is a placement gap, not a missing-
 | Watchtower | Bululú board; No te caigas | [watchtower.js](../../Pana/engine/models/props/watchtower.js#L4) | Thatch/zinc options; distinct from the new lifeguard tower. |
 | Venezuelan flagpole | Bululú board; No te caigas; Selva | [flags.js](../../Pana/engine/models/props/flags.js#L38) | Active animated flag. Pana branded pedestal is a separate catalog entry. |
 | Displaced rock | Bululú board/minigames; Selva | [rock.js](../../Pana/engine/models/props/rock.js#L4) | Shared seeded rock, also embedded inside other models. |
-| Offshore lighthouse (older) | Bululú board | [island-scenery.js](../../Pana/engine/island-scenery.js#L15) | One tower with a rotating night beam. Not the Costa lighthouse used on the race island; preserve daylight behavior when replacing. |
-| Offshore sailboat (older) | Bululú board | [island-scenery.js](../../Pana/engine/island-scenery.js#L43) | Four box-hull sailboats still bob offshore. Not the new peñero. |
+| Offshore lighthouse (older) | Bululú board | [island-scenery.js](../../Pana/engine/island-scenery.js#L14) | One tower with a rotating night beam. Not the Costa lighthouse used on the race island; preserve daylight behavior when replacing. |
+| Offshore sailboat (older) | Bululú board | [island-scenery.js](../../Pana/engine/island-scenery.js#L42) | Four box-hull sailboats still bob offshore. Not the new peñero. |
 | Golden mango landmark tree | Bululú board | [island-environment.js](../../Pana/engine/island-environment.js#L38) | Special large fruit tree; separate construction from flora.mangoTree. |
-| Original plaza church | Escondidas; Cocina; Plaza circuit | [plaza-buildings.js](../../Pana/engine/models/props/plaza-buildings.js#L51) | Active small bell tower/chapel, distinct from colonialChurch. |
+| Original plaza church | Escondidas; Cocina; Plaza circuit | [plaza-buildings.js](../../Pana/engine/models/props/plaza-buildings.js#L158) | Active small bell tower/chapel, distinct from colonialChurch. |
 | Summit terminal | Páramo | [world-landmarks.js](../../Pana/games/derrape/public/tracks/world-landmarks.js#L5) | Upper/lower terminals; separate from the catalog heritage cable-car station. |
 | Aerial cable system and cabins | Páramo | [world-landmarks.js](../../Pana/games/derrape/public/tracks/world-landmarks.js#L19) | Six moving cabins, two cable curves; parameterized scene assembly. |
 | Cable support tower | Páramo | [world-landmarks.js](../../Pana/games/derrape/public/tracks/world-landmarks.js#L39) | Terrain-dependent support height. |
 | Diving school | Chi Chi | [world-landmarks.js](../../Pana/games/derrape/public/tracks/world-landmarks.js#L46) | Facade, dive tanks and diver flag. |
 | Coastal fort | Chi Chi | [world-landmarks.js](../../Pana/games/derrape/public/tracks/world-landmarks.js#L63) | Lookout landmark on the mountain coast. |
 | Maracaibo-inspired bridge | Plaza circuit | [world-landmarks.js](../../Pana/games/derrape/public/tracks/world-landmarks.js#L75) | Full driving bridge; use its actual road deck when previewing. |
-| Grandstand | Estadio | [world-landmarks.js](../../Pana/games/derrape/public/tracks/world-landmarks.js#L95) | Six stands with different dimensions/colors. |
+| Grandstand | Estadio | [world-landmarks.js](../../Pana/games/derrape/public/tracks/world-landmarks.js#L95) | Eight stands with different dimensions/colors, covering the infield and outer sectors. |
 | Canal villa | Plaza circuit | [world-landmarks.js](../../Pana/games/derrape/public/tracks/world-landmarks.js#L107) | Waterfront houses and balconies. |
 | Small rowboat (older) | Selva; Llanos | [track-kit.js](../../Pana/games/derrape/public/track-kit.js#L427) | Two active river boats. Keep shallow-water footprint when upgrading. |
-| Canal/dive-village boat | Plaza circuit; Chi Chi | [world-kit.js](../../Pana/games/derrape/public/tracks/world-kit.js#L97) | Cabin option; different builder from the coast peñero and island sailboats. |
-| Faceted boulder | Páramo; Chi Chi; Desierto | [world-kit.js](../../Pana/games/derrape/public/tracks/world-kit.js#L107) | Instanced geological scatter, separate from props.rock. |
+| Canal/dive-village boat | Plaza circuit; Chi Chi | [world-kit.js](../../Pana/games/derrape/public/tracks/world-kit.js#L100) | Cabin option; different builder from the coast peñero and island sailboats. |
+| Faceted boulder | Páramo; Chi Chi; Desierto | [world-kit.js](../../Pana/games/derrape/public/tracks/world-kit.js#L110) | Instanced geological scatter, separate from props.rock. |
 | Catch basket | Atrapa los mangos | [atrapa.js](../../Pana/games/bululu/public/minigames/atrapa.js#L18) | Held by players; needs a standalone preview adapter. |
 | Coconut | Atrapa los mangos | [atrapa.js](../../Pana/games/bululu/public/minigames/atrapa.js#L30) | Falling hazard with three dark eyes. |
 | Mango minigame tree (older) | Atrapa los mangos | [atrapa.js](../../Pana/games/bululu/public/minigames/atrapa.js#L39) | Old polygon canopy and random fruit placement. Modernize with shared flora while preserving catch lanes. |
@@ -100,37 +100,41 @@ These already exist. Their absence from a map is a placement gap, not a missing-
 | Resource / family | Current location | Source | Finding |
 | --- | --- | --- | --- |
 | Mounted horse and riding tack | Galope; hub tile | [rider.js](../../Pana/games/galope/public/rider.js#L7) | Shared horse and saved pana with game-local saddle, stirrups and reins; not a duplicate animal sculpt. |
-| Horse course and wadeable esteros | Galope; Studio map | [scene.js](../../Pana/games/galope/public/scene.js#L25) | Route-generated terrain, shallow water, jump logs, start gantry and trail markers. Shared ranch props and plants are counted separately. |
-| Selva pyramid | Selva | [selva-world.js](../../Pana/games/derrape/public/tracks/selva-world.js#L54) | Stepped landmark outside the driving tunnel. |
+| Horse course and wadeable esteros | Galope; Studio map | [scene.js](../../Pana/games/galope/public/scene.js#L26) | Route-generated terrain, shallow water, jump logs, start gantry and trail markers. Shared ranch props and plants are counted separately. |
+| Selva pyramid | Selva | [selva-world.js](../../Pana/games/derrape/public/tracks/selva-world.js#L55) | Stepped landmark outside the driving tunnel. |
 | Road temple tunnel and portals | Selva | [selva-temple.js](../../Pana/games/derrape/public/tracks/selva-temple.js#L88) | Swept along the actual road; not the unused standalone temple entrance. |
-| Selva plank crossing | Selva | [selva-world.js](../../Pana/games/derrape/public/tracks/selva-world.js#L146) | Road-warped planks, piers and flankBridge rails. Anchor spacing normalized by the audit. |
+| Selva plank crossing | Selva | [selva-world.js](../../Pana/games/derrape/public/tracks/selva-world.js#L149) | Road-warped planks, piers and flankBridge rails. Anchor spacing normalized by the audit. |
 | Simple waterfall sheet | Selva | [track-kit.js](../../Pana/games/derrape/public/track-kit.js#L273) | Active older waterfall; separate from waterfallRocks in Chi Chi. |
 | Pond and river wrappers | Selva | [track-kit.js](../../Pana/games/derrape/public/track-kit.js#L263) | waterPond/waterRibbon wrap the shared water surface. |
 | Country grass tufts | Llanos; Desierto | [country-details.js](../../Pana/games/derrape/public/tracks/country-details.js#L4) | Instanced grass, absent from the 22 plant catalog entries. |
 | Country entrance gantry | Llanos; Desierto | [country-details.js](../../Pana/games/derrape/public/tracks/country-details.js#L15) | Map-specific entrance text and width. |
 | Country bridge crossings | Llanos; Desierto | [country-details.js](../../Pana/games/derrape/public/tracks/country-details.js#L24) | Road-conforming decks/rails; not standalone rope bridges. |
 | Verge posts and dirt shoulders | Llanos; Desierto | [country-details.js](../../Pana/games/derrape/public/tracks/country-details.js#L39) | Route-generated posts, shoulders and tire ruts. |
-| Llanos wetland landing | Llanos | [llanos-world.js](../../Pana/games/derrape/public/tracks/llanos-world.js#L111) | Dock planks and supports; capybaras now use shared wildlife. |
-| Generic race edges | Multiple Derrape circuits | [world-kit.js](../../Pana/games/derrape/public/tracks/world-kit.js#L77) | Steel, timber and kerb variants, generated along the route. |
+| Llanos wetland landing | Llanos | [llanos-world.js](../../Pana/games/derrape/public/tracks/llanos-world.js#L115) | Dock planks and supports; capybaras now use shared wildlife. |
+| Generic race edges | Multiple Derrape circuits | [world-kit.js](../../Pana/games/derrape/public/tracks/world-kit.js#L80) | Steel, timber and kerb variants, generated along the route. |
 | Chevrons/start line/sector signs/ramps | Derrape | [track-kit.js](../../Pana/games/derrape/public/track-kit.js#L143) | Four route-generated furniture families; ramps depend on each track definition. |
-| Race terrain and waterways | Derrape | [world-kit.js](../../Pana/games/derrape/public/tracks/world-kit.js#L34) | Terrain, sea and stream generators; each map supplies shape and palette. |
+| Race terrain and waterways | Derrape | [world-kit.js](../../Pana/games/derrape/public/tracks/world-kit.js#L35) | Terrain, sea and stream generators; each map supplies shape and palette. |
 | Water surface system | Derrape | [water-surface.js](../../Pana/engine/models/effects/water-surface.js#L18) | Ocean, river, canal and pool configurations; not separate species/objects. |
 | Bululú tide wash | Bululú circuit | [bululu-tide.js](../../Pana/games/derrape/public/tracks/bululu-tide.js#L20) | Animated surface tied to tire grip and wetness. |
 | Board island terrain | Bululú board | [island-terrain.js](../../Pana/engine/island-terrain.js#L97) | Shoreline, beach, hills, river and path cuts. |
 | Forested islet/ridge | Bululú board | [island-landscape.js](../../Pana/engine/island-landscape.js#L40) | Seeded neighboring islands and distant ridges. |
 | Tepui and waterfall | Bululú board | [island-landscape.js](../../Pana/engine/island-landscape.js#L115) | Three mesas; one waterfall/mist landmark. Not the Selva waterfall. |
-| Drifting cloud bank | Bululú board | [island-scenery.js](../../Pana/engine/island-scenery.js#L169) | Sixteen cloud sprites; animation still accumulates dt and should gain deterministic scrubbing. |
+| Living sky and cloud layers | Derrape; Galope; Escondidas; Cocina; Bululú and minigames; Studio tours | [sky.js](../../Pana/engine/sky.js#L5) | One procedural sky draw, seeded cumulus and wisps, absolute-time wind and day/night tint. Scene-owned, outside scenery bounds. |
 | Island dock and village light strings | Bululú board | [island-environment.js](../../Pana/engine/island-environment.js#L180) | Placement-specific geometry; not separate library factories. |
 | Race-island piers | Bululú circuit | [bululu.js](../../Pana/games/derrape/public/tracks/bululu.js#L88) | Inline harbor planks and pilings. |
-| Plaza streets, gardens and mirador | Plaza circuit | [plaza-town.js](../../Pana/games/derrape/public/tracks/plaza-town.js#L34) | Street surfaces, block gardens, lookout terrace and stairs; shared houses/trees counted separately. |
-| Plaza waterfront canals and docks | Plaza circuit | [plaza-waterfront.js](../../Pana/games/derrape/public/tracks/plaza-waterfront.js#L18) | Canal network and moorings around canalVilla. |
-| Football pitch and goals | Estadio | [estadio.js](../../Pana/games/derrape/public/tracks/estadio.js#L21) | Pitch stripes, markings and two goal frames. |
-| Pit garages | Estadio | [estadio.js](../../Pana/games/derrape/public/tracks/estadio.js#L44) | Eight inline garage blocks and numbered signs. |
-| Floodlights and scoreboard | Estadio | [estadio.js](../../Pana/games/derrape/public/tracks/estadio.js#L54) | Two inline landmark families. |
-| Basketball court and banners | Estadio | [estadio.js](../../Pana/games/derrape/public/tracks/estadio.js#L68) | Court and sponsor panels; shared hoops already cataloged. |
+| Plaza streets, gardens and mirador | Plaza circuit | [plaza-town.js](../../Pana/games/derrape/public/tracks/plaza-town.js#L36) | Street surfaces, block gardens, lookout terrace and stairs; shared houses/trees counted separately. |
+| Plaza waterfront canals and docks | Plaza circuit | [plaza-waterfront.js](../../Pana/games/derrape/public/tracks/plaza-waterfront.js#L19) | Canal network and moorings around canalVilla. |
+| Continuous circuit surroundings | All eight Derrape races | [world-horizon.js](../../Pana/games/derrape/public/tracks/world-horizon.js#L14) | Exact grid-edge joins to coarser outer terrain; coastal water keeps its detailed near grid and gains a far apron. |
+| Plaza outer neighborhoods | Plaza circuit | [plaza-outskirts.js](../../Pana/games/derrape/public/tracks/plaza-outskirts.js#L10) | Connected outer lanes, 51 additional houses, 26 planted courtyards and road-safe groves. Reuses existing house and plant factories. |
+| Llanos pastures and gallery woodland | Llanos | [llanos-landscape.js](../../Pana/games/derrape/public/tracks/llanos-landscape.js#L9) | Four pastures, repeated ranch fences, harvest bales, morichal palms and distant ceiba groves. Existing animals retain their space. |
+| Stadium venue grounds | Estadio | [stadium-grounds.js](../../Pana/games/derrape/public/tracks/stadium-grounds.js#L10) | Entrance, perimeter, concourse, planted parking and infields. Parked copies reuse real garage vehicles with no driver. |
+| Football pitch and goals | Estadio | [estadio.js](../../Pana/games/derrape/public/tracks/estadio.js#L22) | Pitch stripes, markings and two goal frames. |
+| Pit garages | Estadio | [estadio.js](../../Pana/games/derrape/public/tracks/estadio.js#L45) | Eight inline garage blocks and numbered signs. |
+| Floodlights and scoreboard | Estadio | [estadio.js](../../Pana/games/derrape/public/tracks/estadio.js#L55) | Two inline landmark families. |
+| Basketball court and banners | Estadio | [estadio.js](../../Pana/games/derrape/public/tracks/estadio.js#L69) | Court and sponsor panels; shared hoops already cataloged. |
 | Chi Chi retaining walls and river bridges | Chi Chi | [chichi-village.js](../../Pana/games/derrape/public/tracks/chichi-village.js#L41) | Bridge geometry follows road/river. Retaining walls in chichi.js. |
 | Bululú board tiles, paths, stairs and pins | Bululú board | [board.js](../../Pana/games/bululu/public/board.js#L60) | Tile-kind texture variants, raised supports, fork paths and waypoint sprites. |
-| Sunny minigame stage | Both Bululú minigames | [stage.js](../../Pana/games/bululu/public/minigames/stage.js#L15) | Sky, ground, clouds and shared landscape props. |
+| Sunny minigame stage | Both Bululú minigames | [stage.js](../../Pana/games/bululu/public/minigames/stage.js#L16) | Sky, ground, clouds and shared landscape props. |
 | Raft and spinning striped log | No te caigas | [caigas.js](../../Pana/games/bululu/public/minigames/caigas.js#L45) | Player platforms, floats, central post, rotating obstacle and sandbars. |
 | Minigame wave surface | No te caigas | [caigas.js](../../Pana/games/bululu/public/minigames/caigas.js#L38) | Older deformed plane, separate from the shared water shader. |
 | Boost pad | Derrape | [items.js](../../Pana/games/derrape/public/items.js#L71) | Animated ground marker, separate from collectible item models. |
@@ -258,7 +262,7 @@ The following list is generated, not manually copied. “In use” is the catalo
 | Circuito · Plaza Pana · track-plaza | Derrape | [plaza.js](../../Pana/games/derrape/public/tracks/plaza.js) | makeTrack(definition).build |
 | Circuito · Isla Bululú · track-bululu | Derrape | [bululu.js](../../Pana/games/derrape/public/tracks/bululu.js) | makeTrack(definition).build |
 
-### Objetos (27)
+### Objetos (30)
 
 | Name / ID | Status / games | Source | Constructor |
 | --- | --- | --- | --- |
@@ -270,6 +274,9 @@ The following list is generated, not manually copied. “In use” is the catalo
 | Puesto de mercado · market-stall | Escondidas, Derrape | [plaza.js](../../Pana/engine/models/props/plaza.js) | marketStall |
 | Farol de plaza · street-lamp | Escondidas, Cocina, Derrape | [plaza.js](../../Pana/engine/models/props/plaza.js) | streetLamp |
 | Casa del pueblo · house | Escondidas, Cocina, Derrape | [plaza-buildings.js](../../Pana/engine/models/props/plaza-buildings.js) | house |
+| Casa con balcón · house-balcony | Escondidas, Cocina, Derrape | [plaza-buildings.js](../../Pana/engine/models/props/plaza-buildings.js) | house |
+| Bodeguita del pueblo · house-shop | Escondidas, Cocina, Derrape | [plaza-buildings.js](../../Pana/engine/models/props/plaza-buildings.js) | house |
+| Casa con terraza · house-terrace | Escondidas, Cocina, Derrape | [plaza-buildings.js](../../Pana/engine/models/props/plaza-buildings.js) | house |
 | Mango · mango | Bululú, Derrape | [mango.js](../../Pana/engine/models/props/mango.js) | makeMango |
 | Mango dorado · gold-mango | Bululú, Derrape | [mango.js](../../Pana/engine/models/props/mango.js) | makeMango |
 | Casita de isla · casita | Bululú | [island-house.js](../../Pana/engine/models/props/island-house.js) | casita |

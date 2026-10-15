@@ -12,6 +12,8 @@ import { AVENUES, STREETS, BLOCKS, STREET_HALF, townHeight, streetDistance } fro
 import { waterfrontHeight,overWater,createWaterfront } from './plaza-waterfront.js';
 import { waterAnimator } from '/engine/models/effects/water-surface.js';
 import { colonialHouse, busStopShelter } from '/engine/models/props/pueblo.js';
+import { extendTerrain } from './world-horizon.js';
+import { plazaOutskirts } from './plaza-outskirts.js';
 
 const COLORS=[0xe2b267,0x66a8a0,0xdd9277,0xaabb82,0xe7ce98,0x7d9fac];
 const PAVING=0xd2bd95, ROAD=0x8b958c;
@@ -35,7 +37,9 @@ export function createTown(T) {
   const group=new THREE.Group(),ground=new THREE.Group(),buildings=new THREE.Group(),plants=new THREE.Group();
   const random=rng(391),placements=[],trees=[],clear=(x,z,r=0)=>Math.abs(T.offsetOf(x,z))>T.HW+r+2;
   // A level cross-section through the hill supports roads, paving and foundations.
+  let horizon;
   function groundAt(x,z) {
+    if(horizon&&(x<-650||x>850||z<-700||z>600))return horizon.heightAt(x,z)??waterfrontHeight(x,z,townHeight(x,z)-.3);
     const d=Math.abs(T.offsetOf(x,z)),blend=THREE.MathUtils.smoothstep(d,T.HW+8,T.HW+25);
     const land=waterfrontHeight(x,z,townHeight(x,z)-0.3);
     return overWater(x,z)?land:THREE.MathUtils.lerp(T.surfaceAt(x,z)-0.3,land,blend);
@@ -47,13 +51,15 @@ export function createTown(T) {
   }
   land.geometry.setAttribute('color',new THREE.Float32BufferAttribute(colors,3));
   land.material=M(0xffffff,{vertexColors:true,flatShading:false,roughness:1});land.name='plaza-terrain';group.add(land);
+  horizon=extendTerrain(land,{bounds:[-650,-700,850,600],nx:300,nz:260,height:groundAt,biome:'plaza',
+    color:(x,z)=>lawn.clone().lerp(dry,.26+.16*Math.sin(x*.013)*Math.cos(z*.017))});
 
   // Streets extend through junctions into the outskirts, independently of the lap.
   for(const x of AVENUES)ground.add(surface(x-STREET_HALF,-355,x+STREET_HALF,x>265?275:325,(x,z)=>groundAt(x,z)+0.2,ROAD,2));
   for(const z of STREETS)ground.add(surface(-355,z-STREET_HALF,465,z+STREET_HALF,(x,z)=>groundAt(x,z)+0.21,ROAD,2));
   // Main avenues keep going beyond the built blocks toward neighboring towns.
-  for(const z of [-200,60])for(const [a,b] of [[-650,-355],[465,850]])ground.add(surface(a,z-STREET_HALF,b,z+STREET_HALF,(x,z)=>groundAt(x,z)+0.21,ROAD,2));
-  for(const [a,b] of [[-700,-355],[325,600]])ground.add(surface(195-STREET_HALF,a,195+STREET_HALF,b,(x,z)=>groundAt(x,z)+0.2,ROAD,2));
+  for(const z of [-200,60])for(const [a,b] of [[-590,-355],[465,710]])ground.add(surface(a,z-STREET_HALF,b,z+STREET_HALF,(x,z)=>groundAt(x,z)+0.21,ROAD,2));
+  for(const [a,b] of [[-420,-355],[325,430]])ground.add(surface(195-STREET_HALF,a,195+STREET_HALF,b,(x,z)=>groundAt(x,z)+0.2,ROAD,2));
   const outsideLane=(x,z)=>clear(x,z,1.5);
   for(const b of BLOCKS) {
     ground.add(surface(b.x0+11,b.z0+11,b.x1-11,b.z1-11,(x,z)=>groundAt(x,z)+0.3,PAVING,2));
@@ -63,7 +69,7 @@ export function createTown(T) {
     ground.add(surface(x+k*2.3-0.65,z+side*15-1.5,x+k*2.3+0.65,z+side*15+1.5,(x,z)=>groundAt(x,z)+0.24,0xe4dfc9,1));
     ground.add(surface(x+side*15-1.5,z+k*2.3-0.65,x+side*15+1.5,z+k*2.3+0.65,(x,z)=>groundAt(x,z)+0.25,0xe4dfc9,1));
   }
-  const prototypes=COLORS.map((color,i)=>i%2?colonialHouse({color,seed:11+i}):house({w:8.2,h:5.4,color,seed:i})),occupied=[];
+  const prototypes=Array.from({length:12},(_,i)=>i%5===4?colonialHouse({color:COLORS[i%6],seed:11+i}):house({w:7.3+(i%3)*.4,h:i%3===0?5.4:7.1+(i%2)*.8,color:COLORS[(i*5+Math.floor(i/4))%6],seed:i+21,style:['tejas','balcon','tienda','terraza'][i%4]})),occupied=[];
   function building(x,z,turn,seed,scale=1) {
     if(groundAt(x,z)<-0.4||x>270&&z>280)return;
     if(!clear(x,z,10*scale)||streetDistance(x,z)<STREET_HALF+8.5*scale||(Math.abs(x)<68&&z>-57&&z<48)||occupied.some(p=>Math.hypot(x-p.x,z-p.z)<12*scale))return;
@@ -138,6 +144,7 @@ export function createTown(T) {
     stop.userData.assetId='bus-stop-shelter';stop.userData.footprintRadius=4;group.add(stop);
   }
   plaza.group.scale.setScalar(2);group.add(plaza.group);
+  const outskirts=plazaOutskirts(T,groundAt,building,occupied);group.add(outskirts);group.userData.surroundings=outskirts.userData.surroundings;
   group.add(bake(ground,{cellSize:200}),bake(buildings,{cellSize:200}),bake(plants,{cellSize:200}));
   group.add(createWaterfront(T));
   const privateGeometries=new Set();

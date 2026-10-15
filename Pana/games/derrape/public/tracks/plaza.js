@@ -13,7 +13,7 @@ export default {
   items: { boxes: [0.12, 0.31, 0.52, 0.73, 0.91], boxLanes: [-6, -2, 2, 6],
     pads: [{ u: 0.23, off: -4 }, { u: 0.46, off: 4 }, { u: 0.68, off: 0 }, { u: 0.87, off: -4 }] },
   walls: false,
-  palette: { horizon: 0xbfd5c5, skyTop: 0x8bcde9, hemiSky: 0xe6f6ff, hemiGround: 0xb29772, hemiInt: 1.8,
+  palette: { horizon: 0xc7e1e8, skyTop: 0x458ec4, skySeed: 7, cloudCover: .52, hemiSky: 0xe6f6ff, hemiGround: 0xb29772, hemiInt: 1.8,
     sun: 0xffe1ab, sunInt: 3, ground: 0x9fb37c, track: 0x8b958c, dune: 0, fog: [170, 720] },
   environment: createTown,
   scenery: raceEdges,

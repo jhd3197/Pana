@@ -15,6 +15,7 @@ import { yardChicken } from '/engine/models/fauna/farm/yard-chicken.js';
 import { hatoCow } from '/engine/models/fauna/farm/hato-cow.js';
 import { baseHeight,riverDistance,ESTEROS,WATER_Y,wetlandDistance } from './llanos-layout.js';
 import { grassTuft,entrance,crossing,vergePosts,dirtVerge } from './country-details.js';
+import { llanosLandscape } from './llanos-landscape.js';
 
 export function llanosEnvironment(T){
   const group=new THREE.Group(),counts={},occupied=[],moving=[];
@@ -83,9 +84,12 @@ export function llanosEnvironment(T){
   // One surface shares the terrain's grid and triangle split. Signed bed depth
   // clips the shader at the actual bank, including under both elevated bridges.
   // Overlapping pond/river meshes would leave seams and coplanar flickering.
-  const vertices=[],depths=[],indices=[],nx=80,nz=208;
+  const vertices=[],depths=[],indices=[],nx=100,nz=400;
+  // Continue to the rounded ends of the caño instead of chopping the water at
+  // the old rectangle. groundAt also interpolates the real outer bank triangles.
   for(let j=0;j<=nz;j++)for(let i=0;i<=nx;i++){
-    const x=-140+i*5,z=-530+j*5;vertices.push(x,WATER_Y,z);depths.push(WATER_Y-world.groundAt(x,z));
+    const x=-140+i*5,z=-1000+j*5,bed=world.groundAt(x,z);
+    vertices.push(x,WATER_Y,z);depths.push(WATER_Y-bed);
   }
   for(let j=0;j<nz;j++)for(let i=0;i<nx;i++){
     const a=j*(nx+1)+i;
@@ -127,6 +131,7 @@ export function llanosEnvironment(T){
   instances(group,mangoTree({seed:14,h:7,fruit:false}),scatter(T,world.groundAt,{seed:416,count:18,bounds:[-350,-280,-110,200],margin:9,scale:1.35,accept:dry}),'hato-shade-trees',180);
   instances(group,araguaney({seed:11}),scatter(T,world.groundAt,{seed:417,count:9,bounds:[-300,-240,290,200],margin:10,scale:1.4,accept:dry}),'savanna-araguaneyes',180);
   instances(group,palm({seed:17,h:9}),scatter(T,world.groundAt,{seed:418,count:20,bounds:[-150,-340,360,280],margin:9,scale:1.1,accept:dry}),'savanna-palms',180);
+  const landscape=llanosLandscape(T,world,occupied);group.add(landscape);group.userData.surroundings=landscape.userData.surroundings;
   group.userData.assetCounts=counts;const water=waterAnimator(group);
   return {group,groundAt:world.groundAt,update:t=>{water(t);moving.forEach(o=>o.userData.tick?.(t));}};
 }

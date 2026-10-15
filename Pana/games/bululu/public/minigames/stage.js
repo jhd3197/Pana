@@ -2,6 +2,7 @@
 // players, and small helpers. Each minigame builds its own scene with these.
 
 import * as THREE from 'three';
+import {createSky} from '/engine/sky.js';
 import { buildCharacter } from '/engine/models/characters/pana/avatar-model.js';
 import { makeBubble } from '/engine/fx.js';
 import { palm } from '/engine/models/vegetation/palm.js';
@@ -16,16 +17,7 @@ export function sunnyStage(scene, { ground = 0xd9a46c, grass = true, sky = 0x7cc
   const h = new THREE.Color(horizon);
   scene.background = h;
   scene.fog = new THREE.Fog(h, 60, 200);
-  const domeGeo = new THREE.SphereGeometry(240, 20, 10);
-  const top = new THREE.Color(sky);
-  const dc = [];
-  const dp = domeGeo.attributes.position;
-  for (let i = 0; i < dp.count; i++) {
-    const c = h.clone().lerp(top, Math.pow(Math.max(0, dp.getY(i) / 240), 0.5));
-    dc.push(c.r, c.g, c.b);
-  }
-  domeGeo.setAttribute('color', new THREE.Float32BufferAttribute(dc, 3));
-  scene.add(new THREE.Mesh(domeGeo, new THREE.MeshBasicMaterial({ vertexColors: true, side: THREE.BackSide, fog: false })));
+  const atmosphere=createSky({horizon,skyTop:sky,skySeed:23,cloudCover:.42});scene.add(atmosphere.mesh);
   scene.add(new THREE.HemisphereLight(0xfff4e0, 0x8a6a4a, 1.8));
   const sun = new THREE.DirectionalLight(0xfff0d6, 2.2);
   sun.position.set(-12, 26, 18);
@@ -68,7 +60,7 @@ export function sunnyStage(scene, { ground = 0xd9a46c, grass = true, sky = 0x7cc
     rk.position.set((r() - 0.5) * 50, 0, -12 - r() * 10);
     scene.add(rk);
   }
-  return { sun };
+  return { sun, update: atmosphere.update };
 }
 
 // The four panas as minigame actors (no pedestal).

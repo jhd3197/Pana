@@ -114,7 +114,7 @@ function frame(){
   if(!cameraReady){camera.position.copy(cameraGoal);cameraReady=true;}else camera.position.lerp(cameraGoal,1-Math.exp(-dt*5));camera.lookAt(look);
   // Follow the local rider with a bounded shadow frustum.
   sun.position.set(q.x-45,70,q.z+35);sun.target.position.set(q.x,0,q.z);sun.target.updateMatrixWorld();
-  course.update(elapsed);
+  course.update(elapsed);world.sky.update(elapsed);
   splashes.visible=p.water>.04&&p.speed>1&&p.jumpY<.4;dust.visible=p.water<.04&&p.speed>4&&p.jumpY<.4;
   for(const [mesh,count,water]of [[splashes,40,true],[dust,20,false]])if(mesh.visible){for(let i=0;i<count;i++){
     const age=((elapsed*(water?2:1.4)+i/count)%1),side=i%2?1:-1;
@@ -132,6 +132,6 @@ if(params.has('debug'))window.galope={room,get state(){return state;},world,ride
   step(seconds,controls={}){for(let t=0;t<seconds;t+=.05)room.tick(.05,controls);updateUI();},
   place(id,s,offset=0){const p=room.game.players.find(p=>p.id===id),q=at(s,offset);Object.assign(p,{x:q.x,z:q.z,h:q.h,s:q.s,progress:s,checkpoint:Math.max(0,Math.floor(s/(LENGTH/8))+1),speed:0,jumpY:0,vy:0,stun:0});room.publish();},
   at,LENGTH,JUMPS,groundAt,waterS:nearest(WETLANDS[0].x,WETLANDS[0].z).s,updateUI};
-window.addEventListener('pagehide',()=>{disposed=true;clearInterval(simulation);room.dispose();for(const r of riders.values())r.dispose();course.dispose();splashGeometry.dispose();splashMaterial.dispose();dustGeometry.dispose();dustMaterial.dispose();unbind?.();renderer.dispose();},{once:true});
+window.addEventListener('pagehide',()=>{disposed=true;clearInterval(simulation);room.dispose();for(const r of riders.values())r.dispose();course.dispose();world.sky.dispose();splashGeometry.dispose();splashMaterial.dispose();dustGeometry.dispose();dustMaterial.dispose();unbind?.();renderer.dispose();},{once:true});
 // Back/forward cache restores a disposed WebGL scene; rebuild and rejoin safely.
 window.addEventListener('pageshow',event=>{if(event.persisted)location.reload();});

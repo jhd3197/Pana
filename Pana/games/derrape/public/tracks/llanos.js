@@ -9,6 +9,6 @@ export default {
   sectors:[[0,'Hacienda Pana'],[.17,'Puente del estero'],[.32,'Curvas del morichal'],[.5,'Potrero del levante'],[.65,'Paso del caño'],[.81,'Arepera del camino']],
   items:{boxes:[.1,.25,.4,.56,.73,.9],boxLanes:[-6,-2,2,6],pads:[{u:.13,off:0},{u:.35,off:-3},{u:.6,off:3},{u:.94,off:0}]},
   walls:false,chevrons:true,
-  palette:{horizon:0xe8dfb9,skyTop:0x9ac9d7,hemiSky:0xfff2d6,hemiGround:0x90945b,hemiInt:1.65,sun:0xffdba3,sunInt:2.3,ground:0xb6ad68,track:0xa5926c,dune:0,fog:[450,1500]},
+  palette:{skySeed:19,cloudCover:0.56,horizon:0xe8dfb9,skyTop:0x9ac9d7,hemiSky:0xfff2d6,hemiGround:0x90945b,hemiInt:1.65,sun:0xffdba3,sunInt:2.3,ground:0xb6ad68,track:0xa5926c,dune:0,fog:[450,1500]},
   environment:llanosEnvironment,scenery:llanosScenery,
 };

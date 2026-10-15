@@ -14,7 +14,7 @@ export default {
   items:{boxes:[0.12,0.31,0.51,0.72,0.91],boxLanes:[-6,-2,2,6],pads:[{u:0.26,off:0},{u:0.72,off:-4}]},
   walls:false,fence:false,
   offroad:{fullAt:4.5,speed:0.36,accel:0.48,drag:0.75},
-  palette:{horizon:0x9ec7b7,skyTop:0x65b0bd,hemiSky:0xe1efcf,hemiGround:0x345542,hemiInt:1.35,
+  palette:{skySeed:61,cloudCover:0.65,horizon:0x9ec7b7,skyTop:0x65b0bd,hemiSky:0xe1efcf,hemiGround:0x345542,hemiInt:1.35,
     sun:0xffe6af,sunInt:2.2,ground:0x456f42,track:0xb69b68,dune:0,fog:[110,470]},
   environment:createJungle,scenery:jungleScenery,
 };

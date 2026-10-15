@@ -50,11 +50,13 @@ try {
     await page.waitForFunction(() => panaLibrary.tour.distance > 2);
     assert.equal(await page.evaluate(() => panaLibrary.camera.fov), 64);
     assert.equal(await page.evaluate(() => panaLibrary.scene.background.getHex() === panaLibrary.current.route.def.palette.horizon && !!panaLibrary.scene.fog), true);
+    assert.equal(await page.evaluate(() => panaLibrary.scene.children.filter(o=>o.userData.isSky).length),1,'one live tour sky');
     await page.locator('#tour-play').click();
     const paused = await page.evaluate(() => ({ distance: panaLibrary.tour.distance, camera: panaLibrary.camera.position.toArray() }));
     await page.waitForTimeout(150);
     const settled = await page.evaluate(() => ({ distance: panaLibrary.tour.distance, camera: panaLibrary.camera.position.toArray() }));
     assert.equal(settled.distance, paused.distance);
+    assert.ok(await page.evaluate(() => Math.abs(panaLibrary.scene.getObjectByName('Living sky').material.uniforms.time.value-panaLibrary.tour.distance/24)<1e-8),'sky pauses with tour');
     // OrbitControls converts through spherical coordinates, with floating-point roundoff.
     assert.ok(settled.camera.every((v,i) => Math.abs(v-paused.camera[i]) < 1e-8), 'paused camera stays still');
     await seek(id === 'track-selva' ? await page.evaluate(async () => { const {TUNNEL}=await import('/g/derrape/tracks/selva-layout.js'),T=panaLibrary.current.route;return (((TUNNEL.from+.02)*T.TOTAL-T.LINE+T.TOTAL)%T.TOTAL)/T.TOTAL*1000; }) : 230);
@@ -67,6 +69,7 @@ try {
     assert.equal(await page.evaluate(() => panaLibrary.camera.fov), 34);
     assert.equal(await page.evaluate(() => panaLibrary.scene.fog), null);
     assert.equal(await page.evaluate(() => panaLibrary.tour.active), false);
+    assert.equal(await page.evaluate(() => panaLibrary.scene.children.filter(o=>o.userData.isSky).length),0,'overview releases the sky');
   }
   await choose('track-desierto'); await seek(500);
   await page.locator('#tour-copy').click();

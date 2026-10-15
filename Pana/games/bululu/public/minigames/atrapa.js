@@ -63,7 +63,7 @@ export default {
 
   create(ctx) {
     const scene = new THREE.Scene();
-    sunnyStage(scene);
+    const stage=sunnyStage(scene);
     const tree = mangoTree();
     tree.position.set(0, 0, -3.5);
     scene.add(tree);
@@ -132,7 +132,9 @@ export default {
       ai.target = best ? best.obj.position.x + ai.err : null;
     }
 
+    let skyTime=0;
     function update(dt, input) {
+      skyTime+=dt;stage.update(skyTime);
       clock += dt;
       spawnT -= dt;
       if (spawnT <= 0) {

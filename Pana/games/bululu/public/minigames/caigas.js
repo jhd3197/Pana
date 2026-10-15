@@ -31,7 +31,7 @@ export default {
 
   create(ctx) {
     const scene = new THREE.Scene();
-    sunnyStage(scene, { ground: null, grass: false });
+    const stage=sunnyStage(scene, { ground: null, grass: false });
     const puffs = new Puffs(scene);
 
     // sea
@@ -123,7 +123,9 @@ export default {
       if (a.player.human) sound.boing();
     }
 
+    let skyTime=0;
     function update(dt, input) {
+      skyTime+=dt;stage.update(skyTime);
       clock += dt;
       const w = (1.7 + clock * 0.11) * dir;
       flipT -= dt;

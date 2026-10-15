@@ -19,7 +19,7 @@ export default {
   sectors:[[0,'Mirador de las nubes'],[.08,'Aguas del Cielo'],[.22,'Las siete curvas'],[.4,'Bosque de la quebrada'],[.53,'Pueblo de buceo'],[.63,'Bahía Chi Chi'],[.73,'Puentes del río'],[.86,'Subida al mirador']],
   items:{boxes:[.1,.23,.36,.49,.62,.75,.9],boxLanes:[-6,-2,2,6],pads:[{u:.035,off:0},{u:.36,off:4},{u:.57,off:4},{u:.7,off:-4},{u:.81,off:0},{u:.96,off:0}]},
   walls:false,chevrons:true,
-  palette:{horizon:0xc4e1df,skyTop:0x76adc4,hemiSky:0xe1f4f0,hemiGround:0x58835b,hemiInt:1.8,sun:0xffe1ae,sunInt:2.5,ground:0x5a8859,track:0x94978b,dune:0,fog:[420,1750]},
+  palette:{skySeed:29,cloudCover:0.58,horizon:0xc4e1df,skyTop:0x76adc4,hemiSky:0xe1f4f0,hemiGround:0x58835b,hemiInt:1.8,sun:0xffe1ae,sunInt:2.5,ground:0x5a8859,track:0x94978b,dune:0,fog:[420,1750]},
   environment(T){
     const group=new THREE.Group(),world=terrain(T,{bounds:[-800,-900,800,950],base:baseHeight,step:6,
       // Preserve the channel under road bridges after the usual road carving.

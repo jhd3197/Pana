@@ -1,3 +1,4 @@
+import { createSky } from '/engine/sky.js';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { CARS } from './cars.js';
@@ -249,10 +250,7 @@ race.debris = new Debris(race.scene);
   const s = race.scene;
   s.background = new THREE.Color(0xffd6a0);
   s.fog = new THREE.Fog(0xffd6a0, 80, 260);
-  // sky dome: warm at the horizon, blue overhead (recolored per track)
-  const domeGeo = new THREE.SphereGeometry(1200, 24, 12);
-  race.dome = new THREE.Mesh(domeGeo, new THREE.MeshBasicMaterial({ vertexColors: true, side: THREE.BackSide, fog: false }));
-  s.add(race.dome);
+  race.sky = createSky();s.add(race.sky.mesh);
   race.hemi = new THREE.HemisphereLight(0xfff1d6, 0xc08a5a, 1.6);
   s.add(race.hemi);
   const sun = new THREE.DirectionalLight(0xffd9a0, 2.4);
@@ -276,14 +274,7 @@ function applyPalette(pal) {
   race.hemi.intensity = pal.hemiInt ?? 1.6;
   race.sun.color.set(pal.sun);
   race.sun.intensity = pal.sunInt ?? 2.4;
-  const dp = race.dome.geometry.attributes.position;
-  const col = [];
-  const horizon = new THREE.Color(pal.horizon), top = new THREE.Color(pal.skyTop);
-  for (let i = 0; i < dp.count; i++) {
-    const c = horizon.clone().lerp(top, Math.pow(Math.max(0, dp.getY(i) / 1200), 0.6));
-    col.push(c.r, c.g, c.b);
-  }
-  race.dome.geometry.setAttribute('color', new THREE.Float32BufferAttribute(col, 3));
+  race.sky.setPalette(pal);race.sky.update(0);
 }
 
 // Browsing needs only route metadata. Keep the last built map for replay;
@@ -989,6 +980,7 @@ function updateRace(dt) {
   for (const c of race.cars) syncCar(c, dt);
   race.puffs.update(dt);
   race.debris.update(dt);
+  race.sky.update(race.clock);
   for (const o of T.animated) o.userData.tick(race.clock, dt);   // scenery: flags, windmills, birds…
   sound.setEngine(race.player.vf);
 

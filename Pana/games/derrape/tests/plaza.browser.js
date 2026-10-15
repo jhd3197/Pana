@@ -71,7 +71,12 @@ try {
   assert.deepEqual(metrics.blockedStreets,[]);assert.ok(metrics.streetIntrusion<0.025,'terrain stays below side streets');
   assert.ok(metrics.maxHeight-metrics.minHeight>20);assert.ok(metrics.maxGrade<0.35);
   assert.ok(metrics.minRadius>15);assert.ok(metrics.projectionError<0.01);assert.ok(metrics.intrusion<0.025,'visible terrain stays below road');
-  assert.ok(metrics.triangles<2200000);assert.ok(metrics.drawCalls<900);assert.deepEqual(errors,[]);
+  // The older 2.2 M / 900 limits predated Pueblo/coastal placements. HEAD before
+  // the living-world pass measured 5,278,588 triangles / 1,383 overview draws.
+  // The surroundings pass adds 51 homes, 26 gardens and 187 trees, using light
+  // canopy prototypes. Allow that authored expansion while staying below the
+  // pre-batching town's 5.28 M triangles / 1,383 overview draws.
+  assert.ok(metrics.triangles<4600000);assert.ok(metrics.drawCalls<1300);assert.deepEqual(errors,[]);
   console.log('PASS: town layout, hill, foundations, drivable geometry, real terrain clearance and render budgets');
   await page.close();
   const game=await browser.newPage({viewport:{width:1440,height:900}});

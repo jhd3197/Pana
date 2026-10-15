@@ -4,17 +4,18 @@ import { grandstand } from './world-landmarks.js';
 import { palm } from '/engine/models/vegetation/palm.js';
 import { cornerBodega, streetFoodKiosk, basketballHoop, rooftopWaterTank } from '/engine/models/props/pueblo.js';
 import { trophyMonument } from '/engine/models/props/monuments.js';
+import { stadiumGrounds } from './stadium-grounds.js';
 
 export default {
   id:'estadio',name:'El Estadio',
   blurb:'Un gran premio técnico: frenadas, chicanas, horquillas y la recta de las tribunas.',
   points:[[-235,150],[-130,150],[-30,150],[70,150],[150,150],[200,110],[200,35],[140,20],[85,40],[25,5],[50,-65],[130,-85],[205,-90],[235,-110],[240,-200],[165,-245],[80,-215],[45,-155],[-15,-145],[-50,-195],[-115,-220],[-220,-210],[-265,-150],[-250,-80],[-180,-50],[-120,-85],[-65,-65],[-65,0],[-130,40],[-220,35],[-275,85]],
   rounded:true,hw:8,lineU:.045,elevation:()=>1.65,
-  previewBounds:[[-325,0,-295],[300,55,245]],
+  previewBounds:[[-430,0,-400],[515,55,475]],
   sectors:[[0,'Recta principal'],[.24,'Chicana del marcador'],[.43,'Horquilla del paddock'],[.63,'Doble cambio'],[.82,'Curva de la hinchada']],
   items:{boxes:[.12,.32,.49,.69,.9],boxLanes:[-5.5,-1.8,1.8,5.5],pads:[{u:.055,off:0},{u:.37,off:-3},{u:.73,off:3}]},
   walls:false,chevrons:true,
-  palette:{horizon:0xf0dac0,skyTop:0x7bbce2,hemiSky:0xf0f5f2,hemiGround:0x899971,hemiInt:1.8,sun:0xffd8a3,sunInt:2.6,ground:0x7e9b65,track:0x626e75,dune:0,fog:[350,1050]},
+  palette:{skySeed:23,cloudCover:0.4,horizon:0xf0dac0,skyTop:0x7bbce2,hemiSky:0xf0f5f2,hemiGround:0x899971,hemiInt:1.8,sun:0xffd8a3,sunInt:2.6,ground:0x7e9b65,track:0x626e75,dune:0,fog:[350,1050]},
   environment(T){
     const group=new THREE.Group(),world=terrain(T,{bounds:[-620,-570,620,520],base:()=>1,color:(x,z)=>Math.abs(T.offsetOf(x,z))<22?0xc5bfa8:0x83a36c,step:7});group.add(world.land);
     const fixed=new THREE.Group(),white=M(0xefe8cf);
@@ -72,6 +73,7 @@ export default {
     for(const [z,rot]of [[221,0],[243,Math.PI]])detail('basketball-hoop',basketballHoop(),180,z,1.12,rot);
     group.add(finish(fixed));
     instances(group,palm({seed:9,h:11}),scatter(T,world.groundAt,{seed:137,count:38,bounds:[-365,-300,310,285],margin:12,accept:(x,z)=>Math.abs(x)>280||z<-265||z>250}),'stadium-palms');
+    const grounds=stadiumGrounds(T,world.groundAt);group.add(grounds);group.userData.surroundings=grounds.userData.surroundings;
     return {group,groundAt:world.groundAt};
   },
   scenery(group,kit,T){edges(group,kit,T,{style:'kerb',step:3});},
