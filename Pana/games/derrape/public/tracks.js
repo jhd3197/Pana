@@ -247,6 +247,10 @@ export function makeTrack(def) {
   T.groundAt = (x, z) => {
     const base = T.surfaceAt(x, z);
     const off = geo.offsetOf(x, z);
+    if(def.offroad&&Math.abs(off)>T.HW) {
+      const blend=THREE.MathUtils.smoothstep(Math.abs(off),T.HW,T.HW+2);
+      return THREE.MathUtils.lerp(base,T.terrainAt(x,z),blend);
+    }
     if (Math.abs(off) > 5) return base;
     const s = geo.paramOf(x, z);
     for (const r of T.ramps) {
@@ -258,25 +262,31 @@ export function makeTrack(def) {
 
   // Build every visual into a fresh group; caller adds it to the scene and
   // drops the old one when switching tracks.
-  T.build = () => {
+  T.buildSteps = function* () {
     const group = new THREE.Group();
+    T.group = group;
     T.animated = [];
+    T.constrainMotion = null;
     if (def.environment) {
       const environment = def.environment(T);
       environment.group.name = 'track-environment';
       group.add(environment.group);
       if (environment.groundAt) T.terrainAt = environment.groundAt;
+      if (environment.constrainMotion) T.constrainMotion = environment.constrainMotion;
       // The environment owns its animation; don't also tick its children.
       if (environment.update) T.animated.push({ userData: { tick: environment.update } });
     } else group.add(buildGround(T, def.palette));
+    yield 'Preparando la carretera…';
     group.userData.groundAt = T.terrainAt;
     if (def.island) group.add(buildIsland(T, def.island));
     group.add(buildRibbon(T, def.palette));
     kit.startLine(group, T);
+    yield 'Colocando las defensas…';
     if (def.walls !== false) kit.tireWall(group, T);
     if (def.fence) kit.fenceRing(group, T, def.fence);
     if (def.chevrons !== false) kit.chevrons(group, T);
     kit.buildRamps(group, T);
+    yield 'Terminando el paisaje…';
     // Shared environments are attached first; only collect track-owned ticks.
     const scenery = new THREE.Group();
     scenery.name = 'track-scenery';
@@ -287,6 +297,14 @@ export function makeTrack(def) {
     group.add(scenery);
     T.group = group;
     return group;
+  };
+  // Studio and geometry tools can still build synchronously. The game yields
+  // between the same steps so the loading screen can paint and accept input.
+  T.build = () => {
+    const steps = T.buildSteps();
+    let step;
+    do { step = steps.next(); } while (!step.done);
+    return step.value;
   };
   return T;
 }

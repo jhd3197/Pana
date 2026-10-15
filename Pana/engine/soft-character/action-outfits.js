@@ -1,27 +1,6 @@
 import * as THREE from 'three';
 import { curve, ellipsoid, mesh, ovalRing, patch, surface, signedPower } from './geometry.js';
-
-// Sample each finished garment once. Pockets, buttons and emblems then follow
-// its actual cloth surface, including subdivision, rather than a guessed sphere.
-function clothFront(geometry) {
-  const material = new THREE.MeshBasicMaterial({ side: THREE.DoubleSide });
-  const proxy = new THREE.Mesh(geometry, material), ray = new THREE.Raycaster();
-  const nx = 32, ny = 40, minX = -0.65, minY = 1.01, width = 1.3, height = 0.8, depths = [];
-  geometry.computeBoundingSphere(); geometry.computeBoundingBox(); proxy.updateMatrixWorld(true);
-  for (let j = 0; j <= ny; j++) for (let i = 0; i <= nx; i++) {
-    ray.set(new THREE.Vector3(minX + i / nx * width, minY + j / ny * height, 2), new THREE.Vector3(0, 0, -1));
-    const hit = ray.intersectObject(proxy, false).find(h => h.point.z > 0);
-    depths.push(hit ? hit.point.z : 0.31);
-  }
-  material.dispose();
-  return (x, y) => {
-    const gx = THREE.MathUtils.clamp((x - minX) / width * nx, 0, nx - 0.00001);
-    const gy = THREE.MathUtils.clamp((y - minY) / height * ny, 0, ny - 0.00001);
-    const i = Math.floor(gx), j = Math.floor(gy), u = gx - i, v = gy - j;
-    const at = (a, b) => depths[b * (nx + 1) + a];
-    return THREE.MathUtils.lerp(THREE.MathUtils.lerp(at(i, j), at(i + 1, j), u), THREE.MathUtils.lerp(at(i, j + 1), at(i + 1, j + 1), u), v) + 0.012;
-  };
-}
+import { clothFront } from './cloth-front.js';
 
 function crown(parent, material, centerY, depthAt, size = 0.19) {
   const shape = new THREE.Shape();

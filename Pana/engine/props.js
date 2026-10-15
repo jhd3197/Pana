@@ -1,8 +1,9 @@
-// Scenery and props shared by every game: low-poly, flat-shaded, built in
-// code (no asset files). Each builder returns a THREE.Object3D that sits on
-// y = 0 and faces +Z. Anything with userData.tick(t, dt) wants animating.
+// Scenery and props shared by every game: stylized, built in
+// code (no asset files). Scenery sits on y = 0 and faces +Z; carried mangoes
+// keep their centered origin. Anything with userData.tick(t, dt) wants animating.
 
 import * as THREE from 'three';
+import { leafBlade, taperedStem } from './botanical-shapes.js';
 
 const mats = new Map();
 function M(color, extra = {}) {
@@ -74,24 +75,63 @@ function venezuelaFlag() {
   });
 }
 
+// The Pana flag: brand purple field, a yellow stripe and a capybara face.
+function panaFlag() {
+  return canvasMat(192, 128, (g) => {
+    g.fillStyle = '#1a1336'; g.fillRect(0, 0, 192, 128);
+    g.fillStyle = '#ffc629'; g.fillRect(0, 98, 192, 14);
+    g.fillStyle = '#2ad1b2'; g.fillRect(0, 112, 192, 16);
+    g.fillStyle = '#cf7d22';
+    g.beginPath(); g.ellipse(46, 50, 28, 32, 0, 0, Math.PI * 2); g.fill();
+    for (const x of [26, 66]) { g.beginPath(); g.ellipse(x, 22, 7, 8, 0, 0, Math.PI * 2); g.fill(); }
+    g.fillStyle = '#8b5e3c'; g.beginPath(); g.ellipse(46, 66, 18, 13, 0, 0, Math.PI * 2); g.fill();
+    g.fillStyle = '#16161a';
+    for (const x of [35, 57]) { g.beginPath(); g.arc(x, 46, 3.6, 0, Math.PI * 2); g.fill(); }
+    g.fillStyle = '#ffc629'; g.textAlign = 'center'; g.textBaseline = 'middle';
+    g.font = '44px "Luckiest Guy", system-ui, sans-serif'; g.fillText('PANA', 132, 54, 104);
+  });
+}
+
 // ---------- mango (Derrape's item, Bululú's everything) ----------
-const mat = (color) => new THREE.MeshStandardMaterial({ color, flatShading: true, roughness: 0.7 });
-const GOLD = new THREE.MeshStandardMaterial({ color: 0xffc629, emissive: 0xc77800, emissiveIntensity: 0.55, metalness: 0.5, roughness: 0.35, flatShading: true });
+const mangoBodies = new Map();
+function mangoBody(gold) {
+  if (!mangoBodies.has(gold)) {
+    const geo = new THREE.SphereGeometry(1, 28, 20), pos = geo.attributes.position, colors = [];
+    const yellow = new THREE.Color(gold ? 0xffcc47 : 0xffbd32);
+    const blush = new THREE.Color(gold ? 0xe69a19 : 0xe94e28);
+    const green = new THREE.Color(gold ? 0xffdf75 : 0xc9b640);
+    for (let i = 0; i < pos.count; i++) {
+      const x = pos.getX(i), y = pos.getY(i), z = pos.getZ(i);
+      const fullness = 1 + y * 0.14 - y * y * 0.08;
+      // One continuous, asymmetric fruit with a full shoulder and curved lower tip.
+      pos.setXYZ(i, x * 0.46 * fullness + 0.13 * (1 - y * y) - y * 0.09,
+        y * 0.55 - x * 0.025, z * 0.42 * (1 + y * 0.07));
+      const red = THREE.MathUtils.smoothstep(x * 0.55 + z * 0.72 + y * 0.28, -0.1, 0.85);
+      const color = yellow.clone().lerp(blush, red * (gold ? 0.35 : 0.88));
+      color.lerp(green, THREE.MathUtils.smoothstep(y, 0.65, 1) * 0.55);
+      colors.push(color.r, color.g, color.b);
+    }
+    geo.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3)); geo.computeVertexNormals();
+    mangoBodies.set(gold, geo);
+  }
+  // Callers dispose their own geometry; templates are never mounted in a scene.
+  return mangoBodies.get(gold).clone();
+}
 
 function makeMango({ gold = false } = {}) {
   const g = new THREE.Group();
-  const body = new THREE.Mesh(new THREE.SphereGeometry(0.5, 10, 8), gold ? GOLD : mat(0xffae2b));
-  body.scale.set(0.9, 0.85, 1.25);
-  const cheek = new THREE.Mesh(new THREE.SphereGeometry(0.4, 8, 6), gold ? GOLD : mat(0xe8452c));
-  cheek.position.set(0.12, 0.14, 0.18);
-  const stem = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.05, 0.22, 5), mat(0x6b4226));
-  stem.position.set(0, 0.42, -0.42);
-  const leaf = new THREE.Mesh(new THREE.ConeGeometry(0.16, 0.6, 4), mat(0x3a9d3a));
-  leaf.scale.set(1, 1, 0.35);
-  leaf.position.set(0.18, 0.55, -0.5);
-  leaf.rotation.z = -1.1;
-  g.add(body, cheek, stem, leaf);
-  for (const m of g.children) m.castShadow = true;
+  const skin = M(0xffffff, { vertexColors: true, flatShading: false,
+    roughness: gold ? 0.32 : 0.46, metalness: gold ? 0.72 : 0,
+    emissive: gold ? 0xb66c09 : 0, emissiveIntensity: gold ? 0.08 : 0 });
+  const wood = M(gold ? 0x98702c : 0x6b472a, { flatShading: false, roughness: 0.85 });
+  const green = M(0xffffff, { vertexColors: true, side: THREE.DoubleSide, flatShading: false, roughness: 0.72 });
+  const body = mesh(mangoBody(gold), skin); body.name = 'mango-body';
+  g.add(body, mesh(taperedStem([[-0.09, 0.53, 0], [-0.12, 0.65, -0.02], [-0.06, 0.74, -0.035]], 0.038, 0.027, 6, 7), wood));
+  const leaf = mesh(leafBlade(0.64, 0.16, 0.13, gold ? 0x859d39 : 0x559936), green, -0.1, 0.65, -0.015);
+  leaf.rotation.set(0.2, -0.3, 0.15); g.add(leaf);
+  const vein = mesh(taperedStem([[0, 0.006, 0], [0.3, 0.115, 0], [0.62, -0.067, 0]], 0.009, 0.002, 6, 4), M(0xb0bd59, { flatShading: false }));
+  leaf.add(vein);
+  // Keep the historic centered origin and root scale used by held/thrown fruit.
   g.scale.setScalar(1.5);
   return g;
 }
@@ -176,24 +216,34 @@ function watchtower({ h = 6.5, roof = 'thatch' } = {}) {
   return g;
 }
 
-// Wooden flag pole with the Venezuelan flag waving.
-function flagPole({ h = 9 } = {}) {
+// Flag pole with the Venezuelan (default) or Pana flag waving.
+function flagPole({ h = 9, flag: design = 'venezuela' } = {}) {
   const g = new THREE.Group();
   g.add(mesh(new THREE.CylinderGeometry(0.12, 0.16, h, 8), M(0x8a8a92, { metalness: 0.4, roughness: 0.5 }), 0, h / 2, 0));
   const flag = new THREE.Group();
   flag.position.set(0, h - 0.8, 0);
-  const f = new THREE.Mesh(new THREE.PlaneGeometry(2.6, 1.7, 6, 1), venezuelaFlag());
+  const fabric = design === 'pana' ? panaFlag() : venezuelaFlag();
+  fabric.side = THREE.DoubleSide;
+  const f = new THREE.Mesh(new THREE.PlaneGeometry(2.6, 1.7, 20, 10), fabric);
+  const rest = f.geometry.attributes.position.array.slice();
   f.position.x = 1.35;
   flag.add(f);
   g.add(flag);
+  const cord = M(0xd4c9ab, { roughness: 1 });
+  g.add(tube([0.18, 1.1, 0], [0.18, h - 0.03, 0], 0.012, cord));
+  g.add(tube([0.18, 1.1, 0], [0.23, 1.35, 0], 0.022, cord));
+  g.add(mesh(new THREE.SphereGeometry(0.18, 12, 8), M(0xc4ad75, { metalness: 0.55, roughness: 0.4 }), 0, h, 0));
   g.userData.tick = (t) => {
     const pos = f.geometry.attributes.position;
     for (let i = 0; i < pos.count; i++) {
-      const x = pos.getX(i);
-      pos.setZ(i, Math.sin(t * 4 + x * 1.8) * 0.12 * (x + 1.3) / 2.6);
+      const x = rest[i * 3], y = rest[i * 3 + 1], u = (x + 1.3) / 2.6;
+      pos.setXYZ(i, x - 0.07 * u * u, y - 0.13 * u * u + Math.sin(t * 2.4 + x * 2 + y) * 0.025 * u,
+        (Math.sin(t * 3.2 - u * 6.3 + y * 0.65) * 0.17 + Math.sin(t * 5 - u * 11) * 0.045) * u);
     }
     pos.needsUpdate = true;
+    f.geometry.computeVertexNormals();
   };
+  g.userData.tick(0);
   return g;
 }
 
@@ -215,6 +265,6 @@ function rock(r, color = 0x8d8d96, seed = 1) {
 
 export {
   M, mesh, box, tube, canvasMat, DECAL, rng,
-  venezuelaFlag, makeMango,
+  venezuelaFlag, panaFlag, makeMango,
   woodSign, watchtower, flagPole, rock,
 };

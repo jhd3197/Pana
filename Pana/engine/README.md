@@ -7,11 +7,18 @@ Shared game code, served to browsers at `/engine/*`. Something moves here once a
 |---|---|---|
 | `avatar.js` | A player's look (fur, hat, glasses, outfit, face, extra) + name, saved in `localStorage`. Plain data, no Three.js. Brand palette lives here too. | hub, derrape, bululu, escondidas |
 | `fx.js` | WebAudio `sound` (horns, bonks, pickups, whooshes…, no files), `Puffs` (smoke/dust), `Debris` (parts that pop off), `makeBubble()` (cartoon speech bubble sprite). | derrape, bululu |
-| `props.js` | Low-poly builders, no asset files: `makeMango({gold})`, `rock`, `woodSign(lines)`, `flagPole`, `watchtower`, `venezuelaFlag`, plus the helpers they use (`M`, `mesh`, `box`, `tube`, `canvasMat`, `rng`). Props sit on y = 0 and face +Z; `userData.tick(t, dt)` wants animating. | derrape, bululu |
+| `props.js` | Procedural builders, no asset files: `makeMango({gold})`, `rock`, `woodSign(lines)`, `flagPole({flag:'pana'})`, `watchtower`, `venezuelaFlag`, `panaFlag`, plus helpers (`M`, `mesh`, `box`, `tube`, `canvasMat`, `rng`). Scenery sits on y = 0 and faces +Z; mangoes keep their centered carry/projectile origin. `userData.tick(t, dt)` wants animating. | derrape, bululu |
 | `flora.js` | The canonical curved palms, mango trees, ceibas, pines, bananas, bushes, houses and static mesh batching (`bake`). The original Bululú import path re-exports this module. | all games and shared market kit |
+| `flora-species.js` | Seeded `araguaney`, `bamboo`, `fern`, `monstera`, `heliconia`, `cactus`, `mangrove`, `papaya`, `agave`, `waterLily`, `hibiscus`, `reeds` builders, re-exported by `flora.js`. Each returns 1–4 static material batches with owned geometry. | Studio, Derrape (Selva) |
+| `botanical-shapes.js` | Folded leaf surfaces and tapered curved stems with independently owned geometry. | fruit, foliage, island house |
+| `island-house.js` | Seeded plaster casita with shutters, veranda and terracotta tiles, returned as 12 material batches. `flora.js` re-exports `casita`. | shared scenery and Studio |
+| `static-batch.js` | Canonical `bake` implementation; `flora.js` retains the public compatibility export. | shared scenery, casita |
+| `landmarks.js` | Pana signature monuments: `capybaraStatue`, `goldenMangoStatue`, `welcomeArch`, `capybaraTopiary`, `panaFlagpole`, `trophyMonument`, `capybaraFountain`, `souvenirKiosk`, plus the shared `capybaraForm`. Grounded, +Z, baked. | Pana Studio |
+| `water-details.js` | Instanced ripples and moving droplets for both shared fountains and the waterfall; deterministic absolute-time updates. | Landmarks, Plaza, jungle props |
+| `jungle-props.js` | Jungle ruins and traversal: `templeEntrance`, `ropeBridge`, `waterfallRocks`, `vineArch`, `bambooBridge`, `stoneTotem`, `hollowLog`, plus `liana`. Plants `jungleGiant`/`tropicalBush` come from `flora.js`. | Pana Studio |
 | `plaza-catalog.js` | Renderer-independent prop IDs, Spanish labels, dimensions, collision radii and heights. | escondidas rules, shared market kit |
 | `plaza-props.js` | `barrel`, `crate`, `cooler`, `planter`, `bench`, `marketStall`, `streetLamp`, and `createPlazaProp(id)`. No gameplay state or game-specific imports. | escondidas, derrape (Los Llanos), hub |
-| `plaza.js` | `createPlaza({cooking:false})`: the shared buildings, paving, fountain, greenery and market. `createPlazaEnvironment({clearance})` returns geometry and water animation without lights, for embedding in another game. | escondidas, cocina, derrape |
+| `plaza.js` | `createPlaza({cooking:false})`, `plazaFountain()`: the shared buildings, paving, fountain, greenery and market. `createPlazaEnvironment({clearance})` returns geometry and water animation without lights, for embedding in another game. | escondidas, cocina, derrape |
 | `island-environment.js` | `ISLAND_LOOP` and `createIslandEnvironment(scene,{island,pathDist,inShot,clearance})`: sea, biome vegetation, big mango tree, harbor, lanterns, signs and animation. No tiles, dice or race logic. | bululu, derrape |
 | `island-terrain.js` | Shared coastline, hill, Pico Pana, river and beach heightfield. `buildIsland(tiles,edges,{road})` optionally reserves a wider driving corridor and lowers the river below its deck. | bululu, derrape |
 | `island-scenery.js`, `island-landscape.js`, `terrain-material.js`, `beach-props.js` | Offshore islands, tepuis, lighthouse, boats, clouds, terrain shading and beach furniture. Old Bululú URLs re-export these sources. | bululu, derrape |
@@ -34,6 +41,7 @@ game adapter preserves avatar data, game-world size, seated drivers and carrying
 The editor uses full tessellation; games sample the same surfaces more sparsely.
 Use `character.dispose()` when removing one. Detach shared carried props first.
 See `docs/knowledge/pana-studio.md` for the catalog and extension workflow.
+See `docs/knowledge/shared-props.md` for fruit/foliage geometry budgets and checks.
 
 ## Reusing the plaza kit
 

@@ -16,8 +16,7 @@ try {
   const page = await browser.newPage({ viewport: { width: 1440, height: 900 } });
   page.on('pageerror', error => errors.push(String(error)));
   // Keep the real input handlers and renderer, but step simulation explicitly.
-  await page.addInitScript(() => { window.requestAnimationFrame = () => 0; });
-  await page.goto(`${origin}/g/derrape/?debug&track=estadio`);
+  await page.goto(`${origin}/g/derrape/?debug&manual&track=estadio`);
   await page.waitForFunction(() => window.garage?.car);
   assert.equal(await page.locator('.car-choice').count(), 8);
   for (let i = 0; i < 8; i++) {
@@ -37,6 +36,7 @@ try {
   }
   await page.locator('.car-choice').first().click();
   await page.locator('#play').click();
+  await page.waitForFunction(() => race.state === 'count');
 
   const pickups = await page.evaluate(async () => {
     const { addItem, canBlock } = await import('./item-rules.js');
@@ -105,7 +105,7 @@ try {
   for (const [name, value] of Object.entries(combat)) assert.ok(value, name);
 
   await page.evaluate(async () => {
-    startRace(0); race.state = 'go'; race.count = 0;
+    await startRace(0); race.state = 'go'; race.count = 0;
     const { addItem } = await import('./item-rules.js');
     addItem(race.player, 'mango3', 0); addItem(race.player, 'jugo', 0);
     updateRace(1 / 60);
@@ -128,7 +128,7 @@ try {
   // Render the actual supply row and its fragments with readable UI.
   await page.evaluate(async () => {
     const { addItem } = await import('./item-rules.js');
-    startRace(0); race.state = 'go'; race.count = 0;
+    await startRace(0); race.state = 'go'; race.count = 0;
     const c = race.player, T = getActiveTrack(), box = race.items.boxes[0];
     c.x = box.x; c.z = box.z; c.y = box.y; c.h = box.h;
     race.items.update(1 / 60, [c], true);
@@ -148,12 +148,13 @@ try {
     !race.trackGroup.getObjectByName('held-mango'));
   assert.ok(clean, 'garage cleanup');
   await page.locator('#play').click();
+  await page.waitForFunction(() => race.state === 'count');
   assert.equal(await page.evaluate(() => race.player.coinsCollected), 0);
   assert.deepEqual(await page.evaluate(() => race.player.inventory), [null, null]);
 
   // Elevated pickups use local terrain height, including coins on the island.
-  const elevated = await page.evaluate(() => {
-    toGarage(); buildTrack('bululu'); startRace(0);
+  const elevated = await page.evaluate(async () => {
+    toGarage(); buildTrack('bululu'); await startRace(0);
     const c = race.player, coin = race.items.coins.reduce((a, b) => a.y > b.y ? a : b);
     c.x = coin.x; c.y = coin.y; c.z = coin.z;
     race.items.update(1 / 60, [c], true);
@@ -163,8 +164,7 @@ try {
 
   const mobile = await browser.newPage({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
   mobile.on('pageerror', error => errors.push(String(error)));
-  await mobile.addInitScript(() => { window.requestAnimationFrame = () => 0; });
-  await mobile.goto(`${origin}/g/derrape/?debug&track=estadio`);
+  await mobile.goto(`${origin}/g/derrape/?debug&manual&track=estadio`);
   await mobile.waitForFunction(() => window.garage?.car);
   const framed = await mobile.evaluate(async () => {
     const THREE = await import('three');
@@ -179,6 +179,7 @@ try {
   assert.ok(framed, 'portrait garage frames the entire car');
   await mobile.screenshot({ path: join(output, 'mobile-garage.png') });
   await mobile.locator('#play').tap();
+  await mobile.waitForFunction(() => race.state === 'count');
   await mobile.evaluate(async () => {
     race.state = 'go'; race.count = 0;
     const { addItem } = await import('./item-rules.js');

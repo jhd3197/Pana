@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { addWaterMotion } from './water-details.js';
 import { M, mesh, box, tube, canvasMat, rng } from '/engine/props.js';
 import { palm, mangoTree, bush, bake } from '/engine/flora.js';
 import { createPlazaProp, marketStall, streetLamp } from '/engine/plaza-props.js';
@@ -64,31 +65,49 @@ function church() {
   return g;
 }
 
+// The plaza's crowned-capybara fountain as a standalone landmark.
+export function plazaFountain() {
+  const f = fountain(), out = bake(f.group);
+  f.capy.dispose(); f.group.traverse(o => o.geometry?.dispose());
+  out.userData.tick = addWaterMotion(out, f.impacts, f.curves);
+  return out;
+}
+
 function fountain() {
   const g = new THREE.Group(), stone = M(0xe5caa0), rim = M(0xf6dfb8);
   g.add(mesh(new THREE.CylinderGeometry(3.1, 3.3, 0.3, 16), stone, 0, 0.15, 0));
   g.add(mesh(new THREE.CylinderGeometry(2.88, 3.02, 0.55, 16), rim, 0, 0.46, 0));
   const water = mesh(new THREE.CylinderGeometry(2.65, 2.65, 0.05, 32), M(0x47bec1, { metalness: 0.15, roughness: 0.25 }), 0, 0.76, 0); g.add(water);
+  // Rounded coping and a glazed mosaic frieze around the existing footprint.
+  const glaze = M(0x398f88, { roughness: 0.42 }), trim = M(0xf6dfb8, { flatShading: false, roughness: 0.8 });
+  for (const [radius, y, thickness] of [[2.84, 0.74, 0.1], [1.48, 2.42, 0.07]]) {
+    const ring = mesh(new THREE.TorusGeometry(radius, thickness, 6, 48), trim, 0, y, 0); ring.rotation.x = Math.PI / 2; g.add(ring);
+  }
+  for (let i = 0; i < 48; i++) {
+    const a = i * Math.PI / 24, tile = box(0.18, 0.15, 0.045, i % 3 ? glaze : trim, Math.sin(a) * 2.94, 0.48, Math.cos(a) * 2.94);
+    tile.rotation.y = a; g.add(tile);
+  }
   g.add(mesh(new THREE.CylinderGeometry(0.8, 1.05, 1.8, 8), stone, 0, 1.35, 0));
   g.add(mesh(new THREE.CylinderGeometry(1.6, 1.3, 0.24, 12), rim, 0, 2.3, 0));
   g.add(mesh(new THREE.CylinderGeometry(1.42, 1.42, 0.03, 24), M(0x69d2d0), 0, 2.44, 0));
   g.add(mesh(new THREE.CylinderGeometry(0.65, 0.8, 1.2, 8), stone, 0, 2.9, 0));
   const capy = buildCharacter({ fur: '#e8b97f', hat: 'corona', glasses: 'none', outfit: 'nada', face: 'feliz' });
   capy.group.position.y = 3.5; capy.group.scale.setScalar(1.15); g.add(capy.group);
-  const streams = new THREE.Group();
+  const streams = new THREE.Group(), curves = [], impacts = [];
   for (let i = 0; i < 8; i++) {
     const a = i / 8 * Math.PI * 2;
     const curve = new THREE.QuadraticBezierCurve3(new THREE.Vector3(Math.cos(a) * 1.35, 2.4, Math.sin(a) * 1.35), new THREE.Vector3(Math.cos(a) * 2.2, 2.2, Math.sin(a) * 2.2), new THREE.Vector3(Math.cos(a) * 2.35, 0.8, Math.sin(a) * 2.35));
+    curves.push(curve); impacts.push([Math.cos(a) * 2.35, 0.8, Math.sin(a) * 2.35, 0.2]);
     streams.add(mesh(new THREE.TubeGeometry(curve, 10, 0.045, 4, false), M(0x91e5e1, { transparent: true, opacity: 0.75 })));
   }
   g.add(streams);
-  return { group: g, streams, water };
+  return { group: g, streams, water, capy, curves, impacts };
 }
 
 export function createPlazaEnvironment({ cooking = false, clearance = () => true, town = false } = {}) {
   const scene = new THREE.Group();
   const staticGroup = new THREE.Group(), random = rng(32);
-  const floor = mesh(new THREE.PlaneGeometry(170, 170), M(0xc6b388)); floor.rotation.x = -Math.PI / 2; floor.position.y = -0.08; staticGroup.add(floor);
+  const floor = mesh(new THREE.PlaneGeometry(town ? 64 : 170, town ? 54 : 170), M(0xc6b388)); floor.rotation.x = -Math.PI / 2; floor.position.y = -0.08; staticGroup.add(floor);
   // Individual paving slabs give the plaza its warm, tactile scale.
   const stoneColors = [0xe3c58f, 0xe7c896, 0xeacf9e, 0xdabd8c, 0xedd2a3, 0xe5c094];
   for (let z = -22; z < 22; z += 1.5) for (let x = -26; x < 26; x += 2.25) {

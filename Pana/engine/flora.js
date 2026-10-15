@@ -2,8 +2,12 @@
 // per material, so hundreds of trees cost a handful of draw calls.
 
 import * as THREE from 'three';
-import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { M, mesh, makeMango, rng } from '/engine/props.js';
+import { leafBlade, taperedStem } from './botanical-shapes.js';
+import { bake } from './static-batch.js';
+export { casita } from './island-house.js';
+export { bake } from './static-batch.js';
+export { araguaney, bamboo, fern, monstera, heliconia, cactus, mangrove, papaya, agave, waterLily, hibiscus, reeds, jungleGiant, tropicalBush } from './flora-species.js';
 
 // A small shared palette and smooth, gently lobed forms keep the island toy-like
 // without turning every crown into the same faceted disk. Colors survive bake().
@@ -46,61 +50,98 @@ function branch(from, to, bottom, top, mat = bark) {
   return m;
 }
 
-function crown(group, x, y, z, size, seed, tint, sy = 0.85) {
-  const m = foliage(size, seed, tint);
-  m.position.set(x, y, z);
-  m.scale.set(1, sy, 0.9 + (seed % 5) * 0.04);
-  m.rotation.y = seed * 2.4;
-  group.add(m);
-}
-
 // Round mango tree: chunky trunk, a cloud of leaves, a few ripe mangos.
 export function mangoTree({ seed = 1, h = 3.2, fruit = true } = {}) {
   const r = rng(seed);
   const g = new THREE.Group();
   g.add(branch([0, 0, 0], [0.2, h, 0], 0.38, 0.19));
+  for (let i = 0; i < 5; i++) {
+    const a = i * Math.PI * 0.4 + seed;
+    g.add(mesh(taperedStem([[Math.cos(a) * 0.65, 0.035, Math.sin(a) * 0.65], [Math.cos(a) * 0.3, 0.18, Math.sin(a) * 0.3], [0.02, 0.65, 0]], 0.045, 0.12, 5, 6), bark));
+  }
   const tint = [0x64a847, 0x76ac49, 0x4f9b48][seed % 3];
   for (let i = 0; i < 5; i++) {
     const a = (i / 5) * Math.PI * 2 + r();
-    const rr = 1.05 + r() * 0.55;
+    const rr = 0.95 + r() * 0.35;
     const x = Math.cos(a) * 1.05, z = Math.sin(a) * 1.05, y = h + 0.45 + r() * 0.65;
     g.add(branch([0.1, h * 0.6, 0], [x, y, z], 0.16, 0.06));
-    crown(g, x, y, z, rr, seed + i, tint, 0.9);
+    const pad = leafyCushion(rr, seed + i, tint); pad.position.set(x, y, z); pad.scale.y = 0.82; g.add(pad);
+    for (let j = 0; j < 3; j++) {
+      const turn = a + j * Math.PI * 2 / 3, px = x + Math.cos(turn) * rr * 0.65, pz = z + Math.sin(turn) * rr * 0.65;
+      const tuft = leafyCushion(0.58 + j * 0.06, seed + i + j, j % 3 ? tint : 0x79a448, true);
+      tuft.position.set(px, y + rr * 0.1, pz); tuft.scale.y = 0.85; g.add(tuft);
+      leafSprig(g, px, y + rr * 0.54, pz, -turn, 0.4, seed + i * 6 + j, tint);
+    }
   }
-  crown(g, 0.1, h + 1.35, -0.15, 1.5, seed, tint, 1.05);
+  for (let i = 0; i < 3; i++) {
+    const a = i * 2.1 + seed, top = leafyCushion(0.95, seed + 20 + i, tint);
+    top.position.set(Math.cos(a) * 0.6, h + 1.2 + i * 0.15, Math.sin(a) * 0.6); top.scale.set(1, 0.85, 0.95); g.add(top);
+  }
   if (fruit) {
-    for (let i = 0; i < 4; i++) {
+    for (let i = 0; i < 5; i++) {
       const m = makeMango();
       m.scale.setScalar(0.4);
-      const a = r() * Math.PI * 2;
-      m.position.set(Math.cos(a) * 1.9, h + 0.1, Math.sin(a) * 1.9);
+      const a = i * 2.4 + seed, y = h + (i % 3) * 0.22;
+      m.position.set(Math.cos(a) * 1.72, y, Math.sin(a) * 1.72); m.rotation.z = Math.sin(a) * 0.3;
+      g.add(branch([m.position.x, y + 0.22, m.position.z], [m.position.x * 0.85, y + 0.65, m.position.z * 0.85], 0.012, 0.018));
       g.add(m);
     }
   }
-  return g;
+  const result = bake(g); result.name = 'mangoTree'; g.traverse(o => o.geometry?.dispose()); return result;
 }
 
-// Ceiba: tapered buttress roots, visible forks and an irregular domed crown.
+// Smaller scallops and leaf tips give these crowns a readable plant silhouette.
+const bladeMat = M(0xffffff, { vertexColors: true, side: THREE.DoubleSide, flatShading: false, roughness: 1 });
+function leafyCushion(size, seed, tint, small = false) {
+  const geo = new THREE.SphereGeometry(1, small ? 12 : 20, small ? 8 : 14), p = geo.attributes.position, colors = [];
+  const dark = new THREE.Color(0x24543a), light = new THREE.Color(tint);
+  for (let i = 0; i < p.count; i++) {
+    const x = p.getX(i), y = p.getY(i), z = p.getZ(i);
+    const scallop = 1 + 0.07 * Math.sin(x * 5 + seed) * Math.sin(z * 5 - seed) + 0.035 * Math.cos(y * 7 + x * 3);
+    p.setXYZ(i, x * size * scallop, y * size * scallop, z * size * scallop);
+    const shade = THREE.MathUtils.clamp(0.56 + y * 0.36 + Math.sin(x * 12 + z * 9 + seed) * 0.04, 0, 1);
+    const c = dark.clone().lerp(light, shade); colors.push(c.r, c.g, c.b);
+  }
+  geo.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3)); geo.computeVertexNormals();
+  return mesh(geo, leafMat);
+}
+function leafSprig(group, x, y, z, angle, size, seed, tint) {
+  for (let j = -1; j <= 1; j++) {
+    const leaf = mesh(leafBlade(size * (j ? 0.8 : 1), size * 0.27, size * 0.2, tint, 6), bladeMat, x, y + Math.abs(j) * 0.025, z);
+    leaf.rotation.set(0.5 + 0.15 * Math.sin(seed + j), angle + j * 0.65, 0.22 + Math.sin(seed) * 0.18); group.add(leaf);
+  }
+}
+
+// Ceiba: flared roots flow into the trunk; curved forks support a spreading crown.
 export function ceiba({ seed = 1 } = {}) {
   const r = rng(seed);
   const g = new THREE.Group();
   const h = 5.7 + r() * 2.2;
   const lean = (r() - 0.5) * 0.7;
-  g.add(branch([0, 0, 0], [lean, h, 0.15], 0.64, 0.28, paleBark));
-  for (let i = 0; i < 4; i++) {
-    const a = i * Math.PI / 2 + r() * 0.3;
-    g.add(branch([Math.cos(a) * 1.05, 0.08, Math.sin(a) * 1.05], [lean * 0.2, 1.65, 0], 0.14, 0.34, paleBark));
+  const trunk = new THREE.CylinderGeometry(1, 1, 1, 20, 12), p = trunk.attributes.position, colors = [];
+  const low = new THREE.Color(0x756746), high = new THREE.Color(0xb8a37a);
+  for (let i = 0; i < p.count; i++) {
+    const t = p.getY(i) + 0.5, x = p.getX(i), z = p.getZ(i), angle = Math.atan2(z, x);
+    const flute = Math.pow(Math.max(0, Math.cos(angle * 5 + seed)), 4);
+    const radius = 0.64 - t * 0.37 + Math.pow(1 - t, 6) * (0.16 + flute * 1.05) + Math.sin(t * Math.PI) * 0.1;
+    p.setXYZ(i, x * radius + lean * t * t, t * h, z * radius + Math.sin(t * Math.PI * 0.6) * 0.18);
+    const color = low.clone().lerp(high, 0.38 + t * 0.4 + Math.cos(angle * 5 + seed) * 0.08);
+    colors.push(color.r, color.g, color.b);
   }
-  const tint = [0x75a84d, 0x5f9d46, 0x8ab65b][seed % 3];
-  for (let i = 0; i < 7; i++) {
-    const a = (i / 7) * Math.PI * 2 + r() * 0.4;
-    const reach = 1.8 + r() * 0.7;
+  trunk.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3)); trunk.computeVertexNormals();
+  g.add(mesh(trunk, M(0xffffff, { vertexColors: true, flatShading: false, roughness: 1 })));
+  const tint = [0x78a84a, 0x629e48, 0x8ab252][Math.abs(seed) % 3];
+  for (let i = 0; i < 6; i++) {
+    const a = (i / 6) * Math.PI * 2 + r() * 0.35;
+    const reach = 1.95 + r() * 0.5;
     const x = Math.cos(a) * reach, z = Math.sin(a) * reach;
-    const y = h + 0.25 + r() * 1.2, size = 1.3 + r() * 0.55;
-    g.add(branch([lean, h * 0.65, 0], [x, y, z], 0.25, 0.09, paleBark));
-    crown(g, x, y, z, size, seed + i, tint, 0.82 + r() * 0.2);
+    const y = h + r() * 0.65, size = 1.35 + r() * 0.4;
+    g.add(mesh(taperedStem([[lean * 0.5, h * 0.61, 0.13], [x * 0.5, h * 0.92, z * 0.5], [x, y, z]], 0.3, 0.07, 7, 8), paleBark));
+    const canopy = leafyCushion(size, seed + i, tint); canopy.position.set(x, y + 0.45, z); canopy.scale.set(1.12, 0.72, 1); g.add(canopy);
+    const edge = leafyCushion(size * 0.55, seed + i + 12, tint, true); edge.position.set(x * 1.35, y + 0.08, z * 1.35); edge.scale.y = 0.75; g.add(edge);
+    leafSprig(g, x * 1.35, y + size * 0.55, z * 1.35, -a, 0.72, seed + i, 0x629238);
   }
-  crown(g, lean, h + 1.25, 0, 2, seed + 31, tint, 0.95);
+  const top = leafyCushion(1.95, seed + 31, tint); top.position.set(lean, h + 1.15, 0); top.scale.set(1.1, 0.76, 1); g.add(top);
   return g;
 }
 
@@ -152,7 +193,7 @@ export function palm({ h = 8, seed = 1 } = {}) {
   const r = rng(seed), g = new THREE.Group();
   const bend = 0.6 + r() * 1.1, turn = r() * Math.PI * 2;
   const dx = Math.cos(turn) * bend, dz = Math.sin(turn) * bend;
-  const trunkGeo = new THREE.CylinderGeometry(0.18, 0.36, h, 9, 10);
+  const trunkGeo = new THREE.CylinderGeometry(0.18, 0.36, h, 12, 18);
   const p = trunkGeo.attributes.position;
   for (let i = 0; i < p.count; i++) {
     const t = (p.getY(i) + h / 2) / h;
@@ -161,8 +202,8 @@ export function palm({ h = 8, seed = 1 } = {}) {
   trunkGeo.computeVertexNormals();
   g.add(mesh(trunkGeo, bark));
   const collar = M(0xb69a6a, { roughness: 1, flatShading: false });
-  for (let i = 1; i < 9; i++) {
-    const t = i / 10;
+  for (let i = 1; i < 20; i++) {
+    const t = i / 21;
     const ring = mesh(new THREE.TorusGeometry(0.36 - t * 0.18, 0.017, 3, 9), collar, dx * t * t, h * t, dz * t * t);
     ring.rotation.x = Math.PI / 2;
     g.add(ring);
@@ -178,7 +219,7 @@ export function palm({ h = 8, seed = 1 } = {}) {
       const t = k / 10;
       const leafletLength = (0.35 + Math.sin(t * Math.PI) * 0.85) * (length / 3.7);
       for (const side of [-1, 1]) {
-        const leaf = mesh(ribbon(leafletLength, 0.13, 0.04, 0.24 + t * 0.2, k, 3), frondMats[(i + k) % 3], t * length, Math.sin(t * Math.PI * 0.85) * rise - t * t * droop, 0);
+        const leaf = mesh(ribbon(leafletLength * (1 + side * 0.06), 0.16, 0.04, 0.24 + t * 0.2, k, 5), frondMats[(i + k) % 3], t * length, Math.sin(t * Math.PI * 0.85) * rise - t * t * droop, 0);
         leaf.rotation.y = side * (0.9 + t * 0.35);
         frond.add(leaf);
       }
@@ -189,7 +230,12 @@ export function palm({ h = 8, seed = 1 } = {}) {
     const a = i * 2.1;
     g.add(mesh(new THREE.SphereGeometry(0.24, 8, 6), M(0x73502c, { flatShading: false }), dx + Math.cos(a) * 0.28, h - 0.25, dz + Math.sin(a) * 0.28));
   }
-  return g;
+  // Upright new growth breaks the flat umbrella silhouette.
+  for (let i = 0; i < 3; i++) {
+    const spear = mesh(leafBlade(1.45, 0.16, 0.2, 0x92b854, 7), bladeMat, dx, h - 0.1, dz);
+    spear.rotation.set(0, i * 2.1, 1.0); g.add(spear);
+  }
+  const result = bake(g); result.name = 'palm'; g.traverse(o => o.geometry?.dispose()); return result;
 }
 
 // Banana plant: a soft stem with broad, drooping leaves.
@@ -209,81 +255,36 @@ export function banana({ seed = 1 } = {}) {
   return g;
 }
 
-// A round bush, sometimes with flowers.
+// Low branching shrub with overlapping leaf pads and folded new growth.
 export function bush({ seed = 1, flowers = false } = {}) {
-  const r = rng(seed);
-  const g = new THREE.Group();
-  for (let i = 0; i < 3; i++) {
-    crown(g, (r() - 0.5) * 1.1, 0.45, (r() - 0.5) * 1.1, 0.6 + r() * 0.35, seed + i, 0x80b955);
-  }
-  if (flowers) {
-    const petal = M(['#ff6fa5', '#ffd23f', '#ff8a1f', '#f3e9d7'][Math.floor(r() * 4)], { roughness: 0.7 });
-    for (let i = 0; i < 6; i++) {
-      g.add(mesh(new THREE.SphereGeometry(0.13, 5, 4), petal, (r() - 0.5) * 1.4, 0.8 + r() * 0.3, (r() - 0.5) * 1.4));
+  const r = rng(seed), g = new THREE.Group();
+  const pads = [[-0.55, 0.49, 0.06, 0.68], [0.5, 0.5, 0.12, 0.72], [0, 0.79, -0.16, 0.67], [-0.05, 0.39, 0.56, 0.51], [0.22, 0.46, -0.63, 0.55]];
+  pads.forEach(([x, y, z, size], i) => {
+    const pad = leafyCushion(size, seed + i, [0x689e42, 0x80ae4b, 0x92ba55][i % 3]);
+    pad.position.set(x, y, z); pad.scale.set(1, 0.68, 0.95); g.add(pad);
+    if (i < 3) g.add(mesh(taperedStem([[0, 0, 0], [x * 0.4, 0.28, z * 0.4], [x, y, z]], 0.045, 0.014, 4, 5), bark));
+    leafSprig(g, x * 1.1, y + size * 0.66, z * 1.1, r() * Math.PI * 2, 0.36 + r() * 0.12, seed + i, 0x8dbd52);
+    for (let j = 0; j < 3; j++) {
+      const a = j * Math.PI * 2 / 3 + i;
+      const leaf = mesh(leafBlade(0.4, 0.14, 0.07, 0x528a38, 6), bladeMat,
+        x + Math.cos(a) * size * 0.75, y + size * 0.47, z + Math.sin(a) * size * 0.75);
+      leaf.rotation.set(0, -a, -0.4); g.add(leaf);
     }
-  }
-  return g;
-}
-
-// A little tropical house: colored walls, tin roof, lit window.
-export function casita({ seed = 1 } = {}) {
-  const r = rng(seed);
-  const g = new THREE.Group();
-  const walls = ['#ff8a65', '#ffd54f', '#4fc3f7', '#aed581', '#f48fb1', '#fff3e0'][Math.floor(r() * 6)];
-  g.add(mesh(new THREE.BoxGeometry(3.2, 2.4, 2.8), M(walls, { roughness: 0.9 }), 0, 1.2, 0));
-  const roof = mesh(new THREE.ConeGeometry(2.7, 1.4, 4), M(r() < 0.5 ? 0xb5462f : 0x8a7a6a, { roughness: 0.8 }), 0, 3.1, 0);
-  roof.rotation.y = Math.PI / 4;
-  roof.scale.set(1.2, 1, 1.05);
-  g.add(roof);
-  g.add(mesh(new THREE.BoxGeometry(0.8, 1.5, 0.08), M(0x6b4226), 0.6, 0.75, 1.42));
-  g.add(mesh(new THREE.BoxGeometry(0.7, 0.6, 0.08), new THREE.MeshStandardMaterial({ color: 0xffd27a, emissive: 0xffb340, emissiveIntensity: 1.2 }), -0.8, 1.4, 1.42));
-  return g;
-}
-
-// Merge every static mesh under `root` into one mesh per material.
-// Meshes with texture maps keep their own (signs are few); everything else is
-// vertex colors are retained for the foliage's top-to-bottom color variation.
-export function bake(root, { cellSize = Infinity } = {}) {
-  root.updateMatrixWorld(true);
-  const buckets = new Map();
-  const keep = [];
-  root.traverseVisible((m) => {
-    if (!m.isMesh) return;
-    let geo = m.geometry.clone();
-    // Static statues can use the shared animated character. Freeze the current
-    // skin/morph pose before batching; never merge bind poses or hidden outfits.
-    if (m.isSkinnedMesh || m.geometry.morphAttributes.position?.length) {
-      const positions = geo.attributes.position, point = new THREE.Vector3();
-      for (let i = 0; i < positions.count; i++) { m.getVertexPosition(i, point); positions.setXYZ(i, point.x, point.y, point.z); }
-      geo.computeVertexNormals();
-    }
-    geo.morphAttributes = {}; geo.deleteAttribute('skinIndex'); geo.deleteAttribute('skinWeight');
-    if (m.material.map || m.material.bumpMap || Array.isArray(m.material) || m.material.transparent) {
-      const clone = new THREE.Mesh(geo, m.material); clone.castShadow = m.castShadow; clone.receiveShadow = m.receiveShadow;
-      m.matrixWorld.decompose(clone.position, clone.quaternion, clone.scale); keep.push(clone); return;
-    }
-    if (geo.index) { const indexed = geo; geo = indexed.toNonIndexed(); indexed.dispose(); }
-    for (const name of Object.keys(geo.attributes)) if (!['position', 'normal', 'color'].includes(name)) geo.deleteAttribute(name);
-    if (!geo.attributes.normal) geo.computeVertexNormals();
-    geo.applyMatrix4(m.matrixWorld);
-    // same look = same bucket, even when two builders made separate materials
-    const mt = m.material;
-    // Optional spatial buckets let large race environments cull distant
-    // vegetation instead of submitting every tree in the world each frame.
-    const cellX = Math.floor(m.matrixWorld.elements[12] / cellSize);
-    const cellZ = Math.floor(m.matrixWorld.elements[14] / cellSize);
-    const key = [cellX, cellZ, mt.type, mt.color?.getHex(), mt.emissive?.getHex(), mt.emissiveIntensity, mt.roughness, mt.metalness, mt.side, mt.flatShading, mt.vertexColors, !!geo.attributes.color, m.castShadow, m.receiveShadow].join('|');
-    if (!buckets.has(key)) buckets.set(key, { mat: mt, geos: [], castShadow: m.castShadow, receiveShadow: m.receiveShadow });
-    buckets.get(key).geos.push(geo);
   });
-  const out = new THREE.Group();
-  for (const { mat, geos, castShadow, receiveShadow } of buckets.values()) {
-    const merged = new THREE.Mesh(mergeGeometries(geos, false), mat);
-    merged.castShadow = castShadow;
-    merged.receiveShadow = receiveShadow;
-    out.add(merged);
-    for (const g of geos) g.dispose();
+  if (flowers) {
+    const tint = [0xf29eae, 0xffd364, 0xf28a50, 0xfff0d4][Math.floor(r() * 4)];
+    const centerMat = M(0xe5a632, { flatShading: false, roughness: 0.9 });
+    for (let i = 0; i < 5; i++) {
+      const [x, y, z, size] = pads[i], flower = new THREE.Group();
+      flower.position.set(x + (r() - 0.5) * 0.2, y + size * 0.68 + 0.02, z);
+      flower.rotation.set((r() - 0.5) * 0.6, r() * Math.PI * 2, (r() - 0.5) * 0.5);
+      for (let j = 0; j < 5; j++) {
+        const petal = mesh(leafBlade(0.23, 0.12, 0.055, tint, 6), bladeMat);
+        petal.rotation.y = j / 5 * Math.PI * 2; flower.add(petal);
+      }
+      const center = mesh(new THREE.SphereGeometry(0.07, 8, 5), centerMat, 0, 0.035, 0); center.scale.y = 0.55;
+      flower.add(center); g.add(flower);
+    }
   }
-  keep.forEach(m => out.add(m));
-  return out;
+  return g;
 }

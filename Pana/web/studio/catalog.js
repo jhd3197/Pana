@@ -9,7 +9,7 @@ import { Box3, Vector3 } from 'three';
 const shared = ['Bululú', 'Derrape', 'Escondidas', 'Cocina'];
 const object = (id, name, category, source, factory, usedBy, options) => ({
   id, name, category, source, factory, usedBy, previewOptions: options ?? null,
-  async build() { const module = await import(source); return { group: module[factory](options) }; },
+  async build() { const module = await import(source), group = module[factory](options); return { group, update: group.userData.tick && ((t, dt) => group.userData.tick(t, dt)) }; },
 });
 const character = (id, name, options = {}) => ({ id, name, category: 'Personajes', source: '/engine/character.js', factory: 'buildCharacter', usedBy: shared, previewOptions: options,
   async build() { const { buildCharacter } = await import('/engine/character.js'); const model = buildCharacter(DEFAULT_AVATAR, { quality: 'studio', ...options }); return { group: model.group, update: (t, dt) => model.update(dt), dispose: () => model.dispose() }; },
@@ -29,6 +29,44 @@ export const ASSETS = [
   object('mango', 'Mango', 'Objetos', '/engine/props.js', 'makeMango', ['Bululú', 'Derrape']),
   object('gold-mango', 'Mango dorado', 'Objetos', '/engine/props.js', 'makeMango', ['Bululú', 'Derrape'], { gold: true }),
   ...[['palm', 'Palmera'], ['mangoTree', 'Árbol de mango'], ['ceiba', 'Ceiba'], ['pine', 'Pino'], ['banana', 'Mata de cambur'], ['bush', 'Arbusto'], ['casita', 'Casita de isla']].map(([factory, name]) => object(factory, name, factory === 'casita' ? 'Objetos' : 'Vegetación', '/engine/flora.js', factory, shared, { seed: 7 })),
+  ...[
+    ['araguaney','Araguaney','Copa de flores amarillas y tronco ramificado.',['árbol','flores','pueblo']],
+    ['bamboo','Bambú','Grupo de tallos con nudos y ramas de hojas finas.',['selva','tallos']],
+    ['fern','Helecho','Frondas arqueadas y brotes enrollados para el suelo del bosque.',['selva','sotobosque']],
+    ['monstera','Monstera','Hojas grandes con cortes y perforaciones.',['selva','hojas']],
+    ['heliconia','Heliconia','Flores rojas con puntas doradas entre hojas tropicales.',['selva','flores']],
+    ['cactus','Cardón','Cactus de brazos curvos, costillas y una pequeña flor.',['desierto','cactus']],
+    ['mangrove','Mangle','Raíces arqueadas y copa extendida para costas y lagunas.',['árbol','costa','raíces']],
+    ['papaya','Lechosa','Tronco esbelto, hojas recortadas y un racimo de frutas.',['árbol','papaya','fruta','huerto']],
+    ['agave','Agave','Roseta de hojas carnosas azuladas con bordes claros.',['seco','jardín','suculenta']],
+    ['waterLily','Nenúfar','Hojas flotantes y flores rosadas para estanques.',['agua','flores','laguna']],
+    ['hibiscus','Cayena','Arbusto de hojas verdes y grandes flores rojas.',['flores','hibisco','jardín']],
+    ['reeds','Juncos','Tallos altos, hojas arqueadas y espigas para las orillas.',['agua','laguna','enea']],
+    ['jungleGiant','Árbol gigante de la selva','Tronco con raíces tabulares, copa en pisos, lianas y bromelias.',['selva','árbol','lianas']],
+    ['tropicalBush','Arbusto tropical grande','Hojas anchas, crotos variegados y espigas rojas de jengibre.',['selva','arbusto','flores']],
+  ].map(([factory,name,description,tags])=>({...object(factory,name,'Vegetación','/engine/flora.js',factory,['jungleGiant','tropicalBush'].includes(factory)?['Pana Studio']:['Pana Studio','Derrape'],{seed:7}),description,tags})),
+  // Pana signature landmarks shared by every game.
+  ...[
+    ['capybara-statue', 'Estatua gigante de capibara', '/engine/landmarks.js', 'capybaraStatue', 'El pana original en bronce, saludando sobre un pedestal.', ['estatua', 'capibara', 'monumento']],
+    ['golden-mango-statue', 'Estatua del mango de oro', '/engine/landmarks.js', 'goldenMangoStatue', 'Un mango dorado gigante sobre un pedestal octogonal.', ['estatua', 'mango', 'monumento']],
+    ['plaza-fountain', 'Fuente de Plaza Pana', '/engine/plaza.js', 'plazaFountain', 'Capibara coronado, mosaicos turquesa y chorros con ondas animadas.', ['fuente', 'agua', 'plaza']],
+    ['welcome-arch', 'Arco de bienvenida Pana', '/engine/landmarks.js', 'welcomeArch', 'Arco de entrada con letrero PANA, faroles y banderines.', ['arco', 'entrada', 'letrero']],
+    ['capybara-topiary', 'Topiaria de capibara', '/engine/landmarks.js', 'capybaraTopiary', 'Seto podado con forma de capibara en una jardinera.', ['jardín', 'capibara', 'seto']],
+    ['pana-flagpole', 'Asta con bandera Pana', '/engine/landmarks.js', 'panaFlagpole', 'Bandera Pana ondeando sobre una base de mármol.', ['bandera', 'asta']],
+    ['trophy-monument', 'Monumento de la Copa Pana', '/engine/landmarks.js', 'trophyMonument', 'Copa dorada gigante con un capibara en la tapa.', ['trofeo', 'copa', 'monumento']],
+    ['capybara-fountain', 'Fuente de los capibaras', '/engine/landmarks.js', 'capybaraFountain', 'Capibara de piedra con su pajarito y dos crías que echan agua.', ['fuente', 'agua', 'capibara']],
+    ['souvenir-kiosk', 'Kiosco de recuerdos Pana', '/engine/landmarks.js', 'souvenirKiosk', 'Puesto con peluches de capibara, mangos, postales y banderines.', ['tienda', 'kiosco', 'recuerdos']],
+  ].map(([id, name, source, factory, description, tags]) => ({ ...object(id, name, 'Emblemas', source, factory, source.includes('plaza') ? ['Escondidas', 'Cocina', 'Derrape'] : ['Pana Studio']), description, tags: ['pana', ...tags] })),
+  // Jungle ruins and traversal obstacles.
+  ...[
+    ['temple-entrance', 'Entrada del templo de piedra', 'templeEntrance', 'Pasaje abierto, piedra erosionada, máscara de jade y enredaderas.', ['templo', 'ruinas', 'entrada']],
+    ['rope-bridge', 'Puente colgante de cuerdas', 'ropeBridge', 'Tablas sobre cuerdas entre dos salientes de piedra.', ['puente', 'cuerdas', 'obstáculo']],
+    ['waterfall-rocks', 'Cascada entre rocas', 'waterfallRocks', 'Acantilado en herradura con cascada animada y poza.', ['agua', 'cascada', 'rocas']],
+    ['vine-arch', 'Arco de piedra con enredaderas', 'vineArch', 'Arco de dovelas cubierto de musgo y lianas.', ['arco', 'ruinas', 'lianas']],
+    ['bamboo-bridge', 'Puente de bambú', 'bambooBridge', 'Tablero de cañas amarradas sobre caballetes, con rampas.', ['puente', 'bambú', 'obstáculo']],
+    ['stone-totem', 'Tótem de piedra antiguo', 'stoneTotem', 'Tres rostros tallados (jaguar, búho y capibara) bajo un penacho.', ['tótem', 'ruinas', 'capibara']],
+    ['hollow-log', 'Tronco hueco', 'hollowLog', 'Tronco caído y hueco con hongos, musgo y bordes rotos.', ['tronco', 'obstáculo', 'túnel']],
+  ].map(([id, name, factory, description, tags]) => ({ ...object(id, name, 'Selva', '/engine/jungle-props.js', factory, ['Pana Studio']), description, tags: ['selva', ...tags] })),
   ...[['beachShade', 'Sombrilla de playa'], ['beachHut', 'Rancho de playa'], ['driftwood', 'Tronco de playa']].map(([factory, name]) => object(factory, name, 'Objetos', '/engine/beach-props.js', factory, ['Bululú', 'Derrape'])),
   ...RECIPES.map(r => ({ ...object(`food-${r.id}`, r.name, 'Objetos', '/engine/kitchen-props.js', 'food', ['Cocina'], r.id), tags: ['comida', 'cocina'] })),
   object('corn', 'Mazorca', 'Objetos', '/engine/kitchen-props.js', 'corn', ['Cocina']),
@@ -53,10 +91,10 @@ export const ASSETS = [
     async build() { const { buildIsland } = await import('/engine/island-terrain.js'); return buildIsland([], []); },
   },
   ...TRACKS.map(track => ({ id: `track-${track.id}`, name: `Circuito · ${track.name}`, category: 'Mapas', source: `/g/derrape/tracks/${track.id}.js`, dependencies: ['/g/derrape/tracks.js'], factory: 'makeTrack(definition).build', usedBy: ['Derrape'], description: track.blurb, game: '/g/derrape/',
-    async build() { const model = makeTrack(track); return { group: model.build(), bounds: new Box3(new Vector3(-model.bounds.x - 20, 0, -model.bounds.z - 20), new Vector3(model.bounds.x + 20, 35, model.bounds.z + 20)), update: (t, dt) => model.animated.forEach(o => o.userData.tick?.(t, dt)) }; },
+    async build() { const model = makeTrack(track); return { group: model.build(), bounds: track.previewBounds ? new Box3(new Vector3(...track.previewBounds[0]), new Vector3(...track.previewBounds[1])) : new Box3(new Vector3(-model.bounds.x - 20, 0, -model.bounds.z - 20), new Vector3(model.bounds.x + 20, 35, model.bounds.z + 20)), update: (t, dt) => model.animated.forEach(o => o.userData.tick?.(t, dt)) }; },
   })),
 ];
-export const CATEGORIES = ['Todos', 'Personajes', 'Vestuario', 'Objetos', 'Vegetación', 'Vehículos', 'Mapas'];
+export const CATEGORIES = ['Todos', 'Personajes', 'Vestuario', 'Objetos', 'Emblemas', 'Selva', 'Vegetación', 'Vehículos', 'Mapas'];
 export function sourcePath(url) {
   return url.startsWith('/engine/') ? `Pana${url}` : url.replace(/^\/g\/([^/]+)\//, 'Pana/games/$1/public/');
 }

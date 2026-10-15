@@ -2,10 +2,12 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { CARS } from './cars.js';
 import { garageCards } from './garage-cards.js';
+import { paintNext } from './loading.js';
 import { sound, Puffs, Debris, makeBubble } from '/engine/fx.js';
 import { createItems, ITEMS, SPIN } from './items.js';
 import { activeItem, canBlock, coinMultiplier, COIN_SPEED, MAX_COINS } from './item-rules.js';
 import { TRACKS, getTrack, makeTrack } from './tracks.js';
+import { roughnessAt } from './offroad.js';
 import { loadAvatar, loadName, randomAvatar } from '/engine/avatar.js';
 
 const $ = (id) => document.getElementById(id);
@@ -64,6 +66,7 @@ const garage = {
   t: 0,
   focus: false,
   glide: 0,
+  cars: new Map(),
 };
 {
   const s = garage.scene;
@@ -76,7 +79,8 @@ const garage = {
   const key = new THREE.SpotLight(0xfff0d8, 220, 45, Math.PI / 5, 0.5, 1.6);
   key.position.set(6, 13, 8);
   key.castShadow = true;
-  key.shadow.mapSize.set(2048, 2048);
+  // The small turntable needs a quarter of the previous shadow texels.
+  key.shadow.mapSize.set(1024, 1024);
   key.shadow.bias = -0.0004;
   s.add(key);
   const rim = new THREE.DirectionalLight(0x9fb7ff, 1.6);
@@ -113,14 +117,18 @@ const garage = {
   garage.controls.maxPolarAngle = Math.PI * 0.49;
 }
 
+function garageCar(index) {
+  if (!garage.cars.has(index)) garage.cars.set(index, CARS[index].build(ME.avatar));
+  return garage.cars.get(index);
+}
+
 function showCar(i) {
   garage.index = (i + CARS.length) % CARS.length;
   const def = CARS[garage.index];
-  // Geometry belongs to the instance; cached paint/decal materials are shared.
-  garage.car?.driver.dispose();
-  garage.car?.root.traverse(o => o.geometry?.dispose());
   garage.turn.clear();
-  garage.car = def.build(ME.avatar);
+  // At most eight garage models; thumbnails borrow these same instances.
+  // Race models stay independent because their parts can break off.
+  garage.car = garageCar(garage.index);
   garage.turn.add(garage.car.root);
   garage.ring.material.color.set(def.color);
 
@@ -275,37 +283,69 @@ function applyPalette(pal) {
   race.dome.geometry.setAttribute('color', new THREE.Float32BufferAttribute(col, 3));
 }
 
-// Swap the active track: rebuild all track-owned visuals and the items.
+// Browsing needs only route metadata. Keep the last built map for replay;
+// construct a different environment only after the player presses Play.
 let trackIndex = 0;
-function buildTrack(id) {
+const trackRoutes = new Map();
+function selectTrack(id) {
   const def = getTrack(id);
   trackIndex = TRACKS.indexOf(def);
   try { localStorage.setItem('derrape:track', def.id); } catch { /* private mode */ }
+  if (!trackRoutes.has(def.id)) trackRoutes.set(def.id, makeTrack(def));
+  const route = trackRoutes.get(def.id);
+  $('track-name').textContent = def.name;
+  $('track-blurb').textContent = `${(route.TOTAL / 1000).toFixed(2)} km por vuelta · ${LAPS} vueltas. ${def.blurb}`;
+  return route;
+}
+
+function beginTrack(id) {
+  let route = selectTrack(id);
+  if (race.trackReady && T === route) return false;
+  // A cancelled environment may have installed ground/collision closures.
+  // Retry with a fresh runtime instead of retaining those partial callbacks.
+  if (T === route) route = makeTrack(route.def);
   if (race.trackGroup) {
     race.items?.dispose();
     race.scene.remove(race.trackGroup);
     race.trackGroup.traverse((o) => o.geometry?.dispose());
+    // Built runtimes retain environment animation/terrain closures. Evict the
+    // old runtime too, so metadata caching cannot retain eight whole worlds.
+    trackRoutes.delete(T.id);
+    T.group = null;
   }
-  T = makeTrack(def);
-  race.trackGroup = T.build();
+  race.items = null;
+  race.trackGroup = null;
+  race.trackReady = false;
+  T = route;
+  trackRoutes.set(route.id, route);
+  return true;
+}
+
+function finishTrack() {
+  race.trackGroup = T.group;
   race.scene.add(race.trackGroup);
-  applyPalette(def.palette);
+  applyPalette(T.def.palette);
   race.items = createItems({
     scene: race.trackGroup, puffs: race.puffs, sound, G, track: T,
     crash: (c, power, side) => crash(c, power, side),
     say: (c, lines, time) => say(c, lines, time),
     standings: () => standings(),
   });
-  $('track-name').textContent = def.name;
-  $('track-blurb').textContent = `${(T.TOTAL / 1000).toFixed(2)} km por vuelta · ${LAPS} vueltas. ${def.blurb}`;
-  $('mm-track').textContent = def.name;
+  $('mm-track').textContent = T.name;
   $('mm-sub').textContent = `${(T.TOTAL / 1000).toFixed(2)} km por vuelta`;
   buildMinimap();
+  race.trackReady = true;
+}
+
+function buildTrack(id) {
+  if (!beginTrack(id)) return;
+  race.trackGroup = T.build();
+  finishTrack();
 }
 
 function switchTrack(i) {
   sound.unlock();
-  buildTrack(TRACKS[(i + TRACKS.length) % TRACKS.length].id);
+  selectTrack(TRACKS[(i + TRACKS.length) % TRACKS.length].id);
 }
 
 // ---------- race HUD: standings board + minimap ----------
@@ -416,33 +456,102 @@ function clearRace() {
   race.cars = [];
   race.puffs.clear();
   race.debris.clear();
-  race.items.clear();
+  race.items?.clear();
+  race.player = null;
 }
 
-function startRace(playerIndex) {
-  clearRace();
-  const others = CARS.map((_, i) => i).filter((i) => i !== playerIndex).sort(() => Math.random() - 0.5);
-  const names = [...RIVALS].sort(() => Math.random() - 0.5);
-  race.cars = [makeRacer(playerIndex, true)];
-  for (let i = 1; i < RACERS; i++) race.cars.push(makeRacer(others[i - 1], false, names[i - 1]));
-  // a two-by-two grid; you start at the back so there's someone to pass
-  race.cars.forEach((c, i) => placeRacer(c, i % 2 ? -3.5 : 3.5, Math.floor((RACERS - 1 - i) / 2)));
-  race.player = race.cars[0];
-  race.playerIndex = playerIndex;
-  race.clock = 0;
-  race.count = 3.999;
-  race.boardT = 0;
-  race.state = 'count';
-  race.camPos = null;
-  $('garage').classList.add('hidden');
-  $('race').classList.remove('hidden');
-  $('result').classList.add('hidden');
+let loadGeneration = 0;
+async function startRace(playerIndex) {
+  if (mode === 'loading') return;
+  const generation = ++loadGeneration;
+  mode = 'loading';
+  race.state = 'loading';
   garage.controls.enabled = false;
-  sound.startEngine();
-  mode = 'race';
+  $('loading').classList.remove('hidden');
+  $('loading').setAttribute('aria-busy', 'true');
+  $('garage').inert = $('race').inert = true;
+  $('loading-back').focus();
+  $('loading-title').textContent = TRACKS[trackIndex].name;
+  $('play').disabled = true;
+  sound.stopEngine();
+  const step = async (label, progress) => {
+    $('loading-status').textContent = label;
+    $('loading-progress').value = progress;
+    await paintNext();
+    return generation === loadGeneration;
+  };
+  try {
+    if (!await step('Preparando la pista…', 0.05)) return;
+    clearRace();
+    if (beginTrack(TRACKS[trackIndex].id)) {
+      let progress = 0.12;
+      for (const label of T.buildSteps()) {
+        race.trackGroup = T.group;
+        if (!await step(label, progress)) return;
+        progress += 0.1;
+      }
+      finishTrack();
+    }
+    if (!await step('Preparando los carros…', 0.5)) return;
+    const others = CARS.map((_, i) => i).filter((i) => i !== playerIndex).sort(() => Math.random() - 0.5);
+    const names = [...RIVALS].sort(() => Math.random() - 0.5);
+    race.cars = [makeRacer(playerIndex, true)];
+    for (let i = 1; i < RACERS; i++) {
+      if (!await step(`Preparando los panas… ${i}/${RACERS}`, 0.5 + i * 0.08)) return;
+      race.cars.push(makeRacer(others[i - 1], false, names[i - 1]));
+    }
+    // a two-by-two grid; you start at the back so there's someone to pass
+    race.cars.forEach((c, i) => placeRacer(c, i % 2 ? -3.5 : 3.5, Math.floor((RACERS - 1 - i) / 2)));
+    race.player = race.cars[0];
+    race.playerIndex = playerIndex;
+    race.clock = 0;
+    race.count = 3.999;
+    race.boardT = 0;
+    race.camPos = null;
+    if (!await step('Todo listo. ¡A correr!', 0.9)) return;
+    renderer.toneMapping = THREE.NoToneMapping;
+    updateRace(0);
+    await renderer.compileAsync(race.scene, race.camera);
+    if (generation !== loadGeneration) return;
+    // Upload geometry and draw once behind the loading panel. The countdown
+    // starts only after this first frame, never while compilation is running.
+    renderer.render(race.scene, race.camera);
+    if (!await step('¡Listo!', 1)) return;
+    race.state = 'count';
+    $('count').textContent = '3';
+    $('garage').classList.add('hidden');
+    $('race').classList.remove('hidden');
+    $('result').classList.add('hidden');
+    garage.controls.enabled = false;
+    sound.startEngine();
+    acc = 0;
+    clock.getDelta();
+    mode = 'race';
+    $('garage').inert = $('race').inert = false;
+    $('loading').classList.add('hidden');
+    renderer.domElement.tabIndex = -1;
+    renderer.domElement.focus({ preventScroll: true });
+  } catch (error) {
+    console.error('Derrape loading failed', error);
+    if (generation === loadGeneration) {
+      if (!race.trackReady && T?.group) race.trackGroup = T.group;
+      $('loading-status').textContent = 'No pudimos preparar la carrera. Vuelve al garaje e inténtalo otra vez.';
+      race.state = 'off';
+    }
+  } finally {
+    if (generation === loadGeneration) {
+      $('play').disabled = false;
+      $('loading').setAttribute('aria-busy', 'false');
+    }
+  }
 }
 
 function toGarage() {
+  ++loadGeneration;
+  $('loading').classList.add('hidden');
+  $('loading').setAttribute('aria-busy', 'false');
+  $('garage').inert = $('race').inert = false;
+  $('play').disabled = false;
   race.state = 'off';
   clearRace();
   sound.stopEngine();
@@ -450,10 +559,12 @@ function toGarage() {
   $('garage').classList.remove('hidden');
   garage.controls.enabled = true;
   mode = 'garage';
+  $('play').focus({ preventScroll: true });
 }
 
 $('again').onclick = () => startRace(race.playerIndex);
 $('back').onclick = toGarage;
+$('loading-back').onclick = toGarage;
 function itemAction(direction) {
   if (mode === 'race' && race.state === 'go') race.items.use(race.player, direction);
 }
@@ -483,7 +594,7 @@ addEventListener('keydown', (e) => {
   if (e.target.closest('input, textarea, select, [contenteditable="true"]')) return;
   const k = e.key.toLowerCase();
   race.keys[k] = true;
-  if (k === 'escape' && mode === 'race') toGarage();
+  if (k === 'escape' && (mode === 'race' || mode === 'loading')) toGarage();
   if (k === 'h' && !e.repeat) {
     if (mode === 'race' && race.player) honk(race.player);
     else if (mode === 'garage') garageHonk();
@@ -567,6 +678,9 @@ function stepCar(c, input, dt) {
   const t = c.def.tune;
   const boosting = c.boost > 0;
   const top = t.top * c.skill * coinMultiplier(c);
+  const rough=c.onGround?roughnessAt(T,c.x,c.z):0,terrain=T.def.offroad;
+  const acceleration=t.accel*(1-rough*(1-(terrain?.accel??1)));
+  const previous={x:c.x,z:c.z};
   if (c.spin > 0) input = { throttle: 0, steer: 0 };   // skidding on a peel: no control
   let fx = Math.sin(c.h), fz = Math.cos(c.h);
   let rx = -Math.cos(c.h), rz = Math.sin(c.h);
@@ -575,13 +689,17 @@ function stepCar(c, input, dt) {
   const prevVf = vf;
 
   if (c.onGround) {
-    if (boosting) vf += t.accel * 2.5 * dt;
-    else if (input.throttle > 0) vf += t.accel * input.throttle * dt;
-    else if (input.throttle < 0) vf -= (vf > 0 ? t.accel * 2.2 : t.accel * 0.6) * dt;
+    if (boosting) vf += acceleration * 2.5 * dt;
+    else if (input.throttle > 0) vf += acceleration * input.throttle * dt;
+    else if (input.throttle < 0) vf -= (vf > 0 ? t.accel * 2.2 : acceleration * 0.6) * dt;
     else vf -= Math.sign(vf) * Math.min(Math.abs(vf), 6 * dt);
     // a turbo lifts the cap; when it ends the extra speed bleeds off instead of snapping
-    const cap = boosting ? top * 1.5 : Math.max(top, prevVf - 20 * dt);
-    vf = Math.max(-top * 0.4, Math.min(cap, vf));
+    const surfaceTop=top*(1-rough*(1-(terrain?.speed??1)));
+    // Rough ground bleeds speed progressively; turbo still helps but cannot
+    // cancel the terrain penalty and turn the grass into the fastest route.
+    const cap = rough>0?Math.max(surfaceTop*(boosting?1.5:1),prevVf-48*dt):boosting?top*1.5:Math.max(top,prevVf-20*dt);
+    vf = Math.max(-surfaceTop * 0.4, Math.min(cap, vf));
+    vf*=Math.exp(-rough*(terrain?.drag??0)*dt);
     vr *= Math.exp(-t.grip * dt);          // tires bite, a bit of slide remains
     c.steer += (input.steer - c.steer) * Math.min(1, dt * 8);
     const turn = c.steer * t.turn * Math.max(-1, Math.min(1, vf / 10)) * (1 - Math.abs(vf) / top * 0.3);
@@ -601,11 +719,14 @@ function stepCar(c, input, dt) {
   c.vr = vr;
   c.x += c.vx * dt;
   c.z += c.vz * dt;
+  T.constrainMotion?.(c,previous);
+  c.vf=c.vx*fx+c.vz*fz;c.vr=c.vx*rx+c.vz*rz;
 
   // ---- vertical: ramps, jumps, tumbles ----
   const g = groundAt(c.x, c.z);
   if (c.onGround) {
-    const followingTerrain = Math.abs(c.y - T.surfaceAt(c.x - c.vx * dt, c.z - c.vz * dt)) < 0.15;
+    const previousGround=terrain&&Math.abs(offsetOf(previous.x,previous.z))>T.HW?groundAt(previous.x,previous.z):T.surfaceAt(previous.x,previous.z);
+    const followingTerrain = Math.abs(c.y-previousGround)<0.15;
     if (g >= c.y - 0.08 || (followingTerrain && Math.abs(g - c.y) < 1.2)) {
       c.vy = (g - c.y) / dt;
       c.y = g;
@@ -662,7 +783,7 @@ function stepCar(c, input, dt) {
   // Works on any track shape: the wall normal is the gradient of offsetOf.
   const off = offsetOf(c.x, c.z);
   const limit = T.HW - 1.6;
-  if (Math.abs(off) > limit) {
+  if (!terrain && Math.abs(off) > limit) {
     const e = 0.6;
     let nx = offsetOf(c.x + e, c.z) - offsetOf(c.x - e, c.z);
     let nz = offsetOf(c.x, c.z + e) - offsetOf(c.x, c.z - e);
@@ -704,7 +825,7 @@ function stepCar(c, input, dt) {
   if (c.puffT <= 0) {
     const kicking = c.onGround && ((input.throttle > 0 && Math.abs(vf) < top * 0.55) || Math.abs(c.vr) > 4);
     if (kicking) {
-      race.puffs.spawn(new THREE.Vector3(c.x - fx * 1.6, 0.25, c.z - fz * 1.6), { color: 0xe7bd8a, count: 1, size: 0.7, rise: 0.6, life: 0.7 });
+      race.puffs.spawn(new THREE.Vector3(c.x - fx * 1.6, c.y+0.25, c.z - fz * 1.6), { color: rough>0.1?0x889263:0xe7bd8a, count: 1, size: 0.7, rise: 0.6, life: 0.7 });
     }
     if (boosting) {
       race.puffs.spawn(new THREE.Vector3(c.x - fx * 2.2, c.y + 0.5, c.z - fz * 2.2), { color: pick([0xff7b1c, 0xffd23f]), count: 2, size: 0.6, rise: 0.4, life: 0.35, spread: 0.4 });
@@ -950,7 +1071,7 @@ function frame() {
     renderer.toneMappingExposure = 1.05;
     updateGarage(dt);
     renderer.render(garage.scene, garage.camera);
-  } else {
+  } else if (mode === 'race') {
     renderer.toneMapping = THREE.NoToneMapping;
     // fixed physics steps: same race speed at any frame rate
     acc += dt * SPEED;
@@ -960,7 +1081,7 @@ function frame() {
     }
     renderer.render(race.scene, race.camera);
   }
-  requestAnimationFrame(frame);
+  if (!(DEBUG && QS.has('manual'))) requestAnimationFrame(frame);
 }
 
 function resize() {
@@ -979,16 +1100,23 @@ function resize() {
 addEventListener('resize', resize);
 resize();
 
-if (DEBUG) Object.assign(window, { race, garage, renderer, crash, startRace, updateRace, toGarage, ITEMS, TRACKS, buildTrack, getActiveTrack: () => T });
+if (DEBUG) Object.assign(window, { race, garage, renderer, crash, stepCar, startRace, updateRace, toGarage, ITEMS, TRACKS, buildTrack, getActiveTrack: () => T });
 
 // ?track=desierto wins; otherwise the last pick, otherwise the estadio
 let savedTrack = 'estadio';
 try { savedTrack = localStorage.getItem('derrape:track') || savedTrack; } catch { /* private mode */ }
-buildTrack(QS.get('track') || savedTrack);
-
-// bubbles use the cartoon font, so wait for it (but never block on it)
-Promise.race([document.fonts.ready, new Promise((r) => setTimeout(r, 1500))]).then(() => {
-  $('car-lineup').append(garageCards(CARS, ME.avatar, showCar));
-  showCar(0);
-  frame();
+selectTrack(QS.get('track') || savedTrack);
+showCar(0);
+frame();
+performance.mark('derrape:garage-ready');
+let lastGarageInput = performance.now();
+for (const event of ['pointerdown', 'wheel', 'keydown']) {
+  addEventListener(event, () => { lastGarageInput = performance.now(); }, { passive: true });
+}
+renderer.domElement.addEventListener('pointermove', event => {
+  if (event.buttons) lastGarageInput = performance.now();
 });
+const cards = garageCards(CARS, garageCar, showCar,
+  () => mode === 'garage' && performance.now() - lastGarageInput > 350);
+$('car-lineup').append(cards.fragment);
+cards.ready.catch(error => console.warn('Garage previews unavailable', error));

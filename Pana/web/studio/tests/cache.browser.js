@@ -26,7 +26,9 @@ try {
   await page.setViewportSize({ width: 1440, height: 1000 });
   await page.locator('#startup').waitFor({ state: 'hidden', timeout: 300000 });
   const cold = await page.evaluate(() => ({ ...panaLibrary.thumbnails.state, errors: [...panaLibrary.thumbnails.errors] }));
-  assert.equal(cold.ready, 60); assert.equal(cold.generated, 60); assert.equal(cold.validationError, ''); assert.deepEqual(cold.errors, []);
+  const assetCount=await page.evaluate(()=>panaLibrary.assets.length);
+  assert.ok(assetCount>0);
+  assert.equal(cold.ready, assetCount); assert.equal(cold.generated, assetCount); assert.equal(cold.validationError, ''); assert.deepEqual(cold.errors, []);
   assert.ok(cold.bytes > 20000 && cold.bytes < 10 * 1048576); console.log('Cold startup', cold);
   assert.equal(await page.locator('#studio-app').isVisible(), true);
   assert.equal(await page.locator('#studio-app').evaluate(app => app.inert), false);
@@ -52,10 +54,10 @@ try {
   await page.reload();
   await page.locator('#startup').waitFor({ state: 'hidden', timeout: 90000 });
   const warm = await page.evaluate(() => panaLibrary.thumbnails.state);
-  assert.equal(warm.reused, 60); assert.equal(warm.generated, 0); console.log('Warm cache: 60 reused, zero thumbnail builds');
+  assert.equal(warm.reused, assetCount); assert.equal(warm.generated, 0); console.log(`Warm cache: ${assetCount} reused, zero thumbnail builds`);
   assert.ok(await page.locator('[data-asset="pana"] img').evaluate(img => img.complete && img.naturalWidth === 320));
   await page.locator('#settings-link').click();
-  await page.waitForFunction(() => document.querySelector('#cache-count').textContent === '60');
+  await page.waitForFunction(count => Number(document.querySelector('#cache-count').textContent) === count,assetCount);
   assert.equal(await page.locator('canvas').count(), 0);
   assert.match(await page.locator('#inventory-link').getAttribute('href'), /#pana$/);
   await page.screenshot({ path: `${output}/settings.png` });
@@ -88,7 +90,7 @@ try {
   await page.reload();
   await page.waitForFunction(() => window.panaLibrary && !panaLibrary.thumbnails.state.validating);
   const invalidated = await page.evaluate(() => panaLibrary.thumbnails.state);
-  assert.ok(invalidated.reused > 0 && invalidated.reused < 60);
+  assert.ok(invalidated.reused > 0 && invalidated.reused < assetCount);
   assert.equal(await page.locator('#studio-app').isVisible(), false);
   await page.locator('#startup').waitFor({ state: 'hidden', timeout: 180000 });
   const after = await page.evaluate(() => Object.fromEntries([...panaLibrary.thumbnails.entries].map(([id, entry]) => [id, entry.createdAt])));
@@ -120,7 +122,7 @@ try {
   await fallback.goto(`${base}/studio.html#corn`);
   await fallback.locator('#startup').waitFor({ state: 'hidden', timeout: 300000 });
   assert.equal(await fallback.evaluate(() => panaLibrary.thumbnails.state.persistent), false);
-  assert.equal(await fallback.evaluate(() => panaLibrary.thumbnails.state.ready), 60);
+  assert.equal(await fallback.evaluate(() => panaLibrary.thumbnails.state.ready), assetCount);
   await fallback.locator('#settings-link').click();
   await fallback.waitForFunction(() => document.querySelector('#cache-status').textContent.includes('no está disponible'));
   assert.equal(await fallback.locator('#cache-rebuild').isEnabled(), false);

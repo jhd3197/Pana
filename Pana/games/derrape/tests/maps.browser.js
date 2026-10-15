@@ -29,10 +29,12 @@ try {
     return before.min.distanceTo(after.min)+before.max.distanceTo(after.max);
   });
   assert.ok(accessoryError < 1e-6, 'pre-positioned car accessories stay in place');
-  for (const id of [...ids, 'plaza', 'bululu', 'estadio']) {
+  const requested = process.env.PANA_MAP_TEST_TRACKS?.split(',');
+  if (requested) requested.forEach(id => assert.ok(ids.includes(id), `known requested track: ${id}`));
+  for (const id of requested || [...ids, 'plaza', 'bululu', 'estadio']) {
     const result = await page.evaluate(async id => {
       const THREE = await import('three');
-      toGarage(); buildTrack(id); startRace(0);
+      toGarage(); buildTrack(id); await startRace(0);
       const T = getActiveTrack();
       let roundtrip = 0, minRadius = Infinity, maxGrade = 0, protrusion = 0, finite = true, riverClear = true;
       let leftTurns = 0, rightTurns = 0;
@@ -46,7 +48,7 @@ try {
         if(signedTurn>0.01) leftTurns++;
         if(signedTurn<-0.01) rightTurns++;
         maxGrade = Math.max(maxGrade, Math.abs(T.heightAtS(s + 0.5) - T.heightAtS(s - 0.5)));
-        if (id === 'bululu') {
+        if (T.def.elevation) {
           const h = Math.atan2(c.x - b.x, c.y - b.y);
           for (const off of [-T.HW + 1, 0, T.HW - 1]) {
             const x = b.x - Math.cos(h) * off, z = b.y + Math.sin(h) * off;
@@ -126,7 +128,7 @@ try {
     assert.equal(result.state, 'end', `${id}: AI finishes the race`);
     assert.equal(result.lap, 4, `${id}: completes three full laps after the start line`);
     assert.ok(result.itemRows, `${id}: all item rows work at their ground height`);
-    if (id === 'bululu') assert.ok(result.maxGroundError < 0.2, 'island: cars follow the slopes');
+    if (id === 'bululu' || id === 'plaza') assert.ok(result.maxGroundError < 0.2, `${id}: cars follow the slopes`);
     assert.deepEqual(errors, [], `${id}: browser errors`);
     console.log(JSON.stringify(result));
   }
@@ -136,7 +138,7 @@ try {
     return map.x >= panel.x && map.right <= panel.right && map.y >= panel.y && map.bottom <= panel.bottom;
   });
   assert.equal(minimap, true, 'minimap stays inside its map panel');
-  console.log('All eight maps and repeated switches passed.');
+  console.log(requested ? `Requested maps passed: ${requested.join(', ')}` : 'All eight maps and repeated switches passed.');
 } finally {
   await browser.close();
 }

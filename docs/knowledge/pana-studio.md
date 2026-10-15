@@ -8,11 +8,23 @@ normal port fallback applies. `-NoAutoPort` makes that conflict explicit.
 
 ## Library and extension contract
 
-`web/studio/catalog.js` is the curated registration point, initially 60 resources.
+`web/studio/catalog.js` is the curated registration point, currently 90 resources
+including twenty vegetation species, nine Pana landmarks (category `Emblemas`)
+and seven jungle structures (category `Selva`); see `shared-props.md`.
 It derives props from `PLAZA_PROPS`, recipes/stations from Cocina's definitions,
 vehicles from `CARS`, and circuits from `TRACKS`. Other shared factories have
 explicit entries. This is a development asset catalog, not player inventory or
 a visual level editor. New exported functions are not automatically registered.
+
+The additional vegetation IDs are `araguaney`, `bamboo`, `fern`, `monstera`,
+`heliconia`, `cactus` (Cardón), `mangrove` (Mangle), `papaya` (Lechosa), `agave`,
+`waterLily` (Nenúfar), `hibiscus` (Cayena), and `reeds` (Juncos). Their seeded constructors are
+re-exported from `/engine/flora.js`; `flora-species.js` owns the geometry. They
+are all used by Derrape's Selva circuit, so `usedBy` lists Pana Studio and Derrape.
+`tracks/selva-flora.js` owns habitat placement. Registering a future plant still
+does not change map placement or collision rules automatically.
+The additional `jungleGiant` and `tropicalBush` entries are currently Studio-only;
+their catalog `usedBy` must not imply they have already been placed in Derrape.
 
 Each entry has a unique stable `id`, Spanish `name`, `category`, browser `source`
 URL, `factory`, `usedBy`, and asynchronous `build()`. Optional fields include
@@ -27,6 +39,10 @@ large maps use playable bounds rather than background hills/ocean. Reuse the
 existing constructor, never paste geometry into the catalog. Shared resources
 live under `engine/`; assets with one game consumer can stay in that game. Origin,
 scale, orientation, collision contracts and lifecycle belong to the source.
+
+Circuit definitions can provide `previewBounds: [[minX,minY,minZ],[maxX,maxY,maxZ]]`
+to include meaningful surrounding scenery. Plaza uses this to show its street
+network and hill; tracks without the field retain their route-based framing.
 
 The live inspector uses one WebGL context, releases previews on selection, and ignores
 stale asynchronous builds. It copies materials before enabling wireframe so
@@ -92,6 +108,12 @@ not a shared asset database; another browser or port warms its own cache.
 Agent workflow: read `Pana/AGENTS.md`, inspect the closest existing asset, extend
 its source, register the entry, inspect its actual 3D preview and affected games,
 run `npm run check`, and record any non-obvious conventions here.
+
+Mango, Mango dorado, Ceiba, Arbusto and Casita de isla use the shared refined
+factories described in `shared-props.md`. The casita implementation is in
+`engine/island-house.js`, re-exported by `flora.js`; foliage and fruit reuse
+`botanical-shapes.js`. Source fingerprints follow these imports/re-exports,
+so model edits refresh dependent thumbnails on reload without manual cache clearing.
 
 ## One character source
 

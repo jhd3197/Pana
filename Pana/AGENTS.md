@@ -28,6 +28,18 @@ clean: only `README.md` and `.gitignore` belong there. Everything else lives her
   Thumbnail images live only in browser IndexedDB. Declare extra factory
   dependencies in the catalog for cache invalidation, and run the studio cache
   browser suite when changing its generation or persistence behavior.
+  The vegetation catalog has twenty species. New plant factories live in
+  `engine/flora-species.js` and are re-exported by `flora.js`; keep their seeds
+  deterministic and their ground origin at y=0. Registration does not place
+  plants into maps; list actual consumers in `usedBy`.
+  Pana landmarks (statues, arch, fountains, kiosk) live in `engine/landmarks.js`
+  under the Studio category `Emblemas`. Reuse `capybaraForm` for any new
+  four-legged capybara shape. Jungle ruins, bridges and the waterfall live in
+  `engine/jungle-props.js` (Studio category `Selva`).
+  `capybaraForm` clones a cached continuous sculpt; preserve geometry ownership.
+  Shared water motion lives in `engine/water-details.js` and uses absolute time
+  so pausing, scrubbing and thumbnail capture agree. Bridge spans accept 4–40 m;
+  hollow logs accept 3–20 m. Keep their passages empty and ground origins stable.
 - The character sculpt lives in `engine/soft-character/`; `engine/character.js`
   adapts it to saved avatars and gameplay. The full editor stays at
   `/personaje.html`; its old model module URLs only re-export shared sources.
@@ -61,7 +73,20 @@ clean: only `README.md` and `.gitignore` belong there. Everything else lives her
   old Bululú paths re-export them. Keep gameplay in the games, and pass route
   clearance to the shared environment instead of copying its assets.
   Race routes are 1.09–2.11 km with bends in both directions. Plaza extends
-  the shared courtyard into a pueblo; the race island uses expanded geography
+  the shared courtyard into a pueblo. Its game-local `tracks/plaza-layout.js`
+  owns the street grid and hill; `plaza-town.js` builds blocks independently of
+  the racing line. Keep streets and buildings clear as well as the race lanes.
+  Selva's `selva-world.js` builds the river valley and shared forest assets;
+  `selva-temple.js` sweeps a hollow tunnel along the road. Keep the terrain
+  below its driving surface and test the chase camera through both portals.
+  `selva-flora.js` composes sixteen shared species by habitat, including all
+  twelve additional Studio plants. Keep its footprint clearance, water height,
+  and sampled terrain grounding; do not duplicate plant geometry in the map.
+  Selva opts into off-road drag through `offroad.js`. Its `selva-driving.js`
+  constrains motion against trunks, steep banks and tunnel masonry, while grass
+  leaves steering to the driver. Keep the interior ridge's tunnel-exit sightline
+  tests and reset environment motion callbacks when rebuilding a track.
+  The race island uses expanded geography
   with normal-sized assets. Keep those options opt-in for the original games.
 - Characters stand on articulated legs by default. Pass `{ seated: true }` for
   vehicle drivers, `{ chef: true }` for cooking attire, and `walk` / `carry` /
@@ -71,6 +96,11 @@ clean: only `README.md` and `.gitignore` belong there. Everything else lives her
   `fragments.js` owns reusable prop bursts. See `../docs/knowledge/derrape-items.md`
   for controls, ownership and regression commands. Keep these game-local until
   another game actually needs them. Garage cards render the real vehicle models.
+  Garage previews reuse a bounded cache of eight cars and render progressively;
+  track browsing selects route metadata without building scenery. `startRace()`
+  is asynchronous: await it in browser tests. `?debug&manual` stops only the game
+  loop so deterministic tests can still paint loading steps. Keep the last map
+  for replay, and preserve cancellation between `buildSteps()` stages.
 - Keep dependencies minimal. `ws` on the server; Three.js from CDN on the client.
 
 ## Dev workflow (Windows)

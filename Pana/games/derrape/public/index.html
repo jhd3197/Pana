@@ -126,6 +126,15 @@
     </div>
   </div>
 
+  <section id="loading" class="loading hidden" role="dialog" aria-modal="true" aria-labelledby="loading-title" aria-busy="false">
+    <div class="loading-panel">
+      <p>DERRAPE</p>
+      <h1 id="loading-title">Preparando la carrera</h1>
+      <p id="loading-status" role="status">Preparando la pista…</p>
+      <progress id="loading-progress" max="1" value="0" aria-label="Preparación de la carrera"></progress>
+      <button id="loading-back">Volver al garaje</button>
+    </div>
+  </section>
   <script type="module" src="game.js"></script>
 </body>
 </html>
