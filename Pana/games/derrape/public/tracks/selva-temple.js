@@ -1,8 +1,8 @@
 // An invented jungle ruin with stepped masonry and a corbelled stone passage.
 // The tunnel follows the racing curve; its facade is not a flat backdrop.
 import * as THREE from 'three';
-import { M, mesh, box, tube, rng } from '/engine/props.js';
-import { bake } from '/engine/flora.js';
+import { M, mesh, box, tube, rng } from '/engine/models/core/primitives.js';
+import { bake } from '/engine/models/core/static-batch.js';
 import { placeOnTrack } from '../track-kit.js';
 import { TUNNEL } from './selva-layout.js';
 

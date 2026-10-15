@@ -1,13 +1,16 @@
 // Los Roques-inspired racing island. The Bululú board-game world stays independent.
 import { THREE,M,box,sign,smooth,hill,terrain,sea,put,foundation,scatter,instances,clear,finish,edges } from './world-kit.js';
-import { palm,mangrove } from '/engine/flora.js';
-import { colonialHouse,colonialChurch,streetFoodKiosk } from '/engine/pueblo-props.js';
-import { waterAnimator } from '/engine/water-surface.js';
+import { palm } from '/engine/models/vegetation/palm.js';
+import { mangrove } from '/engine/models/vegetation/mangrove.js';
+import { colonialHouse, colonialChurch, streetFoodKiosk } from '/engine/models/props/pueblo.js';
+import { waterAnimator } from '/engine/models/effects/water-surface.js';
 import { tideZone,tideWetness,tidalCrossing } from './bululu-tide.js';
-import { beachShade,beachHut,driftwood } from '/engine/beach-props.js';
-import { placeReefSchools } from '/engine/reef-fish.js';
-import { souvenirKiosk } from '/engine/landmarks.js';
-import { fishingBoat,coastalLighthouse,lifeguardTower,beachVolleyball,beachShower,rescueRingStand,fishingNetRack,fishCrates,channelBuoy,beachCrab,groundBeachCrab } from '/engine/coastal-props.js';
+import { beachShade, beachHut, driftwood } from '/engine/models/props/beach.js';
+import { placeReefSchools } from '/engine/placement/reef-schools.js';
+import { souvenirKiosk } from '/engine/models/props/monuments.js';
+import { fishingBoat, coastalLighthouse, lifeguardTower, beachVolleyball, beachShower, rescueRingStand, fishingNetRack, fishCrates, channelBuoy } from '/engine/models/props/coastal.js';
+import { beachCrab } from '/engine/models/fauna/beach-crab.js';
+import { groundBeachCrab } from '/engine/placement/beach-crab.js';
 const SCALE=1.23;
 const ROUTE=[[-260,80],[-260,155],[-170,210],[-70,220],[10,170],[15,100],[65,60],[140,75],[220,130],[300,110],[335,35],[300,-35],[230,-70],[170,-130],[90,-195],[-5,-215],[-90,-175],[-120,-100],[-185,-65],[-255,-20]].map(([x,z])=>[x*SCALE,z*SCALE]);
 const roadHeight=(x,z)=>(3.2+hill(x,z,-270,-120,120,95,7))*(1-tideZone(x,z))+.48*tideZone(x,z);

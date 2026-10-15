@@ -3,8 +3,10 @@
 // fishing villages and drifting clouds.
 
 import * as THREE from 'three';
-import { M, mesh, rng } from '/engine/props.js';
-import { casita, bake, palm } from './flora.js';
+import { M, mesh, rng } from '/engine/models/core/primitives.js';
+import { casita } from '/engine/models/props/island-house.js';
+import { bake } from '/engine/models/core/static-batch.js';
+import { palm } from '/engine/models/vegetation/palm.js';
 import { SEA } from './island-terrain.js';
 import { createIslet, createTepui } from './island-landscape.js';
 

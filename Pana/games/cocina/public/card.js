@@ -1,8 +1,8 @@
 import * as THREE from 'three';
-import { buildCharacter } from '/engine/character.js';
+import { buildCharacter } from '/engine/models/characters/pana/avatar-model.js';
 import { loadAvatar } from '/engine/avatar.js';
-import { food, kitchenStation } from '/engine/kitchen-props.js';
-import { bake } from '/engine/flora.js';
+import { food, kitchenStation } from '/engine/models/props/kitchen.js';
+import { bake } from '/engine/models/core/static-batch.js';
 export function mount(canvas) {
   const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true }); renderer.setPixelRatio(Math.min(devicePixelRatio, 1.5));
   const scene = new THREE.Scene(), camera = new THREE.PerspectiveCamera(36, 1, 0.1, 40); camera.position.set(4, 3.5, 6); camera.lookAt(0, 1.2, 0);

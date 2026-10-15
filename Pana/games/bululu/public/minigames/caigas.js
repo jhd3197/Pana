@@ -3,7 +3,10 @@
 
 import * as THREE from 'three';
 import { Puffs, sound, makeBubble } from '/engine/fx.js';
-import { M, mesh, box, flagPole, watchtower, woodSign } from '/engine/props.js';
+import { M, mesh, box } from '/engine/models/core/primitives.js';
+import { flagPole } from '/engine/models/props/flags.js';
+import { watchtower } from '/engine/models/props/watchtower.js';
+import { woodSign } from '/engine/models/props/wood-sign.js';
 import { sunnyStage, makeActors, animateActor, rand, pick } from './stage.js';
 
 const DECK = 0.25;          // plank top height

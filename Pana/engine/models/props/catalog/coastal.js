@@ -1,0 +1,111 @@
+// Model metadata only: no Three.js, construction or game imports.
+export default [
+  {
+    id: "fishing-boat",
+    name: "Peñero de pesca",
+    category: "Costa",
+    source: "/engine/models/props/coastal.js",
+    factory: "fishingBoat",
+    usedBy: ["Bululú","Derrape"],
+    previewOptions: null,
+    description: "Casco abierto, bancos de madera, remos, motor fuera de borda y cabo de proa.",
+    tags: ["costa","playa","puerto","Bululú"],
+    pack: "coastal"
+  },
+  {
+    id: "coastal-lighthouse",
+    name: "Faro costero",
+    category: "Costa",
+    source: "/engine/models/props/coastal.js",
+    factory: "coastalLighthouse",
+    usedBy: ["Derrape"],
+    previewOptions: null,
+    description: "Torre pintada, balcón circular, linterna abierta y techo cónico.",
+    tags: ["costa","playa","puerto","Bululú"],
+    pack: "coastal"
+  },
+  {
+    id: "lifeguard-tower",
+    name: "Torre de salvavidas",
+    category: "Costa",
+    source: "/engine/models/props/coastal.js",
+    factory: "lifeguardTower",
+    usedBy: ["Bululú","Derrape"],
+    previewOptions: null,
+    description: "Puesto elevado con escalinata, asiento, techo coral y aro de rescate.",
+    tags: ["costa","playa","puerto","Bululú"],
+    pack: "coastal"
+  },
+  {
+    id: "beach-volleyball",
+    name: "Cancha de voleibol de playa",
+    category: "Costa",
+    source: "/engine/models/props/coastal.js",
+    factory: "beachVolleyball",
+    usedBy: ["Derrape"],
+    previewOptions: null,
+    description: "Campo de arena delimitado, red abierta con caída y pelota.",
+    tags: ["costa","playa","puerto","Bululú"],
+    pack: "coastal"
+  },
+  {
+    id: "beach-shower",
+    name: "Ducha de playa",
+    category: "Costa",
+    source: "/engine/models/props/coastal.js",
+    factory: "beachShower",
+    usedBy: ["Bululú","Derrape"],
+    previewOptions: null,
+    description: "Tarima de madera, tubería curva, rociador y válvula.",
+    tags: ["costa","playa","puerto","Bululú"],
+    pack: "coastal"
+  },
+  {
+    id: "rescue-ring-stand",
+    name: "Puesto de salvavidas",
+    category: "Costa",
+    source: "/engine/models/props/coastal.js",
+    factory: "rescueRingStand",
+    usedBy: ["Bululú","Derrape"],
+    previewOptions: null,
+    description: "Aro con bandas, cuerda de rescate y señal sobre un poste.",
+    tags: ["costa","playa","puerto","Bululú"],
+    pack: "coastal"
+  },
+  {
+    id: "fishing-net-rack",
+    name: "Secadero de redes",
+    category: "Costa",
+    source: "/engine/models/props/coastal.js",
+    factory: "fishingNetRack",
+    usedBy: ["Bululú","Derrape"],
+    previewOptions: null,
+    description: "Red tejida colgada entre postes, flotadores y cabo enrollado.",
+    tags: ["costa","playa","puerto","Bululú"],
+    pack: "coastal"
+  },
+  {
+    id: "fish-crates",
+    name: "Cajas de pesca",
+    category: "Costa",
+    source: "/engine/models/props/coastal.js",
+    factory: "fishCrates",
+    usedBy: ["Bululú","Derrape"],
+    previewOptions: null,
+    description: "Cajas de listones apiladas con peces plateados.",
+    tags: ["costa","playa","puerto","Bululú"],
+    pack: "coastal"
+  },
+  {
+    id: "channel-buoy",
+    name: "Boya de canal",
+    category: "Costa",
+    source: "/engine/models/props/coastal.js",
+    factory: "channelBuoy",
+    usedBy: ["Bululú","Derrape"],
+    previewOptions: null,
+    description: "Marcador costero que cabecea suavemente sobre el agua.",
+    tags: ["costa","playa","puerto","Bululú"],
+    pack: "coastal"
+  },
+];

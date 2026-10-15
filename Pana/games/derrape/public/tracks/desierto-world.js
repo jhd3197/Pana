@@ -1,9 +1,11 @@
 import { THREE,terrain,put,foundation,scatter,instances,clear,finish,smooth,placeOnTrack,boulder } from './world-kit.js';
-import { giantCactus,sandDune,desertRockArch,abandonedGasStation,rustedPickup,roadsideTirePile,canyonSpire,brokenWagon,desertWarningSign,desertWell } from '/engine/desert-props.js';
-import { palm,agave } from '/engine/flora.js';
-import { soaringVulture,orbitBird } from '/engine/wildlife.js';
-import { parkBench } from '/engine/pueblo-props.js';
-import { waterPool,waterAnimator } from '/engine/water-surface.js';
+import { giantCactus, sandDune, desertRockArch, abandonedGasStation, rustedPickup, roadsideTirePile, canyonSpire, brokenWagon, desertWarningSign, desertWell } from '/engine/models/props/desert.js';
+import { palm } from '/engine/models/vegetation/palm.js';
+import { agave } from '/engine/models/vegetation/agave.js';
+import { soaringVulture } from '/engine/models/fauna/birds/soaring-vulture.js';
+import { orbitBird } from '/engine/models/animation/orbit-bird.js';
+import { parkBench } from '/engine/models/props/pueblo.js';
+import { waterPool, waterAnimator } from '/engine/models/effects/water-surface.js';
 import { baseHeight,roadHeight,OASIS } from './desierto-layout.js';
 import { grassTuft,entrance,crossing,vergePosts,dirtVerge } from './country-details.js';
 

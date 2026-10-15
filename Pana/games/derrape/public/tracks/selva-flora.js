@@ -1,7 +1,8 @@
 // Game-local planting composition. Every shape comes from the Studio library.
 import * as THREE from 'three';
-import { rng } from '/engine/props.js';
-import * as flora from '/engine/flora.js';
+import { rng } from '/engine/models/core/primitives.js';
+import * as flora from '/engine/models/vegetation/index.js';
+import { bake } from '/engine/models/core/static-batch.js';
 import { placeOnTrack } from '../track-kit.js';
 import { RIVER_SAMPLES, riverDistance, TUNNEL, tunnelContains } from './selva-layout.js';
 import { tunnelRoofHeight } from './selva-temple.js';
@@ -87,7 +88,7 @@ export function jungleFlora(T,groundAt,reservations) {
     add('fern',p.x+side*2,p.z,1.8,'roof',{roof:true,y:y-0.6});
   }
   // Merge into spatial material batches; release all temporary/template geometry.
-  const group=flora.bake(source,{cellSize:100}),owned=new Set();
+  const group=bake(source,{cellSize:100}),owned=new Set();
   for(const variants of templates.values())for(const {root} of variants)root.traverse(o=>{if(o.geometry)owned.add(o.geometry);});
   owned.forEach(g=>g.dispose());group.name='selva-forest';
   return {group,placements};

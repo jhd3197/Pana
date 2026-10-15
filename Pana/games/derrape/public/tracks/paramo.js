@@ -1,10 +1,11 @@
 // An Andean ascent: lower meadows, glacial lake and the cable-car summit.
 import { THREE,terrain,put,foundation,scatter,instances,edges,clear,smooth,boulder } from './world-kit.js';
-import { frailejon,mountainPine } from '/engine/flora.js';
-import { mountainCabin,mountainTent,stoneLookout,mountainSignpost,cableCarStation,rockyCliff } from '/engine/mountain-props.js';
+import { frailejon } from '/engine/models/vegetation/frailejon.js';
+import { mountainPine } from '/engine/models/vegetation/mountain-pine.js';
+import { mountainCabin, mountainTent, stoneLookout, mountainSignpost, cableCarStation, rockyCliff } from '/engine/models/props/mountain.js';
 import { summitTerminal,aerialLift,cableTower } from './world-landmarks.js';
 import { ROUTE,roadHeight,baseHeight,LAKE } from './paramo-layout.js';
-import { waterPool } from '/engine/water-surface.js';
+import { waterPool } from '/engine/models/effects/water-surface.js';
 
 export default {
   id:'paramo',name:'Pana Páramo',

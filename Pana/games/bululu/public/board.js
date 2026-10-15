@@ -3,11 +3,13 @@
 // the hill shortcut, the Mango de oro cart, the panas and the dice.
 
 import * as THREE from 'three';
-import { buildCharacter } from '/engine/character.js';
+import { buildCharacter } from '/engine/models/characters/pana/avatar-model.js';
 import { makeBubble } from '/engine/fx.js';
-import { M, mesh, box, canvasMat, makeMango, woodSign } from '/engine/props.js';
+import { M, mesh, box, canvasMat } from '/engine/models/core/primitives.js';
+import { makeMango } from '/engine/models/props/mango.js';
+import { woodSign } from '/engine/models/props/wood-sign.js';
 import { buildIsland, baseHeight, riverDist, landMask, beachMask, HILL } from './island.js';
-import { bake } from './flora.js';
+import { bake } from '/engine/models/core/static-batch.js';
 import { createIslandEnvironment, ISLAND_LOOP } from '/engine/island-environment.js';
 import { createAtmosphere } from './atmosphere.js';
 

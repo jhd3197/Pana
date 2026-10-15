@@ -1,5 +1,5 @@
 import { THREE,M,mesh,box,tube,sign,finish } from './world-kit.js';
-import { tiledRoof,shutterWindow,archPanel,archFrame,railing } from '/engine/architecture-kit.js';
+import { tiledRoof, shutterWindow, archPanel, archFrame, railing } from '/engine/models/core/architecture-kit.js';
 
 // Angular glazed mountain terminal, inspired by the supplied Mérida reference.
 export function summitTerminal(label='PICO PANA'){

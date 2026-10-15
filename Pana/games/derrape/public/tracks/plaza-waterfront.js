@@ -1,7 +1,7 @@
 import { THREE,M,box,smooth,mix,sign,put,finish,boat,clear } from './world-kit.js';
 import { maracaiboBridge,canalVilla } from './world-landmarks.js';
-import { palm } from '/engine/flora.js';
-import { waterSurface } from '/engine/water-surface.js';
+import { palm } from '/engine/models/vegetation/palm.js';
+import { waterSurface } from '/engine/models/effects/water-surface.js';
 
 const FINGERS=[325,405,485,565];
 export function waterfrontHeight(x,z,land){

@@ -1,13 +1,30 @@
 // The same island environment for the board game and driving circuits.
 // Games supply path clearance; geography, vegetation and landmarks stay here.
 import * as THREE from 'three';
-import { M, mesh, box, rng, makeMango, woodSign, watchtower, flagPole, rock } from './props.js';
-import { mangoTree, ceiba, pine, banana, bush, casita, bake, palm, foliage, hibiscus, papaya } from './flora.js';
+import { M, mesh, box, rng } from '/engine/models/core/primitives.js';
+import { makeMango } from '/engine/models/props/mango.js';
+import { woodSign } from '/engine/models/props/wood-sign.js';
+import { watchtower } from '/engine/models/props/watchtower.js';
+import { flagPole } from '/engine/models/props/flags.js';
+import { rock } from '/engine/models/props/rock.js';
+import { mangoTree } from '/engine/models/vegetation/mango-tree.js';
+import { ceiba } from '/engine/models/vegetation/ceiba.js';
+import { pine } from '/engine/models/vegetation/pine.js';
+import { banana } from '/engine/models/vegetation/banana.js';
+import { bush } from '/engine/models/vegetation/bush.js';
+import { casita } from '/engine/models/props/island-house.js';
+import { bake } from '/engine/models/core/static-batch.js';
+import { palm } from '/engine/models/vegetation/palm.js';
+import { foliage } from '/engine/models/vegetation/canopy.js';
+import { hibiscus } from '/engine/models/vegetation/hibiscus.js';
+import { papaya } from '/engine/models/vegetation/papaya.js';
 import { riverDist, landMask, beachMask, fbm, SEA, PEAK, HILL } from './island-terrain.js';
 import { buildScenery } from './island-scenery.js';
-import { beachShade, beachHut, driftwood } from './beach-props.js';
-import { placeReefSchools } from './reef-fish.js';
-import { fishingBoat,lifeguardTower,beachShower,rescueRingStand,fishingNetRack,fishCrates,channelBuoy,beachCrab,groundBeachCrab } from './coastal-props.js';
+import { beachShade, beachHut, driftwood } from '/engine/models/props/beach.js';
+import { placeReefSchools } from '/engine/placement/reef-schools.js';
+import { fishingBoat, lifeguardTower, beachShower, rescueRingStand, fishingNetRack, fishCrates, channelBuoy } from '/engine/models/props/coastal.js';
+import { beachCrab } from '/engine/models/fauna/beach-crab.js';
+import { groundBeachCrab } from '/engine/placement/beach-crab.js';
 
 export const ISLAND_LOOP = [[28, 94], [0, 97], [-35, 91], [-70, 75], [-92, 48],
   [-103, 12], [-84, -18], [-49, -36], [-12, -34], [24, -36],

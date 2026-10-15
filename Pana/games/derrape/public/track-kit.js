@@ -8,9 +8,13 @@
 
 import * as THREE from 'three';
 import { M, mesh, box, tube, canvasMat } from './car-kit.js';
-import { rng, woodSign as mapSign, watchtower, flagPole, rock } from '/engine/props.js';
-import * as flora from '/engine/flora.js';
-import { waterPool,riverSurface } from '/engine/water-surface.js';
+import { rng } from '/engine/models/core/primitives.js';
+import { woodSign as mapSign } from '/engine/models/props/wood-sign.js';
+import { watchtower } from '/engine/models/props/watchtower.js';
+import { flagPole } from '/engine/models/props/flags.js';
+import { rock } from '/engine/models/props/rock.js';
+import * as flora from '/engine/models/vegetation/index.js';
+import { waterPool, riverSurface } from '/engine/models/effects/water-surface.js';
 
 // Use the canonical foliage and batch its many leaflets before placement.
 // Cloning the source geometry in bake keeps shared assets safe on map switches.

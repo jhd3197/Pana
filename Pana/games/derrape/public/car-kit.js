@@ -4,8 +4,8 @@
 
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
-import { buildCharacter } from '/engine/character.js';
-import { venezuelaFlag } from '/engine/props.js';
+import { buildCharacter } from '/engine/models/characters/pana/avatar-model.js';
+import { venezuelaFlag } from '/engine/models/props/flags.js';
 
 const mats = new Map();
 function M(color, extra = {}) {

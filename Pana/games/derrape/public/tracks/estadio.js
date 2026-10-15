@@ -1,9 +1,9 @@
 // Stadium Grand Prix: braking zones, opposing chicanes and an infield return.
 import { THREE,M,box,tube,sign,terrain,finish,put,instances,scatter,edges,clear } from './world-kit.js';
 import { grandstand } from './world-landmarks.js';
-import { palm } from '/engine/flora.js';
-import { cornerBodega,streetFoodKiosk,basketballHoop,rooftopWaterTank } from '/engine/pueblo-props.js';
-import { trophyMonument } from '/engine/landmarks.js';
+import { palm } from '/engine/models/vegetation/palm.js';
+import { cornerBodega, streetFoodKiosk, basketballHoop, rooftopWaterTank } from '/engine/models/props/pueblo.js';
+import { trophyMonument } from '/engine/models/props/monuments.js';
 
 export default {
   id:'estadio',name:'El Estadio',

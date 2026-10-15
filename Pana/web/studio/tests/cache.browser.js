@@ -55,7 +55,9 @@ try {
   await page.locator('#startup').waitFor({ state: 'hidden', timeout: 90000 });
   const warm = await page.evaluate(() => panaLibrary.thumbnails.state);
   assert.equal(warm.reused, assetCount); assert.equal(warm.generated, 0); console.log(`Warm cache: ${assetCount} reused, zero thumbnail builds`);
-  assert.ok(await page.locator('[data-asset="pana"] img').evaluate(img => img.complete && img.naturalWidth === 320));
+  // Catalog groups may move this lazy thumbnail below the fold.
+  await page.locator('[data-asset="pana"]').scrollIntoViewIfNeeded();
+  await page.waitForFunction(() => { const img=document.querySelector('[data-asset="pana"] img'); return img.complete && img.naturalWidth === 320; });
   await page.locator('#settings-link').click();
   await page.waitForFunction(count => Number(document.querySelector('#cache-count').textContent) === count,assetCount);
   assert.equal(await page.locator('canvas').count(), 0);
@@ -84,7 +86,7 @@ try {
   await page.screenshot({ path: `${output}/mobile.png`, fullPage: true });
   await page.setViewportSize({ width: 1440, height: 1000 });
   // Change a dependency response without touching the repository; consumers must invalidate.
-  await page.route('**/engine/kitchen-props.js', async route => {
+  await page.route('**/engine/models/props/kitchen.js', async route => {
     const response = await route.fetch(); await route.fulfill({ response, body: (await response.text()) + '\n// cache invalidation test\n' });
   });
   await page.reload();
@@ -97,13 +99,13 @@ try {
   assert.ok(after.corn > before.corn); assert.ok(after.cocina > before.cocina); assert.equal(after.mango, before.mango);
   console.log('Dependency invalidation: kitchen props and kitchen map rebuilt; mango reused');
   // An unavailable source must offer recovery instead of revealing stale previews.
-  await page.unroute('**/engine/kitchen-props.js');
-  await page.route('**/engine/kitchen-props.js', route => route.fulfill({ status: 503, body: 'Unavailable for test' }));
+  await page.unroute('**/engine/models/props/kitchen.js');
+  await page.route('**/engine/models/props/kitchen.js', route => route.fulfill({ status: 503, body: 'Unavailable for test' }));
   await page.reload();
   await page.locator('#startup-error').waitFor({ state: 'visible', timeout: 90000 });
   assert.equal(await page.locator('#studio-app').isVisible(), false);
   assert.equal(await page.locator('#startup-retry').isEnabled(), true);
-  await page.unroute('**/engine/kitchen-props.js');
+  await page.unroute('**/engine/models/props/kitchen.js');
   await page.locator('#startup-retry').click();
   await page.locator('#startup').waitFor({ state: 'hidden', timeout: 180000 });
   await page.locator('#settings-link').click();

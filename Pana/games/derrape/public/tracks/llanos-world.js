@@ -1,10 +1,18 @@
 import { THREE,M,mesh,box,tube,terrain,put,foundation,scatter,instances,clear,finish,smooth,placeOnTrack } from './world-kit.js';
-import { llaneroRanchHouse,corralGate,hayBale,waterWindmill,horseStable,feedingTrough,ranchFence,oldTractor,mudPuddle,ranchWaterTower } from '/engine/ranch-props.js';
-import { palm,mangoTree,araguaney,reeds,waterLily } from '/engine/flora.js';
-import { wildCapybara,scarletIbis,orbitBird } from '/engine/wildlife.js';
-import { streetFoodKiosk,cornerBodega,parkBench } from '/engine/pueblo-props.js';
-import { waterSurface,waterAnimator } from '/engine/water-surface.js';
-import { llaneroHorse,yardChicken,hatoCow } from '/engine/farm-animals.js';
+import { llaneroRanchHouse, corralGate, hayBale, waterWindmill, horseStable, feedingTrough, ranchFence, oldTractor, mudPuddle, ranchWaterTower } from '/engine/models/props/ranch.js';
+import { palm } from '/engine/models/vegetation/palm.js';
+import { mangoTree } from '/engine/models/vegetation/mango-tree.js';
+import { araguaney } from '/engine/models/vegetation/araguaney.js';
+import { reeds } from '/engine/models/vegetation/reeds.js';
+import { waterLily } from '/engine/models/vegetation/water-lily.js';
+import { wildCapybara } from '/engine/models/fauna/capybara/wild-capybara.js';
+import { scarletIbis } from '/engine/models/fauna/birds/scarlet-ibis.js';
+import { orbitBird } from '/engine/models/animation/orbit-bird.js';
+import { streetFoodKiosk, cornerBodega, parkBench } from '/engine/models/props/pueblo.js';
+import { waterSurface, waterAnimator } from '/engine/models/effects/water-surface.js';
+import { llaneroHorse } from '/engine/models/fauna/farm/llanero-horse.js';
+import { yardChicken } from '/engine/models/fauna/farm/yard-chicken.js';
+import { hatoCow } from '/engine/models/fauna/farm/hato-cow.js';
 import { baseHeight,riverDistance,ESTEROS,WATER_Y,wetlandDistance } from './llanos-layout.js';
 import { grassTuft,entrance,crossing,vergePosts,dirtVerge } from './country-details.js';
 

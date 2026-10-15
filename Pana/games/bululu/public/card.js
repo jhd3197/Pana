@@ -3,8 +3,8 @@
 
 import * as THREE from 'three';
 import { loadAvatar } from '/engine/avatar.js';
-import { buildCharacter } from '/engine/character.js';
-import { makeMango } from '/engine/props.js';
+import { buildCharacter } from '/engine/models/characters/pana/avatar-model.js';
+import { makeMango } from '/engine/models/props/mango.js';
 import { createDie } from './board.js';
 
 export function mount(canvas) {

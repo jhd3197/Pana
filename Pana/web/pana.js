@@ -3,7 +3,7 @@
 // fires a `pana:avatar` event so game cards can redraw.
 
 import * as THREE from 'three';
-import { buildCharacter } from '/engine/character.js';
+import { buildCharacter } from '/engine/models/characters/pana/avatar-model.js';
 import { COLORS, FURS, OPTIONS, loadAvatar, randomAvatar, saveAvatar } from '/engine/avatar.js';
 
 // colorless: option ids where the color swatches don't apply

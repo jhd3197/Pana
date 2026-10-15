@@ -1,6 +1,6 @@
 // One absolute-time shoreline drives both the visible wash and car response.
 import { THREE,M,box,sign,put,smooth,mix,placeOnTrack } from './world-kit.js';
-import { waterSurface } from '/engine/water-surface.js';
+import { waterSurface } from '/engine/models/effects/water-surface.js';
 
 export const TIDE_PERIOD=28;
 export const TIDE_START=.665,TIDE_END=.805;

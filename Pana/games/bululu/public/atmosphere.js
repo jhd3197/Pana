@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { rng } from '/engine/props.js';
+import { rng } from '/engine/models/core/primitives.js';
 
 export const SKY_MODES = ['day', 'night', 'cycle'];
 const TAU = Math.PI * 2;

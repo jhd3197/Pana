@@ -12,7 +12,7 @@ try {
   await page.setContent('<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}</script><style>body{margin:0;background:#eef0ee;font:15px system-ui;color:#334642}canvas{display:block}.label{position:absolute;width:300px;text-align:center;pointer-events:none}</style><canvas></canvas><div id="labels"></div>');
   const metrics=await page.evaluate(async()=>{
     const THREE=await import('three'),preview=await import('/studio/preview.js'),{ASSETS}=await import('/studio/catalog.js');
-    const assets=ASSETS.filter(a=>a.source==='/engine/coastal-props.js'),models=[],metrics=[];
+    const assets=ASSETS.filter(a=>a.pack==='coastal'),models=[],metrics=[];
     const check=(ok,msg)=>{if(!ok)throw Error(msg);};
     const hash=root=>{
       root.updateMatrixWorld(true);let h=2166136261;
@@ -71,7 +71,7 @@ try {
       model.update?.(0,0);stage.scene.add(model.group);
       const coast=model.group.getObjectByName(id==='isla'?'island-coastal-props':'roques-coastal-props');check(!!coast,'Missing coastal group');
       const details=coast.children.filter(o=>o.userData.assetId).map(o=>({id:o.userData.assetId,position:o.position.toArray(),radius:o.userData.footprintRadius}));
-      const expected=ASSETS.filter(a=>a.source==='/engine/coastal-props.js'&&(id!=='isla'||a.usedBy.includes('Bululú')));
+      const expected=ASSETS.filter(a=>a.pack==='coastal'&&(id!=='isla'||a.usedBy.includes('Bululú')));
       for(const asset of expected)check(details.some(d=>d.id===asset.id),`${id} missing ${asset.id}`);
       coast.updateMatrixWorld(true);
       for(const crab of coast.children.filter(o=>o.userData.species==='crab'))crab.children[0].traverse(o=>{

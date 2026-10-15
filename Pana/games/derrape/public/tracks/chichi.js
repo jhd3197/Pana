@@ -1,13 +1,16 @@
 // Chi Chi: a long coastal mountain journey, with fictional thermal springs.
 import { THREE,M,box,terrain,sea,stream,finish,put,foundation,scatter,instances,edges,boulder,smooth } from './world-kit.js';
-import { palm,mangoTree,ceiba,fern } from '/engine/flora.js';
-import { mountainSignpost } from '/engine/mountain-props.js';
-import { waterfallRocks } from '/engine/jungle-props.js';
+import { palm } from '/engine/models/vegetation/palm.js';
+import { mangoTree } from '/engine/models/vegetation/mango-tree.js';
+import { ceiba } from '/engine/models/vegetation/ceiba.js';
+import { fern } from '/engine/models/vegetation/fern.js';
+import { mountainSignpost } from '/engine/models/props/mountain.js';
+import { waterfallRocks } from '/engine/models/props/jungle.js';
 import { coastalFort } from './world-landmarks.js';
 import { thermalSanctuary } from './chichi-thermal.js';
 import { beachVillage,riverBridges } from './chichi-village.js';
 import { ROUTE,roadHeight,baseHeight,RIVER,riverDistance,coast,THERMAL,gripAt } from './chichi-layout.js';
-import { waterAnimator } from '/engine/water-surface.js';
+import { waterAnimator } from '/engine/models/effects/water-surface.js';
 export default {
   id:'chichi',name:'Chi Chi',
   blurb:'De las termas entre nubes al pueblo de buceo: curvas de montaña, bosque húmedo, playa y una larga subida junto al río.',

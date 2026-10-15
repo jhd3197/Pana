@@ -3,7 +3,7 @@
 const hash = async text => Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text))), n => n.toString(16).padStart(2, '0')).join('');
 export async function fingerprints(assets) {
   const files = new Map(), pending = new Set(assets.flatMap(a => [a.source, ...(a.dependencies || [])]));
-  const recipe = ['/studio/catalog.js', '/studio/preview.js', '/studio.html'];
+  const recipe = ['/studio/catalog.js', '/studio/catalog/objects.js', '/studio/preview.js', '/studio.html'];
   recipe.forEach(url => pending.add(url));
   while (pending.size) {
     const batch = [...pending].slice(0, 8); batch.forEach(url => pending.delete(url));

@@ -1,7 +1,7 @@
 // Upper-mountain thermal sanctuary. Animated objects stay outside static batches.
 import { THREE,M,mesh,box,sign,put,foundation,finish,placeOnTrack } from './world-kit.js';
-import { hotSpringPool,steamVent,mineralTerraces,thermalBathhouse,thermalLookout } from '/engine/thermal-props.js';
-import { steamField } from '/engine/thermal-steam.js';
+import { hotSpringPool, steamVent, mineralTerraces, thermalBathhouse, thermalLookout } from '/engine/models/props/thermal.js';
+import { steamField } from '/engine/models/effects/thermal-steam.js';
 import { wetnessAt } from './chichi-layout.js';
 
 export function thermalSanctuary(T,world){

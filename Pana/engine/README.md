@@ -1,82 +1,70 @@
 # engine/
 
-Shared game code, served to browsers at `/engine/*`. Something moves here once a
-**second** page needs it — duplicate first, extract on the second use.
+Shared game code, served to browsers at `/engine/*`. Browser ESM, no build step.
+Extract reusable code when a second page needs it; keep gameplay with its game.
 
-For the current resource-by-resource inventory, actual missing Studio previews,
-preview-only models and older factories, see
-[model-inventory.md](../../docs/knowledge/model-inventory.md). The table below
-describes modules; importing a module does not place every model it exports.
+The canonical 3D library is [models/](models/README.md). Its factories are shared
+by Studio and games; their catalog entries are plain data. For all current
+resources, map consumers, missing previews and older code, see the
+[model inventory](../../docs/knowledge/model-inventory.md).
 
-`wildlife.js` provides the shared macaw, scarlet ibis, soaring vulture and natural
-capybara for Studio and Derrape (Selva, Llanos and Desierto). Keep their absolute
-ticks and +Z flight heading. The old track-kit bird/player-character animal were
-removed; `wildCapybara` uses the canonical `capybaraForm` geometry.
+| Location | Responsibility |
+| --- | --- |
+| `models/fauna/` | Individual birds, farm animals, fish, crab and natural capybara; scoped rigs |
+| `models/vegetation/` | All 22 plant species, with shared canopy/leaf helpers |
+| `models/props/` | Scenery packs, monuments, furniture, buildings, kitchen and carried props |
+| `models/characters/pana/` | Character sculpt, wardrobe, expression geometry and avatar adapter |
+| `models/core/` | Cached materials, primitives, batching and construction helpers |
+| `models/animation/`, `models/effects/` | Reusable motion, water and steam |
+| `models/catalog.js` | Pure category/pack metadata; no eager model construction |
+| `placement/` | Terrain-aware reef school placement and crab grounding |
+| `avatar.js` | Saved appearance/name, brand palette and normalization; no renderer |
+| `plaza.js`, `plaza-layout.js` | Plaza world composition and hunt layout/navigation |
+| `island-environment.js`, `island-terrain.js` | Board island terrain and scenery composition |
+| `island-scenery.js`, `island-landscape.js`, `terrain-material.js` | Offshore worlds, terrain shading and older scene assemblies |
+| `fx.js` | Audio, particle bursts, debris and speech bubbles |
+| `ui.js`, `settings.js` | Shared game menu, settings persistence and hints |
 
-| File | What | Used by |
-|---|---|---|
-| `avatar.js` | A player's look (fur, hat, glasses, outfit, face, extra) + name, saved in `localStorage`. Plain data, no Three.js. Brand palette lives here too. | hub, derrape, bululu, escondidas |
-| `fx.js` | WebAudio `sound` (horns, bonks, pickups, whooshes…, no files), `Puffs` (smoke/dust), `Debris` (parts that pop off), `makeBubble()` (cartoon speech bubble sprite). | derrape, bululu |
-| `props.js` | Procedural builders, no asset files: `makeMango({gold})`, `rock`, `woodSign(lines)`, `flagPole({flag:'pana'})`, `watchtower`, `venezuelaFlag`, `panaFlag`, plus helpers (`M`, `mesh`, `box`, `tube`, `canvasMat`, `rng`). Scenery sits on y = 0 and faces +Z; mangoes keep their centered carry/projectile origin. `userData.tick(t, dt)` wants animating. | derrape, bululu |
-| `flora.js` | The canonical curved palms, mango trees, ceibas, pines, bananas, bushes, houses and static mesh batching (`bake`). The original Bululú import path re-exports this module. | all games and shared market kit |
-| `flora-species.js` | Seeded `araguaney`, `bamboo`, `fern`, `monstera`, `heliconia`, `cactus`, `mangrove`, `papaya`, `agave`, `waterLily`, `hibiscus`, `reeds`, `jungleGiant`, `tropicalBush`, `frailejon`, `mountainPine`, re-exported by `flora.js`. Owned, batched geometry. | Studio; Derrape habitats; Bululú harbor |
-| `botanical-shapes.js` | Folded leaf surfaces and tapered curved stems with independently owned geometry. | fruit, foliage, island house |
-| `island-house.js` | Seeded plaster casita with shutters, veranda and terracotta tiles, returned as 12 material batches. `flora.js` re-exports `casita`. | shared scenery and Studio |
-| `static-batch.js` | Canonical `bake` implementation; `flora.js` retains the public compatibility export. | shared scenery, casita |
-| `landmarks.js` | Pana signature monuments: `capybaraStatue`, `goldenMangoStatue`, `welcomeArch`, `capybaraTopiary`, `panaFlagpole`, `trophyMonument`, `capybaraFountain`, `souvenirKiosk`, plus the shared `capybaraForm`. Grounded, +Z, baked. | Studio; Escondidas/Cocina gardens; Derrape |
-| `water-details.js` | Instanced ripples and moving droplets for both shared fountains and the waterfall; deterministic absolute-time updates. | Landmarks, Plaza, jungle props |
-| `jungle-props.js` | Jungle ruins and traversal: `templeEntrance`, `ropeBridge`, `waterfallRocks`, `vineArch`, `bambooBridge`, `stoneTotem`, `hollowLog`, plus `liana`. Plants `jungleGiant`/`tropicalBush` come from `flora.js`. | Studio; Derrape (Selva, Chi Chi) |
-| `pueblo-props.js` | Pueblo 011–020: colonial house, bodega, church, bus shelter, arepa kiosk, animated clock tower, basketball hoop, rooftop tank, streetlight and park bench. | Studio; Escondidas, Cocina, Derrape |
-| `mountain-props.js` | Páramo 052–060: cabin, animated cable car station, modular cliff, adjustable guardrail, lookout, tent, suspension bridge and trail sign. Plants 051/057 come from `flora.js`. | Studio; Derrape (Páramo, Chi Chi) |
-| `architecture-kit.js` | Shared roof tiles, masonry, arches, shutters, railings and owned canvas signs; disposes temporary geometry after batching. | Pueblo and Páramo factories |
-| `plaza-catalog.js` | Renderer-independent prop IDs, Spanish labels, dimensions, collision radii and heights. | escondidas rules, shared market kit |
-| `plaza-props.js` | `barrel`, `crate`, `cooler`, `planter`, `bench`, `marketStall`, `streetLamp`, and `createPlazaProp(id)`. No gameplay state or game-specific imports. | Studio; Escondidas, Cocina, Derrape (Plaza) |
-| `plaza.js` | `createPlaza({cooking:false})`, `plazaFountain()`: the shared buildings, paving, fountain, greenery and market. `createPlazaEnvironment({clearance})` returns geometry and water animation without lights, for embedding in another game. | escondidas, cocina, derrape |
-| `island-environment.js` | `ISLAND_LOOP` and `createIslandEnvironment(scene,{island,pathDist,inShot,clearance})`: sea, biome vegetation, big mango tree, harbor, lanterns, signs and animation. No tiles, dice or race logic. | Bululú board; Studio island preview |
-| `island-terrain.js` | Shared coastline, hill, Pico Pana, river and beach heightfield. `buildIsland(tiles,edges,{road})` optionally reserves a wider driving corridor and lowers the river below its deck. | Bululú board; Studio island preview |
-| `island-scenery.js`, `island-landscape.js`, `terrain-material.js`, `beach-props.js` | Offshore islands, tepuis, lighthouse, boats, clouds, terrain shading and beach furniture. Old Bululú URLs re-export these sources. | bululu, derrape |
-| `plaza-layout.js` | Original hunt map data, collision, sight and navigation. Escondidas retains compatibility re-exports. | escondidas, plaza renderer |
-| `kitchen-props.js` | `food(id,{stage,plated})`, `corn`, `cheese`, `kitchenStation`, `sink`, `kitchenSign`. Actual 3D food also supplies the order-ticket thumbnails. | cocina, hub |
-| `character.js` | `buildCharacter(avatar,{seated,chef})`: articulated legs, expressive face, optional chef hat and apron. `update(dt,{open,dizzy,look,walk,carry,run})` animates the rig. `carry` is a hand-level attachment group. Existing `armL`, `armR`, `neck`, `head` APIs are preserved. Drivers explicitly use `seated:true`. | hub, derrape, bululu, escondidas, cocina |
+Old model URLs (`props.js`, `flora.js`, `wildlife.js`, `farm-animals.js`,
+`character.js`, `soft-character/*`, and the old prop/helper files) remain
+compatibility re-exports. Edit the canonical files under `models/`; do not put
+new geometry into aliases. The source inspector and inventory use actual model
+paths. `plaza.js` still re-exports `house` and `plazaFountain` for compatibility,
+while their implementations live in `models/props/plaza-buildings.js`.
 
-Import with absolute paths so it works from any page:
+## Using models
+
+Import directly so changes propagate to the games and Studio without copies:
 
 ```js
 import { loadAvatar } from '/engine/avatar.js';
-import { buildCharacter } from '/engine/character.js';   // needs "three" in the page's import map
-```
-
-New avatar options go in `avatar.js` (`OPTIONS`, color lists) and get built in
-`character.js`. `normalizeAvatar()` keeps old saves working when options change.
-
-Characters use the sculpt in `soft-character/`, shared with Pana Studio. The
-game adapter preserves avatar data, game-world size, seated drivers and carrying.
-The editor uses full tessellation; games sample the same surfaces more sparsely.
-Use `character.dispose()` when removing one. Detach shared carried props first.
-See `docs/knowledge/pana-studio.md` for the catalog and extension workflow.
-See `docs/knowledge/shared-props.md` for fruit/foliage geometry budgets and checks.
-
-## Reusing the plaza kit
-
-```js
-import { createPlazaProp, marketStall, PLAZA_PROPS } from '/engine/plaza-props.js';
-import { palm, mangoTree, bake } from '/engine/flora.js';
+import { buildCharacter } from '/engine/models/characters/pana/avatar-model.js';
+import { scarletMacaw } from '/engine/models/fauna/birds/scarlet-macaw.js';
+import { orbitBird } from '/engine/models/animation/orbit-bird.js';
+import { createPlazaProp } from '/engine/models/props/plaza.js';
+import { palm } from '/engine/models/vegetation/palm.js';
 
 const barrel = createPlazaProp('barrel');
 barrel.position.set(10, 0, 4);
-scene.add(barrel, marketStall({ seed: 4 }));
+scene.add(barrel, palm({ seed: 4 }));
 ```
 
-Models sit at ground level and face +Z. Their world-unit dimensions are in
-`PLAZA_PROPS`; games decide movement, collision and interactions. Disguises and
-map scenery use identical factories. Keep moving objects outside `bake()`.
-Builders share cached materials: dispose owned geometry when removing an object,
-but do not dispose shared materials while another scene still uses the kit.
-Include `three/addons/` in the page's import map for the foliage batcher.
+The page needs Three.js and `three/addons/` in its import map. Models use metres,
++Y up, +Z forward and ground y=0, except documented carried/water/keel origins.
+Games own collisions and interactions; catalog registration does not place an
+asset. `models/props/plaza-definitions.js` is the shared source for disguise
+labels and dimensions.
+
+Keep animated roots outside `bake()`. Tick each root once, using absolute time
+where supported. Factories return owned geometry and may share cached materials;
+do not dispose or mutate cached materials while other models use them. Preview
+controls clone materials. Call character/texture/skeleton disposers when releasing
+models and detach shared carried objects first. The character adapter preserves
+saved avatars, game-world size, articulated legs, seated drivers and carrying.
 
 ## Reusing whole worlds
 
-Edit foliage in `flora.js`, Plaza models in `plaza.js` / `plaza-props.js`, and
+Edit foliage in `models/vegetation/`, Plaza models in `models/props/`, and
 island scenery in `island-environment.js` and its neighboring modules. Changes
 reach every consumer on reload. Do not add a second tree implementation in a
 game folder or put game rules in an environment builder.

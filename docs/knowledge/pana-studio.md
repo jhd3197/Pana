@@ -8,7 +8,10 @@ normal port fallback applies. `-NoAutoPort` makes that conflict explicit.
 
 ## Library and extension contract
 
-`web/studio/catalog.js` is the curated registration point, currently 154 resources
+`engine/models/catalog.js` aggregates shared model metadata; category manifests
+under `models/fauna/`, `models/vegetation/` and `models/props/catalog/` are the
+registration points. `web/studio/catalog.js` composes these with specialized
+scene/character/game adapters in `web/studio/catalog/`, currently 154 resources
 including twenty-two vegetation models, nine Pana landmarks (`Emblemas`),
 ten Pueblo models, seven jungle structures (`Selva`), eight Páramo structures
 and five thermal landmarks (`Termales`) used by Chi Chi, plus ten Llanos and
@@ -26,7 +29,8 @@ a visual level editor. New exported functions are not automatically registered.
 The additional vegetation IDs are `araguaney`, `bamboo`, `fern`, `monstera`,
 `heliconia`, `cactus` (Cardón), `mangrove` (Mangle), `papaya` (Lechosa), `agave`,
 `waterLily` (Nenúfar), `hibiscus` (Cayena), and `reeds` (Juncos). Their seeded constructors are
-re-exported from `/engine/flora.js`; `flora-species.js` owns the geometry. They
+defined in individual `/engine/models/vegetation/` modules; `/engine/flora.js`
+is only a compatibility barrel. They
 are all used by Derrape's Selva circuit, so `usedBy` lists Derrape.
 `tracks/selva-flora.js` owns habitat placement. Registering a future plant still
 does not change map placement or collision rules automatically.
@@ -37,7 +41,9 @@ models. The Isla preview now calls the actual `createBoard` constructor, so its
 vegetation, props, paths and fish are visible alongside its terrain.
 
 Each entry has a unique stable `id`, Spanish `name`, `category`, browser `source`
-URL, `factory`, `usedBy`, and asynchronous `build()`. Optional fields include
+URL, `factory` and `usedBy`. Shared definitions also carry preview options and a
+`pack` identifier. Studio adds asynchronous `build()` using `catalog/objects.js`;
+shared metadata has no functions or renderer imports. Optional fields include
 `description`, `tags`, `dimensions` and a `game` link. Build returns:
 
 ```js
@@ -47,7 +53,8 @@ URL, `factory`, `usedBy`, and asynchronous `build()`. Optional fields include
 Only `group` is mandatory. `bounds` is an optional THREE.Box3 for camera framing;
 large maps use playable bounds rather than background hills/ocean. Reuse the
 existing constructor, never paste geometry into the catalog. Shared resources
-live under `engine/`; assets with one game consumer can stay in that game. Origin,
+live under `engine/models/`; assets with one game consumer can stay in that game.
+Read [models/README.md](../../Pana/engine/models/README.md) for extension and layer rules. Origin,
 scale, orientation, collision contracts and lifecycle belong to the source.
 
 Circuit definitions can provide `previewBounds: [[minX,minY,minZ],[maxX,maxY,maxZ]]`

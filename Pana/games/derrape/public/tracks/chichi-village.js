@@ -1,5 +1,5 @@
 import { THREE,M,box,sign,put,foundation,finish,clear,boat,placeOnTrack } from './world-kit.js';
-import { colonialHouse,streetFoodKiosk,parkBench } from '/engine/pueblo-props.js';
+import { colonialHouse, streetFoodKiosk, parkBench } from '/engine/models/props/pueblo.js';
 import { divingSchool } from './world-landmarks.js';
 import { coast,riverDistance } from './chichi-layout.js';
 

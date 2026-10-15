@@ -34,27 +34,27 @@ clean: only `README.md` and `.gitignore` belong there. Everything else lives her
   dependencies in the catalog for cache invalidation, and run the studio cache
   browser suite when changing its generation or persistence behavior.
   The vegetation catalog has twenty-two models. New plant factories live in
-  `engine/flora-species.js` and are re-exported by `flora.js`; keep their seeds
+  individual files in `engine/models/vegetation/`; keep their seeds
   deterministic and their ground origin at y=0. Registration does not place
   plants into maps; list actual consumers in `usedBy`.
-  Pana landmarks (statues, arch, fountains, kiosk) live in `engine/landmarks.js`
+  Pana landmarks (statues, arch, fountains, kiosk) live in `engine/models/props/monuments.js`
   under the Studio category `Emblemas`. Reuse `capybaraForm` for any new
   four-legged capybara shape. Jungle ruins, bridges and the waterfall live in
-  `engine/jungle-props.js` (Studio category `Selva`).
+  `engine/models/props/jungle.js` (Studio category `Selva`).
   `capybaraForm` clones a cached continuous sculpt; preserve geometry ownership.
-  Shared water motion lives in `engine/water-details.js` and uses absolute time
+  Shared water motion lives in `engine/models/effects/water-details.js` and uses absolute time
   so pausing, scrubbing and thumbnail capture agree. Bridge spans accept 4–40 m;
   hollow logs accept 3–20 m. Keep their passages empty and ground origins stable.
-  Pueblo 011–020 lives in `engine/pueblo-props.js`; Páramo structures 052–060
-  live in `engine/mountain-props.js`. Both use `engine/architecture-kit.js`.
-  Frailejón (051) and mountain pine (057) are re-exported by `flora.js` and
+  Pueblo 011–020 lives in `engine/models/props/pueblo.js`; Páramo structures 052–060
+  live in `engine/models/props/mountain.js`. Both use `engine/models/core/architecture-kit.js`.
+  Frailejón (051) and mountain pine (057) are exported by their vegetation modules and
   stay in Vegetación. Several Pueblo and Páramo models now appear in Derrape;
   keep Studio consumer metadata aligned with actual placements.
   Mountain bridges span 6–40 m, guardrails 2–30 m; their long axis is X.
   Cliff end profiles must match across seeds. The clock and cable car use
   absolute-time `userData.tick(t)`; dispose owned sign textures when released.
-  Llanos 041–050 and Desierto 061–070 live in `engine/ranch-props.js` and
-  `engine/desert-props.js`, with construction details in `rural-kit.js`.
+  Llanos 041–050 and Desierto 061–070 live in `engine/models/props/ranch.js` and
+  `engine/models/props/desert.js`, with construction details in `models/core/rural-kit.js`.
   Their Studio categories each contain ten models. The giant cardón reuses the
   existing cactus sculpt; keep the smaller Cardón entry in Vegetación.
   Gates span 3–24 m and expose `userData.setOpen(0..1)`; fences span 2–30 m
@@ -64,25 +64,28 @@ clean: only `README.md` and `.gitignore` belong there. Everything else lives her
   each use all ten models from their respective pack. Their game-local
   `*-layout.js` modules own routes and terrain; `*-world.js` owns placements.
   `country-details.js` supplies swept bridge decks, road shoulders and grasses.
-  `engine/farm-animals.js` supplies the Fauna horse, chicken and cow, used in Los
+  `engine/models/fauna/farm/` supplies the Fauna horse, chicken and cow, used in Los
   Llanos. Their SDF core is MIT code in `engine/vendor/procedural-animals/`;
   preserve its license and source attribution. Factories return owned native
   skinned meshes with absolute-time `userData.tick(t)` and an idempotent skeleton
   `userData.dispose()`. Keep animals outside static batches and racing lanes.
   See `../docs/knowledge/procedural-farm-animals.md` for parameters and proof.
-  `engine/wildlife.js` supplies the Fauna macaw, scarlet ibis, soaring vulture and
-  natural capybara. Selva uses one macaw/one capybara; Llanos four ibis/three
+  `engine/models/fauna/` supplies the Fauna macaw, scarlet ibis, soaring vulture and
+  natural capybara. Each species has its own module; the shared flight rig and
+  `models/animation/orbit-bird.js` are separate. `capybaraForm` lives in
+  `models/fauna/capybara/shape.js`, independent of monuments. Selva uses one macaw/one capybara; Llanos four ibis/three
   capybaras; Desierto two vultures. Keep flight roots outside static batches,
   preserve +Z tangent heading and absolute-time ticks, and reuse `capybaraForm`.
   Fauna now has ten entries (nine animals plus a fish school). The current source
   inventory, uncataloged/legacy ledger and priorities live in
   `../docs/knowledge/model-inventory.md`; regenerate it with
   `scripts/audit-inventory.browser.js` after updating `scripts/inventory-notes.js`.
-  `engine/reef-fish.js` supplies Pana-authored fish and schools to both islands.
+  `engine/models/fauna/aquatic/` supplies Pana-authored fish and schools to both islands.
   Keep their whole swimming envelope below waves and above the seabed, and pass
-  path clearance to `placeReefSchools`. Do not bake animated fish. The Studio
+  path clearance to `placeReefSchools` in `engine/placement/reef-schools.js`. Do not bake animated fish. The Studio
   island preview uses the full Bululú board, including scenery and paths.
-  `engine/coastal-props.js` adds nine `Costa` models and the Fauna beach crab.
+  `engine/models/props/coastal.js` adds nine `Costa` models. The Fauna crab lives in
+  `models/fauna/beach-crab.js`; terrain grounding in `engine/placement/beach-crab.js`.
   All ten appear in the Bululú circuit; eight types also appear on the board
   island. Keep buoys/crabs outside static batches and tick absolute time.
   Boat origins are at the keel: placements sit 0.32 m below mean water.
@@ -94,20 +97,21 @@ clean: only `README.md` and `.gitignore` belong there. Everything else lives her
   Llanos' connected water uses the terrain's grid and signed bed depth to avoid
   coplanar pond seams; keep both bridge channels below the racing road.
   See `../docs/knowledge/llanos-desert-props.md` for parameters and proof.
-  Chi Chi's five thermal landmarks live in `engine/thermal-props.js` and the
-  Studio category `Termales`. `thermal-steam.js` uses instanced camera-facing
+  Chi Chi's five thermal landmarks live in `engine/models/props/thermal.js` and the
+  Studio category `Termales`. `models/effects/thermal-steam.js` uses instanced camera-facing
   quads, seeded phases and absolute time. Keep its shader culling bounds broad;
   `group.userData.previewBounds` supplies a tighter Studio framing box. Tick the
   live shader material because Studio clones materials. Own ripple/steam material
   disposal, and do not bake animated roots into static batches.
-  `engine/water-surface.js` supplies animated oceans, directional rivers, canals
+  `engine/models/effects/water-surface.js` supplies animated oceans, directional rivers, canals
   and ponds to Derrape and Studio. Its depth textures use actual sampled terrain;
   update the live shader material and dispose cloned uniform textures too.
   Environment owners compose `waterAnimator(group)` with their existing update;
   scenery water is already collected by the track runtime. Keep animated water
   outside static batches and preserve pond surface height inside a wrapper group.
-- The character sculpt lives in `engine/soft-character/`; `engine/character.js`
-  adapts it to saved avatars and gameplay. The full editor stays at
+- The character sculpt lives in `engine/models/characters/pana/`; `engine/character.js`
+  re-exports `models/characters/pana/avatar-model.js`, which adapts it to saved
+  avatars and gameplay. The full editor stays at
   `/personaje.html`; its old model module URLs only re-export shared sources.
   Games use the lighter sampling profile and must call `character.dispose()`
   when removing a character (detach shared carried props first).
@@ -139,7 +143,7 @@ clean: only `README.md` and `.gitignore` belong there. Everything else lives her
 - Derrape's eight circuits include Plaza Pana, Isla Bululú and Chi Chi. Playa
   is now a sector of the Los Roques-inspired race island; legacy `playa` IDs
   resolve to `bululu`. All trees come
-  from `engine/flora.js`; the obsolete `props.js` palm has been removed.
+  from `engine/models/vegetation/`; `engine/flora.js` is a compatibility barrel.
   `createPlazaEnvironment()` provides scenery without lights, while
   `createIslandEnvironment()` shares Bululú's vegetation, harbor, sea and
   landmarks. Island terrain/scenery/beach modules now live in `engine/`;
@@ -210,4 +214,7 @@ clean: only `README.md` and `.gitignore` belong there. Everything else lives her
   doesn't rediscover it.
 - Bigger pieces of work start as a numbered plan in `docs/plans/` (Torre-style:
   `NN_kebab-name.md`, scope + files + proof). Update its status when done.
+- For library structure or registry changes, run
+  `node engine/tests/model-architecture.test.js` and the corresponding browser
+  suite. Preserve compatibility export identity and selective thumbnail invalidation.
 - Update this file if you change anything it documents.

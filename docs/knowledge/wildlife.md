@@ -1,7 +1,14 @@
 # Shared wildlife and inventory audit
 
-`engine/wildlife.js` is native Pana procedural geometry, used by Studio and three
-race worlds. No additional external source/license was added. The existing farm
+Canonical species live in `engine/models/fauna/birds/` and
+`engine/models/fauna/capybara/`. `engine/wildlife.js` now only re-exports them.
+The common bird rig lives beside the species; orbit motion is separate in
+`engine/models/animation/orbit-bird.js`. The natural capybara and monuments import
+`fauna/capybara/shape.js`, so an animal no longer imports the monuments pack.
+See [the model library](../../Pana/engine/models/README.md) for extension rules.
+
+These are native Pana procedural models, used by Studio and three race worlds.
+No additional external source/license was added. The existing farm
 animals retain their separate MIT attribution in `procedural-farm-animals.md`.
 
 | Factory | Studio entry | Actual map instances | Triangles / meshes |

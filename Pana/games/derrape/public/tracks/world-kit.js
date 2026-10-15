@@ -1,11 +1,11 @@
 // Game-local world construction: terrain, spatial instances and road furniture.
 import * as THREE from 'three';
-import { M, mesh, box, tube, rng } from '/engine/props.js';
-import { bake } from '/engine/static-batch.js';
+import { M, mesh, box, tube, rng } from '/engine/models/core/primitives.js';
+import { bake } from '/engine/models/core/static-batch.js';
 import { terrainMaterial } from '/engine/terrain-material.js';
-import { sign as makeSign } from '/engine/architecture-kit.js';
+import { sign as makeSign } from '/engine/models/core/architecture-kit.js';
 import { placeOnTrack } from '../track-kit.js';
-import { waterSurface,waterDepthMap,riverSurface } from '/engine/water-surface.js';
+import { waterSurface, waterDepthMap, riverSurface } from '/engine/models/effects/water-surface.js';
 export { THREE, M, mesh, box, tube, rng, placeOnTrack };
 export function sign(...args){const panel=makeSign(...args);panel.userData.dispose=()=>panel.material.map.dispose();return panel;}
 export const smooth=THREE.MathUtils.smoothstep, mix=THREE.MathUtils.lerp;

@@ -3,7 +3,9 @@
 
 import * as THREE from 'three';
 import { Puffs, sound } from '/engine/fx.js';
-import { M, mesh, makeMango, woodSign } from '/engine/props.js';
+import { M, mesh } from '/engine/models/core/primitives.js';
+import { makeMango } from '/engine/models/props/mango.js';
+import { woodSign } from '/engine/models/props/wood-sign.js';
 import { sunnyStage, makeActors, animateActor, rand, pick } from './stage.js';
 
 const LANE_Z = 3;            // where the panas stand

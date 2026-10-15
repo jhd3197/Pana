@@ -1,13 +1,15 @@
 import * as THREE from 'three';
-import { wildCapybara,scarletMacaw,orbitBird } from '/engine/wildlife.js';
-import { M, mesh, box, rng } from '/engine/props.js';
-import { bake } from '/engine/flora.js';
+import { wildCapybara } from '/engine/models/fauna/capybara/wild-capybara.js';
+import { scarletMacaw } from '/engine/models/fauna/birds/scarlet-macaw.js';
+import { orbitBird } from '/engine/models/animation/orbit-bird.js';
+import { M, mesh, box, rng } from '/engine/models/core/primitives.js';
+import { bake } from '/engine/models/core/static-batch.js';
 import * as kit from '../track-kit.js';
 import { jungleHeight, jungleRidgeHeight, riverDistance, RIVER, TUNNEL, tunnelContains } from './selva-layout.js';
 import { templeTunnel } from './selva-temple.js';
 import { jungleFlora } from './selva-flora.js';
 import { jungleDriving } from './selva-driving.js';
-import { stoneTotem,hollowLog,vineArch } from '/engine/jungle-props.js';
+import { stoneTotem, hollowLog, vineArch } from '/engine/models/props/jungle.js';
 
 const smooth=THREE.MathUtils.smoothstep;
 const mix=THREE.MathUtils.lerp;

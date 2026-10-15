@@ -1,13 +1,17 @@
 // A complete pueblo around a temporary street circuit.
 import * as THREE from 'three';
-import { createPlazaEnvironment, house } from '/engine/plaza.js';
-import { marketStall, streetLamp, bench } from '/engine/plaza-props.js';
-import { M, mesh, box, rng } from '/engine/props.js';
-import { bake, palm, mangoTree, ceiba } from '/engine/flora.js';
+import { createPlazaEnvironment } from '/engine/plaza.js';
+import { house } from '/engine/models/props/plaza-buildings.js';
+import { marketStall, streetLamp, bench } from '/engine/models/props/plaza.js';
+import { M, mesh, box, rng } from '/engine/models/core/primitives.js';
+import { bake } from '/engine/models/core/static-batch.js';
+import { palm } from '/engine/models/vegetation/palm.js';
+import { mangoTree } from '/engine/models/vegetation/mango-tree.js';
+import { ceiba } from '/engine/models/vegetation/ceiba.js';
 import { AVENUES, STREETS, BLOCKS, STREET_HALF, townHeight, streetDistance } from './plaza-layout.js';
 import { waterfrontHeight,overWater,createWaterfront } from './plaza-waterfront.js';
-import { waterAnimator } from '/engine/water-surface.js';
-import { colonialHouse,busStopShelter } from '/engine/pueblo-props.js';
+import { waterAnimator } from '/engine/models/effects/water-surface.js';
+import { colonialHouse, busStopShelter } from '/engine/models/props/pueblo.js';
 
 const COLORS=[0xe2b267,0x66a8a0,0xdd9277,0xaabb82,0xe7ce98,0x7d9fac];
 const PAVING=0xd2bd95, ROAD=0x8b958c;

@@ -2,10 +2,11 @@
 // players, and small helpers. Each minigame builds its own scene with these.
 
 import * as THREE from 'three';
-import { buildCharacter } from '/engine/character.js';
+import { buildCharacter } from '/engine/models/characters/pana/avatar-model.js';
 import { makeBubble } from '/engine/fx.js';
-import { palm } from '/engine/flora.js';
-import { M, mesh, rng, rock } from '/engine/props.js';
+import { palm } from '/engine/models/vegetation/palm.js';
+import { M, mesh, rng } from '/engine/models/core/primitives.js';
+import { rock } from '/engine/models/props/rock.js';
 
 export const rand = (a, b) => a + Math.random() * (b - a);
 export const pick = (list) => list[Math.floor(Math.random() * list.length)];

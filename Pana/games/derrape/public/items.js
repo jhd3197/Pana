@@ -1,7 +1,7 @@
 // Wooden supply crates, coin trails, two-slot inventory and mango combat.
 
 import * as THREE from 'three';
-import { makeMango } from '/engine/props.js';
+import { makeMango } from '/engine/models/props/mango.js';
 import { FragmentBurst } from './fragments.js';
 import { crateArt, coinArt } from './pickup-art.js';
 import { activeItem, addItem, consumeItem, selectItem, canBlock, isMango, MAX_COINS, segmentDistanceSq } from './item-rules.js';

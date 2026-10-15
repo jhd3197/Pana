@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { loadAvatar, loadName } from '/engine/avatar.js';
-import { buildCharacter } from '/engine/character.js';
-import { createPlazaProp, PLAZA_PROPS, propDefinition } from '/engine/plaza-props.js';
+import { buildCharacter } from '/engine/models/characters/pana/avatar-model.js';
+import { createPlazaProp, PLAZA_PROPS, propDefinition } from '/engine/models/props/plaza.js';
 import { sound } from '/engine/fx.js';
 import { createGameMenu, toggleMute } from '/engine/ui.js';
 import { pixelRatio, bindRenderer } from '/engine/settings.js';

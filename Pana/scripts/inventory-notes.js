@@ -6,14 +6,14 @@ const board=name=>`Pana/games/bululu/public/${name}.js`;
 const kitchen='Pana/games/cocina/public/scene.js';
 const record=(name,source,anchor,where,note)=>({name,source,anchor,where,note});
 export const uncataloged=[
-  record('Wooden sign',engine('props'),'function woodSign','Bululú board/minigames; Derrape sectors','Active shared factory; many text variants, one model family.'),
-  record('Watchtower',engine('props'),'function watchtower','Bululú board; No te caigas','Thatch/zinc options; distinct from the new lifeguard tower.'),
-  record('Venezuelan flagpole',engine('props'),'function flagPole','Bululú board; No te caigas; Selva','Active animated flag. Pana branded pedestal is a separate catalog entry.'),
-  record('Displaced rock',engine('props'),'function rock','Bululú board/minigames; Selva','Shared seeded rock, also embedded inside other models.'),
+  record('Wooden sign',engine('models/props/wood-sign'),'function woodSign','Bululú board/minigames; Derrape sectors','Active shared factory; many text variants, one model family.'),
+  record('Watchtower',engine('models/props/watchtower'),'function watchtower','Bululú board; No te caigas','Thatch/zinc options; distinct from the new lifeguard tower.'),
+  record('Venezuelan flagpole',engine('models/props/flags'),'function flagPole','Bululú board; No te caigas; Selva','Active animated flag. Pana branded pedestal is a separate catalog entry.'),
+  record('Displaced rock',engine('models/props/rock'),'function rock','Bululú board/minigames; Selva','Shared seeded rock, also embedded inside other models.'),
   record('Offshore lighthouse (older)',engine('island-scenery'),'function lighthouse','Bululú board','One tower with a rotating night beam. Not the Costa lighthouse used on the race island; preserve daylight behavior when replacing.'),
   record('Offshore sailboat (older)',engine('island-scenery'),'function sailboat','Bululú board','Four box-hull sailboats still bob offshore. Not the new peñero.'),
   record('Golden mango landmark tree',engine('island-environment'),'function mangoTreeBig','Bululú board','Special large fruit tree; separate construction from flora.mangoTree.'),
-  record('Original plaza church',engine('plaza'),'function church','Escondidas; Cocina; Plaza circuit','Active small bell tower/chapel, distinct from colonialChurch.'),
+  record('Original plaza church',engine('models/props/plaza-buildings'),'function church','Escondidas; Cocina; Plaza circuit','Active small bell tower/chapel, distinct from colonialChurch.'),
   ...[
     ['Summit terminal','summitTerminal','Páramo','Upper/lower terminals; separate from the catalog heritage cable-car station.'],
     ['Aerial cable system and cabins','aerialLift','Páramo','Six moving cabins, two cable curves; parameterized scene assembly.'],
@@ -36,7 +36,7 @@ export const uncataloged=[
   record('Breakable supply crate',race('pickup-art'),'function crateArt','All eight Derrape races','Gameplay crate is distinct from the Plaza disguise crate.'),
   record('Collectible coin',race('pickup-art'),'function coinArt','All eight Derrape races','Coin trails and pickups.'),
   record('Mango peel',race('items'),'function makePeel','Derrape item use','Three peel strips and seed; not the whole mango.'),
-  record('Kitchen sign',engine('kitchen-props'),'function kitchenSign','Cocina','Signs and flour-sack labels; text variants grouped.'),
+  record('Kitchen sign',engine('models/props/kitchen'),'function kitchenSign','Cocina','Signs and flour-sack labels; text variants grouped.'),
   record('Open pantry/fridge',kitchen,'const fridge =','Cocina','Shelves with tomatoes, milk cartons and shared cheese. Assembly includes its food dressing.'),
   record('Condiment bottles and flour sacks',kitchen,'Small working-kitchen details','Cocina','Counter and floor dressing made inline; two prop types grouped as one set.'),
 ];
@@ -54,7 +54,7 @@ export const assemblies=[
   record('Generic race edges',race('tracks/world-kit'),'function edges','Multiple Derrape circuits','Steel, timber and kerb variants, generated along the route.'),
   record('Chevrons/start line/sector signs/ramps',race('track-kit'),'function chevrons','Derrape','Four route-generated furniture families; ramps depend on each track definition.'),
   record('Race terrain and waterways',race('tracks/world-kit'),'function terrain','Derrape','Terrain, sea and stream generators; each map supplies shape and palette.'),
-  record('Water surface system',engine('water-surface'),'function waterSurface','Derrape','Ocean, river, canal and pool configurations; not separate species/objects.'),
+  record('Water surface system',engine('models/effects/water-surface'),'function waterSurface','Derrape','Ocean, river, canal and pool configurations; not separate species/objects.'),
   record('Bululú tide wash',race('tracks/bululu-tide'),'function tidalCrossing','Bululú circuit','Animated surface tied to tire grip and wetness.'),
   record('Board island terrain',engine('island-terrain'),'function buildIsland','Bululú board','Shoreline, beach, hills, river and path cuts.'),
   record('Forested islet/ridge',engine('island-landscape'),'function createIslet','Bululú board','Seeded neighboring islands and distant ridges.'),
@@ -77,7 +77,7 @@ export const assemblies=[
   record('Puffs, debris and speech bubbles',engine('fx'),'export class Puffs','Bululú; Derrape','Particle/sprite effects, not scenery inventory counts.'),
   record('Crate fragment bursts',race('fragments'),'export class FragmentBurst','Derrape','Gameplay fragments reused from crate art.'),
   record('Steam, fire and order dressing',kitchen,'const effects =','Cocina','Cooking state effects; recipes also have raw/prepared/cooked/burned variants.'),
-  record('Thermal steam and water details',engine('thermal-steam'),'export function','Chi Chi; shared fountains/waterfalls','Reusable steam, droplets and ripple systems; water details also in water-details.js.'),
+  record('Thermal steam and water details',engine('models/effects/thermal-steam'),'export function','Chi Chi; shared fountains/waterfalls','Reusable steam, droplets and ripple systems; water details also in water-details.js.'),
   record('Character accessories and expressions',engine('avatar'),'export const OPTIONS','All games; character editor','Eight non-empty hat options, three glasses options, five expression options and two non-empty extras. Some options share geometry/poses. Outfits are already cataloged; accessories and dizzy stars are embedded parts.'),
 ];
 export const dormant=[
