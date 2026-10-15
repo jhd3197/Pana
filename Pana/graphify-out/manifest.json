@@ -1,0 +1,917 @@
+{
+  "dev.ps1": {
+    "mtime": 1792011031.0973215,
+    "ast_hash": "7001bc7098e60a916ece6741c8447ba1",
+    "semantic_hash": ""
+  },
+  "engine/architecture-kit.js": {
+    "mtime": 1792032481.774505,
+    "ast_hash": "8a7fd821e5e598099a7b67bda2cfb1fa",
+    "semantic_hash": ""
+  },
+  "engine/avatar.js": {
+    "mtime": 1792010898.8277342,
+    "ast_hash": "41f586ed8a6623731633104b72d8b142",
+    "semantic_hash": ""
+  },
+  "engine/beach-props.js": {
+    "mtime": 1791997654.9001026,
+    "ast_hash": "d93090acddb6a1a8842a24857deece42",
+    "semantic_hash": ""
+  },
+  "engine/botanical-shapes.js": {
+    "mtime": 1792021023.1263034,
+    "ast_hash": "4fb7362be9143080f8d78cc6e57c7341",
+    "semantic_hash": ""
+  },
+  "engine/character.js": {
+    "mtime": 1792010574.9386067,
+    "ast_hash": "1a7b5464f334c6722cba1e4ecc339e3c",
+    "semantic_hash": ""
+  },
+  "engine/desert-props.js": {
+    "mtime": 1792039994.595618,
+    "ast_hash": "a6bba3c02bbf6a9b85057577c740cb81",
+    "semantic_hash": ""
+  },
+  "engine/flora-species.js": {
+    "mtime": 1792032730.2607234,
+    "ast_hash": "8541d3cddbdc0f042b413d87f00d51c5",
+    "semantic_hash": ""
+  },
+  "engine/flora.js": {
+    "mtime": 1792032075.5957873,
+    "ast_hash": "1b01134c7221589a7178cfa005307964",
+    "semantic_hash": ""
+  },
+  "engine/fx.js": {
+    "mtime": 1792053293.226084,
+    "ast_hash": "66fa75380e9379d0646a526cec5d5468",
+    "semantic_hash": ""
+  },
+  "engine/island-environment.js": {
+    "mtime": 1791999541.164705,
+    "ast_hash": "63adea86d5b3716242970f6dde5aba1e",
+    "semantic_hash": ""
+  },
+  "engine/island-house.js": {
+    "mtime": 1792021347.603313,
+    "ast_hash": "9a4af20ec4a6b9eb6e4f248e6aa613b1",
+    "semantic_hash": ""
+  },
+  "engine/island-landscape.js": {
+    "mtime": 1791997654.898095,
+    "ast_hash": "13a29c2e6d4dd768b7f21692ff3f8480",
+    "semantic_hash": ""
+  },
+  "engine/island-scenery.js": {
+    "mtime": 1791997654.8970907,
+    "ast_hash": "8842d14c121dcd054317968cc41cf371",
+    "semantic_hash": ""
+  },
+  "engine/island-terrain.js": {
+    "mtime": 1791998406.7151551,
+    "ast_hash": "78aa453a6d971fb0836862e362767b42",
+    "semantic_hash": ""
+  },
+  "engine/jungle-props.js": {
+    "mtime": 1792031423.7174945,
+    "ast_hash": "7c0a730313704ba305505be4d0e738e7",
+    "semantic_hash": ""
+  },
+  "engine/kitchen-props.js": {
+    "mtime": 1791995494.2487924,
+    "ast_hash": "9baf033465a8d51d12d6e4fa6a9b285d",
+    "semantic_hash": ""
+  },
+  "engine/landmarks.js": {
+    "mtime": 1792031604.8235743,
+    "ast_hash": "03c99d70e4a337288906732a6f181ca7",
+    "semantic_hash": ""
+  },
+  "engine/mountain-props.js": {
+    "mtime": 1792032989.146723,
+    "ast_hash": "1cf38f652e16d6d3fb76b4c0677d233f",
+    "semantic_hash": ""
+  },
+  "engine/plaza-catalog.js": {
+    "mtime": 1791992814.3888907,
+    "ast_hash": "5d6a081408ae4e016937763ae00cc111",
+    "semantic_hash": ""
+  },
+  "engine/plaza-layout.js": {
+    "mtime": 1791994760.7221193,
+    "ast_hash": "1137ac0d445f985773bbdd5ae02e3217",
+    "semantic_hash": ""
+  },
+  "engine/plaza-props.js": {
+    "mtime": 1791992814.3898954,
+    "ast_hash": "5a908e16dd3b7b02c1324239714b5dfc",
+    "semantic_hash": ""
+  },
+  "engine/plaza.js": {
+    "mtime": 1792030903.8165815,
+    "ast_hash": "7e0b2582aad2b81e3d5e8fef6795782c",
+    "semantic_hash": ""
+  },
+  "engine/props.js": {
+    "mtime": 1792030844.5284834,
+    "ast_hash": "a103d285b1585a527735dab55f36ee31",
+    "semantic_hash": ""
+  },
+  "engine/pueblo-props.js": {
+    "mtime": 1792032885.4707987,
+    "ast_hash": "4a8c30f929419a8f382d74fdec5888ae",
+    "semantic_hash": ""
+  },
+  "engine/ranch-props.js": {
+    "mtime": 1792039873.3679063,
+    "ast_hash": "20b73b0710a2e16ed83a8842306a87a5",
+    "semantic_hash": ""
+  },
+  "engine/rural-kit.js": {
+    "mtime": 1792039556.9160905,
+    "ast_hash": "aaff06ebaf9891a843b432ed4a1ab133",
+    "semantic_hash": ""
+  },
+  "engine/settings.js": {
+    "mtime": 1792051500.1740665,
+    "ast_hash": "1e50c58813084e1bc587af1b092ceba3",
+    "semantic_hash": ""
+  },
+  "engine/soft-character/action-outfits.js": {
+    "mtime": 1792028582.062631,
+    "ast_hash": "c9959df81dfcea4cba150a3c326bc944",
+    "semantic_hash": ""
+  },
+  "engine/soft-character/chef.js": {
+    "mtime": 1792011294.8585365,
+    "ast_hash": "027fad70c5ed11a8ffeb7f12aa53f971",
+    "semantic_hash": ""
+  },
+  "engine/soft-character/cloth-front.js": {
+    "mtime": 1792028582.061627,
+    "ast_hash": "ca3a50905d5e384d511ff881688c19c3",
+    "semantic_hash": ""
+  },
+  "engine/soft-character/detail.js": {
+    "mtime": 1792010507.7095218,
+    "ast_hash": "93d9981c69294e7a283eaeb10c74360e",
+    "semantic_hash": ""
+  },
+  "engine/soft-character/foundation.js": {
+    "mtime": 1792011431.846681,
+    "ast_hash": "fd80730fc58ecebabc494d2f9526bd2d",
+    "semantic_hash": ""
+  },
+  "engine/soft-character/garment.js": {
+    "mtime": 1792011431.8632991,
+    "ast_hash": "914389bf0305518c4c70855fd04589be",
+    "semantic_hash": ""
+  },
+  "engine/soft-character/geometry.js": {
+    "mtime": 1792010507.7105212,
+    "ast_hash": "7c8b1b25cad9395549edc2f77779b00e",
+    "semantic_hash": ""
+  },
+  "engine/soft-character/glasses.js": {
+    "mtime": 1792004445.7002647,
+    "ast_hash": "c436e866bbfd9eff99252b3380b93732",
+    "semantic_hash": ""
+  },
+  "engine/soft-character/legacy-accessories.js": {
+    "mtime": 1792010575.007176,
+    "ast_hash": "3d0bc5527f1f63bc55a92daa997f79bd",
+    "semantic_hash": ""
+  },
+  "engine/soft-character/model.js": {
+    "mtime": 1792010507.7127526,
+    "ast_hash": "97554eb59a33372172c05170b69c2208",
+    "semantic_hash": ""
+  },
+  "engine/soft-character/mouth.js": {
+    "mtime": 1792010507.713752,
+    "ast_hash": "ce1c730a8f27a0fc696b9a8a3d9ff658",
+    "semantic_hash": ""
+  },
+  "engine/soft-character/outfits.js": {
+    "mtime": 1792009880.5170212,
+    "ast_hash": "e91e4035b59de734ec52b8329aa1d2f5",
+    "semantic_hash": ""
+  },
+  "engine/static-batch.js": {
+    "mtime": 1792021711.0749252,
+    "ast_hash": "a0fb321f96265905e48dd1719cafa69b",
+    "semantic_hash": ""
+  },
+  "engine/terrain-material.js": {
+    "mtime": 1791997654.8990996,
+    "ast_hash": "02b280dea976e9d1f3c5ed3c3b08da6a",
+    "semantic_hash": ""
+  },
+  "engine/tests/cloth-front.browser.js": {
+    "mtime": 1792028845.853435,
+    "ast_hash": "7fb9922b26a63f03838da143a6c84bf1",
+    "semantic_hash": ""
+  },
+  "engine/tests/landmarks.browser.js": {
+    "mtime": 1792031165.0376134,
+    "ast_hash": "711ebabab2a7daa2ab3c2ffbb41e855a",
+    "semantic_hash": ""
+  },
+  "engine/tests/props.browser.js": {
+    "mtime": 1792021482.7307868,
+    "ast_hash": "6e33b2f980498deb98a9a68f592add38",
+    "semantic_hash": ""
+  },
+  "engine/tests/rural.browser.js": {
+    "mtime": 1792039995.0367873,
+    "ast_hash": "a42314e3459652130100d17c422052c9",
+    "semantic_hash": ""
+  },
+  "engine/tests/settlements.browser.js": {
+    "mtime": 1792032924.1207323,
+    "ast_hash": "24bdf5a860b4de70169c541aa26d4866",
+    "semantic_hash": ""
+  },
+  "engine/tests/ui.browser.js": {
+    "mtime": 1792052382.4364812,
+    "ast_hash": "d84bd3ea493f06ea57599c43f7487111",
+    "semantic_hash": ""
+  },
+  "engine/tests/vegetation.browser.js": {
+    "mtime": 1792032768.7935867,
+    "ast_hash": "2fb612c87be85b6cc7876891cb523cd5",
+    "semantic_hash": ""
+  },
+  "engine/thermal-props.js": {
+    "mtime": 1792037185.5836692,
+    "ast_hash": "53c22dc611f7b284c7d12ccecc26726a",
+    "semantic_hash": ""
+  },
+  "engine/thermal-steam.js": {
+    "mtime": 1792036300.7601283,
+    "ast_hash": "e9601c1bc74a68d92098786be9c11251",
+    "semantic_hash": ""
+  },
+  "engine/ui.js": {
+    "mtime": 1792052457.1511078,
+    "ast_hash": "7d55f6ea23475b6f80ba3255b4b936d7",
+    "semantic_hash": ""
+  },
+  "engine/water-details.js": {
+    "mtime": 1792037018.6853518,
+    "ast_hash": "9746063b6c63365aaa9358bb124d7543",
+    "semantic_hash": ""
+  },
+  "engine/water-surface.js": {
+    "mtime": 1792038648.8367527,
+    "ast_hash": "89b3b3eee031e11ea13dd67c24b932eb",
+    "semantic_hash": ""
+  },
+  "games/bululu/game.json": {
+    "mtime": 1791969334.6683154,
+    "ast_hash": "b63bfb78327938e635ffc010b1b51400",
+    "semantic_hash": ""
+  },
+  "games/bululu/public/atmosphere.js": {
+    "mtime": 1791991261.0555577,
+    "ast_hash": "a94708145894346e66510d581dc87d6f",
+    "semantic_hash": ""
+  },
+  "games/bululu/public/beach.js": {
+    "mtime": 1791997654.9005997,
+    "ast_hash": "96d6e3ea243447c96ecff34eeffd1f14",
+    "semantic_hash": ""
+  },
+  "games/bululu/public/board.js": {
+    "mtime": 1791998323.0264034,
+    "ast_hash": "9f3cb485b36074ab9b04a57d23018bc6",
+    "semantic_hash": ""
+  },
+  "games/bululu/public/card.js": {
+    "mtime": 1792010644.0093632,
+    "ast_hash": "dde89bb1b7785d16da38b15e82ccb688",
+    "semantic_hash": ""
+  },
+  "games/bululu/public/flora.js": {
+    "mtime": 1791992814.6834972,
+    "ast_hash": "228664faddb9e62f562490800722b4c2",
+    "semantic_hash": ""
+  },
+  "games/bululu/public/game.js": {
+    "mtime": 1792053293.2270823,
+    "ast_hash": "cf7dde80e5e2b205a6b51f73688f9e79",
+    "semantic_hash": ""
+  },
+  "games/bululu/public/island.js": {
+    "mtime": 1791997654.8966775,
+    "ast_hash": "b52580d5e64c3a5a54b2386827727941",
+    "semantic_hash": ""
+  },
+  "games/bululu/public/landscape.js": {
+    "mtime": 1791997654.8986013,
+    "ast_hash": "8b4f98930531553cd678b3d9d98358ad",
+    "semantic_hash": ""
+  },
+  "games/bululu/public/minigames/atrapa.js": {
+    "mtime": 1791969597.5444782,
+    "ast_hash": "4f01b9acc9118a3b88172f1f8660fd45",
+    "semantic_hash": ""
+  },
+  "games/bululu/public/minigames/caigas.js": {
+    "mtime": 1791969905.7209182,
+    "ast_hash": "57f7a118803c3ce1327aaeb3852e9895",
+    "semantic_hash": ""
+  },
+  "games/bululu/public/minigames/stage.js": {
+    "mtime": 1791997654.9031172,
+    "ast_hash": "0613f8e88ccf01889c9a26c3e238b6a1",
+    "semantic_hash": ""
+  },
+  "games/bululu/public/scenery.js": {
+    "mtime": 1791997654.8970907,
+    "ast_hash": "49882e336f00b90dad47fdfefd5c03c7",
+    "semantic_hash": ""
+  },
+  "games/bululu/public/terrain-material.js": {
+    "mtime": 1791997654.8996022,
+    "ast_hash": "9cfa10a11bab9133d2d69e6116c1a3eb",
+    "semantic_hash": ""
+  },
+  "games/cocina/game.json": {
+    "mtime": 1791994912.3511617,
+    "ast_hash": "b9113983a221c478a3e0b331211b3ef6",
+    "semantic_hash": ""
+  },
+  "games/cocina/public/card.js": {
+    "mtime": 1792011738.8962061,
+    "ast_hash": "62246eb1e084523a61f9c142ea50e319",
+    "semantic_hash": ""
+  },
+  "games/cocina/public/game.js": {
+    "mtime": 1792053293.229583,
+    "ast_hash": "c5a7fe3fada4e0359999a9f9ff2e05f3",
+    "semantic_hash": ""
+  },
+  "games/cocina/public/network.js": {
+    "mtime": 1791995170.857359,
+    "ast_hash": "d30d6b0b435cff0b257be0d3d1f234f8",
+    "semantic_hash": ""
+  },
+  "games/cocina/public/rules.js": {
+    "mtime": 1791995925.4227474,
+    "ast_hash": "20f0893877ff84a1592e20b1059abfa8",
+    "semantic_hash": ""
+  },
+  "games/cocina/public/scene.js": {
+    "mtime": 1792011195.034926,
+    "ast_hash": "8a27f60eaa4f61523b018201db762146",
+    "semantic_hash": ""
+  },
+  "games/cocina/tests/browser.mjs": {
+    "mtime": 1792053293.232083,
+    "ast_hash": "ad3ea6a533b93ec97206421c04f4d67d",
+    "semantic_hash": ""
+  },
+  "games/cocina/tests/rules.test.js": {
+    "mtime": 1791995925.4232473,
+    "ast_hash": "d599894f7033a619d7476bfd65d5611e",
+    "semantic_hash": ""
+  },
+  "games/derrape/game.json": {
+    "mtime": 1791998323.0284097,
+    "ast_hash": "5b3b59b04dcbe09bdb24eb5abe9250df",
+    "semantic_hash": ""
+  },
+  "games/derrape/public/car-kit.js": {
+    "mtime": 1792001483.822962,
+    "ast_hash": "6e695a516451e09508ea085e2e323ebf",
+    "semantic_hash": ""
+  },
+  "games/derrape/public/card.js": {
+    "mtime": 1791955939.9271567,
+    "ast_hash": "63f614aecb7e79123ad8d7e0350a22e2",
+    "semantic_hash": ""
+  },
+  "games/derrape/public/cars.js": {
+    "mtime": 1792001483.8244708,
+    "ast_hash": "3230f2fa206fb78767243565edd2bcb4",
+    "semantic_hash": ""
+  },
+  "games/derrape/public/fragments.js": {
+    "mtime": 1792000618.3216164,
+    "ast_hash": "802fa7ff598113036f35e177ca5176a4",
+    "semantic_hash": ""
+  },
+  "games/derrape/public/game.js": {
+    "mtime": 1792053293.2335825,
+    "ast_hash": "5cd850006c832a56576d13292f7c2835",
+    "semantic_hash": ""
+  },
+  "games/derrape/public/garage-cards.js": {
+    "mtime": 1792028880.2302816,
+    "ast_hash": "b2d1aed4d47989e5abbb404ebf8a9f1a",
+    "semantic_hash": ""
+  },
+  "games/derrape/public/item-rules.js": {
+    "mtime": 1792000618.3206155,
+    "ast_hash": "c989fdd1245ebf46e420e626011371cf",
+    "semantic_hash": ""
+  },
+  "games/derrape/public/items.js": {
+    "mtime": 1792001483.8254702,
+    "ast_hash": "1336c8b5e63b2a3c2b4d3fcb82ca7242",
+    "semantic_hash": ""
+  },
+  "games/derrape/public/loading.js": {
+    "mtime": 1792028639.4179592,
+    "ast_hash": "6520db377fb59a5ca3b739196d2175eb",
+    "semantic_hash": ""
+  },
+  "games/derrape/public/offroad.js": {
+    "mtime": 1792038215.6238441,
+    "ast_hash": "301ca424b8b4f96dff3d63a3fe6ee252",
+    "semantic_hash": ""
+  },
+  "games/derrape/public/pickup-art.js": {
+    "mtime": 1792000618.322116,
+    "ast_hash": "211c605054ea193ee04c3e3e401c801d",
+    "semantic_hash": ""
+  },
+  "games/derrape/public/track-kit.js": {
+    "mtime": 1792038405.1465821,
+    "ast_hash": "fd53f235067622832aa098f9ed13876f",
+    "semantic_hash": ""
+  },
+  "games/derrape/public/tracks.js": {
+    "mtime": 1792034551.4222617,
+    "ast_hash": "ab84057c3a89aeb4cc0fa30863b33e2f",
+    "semantic_hash": ""
+  },
+  "games/derrape/public/tracks/bululu-tide.js": {
+    "mtime": 1792038374.378986,
+    "ast_hash": "752a8811d97539ed21aaca4a0b187dd0",
+    "semantic_hash": ""
+  },
+  "games/derrape/public/tracks/bululu.js": {
+    "mtime": 1792038475.214544,
+    "ast_hash": "8547136ccf491fd123c990c07ad484ea",
+    "semantic_hash": ""
+  },
+  "games/derrape/public/tracks/chichi-layout.js": {
+    "mtime": 1792036927.773726,
+    "ast_hash": "c5e90317800de3917a688f3005e7d5d5",
+    "semantic_hash": ""
+  },
+  "games/derrape/public/tracks/chichi-thermal.js": {
+    "mtime": 1792036927.7747304,
+    "ast_hash": "903bdfef1642368d86a1201b4694890e",
+    "semantic_hash": ""
+  },
+  "games/derrape/public/tracks/chichi-village.js": {
+    "mtime": 1792036622.9937077,
+    "ast_hash": "2e2c2599fb4a55348d1d963d23247103",
+    "semantic_hash": ""
+  },
+  "games/derrape/public/tracks/chichi.js": {
+    "mtime": 1792038083.0509584,
+    "ast_hash": "ee4d980714ed4b0deb0ff3854540966b",
+    "semantic_hash": ""
+  },
+  "games/derrape/public/tracks/desierto.js": {
+    "mtime": 1792039757.6618025,
+    "ast_hash": "eb2ee38074024e01f0389438fcc07a49",
+    "semantic_hash": ""
+  },
+  "games/derrape/public/tracks/estadio.js": {
+    "mtime": 1792035399.7029026,
+    "ast_hash": "bf35da159da7e9447165c059068dec08",
+    "semantic_hash": ""
+  },
+  "games/derrape/public/tracks/llanos.js": {
+    "mtime": 1792039757.6612995,
+    "ast_hash": "e2ef3e779916af1fa65efa0e59772962",
+    "semantic_hash": ""
+  },
+  "games/derrape/public/tracks/paramo-layout.js": {
+    "mtime": 1792034885.307476,
+    "ast_hash": "19ea4338da4d729cf8221e4e727a36b8",
+    "semantic_hash": ""
+  },
+  "games/derrape/public/tracks/paramo.js": {
+    "mtime": 1792038147.453475,
+    "ast_hash": "fc1ef91c6248960c3a0b702d771d06b7",
+    "semantic_hash": ""
+  },
+  "games/derrape/public/tracks/playa.js": {
+    "mtime": 1792035159.770461,
+    "ast_hash": "0a8ffd026f2fce67fa25b24342b50e2a",
+    "semantic_hash": ""
+  },
+  "games/derrape/public/tracks/plaza-layout.js": {
+    "mtime": 1792034661.3224127,
+    "ast_hash": "9e9a82b2aebf2d59a8c68a28665f05f6",
+    "semantic_hash": ""
+  },
+  "games/derrape/public/tracks/plaza-town.js": {
+    "mtime": 1792038083.0524652,
+    "ast_hash": "b23e3831ac97525fac3f2b2e5a0f5b40",
+    "semantic_hash": ""
+  },
+  "games/derrape/public/tracks/plaza-waterfront.js": {
+    "mtime": 1792038083.0520809,
+    "ast_hash": "5f2fa71baa83d3da7c148d311ee7d9ca",
+    "semantic_hash": ""
+  },
+  "games/derrape/public/tracks/plaza.js": {
+    "mtime": 1792034661.3234155,
+    "ast_hash": "9221e7e08b28f29c409904e02a3230f3",
+    "semantic_hash": ""
+  },
+  "games/derrape/public/tracks/selva-driving.js": {
+    "mtime": 1792027965.0758615,
+    "ast_hash": "c767e77591e11c182ed8c22742d29111",
+    "semantic_hash": ""
+  },
+  "games/derrape/public/tracks/selva-flora.js": {
+    "mtime": 1792026822.6017323,
+    "ast_hash": "b435b1aca5528082f6670d90cb37c357",
+    "semantic_hash": ""
+  },
+  "games/derrape/public/tracks/selva-layout.js": {
+    "mtime": 1792027404.135181,
+    "ast_hash": "7d51a29f88a0fe191251166efa5967c8",
+    "semantic_hash": ""
+  },
+  "games/derrape/public/tracks/selva-temple.js": {
+    "mtime": 1792024654.792971,
+    "ast_hash": "5d90cee032b009ff32773a036ff3b628",
+    "semantic_hash": ""
+  },
+  "games/derrape/public/tracks/selva-world.js": {
+    "mtime": 1792038475.2150478,
+    "ast_hash": "43bfdd7e31ace28b72ef7ac89423087d",
+    "semantic_hash": ""
+  },
+  "games/derrape/public/tracks/selva.js": {
+    "mtime": 1792027404.135181,
+    "ast_hash": "6270277af2bb2e471e0df35123e40a22",
+    "semantic_hash": ""
+  },
+  "games/derrape/public/tracks/world-kit.js": {
+    "mtime": 1792038147.4519632,
+    "ast_hash": "baa1cf9bdf1d627ea5161dd35110d775",
+    "semantic_hash": ""
+  },
+  "games/derrape/public/tracks/world-landmarks.js": {
+    "mtime": 1792035159.4437003,
+    "ast_hash": "484037ca8828c93b0d017eb70acbf6a9",
+    "semantic_hash": ""
+  },
+  "games/derrape/tests/chichi.browser.js": {
+    "mtime": 1792037018.686352,
+    "ast_hash": "d08d7f0f032b64f8b2773f9bbcf2104e",
+    "semantic_hash": ""
+  },
+  "games/derrape/tests/items.browser.js": {
+    "mtime": 1792053360.5865731,
+    "ast_hash": "05a03d8ea8d2de70460c557dd466a790",
+    "semantic_hash": ""
+  },
+  "games/derrape/tests/items.test.js": {
+    "mtime": 1792001225.4306214,
+    "ast_hash": "5f0db8db371dc53fe26a0ad67b9de8c9",
+    "semantic_hash": ""
+  },
+  "games/derrape/tests/loading.browser.js": {
+    "mtime": 1792029048.0355167,
+    "ast_hash": "9b682212a315e9d32a75f81902ea7749",
+    "semantic_hash": ""
+  },
+  "games/derrape/tests/maps.browser.js": {
+    "mtime": 1792036542.231328,
+    "ast_hash": "bc905abdde6138d62e03d06f932b320d",
+    "semantic_hash": ""
+  },
+  "games/derrape/tests/plaza.browser.js": {
+    "mtime": 1792028767.7270417,
+    "ast_hash": "c4df8a1c30bd20cbe18874bc1bc2907c",
+    "semantic_hash": ""
+  },
+  "games/derrape/tests/selva-driving.browser.js": {
+    "mtime": 1792028767.726539,
+    "ast_hash": "3926e116ed836df674cf74bc4fe00e6e",
+    "semantic_hash": ""
+  },
+  "games/derrape/tests/selva.browser.js": {
+    "mtime": 1792028767.7262006,
+    "ast_hash": "89e8447f821af12b5762ff417ffa27dc",
+    "semantic_hash": ""
+  },
+  "games/derrape/tests/venezuela.browser.js": {
+    "mtime": 1792036542.233328,
+    "ast_hash": "88c90677bcb663fa58cf876238398e15",
+    "semantic_hash": ""
+  },
+  "games/derrape/tests/water.browser.js": {
+    "mtime": 1792038714.0196314,
+    "ast_hash": "217a00a9cd03ddd7fb235285e1310042",
+    "semantic_hash": ""
+  },
+  "games/escondidas/game.json": {
+    "mtime": 1791992924.1403627,
+    "ast_hash": "e20d7ce3e5ff9aad55c9a1801c43cfcb",
+    "semantic_hash": ""
+  },
+  "games/escondidas/public/card.js": {
+    "mtime": 1792010644.0098662,
+    "ast_hash": "f5531c145fca5d92e88fa6065af93387",
+    "semantic_hash": ""
+  },
+  "games/escondidas/public/game.js": {
+    "mtime": 1792053293.237087,
+    "ast_hash": "2df65b9f4292c14c9af455fb6e0b0736",
+    "semantic_hash": ""
+  },
+  "games/escondidas/public/layout.js": {
+    "mtime": 1791994761.0055711,
+    "ast_hash": "008536784c6d18bd70fb942d7116351b",
+    "semantic_hash": ""
+  },
+  "games/escondidas/public/network.js": {
+    "mtime": 1791993896.7981832,
+    "ast_hash": "2a7c82437018d7c294197a3a14324ffb",
+    "semantic_hash": ""
+  },
+  "games/escondidas/public/plaza.js": {
+    "mtime": 1791994761.0029798,
+    "ast_hash": "c3155866fa82b7dd26409685ae57b3ea",
+    "semantic_hash": ""
+  },
+  "games/escondidas/public/rules.js": {
+    "mtime": 1791994055.0376558,
+    "ast_hash": "609dfe4051407e24e7059881777553da",
+    "semantic_hash": ""
+  },
+  "games/escondidas/tests/browser.mjs": {
+    "mtime": 1791993926.9249597,
+    "ast_hash": "e4ab11091dbed960c59a48563ecfb6b9",
+    "semantic_hash": ""
+  },
+  "games/escondidas/tests/rules.test.js": {
+    "mtime": 1791994142.1349573,
+    "ast_hash": "33bd598abaed20b41dc8903a8209eae4",
+    "semantic_hash": ""
+  },
+  "server/package.json": {
+    "mtime": 1791946880.712874,
+    "ast_hash": "f78c51a3d2dda3d6ed15eaf67d8b2e94",
+    "semantic_hash": ""
+  },
+  "server/src/api.js": {
+    "mtime": 1791955903.319949,
+    "ast_hash": "0f2e35d4524866b579784b28589adb83",
+    "semantic_hash": ""
+  },
+  "server/src/app.js": {
+    "mtime": 1791954501.9048953,
+    "ast_hash": "9926e45dc8e255de6a855a046e811f30",
+    "semantic_hash": ""
+  },
+  "server/src/check.js": {
+    "mtime": 1791954501.9053917,
+    "ast_hash": "9370d0cdc95c5d977f9294a9e2ac3ffd",
+    "semantic_hash": ""
+  },
+  "server/src/config.js": {
+    "mtime": 1791954501.9048953,
+    "ast_hash": "235ce40e7aa29123b81403426342a2bb",
+    "semantic_hash": ""
+  },
+  "server/src/index.js": {
+    "mtime": 1791946982.9789736,
+    "ast_hash": "5f4ed588f832cc72a02414d8e034b796",
+    "semantic_hash": ""
+  },
+  "server/src/rooms.js": {
+    "mtime": 1791954671.5945113,
+    "ast_hash": "9d08f9d285bb15abec4cfd0517ac3224",
+    "semantic_hash": ""
+  },
+  "server/src/static.js": {
+    "mtime": 1791946923.698372,
+    "ast_hash": "a5d8e9708f56a988e4369f302fc86a21",
+    "semantic_hash": ""
+  },
+  "web/character/action-outfits.js": {
+    "mtime": 1792010480.2966912,
+    "ast_hash": "6944d61d8fa4ec47a3ebb99e77bff93e",
+    "semantic_hash": ""
+  },
+  "web/character/chef.js": {
+    "mtime": 1792010480.2956917,
+    "ast_hash": "dc04540c1368e7541d5de7754ebf5831",
+    "semantic_hash": ""
+  },
+  "web/character/foundation.js": {
+    "mtime": 1792010480.2926905,
+    "ast_hash": "2a0e17c0c4b6b4304908981c3badd52e",
+    "semantic_hash": ""
+  },
+  "web/character/garment.js": {
+    "mtime": 1792010480.2916913,
+    "ast_hash": "b7e1c56318b14762567f57849d4c0e07",
+    "semantic_hash": ""
+  },
+  "web/character/geometry.js": {
+    "mtime": 1792010480.290691,
+    "ast_hash": "e28feea3e6607d877c7567846f79ce23",
+    "semantic_hash": ""
+  },
+  "web/character/glasses.js": {
+    "mtime": 1792010480.2981992,
+    "ast_hash": "129b955ea837c765c658ad76c5517d88",
+    "semantic_hash": ""
+  },
+  "web/character/model.js": {
+    "mtime": 1792010480.2896907,
+    "ast_hash": "8836a78995990ab6349e77a57c062fe7",
+    "semantic_hash": ""
+  },
+  "web/character/mouth.js": {
+    "mtime": 1792010480.300087,
+    "ast_hash": "5f053dc9c847b113b937401819b703ad",
+    "semantic_hash": ""
+  },
+  "web/character/outfits.js": {
+    "mtime": 1792010480.2941911,
+    "ast_hash": "37524a7e73ef8e9741645c2ff0f83b7a",
+    "semantic_hash": ""
+  },
+  "web/character/studio.js": {
+    "mtime": 1792010898.8287349,
+    "ast_hash": "f9369d950a942759daedec31f4e11f42",
+    "semantic_hash": ""
+  },
+  "web/character/tests/expressions.browser.js": {
+    "mtime": 1792007160.8699417,
+    "ast_hash": "fbf981e1bbbf3a50c6e3cfac0c15b7ac",
+    "semantic_hash": ""
+  },
+  "web/character/tests/foundation.browser.js": {
+    "mtime": 1792008479.3315017,
+    "ast_hash": "e2acfcf407c61b0bc1a02e5dbdcf70fd",
+    "semantic_hash": ""
+  },
+  "web/character/tests/mix.browser.js": {
+    "mtime": 1792008479.3300023,
+    "ast_hash": "55f1b5e75005e6c4ab2daf0ac906d536",
+    "semantic_hash": ""
+  },
+  "web/character/tests/proportions.browser.js": {
+    "mtime": 1792009982.826072,
+    "ast_hash": "ba914d7f533ec7ea2ce362e5d35a4176",
+    "semantic_hash": ""
+  },
+  "web/character/tests/shoulders.browser.js": {
+    "mtime": 1792008479.3310027,
+    "ast_hash": "40cf0965b99ad275289e26e9a0cd7dc7",
+    "semantic_hash": ""
+  },
+  "web/character/tests/studio.browser.js": {
+    "mtime": 1792004482.5528452,
+    "ast_hash": "815cea55176378e63e7773f4dd31aa61",
+    "semantic_hash": ""
+  },
+  "web/character/tests/wardrobe.browser.js": {
+    "mtime": 1792005695.2941246,
+    "ast_hash": "9a5e9abfa4d6514b97dacf1271e36fa6",
+    "semantic_hash": ""
+  },
+  "web/hub.js": {
+    "mtime": 1792053293.239657,
+    "ast_hash": "b3aa98b6c8cd95437f930323e5cd7449",
+    "semantic_hash": ""
+  },
+  "web/pana.js": {
+    "mtime": 1792010575.008182,
+    "ast_hash": "e92ef5959ca68498fd871d4b3afdb989",
+    "semantic_hash": ""
+  },
+  "web/studio/cache-store.js": {
+    "mtime": 1792013336.9693413,
+    "ast_hash": "da4fdd126390ce33ff20957902bf8fd6",
+    "semantic_hash": ""
+  },
+  "web/studio/catalog.js": {
+    "mtime": 1792039737.7193143,
+    "ast_hash": "dc869f81e21cae9aa75e7de742fb1206",
+    "semantic_hash": ""
+  },
+  "web/studio/fingerprints.js": {
+    "mtime": 1792012729.9206393,
+    "ast_hash": "8c3925655b5612f81beca58ce8122a7c",
+    "semantic_hash": ""
+  },
+  "web/studio/preview.js": {
+    "mtime": 1792034661.325426,
+    "ast_hash": "b60959d5fa7988d676849d757b437ce9",
+    "semantic_hash": ""
+  },
+  "web/studio/settings.js": {
+    "mtime": 1792013336.9713528,
+    "ast_hash": "2d6cbaa95f783a1458d420e37706801b",
+    "semantic_hash": ""
+  },
+  "web/studio/startup.js": {
+    "mtime": 1792013520.2482746,
+    "ast_hash": "6498bb61aa54e022a56e8a670fd8217b",
+    "semantic_hash": ""
+  },
+  "web/studio/studio.js": {
+    "mtime": 1792035159.445785,
+    "ast_hash": "ad665b61d0815c91a6aa9523a09b1f3c",
+    "semantic_hash": ""
+  },
+  "web/studio/tests/cache.browser.js": {
+    "mtime": 1792025690.0731964,
+    "ast_hash": "2518f0f58533303a4d294a903405e5aa",
+    "semantic_hash": ""
+  },
+  "web/studio/tests/studio.browser.js": {
+    "mtime": 1792039994.5961192,
+    "ast_hash": "2fa58442737ebb7b96b2459f116c0517",
+    "semantic_hash": ""
+  },
+  "web/studio/thumbnails.js": {
+    "mtime": 1792013378.080305,
+    "ast_hash": "6f7a248a2978241f41f873c2c073e9c5",
+    "semantic_hash": ""
+  },
+  "AGENTS.md": {
+    "mtime": 1792053630.63298,
+    "ast_hash": "efb2fcb75a6fabcc566bde7d87a781fb",
+    "semantic_hash": ""
+  },
+  "engine/README.md": {
+    "mtime": 1792032885.4728024,
+    "ast_hash": "7510dbd820e4e782a1e20250b41c52ad",
+    "semantic_hash": ""
+  },
+  "games/bululu/public/index.html": {
+    "mtime": 1792053293.227583,
+    "ast_hash": "5ebea723f527ad10a0f52ae1197fc08b",
+    "semantic_hash": ""
+  },
+  "games/cocina/public/index.html": {
+    "mtime": 1792053293.2305834,
+    "ast_hash": "110b3362b6cf00080deb3da5484ee323",
+    "semantic_hash": ""
+  },
+  "games/derrape/public/index.html": {
+    "mtime": 1792053293.2340825,
+    "ast_hash": "9cc5ac796e81fbcf0442e372da512d8e",
+    "semantic_hash": ""
+  },
+  "games/escondidas/public/index.html": {
+    "mtime": 1792053293.238091,
+    "ast_hash": "33757274f74265d569aee123b27ac875",
+    "semantic_hash": ""
+  },
+  "web/index.html": {
+    "mtime": 1792053293.2406633,
+    "ast_hash": "7ae86369ac1fa7dc633dc21c5456813d",
+    "semantic_hash": ""
+  },
+  "web/personaje.html": {
+    "mtime": 1792010644.006349,
+    "ast_hash": "39e1735a7c5150c8a42dcaacf0f662c4",
+    "semantic_hash": ""
+  },
+  "web/studio.html": {
+    "mtime": 1792013336.9678338,
+    "ast_hash": "34ffc01d9a0d3165bbd72da5ad04ff70",
+    "semantic_hash": ""
+  },
+  "web/studio/guide.html": {
+    "mtime": 1792013378.9688632,
+    "ast_hash": "8ae3160f2497aaf9cff2a75fabf58db0",
+    "semantic_hash": ""
+  },
+  "web/studio/settings.html": {
+    "mtime": 1792013336.9708526,
+    "ast_hash": "b3e0e033c0050977dbc7c2de63f09d69",
+    "semantic_hash": ""
+  },
+  "web/character/references/front.png": {
+    "mtime": 1792001494.1526558,
+    "ast_hash": "f83062e8cecf2d89f3a9a6b053824dbb",
+    "semantic_hash": ""
+  },
+  "web/character/references/three-quarter.png": {
+    "mtime": 1792001497.934618,
+    "ast_hash": "f88e2b05c54a0c4f3521421e705ece61",
+    "semantic_hash": ""
+  }
+}
