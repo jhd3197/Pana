@@ -59,6 +59,19 @@ clean: only `README.md` and `.gitignore` belong there. Everything else lives her
   each use all ten models from their respective pack. Their game-local
   `*-layout.js` modules own routes and terrain; `*-world.js` owns placements.
   `country-details.js` supplies swept bridge decks, road shoulders and grasses.
+  `engine/farm-animals.js` supplies the Fauna horse, chicken and cow, used in Los
+  Llanos. Their SDF core is MIT code in `engine/vendor/procedural-animals/`;
+  preserve its license and source attribution. Factories return owned native
+  skinned meshes with absolute-time `userData.tick(t)` and an idempotent skeleton
+  `userData.dispose()`. Keep animals outside static batches and racing lanes.
+  See `../docs/knowledge/procedural-farm-animals.md` for parameters and proof.
+  `engine/reef-fish.js` supplies Pana-authored fish and schools to both islands.
+  Keep their whole swimming envelope below waves and above the seabed, and pass
+  path clearance to `placeReefSchools`. Do not bake animated fish. The Studio
+  island preview uses the full Bululú board, including scenery and paths.
+  See `../docs/knowledge/map-asset-rollout.md` for actual map coverage and the
+  remaining Studio-only models. New Plaza garden props must stay outside player
+  movement bounds; the race town supplies separate road-safe positions.
   Llanos' connected water uses the terrain's grid and signed bed depth to avoid
   coplanar pond seams; keep both bridge channels below the racing road.
   See `../docs/knowledge/llanos-desert-props.md` for parameters and proof.
@@ -136,8 +149,8 @@ clean: only `README.md` and `.gitignore` belong there. Everything else lives her
   Selva's `selva-world.js` builds the river valley and shared forest assets;
   `selva-temple.js` sweeps a hollow tunnel along the road. Keep the terrain
   below its driving surface and test the chase camera through both portals.
-  `selva-flora.js` composes sixteen shared species by habitat, including all
-  twelve additional Studio plants. Keep its footprint clearance, water height,
+  `selva-flora.js` composes eighteen shared species by habitat, including the
+  giant jungle tree and tropical bush. Keep its footprint clearance, water height,
   and sampled terrain grounding; do not duplicate plant geometry in the map.
   Selva opts into off-road drag through `offroad.js`. Its `selva-driving.js`
   constrains motion against trunks, steep banks and tunnel masonry, while grass

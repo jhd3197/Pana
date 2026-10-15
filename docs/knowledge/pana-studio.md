@@ -8,12 +8,13 @@ normal port fallback applies. `-NoAutoPort` makes that conflict explicit.
 
 ## Library and extension contract
 
-`web/studio/catalog.js` is the curated registration point, currently 135 resources
+`web/studio/catalog.js` is the curated registration point, currently 140 resources
 including twenty-two vegetation models, nine Pana landmarks (`Emblemas`),
 ten Pueblo models, seven jungle structures (`Selva`), eight Páramo structures
 and five thermal landmarks (`Termales`) used by Chi Chi, plus ten Llanos and
-ten Desierto models. See `shared-props.md`, `pueblo-paramo-props.md` and
-`llanos-desert-props.md`.
+ten Desierto models, plus five `Fauna` entries (horse, chicken, cow, fish and school). See
+`shared-props.md`, `pueblo-paramo-props.md`, `llanos-desert-props.md` and
+`procedural-farm-animals.md`.
 It derives props from `PLAZA_PROPS`, recipes/stations from Cocina's definitions,
 vehicles from `CARS`, and circuits from `TRACKS`. Other shared factories have
 explicit entries. This is a development asset catalog, not player inventory or
@@ -23,11 +24,14 @@ The additional vegetation IDs are `araguaney`, `bamboo`, `fern`, `monstera`,
 `heliconia`, `cactus` (Cardón), `mangrove` (Mangle), `papaya` (Lechosa), `agave`,
 `waterLily` (Nenúfar), `hibiscus` (Cayena), and `reeds` (Juncos). Their seeded constructors are
 re-exported from `/engine/flora.js`; `flora-species.js` owns the geometry. They
-are all used by Derrape's Selva circuit, so `usedBy` lists Pana Studio and Derrape.
+are all used by Derrape's Selva circuit, so `usedBy` lists Derrape.
 `tracks/selva-flora.js` owns habitat placement. Registering a future plant still
 does not change map placement or collision rules automatically.
-The additional `jungleGiant`, `tropicalBush`, `frailejon` and `mountainPine` entries are currently Studio-only;
-their catalog `usedBy` must not imply they have already been placed in Derrape.
+`jungleGiant` and `tropicalBush` now appear in Selva; `frailejon` and
+`mountainPine` appear in Páramo. Papaya and hibiscus also decorate the original
+Bululú harbor. See `map-asset-rollout.md` for the map audit and remaining unused
+models. The Isla preview now calls the actual `createBoard` constructor, so its
+vegetation, props, paths and fish are visible alongside its terrain.
 
 Each entry has a unique stable `id`, Spanish `name`, `category`, browser `source`
 URL, `factory`, `usedBy`, and asynchronous `build()`. Optional fields include

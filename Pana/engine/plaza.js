@@ -5,6 +5,8 @@ import { palm, mangoTree, bush, bake } from '/engine/flora.js';
 import { createPlazaProp, marketStall, streetLamp } from '/engine/plaza-props.js';
 import { buildCharacter } from '/engine/character.js';
 import { MAP_PROPS, STALLS, TREES } from './plaza-layout.js';
+import { streetFoodKiosk, plazaClockTower, parkBench, streetlightPole } from './pueblo-props.js';
+import { capybaraTopiary } from './landmarks.js';
 
 function lettering(words, color = '#fff0ca', bg = '#387c82', w = 4, h = 1.1) {
   return mesh(new THREE.PlaneGeometry(w, h), canvasMat(768, 192, ctx => {
@@ -106,6 +108,13 @@ function fountain() {
 
 export function createPlazaEnvironment({ cooking = false, clearance = () => true, town = false } = {}) {
   const scene = new THREE.Group();
+  const additions=[],assetCounts={};
+  const addDetail=(id,factory,x,z,radius,rotation=0)=>{
+    if(!clearance(x,z,radius))return;
+    const object=factory();object.position.set(x,0,z);object.rotation.y=rotation;
+    object.userData.assetId=id;object.userData.footprintRadius=radius;
+    scene.add(object);additions.push(object);assetCounts[id]=(assetCounts[id]||0)+1;
+  };
   const staticGroup = new THREE.Group(), random = rng(32);
   const floor = mesh(new THREE.PlaneGeometry(town ? 64 : 170, town ? 54 : 170), M(0xc6b388)); floor.rotation.x = -Math.PI / 2; floor.position.y = -0.08; staticGroup.add(floor);
   // Individual paving slabs give the plaza its warm, tactile scale.
@@ -143,7 +152,8 @@ export function createPlazaEnvironment({ cooking = false, clearance = () => true
   const stalls = cooking ? [{ x: -17, z: -6, h: 0, seed: 1 }, { x: 17, z: -6, h: 0, seed: 2 }] : STALLS;
   for (const s of stalls) {
     if (!clearance(s.x, s.z, 3.5)) continue;
-    const o = marketStall({ seed: s.seed, colors: s.seed === 2 ? [0x488e94, 0xf3dc9f] : [0xd95845, 0xf1bd45] });
+    const o = cooking ? streetFoodKiosk() : marketStall({ seed: s.seed, colors: s.seed === 2 ? [0x488e94, 0xf3dc9f] : [0xd95845, 0xf1bd45] });
+    if(cooking)assetCounts['street-food-kiosk']=(assetCounts['street-food-kiosk']||0)+1;
     o.position.set(s.x, 0, s.z); o.rotation.y = s.h; staticGroup.add(o);
   }
   for (const p of MAP_PROPS) {
@@ -151,10 +161,11 @@ export function createPlazaEnvironment({ cooking = false, clearance = () => true
     if (cooking && Math.abs(p.x) < 16 && p.z > -16) continue;
     const o = createPlazaProp(p.type); o.position.set(p.x, 0, p.z); o.rotation.y = p.h; staticGroup.add(o);
   }
-  for (const [x, z] of [[-19, -7], [19, 7], [-5, 7], [5, -7], [-20, 15], [20, -16]]) {
+  for (const [i,[x, z]] of [[-19, -7], [19, 7], [-5, 7], [5, -7], [-20, 15], [20, -16]].entries()) {
     if (!clearance(x, z, 1)) continue;
     if (cooking && Math.abs(x) < 16) continue;
-    const o = streetLamp(); o.position.set(x, 0, z); staticGroup.add(o);
+    const o = i%2?streetlightPole():streetLamp(); o.position.set(x, 0, z); staticGroup.add(o);
+    if(i%2)assetCounts['streetlight-pole']=(assetCounts['streetlight-pole']||0)+1;
   }
   // Bunting casts little triangular shadows across the market.
   for (const z of (cooking ? [-15] : [-10, 9])) {
@@ -178,7 +189,17 @@ export function createPlazaEnvironment({ cooking = false, clearance = () => true
     }
   }
   const f = fountain(); if (cooking) f.group.position.z = -11; staticGroup.add(f.group);
-  scene.add(bake(staticGroup));
+  const batch=bake(staticGroup),textures=new Set(),geometry=new Set();
+  staticGroup.traverse(o=>{if(o.geometry)geometry.add(o.geometry);if(o.material?.map?.isCanvasTexture)textures.add(o.material.map);});
+  // The fountain's character has already been frozen into the batch.
+  f.capy.dispose();geometry.forEach(g=>g.dispose());
+  batch.userData.dispose=()=>textures.forEach(t=>t.dispose());scene.add(batch);
+  // The south garden is outside both games' movement bounds. Town consumers
+  // still supply road clearance, including the complete footprint of each prop.
+  addDetail('plaza-clock-tower',plazaClockTower,town?-21:-23,town?17:24,2.4);
+  for(const x of [-7,7])addDetail('park-bench',parkBench,x,22,1.6,Math.PI);
+  for(const side of [-1,1])addDetail('capybara-topiary',capybaraTopiary,side*(town?16:13),town?18.2:23,2.2,Math.PI);
+  scene.userData.assetCounts=assetCounts;
   // Animated water sparkles are kept outside the static batch.
   const sparkles = new THREE.Group();
   for (let i = 0; i < 22; i++) {
@@ -188,7 +209,7 @@ export function createPlazaEnvironment({ cooking = false, clearance = () => true
   }
   scene.add(sparkles);
   if (cooking) sparkles.position.z = -11;
-  return { group: scene, update(t) { sparkles.children.forEach((m, i) => { m.position.y = 0.85 + Math.abs(Math.sin(t * 2.1 + i)) * 0.3; }); } };
+  return { group: scene, update(t) { additions.forEach(o=>o.userData.tick?.(t));sparkles.children.forEach((m, i) => { m.position.y = 0.85 + Math.abs(Math.sin(t * 2.1 + i)) * 0.3; }); } };
 }
 
 export function createPlaza(options = {}) {

@@ -23,6 +23,11 @@ const marbleDark = () => smooth(0xd8c8ae, { roughness: 0.7 });
 function finish(group) {
   const out = bake(group);
   group.traverse(o => o.geometry?.dispose());
+  // Include textured details attached after batching (the souvenir flag).
+  out.userData.dispose=()=>{
+    const textures=new Set();out.traverse(o=>{if(o.material?.map?.isCanvasTexture)textures.add(o.material.map);});
+    textures.forEach(t=>t.dispose());
+  };
   return out;
 }
 

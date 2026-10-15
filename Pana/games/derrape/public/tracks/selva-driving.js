@@ -4,7 +4,7 @@ import { TUNNEL, riverDistance } from './selva-layout.js';
 import { tunnelRoofHeight } from './selva-temple.js';
 
 export function jungleDriving(T,height,plants,reservations) {
-  const radii={ceiba:0.8,palm:0.25,papaya:0.22,araguaney:0.4,bamboo:0.65,mangrove:0.4};
+  const radii={ceiba:0.8,jungleGiant:2.4,palm:0.25,papaya:0.22,araguaney:0.4,bamboo:0.65,mangrove:0.4};
   const colliders=plants.filter(p=>p.zone!=='roof'&&radii[p.kind]).map(p=>({x:p.x,z:p.z,
     radius:radii[p.kind]*p.scale,base:p.y,top:p.y+7*p.scale,kind:p.kind}));
   colliders.push(...reservations.map(p=>({...p,radius:p.r,base:height(p.x,p.z)-2,top:height(p.x,p.z)+22,kind:'ruin'})));

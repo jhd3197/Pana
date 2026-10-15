@@ -2,10 +2,11 @@
 // Games supply path clearance; geography, vegetation and landmarks stay here.
 import * as THREE from 'three';
 import { M, mesh, box, rng, makeMango, woodSign, watchtower, flagPole, rock } from './props.js';
-import { mangoTree, ceiba, pine, banana, bush, casita, bake, palm, foliage } from './flora.js';
+import { mangoTree, ceiba, pine, banana, bush, casita, bake, palm, foliage, hibiscus, papaya } from './flora.js';
 import { riverDist, landMask, beachMask, fbm, SEA, PEAK, HILL } from './island-terrain.js';
 import { buildScenery } from './island-scenery.js';
 import { beachShade, beachHut, driftwood } from './beach-props.js';
+import { placeReefSchools } from './reef-fish.js';
 
 export const ISLAND_LOOP = [[28, 94], [0, 97], [-35, 91], [-70, 75], [-92, 48],
   [-103, 12], [-84, -18], [-49, -36], [-12, -34], [24, -36],
@@ -43,13 +44,14 @@ function mangoTreeBig(gold = true) {
 export function createIslandEnvironment(scene, { island, pathDist = island.pathDist,
   inShot = () => false, clearance = () => true, layoutScale = 1, heightScale = 1 } = {}) {
   const rand = rng(7), groundAt = island.groundAt;
+  const assetCounts={};scene.userData.assetCounts=assetCounts;
   const statics = new THREE.Group();
   const plank = M(0x9a6539, { roughness: 0.9 }), post = M(0x5c3a20, { roughness: 0.9 });
   // the sea: see-through enough that the sandy shallows show
   const waterGeo = new THREE.PlaneGeometry(2400, 2400, 90, 90);
   waterGeo.rotateX(-Math.PI / 2);
   const sea = new THREE.Mesh(waterGeo, new THREE.MeshStandardMaterial({
-    color: 0x279fba, roughness: 0.38, metalness: 0.08, transparent: true, opacity: 0.8,
+    color: 0x279fba, roughness: 0.38, metalness: 0.08, transparent: true, opacity: 0.66, depthWrite:false,
   }));
   sea.position.y = SEA;
   scene.add(sea);
@@ -70,8 +72,14 @@ export function createIslandEnvironment(scene, { island, pathDist = island.pathD
     obj.position.set(x, groundAt(x, z), z);
     obj.rotation.y = rot;
     into.add(obj);
+    if(obj.name)assetCounts[obj.name]=(assetCounts[obj.name]||0)+1;
     return obj;
   };
+  const schools=placeReefSchools(scene,{spots:[[138,22],[139,40],[146,58],[-52,119],[18,132]],groundAt,waterY:SEA,clearance:(x,z,r)=>pathDist(x,z)>r+4&&clearance(x,z,r)});
+  // Fruit and flowering gardens reuse the library behind the harbor houses.
+  for(const [factory,x,z,seed] of [[hibiscus,112,1,87],[hibiscus,116,42,88],[papaya,112,37,89],[papaya,117,13,90]]) {
+    if(groundAt(x,z)>.3&&free(x,z,5)&&!inShot(x,z))place(factory({seed}),x,z);
+  }
 
   // plants: what grows depends on where you are
   for (let i = 0; i < 3400 * layoutScale; i++) {
@@ -209,6 +217,7 @@ export function createIslandEnvironment(scene, { island, pathDist = island.pathD
       }
     },
     update(t, dt, daylight = 1) {
+      schools.forEach(o=>o.userData.tick(t));
       const wp = waterGeo.attributes.position;
       for (let i = 0; i < wp.count; i++) {
         const x = waterBase[i * 3], z = waterBase[i * 3 + 2];

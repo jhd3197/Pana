@@ -4,7 +4,7 @@ import { TRACKS, makeTrack } from '/g/derrape/tracks.js';
 import { CARS } from '/g/derrape/cars.js';
 import { RECIPES, STATIONS } from '/g/cocina/rules.js';
 import { DEFAULT_AVATAR } from '/engine/avatar.js';
-import { Box3, Vector3 } from 'three';
+import { Box3, Vector3, Scene } from 'three';
 
 const shared = ['Bululú', 'Derrape', 'Escondidas', 'Cocina'];
 const object = (id, name, category, source, factory, usedBy, options) => ({
@@ -15,6 +15,12 @@ const character = (id, name, options = {}) => ({ id, name, category: 'Personajes
   async build() { const { buildCharacter } = await import('/engine/character.js'); const model = buildCharacter(DEFAULT_AVATAR, { quality: 'studio', ...options }); return { group: model.group, update: (t, dt) => model.update(dt), dispose: () => model.dispose() }; },
 });
 export const ASSETS = [
+  ...[
+    ['llanero-horse','Caballo llanero','llaneroHorse','Caballo de hato con crin, lucero, medias claras y animación de pastoreo.',{seed:7,coat:'bay'}],
+    ['yard-chicken','Gallina de patio','yardChicken','Gallina de corral con cresta, alas plegadas y animación de picoteo.',{seed:7,coat:'red'}],
+    ['hato-cow','Vaca del hato','hatoCow','Vaca de manchas castañas, pezuñas partidas, cuernos y cola animada. Reemplaza la vaca antigua de Los Llanos.',{seed:7,coat:'pinto'}],
+  ].map(([id,name,factory,description,options])=>({...object(id,name,'Fauna','/engine/farm-animals.js',factory,['Pana Studio','Derrape'],options),description,tags:['animal','hato','llanos','animado'],dependencies:['/engine/vendor/procedural-animals/core/sdf/sdf.js','/engine/vendor/procedural-animals/core/sdf/mesher.js','/engine/vendor/procedural-animals/core/math/vec.js']})),
+  ...[['reef-fish','Pez de arrecife','reefFish'],['reef-fish-school','Cardumen costero','reefFishSchool']].map(([id,name,factory])=>({...object(id,name,'Fauna','/engine/reef-fish.js',factory,['Bululú','Derrape'],{seed:7}),description:'Fauna marina de Pana: peces con aletas y cola animadas en las aguas de ambas islas.',tags:['pez','agua','isla','animado']})),
   // Llanos 041–050: grounded ranch buildings, working machinery and scenery.
   ...[
     ['041','ranch-house','Casa de hato llanero','llaneroRanchHouse','Casa encalada con tejas, porche, persianas y un chinchorro tejido.'],
@@ -56,12 +62,12 @@ export const ASSETS = [
     async build() { const { buildSoftCharacter } = await import('/engine/soft-character/model.js'); const model = buildSoftCharacter({ outfit }); return { group: model.group, update: (t, dt) => model.update(dt), dispose: () => model.dispose() }; },
   })),
   ...PLAZA_PROPS.map(p => ({ ...object(p.id, p.label, 'Objetos', '/engine/plaza-props.js', p.id, ['Escondidas', 'Cocina', 'Derrape']), dimensions: [p.width, p.height, p.depth] })),
-  object('market-stall', 'Puesto de mercado', 'Objetos', '/engine/plaza-props.js', 'marketStall', ['Escondidas', 'Cocina', 'Derrape']),
+  object('market-stall', 'Puesto de mercado', 'Objetos', '/engine/plaza-props.js', 'marketStall', ['Escondidas', 'Derrape']),
   object('street-lamp', 'Farol de plaza', 'Objetos', '/engine/plaza-props.js', 'streetLamp', ['Escondidas', 'Cocina', 'Derrape']),
   object('house', 'Casa del pueblo', 'Objetos', '/engine/plaza.js', 'house', ['Escondidas', 'Cocina', 'Derrape']),
   object('mango', 'Mango', 'Objetos', '/engine/props.js', 'makeMango', ['Bululú', 'Derrape']),
   object('gold-mango', 'Mango dorado', 'Objetos', '/engine/props.js', 'makeMango', ['Bululú', 'Derrape'], { gold: true }),
-  ...[['palm', 'Palmera'], ['mangoTree', 'Árbol de mango'], ['ceiba', 'Ceiba'], ['pine', 'Pino'], ['banana', 'Mata de cambur'], ['bush', 'Arbusto'], ['casita', 'Casita de isla']].map(([factory, name]) => object(factory, name, factory === 'casita' ? 'Objetos' : 'Vegetación', '/engine/flora.js', factory, shared, { seed: 7 })),
+  ...[['palm', 'Palmera'], ['mangoTree', 'Árbol de mango'], ['ceiba', 'Ceiba'], ['pine', 'Pino'], ['banana', 'Mata de cambur'], ['bush', 'Arbusto'], ['casita', 'Casita de isla']].map(([factory, name]) => object(factory, name, factory === 'casita' ? 'Objetos' : 'Vegetación', '/engine/flora.js', factory, ['palm','mangoTree','bush'].includes(factory)?shared:['pine','casita'].includes(factory)?['Bululú']:['Bululú','Derrape'], { seed: 7 })),
   ...[
     ['araguaney','Araguaney','Copa de flores amarillas y tronco ramificado.',['árbol','flores','pueblo']],
     ['bamboo','Bambú','Grupo de tallos con nudos y ramas de hojas finas.',['selva','tallos']],
@@ -79,7 +85,7 @@ export const ASSETS = [
     ['tropicalBush','Arbusto tropical grande','Hojas anchas, crotos variegados y espigas rojas de jengibre.',['selva','arbusto','flores']],
     ['frailejon','Frailejón','Roseta plateada, hojas secas y tallos de flores amarillas.',['051','páramo','montaña','flores']],
     ['mountainPine','Pino de montaña','Ramas abiertas en pisos y follaje verde oscuro.',['057','páramo','montaña','árbol']],
-  ].map(([factory,name,description,tags])=>({...object(factory,name,'Vegetación','/engine/flora.js',factory,['jungleGiant','tropicalBush','frailejon','mountainPine'].includes(factory)?['Pana Studio']:['Pana Studio','Derrape'],{seed:7}),description,tags})),
+  ].map(([factory,name,description,tags])=>({...object(factory,name,'Vegetación','/engine/flora.js',factory,['hibiscus','papaya'].includes(factory)?['Bululú','Derrape']:['Derrape'],{seed:7}),description,tags})),
   // Pueblo 011–020: new standalone buildings and street furniture.
   ...[
     ['011', 'colonial-house', 'Casa colonial colorida', 'colonialHouse', 'Fachada turquesa, puerta de arco, rejas, persianas y techo de tejas.', ['casa','colonial']],
@@ -92,7 +98,7 @@ export const ASSETS = [
     ['018', 'rooftop-water-tank', 'Tanque de agua de azotea', 'rooftopWaterTank', 'Tanque estriado con soporte, escalera, tubería y válvula.', ['tanque','agua','azotea']],
     ['019', 'streetlight-pole', 'Farol de calle', 'streetlightPole', 'Poste curvado con brazo ornamental y lámpara cálida.', ['farol','calle','luz']],
     ['020', 'park-bench', 'Banco de parque', 'parkBench', 'Listones de madera, patas de hierro y apoyabrazos curvos.', ['banco','parque']],
-  ].map(([number,id,name,factory,description,tags])=>({...object(id,name,'Pueblo','/engine/pueblo-props.js',factory,['colonialHouse','cornerBodega','colonialChurch','streetFoodKiosk','parkBench'].includes(factory)?['Derrape']:['Pana Studio']),description,tags:[number,'pueblo',...tags]})),
+  ].map(([number,id,name,factory,description,tags])=>({...object(id,name,'Pueblo','/engine/pueblo-props.js',factory,['plazaClockTower','parkBench','streetlightPole'].includes(factory)?['Escondidas','Cocina','Derrape']:factory==='streetFoodKiosk'?['Cocina','Derrape']:['Derrape']),description,tags:[number,'pueblo',...tags]})),
   // Páramo 051–060: the two plants remain under Vegetación.
   ...[
     ['052', 'mountain-cabin', 'Cabaña de montaña', 'mountainCabin', 'Refugio de madera y piedra con porche, chimenea y techo de tejas.', ['cabaña','refugio']],
@@ -103,7 +109,7 @@ export const ASSETS = [
     ['058', 'mountain-tent', 'Carpa de montaña', 'mountainTent', 'Carpa abierta con vientos, estacas y dos colchonetas.', ['campamento','carpa']],
     ['059', 'mountain-suspension-bridge', 'Puente colgante de montaña', 'mountainSuspensionBridge', 'Tablero de madera, torres de acero, cables y accesos de piedra.', ['puente','cables']],
     ['060', 'mountain-signpost', 'Señal de senderos', 'mountainSignpost', 'Flechas de madera hacia el mirador, la laguna y el refugio.', ['sendero','señal']],
-  ].map(([number,id,name,factory,description,tags])=>({...object(id,name,'Páramo','/engine/mountain-props.js',factory,['mountainCabin','stoneLookout','mountainTent','mountainSignpost'].includes(factory)?['Derrape']:['Pana Studio']),description,tags:[number,'páramo','montaña',...tags]})),
+  ].map(([number,id,name,factory,description,tags])=>({...object(id,name,'Páramo','/engine/mountain-props.js',factory,['mountainGuardrail','mountainSuspensionBridge'].includes(factory)?['Pana Studio']:['Derrape']),description,tags:[number,'páramo','montaña',...tags]})),
   // Pana signature landmarks shared by every game.
   ...[
     ['capybara-statue', 'Estatua gigante de capibara', '/engine/landmarks.js', 'capybaraStatue', 'El pana original en bronce, saludando sobre un pedestal.', ['estatua', 'capibara', 'monumento']],
@@ -115,7 +121,7 @@ export const ASSETS = [
     ['trophy-monument', 'Monumento de la Copa Pana', '/engine/landmarks.js', 'trophyMonument', 'Copa dorada gigante con un capibara en la tapa.', ['trofeo', 'copa', 'monumento']],
     ['capybara-fountain', 'Fuente de los capibaras', '/engine/landmarks.js', 'capybaraFountain', 'Capibara de piedra con su pajarito y dos crías que echan agua.', ['fuente', 'agua', 'capibara']],
     ['souvenir-kiosk', 'Kiosco de recuerdos Pana', '/engine/landmarks.js', 'souvenirKiosk', 'Puesto con peluches de capibara, mangos, postales y banderines.', ['tienda', 'kiosco', 'recuerdos']],
-  ].map(([id, name, source, factory, description, tags]) => ({ ...object(id, name, 'Emblemas', source, factory, source.includes('plaza') ? ['Escondidas', 'Cocina', 'Derrape'] : ['Pana Studio']), description, tags: ['pana', ...tags] })),
+  ].map(([id, name, source, factory, description, tags]) => ({ ...object(id, name, 'Emblemas', source, factory, source.includes('plaza')||factory==='capybaraTopiary' ? ['Escondidas', 'Cocina', 'Derrape'] : ['trophyMonument','souvenirKiosk'].includes(factory)?['Derrape']:['Pana Studio']), description, tags: ['pana', ...tags] })),
   // Jungle ruins and traversal obstacles.
   ...[
     ['temple-entrance', 'Entrada del templo de piedra', 'templeEntrance', 'Pasaje abierto, piedra erosionada, máscara de jade y enredaderas.', ['templo', 'ruinas', 'entrada']],
@@ -125,7 +131,7 @@ export const ASSETS = [
     ['bamboo-bridge', 'Puente de bambú', 'bambooBridge', 'Tablero de cañas amarradas sobre caballetes, con rampas.', ['puente', 'bambú', 'obstáculo']],
     ['stone-totem', 'Tótem de piedra antiguo', 'stoneTotem', 'Tres rostros tallados (jaguar, búho y capibara) bajo un penacho.', ['tótem', 'ruinas', 'capibara']],
     ['hollow-log', 'Tronco hueco', 'hollowLog', 'Tronco caído y hueco con hongos, musgo y bordes rotos.', ['tronco', 'obstáculo', 'túnel']],
-  ].map(([id, name, factory, description, tags]) => ({ ...object(id, name, 'Selva', '/engine/jungle-props.js', factory, ['Pana Studio']), description, tags: ['selva', ...tags] })),
+  ].map(([id, name, factory, description, tags]) => ({ ...object(id, name, 'Selva', '/engine/jungle-props.js', factory, ['stoneTotem','hollowLog','vineArch'].includes(factory)?['Derrape']:['Pana Studio']), description, tags: ['selva', ...tags] })),
   ...[['beachShade', 'Sombrilla de playa'], ['beachHut', 'Rancho de playa'], ['driftwood', 'Tronco de playa']].map(([factory, name]) => object(factory, name, 'Objetos', '/engine/beach-props.js', factory, ['Bululú', 'Derrape'])),
   ...RECIPES.map(r => ({ ...object(`food-${r.id}`, r.name, 'Objetos', '/engine/kitchen-props.js', 'food', ['Cocina'], r.id), tags: ['comida', 'cocina'] })),
   object('corn', 'Mazorca', 'Objetos', '/engine/kitchen-props.js', 'corn', ['Cocina']),
@@ -136,24 +142,28 @@ export const ASSETS = [
     async build() { const model = car.build(DEFAULT_AVATAR); return { group: model.root, update: (t, dt) => model.driver.update(dt), dispose: () => model.driver.dispose() }; },
   })),
   { id: 'plaza', name: 'Plaza Pana', category: 'Mapas', source: '/engine/plaza.js', factory: 'createPlazaEnvironment', usedBy: ['Escondidas', 'Cocina', 'Derrape'], game: '/g/escondidas/',
-    async build() { const { createPlazaEnvironment } = await import('/engine/plaza.js'); return { ...createPlazaEnvironment(), bounds: new Box3(new Vector3(-25, 0, -22), new Vector3(25, 15, 22)) }; },
+    async build() { const { createPlazaEnvironment } = await import('/engine/plaza.js'); return { ...createPlazaEnvironment(), bounds: new Box3(new Vector3(-28, 0, -24), new Vector3(28, 15, 28)) }; },
   },
   { id: 'cocina', name: 'Cocina de la plaza', category: 'Mapas', source: '/g/cocina/scene.js', factory: 'createKitchenScene', usedBy: ['Cocina'], game: '/g/cocina/',
     async build() {
       const { createKitchenScene } = await import('/g/cocina/scene.js'); const model = createKitchenScene({ labelsRoot: null });
       const lights = []; model.scene.traverse(o => { if (o.isLight) lights.push(o); }); lights.forEach(o => o.removeFromParent());
       const state = { phase: 'lobby', stations: STATIONS.map(s => ({ id: s.id, item: null, fire: 0, progress: 0 })) };
-      return { group: model.scene, bounds: new Box3(new Vector3(-24, 0, -20), new Vector3(24, 15, 20)), update: t => model.update(t, state, null, null, false), dispose: () => model.dispose() };
+      return { group: model.scene, bounds: new Box3(new Vector3(-28, 0, -24), new Vector3(28, 15, 28)), update: t => model.update(t, state, null, null, false), dispose: () => model.dispose() };
     },
   },
-  { id: 'isla', name: 'Isla Bululú', category: 'Mapas', source: '/engine/island-terrain.js', factory: 'buildIsland', usedBy: ['Bululú'], game: '/g/bululu/', description: 'Terreno del tablero de Bululú. El circuito de carreras tiene su propia geografía costera.',
-    async build() { const { buildIsland } = await import('/engine/island-terrain.js'); return buildIsland([], []); },
+  { id: 'isla', name: 'Isla Bululú', category: 'Mapas', source: '/g/bululu/board.js', factory: 'createBoard', dependencies:['/engine/island-environment.js','/engine/island-terrain.js','/engine/reef-fish.js'], usedBy: ['Bululú'], game: '/g/bululu/', description: 'Tablero completo con sus caminos, pueblo, vegetación, mar y peces. El circuito de carreras tiene su propia geografía costera.',
+    async build() {
+      const {createBoard}=await import('/g/bululu/board.js'),group=new Scene(),board=createBoard(group);
+      const lights=[];group.traverse(o=>{if(o.isLight)lights.push(o);});lights.forEach(o=>o.removeFromParent());
+      return {group,groundAt:board.groundAt,bounds:new Box3(new Vector3(-155,-4,-145),new Vector3(170,70,145)),update:(t,dt)=>board.update(t,dt)};
+    },
   },
   ...TRACKS.map(track => ({ id: `track-${track.id}`, name: `Circuito · ${track.name}`, category: 'Mapas', source: `/g/derrape/tracks/${track.id}.js`, dependencies: ['/g/derrape/tracks.js'], factory: 'makeTrack(definition).build', usedBy: ['Derrape'], description: track.blurb, game: `/g/derrape/?track=${track.id}`,
-    async build() { const model = makeTrack(track); return { group: model.build(), bounds: track.previewBounds ? new Box3(new Vector3(...track.previewBounds[0]), new Vector3(...track.previewBounds[1])) : new Box3(new Vector3(-model.bounds.x - 20, 0, -model.bounds.z - 20), new Vector3(model.bounds.x + 20, 35, model.bounds.z + 20)), update: (t, dt) => model.animated.forEach(o => o.userData.tick?.(t, dt)) }; },
+    async build() { const model = makeTrack(track); return { group: model.build(), groundAt:model.terrainAt, bounds: track.previewBounds ? new Box3(new Vector3(...track.previewBounds[0]), new Vector3(...track.previewBounds[1])) : new Box3(new Vector3(-model.bounds.x - 20, 0, -model.bounds.z - 20), new Vector3(model.bounds.x + 20, 35, model.bounds.z + 20)), update: (t, dt) => model.animated.forEach(o => o.userData.tick?.(t, dt)) }; },
   })),
 ];
-export const CATEGORIES = ['Todos', 'Personajes', 'Vestuario', 'Objetos', 'Emblemas', 'Pueblo', 'Selva', 'Llanos', 'Páramo', 'Desierto', 'Termales', 'Vegetación', 'Vehículos', 'Mapas'];
+export const CATEGORIES = ['Todos', 'Personajes', 'Vestuario', 'Objetos', 'Fauna', 'Emblemas', 'Pueblo', 'Selva', 'Llanos', 'Páramo', 'Desierto', 'Termales', 'Vegetación', 'Vehículos', 'Mapas'];
 export function sourcePath(url) {
   return url.startsWith('/engine/') ? `Pana${url}` : url.replace(/^\/g\/([^/]+)\//, 'Pana/games/$1/public/');
 }

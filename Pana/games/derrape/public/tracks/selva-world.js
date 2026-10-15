@@ -6,6 +6,7 @@ import { jungleHeight, jungleRidgeHeight, riverDistance, RIVER, TUNNEL, tunnelCo
 import { templeTunnel } from './selva-temple.js';
 import { jungleFlora } from './selva-flora.js';
 import { jungleDriving } from './selva-driving.js';
+import { stoneTotem,hollowLog,vineArch } from '/engine/jungle-props.js';
 
 const smooth=THREE.MathUtils.smoothstep;
 const mix=THREE.MathUtils.lerp;
@@ -90,7 +91,18 @@ export function createJungle(T) {
   const reservations=[{x:190,z:-82,r:31},{x:-48,z:-187,r:24}];
   const clear=(x,z,rad=0)=>Math.abs(T.offsetOf(x,z))>T.HW+rad+3&&riverDistance(x,z)>12+rad
     &&!tunnelContains(T,x,z,rad+7)&&!reservations.some(a=>Math.hypot(x-a.x,z-a.z)<a.r+rad);
-  const forest=jungleFlora(T,plantGround,reservations);group.add(forest.group);
+  const plantReservations=[...reservations];
+  const ruins=new THREE.Group();ruins.name='selva-library-ruins';
+  for(const [id,factory,u,side,radius] of [['stone-totem',stoneTotem,.34,1,3],['vine-arch',vineArch,.38,1,6],['hollow-log',hollowLog,.76,-1,6]]) {
+    for(let step=0;step<12;step++) {
+      const p=kit.placeOnTrack(T,(u+step*.003)*T.TOTAL,side*(T.HW+radius+12));
+      if(!clear(p.x,p.z,radius)||plantReservations.some(a=>Math.hypot(p.x-a.x,p.z-a.z)<a.r+radius))continue;
+      const object=factory();object.position.set(p.x,plantGround(p.x,p.z),p.z);object.rotation.y=p.h;
+      object.userData.assetId=id;object.userData.footprintRadius=radius;ruins.add(object);plantReservations.push({x:p.x,z:p.z,r:radius+2});break;
+    }
+  }
+  group.add(ruins);
+  const forest=jungleFlora(T,plantGround,plantReservations);group.add(forest.group);
   for(const p of forest.placements.filter(p=>p.zone==='dry-ruins')) {
     const x=p.x+1.6,z=p.z-0.7;if(!clear(x,z,1.5))continue;
     const stone=kit.rock(1.1,0x969579,Math.floor(p.x));stone.scale.set(1.6,0.4,1.3);

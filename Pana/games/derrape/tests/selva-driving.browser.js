@@ -39,8 +39,9 @@ try {
     for(let i=0;i<60;i++)stepCar(c,{throttle:0.4,steer:0},1/60);
     const recovery={start:Math.abs(T.offsetOf(recoveryStart.x,recoveryStart.z)),end:Math.abs(T.offsetOf(c.x,c.z)),groundError:Math.abs(c.y-T.groundAt(c.x,c.z))};
     // Run actual collision responses against authored trunks from multiple sides.
-    const trunks=T.group.getObjectByName('track-environment').userData.jungle.colliders.filter(p=>p.kind==='ceiba'&&
-      [[4,0],[-4,0],[0,4],[0,-4]].every(([x,z])=>Math.abs(T.terrainAt(p.x+x,p.z+z)-p.base-0.12)<1.8)),trunkFailures=[];
+    const trunks=T.group.getObjectByName('track-environment').userData.jungle.colliders.filter(p=>['ceiba','jungleGiant'].includes(p.kind)&&
+      [[4,0],[-4,0],[0,4],[0,-4]].every(([x,z])=>Math.abs(T.terrainAt(p.x+x,p.z+z)-p.base-0.12)<1.8)).sort((a,b)=>(b.kind==='jungleGiant')-(a.kind==='jungleGiant')),trunkFailures=[];
+    if(!trunks.some(p=>p.kind==='jungleGiant'))throw Error('No giant-tree trunk collision case');
     for(const tree of trunks.slice(0,15))for(const direction of [0,Math.PI/2]) {
       const dx=Math.cos(direction),dz=Math.sin(direction),previous={x:tree.x+dx*(tree.radius+1.7),z:tree.z+dz*(tree.radius+1.7)};
       const car={x:tree.x+dx*(tree.radius+0.9),z:tree.z+dz*(tree.radius+0.9),y:tree.base+0.1,vx:-dx*10,vz:-dz*10};

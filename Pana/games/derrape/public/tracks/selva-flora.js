@@ -8,7 +8,7 @@ import { tunnelRoofHeight } from './selva-temple.js';
 
 const TAU=Math.PI*2;
 export const JUNGLE_ADDITIONS=['araguaney','bamboo','fern','monstera','heliconia','cactus',
-  'mangrove','papaya','agave','waterLily','hibiscus','reeds'];
+  'mangrove','papaya','agave','waterLily','hibiscus','reeds','jungleGiant','tropicalBush'];
 
 export function jungleFlora(T,groundAt,reservations) {
   const r=rng(5721),source=new THREE.Group(),placements=[],templates=new Map();
@@ -35,13 +35,14 @@ export function jungleFlora(T,groundAt,reservations) {
     const px=x+(r()-0.5)*17,pz=z+(r()-0.5)*17;
     if(r()<0.09)continue;
     const golden=(px>275||pz>45)&&r()<0.13;
-    add(golden?'araguaney':'ceiba',px,pz,golden?2.1+r()*0.6:1.9+r()*1.1,'canopy');
+    const giant=!golden&&r()<.05;
+    add(golden?'araguaney':giant?'jungleGiant':'ceiba',px,pz,golden?2.1+r()*0.6:giant?1:1.9+r()*1.1,'canopy');
   }
   // Broken, overlapping patches read as understory, not evenly spaced roadside props.
   // Taller bamboo occupies the cool western half; flowering plants mark clearings.
   for(let s=5;s<T.TOTAL;s+=17)for(const side of [-1,1]) {
     const u=s/T.TOTAL,shaded=u>0.57&&u<0.92;
-    const kinds=shaded?['fern','monstera','bamboo','fern']:['heliconia','monstera','fern','hibiscus'];
+    const kinds=shaded?['fern','monstera','bamboo','tropicalBush']:['heliconia','monstera','fern','hibiscus'];
     const kind=kinds[Math.floor(r()*kinds.length)],p=placeOnTrack(T,s,side*(T.HW+6+r()*6));
     const scale=kind==='bamboo'?1.3+r()*0.35:kind==='fern'?1.6+r()*0.6:1.25+r()*0.55;
     if(!add(kind,p.x,p.z,scale,shaded?'understory':'flowering-edge'))continue;

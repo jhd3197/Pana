@@ -2,7 +2,8 @@
 import { THREE,M,box,tube,sign,terrain,finish,put,instances,scatter,edges,clear } from './world-kit.js';
 import { grandstand } from './world-landmarks.js';
 import { palm } from '/engine/flora.js';
-import { cornerBodega,streetFoodKiosk } from '/engine/pueblo-props.js';
+import { cornerBodega,streetFoodKiosk,basketballHoop,rooftopWaterTank } from '/engine/pueblo-props.js';
+import { trophyMonument } from '/engine/landmarks.js';
 
 export default {
   id:'estadio',name:'El Estadio',
@@ -57,6 +58,18 @@ export default {
     put(group,finish(score),123,-6,1,.25);
     for(const [x,z] of [[-200,255],[-170,255],[160,210]])if(clear(T,x,z,12))put(group,streetFoodKiosk(),x,z,1,Math.PI,2);
     put(group,cornerBodega(),-305,170,1,1.5,2);
+    const details=new THREE.Group();details.name='stadium-library-details';group.add(details);
+    const detail=(id,object,x,z,y,rotation=0,radius=3)=>{
+      if(!clear(T,x,z,radius))return;
+      put(details,object,x,z,y,rotation);object.userData.assetId=id;object.userData.footprintRadius=radius;
+    };
+    detail('trophy-monument',trophyMonument(),105,220,1,Math.PI,5);
+    for(const x of [-200,-92])detail('rooftop-water-tank',rooftopWaterTank(),x,223,8.4);
+    // A community half-court beside the spectator entrance, away from the lap.
+    fixed.add(box(15,.08,24,M(0xb57b5e),180,1.08,232));
+    for(const z of [221,243])fixed.add(box(13,.03,.12,white,180,1.14,z));
+    for(const x of [173.5,186.5])fixed.add(box(.12,.03,22,white,x,1.14,232));
+    for(const [z,rot]of [[221,0],[243,Math.PI]])detail('basketball-hoop',basketballHoop(),180,z,1.12,rot);
     group.add(finish(fixed));
     instances(group,palm({seed:9,h:11}),scatter(T,world.groundAt,{seed:137,count:38,bounds:[-365,-300,310,285],margin:12,accept:(x,z)=>Math.abs(x)>280||z<-265||z>250}),'stadium-palms');
     return {group,groundAt:world.groundAt};

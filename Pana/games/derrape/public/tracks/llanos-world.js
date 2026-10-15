@@ -4,20 +4,9 @@ import { palm,mangoTree,araguaney,reeds,waterLily } from '/engine/flora.js';
 import { capybaraForm } from '/engine/landmarks.js';
 import { streetFoodKiosk,cornerBodega,parkBench } from '/engine/pueblo-props.js';
 import { waterSurface,waterAnimator } from '/engine/water-surface.js';
+import { llaneroHorse,yardChicken,hatoCow } from '/engine/farm-animals.js';
 import { baseHeight,riverDistance,ESTEROS,WATER_Y,wetlandDistance } from './llanos-layout.js';
 import { grassTuft,entrance,crossing,vergePosts,dirtVerge } from './country-details.js';
-
-function cow(seed){
-  const g=new THREE.Group(),body=new THREE.Group(),hide=M(seed%2?0xd8cfb7:0xc5bba6),dark=M(0x756953);
-  const trunk=mesh(new THREE.SphereGeometry(1,12,8),hide,0,1.25,0);trunk.scale.set(.62,.64,1.25);body.add(trunk);
-  const hump=mesh(new THREE.SphereGeometry(.38,9,6),hide,0,1.82,.65);body.add(hump);
-  for(const x of [-.4,.4])for(const z of [-.83,.83]){body.add(box(.18,.85,.18,hide,x,.58,z),box(.21,.18,.24,dark,x,.09,z));}
-  const head=new THREE.Group(),face=new THREE.Group();head.position.set(0,1.65,.95);
-  face.add(box(.42,.5,.65,hide,0,-.1,.28),box(.39,.27,.25,dark,0,-.28,.69),box(.19,.4,.12,hide,0,-.52,.1));
-  for(const side of [-1,1]){face.add(box(.3,.11,.16,hide,side*.3,0,.17),tube([side*.2,.1,.13],[side*.47,.34,.1],.045,M(0xe3d7b9)));face.add(mesh(new THREE.SphereGeometry(.035,6,4),M(0x35352c),side*.216,.01,.43));}
-  head.add(finish(face));g.add(finish(body),head);const tail=box(.07,.8,.07,dark,0,1.14,-1.24);g.add(tail);
-  g.userData.tick=t=>{head.rotation.x=.4+Math.sin(t*.55+seed)*.28;tail.rotation.x=Math.sin(t*1.6+seed)*.2;};return g;
-}
 
 export function llanosEnvironment(T){
   const group=new THREE.Group(),counts={},occupied=[],moving=[];
@@ -69,8 +58,19 @@ export function llanosEnvironment(T){
     const p=placeOnTrack(T,s,off);if(!clear(T,p.x,p.z,2))continue;
     put(fenceLine,ranchFence({span:7.8}),p.x,p.z,world.groundAt(p.x,p.z),p.h+Math.PI/2);counts['ranch-fence']++;
   }group.add(finish(fenceLine));
+  // All cattle share the same native sculpt and rig as their Studio entry.
+  const fauna=new THREE.Group();fauna.name='llanos-farm-animals';group.add(fauna);
   for(const [i,x,z]of [[0,-253,92],[1,-230,83],[2,-239,105],[3,240,-204],[4,258,-210],[5,216,-188],[6,-80,125],[7,-108,117]]){
-    if(!clear(T,x,z,3))continue;const animal=put(group,cow(i+41),x,z,world.groundAt(x,z),i*.9,1.2);moving.push(animal);
+    const animal=add(fauna,'hato-cow',()=>hatoCow({seed:41+i,coat:i%3?'pinto':'brown'}),x,z,{rotation:i*.9,scale:1.2,radius:3,animate:true});
+    animal.userData.footprintRadius=3;
+  }
+  for(const [seed,x,z,rotation,coat] of [[7,-198,116,-.6,'bay'],[11,-224,99,1.9,'palomino'],[19,263,-213,2.7,'grey']]){
+    const animal=add(fauna,'llanero-horse',()=>llaneroHorse({seed,coat}),x,z,{rotation,scale:1.25,radius:3,animate:true});
+    animal.userData.footprintRadius=3;
+  }
+  for(const [i,x,z] of [[0,-234,129],[1,-231,127],[2,-228,130],[3,-233,124],[4,-226,126],[5,246,-227],[6,250,-226],[7,248,-224]]){
+    const animal=add(fauna,'yard-chicken',()=>yardChicken({seed:31+i,coat:i%3?'red':'cream'}),x,z,{rotation:i*1.7,scale:1.2,radius:1,animate:true});
+    animal.userData.footprintRadius=1;
   }
   // One surface shares the terrain's grid and triangle split. Signed bed depth
   // clips the shader at the actual bank, including under both elevated bridges.

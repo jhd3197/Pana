@@ -4,6 +4,9 @@ import { palm,mangrove } from '/engine/flora.js';
 import { colonialHouse,colonialChurch,streetFoodKiosk } from '/engine/pueblo-props.js';
 import { waterAnimator } from '/engine/water-surface.js';
 import { tideZone,tideWetness,tidalCrossing } from './bululu-tide.js';
+import { beachShade,beachHut,driftwood } from '/engine/beach-props.js';
+import { placeReefSchools } from '/engine/reef-fish.js';
+import { souvenirKiosk } from '/engine/landmarks.js';
 const SCALE=1.23;
 const ROUTE=[[-260,80],[-260,155],[-170,210],[-70,220],[10,170],[15,100],[65,60],[140,75],[220,130],[300,110],[335,35],[300,-35],[230,-70],[170,-130],[90,-195],[-5,-215],[-90,-175],[-120,-100],[-185,-65],[-255,-20]].map(([x,z])=>[x*SCALE,z*SCALE]);
 const roadHeight=(x,z)=>(3.2+hill(x,z,-270,-120,120,95,7))*(1-tideZone(x,z))+.48*tideZone(x,z);
@@ -36,7 +39,7 @@ export default {
         const channel=zone*smooth(off,T.HW+2,T.HW+19);return h*(1-channel)-3*channel;
       },
       color:(x,z,y)=>y<.8?0xe9dfbd:y<5?0xf3e7c6:y<15?0xb3ae7d:0x979d88});
-    group.add(sea(world.groundAt),world.land);
+    group.add(sea(world.groundAt,{opacity:.68}),world.land);
     const village=new THREE.Group(),occupied=[];
     const colors=[0x55a7a5,0xd88b75,0xe2bc60,0x82a9c3,0xd5d1aa];
     let n=0;
@@ -47,6 +50,17 @@ export default {
     foundation(village,colonialChurch(),-211,166,world.groundAt,{radius:10,scale:1.8,rotation:Math.PI});
     for(const [x,z] of [[-173,52],[-174,93]])if(clear(T,x,z,10))foundation(village,streetFoodKiosk(),x,z,world.groundAt,{radius:6,scale:1.6,rotation:Math.PI/2});
     group.add(village);village.name='roques-village';
+    const details=new THREE.Group();details.name='roques-beach-details';group.add(details);
+    const detail=(id,factory,x,z,radius,rotation=0)=>{
+      if(!clear(T,x,z,radius)||world.groundAt(x,z)<.6||occupied.some(([a,b])=>Math.hypot(x-a,z-b)<radius+10))return;
+      const object=foundation(details,factory(),x,z,world.groundAt,{radius,rotation});
+      object.userData.assetId=id;object.userData.footprintRadius=radius;occupied.push([x,z]);return object;
+    };
+    for(const [i,[x,z]]of [[255,50],[280,45],[270,75],[245,80]].entries())detail('beachShade',()=>beachShade(i%2?0xe77950:0x48a9aa),x,z,3);
+    detail('beachHut',beachHut,295,65,5,Math.PI);
+    const kiosk=detail('souvenir-kiosk',souvenirKiosk,-180,135,4,Math.PI/2);
+    for(const [x,z]of [[225,165],[290,150]])detail('driftwood',driftwood,x,z,3,.4);
+    const schools=placeReefSchools(group,{spots:[[-120,0],[-113,32],[-105,65],[-88,94],[175,20],[210,-5]],groundAt:world.groundAt,clearance:(x,z,r)=>clear(T,x,z,r)});
     const fixed=new THREE.Group();
     // Low jetties and peñeros populate the harbor without filling the beach.
     for(let i=0;i<6;i++){
@@ -67,7 +81,7 @@ export default {
     instances(group,palm({seed:32,h:10}),scatter(T,world.groundAt,{seed:1032,count:58,bounds:[-350,-210,420,240],margin:9,minY:1,accept:(x,z,y)=>y<9&&!occupied.some(([a,b])=>Math.hypot(x-a,z-b)<14)}),'island-palms');
     instances(group,mangrove({seed:17}),scatter(T,world.groundAt,{seed:701,count:35,bounds:[-145,-45,0,150],margin:6,minY:-1.5,accept:(x,z,y)=>y<3}),'lagoon-mangroves');
     const animateWater=waterAnimator(group),tide=tidalCrossing(T);group.add(tide.group);
-    return {group,groundAt:world.groundAt,update:t=>{animateWater(t);tide.update(t);}};
+    return {group,groundAt:world.groundAt,update:t=>{animateWater(t);tide.update(t);kiosk?.userData.tick(t);schools.forEach(o=>o.userData.tick(t));}};
   },
   scenery(group,kit,T){edges(group,kit,T,{style:'rope',step:7,skip:(s)=>{const p=T.pointAt(s);return tideZone(p.x,p.y)>.01;}});},
 };

@@ -7,6 +7,7 @@ import { bake, palm, mangoTree, ceiba } from '/engine/flora.js';
 import { AVENUES, STREETS, BLOCKS, STREET_HALF, townHeight, streetDistance } from './plaza-layout.js';
 import { waterfrontHeight,overWater,createWaterfront } from './plaza-waterfront.js';
 import { waterAnimator } from '/engine/water-surface.js';
+import { colonialHouse,busStopShelter } from '/engine/pueblo-props.js';
 
 const COLORS=[0xe2b267,0x66a8a0,0xdd9277,0xaabb82,0xe7ce98,0x7d9fac];
 const PAVING=0xd2bd95, ROAD=0x8b958c;
@@ -58,7 +59,7 @@ export function createTown(T) {
     ground.add(surface(x+k*2.3-0.65,z+side*15-1.5,x+k*2.3+0.65,z+side*15+1.5,(x,z)=>groundAt(x,z)+0.24,0xe4dfc9,1));
     ground.add(surface(x+side*15-1.5,z+k*2.3-0.65,x+side*15+1.5,z+k*2.3+0.65,(x,z)=>groundAt(x,z)+0.25,0xe4dfc9,1));
   }
-  const prototypes=COLORS.map((color,i)=>house({w:8.2,h:5.4+(i%2)*0.6,color,seed:i})),occupied=[];
+  const prototypes=COLORS.map((color,i)=>i%2?colonialHouse({color,seed:11+i}):house({w:8.2,h:5.4,color,seed:i})),occupied=[];
   function building(x,z,turn,seed,scale=1) {
     if(groundAt(x,z)<-0.4||x>270&&z>280)return;
     if(!clear(x,z,10*scale)||streetDistance(x,z)<STREET_HALF+8.5*scale||(Math.abs(x)<68&&z>-57&&z<48)||occupied.some(p=>Math.hypot(x-p.x,z-p.z)<12*scale))return;
@@ -127,6 +128,11 @@ export function createTown(T) {
     tree(x,z,700+i,i%4===0);
   }
   const plaza=createPlazaEnvironment({town:true,clearance:(x,z,r)=>clear(x*2,z*2,r*2)});
+  const stop=busStopShelter(),sx=-171,sz=146;
+  if(clear(sx,sz,4)&&streetDistance(sx,sz)>STREET_HALF+4) {
+    stop.position.set(sx,groundAt(sx,sz)+.3,sz);stop.rotation.y=Math.PI;
+    stop.userData.assetId='bus-stop-shelter';stop.userData.footprintRadius=4;group.add(stop);
+  }
   plaza.group.scale.setScalar(2);group.add(plaza.group);
   group.add(bake(ground,{cellSize:200}),bake(buildings,{cellSize:200}),bake(plants,{cellSize:200}));
   group.add(createWaterfront(T));

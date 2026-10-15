@@ -53,9 +53,9 @@ export function terrain(T,{bounds,base,color,name='world-terrain',step=5,carve=t
   return {land,groundAt,height};
 }
 
-export function sea(base,{size=2200,y=0}={}) {
+export function sea(base,{size=2200,y=0,opacity=1}={}) {
   const geo=new THREE.PlaneGeometry(size,size,90,90);geo.rotateX(-Math.PI/2);
-  const water=waterSurface(geo,{depthMap:waterDepthMap(base,{size,y}),size,amplitude:.11});
+  const water=waterSurface(geo,{depthMap:waterDepthMap(base,{size,y}),size,amplitude:.11,opacity});
   water.position.y=y;water.name='coastal-water';return water;
 }
 

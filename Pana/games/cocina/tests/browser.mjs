@@ -12,9 +12,13 @@ const browser = await chromium.launch({ headless: true, ...(process.argv[3] ? { 
 const errors = [], sockets = [], room = `cocina-qa-${Date.now().toString(36)}`;
 const check = text => console.log(`ok  ${text}`);
 async function page(name, mobile = false, code = room) {
-  const ctx = await browser.newContext(mobile ? { viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true } : { viewport: { width: 1440, height: 900 } });
+  // Three simultaneous software-rendered clients can starve the input relay.
+  // Compact desktops reduce pixel work while retaining real rendering and input.
+  const desktop = process.env.PANA_QA_COMPACT ? { width: 900, height: 650 } : { width: 1440, height: 900 };
+  const ctx = await browser.newContext(mobile ? { viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true } : { viewport: desktop });
   const p = await ctx.newPage(); p.on('pageerror', e => errors.push(`${name}: ${e.message}`));
-  await p.goto(`${base}/g/cocina/?name=${name}&room=${code}&debug`); await p.waitForFunction(() => window.cocina?.room.connected); return p;
+  await p.goto(`${base}/g/cocina/?name=${name}&room=${code}&debug`);
+  await p.waitForFunction(() => window.cocina?.room.connected, null, { timeout: Number(process.env.PANA_QA_TIMEOUT) || 30000 }); return p;
 }
 async function position(host, id, station) {
   await host.evaluate(({ id, station }) => { const s = cocina.STATIONS.find(s => s.id === station); cocina.place(id, s.x, s.z + s.d / 2 + 0.65); cocina.room.game.players.find(p => p.id === id).cooldown = 0; }, { id, station });
@@ -46,9 +50,14 @@ try {
   const c = await page('Luisa', true); await c.waitForFunction(() => cocina.state.phase === 'playing' && cocina.state.players.length === 3);
   assert.equal(await c.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
   const cId = await c.evaluate(() => cocina.room.id); await a.evaluate(id => cocina.place(id, -6, 6), cId);
+  // Wait for the host's placement snapshot before measuring movement.
+  await c.waitForFunction(() => { const p = cocina.state.players.find(p => p.id === cocina.room.id); return Math.abs(p.x + 6) < 0.1 && Math.abs(p.z - 6) < 0.1; });
   const btn = await c.locator('[data-move="right"]').boundingBox(); const x0 = await c.evaluate(() => cocina.state.players.find(p => p.id === cocina.room.id).x);
-  await c.mouse.move(btn.x + btn.width / 2, btn.y + btn.height / 2); await c.mouse.down();
-  await c.waitForFunction(x => cocina.state.players.find(p => p.id === cocina.room.id).x > x + 0.5, x0); await c.mouse.up();
+  // Use an actual held touch on the emulated phone, not a compatibility mouse.
+  const touch = await c.context().newCDPSession(c);
+  await touch.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: btn.x + btn.width / 2, y: btn.y + btn.height / 2 }] });
+  await c.waitForFunction(x => cocina.state.players.find(p => p.id === cocina.room.id).x > x + 0.5, x0);
+  await touch.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] }); await touch.detach();
   await position(a, cId, 'supply-cachapa'); await c.locator('#action').click(); await held(c, 'raw');
   if (output) await c.screenshot({ path: path.join(output, 'cocina-mobile.png') }); check('late join, mobile movement and touch interaction work at 390px');
   const remaining = await b.evaluate(() => cocina.state.remaining); await a.close();
