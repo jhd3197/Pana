@@ -1,4 +1,4 @@
-// World construction, performance and visual proof for the five Venezuela circuits.
+// World construction, performance and visual proof for the Venezuela circuits.
 // Run with npm start; PANA_PLAYWRIGHT_PATH can point to an external Playwright.
 import assert from 'node:assert/strict';
 import { createRequire } from 'node:module';
@@ -20,7 +20,7 @@ try{
   });
   const registry=await page.evaluate(()=>({ids:proof.tracks.TRACKS.map(t=>t.id),legacy:proof.tracks.getTrack('playa').id}));
   assert.equal(registry.legacy,'bululu');assert.ok(!registry.ids.includes('playa'));assert.ok(registry.ids.includes('chichi'));
-  for(const id of process.env.PANA_MAP_TEST_TRACKS?.split(',')||['estadio','paramo','bululu','chichi','plaza']){
+  for(const id of process.env.PANA_MAP_TEST_TRACKS?.split(',')||['estadio','paramo','bululu','chichi','plaza','desierto','llanos']){
     const metrics=await page.evaluate(id=>{
       const {THREE,tracks,preview,stage}=proof;if(proof.model){preview.release(proof.model);stage.renderer.renderLists.dispose();}
       const begin=performance.now(),T=tracks.makeTrack(tracks.getTrack(id)),group=T.build();
@@ -42,25 +42,26 @@ try{
         if(cross(a,b,c)*cross(a,b,d)<0&&cross(c,d,a)*cross(c,d,b)<0)crossings++;
       }
       const names=[];group.traverse(o=>{if(o.name&&!names.includes(o.name))names.push(o.name);});
-      return {id,length:T.TOTAL,elevation:max-min,grade,radius,crossings,buildMs:performance.now()-begin,...data.stats,drawCalls:stage.renderer.info.render.calls,names};
+      return {id,length:T.TOTAL,elevation:max-min,grade,radius,crossings,buildMs:performance.now()-begin,...data.stats,drawCalls:stage.renderer.info.render.calls,assetCounts:group.getObjectByName('track-environment')?.userData.assetCounts,names};
     },id);
     results.push(metrics);console.log(JSON.stringify(metrics));
     await page.screenshot({path:`${output}/${id}-overview.png`});
     await page.evaluate(()=>{const {stage,bounds,preview}=proof;preview.fitCamera(stage.camera,bounds,true,'top');stage.renderer.render(stage.scene,stage.camera);});
     await page.screenshot({path:`${output}/${id}-top.png`});
-    const detail={estadio:[[-200,48,215],[-15,8,85]],paramo:[[50,167,-180],[-35,130,-275]],bululu:[[-440,145,250],[-120,0,45]],chichi:[[-50,270,-265],[65,175,-408]],plaza:[[650,110,560],[410,12,330]]}[id];
+    const detail={desierto:[[-290,38,255],[-192,9,171]],llanos:[[-310,27,178],[-232,5,110]],estadio:[[-200,48,215],[-15,8,85]],paramo:[[50,167,-180],[-35,130,-275]],bululu:[[-440,145,250],[-120,0,45]],chichi:[[-50,270,-265],[65,175,-408]],plaza:[[650,110,560],[410,12,330]]}[id];
     await page.evaluate(([position,target])=>{const {stage}=proof;stage.camera.position.set(...position);stage.camera.lookAt(...target);stage.camera.near=.1;stage.camera.updateProjectionMatrix();stage.renderer.render(stage.scene,stage.camera);},detail);
     await page.screenshot({path:`${output}/${id}-detail.png`});
   }
   await writeFile(`${output}/metrics.json`,JSON.stringify(results,null,2));
-  const budget={estadio:1000000,paramo:2000000,bululu:2200000,chichi:4500000,plaza:3000000};
+  const budget={desierto:1600000,llanos:2500000,estadio:1000000,paramo:2000000,bululu:2200000,chichi:4500000,plaza:3000000};
   for(const m of results){
     assert.ok(m.triangles<budget[m.id],`${m.id}: actual rendered triangle budget (${m.triangles})`);
     assert.ok(m.drawCalls<1000,`${m.id}: draw-call budget`);
     assert.ok(m.radius>15,`${m.id}: safe inside corner radius`);assert.ok(m.grade<.4,`${m.id}: drivable gradient`);
     assert.equal(m.crossings,0,`${m.id}: racing line has no self-intersections`);
     if(['paramo','chichi'].includes(m.id))assert.ok(m.elevation>75,`${m.id}: sustained mountain descent/ascent`);
-    const features={paramo:['summit-terminal','glacial-lake'],bululu:['roques-village','coastal-water'],chichi:['diving-school','chichi-river','coastal-lookout'],plaza:['plaza-waterfront','maracaibo-bridge','canal-water']}[m.id]||[];
+    const features={desierto:['pana-gas-yard','wind-carved-dunes','canyon-gateway-1','canyon-gateway-2','canyon-buttresses','desert-oasis','oasis-well-stop'],llanos:['hacienda-pana-yard','eastern-cattle-hato','llanos-cano','llanos-connected-wetlands','estero-road-bridges','llanos-roadside-arepera'],paramo:['summit-terminal','glacial-lake'],bululu:['roques-village','coastal-water'],chichi:['diving-school','chichi-river','coastal-lookout'],plaza:['plaza-waterfront','maracaibo-bridge','canal-water']}[m.id]||[];
+    if(['desierto','llanos'].includes(m.id)){assert.ok(m.length>1800,`${m.id}: expanded journey`);assert.equal(Object.keys(m.assetCounts).length,10,`${m.id}: all ten pack models placed`);assert.ok(Object.values(m.assetCounts).every(n=>n>0),`${m.id}: nonempty placements`);}
     for(const name of features)assert.ok(m.names.includes(name),`${m.id}: ${name} exists`);
   }
   assert.deepEqual(errors,[]);console.log('PASS: registry migration, landmarks, elevation, rendering budgets and visual captures.');
@@ -69,9 +70,9 @@ try{
   await game.goto(`${base}/g/derrape/?debug&manual&track=estadio`);await game.waitForFunction(()=>window.garage?.car);
   for(const {id} of results){
     await game.evaluate(async id=>{toGarage();buildTrack(id);await startRace(0);for(let i=0;i<270;i++)updateRace(1/60);},id);
-    const views={estadio:[.06,.34,.65],paramo:[.1,.5,.72],bululu:[.1,.45,.86],chichi:[.12,.48,.75],plaza:[.08,.36,.7]}[id];
+    const views={desierto:[.025,.22,.43,.59,.75,.9],llanos:[.025,.18,.35,.53,.66,.83],estadio:[.06,.34,.65],paramo:[.1,.5,.72],bululu:[.1,.45,.86],chichi:[.12,.48,.75],plaza:[.08,.36,.7]}[id];
     for(const [i,u] of views.entries()){
-      const name=['early','middle','late'][i];
+      const name=['early','middle','late'][i]||`sector-${i+1}`;
       const metrics=await game.evaluate(async u=>{
         const THREE=await import('three');race.state='go';race.count=0;
         const T=getActiveTrack(),s=u*T.TOTAL,p=T.pointAt(s),q=T.pointAt(s+.5),c=race.player;

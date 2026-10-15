@@ -55,8 +55,12 @@ clean: only `README.md` and `.gitignore` belong there. Everything else lives her
   Gates span 3–24 m and expose `userData.setOpen(0..1)`; fences span 2–30 m
   along X. Rock arches span 4–28 m. Keep gate, stable, arch, tire and well
   openings usable. The wind pump and puddle use absolute-time ticks; keep the
-  water shader outside static batches. Llanos uses the shared ranch house and
-  windmill; Desierto uses the cardón, gas station and road-spanning rock arch.
+  water shader outside static batches. The rebuilt Llanos and Desierto circuits
+  each use all ten models from their respective pack. Their game-local
+  `*-layout.js` modules own routes and terrain; `*-world.js` owns placements.
+  `country-details.js` supplies swept bridge decks, road shoulders and grasses.
+  Llanos' connected water uses the terrain's grid and signed bed depth to avoid
+  coplanar pond seams; keep both bridge channels below the racing road.
   See `../docs/knowledge/llanos-desert-props.md` for parameters and proof.
   Chi Chi's five thermal landmarks live in `engine/thermal-props.js` and the
   Studio category `Termales`. `thermal-steam.js` uses instanced camera-facing
@@ -109,7 +113,7 @@ clean: only `README.md` and `.gitignore` belong there. Everything else lives her
   landmarks. Island terrain/scenery/beach modules now live in `engine/`;
   old Bululú paths re-export them. Keep gameplay in the games, and pass route
   clearance to the shared environment instead of copying its assets.
-  Race routes are 1.09–4.88 km with bends in both directions. Plaza extends
+  Race routes are 1.14–4.88 km with bends in both directions. Plaza extends
   the shared courtyard into a pueblo. Its game-local `tracks/plaza-layout.js`
   owns the street grid and hill; `plaza-town.js` builds blocks independently of
   the racing line. Keep streets and buildings clear as well as the race lanes.

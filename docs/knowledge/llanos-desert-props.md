@@ -40,10 +40,13 @@ outside static batches and updates the live material after Studio cloning.
 Studio's `release()` disposes cloned materials as well as factory-owned resources.
 Registering a prop does not add collision, mud physics or driving controls.
 
-The existing Llanos ranch house (scaled to its original site) and windmill use
-these factories. Desierto uses the giant cactus at existing plant heights,
-the abandoned gas station and a 21 m clear-span arch. Other entries are ready
-for placement and correctly list Studio as their consumer.
+The rebuilt Los Llanos and Pana Desierto circuits each use all ten factories in
+their respective pack; all twenty entries now list Derrape as a consumer.
+The ranch circuit has two hatos, an enclosed corral, pasture fences and three
+mud patches. Desierto groups its roadside props at Pana Gas and the oasis,
+with eight terrain-fitted dunes, two 25 m rock gateways and clustered spires.
+Model geometry stays shared through factories; game-local placements, dune
+fitting and enlarged geological formations live in the circuit world modules.
 
 ## Validation
 

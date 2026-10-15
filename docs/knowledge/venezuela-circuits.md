@@ -13,6 +13,8 @@ Bululú. The original Bululú board-game environment is unchanged.
 | Isla Bululú | 2.044 km | 5.1 m | Los Roques-inspired white cays, shallow lagoons, village, lighthouse, peñeros and mangroves; Playa Pana is a sector |
 | Chi Chi | 4.880 km | 195.0 m | High ridge, Aguas del Cielo thermal terraces, mountainside switchbacks, misty forest/waterfall, diving village, crescent bay and river bridges |
 | Plaza Pana | 2.598 km | 25.5 m | Original town plus four canal peninsulas, two-storey villas, docks and a 300 m Maracaibo-inspired bridge |
+| Pana Desierto | 2.243 km | 34.1 m | Pana Gas yard, terrain-fitted dunes, eroded mesas, two rock gateways, canyon pillars and an oasis well stop |
+| Los Llanos | 2.325 km | 2.2 m | Two hatos, working wind pumps, cattle corral, pastures, morichal, connected esteros, two bridges and a roadside arepera |
 
 ## Construction
 
@@ -69,6 +71,40 @@ the helper's numerical return value.
 
 ## Proof
 
+### Ranch and canyon circuit rebuild
+
+`desierto-layout.js` and `llanos-layout.js` own the route, road elevation and
+terrain shapes. Their world modules compose all ten respective pack factories;
+`group.userData.assetCounts` records actual placements for browser proof.
+The main hato and service yard sit alongside the opening straight. Sector signs and
+clear road edges guide the longer laps, with corners in both directions.
+
+Desierto's mesa profiles have irregular, steep walls and broad tops. Dunes reuse
+the pack model but fit owned vertices to sampled terrain and blend their skirts
+into the sand. Cacti and rock pillars use spatial instances. Two 25 m arch
+openings remain outside the 18 m racing corridor. Buildings get foundations;
+small equipment sits on the ground instead of separate square plinths.
+
+Llanos' riverbed is cut after road carving, leaving the race ribbon elevated
+above two channels. `country-details.crossing` sweeps decks below that ribbon
+and rails outside it. The connected water uses the exact 5 m terrain grid and
+triangle split, with signed `waterDepth = surfaceY - groundAt(x,z)`. The water
+shader discards dry fragments; this removes overlapping pond seams and keeps
+the shore on the actual mesh. The caño continues beyond the terrain boundary.
+Do not replace it with coplanar ellipses. Environment animation ticks water once,
+alongside windmills and grazing cattle; static batches exclude these roots.
+
+Measured full-scene geometry is 895,872 triangles / 483 meshes for Desierto and
+1,330,108 / 720 for Llanos. Before the rebuild those were 848,431 / 1,016 and
+1,228,390 / 1,443 respectively. More scenery and longer routes add modest
+geometry while roughly halving mesh counts; these are not FPS measurements.
+Both pass three AI laps, 480 lane-clearance rays, grounded grid/item checks,
+continuous projection and zero terrain intrusion. Maximum grades are 0.1584
+and 0.0140; minimum turn radii are 33.24 m and 30.52 m. Water proof checks
+sampled depth agreement and exactly two wet river crossings below the road.
+Six actual chase views per circuit, detailed model yards and overviews live in
+ignored `art/studio/venezuela/`; old views are in `art/studio/rural-maps/`.
+
 ### Living water and the tidal causeway
 
 `engine/water-surface.js` supplies a single-pass shader for ocean swell, shallow
@@ -76,7 +112,7 @@ caustics, broken shoreline foam, river currents and calmer lakes/canals. Surface
 detail fades with distance to avoid moiré at the horizon. Rivers have transverse
 depth and longitudinal distance attributes; control points run downstream
 (Selva's layout array runs upstream, so its water factory receives a reversed
-copy). Llanos ponds keep their original surface elevation in a wrapper group.
+copy). Llanos' connected caño and esteros share one surface at y=0.65.
 Ocean color and foam sample a 256² RG depth texture from the actual terrain.
 Colors are linear Three.js colors, with tone mapping, color-space and fog chunks
 for both the race renderer and Studio. No extra reflection render pass is used.
@@ -114,7 +150,7 @@ Run with the local server and an external Playwright installation if needed:
 
 ```powershell
 $env:PANA_PLAYWRIGHT_PATH='C:\path\to\playwright'
-$env:PANA_MAP_TEST_TRACKS='estadio,paramo,bululu,chichi,plaza'
+$env:PANA_MAP_TEST_TRACKS='estadio,paramo,bululu,chichi,plaza,desierto,llanos'
 node Pana/games/derrape/tests/maps.browser.js
 node Pana/games/derrape/tests/venezuela.browser.js
 node Pana/games/derrape/tests/chichi.browser.js
@@ -124,8 +160,9 @@ node Pana/games/derrape/tests/loading.browser.js
 
 The map suite completes three laps, exercises every item row, casts 480 scenery
 clearance rays per circuit, and checks road projection, gradients, finish-line
-alignment and terrain intrusion. All five rebuilt circuits pass; minimum turn
-radii range from 16.6 to 31.2 m and maximum grades remain below 0.326.
+alignment and terrain intrusion. The five earlier rebuilds and both ranch/canyon
+circuits pass; minimum turn radii range from 16.6 to 33.3 m and maximum grades
+remain below 0.326.
 `venezuela.browser.js` checks registry migration, landmarks, rendering budgets,
 and captures overview, top, detail and actual chase-camera views. The Chi Chi
 suite checks wet braking/slip, dry defaults, bridge water, model grounding,

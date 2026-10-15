@@ -27,7 +27,7 @@ export const ASSETS = [
     ['048','old-tractor','Tractor viejo','oldTractor','Tractor rojo gastado con motor, escape, ruedas estriadas y enganche.'],
     ['049','mud-puddle','Módulo de charco de barro','mudPuddle','Agua marrón con ondas suaves, orilla irregular y huellas.'],
     ['050','ranch-water-tower','Torre de agua del hato','ranchWaterTower','Tanque acanalado sobre estructura de madera con escalera y tubería.'],
-  ].map(([number,id,name,factory,description])=>({...object(id,name,'Llanos','/engine/ranch-props.js',factory,['llaneroRanchHouse','waterWindmill'].includes(factory)?['Derrape']:['Pana Studio']),description,tags:[number,'llanos','hato','ranch']})),
+  ].map(([number,id,name,factory,description])=>({...object(id,name,'Llanos','/engine/ranch-props.js',factory,['Derrape']),description,tags:[number,'llanos','hato','ranch']})),
   // Desert 061–070: eroded sandstone, abandoned roadside props and dry flora.
   ...[
     ['061','giant-cactus','Cardón gigante','giantCactus','Cardón maduro con brazos, costillas, flores y un retoño basal.'],
@@ -40,7 +40,7 @@ export const ASSETS = [
     ['068','broken-wagon','Carreta de madera rota','brokenWagon','Tablas faltantes, rueda con radios rotos y varas de tiro.'],
     ['069','desert-warning-sign','Señal de peligro del desierto','desertWarningSign','Advertencia de cañón sobre poste de madera envejecida.'],
     ['070','desert-well','Pozo viejo del desierto','desertWell','Brocal hueco de piedra, torno con cuerda, balde y pequeño tejado.'],
-  ].map(([number,id,name,factory,description])=>({...object(id,name,'Desierto','/engine/desert-props.js',factory,['giantCactus','desertRockArch','abandonedGasStation'].includes(factory)?['Derrape']:['Pana Studio']),description,tags:[number,'desierto','cañón','desert']})),
+  ].map(([number,id,name,factory,description])=>({...object(id,name,'Desierto','/engine/desert-props.js',factory,['Derrape']),description,tags:[number,'desierto','cañón','desert']})),
   ...[
     ['hot-spring-pool','Poza termal','hotSpringPool','Agua mineral, borde de travertino, ondas y vapor.'],
     ['steam-vent','Fumarola','steamVent','Respiradero de roca con una columna de vapor animada.'],

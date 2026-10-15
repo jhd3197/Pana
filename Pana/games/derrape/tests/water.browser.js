@@ -66,14 +66,21 @@ try{
   console.log(JSON.stringify(tide));
   const worlds=[];
   for(const [id,position,target] of [
-    ['llanos',[-40,23,48],[-10,0,20]],['selva',[-90,48,-120],[-45,4,-173]],
+    ['llanos',[210,65,230],[95,0,95]],['selva',[-90,48,-120],[-45,4,-173]],
     ['chichi',[140,43,350],[165,19,275]],['paramo',[90,110,-60],[35,72,-125]],
-    ['plaza',[505,35,385],[440,0,322]],['desierto',[68,22,48],[37,0,22]],
+    ['plaza',[505,35,385],[440,0,322]],['desierto',[-110,80,-110],[-177,22,-190]],
   ]){
     const result=await page.evaluate(async([id,position,target])=>{
       toGarage();buildTrack(id);await startRace(0);const T=getActiveTrack(),water=[];
       T.animated.forEach(o=>o.userData.tick(23,.016));
       T.group.traverse(o=>{if(o.userData.waterSurface)water.push({name:o.name,time:o.material.uniforms.time.value});});
+      if(id==='llanos'){
+        const river=T.group.getObjectByName('llanos-cano'),geo=river.geometry,pos=geo.attributes.position,depth=geo.attributes.waterDepth;
+        let error=0,crossings=0,wasWet=false;
+        for(let i=0;i<pos.count;i++)error=Math.max(error,Math.abs(depth.getX(i)-(pos.getY(i)-T.terrainAt(pos.getX(i),pos.getZ(i)))));
+        for(let s=0;s<T.TOTAL;s+=2){const p=T.pointAt(s),wet=T.terrainAt(p.x,p.y)<.65;if(wet&&!wasWet)crossings++;wasWet=wet;}
+        if(error>1e-4||crossings!==2)throw Error(`Llanos wetland depth error ${error}, bridge crossings ${crossings}`);
+      }
       race.camera.position.set(...position);race.camera.lookAt(...target);renderer.render(race.scene,race.camera);
       return {id,water,calls:renderer.info.render.calls};
     },[id,position,target]);

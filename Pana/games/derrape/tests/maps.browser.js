@@ -83,9 +83,10 @@ try {
       }
       T.group.traverse(o => {
         if (o.geometry?.attributes.position) for (const v of o.geometry.attributes.position.array) if (!Number.isFinite(v)) finite = false;
-        if (o.name === 'island-river') {
+        if (o.name === 'island-river' || o.name === 'llanos-cano') {
           const pos = o.geometry.attributes.position, p = new THREE.Vector3();
           for (let i = 0; i < pos.count; i++) {
+            if(o.geometry.attributes.waterDepth?.getX(i)<=.015)continue;
             p.fromBufferAttribute(pos, i).applyMatrix4(o.matrixWorld);
             if (Math.abs(T.offsetOf(p.x, p.z)) < T.HW && p.y > T.surfaceAt(p.x, p.z) - 0.1) riverClear = false;
           }
