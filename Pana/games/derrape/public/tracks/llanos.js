@@ -5,6 +5,7 @@
 
 import * as THREE from 'three';
 import { M, mesh, box, canvasMat } from '../car-kit.js';
+import { llaneroRanchHouse, waterWindmill } from '/engine/ranch-props.js';
 import { marketStall, barrel, crate, cooler } from '/engine/plaza-props.js';
 
 // ---------- llanos-only props ----------
@@ -87,22 +88,7 @@ function barn() {
 
 // Small white ranch house with a red roof and a little porch.
 function ranchHouse() {
-  const g = new THREE.Group();
-  const white = M(0xf6f1e4, { roughness: 0.85 });
-  const red = M(0xb5462f, { roughness: 0.7 });
-  const wood = M(0x6b4226, { roughness: 0.9 });
-  g.add(box(5, 2.5, 3.8, white, 0, 1.25, 0));
-  const roof = gableRoof(5.6, 1.5, 4.4, red, white);
-  roof.position.y = 2.5;
-  g.add(roof);
-  g.add(box(5, 0.14, 1.5, red, 0, 2.15, 2.55));                 // porch roof
-  g.add(box(5, 0.18, 1.5, wood, 0, 0.09, 2.6));                 // porch deck
-  for (const sx of [1, -1]) g.add(box(0.16, 2.15, 0.16, wood, sx * 2.2, 1.07, 3.1));
-  g.add(box(0.9, 1.8, 0.1, wood, 0, 1.0, 1.92));                // door
-  for (const sx of [1, -1]) {
-    g.add(box(0.9, 0.9, 0.08, M(0x6d8fae, { roughness: 0.3 }), sx * 1.6, 1.45, 1.92));
-  }
-  return g;
+  const g = llaneroRanchHouse(); g.scale.setScalar(.72); return g;
 }
 
 // Brahman cow: cream/grey body, shoulder hump, dewlap and short horns.
@@ -250,7 +236,7 @@ export default {
     // ranch cluster inside the loop: red barn, white house, windmill
     at(group, barn(), { x: 30, z: -24, y: 0.1 }, 0.6);
     at(group, ranchHouse(), { x: 40, z: -16, y: 0.2 }, -0.5);
-    at(group, kit.windmill({ h: 9 }), { x: 2, z: -14, y: 0.1 });
+    at(group, waterWindmill({ height: 9 }), { x: 2, z: -14, y: 0.1 });
 
     // marsh ponds inside the loop; pond y lifted so the water covers the
     // gentle terrain bumps (dune 0.4). Shores get reeds + grey rocks.

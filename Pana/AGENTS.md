@@ -48,6 +48,16 @@ clean: only `README.md` and `.gitignore` belong there. Everything else lives her
   Mountain bridges span 6–40 m, guardrails 2–30 m; their long axis is X.
   Cliff end profiles must match across seeds. The clock and cable car use
   absolute-time `userData.tick(t)`; dispose owned sign textures when released.
+  Llanos 041–050 and Desierto 061–070 live in `engine/ranch-props.js` and
+  `engine/desert-props.js`, with construction details in `rural-kit.js`.
+  Their Studio categories each contain ten models. The giant cardón reuses the
+  existing cactus sculpt; keep the smaller Cardón entry in Vegetación.
+  Gates span 3–24 m and expose `userData.setOpen(0..1)`; fences span 2–30 m
+  along X. Rock arches span 4–28 m. Keep gate, stable, arch, tire and well
+  openings usable. The wind pump and puddle use absolute-time ticks; keep the
+  water shader outside static batches. Llanos uses the shared ranch house and
+  windmill; Desierto uses the cardón, gas station and road-spanning rock arch.
+  See `../docs/knowledge/llanos-desert-props.md` for parameters and proof.
   Chi Chi's five thermal landmarks live in `engine/thermal-props.js` and the
   Studio category `Termales`. `thermal-steam.js` uses instanced camera-facing
   quads, seeded phases and absolute time. Keep its shader culling bounds broad;

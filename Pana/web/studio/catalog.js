@@ -15,6 +15,32 @@ const character = (id, name, options = {}) => ({ id, name, category: 'Personajes
   async build() { const { buildCharacter } = await import('/engine/character.js'); const model = buildCharacter(DEFAULT_AVATAR, { quality: 'studio', ...options }); return { group: model.group, update: (t, dt) => model.update(dt), dispose: () => model.dispose() }; },
 });
 export const ASSETS = [
+  // Llanos 041–050: grounded ranch buildings, working machinery and scenery.
+  ...[
+    ['041','ranch-house','Casa de hato llanero','llaneroRanchHouse','Casa encalada con tejas, porche, persianas y un chinchorro tejido.'],
+    ['042','corral-gate','Portón de corral','corralGate','Dos hojas de madera con bisagras; ancho y apertura ajustables.'],
+    ['043','hay-bale','Paca de heno','hayBale','Rollo de paja con fibras en espiral y dos amarres.'],
+    ['044','water-windmill','Molino de agua','waterWindmill','Torre de celosía, rotor de dieciséis aspas y bomba animada.'],
+    ['045','horse-stable','Caballeriza','horseStable','Tres puestos con divisiones de madera, cama de paja y entrada abierta.'],
+    ['046','feeding-trough','Comedero de ganado','feedingTrough','Artesa abierta de madera con patas y forraje.'],
+    ['047','ranch-fence','Cerca de hato','ranchFence','Tres travesaños, postes y refuerzos; longitud ajustable.'],
+    ['048','old-tractor','Tractor viejo','oldTractor','Tractor rojo gastado con motor, escape, ruedas estriadas y enganche.'],
+    ['049','mud-puddle','Módulo de charco de barro','mudPuddle','Agua marrón con ondas suaves, orilla irregular y huellas.'],
+    ['050','ranch-water-tower','Torre de agua del hato','ranchWaterTower','Tanque acanalado sobre estructura de madera con escalera y tubería.'],
+  ].map(([number,id,name,factory,description])=>({...object(id,name,'Llanos','/engine/ranch-props.js',factory,['llaneroRanchHouse','waterWindmill'].includes(factory)?['Derrape']:['Pana Studio']),description,tags:[number,'llanos','hato','ranch']})),
+  // Desert 061–070: eroded sandstone, abandoned roadside props and dry flora.
+  ...[
+    ['061','giant-cactus','Cardón gigante','giantCactus','Cardón maduro con brazos, costillas, flores y un retoño basal.'],
+    ['062','sand-dune','Módulo de duna','sandDune','Cresta asimétrica y ondulaciones de arena con bordes a nivel del suelo.'],
+    ['063','desert-rock-arch','Arco de roca del desierto','desertRockArch','Arco erosionado de estratos cálidos con paso abierto y ancho ajustable.'],
+    ['064','abandoned-gas-station','Gasolinera abandonada','abandonedGasStation','Marquesina oxidada, surtidores con mangueras y local clausurado.'],
+    ['065','rusted-pickup','Camioneta oxidada','rustedPickup','Cabina con interior visible y cajón abierto de madera gastada.'],
+    ['066','roadside-tire-pile','Pila de cauchos','roadsideTirePile','Cauchos huecos apilados y uno recostado, con bandas de rodadura.'],
+    ['067','canyon-spire','Aguja de roca del cañón','canyonSpire','Columna irregular con estratos y bloques erosionados al pie.'],
+    ['068','broken-wagon','Carreta de madera rota','brokenWagon','Tablas faltantes, rueda con radios rotos y varas de tiro.'],
+    ['069','desert-warning-sign','Señal de peligro del desierto','desertWarningSign','Advertencia de cañón sobre poste de madera envejecida.'],
+    ['070','desert-well','Pozo viejo del desierto','desertWell','Brocal hueco de piedra, torno con cuerda, balde y pequeño tejado.'],
+  ].map(([number,id,name,factory,description])=>({...object(id,name,'Desierto','/engine/desert-props.js',factory,['giantCactus','desertRockArch','abandonedGasStation'].includes(factory)?['Derrape']:['Pana Studio']),description,tags:[number,'desierto','cañón','desert']})),
   ...[
     ['hot-spring-pool','Poza termal','hotSpringPool','Agua mineral, borde de travertino, ondas y vapor.'],
     ['steam-vent','Fumarola','steamVent','Respiradero de roca con una columna de vapor animada.'],
@@ -127,7 +153,7 @@ export const ASSETS = [
     async build() { const model = makeTrack(track); return { group: model.build(), bounds: track.previewBounds ? new Box3(new Vector3(...track.previewBounds[0]), new Vector3(...track.previewBounds[1])) : new Box3(new Vector3(-model.bounds.x - 20, 0, -model.bounds.z - 20), new Vector3(model.bounds.x + 20, 35, model.bounds.z + 20)), update: (t, dt) => model.animated.forEach(o => o.userData.tick?.(t, dt)) }; },
   })),
 ];
-export const CATEGORIES = ['Todos', 'Personajes', 'Vestuario', 'Objetos', 'Emblemas', 'Pueblo', 'Selva', 'Páramo', 'Termales', 'Vegetación', 'Vehículos', 'Mapas'];
+export const CATEGORIES = ['Todos', 'Personajes', 'Vestuario', 'Objetos', 'Emblemas', 'Pueblo', 'Selva', 'Llanos', 'Páramo', 'Desierto', 'Termales', 'Vegetación', 'Vehículos', 'Mapas'];
 export function sourcePath(url) {
   return url.startsWith('/engine/') ? `Pana${url}` : url.replace(/^\/g\/([^/]+)\//, 'Pana/games/$1/public/');
 }

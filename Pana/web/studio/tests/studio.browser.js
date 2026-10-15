@@ -21,12 +21,14 @@ try {
   await page.waitForFunction(() => panaLibrary.selected === 'corn' && document.querySelector('#preview-status').hidden);
   await page.locator('#search').fill('zzzz-missing'); assert.equal(await page.locator('#empty').isVisible(), true);
   await page.locator('#clear-search').click();
-  for (const [category, count] of [['Pueblo', 10], ['Páramo', 8], ['Termales', 5], ['Vegetación', 22]]) {
+  for (const [category, count] of [['Pueblo', 10], ['Llanos', 10], ['Desierto', 10], ['Páramo', 8], ['Termales', 5], ['Vegetación', 22]]) {
     await page.locator(`[data-category="${category}"]`).click();
     assert.equal(await page.locator('[data-asset]').count(), count, `${category} registrations`);
   }
   await page.locator('[data-category="Todos"]').click();
   await page.locator('#search').fill('051'); assert.equal(await page.locator('[data-asset="frailejon"]').count(), 1);
+  await page.locator('#search').fill('041'); assert.equal(await page.locator('[data-asset="ranch-house"]').count(), 1);
+  await page.locator('#search').fill('070'); assert.equal(await page.locator('[data-asset="desert-well"]').count(), 1);
   await page.locator('#search').fill('');
   const downloadPromise = page.waitForEvent('download'); await page.locator('#export').click(); const download = await downloadPromise;
   assert.equal(download.suggestedFilename(), 'pana-studio-inventario.json'); await download.saveAs(`${output}/inventory.json`);

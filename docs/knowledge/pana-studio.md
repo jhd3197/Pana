@@ -8,11 +8,12 @@ normal port fallback applies. `-NoAutoPort` makes that conflict explicit.
 
 ## Library and extension contract
 
-`web/studio/catalog.js` is the curated registration point, currently 115 resources
+`web/studio/catalog.js` is the curated registration point, currently 135 resources
 including twenty-two vegetation models, nine Pana landmarks (`Emblemas`),
 ten Pueblo models, seven jungle structures (`Selva`), eight Páramo structures
-and five thermal landmarks (`Termales`) used by Chi Chi.
-See `shared-props.md` and `pueblo-paramo-props.md`.
+and five thermal landmarks (`Termales`) used by Chi Chi, plus ten Llanos and
+ten Desierto models. See `shared-props.md`, `pueblo-paramo-props.md` and
+`llanos-desert-props.md`.
 It derives props from `PLAZA_PROPS`, recipes/stations from Cocina's definitions,
 vehicles from `CARS`, and circuits from `TRACKS`. Other shared factories have
 explicit entries. This is a development asset catalog, not player inventory or

@@ -3,27 +3,11 @@
 // the other maps follow.
 
 import * as THREE from 'three';
+import { giantCactus, desertRockArch, abandonedGasStation } from '/engine/desert-props.js';
 import { M, mesh, box, tube, canvasMat } from '../car-kit.js';
 
 // ---------- desert-only props ----------
-function saguaro({ h = 5, seed = 1 } = {}) {
-  const g = new THREE.Group();
-  const green = M(0x4a8f3c, { roughness: 0.9 });
-  const trunk = mesh(new THREE.CylinderGeometry(0.4, 0.5, h, 9), green, 0, h / 2, 0);
-  g.add(trunk);
-  g.add(mesh(new THREE.SphereGeometry(0.4, 9, 6), green, 0, h, 0));
-  const rand = (n) => { const v = Math.sin(seed * 127.1 + n * 311.7) * 43758.5453; return v - Math.floor(v); };
-  const arms = 1 + Math.floor(rand(0) * 2);
-  for (let i = 0; i < arms; i++) {
-    const side = i === 0 ? 1 : -1;
-    const y0 = h * (0.4 + rand(1 + i) * 0.25);
-    const reach = 0.9 + rand(2 + i) * 0.5;
-    g.add(tube([0, y0, 0], [side * reach, y0 + 0.1, 0], 0.28, green));
-    g.add(mesh(new THREE.CylinderGeometry(0.28, 0.28, 1.6, 8), green, side * reach, y0 + 0.9, 0));
-    g.add(mesh(new THREE.SphereGeometry(0.28, 8, 6), green, side * reach, y0 + 1.7, 0));
-  }
-  return g;
-}
+function saguaro({ h = 5, seed = 1 } = {}) { return giantCactus({ height: h, seed }); }
 
 function barrelCactus({ seed = 2 } = {}) {
   const g = new THREE.Group();
@@ -68,43 +52,9 @@ function mesa(w, h, { seed = 4 } = {}) {
 
 // Natural rock arch straddling the road: legs clear of the car corridor,
 // lintel high enough to drive under.
-function rockArch() {
-  const g = new THREE.Group();
-  const rockM = M(0xb5654a, { roughness: 1 });
-  const l = box(2.6, 11, 2.4, rockM, -11, 5.5, 0);
-  l.rotation.z = 0.08;
-  const r = box(2.6, 11, 2.4, rockM, 11, 5.5, 0);
-  r.rotation.z = -0.08;
-  const top = box(25, 2.8, 2.6, rockM, 0, 11.6, 0);
-  top.rotation.z = 0.03;
-  g.add(l, r, top);
-  return g;
-}
+function rockArch() { return desertRockArch({ span: 21, height: 10, depth: 3 }); }
 
-function gasStation() {
-  const g = new THREE.Group();
-  const cream = M(0xf0e2c8, { roughness: 0.9 });
-  const red = M(0xcf3f2e, { roughness: 0.7 });
-  g.add(box(5, 2.8, 3.4, cream, -1, 1.4, -1));                              // shop
-  g.add(box(5.6, 0.3, 4, red, -1, 2.95, -1));                               // shop roof
-  g.add(box(6.5, 0.25, 4.5, cream, 0.5, 3.6, 2.2));                         // canopy
-  for (const s of [1, -1]) g.add(box(0.22, 3.6, 0.22, M(0x9a9aa4, { metalness: 0.4 }), 0.5 + s * 2.8, 1.8, 2.2));
-  for (const s of [1, -1]) {                                                 // pumps
-    g.add(box(0.7, 1.3, 0.5, red, 0.5 + s * 1.2, 0.65, 2.2));
-    g.add(mesh(new THREE.SphereGeometry(0.2, 8, 6), M(0xf6f1e4), 0.5 + s * 1.2, 1.5, 2.2));
-  }
-  const sign = canvasMat(256, 96, (ctx) => {
-    ctx.fillStyle = '#f0e2c8';
-    ctx.fillRect(0, 0, 256, 96);
-    ctx.fillStyle = '#cf3f2e';
-    ctx.font = '52px "Luckiest Guy", system-ui, sans-serif';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText('PANA GAS', 128, 52);
-  });
-  g.add(mesh(new THREE.BoxGeometry(3.6, 1.4, 0.15), sign, -1, 4.2, 0.9));
-  return g;
-}
+function gasStation() { return abandonedGasStation(); }
 
 // Wooden signpost with a cow skull.
 function skullSign() {
