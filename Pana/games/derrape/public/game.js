@@ -307,7 +307,7 @@ function beginTrack(id) {
   if (race.trackGroup) {
     race.items?.dispose();
     race.scene.remove(race.trackGroup);
-    race.trackGroup.traverse((o) => o.geometry?.dispose());
+    race.trackGroup.traverse((o) => { o.userData.dispose?.(); o.geometry?.dispose(); });
     // Built runtimes retain environment animation/terrain closures. Evict the
     // old runtime too, so metadata caching cannot retain eight whole worlds.
     trackRoutes.delete(T.id);

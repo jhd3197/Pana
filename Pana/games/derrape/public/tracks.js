@@ -7,16 +7,16 @@ import * as kit from './track-kit.js';
 import estadio from './tracks/estadio.js';
 import desierto from './tracks/desierto.js';
 import llanos from './tracks/llanos.js';
-import playa from './tracks/playa.js';
+import chichi from './tracks/chichi.js';
 import selva from './tracks/selva.js';
 import paramo from './tracks/paramo.js';
 import plaza from './tracks/plaza.js';
 import bululu from './tracks/bululu.js';
 
-export const TRACKS = [estadio, desierto, llanos, playa, selva, paramo, plaza, bululu];
+export const TRACKS = [estadio, desierto, llanos, chichi, selva, paramo, plaza, bululu];
 
 export function getTrack(id) {
-  return TRACKS.find((t) => t.id === id) || TRACKS[0];
+  return TRACKS.find((t) => t.id === (id === 'playa' ? 'bululu' : id)) || TRACKS[0];
 }
 
 // ---------- geometry backends ----------

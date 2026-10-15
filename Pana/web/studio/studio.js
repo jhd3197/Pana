@@ -176,6 +176,7 @@ function tick(now) {
 requestAnimationFrame(tick);
 function selectFromHash() {
   let id = 'pana'; try { id = decodeURIComponent(location.hash.slice(1)) || id; } catch { /* Malformed links use the default asset. */ }
+  if (id === 'track-playa') { id = 'track-bululu'; history.replaceState(null, '', '#track-bululu'); }
   select(id);
 }
 selectFromHash(); addEventListener('hashchange', selectFromHash);

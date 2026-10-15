@@ -5,6 +5,7 @@ import { marketStall, streetLamp, bench } from '/engine/plaza-props.js';
 import { M, mesh, box, rng } from '/engine/props.js';
 import { bake, palm, mangoTree, ceiba } from '/engine/flora.js';
 import { AVENUES, STREETS, BLOCKS, STREET_HALF, townHeight, streetDistance } from './plaza-layout.js';
+import { waterfrontHeight,overWater,createWaterfront } from './plaza-waterfront.js';
 
 const COLORS=[0xe2b267,0x66a8a0,0xdd9277,0xaabb82,0xe7ce98,0x7d9fac];
 const PAVING=0xd2bd95, ROAD=0x8b958c;
@@ -30,7 +31,8 @@ export function createTown(T) {
   // A level cross-section through the hill supports roads, paving and foundations.
   function groundAt(x,z) {
     const d=Math.abs(T.offsetOf(x,z)),blend=THREE.MathUtils.smoothstep(d,T.HW+8,T.HW+25);
-    return THREE.MathUtils.lerp(T.surfaceAt(x,z)-0.3,townHeight(x,z)-0.3,blend);
+    const land=waterfrontHeight(x,z,townHeight(x,z)-0.3);
+    return overWater(x,z)?land:THREE.MathUtils.lerp(T.surfaceAt(x,z)-0.3,land,blend);
   }
   const land=surface(-650,-700,850,600,groundAt,0xffffff,5);
   const p=land.geometry.attributes.position,colors=[],lawn=new THREE.Color(0x8fab72),dry=new THREE.Color(0xb7b581);
@@ -41,7 +43,7 @@ export function createTown(T) {
   land.material=M(0xffffff,{vertexColors:true,flatShading:false,roughness:1});land.name='plaza-terrain';group.add(land);
 
   // Streets extend through junctions into the outskirts, independently of the lap.
-  for(const x of AVENUES)ground.add(surface(x-STREET_HALF,-355,x+STREET_HALF,325,(x,z)=>groundAt(x,z)+0.2,ROAD,2));
+  for(const x of AVENUES)ground.add(surface(x-STREET_HALF,-355,x+STREET_HALF,x>265?275:325,(x,z)=>groundAt(x,z)+0.2,ROAD,2));
   for(const z of STREETS)ground.add(surface(-355,z-STREET_HALF,465,z+STREET_HALF,(x,z)=>groundAt(x,z)+0.21,ROAD,2));
   // Main avenues keep going beyond the built blocks toward neighboring towns.
   for(const z of [-200,60])for(const [a,b] of [[-650,-355],[465,850]])ground.add(surface(a,z-STREET_HALF,b,z+STREET_HALF,(x,z)=>groundAt(x,z)+0.21,ROAD,2));
@@ -57,6 +59,7 @@ export function createTown(T) {
   }
   const prototypes=COLORS.map((color,i)=>house({w:8.2,h:5.4+(i%2)*0.6,color,seed:i})),occupied=[];
   function building(x,z,turn,seed,scale=1) {
+    if(groundAt(x,z)<-0.4||x>270&&z>280)return;
     if(!clear(x,z,10*scale)||streetDistance(x,z)<STREET_HALF+8.5*scale||(Math.abs(x)<68&&z>-57&&z<48)||occupied.some(p=>Math.hypot(x-p.x,z-p.z)<12*scale))return;
     const width=11.6*scale,depth=11*scale;
     const samples=[[0,0],[-width/2,-depth/2],[width/2,-depth/2],[-width/2,depth/2],[width/2,depth/2]].map(([a,b])=>
@@ -78,6 +81,7 @@ export function createTown(T) {
   for(let x=-280;x<420;x+=30){building(x,-337,0,Math.floor(x+400),0.86);building(x,303,Math.PI,Math.floor(x+500),0.86);}
   for(let z=-290;z<280;z+=31){building(-329,z,Math.PI/2,Math.floor(z+400),0.86);building(434,z,-Math.PI/2,Math.floor(z+500),0.86);}
   function tree(x,z,seed,large=false) {
+    if(groundAt(x,z)<-0.4||x>270&&z>280)return;
     if(!clear(x,z,6)||streetDistance(x,z)<15||occupied.some(p=>Math.hypot(x-p.x,z-p.z)<9))return;
     const model=large?ceiba({seed}):seed%3?mangoTree({seed,h:6+seed%3,fruit:false}):palm({seed,h:9+seed%4});
     const lift=x>-300&&x<405&&z>-310&&z<275?0.47:0.03;
@@ -124,6 +128,7 @@ export function createTown(T) {
   const plaza=createPlazaEnvironment({town:true,clearance:(x,z,r)=>clear(x*2,z*2,r*2)});
   plaza.group.scale.setScalar(2);group.add(plaza.group);
   group.add(bake(ground,{cellSize:200}),bake(buildings,{cellSize:200}),bake(plants,{cellSize:200}));
+  group.add(createWaterfront(T));
   const privateGeometries=new Set();
   for(const root of [ground,buildings,plants,...prototypes])root.traverse(o=>{if(o.geometry)privateGeometries.add(o.geometry);});
   privateGeometries.forEach(g=>g.dispose());

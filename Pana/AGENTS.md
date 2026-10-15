@@ -72,17 +72,26 @@ clean: only `README.md` and `.gitignore` belong there. Everything else lives her
   `../docs/knowledge/cocina.md`. Plaza scenery and the original hunt layout now
   live in `engine/plaza.js` and `engine/plaza-layout.js`; cooking has its own
   station layout and collision rules. Existing Escondidas paths re-export them.
-- Derrape's eight circuits include Plaza Pana and Isla Bululú. All trees come
+- Derrape's eight circuits include Plaza Pana, Isla Bululú and Chi Chi. Playa
+  is now a sector of the Los Roques-inspired race island; legacy `playa` IDs
+  resolve to `bululu`. All trees come
   from `engine/flora.js`; the obsolete `props.js` palm has been removed.
   `createPlazaEnvironment()` provides scenery without lights, while
   `createIslandEnvironment()` shares Bululú's vegetation, harbor, sea and
   landmarks. Island terrain/scenery/beach modules now live in `engine/`;
   old Bululú paths re-export them. Keep gameplay in the games, and pass route
   clearance to the shared environment instead of copying its assets.
-  Race routes are 1.09–2.11 km with bends in both directions. Plaza extends
+  Race routes are 1.09–2.60 km with bends in both directions. Plaza extends
   the shared courtyard into a pueblo. Its game-local `tracks/plaza-layout.js`
   owns the street grid and hill; `plaza-town.js` builds blocks independently of
   the racing line. Keep streets and buildings clear as well as the race lanes.
+  `plaza-waterfront.js` adds Casas Botes and the Maracaibo-inspired bridge.
+  The race island has its own light coastal terrain; the original Bululú
+  board world stays independent. `world-kit.js` batches static landmarks and
+  spatially instances shared flora. Do not pass instances through `bake()`.
+  Páramo and Chi Chi use elevated, continuous roads over carved terrain;
+  keep waterways below the road and inspect actual chase-camera views.
+  See `../docs/knowledge/venezuela-circuits.md` for construction and validation.
   Selva's `selva-world.js` builds the river valley and shared forest assets;
   `selva-temple.js` sweeps a hollow tunnel along the road. Keep the terrain
   below its driving surface and test the chase camera through both portals.

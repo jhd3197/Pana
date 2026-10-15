@@ -34,16 +34,17 @@ Derrape supports multiple maps. Everything lives in `games/derrape/public/`:
   disposed; materials come from shared caches (never dispose those).
 - Track choice persists in `localStorage['derrape:track']`; `?track=<id>`
   overrides. New maps also need their import added to `tracks.js`.
-- Keep loops gentle: min radius of curvature > 15, lap length 1,000–2,200, no
+- Keep loops drivable: min radius of curvature > 15, lap length 1,000–2,600, no
   self-intersections. Verify with a numeric spline check before shipping
   (control-point drafts often hide tight corners between points).
 
 ## Shared worlds (2026-10-14)
 
-The registry has eight maps: estadio, desierto, llanos, playa, selva, paramo,
-plaza and bululu. Plaza now extends the shared courtyard into a 1,502-unit town
-route; Bululú has a 2,112-unit coastal and inland course. The other six maps
-range from 1,091 to 1,175 units, with authored bends in both directions.
+The registry has eight maps: estadio, desierto, llanos, chichi, selva, paramo,
+plaza and bululu. Playa is consolidated into Bululú, including legacy ID and
+Studio bookmark migration. The five rebuilt routes are 2.04–2.60 km; see
+`venezuela-circuits.md` for current construction, landmarks and proof. The
+shared-world notes below describe the original integration and its contracts.
 
 - `track-kit.js` wraps `/engine/flora.js` builders with `bake()` so the current
   palm's many leaflets do not become hundreds of draw calls per tree. The
@@ -95,10 +96,9 @@ and `PANA_TEST_URL` (server origin). No runtime dependency is added to the games
 - The Plaza race uses the shared `house()` and `town:true` courtyard option;
   route clearance opens side streets and the front garden. Its other games
   keep their default courtyard. The extended town is batched into 200-unit cells.
-- Bululú race geography scales by 3.2 in X/Z and 1.7 in Y. Its route leaves the
-  coast, crosses the river and returns through the forest and harbor. Shared
-  props compensate for that transform so trees and houses do not become giants.
-  Terrain road queries must divide distance/width by 3.2 and height by 1.7.
+- The original Bululú race scaled the board world by 3.2 in X/Z and 1.7 in Y.
+  That race environment has been replaced by authored Los Roques-inspired
+  terrain in `tracks/bululu.js`; the board keeps its original shared world.
 - Optional spatial cells in `flora.bake()` preserve frustum/shadow culling on
   large environments. Keep the default for existing compact game scenes.
 - Construct the finish stripe from along-road and across-road coordinates.
@@ -125,7 +125,7 @@ beyond the built blocks. The street network is scenery: racing retains the
 existing single-loop projection, lap logic and confinement to the marked route.
 
 The route rises from 0 to about 25.5 units, with a maximum grade near 0.321 and
-minimum turn radius above 20. The historic plaza stays flat. The same heightfield
+minimum turn radius above 19. The historic plaza stays flat. The same heightfield
 grounds foundations and city streets; terrain blends to a level cross-section
 under the race. Mesh clearance must be checked with rays, not just the analytic
 height function: coarse terrain interpolation can otherwise poke through road
@@ -137,9 +137,9 @@ The shared plaza's `town:true` option uses a courtyard-sized backing plane;
 the default 170-unit plane remains unchanged for Escondidas/Cocina. Low kerbs
 and temporary barriers replace the race's tyre stacks. Prop constructors and
 materials remain shared. Discard source geometry after batching, and retain
-shared materials. The current town is about 1.40 million triangles and 774
-draw calls in its Studio overview, including 416 homes and 240 more than 80
-units from the route. These counts are inspection evidence, not gameplay data.
+shared materials. Before the waterfront extension, the town was about 1.40
+million triangles and 774 overview draw calls. Current render counts live in
+`venezuela-circuits.md` and the ignored visual-proof metrics.
 
 Optional `track.previewBounds` is a pair of min/max XYZ arrays for Studio;
 Plaza includes the surrounding neighborhoods instead of framing only the lap.
