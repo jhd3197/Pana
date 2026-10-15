@@ -4,6 +4,7 @@ import { frailejon,mountainPine } from '/engine/flora.js';
 import { mountainCabin,mountainTent,stoneLookout,mountainSignpost } from '/engine/mountain-props.js';
 import { summitTerminal,aerialLift,cableTower } from './world-landmarks.js';
 import { ROUTE,roadHeight,baseHeight,LAKE } from './paramo-layout.js';
+import { waterPool } from '/engine/water-surface.js';
 
 export default {
   id:'paramo',name:'Pana Páramo',
@@ -18,8 +19,7 @@ export default {
     const group=new THREE.Group(),world=terrain(T,{bounds:[-620,-610,560,410],base:baseHeight,
       color:(x,z,y)=>new THREE.Color(0x7f925f).lerp(new THREE.Color(0x768b84),smooth(y,70,145)).lerp(new THREE.Color(0xdde7e4),smooth(y+Math.sin(x*.05)*7+Math.cos(z*.06)*6,145,175))});
     group.add(world.land);
-    const lakeGeo=new THREE.CircleGeometry(1,80);lakeGeo.rotateX(-Math.PI/2);
-    const lake=new THREE.Mesh(lakeGeo,new THREE.MeshStandardMaterial({color:0x408d9a,roughness:.2,metalness:.2}));lake.scale.set(LAKE.rx,1,LAKE.rz);lake.position.set(LAKE.x,LAKE.y,LAKE.z);lake.name='glacial-lake';group.add(lake);
+    const lake=waterPool(LAKE.rx,LAKE.rz,{color:0x6daab1,depth:8});lake.position.set(LAKE.x,LAKE.y,LAKE.z);lake.name='glacial-lake';group.add(lake);
     const occupied=[[-35,-275,30],[40,130,23],[-100,120,17],[125,-145,18]];
     const accept=(x,z,y)=>y<140&&Math.hypot((x-LAKE.x)/LAKE.rx,(z-LAKE.z)/LAKE.rz)>1.3&&!occupied.some(([a,b,r])=>Math.hypot(x-a,z-b)<r);
     instances(group,frailejon({seed:51,h:2.3}),scatter(T,world.groundAt,{seed:511,count:170,bounds:[-330,-270,270,245],margin:5,scale:1.5,accept}),'paramo-frailejones');
@@ -33,7 +33,7 @@ export default {
     foundation(group,mountainCabin({seed:52}),-100,120,world.groundAt,{scale:1.8,radius:9,rotation:-.4});
     foundation(group,stoneLookout(),125,-145,world.groundAt,{scale:1.4,radius:8,rotation:1.2});
     for(const [x,z] of [[-190,110],[-205,135],[-175,145]])if(clear(T,x,z,8))foundation(group,mountainTent(),x,z,world.groundAt,{scale:1.6,radius:5,rotation:x});
-    return {group,groundAt:world.groundAt,update:t=>lift.userData.tick(t)};
+    return {group,groundAt:world.groundAt,update:t=>{lift.userData.tick(t);lake.userData.tick(t);}};
   },
   scenery(group,kit,T){
     edges(group,kit,T,{style:'steel',step:6});

@@ -69,6 +69,47 @@ the helper's numerical return value.
 
 ## Proof
 
+### Living water and the tidal causeway
+
+`engine/water-surface.js` supplies a single-pass shader for ocean swell, shallow
+caustics, broken shoreline foam, river currents and calmer lakes/canals. Surface
+detail fades with distance to avoid moiré at the horizon. Rivers have transverse
+depth and longitudinal distance attributes; control points run downstream
+(Selva's layout array runs upstream, so its water factory receives a reversed
+copy). Llanos ponds keep their original surface elevation in a wrapper group.
+Ocean color and foam sample a 256² RG depth texture from the actual terrain.
+Colors are linear Three.js colors, with tone mapping, color-space and fog chunks
+for both the race renderer and Studio. No extra reflection render pass is used.
+
+Tick the live `ShaderMaterial`: Studio clones materials and shader texture
+uniforms. Disposal releases both the original depth texture and any live cloned
+texture. Environments explicitly compose their water update with existing
+landmark animation; normal scenery already receives child ticks.
+
+Bululú's northern sandbar (route progress .665–.805) is lowered to 0.48 m and
+supported by sand, with channels excavated on either side. The 28-second surf
+cycle in `bululu-tide.js` shrinks the dry road from 18 m to 9.5–10.5 m. Its
+animated inner vertices and `tideWetness` use the same front function, with a
+gentle handling transition behind the foam. `def.waterAt(x,z,time,T)` opts in;
+other roads remain dry. Water reduces lateral grip to 0.6, acceleration by up to
+28%, and applies 0.7/s forward drag. Tire spray uses the existing bounded
+particle pool. The dry center retains normal handling, and the ordinary road
+boundary never moves. Race time drives physics and visuals; previews can scrub
+and races can restart without accumulating motion state.
+
+Switching away from Llanos exposed a cleanup issue: character disposal removes
+children, so calling disposers during `Object3D.traverse` invalidates its child
+iteration. `beginTrack` now collects callbacks/geometries before disposal,
+matching Studio's existing release pattern.
+
+`water.browser.js` checks visual/physical shoreline agreement, a dry center over
+two cycles, real-car slowdown/slip, grounded driving, repeatable geometry and
+rendered pixels after scrubbing, animation in all seven water-bearing circuits,
+shader errors and original/cloned texture disposal. It captures low/high tide,
+driver-level views and all water families under ignored `art/studio/water/`.
+
+### Regression commands
+
 Run with the local server and an external Playwright installation if needed:
 
 ```powershell
@@ -77,6 +118,7 @@ $env:PANA_MAP_TEST_TRACKS='estadio,paramo,bululu,chichi,plaza'
 node Pana/games/derrape/tests/maps.browser.js
 node Pana/games/derrape/tests/venezuela.browser.js
 node Pana/games/derrape/tests/chichi.browser.js
+node Pana/games/derrape/tests/water.browser.js
 node Pana/games/derrape/tests/loading.browser.js
 ```
 

@@ -7,7 +7,7 @@ import { sound, Puffs, Debris, makeBubble } from '/engine/fx.js';
 import { createItems, ITEMS, SPIN } from './items.js';
 import { activeItem, canBlock, coinMultiplier, COIN_SPEED, MAX_COINS } from './item-rules.js';
 import { TRACKS, getTrack, makeTrack } from './tracks.js';
-import { roughnessAt,roadGripAt } from './offroad.js';
+import { roughnessAt,roadGripAt,roadWaterAt } from './offroad.js';
 import { loadAvatar, loadName, randomAvatar } from '/engine/avatar.js';
 
 const $ = (id) => document.getElementById(id);
@@ -307,7 +307,11 @@ function beginTrack(id) {
   if (race.trackGroup) {
     race.items?.dispose();
     race.scene.remove(race.trackGroup);
-    race.trackGroup.traverse((o) => { o.userData.dispose?.(); o.geometry?.dispose(); });
+    // Character disposal detaches children. Collect first so cleanup cannot
+    // mutate Three's active traversal when switching away from Los Llanos.
+    const disposers=[],geometries=new Set();
+    race.trackGroup.traverse(o=>{if(o.userData.dispose)disposers.push(o.userData.dispose);if(o.geometry)geometries.add(o.geometry);});
+    disposers.forEach(dispose=>dispose());geometries.forEach(geometry=>geometry.dispose());
     // Built runtimes retain environment animation/terrain closures. Evict the
     // old runtime too, so metadata caching cannot retain eight whole worlds.
     trackRoutes.delete(T.id);
@@ -679,8 +683,9 @@ function stepCar(c, input, dt) {
   const boosting = c.boost > 0;
   const top = t.top * c.skill * coinMultiplier(c);
   const rough=c.onGround?roughnessAt(T,c.x,c.z):0,terrain=T.def.offroad;
-  const grip=c.onGround?roadGripAt(T,c.x,c.z):1;
-  const acceleration=t.accel*(1-rough*(1-(terrain?.accel??1)));
+  const water=c.onGround?roadWaterAt(T,c.x,c.z,race.clock):0;
+  const grip=c.onGround?roadGripAt(T,c.x,c.z,race.clock):1;
+  const acceleration=t.accel*(1-rough*(1-(terrain?.accel??1)))*(1-water*.28);
   const previous={x:c.x,z:c.z};
   if (c.spin > 0) input = { throttle: 0, steer: 0 };   // skidding on a peel: no control
   let fx = Math.sin(c.h), fz = Math.cos(c.h);
@@ -701,6 +706,7 @@ function stepCar(c, input, dt) {
     const cap = rough>0?Math.max(surfaceTop*(boosting?1.5:1),prevVf-48*dt):boosting?top*1.5:Math.max(top,prevVf-20*dt);
     vf = Math.max(-surfaceTop * 0.4, Math.min(cap, vf));
     vf*=Math.exp(-rough*(terrain?.drag??0)*dt);
+    vf*=Math.exp(-water*.7*dt); // shallow surf slows a kart without moving invisible walls
     vr *= Math.exp(-t.grip * grip * dt);   // mineral runoff leaves more lateral slip
     c.steer += (input.steer - c.steer) * Math.min(1, dt * 8);
     const turn = c.steer * t.turn * Math.max(-1, Math.min(1, vf / 10)) * (1 - Math.abs(vf) / top * 0.3);
@@ -821,11 +827,14 @@ function stepCar(c, input, dt) {
   c.scream = Math.max(0, c.scream - dt);
   c.honkT = Math.max(0, c.honkT - dt);
 
-  // dust and damage smoke
+  // Tire spray, dust and damage smoke share the bounded particle pool.
   c.puffT -= dt;
   if (c.puffT <= 0) {
     const kicking = c.onGround && ((input.throttle > 0 && Math.abs(vf) < top * 0.55) || Math.abs(c.vr) > 4);
-    if (kicking) {
+    if (water>.15&&c.onGround&&Math.abs(vf)>7) {
+      for(const side of [-1,1])race.puffs.spawn(new THREE.Vector3(c.x-fx*1.5+rx*side,c.y+.2,c.z-fz*1.5+rz*side),
+        {color:0xc1e9e3,count:1,size:.45,rise:1.2,life:.35,spread:.8});
+    } else if (kicking) {
       race.puffs.spawn(new THREE.Vector3(c.x - fx * 1.6, c.y+0.25, c.z - fz * 1.6), { color: rough>0.1?0x889263:0xe7bd8a, count: 1, size: 0.7, rise: 0.6, life: 0.7 });
     }
     if (boosting) {

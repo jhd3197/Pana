@@ -12,6 +12,7 @@ import { rng, woodSign as mapSign, watchtower, flagPole, rock } from '/engine/pr
 import * as flora from '/engine/flora.js';
 import { buildCharacter } from '/engine/character.js';
 import { randomAvatar } from '/engine/avatar.js';
+import { waterPool,riverSurface } from '/engine/water-surface.js';
 
 // Use the canonical foliage and batch its many leaflets before placement.
 // Cloning the source geometry in bake keeps shared assets safe on map switches.
@@ -258,49 +259,12 @@ function buildRamps(group, T) {
 
 // ---------- water ----------
 function waterPond(rx, rz, { color = 0x2e9db5, y = 0.04 } = {}) {
-  const g = new THREE.Group();
-  const w = new THREE.Mesh(new THREE.CircleGeometry(1, 28),
-    new THREE.MeshStandardMaterial({ color, transparent: true, opacity: 0.85, roughness: 0.15, metalness: 0.3 }));
-  w.rotation.x = -Math.PI / 2;
-  w.scale.set(rx, rz, 1);
-  w.position.y = y;
-  w.receiveShadow = true;
-  g.add(w);
-  const foam = new THREE.Mesh(new THREE.RingGeometry(0.94, 1, 28),
-    new THREE.MeshBasicMaterial({ color: 0xeaf7f7, transparent: true, opacity: 0.5, side: THREE.DoubleSide }));
-  foam.rotation.x = -Math.PI / 2;
-  foam.scale.set(rx, rz, 1);
-  foam.position.y = y + 0.01;
-  g.add(foam);
-  return g;
+  const group=new THREE.Group(),water=waterPool(rx,rz,{color});water.position.y=y;group.add(water);return group;
 }
 
 // A strip of water (river, stream) along control points.
 function waterRibbon(points, w, { color = 0x2e9db5, y = 0.03, closed = false } = {}) {
-  const curve = new THREE.CatmullRomCurve3(points.map(([x, z]) => new THREE.Vector3(x, 0, z)), closed, 'centripetal');
-  const N = Math.max(40, Math.round(curve.getLength() / 1.5));
-  const pts = curve.getSpacedPoints(N);
-  const verts = [];
-  const idx = [];
-  for (let i = 0; i <= N; i++) {
-    const p = pts[i % pts.length], p2 = pts[(i + 1) % pts.length];
-    const tx = p2.x - p.x, tz = p2.z - p.z;
-    const l = Math.hypot(tx, tz) || 1;
-    verts.push(p.x - tz / l * w / 2, y, p.z + tx / l * w / 2, p.x + tz / l * w / 2, y, p.z - tx / l * w / 2);
-    if (i < N) {
-      const a = i * 2;
-      idx.push(a, a + 1, a + 2, a + 1, a + 3, a + 2);
-    }
-  }
-  const geo = new THREE.BufferGeometry();
-  geo.setAttribute('position', new THREE.Float32BufferAttribute(verts, 3));
-  geo.setIndex(idx);
-  geo.computeVertexNormals();
-  const m = new THREE.Mesh(geo, new THREE.MeshStandardMaterial({
-    color, transparent: true, opacity: 0.85, roughness: 0.15, metalness: 0.3, side: THREE.DoubleSide,
-  }));
-  m.receiveShadow = true;
-  return m;
+  return riverSurface(points,w,()=>y,{color,closed});
 }
 
 // Waterfall sheet with scrolling stripes + foam at the base.
@@ -322,7 +286,8 @@ function waterfall(w, h, { color = 0xbfe8f2 } = {}) {
   foam.rotation.x = -Math.PI / 2;
   foam.position.y = 0.06;
   g.add(foam);
-  g.userData.tick = (t, dt) => { tex.offset.y -= dt * 1.4; };
+  g.userData.tick = t => { sheet.material.map.offset.y = -t * 1.4; };
+  g.userData.dispose=()=>{tex.dispose();if(sheet.material.map!==tex)sheet.material.map.dispose();};
   return g;
 }
 

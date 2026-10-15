@@ -54,6 +54,12 @@ clean: only `README.md` and `.gitignore` belong there. Everything else lives her
   `group.userData.previewBounds` supplies a tighter Studio framing box. Tick the
   live shader material because Studio clones materials. Own ripple/steam material
   disposal, and do not bake animated roots into static batches.
+  `engine/water-surface.js` supplies animated oceans, directional rivers, canals
+  and ponds to Derrape and Studio. Its depth textures use actual sampled terrain;
+  update the live shader material and dispose cloned uniform textures too.
+  Environment owners compose `waterAnimator(group)` with their existing update;
+  scenery water is already collected by the track runtime. Keep animated water
+  outside static batches and preserve pond surface height inside a wrapper group.
 - The character sculpt lives in `engine/soft-character/`; `engine/character.js`
   adapts it to saved avatars and gameplay. The full editor stays at
   `/personaje.html`; its old model module URLs only re-export shared sources.
@@ -102,6 +108,11 @@ clean: only `README.md` and `.gitignore` belong there. Everything else lives her
   forest, a dive village and river bridges. Its thermal shelf and bridge channels
   use the optional post-carve terrain cut. Wet grip is opt-in through `def.gripAt`
   and `roadGripAt()`; preserve dry defaults and normal road confinement elsewhere.
+  Bululú's `bululu-tide.js` shares one absolute-time wash front between visible
+  geometry and `def.waterAt(x,z,time,T)`. Use race time for grip, drag and tire
+  spray; preserve at least 9.5 m of dry center at peak tide. This is an opt-in
+  flooded edge, not a moving collision wall. Track cleanup collects disposers
+  before invoking them because character disposal detaches scene children.
   See `../docs/knowledge/venezuela-circuits.md` for construction and validation.
   Selva's `selva-world.js` builds the river valley and shared forest assets;
   `selva-temple.js` sweeps a hollow tunnel along the road. Keep the terrain

@@ -7,6 +7,7 @@ import { coastalFort } from './world-landmarks.js';
 import { thermalSanctuary } from './chichi-thermal.js';
 import { beachVillage,riverBridges } from './chichi-village.js';
 import { ROUTE,roadHeight,baseHeight,RIVER,riverDistance,coast,THERMAL,gripAt } from './chichi-layout.js';
+import { waterAnimator } from '/engine/water-surface.js';
 export default {
   id:'chichi',name:'Chi Chi',
   blurb:'De las termas entre nubes al pueblo de buceo: curvas de montaña, bosque húmedo, playa y una larga subida junto al río.',
@@ -25,7 +26,7 @@ export default {
         const d=riverDistance(x,z);return h*smooth(d,8,22)+Math.min(h,roadHeight(x,z)-7)*(1-smooth(d,8,22));
       },
       color:(x,z,y)=>z>coast(x)-30?0xcfbd8d:Math.hypot(x-THERMAL.x,z-THERMAL.z)<66?0xb6b69a:y>235?0x7d9381:y>150?0x658374:y>80?0x60835c:0x6c985c});
-    group.add(sea(world.height,{size:3400}),world.land);
+    group.add(sea(world.groundAt,{size:3400}),world.land);
     const river=stream(RIVER,10,(x,z)=>Math.max(.1,roadHeight(x,z)-5.8),0x4c9b99);river.name='chichi-river';group.add(river,riverBridges(T));
     const springs=thermalSanctuary(T,world),village=beachVillage(T,world);group.add(springs.group,village.group);
     const fort=foundation(group,coastalFort(),-290,-550,world.groundAt,{radius:13,rotation:Math.PI*.1,scale:1.4});fort.name='coastal-lookout';
@@ -48,7 +49,8 @@ export default {
         const wall=box(.8,4,8.3,stone,x,y-2.1,z);wall.rotation.y=h;retaining.add(wall);
       }
     }group.add(finish(retaining));
-    return {group,groundAt:world.groundAt,update:t=>{springs.update(t);falls.userData.tick(t);}};
+    const animateWater=waterAnimator(group);
+    return {group,groundAt:world.groundAt,update:t=>{animateWater(t);springs.update(t);falls.userData.tick(t);}};
   },
   scenery(group,kit,T){
     edges(group,kit,T,{style:'steel',step:6,skip:s=>{const p=T.pointAt(s);return riverDistance(p.x,p.y)<25;}});

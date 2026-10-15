@@ -261,7 +261,7 @@ export default {
       { x: 36, z: 30, rx: 8, rz: 6, y: 0.35, pads: 3, seed: 24 },
     ];
     for (const p of ponds) {
-      at(group, kit.waterPond(p.rx, p.rz, { color: 0x4aa3b8, y: p.y }), { x: p.x, z: p.z });
+      at(group, kit.waterPond(p.rx, p.rz, { color: 0x6c9f8b, y: p.y }), { x: p.x, z: p.z });
       for (let i = 0; i < p.pads; i++) {
         const a = (i / p.pads) * Math.PI * 2 + p.seed;
         at(group, lilyPads({ count: 2, seed: p.seed * 10 + i }),

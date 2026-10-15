@@ -5,6 +5,7 @@ import { bake } from '/engine/static-batch.js';
 import { terrainMaterial } from '/engine/terrain-material.js';
 import { sign as makeSign } from '/engine/architecture-kit.js';
 import { placeOnTrack } from '../track-kit.js';
+import { waterSurface,waterDepthMap,riverSurface } from '/engine/water-surface.js';
 export { THREE, M, mesh, box, tube, rng, placeOnTrack };
 export function sign(...args){const panel=makeSign(...args);panel.userData.dispose=()=>panel.material.map.dispose();return panel;}
 export const smooth=THREE.MathUtils.smoothstep, mix=THREE.MathUtils.lerp;
@@ -53,12 +54,9 @@ export function terrain(T,{bounds,base,color,name='world-terrain',step=5,carve=t
 }
 
 export function sea(base,{size=2200,y=0}={}) {
-  const geo=new THREE.PlaneGeometry(size,size,90,90);geo.rotateX(-Math.PI/2);const p=geo.attributes.position,colors=[];
-  const shallow=new THREE.Color(0x28cbbb),deep=new THREE.Color(0x075c87),foam=new THREE.Color(0xa6e3cc);
-  for(let i=0;i<p.count;i++){
-    const depth=-base(p.getX(i),p.getZ(i)),c=shallow.clone().lerp(deep,smooth(depth,3,18));c.lerp(foam,(1-smooth(depth,.2,2))*.35);colors.push(c.r,c.g,c.b);
-  }
-  geo.setAttribute('color',new THREE.Float32BufferAttribute(colors,3));const water=mesh(geo,M(0xffffff,{vertexColors:true,roughness:.65,metalness:0,envMapIntensity:.15,flatShading:false}),0,y,0);water.name='coastal-water';water.castShadow=false;return water;
+  const geo=new THREE.PlaneGeometry(size,size,90,90);geo.rotateX(-Math.PI/2);
+  const water=waterSurface(geo,{depthMap:waterDepthMap(base,{size,y}),size,amplitude:.11});
+  water.position.y=y;water.name='coastal-water';return water;
 }
 
 export function put(root,obj,x,z,y,rotation=0,scale=1) {obj.position.set(x,y,z);obj.rotation.y=rotation;obj.scale.setScalar(scale);root.add(obj);return obj;}
@@ -91,14 +89,7 @@ export function edges(group,kit,T,{style='steel',step=5,skip=()=>false}={}) {
 }
 
 export function stream(points,width,height,color=0x438e93){
-  const curve=new THREE.CatmullRomCurve3(points.map(([x,z])=>new THREE.Vector3(x,0,z))),ps=curve.getSpacedPoints(180),verts=[],indices=[];
-  for(let i=0;i<ps.length;i++){
-    const p=ps[i],a=ps[Math.max(0,i-1)],b=ps[Math.min(ps.length-1,i+1)],dx=b.x-a.x,dz=b.z-a.z,l=Math.hypot(dx,dz);
-    for(const side of [-1,1]){const x=p.x-side*dz/l*width/2,z=p.z+side*dx/l*width/2;verts.push(x,height(x,z),z);}
-    if(i<ps.length-1){const n=i*2;indices.push(n,n+1,n+2,n+1,n+3,n+2);}
-  }
-  const geo=new THREE.BufferGeometry();geo.setAttribute('position',new THREE.Float32BufferAttribute(verts,3));geo.setIndex(indices);geo.computeVertexNormals();
-  return mesh(geo,M(color,{roughness:.25,metalness:.15,side:THREE.DoubleSide,flatShading:false}));
+  return riverSurface(points,width,height,{color});
 }
 export function pathDistance(points){return(x,z)=>{let best=Infinity;for(let i=1;i<points.length;i++){
   const a=points[i-1],b=points[i],dx=b[0]-a[0],dz=b[1]-a[1],u=THREE.MathUtils.clamp(((x-a[0])*dx+(z-a[1])*dz)/(dx*dx+dz*dz),0,1);best=Math.min(best,Math.hypot(x-a[0]-dx*u,z-a[1]-dz*u));}return best;};}

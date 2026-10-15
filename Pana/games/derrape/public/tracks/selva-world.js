@@ -80,7 +80,7 @@ export function createJungle(T) {
     return mix(-1.7,mix(bank,24,terrace),smooth(river,8,13));
   }
   const terrain=groundMesh(groundAt),plantGround=meshHeight(terrain,groundAt);group.add(terrain);
-  const river=kit.waterRibbon(RIVER,18,{color:0x269e96,y:0.3});river.name='selva-river';group.add(river);
+  const river=kit.waterRibbon([...RIVER].reverse(),18,{color:0x529b8b,y:0.3});river.name='selva-river';group.add(river);animated.push(river);
   const tunnel=templeTunnel(T);group.add(tunnel);
   const foundation=[];
   for(const x of [-21,0,21])for(const z of [-25,0,25])foundation.push(groundAt(190+Math.cos(0.4)*x+Math.sin(0.4)*z,-82-Math.sin(0.4)*x+Math.cos(0.4)*z));
@@ -102,7 +102,7 @@ export function createJungle(T) {
     const rock=kit.rock(1,0x788270,47+i);rock.scale.set(5.6,14+(i%3)*2,6);rock.position.set(x,y+5,z);statics.add(rock);
   }
   const falls=kit.waterfall(7,22);falls.position.set(-43,0.4,-183);group.add(falls);animated.push(falls);
-  const pool=kit.waterPond(13,11,{color:0x269e96});pool.position.set(-43,0.29,-178);group.add(pool);
+  const pool=kit.waterPond(13,11,{color:0x529b8b});pool.position.set(-43,0.29,-178);group.add(pool);animated.push(...pool.children);
   // Flat river stones, mossy ruin fragments and roots replace red tire walls.
   for(let i=0;i<110;i++) {
     const p=kit.placeOnTrack(T,r()*T.TOTAL,(r()<0.5?-1:1)*(T.HW+3+r()*5));

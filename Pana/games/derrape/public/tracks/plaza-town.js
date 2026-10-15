@@ -6,6 +6,7 @@ import { M, mesh, box, rng } from '/engine/props.js';
 import { bake, palm, mangoTree, ceiba } from '/engine/flora.js';
 import { AVENUES, STREETS, BLOCKS, STREET_HALF, townHeight, streetDistance } from './plaza-layout.js';
 import { waterfrontHeight,overWater,createWaterfront } from './plaza-waterfront.js';
+import { waterAnimator } from '/engine/water-surface.js';
 
 const COLORS=[0xe2b267,0x66a8a0,0xdd9277,0xaabb82,0xe7ce98,0x7d9fac];
 const PAVING=0xd2bd95, ROAD=0x8b958c;
@@ -133,7 +134,8 @@ export function createTown(T) {
   for(const root of [ground,buildings,plants,...prototypes])root.traverse(o=>{if(o.geometry)privateGeometries.add(o.geometry);});
   privateGeometries.forEach(g=>g.dispose());
   group.userData.town={blocks:BLOCKS,buildings:placements,trees,avenues:AVENUES,streets:STREETS};
-  return {group,groundAt,update:plaza.update};
+  const animateWater=waterAnimator(group);
+  return {group,groundAt,update(t,dt){plaza.update?.(t,dt);animateWater(t);}};
 }
 
 export function raceEdges(group,kit,T) {
