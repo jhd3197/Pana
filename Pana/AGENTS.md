@@ -75,6 +75,11 @@ clean: only `README.md` and `.gitignore` belong there. Everything else lives her
   `/personaje.html`; its old model module URLs only re-export shared sources.
   Games use the lighter sampling profile and must call `character.dispose()`
   when removing a character (detach shared carried props first).
+- Pause menus and settings are shared: `engine/ui.js` (`createGameMenu`) plus
+  `engine/settings.js` (`pana:settings`: sound, volume, resolution, hints).
+  Every game and the hub use them. Do not write a per-game pause overlay, sound
+  toggle or invite flow, and do not handle Escape in a game. Mark keyboard
+  reminders with `data-pana-hint`. See `../docs/knowledge/pana-ui.md`.
 - Browser is the only platform target. Friends join by opening a link; nothing to
   install, nothing to sign up for.
 

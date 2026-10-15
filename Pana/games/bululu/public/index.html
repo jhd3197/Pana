@@ -6,6 +6,7 @@
   <title>Bululú — un juego de Pana</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Luckiest+Guy&family=Nunito:wght@700;900&display=swap">
+  <link rel="stylesheet" href="/engine/ui.css">
   <link rel="stylesheet" href="style.css">
   <script type="importmap">
     { "imports": {
@@ -27,11 +28,8 @@
       <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="13.5" r="8" fill="none" stroke="currentColor" stroke-width="2.6"/><path d="M12 13.5V9M9.5 2.5h5M19 6l1.6-1.6" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg>
       <b id="timer-n">30</b>
     </div>
-    <button id="look" class="look">Ver tablero <kbd>Tab</kbd></button>
-    <div class="sky-controls" role="group" aria-label="Luz de la isla">
-      <button type="button" data-sky="day" aria-pressed="true" title="Mantener la luz de día">Día</button>
-      <button type="button" data-sky="night" aria-pressed="false" title="Mantener la luz de noche">Noche</button>
-      <button type="button" data-sky="cycle" aria-pressed="false" title="Día y noche: un ciclo cada 10 minutos">Ciclo</button>
+    <div id="top-actions" class="top-actions">
+      <button id="look" class="look">Ver tablero <kbd data-pana-hint>Tab</kbd></button>
     </div>
     <canvas id="minimap" class="minimap" width="400" height="340" title="Toca el mapa para mirar ahí"></canvas>
     <select id="places" class="places" aria-label="Explorar una zona de la isla">
@@ -42,7 +40,7 @@
       <option value="harbor">Puerto de los Panas</option>
     </select>
     <div id="cards" class="cards"></div>
-    <div class="keys">Espacio: tirar / saltar · A D: moverte · Tab: ver tablero · L: luz · M: sonido</div>
+    <div class="keys" data-pana-hint>Espacio: tirar / saltar · A D: moverte · Tab: ver tablero · L: luz · M: sonido · Esc: pausa</div>
   </div>
 
   <div id="toast" class="toast hidden"></div>

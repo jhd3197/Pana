@@ -554,26 +554,6 @@ h1 {
 .panel .primary {
   margin-top:12px
 }
-.secondary {
-  width:100%;
-  padding:13px;
-  background:#e5d9c4;
-  color:var(--ink);
-  margin-top:12px;
-  border-radius:8px
-}
-.panel label {
-  font-size:11px;
-  display:block;
-  margin-top:15px
-}
-.panel input {
-  width:100%;
-  margin-top:5px;
-  padding:10px;
-  border:1px solid #bba793;
-  border-radius:5px
-}
 .result-stars {
   font-size:44px;
   letter-spacing:8px;

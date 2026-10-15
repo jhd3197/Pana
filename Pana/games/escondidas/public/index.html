@@ -8,6 +8,7 @@
   <title>Escondidas · Pana Hunt</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Luckiest+Guy&family=Nunito:wght@600;700;800;900&display=swap">
+  <link rel="stylesheet" href="/engine/ui.css">
   <link rel="stylesheet" href="style.css">
   <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}</script>
 </head>
@@ -16,11 +17,7 @@
   <div class="vignette" aria-hidden="true"></div>
   <header>
     <a class="brand" href="/" aria-label="Volver a Pana"><span>ESCONDIDAS</span><b>PANA HUNT</b></a>
-    <nav aria-label="Opciones de juego">
-      <button id="invite" title="Copiar enlace de la sala">Invitar panas <span>↗</span></button>
-      <button id="sound" aria-label="Activar sonido" aria-pressed="false">Sonido: no</button>
-      <button id="menu" aria-label="Abrir menú">Menú <kbd>Esc</kbd></button>
-    </nav>
+    <nav id="game-nav" aria-label="Opciones de juego"></nav>
   </header>
   <div id="loading" class="loading" role="status">Abriendo la plaza…</div>
   <section id="lobby" class="lobby hidden" aria-labelledby="intro-title">
@@ -49,19 +46,13 @@
     <div id="suspicion" class="suspicion hidden"><span>¡Te están viendo!</span><div><i id="suspicion-fill"></i></div></div>
     <button id="action" class="action"><kbd>E</kbd> <span id="action-label">Copiar objeto cercano</span></button>
     <aside class="map-wrap"><span>PLAZA PANA</span><canvas id="minimap" width="300" height="270" aria-label="Mapa: tu posición y la del buscador"></canvas><small id="map-note">Tú <i></i> · Buscador <i></i></small></aside>
-    <div class="controls"><span><kbd>W A S D</kbd> Moverte</span><span><kbd>Arrastrar</kbd> Mirar</span><span><kbd>Shift</kbd> Correr</span><span><kbd>1–5</kbd> Cambiar</span></div>
+    <div class="controls" data-pana-hint><span><kbd>W A S D</kbd> Moverte</span><span><kbd>Arrastrar</kbd> Mirar</span><span><kbd>Shift</kbd> Correr</span><span><kbd>1–5</kbd> Cambiar</span></div>
     <div id="touch-controls" class="touch-controls"><button data-move="up" aria-label="Avanzar">▲</button><div><button data-move="left" aria-label="Izquierda">◀</button><button data-move="down" aria-label="Retroceder">▼</button><button data-move="right" aria-label="Derecha">▶</button></div></div>
   </main>
   <div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
   <section id="results" class="overlay hidden" aria-labelledby="result-title"><div class="result-panel">
     <span class="eyebrow" id="result-round">RONDA TERMINADA</span><h2 id="result-title">¡Bien escondidos!</h2><p id="result-copy"></p>
     <div id="scores" class="scores"></div><button id="next" class="primary">Siguiente ronda →</button><a href="/" class="back">← Volver a Pana</a>
-  </div></section>
-  <section id="pause" class="overlay hidden" aria-labelledby="pause-title"><div class="pause-panel">
-    <h2 id="pause-title">Un momentico.</h2><p id="pause-copy">La ronda continúa para los demás panas.</p>
-    <p><b>WASD / flechas</b> para moverte. Arrastra para mirar.<br><b>1–5</b> para transformarte. <b>Q</b> para volver a pana.<br><b>E</b> copia el objeto cercano o busca a un pana.<br>Una revisión fallida espera 1,6 segundos.</p>
-    <button id="resume" class="primary">Volver a la plaza</button><button id="copy-room" class="secondary">Copiar invitación</button>
-    <label class="share-label hidden" id="share-label">Enlace de la sala<input id="share-url" readonly></label><a href="/" class="back">Salir a Pana</a>
   </div></section>
   <script type="module">
     import('./game.js').catch(error => {

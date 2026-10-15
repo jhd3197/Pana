@@ -6,6 +6,7 @@
   <title>Derrape — un juego de Pana</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Luckiest+Guy&display=swap">
+  <link rel="stylesheet" href="/engine/ui.css">
   <link rel="stylesheet" href="style.css">
   <script type="importmap">
     { "imports": {
@@ -19,7 +20,7 @@
   <div id="garage" class="screen">
     <header class="bar">
       <div class="brand">DERRAPE <span>garaje</span></div>
-      <div class="hint">Arrastra para girar · rueda para acercar</div>
+      <div class="hint" data-pana-hint>Arrastra para girar · rueda para acercar</div>
     </header>
 
     <aside class="card info">
@@ -98,12 +99,12 @@
       <div id="boost"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
     </div>
 
-    <div class="keys">
+    <div class="keys" data-pana-hint>
       <span><kbd>W</kbd> Acelerar</span>
       <span><kbd>S</kbd> Frenar</span>
       <span><kbd>A D</kbd> Girar</span>
       <span><kbd>H</kbd> Claxon</span>
-      <span><kbd>Esc</kbd> Garaje</span>
+      <span><kbd>Esc</kbd> Pausa</span>
     </div>
 
     <div class="touch-drive" aria-label="Conducir">

@@ -614,7 +614,7 @@ h1 {
   padding:18px;
   backdrop-filter:blur(6px)
 }
-.result-panel,.pause-panel {
+.result-panel {
   width:440px;
   max-width:100%;
   padding:32px;
@@ -631,14 +631,14 @@ h1 {
   font-weight:900;
   letter-spacing:2px
 }
-.result-panel h2,.pause-panel h2 {
+.result-panel h2 {
   font-family:'Luckiest Guy',cursive;
   font-size:35px;
   color:var(--yellow);
   font-weight:400;
   margin:14px 0 8px
 }
-.result-panel p,.pause-panel p {
+.result-panel p {
   font-size:13px;
   line-height:1.7;
   color:#d3c9dc
@@ -665,30 +665,6 @@ h1 {
 .score-row b {
   color:var(--yellow);
   font-size:20px
-}
-.secondary {
-  display:block;
-  width:100%;
-  margin-top:12px;
-  padding:12px;
-  border:1px solid #ffffff40;
-  border-radius:6px;
-  background:transparent;
-  font-size:12px;
-  font-weight:800
-}
-.share-label {
-  display:block;
-  font-size:11px;
-  margin-top:18px
-}
-.share-label input {
-  width:100%;
-  color:var(--ink);
-  padding:8px;
-  margin-top:6px;
-  border:0;
-  border-radius:4px
 }
 .touch-controls {
   display:none
@@ -973,7 +949,7 @@ h1 {
     font-size:11px;
     min-width:200px
   }
-  .result-panel,.pause-panel {
+  .result-panel {
     padding:24px
   }
 }

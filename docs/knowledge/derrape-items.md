@@ -11,6 +11,10 @@ runtime dependencies. Derrape still runs a local four-car race with bots.
   1/2 selects directly. Matching on-screen buttons work with pointer/touch, with
   independent multi-touch driving controls. Lost focus, cancelled touches, garage
   return and restarting release all movement input.
+- Esc (or the on-screen Pausa pill) opens the shared pause menu and freezes the
+  fixed-step loop; Reiniciar carrera and Volver al garaje live there. Esc only
+  cancels straight to the garage while a track is loading. In the garage, Esc
+  and the Ajustes button open the same menu for settings.
 - A ready, equipped mango is visibly held behind the car and automatically blocks
   one incoming mango per charge. Reserve items do not defend; juice and peels do
   not defend. Triple mango spends one charge. A block consumes the projectile

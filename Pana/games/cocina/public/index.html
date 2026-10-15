@@ -8,6 +8,7 @@
   <title>Pana Cocina · ¡A comer!</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Luckiest+Guy&family=Nunito:wght@600;700;800;900&display=swap">
+  <link rel="stylesheet" href="/engine/ui.css">
   <link rel="stylesheet" href="style.css">
   <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}</script>
 </head>
@@ -15,7 +16,7 @@
   <canvas id="world" aria-label="Cocina cooperativa en la Plaza Pana"></canvas>
   <header>
     <a class="brand" href="/" aria-label="Volver a Pana"><span class="chef-mark" aria-hidden="true">♨</span><b>PANA</b><strong>COCINA</strong></a>
-    <nav aria-label="Opciones"><button id="invite">Invitar panas ↗</button><button id="sound" aria-pressed="false">Sonido: no</button><button id="menu">Menú <kbd>Esc</kbd></button></nav>
+    <nav id="game-nav" aria-label="Opciones"></nav>
   </header>
   <div id="loading" role="status">Prendiendo los fogones…</div>
   <section id="lobby" class="lobby hidden" aria-labelledby="title">
@@ -37,12 +38,11 @@
     <div id="station-labels" aria-hidden="true"></div>
     <div id="team" class="team"></div>
     <div class="bottom-hud"><div class="held-panel"><img id="held-image" alt=""><div><small>EN TUS MANOS</small><b id="held-name">Manos libres</b><span id="held-next">Busca ingredientes para un pedido.</span></div></div><button id="action" class="action"><kbd>E</kbd><span id="action-label">Acércate a una estación</span></button></div>
-    <div class="controls"><span><kbd>W A S D</kbd> / <kbd>↑ ← ↓ →</kbd> Moverte</span><span><kbd>E</kbd> Recoger / dejar</span><span><kbd>Shift</kbd> Apurarte</span></div>
+    <div class="controls" data-pana-hint><span><kbd>W A S D</kbd> / <kbd>↑ ← ↓ →</kbd> Moverte</span><span><kbd>E</kbd> Recoger / dejar</span><span><kbd>Shift</kbd> Apurarte</span></div>
     <div class="touch-controls"><button data-move="up" aria-label="Avanzar">▲</button><div><button data-move="left" aria-label="Izquierda">◀</button><button data-move="down" aria-label="Retroceder">▼</button><button data-move="right" aria-label="Derecha">▶</button></div></div>
     <button id="dash" class="touch-dash" aria-label="Apurarte">¡Voy!</button>
   </main>
   <div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
-  <section id="pause" class="overlay hidden" aria-labelledby="pause-title"><div class="panel"><small>UN MOMENTICO</small><h2 id="pause-title">¿Y la sazón?</h2><p id="pause-note"></p><p>Busca un cajón de ingredientes, déjalos en una tabla y recoge la preparación. Llévala al fogón; cuando esté verde, recoge el plato y sírvelo en el mostrador.</p><p><b>E</b> recoge, deja o apaga un fuego. <b>Shift</b> te da un empujoncito. La mesa «Para tu pana» permite pasar platos.</p><button id="resume" class="primary">Volver a cocinar</button><button id="copy-room" class="secondary">Copiar invitación</button><label id="share-label" class="hidden">Enlace de la sala<input id="share-url" readonly></label><button id="offline" class="text-button hidden">Abrir cocina local</button><a class="back" href="/">Salir a Pana</a></div></section>
   <section id="results" class="overlay hidden" aria-labelledby="result-title"><div class="panel results-panel"><small>COCINA CERRADA</small><div id="result-stars" class="result-stars"></div><h2 id="result-title">¡Buen provecho!</h2><p id="result-copy"></p><div class="result-stats"><div><b id="result-score">0</b><span>puntos</span></div><div><b id="result-served">0</b><span>servidos</span></div><div><b id="result-missed">0</b><span>perdidos</span></div></div><div id="result-team"></div><button id="again" class="primary">Otro turno →</button><a class="back" href="/">← Todos los juegos</a></div></section>
   <script type="module">import('./game.js').catch(error => { console.error(error); const el = document.getElementById('loading'); el.textContent = 'No pudimos abrir la cocina. Comprueba la conexión y WebGL, y recarga la página.'; el.classList.remove('hidden'); });</script>
 </body>

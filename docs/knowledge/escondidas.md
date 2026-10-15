@@ -35,6 +35,7 @@ A departing host elects the next oldest client and returns the room to a fresh
 lobby, rather than trying to reconstruct partially received state. Remote inputs
 expire after 600ms so a lost connection cannot keep a player moving indefinitely.
 Solo menus pause simulation; multiplayer menus stop only local movement.
+The menu is the shared `engine/ui.js` dialog (see `pana-ui.md`).
 
 A disconnect must show the lobby with its practice fallback, even if it occurred
 during gameplay. Otherwise the fallback button exists inside a hidden container.

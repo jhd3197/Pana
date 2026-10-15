@@ -6,11 +6,28 @@ import * as THREE from 'three';
 export const sound = {
   ctx: null,
   muted: false,
+  volume: 1,
   engine: null,
+  master: null,
 
   unlock() {
     if (!this.ctx) this.ctx = new (window.AudioContext || window.webkitAudioContext)();
     if (this.ctx.state === 'suspended') this.ctx.resume();
+  },
+
+  // every sound goes through one gain node, so volume applies to all of them
+  out() {
+    if (!this.master) {
+      this.master = this.ctx.createGain();
+      this.master.gain.value = this.volume;
+      this.master.connect(this.ctx.destination);
+    }
+    return this.master;
+  },
+
+  setVolume(v) {
+    this.volume = Math.min(1, Math.max(0, v));
+    if (this.master) this.master.gain.setTargetAtTime(this.volume, this.ctx.currentTime, 0.02);
   },
 
   tone(freq, start, dur, type = 'square', vol = 0.12) {
@@ -24,7 +41,7 @@ export const sound = {
     g.gain.linearRampToValueAtTime(vol, t + 0.01);
     g.gain.setValueAtTime(vol, t + dur - 0.03);
     g.gain.linearRampToValueAtTime(0, t + dur);
-    o.connect(g).connect(this.ctx.destination);
+    o.connect(g).connect(this.out());
     o.start(t);
     o.stop(t + dur + 0.02);
   },
@@ -82,7 +99,7 @@ export const sound = {
     f.frequency.value = 900;
     const g = this.ctx.createGain();
     g.gain.value = Math.min(0.5, 0.15 * power);
-    src.connect(f).connect(g).connect(this.ctx.destination);
+    src.connect(f).connect(g).connect(this.out());
     src.start(t);
     // cartoon "boing" thump
     const o = this.ctx.createOscillator();
@@ -92,7 +109,7 @@ export const sound = {
     o.frequency.exponentialRampToValueAtTime(60, t + 0.25);
     og.gain.setValueAtTime(Math.min(0.4, 0.12 * power), t);
     og.gain.exponentialRampToValueAtTime(0.001, t + 0.3);
-    o.connect(og).connect(this.ctx.destination);
+    o.connect(og).connect(this.out());
     o.start(t);
     o.stop(t + 0.32);
   },
@@ -107,7 +124,7 @@ export const sound = {
     o.frequency.exponentialRampToValueAtTime(520, t + 0.18);
     g.gain.setValueAtTime(0.12, t);
     g.gain.exponentialRampToValueAtTime(0.001, t + 0.3);
-    o.connect(g).connect(this.ctx.destination);
+    o.connect(g).connect(this.out());
     o.start(t);
     o.stop(t + 0.32);
   },
@@ -123,7 +140,7 @@ export const sound = {
     o.frequency.exponentialRampToValueAtTime(f1, t + dur);
     g.gain.setValueAtTime(vol, t);
     g.gain.exponentialRampToValueAtTime(0.001, t + dur);
-    o.connect(g).connect(this.ctx.destination);
+    o.connect(g).connect(this.out());
     o.start(t);
     o.stop(t + dur + 0.02);
   },
@@ -158,7 +175,7 @@ export const sound = {
     lfoGain.gain.value = 0.025;
     g.gain.value = 0.035;
     lfo.connect(lfoGain).connect(g.gain);
-    o.connect(f).connect(g).connect(this.ctx.destination);
+    o.connect(f).connect(g).connect(this.out());
     o.start();
     lfo.start();
     this.engine = { o, lfo, g };

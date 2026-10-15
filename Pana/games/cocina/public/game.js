@@ -4,6 +4,8 @@ import { loadAvatar, loadName } from '/engine/avatar.js';
 import { canvasMat } from '/engine/props.js';
 import { food } from '/engine/kitchen-props.js';
 import { sound } from '/engine/fx.js';
+import { createGameMenu, toggleMute } from '/engine/ui.js';
+import { pixelRatio, bindRenderer } from '/engine/settings.js';
 import { Kitchen, RECIPES, STATIONS, recipe, nearestStation } from './rules.js';
 import { KitchenRoom } from './network.js';
 import { createKitchenScene, mealModel } from './scene.js';
@@ -13,14 +15,13 @@ const qs = new URLSearchParams(location.search), code = (qs.get('room') || Math.
 const url = new URL(location.href); url.searchParams.set('room', code); history.replaceState(null, '', url);
 await Promise.race([document.fonts.load('900 48px Nunito'), new Promise(resolve => setTimeout(resolve, 1200))]);
 const avatar = loadAvatar(), name = loadName();
-sound.muted = true;
 const renderer = new THREE.WebGLRenderer({ canvas: $('world'), antialias: true });
-renderer.setPixelRatio(Math.min(devicePixelRatio, 1.6)); renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.setPixelRatio(pixelRatio(1.6)); bindRenderer(renderer, 1.6); renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.12;
 const world = createKitchenScene(), { scene } = world;
 const camera = new THREE.OrthographicCamera(-20, 20, 15, -15, 0.1, 200);
 const actors = new Map(), keys = new Set(), touch = new Set(), previews = new Map();
-let state = new Kitchen().snapshot(), paused = false, lastEvent = 0, lastPhase = '', toastTimer, renderedOrders = '', teamKey = '', heldKey = '', last = performance.now(), elapsed = 0;
+let state = new Kitchen().snapshot(), paused = false, canGoOffline = false, lastEvent = 0, lastPhase = '', toastTimer, renderedOrders = '', teamKey = '', heldKey = '', last = performance.now(), elapsed = 0;
 let aimWidth = innerWidth, aimHeight = innerHeight;
 function resize() {
   renderer.setSize(innerWidth, innerHeight); aimWidth = innerWidth; aimHeight = innerHeight;
@@ -45,8 +46,20 @@ for (const r of RECIPES) for (const stage of ['raw', 'prepared', 'cooked']) {
 artRenderer.dispose();
 for (const r of RECIPES) { const img = document.createElement('img'); img.src = previews.get(`${r.id}:cooked`); img.alt = r.name; $('tasting').append(img); }
 function notify(text) { $('toast').textContent = text; show('toast', true); clearTimeout(toastTimer); toastTimer = setTimeout(() => show('toast', false), 3100); }
+const menu = createGameMenu({
+  title: 'Pana Cocina', heading: '¿Y la sazón?', resumeLabel: 'Volver a cocinar', sound, notify,
+  note: () => room.offline || room.members.size === 1 ? 'Tu turno está pausado.' : 'La cocina sigue para los demás panas.',
+  controls: [['W A S D / ↑ ← ↓ →', 'Moverte'], ['E / Espacio', 'Recoger, dejar o apagar un fuego'], ['Shift', 'Un empujoncito'], ['M', 'Sonido']],
+  tips: ['Busca un cajón de ingredientes, déjalos en una tabla y recoge la preparación. Llévala al fogón; cuando esté verde, recoge el plato y sírvelo en el mostrador.',
+    'La mesa «Para tu pana» permite pasar platos.'],
+  actions: [{ id: 'offline', label: 'Abrir cocina local', kind: 'link', visible: () => canGoOffline, run: () => room.practice() }],
+  invite() { const share = new URL(location.href); share.searchParams.delete('debug'); share.searchParams.delete('name'); return share.href; },
+  onOpen() { paused = true; keys.clear(); touch.clear(); },
+  onClose() { paused = false; },
+});
+$('game-nav').append(menu.createInviteButton({ id: 'invite' }), menu.createSoundButton({ id: 'sound' }), menu.createButton({ id: 'menu' }));
 const room = new KitchenRoom({ code, name, avatar, onState: receive, onNotice: notify, onStatus(text, failed = false) {
-  $('connection').textContent = text; show('practice', failed); show('offline', failed); if (failed) notify(text); updateUI();
+  $('connection').textContent = text; show('practice', failed); canGoOffline = failed; menu.update(); if (failed) notify(text); updateUI();
 } });
 const me = () => state.players.find(p => p.id === room.id);
 const colors = ['#eb574b', '#4789e3', '#3aae77', '#e4b52c', '#a974d5', '#e584a9', '#57bcc0', '#e68a3c'];
@@ -80,7 +93,7 @@ function syncActors() {
 }
 function receive(next) {
   state = next; syncActors();
-  if (state.phase !== lastPhase) { lastPhase = state.phase; resize(); paused = false; show('pause', false); heldKey = ''; }
+  if (state.phase !== lastPhase) { lastPhase = state.phase; resize(); menu.close(); heldKey = ''; }
   const event = state.events.at(-1);
   if (event && event.id !== lastEvent) {
     lastEvent = event.id; notify(event.text);
@@ -134,27 +147,15 @@ function updateUI() {
     $('result-team').replaceChildren(); for (const p of state.players) { const row = document.createElement('div'); row.textContent = `${p.name}${p.bot ? ' (ayudante)' : ''} · ${p.deliveries} platos servidos`; $('result-team').append(row); }
   }
 }
-function togglePause(value = !paused) {
-  paused = value; keys.clear(); touch.clear(); show('pause', paused);
-  $('pause-note').textContent = room.offline || room.members.size === 1 ? 'Tu turno está pausado.' : 'La cocina sigue para los demás panas.';
-  if (paused) $('resume').focus();
-}
 function interact() { if (!paused && state.phase === 'playing') room.action('interact'); }
 $('start').onclick = () => room.action('start', { helpers: $('helpers').checked });
 $('again').onclick = () => { lastEvent = 0; room.action('start', { helpers: state.helpers }); };
-$('action').onclick = interact; $('menu').onclick = () => togglePause(); $('resume').onclick = () => togglePause(false);
-for (const id of ['practice', 'offline']) $(id).onclick = () => { room.practice(); togglePause(false); };
-async function invite() {
-  const share = new URL(location.href); share.searchParams.delete('debug'); share.searchParams.delete('name');
-  try { await navigator.clipboard.writeText(share.href); notify('¡Enlace copiado! Pásaselo a tus panas.'); }
-  catch { togglePause(true); show('share-label', true); $('share-url').value = share.href; $('share-url').focus(); $('share-url').select(); }
-}
-$('invite').onclick = invite; $('copy-room').onclick = invite;
-$('sound').onclick = () => { sound.unlock(); sound.muted = !sound.muted; $('sound').textContent = `Sonido: ${sound.muted ? 'no' : 'sí'}`; $('sound').setAttribute('aria-pressed', String(!sound.muted)); if (!sound.muted) sound.tone(660, 0, 0.1, 'sine', 0.08); };
+$('action').onclick = interact;
+$('practice').onclick = () => room.practice();
 addEventListener('keydown', e => {
   if (e.target instanceof HTMLInputElement) return;
   const key = e.key.toLowerCase(); if (['arrowup', 'arrowdown', 'arrowleft', 'arrowright', ' '].includes(key)) e.preventDefault();
-  if (key === 'escape' && !e.repeat) togglePause();
+  if (key === 'm' && !e.repeat) toggleMute();
   if ((key === 'e' || key === ' ') && !e.repeat) { e.preventDefault(); interact(); }
   if (!paused) keys.add(key);
 });
@@ -194,6 +195,6 @@ function frame(now) {
 }
 show('loading', false); room.connect(); requestAnimationFrame(frame);
 addEventListener('pagehide', () => { clearInterval(ticker); room.dispose(); });
-if (qs.has('debug')) window.cocina = { room, camera, actors, renderer, get state() { return state; },
+if (qs.has('debug')) window.cocina = { room, camera, actors, renderer, menu, get state() { return state; },
   step(seconds) { if (!room.isHost) return; for (let i = 0; i < seconds; i += 0.05) room.game.update(Math.min(0.05, seconds - i)); room.publish(); },
   place(id, x, z) { const p = room.game?.players.find(p => p.id === id); if (p) { p.x = x; p.z = z; room.publish(); } }, STATIONS };

@@ -1,3 +1,5 @@
+import { createGameMenu } from '/engine/ui.js';
+
 const gamesEl = document.getElementById('games');
 const roomsEl = document.getElementById('rooms');
 const statusEl = document.getElementById('status');
@@ -9,6 +11,10 @@ const featured = document.getElementById('play-featured');
 const SOON = [
   { name: 'Dominó', description: 'La partida del sábado, con tus panas y un cafecito.', glyph: '6:6' },
 ];
+
+// The same settings every game reads (sound, volume, resolution, hints).
+const settings = createGameMenu({ title: 'Pana', pause: false, hotkey: false });
+document.getElementById('hub-actions').append(settings.createButton({ id: 'open-settings', label: 'Ajustes', kbd: null, className: 'btn btn-ghost' }));
 
 try { nameInput.value = localStorage.getItem('pana:name') || ''; } catch { /* storage off */ }
 function syncName() {

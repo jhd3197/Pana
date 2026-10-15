@@ -13,6 +13,7 @@ The oldest connected member becomes host. Unlike Hunt, Cocina restores the
 latest snapshot instead of discarding a live turn; stale human entries and
 station ownership are removed. New arrivals can immediately help.
 
+The menu is the shared one from `engine/ui.js` (see `pana-ui.md`).
 In solo or local practice the menu pauses simulation. In multiplayer it only
 stops that user's input. Input is cleared on blur and expires on the host after
 600 ms. A failed connection offers an explicit local kitchen; it does not

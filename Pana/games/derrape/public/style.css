@@ -201,6 +201,9 @@ kbd {
   font-variant-numeric: tabular-nums;
 }
 .pill b.small { font-size: 15px; }
+.pause-button { pointer-events: auto; min-width: 0; padding: 7px 14px; color: var(--text); font-weight: 800; cursor: pointer; }
+.pause-button kbd { color: #ffd23f; }
+.pause-button:focus-visible { outline: 3px solid #ffd23f; outline-offset: 2px; }
 
 #logo {
   position: absolute;
@@ -433,7 +436,7 @@ button:focus-visible { outline: 3px solid #fff0a4; outline-offset: 3px; }
 
 @media (max-width: 1100px) {
   #logo { display: none; }
-  .hud-top .pill:last-child { display: none; }
+  .hud-top .pill:nth-child(4) { display: none; }
 }
 @media (max-width: 760px) {
   .car-lineup { left: 16px; right: 16px; bottom: 230px; }
@@ -455,7 +458,7 @@ button:focus-visible { outline: 3px solid #fff0a4; outline-offset: 3px; }
   #speedo b { font-size: 30px; }
   #logo { display: none; }
   .hud-top { gap: 5px; }
-  .hud-top .pill:nth-child(n+3) { display: none; }
+  .hud-top .pill:not(.pause-button):nth-child(n+3) { display: none; }
   .coins { top: 85px; bottom: auto; left: 14px; right: auto; min-width: 0; padding: 8px 10px; }
   .coin-symbol { width: 24px; height: 28px; font-size: 16px; border-width: 3px; }
   .coins b { font-size: 22px; }

@@ -83,6 +83,9 @@ main {
 .live.on i { background: var(--teal); }
 .live #live-count { color: var(--text); font-weight: 700; }
 
+.hub-actions { display: flex; gap: 8px; }
+.studio-link { display: inline-block; margin-top: 14px; color: inherit; font-size: 13px; }
+
 /* ---------- buttons ---------- */
 .btn {
   display: inline-flex;

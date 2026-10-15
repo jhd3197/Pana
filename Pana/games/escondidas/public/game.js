@@ -3,6 +3,8 @@ import { loadAvatar, loadName } from '/engine/avatar.js';
 import { buildCharacter } from '/engine/character.js';
 import { createPlazaProp, PLAZA_PROPS, propDefinition } from '/engine/plaza-props.js';
 import { sound } from '/engine/fx.js';
+import { createGameMenu, toggleMute } from '/engine/ui.js';
+import { pixelRatio, bindRenderer } from '/engine/settings.js';
 import { createPlaza } from './plaza.js';
 import { MAP_PROPS, BLOCKERS, BOUNDS } from './layout.js';
 import { RULES } from './rules.js';
@@ -16,7 +18,7 @@ const avatar = loadAvatar(), name = loadName();
 await Promise.race([document.fonts.load('900 64px Nunito'), new Promise(resolve => setTimeout(resolve, 1600))]);
 
 const renderer = new THREE.WebGLRenderer({ canvas: $('world'), antialias: true });
-renderer.setPixelRatio(Math.min(devicePixelRatio, 1.75)); renderer.setSize(innerWidth, innerHeight);
+renderer.setPixelRatio(pixelRatio(1.75)); renderer.setSize(innerWidth, innerHeight); bindRenderer(renderer, 1.75);
 renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.13;
 const plaza = createPlaza(), { scene } = plaza;
@@ -51,7 +53,7 @@ for (const [i, def] of PLAZA_PROPS.entries()) {
 }
 
 let state = { phase: 'lobby', players: [], round: 0, events: [] }, previousPhase = 'lobby';
-let preference = 'hide', paused = false, yaw = 0.28, pitch = 0.22, eventId = 0, uiKey = '', snapRound = -1;
+let drag = null, preference = 'hide', paused = false, yaw = 0.28, pitch = 0.22, eventId = 0, uiKey = '', snapRound = -1;
 let toastTimer, motionTime = 0, last = performance.now();
 let portraitKey = '';
 const keys = new Set(), touch = new Set(), actorRing = new THREE.Mesh(new THREE.RingGeometry(0.82, 0.88, 40), new THREE.MeshBasicMaterial({ color: 0x54e2ca, transparent: true, opacity: 0.8, depthWrite: false }));
@@ -59,6 +61,17 @@ actorRing.rotation.x = -Math.PI / 2; actorRing.position.y = 0.07; scene.add(acto
 const room = new HuntRoom({ code, name, avatar, onState: receive,
   onStatus(text, failed = false) { $('connection').textContent = text; show('practice', failed); if (failed) notify(text); updateHUD(); }, onNotice: notify });
 function notify(message) { $('toast').textContent = message; show('toast', true); clearTimeout(toastTimer); toastTimer = setTimeout(() => show('toast', false), 3300); }
+const menu = createGameMenu({
+  title: 'Escondidas', heading: 'Un momentico.', resumeLabel: 'Volver a la plaza', sound, notify,
+  note: () => room.members.size === 1 ? 'La práctica queda en pausa mientras descansas.' : 'La ronda continúa para los demás panas.',
+  controls: [['W A S D / ↑ ← ↓ →', 'Moverte'], ['Arrastrar', 'Mirar'], ['Shift', 'Correr'], ['1 2 3 4 5', 'Transformarte'],
+    ['Q', 'Volver a pana'], ['E', 'Copiar objeto cercano o buscar'], ['M', 'Sonido']],
+  tips: ['Una revisión fallida espera 1,6 segundos.'],
+  invite() { const share = new URL(location.href); share.search = ''; share.searchParams.set('room', code); return share.href; },
+  onOpen() { paused = true; keys.clear(); touch.clear(); drag = null; },
+  onClose() { paused = false; },
+});
+$('game-nav').append(menu.createInviteButton({ id: 'invite' }), menu.createSoundButton({ id: 'sound' }), menu.createButton({ id: 'menu' }));
 function getMe() { return state.players.find(p => p.id === room.id); }
 
 function disposeActor(actor) {
@@ -178,24 +191,6 @@ function act() {
   if (room.id === state.seeker) room.action('check');
   else { const near = nearestProp(); if (near) transform(near.type); else notify('Acércate a un barril, caja, cava, mata o banco.'); }
 }
-function setPaused(value) {
-  paused = value; keys.clear(); touch.clear(); show('pause', value);
-  $('pause-copy').textContent = room.members.size === 1 ? 'La práctica queda en pausa mientras descansas.' : 'La ronda continúa para los demás panas.';
-  if (value) $('resume').focus();
-}
-async function invite() {
-  const share = new URL(location.href); share.search = ''; share.searchParams.set('room', code);
-  try { await navigator.clipboard.writeText(share.href); notify('¡Enlace copiado! Pásaselo a tus panas.'); }
-  catch { setPaused(true); show('share-label', true); $('share-url').value = share.href; $('share-url').select(); }
-}
-$('invite').onclick = $('copy-room').onclick = invite;
-$('menu').onclick = () => setPaused(!paused); $('resume').onclick = () => setPaused(false);
-$('sound').onclick = () => {
-  sound.unlock(); sound.muted = !sound.muted;
-  $('sound').textContent = sound.muted ? 'Sonido: no' : 'Sonido: sí';
-  $('sound').setAttribute('aria-pressed', String(!sound.muted)); $('sound').setAttribute('aria-label', sound.muted ? 'Activar sonido' : 'Silenciar sonido');
-};
-sound.muted = true;
 for (const mode of ['hide', 'seek']) $(`role-${mode}`).onclick = () => {
   preference = mode;
   for (const m of ['hide', 'seek']) { $(`role-${m}`).classList.toggle('selected', m === mode); $(`role-${m}`).setAttribute('aria-pressed', String(m === mode)); }
@@ -209,8 +204,8 @@ addEventListener('keydown', event => {
   const key = event.key.toLowerCase();
   if (['arrowup', 'arrowdown', 'arrowleft', 'arrowright', ' '].includes(key)) event.preventDefault();
   keys.add(key); if (event.repeat) return;
-  if (key === 'escape') setPaused(!paused);
   if (paused) return;
+  if (key === 'm') toggleMute();
   if (key === 'e') act(); if (key === 'q') transform(null);
   if (/^[1-5]$/.test(key)) transform(PLAZA_PROPS[Number(key) - 1].id);
 });
@@ -222,7 +217,6 @@ for (const button of document.querySelectorAll('[data-move]')) {
   const release = () => touch.delete(button.dataset.move);
   button.onpointerup = button.onpointercancel = button.onlostpointercapture = release;
 }
-let drag = null;
 $('world').onpointerdown = event => { if (paused) return; drag = { x: event.clientX, y: event.clientY }; $('world').setPointerCapture(event.pointerId); };
 $('world').onpointermove = event => {
   if (!drag) return;
@@ -297,6 +291,6 @@ addEventListener('resize', () => { camera.aspect = innerWidth / innerHeight; cam
 addEventListener('pagehide', () => { clearInterval(ticker); room.dispose(); renderer.dispose(); previewRenderer.dispose(); });
 show('loading', false); show('lobby', true); room.connect(); requestAnimationFrame(frame);
 
-if (DEBUG) window.hunt = { room, get state() { return state; }, scene, renderer, camera, actors,
+if (DEBUG) window.hunt = { room, menu, get state() { return state; }, scene, renderer, camera, actors,
   step(seconds) { if (!room.isHost) return; for (let t = 0; t < seconds; t += 1 / 60) room.game.update(1 / 60, new Map()); room.tick(0, {}); },
   place(id, x, z) { if (!room.isHost) return; const p = room.game.players.find(p => p.id === id); if (p) Object.assign(p, { x, z }); room.tick(0, {}); } };

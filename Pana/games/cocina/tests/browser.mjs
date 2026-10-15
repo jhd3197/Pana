@@ -39,9 +39,10 @@ try {
   await b.keyboard.press('e'); await held(b, 'cooked');
   await position(a, ids.guest, 'serve'); await b.keyboard.press('e'); await a.waitForFunction(() => cocina.state.score === 80); await b.waitForFunction(() => cocina.state.score === 80);
   check('host prepares, guest cooks and serves; food and score agree');
+  await a.locator('#sound').click(); assert.equal(await a.locator('#sound').getAttribute('aria-pressed'), 'false');
   await a.locator('#sound').click(); assert.equal(await a.locator('#sound').getAttribute('aria-pressed'), 'true');
   await a.locator('#menu').click(); const before = await a.evaluate(() => cocina.state.remaining);
-  await a.waitForFunction(t => cocina.state.remaining < t - 0.2, before); await a.locator('#resume').click(); check('multiplayer menu does not pause the other player');
+  await a.waitForFunction(t => cocina.state.remaining < t - 0.2, before); await a.locator('#pana-resume').click(); check('multiplayer menu does not pause the other player');
   const c = await page('Luisa', true); await c.waitForFunction(() => cocina.state.phase === 'playing' && cocina.state.players.length === 3);
   assert.equal(await c.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
   const cId = await c.evaluate(() => cocina.room.id); await a.evaluate(id => cocina.place(id, -6, 6), cId);
@@ -56,7 +57,7 @@ try {
   check('host departure preserves score, orders, timer and active turn');
   await c.close(); await b.waitForFunction(() => cocina.room.members.size === 1);
   await b.locator('#menu').click(); const paused = await b.evaluate(() => cocina.state.remaining);
-  await b.waitForTimeout(300); assert.equal(await b.evaluate(() => cocina.state.remaining), paused); await b.locator('#resume').click(); check('solo menu pauses the turn');
+  await b.waitForTimeout(300); assert.equal(await b.evaluate(() => cocina.state.remaining), paused); await b.locator('#pana-resume').click(); check('solo menu pauses the turn');
   await b.evaluate(() => { cocina.room.game.remaining = 0.01; cocina.room.tick(0.05, {}); }); await b.locator('#results').waitFor({ state: 'visible' });
   if (output) await b.screenshot({ path: path.join(output, 'cocina-results.png') });
   await b.locator('#again').click(); await b.waitForFunction(() => cocina.state.phase === 'playing' && cocina.state.score === 0); check('results and replay reset the turn');

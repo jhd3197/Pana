@@ -9,6 +9,8 @@ import { RIVER, SEA, MAP_BOUNDS, beachMask } from './island.js';
 import atrapa from './minigames/atrapa.js';
 import caigas from './minigames/caigas.js';
 import { SKY_MODES } from './atmosphere.js';
+import { createGameMenu, toggleMute } from '/engine/ui.js';
+import { pixelRatio, bindRenderer } from '/engine/settings.js';
 
 // every tile, sign and bubble is drawn on a canvas in the cartoon font, so
 // load it before building anything (but never hang on it)
@@ -62,7 +64,8 @@ const isHuman = (p) => p.human && !AUTO;
 
 // ---------- renderer ----------
 const renderer = new THREE.WebGLRenderer({ antialias: true });
-renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.setPixelRatio(pixelRatio(2));
+bindRenderer(renderer, 2);
 renderer.setSize(innerWidth, innerHeight);
 renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
@@ -72,15 +75,27 @@ document.body.prepend(renderer.domElement);
 const boardScene = new THREE.Scene();
 const boardCam = new THREE.PerspectiveCamera(50, innerWidth / innerHeight, 0.1, 1800);
 const board = createBoard(boardScene, { skyMode });
-const skyButtons = [...document.querySelectorAll('[data-sky]')];
 function selectSky(mode, save = true) {
   if (!SKY_MODES.includes(mode)) return;
   board.atmosphere.setMode(mode);
-  for (const button of skyButtons) button.setAttribute('aria-pressed', String(button.dataset.sky === mode));
   if (save) try { localStorage.setItem('pana.bululu.sky', mode); } catch { /* Keep the selection for this session. */ }
 }
-for (const button of skyButtons) button.addEventListener('click', () => selectSky(button.dataset.sky));
-selectSky(board.atmosphere.mode, false);
+
+// Esc pauses on game time: turns, timers, tweens and minigames all wait.
+let paused = false;
+const menu = createGameMenu({
+  title: 'Bululú', heading: 'Pausa', sound,
+  note: () => 'La partida está en pausa.',
+  controls: [['Espacio', 'Tirar los dados / saltar'], ['A D / ← →', 'Moverte en los minijuegos'], ['Tab', 'Ver el tablero'],
+    ['L', 'Cambiar la luz'], ['M', 'Sonido'], ['Esc', 'Pausa']],
+  tips: ['Junta 20 monedas y cómprale un Mango de oro al puesto del árbol. Gana el pana con más mangos de oro.'],
+  options: [{ id: 'sky', label: 'Luz de la isla', choices: [['day', 'Día'], ['night', 'Noche'], ['cycle', 'Ciclo']],
+    get: () => board.atmosphere.mode, set: mode => selectSky(mode) }],
+  actions: [{ id: 'restart', label: 'Empezar de nuevo', kind: 'secondary', run: () => location.reload() }],
+  onOpen() { paused = true; for (const k in held) held[k] = false; },
+  onClose() { paused = false; },
+});
+$('top-actions').prepend(menu.createButton({ id: 'menu', className: 'menu-button' }));
 const puffs = new Puffs(boardScene);
 // two dice, plus a floating counter for the steps left once they're rolled
 const dice = [createDie(), createDie()];
@@ -276,12 +291,12 @@ let jumpPressed = false;
 let actionWaiters = [];
 addEventListener('keydown', (e) => {
   // Let the atmosphere buttons retain native Space/Enter/Tab behavior.
-  if (e.target.closest?.('.sky-controls, .places')) return;
+  if (e.target.closest?.('.places')) return;
   const k = e.key.toLowerCase();
   if (k === ' ' || k.startsWith('arrow')) e.preventDefault();
   held[k] = true;
   if (!e.repeat && (k === ' ' || k === 'w' || k === 'arrowup')) jumpPressed = true;
-  if (k === 'm') sound.muted = !sound.muted;
+  if (k === 'm' && !e.repeat) toggleMute();
   if (k === 'l' && !e.repeat && view === boardView) {
     selectSky(SKY_MODES[(SKY_MODES.indexOf(board.atmosphere.mode) + 1) % SKY_MODES.length]);
   }
@@ -967,7 +982,8 @@ async function main() {
 const clock = new THREE.Clock();
 let t = 0;
 function frame() {
-  const dt = Math.min(clock.getDelta(), 0.1) * SPEED;
+  const dt = paused ? 0 : Math.min(clock.getDelta(), 0.1) * SPEED;
+  if (paused) clock.getDelta();
   t += dt;
   stepJobs(dt);
   if (mini) updateMini(dt);
@@ -997,7 +1013,7 @@ async function fastForward(seconds, dt = 1 / 30) {
     await null;   // let the turn logic's awaits run
   }
 }
-if (DEBUG) Object.assign(window, { players, board, MINIGAMES, layoutTokens, fastForward, renderer, boardScene, boardCam });
+if (DEBUG) Object.assign(window, { menu, players, board, MINIGAMES, layoutTokens, fastForward, renderer, boardScene, boardCam });
 
 frame();
 main();

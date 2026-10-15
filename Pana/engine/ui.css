@@ -1,0 +1,173 @@
+/* Shared Pana menu: pause, settings, controls, invite. Used by /engine/ui.js.
+   Everything is scoped under .pana-* so each game keeps its own HUD look.
+   Games style bare elements (header, dl, dd…), so the menu sticks to divs,
+   spans and buttons with classes. */
+
+.pana-menu {
+  --pm-bg: #1a1336;
+  --pm-raised: #241b47;
+  --pm-line: #3a2f63;
+  --pm-text: #fbf3e2;
+  --pm-muted: #b3aad6;
+  --pm-yellow: #ffc629;
+  --pm-yellow-edge: #a87700;
+  --pm-ink: #1b1530;
+  --pm-coral: #ff5a4f;
+  color-scheme: dark;
+  width: min(440px, calc(100vw - 32px));
+  max-height: calc(100dvh - 32px);
+  overflow: auto;
+  padding: 0;
+  border: 2px solid var(--pm-line);
+  border-radius: 14px;
+  background: var(--pm-bg);
+  color: var(--pm-text);
+  box-shadow: 0 6px 0 #0b0820, 0 18px 40px rgba(0, 0, 0, .45);
+  font: 600 15px/1.45 Nunito, system-ui, sans-serif;
+  text-align: left;
+}
+.pana-menu::backdrop { background: rgba(14, 11, 36, .62); }
+.pana-menu[open] { animation: pana-menu-in 140ms ease-out; }
+@keyframes pana-menu-in { from { opacity: 0; transform: translateY(8px); } }
+@media (prefers-reduced-motion: reduce) { .pana-menu[open] { animation: none; } }
+
+.pana-menu *, .pana-toast { box-sizing: border-box; }
+/* :where keeps these resets below every .pana-* rule */
+:where(.pana-menu) :where(button, input) { font: inherit; color: inherit; -webkit-tap-highlight-color: transparent; }
+.pana-menu :focus-visible { outline: 3px solid var(--pm-yellow); outline-offset: 2px; }
+.pana-menu [hidden] { display: none !important; }
+
+.pana-menu-head { position: relative; padding: 22px 24px 14px; }
+.pana-menu-head small { display: block; color: var(--pm-yellow); font-size: 12px; font-weight: 900; letter-spacing: 2px; text-transform: uppercase; }
+.pana-menu-head h2 {
+  margin: 4px 0 0;
+  font: 400 32px/1.05 'Luckiest Guy', system-ui, sans-serif;
+  letter-spacing: 1px;
+  color: var(--pm-text);
+}
+.pana-menu-note { margin: 8px 0 0; color: var(--pm-muted); font-size: 14px; }
+.pana-close {
+  position: absolute; top: 14px; right: 14px;
+  width: 40px; height: 40px;
+  border: 2px solid var(--pm-line); border-radius: 10px;
+  background: var(--pm-raised); font-size: 24px; line-height: 1; cursor: pointer;
+}
+
+.pana-tabs {
+  display: flex; align-items: center; gap: 4px;
+  margin: 0 24px; padding-bottom: 2px;
+  border-bottom: 2px solid var(--pm-line);
+}
+.pana-tabs [role="tab"] {
+  margin-bottom: -4px; padding: 9px 12px 8px;
+  border: 0; border-bottom: 4px solid transparent; background: none;
+  color: var(--pm-muted); font-weight: 900; cursor: pointer;
+}
+.pana-tabs [role="tab"][aria-selected="true"] { color: var(--pm-text); border-bottom-color: var(--pm-yellow); }
+.pana-tabs [role="tab"]:hover { color: var(--pm-text); }
+.pana-tabs-hint { margin-left: auto; color: var(--pm-muted); font-size: 12px; }
+
+.pana-panel { padding: 18px 24px 24px; }
+
+.pana-primary, .pana-secondary, .pana-link {
+  display: block; width: 100%; min-height: 48px;
+  margin-top: 10px; padding: 12px 16px;
+  border-radius: 10px; font-weight: 900; text-align: center; cursor: pointer;
+}
+.pana-panel > :first-child { margin-top: 0; }
+.pana-primary {
+  border: 0; background: var(--pm-yellow); color: var(--pm-ink);
+  box-shadow: 0 4px 0 var(--pm-yellow-edge); font-size: 17px;
+}
+.pana-primary:active { transform: translateY(2px); box-shadow: 0 2px 0 var(--pm-yellow-edge); }
+.pana-secondary { border: 2px solid var(--pm-line); background: var(--pm-raised); }
+.pana-secondary:hover, .pana-close:hover { border-color: var(--pm-muted); }
+.pana-link { min-height: 40px; border: 0; background: none; color: var(--pm-yellow); }
+.pana-exit {
+  display: block; margin-top: 18px; padding: 6px;
+  color: var(--pm-muted); font-size: 14px; font-weight: 800; text-align: center;
+}
+.pana-exit:hover { color: var(--pm-coral); }
+.pana-menu-status { min-height: 0; margin: 10px 0 0; color: var(--pm-yellow); font-weight: 800; text-align: center; }
+.pana-menu-status:empty { display: none; }
+.pana-share { display: block; margin-top: 14px; font-size: 13px; color: var(--pm-muted); }
+.pana-share input {
+  width: 100%; margin-top: 6px; padding: 9px 10px;
+  border: 2px solid var(--pm-line); border-radius: 8px; background: #120d2c; color: var(--pm-text);
+}
+
+/* settings rows */
+.pana-row {
+  display: flex; align-items: center; justify-content: space-between; gap: 16px;
+  min-height: 52px; padding: 8px 0;
+  border-bottom: 1px solid var(--pm-line);
+}
+.pana-row > span { font-weight: 800; }
+.pana-switch {
+  position: relative; flex: none;
+  width: 74px; height: 34px;
+  border: 2px solid var(--pm-line); border-radius: 999px;
+  background: #120d2c; cursor: pointer;
+  font-size: 12px; font-weight: 900; text-align: right; padding: 0 11px;
+}
+.pana-switch::before {
+  content: ''; position: absolute; top: 3px; left: 3px;
+  width: 24px; height: 24px; border-radius: 50%; background: var(--pm-muted);
+  transition: transform 120ms ease-out, background 120ms;
+}
+.pana-switch::after { content: attr(data-state); }
+.pana-switch[aria-checked="true"] { background: var(--pm-yellow); border-color: var(--pm-yellow-edge); color: var(--pm-ink); text-align: left; }
+.pana-switch[aria-checked="true"]::before { transform: translateX(38px); background: var(--pm-ink); }
+@media (prefers-reduced-motion: reduce) { .pana-switch::before { transition: none; } }
+.pana-volume input { flex: 1; max-width: 220px; accent-color: var(--pm-yellow); }
+.pana-volume input:disabled { opacity: .4; }
+.pana-choice { flex-wrap: wrap; }
+.pana-segments { display: flex; padding: 3px; border: 2px solid var(--pm-line); border-radius: 10px; background: #120d2c; }
+.pana-segments button {
+  min-height: 34px; padding: 4px 10px;
+  border: 0; border-radius: 7px; background: none;
+  color: var(--pm-muted); font-size: 13px; font-weight: 900; cursor: pointer;
+}
+.pana-segments button[aria-checked="true"] { background: var(--pm-yellow); color: var(--pm-ink); }
+.pana-fine { margin: 14px 0 0; color: var(--pm-muted); font-size: 12px; }
+.pana-panel > .pana-primary:last-child { margin-top: 18px; }
+
+/* controls */
+.pana-keys { display: grid; gap: 8px; }
+.pana-key { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 4px 0 8px; border-bottom: 1px solid var(--pm-line); }
+.pana-key-caps { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; color: var(--pm-muted); }
+.pana-key-text { font-weight: 800; text-align: right; }
+.pana-menu kbd {
+  display: inline-block; min-width: 24px; margin: 0; padding: 3px 7px 2px;
+  border: 1px solid var(--pm-line); border-bottom-width: 3px; border-radius: 6px;
+  background: var(--pm-raised); color: var(--pm-yellow);
+  font: 800 12px/1.3 Nunito, system-ui, sans-serif; text-align: center;
+}
+.pana-tip { margin: 12px 0 0; color: var(--pm-muted); font-size: 14px; }
+
+/* the small "link copied" toast used when a game has none of its own */
+.pana-toast {
+  position: fixed; left: 50%; top: 24px; z-index: 50;
+  padding: 10px 18px; border-radius: 10px;
+  background: #1a1336; color: #fbf3e2; border: 2px solid #3a2f63;
+  font: 800 14px Nunito, system-ui, sans-serif;
+  transform: translate(-50%, -12px); opacity: 0; pointer-events: none;
+  transition: opacity 160ms, transform 160ms;
+}
+.pana-toast.show { opacity: 1; transform: translate(-50%, 0); }
+
+/* player setting: hide keyboard reminders */
+.pana-no-hints [data-pana-hint] { display: none !important; }
+
+@media (max-width: 480px) {
+  .pana-menu-head { padding: 18px 18px 12px; }
+  .pana-tabs { margin: 0 18px; }
+  .pana-tabs-hint { display: none; }
+  .pana-panel { padding: 16px 18px 20px; }
+  .pana-volume input { max-width: 160px; }
+}
+
+/* touch screens have no Esc key: keep the button, drop the key cap */
+@media (pointer: coarse) {
+  [aria-haspopup="dialog"] kbd[data-pana-hint], .pana-tabs-hint { display: none; }
+}

@@ -9,6 +9,8 @@ import { activeItem, canBlock, coinMultiplier, COIN_SPEED, MAX_COINS } from './i
 import { TRACKS, getTrack, makeTrack } from './tracks.js';
 import { roughnessAt,roadGripAt,roadWaterAt } from './offroad.js';
 import { loadAvatar, loadName, randomAvatar } from '/engine/avatar.js';
+import { createGameMenu, toggleMute } from '/engine/ui.js';
+import { pixelRatio, bindRenderer } from '/engine/settings.js';
 
 const $ = (id) => document.getElementById(id);
 const rand = (a, b) => a + Math.random() * (b - a);
@@ -45,7 +47,8 @@ class Spring {
 
 // ---------- renderer ----------
 const renderer = new THREE.WebGLRenderer({ antialias: true });
-renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.setPixelRatio(pixelRatio(2));
+bindRenderer(renderer, 2);
 renderer.setSize(innerWidth, innerHeight);
 renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
@@ -566,6 +569,31 @@ function toGarage() {
   $('play').focus({ preventScroll: true });
 }
 
+// Esc pauses the race (or opens the settings in the garage). Paused races
+// keep their clock, items and AI frozen until the menu closes.
+let paused = false;
+const menu = createGameMenu({
+  title: 'Derrape', heading: 'Pausa', sound,
+  note: () => mode === 'race' ? (race.state === 'end' ? 'La carrera terminó.' : 'La carrera está en pausa.') : 'Estás en el garaje.',
+  controls: [['W / ↑', 'Acelerar'], ['S / ↓', 'Frenar'], ['A D / ← →', 'Girar'], ['Espacio / E', 'Lanzar objeto adelante'],
+    ['X', 'Lanzar objeto atrás'], ['1 2', 'Elegir objeto'], ['Q', 'Cambiar objeto'], ['H', 'Claxon'], ['M', 'Sonido'], ['Esc', 'Pausa']],
+  tips: ['Rompe cajas de madera para conseguir objetos. Cada moneda da un poquito más de velocidad.'],
+  actions: [
+    { id: 'restart', label: 'Reiniciar carrera', kind: 'secondary', visible: () => mode === 'race', run: () => startRace(race.playerIndex) },
+    { id: 'to-garage', label: 'Volver al garaje', kind: 'secondary', visible: () => mode === 'race', run: () => toGarage() },
+  ],
+  canOpen: () => mode !== 'loading',
+  onOpen() {
+    resetInput();
+    if (mode !== 'race') return;
+    paused = true;
+    if (sound.engine) sound.engine.g.gain.setTargetAtTime(0, sound.ctx.currentTime, 0.05);
+  },
+  onClose() { paused = false; acc = 0; clock.getDelta(); },
+});
+$('race').querySelector('.hud-top').append(menu.createButton({ id: 'pause', label: 'Pausa', className: 'pill pause-button' }));
+$('garage').querySelector('.tools').prepend(menu.createButton({ id: 'settings', label: 'Ajustes', className: 'toggle' }));
+
 $('again').onclick = () => startRace(race.playerIndex);
 $('back').onclick = toGarage;
 $('loading-back').onclick = toGarage;
@@ -598,12 +626,12 @@ addEventListener('keydown', (e) => {
   if (e.target.closest('input, textarea, select, [contenteditable="true"]')) return;
   const k = e.key.toLowerCase();
   race.keys[k] = true;
-  if (k === 'escape' && (mode === 'race' || mode === 'loading')) toGarage();
+  if (k === 'escape' && mode === 'loading') toGarage();
   if (k === 'h' && !e.repeat) {
     if (mode === 'race' && race.player) honk(race.player);
     else if (mode === 'garage') garageHonk();
   }
-  if (k === 'm') sound.muted = !sound.muted;
+  if (k === 'm' && !e.repeat) toggleMute();
   if ((k === ' ' || k === 'e') && mode === 'race' && race.state === 'go' && race.player) {
     e.preventDefault();
     if (!e.repeat) itemAction(race.keys.s || race.keys.arrowdown ? -1 : 1);
@@ -1084,7 +1112,7 @@ function frame() {
   } else if (mode === 'race') {
     renderer.toneMapping = THREE.NoToneMapping;
     // fixed physics steps: same race speed at any frame rate
-    acc += dt * SPEED;
+    if (!paused) acc += dt * SPEED;
     while (acc >= STEP && mode === 'race') {
       updateRace(STEP);
       acc -= STEP;
@@ -1110,7 +1138,7 @@ function resize() {
 addEventListener('resize', resize);
 resize();
 
-if (DEBUG) Object.assign(window, { race, garage, renderer, crash, stepCar, startRace, updateRace, toGarage, ITEMS, TRACKS, buildTrack, getActiveTrack: () => T });
+if (DEBUG) Object.assign(window, { menu, race, garage, renderer, crash, stepCar, startRace, updateRace, toGarage, ITEMS, TRACKS, buildTrack, getActiveTrack: () => T });
 
 // ?track=desierto wins; otherwise the last pick, otherwise the estadio
 let savedTrack = 'estadio';

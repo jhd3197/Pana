@@ -143,7 +143,14 @@ try {
   await page.evaluate(() => window.dispatchEvent(new Event('blur')));
   assert.equal(await page.evaluate(() => !!race.keys.w), false);
   await page.keyboard.up('w');
+  // Esc opens the pause menu; its "Volver al garaje" cleans up the race.
   await page.keyboard.press('Escape');
+  assert.equal(await page.locator('#pana-menu-dialog').evaluate(d => d.open), true);
+  await page.keyboard.down('w');
+  assert.equal(await page.evaluate(() => !!race.keys.w), false, 'keys stay with the menu');
+  await page.keyboard.up('w');
+  await page.locator('#to-garage').click();
+  assert.equal(await page.evaluate(() => race.state), 'off');
   const clean = await page.evaluate(() => race.items.fragments.pieces.length === 0 && race.items.projectiles.length === 0 &&
     !race.trackGroup.getObjectByName('held-mango'));
   assert.ok(clean, 'garage cleanup');
