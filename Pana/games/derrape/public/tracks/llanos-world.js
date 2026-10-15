@@ -1,7 +1,7 @@
 import { THREE,M,mesh,box,tube,terrain,put,foundation,scatter,instances,clear,finish,smooth,placeOnTrack } from './world-kit.js';
 import { llaneroRanchHouse,corralGate,hayBale,waterWindmill,horseStable,feedingTrough,ranchFence,oldTractor,mudPuddle,ranchWaterTower } from '/engine/ranch-props.js';
 import { palm,mangoTree,araguaney,reeds,waterLily } from '/engine/flora.js';
-import { capybaraForm } from '/engine/landmarks.js';
+import { wildCapybara,scarletIbis,orbitBird } from '/engine/wildlife.js';
 import { streetFoodKiosk,cornerBodega,parkBench } from '/engine/pueblo-props.js';
 import { waterSurface,waterAnimator } from '/engine/water-surface.js';
 import { llaneroHorse,yardChicken,hatoCow } from '/engine/farm-animals.js';
@@ -103,7 +103,9 @@ export function llanosEnvironment(T){
   // A fisherman's landing and grazing capybaras make the wetland readable.
   banks.add(box(3.2,.25,15,M(0x998360),-30,1.2,-67));
   for(const x of [-31.4,-28.6])for(const z of [-73,-68,-62])banks.add(box(.2,3,.2,M(0x6c6047),x,-.2,z));
-  for(const [x,z,rot]of [[-40,-80,.7],[16,-112,2],[137,85,-1]])if(clear(T,x,z,3))put(banks,capybaraForm(M(0x9b7954)),x,z,world.groundAt(x,z),rot,1.15);
+  for(const [i,[x,z,rot]]of [[-40,-80,.7],[16,-112,2],[137,85,-1]].entries())if(clear(T,x,z,3)){
+    const capy=put(group,wildCapybara({seed:10+i}),x,z,world.groundAt(x,z),rot,1.15);moving.push(capy);
+  }
   const banksBatch=finish(banks);banksBatch.name='estero-wildlife-landing';group.add(banksBatch);
   for(const [i,x,z]of [[0,-207,145],[1,260,-208],[2,-188,-131]])add(group,'mud-puddle',()=>mudPuddle({rx:3.1,rz:1.7,seed:49+i}),x,z,{radius:4});
 
@@ -126,6 +128,5 @@ export function llanosScenery(group,kit,T){
   group.add(crossing(T,p=>riverDistance(p.x,p.z)<26,{name:'estero-road-bridges',wood:true,color:0x9e9172}));
   group.add(vergePosts(T,{skip:onBridge,step:18}),dirtVerge(T,{shoulder:0xb3a776,rut:0x927c54,skip:onBridge}));
   const boat=kit.rowboat({color:0x9b5140});kit.at(group,boat,{x:-28,z:-66,y:WATER_Y},.4);
-  const ibis={body:'#dd5039',wing:'#a93829',beak:'#484235',tail:'#6a3228'};
-  for(let i=0;i<4;i++)kit.buildBird(ibis).flyCircle(group,{cx:85,cz:80,cy:17+i*3,r:42+i*10,speed:.18+i*.015,phase:i*1.4});
+  for(let i=0;i<4;i++)group.add(orbitBird(scarletIbis({seed:20+i}),{cx:85,cz:80,cy:17+i*3,r:42+i*10,speed:.18+i*.015,phase:i*1.4}));
 }

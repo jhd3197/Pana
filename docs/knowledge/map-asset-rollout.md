@@ -3,8 +3,9 @@
 Studio registration and map placement are separate. A catalog entry does not
 automatically appear in any game. This pass audited the eleven map previews
 (eight circuits, Plaza, Cocina and the original Bululú board), added contextual
-placements, and corrected consumer labels. The catalog has 140 entries, five in
-Fauna: horse, chicken, cow, reef fish and fish school.
+placements, and corrected consumer labels. This pass originally had 140 entries,
+five in Fauna. Later coastal and wildlife work brings the catalog to 154 entries
+and ten in Fauna; see `model-inventory.md` for the current complete inventory.
 
 ## Actual placement coverage
 
@@ -33,11 +34,14 @@ locations merely to claim complete coverage:
 
 - Emblemas: capybara statue, golden mango statue, welcome arch, Pana flagpole,
   capybara fountain.
-- Selva: standalone temple entrance, rope bridge, waterfall rocks, bamboo bridge.
+- Selva: standalone temple entrance, rope bridge, bamboo bridge.
   Selva's current drivable temple and river crossing are larger route-specific
   constructions, not instances of those catalog models.
 - Páramo: mountain guardrail and suspension bridge. The current road barriers and
   cable lift are route-specific constructions.
+
+There are ten preview-only entries. `waterfallRocks` is already used in Chi Chi;
+the earlier preview-only label was corrected during the wildlife inventory audit.
 
 ## Construction and regression contracts
 

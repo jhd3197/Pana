@@ -11,15 +11,21 @@ const object = (id, name, category, source, factory, usedBy, options) => ({
   id, name, category, source, factory, usedBy, previewOptions: options ?? null,
   async build() { const module = await import(source), group = module[factory](options), frame=group.userData.previewBounds; return { group, bounds:frame&&new Box3(new Vector3(...frame[0]),new Vector3(...frame[1])), update: group.userData.tick && ((t, dt) => group.userData.tick(t, dt)) }; },
 });
-const character = (id, name, options = {}) => ({ id, name, category: 'Personajes', source: '/engine/character.js', factory: 'buildCharacter', usedBy: shared, previewOptions: options,
+const character = (id, name, options = {}) => ({ id, name, category: 'Personajes', source: '/engine/character.js', factory: 'buildCharacter', usedBy: options.seated?['Derrape']:options.chef?['Cocina']:shared, previewOptions: options,
   async build() { const { buildCharacter } = await import('/engine/character.js'); const model = buildCharacter(DEFAULT_AVATAR, { quality: 'studio', ...options }); return { group: model.group, update: (t, dt) => model.update(dt), dispose: () => model.dispose() }; },
 });
 export const ASSETS = [
   ...[
+    ['scarlet-macaw','Guacamaya roja','scarletMacaw','Selva: alas rojas, amarillas y azules, cara clara, pico curvo y cola larga.'],
+    ['scarlet-ibis','Corocora roja','scarletIbis','Los Llanos: cuerpo esbelto, pico largo curvado y patas extendidas en vuelo.'],
+    ['soaring-vulture','Zamuro planeador','soaringVulture','Desierto: alas anchas con plumas abiertas, cabeza desnuda y planeo suave.'],
+    ['wild-capybara','Chigüire','wildCapybara','Selva y Los Llanos: capibara natural de cuatro patas, sin ropa, con orejas animadas.'],
+  ].map(([id,name,factory,description])=>({...object(id,name,'Fauna','/engine/wildlife.js',factory,['Derrape'],{seed:7}),description,tags:['animal','fauna',id==='wild-capybara'?'capibara':'ave','animado'],dependencies:['/engine/landmarks.js','/engine/architecture-kit.js']})),
+  ...[
     ['llanero-horse','Caballo llanero','llaneroHorse','Caballo de hato con crin, lucero, medias claras y animación de pastoreo.',{seed:7,coat:'bay'}],
     ['yard-chicken','Gallina de patio','yardChicken','Gallina de corral con cresta, alas plegadas y animación de picoteo.',{seed:7,coat:'red'}],
     ['hato-cow','Vaca del hato','hatoCow','Vaca de manchas castañas, pezuñas partidas, cuernos y cola animada. Reemplaza la vaca antigua de Los Llanos.',{seed:7,coat:'pinto'}],
-  ].map(([id,name,factory,description,options])=>({...object(id,name,'Fauna','/engine/farm-animals.js',factory,['Pana Studio','Derrape'],options),description,tags:['animal','hato','llanos','animado'],dependencies:['/engine/vendor/procedural-animals/core/sdf/sdf.js','/engine/vendor/procedural-animals/core/sdf/mesher.js','/engine/vendor/procedural-animals/core/math/vec.js']})),
+  ].map(([id,name,factory,description,options])=>({...object(id,name,'Fauna','/engine/farm-animals.js',factory,['Derrape'],options),description,tags:['animal','hato','llanos','animado'],dependencies:['/engine/vendor/procedural-animals/core/sdf/sdf.js','/engine/vendor/procedural-animals/core/sdf/mesher.js','/engine/vendor/procedural-animals/core/math/vec.js']})),
   ...[['reef-fish','Pez de arrecife','reefFish'],['reef-fish-school','Cardumen costero','reefFishSchool']].map(([id,name,factory])=>({...object(id,name,'Fauna','/engine/reef-fish.js',factory,['Bululú','Derrape'],{seed:7}),description:'Fauna marina de Pana: peces con aletas y cola animadas en las aguas de ambas islas.',tags:['pez','agua','isla','animado']})),
   // Llanos 041–050: grounded ranch buildings, working machinery and scenery.
   ...[
@@ -131,7 +137,7 @@ export const ASSETS = [
     ['bamboo-bridge', 'Puente de bambú', 'bambooBridge', 'Tablero de cañas amarradas sobre caballetes, con rampas.', ['puente', 'bambú', 'obstáculo']],
     ['stone-totem', 'Tótem de piedra antiguo', 'stoneTotem', 'Tres rostros tallados (jaguar, búho y capibara) bajo un penacho.', ['tótem', 'ruinas', 'capibara']],
     ['hollow-log', 'Tronco hueco', 'hollowLog', 'Tronco caído y hueco con hongos, musgo y bordes rotos.', ['tronco', 'obstáculo', 'túnel']],
-  ].map(([id, name, factory, description, tags]) => ({ ...object(id, name, 'Selva', '/engine/jungle-props.js', factory, ['stoneTotem','hollowLog','vineArch'].includes(factory)?['Derrape']:['Pana Studio']), description, tags: ['selva', ...tags] })),
+  ].map(([id, name, factory, description, tags]) => ({ ...object(id, name, 'Selva', '/engine/jungle-props.js', factory, ['stoneTotem','hollowLog','vineArch','waterfallRocks'].includes(factory)?['Derrape']:['Pana Studio']), description, tags: ['selva', ...tags] })),
   ...[['beachShade', 'Sombrilla de playa'], ['beachHut', 'Rancho de playa'], ['driftwood', 'Tronco de playa']].map(([factory, name]) => object(factory, name, 'Objetos', '/engine/beach-props.js', factory, ['Bululú', 'Derrape'])),
   ...[
     ['fishing-boat','Peñero de pesca','fishingBoat','Casco abierto, bancos de madera, remos, motor fuera de borda y cabo de proa.',true],

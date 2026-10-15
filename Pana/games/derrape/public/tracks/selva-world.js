@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { wildCapybara,scarletMacaw,orbitBird } from '/engine/wildlife.js';
 import { M, mesh, box, rng } from '/engine/props.js';
 import { bake } from '/engine/flora.js';
 import * as kit from '../track-kit.js';
@@ -158,7 +159,6 @@ export function jungleScenery(group,kit,T) {
   kit.at(group,sign,{...p,y:T.terrainAt(p.x,p.z)},p.h+Math.PI/2);
   kit.at(group,kit.flagPole({h:9}),kit.placeOnTrack(T,T.LINE-28,T.HW+6));
   kit.at(group,kit.rowboat({color:0x9c663e}),{x:-20,z:-72,y:0.6},1.1);
-  kit.at(group,kit.capybara({seed:5}),{x:-27,z:-83,y:T.terrainAt(-27,-83)},2.2);
-  const bird=kit.buildBird({body:'#e8392a',wing:'#2a5db8',beak:'#e8e0c8',tail:'#2a5db8',size:1.3});
-  bird.flyCircle(group,{cx:-20,cz:-100,cy:24,r:24,speed:0.4,phase:1});
+  kit.at(group,wildCapybara({seed:5}),{x:-27,z:-83,y:T.terrainAt(-27,-83)},2.2);
+  group.add(orbitBird(scarletMacaw({seed:5}),{cx:-20,cz:-100,cy:24,r:24,speed:0.4,phase:1}));
 }

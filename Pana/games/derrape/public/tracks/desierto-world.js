@@ -1,6 +1,7 @@
 import { THREE,terrain,put,foundation,scatter,instances,clear,finish,smooth,placeOnTrack,boulder } from './world-kit.js';
 import { giantCactus,sandDune,desertRockArch,abandonedGasStation,rustedPickup,roadsideTirePile,canyonSpire,brokenWagon,desertWarningSign,desertWell } from '/engine/desert-props.js';
 import { palm,agave } from '/engine/flora.js';
+import { soaringVulture,orbitBird } from '/engine/wildlife.js';
 import { parkBench } from '/engine/pueblo-props.js';
 import { waterPool,waterAnimator } from '/engine/water-surface.js';
 import { baseHeight,roadHeight,OASIS } from './desierto-layout.js';
@@ -109,5 +110,5 @@ export function desertScenery(group,kit,T){
   // Guard the exposed eastern ledge while keeping dune views open.
   group.add(crossing(T,(p,s)=>high(s),{name:'canyon-ledge-viaduct',color:0xb3987e}));
   group.add(vergePosts(T,{skip:high,color:0xe9d0a0,step:18}),dirtVerge(T,{shoulder:0xc9aa77,rut:0xa58d69,skip:high}));
-  for(let i=0;i<2;i++)kit.buildBird({body:'#50473b',wing:'#302d27',beak:'#c7b88c',tail:'#302d27',size:1.7}).flyCircle(group,{cx:70,cz:-110,cy:90+i*8,r:58+i*14,speed:.16,phase:i*3});
+  for(let i=0;i<2;i++)group.add(orbitBird(soaringVulture({seed:30+i}),{cx:70,cz:-110,cy:90+i*8,r:58+i*14,speed:.16,phase:i*3}));
 }

@@ -126,7 +126,9 @@ shared `water-details.js` batches ripples and droplets into two InstancedMeshes.
 All motion uses absolute time, including the waterfall texture offset, so
 thumbnails, paused previews and replayed time agree. `flagPole({flag:'pana'})` uses the
 `panaFlag()` canvas; the default flag is still Venezuelan. Registration does
-not place landmarks into maps; only the plaza fountain has game consumers.
+not itself place landmarks into maps. The plaza fountain, capybara topiary,
+trophy monument and souvenir kiosk now have game consumers; see
+`model-inventory.md` for current coverage rather than the original rollout state.
 
 Run `node Pana/engine/tests/landmarks.browser.js` (with `PANA_PLAYWRIGHT_PATH`
 and `PANA_BROWSER_PATH` when needed). It checks all ten signature assets (the nine

@@ -10,8 +10,6 @@ import * as THREE from 'three';
 import { M, mesh, box, tube, canvasMat } from './car-kit.js';
 import { rng, woodSign as mapSign, watchtower, flagPole, rock } from '/engine/props.js';
 import * as flora from '/engine/flora.js';
-import { buildCharacter } from '/engine/character.js';
-import { randomAvatar } from '/engine/avatar.js';
 import { waterPool,riverSurface } from '/engine/water-surface.js';
 
 // Use the canonical foliage and batch its many leaflets before placement.
@@ -474,69 +472,6 @@ function distantMountains({ r = 210, count = 10, color = 0x7a6a8a, snow = false,
   return g;
 }
 
-// ---------- critters ----------
-// Shared bird builder: toucan, macaw, ibis, seagull. Perches by default;
-// add flyCircle to make it orbit.
-function buildBird({ body = '#e8452c', wing = '#a5281b', beak = '#f4a259', tail = '#16161a', size = 1 } = {}) {
-  const g = new THREE.Group();
-  const b = mesh(new THREE.SphereGeometry(0.3, 8, 6), M(body, { roughness: 0.8 }));
-  b.scale.set(0.8, 0.9, 1.2);
-  b.position.y = 0.45;
-  g.add(b);
-  const head = mesh(new THREE.SphereGeometry(0.2, 8, 6), M(body, { roughness: 0.8 }), 0, 0.75, 0.28);
-  g.add(head);
-  const bk = mesh(new THREE.ConeGeometry(0.09, 0.42, 6), M(beak, { roughness: 0.6 }), 0, 0.73, 0.55);
-  bk.rotation.x = Math.PI / 2;
-  g.add(bk);
-  const tl = mesh(new THREE.ConeGeometry(0.12, 0.5, 4), M(tail, { roughness: 0.8 }), 0, 0.42, -0.5);
-  tl.rotation.x = -Math.PI / 2.3;
-  g.add(tl);
-  const wings = [];
-  for (const s of [1, -1]) {
-    const w = mesh(new THREE.BoxGeometry(0.5, 0.06, 0.34), M(wing, { roughness: 0.8 }), s * 0.28, 0.52, 0);
-    wings.push(w);
-    g.add(w);
-  }
-  let flying = false;
-  g.userData.tick = (t) => {
-    const flap = flying ? Math.sin(t * 14) * 0.9 : Math.sin(t * 2) * 0.08;
-    wings[0].rotation.z = flap;
-    wings[1].rotation.z = -flap;
-    if (!flying) head.rotation.y = Math.sin(t * 0.7) * 0.5;
-  };
-  g.scale.setScalar(size);
-  return {
-    group: g,
-    // orbit a point: circling ibis, condor on a thermal
-    flyCircle(group3, { cx, cz, cy = 14, r = 16, speed = 0.5, phase = 0 }) {
-      flying = true;
-      g.userData.tick = (t) => {
-        const a = t * speed + phase;
-        g.position.set(cx + Math.cos(a) * r, cy + Math.sin(t * 1.3 + phase) * 0.8, cz + Math.sin(a) * r);
-        g.rotation.y = -a - Math.PI / 2;
-        const flap = Math.sin(t * 14) * 0.7;
-        wings[0].rotation.z = flap;
-        wings[1].rotation.z = -flap;
-      };
-      group3.add(g);
-      return g;
-    },
-  };
-}
-
-// A scenery capybara: the same pana character, standing around grazing.
-function capybara({ seed = 1 } = {}) {
-  const phase = rng(seed)() * 6;
-  const pana = buildCharacter(randomAvatar(), {});
-  pana.armL.rotation.set(0, 0, 0.15);
-  pana.armR.rotation.set(0, 0, -0.15);
-  pana.group.userData.tick = (t, dt) => {
-    pana.update(dt, {});
-    pana.neck.rotation.x = 0.35 + Math.sin(t * 0.8 + phase) * 0.28;   // grazing
-  };
-  return pana.group;
-}
-
 function sectorSigns(group, T) {
   for (const [u, name] of T.def.sectors || []) {
     const p = placeOnTrack(T, T.TOTAL * u, T.HW + 6);
@@ -579,5 +514,4 @@ export {
   waterPond, waterRibbon, waterfall,
   bridge, flankBridge,
   palm, mangoTree, ceiba, pine, banana, bush, bake, windmill, arepaStand, dock, rowboat, sailboat, distantMountains,
-  buildBird, capybara,
 };

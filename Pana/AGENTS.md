@@ -70,6 +70,14 @@ clean: only `README.md` and `.gitignore` belong there. Everything else lives her
   skinned meshes with absolute-time `userData.tick(t)` and an idempotent skeleton
   `userData.dispose()`. Keep animals outside static batches and racing lanes.
   See `../docs/knowledge/procedural-farm-animals.md` for parameters and proof.
+  `engine/wildlife.js` supplies the Fauna macaw, scarlet ibis, soaring vulture and
+  natural capybara. Selva uses one macaw/one capybara; Llanos four ibis/three
+  capybaras; Desierto two vultures. Keep flight roots outside static batches,
+  preserve +Z tangent heading and absolute-time ticks, and reuse `capybaraForm`.
+  Fauna now has ten entries (nine animals plus a fish school). The current source
+  inventory, uncataloged/legacy ledger and priorities live in
+  `../docs/knowledge/model-inventory.md`; regenerate it with
+  `scripts/audit-inventory.browser.js` after updating `scripts/inventory-notes.js`.
   `engine/reef-fish.js` supplies Pana-authored fish and schools to both islands.
   Keep their whole swimming envelope below waves and above the seabed, and pass
   path clearance to `placeReefSchools`. Do not bake animated fish. The Studio

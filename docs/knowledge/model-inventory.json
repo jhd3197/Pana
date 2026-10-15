@@ -1,0 +1,2804 @@
+{
+  "date": "2026-10-15",
+  "scope": "Current production 3D resource/model families; catalog variants and scene assemblies are counted separately. No primitive-mesh count or deleted-history total.",
+  "counts": {
+    "catalog": 154,
+    "categories": {
+      "Fauna": 10,
+      "Llanos": 10,
+      "Desierto": 10,
+      "Termales": 5,
+      "Personajes": 3,
+      "Vestuario": 5,
+      "Objetos": 27,
+      "Vegetación": 22,
+      "Pueblo": 10,
+      "Páramo": 8,
+      "Emblemas": 9,
+      "Selva": 7,
+      "Costa": 9,
+      "Vehículos": 8,
+      "Mapas": 11
+    },
+    "previewOnly": 10,
+    "uncatalogedFamilies": 31,
+    "sceneFamilies": 38,
+    "dormantFactories": 9
+  },
+  "assets": [
+    {
+      "id": "scarlet-macaw",
+      "name": "Guacamaya roja",
+      "category": "Fauna",
+      "source": "Pana/engine/wildlife.js",
+      "factory": "scarletMacaw",
+      "usedBy": [
+        "Derrape"
+      ],
+      "previewOptions": {
+        "seed": 7
+      },
+      "status": "in-use"
+    },
+    {
+      "id": "scarlet-ibis",
+      "name": "Corocora roja",
+      "category": "Fauna",
+      "source": "Pana/engine/wildlife.js",
+      "factory": "scarletIbis",
+      "usedBy": [
+        "Derrape"
+      ],
+      "previewOptions": {
+        "seed": 7
+      },
+      "status": "in-use"
+    },
+    {
+      "id": "soaring-vulture",
+      "name": "Zamuro planeador",
+      "category": "Fauna",
+      "source": "Pana/engine/wildlife.js",
+      "factory": "soaringVulture",
+      "usedBy": [
+        "Derrape"
+      ],
+      "previewOptions": {
+        "seed": 7
+      },
+      "status": "in-use"
+    },
+    {
+      "id": "wild-capybara",
+      "name": "Chigüire",
+      "category": "Fauna",
+      "source": "Pana/engine/wildlife.js",
+      "factory": "wildCapybara",
+      "usedBy": [
+        "Derrape"
+      ],
+      "previewOptions": {
+        "seed": 7
+      },
+      "status": "in-use"
+    },
+    {
+      "id": "llanero-horse",
+      "name": "Caballo llanero",
+      "category": "Fauna",
+      "source": "Pana/engine/farm-animals.js",
+      "factory": "llaneroHorse",
+      "usedBy": [
+        "Derrape"
+      ],
+      "previewOptions": {
+        "seed": 7,
+        "coat": "bay"
+      },
+      "status": "in-use"
+    },
+    {
+      "id": "yard-chicken",
+      "name": "Gallina de patio",
+      "category": "Fauna",
+      "source": "Pana/engine/farm-animals.js",
+      "factory": "yardChicken",
+      "usedBy": [
+        "Derrape"
+      ],
+      "previewOptions": {
+        "seed": 7,
+        "coat": "red"
+      },
+      "status": "in-use"
+    },
+    {
+      "id": "hato-cow",
+      "name": "Vaca del hato",
+      "category": "Fauna",
+      "source": "Pana/engine/farm-animals.js",
+      "factory": "hatoCow",
+      "usedBy": [
+        "Derrape"
+      ],
+      "previewOptions": {
+        "seed": 7,
+        "coat": "pinto"
+      },
+      "status": "in-use"
+    },
+    {
+      "id": "reef-fish",
+      "name": "Pez de arrecife",
+      "category": "Fauna",
+      "source": "Pana/engine/reef-fish.js",
+      "factory": "reefFish",
+      "usedBy": [
+        "Bululú",
+        "Derrape"
+      ],
+      "previewOptions": {
+        "seed": 7
+      },
+      "status": "in-use"
+    },
+    {
+      "id": "reef-fish-school",
+      "name": "Cardumen costero",
+      "category": "Fauna",
+      "source": "Pana/engine/reef-fish.js",
+      "factory": "reefFishSchool",
+      "usedBy": [
+        "Bululú",
+        "Derrape"
+      ],
+      "previewOptions": {
+        "seed": 7
+      },
+      "status": "in-use"
+    },
+    {
+      "id": "ranch-house",
+      "name": "Casa de hato llanero",
+      "category": "Llanos",
+      "source": "Pana/engine/ranch-props.js",
+      "factory": "llaneroRanchHouse",
+      "usedBy": [
+        "Derrape"
+      ],
+      "previewOptions": null,
+      "status": "in-use"
+    },
+    {
+      "id": "corral-gate",
+      "name": "Portón de corral",
+      "category": "Llanos",
+      "source": "Pana/engine/ranch-props.js",
+      "factory": "corralGate",
+      "usedBy": [
+        "Derrape"
+      ],
+      "previewOptions": null,
+      "status": "in-use"
+    },
+    {
+      "id": "hay-bale",
+      "name": "Paca de heno",
+      "category": "Llanos",
+      "source": "Pana/engine/ranch-props.js",
+      "factory": "hayBale",
+      "usedBy": [
+        "Derrape"
+      ],
+      "previewOptions": null,
+      "status": "in-use"
+    },
+    {
+      "id": "water-windmill",
+      "name": "Molino de agua",
+      "category": "Llanos",
+      "source": "Pana/engine/ranch-props.js",
+      "factory": "waterWindmill",
+      "usedBy": [
+        "Derrape"
+      ],
+      "previewOptions": null,
+      "status": "in-use"
+    },
+    {
+      "id": "horse-stable",
+      "name": "Caballeriza",
+      "category": "Llanos",
+      "source": "Pana/engine/ranch-props.js",
+      "factory": "horseStable",
+      "usedBy": [
+        "Derrape"
+      ],
+      "previewOptions": null,
+      "status": "in-use"
+    },
+    {
+      "id": "feeding-trough",
+      "name": "Comedero de ganado",
+      "category": "Llanos",
+      "source": "Pana/engine/ranch-props.js",
+      "factory": "feedingTrough",
+      "usedBy": [
+        "Derrape"
+      ],
+      "previewOptions": null,
+      "status": "in-use"
+    },
+    {
+      "id": "ranch-fence",
+      "name": "Cerca de hato",
+      "category": "Llanos",
+      "source": "Pana/engine/ranch-props.js",
+      "factory": "ranchFence",
+      "usedBy": [
+        "Derrape"
+      ],
+      "previewOptions": null,
+      "status": "in-use"
+    },
+    {
+      "id": "old-tractor",
+      "name": "Tractor viejo",
+      "category": "Llanos",
+      "source": "Pana/engine/ranch-props.js",
+      "factory": "oldTractor",
+      "usedBy": [
+        "Derrape"
+      ],
+      "previewOptions": null,
+      "status": "in-use"
+    },
+    {
+      "id": "mud-puddle",
+      "name": "Módulo de charco de barro",
+      "category": "Llanos",
+      "source": "Pana/engine/ranch-props.js",
+      "factory": "mudPuddle",
+      "usedBy": [
+        "Derrape"
+      ],
+      "previewOptions": null,
+      "status": "in-use"
+    },
+    {
+      "id": "ranch-water-tower",
+      "name": "Torre de agua del hato",
+      "category": "Llanos",
+      "source": "Pana/engine/ranch-props.js",
+      "factory": "ranchWaterTower",
+      "usedBy": [
+        "Derrape"
+      ],
+      "previewOptions": null,
+      "status": "in-use"
+    },
+    {
+      "id": "giant-cactus",
+      "name": "Cardón gigante",
+      "category": "Desierto",
+      "source": "Pana/engine/desert-props.js",
+      "factory": "giantCactus",
+      "usedBy": [
+        "Derrape"
+      ],
+      "previewOptions": null,
+      "status": "in-use"
+    },
+    {
+      "id": "sand-dune",
+      "name": "Módulo de duna",
+      "category": "Desierto",
+      "source": "Pana/engine/desert-props.js",
+      "factory": "sandDune",
+      "usedBy": [
+        "Derrape"
+      ],
+      "previewOptions": null,
+      "status": "in-use"
+    },
+    {
+      "id": "desert-rock-arch",
+      "name": "Arco de roca del desierto",
+      "category": "Desierto",
+      "source": "Pana/engine/desert-props.js",
+      "factory": "desertRockArch",
+      "usedBy": [
+        "Derrape"
+      ],
+      "previewOptions": null,
+      "status": "in-use"
+    },
+    {
+      "id": "abandoned-gas-station",
+      "name": "Gasolinera abandonada",
+      "category": "Desierto",
+      "source": "Pana/engine/desert-props.js",
+      "factory": "abandonedGasStation",
+      "usedBy": [
+        "Derrape"
+      ],
+      "previewOptions": null,
+      "status": "in-use"
+    },
+    {
+      "id": "rusted-pickup",
+      "name": "Camioneta oxidada",
+      "category": "Desierto",
+      "source": "Pana/engine/desert-props.js",
+      "factory": "rustedPickup",
+      "usedBy": [
+        "Derrape"
+      ],
+      "previewOptions": null,
+      "status": "in-use"
+    },
+    {
+      "id": "roadside-tire-pile",
+      "name": "Pila de cauchos",
+      "category": "Desierto",
+      "source": "Pana/engine/desert-props.js",
+      "factory": "roadsideTirePile",
+      "usedBy": [
+        "Derrape"
+      ],
+      "previewOptions": null,
+      "status": "in-use"
+    },
+    {
+      "id": "canyon-spire",
+      "name": "Aguja de roca del cañón",
+      "category": "Desierto",
+      "source": "Pana/engine/desert-props.js",
+      "factory": "canyonSpire",
+      "usedBy": [
+        "Derrape"
+      ],
+      "previewOptions": null,
+      "status": "in-use"
+    },
+    {
+      "id": "broken-wagon",
+      "name": "Carreta de madera rota",
+      "category": "Desierto",
+      "source": "Pana/engine/desert-props.js",
+      "factory": "brokenWagon",
+      "usedBy": [
+        "Derrape"
+      ],
+      "previewOptions": null,
+      "status": "in-use"
+    },
+    {
+      "id": "desert-warning-sign",
+      "name": "Señal de peligro del desierto",
+      "category": "Desierto",
+      "source": "Pana/engine/desert-props.js",
+      "factory": "desertWarningSign",
+      "usedBy": [
+        "Derrape"
+      ],
+      "previewOptions": null,
+      "status": "in-use"
+    },
+    {
+      "id": "desert-well",
+      "name": "Pozo viejo del desierto",
+      "category": "Desierto",
+      "source": "Pana/engine/desert-props.js",
+      "factory": "desertWell",
+      "usedBy": [
+        "Derrape"
+      ],
+      "previewOptions": null,
+      "status": "in-use"
+    },
+    {
+      "id": "hot-spring-pool",
+      "name": "Poza termal",
+      "category": "Termales",
+      "source": "Pana/engine/thermal-props.js",
+      "factory": "hotSpringPool",
+      "usedBy": [
+        "Derrape"
+      ],
+      "previewOptions": null,
+      "status": "in-use"
+    },
+    {
+      "id": "steam-vent",
+      "name": "Fumarola",
+      "category": "Termales",
+      "source": "Pana/engine/thermal-props.js",
+      "factory": "steamVent",
+      "usedBy": [
+        "Derrape"
+      ],
+      "previewOptions": null,
+      "status": "in-use"
+    },
+    {
+      "id": "mineral-terraces",
+      "name": "Terrazas minerales",
+      "category": "Termales",
+      "source": "Pana/engine/thermal-props.js",
+      "factory": "mineralTerraces",
+      "usedBy": [
+        "Derrape"
+      ],
+      "previewOptions": null,
+      "status": "in-use"
+    },
+    {
+      "id": "thermal-bathhouse",
+      "name": "Casa de las termas",
+      "category": "Termales",
+      "source": "Pana/engine/thermal-props.js",
+      "factory": "thermalBathhouse",
+      "usedBy": [
+        "Derrape"
+      ],
+      "previewOptions": null,
+      "status": "in-use"
+    },
+    {
+      "id": "thermal-lookout",
+      "name": "Mirador de Chi Chi",
+      "category": "Termales",
+      "source": "Pana/engine/thermal-props.js",
+      "factory": "thermalLookout",
+      "usedBy": [
+        "Derrape"
+      ],
+      "previewOptions": null,
+      "status": "in-use"
+    },
+    {
+      "id": "pana",
+      "name": "Pana original",
+      "category": "Personajes",
+      "source": "Pana/engine/character.js",
+      "factory": "buildCharacter",
+      "usedBy": [
+        "Bululú",
+        "Derrape",
+        "Escondidas",
+        "Cocina"
+      ],
+      "previewOptions": {},
+      "status": "in-use"
+    },
+    {
+      "id": "pana-chef",
+      "name": "Pana cocinero",
+      "category": "Personajes",
+      "source": "Pana/engine/character.js",
+      "factory": "buildCharacter",
+      "usedBy": [
+        "Cocina"
+      ],
+      "previewOptions": {
+        "chef": true
+      },
+      "status": "in-use"
+    },
+    {
+      "id": "pana-driver",
+      "name": "Pana conductor",
+      "category": "Personajes",
+      "source": "Pana/engine/character.js",
+      "factory": "buildCharacter",
+      "usedBy": [
+        "Derrape"
+      ],
+      "previewOptions": {
+        "seated": true
+      },
+      "status": "in-use"
+    },
+    {
+      "id": "outfit-shirt",
+      "name": "Franela",
+      "category": "Vestuario",
+      "source": "Pana/engine/soft-character/model.js",
+      "factory": "buildSoftCharacter",
+      "usedBy": [
+        "Bululú",
+        "Derrape",
+        "Escondidas",
+        "Cocina"
+      ],
+      "status": "in-use"
+    },
+    {
+      "id": "outfit-chef",
+      "name": "Delantal y gorro",
+      "category": "Vestuario",
+      "source": "Pana/engine/soft-character/model.js",
+      "factory": "buildSoftCharacter",
+      "usedBy": [
+        "Bululú",
+        "Derrape",
+        "Escondidas",
+        "Cocina"
+      ],
+      "status": "in-use"
+    },
+    {
+      "id": "outfit-hoodie",
+      "name": "Suéter y gorra",
+      "category": "Vestuario",
+      "source": "Pana/engine/soft-character/model.js",
+      "factory": "buildSoftCharacter",
+      "usedBy": [
+        "Bululú",
+        "Derrape",
+        "Escondidas",
+        "Cocina"
+      ],
+      "status": "in-use"
+    },
+    {
+      "id": "outfit-tropical",
+      "name": "Camisa tropical",
+      "category": "Vestuario",
+      "source": "Pana/engine/soft-character/model.js",
+      "factory": "buildSoftCharacter",
+      "usedBy": [
+        "Bululú",
+        "Derrape",
+        "Escondidas",
+        "Cocina"
+      ],
+      "status": "in-use"
+    },
+    {
+      "id": "outfit-sport",
+      "name": "Conjunto deportivo",
+      "category": "Vestuario",
+      "source": "Pana/engine/soft-character/model.js",
+      "factory": "buildSoftCharacter",
+      "usedBy": [
+        "Bululú",
+        "Derrape",
+        "Escondidas",
+        "Cocina"
+      ],
+      "status": "in-use"
+    },
+    {
+      "id": "barrel",
+      "name": "Barril",
+      "category": "Objetos",
+      "source": "Pana/engine/plaza-props.js",
+      "factory": "barrel",
+      "usedBy": [
+        "Escondidas",
+        "Cocina",
+        "Derrape"
+      ],
+      "previewOptions": null,
+      "status": "in-use"
+    },
+    {
+      "id": "crate",
+      "name": "Caja",
+      "category": "Objetos",
+      "source": "Pana/engine/plaza-props.js",
+      "factory": "crate",
+      "usedBy": [
+        "Escondidas",
+        "Cocina",
+        "Derrape"
+      ],
+      "previewOptions": null,
+      "status": "in-use"
+    },
+    {
+      "id": "cooler",
+      "name": "Cava",
+      "category": "Objetos",
+      "source": "Pana/engine/plaza-props.js",
+      "factory": "cooler",
+      "usedBy": [
+        "Escondidas",
+        "Cocina",
+        "Derrape"
+      ],
+      "previewOptions": null,
+      "status": "in-use"
+    },
+    {
+      "id": "planter",
+      "name": "Mata",
+      "category": "Objetos",
+      "source": "Pana/engine/plaza-props.js",
+      "factory": "planter",
+      "usedBy": [
+        "Escondidas",
+        "Cocina",
+        "Derrape"
+      ],
+      "previewOptions": null,
+      "status": "in-use"
+    },
+    {
+      "id": "bench",
+      "name": "Banco",
+      "category": "Objetos",
+      "source": "Pana/engine/plaza-props.js",
+      "factory": "bench",
+      "usedBy": [
+        "Escondidas",
+        "Cocina",
+        "Derrape"
+      ],
+      "previewOptions": null,
+      "status": "in-use"
+    },
+    {
+      "id": "market-stall",
+      "name": "Puesto de mercado",
+      "category": "Objetos",
+      "source": "Pana/engine/plaza-props.js",
+      "factory": "marketStall",
+      "usedBy": [
+        "Escondidas",
+        "Derrape"
+      ],
+      "previewOptions": null,
+      "status": "in-use"
+    },
+    {
+      "id": "street-lamp",
+      "name": "Farol de plaza",
+      "category": "Objetos",
+      "source": "Pana/engine/plaza-props.js",
+      "factory": "streetLamp",
+      "usedBy": [
+        "Escondidas",
+        "Cocina",
+        "Derrape"
+      ],
+      "previewOptions": null,
+      "status": "in-use"
+    },
+    {
+      "id": "house",
+      "name": "Casa del pueblo",
+      "category": "Objetos",
+      "source": "Pana/engine/plaza.js",
+      "factory": "house",
+      "usedBy": [
+        "Escondidas",
+        "Cocina",
+        "Derrape"
+      ],
+      "previewOptions": null,
+      "status": "in-use"
+    },
+    {
+      "id": "mango",
+      "name": "Mango",
+      "category": "Objetos",
+      "source": "Pana/engine/props.js",
+      "factory": "makeMango",
+      "usedBy": [
+        "Bululú",
+        "Derrape"
+      ],
+      "previewOptions": null,
+      "status": "in-use"
+    },
+    {
+      "id": "gold-mango",
+      "name": "Mango dorado",
+      "category": "Objetos",
+      "source": "Pana/engine/props.js",
+      "factory": "makeMango",
+      "usedBy": [
+        "Bululú",
+        "Derrape"
+      ],
+      "previewOptions": {
+        "gold": true
+      },
+      "status": "in-use"
+    },
+    {
+      "id": "palm",
+      "name": "Palmera",
+      "category": "Vegetación",
+      "source": "Pana/engine/flora.js",
+      "factory": "palm",
+      "usedBy": [
+        "Bululú",
+        "Derrape",
+        "Escondidas",
+        "Cocina"
+      ],
+      "previewOptions": {
+        "seed": 7
+      },
+      "status": "in-use"
+    },
+    {
+      "id": "mangoTree",
+      "name": "Árbol de mango",
+      "category": "Vegetación",
+      "source": "Pana/engine/flora.js",
+      "factory": "mangoTree",
+      "usedBy": [
+        "Bululú",
+        "Derrape",
+        "Escondidas",
+        "Cocina"
+      ],
+      "previewOptions": {
+        "seed": 7
+      },
+      "status": "in-use"
+    },
+    {
+      "id": "ceiba",
+      "name": "Ceiba",
+      "category": "Vegetación",
+      "source": "Pana/engine/flora.js",
+      "factory": "ceiba",
+      "usedBy": [
+        "Bululú",
+        "Derrape"
+      ],
+      "previewOptions": {
+        "seed": 7
+      },
+      "status": "in-use"
+    },
+    {
+      "id": "pine",
+      "name": "Pino",
+      "category": "Vegetación",
+      "source": "Pana/engine/flora.js",
+      "factory": "pine",
+      "usedBy": [
+        "Bululú"
+      ],
+      "previewOptions": {
+        "seed": 7
+      },
+      "status": "in-use"
+    },
+    {
+      "id": "banana",
+      "name": "Mata de cambur",
+      "category": "Vegetación",
+      "source": "Pana/engine/flora.js",
+      "factory": "banana",
+      "usedBy": [
+        "Bululú",
+        "Derrape"
+      ],
+      "previewOptions": {
+        "seed": 7
+      },
+      "status": "in-use"
+    },
+    {
+      "id": "bush",
+      "name": "Arbusto",
+      "category": "Vegetación",
+      "source": "Pana/engine/flora.js",
+      "factory": "bush",
+      "usedBy": [
+        "Bululú",
+        "Derrape",
+        "Escondidas",
+        "Cocina"
+      ],
+      "previewOptions": {
+        "seed": 7
+      },
+      "status": "in-use"
+    },
+    {
+      "id": "casita",
+      "name": "Casita de isla",
+      "category": "Objetos",
+      "source": "Pana/engine/flora.js",
+      "factory": "casita",
+      "usedBy": [
+        "Bululú"
+      ],
+      "previewOptions": {
+        "seed": 7
+      },
+      "status": "in-use"
+    },
+    {
+      "id": "araguaney",
+      "name": "Araguaney",
+      "category": "Vegetación",
+      "source": "Pana/engine/flora.js",
+      "factory": "araguaney",
+      "usedBy": [
+        "Derrape"
+      ],
+      "previewOptions": {
+        "seed": 7
+      },
+      "status": "in-use"
+    },
+    {
+      "id": "bamboo",
+      "name": "Bambú",
+      "category": "Vegetación",
+      "source": "Pana/engine/flora.js",
+      "factory": "bamboo",
+      "usedBy": [
+        "Derrape"
+      ],
+      "previewOptions": {
+        "seed": 7
+      },
+      "status": "in-use"
+    },
+    {
+      "id": "fern",
+      "name": "Helecho",
+      "category": "Vegetación",
+      "source": "Pana/engine/flora.js",
+      "factory": "fern",
+      "usedBy": [
+        "Derrape"
+      ],
+      "previewOptions": {
+        "seed": 7
+      },
+      "status": "in-use"
+    },
+    {
+      "id": "monstera",
+      "name": "Monstera",
+      "category": "Vegetación",
+      "source": "Pana/engine/flora.js",
+      "factory": "monstera",
+      "usedBy": [
+        "Derrape"
+      ],
+      "previewOptions": {
+        "seed": 7
+      },
+      "status": "in-use"
+    },
+    {
+      "id": "heliconia",
+      "name": "Heliconia",
+      "category": "Vegetación",
+      "source": "Pana/engine/flora.js",
+      "factory": "heliconia",
+      "usedBy": [
+        "Derrape"
+      ],
+      "previewOptions": {
+        "seed": 7
+      },
+      "status": "in-use"
+    },
+    {
+      "id": "cactus",
+      "name": "Cardón",
+      "category": "Vegetación",
+      "source": "Pana/engine/flora.js",
+      "factory": "cactus",
+      "usedBy": [
+        "Derrape"
+      ],
+      "previewOptions": {
+        "seed": 7
+      },
+      "status": "in-use"
+    },
+    {
+      "id": "mangrove",
+      "name": "Mangle",
+      "category": "Vegetación",
+      "source": "Pana/engine/flora.js",
+      "factory": "mangrove",
+      "usedBy": [
+        "Derrape"
+      ],
+      "previewOptions": {
+        "seed": 7
+      },
+      "status": "in-use"
+    },
+    {
+      "id": "papaya",
+      "name": "Lechosa",
+      "category": "Vegetación",
+      "source": "Pana/engine/flora.js",
+      "factory": "papaya",
+      "usedBy": [
+        "Bululú",
+        "Derrape"
+      ],
+      "previewOptions": {
+        "seed": 7
+      },
+      "status": "in-use"
+    },
+    {
+      "id": "agave",
+      "name": "Agave",
+      "category": "Vegetación",
+      "source": "Pana/engine/flora.js",
+      "factory": "agave",
+      "usedBy": [
+        "Derrape"
+      ],
+      "previewOptions": {
+        "seed": 7
+      },
+      "status": "in-use"
+    },
+    {
+      "id": "waterLily",
+      "name": "Nenúfar",
+      "category": "Vegetación",
+      "source": "Pana/engine/flora.js",
+      "factory": "waterLily",
+      "usedBy": [
+        "Derrape"
+      ],
+      "previewOptions": {
+        "seed": 7
+      },
+      "status": "in-use"
+    },
+    {
+      "id": "hibiscus",
+      "name": "Cayena",
+      "category": "Vegetación",
+      "source": "Pana/engine/flora.js",
+      "factory": "hibiscus",
+      "usedBy": [
+        "Bululú",
+        "Derrape"
+      ],
+      "previewOptions": {
+        "seed": 7
+      },
+      "status": "in-use"
+    },
+    {
+      "id": "reeds",
+      "name": "Juncos",
+      "category": "Vegetación",
+      "source": "Pana/engine/flora.js",
+      "factory": "reeds",
+      "usedBy": [
+        "Derrape"
+      ],
+      "previewOptions": {
+        "seed": 7
+      },
+      "status": "in-use"
+    },
+    {
+      "id": "jungleGiant",
+      "name": "Árbol gigante de la selva",
+      "category": "Vegetación",
+      "source": "Pana/engine/flora.js",
+      "factory": "jungleGiant",
+      "usedBy": [
+        "Derrape"
+      ],
+      "previewOptions": {
+        "seed": 7
+      },
+      "status": "in-use"
+    },
+    {
+      "id": "tropicalBush",
+      "name": "Arbusto tropical grande",
+      "category": "Vegetación",
+      "source": "Pana/engine/flora.js",
+      "factory": "tropicalBush",
+      "usedBy": [
+        "Derrape"
+      ],
+      "previewOptions": {
+        "seed": 7
+      },
+      "status": "in-use"
+    },
+    {
+      "id": "frailejon",
+      "name": "Frailejón",
+      "category": "Vegetación",
+      "source": "Pana/engine/flora.js",
+      "factory": "frailejon",
+      "usedBy": [
+        "Derrape"
+      ],
+      "previewOptions": {
+        "seed": 7
+      },
+      "status": "in-use"
+    },
+    {
+      "id": "mountainPine",
+      "name": "Pino de montaña",
+      "category": "Vegetación",
+      "source": "Pana/engine/flora.js",
+      "factory": "mountainPine",
+      "usedBy": [
+        "Derrape"
+      ],
+      "previewOptions": {
+        "seed": 7
+      },
+      "status": "in-use"
+    },
+    {
+      "id": "colonial-house",
+      "name": "Casa colonial colorida",
+      "category": "Pueblo",
+      "source": "Pana/engine/pueblo-props.js",
+      "factory": "colonialHouse",
+      "usedBy": [
+        "Derrape"
+      ],
+      "previewOptions": null,
+      "status": "in-use"
+    },
+    {
+      "id": "corner-bodega",
+      "name": "Bodega de esquina",
+      "category": "Pueblo",
+      "source": "Pana/engine/pueblo-props.js",
+      "factory": "cornerBodega",
+      "usedBy": [
+        "Derrape"
+      ],
+      "previewOptions": null,
+      "status": "in-use"
+    },
+    {
+      "id": "colonial-church",
+      "name": "Iglesia colonial pequeña",
+      "category": "Pueblo",
+      "source": "Pana/engine/pueblo-props.js",
+      "factory": "colonialChurch",
+      "usedBy": [
+        "Derrape"
+      ],
+      "previewOptions": null,
+      "status": "in-use"
+    },
+    {
+      "id": "bus-stop-shelter",
+      "name": "Parada de autobús",
+      "category": "Pueblo",
+      "source": "Pana/engine/pueblo-props.js",
+      "factory": "busStopShelter",
+      "usedBy": [
+        "Derrape"
+      ],
+      "previewOptions": null,
+      "status": "in-use"
+    },
+    {
+      "id": "street-food-kiosk",
+      "name": "Puesto de arepas",
+      "category": "Pueblo",
+      "source": "Pana/engine/pueblo-props.js",
+      "factory": "streetFoodKiosk",
+      "usedBy": [
+        "Cocina",
+        "Derrape"
+      ],
+      "previewOptions": null,
+      "status": "in-use"
+    },
+    {
+      "id": "plaza-clock-tower",
+      "name": "Torre del reloj",
+      "category": "Pueblo",
+      "source": "Pana/engine/pueblo-props.js",
+      "factory": "plazaClockTower",
+      "usedBy": [
+        "Escondidas",
+        "Cocina",
+        "Derrape"
+      ],
+      "previewOptions": null,
+      "status": "in-use"
+    },
+    {
+      "id": "basketball-hoop",
+      "name": "Aro de baloncesto",
+      "category": "Pueblo",
+      "source": "Pana/engine/pueblo-props.js",
+      "factory": "basketballHoop",
+      "usedBy": [
+        "Derrape"
+      ],
+      "previewOptions": null,
+      "status": "in-use"
+    },
+    {
+      "id": "rooftop-water-tank",
+      "name": "Tanque de agua de azotea",
+      "category": "Pueblo",
+      "source": "Pana/engine/pueblo-props.js",
+      "factory": "rooftopWaterTank",
+      "usedBy": [
+        "Derrape"
+      ],
+      "previewOptions": null,
+      "status": "in-use"
+    },
+    {
+      "id": "streetlight-pole",
+      "name": "Farol de calle",
+      "category": "Pueblo",
+      "source": "Pana/engine/pueblo-props.js",
+      "factory": "streetlightPole",
+      "usedBy": [
+        "Escondidas",
+        "Cocina",
+        "Derrape"
+      ],
+      "previewOptions": null,
+      "status": "in-use"
+    },
+    {
+      "id": "park-bench",
+      "name": "Banco de parque",
+      "category": "Pueblo",
+      "source": "Pana/engine/pueblo-props.js",
+      "factory": "parkBench",
+      "usedBy": [
+        "Escondidas",
+        "Cocina",
+        "Derrape"
+      ],
+      "previewOptions": null,
+      "status": "in-use"
+    },
+    {
+      "id": "mountain-cabin",
+      "name": "Cabaña de montaña",
+      "category": "Páramo",
+      "source": "Pana/engine/mountain-props.js",
+      "factory": "mountainCabin",
+      "usedBy": [
+        "Derrape"
+      ],
+      "previewOptions": null,
+      "status": "in-use"
+    },
+    {
+      "id": "cable-car-station",
+      "name": "Estación de teleférico",
+      "category": "Páramo",
+      "source": "Pana/engine/mountain-props.js",
+      "factory": "cableCarStation",
+      "usedBy": [
+        "Derrape"
+      ],
+      "previewOptions": null,
+      "status": "in-use"
+    },
+    {
+      "id": "rocky-cliff",
+      "name": "Módulo de acantilado rocoso",
+      "category": "Páramo",
+      "source": "Pana/engine/mountain-props.js",
+      "factory": "rockyCliff",
+      "usedBy": [
+        "Derrape"
+      ],
+      "previewOptions": null,
+      "status": "in-use"
+    },
+    {
+      "id": "mountain-guardrail",
+      "name": "Defensa vial de montaña",
+      "category": "Páramo",
+      "source": "Pana/engine/mountain-props.js",
+      "factory": "mountainGuardrail",
+      "usedBy": [
+        "Pana Studio"
+      ],
+      "previewOptions": null,
+      "status": "preview-only"
+    },
+    {
+      "id": "stone-lookout",
+      "name": "Mirador de piedra",
+      "category": "Páramo",
+      "source": "Pana/engine/mountain-props.js",
+      "factory": "stoneLookout",
+      "usedBy": [
+        "Derrape"
+      ],
+      "previewOptions": null,
+      "status": "in-use"
+    },
+    {
+      "id": "mountain-tent",
+      "name": "Carpa de montaña",
+      "category": "Páramo",
+      "source": "Pana/engine/mountain-props.js",
+      "factory": "mountainTent",
+      "usedBy": [
+        "Derrape"
+      ],
+      "previewOptions": null,
+      "status": "in-use"
+    },
+    {
+      "id": "mountain-suspension-bridge",
+      "name": "Puente colgante de montaña",
+      "category": "Páramo",
+      "source": "Pana/engine/mountain-props.js",
+      "factory": "mountainSuspensionBridge",
+      "usedBy": [
+        "Pana Studio"
+      ],
+      "previewOptions": null,
+      "status": "preview-only"
+    },
+    {
+      "id": "mountain-signpost",
+      "name": "Señal de senderos",
+      "category": "Páramo",
+      "source": "Pana/engine/mountain-props.js",
+      "factory": "mountainSignpost",
+      "usedBy": [
+        "Derrape"
+      ],
+      "previewOptions": null,
+      "status": "in-use"
+    },
+    {
+      "id": "capybara-statue",
+      "name": "Estatua gigante de capibara",
+      "category": "Emblemas",
+      "source": "Pana/engine/landmarks.js",
+      "factory": "capybaraStatue",
+      "usedBy": [
+        "Pana Studio"
+      ],
+      "previewOptions": null,
+      "status": "preview-only"
+    },
+    {
+      "id": "golden-mango-statue",
+      "name": "Estatua del mango de oro",
+      "category": "Emblemas",
+      "source": "Pana/engine/landmarks.js",
+      "factory": "goldenMangoStatue",
+      "usedBy": [
+        "Pana Studio"
+      ],
+      "previewOptions": null,
+      "status": "preview-only"
+    },
+    {
+      "id": "plaza-fountain",
+      "name": "Fuente de Plaza Pana",
+      "category": "Emblemas",
+      "source": "Pana/engine/plaza.js",
+      "factory": "plazaFountain",
+      "usedBy": [
+        "Escondidas",
+        "Cocina",
+        "Derrape"
+      ],
+      "previewOptions": null,
+      "status": "in-use"
+    },
+    {
+      "id": "welcome-arch",
+      "name": "Arco de bienvenida Pana",
+      "category": "Emblemas",
+      "source": "Pana/engine/landmarks.js",
+      "factory": "welcomeArch",
+      "usedBy": [
+        "Pana Studio"
+      ],
+      "previewOptions": null,
+      "status": "preview-only"
+    },
+    {
+      "id": "capybara-topiary",
+      "name": "Topiaria de capibara",
+      "category": "Emblemas",
+      "source": "Pana/engine/landmarks.js",
+      "factory": "capybaraTopiary",
+      "usedBy": [
+        "Escondidas",
+        "Cocina",
+        "Derrape"
+      ],
+      "previewOptions": null,
+      "status": "in-use"
+    },
+    {
+      "id": "pana-flagpole",
+      "name": "Asta con bandera Pana",
+      "category": "Emblemas",
+      "source": "Pana/engine/landmarks.js",
+      "factory": "panaFlagpole",
+      "usedBy": [
+        "Pana Studio"
+      ],
+      "previewOptions": null,
+      "status": "preview-only"
+    },
+    {
+      "id": "trophy-monument",
+      "name": "Monumento de la Copa Pana",
+      "category": "Emblemas",
+      "source": "Pana/engine/landmarks.js",
+      "factory": "trophyMonument",
+      "usedBy": [
+        "Derrape"
+      ],
+      "previewOptions": null,
+      "status": "in-use"
+    },
+    {
+      "id": "capybara-fountain",
+      "name": "Fuente de los capibaras",
+      "category": "Emblemas",
+      "source": "Pana/engine/landmarks.js",
+      "factory": "capybaraFountain",
+      "usedBy": [
+        "Pana Studio"
+      ],
+      "previewOptions": null,
+      "status": "preview-only"
+    },
+    {
+      "id": "souvenir-kiosk",
+      "name": "Kiosco de recuerdos Pana",
+      "category": "Emblemas",
+      "source": "Pana/engine/landmarks.js",
+      "factory": "souvenirKiosk",
+      "usedBy": [
+        "Derrape"
+      ],
+      "previewOptions": null,
+      "status": "in-use"
+    },
+    {
+      "id": "temple-entrance",
+      "name": "Entrada del templo de piedra",
+      "category": "Selva",
+      "source": "Pana/engine/jungle-props.js",
+      "factory": "templeEntrance",
+      "usedBy": [
+        "Pana Studio"
+      ],
+      "previewOptions": null,
+      "status": "preview-only"
+    },
+    {
+      "id": "rope-bridge",
+      "name": "Puente colgante de cuerdas",
+      "category": "Selva",
+      "source": "Pana/engine/jungle-props.js",
+      "factory": "ropeBridge",
+      "usedBy": [
+        "Pana Studio"
+      ],
+      "previewOptions": null,
+      "status": "preview-only"
+    },
+    {
+      "id": "waterfall-rocks",
+      "name": "Cascada entre rocas",
+      "category": "Selva",
+      "source": "Pana/engine/jungle-props.js",
+      "factory": "waterfallRocks",
+      "usedBy": [
+        "Derrape"
+      ],
+      "previewOptions": null,
+      "status": "in-use"
+    },
+    {
+      "id": "vine-arch",
+      "name": "Arco de piedra con enredaderas",
+      "category": "Selva",
+      "source": "Pana/engine/jungle-props.js",
+      "factory": "vineArch",
+      "usedBy": [
+        "Derrape"
+      ],
+      "previewOptions": null,
+      "status": "in-use"
+    },
+    {
+      "id": "bamboo-bridge",
+      "name": "Puente de bambú",
+      "category": "Selva",
+      "source": "Pana/engine/jungle-props.js",
+      "factory": "bambooBridge",
+      "usedBy": [
+        "Pana Studio"
+      ],
+      "previewOptions": null,
+      "status": "preview-only"
+    },
+    {
+      "id": "stone-totem",
+      "name": "Tótem de piedra antiguo",
+      "category": "Selva",
+      "source": "Pana/engine/jungle-props.js",
+      "factory": "stoneTotem",
+      "usedBy": [
+        "Derrape"
+      ],
+      "previewOptions": null,
+      "status": "in-use"
+    },
+    {
+      "id": "hollow-log",
+      "name": "Tronco hueco",
+      "category": "Selva",
+      "source": "Pana/engine/jungle-props.js",
+      "factory": "hollowLog",
+      "usedBy": [
+        "Derrape"
+      ],
+      "previewOptions": null,
+      "status": "in-use"
+    },
+    {
+      "id": "beachShade",
+      "name": "Sombrilla de playa",
+      "category": "Objetos",
+      "source": "Pana/engine/beach-props.js",
+      "factory": "beachShade",
+      "usedBy": [
+        "Bululú",
+        "Derrape"
+      ],
+      "previewOptions": null,
+      "status": "in-use"
+    },
+    {
+      "id": "beachHut",
+      "name": "Rancho de playa",
+      "category": "Objetos",
+      "source": "Pana/engine/beach-props.js",
+      "factory": "beachHut",
+      "usedBy": [
+        "Bululú",
+        "Derrape"
+      ],
+      "previewOptions": null,
+      "status": "in-use"
+    },
+    {
+      "id": "driftwood",
+      "name": "Tronco de playa",
+      "category": "Objetos",
+      "source": "Pana/engine/beach-props.js",
+      "factory": "driftwood",
+      "usedBy": [
+        "Bululú",
+        "Derrape"
+      ],
+      "previewOptions": null,
+      "status": "in-use"
+    },
+    {
+      "id": "fishing-boat",
+      "name": "Peñero de pesca",
+      "category": "Costa",
+      "source": "Pana/engine/coastal-props.js",
+      "factory": "fishingBoat",
+      "usedBy": [
+        "Bululú",
+        "Derrape"
+      ],
+      "previewOptions": null,
+      "status": "in-use"
+    },
+    {
+      "id": "coastal-lighthouse",
+      "name": "Faro costero",
+      "category": "Costa",
+      "source": "Pana/engine/coastal-props.js",
+      "factory": "coastalLighthouse",
+      "usedBy": [
+        "Derrape"
+      ],
+      "previewOptions": null,
+      "status": "in-use"
+    },
+    {
+      "id": "lifeguard-tower",
+      "name": "Torre de salvavidas",
+      "category": "Costa",
+      "source": "Pana/engine/coastal-props.js",
+      "factory": "lifeguardTower",
+      "usedBy": [
+        "Bululú",
+        "Derrape"
+      ],
+      "previewOptions": null,
+      "status": "in-use"
+    },
+    {
+      "id": "beach-volleyball",
+      "name": "Cancha de voleibol de playa",
+      "category": "Costa",
+      "source": "Pana/engine/coastal-props.js",
+      "factory": "beachVolleyball",
+      "usedBy": [
+        "Derrape"
+      ],
+      "previewOptions": null,
+      "status": "in-use"
+    },
+    {
+      "id": "beach-shower",
+      "name": "Ducha de playa",
+      "category": "Costa",
+      "source": "Pana/engine/coastal-props.js",
+      "factory": "beachShower",
+      "usedBy": [
+        "Bululú",
+        "Derrape"
+      ],
+      "previewOptions": null,
+      "status": "in-use"
+    },
+    {
+      "id": "rescue-ring-stand",
+      "name": "Puesto de salvavidas",
+      "category": "Costa",
+      "source": "Pana/engine/coastal-props.js",
+      "factory": "rescueRingStand",
+      "usedBy": [
+        "Bululú",
+        "Derrape"
+      ],
+      "previewOptions": null,
+      "status": "in-use"
+    },
+    {
+      "id": "fishing-net-rack",
+      "name": "Secadero de redes",
+      "category": "Costa",
+      "source": "Pana/engine/coastal-props.js",
+      "factory": "fishingNetRack",
+      "usedBy": [
+        "Bululú",
+        "Derrape"
+      ],
+      "previewOptions": null,
+      "status": "in-use"
+    },
+    {
+      "id": "fish-crates",
+      "name": "Cajas de pesca",
+      "category": "Costa",
+      "source": "Pana/engine/coastal-props.js",
+      "factory": "fishCrates",
+      "usedBy": [
+        "Bululú",
+        "Derrape"
+      ],
+      "previewOptions": null,
+      "status": "in-use"
+    },
+    {
+      "id": "channel-buoy",
+      "name": "Boya de canal",
+      "category": "Costa",
+      "source": "Pana/engine/coastal-props.js",
+      "factory": "channelBuoy",
+      "usedBy": [
+        "Bululú",
+        "Derrape"
+      ],
+      "previewOptions": null,
+      "status": "in-use"
+    },
+    {
+      "id": "beach-crab",
+      "name": "Cangrejo de playa",
+      "category": "Fauna",
+      "source": "Pana/engine/coastal-props.js",
+      "factory": "beachCrab",
+      "usedBy": [
+        "Bululú",
+        "Derrape"
+      ],
+      "previewOptions": null,
+      "status": "in-use"
+    },
+    {
+      "id": "food-arepa",
+      "name": "Arepa",
+      "category": "Objetos",
+      "source": "Pana/engine/kitchen-props.js",
+      "factory": "food",
+      "usedBy": [
+        "Cocina"
+      ],
+      "previewOptions": "arepa",
+      "status": "in-use"
+    },
+    {
+      "id": "food-cachapa",
+      "name": "Cachapa",
+      "category": "Objetos",
+      "source": "Pana/engine/kitchen-props.js",
+      "factory": "food",
+      "usedBy": [
+        "Cocina"
+      ],
+      "previewOptions": "cachapa",
+      "status": "in-use"
+    },
+    {
+      "id": "food-tequenos",
+      "name": "Tequeños",
+      "category": "Objetos",
+      "source": "Pana/engine/kitchen-props.js",
+      "factory": "food",
+      "usedBy": [
+        "Cocina"
+      ],
+      "previewOptions": "tequenos",
+      "status": "in-use"
+    },
+    {
+      "id": "food-empanada",
+      "name": "Empanada",
+      "category": "Objetos",
+      "source": "Pana/engine/kitchen-props.js",
+      "factory": "food",
+      "usedBy": [
+        "Cocina"
+      ],
+      "previewOptions": "empanada",
+      "status": "in-use"
+    },
+    {
+      "id": "corn",
+      "name": "Mazorca",
+      "category": "Objetos",
+      "source": "Pana/engine/kitchen-props.js",
+      "factory": "corn",
+      "usedBy": [
+        "Cocina"
+      ],
+      "previewOptions": null,
+      "status": "in-use"
+    },
+    {
+      "id": "cheese",
+      "name": "Queso",
+      "category": "Objetos",
+      "source": "Pana/engine/kitchen-props.js",
+      "factory": "cheese",
+      "usedBy": [
+        "Cocina"
+      ],
+      "previewOptions": null,
+      "status": "in-use"
+    },
+    {
+      "id": "sink",
+      "name": "Fregadero",
+      "category": "Objetos",
+      "source": "Pana/engine/kitchen-props.js",
+      "factory": "sink",
+      "usedBy": [
+        "Cocina"
+      ],
+      "previewOptions": null,
+      "status": "in-use"
+    },
+    {
+      "id": "station-supply",
+      "name": "Estación · Arepa",
+      "category": "Objetos",
+      "source": "Pana/engine/kitchen-props.js",
+      "factory": "kitchenStation",
+      "usedBy": [
+        "Cocina"
+      ],
+      "previewOptions": {
+        "id": "supply-arepa",
+        "type": "supply",
+        "recipe": "arepa",
+        "label": "Arepa",
+        "x": -9,
+        "z": -3,
+        "w": 2.6,
+        "d": 2.2
+      },
+      "status": "in-use"
+    },
+    {
+      "id": "station-prep",
+      "name": "Estación · Preparar",
+      "category": "Objetos",
+      "source": "Pana/engine/kitchen-props.js",
+      "factory": "kitchenStation",
+      "usedBy": [
+        "Cocina"
+      ],
+      "previewOptions": {
+        "id": "prep-1",
+        "type": "prep",
+        "label": "Preparar",
+        "x": -9,
+        "z": 3,
+        "w": 3,
+        "d": 2.2
+      },
+      "status": "in-use"
+    },
+    {
+      "id": "station-stove",
+      "name": "Estación · Cocinar",
+      "category": "Objetos",
+      "source": "Pana/engine/kitchen-props.js",
+      "factory": "kitchenStation",
+      "usedBy": [
+        "Cocina"
+      ],
+      "previewOptions": {
+        "id": "stove-1",
+        "type": "stove",
+        "label": "Cocinar",
+        "x": 5,
+        "z": -3,
+        "w": 2.7,
+        "d": 2.2
+      },
+      "status": "in-use"
+    },
+    {
+      "id": "station-counter",
+      "name": "Estación · Pasar plato",
+      "category": "Objetos",
+      "source": "Pana/engine/kitchen-props.js",
+      "factory": "kitchenStation",
+      "usedBy": [
+        "Cocina"
+      ],
+      "previewOptions": {
+        "id": "counter-1",
+        "type": "counter",
+        "label": "Pasar plato",
+        "x": -3,
+        "z": 8.8,
+        "w": 3,
+        "d": 2
+      },
+      "status": "in-use"
+    },
+    {
+      "id": "station-serve",
+      "name": "Estación · Servir pedido",
+      "category": "Objetos",
+      "source": "Pana/engine/kitchen-props.js",
+      "factory": "kitchenStation",
+      "usedBy": [
+        "Cocina"
+      ],
+      "previewOptions": {
+        "id": "serve",
+        "type": "serve",
+        "label": "Servir pedido",
+        "x": 4,
+        "z": 9.5,
+        "w": 6,
+        "d": 2.2
+      },
+      "status": "in-use"
+    },
+    {
+      "id": "station-trash",
+      "name": "Estación · Descartar",
+      "category": "Objetos",
+      "source": "Pana/engine/kitchen-props.js",
+      "factory": "kitchenStation",
+      "usedBy": [
+        "Cocina"
+      ],
+      "previewOptions": {
+        "id": "trash",
+        "type": "trash",
+        "label": "Descartar",
+        "x": -10,
+        "z": 9,
+        "w": 1.6,
+        "d": 1.6
+      },
+      "status": "in-use"
+    },
+    {
+      "id": "car-chamo",
+      "name": "El Chamo",
+      "category": "Vehículos",
+      "source": "Pana/games/derrape/public/cars.js",
+      "factory": "CARS.find(c => c.id === 'chamo').build",
+      "usedBy": [
+        "Derrape"
+      ],
+      "status": "in-use"
+    },
+    {
+      "id": "car-lancha",
+      "name": "La Lancha",
+      "category": "Vehículos",
+      "source": "Pana/games/derrape/public/cars.js",
+      "factory": "CARS.find(c => c.id === 'lancha').build",
+      "usedBy": [
+        "Derrape"
+      ],
+      "status": "in-use"
+    },
+    {
+      "id": "car-machito",
+      "name": "El Machito",
+      "category": "Vehículos",
+      "source": "Pana/games/derrape/public/cars.js",
+      "factory": "CARS.find(c => c.id === 'machito').build",
+      "usedBy": [
+        "Derrape"
+      ],
+      "status": "in-use"
+    },
+    {
+      "id": "car-bala",
+      "name": "La Bala",
+      "category": "Vehículos",
+      "source": "Pana/games/derrape/public/cars.js",
+      "factory": "CARS.find(c => c.id === 'bala').build",
+      "usedBy": [
+        "Derrape"
+      ],
+      "status": "in-use"
+    },
+    {
+      "id": "car-toro",
+      "name": "El Toro",
+      "category": "Vehículos",
+      "source": "Pana/games/derrape/public/cars.js",
+      "factory": "CARS.find(c => c.id === 'toro').build",
+      "usedBy": [
+        "Derrape"
+      ],
+      "status": "in-use"
+    },
+    {
+      "id": "car-familiar",
+      "name": "La Familiar",
+      "category": "Vehículos",
+      "source": "Pana/games/derrape/public/cars.js",
+      "factory": "CARS.find(c => c.id === 'familiar').build",
+      "usedBy": [
+        "Derrape"
+      ],
+      "status": "in-use"
+    },
+    {
+      "id": "car-rumbera",
+      "name": "La Rumbera",
+      "category": "Vehículos",
+      "source": "Pana/games/derrape/public/cars.js",
+      "factory": "CARS.find(c => c.id === 'rumbera').build",
+      "usedBy": [
+        "Derrape"
+      ],
+      "status": "in-use"
+    },
+    {
+      "id": "car-montanero",
+      "name": "El Montañero",
+      "category": "Vehículos",
+      "source": "Pana/games/derrape/public/cars.js",
+      "factory": "CARS.find(c => c.id === 'montanero').build",
+      "usedBy": [
+        "Derrape"
+      ],
+      "status": "in-use"
+    },
+    {
+      "id": "plaza",
+      "name": "Plaza Pana",
+      "category": "Mapas",
+      "source": "Pana/engine/plaza.js",
+      "factory": "createPlazaEnvironment",
+      "usedBy": [
+        "Escondidas",
+        "Cocina",
+        "Derrape"
+      ],
+      "status": "in-use"
+    },
+    {
+      "id": "cocina",
+      "name": "Cocina de la plaza",
+      "category": "Mapas",
+      "source": "Pana/games/cocina/public/scene.js",
+      "factory": "createKitchenScene",
+      "usedBy": [
+        "Cocina"
+      ],
+      "status": "in-use"
+    },
+    {
+      "id": "isla",
+      "name": "Isla Bululú",
+      "category": "Mapas",
+      "source": "Pana/games/bululu/public/board.js",
+      "factory": "createBoard",
+      "usedBy": [
+        "Bululú"
+      ],
+      "status": "in-use"
+    },
+    {
+      "id": "track-estadio",
+      "name": "Circuito · El Estadio",
+      "category": "Mapas",
+      "source": "Pana/games/derrape/public/tracks/estadio.js",
+      "factory": "makeTrack(definition).build",
+      "usedBy": [
+        "Derrape"
+      ],
+      "status": "in-use"
+    },
+    {
+      "id": "track-desierto",
+      "name": "Circuito · Pana Desierto",
+      "category": "Mapas",
+      "source": "Pana/games/derrape/public/tracks/desierto.js",
+      "factory": "makeTrack(definition).build",
+      "usedBy": [
+        "Derrape"
+      ],
+      "status": "in-use"
+    },
+    {
+      "id": "track-llanos",
+      "name": "Circuito · Los Llanos",
+      "category": "Mapas",
+      "source": "Pana/games/derrape/public/tracks/llanos.js",
+      "factory": "makeTrack(definition).build",
+      "usedBy": [
+        "Derrape"
+      ],
+      "status": "in-use"
+    },
+    {
+      "id": "track-chichi",
+      "name": "Circuito · Chi Chi",
+      "category": "Mapas",
+      "source": "Pana/games/derrape/public/tracks/chichi.js",
+      "factory": "makeTrack(definition).build",
+      "usedBy": [
+        "Derrape"
+      ],
+      "status": "in-use"
+    },
+    {
+      "id": "track-selva",
+      "name": "Circuito · Pana Selva",
+      "category": "Mapas",
+      "source": "Pana/games/derrape/public/tracks/selva.js",
+      "factory": "makeTrack(definition).build",
+      "usedBy": [
+        "Derrape"
+      ],
+      "status": "in-use"
+    },
+    {
+      "id": "track-paramo",
+      "name": "Circuito · Pana Páramo",
+      "category": "Mapas",
+      "source": "Pana/games/derrape/public/tracks/paramo.js",
+      "factory": "makeTrack(definition).build",
+      "usedBy": [
+        "Derrape"
+      ],
+      "status": "in-use"
+    },
+    {
+      "id": "track-plaza",
+      "name": "Circuito · Plaza Pana",
+      "category": "Mapas",
+      "source": "Pana/games/derrape/public/tracks/plaza.js",
+      "factory": "makeTrack(definition).build",
+      "usedBy": [
+        "Derrape"
+      ],
+      "status": "in-use"
+    },
+    {
+      "id": "track-bululu",
+      "name": "Circuito · Isla Bululú",
+      "category": "Mapas",
+      "source": "Pana/games/derrape/public/tracks/bululu.js",
+      "factory": "makeTrack(definition).build",
+      "usedBy": [
+        "Derrape"
+      ],
+      "status": "in-use"
+    }
+  ],
+  "uncataloged": [
+    {
+      "name": "Wooden sign",
+      "source": "Pana/engine/props.js",
+      "anchor": "function woodSign",
+      "where": "Bululú board/minigames; Derrape sectors",
+      "note": "Active shared factory; many text variants, one model family.",
+      "line": 141
+    },
+    {
+      "name": "Watchtower",
+      "source": "Pana/engine/props.js",
+      "anchor": "function watchtower",
+      "where": "Bululú board; No te caigas",
+      "note": "Thatch/zinc options; distinct from the new lifeguard tower.",
+      "line": 188
+    },
+    {
+      "name": "Venezuelan flagpole",
+      "source": "Pana/engine/props.js",
+      "anchor": "function flagPole",
+      "where": "Bululú board; No te caigas; Selva",
+      "note": "Active animated flag. Pana branded pedestal is a separate catalog entry.",
+      "line": 220
+    },
+    {
+      "name": "Displaced rock",
+      "source": "Pana/engine/props.js",
+      "anchor": "function rock",
+      "where": "Bululú board/minigames; Selva",
+      "note": "Shared seeded rock, also embedded inside other models.",
+      "line": 251
+    },
+    {
+      "name": "Offshore lighthouse (older)",
+      "source": "Pana/engine/island-scenery.js",
+      "anchor": "function lighthouse",
+      "where": "Bululú board",
+      "note": "One tower with a rotating night beam. Not the Costa lighthouse used on the race island; preserve daylight behavior when replacing.",
+      "line": 13
+    },
+    {
+      "name": "Offshore sailboat (older)",
+      "source": "Pana/engine/island-scenery.js",
+      "anchor": "function sailboat",
+      "where": "Bululú board",
+      "note": "Four box-hull sailboats still bob offshore. Not the new peñero.",
+      "line": 41
+    },
+    {
+      "name": "Golden mango landmark tree",
+      "source": "Pana/engine/island-environment.js",
+      "anchor": "function mangoTreeBig",
+      "where": "Bululú board",
+      "note": "Special large fruit tree; separate construction from flora.mangoTree.",
+      "line": 21
+    },
+    {
+      "name": "Original plaza church",
+      "source": "Pana/engine/plaza.js",
+      "anchor": "function church",
+      "where": "Escondidas; Cocina; Plaza circuit",
+      "note": "Active small bell tower/chapel, distinct from colonialChurch.",
+      "line": 54
+    },
+    {
+      "name": "Summit terminal",
+      "source": "Pana/games/derrape/public/tracks/world-landmarks.js",
+      "anchor": "function summitTerminal",
+      "where": "Páramo",
+      "note": "Upper/lower terminals; separate from the catalog heritage cable-car station.",
+      "line": 5
+    },
+    {
+      "name": "Aerial cable system and cabins",
+      "source": "Pana/games/derrape/public/tracks/world-landmarks.js",
+      "anchor": "function aerialLift",
+      "where": "Páramo",
+      "note": "Six moving cabins, two cable curves; parameterized scene assembly.",
+      "line": 19
+    },
+    {
+      "name": "Cable support tower",
+      "source": "Pana/games/derrape/public/tracks/world-landmarks.js",
+      "anchor": "function cableTower",
+      "where": "Páramo",
+      "note": "Terrain-dependent support height.",
+      "line": 39
+    },
+    {
+      "name": "Diving school",
+      "source": "Pana/games/derrape/public/tracks/world-landmarks.js",
+      "anchor": "function divingSchool",
+      "where": "Chi Chi",
+      "note": "Facade, dive tanks and diver flag.",
+      "line": 46
+    },
+    {
+      "name": "Coastal fort",
+      "source": "Pana/games/derrape/public/tracks/world-landmarks.js",
+      "anchor": "function coastalFort",
+      "where": "Chi Chi",
+      "note": "Lookout landmark on the mountain coast.",
+      "line": 63
+    },
+    {
+      "name": "Maracaibo-inspired bridge",
+      "source": "Pana/games/derrape/public/tracks/world-landmarks.js",
+      "anchor": "function maracaiboBridge",
+      "where": "Plaza circuit",
+      "note": "Full driving bridge; use its actual road deck when previewing.",
+      "line": 75
+    },
+    {
+      "name": "Grandstand",
+      "source": "Pana/games/derrape/public/tracks/world-landmarks.js",
+      "anchor": "function grandstand",
+      "where": "Estadio",
+      "note": "Six stands with different dimensions/colors.",
+      "line": 95
+    },
+    {
+      "name": "Canal villa",
+      "source": "Pana/games/derrape/public/tracks/world-landmarks.js",
+      "anchor": "function canalVilla",
+      "where": "Plaza circuit",
+      "note": "Waterfront houses and balconies.",
+      "line": 107
+    },
+    {
+      "name": "Small rowboat (older)",
+      "source": "Pana/games/derrape/public/track-kit.js",
+      "anchor": "function rowboat",
+      "where": "Selva; Llanos",
+      "note": "Two active river boats. Keep shallow-water footprint when upgrading.",
+      "line": 423
+    },
+    {
+      "name": "Canal/dive-village boat",
+      "source": "Pana/games/derrape/public/tracks/world-kit.js",
+      "anchor": "function boat",
+      "where": "Plaza circuit; Chi Chi",
+      "note": "Cabin option; different builder from the coast peñero and island sailboats.",
+      "line": 97
+    },
+    {
+      "name": "Faceted boulder",
+      "source": "Pana/games/derrape/public/tracks/world-kit.js",
+      "anchor": "function boulder",
+      "where": "Páramo; Chi Chi; Desierto",
+      "note": "Instanced geological scatter, separate from props.rock.",
+      "line": 107
+    },
+    {
+      "name": "Catch basket",
+      "source": "Pana/games/bululu/public/minigames/atrapa.js",
+      "anchor": "function basket",
+      "where": "Atrapa los mangos",
+      "note": "Held by players; needs a standalone preview adapter.",
+      "line": 16
+    },
+    {
+      "name": "Coconut",
+      "source": "Pana/games/bululu/public/minigames/atrapa.js",
+      "anchor": "function coconut",
+      "where": "Atrapa los mangos",
+      "note": "Falling hazard with three dark eyes.",
+      "line": 28
+    },
+    {
+      "name": "Mango minigame tree (older)",
+      "source": "Pana/games/bululu/public/minigames/atrapa.js",
+      "anchor": "function mangoTree",
+      "where": "Atrapa los mangos",
+      "note": "Old polygon canopy and random fruit placement. Modernize with shared flora while preserving catch lanes.",
+      "line": 37
+    },
+    {
+      "name": "Board die",
+      "source": "Pana/games/bululu/public/board.js",
+      "anchor": "function createDie",
+      "where": "Bululú board",
+      "note": "Six face textures; game-driven roll animation.",
+      "line": 171
+    },
+    {
+      "name": "Golden mango cart",
+      "source": "Pana/games/bululu/public/board.js",
+      "anchor": "function buildStand",
+      "where": "Bululú board",
+      "note": "Cart, striped umbrella, chalkboard and reward beam.",
+      "line": 199
+    },
+    {
+      "name": "Player token pedestal",
+      "source": "Pana/games/bululu/public/board.js",
+      "anchor": "function createToken",
+      "where": "Bululú board",
+      "note": "Colored base under shared character; not a new character sculpt.",
+      "line": 495
+    },
+    {
+      "name": "Breakable supply crate",
+      "source": "Pana/games/derrape/public/pickup-art.js",
+      "anchor": "function crateArt",
+      "where": "All eight Derrape races",
+      "note": "Gameplay crate is distinct from the Plaza disguise crate.",
+      "line": 11
+    },
+    {
+      "name": "Collectible coin",
+      "source": "Pana/games/derrape/public/pickup-art.js",
+      "anchor": "function coinArt",
+      "where": "All eight Derrape races",
+      "note": "Coin trails and pickups.",
+      "line": 51
+    },
+    {
+      "name": "Mango peel",
+      "source": "Pana/games/derrape/public/items.js",
+      "anchor": "function makePeel",
+      "where": "Derrape item use",
+      "note": "Three peel strips and seed; not the whole mango.",
+      "line": 47
+    },
+    {
+      "name": "Kitchen sign",
+      "source": "Pana/engine/kitchen-props.js",
+      "anchor": "function kitchenSign",
+      "where": "Cocina",
+      "note": "Signs and flour-sack labels; text variants grouped.",
+      "line": 66
+    },
+    {
+      "name": "Open pantry/fridge",
+      "source": "Pana/games/cocina/public/scene.js",
+      "anchor": "const fridge =",
+      "where": "Cocina",
+      "note": "Shelves with tomatoes, milk cartons and shared cheese. Assembly includes its food dressing.",
+      "line": 27
+    },
+    {
+      "name": "Condiment bottles and flour sacks",
+      "source": "Pana/games/cocina/public/scene.js",
+      "anchor": "Small working-kitchen details",
+      "where": "Cocina",
+      "note": "Counter and floor dressing made inline; two prop types grouped as one set.",
+      "line": 41
+    }
+  ],
+  "assemblies": [
+    {
+      "name": "Selva pyramid",
+      "source": "Pana/games/derrape/public/tracks/selva-world.js",
+      "anchor": "function pyramid",
+      "where": "Selva",
+      "note": "Stepped landmark outside the driving tunnel.",
+      "line": 52
+    },
+    {
+      "name": "Road temple tunnel and portals",
+      "source": "Pana/games/derrape/public/tracks/selva-temple.js",
+      "anchor": "function templeTunnel",
+      "where": "Selva",
+      "note": "Swept along the actual road; not the unused standalone temple entrance.",
+      "line": 88
+    },
+    {
+      "name": "Selva plank crossing",
+      "source": "Pana/games/derrape/public/tracks/selva-world.js",
+      "anchor": "const deck =",
+      "where": "Selva",
+      "note": "Road-warped planks, piers and flankBridge rails. Anchor spacing normalized by the audit.",
+      "line": 144
+    },
+    {
+      "name": "Simple waterfall sheet",
+      "source": "Pana/games/derrape/public/track-kit.js",
+      "anchor": "function waterfall",
+      "where": "Selva",
+      "note": "Active older waterfall; separate from waterfallRocks in Chi Chi.",
+      "line": 269
+    },
+    {
+      "name": "Pond and river wrappers",
+      "source": "Pana/games/derrape/public/track-kit.js",
+      "anchor": "function waterPond",
+      "where": "Selva",
+      "note": "waterPond/waterRibbon wrap the shared water surface.",
+      "line": 259
+    },
+    {
+      "name": "Country grass tufts",
+      "source": "Pana/games/derrape/public/tracks/country-details.js",
+      "anchor": "function grassTuft",
+      "where": "Llanos; Desierto",
+      "note": "Instanced grass, absent from the 22 plant catalog entries.",
+      "line": 4
+    },
+    {
+      "name": "Country entrance gantry",
+      "source": "Pana/games/derrape/public/tracks/country-details.js",
+      "anchor": "function entrance",
+      "where": "Llanos; Desierto",
+      "note": "Map-specific entrance text and width.",
+      "line": 15
+    },
+    {
+      "name": "Country bridge crossings",
+      "source": "Pana/games/derrape/public/tracks/country-details.js",
+      "anchor": "function crossing",
+      "where": "Llanos; Desierto",
+      "note": "Road-conforming decks/rails; not standalone rope bridges.",
+      "line": 24
+    },
+    {
+      "name": "Verge posts and dirt shoulders",
+      "source": "Pana/games/derrape/public/tracks/country-details.js",
+      "anchor": "function vergePosts",
+      "where": "Llanos; Desierto",
+      "note": "Route-generated posts, shoulders and tire ruts.",
+      "line": 39
+    },
+    {
+      "name": "Llanos wetland landing",
+      "source": "Pana/games/derrape/public/tracks/llanos-world.js",
+      "anchor": "fisherman",
+      "where": "Llanos",
+      "note": "Dock planks and supports; capybaras now use shared wildlife.",
+      "line": 103
+    },
+    {
+      "name": "Generic race edges",
+      "source": "Pana/games/derrape/public/tracks/world-kit.js",
+      "anchor": "function edges",
+      "where": "Multiple Derrape circuits",
+      "note": "Steel, timber and kerb variants, generated along the route.",
+      "line": 77
+    },
+    {
+      "name": "Chevrons/start line/sector signs/ramps",
+      "source": "Pana/games/derrape/public/track-kit.js",
+      "anchor": "function chevrons",
+      "where": "Derrape",
+      "note": "Four route-generated furniture families; ramps depend on each track definition.",
+      "line": 139
+    },
+    {
+      "name": "Race terrain and waterways",
+      "source": "Pana/games/derrape/public/tracks/world-kit.js",
+      "anchor": "function terrain",
+      "where": "Derrape",
+      "note": "Terrain, sea and stream generators; each map supplies shape and palette.",
+      "line": 34
+    },
+    {
+      "name": "Water surface system",
+      "source": "Pana/engine/water-surface.js",
+      "anchor": "function waterSurface",
+      "where": "Derrape",
+      "note": "Ocean, river, canal and pool configurations; not separate species/objects.",
+      "line": 18
+    },
+    {
+      "name": "Bululú tide wash",
+      "source": "Pana/games/derrape/public/tracks/bululu-tide.js",
+      "anchor": "function tidalCrossing",
+      "where": "Bululú circuit",
+      "note": "Animated surface tied to tire grip and wetness.",
+      "line": 20
+    },
+    {
+      "name": "Board island terrain",
+      "source": "Pana/engine/island-terrain.js",
+      "anchor": "function buildIsland",
+      "where": "Bululú board",
+      "note": "Shoreline, beach, hills, river and path cuts.",
+      "line": 97
+    },
+    {
+      "name": "Forested islet/ridge",
+      "source": "Pana/engine/island-landscape.js",
+      "anchor": "function createIslet",
+      "where": "Bululú board",
+      "note": "Seeded neighboring islands and distant ridges.",
+      "line": 40
+    },
+    {
+      "name": "Tepui and waterfall",
+      "source": "Pana/engine/island-landscape.js",
+      "anchor": "function createTepui",
+      "where": "Bululú board",
+      "note": "Three mesas; one waterfall/mist landmark. Not the Selva waterfall.",
+      "line": 115
+    },
+    {
+      "name": "Drifting cloud bank",
+      "source": "Pana/engine/island-scenery.js",
+      "anchor": "const clouds =",
+      "where": "Bululú board",
+      "note": "Sixteen cloud sprites; animation still accumulates dt and should gain deterministic scrubbing.",
+      "line": 167
+    },
+    {
+      "name": "Island dock and village light strings",
+      "source": "Pana/engine/island-environment.js",
+      "anchor": "dockStart",
+      "where": "Bululú board",
+      "note": "Placement-specific geometry; not separate library factories.",
+      "line": 163
+    },
+    {
+      "name": "Race-island piers",
+      "source": "Pana/games/derrape/public/tracks/bululu.js",
+      "anchor": "Low jetties",
+      "where": "Bululú circuit",
+      "note": "Inline harbor planks and pilings.",
+      "line": 85
+    },
+    {
+      "name": "Plaza streets, gardens and mirador",
+      "source": "Pana/games/derrape/public/tracks/plaza-town.js",
+      "anchor": "function createTown",
+      "where": "Plaza circuit",
+      "note": "Street surfaces, block gardens, lookout terrace and stairs; shared houses/trees counted separately.",
+      "line": 30
+    },
+    {
+      "name": "Plaza waterfront canals and docks",
+      "source": "Pana/games/derrape/public/tracks/plaza-waterfront.js",
+      "anchor": "function createWaterfront",
+      "where": "Plaza circuit",
+      "note": "Canal network and moorings around canalVilla.",
+      "line": 18
+    },
+    {
+      "name": "Football pitch and goals",
+      "source": "Pana/games/derrape/public/tracks/estadio.js",
+      "anchor": "for(let i=0;i<10;i++)fixed.add",
+      "where": "Estadio",
+      "note": "Pitch stripes, markings and two goal frames.",
+      "line": 21
+    },
+    {
+      "name": "Pit garages",
+      "source": "Pana/games/derrape/public/tracks/estadio.js",
+      "anchor": "Pit garages",
+      "where": "Estadio",
+      "note": "Eight inline garage blocks and numbered signs.",
+      "line": 44
+    },
+    {
+      "name": "Floodlights and scoreboard",
+      "source": "Pana/games/derrape/public/tracks/estadio.js",
+      "anchor": "const score=",
+      "where": "Estadio",
+      "note": "Two inline landmark families.",
+      "line": 54
+    },
+    {
+      "name": "Basketball court and banners",
+      "source": "Pana/games/derrape/public/tracks/estadio.js",
+      "anchor": "community half-court",
+      "where": "Estadio",
+      "note": "Court and sponsor panels; shared hoops already cataloged.",
+      "line": 68
+    },
+    {
+      "name": "Chi Chi retaining walls and river bridges",
+      "source": "Pana/games/derrape/public/tracks/chichi-village.js",
+      "anchor": "function riverBridges",
+      "where": "Chi Chi",
+      "note": "Bridge geometry follows road/river. Retaining walls in chichi.js.",
+      "line": 41
+    },
+    {
+      "name": "Bululú board tiles, paths, stairs and pins",
+      "source": "Pana/games/bululu/public/board.js",
+      "anchor": "function tileTop",
+      "where": "Bululú board",
+      "note": "Tile-kind texture variants, raised supports, fork paths and waypoint sprites.",
+      "line": 58
+    },
+    {
+      "name": "Sunny minigame stage",
+      "source": "Pana/games/bululu/public/minigames/stage.js",
+      "anchor": "function sunnyStage",
+      "where": "Both Bululú minigames",
+      "note": "Sky, ground, clouds and shared landscape props.",
+      "line": 14
+    },
+    {
+      "name": "Raft and spinning striped log",
+      "source": "Pana/games/bululu/public/minigames/caigas.js",
+      "anchor": "// raft:",
+      "where": "No te caigas",
+      "note": "Player platforms, floats, central post, rotating obstacle and sandbars.",
+      "line": 42
+    },
+    {
+      "name": "Minigame wave surface",
+      "source": "Pana/games/bululu/public/minigames/caigas.js",
+      "anchor": "const seaGeo",
+      "where": "No te caigas",
+      "note": "Older deformed plane, separate from the shared water shader.",
+      "line": 35
+    },
+    {
+      "name": "Boost pad",
+      "source": "Pana/games/derrape/public/items.js",
+      "anchor": "function padTexture",
+      "where": "Derrape",
+      "note": "Animated ground marker, separate from collectible item models.",
+      "line": 71
+    },
+    {
+      "name": "Puffs, debris and speech bubbles",
+      "source": "Pana/engine/fx.js",
+      "anchor": "export class Puffs",
+      "where": "Bululú; Derrape",
+      "note": "Particle/sprite effects, not scenery inventory counts.",
+      "line": 203
+    },
+    {
+      "name": "Crate fragment bursts",
+      "source": "Pana/games/derrape/public/fragments.js",
+      "anchor": "export class FragmentBurst",
+      "where": "Derrape",
+      "note": "Gameplay fragments reused from crate art.",
+      "line": 6
+    },
+    {
+      "name": "Steam, fire and order dressing",
+      "source": "Pana/games/cocina/public/scene.js",
+      "anchor": "const effects =",
+      "where": "Cocina",
+      "note": "Cooking state effects; recipes also have raw/prepared/cooked/burned variants.",
+      "line": 65
+    },
+    {
+      "name": "Thermal steam and water details",
+      "source": "Pana/engine/thermal-steam.js",
+      "anchor": "export function",
+      "where": "Chi Chi; shared fountains/waterfalls",
+      "note": "Reusable steam, droplets and ripple systems; water details also in water-details.js.",
+      "line": 5
+    },
+    {
+      "name": "Character accessories and expressions",
+      "source": "Pana/engine/avatar.js",
+      "anchor": "export const OPTIONS",
+      "where": "All games; character editor",
+      "note": "Eight non-empty hat options, three glasses options, five expression options and two non-empty extras. Some options share geometry/poses. Outfits are already cataloged; accessories and dizzy stars are embedded parts.",
+      "line": 23
+    }
+  ],
+  "dormant": [
+    {
+      "name": "Old windmill",
+      "source": "Pana/games/derrape/public/track-kit.js",
+      "anchor": "function windmill",
+      "where": "No current production callsite",
+      "note": "Current Llanos uses ranch-props.waterWindmill.",
+      "line": 350
+    },
+    {
+      "name": "Old arepa stand",
+      "source": "Pana/games/derrape/public/track-kit.js",
+      "anchor": "function arepaStand",
+      "where": "No current production callsite",
+      "note": "Current maps use streetFoodKiosk.",
+      "line": 380
+    },
+    {
+      "name": "Generic dock",
+      "source": "Pana/games/derrape/public/track-kit.js",
+      "anchor": "function dock",
+      "where": "No current production callsite",
+      "note": "Maps now build docks against their shore/deck.",
+      "line": 410
+    },
+    {
+      "name": "Generic sailboat",
+      "source": "Pana/games/derrape/public/track-kit.js",
+      "anchor": "function sailboat",
+      "where": "No current production callsite",
+      "note": "No production caller; internally uses rowboat, which remains active.",
+      "line": 435
+    },
+    {
+      "name": "Generic plank/rope bridge",
+      "source": "Pana/games/derrape/public/track-kit.js",
+      "anchor": "function bridge",
+      "where": "No current production callsite",
+      "note": "Active crossings have road-specific decks or newer shared factories.",
+      "line": 294
+    },
+    {
+      "name": "Distant mountain ring",
+      "source": "Pana/games/derrape/public/track-kit.js",
+      "anchor": "function distantMountains",
+      "where": "No current production callsite",
+      "note": "Current maps use their own terrain or island-landscape.",
+      "line": 454
+    },
+    {
+      "name": "Old route landscape scatter",
+      "source": "Pana/games/derrape/public/track-kit.js",
+      "anchor": "function routeLandscape",
+      "where": "No current production callsite",
+      "note": "Current worlds supply habitat-specific planting.",
+      "line": 488
+    },
+    {
+      "name": "Tire-wall generator",
+      "source": "Pana/games/derrape/public/track-kit.js",
+      "anchor": "function tireWall",
+      "where": "Runtime hook only; current tracks disable walls",
+      "note": "Code is still wired conditionally; distinguish dormant configuration from dead code.",
+      "line": 60
+    },
+    {
+      "name": "Fence-ring generator",
+      "source": "Pana/games/derrape/public/track-kit.js",
+      "anchor": "function fenceRing",
+      "where": "Runtime hook only; no current track enables fence",
+      "note": "Do not remove without checking future track configuration.",
+      "line": 96
+    }
+  ],
+  "replaced": [
+    {
+      "name": "Generic box-wing bird",
+      "source": "Pana/games/derrape/public/track-kit.js",
+      "where": "Previously Selva/Llanos/Desierto",
+      "note": "Removed in this audit; replaced by three wildlife factories. Old comments listed toucan/seagull, but those were not distinct current species."
+    },
+    {
+      "name": "Random dressed scenery capybara",
+      "source": "Pana/games/derrape/public/track-kit.js",
+      "where": "Previously Selva",
+      "note": "Removed in this audit; wildCapybara reuses canonical capybaraForm. Three Llanos animals now use the same factory."
+    },
+    {
+      "name": "Old box cow",
+      "source": "Pana/games/derrape/public/tracks/llanos-world.js",
+      "where": "Previously Llanos",
+      "note": "Already replaced by hatoCow in 64bf025 before this audit; not a second current cow model."
+    },
+    {
+      "name": "Legacy playa track ID",
+      "source": "Pana/games/derrape/public/tracks.js",
+      "where": "Derrape URL alias",
+      "note": "Resolves to bululu, not a ninth racing map."
+    },
+    {
+      "name": "Old game-local shared module paths",
+      "source": "Pana/games/bululu/public/scenery.js",
+      "where": "Bululú and Escondidas compatibility re-exports",
+      "note": "Forward to engine modules; do not count aliases as duplicate assets."
+    }
+  ],
+  "priorities": [
+    [
+      "Upgrade existing",
+      "Offshore sailboats and lighthouse",
+      "Bululú board",
+      "Most obvious remaining old silhouettes. Reuse the coast visual language; preserve bobbing and the night beam."
+    ],
+    [
+      "Expose existing",
+      "Bridge, cable system, grandstands, canal villas, diving school and fort",
+      "Studio",
+      "Eight useful landmark factories already exist. Give them safe standalone preview adapters before making duplicates."
+    ],
+    [
+      "Expose existing",
+      "Crate, coin, peel, die, cart, coconut and basket",
+      "Studio",
+      "Important gameplay props are invisible to the review workflow."
+    ],
+    [
+      "Upgrade existing",
+      "Atrapa mango tree and river rowboats",
+      "Atrapa / Selva / Llanos",
+      "Replace older block geometry while preserving gameplay dimensions."
+    ],
+    [
+      "Place existing",
+      "Welcome arch and signature statues",
+      "Plaza / Estadio entrances",
+      "Ten current resources are preview-only; place selected landmarks with route clearance before expanding the library."
+    ],
+    [
+      "Build new",
+      "Seagull and pelican",
+      "Both Bululú islands / harbor",
+      "No dedicated current models. Add perched and flying poses around docks."
+    ],
+    [
+      "Build new",
+      "Heron and small river turtle",
+      "Llanos wetlands",
+      "Adds waterside life distinct from flying ibis and grazing capybaras."
+    ],
+    [
+      "Build new",
+      "Toucan and butterflies",
+      "Selva",
+      "No actual toucan model despite old comments; add canopy and understory behavior."
+    ],
+    [
+      "Build new",
+      "Coral, sea fan, sponge and sea turtle",
+      "Bululú reefs",
+      "Fish already exist; reef habitat is the larger missing layer."
+    ],
+    [
+      "Build new",
+      "Nest, perch and shoreline feeding behavior",
+      "Fauna system",
+      "Habitat interaction would add more life than another recolor on a circle."
+    ],
+    [
+      "Build new",
+      "Spectators, mechanic and marshal",
+      "Estadio / race towns",
+      "Current stands and pits need people and activity. Reuse the Pana rig."
+    ],
+    [
+      "Build new",
+      "Pit tool cart, jack, cones and portable barriers",
+      "Estadio",
+      "Build a believable working paddock around existing garages."
+    ],
+    [
+      "Build new",
+      "Waste bins, drain covers, utility poles and traffic signs",
+      "Plaza / Cocina streets",
+      "Small everyday details fill gaps between the buildings."
+    ],
+    [
+      "Build new",
+      "Fishing baskets, anchor, mooring bollard and fish-drying table",
+      "Harbors",
+      "Complements the existing fishing boat, net rack and crates."
+    ],
+    [
+      "Improve behavior",
+      "Deterministic offshore clouds and ambient perching/swimming routes",
+      "Shared environments",
+      "Make Studio pause/scrub match game motion across older scenery."
+    ]
+  ]
+}
