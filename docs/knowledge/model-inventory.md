@@ -2,7 +2,7 @@
 
 Audited 2026-10-15. Generated from the real Studio registry plus a reviewed source ledger.
 
-**154 Studio resources**, including **10 Fauna entries**, **22 vegetation entries**, **8 vehicles** and **11 maps**. **10 resources are preview-only.** The separate ledger identifies **31 active uncataloged model families**, **38 scene/effect families** and **9 dormant factories/hooks**. These numbers must not be added into a “unique 3D models” total: maps contain models, variants share geometry, and some ledger rows group multiple related props.
+**155 Studio resources**, including **10 Fauna entries**, **22 vegetation entries**, **8 vehicles** and **12 maps**. **10 resources are preview-only.** The separate ledger identifies **31 active uncataloged model families**, **40 scene/effect families** and **9 dormant factories/hooks**. These numbers must not be added into a “unique 3D models” total: maps contain models, variants share geometry, and some ledger rows group multiple related props.
 
 Scope: current production geometry in `engine/` and the four games, including Bululú minigames, gameplay props, embedded wardrobe options and map scenery. Individual meshes, geometry helpers, UI/SVG art, generated screenshots, dependency internals and historical deleted revisions are excluded. Catalog consumer labels identify games, not instance counts. Active uncataloged entries were traced to their placement sources; presence in source does not guarantee visibility from every camera. Legacy rows are retained explicitly instead of being presented as new content.
 
@@ -99,6 +99,8 @@ These already exist. Their absence from a map is a placement gap, not a missing-
 
 | Resource / family | Current location | Source | Finding |
 | --- | --- | --- | --- |
+| Mounted horse and riding tack | Galope; hub tile | [rider.js](../../Pana/games/galope/public/rider.js#L7) | Shared horse and saved pana with game-local saddle, stirrups and reins; not a duplicate animal sculpt. |
+| Horse course and wadeable esteros | Galope; Studio map | [scene.js](../../Pana/games/galope/public/scene.js#L25) | Route-generated terrain, shallow water, jump logs, start gantry and trail markers. Shared ranch props and plants are counted separately. |
 | Selva pyramid | Selva | [selva-world.js](../../Pana/games/derrape/public/tracks/selva-world.js#L54) | Stepped landmark outside the driving tunnel. |
 | Road temple tunnel and portals | Selva | [selva-temple.js](../../Pana/games/derrape/public/tracks/selva-temple.js#L88) | Swept along the actual road; not the unused standalone temple entrance. |
 | Selva plank crossing | Selva | [selva-world.js](../../Pana/games/derrape/public/tracks/selva-world.js#L146) | Road-warped planks, piers and flankBridge rails. Anchor spacing normalized by the audit. |
@@ -214,12 +216,12 @@ The following list is generated, not manually copied. “In use” is the catalo
 | Name / ID | Status / games | Source | Constructor |
 | --- | --- | --- | --- |
 | Guacamaya roja · scarlet-macaw | Derrape | [scarlet-macaw.js](../../Pana/engine/models/fauna/birds/scarlet-macaw.js) | scarletMacaw |
-| Corocora roja · scarlet-ibis | Derrape | [scarlet-ibis.js](../../Pana/engine/models/fauna/birds/scarlet-ibis.js) | scarletIbis |
+| Corocora roja · scarlet-ibis | Derrape, Galope | [scarlet-ibis.js](../../Pana/engine/models/fauna/birds/scarlet-ibis.js) | scarletIbis |
 | Zamuro planeador · soaring-vulture | Derrape | [soaring-vulture.js](../../Pana/engine/models/fauna/birds/soaring-vulture.js) | soaringVulture |
 | Chigüire · wild-capybara | Derrape | [wild-capybara.js](../../Pana/engine/models/fauna/capybara/wild-capybara.js) | wildCapybara |
-| Caballo llanero · llanero-horse | Derrape | [llanero-horse.js](../../Pana/engine/models/fauna/farm/llanero-horse.js) | llaneroHorse |
+| Caballo llanero · llanero-horse | Derrape, Galope | [llanero-horse.js](../../Pana/engine/models/fauna/farm/llanero-horse.js) | llaneroHorse |
 | Gallina de patio · yard-chicken | Derrape | [yard-chicken.js](../../Pana/engine/models/fauna/farm/yard-chicken.js) | yardChicken |
-| Vaca del hato · hato-cow | Derrape | [hato-cow.js](../../Pana/engine/models/fauna/farm/hato-cow.js) | hatoCow |
+| Vaca del hato · hato-cow | Derrape, Galope | [hato-cow.js](../../Pana/engine/models/fauna/farm/hato-cow.js) | hatoCow |
 | Pez de arrecife · reef-fish | Bululú, Derrape | [reef-fish.js](../../Pana/engine/models/fauna/aquatic/reef-fish.js) | reefFish |
 | Cardumen costero · reef-fish-school | Bululú, Derrape | [reef-fish-school.js](../../Pana/engine/models/fauna/aquatic/reef-fish-school.js) | reefFishSchool |
 | Cangrejo de playa · beach-crab | Bululú, Derrape | [beach-crab.js](../../Pana/engine/models/fauna/beach-crab.js) | beachCrab |
@@ -228,21 +230,22 @@ The following list is generated, not manually copied. “In use” is the catalo
 
 | Name / ID | Status / games | Source | Constructor |
 | --- | --- | --- | --- |
-| Casa de hato llanero · ranch-house | Derrape | [ranch.js](../../Pana/engine/models/props/ranch.js) | llaneroRanchHouse |
-| Portón de corral · corral-gate | Derrape | [ranch.js](../../Pana/engine/models/props/ranch.js) | corralGate |
-| Paca de heno · hay-bale | Derrape | [ranch.js](../../Pana/engine/models/props/ranch.js) | hayBale |
-| Molino de agua · water-windmill | Derrape | [ranch.js](../../Pana/engine/models/props/ranch.js) | waterWindmill |
-| Caballeriza · horse-stable | Derrape | [ranch.js](../../Pana/engine/models/props/ranch.js) | horseStable |
-| Comedero de ganado · feeding-trough | Derrape | [ranch.js](../../Pana/engine/models/props/ranch.js) | feedingTrough |
-| Cerca de hato · ranch-fence | Derrape | [ranch.js](../../Pana/engine/models/props/ranch.js) | ranchFence |
-| Tractor viejo · old-tractor | Derrape | [ranch.js](../../Pana/engine/models/props/ranch.js) | oldTractor |
+| Casa de hato llanero · ranch-house | Derrape, Galope | [ranch.js](../../Pana/engine/models/props/ranch.js) | llaneroRanchHouse |
+| Portón de corral · corral-gate | Derrape, Galope | [ranch.js](../../Pana/engine/models/props/ranch.js) | corralGate |
+| Paca de heno · hay-bale | Derrape, Galope | [ranch.js](../../Pana/engine/models/props/ranch.js) | hayBale |
+| Molino de agua · water-windmill | Derrape, Galope | [ranch.js](../../Pana/engine/models/props/ranch.js) | waterWindmill |
+| Caballeriza · horse-stable | Derrape, Galope | [ranch.js](../../Pana/engine/models/props/ranch.js) | horseStable |
+| Comedero de ganado · feeding-trough | Derrape, Galope | [ranch.js](../../Pana/engine/models/props/ranch.js) | feedingTrough |
+| Cerca de hato · ranch-fence | Derrape, Galope | [ranch.js](../../Pana/engine/models/props/ranch.js) | ranchFence |
+| Tractor viejo · old-tractor | Derrape, Galope | [ranch.js](../../Pana/engine/models/props/ranch.js) | oldTractor |
 | Módulo de charco de barro · mud-puddle | Derrape | [ranch.js](../../Pana/engine/models/props/ranch.js) | mudPuddle |
-| Torre de agua del hato · ranch-water-tower | Derrape | [ranch.js](../../Pana/engine/models/props/ranch.js) | ranchWaterTower |
+| Torre de agua del hato · ranch-water-tower | Derrape, Galope | [ranch.js](../../Pana/engine/models/props/ranch.js) | ranchWaterTower |
 
-### Mapas (11)
+### Mapas (12)
 
 | Name / ID | Status / games | Source | Constructor |
 | --- | --- | --- | --- |
+| Galope · La vuelta del estero · galope | Galope | [scene.js](../../Pana/games/galope/public/scene.js) | createCourse |
 | Plaza Pana · plaza | Escondidas, Cocina, Derrape | [plaza.js](../../Pana/engine/plaza.js) | createPlazaEnvironment |
 | Cocina de la plaza · cocina | Cocina | [scene.js](../../Pana/games/cocina/public/scene.js) | createKitchenScene |
 | Isla Bululú · isla | Bululú | [board.js](../../Pana/games/bululu/public/board.js) | createBoard |
@@ -349,8 +352,8 @@ The following list is generated, not manually copied. “In use” is the catalo
 
 | Name / ID | Status / games | Source | Constructor |
 | --- | --- | --- | --- |
-| Palmera · palm | Bululú, Derrape, Escondidas, Cocina | [palm.js](../../Pana/engine/models/vegetation/palm.js) | palm |
-| Árbol de mango · mangoTree | Bululú, Derrape, Escondidas, Cocina | [mango-tree.js](../../Pana/engine/models/vegetation/mango-tree.js) | mangoTree |
+| Palmera · palm | Bululú, Derrape, Escondidas, Cocina, Galope | [palm.js](../../Pana/engine/models/vegetation/palm.js) | palm |
+| Árbol de mango · mangoTree | Bululú, Derrape, Escondidas, Cocina, Galope | [mango-tree.js](../../Pana/engine/models/vegetation/mango-tree.js) | mangoTree |
 | Ceiba · ceiba | Bululú, Derrape | [ceiba.js](../../Pana/engine/models/vegetation/ceiba.js) | ceiba |
 | Pino · pine | Bululú | [pine.js](../../Pana/engine/models/vegetation/pine.js) | pine |
 | Mata de cambur · banana | Bululú, Derrape | [banana.js](../../Pana/engine/models/vegetation/banana.js) | banana |
@@ -364,9 +367,9 @@ The following list is generated, not manually copied. “In use” is the catalo
 | Mangle · mangrove | Derrape | [mangrove.js](../../Pana/engine/models/vegetation/mangrove.js) | mangrove |
 | Lechosa · papaya | Bululú, Derrape | [papaya.js](../../Pana/engine/models/vegetation/papaya.js) | papaya |
 | Agave · agave | Derrape | [agave.js](../../Pana/engine/models/vegetation/agave.js) | agave |
-| Nenúfar · waterLily | Derrape | [water-lily.js](../../Pana/engine/models/vegetation/water-lily.js) | waterLily |
+| Nenúfar · waterLily | Derrape, Galope | [water-lily.js](../../Pana/engine/models/vegetation/water-lily.js) | waterLily |
 | Cayena · hibiscus | Bululú, Derrape | [hibiscus.js](../../Pana/engine/models/vegetation/hibiscus.js) | hibiscus |
-| Juncos · reeds | Derrape | [reeds.js](../../Pana/engine/models/vegetation/reeds.js) | reeds |
+| Juncos · reeds | Derrape, Galope | [reeds.js](../../Pana/engine/models/vegetation/reeds.js) | reeds |
 | Árbol gigante de la selva · jungleGiant | Derrape | [jungle-giant.js](../../Pana/engine/models/vegetation/jungle-giant.js) | jungleGiant |
 | Arbusto tropical grande · tropicalBush | Derrape | [tropical-bush.js](../../Pana/engine/models/vegetation/tropical-bush.js) | tropicalBush |
 | Frailejón · frailejon | Derrape | [frailejon.js](../../Pana/engine/models/vegetation/frailejon.js) | frailejon |

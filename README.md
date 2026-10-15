@@ -29,6 +29,12 @@ helpers or invite up to 8 panas. Includes touch controls, shared counters,
 fire recovery, team scores and replay. Panas now have animated legs, and the
 kitchen crew wears chef hats and aprons over their saved outfits.
 
+Fifth game: **Galope** — horse racing around a 482-metre Llanos ranch circuit.
+Ride your saved pana through two shallow esteros, jump three logs per lap and
+manage stamina over two laps. Choose a horse coat, race against the hato's
+jinetes or invite up to 8 panas. Includes touch controls, shared settings,
+ordered checkpoints, results, replay and host migration.
+
 ## Run it
 
 ```powershell
@@ -42,6 +48,7 @@ npm start            # or: npm run dev  /  Pana\dev.ps1
 - Bululú: http://localhost:8461/g/bululu/
 - Escondidas: http://localhost:8461/g/escondidas/
 - Cocina: http://localhost:8461/g/cocina/
+- Galope: http://localhost:8461/g/galope/
 - Pana Studio: http://localhost:8461/studio.html
 - Character editor: http://localhost:8461/personaje.html
 - Friends on your network: the dev script prints your LAN URL.
@@ -77,6 +84,7 @@ Pana/                  ← this repo
 - **Bululú**: party board game + minigames (playable now; more minigames coming)
 - **Escondidas**: prop hunt in Plaza Pana (playable now; solo bots + shared rooms)
 - **Cocina**: cooperative Venezuelan cooking in Plaza Pana (playable now; helpers + shared rooms)
+- **Galope**: Llanos horse racing (playable now; shallow water, jumps, bots + shared rooms)
 - **pana.sh** — public deploy
 
 ## Contributing / AI agents

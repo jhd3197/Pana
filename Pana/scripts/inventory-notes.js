@@ -41,6 +41,8 @@ export const uncataloged=[
   record('Condiment bottles and flour sacks',kitchen,'Small working-kitchen details','Cocina','Counter and floor dressing made inline; two prop types grouped as one set.'),
 ];
 export const assemblies=[
+  record('Mounted horse and riding tack','Pana/games/galope/public/rider.js','function createRider','Galope; hub tile','Shared horse and saved pana with game-local saddle, stirrups and reins; not a duplicate animal sculpt.'),
+  record('Horse course and wadeable esteros','Pana/games/galope/public/scene.js','function createCourse','Galope; Studio map','Route-generated terrain, shallow water, jump logs, start gantry and trail markers. Shared ranch props and plants are counted separately.'),
   record('Selva pyramid',race('tracks/selva-world'),'function pyramid','Selva','Stepped landmark outside the driving tunnel.'),
   record('Road temple tunnel and portals',race('tracks/selva-temple'),'function templeTunnel','Selva','Swept along the actual road; not the unused standalone temple entrance.'),
   record('Selva plank crossing',race('tracks/selva-world'),'const deck =','Selva','Road-warped planks, piers and flankBridge rails. Anchor spacing normalized by the audit.'),

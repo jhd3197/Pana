@@ -11,7 +11,7 @@ normal port fallback applies. `-NoAutoPort` makes that conflict explicit.
 `engine/models/catalog.js` aggregates shared model metadata; category manifests
 under `models/fauna/`, `models/vegetation/` and `models/props/catalog/` are the
 registration points. `web/studio/catalog.js` composes these with specialized
-scene/character/game adapters in `web/studio/catalog/`, currently 154 resources
+scene/character/game adapters in `web/studio/catalog/`, currently 155 resources
 including twenty-two vegetation models, nine Pana landmarks (`Emblemas`),
 ten Pueblo models, seven jungle structures (`Selva`), eight Páramo structures
 and five thermal landmarks (`Termales`) used by Chi Chi, plus ten Llanos and
@@ -25,6 +25,9 @@ It derives props from `PLAZA_PROPS`, recipes/stations from Cocina's definitions,
 vehicles from `CARS`, and circuits from `TRACKS`. Other shared factories have
 explicit entries. This is a development asset catalog, not player inventory or
 a visual level editor. New exported functions are not automatically registered.
+
+Galope's `galope` map calls `createCourse()` and exposes its actual 482 m route
+to the existing camera tour, including both wadeable esteros and all three jumps.
 
 The additional vegetation IDs are `araguaney`, `bamboo`, `fern`, `monstera`,
 `heliconia`, `cactus` (Cardón), `mangrove` (Mangle), `papaya` (Lechosa), `agave`,

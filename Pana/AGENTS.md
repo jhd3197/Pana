@@ -140,6 +140,14 @@ clean: only `README.md` and `.gitignore` belong there. Everything else lives her
   `../docs/knowledge/cocina.md`. Plaza scenery and the original hunt layout now
   live in `engine/plaza.js` and `engine/plaza-layout.js`; cooking has its own
   station layout and collision rules. Existing Escondidas paths re-export them.
+- Galope uses a host simulation at 20 Hz (`galope-v1`), with ordered route gates,
+  bots, snapshots and host migration. `games/galope/public/course.js` owns the
+  482 m horse circuit, terrain and water depth; `scene.js` uses the shared ranch,
+  plants and fauna. Late arrivals spectate until replay. Keep decorations outside
+  the 9 m recovery corridor and water geometry aligned with the terrain bed.
+  Horses opt into `{locomotion:true}` and `userData.gallop(phase,speed,jump)`;
+  ordinary Studio/Derrape horses retain their grazing rig. The rider uses the
+  saved Pana character. See `../docs/knowledge/galope.md` for proof and controls.
 - Derrape's eight circuits include Plaza Pana, Isla Bululú and Chi Chi. Playa
   is now a sector of the Los Roques-inspired race island; legacy `playa` IDs
   resolve to `bululu`. All trees come

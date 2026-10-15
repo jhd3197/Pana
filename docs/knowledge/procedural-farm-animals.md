@@ -8,8 +8,11 @@ including the separately authored fish and fish school; see `map-asset-rollout.m
 
 Horse coats: `bay`, `palomino`, `grey`; chicken coats: `red`, `cream`; cow coats: `pinto`, `brown`.
 The integer seed determines default coat, body width and animation phase.
-These are scenery animals with grazing/pecking, blinking and tail motion;
-walking, riding, pathfinding, interactions and animal collision are not included.
+By default these are scenery animals with grazing/pecking, blinking and tail motion.
+Galope opts horses into `{locomotion:true}` to add eight leg bones and
+`userData.gallop(phase,speed,jump)` for riding. The game owns its mounted character,
+movement and bot pathfinding; scenery animals keep their original grazing rig.
+See [Galope](galope.md).
 
 Los Llanos places three horses, eight chickens and eight cows around its ranches
 and pastures. The cows replace the old game-local box-and-sphere model.

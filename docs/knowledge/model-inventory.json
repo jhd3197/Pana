@@ -2,7 +2,7 @@
   "date": "2026-10-15",
   "scope": "Current production 3D resource/model families; catalog variants and scene assemblies are counted separately. No primitive-mesh count or deleted-history total.",
   "counts": {
-    "catalog": 154,
+    "catalog": 155,
     "categories": {
       "Fauna": 10,
       "Vegetación": 22,
@@ -18,11 +18,11 @@
       "Personajes": 3,
       "Vestuario": 5,
       "Vehículos": 8,
-      "Mapas": 11
+      "Mapas": 12
     },
     "previewOnly": 10,
     "uncatalogedFamilies": 31,
-    "sceneFamilies": 38,
+    "sceneFamilies": 40,
     "dormantFactories": 9
   },
   "assets": [
@@ -47,7 +47,8 @@
       "source": "Pana/engine/models/fauna/birds/scarlet-ibis.js",
       "factory": "scarletIbis",
       "usedBy": [
-        "Derrape"
+        "Derrape",
+        "Galope"
       ],
       "previewOptions": {
         "seed": 7
@@ -89,7 +90,8 @@
       "source": "Pana/engine/models/fauna/farm/llanero-horse.js",
       "factory": "llaneroHorse",
       "usedBy": [
-        "Derrape"
+        "Derrape",
+        "Galope"
       ],
       "previewOptions": {
         "seed": 7,
@@ -119,7 +121,8 @@
       "source": "Pana/engine/models/fauna/farm/hato-cow.js",
       "factory": "hatoCow",
       "usedBy": [
-        "Derrape"
+        "Derrape",
+        "Galope"
       ],
       "previewOptions": {
         "seed": 7,
@@ -180,7 +183,8 @@
         "Bululú",
         "Derrape",
         "Escondidas",
-        "Cocina"
+        "Cocina",
+        "Galope"
       ],
       "previewOptions": {
         "seed": 7
@@ -197,7 +201,8 @@
         "Bululú",
         "Derrape",
         "Escondidas",
-        "Cocina"
+        "Cocina",
+        "Galope"
       ],
       "previewOptions": {
         "seed": 7
@@ -399,7 +404,8 @@
       "source": "Pana/engine/models/vegetation/water-lily.js",
       "factory": "waterLily",
       "usedBy": [
-        "Derrape"
+        "Derrape",
+        "Galope"
       ],
       "previewOptions": {
         "seed": 7
@@ -428,7 +434,8 @@
       "source": "Pana/engine/models/vegetation/reeds.js",
       "factory": "reeds",
       "usedBy": [
-        "Derrape"
+        "Derrape",
+        "Galope"
       ],
       "previewOptions": {
         "seed": 7
@@ -498,7 +505,8 @@
       "source": "Pana/engine/models/props/ranch.js",
       "factory": "llaneroRanchHouse",
       "usedBy": [
-        "Derrape"
+        "Derrape",
+        "Galope"
       ],
       "previewOptions": null,
       "status": "in-use"
@@ -510,7 +518,8 @@
       "source": "Pana/engine/models/props/ranch.js",
       "factory": "corralGate",
       "usedBy": [
-        "Derrape"
+        "Derrape",
+        "Galope"
       ],
       "previewOptions": null,
       "status": "in-use"
@@ -522,7 +531,8 @@
       "source": "Pana/engine/models/props/ranch.js",
       "factory": "hayBale",
       "usedBy": [
-        "Derrape"
+        "Derrape",
+        "Galope"
       ],
       "previewOptions": null,
       "status": "in-use"
@@ -534,7 +544,8 @@
       "source": "Pana/engine/models/props/ranch.js",
       "factory": "waterWindmill",
       "usedBy": [
-        "Derrape"
+        "Derrape",
+        "Galope"
       ],
       "previewOptions": null,
       "status": "in-use"
@@ -546,7 +557,8 @@
       "source": "Pana/engine/models/props/ranch.js",
       "factory": "horseStable",
       "usedBy": [
-        "Derrape"
+        "Derrape",
+        "Galope"
       ],
       "previewOptions": null,
       "status": "in-use"
@@ -558,7 +570,8 @@
       "source": "Pana/engine/models/props/ranch.js",
       "factory": "feedingTrough",
       "usedBy": [
-        "Derrape"
+        "Derrape",
+        "Galope"
       ],
       "previewOptions": null,
       "status": "in-use"
@@ -570,7 +583,8 @@
       "source": "Pana/engine/models/props/ranch.js",
       "factory": "ranchFence",
       "usedBy": [
-        "Derrape"
+        "Derrape",
+        "Galope"
       ],
       "previewOptions": null,
       "status": "in-use"
@@ -582,7 +596,8 @@
       "source": "Pana/engine/models/props/ranch.js",
       "factory": "oldTractor",
       "usedBy": [
-        "Derrape"
+        "Derrape",
+        "Galope"
       ],
       "previewOptions": null,
       "status": "in-use"
@@ -606,7 +621,8 @@
       "source": "Pana/engine/models/props/ranch.js",
       "factory": "ranchWaterTower",
       "usedBy": [
-        "Derrape"
+        "Derrape",
+        "Galope"
       ],
       "previewOptions": null,
       "status": "in-use"
@@ -1924,6 +1940,17 @@
       "status": "in-use"
     },
     {
+      "id": "galope",
+      "name": "Galope · La vuelta del estero",
+      "category": "Mapas",
+      "source": "Pana/games/galope/public/scene.js",
+      "factory": "createCourse",
+      "usedBy": [
+        "Galope"
+      ],
+      "status": "in-use"
+    },
+    {
       "id": "plaza",
       "name": "Plaza Pana",
       "category": "Mapas",
@@ -2298,6 +2325,22 @@
     }
   ],
   "assemblies": [
+    {
+      "name": "Mounted horse and riding tack",
+      "source": "Pana/games/galope/public/rider.js",
+      "anchor": "function createRider",
+      "where": "Galope; hub tile",
+      "note": "Shared horse and saved pana with game-local saddle, stirrups and reins; not a duplicate animal sculpt.",
+      "line": 7
+    },
+    {
+      "name": "Horse course and wadeable esteros",
+      "source": "Pana/games/galope/public/scene.js",
+      "anchor": "function createCourse",
+      "where": "Galope; Studio map",
+      "note": "Route-generated terrain, shallow water, jump logs, start gantry and trail markers. Shared ranch props and plants are counted separately.",
+      "line": 25
+    },
     {
       "name": "Selva pyramid",
       "source": "Pana/games/derrape/public/tracks/selva-world.js",

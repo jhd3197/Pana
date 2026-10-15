@@ -48,7 +48,7 @@ try {
   assert.ok(horse.includes('llanero-horse')&&horse.includes('track-llanos'));
   for(const id of ['hato-cow','yard-chicken','wild-capybara','corn'])assert.ok(!horse.includes(id),`Horse invalidated unrelated ${id}`);
   const plant=await changedBy('/engine/models/vegetation/palm.js');
-  assert.ok(plant.includes('palm')&&plant.includes('isla'));
+  assert.ok(plant.includes('palm')&&plant.includes('isla')&&plant.includes('galope'));
   for(const id of ['bush','mangoTree','hato-cow','corn'])assert.ok(!plant.includes(id),`Palm invalidated unrelated ${id}`);
   assert.deepEqual(errors,[]);console.log('PASS exports, aliases and isolated cache invalidation',result);
 } finally {await browser.close();}

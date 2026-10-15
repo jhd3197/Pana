@@ -2,6 +2,9 @@ import { TRACKS, makeTrack } from '/g/derrape/tracks.js';
 import { STATIONS } from '/g/cocina/rules.js';
 import { Box3, Vector3, Scene } from 'three';
 export const MAPS = [
+  { id: 'galope', name: 'Galope · La vuelta del estero', category: 'Mapas', source: '/g/galope/scene.js', dependencies: ['/g/galope/course.js'], factory: 'createCourse', usedBy: ['Galope'], game: '/g/galope/', description: 'Circuito a caballo de 482 m: hato, sabana, tres saltos y dos esteros poco profundos.',
+    async build() { const {createCourse}=await import('/g/galope/scene.js');return {...createCourse(),bounds:new Box3(new Vector3(-100,0,-100),new Vector3(105,20,85))}; },
+  },
   { id: 'plaza', name: 'Plaza Pana', category: 'Mapas', source: '/engine/plaza.js', factory: 'createPlazaEnvironment', usedBy: ['Escondidas', 'Cocina', 'Derrape'], game: '/g/escondidas/',
     async build() { const { createPlazaEnvironment } = await import('/engine/plaza.js'); return { ...createPlazaEnvironment(), bounds: new Box3(new Vector3(-28, 0, -24), new Vector3(28, 15, 28)) }; },
   },

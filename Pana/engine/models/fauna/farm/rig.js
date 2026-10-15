@@ -65,7 +65,7 @@ function mergeDetails(group) {
   mesh.castShadow=true;group.add(mesh);
 }
 
-export function makeAnimal(species,sculpt,{seed=7,coat}={}) {
+export function makeAnimal(species,sculpt,{seed=7,coat,locomotion=false}={}) {
   if(!Number.isInteger(seed))throw new RangeError('Animal seed must be an integer');
   const horse=species==='horse',cow=species==='cow',large=horse||cow,random=rng(seed);
   const coats=horse?{bay:0x995b38,palomino:0xc59b5b,grey:0xb7b2a4}:cow?{pinto:0xe8dcc2,brown:0xa57850}:{red:0xb85e31,cream:0xe5d8b9};
@@ -98,7 +98,26 @@ export function makeAnimal(species,sculpt,{seed=7,coat}={}) {
   neck.position.set(...neckAt);head.position.set(...headAt).sub(neck.position);root.add(neck);neck.add(head);
   const skin=new THREE.SkinnedMesh(geometry,new THREE.MeshStandardMaterial({vertexColors:true,roughness:.86}));
   skin.name='AnimalSkin';skin.castShadow=true;skin.receiveShadow=true;skin.add(root);shape.add(skin);
-  const skeleton=new THREE.Skeleton([root,neck,head]);skin.bind(skeleton);
+  const bones=[root,neck,head],legs=[];
+  // Opt-in riding rig. Default Studio/grazing animals retain their original skin.
+  if(horse&&locomotion){
+    for(const front of [true,false])for(const side of [-1,1]){
+      const upper=new THREE.Bone(),lower=new THREE.Bone();
+      upper.name=`${front?'Front':'Rear'}${side<0?'Left':'Right'}Leg`;
+      lower.name=`${upper.name}Lower`;
+      upper.position.set(side*.25,1.15,front?.49:-.59);
+      lower.position.set(0,-.59,front?.04:-.14);
+      root.add(upper);upper.add(lower);legs.push({upper,lower,front,side,index:bones.length});bones.push(upper,lower);
+    }
+    const indices=geometry.attributes.skinIndex,weights=geometry.attributes.skinWeight;
+    for(let i=0;i<p.count;i++){
+      const y=p.getY(i);if(y>=1.18)continue;
+      const leg=legs.find(l=>l.front===(p.getZ(i)>0)&&l.side===(p.getX(i)<0?-1:1));
+      const influence=1-smoothstep(.88,1.18,y),lower=1-smoothstep(.44,.66,y);
+      indices.setXYZW(i,0,leg.index,leg.index+1,0);weights.setXYZW(i,1-influence,influence*(1-lower),influence*lower,0);
+    }
+  }
+  const skeleton=new THREE.Skeleton(bones);skin.bind(skeleton);
   // Explicitly generous animation bounds (meshes can graze outside the bind pose).
   skin.boundingSphere=new THREE.Sphere(new THREE.Vector3(0,large?1:.4,0),large?2.5:1);
   const eyes=[];
@@ -146,6 +165,22 @@ export function makeAnimal(species,sculpt,{seed=7,coat}={}) {
     skin.updateMatrixWorld(true);
     // Box3/Studio must recompute skinned bounds after every sampled pose.
     skin.boundingBox=null;
+  };
+  if(legs.length)group.userData.gallop=(phase=0,speed=0,jump=0)=>{
+    const amount=Math.min(1,Math.max(0,speed)/5);
+    neck.position.set(...neckAt);
+    head.position.set(...headAt).sub(neck.position);
+    neck.rotation.set(-.12*amount+Math.sin(phase*2)*.035*amount,0,0);
+    head.rotation.set(.06*amount,0,0);
+    for(const leg of legs){
+      const cycle=phase+(leg.front?0:2.1)+(leg.side<0?.5:0);
+      leg.upper.rotation.x=(Math.sin(cycle)*.65+(leg.front?-.12:.12))*amount+(jump>0?(leg.front?-.5:.3):0);
+      leg.lower.rotation.x=Math.max(0,Math.cos(cycle))*(leg.front?1:-1)*.95*amount;
+    }
+    shape.position.y=Math.abs(Math.sin(phase))*.08*amount;
+    shape.rotation.x=Math.sin(phase)*.025*amount;
+    tail.rotation.set(-.25*amount,0,Math.sin(phase*.7)*.12);
+    skin.updateMatrixWorld(true);skin.boundingBox=null;
   };
   let disposed=false;
   group.userData.dispose=()=>{if(disposed)return;disposed=true;skeleton.dispose();group.traverse(o=>o.material?.dispose());};
