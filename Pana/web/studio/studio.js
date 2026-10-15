@@ -4,6 +4,7 @@ import { ASSETS, CATEGORIES, sourcePath, assetContext } from './catalog.js';
 import { createPreview, release, ownMaterials, inspect, fitCamera } from './preview.js';
 import { createThumbnails } from './thumbnails.js';
 import { updateStartup, previewSettled } from './startup.js';
+import { createTrackTour } from './track-tour.js';
 
 const $ = id => document.getElementById(id), canvas = $('preview');
 const stage = createPreview(canvas), { scene, camera, renderer } = stage;
@@ -12,6 +13,7 @@ controls.enableDamping = true; controls.dampingFactor = 0.08; controls.autoRotat
 let current = null, selected = '', category = 'Todos', generation = 0, stopped = false, loading = true;
 let bounds = new THREE.Box3(), grid, wireframe = false, thumbnails, lastInput = 0, renderNeeded = true, animated = false;
 const nodes = new Map(), number = value => value.toLocaleString('es');
+const tour = createTrackTour({ scene, camera, controls, canvas, invalidate: () => { renderNeeded = true; }, overview: frame, copy, animate: (t, dt) => current?.update?.(t, dt) });
 const normalize = text => text.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
 const resize = () => {
   const w = canvas.clientWidth, h = canvas.clientHeight; if (!w || !h) return;
@@ -24,6 +26,7 @@ document.addEventListener('pointerdown', interacted); document.addEventListener(
 
 function frame() {
   if (!current) return;
+  if (tour.active) { tour.overview(); return; }
   const { center, distance } = fitCamera(camera, bounds, current.map, $('camera-view').value);
   controls.target.copy(center); controls.minDistance = distance * 0.15; controls.maxDistance = distance * 4;
   controls.enableDamping = false; controls.update(); controls.enableDamping = true;
@@ -87,6 +90,7 @@ function renderList() {
 async function select(id) {
   const asset = ASSETS.find(a => a.id === id) || ASSETS[0]; id = asset.id;
   const ticket = ++generation; selected = id; loading = true;
+  tour.setTrack(null, null);
   $('settings-link').href = '/studio/settings.html?asset=' + encodeURIComponent(id);
   history.replaceState(null, '', '#' + encodeURIComponent(id)); renderList();
   $('asset-category').textContent = asset.category; $('asset-id').textContent = asset.id; $('asset-name').textContent = asset.name;
@@ -108,7 +112,7 @@ async function select(id) {
     $('dimensions').textContent = stats.dimensions.map(n => n.toFixed(2)).join(' × ') + ' u';
     $('geometry').textContent = number(stats.triangles) + ' tri · ' + number(stats.meshes) + ' mallas';
     for (const name of ['vertices', 'materials', 'textures']) $(name).textContent = number(stats[name]);
-    current = runtime; updateGrid(); frame(); $('preview-status').hidden = true;
+    current = runtime; updateGrid(); frame(); tour.setTrack(runtime.route, asset); $('preview-status').hidden = true;
   } catch (error) {
     release(runtime); if (ticket !== generation) return; current = null;
     $('preview-status').classList.add('error'); $('preview-status').textContent = 'No se pudo abrir este recurso: ' + error.message;
@@ -149,8 +153,8 @@ document.addEventListener('keydown', event => {
   if (event.key.toLowerCase() === 'f') { event.preventDefault(); frame(); }
 });
 async function copy(text) {
-  try { await navigator.clipboard.writeText(text); $('copy-status').textContent = 'Copiado.'; }
-  catch { $('copy-status').textContent = 'No se pudo copiar. Selecciona la ruta o exporta el inventario.'; }
+  try { await navigator.clipboard.writeText(text); $('copy-status').textContent = 'Copiado.'; return true; }
+  catch { $('copy-status').textContent = 'No se pudo copiar. Selecciona la ruta o exporta el inventario.'; return false; }
 }
 $('copy-path').onclick = () => copy(sourcePath(ASSETS.find(a => a.id === selected).source));
 $('copy-context').onclick = () => copy(assetContext(ASSETS.find(a => a.id === selected)));
@@ -162,10 +166,11 @@ $('export').onclick = () => {
 let previous = performance.now(), time = 0;
 function tick(now) {
   if (stopped) return;
-  const dt = Math.min(0.05, (now - previous) / 1000); previous = now; time += dt;
+  const elapsed = (now - previous) / 1000, dt = Math.min(0.05, elapsed); previous = now; time += dt;
   if (!document.hidden) {
-    if (animated) { current?.update?.(time, dt); renderNeeded = true; }
-    controls.update();
+    if (tour.active) { if (tour.playing) tour.step(elapsed); }
+    else if (animated) { current?.update?.(time, dt); renderNeeded = true; }
+    if (!tour.playing) controls.update();
     if (renderNeeded) {
       renderer.render(scene, camera); renderNeeded = false;
       $('draw-calls').textContent = renderer.info.render.calls + ' draw calls · visor';
@@ -180,11 +185,11 @@ function selectFromHash() {
   select(id);
 }
 selectFromHash(); addEventListener('hashchange', selectFromHash);
-thumbnails = createThumbnails(ASSETS, { onChange: cacheStatus, isBusy: () => loading || performance.now() - lastInput < 700 });
+thumbnails = createThumbnails(ASSETS, { onChange: cacheStatus, isBusy: () => loading || tour.playing || performance.now() - lastInput < 700 });
 thumbnails.prioritize([selected, ...ASSETS.map(asset => asset.id)]);
 addEventListener('pagehide', event => {
   if (event.persisted) return;
   stopped = true; generation++; observer.disconnect(); controls.dispose(); release(current); thumbnails.dispose();
   if (grid) { grid.geometry.dispose(); grid.material.dispose(); } stage.dispose();
 });
-window.panaLibrary = { assets: ASSETS, renderer, scene, camera, thumbnails, get selected() { return selected; }, get current() { return current; } };
+window.panaLibrary = { assets: ASSETS, renderer, scene, camera, thumbnails, tour, get selected() { return selected; }, get current() { return current; } };

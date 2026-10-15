@@ -25,6 +25,11 @@ clean: only `README.md` and `.gitignore` belong there. Everything else lives her
   characters. Register new resources in `web/studio/catalog.js` using their real
   constructors; do not duplicate models in the preview. See
   `../docs/knowledge/pana-studio.md` for the registration and agent workflow.
+  Circuit previews expose their existing track runtime as `route` for Studio's
+  `track-tour.js`: user-started playback follows the start line, road and ramps.
+  Preserve pause/scrub/copy-point behavior, restore overview on exit, and reset
+  tour state on asset changes. Keep this camera tool separate from race state.
+  See the circuit walkthrough section in the Studio knowledge note for proof.
   Thumbnail images live only in browser IndexedDB. Declare extra factory
   dependencies in the catalog for cache invalidation, and run the studio cache
   browser suite when changing its generation or persistence behavior.

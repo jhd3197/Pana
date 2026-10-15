@@ -160,7 +160,7 @@ export const ASSETS = [
     },
   },
   ...TRACKS.map(track => ({ id: `track-${track.id}`, name: `Circuito · ${track.name}`, category: 'Mapas', source: `/g/derrape/tracks/${track.id}.js`, dependencies: ['/g/derrape/tracks.js'], factory: 'makeTrack(definition).build', usedBy: ['Derrape'], description: track.blurb, game: `/g/derrape/?track=${track.id}`,
-    async build() { const model = makeTrack(track); return { group: model.build(), groundAt:model.terrainAt, bounds: track.previewBounds ? new Box3(new Vector3(...track.previewBounds[0]), new Vector3(...track.previewBounds[1])) : new Box3(new Vector3(-model.bounds.x - 20, 0, -model.bounds.z - 20), new Vector3(model.bounds.x + 20, 35, model.bounds.z + 20)), update: (t, dt) => model.animated.forEach(o => o.userData.tick?.(t, dt)) }; },
+    async build() { const model = makeTrack(track); return { group: model.build(), groundAt:model.terrainAt, route:model, bounds: track.previewBounds ? new Box3(new Vector3(...track.previewBounds[0]), new Vector3(...track.previewBounds[1])) : new Box3(new Vector3(-model.bounds.x - 20, 0, -model.bounds.z - 20), new Vector3(model.bounds.x + 20, 35, model.bounds.z + 20)), update: (t, dt) => model.animated.forEach(o => o.userData.tick?.(t, dt)) }; },
   })),
 ];
 export const CATEGORIES = ['Todos', 'Personajes', 'Vestuario', 'Objetos', 'Fauna', 'Emblemas', 'Pueblo', 'Selva', 'Llanos', 'Páramo', 'Desierto', 'Termales', 'Vegetación', 'Vehículos', 'Mapas'];

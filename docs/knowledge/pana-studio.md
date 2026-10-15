@@ -79,6 +79,47 @@ Perspective, front, side and top cameras, a world-unit grid, wireframe and optio
 animation are inspection controls. `/` focuses search and `F` frames the model.
 Static previews render on demand, avoiding continuous GPU work on large maps.
 
+## Circuit walkthroughs
+
+Each of the eight circuit previews includes **Recorrer pista**. It plays one
+lap from the actual starting line, using the same `makeTrack` route, elevation
+and ramps as the race. Other maps and props do not show the tour controls.
+`build()` returns the existing track runtime as `route`; this is live preview
+data, not a second map or exported inventory field.
+
+The player supports pause/resume, a position slider, 0.5×/1×/2×/4× speed,
+**Vista general**, **Ampliar visor** and **Copiar punto**. Paused tours allow
+normal orbit inspection; resuming returns to the road camera. Copying a point
+pauses the tour and includes the circuit, lap percentage, metres from the
+starting line, road/camera coordinates and source link for feedback. With the
+canvas focused, Space toggles playback and Left/Right moves five seconds along
+the 1× timeline. The displayed timeline is at 1×, like a video timeline.
+
+`track-tour.js` owns this Studio-only behavior. Playback is always user-started,
+including with reduced motion enabled. Hidden tabs pause; changing assets clears
+the tour and expanded viewer. Map animation runs during playback and freezes
+with the paused view. Overview restores normal camera framing.
+Tour motion and scenery share the scrubbed 1× timeline, so seeking/replaying a
+point also restores its water and animal poses. The track's horizon/fog palette
+is applied during the tour and the Studio atmosphere is restored on exit.
+Thumbnail work defers during playback. No car physics, multiplayer or race state
+is involved.
+
+Run `node Pana/web/studio/tests/track-tour.browser.js <playwright-package>` against
+the running server. It checks every route, road clearance, start/finish seam,
+UI playback/pause/scrub/copy/repeat, orbit, keyboard, visibility handling, switching
+to ordinary props, mobile layout and warm thumbnail reuse. Screenshots and route
+metrics go to ignored `art/studio/tours/`.
+
+The October 2026 rollout passed all eight routes and the interaction suite above,
+including a 390×844 expanded viewer, all 140 thumbnail preparations and a warm
+reload with zero regenerated thumbnails. Camera stability assertions allow
+1e-8 metres for OrbitControls' spherical-coordinate roundoff. `npm run check`
+passed 176 files. Optional `PANA_QA_PROFILE` stores an isolated browser profile
+under an ignored artifact directory for faster subsequent test runs.
+
+## Thumbnail cache
+
 `thumbnails.js` generates one real 320×240 WebP preview at a time, with a separate
 reused renderer. The queue yields between builds, prioritizes selected/filtered
 assets and defers while the document is hidden. Startup keeps the inventory
