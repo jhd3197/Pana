@@ -44,7 +44,33 @@ export const ASSETS = [
     ['reeds','Juncos','Tallos altos, hojas arqueadas y espigas para las orillas.',['agua','laguna','enea']],
     ['jungleGiant','Árbol gigante de la selva','Tronco con raíces tabulares, copa en pisos, lianas y bromelias.',['selva','árbol','lianas']],
     ['tropicalBush','Arbusto tropical grande','Hojas anchas, crotos variegados y espigas rojas de jengibre.',['selva','arbusto','flores']],
-  ].map(([factory,name,description,tags])=>({...object(factory,name,'Vegetación','/engine/flora.js',factory,['jungleGiant','tropicalBush'].includes(factory)?['Pana Studio']:['Pana Studio','Derrape'],{seed:7}),description,tags})),
+    ['frailejon','Frailejón','Roseta plateada, hojas secas y tallos de flores amarillas.',['051','páramo','montaña','flores']],
+    ['mountainPine','Pino de montaña','Ramas abiertas en pisos y follaje verde oscuro.',['057','páramo','montaña','árbol']],
+  ].map(([factory,name,description,tags])=>({...object(factory,name,'Vegetación','/engine/flora.js',factory,['jungleGiant','tropicalBush','frailejon','mountainPine'].includes(factory)?['Pana Studio']:['Pana Studio','Derrape'],{seed:7}),description,tags})),
+  // Pueblo 011–020: new standalone buildings and street furniture.
+  ...[
+    ['011', 'colonial-house', 'Casa colonial colorida', 'colonialHouse', 'Fachada turquesa, puerta de arco, rejas, persianas y techo de tejas.', ['casa','colonial']],
+    ['012', 'corner-bodega', 'Bodega de esquina', 'cornerBodega', 'Toldos a dos calles, estantes surtidos y cajas de mangos.', ['tienda','bodega']],
+    ['013', 'colonial-church', 'Iglesia colonial pequeña', 'colonialChurch', 'Muros encalados, rosetón y campanario abierto con campana.', ['iglesia','campana']],
+    ['014', 'bus-stop-shelter', 'Parada de autobús', 'busStopShelter', 'Marquesina, asientos y panel de ruta con paradas.', ['parada','autobús']],
+    ['015', 'street-food-kiosk', 'Puesto de arepas', 'streetFoodKiosk', 'Plancha con arepas, salsas y mostrador bajo un toldo a rayas.', ['comida','kiosco','arepas']],
+    ['016', 'plaza-clock-tower', 'Torre del reloj', 'plazaClockTower', 'Reloj de cuatro caras con agujas y segundero animados.', ['plaza','reloj','torre']],
+    ['017', 'basketball-hoop', 'Aro de baloncesto', 'basketballHoop', 'Tablero, aro a 3,05 m y red tejida abierta.', ['cancha','baloncesto']],
+    ['018', 'rooftop-water-tank', 'Tanque de agua de azotea', 'rooftopWaterTank', 'Tanque estriado con soporte, escalera, tubería y válvula.', ['tanque','agua','azotea']],
+    ['019', 'streetlight-pole', 'Farol de calle', 'streetlightPole', 'Poste curvado con brazo ornamental y lámpara cálida.', ['farol','calle','luz']],
+    ['020', 'park-bench', 'Banco de parque', 'parkBench', 'Listones de madera, patas de hierro y apoyabrazos curvos.', ['banco','parque']],
+  ].map(([number,id,name,factory,description,tags])=>({...object(id,name,'Pueblo','/engine/pueblo-props.js',factory,['Pana Studio']),description,tags:[number,'pueblo',...tags]})),
+  // Páramo 051–060: the two plants remain under Vegetación.
+  ...[
+    ['052', 'mountain-cabin', 'Cabaña de montaña', 'mountainCabin', 'Refugio de madera y piedra con porche, chimenea y techo de tejas.', ['cabaña','refugio']],
+    ['053', 'cable-car-station', 'Estación de teleférico', 'cableCarStation', 'Andén abierto, boletería, poleas y una cabina en movimiento.', ['teleférico','estación']],
+    ['054', 'rocky-cliff', 'Módulo de acantilado rocoso', 'rockyCliff', 'Estratos de roca y extremos compatibles para unir módulos.', ['acantilado','roca','módulo']],
+    ['055', 'mountain-guardrail', 'Defensa vial de montaña', 'mountainGuardrail', 'Barrera de acero ondulado con pernos y reflectores.', ['carretera','defensa','barrera']],
+    ['056', 'stone-lookout', 'Mirador de piedra', 'stoneLookout', 'Terraza con escalinata, barandas y binoculares de observación.', ['mirador','plataforma']],
+    ['058', 'mountain-tent', 'Carpa de montaña', 'mountainTent', 'Carpa abierta con vientos, estacas y dos colchonetas.', ['campamento','carpa']],
+    ['059', 'mountain-suspension-bridge', 'Puente colgante de montaña', 'mountainSuspensionBridge', 'Tablero de madera, torres de acero, cables y accesos de piedra.', ['puente','cables']],
+    ['060', 'mountain-signpost', 'Señal de senderos', 'mountainSignpost', 'Flechas de madera hacia el mirador, la laguna y el refugio.', ['sendero','señal']],
+  ].map(([number,id,name,factory,description,tags])=>({...object(id,name,'Páramo','/engine/mountain-props.js',factory,['Pana Studio']),description,tags:[number,'páramo','montaña',...tags]})),
   // Pana signature landmarks shared by every game.
   ...[
     ['capybara-statue', 'Estatua gigante de capibara', '/engine/landmarks.js', 'capybaraStatue', 'El pana original en bronce, saludando sobre un pedestal.', ['estatua', 'capibara', 'monumento']],
@@ -94,7 +120,7 @@ export const ASSETS = [
     async build() { const model = makeTrack(track); return { group: model.build(), bounds: track.previewBounds ? new Box3(new Vector3(...track.previewBounds[0]), new Vector3(...track.previewBounds[1])) : new Box3(new Vector3(-model.bounds.x - 20, 0, -model.bounds.z - 20), new Vector3(model.bounds.x + 20, 35, model.bounds.z + 20)), update: (t, dt) => model.animated.forEach(o => o.userData.tick?.(t, dt)) }; },
   })),
 ];
-export const CATEGORIES = ['Todos', 'Personajes', 'Vestuario', 'Objetos', 'Emblemas', 'Selva', 'Vegetación', 'Vehículos', 'Mapas'];
+export const CATEGORIES = ['Todos', 'Personajes', 'Vestuario', 'Objetos', 'Emblemas', 'Pueblo', 'Selva', 'Páramo', 'Vegetación', 'Vehículos', 'Mapas'];
 export function sourcePath(url) {
   return url.startsWith('/engine/') ? `Pana${url}` : url.replace(/^\/g\/([^/]+)\//, 'Pana/games/$1/public/');
 }

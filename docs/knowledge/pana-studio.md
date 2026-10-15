@@ -8,9 +8,10 @@ normal port fallback applies. `-NoAutoPort` makes that conflict explicit.
 
 ## Library and extension contract
 
-`web/studio/catalog.js` is the curated registration point, currently 90 resources
-including twenty vegetation species, nine Pana landmarks (category `Emblemas`)
-and seven jungle structures (category `Selva`); see `shared-props.md`.
+`web/studio/catalog.js` is the curated registration point, currently 110 resources
+including twenty-two vegetation models, nine Pana landmarks (`Emblemas`),
+ten Pueblo models, seven jungle structures (`Selva`) and eight Páramo structures.
+See `shared-props.md` and `pueblo-paramo-props.md`.
 It derives props from `PLAZA_PROPS`, recipes/stations from Cocina's definitions,
 vehicles from `CARS`, and circuits from `TRACKS`. Other shared factories have
 explicit entries. This is a development asset catalog, not player inventory or
@@ -23,7 +24,7 @@ re-exported from `/engine/flora.js`; `flora-species.js` owns the geometry. They
 are all used by Derrape's Selva circuit, so `usedBy` lists Pana Studio and Derrape.
 `tracks/selva-flora.js` owns habitat placement. Registering a future plant still
 does not change map placement or collision rules automatically.
-The additional `jungleGiant` and `tropicalBush` entries are currently Studio-only;
+The additional `jungleGiant`, `tropicalBush`, `frailejon` and `mountainPine` entries are currently Studio-only;
 their catalog `usedBy` must not imply they have already been placed in Derrape.
 
 Each entry has a unique stable `id`, Spanish `name`, `category`, browser `source`
@@ -160,6 +161,9 @@ IDs, source links, filters, empty results, inventory export and mobile overflow,
 then saves a mixed wardrobe and checks the standing/seated game adapter.
 Run with the same optional Playwright package and browser executable arguments
 as `web/character/tests/proportions.browser.js`.
+Large map constructors can block the main thread during the click itself, so
+the suite gives both the click and preview-ready wait 90 seconds. Increasing
+only the latter does not prevent a 30-second Playwright click timeout.
 
 The character proportions suite verifies stable camera/body size across wardrobe
 changes. Cocina and Escondidas browser suites use real two-client sessions for

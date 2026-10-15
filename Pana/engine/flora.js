@@ -7,7 +7,7 @@ import { leafBlade, taperedStem } from './botanical-shapes.js';
 import { bake } from './static-batch.js';
 export { casita } from './island-house.js';
 export { bake } from './static-batch.js';
-export { araguaney, bamboo, fern, monstera, heliconia, cactus, mangrove, papaya, agave, waterLily, hibiscus, reeds, jungleGiant, tropicalBush } from './flora-species.js';
+export { araguaney, bamboo, fern, monstera, heliconia, cactus, mangrove, papaya, agave, waterLily, hibiscus, reeds, jungleGiant, tropicalBush, frailejon, mountainPine } from './flora-species.js';
 
 // A small shared palette and smooth, gently lobed forms keep the island toy-like
 // without turning every crown into the same faceted disk. Colors survive bake().

@@ -422,3 +422,72 @@ export function tropicalBush({seed=1}={}) {
   }
   return finish(g,'tropicalBush');
 }
+
+// 051 · Frailejón: a felted silver rosette, shaggy skirt and yellow flower sprays.
+export function frailejon({seed=51,h=1.5}={}) {
+  if(!Number.isFinite(h)||h<0.8||h>3.5)throw new RangeError('Frailejón height must be between 0.8 and 3.5');
+  const r=rng(seed),g=new THREE.Group(),dead=M(0x8c8064,{roughness:1,flatShading:false});
+  g.add(mesh(new THREE.CylinderGeometry(0.15,0.23,h,12,5),dead,0,h/2,0));
+  for(let i=0;i<48;i++) {
+    const a=i*2.4, y=0.48+r()*Math.max(0.05,h-0.6);
+    leaf(g,0.28+r()*0.18,0.07,[Math.cos(a)*0.15,y,Math.sin(a)*0.15],[0,-a,-1.25],i%2?0x8a8067:0xa39877,0.03,5);
+  }
+  for(let tier=0;tier<3;tier++)for(let i=0;i<11;i++) {
+    const a=i*TAU/11+tier*0.33, length=0.92-tier*0.2+r()*0.15;
+    const blade=leaf(g,length,0.16-tier*0.025,[0,h-0.12+tier*0.12,0],[0,-a,-0.15+tier*0.52],i%3?0xa5b7a0:0xc1c7aa,0.18,12);
+    const colors=blade.geometry.attributes.color;
+    for(let j=0;j<colors.count;j++) {
+      const mottling=0.94+r()*0.08;
+      colors.setXYZ(j,colors.getX(j)*mottling,colors.getY(j)*mottling,colors.getZ(j)*mottling);
+    }
+  }
+  const flower=M(0xe6ba42,{roughness:1,flatShading:false}),heart=M(0x846738,{roughness:1});
+  for(let i=0;i<3;i++) {
+    const a=i*TAU/3+0.5,x=Math.cos(a)*0.42,z=Math.sin(a)*0.42,y=h+0.6+r()*0.3;
+    stem(g,[[0,h*0.6,0],[x*0.5,h+0.1,z*0.5],[x,y,z]],0.035,0.018,dead,10);
+    for(let j=0;j<3;j++) {
+      const b=j*TAU/3,fx=x+Math.cos(b)*0.16,fz=z+Math.sin(b)*0.16;
+      stem(g,[[x,y-0.16,z],[fx,y+0.08,fz]],0.015,0.009,dead,3);
+      g.add(mesh(new THREE.SphereGeometry(0.06,8,6),heart,fx,y+0.1,fz));
+      for(let k=0;k<9;k++) {
+        const angle=k*TAU/9,petal=mesh(new THREE.SphereGeometry(1,6,4),flower,fx+Math.cos(angle)*0.08,y+0.1,fz+Math.sin(angle)*0.08);
+        petal.scale.set(0.075,0.018,0.033);petal.rotation.y=-angle;g.add(petal);
+      }
+    }
+  }
+  return finish(g,'frailejon');
+}
+
+// 057 · A branching mountain pine, separate from the compact existing map pine.
+export function mountainPine({seed=57,h=7}={}) {
+  if(!Number.isFinite(h)||h<3||h>14)throw new RangeError('Mountain pine height must be between 3 and 14');
+  const r=rng(seed),g=new THREE.Group(),wood=M(0x79624b,{roughness:1,flatShading:false});
+  stem(g,[[0,0,0],[-0.1,h*0.45,0.04],[0.12,h,0]],0.27,0.045,wood,16);
+  const greens=[0x315b4c,0x416e57,0x527961];
+  for(let tier=0;tier<7;tier++) {
+    const y=h*(0.15+tier*0.115),reach=(1-tier*0.135)*h*0.32,phase=r()*TAU;
+    for(let i=0;i<7;i++) {
+      const a=i*TAU/7+phase,x=Math.cos(a)*reach,z=Math.sin(a)*reach;
+      stem(g,[[0,y+0.2,0],[x*0.55,y-0.04,z*0.55],[x*.88,y+0.06,z*.88]],0.065*(1-tier*.12),0.012,wood,6);
+    }
+    // Broad drooping boughs form a continuous crown with irregular seven-lobed
+    // edges. Dark undersides keep the overlapping branch tiers readable.
+    const positions=[],colors=[],indices=[],segments=28,lift=h*(.235-tier*.012);
+    const profile=[[0,.14],[.09,1],[.34,.88],[.68,.48],[1,.015]];
+    const base=new THREE.Color(greens[tier%3]),shadow=base.clone().multiplyScalar(.55);
+    profile.forEach(([up,width],j)=>{
+      for(let i=0;i<segments;i++){
+        const a=i*TAU/segments+phase,lobes=.84+.16*Math.cos((a-phase)*7);
+        const radius=reach*width*lobes*(1+Math.sin(a*11+seed+tier)*.035);
+        const droop=(j===1||j===2)?-.14*h/7*Math.cos((a-phase)*7):0;
+        positions.push(Math.cos(a)*radius,y+up*lift+droop,Math.sin(a)*radius);
+        colors.push(...shadow.clone().lerp(base,j===0?.05:.48+up*.48+(Math.sin(a*5+seed)+1)*.035).toArray());
+        if(j<profile.length-1){const n=j*segments+i,next=j*segments+(i+1)%segments;indices.push(n,n+segments,next,next,n+segments,next+segments);}
+      }
+    });
+    const geo=new THREE.BufferGeometry();geo.setAttribute('position',new THREE.Float32BufferAttribute(positions,3));geo.setAttribute('color',new THREE.Float32BufferAttribute(colors,3));geo.setIndex(indices);geo.computeVertexNormals();
+    g.add(mesh(geo,leafMaterial));
+  }
+  g.add(mesh(new THREE.ConeGeometry(h*.048,h*.22,9),M(0x416e57,{roughness:1}),0.12,h*.94,0));
+  return finish(g,'mountainPine');
+}

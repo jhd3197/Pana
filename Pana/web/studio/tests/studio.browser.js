@@ -21,10 +21,19 @@ try {
   await page.waitForFunction(() => panaLibrary.selected === 'corn' && document.querySelector('#preview-status').hidden);
   await page.locator('#search').fill('zzzz-missing'); assert.equal(await page.locator('#empty').isVisible(), true);
   await page.locator('#clear-search').click();
+  for (const [category, count] of [['Pueblo', 10], ['Páramo', 8], ['Vegetación', 22]]) {
+    await page.locator(`[data-category="${category}"]`).click();
+    assert.equal(await page.locator('[data-asset]').count(), count, `${category} registrations`);
+  }
+  await page.locator('[data-category="Todos"]').click();
+  await page.locator('#search').fill('051'); assert.equal(await page.locator('[data-asset="frailejon"]').count(), 1);
+  await page.locator('#search').fill('');
   const downloadPromise = page.waitForEvent('download'); await page.locator('#export').click(); const download = await downloadPromise;
   assert.equal(download.suggestedFilename(), 'pana-studio-inventario.json'); await download.saveAs(`${output}/inventory.json`);
   for (const asset of assets) {
-    await page.locator(`[data-asset="${asset.id}"]`).click();
+    // Map constructors can occupy the main thread during the click itself.
+    // Use the same budget as the subsequent preview-ready check.
+    await page.locator(`[data-asset="${asset.id}"]`).click({ timeout: 90000 });
     await page.waitForFunction(id => panaLibrary.selected === id && document.querySelector('#preview-status').hidden, asset.id, { timeout: 90000 });
     assert.equal(await page.locator('#source').getAttribute('href'), asset.source);
     assert.equal(await page.evaluate(() => Number.isFinite(panaLibrary.camera.position.length()) && panaLibrary.current.group.children.length > 0), true, asset.id);

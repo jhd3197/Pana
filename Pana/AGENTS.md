@@ -28,7 +28,7 @@ clean: only `README.md` and `.gitignore` belong there. Everything else lives her
   Thumbnail images live only in browser IndexedDB. Declare extra factory
   dependencies in the catalog for cache invalidation, and run the studio cache
   browser suite when changing its generation or persistence behavior.
-  The vegetation catalog has twenty species. New plant factories live in
+  The vegetation catalog has twenty-two models. New plant factories live in
   `engine/flora-species.js` and are re-exported by `flora.js`; keep their seeds
   deterministic and their ground origin at y=0. Registration does not place
   plants into maps; list actual consumers in `usedBy`.
@@ -40,6 +40,13 @@ clean: only `README.md` and `.gitignore` belong there. Everything else lives her
   Shared water motion lives in `engine/water-details.js` and uses absolute time
   so pausing, scrubbing and thumbnail capture agree. Bridge spans accept 4–40 m;
   hollow logs accept 3–20 m. Keep their passages empty and ground origins stable.
+  Pueblo 011–020 lives in `engine/pueblo-props.js`; Páramo structures 052–060
+  live in `engine/mountain-props.js`. Both use `engine/architecture-kit.js`.
+  Frailejón (051) and mountain pine (057) are re-exported by `flora.js` and
+  stay in Vegetación. All twenty new models are Studio-only until placed by a
+  game. Mountain bridges span 6–40 m, guardrails 2–30 m; their long axis is X.
+  Cliff end profiles must match across seeds. The clock and cable car use
+  absolute-time `userData.tick(t)`; dispose owned sign textures when released.
 - The character sculpt lives in `engine/soft-character/`; `engine/character.js`
   adapts it to saved avatars and gameplay. The full editor stays at
   `/personaje.html`; its old model module URLs only re-export shared sources.
