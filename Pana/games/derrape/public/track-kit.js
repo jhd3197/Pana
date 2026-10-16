@@ -477,8 +477,18 @@ function distantMountains({ r = 210, count = 10, color = 0x7a6a8a, snow = false,
 }
 
 function sectorSigns(group, T) {
+  // A sign never stands on a shortcut's way in: try the far side, then further on.
+  const nearPlank = (p) => (T.shortcuts || []).some(sc => {
+    const dx = sc.b.x - sc.a.x, dz = sc.b.z - sc.a.z, l = dx * dx + dz * dz;
+    const t = Math.max(0, Math.min(1, ((p.x - sc.a.x) * dx + (p.z - sc.a.z) * dz) / (l || 1)));
+    return Math.hypot(p.x - sc.a.x - dx * t, p.z - sc.a.z - dz * t) < sc.w / 2 + 5;
+  });
   for (const [u, name] of T.def.sectors || []) {
-    const p = placeOnTrack(T, T.TOTAL * u, T.HW + 6);
+    let p = placeOnTrack(T, T.TOTAL * u, T.HW + 6);
+    for (const [ds, off] of [[0, -(T.HW + 6)], [22, T.HW + 6], [22, -(T.HW + 6)], [-22, T.HW + 6]]) {
+      if (!nearPlank(p)) break;
+      p = placeOnTrack(T, T.TOTAL * u + ds, off);
+    }
     at(group, mapSign(name.toUpperCase().split(' ').reduce((lines, word) => {
       if (!lines.length || (lines[lines.length-1] + word).length > 15) lines.push(word);
       else lines[lines.length-1] += ' ' + word;
@@ -519,3 +529,48 @@ export {
   bridge, flankBridge,
   palm, mangoTree, ceiba, pine, banana, bush, bake, windmill, arepaStand, dock, rowboat, sailboat, distantMountains,
 };
+
+// A shortcut: a wooden plank road on posts between two points of the lap,
+// arched in the middle, with no side rails (fall off and the zamuro comes).
+export function plankRoad(T, sc) {
+  const g = new THREE.Group();
+  g.name = 'shortcut';
+  const dx = sc.b.x - sc.a.x, dz = sc.b.z - sc.a.z, len = Math.hypot(dx, dz), h = Math.atan2(dx, dz);
+  const boards = [new THREE.MeshStandardMaterial({ color: 0x9a6a3a, roughness: 0.95, flatShading: true }),
+    new THREE.MeshStandardMaterial({ color: 0xb5814a, roughness: 0.95, flatShading: true })];
+  const post = new THREE.MeshStandardMaterial({ color: 0x5e4128, roughness: 1, flatShading: true });
+  const plank = new THREE.BoxGeometry(sc.w, 0.22, 1.05);
+  const pole = new THREE.CylinderGeometry(0.18, 0.22, 1, 6);
+  const n = Math.max(2, Math.round(len / 1.1));
+  for (let i = 0; i <= n; i++) {
+    const t = i / n, x = sc.a.x + dx * t, z = sc.a.z + dz * t;
+    const y = sc.a.y + (sc.b.y - sc.a.y) * t + Math.sin(Math.PI * t) * (sc.arch ?? 1.2);
+    const m = new THREE.Mesh(plank, boards[i % 2]);
+    m.position.set(x, y - 0.06, z);
+    const slope = ((sc.b.y - sc.a.y) + Math.cos(Math.PI * t) * Math.PI * (sc.arch ?? 1.2)) / len;
+    m.rotation.set(-Math.atan(slope), h, 0, 'YXZ');
+    m.castShadow = m.receiveShadow = true;
+    g.add(m);
+    if (i % 5 === 2 && t > 0.05 && t < 0.95) for (const side of [-1, 1]) {
+      const px = x + Math.cos(h) * side * (sc.w / 2 - 0.3), pz = z - Math.sin(h) * side * (sc.w / 2 - 0.3);
+      const ground = T.terrainAt(px, pz), top = y - 0.2, tall = Math.max(0.2, top - ground + 0.4);
+      const p = new THREE.Mesh(pole, post);
+      p.scale.y = tall;
+      p.position.set(px, top - tall / 2, pz);
+      p.castShadow = true;
+      g.add(p);
+    }
+  }
+  // Orange arrows painted on the road point at the way in.
+  const arrow = new THREE.MeshStandardMaterial({ color: 0xff9a1f, emissive: 0x7a3a00, emissiveIntensity: 0.4, roughness: 0.6 });
+  const shape = new THREE.Shape([new THREE.Vector2(-1.2, -1), new THREE.Vector2(0, 1.4), new THREE.Vector2(1.2, -1), new THREE.Vector2(0, -0.3)]);
+  const arrowGeo = new THREE.ShapeGeometry(shape);
+  arrowGeo.rotateX(-Math.PI / 2);
+  for (const k of [-6, -3]) {
+    const a = new THREE.Mesh(arrowGeo, arrow);
+    a.position.set(sc.a.x + dx / len * k, sc.a.y + 0.2, sc.a.z + dz / len * k);
+    a.rotation.y = h + Math.PI;   // the shape's tip points along -z before turning
+    g.add(a);
+  }
+  return g;
+}

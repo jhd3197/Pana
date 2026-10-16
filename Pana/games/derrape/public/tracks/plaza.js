@@ -10,6 +10,7 @@ export default {
   previewBounds: [[-355, 0, -355], [720, 80, 490]],
   sectors: [[0, 'Casco histórico'], [0.2, 'Camino del lago'], [0.35, 'Puente de los panas'],
     [0.51, 'Casas Botes'], [0.7, 'Subida del mirador'], [0.88, 'La alameda']],
+  hazards:[{kind:'bus',u:.2},{kind:'bus',u:.53,phase:5}],
   items: { boxes: [0.12, 0.31, 0.52, 0.73, 0.91], boxLanes: [-6, -2, 2, 6],
     pads: [{ u: 0.23, off: -4 }, { u: 0.46, off: 4 }, { u: 0.68, off: 0 }, { u: 0.87, off: -4 }] },
   walls: false,

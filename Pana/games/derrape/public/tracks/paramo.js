@@ -13,6 +13,7 @@ export default {
   points:ROUTE,rounded:true,hw:8.5,lineU:.04,elevation:roadHeight,
   previewBounds:[[-440,0,-425],[400,240,285]],
   sectors:[[0,'Prado de frailejones'],[.23,'Las herraduras'],[.45,'Laguna del cielo'],[.67,'Estación cumbre'],[.84,'Bajada del cóndor']],
+  rain:0.5,
   items:{boxes:[.1,.29,.47,.66,.87],boxLanes:[-6,-2,2,6],pads:[{u:.19,off:0},{u:.42,off:4},{u:.74,off:-4},{u:.94,off:0}]},
   walls:false,chevrons:true,
   palette:{skySeed:17,cloudCover:0.44,horizon:0xb9ddf3,skyTop:0x347ec8,hemiSky:0xe1efff,hemiGround:0x67875b,hemiInt:1.6,sun:0xfff4e1,sunInt:2.5,ground:0x78a454,track:0x777e7c,dune:0,fog:[280,1100]},

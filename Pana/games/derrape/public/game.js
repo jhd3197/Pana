@@ -22,6 +22,10 @@ import { shout } from '/engine/kit.js';
 import { LAPS, RIVALS, AI_WHEELS, POSE_HZ, FLAG, DRIFT_SHIFT, packPose, gridSlot } from './online-rules.js';
 import { clockText, wrapAngle, raceOrder, aiPedals, resolveContact } from './rules.js';
 import { CUPS, cupById, awardPoints, cupStandings, trophyFor, TROPHY_RANK, difficultyById, rubberBand, cleanLaps, BALLOONS, BATTLE_TIME, battleOrder, battleOver } from './modes.js';
+import { advanceLap, isOpenEdge, offCourse, stuckStep, ALL_SECTORS, RESCUE_TIME, OUT_TIME, STUCK_TIME, OPEN_MARGIN } from './course-rules.js';
+import { createHazards } from './hazards.js';
+import { createMusic } from './music.js';
+import { soaringVulture } from '/engine/models/fauna/birds/soaring-vulture.js';
 import { DRIFT_MIN_SPEED, DRIFT_BOOST, HOP_SPEED, DRAFT_TIME, DRAFT_BOOST, driftLevel, driftSteer, driftCharge, startBoost, trickBoost, inSlipstream, loseCoins } from './drive-rules.js';
 
 const $ = (id) => document.getElementById(id);
@@ -50,6 +54,7 @@ const LINES = {
   trick: ['¡Truco!', '¡Qué vacilón!', '¡Mírame!'],
   rocket: ['¡Arranque cohete!', '¡Fiuuu!', '¡Me fui!'],
   pop: ['¡Mi globo!', '¡Pop!', '¡Nooo, mi globo!'],
+  rescue: ['¡Zamuro, ayúdame!', '¡Al rescate!', '¡Sácame de aquí!'],
   out: ['¡Me quedé sin globos!', '¡Me reventaron!'],
   stall: ['¡Se me ahogó!', '¡Ay no, el motor!'],
   honk: { meep: '¡MEEP MEEP!', cucaracha: '♪ Cucaracha ♪', grave: '¡PAAAAN!', fiesta: '♪ ¡Rumba! ♪' },
@@ -310,6 +315,32 @@ const race = {
   shake: 0,
 };
 race.puffs = new Puffs(race.scene);
+const music = createMusic(sound);
+
+// Rain: streaks falling in a box that follows the camera.
+const RAIN_DROPS = 1400;
+race.rain = (() => {
+  const pos = new Float32Array(RAIN_DROPS * 6);
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+  const lines = new THREE.LineSegments(geo, new THREE.LineBasicMaterial({ color: 0xb8d4ec, transparent: true, opacity: 0.55 }));
+  lines.frustumCulled = false;
+  lines.visible = false;
+  lines.name = 'rain';
+  race.scene.add(lines);
+  const seed = Array.from({ length: RAIN_DROPS }, () => [Math.random() * 60 - 30, Math.random() * 30, Math.random() * 60 - 30]);
+  return {
+    lines,
+    update(cx, cy, cz, t) {
+      for (let i = 0; i < RAIN_DROPS; i++) {
+        const [x, y0, z] = seed[i];
+        const y = cy - 8 + ((y0 - t * 34) % 30 + 30) % 30;
+        pos.set([cx + x, y, cz + z, cx + x + 0.15, y + 1.3, cz + z], i * 6);
+      }
+      geo.attributes.position.needsUpdate = true;
+    },
+  };
+})();
 race.debris = new Debris(race.scene);
 {
   const s = race.scene;
@@ -330,6 +361,14 @@ race.debris = new Debris(race.scene);
 
 // Sky, fog and lights follow the track's palette.
 function applyPalette(pal) {
+  if (T?.def.rain) {
+    const grey = new THREE.Color(0x8a96a3);
+    const mix = (c, k) => new THREE.Color(c).lerp(grey, k).getHex();
+    pal = { ...pal, horizon: mix(pal.horizon, 0.55), skyTop: mix(pal.skyTop ?? pal.horizon, 0.6), hemiSky: mix(pal.hemiSky, 0.4),
+      sunInt: (pal.sunInt ?? 2.4) * 0.5, hemiInt: (pal.hemiInt ?? 1.6) * 0.85, cloudCover: 0.95,
+      fog: [Math.min(pal.fog?.[0] ?? 80, 60), Math.min(pal.fog?.[1] ?? 260, 380)] };
+  }
+  race.rain.lines.visible = !!T?.def.rain;
   race.scene.background.set(pal.horizon);
   race.scene.fog.color.set(pal.horizon);
   race.scene.fog.near = pal.fog?.[0] ?? 80;
@@ -402,7 +441,8 @@ function selectTrack(id) {
   const route = trackRoutes.get(def.id);
   $('track-name').textContent = def.name;
   const laps = net ? net.state?.laps || LAPS : setup.mode === 'battle' ? 0 : setup.laps;
-  $('track-blurb').textContent = `${(route.TOTAL / 1000).toFixed(2)} km por vuelta · ${laps ? `${laps} ${laps === 1 ? 'vuelta' : 'vueltas'}` : 'batalla de globos'}. ${def.blurb}`;
+  $('track-blurb').textContent = `${(route.TOTAL / 1000).toFixed(2)} km por vuelta · ${laps ? `${laps} ${laps === 1 ? 'vuelta' : 'vueltas'}` : 'batalla de globos'}. ${def.blurb}`
+    + (def.rain ? ' Está lloviendo: los cauchos de lluvia agarran mejor.' : '');
   $('track-of').textContent = `Pista ${trackIndex + 1}/${TRACKS.length}`;
   drawTrackPreview(route);
   return route;
@@ -416,6 +456,8 @@ function beginTrack(id) {
   if (T === route) route = makeTrack(route.def);
   if (race.trackGroup) {
     race.items?.dispose();
+    race.hazards?.dispose();
+    race.hazards = null;
     race.scene.remove(race.trackGroup);
     // Character disposal detaches children. Collect first so cleanup cannot
     // mutate Three's active traversal when switching away from Los Llanos.
@@ -451,6 +493,7 @@ function finishTrack() {
     slipped: (c) => popBalloon(c),
     emit: (kind, c, data) => { if (race.netRace && !c.remote) net.fx(c.netId, kind, data); },
   });
+  race.hazards = createHazards(T, race.trackGroup);
   $('mm-track').textContent = T.name;
   $('mm-sub').textContent = `${(T.TOTAL / 1000).toFixed(2)} km por vuelta`;
   buildMinimap();
@@ -573,6 +616,8 @@ function makeRacer(index, isPlayer, name, wheelId = 'calle', avatar = null) {
     drift: 0, driftT: 0, driftHeld: false, driftWindow: 0, driftYaw: 0, hopping: false,
     trick: false, trickT: 0, draft: 0, stall: 0, aiDrift: false,
     shield: 0, cloud: 0, band: 1, balloons: 0, popT: 0, avatar: who.avatar,
+    // course: checkpoint sectors, last safe road spot, rescue by the zamuro
+    sectors: ALL_SECTORS, safe: null, safeT: 0, outT: 0, stuckT: 0, rescueT: 0, rescued: false, awayT: 0,
   };
 }
 
@@ -631,9 +676,11 @@ function placeRacer(c, lane, row) {
     lane, x: p.x - tz / l * lane, z: p.y + tx / l * lane, y: 0, h: Math.atan2(tx, tz),
     vx: 0, vz: 0, vy: 0, vf: 0, lap: 0, done: false, time: 0,
     drift: 0, driftT: 0, hopping: false, trick: false, draft: 0, stall: 0, shield: 0, cloud: 0,
+    sectors: ALL_SECTORS, outT: 0, stuckT: 0, rescueT: 0,
   });
   c.y = groundAt(c.x, c.z);
   c.prog = progressOf(c);
+  c.safe = { s, off: lane, back: false };
 }
 
 // Battle starts: a racer at arc length s, optionally facing backwards.
@@ -643,6 +690,7 @@ function placeAlong(c, s, backwards) {
   Object.assign(c, { x: p.x, z: p.y, h: Math.atan2(tx, tz) + (backwards ? Math.PI : 0), reverse: backwards && !c.isPlayer });
   c.y = groundAt(c.x, c.z);
   c.prog = progressOf(c);
+  c.safe = { s, off: 0, back: backwards };
 }
 
 function progressOf(c) {
@@ -660,6 +708,8 @@ function disposeRacer(c) {
 
 function clearRace() {
   resetInput();
+  for (const v of vultures.values()) v.removeFromParent();
+  vultures.clear();
   race.cars.forEach(disposeRacer);
   race.cars = [];
   race.puffs.clear();
@@ -683,6 +733,9 @@ const TIPS = [
   [ITEM_ICONS.aguacero, 'El aguacero moja a todos los que van delante. Los cauchos de lluvia lo aguantan.'],
   [ITEM_ICONS.trampa, 'Ojo con las cajas con banda roja: son trampas y explotan.'],
   [SVG.coin, 'Con 10 monedas tu próximo objeto sale potenciado.'],
+  [SVG.back, '¿Atascado o te caíste? Pulsa R y el zamuro te devuelve a la pista.'],
+  [ITEM_ICONS.aguacero, 'En Pana Selva y Pana Páramo llueve: con cauchos de lluvia no resbalas.'],
+  [SVG.crate, 'Busca los puentes de tablas: son atajos, pero sin turbo frenan y sin baranda te puedes caer.'],
   [SVG.coin, 'Pégate detrás de otro carro en la recta: el rebufo te lanza hacia adelante.'],
   [SVG.coin, 'Si te pegan pierdes monedas. Cuídalas: cada una es velocidad.'],
 ];
@@ -723,6 +776,7 @@ async function startRace(playerIndex, wheelId = garage.wheel, roster = null) {
   $('loading-tip').textContent = tip[1];
   $('play').disabled = true;
   sound.stopEngine();
+  music.stop();
   const step = async (label, progress) => {
     $('loading-status').textContent = label;
     $('loading-progress').value = progress;
@@ -808,6 +862,7 @@ async function startRace(playerIndex, wheelId = garage.wheel, roster = null) {
       if (net.state.raceId !== race.netRace) return;
     } else if (!await step('¡Listo!', 1)) return;
     race.state = 'count';
+    music.play(T.id);
     $('count').textContent = '3';
     $('garage').classList.add('hidden');
     $('race').classList.remove('hidden');
@@ -847,6 +902,7 @@ function toGarage() {
   race.state = 'off';
   clearRace();
   sound.stopEngine();
+  music.stop();
   $('race').classList.add('hidden');
   $('garage').classList.remove('hidden');
   garage.controls.enabled = true;
@@ -864,7 +920,7 @@ const menu = createGameMenu({
   title: 'Derrape', heading: 'Pausa', sound, orientation: 'horizontal',
   note: () => mode === 'race' ? (race.state === 'end' ? 'La carrera terminó.' : race.netRace ? 'Carrera online: no se detiene.' : 'La carrera está en pausa.') : 'Estás en el garaje.',
   controls: [['W / ↑', 'Acelerar'], ['S / ↓', 'Frenar'], ['A D / ← →', 'Girar'], ['Shift / K', 'Saltar y derrapar · truco en el aire'], ['Espacio / E', 'Lanzar objeto adelante'],
-    ['X', 'Lanzar objeto atrás'], ['1 2', 'Elegir objeto'], ['Q', 'Cambiar objeto'], ['H', 'Claxon'], ['M', 'Sonido'], ['Esc', 'Pausa']],
+    ['X', 'Lanzar objeto atrás'], ['1 2', 'Elegir objeto'], ['Q', 'Cambiar objeto'], ['R', 'Pedir rescate al zamuro'], ['H', 'Claxon'], ['M', 'Sonido'], ['Esc', 'Pausa']],
   tips: ['Mantén Shift en una curva para derrapar: chispas azules, naranjas y moradas dan más turbo al soltar.',
     'Acelera justo al final del "1" para un arranque cohete. Si aceleras en el "3" se te ahoga el motor.',
     'Rompe cajas de madera para conseguir objetos. Cada moneda da un poquito más de velocidad.'],
@@ -878,9 +934,10 @@ const menu = createGameMenu({
     resetInput();
     if (mode !== 'race' || race.netRace) return;
     paused = true;
+    music.pause();
     if (sound.engine) sound.engine.g.gain.setTargetAtTime(0, sound.ctx.currentTime, 0.05);
   },
-  onClose() { paused = false; acc = 0; clock.getDelta(); },
+  onClose() { if (paused) music.resume(); paused = false; acc = 0; clock.getDelta(); },
 });
 $('race').querySelector('.hud-corner').append(menu.createButton({ id: 'pause', label: 'Pausa', className: 'pause-button pk-btn pk-btn--sm' }));
 $('garage').querySelector('.tools').prepend(menu.createButton({ id: 'settings', label: 'Ajustes', className: 'toggle pk-btn pk-btn--sm' }));
@@ -931,6 +988,7 @@ addEventListener('keydown', (e) => {
     else if (mode === 'garage') garageHonk();
   }
   if (k === 'm' && !e.repeat) toggleMute();
+  if (k === 'r' && !e.repeat && mode === 'race' && race.state === 'go' && race.player) rescue(race.player);
   if ((k === ' ' || k === 'e') && mode === 'race' && race.state === 'go' && race.player) {
     e.preventDefault();
     if (!e.repeat) itemAction(race.keys.s || race.keys.arrowdown ? -1 : 1);
@@ -1037,7 +1095,8 @@ function stepCar(c, input, dt) {
   const rough=(c.onGround?roughnessAt(T,c.x,c.z):0)*(1-t.offroadResist);
   const water=c.onGround?roadWaterAt(T,c.x,c.z,race.clock):0;
   // Rain cauchos keep a grip floor where the road reports wet.
-  const grip=Math.max((c.onGround?roadGripAt(T,c.x,c.z,race.clock):1)*(c.cloud>0?.55:1),t.wetFloor);
+  // Rain (and an aguacero cloud) cut grip; rain cauchos keep a floor.
+  const grip=Math.max((c.onGround?roadGripAt(T,c.x,c.z,race.clock):1)*(c.cloud>0?.55:1)*(1-(T.def.rain||0)*.4),t.wetFloor);
   const acceleration=t.accel*(1-rough*(1-(terrain?.accel??1)))*(1-water*.28);
   const previous={x:c.x,z:c.z};
   if (c.spin > 0) input = { throttle: 0, steer: 0 };   // skidding on a peel: no control
@@ -1079,10 +1138,12 @@ function stepCar(c, input, dt) {
     else if (input.throttle < 0) vf -= (vf > 0 ? t.accel * 2.2 * (.75+.25*grip) : acceleration * 0.6) * dt;
     else vf -= Math.sign(vf) * Math.min(Math.abs(vf), 6 * dt);
     // a turbo lifts the cap; when it ends the extra speed bleeds off instead of snapping
-    const surfaceTop=top*(1-rough*(1-(terrain?.speed??1)));
+    // Shortcut planks are bumpy: without a turbo they cost speed.
+    const onPlank = T.shortcuts.length > 0 && !boosting && T.plankAt(c.x, c.z) != null;
+    const surfaceTop=top*(1-rough*(1-(terrain?.speed??1)))*(onPlank ? 0.72 : 1);
     // Rough ground bleeds speed progressively; turbo still helps but cannot
     // cancel the terrain penalty and turn the grass into the fastest route.
-    const cap = rough>0?Math.max(surfaceTop*(boosting?1.5:1),prevVf-48*dt):boosting?top*1.5:Math.max(top,prevVf-20*dt);
+    const cap = rough>0||onPlank?Math.max(surfaceTop*(boosting?1.5:1),prevVf-48*dt):boosting?top*1.5:Math.max(top,prevVf-20*dt);
     vf = Math.max(-surfaceTop * 0.4, Math.min(cap, vf));
     vf*=Math.exp(-rough*(terrain?.drag??0)*dt);
     vf*=Math.exp(-water*.7*dt); // shallow surf slows a kart without moving invisible walls
@@ -1181,9 +1242,13 @@ function stepCar(c, input, dt) {
 
   // ---- tire walls ----
   // Works on any track shape: the wall normal is the gradient of offsetOf.
+  // Shortcut planks and open edges have no wall: drive off them and you fall.
   const off = offsetOf(c.x, c.z);
   const limit = T.HW - 1.6;
-  if (!terrain && Math.abs(off) > limit) {
+  const plank = T.shortcuts.length > 0 && T.plankAt(c.x, c.z) != null;
+  const edgeOpen = T.drops.length > 0 && isOpenEdge(T.drops, paramOf(c.x, c.z) / T.TOTAL, Math.sign(off));
+  const far = Math.abs(off) > T.HW + OPEN_MARGIN;
+  if (!terrain && Math.abs(off) > limit && !plank && !edgeOpen && !far) {
     const e = 0.6;
     let nx = offsetOf(c.x + e, c.z) - offsetOf(c.x - e, c.z);
     let nz = offsetOf(c.x, c.z + e) - offsetOf(c.x, c.z - e);
@@ -1210,11 +1275,24 @@ function stepCar(c, input, dt) {
     }
   }
 
-  // laps
+  // laps: crossing the line counts only after the lap's checkpoints
   const prog = progressOf(c);
-  if (c.prog > T.TOTAL * 0.75 && prog < T.TOTAL * 0.25) c.lap++;
-  else if (c.prog < T.TOTAL * 0.25 && prog > T.TOTAL * 0.75) c.lap--;
+  advanceLap(c, c.prog, prog, T.TOTAL);
   c.prog = prog;
+
+  // Off the course (past an open edge, off a plank) the zamuro comes soon.
+  c.outT = !terrain && offCourse(Math.abs(off), T.HW, edgeOpen, plank) ? c.outT + dt : 0;
+  const trying = !c.done && c.spin <= 0 && c.stall <= 0 && (c.isPlayer && !AUTO ? input.throttle !== 0 : true);
+  c.stuckT = stuckStep(c.stuckT, c.vf, trying && race.state === 'go', dt);
+  // Remember the last safe stretch of road to come back to.
+  c.safeT -= dt;
+  if (c.safeT <= 0 && c.onGround && !plank && Math.abs(off) < T.HW - 2 && c.spin <= 0
+    && Math.abs(wrapAngle(c.roll)) < 0.3 && Math.abs(wrapAngle(c.pitch)) < 0.4) {
+    const s = paramOf(c.x, c.z), ahead = pointAt(s + 1), here = pointAt(s);
+    const back = Math.cos(c.h - Math.atan2(ahead.x - here.x, ahead.y - here.y)) < 0;
+    c.safe = { s, off: Math.max(-3, Math.min(3, off)), back };
+    c.safeT = 0.3;
+  }
 
   // timers
   c.dizzy = Math.max(0, c.dizzy - dt);
@@ -1239,6 +1317,77 @@ function stepCar(c, input, dt) {
     }
     c.puffT = 0.07;
   }
+}
+
+// ---------- the zamuro rescue ----------
+// Off the course, stuck, or asked for (R): a vulture lifts the car, flies it
+// back to the last safe stretch of road and drops it there, minus two coins.
+function rescue(c) {
+  if (c.rescueT > 0 || c.done || race.state !== 'go') return false;
+  Object.assign(c, { rescueT: RESCUE_TIME, rescued: false, drift: 0, driftT: 0, boost: 0, trick: false, hopping: false, outT: 0, stuckT: 0, spin: 0 });
+  spillCoins(c, 2);
+  say(c, LINES.rescue, 1.3);
+  if (c.isPlayer) sound.sweep(380, 980, 0.45, 'triangle', 0.08);
+  if (race.netRace && !c.remote) net.fx(c.netId, 'rescue', {});
+  return true;
+}
+
+function stepRescue(c, dt) {
+  c.rescueT = Math.max(0, c.rescueT - dt);
+  const k = 1 - c.rescueT / RESCUE_TIME;
+  c.vx = c.vz = c.vy = c.vf = c.vr = 0;
+  c.onGround = false;
+  c.pitch += (0 - c.pitch) * Math.min(1, dt * 6);
+  c.roll += (0 - c.roll) * Math.min(1, dt * 6);
+  if (k < 0.38) c.y += 7 * dt;   // lifted up and away
+  else if (!c.rescued) {
+    // Over the safe spot, facing along the road (or back, for battle bots).
+    const safe = c.safe ?? { s: paramOf(c.x, c.z), off: 0, back: false };
+    const p = pointAt(safe.s), q = pointAt(safe.s + 0.5);
+    const tx = q.x - p.x, tz = q.y - p.y, l = Math.hypot(tx, tz) || 1;
+    c.x = p.x - tz / l * safe.off; c.z = p.y + tx / l * safe.off;
+    c.h = Math.atan2(tx, tz) + (safe.back ? Math.PI : 0);
+    c.y = groundAt(c.x, c.z) + 5;
+    const prog = progressOf(c);
+    advanceLap(c, c.prog, prog, T.TOTAL);
+    c.prog = prog;
+    c.rescued = true;
+  } else c.y = Math.max(groundAt(c.x, c.z), c.y - 7 * dt);   // lowered onto the road
+  if (c.rescueT <= 0) {
+    c.y = groundAt(c.x, c.z);
+    c.onGround = true;
+    c.pitch = c.roll = c.pitchV = c.rollV = 0;
+    c.awayT = 1;
+  }
+}
+
+// The zamuro model hovers over a car being rescued, then flies off.
+const vultures = new Map();
+function syncVulture(c, dt) {
+  if (c.remote && c.rescueT > 0) { c.rescueT = Math.max(0, c.rescueT - dt); if (c.rescueT === 0) c.awayT = 1; }
+  c.awayT = Math.max(0, (c.awayT || 0) - dt);
+  let v = vultures.get(c);
+  if (!(c.rescueT > 0 || c.awayT > 0)) { if (v) v.visible = false; return; }
+  if (!v) {
+    v = soaringVulture({ seed: c.def.num });
+    v.scale.setScalar(2.1);
+    v.name = 'rescue-zamuro';
+    race.scene.add(v);
+    vultures.set(c, v);
+  }
+  v.visible = true;
+  const lift = c.awayT > 0 ? (1 - c.awayT) * 9 : 0;
+  v.position.set(c.x, c.y + 2.2 + lift, c.z);
+  v.rotation.y = c.h;
+  v.userData.tick(race.clock * 9);
+}
+
+// A cow, bus or boulder in the road: a crash and a bounce back.
+function hitHazard(c, power, side, hz) {
+  crash(c, power, side);
+  c.vx *= -0.3; c.vz *= -0.3;
+  say(c, pick(race.hazards.lines(hz)), 1.1);
+  sound.bonk(power / 10);
 }
 
 // "¡YA!": the player's timing decides a turbo or a stall; rivals sometimes
@@ -1320,6 +1469,7 @@ function syncCar(c, dt) {
   const trickSpin = c.trick ? Math.min(1, c.trickT / 0.45) * Math.PI * 2 : 0;
   car.root.rotation.y = c.h + c.driftYaw + trickSpin + (c.spin > 0 ? (1 - (1 - k) ** 3) * Math.PI * 4 : 0);
   driftSparks(c, dt);
+  syncVulture(c, dt);
   car.tumble.rotation.set(c.pitch, 0, c.roll);
 
   // springy suspension: squat, dive and lean, exaggerated
@@ -1381,11 +1531,13 @@ function updateRace(dt) {
         applyRemote(c, dt);
         continue;
       }
+      if (c.rescueT > 0) { stepRescue(c, dt); continue; }
       if (c.done) {
         stepCar(c, { throttle: 0, steer: 0 }, dt);
         continue;
       }
       stepCar(c, c.isPlayer && !AUTO ? playerInput() : aiInput(c), dt);
+      if (c.outT > OUT_TIME || c.stuckT > STUCK_TIME) rescue(c);
       if (!c.isPlayer) {
         c.aiHonk -= dt;
         const p = race.player;
@@ -1410,6 +1562,7 @@ function updateRace(dt) {
     for (const c of race.cars) if (c.remote) applyRemote(c, dt);
   }
   race.items.update(dt, race.cars, race.state === 'go' || race.state === 'end');
+  race.hazards?.update(race.clock, dt, race.state === 'go' || race.state === 'end' ? race.cars : [], hitHazard);
   for (const c of race.cars) syncCar(c, dt);
   race.puffs.update(dt);
   race.debris.update(dt);
@@ -1438,6 +1591,7 @@ function updateRace(dt) {
   if (race.mode !== 'battle' && race.laps > 1 && p.lap === race.laps && !p.finalLap && !p.done) {
     p.finalLap = true;
     shout('¡Vuelta final!');
+    music.setTempo(1.14);
   }
   showItem(p);
 
@@ -1480,6 +1634,7 @@ function updateRace(dt) {
     race.camera.fov += (fov - race.camera.fov) * Math.min(1, dt * 5);
     race.camera.updateProjectionMatrix();
   }
+  if (race.rain.lines.visible) race.rain.update(p.x + fx * 10, p.y, p.z + fz * 10, race.clock);
   race.sun.position.set(p.x - 30, p.y + 40, p.z + 25);
   race.sun.target.position.set(p.x, p.y, p.z);
 }
@@ -1707,6 +1862,7 @@ function onNetFx(id, kind, d) {
   else if (kind === 'hit') race.items.remoteHit(c, d);
   else if (kind === 'slip') race.items.remoteSlip(d);
   else if (kind === 'cloud') race.items.remoteCloud(d);
+  else if (kind === 'rescue' && c.remote) { c.rescueT = RESCUE_TIME; c.bubble.say(pick(LINES.rescue), 1.3); }
   else if (kind === 'honk' && c.honkT <= 0) {
     c.honkT = sound.horn(c.def.horn);
     c.bubble.say(LINES.honk[c.def.horn], c.honkT + 0.2);
@@ -1879,7 +2035,7 @@ function resize() {
 addEventListener('resize', resize);
 resize();
 
-if (DEBUG) Object.assign(window, { menu, race, garage, renderer, crash, stepCar, startRace, updateRace, toGarage, showWheel, ITEMS, TRACKS, buildTrack, setup, popBalloon, getActiveTrack: () => T, getNet: () => net });
+if (DEBUG) Object.assign(window, { music, menu, race, garage, renderer, crash, stepCar, startRace, updateRace, toGarage, showWheel, ITEMS, TRACKS, buildTrack, setup, popBalloon, rescue, getActiveTrack: () => T, getNet: () => net });
 
 // ?track=desierto wins; otherwise the last pick, otherwise the estadio
 let savedTrack = 'estadio';

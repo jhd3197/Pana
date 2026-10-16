@@ -13,6 +13,7 @@ export default {
   rounded:true,hw:8,lineU:.045,elevation:()=>1.65,
   previewBounds:[[-430,0,-400],[515,55,475]],
   sectors:[[0,'Recta principal'],[.24,'Chicana del marcador'],[.43,'Horquilla del paddock'],[.63,'Doble cambio'],[.82,'Curva de la hinchada']],
+  shortcuts:[{from:[.2338,5.5],to:[.3579,5.5]}],
   items:{boxes:[.12,.32,.49,.69,.9],boxLanes:[-5.5,-1.8,1.8,5.5],pads:[{u:.055,off:0},{u:.37,off:-3},{u:.73,off:3}]},
   walls:false,chevrons:true,
   palette:{skySeed:23,cloudCover:0.28,horizon:0xb6def1,skyTop:0x278dd1,hemiSky:0xe4f3ff,hemiGround:0x5e8650,hemiInt:1.55,sun:0xfff2dd,sunInt:2.5,ground:0x60a34e,track:0x626e75,dune:0,fog:[350,1050]},

@@ -296,3 +296,26 @@ leaves steering to the driver. Keep the interior ridge's tunnel-exit sightline
 tests and reset environment motion callbacks when rebuilding a track.
 The race island uses expanded geography
 with normal-sized assets. Keep those options opt-in for the original games.
+
+## Shortcuts, open edges, hazards, rain (plan 53)
+
+- `shortcuts: [{ from: [u, off], to: [u, off], w, arch }]` builds a plank
+  road (`track-kit.js plankRoad`). `T.plankAt` is the deck height; walls are
+  off on it, scenery (`world-kit clear`), rails (`edges`) and sector signs
+  step aside. Off the plank the car falls and the zamuro rescues it.
+- Pick chords with a scan of the *built* world, not the spline alone: test
+  the deck against `terrainAt` (hills bury it) and against non-instanced mesh
+  boxes (buildings). Batched city blocks slip past box tests, so look at a
+  top-down render too. Fixed landmarks that call `clear()` throw when a plank
+  crosses them (Los Llanos' water windmill did): drop that chord.
+- Keep the gain at 35–120 m once the plank's 0.72 speed cap without turbo is
+  counted, and never let a chord cross the line or skip two of the eight
+  checkpoint sectors (`course-rules.js advanceLap`).
+- `drops: [{ u0, u1, side }]` opens an edge (ground past it is the real
+  terrain). Only use it where the model has no rail or fence: every bridge and
+  water crossing found so far has one.
+- `hazards: [{ kind: 'cow' | 'bus' | 'rock', u, phase }]` cross on the race
+  clock, so online screens agree. Cows stay inside roadside fences; buses and
+  rocks need a cross-street or open dune on both sides.
+- `rain: 0..1` greys the palette, cuts grip (rain cauchos keep their floor)
+  and turns on the camera-following streaks.

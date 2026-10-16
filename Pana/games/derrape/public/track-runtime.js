@@ -1,6 +1,7 @@
 // Geometry/runtime shared by the race and Studio's individual map previews.
 import * as THREE from 'three';
 import * as kit from './track-kit.js';
+import { plankHeight, isOpenEdge, OPEN_MARGIN } from './course-rules.js';
 
 // ---------- geometry backends ----------
 // The original stadium oval, kept verbatim so lap logic never regresses.
@@ -227,9 +228,31 @@ export function makeTrack(def) {
   } : () => 0;
   T.surfaceAt = def.elevation ? (x, z) => T.heightAtS(geo.paramOf(x, z)) : () => 0;
   T.terrainAt = (x, z) => terrainHeight(T, def.palette, x, z);
+  // Shortcut plank roads: { from: [u, offset], to: [u, offset], w, arch }.
+  const along = (u, off) => {
+    const s = u * geo.TOTAL, p = geo.pointAt(s), q = geo.pointAt(s + 0.5);
+    const tx = q.x - p.x, tz = q.y - p.y, l = Math.hypot(tx, tz) || 1;
+    return { x: p.x - tz / l * off, z: p.y + tx / l * off, y: T.heightAtS(s) };
+  };
+  T.shortcuts = (def.shortcuts || []).map(sc => ({ ...sc, a: along(...sc.from), b: along(...sc.to), w: sc.w ?? 6 }));
+  T.drops = def.drops || [];
+  T.plankAt = (x, z) => {
+    for (const sc of T.shortcuts) { const y = plankHeight(sc, x, z); if (y != null) return y; }
+    return null;
+  };
+  // Past an open edge (or far off the road) the real ground takes over, so
+  // a car that leaves the course falls to it.
+  T.openAt = (x, z, off = geo.offsetOf(x, z)) => {
+    const a = Math.abs(off);
+    if (a <= T.HW + 0.4) return false;
+    return a > T.HW + OPEN_MARGIN || isOpenEdge(T.drops, geo.paramOf(x, z) / geo.TOTAL, Math.sign(off));
+  };
   T.groundAt = (x, z) => {
+    const plank = T.shortcuts.length ? T.plankAt(x, z) : null;
+    if (plank != null) return plank;
     const base = T.surfaceAt(x, z);
     const off = geo.offsetOf(x, z);
+    if (!def.offroad && T.openAt(x, z, off)) return Math.min(base, T.terrainAt(x, z));
     if(def.offroad&&Math.abs(off)>T.HW) {
       const blend=THREE.MathUtils.smoothstep(Math.abs(off),T.HW,T.HW+2);
       return THREE.MathUtils.lerp(base,T.terrainAt(x,z),blend);
@@ -269,6 +292,7 @@ export function makeTrack(def) {
     if (def.fence) kit.fenceRing(group, T, def.fence);
     if (def.chevrons !== false) kit.chevrons(group, T);
     kit.buildRamps(group, T);
+    for (const sc of T.shortcuts) group.add(kit.plankRoad(T, sc));
     yield 'Terminando el paisaje…';
     // Shared environments are attached first; only collect track-owned ticks.
     const scenery = new THREE.Group();

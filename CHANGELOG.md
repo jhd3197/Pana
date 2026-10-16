@@ -10,6 +10,10 @@ becomes the GitHub release's notes.
 
 ### Added
 
+- **Derrape's tracks fight back.** Fall off or get stuck and a zamuro
+  carries you back (or press R), take plank shortcuts on three tracks,
+  dodge cows, a bus and rolling boulders, race to a Venezuelan groove
+  per track, and pack rain cauchos for wet Selva and Páramo.
 - **Derrape has cups, balloon battles and race options.** Win the Copa
   Mango or Copa Arepa across four tracks for a gold, silver or bronze
   trophy, pop rivals' balloons in Globos, and pick easy, normal or hard

@@ -63,7 +63,12 @@ export function sea(base,{size=2200,y=0,opacity=1}={}) {
 }
 
 export function put(root,obj,x,z,y,rotation=0,scale=1) {obj.position.set(x,y,z);obj.rotation.y=rotation;obj.scale.setScalar(scale);root.add(obj);return obj;}
-export function clear(T,x,z,r=0){return Math.abs(T.offsetOf(x,z))>T.HW+r+5;}
+export function clear(T,x,z,r=0){
+  // Keep scenery off the road and off any shortcut planks.
+  if(T.shortcuts?.some(sc=>{const dx=sc.b.x-sc.a.x,dz=sc.b.z-sc.a.z,l=dx*dx+dz*dz,t=Math.max(0,Math.min(1,((x-sc.a.x)*dx+(z-sc.a.z)*dz)/(l||1)));
+    return Math.hypot(x-sc.a.x-dx*t,z-sc.a.z-dz*t)<sc.w/2+r+3;}))return false;
+  return Math.abs(T.offsetOf(x,z))>T.HW+r+5;
+}
 export function foundation(root,obj,x,z,groundAt,{rotation=0,scale=1,radius=5,color=0x999582}={}) {
   const levels=[];for(const dx of [-radius,0,radius])for(const dz of [-radius,0,radius])levels.push(groundAt(x+dx,z+dz));
   const top=Math.max(...levels)+.15,bottom=Math.min(...levels)-.3;
@@ -81,6 +86,7 @@ export function edges(group,kit,T,{style='steel',step=5,skip=()=>false}={}) {
   const g=new THREE.Group(),steel=M(0xa9b5af,{metalness:.45}),cream=M(0xe8ddc1),red=M(0xbf5947),wood=M(0x8a7353);
   for(let s=0;s<T.TOTAL;s+=step)for(const side of [-1,1]){
     if(skip(s,side))continue;const p=placeOnTrack(T,s,side*(T.HW+.8)),q=placeOnTrack(T,Math.min(s+step,T.TOTAL),side*(T.HW+.8));
+    if(T.openAt?.(p.x,p.z,side*(T.HW+1))||T.plankAt?.(p.x,p.z)!=null||T.plankAt?.(q.x,q.z)!=null)continue;
     if(style==='kerb'){
       const kerb=box(.75,.24,step+.1,Math.floor(s/step)%2?cream:red,p.x,p.y+.12,p.z);kerb.rotation.y=p.h;g.add(kerb);
     }else{
