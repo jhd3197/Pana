@@ -9,7 +9,6 @@ const featured = document.getElementById('play-featured');
 
 // Not playable yet; shown so the hub feels like a place that's growing.
 const SOON = [
-  { name: 'Dominó', description: 'La partida del sábado, con tus panas y un cafecito.', glyph: '6:6' },
 ];
 
 // The same settings every game reads (sound, volume, resolution, hints).

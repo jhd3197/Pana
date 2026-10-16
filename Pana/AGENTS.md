@@ -243,6 +243,14 @@ clean: only `README.md` and `.gitignore` belong there. Everything else lives her
   is asynchronous: await it in browser tests. `?debug&manual` stops only the game
   loop so deterministic tests can still paint loading steps. Keep the last map
   for replay, and preserve cancellation between `buildSteps()` stages.
+- Dominó uses event-driven host snapshots (`domino-v1`), with four seats and
+  alternating teams. Its pure `games/domino/public/rules.js` owns deals, legal
+  moves, passes, scoring and a revision/sequence ledger. Empty seats are bots;
+  late arrivals inherit a bot hand and overflow visitors spectate. Host migration
+  preserves all hands, RNG and scores. `scene.js` uses the shared plaza and real
+  seated Pana characters; physical tiles and the accessible rack share actions.
+  The game-local table, chair and tile factories are registered in
+  `web/studio/catalog/domino.js`. See `../docs/knowledge/domino.md`.
 - Keep dependencies minimal. `ws` on the server; Three.js from CDN on the client.
 
 ## Dev workflow (Windows)

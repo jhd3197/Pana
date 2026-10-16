@@ -45,6 +45,14 @@ Includes dodging, healing, revives, adaptive encounter pacing, touch controls,
 late joining, host migration and replay. Play solo or share a room with up to
 8 panas; the first expedition is designed around small groups.
 
+Seventh game: **Dominó** — a 3D domino table in Plaza Pana, with your actual saved
+characters seated around it, wooden chairs, coffee and animated physical tiles.
+Play four-seat partnership dominoes to 100, solo with bots or with up to four
+human players. Includes both-end placement, legal passes, blocked-round scoring,
+touch/keyboard controls, a table camera, shared invitations and host migration.
+Additional visitors watch until a seat opens. The table, chair and domino tile
+are also available in Pana Studio.
+
 ## Run it
 
 ```powershell
@@ -60,6 +68,7 @@ npm start            # or: npm run dev  /  Pana\dev.ps1
 - Cocina: http://localhost:8461/g/cocina/
 - Galope: http://localhost:8461/g/galope/
 - Reliquia: http://localhost:8461/g/reliquia/
+- Dominó: http://localhost:8461/g/domino/
 - Pana Studio: http://localhost:8461/studio.html
 - Character editor: http://localhost:8461/personaje.html
 - Friends on your network: the dev script prints your LAN URL.
@@ -97,6 +106,7 @@ Pana/                  ← this repo
 - **Cocina**: cooperative Venezuelan cooking in Plaza Pana (playable now; helpers + shared rooms)
 - **Galope**: Llanos horse racing (playable now; shallow water, jumps, bots + shared rooms)
 - **Reliquia**: cooperative mine and temple expedition (playable now; mummies, shared puzzles, revives and relic extraction)
+- **Dominó**: partnership dominoes at a 3D plaza table (playable now; actual Pana characters, bots, shared rooms and match scoring)
 - **pana.sh** — public deploy
 
 ## Contributing / AI agents

@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#26382d">
+  <meta name="description" content="Dominó en la Plaza Pana. Siéntate con tus panas, arma pareja y juega una partida en 3D.">
+  <title>Dominó · Pana</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Luckiest+Guy&family=Nunito:wght@400;600;700;800;900&display=swap">
+  <link rel="stylesheet" href="/engine/ui.css">
+  <link rel="stylesheet" href="style.css">
+  <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}</script>
+</head>
+<body class="in-lobby">
+  <canvas id="world" aria-label="Mesa de dominó en 3D con cuatro panas en la plaza"></canvas>
+  <div class="scene-vignette"></div>
+  <div id="world-labels" aria-hidden="true"></div>
+  <header class="topbar"><a href="/" class="brand" aria-label="Volver a Pana">PANA<span>JUEGA CON TUS PANAS</span></a><nav id="game-nav" aria-label="Opciones de la mesa"></nav></header>
+  <div id="loading" role="status"><span class="loading-tile">6<span>6</span></span><b id="loading-copy">Abriendo la plaza…</b><p>Un cafecito y arrancamos.</p></div>
+  <main>
+    <section id="welcome" class="welcome" aria-labelledby="title"><div class="eyebrow"><i></i> PLAZA PANA · LA MESA DE SIEMPRE</div><h1 id="title">DOMINÓ<span>¡Tranca esa vaina!</span></h1><p class="intro">Cuatro sillas, dos parejas<br>y un buen rato entre panas.</p><div class="lobby-facts"><span><b>28</b> fichas</span><span><b>2 × 2</b> por parejas</span><span><b>100</b> puntos</span></div><button id="start" class="button button-yellow" disabled>Preparando la mesa…</button><p class="welcome-note">Juega con bots o invita a tus panas.</p><button id="rules" class="text-button">¿Cómo se juega? <span>↗</span></button></section>
+    <section class="scoreboard" aria-label="Marcador"><div class="score-header"><span id="round-label">MESA ABIERTA</span><span>PRIMERO A 100</span></div><div class="scores"><div class="score-team yours"><span id="our-label">Tu pareja</span><strong id="our-score">0</strong><small id="our-names">Tú + Tito</small><div class="score-track"><i id="our-progress"></i></div></div><span class="score-separator">:</span><div class="score-team theirs"><span id="their-label">Los rivales</span><strong id="their-score">0</strong><small id="their-names">Lola + Nina</small><div class="score-track rival"><i id="their-progress"></i></div></div></div></section>
+    <div class="scene-tools"><button id="camera-view" title="Cambiar entre la plaza y una vista más alta de la mesa"><span aria-hidden="true">◈</span> Vista de mesa</button><span id="ends-label">DOBLE SEIS · SIN POZO</span></div>
+    <section class="activity-panel" aria-label="Últimas jugadas"><div class="panel-heading"><span>EN LA MESA</span><span id="move-count">0 JUGADAS</span></div><ol id="activity"></ol></section>
+    <section class="rack-panel" aria-label="Tus fichas"><div class="rack-heading"><div class="you"><strong id="your-name">Tú</strong><span id="hand-count">7 fichas</span></div><div id="turn-status" role="status" aria-live="polite">La mesa te espera.</div><button id="hint" class="text-button" disabled>Una pista <span aria-hidden="true">✧</span></button></div><div id="hand" class="hand" aria-label="Selecciona una ficha"></div><div class="action-row"><span id="instruction">Reparte las fichas para empezar.</span><div id="end-actions" hidden><button id="play-left" class="end-button"></button><button id="play-right" class="end-button"></button><button id="cancel-selection" class="text-button">Cancelar</button></div><button id="pass" class="button button-small" hidden>Pasar turno →</button><button id="round-result" class="button button-small" hidden>Ver resultado →</button></div></section>
+  </main>
+  <footer class="footer"><div><span id="connection" role="status">Conectando con la mesa…</span><button id="practice" class="text-button" hidden>Jugar en local</button></div><span data-pana-hint><kbd>1–7</kbd> elegir ficha <kbd>H</kbd> pista <kbd>Esc</kbd> menú</span></footer>
+  <dialog id="result" class="result-layer" aria-labelledby="result-title" hidden><div class="result-card"><span id="result-eyebrow" class="eyebrow">MANO TERMINADA</span><div class="result-domino" aria-hidden="true">✳</div><h2 id="result-title"></h2><p id="result-description"></p><div id="result-score" class="result-score"></div><div id="result-hands" class="result-hands"></div><button id="next-round" class="button button-yellow">Siguiente mano →</button><button id="review-table" class="text-button">Ver la mesa</button></div></dialog>
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+  <script type="module">import('./game.js').catch(error => { console.error(error); document.getElementById('loading-copy').textContent = 'No pudimos abrir la mesa. Revisa tu conexión y recarga.'; });</script>
+</body>
+</html>
