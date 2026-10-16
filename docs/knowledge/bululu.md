@@ -147,6 +147,16 @@ flow bugs and check balance.
   behind and ±0.65 m across, bull swerving at 3.4 m/s every 1–1.9 s, a new bull
   18 m ahead: about 8 tumbles a game. `stats()` reports grabs, misses, bulls and
   time anyone was in reach.
+- **¡Embuste!** (from the full game, `docs/knowledge/embuste.md`): one of the
+  four panas is secretly a mummy, picked at random and possibly you. 19 s of
+  cranking winches (a real crank lights that pana's lantern; a mummy's crank
+  puffs sand 28% of the time, 63% when cranked within 0.28 s of the last), 8 s
+  to vote with ← → and Space, then the verdict. AI panas vote for whoever they
+  saw puff most, with a little noise; an AI mummy cranks a bit slower and votes
+  for a random pana. Catching the mummy pays every pana 50, plus 50 for voting
+  it; an uncaught mummy takes 100. Live chips stay at 0 until the verdict so
+  the scores can't give the mummy away. `stats()` reports the mummy, its sand
+  and the votes.
 - **2D minigames** export `input: '2d'`: `minigameInput()` adds `z` (W/S, ↑/↓),
   W stops being jump for them, and the body gets `mini-2d`, which swaps the
   left/jump/right touch row for the kit's `.pk-dpad` plus an action button.

@@ -12,6 +12,7 @@ import caida from './minigames/caida.js';
 import momia from './minigames/momia.js';
 import coleo from './minigames/coleo.js';
 import choque from './minigames/choque.js';
+import embuste from './minigames/embuste.js';
 import { SKY_MODES } from './atmosphere.js';
 import * as rules from './rules.js';
 import { ICONS as SVG } from '/engine/icons.js';
@@ -36,7 +37,7 @@ const AUTO = QS.has('auto');
 const SPEED = Number(QS.get('speed')) || 1;
 let ROUNDS = Math.max(1, Math.min(20, Number(QS.get('rounds')) || 10));   // the lobby can change it
 const DEBUG = QS.has('debug');
-const MINIGAMES = [atrapa, caigas, caida, momia, coleo, choque];
+const MINIGAMES = [atrapa, caigas, caida, momia, coleo, choque, embuste];
 const nextMinigame = rules.minigameBag(MINIGAMES);
 const FORCED = MINIGAMES.find((m) => m.id === QS.get('mini'));
 const ONLY = MINIGAMES.find((m) => m.id === QS.get('play'));
@@ -346,6 +347,7 @@ const ICONS = {
   relic: SVG.relic.replace('pk-ico', 'ico'),
   bull: SVG.bull.replace('pk-ico', 'ico'),
   car: SVG.car.replace('pk-ico', 'ico'),
+  mummy: SVG.mummy.replace('pk-ico', 'ico'),
 };
 
 let cardMode = 'board';

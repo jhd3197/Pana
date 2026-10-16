@@ -15,6 +15,8 @@ becomes the GitHub release's notes.
   through hollow logs, pose as barrels and sabotage the camp. Report the
   statues, argue at the fogata and vote someone down the river. Each pana
   plays on their own screen; practice with bots in the browser.
+- **Bululú has an ¡Embuste! minigame.** One of the four panas is secretly
+  a mummy faking the chores; watch for sand, then vote it out.
 - **Play Derrape with a controller or with a pana on the same screen.**
   Gamepads drive and fire items, two players can race in split screen,
   and the HUD warns about wrong-way driving and incoming items, shows
