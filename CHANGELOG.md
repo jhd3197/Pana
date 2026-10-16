@@ -8,6 +8,8 @@ becomes the GitHub release's notes.
 
 ## Unreleased
 
+## 0.1.0 - 2026-10-16
+
 ### Added
 
 - **Race Derrape online with up to 8 panas.** Open a room from the garage or a
