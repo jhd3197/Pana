@@ -3,8 +3,8 @@
 // Night runs: the server room or the practice page) and returns an input. They
 // only act on what their own seat could see.
 
-import { STATIONS, VENTS, distance, findPath, lineClear, near, REACH, stationById } from './layout.js';
-import { taskById, WRAP_RANGE, VENT_RANGE, PHRASES, DISGUISES } from './rules.js';
+import { STATIONS, VENTS, FIXES, distance, findPath, lineClear, near, REACH, stationById } from './layout.js';
+import { taskById, WRAP_RANGE, VENT_RANGE, PHRASES, DISGUISES, SABOTAGES } from './rules.js';
 
 export const BOT_NAMES = ['Chiguire', 'Lapa', 'Báquiro', 'Danta', 'Araguato', 'Cachicamo', 'Morrocoy', 'Perico'];
 const STILL = { x: 0, z: 0 };
@@ -77,7 +77,10 @@ export class Brains {
       if (m.working <= 0) night.act(p.seat, 'done', { station: p.task.station });
       return STILL;
     }
+    if (night.sabotage?.kind === 'momia' && night.sabotage.looking && p.role === 'pana' && !night.ghost(p)) return STILL;
     if (m.escape) { const away = this.escape(p, m, dt); if (away) return away; }
+    if (p.role === 'momia') this.maybeSabotage(p, dt);
+    else if (!night.ghost(p) && night.sabotage) { const fix = this.fix(p, m, dt); if (fix) return fix; }
     if (!night.ghost(p)) {
       if (p.role === 'momia') { const hunt = this.hunt(p, m); if (hunt) return hunt; }
       else { const found = this.lookForStatues(p, m); if (found) return found; }
@@ -145,6 +148,25 @@ export class Brains {
     if (near(p, vent, VENT_RANGE - 0.3)) { if (!night.act(p.seat, 'vent')) m.escape = null; return STILL; }
     if (m.goal !== vent) this.goTo(p, m, vent);
     return this.follow(p, m, dt) || (m.escape = null);
+  }
+
+  // Now and then (about twice a minute when ready), a mummy bot pulls a trick.
+  maybeSabotage(p, dt) {
+    const night = this.night;
+    if (night.sabCooldown > 0 || night.rand() > dt / 30) return;
+    const kinds = Object.keys(SABOTAGES).filter(k => (k === 'bejuco' || !night.sabotage) && (k !== 'crecida' || night.rand() < 0.3));
+    if (kinds.length) night.act(p.seat, 'sabotage', { kind: kinds[Math.floor(night.rand() * kinds.length)] });
+  }
+
+  // Panas drop everything to fix an alarm: walk to the spot and hold E.
+  fix(p, m, dt) {
+    const night = this.night, kind = night.sabotage.kind, spots = FIXES[kind];
+    if (!spots || kind === 'momia') return null;
+    if (p.task) night.act(p.seat, 'cancel');
+    const spot = kind === 'crecida' ? spots[p.seat % 2] : spots.slice().sort((a, b) => distance(p, a) - distance(p, b))[0];
+    if (distance(p, spot) <= spot.r - 0.4) return { x: 0, z: 0, hold: true };
+    if (m.goal !== spot) this.goTo(p, m, spot);
+    return this.follow(p, m, dt) || toward(p, spot);
   }
 
   // A pana who sees a statue walks up and reports it.

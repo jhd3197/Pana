@@ -4,18 +4,33 @@
 // view(seat) is everything a screen is allowed to know; roles and anything out
 // of sight never leave the Night except through it.
 
-import { SEATS, BELL, VENTS, HIDES, distance, moveBody, sightClear, zoneAt, inBounds, stationById, ventById, hideById, near, REACH } from './layout.js';
+import { SEATS, BELL, VENTS, HIDES, FIXES, distance, moveBody, sightClear, zoneAt, inBounds, stationById, ventById, hideById, near, REACH } from './layout.js';
 
 export const MIN_PLAYERS = 4, MAX_PLAYERS = 8;
 export const SPEED = 5, GHOST_SPEED = 6.2, RADIUS = 0.45;
 // Lantern radius in metres. Standing in the fogata's light adds `lit`.
-export const VISION = { pana: 7.5, momia: 10, lit: 5 };
+export const VISION = { pana: 7.5, momia: 10, lit: 5, dark: 2.8 };
 // Seconds. QUICK is for browser suites: a whole night in under a minute.
-export const TIMERS = { reveal: 5, task: 1, visual: 4, wrap: 25, firstWrap: 12, afterMeeting: 12, discuss: 30, vote: 30, eject: 6, bell: 15, disguise: 10, hide: 10, hideCooldown: 8, tracks: 6, footprints: 20 };
-export const QUICK = { timers: { reveal: 1.5, task: 0.1, wrap: 3, firstWrap: 1, afterMeeting: 1, discuss: 2, vote: 6, eject: 2, bell: 1 } };
+export const TIMERS = { reveal: 5, task: 1, visual: 4, wrap: 25, firstWrap: 12, afterMeeting: 12, discuss: 30, vote: 30, eject: 6, bell: 15, disguise: 10, hide: 10, hideCooldown: 8, tracks: 6, footprints: 20,
+  sabotage: 30, crecida: 45, momia: 15, look: 2, frozen: 3, stuck: 3, fix: 3, fixPair: 1.5 };
+export const QUICK = { timers: { reveal: 1.5, task: 0.1, wrap: 3, firstWrap: 1, afterMeeting: 1, discuss: 2, vote: 6, eject: 2, bell: 1, sabotage: 2, crecida: 10, momia: 8, fix: 1, fixPair: 0.5 } };
 export const WRAP_RANGE = 2.2, REPORT_RANGE = 4, BELL_RANGE = REACH + 0.5, VENT_RANGE = 1.8, HIDE_RANGE = 1.9;
 // What a mummy can turn into (the shared plaza props), a few times a night.
 export const DISGUISES = ['barrel', 'crate', 'cooler', 'planter'], DISGUISE_CHARGES = 3;
+
+// The mummies' tricks. One at a time (traps aside), on a shared cooldown.
+// fix: how it ends. 'pair' needs two panas holding E together at the spot(s).
+export const SABOTAGES = {
+  apagar: { name: 'Apagar la reliquia', fix: 'pair', hint: 'Dos panas mantengan E junto a la reliquia de la fogata.' },
+  momia: { name: '¡Un, dos, tres, momia!', fix: 'time', hint: 'Cuando el guardián mira, no te muevas.' },
+  bejuco: { name: 'Trampa de bejuco', fix: 'trap', hint: 'Una trampa invisible en el camino.' },
+  puente: { name: 'Cortar el puente', fix: 'hold', hint: 'Mantén E en una punta del puente.' },
+  radio: { name: 'Interferir la radio', fix: 'hold', hint: 'Mantén E en la antena de la carpa de la radio.' },
+  crecida: { name: 'Crecida del río', fix: 'both', critical: true, hint: 'Dos panas: uno en cada palanca de la represa, a la vez.' },
+};
+export const TRAPS = 2, TRAP_RADIUS = 0.9;
+// The guardian of ¡Un, dos, tres, momia! looks for `look` seconds out of every five.
+export const guardianLooks = (elapsed, look = TIMERS.look) => elapsed % 5 >= 5 - look;
 
 // Quick chat for meetings, always available (free text is a room option).
 export const PHRASES = [
@@ -106,6 +121,9 @@ export class Night {
     this.statues = [];
     this.meeting = null;
     this.nextBell = 0;
+    this.traps = [];
+    this.sabCooldown = 0;
+    this.clearSabotage();
   }
 
   // ---------- roster ----------
@@ -117,7 +135,7 @@ export class Night {
       seat, name, avatar, bot, role: 'pana', alive: true, spectator: this.phase !== 'lobby',
       x: spot.x, z: spot.z, h: spot.h, moving: false, tasks: [], task: null,
       cooldown: 0, emergencies: 1, known: false, ejected: false, said: -Infinity,
-      hidden: null, disguise: null, disguises: DISGUISE_CHARGES, hideCooldown: 0, tracks: 0, print: null,
+      hidden: null, disguise: null, disguises: DISGUISE_CHARGES, hideCooldown: 0, tracks: 0, print: null, frozen: 0, stuck: 0,
     };
     this.players.set(seat, p);
     return p;
@@ -157,12 +175,15 @@ export class Night {
     this.footprints = [];
     this.meeting = null;
     this.nextBell = 0;
+    this.clearSabotage();
+    this.traps = [];
+    this.sabCooldown = this.timers.firstWrap;
     shuffle(seats, this.rand).forEach((seat, i) => {
       const p = this.players.get(seat), spot = SEATS[i % SEATS.length];
       Object.assign(p, {
         role: roles.get(seat), alive: true, spectator: false, x: spot.x, z: spot.z, h: spot.h, moving: false, task: null,
         cooldown: this.timers.firstWrap, emergencies: 1, known: false, ejected: false, said: -Infinity,
-        hidden: null, disguise: null, disguises: DISGUISE_CHARGES, hideCooldown: 0, tracks: 0, print: null,
+        hidden: null, disguise: null, disguises: DISGUISE_CHARGES, hideCooldown: 0, tracks: 0, print: null, frozen: 0, stuck: 0,
       });
       // Mummies get a list too: something to pretend with.
       p.tasks = shuffle(TASKS, this.rand).slice(0, this.options.tasks ?? TASKS_EACH).map(t => ({ id: t.id, step: 0 }));
@@ -255,7 +276,8 @@ export class Night {
     if (this.ghost(p)) return null;
     return this.statues.find(s => distance(p, s) <= REPORT_RANGE && sightClear(p, s)) || null;
   }
-  canCall() { return true; }
+  // A jammed radio stops every meeting; any other alarm only stops the bell.
+  canCall(p, report) { return !this.jammed && (report || !this.sabotage); }
 
   report(p) {
     const statue = this.statueNear(p);
@@ -324,9 +346,80 @@ export class Night {
     return true;
   }
 
+  // ---------- sabotage ----------
+  sabotageAct(p, { kind }) {
+    const def = SABOTAGES[kind];
+    if (!def || p.role !== 'momia' || this.sabCooldown > 0) return false;
+    if (kind === 'bejuco') {
+      if (this.ghost(p) || p.hidden || this.traps.length >= TRAPS) return false;
+      this.traps.push({ id: ++this.trapId, x: +p.x.toFixed(2), z: +p.z.toFixed(2) });
+    } else {
+      if (this.sabotage) return false;
+      this.sabotage = { kind, t: kind === 'crecida' ? this.timers.crecida : kind === 'momia' ? this.timers.momia : 0, progress: 0, holders: 0 };
+      if (kind === 'apagar') this.lightsOut = true;
+      if (kind === 'puente') this.bridgeCut = true;
+      if (kind === 'radio') this.jammed = true;
+      this.emit('alarm', { sabotage: kind });
+    }
+    this.sabCooldown = this.timers.sabotage;
+    this.emit('sabotaged', { sabotage: kind }, this.active().filter(q => q.role === 'momia').map(q => q.seat));
+    return true;
+  }
+
+  clearSabotage() {
+    this.sabotage = null; this.lightsOut = false; this.bridgeCut = false; this.jammed = false;
+    this.trapId ??= 0;
+  }
+
+  // Who is holding E at a fix spot right now (living, not hiding).
+  holdersAt(spot, inputs) {
+    return [...this.players.values()].filter(p => !this.ghost(p) && !p.hidden && inputs.get(p.seat)?.hold && distance(p, spot) <= spot.r).length;
+  }
+
+  updateSabotage(dt, inputs) {
+    if (this.sabCooldown > 0) this.sabCooldown = Math.max(0, this.sabCooldown - dt);
+    // Vine snares catch the first pana who steps on them.
+    for (const trap of [...this.traps]) {
+      const p = [...this.players.values()].find(q => q.role === 'pana' && !this.ghost(q) && !q.hidden && distance(q, trap) <= TRAP_RADIUS);
+      if (!p) continue;
+      this.traps.splice(this.traps.indexOf(trap), 1);
+      p.stuck = this.timers.stuck; p.task = null;
+      this.emit('snared', { seat: p.seat, x: trap.x, z: trap.z }, this.viewers(trap));
+    }
+    const sab = this.sabotage;
+    if (!sab) return;
+    const def = SABOTAGES[sab.kind], spots = FIXES[sab.kind] || [];
+    if (sab.kind === 'momia') {
+      const elapsed = this.timers.momia - sab.t, looking = guardianLooks(elapsed, this.timers.look);
+      if (looking && !sab.looking) this.emit('look');
+      sab.looking = looking;
+      if (looking) for (const p of this.players.values()) if (p.role === 'pana' && !this.ghost(p) && p.moving && !p.frozen) { p.frozen = this.timers.frozen; p.task = null; this.emit('frozen', { seat: p.seat }, [p.seat]); }
+    }
+    if (sab.t > 0) {
+      sab.t -= dt;
+      if (sab.t <= 0) {
+        if (def.critical) { this.end('momias', 'flood'); return; }
+        this.fixed(sab.kind);
+        return;
+      }
+    }
+    const counts = spots.map(s => this.holdersAt(s, inputs));
+    const working = def.fix === 'pair' ? counts[0] >= 2 : def.fix === 'hold' ? counts.some(n => n > 0) : def.fix === 'both' ? counts.every(n => n > 0) : false;
+    sab.holders = counts.reduce((a, b) => a + b, 0);
+    if (!working) return;
+    sab.progress += dt / (def.fix === 'hold' ? this.timers.fix : this.timers.fixPair);
+    if (sab.progress >= 1) this.fixed(sab.kind);
+  }
+
+  fixed(kind) {
+    this.clearSabotage();
+    this.emit('fixed', { sabotage: kind });
+  }
+
   // ---------- meetings ----------
   startMeeting(by, body) {
     this.phase = 'meeting';
+    this.clearSabotage();
     this.meeting = { by: by.seat, body, stage: 'discuss', t: this.timers.discuss, votes: new Map(), chat: [], result: null, chatId: 0 };
     let i = 0;
     for (const p of this.players.values()) {
@@ -427,11 +520,15 @@ export class Night {
     this.world.bell = Math.max(0, this.world.bell - dt);
     this.world.winch = Math.max(0, this.world.winch - dt);
     this.world.lanterns = Math.max(0, this.world.lanterns - dt);
+    this.updateSabotage(dt, new Map([...inputs].map(([k, v]) => [k, cleanInput(v)])));
+    if (this.phase !== 'playing') return;
     for (const p of this.players.values()) {
+      if (p.frozen > 0) p.frozen = Math.max(0, p.frozen - dt);
+      if (p.stuck > 0) p.stuck = Math.max(0, p.stuck - dt);
       if (p.hideCooldown > 0) p.hideCooldown = Math.max(0, p.hideCooldown - dt);
       if (p.hidden?.kind === 'hide' && (p.hidden.t -= dt) <= 0) this.leaveHide(p, true);
       if (p.disguise && (p.disguise.t -= dt) <= 0) p.disguise = null;
-      const input = p.task || p.hidden ? { x: 0, z: 0 } : cleanInput(inputs.get(p.seat));
+      const input = p.task || p.hidden || p.frozen > 0 || p.stuck > 0 ? { x: 0, z: 0 } : cleanInput(inputs.get(p.seat));
       if (p.disguise && Math.hypot(input.x, input.z) > 0.05) p.disguise = null;   // a barrel that walks is no barrel
       this.move(p, input, dt);
       if (p.tracks > 0) {
@@ -461,6 +558,7 @@ export class Night {
   // ---------- what a seat may know ----------
   vision(p) {
     if (this.ghost(p)) return Infinity;
+    if (this.lightsOut && p.role === 'pana') return VISION.dark;
     return (p.role === 'momia' ? VISION.momia : VISION.pana) + (zoneAt(p).lit ? VISION.lit : 0);
   }
 
@@ -483,6 +581,11 @@ export class Night {
   worldFor(me) {
     const w = {};
     if (this.world.bell > 0) w.bell = 1;
+    if (this.bridgeCut) w.bridgeCut = true;
+    if (this.lightsOut) w.lightsOut = true;
+    if (this.jammed) w.jammed = true;
+    if (this.sabotage?.kind === 'crecida') w.flood = true;
+    if (this.sabotage?.kind === 'momia') w.guardian = this.sabotage.looking ? 'look' : 'away';
     if (this.world.winch > 0 && this.sees(me, stationById('malacate'))) w.winch = +this.world.winch.toFixed(1);
     if (this.world.lanterns > 0 && this.sees(me, stationById('faroles'))) w.lanterns = Math.min(4, Math.ceil(this.world.lanterns / this.timers.visual));
     return w;
@@ -523,7 +626,16 @@ export class Night {
         hidden: me.hidden && { kind: me.hidden.kind, id: me.hidden.id, t: me.hidden.t != null ? +me.hidden.t.toFixed(1) : undefined },
         disguise: me.disguise && { prop: me.disguise.prop, t: +me.disguise.t.toFixed(1) },
         disguises: mummy ? me.disguises : undefined, hideCooldown: +me.hideCooldown.toFixed(1),
+        frozen: me.frozen > 0 ? +me.frozen.toFixed(1) : undefined, stuck: me.stuck > 0 ? +me.stuck.toFixed(1) : undefined,
+        sabCooldown: mummy ? +this.sabCooldown.toFixed(1) : undefined,
       },
+      sabotage: this.sabotage && {
+        kind: this.sabotage.kind, progress: +Math.min(1, this.sabotage.progress).toFixed(2), holders: this.sabotage.holders,
+        t: SABOTAGES[this.sabotage.kind].critical || mummy ? +Math.max(0, this.sabotage.t).toFixed(1) : undefined,
+        // The saboteur's side knows exactly when the guardian turns.
+        next: mummy && this.sabotage.kind === 'momia' ? +(5 - ((this.timers.momia - this.sabotage.t) % 5) - (this.sabotage.looking ? 0 : this.timers.look)).toFixed(1) : undefined,
+      },
+      traps: mummy ? this.traps.map(({ x, z }) => ({ x, z })) : [],
       footprints: (this.footprints || []).filter(f => this.sees(me, f)).map(f => ({ x: f.x, z: f.z, h: f.h, age: +(this.time - f.t).toFixed(1) })),
       statues: this.statues.filter(s => this.sees(me, s)),
       meeting: this.meeting && this.meetingView(me),
@@ -553,6 +665,7 @@ Night.prototype.actions = {
   vent: ['playing', Night.prototype.vent],
   hide: ['playing', Night.prototype.hide],
   disguise: ['playing', Night.prototype.disguise],
+  sabotage: ['playing', Night.prototype.sabotageAct],
   vote: ['meeting', Night.prototype.vote],
   chat: ['meeting', Night.prototype.chat],
 };

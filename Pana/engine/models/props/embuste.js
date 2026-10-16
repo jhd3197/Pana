@@ -87,3 +87,16 @@ export function bandageWrap({ height = 1.6, radius = 0.55 } = {}) {
   }
   return g;
 }
+
+// A vine snare: a loop of liana pegged to the ground with a few leaves.
+export function vineSnare() {
+  const g = new THREE.Group(); g.name = 'Trampa de bejuco';
+  const vine = M(0x56683a, { flatShading: false, roughness: 1 }), leaf = M(0x4b783e, { side: THREE.DoubleSide, roughness: 1 });
+  const loop = mesh(new THREE.TorusGeometry(0.42, 0.035, 6, 24), vine, 0, 0.04, 0); loop.rotation.x = Math.PI / 2; loop.scale.y = 0.8; g.add(loop);
+  g.add(tube([0.42, 0.04, 0], [0.75, 0.32, 0.1], 0.03, vine), tube([0.75, 0.32, 0.1], [0.8, 0, 0.12], 0.025, DARK));
+  for (let i = 0; i < 5; i++) {
+    const a = i * 1.3, l = mesh(new THREE.CircleGeometry(0.11, 6), leaf, Math.cos(a) * 0.44, 0.06, Math.sin(a) * 0.36);
+    l.rotation.set(-Math.PI / 2 + 0.3, 0, a); l.scale.y = 1.8; g.add(l);
+  }
+  return g;
+}

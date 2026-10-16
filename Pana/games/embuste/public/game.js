@@ -10,8 +10,10 @@ import { shout } from '/engine/kit.js';
 import { pixelRatio, bindRenderer } from '/engine/settings.js';
 import { OnlineNight, PracticeNight } from './network.js';
 import { createCampWorld, groundAt } from './scene.js';
-import { zoneAt, zoneById, FIRE, ZONES, BOUNDS, STATIONS, REACH, BELL, VENTS, HIDES, stationById, ventById, hideById, distance } from './layout.js';
-import { mummyCount, MIN_PLAYERS, taskById, WRAP_RANGE, REPORT_RANGE, BELL_RANGE, VENT_RANGE, HIDE_RANGE, DISGUISES } from './rules.js';
+import { zoneAt, zoneById, FIRE, ZONES, BOUNDS, STATIONS, REACH, BELL, VENTS, HIDES, FIXES, stationById, ventById, hideById, distance } from './layout.js';
+import { mummyCount, MIN_PLAYERS, taskById, WRAP_RANGE, REPORT_RANGE, BELL_RANGE, VENT_RANGE, HIDE_RANGE, DISGUISES, SABOTAGES } from './rules.js';
+import { vineSnare } from '/engine/models/props/embuste.js';
+import { guardianModel } from './scene.js';
 import { createPlazaProp, propDefinition } from '/engine/models/props/plaza.js';
 import { createMeeting } from './ui.js';
 import { bandageWrap } from '/engine/models/props/embuste.js';
@@ -153,6 +155,16 @@ function syncPrints() {
   });
   prints.count = list.length; prints.instanceMatrix.needsUpdate = true;
 }
+// Traps only ever reach a mummy's view.
+const traps = [];
+function syncTraps() {
+  const list = view.phase === 'playing' ? view.traps || [] : [];
+  while (traps.length > list.length) traps.pop().removeFromParent();
+  while (traps.length < list.length) { const t = vineSnare(); scene.add(t); traps.push(t); }
+  list.forEach((t, i) => traps[i].position.set(t.x, groundAt(t.x, t.z) + 0.01, t.z));
+}
+// The guardian of ¡Un, dos, tres, momia! stands at the edge of the fogata.
+const guardian = guardianModel(); guardian.position.set(0, 0, -8.6); guardian.visible = false; scene.add(guardian);
 function syncActors() {
   for (const [seat, a] of actors) if (!rosterOf(seat)) { removeActor(a); actors.delete(seat); }
   const seen = new Set(view.players.map(p => p.seat));
@@ -170,7 +182,7 @@ function syncActors() {
 function receive(v) {
   view = v;
   if (phase !== v.phase) enterPhase(v.phase);
-  syncActors(); syncStatues(); syncProps(); syncPrints();
+  syncActors(); syncStatues(); syncProps(); syncPrints(); syncTraps();
   for (const e of v.events) handleEvent(e);
   updateHud();
   if (v.phase === 'meeting') meeting.render(v);
@@ -194,6 +206,12 @@ function handleEvent(e) {
     else notify('Primera parte lista. Sigue con la segunda.');
   }
   if (e.kind === 'visual') sound.tone(520, 0, 0.3, 'triangle', 0.05);
+  if (e.kind === 'alarm') { horn(); shout(SABOTAGES[e.sabotage].name, { tone: 'coral' }); }
+  if (e.kind === 'fixed') { notify(`${SABOTAGES[e.sabotage].name}: ¡arreglado!`); sound.tone(660, 0, 0.15, 'sine', 0.07); sound.tone(880, 0.12, 0.2, 'sine', 0.06); }
+  if (e.kind === 'sabotaged' && e.sabotage === 'bejuco') notify('Trampa puesta. Solo las momias la ven.');
+  if (e.kind === 'look') { shout('¡Momia!', { tone: 'coral' }); sound.tone(98, 0, 0.5, 'square', 0.06); }
+  if (e.kind === 'frozen') notify('¡Te moviste! El guardián te congeló un momento.');
+  if (e.kind === 'snared') { sound.tone(140, 0, 0.3, 'triangle', 0.06); notify(e.seat === me().seat ? '¡Un bejuco te agarró el pie!' : `Un bejuco agarró a ${nameOf(e.seat)}.`); }
   if (e.kind === 'shake') { world.shake(e.spot); sound.tone(90, 0, 0.18, 'triangle', 0.04); }
   if (e.kind === 'kicked') notify(`Ya no cabes en ${hideById(e.spot)?.name.toLowerCase() || 'el escondite'}. ¡A moverse!`);
   if (e.kind === 'wrap') {
@@ -279,12 +297,17 @@ function updateHud() {
     world.mark(mapStations);
   }
   setBar($('dawn-bar'), view.bar.total ? view.bar.done / view.bar.total : 0);
+  alarm(p);
+  $('task-list').parentElement.classList.toggle('is-jammed', !!view.world.jammed);
   const use = useTarget();
   $('use').disabled = !use || use.wait; $('use-label').textContent = use?.label || 'Usar';
   document.body.classList.toggle('ghost', !!p.ghost); document.body.classList.toggle('mummy', mummy && !p.ghost);
   show('ghost-note', !!p.ghost);
   for (const id of ['wrap', 'sabotage', 'disguise']) show(id, mummy && !p.ghost);
-  $('report').disabled = !statueInReach(); show('report', !p.ghost);
+  $('report').disabled = !statueInReach() || !!view.world.jammed; show('report', !p.ghost);
+  $('sabotage').disabled = p.sabCooldown > 0 && !view.sabotage;
+  $('sabotage').style.setProperty('--cool', String(mummy ? Math.min(1, (p.sabCooldown || 0) / 30) : 0));
+  if (!mummy || p.ghost) show('sabotage-menu', false); else if (!$('sabotage-menu').classList.contains('hidden')) sabotageMenu();
   $('wrap').disabled = !wrapInReach();
   show('vent', mummy && p.hidden?.kind === 'vent');
   $('disguise').disabled = !p.disguise && (!p.disguises || !!p.hidden);
@@ -302,6 +325,7 @@ function updateHud() {
 function useTarget() {
   const p = me(), mine = myPose(); if (!p || !mine || openPanel) return null;
   if (p.hidden?.kind === 'hide') return { label: 'Salir del escondite', run: () => net.act('hide') };
+  if (view.sabotage && !p.ghost && !p.hidden && (FIXES[view.sabotage.kind] || []).some(f => distance(mine, f) <= f.r)) return { label: 'Mantén E: arreglar', hold: true };
   if (p.hidden?.kind === 'vent') return { label: 'Salir del tronco', run: () => net.act('vent') };
   if (p.disguise) return null;
   const t = p.tasks.filter(t => !t.done).map(t => ({ t, s: stationById(t.station) })).filter(({ s }) => distance(mine, s) <= REACH)
@@ -324,6 +348,38 @@ function wrapInReach() {
   return view.players.find(q => q.seat !== p.seat && !q.ghost && !q.prop && !view.partners.includes(q.seat) && distance(mine, q) <= WRAP_RANGE);
 }
 const doWrap = () => { if (wrapInReach()) net.act('wrap'); };
+// The alarm card: what broke, how to fix it, and the fix (or flood) meter.
+function alarm(p) {
+  const sab = view.sabotage, def = sab && SABOTAGES[sab.kind];
+  show('alarm', !!def); document.body.classList.toggle('alarmed', !!def);
+  if (!def) return;
+  const looking = view.world.guardian === 'look';
+  $('alarm-title').textContent = def.name;
+  $('alarm-copy').textContent = sab.kind === 'momia' ? (looking ? '¡El guardián está mirando! No te muevas.' : p.role === 'momia' && sab.next != null ? `Gira en ${Math.ceil(sab.next)} s. Tú sí puedes moverte.` : 'Un, dos, tres… ¡atento!')
+    : def.critical ? `${def.hint} Quedan ${Math.ceil(sab.t)} s.` : def.hint;
+  setBar($('alarm-bar'), sab.kind === 'momia' ? (looking ? 1 : 0) : sab.progress);
+}
+// Built once; each view only refreshes what can be picked (a rebuilt button can't be clicked).
+function sabotageMenu() {
+  const p = me(), busy = !!view.sabotage, menuNode = $('sabotage-menu');
+  if (!menuNode.children.length) menuNode.replaceChildren(...Object.entries(SABOTAGES).map(([kind, def]) => {
+    const b = document.createElement('button'); b.type = 'button'; b.className = 'pk-btn pk-btn--sm'; b.dataset.kind = kind;
+    b.append(document.createTextNode(def.name), document.createElement('small'));
+    b.onclick = () => { net.act('sabotage', { kind }); show('sabotage-menu', false); }; return b;
+  }));
+  for (const b of menuNode.children) {
+    const kind = b.dataset.kind, def = SABOTAGES[kind];
+    b.disabled = p.sabCooldown > 0 || (kind !== 'bejuco' && busy) || (kind === 'bejuco' && p.ghost);
+    const note = p.sabCooldown > 0 ? `${Math.ceil(p.sabCooldown)} s` : def.critical ? 'crítico' : '';
+    if (b.lastChild.textContent !== note) b.lastChild.textContent = note;
+  }
+}
+function toggleSabotage() {
+  const p = me(); if (!p || p.role !== 'momia' || p.ghost) return;
+  const open = $('sabotage-menu').classList.contains('hidden');
+  if (open) { sabotageMenu(); show('disguise-menu', false); }
+  show('sabotage-menu', open);
+}
 const crossVent = () => { if (me()?.hidden?.kind === 'vent') net.act('vent', { move: true }); };
 function doDisguise() {
   const p = me(); if (!p || p.role !== 'momia' || p.ghost) return;
@@ -400,6 +456,7 @@ addEventListener('keydown', e => {
   if (key === 'q' && !openPanel) doWrap();
   if (key === 'v' && !openPanel) crossVent();
   if (key === 'c' && !openPanel) doDisguise();
+  if (key === 'f' && !openPanel) toggleSabotage();
   if (!$('disguise-menu').classList.contains('hidden') && /^[1-4]$/.test(key)) { net.act('disguise', { prop: DISGUISES[Number(key) - 1] }); show('disguise-menu', false); }
   if (key === 'r' && !openPanel) doReport();
 });
@@ -407,7 +464,7 @@ addEventListener('keyup', e => keys.delete(e.key.toLowerCase())); addEventListen
 for (const button of document.querySelectorAll('[data-move]')) holdButton(button, { paused: () => paused, down: () => touch.add(button.dataset.move), up: () => touch.delete(button.dataset.move) });
 
 holdButton($('use'), { paused: () => paused, down: () => { touch.add('use'); if (!openPanel) useTarget()?.run?.(); }, up: () => touch.delete('use') });
-$('wrap').onclick = doWrap; $('report').onclick = doReport; $('vent').onclick = crossVent; $('disguise').onclick = doDisguise;
+$('wrap').onclick = doWrap; $('report').onclick = doReport; $('vent').onclick = crossVent; $('sabotage').onclick = toggleSabotage; $('disguise').onclick = doDisguise;
 $('start').onclick = () => net?.start();
 $('again').onclick = () => net?.start();
 $('to-lobby').onclick = () => net?.toLobby();
@@ -428,7 +485,7 @@ function frame(now) {
     a.root.visible = !a.hiddenNow;
     temp.set(p.x, p.ghost ? 0.6 + Math.sin(elapsed * 2 + a.seat) * 0.15 : groundAt(p.x, p.z), p.z); if (a.root.position.distanceTo(temp) > 6) a.root.position.copy(temp); else a.root.position.lerp(temp, Math.min(1, dt * 14));
     const diff = Math.atan2(Math.sin(p.h - a.character.group.rotation.y), Math.cos(p.h - a.character.group.rotation.y)); a.character.group.rotation.y += diff * Math.min(1, dt * 12);
-    a.character.update(dt, { walk: p.moving ? 1 : 0 });
+    a.character.update(dt, { walk: p.moving ? 1 : 0, dizzy: !!(a.seat === me()?.seat && (me().frozen || me().stuck)) });
   }
   const mine = view && actors.get(me()?.seat);
   if (!view || view.phase === 'lobby') {
@@ -446,6 +503,10 @@ function frame(now) {
   if (view?.meeting?.stage !== 'eject') lantern.intensity = 30;
   if (mine && view?.meeting?.stage !== 'eject') lantern.position.set(mine.root.position.x + 0.8, 4.2, mine.root.position.z + 1.2);
   darkness(mine);
+  const w = view?.world || {};
+  guardian.visible = !!w.guardian && view.phase === 'playing';
+  if (guardian.visible) { guardian.rotation.y = THREE.MathUtils.damp(guardian.rotation.y, w.guardian === 'look' ? 0 : Math.PI, 8, dt); guardian.userData.animate(elapsed, false, w.guardian === 'look'); }
+  fireLight.intensity = THREE.MathUtils.damp(fireLight.intensity, w.lightsOut ? 12 : 90, 3, dt);
   world.update(elapsed, view, dt); renderer.render(scene, camera);
   uiClock += dt; if (uiClock > 0.1 && view?.phase === 'playing') { uiClock = 0; minimap(); }
   requestAnimationFrame(frame);

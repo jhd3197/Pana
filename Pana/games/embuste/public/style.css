@@ -88,7 +88,7 @@ body.mummy .controls{bottom:340px}
 .controls span{display:block}
 .touch-controls{display:none}
 .disconnect{position:fixed;bottom:120px;left:50%;transform:translateX(-50%);z-index:20;display:grid;gap:8px;justify-items:center;font:800 14px var(--pk-sans)}
-.toast{position:fixed;left:50%;top:92px;transform:translateX(-50%);z-index:35;max-width:min(520px,84vw);padding:10px 18px;border:1px solid var(--pk-line);border-radius:var(--pk-r);background:var(--pk-hud);box-shadow:var(--pk-drop);text-align:center;font:800 14px/1.35 var(--pk-sans);color:var(--pk-text);pointer-events:none}
+.toast{position:fixed;left:50%;top:176px;transform:translateX(-50%);z-index:35;max-width:min(520px,84vw);padding:10px 18px;border:1px solid var(--pk-line);border-radius:var(--pk-r);background:var(--pk-hud);box-shadow:var(--pk-drop);text-align:center;font:800 14px/1.35 var(--pk-sans);color:var(--pk-text);pointer-events:none}
 
 /* task panel: covers the view while you work, which is the danger */
 .task-layer{position:fixed;inset:0;z-index:25;display:grid;place-items:center;padding:16px;background:rgba(5,4,15,.62)}
