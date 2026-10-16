@@ -6,7 +6,7 @@ const {chromium}=createRequire(import.meta.url)(process.argv[2]||'playwright');
 const browser=await chromium.launch({headless:true});await mkdir('art/galope',{recursive:true});
 try{
   const p=await browser.newPage({viewport:{width:1100,height:780}}),errors=[];p.on('pageerror',e=>errors.push(e.message));
-  await p.goto('http://localhost:8461/studio/settings.html');
+  await p.goto(`${process.env.PANA_TEST_URL||'http://localhost:8461'}/studio/settings.html`);
   await p.setContent(`<html><head><script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}</script><style>body{margin:0;background:#eef0ee;font:16px sans-serif}#preview{display:block}header{padding:16px}</style></head><body><header>Pana Studio · Galope · La vuelta del estero</header><div id="studio-app"><div><canvas id="preview" tabindex="0"></canvas></div><div id="track-tour"><button id="tour-play"></button><input id="tour-progress" type="range" min="0" max="1000"><span id="tour-time"></span><span id="tour-position"></span><span id="tour-state"></span><button id="tour-overview"></button><button id="tour-copy"></button><button id="tour-expand"></button><select id="tour-speed"><option value="1">1</option></select></div><button id="rotate"></button></div></body></html>`);
   const proof=await p.evaluate(async()=>{
     const THREE=await import('three'),{OrbitControls}=await import('three/addons/controls/OrbitControls.js');

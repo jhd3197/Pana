@@ -4,7 +4,7 @@ const {chromium}=createRequire(import.meta.url)(process.argv[2]||'playwright');
 const browser=await chromium.launch({headless:true}),errors=[];
 const page=await browser.newPage({viewport:{width:1440,height:900}});page.on('pageerror',e=>errors.push(e.message));
 try{
- await page.goto(`http://localhost:8461/g/domino/?room=pick-${Date.now()}&name=Juan&debug`);
+ await page.goto(`${process.env.PANA_TEST_URL||'http://localhost:8461'}/g/domino/?room=pick-${Date.now()}&name=Juan&debug`);
  await page.waitForFunction(()=>dominoDebug.world&&dominoDebug.room.connected,null,{timeout:90000});
  await page.locator('#start').click();
  for(let i=0;i<4;i++){if(await page.evaluate(()=>dominoDebug.room.state.turn===dominoDebug.room.seat))break;await page.evaluate(()=>dominoDebug.room.tick(2));}

@@ -8,7 +8,7 @@ await mkdir(out,{recursive:true});
 try{
   const page=await browser.newPage({viewport:{width:1280,height:800}}),errors=[],proof=[];
   page.on('pageerror',e=>errors.push(e.message));page.on('console',m=>{if(m.type()==='error'&&m.text().includes('THREE'))errors.push(m.text());});
-  await page.goto('http://localhost:8461/g/derrape/?debug&manual');await page.waitForFunction(()=>window.garage?.car,null,{timeout:90000});
+  await page.goto(`${process.env.PANA_TEST_URL||'http://localhost:8461'}/g/derrape/?debug&manual`);await page.waitForFunction(()=>window.garage?.car,null,{timeout:90000});
   for(const id of process.env.PANA_COLOUR_TRACKS?.split(',')||['estadio','desierto','llanos','chichi','selva','paramo','plaza','bululu']){
     const data=await page.evaluate(async id=>{
       toGarage();buildTrack(id);await startRace(0);

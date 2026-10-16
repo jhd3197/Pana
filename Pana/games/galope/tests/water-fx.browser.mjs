@@ -7,7 +7,7 @@ const browser=await chromium.launch({headless:true}),out='art/galope/water-fx';a
 try{
   const page=await browser.newPage({viewport:{width:1440,height:900}}),errors=[];
   page.on('pageerror',e=>errors.push(e.message));page.on('console',m=>{if(m.type()==='error'&&m.text().includes('THREE'))errors.push(m.text());});
-  await page.goto('http://localhost:8461/studio/settings.html');
+  await page.goto(`${process.env.PANA_TEST_URL||'http://localhost:8461'}/studio/settings.html`);
   await page.setContent('<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}</script><style>body{margin:0}canvas{display:block}</style><canvas></canvas>');
   const checks=await page.evaluate(async()=>{
     const THREE=await import('three'),{createHorseWaterFX,WATER_FX_BUDGET}=await import('/g/galope/water-fx.js');
