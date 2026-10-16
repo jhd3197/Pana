@@ -3,6 +3,7 @@ import { buildCharacter } from '/engine/character.js';
 import { loadAvatar, loadName } from '/engine/avatar.js';
 import { sound } from '/engine/fx.js';
 import { createGameMenu, toggleMute } from '/engine/ui.js';
+import { inviteUrl, newRoomCode, roomFromUrl } from '/engine/invite.js';
 import { holdButton as hold } from '/engine/touch.js';
 import { shout } from '/engine/kit.js';
 import { pixelRatio, bindRenderer } from '/engine/settings.js';
@@ -13,7 +14,7 @@ import { createExpeditionWorld, groundAt } from './scene.js';
 import { CAMP, ALTAR, WINCHES, ROOMS, regionAt, distance } from './layout.js';
 
 const $ = id => document.getElementById(id), show = (id, on) => $(id).classList.toggle('hidden', !on);
-const qs = new URLSearchParams(location.search), code = (qs.get('room') || Math.random().toString(36).slice(2, 8)).slice(0, 24);
+const qs = new URLSearchParams(location.search), code = roomFromUrl() || newRoomCode();
 const url = new URL(location.href); url.searchParams.set('room', code); history.replaceState(null, '', url);
 const avatar = loadAvatar(), name = qs.get('name')?.slice(0, 16) || loadName();
 const renderer = new THREE.WebGLRenderer({ canvas: $('world'), antialias: true });
@@ -42,7 +43,7 @@ const menu = createGameMenu({
   controls: [['W A S D / ↑ ← ↓ →', 'Moverte'], ['Espacio', 'Golpear; también puedes hacer clic'], ['Shift', 'Esquivar un golpe'], ['E', 'Interactuar; mantén para girar o revivir'], ['R', 'Usar un botiquín'], ['Q', 'Centrar la cámara'], ['M', 'Sonido']],
   tips: ['Arrastra el escenario para girar la cámara. Las marcas rojas en el suelo anuncian un ataque: sal de ellas o esquiva.', 'Mantén E en cada rueda. Al soltarla queda activa doce segundos: puedes llegar a la otra incluso jugando solo.', 'Al recoger la reliquia se abre el túnel de regreso. Levanten a los panas caídos, reúnanse en el círculo del campamento y mantengan E.'],
   actions: [{ id: 'offline', label: 'Abrir expedición local', kind: 'link', visible: () => failed, run: () => room.practice() }],
-  invite() { const link = new URL(location.href); ['debug', 'name', 'manual'].forEach(k => link.searchParams.delete(k)); return link.href; },
+  invite: () => inviteUrl(code),
   onOpen() { paused = true; clearInput(); }, onClose() { paused = false; },
 });
 const navButton = 'pk-btn pk-btn--sm';

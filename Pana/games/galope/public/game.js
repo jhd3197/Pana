@@ -2,6 +2,8 @@ import * as THREE from 'three';
 import {loadAvatar,loadName} from '/engine/avatar.js';
 import {sound} from '/engine/fx.js';
 import {createGameMenu,toggleMute} from '/engine/ui.js';
+import {fillRoster} from '/engine/results.js';
+import {inviteUrl,newRoomCode,roomFromUrl} from '/engine/invite.js';
 import {holdButton} from '/engine/touch.js';
 import {bindRenderer,pixelRatio} from '/engine/settings.js';
 import {RaceRoom} from './network.js';
@@ -13,15 +15,14 @@ import {createHorseWaterFX} from './water-fx.js';
 
 const $=id=>document.getElementById(id),params=new URLSearchParams(location.search),avatar=loadAvatar(),name=loadName();
 let coat='bay';try{coat=['bay','palomino','grey'].includes(localStorage.getItem('galope:coat'))?localStorage.getItem('galope:coat'):'bay';}catch{}
-const code=(params.get('room')||Math.random().toString(36).slice(2,8)).slice(0,24);params.set('room',code);history.replaceState(null,'',`${location.pathname}?${params}`);
-const invite=new URL(location.href);invite.searchParams.delete('name');invite.searchParams.delete('debug');invite.searchParams.delete('manual');
+const code=roomFromUrl()||newRoomCode();params.set('room',code);history.replaceState(null,'',`${location.pathname}?${params}`);
 const keys=new Set(),touch=new Set(),riders=new Map();let paused=false,state,world,ready=false,lastPhase='',lastCountdown='',lastRace=0,hoofClock=0,drawClock=0,disposed=false;
 const room=new RaceRoom({code,name,avatar,coat,onState:s=>{state=s;},onStatus:(message,error=false)=>{$('connection').textContent=message;$('practice').classList.toggle('hidden',!error);if(error)showNotice(message);}});state=room.state;
 const touchButtons=[];
 function clearInput(){keys.clear();for(const b of touchButtons)b.release();touch.clear();}
 const menu=createGameMenu({title:'Galope',sound,orientation:'horizontal',note:()=>room.members.size>1?'La carrera sigue mientras abres el menú.':'La carrera está en pausa.',
   controls:[['W / ↑','Avanzar'],['A D / ← →','Girar'],['S / ↓','Frenar'],['Shift','Remate: gasta resistencia'],['Espacio','Saltar troncos'],['R','Volver al camino'],['M','Sonido'],['Esc','Menú']],
-  invite:()=>invite.href,actions:[{id:'local-race',label:'Abrir carrera local',run:()=>room.practice()}],onOpen(){paused=true;clearInput();},onClose(){paused=false;}});
+  invite:()=>inviteUrl(code),actions:[{id:'local-race',label:'Abrir carrera local',run:()=>room.practice()}],onOpen(){paused=true;clearInput();},onClose(){paused=false;}});
 const navButton='pk-btn pk-btn--sm game-menu-button';
 $('game-nav').append(menu.createInviteButton({id:'invite',label:'Invitar',className:navButton}),menu.createSoundButton({id:'sound',className:navButton}),menu.createButton({id:'menu',className:navButton}));
 $('lobby-cta').append(menu.createInviteButton({id:'lobby-invite',label:'Invitar panas',className:'pk-btn'}));
@@ -111,7 +112,7 @@ function updateUI(){
   if(done&&(lastPhase!==state.phase||$('result-board').childElementCount!==ordered.length)){
     $('result-title').textContent=place===1?'¡Ganaste, pana!':own?.finish!==null?'¡Llegaste, pana!':'¡Se cerró la carrera!';
     $('result-copy').textContent=own?.finish!=null?`${place}.º lugar · ${formatTime(own.finish)} · ${own.hits} tropiezos`:'La próxima salida es tuya. Sigue las estacas y guarda fuerzas.';
-    $('result-board').replaceChildren(...ordered.map((p,i)=>{const li=document.createElement('li');li.className=p.id===room.id?'pk-row is-me me':'pk-row';const b=document.createElement('b'),span=document.createElement('span'),time=document.createElement('time');b.className='pk-row-n';span.className='row-name';time.className='pk-row-end';b.textContent=i+1;span.textContent=p.name+(p.bot?' · hato':'');time.textContent=p.finish===null?'Sin terminar':formatTime(p.finish);li.append(b,span,time);return li;}));
+    fillRoster($('result-board'),ordered.map((p,i)=>({rank:i+1,name:p.name+(p.bot?' · hato':''),end:p.finish===null?'Sin terminar':formatTime(p.finish),me:p.id===room.id})));
     if(lastPhase!==state.phase)sound.tone(660,0,.25,'triangle',.08);
   }
   lastPhase=state.phase;drawMap(own);

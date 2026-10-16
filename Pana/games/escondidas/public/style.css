@@ -95,16 +95,8 @@ nav .pk-kbd { min-width: 0; height: 20px; padding: 0 5px; font-size: 10px; }
 .touch-controls { display: none; }
 
 /* ---------- results ---------- */
-.overlay { position: fixed; inset: 0; z-index: 15; display: grid; place-items: center; padding: 16px; background: rgba(14, 11, 36, .62); backdrop-filter: blur(6px); }
-.result-panel { display: flex; flex-direction: column; gap: 12px; max-width: 460px; max-height: calc(100dvh - 32px); overflow: auto; }
-.result-panel .pk-title { font-size: 44px; --pk-title-shadow: #c47f1a; }
-.result-panel .pk-copy { font-size: 14px; }
+.result-panel .pk-title { --pk-title-shadow: #c47f1a; }
 .scores { margin: 4px 0; }
-.score-row > span { flex: 1; }
-.score-row small { font: 700 12px var(--pk-sans); color: var(--pk-muted); }
-.score-row b { min-width: 24px; text-align: right; font: 400 22px var(--pk-display); color: var(--pk-yellow); }
-.score-row.is-me b { color: inherit; }
-.result-panel .pk-back { align-self: center; }
 
 @media (max-height: 760px) and (min-width: 721px) {
   .pk-lobby { padding-top: 24px; padding-bottom: 24px; gap: 14px; }
@@ -160,8 +152,6 @@ nav .pk-kbd { min-width: 0; height: 20px; padding: 0 5px; font-size: 10px; }
   .action.pk-btn--primary { bottom: 16px; max-width: calc(100vw - 20px); padding: 12px 18px; font-size: 14px; }
   .touch-controls { left: 10px; bottom: 300px; }
   .toast { top: 158px; max-width: calc(100vw - 150px); left: 10px; transform: none; padding: 8px 12px; font-size: 12px; border-radius: 14px; }
-  .result-panel { padding: 22px; }
-  .result-panel .pk-title { font-size: 34px; }
 }
 @media (pointer: coarse) and (max-height: 520px) {
   .touch-controls { left: auto; right: max(14px, env(safe-area-inset-right)); bottom: max(14px, env(safe-area-inset-bottom)); --pk-touch: 48px; }

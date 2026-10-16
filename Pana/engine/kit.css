@@ -193,7 +193,32 @@
 .pk-row > .pk-row-end { margin-left: auto; font-size: 12px; color: var(--pk-muted); }
 .pk-row.is-me { background: var(--pk-yellow); border-color: var(--pk-yellow); color: var(--pk-yellow-ink); }
 .pk-row.is-me > * { color: inherit; }
+.pk-row > .pk-row-name { display: flex; flex-direction: column; min-width: 0; overflow-wrap: anywhere; }
+.pk-row-name > small { font: 700 12px var(--pk-sans); color: var(--pk-muted); }
+.pk-row.is-me .pk-row-name > small { color: inherit; opacity: .75; }
+.pk-row > .pk-row-score { font: 400 22px var(--pk-display); color: var(--pk-yellow); }
+.pk-row.is-me > .pk-row-score { color: inherit; }
 .pk-avatar { width: 32px; height: 32px; border-radius: 50%; object-fit: cover; flex: none; background: var(--pk-raised); border: 2px solid var(--pk-night); }
+
+/* results: the end-of-round screen (engine/results.js fills the standings)
+   <section class="pk-results hidden"><div class="pk-modal pk-results-card">
+     ribbon, pk-title, pk-copy, pk-stats / pk-roster, primary button, pk-back
+   </div></section>
+   A game tunes the layer with --pk-results-z, --pk-results-top and --pk-results-dim. */
+.pk-results {
+  position: fixed; inset: 0; z-index: var(--pk-results-z, 15); display: grid; place-items: center;
+  padding: var(--pk-results-top, 16px) 16px 16px; background: rgba(14, 11, 36, var(--pk-results-dim, .62)); backdrop-filter: blur(4px);
+}
+.pk-results.hidden, .pk-results[hidden] { display: none; }
+.pk-results-card {
+  display: flex; flex-direction: column; gap: 14px; width: min(460px, calc(100vw - 32px));
+  max-height: calc(100dvh - 32px); overflow-y: auto; text-align: center;
+}
+.pk-results-card > :is(.pk-ribbon, .pk-eyebrow, .pk-back) { align-self: center; }
+.pk-results-card .pk-title { font-size: clamp(32px, 5vw, 44px); }
+.pk-results-card .pk-copy { font-size: 14px; }
+.pk-results-card :is(.pk-roster, .pk-stats) { width: 100%; text-align: left; }
+@media (max-width: 520px) { .pk-results-card { padding: 22px; } .pk-results-card .pk-title { font-size: 34px; } }
 
 /* inventory slots */
 .pk-slots { display: flex; gap: 8px; }

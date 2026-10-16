@@ -71,13 +71,10 @@ body:not(.in-lobby) .lobby-hint{display:none}
 .touch-controls{display:none}
 
 /* results */
-.results{position:fixed;inset:0;z-index:15;display:grid;place-items:center;padding:76px 16px 16px;background:rgba(14,11,36,.6)}
-.result-paper{display:flex;flex-direction:column;gap:14px;max-height:100%;overflow-y:auto}
+#results{--pk-results-top:76px;--pk-results-dim:.6}
 .result-paper .pk-title{font-size:clamp(36px,6vw,52px)}
-.result-paper .pk-copy{font-size:15px}
 #result-board{margin:4px 0 8px}
-#result-board time{font-variant-numeric:tabular-nums}
-.result-paper .pk-back{align-self:center}
+#result-board .pk-row-end{font-variant-numeric:tabular-nums}
 
 @media(pointer:coarse){
   .keyboard-hints,.lobby-hint,#game-nav kbd{display:none}
@@ -119,7 +116,6 @@ body:not(.in-lobby) .lobby-hint{display:none}
   .stamina-pips>i{height:12px;min-width:0}
   .countdown{font-size:96px}
   .notice{top:340px;font-size:12px}
-  .result-paper{padding:22px}
 }
 @media(max-height:600px) and (pointer:coarse){
   .race-top{top:12px;left:12px}.position{font-size:52px}

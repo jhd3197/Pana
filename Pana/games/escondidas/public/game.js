@@ -4,6 +4,8 @@ import { buildCharacter } from '/engine/models/characters/pana/avatar-model.js';
 import { createPlazaProp, PLAZA_PROPS, propDefinition } from '/engine/models/props/plaza.js';
 import { sound } from '/engine/fx.js';
 import { createGameMenu, toggleMute } from '/engine/ui.js';
+import { fillRoster } from '/engine/results.js';
+import { inviteUrl, newRoomCode, roomFromUrl } from '/engine/invite.js';
 import { holdButton } from '/engine/touch.js';
 import { pixelRatio, bindRenderer } from '/engine/settings.js';
 import { createPlaza } from './plaza.js';
@@ -13,7 +15,7 @@ import { HuntRoom } from './network.js';
 
 const $ = id => document.getElementById(id), show = (id, visible) => $(id).classList.toggle('hidden', !visible);
 const qs = new URLSearchParams(location.search), DEBUG = qs.has('debug');
-const code = (qs.get('room') || Math.random().toString(36).slice(2, 8)).slice(0, 24);
+const code = roomFromUrl() || newRoomCode();
 const url = new URL(location.href); url.searchParams.set('room', code); history.replaceState(null, '', url);
 const avatar = loadAvatar(), name = loadName();
 await Promise.race([document.fonts.load('900 64px Nunito'), new Promise(resolve => setTimeout(resolve, 1600))]);
@@ -69,7 +71,7 @@ const menu = createGameMenu({
   controls: [['W A S D / ↑ ← ↓ →', 'Moverte'], ['Arrastrar', 'Mirar'], ['Shift', 'Correr'], ['1 2 3 4 5', 'Transformarte'],
     ['Q', 'Volver a pana'], ['E', 'Copiar objeto cercano o buscar'], ['M', 'Sonido']],
   tips: ['Una revisión fallida espera 1,6 segundos.'],
-  invite() { const share = new URL(location.href); share.search = ''; share.searchParams.set('room', code); return share.href; },
+  invite: () => inviteUrl(code),
   onOpen() { paused = true; keys.clear(); touch.clear(); drag = null; },
   onClose() { paused = false; },
 });
@@ -174,13 +176,9 @@ function updateHUD() {
     $('result-round').textContent = state.phase === 'finished' ? 'PARTIDA TERMINADA' : `RONDA ${state.round} DE ${state.totalRounds}`;
     $('result-title').textContent = state.winner === 'hiders' ? '¡Bien escondidos!' : '¡Los pillaron a todos!';
     $('result-copy').textContent = 'Cada captura suma 1 punto. Sobrevivir a la ronda suma 3. El buscador cambia en cada ronda.';
-    $('scores').replaceChildren();
-    for (const p of [...state.players].sort((a, b) => b.score - a.score)) {
-      const row = document.createElement('li'); row.className = `score-row pk-row${p.id === room.id ? ' is-me' : ''}`;
-      const label = document.createElement('span'); label.textContent = p.name + (p.id === room.id ? ' (tú)' : '');
-      const detail = document.createElement('small'); detail.textContent = p.spectator ? 'Espectador' : p.id === state.seeker ? 'Buscador' : p.caught ? 'Encontrado' : 'A salvo';
-      const score = document.createElement('b'); score.textContent = p.score; row.append(label, detail, score); $('scores').append(row);
-    }
+    fillRoster($('scores'), [...state.players].sort((a, b) => b.score - a.score).map(p => ({
+      className: 'score-row', name: p.name + (p.id === room.id ? ' (tú)' : ''), me: p.id === room.id, end: p.score, score: true,
+      detail: p.spectator ? 'Espectador' : p.id === state.seeker ? 'Buscador' : p.caught ? 'Encontrado' : 'A salvo' })));
     $('next').disabled = !room.isHost;
     $('next').textContent = !room.isHost ? 'Esperando al anfitrión…' : state.phase === 'finished' ? 'Otra partida →' : 'Siguiente ronda →';
   }

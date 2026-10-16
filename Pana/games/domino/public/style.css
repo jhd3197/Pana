@@ -139,14 +139,11 @@ body:not(.in-lobby) .world-label.partner{visibility:hidden}
 /* result dialog */
 .result-layer{margin:0;padding:16px;inset:0;width:100%;height:100%;max-width:none;max-height:none;z-index:9;border:0;background:rgba(14,11,36,.6);backdrop-filter:blur(3px);display:grid;place-items:center;color:var(--pk-text)}
 .result-layer::backdrop{background:transparent}
-.result-card{display:flex;flex-direction:column;align-items:center;gap:14px;max-height:95vh;overflow:auto;width:min(460px,100%);text-align:center}
-.result-card .pk-ribbon{align-self:center}
-.result-card .pk-title{font-size:clamp(32px,5vw,44px)}
+.result-card{max-height:95vh}
 .result-score{display:flex;align-items:center;justify-content:center;gap:12px;width:100%;padding:10px 0;border-block:1px solid var(--pk-line)}
 .result-score b{font:400 40px/1 var(--pk-display)}
 .result-score b:first-of-type{color:var(--pk-teal)}.result-score b:last-of-type{color:var(--pk-coral)}
 .result-score span{font:800 12px var(--pk-sans);color:var(--pk-muted)}
-.result-hands{width:100%;text-align:left}
 .result-card>.pk-btn--primary{margin-top:6px}
 
 @media(max-height:760px) and (min-width:721px){.domino{width:46px;height:92px}.pip-face{padding:4px}.hand{min-height:96px}.rack-center{gap:10px}.hud-right{top:72px}}

@@ -51,7 +51,7 @@
   </main>
   <div id="countdown" class="countdown hidden" role="status" aria-live="polite"></div>
   <div id="notice" class="notice pk-chip hidden" role="status"></div>
-  <section id="results" class="results hidden" aria-labelledby="result-title"><div class="result-paper pk-modal"><span class="pk-ribbon">La vuelta del estero</span><h2 id="result-title" class="pk-title">¡Llegaste, pana!</h2><p id="result-copy" class="pk-copy"></p><ol id="result-board" class="pk-roster"></ol><button id="again" class="pk-btn pk-btn--primary pk-btn--lg pk-btn--block">Otra carrera</button><a class="pk-back" href="/">← Volver a Pana</a></div></section>
+  <section id="results" class="pk-results hidden" aria-labelledby="result-title"><div class="result-paper pk-modal pk-results-card"><span class="pk-ribbon">La vuelta del estero</span><h2 id="result-title" class="pk-title">¡Llegaste, pana!</h2><p id="result-copy" class="pk-copy"></p><ol id="result-board" class="pk-roster"></ol><button id="again" class="pk-btn pk-btn--primary pk-btn--lg pk-btn--block">Otra carrera</button><a class="pk-back" href="/">← Volver a Pana</a></div></section>
   <script type="module">import('./game.js').catch(error=>{console.error(error);const e=document.getElementById('loading');e.classList.remove('hidden');e.replaceChildren();const message=document.createElement('b');message.className='pk-heading';message.textContent='No pudimos ensillar. Comprueba tu conexión y WebGL, y recarga la página.';const back=document.createElement('a');back.href='/';back.textContent='Volver a Pana';back.className='pk-btn pk-btn--primary';e.append(message,back);});</script>
 </body>
 </html>

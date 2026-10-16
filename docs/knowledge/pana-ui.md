@@ -28,7 +28,7 @@ const menu = createGameMenu({
   controls: [['W A S D / ↑ ← ↓ →', 'Moverte'], ['M', 'Sonido'], ['Esc', 'Pausa']],
   actions: [{ id: 'restart', label: 'Reiniciar', visible: () => playing, run: restart }],
   options: [{ id: 'sky', label: 'Luz', choices: [['day', 'Día']], get, set }],
-  invite: () => roomLink,            // optional: adds "Copiar invitación"
+  invite: () => inviteUrl(code),     // optional: adds "Copiar invitación"
   onOpen() { paused = true; clearHeldKeys(); },
   onClose() { paused = false; },
 });
@@ -38,6 +38,11 @@ hud.append(menu.createButton({ id: 'menu' }));      // "Menú Esc"
 ```
 
 Put the menu button somewhere visible on touch screens: phones have no Esc.
+
+Room codes and invite links come from `/engine/invite.js`: `roomFromUrl() ||
+newRoomCode()` for the code, `inviteUrl(code)` for the link to share. An invite carries
+only `?room=`; never the sender's name, `debug`, `manual` or `lead` (an invitee must
+not become the party's lead). The hub builds its links with `playUrl()`.
 
 `orientation: 'horizontal' | 'vertical' | 'libre'` (default `libre`) is how the game
 wants a phone held. Racing games (Derrape, Galope) are horizontal; Cocina, Escondidas and

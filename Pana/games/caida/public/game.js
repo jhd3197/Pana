@@ -1,11 +1,13 @@
 import { loadName, loadAvatar } from '/engine/avatar.js';
 import { createGameMenu, toggleMute } from '/engine/ui.js';
+import { fillRoster } from '/engine/results.js';
+import { inviteUrl, newRoomCode, roomFromUrl } from '/engine/invite.js';
 import { CaidaRoom } from './network.js';
 import { CaidaGame, canto, chooseMove, previewPlay, teamOf, cardName, MODES } from './rules.js';
 import { cardButton } from './cards.js';
 
 const $ = id => document.getElementById(id), params = new URLSearchParams(location.search);
-const code = (params.get('room') || Math.random().toString(36).slice(2, 8)).slice(0, 24);
+const code = roomFromUrl() || newRoomCode();
 params.set('room', code); history.replaceState(null, '', `${location.pathname}?${params}`);
 let world = null, ready = false, stopped = false, selected = null, previousEvent = 0, shownResult = '', resultTimer, toastTimer, announcementTimer;
 const audio = { muted: false, volume: .8, unlocked: false, impl: null,
@@ -33,7 +35,7 @@ const menu = createGameMenu({ title: 'Caída · Pana', sound: audio,
     'En dos parejas, tu compañero se sienta enfrente y comparten puntos y cartas recogidas. Los puestos vacíos los juegan bots. Un pana nuevo toma un puesto de bot; los demás observan hasta que haya espacio.',
   ],
   actions: [{ id: 'new-table', label: 'Abrir otra mesa', run: () => { location.href = '/g/caida/'; } }],
-  invite: () => `${location.origin}${location.pathname}?room=${encodeURIComponent(code)}`,
+  invite: () => inviteUrl(code),
   canOpen: () => !$('result').open,
 });
 $('game-nav').append(menu.createInviteButton({ id: 'invite', className: 'pk-btn' }), menu.createButton({ id: 'menu', className: 'pk-btn' }));
@@ -125,12 +127,10 @@ function renderResult(state) {
   $('result-kicker').textContent = state.phase === 'finished' ? 'PARTIDA TERMINADA' : `REPARTO ${state.round} · CUENTA LAS CARTAS`;
   $('result-title').textContent = state.phase === 'finished' ? won ? '¡Esa partida es tuya!' : '¡Vamos por la revancha!' : 'Vamos a contar.';
   $('result-description').textContent = state.phase === 'finished' ? `Se alcanzaron los 24 puntos. ${state.result.reason}.` : `Cada carta por encima de ${state.result.baseline} suma un punto. La última recogida se lleva las sobrantes.`;
-  $('result-details').replaceChildren();
-  state.scores.forEach((score, team) => {
-    const row = document.createElement('div'), title = document.createElement('div'), small = document.createElement('small'), points = document.createElement('b'); row.className = `result-detail pk-row${room.seat >= 0 && team === teamOf(state, room.seat) ? ' is-me' : ''}`;
-    title.textContent = state.players.filter(p => teamOf(state, p.seat) === team).map(p => p.name).join(' + ');
-    small.textContent = `${state.result.counts[team] || 0} cartas${state.result.bonuses.length ? ` · +${state.result.bonuses[team]} al contar` : ''}`; title.append(small); points.textContent = `${score} / 24`; row.append(title, points); $('result-details').append(row);
-  });
+  fillRoster($('result-details'), state.scores.map((score, team) => ({
+    className: 'result-detail', me: room.seat >= 0 && team === teamOf(state, room.seat), end: `${score} / 24`, score: true,
+    name: state.players.filter(p => teamOf(state, p.seat) === team).map(p => p.name).join(' + '),
+    detail: `${state.result.counts[team] || 0} cartas${state.result.bonuses.length ? ` · +${state.result.bonuses[team]} al contar` : ''}` })));
   $('next-round').disabled = !room.isHost || !room.connected; $('next-round').textContent = !room.isHost ? 'El anfitrión reparte' : state.phase === 'finished' ? 'Jugar la revancha →' : 'Siguiente reparto →';
 }
 function showResult() { if (!['round-over', 'finished'].includes(room.state.phase)) return; menu.close(); if (!$('result').open) $('result').showModal(); }

@@ -12,6 +12,8 @@ import { TRACKS, getTrack, makeTrack } from './tracks.js';
 import { roughnessAt,roadGripAt,roadWaterAt } from './offroad.js';
 import { loadAvatar, loadName, randomAvatar } from '/engine/avatar.js';
 import { createGameMenu, toggleMute } from '/engine/ui.js';
+import { inviteUrl, newRoomCode, roomFromUrl } from '/engine/invite.js';
+import { fillRoster } from '/engine/results.js';
 import { holdButton } from '/engine/touch.js';
 import { pixelRatio, bindRenderer } from '/engine/settings.js';
 import { shout } from '/engine/kit.js';
@@ -39,7 +41,7 @@ const DEBUG = QS.has('debug');
 const ME = { name: loadName(), avatar: loadAvatar() };
 // ?room=<code> races online with panas (online.js); without it the race is local.
 // ?lead=1 marks the party's Pana Mayor, who hosts the room.
-const ROOM = (QS.get('room') || '').replace(/[^a-z0-9-]/gi, '').slice(0, 24);
+const ROOM = roomFromUrl();
 let net = null;
 
 const LINES = {
@@ -267,7 +269,7 @@ $('play').onclick = () => {
   if (net) { if (net.isHost) net.start(); return; }
   if (!joining) startRace(garage.index, garage.wheel);
 };
-$('go-online').onclick = () => { sound.unlock(); goOnline(newCode(), true); };
+$('go-online').onclick = () => { sound.unlock(); goOnline(newRoomCode(), true); };
 $('lobby-invite').onclick = () => menu.share();
 $('lobby-bots').onchange = (e) => net?.bots(e.target.checked);
 $('lobby-solo').onclick = () => { location.href = location.pathname; };
@@ -1283,10 +1285,13 @@ function renderResults(order, player) {
     return `<li style="--c:${color};--h:${h}px;--w:${w}px"><span class="who">${who(c)}</span>`
       + `<span class="name">${esc(c.name)}</span><b class="place">${i + 1}</b></li>`;
   }).join('');
-  $('result-board').innerHTML = order.map((c, i) =>
-    `<li class="pk-row${c === player ? ' is-me' : ''}"><span class="pk-row-n">${i + 1}</span><span class="chip" style="--c:${c.def.color}"></span>${esc(c.name)}`
-    + `<span class="pk-row-end${c.done ? '' : ' running'}">${c.done ? clockText(c.time) : `vuelta ${Math.min(LAPS, Math.max(1, c.lap))}/${LAPS}`}</span></li>`
-  ).join('');
+  fillRoster($('result-board'), order.map((c, i) => {
+    const chip = document.createElement('span');
+    chip.className = 'chip';
+    chip.style.setProperty('--c', c.def.color);
+    return { rank: i + 1, lead: chip, name: c.name, me: c === player,
+      end: c.done ? clockText(c.time) : `vuelta ${Math.min(LAPS, Math.max(1, c.lap))}/${LAPS}` };
+  }));
 }
 
 
@@ -1443,9 +1448,7 @@ function updateResultActions(s) {
 }
 
 function inviteLink() {
-  const link = new URL(location.pathname, location.origin);
-  link.searchParams.set('room', net?.code || ROOM || newCode());
-  return link.href;
+  return inviteUrl(net?.code || ROOM || newRoomCode());
 }
 
 let joining = null;
@@ -1489,12 +1492,6 @@ async function goOnline(code, lead) {
     return net;
   })();
   return joining;
-}
-
-// The room code: six letters and digits, nothing that reads two ways.
-function newCode() {
-  const abc = 'abcdefghjkmnpqrstuvwxyz23456789';
-  return Array.from({ length: 6 }, () => abc[Math.floor(Math.random() * abc.length)]).join('');
 }
 
 // ======================================================================

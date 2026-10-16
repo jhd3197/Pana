@@ -1,4 +1,5 @@
 import { createGameMenu } from '/engine/ui.js';
+import { inviteUrl, newRoomCode, playUrl } from '/engine/invite.js';
 
 const gamesEl = document.getElementById('games');
 const roomsEl = document.getElementById('rooms');
@@ -44,12 +45,8 @@ function playerName() {
   return nameInput.value.trim() || 'pana';
 }
 
-function newRoomCode() {
-  return Math.random().toString(36).slice(2, 8);
-}
-
 function gameUrl(game, room) {
-  return `${game.url}?room=${encodeURIComponent(room)}&name=${encodeURIComponent(playerName())}`;
+  return playUrl(game.url, room, playerName());
 }
 
 let games = [];
@@ -136,7 +133,7 @@ document.getElementById('create-room').addEventListener('click', async (e) => {
   const room = newRoomCode();
   const btn = e.currentTarget;
   try {
-    await navigator.clipboard.writeText(`${location.origin}${feat.url}?room=${room}`);
+    await navigator.clipboard.writeText(inviteUrl(room, feat.url));
     btn.textContent = '¡Link copiado!';
   } catch { /* no clipboard, the game can still invite */ }
   setTimeout(() => { location.href = gameUrl(feat, room); }, 350);
@@ -178,7 +175,7 @@ async function loadRooms() {
       const info = el('div', 'room-info');
       info.append(el('b', null, `${game ? shortName(game) : room.game} · ${room.players}/${room.max}`), el('span', 'names', room.names.join(', ')));
       const join = el('a', null, 'Unirse →');
-      join.href = `/g/${room.game}/?room=${encodeURIComponent(room.room)}&name=${encodeURIComponent(playerName())}`;
+      join.href = playUrl(`/g/${room.game}/`, room.room, playerName());
       join.setAttribute('aria-label', `Unirse a la sala ${room.room} de ${game?.name || room.game}`);
       row.append(bar, info, join);
       roomsEl.appendChild(row);

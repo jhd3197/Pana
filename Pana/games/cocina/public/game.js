@@ -5,6 +5,8 @@ import { canvasMat } from '/engine/models/core/primitives.js';
 import { food } from '/engine/models/props/kitchen.js';
 import { sound } from '/engine/fx.js';
 import { createGameMenu, toggleMute } from '/engine/ui.js';
+import { fillRoster } from '/engine/results.js';
+import { inviteUrl, newRoomCode, roomFromUrl } from '/engine/invite.js';
 import { holdButton } from '/engine/touch.js';
 import { shout } from '/engine/kit.js';
 import { pixelRatio, bindRenderer } from '/engine/settings.js';
@@ -13,7 +15,7 @@ import { KitchenRoom } from './network.js';
 import { createKitchenScene, mealModel } from './scene.js';
 
 const $ = id => document.getElementById(id), show = (id, v) => $(id).classList.toggle('hidden', !v);
-const qs = new URLSearchParams(location.search), code = (qs.get('room') || Math.random().toString(36).slice(2, 8)).slice(0, 24);
+const qs = new URLSearchParams(location.search), code = roomFromUrl() || newRoomCode();
 const url = new URL(location.href); url.searchParams.set('room', code); history.replaceState(null, '', url);
 await Promise.race([document.fonts.load('900 48px Nunito'), new Promise(resolve => setTimeout(resolve, 1200))]);
 const avatar = loadAvatar(), name = loadName();
@@ -58,7 +60,7 @@ const menu = createGameMenu({
   tips: ['Busca un cajón de ingredientes, déjalos en una tabla y recoge la preparación. Llévala al fogón; cuando esté verde, recoge el plato y sírvelo en el mostrador.',
     'La mesa «Para tu pana» permite pasar platos.'],
   actions: [{ id: 'offline', label: 'Abrir cocina local', kind: 'link', visible: () => canGoOffline, run: () => room.practice() }],
-  invite() { const share = new URL(location.href); share.searchParams.delete('debug'); share.searchParams.delete('name'); return share.href; },
+  invite: () => inviteUrl(code),
   onOpen() { paused = true; keys.clear(); touch.clear(); },
   onClose() { paused = false; },
 });
@@ -176,13 +178,8 @@ function updateUI() {
     $('result-stars').textContent = '★'.repeat(stars(state.score)) + '☆'.repeat(3 - stars(state.score));
     $('result-copy').textContent = state.served ? `La plaza se fue contenta. ${state.burnt ? `Se quemaron ${state.burnt} platos; en el próximo turno salen mejor.` : '¡Y ningún plato quemado!'} Estrellas: 350 / 850 / 1500 puntos.` : 'El secreto es recoger, preparar, cocinar y servir. ¡Vamos otra vez!';
     $('result-score').textContent = state.score; $('result-served').textContent = state.served; $('result-missed').textContent = state.missed;
-    $('result-team').replaceChildren();
-    state.players.forEach((p, i) => {
-      const row = document.createElement('li'); row.className = `pk-row${p.id === room.id ? ' is-me' : ''}`;
-      const b = document.createElement('span'); b.textContent = `${p.name}${p.bot ? ' (ayudante)' : ''}`;
-      const end = document.createElement('span'); end.className = 'pk-row-end'; end.textContent = `${p.deliveries} platos servidos`;
-      row.append(chip(i, p), b, end); $('result-team').append(row);
-    });
+    fillRoster($('result-team'), state.players.map((p, i) => ({
+      lead: chip(i, p), name: `${p.name}${p.bot ? ' (ayudante)' : ''}`, end: `${p.deliveries} platos servidos`, me: p.id === room.id })));
   }
 }
 function interact() { if (!paused && state.phase === 'playing') room.action('interact'); }

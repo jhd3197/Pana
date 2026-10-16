@@ -258,7 +258,6 @@ body:has(#loading:not(.hidden)) #garage { visibility: hidden; }
 .res-table .pk-row.is-me { background: var(--pk-yellow); }
 .res-table .pk-row-n { width: 22px; font-size: 16px; color: inherit; }
 .res-table .pk-row-end { font-size: 14px; color: inherit; font-variant-numeric: tabular-nums; }
-.res-table .pk-row:not(.is-me) .pk-row-end.running { color: var(--pk-muted); }
 .res-coins { display: flex; align-items: center; gap: 12px; padding: 14px 18px; border-color: #63552f; }
 .res-coins .coin-symbol { width: 30px; height: 34px; font-size: 18px; }
 .result p.result-coins { margin: 0; color: #ffdf72; font-size: 14px; font-weight: 800; }

@@ -1,12 +1,14 @@
 import { loadName, loadAvatar } from '/engine/avatar.js';
 import { createGameMenu, toggleMute } from '/engine/ui.js';
+import { fillRoster } from '/engine/results.js';
+import { inviteUrl, newRoomCode, roomFromUrl } from '/engine/invite.js';
 import { DominoRoom } from './network.js';
 import { legalEnds, legalMoves, chooseMove, pips, TARGET } from './rules.js';
 import { domino } from './tiles.js';
 
 const $ = id => document.getElementById(id);
 const params = new URLSearchParams(location.search);
-const code = (params.get('room') || Math.random().toString(36).slice(2, 8)).slice(0, 24);
+const code = roomFromUrl() || newRoomCode();
 params.set('room', code); history.replaceState(null, '', `${location.pathname}?${params}`);
 const name = loadName(), avatar = loadAvatar();
 let selected = null, shownResult = '', toastTimer, previousEvent = '', previousPhase = 'lobby';
@@ -47,7 +49,7 @@ const menu = createGameMenu({
     'La primera pareja en llegar a 100 gana la partida. El anfitrión reparte cada nueva mano.',
     'Los panas que llegan toman un puesto de bot con sus fichas actuales. Si se van, un bot sigue. Con cuatro puestos ocupados, los demás observan.',
   ],
-  invite: () => `${location.origin}${location.pathname}?room=${encodeURIComponent(code)}`,
+  invite: () => inviteUrl(code),
   canOpen: () => !$('result').open,
 });
 $('game-nav').append(menu.createInviteButton({ id: 'invite', className: 'pk-btn' }), menu.createButton({ id: 'menu', className: 'pk-btn' }));
@@ -206,12 +208,8 @@ function renderResult(state, team) {
   for (const [text, tag] of [['Ustedes', 'span'], [state.scores[team], 'b'], ['—', 'span'], [state.scores[1 - team], 'b'], ['Rivales', 'span']]) {
     const node = document.createElement(tag); node.textContent = text; $('result-score').append(node);
   }
-  $('result-hands').replaceChildren();
-  for (const player of state.players) {
-    const row = document.createElement('div'), title = document.createElement('strong'), points = document.createElement('span');
-    row.className = `pk-row${player.seat === room.seat ? ' is-me' : ''}`; points.className = 'pk-row-end';
-    title.textContent = player.name; points.textContent = `${player.hand.length} fichas · ${pips(player.hand)} puntos`; row.append(title, points); $('result-hands').append(row);
-  }
+  fillRoster($('result-hands'), state.players.map(player => ({
+    name: player.name, end: `${player.hand.length} fichas · ${pips(player.hand)} puntos`, me: player.seat === room.seat })));
   $('next-round').textContent = !room.isHost ? 'El anfitrión reparte la siguiente' : state.phase === 'finished' ? 'Jugar la revancha →' : 'Siguiente mano →';
   $('next-round').disabled = !room.isHost || !room.connected;
 }

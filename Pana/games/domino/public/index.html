@@ -66,7 +66,7 @@
       </div>
     </section>
   </main>
-  <dialog id="result" class="result-layer" aria-labelledby="result-title" hidden><div class="result-card pk-modal"><span id="result-eyebrow" class="pk-ribbon">MANO TERMINADA</span><h2 id="result-title" class="pk-title pk-title--yellow"></h2><p id="result-description" class="pk-copy"></p><div id="result-score" class="result-score"></div><div id="result-hands" class="result-hands pk-roster"></div><button id="next-round" class="pk-btn pk-btn--primary pk-btn--block">Siguiente mano →</button><button id="review-table" class="pk-btn pk-btn--ghost pk-btn--block">Ver la mesa</button></div></dialog>
+  <dialog id="result" class="result-layer" aria-labelledby="result-title" hidden><div class="result-card pk-modal pk-results-card"><span id="result-eyebrow" class="pk-ribbon">MANO TERMINADA</span><h2 id="result-title" class="pk-title pk-title--yellow"></h2><p id="result-description" class="pk-copy"></p><div id="result-score" class="result-score"></div><div id="result-hands" class="result-hands pk-roster"></div><button id="next-round" class="pk-btn pk-btn--primary pk-btn--block">Siguiente mano →</button><button id="review-table" class="pk-btn pk-btn--ghost pk-btn--block">Ver la mesa</button></div></dialog>
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
   <script type="module">import('./game.js').catch(error => { console.error(error); document.getElementById('loading-copy').textContent = 'No pudimos abrir la mesa. Revisa tu conexión y recarga.'; });</script>
 </body>

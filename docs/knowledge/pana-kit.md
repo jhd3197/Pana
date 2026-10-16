@@ -36,7 +36,8 @@ the same tokens.
 | `pk-seg` | Segmented choice; on = `aria-pressed/aria-checked="true"`, `.is-on`, or a checked radio inside a label |
 | `pk-switch` | Toggle (`role="switch" aria-checked`) |
 | `pk-bar` (`--pk-value`, `--pk-bar-color`, `--stripes`), `pk-pips` | Progress |
-| `pk-roster` > `pk-row` (`.is-me`, `pk-row-n`, `pk-row-end`), `pk-avatar` | Standings and player lists |
+| `pk-roster` > `pk-row` (`.is-me`, `pk-row-n`, `pk-row-name` + `<small>`, `pk-row-end`, `pk-row-score`), `pk-avatar` | Standings and player lists; build rows with `fillRoster()` from `engine/results.js` |
+| `pk-results` > `pk-modal pk-results-card` | End-of-round screen (see "Results screen" below) |
 | `pk-slots` > `pk-slot` (`.is-active`, `pk-slot-n`, `pk-slot-count`) | Inventory |
 | `pk-banner(--yellow/--teal)`, `pk-pop` | Tilted shout; `shout(text)` in kit.js |
 | `pk-hints` | Bottom-right key reminders (also mark `data-pana-hint`) |
@@ -75,3 +76,40 @@ right, at the bottom edge, in both orientations.
   button with a `pk-kbd`) bottom-center, key hints bottom-right. Shouts
   in the upper middle.
 - **Pause / settings:** the shared menu; do not build one.
+- **Results:** the shared results screen below; do not build one.
+
+## Results screen
+
+Every game ends a round on the same card: a dimmed layer over the scene with one
+`pk-modal pk-results-card`. Inside, in this order: a `pk-ribbon` (or `pk-eyebrow`),
+the `pk-title`, a `pk-copy` line, then `pk-stats` and/or a `pk-roster` of standings,
+the primary button (`Otra vez`, `Siguiente ronda →`…) and a way back to the hub.
+
+```html
+<section id="results" class="pk-results hidden" aria-labelledby="result-title">
+  <div class="pk-modal pk-results-card">
+    <span class="pk-ribbon">Ronda terminada</span>
+    <h2 id="result-title" class="pk-title">¡Bien escondidos!</h2>
+    <p class="pk-copy">…</p>
+    <ol id="result-board" class="pk-roster"></ol>
+    <button id="again" class="pk-btn pk-btn--primary pk-btn--block">Otra vez</button>
+    <a class="pk-back" href="/">← Todos los juegos</a>
+  </div>
+</section>
+```
+
+```js
+import { fillRoster } from '/engine/results.js';
+fillRoster($('result-board'), order.map((p, i) => ({
+  rank: i + 1, name: p.name, detail: 'A salvo', end: p.score, score: true, me: p.id === room.id,
+})));
+```
+
+Rows are built from text only, so names never become HTML. Row fields: `rank`,
+`lead` (a node before the name, such as a colour chip or a face), `name`, `detail`
+(small line under the name), `end` (right side; `score: true` shows it big), `me`,
+`className`. A game tunes the layer with `--pk-results-z`, `--pk-results-top` and
+`--pk-results-dim` instead of restyling it. A game that already opens its results as
+a modal `<dialog>` (Caída, Dominó) keeps the dialog and puts `pk-results-card` on
+the card. Derrape (podium) and Bululú (medals and portraits) keep their own layouts
+but follow the same order of pieces.
