@@ -7,7 +7,7 @@
 // all trees and leafy plants use the /engine/models/vegetation/ builders.
 
 import * as THREE from 'three';
-import { M, mesh, box, tube, canvasMat } from './car-kit.js';
+import { M, mesh, box, tube, canvasMat } from '/engine/models/vehicles/car-kit.js';
 import { rng } from '/engine/models/core/primitives.js';
 import { woodSign as mapSign } from '/engine/models/props/wood-sign.js';
 import { watchtower } from '/engine/models/props/watchtower.js';

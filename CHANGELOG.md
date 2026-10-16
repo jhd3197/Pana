@@ -41,6 +41,9 @@ becomes the GitHub release's notes.
   mummy counts and freeze when she turns; hide as a barrel to sneak closer.
 - **¡Coleo! comes to Bululú.** Chase bulls down the manga on horseback, get
   right behind one and pull its tail to tumble it; most bulls wins.
+- **¡Choque de carritos! brings the Derrape karts to Bululú.** Bump the others
+  off a platform over the sea while its edge falls away. On phones, minigames
+  that move in every direction show a d-pad.
 - **Race Derrape online with up to 8 panas.** Open a room from the garage or a
   shared link; each pana drives their own car, bots fill the grid, and the room
   keeps the order, finish times and results in sync.

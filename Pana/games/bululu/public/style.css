@@ -407,6 +407,8 @@ body.in-mini .look, body.in-mini .side, body.in-mini .legend { display: none; }
     z-index: 4;
   }
   /* the buttons themselves are the kit's .pk-touch */
+  body.in-mini .touch-2d { align-items: flex-end; }
+  body.in-mini.mini-2d .touch-1d, body.in-mini:not(.mini-2d) .touch-2d { display: none; }
 }
 
 /* narrower screens: smaller cards between the logo and the right column */

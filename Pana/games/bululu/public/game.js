@@ -11,6 +11,7 @@ import caigas from './minigames/caigas.js';
 import caida from './minigames/caida.js';
 import momia from './minigames/momia.js';
 import coleo from './minigames/coleo.js';
+import choque from './minigames/choque.js';
 import { SKY_MODES } from './atmosphere.js';
 import * as rules from './rules.js';
 import { ICONS as SVG } from '/engine/icons.js';
@@ -35,7 +36,7 @@ const AUTO = QS.has('auto');
 const SPEED = Number(QS.get('speed')) || 1;
 let ROUNDS = Math.max(1, Math.min(20, Number(QS.get('rounds')) || 10));   // the lobby can change it
 const DEBUG = QS.has('debug');
-const MINIGAMES = [atrapa, caigas, caida, momia, coleo];
+const MINIGAMES = [atrapa, caigas, caida, momia, coleo, choque];
 const nextMinigame = rules.minigameBag(MINIGAMES);
 const FORCED = MINIGAMES.find((m) => m.id === QS.get('mini'));
 const ONLY = MINIGAMES.find((m) => m.id === QS.get('play'));
@@ -301,7 +302,8 @@ addEventListener('keydown', (e) => {
   const k = e.key.toLowerCase();
   if (k === ' ' || k.startsWith('arrow')) e.preventDefault();
   held[k] = true;
-  if (!e.repeat && (k === ' ' || k === 'w' || k === 'arrowup')) jumpPressed = true;
+  // in 2D minigames W / ↑ drive forward, so only Space is the action
+  if (!e.repeat && (k === ' ' || (!mini2d() && (k === 'w' || k === 'arrowup')))) jumpPressed = true;
   if (k === 'm' && !e.repeat) toggleMute();
   if (k === 'l' && !e.repeat && view === boardView) {
     selectSky(SKY_MODES[(SKY_MODES.indexOf(board.atmosphere.mode) + 1) % SKY_MODES.length]);
@@ -317,15 +319,19 @@ addEventListener('pointerdown', () => sound.unlock(), { once: false });
 
 // on-screen buttons for touch screens during minigames
 // (engine/touch.js: a finger sliding off the button still lets go)
-for (const [id, key] of [['t-left', 'a'], ['t-right', 'd'], ['t-jump', ' ']]) {
+for (const [id, key] of [['t-left', 'a'], ['t-right', 'd'], ['t-jump', ' '], ['t2-up', 'w'], ['t2-down', 's'], ['t2-left', 'a'], ['t2-right', 'd'], ['t2-go', ' ']]) {
   holdButton($(id), { down: () => { held[key] = true; if (key === ' ') jumpPressed = true; }, up: () => { held[key] = false; } });
 }
 
+// 1D minigames get { x, jump }; a module with `input: '2d'` also gets z (W/S, ↑/↓)
+const mini2d = () => mini?.def.input === '2d';
 function minigameInput() {
   const x = (held.d || held.arrowright ? 1 : 0) - (held.a || held.arrowleft ? 1 : 0);
   const jump = jumpPressed;
   jumpPressed = false;
-  return { x, jump };
+  if (!mini2d()) return { x, jump };
+  const z = (held.w || held.arrowup ? 1 : 0) - (held.s || held.arrowdown ? 1 : 0);
+  return { x, z, jump };
 }
 
 // ======================================================================
@@ -339,6 +345,7 @@ const ICONS = {
   card: SVG.card.replace('pk-ico', 'ico'),
   relic: SVG.relic.replace('pk-ico', 'ico'),
   bull: SVG.bull.replace('pk-ico', 'ico'),
+  car: SVG.car.replace('pk-ico', 'ico'),
 };
 
 let cardMode = 'board';
@@ -821,10 +828,11 @@ async function playMinigame(def) {
   miniIcon = def.icon;
   cardMode = 'mini';
   renderCards();
-  mini = { game, state: 'wait', left: def.time };
+  mini = { def, game, state: 'wait', left: def.time };
   game.update(0.0001, { x: 0, jump: false });
   view = { scene: game.scene, camera: game.camera, update: () => {} };
   document.body.classList.add('in-mini');
+  document.body.classList.toggle('mini-2d', def.input === '2d');
   setTimer(def.time);
 
   for (const n of ['3', '2', '1']) {

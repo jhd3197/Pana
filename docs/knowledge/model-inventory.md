@@ -394,14 +394,14 @@ The following list is generated, not manually copied. “In use” is the catalo
 
 | Name / ID | Status / games | Source | Constructor |
 | --- | --- | --- | --- |
-| El Chamo · car-chamo | Derrape | [cars.js](../../Pana/games/derrape/public/cars.js) | CARS.find(c => c.id === 'chamo').build |
-| La Lancha · car-lancha | Derrape | [cars.js](../../Pana/games/derrape/public/cars.js) | CARS.find(c => c.id === 'lancha').build |
-| El Machito · car-machito | Derrape | [cars.js](../../Pana/games/derrape/public/cars.js) | CARS.find(c => c.id === 'machito').build |
-| La Bala · car-bala | Derrape | [cars.js](../../Pana/games/derrape/public/cars.js) | CARS.find(c => c.id === 'bala').build |
-| El Toro · car-toro | Derrape | [cars.js](../../Pana/games/derrape/public/cars.js) | CARS.find(c => c.id === 'toro').build |
-| La Familiar · car-familiar | Derrape | [cars.js](../../Pana/games/derrape/public/cars.js) | CARS.find(c => c.id === 'familiar').build |
-| La Rumbera · car-rumbera | Derrape | [cars.js](../../Pana/games/derrape/public/cars.js) | CARS.find(c => c.id === 'rumbera').build |
-| El Montañero · car-montanero | Derrape | [cars.js](../../Pana/games/derrape/public/cars.js) | CARS.find(c => c.id === 'montanero').build |
+| El Chamo · car-chamo | Derrape, Bululú | [cars.js](../../Pana/engine/models/vehicles/cars.js) | CAR_BUILDERS.chamo |
+| La Lancha · car-lancha | Derrape, Bululú | [cars.js](../../Pana/engine/models/vehicles/cars.js) | CAR_BUILDERS.lancha |
+| El Machito · car-machito | Derrape, Bululú | [cars.js](../../Pana/engine/models/vehicles/cars.js) | CAR_BUILDERS.machito |
+| La Bala · car-bala | Derrape, Bululú | [cars.js](../../Pana/engine/models/vehicles/cars.js) | CAR_BUILDERS.bala |
+| El Toro · car-toro | Derrape, Bululú | [cars.js](../../Pana/engine/models/vehicles/cars.js) | CAR_BUILDERS.toro |
+| La Familiar · car-familiar | Derrape, Bululú | [cars.js](../../Pana/engine/models/vehicles/cars.js) | CAR_BUILDERS.familiar |
+| La Rumbera · car-rumbera | Derrape, Bululú | [cars.js](../../Pana/engine/models/vehicles/cars.js) | CAR_BUILDERS.rumbera |
+| El Montañero · car-montanero | Derrape, Bululú | [cars.js](../../Pana/engine/models/vehicles/cars.js) | CAR_BUILDERS.montanero |
 
 ### Vestuario (5)
 

@@ -18,7 +18,7 @@ try {
   assert.deepEqual(ids, ['estadio', 'desierto', 'llanos', 'chichi', 'selva', 'paramo', 'plaza', 'bululu']);
   const accessoryError = await page.evaluate(async () => {
     const THREE = await import('three');
-    const { detachable } = await import('./car-kit.js');
+    const { detachable } = await import('/engine/models/vehicles/car-kit.js');
     const accessory = new THREE.Group();
     const part = new THREE.Mesh(new THREE.BoxGeometry(0.8,0.9,0.3));
     part.position.set(0.2,0.1,0); accessory.add(part);

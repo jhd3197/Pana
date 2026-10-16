@@ -2150,10 +2150,11 @@
       "id": "car-chamo",
       "name": "El Chamo",
       "category": "Vehículos",
-      "source": "Pana/games/derrape/public/cars.js",
-      "factory": "CARS.find(c => c.id === 'chamo').build",
+      "source": "Pana/engine/models/vehicles/cars.js",
+      "factory": "CAR_BUILDERS.chamo",
       "usedBy": [
-        "Derrape"
+        "Derrape",
+        "Bululú"
       ],
       "status": "in-use"
     },
@@ -2161,10 +2162,11 @@
       "id": "car-lancha",
       "name": "La Lancha",
       "category": "Vehículos",
-      "source": "Pana/games/derrape/public/cars.js",
-      "factory": "CARS.find(c => c.id === 'lancha').build",
+      "source": "Pana/engine/models/vehicles/cars.js",
+      "factory": "CAR_BUILDERS.lancha",
       "usedBy": [
-        "Derrape"
+        "Derrape",
+        "Bululú"
       ],
       "status": "in-use"
     },
@@ -2172,10 +2174,11 @@
       "id": "car-machito",
       "name": "El Machito",
       "category": "Vehículos",
-      "source": "Pana/games/derrape/public/cars.js",
-      "factory": "CARS.find(c => c.id === 'machito').build",
+      "source": "Pana/engine/models/vehicles/cars.js",
+      "factory": "CAR_BUILDERS.machito",
       "usedBy": [
-        "Derrape"
+        "Derrape",
+        "Bululú"
       ],
       "status": "in-use"
     },
@@ -2183,10 +2186,11 @@
       "id": "car-bala",
       "name": "La Bala",
       "category": "Vehículos",
-      "source": "Pana/games/derrape/public/cars.js",
-      "factory": "CARS.find(c => c.id === 'bala').build",
+      "source": "Pana/engine/models/vehicles/cars.js",
+      "factory": "CAR_BUILDERS.bala",
       "usedBy": [
-        "Derrape"
+        "Derrape",
+        "Bululú"
       ],
       "status": "in-use"
     },
@@ -2194,10 +2198,11 @@
       "id": "car-toro",
       "name": "El Toro",
       "category": "Vehículos",
-      "source": "Pana/games/derrape/public/cars.js",
-      "factory": "CARS.find(c => c.id === 'toro').build",
+      "source": "Pana/engine/models/vehicles/cars.js",
+      "factory": "CAR_BUILDERS.toro",
       "usedBy": [
-        "Derrape"
+        "Derrape",
+        "Bululú"
       ],
       "status": "in-use"
     },
@@ -2205,10 +2210,11 @@
       "id": "car-familiar",
       "name": "La Familiar",
       "category": "Vehículos",
-      "source": "Pana/games/derrape/public/cars.js",
-      "factory": "CARS.find(c => c.id === 'familiar').build",
+      "source": "Pana/engine/models/vehicles/cars.js",
+      "factory": "CAR_BUILDERS.familiar",
       "usedBy": [
-        "Derrape"
+        "Derrape",
+        "Bululú"
       ],
       "status": "in-use"
     },
@@ -2216,10 +2222,11 @@
       "id": "car-rumbera",
       "name": "La Rumbera",
       "category": "Vehículos",
-      "source": "Pana/games/derrape/public/cars.js",
-      "factory": "CARS.find(c => c.id === 'rumbera').build",
+      "source": "Pana/engine/models/vehicles/cars.js",
+      "factory": "CAR_BUILDERS.rumbera",
       "usedBy": [
-        "Derrape"
+        "Derrape",
+        "Bululú"
       ],
       "status": "in-use"
     },
@@ -2227,10 +2234,11 @@
       "id": "car-montanero",
       "name": "El Montañero",
       "category": "Vehículos",
-      "source": "Pana/games/derrape/public/cars.js",
-      "factory": "CARS.find(c => c.id === 'montanero').build",
+      "source": "Pana/engine/models/vehicles/cars.js",
+      "factory": "CAR_BUILDERS.montanero",
       "usedBy": [
-        "Derrape"
+        "Derrape",
+        "Bululú"
       ],
       "status": "in-use"
     },

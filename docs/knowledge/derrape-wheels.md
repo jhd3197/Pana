@@ -33,7 +33,7 @@ grip floor when `roadGripAt` reports wet (0..1).
 
 ## Visual path
 
-- Car builders in `cars.js` accept an optional `wheel` spec (`build(avatar, wheel)`);
+- Car builders in `/engine/models/vehicles/cars.js` accept an optional `wheel` spec (`build(avatar, wheel)`);
   `rig()` already parametrizes hub height (`steer.position.y = wheel.r`) and
   `game.js` spins wheels by `car.radius`, so radius changes need no extra wiring.
 - `calle.wheel = null` means "keep the car's own spec" — Estadio parked cars and

@@ -147,4 +147,13 @@ flow bugs and check balance.
   behind and ±0.65 m across, bull swerving at 3.4 m/s every 1–1.9 s, a new bull
   18 m ahead: about 8 tumbles a game. `stats()` reports grabs, misses, bulls and
   time anyone was in reach.
+- **2D minigames** export `input: '2d'`: `minigameInput()` adds `z` (W/S, ↑/↓),
+  W stops being jump for them, and the body gets `mini-2d`, which swaps the
+  left/jump/right touch row for the kit's `.pk-dpad` plus an action button.
+- **¡Choque de carritos!** steers screen-relative (the d-pad points where the
+  kart should go, and it turns toward that), not like a car: with a fixed top-down
+  camera, relative steering fights the d-pad. The karts are
+  `/engine/models/vehicles/cars.js` `CAR_BUILDERS` at 0.72 scale; Derrape's
+  `cars.js` joins them to its stats. A kart that drops credits whoever drove
+  into it in the last 3 s. Simulated: ~17 knockouts per 45 s game.
 

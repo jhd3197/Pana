@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { paintNext } from './loading.js';
-import { makeWheel } from './car-kit.js';
+import { makeWheel } from '/engine/models/vehicles/car-kit.js';
 
 // Render each actual car once. Eight static thumbnails share one short-lived
 // renderer, so the selector never runs eight extra WebGL scenes every frame.
