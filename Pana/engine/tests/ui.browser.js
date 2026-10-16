@@ -21,7 +21,7 @@ try {
   await page.locator('#pana-set-quality [data-value="baja"]').click();
   await page.locator('#pana-set-hints').click();
   assert.deepEqual(await page.evaluate(() => JSON.parse(localStorage.getItem('pana:settings'))),
-    { sound: false, volume: 0.8, quality: 'baja', hints: false });
+    { sound: false, volume: 0.8, quality: 'baja', hints: false, orientation: 'juego' });
   await page.keyboard.press('Escape');
   assert.equal(await page.locator('#pana-menu-dialog').evaluate(d => d.open), false);
   check('hub settings save sound, resolution and hints');
