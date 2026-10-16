@@ -10,6 +10,13 @@ becomes the GitHub release's notes.
 
 ### Added
 
+- **New game: Curiara, race dugout canoes down the Amazonas.**
+  Paddle with A and D in rhythm (no throttle): alternate to go straight,
+  stroke the same side twice to turn and hit the gold sweet spot for a
+  ¡Remazo!. Up to 8 panas, bots fill the river.
+- **Contributors have a phased roadmap for Derrape Grand Prix and four new water maps.**
+  Plan 56 specifies three four-race cups, online championship continuity,
+  shared scenery and verification across 22 implementation phases.
 - **New game: ¡Embuste!, find the mummy among your panas at the camp.**
   Do chores until dawn while one or two secret mummies wrap panas, slip
   through hollow logs, pose as barrels and sabotage the camp. Report the
