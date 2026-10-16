@@ -1,3 +1,5 @@
+// A llanero horse with riding tack and the player's pana in the saddle.
+// Shared by Galope and Bululú's ¡Coleo! minigame. Faces +Z, metres.
 import * as THREE from 'three';
 import { llaneroHorse } from '/engine/models/fauna/farm/llanero-horse.js';
 import { buildCharacter } from '/engine/models/characters/pana/avatar-model.js';

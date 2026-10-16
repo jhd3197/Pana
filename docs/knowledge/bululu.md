@@ -134,4 +134,17 @@ flow bugs and check balance.
   Speed 1.8 over an 18.5-unit causeway, counts 0.8–2.2 s and looks of 1.4–2.4 s
   give ~19 s games. No fake turn right after another: two in a row let the
   whole field sprint home in 7 s.
+- **¡Coleo!** scrolls the world, not the camera: everything has a forward
+  distance `s` drawn at `z = -(s - anchor)`, and fences, palms and grass recycle
+  every 240 m. That's why `sunnyStage` takes `decor: false` (its fixed palms
+  would ride along). The bull is `hatoCow({locomotion: true})`: the farm rig now
+  builds running legs for cows as well as horses, keeping the udder and belly
+  on the body. The rider is `/engine/models/fauna/farm/llanero-rider.js`.
+- **¡Coleo! balance** (simulated, 100 games): pushing overlapping horses only
+  sideways froze the riders in their starting left-to-right row, and the end
+  seats won 2–3× as often. Near the bull, the horse farther from its line now
+  drops back instead, so riders cut behind each other. Tail window 2.5–3.9 m
+  behind and ±0.65 m across, bull swerving at 3.4 m/s every 1–1.9 s, a new bull
+  18 m ahead: about 8 tumbles a game. `stats()` reports grabs, misses, bulls and
+  time anyone was in reach.
 

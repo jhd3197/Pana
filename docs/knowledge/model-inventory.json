@@ -2641,11 +2641,11 @@
     },
     {
       "name": "Mounted horse and riding tack",
-      "source": "Pana/games/galope/public/rider.js",
+      "source": "Pana/engine/models/fauna/farm/llanero-rider.js",
       "anchor": "function createRider",
-      "where": "Galope; hub tile",
+      "where": "Galope, Bululú coleo; hub tile",
       "note": "Shared horse and saved pana with game-local saddle, stirrups and reins; not a duplicate animal sculpt.",
-      "line": 7
+      "line": 9
     },
     {
       "name": "Horse course and distinct wetlands",

@@ -10,7 +10,7 @@ import {RaceRoom} from './network.js';
 import {standings} from './rules.js';
 import {at,angle,wrap,nearest,samples,LENGTH,LAPS,groundAt,waterDepth,WATER_Y,WETLANDS,JUMPS,sector,formatTime} from './course.js';
 import {createRaceScene} from './scene.js';
-import {createRider} from './rider.js';
+import {createRider} from '/engine/models/fauna/farm/llanero-rider.js';
 import {createHorseWaterFX} from './water-fx.js';
 
 const $=id=>document.getElementById(id),params=new URLSearchParams(location.search),avatar=loadAvatar(),name=loadName();

@@ -42,7 +42,7 @@ export const uncataloged=[
 ];
 export const assemblies=[
   record('Reliquia mine and temple','Pana/games/reliquia/public/scene.js','function createExpeditionWorld','Reliquia; Studio map','Authored walkable mine, swept shared bridge, timed winches, crypt, relic chamber and return tunnel. Five expedition models are cataloged independently.'),
-  record('Mounted horse and riding tack','Pana/games/galope/public/rider.js','function createRider','Galope; hub tile','Shared horse and saved pana with game-local saddle, stirrups and reins; not a duplicate animal sculpt.'),
+  record('Mounted horse and riding tack','Pana/engine/models/fauna/farm/llanero-rider.js','function createRider','Galope, Bululú coleo; hub tile','Shared horse and saved pana with game-local saddle, stirrups and reins; not a duplicate animal sculpt.'),
   record('Horse course and distinct wetlands','Pana/games/galope/public/scene.js','function createCourse','Galope; Studio map','Shared terrain/water grid, clipped riding trail, irregular lagoon with island, winding estero, jump logs, start gantry and trail markers. Shared models counted separately.'),
   record('Galope living Llanos landscape','Pana/games/galope/public/landscape.js','function addLandscape','Galope; Studio map','Hato gathering places, bank-connected canoe landing, moriche groves, green/dry grass, shore-only reeds and continuous far plain. All 13 new models have individual Studio previews.'),
   record('Selva pyramid',race('tracks/selva-world'),'function pyramid','Selva','Stepped landmark outside the driving tunnel.'),

@@ -12,8 +12,9 @@ import { rock } from '/engine/models/props/rock.js';
 export const rand = (a, b) => a + Math.random() * (b - a);
 export const pick = (list) => list[Math.floor(Math.random() * list.length)];
 
-// Daylight sky, sun with shadows, distant green mountains.
-export function sunnyStage(scene, { ground = 0xd9a46c, grass = true, sky = 0x7cc6f2, horizon = 0xfde2b0 } = {}) {
+// Daylight sky, sun with shadows, distant green mountains. `decor: false` skips
+// the nearby palms and rocks (for scenes whose ground scrolls past the camera).
+export function sunnyStage(scene, { ground = 0xd9a46c, grass = true, sky = 0x7cc6f2, horizon = 0xfde2b0, decor = true } = {}) {
   const h = new THREE.Color(horizon);
   scene.background = h;
   scene.fog = new THREE.Fog(h, 60, 200);
@@ -49,13 +50,13 @@ export function sunnyStage(scene, { ground = 0xd9a46c, grass = true, sky = 0x7cc
     m.castShadow = false;
     scene.add(m);
   }
-  for (let i = 0; i < 10; i++) {
+  for (let i = 0; decor && i < 10; i++) {
     const a = Math.PI * (0.1 + 0.8 * r());
     const p = palm({ h: 6 + r() * 4, seed: 70 + i });
     p.position.set(Math.cos(a) * (24 + r() * 10), 0, -Math.sin(a) * (22 + r() * 8) + 2);
     scene.add(p);
   }
-  for (let i = 0; i < 6; i++) {
+  for (let i = 0; decor && i < 6; i++) {
     const rk = rock(0.6 + r() * 1.2, 0x9a93a0, i + 20);
     rk.position.set((r() - 0.5) * 50, 0, -12 - r() * 10);
     scene.add(rk);

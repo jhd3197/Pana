@@ -61,7 +61,8 @@ race still uses its established recovery corridor and shallow-water rules.
 
 ## Rendering and ownership
 
-`rider.js` mounts the shared saved character on `llaneroHorse`. The opt-in
+`/engine/models/fauna/farm/llanero-rider.js` mounts the shared saved character
+on `llaneroHorse` (Bululú's coleo uses it too). The opt-in
 `locomotion` rig adds upper/lower limb bones without changing the default grazing
 rig or cached sculpt template. `gallop(phase,speed,jump)` poses the actual skinned
 mesh; the game accumulates gait phase. Models own geometry/skeletons and release

@@ -39,6 +39,8 @@ becomes the GitHub release's notes.
   Minigames now come up shuffled instead of always in the same order.
 - **¡Un, dos, tres, momia! joins Bululú.** Run for the relic while the temple
   mummy counts and freeze when she turns; hide as a barrel to sneak closer.
+- **¡Coleo! comes to Bululú.** Chase bulls down the manga on horseback, get
+  right behind one and pull its tail to tumble it; most bulls wins.
 - **Race Derrape online with up to 8 panas.** Open a room from the garage or a
   shared link; each pana drives their own car, bots fill the grid, and the room
   keeps the order, finish times and results in sync.

@@ -99,21 +99,25 @@ export function makeAnimal(species,sculpt,{seed=7,coat,locomotion=false}={}) {
   const skin=new THREE.SkinnedMesh(geometry,new THREE.MeshStandardMaterial({vertexColors:true,roughness:.86}));
   skin.name='AnimalSkin';skin.castShadow=true;skin.receiveShadow=true;skin.add(root);shape.add(skin);
   const bones=[root,neck,head],legs=[];
-  // Opt-in riding rig. Default Studio/grazing animals retain their original skin.
-  if(horse&&locomotion){
+  // Opt-in running rig (the horse for riding, the cow for Bululú's coleo).
+  // Default Studio/grazing animals retain their original skin.
+  const legRig=horse?{x:.25,hip:1.15,front:.49,rear:-.59,knee:[[0,-.59,.04],[0,-.59,-.14]],cut:1.18,from:.88,low:[.44,.66],inner:0}
+    :cow?{x:.28,hip:.98,front:.47,rear:-.6,knee:[[0,-.42,-.07],[0,-.4,-.18]],cut:1,from:.74,low:[.46,.6],inner:.17}:null;
+  if(legRig&&locomotion){
     for(const front of [true,false])for(const side of [-1,1]){
       const upper=new THREE.Bone(),lower=new THREE.Bone();
       upper.name=`${front?'Front':'Rear'}${side<0?'Left':'Right'}Leg`;
       lower.name=`${upper.name}Lower`;
-      upper.position.set(side*.25,1.15,front?.49:-.59);
-      lower.position.set(0,-.59,front?.04:-.14);
+      upper.position.set(side*legRig.x,legRig.hip,front?legRig.front:legRig.rear);
+      lower.position.set(...legRig.knee[front?0:1]);
       root.add(upper);upper.add(lower);legs.push({upper,lower,front,side,index:bones.length});bones.push(upper,lower);
     }
     const indices=geometry.attributes.skinIndex,weights=geometry.attributes.skinWeight;
     for(let i=0;i<p.count;i++){
-      const y=p.getY(i);if(y>=1.18)continue;
+      // The cow's udder and belly sit between its legs: keep them on the body.
+      const y=p.getY(i);if(y>=legRig.cut||Math.abs(p.getX(i))<legRig.inner||source.tags[i]==='udder')continue;
       const leg=legs.find(l=>l.front===(p.getZ(i)>0)&&l.side===(p.getX(i)<0?-1:1));
-      const influence=1-smoothstep(.88,1.18,y),lower=1-smoothstep(.44,.66,y);
+      const influence=1-smoothstep(legRig.from,legRig.cut,y),lower=1-smoothstep(...legRig.low,y);
       indices.setXYZW(i,0,leg.index,leg.index+1,0);weights.setXYZW(i,1-influence,influence*(1-lower),influence*lower,0);
     }
   }
