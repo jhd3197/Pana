@@ -30,8 +30,10 @@ export function serveStatic(res, baseDir, relPath) {
     // phones at once. The ETag lets an unchanged file answer that check with a 304.
     const etag = `"${st.size.toString(36)}-${Math.floor(st.mtimeMs).toString(36)}"`;
     const headers = { ETag: etag, 'Cache-Control': 'no-cache' };
+    // A proxy that compresses (Caddy on pana.sh) hands the tag back as W/"…-gzip".
     const asked = res.req?.headers['if-none-match'];
-    if (asked && asked.split(',').some(tag => tag.trim().replace(/^W\//, '') === etag)) {
+    const same = tag => tag.trim().replace(/^W\//, '').replace(/-(gzip|zstd|br)"$/, '"') === etag;
+    if (asked && asked.split(',').some(same)) {
       res.writeHead(304, headers).end();
       return;
     }
