@@ -10,8 +10,10 @@ import { shout } from '/engine/kit.js';
 import { pixelRatio, bindRenderer } from '/engine/settings.js';
 import { OnlineNight, PracticeNight } from './network.js';
 import { createCampWorld, groundAt } from './scene.js';
-import { zoneAt, FIRE, ZONES, BOUNDS, STATIONS } from './layout.js';
-import { mummyCount, MIN_PLAYERS } from './rules.js';
+import { zoneAt, zoneById, FIRE, ZONES, BOUNDS, STATIONS, REACH, stationById, distance } from './layout.js';
+import { mummyCount, MIN_PLAYERS, taskById } from './rules.js';
+import { openTask, HINTS } from './tasks.js';
+import { setBar } from '/engine/kit.js';
 
 const $ = id => document.getElementById(id), show = (id, on) => $(id).classList.toggle('hidden', !on);
 const qs = new URLSearchParams(location.search), code = roomFromUrl() || newRoomCode();
@@ -130,6 +132,13 @@ function enterPhase(next) {
   updateLobby();
 }
 function handleEvent(e) {
+  if (e.kind === 'task') {
+    if (openPanel) closeTask(false);
+    if (e.complete) { sound.tone(660, 0, 0.12, 'sine', 0.07); sound.tone(990, 0.1, 0.16, 'sine', 0.06); notify(e.fake ? 'Fingiste la tarea. Nadie lo notó… ¿o sí?' : '¡Tarea lista!'); }
+    else if (e.fake) notify('Fingiste la tarea. Nadie lo notó… ¿o sí?');
+    else notify('Primera parte lista. Sigue con la segunda.');
+  }
+  if (e.kind === 'visual') sound.tone(520, 0, 0.3, 'triangle', 0.05);
   if (e.kind === 'night') shout('¡Cayó la noche!', { tone: 'yellow' });
   if (e.kind === 'left') notify(`${e.name} se fue del campamento${e.role === 'momia' ? ': era una momia.' : '.'}`);
   if (e.kind === 'end') sound.tone(e.winner === 'panas' ? 660 : 160, 0, 0.6, 'triangle', 0.08);
@@ -170,12 +179,70 @@ function updateLobby() {
   $('again').textContent = host ? 'Otra noche' : 'Esperando al anfitrión…';
 }
 
+const myPose = () => view?.players.find(q => q.seat === view.me.seat);
+let tasksKey = '';
 function updateHud() {
   const p = me(); if (!p) return;
-  const mine = view.players.find(q => q.seat === p.seat);
+  const mine = myPose();
   if (mine) $('zone').textContent = zoneAt(mine).name;
   if (view.phase === 'ended') showResults();
+  if (view.phase !== 'playing') { closeTask(false); return; }
+  const mummy = p.role === 'momia';
+  $('objective').textContent = p.ghost ? 'Sigue ayudando, momiita' : mummy ? 'Finge que trabajas' : 'Mantén la reliquia encendida';
+  const key = p.tasks.map(t => `${t.id}:${t.step}:${mine && !t.done && distance(mine, stationById(t.station)) < REACH + 1 ? 1 : 0}`).join('|');
+  if (key !== tasksKey) {
+    tasksKey = key;
+    $('task-list').replaceChildren(...p.tasks.map(t => {
+      const li = document.createElement('li'), s = stationById(t.station), near = mine && !t.done && distance(mine, s) < REACH + 1;
+      li.className = t.done ? 'is-done' : near ? 'is-near' : '';
+      li.append(document.createTextNode(t.steps > 1 && !t.done ? `${t.name} (${t.step + 1}/${t.steps})` : t.name));
+      const where = document.createElement('small'); where.textContent = zoneById(s.zone).name.replace(/^(La|El|Los|Las) /, ''); li.append(where);
+      return li;
+    }));
+    mapStations = new Set(p.tasks.filter(t => !t.done).map(t => t.station));
+    world.mark(mapStations);
+  }
+  setBar($('dawn-bar'), view.bar.total ? view.bar.done / view.bar.total : 0);
+  const use = useTarget();
+  $('use').disabled = !use; $('use-label').textContent = use?.label || 'Usar';
+  if (openPanel && !p.task && performance.now() - openPanel.opened > 1500) closeTask(false);
 }
+
+// What E does here, nearest first: your task, (later) hiding, vents, the bell.
+function useTarget() {
+  const p = me(), mine = myPose(); if (!p || !mine || openPanel) return null;
+  const t = p.tasks.filter(t => !t.done).map(t => ({ t, s: stationById(t.station) })).filter(({ s }) => distance(mine, s) <= REACH)
+    .sort((a, b) => distance(mine, a.s) - distance(mine, b.s))[0];
+  if (t) return { label: t.t.name, run: () => startTask(t.t) };
+  return null;
+}
+
+// ---------- the task panel ----------
+let openPanel = null;
+function startTask(t) {
+  if (openPanel) return;
+  net.act('task', { station: t.station });
+  const s = stationById(t.station), def = taskById(t.id);
+  $('task-title').textContent = def.name; $('task-where').textContent = zoneById(s.zone).name;
+  $('task-hint').textContent = HINTS[t.id] || '';
+  show('task', true); clearInput();
+  const panel = { station: t.station, opened: performance.now(), sent: 0 };
+  panel.dispose = openTask(t.id, $('task-body'), { step: t.step, done: () => finishTask(panel) });
+  openPanel = panel;
+}
+function finishTask(panel) {
+  if (openPanel !== panel) return;
+  panel.finished = true;
+  // The room only accepts a chore after its least time; keep asking until it closes.
+  const send = () => { if (openPanel !== panel) return; net.act('done', { station: panel.station }); panel.retry = setTimeout(send, 350); };
+  send();
+}
+function closeTask(cancel = true) {
+  if (!openPanel) return;
+  if (cancel && !openPanel.finished) net.act('cancel');
+  clearTimeout(openPanel.retry); openPanel.dispose(); openPanel = null; show('task', false);
+}
+$('task-close').onclick = () => closeTask(true);
 
 function showResults() {
   const e = view.ending; if (!e) return;
@@ -198,7 +265,7 @@ function showResults() {
 
 // ---------- input ----------
 function input() {
-  if (paused || view?.phase !== 'playing') return { x: 0, z: 0, hold: false };
+  if (paused || openPanel || view?.phase !== 'playing') return { x: 0, z: 0, hold: false };
   const x = +(keys.has('d') || keys.has('arrowright') || touch.has('right')) - +(keys.has('a') || keys.has('arrowleft') || touch.has('left'));
   const z = +(keys.has('s') || keys.has('arrowdown') || touch.has('down')) - +(keys.has('w') || keys.has('arrowup') || touch.has('up'));
   return { x, z, hold: keys.has('e') || touch.has('use') };
@@ -208,10 +275,12 @@ addEventListener('keydown', e => {
   const key = e.key.toLowerCase(); if ([' ', 'arrowup', 'arrowdown', 'arrowleft', 'arrowright'].includes(key)) e.preventDefault();
   keys.add(key); if (e.repeat) return;
   if (key === 'm') toggleMute();
+  if (key === 'e' && !openPanel) useTarget()?.run();
 });
 addEventListener('keyup', e => keys.delete(e.key.toLowerCase())); addEventListener('blur', clearInput); document.addEventListener('visibilitychange', clearInput);
 for (const button of document.querySelectorAll('[data-move]')) holdButton(button, { paused: () => paused, down: () => touch.add(button.dataset.move), up: () => touch.delete(button.dataset.move) });
 
+holdButton($('use'), { paused: () => paused, down: () => { touch.add('use'); if (!openPanel) useTarget()?.run(); }, up: () => touch.delete('use') });
 $('start').onclick = () => net?.start();
 $('again').onclick = () => net?.start();
 $('to-lobby').onclick = () => net?.toLobby();
@@ -283,4 +352,5 @@ addEventListener('pagehide', () => {
   actors.forEach(removeActor); world.dispose(); renderer.dispose();
 });
 if (qs.has('debug')) window.embuste = { scene, camera, renderer, actors, world, menu, input,
+  use: () => useTarget()?.run(), solve: () => openPanel && finishTask(openPanel), get panel() { return openPanel; },
   get net() { return net; }, get view() { return view; }, get lobby() { return lobby; } };

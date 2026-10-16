@@ -82,14 +82,25 @@ export class PracticeNight extends Emitter {
   connect() {
     this.emit('lobby', this.lobby);
     this.emit('status', 'Práctica en este navegador · bots en el campamento');
-    this.timer = setInterval(() => this.tick(0.05), 50);
+    // Real elapsed time in 50 ms steps: a busy page still runs the night at speed.
+    let last = performance.now();
+    this.timer = setInterval(() => {
+      const now = performance.now(); let dt = Math.min(0.5, (now - last) / 1000); last = now;
+      for (; dt > 0.001; dt -= 0.05) this.tick(Math.min(0.05, dt), false);
+      this.publish();
+    }, 50);
     return true;
   }
 
-  tick(dt) {
+  tick(dt, publish = true) {
     const night = this.night, inputs = new Map([[1, this.paused ? { x: 0, z: 0 } : this.current]]);
     if (night.inRound() && !this.paused) this.brains.think(dt, inputs);
     if (!this.paused) night.update(dt, inputs);
+    if (publish) this.publish();
+  }
+
+  publish() {
+    const night = this.night;
     if (this.lobby.phase !== night.phase || this.lobby.round !== night.round) {
       this.lobby = { ...this.lobby, phase: night.phase, round: night.round };
       this.emit('lobby', this.lobby);

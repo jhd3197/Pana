@@ -103,3 +103,103 @@ test('walls stop the living, not the ghosts', () => {
   for (let i = 0; i < 20; i++) g.update(0.05, new Map([[1, { x: 0, z: -1 }]]));
   assert.ok(p.z < -12, 'a ghost floats through');
 });
+
+// ---------- tasks ----------
+import { TASKS, TASKS_EACH, taskById } from '../public/rules.js';
+import { stationById } from '../public/layout.js';
+
+// Put `p` at a station, start its task there and wait the least time.
+function work(g, p, station, { wait = true } = {}) {
+  const s = stationById(station); Object.assign(p, { x: s.x, z: s.z + 1.2 });
+  const started = g.act(p.seat, 'task', { station });
+  if (wait) g.update(10);
+  return started && g.act(p.seat, 'done', { station });
+}
+// Give `p` exactly these tasks.
+const give = (p, ...ids) => { p.tasks = ids.map(id => ({ id, step: 0 })); };
+
+test('everyone gets a task list, mummies too (to pretend)', () => {
+  const g = night(6, 4);
+  for (const p of g.players.values()) {
+    assert.equal(p.tasks.length, TASKS_EACH);
+    assert.equal(new Set(p.tasks.map(t => t.id)).size, TASKS_EACH, 'no chore twice');
+  }
+  assert.equal(g.bar().total, TASKS_EACH * 5, 'only the five panas fill the bar');
+});
+
+test('a task counts once, at its station, after its least time', () => {
+  const g = night(5, 4), p = panas(g)[0];
+  give(p, 'agua', 'radio');
+  const s = stationById('agua');
+  Object.assign(p, { x: 0, z: 4 });
+  assert.equal(g.act(p.seat, 'task', { station: 'agua' }), false, 'too far from the poza');
+  Object.assign(p, { x: s.x, z: s.z + 1.2 });
+  assert.equal(g.act(p.seat, 'task', { station: 'malacate' }), false, 'not a station on the list');
+  assert.equal(g.act(p.seat, 'task', { station: 'agua' }), true);
+  assert.equal(g.act(p.seat, 'done', { station: 'agua' }), false, 'too fast');
+  g.update(taskById('agua').seconds * g.timers.task);
+  const before = g.bar().done;
+  assert.equal(g.act(p.seat, 'done', { station: 'agua' }), true);
+  assert.equal(g.bar().done, before + 1);
+  assert.equal(g.act(p.seat, 'done', { station: 'agua' }), false, 'no second time');
+  assert.equal(work(g, p, 'agua'), false, 'a finished chore stays finished');
+  assert.equal(g.bar().done, before + 1);
+});
+
+test('working holds you in place; cancelling lets you go', () => {
+  const g = night(5, 4), p = panas(g)[0];
+  give(p, 'radio');
+  const s = stationById('radio'); Object.assign(p, { x: s.x, z: s.z - 1.2 });
+  g.act(p.seat, 'task', { station: 'radio' });
+  g.update(0.5, new Map([[p.seat, { x: -1, z: 0 }]]));
+  assert.equal(p.x, s.x);
+  g.act(p.seat, 'cancel');
+  g.update(0.5, new Map([[p.seat, { x: -1, z: 0 }]]));
+  assert.ok(p.x < s.x);
+});
+
+test('momiitas still add progress; mummies never do', () => {
+  const g = night(6, 9), [p] = panas(g), [m] = mummies(g);
+  give(p, 'arepas'); give(m, 'arepas');
+  const before = g.bar().done;
+  assert.equal(work(g, m, 'arepas'), true, 'the mummy can fake it');
+  assert.equal(g.bar().done, before, 'faking adds nothing');
+  assert.ok(g.view(m.seat).events.some(e => e.kind === 'task' && e.fake));
+  p.alive = false;
+  assert.equal(work(g, p, 'arepas'), true, 'a momiita keeps working');
+  assert.equal(g.bar().done, before + 1);
+});
+
+test('provisiones takes two stations, in order', () => {
+  const g = night(5, 3), p = panas(g)[0];
+  give(p, 'provisiones');
+  assert.equal(work(g, p, 'prov-cocina'), false, 'the kitchen comes second');
+  assert.equal(work(g, p, 'prov-muelle'), true);
+  assert.equal(g.bar().done, 0, 'half a task is not a task');
+  assert.equal(work(g, p, 'prov-cocina'), true);
+  assert.equal(p.tasks[0].step, 2);
+});
+
+test('only someone who can see the winch sees it turn', () => {
+  const g = night(5, 3), [doer, near, far] = panas(g);
+  give(doer, 'malacate');
+  const s = stationById('malacate');
+  Object.assign(near, { x: s.x + 3, z: s.z + 3 }); Object.assign(far, { x: 0, z: 4 });
+  const since = g.eventId;
+  assert.equal(work(g, doer, 'malacate'), true);
+  assert.ok(g.view(near.seat, since).events.some(e => e.kind === 'visual'), 'a pana nearby sees it');
+  assert.ok(!g.view(far.seat, since).events.some(e => e.kind === 'visual'), 'the fogata does not');
+  assert.ok(g.view(near.seat).world.winch > 0);
+  assert.equal(g.view(far.seat).world.winch, undefined);
+});
+
+test('a full dawn bar wins for the panas', () => {
+  const g = night(4, 6);
+  for (const p of panas(g)) give(p, 'agua');
+  for (const p of panas(g)) work(g, p, 'agua');
+  assert.deepEqual(g.ending, { winner: 'panas', reason: 'tasks' });
+});
+
+test('every chore has a station on the map', () => {
+  for (const t of TASKS) for (const s of t.stations) assert.ok(stationById(s), `${t.id} → ${s}`);
+});

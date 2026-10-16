@@ -151,12 +151,13 @@ function graph(state = {}) {
   graphs.set(k, nodes); return nodes;
 }
 function nearestNode(p, state) {
-  const nodes = graph(state), cx = Math.round(p.x), cz = Math.round(p.z);
+  // A target inside furniture (a station) takes the closest node, seen or not.
+  const nodes = graph(state), cx = Math.round(p.x), cz = Math.round(p.z), open = walkable(p.x, p.z, state, 0.3);
   for (let r = 0; r < 6; r++) {
     let best = null, d = Infinity;
     for (let x = cx - r; x <= cx + r; x++) for (let z = cz - r; z <= cz + r; z++) {
       const n = nodes.get(key(x, z)); if (!n) continue;
-      const nd = distance(p, n); if (nd < d && lineClear(p, n, state, 0.3)) { best = n; d = nd; }
+      const nd = distance(p, n); if (nd < d && (!open || lineClear(p, n, state, 0.3))) { best = n; d = nd; }
     }
     if (best) return best;
   }
