@@ -9,6 +9,7 @@ import { RIVER, SEA, MAP_BOUNDS, beachMask } from './island.js';
 import atrapa from './minigames/atrapa.js';
 import caigas from './minigames/caigas.js';
 import caida from './minigames/caida.js';
+import momia from './minigames/momia.js';
 import { SKY_MODES } from './atmosphere.js';
 import * as rules from './rules.js';
 import { ICONS as SVG } from '/engine/icons.js';
@@ -33,7 +34,7 @@ const AUTO = QS.has('auto');
 const SPEED = Number(QS.get('speed')) || 1;
 let ROUNDS = Math.max(1, Math.min(20, Number(QS.get('rounds')) || 10));   // the lobby can change it
 const DEBUG = QS.has('debug');
-const MINIGAMES = [atrapa, caigas, caida];
+const MINIGAMES = [atrapa, caigas, caida, momia];
 const nextMinigame = rules.minigameBag(MINIGAMES);
 const FORCED = MINIGAMES.find((m) => m.id === QS.get('mini'));
 const ONLY = MINIGAMES.find((m) => m.id === QS.get('play'));
@@ -335,6 +336,7 @@ const ICONS = {
   mango: MANGO_SVG,
   jump: '<i class="ico jump">⤒</i>',
   card: SVG.card.replace('pk-ico', 'ico'),
+  relic: SVG.relic.replace('pk-ico', 'ico'),
 };
 
 let cardMode = 'board';

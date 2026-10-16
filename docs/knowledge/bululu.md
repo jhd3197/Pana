@@ -126,4 +126,12 @@ flow bugs and check balance.
   are unreadable at a party-game camera distance.
 - **Spanish cards** live in `/engine/models/props/spanish-cards.js`, shared with
   Caída.
+- **¡Un, dos, tres, momia! tuning** (simulated, 150 games): AI reactions must be
+  timed from when she *starts* turning, not from the current state's clock. The
+  turn → watch hand-off resets `stateT`, and an AI that re-reacts there runs
+  straight into a catch. Freezing takes ~0.1 s (velocity eases at 20/s), the
+  grace is 0.4 s, AI reacts in 0.12–0.26 s with a 10% chance of being late.
+  Speed 1.8 over an 18.5-unit causeway, counts 0.8–2.2 s and looks of 1.4–2.4 s
+  give ~19 s games. No fake turn right after another: two in a row let the
+  whole field sprint home in 7 s.
 
