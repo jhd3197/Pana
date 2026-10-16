@@ -1,3 +1,4 @@
+import { TRACK_DEFINITIONS } from '../track-definitions.js';
 // An Andean ascent: lower meadows, glacial lake and the cable-car summit.
 import { THREE,terrain,put,foundation,scatter,instances,edges,clear,smooth,boulder } from './world-kit.js';
 import { frailejon } from '/engine/models/vegetation/frailejon.js';
@@ -8,8 +9,7 @@ import { ROUTE,roadHeight,baseHeight,LAKE } from './paramo-layout.js';
 import { waterPool } from '/engine/models/effects/water-surface.js';
 
 export default {
-  id:'paramo',name:'Pana Páramo',
-  blurb:'Sube entre frailejones, enlaza las horquillas de la laguna y corona el teleférico.',
+  ...TRACK_DEFINITIONS.find(track => track.id === 'paramo'),
   points:ROUTE,rounded:true,hw:8.5,lineU:.04,elevation:roadHeight,
   previewBounds:[[-440,0,-425],[400,240,285]],
   sectors:[[0,'Prado de frailejones'],[.23,'Las herraduras'],[.45,'Laguna del cielo'],[.67,'Estación cumbre'],[.84,'Bajada del cóndor']],

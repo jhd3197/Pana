@@ -9,9 +9,9 @@
 
 import { getSettings, setSettings, onSettings, bindSound, QUALITY } from './settings.js';
 
-const STYLESHEET = '/engine/ui.css';
-if (!document.querySelector(`link[href="${STYLESHEET}"]`)) {
-  const link = document.createElement('link'); link.rel = 'stylesheet'; link.href = STYLESHEET; document.head.append(link);
+for (const href of ['/engine/kit.css', '/engine/ui.css']) {
+  if (document.querySelector(`link[href="${href}"]`)) continue;
+  const link = document.createElement('link'); link.rel = 'stylesheet'; link.href = href; document.head.append(link);
 }
 // [data-pana-hint] marks keyboard reminders the player can hide in Ajustes.
 onSettings(s => document.documentElement.classList.toggle('pana-no-hints', !s.hints));

@@ -1,10 +1,10 @@
+import { TRACK_DEFINITIONS } from '../track-definitions.js';
 // A street race through a complete town, from the historic plaza to the hill.
 import { ROUTE, townHeight } from './plaza-layout.js';
 import { createTown, raceEdges } from './plaza-town.js';
 
 export default {
-  id: 'plaza', name: 'Plaza Pana',
-  blurb: 'Del casco histórico a Casas Botes: cruza el gran puente del lago y vuelve por el mirador.',
+  ...TRACK_DEFINITIONS.find(track => track.id === 'plaza'),
   points: ROUTE, rounded: true, hw: 9, lineU: 0.075,
   elevation: townHeight,
   previewBounds: [[-355, 0, -355], [720, 80, 490]],

@@ -38,6 +38,14 @@ export function createRequestHandler(rooms, startedAt) {
       return serveStatic(res, config.paths.engine, pathname.slice('/engine/'.length));
     }
 
+    // Studio has addressable pages; only known UI routes receive its shell.
+    if (/^\/studio(?:\/|\/library\/?|\/workspace\/?|\/assets\/[^/]+\/?)?$/.test(pathname)) {
+      return serveStatic(res, config.paths.web, 'studio.html');
+    }
+    if (/^\/studio\/(settings|guide)\/?$/.test(pathname)) {
+      return serveStatic(res, config.paths.web, `studio/${pathname.split('/')[2]}.html`);
+    }
+
     // Hub frontend
     return serveStatic(res, config.paths.web, pathname.slice(1) || 'index.html');
   };

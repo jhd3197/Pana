@@ -1,10 +1,10 @@
+import { TRACK_DEFINITIONS } from '../track-definitions.js';
 // Pana Selva: a river valley with a ruined temple passage under the jungle.
 import { jungleHeight } from './selva-layout.js';
 import { createJungle, jungleScenery } from './selva-world.js';
 
 export default {
-  id:'selva',name:'Pana Selva',
-  blurb:'Corre entre ceibas y bambúes, cruza el río de los mangles y entra al túnel del jaguar entre flores y ruinas.',
+  ...TRACK_DEFINITIONS.find(track => track.id === 'selva'),
   points:[[-76,28],[-40,60],[15,65],[65,30],[85,-30],[145,-45],[185,0],[230,-15],[270,-80],[240,-145],
     [175,-155],[120,-115],[70,-145],[25,-210],[-45,-225],[-115,-180],[-120,-105],[-85,-65],[-110,-15]],
   rounded:true,hw:9,lineU:0.06,elevation:jungleHeight,

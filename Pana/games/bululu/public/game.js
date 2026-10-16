@@ -26,7 +26,7 @@ const pick = (list) => list[Math.floor(Math.random() * list.length)];
 const QS = new URLSearchParams(location.search);
 const AUTO = QS.has('auto');
 const SPEED = Number(QS.get('speed')) || 1;
-const ROUNDS = Math.max(1, Math.min(20, Number(QS.get('rounds')) || 10));
+let ROUNDS = Math.max(1, Math.min(20, Number(QS.get('rounds')) || 10));   // the lobby can change it
 const DEBUG = QS.has('debug');
 const MINIGAMES = [atrapa, caigas];
 const FORCED = MINIGAMES.find((m) => m.id === QS.get('mini'));
@@ -78,6 +78,7 @@ const board = createBoard(boardScene, { skyMode });
 function selectSky(mode, save = true) {
   if (!SKY_MODES.includes(mode)) return;
   board.atmosphere.setMode(mode);
+  for (const b of $('sky').children) b.setAttribute('aria-pressed', String(b.dataset.sky === mode));
   if (save) try { localStorage.setItem('pana.bululu.sky', mode); } catch { /* Keep the selection for this session. */ }
 }
 
@@ -95,7 +96,9 @@ const menu = createGameMenu({
   onOpen() { paused = true; for (const k in held) held[k] = false; },
   onClose() { paused = false; },
 });
-$('top-actions').prepend(menu.createButton({ id: 'menu', className: 'menu-button' }));
+$('top-actions').prepend(menu.createButton({ id: 'menu', className: 'pk-btn menu-button' }));
+for (const b of $('sky').children) b.onclick = () => selectSky(b.dataset.sky);
+selectSky(board.atmosphere.mode, false);
 const puffs = new Puffs(boardScene);
 // two dice, plus a floating counter for the steps left once they're rolled
 const dice = [createDie(), createDie()];
@@ -196,7 +199,7 @@ function setFreeLook(on) {
     cam.look.copy(looker.target);
   }
   $('look').classList.toggle('on', on);
-  $('look').innerHTML = on ? 'Volver <kbd>Tab</kbd>' : 'Ver tablero <kbd>Tab</kbd>';
+  $('look').innerHTML = `${on ? 'Volver' : 'Ver tablero'} <kbd class="pk-kbd" data-pana-hint>Tab</kbd>`;
   if (!on) $('places').value = '';
 }
 $('look').onclick = () => setFreeLook(!freeLook);
@@ -361,13 +364,14 @@ function renderCards() {
   $('cards').innerHTML = players.map((p) => {
     const crown = cardMode === 'board' ? r[p.i] === 1 && (p.mangos || p.coins !== START_COINS) : best > 0 && miniScores[p.i] === best;
     const stats = cardMode === 'board'
-      ? `<span>${ICONS.mango}<b>${p.mangos}</b></span><span>${ICONS.coin}<b>${p.coins}</b></span>`
+      ? `<span class="coins">${ICONS.coin}<b>${p.coins}</b></span><span class="mangos">${ICONS.mango}<b>${p.mangos}</b></span>`
       : `<span class="big">${ICONS[miniIcon]}<b>${miniScores[p.i]}</b></span>`;
     return `<div class="pcard${turnOf === p.i ? ' turn' : ''}" style="--c:${p.color}">
       ${cardMode === 'board' ? `<span class="medal m${r[p.i]}">${r[p.i]}</span>` : ''}
       ${crown ? '<span class="crown">👑</span>' : ''}
+      ${turnOf === p.i ? `<span class="tag">${p.human ? 'Tu turno' : 'Turno'}</span>` : ''}
       <img src="${p.portrait || ''}" alt="">
-      <div class="info"><small>P${p.i + 1} · ${escapeHtml(p.name)}</small><div class="vals">${stats}</div></div>
+      <div class="info"><small>${escapeHtml(p.name)}</small><div class="vals">${stats}</div></div>
     </div>`;
   }).join('');
 }
@@ -395,7 +399,8 @@ async function toast(title, sub = '', secs = 1.4, kind = '') {
 function ask(text, options, { auto = 0, delay = 0.5 } = {}) {
   const el = $('prompt');
   el.innerHTML = `<p>${text}</p><div class="row">${options.map((o, i) =>
-    `<button data-i="${i}" class="${i === 0 ? 'primary' : ''}">${o.label}${o.key ? ` <kbd>${o.key === ' ' ? 'Espacio' : o.key.toUpperCase()}</kbd>` : ''}</button>`).join('')}</div>`;
+    `<button data-i="${i}" class="pk-btn${i === 0 ? ' pk-btn--primary primary' : ''}">${o.label}${o.key ? ` <kbd class="pk-kbd" data-pana-hint>${o.key === ' ' ? 'Espacio' : o.key.toUpperCase()}</kbd>` : ''}</button>`).join('')}</div>`;
+  el.classList.toggle('bare', !text);
   el.classList.remove('hidden');
   return new Promise((resolve) => {
     const done = (i) => {
@@ -792,7 +797,7 @@ async function takeTurn(p) {
   });
   tk.pin.visible = false;
   sound.unlock();
-  if (isHuman(p)) await ask('¡Tira los dados!', [{ label: '¡Tirar!', key: ' ' }]);
+  if (isHuman(p)) await ask('', [{ label: '¡Tira los dados!', key: ' ' }]);
   else await wait(0.9);
   const roll = () => 1 + Math.floor(Math.random() * 6);
   const a = roll(), b = roll(), n = a + b;
@@ -834,7 +839,7 @@ async function playMinigame(def) {
   setSign(def.title);
   $('mini-title').textContent = def.title;
   $('mini-howto').textContent = def.howto;
-  $('mini-keys').innerHTML = def.keys.map(([k, what]) => `<span><kbd>${k}</kbd> ${what}</span>`).join('');
+  $('mini-keys').innerHTML = def.keys.map(([k, what]) => `<span><kbd class="pk-kbd">${k}</kbd> ${what}</span>`).join('');
   $('mini-intro').classList.remove('hidden');
   if (isHuman(me)) await ask('', [{ label: '¡Listo!', key: ' ' }]);
   else await wait(2);
@@ -919,8 +924,14 @@ function updateMini(dt) {
 // ======================================================================
 async function intro() {
   $('intro-players').innerHTML = players.map((p) =>
-    `<div class="ip" style="--c:${p.color}"><img src="${p.portrait}" alt=""><b>P${p.i + 1}</b><span>${escapeHtml(p.name)}</span></div>`).join('');
-  $('intro-rounds').textContent = ROUNDS;
+    `<div class="ip" style="--c:${p.color}"><img src="${p.portrait}" alt=""><b>P${p.i + 1}</b><span>${p.human ? 'Tú' : escapeHtml(p.name)}</span></div>`).join('');
+  const pickRounds = (n) => {
+    ROUNDS = n;
+    $('intro-rounds').textContent = $('intro-rounds-n').textContent = n;
+    for (const b of $('intro-pick').children) b.setAttribute('aria-pressed', String(Number(b.dataset.rounds) === n));
+  };
+  for (const b of $('intro-pick').children) b.onclick = () => pickRounds(Number(b.dataset.rounds));
+  pickRounds(ROUNDS);
   $('intro').classList.remove('hidden');
   await new Promise((r) => {
     $('start').onclick = r;
@@ -949,7 +960,7 @@ async function results() {
   $('res-title').textContent = tied.length > 1 ? `¡Empate entre ${tied.map((p) => p.name).join(' y ')}!`
     : champ.human ? `¡Ganaste, ${champ.name}!` : `¡${champ.name} es el pana más pana!`;
   $('res-rows').innerHTML = order.map((p) => `
-    <div class="rrow" style="--c:${p.color}">
+    <div class="rrow pk-row${p.human ? ' is-me' : ''}" style="--c:${p.color}">
       ${r[p.i] === 1 ? '<span class="crown">👑</span>' : ''}
       <span class="medal m${r[p.i]}">${r[p.i]}</span>
       <img src="${p.portrait}" alt="">
@@ -969,7 +980,7 @@ async function main() {
     for (;;) await playMinigame(ONLY);
   }
   for (round = 1; round <= ROUNDS; round++) {
-    setPlank(`RONDA ${round}/${ROUNDS}`);
+    setPlank(`RONDA ${round} / ${ROUNDS}`);
     overview();
     await toast(`Ronda ${round}`, round === ROUNDS ? '¡Última ronda!' : `de ${ROUNDS}`, 1.5, 'round');
     for (const p of players) await takeTurn(p);

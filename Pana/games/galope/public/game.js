@@ -5,7 +5,7 @@ import {createGameMenu,toggleMute} from '/engine/ui.js';
 import {bindRenderer,pixelRatio} from '/engine/settings.js';
 import {RaceRoom} from './network.js';
 import {standings} from './rules.js';
-import {at,angle,nearest,samples,LENGTH,LAPS,groundAt,waterDepth,WATER_Y,WETLANDS,JUMPS,sector,formatTime} from './course.js';
+import {at,angle,wrap,nearest,samples,LENGTH,LAPS,groundAt,waterDepth,WATER_Y,WETLANDS,JUMPS,sector,formatTime} from './course.js';
 import {createRaceScene} from './scene.js';
 import {createRider} from './rider.js';
 import {createHorseWaterFX} from './water-fx.js';
@@ -20,7 +20,14 @@ function clearInput(){keys.clear();touch.clear();document.querySelectorAll('[dat
 const menu=createGameMenu({title:'Galope',sound,note:()=>room.members.size>1?'La carrera sigue mientras abres el menú.':'La carrera está en pausa.',
   controls:[['W / ↑','Avanzar'],['A D / ← →','Girar'],['S / ↓','Frenar'],['Shift','Remate: gasta resistencia'],['Espacio','Saltar troncos'],['R','Volver al camino'],['M','Sonido'],['Esc','Menú']],
   invite:()=>invite.href,actions:[{id:'local-race',label:'Abrir carrera local',run:()=>room.practice()}],onOpen(){paused=true;clearInput();},onClose(){paused=false;}});
-$('game-nav').append(menu.createInviteButton({id:'invite',label:'Invitar',className:'game-menu-button'}),menu.createSoundButton({id:'sound',className:'game-menu-button'}),menu.createButton({id:'menu',className:'game-menu-button'}));
+const navButton='pk-btn pk-btn--sm game-menu-button';
+$('game-nav').append(menu.createInviteButton({id:'invite',label:'Invitar',className:navButton}),menu.createSoundButton({id:'sound',className:navButton}),menu.createButton({id:'menu',className:navButton}));
+$('lobby-cta').append(menu.createInviteButton({id:'lobby-invite',label:'Invitar panas',className:'pk-btn'}));
+$('room-code').textContent=code.toUpperCase();
+// Horse names for the HUD; the stamina panel is 12 pips, the last 4 kept for the remate.
+const COAT_NAMES={bay:'Castaño',palomino:'Dorado',grey:'Tordillo'},PIPS=12,RESERVE=4,coarse=matchMedia('(pointer:coarse)').matches;
+$('stamina-pips').replaceChildren(...Array.from({length:PIPS},()=>document.createElement('i')));
+$('jump-key').textContent=coarse?'Toca Salto':'Espacio para saltar';
 function showNotice(text){$('notice').textContent=text;$('notice').classList.remove('hidden');clearTimeout(showNotice.timer);showNotice.timer=setTimeout(()=>$('notice').classList.add('hidden'),3000);}
 function unlock(){try{sound.unlock();}catch{}}
 window.addEventListener('keydown',e=>{
@@ -51,6 +58,7 @@ renderer.setPixelRatio(pixelRatio(1.5));const unbind=bindRenderer(renderer,1.5);
 const waterFX=createHorseWaterFX({waterY:WATER_Y,depthAt:waterDepth});scene.add(waterFX.group);const dummy=new THREE.Object3D();
 const dustGeometry=new THREE.SphereGeometry(.12,5,4),dustMaterial=new THREE.MeshBasicMaterial({color:0xd9c89b,transparent:true,opacity:.22});
 const dust=new THREE.InstancedMesh(dustGeometry,dustMaterial,20);dust.frustumCulled=false;scene.add(dust);
+$('map-length').textContent=`${(LENGTH*LAPS/1000).toFixed(1).replace('.',',')} KM`;
 const mapCtx=$('map').getContext('2d'),look=new THREE.Vector3(),cameraGoal=new THREE.Vector3();let cameraReady=false;
 // Cache the real wetland footprint once, including the island and winding creek.
 const mapScale=.74,wetlandMap=document.createElement('canvas');wetlandMap.width=220;wetlandMap.height=190;
@@ -73,7 +81,7 @@ function drawMap(player){
   c.drawImage(wetlandMap,0,0);
   c.strokeStyle='#c6b68c';c.lineWidth=5;c.lineJoin='round';c.beginPath();samples.forEach((p,i)=>i?c.lineTo(...xy(p.x,p.z)):c.moveTo(...xy(p.x,p.z)));c.closePath();c.stroke();
   for(const j of JUMPS){const p=at(j.s);c.fillStyle='#e3a35d';c.fillRect(...xy(p.x-2,p.z-2),4,4);}
-  for(const p of state.players){if(p.spectator)continue;c.fillStyle=p.id===player?.id?'#ffdd8e':'#f7f0da';c.beginPath();c.arc(...xy(p.x,p.z),p.id===player?.id?4.5:2.6,0,Math.PI*2);c.fill();}
+  for(const p of state.players){if(p.spectator)continue;c.fillStyle=p.id===player?.id?'#ffc629':'#f3e9d7';c.beginPath();c.arc(...xy(p.x,p.z),p.id===player?.id?4.5:2.6,0,Math.PI*2);c.fill();}
   const start=at(0);c.fillStyle='#fff';c.fillRect(...xy(start.x-2,start.z-2),4,4);
 }
 function updateUI(){
@@ -82,14 +90,19 @@ function updateUI(){
   $('start').disabled=!room.connected||!room.isHost||!ready;$('start').firstChild.textContent=!room.connected?'Conectando… ':room.isHost?'¡A la salida! ':'Esperando al anfitrión… ';
   $('again').disabled=!room.connected||!room.isHost;$('again').firstChild.textContent=room.isHost?'Otra carrera ':'Esperando al anfitrión… ';
   const own=state.players.find(p=>p.id===room.id),ordered=standings(state),place=ordered.findIndex(p=>p.id===room.id)+1;
-  $('place').textContent=place||'—';$('field-size').textContent=`/ ${ordered.length}`;
+  $('place').textContent=place||'—';$('field-size').textContent=`de ${ordered.length}`;
   $('lap').textContent=`${Math.min(LAPS,1+Math.max(0,Math.floor((own?.progress||0)/LENGTH)))} / ${LAPS}`;
   $('timer').textContent=formatTime(own?.finish??state.time);
-  $('sector').textContent=own?.spectator?'La carrera ya arrancó · corres en la próxima':sector(own?.s||0);
-  $('speed').textContent=Math.round((own?.speed||0)*3.6);$('stamina-fill').style.width=`${own?.stamina??100}%`;$('stamina-label').textContent=`${Math.round(own?.stamina??100)}%`;
+  $('sector').textContent=own?.spectator?'Corres en la próxima':sector(own?.s||0);
+  const stamina=own?.stamina??100,lit=Math.ceil(stamina/100*PIPS-.01);$('speed').textContent=Math.round((own?.speed||0)*3.6);$('stamina-label').textContent=`${Math.round(stamina)}%`;
+  [...$('stamina-pips').children].forEach((pip,i)=>pip.className=i>=lit?'':own?.exhausted?'tired':i<RESERVE?'on':'teal');
+  $('horse-name').textContent=COAT_NAMES[own?.coat||coat];
+  // ¡Tronco! shows while the next log is a few strides ahead.
+  const racing=state.phase==='racing'&&state.time>=.75&&own&&!own.spectator&&own.finish==null,ahead=racing?Math.min(...JUMPS.map(j=>wrap(j.s-own.s,LENGTH))):Infinity;
+  $('jump-cue').classList.toggle('hidden',!(ahead>2.5&&ahead<18&&!(own.jumpY>.2)));
   $('gait').textContent=own?.water>.08?'CRUZANDO EL ESTERO':own?.exhausted?'RECUPERANDO':own?.speed>13?'¡AL REMATE!':own?.speed>4?'AL GALOPE':'AL PASO';
   $('riding-tip').textContent=own?.finish!==null&&own?.finish!==undefined?'¡En la meta! Esperando a tus panas.':own?.stun>0?'¡El tronco! Salta un poco antes.':own?.water>.08?'El agua frena. Aquí recuperas fuerzas.':own?.exhausted?'Afloja el remate para recuperar fuerzas.':'Guarda fuerzas para el remate.';
-  $('leaderboard').replaceChildren(...ordered.slice(0,6).map((p,i)=>{const li=document.createElement('li');if(p.id===room.id)li.className='me';const b=document.createElement('b');b.textContent=`${i+1}.`;const span=document.createElement('span');span.textContent=p.name+(p.id===room.id?' · tú':'');li.append(b,span);return li;}));
+  $('leaderboard').replaceChildren(...ordered.slice(0,6).map((p,i)=>{const li=document.createElement('li');li.className=p.id===room.id?'pk-row is-me me':'pk-row';const b=document.createElement('b');b.className='pk-row-n';b.textContent=i+1;const span=document.createElement('span');span.className='row-name';span.textContent=p.name+(p.id===room.id?' · tú':'');const horse=document.createElement('span');horse.className='pk-row-end';horse.textContent=COAT_NAMES[p.coat]||'';li.append(b,span,horse);return li;}));
   const count=state.phase==='countdown'?String(Math.max(1,Math.ceil(state.countdown))):state.phase==='racing'&&state.time<.75?'¡ARRE!':'';
   $('countdown').classList.toggle('hidden',!count);$('countdown').textContent=count;
   if(count&&count!==lastCountdown){sound.tone(count==='¡ARRE!'?740:370,0,.12,'triangle',.06);lastCountdown=count;}
@@ -97,7 +110,7 @@ function updateUI(){
   if(done&&(lastPhase!==state.phase||$('result-board').childElementCount!==ordered.length)){
     $('result-title').textContent=place===1?'¡Ganaste, pana!':own?.finish!==null?'¡Llegaste, pana!':'¡Se cerró la carrera!';
     $('result-copy').textContent=own?.finish!=null?`${place}.º lugar · ${formatTime(own.finish)} · ${own.hits} tropiezos`:'La próxima salida es tuya. Sigue las estacas y guarda fuerzas.';
-    $('result-board').replaceChildren(...ordered.map((p,i)=>{const li=document.createElement('li');if(p.id===room.id)li.className='me';const b=document.createElement('b'),span=document.createElement('span'),time=document.createElement('time');b.textContent=i+1;span.textContent=p.name+(p.bot?' · hato':'');time.textContent=p.finish===null?'Sin terminar':formatTime(p.finish);li.append(b,span,time);return li;}));
+    $('result-board').replaceChildren(...ordered.map((p,i)=>{const li=document.createElement('li');li.className=p.id===room.id?'pk-row is-me me':'pk-row';const b=document.createElement('b'),span=document.createElement('span'),time=document.createElement('time');b.className='pk-row-n';span.className='row-name';time.className='pk-row-end';b.textContent=i+1;span.textContent=p.name+(p.bot?' · hato':'');time.textContent=p.finish===null?'Sin terminar':formatTime(p.finish);li.append(b,span,time);return li;}));
     if(lastPhase!==state.phase)sound.tone(660,0,.25,'triangle',.08);
   }
   lastPhase=state.phase;drawMap(own);

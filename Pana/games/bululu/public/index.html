@@ -4,8 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Bululú — un juego de Pana</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Luckiest+Guy&family=Nunito:wght@700;900&display=swap">
+  <link rel="stylesheet" href="/engine/kit.css">
   <link rel="stylesheet" href="/engine/ui.css">
   <link rel="stylesheet" href="style.css">
   <script type="importmap">
@@ -16,7 +15,7 @@
   </script>
 </head>
 <body>
-  <!-- logo + plank: always on -->
+  <!-- logo + round plank: always on -->
   <div class="logo">
     <h1>Bululú</h1>
     <div class="plank" id="plank">¡A JUGAR!</div>
@@ -24,21 +23,33 @@
   </div>
 
   <div id="hud" class="hidden">
-    <div id="timer" class="timer hidden">
+    <div id="timer" class="timer pk-panel hidden">
       <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="13.5" r="8" fill="none" stroke="currentColor" stroke-width="2.6"/><path d="M12 13.5V9M9.5 2.5h5M19 6l1.6-1.6" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg>
       <b id="timer-n">30</b>
     </div>
-    <div id="top-actions" class="top-actions">
-      <button id="look" class="look">Ver tablero <kbd data-pana-hint>Tab</kbd></button>
+    <div class="side">
+      <div id="sky" class="pk-seg sky" role="group" aria-label="Luz de la isla">
+        <button type="button" data-sky="day">Día</button>
+        <button type="button" data-sky="night">Noche</button>
+        <button type="button" data-sky="cycle">Ciclo</button>
+      </div>
+      <canvas id="minimap" class="minimap" width="400" height="340" title="Toca el mapa para mirar ahí"></canvas>
+      <select id="places" class="places" aria-label="Explorar una zona de la isla">
+        <option value="">Explorar isla…</option>
+        <option value="island">Toda la isla</option>
+        <option value="beach">Playa Cocotero</option>
+        <option value="waterfall">Salto del Tepuy</option>
+        <option value="harbor">Puerto de los Panas</option>
+      </select>
     </div>
-    <canvas id="minimap" class="minimap" width="400" height="340" title="Toca el mapa para mirar ahí"></canvas>
-    <select id="places" class="places" aria-label="Explorar una zona de la isla">
-      <option value="">Explorar isla…</option>
-      <option value="island">Toda la isla</option>
-      <option value="beach">Playa Cocotero</option>
-      <option value="waterfall">Salto del Tepuy</option>
-      <option value="harbor">Puerto de los Panas</option>
-    </select>
+    <div id="top-actions" class="top-actions">
+      <button id="look" class="pk-btn look">Ver tablero <kbd class="pk-kbd" data-pana-hint>Tab</kbd></button>
+    </div>
+    <div class="legend" aria-label="Casillas">
+      <div class="pk-panel"><span class="tile blue">+3</span>Gana 3</div>
+      <div class="pk-panel"><span class="tile red">−3</span>Pierde 3</div>
+      <div class="pk-panel"><span class="tile yellow">?</span>Evento loco</div>
+    </div>
     <div id="cards" class="cards"></div>
     <div class="keys" data-pana-hint>Espacio: tirar / saltar · A D: moverte · Tab: ver tablero · L: luz · M: sonido · Esc: pausa</div>
   </div>
@@ -46,7 +57,7 @@
   <div id="toast" class="toast hidden"></div>
   <div id="count"></div>
   <div id="prompt" class="prompt hidden"></div>
-  <div id="winner" class="winner hidden"></div>
+  <div id="winner" class="winner pk-modal hidden"></div>
 
   <div class="touch">
     <button id="t-left" aria-label="Izquierda">◀</button>
@@ -54,41 +65,59 @@
     <button id="t-right" aria-label="Derecha">▶</button>
   </div>
 
-  <!-- start screen -->
-  <div id="intro" class="panel intro hidden">
-    <p class="tag">Tira. Junta. Gana el <b>Mango de oro</b>.</p>
-    <div class="spaces">
-      <div><span class="tile blue"><i class="ico coin"></i>+3</span><small>Gana 3 monedas</small></div>
-      <div><span class="tile red"><i class="ico coin"></i>-3</span><small>Pierde 3 monedas</small></div>
-      <div><span class="tile yellow">?</span><small>Evento loco</small></div>
-    </div>
-    <p class="rules">Junta 20 monedas y cómprale un <b>Mango de oro</b> al puesto del árbol.
+  <!-- start screen: the shared launcher column over the live island -->
+  <section id="intro" class="pk-lobby intro hidden">
+    <div class="pk-lobby-top"><a class="pk-back" href="/">← Todos los juegos</a><a class="pk-logo" href="/">PANA</a></div>
+    <span class="pk-ribbon">Isla del mango</span>
+    <h1 class="pk-title">Tira. Junta. Gana el <span class="gold">Mango de oro</span>.</h1>
+    <p class="pk-copy">Junta 20 monedas y cómprale un <b>Mango de oro</b> al puesto del árbol.
       Después de cada ronda hay un minijuego: el ganador se lleva 10 monedas.
       Tras <b id="intro-rounds">10</b> rondas, gana el pana con más mangos de oro.</p>
-    <div id="intro-players" class="iplayers"></div>
-    <button id="start" class="play">¡A JUGAR! <kbd>Espacio</kbd></button>
-    <a class="back" href="/">← volver a los juegos</a>
-  </div>
+    <div class="pk-stats">
+      <div class="pk-stat"><b id="intro-rounds-n">10</b><span>rondas</span></div>
+      <div class="pk-stat"><b>20</b><span>monedas = 1 mango</span></div>
+      <div class="pk-stat"><b>+10</b><span>por minijuego</span></div>
+    </div>
+    <div class="spaces" aria-label="Casillas">
+      <div><span class="tile blue"><i class="ico coin"></i>+3</span><small>Gana 3 monedas</small></div>
+      <div><span class="tile red"><i class="ico coin"></i>−3</span><small>Pierde 3 monedas</small></div>
+      <div><span class="tile yellow">?</span><small>Evento loco</small></div>
+    </div>
+    <div class="pk-field">
+      <span class="pk-eyebrow">Rondas</span>
+      <div id="intro-pick" class="pk-seg" role="group" aria-label="Rondas">
+        <button type="button" data-rounds="5">5</button>
+        <button type="button" data-rounds="10">10</button>
+        <button type="button" data-rounds="15">15</button>
+      </div>
+    </div>
+    <div class="pk-lobby-foot">
+      <div id="intro-players" class="iplayers"></div>
+      <div class="pk-lobby-cta">
+        <button id="start" class="pk-btn pk-btn--primary pk-btn--lg play">¡A jugar! <kbd class="pk-kbd" data-pana-hint>Espacio</kbd></button>
+      </div>
+    </div>
+  </section>
 
   <!-- before every minigame -->
-  <div id="mini-intro" class="panel mini-intro hidden">
-    <div class="plank small">MINIJUEGO</div>
-    <h2 id="mini-title"></h2>
-    <p id="mini-howto"></p>
+  <div id="mini-intro" class="panel pk-modal mini-intro hidden">
+    <span class="pk-ribbon">Minijuego</span>
+    <h2 id="mini-title" class="pk-title"></h2>
+    <p id="mini-howto" class="pk-copy"></p>
     <div id="mini-keys" class="mkeys"></div>
     <p class="prize">El ganador se lleva <b>+10 monedas</b></p>
   </div>
 
   <!-- the end -->
-  <div id="results" class="panel results hidden">
-    <div class="plank small">DESPUÉS DE TODAS LAS RONDAS…</div>
-    <h2 id="res-title"></h2>
-    <p class="sub">El pana con más mangos de oro gana. Si hay empate, ganan las monedas.</p>
-    <div id="res-rows" class="rrows"></div>
+  <div id="results" class="panel pk-modal results hidden">
+    <span class="pk-eyebrow">Después de todas las rondas…</span>
+    <h2 id="res-title" class="pk-title pk-title--yellow"></h2>
+    <p class="sub pk-copy">El pana con más mangos de oro gana. Si hay empate, ganan las monedas.</p>
+    <div id="res-rows" class="rrows pk-roster"></div>
     <p class="note">¡Que gane el pana más pana! ♥</p>
     <div class="row">
-      <button id="again" class="play">Otra vez</button>
-      <a class="btn" href="/">Volver a los juegos</a>
+      <button id="again" class="pk-btn pk-btn--primary">Otra vez</button>
+      <a class="pk-btn" href="/">Volver a los juegos</a>
     </div>
   </div>
 

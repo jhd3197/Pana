@@ -2,7 +2,8 @@ import { createSky } from '/engine/sky.js';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { CARS } from './cars.js';
-import { garageCards } from './garage-cards.js';
+import { WHEEL_DEFINITIONS, wheelById, composeTune } from './wheel-definitions.js';
+import { garageCards, wheelCards } from './garage-cards.js';
 import { paintNext } from './loading.js';
 import { sound, Puffs, Debris, makeBubble } from '/engine/fx.js';
 import { createItems, ITEMS, SPIN } from './items.js';
@@ -12,8 +13,15 @@ import { roughnessAt,roadGripAt,roadWaterAt } from './offroad.js';
 import { loadAvatar, loadName, randomAvatar } from '/engine/avatar.js';
 import { createGameMenu, toggleMute } from '/engine/ui.js';
 import { pixelRatio, bindRenderer } from '/engine/settings.js';
+import { shout } from '/engine/kit.js';
 
 const $ = (id) => document.getElementById(id);
+const esc = (text) => String(text).replace(/[&<>"]/g, (ch) => `&#${ch.charCodeAt(0)};`);
+// Race clock as m:ss.s (1:12.4), seconds only under a minute.
+const clockText = (t) => {
+  const d = Math.floor(t * 10), m = Math.floor(d / 600), s = (d % 600) / 10;
+  return m ? `${m}:${s.toFixed(1).padStart(4, '0')}` : s.toFixed(1);
+};
 const rand = (a, b) => a + Math.random() * (b - a);
 const pick = (list) => list[Math.floor(Math.random() * list.length)];
 const wrapAngle = (a) => Math.atan2(Math.sin(a), Math.cos(a));
@@ -29,6 +37,8 @@ const DEBUG = QS.has('debug');
 // You drive as the pana you made in the hub; the rival is a random one.
 const ME = { name: loadName(), avatar: loadAvatar() };
 const RIVALS = ['Don Pancho', 'La Chama', 'El Gocho', 'Tía Carmen', 'El Catire', 'Yoli'];
+// Thematic cauchos per car, so rival loadouts show up in every race.
+const AI_WHEELS = { chamo: 'calle', lancha: 'lluvia', machito: 'barro', bala: 'slick', toro: 'barro', familiar: 'lluvia', rumbera: 'palo', montanero: 'barro' };
 
 const LINES = {
   crash: ['¡AY!', '¡UEPA!', '¡Ñooo!', '¡Mi carro!', '¡Epa, chamo!', '¡Qué molleja!'],
@@ -64,6 +74,7 @@ const garage = {
   scene: new THREE.Scene(),
   camera: new THREE.PerspectiveCamera(40, innerWidth / innerHeight, 0.1, 200),
   index: 0,
+  wheel: 'calle',
   spin: true,
   hop: new Spring(),
   honkT: 0,
@@ -122,15 +133,20 @@ const garage = {
 }
 
 function garageCar(index) {
-  if (!garage.cars.has(index)) garage.cars.set(index, CARS[index].build(ME.avatar));
-  return garage.cars.get(index);
+  // Cache key includes the cauchos: the same car wears different wheels.
+  const key = `${index}:${garage.wheel}`;
+  if (!garage.cars.has(key)) {
+    if (garage.cars.size >= 16) garage.cars.delete(garage.cars.keys().next().value);
+    garage.cars.set(key, CARS[index].build(ME.avatar, wheelById(garage.wheel).wheel ?? undefined));
+  }
+  return garage.cars.get(key);
 }
 
 function showCar(i) {
   garage.index = (i + CARS.length) % CARS.length;
   const def = CARS[garage.index];
   garage.turn.clear();
-  // At most eight garage models; thumbnails borrow these same instances.
+  // Bounded garage models; thumbnails borrow these same instances.
   // Race models stay independent because their parts can break off.
   garage.car = garageCar(garage.index);
   garage.turn.add(garage.car.root);
@@ -138,14 +154,38 @@ function showCar(i) {
 
   document.documentElement.style.setProperty('--car', def.color);
   $('car-num').textContent = def.num;
+  $('car-of').textContent = `Carro ${garage.index + 1} de ${CARS.length}`;
   $('car-name').textContent = def.name;
   $('car-blurb').textContent = def.blurb;
-  $('stats').innerHTML = Object.entries(def.stats)
+  // Stats bars reflect the car + cauchos combo, recomputed from the composed tune.
+  const tune = composeTune(def.tune, wheelById(garage.wheel).profile);
+  const bar = (base, ratio) => Math.max(0.04, Math.min(1, base * ratio));
+  const stats = {
+    Velocidad: bar(def.stats.Velocidad, tune.top / def.tune.top),
+    'Aceleración': bar(def.stats['Aceleración'], tune.accel / def.tune.accel),
+    Manejo: bar(def.stats.Manejo, Math.sqrt((tune.turn / def.tune.turn) * (tune.grip / def.tune.grip))),
+    Peso: def.stats.Peso,
+  };
+  $('stats').innerHTML = Object.entries(stats)
     .map(([k, v]) => `<div><dt>${k}</dt><dd><i style="width:${Math.round(v * 100)}%"></i></dd></div>`)
     .join('');
   $('driver-name').textContent = ME.name;
   $('dots').innerHTML = CARS.map((_, j) => `<span class="${j === garage.index ? 'on' : ''}"></span>`).join('');
   for (const [j, button] of [...$('car-lineup').children].entries()) button.setAttribute('aria-pressed', String(j === garage.index));
+}
+
+// Step 2: pick the cauchos. Rebuilds the turntable car and the stats bars,
+// and persists the choice for the next visit.
+function showWheel(id) {
+  const def = wheelById(id);
+  garage.wheel = def.id;
+  try { localStorage.setItem('derrape:wheels', def.id); } catch { /* private mode */ }
+  $('wheel-name').textContent = def.name;
+  $('wheel-blurb').textContent = def.blurb;
+  for (const [j, button] of [...$('wheel-lineup').children].entries()) {
+    button.setAttribute('aria-pressed', String(WHEEL_DEFINITIONS[j].id === def.id));
+  }
+  showCar(garage.index);
 }
 
 function garageHonk() {
@@ -221,8 +261,19 @@ $('honk').onclick = garageHonk;
 $('cam').onclick = () => setFocus(!garage.focus);
 $('play').onclick = () => {
   sound.unlock();
-  startRace(garage.index);
+  startRace(garage.index, garage.wheel);
 };
+// Step pills jump to the car strip, the cauchos strip or the track picker.
+for (const step of document.querySelectorAll('.step')) {
+  step.onclick = () => {
+    const target = step.dataset.step === 'car'
+      ? $('car-lineup').querySelector('[aria-pressed="true"]') ?? $('next')
+      : step.dataset.step === 'wheels'
+        ? $('wheel-lineup').querySelector('[aria-pressed="true"]') ?? $('wheel-lineup').firstElementChild
+        : $('t-next');
+    target?.focus();
+  };
+}
 
 // ======================================================================
 // Track: data-driven. Definitions live in tracks.js + tracks/*.js; the
@@ -289,6 +340,8 @@ function selectTrack(id) {
   const route = trackRoutes.get(def.id);
   $('track-name').textContent = def.name;
   $('track-blurb').textContent = `${(route.TOTAL / 1000).toFixed(2)} km por vuelta · ${LAPS} vueltas. ${def.blurb}`;
+  $('track-of').textContent = `Pista ${trackIndex + 1}/${TRACKS.length}`;
+  drawTrackPreview(route);
   return route;
 }
 
@@ -349,38 +402,58 @@ function switchTrack(i) {
 // ---------- race HUD: standings board + minimap ----------
 function renderBoard(order, player) {
   $('board').innerHTML = order.map((c, i) =>
-    `<li class="${c === player ? 'me' : ''}"><i>${i + 1}</i><span class="chip" style="--c:${c.def.color}"></span>${c.name}</li>`
+    `<li class="pk-row${c === player ? ' me is-me' : ''}"><span class="pk-row-n">${i + 1}</span><span class="chip" style="--c:${c.def.color}"></span>${esc(c.name)}</li>`
   ).join('');
+}
+
+// Sample a route's centerline and fit it into a canvas with a margin.
+function fitRoute(route, canvas, margin) {
+  const N = 160;
+  const raw = [];
+  for (let i = 0; i < N; i++) raw.push(route.pointAt((i / N) * route.TOTAL));
+  const minX = Math.min(...raw.map(p=>p.x)), maxX = Math.max(...raw.map(p=>p.x));
+  const minZ = Math.min(...raw.map(p=>p.y)), maxZ = Math.max(...raw.map(p=>p.y));
+  const scale = Math.min((canvas.width-margin*2)/(maxX-minX), (canvas.height-margin*2)/(maxZ-minZ));
+  return raw.map(p=>[canvas.width/2+(p.x-(minX+maxX)/2)*scale,canvas.height/2+(p.y-(minZ+maxZ)/2)*scale]);
+}
+function strokeRoute(ctx, pts, width) {
+  ctx.lineJoin = 'round';
+  ctx.lineCap = 'round';
+  ctx.beginPath();
+  pts.forEach(([x, y], i) => (i ? ctx.lineTo(x, y) : ctx.moveTo(x, y)));
+  ctx.closePath();
+  ctx.strokeStyle = '#0e0b24';
+  ctx.lineWidth = width * 2;
+  ctx.stroke();
+  ctx.strokeStyle = '#f3e9d7';
+  ctx.lineWidth = width;
+  ctx.stroke();
+}
+
+// Garage preview of the selected circuit, with its start line.
+function drawTrackPreview(route) {
+  const canvas = $('track-map'), ctx = canvas.getContext('2d');
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  try {
+    const pts = fitRoute(route, canvas, 28);
+    strokeRoute(ctx, pts, 7);
+    const [x, y] = pts[Math.floor((route.LINE ?? 0) / route.TOTAL * pts.length) % pts.length];
+    ctx.beginPath(); ctx.arc(x, y, 9, 0, Math.PI * 2);
+    ctx.fillStyle = '#ffc629'; ctx.fill();
+    ctx.lineWidth = 3; ctx.strokeStyle = '#0e0b24'; ctx.stroke();
+  } catch { /* metadata without a centerline: keep the striped placeholder */ }
 }
 
 const mm = $('mm');
 const mmCtx = mm.getContext('2d');
 let mmPts = [];
 function buildMinimap() {
-  // sample the centerline and fit it into the canvas with a margin
-  const N = 160;
-  const raw = [];
-  for (let i = 0; i < N; i++) raw.push(T.pointAt((i / N) * T.TOTAL));
-  const margin = 16;
-  const minX = Math.min(...raw.map(p=>p.x)), maxX = Math.max(...raw.map(p=>p.x));
-  const minZ = Math.min(...raw.map(p=>p.y)), maxZ = Math.max(...raw.map(p=>p.y));
-  const scale = Math.min((mm.width-margin*2)/(maxX-minX), (mm.height-margin*2)/(maxZ-minZ));
-  mmPts = raw.map(p=>[mm.width/2+(p.x-(minX+maxX)/2)*scale,mm.height/2+(p.y-(minZ+maxZ)/2)*scale]);
+  mmPts = fitRoute(T, mm, 16);
 }
 
 function drawMinimap() {
   mmCtx.clearRect(0, 0, mm.width, mm.height);
-  mmCtx.lineJoin = 'round';
-  mmCtx.lineCap = 'round';
-  mmCtx.beginPath();
-  mmPts.forEach(([x, y], i) => (i ? mmCtx.lineTo(x, y) : mmCtx.moveTo(x, y)));
-  mmCtx.closePath();
-  mmCtx.strokeStyle = '#16161a';
-  mmCtx.lineWidth = 8;
-  mmCtx.stroke();
-  mmCtx.strokeStyle = '#f6f1e4';
-  mmCtx.lineWidth = 4;
-  mmCtx.stroke();
+  strokeRoute(mmCtx, mmPts, 4);
   for (const c of race.cars) {
     const i = Math.floor((paramOf(c.x, c.z) / T.TOTAL) * mmPts.length) % mmPts.length;
     const [x, y] = mmPts[i];
@@ -401,10 +474,11 @@ function drawMinimap() {
 // ======================================================================
 const RACERS = 4;
 
-function makeRacer(index, isPlayer, name) {
+function makeRacer(index, isPlayer, name, wheelId = 'calle') {
   const def = CARS[index];
+  const wheel = wheelById(wheelId);
   const who = isPlayer ? ME : { name, avatar: randomAvatar() };
-  const car = def.build(who.avatar);
+  const car = def.build(who.avatar, wheel.wheel ?? undefined);
   // Retain ownership even after a bumper detaches and expires from the scene.
   car.geometries = new Set();
   car.root.traverse(o => { if (o.geometry) car.geometries.add(o.geometry); });
@@ -413,6 +487,7 @@ function makeRacer(index, isPlayer, name) {
   race.scene.add(bubble.sprite);
   return {
     def, car, bubble, isPlayer, name: who.name,
+    wheel: wheel.id, tune: composeTune(def.tune, wheel.profile),   // stepCar drives with the composed tune
     skill: isPlayer ? 1 : rand(0.88, 0.97),   // rivals top out a bit below their car's max
     x: 0, z: 0, y: 0, h: Math.PI / 2, vx: 0, vz: 0, vy: 0, vf: 0, vr: 0, steer: 0, latAcc: 0, longAcc: 0,
     onGround: true, pitch: 0, roll: 0, pitchV: 0, rollV: 0,
@@ -458,8 +533,16 @@ function clearRace() {
   race.player = null;
 }
 
+// Loading-screen tips: real rules only.
+const TIPS = [
+  ['🥭', 'Lleva un mango equipado: bloquea el mango que te lancen.'],
+  ['🪙', 'Cada moneda te da un poquito más de velocidad, hasta 10.'],
+  ['📦', 'Rompe cajas de madera para conseguir objetos. Guardas hasta 2.'],
+  ['🧃', 'El jugo de mango te da un turbo: tómatelo en una recta.'],
+  ['↩️', 'Lanza hacia atrás con X para frenar al que te persigue.'],
+];
 let loadGeneration = 0;
-async function startRace(playerIndex) {
+async function startRace(playerIndex, wheelId = garage.wheel) {
   if (mode === 'loading') return;
   const generation = ++loadGeneration;
   mode = 'loading';
@@ -469,12 +552,18 @@ async function startRace(playerIndex) {
   $('loading').setAttribute('aria-busy', 'true');
   $('garage').inert = $('race').inert = true;
   $('loading-back').focus();
-  $('loading-title').textContent = TRACKS[trackIndex].name;
+  const def = TRACKS[trackIndex], tip = pick(TIPS);
+  $('loading-title').textContent = def.name;
+  $('loading-meta').textContent = `Derrape · Pista ${trackIndex + 1} de ${TRACKS.length} · ${LAPS} vueltas`;
+  $('loading-blurb').textContent = def.blurb;
+  $('loading-tip-icon').textContent = tip[0];
+  $('loading-tip').textContent = tip[1];
   $('play').disabled = true;
   sound.stopEngine();
   const step = async (label, progress) => {
     $('loading-status').textContent = label;
     $('loading-progress').value = progress;
+    $('loading-pct').textContent = `${Math.round(progress * 100)}%`;
     await paintNext();
     return generation === loadGeneration;
   };
@@ -493,15 +582,16 @@ async function startRace(playerIndex) {
     if (!await step('Preparando los carros…', 0.5)) return;
     const others = CARS.map((_, i) => i).filter((i) => i !== playerIndex).sort(() => Math.random() - 0.5);
     const names = [...RIVALS].sort(() => Math.random() - 0.5);
-    race.cars = [makeRacer(playerIndex, true)];
+    race.cars = [makeRacer(playerIndex, true, undefined, wheelId)];
     for (let i = 1; i < RACERS; i++) {
       if (!await step(`Preparando los panas… ${i}/${RACERS}`, 0.5 + i * 0.08)) return;
-      race.cars.push(makeRacer(others[i - 1], false, names[i - 1]));
+      race.cars.push(makeRacer(others[i - 1], false, names[i - 1], AI_WHEELS[CARS[others[i - 1]].id]));
     }
     // a two-by-two grid; you start at the back so there's someone to pass
     race.cars.forEach((c, i) => placeRacer(c, i % 2 ? -3.5 : 3.5, Math.floor((RACERS - 1 - i) / 2)));
     race.player = race.cars[0];
     race.playerIndex = playerIndex;
+    race.playerWheel = wheelId;
     race.clock = 0;
     race.count = 3.999;
     race.boardT = 0;
@@ -570,7 +660,7 @@ const menu = createGameMenu({
     ['X', 'Lanzar objeto atrás'], ['1 2', 'Elegir objeto'], ['Q', 'Cambiar objeto'], ['H', 'Claxon'], ['M', 'Sonido'], ['Esc', 'Pausa']],
   tips: ['Rompe cajas de madera para conseguir objetos. Cada moneda da un poquito más de velocidad.'],
   actions: [
-    { id: 'restart', label: 'Reiniciar carrera', kind: 'secondary', visible: () => mode === 'race', run: () => startRace(race.playerIndex) },
+    { id: 'restart', label: 'Reiniciar carrera', kind: 'secondary', visible: () => mode === 'race', run: () => startRace(race.playerIndex, race.playerWheel) },
     { id: 'to-garage', label: 'Volver al garaje', kind: 'secondary', visible: () => mode === 'race', run: () => toGarage() },
   ],
   canOpen: () => mode !== 'loading',
@@ -582,10 +672,11 @@ const menu = createGameMenu({
   },
   onClose() { paused = false; acc = 0; clock.getDelta(); },
 });
-$('race').querySelector('.hud-top').append(menu.createButton({ id: 'pause', label: 'Pausa', className: 'pill pause-button' }));
-$('garage').querySelector('.tools').prepend(menu.createButton({ id: 'settings', label: 'Ajustes', className: 'toggle' }));
+$('race').querySelector('.hud-corner').append(menu.createButton({ id: 'pause', label: 'Pausa', className: 'pause-button pk-btn pk-btn--sm' }));
+$('garage').querySelector('.tools').prepend(menu.createButton({ id: 'settings', label: 'Ajustes', className: 'toggle pk-btn pk-btn--sm' }));
+for (const kbd of document.querySelectorAll('#pause kbd, #settings kbd')) kbd.classList.add('pk-kbd');
 
-$('again').onclick = () => startRace(race.playerIndex);
+$('again').onclick = () => startRace(race.playerIndex, race.playerWheel);
 $('back').onclick = toGarage;
 $('loading-back').onclick = toGarage;
 function itemAction(direction) {
@@ -698,12 +789,16 @@ function crash(c, power, side) {
 }
 
 function stepCar(c, input, dt) {
-  const t = c.def.tune;
+  const t = c.tune;   // car tune composed with the racer's cauchos (makeRacer)
   const boosting = c.boost > 0;
   const top = t.top * c.skill * coinMultiplier(c);
-  const rough=c.onGround?roughnessAt(T,c.x,c.z):0,terrain=T.def.offroad;
+  const terrain=T.def.offroad;
+  // Wheel off-road resistance scales every roughness penalty below (accel,
+  // speed cap, drag); slicks go negative and make rough ground worse.
+  const rough=(c.onGround?roughnessAt(T,c.x,c.z):0)*(1-t.offroadResist);
   const water=c.onGround?roadWaterAt(T,c.x,c.z,race.clock):0;
-  const grip=c.onGround?roadGripAt(T,c.x,c.z,race.clock):1;
+  // Rain cauchos keep a grip floor where the road reports wet.
+  const grip=Math.max(c.onGround?roadGripAt(T,c.x,c.z,race.clock):1,t.wetFloor);
   const acceleration=t.accel*(1-rough*(1-(terrain?.accel??1)))*(1-water*.28);
   const previous={x:c.x,z:c.z};
   if (c.spin > 0) input = { throttle: 0, steer: 0 };   // skidding on a peel: no control
@@ -989,15 +1084,23 @@ function updateRace(dt) {
   const order = standings();
   const place = order.indexOf(p);
   $('lap').textContent = `${Math.min(LAPS, Math.max(1, p.lap))}/${LAPS}`;
-  $('pos').textContent = `${place + 1}/${order.length}`;
+  if (race.shownPlace !== place) {
+    race.shownPlace = place;
+    $('pos').innerHTML = `${place + 1}<sup>º</sup>`;
+    $('pos').setAttribute('aria-label', `Posición ${place + 1} de ${order.length}`);
+  }
   $('leader').textContent = order[0] === p ? '¡Tú!' : order[0].name;
-  $('time').textContent = (p.done ? p.time : race.clock).toFixed(1);
+  $('time').textContent = clockText(p.done ? p.time : race.clock);
+  if (p.lap === LAPS && !p.finalLap && !p.done) {
+    p.finalLap = true;
+    shout('¡Vuelta final!');
+  }
   showItem(p);
 
   // speedometer + boost bar
   $('speed').textContent = Math.round(Math.abs(p.vf) * 4);
   const boost = $('boost');
-  const ratio = Math.min(1, Math.abs(p.vf) / (p.def.tune.top * 1.5));
+  const ratio = Math.min(1, Math.abs(p.vf) / (p.tune.top * 1.5));
   const lit = Math.round(ratio * 8);
   boost.classList.toggle('turbo', p.boost > 0);
   const segs = boost.children;
@@ -1008,6 +1111,7 @@ function updateRace(dt) {
   if (race.boardT <= 0) {
     race.boardT = 0.2;
     renderBoard(order, p);
+    if (race.state === 'end') renderResults(order, p);
     const u = paramOf(p.x, p.z) / T.TOTAL;
     const sector = T.def.sectors?.filter(([start]) => u >= start).at(-1);
     if (sector) $('mm-sub').textContent = sector[1];
@@ -1081,11 +1185,38 @@ function finish() {
   const p = race.player;
   const place = 1 + race.cars.filter((c) => c !== p && c.done && c.time < p.time).length;
   const winner = race.cars.find((c) => c.done && c.time < p.time);
-  $('result-title').textContent = place === 1 ? `¡Ganaste, ${p.name}!` : `${place}º lugar`;
-  $('result-time').textContent = `${p.def.name} · ${p.time.toFixed(1)} s · ${p.lost} piezas perdidas`
+  $('result-title').textContent = place === 1 ? '¡Ganaste!' : `${place}º lugar`;
+  $('result-time').textContent = `${T.name} · ${LAPS} vueltas · ${clockText(p.time)} · ${p.def.name} · ${p.lost} piezas perdidas`
     + (winner && place > 1 ? ` · ganó ${winner.name}` : '');
+  race.resultKey = '';
+  renderResults(standings(), p);
   $('result').classList.remove('hidden');
   $('result-coins').textContent = `${p.coinsCollected} monedas recogidas · +${Number((p.coins * COIN_SPEED * 100).toFixed(1)).toLocaleString('es-VE')}% de velocidad`;
+  $('again').focus({ preventScroll: true });
+}
+
+// Podium (top three, with their car pictures) and the full classification.
+// Rivals keep racing behind the results, so this refreshes as they finish.
+const PODIUM = [['var(--pk-yellow)', 260, 124], ['var(--pk-teal)', 190, 96], ['var(--pk-coral)', 140, 86]];
+function renderResults(order, player) {
+  const key = order.map(c => `${c.name}:${c.done}`).join();
+  if (key === race.resultKey) return;
+  race.resultKey = key;
+  const thumbs = $('car-lineup').querySelectorAll('img');
+  const who = (c) => {
+    const src = thumbs[CARS.indexOf(c.def)]?.getAttribute('src');
+    return src ? `<img src="${src}" alt="">` : `<b style="--car:${c.def.color}">${c.def.num}</b>`;
+  };
+  // Second, first, third, like a real podium.
+  $('podium').innerHTML = [1, 0, 2].filter(i => order[i]).map(i => {
+    const c = order[i], [color, h, w] = PODIUM[i];
+    return `<li style="--c:${color};--h:${h}px;--w:${w}px"><span class="who">${who(c)}</span>`
+      + `<span class="name">${esc(c.name)}</span><b class="place">${i + 1}</b></li>`;
+  }).join('');
+  $('result-board').innerHTML = order.map((c, i) =>
+    `<li class="pk-row${c === player ? ' is-me' : ''}"><span class="pk-row-n">${i + 1}</span><span class="chip" style="--c:${c.def.color}"></span>${esc(c.name)}`
+    + `<span class="pk-row-end${c.done ? '' : ' running'}">${c.done ? clockText(c.time) : `vuelta ${Math.min(LAPS, Math.max(1, c.lap))}/${LAPS}`}</span></li>`
+  ).join('');
 }
 
 // ======================================================================
@@ -1124,17 +1255,20 @@ function resize() {
   // above the compact garage controls on a phone.
   const wide = innerWidth > 760;
   garage.camera.zoom = wide ? 1 : Math.min(0.86, innerWidth / innerHeight * 1.3);
-  garage.camera.setViewOffset(innerWidth, innerHeight, wide ? -150 : 0,
-    wide ? 35 : innerHeight * 0.17, innerWidth, innerHeight);
+  // The garage has a card on each side, so the car stays centered between them.
+  garage.camera.setViewOffset(innerWidth, innerHeight, wide ? -10 : 0,
+    wide ? 20 : innerHeight * 0.12, innerWidth, innerHeight);
 }
 addEventListener('resize', resize);
 resize();
 
-if (DEBUG) Object.assign(window, { menu, race, garage, renderer, crash, stepCar, startRace, updateRace, toGarage, ITEMS, TRACKS, buildTrack, getActiveTrack: () => T });
+if (DEBUG) Object.assign(window, { menu, race, garage, renderer, crash, stepCar, startRace, updateRace, toGarage, showWheel, ITEMS, TRACKS, buildTrack, getActiveTrack: () => T });
 
 // ?track=desierto wins; otherwise the last pick, otherwise the estadio
 let savedTrack = 'estadio';
 try { savedTrack = localStorage.getItem('derrape:track') || savedTrack; } catch { /* private mode */ }
+// The cauchos from the last visit (fallback calle) dress the turntable car.
+try { garage.wheel = wheelById(localStorage.getItem('derrape:wheels')).id; } catch { /* private mode */ }
 selectTrack(QS.get('track') || savedTrack);
 showCar(0);
 frame();
@@ -1150,3 +1284,8 @@ const cards = garageCards(CARS, garageCar, showCar,
   () => mode === 'garage' && performance.now() - lastGarageInput > 350);
 $('car-lineup').append(cards.fragment);
 cards.ready.catch(error => console.warn('Garage previews unavailable', error));
+const wheelStrip = wheelCards(WHEEL_DEFINITIONS, showWheel,
+  () => mode === 'garage' && performance.now() - lastGarageInput > 350);
+$('wheel-lineup').append(wheelStrip.fragment);
+wheelStrip.ready.catch(error => console.warn('Wheel previews unavailable', error));
+showWheel(garage.wheel);

@@ -29,7 +29,7 @@ function notify(message) {
 const room = new DominoRoom({ code, name, avatar, onState: render,
   onStatus(message, failed = false) {
     $('connection').textContent = message; $('practice').hidden = !failed;
-    $('invite').disabled = !room.connected || room.offline;
+    $('invite').disabled = $('lobby-invite').disabled = !room.connected || room.offline;
     render(room.state);
   }, onNotice: notify,
 });
@@ -50,7 +50,9 @@ const menu = createGameMenu({
   invite: () => `${location.origin}${location.pathname}?room=${encodeURIComponent(code)}`,
   canOpen: () => !$('result').open,
 });
-$('game-nav').append(menu.createInviteButton({ id: 'invite' }), menu.createButton({ id: 'menu' }));
+$('game-nav').append(menu.createInviteButton({ id: 'invite', className: 'pk-btn' }), menu.createButton({ id: 'menu', className: 'pk-btn' }));
+$('lobby-invite-slot').replaceWith(menu.createInviteButton({ id: 'lobby-invite', className: 'pk-btn' }));
+$('lobby-room').textContent = `Sala ${code}`;
 $('rules').onclick = () => menu.open('controls');
 $('practice').onclick = () => room.practice();
 $('start').onclick = () => room.action('start');
@@ -62,11 +64,14 @@ $('hint').onclick = hint;
 $('pass').onclick = () => room.action('pass');
 $('cancel-selection').onclick = () => { selected = null; renderHand(room.state); };
 for (const end of ['left', 'right']) $(`play-${end}`).onclick = () => playSelected(end);
-$('camera-view').onclick = () => {
-  view = view === 'plaza' ? 'mesa' : 'plaza'; world?.setView(view);
+function setView(next) {
+  view = next; world?.setView(view);
   $('camera-view').textContent = view === 'plaza' ? '◈ Vista de mesa' : '◈ Vista de plaza';
   $('camera-view').setAttribute('aria-pressed', String(view === 'mesa'));
-};
+  for (const button of document.querySelectorAll('[data-view]')) button.setAttribute('aria-pressed', String(button.dataset.view === view));
+}
+$('camera-view').onclick = () => setView(view === 'plaza' ? 'mesa' : 'plaza');
+for (const button of document.querySelectorAll('[data-view]')) button.onclick = () => setView(button.dataset.view);
 
 function ownTurn() { return worldReady && room.connected && room.state.phase === 'playing' && room.seat >= 0 && room.state.turn === room.seat; }
 function selectTile(id) {
@@ -98,18 +103,20 @@ function render(state) {
   previousEvent = eventKey;
   document.body.classList.toggle('in-lobby', state.phase === 'lobby');
   $('your-name').textContent = seat >= 0 ? `${state.players[seat].name} · tú` : 'Espectador';
-  $('our-label').textContent = seat >= 0 ? 'Tu pareja' : 'Pareja verde';
-  $('their-label').textContent = seat >= 0 ? 'La otra pareja' : 'Pareja arena';
+  $('our-label').textContent = seat >= 0 ? 'Nosotros' : 'Pareja A';
+  $('their-label').textContent = seat >= 0 ? 'Ellos' : 'Pareja B';
   $('our-score').textContent = state.scores[team]; $('their-score').textContent = state.scores[1 - team];
   $('our-progress').style.width = `${Math.min(100, state.scores[team] / TARGET * 100)}%`;
   $('their-progress').style.width = `${Math.min(100, state.scores[1 - team] / TARGET * 100)}%`;
   $('our-names').textContent = state.players.filter(p => p.seat % 2 === team).map(p => p.id === room.id ? 'Tú' : p.name).join(' + ');
   $('their-names').textContent = state.players.filter(p => p.seat % 2 !== team).map(p => p.name).join(' + ');
-  $('round-label').textContent = state.phase === 'lobby' ? 'MESA ABIERTA' : `MANO ${String(state.round).padStart(2, '0')}`;
+  $('round-label').textContent = state.phase === 'lobby' ? 'Mesa abierta' : `Mano ${state.round}`;
+  $('lobby-roster').textContent = seat >= 0 ? `${state.players[(seat + 2) % 4].name} es tu pareja` : 'La mesa está llena';
+  renderSeats(state, base);
   $('welcome').hidden = state.phase !== 'lobby';
   $('start').disabled = !worldReady || !room.connected || !room.isHost;
-  $('start').replaceChildren(document.createTextNode(!worldReady ? 'Preparando la mesa…' : !room.connected ? 'Conectando…' : room.isHost ? '¡Repartir las fichas! ↗' : 'El anfitrión reparte'));
-  $('ends-label').textContent = state.chain.length ? `PUNTAS  A · ${state.chain[0].a}   /   B · ${state.chain.at(-1).b}` : '28 fichas · 4 panas';
+  $('start').replaceChildren(document.createTextNode(!worldReady ? 'Preparando la mesa…' : !room.connected ? 'Conectando…' : room.isHost ? '¡Repartir!' : 'El anfitrión reparte'));
+  $('ends-label').textContent = state.chain.length ? `Puntas: A · ${state.chain[0].a}  /  B · ${state.chain.at(-1).b}` : '28 fichas · 4 panas · sin pozo';
   renderHand(state); renderHistory(state, team);
   const ended = ['round-over', 'finished'].includes(state.phase);
   const resultId = `${state.round}:${state.phase}`;
@@ -136,8 +143,10 @@ function renderHand(state) {
   if (activeTile) $('hand').querySelector(`[data-tile="${activeTile}"]:not(:disabled)`)?.focus({ preventScroll: true });
   $('hand-count').textContent = seat < 0 ? 'Mesa llena · estás mirando' : state.phase === 'lobby' ? 'Tu puesto está listo' : `${hand.length} ${hand.length === 1 ? 'ficha' : 'fichas'} · ${pips(hand)} puntos`;
   const moves = myTurn ? legalMoves(state, seat) : [];
+  const tips = state.chain.length ? [...new Set([state.chain[0].a, state.chain.at(-1).b])].join(' o al ') : '';
   $('turn-status').classList.toggle('your-turn', myTurn);
-  $('turn-status').textContent = !room.connected ? 'Esperando conexión…' : ended ? 'Mano terminada' : state.phase === 'lobby' ? 'La mesa te espera.' : myTurn ? 'Te toca, pana.' : `Turno de ${state.players[state.turn].name}`;
+  $('turn-status').textContent = !room.connected ? 'Esperando conexión…' : ended ? 'Mano terminada' : state.phase === 'lobby' ? 'La mesa te espera.'
+    : myTurn ? `¡Tu turno! · ${selected ? 'elige la punta' : !state.chain.length ? 'abre la mano' : moves.length ? `juega al ${tips}` : 'canta paso'}` : `Turno de ${state.players[state.turn].name}`;
   $('hint').disabled = !myTurn;
   $('pass').hidden = !myTurn || moves.length > 0;
   $('round-result').hidden = !ended;
@@ -151,6 +160,24 @@ function renderHand(state) {
   world?.update(state, room.seat, selected);
 }
 
+// Partner chip top-center, rivals' cards on the side they sit in the 3D view.
+function renderSeats(state, base) {
+  const playing = state.phase !== 'lobby' && room.seat >= 0;
+  for (const [id, offset] of [['partner-card', 2], ['rival-right', 1], ['rival-left', 3]]) {
+    const node = $(id), player = state.players[(base + offset) % 4]; node.hidden = !playing;
+    if (!playing) continue;
+    const last = [...state.history].reverse().find(e => e.seat === player.seat), count = player.hand.length;
+    const badge = document.createElement('span'), name = document.createElement('b'), note = document.createElement('span');
+    badge.className = 'seat-badge'; badge.textContent = player.id === null ? 'BOT' : player.name.slice(0, 1).toUpperCase();
+    name.textContent = player.name; note.className = 'seat-note';
+    note.textContent = `${offset === 2 ? 'TU PAREJA · ' : ''}${count} ${count === 1 ? 'ficha' : 'fichas'}`;
+    node.classList.toggle('is-turn', state.phase === 'playing' && state.turn === player.seat);
+    if (offset === 2) { const copy = document.createElement('div'); copy.append(name, note); node.replaceChildren(badge, copy); }
+    else node.replaceChildren(badge, name, note);
+    if (last?.kind === 'pass') { const passed = document.createElement('span'); passed.className = 'seat-passed'; passed.textContent = 'PASÓ'; (offset === 2 ? node.lastChild : node).append(passed); }
+  }
+}
+
 function renderHistory(state, team) {
   $('move-count').textContent = `${state.history.length} JUGADAS`;
   $('activity').replaceChildren();
@@ -158,7 +185,7 @@ function renderHistory(state, team) {
     const li = document.createElement('li'); li.className = 'activity-empty';
     li.textContent = state.phase === 'lobby' ? 'Aquí va el cuento de la partida.' : 'El primer golpe está por caer.'; $('activity').append(li);
   }
-  for (const event of state.history.slice(-5).reverse()) {
+  for (const event of state.history.slice(-3).reverse()) {
     const li = document.createElement('li'), marker = document.createElement('i'), copy = document.createElement('div'), title = document.createElement('strong'), note = document.createElement('small');
     marker.className = `activity-marker${event.seat % 2 !== team ? ' rival' : ''}`; title.textContent = event.name;
     note.textContent = event.kind === 'play' ? `Jugó ${event.tile.a}–${event.tile.b}` : 'Cantó paso'; copy.append(title, note); li.append(marker, copy);
@@ -182,6 +209,7 @@ function renderResult(state, team) {
   $('result-hands').replaceChildren();
   for (const player of state.players) {
     const row = document.createElement('div'), title = document.createElement('strong'), points = document.createElement('span');
+    row.className = `pk-row${player.seat === room.seat ? ' is-me' : ''}`; points.className = 'pk-row-end';
     title.textContent = player.name; points.textContent = `${player.hand.length} fichas · ${pips(player.hand)} puntos`; row.append(title, points); $('result-hands').append(row);
   }
   $('next-round').textContent = !room.isHost ? 'El anfitrión reparte la siguiente' : state.phase === 'finished' ? 'Jugar la revancha →' : 'Siguiente mano →';
@@ -216,10 +244,10 @@ addEventListener('pagehide', () => { stopped = true; clearInterval(timer); clear
 render(room.state); room.connect();
 import('./scene.js').then(module => module.createDominoScene($('world'), { onTile: selectTile, onEnd: playSelected, onLoading: message => { $('loading-copy').textContent = message; } })).then(scene => {
   if (stopped) { scene.dispose(); return; }
-  world = scene; worldReady = true; world.update(room.state, room.seat); render(room.state); $('loading').hidden = true;
+  world = scene; worldReady = true; world.update(room.state, room.seat); if (view !== 'plaza') world.setView(view); render(room.state); $('loading').hidden = true;
 }).catch(error => {
   console.error(error); $('loading-copy').textContent = 'No pudimos cargar la plaza. Comprueba tu conexión y WebGL.';
-  const reload = document.createElement('button'); reload.className = 'button button-yellow'; reload.textContent = 'Volver a intentar'; reload.onclick = () => location.reload(); $('loading').append(reload);
+  const reload = document.createElement('button'); reload.className = 'pk-btn pk-btn--primary'; reload.textContent = 'Volver a intentar'; reload.onclick = () => location.reload(); $('loading').append(reload);
 });
 // Opt-in diagnostics for repeatable browser regression tests.
 if (params.has('debug')) window.dominoDebug = { room, legalMoves, chooseMove, menu, render, get world() { return world; } };

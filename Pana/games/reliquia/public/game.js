@@ -3,6 +3,7 @@ import { buildCharacter } from '/engine/character.js';
 import { loadAvatar, loadName } from '/engine/avatar.js';
 import { sound } from '/engine/fx.js';
 import { createGameMenu, toggleMute } from '/engine/ui.js';
+import { shout } from '/engine/kit.js';
 import { pixelRatio, bindRenderer } from '/engine/settings.js';
 import { mummy, sunRelic, expeditionLantern } from '/engine/models/props/reliquia.js';
 import { Expedition, interaction, objective } from './rules.js';
@@ -42,7 +43,9 @@ const menu = createGameMenu({
   invite() { const link = new URL(location.href); ['debug', 'name', 'manual'].forEach(k => link.searchParams.delete(k)); return link.href; },
   onOpen() { paused = true; clearInput(); }, onClose() { paused = false; },
 });
-$('game-nav').append(menu.createInviteButton({ id: 'invite' }), menu.createSoundButton({ id: 'sound' }), menu.createButton({ id: 'menu' }));
+const navButton = 'pk-btn pk-btn--sm';
+$('game-nav').append(menu.createInviteButton({ id: 'invite', className: navButton }), menu.createSoundButton({ id: 'sound', className: navButton }), menu.createButton({ id: 'menu', className: navButton }));
+$('lobby-cta').append(menu.createInviteButton({ id: 'lobby-invite', className: 'pk-btn' }));
 const room = new ExpeditionRoom({ code, name, avatar, onState: receive, onNotice: notify,
   onStatus(text, error = false) { failed = error; $('connection').textContent = text; show('practice', error); show('disconnect', error && state.phase === 'playing'); menu.update(); updateUI(); },
 });
@@ -50,8 +53,8 @@ const me = () => state.players.find(p => p.id === room.id);
 
 function label(text, color) {
   const canvas = document.createElement('canvas'); canvas.width = 256; canvas.height = 64;
-  const ctx = canvas.getContext('2d'); ctx.fillStyle = '#18332ce8'; ctx.beginPath(); ctx.roundRect(8, 7, 240, 48, 8); ctx.fill();
-  ctx.fillStyle = color; ctx.font = 'bold 25px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(text, 128, 32, 224);
+  const ctx = canvas.getContext('2d'); ctx.fillStyle = '#0e0b24e0'; ctx.beginPath(); ctx.roundRect(8, 7, 240, 48, 8); ctx.fill();
+  ctx.fillStyle = color; ctx.font = '800 25px Nunito, sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(text, 128, 32, 224);
   const texture = new THREE.CanvasTexture(canvas); texture.colorSpace = THREE.SRGBColorSpace;
   const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: texture, depthTest: false })); sprite.scale.set(2.7, 0.675, 1); sprite.position.y = 3.25; return sprite;
 }
@@ -95,31 +98,46 @@ function receive(next) {
     if (e.kind === 'swing') sound.tone(130, 0, 0.08, 'triangle', 0.025);
     if (['gate', 'relic', 'win', 'revive'].includes(e.kind)) { sound.tone(440, 0, 0.16, 'sine', 0.08); sound.tone(660, 0.12, 0.2, 'sine', 0.06); }
     if (e.kind === 'boss') sound.tone(90, 0, 0.8, 'triangle', 0.1);
+    const big = SHOUTS[e.kind]; if (big) shout(big[0], { tone: big[1] });
   }
   updateUI();
 }
+// Big tilted callouts for the beats of a run; the toast keeps the full sentence.
+const SHOUTS = { awaken: ['¡Una momia despertó!', 'coral'], gate: ['¡Templo abierto!', 'teal'], boss: ['¡El guardián despertó!', 'coral'],
+  guardian: ['¡Guardián vencido!', 'yellow'], relic: ['¡La reliquia es nuestra!', 'yellow'], down: ['¡Pana caído!', 'coral'] };
+const hearts = hp => { const n = Math.ceil(Math.max(0, hp) / 34); return '♥'.repeat(n) + '♡'.repeat(3 - n); };
+function missionSteps() {
+  const wheels = Object.values(state.winches).filter(w => w.latched > 0).length;
+  const steps = [[state.gateOpen ? 'Girar las dos ruedas' : `Girar las dos ruedas (${wheels}/2)`, state.gateOpen], ['Vencer al guardián', state.guardianDefeated], ['Recoger la reliquia', state.relicTaken], ['Volver al campamento', state.phase === 'results' && state.outcome === 'win']];
+  const current = steps.findIndex(s => !s[1]);
+  return steps.map(([text, done], i) => ({ text, state: done ? 'done' : i === current ? 'now' : 'todo' }));
+}
+let stepsKey = '';
 function updateUI() {
   const playing = state.phase === 'playing', p = me();
   show('lobby', state.phase === 'lobby'); show('location-card', state.phase === 'lobby'); show('hud', playing); show('results', state.phase === 'results');
   $('start').disabled = !room.connected || !room.isHost;
-  $('start').textContent = !room.connected ? 'Conectando…' : room.isHost ? 'Empezar la expedición  →' : 'El anfitrión prepara la salida';
-  $('again').disabled = !room.connected || !room.isHost; $('again').textContent = room.isHost ? 'Otra expedición  →' : 'Esperando al anfitrión…';
+  $('start').textContent = !room.connected ? 'Conectando…' : room.isHost ? '¡A la mina!' : 'El anfitrión prepara la salida';
+  $('again').disabled = !room.connected || !room.isHost; $('again').textContent = room.isHost ? '¡Otra expedición!' : 'Esperando al anfitrión…';
   const roster = state.players.map(p => `${p.id}:${p.name}`).join('|');
   if (roster !== rosterKey) {
     rosterKey = roster; $('lobby-team').replaceChildren(); $('team').replaceChildren();
     state.players.forEach((p, i) => {
-      const chip = document.createElement('span'), dot = document.createElement('i'); dot.style.background = colors[i % 8]; chip.append(dot, document.createTextNode(p.name)); $('lobby-team').append(chip);
-      const row = document.createElement('div'); row.className = 'teammate'; row.dataset.player = p.id;
-      const name = document.createElement('span'), value = document.createElement('b'); name.append(document.createTextNode(p.name), value);
-      const meter = document.createElement('div'), bar = document.createElement('i'); bar.style.background = colors[i % 8]; meter.append(bar); row.append(name, meter); $('team').append(row);
+      const chip = document.createElement('span'), dot = document.createElement('i'); chip.className = 'pk-chip'; dot.className = 'pk-dot'; dot.style.background = colors[i % 8]; chip.append(dot, document.createTextNode(p.id === room.id ? `${p.name} · tú` : p.name)); $('lobby-team').append(chip);
+      const row = document.createElement('li'); row.className = `pk-row teammate${p.id === room.id ? ' is-me' : ''}`; row.dataset.player = p.id;
+      const face = document.createElement('span'); face.className = 'pk-avatar'; face.style.background = colors[i % 8]; face.textContent = p.name.slice(0, 1).toUpperCase();
+      const name = document.createElement('span'); name.className = 'teammate-name'; name.textContent = p.name;
+      const value = document.createElement('b'); value.className = 'pk-row-end'; row.append(face, name, value); $('team').append(row);
     });
   }
-  state.players.forEach(p => { const row = $('team').querySelector(`[data-player="${p.id}"]`); if (!row) return; row.querySelector('b').textContent = p.downed ? 'AYUDA' : p.spectator ? 'EN ESPERA' : Math.ceil(p.hp); row.querySelector('i').style.width = `${p.hp}%`; row.classList.toggle('fallen', p.downed); });
-  $('objective').textContent = objective(state);
-  $('mission-fill').style.width = `${state.relicTaken ? 90 : state.guardianDefeated ? 75 : state.gateOpen ? 50 : 15}%`;
+  state.players.forEach(p => { const row = $('team').querySelector(`[data-player="${p.id}"]`); if (!row) return; const value = row.querySelector('b'); value.textContent = p.downed ? 'AYUDA' : p.spectator ? 'EN ESPERA' : hearts(p.hp); value.title = `${Math.ceil(p.hp)} de vitalidad`; row.classList.toggle('fallen', p.downed); row.classList.toggle('waiting', p.spectator); });
+  $('objective').textContent = state.relicTaken ? 'Vuelvan al campamento' : !state.gateOpen ? 'Abre el templo' : !state.guardianDefeated ? 'Vence al guardián' : 'Toma la reliquia';
+  $('objective').title = objective(state);
+  const steps = missionSteps(), key = steps.map(s => s.text + s.state).join('|');
+  if (key !== stepsKey) { stepsKey = key; $('mission-steps').replaceChildren(...steps.map(s => { const li = document.createElement('li'); li.className = `is-${s.state}`; li.textContent = s.text; return li; })); }
   $('region').textContent = p ? regionAt(p).name : 'Campamento';
-  $('health-number').textContent = Math.ceil(p?.hp || 0); $('health-fill').style.width = `${p?.hp || 0}%`;
-  $('meds').textContent = `${p?.heals || 0} botiquines`;
+  $('health-number').textContent = Math.ceil(p?.hp || 0); $('health-fill').parentElement.style.setProperty('--pk-value', String((p?.hp || 0) / 100));
+  $('meds').textContent = `×${p?.heals || 0}`; $('slot-meds').classList.toggle('is-empty', !p?.heals); $('slot-relic').classList.toggle('is-active', state.carrier === p?.id); $('slot-relic').classList.toggle('is-empty', state.carrier !== p?.id);
   $('player-note').textContent = state.carrier === p?.id ? 'Llevas la reliquia. Tus panas te cubren.' : p?.downed ? 'Un pana puede levantarte.' : state.relicTaken ? 'El túnel de regreso está abierto.' : 'Juntos hasta la salida.';
   const target = interaction(state, p); show('interact', playing && !!target && !paused);
   if (target) { $('interaction-label').textContent = target.text; $('interaction-fill').style.width = `${Math.min(1, target.progress) * 100}%`; }
@@ -128,10 +146,10 @@ function updateUI() {
   const guardian = state.enemies.find(e => e.kind === 'guardian');
   const bossVisible = playing && !!guardian && !!p && distance(p, guardian) < 32;
   show('boss', bossVisible); show('compass', !bossVisible);
-  if (guardian) $('boss-fill').style.width = `${guardian.hp / guardian.maxHp * 100}%`;
+  if (guardian) $('boss-fill').parentElement.style.setProperty('--pk-value', String(guardian.hp / guardian.maxHp));
   $('destination').textContent = state.relicTaken ? 'CAMPAMENTO' : !state.gateOpen ? 'LAS RUEDAS' : 'LA RELIQUIA';
   if (state.phase === 'results') {
-    $('result-eyebrow').textContent = state.outcome === 'win' ? 'EXPEDICIÓN COMPLETADA' : 'EL TEMPLO SIGUE EN PIE';
+    $('result-eyebrow').textContent = state.outcome === 'win' ? 'Expedición completada' : 'El templo sigue en pie';
     $('result-title').textContent = state.outcome === 'win' ? 'Volvimos juntos.' : 'Una vuelta más.';
     $('result-copy').textContent = state.outcome === 'win' ? 'Una reliquia recuperada. Una historia más para contar con tus panas.' : 'Las momias ganaron esta vez. Esquiven las marcas rojas y levanten a sus panas antes de seguir.';
     $('result-time').textContent = `${Math.floor(state.time / 60)}:${String(Math.floor(state.time % 60)).padStart(2, '0')}`;
@@ -171,10 +189,29 @@ const mapCtx = $('minimap').getContext('2d');
 function minimap() {
   const c = mapCtx, sx = x => 18 + (x + 14) * 1.75, sz = z => 10 + (z + 127) * 1.25;
   c.clearRect(0, 0, 170, 220);
-  for (const r of ROOMS) { c.fillStyle = r.id === 'shortcut' || r.id === 'return' ? (state.relicTaken ? '#718d72' : '#364c40') : '#899579'; c.fillRect(sx(r.x - r.w / 2), sz(r.z - r.d / 2), r.w * 1.75, r.d * 1.25); }
+  for (const r of ROOMS) { c.fillStyle = r.id === 'shortcut' || r.id === 'return' ? (state.relicTaken ? '#148f78' : '#231a47') : '#4a3f80'; c.fillRect(sx(r.x - r.w / 2), sz(r.z - r.d / 2), r.w * 1.75, r.d * 1.25); }
   const target = state.relicTaken ? CAMP : !state.gateOpen ? { x: 40, z: -38 } : ALTAR;
-  c.fillStyle = '#f7cf7e'; c.beginPath(); c.arc(sx(target.x), sz(target.z), 4, 0, Math.PI * 2); c.fill();
-  for (const [i, p] of state.players.entries()) { c.fillStyle = p.downed ? '#fa8367' : colors[i % 8]; c.beginPath(); c.arc(sx(p.x), sz(p.z), p.id === room.id ? 3.5 : 2.5, 0, Math.PI * 2); c.fill(); c.strokeStyle = '#102c25'; c.lineWidth = 1; c.stroke(); }
+  c.fillStyle = '#ffc629'; c.beginPath(); c.arc(sx(target.x), sz(target.z), 4, 0, Math.PI * 2); c.fill();
+  for (const [i, p] of state.players.entries()) { c.fillStyle = p.downed ? '#ff4b4b' : colors[i % 8]; c.beginPath(); c.arc(sx(p.x), sz(p.z), p.id === room.id ? 3.5 : 2.5, 0, Math.PI * 2); c.fill(); c.strokeStyle = '#0e0b24'; c.lineWidth = 1; c.stroke(); }
+}
+// Compass strip: +-90 degrees around the camera heading. North is -z.
+const CARDINALS = ['N', 'NE', 'E', 'SE', 'S', 'SO', 'O', 'NO'].map((text, i) => ({ text, angle: i * Math.PI / 4 }));
+const compassNodes = new Map();
+function compassNode(key, text, className) {
+  let node = compassNodes.get(key);
+  if (!node) { node = Object.assign(document.createElement('span'), { className }); $('compass-strip').append(node); compassNodes.set(key, node); }
+  if (node.textContent !== text) node.textContent = text; return node;
+}
+function compass(p, destination) {
+  // Cardinals scroll off the strip; place tags pin to its edge so the way back is never lost.
+  const place = (node, bearing, pin = false) => {
+    const rel = Math.atan2(Math.sin(bearing + yaw), Math.cos(bearing + yaw)), x = 50 + rel / Math.PI * 100;
+    node.hidden = !pin && Math.abs(rel) > Math.PI / 2; node.style.left = `${pin ? Math.max(12, Math.min(88, x)) : x}%`;
+  };
+  for (const c of CARDINALS) place(compassNode(c.text, c.text, `compass-mark${c.text === 'N' ? ' is-north' : ''}`), c.angle);
+  place(compassNode('camp', 'CAMPAMENTO', 'compass-tag is-camp'), Math.atan2(CAMP.x - p.x, -(CAMP.z - p.z)), true);
+  const goal = compassNode('goal', $('destination').textContent.replace(/^(LAS?|EL) /, ''), 'compass-tag is-goal');
+  place(goal, Math.atan2(destination.x - p.x, -(destination.z - p.z)), true); if (destination === CAMP) goal.hidden = true;
 }
 function resize() { renderer.setSize(innerWidth, innerHeight); camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix(); }
 addEventListener('resize', resize); resize();
@@ -210,6 +247,7 @@ function frame(now) {
     sun.position.set(p.x - 16, 35, p.z + 23); sun.target.position.set(p.x, 0, p.z);
     const destination = state.relicTaken ? CAMP : !state.gateOpen ? { x: 40, z: -38 } : ALTAR;
     $('compass-arrow').style.transform = `rotate(${Math.atan2(destination.x - p.x, -(destination.z - p.z)) + yaw}rad)`;
+    compass(p, destination);
   }
   lanternLight.position.set(p?.x || 0, 2.8, p?.z || 15);
   world.update(elapsed, state, dt); renderer.render(scene, camera);

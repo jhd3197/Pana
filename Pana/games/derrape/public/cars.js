@@ -9,78 +9,17 @@ import {
   bevelBox, squareLamp, towLoop, bodyShell,
 } from './car-kit.js';
 
-export const CARS = [
-  {
-    id: 'chamo', num: 1, name: 'El Chamo', color: '#e0262f',
-    blurb: 'Chiquito, bravo y con tumbaburros. Arranca rápido y dobla en una moneda.',
-    stats: { Velocidad: 0.62, 'Aceleración': 0.92, Manejo: 0.88, Peso: 0.35 },
-    tune: { top: 33, accel: 26, turn: 2.6, mass: 0.8, grip: 7 },
-    horn: 'meep',
-    build: buildChamo,
-  },
-  {
-    id: 'lancha', num: 2, name: 'La Lancha', color: '#1f9e8e',
-    blurb: 'Larga, pesada y oxidada. Tarda en arrancar, pero en la recta no la para nadie.',
-    stats: { Velocidad: 0.9, 'Aceleración': 0.55, Manejo: 0.58, Peso: 0.9 },
-    tune: { top: 39, accel: 16, turn: 2.0, mass: 1.35, grip: 5 },
-    horn: 'cucaracha',
-    build: buildLancha,
-  },
-  {
-    id: 'machito', num: 3, name: 'El Machito', color: '#ffc629',
-    blurb: 'Rústico de techo duro, cuatro faros y repuesto atrás. Siempre listo pa’ la trocha.',
-    stats: { Velocidad: 0.7, 'Aceleración': 0.75, Manejo: 0.7, Peso: 0.75 },
-    tune: { top: 35, accel: 21, turn: 2.3, mass: 1.15, grip: 6 },
-    horn: 'grave',
-    build: buildMachito,
-  },
-  {
-    id: 'bala', num: 4, name: 'La Bala', color: '#3d7bf2',
-    blurb: 'Hatchback de rally con alerón. La más rápida en la recta, pero se espanta en las curvas.',
-    stats: { Velocidad: 0.95, 'Aceleración': 0.8, Manejo: 0.62, Peso: 0.4 },
-    tune: { top: 40, accel: 22, turn: 2.2, mass: 0.85, grip: 5.5 },
-    horn: 'meep',
-    build: buildBala,
-  },
-  {
-    id: 'toro', num: 5, name: 'El Toro', color: '#ff7a2b',
-    blurb: 'Pick-up con cava en el cajón. Pesada: cuando choca, el otro sale volando.',
-    stats: { Velocidad: 0.72, 'Aceleración': 0.55, Manejo: 0.55, Peso: 1.0 },
-    tune: { top: 36, accel: 16, turn: 2.0, mass: 1.5, grip: 5.5 },
-    horn: 'grave',
-    build: buildToro,
-  },
-  {
-    id: 'familiar', num: 6, name: 'La Familiar', color: '#8ac926',
-    blurb: 'Va pa\u2019 la playa con maletas y olla en el techo. Si choca, llueven corotos.',
-    stats: { Velocidad: 0.66, 'Aceleración': 0.6, Manejo: 0.7, Peso: 0.8 },
-    tune: { top: 35, accel: 18, turn: 2.3, mass: 1.2, grip: 6 },
-    horn: 'cucaracha',
-    build: buildFamiliar,
-  },
-  {
-    id: 'rumbera', num: 7, name: 'La Rumbera', color: '#f15bb5',
-    blurb: 'Escarabajo con cornetas en el techo y la bandera al viento. Siempre de fiesta.',
-    stats: { Velocidad: 0.6, 'Aceleración': 0.85, Manejo: 0.92, Peso: 0.3 },
-    tune: { top: 33, accel: 25, turn: 2.7, mass: 0.75, grip: 7 },
-    horn: 'fiesta',
-    build: buildRumbera,
-  },
-  {
-    id: 'montanero', num: 8, name: 'El Montañero', color: '#b8d000',
-    blurb: 'Buggy camuflado con winche y jaula. Brinca las rampas como si nada.',
-    stats: { Velocidad: 0.78, 'Aceleración': 0.8, Manejo: 0.74, Peso: 0.7 },
-    tune: { top: 37, accel: 22, turn: 2.4, mass: 1.05, grip: 6.5 },
-    horn: 'grave',
-    build: buildMontanero,
-  },
-];
+import { CAR_DEFINITIONS } from './car-definitions.js';
+const builders = { chamo: buildChamo, lancha: buildLancha, machito: buildMachito, bala: buildBala, toro: buildToro, familiar: buildFamiliar, rumbera: buildRumbera, montanero: buildMontanero };
+export const CARS = CAR_DEFINITIONS.map(car => ({ ...car, build: builders[car.id] }));
 
 // ---------- El Chamo ----------
-function buildChamo(avatar) {
+// Every builder takes an optional wheel override (garage cauchos); without
+// one it keeps its own spec, so parked cars and Studio previews are unchanged.
+function buildChamo(avatar, wheel) {
   const W = 2.3, red = '#e0262f';
   const car = rig({
-    wheel: { r: 0.69, w: 0.68, style: 'spokes', rim: '#6b707e', cap: '#e0262f' },
+    wheel: wheel ?? { r: 0.69, w: 0.68, style: 'spokes', rim: '#6b707e', cap: '#e0262f' },
     wheelPos: [[W / 2 + 0.02, 1.32, true], [-W / 2 - 0.02, 1.32, true], [W / 2 + 0.02, -1.32, false], [-W / 2 - 0.02, -1.32, false]],
   });
   const c = car.chassis;
@@ -194,10 +133,10 @@ function buildChamo(avatar) {
 }
 
 // ---------- La Lancha ----------
-function buildLancha(avatar) {
+function buildLancha(avatar, wheel) {
   const W = 2.24, teal = '#1f9e8e', cream = '#f3e2bf';
   const car = rig({
-    wheel: { r: 0.64, w: 0.62, style: 'hubcap' },
+    wheel: wheel ?? { r: 0.64, w: 0.62, style: 'hubcap' },
     wheelPos: [[W / 2, 1.38, true], [-W / 2, 1.38, true], [W / 2, -1.38, false], [-W / 2, -1.38, false]],
   });
   const c = car.chassis;
@@ -292,10 +231,10 @@ function buildLancha(avatar) {
 }
 
 // ---------- El Machito (short-wheelbase hardtop utility 4x4) ----------
-function buildMachito(avatar) {
+function buildMachito(avatar, wheel) {
   const W = 2.18;
   const car = rig({
-    wheel: { r: 0.72, w: 0.66, style: 'steel', rim: '#c1c2cd' },
+    wheel: wheel ?? { r: 0.72, w: 0.66, style: 'steel', rim: '#c1c2cd' },
     wheelPos: [[1.12,1.25,true],[-1.12,1.25,true],[1.12,-1.25,false],[-1.12,-1.25,false]],
   });
   const c = car.chassis, paint = M('#ffc629'), trim = M('#ede4cf'), rubber = DARK();
@@ -354,10 +293,10 @@ function buildMachito(avatar) {
 }
 
 // ---------- La Bala (blue rally hatch) ----------
-function buildBala(avatar) {
+function buildBala(avatar, wheel) {
   const W = 2.24, blue = '#3d7bf2';
   const car = rig({
-    wheel: { r: 0.65, w: 0.66, style: 'spokes', rim: '#d8ddea', cap: '#ff4b4b' },
+    wheel: wheel ?? { r: 0.65, w: 0.66, style: 'spokes', rim: '#d8ddea', cap: '#ff4b4b' },
     wheelPos: [[W / 2 + 0.02, 1.3, true], [-W / 2 - 0.02, 1.3, true], [W / 2 + 0.02, -1.3, false], [-W / 2 - 0.02, -1.3, false]],
   });
   const c = car.chassis;
@@ -415,10 +354,10 @@ function buildBala(avatar) {
 }
 
 // ---------- El Toro (red and white pickup) ----------
-function buildToro(avatar) {
+function buildToro(avatar, wheel) {
   const W = 2.3, red = '#e0262f';
   const car = rig({
-    wheel: { r: 0.73, w: 0.72, style: 'steel', rim: '#aeb7c7' },
+    wheel: wheel ?? { r: 0.73, w: 0.72, style: 'steel', rim: '#aeb7c7' },
     wheelPos: [[W / 2 + 0.04, 1.45, true], [-W / 2 - 0.04, 1.45, true], [W / 2 + 0.04, -1.4, false], [-W / 2 - 0.04, -1.4, false]],
   });
   const c = car.chassis;
@@ -492,10 +431,10 @@ function buildToro(avatar) {
 }
 
 // ---------- La Familiar (green sedan with a loaded roof rack) ----------
-function buildFamiliar(avatar) {
+function buildFamiliar(avatar, wheel) {
   const W = 2.24, green = '#3f9d4a';
   const car = rig({
-    wheel: { r: 0.63, w: 0.59, style: 'hubcap' },
+    wheel: wheel ?? { r: 0.63, w: 0.59, style: 'hubcap' },
     wheelPos: [[W / 2, 1.38, true], [-W / 2, 1.38, true], [W / 2, -1.38, false], [-W / 2, -1.38, false]],
   });
   const c = car.chassis;
@@ -582,10 +521,10 @@ function buildFamiliar(avatar) {
 }
 
 // ---------- La Rumbera (pink beetle with a sound system) ----------
-function buildRumbera(avatar) {
+function buildRumbera(avatar, wheel) {
   const W = 2.2, pink = '#ff4fa3';
   const car = rig({
-    wheel: { r: 0.64, w: 0.62, style: 'steel', rim: '#ef68ab' },
+    wheel: wheel ?? { r: 0.64, w: 0.62, style: 'steel', rim: '#ef68ab' },
     wheelPos: [[W / 2, 1.3, true], [-W / 2, 1.3, true], [W / 2, -1.3, false], [-W / 2, -1.3, false]],
   });
   const c = car.chassis;
@@ -652,10 +591,10 @@ function buildRumbera(avatar) {
 }
 
 // ---------- El Montañero (camo buggy) ----------
-function buildMontanero(avatar) {
+function buildMontanero(avatar, wheel) {
   const W = 2.3, olive = '#6b7a3a';
   const car = rig({
-    wheel: { r: 0.81, w: 0.78, style: 'steel', rim: '#aeb3bc' },
+    wheel: wheel ?? { r: 0.81, w: 0.78, style: 'steel', rim: '#aeb3bc' },
     wheelPos: [[W / 2 + 0.08, 1.32, true], [-W / 2 - 0.08, 1.32, true], [W / 2 + 0.08, -1.32, false], [-W / 2 - 0.08, -1.32, false]],
   });
   const c = car.chassis;

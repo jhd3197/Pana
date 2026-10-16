@@ -1,3 +1,4 @@
+import { TRACK_DEFINITIONS } from '../track-definitions.js';
 // Stadium Grand Prix: braking zones, opposing chicanes and an infield return.
 import { THREE,M,box,tube,sign,terrain,finish,put,instances,scatter,edges,clear } from './world-kit.js';
 import { grandstand } from './world-landmarks.js';
@@ -7,8 +8,7 @@ import { trophyMonument } from '/engine/models/props/monuments.js';
 import { stadiumGrounds } from './stadium-grounds.js';
 
 export default {
-  id:'estadio',name:'El Estadio',
-  blurb:'Un gran premio técnico: frenadas, chicanas, horquillas y la recta de las tribunas.',
+  ...TRACK_DEFINITIONS.find(track => track.id === 'estadio'),
   points:[[-235,150],[-130,150],[-30,150],[70,150],[150,150],[200,110],[200,35],[140,20],[85,40],[25,5],[50,-65],[130,-85],[205,-90],[235,-110],[240,-200],[165,-245],[80,-215],[45,-155],[-15,-145],[-50,-195],[-115,-220],[-220,-210],[-265,-150],[-250,-80],[-180,-50],[-120,-85],[-65,-65],[-65,0],[-130,40],[-220,35],[-275,85]],
   rounded:true,hw:8,lineU:.045,elevation:()=>1.65,
   previewBounds:[[-430,0,-400],[515,55,475]],

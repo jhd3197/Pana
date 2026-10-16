@@ -1,7 +1,8 @@
 import { openDatabase, transaction } from './cache-store.js';
 const $ = id => document.getElementById(id);
-const asset = new URLSearchParams(location.search).get('asset');
-const inventoryURL = '/studio.html' + (asset ? '#' + encodeURIComponent(asset) : '');
+const params = new URLSearchParams(location.search), asset = params.get('asset'), back = params.get('return');
+// Only allow known local Studio destinations in return links.
+const inventoryURL = back && /^\/studio\/(library|workspace|assets\/[^/?#]+)(\?[^#]*)?$/.test(back) ? back : asset ? '/studio/assets/' + encodeURIComponent(asset) : '/studio/library';
 $('inventory-link').href = inventoryURL;
 function busy(value) { $('cache-clear').disabled = value; $('cache-rebuild').disabled = value; }
 async function withStore(mode, action) {
@@ -23,7 +24,7 @@ async function clear(rebuild) {
   try {
     await withStore('readwrite', store => store.clear());
     if (rebuild) { location.assign(inventoryURL); return; }
-    await refresh(); $('cache-status').textContent = 'Caché vacía. Se preparará al volver al inventario.';
+    await refresh(); $('cache-status').textContent = 'Caché vacía. Prepara los resultados que necesites desde la biblioteca.';
   } catch (error) { busy(false); $('cache-status').textContent = 'No se pudo vaciar la caché: ' + error.message; }
 }
 $('cache-clear').onclick = () => clear(false);

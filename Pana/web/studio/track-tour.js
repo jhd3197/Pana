@@ -101,7 +101,7 @@ export function createTrackTour({ scene, camera, controls, canvas, invalidate, o
   $('tour-copy').onclick = async () => {
     if (!route || !active) return;
     pause(); const point = tourPose(route, distance).position;
-    const text = `${asset.name}\nRevisar el circuito en el ${((distance / length()) * 100).toFixed(1)} % (${distance.toFixed(1)} de ${length().toFixed(1)} m desde la salida).\nPista XYZ: ${point.x.toFixed(2)}, ${roadHeight(route, (route.LINE || 0) + distance).toFixed(2)}, ${point.z.toFixed(2)}\nCámara XYZ: ${camera.position.toArray().map(v => v.toFixed(2)).join(', ')}\nFuente: ${asset.source}\nStudio: ${location.origin}/studio.html#${asset.id}\nComentario: `;
+    const text = `${asset.name}\nRevisar el circuito en el ${((distance / length()) * 100).toFixed(1)} % (${distance.toFixed(1)} de ${length().toFixed(1)} m desde la salida).\nPista XYZ: ${point.x.toFixed(2)}, ${roadHeight(route, (route.LINE || 0) + distance).toFixed(2)}, ${point.z.toFixed(2)}\nCámara XYZ: ${camera.position.toArray().map(v => v.toFixed(2)).join(', ')}\nFuente: ${asset.source}\nStudio: ${location.origin}/studio/assets/${encodeURIComponent(asset.id)}\nComentario: `;
     $('tour-state').textContent = await copy(text) ? 'Punto copiado. Pégalo junto a tu comentario.' : 'No se pudo copiar el punto. Puedes indicar el porcentaje visible.';
   };
   canvas.addEventListener('keydown', event => {

@@ -21,10 +21,17 @@ clean: only `README.md` and `.gitignore` belong there. Everything else lives her
   something into `engine/` when a second page needs it — don't abstract early.
 - Players are panas: every game should use the player's character
   (`/engine/avatar.js` + `/engine/character.js`) instead of a faceless placeholder.
-- Pana Studio at `/studio.html` catalogs existing props, maps, vehicles and
+- Pana Studio at `/studio/library` catalogs existing props, maps, vehicles and
   characters. Register new resources in `web/studio/catalog.js` using their real
   constructors; do not duplicate models in the preview. See
   `../docs/knowledge/pana-studio.md` for the registration and agent workflow.
+  Each asset has a real `/studio/assets/:id` page; `/studio/workspace` stores a
+  local working set. Keep library metadata independent of renderer imports and
+  load `inspector.js` only for an item. Thumbnail queues are explicit filtered
+  sets, never a full-catalog startup gate. Preserve legacy hash links and history.
+  Racing metadata lives in `car-definitions.js` / `track-definitions.js`;
+  `tracks.js` re-exports the shared `track-runtime.js` constructor. Studio loads
+  only the selected track definition. Preserve these compatibility exports.
   Circuit previews expose their existing track runtime as `route` for Studio's
   `track-tour.js`: user-started playback follows the start line, road and ramps.
   Preserve pause/scrub/copy-point behavior, restore overview on exit, and reset
@@ -115,6 +122,11 @@ clean: only `README.md` and `.gitignore` belong there. Everything else lives her
   `/personaje.html`; its old model module URLs only re-export shared sources.
   Games use the lighter sampling profile and must call `character.dispose()`
   when removing a character (detach shared carried props first).
+- The look is shared: `engine/kit.css` (Pana Kit) holds the palette, the only
+  two fonts (Luckiest Guy for display, Nunito for UI) and the lobby/HUD pieces.
+  Link it before `/engine/ui.css` and the game's stylesheet, set the game's
+  accent with `--pk-game`, and build lobbies and HUDs from `.pk-*` classes
+  instead of per-game fonts and palettes. See `../docs/knowledge/pana-kit.md`.
 - Pause menus and settings are shared: `engine/ui.js` (`createGameMenu`) plus
   `engine/settings.js` (`pana:settings`: sound, volume, resolution, hints).
   Every game and the hub use them. Do not write a per-game pause overlay, sound
@@ -243,6 +255,15 @@ clean: only `README.md` and `.gitignore` belong there. Everything else lives her
   is asynchronous: await it in browser tests. `?debug&manual` stops only the game
   loop so deterministic tests can still paint loading steps. Keep the last map
   for replay, and preserve cancellation between `buildSteps()` stages.
+  Swappable wheels (cauchos) live in `wheel-definitions.js`: five trade-off
+  profiles composed per racer (`composeTune` at `makeRacer`, never mutating
+  `def.tune`). `stepCar` reads the composed tune, scaling off-road roughness by
+  `offroadResist` and flooring wet grip at `wetFloor`. Car builders take an
+  optional wheel override; without one each car keeps its own wheels. The
+  garage has a `2 Cauchos` step persisted in `localStorage 'derrape:wheels'`
+  (fallback calle), and rivals wear thematic wheels (`AI_WHEELS`). The five
+  wheels are registered in Studio under Vehículos. See
+  `../docs/knowledge/derrape-wheels.md`.
 - Dominó uses event-driven host snapshots (`domino-v1`), with four seats and
   alternating teams. Its pure `games/domino/public/rules.js` owns deals, legal
   moves, passes, scoring and a revision/sequence ledger. Empty seats are bots;

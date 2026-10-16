@@ -11,7 +11,7 @@ try {
   const page = await browser.newPage({ viewport: { width: 1440, height: 1000 }, reducedMotion: 'reduce' });
   page.on('pageerror', e => errors.push(e.message));
   page.on('console', m => { if (m.type() === 'error' && !m.text().includes('404')) errors.push(m.text()); });
-  await page.goto(`${base}/studio.html`);
+  await page.goto(`${base}/studio/library`);
   await page.locator('#startup').waitFor({ state: 'hidden', timeout: 300000 });
   const assets = await page.evaluate(() => panaLibrary.assets.map(({ id, source, category }) => ({ id, source, category })));
   assert.ok(assets.length >= 50); assert.equal(new Set(assets.map(a => a.id)).size, assets.length);
@@ -19,7 +19,7 @@ try {
   await page.locator('#search').fill('mazorca'); assert.equal(await page.locator('[data-asset]').count(), 1);
   await page.locator('[data-asset="corn"]').click();
   await page.waitForFunction(() => panaLibrary.selected === 'corn' && document.querySelector('#preview-status').hidden);
-  await page.locator('#search').fill('zzzz-missing'); assert.equal(await page.locator('#empty').isVisible(), true);
+  await page.locator('#back-library').click(); await page.locator('#search').fill('zzzz-missing'); assert.equal(await page.locator('#empty').isVisible(), true);
   await page.locator('#clear-search').click();
   for (const [category, count] of [['Pueblo', 10], ['Llanos', 10], ['Vida llanera', 11], ['Desierto', 10], ['Páramo', 8], ['Termales', 5], ['Costa', 9], ['Vegetación', 24], ['Fauna', 10]]) {
     await page.locator(`[data-category="${category}"]`).click();
@@ -31,8 +31,9 @@ try {
   await page.locator('#search').fill('070'); assert.equal(await page.locator('[data-asset="desert-well"]').count(), 1);
   await page.locator('#search').fill('');
   const downloadPromise = page.waitForEvent('download'); await page.locator('#export').click(); const download = await downloadPromise;
-  assert.equal(download.suggestedFilename(), 'pana-studio-inventario.json'); await download.saveAs(`${output}/inventory.json`);
+  assert.equal(download.suggestedFilename(), 'pana-studio-seleccion.json'); await download.saveAs(`${output}/inventory.json`);
   for (const asset of assets) {
+    await page.locator('#nav-library').click();
     // Map constructors can occupy the main thread during the click itself.
     // Use the same budget as the subsequent preview-ready check.
     await page.locator(`[data-asset="${asset.id}"]`).click({ timeout: 90000 });
@@ -42,7 +43,7 @@ try {
     if (['pana-chef', 'car-chamo', 'car-machito', 'plaza', 'track-estadio', 'mangoTree'].includes(asset.id)) await page.screenshot({ path: `${output}/${asset.id}.png` });
     console.log(`preview ${asset.id}`);
   }
-  await page.locator('[data-category="Mapas"]').click(); assert.ok(await page.locator('[data-asset]').count() >= 10);
+  await page.locator('#nav-library').click(); await page.locator('[data-category="Mapas"]').click(); assert.ok(await page.locator('[data-asset]').count() >= 10);
   await page.setViewportSize({ width: 390, height: 844 }); await page.locator('[data-category="Personajes"]').click(); await page.locator('[data-asset="pana"]').click();
   await page.waitForFunction(() => panaLibrary.selected === 'pana' && document.querySelector('#preview-status').hidden);
   assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false); await page.screenshot({ path: `${output}/mobile-library.png`, fullPage: true });

@@ -1,9 +1,9 @@
+import { TRACK_DEFINITIONS } from '../track-definitions.js';
 // Hato, pastures and connected esteros: a broad countryside race with two river bridges.
 import {ROUTE,roadHeight} from './llanos-layout.js';
 import {llanosEnvironment,llanosScenery} from './llanos-world.js';
 export default {
-  id:'llanos',name:'Los Llanos',
-  blurb:'Corre entre hatos y potreros, cruza los puentes del estero y vuelve por el morichal y la arepera.',
+  ...TRACK_DEFINITIONS.find(track => track.id === 'llanos'),
   points:ROUTE,rounded:true,hw:9,lineU:.013,elevation:roadHeight,
   previewBounds:[[-420,-2,-380],[425,45,300]],
   sectors:[[0,'Hacienda Pana'],[.17,'Puente del estero'],[.32,'Curvas del morichal'],[.5,'Potrero del levante'],[.65,'Paso del caño'],[.81,'Arepera del camino']],

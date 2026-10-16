@@ -3,11 +3,10 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="theme-color" content="#30283d">
+  <meta name="theme-color" content="#0e0b24">
   <meta name="description" content="Cocina arepas, cachapas, tequeños y empanadas con tus panas. Una cocina cooperativa en la Plaza Pana.">
   <title>Pana Cocina · ¡A comer!</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Luckiest+Guy&family=Nunito:wght@600;700;800;900&display=swap">
+  <link rel="stylesheet" href="/engine/kit.css">
   <link rel="stylesheet" href="/engine/ui.css">
   <link rel="stylesheet" href="style.css">
   <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}</script>
@@ -15,35 +14,41 @@
 <body>
   <canvas id="world" aria-label="Cocina cooperativa en la Plaza Pana"></canvas>
   <header>
-    <a class="brand" href="/" aria-label="Volver a Pana"><span class="chef-mark" aria-hidden="true">♨</span><b>PANA</b><strong>COCINA</strong></a>
     <nav id="game-nav" aria-label="Opciones"></nav>
   </header>
-  <div id="loading" role="status">Prendiendo los fogones…</div>
-  <section id="lobby" class="lobby hidden" aria-labelledby="title">
-    <div class="ribbon">HOY SE COME EN LA PLAZA</div>
-    <h1 id="title">¡Manos<br>a la masa!</h1>
-    <p class="intro">Cuatro platos de aquí.<br>Una cocina llena de panas.</p>
+  <div id="loading" class="pk-panel" role="status">Prendiendo los fogones…</div>
+  <section id="lobby" class="pk-lobby hidden" aria-labelledby="title">
+    <div class="pk-lobby-top"><a class="pk-back" href="/">← Todos los juegos</a><a class="pk-logo" href="/" aria-label="Pana">PANA</a></div>
+    <span class="pk-ribbon">HOY SE COME EN LA PLAZA</span>
+    <h1 id="title" class="pk-title">¡Manos a la masa!</h1>
+    <p class="pk-copy">Cuatro platos de aquí. Una cocina llena de panas.</p>
     <div class="menu-tasting" id="tasting" aria-label="Arepas, cachapas, tequeños y empanadas"></div>
     <ol class="recipe-steps"><li><b>01</b> Busca ingredientes</li><li><b>02</b> Prepara en la tabla</li><li><b>03</b> Cocina y sirve</li></ol>
-    <div class="shift-info"><span><b>3 min</b> por turno</span><span><b>1–8</b> panas</span></div>
-    <label class="helpers"><input id="helpers" type="checkbox" checked> Ayudantes cuando falten panas</label>
-    <button id="start" class="primary" disabled>Entrando a la cocina…</button>
-    <p id="connection" class="connection" role="status">Conectando…</p>
-    <button id="practice" class="text-button hidden">Abrir cocina local</button>
-    <a class="back" href="/">← Todos los juegos</a>
+    <div class="pk-stats"><div class="pk-stat"><b>3 min</b><span>por turno</span></div><div class="pk-stat"><b>1–8</b><span>panas</span></div><div class="pk-stat"><b>4</b><span>platos</span></div></div>
+    <div class="pk-field"><span class="pk-eyebrow" id="helpers-label">Cuando falten panas</span>
+      <div class="pk-seg" role="group" aria-labelledby="helpers-label"><label class="helpers"><input id="helpers" type="checkbox" checked> Con ayudantes</label><button id="solo" type="button" aria-pressed="false">Solo panas</button></div></div>
+    <div class="pk-lobby-foot">
+      <div class="pk-lobby-room"><div id="lobby-avatars" class="pk-avatars" aria-hidden="true"></div><span id="lobby-names"></span><span class="pk-room-code" id="room-code"></span></div>
+      <p id="lobby-status" class="lobby-status"><span id="connection" role="status">Conectando…</span> <button id="practice" class="text-button hidden">Abrir cocina local</button></p>
+      <div class="pk-lobby-cta" id="lobby-cta"><button id="start" class="pk-btn pk-btn--primary pk-btn--lg" disabled>Entrando a la cocina…</button></div>
+    </div>
   </section>
   <div id="welcome-label" class="welcome-label"><small>PLAZA PANA</small><b>La sazón se comparte.</b><span>Más panas, menos drama.</span></div>
   <main id="hud" class="hidden">
-    <div class="order-bar"><section id="orders" aria-label="Pedidos pendientes"></section><div class="shift-clock"><small>CIERRE EN</small><b id="timer">03:00</b></div><div class="score"><small>PUNTOS</small><b id="score">0</b><span id="stars">☆ ☆ ☆</span></div></div>
+    <div class="order-bar"><section id="orders" aria-label="Pedidos pendientes"></section><div class="shift-clock pk-panel pk-readout"><small class="pk-eyebrow">CIERRE EN</small><b id="timer" class="pk-num">03:00</b></div><div class="score pk-panel pk-readout"><small class="pk-eyebrow">PUNTOS</small><b id="score" class="pk-num">0</b><span id="stars">☆ ☆ ☆</span></div></div>
     <div id="station-labels" aria-hidden="true"></div>
-    <div id="team" class="team"></div>
-    <div class="bottom-hud"><div class="held-panel"><img id="held-image" alt=""><div><small>EN TUS MANOS</small><b id="held-name">Manos libres</b><span id="held-next">Busca ingredientes para un pedido.</span></div></div><button id="action" class="action"><kbd>E</kbd><span id="action-label">Acércate a una estación</span></button></div>
-    <div class="controls" data-pana-hint><span><kbd>W A S D</kbd> / <kbd>↑ ← ↓ →</kbd> Moverte</span><span><kbd>E</kbd> Recoger / dejar</span><span><kbd>Shift</kbd> Apurarte</span></div>
+    <ul id="team" class="team pk-roster" aria-label="Cocineros"></ul>
+    <div class="bottom-hud"><div class="held-panel pk-panel"><div class="held-art"><img id="held-image" alt=""></div><div><small class="pk-eyebrow">EN TUS MANOS</small><b id="held-name">Manos libres</b><span id="held-next">Busca ingredientes para un pedido.</span></div></div><button id="action" class="action pk-btn pk-btn--primary"><kbd class="pk-kbd">E</kbd><span id="action-label">Acércate a una estación</span></button></div>
+    <div class="controls pk-hints" data-pana-hint><span><b>W A S D</b> Moverte</span><span><b>E</b> Recoger / dejar</span><span><b>Shift</b> Apurarte</span></div>
     <div class="touch-controls"><button data-move="up" aria-label="Avanzar">▲</button><div><button data-move="left" aria-label="Izquierda">◀</button><button data-move="down" aria-label="Retroceder">▼</button><button data-move="right" aria-label="Derecha">▶</button></div></div>
     <button id="dash" class="touch-dash" aria-label="Apurarte">¡Voy!</button>
   </main>
   <div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
-  <section id="results" class="overlay hidden" aria-labelledby="result-title"><div class="panel results-panel"><small>COCINA CERRADA</small><div id="result-stars" class="result-stars"></div><h2 id="result-title">¡Buen provecho!</h2><p id="result-copy"></p><div class="result-stats"><div><b id="result-score">0</b><span>puntos</span></div><div><b id="result-served">0</b><span>servidos</span></div><div><b id="result-missed">0</b><span>perdidos</span></div></div><div id="result-team"></div><button id="again" class="primary">Otro turno →</button><a class="back" href="/">← Todos los juegos</a></div></section>
+  <section id="results" class="overlay hidden" aria-labelledby="result-title"><div class="pk-modal results-panel">
+    <span class="pk-eyebrow">COCINA CERRADA</span><div id="result-stars" class="result-stars"></div><h2 id="result-title" class="pk-title">¡Buen provecho!</h2><p id="result-copy" class="pk-copy"></p>
+    <div class="pk-stats result-stats"><div class="pk-stat"><b id="result-score">0</b><span>puntos</span></div><div class="pk-stat"><b id="result-served">0</b><span>servidos</span></div><div class="pk-stat"><b id="result-missed">0</b><span>perdidos</span></div></div>
+    <ul id="result-team" class="pk-roster"></ul><button id="again" class="pk-btn pk-btn--primary pk-btn--block">Otro turno →</button><a class="pk-back" href="/">← Todos los juegos</a>
+  </div></section>
   <script type="module">import('./game.js').catch(error => { console.error(error); const el = document.getElementById('loading'); el.textContent = 'No pudimos abrir la cocina. Comprueba la conexión y WebGL, y recarga la página.'; el.classList.remove('hidden'); });</script>
 </body>
 </html>

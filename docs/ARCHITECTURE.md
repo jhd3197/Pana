@@ -34,7 +34,9 @@ Pana/
 | URL | Handler | Purpose |
 |---|---|---|
 | `/` | `web/` statics | Hub: game list, live rooms, name picker |
-| `/studio.html` | `web/` statics | Pana Studio: reusable asset catalog and live previews |
+| `/studio/library`, `/studio/workspace` | Studio shell | Lightweight catalog and saved working set |
+| `/studio/assets/:id` | Studio shell | Dedicated resource page; lazy live preview |
+| `/studio/settings`, `/studio/guide` | Studio statics | Cache settings and contributor guide |
 | `/personaje.html` | `web/` statics | Full character and wardrobe editor; saves the game avatar |
 | `/g/<game>/*` | `games/<game>/public` | A game's client |
 | `/engine/*` | `engine/` statics | Shared code: player avatar + 3D character |
@@ -52,6 +54,9 @@ The character sculpt is shared under `engine/soft-character/`. The game adapter
 in `engine/character.js` preserves game-world scale, seated/carry poses and saved
 avatars while using a lighter geometry profile. Pana Studio registers existing
 asset constructors in `web/studio/catalog.js`; no additional backend is needed.
+Its known browser routes serve `studio.html`; `routes.js` handles navigation and
+filter URLs, and `inspector.js` loads on an asset page only. Legacy
+`/studio.html#<id>` links remain valid. Unknown Studio paths keep normal 404s.
 
 ## Multiplayer model
 

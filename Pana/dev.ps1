@@ -174,7 +174,7 @@ function Start-PanaServer {
                 $proc.Refresh()
             }
             if (-not $ready) { throw 'Pana did not become ready. Check the port and Node installation.' }
-            if (-not $NoBrowser) { Start-Process "http://localhost:$Port/studio.html" }
+            if (-not $NoBrowser) { Start-Process "http://localhost:$Port/studio/library" }
         }
         while (-not $proc.HasExited) {
             Start-Sleep -Milliseconds 500
@@ -194,19 +194,19 @@ switch ($mode) {
         $existing = $false
         try {
             $health = Invoke-RestMethod -Uri "http://localhost:$port/api/health" -TimeoutSec 5
-            $page = Invoke-WebRequest -UseBasicParsing -Uri "http://localhost:$port/studio.html" -TimeoutSec 5
+            $page = Invoke-WebRequest -UseBasicParsing -Uri "http://localhost:$port/studio/library" -TimeoutSec 5
             $existing = $health.ok -and $page.Content.Contains('Pana Studio')
         } catch { }
         if ($existing) {
             Write-Header 'Pana Studio'
-            Write-Host "  Reusing Pana: http://localhost:$port/studio.html"
-            if (-not $noBrowser) { Start-Process "http://localhost:$port/studio.html" }
+            Write-Host "  Reusing Pana: http://localhost:$port/studio/library"
+            if (-not $noBrowser) { Start-Process "http://localhost:$port/studio/library" }
             exit 0
         }
         # Studio must never terminate a running game or an unrelated listener.
         $resolved = Resolve-DevPort -Name 'Pana Studio' -Preferred $port -NoAutoPort $noAutoPort
         Write-Header 'Pana Studio'
-        Write-Host "  Studio:       http://localhost:$($resolved.Port)/studio.html"
+        Write-Host "  Studio:       http://localhost:$($resolved.Port)/studio/library"
         Write-Host "  Character:    http://localhost:$($resolved.Port)/personaje.html"
         Start-PanaServer -Port $resolved.Port -OpenStudio $true -NoBrowser $noBrowser
     }

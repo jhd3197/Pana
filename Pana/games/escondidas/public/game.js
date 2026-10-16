@@ -44,11 +44,11 @@ for (const def of PLAZA_PROPS) previews.set(def.id, preview(createPlazaProp(def.
 const seekerFace = preview(buildCharacter({ ...avatar, hatColor: '#3d7bf2' }).group, true);
 $('seeker-face').src = seekerFace;
 for (const [i, def] of PLAZA_PROPS.entries()) {
-  const button = document.createElement('button'); button.type = 'button'; button.dataset.prop = def.id;
+  const button = document.createElement('button'); button.type = 'button'; button.className = 'pk-slot'; button.dataset.prop = def.id;
   button.setAttribute('aria-label', `${def.label}, tecla ${i + 1}`); button.setAttribute('aria-pressed', 'false');
   const img = document.createElement('img'); img.src = previews.get(def.id); img.alt = '';
   const label = document.createElement('b'); label.textContent = def.label;
-  const key = document.createElement('kbd'); key.textContent = i + 1;
+  const key = document.createElement('kbd'); key.className = 'pk-slot-n'; key.textContent = i + 1;
   button.append(img, label, key); button.onclick = () => transform(def.id); $('prop-list').append(button);
 }
 
@@ -71,7 +71,9 @@ const menu = createGameMenu({
   onOpen() { paused = true; keys.clear(); touch.clear(); drag = null; },
   onClose() { paused = false; },
 });
-$('game-nav').append(menu.createInviteButton({ id: 'invite' }), menu.createSoundButton({ id: 'sound' }), menu.createButton({ id: 'menu' }));
+$('game-nav').append(menu.createInviteButton({ id: 'invite', className: 'pk-btn pk-btn--sm' }), menu.createSoundButton({ id: 'sound', className: 'pk-btn pk-btn--sm' }), menu.createButton({ id: 'menu', className: 'pk-btn pk-btn--sm' }));
+$('menu').querySelector('kbd')?.classList.add('pk-kbd');
+$('lobby-cta').append(menu.createInviteButton({ id: 'lobby-invite', className: 'pk-btn' }));
 function getMe() { return state.players.find(p => p.id === room.id); }
 
 function disposeActor(actor) {
@@ -110,17 +112,19 @@ function receive(next) {
 }
 function updateHUD() {
   const me = getMe(), active = room.connected && ['hide', 'hunt'].includes(state.phase), lobby = state.phase === 'lobby' || !room.connected;
-  show('lobby', lobby); show('scene-label', lobby); show('hud', active);
+  show('lobby', lobby); show('scene-label', lobby); show('hud', active); document.body.classList.toggle('in-lobby', lobby);
   show('results', room.connected && ['results', 'finished'].includes(state.phase));
   $('start').disabled = !room.connected || !room.isHost;
   $('start').textContent = !room.connected ? 'Entrando a la sala…' : room.isHost ? '¡A jugar! →' : 'Esperando al anfitrión…';
   $('role-hide').disabled = $('role-seek').disabled = !room.isHost;
+  $('room-code').textContent = room.offline ? '● Práctica' : `● Sala ${code}`;
   if (room.connected) $('connection').textContent = room.offline ? 'Práctica con 3 panas de la máquina.'
     : `Sala ${code} · ${room.members.size} pana${room.members.size === 1 ? '' : 's'} conectado${room.members.size === 1 ? '' : 's'}${room.members.size < 4 ? ' · completamos con bots' : ''}`;
   const rosterKey = [...room.members.values()].map(p => p.name).join('|');
   if ($('roster').dataset.key !== rosterKey) {
     $('roster').dataset.key = rosterKey; $('roster').replaceChildren();
     for (const p of room.members.values()) { const el = document.createElement('span'); el.textContent = p.name + (p.id === room.id ? ' (tú)' : ''); $('roster').append(el); }
+    $('roster').prepend(Object.assign(document.createElement('i'), { className: 'pk-dot' }));
   }
   if (lobby) { $('world').style.filter = ''; eventId = 0; return; }
   const seeker = state.players.find(p => p.id === state.seeker), seeking = me?.id === state.seeker;
@@ -146,13 +150,13 @@ function updateHUD() {
   $('world').style.filter = seeking && state.phase === 'hide' ? 'blur(30px) brightness(.45)' : '';
   show('disguise-panel', !seeking && !spectating);
   $('prop-name').textContent = propDefinition(me?.prop)?.label || 'Tu pana';
-  $('charges').textContent = Array.from({ length: RULES.changes }, (_, i) => i < (me?.changes || 0) ? '●' : '○').join(' ');
+  $('charges').replaceChildren(...Array.from({ length: RULES.changes }, (_, i) => Object.assign(document.createElement('i'), { className: i < (me?.changes || 0) ? 'on' : '' })));
   $('charges').setAttribute('aria-label', `${me?.changes || 0} cambios restantes`);
   $('disguise-tip').textContent = me?.prop ? 'Quédate quieto para camuflarte.' : 'Elige un objeto para camuflarte.';
   $('revert').disabled = !me?.prop || seeking || spectating;
   for (const button of $('prop-list').children) {
     const selected = button.dataset.prop === me?.prop;
-    button.classList.toggle('selected', selected); button.setAttribute('aria-pressed', String(selected));
+    button.classList.toggle('selected', selected); button.classList.toggle('is-active', selected); button.setAttribute('aria-pressed', String(selected));
     button.disabled = !active || seeking || spectating || (me?.changes ?? 0) <= 0 || selected;
   }
   const near = nearestProp();
@@ -170,7 +174,7 @@ function updateHUD() {
     $('result-copy').textContent = 'Cada captura suma 1 punto. Sobrevivir a la ronda suma 3. El buscador cambia en cada ronda.';
     $('scores').replaceChildren();
     for (const p of [...state.players].sort((a, b) => b.score - a.score)) {
-      const row = document.createElement('div'); row.className = 'score-row';
+      const row = document.createElement('li'); row.className = `score-row pk-row${p.id === room.id ? ' is-me' : ''}`;
       const label = document.createElement('span'); label.textContent = p.name + (p.id === room.id ? ' (tú)' : '');
       const detail = document.createElement('small'); detail.textContent = p.spectator ? 'Espectador' : p.id === state.seeker ? 'Buscador' : p.caught ? 'Encontrado' : 'A salvo';
       const score = document.createElement('b'); score.textContent = p.score; row.append(label, detail, score); $('scores').append(row);
@@ -234,8 +238,8 @@ function input() {
 const map = $('minimap').getContext('2d');
 function drawMap() {
   const W = 300, H = 270, scale = 5.7, px = x => W / 2 + x * scale, pz = z => H / 2 + z * scale;
-  map.clearRect(0, 0, W, H); map.fillStyle = '#595565'; map.fillRect(px(-BOUNDS.x), pz(-BOUNDS.z), BOUNDS.x * scale * 2, BOUNDS.z * scale * 2);
-  map.fillStyle = '#353145';
+  map.clearRect(0, 0, W, H); map.fillStyle = '#2e2558'; map.fillRect(px(-BOUNDS.x), pz(-BOUNDS.z), BOUNDS.x * scale * 2, BOUNDS.z * scale * 2);
+  map.fillStyle = '#120d2c';
   for (const b of BLOCKERS) {
     if (b.r) { map.beginPath(); map.arc(px(b.x), pz(b.z), Math.max(2, b.r * scale), 0, Math.PI * 2); map.fill(); }
     else map.fillRect(px(b.x - b.w / 2), pz(b.z - b.d / 2), b.w * scale, b.d * scale);
@@ -244,18 +248,19 @@ function drawMap() {
     if (p.caught || p.spectator) continue;
     // Do not reveal hiders to the seeker, even during preparations.
     if (p.id !== room.id && p.id !== state.seeker) continue;
-    map.fillStyle = p.id === room.id ? '#54e2ca' : '#ff7067';
-    map.strokeStyle = '#252137'; map.lineWidth = 2.5;
+    map.fillStyle = p.id === room.id ? '#ffc629' : '#ff4b4b';
+    map.strokeStyle = '#0e0b24'; map.lineWidth = 2.5;
     map.beginPath(); map.arc(px(p.x), pz(p.z), p.id === room.id ? 7 : 5, 0, Math.PI * 2); map.fill(); map.stroke();
     if (p.id === room.id) {
-      map.beginPath(); map.moveTo(px(p.x), pz(p.z)); map.lineTo(px(p.x) - Math.sin(yaw) * 13, pz(p.z) - Math.cos(yaw) * 13); map.strokeStyle = '#fff1d0'; map.stroke();
+      map.beginPath(); map.moveTo(px(p.x), pz(p.z)); map.lineTo(px(p.x) - Math.sin(yaw) * 13, pz(p.z) - Math.cos(yaw) * 13); map.strokeStyle = '#f3e9d7'; map.stroke();
     }
   }
 }
 
 const look = new THREE.Vector3(), desired = new THREE.Vector3();
 function frame(now) {
-  const dt = Math.min((now - last) / 1000, 0.06); last = now; motionTime += dt;
+  // rAF time can trail performance.now(); a negative dt would fling the camera.
+  const dt = Math.max(0, Math.min((now - last) / 1000, 0.06)); last = now; motionTime += dt;
   plaza.update(motionTime);
   const me = getMe(), active = ['hide', 'hunt'].includes(state.phase);
   for (const p of state.players) {
@@ -280,6 +285,11 @@ function frame(now) {
     desired.set(26 + Math.sin(motionTime * 0.06) * 2, 21, 32); camera.position.lerp(desired, 1 - Math.exp(-dt * 2));
     camera.lookAt(innerWidth < 600 ? 0 : -3, 1.5, -2); actorRing.visible = false;
   }
+  // The launcher column covers the left of the lobby; shift the plaza right of it.
+  const lobbyShift = (state.phase === 'lobby' || !room.connected) && innerWidth > 720 ? Math.min(560, innerWidth) / 2 : 0;
+  if (lobbyShift !== (camera.view?.enabled ? -camera.view.offsetX : 0)) {
+    if (lobbyShift) camera.setViewOffset(innerWidth, innerHeight, -lobbyShift, 0, innerWidth, innerHeight); else camera.clearViewOffset();
+  }
   drawMap(); renderer.render(scene, camera); requestAnimationFrame(frame);
 }
 let tickAt = performance.now();
@@ -287,7 +297,7 @@ const ticker = setInterval(() => {
   const now = performance.now(), dt = Math.min((now - tickAt) / 1000, 0.25); tickAt = now;
   room.tick(dt, input(), paused && room.members.size === 1);
 }, 50);
-addEventListener('resize', () => { camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix(); renderer.setSize(innerWidth, innerHeight); });
+addEventListener('resize', () => { camera.aspect = innerWidth / innerHeight; camera.clearViewOffset(); renderer.setSize(innerWidth, innerHeight); });
 addEventListener('pagehide', () => { clearInterval(ticker); room.dispose(); renderer.dispose(); previewRenderer.dispose(); });
 show('loading', false); show('lobby', true); room.connect(); requestAnimationFrame(frame);
 

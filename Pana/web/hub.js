@@ -4,20 +4,37 @@ const gamesEl = document.getElementById('games');
 const roomsEl = document.getElementById('rooms');
 const statusEl = document.getElementById('status');
 const nameInput = document.getElementById('name');
-const helloName = document.getElementById('hello-name');
 const featured = document.getElementById('play-featured');
-
-// Not playable yet; shown so the hub feels like a place that's growing.
-const SOON = [
-];
+const featureEl = document.getElementById('feature');
+const featureArt = document.getElementById('feature-art');
 
 // The same settings every game reads (sound, volume, resolution, hints).
 const settings = createGameMenu({ title: 'Pana', pause: false, hotkey: false });
-document.getElementById('hub-actions').append(settings.createButton({ id: 'open-settings', label: 'Ajustes', kbd: null, className: 'btn btn-ghost' }));
+const gear = settings.createButton({ id: 'open-settings', label: '⚙︎', kbd: null, className: 'pk-btn icon-btn' });
+gear.setAttribute('aria-label', 'Ajustes');
+gear.title = 'Ajustes';
+document.getElementById('hub-actions').append(gear);
 
+// ---------- views: #jugar (default), #mi-pana, #salas ----------
+// The one pana canvas moves between the "Tu pana" card and the creator.
+const stage = document.getElementById('pana-stage');
+function showView() {
+  const view = { '#mi-pana': 'mi-pana', '#salas': 'salas' }[location.hash] || 'jugar';
+  document.body.dataset.view = view;
+  for (const a of document.querySelectorAll('.nav [data-view]')) {
+    if (a.dataset.view === view) a.setAttribute('aria-current', 'page');
+    else a.removeAttribute('aria-current');
+  }
+  document.getElementById(view === 'mi-pana' ? 'creator-slot' : 'tu-pana-slot').append(stage);
+  scrollTo(0, 0);
+}
+addEventListener('hashchange', showView);
+showView();
+
+// ---------- name ----------
 try { nameInput.value = localStorage.getItem('pana:name') || ''; } catch { /* storage off */ }
 function syncName() {
-  helloName.textContent = playerName();
+  for (const e of document.querySelectorAll('[data-name]')) e.textContent = playerName();
   try { localStorage.setItem('pana:name', nameInput.value.trim()); } catch { /* storage off */ }
   updateLinks();
 }
@@ -36,8 +53,9 @@ function gameUrl(game, room) {
 }
 
 let games = [];
+let feat = null;
 function updateLinks() {
-  for (const a of document.querySelectorAll('[data-game]')) {
+  for (const a of document.querySelectorAll('a[data-game]')) {
     const game = games.find((g) => g.id === a.dataset.game);
     if (game) a.href = gameUrl(game, newRoomCode());
   }
@@ -50,52 +68,91 @@ function el(tag, cls, text) {
   return e;
 }
 
+const meta = (game) => game.players > 1 ? `hasta ${game.players} panas` : 'tú vs la máquina';
+const shortName = (game) => game.name.split(' · ')[0];
+
+// a game can ship card.js to draw live art on its tile
+function mountArt(game, canvas) {
+  if (!game.card) return;
+  import(`${game.url}card.js`)
+    .then((m) => { if (!canvas.isConnected) return; m.mount(canvas); canvas.dataset.live = ''; })
+    .catch(() => { /* no art, the color tile is enough */ });
+}
+
+// The card is a plain block with a real heading (tests and screen readers
+// find games by it); a stretched button on top handles the pick.
 function gameCard(game) {
   const card = el('article', 'game');
+  card.dataset.id = game.id;
   if (game.color) card.style.setProperty('--tone', game.color);
   const art = el('canvas', 'game-art');
   art.setAttribute('aria-hidden', 'true');
-  card.appendChild(art);
+  const name = el('h3', 'game-name', shortName(game));
+  name.setAttribute('aria-label', game.name);
   const body = el('div', 'game-body');
-  body.append(el('h3', null, game.name), el('p', null, game.description));
-  body.appendChild(el('span', 'meta', game.players > 1 ? `hasta ${game.players} panas` : 'tú contra la máquina'));
-  const play = el('a', 'btn btn-play', '¡Jugar!');
-  play.dataset.game = game.id;
-  play.href = gameUrl(game, newRoomCode());
-  play.addEventListener('click', () => { play.href = gameUrl(game, newRoomCode()); });
-  body.appendChild(play);
-  card.appendChild(body);
-  // a game can ship card.js to draw live art on its tile
-  if (game.card) {
-    import(`${game.url}card.js`)
-      .then((m) => m.mount(art))
-      .catch(() => { /* no art, the color tile is enough */ });
-  }
+  body.append(name, el('span', 'game-meta', meta(game)));
+  const pick = el('button', 'game-pick');
+  pick.type = 'button';
+  pick.setAttribute('aria-pressed', 'false');
+  pick.setAttribute('aria-label', `${game.name}: ${meta(game)}`);
+  pick.addEventListener('click', () => {
+    feature(game);
+    if (matchMedia('(max-width: 760px)').matches) featureEl.scrollIntoView({ behavior: 'smooth' });
+  });
+  card.append(art, body, pick);
+  mountArt(game, art);
   return card;
 }
 
-function soonCard(s) {
-  const card = el('article', 'game soon');
-  const art = el('div', 'game-art', s.glyph);
+// The hero shows one game at a time. card.js never unmounts, so the old
+// hero canvas loses its WebGL context instead of piling up live ones.
+function feature(game) {
+  if (feat === game) return;
+  feat = game;
+  try { localStorage.setItem('pana:featured', game.id); } catch { /* storage off */ }
+  featureEl.style.setProperty('--tone', game.color || 'var(--pk-coral)');
+  document.getElementById('feature-tag').textContent = `Destacado · ${meta(game)}`;
+  document.getElementById('feature-name').textContent = game.name;
+  document.getElementById('feature-copy').textContent = game.description;
+  featured.dataset.game = game.id;
+  featured.href = gameUrl(game, newRoomCode());
+  for (const c of gamesEl.children) c.querySelector('.game-pick').setAttribute('aria-pressed', String(c.dataset.id === game.id));
+
+  for (const old of featureArt.querySelectorAll('canvas')) {
+    if ('live' in old.dataset) old.getContext('webgl2')?.getExtension('WEBGL_lose_context')?.loseContext();
+    old.remove();
+  }
+  const art = el('canvas');
   art.setAttribute('aria-hidden', 'true');
-  card.appendChild(art);
-  const body = el('div', 'game-body');
-  body.append(el('span', 'badge', 'Próximamente'), el('h3', null, s.name), el('p', null, s.description));
-  card.appendChild(body);
-  return card;
+  featureArt.append(art);
+  mountArt(game, art);
 }
+
+featured.addEventListener('click', () => { if (feat) featured.href = gameUrl(feat, newRoomCode()); });
+
+// "Crear sala": a fresh room, its invite link on the clipboard, then go.
+document.getElementById('create-room').addEventListener('click', async (e) => {
+  if (!feat) return;
+  const room = newRoomCode();
+  const btn = e.currentTarget;
+  try {
+    await navigator.clipboard.writeText(`${location.origin}${feat.url}?room=${room}`);
+    btn.textContent = '¡Link copiado!';
+  } catch { /* no clipboard, the game can still invite */ }
+  setTimeout(() => { location.href = gameUrl(feat, room); }, 350);
+});
 
 async function loadGames() {
   try {
     ({ games } = await fetch('/api/games').then((r) => r.json()));
     gamesEl.innerHTML = '';
     for (const game of games) gamesEl.appendChild(gameCard(game));
-    for (const s of SOON) gamesEl.appendChild(soonCard(s));
-    if (games[0]) {
-      featured.dataset.game = games[0].id;
-      featured.href = gameUrl(games[0], newRoomCode());
-    }
-    statusEl.textContent = `${games.length} juego(s) disponibles`;
+    let saved = null;
+    try { saved = localStorage.getItem('pana:featured'); } catch { /* storage off */ }
+    const first = games.find((g) => g.id === saved) || games.find((g) => g.id === 'derrape') || games[0];
+    if (first) feature(first);
+    statusEl.textContent = `${games.length} juegos disponibles`;
+    loadRooms();
   } catch {
     statusEl.textContent = 'no se pudo hablar con el servidor';
   }
@@ -107,24 +164,28 @@ async function loadRooms() {
     const playing = rooms.reduce((n, r) => n + r.players, 0);
     document.getElementById('live-count').textContent = playing;
     document.getElementById('live').classList.toggle('on', playing > 0);
+    document.getElementById('rooms-count').textContent = rooms.length;
     roomsEl.innerHTML = '';
     if (rooms.length === 0) {
       roomsEl.appendChild(el('div', 'empty', 'Nadie jugando todavía. Arranca un juego y comparte el link.'));
       return;
     }
     for (const room of rooms) {
+      const game = games.find((g) => g.id === room.game);
       const row = el('div', 'room');
-      const info = el('div');
-      info.append(el('div', null, `${room.game} · sala "${room.room}" (${room.players}/${room.max})`), el('div', 'names', room.names.join(', ')));
+      const bar = el('i', 'room-tone');
+      if (game?.color) bar.style.background = game.color;
+      const info = el('div', 'room-info');
+      info.append(el('b', null, `${game ? shortName(game) : room.game} · ${room.players}/${room.max}`), el('span', 'names', room.names.join(', ')));
       const join = el('a', null, 'Unirse →');
       join.href = `/g/${room.game}/?room=${encodeURIComponent(room.room)}&name=${encodeURIComponent(playerName())}`;
-      row.append(info, join);
+      join.setAttribute('aria-label', `Unirse a la sala ${room.room} de ${game?.name || room.game}`);
+      row.append(bar, info, join);
       roomsEl.appendChild(row);
     }
   } catch { /* keep last state */ }
 }
 
-helloName.textContent = playerName();
+syncName();
 loadGames();
-loadRooms();
 setInterval(loadRooms, 3000);

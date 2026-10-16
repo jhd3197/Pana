@@ -1,7 +1,6 @@
-import { Box3, Vector3 } from 'three';
-
 export function object(definition) {
   return { ...definition, async build() {
+    const { Box3, Vector3 } = await import('three');
     const module = await import(definition.source);
     const factory = module[definition.factory];
     if (typeof factory !== 'function') throw new Error(`Missing model factory: ${definition.id}`);

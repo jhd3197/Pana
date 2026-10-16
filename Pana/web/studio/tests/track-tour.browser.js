@@ -15,9 +15,10 @@ try {
   const page = await context.newPage(); page.on('pageerror', e => errors.push(e.message));
   await page.goto(`${base}/studio.html#track-desierto`);
   await page.locator('#startup').waitFor({ state: 'hidden', timeout: 300000 });
-  assert.equal(await page.evaluate(() => panaLibrary.thumbnails.state.ready === panaLibrary.assets.length), true);
+  await page.waitForFunction(() => panaLibrary.current && document.querySelector('#preview-status').hidden, null, { timeout: 90000 });
+  assert.equal(await page.evaluate(() => panaLibrary.thumbnails.state.generated), 0, 'opening one circuit does not prepare the catalog');
   const choose = async id => {
-    await page.evaluate(id => { location.hash = id; }, id);
+    await page.evaluate(id => { history.pushState(null, '', '/studio/assets/' + encodeURIComponent(id)); dispatchEvent(new PopStateEvent('popstate')); }, id);
     await page.waitForFunction(id => panaLibrary.selected === id && document.querySelector('#preview-status').hidden, id, { timeout: 90000 });
   };
   const seek = async value => page.locator('#tour-progress').evaluate((input, value) => { input.value = String(value); input.dispatchEvent(new Event('input', { bubbles: true })); }, value);
@@ -74,7 +75,7 @@ try {
   await choose('track-desierto'); await seek(500);
   await page.locator('#tour-copy').click();
   const copied = await page.evaluate(() => navigator.clipboard.readText());
-  assert.match(copied, /50\.0 %/); assert.match(copied, /Pista XYZ:/); assert.match(copied, /#track-desierto/);
+  assert.match(copied, /50\.0 %/); assert.match(copied, /Pista XYZ:/); assert.match(copied, /\/studio\/assets\/track-desierto/);
   assert.equal(await page.evaluate(() => panaLibrary.tour.playing), false);
   await page.locator('#tour-speed').selectOption('4'); await seek(999);
   await page.locator('#tour-play').click(); await page.waitForFunction(() => !panaLibrary.tour.playing);
@@ -109,6 +110,7 @@ try {
   await page.screenshot({ path: `${output}/mobile.png` });
   await page.reload(); await page.locator('#startup').waitFor({ state: 'hidden', timeout: 90000 });
   assert.equal(await page.evaluate(() => panaLibrary.thumbnails.state.generated), 0, 'warm thumbnails are reused');
+  await page.waitForFunction(() => panaLibrary.current && document.querySelector('#preview-status').hidden, null, { timeout: 90000 });
   assert.equal(await page.evaluate(() => panaLibrary.tour.playing), false);
   assert.deepEqual(errors, []); await writeFile(`${output}/routes.json`, JSON.stringify(records,null,2));
   console.log('PASS: eight routes, playback, pause, scrub, copy, completion, orbit, keyboard, visibility, asset switch, mobile and warm cache');

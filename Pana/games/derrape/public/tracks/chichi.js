@@ -1,3 +1,4 @@
+import { TRACK_DEFINITIONS } from '../track-definitions.js';
 // Chi Chi: a long coastal mountain journey, with fictional thermal springs.
 import { THREE,M,box,terrain,sea,stream,finish,put,foundation,scatter,instances,edges,boulder,smooth } from './world-kit.js';
 import { palm } from '/engine/models/vegetation/palm.js';
@@ -12,8 +13,7 @@ import { beachVillage,riverBridges } from './chichi-village.js';
 import { ROUTE,roadHeight,baseHeight,RIVER,riverDistance,coast,THERMAL,gripAt } from './chichi-layout.js';
 import { waterAnimator } from '/engine/models/effects/water-surface.js';
 export default {
-  id:'chichi',name:'Chi Chi',
-  blurb:'De las termas entre nubes al pueblo de buceo: curvas de montaña, bosque húmedo, playa y una larga subida junto al río.',
+  ...TRACK_DEFINITIONS.find(track => track.id === 'chichi'),
   points:ROUTE,rounded:true,hw:8.5,lineU:.025,elevation:roadHeight,gripAt,
   previewBounds:[[-620,0,-790],[650,370,650]],
   sectors:[[0,'Mirador de las nubes'],[.08,'Aguas del Cielo'],[.22,'Las siete curvas'],[.4,'Bosque de la quebrada'],[.53,'Pueblo de buceo'],[.63,'Bahía Chi Chi'],[.73,'Puentes del río'],[.86,'Subida al mirador']],

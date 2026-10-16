@@ -1,9 +1,9 @@
+import { TRACK_DEFINITIONS } from '../track-definitions.js';
 // An authored desert journey: dunes, elevated canyon gates and a living oasis.
 import {ROUTE,roadHeight} from './desierto-layout.js';
 import {desertEnvironment,desertScenery} from './desierto-world.js';
 export default {
-  id:'desierto',name:'Pana Desierto',
-  blurb:'De Pana Gas a las dunas: sube al cañón de los dos arcos y baja hasta el pozo del oasis.',
+  ...TRACK_DEFINITIONS.find(track => track.id === 'desierto'),
   points:ROUTE,rounded:true,hw:9,lineU:.008,elevation:roadHeight,
   previewBounds:[[-445,0,-435],[450,115,325]],
   sectors:[[0,'Pana Gas'],[.18,'Mar de dunas'],[.36,'Subida del cardón'],[.49,'Cañón de los arcos'],[.69,'Oasis del pozo'],[.85,'Camino de las carretas']],

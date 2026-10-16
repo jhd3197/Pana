@@ -31,6 +31,18 @@ try {
       const old=await import(alias.old),canonical=await import(alias.target);
       for(const name of alias.names){check(old[name]!==undefined&&old[name]===canonical[name],`Broken alias ${alias.old}#${name}`);symbols++;}
     }
+    const registry = await import('/g/derrape/tracks.js'), runtime = await import('/g/derrape/track-runtime.js');
+    const { TRACK_DEFINITIONS } = await import('/g/derrape/track-definitions.js');
+    const { CARS } = await import('/g/derrape/cars.js'), { CAR_DEFINITIONS } = await import('/g/derrape/car-definitions.js');
+    check(registry.makeTrack === runtime.makeTrack, 'Track runtime compatibility export changed identity');
+    for (const definition of TRACK_DEFINITIONS) {
+      const track = registry.TRACKS.find(track => track.id === definition.id);
+      check(track && track.name === definition.name && track.blurb === definition.blurb, `Track metadata drift: ${definition.id}`);
+    }
+    for (const definition of CAR_DEFINITIONS) {
+      const car = CARS.find(car => car.id === definition.id);
+      check(car && typeof car.build === 'function' && car.name === definition.name && car.tune === definition.tune, `Car metadata drift: ${definition.id}`);
+    }
     window.catalog=ASSETS;window.fingerprints=(await import('/studio/fingerprints.js')).fingerprints;
     window.before=await fingerprints(catalog);
     return {models:MODEL_DEFINITIONS.length,assets:ASSETS.length,symbols};
@@ -48,13 +60,12 @@ try {
   assert.ok(horse.includes('llanero-horse')&&horse.includes('track-llanos'));
   for(const id of ['hato-cow','yard-chicken','wild-capybara','corn'])assert.ok(!horse.includes(id),`Horse invalidated unrelated ${id}`);
   const plant=await changedBy('/engine/models/vegetation/palm.js');
-  assert.ok(plant.includes('palm')&&plant.includes('isla')&&plant.includes('galope'));
+  assert.ok(plant.includes('palm')&&plant.includes('isla'));
+  assert.ok(!plant.includes('galope'), 'Galope uses moriche, not palm; unrelated map adapters must stay cached');
   for(const id of ['bush','mangoTree','hato-cow','corn'])assert.ok(!plant.includes(id),`Palm invalidated unrelated ${id}`);
   const moriche=await changedBy('/engine/models/vegetation/moriche.js');
   assert.ok(moriche.includes('moriche')&&moriche.includes('galope'),'Moriche and its actual course must invalidate');
-  // Map adapters share their source dependency, so existing behavior invalidates
-  // other map thumbnails too. Individual unrelated objects must stay cached.
-  for(const id of ['palm','hato-cow','corn'])assert.ok(!moriche.includes(id),`Moriche invalidated unrelated ${id}`);
+  for(const id of ['palm','hato-cow','corn','isla','track-paramo'])assert.ok(!moriche.includes(id),`Moriche invalidated unrelated ${id}`);
   const llano=await changedBy('/engine/models/props/llano-life.js');
   for(const id of ['ranch-caney','chinchorro','river-canoe','galope'])assert.ok(llano.includes(id),`Llanos pack missed ${id}`);
   for(const id of ['ranch-house','corn'])assert.ok(!llano.includes(id),`Llanos pack invalidated unrelated ${id}`);

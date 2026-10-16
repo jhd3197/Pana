@@ -5,6 +5,7 @@ import { canvasMat } from '/engine/models/core/primitives.js';
 import { food } from '/engine/models/props/kitchen.js';
 import { sound } from '/engine/fx.js';
 import { createGameMenu, toggleMute } from '/engine/ui.js';
+import { shout } from '/engine/kit.js';
 import { pixelRatio, bindRenderer } from '/engine/settings.js';
 import { Kitchen, RECIPES, STATIONS, recipe, nearestStation } from './rules.js';
 import { KitchenRoom } from './network.js';
@@ -27,8 +28,10 @@ function resize() {
   renderer.setSize(innerWidth, innerHeight); aimWidth = innerWidth; aimHeight = innerHeight;
   const ratio = innerWidth / innerHeight;
   const half = innerWidth <= 760 ? 14.5 / ratio : state.phase === 'lobby' ? 16 : 13.3;
-  camera.left = -half * ratio; camera.right = half * ratio; camera.top = half; camera.bottom = -half;
-  camera.position.set(17, 28, 34); camera.lookAt(state.phase === 'lobby' && innerWidth > 760 ? -3 : -0.5, 0.5, 2);
+  // In the lobby, centre the kitchen in the space right of the launcher column.
+  const shift = state.phase === 'lobby' && innerWidth > 760 ? Math.min(560, innerWidth) / innerWidth * half * ratio : 0;
+  camera.left = -half * ratio - shift; camera.right = half * ratio - shift; camera.top = half; camera.bottom = -half;
+  camera.position.set(17, 28, 34); camera.lookAt(-0.5, 0.5, 2);
   camera.updateProjectionMatrix();
 }
 addEventListener('resize', resize); resize();
@@ -57,7 +60,9 @@ const menu = createGameMenu({
   onOpen() { paused = true; keys.clear(); touch.clear(); },
   onClose() { paused = false; },
 });
-$('game-nav').append(menu.createInviteButton({ id: 'invite' }), menu.createSoundButton({ id: 'sound' }), menu.createButton({ id: 'menu' }));
+$('game-nav').append(menu.createInviteButton({ id: 'invite', className: 'pk-btn pk-btn--sm' }), menu.createSoundButton({ id: 'sound', className: 'pk-btn pk-btn--sm' }), menu.createButton({ id: 'menu', className: 'pk-btn pk-btn--sm' }));
+$('menu').querySelector('kbd')?.classList.add('pk-kbd');
+$('lobby-cta').append(menu.createInviteButton({ id: 'lobby-invite', className: 'pk-btn' }));
 const room = new KitchenRoom({ code, name, avatar, onState: receive, onNotice: notify, onStatus(text, failed = false) {
   $('connection').textContent = text; show('practice', failed); canGoOffline = failed; menu.update(); if (failed) notify(text); updateUI();
 } });
@@ -93,21 +98,39 @@ function syncActors() {
 }
 function receive(next) {
   state = next; syncActors();
-  if (state.phase !== lastPhase) { lastPhase = state.phase; resize(); menu.close(); heldKey = ''; }
+  if (state.phase !== lastPhase) { lastPhase = state.phase; resize(); menu.close(); heldKey = ''; document.querySelector('.pk-banner-layer')?.replaceChildren(); }
   const event = state.events.at(-1);
   if (event && event.id !== lastEvent) {
-    lastEvent = event.id; notify(event.text);
-    if (event.kind === 'serve') { sound.tone(660, 0, 0.1, 'sine', 0.1); sound.tone(880, 0.11, 0.18, 'sine', 0.1); }
-    if (event.kind === 'fire') sound.tone(220, 0, 0.3, 'sawtooth', 0.06);
+    lastEvent = event.id;
+    if (event.kind === 'serve') { shout(event.text, { tone: 'teal', ms: 1500 }); sound.tone(660, 0, 0.1, 'sine', 0.1); sound.tone(880, 0.11, 0.18, 'sine', 0.1); }
+    else notify(event.text);
+    if (event.kind === 'start') shout('¡A cocinar!', { tone: 'yellow', ms: 1500 });
+    if (event.kind === 'fire') { shout(burnShout(state.stations.find(s => s.fire && s.item)?.item.recipe)); sound.tone(220, 0, 0.3, 'sawtooth', 0.06); }
   }
   updateUI();
+}
+const burnShout = id => id === 'tequenos' ? '¡Se queman los tequeños!' : id ? `¡Se quema la ${recipe(id).name.toLowerCase()}!` : '¡Fuego en el fogón!';
+const carrying = { raw: r => `Ingredientes de ${r.toLowerCase()}`, prepared: r => `${r} al fogón`, cooked: r => `${r} al mostrador`, burnt: r => `${r} a la basura` };
+const tone = { raw: 'yellow', prepared: 'yellow', cooked: 'teal', burnt: 'coral' };
+function chip(i, p) {
+  const el = document.createElement('span'); el.className = 'chef-chip'; el.setAttribute('aria-hidden', 'true');
+  el.style.setProperty('--player-color', colors[i % colors.length]); el.textContent = (p.name || '?').trim().charAt(0).toUpperCase(); return el;
 }
 const stars = score => score >= 1500 ? 3 : score >= 850 ? 2 : score >= 350 ? 1 : 0;
 function updateUI() {
   const playing = state.phase === 'playing', player = me();
+  document.body.classList.toggle('is-playing', playing);
   show('lobby', state.phase === 'lobby'); show('welcome-label', state.phase === 'lobby'); show('hud', playing); show('results', state.phase === 'results');
   $('start').disabled = !room.connected || !room.isHost; $('start').textContent = !room.connected ? 'Entrando a la cocina…' : room.isHost ? '¡A cocinar! →' : 'El anfitrión abre la cocina';
-  $('helpers').disabled = !room.isHost;
+  $('helpers').disabled = $('solo').disabled = !room.isHost;
+  show('lobby-status', !room.connected);
+  $('room-code').textContent = room.offline ? '● Cocina local' : `● Sala ${code}`;
+  const lk = state.players.map(p => `${p.id}:${p.name}`).join('|');
+  if ($('lobby-names').dataset.key !== lk) {
+    $('lobby-names').dataset.key = lk; const people = state.players.filter(p => !p.bot);
+    $('lobby-avatars').replaceChildren(...people.slice(0, 4).map(p => chip(state.players.indexOf(p), p)));
+    $('lobby-names').textContent = people.map(p => p.id === room.id ? `${p.name} (tú)` : p.name).join(', ');
+  }
   $('again').disabled = !room.connected || !room.isHost; $('again').textContent = room.isHost ? 'Otro turno →' : 'Esperando al anfitrión…';
   $('timer').textContent = `${String(Math.floor(Math.ceil(state.remaining) / 60)).padStart(2, '0')}:${String(Math.ceil(state.remaining) % 60).padStart(2, '0')}`;
   $('timer').parentElement.classList.toggle('urgent', state.remaining < 30);
@@ -118,18 +141,25 @@ function updateUI() {
     for (const order of state.orders) {
       const r = recipe(order.recipe), el = document.createElement('article'); el.className = 'order'; el.dataset.order = order.id;
       const h = document.createElement('h2'); h.textContent = r.name;
-      const img = document.createElement('img'); img.src = previews.get(`${r.id}:cooked`); img.alt = r.name;
-      const desc = document.createElement('small'); desc.textContent = r.ingredients;
-      const bar = document.createElement('div'); bar.className = 'meter'; bar.innerHTML = '<i></i>'; el.append(h, img, desc, bar); $('orders').append(el);
+      const n = document.createElement('span'); n.className = 'order-n'; n.textContent = `#${order.id}`;
+      const img = document.createElement('img'); img.src = previews.get(`${r.id}:cooked`); img.alt = '';
+      const desc = document.createElement('small'); desc.textContent = r.ingredients.toLowerCase().replace(' + ', ' · ');
+      const bar = document.createElement('div'); bar.className = 'meter'; bar.innerHTML = '<i></i>'; el.append(h, n, img, desc, bar); $('orders').append(el);
     }
   }
   for (const order of state.orders) {
-    const el = $('orders').querySelector(`[data-order="${order.id}"]`); el.querySelector('i').style.width = `${Math.max(0, order.remaining / order.total) * 100}%`; el.classList.toggle('urgent', order.remaining < 18); el.setAttribute('aria-label', `${recipe(order.recipe).name}, ${Math.ceil(order.remaining)} segundos`);
+    const el = $('orders').querySelector(`[data-order="${order.id}"]`); const left = Math.max(0, order.remaining / order.total); el.querySelector('i').style.width = `${left * 100}%`; el.classList.toggle('urgent', order.remaining < 18); el.classList.toggle('half', left < 0.5); el.setAttribute('aria-label', `${recipe(order.recipe).name}, ${Math.ceil(order.remaining)} segundos`);
   }
-  const tk = state.players.map(p => `${p.id}:${p.name}`).join('|');
+  const tk = state.players.map(p => `${p.id}:${p.name}:${p.held ? `${p.held.recipe}:${p.held.stage}` : ''}`).join('|');
   if (tk !== teamKey) {
     teamKey = tk; $('team').replaceChildren();
-    state.players.forEach((p, i) => { const el = document.createElement('span'); el.textContent = `${p.name}${p.id === room.id ? ' · tú' : p.bot ? ' · ayudante' : ''}`; el.style.setProperty('--player-color', colors[i % colors.length]); $('team').append(el); });
+    state.players.forEach((p, i) => {
+      const el = document.createElement('li'); el.className = `pk-row${p.id === room.id ? ' is-me' : ''}`;
+      const who = document.createElement('div'), b = document.createElement('b'), doing = document.createElement('span');
+      b.textContent = `${p.name}${p.id === room.id ? ' · tú' : p.bot ? ' · ayudante' : ''}`;
+      doing.textContent = p.held ? carrying[p.held.stage](recipe(p.held.recipe).name) : 'Manos libres'; doing.className = `doing ${p.held ? tone[p.held.stage] : ''}`;
+      who.append(b, doing); el.append(chip(i, p), who); $('team').append(el);
+    });
   }
   const hk = player?.held ? `${player.held.recipe}:${player.held.stage}` : 'empty';
   if (hk !== heldKey) {
@@ -144,11 +174,20 @@ function updateUI() {
     $('result-stars').textContent = '★'.repeat(stars(state.score)) + '☆'.repeat(3 - stars(state.score));
     $('result-copy').textContent = state.served ? `La plaza se fue contenta. ${state.burnt ? `Se quemaron ${state.burnt} platos; en el próximo turno salen mejor.` : '¡Y ningún plato quemado!'} Estrellas: 350 / 850 / 1500 puntos.` : 'El secreto es recoger, preparar, cocinar y servir. ¡Vamos otra vez!';
     $('result-score').textContent = state.score; $('result-served').textContent = state.served; $('result-missed').textContent = state.missed;
-    $('result-team').replaceChildren(); for (const p of state.players) { const row = document.createElement('div'); row.textContent = `${p.name}${p.bot ? ' (ayudante)' : ''} · ${p.deliveries} platos servidos`; $('result-team').append(row); }
+    $('result-team').replaceChildren();
+    state.players.forEach((p, i) => {
+      const row = document.createElement('li'); row.className = `pk-row${p.id === room.id ? ' is-me' : ''}`;
+      const b = document.createElement('span'); b.textContent = `${p.name}${p.bot ? ' (ayudante)' : ''}`;
+      const end = document.createElement('span'); end.className = 'pk-row-end'; end.textContent = `${p.deliveries} platos servidos`;
+      row.append(chip(i, p), b, end); $('result-team').append(row);
+    });
   }
 }
 function interact() { if (!paused && state.phase === 'playing') room.action('interact'); }
 $('start').onclick = () => room.action('start', { helpers: $('helpers').checked });
+// "Con ayudantes" is the real checkbox; "Solo panas" just clears it.
+const syncHelpers = () => { $('solo').classList.toggle('is-on', !$('helpers').checked); $('solo').setAttribute('aria-pressed', String(!$('helpers').checked)); };
+$('helpers').addEventListener('change', syncHelpers); $('solo').onclick = () => { $('helpers').checked = false; syncHelpers(); }; syncHelpers();
 $('again').onclick = () => { lastEvent = 0; room.action('start', { helpers: state.helpers }); };
 $('action').onclick = interact;
 $('practice').onclick = () => room.practice();

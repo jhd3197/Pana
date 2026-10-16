@@ -20,8 +20,10 @@ export const ASSETS = [
 ];
 export const CATEGORIES = ['Todos', 'Personajes', 'Vestuario', 'Objetos', 'Fauna', 'Emblemas', 'Pueblo', 'Selva', 'Llanos', 'Vida llanera', 'Páramo', 'Desierto', 'Termales', 'Costa', 'Vegetación', 'Vehículos', 'Mapas'];
 export function sourcePath(url) {
-  return url.startsWith('/engine/') ? `Pana${url}` : url.replace(/^\/g\/([^/]+)\//, 'Pana/games/$1/public/');
+  if (url.startsWith('/engine/')) return `Pana${url}`;
+  if (url.startsWith('/studio/')) return `Pana/web${url}`;
+  return url.replace(/^\/g\/([^/]+)\//, 'Pana/games/$1/public/');
 }
 export function assetContext(asset) {
-  return `Pana Studio — ${asset.name}\nID: ${asset.id}\nCategoría: ${asset.category}\nFuente: ${sourcePath(asset.source)}\nConstructor: ${asset.factory}\nUsado en: ${asset.usedBy.join(', ')}\n\nLee Pana/AGENTS.md y docs/knowledge/pana-studio.md. Modifica la fuente compartida sin duplicar el modelo. Conserva escala, origen y contratos de los consumidores. Registra modelos en Pana/engine/models y adaptadores de escenas en Pana/web/studio/catalog y verifica la vista previa y los juegos afectados.`;
+  return `Pana Studio — ${asset.name}\nID: ${asset.id}\nCategoría: ${asset.category}\nStudio: /studio/assets/${encodeURIComponent(asset.id)}\nFuente: ${sourcePath(asset.source)}\nConstructor: ${asset.factory}\nUsado en: ${asset.usedBy.join(', ')}\nDependencias declaradas: ${(asset.dependencies || []).map(sourcePath).join(', ') || 'Ninguna adicional'}\nOpciones de vista previa: ${JSON.stringify(asset.previewOptions || {})}\n\nLee Pana/AGENTS.md y docs/knowledge/pana-studio.md. Modifica la fuente compartida sin duplicar el modelo. Conserva escala, origen y contratos de los consumidores. Registra modelos en Pana/engine/models y adaptadores de escenas en Pana/web/studio/catalog y verifica la vista previa y los juegos afectados. Anota la prueba y cualquier limitación.`;
 }

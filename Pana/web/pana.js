@@ -21,6 +21,8 @@ let tab = TABS[1];
 const canvas = document.getElementById('pana-preview');
 const tabsEl = document.getElementById('pana-tabs');
 const controlsEl = document.getElementById('pana-controls');
+const summaryEl = document.getElementById('pana-summary');
+const faceEl = document.getElementById('pana-face');
 
 // ---------- 3D stage ----------
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
@@ -57,11 +59,38 @@ const turn = new THREE.Group();
 scene.add(turn);
 
 let pana = null;
+let needFace = true;
 function rebuild() {
   pana?.dispose();
   turn.clear();
   pana = buildCharacter(avatar);
   turn.add(pana.group);
+  needFace = true;
+}
+
+// Headshot for the nav chip: one extra render, cropped from the live canvas
+// in the same task (the drawing buffer is still valid there).
+const faceCam = new THREE.PerspectiveCamera(16, 1, 0.1, 50);
+const faceCanvas = document.createElement('canvas');
+faceCanvas.width = faceCanvas.height = 96;
+const neckAt = new THREE.Vector3();
+function shootFace() {
+  const spin = turn.rotation.y;
+  turn.rotation.y = 0;
+  turn.updateMatrixWorld(true);
+  pana.neck.getWorldPosition(neckAt);
+  faceCam.aspect = canvas.width / canvas.height;
+  faceCam.position.set(0, neckAt.y + 0.55, 4.2);
+  faceCam.lookAt(0, neckAt.y + 0.45, 0);
+  faceCam.updateProjectionMatrix();
+  renderer.render(scene, faceCam);
+  const s = Math.min(canvas.width, canvas.height);
+  const ctx = faceCanvas.getContext('2d');
+  ctx.fillStyle = '#3a2a78';
+  ctx.fillRect(0, 0, 96, 96);
+  ctx.drawImage(canvas, (canvas.width - s) / 2, (canvas.height - s) / 2, s, s, 0, 0, 96, 96);
+  if (faceEl) faceEl.src = faceCanvas.toDataURL();
+  turn.rotation.y = spin;
 }
 
 function resize() {
@@ -116,6 +145,7 @@ function frame() {
   pana.neck.rotation.z = Math.sin(t * 1.6) * 0.06 + (waving ? 0.12 : 0);
   pana.group.position.y = yell > 0 ? Math.abs(Math.sin(t * 16)) * 0.12 : 0;
   pana.update(dt, { open: yell > 0, look: Math.sin(t * 0.8) });
+  if (needFace && canvas.clientWidth) { needFace = false; shootFace(); }
   renderer.render(scene, camera);
   requestAnimationFrame(frame);
 }
@@ -138,7 +168,22 @@ function button(cls, label, pressed, onClick) {
   return b;
 }
 
+// "Gorra · De sol · Franela" on the hub's Tu pana card
+function summarize() {
+  if (!summaryEl) return;
+  summaryEl.innerHTML = '';
+  for (const k of ['hat', 'glasses', 'outfit', 'extra']) {
+    const o = OPTIONS[k].find((x) => x.id === avatar[k]);
+    if (!o || o.id === 'none' || o.id === 'nada') continue;
+    const li = document.createElement('li');
+    li.textContent = o.label;
+    summaryEl.appendChild(li);
+  }
+  if (!summaryEl.children.length) summaryEl.innerHTML = '<li>Al natural</li>';
+}
+
 function render() {
+  summarize();
   tabsEl.innerHTML = '';
   for (const tb of TABS) {
     const b = document.createElement('button');
@@ -146,6 +191,7 @@ function render() {
     b.className = 'tab';
     b.setAttribute('role', 'tab');
     b.setAttribute('aria-selected', String(tb === tab));
+    b.classList.toggle('is-on', tb === tab);
     b.textContent = tb.label;
     b.onclick = () => { tab = tb; render(); };
     tabsEl.appendChild(b);

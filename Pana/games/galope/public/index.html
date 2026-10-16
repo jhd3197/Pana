@@ -3,45 +3,55 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="theme-color" content="#293f30">
+  <meta name="theme-color" content="#0e0b24">
   <meta name="description" content="Carreras a caballo por los Llanos. Salta troncos, cruza esteros y corre con tus panas en el Hato Pana.">
   <title>Galope · Pana</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Luckiest+Guy&family=Nunito:wght@600;700;800;900&display=swap">
+  <link rel="stylesheet" href="/engine/kit.css">
   <link rel="stylesheet" href="/engine/ui.css">
   <link rel="stylesheet" href="style.css">
   <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}</script>
 </head>
 <body class="in-lobby">
   <canvas id="world" aria-label="Carrera de caballos en los Llanos"></canvas>
-  <div class="lobby-shade"></div>
-  <header class="topbar"><a class="brand" href="/" aria-label="Volver a Pana">PANA<span>JUEGA CON TUS PANAS</span></a><nav id="game-nav" aria-label="Opciones del juego"></nav></header>
-  <div id="loading" role="status"><span class="loading-mark">G</span><b>Ensillando los caballos…</b></div>
-  <section id="lobby" class="hidden" aria-labelledby="title">
-    <p class="location">HATO PANA / LOS LLANOS</p>
-    <h1 id="title">Galope<span>¡Arre, pana!</span></h1>
-    <p class="intro">Sabana abierta. Patas en el agua.<br>Y tus panas pisándote los talones.</p>
-    <div class="race-facts"><span><b>2</b> vueltas</span><span><b>3</b> saltos por vuelta</span><span><b>1–8</b> panas</span></div>
-    <fieldset class="horse-picker"><legend>Tu compañero de carrera</legend><div><button data-coat="bay" aria-pressed="true"><i style="--coat:#955637"></i>Castaño</button><button data-coat="palomino" aria-pressed="false"><i style="--coat:#c6a568"></i>Dorado</button><button data-coat="grey" aria-pressed="false"><i style="--coat:#c1c0b4"></i>Tordillo</button></div></fieldset>
-    <label class="bots"><input id="bots" type="checkbox" checked> Completar la carrera con jinetes del hato</label>
-    <button id="start" class="primary" disabled>Preparando la salida… <span>↗</span></button>
-    <p id="connection" role="status">Conectando…</p>
-    <button id="practice" class="text-button hidden">Correr en local</button>
-    <p class="lobby-hint" data-pana-hint><kbd>WASD</kbd> cabalgar <kbd>Shift</kbd> remate <kbd>Espacio</kbd> saltar</p>
+  <header class="topbar"><nav id="game-nav" aria-label="Opciones del juego"></nav></header>
+  <div id="loading" class="pk-loading" role="status"><span class="pk-ribbon">Los Llanos</span><b class="pk-title">Galope</b><p class="pk-copy">Ensillando los caballos…</p></div>
+  <section id="lobby" class="pk-lobby hidden" aria-labelledby="title">
+    <div class="pk-lobby-top"><a class="pk-back" href="/">← Todos los juegos</a><a class="pk-logo" href="/" aria-label="Volver a Pana">PANA</a></div>
+    <span class="pk-ribbon">Galope · La vuelta del estero</span>
+    <h1 id="title" class="pk-title">¡A caballo por los Llanos!</h1>
+    <p class="pk-copy">Hato, sabana y morichal. Patas en el agua y tus panas pisándote los talones.</p>
+    <div class="pk-stats"><div class="pk-stat"><b>2</b><span>vueltas</span></div><div class="pk-stat"><b>3</b><span>saltos por vuelta</span></div><div class="pk-stat"><b>1–8</b><span>panas</span></div></div>
+    <div class="pk-field horse-picker"><span class="pk-eyebrow" id="horse-label">Tu compañero de carrera</span><div class="pk-seg" role="group" aria-labelledby="horse-label"><button type="button" data-coat="bay" aria-pressed="true"><i style="--coat:#955637"></i>Castaño</button><button type="button" data-coat="palomino" aria-pressed="false"><i style="--coat:#c6a568"></i>Dorado</button><button type="button" data-coat="grey" aria-pressed="false"><i style="--coat:#c1c0b4"></i>Tordillo</button></div>
+      <label class="pk-check"><input id="bots" type="checkbox" checked> Completar la carrera con jinetes del hato</label></div>
+    <div class="pk-lobby-foot">
+      <div class="pk-lobby-room"><span class="pk-dot"></span><span id="connection" role="status">Conectando…</span><span class="pk-room-code">Sala <b id="room-code"></b></span></div>
+      <button id="practice" class="pk-btn pk-btn--ghost pk-btn--sm practice hidden">Correr en local</button>
+      <div class="pk-lobby-cta" id="lobby-cta"><button id="start" class="pk-btn pk-btn--primary pk-btn--lg" disabled>Preparando la salida…</button></div>
+    </div>
   </section>
-  <div id="course-label" class="course-label"><span>EL CIRCUITO</span><b>La vuelta del estero</b><p>Hato · sabana · morichal</p></div>
+  <div class="pk-hints lobby-hint" data-pana-hint><span><b>WASD</b> cabalgar</span><span><b>Shift</b> remate</span><span><b>Espacio</b> saltar</span></div>
   <main id="hud" class="hidden">
-    <div class="race-top"><div class="position"><b id="place">1</b><span id="field-size">/ 6</span></div><div class="lap"><small>VUELTA</small><b id="lap">1 / 2</b></div><div class="clock"><small>TIEMPO</small><b id="timer">0:00.00</b></div></div>
-    <div id="sector" class="sector">Hato Pana</div>
-    <ol id="leaderboard" aria-label="Posiciones"></ol>
-    <div class="minimap"><canvas id="map" width="220" height="190" aria-label="Mapa del circuito"></canvas><span>LA VUELTA DEL ESTERO</span></div>
-    <div class="riding-status"><div class="speed"><b id="speed">0</b><span>km/h</span></div><div class="stamina"><div><span id="gait">AL PASO</span><span id="stamina-label">100%</span></div><div class="stamina-track"><i id="stamina-fill"></i></div><p id="riding-tip">Guarda fuerzas para el remate.</p></div></div>
-    <p class="keyboard-hints" data-pana-hint><kbd>W ↑</kbd> avanzar <kbd>A D / ← →</kbd> girar <kbd>S ↓</kbd> frenar <kbd>Shift</kbd> remate <kbd>Espacio</kbd> saltar <kbd>R</kbd> volver al camino</p>
+    <div class="race-top">
+      <div class="pk-place position"><b id="place">1</b><sup>º</sup><span id="field-size" class="pk-eyebrow">de 6</span></div>
+      <div class="race-cards">
+        <div class="pk-panel pk-readout"><span class="pk-eyebrow">Tramo</span><b id="sector" class="pk-num">Hato Pana</b></div>
+        <div class="race-pair"><div class="pk-panel pk-readout"><span class="pk-eyebrow">Vuelta</span><b id="lap" class="pk-num">1 / 2</b></div><div class="pk-panel pk-readout"><span class="pk-eyebrow">Tiempo</span><b id="timer" class="pk-num">0:00.00</b></div></div>
+      </div>
+    </div>
+    <ol id="leaderboard" class="pk-roster" aria-label="Posiciones"></ol>
+    <div class="minimap pk-panel"><div class="map-head"><b>La vuelta del estero</b><small id="map-length"></small></div><canvas id="map" width="220" height="190" aria-label="Mapa del circuito"></canvas></div>
+    <div id="jump-cue" class="jump-cue hidden" aria-hidden="true"><span class="pk-banner pk-banner--yellow">¡Tronco!</span><span class="pk-chip" id="jump-key">Espacio para saltar</span></div>
+    <div class="riding-status pk-panel">
+      <div class="stamina-head"><span class="pk-eyebrow">Fuerza de <span id="horse-name">Castaño</span></span><span><span id="gait">AL PASO</span> · <span id="stamina-label">100%</span></span></div>
+      <div id="stamina-pips" class="pk-pips stamina-pips" aria-hidden="true"></div>
+      <div class="stamina-foot"><p id="riding-tip">Guarda fuerzas para el remate.</p><span class="speed"><b id="speed">0</b> km/h</span></div>
+    </div>
+    <div class="pk-hints keyboard-hints" data-pana-hint><span><b>W ↑</b> avanzar</span><span><b>A D</b> girar</span><span><b>S ↓</b> frenar</span><span><b>Shift</b> remate</span><span><b>Espacio</b> saltar</span><span><b>R</b> volver al camino</span></div>
     <div class="touch-controls"><div class="touch-steer"><button data-input="left" aria-label="Girar a la izquierda">◀</button><button data-input="right" aria-label="Girar a la derecha">▶</button></div><div class="touch-actions"><button data-input="brake" aria-label="Frenar">Freno</button><button data-input="jump" aria-label="Saltar">Salto</button><button data-input="sprint" aria-label="Esprintar">Remate</button><button data-input="go" aria-label="Avanzar">¡Arre!</button></div></div>
   </main>
   <div id="countdown" class="countdown hidden" role="status" aria-live="polite"></div>
-  <div id="notice" class="notice hidden" role="status"></div>
-  <section id="results" class="results hidden" aria-labelledby="result-title"><div class="result-paper"><p class="location">LA VUELTA DEL ESTERO</p><h2 id="result-title">¡Llegaste, pana!</h2><p id="result-copy"></p><ol id="result-board"></ol><button id="again" class="primary">Otra carrera <span>↗</span></button><a href="/">← Volver a Pana</a></div></section>
-  <script type="module">import('./game.js').catch(error=>{console.error(error);const e=document.getElementById('loading');e.classList.remove('hidden');e.replaceChildren();const message=document.createElement('b');message.textContent='No pudimos ensillar. Comprueba tu conexión y WebGL, y recarga la página.';const back=document.createElement('a');back.href='/';back.textContent='Volver a Pana';e.append(message,back);});</script>
+  <div id="notice" class="notice pk-chip hidden" role="status"></div>
+  <section id="results" class="results hidden" aria-labelledby="result-title"><div class="result-paper pk-modal"><span class="pk-ribbon">La vuelta del estero</span><h2 id="result-title" class="pk-title">¡Llegaste, pana!</h2><p id="result-copy" class="pk-copy"></p><ol id="result-board" class="pk-roster"></ol><button id="again" class="pk-btn pk-btn--primary pk-btn--lg pk-btn--block">Otra carrera</button><a class="pk-back" href="/">← Volver a Pana</a></div></section>
+  <script type="module">import('./game.js').catch(error=>{console.error(error);const e=document.getElementById('loading');e.classList.remove('hidden');e.replaceChildren();const message=document.createElement('b');message.className='pk-heading';message.textContent='No pudimos ensillar. Comprueba tu conexión y WebGL, y recarga la página.';const back=document.createElement('a');back.href='/';back.textContent='Volver a Pana';back.className='pk-btn pk-btn--primary';e.append(message,back);});</script>
 </body>
 </html>

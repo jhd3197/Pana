@@ -1,3 +1,4 @@
+import { TRACK_DEFINITIONS } from '../track-definitions.js';
 // Los Roques-inspired racing island. The Bululú board-game world stays independent.
 import { THREE,M,box,sign,smooth,hill,terrain,sea,put,foundation,scatter,instances,clear,finish,edges } from './world-kit.js';
 import { palm } from '/engine/models/vegetation/palm.js';
@@ -26,8 +27,7 @@ function baseHeight(x,z){
   return h;
 }
 export default {
-  id:'bululu',name:'Isla Bululú',
-  blurb:'Los Roques entre cayos y lagunas: la marea invade los bordes de la lengua de arena. Busca el centro seco.',
+  ...TRACK_DEFINITIONS.find(track => track.id === 'bululu'),
   points:ROUTE,rounded:true,hw:9,lineU:.025,elevation:roadHeight,
   waterAt:(x,z,t,T)=>tideWetness(T,x,z,t),
   previewBounds:[[-420,0,-400],[590,75,340]],

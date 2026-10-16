@@ -15,7 +15,7 @@ const audio = { muted: false, volume: .8, unlocked: false, impl: null,
 import('/engine/fx.js').then(({ sound }) => { audio.impl = sound; sound.setVolume(audio.volume); if (audio.unlocked) sound.unlock(); }).catch(() => {});
 function notify(text) { $('toast').textContent = text; $('toast').classList.add('show'); clearTimeout(toastTimer); toastTimer = setTimeout(() => $('toast').classList.remove('show'), 3600); }
 const room = new CaidaRoom({ code, name: loadName(), avatar: loadAvatar(), onState: render, onNotice: notify,
-  onStatus(message, failed) { $('connection').textContent = message; $('practice').hidden = !failed; $('invite').disabled = !room.connected || room.offline; render(room.state); },
+  onStatus(message, failed) { $('connection').textContent = message; $('practice').hidden = !failed; $('invite').disabled = $('lobby-invite').disabled = !room.connected || room.offline; render(room.state); },
 });
 const menu = createGameMenu({ title: 'Caída · Pana', sound: audio,
   note: () => room.members.size > 1 ? 'La mesa sigue jugando mientras estás en el menú.' : 'La partida está en pausa. Los bots te esperan.',
@@ -36,10 +36,13 @@ const menu = createGameMenu({ title: 'Caída · Pana', sound: audio,
   invite: () => `${location.origin}${location.pathname}?room=${encodeURIComponent(code)}`,
   canOpen: () => !$('result').open,
 });
-$('game-nav').append(menu.createInviteButton({ id: 'invite' }), menu.createButton({ id: 'menu' }));
+$('game-nav').append(menu.createInviteButton({ id: 'invite', className: 'pk-btn' }), menu.createButton({ id: 'menu', className: 'pk-btn' }));
+$('lobby-invite-slot').replaceWith(menu.createInviteButton({ id: 'lobby-invite', className: 'pk-btn' }));
+$('lobby-room').textContent = `Sala ${code}`;
 $('rules').onclick = () => menu.open('controls'); $('practice').onclick = () => room.practice();
 $('start').onclick = () => { audio.unlock(); room.action('start'); }; $('next-round').onclick = () => room.action('start');
-for (const key of ['mode', 'difficulty', 'call', 'cantos']) $(key).onchange = () => room.action('configure', { options: { [key]: key === 'cantos' ? $(key).checked : $(key).value } });
+for (const key of ['mode', 'cantos']) $(key).onchange = () => room.action('configure', { options: { [key]: key === 'cantos' ? $(key).checked : $(key).value } });
+for (const button of document.querySelectorAll('[data-option]')) button.onclick = () => room.action('configure', { options: { [button.dataset.option]: button.dataset.value } });
 let view = 'patio'; $('camera-view').onclick = () => { view = view === 'patio' ? 'mesa' : 'patio'; world?.setView(view); $('camera-view').textContent = view === 'mesa' ? 'Vista del patio ↗' : 'Vista de mesa ↗'; $('camera-view').setAttribute('aria-pressed', String(view === 'mesa')); };
 $('play').onclick = playSelected; $('chant').onclick = () => room.action('chant'); $('hint').onclick = hint;
 $('review').onclick = closeResult; $('round-result').onclick = showResult;
@@ -57,9 +60,11 @@ function hint() {
 function render(state) {
   document.body.classList.toggle('in-lobby', state.phase === 'lobby'); $('welcome').hidden = state.phase !== 'lobby';
   $('start').disabled = !ready || !room.connected || !room.isHost;
-  $('start').textContent = !ready ? 'Preparando la mesa…' : !room.connected ? 'Conectando…' : room.isHost ? '¡Repartir las cartas! ↗' : 'El anfitrión reparte';
-  for (const key of ['mode', 'difficulty', 'call', 'cantos']) { $(key).disabled = !room.isHost; if (key === 'cantos') $(key).checked = state.options[key]; else $(key).value = state.options[key]; }
-  $('round-label').textContent = state.phase === 'lobby' ? 'MESA ABIERTA' : `REPARTO ${state.round} · MANO ${state.handNumber}`;
+  $('start').textContent = !ready ? 'Preparando la mesa…' : !room.connected ? 'Conectando…' : room.isHost ? '¡Repartir!' : 'El anfitrión reparte';
+  for (const key of ['mode', 'cantos']) { $(key).disabled = !room.isHost; if (key === 'cantos') $(key).checked = state.options[key]; else $(key).value = state.options[key]; }
+  for (const button of document.querySelectorAll('[data-option]')) { button.disabled = !room.isHost; button.setAttribute('aria-pressed', String(state.options[button.dataset.option] === button.dataset.value)); }
+  $('lobby-roster').textContent = state.players.map(p => p.id === room.id ? 'Tú' : p.name).join(' · ');
+  $('round-label').textContent = state.phase === 'lobby' ? 'Mesa abierta' : `Reparto ${state.round} · mano ${state.handNumber}`;
   $('deck-info').textContent = state.phase === 'lobby' ? MODES[state.options.mode].label : `${state.stock.length} por repartir · ${state.table.length} en la mesa`;
   $('last-hand').hidden = state.phase !== 'playing' || state.stock.length > 0;
   $('scores').replaceChildren();
@@ -67,7 +72,7 @@ function render(state) {
   state.scores.forEach((score, team) => {
     const players = state.players.filter(p => teamOf(state, p.seat) === team), row = document.createElement('div'); row.className = `score-row${team === ownTeam ? ' active' : ''}`;
     const name = document.createElement('span'), number = document.createElement('strong'), sub = document.createElement('small'), progress = document.createElement('div');
-    name.className = 'score-name'; name.textContent = state.options.mode === 'teams' ? team === ownTeam ? 'Tu pareja' : 'La otra pareja' : players[0].id === room.id ? 'Tú' : players[0].name;
+    name.className = 'score-name pk-eyebrow'; number.className = 'pk-num'; name.textContent = state.options.mode === 'teams' ? team === ownTeam ? 'Nosotros' : 'Ellos' : players[0].id === room.id ? 'Tú' : players[0].name;
     number.textContent = score; sub.textContent = score >= 12 ? 'En buena' : state.options.mode === 'teams' ? players.map(p => p.name).join(' + ') : `${players[0].captured.length} cartas recogidas`;
     progress.className = 'progress'; for (let i = 0; i < 24; i++) { const tick = document.createElement('i'); if (i < score) tick.className = 'filled'; progress.append(tick); }
     row.append(name, number, sub, progress); $('scores').append(row);
@@ -90,7 +95,7 @@ function render(state) {
   } else { clearTimeout(resultTimer); if ($('result').open) closeResult(); shownResult = ''; }
 }
 function positionTools() {
-  document.querySelector('.table-tools').style.top = room.state.phase === 'lobby' ? '' : `${document.querySelector('.scoreboard').getBoundingClientRect().bottom + 12}px`;
+  document.querySelector('.table-tools').style.top = room.state.phase === 'lobby' ? '' : `${document.querySelector('.scoreboard').getBoundingClientRect().bottom + 10}px`;
 }
 addEventListener('resize', positionTools);
 function renderHand(state) {
@@ -101,7 +106,7 @@ function renderHand(state) {
   if (focus) $('hand').querySelector(`[data-card="${focus}"]:not(:disabled)`)?.focus({ preventScroll: true });
   $('your-name').textContent = player ? `${player.name} · ${hand.length} cartas` : 'Estás mirando';
   $('capture-count').textContent = `${player?.captured.length || 0} RECOGIDAS`;
-  $('turn-status').textContent = !room.connected ? 'Reconectando…' : ended ? 'Reparto terminado' : state.phase === 'lobby' ? 'La mesa te espera.' : turn ? 'Te toca, pana.' : `Juega ${state.players[state.turn].name}`;
+  $('turn-status').textContent = !room.connected ? 'Reconectando…' : ended ? 'Reparto terminado' : state.phase === 'lobby' ? 'La mesa te espera.' : turn ? `¡Tu turno! · ${selected ? 'juégala o cambia' : 'elige una carta'}` : `Juega ${state.players[state.turn].name}`;
   $('turn-status').classList.toggle('active', turn); $('hint').disabled = !turn; $('play').disabled = !turn || !selected; $('play').hidden = ended; $('round-result').hidden = !ended;
   const chant = turn && state.options.cantos && !player.announced ? canto(hand) : null;
   $('chant').hidden = !chant; $('chant').textContent = chant ? `Cantar ${chant.name.toLowerCase()} +${chant.points}` : '';
@@ -122,7 +127,7 @@ function renderResult(state) {
   $('result-description').textContent = state.phase === 'finished' ? `Se alcanzaron los 24 puntos. ${state.result.reason}.` : `Cada carta por encima de ${state.result.baseline} suma un punto. La última recogida se lleva las sobrantes.`;
   $('result-details').replaceChildren();
   state.scores.forEach((score, team) => {
-    const row = document.createElement('div'), title = document.createElement('div'), small = document.createElement('small'), points = document.createElement('b'); row.className = 'result-detail';
+    const row = document.createElement('div'), title = document.createElement('div'), small = document.createElement('small'), points = document.createElement('b'); row.className = `result-detail pk-row${room.seat >= 0 && team === teamOf(state, room.seat) ? ' is-me' : ''}`;
     title.textContent = state.players.filter(p => teamOf(state, p.seat) === team).map(p => p.name).join(' + ');
     small.textContent = `${state.result.counts[team] || 0} cartas${state.result.bonuses.length ? ` · +${state.result.bonuses[team]} al contar` : ''}`; title.append(small); points.textContent = `${score} / 24`; row.append(title, points); $('result-details').append(row);
   });
@@ -144,5 +149,5 @@ addEventListener('pagehide', () => { stopped = true; clearInterval(timer); clear
 render(room.state); room.connect();
 import('./scene.js').then(m => m.createCaidaScene($('world'), { onCard: selectCard, onLoading: text => { $('loading-copy').textContent = text; } })).then(scene => {
   if (stopped) { scene.dispose(); return; } world = scene; ready = true; render(room.state); $('loading').hidden = true;
-}).catch(error => { console.error(error); $('loading-copy').textContent = 'No pudimos cargar la mesa. Comprueba tu conexión y WebGL.'; const button = document.createElement('button'); button.className = 'button primary'; button.textContent = 'Volver a intentar'; button.onclick = () => location.reload(); $('loading').append(button); });
+}).catch(error => { console.error(error); $('loading-copy').textContent = 'No pudimos cargar la mesa. Comprueba tu conexión y WebGL.'; const button = document.createElement('button'); button.className = 'pk-btn pk-btn--primary'; button.textContent = 'Volver a intentar'; button.onclick = () => location.reload(); $('loading').append(button); });
 if (params.has('debug')) window.caidaDebug = { room, menu, CaidaGame, chooseMove, previewPlay, canto, render, get world() { return world; } };
