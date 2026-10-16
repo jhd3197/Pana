@@ -7,12 +7,18 @@ export const activeItem = c => c.inventory[c.selected];
 export const isMango = item => item?.kind === 'mango' || item?.kind === 'mango3';
 export const canBlock = c => !c.done && isMango(activeItem(c)) && activeItem(c).rolling <= 0;
 export const coinMultiplier = c => 1 + Math.min(MAX_COINS, Math.max(0, c.coins || 0)) * COIN_SPEED;
+// A full coin purse (10) powers up the next item: it flies faster, lasts longer.
+export const isJuiced = c => (c.coins || 0) >= MAX_COINS;
+// Items that come in threes; each use spends one charge.
+export const CHARGES = { mango3: 3, jugo3: 3 };
+// Items fired at someone (front/back) versus used on yourself or the field.
+export const AIMED = new Set(['mango', 'mango3', 'concha', 'trampa', 'cohete']);
 
 export function addItem(c, kind, rolling = 0.65) {
   const empty = c.inventory.indexOf(null);
   if (empty < 0) return false;
   const wasEmpty = !activeItem(c);
-  c.inventory[empty] = { kind, n: kind === 'mango3' ? 3 : 1, rolling };
+  c.inventory[empty] = { kind, n: CHARGES[kind] || 1, rolling };
   if (wasEmpty) c.selected = empty;
   return true;
 }

@@ -10,6 +10,10 @@ becomes the GitHub release's notes.
 
 ### Added
 
+- **Derrape has six new items.** A cohete that chases the car ahead, the
+  chancleta that drops on the leader, a totuma shield, exploding trap
+  crates, an aguacero that soaks everyone ahead and a jarra with three
+  turbos. Ten coins power up whatever you use next.
 - **Derrape has real drifting.** Hold Shift (or the Derrape button) in a
   bend: sparks go blue, orange and purple, and letting go fires a turbo.
   Time the gas on the countdown for a rocket start, do tricks off ramps,

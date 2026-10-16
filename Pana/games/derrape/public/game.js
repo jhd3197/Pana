@@ -7,7 +7,8 @@ import { garageCards, wheelCards } from './garage-cards.js';
 import { paintNext } from './loading.js';
 import { sound, Puffs, Debris, makeBubble } from '/engine/fx.js';
 import { createItems, ITEMS, SPIN } from './items.js';
-import { activeItem, canBlock, coinMultiplier, COIN_SPEED, MAX_COINS } from './item-rules.js';
+import { activeItem, canBlock, coinMultiplier, COIN_SPEED, MAX_COINS, AIMED } from './item-rules.js';
+import { ITEM_ICONS } from './item-art.js';
 import { TRACKS, getTrack, makeTrack } from './tracks.js';
 import { roughnessAt,roadGripAt,roadWaterAt } from './offroad.js';
 import { loadAvatar, loadName, randomAvatar } from '/engine/avatar.js';
@@ -391,6 +392,9 @@ function finishTrack() {
     crash: (c, power, side) => crash(c, power, side),
     say: (c, lines, time) => say(c, lines, time),
     standings: () => standings(),
+    cars: () => race.cars,
+    byId: (id) => racerById(id),
+    battle: () => race.mode === 'battle',
     emit: (kind, c, data) => { if (race.netRace && !c.remote) net.fx(c.netId, kind, data); },
   });
   $('mm-track').textContent = T.name;
@@ -512,6 +516,7 @@ function makeRacer(index, isPlayer, name, wheelId = 'calle', avatar = null) {
     // driving skills (drive-rules.js): drift dir ±1 and its charge, hop, trick, draft, stall
     drift: 0, driftT: 0, driftHeld: false, driftWindow: 0, driftYaw: 0, hopping: false,
     trick: false, trickT: 0, draft: 0, stall: 0, aiDrift: false,
+    shield: 0, cloud: 0,
   };
 }
 
@@ -523,7 +528,7 @@ function placeRacer(c, lane, row) {
   Object.assign(c, {
     lane, x: p.x - tz / l * lane, z: p.y + tx / l * lane, y: 0, h: Math.atan2(tx, tz),
     vx: 0, vz: 0, vy: 0, vf: 0, lap: 0, done: false, time: 0,
-    drift: 0, driftT: 0, hopping: false, trick: false, draft: 0, stall: 0,
+    drift: 0, driftT: 0, hopping: false, trick: false, draft: 0, stall: 0, shield: 0, cloud: 0,
   });
   c.y = groundAt(c.x, c.z);
   c.prog = progressOf(c);
@@ -559,8 +564,14 @@ const TIPS = [
   [SVG.crate, 'Rompe cajas de madera para conseguir objetos. Guardas hasta 2.'],
   [SVG.juice, 'El jugo de mango te da un turbo: tómatelo en una recta.'],
   [SVG.back, 'Lanza hacia atrás con X para frenar al que te persigue.'],
-  [SVG.coin, 'Derrapa con Shift: suelta con chispas moradas para el turbo más largo.'],
-  [SVG.coin, 'En una rampa, pulsa Shift en el aire para hacer un truco y caer con turbo.'],
+  [ITEM_ICONS.drift, 'Derrapa con Shift: suelta con chispas moradas para el turbo más largo.'],
+  [ITEM_ICONS.drift, 'En una rampa, pulsa Shift en el aire para hacer un truco y caer con turbo.'],
+  [ITEM_ICONS.cohete, 'El cohete persigue al carro que va justo delante de ti.'],
+  [ITEM_ICONS.chancleta, 'La chancleta vuela por encima de la pista y cae sobre el líder.'],
+  [ITEM_ICONS.totuma, 'La totuma protectora aguanta un golpe de lo que sea.'],
+  [ITEM_ICONS.aguacero, 'El aguacero moja a todos los que van delante. Los cauchos de lluvia lo aguantan.'],
+  [ITEM_ICONS.trampa, 'Ojo con las cajas con banda roja: son trampas y explotan.'],
+  [SVG.coin, 'Con 10 monedas tu próximo objeto sale potenciado.'],
   [SVG.coin, 'Pégate detrás de otro carro en la recta: el rebufo te lanza hacia adelante.'],
   [SVG.coin, 'Si te pegan pierdes monedas. Cuídalas: cada una es velocidad.'],
 ];
@@ -864,14 +875,16 @@ function crash(c, power, side) {
 function stepCar(c, input, dt) {
   const t = c.tune;   // car tune composed with the racer's cauchos (makeRacer)
   const boosting = c.boost > 0;
-  const top = t.top * c.skill * coinMultiplier(c);
+  // Under an aguacero cloud the car is slower and slides, less so on rain cauchos.
+  const rained = c.cloud > 0 ? (t.wetFloor >= 0.5 ? 0.93 : 0.74) : 1;
+  const top = t.top * c.skill * coinMultiplier(c) * rained;
   const terrain=T.def.offroad;
   // Wheel off-road resistance scales every roughness penalty below (accel,
   // speed cap, drag); slicks go negative and make rough ground worse.
   const rough=(c.onGround?roughnessAt(T,c.x,c.z):0)*(1-t.offroadResist);
   const water=c.onGround?roadWaterAt(T,c.x,c.z,race.clock):0;
   // Rain cauchos keep a grip floor where the road reports wet.
-  const grip=Math.max(c.onGround?roadGripAt(T,c.x,c.z,race.clock):1,t.wetFloor);
+  const grip=Math.max((c.onGround?roadGripAt(T,c.x,c.z,race.clock):1)*(c.cloud>0?.55:1),t.wetFloor);
   const acceleration=t.accel*(1-rough*(1-(terrain?.accel??1)))*(1-water*.28);
   const previous={x:c.x,z:c.z};
   if (c.spin > 0) input = { throttle: 0, steer: 0 };   // skidding on a peel: no control
@@ -1333,8 +1346,9 @@ function showItem(p) {
   if ($('item-status').textContent !== status) $('item-status').textContent = status;
   $('item').classList.toggle('protected', canBlock(p));
   $('throw-front').disabled = $('throw-back').disabled = !ready;
-  $('throw-front').querySelector('span').textContent = item?.kind === 'jugo' ? 'Beber' : 'Adelante';
-  $('throw-back').disabled = !ready || item.kind === 'jugo';
+  const aimed = !item || AIMED.has(item.kind);
+  $('throw-front').querySelector('span').textContent = item?.kind?.startsWith('jugo') ? 'Beber' : aimed ? 'Adelante' : 'Usar';
+  $('throw-back').disabled = !ready || !aimed;
   $('swap-item').disabled = !p.inventory[1 - p.selected] || p.done;
   $('coin-count').textContent = String(p.coins).padStart(2, '0');
   $('coin-bonus').textContent = `+${Number((p.coins * COIN_SPEED * 100).toFixed(1)).toLocaleString('es-VE')}% velocidad`;
@@ -1469,6 +1483,7 @@ function onNetFx(id, kind, d) {
   else if (kind === 'peel') race.items.remotePeel(c, d);
   else if (kind === 'hit') race.items.remoteHit(c, d);
   else if (kind === 'slip') race.items.remoteSlip(d);
+  else if (kind === 'cloud') race.items.remoteCloud(d);
   else if (kind === 'honk' && c.honkT <= 0) {
     c.honkT = sound.horn(c.def.horn);
     c.bubble.say(LINES.honk[c.def.horn], c.honkT + 0.2);
