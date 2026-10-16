@@ -7,10 +7,10 @@ export {
   LEGACY_CUP_ALIASES, canonicalCupId, cupById, cupDuration, cupTracks, validateCups,
 } from './cup-definitions.js';
 
-// Points by finishing place (1st first). Eight racers at most.
-export const POINTS = [15, 12, 10, 8, 6, 4, 2, 1];
+import { POINTS } from './cup-rules.js';
+export { POINTS };
 
-// Adds one race's finishing order (names) to a { name: points } table.
+// Compatibility for the previous local cup; new sessions use cup-rules.js.
 export function awardPoints(table, order) {
   order.forEach((name, i) => { table[name] = (table[name] || 0) + (POINTS[i] ?? 0); });
   return table;

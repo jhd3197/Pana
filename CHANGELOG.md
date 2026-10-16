@@ -92,6 +92,9 @@ becomes the GitHub release's notes.
   new four-track order; Mango and Arepa trophies, coins and cosmetics stay
   earned, with old route wins labeled "Edición anterior" instead of counting as
   wins on the new routes.
+- **Contributors have one shared Grand Prix championship rulebook.** The pure
+  renderer-free rules cover stable entrants, seeded grids, stage result ledgers,
+  points, DNF/DNS/retirement and championship tiebreaks for local and online play.
 - **Online play runs on Colyseus rooms.** Rooms choose the host, hand it over at
   once when the host leaves, and give a dropped pana 20 seconds to come back to
   the same seat.

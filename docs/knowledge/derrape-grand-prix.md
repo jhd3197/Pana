@@ -102,3 +102,26 @@ receipts. `modes.browser.js` completed Copa Pana in its new order;
 `shop.browser.js` passed wallet, paint, horn and legacy-mirror flows. The pure
 shop tests also prove Mango + Pana is one unlock credit.
 
+## Phase 02 — pure championship ledger
+
+`public/cup-rules.js` is renderer-free and shared by browser and Node. A session
+freezes entrant IDs, names, bot/human identity, avatar, loadout and skill seed;
+display names are never keys. Stage context is `(stageIndex, attempt)`. Only
+`ready → loading → racing → intermission/complete` mutations are legal, and all
+context/ownership/cardinality validation happens before the ledger changes.
+
+A finalized stage has one record per roster entrant. Finished cars sort by time,
+started DNFs by progress, then retired and DNS. Only finished/DNF records earn
+place points; earlier points are immutable. `acceptFinish` is separate from
+finalization so leaving after an accepted finish keeps that finish, while a
+permanent absence becomes DNS on later stages. Standings are derived from the
+ledger every time: points, wins, classifications from race four back to race
+one, then the seeded initial grid. `decidedBy`/`explainTie` expose the deciding
+rule to the UI.
+
+Proof: `cup-rules.test.js` completes a four-stage session and covers duplicate
+names, duplicate/missing/foreign submissions, stale attempts, all-DNF races,
+DNS/retirement, departure after finishing, sparse grids, tie chains and
+abandonment. `assertCupInvariants` checks bounded stages, unique stage/entrant
+records and totals equal to ledger sums. No DOM or Three.js import is present.
+
