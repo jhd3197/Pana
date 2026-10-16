@@ -7,7 +7,7 @@
 import { t } from '@colyseus/schema';
 import { PanaRoom, Member, roomState } from '../../../server/src/room-kit.js';
 import { randomAvatar } from '../../../engine/avatar.js';
-import { Night, MIN_PLAYERS, MAX_PLAYERS, cleanInput, QUICK } from '../public/rules.js';
+import { Night, MIN_PLAYERS, MAX_PLAYERS, cleanInput, debugNight, QUICK } from '../public/rules.js';
 import { Brains, BOT_NAMES } from '../public/bots.js';
 
 const TICK = 0.05;
@@ -56,6 +56,8 @@ export default class EmbusteRoom extends PanaRoom {
       if (seat == null || !m || typeof m.action !== 'string' || JSON.stringify(m).length > 600) return;
       this.night.act?.(seat, m.action, m);
     });
+    // Browser suites only (?quick rooms): stand somewhere, clear the cooldowns.
+    this.onMessage('debug', (client, m) => { if (this.quick) debugNight(this.night, this.seatOf(client), m); });
     this.clock.setInterval(() => this.tick(), TICK * 1000);
   }
 

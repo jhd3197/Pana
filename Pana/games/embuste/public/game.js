@@ -10,7 +10,7 @@ import { shout } from '/engine/kit.js';
 import { pixelRatio, bindRenderer } from '/engine/settings.js';
 import { OnlineNight, PracticeNight } from './network.js';
 import { createCampWorld, groundAt } from './scene.js';
-import { zoneAt, zoneById, FIRE, ZONES, BOUNDS, STATIONS, REACH, BELL, VENTS, HIDES, FIXES, stationById, ventById, hideById, distance } from './layout.js';
+import { SEATS, zoneAt, zoneById, FIRE, ZONES, BOUNDS, STATIONS, REACH, BELL, VENTS, HIDES, FIXES, stationById, ventById, hideById, distance } from './layout.js';
 import { mummyCount, MIN_PLAYERS, taskById, WRAP_RANGE, REPORT_RANGE, BELL_RANGE, VENT_RANGE, HIDE_RANGE, DISGUISES, SABOTAGES } from './rules.js';
 import { vineSnare } from '/engine/models/props/embuste.js';
 import { guardianModel } from './scene.js';
@@ -24,6 +24,7 @@ const $ = id => document.getElementById(id), show = (id, on) => $(id).classList.
 const qs = new URLSearchParams(location.search), code = roomFromUrl() || newRoomCode();
 const url = new URL(location.href); url.searchParams.set('room', code); history.replaceState(null, '', url);
 const avatar = loadAvatar(), name = qs.get('name')?.slice(0, 16) || loadName(), quick = qs.has('quick');
+const noRender = qs.has('norender');   // browser suites: many pages on a software renderer
 const colors = ['#ffb36b', '#81c8c4', '#d2a0a0', '#a3bc74', '#f2d16b', '#b7a8ce', '#6ea6d0', '#e58fb6', '#c1c5a6'];
 
 // ---------- renderer ----------
@@ -40,7 +41,7 @@ const cameraTarget = new THREE.Vector3(0, 0, 0), temp = new THREE.Vector3();
 
 // ---------- state ----------
 let net = null, view = null, lobby = { phase: 'lobby', players: [], isHost: false }, paused = false, dead = false, phase = '';
-let toastTimer, last = performance.now(), elapsed = 0, rosterKey = '', uiClock = 0;
+let toastTimer, last = performance.now(), elapsed = 0, rosterKey = '', uiClock = 0, endedAt = 0;
 const actors = new Map(), keys = new Set(), touch = new Set();
 const me = () => view?.me;
 const rosterOf = seat => view?.roster.find(r => r.seat === seat);
@@ -168,7 +169,9 @@ const guardian = guardianModel(); guardian.position.set(0, 0, -8.6); guardian.vi
 function syncActors() {
   for (const [seat, a] of actors) if (!rosterOf(seat)) { removeActor(a); actors.delete(seat); }
   const seen = new Set(view.players.map(p => p.seat));
-  for (const p of view.players) {
+  const ended = view.phase === 'ended';
+  for (const [i, raw] of view.players.entries()) {
+    const ring = SEATS[i % SEATS.length], p = ended ? { seat: raw.seat, x: ring.x * 1.3, z: ring.z * 1.3, h: ring.h, moving: false } : raw;
     const a = actorFor(p.seat); if (!a) continue;
     if (!a.seen) a.root.position.set(p.x, groundAt(p.x, p.z), p.z);
     a.seen = true; a.target = p;
@@ -179,6 +182,51 @@ function syncActors() {
 }
 
 // ---------- view ----------
+// Endings. Sunrise: the relic blazes and the mummies' bandages fall off.
+// Endless night: the panas end up wrapped and the guardian keeps watch.
+const DAY = { sky: new THREE.Color(0xe9a46a), night: new THREE.Color(0x0b0d22), void: new THREE.Color(0x04030c) };
+const endingWraps = [];
+function startEnding() {
+  clearEnding();
+  const panas = view.ending.winner === 'panas';
+  for (const r of view.roster) {
+    const a = actors.get(r.seat); if (!a || r.spectator || (panas ? r.role !== 'momia' : r.role === 'momia')) continue;
+    const box = new THREE.Box3().setFromObject(a.character.group), size = box.getSize(new THREE.Vector3());
+    const wrap = bandageWrap({ height: size.y * 0.98, radius: Math.max(size.x, size.z) * 0.5 });
+    a.root.add(wrap); endingWraps.push({ wrap, falling: panas });
+    if (!panas) wrap.scale.y = 0.01;
+  }
+  shout(panas ? '¡Amaneció!' : 'La noche no termina', { tone: panas ? 'yellow' : 'coral' });
+  sound.tone(panas ? 523 : 110, 0, 0.5, 'triangle', 0.08); sound.tone(panas ? 784 : 82, 0.4, 0.9, 'triangle', 0.07);
+}
+function clearEnding() { while (endingWraps.length) endingWraps.pop().wrap.removeFromParent(); }
+function mood(dt) {
+  const end = view?.phase === 'ended' && view.ending, dawn = end?.winner === 'panas', gloom = end && !dawn;
+  scene.background.lerp(dawn ? DAY.sky : gloom ? DAY.void : DAY.night, Math.min(1, dt * 0.8));
+  scene.fog.color.copy(scene.background); scene.fog.density = THREE.MathUtils.damp(scene.fog.density, dawn ? 0.006 : 0.018, 1, dt);
+  moon.intensity = THREE.MathUtils.damp(moon.intensity, dawn ? 2.6 : gloom ? 0.4 : 0.9, 1, dt);
+  for (const e of endingWraps) {
+    if (e.falling) { e.wrap.position.y = Math.max(-1.6, e.wrap.position.y - dt * 0.5); e.wrap.scale.y = Math.max(0.05, e.wrap.scale.y - dt * 0.25); }
+    else e.wrap.scale.y = Math.min(1, e.wrap.scale.y + dt * 0.5);
+  }
+}
+
+// Night jungle: crickets and the odd frog, and a heartbeat when a mummy is close.
+let nextChirp = 0, nextBeat = 0;
+function ambience() {
+  if (view?.phase !== 'playing' || paused) return;
+  if (elapsed > nextChirp) {
+    nextChirp = elapsed + 0.4 + Math.random() * 1.6;
+    if (Math.random() < 0.7) { const f = 3900 + Math.random() * 700; sound.tone(f, 0, 0.035, 'sine', 0.006); sound.tone(f * 1.04, 0.07, 0.035, 'sine', 0.006); }
+    else sound.tone(260 + Math.random() * 80, 0, 0.12, 'triangle', 0.012);
+  }
+  const hb = me()?.heartbeat || 0;
+  if (hb > 0 && elapsed > nextBeat) {
+    nextBeat = elapsed + THREE.MathUtils.lerp(1.1, 0.42, hb);
+    sound.tone(58, 0, 0.11, 'sine', 0.05 + hb * 0.12); sound.tone(52, 0.16, 0.11, 'sine', 0.04 + hb * 0.1);
+  }
+}
+
 function receive(v) {
   view = v;
   if (phase !== v.phase) enterPhase(v.phase);
@@ -194,8 +242,10 @@ function enterPhase(next) {
   document.body.classList.toggle('playing', next === 'playing');
   if (next !== 'playing') closeTask(false);
   if (next === 'reveal') showReveal();
+  if (next === 'ended') { endedAt = performance.now(); syncActors(); startEnding(); setTimeout(updateLobby, 4300); } else clearEnding();
   if (was === 'meeting') dock();
   if (next === 'playing' && was === 'reveal') { const p = me(); if (p) cameraTarget.set(p.x ?? 0, 0, p.z ?? 0); }
+  if (next === 'playing') setTimeout(minimap, 0);
   updateLobby();
 }
 function handleEvent(e) {
@@ -243,10 +293,10 @@ function showReveal() {
 
 function updateLobby() {
   const inLobby = !view || view.phase === 'lobby' || lobby.phase === 'lobby';
-  show('lobby', inLobby); show('loading', false);
+  show('lobby', inLobby); show('loading', false); show('story', inLobby);
   show('reveal', view?.phase === 'reveal'); show('hud', !!view && ['playing'].includes(view.phase));
   overlays();
-  show('results', view?.phase === 'ended');
+  show('results', view?.phase === 'ended' && performance.now() - endedAt > 4200);
   const connected = !!net?.connected, host = lobby.isHost;
   const count = lobby.players.length, filled = lobby.bots ? Math.max(6, count) : count;
   $('start').disabled = !connected || !host || (!lobby.bots && count < MIN_PLAYERS && !quick);
@@ -490,6 +540,8 @@ function frame(now) {
   const mine = view && actors.get(me()?.seat);
   if (!view || view.phase === 'lobby') {
     const a = elapsed * 0.08; camera.position.set(Math.sin(a) * 26, 17, Math.cos(a) * 26); camera.lookAt(0, 0, 0);
+  } else if (view.phase === 'ended') {
+    const a = elapsed * 0.12; camera.position.set(Math.sin(a) * 12, 6.5, Math.cos(a) * 12); camera.lookAt(0, 1, 0);
   } else if (view.phase === 'meeting' && view.meeting?.stage === 'eject' && view.meeting.result) {
     river(dt);
   } else if (view.phase === 'meeting') {
@@ -498,16 +550,19 @@ function frame(now) {
     temp.copy(mine.root.position); camera.position.lerp(temp.clone().add(new THREE.Vector3(0, 2.4, 5.2)), Math.min(1, dt * 3)); camera.lookAt(temp.x, 1.2, temp.z);
   } else if (mine) {
     temp.copy(mine.root.position); cameraTarget.lerp(temp, Math.min(1, dt * 8));
-    camera.position.set(cameraTarget.x, 16, cameraTarget.z + 11); camera.lookAt(cameraTarget.x, 0, cameraTarget.z);
+    // Portrait phones see less across, so the camera backs off.
+    const far = camera.aspect < 0.8 ? 1.55 : 1;
+    camera.position.set(cameraTarget.x, 16 * far, cameraTarget.z + 11 * far); camera.lookAt(cameraTarget.x, 0, cameraTarget.z);
   }
   if (view?.meeting?.stage !== 'eject') lantern.intensity = 30;
   if (mine && view?.meeting?.stage !== 'eject') lantern.position.set(mine.root.position.x + 0.8, 4.2, mine.root.position.z + 1.2);
   darkness(mine);
   const w = view?.world || {};
-  guardian.visible = !!w.guardian && view.phase === 'playing';
+  guardian.visible = (!!w.guardian && view.phase === 'playing') || (view?.phase === 'ended' && view.ending?.winner === 'momias');
   if (guardian.visible) { guardian.rotation.y = THREE.MathUtils.damp(guardian.rotation.y, w.guardian === 'look' ? 0 : Math.PI, 8, dt); guardian.userData.animate(elapsed, false, w.guardian === 'look'); }
   fireLight.intensity = THREE.MathUtils.damp(fireLight.intensity, w.lightsOut ? 12 : 90, 3, dt);
-  world.update(elapsed, view, dt); renderer.render(scene, camera);
+  mood(dt); ambience();
+  world.update(elapsed, view, dt); if (!noRender) renderer.render(scene, camera);
   uiClock += dt; if (uiClock > 0.1 && view?.phase === 'playing') { uiClock = 0; minimap(); }
   requestAnimationFrame(frame);
 }
@@ -564,5 +619,6 @@ addEventListener('pagehide', () => {
   actors.forEach(removeActor); world.dispose(); renderer.dispose();
 });
 if (qs.has('debug')) window.embuste = { scene, camera, renderer, actors, world, menu, input,
+  debug: (m) => net?.debug?.(m),
   use: () => useTarget()?.run(), solve: () => openPanel && finishTask(openPanel), get panel() { return openPanel; },
   get net() { return net; }, get view() { return view; }, get lobby() { return lobby; } };

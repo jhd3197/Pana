@@ -102,7 +102,9 @@ Every game's online play runs on Colyseus rooms through one shared kit
 sharing a link IS the lobby. Most games are host-simulated: the room's host runs
 the game and publishes snapshots while the room relays (`relay-room.js` +
 `engine/net.js` `HostRoom`). Derrape ships its own room, which owns phase, roster
-and results while each client drives its own car.
+and results while each client drives its own car. ¡Embuste! ships its own room
+that runs the whole game and sends each player a private view, because its
+roles must stay secret (`docs/knowledge/embuste.md`).
 
 This is deliberately trust-based: Pana is for playing with your panas, not for
 competitive strangers. If a game ever needs anti-cheat or authoritative physics,

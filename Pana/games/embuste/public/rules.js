@@ -102,6 +102,14 @@ export function checkWin(players, bar = { done: 0, total: 0 }) {
 }
 
 const clampInput = v => (Number.isFinite(v) ? Math.max(-1, Math.min(1, v)) : 0);
+// Browser suites place panas and clear cooldowns instead of walking the map
+// (practice pages, and the room only when it was opened with ?quick).
+export function debugNight(night, seat, m = {}) {
+  const p = night.players.get(seat);
+  if (!p || !m) return;
+  if (Number.isFinite(m.x) && Number.isFinite(m.z)) Object.assign(p, { x: m.x, z: m.z });
+  if (m.ready) { for (const q of night.players.values()) q.cooldown = 0; night.sabCooldown = 0; night.nextBell = 0; }
+}
 export const cleanInput = i => ({ x: clampInput(i?.x), z: clampInput(i?.z), hold: !!i?.hold });
 
 export class Night {
@@ -591,6 +599,13 @@ export class Night {
     return w;
   }
 
+  // A living pana's heart races when a mummy is close, seen or not (0..1).
+  heartbeat(me) {
+    if (me.role !== 'pana' || this.ghost(me)) return 0;
+    const d = Math.min(...this.active().filter(p => p.role === 'momia' && !this.ghost(p)).map(p => distance(me, p)));
+    return d < 7 ? +(1 - d / 7).toFixed(2) : 0;
+  }
+
   meetingView(me) {
     const m = this.meeting, done = m.stage === 'eject';
     return {
@@ -628,6 +643,7 @@ export class Night {
         disguises: mummy ? me.disguises : undefined, hideCooldown: +me.hideCooldown.toFixed(1),
         frozen: me.frozen > 0 ? +me.frozen.toFixed(1) : undefined, stuck: me.stuck > 0 ? +me.stuck.toFixed(1) : undefined,
         sabCooldown: mummy ? +this.sabCooldown.toFixed(1) : undefined,
+        heartbeat: this.phase === 'playing' ? this.heartbeat(me) : 0,
       },
       sabotage: this.sabotage && {
         kind: this.sabotage.kind, progress: +Math.min(1, this.sabotage.progress).toFixed(2), holders: this.sabotage.holders,
@@ -646,7 +662,8 @@ export class Night {
         seat: p.seat, name: p.name, avatar: p.avatar, bot: p.bot || undefined, role: roleOf(p), spectator: p.spectator || undefined,
         out: (ended || p === me ? !p.alive : p.known) || undefined, ejected: p.ejected || undefined,
       })),
-      players: lobby ? [] : [...this.players.values()].filter(p => this.seesPlayer(me, p)).map(pose),
+      // At the end everyone gathers at the fire for the sunrise (or the endless night).
+      players: lobby ? [] : ended ? this.active().map(p => ({ seat: p.seat, x: p.x, z: p.z, h: p.h })) : [...this.players.values()].filter(p => this.seesPlayer(me, p)).map(pose),
       ending: this.ending,
       options: { reveal: this.options.reveal, chat: this.options.chat },
       events: this.events.filter(e => e.id > since && (!e.to || e.to.includes(seat))).map(({ to, ...e }) => e),

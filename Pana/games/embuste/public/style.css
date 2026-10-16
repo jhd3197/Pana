@@ -32,6 +32,14 @@ body.ghost .dark{opacity:.25}
 #practice{align-self:flex-start;color:var(--pk-yellow)}
 #loading .pk-ribbon{background:var(--pk-game);color:var(--pk-game-ink)}
 
+/* the story, beside the lobby */
+.story{position:fixed;right:5%;top:50%;transform:translateY(-50%) rotate(-2deg);max-width:340px;display:grid;gap:10px;padding-left:18px;border-left:3px solid var(--pk-game);text-shadow:0 2px 6px rgba(14,11,36,.8)}
+.story .pk-eyebrow{color:var(--pk-game)}
+.story .pk-heading{font-size:34px;color:var(--pk-text);text-shadow:0 4px 0 var(--pk-night)}
+.story p{margin:0;font:700 14px/1.45 var(--pk-sans);color:var(--pk-text)}
+.story p b{color:var(--bandage)}
+@media(max-width:1100px){.story{display:none}}
+
 /* private role reveal */
 .reveal{position:fixed;left:0;right:0;bottom:9vh;z-index:20;display:grid;justify-items:center;gap:10px;padding:0 20px;text-align:center;pointer-events:none}
 .reveal .pk-title{font-size:clamp(54px,9vw,96px)}
@@ -152,9 +160,9 @@ body.mummy .controls{bottom:340px}
   #game-nav{gap:6px}#game-nav .pk-btn{padding:6px 10px;font-size:12px}#game-nav kbd{display:none}
   .pk-lobby{padding-top:64px}.lobby .pk-title{font-size:56px}.lobby .pk-copy{font-size:14px}.pk-stat b{font-size:22px}
   .tasks{top:56px;left:10px;width:min(220px,56vw);padding:8px 10px;gap:5px}.tasks h2{font-size:16px}.steps{gap:3px}.steps li{font-size:11px}.steps li::before{width:12px;height:12px}
-  .dawn{top:auto;bottom:max(84px,calc(env(safe-area-inset-bottom) + 84px));left:12px;transform:none;width:150px;padding:6px 8px}
-  .alarm{top:56px;left:auto;right:10px;transform:none;width:min(170px,40vw);padding:6px 8px}.alarm b{font-size:15px}.alarm span{font-size:10px}
-  .map-wrap{top:56px;right:10px;padding:4px}.map-wrap canvas{width:96px;height:108px}
+  .dawn{top:56px;left:auto;right:10px;transform:none;width:min(150px,36vw);padding:6px 8px}.dawn .pk-eyebrow{font-size:9px}
+  .alarm{top:108px;left:auto;right:10px;transform:none;width:min(170px,40vw);padding:6px 8px}.alarm b{font-size:15px}.alarm span{font-size:10px}
+  .map-wrap{top:108px;right:10px;padding:4px}.map-wrap canvas{width:96px;height:108px}
   body.alarmed .map-wrap{display:none}
   .actions{right:10px;bottom:16px;width:190px;gap:6px}.action-button{justify-content:center;min-height:44px;padding:8px;font-size:13px}.action-button .pk-kbd{display:none}.action-button.use{min-height:54px}
   .sabotage-menu{right:10px;bottom:178px;width:200px}

@@ -212,7 +212,9 @@ export function createCampWorld() {
     const w = view?.world || {};
     fire.userData.tick?.(t); falls.userData.tick?.(t);
     relic.rotation.y = t * 0.5; relic.position.y = 1.05 + Math.sin(t * 1.6) * 0.06;
-    relicGlow.material.opacity = w.lightsOut ? 0.03 : 0.16 + Math.sin(t * 2) * 0.03;
+    const blaze = view?.ending?.winner === 'panas';
+    relicGlow.material.opacity = w.lightsOut ? 0.03 : blaze ? 0.45 + Math.sin(t * 3) * 0.08 : 0.16 + Math.sin(t * 2) * 0.03;
+    relicGlow.scale.setScalar(THREE.MathUtils.damp(relicGlow.scale.x, blaze ? 3.2 : 1, 1.5, dt));
     bell.userData.ring(t, w.bell > 0 ? 1 : 0);
     bridge.visible = !w.bridgeCut; broken.visible = !!w.bridgeCut;
     winchTurn += dt * (w.winch > 0 ? 6 : 0); winch.userData.wheel.rotation.z = -winchTurn;

@@ -69,6 +69,10 @@ with `roomState({ ...fields }, Member.extend({ ...memberFields }, 'Name'))`, cal
 `left`, `hostChanged` instead of overriding `onJoin`/`onLeave`. Browser side:
 `joinRoom('<game>', options)` and listen on the link. See `derrape-online.md`.
 
+When players must not see each other's data (¡Embuste!'s roles), run the game
+in the room and `client.send()` each seat its own filtered view instead of
+putting it in the shared state; see `embuste.md`.
+
 ## Proof
 
 Each migrated game keeps its own two-client browser suite (`games/<game>/tests/`).

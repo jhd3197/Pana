@@ -7,7 +7,7 @@
 // Both emit 'lobby' (roster, phase, options, who hosts), 'view' and 'status'.
 
 import { joinRoom, leadFromUrl } from '/engine/net.js';
-import { Night, cleanInput, MAX_PLAYERS, QUICK } from './rules.js';
+import { Night, cleanInput, debugNight, MAX_PLAYERS, QUICK } from './rules.js';
 import { Brains, BOT_NAMES } from './bots.js';
 import { randomAvatar } from '/engine/avatar.js';
 
@@ -63,6 +63,7 @@ export class OnlineNight extends Emitter {
   start() { this.link?.send('start'); }
   toLobby() { this.link?.send('lobby'); }
   options(patch) { this.link?.send('options', patch); }
+  debug(m) { this.link?.send('debug', m); }   // ?quick rooms only (browser suites)
   leave() { this.connected = false; return this.link?.leave(); }
 }
 
@@ -126,5 +127,6 @@ export class PracticeNight extends Emitter {
     this.night.toLobby();
   }
   options(patch) { this.lobby = { ...this.lobby, ...patch }; this.emit('lobby', this.lobby); }
+  debug(m) { debugNight(this.night, 1, m); }
   leave() { clearInterval(this.timer); }
 }

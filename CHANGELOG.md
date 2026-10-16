@@ -10,9 +10,11 @@ becomes the GitHub release's notes.
 
 ### Added
 
-- **New game: ¡Embuste!, a mummy among your panas at the camp.**
-  Everyone plays on their own screen; the room deals secret roles, so
-  only the mummies know who they are. Practice with bots in the browser.
+- **New game: ¡Embuste!, find the mummy among your panas at the camp.**
+  Do chores until dawn while one or two secret mummies wrap panas, slip
+  through hollow logs, pose as barrels and sabotage the camp. Report the
+  statues, argue at the fogata and vote someone down the river. Each pana
+  plays on their own screen; practice with bots in the browser.
 - **Play Derrape with a controller or with a pana on the same screen.**
   Gamepads drive and fire items, two players can race in split screen,
   and the HUD warns about wrong-way driving and incoming items, shows
