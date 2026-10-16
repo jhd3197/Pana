@@ -68,6 +68,10 @@ Browser suites take `PANA_PLAYWRIGHT_PATH` (an external Playwright) and
 ## When you finish a task
 
 - `.\dev.ps1 check` passes. For a game you touched, its browser suites pass too.
+- A change players, hosts or contributors will notice adds a line to
+  `CHANGELOG.md` under `## Unreleased`, in the same commit: one bold sentence on
+  what they can do now, then a line of detail. Group related work; never write a
+  version or date by hand. Internal refactors may skip it.
 - Multiplayer changes are proven with a real two-client suite, not a page load.
 - Something non-obvious learned (a netcode trap, a tuning value, a deploy gotcha)
   goes in `docs/knowledge/<topic>.md`, the note for that area. Not in this file.

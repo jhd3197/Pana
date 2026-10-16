@@ -1,0 +1,121 @@
+# Changelog
+
+What changed in Pana, for the people who play it. Newest first. Every change
+that players, hosts or contributors will notice adds a line under
+`## Unreleased` in the same commit (see `AGENTS.md`). Pana has no versions yet;
+the first public deploy to pana.sh will stamp the Unreleased section.
+
+## Unreleased
+
+### Added
+
+- **Race Derrape online with up to 8 panas.** Open a room from the garage or a
+  shared link; each pana drives their own car, bots fill the grid, and the room
+  keeps the order, finish times and results in sync.
+- **Every game ends on the same results card.** Standings, scores and the
+  "again" button sit in the same place in every game, and long names wrap instead
+  of breaking the layout.
+- **Crowns, coins, mangos and hearts are drawn icons.** Phones no longer swap them
+  for their own emoji, so Derrape's items, Bululú's winners and Reliquia's health
+  look the same everywhere.
+
+### Changed
+
+- **Online play runs on Colyseus rooms.** Rooms choose the host, hand it over at
+  once when the host leaves, and give a dropped pana 20 seconds to come back to
+  the same seat.
+- **Invite links carry only the room.** A shared link no longer passes on your
+  name, debug switches or the party lead role.
+- **Bululú is listed as a solo game.** The hub no longer offers "Crear sala" or
+  room links for it.
+- **Rules buttons in Caída and Dominó lose their arrow,** since they open a
+  dialog rather than another page.
+
+### Fixed
+
+- **"Crear sala" no longer copies a dead link** for single-player games.
+
+For contributors: `npm test` runs every unit test plus `Pana/tests/conventions.test.js`,
+`npm run test:browser` runs the Playwright suites, `.\dev.ps1 check` runs both
+locally and CI runs the checks on every push to `dev`. `AGENTS.md` now holds only
+the rules; per-area notes live in `docs/knowledge/`.
+
+## Before the changelog
+
+The games as they first arrived (dates from the git history).
+
+### Caída (2026-10-15)
+
+A 3D Spanish-card table in Plaza Pana. Reach 24 points with caídas, clean tables,
+opening calls and optional classic cantos. Play solo with bots or share a private
+room for two, three or four players, including partnerships. Includes capture
+previews, touch/keyboard controls, shared Pana characters, card counting, replay,
+offline fallback and host migration. The table's exact rule variant is explained
+in the controls menu. Spanish cards and score tokens are also available in Pana
+Studio.
+
+### Dominó (2026-10-15)
+
+A 3D domino table in Plaza Pana, with your actual saved characters seated around
+it, wooden chairs, coffee and animated physical tiles. Play four-seat partnership
+dominoes to 100, solo with bots or with up to four human players. Includes
+both-end placement, legal passes, blocked-round scoring, touch/keyboard controls,
+a table camera, shared invitations and host migration. Additional visitors watch
+until a seat opens. The table, chair and domino tile are also available in Pana
+Studio.
+
+### Reliquia (2026-10-15)
+
+A cooperative expedition into an abandoned mine and the temple beneath it.
+Explore with your saved pana, fight wrapped guardians, activate two timed winches,
+retrieve the sun relic and return to camp together. Includes dodging, healing,
+revives, adaptive encounter pacing, touch controls, late joining, host migration
+and replay. Play solo or share a room with up to 8 panas; the first expedition is
+designed around small groups.
+
+### Galope (2026-10-15)
+
+Horse racing around a 482-metre Llanos ranch circuit. Ride your saved pana
+through two shallow esteros, jump three logs per lap and manage stamina over two
+laps. Choose a horse coat, race against the hato's jinetes or invite up to 8
+panas. Includes touch controls, shared settings, ordered checkpoints, results,
+replay and host migration. The surrounding hato opens onto an irregular lagoon
+with an island and a winding morichal channel, with caneyes, chinchorros, a canoe
+landing and native grassland. Thirteen new reusable models are also available in
+Pana Studio.
+
+### Pana Cocina (2026-10-14)
+
+A cooperative three-minute cooking rush in Plaza Pana. Collect ingredients,
+prepare arepas, cachapas, tequeños and empanadas, mind the stoves, and serve
+before orders expire. Play with two bot helpers or invite up to 8 panas. Includes
+touch controls, shared counters, fire recovery, team scores and replay. Panas
+have animated legs, and the kitchen crew wears chef hats and aprons over their
+saved outfits.
+
+### Escondidas · Pana Hunt (2026-10-14)
+
+Hide in a colourful market plaza as a barrel, crate, cooler, plant or bench.
+Three transformations per round; 15 seconds to hide, then 100 seconds to hunt.
+Play solo with bots or share a room with up to 8 panas. Roles rotate, with four
+rounds for a small group and up to eight for a full room. Uses the same saved
+character, Bululú foliage, and market props also featured in Derrape's Los
+Llanos track.
+
+### Bululú (2026-10-14)
+
+A party board game on Mango Island. Roll the dice, collect monedas, buy the
+*Mango de oro*, and win a minigame after every round.
+
+### Derrape (2026-10-14)
+
+A goofy toy-car race. Jump ramps, flip over, lose your bumpers, honk *La
+Cucaracha*. Your pana (made in the hub) is the driver. Choose from eight
+circuits, including Plaza Pana and Isla Bululú. Collect coins for up to 8% extra
+speed, smash wooden supply crates and carry two items. Throw forward with
+**Space**, backward with **X**, and switch with **Q** or **1/2**. Keep a mango
+equipped to block an incoming mango; each block spends one mango. The garage
+previews all eight detailed cars and five swappable wheels (cauchos), and touch
+controls are available on phones. The plaza buildings, island terrain, trees and
+scenery use the same shared sources as the other games, so asset improvements
+carry through everywhere.
