@@ -1,7 +1,7 @@
 /* Derrape on the Pana Kit (/engine/kit.css): tokens, fonts and HUD pieces
    come from the kit; this file places them over the 3D scene. */
 :root { color-scheme: dark; }
-body { --bar-top: #ffd65c; --me-rank: #b5121b; --slot-bg: #2c263e; --slot-line: #514b65; --slot-on: #3b3040; --slot-key: #bab2ca; --swap: #e0d8ec; --shield: #ffe58b; --coin-line: #63552f; --coin-rim: #f8bd37; --coin-face: #d88a20; --coin-shine: #ffed9a; --coin-label: #d7cba8; --coin-text: #ffdf72; --coin-cap: #aaa08c; --coin-full: #e3ae39; --boost: #4fb6ff; --pk-game: #ff4b4b; --pk-game-ink: #fff; --hud-edge: 2px solid rgba(255, 255, 255, .08); }
+body { --bar-top: #ffd65c; --me-rank: #b5121b; --slot-bg: #2c263e; --slot-line: #514b65; --slot-on: #3b3040; --slot-key: #bab2ca; --swap: #e0d8ec; --shield: #ffe58b; --coin-line: #63552f; --coin-rim: #f8bd37; --coin-face: #d88a20; --coin-shine: #ffed9a; --coin-label: #d7cba8; --coin-text: #ffdf72; --coin-cap: #aaa08c; --coin-full: #e3ae39; --boost: #4fb6ff; --drift-1: #4fb6ff; --drift-2: #ff9a1f; --drift-3: #c45bff; --pk-game: #ff4b4b; --pk-game-ink: #fff; --hud-edge: 2px solid rgba(255, 255, 255, .08); }
 
 * { box-sizing: border-box; }
 
@@ -221,6 +221,9 @@ body:has(#loading:not(.hidden)) #garage { visibility: hidden; }
 #boost i { width: 22px; height: 10px; background: var(--pk-raised); border-radius: 3px; transform: skewX(-14deg); transition: background .1s; }
 #boost i.on { background: var(--boost); }
 #boost.turbo i.on { background: var(--pk-yellow); box-shadow: 0 0 8px rgba(255, 198, 41, .7); }
+#boost[data-drift="1"] i.on { background: var(--drift-1); }
+#boost[data-drift="2"] i.on { background: var(--drift-2); }
+#boost[data-drift="3"] i.on { background: var(--drift-3); box-shadow: 0 0 8px var(--drift-3); }
 
 .keys { position: absolute; bottom: 116px; right: 22px; grid-template-columns: repeat(2, auto); gap: 7px 14px; pointer-events: none; }
 .keys span { display: flex; align-items: center; gap: 6px; }

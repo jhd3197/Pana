@@ -6,6 +6,7 @@ import { FragmentBurst } from './fragments.js';
 import { ICONS as SVG } from '/engine/icons.js';
 import { crateArt, coinArt } from './pickup-art.js';
 import { activeItem, addItem, consumeItem, selectItem, canBlock, isMango, MAX_COINS, segmentDistanceSq } from './item-rules.js';
+import { loseCoins } from './drive-rules.js';
 
 export const ITEMS = {
   mango: { icon: SVG.mango, name: 'Mango' },
@@ -250,6 +251,8 @@ export function createItems(hooks) {
     c.spin = SPIN;
     c.dizzy = Math.max(c.dizzy, 2);
     c.vx *= 0.35; c.vz *= 0.35; c.boost = 0;
+    c.drift = 0; c.driftT = 0;
+    if (loseCoins(c, 1)) puffs.spawn(new THREE.Vector3(c.x, c.y + 1.6, c.z), { color: 0xffc629, count: 4, spread: 2, size: 0.5, rise: 3, life: 0.7 });
     c.heave.v += 4;
     hooks.say(c, LINES.peel, 1);
     sound.slip();

@@ -27,13 +27,17 @@ export const cleanTrack = (id) => TRACK_IDS.includes(id === 'playa' ? 'bululu' :
 // A pose is a flat array so 20 Hz updates stay small:
 // [x, y, z, h, pitch, roll, vf, steer, spin, boost, flags, lap, prog, lost, coins]
 export const POSE_LENGTH = 15;
-export const FLAG = { ground: 1, dizzy: 2, open: 4, full: 8, done: 16 };
+export const FLAG = { ground: 1, dizzy: 2, open: 4, full: 8, done: 16, drift: 32, driftRight: 64, shield: 512 };
+// Drift charge level 0..3 rides in two more flag bits (×128).
+export const DRIFT_SHIFT = 7;
 
 const r2 = (v) => Math.round(v * 100) / 100;
 export function packPose(c) {
   const flags = (c.onGround ? FLAG.ground : 0) | (c.dizzy > 0 ? FLAG.dizzy : 0)
     | (c.scream > 0 || c.honkT > 0 || (!c.onGround && c.airTime > 0.3) ? FLAG.open : 0)
-    | (!c.inventory?.includes(null) ? FLAG.full : 0) | (c.done ? FLAG.done : 0);
+    | (!c.inventory?.includes(null) ? FLAG.full : 0) | (c.done ? FLAG.done : 0)
+    | (c.drift ? FLAG.drift | (c.drift < 0 ? FLAG.driftRight : 0) | ((c.driftLvl || 0) << DRIFT_SHIFT) : 0)
+    | (c.shield > 0 ? FLAG.shield : 0);
   return [r2(c.x), r2(c.y), r2(c.z), r2(c.h), r2(c.pitch), r2(c.roll), r2(c.vf), r2(c.steer),
     r2(c.spin), r2(c.boost), flags, c.lap, Math.round(c.prog), c.lost, c.coins || 0];
 }

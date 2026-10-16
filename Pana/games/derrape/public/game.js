@@ -18,8 +18,9 @@ import { ICONS as SVG } from '/engine/icons.js';
 import { holdButton } from '/engine/touch.js';
 import { pixelRatio, bindRenderer } from '/engine/settings.js';
 import { shout } from '/engine/kit.js';
-import { LAPS, RIVALS, AI_WHEELS, POSE_HZ, FLAG, packPose, gridSlot } from './online-rules.js';
+import { LAPS, RIVALS, AI_WHEELS, POSE_HZ, FLAG, DRIFT_SHIFT, packPose, gridSlot } from './online-rules.js';
 import { clockText, wrapAngle, raceOrder, aiPedals, resolveContact } from './rules.js';
+import { DRIFT_MIN_SPEED, DRIFT_BOOST, HOP_SPEED, DRAFT_TIME, DRAFT_BOOST, driftLevel, driftSteer, driftCharge, startBoost, trickBoost, inSlipstream, loseCoins } from './drive-rules.js';
 
 const $ = (id) => document.getElementById(id);
 const esc = (text) => String(text).replace(/[&<>"]/g, (ch) => `&#${ch.charCodeAt(0)};`);
@@ -44,6 +45,9 @@ const LINES = {
   crash: ['¡AY!', '¡UEPA!', '¡Ñooo!', '¡Mi carro!', '¡Epa, chamo!', '¡Qué molleja!'],
   air: ['¡Wiii!', '¡Ayayay!', '¡Me fui!'],
   wall: ['¡Ups!', '¡Pum!', '¡Mi pintura!'],
+  trick: ['¡Truco!', '¡Qué vacilón!', '¡Mírame!'],
+  rocket: ['¡Arranque cohete!', '¡Fiuuu!', '¡Me fui!'],
+  stall: ['¡Se me ahogó!', '¡Ay no, el motor!'],
   honk: { meep: '¡MEEP MEEP!', cucaracha: '♪ Cucaracha ♪', grave: '¡PAAAAN!', fiesta: '♪ ¡Rumba! ♪' },
 };
 
@@ -505,6 +509,9 @@ function makeRacer(index, isPlayer, name, wheelId = 'calle', avatar = null) {
     dizzy: 0, scream: 0, honkT: 0, lost: 0, puffT: 0, aiHonk: rand(3, 8), airTime: 0,
     inventory: [null, null], selected: 0, useT: 0, boost: 0, spin: 0,
     coins: 0, coinsCollected: 0, coinFlash: 0, itemMessage: '', itemMessageT: 0,
+    // driving skills (drive-rules.js): drift dir ±1 and its charge, hop, trick, draft, stall
+    drift: 0, driftT: 0, driftHeld: false, driftWindow: 0, driftYaw: 0, hopping: false,
+    trick: false, trickT: 0, draft: 0, stall: 0, aiDrift: false,
   };
 }
 
@@ -516,6 +523,7 @@ function placeRacer(c, lane, row) {
   Object.assign(c, {
     lane, x: p.x - tz / l * lane, z: p.y + tx / l * lane, y: 0, h: Math.atan2(tx, tz),
     vx: 0, vz: 0, vy: 0, vf: 0, lap: 0, done: false, time: 0,
+    drift: 0, driftT: 0, hopping: false, trick: false, draft: 0, stall: 0,
   });
   c.y = groundAt(c.x, c.z);
   c.prog = progressOf(c);
@@ -551,6 +559,10 @@ const TIPS = [
   [SVG.crate, 'Rompe cajas de madera para conseguir objetos. Guardas hasta 2.'],
   [SVG.juice, 'El jugo de mango te da un turbo: tómatelo en una recta.'],
   [SVG.back, 'Lanza hacia atrás con X para frenar al que te persigue.'],
+  [SVG.coin, 'Derrapa con Shift: suelta con chispas moradas para el turbo más largo.'],
+  [SVG.coin, 'En una rampa, pulsa Shift en el aire para hacer un truco y caer con turbo.'],
+  [SVG.coin, 'Pégate detrás de otro carro en la recta: el rebufo te lanza hacia adelante.'],
+  [SVG.coin, 'Si te pegan pierdes monedas. Cuídalas: cada una es velocidad.'],
 ];
 let loadGeneration = 0;
 // roster (online only): [{ id, kind, owner, name, avatar, car, wheel, slot }]
@@ -697,9 +709,11 @@ let paused = false;
 const menu = createGameMenu({
   title: 'Derrape', heading: 'Pausa', sound, orientation: 'horizontal',
   note: () => mode === 'race' ? (race.state === 'end' ? 'La carrera terminó.' : race.netRace ? 'Carrera online: no se detiene.' : 'La carrera está en pausa.') : 'Estás en el garaje.',
-  controls: [['W / ↑', 'Acelerar'], ['S / ↓', 'Frenar'], ['A D / ← →', 'Girar'], ['Espacio / E', 'Lanzar objeto adelante'],
+  controls: [['W / ↑', 'Acelerar'], ['S / ↓', 'Frenar'], ['A D / ← →', 'Girar'], ['Shift / K', 'Saltar y derrapar · truco en el aire'], ['Espacio / E', 'Lanzar objeto adelante'],
     ['X', 'Lanzar objeto atrás'], ['1 2', 'Elegir objeto'], ['Q', 'Cambiar objeto'], ['H', 'Claxon'], ['M', 'Sonido'], ['Esc', 'Pausa']],
-  tips: ['Rompe cajas de madera para conseguir objetos. Cada moneda da un poquito más de velocidad.'],
+  tips: ['Mantén Shift en una curva para derrapar: chispas azules, naranjas y moradas dan más turbo al soltar.',
+    'Acelera justo al final del "1" para un arranque cohete. Si aceleras en el "3" se te ahoga el motor.',
+    'Rompe cajas de madera para conseguir objetos. Cada moneda da un poquito más de velocidad.'],
   actions: [
     { id: 'restart', label: 'Reiniciar carrera', kind: 'secondary', visible: () => mode === 'race' && !race.netRace, run: () => startRace(race.playerIndex, race.playerWheel) },
     { id: 'to-garage', label: 'Volver al garaje', kind: 'secondary', visible: () => mode === 'race', run: () => toGarage() },
@@ -779,6 +793,7 @@ function playerInput() {
   return {
     throttle: (k.w || k.arrowup ? 1 : 0) - (k.s || k.arrowdown ? 1 : 0),
     steer: (k.a || k.arrowleft ? 1 : 0) - (k.d || k.arrowright ? 1 : 0),
+    drift: !!(k.shift || k.k),
   };
 }
 
@@ -793,7 +808,10 @@ function aiInput(c) {
   target.y += tx / tl * c.lane * 0.8;
   const diff = wrapAngle(Math.atan2(target.x - c.x, target.y - c.z) - c.h);
   const gap = (c.lap * T.TOTAL + c.prog) - (race.player.lap * T.TOTAL + race.player.prog);
-  return aiPedals(diff, gap);
+  // Rivals drift through long bends and let go once the nose lines up.
+  if (!c.aiDrift && Math.abs(diff) > 0.3 && c.vf > 20 && c.onGround) c.aiDrift = true;
+  else if (c.aiDrift && (Math.abs(diff) < 0.08 || (c.drift && Math.sign(diff) !== c.drift) || c.driftT > 2.8)) c.aiDrift = false;
+  return { ...aiPedals(diff, gap), drift: c.aiDrift };
 }
 
 function say(c, lines, time) {
@@ -819,14 +837,23 @@ function popPart(c, power) {
   c.lost++;
 }
 
+// A hit knocks coins off the car: they burst out as golden puffs.
+function spillCoins(c, n) {
+  const lost = loseCoins(c, n);
+  if (lost) race.puffs.spawn(new THREE.Vector3(c.x, c.y + 1.6, c.z), { color: 0xffc629, count: lost * 4, spread: 2.4, size: 0.5, rise: 3, life: 0.7 });
+  return lost;
+}
+
 function crash(c, power, side) {
   c.vy = Math.max(c.vy, power * 0.38 / c.def.tune.mass);
   c.onGround = false;
   c.airTime = 0;
   c.rollV += side * power * 0.35 / c.def.tune.mass;
   c.pitchV += rand(-1, 1) * power * 0.12;
-  c.dizzy = 2.6;
+  c.dizzy = 1.4;
   c.scream = 1.2;
+  c.drift = 0; c.driftT = 0;
+  spillCoins(c, power >= 14 ? 2 : 1);
   say(c, LINES.crash);
   popPart(c, power);
   if (power > 14) popPart(c, power);
@@ -848,6 +875,32 @@ function stepCar(c, input, dt) {
   const acceleration=t.accel*(1-rough*(1-(terrain?.accel??1)))*(1-water*.28);
   const previous={x:c.x,z:c.z};
   if (c.spin > 0) input = { throttle: 0, steer: 0 };   // skidding on a peel: no control
+  if (c.stall > 0) { c.stall -= dt; input = { ...input, throttle: 0 }; }   // flooded engine after a jumped start
+  // Drift button: on the ground it hops (a drift starts on landing with the
+  // stick held); in the air after a ramp it is a trick.
+  const held = !!input.drift;
+  if (held && !c.driftHeld && c.spin <= 0) {
+    if (c.onGround && c.vf > 4) {
+      c.vy = HOP_SPEED; c.onGround = false; c.airTime = 0; c.hopping = true;
+    } else if (!c.onGround && !c.hopping && !c.trick && c.airTime > 0.06) {
+      c.trick = true; c.trickT = 0;
+      if (c.isPlayer) sound.tone(660, 0, 0.09, 'triangle', 0.1);
+    }
+  }
+  c.driftHeld = held;
+  c.driftWindow = Math.max(0, c.driftWindow - dt);
+  if (!c.drift && held && c.onGround && c.driftWindow > 0 && Math.abs(input.steer) > 0.3 && c.vf > DRIFT_MIN_SPEED) {
+    c.drift = Math.sign(input.steer); c.driftT = 0;
+  }
+  if (c.drift && (!held || c.vf < DRIFT_MIN_SPEED * 0.75 || c.spin > 0)) {
+    // Letting go pays the charged turbo; a spin-out or stall loses it.
+    const level = driftLevel(c.driftT);
+    if (!held && level && c.spin <= 0) {
+      c.boost = Math.max(c.boost, DRIFT_BOOST[level]);
+      if (c.isPlayer) sound.turbo();
+    }
+    c.drift = 0; c.driftT = 0;
+  }
   let fx = Math.sin(c.h), fz = Math.cos(c.h);
   let rx = -Math.cos(c.h), rz = Math.sin(c.h);
   let vf = c.vx * fx + c.vz * fz;
@@ -867,8 +920,11 @@ function stepCar(c, input, dt) {
     vf = Math.max(-surfaceTop * 0.4, Math.min(cap, vf));
     vf*=Math.exp(-rough*(terrain?.drag??0)*dt);
     vf*=Math.exp(-water*.7*dt); // shallow surf slows a kart without moving invisible walls
-    vr *= Math.exp(-t.grip * grip * dt);   // mineral runoff leaves more lateral slip
-    c.steer += (input.steer - c.steer) * Math.min(1, dt * 8);
+    // A drift loosens the rear: less lateral grip, so the car slides outward.
+    vr *= Math.exp(-t.grip * grip * (c.drift ? 0.38 : 1) * dt);   // mineral runoff leaves more lateral slip
+    const steerIn = c.drift ? driftSteer(c.drift, input.steer) * 1.18 : input.steer;
+    c.steer += (steerIn - c.steer) * Math.min(1, dt * 8);
+    if (c.drift) { c.driftT += dt * driftCharge(c.drift, input.steer); c.driftLvl = driftLevel(c.driftT); }
     const turn = c.steer * t.turn * Math.max(-1, Math.min(1, vf / 10)) * (1 - Math.abs(vf) / top * 0.3);
     c.h += turn * dt;
     c.latAcc = turn * vf;
@@ -926,6 +982,16 @@ function stepCar(c, input, dt) {
         c.pitch = wrapAngle(c.pitch);
         c.rollV = c.pitchV = 0;
         c.heave.v -= impact * 0.5;
+        if (c.hopping) { c.hopping = false; c.driftWindow = 0.3; }
+        if (c.trick) {
+          const bonus = trickBoost(c.airTime, true);
+          if (bonus) {
+            c.boost = Math.max(c.boost, bonus);
+            say(c, LINES.trick, 0.9);
+            if (c.isPlayer) sound.turbo();
+          }
+          c.trick = false;
+        }
         if (impact > 9) {
           sound.boing();
           race.puffs.spawn(new THREE.Vector3(c.x, 0.2, c.z), { color: 0xe0b07a, count: 6, spread: 2.5, rise: 0.8 });
@@ -933,6 +999,7 @@ function stepCar(c, input, dt) {
         }
       } else {
         // cartoon bounce that sets the car back on its wheels
+        c.trick = false; c.hopping = false; c.drift = 0; c.driftT = 0;
         sound.bonk(1.2);
         race.puffs.spawn(new THREE.Vector3(c.x, g + 0.3, c.z), { color: 0xe0b07a, count: 7, spread: 2.5, rise: 0.8 });
         c.vy = 7.5;
@@ -964,6 +1031,7 @@ function stepCar(c, input, dt) {
       c.vx -= 1.4 * vn * nx * side;
       c.vz -= 1.4 * vn * nz * side;
       if (vn > 9) {
+        c.drift = 0; c.driftT = 0;   // a hard wall hit throws the drift away
         sound.bonk(vn / 10);
         say(c, LINES.wall, 0.8);
         c.vy = Math.max(c.vy, 4);
@@ -1007,6 +1075,35 @@ function stepCar(c, input, dt) {
   }
 }
 
+// "¡YA!": the player's timing decides a turbo or a stall; rivals sometimes
+// nail it too.
+function launchGrid() {
+  for (const c of race.cars) {
+    if (c.remote) continue;
+    const timing = c.isPlayer && !AUTO ? startBoost(race.throttleAt) : Math.random() < 0.35 ? startBoost(1.3) : startBoost(2.2);
+    if (timing.boost) {
+      c.boost = Math.max(c.boost, timing.boost);
+      if (c.isPlayer) { sound.turbo(); say(c, LINES.rocket, 1); }
+    }
+    if (timing.stall) { c.stall = timing.stall; say(c, LINES.stall, 1); }
+  }
+  race.throttleAt = null;
+}
+
+// Sitting in another car's wake builds draft; a full charge slingshots past.
+function slipstreams(dt) {
+  for (const c of race.cars) {
+    if (c.remote || c.done) continue;
+    const wake = race.cars.some(o => o !== c && inSlipstream(o, c));
+    c.draft = wake ? c.draft + dt : Math.max(0, c.draft - dt * 2);
+    if (c.draft >= DRAFT_TIME) {
+      c.draft = 0;
+      c.boost = Math.max(c.boost, DRAFT_BOOST);
+      if (c.isPlayer) { sound.turbo(); c.itemMessage = '¡Rebufo!'; c.itemMessageT = 1; }
+    }
+  }
+}
+
 function collideCars() {
   for (let i = 0; i < race.cars.length; i++) {
     for (let j = i + 1; j < race.cars.length; j++) collidePair(race.cars[i], race.cars[j]);
@@ -1024,12 +1121,39 @@ function collidePair(a, b) {
   }
 }
 
+// Sparks under the rear wheels show the drift charge: dust, then blue,
+// orange and purple. A stalled engine coughs black smoke instead.
+const SPARKS = [0xd8c6a8, 0x4fb6ff, 0xff9a1f, 0xc45bff];
+function driftSparks(c, dt) {
+  c.sparkT = (c.sparkT || 0) - dt;
+  if (c.sparkT > 0) return;
+  c.sparkT = 0.05;
+  const fx = Math.sin(c.h), fz = Math.cos(c.h), rx = -Math.cos(c.h), rz = Math.sin(c.h);
+  if (c.drift && c.onGround) {
+    const level = c.remote ? c.driftLvl || 0 : driftLevel(c.driftT);
+    for (const side of [-1, 1]) {
+      race.puffs.spawn(new THREE.Vector3(c.x - fx * 1.7 + rx * side * 1.1, c.y + 0.25, c.z - fz * 1.7 + rz * side * 1.1),
+        { color: SPARKS[level], count: 1, size: level ? 0.42 : 0.6, rise: level ? 0.9 : 0.5, life: level ? 0.28 : 0.5, spread: 0.3 });
+    }
+  }
+  if (c.stall > 0) race.puffs.spawn(new THREE.Vector3(c.x - fx * 2.2, c.y + 0.7, c.z - fz * 2.2), { color: 0x3a3a40, count: 1, size: 0.8, rise: 1.6, life: 0.8 });
+  if (c.draft > 0.2 && c.isPlayer) {
+    race.puffs.spawn(new THREE.Vector3(c.x + fx * 2 + rx * (Math.random() * 4 - 2), c.y + 1 + Math.random(), c.z + fz * 2 + rz * (Math.random() * 4 - 2)),
+      { color: 0xf4f8ff, count: 1, size: 0.25, rise: 0, life: 0.25, spread: 0.2 });
+  }
+}
+
 function syncCar(c, dt) {
   const car = c.car;
   car.root.position.set(c.x, c.y, c.z);
   // a peel spins the car around twice, easing out
   const k = 1 - c.spin / SPIN;
-  car.root.rotation.y = c.h + (c.spin > 0 ? (1 - (1 - k) ** 3) * Math.PI * 4 : 0);
+  // A drift swings the tail out; a trick spins the car once in the air.
+  c.driftYaw += ((c.drift ? c.drift * 0.42 : 0) - c.driftYaw) * Math.min(1, dt * 9);
+  if (c.trick) c.trickT += dt;
+  const trickSpin = c.trick ? Math.min(1, c.trickT / 0.45) * Math.PI * 2 : 0;
+  car.root.rotation.y = c.h + c.driftYaw + trickSpin + (c.spin > 0 ? (1 - (1 - k) ** 3) * Math.PI * 4 : 0);
+  driftSparks(c, dt);
   car.tumble.rotation.set(c.pitch, 0, c.roll);
 
   // springy suspension: squat, dive and lean, exaggerated
@@ -1071,9 +1195,13 @@ function updateRace(dt) {
     else race.count -= dt;
     const n = Math.ceil(race.count) - 1;
     $('count').textContent = n > 0 ? n : '¡YA!';
+    // Rocket start: remember when the gas went down (and stayed down).
+    if (playerInput().throttle > 0) race.throttleAt ??= race.count;
+    else race.throttleAt = null;
     if (race.count <= 1) {
       race.state = 'go';
       if (race.netRace) race.clock = Math.max(0, (net.now() - net.state.startAt) / 1000);
+      launchGrid();
     }
   } else if (race.state === 'go' || race.state === 'end') {
     race.clock += dt;
@@ -1107,6 +1235,7 @@ function updateRace(dt) {
       }
     }
     collideCars();
+    slipstreams(dt);
   } else if (race.netRace) {
     // Rivals already on the grid still settle into place during the countdown.
     for (const c of race.cars) if (c.remote) applyRemote(c, dt);
@@ -1143,6 +1272,8 @@ function updateRace(dt) {
   const ratio = Math.min(1, Math.abs(p.vf) / (p.tune.top * 1.5));
   const lit = Math.round(ratio * 8);
   boost.classList.toggle('turbo', p.boost > 0);
+  const charge = p.drift ? String(driftLevel(p.driftT)) : '';
+  if (boost.dataset.drift !== charge) boost.dataset.drift = charge;
   const segs = boost.children;
   for (let i = 0; i < segs.length; i++) segs[i].classList.toggle('on', i < lit);
 
@@ -1304,6 +1435,9 @@ function applyRemote(c, dt) {
   c.dizzy = f & FLAG.dizzy ? 1 : 0;
   c.scream = f & FLAG.open ? 0.2 : 0;
   c.full = !!(f & FLAG.full);
+  c.drift = f & FLAG.drift ? (f & FLAG.driftRight ? -1 : 1) : 0;
+  c.driftLvl = (f >> DRIFT_SHIFT) & 3;
+  c.shield = f & FLAG.shield ? 1 : 0;
   if (f & FLAG.done) c.done = true;
   c.lap = Q[11]; c.prog = Q[12]; c.coins = Q[14];
   // Parts that fell off on the owner's screen fall off here too.
