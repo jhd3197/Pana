@@ -9,6 +9,8 @@ import { RIVER, SEA, MAP_BOUNDS, beachMask } from './island.js';
 import atrapa from './minigames/atrapa.js';
 import caigas from './minigames/caigas.js';
 import { SKY_MODES } from './atmosphere.js';
+import * as rules from './rules.js';
+import { COLORS, RIVALS, START_COINS, PRICE, DOUBLES_BONUS, TREE_COINS } from './rules.js';
 import { createGameMenu, toggleMute } from '/engine/ui.js';
 import { holdButton } from '/engine/touch.js';
 import { pixelRatio, bindRenderer } from '/engine/settings.js';
@@ -35,11 +37,6 @@ const ONLY = MINIGAMES.find((m) => m.id === QS.get('play'));
 let savedSky = 'day';
 try { savedSky = localStorage.getItem('pana.bululu.sky') || 'day'; } catch { /* Storage can be disabled. */ }
 const skyMode = QS.get('sky') || savedSky;
-
-const COLORS = ['#ff4b4b', '#3d7bf2', '#ffc629', '#2fbf4a'];
-const RIVALS = ['Don Pancho', 'La Chama', 'El Gocho', 'Tía Carmen', 'El Catire', 'Yoli', 'Chuchú', 'La Nena'];
-const START_COINS = 10;
-const PRICE = 20;
 
 // ---------- players ----------
 const players = (() => {
@@ -342,18 +339,8 @@ let miniIcon = 'mango';
 let turnOf = -1;
 let lastCards = '';
 
-function standings() {
-  return [...players].sort((a, b) => b.mangos - a.mangos || b.coins - a.coins);
-}
-function ranks() {
-  const order = standings();
-  const out = {};
-  order.forEach((p, k) => {
-    const prev = order[k - 1];
-    out[p.i] = prev && prev.mangos === p.mangos && prev.coins === p.coins ? out[prev.i] : k + 1;
-  });
-  return out;
-}
+const standings = () => rules.standings(players);
+const ranks = () => rules.ranks(players);
 
 function renderCards() {
   const r = ranks();
@@ -589,18 +576,7 @@ async function moveSteps(p, n, { counted = false } = {}) {
 }
 
 // steps from a tile to another, along the shortest route
-function stepsTo(from, goal) {
-  const seen = new Map([[from, 0]]);
-  const queue = [from];
-  while (queue.length) {
-    const t = queue.shift();
-    if (t === goal) return seen.get(t);
-    for (const n of board.tiles[t].next) {
-      if (!seen.has(n)) { seen.set(n, seen.get(t) + 1); queue.push(n); }
-    }
-  }
-  return Infinity;
-}
+const stepsTo = (from, goal) => rules.stepsTo(board.tiles, from, goal);
 
 // At the fork: stay on the shore, or pay the toll and take the hill shortcut.
 async function chooseRoute(p, [shore, hill]) {
@@ -618,7 +594,7 @@ async function chooseRoute(p, [shore, hill]) {
   } else {
     // head for the cart: take the hill if it gets there sooner, sometimes just for fun
     const viaHill = stepsTo(hill, board.standTile), viaShore = stepsTo(shore, board.standTile);
-    take = (p.coins >= PRICE + FORK.toll && viaHill < viaShore) || Math.random() < 0.3 ? 1 : 0;
+    take = rules.botTakesHill({ coins: p.coins, toll: FORK.toll, viaHill, viaShore, whim: Math.random() }) ? 1 : 0;
     await wait(0.8);
   }
   board.highlight = [];
@@ -628,9 +604,7 @@ async function chooseRoute(p, [shore, hill]) {
 }
 
 async function give(p, n, line) {
-  const before = p.coins;
-  p.coins = Math.max(0, p.coins + n);
-  const real = p.coins - before;
+  const real = rules.addCoins(p, n);
   p.token.bubble.say(line || (n >= 0 ? `+${n}` : `${n}`), 1);
   if (n >= 0) {
     sound.pickup();
@@ -647,7 +621,7 @@ async function give(p, n, line) {
 async function visitStand(p, landed) {
   const st = board.stand;
   focus(p.token.rest.clone().lerp(st.group.position, 0.5), 'close');
-  if (p.coins < PRICE) {
+  if (!rules.canBuy(p)) {
     st.bubble.say(p.human ? `¡Trae ${PRICE} monedas!` : '¡Sigue, sigue!', 1.3);
     await wait(landed ? 1.1 : 0.6);
     return;
@@ -662,8 +636,7 @@ async function visitStand(p, landed) {
     await wait(0.9);
     return;
   }
-  p.coins -= PRICE;
-  p.mangos += 1;
+  rules.buyMango(p);
   renderCards();
   // the golden mango arcs from the stand into the pana's arms
   const mg = makeMango({ gold: true });
@@ -686,18 +659,12 @@ async function visitStand(p, landed) {
 
 async function moveStand(p) {
   const st = board.stand;
-  const taken = new Set(players.map((o) => o.tile));
   // somewhere the panas will reach soon: ahead of them on average, but not
   // right under anyone's nose (the board is big; behind them is a whole lap)
-  const options = [], fallback = [];
-  for (let i = 0; i < TILE_COUNT; i++) {
-    if (i === board.standTile || taken.has(i) || board.standSpot(i).bad >= 30) continue;
-    const steps = players.map((o) => stepsTo(o.tile, i));
-    const avg = steps.reduce((a, b) => a + b, 0) / steps.length;
-    fallback.push(i);
-    if (Math.min(...steps) >= 4 && avg >= 8 && avg <= 24) options.push(i);
-  }
-  const next = pick(options.length ? options : fallback);
+  const next = pick(rules.standCandidates({
+    tileCount: TILE_COUNT, standTile: board.standTile, tiles: board.tiles, players,
+    isBad: (i) => board.standSpot(i).bad >= 30,
+  }));
   puffs.spawn(st.group.position.clone().setY(2), { color: 0xffffff, count: 14, spread: 4, size: 1.2, rise: 2, life: 1 });
   sound.whoosh();
   await tween(0.4, (k) => st.group.scale.setScalar(Math.max(0.01, 1 - k)));
@@ -723,12 +690,7 @@ const EVENTS = [
   {
     title: '¡Brindan los panas!', text: 'Cada pana te regala 2 monedas.',
     run: async (p) => {
-      for (const o of players) {
-        if (o === p) continue;
-        const n = Math.min(2, o.coins);
-        o.coins -= n;
-        p.coins += n;
-      }
+      rules.brindis(players, p);
       await give(p, 0, '¡Gracias, panas!');
     },
   },
@@ -754,27 +716,28 @@ async function shakeTree(p) {
   sound.whoosh();
   p.token.cheer = 0.8;
   await wait(0.6);
-  const r = Math.random();
-  if (r < 0.1) {
+  const fall = rules.treeOutcome(Math.random());
+  if (fall === 'mango') {
     p.mangos += 1;
     renderCards();
     sound.horn('fiesta');
     p.token.cheer = 1.6;
     puffs.spawn(p.token.group.position.clone().setY(p.token.rest.y + 3), { color: 0xffd23f, count: 14, spread: 2, size: 0.7, rise: 3, life: 1 });
     await toast('¡Cayó un Mango de oro!', `¡Gratis para ${escapeHtml(p.name)}!`, 1.8, 'gold');
-  } else if (r < 0.4) {
+  } else if (fall === 'coconut') {
     p.token.dizzy = 2;
-    await give(p, -4, '¡Un coco!');
+    await give(p, TREE_COINS.coconut, '¡Un coco!');
   } else {
-    await give(p, 8, '¡Llovieron monedas!');
+    await give(p, TREE_COINS.coins, '¡Llovieron monedas!');
   }
 }
 
 async function landOn(p) {
   const kind = board.tiles[p.tile].kind;
-  if (kind === 'blue' || kind === 'start') return give(p, 3);
+  const coins = rules.tileCoins(kind);
+  if (coins > 0) return give(p, coins);
+  if (coins < 0) return give(p, coins, pick(['¡Ay!', '¡Qué pava!', `${coins}`]));
   if (kind === 'tree') return shakeTree(p);
-  if (kind === 'red') return give(p, -3, pick(['¡Ay!', '¡Qué pava!', '-3']));
   const ev = pick(EVENTS);
   sound.tone(660, 0, 0.12, 'triangle', 0.08);
   sound.tone(880, 0.12, 0.18, 'triangle', 0.08);
@@ -799,8 +762,7 @@ async function takeTurn(p) {
   sound.unlock();
   if (isHuman(p)) await ask('', [{ label: '¡Tira los dados!', key: ' ' }]);
   else await wait(0.9);
-  const roll = () => 1 + Math.floor(Math.random() * 6);
-  const a = roll(), b = roll(), n = a + b;
+  const { a, b, n, doubles } = rules.rollDice();
   dice[0].rolling = false;
   dice[0].show(a);
   sound.boing();
@@ -808,13 +770,12 @@ async function takeTurn(p) {
   dice[1].rolling = false;
   dice[1].show(b);
   sound.boing();
-  const doubles = a === b;
   tk.bubble.say(doubles ? '¡DOBLES!' : n >= 10 ? pick(['¡Epa!', '¡Dale!', `¡${n}!`]) : n <= 3 ? pick(['¿Nada más?', '¡Qué pava!']) : `¡${n}!`, 0.9);
   await wait(0.9);
   if (doubles) {
     sound.horn('fiesta');
-    await toast('¡Dobles!', '+5 monedas de premio', 1.2, 'gold');
-    await give(p, 5);
+    await toast('¡Dobles!', `+${DOUBLES_BONUS} monedas de premio`, 1.2, 'gold');
+    await give(p, DOUBLES_BONUS);
   }
   for (const d of dice) d.mesh.visible = false;
   counter.sprite.position.set(tk.rest.x, tk.rest.y + 4.6, tk.rest.z);

@@ -18,17 +18,12 @@ import { holdButton } from '/engine/touch.js';
 import { pixelRatio, bindRenderer } from '/engine/settings.js';
 import { shout } from '/engine/kit.js';
 import { LAPS, RIVALS, AI_WHEELS, POSE_HZ, FLAG, packPose, gridSlot } from './online-rules.js';
+import { clockText, wrapAngle, raceOrder, aiPedals, resolveContact } from './rules.js';
 
 const $ = (id) => document.getElementById(id);
 const esc = (text) => String(text).replace(/[&<>"]/g, (ch) => `&#${ch.charCodeAt(0)};`);
-// Race clock as m:ss.s (1:12.4), seconds only under a minute.
-const clockText = (t) => {
-  const d = Math.floor(t * 10), m = Math.floor(d / 600), s = (d % 600) / 10;
-  return m ? `${m}:${s.toFixed(1).padStart(4, '0')}` : s.toFixed(1);
-};
 const rand = (a, b) => a + Math.random() * (b - a);
 const pick = (list) => list[Math.floor(Math.random() * list.length)];
-const wrapAngle = (a) => Math.atan2(Math.sin(a), Math.cos(a));
 
 const G = 30;   // cartoon gravity: snappy jumps
 // test switches: ?auto lets the AI drive your car, ?speed=4 fast-forwards
@@ -797,8 +792,7 @@ function aiInput(c) {
   target.y += tx / tl * c.lane * 0.8;
   const diff = wrapAngle(Math.atan2(target.x - c.x, target.y - c.z) - c.h);
   const gap = (c.lap * T.TOTAL + c.prog) - (race.player.lap * T.TOTAL + race.player.prog);
-  const throttle = Math.abs(diff) > 0.6 ? 0.55 : gap > 40 ? 0.75 : 1;
-  return { throttle, steer: Math.max(-1, Math.min(1, diff * 2.8)) };
+  return aiPedals(diff, gap);
 }
 
 function say(c, lines, time) {
@@ -1019,35 +1013,12 @@ function collideCars() {
 }
 
 function collidePair(a, b) {
-  if (Math.abs(a.y - b.y) > 1.6) return;
-  const dx = b.x - a.x, dz = b.z - a.z;
-  const d = Math.hypot(dx, dz);
-  const min = 3.3;
-  if (d <= 0 || d >= min) return;
-  const nx = dx / d, nz = dz / d;
-  const ma = a.def.tune.mass, mb = b.def.tune.mass;
-  // Online, each client resolves only its own car's share of a contact; the
-  // rival's client resolves the other half from the same two poses.
-  const ka = a.remote ? 0 : 1, kb = b.remote ? 0 : 1;
-  if (!ka && !kb) return;
-  const push = min - d;
-  a.x -= nx * push * mb / (ma + mb) * ka;
-  a.z -= nz * push * mb / (ma + mb) * ka;
-  b.x += nx * push * ma / (ma + mb) * kb;
-  b.z += nz * push * ma / (ma + mb) * kb;
-  const vrel = (a.vx - b.vx) * nx + (a.vz - b.vz) * nz;   // closing speed
-  if (vrel <= 0) return;
-  const j = 1.4 * vrel / (1 / ma + 1 / mb);
-  a.vx -= j / ma * nx * ka; a.vz -= j / ma * nz * ka;
-  b.vx += j / mb * nx * kb; b.vz += j / mb * nz * kb;
-  if (vrel > 7) {
-    sound.bonk(vrel / 8);
-    // which side each car got hit on decides which way it rolls
-    const sideA = Math.sign(nx * -Math.cos(a.h) + nz * Math.sin(a.h)) || 1;
-    const sideB = Math.sign(nx * Math.cos(b.h) - nz * Math.sin(b.h)) || 1;
-    if (ka) crash(a, vrel * mb / (ma + mb) * 2, sideA);
-    if (kb) crash(b, vrel * ma / (ma + mb) * 2, sideB);
-  } else if (vrel > 2) {
+  const hit = resolveContact(a, b);
+  if (hit?.kind === 'crash') {
+    sound.bonk(hit.speed / 8);
+    if (hit.a.hit) crash(a, hit.a.power, hit.a.side);
+    if (hit.b.hit) crash(b, hit.b.power, hit.b.side);
+  } else if (hit?.kind === 'bump') {
     sound.bonk(0.4);
   }
 }
@@ -1241,11 +1212,7 @@ function showItem(p) {
 
 // Finished cars by time, then everyone else by how far along they are.
 function standings() {
-  return [...race.cars].sort((a, b) => {
-    if (a.done && b.done) return a.time - b.time;
-    if (a.done !== b.done) return a.done ? -1 : 1;
-    return (b.lap * T.TOTAL + b.prog) - (a.lap * T.TOTAL + a.prog);
-  });
+  return raceOrder(race.cars, T.TOTAL);
 }
 
 function finish() {

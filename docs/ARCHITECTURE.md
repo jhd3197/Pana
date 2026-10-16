@@ -51,6 +51,34 @@ Pana/                    ← repo root
 | `/ws` | `rooms.js` | Legacy WebSocket relay (no current game uses it) |
 | `/colyseus/*` | `colyseus.js` | Colyseus matchmaking (HTTP) and room sockets |
 
+## A game's files
+
+Every game uses the same split, so data, rules and rendering never tangle:
+
+```
+games/<game>/
+├── game.json        name, description, players, color (the hub reads it)
+├── public/
+│   ├── index.html   links /engine/kit.css, /engine/ui.css, then style.css
+│   ├── card.js      the hub tile's live art
+│   ├── rules.js     pure rules: plain data in, plain data out; no DOM, no Three.js
+│   ├── network.js   thin room: extends HostRoom (engine/net.js) or joins its own
+│   ├── scene.js     the 3D world (Three.js)
+│   ├── ui.js        DOM: HUD, lobby, results (optional while game.js stays small)
+│   └── game.js      wiring only: input → rules → network → scene/ui
+├── server/room.js   optional: the game's own Colyseus room
+└── tests/
+    ├── rules.test.js      node --test, runs in npm test and CI
+    └── *.browser.js/.mjs  Playwright, runs in npm run test:browser
+```
+
+Anything a test can check without a browser goes in `rules.js` (or a sibling such
+as Derrape's `item-rules.js` and `online-rules.js`) with a `rules.test.js` beside
+it. A single-player game (`players: 1`) has no `network.js`. Shared pieces live in
+`engine/`: room codes and invites (`invite.js`), rooms (`net.js`), the end screen
+(`results.js`), menu and settings (`ui.js`, `settings.js`), touch (`touch.js`).
+`engine/tests/` and `tests/conventions.test.js` enforce the contract.
+
 ## Players
 
 A player is a name plus a look (`engine/avatar.js`), both kept in the browser's
