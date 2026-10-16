@@ -10,9 +10,11 @@
 import { getSettings, setSettings, onSettings, bindSound, QUALITY } from './settings.js';
 import { ORIENTATIONS, guardOrientation, isTouch } from './touch.js';
 
-for (const href of ['/engine/kit.css', '/engine/ui.css']) {
-  if (document.querySelector(`link[href="${href}"]`)) continue;
-  const link = document.createElement('link'); link.rel = 'stylesheet'; link.href = href; document.head.append(link);
+// From next to this module, so a versioned copy (pana.sh's /_v/<version>/engine/) loads its own kit.
+for (const name of ['kit.css', 'ui.css']) {
+  if (document.querySelector(`link[href*="/engine/${name}"]`)) continue;
+  const link = document.createElement('link'); link.rel = 'stylesheet'; link.href = new URL(name, import.meta.url).pathname;
+  document.head.append(link);
 }
 // [data-pana-hint] marks keyboard reminders the player can hide in Ajustes.
 onSettings(s => document.documentElement.classList.toggle('pana-no-hints', !s.hints));

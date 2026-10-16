@@ -5,9 +5,9 @@
 //   shout('¡Vuelta final!');                 // coral, tilted, fades out
 //   shout('¡Tronco!', { tone: 'yellow', ms: 1200 });
 
-const STYLESHEET = '/engine/kit.css';
-if (!document.querySelector(`link[href="${STYLESHEET}"]`)) {
-  const link = document.createElement('link'); link.rel = 'stylesheet'; link.href = STYLESHEET;
+// From next to this module, so a versioned copy (pana.sh's /_v/<version>/engine/) loads its own kit.
+if (!document.querySelector('link[href*="/engine/kit.css"]')) {
+  const link = document.createElement('link'); link.rel = 'stylesheet'; link.href = new URL('kit.css', import.meta.url).pathname;
   document.head.prepend(link);
 }
 
