@@ -91,7 +91,7 @@ try {
   assert.equal(await b.evaluate(() => hunt.state.round), 1);
   assert.equal(await b.evaluate(() => hunt.state.players.every(p => p.score === 0)), true);
   check('complete match and replay reset scores and changes');
-  await b.evaluate(() => hunt.room.socket.close());
+  await b.evaluate(() => hunt.room.cut());
   await b.waitForFunction(() => !hunt.room.connected); await b.locator('#practice').click();
   await b.waitForFunction(() => hunt.room.offline && hunt.state.phase === 'lobby');
   await b.locator('#role-hide').click(); await b.locator('#start').click(); await b.keyboard.press('1');

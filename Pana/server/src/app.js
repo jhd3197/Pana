@@ -6,6 +6,7 @@ import path from 'node:path';
 import { config } from './config.js';
 import { handleApi } from './api.js';
 import { serveStatic } from './static.js';
+import { isColyseusPath } from './colyseus.js';
 
 function gamePublicDir(game) {
   if (!/^[a-z0-9-]+$/.test(game)) return null;
@@ -13,13 +14,15 @@ function gamePublicDir(game) {
   return fs.existsSync(path.join(dir, 'index.html')) ? dir : null;
 }
 
-export function createRequestHandler(rooms, startedAt) {
+export function createRequestHandler(rooms, startedAt, colyseus) {
   return (req, res) => {
     const url = new URL(req.url, 'http://localhost');
     const pathname = url.pathname;
 
+    if (isColyseusPath(pathname) && colyseus.handle) return colyseus.handle(req, res);
+
     if (pathname.startsWith('/api/')) {
-      return handleApi(req, res, pathname, rooms, startedAt);
+      return handleApi(req, res, pathname, rooms, startedAt, colyseus);
     }
 
     if (pathname.startsWith('/g/')) {

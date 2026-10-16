@@ -90,8 +90,10 @@ export class RoomManager {
   }
 }
 
-export function attachWebSocket(server, rooms) {
-  const wss = new WebSocketServer({ server, path: '/ws' });
+// noServer: index.js routes upgrades by path, because a ws server bound to
+// {server, path} rejects every other upgrade (Colyseus lives at /colyseus/*).
+export function createRelay(rooms) {
+  const wss = new WebSocketServer({ noServer: true });
   wss.on('connection', (ws) => {
     ws.on('message', (raw) => {
       let msg;

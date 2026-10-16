@@ -65,7 +65,7 @@ try {
  await m.locator('#start').tap();const mobileHumans=new Map([[await m.evaluate(()=>dominoDebug.room.id),m]]);
  for(let i=0;i<5;i++)if(!await advance(m,mobileHumans))break;
  await m.screenshot({path:'art/domino/mobile-playing.png'});check('390px layout and touch start work without horizontal overflow');
- await m.evaluate(()=>{dominoDebug.room.attempts=3;dominoDebug.room.socket.close();});await m.waitForFunction(()=>!dominoDebug.room.connected);
+ await m.evaluate(()=>{dominoDebug.room.cut();});await m.waitForFunction(()=>!dominoDebug.room.connected);
  await m.locator('#practice').click();await m.waitForFunction(()=>dominoDebug.room.offline);await m.locator('#start').click();
  assert.equal(await m.evaluate(()=>dominoDebug.room.state.phase),'playing');check('connection failure has working local fallback');
  await m.goto(`${base}/`);await m.getByRole('heading',{name:'Dominó',exact:true}).waitFor();

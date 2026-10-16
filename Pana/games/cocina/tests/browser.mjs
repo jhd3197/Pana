@@ -72,7 +72,7 @@ try {
   await b.locator('#again').click(); await b.waitForFunction(() => cocina.state.phase === 'playing' && cocina.state.score === 0); check('results and replay reset the turn');
   // Exhaust automatic retries to keep the disconnected UI stable while testing
   // the fallback. Chromium's HTTP offline emulation does not block all WS reconnects.
-  await b.evaluate(() => { cocina.room.attempts = 3; cocina.room.socket.close(); });
+  await b.evaluate(() => { cocina.room.cut(); });
   await b.waitForFunction(() => !cocina.room.connected); await b.locator('#menu').click(); await b.locator('#offline').click();
   await b.waitForFunction(() => cocina.room.offline && cocina.state.phase === 'lobby'); await b.locator('#helpers').check(); await b.locator('#start').click();
   await b.waitForFunction(() => cocina.state.players.filter(p => p.bot).length === 2); await b.evaluate(() => cocina.step(45));

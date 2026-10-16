@@ -23,8 +23,9 @@ Fly.io or Railway are the simplest paths:
 
 ## Requirements
 
-- Node.js 18+
-- One dependency: `ws`
+- Node.js 22+ (Colyseus 0.18)
+- `ws`, plus `@colyseus/core`, `@colyseus/ws-transport`, `@colyseus/schema` and `express`
+  (a load-time import of the transport) for Colyseus rooms
 
 ## What NOT to add (yet)
 

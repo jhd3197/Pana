@@ -79,7 +79,7 @@ try {
   await b.locator('#again').click(); await c.waitForFunction(() => reliquia.state.phase === 'playing' && !reliquia.state.gateOpen && !reliquia.state.relicTaken); check('replay resets the expedition');
   await c.close(); await b.waitForFunction(() => reliquia.room.members.size === 1);
   await b.locator('#menu').click(); const frozen = await b.evaluate(() => reliquia.state.time); await b.waitForTimeout(350); assert.equal(await b.evaluate(() => reliquia.state.time), frozen); await b.locator('#pana-resume').click(); check('solo pause freezes the simulation');
-  await b.evaluate(() => { reliquia.room.attempts = 3; reliquia.room.socket.close(); }); await b.waitForFunction(() => !reliquia.room.connected);
+  await b.evaluate(() => { reliquia.room.cut(); }); await b.waitForFunction(() => !reliquia.room.connected);
   await b.locator('#offline-inline').click(); await b.waitForFunction(() => reliquia.room.offline && reliquia.state.phase === 'lobby'); await b.locator('#start').click();
   await b.waitForFunction(() => reliquia.state.phase === 'playing'); check('failed connection has an explicit playable local fallback');
   await b.setViewportSize({ width: 1440, height: 900 }); await b.evaluate(() => reliquia.place(reliquia.room.id, 40, -96));

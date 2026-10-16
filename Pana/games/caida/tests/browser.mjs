@@ -54,7 +54,7 @@ try {
   await m.locator('#cantos').uncheck(); await m.locator('#start').tap();
   await m.locator('.hand-card').first().tap(); assert.equal(await m.locator('#play').isDisabled(), false); await m.locator('#play').tap();
   await m.waitForTimeout(1500); await m.screenshot({ path: 'art/caida/mobile-playing.png' }); check('390px touch layout, selection and confirmation');
-  await m.evaluate(() => { caidaDebug.room.attempts = 3; caidaDebug.room.socket.close(); }); await m.waitForFunction(() => !caidaDebug.room.connected);
+  await m.evaluate(() => { caidaDebug.room.cut(); }); await m.waitForFunction(() => !caidaDebug.room.connected);
   await m.locator('#practice').click(); await m.locator('#mode').selectOption('teams'); await m.locator('#start').click();
   await m.waitForFunction(() => caidaDebug.room.state.players.length === 4 && caidaDebug.world.characters.filter(Boolean).length === 4); check('offline fallback and four-seat mode');
   await m.screenshot({ path: 'art/caida/mobile-teams.png' });

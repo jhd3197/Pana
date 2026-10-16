@@ -48,7 +48,7 @@ try{
   await mobile.waitForFunction(()=>galope.state.players.find(p=>p.id===galope.room.id).speed>4);
   await mobile.screenshot({path:`${output}/mobile-race.png`});
   await cdp.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});await cdp.detach();check('real held touch accelerates on a 390px screen');
-  await mobile.evaluate(()=>{galope.room.attempts=3;galope.room.socket.close();});await mobile.waitForFunction(()=>!galope.room.connected);
+  await mobile.evaluate(()=>{galope.room.cut();});await mobile.waitForFunction(()=>!galope.room.connected);
   await mobile.locator('#menu').click();await mobile.locator('#local-race').click();await mobile.waitForFunction(()=>galope.room.offline&&galope.state.phase==='lobby');
   await mobile.locator('#start').click();await mobile.waitForFunction(()=>galope.state.phase==='countdown');check('offline fallback starts a local race');
   await mobile.goto(`${base}/`);await mobile.getByRole('heading',{name:'Galope',exact:true}).waitFor();check('hub discovers Galope');
