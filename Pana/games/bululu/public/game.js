@@ -96,12 +96,12 @@ const menu = createGameMenu({
   title: 'Bululú', heading: 'Pausa', sound,
   note: () => 'La partida está en pausa.',
   controls: [['Espacio', 'Tirar los dados / saltar'], ['A D / ← →', 'Moverte en los minijuegos'], ['Tab', 'Ver el tablero'],
-    ['L', 'Cambiar la luz'], ['M', 'Sonido'], ['Esc', 'Pausa']],
+    ['Clic / Espacio', 'Estirar y soltar la china'], ['L', 'Cambiar la luz'], ['M', 'Sonido'], ['Esc', 'Pausa']],
   tips: ['Junta 20 monedas y cómprale un Mango de oro al puesto del árbol. Gana el pana con más mangos de oro.'],
   options: [{ id: 'sky', label: 'Luz de la isla', choices: [['day', 'Día'], ['night', 'Noche'], ['cycle', 'Ciclo']],
     get: () => board.atmosphere.mode, set: mode => selectSky(mode) }],
   actions: [{ id: 'restart', label: 'Empezar de nuevo', kind: 'secondary', run: () => location.reload() }],
-  onOpen() { paused = true; for (const k in held) held[k] = false; },
+  onOpen() { paused = true; for (const k in held) held[k] = false; aim.pull = aim.keyPull = false; },
   onClose() { paused = false; },
 });
 $('top-actions').prepend(menu.createButton({ id: 'menu', className: 'pk-btn menu-button' }));
@@ -306,8 +306,9 @@ addEventListener('keydown', (e) => {
   const k = e.key.toLowerCase();
   if (k === ' ' || k.startsWith('arrow')) e.preventDefault();
   held[k] = true;
-  // in 2D minigames W / ↑ drive forward, so only Space is the action
-  if (!e.repeat && (k === ' ' || (!mini2d() && (k === 'w' || k === 'arrowup')))) jumpPressed = true;
+  // in 2D and aim minigames W / ↑ move, so only Space is the action
+  if (!e.repeat && (k === ' ' || (!mini2d() && !miniAim() && (k === 'w' || k === 'arrowup')))) jumpPressed = true;
+  if (!e.repeat && k === ' ' && miniAim()) aim.keyPull = true;
   if (k === 'm' && !e.repeat) toggleMute();
   if (k === 'l' && !e.repeat && view === boardView) {
     selectSky(SKY_MODES[(SKY_MODES.indexOf(board.atmosphere.mode) + 1) % SKY_MODES.length]);
@@ -318,7 +319,15 @@ addEventListener('keydown', (e) => {
   }
   if (!e.repeat) for (const w of actionWaiters) w(k);
 });
-addEventListener('keyup', (e) => (held[e.key.toLowerCase()] = false));
+addEventListener('keyup', (e) => {
+  const k = e.key.toLowerCase();
+  held[k] = false;
+  // Space pulls the china while held; letting go fires
+  if (k === ' ' && aim.keyPull) {
+    aim.keyPull = false;
+    aim.fire = true;
+  }
+});
 addEventListener('pointerdown', () => sound.unlock(), { once: false });
 
 // on-screen buttons for touch screens during minigames
@@ -327,12 +336,74 @@ for (const [id, key] of [['t-left', 'a'], ['t-right', 'd'], ['t-jump', ' '], ['t
   holdButton($(id), { down: () => { held[key] = true; if (key === ' ') jumpPressed = true; }, up: () => { held[key] = false; } });
 }
 
+// Aim minigames (`input: 'aim'`) get a reticle in NDC (−1..1) instead. The mouse
+// moves it and a press pulls; WASD / arrows steer it and Space pulls; on touch,
+// dragging anywhere aims and lifting the finger fires. The handlers live on the
+// canvas only while such a minigame runs, so the board and minimap never see them.
+const aim = { x: 0, y: 0, pull: false, keyPull: false, fire: false, keyT: 0, pointer: null, touch: null };
+const miniAim = () => mini?.def.input === 'aim';
+const clampAim = (v) => Math.max(-1, Math.min(1, v));
+const canvasEl = renderer.domElement;
+function aimAtPointer(e) {
+  const r = canvasEl.getBoundingClientRect();
+  aim.x = clampAim(((e.clientX - r.left) / r.width) * 2 - 1);
+  aim.y = clampAim(1 - ((e.clientY - r.top) / r.height) * 2);
+}
+const aimHandlers = {
+  pointerdown(e) {
+    if (paused || aim.pointer != null || (e.pointerType === 'mouse' && e.button !== 0)) return;
+    e.preventDefault();
+    sound.unlock();
+    canvasEl.setPointerCapture?.(e.pointerId);
+    aim.pointer = e.pointerId;
+    if (e.pointerType === 'mouse') aimAtPointer(e);
+    else aim.touch = { x: e.clientX, y: e.clientY };
+    aim.pull = true;
+  },
+  pointermove(e) {
+    if (e.pointerType === 'mouse') return aimAtPointer(e);
+    if (aim.pointer !== e.pointerId || !aim.touch) return;
+    // a finger would hide the reticle, so touch drags it (a bit faster than the finger)
+    const r = canvasEl.getBoundingClientRect();
+    aim.x = clampAim(aim.x + ((e.clientX - aim.touch.x) / r.width) * 3);
+    aim.y = clampAim(aim.y - ((e.clientY - aim.touch.y) / r.height) * 3);
+    aim.touch = { x: e.clientX, y: e.clientY };
+  },
+  pointerup(e) {
+    if (aim.pointer !== e.pointerId) return;
+    aim.pointer = aim.touch = null;
+    if (aim.pull) aim.fire = true;
+    aim.pull = false;
+  },
+  pointercancel(e) {
+    if (aim.pointer !== e.pointerId) return;
+    aim.pointer = aim.touch = null;
+    aim.pull = false;
+  },
+};
+function bindAim(on) {
+  for (const [type, fn] of Object.entries(aimHandlers)) canvasEl[on ? 'addEventListener' : 'removeEventListener'](type, fn);
+  Object.assign(aim, { x: 0, y: 0, pull: false, keyPull: false, fire: false, keyT: 0, pointer: null, touch: null });
+}
+const IDLE_AIM = { aim: { x: 0, y: 0 }, pull: false, fire: false };
+
 // 1D minigames get { x, jump }; a module with `input: '2d'` also gets z (W/S, ↑/↓)
 const mini2d = () => mini?.def.input === '2d';
-function minigameInput() {
+function minigameInput(dt = 0) {
   const x = (held.d || held.arrowright ? 1 : 0) - (held.a || held.arrowleft ? 1 : 0);
   const jump = jumpPressed;
   jumpPressed = false;
+  if (miniAim()) {
+    // keys steer the reticle, quick to start and faster the longer they're held
+    const y = (held.w || held.arrowup ? 1 : 0) - (held.s || held.arrowdown ? 1 : 0);
+    aim.keyT = x || y ? aim.keyT + dt : 0;
+    const speed = 0.8 + Math.min(1, aim.keyT / 0.45) * 1.5;
+    aim.x = clampAim(aim.x + x * speed * dt);
+    aim.y = clampAim(aim.y + y * speed * dt);
+    const fire = aim.fire;
+    aim.fire = false;
+    return { aim: { x: aim.x, y: aim.y }, pull: aim.pull || aim.keyPull, fire };
+  }
   if (!mini2d()) return { x, jump };
   const z = (held.w || held.arrowup ? 1 : 0) - (held.s || held.arrowdown ? 1 : 0);
   return { x, z, jump };
@@ -836,10 +907,13 @@ async function playMinigame(def) {
   cardMode = 'mini';
   renderCards();
   mini = { def, game, state: 'wait', left: def.time };
-  game.update(0.0001, { x: 0, jump: false });
+  game.update(0.0001, def.input === 'aim' ? IDLE_AIM : { x: 0, jump: false });
   view = { scene: game.scene, camera: game.camera, update: () => {} };
   document.body.classList.add('in-mini');
   document.body.classList.toggle('mini-2d', def.input === '2d');
+  document.body.classList.toggle('mini-aim', def.input === 'aim');
+  $('reticles').innerHTML = '';
+  if (def.input === 'aim') bindAim(true);
   setTimer(def.time);
 
   for (const n of ['3', '2', '1']) {
@@ -851,6 +925,7 @@ async function playMinigame(def) {
   sound.tone(880, 0, 0.3, 'square', 0.08);
   wait(0.6).then(() => ($('count').textContent = ''));
   jumpPressed = false;
+  aim.fire = aim.keyPull = false;
   mini.state = 'run';
   await new Promise((r) => (mini.finish = r));
 
@@ -863,6 +938,9 @@ async function playMinigame(def) {
   }
   mini.state = 'outro';
   mini.winners = winners;
+  // the pointer is the board's again (and the cursor comes back)
+  if (def.input === 'aim') bindAim(false);
+  document.body.classList.remove('mini-aim');
   setTimer(null);
   sound.horn('fiesta');
   $('winner').innerHTML = winners.length
@@ -886,10 +964,35 @@ async function playMinigame(def) {
   }
 }
 
+// Aim minigames draw a reticle per pana over the canvas: { x, y } in NDC, its
+// color, how far the china is pulled (0..1), and for you the stones left.
+function drawReticles(list) {
+  const box = $('reticles');
+  while (box.children.length < list.length) {
+    const el = document.createElement('div');
+    el.className = 'reticle';
+    el.innerHTML = '<i></i><span class="ammo"></span>';
+    box.append(el);
+  }
+  list.forEach((r, i) => {
+    const el = box.children[i];
+    el.style.setProperty('--c', r.color);
+    el.style.setProperty('--pull', r.pull.toFixed(2));
+    el.style.transform = `translate(${((r.x + 1) / 2) * innerWidth}px, ${((1 - r.y) / 2) * innerHeight}px)`;
+    el.classList.toggle('me', !!r.me);
+    el.classList.toggle('empty', r.ammo === 0);
+    if (r.me) {
+      const pips = r.ammo == null ? '' : '<b></b>'.repeat(r.ammo) + '<b class="used"></b>'.repeat(Math.max(0, (r.max || 3) - r.ammo));
+      if (el.dataset.pips !== pips) el.querySelector('.ammo').innerHTML = el.dataset.pips = pips;
+    }
+  });
+}
+
 function updateMini(dt) {
   const { game } = mini;
   if (mini.state === 'run') {
-    game.update(dt, minigameInput());
+    game.update(dt, minigameInput(dt));
+    if (game.reticles) drawReticles(game.reticles());
     mini.left -= dt;
     setTimer(Math.max(0, Math.ceil(mini.left)));
     miniScores = game.scores();
