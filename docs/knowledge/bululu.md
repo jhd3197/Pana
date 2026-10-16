@@ -167,3 +167,17 @@ flow bugs and check balance.
   `cars.js` joins them to its stats. A kart that drops credits whoever drove
   into it in the last 3 s. Simulated: ~17 knockouts per 45 s game.
 
+- **River minigames** (¡Remada!, ¡Raudal!, ¡Remolino!): their rules live in
+  `minigames/river-sims.js` (pure, no THREE) so `tests/river-minigames.test.js`
+  plays 200 all-AI rounds each for plan 52's balance rule (every seat wins
+  15–35%; nobody-scores runs fail the test). The modules only draw the sims.
+  Paddling is Curiara's model (`/engine/paddle.js`): a stroke is `x` reaching
+  ±1 (`axisStroke`), so A/D taps alternate. Canoes are
+  `/engine/models/vehicles/curiara.js`; `river-stage.js` adds water, banks and
+  actors. ¡Remada!: 120 m, AIs finish in ~22–30 s. ¡Raudal!: four parallel
+  rapids share one seeded pattern (rocks, mangos, a ledge every 5th row); a
+  jump counts .08–.45 s before the ledge, rocks cost a mango and .9 s of stun.
+  ¡Remolino!: canoes point outward on their own; the eye grows 1.6→6.5 m and
+  the pull 1.2→6.8 m/s, so even good rhythm drifts in by the end. Starting
+  in pairs and a swirl of 3.4/r made AIs meet and shove; spaced evenly they
+  never touched. ¡Toninas! (2v2 fruit) waits for team support in the runner.

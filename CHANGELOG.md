@@ -13,7 +13,17 @@ becomes the GitHub release's notes.
 - **New game: Curiara, race dugout canoes down the Amazonas.**
   Paddle with A and D in rhythm (no throttle): alternate to go straight,
   stroke the same side twice to turn and hit the gold sweet spot for a
-  ¡Remazo!. Up to 8 panas, bots fill the river.
+  ¡Remazo!. Read the chorro through a jungle caño (or gamble on the igapó
+  cut), pick a lane down the raudales under the Autana tepui and cross the
+  Río Negro past toninas, caimanes and a remolino to the churuata. Hits,
+  bad drops and bumps fill the tip meter until you capsize; Space throws a
+  ¡Salpicón! at the canoe beside you. Up to 8 panas online, bots fill in.
+- **Curiara has Parejas: two panas share one canoe.** The proa paddles,
+  the popa holds the rudder, back-paddles and throws the salpicón, and a
+  tap right with the stroke calls ¡Ahora! for 15% more.
+- **Bululú has three river minigames: ¡Remada!, ¡Raudal! and ¡Remolino!.**
+  Sprint 120 m in rhythm, dodge rocks and jump ledges down four rapids for
+  mangos, or paddle away from a growing whirlpool and shove the others in.
 - **Contributors have a phased roadmap for Derrape Grand Prix and four new water maps.**
   Plan 56 specifies three four-race cups, online championship continuity,
   shared scenery and verification across 22 implementation phases.
