@@ -79,6 +79,37 @@
         <label class="lobby-bots"><input id="lobby-bots" type="checkbox" checked> Completar con rivales</label>
         <p id="lobby-status" class="lobby-status" role="status" aria-live="polite"></p>
       </section>
+      <section id="setup" class="setup" aria-label="Tipo de carrera">
+        <div class="setup-row">
+          <span class="pk-eyebrow">Modo</span>
+          <div id="mode-pick" class="pk-seg" role="group" aria-label="Modo de juego">
+            <button type="button" data-mode="race" aria-pressed="true">Carrera</button>
+            <button type="button" data-mode="mango" aria-pressed="false">Copa Mango</button>
+            <button type="button" data-mode="arepa" aria-pressed="false">Copa Arepa</button>
+            <button type="button" data-mode="battle" aria-pressed="false">Globos</button>
+          </div>
+        </div>
+        <div class="setup-row">
+          <span class="pk-eyebrow">Rivales</span>
+          <div id="difficulty-pick" class="pk-seg" role="group" aria-label="Dificultad">
+            <button type="button" data-difficulty="facil" aria-pressed="false">Fácil</button>
+            <button type="button" data-difficulty="normal" aria-pressed="true">Normal</button>
+            <button type="button" data-difficulty="dificil" aria-pressed="false">Difícil</button>
+          </div>
+        </div>
+        <div class="setup-row">
+          <span class="pk-eyebrow">Vueltas</span>
+          <div id="laps-pick" class="pk-seg" role="group" aria-label="Vueltas">
+            <button type="button" data-laps="1" aria-pressed="false">1</button>
+            <button type="button" data-laps="2" aria-pressed="false">2</button>
+            <button type="button" data-laps="3" aria-pressed="true">3</button>
+            <button type="button" data-laps="4" aria-pressed="false">4</button>
+            <button type="button" data-laps="5" aria-pressed="false">5</button>
+          </div>
+          <label class="mirror-pick">Espejo <button id="mirror" type="button" class="pk-switch" role="switch" aria-checked="false" aria-label="Modo espejo"></button></label>
+        </div>
+        <p id="setup-note" class="setup-note"></p>
+      </section>
       <p id="launch-note" class="launch-note"><span class="pk-dot"></span>Tú contra 3 rivales</p>
       <button id="play" class="play pk-btn pk-btn--primary pk-btn--lg pk-btn--block">¡JUGAR!</button>
       <button id="go-online" type="button" class="pk-btn pk-btn--block">Carrera online con panas</button>
@@ -91,7 +122,7 @@
     <div class="hud-top">
       <b id="pos" class="pk-place" aria-label="Posición">1<sup>º</sup></b>
       <div class="readouts">
-        <div class="pill pk-panel pk-readout"><span class="pk-eyebrow">Vuelta</span><b id="lap" class="pk-num">1/3</b></div>
+        <div class="pill pk-panel pk-readout"><span id="lap-label" class="pk-eyebrow">Vuelta</span><b id="lap" class="pk-num">1/3</b></div>
         <div class="pill pk-panel pk-readout"><span class="pk-eyebrow">Tiempo</span><b id="time" class="pk-num">0.0</b></div>
         <div class="pill pk-panel pk-readout leader"><span class="pk-eyebrow">Líder</span><b id="leader" class="pk-num small">—</b></div>
       </div>
@@ -167,6 +198,10 @@
         <div class="res-table pk-panel pk-panel--solid">
           <span class="pk-eyebrow">Clasificación</span>
           <ol id="result-board" class="pk-roster"></ol>
+        </div>
+        <div id="cup-table" class="res-table pk-panel pk-panel--solid" hidden>
+          <span id="cup-title" class="pk-eyebrow">Copa</span>
+          <ol id="cup-board" class="pk-roster"></ol>
         </div>
         <div class="res-coins pk-panel"><span class="coin-symbol" aria-hidden="true">I</span><p id="result-coins" class="result-coins"></p></div>
         <div class="res-actions">

@@ -223,7 +223,7 @@ export function createItems(hooks) {
 
   function give(c, place, count) {
     if (!addItem(c, roll(place, count))) return false;
-    c.useT = rand(0.8, 3.5);
+    c.useT = rand(0.8, 3.5) * (hooks.itemDelay?.() ?? 1);
     if (c.isPlayer) sound.pickup();
     return true;
   }
@@ -363,6 +363,7 @@ export function createItems(hooks) {
     if (shielded(c, new THREE.Vector3(c.x, c.y + 1, c.z))) return;
     c.spin = SPIN;
     c.dizzy = Math.max(c.dizzy, 2);
+    hooks.slipped?.(c);
     c.vx *= 0.35; c.vz *= 0.35; c.boost = 0;
     c.drift = 0; c.driftT = 0;
     if (loseCoins(c, 1)) puffs.spawn(new THREE.Vector3(c.x, c.y + 1.6, c.z), { color: 0xffc629, count: 4, spread: 2, size: 0.5, rise: 3, life: 0.7 });

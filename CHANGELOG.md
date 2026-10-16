@@ -10,6 +10,10 @@ becomes the GitHub release's notes.
 
 ### Added
 
+- **Derrape has cups, balloon battles and race options.** Win the Copa
+  Mango or Copa Arepa across four tracks for a gold, silver or bronze
+  trophy, pop rivals' balloons in Globos, and pick easy, normal or hard
+  rivals, 1 to 5 laps and mirror mode before you start.
 - **Derrape has six new items.** A cohete that chases the car ahead, the
   chancleta that drops on the leader, a totuma shield, exploding trap
   crates, an aguacero that soaks everyone ahead and a jarra with three

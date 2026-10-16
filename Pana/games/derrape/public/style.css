@@ -125,6 +125,18 @@ dd i { display: block; height: 100%; background: var(--car, var(--pk-coral)); bo
 .t-info span { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; margin-top: 3px; color: var(--pk-muted); font-size: 11px; font-weight: 700; line-height: 1.35; }
 .launch-note { display: flex; align-items: center; gap: 8px; margin: 0; padding: 10px 12px; border: 1px solid var(--pk-line); border-radius: 12px; background: var(--pk-deep); color: var(--pk-muted); font-size: 13px; font-weight: 800; }
 .launch .play { margin-top: auto; }
+.setup { display: flex; flex-direction: column; gap: 8px; }
+.setup-row { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; }
+.setup-row > .pk-eyebrow { min-width: 58px; }
+.setup .pk-seg > button { padding: 5px 9px; font-size: 12px; }
+.mirror-pick { display: flex; align-items: center; gap: 8px; margin-left: auto; color: var(--pk-muted); font-size: 12px; font-weight: 800; }
+.mirror-pick .pk-switch { width: 46px; height: 26px; }
+.mirror-pick .pk-switch::before { width: 18px; height: 18px; }
+.mirror-pick .pk-switch[aria-checked="true"]::before { transform: translateX(20px); }
+.setup-note { margin: 0; color: var(--pk-muted); font-size: 12px; line-height: 1.35; }
+.setup-note:empty { display: none; }
+.setup .pk-seg > button:disabled { opacity: .4; cursor: default; }
+#cup-table[hidden], #setup[hidden] { display: none; }
 
 /* ---------- loading ---------- */
 .loading { z-index: 20; gap: 18px; background: linear-gradient(180deg, rgba(14, 11, 36, .2) 0%, rgba(14, 11, 36, .6) 45%, var(--pk-night) 85%); }

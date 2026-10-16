@@ -21,6 +21,7 @@ import { pixelRatio, bindRenderer } from '/engine/settings.js';
 import { shout } from '/engine/kit.js';
 import { LAPS, RIVALS, AI_WHEELS, POSE_HZ, FLAG, DRIFT_SHIFT, packPose, gridSlot } from './online-rules.js';
 import { clockText, wrapAngle, raceOrder, aiPedals, resolveContact } from './rules.js';
+import { CUPS, cupById, awardPoints, cupStandings, trophyFor, TROPHY_RANK, difficultyById, rubberBand, cleanLaps, BALLOONS, BATTLE_TIME, battleOrder, battleOver } from './modes.js';
 import { DRIFT_MIN_SPEED, DRIFT_BOOST, HOP_SPEED, DRAFT_TIME, DRAFT_BOOST, driftLevel, driftSteer, driftCharge, startBoost, trickBoost, inSlipstream, loseCoins } from './drive-rules.js';
 
 const $ = (id) => document.getElementById(id);
@@ -48,6 +49,8 @@ const LINES = {
   wall: ['¡Ups!', '¡Pum!', '¡Mi pintura!'],
   trick: ['¡Truco!', '¡Qué vacilón!', '¡Mírame!'],
   rocket: ['¡Arranque cohete!', '¡Fiuuu!', '¡Me fui!'],
+  pop: ['¡Mi globo!', '¡Pop!', '¡Nooo, mi globo!'],
+  out: ['¡Me quedé sin globos!', '¡Me reventaron!'],
   stall: ['¡Se me ahogó!', '¡Ay no, el motor!'],
   honk: { meep: '¡MEEP MEEP!', cucaracha: '♪ Cucaracha ♪', grave: '¡PAAAAN!', fiesta: '♪ ¡Rumba! ♪' },
 };
@@ -339,6 +342,54 @@ function applyPalette(pal) {
   race.sky.setPalette(pal);race.sky.update(0);
 }
 
+// ---------- race setup: mode, difficulty, laps, mirror (local races) ----------
+const setup = { mode: 'race', difficulty: 'normal', laps: 3, mirror: false };
+try { Object.assign(setup, JSON.parse(localStorage.getItem('derrape:setup') || '{}')); } catch { /* private mode */ }
+setup.laps = cleanLaps(setup.laps);
+if (!['race', 'battle', ...CUPS.map(c => c.id)].includes(setup.mode)) setup.mode = 'race';
+setup.mirror = setup.mirror === true;
+const isCupMode = (mode) => CUPS.some(c => c.id === mode);
+
+function saveSetup() {
+  try { localStorage.setItem('derrape:setup', JSON.stringify(setup)); } catch { /* private mode */ }
+}
+
+function loadTrophies() {
+  try { return JSON.parse(localStorage.getItem('derrape:trophies') || '{}'); } catch { return {}; }
+}
+
+function renderSetup() {
+  const press = (root, attr, value) => {
+    for (const b of $(root).querySelectorAll('button')) b.setAttribute('aria-pressed', String(b.dataset[attr] === String(value)));
+  };
+  press('mode-pick', 'mode', setup.mode);
+  press('difficulty-pick', 'difficulty', setup.difficulty);
+  press('laps-pick', 'laps', setup.laps);
+  $('mirror').setAttribute('aria-checked', String(setup.mirror));
+  const battle = setup.mode === 'battle', cup = isCupMode(setup.mode) ? cupById(setup.mode) : null;
+  for (const b of $('laps-pick').querySelectorAll('button')) b.disabled = battle;
+  const trophies = loadTrophies();
+  for (const b of $('mode-pick').querySelectorAll('button')) {
+    const won = trophies[b.dataset.mode];
+    b.title = won ? `Trofeo de ${won}` : '';
+    b.classList.toggle('has-trophy', !!won);
+    b.dataset.trophy = won || '';
+  }
+  $('setup-note').textContent = cup
+    ? `${cup.name}: ${cup.tracks.map(id => getTrack(id).name).join(' → ')}. Suma puntos en las cuatro.`
+    : battle ? 'Globos: tres globos por carro. Cada golpe revienta uno. Gana el último con globos.' : '';
+  if (!net) {
+    $('t-prev').disabled = $('t-next').disabled = !!cup;
+    if (cup) selectTrack(cup.tracks[0]);
+    else selectTrack(TRACKS[trackIndex].id);
+  }
+}
+
+for (const b of document.querySelectorAll('#mode-pick button')) b.onclick = () => { setup.mode = b.dataset.mode; race.cup = null; saveSetup(); renderSetup(); };
+for (const b of document.querySelectorAll('#difficulty-pick button')) b.onclick = () => { setup.difficulty = b.dataset.difficulty; saveSetup(); renderSetup(); };
+for (const b of document.querySelectorAll('#laps-pick button')) b.onclick = () => { setup.laps = cleanLaps(Number(b.dataset.laps)); saveSetup(); renderSetup(); };
+$('mirror').onclick = () => { setup.mirror = !setup.mirror; saveSetup(); renderSetup(); };
+
 // Browsing needs only route metadata. Keep the last built map for replay;
 // construct a different environment only after the player presses Play.
 let trackIndex = 0;
@@ -350,7 +401,8 @@ function selectTrack(id) {
   if (!trackRoutes.has(def.id)) trackRoutes.set(def.id, makeTrack(def));
   const route = trackRoutes.get(def.id);
   $('track-name').textContent = def.name;
-  $('track-blurb').textContent = `${(route.TOTAL / 1000).toFixed(2)} km por vuelta · ${LAPS} vueltas. ${def.blurb}`;
+  const laps = net ? net.state?.laps || LAPS : setup.mode === 'battle' ? 0 : setup.laps;
+  $('track-blurb').textContent = `${(route.TOTAL / 1000).toFixed(2)} km por vuelta · ${laps ? `${laps} ${laps === 1 ? 'vuelta' : 'vueltas'}` : 'batalla de globos'}. ${def.blurb}`;
   $('track-of').textContent = `Pista ${trackIndex + 1}/${TRACKS.length}`;
   drawTrackPreview(route);
   return route;
@@ -395,6 +447,8 @@ function finishTrack() {
     cars: () => race.cars,
     byId: (id) => racerById(id),
     battle: () => race.mode === 'battle',
+    itemDelay: () => race.diff?.itemDelay ?? 1,
+    slipped: (c) => popBalloon(c),
     emit: (kind, c, data) => { if (race.netRace && !c.remote) net.fx(c.netId, kind, data); },
   });
   $('mm-track').textContent = T.name;
@@ -469,7 +523,9 @@ function buildMinimap() {
 }
 
 function drawMinimap() {
+  mmCtx.setTransform(1, 0, 0, 1, 0, 0);
   mmCtx.clearRect(0, 0, mm.width, mm.height);
+  if (race.mirror) mmCtx.setTransform(-1, 0, 0, 1, mm.width, 0);
   strokeRoute(mmCtx, mmPts, 4);
   for (const c of race.cars) {
     const i = Math.floor((paramOf(c.x, c.z) / T.TOTAL) * mmPts.length) % mmPts.length;
@@ -505,7 +561,7 @@ function makeRacer(index, isPlayer, name, wheelId = 'calle', avatar = null) {
   return {
     def, car, bubble, isPlayer, name: who.name,
     wheel: wheel.id, tune: composeTune(def.tune, wheel.profile),   // stepCar drives with the composed tune
-    skill: isPlayer ? 1 : rand(0.88, 0.97),   // rivals top out a bit below their car's max
+    skill: isPlayer ? 1 : rand(...(race.diff ?? difficultyById('normal')).skill),   // rivals top out a bit below their car's max
     x: 0, z: 0, y: 0, h: Math.PI / 2, vx: 0, vz: 0, vy: 0, vf: 0, vr: 0, steer: 0, latAcc: 0, longAcc: 0,
     onGround: true, pitch: 0, roll: 0, pitchV: 0, rollV: 0,
     heave: new Spring(), sp: new Spring(), sr: new Spring(), headLag: new Spring(),
@@ -516,8 +572,54 @@ function makeRacer(index, isPlayer, name, wheelId = 'calle', avatar = null) {
     // driving skills (drive-rules.js): drift dir ±1 and its charge, hop, trick, draft, stall
     drift: 0, driftT: 0, driftHeld: false, driftWindow: 0, driftYaw: 0, hopping: false,
     trick: false, trickT: 0, draft: 0, stall: 0, aiDrift: false,
-    shield: 0, cloud: 0,
+    shield: 0, cloud: 0, band: 1, balloons: 0, popT: 0, avatar: who.avatar,
   };
+}
+
+// Battle balloons ride on sticks above the trunk, in the car's colour.
+const balloonGeo = new THREE.SphereGeometry(0.55, 10, 8);
+const stringGeo = new THREE.CylinderGeometry(0.025, 0.025, 1.6, 4);
+const stringMat = new THREE.MeshBasicMaterial({ color: 0xf3e9d7 });
+function addBalloons(c) {
+  c.balloons = BALLOONS;
+  c.balloonMeshes = [];
+  const mat = new THREE.MeshStandardMaterial({ color: c.def.color, roughness: 0.35, emissive: c.def.color, emissiveIntensity: 0.15 });
+  for (let i = 0; i < BALLOONS; i++) {
+    const g = new THREE.Group();
+    const ball = new THREE.Mesh(balloonGeo, mat);
+    ball.scale.set(1, 1.2, 1);
+    ball.position.y = 1.6;
+    const string = new THREE.Mesh(stringGeo, stringMat);
+    string.position.y = 0.8;
+    g.add(ball, string);
+    g.position.set((i - 1) * 0.75, 2.1, -1.5);
+    g.rotation.z = (i - 1) * -0.25;
+    c.car.root.add(g);
+    c.balloonMeshes.push(g);
+  }
+}
+
+// A hard hit in battle pops one balloon; the last one knocks the car out.
+function popBalloon(c) {
+  if (race.mode !== 'battle' || c.remote || c.balloons <= 0 || c.popT > 0 || race.state !== 'go') return;
+  c.balloons--;
+  c.popT = 1.4;   // a short grace so one crash cannot pop two
+  const mesh = c.balloonMeshes?.pop();
+  if (mesh) {
+    race.puffs.spawn(mesh.getWorldPosition(new THREE.Vector3()).setY(c.y + 3.6), { color: c.def.color, count: 8, spread: 1.6, size: 0.45, rise: 2, life: 0.5 });
+    mesh.removeFromParent();
+  }
+  sound.tone(1400, 0, 0.05, 'square', 0.12);
+  sound.sweep(900, 200, 0.18, 'triangle', 0.1);
+  if (c.balloons > 0) { say(c, LINES.pop, 1); return; }
+  c.done = true;
+  c.outAt = race.clock;
+  c.time = race.clock;
+  say(c, LINES.out, 1.4);
+  // Knocked out: the car fades to a ghost (materials are shared, so clone them).
+  const fade = (m) => { if (m.transparent) return m; const f = m.clone(); f.transparent = true; f.opacity = 0.5; return f; };
+  c.car.root.traverse(o => { if (o.material) o.material = Array.isArray(o.material) ? o.material.map(fade) : fade(o.material); });
+  if (c.isPlayer) finish();
 }
 
 function placeRacer(c, lane, row) {
@@ -530,6 +632,15 @@ function placeRacer(c, lane, row) {
     vx: 0, vz: 0, vy: 0, vf: 0, lap: 0, done: false, time: 0,
     drift: 0, driftT: 0, hopping: false, trick: false, draft: 0, stall: 0, shield: 0, cloud: 0,
   });
+  c.y = groundAt(c.x, c.z);
+  c.prog = progressOf(c);
+}
+
+// Battle starts: a racer at arc length s, optionally facing backwards.
+function placeAlong(c, s, backwards) {
+  const p = pointAt(s), p2 = pointAt(s + 0.5);
+  const tx = p2.x - p.x, tz = p2.y - p.y;
+  Object.assign(c, { x: p.x, z: p.y, h: Math.atan2(tx, tz) + (backwards ? Math.PI : 0), reverse: backwards && !c.isPlayer });
   c.y = groundAt(c.x, c.z);
   c.prog = progressOf(c);
 }
@@ -581,6 +692,21 @@ let loadGeneration = 0;
 async function startRace(playerIndex, wheelId = garage.wheel, roster = null) {
   if (mode === 'loading') return;
   const generation = ++loadGeneration;
+  // Local races follow the garage setup; online races are plain 3-lap races.
+  race.mode = roster ? 'race' : setup.mode === 'battle' ? 'battle' : isCupMode(setup.mode) ? 'cup' : 'race';
+  race.diff = difficultyById(roster ? 'normal' : setup.difficulty);
+  race.laps = roster ? (net.state.laps || LAPS) : race.mode === 'battle' ? 1 : setup.laps;
+  race.mirror = !roster && setup.mirror;
+  if (race.mode === 'cup') {
+    if (!race.cup || race.cup.id !== setup.mode || race.cup.over) {
+      const cup = cupById(setup.mode);
+      const others = CARS.map((_, i) => i).filter(i => i !== playerIndex).sort(() => Math.random() - 0.5);
+      const names = RIVALS.slice(0, 6).sort(() => Math.random() - 0.5);
+      race.cup = { id: cup.id, name: cup.name, tracks: cup.tracks, index: 0, results: [], over: false,
+        rivals: others.slice(0, RACERS - 1).map((car, i) => ({ car, name: names[i], wheel: AI_WHEELS[CARS[car].id], avatar: randomAvatar() })) };
+    }
+    selectTrack(race.cup.tracks[race.cup.index]);
+  } else race.cup = null;
   mode = 'loading';
   race.state = 'loading';
   garage.controls.enabled = false;
@@ -590,7 +716,8 @@ async function startRace(playerIndex, wheelId = garage.wheel, roster = null) {
   $('loading-back').focus();
   const def = TRACKS[trackIndex], tip = pick(TIPS);
   $('loading-title').textContent = def.name;
-  $('loading-meta').textContent = `Derrape · Pista ${trackIndex + 1} de ${TRACKS.length} · ${LAPS} vueltas`;
+  $('loading-meta').textContent = race.cup ? `${race.cup.name} · Carrera ${race.cup.index + 1} de ${race.cup.tracks.length} · ${race.laps} ${race.laps === 1 ? 'vuelta' : 'vueltas'}`
+    : race.mode === 'battle' ? `Derrape · Batalla de globos · ${def.name}` : `Derrape · Pista ${trackIndex + 1} de ${TRACKS.length} · ${race.laps} ${race.laps === 1 ? 'vuelta' : 'vueltas'}`;
   $('loading-blurb').textContent = def.blurb;
   $('loading-tip-icon').innerHTML = tip[0];
   $('loading-tip').textContent = tip[1];
@@ -631,13 +758,25 @@ async function startRace(playerIndex, wheelId = garage.wheel, roster = null) {
     } else {
       const others = CARS.map((_, i) => i).filter((i) => i !== playerIndex).sort(() => Math.random() - 0.5);
       const names = RIVALS.slice(0, 6).sort(() => Math.random() - 0.5);
+      // A cup keeps the same rivals from track to track.
+      const rivals = race.cup?.rivals ?? others.slice(0, RACERS - 1).map((car, i) => ({ car, name: names[i], wheel: AI_WHEELS[CARS[car].id] }));
       race.cars = [makeRacer(playerIndex, true, undefined, wheelId)];
       for (let i = 1; i < RACERS; i++) {
         if (!await step(`Preparando los panas… ${i}/${RACERS}`, 0.5 + i * 0.08)) return;
-        race.cars.push(makeRacer(others[i - 1], false, names[i - 1], AI_WHEELS[CARS[others[i - 1]].id]));
+        const r = rivals[i - 1];
+        race.cars.push(makeRacer(r.car, false, r.name, r.wheel, r.avatar));
       }
-      // a two-by-two grid; you start at the back so there's someone to pass
-      race.cars.forEach((c, i) => placeRacer(c, i % 2 ? -3.5 : 3.5, Math.floor((RACERS - 1 - i) / 2)));
+      if (race.mode === 'battle') {
+        // Spread around the lap, half of them driving it backwards: they meet head-on.
+        race.cars.forEach((c, i) => {
+          placeRacer(c, 0, 0);
+          placeAlong(c, T.LINE + i * T.TOTAL / RACERS, i % 2 === 1);
+          addBalloons(c);
+        });
+      } else {
+        // a two-by-two grid; you start at the back so there's someone to pass
+        race.cars.forEach((c, i) => placeRacer(c, i % 2 ? -3.5 : 3.5, Math.floor((RACERS - 1 - i) / 2)));
+      }
     }
     race.player = race.cars.find(c => c.isPlayer);
     race.playerIndex = playerIndex;
@@ -648,6 +787,8 @@ async function startRace(playerIndex, wheelId = garage.wheel, roster = null) {
     race.poseAt = 0;
     race.camPos = null;
     race.netRace = roster ? net.state.raceId : 0;
+    race.scene.scale.x = race.mirror ? -1 : 1;
+    race.ended = false;
     if (!await step('Todo listo. ¡A correr!', 0.9)) return;
     renderer.toneMapping = THREE.NoToneMapping;
     updateRace(0);
@@ -711,6 +852,8 @@ function toGarage() {
   garage.controls.enabled = true;
   mode = 'garage';
   if (net) renderLobby(net.state);
+  else { race.cup = null; renderSetup(); }
+  race.scene.scale.x = 1;
   $('play').focus({ preventScroll: true });
 }
 
@@ -744,7 +887,12 @@ $('garage').querySelector('.tools').prepend(menu.createButton({ id: 'settings', 
 for (const kbd of document.querySelectorAll('#pause kbd, #settings kbd')) kbd.classList.add('pk-kbd');
 
 $('again').onclick = () => {
-  if (!race.netRace) return startRace(race.playerIndex, race.playerWheel);
+  if (!race.netRace) {
+    // Cups move on to their next track; a finished cup starts a fresh one.
+    if (race.cup && !race.cup.over && race.cup.results[race.cup.index]) race.cup.index++;
+    else if (race.cup?.over) race.cup = null;
+    return startRace(race.playerIndex, race.playerWheel);
+  }
   if (net.isHost) net.start();
 };
 $('back').onclick = () => {
@@ -801,9 +949,10 @@ addEventListener('keyup', (e) => (race.keys[e.key.toLowerCase()] = false));
 function playerInput() {
   const k = { ...race.keys };
   for (const key of touchHeld) k[key] = true;
+  const steer = (k.a || k.arrowleft ? 1 : 0) - (k.d || k.arrowright ? 1 : 0);
   return {
     throttle: (k.w || k.arrowup ? 1 : 0) - (k.s || k.arrowdown ? 1 : 0),
-    steer: (k.a || k.arrowleft ? 1 : 0) - (k.d || k.arrowright ? 1 : 0),
+    steer: race.mirror ? -steer : steer,   // the world is drawn flipped: left on screen is world right
     drift: !!(k.shift || k.k),
   };
 }
@@ -811,18 +960,21 @@ function playerInput() {
 function aiInput(c) {
   // aim ahead along the track, holding this car's own lane so the pack
   // doesn't pile into the middle (it still bumps when lanes cross)
-  const s = paramOf(c.x, c.z) + 14 + Math.max(0, c.vf) * 0.25;
+  const way = c.reverse ? -1 : 1;
+  const s = paramOf(c.x, c.z) + way * (14 + Math.max(0, c.vf) * 0.25);
   const target = pointAt(s);
-  const next = pointAt(s + 1);
+  const next = pointAt(s + way);
   const tx = next.x - target.x, tz = next.y - target.y, tl = Math.hypot(tx, tz) || 1;
   target.x += -tz / tl * c.lane * 0.8;
   target.y += tx / tl * c.lane * 0.8;
   const diff = wrapAngle(Math.atan2(target.x - c.x, target.y - c.z) - c.h);
   const gap = (c.lap * T.TOTAL + c.prog) - (race.player.lap * T.TOTAL + race.player.prog);
+  // Catch-up: rivals far behind find a little extra, far ahead ease off.
+  c.band = race.mode === 'battle' ? 1 : rubberBand(gap, race.diff);
   // Rivals drift through long bends and let go once the nose lines up.
   if (!c.aiDrift && Math.abs(diff) > 0.3 && c.vf > 20 && c.onGround) c.aiDrift = true;
   else if (c.aiDrift && (Math.abs(diff) < 0.08 || (c.drift && Math.sign(diff) !== c.drift) || c.driftT > 2.8)) c.aiDrift = false;
-  return { ...aiPedals(diff, gap), drift: c.aiDrift };
+  return { ...aiPedals(diff, race.mode === 'battle' ? 0 : gap), drift: c.aiDrift && race.diff?.drift !== false };
 }
 
 function say(c, lines, time) {
@@ -856,6 +1008,7 @@ function spillCoins(c, n) {
 }
 
 function crash(c, power, side) {
+  if (power >= 12) popBalloon(c);
   c.vy = Math.max(c.vy, power * 0.38 / c.def.tune.mass);
   c.onGround = false;
   c.airTime = 0;
@@ -877,7 +1030,7 @@ function stepCar(c, input, dt) {
   const boosting = c.boost > 0;
   // Under an aguacero cloud the car is slower and slides, less so on rain cauchos.
   const rained = c.cloud > 0 ? (t.wetFloor >= 0.5 ? 0.93 : 0.74) : 1;
-  const top = t.top * c.skill * coinMultiplier(c) * rained;
+  const top = t.top * c.skill * (c.band || 1) * coinMultiplier(c) * rained;
   const terrain=T.def.offroad;
   // Wheel off-road resistance scales every roughness penalty below (accel,
   // speed cap, drag); slicks go negative and make rough ground worse.
@@ -1199,6 +1352,7 @@ function syncCar(c, dt) {
 
   c.bubble.sprite.position.set(c.x, c.y + 4.4, c.z);
   c.bubble.update(dt);
+  if (race.mirror) c.bubble.sprite.scale.x *= -1;   // keep speech readable in the flipped world
 }
 
 function updateRace(dt) {
@@ -1240,7 +1394,7 @@ function updateRace(dt) {
           c.aiHonk = rand(5, 10);
         }
       }
-      if (c.lap > LAPS) {
+      if (race.mode !== 'battle' && c.lap > race.laps) {
         c.done = true;
         c.time = race.clock;
         if (race.netRace) net.finish(c.netId, c.time);
@@ -1249,6 +1403,8 @@ function updateRace(dt) {
     }
     collideCars();
     slipstreams(dt);
+    for (const c of race.cars) c.popT = Math.max(0, (c.popT || 0) - dt);
+    if (race.mode === 'battle' && !race.ended && battleOver(race.cars, race.clock)) endBattle();
   } else if (race.netRace) {
     // Rivals already on the grid still settle into place during the countdown.
     for (const c of race.cars) if (c.remote) applyRemote(c, dt);
@@ -1265,15 +1421,21 @@ function updateRace(dt) {
   const p = race.player;
   const order = standings();
   const place = order.indexOf(p);
-  $('lap').textContent = `${Math.min(LAPS, Math.max(1, p.lap))}/${LAPS}`;
+  if (race.mode === 'battle') {
+    $('lap-label').textContent = 'Globos';
+    $('lap').textContent = `${p.balloons}/${BALLOONS}`;
+  } else {
+    $('lap-label').textContent = 'Vuelta';
+    $('lap').textContent = `${Math.min(race.laps, Math.max(1, p.lap))}/${race.laps}`;
+  }
   if (race.shownPlace !== place) {
     race.shownPlace = place;
     $('pos').innerHTML = `${place + 1}<sup>º</sup>`;
     $('pos').setAttribute('aria-label', `Posición ${place + 1} de ${order.length}`);
   }
   $('leader').textContent = order[0] === p ? '¡Tú!' : order[0].name;
-  $('time').textContent = clockText(p.done ? p.time : race.clock);
-  if (p.lap === LAPS && !p.finalLap && !p.done) {
+  $('time').textContent = race.mode === 'battle' ? clockText(Math.max(0, BATTLE_TIME - race.clock)) : clockText(p.done ? p.time : race.clock);
+  if (race.mode !== 'battle' && race.laps > 1 && p.lap === race.laps && !p.finalLap && !p.done) {
     p.finalLap = true;
     shout('¡Vuelta final!');
   }
@@ -1309,8 +1471,10 @@ function updateRace(dt) {
   race.camPos.lerp(want, Math.min(1, dt * 4));
   race.shake = Math.max(0, race.shake - dt * 2);
   const sh = race.shake * 0.6;
-  race.camera.position.set(race.camPos.x + rand(-sh, sh), race.camPos.y + rand(-sh, sh), race.camPos.z + rand(-sh, sh));
-  race.camera.lookAt(p.x + fx * 4, p.y + 1.4, p.z + fz * 4);
+  // Mirror mode flips the whole scene on x; the camera follows in flipped space.
+  const mx = race.mirror ? -1 : 1;
+  race.camera.position.set(mx * race.camPos.x + rand(-sh, sh), race.camPos.y + rand(-sh, sh), race.camPos.z + rand(-sh, sh));
+  race.camera.lookAt(mx * (p.x + fx * 4), p.y + 1.4, p.z + fz * 4);
   const fov = p.boost > 0 ? 74 : 60;   // turbo stretches the view
   if (Math.abs(race.camera.fov - fov) > 0.05) {
     race.camera.fov += (fov - race.camera.fov) * Math.min(1, dt * 5);
@@ -1358,7 +1522,49 @@ function showItem(p) {
 
 // Finished cars by time, then everyone else by how far along they are.
 function standings() {
-  return raceOrder(race.cars, T.TOTAL);
+  return race.mode === 'battle' ? battleOrder(race.cars) : raceOrder(race.cars, T.TOTAL);
+}
+
+// Time's up or one car left: everyone still holding balloons is done.
+function endBattle() {
+  race.ended = true;
+  for (const c of race.cars) if (!c.done) { c.done = true; c.time = race.clock; }
+  if (race.state !== 'end') finish();
+}
+
+// Points for this cup race (a restarted race replaces its earlier result).
+function scoreCup(order) {
+  const cup = race.cup;
+  cup.results[cup.index] = order.map(c => c.name);
+  const table = {};
+  for (const result of cup.results) if (result) awardPoints(table, result);
+  cup.table = cupStandings(table, cup.results[cup.index]);
+  cup.over = cup.index === cup.tracks.length - 1;
+  if (cup.over) {
+    const place = cup.table.findIndex(r => r.name === race.player.name);
+    const trophy = trophyFor(place);
+    const trophies = loadTrophies();
+    if (trophy && (TROPHY_RANK[trophy] > (TROPHY_RANK[trophies[cup.id]] || 0))) {
+      trophies[cup.id] = trophy;
+      try { localStorage.setItem('derrape:trophies', JSON.stringify(trophies)); } catch { /* private mode */ }
+    }
+    cup.place = place;
+    cup.trophy = trophy;
+  }
+}
+
+function renderCup() {
+  const cup = race.cup;
+  $('cup-table').hidden = !cup?.table;
+  if (!cup?.table) return;
+  $('cup-title').textContent = `${cup.name} · ${cup.over ? 'Final' : `Carrera ${cup.index + 1} de ${cup.tracks.length}`}`;
+  const colors = new Map(race.cars.map(c => [c.name, c.def.color]));
+  fillRoster($('cup-board'), cup.table.map((r, i) => {
+    const chip = document.createElement('span');
+    chip.className = 'chip';
+    chip.style.setProperty('--c', colors.get(r.name) || '#fff');
+    return { rank: i + 1, lead: chip, name: r.name, me: r.name === race.player.name, end: `${r.points} pts` };
+  }));
 }
 
 function finish() {
@@ -1369,10 +1575,26 @@ function finish() {
   const place = 1 + race.cars.filter((c) => c !== p && ahead(c)).length;
   const winner = race.cars.filter(ahead).sort((a, b) => a.time - b.time)[0];
   $('result-title').textContent = !p.done ? 'Se acabó el tiempo' : place === 1 ? '¡Ganaste!' : `${place}º lugar`;
-  $('result-time').textContent = `${T.name} · ${LAPS} vueltas · ${p.done ? clockText(p.time) : 'sin terminar'} · ${p.def.name} · ${p.lost} piezas perdidas`
+  $('result-time').textContent = `${T.name} · ${race.laps} ${race.laps === 1 ? 'vuelta' : 'vueltas'} · ${p.done ? clockText(p.time) : 'sin terminar'} · ${p.def.name} · ${p.lost} piezas perdidas`
     + (winner && place > 1 ? ` · ganó ${winner.name}` : '');
+  if (race.mode === 'battle') {
+    const order = standings(), rank = order.indexOf(p) + 1;
+    $('result-title').textContent = p.balloons > 0 && rank === 1 ? '¡Ganaste la batalla!' : p.balloons > 0 ? `${rank}º lugar` : '¡Sin globos!';
+    $('result-time').textContent = `${T.name} · batalla de globos · ${p.balloons} ${p.balloons === 1 ? 'globo' : 'globos'} · ${p.def.name}`
+      + (p.balloons === 0 ? ` · aguantaste ${clockText(p.outAt ?? race.clock)}` : '');
+  }
+  if (race.cup) {
+    scoreCup(standings());
+    const cup = race.cup;
+    if (cup.over) $('result-title').textContent = cup.place === 0 ? `¡Ganaste la ${cup.name}!` : `${cup.place + 1}º en la ${cup.name}`;
+    if (cup.trophy) $('result-time').textContent += ` · trofeo de ${cup.trophy}`;
+  }
+  renderCup();
   if (race.netRace) updateResultActions(net.state);
-  else { $('again').textContent = 'Otra vez'; $('again').disabled = false; $('back').textContent = 'Garaje'; }
+  else {
+    $('again').textContent = race.cup ? (race.cup.over ? 'Otra copa' : 'Siguiente pista') : 'Otra vez';
+    $('again').disabled = false; $('back').textContent = 'Garaje';
+  }
   race.resultKey = '';
   renderResults(standings(), p);
   $('result').classList.remove('hidden');
@@ -1384,7 +1606,7 @@ function finish() {
 // Rivals keep racing behind the results, so this refreshes as they finish.
 const PODIUM = [['var(--pk-yellow)', 260, 124], ['var(--pk-teal)', 190, 96], ['var(--pk-coral)', 140, 86]];
 function renderResults(order, player) {
-  const key = order.map(c => `${c.name}:${c.done}`).join();
+  const key = order.map(c => `${c.name}:${c.done}:${c.balloons}`).join();
   if (key === race.resultKey) return;
   race.resultKey = key;
   const thumbs = $('car-lineup').querySelectorAll('img');
@@ -1403,7 +1625,8 @@ function renderResults(order, player) {
     chip.className = 'chip';
     chip.style.setProperty('--c', c.def.color);
     return { rank: i + 1, lead: chip, name: c.name, me: c === player,
-      end: c.done ? clockText(c.time) : `vuelta ${Math.min(LAPS, Math.max(1, c.lap))}/${LAPS}` };
+      end: race.mode === 'battle' ? `${c.balloons} ${c.balloons === 1 ? 'globo' : 'globos'}`
+        : c.done ? clockText(c.time) : `vuelta ${Math.min(race.laps, Math.max(1, c.lap))}/${race.laps}` };
   }));
 }
 
@@ -1573,6 +1796,7 @@ async function goOnline(code, lead) {
   if (net || joining) return joining;
   $('lobby').hidden = false;
   $('go-online').hidden = true;
+  $('setup').hidden = true;
   $('lobby-code').textContent = code;
   $('lobby-status').textContent = 'Conectando con la sala…';
   $('play').disabled = true;
@@ -1655,7 +1879,7 @@ function resize() {
 addEventListener('resize', resize);
 resize();
 
-if (DEBUG) Object.assign(window, { menu, race, garage, renderer, crash, stepCar, startRace, updateRace, toGarage, showWheel, ITEMS, TRACKS, buildTrack, getActiveTrack: () => T, getNet: () => net });
+if (DEBUG) Object.assign(window, { menu, race, garage, renderer, crash, stepCar, startRace, updateRace, toGarage, showWheel, ITEMS, TRACKS, buildTrack, setup, popBalloon, getActiveTrack: () => T, getNet: () => net });
 
 // ?track=desierto wins; otherwise the last pick, otherwise the estadio
 let savedTrack = 'estadio';
@@ -1682,4 +1906,5 @@ const wheelStrip = wheelCards(WHEEL_DEFINITIONS, showWheel,
 $('wheel-lineup').append(wheelStrip.fragment);
 wheelStrip.ready.catch(error => console.warn('Wheel previews unavailable', error));
 showWheel(garage.wheel);
+renderSetup();
 if (ROOM) goOnline(ROOM, QS.has('lead'));
