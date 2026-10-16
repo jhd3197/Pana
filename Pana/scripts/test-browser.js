@@ -22,11 +22,24 @@ function collect(dir, out = []) {
   return out;
 }
 
+// A suite that documents variants in its usage line (`node …/rural.browser.js
+// [llanos|desierto]`) runs once per variant. Older suites read the Playwright
+// path from argv[2] instead of PANA_PLAYWRIGHT_PATH; only those get it there.
+function runsOf(file) {
+  const source = fs.readFileSync(path.join(repo, file), 'utf8');
+  const name = path.basename(file).replace(/[.]/g, '\\.');
+  const usage = source.match(new RegExp(`${name}\\s+\\[([a-z0-9-]+(?:\\|[a-z0-9-]+)+)\\]`, 'i'));
+  if (usage) return usage[1].split('|').map(variant => ({ file, args: [variant], label: `${file} ${variant}` }));
+  const legacy = /argv\[2\]\s*\|\|\s*['"]playwright['"]/.test(source) && process.env.PANA_PLAYWRIGHT_PATH;
+  return [{ file, args: legacy ? [process.env.PANA_PLAYWRIGHT_PATH] : [], label: file }];
+}
+
 const suites = ['engine', 'games', 'web']
   .flatMap(dir => collect(path.join(app, dir)))
   .map(file => path.relative(repo, file).split(path.sep).join('/'))
   .filter(file => !filters.length || filters.some(f => file.toLowerCase().includes(f)))
-  .sort();
+  .sort()
+  .flatMap(runsOf);
 
 async function healthy() {
   try { return (await fetch(`${base}/api/health`)).ok; } catch { return false; }
@@ -41,29 +54,27 @@ if (!(await healthy())) {
   if (!(await healthy())) { server.kill(); console.error('Pana did not start.'); process.exit(1); }
 }
 
-function run(file) {
+function run({ file, args, label }) {
   return new Promise(done => {
     const started = Date.now();
-    // Older suites take the Playwright path as argv[2]; newer ones read the env.
-    const args = process.env.PANA_PLAYWRIGHT_PATH ? [file, process.env.PANA_PLAYWRIGHT_PATH] : [file];
     const env = { ...process.env, PANA_TEST_URL: base, PANA_QA_URL: base };
-    const child = spawn(process.execPath, args, { cwd: repo, env, stdio: ['ignore', 'pipe', 'pipe'] });
+    const child = spawn(process.execPath, [file, ...args], { cwd: repo, env, stdio: ['ignore', 'pipe', 'pipe'] });
     let log = '';
     child.stdout.on('data', d => { log += d; });
     child.stderr.on('data', d => { log += d; });
     const timer = setTimeout(() => { log += `\nTimed out after ${timeout} ms`; child.kill(); }, timeout);
     child.on('close', code => {
       clearTimeout(timer);
-      done({ file, ok: code === 0, seconds: ((Date.now() - started) / 1000).toFixed(1), log });
+      done({ label, ok: code === 0, seconds: ((Date.now() - started) / 1000).toFixed(1), log });
     });
   });
 }
 
 const results = [];
-for (const file of suites) {
-  const result = await run(file);
+for (const suite of suites) {
+  const result = await run(suite);
   results.push(result);
-  console.log(`${result.ok ? 'ok  ' : 'FAIL'}  ${file}  (${result.seconds}s)`);
+  console.log(`${result.ok ? 'ok  ' : 'FAIL'}  ${result.label}  (${result.seconds}s)`);
   if (!result.ok) console.log(result.log.trim().split('\n').slice(-15).map(line => `      ${line}`).join('\n'));
 }
 server?.kill();
