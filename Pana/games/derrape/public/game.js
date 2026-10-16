@@ -15,6 +15,7 @@ import { createGameMenu, toggleMute } from '/engine/ui.js';
 import { holdButton } from '/engine/touch.js';
 import { pixelRatio, bindRenderer } from '/engine/settings.js';
 import { shout } from '/engine/kit.js';
+import { LAPS, RIVALS, AI_WHEELS, POSE_HZ, FLAG, packPose, gridSlot } from './online-rules.js';
 
 const $ = (id) => document.getElementById(id);
 const esc = (text) => String(text).replace(/[&<>"]/g, (ch) => `&#${ch.charCodeAt(0)};`);
@@ -27,7 +28,6 @@ const rand = (a, b) => a + Math.random() * (b - a);
 const pick = (list) => list[Math.floor(Math.random() * list.length)];
 const wrapAngle = (a) => Math.atan2(Math.sin(a), Math.cos(a));
 
-const LAPS = 3;
 const G = 30;   // cartoon gravity: snappy jumps
 // test switches: ?auto lets the AI drive your car, ?speed=4 fast-forwards
 const QS = new URLSearchParams(location.search);
@@ -35,11 +35,12 @@ const AUTO = QS.has('auto');
 const SPEED = Number(QS.get('speed')) || 1;
 const DEBUG = QS.has('debug');
 
-// You drive as the pana you made in the hub; the rival is a random one.
+// You drive as the pana you made in the hub; the rivals are random ones.
 const ME = { name: loadName(), avatar: loadAvatar() };
-const RIVALS = ['Don Pancho', 'La Chama', 'El Gocho', 'Tía Carmen', 'El Catire', 'Yoli'];
-// Thematic cauchos per car, so rival loadouts show up in every race.
-const AI_WHEELS = { chamo: 'calle', lancha: 'lluvia', machito: 'barro', bala: 'slick', toro: 'barro', familiar: 'lluvia', rumbera: 'palo', montanero: 'barro' };
+// ?room=<code> races online with panas (online.js); without it the race is local.
+// ?lead=1 marks the party's Pana Mayor, who hosts the room.
+const ROOM = (QS.get('room') || '').replace(/[^a-z0-9-]/gi, '').slice(0, 24);
+let net = null;
 
 const LINES = {
   crash: ['¡AY!', '¡UEPA!', '¡Ñooo!', '¡Mi carro!', '¡Epa, chamo!', '¡Qué molleja!'],
@@ -173,6 +174,7 @@ function showCar(i) {
   $('driver-name').textContent = ME.name;
   $('dots').innerHTML = CARS.map((_, j) => `<span class="${j === garage.index ? 'on' : ''}"></span>`).join('');
   for (const [j, button] of [...$('car-lineup').children].entries()) button.setAttribute('aria-pressed', String(j === garage.index));
+  net?.pick(garage.index, garage.wheel);
 }
 
 // Step 2: pick the cauchos. Rebuilds the turntable car and the stats bars,
@@ -262,8 +264,13 @@ $('honk').onclick = garageHonk;
 $('cam').onclick = () => setFocus(!garage.focus);
 $('play').onclick = () => {
   sound.unlock();
-  startRace(garage.index, garage.wheel);
+  if (net) { if (net.isHost) net.start(); return; }
+  if (!joining) startRace(garage.index, garage.wheel);
 };
+$('go-online').onclick = () => { sound.unlock(); goOnline(newCode(), true); };
+$('lobby-invite').onclick = () => menu.share();
+$('lobby-bots').onchange = (e) => net?.bots(e.target.checked);
+$('lobby-solo').onclick = () => { location.href = location.pathname; };
 // Step pills jump to the car strip, the cauchos strip or the track picker.
 for (const step of document.querySelectorAll('.step')) {
   step.onclick = () => {
@@ -382,6 +389,7 @@ function finishTrack() {
     crash: (c, power, side) => crash(c, power, side),
     say: (c, lines, time) => say(c, lines, time),
     standings: () => standings(),
+    emit: (kind, c, data) => { if (race.netRace && !c.remote) net.fx(c.netId, kind, data); },
   });
   $('mm-track').textContent = T.name;
   $('mm-sub').textContent = `${(T.TOTAL / 1000).toFixed(2)} km por vuelta`;
@@ -397,7 +405,9 @@ function buildTrack(id) {
 
 function switchTrack(i) {
   sound.unlock();
-  selectTrack(TRACKS[(i + TRACKS.length) % TRACKS.length].id);
+  if (net && !net.isHost) return;
+  const def = selectTrack(TRACKS[(i + TRACKS.length) % TRACKS.length].id).def;
+  net?.track(def.id);
 }
 
 // ---------- race HUD: standings board + minimap ----------
@@ -475,10 +485,10 @@ function drawMinimap() {
 // ======================================================================
 const RACERS = 4;
 
-function makeRacer(index, isPlayer, name, wheelId = 'calle') {
+function makeRacer(index, isPlayer, name, wheelId = 'calle', avatar = null) {
   const def = CARS[index];
   const wheel = wheelById(wheelId);
-  const who = isPlayer ? ME : { name, avatar: randomAvatar() };
+  const who = isPlayer ? ME : { name, avatar: avatar || randomAvatar() };
   const car = def.build(who.avatar, wheel.wheel ?? undefined);
   // Retain ownership even after a bumper detaches and expires from the scene.
   car.geometries = new Set();
@@ -517,16 +527,18 @@ function progressOf(c) {
   return (paramOf(c.x, c.z) - T.LINE + T.TOTAL) % T.TOTAL;
 }
 
+function disposeRacer(c) {
+  race.scene.remove(c.car.root);
+  c.car.driver.dispose();
+  race.scene.remove(c.bubble.sprite);
+  c.car.geometries.forEach(g => g.dispose());
+  c.bubble.sprite.material.map.dispose();
+  c.bubble.sprite.material.dispose();
+}
+
 function clearRace() {
   resetInput();
-  for (const c of race.cars) {
-    race.scene.remove(c.car.root);
-    c.car.driver.dispose();
-    race.scene.remove(c.bubble.sprite);
-    c.car.geometries.forEach(g => g.dispose());
-    c.bubble.sprite.material.map.dispose();
-    c.bubble.sprite.material.dispose();
-  }
+  race.cars.forEach(disposeRacer);
   race.cars = [];
   race.puffs.clear();
   race.debris.clear();
@@ -543,7 +555,9 @@ const TIPS = [
   ['↩️', 'Lanza hacia atrás con X para frenar al que te persigue.'],
 ];
 let loadGeneration = 0;
-async function startRace(playerIndex, wheelId = garage.wheel) {
+// roster (online only): [{ id, kind, owner, name, avatar, car, wheel, slot }]
+// from the room. Without one the race is the local player plus three bots.
+async function startRace(playerIndex, wheelId = garage.wheel, roster = null) {
   if (mode === 'loading') return;
   const generation = ++loadGeneration;
   mode = 'loading';
@@ -581,22 +595,38 @@ async function startRace(playerIndex, wheelId = garage.wheel) {
       finishTrack();
     }
     if (!await step('Preparando los carros…', 0.5)) return;
-    const others = CARS.map((_, i) => i).filter((i) => i !== playerIndex).sort(() => Math.random() - 0.5);
-    const names = [...RIVALS].sort(() => Math.random() - 0.5);
-    race.cars = [makeRacer(playerIndex, true, undefined, wheelId)];
-    for (let i = 1; i < RACERS; i++) {
-      if (!await step(`Preparando los panas… ${i}/${RACERS}`, 0.5 + i * 0.08)) return;
-      race.cars.push(makeRacer(others[i - 1], false, names[i - 1], AI_WHEELS[CARS[others[i - 1]].id]));
+    if (roster) {
+      for (const [i, r] of roster.entries()) {
+        if (!await step(`Preparando los panas… ${i + 1}/${roster.length}`, 0.5 + (i + 1) / roster.length * 0.3)) return;
+        const mine = r.id === net.id;
+        const c = makeRacer(r.car, mine, r.name, r.wheel, mine ? null : r.avatar);
+        Object.assign(c, { netId: r.id, bot: r.kind === 'bot', remote: r.owner !== net.id, buf: [], gap: 1000 / POSE_HZ, delay: 120 });
+        const { lane, row } = gridSlot(r.slot);
+        placeRacer(c, lane, row);
+        race.cars.push(c);
+      }
+      // A reload mid-race puts this car back where the room last saw it.
+      for (const c of race.cars) if (!c.remote) resumePose(c, net.lastPose(c.netId));
+    } else {
+      const others = CARS.map((_, i) => i).filter((i) => i !== playerIndex).sort(() => Math.random() - 0.5);
+      const names = RIVALS.slice(0, 6).sort(() => Math.random() - 0.5);
+      race.cars = [makeRacer(playerIndex, true, undefined, wheelId)];
+      for (let i = 1; i < RACERS; i++) {
+        if (!await step(`Preparando los panas… ${i}/${RACERS}`, 0.5 + i * 0.08)) return;
+        race.cars.push(makeRacer(others[i - 1], false, names[i - 1], AI_WHEELS[CARS[others[i - 1]].id]));
+      }
+      // a two-by-two grid; you start at the back so there's someone to pass
+      race.cars.forEach((c, i) => placeRacer(c, i % 2 ? -3.5 : 3.5, Math.floor((RACERS - 1 - i) / 2)));
     }
-    // a two-by-two grid; you start at the back so there's someone to pass
-    race.cars.forEach((c, i) => placeRacer(c, i % 2 ? -3.5 : 3.5, Math.floor((RACERS - 1 - i) / 2)));
-    race.player = race.cars[0];
+    race.player = race.cars.find(c => c.isPlayer);
     race.playerIndex = playerIndex;
     race.playerWheel = wheelId;
     race.clock = 0;
     race.count = 3.999;
     race.boardT = 0;
+    race.poseAt = 0;
     race.camPos = null;
+    race.netRace = roster ? net.state.raceId : 0;
     if (!await step('Todo listo. ¡A correr!', 0.9)) return;
     renderer.toneMapping = THREE.NoToneMapping;
     updateRace(0);
@@ -605,7 +635,16 @@ async function startRace(playerIndex, wheelId = garage.wheel) {
     // Upload geometry and draw once behind the loading panel. The countdown
     // starts only after this first frame, never while compilation is running.
     renderer.render(race.scene, race.camera);
-    if (!await step('¡Listo!', 1)) return;
+    if (roster) {
+      // Everyone counts down together once every pana has loaded.
+      net.loaded();
+      if (!await step('Esperando a los panas…', 1)) return;
+      if (!await net.until(s => s.raceId !== race.netRace || s.startAt > 0, (s) => {
+        const racing = s.players.filter(p => p.racing), ready = racing.filter(p => p.loaded).length;
+        $('loading-status').textContent = `Esperando a los panas… ${ready}/${racing.length} listos`;
+      }) || generation !== loadGeneration) return;
+      if (net.state.raceId !== race.netRace) return;
+    } else if (!await step('¡Listo!', 1)) return;
     race.state = 'count';
     $('count').textContent = '3';
     $('garage').classList.add('hidden');
@@ -636,6 +675,8 @@ async function startRace(playerIndex, wheelId = garage.wheel) {
 }
 
 function toGarage() {
+  if (race.netRace && net.state.raceId === race.netRace && !race.player?.done && ['loading', 'count', 'race'].includes(net.state.phase)) net.retire();
+  race.netRace = 0;
   ++loadGeneration;
   $('loading').classList.add('hidden');
   $('loading').setAttribute('aria-busy', 'false');
@@ -648,6 +689,7 @@ function toGarage() {
   $('garage').classList.remove('hidden');
   garage.controls.enabled = true;
   mode = 'garage';
+  if (net) renderLobby(net.state);
   $('play').focus({ preventScroll: true });
 }
 
@@ -656,18 +698,19 @@ function toGarage() {
 let paused = false;
 const menu = createGameMenu({
   title: 'Derrape', heading: 'Pausa', sound, orientation: 'horizontal',
-  note: () => mode === 'race' ? (race.state === 'end' ? 'La carrera terminó.' : 'La carrera está en pausa.') : 'Estás en el garaje.',
+  note: () => mode === 'race' ? (race.state === 'end' ? 'La carrera terminó.' : race.netRace ? 'Carrera online: no se detiene.' : 'La carrera está en pausa.') : 'Estás en el garaje.',
   controls: [['W / ↑', 'Acelerar'], ['S / ↓', 'Frenar'], ['A D / ← →', 'Girar'], ['Espacio / E', 'Lanzar objeto adelante'],
     ['X', 'Lanzar objeto atrás'], ['1 2', 'Elegir objeto'], ['Q', 'Cambiar objeto'], ['H', 'Claxon'], ['M', 'Sonido'], ['Esc', 'Pausa']],
   tips: ['Rompe cajas de madera para conseguir objetos. Cada moneda da un poquito más de velocidad.'],
   actions: [
-    { id: 'restart', label: 'Reiniciar carrera', kind: 'secondary', visible: () => mode === 'race', run: () => startRace(race.playerIndex, race.playerWheel) },
+    { id: 'restart', label: 'Reiniciar carrera', kind: 'secondary', visible: () => mode === 'race' && !race.netRace, run: () => startRace(race.playerIndex, race.playerWheel) },
     { id: 'to-garage', label: 'Volver al garaje', kind: 'secondary', visible: () => mode === 'race', run: () => toGarage() },
   ],
+  invite: () => inviteLink(),
   canOpen: () => mode !== 'loading',
   onOpen() {
     resetInput();
-    if (mode !== 'race') return;
+    if (mode !== 'race' || race.netRace) return;
     paused = true;
     if (sound.engine) sound.engine.g.gain.setTargetAtTime(0, sound.ctx.currentTime, 0.05);
   },
@@ -677,8 +720,14 @@ $('race').querySelector('.hud-corner').append(menu.createButton({ id: 'pause', l
 $('garage').querySelector('.tools').prepend(menu.createButton({ id: 'settings', label: 'Ajustes', className: 'toggle pk-btn pk-btn--sm' }));
 for (const kbd of document.querySelectorAll('#pause kbd, #settings kbd')) kbd.classList.add('pk-kbd');
 
-$('again').onclick = () => startRace(race.playerIndex, race.playerWheel);
-$('back').onclick = toGarage;
+$('again').onclick = () => {
+  if (!race.netRace) return startRace(race.playerIndex, race.playerWheel);
+  if (net.isHost) net.start();
+};
+$('back').onclick = () => {
+  if (race.netRace && net.isHost && net.state.phase === 'results') net.lobby();
+  else toGarage();
+};
 $('loading-back').onclick = toGarage;
 function itemAction(direction) {
   if (mode === 'race' && race.state === 'go') race.items.use(race.player, direction);
@@ -751,14 +800,17 @@ function aiInput(c) {
 }
 
 function say(c, lines, time) {
-  c.bubble.say(typeof lines === 'string' ? lines : pick(lines), time);
+  const text = typeof lines === 'string' ? lines : pick(lines);
+  c.bubble.say(text, time);
+  if (race.netRace && !c.remote) net.fx(c.netId, 'say', { text, time });
 }
 
 function honk(c) {
   if (c.honkT > 0) return;
   c.honkT = sound.horn(c.def.horn);
-  say(c, LINES.honk[c.def.horn], c.honkT + 0.2);
+  c.bubble.say(LINES.honk[c.def.horn], c.honkT + 0.2);
   c.heave.v += 5;   // the whole car jumps when it honks
+  if (race.netRace && !c.remote) net.fx(c.netId, 'honk', {});
 }
 
 function popPart(c, power) {
@@ -972,23 +1024,27 @@ function collidePair(a, b) {
   if (d <= 0 || d >= min) return;
   const nx = dx / d, nz = dz / d;
   const ma = a.def.tune.mass, mb = b.def.tune.mass;
+  // Online, each client resolves only its own car's share of a contact; the
+  // rival's client resolves the other half from the same two poses.
+  const ka = a.remote ? 0 : 1, kb = b.remote ? 0 : 1;
+  if (!ka && !kb) return;
   const push = min - d;
-  a.x -= nx * push * mb / (ma + mb);
-  a.z -= nz * push * mb / (ma + mb);
-  b.x += nx * push * ma / (ma + mb);
-  b.z += nz * push * ma / (ma + mb);
+  a.x -= nx * push * mb / (ma + mb) * ka;
+  a.z -= nz * push * mb / (ma + mb) * ka;
+  b.x += nx * push * ma / (ma + mb) * kb;
+  b.z += nz * push * ma / (ma + mb) * kb;
   const vrel = (a.vx - b.vx) * nx + (a.vz - b.vz) * nz;   // closing speed
   if (vrel <= 0) return;
   const j = 1.4 * vrel / (1 / ma + 1 / mb);
-  a.vx -= j / ma * nx; a.vz -= j / ma * nz;
-  b.vx += j / mb * nx; b.vz += j / mb * nz;
+  a.vx -= j / ma * nx * ka; a.vz -= j / ma * nz * ka;
+  b.vx += j / mb * nx * kb; b.vz += j / mb * nz * kb;
   if (vrel > 7) {
     sound.bonk(vrel / 8);
     // which side each car got hit on decides which way it rolls
     const sideA = Math.sign(nx * -Math.cos(a.h) + nz * Math.sin(a.h)) || 1;
     const sideB = Math.sign(nx * Math.cos(b.h) - nz * Math.sin(b.h)) || 1;
-    crash(a, vrel * mb / (ma + mb) * 2, sideA);
-    crash(b, vrel * ma / (ma + mb) * 2, sideB);
+    if (ka) crash(a, vrel * mb / (ma + mb) * 2, sideA);
+    if (kb) crash(b, vrel * ma / (ma + mb) * 2, sideB);
   } else if (vrel > 2) {
     sound.bonk(0.4);
   }
@@ -1036,10 +1092,15 @@ function syncCar(c, dt) {
 
 function updateRace(dt) {
   if (race.state === 'count') {
-    race.count -= dt;
+    // Online, the room's start time drives every countdown at once.
+    if (race.netRace) race.count = Math.min(3.999, 1 + (net.state.startAt - net.now()) / 1000);
+    else race.count -= dt;
     const n = Math.ceil(race.count) - 1;
     $('count').textContent = n > 0 ? n : '¡YA!';
-    if (race.count <= 1) race.state = 'go';
+    if (race.count <= 1) {
+      race.state = 'go';
+      if (race.netRace) race.clock = Math.max(0, (net.now() - net.state.startAt) / 1000);
+    }
   } else if (race.state === 'go' || race.state === 'end') {
     race.clock += dt;
     if (race.count > 0) {
@@ -1047,6 +1108,10 @@ function updateRace(dt) {
       if (race.count <= 0) $('count').textContent = '';
     }
     for (const c of race.cars) {
+      if (c.remote) {
+        applyRemote(c, dt);
+        continue;
+      }
       if (c.done) {
         stepCar(c, { throttle: 0, steer: 0 }, dt);
         continue;
@@ -1063,10 +1128,14 @@ function updateRace(dt) {
       if (c.lap > LAPS) {
         c.done = true;
         c.time = race.clock;
+        if (race.netRace) net.finish(c.netId, c.time);
         if (c.isPlayer) finish();
       }
     }
     collideCars();
+  } else if (race.netRace) {
+    // Rivals already on the grid still settle into place during the countdown.
+    for (const c of race.cars) if (c.remote) applyRemote(c, dt);
   }
   race.items.update(dt, race.cars, race.state === 'go' || race.state === 'end');
   for (const c of race.cars) syncCar(c, dt);
@@ -1180,11 +1249,15 @@ function standings() {
 function finish() {
   race.state = 'end';
   const p = race.player;
-  const place = 1 + race.cars.filter((c) => c !== p && c.done && c.time < p.time).length;
-  const winner = race.cars.find((c) => c.done && c.time < p.time);
-  $('result-title').textContent = place === 1 ? '¡Ganaste!' : `${place}º lugar`;
-  $('result-time').textContent = `${T.name} · ${LAPS} vueltas · ${clockText(p.time)} · ${p.def.name} · ${p.lost} piezas perdidas`
+  // A racer the room timed out has no time of its own: everyone finished ahead.
+  const ahead = (c) => c.done && (!p.done || c.time < p.time);
+  const place = 1 + race.cars.filter((c) => c !== p && ahead(c)).length;
+  const winner = race.cars.filter(ahead).sort((a, b) => a.time - b.time)[0];
+  $('result-title').textContent = !p.done ? 'Se acabó el tiempo' : place === 1 ? '¡Ganaste!' : `${place}º lugar`;
+  $('result-time').textContent = `${T.name} · ${LAPS} vueltas · ${p.done ? clockText(p.time) : 'sin terminar'} · ${p.def.name} · ${p.lost} piezas perdidas`
     + (winner && place > 1 ? ` · ganó ${winner.name}` : '');
+  if (race.netRace) updateResultActions(net.state);
+  else { $('again').textContent = 'Otra vez'; $('again').disabled = false; $('back').textContent = 'Garaje'; }
   race.resultKey = '';
   renderResults(standings(), p);
   $('result').classList.remove('hidden');
@@ -1216,6 +1289,214 @@ function renderResults(order, player) {
   ).join('');
 }
 
+
+// ======================================================================
+// Online (online.js + server/room.js). Remote cars are kinematic: they
+// follow their owner's poses about 110 ms behind, never local physics.
+// ======================================================================
+// Poses carry the sender's estimate of server time, so bursts from a slow
+// frame still interpolate evenly. The delay follows each sender's own rate.
+function sendPoses() {
+  if (!race.netRace || !['go', 'end'].includes(race.state)) return;
+  const now = performance.now();
+  if (now - race.poseAt < 1000 / POSE_HZ) return;
+  race.poseAt = now;
+  const stamp = Math.round(net.now());
+  net.poses(race.cars.filter(c => !c.remote).map(c => [c.netId, stamp, ...packPose(c)]));
+}
+
+function resumePose(c, p) {
+  if (!p) return;
+  [c.x, c.y, c.z, c.h, c.pitch, c.roll, c.vf, c.steer] = p;
+  c.vx = Math.sin(c.h) * c.vf; c.vz = Math.cos(c.h) * c.vf;
+  c.lap = p[11]; c.prog = p[12]; c.coins = p[14];
+}
+
+function applyRemote(c, dt) {
+  const buf = c.buf;
+  if (!buf.length) { c.vx = c.vz = 0; return; }   // still on its grid slot
+  const at = net.now() - c.delay;
+  while (buf.length > 2 && buf[1].t <= at) buf.shift();
+  const a = buf[0], b = buf[1] || a;
+  const k = b === a ? 0 : Math.max(0, Math.min(1, (at - a.t) / (b.t - a.t)));
+  // Past the newest pose (a late packet), coast briefly along its heading.
+  const ahead = buf.length < 2 || at > b.t ? Math.min(0.25, (at - b.t) / 1000) : 0;
+  const P = a.p, Q = b.p;
+  const lerp = (i) => P[i] + (Q[i] - P[i]) * k, turn = (i) => P[i] + wrapAngle(Q[i] - P[i]) * k;
+  const h0 = c.h, vf0 = c.vf;
+  c.x = lerp(0); c.y = lerp(1); c.z = lerp(2); c.h = turn(3); c.pitch = turn(4); c.roll = turn(5);
+  c.vf = lerp(6); c.steer = lerp(7); c.spin = lerp(8); c.boost = Q[9];
+  const f = Q[10];
+  c.onGround = !!(f & FLAG.ground);
+  c.dizzy = f & FLAG.dizzy ? 1 : 0;
+  c.scream = f & FLAG.open ? 0.2 : 0;
+  c.full = !!(f & FLAG.full);
+  if (f & FLAG.done) c.done = true;
+  c.lap = Q[11]; c.prog = Q[12]; c.coins = Q[14];
+  // Parts that fell off on the owner's screen fall off here too.
+  for (let n = Q[13] - c.lost; n > 0; n--) popPart(c, 10);
+  c.lost = Math.max(c.lost, Q[13]);
+  c.vx = Math.sin(c.h) * c.vf; c.vz = Math.cos(c.h) * c.vf;
+  if (ahead > 0 && c.onGround) { c.x += c.vx * ahead; c.z += c.vz * ahead; }
+  c.latAcc = wrapAngle(c.h - h0) / dt * c.vf;
+  c.longAcc = (c.vf - vf0) / dt;
+}
+
+const racerById = (id) => race.cars.find(c => c.netId === id);
+
+function onNetPose(id, stamp, pose) {
+  const c = race.netRace && racerById(id);
+  if (!c?.remote) return;
+  const last = c.buf.at(-1);
+  if (last && stamp <= last.t) return;   // stale or duplicate
+  if (last) c.gap = c.gap * 0.8 + Math.min(1000, stamp - last.t) * 0.2;
+  c.delay = Math.max(100, Math.min(450, c.gap * 1.6 + 40));
+  c.buf.push({ t: stamp, p: pose });
+  if (c.buf.length > 24) c.buf.shift();
+}
+
+function onNetFx(id, kind, d) {
+  const c = race.netRace && racerById(id);
+  if (!c || !race.items || !d) return;
+  if (kind === 'throw') race.items.remoteThrow(c, d);
+  else if (kind === 'peel') race.items.remotePeel(c, d);
+  else if (kind === 'hit') race.items.remoteHit(c, d);
+  else if (kind === 'slip') race.items.remoteSlip(d);
+  else if (kind === 'honk' && c.honkT <= 0) {
+    c.honkT = sound.horn(c.def.horn);
+    c.bubble.say(LINES.honk[c.def.horn], c.honkT + 0.2);
+    c.heave.v += 5;
+  } else if (kind === 'say') c.bubble.say(String(d.text ?? '').slice(0, 40), Math.min(3, Number(d.time) || 1.2));
+}
+
+// Room state into the race: finishes, departures and bot control.
+function syncRacers(s) {
+  if (!race.netRace || s.raceId !== race.netRace) return;
+  for (const r of s.racers) {
+    const c = racerById(r.id);
+    if (!c) continue;
+    if (r.retired && !c.isPlayer) {
+      disposeRacer(c);
+      race.cars.splice(race.cars.indexOf(c), 1);
+      continue;
+    }
+    if (r.done && c.remote) { c.done = true; c.time = r.time; }
+    const owned = r.owner === net.id;
+    if (owned && c.remote) {
+      // The host left: this client now drives the bots from where they were.
+      c.remote = false; c.buf = [];
+      c.vx = Math.sin(c.h) * c.vf; c.vz = Math.cos(c.h) * c.vf;
+      c.lane = gridSlot(r.slot).lane;
+    } else if (!owned && !c.remote && !c.isPlayer) c.remote = true;
+  }
+}
+
+function onNetState(s) {
+  if (!s.racers) return;   // the room's first state has not arrived yet
+  const me = s.players.find(p => p.id === net.id);
+  const inRace = s.racers.some(r => r.id === net.id && !r.retired);
+  if (s.phase === 'loading' && inRace && s.raceId !== race.netRace && mode !== 'loading') {
+    selectTrack(s.track);
+    startRace(garage.index, garage.wheel, s.racers);
+  } else if (['count', 'race'].includes(s.phase) && inRace && !race.netRace && mode === 'garage' && me?.racing) {
+    // Back from a reload: rejoin the race already under way.
+    selectTrack(s.track);
+    startRace(garage.index, garage.wheel, s.racers);
+  } else if (s.phase === 'lobby' && race.netRace && mode !== 'garage') {
+    toGarage();
+  }
+  syncRacers(s);
+  if (s.phase === 'results' && race.netRace === s.raceId && mode === 'race' && race.player && !race.player.done && race.state !== 'end') finish();
+  if (mode === 'race' && race.state === 'end') updateResultActions(s);
+  if (mode === 'garage') {
+    if (!net.isHost && s.track && TRACKS[trackIndex]?.id !== s.track) selectTrack(s.track);
+    renderLobby(s);
+  }
+}
+
+function renderLobby(s) {
+  const host = net.isHost, live = !['lobby', 'results'].includes(s.phase);
+  const racing = s.players.find(p => p.id === net.id)?.racing;
+  $('lobby-code').textContent = net.code;
+  $('lobby-roster').innerHTML = s.players.map((p, i) =>
+    `<li class="pk-row${p.id === net.id ? ' is-me' : ''}${p.connected ? '' : ' away'}"><span class="pk-row-n">${p.id === s.host ? '👑' : i + 1}</span>`
+    + `<span class="chip" style="--c:${CARS[p.car]?.color || '#fff'}"></span>${esc(p.name)}`
+    + `<span class="pk-row-end">${p.connected ? esc(CARS[p.car]?.name || '') : 'reconectando…'}</span></li>`).join('');
+  const bots = Math.max(0, (s.bots ? Math.max(4, s.players.length) : s.players.length) - s.players.length);
+  $('launch-note').innerHTML = `<span class="pk-dot"></span>${s.players.length} ${s.players.length === 1 ? 'pana' : 'panas'}${bots ? ` + ${bots} ${bots === 1 ? 'rival' : 'rivales'}` : ''}`;
+  $('lobby-bots').checked = s.bots;
+  $('lobby-bots').disabled = !host || live;
+  $('t-prev').disabled = $('t-next').disabled = !host || live;
+  const hostName = s.players.find(p => p.id === s.host)?.name || 'el anfitrión';
+  $('lobby-status').textContent = live
+    ? (racing ? 'Tu carrera sigue en curso.' : 'Carrera en curso: entras en la próxima.')
+    : host ? 'Tú eliges la pista y das la salida.' : `${hostName} elige la pista y da la salida.`;
+  $('play').textContent = host ? (live ? 'Carrera en curso' : '¡ARRANCAR!') : live ? 'Carrera en curso' : `Esperando a ${hostName}`;
+  $('play').disabled = live || !host || mode !== 'garage';
+}
+
+function updateResultActions(s) {
+  const host = net.isHost;
+  $('again').textContent = host ? 'Otra carrera' : 'Esperando al anfitrión';
+  $('again').disabled = !host || s.phase !== 'results';
+  $('back').textContent = host ? 'Sala' : 'Garaje';
+}
+
+function inviteLink() {
+  const link = new URL(location.pathname, location.origin);
+  link.searchParams.set('room', net?.code || ROOM || newCode());
+  return link.href;
+}
+
+let joining = null;
+async function goOnline(code, lead) {
+  if (net || joining) return joining;
+  $('lobby').hidden = false;
+  $('go-online').hidden = true;
+  $('lobby-code').textContent = code;
+  $('lobby-status').textContent = 'Conectando con la sala…';
+  $('play').disabled = true;
+  const url = new URL(location.href);
+  url.searchParams.set('room', code);
+  url.searchParams.delete('lead');
+  history.replaceState(null, '', url);
+  joining = (async () => {
+    try {
+      const { joinRace } = await import('./online.js');
+      net = await joinRace({ code, lead, name: ME.name, avatar: ME.avatar, car: garage.index, wheel: garage.wheel });
+    } catch (error) {
+      console.warn('Derrape online unavailable', error);
+      $('lobby-status').textContent = error?.full ? 'La sala está llena.' : 'No pudimos entrar a la sala. Puedes correr en local.';
+      $('play').disabled = false;
+      $('play').textContent = '¡JUGAR!';
+      $('lobby-solo').hidden = false;
+      return null;
+    } finally { joining = null; }
+    net.on('state', onNetState);
+    net.on('pose', onNetPose);
+    net.on('fx', onNetFx);
+    net.on('status', (text, bad) => {
+      $('net-status').textContent = text;
+      $('net-status').hidden = !text;
+      $('net-status').classList.toggle('bad', !!bad);
+    });
+    net.on('left', () => {
+      $('lobby-status').textContent = 'Saliste de la sala. Recarga para volver a entrar.';
+      $('lobby-solo').hidden = false;
+    });
+    $('lobby-solo').hidden = false;
+    onNetState(net.state);
+    return net;
+  })();
+  return joining;
+}
+
+// The room code: six letters and digits, nothing that reads two ways.
+function newCode() {
+  const abc = 'abcdefghjkmnpqrstuvwxyz23456789';
+  return Array.from({ length: 6 }, () => abc[Math.floor(Math.random() * abc.length)]).join('');
+}
+
 // ======================================================================
 let mode = 'garage';
 const clock = new THREE.Clock();
@@ -1237,6 +1518,7 @@ function frame() {
       updateRace(STEP);
       acc -= STEP;
     }
+    sendPoses();
     renderer.render(race.scene, race.camera);
   }
   if (!(DEBUG && QS.has('manual'))) requestAnimationFrame(frame);
@@ -1259,7 +1541,7 @@ function resize() {
 addEventListener('resize', resize);
 resize();
 
-if (DEBUG) Object.assign(window, { menu, race, garage, renderer, crash, stepCar, startRace, updateRace, toGarage, showWheel, ITEMS, TRACKS, buildTrack, getActiveTrack: () => T });
+if (DEBUG) Object.assign(window, { menu, race, garage, renderer, crash, stepCar, startRace, updateRace, toGarage, showWheel, ITEMS, TRACKS, buildTrack, getActiveTrack: () => T, getNet: () => net });
 
 // ?track=desierto wins; otherwise the last pick, otherwise the estadio
 let savedTrack = 'estadio';
@@ -1286,3 +1568,4 @@ const wheelStrip = wheelCards(WHEEL_DEFINITIONS, showWheel,
 $('wheel-lineup').append(wheelStrip.fragment);
 wheelStrip.ready.catch(error => console.warn('Wheel previews unavailable', error));
 showWheel(garage.wheel);
+if (ROOM) goOnline(ROOM, QS.has('lead'));

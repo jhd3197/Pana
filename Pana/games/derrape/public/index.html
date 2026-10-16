@@ -70,8 +70,19 @@
         </div>
         <button id="t-next" class="pk-btn pk-btn--sm" aria-label="Pista siguiente">›</button>
       </div>
-      <p class="launch-note"><span class="pk-dot"></span>Tú contra 3 rivales</p>
+      <section id="lobby" class="lobby" aria-label="Sala online" hidden>
+        <div class="lobby-head">
+          <span class="pk-eyebrow">Sala <b id="lobby-code"></b></span>
+          <button id="lobby-invite" type="button" class="pk-btn pk-btn--sm">Invitar panas</button>
+        </div>
+        <ol id="lobby-roster" class="pk-roster" aria-label="Panas en la sala"></ol>
+        <label class="lobby-bots"><input id="lobby-bots" type="checkbox" checked> Completar con rivales</label>
+        <p id="lobby-status" class="lobby-status" role="status" aria-live="polite"></p>
+      </section>
+      <p id="launch-note" class="launch-note"><span class="pk-dot"></span>Tú contra 3 rivales</p>
       <button id="play" class="play pk-btn pk-btn--primary pk-btn--lg pk-btn--block">¡JUGAR!</button>
+      <button id="go-online" type="button" class="pk-btn pk-btn--block">Carrera online con panas</button>
+      <button id="lobby-solo" type="button" class="pk-btn pk-btn--sm lobby-solo" hidden>Salir de la sala · correr solo</button>
     </section>
   </div>
 
@@ -142,6 +153,7 @@
     </div>
 
     <div id="count"></div>
+    <p id="net-status" class="net-status pk-panel" role="status" aria-live="polite" hidden></p>
 
     <div id="result" class="result hidden" role="dialog" aria-labelledby="result-title">
       <div class="res-main">

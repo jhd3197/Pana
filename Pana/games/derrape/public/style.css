@@ -397,3 +397,32 @@ body:has(#loading:not(.hidden)) #garage { visibility: hidden; }
   .coins.picked .coin-symbol { transform: none; }
   dd i, button, .coin-symbol { transition: none; }
 }
+
+/* ---------- online lobby ---------- */
+/* pana.sh's party tab sits on the left edge; this height clears the garage buttons. */
+:root { --pana-party-top: 30%; }
+.launch { overflow-y: auto; }
+.launch > * { flex-shrink: 0; }   /* scroll when short instead of overlapping rows */
+.launch [hidden] { display: none !important; }
+.lobby { display: flex; flex-direction: column; gap: 8px; min-height: 0; }
+.lobby[hidden] { display: none; }
+.lobby-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.lobby-head b { color: var(--pk-yellow); letter-spacing: 2px; }
+#lobby-roster { overflow-y: auto; max-height: 190px; }
+#lobby-roster .pk-row { font-size: 13px; padding-block: 5px; }
+#lobby-roster .pk-row.away { opacity: .55; }
+.lobby-bots { display: flex; align-items: center; gap: 8px; color: var(--pk-muted); font-size: 12px; font-weight: 800; }
+.lobby-status { margin: 0; color: var(--pk-muted); font-size: 12px; font-weight: 700; }
+.lobby-solo { align-self: center; }
+.launch .play:disabled { opacity: .6; cursor: default; }
+.net-status { position: absolute; top: 18px; left: 50%; transform: translateX(-50%); margin: 0; padding: 8px 14px; font-size: 13px; font-weight: 800; z-index: 5; }
+.net-status.bad { color: var(--pk-coral); }
+@media (max-width: 760px) {
+  #lobby-roster { max-height: 96px; }
+  .lobby-bots, .lobby-status { display: none; }
+}
+@media (max-height: 600px) and (min-width: 761px) {
+  .launch { gap: 8px; padding: 12px 14px; }
+  #lobby-roster { max-height: 64px; }
+  .lobby-status, .lobby:not([hidden]) ~ .launch-note { display: none; }
+}

@@ -88,7 +88,10 @@ function padTexture() {
   return tex;
 }
 
-// hooks: { scene, puffs, sound, G, track, crash, say, standings }
+// hooks: { scene, puffs, sound, G, track, crash, say, standings, emit? }
+// Online races mark rival cars `remote`: their own client decides what they
+// pick up and what hits them. `emit(kind, car, data)` reports what this
+// client's cars do, and the remote* functions replay what others did.
 export function createItems(hooks) {
   const { scene, puffs, sound, track: T } = hooks;
   const { pointAt, paramOf, offsetOf, groundAt } = T;
@@ -149,13 +152,16 @@ export function createItems(hooks) {
   let flying = [], peels = [], sparks = [];
   const held = new Map();
   const previous = new Map();
-  let t = 0;
+  let t = 0, seq = 0;
+  const gone = new Set();   // projectile ids already burst here, so a late remote hit doesn't splat twice
+  const emit = (kind, c, data) => hooks.emit?.(kind, c, data);
+  const nextId = (c) => `${c.netId ?? 'local'}:${++seq}`;
   const disposeGeometry = root => root.traverse(o => o.geometry?.dispose());
 
   function clear() {
     for (const entry of [...flying, ...peels, ...sparks]) entry.m.removeFromParent();
     for (const m of held.values()) m.removeFromParent();
-    held.clear(); previous.clear(); fragments.clear();
+    held.clear(); previous.clear(); gone.clear(); fragments.clear();
     flying = []; peels = []; sparks = [];
     for (const pickup of [...boxes, ...coins]) {
       pickup.down = 0; pickup.m.visible = true; pickup.m.scale.setScalar(1);
@@ -213,7 +219,9 @@ export function createItems(hooks) {
       // A reverse throw keeps travelling backward when it seeks the road.
       const s = paramOf(c.x, c.z), a = pointAt(s), b = pointAt(s + 0.5);
       const travel = (b.x - a.x) * fx + (b.y - a.y) * fz >= 0 ? 1 : -1;
-      flying.push({ m, owner: c, h, speed, travel, vy: 3.5, t: 0, spin: rand(8, 14) });
+      const id = nextId(c);
+      flying.push({ id, m, owner: c, h, speed, travel, vy: 3.5, t: 0, spin: rand(8, 14) });
+      emit('throw', c, { id, x: m.position.x, y: m.position.y, z: m.position.z, h, speed, travel });
       sound.whoosh();
       feedback(c, direction < 0 ? '¡Mango hacia atrás!' : '¡Ahí va ese mango!');
       if (Math.random() < 0.5) hooks.say(c, LINES.throw, 0.9);
@@ -227,7 +235,9 @@ export function createItems(hooks) {
       m.position.set(c.x + fx * 3.4, groundAt(c.x + fx * 3.4, c.z + fz * 3.4) + 0.15, c.z + fz * 3.4);
       m.rotation.y = Math.random() * 6;
       scene.add(m);
-      peels.push({ m, owner: c, safe: 1, t: 0 });
+      const id = nextId(c);
+      peels.push({ id, m, owner: c, safe: 1, t: 0 });
+      emit('peel', c, { id, x: m.position.x, y: m.position.y, z: m.position.z, r: m.rotation.y });
       sound.plop();
       feedback(c, direction < 0 ? '¡Concha detrás!' : '¡Concha adelante!');
     }
@@ -303,6 +313,56 @@ export function createItems(hooks) {
     m.rotation.set(0, c.h + t * 0.7, 0.15);
   }
 
+  function breakCrate(b, c) {
+    crate.pieces.position.copy(b.m.position);
+    crate.pieces.quaternion.copy(b.m.quaternion);
+    crate.pieces.scale.setScalar(1);
+    fragments.burst(crate.pieces, { velocity: new THREE.Vector3(c.vx, 0, c.vz), power: 5 });
+    b.down = BOX_RESPAWN; b.m.visible = false; b.m.scale.setScalar(0.85);
+    puffs.spawn(b.m.position, { color: 0xc79c63, count: 4, spread: 1.3, size: 0.45, life: 0.4 });
+  }
+
+  // A remote rival drives through pickups on this screen too, so they vanish
+  // where everyone saw them taken. Only its own client gives it the item.
+  function touchRemote(c, touches) {
+    for (const b of boxes) if (b.down === 0 && !c.full && touches(b, 2.2)) breakCrate(b, c);
+    for (const coin of coins) {
+      if (coin.down > 0 || !touches(coin, 1.9)) continue;
+      coin.down = COIN_RESPAWN; coin.m.visible = false;
+    }
+  }
+
+  function remoteThrow(owner, d) {
+    const m = mango.clone();
+    m.position.set(d.x, d.y, d.z);
+    scene.add(m);
+    flying.push({ id: d.id, m, owner, h: d.h, speed: d.speed, travel: d.travel, vy: 3.5, t: 0, spin: rand(8, 14) });
+    sound.whoosh();
+  }
+
+  function remotePeel(owner, d) {
+    const m = peel.clone();
+    m.position.set(d.x, d.y, d.z);
+    m.rotation.y = d.r || 0;
+    scene.add(m);
+    peels.push({ id: d.id, m, owner, safe: 1, t: 0 });
+    sound.plop();
+  }
+
+  // The victim's client resolved a hit: burst the mango where it landed there.
+  function remoteHit(victim, d) {
+    const f = flying.find(f => f.id === d.id);
+    if (f) f.dead = true;
+    const pos = f ? f.m.position.clone() : new THREE.Vector3(d.x, d.y, d.z);
+    if (d.blocked) puffs.spawn(pos, { color: 0xfff0ac, count: 8, spread: 2.2, size: 0.5, life: 0.45 });
+    else if (!f && !gone.has(d.id)) splat(pos);
+  }
+
+  function remoteSlip(d) {
+    const p = peels.find(p => p.id === d.id);
+    if (p) p.dead = true;
+  }
+
   function update(dt, cars, racing) {
     t += dt;
     padTex.offset.y -= dt * 1.6;
@@ -342,6 +402,7 @@ export function createItems(hooks) {
         segmentDistanceSq(pickup.x, pickup.z, start.x, start.z, c.x, c.z) < radius * radius;
       previous.set(c, { x: c.x, z: c.z });
       if (c.done) continue;
+      if (c.remote) { touchRemote(c, touches); continue; }
 
       for (const b of boxes) {
         if (b.down > 0 || !touches(b, 2.2)) continue;
@@ -351,13 +412,8 @@ export function createItems(hooks) {
           continue;
         }
         give(c, order.indexOf(c), cars.length);
-        crate.pieces.position.copy(b.m.position);
-        crate.pieces.quaternion.copy(b.m.quaternion);
-        crate.pieces.scale.setScalar(1);
-        fragments.burst(crate.pieces, { velocity: new THREE.Vector3(c.vx, 0, c.vz), power: 5 });
-        b.down = BOX_RESPAWN; b.m.visible = false; b.m.scale.setScalar(0.85);
+        breakCrate(b, c);
         if (c.isPlayer) sound.bonk(0.4);
-        puffs.spawn(b.m.position, { color: 0xc79c63, count: 4, spread: 1.3, size: 0.45, life: 0.4 });
       }
 
       for (const coin of coins) {
@@ -387,6 +443,7 @@ export function createItems(hooks) {
         if (p.dead || (p.owner === c && p.t < p.safe) || !c.onGround || c.spin > 0) continue;
         if (Math.hypot(c.x - p.m.position.x, c.z - p.m.position.z) < 1.8) {
           slip(c); p.dead = true;
+          emit('slip', c, { id: p.id });
         }
       }
       if (!c.isPlayer) aiThink(c, cars, dt);
@@ -418,19 +475,28 @@ export function createItems(hooks) {
         Math.abs(c.y + 1 - pos.y) < 2.2).sort((a, b) =>
           Math.hypot(a.x - old.x, a.z - old.z) - Math.hypot(b.x - old.x, b.z - old.z));
       const c = hits[0];
-      if (c) {
-        if (!block(c, pos)) {
+      // A remote rival's own client decides the hit; here the mango just bursts.
+      if (c && !c.remote) {
+        const blocked = block(c, pos);
+        if (!blocked) {
           const side = Math.sign((pos.x - c.x) * -Math.cos(c.h) + (pos.z - c.z) * Math.sin(c.h)) || 1;
           hooks.crash(c, 16, -side);
           c.vx *= 0.4; c.vz *= 0.4; c.boost = 0;
           hooks.say(c, LINES.hit, 1.2);
         }
-        f.dead = true;
+        emit('hit', c, { id: f.id, blocked, x: pos.x, y: pos.y, z: pos.z });
       }
+      if (c) f.dead = true;
       if (Math.abs(offsetOf(pos.x, pos.z)) > T.HW - 0.4 || f.t > 3) f.dead = true;
       if (f.dead) splat(pos.clone());
     }
-    flying = flying.filter(f => !f.dead || (f.m.removeFromParent(), false));
+    flying = flying.filter(f => {
+      if (!f.dead) return true;
+      f.m.removeFromParent();
+      gone.add(f.id);
+      if (gone.size > 64) gone.delete(gone.values().next().value);
+      return false;
+    });
     peels = peels.filter(p => {
       p.t += dt;
       if (!p.dead && p.t < 30) return true;
@@ -441,5 +507,6 @@ export function createItems(hooks) {
   }
 
   return { clear, dispose, update, use, select, boxes, coins, pads, fragments,
+    remoteThrow, remotePeel, remoteHit, remoteSlip,
     get projectiles() { return flying; }, get peels() { return peels; } };
 }
