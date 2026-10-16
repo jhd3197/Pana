@@ -45,8 +45,8 @@ event must not clear the new local session's connected state.
 ## Shared assets
 
 Bululú's original `flora.js` is now a compatibility re-export of
-`/engine/flora.js`. Both games use exactly the same plant factories. The shared
-market kit is in `/engine/plaza-props.js`; its plain dimensions are in
+`/engine/models/vegetation/`. Both games use exactly the same plant factories. The shared
+market kit is in `/engine/models/props/plaza.js`; its plain dimensions are in
 `plaza-catalog.js`. Los Llanos uses the stall, barrel, crate and cooler directly.
 There are no cross-game asset imports. Add `three/addons/` to import maps,
 including the hub's, because the foliage batcher imports BufferGeometryUtils.

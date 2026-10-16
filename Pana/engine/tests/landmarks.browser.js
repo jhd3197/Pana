@@ -49,9 +49,9 @@ try {
       details.push({ id: asset.id, name: asset.name, ...info.stats, minY: info.bounds.min.y, animated: !!model.update });
       models.push(model);
     }
-    const { ropeBridge, bambooBridge, templeEntrance, hollowLog } = await import('/engine/jungle-props.js');
-    const { welcomeArch, panaFlagpole, capybaraStatue } = await import('/engine/landmarks.js');
-    const { flagPole } = await import('/engine/props.js');
+    const { ropeBridge, bambooBridge, templeEntrance, hollowLog } = await import('/engine/models/props/jungle.js');
+    const { welcomeArch, panaFlagpole, capybaraStatue } = await import('/engine/models/props/monuments.js');
+    const { flagPole } = await import('/engine/models/props/flags.js');
     const dispose = group => group.traverse(o => { o.geometry?.dispose(); o.userData.dispose?.(); });
     // A visible opening must actually be empty geometry, including the rear.
     const passage = (group, origin, direction, distance, label) => {

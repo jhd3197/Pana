@@ -1,5 +1,5 @@
 // Derrape's garage: one builder per car. Shared parts live in car-kit.js; the
-// driver is the player's pana (see /engine/character.js).
+// driver is the player's pana (see /engine/models/characters/pana/avatar-model.js).
 // Every car faces +Z, its left is +X, wheels touch y = 0.
 
 import * as THREE from 'three';

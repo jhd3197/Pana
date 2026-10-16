@@ -32,7 +32,8 @@ try{
       const info=preview.inspect(model);check(info.stats.triangles<40000&&info.stats.meshes<20,'Budget exceeded');
       check(info.bounds.min.y>=-.025,'Below origin');models.push(model);metrics.push({id:asset.id,...info.stats});
     }
-    const {orbitBird,scarletMacaw}=await import('/engine/wildlife.js');
+    const { orbitBird } = await import('/engine/models/animation/orbit-bird.js');
+    const { scarletMacaw } = await import('/engine/models/fauna/birds/scarlet-macaw.js');
     for(const speed of [.4,-.4]){
       const b=orbitBird(scarletMacaw(),{cx:0,cz:0,cy:20,r:20,speed,phase:.6});
       b.userData.tick(3);const p=b.position.clone();b.userData.tick(3.001);

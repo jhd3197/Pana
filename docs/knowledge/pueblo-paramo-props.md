@@ -10,7 +10,7 @@ remain available under their original IDs.
 ## Constructors
 
 Import Pueblo factories from `/engine/pueblo-props.js`, mountain structures
-from `/engine/mountain-props.js`, and plants from `/engine/flora.js`.
+from `/engine/models/props/mountain.js`, and plants from `/engine/models/vegetation/`.
 
 | # | Factory | Details / options |
 |---|---|---|

@@ -78,6 +78,25 @@ function mountArt(game, canvas) {
     .catch(() => { /* no art, the color tile is enough */ });
 }
 
+// Tiles load their card.js (a module and a WebGL scene) only when they scroll
+// near the screen; most of the grid starts below the fold on a phone.
+const waiting = new WeakMap();
+const artObserver = 'IntersectionObserver' in window
+  ? new IntersectionObserver((entries) => {
+    for (const entry of entries) {
+      if (!entry.isIntersecting) continue;
+      artObserver.unobserve(entry.target);
+      mountArt(waiting.get(entry.target), entry.target);
+    }
+  }, { rootMargin: '200px' })
+  : null;
+function lazyArt(game, canvas) {
+  if (!game.card) return;
+  if (!artObserver) return mountArt(game, canvas);
+  waiting.set(canvas, game);
+  artObserver.observe(canvas);
+}
+
 // The card is a plain block with a real heading (tests and screen readers
 // find games by it); a stretched button on top handles the pick.
 function gameCard(game) {
@@ -99,7 +118,7 @@ function gameCard(game) {
     if (matchMedia('(max-width: 760px)').matches) featureEl.scrollIntoView({ behavior: 'smooth' });
   });
   card.append(art, body, pick);
-  mountArt(game, art);
+  lazyArt(game, art);
   return card;
 }
 

@@ -83,11 +83,11 @@ it. A single-player game (`players: 1`) has no `network.js`. Shared pieces live 
 
 A player is a name plus a look (`engine/avatar.js`), both kept in the browser's
 `localStorage` (`pana:name`, `pana:avatar`). The hub edits them; games read them
-on load. Games build the 3D pana with `engine/character.js`. Nothing about the
+on load. Games build the 3D pana with `engine/models/characters/pana/avatar-model.js`. Nothing about the
 player is stored on the server.
 
 The character sculpt is shared under `engine/soft-character/`. The game adapter
-in `engine/character.js` preserves game-world scale, seated/carry poses and saved
+in `engine/models/characters/pana/avatar-model.js` preserves game-world scale, seated/carry poses and saved
 avatars while using a lighter geometry profile. Pana Studio registers existing
 asset constructors in `web/studio/catalog.js`; no additional backend is needed.
 Its known browser routes serve `studio.html`; `routes.js` handles navigation and

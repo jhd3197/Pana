@@ -11,7 +11,7 @@ try {
   page.on('pageerror',e=>errors.push(e.message));await page.goto(`${base}/studio/settings.html`);
   await page.setContent(`<html><head><script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}</script><style>body{margin:0;background:#eef0ee;color:#303934;font:16px system-ui}header{height:70px;box-sizing:border-box;padding:24px 35px;font-weight:600}canvas{display:block;width:1500px;height:960px}.label{position:absolute;width:500px;text-align:center;pointer-events:none}.label span{display:block;font:12px monospace;color:#69766e;margin-top:5px}</style></head><body><header>PANA · Vegetación nueva</header><canvas></canvas><div id="labels"></div></body></html>`);
   const metrics=await page.evaluate(async()=>{
-    const THREE=await import('three'),flora=await import('/engine/flora.js'),{ASSETS}=await import('/studio/catalog.js');
+    const THREE=await import('three'),flora={...await import('/engine/models/vegetation/index.js'),...await import('/engine/models/core/static-batch.js')},{ASSETS}=await import('/studio/catalog.js');
     const {createPreview,inspect,fitCamera,ownMaterials}=await import('/studio/preview.js');
     const ids=['araguaney','bamboo','fern','monstera','heliconia','cactus','mangrove','papaya','agave','waterLily','hibiscus','reeds'],vegetation=ASSETS.filter(a=>a.category==='Vegetación');
     const hash=root=>{

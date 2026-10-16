@@ -3,8 +3,8 @@
 // low-poly geometry and canvas textures, no asset files.
 // Props sit on y = 0 and face +Z unless they take an explicit transform.
 // Anything with userData.tick(t, dt) gets collected by makeTrack and
-// animated during the race. Generic props live in /engine/props.js;
-// all trees and leafy plants use the current /engine/flora.js builders.
+// animated during the race. Generic props live in /engine/models/props/;
+// all trees and leafy plants use the /engine/models/vegetation/ builders.
 
 import * as THREE from 'three';
 import { M, mesh, box, tube, canvasMat } from './car-kit.js';
@@ -14,11 +14,11 @@ import { watchtower } from '/engine/models/props/watchtower.js';
 import { flagPole } from '/engine/models/props/flags.js';
 import { rock } from '/engine/models/props/rock.js';
 import * as flora from '/engine/models/vegetation/index.js';
+import { bake } from '/engine/models/core/static-batch.js';
 import { waterPool, riverSurface } from '/engine/models/effects/water-surface.js';
 
 // Use the canonical foliage and batch its many leaflets before placement.
 // Cloning the source geometry in bake keeps shared assets safe on map switches.
-const { bake } = flora;
 const palm = options => bake(flora.palm(options));
 const mangoTree = options => bake(flora.mangoTree(options));
 const ceiba = options => bake(flora.ceiba(options));

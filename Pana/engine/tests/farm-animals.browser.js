@@ -15,7 +15,7 @@ try {
   const result=await page.evaluate(async()=>{
     const THREE=await import('three'),{ASSETS}=await import('/studio/catalog.js');
     const {createPreview,inspect,fitCamera,ownMaterials,release}=await import('/studio/preview.js');
-    const factories=await import('/engine/farm-animals.js'),check=(ok,message)=>{if(!ok)throw Error(message);};
+    const factories={...await import('/engine/models/fauna/farm/llanero-horse.js'),...await import('/engine/models/fauna/farm/yard-chicken.js'),...await import('/engine/models/fauna/farm/hato-cow.js')},check=(ok,message)=>{if(!ok)throw Error(message);};
     const hash=group=>{
       let h=2166136261;group.updateMatrixWorld(true);
       const mix=v=>{check(Number.isFinite(v),'Non-finite value');h=Math.imul(h^Math.round(v*100000),16777619);};

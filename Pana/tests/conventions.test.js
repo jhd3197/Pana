@@ -110,6 +110,23 @@ test('every Studio catalog entry is complete and points at real source', async (
   assert.deepEqual(problems, []);
 });
 
+// Every absolute import (/engine/…, /studio/…, /g/<game>/…) points at a real
+// file, so moving or deleting a module can't leave a page importing nothing.
+test('absolute imports resolve to real files', () => {
+  const toFile = (url) => url.startsWith('/engine/') ? path.join(app, url)
+    : url.startsWith('/studio/') ? path.join(app, 'web', url)
+      : url.replace(/^\/g\/([^/]+)\//, (_, id) => `${path.join(gamesDir, id, 'public')}/`);
+  const problems = [];
+  const files = ['engine', 'games', 'web', 'tests'].flatMap(dir => walk(path.join(app, dir), n => /\.(m?js|html)$/.test(n)));
+  for (const file of files) {
+    const src = read(file);
+    for (const m of src.matchAll(/(?:\bfrom\s*|\bimport\s*\(\s*|\bimport\s+)['"](\/(?:engine|studio|g)\/[^'"`$]+\.js)['"]/g)) {
+      if (!fs.existsSync(toFile(m[1]))) problems.push(`${rel(file)}: ${m[1]}`);
+    }
+  }
+  assert.deepEqual(problems, []);
+});
+
 // Characters some phones draw as colour emoji. Plain arrows (← →) and
 // typographic marks are fine; anything with the Unicode Emoji property is not.
 const EMOJI = /(?![0-9#*©®™])\p{Emoji}/gu;

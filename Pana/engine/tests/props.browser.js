@@ -13,8 +13,11 @@ try {
   await page.setContent(`<html><head><script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}</script><style>body{margin:0;background:#eef0ee;color:#292e2b;font:16px system-ui}header{padding:25px 30px 0;font-weight:600}canvas{display:block;width:1600px;height:500px}.names{display:grid;grid-template-columns:repeat(5,1fr);text-align:center}.names span{display:block;font:12px monospace;color:#626a64;margin-top:8px}</style></head><body><header>Pana · Objetos compartidos</header><canvas></canvas><div class="names"></div></body></html>`);
   const metrics = await page.evaluate(async () => {
     const THREE = await import('three');
-    const { makeMango } = await import('/engine/props.js');
-    const { ceiba, bush, casita, bake } = await import('/engine/flora.js');
+    const { makeMango } = await import('/engine/models/props/mango.js');
+    const { ceiba } = await import('/engine/models/vegetation/ceiba.js');
+    const { bush } = await import('/engine/models/vegetation/bush.js');
+    const { casita } = await import('/engine/models/props/island-house.js');
+    const { bake } = await import('/engine/models/core/static-batch.js');
     const { createPreview, fitCamera, inspect, ownMaterials, release } = await import('/studio/preview.js');
     const builders = [() => makeMango(), () => makeMango({ gold: true }), () => ceiba({ seed: 7 }), () => bush({ seed: 7 }), () => casita({ seed: 7 })];
     const names = ['Mango', 'Mango dorado', 'Ceiba', 'Arbusto', 'Casita de isla'];

@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { createPlazaEnvironment } from '/engine/plaza.js';
-import { buildCharacter } from '/engine/character.js';
+import { buildCharacter } from '/engine/models/characters/pana/avatar-model.js';
 import { normalizeAvatar } from '/engine/avatar.js';
 import { bindRenderer } from '/engine/settings.js';
 import { createDominoTable, createDominoChair, createDominoTile, disposeModel } from './table-model.js';

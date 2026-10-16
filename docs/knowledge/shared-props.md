@@ -94,7 +94,7 @@ sheets are `new-plants.png` and `six-more-plants.png`.
 
 ## Pana signature landmarks
 
-`engine/landmarks.js` holds the shared monuments that give every game the same
+`engine/models/props/monuments.js` holds the shared monuments that give every game the same
 identity. Studio lists them under the **Emblemas** category. Each factory is
 grounded at y = 0, faces +Z, is deterministic and bakes its static detail.
 Text plaques are canvas materials and stay as separate meshes.

@@ -46,7 +46,7 @@ Studio bookmark migration. The five rebuilt routes are 2.04–2.60 km; see
 `venezuela-circuits.md` for current construction, landmarks and proof. The
 shared-world notes below describe the original integration and its contracts.
 
-- `track-kit.js` wraps `/engine/flora.js` builders with `bake()` so the current
+- `track-kit.js` wraps `/engine/models/vegetation/` builders with `bake()` so the current
   palm's many leaflets do not become hundreds of draw calls per tree. The
   obsolete `props.js` palm and Selva's duplicate ceiba were removed. Páramo
   now uses shared pines; Estadio uses shared mango trees, palms and market props.
@@ -157,7 +157,7 @@ in `tests/maps.browser.js`; omitting it still runs all eight maps and repeats.
 `tracks/selva-layout.js` owns the river samples, gentle route elevation,
 interior ridge and tunnel interval. `selva-world.js` builds continuous terrain, a carved riverbed,
 a raised plank crossing, waterfall, stepped ruins and forest extending up the
-surrounding ridges. Trees and understory use the canonical `engine/flora.js`
+surrounding ridges. Trees and understory use the canonical `engine/models/vegetation/`
 factories. `selva-flora.js` owns the sixteen-species planting composition,
 including all twelve newer Studio plants. Scenery is merged into spatial material batches. Geometry is freed
 after baking while cached materials remain shared. The former tire wall is
@@ -240,7 +240,7 @@ true when you change this area.
 Derrape's eight circuits include Plaza Pana, Isla Bululú and Chi Chi. Playa
 is now a sector of the Los Roques-inspired race island; legacy `playa` IDs
 resolve to `bululu`. All trees come
-from `engine/models/vegetation/`; `engine/flora.js` is a compatibility barrel.
+from `engine/models/vegetation/`.
 `createPlazaEnvironment()` provides scenery without lights, while
 `createIslandEnvironment()` shares Bululú's vegetation, harbor, sea and
 landmarks. Island terrain/scenery/beach modules now live in `engine/`;

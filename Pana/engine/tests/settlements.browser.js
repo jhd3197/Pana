@@ -52,7 +52,7 @@ try {
       return new THREE.Raycaster(new THREE.Vector3(...origin), new THREE.Vector3(...dir), 0, far).intersectObject(group, true);
     };
     if (set.category === 'Páramo') {
-      const { mountainSuspensionBridge, mountainGuardrail, rockyCliff, mountainTent, cableCarStation } = await import('/engine/mountain-props.js');
+      const { mountainSuspensionBridge, mountainGuardrail, rockyCliff, mountainTent, cableCarStation } = await import('/engine/models/props/mountain.js');
       const station=cableCarStation(),cabin=station.getObjectByName('Gondola');
       for(const t of [0,4,12]){station.userData.tick(t);station.updateMatrixWorld(true);const anchor=cabin.getWorldPosition(new THREE.Vector3());if(Math.abs(anchor.y-4.5)>.001||Math.abs(anchor.z-.7)>.001)throw Error('Gondola detached from cable');}
       dispose(station);
@@ -88,14 +88,15 @@ try {
       const next = rockyCliff({seed:87}); if(edge(cliff,4)!==edge(next,-4))throw Error('Cliff module seams do not join'); dispose(cliff); dispose(next);
       for(const options of [{width:0},{height:NaN},{depth:Infinity}]){let rejected=false;try{rockyCliff(options);}catch(e){rejected=e instanceof RangeError;}if(!rejected)throw Error('Invalid cliff dimension accepted');}
       const tent = mountainTent(); if(ray(tent,[.35,.65,3],[0,0,-1],1.4).length)throw Error('Tent entrance blocked'); dispose(tent);
-      const {frailejon,mountainPine}=await import('/engine/flora.js');
+      const { frailejon } = await import('/engine/models/vegetation/frailejon.js');
+      const { mountainPine } = await import('/engine/models/vegetation/mountain-pine.js');
       for(const build of [frailejon,mountainPine]){const a=build({seed:3}),b=build({seed:8});if(hash(a)===hash(b))throw Error('Plant seed has no effect');dispose(a);dispose(b);}
       for(const [build,heights]of [[frailejon,[.8,3.5]],[mountainPine,[3,14]]]){
         for(const h of heights){const group=build({h});hash(group);if(new THREE.Box3().setFromObject(group).min.y<-.05)throw Error('Plant height lost ground origin');dispose(group);}
         for(const h of [0,NaN,Infinity]){let rejected=false;try{build({h});}catch(e){rejected=e instanceof RangeError;}if(!rejected)throw Error('Invalid plant height accepted');}
       }
     } else {
-      const {basketballHoop,plazaClockTower}=await import('/engine/pueblo-props.js');
+      const { basketballHoop, plazaClockTower } = await import('/engine/models/props/pueblo.js');
       const hoop=basketballHoop(); if(ray(hoop,[0,3.4,1.08],[0,-1,0],1.1).length)throw Error('Basketball rim/net is blocked'); dispose(hoop);
       const clock=plazaClockTower();clock.userData.tick(43200);const noon=hash(clock);clock.userData.tick(0);if(hash(clock)!==noon)throw Error('Clock does not repeat after 12 hours');dispose(clock);
     }

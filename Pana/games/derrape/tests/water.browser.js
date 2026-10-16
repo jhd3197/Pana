@@ -90,7 +90,7 @@ try{
   await page.goto(`${base}/studio/settings.html`);
   await page.setContent(`<html><head><script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}</script><style>body{margin:0}</style></head><body><canvas></canvas></body></html>`);
   const ownership=await page.evaluate(async()=>{
-    const THREE=await import('three'),{waterSurface,waterDepthMap,riverSurface,waterPool}=await import('/engine/water-surface.js');
+    const THREE=await import('three'),{waterSurface,waterDepthMap,riverSurface,waterPool}=await import('/engine/models/effects/water-surface.js');
     const {createPreview,ownMaterials,release}=await import('/studio/preview.js'),stage=createPreview(document.querySelector('canvas'),true);
     stage.renderer.setSize(1440,960,false);stage.camera.aspect=1.5;stage.camera.updateProjectionMatrix();
     const group=new THREE.Group(),geo=new THREE.PlaneGeometry(100,100,24,24);geo.rotateX(-Math.PI/2);

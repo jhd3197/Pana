@@ -55,7 +55,7 @@ try {
     const check=(condition,message)=>{if(!condition)throw Error(message);};
     const invalid=(factory,options)=>{let rejected=false;try{factory(options);}catch(e){rejected=e instanceof RangeError;}check(rejected,'Invalid dimension accepted');};
     if(set.category==='Llanos') {
-      const {corralGate,ranchFence,horseStable,waterWindmill,mudPuddle}=await import('/engine/ranch-props.js');
+      const { corralGate, ranchFence, horseStable, waterWindmill, mudPuddle } = await import('/engine/models/props/ranch.js');
       for(const span of [3,6,20]) {
         const gate=corralGate({span,open:1});
         check(!ray(gate,[0,1,3],[0,0,-1],6).length,'Open gate blocks passage');
@@ -72,7 +72,7 @@ try {
       let disposed=false;material.addEventListener('dispose',()=>disposed=true);release(model);check(disposed,'Puddle shader was not disposed');
       for(const rx of [0,NaN,13])invalid(mudPuddle,{rx});
     } else {
-      const {desertRockArch,desertWell,roadsideTirePile,sandDune,canyonSpire,giantCactus}=await import('/engine/desert-props.js');
+      const { desertRockArch, desertWell, roadsideTirePile, sandDune, canyonSpire, giantCactus } = await import('/engine/models/props/desert.js');
       for(const span of [4,8,21]){const a=desertRockArch({span,height:10});for(const x of [-span*.4,0,span*.4])check(!ray(a,[x,2,8],[0,0,-1],16).length,'Arch passage blocked');check(ray(a,[0,16,0],[0,-1,0],10).length,'Arch missing roof');dispose(a);}
       const well=desertWell();const hits=ray(well,[.65,1.8,.5],[0,-1,0],2);check(hits.length&&hits[0].point.y<.1,'Well mouth is capped');check(ray(well,[1.2,2,0],[0,-1,0],2).length,'Well rim missing');dispose(well);
       const tires=roadsideTirePile();check(!ray(tires,[0,2,0],[0,-1,0],3).length,'Tire stack is not hollow');dispose(tires);

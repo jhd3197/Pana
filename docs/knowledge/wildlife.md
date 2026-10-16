@@ -1,7 +1,7 @@
 # Shared wildlife and inventory audit
 
 Canonical species live in `engine/models/fauna/birds/` and
-`engine/models/fauna/capybara/`. `engine/wildlife.js` now only re-exports them.
+`engine/models/fauna/capybara/`.
 The common bird rig lives beside the species; orbit motion is separate in
 `engine/models/animation/orbit-bird.js`. The natural capybara and monuments import
 `fauna/capybara/shape.js`, so an animal no longer imports the monuments pack.

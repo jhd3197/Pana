@@ -31,8 +31,8 @@ to the existing camera tour, including both wadeable esteros and all three jumps
 The additional vegetation IDs are `araguaney`, `bamboo`, `fern`, `monstera`,
 `heliconia`, `cactus` (Cardón), `mangrove` (Mangle), `papaya` (Lechosa), `agave`,
 `waterLily` (Nenúfar), `hibiscus` (Cayena), and `reeds` (Juncos). Their seeded constructors are
-defined in individual `/engine/models/vegetation/` modules; `/engine/flora.js`
-is only a compatibility barrel. They
+defined in individual `/engine/models/vegetation/` modules
+(`/engine/models/vegetation/index.js` exports them all). They
 are all used by Derrape's Selva circuit, so `usedBy` lists Derrape.
 `tracks/selva-flora.js` owns habitat placement. Registering a future plant still
 does not change map placement or collision rules automatically.
@@ -209,7 +209,7 @@ so model edits refresh dependent thumbnails on reload without manual cache clear
 garments, exposed-body topology, expressions and eyewear. `/personaje.html`
 retains the full editor. Old `web/character/*.js` model URLs are re-exports only;
 do not edit a second implementation there. The editor and games use the same
-surfaces and rig. `engine/character.js` adapts that model to saved avatar data
+surfaces and rig. `engine/models/characters/pana/avatar-model.js` adapts that model to saved avatar data
 and the established `buildCharacter()` game API.
 
 The game adapter places a 0.60 conversion scale on an inner group, so game-owned

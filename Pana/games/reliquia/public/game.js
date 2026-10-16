@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { buildCharacter } from '/engine/character.js';
+import { buildCharacter } from '/engine/models/characters/pana/avatar-model.js';
 import { loadAvatar, loadName } from '/engine/avatar.js';
 import { sound } from '/engine/fx.js';
 import { createGameMenu, toggleMute } from '/engine/ui.js';

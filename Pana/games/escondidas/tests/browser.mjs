@@ -105,7 +105,7 @@ try {
   await b.goto(base + '/g/derrape/?track=llanos&debug'); await b.waitForFunction(() => window.race && window.garage);
   await b.evaluate(() => startRace(0)); check('Derrape loads and starts on Los Llanos with the market kit');
   await b.goto(base + '/g/bululu/?debug'); await b.waitForFunction(() => window.board && window.players);
-  assert.equal(await b.evaluate(async () => { const shared = await import('/engine/flora.js'), original = await import('/g/bululu/flora.js'); return shared.palm === original.palm && shared.mangoTree === original.mangoTree; }), true);
+  assert.equal(await b.evaluate(async () => { const shared = await import('/engine/models/vegetation/index.js'), original = await import('/g/bululu/flora.js'); return shared.palm === original.palm && shared.mangoTree === original.mangoTree; }), true);
   check('Bululú renders and retains exactly the same shared foliage factories');
   await b.goto(base + '/'); await b.getByRole('heading', { name: 'Escondidas · Pana Hunt', exact: true }).waitFor();
   assert.equal(await b.evaluate(async () => typeof (await import('/g/escondidas/card.js')).mount), 'function');

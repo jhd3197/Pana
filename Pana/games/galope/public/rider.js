@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { llaneroHorse } from '/engine/models/fauna/farm/llanero-horse.js';
-import { buildCharacter } from '/engine/character.js';
+import { buildCharacter } from '/engine/models/characters/pana/avatar-model.js';
 import { box, tube } from '/engine/models/core/primitives.js';
 const M=color=>new THREE.MeshStandardMaterial({color,roughness:.85});
 

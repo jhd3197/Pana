@@ -33,7 +33,7 @@ The app lives in `Pana/` (server, web, games, engine, scripts, tests). Docs are 
 | End-of-round screen | `.pk-results` + `engine/results.js` (`fillRoster`) | pana-kit.md, "Results screen" |
 | Icons | `engine/icons.js` (SVG); never emoji or symbol glyphs | pana-kit.md, "Icons and colours" |
 | Touch controls, orientation | `engine/touch.js` | pana-kit.md, "Touch controls" |
-| The player's pana | `engine/avatar.js`, `engine/character.js` | `docs/knowledge/character-reference.md` |
+| The player's pana | `engine/avatar.js`, `engine/models/characters/pana/avatar-model.js` | `docs/knowledge/character-reference.md` |
 
 Never write sockets, retries, member lists or host election in a game, a per-game
 pause overlay, sound toggle or invite flow, or handle Escape in a game.

@@ -107,7 +107,7 @@ ignored `art/studio/venezuela/`; old views are in `art/studio/rural-maps/`.
 
 ### Living water and the tidal causeway
 
-`engine/water-surface.js` supplies a single-pass shader for ocean swell, shallow
+`engine/models/effects/water-surface.js` supplies a single-pass shader for ocean swell, shallow
 caustics, broken shoreline foam, river currents and calmer lakes/canals. Surface
 detail fades with distance to avoid moiré at the horizon. Rivers have transverse
 depth and longitudinal distance attributes; control points run downstream

@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { buildCharacter } from '/engine/character.js';
+import { buildCharacter } from '/engine/models/characters/pana/avatar-model.js';
 import { loadAvatar } from '/engine/avatar.js';
 import { createDominoTable, createDominoChair, createDominoTile } from './table-model.js';
 

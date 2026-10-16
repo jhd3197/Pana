@@ -51,7 +51,7 @@ try {
   await page.locator('[data-outfit="hoodie"]').click(); await page.locator('[data-headwear="chef"]').click(); await page.locator('[data-glasses="round"]').click(); await page.locator('#wristbands').check();
   await page.locator('#save-avatar').click(); assert.match(await page.locator('#save-status').innerText(), /guardada/);
   const adapter = await page.evaluate(async () => {
-    const { buildCharacter } = await import('/engine/character.js'), { loadAvatar, normalizeAvatar } = await import('/engine/avatar.js');
+    const { buildCharacter } = await import('/engine/models/characters/pana/avatar-model.js'), { loadAvatar, normalizeAvatar } = await import('/engine/avatar.js');
     const avatar = loadAvatar(), start = performance.now(), model = buildCharacter(avatar);
     const constructionMs = performance.now() - start;
     model.update(1 / 60, { walk: 1, carry: true }); model.group.updateMatrixWorld(true);
