@@ -114,3 +114,16 @@ flow bugs and check balance.
   coins. With "ahead" it's 6–7 mangos per game.
 - **Two dice**: a sum of 2–12, doubles give +5 monedas, and a gold counter sprite
   counts down the steps.
+- **Minigame order** comes from `rules.minigameBag`: each minigame once per
+  pass, shuffled, never the same twice in a row. `?mini=` still forces one.
+- **¡Caída! tuning** (simulated, 4 AIs, 40 games): a plain shuffled deck gives a
+  caída about 1 card in 13, far too rare for 30 s. Nudging the next card to match
+  30% of the time and dealing every 1.15 s down to 0.7 s gives about 7 caídas a
+  game. A card counts as a match once 60% through its flip. A match always stays
+  up at least 1.05 s, so AI reaction (0.30–0.62 s, ~0.08 s faster by the end) fits
+  inside it. Scores may go negative, or spamming Space would cost nothing at 0.
+  The rank is painted big on the felt under each spot: the cards' corner numbers
+  are unreadable at a party-game camera distance.
+- **Spanish cards** live in `/engine/models/props/spanish-cards.js`, shared with
+  Caída.
+

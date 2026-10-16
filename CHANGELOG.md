@@ -34,6 +34,9 @@ becomes the GitHub release's notes.
   bend: sparks go blue, orange and purple, and letting go fires a turbo.
   Time the gas on the countdown for a rocket start, do tricks off ramps,
   ride a rival's slipstream, and watch your coins: hits knock them off.
+- **Bululú has a new card minigame, ¡Caída!** Cards flip onto the table; slam
+  first when one matches the number before it, but a wrong slam costs a point.
+  Minigames now come up shuffled instead of always in the same order.
 - **Race Derrape online with up to 8 panas.** Open a room from the garage or a
   shared link; each pana drives their own car, bots fill the grid, and the room
   keeps the order, finish times and results in sync.

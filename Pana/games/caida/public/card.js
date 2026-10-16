@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { createGameTable } from '/engine/models/props/game-table.js';
-import { createSpanishCard, createScoreToken } from './models.js';
+import { createSpanishCard, createScoreToken } from '/engine/models/props/spanish-cards.js';
 
 export function mount(canvas) {
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true }); renderer.setPixelRatio(Math.min(devicePixelRatio, 1.5)); renderer.toneMapping = THREE.ACESFilmicToneMapping;

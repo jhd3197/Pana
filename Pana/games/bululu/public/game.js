@@ -8,6 +8,7 @@ import { createBoard, createToken, createDie, TILE_COUNT, FORK } from './board.j
 import { RIVER, SEA, MAP_BOUNDS, beachMask } from './island.js';
 import atrapa from './minigames/atrapa.js';
 import caigas from './minigames/caigas.js';
+import caida from './minigames/caida.js';
 import { SKY_MODES } from './atmosphere.js';
 import * as rules from './rules.js';
 import { ICONS as SVG } from '/engine/icons.js';
@@ -32,7 +33,8 @@ const AUTO = QS.has('auto');
 const SPEED = Number(QS.get('speed')) || 1;
 let ROUNDS = Math.max(1, Math.min(20, Number(QS.get('rounds')) || 10));   // the lobby can change it
 const DEBUG = QS.has('debug');
-const MINIGAMES = [atrapa, caigas];
+const MINIGAMES = [atrapa, caigas, caida];
+const nextMinigame = rules.minigameBag(MINIGAMES);
 const FORCED = MINIGAMES.find((m) => m.id === QS.get('mini'));
 const ONLY = MINIGAMES.find((m) => m.id === QS.get('play'));
 let savedSky = 'day';
@@ -332,6 +334,7 @@ const ICONS = {
   coin: '<i class="ico coin"></i>',
   mango: MANGO_SVG,
   jump: '<i class="ico jump">⤒</i>',
+  card: SVG.card.replace('pk-ico', 'ico'),
 };
 
 let cardMode = 'board';
@@ -946,7 +949,7 @@ async function main() {
     overview();
     await toast(`Ronda ${round}`, round === ROUNDS ? '¡Última ronda!' : `de ${ROUNDS}`, 1.5, 'round');
     for (const p of players) await takeTurn(p);
-    await playMinigame(FORCED || MINIGAMES[(round - 1) % MINIGAMES.length]);
+    await playMinigame(FORCED || nextMinigame());
   }
   await results();
 }
