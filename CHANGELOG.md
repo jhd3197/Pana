@@ -10,6 +10,10 @@ becomes the GitHub release's notes.
 
 ### Added
 
+- **Play Derrape with a controller or with a pana on the same screen.**
+  Gamepads drive and fire items, two players can race in split screen,
+  and the HUD warns about wrong-way driving and incoming items, shows
+  your best lap and lets you look behind with C.
 - **Derrape has a taller to spend your coins.** Every race pays into a
   wallet you keep; paint your car, swap the horn or change the turbo
   flame. Cup trophies show in the garage and unlock mirror mode, gold

@@ -25,6 +25,7 @@ import { CUPS, cupById, awardPoints, cupStandings, trophyFor, TROPHY_RANK, diffi
 import { advanceLap, isOpenEdge, offCourse, stuckStep, ALL_SECTORS, RESCUE_TIME, OUT_TIME, STUCK_TIME, OPEN_MARGIN } from './course-rules.js';
 import { createHazards } from './hazards.js';
 import { createMusic } from './music.js';
+import { padInput, pressed, keyInput, SPLIT_KEYS, wrongWayStep, WRONG_WAY_TIME, lapSplit } from './controls.js';
 import { PAINTS, HORNS, FLAMES, CATALOG, cleanWallet, earnings, buy, unlocked, unlockText, mirrorUnlocked, repaintHex } from './shop.js';
 import { soaringVulture } from '/engine/models/fauna/birds/soaring-vulture.js';
 import { DRIFT_MIN_SPEED, DRIFT_BOOST, HOP_SPEED, DRAFT_TIME, DRAFT_BOOST, driftLevel, driftSteer, driftCharge, startBoost, trickBoost, inSlipstream, loseCoins } from './drive-rules.js';
@@ -312,6 +313,8 @@ const groundAt = (x, z) => T.groundAt(x, z);
 const race = {
   scene: new THREE.Scene(),
   camera: new THREE.PerspectiveCamera(60, innerWidth / innerHeight, 0.1, 1800),
+  camera2: new THREE.PerspectiveCamera(60, innerWidth / 2 / innerHeight, 0.1, 1800),
+  codes: {},
   cars: [],
   state: 'off',
   keys: {},
@@ -385,11 +388,12 @@ function applyPalette(pal) {
 }
 
 // ---------- race setup: mode, difficulty, laps, mirror (local races) ----------
-const setup = { mode: 'race', difficulty: 'normal', laps: 3, mirror: false };
+const setup = { mode: 'race', difficulty: 'normal', laps: 3, mirror: false, split: false };
 try { Object.assign(setup, JSON.parse(localStorage.getItem('derrape:setup') || '{}')); } catch { /* private mode */ }
 setup.laps = cleanLaps(setup.laps);
 if (!['race', 'battle', ...CUPS.map(c => c.id)].includes(setup.mode)) setup.mode = 'race';
 setup.mirror = setup.mirror === true;
+setup.split = setup.split === true;
 const isCupMode = (mode) => CUPS.some(c => c.id === mode);
 
 // ---------- the taller: wallet, paints, horns, turbo flames ----------
@@ -480,6 +484,8 @@ function renderSetup() {
   $('mirror').disabled = !mirrorOpen;
   $('mirror').title = mirrorOpen ? '' : 'Gana un trofeo en una copa para desbloquear el modo espejo';
   $('mirror').setAttribute('aria-checked', String(setup.mirror));
+  $('split').setAttribute('aria-checked', String(setup.split));
+  $('launch-note').innerHTML = `<span class="pk-dot"></span>${setup.split ? 'Dos panas contra 2 rivales' : 'Tú contra 3 rivales'}`;
   const battle = setup.mode === 'battle', cup = isCupMode(setup.mode) ? cupById(setup.mode) : null;
   for (const b of $('laps-pick').querySelectorAll('button')) b.disabled = battle;
   const trophies = loadTrophies();
@@ -510,6 +516,7 @@ for (const b of document.querySelectorAll('#mode-pick button')) b.onclick = () =
 for (const b of document.querySelectorAll('#difficulty-pick button')) b.onclick = () => { setup.difficulty = b.dataset.difficulty; saveSetup(); renderSetup(); };
 for (const b of document.querySelectorAll('#laps-pick button')) b.onclick = () => { setup.laps = cleanLaps(Number(b.dataset.laps)); saveSetup(); renderSetup(); };
 $('mirror').onclick = () => { setup.mirror = !setup.mirror; saveSetup(); renderSetup(); };
+$('split').onclick = () => { setup.split = !setup.split; saveSetup(); renderSetup(); };
 
 // Browsing needs only route metadata. Keep the last built map for replay;
 // construct a different environment only after the player presses Play.
@@ -747,7 +754,7 @@ function popBalloon(c) {
   // Knocked out: the car fades to a ghost (materials are shared, so clone them).
   const fade = (m) => { if (m.transparent) return m; const f = m.clone(); f.transparent = true; f.opacity = 0.5; return f; };
   c.car.root.traverse(o => { if (o.material) o.material = Array.isArray(o.material) ? o.material.map(fade) : fade(o.material); });
-  if (c.isPlayer) finish();
+  if (c.isPlayer || c.human) maybeFinish();
 }
 
 function placeRacer(c, lane, row) {
@@ -833,6 +840,7 @@ async function startRace(playerIndex, wheelId = garage.wheel, roster = null) {
   race.diff = difficultyById(roster ? 'normal' : setup.difficulty);
   race.laps = roster ? (net.state.laps || LAPS) : race.mode === 'battle' ? 1 : setup.laps;
   race.mirror = !roster && setup.mirror;
+  race.split = !roster && setup.split;
   if (race.mode === 'cup') {
     if (!race.cup || race.cup.id !== setup.mode || race.cup.over) {
       const cup = cupById(setup.mode);
@@ -898,9 +906,16 @@ async function startRace(playerIndex, wheelId = garage.wheel, roster = null) {
       // A cup keeps the same rivals from track to track.
       const rivals = race.cup?.rivals ?? others.slice(0, RACERS - 1).map((car, i) => ({ car, name: names[i], wheel: AI_WHEELS[CARS[car].id] }));
       race.cars = [makeRacer(playerIndex, true, undefined, wheelId)];
-      for (let i = 1; i < RACERS; i++) {
+      if (race.split) {
+        // Split screen: a second pana takes the next car and a rival's seat.
+        const p2 = makeRacer((playerIndex + 1) % CARS.length, false, 'Jugador 2', 'calle');
+        p2.human = 2;
+        p2.skill = 1;
+        race.cars.push(p2);
+      }
+      for (let i = race.cars.length; i < RACERS; i++) {
         if (!await step(`Preparando los panas… ${i}/${RACERS}`, 0.5 + i * 0.08)) return;
-        const r = rivals[i - 1];
+        const r = rivals[i - (race.split ? 2 : 1)] ?? rivals[i - 1];
         race.cars.push(makeRacer(r.car, false, r.name, r.wheel, r.avatar));
       }
       if (race.mode === 'battle') {
@@ -916,6 +931,12 @@ async function startRace(playerIndex, wheelId = garage.wheel, roster = null) {
       }
     }
     race.player = race.cars.find(c => c.isPlayer);
+    race.p2 = race.cars.find(c => c.human === 2) ?? null;
+    race.splits = []; race.lapSeen = 1; race.bestLap = null;
+    $('best-pill').hidden = true;
+    $('race').classList.toggle('split', !!race.p2);
+    $('p2-hud').hidden = !race.p2;
+    resize();
     race.playerIndex = playerIndex;
     race.playerWheel = wheelId;
     race.clock = 0;
@@ -923,6 +944,7 @@ async function startRace(playerIndex, wheelId = garage.wheel, roster = null) {
     race.boardT = 0;
     race.poseAt = 0;
     race.camPos = null;
+    race.camPos2 = null;
     race.netRace = roster ? net.state.raceId : 0;
     race.scene.scale.x = race.mirror ? -1 : 1;
     race.ended = false;
@@ -995,6 +1017,10 @@ function toGarage() {
   else { race.cup = null; renderSetup(); }
   saveWallet();
   race.scene.scale.x = 1;
+  race.p2 = null;
+  $('race').classList.remove('split');
+  $('p2-hud').hidden = $('wrong-way').hidden = $('incoming').hidden = true;
+  resize();
   $('play').focus({ preventScroll: true });
 }
 
@@ -1005,7 +1031,7 @@ const menu = createGameMenu({
   title: 'Derrape', heading: 'Pausa', sound, orientation: 'horizontal',
   note: () => mode === 'race' ? (race.state === 'end' ? 'La carrera terminó.' : race.netRace ? 'Carrera online: no se detiene.' : 'La carrera está en pausa.') : 'Estás en el garaje.',
   controls: [['W / ↑', 'Acelerar'], ['S / ↓', 'Frenar'], ['A D / ← →', 'Girar'], ['Shift / K', 'Saltar y derrapar · truco en el aire'], ['Espacio / E', 'Lanzar objeto adelante'],
-    ['X', 'Lanzar objeto atrás'], ['1 2', 'Elegir objeto'], ['Q', 'Cambiar objeto'], ['R', 'Pedir rescate al zamuro'], ['H', 'Claxon'], ['M', 'Sonido'], ['Esc', 'Pausa']],
+    ['X', 'Lanzar objeto atrás'], ['1 2', 'Elegir objeto'], ['Q', 'Cambiar objeto'], ['R', 'Pedir rescate al zamuro'], ['C', 'Mirar atrás'], ['Mando', 'RT gas · LT freno · RB derrape · LB/X objeto · Y rescate'], ['H', 'Claxon'], ['M', 'Sonido'], ['Esc', 'Pausa']],
   tips: ['Mantén Shift en una curva para derrapar: chispas azules, naranjas y moradas dan más turbo al soltar.',
     'Acelera justo al final del "1" para un arranque cohete. Si aceleras en el "3" se te ahoga el motor.',
     'Rompe cajas de madera para conseguir objetos. Cada moneda da un poquito más de velocidad.'],
@@ -1060,13 +1086,21 @@ const driveButtons = [...document.querySelectorAll('[data-drive]')].map(button =
   down: () => { sound.unlock(); touchHeld.add(button.dataset.drive); },
   up: () => touchHeld.delete(button.dataset.drive),
 }));
-function resetInput() { race.keys = {}; for (const b of driveButtons) b.release(); touchHeld.clear(); }
+function resetInput() { race.keys = {}; race.codes = {}; for (const b of driveButtons) b.release(); touchHeld.clear(); }
 addEventListener('blur', resetInput);
 document.addEventListener('visibilitychange', () => { if (document.hidden) resetInput(); });
 addEventListener('keydown', (e) => {
   if (e.target.closest('input, textarea, select, [contenteditable="true"]')) return;
   const k = e.key.toLowerCase();
   race.keys[k] = true;
+  race.codes[e.code] = true;
+  if (race.p2 && mode === 'race' && race.state === 'go' && !e.repeat) {
+    // The second pana's buttons (split screen).
+    if (e.code === 'Enter') { e.preventDefault(); race.items.use(race.p2, 1); }
+    if (e.code === 'Period') race.items.use(race.p2, -1);
+    if (e.code === 'Comma') race.items.select(race.p2);
+    if (e.code === 'Backspace') { e.preventDefault(); rescue(race.p2); }
+  }
   if (k === 'escape' && mode === 'loading') toGarage();
   if (k === 'h' && !e.repeat) {
     if (mode === 'race' && race.player) honk(race.player);
@@ -1087,17 +1121,50 @@ addEventListener('keydown', (e) => {
   }
   if (e.key.startsWith('Arrow') && mode === 'race') e.preventDefault();
 });
-addEventListener('keyup', (e) => (race.keys[e.key.toLowerCase()] = false));
+addEventListener('keyup', (e) => { race.keys[e.key.toLowerCase()] = false; race.codes[e.code] = false; });
 
-function playerInput() {
-  const k = { ...race.keys };
-  for (const key of touchHeld) k[key] = true;
-  const steer = (k.a || k.arrowleft ? 1 : 0) - (k.d || k.arrowright ? 1 : 0);
-  return {
-    throttle: (k.w || k.arrowup ? 1 : 0) - (k.s || k.arrowdown ? 1 : 0),
-    steer: race.mirror ? -steer : steer,   // the world is drawn flipped: left on screen is world right
-    drift: !!(k.shift || k.k),
-  };
+// Driver n's controls: keyboard (both key sets alone, its own set in split
+// screen), touch for driver 1, and game controller n.
+function playerInput(n = 1) {
+  let input;
+  if (race.p2) input = keyInput(race.codes, SPLIT_KEYS[n]);
+  else {
+    const k = { ...race.keys };
+    for (const key of touchHeld) k[key] = true;
+    input = {
+      throttle: (k.w || k.arrowup ? 1 : 0) - (k.s || k.arrowdown ? 1 : 0),
+      steer: (k.a || k.arrowleft ? 1 : 0) - (k.d || k.arrowright ? 1 : 0),
+      drift: !!(k.shift || k.k), look: !!k.c,
+    };
+  }
+  const pad = race.pads?.[n - 1];
+  if (pad) {
+    input.throttle = input.throttle || pad.throttle;
+    input.steer = input.steer || pad.steer;
+    input.drift = input.drift || pad.drift;
+    input.look = input.look || pad.look;
+  }
+  if (race.mirror) input.steer = -input.steer;   // the world is drawn flipped: left on screen is world right
+  return input;
+}
+
+// Game controllers: poll each frame, fire item / rescue / pause on presses.
+let padsBefore = [null, null];
+function pollPads() {
+  const list = navigator.getGamepads?.() || [];
+  race.pads = [padInput(list[0]), padInput(list[1])];
+  race.pads.forEach((pad, i) => {
+    const hit = pressed(pad, padsBefore[i]);
+    const who = i === 0 ? race.player : race.p2;
+    if (pad && hit.pause) menu.toggle();
+    if (mode === 'race' && race.state === 'go' && who) {
+      if (hit.item) race.items.use(who, 1);
+      if (hit.itemBack) race.items.use(who, -1);
+      if (hit.swap) race.items.select(who);
+      if (hit.rescue) rescue(who);
+    }
+  });
+  padsBefore = race.pads;
 }
 
 function aiInput(c) {
@@ -1368,7 +1435,8 @@ function stepCar(c, input, dt) {
 
   // Off the course (past an open edge, off a plank) the zamuro comes soon.
   c.outT = !terrain && offCourse(Math.abs(off), T.HW, edgeOpen, plank) ? c.outT + dt : 0;
-  const trying = !c.done && c.spin <= 0 && c.stall <= 0 && (c.isPlayer && !AUTO ? input.throttle !== 0 : true);
+  // Humans only count as stuck while pressing the gas; bots always try.
+  const trying = !c.done && c.spin <= 0 && c.stall <= 0 && ((c.isPlayer && !AUTO) || c.human ? input.throttle !== 0 : true);
   c.stuckT = stuckStep(c.stuckT, c.vf, trying && race.state === 'go', dt);
   // Remember the last safe stretch of road to come back to.
   c.safeT -= dt;
@@ -1622,7 +1690,7 @@ function updateRace(dt) {
         stepCar(c, { throttle: 0, steer: 0 }, dt);
         continue;
       }
-      stepCar(c, c.isPlayer && !AUTO ? playerInput() : aiInput(c), dt);
+      stepCar(c, c.isPlayer && !AUTO ? playerInput(1) : c.human === 2 ? playerInput(2) : aiInput(c), dt);
       if (c.outT > OUT_TIME || c.stuckT > STUCK_TIME) rescue(c);
       if (!c.isPlayer) {
         c.aiHonk -= dt;
@@ -1636,7 +1704,7 @@ function updateRace(dt) {
         c.done = true;
         c.time = race.clock;
         if (race.netRace) net.finish(c.netId, c.time);
-        if (c.isPlayer) finish();
+        if (c.isPlayer || c.human) maybeFinish();
       }
     }
     collideCars();
@@ -1680,6 +1748,8 @@ function updateRace(dt) {
     music.setTempo(1.14);
   }
   showItem(p);
+  readRoad(p, dt);
+  if (race.p2) showP2(order);
 
   // speedometer + boost bar
   $('speed').textContent = Math.round(Math.abs(p.vf) * 4);
@@ -1704,25 +1774,70 @@ function updateRace(dt) {
   }
   drawMinimap();
 
-  // chase camera with a bit of shake
-  const fx = Math.sin(p.h), fz = Math.cos(p.h);
-  const want = new THREE.Vector3(p.x - fx * 11, Math.max(5, p.y + 5), p.z - fz * 11);
-  if (!race.camPos) race.camPos = want.clone();
-  race.camPos.lerp(want, Math.min(1, dt * 4));
   race.shake = Math.max(0, race.shake - dt * 2);
-  const sh = race.shake * 0.6;
-  // Mirror mode flips the whole scene on x; the camera follows in flipped space.
-  const mx = race.mirror ? -1 : 1;
-  race.camera.position.set(mx * race.camPos.x + rand(-sh, sh), race.camPos.y + rand(-sh, sh), race.camPos.z + rand(-sh, sh));
-  race.camera.lookAt(mx * (p.x + fx * 4), p.y + 1.4, p.z + fz * 4);
-  const fov = p.boost > 0 ? 74 : 60;   // turbo stretches the view
-  if (Math.abs(race.camera.fov - fov) > 0.05) {
-    race.camera.fov += (fov - race.camera.fov) * Math.min(1, dt * 5);
-    race.camera.updateProjectionMatrix();
-  }
+  followCam(race.camera, 'camPos', p, playerInput(1).look, dt);
+  if (race.p2) followCam(race.camera2, 'camPos2', race.p2, playerInput(2).look, dt);
+  const fx = Math.sin(p.h), fz = Math.cos(p.h);
   if (race.rain.lines.visible) race.rain.update(p.x + fx * 10, p.y, p.z + fz * 10, race.clock);
   race.sun.position.set(p.x - 30, p.y + 40, p.z + 25);
   race.sun.target.position.set(p.x, p.y, p.z);
+}
+
+// Chase camera with a bit of shake; holding look-back (C) turns it around.
+function followCam(cam, key, p, look, dt) {
+  const fx = Math.sin(p.h), fz = Math.cos(p.h), back = look ? -1 : 1;
+  const want = new THREE.Vector3(p.x - fx * 11 * back, Math.max(5, p.y + 5), p.z - fz * 11 * back);
+  if (!race[key] || look !== race[key + 'Look']) race[key] = want.clone();
+  race[key + 'Look'] = look;
+  race[key].lerp(want, Math.min(1, dt * 4));
+  const sh = p.isPlayer ? race.shake * 0.6 : 0;
+  // Mirror mode flips the whole scene on x; the camera follows in flipped space.
+  const mx = race.mirror ? -1 : 1, at = race[key];
+  cam.position.set(mx * at.x + rand(-sh, sh), at.y + rand(-sh, sh), at.z + rand(-sh, sh));
+  cam.lookAt(mx * (p.x + fx * 4 * back), p.y + 1.4, p.z + fz * 4 * back);
+  const fov = p.boost > 0 ? 74 : 60;   // turbo stretches the view
+  if (Math.abs(cam.fov - fov) > 0.05) {
+    cam.fov += (fov - cam.fov) * Math.min(1, dt * 5);
+    cam.updateProjectionMatrix();
+  }
+}
+
+// Wrong way, incoming items and lap splits for the player.
+function readRoad(p, dt) {
+  const s = paramOf(p.x, p.z), a = pointAt(s), b = pointAt(s + 1);
+  p.wrongT = wrongWayStep(p.wrongT || 0, p.h, Math.atan2(b.x - a.x, b.y - a.y), p.vf, dt);
+  const wrong = race.mode !== 'battle' && race.state === 'go' && !p.done && p.rescueT <= 0 && p.wrongT > WRONG_WAY_TIME;
+  if ($('wrong-way').hidden === wrong) $('wrong-way').hidden = !wrong;
+  // The nearest projectile coming for the player: which way and what it is.
+  let threat = null, best = 60;
+  for (const f of race.items.projectiles) {
+    if (f.owner === p || f.dead) continue;
+    const dx = f.m.position.x - p.x, dz = f.m.position.z - p.z, d = Math.hypot(dx, dz);
+    if ((f.target === p || f.kind === 'mango') && d < best) { best = d; threat = { f, dx, dz }; }
+  }
+  $('incoming').hidden = !threat;
+  if (threat) {
+    const names = { cohete: '¡Cohete!', chancleta: '¡La chancleta viene por ti!', mango: '¡Mango!' };
+    $('incoming-text').textContent = names[threat.f.kind] || '¡Cuidado!';
+    const rel = Math.atan2(threat.dx, threat.dz) - p.h;
+    $('incoming-arrow').style.transform = `rotate(${(race.mirror ? 1 : -1) * rel}rad)`;
+  }
+  // Lap splits: a new lap shows its time; the best one gets a shout.
+  if (race.mode !== 'battle' && p.lap > race.lapSeen && p.lap <= race.laps + 1) {
+    race.lapSeen = p.lap;
+    const { lap, best } = lapSplit(race.splits, race.clock);
+    if (best && race.splits.length > 1) shout(`¡Vuelta rápida! ${clockText(lap)}`);
+    race.bestLap = Math.min(race.bestLap ?? Infinity, lap);
+    $('lap-best').textContent = clockText(race.bestLap);
+    $('best-pill').hidden = false;
+  }
+}
+
+function showP2(order) {
+  const p2 = race.p2, place = order.indexOf(p2) + 1, item = activeItem(p2);
+  $('p2-pos').innerHTML = `${place}<sup>º</sup>`;
+  $('p2-lap').textContent = race.mode === 'battle' ? `Globos ${p2.balloons}/${BALLOONS}` : `Vuelta ${Math.min(race.laps, Math.max(1, p2.lap))}/${race.laps}`;
+  $('p2-item').textContent = item ? (item.rolling > 0 ? 'Abriendo…' : ITEMS[item.kind].name) : 'Sin objeto';
 }
 
 // Each slot rolls independently: picking a reserve never locks the active item.
@@ -1762,6 +1877,12 @@ function showItem(p) {
 }
 
 // Finished cars by time, then everyone else by how far along they are.
+// The results come up once every human driver is done.
+function maybeFinish() {
+  if (race.state === 'end') return;
+  if (race.cars.every(c => !(c.isPlayer || c.human) || c.done)) finish();
+}
+
 function standings() {
   return race.mode === 'battle' ? battleOrder(race.cars) : raceOrder(race.cars, T.TOTAL);
 }
@@ -1818,6 +1939,8 @@ function finish() {
   $('result-title').textContent = !p.done ? 'Se acabó el tiempo' : place === 1 ? '¡Ganaste!' : `${place}º lugar`;
   $('result-time').textContent = `${T.name} · ${race.laps} ${race.laps === 1 ? 'vuelta' : 'vueltas'} · ${p.done ? clockText(p.time) : 'sin terminar'} · ${p.def.name} · ${p.lost} piezas perdidas`
     + (winner && place > 1 ? ` · ganó ${winner.name}` : '');
+  if (race.bestLap != null) $('result-time').textContent += ` · mejor vuelta ${clockText(race.bestLap)}`;
+  if (race.p2) $('result-time').textContent += ` · Jugador 2: ${standings().indexOf(race.p2) + 1}º`;
   if (race.mode === 'battle') {
     const order = standings(), rank = order.indexOf(p) + 1;
     $('result-title').textContent = p.balloons > 0 && rank === 1 ? '¡Ganaste la batalla!' : p.balloons > 0 ? `${rank}º lugar` : '¡Sin globos!';
@@ -2101,6 +2224,7 @@ function frame() {
     renderer.render(garage.scene, garage.camera);
   } else if (mode === 'race') {
     renderer.toneMapping = THREE.NoToneMapping;
+    pollPads();
     // fixed physics steps: same race speed at any frame rate
     if (!paused) acc += dt * SPEED;
     while (acc >= STEP && mode === 'race') {
@@ -2108,14 +2232,23 @@ function frame() {
       acc -= STEP;
     }
     sendPoses();
-    renderer.render(race.scene, race.camera);
+    if (race.p2) {
+      const w = innerWidth, h = innerHeight;
+      renderer.setScissorTest(true);
+      renderer.setViewport(0, 0, w / 2, h); renderer.setScissor(0, 0, w / 2, h);
+      renderer.render(race.scene, race.camera);
+      renderer.setViewport(w / 2, 0, w / 2, h); renderer.setScissor(w / 2, 0, w / 2, h);
+      renderer.render(race.scene, race.camera2);
+      renderer.setScissorTest(false);
+      renderer.setViewport(0, 0, w, h);
+    } else renderer.render(race.scene, race.camera);
   }
   if (!(DEBUG && QS.has('manual'))) requestAnimationFrame(frame);
 }
 
 function resize() {
-  for (const cam of [garage.camera, race.camera]) {
-    cam.aspect = innerWidth / innerHeight;
+  for (const cam of [garage.camera, race.camera, race.camera2]) {
+    cam.aspect = innerWidth / innerHeight / (race.p2 && cam !== garage.camera ? 2 : 1);
     cam.updateProjectionMatrix();
   }
   renderer.setSize(innerWidth, innerHeight);
@@ -2130,7 +2263,7 @@ function resize() {
 addEventListener('resize', resize);
 resize();
 
-if (DEBUG) Object.assign(window, { music, getWallet: () => wallet, menu, race, garage, renderer, crash, stepCar, startRace, updateRace, toGarage, showWheel, ITEMS, TRACKS, buildTrack, setup, popBalloon, rescue, getActiveTrack: () => T, getNet: () => net });
+if (DEBUG) Object.assign(window, { pollPads, music, getWallet: () => wallet, menu, race, garage, renderer, crash, stepCar, startRace, updateRace, toGarage, showWheel, ITEMS, TRACKS, buildTrack, setup, popBalloon, rescue, getActiveTrack: () => T, getNet: () => net });
 
 // ?track=desierto wins; otherwise the last pick, otherwise the estadio
 let savedTrack = 'estadio';

@@ -628,7 +628,7 @@ export function createItems(hooks) {
           emit('slip', c, { id: p.id });
         }
       }
-      if (!c.isPlayer) aiThink(c, cars, dt);
+      if (!c.isPlayer && !c.human) aiThink(c, cars, dt);
     }
 
     for (const f of flying) {
