@@ -71,8 +71,9 @@ order) adds 15% to that stroke, once.
 
 Skill .66–.95 sets cadence (`.355 + (1 − skill) × .2` s) and wobble; each
 stroke has a 3.5–5% chance of a lost beat. Good bots take the fast lane, skim
-the remolino and avoid caimanes. Simulated 40 races (8 bots): finishes
-1:56–2:20 (median 2:09), best-skill bot wins 20%, ~0.7 capsizes per canoe.
+the remolino and avoid caimanes. Simulated 200 races (8 bots): finishes
+1:54–2:30 (median 2:09; the slow tail is capsizes), best-skill bot wins 29%,
+~0.7 capsizes per canoe.
 Check with a script that runs `new Race(); start(true, seed)` and
 `update(.05)` to the end; never judge balance from a throttled browser tab.
 
