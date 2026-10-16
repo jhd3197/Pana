@@ -23,13 +23,22 @@ export function serveStatic(res, baseDir, relPath) {
   }
   fs.stat(target, (err, st) => {
     if (err || !st.isFile()) {
-      res.writeHead(404).end('not found');
+      res.writeHead(404, { 'Cache-Control': 'no-store' }).end('not found');
+      return;
+    }
+    // no-cache: browsers (and Cloudflare) check before every use, so a deploy reaches
+    // phones at once. The ETag lets an unchanged file answer that check with a 304.
+    const etag = `"${st.size.toString(36)}-${Math.floor(st.mtimeMs).toString(36)}"`;
+    const headers = { ETag: etag, 'Cache-Control': 'no-cache' };
+    const asked = res.req?.headers['if-none-match'];
+    if (asked && asked.split(',').some(tag => tag.trim().replace(/^W\//, '') === etag)) {
+      res.writeHead(304, headers).end();
       return;
     }
     res.writeHead(200, {
+      ...headers,
       'Content-Type': MIME[path.extname(target).toLowerCase()] || 'application/octet-stream',
       'Content-Length': st.size,
-      'Cache-Control': 'no-cache',
     });
     fs.createReadStream(target).pipe(res);
   });
