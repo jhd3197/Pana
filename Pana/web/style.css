@@ -133,7 +133,15 @@ body[data-view="salas"] .rooms-panel { min-height: 320px; }
 .game:has(.game-pick[aria-pressed="true"]) { outline: 3px solid var(--pk-yellow); outline-offset: 3px; }
 .game-pick { position: absolute; inset: 0; padding: 0; border: 0; background: none; cursor: pointer; }
 .game-pick:focus-visible { outline: none; }
-.game-art { display: block; width: 100%; height: 130px; background: repeating-linear-gradient(135deg, rgba(0, 0, 0, .12) 0 10px, rgba(0, 0, 0, .04) 10px 20px); }
+/* Each tile is a little stage, like the hub's pedestal: a light behind the model and a floor
+   disc under it, both in the game's own tone (--tone). card.js draws the model on top. */
+.game-art {
+  display: block; width: 100%; height: 130px;
+  background:
+    radial-gradient(40% 13% at 50% 80%, color-mix(in srgb, var(--tone) 40%, var(--pk-night)) 0 97%, transparent 100%),
+    radial-gradient(43% 15% at 50% 81%, color-mix(in srgb, var(--tone) 55%, #fff) 0 97%, transparent 100%),
+    radial-gradient(60% 75% at 50% 42%, color-mix(in srgb, var(--tone) 55%, #fff 45%) 0%, transparent 72%);
+}
 .game-body { display: flex; flex-direction: column; gap: 2px; padding: 10px 12px 14px; min-width: 0; }
 .game-name { margin: 0; font: 400 20px/1.1 var(--pk-display); letter-spacing: .5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-shadow: 0 2px 0 rgba(0, 0, 0, .2); }
 .game-meta { font: 700 12px var(--pk-sans); color: rgba(255, 255, 255, .75); }

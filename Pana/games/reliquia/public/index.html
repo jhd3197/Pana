@@ -45,10 +45,10 @@
       <div class="pk-slots"><div id="slot-meds" class="pk-slot"><span class="pk-slot-n">R</span><span id="meds" class="pk-slot-count">×2</span>Botiquín</div><div id="slot-relic" class="pk-slot"><span class="pk-slot-n">E</span>Reliquia</div></div>
       <p id="player-note">Juntos hasta la salida.</p>
     </div>
-    <div class="actions"><button id="heal" class="pk-btn action-button"><kbd class="pk-kbd">R</kbd><span>Curar</span></button><button id="dodge" class="pk-btn action-button"><kbd class="pk-kbd">Shift</kbd><span>Esquivar</span></button><button id="attack" class="pk-btn pk-btn--coral action-button attack"><kbd class="pk-kbd">Espacio</kbd><span>Golpear</span></button></div>
+    <div class="actions pk-touch-zone"><button id="heal" class="pk-btn action-button"><kbd class="pk-kbd">R</kbd><span>Curar</span></button><button id="dodge" class="pk-btn action-button"><kbd class="pk-kbd">Shift</kbd><span>Esquivar</span></button><button id="attack" class="pk-btn pk-btn--coral action-button attack"><kbd class="pk-kbd">Espacio</kbd><span>Golpear</span></button></div>
     <button id="interact" class="pk-btn pk-btn--primary interaction hidden"><kbd class="pk-kbd interaction-key">E</kbd><span id="interaction-label">Interactuar</span><i id="interaction-fill"></i></button>
     <div class="controls pk-hints" data-pana-hint><span><b>W A S D</b> Moverte</span><span>Arrastra para mirar</span><span><b>Q</b> Centrar cámara</span></div>
-    <div class="touch-controls" aria-label="Movimiento"><button data-move="up" aria-label="Avanzar">▲</button><div><button data-move="left" aria-label="Izquierda">◀</button><button data-move="down" aria-label="Retroceder">▼</button><button data-move="right" aria-label="Derecha">▶</button></div></div>
+    <div class="touch-controls pk-touch-zone pk-dpad" aria-label="Movimiento"><button class="pk-touch" data-icon="up" data-move="up" aria-label="Avanzar"></button><button class="pk-touch" data-icon="left" data-move="left" aria-label="Izquierda"></button><button class="pk-touch" data-icon="down" data-move="down" aria-label="Retroceder"></button><button class="pk-touch" data-icon="right" data-move="right" aria-label="Derecha"></button></div>
     <div id="downed" class="downed pk-panel hidden"><b>¡Pana, una mano!</b><span>Un amigo puede levantarte manteniendo E a tu lado.</span></div>
     <div id="disconnect" class="disconnect pk-panel hidden">Conexión interrumpida. <button id="offline-inline" class="pk-btn pk-btn--sm">Abrir expedición local</button></div>
   </main>

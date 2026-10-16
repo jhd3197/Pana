@@ -40,8 +40,8 @@
     <ul id="team" class="team pk-roster" aria-label="Cocineros"></ul>
     <div class="bottom-hud"><div class="held-panel pk-panel"><div class="held-art"><img id="held-image" alt=""></div><div><small class="pk-eyebrow">EN TUS MANOS</small><b id="held-name">Manos libres</b><span id="held-next">Busca ingredientes para un pedido.</span></div></div><button id="action" class="action pk-btn pk-btn--primary"><kbd class="pk-kbd">E</kbd><span id="action-label">Acércate a una estación</span></button></div>
     <div class="controls pk-hints" data-pana-hint><span><b>W A S D</b> Moverte</span><span><b>E</b> Recoger / dejar</span><span><b>Shift</b> Apurarte</span></div>
-    <div class="touch-controls"><button data-move="up" aria-label="Avanzar">▲</button><div><button data-move="left" aria-label="Izquierda">◀</button><button data-move="down" aria-label="Retroceder">▼</button><button data-move="right" aria-label="Derecha">▶</button></div></div>
-    <button id="dash" class="touch-dash" aria-label="Apurarte">¡Voy!</button>
+    <div class="touch-controls pk-touch-zone pk-dpad" aria-label="Movimiento"><button class="pk-touch" data-icon="up" data-move="up" aria-label="Avanzar"></button><button class="pk-touch" data-icon="left" data-move="left" aria-label="Izquierda"></button><button class="pk-touch" data-icon="down" data-move="down" aria-label="Retroceder"></button><button class="pk-touch" data-icon="right" data-move="right" aria-label="Derecha"></button></div>
+    <button id="dash" class="touch-dash pk-touch pk-touch--go" aria-label="Apurarte">¡Voy!</button>
   </main>
   <div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
   <section id="results" class="overlay hidden" aria-labelledby="result-title"><div class="pk-modal results-panel">

@@ -42,6 +42,27 @@ the same tokens.
 | `pk-hints` | Bottom-right key reminders (also mark `data-pana-hint`) |
 | `pk-lobby`, `pk-lobby-top`, `pk-field`, `pk-lobby-foot`, `pk-lobby-room`, `pk-lobby-cta`, `pk-avatars`, `pk-check` | Game launcher column over the live scene |
 | `pk-loading` | Full-screen loading card |
+| `pk-touch` (`--go --coral --sm --lg`, `data-icon="left/right/up/down/jump"`), `pk-dpad`, `pk-touch-zone` | On-screen touch controls (engine/touch.js). See "Touch controls" below |
+
+## Touch controls
+
+Every game's on-screen buttons are `pk-touch` buttons wired with `holdButton` from
+`/engine/touch.js`. Never draw controls with glyphs (◀ ▲ ⤒): several phones turn them
+into emoji. Direction and jump buttons use `data-icon` (an SVG from `ICONS`); action
+buttons carry one short word (Gas, Freno, ¡Arre!, ¡Voy!). `pk-touch--go` is the main
+action (yellow). Wrap the group in `pk-touch-zone` so a long press never selects the
+words or opens the copy menu. Four arrows: `<div class="pk-dpad">` with up, left, down,
+right in that order.
+
+```js
+import { holdButton } from '/engine/touch.js';
+const pad = holdButton(button, { down: () => held.add('w'), up: () => held.delete('w'), paused: () => paused });
+pad.release();  // on blur / pause: lets go without waiting for the finger
+```
+
+Show the controls on any `(pointer: coarse)` screen, not only narrow ones (tablets are
+wide and have no keyboard). Put steering under the left thumb and actions under the
+right, at the bottom edge, in both orientations.
 
 ## Screen layout (from the design flow)
 

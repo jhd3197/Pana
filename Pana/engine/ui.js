@@ -8,6 +8,7 @@
 // See docs/knowledge/pana-ui.md for the full option list.
 
 import { getSettings, setSettings, onSettings, bindSound, QUALITY } from './settings.js';
+import { ORIENTATIONS, guardOrientation, isTouch } from './touch.js';
 
 for (const href of ['/engine/kit.css', '/engine/ui.css']) {
   if (document.querySelector(`link[href="${href}"]`)) continue;
@@ -61,6 +62,7 @@ export function createGameMenu({
   canOpen = () => true,
   onOpen, onClose,
   pause = true,               // false: a plain settings dialog (used by the hub)
+  orientation = 'libre',      // phones: 'horizontal', 'vertical' or 'libre' (either works)
 } = {}) {
   const uid = menuCount++ ? `-${menuCount}` : '';
   const id = name => `pana-${name}${uid}`;
@@ -94,6 +96,11 @@ export function createGameMenu({
   const qualityGroup = choiceGroup(id('set-quality'), 'Resolución', Object.entries(QUALITY).map(([v, q]) => [v, q.label]),
     () => getSettings().quality, value => setSettings({ quality: value }));
   const gameOptions = options.map(o => choiceGroup(id(`opt-${o.id}`), o.label, o.choices, o.get, o.set));
+  // Phones only: how to hold it. "Según el juego" names this game's own default.
+  const ownWay = ORIENTATIONS[orientation] ? `Según el juego (${ORIENTATIONS[orientation].toLowerCase()})` : 'Como prefieras';
+  const orientationGroup = isTouch() && choiceGroup(id('set-orientation'), 'Orientación',
+    [['juego', ownWay], ...Object.entries(ORIENTATIONS)], () => getSettings().orientation, value => setSettings({ orientation: value }));
+  if (pause) guardOrientation(orientation);
   soundSwitch.onclick = () => {
     const on = !getSettings().sound; setSettings({ sound: on });
     if (on && sound) { sound.unlock(); sound.tone?.(660, 0, 0.1, 'sine', 0.08); }
@@ -105,6 +112,7 @@ export function createGameMenu({
     h('div', { class: 'pana-row' }, h('span', { id: id('set-sound-label'), text: 'Sonido' }), soundSwitch),
     h('label', { class: 'pana-row pana-volume', for: id('set-volume') }, h('span', { text: 'Volumen' }), volume),
     qualityGroup.node,
+    orientationGroup && orientationGroup.node,
     h('div', { class: 'pana-row' }, h('span', { id: id('set-hints-label'), text: 'Ayudas de teclado en pantalla' }), hintsSwitch),
     gameOptions.map(o => o.node),
     h('p', { class: 'pana-fine', text: 'Los ajustes se guardan en este navegador y valen para todos los juegos de Pana.' }),
@@ -172,6 +180,7 @@ export function createGameMenu({
     hintsSwitch.setAttribute('aria-checked', String(s.hints)); hintsSwitch.dataset.state = s.hints ? 'Sí' : 'No';
     volume.value = String(Math.round(s.volume * 100)); volume.disabled = !s.sound;
     qualityGroup.refresh();
+    if (orientationGroup) orientationGroup.refresh();
   });
 
   function open(which = tab) {

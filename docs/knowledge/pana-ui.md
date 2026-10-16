@@ -38,6 +38,15 @@ hud.append(menu.createButton({ id: 'menu' }));      // "Menú Esc"
 ```
 
 Put the menu button somewhere visible on touch screens: phones have no Esc.
+
+`orientation: 'horizontal' | 'vertical' | 'libre'` (default `libre`) is how the game
+wants a phone held. Racing games (Derrape, Galope) are horizontal; Cocina, Escondidas and
+Reliquia, whose phone HUDs are built upright, are vertical. On touch screens Ajustes
+shows **Orientación** (Según el juego / Horizontal / Vertical, saved as
+`orientation` in settings.js). A phone held the other way gets a "Gira tu teléfono"
+screen with "Jugar así" (and, where the browser can lock it, "Pantalla completa").
+`<html data-pana-orientation>` carries the wanted orientation for CSS. The game's
+landscape layout still has to work: test both with a touch emulator.
 Mark keyboard reminders with `data-pana-hint` so the "Ayudas de teclado"
 setting can hide them.
 

@@ -12,6 +12,7 @@ import { TRACKS, getTrack, makeTrack } from './tracks.js';
 import { roughnessAt,roadGripAt,roadWaterAt } from './offroad.js';
 import { loadAvatar, loadName, randomAvatar } from '/engine/avatar.js';
 import { createGameMenu, toggleMute } from '/engine/ui.js';
+import { holdButton } from '/engine/touch.js';
 import { pixelRatio, bindRenderer } from '/engine/settings.js';
 import { shout } from '/engine/kit.js';
 
@@ -654,7 +655,7 @@ function toGarage() {
 // keep their clock, items and AI frozen until the menu closes.
 let paused = false;
 const menu = createGameMenu({
-  title: 'Derrape', heading: 'Pausa', sound,
+  title: 'Derrape', heading: 'Pausa', sound, orientation: 'horizontal',
   note: () => mode === 'race' ? (race.state === 'end' ? 'La carrera terminó.' : 'La carrera está en pausa.') : 'Estás en el garaje.',
   controls: [['W / ↑', 'Acelerar'], ['S / ↓', 'Frenar'], ['A D / ← →', 'Girar'], ['Espacio / E', 'Lanzar objeto adelante'],
     ['X', 'Lanzar objeto atrás'], ['1 2', 'Elegir objeto'], ['Q', 'Cambiar objeto'], ['H', 'Claxon'], ['M', 'Sonido'], ['Esc', 'Pausa']],
@@ -690,18 +691,14 @@ $('throw-back').onclick = () => itemAction(-1);
 $('swap-item').onclick = () => selectSlot();
 for (let i = 0; i < 2; i++) $('item-slot-' + i).onclick = () => selectSlot(i);
 
-// Multi-touch keeps steering and throttle independent. Lost focus/capture
+// Multi-touch keeps steering and throttle independent (engine/touch.js). Lost focus
 // releases input, including a thumb dragged off a control or a cancelled touch.
-const pointers = new Map();
-function resetInput() { race.keys = {}; pointers.clear(); }
-for (const button of document.querySelectorAll('[data-drive]')) {
-  button.onpointerdown = e => {
-    e.preventDefault(); sound.unlock();
-    pointers.set(e.pointerId, button.dataset.drive);
-    button.setPointerCapture(e.pointerId);
-  };
-  button.onpointerup = button.onpointercancel = button.onlostpointercapture = e => pointers.delete(e.pointerId);
-}
+const touchHeld = new Set();
+const driveButtons = [...document.querySelectorAll('[data-drive]')].map(button => holdButton(button, {
+  down: () => { sound.unlock(); touchHeld.add(button.dataset.drive); },
+  up: () => touchHeld.delete(button.dataset.drive),
+}));
+function resetInput() { race.keys = {}; for (const b of driveButtons) b.release(); touchHeld.clear(); }
 addEventListener('blur', resetInput);
 document.addEventListener('visibilitychange', () => { if (document.hidden) resetInput(); });
 addEventListener('keydown', (e) => {
@@ -731,7 +728,7 @@ addEventListener('keyup', (e) => (race.keys[e.key.toLowerCase()] = false));
 
 function playerInput() {
   const k = { ...race.keys };
-  for (const key of pointers.values()) k[key] = true;
+  for (const key of touchHeld) k[key] = true;
   return {
     throttle: (k.w || k.arrowup ? 1 : 0) - (k.s || k.arrowdown ? 1 : 0),
     steer: (k.a || k.arrowleft ? 1 : 0) - (k.d || k.arrowright ? 1 : 0),

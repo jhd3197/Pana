@@ -5,6 +5,7 @@ import { canvasMat } from '/engine/models/core/primitives.js';
 import { food } from '/engine/models/props/kitchen.js';
 import { sound } from '/engine/fx.js';
 import { createGameMenu, toggleMute } from '/engine/ui.js';
+import { holdButton } from '/engine/touch.js';
 import { shout } from '/engine/kit.js';
 import { pixelRatio, bindRenderer } from '/engine/settings.js';
 import { Kitchen, RECIPES, STATIONS, recipe, nearestStation } from './rules.js';
@@ -50,6 +51,7 @@ artRenderer.dispose();
 for (const r of RECIPES) { const img = document.createElement('img'); img.src = previews.get(`${r.id}:cooked`); img.alt = r.name; $('tasting').append(img); }
 function notify(text) { $('toast').textContent = text; show('toast', true); clearTimeout(toastTimer); toastTimer = setTimeout(() => show('toast', false), 3100); }
 const menu = createGameMenu({
+  orientation: 'vertical',
   title: 'Pana Cocina', heading: '¿Y la sazón?', resumeLabel: 'Volver a cocinar', sound, notify,
   note: () => room.offline || room.members.size === 1 ? 'Tu turno está pausado.' : 'La cocina sigue para los demás panas.',
   controls: [['W A S D / ↑ ← ↓ →', 'Moverte'], ['E / Espacio', 'Recoger, dejar o apagar un fuego'], ['Shift', 'Un empujoncito'], ['M', 'Sonido']],
@@ -201,12 +203,11 @@ addEventListener('keydown', e => {
 addEventListener('keyup', e => keys.delete(e.key.toLowerCase()));
 addEventListener('blur', () => { keys.clear(); touch.clear(); });
 document.addEventListener('visibilitychange', () => { keys.clear(); touch.clear(); });
+// Held touch buttons (engine/touch.js).
 for (const button of document.querySelectorAll('[data-move]')) {
-  button.onpointerdown = e => { e.preventDefault(); button.setPointerCapture(e.pointerId); touch.add(button.dataset.move); };
-  for (const event of ['pointerup', 'pointercancel', 'lostpointercapture']) button.addEventListener(event, () => touch.delete(button.dataset.move));
+  holdButton(button, { down: () => touch.add(button.dataset.move), up: () => touch.delete(button.dataset.move) });
 }
-$('dash').onpointerdown = e => { e.preventDefault(); $('dash').setPointerCapture(e.pointerId); touch.add('dash'); };
-for (const event of ['pointerup', 'pointercancel', 'lostpointercapture']) $('dash').addEventListener(event, () => touch.delete('dash'));
+holdButton($('dash'), { down: () => touch.add('dash'), up: () => touch.delete('dash') });
 function input() {
   if (paused || state.phase !== 'playing') return { x: 0, z: 0 };
   const x = Number(keys.has('d') || keys.has('arrowright') || touch.has('right')) - Number(keys.has('a') || keys.has('arrowleft') || touch.has('left'));

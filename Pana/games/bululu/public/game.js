@@ -10,6 +10,7 @@ import atrapa from './minigames/atrapa.js';
 import caigas from './minigames/caigas.js';
 import { SKY_MODES } from './atmosphere.js';
 import { createGameMenu, toggleMute } from '/engine/ui.js';
+import { holdButton } from '/engine/touch.js';
 import { pixelRatio, bindRenderer } from '/engine/settings.js';
 
 // every tile, sign and bubble is drawn on a canvas in the cartoon font, so
@@ -313,10 +314,9 @@ addEventListener('keyup', (e) => (held[e.key.toLowerCase()] = false));
 addEventListener('pointerdown', () => sound.unlock(), { once: false });
 
 // on-screen buttons for touch screens during minigames
+// (engine/touch.js: a finger sliding off the button still lets go)
 for (const [id, key] of [['t-left', 'a'], ['t-right', 'd'], ['t-jump', ' ']]) {
-  const el = $(id);
-  el.addEventListener('pointerdown', (e) => { e.preventDefault(); held[key] = true; if (key === ' ') jumpPressed = true; });
-  for (const ev of ['pointerup', 'pointerleave', 'pointercancel']) el.addEventListener(ev, () => (held[key] = false));
+  holdButton($(id), { down: () => { held[key] = true; if (key === ' ') jumpPressed = true; }, up: () => { held[key] = false; } });
 }
 
 function minigameInput() {

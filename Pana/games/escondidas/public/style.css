@@ -49,7 +49,7 @@ nav .pk-kbd { min-width: 0; height: 20px; padding: 0 5px; font-size: 10px; }
 
 .map-wrap { position: fixed; top: 68px; right: 20px; width: 212px; padding: 10px; border: 2px solid rgba(255, 255, 255, .08); border-radius: 14px; }
 .map-wrap > span { display: block; margin-bottom: 6px; font: 900 10px var(--pk-sans); letter-spacing: 1.2px; color: var(--pk-muted); }
-.map-wrap canvas { display: block; width: 100%; height: auto; border-radius: 8px; background: repeating-linear-gradient(135deg, #231a47 0 8px, #1a1336 8px 16px); }
+.map-wrap canvas { display: block; width: 100%; height: auto; border-radius: 8px; background: #1a1336; }
 .map-wrap small { display: flex; align-items: center; gap: 5px; margin-top: 6px; font: 700 11px var(--pk-sans); color: var(--pk-muted); }
 .map-wrap i { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--pk-yellow); }
 .map-wrap i:last-of-type { margin-left: 6px; background: var(--pk-coral); }
@@ -117,9 +117,8 @@ nav .pk-kbd { min-width: 0; height: 20px; padding: 0 5px; font-size: 10px; }
   .map-wrap { width: 170px; }
 }
 @media (pointer: coarse) {
-  .touch-controls { display: block; position: fixed; left: 20px; bottom: 250px; text-align: center; touch-action: none; }
-  .touch-controls > div { display: flex; }
-  .touch-controls button { width: 46px; height: 44px; margin: 2px; border: 1px solid var(--pk-line-strong); border-radius: 12px; background: var(--pk-hud); color: var(--pk-text); box-shadow: var(--pk-drop); touch-action: none; }
+  /* the arrows are the kit's .pk-touch in a .pk-dpad */
+  .touch-controls { display: grid; position: fixed; left: 20px; bottom: 250px; --pk-touch: 54px; }
   .controls { display: none; }
 }
 
@@ -163,6 +162,10 @@ nav .pk-kbd { min-width: 0; height: 20px; padding: 0 5px; font-size: 10px; }
   .toast { top: 158px; max-width: calc(100vw - 150px); left: 10px; transform: none; padding: 8px 12px; font-size: 12px; border-radius: 14px; }
   .result-panel { padding: 22px; }
   .result-panel .pk-title { font-size: 34px; }
+}
+@media (pointer: coarse) and (max-height: 520px) {
+  .touch-controls { left: auto; right: max(14px, env(safe-area-inset-right)); bottom: max(14px, env(safe-area-inset-bottom)); --pk-touch: 48px; }
+  .map-wrap { display: none; }
 }
 @media (prefers-reduced-motion: reduce) {
   * { transition: none !important; }

@@ -4,6 +4,7 @@ import { buildCharacter } from '/engine/models/characters/pana/avatar-model.js';
 import { createPlazaProp, PLAZA_PROPS, propDefinition } from '/engine/models/props/plaza.js';
 import { sound } from '/engine/fx.js';
 import { createGameMenu, toggleMute } from '/engine/ui.js';
+import { holdButton } from '/engine/touch.js';
 import { pixelRatio, bindRenderer } from '/engine/settings.js';
 import { createPlaza } from './plaza.js';
 import { MAP_PROPS, BLOCKERS, BOUNDS } from './layout.js';
@@ -62,6 +63,7 @@ const room = new HuntRoom({ code, name, avatar, onState: receive,
   onStatus(text, failed = false) { $('connection').textContent = text; show('practice', failed); if (failed) notify(text); updateHUD(); }, onNotice: notify });
 function notify(message) { $('toast').textContent = message; show('toast', true); clearTimeout(toastTimer); toastTimer = setTimeout(() => show('toast', false), 3300); }
 const menu = createGameMenu({
+  orientation: 'vertical',
   title: 'Escondidas', heading: 'Un momentico.', resumeLabel: 'Volver a la plaza', sound, notify,
   note: () => room.members.size === 1 ? 'La práctica queda en pausa mientras descansas.' : 'La ronda continúa para los demás panas.',
   controls: [['W A S D / ↑ ← ↓ →', 'Moverte'], ['Arrastrar', 'Mirar'], ['Shift', 'Correr'], ['1 2 3 4 5', 'Transformarte'],
@@ -216,10 +218,9 @@ addEventListener('keydown', event => {
 addEventListener('keyup', event => keys.delete(event.key.toLowerCase()));
 addEventListener('blur', () => { keys.clear(); touch.clear(); });
 document.addEventListener('visibilitychange', () => { keys.clear(); touch.clear(); });
+// Held touch buttons (engine/touch.js).
 for (const button of document.querySelectorAll('[data-move]')) {
-  button.onpointerdown = event => { event.preventDefault(); button.setPointerCapture(event.pointerId); touch.add(button.dataset.move); };
-  const release = () => touch.delete(button.dataset.move);
-  button.onpointerup = button.onpointercancel = button.onlostpointercapture = release;
+  holdButton(button, { down: () => touch.add(button.dataset.move), up: () => touch.delete(button.dataset.move) });
 }
 $('world').onpointerdown = event => { if (paused) return; drag = { x: event.clientX, y: event.clientY }; $('world').setPointerCapture(event.pointerId); };
 $('world').onpointermove = event => {

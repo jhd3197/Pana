@@ -130,11 +130,15 @@
       <span><kbd class="pk-kbd">Esc</kbd> Pausa</span>
     </div>
 
-    <div class="touch-drive" aria-label="Conducir">
-      <button data-drive="a" aria-label="Girar a la izquierda">←</button>
-      <button data-drive="d" aria-label="Girar a la derecha">→</button>
-      <button data-drive="s" aria-label="Frenar">Freno</button>
-      <button data-drive="w" aria-label="Acelerar">Gas</button>
+    <div class="touch-drive pk-touch-zone" aria-label="Conducir">
+      <div class="touch-steer">
+        <button class="pk-touch pk-touch--lg" data-icon="left" data-drive="a" aria-label="Girar a la izquierda"></button>
+        <button class="pk-touch pk-touch--lg" data-icon="right" data-drive="d" aria-label="Girar a la derecha"></button>
+      </div>
+      <div class="touch-pedals">
+        <button class="pk-touch pk-touch--lg" data-drive="s" aria-label="Frenar">Freno</button>
+        <button class="pk-touch pk-touch--lg pk-touch--go" data-drive="w" aria-label="Acelerar">Gas</button>
+      </div>
     </div>
 
     <div id="count"></div>

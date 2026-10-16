@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import {loadAvatar,loadName} from '/engine/avatar.js';
 import {sound} from '/engine/fx.js';
 import {createGameMenu,toggleMute} from '/engine/ui.js';
+import {holdButton} from '/engine/touch.js';
 import {bindRenderer,pixelRatio} from '/engine/settings.js';
 import {RaceRoom} from './network.js';
 import {standings} from './rules.js';
@@ -16,8 +17,9 @@ const code=(params.get('room')||Math.random().toString(36).slice(2,8)).slice(0,2
 const invite=new URL(location.href);invite.searchParams.delete('name');invite.searchParams.delete('debug');invite.searchParams.delete('manual');
 const keys=new Set(),touch=new Set(),riders=new Map();let paused=false,state,world,ready=false,lastPhase='',lastCountdown='',lastRace=0,hoofClock=0,drawClock=0,disposed=false;
 const room=new RaceRoom({code,name,avatar,coat,onState:s=>{state=s;},onStatus:(message,error=false)=>{$('connection').textContent=message;$('practice').classList.toggle('hidden',!error);if(error)showNotice(message);}});state=room.state;
-function clearInput(){keys.clear();touch.clear();document.querySelectorAll('[data-input]').forEach(b=>b.classList.remove('held'));}
-const menu=createGameMenu({title:'Galope',sound,note:()=>room.members.size>1?'La carrera sigue mientras abres el menú.':'La carrera está en pausa.',
+const touchButtons=[];
+function clearInput(){keys.clear();for(const b of touchButtons)b.release();touch.clear();}
+const menu=createGameMenu({title:'Galope',sound,orientation:'horizontal',note:()=>room.members.size>1?'La carrera sigue mientras abres el menú.':'La carrera está en pausa.',
   controls:[['W / ↑','Avanzar'],['A D / ← →','Girar'],['S / ↓','Frenar'],['Shift','Remate: gasta resistencia'],['Espacio','Saltar troncos'],['R','Volver al camino'],['M','Sonido'],['Esc','Menú']],
   invite:()=>invite.href,actions:[{id:'local-race',label:'Abrir carrera local',run:()=>room.practice()}],onOpen(){paused=true;clearInput();},onClose(){paused=false;}});
 const navButton='pk-btn pk-btn--sm game-menu-button';
@@ -39,10 +41,9 @@ window.addEventListener('keydown',e=>{
 });
 window.addEventListener('keyup',e=>keys.delete(e.code));window.addEventListener('blur',clearInput);
 document.addEventListener('visibilitychange',()=>{if(document.hidden)clearInput();});
-for(const b of document.querySelectorAll('[data-input]')){
-  b.addEventListener('pointerdown',e=>{if(paused)return;e.preventDefault();b.setPointerCapture(e.pointerId);touch.add(b.dataset.input);b.classList.add('held');unlock();});
-  for(const event of ['pointerup','pointercancel','lostpointercapture'])b.addEventListener(event,()=>{touch.delete(b.dataset.input);b.classList.remove('held');});
-}
+// Held touch buttons (engine/touch.js): one per input, several fingers at once.
+for(const b of document.querySelectorAll('[data-input]'))touchButtons.push(holdButton(b,{paused:()=>paused,
+  down:()=>{touch.add(b.dataset.input);unlock();},up:()=>touch.delete(b.dataset.input)}));
 function input(){if(paused)return {};return {throttle:keys.has('KeyS')||keys.has('ArrowDown')||touch.has('brake')?-1:keys.has('KeyW')||keys.has('ArrowUp')||touch.has('go')?1:0,
   steer:Number(keys.has('KeyA')||keys.has('ArrowLeft')||touch.has('left'))-Number(keys.has('KeyD')||keys.has('ArrowRight')||touch.has('right')),
   sprint:keys.has('ShiftLeft')||keys.has('ShiftRight')||touch.has('sprint'),jump:keys.has('Space')||touch.has('jump'),reset:keys.has('KeyR')};}

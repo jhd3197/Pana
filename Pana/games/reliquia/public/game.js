@@ -3,6 +3,7 @@ import { buildCharacter } from '/engine/character.js';
 import { loadAvatar, loadName } from '/engine/avatar.js';
 import { sound } from '/engine/fx.js';
 import { createGameMenu, toggleMute } from '/engine/ui.js';
+import { holdButton as hold } from '/engine/touch.js';
 import { shout } from '/engine/kit.js';
 import { pixelRatio, bindRenderer } from '/engine/settings.js';
 import { mummy, sunRelic, expeditionLantern } from '/engine/models/props/reliquia.js';
@@ -35,6 +36,7 @@ const colors = ['#dfb86d', '#81c8c4', '#d2a0a0', '#a3bc74', '#d9966e', '#b7a8ce'
 function notify(text) { if (!text) return; $('toast').textContent = text; show('toast', true); clearTimeout(toastTimer); toastTimer = setTimeout(() => show('toast', false), 3600); }
 function clearInput() { keys.clear(); touch.clear(); }
 const menu = createGameMenu({
+  orientation: 'vertical',
   title: 'Reliquia', heading: 'Un respiro', resumeLabel: 'Volver a la expedición', sound, notify,
   note: () => room.offline || room.members.size === 1 ? 'La expedición está pausada.' : 'Tus panas siguen explorando.',
   controls: [['W A S D / ↑ ← ↓ →', 'Moverte'], ['Espacio', 'Golpear; también puedes hacer clic'], ['Shift', 'Esquivar un golpe'], ['E', 'Interactuar; mantén para girar o revivir'], ['R', 'Usar un botiquín'], ['Q', 'Centrar la cámara'], ['M', 'Sonido']],
@@ -160,9 +162,8 @@ function act(action) { if (!paused && state.phase === 'playing') room.action(act
 $('start').onclick = () => room.action('start'); $('again').onclick = () => room.action('start');
 $('practice').onclick = $('offline-inline').onclick = () => room.practice();
 $('attack').onclick = () => act('attack'); $('dodge').onclick = () => act('dodge'); $('heal').onclick = () => act('heal');
-function holdButton(button, key, begin) {
-  button.addEventListener('pointerdown', e => { if (paused) return; e.preventDefault(); button.setPointerCapture(e.pointerId); touch.add(key); begin?.(); });
-  for (const type of ['pointerup', 'pointercancel', 'lostpointercapture']) button.addEventListener(type, () => touch.delete(key));
+function holdButton(button, key, begin) {  // engine/touch.js, one key per button
+  hold(button, { paused: () => paused, down: () => { touch.add(key); begin?.(); }, up: () => touch.delete(key) });
 }
 holdButton($('interact'), 'hold', () => act('interact'));
 for (const button of document.querySelectorAll('[data-move]')) holdButton(button, button.dataset.move);

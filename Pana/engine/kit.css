@@ -174,7 +174,7 @@
 /* progress: <div class="pk-bar" style="--pk-value:.68"><i></i></div> */
 .pk-bar { height: 12px; border-radius: 999px; background: var(--pk-deep); border: 1px solid var(--pk-line); overflow: hidden; }
 .pk-bar > i { display: block; height: 100%; width: calc(var(--pk-value, 0) * 100%); border-radius: inherit; background: var(--pk-bar-color, var(--pk-yellow)); transition: width 160ms linear; }
-.pk-bar--stripes > i { background: repeating-linear-gradient(-45deg, var(--pk-yellow) 0 10px, #ffd65c 10px 20px); }
+.pk-bar--stripes > i { background: linear-gradient(#ffd65c, var(--pk-yellow) 60%); box-shadow: inset 0 -2px 0 var(--pk-yellow-edge); }
 /* pips: <div class="pk-pips"><i class="on"></i>…</div> */
 .pk-pips { display: flex; gap: 5px; }
 .pk-pips > i { flex: 1; min-width: 10px; height: 10px; border-radius: 4px; background: var(--pk-raised); }
@@ -267,6 +267,54 @@
 }
 .pk-loading .pk-title { font-size: clamp(44px, 8vw, 88px); }
 
+/* ---------- touch controls (engine/touch.js) ----------
+   Held buttons over the 3D scene. Direction/jump buttons are square with a drawn icon
+   (data-icon); action buttons carry one short word. Nothing in them can be selected or
+   long-pressed into the copy menu. Size with --pk-touch (default 64px). */
+.pk-touch-zone { touch-action: none; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
+.pk-touch {
+  display: inline-flex; align-items: center; justify-content: center;
+  min-width: var(--pk-touch, 64px); height: var(--pk-touch, 64px); padding: 0 16px;
+  border: 2px solid var(--pk-line-strong); border-radius: 18px;
+  background: rgba(26, 19, 54, .84); color: var(--pk-text);
+  font: 400 20px/1 var(--pk-display); letter-spacing: .5px; text-transform: none;
+  box-shadow: 0 5px 0 rgba(0, 0, 0, .45);
+  cursor: pointer; touch-action: none; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none;
+  -webkit-tap-highlight-color: transparent;
+  transition: transform 60ms, box-shadow 60ms, border-color 60ms, color 60ms;
+}
+.pk-touch[data-icon] { width: var(--pk-touch, 64px); padding: 0; }
+.pk-touch svg { flex: none; width: calc(var(--pk-touch, 64px) * .46); height: calc(var(--pk-touch, 64px) * .46); pointer-events: none; }
+.pk-touch > * { pointer-events: none; }
+.pk-touch.is-held { transform: translateY(4px); box-shadow: 0 1px 0 rgba(0, 0, 0, .45); border-color: var(--pk-yellow); color: var(--pk-yellow); }
+.pk-touch--go { border-color: var(--pk-yellow-ink); background: var(--pk-yellow); color: var(--pk-yellow-ink); box-shadow: 0 5px 0 var(--pk-yellow-edge); }
+.pk-touch--go.is-held { color: var(--pk-yellow-ink); border-color: var(--pk-yellow-ink); box-shadow: 0 1px 0 var(--pk-yellow-edge); }
+.pk-touch--coral { border-color: #5a1012; background: var(--pk-coral); color: #fff; box-shadow: 0 5px 0 var(--pk-coral-edge); }
+.pk-touch--coral.is-held { color: #fff; border-color: #5a1012; box-shadow: 0 1px 0 var(--pk-coral-edge); }
+.pk-touch--sm { --pk-touch: 52px; font-size: 16px; border-radius: 15px; }
+.pk-touch--lg { --pk-touch: 76px; font-size: 22px; border-radius: 22px; }
+/* a cross of four arrows: up on top, left/down/right below */
+.pk-dpad { display: grid; grid-template-columns: repeat(3, var(--pk-touch, 58px)); gap: 6px; --pk-touch: 58px; }
+.pk-dpad [data-icon="up"] { grid-column: 2; }
+.pk-dpad [data-icon="left"] { grid-column: 1; grid-row: 2; }
+.pk-dpad [data-icon="down"] { grid-column: 2; grid-row: 2; }
+.pk-dpad [data-icon="right"] { grid-column: 3; grid-row: 2; }
+
+/* "Gira tu teléfono": a game held the other way from the one it (or the player) wants */
+.pana-rotate {
+  position: fixed; inset: 0; z-index: 90; display: grid; place-items: center; padding: 24px;
+  background: rgba(14, 11, 36, .95); color: var(--pk-text); font-family: var(--pk-sans); text-align: center;
+}
+.pana-rotate[hidden] { display: none; }
+.pana-rotate-card { display: flex; flex-direction: column; align-items: center; gap: 14px; max-width: 340px; }
+.pana-rotate h2 { margin: 0; font: 400 36px/1 var(--pk-display); letter-spacing: 1px; color: var(--pk-yellow); text-shadow: 0 4px 0 var(--pk-coral); }
+.pana-rotate p { margin: 0; color: var(--pk-muted); font-weight: 700; }
+.pana-rotate-phone { width: 96px; height: 96px; color: var(--pk-yellow); animation: pana-to-portrait 2s ease-in-out infinite; }
+.pana-rotate.to-landscape .pana-rotate-phone { animation-name: pana-to-landscape; }
+.pana-rotate-actions { display: flex; flex-direction: column; gap: 10px; width: 100%; margin-top: 6px; }
+@keyframes pana-to-landscape { 0%, 25% { transform: rotate(0); } 55%, 100% { transform: rotate(-90deg); } }
+@keyframes pana-to-portrait { 0%, 25% { transform: rotate(-90deg); } 55%, 100% { transform: rotate(0); } }
+
 @media (max-width: 720px) {
   .pk-lobby { width: 100vw; padding: 20px 16px 24px; background: linear-gradient(180deg, rgba(14, 11, 36, .55), rgba(14, 11, 36, .96) 40%); }
   .pk-lobby-cta { grid-template-columns: 1fr; }
@@ -277,5 +325,6 @@
 }
 @media (prefers-reduced-motion: reduce) {
   .pk-banner.pk-pop { animation: none; }
-  .pk-btn, .pk-bar > i, .pk-switch::before { transition: none; }
+  .pk-btn, .pk-bar > i, .pk-switch::before, .pk-touch { transition: none; }
+  .pana-rotate-phone { animation: none; }
 }

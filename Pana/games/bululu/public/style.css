@@ -406,16 +406,7 @@ body.in-mini .look, body.in-mini .side, body.in-mini .legend { display: none; }
     padding: 0 16px;
     z-index: 4;
   }
-  .touch button {
-    width: 76px; height: 76px;
-    border-radius: 50%;
-    border: 2px solid var(--pk-line-strong);
-    background: var(--pk-hud);
-    color: var(--pk-yellow);
-    font-size: 30px;
-    box-shadow: var(--pk-drop);
-    touch-action: none;
-  }
+  /* the buttons themselves are the kit's .pk-touch */
 }
 
 /* narrower screens: smaller cards between the logo and the right column */

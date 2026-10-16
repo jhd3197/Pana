@@ -115,7 +115,7 @@ dd i { display: block; height: 100%; background: var(--car, var(--pk-coral)); bo
   display: flex; flex-direction: column; gap: 14px; padding: 18px;
   border-radius: 18px; background: rgba(26, 19, 54, .94);
 }
-.track-map { position: relative; height: 130px; flex: none; border-radius: 12px; overflow: hidden; background: repeating-linear-gradient(135deg, var(--pk-raised) 0 10px, var(--pk-purple) 10px 20px); }
+.track-map { position: relative; height: 130px; flex: none; border-radius: 12px; overflow: hidden; background: var(--pk-deep); }
 #track-map { position: static; width: 100%; height: 100%; }
 .track-of { position: absolute; left: 10px; top: 10px; padding: 3px 8px; border-radius: 6px; background: var(--pk-night); color: var(--pk-muted); font: 800 11px var(--pk-sans); letter-spacing: 1px; text-transform: uppercase; }
 .track-pick { display: flex; align-items: center; gap: 10px; }
@@ -141,8 +141,8 @@ body:has(#loading:not(.hidden)) #garage { visibility: hidden; }
 .loading-bar { display: flex; align-items: center; gap: 16px; }
 #loading-progress { flex: 1; height: 14px; -webkit-appearance: none; appearance: none; border: 1px solid var(--pk-line); border-radius: 8px; background: var(--pk-purple); overflow: hidden; }
 #loading-progress::-webkit-progress-bar { background: var(--pk-purple); }
-#loading-progress::-webkit-progress-value { background: repeating-linear-gradient(-45deg, var(--pk-yellow) 0 14px, #ffd65c 14px 28px); border-radius: 8px; transition: width .2s; }
-#loading-progress::-moz-progress-bar { background: repeating-linear-gradient(-45deg, var(--pk-yellow) 0 14px, #ffd65c 14px 28px); border-radius: 8px; }
+#loading-progress::-webkit-progress-value { background: linear-gradient(#ffd65c, var(--pk-yellow) 60%); border-radius: 8px; transition: width .2s; }
+#loading-progress::-moz-progress-bar { background: linear-gradient(#ffd65c, var(--pk-yellow) 60%); border-radius: 8px; }
 #loading-pct { width: 64px; text-align: right; font: 400 22px var(--pk-display); }
 .loading-foot { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
 #loading-status { margin: 0; color: var(--pk-muted); font-size: 14px; }
@@ -343,15 +343,20 @@ body:has(#loading:not(.hidden)) #garage { visibility: hidden; }
   .res-side { padding: 0 0 24px; }
 }
 
+/* Touch: steering under the left thumb, Freno/Gas under the right, at the bottom edge in
+   both orientations (buttons from the kit's .pk-touch). The item panel sits above them. */
 @media (pointer: coarse) {
-  .touch-drive { position: absolute; bottom: 230px; left: 12px; right: 12px; display: flex; gap: 8px; }
-  .touch-drive button {
-    min-width: 56px; height: 56px; border: 1px solid var(--pk-line-strong); border-radius: var(--pk-r);
-    background: var(--pk-hud); color: var(--pk-text); font: 800 15px var(--pk-sans);
-    box-shadow: var(--pk-drop); touch-action: none; user-select: none;
+  .touch-drive {
+    position: absolute; left: max(12px, env(safe-area-inset-left)); right: max(12px, env(safe-area-inset-right));
+    bottom: max(14px, env(safe-area-inset-bottom)); display: flex; justify-content: space-between; align-items: flex-end;
+    gap: 12px; pointer-events: none;
   }
-  .touch-drive button:nth-child(3) { margin-left: auto; }
-  .touch-drive button:last-child { border: 0; background: var(--pk-yellow); color: var(--pk-yellow-ink); font: 400 20px var(--pk-display); box-shadow: 0 4px 0 var(--pk-yellow-edge); }
+  .touch-drive > div { display: flex; gap: 10px; pointer-events: auto; }
+  .item, #speedo { bottom: calc(max(14px, env(safe-area-inset-bottom)) + 94px); }
+  #item-status, .slot small { display: none; }
+  .slot { height: 58px; }
+  .slot .item-icon { font-size: 26px; }
+  .item-actions .pk-btn { min-height: 40px; }
   .item-actions kbd, .swap kbd { display: none; }
   .keys { display: none; }
 }
@@ -379,11 +384,14 @@ body:has(#loading:not(.hidden)) #garage { visibility: hidden; }
   .mm-head { max-width: 104px; }
 }
 @media (max-height: 540px) and (pointer: coarse) {
-  .touch-drive { bottom: 16px; left: 286px; }
+  .touch-drive { bottom: max(12px, env(safe-area-inset-bottom)); }
+  .item { left: 50%; bottom: max(10px, env(safe-area-inset-bottom)); width: 236px; padding: 8px; transform: translateX(-50%); }
+  .slot { height: 50px; }
+  .slot .item-icon { font-size: 22px; }
+  .item-actions .pk-btn { min-height: 34px; }
   #speedo, .keys, #board, .wheel-lineup { display: none; }
   .tools { bottom: 284px; }
   .coins { top: 80px; bottom: auto; }
-  .item { bottom: 10px; }
 }
 @media (prefers-reduced-motion: reduce) {
   .coins.picked .coin-symbol { transform: none; }

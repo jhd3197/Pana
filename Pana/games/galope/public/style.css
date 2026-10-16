@@ -80,13 +80,13 @@ body:not(.in-lobby) .lobby-hint{display:none}
 .result-paper .pk-back{align-self:center}
 
 @media(pointer:coarse){
-  .keyboard-hints,.lobby-hint{display:none}
-  .touch-controls{position:absolute;bottom:max(16px,env(safe-area-inset-bottom));left:16px;right:16px;display:flex;justify-content:space-between;align-items:flex-end;gap:16px}
-  .touch-controls button{touch-action:none;user-select:none;-webkit-user-select:none;height:58px;min-width:58px;border:1px solid var(--pk-line);border-radius:var(--pk-r);background:var(--pk-hud);color:var(--pk-text);font:800 13px var(--pk-sans);box-shadow:var(--pk-drop)}
-  .touch-controls button.held,.touch-actions button[data-input=go]{border-color:transparent;background:var(--pk-yellow);color:var(--pk-yellow-ink)}
-  .touch-actions button[data-input=go]{font:400 16px var(--pk-display)}
-  .touch-steer{display:flex;gap:9px}
-  .touch-actions{display:grid;grid-template-columns:repeat(2,64px);gap:8px}
+  .keyboard-hints,.lobby-hint,#game-nav kbd{display:none}
+  /* buttons are the kit's .pk-touch; steering under the left thumb, the rest under the right */
+  .touch-controls{position:absolute;bottom:max(16px,env(safe-area-inset-bottom));left:max(14px,env(safe-area-inset-left));right:max(14px,env(safe-area-inset-right));display:flex;justify-content:space-between;align-items:flex-end;gap:16px;pointer-events:none}
+  .touch-controls>div{pointer-events:auto}
+  .touch-steer{display:flex;gap:10px}
+  .touch-actions{display:grid;grid-template-columns:repeat(2,auto);gap:10px;--pk-touch:60px}
+  .touch-actions .pk-touch{font-size:17px;padding:0 12px}
   .riding-status{bottom:164px}
 }
 @media(max-width:720px){
@@ -125,6 +125,8 @@ body:not(.in-lobby) .lobby-hint{display:none}
   .race-top{top:12px;left:12px}.position{font-size:52px}
   #leaderboard,.minimap{display:none}
   .riding-status{bottom:auto;top:12px;left:auto;right:12px;transform:none;width:300px}
-  .topbar{top:auto;bottom:90px}
+  /* the bar keeps only Menú (invite and sound are inside it), bottom center between the thumbs */
+  .topbar{top:auto;right:auto;left:50%;bottom:max(16px,env(safe-area-inset-bottom));padding:0;transform:translateX(-50%)}
+  #game-nav>:not(#menu){display:none}
 }
 @media(prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}

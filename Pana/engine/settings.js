@@ -15,7 +15,9 @@ export const DEFAULTS = Object.freeze({
   volume: 0.8,     // master volume, 0–1
   quality: 'alta', // render resolution, see QUALITY
   hints: true,     // on-screen keyboard reminders ([data-pana-hint])
+  orientation: 'juego', // phones: 'juego' (each game's own default), 'horizontal' or 'vertical'
 });
+const ORIENTATION_CHOICES = ['juego', 'horizontal', 'vertical'];
 
 function normalize(raw = {}) {
   const out = { ...DEFAULTS };
@@ -23,6 +25,7 @@ function normalize(raw = {}) {
   if (Number.isFinite(raw.volume)) out.volume = Math.min(1, Math.max(0, raw.volume));
   if (raw.quality in QUALITY) out.quality = raw.quality;
   if (typeof raw.hints === 'boolean') out.hints = raw.hints;
+  if (ORIENTATION_CHOICES.includes(raw.orientation)) out.orientation = raw.orientation;
   return out;
 }
 
