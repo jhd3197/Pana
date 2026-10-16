@@ -3,8 +3,9 @@
 Pana is a hub of free multiplayer browser games, built largely by AI coding agents.
 Follow these rules so every agent (and game) stays compatible with the others.
 
-This file lives in `Pana/Pana/` — the app directory. The repo root (`Pana/`) stays
-clean: only `README.md` and `.gitignore` belong there. Everything else lives here.
+This file lives at the repo root, next to `README.md`, `package.json` and `docs/`.
+The app itself lives in `Pana/` (server, web, games, engine, studio). Unless a path
+starts with `docs/`, paths below are relative to that app directory.
 
 ## Architecture
 
@@ -24,7 +25,7 @@ clean: only `README.md` and `.gitignore` belong there. Everything else lives her
 - Pana Studio at `/studio/library` catalogs existing props, maps, vehicles and
   characters. Register new resources in `web/studio/catalog.js` using their real
   constructors; do not duplicate models in the preview. See
-  `../docs/knowledge/pana-studio.md` for the registration and agent workflow.
+  `docs/knowledge/pana-studio.md` for the registration and agent workflow.
   Each asset has a real `/studio/assets/:id` page; `/studio/workspace` stores a
   local working set. Keep library metadata independent of renderer imports and
   load `inspector.js` only for an item. Thumbnail queues are explicit filtered
@@ -76,7 +77,7 @@ clean: only `README.md` and `.gitignore` belong there. Everything else lives her
   preserve its license and source attribution. Factories return owned native
   skinned meshes with absolute-time `userData.tick(t)` and an idempotent skeleton
   `userData.dispose()`. Keep animals outside static batches and racing lanes.
-  See `../docs/knowledge/procedural-farm-animals.md` for parameters and proof.
+  See `docs/knowledge/procedural-farm-animals.md` for parameters and proof.
   `engine/models/fauna/` supplies the Fauna macaw, scarlet ibis, soaring vulture and
   natural capybara. Each species has its own module; the shared flight rig and
   `models/animation/orbit-bird.js` are separate. `capybaraForm` lives in
@@ -85,7 +86,7 @@ clean: only `README.md` and `.gitignore` belong there. Everything else lives her
   preserve +Z tangent heading and absolute-time ticks, and reuse `capybaraForm`.
   Fauna now has ten entries (nine animals plus a fish school). The current source
   inventory, uncataloged/legacy ledger and priorities live in
-  `../docs/knowledge/model-inventory.md`; regenerate it with
+  `docs/knowledge/model-inventory.md`; regenerate it with
   `scripts/audit-inventory.browser.js` after updating `scripts/inventory-notes.js`.
   `engine/models/fauna/aquatic/` supplies Pana-authored fish and schools to both islands.
   Keep their whole swimming envelope below waves and above the seabed, and pass
@@ -97,13 +98,13 @@ clean: only `README.md` and `.gitignore` belong there. Everything else lives her
   island. Keep buoys/crabs outside static batches and tick absolute time.
   Boat origins are at the keel: placements sit 0.32 m below mean water.
   Reserve land furniture before scattering plants; keep dock cargo on its
-  actual deck height. See `../docs/knowledge/coastal-props.md` for coverage/proof.
-  See `../docs/knowledge/map-asset-rollout.md` for actual map coverage and the
+  actual deck height. See `docs/knowledge/coastal-props.md` for coverage/proof.
+  See `docs/knowledge/map-asset-rollout.md` for actual map coverage and the
   remaining Studio-only models. New Plaza garden props must stay outside player
   movement bounds; the race town supplies separate road-safe positions.
   Llanos' connected water uses the terrain's grid and signed bed depth to avoid
   coplanar pond seams; keep both bridge channels below the racing road.
-  See `../docs/knowledge/llanos-desert-props.md` for parameters and proof.
+  See `docs/knowledge/llanos-desert-props.md` for parameters and proof.
   Chi Chi's five thermal landmarks live in `engine/models/props/thermal.js` and the
   Studio category `Termales`. `models/effects/thermal-steam.js` uses instanced camera-facing
   quads, seeded phases and absolute time. Keep its shader culling bounds broad;
@@ -126,12 +127,12 @@ clean: only `README.md` and `.gitignore` belong there. Everything else lives her
   two fonts (Luckiest Guy for display, Nunito for UI) and the lobby/HUD pieces.
   Link it before `/engine/ui.css` and the game's stylesheet, set the game's
   accent with `--pk-game`, and build lobbies and HUDs from `.pk-*` classes
-  instead of per-game fonts and palettes. See `../docs/knowledge/pana-kit.md`.
+  instead of per-game fonts and palettes. See `docs/knowledge/pana-kit.md`.
 - Pause menus and settings are shared: `engine/ui.js` (`createGameMenu`) plus
   `engine/settings.js` (`pana:settings`: sound, volume, resolution, hints).
   Every game and the hub use them. Do not write a per-game pause overlay, sound
   toggle or invite flow, and do not handle Escape in a game. Mark keyboard
-  reminders with `data-pana-hint`. See `../docs/knowledge/pana-ui.md`.
+  reminders with `data-pana-hint`. See `docs/knowledge/pana-ui.md`.
 - Browser is the only platform target. Friends join by opening a link; nothing to
   install, nothing to sign up for.
 
@@ -141,15 +142,23 @@ clean: only `README.md` and `.gitignore` belong there. Everything else lives her
 - Game names are Spanish words: `derrape`, `bululú`, `trompo`. Lowercase folder names.
 - Player-facing strings are in Spanish (Venezuelan flavor welcome); code, comments and
   commit messages in English.
-- URLs: hub at `/`, games at `/g/<name>/`, API at `/api/*`, WebSocket at `/ws`.
-- Multiplayer model: clients simulate their own entity and broadcast state at ~20 Hz;
-  the server relays. Rooms are ephemeral (`${game}:${code}`), max 8 players.
-- Escondidas uses a host-simulated round: clients send input/actions inside `v`,
-  and the oldest connected client broadcasts snapshots at 20 Hz. The server relay
-  is unchanged. See `../docs/knowledge/escondidas.md` for role and recovery rules.
+- URLs: hub at `/`, games at `/g/<name>/`, API at `/api/*`, rooms at `/colyseus/*`
+  (the legacy `/ws` relay still answers old clients; no game uses it).
+- Multiplayer goes through ONE kit: `server/src/room-kit.js` (`PanaRoom`),
+  `server/src/relay-room.js` (the default room every game gets) and `engine/net.js`
+  (`joinRoom`, `HostRoom`). Never write sockets, retries, member lists or host
+  election in a game. Host-run games extend `HostRoom` and keep only their rules
+  (`takeOver`, `memberJoined/Left/Hello`, `receive`, `entered`); reference:
+  `games/galope/public/network.js`. A game that needs its own server logic ships
+  `games/<game>/server/room.js` extending `PanaRoom` (Derrape). Rooms are one per
+  `?room=<code>`, max 8; the room picks the host (`?lead=1` = the party's Pana Mayor
+  during the first 15 s), seats are never reused, and suites force a lasting
+  disconnect with `room.cut()`. See `docs/knowledge/pana-net.md`.
+- Escondidas uses a host-simulated round: clients send input/actions, and the
+  room's host broadcasts snapshots at 20 Hz. See `docs/knowledge/escondidas.md` for role and recovery rules.
 - Cocina also uses a host simulation at 20 Hz (`cocina-v1`). Host migration
   restores the last kitchen snapshot, including orders and active food. See
-  `../docs/knowledge/cocina.md`. Plaza scenery and the original hunt layout now
+  `docs/knowledge/cocina.md`. Plaza scenery and the original hunt layout now
   live in `engine/plaza.js` and `engine/plaza-layout.js`; cooking has its own
   station layout and collision rules. Existing Escondidas paths re-export them.
 - Reliquia uses a host simulation at 20 Hz (`reliquia-v1`). Its game-local
@@ -161,7 +170,7 @@ clean: only `README.md` and `.gitignore` belong there. Everything else lives her
   extract. The mummy, guardian, sun relic, winch and lantern factories live in
   `engine/models/props/reliquia.js` and are registered in Studio. Keep rigid mummy
   parts batched independently of their animation pivots. The shared rope bridge's
-  sag is mirrored by `groundAt()` in the game scene. See `../docs/knowledge/reliquia.md`.
+  sag is mirrored by `groundAt()` in the game scene. See `docs/knowledge/reliquia.md`.
 - Galope uses a host simulation at 20 Hz (`galope-v1`), with ordered route gates,
   bots, snapshots and host migration. `games/galope/public/course.js` owns the
   482 m horse circuit, terrain and water depth; `scene.js` uses the shared ranch,
@@ -169,7 +178,7 @@ clean: only `README.md` and `.gitignore` belong there. Everything else lives her
   the 9 m recovery corridor and water geometry aligned with the terrain bed.
   Horses opt into `{locomotion:true}` and `userData.gallop(phase,speed,jump)`;
   ordinary Studio/Derrape horses retain their grazing rig. The rider uses the
-  saved Pana character. See `../docs/knowledge/galope.md` for proof and controls.
+  saved Pana character. See `docs/knowledge/galope.md` for proof and controls.
   Galope's `landscape.js` extends the scenery into Laguna del Hato (bays/island)
   and Caño del Morichal (winding channel), using the signed field in `course.js`.
   The minimap samples the same bed. The 11 `Vida llanera` props live in
@@ -199,7 +208,7 @@ clean: only `README.md` and `.gitignore` belong there. Everything else lives her
   separate live mesh with fixed cable attachments and absolute-time cloth motion.
   The shared `house()` has tejas/balcon/tienda/terraza styles, registered in Studio;
   preserve the 5.4 m shell, ground origin and road clearance. Its painted trim
-  is color-batched before the town repeats it. See `../docs/knowledge/living-world.md`.
+  is color-batched before the town repeats it. See `docs/knowledge/living-world.md`.
   Race routes are 1.14–4.88 km with bends in both directions. Plaza extends
   the shared courtyard into a pueblo. Its game-local `tracks/plaza-layout.js`
   owns the street grid and hill; `plaza-town.js` builds blocks independently of
@@ -217,7 +226,7 @@ clean: only `README.md` and `.gitignore` belong there. Everything else lives her
   ground overlays use polygon offset for distant views. `ceiba({detail:'distant'})`
   is a lighter form of the same canonical tree for repeated groves. Estadio's
   parked cars reuse garage factories, remove/dispose the driver, and color-batch
-  opaque trim before instancing. See `../docs/knowledge/circuit-surroundings.md`.
+  opaque trim before instancing. See `docs/knowledge/circuit-surroundings.md`.
   Páramo and Chi Chi use elevated, continuous roads over carved terrain;
   keep waterways below the road and inspect actual chase-camera views.
   Chi Chi now spans 195 m of elevation, with springs, mountainside switchbacks,
@@ -229,7 +238,7 @@ clean: only `README.md` and `.gitignore` belong there. Everything else lives her
   spray; preserve at least 9.5 m of dry center at peak tide. This is an opt-in
   flooded edge, not a moving collision wall. Track cleanup collects disposers
   before invoking them because character disposal detaches scene children.
-  See `../docs/knowledge/venezuela-circuits.md` for construction and validation.
+  See `docs/knowledge/venezuela-circuits.md` for construction and validation.
   Selva's `selva-world.js` builds the river valley and shared forest assets;
   `selva-temple.js` sweeps a hollow tunnel along the road. Keep the terrain
   below its driving surface and test the chase camera through both portals.
@@ -247,7 +256,7 @@ clean: only `README.md` and `.gitignore` belong there. Everything else lives her
   `run` in `update()` to animate the shared rig.
 - Derrape's local race uses two item slots, coin trails and breakable wooden
   crates. Inventory/defense/speed rules live in `games/derrape/public/item-rules.js`;
-  `fragments.js` owns reusable prop bursts. See `../docs/knowledge/derrape-items.md`
+  `fragments.js` owns reusable prop bursts. See `docs/knowledge/derrape-items.md`
   for controls, ownership and regression commands. Keep these game-local until
   another game actually needs them. Garage cards render the real vehicle models.
   Garage previews reuse a bounded cache of eight cars and render progressively;
@@ -263,7 +272,7 @@ clean: only `README.md` and `.gitignore` belong there. Everything else lives her
   garage has a `2 Cauchos` step persisted in `localStorage 'derrape:wheels'`
   (fallback calle), and rivals wear thematic wheels (`AI_WHEELS`). The five
   wheels are registered in Studio under Vehículos. See
-  `../docs/knowledge/derrape-wheels.md`.
+  `docs/knowledge/derrape-wheels.md`.
 - Dominó uses event-driven host snapshots (`domino-v1`), with four seats and
   alternating teams. Its pure `games/domino/public/rules.js` owns deals, legal
   moves, passes, scoring and a revision/sequence ledger. Empty seats are bots;
@@ -271,8 +280,18 @@ clean: only `README.md` and `.gitignore` belong there. Everything else lives her
   preserves all hands, RNG and scores. `scene.js` uses the shared plaza and real
   seated Pana characters; physical tiles and the accessible rack share actions.
   The game-local table, chair and tile factories are registered in
-  `web/studio/catalog/domino.js`. See `../docs/knowledge/domino.md`.
-- Keep dependencies minimal. `ws` on the server; Three.js from CDN on the client.
+  `web/studio/catalog/domino.js`. See `docs/knowledge/domino.md`.
+- Keep dependencies minimal. `ws` and the Colyseus core packages on the server;
+  Three.js (and, for Colyseus games, `@colyseus/sdk`'s UMD build) from CDN.
+- Derrape races online through a Colyseus room (`games/derrape/server/room.js`,
+  `/colyseus`), not the `/ws` relay. `?room=<code>` joins; `&lead=1` makes that
+  player host (a pana.sh party's Pana Mayor). Each client simulates the cars it
+  owns (its own, plus bots if host) and sends stamped poses; remote cars are
+  kinematic and interpolate on the sender's server-time stamp. Hits and pickups
+  are decided by the owning client (`items.js` `remote*`/`emit`). Shared limits
+  and pose packing live in `public/online-rules.js`, imported by both sides.
+  Prove changes with `tests/online.browser.js` (two real clients). See
+  `docs/knowledge/derrape-online.md`.
 - Caída uses event-driven host snapshots (`caida-v1`) with 2/3/4 individual
   seats or four-seat partnerships. Its pure `games/caida/public/rules.js` owns
   rank captures, caídas, optional classic cantos, the últimas exception,
@@ -282,7 +301,7 @@ clean: only `README.md` and `.gitignore` belong there. Everything else lives her
   artwork is shared by physical meshes and accessible controls. The card and
   score token are registered in `web/studio/catalog/caida.js`. Table/chair
   factories are shared in `engine/models/props/game-table.js`; Dominó preserves
-  its old exports. See `../docs/knowledge/caida.md` for explicit house rules.
+  its old exports. See `docs/knowledge/caida.md` for explicit house rules.
 
 ## Dev workflow (Windows)
 

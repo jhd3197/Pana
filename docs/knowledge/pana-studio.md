@@ -1,7 +1,6 @@
 # Pana Studio
 
-Run `Pana/dev.ps1 studio` from the repository root (or `./dev.ps1 studio`
-inside `Pana/`). It opens `/studio/library`, reuses a healthy Pana server and does
+Run `.\dev.ps1 studio` from the repository root. It opens `/studio/library`, reuses a healthy Pana server and does
 not kill a running game. `-NoBrowser` prints the address without opening a tab;
 `-Port` selects a server port. If another application occupies that port, the
 normal port fallback applies. `-NoAutoPort` makes that conflict explicit.
@@ -194,7 +193,7 @@ structured searchable metadata (`um/kb.py`), a single source of truth, narrow
 verification before widening, and a reusable context/verification note. It does
 not depend on that toolkit or import its game-specific tooling.
 
-Agent workflow: read `Pana/AGENTS.md`, inspect the closest existing asset, extend
+Agent workflow: read `AGENTS.md`, inspect the closest existing asset, extend
 its source, register the entry, inspect its actual 3D preview and affected games,
 run `npm run check`, and record any non-obvious conventions here.
 

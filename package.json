@@ -10,9 +10,9 @@
   "scripts": {
     "start": "node Pana/server/src/index.js",
     "check": "node Pana/server/src/check.js",
-    "dev": "powershell -ExecutionPolicy Bypass -File Pana/dev.ps1"
+    "dev": "powershell -ExecutionPolicy Bypass -File dev.ps1"
   },
   "engines": {
-    "node": ">=18"
+    "node": ">=22"
   }
 }

@@ -65,8 +65,8 @@ score tokens are also available in Pana Studio.
 
 ```powershell
 npm install
-npm start            # or: npm run dev  /  Pana\dev.ps1
-.\Pana\dev.ps1 studio # Pana Studio: character editor and asset library
+npm start            # or: npm run dev  /  .\dev.ps1
+.\dev.ps1 studio # Pana Studio: character editor and asset library
 ```
 
 - Hub: http://localhost:8461
@@ -96,15 +96,15 @@ The repo root stays clean on purpose — everything lives in [`Pana/`](Pana/):
 ```
 Pana/                  ← this repo
 ├── README.md          ← you are here
+├── AGENTS.md          ← rules for AI coding agents working in the repo
+├── dev.ps1            ← Windows dev launcher (start / studio / check / setup)
 ├── package.json       ← npm workspace root: npm start / check / dev
+├── docs/              ← architecture, deployment, plans/, knowledge/
 └── Pana/              ← the app
-    ├── dev.ps1        ← Windows dev launcher (start / check / setup)
     ├── server/        ← pana-server: HTTP API + statics + WebSocket rooms
     ├── web/           ← hub frontend: game list, live rooms, name picker
     ├── games/         ← one folder per game (derrape, bululú…)
-    ├── engine/        ← shared game code
-    ├── docs/          ← architecture, deployment, plans/, knowledge/
-    └── AGENTS.md      ← rules for AI coding agents working in the repo
+    └── engine/        ← shared game code
 ```
 
 ## Roadmap
@@ -121,4 +121,4 @@ Pana/                  ← this repo
 
 ## Contributing / AI agents
 
-See [Pana/AGENTS.md](Pana/AGENTS.md). This repo is designed to be built largely by AI coding agents — read that file first.
+See [AGENTS.md](AGENTS.md). This repo is designed to be built largely by AI coding agents — read that file first.

@@ -60,5 +60,5 @@ The proof uses the real Studio renderer and shared constructors.
 Also run `games/derrape/tests/maps.browser.js` with
 `PANA_MAP_TEST_TRACKS=llanos,desierto` for lane-clearance and three-lap checks,
 `web/studio/tests/studio.browser.js` for category/search/preview/mobile checks,
-and `Pana/dev.ps1 check` from the repository root. Browser suites accept the
+and `.\dev.ps1 check` from the repository root. Browser suites accept the
 existing external Playwright runtime; no testing dependency is added to the game.

@@ -23,8 +23,8 @@
 #>
 
 $ErrorActionPreference = 'Stop'
-$AppRoot = $PSScriptRoot
-$RepoRoot = Split-Path -Parent $AppRoot
+$RepoRoot = $PSScriptRoot
+$AppRoot = Join-Path $RepoRoot 'Pana'
 
 function Write-Header($text) {
     Write-Host

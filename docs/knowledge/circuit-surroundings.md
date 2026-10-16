@@ -81,7 +81,7 @@ The guard is now 4.6 million triangles / 1,300 overview submissions; unchanged
 route and foundation tolerances still apply. The focused driving views remain
 below 900 submissions / 3.5 million triangles for every tested circuit.
 
-Current screenshots and reports are in `Pana/art/surroundings/`, with actual Studio
-placement renders in `Pana/art/studio/map-rollout/`. These generated assets are
+Current screenshots and reports are in `art/surroundings/`, with actual Studio
+placement renders in `art/studio/map-rollout/`. These generated assets are
 ignored by Git. The source inventory records the new scene assemblies separately
 from their reused canonical props.
