@@ -170,3 +170,37 @@ shows stage classifications and points while `#cup-board` shows cumulative
 standings, rank changes and tiebreaks, and the final podium displays the top
 three championship finishers.
 
+## Phase 05 — server-owned online championship lifecycle
+
+`server/room.js` (`DerrapeRoom`) owns the authoritative Grand Prix session when
+`state.mode` is an available cup (`pana` or `aventura`). Before starting, the
+host can select `mode` and `difficulty` (`facil`, `normal`, `dificil`); track
+selection messages are ignored while a cup mode is active because the cup's
+first stage (`cup.stages[0]`) determines the initial track and lap count.
+
+- **Protocol & race context**: `GP_PROTOCOL = 2` in `public/online-rules.js`.
+  Legacy clients (`protocol < 2`) cannot switch the room into or start a cup;
+  the room sets `state.notice` explaining that a player is on an older version.
+  Control and race traffic (`loaded`, `p`, `fx`, `finish`, `retire`, `next`)
+  validates `matchesContext(m)` against `raceId`, `sessionId`, `stage` and
+  `attempt`.
+- **Roster & stage authority**: `startCup()` locks up to `GP_GRID = 8` entrants
+  (connected humans plus seeded bots with stable `skillSeed` values) and creates
+  `this.cupSession` via `createCupSession()`. `openCupStage()` sets `state.track`
+  and `state.laps` from `cupDef.stages[stageIndex]`, clamps pose laps to
+  `state.laps + 1`, and uses `stage.capSeconds` for finish validation and the
+  stage timer.
+- **Timeouts, host handoff & intermission**: Unready humans after
+  `GP_LOAD_TIMEOUT_MS` (60 s) are marked `dns` while ready humans race; if no
+  human is ready, `toLobby()` abandons the cup with a Spanish notice. Host
+  departure (`hostChanged`) reassigns bot `owner` in both `state.racers` and
+  `cupSession.entrants` without resetting `skillSeed` or ledger records. After
+  stages 1–3, `state.phase = 'results'` with `intermissionEndsAt = now + 12000`;
+  the room advances automatically or on host `next`/`start` after
+  `GP_MIN_READ_MS` (5 s), and enters `state.phase = 'complete'` after stage 4.
+
+Proof: `tests/cup-room.test.js` verifies host-only mode/difficulty selection,
+legacy protocol rejection, 8-entrant roster persistence, stage-specific lap
+bounds, duplicate/stale packet rejection, DNS/all-DNS loading timeouts, and
+mid-cup host handoff.
+

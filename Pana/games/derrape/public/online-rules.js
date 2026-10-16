@@ -7,10 +7,15 @@ import { WHEEL_DEFINITIONS } from './wheel-definitions.js';
 
 export const LAPS = 3;
 export const MIN_GRID = 4;               // bots fill the grid up to four racers
+export const GP_GRID = 8;                // Grand Prix defaults to eight racers
 export const POSE_HZ = 20;
 export const COUNTDOWN_MS = 3500;        // "3" shows a little longer than the rest
 export const LOAD_TIMEOUT_MS = 30000;
+export const GP_LOAD_TIMEOUT_MS = 60000;
 export const FINISH_GRACE_MS = 40000;    // after the first finish, stragglers get this long
+export const GP_INTERMISSION_MS = 12000;
+export const GP_MIN_READ_MS = 5000;
+export const GP_PROTOCOL = 2;
 
 export const RIVALS = ['Don Pancho', 'La Chama', 'El Gocho', 'Tía Carmen', 'El Catire', 'Yoli', 'El Pelúo', 'La Nena'];
 // Thematic cauchos per car, so rival loadouts show up in every race.
@@ -23,6 +28,7 @@ export const WHEEL_IDS = WHEEL_DEFINITIONS.map(w => w.id);
 export const cleanCar = (n) => Number.isInteger(n) && n >= 0 && n < CAR_COUNT ? n : 0;
 export const cleanWheel = (id) => WHEEL_IDS.includes(id) ? id : 'calle';
 export const cleanTrack = (id) => TRACK_IDS.includes(id === 'playa' ? 'bululu' : id) ? (id === 'playa' ? 'bululu' : id) : TRACK_IDS[0];
+export const cleanDifficulty = (id) => ['facil', 'normal', 'dificil'].includes(id) ? id : 'normal';
 
 // A pose is a flat array so 20 Hz updates stay small:
 // [x, y, z, h, pitch, roll, vf, steer, spin, boost, flags, lap, prog, lost, coins]
