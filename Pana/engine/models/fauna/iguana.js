@@ -125,9 +125,9 @@ export function iguana({ seed = 7, color = 0x5fae3c, golden = false, pose = 'sun
 
   // ---- poses: a base posture the animations add to ----
   const POSES = {
-    sun: { y: 0.075, head: -0.12, legs: [[0.15, -0.5], [0.15, 0.5], [0.15, 1.15], [0.15, -1.15]], tail: [0.02, 0.0, -0.02, 0.0, 0.0], curl: 0.12 },
+    sun: { y: 0.08, head: -0.12, legs: [[0.12, -0.5], [0.12, 0.5], [0.12, 1.15], [0.12, -1.15]], tail: [0.02, 0.0, -0.02, 0.0, 0.0], curl: 0.12 },
     perch: { y: 0.08, head: -0.05, legs: [[0.75, -0.4], [0.75, 0.4], [0.85, 0.7], [0.85, -0.7]], tail: [-0.55, -0.5, -0.4, -0.3, -0.2], curl: 0 },
-    run: { y: 0.105, head: -0.2, legs: [[0.6, -0.2], [0.6, 0.2], [0.6, 0.25], [0.6, -0.25]], tail: [-0.05, 0.02, 0.03, 0.02, 0.0], curl: 0 },
+    run: { y: 0.118, head: -0.2, legs: [[0.6, -0.2], [0.6, 0.2], [0.6, 0.25], [0.6, -0.25]], tail: [-0.05, 0.02, 0.03, 0.02, 0.0], curl: 0 },
   };
   let current = POSES.sun, running = false, gait = 0, bonked = 0;
   const sway = random() * 6, bobPhase = random() * 10;
