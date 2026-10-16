@@ -48,3 +48,24 @@ export function bake(root, { cellSize = Infinity } = {}) {
   keep.forEach(m => out.add(m));
   return out;
 }
+
+// One baked prototype drawn at many placements ({x, y, z, rot, scale}). The
+// placements are bucketed into cells so distant groves cull on their own.
+// `source` is consumed: its geometry is baked and released.
+export function instancePlacements(parent, source, placements, { name = source.name, cellSize = 110, castShadow = true } = {}) {
+  const prototype = bake(source), used = new Set();
+  source.traverse(o => { if (o.geometry) used.add(o.geometry); }); used.forEach(g => g.dispose());
+  prototype.updateMatrixWorld(true);
+  const cells = new Map(), dummy = new THREE.Object3D(), out = [];
+  for (const p of placements) { const key = `${Math.floor(p.x / cellSize)},${Math.floor(p.z / cellSize)}`; if (!cells.has(key)) cells.set(key, []); cells.get(key).push(p); }
+  prototype.traverse(o => {
+    if (!o.isMesh) return;
+    if (!placements.length) { o.geometry.dispose(); return; }
+    for (const points of cells.values()) {
+      const im = new THREE.InstancedMesh(o.geometry, o.material, points.length);
+      points.forEach((p, i) => { dummy.position.set(p.x, p.y, p.z); dummy.rotation.set(0, p.rot || 0, 0); dummy.scale.setScalar(p.scale || 1); dummy.updateMatrix(); im.setMatrixAt(i, dummy.matrix.clone().multiply(o.matrixWorld)); });
+      im.name = name; im.castShadow = castShadow; im.receiveShadow = true; im.computeBoundingSphere(); parent.add(im); out.push(im);
+    }
+  });
+  return out;
+}

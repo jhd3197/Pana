@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import {createSky} from '/engine/sky.js';
 import {M,box,tube} from '/engine/models/core/primitives.js';
-import {bake} from '/engine/models/core/static-batch.js';
+import {bake,instancePlacements} from '/engine/models/core/static-batch.js';
 import {sign} from '/engine/models/core/architecture-kit.js';
 import {llaneroRanchHouse,horseStable,corralGate,ranchFence,hayBale,feedingTrough,waterWindmill,ranchWaterTower,oldTractor} from '/engine/models/props/ranch.js';
 import {hatoCow} from '/engine/models/fauna/farm/hato-cow.js';
@@ -13,16 +13,7 @@ import {addLandscape} from './landscape.js';
 
 // Static model prototypes are batched into instances; animated fauna/water stay live.
 function plantInstances(parent,source,placements,name,id){
-  const prototype=bake(source),owned=new Set();source.traverse(o=>{if(o.geometry)owned.add(o.geometry);});owned.forEach(g=>g.dispose());
-  prototype.updateMatrixWorld(true);const dummy=new THREE.Object3D();
-  const cells=new Map();for(const p of placements){const key=`${Math.floor(p.x/40)},${Math.floor(p.z/40)}`;if(!cells.has(key))cells.set(key,[]);cells.get(key).push(p);}
-  prototype.traverse(o=>{if(!o.isMesh)return;if(!placements.length){o.geometry.dispose();return;}
-    for(const points of cells.values()){
-      const mesh=new THREE.InstancedMesh(o.geometry,o.material,points.length);
-      points.forEach((p,i)=>{dummy.position.set(p.x,p.y,p.z);dummy.rotation.set(0,p.rot||0,0);dummy.scale.setScalar(p.scale||1);dummy.updateMatrix();mesh.setMatrixAt(i,dummy.matrix.clone().multiply(o.matrixWorld));});
-      mesh.name=name;mesh.castShadow=false;mesh.receiveShadow=true;mesh.computeBoundingSphere();parent.add(mesh);
-    }
-  });
+  instancePlacements(parent,source,placements,{name,cellSize:40,castShadow:false});
   if(id)parent.userData.assetCounts[id]=(parent.userData.assetCounts[id]||0)+placements.length;
 }
 export function createCourse(){

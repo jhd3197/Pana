@@ -55,7 +55,7 @@ export class Race {
   brain(i) {
     const r = seeded(this.seed * 977 + i * 131);
     // Skill sets rhythm accuracy and line error; igapó takers gamble on the cut.
-    return { skill: .45 + .55 * r(), phase: r() * 6.28, next: .2 + r() * .5, igapo: r() < .35, lane: r(), seq: 0, r: Math.floor(r() * 1e9) };
+    return { skill: .62 + .33 * r(), phase: r() * 6.28, next: .2 + r() * .5, igapo: r() < .35, lane: r(), seq: 0, r: Math.floor(r() * 1e9) };
   }
   // Which pana sits where. Chosen seats first, then join order, then bots.
   crews() {
@@ -94,17 +94,18 @@ export class Race {
   }
   // A bot's strokes for this tick, as the same input a pana would send.
   botFront(b, c, dt) {
-    const k = c.brain, look = 9 + b.v * 1.1;
+    const k = c.brain, look = 12 + b.v * 1.3;
     const target = this.lineTarget(b, c, look), err = angle(Math.atan2(target.x - b.x, target.z - b.z) - b.h);
     k.next -= dt;
     const input = { strokes: [], back: false, steer: 0 };
     // Badly off line and nearly stopped: back-paddle to pivot round.
     if (Math.abs(err) > 1.2 && b.v < 2.5) { input.back = true; input.steer = err > 0 ? -1 : 1; k.next = .3; return input; }
     if (k.next <= 0) {
-      const gap = PADDLE.sweet[0] + .03 + (1 - k.skill) * .16, noise = (seeded(k.r++)() - .5) * (1 - k.skill) * .34;
-      k.next = Math.max(.27, gap + noise);
+      // Everyone wobbles a little; now and then a bot loses the rhythm.
+      const roll = seeded(k.r++), gap = PADDLE.sweet[0] + .005 + (1 - k.skill) * .2, noise = (roll() - .5) * (.08 + (1 - k.skill) * .3);
+      k.next = roll() < .035 + (1 - k.skill) * .04 ? .75 + roll() * .5 : Math.max(.27, gap + noise);
       // Turn strokes repeat the side that pushes the bow toward the line.
-      const want = err > 0 ? 1 : -1, need = Math.abs(err) > .28 - k.skill * .1;
+      const want = err > 0 ? 1 : -1, need = Math.abs(err) > .3 - k.skill * .06;
       const side = need ? want : -(b.paddle.side || want);
       input.strokes.push([++k.seq, side, this.time]);
     }
@@ -201,7 +202,12 @@ export class Race {
       const nx = (b.x - w.x) / (w.distance || 1), nz = (b.z - w.z) / (w.distance || 1), push = w.distance - limit;
       b.x -= nx * push; b.z -= nz * push;
       const fx = Math.sin(b.h), fz = Math.cos(b.h), into = fx * nx + fz * nz;
-      if (into > 0) b.v *= 1 - .5 * into;
+      // Glance off: lose the speed into the bank and swing along it.
+      if (into > 0) {
+        b.v *= 1 - .5 * into;
+        const along = Math.abs(angle(w.h - b.h)) < Math.PI / 2 ? w.h : w.h + Math.PI;
+        b.h = angle(b.h + angle(along - b.h) * Math.min(1, .25 * into));
+      }
       b.lat *= .5;
     }
   }

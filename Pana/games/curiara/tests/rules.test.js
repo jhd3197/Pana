@@ -67,3 +67,12 @@ test('a grey-box race finishes, orders and replays from a snapshot', () => {
   const restored = Race.restore(r.snapshot(), new Map([[1, {}]]), GREYBOX);
   assert.deepEqual(restored.snapshot(), r.snapshot());
 });
+
+test('bots run the Amazonas in about two minutes and nobody gets stuck', () => {
+  const r = new Race(); r.start(true, 21);
+  for (let t = 0; t < 250 && r.phase !== 'finished'; t += .05) r.update(.05, new Map());
+  assert.equal(r.phase, 'finished');
+  const times = r.boats.map(b => b.finish);
+  assert.ok(times.every(t => t !== null), 'every bot reaches the churuata');
+  assert.ok(Math.min(...times) > 105 && Math.max(...times) < 145, times.map(t => t.toFixed(1)).join(' '));
+});

@@ -61,7 +61,7 @@ body:not(.in-lobby) .lobby-hint{display:none}
 .call.is-soft{font-size:28px;color:var(--pk-text);text-shadow:0 3px 0 var(--pk-cocoa)}
 .call.is-teal{color:var(--pk-teal);text-shadow:0 5px 0 var(--title-shadow)}
 @keyframes call-in{from{opacity:0;transform:translateX(-50%) scale(.6)}}
-.paddle-panel{position:absolute;left:50%;bottom:22px;transform:translateX(-50%);width:min(560px,calc(100vw - 32px));display:grid;grid-template-columns:auto 1fr;gap:16px;align-items:center;padding:12px 18px;border-radius:18px}
+.paddle-panel{position:absolute;left:24px;bottom:22px;width:min(440px,calc(100vw - 32px));display:grid;grid-template-columns:auto 1fr;gap:16px;align-items:center;padding:12px 18px;border-radius:18px}
 .ring-wrap{position:relative;width:96px;height:96px}
 .ring-wrap canvas{width:96px;height:96px;display:block}
 .next-key{position:absolute;inset:0;display:grid;place-items:center;font:400 34px/1 var(--pk-display);color:var(--pk-text)}
@@ -92,6 +92,7 @@ body:not(.in-lobby) .lobby-hint{display:none}
 #result-board{margin:4px 0 8px}
 #result-board .pk-row-end{font-variant-numeric:tabular-nums}
 
+@media(max-height:780px){#leaderboard .pk-row:nth-child(n+5):not(.is-me){display:none}}
 @media(pointer:coarse){
   .keyboard-hints,.lobby-hint,#game-nav kbd{display:none}
   /* one big stroke button under each thumb; ciar and salpicón beside them */
@@ -100,7 +101,7 @@ body:not(.in-lobby) .lobby-hint{display:none}
   .touch-side{display:flex;gap:10px;align-items:flex-end;--pk-touch:64px}
   .touch-side .stroke-btn{--pk-touch:96px;font-size:20px}
   .touch-side .pk-touch{font-size:15px;padding:0 12px}
-  .paddle-panel{bottom:136px}
+  .paddle-panel{left:50%;transform:translateX(-50%);bottom:136px;width:min(420px,calc(100vw - 32px))}
 }
 @media(max-width:720px){
   .topbar{padding:12px 16px}

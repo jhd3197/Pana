@@ -12,6 +12,7 @@ import { RIVER, angle, formatTime } from './river.js';
 import { PADDLE, grade } from './paddle.js';
 import { createRaceScene } from './scene.js';
 import { createCanoe } from './boat.js';
+import { addLandscape } from './landscape.js';
 
 const $ = id => document.getElementById(id), params = new URLSearchParams(location.search), avatar = loadAvatar(), name = loadName();
 const store = { get: k => { try { return localStorage.getItem(k); } catch { return null; } }, set: (k, v) => { try { localStorage.setItem(k, v); } catch { /* private mode */ } } };
@@ -122,7 +123,7 @@ $('start').onclick = $('again').onclick = () => { unlock(); room.start($('bots')
 $('practice').onclick = () => goLocal();
 
 await new Promise(resolve => requestAnimationFrame(() => setTimeout(resolve, 30)));
-world = createRaceScene($('world'), RIVER); const { renderer, scene, camera, sun } = world;
+world = createRaceScene($('world'), RIVER, { dress: addLandscape }); const { renderer, scene, camera, sun } = world;
 renderer.setPixelRatio(pixelRatio(1.5)); const unbind = bindRenderer(renderer, 1.5);
 $('map-length').textContent = `${Math.round(RIVER.LENGTH)} M`; $('stat-length').textContent = `${Math.round(RIVER.LENGTH)} m`;
 
@@ -241,7 +242,8 @@ function frame() {
   const boats = ensureCanoes(), t = state.time + (state.phase === 'racing' && !frozen ? Math.min(.1, (performance.now() - snapshotAt) / 1000) : 0);
   for (const b of boats) {
     const c = canoes.get(b.id), blend = 1 - Math.exp(-dt * 16);
-    target.set(b.x, b.y, b.z); c.group.position.lerp(target, blend);
+    // Teleports (host migration, a fresh race) snap instead of gliding.
+    target.set(b.x, b.y, b.z); if (c.group.position.distanceTo(target) > 12) c.group.position.copy(target); else c.group.position.lerp(target, blend);
     c.group.rotation.y += angle(b.h - c.group.rotation.y) * blend;
     c.update(frozen ? 0 : dt, b, t);
   }
@@ -254,14 +256,14 @@ function frame() {
     cameraGoal.set(q.x - Math.sin(camH) * 6.5 + Math.cos(camH) * 4.5, q.y + 3.2, q.z - Math.cos(camH) * 6.5 - Math.sin(camH) * 4.5);
     look.set(q.x + Math.cos(camH) * side, q.y + .9, q.z - Math.sin(camH) * side);
   } else {
-    cameraGoal.set(q.x - Math.sin(camH) * 8.6, q.y + 3.7, q.z - Math.cos(camH) * 8.6);
-    look.set(q.x + Math.sin(camH) * 7, q.y + .8, q.z + Math.cos(camH) * 7);
+    cameraGoal.set(q.x - Math.sin(camH) * 8, q.y + 3.1, q.z - Math.cos(camH) * 8);
+    look.set(q.x + Math.sin(camH) * 7, q.y + 1, q.z + Math.cos(camH) * 7);
   }
   const floor = RIVER.groundAt(cameraGoal.x, cameraGoal.z) + 1.2; if (cameraGoal.y < floor) cameraGoal.y = floor;
-  if (!cameraReady) { camera.position.copy(cameraGoal); cameraReady = true; } else camera.position.lerp(cameraGoal, 1 - Math.exp(-dt * 5));
+  if (!cameraReady || camera.position.distanceTo(cameraGoal) > 30) { camera.position.copy(cameraGoal); cameraReady = true; } else camera.position.lerp(cameraGoal, 1 - Math.exp(-dt * 5));
   camera.lookAt(look);
   sun.position.set(q.x - 40, q.y + 70, q.z + 30); sun.target.position.copy(q); sun.target.updateMatrixWorld();
-  world.world.update(elapsed, dt); world.sky.update(elapsed);
+  world.world.update(elapsed, dt); world.world.cull(camera); world.sky.update(elapsed);
   if (callTimer > 0) { callTimer -= dt; if (callTimer <= 0) $('call').classList.add('hidden'); }
   if (state.phase === 'racing' || state.phase === 'countdown') drawRing(own, t);
   drawClock += dt; if (drawClock > .1) { updateUI(); drawClock = 0; }

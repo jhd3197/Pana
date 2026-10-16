@@ -1,7 +1,7 @@
 // Game-local world construction: terrain, spatial instances and road furniture.
 import * as THREE from 'three';
 import { M, mesh, box, tube, rng } from '/engine/models/core/primitives.js';
-import { bake } from '/engine/models/core/static-batch.js';
+import { bake, instancePlacements } from '/engine/models/core/static-batch.js';
 import { terrainMaterial } from '/engine/terrain-material.js';
 import { sign as makeSign } from '/engine/models/core/architecture-kit.js';
 import { placeOnTrack } from '../track-kit.js';
@@ -19,18 +19,8 @@ export function finish(root,cellSize=110) {
 }
 
 // Keep prototypes out of the live scene; each spatial cell owns its buffers.
-export function instances(parent,source,placements,name,cellSize=110) {
-  const prototype=bake(source),cells=new Map(),used=new Set();
-  source.traverse(o=>{if(o.geometry)used.add(o.geometry);});used.forEach(g=>g.dispose());
-  for(const p of placements){const key=`${Math.floor(p.x/cellSize)},${Math.floor(p.z/cellSize)}`;if(!cells.has(key))cells.set(key,[]);cells.get(key).push(p);}
-  prototype.updateMatrixWorld(true);
-  for(const ps of cells.values())prototype.traverse(o=>{
-    if(!o.isMesh)return;const im=new THREE.InstancedMesh(o.geometry.clone(),o.material,ps.length),dummy=new THREE.Object3D();
-    ps.forEach((p,i)=>{dummy.position.set(p.x,p.y,p.z);dummy.rotation.y=p.rot||0;dummy.scale.setScalar(p.scale||1);dummy.updateMatrix();im.setMatrixAt(i,dummy.matrix.clone().multiply(o.matrixWorld));});
-    im.name=name;im.castShadow=true;im.receiveShadow=true;im.computeBoundingSphere();parent.add(im);
-  });
-  prototype.traverse(o=>o.geometry?.dispose());
-}
+// Shared with Galope and Curiara: engine/models/core/static-batch.js.
+export function instances(parent,source,placements,name,cellSize=110) {instancePlacements(parent,source,placements,{name,cellSize});}
 
 export function terrain(T,{bounds,base,color,name='world-terrain',step=5,carve=true,cut=(x,z,h)=>h}) {
   const [x0,z0,x1,z1]=bounds,nx=Math.ceil((x1-x0)/step),nz=Math.ceil((z1-z0)/step),dx=(x1-x0)/nx,dz=(z1-z0)/nz;

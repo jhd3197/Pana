@@ -1,6 +1,18 @@
 // Model metadata only: no Three.js, construction or game imports.
 export default [
   {
+    id: "morpho",
+    name: "Mariposas morpho",
+    category: "Fauna",
+    source: "/engine/models/fauna/morpho.js",
+    factory: "morphoSwarm",
+    usedBy: ["Curiara"],
+    previewOptions: {"seed":7,"count":5,"radius":1.5},
+    description: "Selva: morphos azules iridiscentes que revolotean en círculos sobre el caño.",
+    tags: ["animal","fauna","mariposa","animado"],
+    pack: "wildlife"
+  },
+  {
     id: "scarlet-macaw",
     name: "Guacamaya roja",
     category: "Fauna",

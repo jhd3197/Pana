@@ -6,10 +6,14 @@ import { createSky } from '/engine/sky.js';
 import { waterSurface, waterAnimator } from '/engine/models/effects/water-surface.js';
 import { RIVER, smooth } from './river.js';
 
-export const DAYLIGHT = { horizon: 0xc9dccf, skyTop: 0x3f8fc4, cloudCover: .46, skySeed: 31, hemiSky: 0xe6f4ff, hemiGround: 0x4a6a3a, hemiInt: 1.45, sun: 0xfff0d2, sunInt: 2.4, fog: [70, 360] };
+export const DAYLIGHT = { horizon: 0xc9dccf, skyTop: 0x3f8fc4, cloudCover: .46, skySeed: 31, hemiSky: 0xe6f4ff, hemiGround: 0x4a6a3a, hemiInt: 1.45, sun: 0xfff0d2, sunInt: 2.4, fog: [90, 1100] };
 
-// Water colour per tramo: caño green-brown, raudal amber, Río Negro tea-black.
-const TINTS = [[0x5d7d4c, 0x8c6d3c], [0x7d6a3f, 0x4f3a22], [0x3c3020, 0x1b140d]];
+// Water per tramo: caño green-brown, raudal amber whitewater, Río Negro tea-black.
+const TINTS = [
+  { shallow: 0x56703c, deep: 0x26331a, sky: 0x8a9c86, foam: 0xd8e0c8 },
+  { shallow: 0x8a6c3c, deep: 0x3d2a14, sky: 0xa3ada2, foam: 0xf4f1e4 },
+  { shallow: 0x4a3420, deep: 0x110b05, sky: 0x58666b, foam: 0xc9b18a },
+];
 
 function ribbon(path, river, { from = 0, to = path.length, extra = 1.6, half, step = 1.4, columns = 18, level, fine = [] }) {
   const rows = [];
@@ -70,24 +74,28 @@ export function createRiverWorld(river = RIVER, { dress } = {}) {
   const cuts = [0, ...(river.def.tints || []), river.LENGTH];
   const water = [];
   for (let k = 0; k < cuts.length - 1; k++) {
-    const [shallow] = TINTS[Math.min(k, 2)];
+    const tint = TINTS[Math.min(k, 2)];
     const g = ribbon(river.main, river, { from: cuts[k], to: cuts[k + 1] + (k < cuts.length - 2 ? .7 : 0), half: river.halfWidth, level: river.levelAt, fine });
-    const m = waterSurface(g, { kind: 'river', color: shallow, amplitude: .02, opacity: .93 });
-    m.material.uniforms.deep.value.setHex(TINTS[Math.min(k, 2)][1]);
-    m.material.uniforms.sky.value.setHex(0xb8cfc8);
+    const m = waterSurface(g, { kind: 'river', color: tint.shallow, amplitude: .02, opacity: .95 });
+    m.material.uniforms.deep.value.setHex(tint.deep); m.material.uniforms.sky.value.setHex(tint.sky); m.material.uniforms.foam.value.setHex(tint.foam);
     m.name = `Agua · tramo ${k + 1}`; group.add(m); water.push(m);
   }
   if (river.branch) {
     const b = river.branch, g = ribbon(b.path, river, { half: () => b.half, level: (s) => river.levelAt(b.from + b.mainLength * s / b.length), step: 1.2, columns: 10 });
-    const m = waterSurface(g, { kind: 'river', color: 0x4e6a3c, amplitude: .012, opacity: .9 });
-    m.material.uniforms.deep.value.setHex(0x2a3a1e); m.name = 'Agua · igapó'; group.add(m); water.push(m);
+    const m = waterSurface(g, { kind: 'river', color: 0x4e6a3c, amplitude: .012, opacity: .92 });
+    m.material.uniforms.deep.value.setHex(0x22301a); m.material.uniforms.sky.value.setHex(0x7d907a); m.name = 'Agua · igapó'; group.add(m); water.push(m);
   }
   const moving = [];
   dress?.({ group, river, moving });
   const animateWater = waterAnimator(group);
+  // Planted cells past the fog's thick part are skipped outright.
+  const far = []; group.traverse(o => { if (o.userData.farCull) far.push(o); });
   let disposed = false;
   return {
     group, water, river,
+    cull(camera, distance = 230) {
+      for (const o of far) { const b = o.boundingSphere; o.visible = !b || camera.position.distanceTo(b.center) - b.radius < distance; }
+    },
     update(t, dt = 0) { animateWater(t); for (const o of moving) o.userData.tick?.(t, dt); },
     dispose() {
       if (disposed) return; disposed = true;
@@ -115,6 +123,6 @@ export function createRaceScene(canvas, river = RIVER, options = {}) {
   Object.assign(sun.shadow.camera, { left: -26, right: 26, top: 26, bottom: -26, far: 180 });
   sun.shadow.bias = -.0003; sun.shadow.normalBias = .035; scene.add(sun, sun.target);
   const world = createRiverWorld(river, options); scene.add(world.group);
-  const camera = new THREE.PerspectiveCamera(55, 1, .1, 900);
+  const camera = new THREE.PerspectiveCamera(55, 1, .1, 1600);
   return { renderer, scene, camera, sun, world, sky };
 }
