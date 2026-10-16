@@ -157,6 +157,33 @@ flow bugs and check balance.
   it; an uncaught mummy takes 100. Live chips stay at 0 until the verdict so
   the scores can't give the mummy away. `stats()` reports the mummy, its sand
   and the votes.
+- **Aim minigames** export `input: 'aim'`: `minigameInput()` returns
+  `{aim: {x, y}, pull, fire}` with `aim` in NDC. The mouse moves the reticle and
+  a press pulls; WASD / arrows steer it (0.8 NDC/s, rising to 2.3 over 0.45 s)
+  and Space pulls and releases; on touch a drag moves it 3× the finger (a
+  finger would hide an absolute reticle) and lifting fires. The pointer
+  handlers sit on the canvas only between `bindAim(true)` and the outro, so
+  the minimap and board never see them; `mini-aim` on the body hides the
+  cursor and the touch buttons, and on phones moves the cards to a slim row
+  at the top (at the bottom they covered the wall). A module can return
+  `reticles()` and the runner draws one per pana in `#reticles`.
+  `setPointerCapture` throws on synthetic events: it's in a try.
+- **¡Chinazo!** (`minigames/chinazo-sim.js` + `chinazo.js`): the stone lands
+  where the reticle was when it left, 0.25–0.42 s later, and hits the nearest
+  thing under that spot *then*, so everything is tested in screen space with
+  the sim's own copy of the camera. Tuning (`tests/chinazo.test.js`, 200 runs):
+  the plan's AI (0.25–0.5 s to pick, firing within 1.5 radii) let a simulated
+  decent human (perfect lead, 0.2 s) win 97%: the game is a reaction race
+  for scarce iguanas. What worked: bots pick in 0.22–0.34 s, fire within 0.7
+  hitbox radii (at 1.5 most stones missed even a still iguana), track the
+  lead point with feed-forward, skip an iguana someone's stone is already
+  flying at, and leave one to a pana whose reticle is clearly closer. Seats:
+  four home spots made the outer seats win ~30% and the inner ~19% (two
+  rivals each); two panas per screen half evens it out; the wall spans the
+  whole patio and sunbathers appear on both sides; shooters act in a fresh
+  order every frame. Result: 24–26% per seat, the decent human ~35%. Iguanas
+  are drawn 2.2× life size with a 1.3× hitbox. The falling iguana rustles
+  the leaves 0.5 s before it drops (0.6 s on screen); the AI ignores it.
 - **2D minigames** export `input: '2d'`: `minigameInput()` adds `z` (W/S, ↑/↓),
   W stops being jump for them, and the body gets `mini-2d`, which swaps the
   left/jump/right touch row for the kit's `.pk-dpad` plus an action button.
