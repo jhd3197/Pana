@@ -10,18 +10,6 @@ export {
 import { POINTS } from './cup-rules.js';
 export { POINTS };
 
-// Compatibility for the previous local cup; new sessions use cup-rules.js.
-export function awardPoints(table, order) {
-  order.forEach((name, i) => { table[name] = (table[name] || 0) + (POINTS[i] ?? 0); });
-  return table;
-}
-
-// Cup table, best first; ties go to whoever did better in the last race.
-export function cupStandings(table, lastOrder = []) {
-  return Object.entries(table).sort((a, b) => b[1] - a[1] || lastOrder.indexOf(a[0]) - lastOrder.indexOf(b[0]))
-    .map(([name, points]) => ({ name, points }));
-}
-
 // Trophy for a final cup place: gold, silver, bronze or nothing.
 export const trophyFor = (place) => ['oro', 'plata', 'bronce'][place] ?? null;
 export const TROPHY_RANK = { oro: 3, plata: 2, bronce: 1 };

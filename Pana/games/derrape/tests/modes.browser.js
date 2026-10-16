@@ -55,12 +55,12 @@ try {
     if (n === 0) await page.locator('#play').click();
     else await page.locator('#again').click();
     await page.waitForFunction(() => race.state === 'count', null, { timeout: 120000 });
-    const info = await page.evaluate(() => ({ track: getActiveTrack().id, rivals: race.cars.filter(c => !c.isPlayer).map(c => c.name).join() }));
+    const info = await page.evaluate(() => ({ track: getActiveTrack().id, rivals: race.cars.filter(c => !c.isPlayer).map(c => c.entrantId).sort().join() }));
     tracks.push(info.track); rivals.push(info.rivals);
     assert.equal(await finishRace(page), 'end');
     const cup = await page.evaluate(() => ({ visible: !document.getElementById('cup-table').hidden,
       rows: document.querySelectorAll('#cup-board li').length, again: document.getElementById('again').textContent }));
-    assert.ok(cup.visible && cup.rows === 4, `cup table ${JSON.stringify(cup)}`);
+    assert.ok(cup.visible && cup.rows === 8, `cup table ${JSON.stringify(cup)}`);
     assert.equal(cup.again, n < 3 ? 'Siguiente pista' : 'Otra copa');
   }
   await page.screenshot({ path: join(output, 'modes-cup.png') });

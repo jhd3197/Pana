@@ -125,3 +125,31 @@ DNS/retirement, departure after finishing, sparse grids, tie chains and
 abandonment. `assertCupInvariants` checks bounded stages, unique stage/entrant
 records and totals equal to ledger sums. No DOM or Three.js import is present.
 
+## Phase 03 — local four-race lifecycle
+
+`game.js` keeps `race.cup = { definition, session, mirror }` across scene resets.
+The session owns entrants and the ledger; `clearRace()` only releases the current
+cars and world. A new local cup locks eight entrants: `local-player`, optional
+`local-guest`, and stable bot IDs with frozen cars, wheels, avatars and skill
+seeds. Ordinary races and Globos retain their four-car defaults. Grid order comes
+from the frozen session grid, so later stages start with prior placement best
+first rather than rebuilding rivals.
+
+`beginStage()` runs before construction and `markRacing()` after the first
+rendered frame. `launchGrid()` records actual starters. Restart uses
+`retryStage()`: it increments the attempt and clears only unaccepted current
+stage data. `finalizeStage()` runs once in `finish()`, never in the results
+renderer. Garage exit abandons the session; accepted stages cannot be restarted
+from the menu. Per-stage laps come from the cup definition. A 240-second cap and
+40-second first-human grace settle every local GP stage; quick-race timing is
+unchanged.
+
+Proof: `cup-local.browser.js` covers restart, exit after race two, replay,
+quick/battle switching, split screen and mirror, then drives every stage of both
+cups through the actual fixed-step simulation. No lap numbers are assigned in
+that proof. `art/grand-prix/cup-local/actual-cups.json` records Pana stage times
+148.2, 162.6, 150.5 and 116.5 seconds, and Aventura times 153.6, 153.9, 73.3 and
+145.0 seconds. Chichi uses its authored one-lap stage; all stages stay below the
+240-second cap. `modes.browser.js`, `loading.browser.js`, `comfort.browser.js`
+and `shop.browser.js` also passed.
+

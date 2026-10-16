@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {
   POINTS, abandonCup, acceptFinish, advanceStage, assertCupInvariants, beginStage,
   createCupSession, cupTrophy, explainTie, finalizeStage, gridForStage, markRacing,
-  markStarted, retireEntrant, seededOrder, stageResults, standings,
+  markStarted, retireEntrant, retryStage, seededOrder, seededUnit, stageResults, standings,
 } from '../public/cup-rules.js';
 
 const entrants = (count = 4) => Array.from({ length: count }, (_, i) => ({
@@ -189,6 +189,25 @@ test('seeded grids freeze, subsequent grids place classified starters first', ()
   assert.equal(beginStage(session), true);
   assert.ok(Object.isFrozen(session.grids[1]));
   assert.equal(markRacing(session, 1, session.attempts[1] - 1), false, 'stale attempt cannot start');
+});
+
+test('restart changes the attempt without consuming a stage or accepting stale finishes', () => {
+  assert.equal(seededUnit('same'), seededUnit('same'));
+  assert.ok(seededUnit('range') >= 0 && seededUnit('range') < 1);
+  const session = make(2);
+  const [a] = ids(session);
+  openStage(session);
+  assert.equal(acceptFinish(session, { id: a, time: 75 }), true);
+  const attempt = session.attempts[0];
+  assert.equal(retryStage(session), true);
+  assert.equal(session.attempts[0], attempt + 1);
+  assert.equal(session.stageIndex, 0);
+  assert.equal(session.status, 'loading');
+  assert.deepEqual(session.started[0], []);
+  assert.deepEqual(session.finishes[0], {});
+  assert.equal(acceptFinish(session, { id: a, time: 76, attempt }), false);
+  assert.equal(markRacing(session), true);
+  assert.equal(session.ledger.length, 0);
 });
 
 test('sparse grids and abandoned cups cannot award a championship trophy', () => {

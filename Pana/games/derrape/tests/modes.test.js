@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { CUPS, awardPoints, cupStandings, trophyFor, rubberBand, DIFFICULTY, cleanLaps, battleOrder, battleOver, BATTLE_TIME } from '../public/modes.js';
+import { CUPS, POINTS, trophyFor, rubberBand, DIFFICULTY, cleanLaps, battleOrder, battleOver, BATTLE_TIME } from '../public/modes.js';
 import { TRACK_IDS } from '../public/online-rules.js';
 
 test('two available cups of four real tracks cover the whole circuit list', () => {
@@ -9,12 +9,8 @@ test('two available cups of four real tracks cover the whole circuit list', () =
   assert.deepEqual([...all].sort(), [...TRACK_IDS].sort());
 });
 
-test('cup points add up across races; ties go to the last race', () => {
-  const table = {};
-  awardPoints(table, ['Ana', 'Beto', 'Caro']);
-  awardPoints(table, ['Beto', 'Ana', 'Caro']);
-  assert.equal(table.Ana, table.Beto);
-  assert.deepEqual(cupStandings(table, ['Beto', 'Ana', 'Caro']).map(r => r.name), ['Beto', 'Ana', 'Caro']);
+test('championship points and podium trophies keep the established scale', () => {
+  assert.deepEqual(POINTS, [15, 12, 10, 8, 6, 4, 2, 1]);
   assert.equal(trophyFor(0), 'oro');
   assert.equal(trophyFor(3), null);
 });

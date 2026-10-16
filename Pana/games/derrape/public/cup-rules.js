@@ -21,6 +21,8 @@ function randomSource(seed) {
   };
 }
 
+export const seededUnit = (seed) => randomSource(seed)();
+
 export function seededOrder(ids, seed) {
   const random = randomSource(seed);
   const result = [...ids];
@@ -146,6 +148,17 @@ export function gridForStage(session, stageIndex = session.stageIndex) {
 
 export function beginStage(session) {
   if (session.status !== 'ready' || session.finalized[session.stageIndex]) return false;
+  const index = session.stageIndex;
+  session.attempts[index]++;
+  session.grids[index] = Object.freeze(gridForStage(session, index));
+  session.started[index] = [];
+  session.finishes[index] = {};
+  session.status = 'loading';
+  return true;
+}
+
+export function retryStage(session) {
+  if (!['loading', 'racing'].includes(session.status) || session.finalized[session.stageIndex]) return false;
   const index = session.stageIndex;
   session.attempts[index]++;
   session.grids[index] = Object.freeze(gridForStage(session, index));

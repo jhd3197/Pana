@@ -19,9 +19,10 @@ import { ICONS as SVG } from '/engine/icons.js';
 import { holdButton } from '/engine/touch.js';
 import { pixelRatio, bindRenderer } from '/engine/settings.js';
 import { shout } from '/engine/kit.js';
-import { LAPS, RIVALS, AI_WHEELS, POSE_HZ, FLAG, DRIFT_SHIFT, packPose, gridSlot } from './online-rules.js';
+import { LAPS, RIVALS, AI_WHEELS, POSE_HZ, FLAG, DRIFT_SHIFT, FINISH_GRACE_MS, packPose, gridSlot } from './online-rules.js';
 import { clockText, wrapAngle, raceOrder, aiPedals, resolveContact } from './rules.js';
-import { CUPS, cupById, cupTracks, awardPoints, cupStandings, trophyFor, difficultyById, rubberBand, cleanLaps, BALLOONS, BATTLE_TIME, battleOrder, battleOver } from './modes.js';
+import { CUPS, cupById, cupTracks, difficultyById, rubberBand, cleanLaps, BALLOONS, BATTLE_TIME, battleOrder, battleOver } from './modes.js';
+import { abandonCup, advanceStage, beginStage, createCupSession, cupTrophy, finalizeStage, markRacing, markStarted, retryStage, seededOrder, seededUnit, standings as championshipStandings } from './cup-rules.js';
 import { advanceLap, isOpenEdge, offCourse, stuckStep, ALL_SECTORS, RESCUE_TIME, OUT_TIME, STUCK_TIME, OPEN_MARGIN } from './course-rules.js';
 import { createHazards } from './hazards.js';
 import { createMusic, TRACK_STYLE } from './music.js';
@@ -484,9 +485,9 @@ function renderSetup() {
   $('mirror').title = mirrorOpen ? '' : 'Gana un trofeo en una copa para desbloquear el modo espejo';
   $('mirror').setAttribute('aria-checked', String(setup.mirror));
   $('split').setAttribute('aria-checked', String(setup.split));
-  $('launch-note').innerHTML = `<span class="pk-dot"></span>${setup.split ? 'Dos panas contra 2 rivales' : 'Tú contra 3 rivales'}`;
   const battle = setup.mode === 'battle', cup = isCupMode(setup.mode) ? cupById(setup.mode) : null;
-  for (const b of $('laps-pick').querySelectorAll('button')) b.disabled = battle;
+  $('launch-note').innerHTML = `<span class="pk-dot"></span>${cup ? (setup.split ? 'Dos panas contra 6 rivales' : 'Tú contra 7 rivales') : setup.split ? 'Dos panas contra 2 rivales' : 'Tú contra 3 rivales'}`;
+  for (const b of $('laps-pick').querySelectorAll('button')) b.disabled = battle || !!cup;
   const trophies = profile.trophies, legacy = profile.legacyTrophies;
   for (const b of $('mode-pick').querySelectorAll('button')) {
     const won = trophies[b.dataset.mode], earlier = legacy[b.dataset.mode];
@@ -685,6 +686,37 @@ function drawMinimap() {
 // Racers
 // ======================================================================
 const RACERS = 4;
+const GP_RACERS = 8;
+const LOCAL_PLAYER = 'local-player';
+const LOCAL_GUEST = 'local-guest';
+
+function createLocalCup(cupId, playerIndex, wheelId, split, difficulty) {
+  const seed = `${Date.now()}:${Math.random()}`;
+  const sessionId = globalThis.crypto?.randomUUID?.() ?? seed;
+  const guestCar = (playerIndex + 1) % CARS.length;
+  const usedCars = new Set(split ? [playerIndex, guestCar] : [playerIndex]);
+  const cars = seededOrder(CARS.map((_, index) => index).filter(index => !usedCars.has(index)), `${seed}:cars`);
+  const names = seededOrder(RIVALS, `${seed}:names`);
+  const entrants = [{
+    id: LOCAL_PLAYER, name: ME.name, kind: 'human', owner: 'local', avatar: ME.avatar,
+    loadout: { car: playerIndex, wheel: wheelId }, skillSeed: `${sessionId}:player`,
+  }];
+  if (split) entrants.push({
+    id: LOCAL_GUEST, name: 'Jugador 2', kind: 'human', owner: 'local', avatar: randomAvatar(),
+    loadout: { car: guestCar, wheel: 'calle' }, skillSeed: `${sessionId}:guest`,
+  });
+  for (let i = 0; entrants.length < GP_RACERS; i++) {
+    const car = cars[i];
+    entrants.push({
+      id: `local-bot-${i + 1}`, name: names[i], kind: 'bot', owner: 'local', avatar: randomAvatar(),
+      loadout: { car, wheel: AI_WHEELS[CARS[car].id] || 'calle' }, skillSeed: `${sessionId}:bot-${i + 1}`,
+    });
+  }
+  return createCupSession({ cupId, sessionId, seed, difficulty, bots: true, entrants });
+}
+
+const cupSkill = (entrant, difficulty) => difficulty.skill[0]
+  + seededUnit(entrant.skillSeed) * (difficulty.skill[1] - difficulty.skill[0]);
 
 function makeRacer(index, isPlayer, name, wheelId = 'calle', avatar = null) {
   const def = CARS[index];
@@ -842,22 +874,29 @@ let loadGeneration = 0;
 async function startRace(playerIndex, wheelId = garage.wheel, roster = null) {
   if (mode === 'loading') return;
   const generation = ++loadGeneration;
-  // Local races follow the garage setup; online races are plain 3-lap races.
   race.mode = roster ? 'race' : setup.mode === 'battle' ? 'battle' : isCupMode(setup.mode) ? 'cup' : 'race';
-  race.diff = difficultyById(roster ? 'normal' : setup.difficulty);
-  race.laps = roster ? (net.state.laps || LAPS) : race.mode === 'battle' ? 1 : setup.laps;
-  race.mirror = !roster && setup.mirror;
-  race.split = !roster && setup.split;
   if (race.mode === 'cup') {
-    if (!race.cup || race.cup.id !== setup.mode || race.cup.over) {
-      const cup = cupById(setup.mode);
-      const others = CARS.map((_, i) => i).filter(i => i !== playerIndex).sort(() => Math.random() - 0.5);
-      const names = RIVALS.slice(0, 6).sort(() => Math.random() - 0.5);
-      race.cup = { id: cup.id, name: cup.name, tracks: cupTracks(cup), index: 0, results: [], over: false,
-        rivals: others.slice(0, RACERS - 1).map((car, i) => ({ car, name: names[i], wheel: AI_WHEELS[CARS[car].id], avatar: randomAvatar() })) };
+    let session = race.cup?.session;
+    if (!session || session.cupId !== setup.mode || ['complete', 'abandoned'].includes(session.status)) {
+      session = createLocalCup(setup.mode, playerIndex, wheelId, setup.split, setup.difficulty);
+      race.cup = { definition: cupById(setup.mode), session, mirror: setup.mirror };
     }
-    selectTrack(race.cup.tracks[race.cup.index]);
-  } else race.cup = null;
+    if (session.status === 'ready') beginStage(session);
+    else if (['loading', 'racing'].includes(session.status)) retryStage(session);
+    else return;
+    const stage = race.cup.definition.stages[session.stageIndex];
+    race.diff = difficultyById(session.difficulty);
+    race.laps = stage.laps;
+    race.mirror = race.cup.mirror;
+    race.split = session.entrants.some(entrant => entrant.id === LOCAL_GUEST);
+    selectTrack(stage.track);
+  } else {
+    race.cup = null;
+    race.diff = difficultyById(roster ? 'normal' : setup.difficulty);
+    race.laps = roster ? (net.state.laps || LAPS) : race.mode === 'battle' ? 1 : setup.laps;
+    race.mirror = !roster && setup.mirror;
+    race.split = !roster && setup.split;
+  }
   mode = 'loading';
   race.state = 'loading';
   garage.controls.enabled = false;
@@ -867,7 +906,7 @@ async function startRace(playerIndex, wheelId = garage.wheel, roster = null) {
   $('loading-back').focus();
   const def = TRACKS[trackIndex], tip = pick(TIPS);
   $('loading-title').textContent = def.name;
-  $('loading-meta').textContent = race.cup ? `${race.cup.name} · Carrera ${race.cup.index + 1} de ${race.cup.tracks.length} · ${race.laps} ${race.laps === 1 ? 'vuelta' : 'vueltas'}`
+  $('loading-meta').textContent = race.cup ? `${race.cup.definition.name} · Carrera ${race.cup.session.stageIndex + 1} de 4 · ${race.laps} ${race.laps === 1 ? 'vuelta' : 'vueltas'}`
     : race.mode === 'battle' ? `Derrape · Batalla de globos · ${def.name}` : `Derrape · Pista ${trackIndex + 1} de ${TRACKS.length} · ${race.laps} ${race.laps === 1 ? 'vuelta' : 'vueltas'}`;
   $('loading-blurb').textContent = def.blurb;
   $('loading-tip-icon').innerHTML = tip[0];
@@ -907,14 +946,27 @@ async function startRace(playerIndex, wheelId = garage.wheel, roster = null) {
       }
       // A reload mid-race puts this car back where the room last saw it.
       for (const c of race.cars) if (!c.remote) resumePose(c, net.lastPose(c.netId));
+    } else if (race.cup) {
+      const session = race.cup.session, grid = session.grids[session.stageIndex];
+      for (const [i, id] of grid.entries()) {
+        if (!await step(`Preparando los panas… ${i + 1}/${grid.length}`, 0.5 + (i + 1) / grid.length * 0.3)) return;
+        const entrant = session.entrants.find(item => item.id === id);
+        const mine = id === LOCAL_PLAYER, guest = id === LOCAL_GUEST;
+        const c = makeRacer(entrant.loadout.car, mine, entrant.name, entrant.loadout.wheel, mine ? null : entrant.avatar);
+        c.entrantId = id;
+        c.entrant = entrant;
+        if (guest) { c.human = 2; c.skill = 1; }
+        else if (!mine) c.skill = cupSkill(entrant, race.diff);
+        const { lane, row } = gridSlot(i);
+        placeRacer(c, lane, row);
+        race.cars.push(c);
+      }
     } else {
       const others = CARS.map((_, i) => i).filter((i) => i !== playerIndex).sort(() => Math.random() - 0.5);
       const names = RIVALS.slice(0, 6).sort(() => Math.random() - 0.5);
-      // A cup keeps the same rivals from track to track.
-      const rivals = race.cup?.rivals ?? others.slice(0, RACERS - 1).map((car, i) => ({ car, name: names[i], wheel: AI_WHEELS[CARS[car].id] }));
+      const rivals = others.slice(0, RACERS - 1).map((car, i) => ({ car, name: names[i], wheel: AI_WHEELS[CARS[car].id] }));
       race.cars = [makeRacer(playerIndex, true, undefined, wheelId)];
       if (race.split) {
-        // Split screen: a second pana takes the next car and a rival's seat.
         const p2 = makeRacer((playerIndex + 1) % CARS.length, false, 'Jugador 2', 'calle');
         p2.human = 2;
         p2.skill = 1;
@@ -926,14 +978,12 @@ async function startRace(playerIndex, wheelId = garage.wheel, roster = null) {
         race.cars.push(makeRacer(r.car, false, r.name, r.wheel, r.avatar));
       }
       if (race.mode === 'battle') {
-        // Spread around the lap, half of them driving it backwards: they meet head-on.
         race.cars.forEach((c, i) => {
           placeRacer(c, 0, 0);
           placeAlong(c, T.LINE + i * T.TOTAL / RACERS, i % 2 === 1);
           addBalloons(c);
         });
       } else {
-        // a two-by-two grid; you start at the back so there's someone to pass
         race.cars.forEach((c, i) => placeRacer(c, i % 2 ? -3.5 : 3.5, Math.floor((RACERS - 1 - i) / 2)));
       }
     }
@@ -947,6 +997,8 @@ async function startRace(playerIndex, wheelId = garage.wheel, roster = null) {
     race.playerIndex = playerIndex;
     race.playerWheel = wheelId;
     race.clock = 0;
+    race.firstHumanFinish = null;
+    race.stageCap = race.cup ? race.cup.definition.stages[race.cup.session.stageIndex].capSeconds : null;
     race.count = 3.999;
     race.boardT = 0;
     race.poseAt = 0;
@@ -974,6 +1026,7 @@ async function startRace(playerIndex, wheelId = garage.wheel, roster = null) {
       }) || generation !== loadGeneration) return;
       if (net.state.raceId !== race.netRace) return;
     } else if (!await step('¡Listo!', 1)) return;
+    if (race.cup) markRacing(race.cup.session);
     race.state = 'count';
     music.play(TRACK_STYLE[T.id]);
     $('count').textContent = '3';
@@ -1021,7 +1074,11 @@ function toGarage() {
   garage.controls.enabled = true;
   mode = 'garage';
   if (net) renderLobby(net.state);
-  else { race.cup = null; renderSetup(); }
+  else {
+    if (race.cup) abandonCup(race.cup.session);
+    race.cup = null;
+    renderSetup();
+  }
   saveWallet();
   race.scene.scale.x = 1;
   race.p2 = null;
@@ -1043,7 +1100,7 @@ const menu = createGameMenu({
     'Acelera justo al final del "1" para un arranque cohete. Si aceleras en el "3" se te ahoga el motor.',
     'Rompe cajas de madera para conseguir objetos. Cada moneda da un poquito más de velocidad.'],
   actions: [
-    { id: 'restart', label: 'Reiniciar carrera', kind: 'secondary', visible: () => mode === 'race' && !race.netRace, run: () => startRace(race.playerIndex, race.playerWheel) },
+    { id: 'restart', label: 'Reiniciar carrera', kind: 'secondary', visible: () => mode === 'race' && !race.netRace && (!race.cup || ['loading', 'racing'].includes(race.cup.session.status)), run: () => startRace(race.playerIndex, race.playerWheel) },
     { id: 'to-garage', label: 'Volver al garaje', kind: 'secondary', visible: () => mode === 'race', run: () => toGarage() },
   ],
   invite: () => inviteLink(),
@@ -1063,9 +1120,8 @@ for (const kbd of document.querySelectorAll('#pause kbd, #settings kbd')) kbd.cl
 
 $('again').onclick = () => {
   if (!race.netRace) {
-    // Cups move on to their next track; a finished cup starts a fresh one.
-    if (race.cup && !race.cup.over && race.cup.results[race.cup.index]) race.cup.index++;
-    else if (race.cup?.over) race.cup = null;
+    if (race.cup?.session.status === 'intermission') advanceStage(race.cup.session);
+    else if (race.cup?.session.status === 'complete') race.cup = null;
     return startRace(race.playerIndex, race.playerWheel);
   }
   if (net.isHost) net.start();
@@ -1554,6 +1610,7 @@ function hitHazard(c, power, side, hz) {
 // "¡YA!": the player's timing decides a turbo or a stall; rivals sometimes
 // nail it too.
 function launchGrid() {
+  if (race.cup) for (const c of race.cars) markStarted(race.cup.session, c.entrantId);
   for (const c of race.cars) {
     if (c.remote) continue;
     const timing = c.isPlayer && !AUTO ? startBoost(race.throttleAt) : Math.random() < 0.35 ? startBoost(1.3) : startBoost(2.2);
@@ -1711,9 +1768,12 @@ function updateRace(dt) {
         c.done = true;
         c.time = race.clock;
         if (race.netRace) net.finish(c.netId, c.time);
+        if ((c.isPlayer || c.human) && race.cup) race.firstHumanFinish ??= race.clock;
         if (c.isPlayer || c.human) maybeFinish();
       }
     }
+    if (race.cup && race.state === 'go' && (race.clock >= race.stageCap
+      || (race.firstHumanFinish != null && race.clock - race.firstHumanFinish >= FINISH_GRACE_MS / 1000))) finish();
     collideCars();
     slipstreams(dt);
     for (const c of race.cars) c.popT = Math.max(0, (c.popT || 0) - dt);
@@ -1901,34 +1961,37 @@ function endBattle() {
   if (race.state !== 'end') finish();
 }
 
-// Points for this cup race (a restarted race replaces its earlier result).
-function scoreCup(order) {
-  const cup = race.cup;
-  cup.results[cup.index] = order.map(c => c.name);
-  const table = {};
-  for (const result of cup.results) if (result) awardPoints(table, result);
-  cup.table = cupStandings(table, cup.results[cup.index]);
-  cup.over = cup.index === cup.tracks.length - 1;
-  if (cup.over) {
-    const place = cup.table.findIndex(r => r.name === race.player.name);
-    const trophy = trophyFor(place);
-    if (trophy && recordCupTrophy(profile, cup.id, trophy)) profileStore.save(profile);
-    cup.place = place;
-    cup.trophy = trophy;
+function scoreCup() {
+  const session = race.cup.session;
+  if (session.status !== 'racing') return;
+  const results = session.entrants.map(entrant => {
+    const c = race.cars.find(car => car.entrantId === entrant.id);
+    return {
+      id: entrant.id,
+      classification: c.done ? 'finished' : 'dnf',
+      started: true,
+      time: c.time,
+      progress: c.lap * T.TOTAL + c.prog,
+    };
+  });
+  if (!finalizeStage(session, { results })) return;
+  if (session.status === 'complete') {
+    const trophy = cupTrophy(session, LOCAL_PLAYER);
+    if (trophy && recordCupTrophy(profile, session.cupId, trophy)) profileStore.save(profile);
   }
 }
 
 function renderCup() {
-  const cup = race.cup;
-  $('cup-table').hidden = !cup?.table;
-  if (!cup?.table) return;
-  $('cup-title').textContent = `${cup.name} · ${cup.over ? 'Final' : `Carrera ${cup.index + 1} de ${cup.tracks.length}`}`;
-  const colors = new Map(race.cars.map(c => [c.name, c.def.color]));
-  fillRoster($('cup-board'), cup.table.map((r, i) => {
+  const session = race.cup?.session;
+  $('cup-table').hidden = !session?.finalized.some(Boolean);
+  if (!session?.finalized.some(Boolean)) return;
+  $('cup-title').textContent = `${race.cup.definition.name} · ${session.status === 'complete' ? 'Final' : `Carrera ${session.stageIndex + 1} de 4`}`;
+  const colors = new Map(race.cars.map(c => [c.entrantId, c.def.color]));
+  fillRoster($('cup-board'), championshipStandings(session).map((r, i) => {
     const chip = document.createElement('span');
     chip.className = 'chip';
-    chip.style.setProperty('--c', colors.get(r.name) || '#fff');
-    return { rank: i + 1, lead: chip, name: r.name, me: r.name === race.player.name, end: `${r.points} pts` };
+    chip.style.setProperty('--c', colors.get(r.id) || '#fff');
+    return { rank: i + 1, lead: chip, name: r.name, me: r.id === race.player.entrantId, end: `${r.points} pts` };
   }));
 }
 
@@ -1951,24 +2014,29 @@ function finish() {
       + (p.balloons === 0 ? ` · aguantaste ${clockText(p.outAt ?? race.clock)}` : '');
   }
   if (race.cup) {
-    scoreCup(standings());
-    const cup = race.cup;
-    if (cup.over) $('result-title').textContent = cup.place === 0 ? `¡Ganaste la ${cup.name}!` : `${cup.place + 1}º en la ${cup.name}`;
-    if (cup.trophy) $('result-time').textContent += ` · trofeo de ${cup.trophy}`;
+    scoreCup();
+    const session = race.cup.session;
+    if (session.status === 'complete') {
+      const cupPlace = championshipStandings(session).findIndex(row => row.id === LOCAL_PLAYER);
+      const trophy = cupTrophy(session, LOCAL_PLAYER);
+      $('result-title').textContent = cupPlace === 0 ? `¡Ganaste la ${race.cup.definition.name}!` : `${cupPlace + 1}º en la ${race.cup.definition.name}`;
+      if (trophy) $('result-time').textContent += ` · trofeo de ${trophy}`;
+    }
   }
   renderCup();
   // The taller wallet keeps what you earned.
   if (!race.paid) {
     race.paid = true;
     const rank = standings().indexOf(p);
-    const earned = earnings({ collected: p.coinsCollected, place: p.done || race.mode === 'battle' ? rank : 99, trophy: race.cup?.over ? race.cup.trophy : null });
+    const earned = earnings({ collected: p.coinsCollected, place: p.done || race.mode === 'battle' ? rank : 99,
+      trophy: race.cup?.session.status === 'complete' ? cupTrophy(race.cup.session, LOCAL_PLAYER) : null });
     wallet.coins += earned;
     saveWallet();
     race.earned = earned;
   }
   if (race.netRace) updateResultActions(net.state);
   else {
-    $('again').textContent = race.cup ? (race.cup.over ? 'Otra copa' : 'Siguiente pista') : 'Otra vez';
+    $('again').textContent = race.cup ? (race.cup.session.status === 'complete' ? 'Otra copa' : 'Siguiente pista') : 'Otra vez';
     $('again').disabled = false; $('back').textContent = 'Garaje';
   }
   race.resultKey = '';
