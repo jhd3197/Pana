@@ -213,7 +213,12 @@
       "source": "Pana/engine/models/fauna/iguana.js",
       "factory": "iguana",
       "usedBy": [
-        "Bululú"
+        "Bululú",
+        "Derrape",
+        "Curiara",
+        "Galope",
+        "Escondidas",
+        "Cocina"
       ],
       "previewOptions": {
         "seed": 7,
@@ -228,7 +233,9 @@
       "source": "Pana/engine/models/fauna/iguana.js",
       "factory": "iguana",
       "usedBy": [
-        "Bululú"
+        "Bululú",
+        "Curiara",
+        "Galope"
       ],
       "previewOptions": {
         "seed": 7,
@@ -2868,7 +2875,7 @@
       "anchor": "function mangoTreeBig",
       "where": "Bululú board",
       "note": "Special large fruit tree; separate construction from flora.mangoTree.",
-      "line": 38
+      "line": 39
     },
     {
       "name": "Original plaza church",
@@ -3086,7 +3093,7 @@
       "anchor": "function createCourse",
       "where": "Galope; Studio map",
       "note": "Shared terrain/water grid, clipped riding trail, irregular lagoon with island, winding estero, jump logs, start gantry and trail markers. Shared models counted separately.",
-      "line": 19
+      "line": 20
     },
     {
       "name": "Galope living Llanos landscape",
@@ -3254,7 +3261,7 @@
       "anchor": "dockStart",
       "where": "Bululú board",
       "note": "Placement-specific geometry; not separate library factories.",
-      "line": 180
+      "line": 194
     },
     {
       "name": "Race-island piers",
@@ -3398,7 +3405,7 @@
       "anchor": "export class Puffs",
       "where": "Bululú; Derrape",
       "note": "Particle/sprite effects, not scenery inventory counts.",
-      "line": 203
+      "line": 205
     },
     {
       "name": "Crate fragment bursts",

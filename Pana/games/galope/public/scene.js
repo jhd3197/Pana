@@ -10,6 +10,7 @@ import {orbitBird} from '/engine/models/animation/orbit-bird.js';
 import {waterSurface,waterAnimator} from '/engine/models/effects/water-surface.js';
 import {at,nearest,LENGTH,HALF_WIDTH,WATER_Y,groundAt,JUMPS,courseRoute,DAYLIGHT} from './course.js';
 import {addLandscape} from './landscape.js';
+import {placeIguanas} from '/engine/placement/iguanas.js';
 
 // Static model prototypes are batched into instances; animated fauna/water stay live.
 function plantInstances(parent,source,placements,name,id){
@@ -69,6 +70,12 @@ export function createCourse(){
   // Course-side rails leave a full nine-metre recovery corridor.
   const rails=new THREE.Group();
   for(const [a,b,off]of [[.015,.12,-11],[.48,.61,11],[.86,.96,-11]])for(let s=a*LENGTH;s<b*LENGTH;s+=7){const q=at(s,off),f=ranchFence({span:6.8});f.position.set(q.x,groundAt(q.x,q.z),q.z);f.rotation.y=q.h+Math.PI/2;rails.add(f);}
+  // Two iguanas sun on fence posts beside the course (a post every 2.27 m, 1.65 m tall).
+  const posts=[rails.children[3],rails.children[Math.floor(rails.children.length*.55)]].map((f,i)=>{
+    f.updateMatrixWorld(true);const top=f.localToWorld(new THREE.Vector3(i?1.13:-1.13,1.66,0)),along=new THREE.Vector3(1,0,0).transformDirection(f.matrixWorld);
+    return {x:top.x,y:top.y,z:top.z,up:[0,1,0],fwd:along.toArray(),pose:'perch'};
+  });
+  moving.push(placeIguanas(group,posts,{seed:12,scale:1.1}));assetCounts.iguana=posts.length;
   const batched=bake(rails);const oldGeo=new Set();rails.traverse(o=>{if(o.geometry)oldGeo.add(o.geometry);});oldGeo.forEach(g=>g.dispose());group.add(batched);assetCounts['ranch-fence']=rails.children.length;
   const start=at(0),gate=corralGate({span:12,open:1});gate.position.set(start.x,groundAt(start.x,start.z),start.z);gate.rotation.y=start.h;group.add(gate);assetCounts['corral-gate']=1;
   const arch=new THREE.Group();arch.position.copy(gate.position);arch.rotation.y=start.h;

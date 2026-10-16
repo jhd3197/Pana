@@ -7,6 +7,8 @@
 //   userData.bonk(k)    0 → 1: flips onto its back, legs wiggling, dizzy stars, rights itself
 // Options: color (base green), golden (the bonus one), seed, pose, and
 // demo: 'run' | 'bonk' so a preview's tick loops that animation on its own.
+// lite: true bakes the pose into two meshes (body, head) for map scenery;
+// only tick() works then (breath and head bob, no blink).
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { rng } from '/engine/models/core/primitives.js';
@@ -30,7 +32,7 @@ const at = (x = 0, y = 0, z = 0, rx = 0, ry = 0, rz = 0, sx = 1, sy = sx, sz = s
   new THREE.Vector3(x, y, z), new THREE.Quaternion().setFromEuler(new THREE.Euler(rx, ry, rz)), new THREE.Vector3(sx, sy, sz));
 const solid = color => () => color;
 
-export function iguana({ seed = 7, color = 0x5fae3c, golden = false, pose = 'sun', demo = null } = {}) {
+export function iguana({ seed = 7, color = 0x5fae3c, golden = false, pose = 'sun', demo = null, lite = false } = {}) {
   const random = rng(seed), group = new THREE.Group(); group.name = golden ? 'Iguana dorada' : 'Iguana';
   group.userData.species = 'iguana';
   const base = new THREE.Color(golden ? 0xffc629 : color);
@@ -186,5 +188,39 @@ export function iguana({ seed = 7, color = 0x5fae3c, golden = false, pose = 'sun
   group.userData.head = head; group.userData.tail = tail;
   group.userData.dispose = () => { group.traverse(o => o.geometry?.dispose()); material.dispose(); stars.userData.dispose(); };
   group.userData.pose(pose);
+  return lite ? bakeLite(group, { root, body, head, stars, material, sway, bobPhase }) : group;
+}
+
+// Merge everything but the head into one mesh, in its current pose.
+function bakeLite(group, { root, body, head, stars, material, sway, bobPhase }) {
+  head.remove(stars); stars.userData.dispose();
+  group.updateMatrixWorld(true);
+  const inv = group.matrixWorld.clone().invert(), pieces = [], under = (o) => { for (let p = o; p; p = p.parent) if (p === head) return true; return false; };
+  body.traverse((o) => { if (o.isMesh && !under(o)) pieces.push(o.geometry.clone().applyMatrix4(inv.clone().multiply(o.matrixWorld))); });
+  group.attach(head);
+  // the eyes join the head: one draw call fewer, no blink
+  head.updateMatrixWorld(true);
+  const headInv = head.matrixWorld.clone().invert(), faces = [];
+  head.traverse((o) => { if (o.isMesh) faces.push(o.geometry.clone().applyMatrix4(headInv.clone().multiply(o.matrixWorld))); });
+  head.traverse((o) => o.geometry?.dispose());
+  head.clear();
+  const face = new THREE.Mesh(mergeGeometries(faces, false), material); face.name = 'Iguana head';
+  face.castShadow = face.receiveShadow = true; faces.forEach((g) => g.dispose());
+  head.add(face);
+  root.traverse((o) => o.geometry?.dispose());
+  group.remove(root);
+  const trunk = new THREE.Mesh(mergeGeometries(pieces, false), material); trunk.name = 'Iguana body';
+  trunk.castShadow = trunk.receiveShadow = true; pieces.forEach((g) => g.dispose());
+  group.add(trunk);
+  const rest = head.rotation.x;
+  group.userData = { species: 'iguana', lite: true,
+    tick(t) {
+      trunk.scale.y = 1 + Math.sin(t * 1.6 + sway) * 0.03;
+      const env = Math.pow(Math.max(0, Math.sin(t * 0.55 + bobPhase)), 10);
+      head.rotation.x = rest - Math.abs(Math.sin(t * 7)) * 0.35 * env;
+      head.rotation.y = Math.sin(t * 0.4 + sway) * 0.15;
+    },
+    dispose() { group.traverse((o) => o.geometry?.dispose()); material.dispose(); },
+  };
   return group;
 }

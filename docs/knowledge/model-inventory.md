@@ -67,7 +67,7 @@ These already exist. Their absence from a map is a placement gap, not a missing-
 | Displaced rock | Bululú board/minigames; Selva | [rock.js](../../Pana/engine/models/props/rock.js#L4) | Shared seeded rock, also embedded inside other models. |
 | Offshore lighthouse (older) | Bululú board | [island-scenery.js](../../Pana/engine/island-scenery.js#L14) | One tower with a rotating night beam. Not the Costa lighthouse used on the race island; preserve daylight behavior when replacing. |
 | Offshore sailboat (older) | Bululú board | [island-scenery.js](../../Pana/engine/island-scenery.js#L42) | Four box-hull sailboats still bob offshore. Not the new peñero. |
-| Golden mango landmark tree | Bululú board | [island-environment.js](../../Pana/engine/island-environment.js#L38) | Special large fruit tree; separate construction from flora.mangoTree. |
+| Golden mango landmark tree | Bululú board | [island-environment.js](../../Pana/engine/island-environment.js#L39) | Special large fruit tree; separate construction from flora.mangoTree. |
 | Original plaza church | Escondidas; Cocina; Plaza circuit | [plaza-buildings.js](../../Pana/engine/models/props/plaza-buildings.js#L158) | Active small bell tower/chapel, distinct from colonialChurch. |
 | Summit terminal | Páramo | [world-landmarks.js](../../Pana/games/derrape/public/tracks/world-landmarks.js#L5) | Upper/lower terminals; separate from the catalog heritage cable-car station. |
 | Aerial cable system and cabins | Páramo | [world-landmarks.js](../../Pana/games/derrape/public/tracks/world-landmarks.js#L19) | Six moving cabins, two cable curves; parameterized scene assembly. |
@@ -99,7 +99,7 @@ These already exist. Their absence from a map is a placement gap, not a missing-
 | --- | --- | --- | --- |
 | Reliquia mine and temple | Reliquia; Studio map | [scene.js](../../Pana/games/reliquia/public/scene.js#L21) | Authored walkable mine, swept shared bridge, timed winches, crypt, relic chamber and return tunnel. Five expedition models are cataloged independently. |
 | Mounted horse and riding tack | Galope, Bululú coleo; hub tile | [llanero-rider.js](../../Pana/engine/models/fauna/farm/llanero-rider.js#L9) | Shared horse and saved pana with game-local saddle, stirrups and reins; not a duplicate animal sculpt. |
-| Horse course and distinct wetlands | Galope; Studio map | [scene.js](../../Pana/games/galope/public/scene.js#L19) | Shared terrain/water grid, clipped riding trail, irregular lagoon with island, winding estero, jump logs, start gantry and trail markers. Shared models counted separately. |
+| Horse course and distinct wetlands | Galope; Studio map | [scene.js](../../Pana/games/galope/public/scene.js#L20) | Shared terrain/water grid, clipped riding trail, irregular lagoon with island, winding estero, jump logs, start gantry and trail markers. Shared models counted separately. |
 | Galope living Llanos landscape | Galope; Studio map | [landscape.js](../../Pana/games/galope/public/landscape.js#L14) | Hato gathering places, bank-connected canoe landing, moriche groves, green/dry grass, shore-only reeds and continuous far plain. All 13 new models have individual Studio previews. |
 | Selva pyramid | Selva | [selva-world.js](../../Pana/games/derrape/public/tracks/selva-world.js#L55) | Stepped landmark outside the driving tunnel. |
 | Road temple tunnel and portals | Selva | [selva-temple.js](../../Pana/games/derrape/public/tracks/selva-temple.js#L88) | Swept along the actual road; not the unused standalone temple entrance. |
@@ -120,7 +120,7 @@ These already exist. Their absence from a map is a placement gap, not a missing-
 | Forested islet/ridge | Bululú board | [island-landscape.js](../../Pana/engine/island-landscape.js#L40) | Seeded neighboring islands and distant ridges. |
 | Tepui and waterfall | Bululú board | [island-landscape.js](../../Pana/engine/island-landscape.js#L115) | Three mesas; one waterfall/mist landmark. Not the Selva waterfall. |
 | Living sky and cloud layers | Derrape; Galope; Escondidas; Cocina; Bululú and minigames; Studio tours | [sky.js](../../Pana/engine/sky.js#L5) | One procedural sky draw, seeded cumulus and wisps, absolute-time wind and day/night tint. Scene-owned, outside scenery bounds. |
-| Island dock and village light strings | Bululú board | [island-environment.js](../../Pana/engine/island-environment.js#L180) | Placement-specific geometry; not separate library factories. |
+| Island dock and village light strings | Bululú board | [island-environment.js](../../Pana/engine/island-environment.js#L194) | Placement-specific geometry; not separate library factories. |
 | Race-island piers | Bululú circuit | [bululu.js](../../Pana/games/derrape/public/tracks/bululu.js#L88) | Inline harbor planks and pilings. |
 | Plaza streets, gardens and mirador | Plaza circuit | [plaza-town.js](../../Pana/games/derrape/public/tracks/plaza-town.js#L36) | Street surfaces, block gardens, lookout terrace and stairs; shared houses/trees counted separately. |
 | Plaza waterfront canals and docks | Plaza circuit | [plaza-waterfront.js](../../Pana/games/derrape/public/tracks/plaza-waterfront.js#L19) | Canal network and moorings around canalVilla. |
@@ -138,7 +138,7 @@ These already exist. Their absence from a map is a placement gap, not a missing-
 | Raft and spinning striped log | No te caigas | [caigas.js](../../Pana/games/bululu/public/minigames/caigas.js#L45) | Player platforms, floats, central post, rotating obstacle and sandbars. |
 | Minigame wave surface | No te caigas | [caigas.js](../../Pana/games/bululu/public/minigames/caigas.js#L38) | Older deformed plane, separate from the shared water shader. |
 | Boost pad | Derrape | [items.js](../../Pana/games/derrape/public/items.js#L98) | Animated ground marker, separate from collectible item models. |
-| Puffs, debris and speech bubbles | Bululú; Derrape | [fx.js](../../Pana/engine/fx.js#L203) | Particle/sprite effects, not scenery inventory counts. |
+| Puffs, debris and speech bubbles | Bululú; Derrape | [fx.js](../../Pana/engine/fx.js#L205) | Particle/sprite effects, not scenery inventory counts. |
 | Crate fragment bursts | Derrape | [fragments.js](../../Pana/games/derrape/public/fragments.js#L6) | Gameplay fragments reused from crate art. |
 | Steam, fire and order dressing | Cocina | [scene.js](../../Pana/games/cocina/public/scene.js#L65) | Cooking state effects; recipes also have raw/prepared/cooked/burned variants. |
 | Thermal steam and water details | Chi Chi; shared fountains/waterfalls | [thermal-steam.js](../../Pana/engine/models/effects/thermal-steam.js#L5) | Reusable steam, droplets and ripple systems; water details also in water-details.js. |
@@ -231,8 +231,8 @@ The following list is generated, not manually copied. “In use” is the catalo
 | Vaca del hato · hato-cow | Derrape, Galope | [hato-cow.js](../../Pana/engine/models/fauna/farm/hato-cow.js) | hatoCow |
 | Pez de arrecife · reef-fish | Bululú, Derrape | [reef-fish.js](../../Pana/engine/models/fauna/aquatic/reef-fish.js) | reefFish |
 | Cardumen costero · reef-fish-school | Bululú, Derrape | [reef-fish-school.js](../../Pana/engine/models/fauna/aquatic/reef-fish-school.js) | reefFishSchool |
-| Iguana tomando sol · iguana | Bululú | [iguana.js](../../Pana/engine/models/fauna/iguana.js) | iguana |
-| Iguana en la rama · iguana-perch | Bululú | [iguana.js](../../Pana/engine/models/fauna/iguana.js) | iguana |
+| Iguana tomando sol · iguana | Bululú, Derrape, Curiara, Galope, Escondidas, Cocina | [iguana.js](../../Pana/engine/models/fauna/iguana.js) | iguana |
+| Iguana en la rama · iguana-perch | Bululú, Curiara, Galope | [iguana.js](../../Pana/engine/models/fauna/iguana.js) | iguana |
 | Iguana corriendo · iguana-run | Bululú | [iguana.js](../../Pana/engine/models/fauna/iguana.js) | iguana |
 | Iguana dorada · iguana-golden | Bululú | [iguana.js](../../Pana/engine/models/fauna/iguana.js) | iguana |
 | Cangrejo de playa · beach-crab | Bululú, Derrape | [beach-crab.js](../../Pana/engine/models/fauna/beach-crab.js) | beachCrab |

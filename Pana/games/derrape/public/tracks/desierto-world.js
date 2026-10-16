@@ -4,6 +4,7 @@ import { palm } from '/engine/models/vegetation/palm.js';
 import { agave } from '/engine/models/vegetation/agave.js';
 import { soaringVulture } from '/engine/models/fauna/birds/soaring-vulture.js';
 import { orbitBird } from '/engine/models/animation/orbit-bird.js';
+import { placeIguanas } from '/engine/placement/iguanas.js';
 import { parkBench } from '/engine/models/props/pueblo.js';
 import { waterPool, waterAnimator } from '/engine/models/effects/water-surface.js';
 import { baseHeight,roadHeight,OASIS } from './desierto-layout.js';
@@ -29,7 +30,7 @@ export function desertEnvironment(T){
   };
   // A complete abandoned service yard beside the opening straight.
   const station=new THREE.Group();station.name='pana-gas-yard';
-  add(station,'abandoned-gas-station',abandonedGasStation,-195,171,{scale:1.7,radius:9});
+  const gas=add(station,'abandoned-gas-station',abandonedGasStation,-195,171,{scale:1.7,radius:9});
   add(station,'rusted-pickup',rustedPickup,-169,177,{rotation:.45,scale:1.2,radius:3});
   add(station,'roadside-tire-pile',roadsideTirePile,-180,158,{scale:1.4,radius:2});
   add(station,'roadside-tire-pile',roadsideTirePile,-213,171,{scale:1.2,radius:2});
@@ -103,8 +104,17 @@ export function desertEnvironment(T){
   for(const u of [.31,.41,.57,.7,.86]){
     const p=placeOnTrack(T,T.TOTAL*u,T.HW+5),m=desertWarningSign();put(fixed,m,p.x,p.z,world.groundAt(p.x,p.z),p.h+Math.PI,1.2);counts['desert-warning-sign']=(counts['desert-warning-sign']||0)+1;
   }
+  // Iguanas: one sunning on Pana Gas's canopy, one clinging to its wall, two
+  // on the scree boulders nearest the start (scree already keeps off the road).
+  const at=(x,y,z)=>new THREE.Vector3(x,y,z).multiplyScalar(gas.scale.x).add(gas.position);
+  const roofTop=at(2.4,3.45,1.3),wallSpot=at(1.05,1.25,.08);
+  const start=placeOnTrack(T,T.LINE);
+  const rocks=[...scree].sort((a,b)=>Math.hypot(a.x-start.x,a.z-start.z)-Math.hypot(b.x-start.x,b.z-start.z)).slice(0,2)
+    .map((p,i)=>({x:p.x,y:p.y+3.2*p.scale,z:p.z,rot:p.rot+i*2}));
+  const iguanas=placeIguanas(group,[{x:roofTop.x,y:roofTop.y,z:roofTop.z,rot:-1.2},
+    {x:wallSpot.x,y:wallSpot.y,z:wallSpot.z,up:[0,0,1],fwd:[.5,1,0]},...rocks],{seed:21,scale:1.5});
   group.add(finish(fixed));group.userData.assetCounts=counts;const water=waterAnimator(group);
-  return {group,groundAt:world.groundAt,update:water};
+  return {group,groundAt:world.groundAt,update:t=>{water(t);iguanas.userData.tick(t);}};
 }
 
 export function desertScenery(group,kit,T){

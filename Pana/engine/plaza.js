@@ -11,6 +11,7 @@ import { streetFoodKiosk, plazaClockTower, parkBench, streetlightPole } from '/e
 import { capybaraTopiary } from '/engine/models/props/monuments.js';
 
 import { house, church, fountain } from '/engine/models/props/plaza-buildings.js';
+import { placeIguanas } from '/engine/placement/iguanas.js';
 export { house, plazaFountain } from '/engine/models/props/plaza-buildings.js';
 
 export function createPlazaEnvironment({ cooking = false, clearance = () => true, town = false } = {}) {
@@ -38,6 +39,8 @@ export function createPlazaEnvironment({ cooking = false, clearance = () => true
     const o = house({ w, h, color, seed: i, label }); o.position.set(x, 0, z); staticGroup.add(o);
   }
   const chapel = church(); chapel.position.set(0, 0, -23); staticGroup.add(chapel);
+  // An easter egg: an iguana clinging to the church's front wall, between the upper windows.
+  const iguanas = placeIguanas(scene, [{ x: -0.5, y: 5.1, z: -23 + 2.72, up: [0, 0, 1], fwd: [-0.45, 1, 0] }], { seed: 77, scale: 1.2 });
   for (const side of [-1, 1]) for (let i = 0; i < 5; i++) {
     if (town && !clearance(side * 27, -17 + i * 8, 5)) continue;
     const o = house({ w: 7.5, h: 6 + (i % 3), color: [0xe8b65d, 0x73aaa5, 0xe7916d, 0xa7b87e, 0xe7c782][(i + (side + 1)) % 5], seed: i + (side + 1) * 7, label: i === 2 ? 'HECHO CON CARIÑO' : '' });
@@ -130,7 +133,7 @@ export function createPlazaEnvironment({ cooking = false, clearance = () => true
   }
   scene.add(sparkles);
   if (cooking) sparkles.position.z = -11;
-  return { group: scene, update(t) { wind(t);additions.forEach(o=>o.userData.tick?.(t));sparkles.children.forEach((m, i) => { m.position.y = 0.85 + Math.abs(Math.sin(t * 2.1 + i)) * 0.3; }); } };
+  return { group: scene, update(t) { wind(t);iguanas.userData.tick(t);additions.forEach(o=>o.userData.tick?.(t));sparkles.children.forEach((m, i) => { m.position.y = 0.85 + Math.abs(Math.sin(t * 2.1 + i)) * 0.3; }); } };
 }
 
 export function createPlaza(options = {}) {

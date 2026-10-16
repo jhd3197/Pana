@@ -130,6 +130,8 @@ export function buildScenery(scene) {
   scene.add(bake(statics));
 
   return {
+    // where the lighthouse stands, for things that perch around it
+    lighthouse: { x: 168, z: 65, groundAt: (x, z) => rockIsle.heightAt(x - 168, z - 65) },
     update(t, dt, daylight = 1) {
       for (const f of anim) f(t);
       light.userData.beam.material.opacity = (1 - daylight) * 0.14;

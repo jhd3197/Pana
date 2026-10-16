@@ -25,6 +25,7 @@ import { placeReefSchools } from '/engine/placement/reef-schools.js';
 import { fishingBoat, lifeguardTower, beachShower, rescueRingStand, fishingNetRack, fishCrates, channelBuoy } from '/engine/models/props/coastal.js';
 import { beachCrab } from '/engine/models/fauna/beach-crab.js';
 import { groundBeachCrab } from '/engine/placement/beach-crab.js';
+import { placeIguanas } from '/engine/placement/iguanas.js';
 
 export const ISLAND_LOOP = [[28, 94], [0, 97], [-35, 91], [-70, 75], [-92, 48],
   [-103, 12], [-84, -18], [-49, -36], [-12, -34], [24, -36],
@@ -165,11 +166,24 @@ export function createIslandEnvironment(scene, { island, pathDist = island.pathD
   for (const [x, z] of [[-44,101],[8,108],[65,94],[-81,85]]) {
     if (groundAt(x, z) > SEA + 0.5 && free(x, z, 4)) place(driftwood(), x, z);
   }
+  const rocks = [];
   for (let i = 0; i < 70; i++) {
     const x = (rand() - 0.5) * 220, z = -100 + rand() * 180;
     if (groundAt(x, z) < 0.5 || !free(x, z, 4) || inShot(x, z) || harborSpace(x, z)||coastalSpots.some(([a,b,r])=>Math.hypot(x-a,z-b)<r+2)) continue;
-    place(rock(0.7 + rand() * 1.6, 0x8b8496, 500 + i), x, z);
+    const stone = place(rock(0.7 + rand() * 1.6, 0x8b8496, 500 + i), x, z);
+    if (stone.parent) rocks.push(stone);
   }
+  // Iguanas sun on the rocks nearest the shore (rocks already avoid every
+  // tile's camera line) and around the lighthouse, one clinging to its tower.
+  const shore = (o) => landMask(o.position.x, o.position.z) - beachMask(o.position.x, o.position.z) - o.position.z / 60;   // the beach is south (+z)
+  const sunning = rocks.sort((a, b) => shore(a) - shore(b)).slice(0, 4).map((stone, i) => {
+    stone.geometry.computeBoundingBox();
+    return { x: stone.position.x, y: stone.position.y + stone.geometry.boundingBox.max.y * stone.scale.y - 0.08, z: stone.position.z, rot: i * 2.1 + 0.6 };
+  });
+  const lh = scenery.lighthouse;
+  sunning.push({ x: lh.x + 2.7, y: lh.groundAt(lh.x + 2.7, lh.z + 1.6) - 0.05, z: lh.z + 1.6, rot: 2.2 },
+    { x: lh.x + 0.3, y: lh.groundAt(lh.x, lh.z) + 2.4, z: lh.z + 1.62, up: [0.15, 0, 1], fwd: [0.45, 1, 0] });
+  const iguanas = placeIguanas(scene, sunning, { seed: 3, scale: 1.4 });
 
   // a fishing village on the right shore, with a dock and a rowboat
   for (const [i, [x, z]] of harborHomes.entries()) {
@@ -276,6 +290,7 @@ export function createIslandEnvironment(scene, { island, pathDist = island.pathD
       treeGlow.intensity = (75 + Math.sin(t * 2) * 10) * (1 - daylight * 0.85);
       bulbMat.emissiveIntensity = 0.35 + (1 - daylight) * 1.65;
       for (const o of ticks) o.userData.tick?.(t, dt);
+      iguanas.userData.tick(t);
     },
   };
 }

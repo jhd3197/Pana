@@ -13,6 +13,8 @@ import { orbitBird } from '/engine/models/animation/orbit-bird.js';
 import { morphoSwarm } from '/engine/models/fauna/morpho.js';
 import { tonina } from '/engine/models/fauna/aquatic/tonina.js';
 import { caiman } from '/engine/models/fauna/caiman.js';
+import { placeIguanas } from '/engine/placement/iguanas.js';
+import { branch, leafyCushion } from '/engine/models/vegetation/canopy.js';
 import { buildCharacter } from '/engine/models/characters/pana/avatar-model.js';
 import { randomAvatar } from '/engine/avatar.js';
 import { driftwood } from '/engine/models/props/beach.js';
@@ -234,5 +236,23 @@ export function addLandscape({ group, river, moving, racers = [] }) {
   for (const s of [40, 120, 190, 245, 300]) {
     const q = at(s, (random() - .5) * 4), swarm = morphoSwarm({ seed: s, count: 5, radius: 3.5 });
     swarm.position.set(q.x, river.levelAt(s) + .3, q.z); group.add(swarm); moving.push(swarm); count('morpho');
+  }
+  // ---- Iguanas perched on two limbs leaning out over the caño, tails
+  // hanging, a good 4 m above a seated pana's head.
+  {
+    const limbs = new THREE.Group(), spots = [];
+    for (const [s, side] of [[95, 1], [205, -1]]) {
+      const half = river.halfWidth(s), base = at(s, side * (half + 2.5)), tip = at(s + 3, side * (half - 3.2));
+      const a = [base.x, river.groundAt(base.x, base.z) + 2.4, base.z], b = [tip.x, river.levelAt(s) + 5.4, tip.z];
+      limbs.add(branch(a, b, .32, .09));
+      for (let k = 0; k < 3; k++) {
+        const pad = leafyCushion(.7 + k * .15, 60 + s + k, 0x4f7d35);
+        pad.position.set(b[0] + (random() - .5) * 1.4, b[1] + .4 + k * .2, b[2] + (random() - .5) * 1.4); limbs.add(pad);
+      }
+      const p = a.map((v, i) => v + (b[i] - v) * .6);
+      spots.push({ x: p[0], y: p[1] + .15, z: p[2], up: [0, 1, 0], fwd: [b[0] - a[0], b[1] - a[1], b[2] - a[2]], pose: 'perch' });
+    }
+    const baked = bake(limbs); limbs.traverse(o => o.geometry?.dispose()); baked.name = 'Ramas de las iguanas'; group.add(baked);
+    moving.push(placeIguanas(group, spots, { seed: 40, scale: 1.3 })); count('iguana', spots.length);
   }
 }

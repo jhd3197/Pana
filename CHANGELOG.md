@@ -29,6 +29,9 @@ becomes the GitHub release's notes.
   go: stones take a moment to land, so lead the runners. Three mamones a
   load, a golden iguana worth 3, a guacamaya that costs 2 and a ¡Plaga!
   for the last 10 seconds.
+- **Iguanas sun themselves around Pana's maps.** Look for them on
+  Bululú's beach rocks and lighthouse, Pana Gas in the Desierto, limbs over
+  Curiara's caño, Galope's fence posts and the plaza church's wall.
 - **Contributors have a phased roadmap for Derrape Grand Prix and four new water maps.**
   Plan 56 specifies three four-race cups, online championship continuity,
   shared scenery and verification across 22 implementation phases.
