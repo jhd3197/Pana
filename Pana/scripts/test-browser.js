@@ -35,7 +35,8 @@ async function healthy() {
 let server = null;
 if (!(await healthy())) {
   console.log(`No server at ${base}; starting one.`);
-  server = spawn(process.execPath, ['server/src/index.js'], { cwd: app, stdio: 'ignore' });
+  const env = { ...process.env, PANA_PORT: new URL(base).port || '80' };
+  server = spawn(process.execPath, ['server/src/index.js'], { cwd: app, env, stdio: 'ignore' });
   for (let i = 0; i < 50 && !(await healthy()); i++) await new Promise(r => setTimeout(r, 200));
   if (!(await healthy())) { server.kill(); console.error('Pana did not start.'); process.exit(1); }
 }
