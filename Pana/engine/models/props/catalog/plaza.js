@@ -3,7 +3,7 @@ import { PLAZA_PROPS } from '../plaza-definitions.js';
 export default [
   ...PLAZA_PROPS.map(p => ({
     id: p.id, name: p.label, category: 'Objetos', source: '/engine/models/props/plaza.js',
-    factory: p.id, usedBy: ['Escondidas', 'Cocina', 'Derrape'], previewOptions: null,
+    factory: p.id, usedBy: ['Escondidas', 'Cocina', 'Derrape', ...(['barrel', 'crate', 'cooler'].includes(p.id) ? ['¡Embuste!'] : [])], previewOptions: null,
     dimensions: [p.width, p.height, p.depth], pack: 'plaza',
   })),
   {

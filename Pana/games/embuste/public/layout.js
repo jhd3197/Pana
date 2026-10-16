@@ -88,8 +88,9 @@ export const OBSTACLES = [
   { ...FIRE, r: 1.5 }, { ...RELIC, r: 0.9 }, { ...BELL, r: 0.45 },
   ...STATIONS.map(s => ({ x: s.x, z: s.z, r: 0.55 })),
   ...HIDES.filter(h => h.prop !== 'falls').map(h => ({ x: h.x, z: h.z, r: 0.75 })),
-  { x: 6.5, z: -6.5, r: 1.2 }, { x: -6.5, z: -6.5, r: 1.2 },          // camp tents
+  { x: 6.5, z: -6.5, r: 1.5 }, { x: -6.5, z: -6.5, r: 1.5 },          // camp tents
   { x: -36, z: -54, r: 1.3 }, { x: -24, z: -54, r: 1.3 },             // temple columns
+  { x: -39, z: -49, r: 0.9 }, { x: -21, z: -49, r: 0.9 },             // totems
   { x: 18, z: -50, r: 1 }, { x: 29, z: -52, r: 1 },                   // mine carts
   { x: -2, z: 22, r: 1.4 },                                           // kitchen table
 ];

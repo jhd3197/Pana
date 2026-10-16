@@ -9,8 +9,8 @@ import { holdButton } from '/engine/touch.js';
 import { shout } from '/engine/kit.js';
 import { pixelRatio, bindRenderer } from '/engine/settings.js';
 import { OnlineNight, PracticeNight } from './network.js';
-import { createCampWorld } from './scene.js';
-import { zoneAt, FIRE } from './layout.js';
+import { createCampWorld, groundAt } from './scene.js';
+import { zoneAt, FIRE, ZONES, BOUNDS, STATIONS } from './layout.js';
 import { mummyCount, MIN_PLAYERS } from './rules.js';
 
 const $ = id => document.getElementById(id), show = (id, on) => $(id).classList.toggle('hidden', !on);
@@ -26,14 +26,14 @@ renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure
 const scene = new THREE.Scene(); scene.background = new THREE.Color(0x0b0d22); scene.fog = new THREE.FogExp2(0x0b0d22, 0.018);
 const moon = new THREE.HemisphereLight(0x6f7fd8, 0x121226, 0.9); scene.add(moon);
 const fireLight = new THREE.PointLight(0xff9a45, 90, 26, 1.5); fireLight.position.set(FIRE.x, 2.2, FIRE.z); scene.add(fireLight);
-const lantern = new THREE.PointLight(0xffd08a, 26, 12, 1.6); scene.add(lantern);
+const lantern = new THREE.PointLight(0xffd08a, 30, 14, 1.4); scene.add(lantern);
 const world = createCampWorld(); scene.add(world.group);
 const camera = new THREE.PerspectiveCamera(46, innerWidth / innerHeight, 0.1, 220);
 const cameraTarget = new THREE.Vector3(0, 0, 0), temp = new THREE.Vector3();
 
 // ---------- state ----------
 let net = null, view = null, lobby = { phase: 'lobby', players: [], isHost: false }, paused = false, dead = false, phase = '';
-let toastTimer, last = performance.now(), elapsed = 0, rosterKey = '';
+let toastTimer, last = performance.now(), elapsed = 0, rosterKey = '', uiClock = 0;
 const actors = new Map(), keys = new Set(), touch = new Set();
 const me = () => view?.me;
 const rosterOf = seat => view?.roster.find(r => r.seat === seat);
@@ -107,7 +107,7 @@ function syncActors() {
   const seen = new Set(view.players.map(p => p.seat));
   for (const p of view.players) {
     const a = actorFor(p.seat); if (!a) continue;
-    if (!a.seen) a.root.position.set(p.x, 0, p.z);
+    if (!a.seen) a.root.position.set(p.x, groundAt(p.x, p.z), p.z);
     a.seen = true; a.target = p;
   }
   for (const a of actors.values()) if (!seen.has(a.seat)) { a.seen = false; a.root.visible = false; }
@@ -230,7 +230,7 @@ function frame(now) {
   for (const a of actors.values()) {
     const p = a.target; if (!a.seen || !p) continue;
     a.root.visible = true;
-    temp.set(p.x, 0, p.z); if (a.root.position.distanceTo(temp) > 6) a.root.position.copy(temp); else a.root.position.lerp(temp, Math.min(1, dt * 14));
+    temp.set(p.x, p.ghost ? 0.6 + Math.sin(elapsed * 2 + a.seat) * 0.15 : groundAt(p.x, p.z), p.z); if (a.root.position.distanceTo(temp) > 6) a.root.position.copy(temp); else a.root.position.lerp(temp, Math.min(1, dt * 14));
     const diff = Math.atan2(Math.sin(p.h - a.character.group.rotation.y), Math.cos(p.h - a.character.group.rotation.y)); a.character.group.rotation.y += diff * Math.min(1, dt * 12);
     a.character.update(dt, { walk: p.moving ? 1 : 0 });
   }
@@ -243,11 +243,28 @@ function frame(now) {
     temp.copy(mine.root.position); cameraTarget.lerp(temp, Math.min(1, dt * 8));
     camera.position.set(cameraTarget.x, 16, cameraTarget.z + 11); camera.lookAt(cameraTarget.x, 0, cameraTarget.z);
   }
-  if (mine) lantern.position.set(mine.root.position.x, 2.6, mine.root.position.z + 0.6);
+  if (mine) lantern.position.set(mine.root.position.x + 0.8, 4.2, mine.root.position.z + 1.2);
   darkness(mine);
   world.update(elapsed, view, dt); renderer.render(scene, camera);
+  uiClock += dt; if (uiClock > 0.1 && view?.phase === 'playing') { uiClock = 0; minimap(); }
   requestAnimationFrame(frame);
 }
+// Minimap: the zones, your task stations and you (others only if your view has them).
+const mapCtx = $('minimap').getContext('2d');
+const MAP_W = 174, MAP_H = 196, mapScale = Math.min((MAP_W - 8) / (BOUNDS.maxX - BOUNDS.minX), (MAP_H - 8) / (BOUNDS.maxZ - BOUNDS.minZ));
+const mx = x => 4 + (x - BOUNDS.minX) * mapScale, mz = z => 4 + (z - BOUNDS.minZ) * mapScale;
+function minimap() {
+  const c = mapCtx; c.clearRect(0, 0, MAP_W, MAP_H);
+  for (const z of ZONES) { c.fillStyle = z.lit ? '#6b4a33' : z.path ? '#2d2650' : '#3b3270'; c.fillRect(mx(z.x - z.w / 2), mz(z.z - z.d / 2), z.w * mapScale, z.d * mapScale); }
+  if (view.world?.bridgeCut) { c.fillStyle = '#ff4b4b'; c.fillRect(mx(-20), mz(-3), 6 * mapScale, 6 * mapScale); }
+  for (const id of mapStations) { const s = STATIONS.find(q => q.id === id); if (!s) continue; c.fillStyle = '#ffc629'; c.beginPath(); c.arc(mx(s.x), mz(s.z), 3, 0, Math.PI * 2); c.fill(); }
+  for (const p of view.players) {
+    const mine = p.seat === me()?.seat; c.fillStyle = mine ? '#ffffff' : view.partners.includes(p.seat) ? '#9fe0c8' : colorOf(p.seat);
+    c.globalAlpha = p.ghost && !mine ? 0.5 : 1; c.beginPath(); c.arc(mx(p.x), mz(p.z), mine ? 3.6 : 2.6, 0, Math.PI * 2); c.fill(); c.globalAlpha = 1;
+  }
+}
+let mapStations = new Set();
+
 // The lantern circle on screen: an ellipse around your pana, sized by your vision.
 function darkness(mine) {
   const dark = $('dark'), p = me();

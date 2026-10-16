@@ -7,7 +7,7 @@ body{--pk-game:#f08a4b;--pk-game-ink:#1a1336;--ember:#ffb36b;--bandage:#e6d6ae;-
 
 /* the lantern: everything outside its circle is night */
 .dark{position:fixed;inset:0;pointer-events:none;opacity:0;transition:opacity .4s;
-  background:radial-gradient(ellipse var(--rx,240px) var(--ry,200px) at var(--fx,50%) var(--fy,50%),transparent 0,transparent 62%,rgba(5,4,15,.82) 92%,var(--dark) 100%)}
+  background:radial-gradient(ellipse var(--rx,240px) var(--ry,200px) at var(--fx,50%) var(--fy,50%),transparent 0,transparent 60%,rgba(5,4,15,.78) 90%,rgba(5,4,15,.9) 100%)}
 body.playing .dark{opacity:1}
 body.ghost .dark{opacity:.25}
 

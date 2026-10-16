@@ -14,6 +14,7 @@ import beach from './catalog/beach.js';
 import coastal from './catalog/coastal.js';
 import kitchen from './catalog/kitchen.js';
 import reliquia from './catalog/reliquia.js';
+import embuste from './catalog/embuste.js';
 
 export default [
   ...ranch,
@@ -32,4 +33,5 @@ export default [
   ...coastal,
   ...kitchen,
   ...reliquia,
+  ...embuste,
 ];
