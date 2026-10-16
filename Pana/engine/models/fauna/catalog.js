@@ -145,6 +145,54 @@ export default [
     pack: "reef"
   },
   {
+    id: "iguana",
+    name: "Iguana tomando sol",
+    category: "Fauna",
+    source: "/engine/models/fauna/iguana.js",
+    factory: "iguana",
+    usedBy: ["Bululú"],
+    previewOptions: {"seed":7,"pose":"sun"},
+    description: "Iguana verde echada al sol con las patas abiertas: respira, parpadea y cabecea. Papada, escama redonda en la mejilla, cresta de espinas y cola anillada.",
+    tags: ["animal","fauna","iguana","reptil","animado"],
+    pack: "wildlife"
+  },
+  {
+    id: "iguana-perch",
+    name: "Iguana en la rama",
+    category: "Fauna",
+    source: "/engine/models/fauna/iguana.js",
+    factory: "iguana",
+    usedBy: ["Bululú"],
+    previewOptions: {"seed":7,"pose":"perch"},
+    description: "La misma iguana agarrada a una rama, con la cola colgando.",
+    tags: ["animal","fauna","iguana","reptil","animado"],
+    pack: "wildlife"
+  },
+  {
+    id: "iguana-run",
+    name: "Iguana corriendo",
+    category: "Fauna",
+    source: "/engine/models/fauna/iguana.js",
+    factory: "iguana",
+    usedBy: ["Bululú"],
+    previewOptions: {"seed":7,"pose":"run","demo":"run"},
+    description: "Pose de carrera: patas en diagonal y la cola que se balancea, para corretear por ramas y paredes.",
+    tags: ["animal","fauna","iguana","reptil","animado"],
+    pack: "wildlife"
+  },
+  {
+    id: "iguana-golden",
+    name: "Iguana dorada",
+    category: "Fauna",
+    source: "/engine/models/fauna/iguana.js",
+    factory: "iguana",
+    usedBy: ["Bululú"],
+    previewOptions: {"seed":7,"golden":true,"pose":"sun","demo":"bonk"},
+    description: "La iguana de bonus de ¡Chinazo!: dorada y brillante. Aquí repite el bonk(): se voltea, patalea con estrellitas y se endereza.",
+    tags: ["animal","fauna","iguana","reptil","animado"],
+    pack: "wildlife"
+  },
+  {
     id: "beach-crab",
     name: "Cangrejo de playa",
     category: "Fauna",

@@ -2,24 +2,24 @@
   "date": "2026-10-16",
   "scope": "Current production 3D resource/model families; catalog variants and scene assemblies are counted separately. No primitive-mesh count or deleted-history total.",
   "counts": {
-    "catalog": 177,
+    "catalog": 209,
     "categories": {
-      "Fauna": 10,
+      "Fauna": 17,
       "Vegetación": 24,
       "Llanos": 10,
       "Vida llanera": 11,
       "Desierto": 10,
       "Termales": 5,
-      "Objetos": 35,
+      "Objetos": 47,
       "Emblemas": 9,
       "Pueblo": 10,
       "Páramo": 8,
-      "Selva": 7,
+      "Selva": 12,
       "Costa": 9,
       "Personajes": 3,
       "Vestuario": 5,
-      "Vehículos": 8,
-      "Mapas": 13
+      "Vehículos": 14,
+      "Mapas": 15
     },
     "previewOnly": 8,
     "uncatalogedFamilies": 31,
@@ -27,6 +27,50 @@
     "dormantFactories": 9
   },
   "assets": [
+    {
+      "id": "tonina",
+      "name": "Tonina (delfín rosado)",
+      "category": "Fauna",
+      "source": "Pana/engine/models/fauna/aquatic/tonina.js",
+      "factory": "tonina",
+      "usedBy": [
+        "Curiara"
+      ],
+      "previewOptions": {
+        "seed": 7
+      },
+      "status": "in-use"
+    },
+    {
+      "id": "caiman",
+      "name": "Babo",
+      "category": "Fauna",
+      "source": "Pana/engine/models/fauna/caiman.js",
+      "factory": "caiman",
+      "usedBy": [
+        "Curiara"
+      ],
+      "previewOptions": {
+        "seed": 7
+      },
+      "status": "in-use"
+    },
+    {
+      "id": "morpho",
+      "name": "Mariposas morpho",
+      "category": "Fauna",
+      "source": "Pana/engine/models/fauna/morpho.js",
+      "factory": "morphoSwarm",
+      "usedBy": [
+        "Curiara"
+      ],
+      "previewOptions": {
+        "seed": 7,
+        "count": 5,
+        "radius": 1.5
+      },
+      "status": "in-use"
+    },
     {
       "id": "scarlet-macaw",
       "name": "Guacamaya roja",
@@ -159,6 +203,69 @@
       ],
       "previewOptions": {
         "seed": 7
+      },
+      "status": "in-use"
+    },
+    {
+      "id": "iguana",
+      "name": "Iguana tomando sol",
+      "category": "Fauna",
+      "source": "Pana/engine/models/fauna/iguana.js",
+      "factory": "iguana",
+      "usedBy": [
+        "Bululú"
+      ],
+      "previewOptions": {
+        "seed": 7,
+        "pose": "sun"
+      },
+      "status": "in-use"
+    },
+    {
+      "id": "iguana-perch",
+      "name": "Iguana en la rama",
+      "category": "Fauna",
+      "source": "Pana/engine/models/fauna/iguana.js",
+      "factory": "iguana",
+      "usedBy": [
+        "Bululú"
+      ],
+      "previewOptions": {
+        "seed": 7,
+        "pose": "perch"
+      },
+      "status": "in-use"
+    },
+    {
+      "id": "iguana-run",
+      "name": "Iguana corriendo",
+      "category": "Fauna",
+      "source": "Pana/engine/models/fauna/iguana.js",
+      "factory": "iguana",
+      "usedBy": [
+        "Bululú"
+      ],
+      "previewOptions": {
+        "seed": 7,
+        "pose": "run",
+        "demo": "run"
+      },
+      "status": "in-use"
+    },
+    {
+      "id": "iguana-golden",
+      "name": "Iguana dorada",
+      "category": "Fauna",
+      "source": "Pana/engine/models/fauna/iguana.js",
+      "factory": "iguana",
+      "usedBy": [
+        "Bululú"
+      ],
+      "previewOptions": {
+        "seed": 7,
+        "golden": true,
+        "pose": "sun",
+        "demo": "bonk"
       },
       "status": "in-use"
     },
@@ -718,7 +825,8 @@
       "source": "Pana/engine/models/props/llano-life.js",
       "factory": "campfire",
       "usedBy": [
-        "Galope"
+        "Galope",
+        "¡Embuste!"
       ],
       "previewOptions": null,
       "status": "in-use"
@@ -730,7 +838,8 @@
       "source": "Pana/engine/models/props/llano-life.js",
       "factory": "coffeeTable",
       "usedBy": [
-        "Galope"
+        "Galope",
+        "¡Embuste!"
       ],
       "previewOptions": null,
       "status": "in-use"
@@ -742,7 +851,8 @@
       "source": "Pana/engine/models/props/llano-life.js",
       "factory": "riverCanoe",
       "usedBy": [
-        "Galope"
+        "Galope",
+        "¡Embuste!"
       ],
       "previewOptions": null,
       "status": "in-use"
@@ -754,7 +864,8 @@
       "source": "Pana/engine/models/props/llano-life.js",
       "factory": "wetlandLanding",
       "usedBy": [
-        "Galope"
+        "Galope",
+        "¡Embuste!"
       ],
       "previewOptions": {
         "length": 7
@@ -991,7 +1102,8 @@
       "usedBy": [
         "Escondidas",
         "Cocina",
-        "Derrape"
+        "Derrape",
+        "¡Embuste!"
       ],
       "previewOptions": null,
       "status": "in-use"
@@ -1005,7 +1117,8 @@
       "usedBy": [
         "Escondidas",
         "Cocina",
-        "Derrape"
+        "Derrape",
+        "¡Embuste!"
       ],
       "previewOptions": null,
       "status": "in-use"
@@ -1019,7 +1132,8 @@
       "usedBy": [
         "Escondidas",
         "Cocina",
-        "Derrape"
+        "Derrape",
+        "¡Embuste!"
       ],
       "previewOptions": null,
       "status": "in-use"
@@ -1193,6 +1307,18 @@
       "previewOptions": {
         "gold": true
       },
+      "status": "in-use"
+    },
+    {
+      "id": "china",
+      "name": "China (tirapiedras)",
+      "category": "Objetos",
+      "source": "Pana/engine/models/props/china.js",
+      "factory": "china",
+      "usedBy": [
+        "Bululú"
+      ],
+      "previewOptions": null,
       "status": "in-use"
     },
     {
@@ -1537,7 +1663,8 @@
       "source": "Pana/engine/models/props/jungle.js",
       "factory": "templeEntrance",
       "usedBy": [
-        "Reliquia"
+        "Reliquia",
+        "¡Embuste!"
       ],
       "previewOptions": null,
       "status": "in-use"
@@ -1549,7 +1676,8 @@
       "source": "Pana/engine/models/props/jungle.js",
       "factory": "ropeBridge",
       "usedBy": [
-        "Reliquia"
+        "Reliquia",
+        "¡Embuste!"
       ],
       "previewOptions": null,
       "status": "in-use"
@@ -1561,7 +1689,8 @@
       "source": "Pana/engine/models/props/jungle.js",
       "factory": "waterfallRocks",
       "usedBy": [
-        "Derrape"
+        "Derrape",
+        "¡Embuste!"
       ],
       "previewOptions": null,
       "status": "in-use"
@@ -1573,7 +1702,8 @@
       "source": "Pana/engine/models/props/jungle.js",
       "factory": "vineArch",
       "usedBy": [
-        "Derrape"
+        "Derrape",
+        "¡Embuste!"
       ],
       "previewOptions": null,
       "status": "in-use"
@@ -1598,7 +1728,8 @@
       "factory": "stoneTotem",
       "usedBy": [
         "Derrape",
-        "Reliquia"
+        "Reliquia",
+        "¡Embuste!"
       ],
       "previewOptions": null,
       "status": "in-use"
@@ -1610,7 +1741,8 @@
       "source": "Pana/engine/models/props/jungle.js",
       "factory": "hollowLog",
       "usedBy": [
-        "Derrape"
+        "Derrape",
+        "¡Embuste!"
       ],
       "previewOptions": null,
       "status": "in-use"
@@ -1813,7 +1945,8 @@
       "source": "Pana/engine/models/props/reliquia.js",
       "factory": "mummy",
       "usedBy": [
-        "Reliquia"
+        "Reliquia",
+        "¡Embuste!"
       ],
       "status": "in-use"
     },
@@ -1824,7 +1957,8 @@
       "source": "Pana/engine/models/props/reliquia.js",
       "factory": "mummy",
       "usedBy": [
-        "Reliquia"
+        "Reliquia",
+        "¡Embuste!"
       ],
       "previewOptions": {
         "guardian": true
@@ -1838,7 +1972,8 @@
       "source": "Pana/engine/models/props/reliquia.js",
       "factory": "sunRelic",
       "usedBy": [
-        "Reliquia"
+        "Reliquia",
+        "¡Embuste!"
       ],
       "status": "in-use"
     },
@@ -1849,7 +1984,8 @@
       "source": "Pana/engine/models/props/reliquia.js",
       "factory": "expeditionWinch",
       "usedBy": [
-        "Reliquia"
+        "Reliquia",
+        "¡Embuste!"
       ],
       "status": "in-use"
     },
@@ -1860,8 +1996,147 @@
       "source": "Pana/engine/models/props/reliquia.js",
       "factory": "expeditionLantern",
       "usedBy": [
-        "Reliquia"
+        "Reliquia",
+        "¡Embuste!"
       ],
+      "status": "in-use"
+    },
+    {
+      "id": "camp-bell",
+      "name": "Campana del campamento",
+      "category": "Objetos",
+      "source": "Pana/engine/models/props/embuste.js",
+      "factory": "campBell",
+      "usedBy": [
+        "¡Embuste!"
+      ],
+      "status": "in-use"
+    },
+    {
+      "id": "field-radio",
+      "name": "Radio de campaña",
+      "category": "Objetos",
+      "source": "Pana/engine/models/props/embuste.js",
+      "factory": "radioSet",
+      "usedBy": [
+        "¡Embuste!"
+      ],
+      "status": "in-use"
+    },
+    {
+      "id": "river-dam",
+      "name": "Compuerta del río",
+      "category": "Objetos",
+      "source": "Pana/engine/models/props/embuste.js",
+      "factory": "damGate",
+      "usedBy": [
+        "¡Embuste!"
+      ],
+      "status": "in-use"
+    },
+    {
+      "id": "camp-tent",
+      "name": "Carpa de expedición",
+      "category": "Objetos",
+      "source": "Pana/engine/models/props/embuste.js",
+      "factory": "campTent",
+      "usedBy": [
+        "¡Embuste!"
+      ],
+      "status": "in-use"
+    },
+    {
+      "id": "bandage-wrap",
+      "name": "Vendas de momia",
+      "category": "Objetos",
+      "source": "Pana/engine/models/props/embuste.js",
+      "factory": "bandageWrap",
+      "usedBy": [
+        "¡Embuste!"
+      ],
+      "status": "in-use"
+    },
+    {
+      "id": "vine-snare",
+      "name": "Trampa de bejuco",
+      "category": "Objetos",
+      "source": "Pana/engine/models/props/embuste.js",
+      "factory": "vineSnare",
+      "usedBy": [
+        "¡Embuste!"
+      ],
+      "status": "in-use"
+    },
+    {
+      "id": "laja-rock",
+      "name": "Laja del Escudo Guayanés",
+      "category": "Selva",
+      "source": "Pana/engine/models/props/amazonas.js",
+      "factory": "lajaRock",
+      "usedBy": [
+        "Curiara"
+      ],
+      "previewOptions": {
+        "seed": 3,
+        "radius": 2
+      },
+      "status": "in-use"
+    },
+    {
+      "id": "igapo-trunk",
+      "name": "Tronco del igapó",
+      "category": "Selva",
+      "source": "Pana/engine/models/props/amazonas.js",
+      "factory": "igapoTrunk",
+      "usedBy": [
+        "Curiara"
+      ],
+      "previewOptions": {
+        "seed": 2,
+        "h": 10
+      },
+      "status": "in-use"
+    },
+    {
+      "id": "churuata",
+      "name": "Churuata",
+      "category": "Selva",
+      "source": "Pana/engine/models/props/amazonas.js",
+      "factory": "churuata",
+      "usedBy": [
+        "Curiara"
+      ],
+      "previewOptions": {
+        "radius": 5.5
+      },
+      "status": "in-use"
+    },
+    {
+      "id": "finish-arch",
+      "name": "Arco de moriche",
+      "category": "Selva",
+      "source": "Pana/engine/models/props/amazonas.js",
+      "factory": "finishArch",
+      "usedBy": [
+        "Curiara"
+      ],
+      "previewOptions": {
+        "span": 14
+      },
+      "status": "in-use"
+    },
+    {
+      "id": "moriche-dock",
+      "name": "Muelle con techo de moriche",
+      "category": "Selva",
+      "source": "Pana/engine/models/props/amazonas.js",
+      "factory": "moricheDock",
+      "usedBy": [
+        "Curiara"
+      ],
+      "previewOptions": {
+        "length": 8
+      },
       "status": "in-use"
     },
     {
@@ -2243,6 +2518,73 @@
       "status": "in-use"
     },
     {
+      "id": "racing-curiara",
+      "name": "Curiara de carrera",
+      "category": "Vehículos",
+      "source": "Pana/engine/models/vehicles/curiara.js",
+      "factory": "createCanoe",
+      "usedBy": [
+        "Curiara",
+        "Bululú"
+      ],
+      "status": "in-use"
+    },
+    {
+      "id": "wheel-calle",
+      "name": "Cauchos de calle",
+      "category": "Vehículos",
+      "source": "Pana/games/derrape/public/wheel-definitions.js",
+      "factory": "makeWheel",
+      "usedBy": [
+        "Derrape"
+      ],
+      "status": "in-use"
+    },
+    {
+      "id": "wheel-slick",
+      "name": "Slicks de pista",
+      "category": "Vehículos",
+      "source": "Pana/games/derrape/public/wheel-definitions.js",
+      "factory": "makeWheel",
+      "usedBy": [
+        "Derrape"
+      ],
+      "status": "in-use"
+    },
+    {
+      "id": "wheel-barro",
+      "name": "Cauchos de barro",
+      "category": "Vehículos",
+      "source": "Pana/games/derrape/public/wheel-definitions.js",
+      "factory": "makeWheel",
+      "usedBy": [
+        "Derrape"
+      ],
+      "status": "in-use"
+    },
+    {
+      "id": "wheel-palo",
+      "name": "Llantas de palo",
+      "category": "Vehículos",
+      "source": "Pana/games/derrape/public/wheel-definitions.js",
+      "factory": "makeWheel",
+      "usedBy": [
+        "Derrape"
+      ],
+      "status": "in-use"
+    },
+    {
+      "id": "wheel-lluvia",
+      "name": "Cauchos de lluvia",
+      "category": "Vehículos",
+      "source": "Pana/games/derrape/public/wheel-definitions.js",
+      "factory": "makeWheel",
+      "usedBy": [
+        "Derrape"
+      ],
+      "status": "in-use"
+    },
+    {
       "id": "reliquia",
       "name": "Reliquia · La mina del sol",
       "category": "Mapas",
@@ -2254,6 +2596,17 @@
       "status": "in-use"
     },
     {
+      "id": "embuste",
+      "name": "¡Embuste! · El campamento y el templo",
+      "category": "Mapas",
+      "source": "Pana/games/embuste/public/scene.js",
+      "factory": "createCampWorld",
+      "usedBy": [
+        "¡Embuste!"
+      ],
+      "status": "in-use"
+    },
+    {
       "id": "galope",
       "name": "Galope · La vuelta del estero",
       "category": "Mapas",
@@ -2261,6 +2614,17 @@
       "factory": "createCourse",
       "usedBy": [
         "Galope"
+      ],
+      "status": "in-use"
+    },
+    {
+      "id": "curiara",
+      "name": "Curiara · Río abajo",
+      "category": "Mapas",
+      "source": "Pana/games/curiara/public/scene.js",
+      "factory": "createRiverWorld",
+      "usedBy": [
+        "Curiara"
       ],
       "status": "in-use"
     },
@@ -2384,6 +2748,67 @@
       "factory": "makeTrack(definition).build",
       "usedBy": [
         "Derrape"
+      ],
+      "status": "in-use"
+    },
+    {
+      "id": "domino-table",
+      "name": "Mesa de dominó",
+      "category": "Objetos",
+      "source": "Pana/games/domino/public/table-model.js",
+      "factory": "createDominoTable",
+      "usedBy": [
+        "Dominó",
+        "Caída"
+      ],
+      "status": "in-use"
+    },
+    {
+      "id": "domino-chair",
+      "name": "Silla de dominó",
+      "category": "Objetos",
+      "source": "Pana/games/domino/public/table-model.js",
+      "factory": "createDominoChair",
+      "usedBy": [
+        "Dominó",
+        "Caída"
+      ],
+      "status": "in-use"
+    },
+    {
+      "id": "domino-tile",
+      "name": "Ficha de dominó",
+      "category": "Objetos",
+      "source": "Pana/games/domino/public/table-model.js",
+      "factory": "createDominoTile",
+      "usedBy": [
+        "Dominó"
+      ],
+      "status": "in-use"
+    },
+    {
+      "id": "caida-card",
+      "name": "Carta española",
+      "category": "Objetos",
+      "source": "Pana/engine/models/props/spanish-cards.js",
+      "factory": "createSpanishCard",
+      "usedBy": [
+        "Caída"
+      ],
+      "previewOptions": {
+        "rank": 12,
+        "suit": "copas"
+      },
+      "status": "in-use"
+    },
+    {
+      "id": "caida-score-token",
+      "name": "Ficha de Caída",
+      "category": "Objetos",
+      "source": "Pana/engine/models/props/spanish-cards.js",
+      "factory": "createScoreToken",
+      "usedBy": [
+        "Caída"
       ],
       "status": "in-use"
     }
@@ -2531,7 +2956,7 @@
       "anchor": "function boat",
       "where": "Plaza circuit; Chi Chi",
       "note": "Cabin option; different builder from the coast peñero and island sailboats.",
-      "line": 100
+      "line": 96
     },
     {
       "name": "Faceted boulder",
@@ -2539,7 +2964,7 @@
       "anchor": "function boulder",
       "where": "Páramo; Chi Chi; Desierto",
       "note": "Instanced geological scatter, separate from props.rock.",
-      "line": 110
+      "line": 106
     },
     {
       "name": "Catch basket",
@@ -2611,7 +3036,7 @@
       "anchor": "function makePeel",
       "where": "Derrape item use",
       "note": "Three peel strips and seed; not the whole mango.",
-      "line": 47
+      "line": 74
     },
     {
       "name": "Kitchen sign",
@@ -2661,7 +3086,7 @@
       "anchor": "function createCourse",
       "where": "Galope; Studio map",
       "note": "Shared terrain/water grid, clipped riding trail, irregular lagoon with island, winding estero, jump logs, start gantry and trail markers. Shared models counted separately.",
-      "line": 28
+      "line": 19
     },
     {
       "name": "Galope living Llanos landscape",
@@ -2757,7 +3182,7 @@
       "anchor": "function edges",
       "where": "Multiple Derrape circuits",
       "note": "Steel, timber and kerb variants, generated along the route.",
-      "line": 80
+      "line": 75
     },
     {
       "name": "Chevrons/start line/sector signs/ramps",
@@ -2773,7 +3198,7 @@
       "anchor": "function terrain",
       "where": "Derrape",
       "note": "Terrain, sea and stream generators; each map supplies shape and palette.",
-      "line": 35
+      "line": 25
     },
     {
       "name": "Water surface system",
@@ -2893,7 +3318,7 @@
       "anchor": "for(let i=0;i<10;i++)fixed.add",
       "where": "Estadio",
       "note": "Pitch stripes, markings and two goal frames.",
-      "line": 22
+      "line": 23
     },
     {
       "name": "Pit garages",
@@ -2901,7 +3326,7 @@
       "anchor": "Pit garages",
       "where": "Estadio",
       "note": "Eight inline garage blocks and numbered signs.",
-      "line": 45
+      "line": 46
     },
     {
       "name": "Floodlights and scoreboard",
@@ -2909,7 +3334,7 @@
       "anchor": "const score=",
       "where": "Estadio",
       "note": "Two inline landmark families.",
-      "line": 55
+      "line": 56
     },
     {
       "name": "Basketball court and banners",
@@ -2917,7 +3342,7 @@
       "anchor": "community half-court",
       "where": "Estadio",
       "note": "Court and sponsor panels; shared hoops already cataloged.",
-      "line": 69
+      "line": 70
     },
     {
       "name": "Chi Chi retaining walls and river bridges",
@@ -2941,7 +3366,7 @@
       "anchor": "function sunnyStage",
       "where": "Both Bululú minigames",
       "note": "Sky, ground, clouds and shared landscape props.",
-      "line": 16
+      "line": 17
     },
     {
       "name": "Raft and spinning striped log",
@@ -2965,7 +3390,7 @@
       "anchor": "function padTexture",
       "where": "Derrape",
       "note": "Animated ground marker, separate from collectible item models.",
-      "line": 71
+      "line": 98
     },
     {
       "name": "Puffs, debris and speech bubbles",
@@ -3063,7 +3488,7 @@
       "anchor": "function routeLandscape",
       "where": "No current production callsite",
       "note": "Current worlds supply habitat-specific planting.",
-      "line": 492
+      "line": 502
     },
     {
       "name": "Tire-wall generator",

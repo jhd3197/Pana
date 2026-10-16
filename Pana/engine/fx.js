@@ -197,6 +197,8 @@ export const sound = {
   },
 };
 
+export { dizzyStars } from '/engine/models/effects/dizzy-stars.js';
+
 // ---------- puffs (smoke, dust) ----------
 const puffGeo = new THREE.IcosahedronGeometry(0.35, 0);
 

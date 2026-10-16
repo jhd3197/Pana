@@ -4,6 +4,7 @@ import * as THREE from 'three';
 import { normalizeAvatar } from '/engine/avatar.js';
 import { buildSoftCharacter } from '/engine/models/characters/pana/model.js';
 import { addLegacyHat } from '/engine/models/characters/pana/legacy-accessories.js';
+import { dizzyStars } from '/engine/models/effects/dizzy-stars.js';
 
 const garments = { franela: 'shirt', deportivo: 'sport', hoodie: 'hoodie', hawaiana: 'tropical', chef: 'chef' };
 const expressions = { cool: 'natural', feliz: 'smile', lengua: 'talk', ojazos: 'natural', wow: 'laugh' };
@@ -33,14 +34,7 @@ export function buildCharacter(input, { head = 0.58, seated = false, chef = fals
     chain.name = 'Gold chain'; chain.position.set(0, 1.64, 0.34); chain.rotation.x = -0.65;
     sculpt.body.add(chain);
   }
-  const stars = new THREE.Group(); stars.name = 'Dizzy stars'; stars.position.y = 1.35; sculpt.head.add(stars);
-  const starMaterial = new THREE.MeshBasicMaterial({ color: '#ffc629', side: THREE.DoubleSide });
-  for (let i = 0; i < 3; i++) {
-    const shape = new THREE.Shape();
-    for (let j = 0; j < 10; j++) { const a = j * Math.PI / 5, r = j % 2 ? 0.055 : 0.13; j ? shape.lineTo(Math.cos(a) * r, Math.sin(a) * r) : shape.moveTo(Math.cos(a) * r, Math.sin(a) * r); }
-    shape.closePath(); const star = new THREE.Mesh(new THREE.ShapeGeometry(shape), starMaterial);
-    star.position.set(Math.cos(i * 2.094) * 0.9, 0, Math.sin(i * 2.094) * 0.9); stars.add(star);
-  }
+  const stars = dizzyStars(); stars.position.y = 1.35; sculpt.head.add(stars);
   stars.visible = false;
   const poseSeat = () => {
     sculpt.legs.forEach(leg => leg.rotation.set(-Math.PI / 2, 0, 0));
