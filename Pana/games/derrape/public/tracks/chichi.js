@@ -19,7 +19,7 @@ export default {
   sectors:[[0,'Mirador de las nubes'],[.08,'Aguas del Cielo'],[.22,'Las siete curvas'],[.4,'Bosque de la quebrada'],[.53,'Pueblo de buceo'],[.63,'Bahía Chi Chi'],[.73,'Puentes del río'],[.86,'Subida al mirador']],
   items:{boxes:[.1,.23,.36,.49,.62,.75,.9],boxLanes:[-6,-2,2,6],pads:[{u:.035,off:0},{u:.36,off:4},{u:.57,off:4},{u:.7,off:-4},{u:.81,off:0},{u:.96,off:0}]},
   walls:false,chevrons:true,
-  palette:{skySeed:29,cloudCover:0.58,horizon:0xc4e1df,skyTop:0x76adc4,hemiSky:0xe1f4f0,hemiGround:0x58835b,hemiInt:1.8,sun:0xffe1ae,sunInt:2.5,ground:0x5a8859,track:0x94978b,dune:0,fog:[420,1750]},
+  palette:{skySeed:29,cloudCover:0.39,horizon:0xb2e1ec,skyTop:0x2d9bcf,hemiSky:0xe1f4ff,hemiGround:0x428558,hemiInt:1.6,sun:0xfff1d5,sunInt:2.5,ground:0x449551,track:0x94978b,dune:0,fog:[420,1750]},
   environment(T){
     const group=new THREE.Group(),world=terrain(T,{bounds:[-800,-900,800,950],base:baseHeight,step:6,
       // Preserve the channel under road bridges after the usual road carving.
@@ -28,7 +28,7 @@ export default {
         h=h*(1-flat)+THERMAL.y*flat;
         const d=riverDistance(x,z);return h*smooth(d,8,22)+Math.min(h,roadHeight(x,z)-7)*(1-smooth(d,8,22));
       },
-      color:(x,z,y)=>z>coast(x)-30?0xcfbd8d:Math.hypot(x-THERMAL.x,z-THERMAL.z)<66?0xb6b69a:y>235?0x7d9381:y>150?0x658374:y>80?0x60835c:0x6c985c});
+      color:(x,z,y)=>z>coast(x)-30?0xdcc38b:Math.hypot(x-THERMAL.x,z-THERMAL.z)<66?0xb6b69a:y>235?0x779b87:y>150?0x4d946b:y>80?0x47944e:0x60a648});
     group.add(sea(world.groundAt,{size:3400}),world.land);
     const river=stream(RIVER,10,(x,z)=>Math.max(.1,roadHeight(x,z)-5.8),0x4c9b99);river.name='chichi-river';group.add(river,riverBridges(T));
     const springs=thermalSanctuary(T,world),village=beachVillage(T,world);group.add(springs.group,village.group);

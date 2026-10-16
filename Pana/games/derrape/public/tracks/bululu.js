@@ -34,7 +34,7 @@ export default {
   sectors:[[0,'Pueblo del faro'],[.23,'Playa Pana'],[.43,'Cayo de los panas'],[.65,'Lengua de arena'],[.84,'Puerto de colores']],
   items:{boxes:[.1,.29,.48,.67,.87],boxLanes:[-6,-2,2,6],pads:[{u:.18,off:0},{u:.37,off:-4},{u:.59,off:4},{u:.79,off:0},{u:.95,off:-4}]},
   walls:false,chevrons:true,
-  palette:{skySeed:31,cloudCover:0.46,horizon:0xc1e6ea,skyTop:0x65b9df,hemiSky:0xe9faff,hemiGround:0xc6be92,hemiInt:1.9,sun:0xffefd1,sunInt:2.7,ground:0xf1e3b7,track:0xddcca3,dune:0,fog:[550,1800]},
+  palette:{skySeed:31,cloudCover:0.28,horizon:0xade4ef,skyTop:0x189fd9,hemiSky:0xe4f7ff,hemiGround:0xb5a877,hemiInt:1.6,sun:0xfff3d9,sunInt:2.5,ground:0xf1dea1,track:0xddc79a,dune:0,fog:[550,1800]},
   environment(T){
     const group=new THREE.Group(),world=terrain(T,{bounds:[-650,-550,750,500],base:baseHeight,step:5,
       cut:(x,z,h)=>{

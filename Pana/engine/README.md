@@ -11,7 +11,7 @@ resources, map consumers, missing previews and older code, see the
 | Location | Responsibility |
 | --- | --- |
 | `models/fauna/` | Individual birds, farm animals, fish, crab and natural capybara; scoped rigs |
-| `models/vegetation/` | All 22 plant species, with shared canopy/leaf helpers |
+| `models/vegetation/` | All 24 plant models, including moriche and savanna grass, with shared canopy/leaf helpers |
 | `models/props/` | Scenery packs, monuments, furniture, buildings, kitchen and carried props |
 | `models/characters/pana/` | Character sculpt, wardrobe, expression geometry and avatar adapter |
 | `models/core/` | Cached materials, primitives, batching and construction helpers |

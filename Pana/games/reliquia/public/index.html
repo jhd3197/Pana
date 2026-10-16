@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#152f2c"><meta name="description" content="Explora una mina olvidada con tus panas. Activa el templo, derrota a las momias y escapa con la reliquia.">
+  <title>Reliquia · Una expedición de Pana</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700;800&family=Nunito+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/engine/ui.css"><link rel="stylesheet" href="style.css">
+  <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}</script>
+</head>
+<body>
+  <canvas id="world" aria-label="Expedición cooperativa por la mina y el templo"></canvas>
+  <div class="vignette" aria-hidden="true"></div>
+  <header class="topbar"><a class="brand" href="/" aria-label="Volver a Pana"><b>PANA</b><span>RELIQUIA</span></a><nav id="game-nav" aria-label="Opciones del juego"></nav></header>
+  <div id="loading" role="status"><span class="loading-mark">✦</span>Abriendo el paso al templo…</div>
+  <section id="lobby" class="lobby hidden" aria-labelledby="title">
+    <p class="expedition-label"><span></span> UNA EXPEDICIÓN CON TUS PANAS</p>
+    <h1 id="title">RELIQUIA<span>La mina del sol</span></h1>
+    <p class="intro">La mina estaba abandonada.<br>El templo de abajo, no.</p>
+    <p class="brief">Entra con tus panas, despierta sus secretos<br class="desktop"> y vuelve con la reliquia. Que nadie se quede atrás.</p>
+    <div class="expedition-details"><span><b>COOPERATIVO</b>Hasta 8 panas</span><span><b>UNA MISIÓN</b>Entrar. Descubrir. Volver.</span></div>
+    <div id="lobby-team" class="lobby-team" aria-label="Panas en la sala"></div>
+    <button id="start" class="primary" disabled>Conectando… <span>→</span></button>
+    <p id="connection" class="connection" role="status">Preparando la expedición…</p>
+    <button id="practice" class="text-button hidden">Jugar en este navegador</button>
+    <p class="solo-note">Puedes explorar solo o invitar con el botón de arriba.</p>
+  </section>
+  <div id="location-card" class="location-card"><span>CUADERNO DE EXPEDICIÓN</span><b>El último mapa<br>termina aquí.</b><i>La mina del sol · Pana</i></div>
+  <main id="hud" class="hidden">
+    <div class="mission"><span id="region">Campamento</span><h2 id="objective">Encuentra las dos ruedas</h2><div class="mission-progress"><i id="mission-fill"></i></div></div>
+    <div id="compass" class="compass"><span>RUMBO</span><b id="compass-arrow">↑</b><small id="destination">EL TEMPLO</small></div>
+    <aside class="map-wrap"><canvas id="minimap" width="170" height="220" aria-label="Mapa de la expedición"></canvas><span id="map-caption">MINA DEL SOL</span></aside>
+    <div id="team" class="team" aria-label="Salud del equipo"></div>
+    <div class="player-status"><div class="health-line"><strong id="health-number">100</strong><span>VITALIDAD</span><b id="meds">2 botiquines</b></div><div class="health-meter"><i id="health-fill"></i></div><p id="player-note">Juntos hasta la salida.</p></div>
+    <div class="actions"><button id="heal" class="secondary action-button"><kbd>R</kbd><span>Curar</span></button><button id="dodge" class="secondary action-button"><kbd>Shift</kbd><span>Esquivar</span></button><button id="attack" class="attack action-button"><kbd>Espacio</kbd><span>Golpear</span></button></div>
+    <button id="interact" class="interaction hidden"><span class="interaction-key">E</span><span id="interaction-label">Interactuar</span><i id="interaction-fill"></i></button>
+    <div class="controls" data-pana-hint><span><kbd>W A S D</kbd> Moverte</span><span>Arrastra para mirar</span><span><kbd>Q</kbd> Centrar cámara</span></div>
+    <div class="touch-controls" aria-label="Movimiento"><button data-move="up" aria-label="Avanzar">▲</button><div><button data-move="left" aria-label="Izquierda">◀</button><button data-move="down" aria-label="Retroceder">▼</button><button data-move="right" aria-label="Derecha">▶</button></div></div>
+    <div id="downed" class="downed hidden"><b>¡Pana, una mano!</b><span>Un amigo puede levantarte manteniendo E a tu lado.</span></div>
+    <div id="boss" class="boss hidden"><span>GUARDIÁN DEL SOL</span><div><i id="boss-fill"></i></div></div>
+    <div id="disconnect" class="disconnect hidden">Conexión interrumpida. <button id="offline-inline">Abrir expedición local</button></div>
+  </main>
+  <div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
+  <section id="results" class="results hidden" aria-labelledby="result-title"><div class="result-paper"><span class="result-symbol" aria-hidden="true">✦</span><p id="result-eyebrow">EXPEDICIÓN COMPLETADA</p><h2 id="result-title">Volvimos juntos.</h2><p id="result-copy"></p><div class="result-stats"><span><b id="result-time">0:00</b>de aventura</span><span><b id="result-kills">0</b>guardianes vencidos</span><span><b id="result-revives">0</b>manos a un pana</span></div><button id="again" class="primary">Otra expedición <span>→</span></button><a href="/">Volver a Pana</a></div></section>
+  <script type="module">import('./game.js').catch(error => { console.error(error); const el = document.getElementById('loading'); el.textContent = 'No pudimos abrir el templo. Revisa tu conexión y WebGL, y recarga la página.'; el.classList.remove('hidden'); });</script>
+</body>
+</html>

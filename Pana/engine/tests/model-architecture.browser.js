@@ -50,5 +50,13 @@ try {
   const plant=await changedBy('/engine/models/vegetation/palm.js');
   assert.ok(plant.includes('palm')&&plant.includes('isla')&&plant.includes('galope'));
   for(const id of ['bush','mangoTree','hato-cow','corn'])assert.ok(!plant.includes(id),`Palm invalidated unrelated ${id}`);
+  const moriche=await changedBy('/engine/models/vegetation/moriche.js');
+  assert.ok(moriche.includes('moriche')&&moriche.includes('galope'),'Moriche and its actual course must invalidate');
+  // Map adapters share their source dependency, so existing behavior invalidates
+  // other map thumbnails too. Individual unrelated objects must stay cached.
+  for(const id of ['palm','hato-cow','corn'])assert.ok(!moriche.includes(id),`Moriche invalidated unrelated ${id}`);
+  const llano=await changedBy('/engine/models/props/llano-life.js');
+  for(const id of ['ranch-caney','chinchorro','river-canoe','galope'])assert.ok(llano.includes(id),`Llanos pack missed ${id}`);
+  for(const id of ['ranch-house','corn'])assert.ok(!llano.includes(id),`Llanos pack invalidated unrelated ${id}`);
   assert.deepEqual(errors,[]);console.log('PASS exports, aliases and isolated cache invalidation',result);
 } finally {await browser.close();}

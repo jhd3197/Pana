@@ -16,7 +16,7 @@ export function createRider(avatar,coat='bay',seed=7){
   group.add(saddle);
   const rider=buildCharacter(avatar,{seated:true});rider.group.scale.setScalar(.7);rider.group.position.set(0,1.65,-.12);group.add(rider.group);
   let phase=0,disposed=false;
-  return {group,horse,rider,
+  return {group,horse,rider,get stridePhase(){return phase;},
     update(dt,p){
       phase+=dt*(p.speed>1?5+p.speed*.5:0);
       horse.userData.gallop(phase,p.speed,p.jumpY);

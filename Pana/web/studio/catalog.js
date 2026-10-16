@@ -14,7 +14,7 @@ export const ASSETS = [
   ...adapted(VEHICLES, '/studio/catalog/vehicles.js'),
   ...adapted(MAPS, '/studio/catalog/maps.js'),
 ];
-export const CATEGORIES = ['Todos', 'Personajes', 'Vestuario', 'Objetos', 'Fauna', 'Emblemas', 'Pueblo', 'Selva', 'Llanos', 'Páramo', 'Desierto', 'Termales', 'Costa', 'Vegetación', 'Vehículos', 'Mapas'];
+export const CATEGORIES = ['Todos', 'Personajes', 'Vestuario', 'Objetos', 'Fauna', 'Emblemas', 'Pueblo', 'Selva', 'Llanos', 'Vida llanera', 'Páramo', 'Desierto', 'Termales', 'Costa', 'Vegetación', 'Vehículos', 'Mapas'];
 export function sourcePath(url) {
   return url.startsWith('/engine/') ? `Pana${url}` : url.replace(/^\/g\/([^/]+)\//, 'Pana/games/$1/public/');
 }

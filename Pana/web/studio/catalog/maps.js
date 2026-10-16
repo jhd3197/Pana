@@ -2,8 +2,11 @@ import { TRACKS, makeTrack } from '/g/derrape/tracks.js';
 import { STATIONS } from '/g/cocina/rules.js';
 import { Box3, Vector3, Scene } from 'three';
 export const MAPS = [
-  { id: 'galope', name: 'Galope · La vuelta del estero', category: 'Mapas', source: '/g/galope/scene.js', dependencies: ['/g/galope/course.js'], factory: 'createCourse', usedBy: ['Galope'], game: '/g/galope/', description: 'Circuito a caballo de 482 m: hato, sabana, tres saltos y dos esteros poco profundos.',
-    async build() { const {createCourse}=await import('/g/galope/scene.js');return {...createCourse(),bounds:new Box3(new Vector3(-100,0,-100),new Vector3(105,20,85))}; },
+  { id: 'reliquia', name: 'Reliquia · La mina del sol', category: 'Mapas', source: '/g/reliquia/scene.js', dependencies: ['/g/reliquia/layout.js','/engine/models/props/reliquia.js','/engine/models/props/jungle.js'], factory: 'createExpeditionWorld', usedBy: ['Reliquia'], game: '/g/reliquia/', description: 'Mina con puente colgante, dos ruedas cooperativas, patio de momias y cámara de la reliquia.',
+    async build() { const { createExpeditionWorld } = await import('/g/reliquia/scene.js'); const model = createExpeditionWorld(); return { ...model, update: (t, dt) => model.update(t, {}, dt) }; },
+  },
+  { id: 'galope', name: 'Galope · La vuelta del estero', category: 'Mapas', source: '/g/galope/scene.js', dependencies: ['/g/galope/course.js','/g/galope/landscape.js'], factory: 'createCourse', usedBy: ['Galope'], game: '/g/galope/', description: 'Circuito de 482 m entre el hato, una laguna con isla y un caño sinuoso: caneyes, curiara, chinchorros y morichales.',
+    async build() { const {createCourse}=await import('/g/galope/scene.js');return {...createCourse(),bounds:new Box3(new Vector3(-140,0,-112),new Vector3(145,20,105))}; },
   },
   { id: 'plaza', name: 'Plaza Pana', category: 'Mapas', source: '/engine/plaza.js', factory: 'createPlazaEnvironment', usedBy: ['Escondidas', 'Cocina', 'Derrape'], game: '/g/escondidas/',
     async build() { const { createPlazaEnvironment } = await import('/engine/plaza.js'); return { ...createPlazaEnvironment(), bounds: new Box3(new Vector3(-28, 0, -24), new Vector3(28, 15, 28)) }; },

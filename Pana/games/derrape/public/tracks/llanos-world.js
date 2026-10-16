@@ -23,8 +23,8 @@ export function llanosEnvironment(T){
     cut:(x,z,h)=>Math.min(h,-1.8+8*smooth(riverDistance(x,z),9,22)),
     color:(x,z,y)=>{
       const wet=Math.min(smooth(wetlandDistance(x,z),1,1.55),smooth(riverDistance(x,z),12,50));
-      const c=new THREE.Color(0x4e7752).lerp(new THREE.Color(0x969c55),wet);
-      return c.lerp(new THREE.Color(0xb5a36a),(.5+.5*Math.sin(x*.018)*Math.cos(z*.025))*wet*.55);
+      const c=new THREE.Color(0x368650).lerp(new THREE.Color(0x73a83e),wet);
+      return c.lerp(new THREE.Color(0xb8a947),(.5+.5*Math.sin(x*.018)*Math.cos(z*.025))*wet*.4);
     }});group.add(world.land);world.land.name='llanos-savanna-terrain';
   const add=(parent,id,factory,x,z,{rotation=0,scale=1,radius=5,animate=false}={})=>{
     if(!clear(T,x,z,radius))throw Error(`Llanos landmark ${id} overlaps road at ${x}, ${z}`);
@@ -96,7 +96,7 @@ export function llanosEnvironment(T){
     for(const tri of [[a,a+nx+1,a+1],[a+1,a+nx+1,a+nx+2]])if(tri.some(k=>depths[k]>.015))indices.push(...tri);
   }
   const geometry=new THREE.BufferGeometry();geometry.setAttribute('position',new THREE.Float32BufferAttribute(vertices,3));geometry.setAttribute('waterDepth',new THREE.Float32BufferAttribute(depths,1));geometry.setIndex(indices);geometry.computeVertexNormals();
-  const river=waterSurface(geometry,{kind:'river',color:0x4b877c,amplitude:.025});river.name='llanos-cano';river.material.uniforms.foamStrength.value=.09;
+  const river=waterSurface(geometry,{kind:'river',color:0x289a97,amplitude:.025});river.name='llanos-cano';river.material.uniforms.foamStrength.value=.09;
   const wetlands=new THREE.Group();wetlands.name='llanos-connected-wetlands';wetlands.add(river);group.add(wetlands);
   const banks=new THREE.Group(),lilies=[],reedSpots=[],palms=[];
   for(const [j,p]of ESTEROS.entries())for(let i=0;i<20;i++){
@@ -127,7 +127,7 @@ export function llanosEnvironment(T){
   }
   const stopBatch=finish(stop);stopBatch.name='llanos-roadside-arepera';group.add(stopBatch);
   const dry=(x,z)=>riverDistance(x,z)>34&&wetlandDistance(x,z)>1.35&&!occupied.some(([a,b,r])=>Math.hypot(x-a,z-b)<r);
-  instances(group,grassTuft(0x929552),scatter(T,world.groundAt,{seed:415,count:2200,bounds:[-440,-365,440,290],margin:2,minY:1,scale:1.5,accept:dry}),'savanna-grasses',180);
+  instances(group,grassTuft(0x7f9f3c),scatter(T,world.groundAt,{seed:415,count:2200,bounds:[-440,-365,440,290],margin:2,minY:1,scale:1.5,accept:dry}),'savanna-grasses',180);
   instances(group,mangoTree({seed:14,h:7,fruit:false}),scatter(T,world.groundAt,{seed:416,count:18,bounds:[-350,-280,-110,200],margin:9,scale:1.35,accept:dry}),'hato-shade-trees',180);
   instances(group,araguaney({seed:11}),scatter(T,world.groundAt,{seed:417,count:9,bounds:[-300,-240,290,200],margin:10,scale:1.4,accept:dry}),'savanna-araguaneyes',180);
   instances(group,palm({seed:17,h:9}),scatter(T,world.groundAt,{seed:418,count:20,bounds:[-150,-340,360,280],margin:9,scale:1.1,accept:dry}),'savanna-palms',180);

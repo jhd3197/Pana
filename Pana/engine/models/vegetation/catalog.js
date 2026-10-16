@@ -1,12 +1,22 @@
 // Model metadata only: no Three.js, construction or game imports.
 export default [
   {
+    id:'moriche',name:'Palma moriche',category:'Vegetación',source:'/engine/models/vegetation/moriche.js',
+    factory:'moriche',usedBy:['Galope'],previewOptions:{seed:7,h:10},
+    description:'Palma de hojas en abanico, tronco anillado y racimos de frutos.',tags:['llanos','morichal','palma'],pack:'vegetation'
+  },
+  {
+    id:'savanna-grass',name:'Paja de sabana',category:'Vegetación',source:'/engine/models/vegetation/savanna-grass.js',
+    factory:'savannaGrass',usedBy:['Galope'],previewOptions:{seed:7,height:1.2,dry:true},
+    description:'Macolla de hojas arqueadas; versiones verde y seca para praderas.',tags:['llanos','hierba','sabana'],pack:'vegetation'
+  },
+  {
     id: "palm",
     name: "Palmera",
     category: "Vegetación",
     source: "/engine/models/vegetation/palm.js",
     factory: "palm",
-    usedBy: ["Bululú","Derrape","Escondidas","Cocina","Galope"],
+    usedBy: ["Bululú","Derrape","Escondidas","Cocina","Reliquia"],
     previewOptions: {"seed":7},
     pack: "vegetation"
   },
@@ -90,7 +100,7 @@ export default [
     category: "Vegetación",
     source: "/engine/models/vegetation/fern.js",
     factory: "fern",
-    usedBy: ["Derrape"],
+    usedBy: ["Derrape","Reliquia"],
     previewOptions: {"seed":7},
     description: "Frondas arqueadas y brotes enrollados para el suelo del bosque.",
     tags: ["selva","sotobosque"],

@@ -1,0 +1,7 @@
+export default [
+  { id: 'temple-mummy', name: 'Momia del templo', category: 'Objetos', source: '/engine/models/props/reliquia.js', factory: 'mummy', usedBy: ['Reliquia'], description: 'Guardián vendado con ojos de jade y extremidades animadas.', tags: ['reliquia', 'momia'], pack: 'reliquia' },
+  { id: 'sun-guardian', name: 'Guardián del sol', category: 'Objetos', source: '/engine/models/props/reliquia.js', factory: 'mummy', previewOptions: { guardian: true }, usedBy: ['Reliquia'], description: 'Guardián de piedra y vendas con collar y tocado de oro.', tags: ['reliquia', 'guardián'], pack: 'reliquia' },
+  { id: 'sun-relic', name: 'Reliquia del sol', category: 'Objetos', source: '/engine/models/props/reliquia.js', factory: 'sunRelic', usedBy: ['Reliquia'], description: 'Sol de oro con un cristal de jade en su centro.', tags: ['reliquia', 'tesoro'], pack: 'reliquia' },
+  { id: 'expedition-winch', name: 'Rueda del templo', category: 'Objetos', source: '/engine/models/props/reliquia.js', factory: 'expeditionWinch', usedBy: ['Reliquia'], description: 'Rueda giratoria montada en un pedestal de piedra.', tags: ['reliquia', 'mecanismo'], pack: 'reliquia' },
+  { id: 'expedition-lantern', name: 'Farol de expedición', category: 'Objetos', source: '/engine/models/props/reliquia.js', factory: 'expeditionLantern', usedBy: ['Reliquia'], description: 'Farol de metal con luz cálida.', tags: ['reliquia', 'luz'], pack: 'reliquia' },
+];

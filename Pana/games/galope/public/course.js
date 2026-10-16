@@ -37,27 +37,48 @@ export function nearest(x,z) {
   best.offset=(x-best.x)*Math.cos(best.h)-(z-best.z)*Math.sin(best.h);
   return best;
 }
-// Each connected depression has one water surface and a smooth, wadeable bed.
+// Two different landforms, not scaled copies of a pond. Tapered channels blend
+// continuously into coves; the same signed field drives terrain, water and plants.
 export const WETLANDS = [
-  {x:56,z:42,rx:25,rz:19,name:'Paso del estero'},
-  {x:-62,z:-31,rx:22,rz:22,name:'Bajo del morichal'},
+  {x:56,z:42,name:'Laguna del Hato',kind:'lagoon',
+    channel:[[43,44,10],[57,42,16],[75,53,17],[89,70,24],[111,77,17],[125,69,10]],
+    islands:[{x:94,z:74,rx:6.8,rz:4.5}]},
+  {x:-62,z:-31,name:'Caño del Morichal',kind:'creek',
+    channel:[[-53,-13,6],[-62,-30,14],[-81,-35,8],[-101,-47,10],[-99,-64,6],[-89,-78,7],[-106,-91,11],[-122,-96,5]],
+    islands:[]},
 ];
 export const WATER_Y = .68;
+export function wetlandDistance(w,x,z) {
+  let d=Infinity;
+  for(let i=1;i<w.channel.length;i++){
+    const a=w.channel[i-1],b=w.channel[i],dx=b[0]-a[0],dz=b[1]-a[1];
+    const t=clamp(((x-a[0])*dx+(z-a[1])*dz)/(dx*dx+dz*dz),0,1);
+    const next=Math.hypot(x-a[0]-dx*t,z-a[1]-dz*t)/(a[2]+(b[2]-a[2])*t);
+    // Smooth union prevents pinched joins between channel segments.
+    const h=Math.max(.18-Math.abs(d-next),0)/.18;
+    d=Math.min(d,next)-h*h*.045;
+  }
+  return d+(Math.sin(x*.23+z*.15)+.5*Math.sin(z*.43-x*.19))*.055;
+}
 export function groundAt(x,z) {
   let y=1.16+.15*Math.sin(x*.055)*Math.cos(z*.065);
   for(const w of WETLANDS) {
-    const r=Math.hypot((x-w.x)/w.rx,(z-w.z)/w.rz);
-    y=Math.min(y,.12+1.08*smooth(.42,1.18,r));
+    y=Math.min(y,.12+1.08*smooth(.42,1.18,wetlandDistance(w,x,z)));
+  }
+  for(const w of WETLANDS)for(const island of w.islands){
+    const r=Math.hypot((x-island.x)/island.rx,(z-island.z)/island.rz);
+    y=Math.max(y,.12+1.14*(1-smooth(.3,1.55,r)));
   }
   return y;
 }
 export function waterDepth(x,z) {return Math.max(0,WATER_Y-groundAt(x,z));}
 export const JUMPS = [.26,.59,.82].map((u,i)=>({s:u*LENGTH,height:.5,id:i}));
-export const SECTORS = [[0,'Hato Pana'],[.16,'Paso del estero'],[.32,'Potrero abierto'],[.5,'Sabana del sol'],[.69,'Bajo del morichal'],[.87,'Recta del hato']];
+export const SECTORS = [[0,'Hato Pana'],[.16,'Laguna del Hato'],[.32,'Potrero abierto'],[.5,'Sabana del sol'],[.69,'Caño del Morichal'],[.87,'Recta del hato']];
 export function sector(s){const u=wrap(s,LENGTH)/LENGTH;return SECTORS.filter(([v])=>u>=v).at(-1)[1];}
 export function formatTime(seconds) {return `${Math.floor(seconds/60)}:${(seconds%60).toFixed(2).padStart(5,'0')}`;}
 // The Studio tour reads this same route; it owns no gameplay state.
-export const courseRoute={id:'galope',TOTAL:LENGTH,LINE:0,ramps:[],groundAt,offsetOf:(x,z)=>nearest(x,z).offset,def:{palette:{horizon:0xd6dfc2,skyTop:0x508fb9,cloudCover:.56,skySeed:19,fog:[110,290]}},
+export const DAYLIGHT={horizon:0xb4e0ed,skyTop:0x238bce,cloudCover:.34,skySeed:19,hemiSky:0xe4f5ff,hemiGround:0x588343,hemiInt:1.5,sun:0xfff1d5,sunInt:2.3,fog:[145,340]};
+export const courseRoute={id:'galope',TOTAL:LENGTH,LINE:0,ramps:[],groundAt,offsetOf:(x,z)=>nearest(x,z).offset,def:{palette:DAYLIGHT},
   pointAt(s){const p=at(s);return {x:p.x,y:p.z};},
   heightAtS(s){const p=at(s);return groundAt(p.x,p.z);}
 };

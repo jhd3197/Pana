@@ -176,3 +176,23 @@ Measured actual geometry: Estadio
 2.051 M. Bululú's race previously submitted roughly 14.8 M triangles. Counts
 include instances; they are measurements, not gameplay data. Current exact
 counts and overview draw calls are in the generated `metrics.json`.
+
+## Outdoor colour pass (October 2026)
+
+All eight track palettes now use clearer blue skies, less cloud cover and more
+neutral sunlight. Llanos gains green grass/teal channels; the desert uses golden
+sand and terracotta strata; Chi Chi/Selva use richer greens; Páramo keeps cool
+snow and mountain greens. Plaza's town palette adds stronger ochre, coral,
+turquoise and blue painted facades. Bululú retains bright sand and Caribbean
+water. Terrain topology, route geometry and shared asset defaults are untouched.
+
+The live game still uses its existing NoToneMapping renderer; this is material
+and lighting direction rather than a screen saturation filter. Studio tours
+read each track's sky palette. Galope independently uses its shared course
+DAYLIGHT values with exposure 1 instead of its earlier yellow exposure 1.2 wash.
+
+`PANA_PLAYWRIGHT_PATH=... node Pana/games/derrape/tests/colour.browser.mjs` builds
+and renders each real circuit through the game at fixed positions, checks browser
+and shader errors and records palette/draw counts. Optional `PANA_COLOUR_TRACKS`
+selects a comma-separated subset. Before/after captures are in ignored
+`art/world-colour/`; the colour changes add no geometry, lights or rendering passes.

@@ -1,15 +1,16 @@
 {
-  "date": "2026-10-15",
+  "date": "2026-10-16",
   "scope": "Current production 3D resource/model families; catalog variants and scene assemblies are counted separately. No primitive-mesh count or deleted-history total.",
   "counts": {
-    "catalog": 158,
+    "catalog": 177,
     "categories": {
       "Fauna": 10,
-      "Vegetación": 22,
+      "Vegetación": 24,
       "Llanos": 10,
+      "Vida llanera": 11,
       "Desierto": 10,
       "Termales": 5,
-      "Objetos": 30,
+      "Objetos": 35,
       "Emblemas": 9,
       "Pueblo": 10,
       "Páramo": 8,
@@ -18,11 +19,11 @@
       "Personajes": 3,
       "Vestuario": 5,
       "Vehículos": 8,
-      "Mapas": 12
+      "Mapas": 13
     },
-    "previewOnly": 10,
+    "previewOnly": 8,
     "uncatalogedFamilies": 31,
-    "sceneFamilies": 44,
+    "sceneFamilies": 46,
     "dormantFactories": 9
   },
   "assets": [
@@ -76,7 +77,8 @@
       "source": "Pana/engine/models/fauna/capybara/wild-capybara.js",
       "factory": "wildCapybara",
       "usedBy": [
-        "Derrape"
+        "Derrape",
+        "Galope"
       ],
       "previewOptions": {
         "seed": 7
@@ -174,6 +176,37 @@
       "status": "in-use"
     },
     {
+      "id": "moriche",
+      "name": "Palma moriche",
+      "category": "Vegetación",
+      "source": "Pana/engine/models/vegetation/moriche.js",
+      "factory": "moriche",
+      "usedBy": [
+        "Galope"
+      ],
+      "previewOptions": {
+        "seed": 7,
+        "h": 10
+      },
+      "status": "in-use"
+    },
+    {
+      "id": "savanna-grass",
+      "name": "Paja de sabana",
+      "category": "Vegetación",
+      "source": "Pana/engine/models/vegetation/savanna-grass.js",
+      "factory": "savannaGrass",
+      "usedBy": [
+        "Galope"
+      ],
+      "previewOptions": {
+        "seed": 7,
+        "height": 1.2,
+        "dry": true
+      },
+      "status": "in-use"
+    },
+    {
       "id": "palm",
       "name": "Palmera",
       "category": "Vegetación",
@@ -184,7 +217,7 @@
         "Derrape",
         "Escondidas",
         "Cocina",
-        "Galope"
+        "Reliquia"
       ],
       "previewOptions": {
         "seed": 7
@@ -305,7 +338,8 @@
       "source": "Pana/engine/models/vegetation/fern.js",
       "factory": "fern",
       "usedBy": [
-        "Derrape"
+        "Derrape",
+        "Reliquia"
       ],
       "previewOptions": {
         "seed": 7
@@ -625,6 +659,147 @@
         "Galope"
       ],
       "previewOptions": null,
+      "status": "in-use"
+    },
+    {
+      "id": "ranch-caney",
+      "name": "Caney de palma",
+      "category": "Vida llanera",
+      "source": "Pana/engine/models/props/llano-life.js",
+      "factory": "ranchCaney",
+      "usedBy": [
+        "Galope"
+      ],
+      "previewOptions": null,
+      "status": "in-use"
+    },
+    {
+      "id": "chinchorro",
+      "name": "Chinchorro del hato",
+      "category": "Vida llanera",
+      "source": "Pana/engine/models/props/llano-life.js",
+      "factory": "chinchorro",
+      "usedBy": [
+        "Galope"
+      ],
+      "previewOptions": null,
+      "status": "in-use"
+    },
+    {
+      "id": "saddle-stand",
+      "name": "Montura en caballete",
+      "category": "Vida llanera",
+      "source": "Pana/engine/models/props/llano-life.js",
+      "factory": "saddleStand",
+      "usedBy": [
+        "Galope"
+      ],
+      "previewOptions": null,
+      "status": "in-use"
+    },
+    {
+      "id": "hitching-rail",
+      "name": "Palenque de caballos",
+      "category": "Vida llanera",
+      "source": "Pana/engine/models/props/llano-life.js",
+      "factory": "hitchingRail",
+      "usedBy": [
+        "Galope"
+      ],
+      "previewOptions": {
+        "span": 4
+      },
+      "status": "in-use"
+    },
+    {
+      "id": "campfire",
+      "name": "Fogón de campamento",
+      "category": "Vida llanera",
+      "source": "Pana/engine/models/props/llano-life.js",
+      "factory": "campfire",
+      "usedBy": [
+        "Galope"
+      ],
+      "previewOptions": null,
+      "status": "in-use"
+    },
+    {
+      "id": "coffee-table",
+      "name": "Mesa de café del hato",
+      "category": "Vida llanera",
+      "source": "Pana/engine/models/props/llano-life.js",
+      "factory": "coffeeTable",
+      "usedBy": [
+        "Galope"
+      ],
+      "previewOptions": null,
+      "status": "in-use"
+    },
+    {
+      "id": "river-canoe",
+      "name": "Curiara del estero",
+      "category": "Vida llanera",
+      "source": "Pana/engine/models/props/llano-life.js",
+      "factory": "riverCanoe",
+      "usedBy": [
+        "Galope"
+      ],
+      "previewOptions": null,
+      "status": "in-use"
+    },
+    {
+      "id": "wetland-landing",
+      "name": "Embarcadero del estero",
+      "category": "Vida llanera",
+      "source": "Pana/engine/models/props/llano-life.js",
+      "factory": "wetlandLanding",
+      "usedBy": [
+        "Galope"
+      ],
+      "previewOptions": {
+        "length": 7
+      },
+      "status": "in-use"
+    },
+    {
+      "id": "flooded-fence",
+      "name": "Cerca inundada",
+      "category": "Vida llanera",
+      "source": "Pana/engine/models/props/llano-life.js",
+      "factory": "floodedFence",
+      "usedBy": [
+        "Galope"
+      ],
+      "previewOptions": {
+        "span": 8,
+        "seed": 7
+      },
+      "status": "in-use"
+    },
+    {
+      "id": "llano-trail-sign",
+      "name": "Señal de sendero llanero",
+      "category": "Vida llanera",
+      "source": "Pana/engine/models/props/llano-life.js",
+      "factory": "trailSign",
+      "usedBy": [
+        "Galope"
+      ],
+      "previewOptions": null,
+      "status": "in-use"
+    },
+    {
+      "id": "termite-mound",
+      "name": "Termitero de sabana",
+      "category": "Vida llanera",
+      "source": "Pana/engine/models/props/llano-life.js",
+      "factory": "termiteMound",
+      "usedBy": [
+        "Galope"
+      ],
+      "previewOptions": {
+        "seed": 7
+      },
       "status": "in-use"
     },
     {
@@ -1362,10 +1537,10 @@
       "source": "Pana/engine/models/props/jungle.js",
       "factory": "templeEntrance",
       "usedBy": [
-        "Pana Studio"
+        "Reliquia"
       ],
       "previewOptions": null,
-      "status": "preview-only"
+      "status": "in-use"
     },
     {
       "id": "rope-bridge",
@@ -1374,10 +1549,10 @@
       "source": "Pana/engine/models/props/jungle.js",
       "factory": "ropeBridge",
       "usedBy": [
-        "Pana Studio"
+        "Reliquia"
       ],
       "previewOptions": null,
-      "status": "preview-only"
+      "status": "in-use"
     },
     {
       "id": "waterfall-rocks",
@@ -1422,7 +1597,8 @@
       "source": "Pana/engine/models/props/jungle.js",
       "factory": "stoneTotem",
       "usedBy": [
-        "Derrape"
+        "Derrape",
+        "Reliquia"
       ],
       "previewOptions": null,
       "status": "in-use"
@@ -1473,7 +1649,8 @@
       "factory": "driftwood",
       "usedBy": [
         "Bululú",
-        "Derrape"
+        "Derrape",
+        "Galope"
       ],
       "previewOptions": null,
       "status": "in-use"
@@ -1627,6 +1804,64 @@
         "Cocina"
       ],
       "previewOptions": null,
+      "status": "in-use"
+    },
+    {
+      "id": "temple-mummy",
+      "name": "Momia del templo",
+      "category": "Objetos",
+      "source": "Pana/engine/models/props/reliquia.js",
+      "factory": "mummy",
+      "usedBy": [
+        "Reliquia"
+      ],
+      "status": "in-use"
+    },
+    {
+      "id": "sun-guardian",
+      "name": "Guardián del sol",
+      "category": "Objetos",
+      "source": "Pana/engine/models/props/reliquia.js",
+      "factory": "mummy",
+      "usedBy": [
+        "Reliquia"
+      ],
+      "previewOptions": {
+        "guardian": true
+      },
+      "status": "in-use"
+    },
+    {
+      "id": "sun-relic",
+      "name": "Reliquia del sol",
+      "category": "Objetos",
+      "source": "Pana/engine/models/props/reliquia.js",
+      "factory": "sunRelic",
+      "usedBy": [
+        "Reliquia"
+      ],
+      "status": "in-use"
+    },
+    {
+      "id": "expedition-winch",
+      "name": "Rueda del templo",
+      "category": "Objetos",
+      "source": "Pana/engine/models/props/reliquia.js",
+      "factory": "expeditionWinch",
+      "usedBy": [
+        "Reliquia"
+      ],
+      "status": "in-use"
+    },
+    {
+      "id": "expedition-lantern",
+      "name": "Farol de expedición",
+      "category": "Objetos",
+      "source": "Pana/engine/models/props/reliquia.js",
+      "factory": "expeditionLantern",
+      "usedBy": [
+        "Reliquia"
+      ],
       "status": "in-use"
     },
     {
@@ -1996,6 +2231,17 @@
       "factory": "CARS.find(c => c.id === 'montanero').build",
       "usedBy": [
         "Derrape"
+      ],
+      "status": "in-use"
+    },
+    {
+      "id": "reliquia",
+      "name": "Reliquia · La mina del sol",
+      "category": "Mapas",
+      "source": "Pana/games/reliquia/public/scene.js",
+      "factory": "createExpeditionWorld",
+      "usedBy": [
+        "Reliquia"
       ],
       "status": "in-use"
     },
@@ -2386,6 +2632,14 @@
   ],
   "assemblies": [
     {
+      "name": "Reliquia mine and temple",
+      "source": "Pana/games/reliquia/public/scene.js",
+      "anchor": "function createExpeditionWorld",
+      "where": "Reliquia; Studio map",
+      "note": "Authored walkable mine, swept shared bridge, timed winches, crypt, relic chamber and return tunnel. Five expedition models are cataloged independently.",
+      "line": 21
+    },
+    {
       "name": "Mounted horse and riding tack",
       "source": "Pana/games/galope/public/rider.js",
       "anchor": "function createRider",
@@ -2394,12 +2648,20 @@
       "line": 7
     },
     {
-      "name": "Horse course and wadeable esteros",
+      "name": "Horse course and distinct wetlands",
       "source": "Pana/games/galope/public/scene.js",
       "anchor": "function createCourse",
       "where": "Galope; Studio map",
-      "note": "Route-generated terrain, shallow water, jump logs, start gantry and trail markers. Shared ranch props and plants are counted separately.",
-      "line": 26
+      "note": "Shared terrain/water grid, clipped riding trail, irregular lagoon with island, winding estero, jump logs, start gantry and trail markers. Shared models counted separately.",
+      "line": 28
+    },
+    {
+      "name": "Galope living Llanos landscape",
+      "source": "Pana/games/galope/public/landscape.js",
+      "anchor": "function addLandscape",
+      "where": "Galope; Studio map",
+      "note": "Hato gathering places, bank-connected canoe landing, moriche groves, green/dry grass, shore-only reeds and continuous far plain. All 13 new models have individual Studio previews.",
+      "line": 14
     },
     {
       "name": "Selva pyramid",

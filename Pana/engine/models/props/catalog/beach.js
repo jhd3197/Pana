@@ -26,7 +26,7 @@ export default [
     category: "Objetos",
     source: "/engine/models/props/beach.js",
     factory: "driftwood",
-    usedBy: ["Bululú","Derrape"],
+    usedBy: ["Bululú","Derrape","Galope"],
     previewOptions: null,
     pack: "beach"
   },

@@ -5,9 +5,10 @@ import {createGameMenu,toggleMute} from '/engine/ui.js';
 import {bindRenderer,pixelRatio} from '/engine/settings.js';
 import {RaceRoom} from './network.js';
 import {standings} from './rules.js';
-import {at,angle,nearest,samples,LENGTH,LAPS,groundAt,WATER_Y,WETLANDS,JUMPS,sector,formatTime} from './course.js';
+import {at,angle,nearest,samples,LENGTH,LAPS,groundAt,waterDepth,WATER_Y,WETLANDS,JUMPS,sector,formatTime} from './course.js';
 import {createRaceScene} from './scene.js';
 import {createRider} from './rider.js';
+import {createHorseWaterFX} from './water-fx.js';
 
 const $=id=>document.getElementById(id),params=new URLSearchParams(location.search),avatar=loadAvatar(),name=loadName();
 let coat='bay';try{coat=['bay','palomino','grey'].includes(localStorage.getItem('galope:coat'))?localStorage.getItem('galope:coat'):'bay';}catch{}
@@ -47,11 +48,14 @@ $('practice').onclick=()=>{room.practice();$('practice').classList.add('hidden')
 await new Promise(resolve=>requestAnimationFrame(()=>setTimeout(resolve,30)));
 world=createRaceScene($('world'));const {renderer,scene,camera,sun,course}=world;
 renderer.setPixelRatio(pixelRatio(1.5));const unbind=bindRenderer(renderer,1.5);
-const splashGeometry=new THREE.SphereGeometry(.065,5,4),splashMaterial=new THREE.MeshBasicMaterial({color:0xd3eee0,transparent:true,opacity:.65});
-const splashes=new THREE.InstancedMesh(splashGeometry,splashMaterial,40);splashes.frustumCulled=false;scene.add(splashes);const dummy=new THREE.Object3D();
+const waterFX=createHorseWaterFX({waterY:WATER_Y,depthAt:waterDepth});scene.add(waterFX.group);const dummy=new THREE.Object3D();
 const dustGeometry=new THREE.SphereGeometry(.12,5,4),dustMaterial=new THREE.MeshBasicMaterial({color:0xd9c89b,transparent:true,opacity:.22});
 const dust=new THREE.InstancedMesh(dustGeometry,dustMaterial,20);dust.frustumCulled=false;scene.add(dust);
 const mapCtx=$('map').getContext('2d'),look=new THREE.Vector3(),cameraGoal=new THREE.Vector3();let cameraReady=false;
+// Cache the real wetland footprint once, including the island and winding creek.
+const mapScale=.74,wetlandMap=document.createElement('canvas');wetlandMap.width=220;wetlandMap.height=190;
+const wetlandCtx=wetlandMap.getContext('2d');wetlandCtx.fillStyle='#699589';
+for(let z=0;z<190;z++)for(let x=0;x<220;x++)if(groundAt((x-110)/mapScale,(z-97)/mapScale)<WATER_Y-.015)wetlandCtx.fillRect(x,z,1,1);
 function resize(){const w=innerWidth,h=innerHeight;renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix();}resize();window.addEventListener('resize',resize);
 function ensureRiders(){
   const people=state.players.length?state.players:[{id:'preview',name,avatar,coat,x:at(-5).x,z:at(-5).z,h:at(-5).h,speed:0,jumpY:0}];
@@ -65,8 +69,8 @@ function ensureRiders(){
   return people;
 }
 function drawMap(player){
-  const c=mapCtx;c.clearRect(0,0,220,190);const xy=(x,z)=>[110+x,97+z];
-  c.fillStyle='#699589';for(const w of WETLANDS){c.beginPath();c.ellipse(...xy(w.x,w.z),w.rx,w.rz,0,0,Math.PI*2);c.fill();}
+  const c=mapCtx;c.clearRect(0,0,220,190);const xy=(x,z)=>[110+x*mapScale,97+z*mapScale];
+  c.drawImage(wetlandMap,0,0);
   c.strokeStyle='#c6b68c';c.lineWidth=5;c.lineJoin='round';c.beginPath();samples.forEach((p,i)=>i?c.lineTo(...xy(p.x,p.z)):c.moveTo(...xy(p.x,p.z)));c.closePath();c.stroke();
   for(const j of JUMPS){const p=at(j.s);c.fillStyle='#e3a35d';c.fillRect(...xy(p.x-2,p.z-2),4,4);}
   for(const p of state.players){if(p.spectator)continue;c.fillStyle=p.id===player?.id?'#ffdd8e':'#f7f0da';c.beginPath();c.arc(...xy(p.x,p.z),p.id===player?.id?4.5:2.6,0,Math.PI*2);c.fill();}
@@ -89,7 +93,7 @@ function updateUI(){
   const count=state.phase==='countdown'?String(Math.max(1,Math.ceil(state.countdown))):state.phase==='racing'&&state.time<.75?'¡ARRE!':'';
   $('countdown').classList.toggle('hidden',!count);$('countdown').textContent=count;
   if(count&&count!==lastCountdown){sound.tone(count==='¡ARRE!'?740:370,0,.12,'triangle',.06);lastCountdown=count;}
-  if(state.raceId!==lastRace){lastRace=state.raceId;cameraReady=false;clearInput();}
+  if(state.raceId!==lastRace){lastRace=state.raceId;cameraReady=false;waterFX.reset();clearInput();}
   if(done&&(lastPhase!==state.phase||$('result-board').childElementCount!==ordered.length)){
     $('result-title').textContent=place===1?'¡Ganaste, pana!':own?.finish!==null?'¡Llegaste, pana!':'¡Se cerró la carrera!';
     $('result-copy').textContent=own?.finish!=null?`${place}.º lugar · ${formatTime(own.finish)} · ${own.hits} tropiezos`:'La próxima salida es tuya. Sigue las estacas y guarda fuerzas.';
@@ -115,10 +119,11 @@ function frame(){
   // Follow the local rider with a bounded shadow frustum.
   sun.position.set(q.x-45,70,q.z+35);sun.target.position.set(q.x,0,q.z);sun.target.updateMatrixWorld();
   course.update(elapsed);world.sky.update(elapsed);
-  splashes.visible=p.water>.04&&p.speed>1&&p.jumpY<.4;dust.visible=p.water<.04&&p.speed>4&&p.jumpY<.4;
-  for(const [mesh,count,water]of [[splashes,40,true],[dust,20,false]])if(mesh.visible){for(let i=0;i<count;i++){
-    const age=((elapsed*(water?2:1.4)+i/count)%1),side=i%2?1:-1;
-    dummy.position.set(q.x-Math.sin(h)*age*2.8+Math.cos(h)*side*(.3+age*.6),water?WATER_Y+Math.sin(age*Math.PI)*.45:q.y+.1+age*.45,q.z-Math.cos(h)*age*2.8-Math.sin(h)*side*(.3+age*.6));dummy.scale.setScalar(water?1-age*.7:1+age*3);dummy.updateMatrix();mesh.setMatrixAt(i,dummy.matrix);}mesh.instanceMatrix.needsUpdate=true;}
+  waterFX.update(elapsed,people,riders,q);
+  dust.visible=p.water<.04&&p.speed>4&&p.jumpY<.4;
+  if(dust.visible){for(let i=0;i<20;i++){
+    const age=(elapsed*1.4+i/20)%1,side=i%2?1:-1;
+    dummy.position.set(q.x-Math.sin(h)*age*2.8+Math.cos(h)*side*(.3+age*.6),q.y+.1+age*.45,q.z-Math.cos(h)*age*2.8-Math.sin(h)*side*(.3+age*.6));dummy.scale.setScalar(1+age*3);dummy.updateMatrix();dust.setMatrixAt(i,dummy.matrix);}dust.instanceMatrix.needsUpdate=true;}
   if(!frozen&&state.phase==='racing'&&p.speed>3){hoofClock+=dt;if(hoofClock>1/(2+p.speed*.32)){hoofClock=0;sound.tone(p.water>.04?160:90,0,.035,'triangle',p.water>.04?.035:.045);}}
   drawClock+=dt;if(drawClock>.1){updateUI();drawClock=0;}
   renderer.render(scene,camera);requestAnimationFrame(frame);
@@ -127,11 +132,11 @@ requestAnimationFrame(frame);
 // Network simulation is independent of render cadence; guests send inputs at 20Hz.
 let simulationTime=performance.now();
 const simulation=setInterval(()=>{const now=performance.now(),dt=(now-simulationTime)/1000;simulationTime=now;if(params.has('manual'))return;room.tick(dt,input(),paused&&room.members.size<=1);},50);
-if(params.has('debug'))window.galope={room,get state(){return state;},world,riders,input,
+if(params.has('debug'))window.galope={room,get state(){return state;},world,riders,waterFX,input,
   manual(value){if(value)params.set('manual','');else params.delete('manual');simulationTime=performance.now();},
   step(seconds,controls={}){for(let t=0;t<seconds;t+=.05)room.tick(.05,controls);updateUI();},
   place(id,s,offset=0){const p=room.game.players.find(p=>p.id===id),q=at(s,offset);Object.assign(p,{x:q.x,z:q.z,h:q.h,s:q.s,progress:s,checkpoint:Math.max(0,Math.floor(s/(LENGTH/8))+1),speed:0,jumpY:0,vy:0,stun:0});room.publish();},
   at,LENGTH,JUMPS,groundAt,waterS:nearest(WETLANDS[0].x,WETLANDS[0].z).s,updateUI};
-window.addEventListener('pagehide',()=>{disposed=true;clearInterval(simulation);room.dispose();for(const r of riders.values())r.dispose();course.dispose();world.sky.dispose();splashGeometry.dispose();splashMaterial.dispose();dustGeometry.dispose();dustMaterial.dispose();unbind?.();renderer.dispose();},{once:true});
+window.addEventListener('pagehide',()=>{disposed=true;clearInterval(simulation);room.dispose();for(const r of riders.values())r.dispose();course.dispose();world.sky.dispose();waterFX.dispose();dustGeometry.dispose();dustMaterial.dispose();unbind?.();renderer.dispose();},{once:true});
 // Back/forward cache restores a disposed WebGL scene; rebuild and rejoin safely.
 window.addEventListener('pageshow',event=>{if(event.persisted)location.reload();});

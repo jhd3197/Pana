@@ -42,7 +42,7 @@ export default [
     category: "Fauna",
     source: "/engine/models/fauna/capybara/wild-capybara.js",
     factory: "wildCapybara",
-    usedBy: ["Derrape"],
+    usedBy: ["Derrape","Galope"],
     previewOptions: {"seed":7},
     description: "Selva y Los Llanos: capibara natural de cuatro patas, sin ropa, con orejas animadas.",
     tags: ["animal","fauna","capibara","animado"],

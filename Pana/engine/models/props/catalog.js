@@ -1,4 +1,5 @@
 import ranch from './catalog/ranch.js';
+import llanoLife from './catalog/llano-life.js';
 import desert from './catalog/desert.js';
 import thermal from './catalog/thermal.js';
 import plaza from './catalog/plaza.js';
@@ -12,9 +13,11 @@ import jungle from './catalog/jungle.js';
 import beach from './catalog/beach.js';
 import coastal from './catalog/coastal.js';
 import kitchen from './catalog/kitchen.js';
+import reliquia from './catalog/reliquia.js';
 
 export default [
   ...ranch,
+  ...llanoLife,
   ...desert,
   ...thermal,
   ...plaza,
@@ -28,4 +31,5 @@ export default [
   ...beach,
   ...coastal,
   ...kitchen,
+  ...reliquia,
 ];

@@ -15,7 +15,7 @@ import { colonialHouse, busStopShelter } from '/engine/models/props/pueblo.js';
 import { extendTerrain } from './world-horizon.js';
 import { plazaOutskirts } from './plaza-outskirts.js';
 
-const COLORS=[0xe2b267,0x66a8a0,0xdd9277,0xaabb82,0xe7ce98,0x7d9fac];
+const COLORS=[0xedaf3f,0x35b4aa,0xeb7658,0x8ab34f,0xf2d38b,0x459fc6];
 const PAVING=0xd2bd95, ROAD=0x8b958c;
 
 function surface(x0,z0,x1,z1,height,color,step=5,include=()=>true) {
@@ -45,7 +45,7 @@ export function createTown(T) {
     return overWater(x,z)?land:THREE.MathUtils.lerp(T.surfaceAt(x,z)-0.3,land,blend);
   }
   const land=surface(-650,-700,850,600,groundAt,0xffffff,5);
-  const p=land.geometry.attributes.position,colors=[],lawn=new THREE.Color(0x8fab72),dry=new THREE.Color(0xb7b581);
+  const p=land.geometry.attributes.position,colors=[],lawn=new THREE.Color(0x6aa746),dry=new THREE.Color(0xb2b76a);
   for(let i=0;i<p.count;i++) {
     const c=lawn.clone().lerp(dry,0.26+0.16*Math.sin(p.getX(i)*0.013)*Math.cos(p.getZ(i)*0.017));colors.push(c.r,c.g,c.b);
   }

@@ -11,11 +11,11 @@ normal port fallback applies. `-NoAutoPort` makes that conflict explicit.
 `engine/models/catalog.js` aggregates shared model metadata; category manifests
 under `models/fauna/`, `models/vegetation/` and `models/props/catalog/` are the
 registration points. `web/studio/catalog.js` composes these with specialized
-scene/character/game adapters in `web/studio/catalog/`, currently 155 resources
-including twenty-two vegetation models, nine Pana landmarks (`Emblemas`),
+scene/character/game adapters in `web/studio/catalog/`, currently 171 resources
+including twenty-four vegetation models, nine Pana landmarks (`Emblemas`),
 ten Pueblo models, seven jungle structures (`Selva`), eight Páramo structures
 and five thermal landmarks (`Termales`) used by Chi Chi, plus ten Llanos and
-ten Desierto models, nine `Costa` objects, plus ten `Fauna` entries (horse, chicken,
+ten Desierto models, eleven `Vida llanera` props, nine `Costa` objects, plus ten `Fauna` entries (horse, chicken,
 cow, fish, school, crab, macaw, ibis, vulture and natural capybara).
 See `model-inventory.md` for the full current registry, active uncataloged models,
 map assemblies, dormant factories and priorities; `coastal-props.md` for the beach and harbor pack,

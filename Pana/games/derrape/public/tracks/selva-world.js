@@ -23,7 +23,7 @@ function finish(source,cellSize=85) {
 
 function groundMesh(height) {
   const geo=new THREE.PlaneGeometry(880,740,220,185);geo.rotateX(-Math.PI/2);geo.translate(50,0,-95);
-  const p=geo.attributes.position,colors=[],dark=new THREE.Color(0x31593e),light=new THREE.Color(0x6d8847),sand=new THREE.Color(0x9b9970);
+  const p=geo.attributes.position,colors=[],dark=new THREE.Color(0x246440),light=new THREE.Color(0x599739),sand=new THREE.Color(0xb3a469);
   for(let i=0;i<p.count;i++) {
     const x=p.getX(i),z=p.getZ(i),y=height(x,z);p.setY(i,y);
     const t=0.46+0.22*Math.sin(x*0.026)*Math.cos(z*0.021)+0.08*Math.sin(x*0.1+z*0.08);
@@ -86,7 +86,7 @@ export function createJungle(T) {
   }
   const terrain=groundMesh(groundAt),plantGround=meshHeight(terrain,groundAt);group.add(terrain);
   extendTerrain(terrain,{bounds:[-390,-465,490,275],nx:220,nz:185,height:groundAt,
-    color:(x,z)=>new THREE.Color(0x31593e).lerp(new THREE.Color(0x6d8847),.46+.22*Math.sin(x*.026)*Math.cos(z*.021)),biome:'selva'});
+    color:(x,z)=>new THREE.Color(0x246440).lerp(new THREE.Color(0x599739),.46+.22*Math.sin(x*.026)*Math.cos(z*.021)),biome:'selva'});
   const river=kit.waterRibbon([...RIVER].reverse(),18,{color:0x529b8b,y:0.3});river.name='selva-river';group.add(river);animated.push(river);
   const tunnel=templeTunnel(T);group.add(tunnel);
   const foundation=[];

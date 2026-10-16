@@ -15,10 +15,10 @@ export function desertEnvironment(T){
     color:(x,z,y)=>{
       const oasis=Math.hypot((x-OASIS.x)/OASIS.rx,(z-OASIS.z)/OASIS.rz);
       const canyon=smooth(-z+Math.sin(x*.018)*32,-100,150),rise=y-roadHeight(x,z);
-      const c=new THREE.Color(0xcfac73).lerp(new THREE.Color(0xa96f4c),canyon);
-      c.lerp(new THREE.Color(0x7f4936),smooth(rise,5,34)*.65);
-      c.lerp(new THREE.Color(0xe0b67b),smooth(rise,20,30)*(1-smooth(rise,31,39))*.65);
-      return c.lerp(new THREE.Color(0x8b9360),(1-smooth(oasis,1.15,1.65))*.75);
+      const c=new THREE.Color(0xd7a355).lerp(new THREE.Color(0xbc7044),canyon);
+      c.lerp(new THREE.Color(0x964b32),smooth(rise,5,34)*.65);
+      c.lerp(new THREE.Color(0xe7bc72),smooth(rise,20,30)*(1-smooth(rise,31,39))*.65);
+      return c.lerp(new THREE.Color(0x7c9d49),(1-smooth(oasis,1.15,1.65))*.75);
     }});group.add(world.land);world.land.name='desert-eroded-terrain';
   const add=(parent,id,factory,x,z,{rotation=0,scale=1,radius=5}={})=>{
     if(!clear(T,x,z,radius))throw Error(`Desert landmark ${id} overlaps road at ${x}, ${z}`);
@@ -50,7 +50,7 @@ export function desertEnvironment(T){
       for(let k=0;k<p.count;k++){
         const lx=p.getX(k),lz=p.getZ(k),rise=p.getY(k),wx=x+(lx*Math.cos(rotation)+lz*Math.sin(rotation))*scale,wz=z+(-lx*Math.sin(rotation)+lz*Math.cos(rotation))*scale;
         p.setY(k,rise+(world.groundAt(wx,wz)-y-.06)/scale);
-        const tint=new THREE.Color(0xcfac73).lerp(new THREE.Color(0xe7c28d),smooth(rise,0,height)*.65);c.setXYZ(k,tint.r,tint.g,tint.b);
+        const tint=new THREE.Color(0xd7a355).lerp(new THREE.Color(0xedc682),smooth(rise,0,height)*.65);c.setXYZ(k,tint.r,tint.g,tint.b);
       }o.geometry.computeVertexNormals();
     });
     put(dunes,dune,x,z,y,rotation,scale);counts['sand-dune']=(counts['sand-dune']||0)+1;occupied.push([x,z,scale*9]);

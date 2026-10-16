@@ -34,6 +34,16 @@ Ride your saved pana through two shallow esteros, jump three logs per lap and
 manage stamina over two laps. Choose a horse coat, race against the hato's
 jinetes or invite up to 8 panas. Includes touch controls, shared settings,
 ordered checkpoints, results, replay and host migration.
+The surrounding hato now opens onto an irregular lagoon with an island and a
+winding morichal channel, with caneyes, chinchorros, a canoe landing and native
+grassland. Thirteen new reusable models are also available in Pana Studio.
+
+Sixth game: **Reliquia** — a cooperative expedition into an abandoned mine and
+the temple beneath it. Explore with your saved pana, fight wrapped guardians,
+activate two timed winches, retrieve the sun relic and return to camp together.
+Includes dodging, healing, revives, adaptive encounter pacing, touch controls,
+late joining, host migration and replay. Play solo or share a room with up to
+8 panas; the first expedition is designed around small groups.
 
 ## Run it
 
@@ -49,6 +59,7 @@ npm start            # or: npm run dev  /  Pana\dev.ps1
 - Escondidas: http://localhost:8461/g/escondidas/
 - Cocina: http://localhost:8461/g/cocina/
 - Galope: http://localhost:8461/g/galope/
+- Reliquia: http://localhost:8461/g/reliquia/
 - Pana Studio: http://localhost:8461/studio.html
 - Character editor: http://localhost:8461/personaje.html
 - Friends on your network: the dev script prints your LAN URL.
@@ -85,6 +96,7 @@ Pana/                  ← this repo
 - **Escondidas**: prop hunt in Plaza Pana (playable now; solo bots + shared rooms)
 - **Cocina**: cooperative Venezuelan cooking in Plaza Pana (playable now; helpers + shared rooms)
 - **Galope**: Llanos horse racing (playable now; shallow water, jumps, bots + shared rooms)
+- **Reliquia**: cooperative mine and temple expedition (playable now; mummies, shared puzzles, revives and relic extraction)
 - **pana.sh** — public deploy
 
 ## Contributing / AI agents

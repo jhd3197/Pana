@@ -9,6 +9,6 @@ export default {
   sectors:[[0,'Pana Gas'],[.18,'Mar de dunas'],[.36,'Subida del cardón'],[.49,'Cañón de los arcos'],[.69,'Oasis del pozo'],[.85,'Camino de las carretas']],
   items:{boxes:[.1,.25,.4,.56,.73,.9],boxLanes:[-6,-2,2,6],pads:[{u:.13,off:0},{u:.31,off:3},{u:.63,off:-3},{u:.94,off:0}]},
   walls:false,chevrons:true,
-  palette:{skySeed:43,cloudCover:0.28,horizon:0xe9d3ad,skyTop:0x80b8d0,hemiSky:0xffefd3,hemiGround:0xba9163,hemiInt:1.65,sun:0xffdfad,sunInt:2.4,ground:0xcfac76,track:0xb3a184,dune:0,fog:[480,1450]},
+  palette:{skySeed:43,cloudCover:0.19,horizon:0xc2e1ed,skyTop:0x328fca,hemiSky:0xeaf4ff,hemiGround:0xad7950,hemiInt:1.45,sun:0xffebc8,sunInt:2.5,ground:0xd5a252,track:0xc5a67a,dune:0,fog:[480,1450]},
   environment:desertEnvironment,scenery:desertScenery,
 };

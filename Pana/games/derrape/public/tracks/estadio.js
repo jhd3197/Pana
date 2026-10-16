@@ -15,9 +15,9 @@ export default {
   sectors:[[0,'Recta principal'],[.24,'Chicana del marcador'],[.43,'Horquilla del paddock'],[.63,'Doble cambio'],[.82,'Curva de la hinchada']],
   items:{boxes:[.12,.32,.49,.69,.9],boxLanes:[-5.5,-1.8,1.8,5.5],pads:[{u:.055,off:0},{u:.37,off:-3},{u:.73,off:3}]},
   walls:false,chevrons:true,
-  palette:{skySeed:23,cloudCover:0.4,horizon:0xf0dac0,skyTop:0x7bbce2,hemiSky:0xf0f5f2,hemiGround:0x899971,hemiInt:1.8,sun:0xffd8a3,sunInt:2.6,ground:0x7e9b65,track:0x626e75,dune:0,fog:[350,1050]},
+  palette:{skySeed:23,cloudCover:0.28,horizon:0xb6def1,skyTop:0x278dd1,hemiSky:0xe4f3ff,hemiGround:0x5e8650,hemiInt:1.55,sun:0xfff2dd,sunInt:2.5,ground:0x60a34e,track:0x626e75,dune:0,fog:[350,1050]},
   environment(T){
-    const group=new THREE.Group(),world=terrain(T,{bounds:[-620,-570,620,520],base:()=>1,color:(x,z)=>Math.abs(T.offsetOf(x,z))<22?0xc5bfa8:0x83a36c,step:7});group.add(world.land);
+    const group=new THREE.Group(),world=terrain(T,{bounds:[-620,-570,620,520],base:()=>1,color:(x,z)=>Math.abs(T.offsetOf(x,z))<22?0xc5bfa8:0x62a849,step:7});group.add(world.land);
     const fixed=new THREE.Group(),white=M(0xefe8cf);
     for(let i=0;i<10;i++)fixed.add(box(13,.12,60,M(i%2?0x4f956b:0x5aa376),-63.5+i*13,1.17,90));
     for(const z of [60,120])fixed.add(box(130,.04,.25,white,-5,1.25,z));

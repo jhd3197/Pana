@@ -1,58 +1,71 @@
 import * as THREE from 'three';
 import {createSky} from '/engine/sky.js';
-import {M,box,tube,rng} from '/engine/models/core/primitives.js';
+import {M,box,tube} from '/engine/models/core/primitives.js';
 import {bake} from '/engine/models/core/static-batch.js';
 import {sign} from '/engine/models/core/architecture-kit.js';
 import {llaneroRanchHouse,horseStable,corralGate,ranchFence,hayBale,feedingTrough,waterWindmill,ranchWaterTower,oldTractor} from '/engine/models/props/ranch.js';
-import {palm} from '/engine/models/vegetation/palm.js';
-import {mangoTree} from '/engine/models/vegetation/mango-tree.js';
-import {reeds} from '/engine/models/vegetation/reeds.js';
-import {waterLily} from '/engine/models/vegetation/water-lily.js';
 import {hatoCow} from '/engine/models/fauna/farm/hato-cow.js';
 import {scarletIbis} from '/engine/models/fauna/birds/scarlet-ibis.js';
 import {orbitBird} from '/engine/models/animation/orbit-bird.js';
 import {waterSurface,waterAnimator} from '/engine/models/effects/water-surface.js';
-import {samples,at,nearest,LENGTH,HALF_WIDTH,WETLANDS,WATER_Y,groundAt,waterDepth,JUMPS,courseRoute} from './course.js';
+import {at,nearest,LENGTH,HALF_WIDTH,WATER_Y,groundAt,JUMPS,courseRoute,DAYLIGHT} from './course.js';
+import {addLandscape} from './landscape.js';
 
 // Static model prototypes are batched into instances; animated fauna/water stay live.
-function plantInstances(parent,source,placements,name){
+function plantInstances(parent,source,placements,name,id){
   const prototype=bake(source),owned=new Set();source.traverse(o=>{if(o.geometry)owned.add(o.geometry);});owned.forEach(g=>g.dispose());
   prototype.updateMatrixWorld(true);const dummy=new THREE.Object3D();
-  prototype.traverse(o=>{if(!o.isMesh)return;const mesh=new THREE.InstancedMesh(o.geometry,o.material,placements.length);
-    placements.forEach((p,i)=>{dummy.position.set(p.x,p.y,p.z);dummy.rotation.set(0,p.rot||0,0);dummy.scale.setScalar(p.scale||1);dummy.updateMatrix();mesh.setMatrixAt(i,dummy.matrix.clone().multiply(o.matrixWorld));});
-    mesh.name=name;mesh.castShadow=false;mesh.receiveShadow=true;mesh.computeBoundingSphere();parent.add(mesh);
+  const cells=new Map();for(const p of placements){const key=`${Math.floor(p.x/40)},${Math.floor(p.z/40)}`;if(!cells.has(key))cells.set(key,[]);cells.get(key).push(p);}
+  prototype.traverse(o=>{if(!o.isMesh)return;if(!placements.length){o.geometry.dispose();return;}
+    for(const points of cells.values()){
+      const mesh=new THREE.InstancedMesh(o.geometry,o.material,points.length);
+      points.forEach((p,i)=>{dummy.position.set(p.x,p.y,p.z);dummy.rotation.set(0,p.rot||0,0);dummy.scale.setScalar(p.scale||1);dummy.updateMatrix();mesh.setMatrixAt(i,dummy.matrix.clone().multiply(o.matrixWorld));});
+      mesh.name=name;mesh.castShadow=false;mesh.receiveShadow=true;mesh.computeBoundingSphere();parent.add(mesh);
+    }
   });
+  if(id)parent.userData.assetCounts[id]=(parent.userData.assetCounts[id]||0)+placements.length;
 }
 export function createCourse(){
   const group=new THREE.Group();group.name='Hato Pana · Galope';
   const moving=[],reserved=[],assetCounts={};
-  const positions=[],colors=[],indices=[],depths=[],N=144,extent=180;
-  const sand=new THREE.Color(0xb7a675),green=new THREE.Color(0x8c9e57),wet=new THREE.Color(0x617e50);
+  group.userData.assetCounts=assetCounts;group.userData.placements=[];
+  const positions=[],colors=[],indices=[],depths=[],distances=[],N=144,extent=180;
+  const sand=new THREE.Color(0xc6ab6e),green=new THREE.Color(0x64a63b),wet=new THREE.Color(0x3b8b52),gold=new THREE.Color(0xb8aa49);
   for(let j=0;j<=N;j++)for(let i=0;i<=N;i++){
     const x=-extent+i*extent*2/N,z=-extent+j*extent*2/N,y=groundAt(x,z),r=nearest(x,z);
-    positions.push(x,y,z);depths.push(WATER_Y-y);
+    positions.push(x,y,z);depths.push(WATER_Y-y);distances.push(r.distance);
     const c=green.clone().lerp(sand,THREE.MathUtils.smoothstep(HALF_WIDTH+3-r.distance,0,4));
-    if(y<.85)c.lerp(wet,.6);c.multiplyScalar(.94+.07*Math.sin(x*.41)*Math.cos(z*.35));colors.push(c.r,c.g,c.b);
+    c.lerp(gold,THREE.MathUtils.smoothstep(-z,-5,75)*.32);
+    if(y<1.05)c.lerp(wet,.65*(1-THREE.MathUtils.smoothstep(y,.3,1.05)));
+    c.multiplyScalar(.96+.045*Math.sin(x*.14+Math.cos(z*.1))*Math.cos(z*.13)+.025*Math.sin(x*.41)*Math.cos(z*.35));colors.push(c.r,c.g,c.b);
   }
   for(let j=0;j<N;j++)for(let i=0;i<N;i++){const a=j*(N+1)+i;indices.push(a,a+N+1,a+1,a+1,a+N+1,a+N+2);}
   const geometry=new THREE.BufferGeometry();geometry.setAttribute('position',new THREE.Float32BufferAttribute(positions,3));geometry.setAttribute('color',new THREE.Float32BufferAttribute(colors,3));geometry.setIndex(indices);geometry.computeVertexNormals();
   const land=new THREE.Mesh(geometry,new THREE.MeshStandardMaterial({vertexColors:true,roughness:1}));land.name='Wadeable savanna';land.receiveShadow=true;group.add(land);
-  // Sweep the actual path, including the bottoms of both flooded crossings.
-  const path=[],uv=[],ix=[];
-  for(let i=0;i<samples.length;i++)for(const off of [-HALF_WIDTH,HALF_WIDTH]){const q=at(samples[i].s,off);path.push(q.x,groundAt(q.x,q.z)+.025,q.z);uv.push(i*.12,off<0?0:1);}
-  for(let i=0;i<samples.length-1;i++){const a=i*2;ix.push(a,a+2,a+1,a+1,a+2,a+3);}
-  const trailGeo=new THREE.BufferGeometry();trailGeo.setAttribute('position',new THREE.Float32BufferAttribute(path,3));trailGeo.setAttribute('uv',new THREE.Float32BufferAttribute(uv,2));trailGeo.setIndex(ix);trailGeo.computeVertexNormals();
-  const trail=new THREE.Mesh(trailGeo,M(0xb7a078,{roughness:1,side:THREE.DoubleSide}));trail.receiveShadow=true;trail.name='Horse trail';group.add(trail);
+  // Clip the trail against the actual terrain triangles. A smooth analytic
+  // ribbon can cut through the coarser bank mesh and flicker at riding height.
+  const path=[];
+  for(let i=0;i<indices.length;i+=3){
+    const polygon=indices.slice(i,i+3).map(k=>[positions[k*3],positions[k*3+1],positions[k*3+2],distances[k]]),clipped=[];
+    for(let j=0;j<3;j++){
+      const a=polygon[j],b=polygon[(j+1)%3],inside=a[3]<=HALF_WIDTH,nextInside=b[3]<=HALF_WIDTH;
+      if(inside)clipped.push(a);
+      if(inside!==nextInside){const t=(HALF_WIDTH-a[3])/(b[3]-a[3]);clipped.push(a.map((v,k)=>v+(b[k]-v)*t));}
+    }
+    for(let j=1;j<clipped.length-1;j++)for(const p of [clipped[0],clipped[j],clipped[j+1]])path.push(p[0],p[1]+.018,p[2]);
+  }
+  const trailGeo=new THREE.BufferGeometry();trailGeo.setAttribute('position',new THREE.Float32BufferAttribute(path,3));trailGeo.computeVertexNormals();
+  const trail=new THREE.Mesh(trailGeo,M(0xc5a573,{roughness:1,side:THREE.DoubleSide}));trail.receiveShadow=true;trail.name='Horse trail';group.add(trail);
   // Share terrain cells and signed depth with the shader to avoid hard pond edges.
   const waterGeo=new THREE.BufferGeometry(),wp=positions.slice(),wi=[];
   for(let i=1;i<wp.length;i+=3)wp[i]=WATER_Y;
   for(let i=0;i<indices.length;i+=3){const tri=indices.slice(i,i+3);if(tri.some(k=>depths[k]>0))wi.push(...tri);}
   waterGeo.setAttribute('position',new THREE.Float32BufferAttribute(wp,3));waterGeo.setAttribute('waterDepth',new THREE.Float32BufferAttribute(depths,1));waterGeo.setIndex(wi);waterGeo.computeVertexNormals();
-  const water=waterSurface(waterGeo,{kind:'pond',color:0x639d91,amplitude:.018});water.material.uniforms.foamStrength.value=.1;water.name='Shallow esteros';group.add(water);
+  const water=waterSurface(waterGeo,{kind:'pond',color:0x289c9b,amplitude:.018,opacity:.96});water.material.uniforms.foamStrength.value=.025;water.material.uniforms.sky.value.set(0x9fdcec);water.name='Laguna and winding caño';group.add(water);
   const add=(id,model,x,z,rotation=0,scale=1,radius=4,animate=false)=>{
     if(nearest(x,z).distance<9+radius)throw Error(`Scenery in horse corridor: ${id}`);
     model.position.set(x,groundAt(x,z),z);model.rotation.y=rotation;model.scale.setScalar(scale);group.add(model);
-    reserved.push({x,z,r:radius+2});assetCounts[id]=(assetCounts[id]||0)+1;if(animate)moving.push(model);return model;
+    model.userData.assetId=id;reserved.push({x,z,r:radius+2});group.userData.placements.push({id,x,z,radius});assetCounts[id]=(assetCounts[id]||0)+1;if(animate)moving.push(model);return model;
   };
   add('ranch-house',llaneroRanchHouse(),-17,27,0,1.6,8);
   add('horse-stable',horseStable(),-42,29,.3,1.3,7);
@@ -81,26 +94,7 @@ export function createCourse(){
     const cap=box(.12,.2,.12,M(side<0?0xe5ae50:0xc86646),q.x,groundAt(q.x,q.z)+1,q.z);markers.add(cap);
   }
   const markerBatch=bake(markers);markers.traverse(o=>o.geometry?.dispose());group.add(markerBatch);
-  const random=rng(410),palms=[],trees=[],grasses=[],reedSpots=[],lilies=[];
-  for(let i=0;i<700;i++){
-    const x=(random()-.5)*280,z=(random()-.5)*260,d=nearest(x,z).distance;
-    if(d<12||reserved.some(p=>Math.hypot(x-p.x,z-p.z)<p.r)||waterDepth(x,z)>.03)continue;
-    const p={x,z,y:groundAt(x,z),rot:random()*6.28,scale:.8+random()*.6};
-    if(i<55&&d>16)palms.push(p);else if(i<62&&d>18)trees.push(p);else grasses.push(p);
-  }
-  for(const w of WETLANDS)for(let i=0;i<32;i++){
-    const a=i*Math.PI/16,x=w.x+Math.sin(a)*w.rx*.9,z=w.z+Math.cos(a)*w.rz*.9;
-    if(nearest(x,z).distance>11)reedSpots.push({x,z,y:groundAt(x,z),rot:a,scale:1.1});
-    const lx=w.x+Math.sin(a)*w.rx*.58,lz=w.z+Math.cos(a)*w.rz*.58;
-    if(i%3===0&&nearest(lx,lz).distance>9)lilies.push({x:lx,z:lz,y:WATER_Y+.02,rot:a,scale:1});
-  }
-  plantInstances(group,palm({seed:7,h:9}),palms,'Morichal');
-  plantInstances(group,mangoTree({seed:11,h:8,fruit:false}),trees,'Shade trees');
-  plantInstances(group,reeds({seed:12}),reedSpots,'Estero reeds');
-  plantInstances(group,waterLily({seed:9}),lilies,'Water lilies');
-  const grass=new THREE.Group(),grassMat=M(0x8e9d54,{side:THREE.DoubleSide});
-  for(let i=0;i<3;i++){const blade=new THREE.Mesh(new THREE.ConeGeometry(.3,.75,3),grassMat);blade.position.set((i-1)*.16,.34,0);blade.rotation.z=(i-1)*.24;grass.add(blade);}
-  plantInstances(group,grass,grasses,'Savanna grass');
+  addLandscape({group,add,plantInstances,reserved});
   for(let i=0;i<3;i++){const bird=orbitBird(scarletIbis({seed:i+21}),{cx:58,cz:42,cy:13+i*3,r:23+i*4,speed:.13,phase:i*2});group.add(bird);moving.push(bird);}
   const animateWater=waterAnimator(group);group.userData.assetCounts=assetCounts;
   let disposed=false;
@@ -110,11 +104,11 @@ export function createCourse(){
 }
 
 export function createRaceScene(canvas){
-  const renderer=new THREE.WebGLRenderer({canvas,antialias:true});renderer.setClearColor(0xc2d4be);renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.2;
-  const scene=new THREE.Scene();scene.fog=new THREE.Fog(0xc2d4be,110,290);
-  const sky=createSky({horizon:0xd6dfc2,skyTop:0x508fb9,cloudCover:.56,skySeed:19});scene.add(sky.mesh);
-  scene.add(new THREE.HemisphereLight(0xffedce,0x647e45,2));
-  const sun=new THREE.DirectionalLight(0xffd59a,2.5);sun.position.set(-50,70,35);sun.castShadow=true;sun.shadow.mapSize.set(1024,1024);sun.shadow.camera.left=-25;sun.shadow.camera.right=25;sun.shadow.camera.top=25;sun.shadow.camera.bottom=-25;sun.shadow.camera.far=180;sun.shadow.bias=-.0003;sun.shadow.normalBias=.035;scene.add(sun,sun.target);
+  const renderer=new THREE.WebGLRenderer({canvas,antialias:true});renderer.setClearColor(DAYLIGHT.horizon);renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1;
+  const scene=new THREE.Scene();scene.fog=new THREE.Fog(DAYLIGHT.horizon,...DAYLIGHT.fog);
+  const sky=createSky(DAYLIGHT);scene.add(sky.mesh);
+  scene.add(new THREE.HemisphereLight(DAYLIGHT.hemiSky,DAYLIGHT.hemiGround,DAYLIGHT.hemiInt));
+  const sun=new THREE.DirectionalLight(DAYLIGHT.sun,DAYLIGHT.sunInt);sun.position.set(-50,70,35);sun.castShadow=true;sun.shadow.mapSize.set(1024,1024);sun.shadow.camera.left=-25;sun.shadow.camera.right=25;sun.shadow.camera.top=25;sun.shadow.camera.bottom=-25;sun.shadow.camera.far=180;sun.shadow.bias=-.0003;sun.shadow.normalBias=.035;scene.add(sun,sun.target);
   const course=createCourse();scene.add(course.group);
   const camera=new THREE.PerspectiveCamera(52,1,.1,450);
   return {renderer,scene,camera,sun,course,sky};

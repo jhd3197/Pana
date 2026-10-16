@@ -33,7 +33,7 @@ clean: only `README.md` and `.gitignore` belong there. Everything else lives her
   Thumbnail images live only in browser IndexedDB. Declare extra factory
   dependencies in the catalog for cache invalidation, and run the studio cache
   browser suite when changing its generation or persistence behavior.
-  The vegetation catalog has twenty-two models. New plant factories live in
+  The vegetation catalog has twenty-four models. New plant factories live in
   individual files in `engine/models/vegetation/`; keep their seeds
   deterministic and their ground origin at y=0. Registration does not place
   plants into maps; list actual consumers in `usedBy`.
@@ -140,6 +140,16 @@ clean: only `README.md` and `.gitignore` belong there. Everything else lives her
   `../docs/knowledge/cocina.md`. Plaza scenery and the original hunt layout now
   live in `engine/plaza.js` and `engine/plaza-layout.js`; cooking has its own
   station layout and collision rules. Existing Escondidas paths re-export them.
+- Reliquia uses a host simulation at 20 Hz (`reliquia-v1`). Its game-local
+  `layout.js` owns walkability/navigation, `rules.js` owns combat, winches,
+  revives and extraction, and `director.js` owns the seeded encounter schedule.
+  Snapshots preserve RNG state and the action sequence ledger across host migration.
+  Late arrivals join the camp or opened-gate checkpoint. Both wheels latch for
+  twelve seconds; all non-spectating players must be revived and back at camp to
+  extract. The mummy, guardian, sun relic, winch and lantern factories live in
+  `engine/models/props/reliquia.js` and are registered in Studio. Keep rigid mummy
+  parts batched independently of their animation pivots. The shared rope bridge's
+  sag is mirrored by `groundAt()` in the game scene. See `../docs/knowledge/reliquia.md`.
 - Galope uses a host simulation at 20 Hz (`galope-v1`), with ordered route gates,
   bots, snapshots and host migration. `games/galope/public/course.js` owns the
   482 m horse circuit, terrain and water depth; `scene.js` uses the shared ranch,
@@ -148,6 +158,19 @@ clean: only `README.md` and `.gitignore` belong there. Everything else lives her
   Horses opt into `{locomotion:true}` and `userData.gallop(phase,speed,jump)`;
   ordinary Studio/Derrape horses retain their grazing rig. The rider uses the
   saved Pana character. See `../docs/knowledge/galope.md` for proof and controls.
+  Galope's `landscape.js` extends the scenery into Laguna del Hato (bays/island)
+  and Caño del Morichal (winding channel), using the signed field in `course.js`.
+  The minimap samples the same bed. The 11 `Vida llanera` props live in
+  `engine/models/props/llano-life.js`; moriche and savanna grass have individual
+  vegetation modules. All 13 appear in the actual map and Studio. Keep animated
+  fire/chinchorro outside static batches, instance plants in spatial cells, and
+  preserve the canoe's keel origin, landing deck height and fixed hammock anchors.
+  The trail clips actual terrain triangles to avoid bank flicker; the far plain
+  joins exact perimeter heights/colours. See the landscape section in that note.
+  Galope's game-local `water-fx.js` pools ripples, wakes and hoof spray across nearby
+  riders: two instanced draws, at most 640 triangles. Use the rider's gait phase,
+  real water depth and paused render time; dispose the bed texture and instance
+  resources. `course.DAYLIGHT` supplies its live scene and Studio tour palette.
 - Derrape's eight circuits include Plaza Pana, Isla Bululú and Chi Chi. Playa
   is now a sector of the Los Roques-inspired race island; legacy `playa` IDs
   resolve to `bululu`. All trees come
