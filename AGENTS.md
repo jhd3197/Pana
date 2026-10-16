@@ -63,7 +63,7 @@ npm run test:browser -- domino   # only the suites whose path matches
 
 Browser suites take `PANA_PLAYWRIGHT_PATH` (an external Playwright) and
 `PANA_TEST_URL`; the runner starts a server if none answers. CI runs `check` and
-`test` on every push to `dev`.
+`test` on every push to `dev`; every merge to `main` releases (`.github/workflows/release.yml`).
 
 ## When you finish a task
 

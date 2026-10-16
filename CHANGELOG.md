@@ -2,8 +2,9 @@
 
 What changed in Pana, for the people who play it. Newest first. Every change
 that players, hosts or contributors will notice adds a line under
-`## Unreleased` in the same commit (see `AGENTS.md`). Pana has no versions yet;
-the first public deploy to pana.sh will stamp the Unreleased section.
+`## Unreleased` in the same commit (see `AGENTS.md`). Each merge to `main` releases:
+the release workflow stamps Unreleased with the version and date, and that section
+becomes the GitHub release's notes.
 
 ## Unreleased
 
@@ -34,6 +35,9 @@ the first public deploy to pana.sh will stamp the Unreleased section.
 ### Fixed
 
 - **"Crear sala" no longer copies a dead link** for single-player games.
+
+**Every merge to `main` is now a release.** The changelog's Unreleased notes become
+the GitHub release notes, under a version tag.
 
 For contributors: `npm test` runs every unit test plus `Pana/tests/conventions.test.js`,
 `npm run test:browser` runs the Playwright suites, `.\dev.ps1 check` runs both
