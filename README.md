@@ -53,6 +53,14 @@ touch/keyboard controls, a table camera, shared invitations and host migration.
 Additional visitors watch until a seat opens. The table, chair and domino tile
 are also available in Pana Studio.
 
+Eighth game: **Caída** — a 3D Spanish-card table in Plaza Pana. Reach 24 points
+with caídas, clean tables, opening calls and optional classic cantos. Play solo
+with bots or share a private room for two, three or four players, including
+partnerships. Includes capture previews, touch/keyboard controls, shared Pana
+characters, card counting, replay, offline fallback and host migration. The
+table's exact rule variant is explained in the controls menu. Spanish cards and
+score tokens are also available in Pana Studio.
+
 ## Run it
 
 ```powershell
@@ -69,6 +77,7 @@ npm start            # or: npm run dev  /  Pana\dev.ps1
 - Galope: http://localhost:8461/g/galope/
 - Reliquia: http://localhost:8461/g/reliquia/
 - Dominó: http://localhost:8461/g/domino/
+- Caída: http://localhost:8461/g/caida/
 - Pana Studio: http://localhost:8461/studio.html
 - Character editor: http://localhost:8461/personaje.html
 - Friends on your network: the dev script prints your LAN URL.
@@ -107,6 +116,7 @@ Pana/                  ← this repo
 - **Galope**: Llanos horse racing (playable now; shallow water, jumps, bots + shared rooms)
 - **Reliquia**: cooperative mine and temple expedition (playable now; mummies, shared puzzles, revives and relic extraction)
 - **Dominó**: partnership dominoes at a 3D plaza table (playable now; actual Pana characters, bots, shared rooms and match scoring)
+- **Caída**: Spanish cards at a 3D table, solo bots and private rooms, individual or partnership play to 24
 - **pana.sh** — public deploy
 
 ## Contributing / AI agents

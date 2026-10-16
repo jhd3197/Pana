@@ -252,6 +252,16 @@ clean: only `README.md` and `.gitignore` belong there. Everything else lives her
   The game-local table, chair and tile factories are registered in
   `web/studio/catalog/domino.js`. See `../docs/knowledge/domino.md`.
 - Keep dependencies minimal. `ws` on the server; Three.js from CDN on the client.
+- Caída uses event-driven host snapshots (`caida-v1`) with 2/3/4 individual
+  seats or four-seat partnerships. Its pure `games/caida/public/rules.js` owns
+  rank captures, caídas, optional classic cantos, the últimas exception,
+  scoring and the revision/sequence ledger. Empty seats are bots; late arrivals
+  inherit their hands, and the oldest peer preserves the match on migration.
+  These are trust-based rooms like Dominó, not server-private hands. Card
+  artwork is shared by physical meshes and accessible controls. The card and
+  score token are registered in `web/studio/catalog/caida.js`. Table/chair
+  factories are shared in `engine/models/props/game-table.js`; Dominó preserves
+  its old exports. See `../docs/knowledge/caida.md` for explicit house rules.
 
 ## Dev workflow (Windows)
 
