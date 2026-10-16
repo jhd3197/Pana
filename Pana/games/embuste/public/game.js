@@ -10,8 +10,9 @@ import { shout } from '/engine/kit.js';
 import { pixelRatio, bindRenderer } from '/engine/settings.js';
 import { OnlineNight, PracticeNight } from './network.js';
 import { createCampWorld, groundAt } from './scene.js';
-import { zoneAt, zoneById, FIRE, ZONES, BOUNDS, STATIONS, REACH, BELL, stationById, distance } from './layout.js';
-import { mummyCount, MIN_PLAYERS, taskById, WRAP_RANGE, REPORT_RANGE, BELL_RANGE } from './rules.js';
+import { zoneAt, zoneById, FIRE, ZONES, BOUNDS, STATIONS, REACH, BELL, VENTS, HIDES, stationById, ventById, hideById, distance } from './layout.js';
+import { mummyCount, MIN_PLAYERS, taskById, WRAP_RANGE, REPORT_RANGE, BELL_RANGE, VENT_RANGE, HIDE_RANGE, DISGUISES } from './rules.js';
+import { createPlazaProp, propDefinition } from '/engine/models/props/plaza.js';
 import { createMeeting } from './ui.js';
 import { bandageWrap } from '/engine/models/props/embuste.js';
 import { openTask, HINTS } from './tasks.js';
@@ -128,6 +129,30 @@ function syncStatues() {
     scene.add(root); statues.set(s.seat, { root, character });
   }
 }
+// Disguised mummies: a plaza prop where they stand, keyed so a name never leaks.
+const props = new Map();
+function syncProps() {
+  const list = view.phase === 'playing' ? view.players.filter(p => p.prop) : [];
+  const keyOf = p => `${p.seat ?? 'k' + p.key}:${p.prop}`, keep = new Set(list.map(keyOf));
+  for (const [k, o] of props) if (!keep.has(k)) { o.removeFromParent(); props.delete(k); }
+  for (const p of list) {
+    let o = props.get(keyOf(p));
+    if (!o) { o = createPlazaProp(p.prop); scene.add(o); props.set(keyOf(p), o); }
+    o.position.set(p.x, groundAt(p.x, p.z), p.z); o.rotation.y = p.h;
+  }
+}
+// Sandy footprints after a wrap: one instanced mesh, faded by age.
+const PRINTS = 90, prints = new THREE.InstancedMesh(new THREE.CircleGeometry(0.16, 10), new THREE.MeshBasicMaterial({ color: 0xc9a86b, transparent: true, opacity: 0.7, depthWrite: false }), PRINTS);
+prints.count = 0; prints.renderOrder = 2; scene.add(prints);
+function syncPrints() {
+  const list = view.phase === 'playing' ? (view.footprints || []).slice(-PRINTS) : [], m = new THREE.Object3D();
+  list.forEach((f, i) => {
+    const side = i % 2 ? 0.14 : -0.14;
+    m.position.set(f.x + Math.cos(f.h) * side, groundAt(f.x, f.z) + 0.03, f.z - Math.sin(f.h) * side); m.rotation.set(-Math.PI / 2, 0, f.h); m.scale.set(0.8, 1.4, 1);
+    m.scale.multiplyScalar(Math.max(0.3, 1 - f.age / 20)); m.updateMatrix(); prints.setMatrixAt(i, m.matrix);
+  });
+  prints.count = list.length; prints.instanceMatrix.needsUpdate = true;
+}
 function syncActors() {
   for (const [seat, a] of actors) if (!rosterOf(seat)) { removeActor(a); actors.delete(seat); }
   const seen = new Set(view.players.map(p => p.seat));
@@ -136,6 +161,7 @@ function syncActors() {
     if (!a.seen) a.root.position.set(p.x, groundAt(p.x, p.z), p.z);
     a.seen = true; a.target = p;
     ghostly(a, !!p.ghost);
+    a.hiddenNow = !!p.prop || !!p.hidden;
   }
   for (const a of actors.values()) if (!seen.has(a.seat)) { a.seen = false; a.root.visible = false; }
 }
@@ -144,7 +170,7 @@ function syncActors() {
 function receive(v) {
   view = v;
   if (phase !== v.phase) enterPhase(v.phase);
-  syncActors(); syncStatues();
+  syncActors(); syncStatues(); syncProps(); syncPrints();
   for (const e of v.events) handleEvent(e);
   updateHud();
   if (v.phase === 'meeting') meeting.render(v);
@@ -168,6 +194,8 @@ function handleEvent(e) {
     else notify('Primera parte lista. Sigue con la segunda.');
   }
   if (e.kind === 'visual') sound.tone(520, 0, 0.3, 'triangle', 0.05);
+  if (e.kind === 'shake') { world.shake(e.spot); sound.tone(90, 0, 0.18, 'triangle', 0.04); }
+  if (e.kind === 'kicked') notify(`Ya no cabes en ${hideById(e.spot)?.name.toLowerCase() || 'el escondite'}. ¡A moverse!`);
   if (e.kind === 'wrap') {
     const mine = me().seat, by = nameOf(e.by), who = nameOf(e.seat);
     if (e.seat === mine) { shout('¡Te envolvieron!', { tone: 'coral' }); notify(`${by} te envolvió. Ahora eres una momiita: sigue haciendo tareas.`); }
@@ -258,6 +286,14 @@ function updateHud() {
   for (const id of ['wrap', 'sabotage', 'disguise']) show(id, mummy && !p.ghost);
   $('report').disabled = !statueInReach(); show('report', !p.ghost);
   $('wrap').disabled = !wrapInReach();
+  show('vent', mummy && p.hidden?.kind === 'vent');
+  $('disguise').disabled = !p.disguise && (!p.disguises || !!p.hidden);
+  $('disguise-label').textContent = p.disguise ? 'Quitar disfraz' : `Disfraz ×${p.disguises ?? 0}`;
+  if (p.disguise || !mummy) show('disguise-menu', false);
+  const hidden = p.hidden && (p.hidden.kind === 'vent' ? ventById(p.hidden.id) : hideById(p.hidden.id));
+  show('hidden-note', !!hidden || !!p.disguise);
+  if (hidden) { $('hidden-title').textContent = p.hidden.kind === 'vent' ? 'Dentro del tronco' : 'Escondido'; $('hidden-copy').textContent = p.hidden.kind === 'vent' ? `${hidden.name}. Cruza al otro lado o sal con E.` : `${hidden.name} · te sacan en ${Math.ceil(p.hidden.t)} s`; }
+  else if (p.disguise) { $('hidden-title').textContent = `Eres ${propDefinition(p.disguise.prop)?.label.toLowerCase()}`; $('hidden-copy').textContent = `No te muevas: ${Math.ceil(p.disguise.t)} s de disfraz.`; }
   $('wrap').style.setProperty('--cool', String(mummy ? Math.min(1, (p.cooldown || 0) / 25) : 0));
   if (openPanel && !p.task && performance.now() - openPanel.opened > 1500) closeTask(false);
 }
@@ -265,9 +301,16 @@ function updateHud() {
 // What E does here, nearest first: your task, (later) hiding, vents, the bell.
 function useTarget() {
   const p = me(), mine = myPose(); if (!p || !mine || openPanel) return null;
+  if (p.hidden?.kind === 'hide') return { label: 'Salir del escondite', run: () => net.act('hide') };
+  if (p.hidden?.kind === 'vent') return { label: 'Salir del tronco', run: () => net.act('vent') };
+  if (p.disguise) return null;
   const t = p.tasks.filter(t => !t.done).map(t => ({ t, s: stationById(t.station) })).filter(({ s }) => distance(mine, s) <= REACH)
     .sort((a, b) => distance(mine, a.s) - distance(mine, b.s))[0];
   if (t) return { label: t.t.name, run: () => startTask(t.t) };
+  const log = p.role === 'momia' && !p.ghost && VENTS.find(v => distance(mine, v) <= VENT_RANGE);
+  if (log) return { label: `Meterse: ${log.name.toLowerCase()}`, run: () => net.act('vent') };
+  const spot = !p.ghost && HIDES.find(h => distance(mine, h) <= HIDE_RANGE);
+  if (spot) return p.hideCooldown > 0 ? { label: `Esconderse en ${Math.ceil(p.hideCooldown)} s`, wait: true } : { label: `Esconderse: ${spot.name.toLowerCase()}`, run: () => net.act('hide') };
   if (!p.ghost && p.emergencies > 0 && distance(mine, BELL) <= BELL_RANGE) {
     return p.bellIn > 0 ? { label: `Campana en ${Math.ceil(p.bellIn)} s`, wait: true } : { label: 'Tocar la campana', run: () => net.act('bell') };
   }
@@ -281,6 +324,17 @@ function wrapInReach() {
   return view.players.find(q => q.seat !== p.seat && !q.ghost && !q.prop && !view.partners.includes(q.seat) && distance(mine, q) <= WRAP_RANGE);
 }
 const doWrap = () => { if (wrapInReach()) net.act('wrap'); };
+const crossVent = () => { if (me()?.hidden?.kind === 'vent') net.act('vent', { move: true }); };
+function doDisguise() {
+  const p = me(); if (!p || p.role !== 'momia' || p.ghost) return;
+  if (p.disguise) { net.act('disguise'); return; }
+  if (p.disguises > 0) show('disguise-menu', $('disguise-menu').classList.contains('hidden'));
+}
+$('disguise-menu').replaceChildren(...DISGUISES.map((prop, i) => {
+  const b = document.createElement('button'); b.type = 'button'; b.className = 'pk-btn pk-btn--sm';
+  b.append(document.createTextNode(propDefinition(prop).label)); const k = document.createElement('small'); k.textContent = String(i + 1); b.append(k);
+  b.onclick = () => { net.act('disguise', { prop }); show('disguise-menu', false); }; return b;
+}));
 const doReport = () => { if (statueInReach()) net.act('report'); };
 function horn() { sound.tone(196, 0, 0.35, 'sawtooth', 0.06); sound.tone(147, 0.32, 0.6, 'sawtooth', 0.06); }
 
@@ -344,13 +398,16 @@ addEventListener('keydown', e => {
   if (key === 'm') toggleMute();
   if (key === 'e' && !openPanel) useTarget()?.run?.();
   if (key === 'q' && !openPanel) doWrap();
+  if (key === 'v' && !openPanel) crossVent();
+  if (key === 'c' && !openPanel) doDisguise();
+  if (!$('disguise-menu').classList.contains('hidden') && /^[1-4]$/.test(key)) { net.act('disguise', { prop: DISGUISES[Number(key) - 1] }); show('disguise-menu', false); }
   if (key === 'r' && !openPanel) doReport();
 });
 addEventListener('keyup', e => keys.delete(e.key.toLowerCase())); addEventListener('blur', clearInput); document.addEventListener('visibilitychange', clearInput);
 for (const button of document.querySelectorAll('[data-move]')) holdButton(button, { paused: () => paused, down: () => touch.add(button.dataset.move), up: () => touch.delete(button.dataset.move) });
 
 holdButton($('use'), { paused: () => paused, down: () => { touch.add('use'); if (!openPanel) useTarget()?.run?.(); }, up: () => touch.delete('use') });
-$('wrap').onclick = doWrap; $('report').onclick = doReport;
+$('wrap').onclick = doWrap; $('report').onclick = doReport; $('vent').onclick = crossVent; $('disguise').onclick = doDisguise;
 $('start').onclick = () => net?.start();
 $('again').onclick = () => net?.start();
 $('to-lobby').onclick = () => net?.toLobby();
@@ -368,7 +425,7 @@ function frame(now) {
   const dt = Math.min(0.06, (now - last) / 1000); last = now; elapsed += dt;
   for (const a of actors.values()) {
     const p = a.target; if (!a.seen || !p) continue;
-    a.root.visible = true;
+    a.root.visible = !a.hiddenNow;
     temp.set(p.x, p.ghost ? 0.6 + Math.sin(elapsed * 2 + a.seat) * 0.15 : groundAt(p.x, p.z), p.z); if (a.root.position.distanceTo(temp) > 6) a.root.position.copy(temp); else a.root.position.lerp(temp, Math.min(1, dt * 14));
     const diff = Math.atan2(Math.sin(p.h - a.character.group.rotation.y), Math.cos(p.h - a.character.group.rotation.y)); a.character.group.rotation.y += diff * Math.min(1, dt * 12);
     a.character.update(dt, { walk: p.moving ? 1 : 0 });

@@ -3,8 +3,8 @@
 // Night runs: the server room or the practice page) and returns an input. They
 // only act on what their own seat could see.
 
-import { STATIONS, distance, findPath, lineClear, near, REACH, stationById } from './layout.js';
-import { taskById, WRAP_RANGE, PHRASES } from './rules.js';
+import { STATIONS, VENTS, distance, findPath, lineClear, near, REACH, stationById } from './layout.js';
+import { taskById, WRAP_RANGE, VENT_RANGE, PHRASES, DISGUISES } from './rules.js';
 
 export const BOT_NAMES = ['Chiguire', 'Lapa', 'Báquiro', 'Danta', 'Araguato', 'Cachicamo', 'Morrocoy', 'Perico'];
 const STILL = { x: 0, z: 0 };
@@ -36,6 +36,9 @@ export class Brains {
   // Who this bot has seen, and where: its only evidence at a meeting.
   remember(p, m) {
     if (this.night.ghost(p)) return;
+    // A wrap this bot saw with its own eyes names the culprit.
+    for (const e of this.night.events) if (e.id > (m.cursor || 0) && e.kind === 'wrap' && e.to?.includes(p.seat) && e.seat !== p.seat) m.culprit = e.by;
+    m.cursor = this.night.eventId;
     for (const q of this.night.players.values()) if (q !== p && !this.night.ghost(q) && this.night.sees(p, q)) m.seen.set(q.seat, { x: q.x, z: q.z, t: this.night.time });
   }
 
@@ -74,6 +77,7 @@ export class Brains {
       if (m.working <= 0) night.act(p.seat, 'done', { station: p.task.station });
       return STILL;
     }
+    if (m.escape) { const away = this.escape(p, m, dt); if (away) return away; }
     if (!night.ghost(p)) {
       if (p.role === 'momia') { const hunt = this.hunt(p, m); if (hunt) return hunt; }
       else { const found = this.lookForStatues(p, m); if (found) return found; }
@@ -108,13 +112,39 @@ export class Brains {
       .sort((a, b) => distance(p, a) - distance(p, b))[0];
     if (!prey) return null;
     if (distance(p, prey) <= WRAP_RANGE - 0.3) {
-      if (night.act(p.seat, 'wrap')) { m.goal = null; this.goTo(p, m, STATIONS[Math.floor(night.rand() * STATIONS.length)]); }
+      if (night.act(p.seat, 'wrap')) {
+        m.goal = null;
+        const r = night.rand(), vent = VENTS.find(v => distance(p, v) < 9);
+        m.escape = vent && r < 0.5 ? 'vent' : r < 0.8 && p.disguises > 0 ? 'disguise' : null;
+        m.ventTime = 1 + night.rand() * 2; m.crossed = false;
+        if (!m.escape) this.goTo(p, m, STATIONS[Math.floor(night.rand() * STATIONS.length)]);
+      }
       return STILL;
     }
     m.goal = null;
     if (lineClear(p, prey, night.terrain(), 0.45)) return toward(p, prey);
     m.path = findPath(p, prey, night.terrain());
     return this.follow(p, m) || toward(p, prey);
+  }
+
+  // After a wrap: into the nearest log and out the far end, or stand still as a barrel.
+  escape(p, m, dt) {
+    const night = this.night;
+    if (m.escape === 'disguise') {
+      if (!p.disguise && !m.disguised) { m.disguised = night.act(p.seat, 'disguise', { prop: DISGUISES[Math.floor(night.rand() * DISGUISES.length)] }); if (!m.disguised) m.escape = null; }
+      if (p.disguise) return STILL;
+      m.escape = null; m.disguised = false; return null;
+    }
+    if (p.hidden?.kind === 'vent') {
+      m.ventTime -= dt;
+      if (!m.crossed) { m.crossed = true; night.act(p.seat, 'vent', { move: true }); }
+      else if (m.ventTime <= 0) { night.act(p.seat, 'vent'); m.escape = null; m.goal = null; }
+      return STILL;
+    }
+    const vent = VENTS.slice().sort((a, b) => distance(p, a) - distance(p, b))[0];
+    if (near(p, vent, VENT_RANGE - 0.3)) { if (!night.act(p.seat, 'vent')) m.escape = null; return STILL; }
+    if (m.goal !== vent) this.goTo(p, m, vent);
+    return this.follow(p, m, dt) || (m.escape = null);
   }
 
   // A pana who sees a statue walks up and reports it.
@@ -148,6 +178,7 @@ export class Brains {
       const panas = living.filter(q => q.role !== 'momia');
       return night.rand() < 0.4 || !panas.length ? 'skip' : panas[Math.floor(night.rand() * panas.length)].seat;
     }
+    if (m.culprit != null && living.some(q => q.seat === m.culprit)) return m.culprit;
     const body = night.statues.find(s => s.seat === night.meeting.body);
     if (body) {
       const close = living.map(q => ({ q, s: m.seen.get(q.seat) })).filter(({ s }) => s && night.time - s.t < 25 && distance(s, body) < 9)

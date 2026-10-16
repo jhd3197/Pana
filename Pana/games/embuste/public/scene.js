@@ -184,7 +184,8 @@ export function createCampWorld() {
   const vents = new Map();
   for (const v of VENTS) {
     const a = wallDirection(v), g = new THREE.Group();
-    if (v.kind === 'log') { const log = hollowLog({ seed: v.x | 0, length: 4 }); log.rotation.y = a - Math.PI / 2; log.position.set(Math.sin(a) * 1.7, 0, Math.cos(a) * 1.7); g.add(log); }
+    // Logs lie along the wall just outside it, open end at the vent.
+    if (v.kind === 'log') { const log = hollowLog({ seed: v.x | 0, length: 3.4 }); log.rotation.y = a; log.position.set(Math.sin(a) * 1.25 + Math.cos(a) * 1.2, -0.15, Math.cos(a) * 1.25 - Math.sin(a) * 1.2); log.scale.setScalar(0.85); g.add(log); }
     else { box(g, stoneWall, 2.6, 2.4, 0.6, Math.sin(a) * 0.8, 1.2, Math.cos(a) * 0.8).rotation.y = a; box(g, mat(0x050608), 1.6, 1.6, 0.62, Math.sin(a) * 0.75, 0.8, Math.cos(a) * 0.75).rotation.y = a; }
     g.position.set(v.x, 0, v.z); dynamic.add(g); vents.set(v.id, { group: g, shake: 0 });
   }
