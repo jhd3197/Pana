@@ -3,13 +3,14 @@
 import * as THREE from 'three';
 import { makeMango } from '/engine/models/props/mango.js';
 import { FragmentBurst } from './fragments.js';
+import { ICONS as SVG } from '/engine/icons.js';
 import { crateArt, coinArt } from './pickup-art.js';
 import { activeItem, addItem, consumeItem, selectItem, canBlock, isMango, MAX_COINS, segmentDistanceSq } from './item-rules.js';
 
 export const ITEMS = {
-  mango: { icon: '🥭', name: 'Mango' },
-  mango3: { icon: '🥭', name: 'Mata de mango', n: 3 },
-  jugo: { icon: '🧃', name: 'Jugo de mango' },
+  mango: { icon: SVG.mango, name: 'Mango' },
+  mango3: { icon: SVG.mango, name: 'Mata de mango', n: 3 },
+  jugo: { icon: SVG.juice, name: 'Jugo de mango' },
   concha: {
     icon: '<svg viewBox="0 0 40 40" width="1em" height="1em"><path d="M20 6c-4 6-14 10-14 22 4-4 8-6 12-6-3 4-4 8-3 12 2-5 5-8 9-9 2 3 5 5 10 6-2-5-2-10-5-13 2-5 0-9-9-12z" fill="#ffae2b" stroke="#16161a" stroke-width="2.5" stroke-linejoin="round"/><path d="M20 6c-2 5-6 8-9 12" fill="none" stroke="#7cc242" stroke-width="3" stroke-linecap="round"/><path d="M29 16c1 3 0 5-2 6" fill="none" stroke="#e8452c" stroke-width="3" stroke-linecap="round"/></svg>',
     name: 'Concha de mango',

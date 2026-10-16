@@ -67,7 +67,7 @@ export default {
     const tree = mangoTree();
     tree.position.set(0, 0, -3.5);
     scene.add(tree);
-    const sign = woodSign(['ENTRE MÁS', 'MANGOS', 'MEJOR ♥'], { w: 4.6, h: 3.4 });
+    const sign = woodSign(['ENTRE MÁS', 'MANGOS', '¡MEJOR!'], { w: 4.6, h: 3.4 });
     sign.position.set(13.5, 0, -2);
     sign.rotation.y = -0.4;
     scene.add(sign);

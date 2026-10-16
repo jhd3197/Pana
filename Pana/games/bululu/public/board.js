@@ -272,7 +272,7 @@ function buildStand() {
     c.fillStyle = '#f3e9d7';
     c.textAlign = 'center';
     c.font = '30px "Luckiest Guy", system-ui, sans-serif';
-    ['EL MANGO HACE', 'TODO MÁS', 'BONITO ♥'].forEach((t, i) => c.fillText(t, 128, 66 + i * 40));
+    ['EL MANGO HACE', 'TODO MÁS', 'BONITO'].forEach((t, i) => c.fillText(t, 128, 66 + i * 40));
   }), 0, 0.95, 0));
   chalk.add(box(0.08, 0.8, 0.08, dark, -0.6, 0.3, -0.1));
   chalk.add(box(0.08, 0.8, 0.08, dark, 0.6, 0.3, -0.1));

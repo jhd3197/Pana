@@ -45,7 +45,7 @@ $('rules').onclick = () => menu.open('controls'); $('practice').onclick = () => 
 $('start').onclick = () => { audio.unlock(); room.action('start'); }; $('next-round').onclick = () => room.action('start');
 for (const key of ['mode', 'cantos']) $(key).onchange = () => room.action('configure', { options: { [key]: key === 'cantos' ? $(key).checked : $(key).value } });
 for (const button of document.querySelectorAll('[data-option]')) button.onclick = () => room.action('configure', { options: { [button.dataset.option]: button.dataset.value } });
-let view = 'patio'; $('camera-view').onclick = () => { view = view === 'patio' ? 'mesa' : 'patio'; world?.setView(view); $('camera-view').textContent = view === 'mesa' ? 'Vista del patio ↗' : 'Vista de mesa ↗'; $('camera-view').setAttribute('aria-pressed', String(view === 'mesa')); };
+let view = 'patio'; $('camera-view').onclick = () => { view = view === 'patio' ? 'mesa' : 'patio'; world?.setView(view); $('camera-view').textContent = view === 'mesa' ? 'Vista del patio' : 'Vista de mesa'; $('camera-view').setAttribute('aria-pressed', String(view === 'mesa')); };
 $('play').onclick = playSelected; $('chant').onclick = () => room.action('chant'); $('hint').onclick = hint;
 $('review').onclick = closeResult; $('round-result').onclick = showResult;
 $('result').addEventListener('cancel', e => { e.preventDefault(); closeResult(); });

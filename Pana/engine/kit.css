@@ -200,6 +200,9 @@
 .pk-row.is-me > .pk-row-score { color: inherit; }
 .pk-avatar { width: 32px; height: 32px; border-radius: 50%; object-fit: cover; flex: none; background: var(--pk-raised); border: 2px solid var(--pk-night); }
 
+/* icons: inline SVGs from engine/icons.js, 1em square on the text baseline */
+.pk-ico { display: inline-block; flex: none; width: 1em; height: 1em; vertical-align: -.125em; }
+
 /* results: the end-of-round screen (engine/results.js fills the standings)
    <section class="pk-results hidden"><div class="pk-modal pk-results-card">
      ribbon, pk-title, pk-copy, pk-stats / pk-roster, primary button, pk-back

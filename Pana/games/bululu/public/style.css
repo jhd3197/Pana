@@ -1,6 +1,6 @@
 /* Bululú: Pana Kit (/engine/kit.css) dressed for the mango island. */
 :root { color-scheme: dark; }
-body { --pk-game: #8e4de8; --pk-game-ink: #fff; }
+body { --wood: #b5753a; --wood-edge: #7a4a20; --coin-text: #ffdf72; --silver: #d6dbe6; --bronze: #e0a463; --coin-shine: #ffe58a; --coin-edge: #9a6400; --sea: #1d4f80; --tile-blue: #3d7bf2; --stat: #c9a2ff; --pk-game: #8e4de8; --pk-game-ink: #fff; }
 
 * { box-sizing: border-box; }
 
@@ -40,8 +40,8 @@ body:has(#results:not(.hidden)) #hud { display: none; }
 .plank {
   padding: 6px 16px 3px;
   border-radius: 6px;
-  background: #b5753a;
-  box-shadow: 0 4px 0 #7a4a20;
+  background: var(--wood);
+  box-shadow: 0 4px 0 var(--wood-edge);
   color: #fff;
   font: 400 18px/1.1 var(--pk-display);
   letter-spacing: 1px;
@@ -103,7 +103,7 @@ body:has(#results:not(.hidden)) #hud { display: none; }
 .vals span { display: flex; align-items: center; gap: 4px; }
 .vals .ico { width: 13px; height: 13px; }
 .vals .ico.coin { border-width: 2px; }
-.vals .coins { color: #ffdf72; }
+.vals .coins { color: var(--coin-text); }
 .vals .mangos { color: var(--pk-yellow); }
 .vals .big b { font: 400 20px/1 var(--pk-display); color: var(--pk-yellow); padding-top: 2px; }
 .vals .big .ico { width: 18px; height: 18px; }
@@ -132,8 +132,8 @@ body:has(#results:not(.hidden)) #hud { display: none; }
   font: 400 12px/1 var(--pk-display);
 }
 .medal.m1 { background: var(--pk-yellow); color: var(--pk-yellow-ink); }
-.medal.m2 { background: #d6dbe6; color: var(--pk-night); }
-.medal.m3 { background: #e0a463; color: var(--pk-night); }
+.medal.m2 { background: var(--silver); color: var(--pk-night); }
+.medal.m3 { background: var(--bronze); color: var(--pk-night); }
 .crown {
   position: absolute;
   top: -15px; left: 22px;
@@ -145,8 +145,8 @@ body:has(#results:not(.hidden)) #hud { display: none; }
 .ico { width: 22px; height: 22px; flex: none; display: inline-block; }
 .ico.coin {
   border-radius: 50%;
-  background: radial-gradient(circle at 35% 35%, #ffe58a 0 22%, #ffc629 24% 100%);
-  border: 3px solid #9a6400;
+  background: radial-gradient(circle at 35% 35%, var(--coin-shine) 0 22%, var(--pk-yellow) 24% 100%);
+  border: 3px solid var(--coin-edge);
 }
 .ico.jump { font-style: normal; font-size: 18px; line-height: 18px; text-align: center; color: var(--pk-yellow); }
 
@@ -168,7 +168,7 @@ body:has(#results:not(.hidden)) #hud { display: none; }
   border-radius: 14px;
   border: 2px solid rgba(255, 255, 255, .08);
   box-shadow: var(--pk-drop);
-  background: #1d4f80;
+  background: var(--sea);
   cursor: crosshair;
 }
 .places {
@@ -229,7 +229,7 @@ body.in-mini .look, body.in-mini .side, body.in-mini .legend { display: none; }
   border-radius: 8px;
   color: #fff;
 }
-.tile.blue { background: #3d7bf2; }
+.tile.blue { background: var(--tile-blue); }
 .tile.red { background: var(--pk-coral); }
 .tile.yellow { background: var(--pk-yellow); color: var(--pk-yellow-ink); }
 .legend .tile { width: 44px; height: 30px; font: 900 14px var(--pk-sans); }
@@ -346,7 +346,7 @@ body.in-mini .look, body.in-mini .side, body.in-mini .legend { display: none; }
 /* ---------- lobby (pk-lobby column) ---------- */
 .intro .pk-title { font-size: clamp(38px, 4.2vw, 52px); }
 .intro .gold { color: var(--pk-yellow); }
-.intro .pk-stat b { color: #c9a2ff; }   /* the accent, lifted for dark tiles */
+.intro .pk-stat b { color: var(--stat); }   /* the accent, lifted for dark tiles */
 .intro .pk-copy { font-size: 15px; }
 .intro .pk-copy b { color: var(--pk-text); }
 .spaces { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }

@@ -1,5 +1,7 @@
 import { createGameMenu } from '/engine/ui.js';
 import { inviteUrl, newRoomCode, playUrl } from '/engine/invite.js';
+import { isOnline, meta, gameUrl as linkFor } from './games.js';
+import { icon } from '/engine/icons.js';
 
 const gamesEl = document.getElementById('games');
 const roomsEl = document.getElementById('rooms');
@@ -11,7 +13,8 @@ const featureArt = document.getElementById('feature-art');
 
 // The same settings every game reads (sound, volume, resolution, hints).
 const settings = createGameMenu({ title: 'Pana', pause: false, hotkey: false });
-const gear = settings.createButton({ id: 'open-settings', label: '⚙︎', kbd: null, className: 'pk-btn icon-btn' });
+const gear = settings.createButton({ id: 'open-settings', label: '', kbd: null, className: 'pk-btn icon-btn' });
+gear.prepend(icon('gear'));
 gear.setAttribute('aria-label', 'Ajustes');
 gear.title = 'Ajustes';
 document.getElementById('hub-actions').append(gear);
@@ -46,7 +49,7 @@ function playerName() {
 }
 
 function gameUrl(game, room) {
-  return playUrl(game.url, room, playerName());
+  return linkFor(game, room, playerName());
 }
 
 let games = [];
@@ -65,7 +68,6 @@ function el(tag, cls, text) {
   return e;
 }
 
-const meta = (game) => game.players > 1 ? `hasta ${game.players} panas` : 'tú vs la máquina';
 const shortName = (game) => game.name.split(' · ')[0];
 
 // a game can ship card.js to draw live art on its tile
@@ -113,6 +115,7 @@ function feature(game) {
   document.getElementById('feature-copy').textContent = game.description;
   featured.dataset.game = game.id;
   featured.href = gameUrl(game, newRoomCode());
+  document.getElementById('create-room').hidden = !isOnline(game);
   for (const c of gamesEl.children) c.querySelector('.game-pick').setAttribute('aria-pressed', String(c.dataset.id === game.id));
 
   for (const old of featureArt.querySelectorAll('canvas')) {
@@ -129,7 +132,7 @@ featured.addEventListener('click', () => { if (feat) featured.href = gameUrl(fea
 
 // "Crear sala": a fresh room, its invite link on the clipboard, then go.
 document.getElementById('create-room').addEventListener('click', async (e) => {
-  if (!feat) return;
+  if (!feat || !isOnline(feat)) return;
   const room = newRoomCode();
   const btn = e.currentTarget;
   try {

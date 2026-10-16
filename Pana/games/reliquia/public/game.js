@@ -3,6 +3,7 @@ import { buildCharacter } from '/engine/character.js';
 import { loadAvatar, loadName } from '/engine/avatar.js';
 import { sound } from '/engine/fx.js';
 import { createGameMenu, toggleMute } from '/engine/ui.js';
+import { ICONS as SVG } from '/engine/icons.js';
 import { inviteUrl, newRoomCode, roomFromUrl } from '/engine/invite.js';
 import { holdButton as hold } from '/engine/touch.js';
 import { shout } from '/engine/kit.js';
@@ -108,7 +109,7 @@ function receive(next) {
 // Big tilted callouts for the beats of a run; the toast keeps the full sentence.
 const SHOUTS = { awaken: ['¡Una momia despertó!', 'coral'], gate: ['¡Templo abierto!', 'teal'], boss: ['¡El guardián despertó!', 'coral'],
   guardian: ['¡Guardián vencido!', 'yellow'], relic: ['¡La reliquia es nuestra!', 'yellow'], down: ['¡Pana caído!', 'coral'] };
-const hearts = hp => { const n = Math.ceil(Math.max(0, hp) / 34); return '♥'.repeat(n) + '♡'.repeat(3 - n); };
+const hearts = hp => { const n = Math.ceil(Math.max(0, hp) / 34); return SVG.heart.repeat(n) + SVG.heartEmpty.repeat(3 - n); };
 function missionSteps() {
   const wheels = Object.values(state.winches).filter(w => w.latched > 0).length;
   const steps = [[state.gateOpen ? 'Girar las dos ruedas' : `Girar las dos ruedas (${wheels}/2)`, state.gateOpen], ['Vencer al guardián', state.guardianDefeated], ['Recoger la reliquia', state.relicTaken], ['Volver al campamento', state.phase === 'results' && state.outcome === 'win']];
@@ -133,7 +134,7 @@ function updateUI() {
       const value = document.createElement('b'); value.className = 'pk-row-end'; row.append(face, name, value); $('team').append(row);
     });
   }
-  state.players.forEach(p => { const row = $('team').querySelector(`[data-player="${p.id}"]`); if (!row) return; const value = row.querySelector('b'); value.textContent = p.downed ? 'AYUDA' : p.spectator ? 'EN ESPERA' : hearts(p.hp); value.title = `${Math.ceil(p.hp)} de vitalidad`; row.classList.toggle('fallen', p.downed); row.classList.toggle('waiting', p.spectator); });
+  state.players.forEach(p => { const row = $('team').querySelector(`[data-player="${p.id}"]`); if (!row) return; const value = row.querySelector('b'); if (p.downed || p.spectator) value.textContent = p.downed ? 'AYUDA' : 'EN ESPERA'; else value.innerHTML = hearts(p.hp); value.title = `${Math.ceil(p.hp)} de vitalidad`; row.classList.toggle('fallen', p.downed); row.classList.toggle('waiting', p.spectator); });
   $('objective').textContent = state.relicTaken ? 'Vuelvan al campamento' : !state.gateOpen ? 'Abre el templo' : !state.guardianDefeated ? 'Vence al guardián' : 'Toma la reliquia';
   $('objective').title = objective(state);
   const steps = missionSteps(), key = steps.map(s => s.text + s.state).join('|');

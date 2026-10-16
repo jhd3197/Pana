@@ -1,7 +1,7 @@
 /* Galope: Pana Kit lobby and HUD over the Llanos scene. */
 :root{color-scheme:dark}
 *{box-sizing:border-box}
-body{margin:0;overflow:hidden;background:var(--pk-night);color:var(--pk-text);font-family:var(--pk-sans);--pk-game:#97a769;--pk-game-ink:#1a1336}
+body{margin:0;overflow:hidden;background:var(--pk-night);color:var(--pk-text);font-family:var(--pk-sans);--stat:#c9d98f;--pk-game:#97a769;--pk-game-ink:#1a1336}
 button,a,input{-webkit-tap-highlight-color:transparent}
 .hidden{display:none!important}
 #world{position:fixed;inset:0;width:100%;height:100%;display:block}
@@ -18,7 +18,7 @@ button,a,input{-webkit-tap-highlight-color:transparent}
 
 /* lobby */
 #lobby .pk-title{--pk-title-shadow:#656b55;font-size:clamp(40px,5vw,58px)}
-#lobby .pk-stat b{color:#c9d98f}
+#lobby .pk-stat b{color:var(--stat)}
 .horse-picker .pk-seg>button{display:inline-flex;align-items:center;gap:8px}
 .horse-picker i{width:14px;height:14px;border-radius:50%;background:var(--coat);box-shadow:inset 0 -3px #0003,0 0 0 2px var(--pk-night)}
 .horse-picker .pk-check{margin-top:6px}

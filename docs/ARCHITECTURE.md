@@ -77,7 +77,7 @@ as Derrape's `item-rules.js` and `online-rules.js`) with a `rules.test.js` besid
 it. A single-player game (`players: 1`) has no `network.js`. Shared pieces live in
 `engine/`: room codes and invites (`invite.js`), rooms (`net.js`), the end screen
 (`results.js`), menu and settings (`ui.js`, `settings.js`), touch (`touch.js`).
-`engine/tests/` and `tests/conventions.test.js` enforce the contract.
+`Pana/engine/tests/` and `Pana/tests/conventions.test.js` enforce the contract.
 
 ## Players
 

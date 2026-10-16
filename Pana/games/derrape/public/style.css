@@ -1,7 +1,7 @@
 /* Derrape on the Pana Kit (/engine/kit.css): tokens, fonts and HUD pieces
    come from the kit; this file places them over the 3D scene. */
 :root { color-scheme: dark; }
-body { --pk-game: #ff4b4b; --pk-game-ink: #fff; --hud-edge: 2px solid rgba(255, 255, 255, .08); }
+body { --bar-top: #ffd65c; --me-rank: #b5121b; --slot-bg: #2c263e; --slot-line: #514b65; --slot-on: #3b3040; --slot-key: #bab2ca; --swap: #e0d8ec; --shield: #ffe58b; --coin-line: #63552f; --coin-rim: #f8bd37; --coin-face: #d88a20; --coin-shine: #ffed9a; --coin-label: #d7cba8; --coin-text: #ffdf72; --coin-cap: #aaa08c; --coin-full: #e3ae39; --boost: #4fb6ff; --pk-game: #ff4b4b; --pk-game-ink: #fff; --hud-edge: 2px solid rgba(255, 255, 255, .08); }
 
 * { box-sizing: border-box; }
 
@@ -141,8 +141,8 @@ body:has(#loading:not(.hidden)) #garage { visibility: hidden; }
 .loading-bar { display: flex; align-items: center; gap: 16px; }
 #loading-progress { flex: 1; height: 14px; -webkit-appearance: none; appearance: none; border: 1px solid var(--pk-line); border-radius: 8px; background: var(--pk-purple); overflow: hidden; }
 #loading-progress::-webkit-progress-bar { background: var(--pk-purple); }
-#loading-progress::-webkit-progress-value { background: linear-gradient(#ffd65c, var(--pk-yellow) 60%); border-radius: 8px; transition: width .2s; }
-#loading-progress::-moz-progress-bar { background: linear-gradient(#ffd65c, var(--pk-yellow) 60%); border-radius: 8px; }
+#loading-progress::-webkit-progress-value { background: linear-gradient(var(--bar-top), var(--pk-yellow) 60%); border-radius: 8px; transition: width .2s; }
+#loading-progress::-moz-progress-bar { background: linear-gradient(var(--bar-top), var(--pk-yellow) 60%); border-radius: 8px; }
 #loading-pct { width: 64px; text-align: right; font: 400 22px var(--pk-display); }
 .loading-foot { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
 #loading-status { margin: 0; color: var(--pk-muted); font-size: 14px; }
@@ -174,23 +174,23 @@ body:has(#loading:not(.hidden)) #garage { visibility: hidden; }
 #board .pk-row { min-width: 170px; min-height: 0; padding: 5px 12px 5px 8px; gap: 8px; border: var(--hud-edge); font-size: 13px; box-shadow: 0 3px 0 rgba(0, 0, 0, .3); }
 #board .pk-row.is-me { border-color: var(--pk-yellow-edge); }
 #board .pk-row-n { width: 20px; text-align: center; }
-#board .pk-row.is-me .pk-row-n { color: #b5121b; }
+#board .pk-row.is-me .pk-row-n { color: var(--me-rank); }
 .chip { flex: none; width: 12px; height: 12px; border-radius: 4px; background: var(--c, #888); box-shadow: inset 0 -3px 0 rgba(0, 0, 0, .3); }
 
 /* two item slots, bottom left */
 .item { position: absolute; bottom: 20px; left: 20px; width: 290px; padding: 12px; background: rgba(14, 11, 36, .94); }
 .inventory { align-items: center; }
-.slot { flex: 1; min-width: 0; width: auto; height: 84px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; padding: 8px 4px; color: var(--pk-muted); background: #2c263e; border-color: #514b65; }
-.slot.selected { border: 3px solid var(--pk-yellow); background: #3b3040; color: var(--pk-text); }
+.slot { flex: 1; min-width: 0; width: auto; height: 84px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; padding: 8px 4px; color: var(--pk-muted); background: var(--slot-bg); border-color: var(--slot-line); }
+.slot.selected { border: 3px solid var(--pk-yellow); background: var(--slot-on); color: var(--pk-text); }
 .slot:disabled { opacity: 1; cursor: default; }
 .slot .item-icon { font-size: 36px; line-height: 1; }
-.slot .slot-key { position: absolute; top: 4px; left: 8px; font: 900 11px var(--pk-sans); color: #bab2ca; }
+.slot .slot-key { position: absolute; top: 4px; left: 8px; font: 900 11px var(--pk-sans); color: var(--slot-key); }
 .slot small { max-width: 100%; font-size: 10px; font-weight: 800; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .slot i { position: absolute; right: 8px; top: 4px; font: 900 13px var(--pk-sans); font-style: normal; color: var(--pk-yellow); }
-.swap { flex: none; display: grid; justify-items: center; gap: 4px; width: 38px; border: 0; background: none; padding: 8px 0; color: #e0d8ec; }
+.swap { flex: none; display: grid; justify-items: center; gap: 4px; width: 38px; border: 0; background: none; padding: 8px 0; color: var(--swap); }
 .swap span { font-size: 22px; line-height: 1; }
 #item-status { min-height: 30px; margin: 8px 0 6px; font-size: 12px; font-weight: 700; line-height: 1.3; color: var(--pk-muted); }
-.protected #item-status { color: #ffe58b; }
+.protected #item-status { color: var(--shield); }
 .item-actions { display: flex; gap: 8px; }
 .item-actions .pk-btn { flex: 1; min-height: 40px; padding: 6px 10px; justify-content: space-between; gap: 6px; font: 800 13px var(--pk-sans); letter-spacing: 0; box-shadow: none; }
 .item-actions .pk-btn--primary { box-shadow: 0 3px 0 var(--pk-yellow-edge); }
@@ -202,15 +202,15 @@ body:has(#loading:not(.hidden)) #garage { visibility: hidden; }
 .coins {
   position: absolute; right: 20px; bottom: 20px;
   display: flex; align-items: center; gap: 12px; min-width: 170px;
-  padding: 12px 18px; border-color: #63552f; background: rgba(14, 11, 36, .94); pointer-events: none;
+  padding: 12px 18px; border-color: var(--coin-line); background: rgba(14, 11, 36, .94); pointer-events: none;
 }
-.coin-symbol { flex: none; display: grid; place-items: center; width: 36px; height: 40px; border: 4px solid #f8bd37; border-radius: 50%; background: #d88a20; color: #ffed9a; font: 400 22px/1 var(--pk-display); padding-top: 3px; transition: transform 120ms; }
-.coins .pk-eyebrow { color: #d7cba8; font-size: 10px; letter-spacing: 1px; }
-.coins b { font-size: 28px; line-height: 1.1; color: #ffdf72; font-variant-numeric: tabular-nums; }
-.coin-cap { color: #aaa08c; font-size: 12px; }
-#coin-bonus { display: block; font-size: 11px; font-weight: 700; color: #d7cba8; }
+.coin-symbol { flex: none; display: grid; place-items: center; width: 36px; height: 40px; border: 4px solid var(--coin-rim); border-radius: 50%; background: var(--coin-face); color: var(--coin-shine); font: 400 22px/1 var(--pk-display); padding-top: 3px; transition: transform 120ms; }
+.coins .pk-eyebrow { color: var(--coin-label); font-size: 10px; letter-spacing: 1px; }
+.coins b { font-size: 28px; line-height: 1.1; color: var(--coin-text); font-variant-numeric: tabular-nums; }
+.coin-cap { color: var(--coin-cap); font-size: 12px; }
+#coin-bonus { display: block; font-size: 11px; font-weight: 700; color: var(--coin-label); }
 .coins.picked .coin-symbol { transform: scale(1.13); }
-.coins.full { border-color: #e3ae39; }
+.coins.full { border-color: var(--coin-full); }
 
 /* speedometer, bottom center */
 #speedo { position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); padding: 10px 28px 12px; border-radius: 18px; text-align: center; pointer-events: none; }
@@ -219,7 +219,7 @@ body:has(#loading:not(.hidden)) #garage { visibility: hidden; }
 #speedo .kmh small { color: var(--pk-muted); font-size: 13px; font-weight: 900; letter-spacing: 2px; }
 #boost { display: flex; gap: 4px; margin-top: 6px; }
 #boost i { width: 22px; height: 10px; background: var(--pk-raised); border-radius: 3px; transform: skewX(-14deg); transition: background .1s; }
-#boost i.on { background: #4fb6ff; }
+#boost i.on { background: var(--boost); }
 #boost.turbo i.on { background: var(--pk-yellow); box-shadow: 0 0 8px rgba(255, 198, 41, .7); }
 
 .keys { position: absolute; bottom: 116px; right: 22px; grid-template-columns: repeat(2, auto); gap: 7px 14px; pointer-events: none; }
@@ -258,9 +258,9 @@ body:has(#loading:not(.hidden)) #garage { visibility: hidden; }
 .res-table .pk-row.is-me { background: var(--pk-yellow); }
 .res-table .pk-row-n { width: 22px; font-size: 16px; color: inherit; }
 .res-table .pk-row-end { font-size: 14px; color: inherit; font-variant-numeric: tabular-nums; }
-.res-coins { display: flex; align-items: center; gap: 12px; padding: 14px 18px; border-color: #63552f; }
+.res-coins { display: flex; align-items: center; gap: 12px; padding: 14px 18px; border-color: var(--coin-line); }
 .res-coins .coin-symbol { width: 30px; height: 34px; font-size: 18px; }
-.result p.result-coins { margin: 0; color: #ffdf72; font-size: 14px; font-weight: 800; }
+.result p.result-coins { margin: 0; color: var(--coin-text); font-size: 14px; font-weight: 800; }
 .res-actions { margin-top: auto; display: flex; flex-direction: column; gap: 10px; }
 .res-actions .row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 

@@ -10,6 +10,7 @@ import atrapa from './minigames/atrapa.js';
 import caigas from './minigames/caigas.js';
 import { SKY_MODES } from './atmosphere.js';
 import * as rules from './rules.js';
+import { ICONS as SVG } from '/engine/icons.js';
 import { COLORS, RIVALS, START_COINS, PRICE, DOUBLES_BONUS, TREE_COINS } from './rules.js';
 import { createGameMenu, toggleMute } from '/engine/ui.js';
 import { holdButton } from '/engine/touch.js';
@@ -355,7 +356,7 @@ function renderCards() {
       : `<span class="big">${ICONS[miniIcon]}<b>${miniScores[p.i]}</b></span>`;
     return `<div class="pcard${turnOf === p.i ? ' turn' : ''}" style="--c:${p.color}">
       ${cardMode === 'board' ? `<span class="medal m${r[p.i]}">${r[p.i]}</span>` : ''}
-      ${crown ? '<span class="crown">👑</span>' : ''}
+      ${crown ? `<span class="crown">${SVG.crown}</span>` : ''}
       ${turnOf === p.i ? `<span class="tag">${p.human ? 'Tu turno' : 'Turno'}</span>` : ''}
       <img src="${p.portrait || ''}" alt="">
       <div class="info"><small>${escapeHtml(p.name)}</small><div class="vals">${stats}</div></div>
@@ -843,7 +844,7 @@ async function playMinigame(def) {
   setTimer(null);
   sound.horn('fiesta');
   $('winner').innerHTML = winners.length
-    ? `<span class="crown">👑</span><small>${winners.length > 1 ? 'GANADORES' : 'GANADOR'}</small><b>${winners.map((i) => escapeHtml(players[i].name)).join(' · ')}</b><em>+10 MONEDAS</em>`
+    ? `<span class="crown">${SVG.crown}</span><small>${winners.length > 1 ? 'GANADORES' : 'GANADOR'}</small><b>${winners.map((i) => escapeHtml(players[i].name)).join(' · ')}</b><em>+10 MONEDAS</em>`
     : '<small>NADIE GANÓ</small><b>¡Qué pena, panas!</b>';
   $('winner').classList.remove('hidden');
   await wait(3);
@@ -922,7 +923,7 @@ async function results() {
     : champ.human ? `¡Ganaste, ${champ.name}!` : `¡${champ.name} es el pana más pana!`;
   $('res-rows').innerHTML = order.map((p) => `
     <div class="rrow pk-row${p.human ? ' is-me' : ''}" style="--c:${p.color}">
-      ${r[p.i] === 1 ? '<span class="crown">👑</span>' : ''}
+      ${r[p.i] === 1 ? `<span class="crown">${SVG.crown}</span>` : ''}
       <span class="medal m${r[p.i]}">${r[p.i]}</span>
       <img src="${p.portrait}" alt="">
       <span class="rname">${escapeHtml(p.name)}</span>

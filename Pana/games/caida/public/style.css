@@ -1,11 +1,11 @@
 /* Caída on the Pana Kit: same table-game HUD as Dominó, over the 3D patio. */
-body{--pk-game:#235d51;--pk-game-ink:#fff;margin:0;overflow:hidden;background:var(--pk-night);color:var(--pk-text);font-family:var(--pk-sans);font-synthesis:none}
+body{--card-edge: #b8ab92; --pk-game:#235d51;--pk-game-ink:#fff;margin:0;overflow:hidden;background:var(--pk-night);color:var(--pk-text);font-family:var(--pk-sans);font-synthesis:none}
 *{box-sizing:border-box}
 button,select,input{font:inherit}button,a,select{-webkit-tap-highlight-color:transparent}button{cursor:pointer}button:disabled{cursor:default}
 button:focus-visible,a:focus-visible,select:focus-visible{outline:3px solid var(--pk-yellow);outline-offset:3px}
 [hidden]{display:none!important}
 #world,.vignette{position:fixed;inset:0;width:100%;height:100%}#world{touch-action:manipulation}
-.vignette{pointer-events:none;background:linear-gradient(180deg,#0e0b2466,transparent 20%,transparent 62%,#0e0b24aa)}
+.vignette{pointer-events:none;background:linear-gradient(180deg,color-mix(in srgb, var(--pk-night) 40%, transparent),transparent 20%,transparent 62%,color-mix(in srgb, var(--pk-night) 67%, transparent))}
 
 /* top bar: Invitar / Menú */
 .topbar{position:fixed;z-index:10;top:0;right:0;padding:20px 24px;pointer-events:none}
@@ -56,7 +56,7 @@ button:focus-visible,a:focus-visible,select:focus-visible{outline:3px solid var(
 .deck-info{font-size:12px}
 .connection-line{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:11px;font-weight:700}
 #table-cards{display:flex;flex-wrap:wrap;gap:4px}
-.table-rank{min-width:28px;min-height:32px;padding:2px 6px;border:0;border-radius:6px;background:var(--pk-text);color:var(--pk-night);font:400 15px/1 var(--pk-display);box-shadow:0 3px 0 #b8ab92}
+.table-rank{min-width:28px;min-height:32px;padding:2px 6px;border:0;border-radius:6px;background:var(--pk-text);color:var(--pk-night);font:400 15px/1 var(--pk-display);box-shadow:0 3px 0 var(--card-edge)}
 .table-rank.will-capture{background:var(--pk-yellow);box-shadow:0 3px 0 var(--pk-yellow-edge)}
 .table-rank:hover{transform:translateY(-1px)}
 

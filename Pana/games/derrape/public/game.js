@@ -14,6 +14,7 @@ import { loadAvatar, loadName, randomAvatar } from '/engine/avatar.js';
 import { createGameMenu, toggleMute } from '/engine/ui.js';
 import { inviteUrl, newRoomCode, roomFromUrl } from '/engine/invite.js';
 import { fillRoster } from '/engine/results.js';
+import { ICONS as SVG } from '/engine/icons.js';
 import { holdButton } from '/engine/touch.js';
 import { pixelRatio, bindRenderer } from '/engine/settings.js';
 import { shout } from '/engine/kit.js';
@@ -545,11 +546,11 @@ function clearRace() {
 
 // Loading-screen tips: real rules only.
 const TIPS = [
-  ['🥭', 'Lleva un mango equipado: bloquea el mango que te lancen.'],
-  ['🪙', 'Cada moneda te da un poquito más de velocidad, hasta 10.'],
-  ['📦', 'Rompe cajas de madera para conseguir objetos. Guardas hasta 2.'],
-  ['🧃', 'El jugo de mango te da un turbo: tómatelo en una recta.'],
-  ['↩️', 'Lanza hacia atrás con X para frenar al que te persigue.'],
+  [SVG.mango, 'Lleva un mango equipado: bloquea el mango que te lancen.'],
+  [SVG.coin, 'Cada moneda te da un poquito más de velocidad, hasta 10.'],
+  [SVG.crate, 'Rompe cajas de madera para conseguir objetos. Guardas hasta 2.'],
+  [SVG.juice, 'El jugo de mango te da un turbo: tómatelo en una recta.'],
+  [SVG.back, 'Lanza hacia atrás con X para frenar al que te persigue.'],
 ];
 let loadGeneration = 0;
 // roster (online only): [{ id, kind, owner, name, avatar, car, wheel, slot }]
@@ -568,7 +569,7 @@ async function startRace(playerIndex, wheelId = garage.wheel, roster = null) {
   $('loading-title').textContent = def.name;
   $('loading-meta').textContent = `Derrape · Pista ${trackIndex + 1} de ${TRACKS.length} · ${LAPS} vueltas`;
   $('loading-blurb').textContent = def.blurb;
-  $('loading-tip-icon').textContent = tip[0];
+  $('loading-tip-icon').innerHTML = tip[0];
   $('loading-tip').textContent = tip[1];
   $('play').disabled = true;
   sound.stopEngine();
@@ -1391,7 +1392,7 @@ function renderLobby(s) {
   const racing = s.players.find(p => p.id === net.id)?.racing;
   $('lobby-code').textContent = net.code;
   $('lobby-roster').innerHTML = s.players.map((p, i) =>
-    `<li class="pk-row${p.id === net.id ? ' is-me' : ''}${p.connected ? '' : ' away'}"><span class="pk-row-n">${p.id === s.host ? '👑' : i + 1}</span>`
+    `<li class="pk-row${p.id === net.id ? ' is-me' : ''}${p.connected ? '' : ' away'}"><span class="pk-row-n">${p.id === s.host ? SVG.crown : i + 1}</span>`
     + `<span class="chip" style="--c:${CARS[p.car]?.color || '#fff'}"></span>${esc(p.name)}`
     + `<span class="pk-row-end">${p.connected ? esc(CARS[p.car]?.name || '') : 'reconectando…'}</span></li>`).join('');
   const bots = Math.max(0, (s.bots ? Math.max(4, s.players.length) : s.players.length) - s.players.length);

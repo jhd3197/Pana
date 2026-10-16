@@ -9,6 +9,7 @@
 
 import { getSettings, setSettings, onSettings, bindSound, QUALITY } from './settings.js';
 import { ORIENTATIONS, guardOrientation, isTouch } from './touch.js';
+import { icon } from './icons.js';
 
 // From next to this module, so a versioned copy (pana.sh's /_v/<version>/engine/) loads its own kit.
 for (const name of ['kit.css', 'ui.css']) {
@@ -253,7 +254,7 @@ export function createGameMenu({
   }
   function createInviteButton({ id: buttonId = id('invite'), label = 'Invitar panas', className = '' } = {}) {
     return h('button', { type: 'button', id: buttonId, class: className || null, title: 'Copiar enlace de la sala', onclick: () => share() },
-      label, ' ', h('span', { 'aria-hidden': 'true', text: '↗' }));
+      label, ' ', icon('share'));
   }
 
   return {

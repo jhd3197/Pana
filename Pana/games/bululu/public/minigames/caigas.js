@@ -81,7 +81,7 @@ export default {
     const flag = flagPole({ h: 10 });
     flag.position.set(12.6, 0, -10);
     scene.add(flag);
-    const sign = woodSign(['PANAS', 'SIEMPRE', 'JUEGAN ♥'], { w: 4.4, h: 3.4 });
+    const sign = woodSign(['PANAS', 'SIEMPRE', '¡JUEGAN!'], { w: 4.4, h: 3.4 });
     sign.position.set(-12, 0, -8);
     sign.rotation.y = 0.5;
     scene.add(sign);
