@@ -79,3 +79,11 @@ does not validate collisions; normal gameplay always does.
 
 Observed desktop gameplay was approximately 196 draw calls and 124k triangles
 including shadow passes. These are scene counts, not an FPS benchmark.
+
+## Notes for agents
+
+Rules that used to live in AGENTS.md (paths are relative to `Pana/`). Keep them
+true when you change this area.
+
+Escondidas uses a host-simulated round: clients send input/actions, and the
+room's host broadcasts snapshots at 20 Hz. See `docs/knowledge/escondidas.md` for role and recovery rules.

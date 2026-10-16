@@ -62,3 +62,19 @@ input, elevated island coins, and restart cleanup. The map regression completed
 eleven three-lap simulations covering all eight tracks and repeated switches.
 Desktop and phone renders were inspected. A live desktop race also ran without
 browser errors; its sampled frame average was about 10 ms on this machine.
+
+## Notes for agents
+
+Rules that used to live in AGENTS.md (paths are relative to `Pana/`). Keep them
+true when you change this area.
+
+Derrape's local race uses two item slots, coin trails and breakable wooden
+crates. Inventory/defense/speed rules live in `games/derrape/public/item-rules.js`;
+`fragments.js` owns reusable prop bursts. See `docs/knowledge/derrape-items.md`
+for controls, ownership and regression commands. Keep these game-local until
+another game actually needs them. Garage cards render the real vehicle models.
+Garage previews reuse a bounded cache of eight cars and render progressively;
+track browsing selects route metadata without building scenery. `startRace()`
+is asynchronous: await it in browser tests. `?debug&manual` stops only the game
+loop so deterministic tests can still paint loading steps. Keep the last map
+for replay, and preserve cancellation between `buildSteps()` stages.

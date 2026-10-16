@@ -58,3 +58,16 @@ all 150 Studio previews, category filters and mobile layout passed; both islands
 reef schools passed their existing water/seabed regression; the Bululú driving
 run finished without road obstructions; all eight walkthroughs passed including
 pause/scrub/mobile and warm cache; `npm run check` passed all 178 JS files.
+
+## Notes for agents
+
+Rules that used to live in AGENTS.md (paths are relative to `Pana/`). Keep them
+true when you change this area.
+
+`engine/models/props/coastal.js` adds nine `Costa` models. The Fauna crab lives in
+`models/fauna/beach-crab.js`; terrain grounding in `engine/placement/beach-crab.js`.
+All ten appear in the Bululú circuit; eight types also appear on the board
+island. Keep buoys/crabs outside static batches and tick absolute time.
+Boat origins are at the keel: placements sit 0.32 m below mean water.
+Reserve land furniture before scattering plants; keep dock cargo on its
+actual deck height. See `docs/knowledge/coastal-props.md` for coverage/proof.

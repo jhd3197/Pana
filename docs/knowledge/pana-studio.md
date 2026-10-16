@@ -263,3 +263,28 @@ shared-source invalidation, partial failure/retry, saved selections, filtered
 exports, settings return/clear, blocked storage and mobile overflow. It uses the
 same CLI arguments as the other Studio browser tests. The architecture browser
 suite also verifies racing metadata consistency and runtime re-export identity.
+
+## Notes for agents
+
+Rules that used to live in AGENTS.md (paths are relative to `Pana/`). Keep them
+true when you change this area.
+
+Pana Studio at `/studio/library` catalogs existing props, maps, vehicles and
+characters. Register new resources in `web/studio/catalog.js` using their real
+constructors; do not duplicate models in the preview. See
+`docs/knowledge/pana-studio.md` for the registration and agent workflow.
+Each asset has a real `/studio/assets/:id` page; `/studio/workspace` stores a
+local working set. Keep library metadata independent of renderer imports and
+load `inspector.js` only for an item. Thumbnail queues are explicit filtered
+sets, never a full-catalog startup gate. Preserve legacy hash links and history.
+Racing metadata lives in `car-definitions.js` / `track-definitions.js`;
+`tracks.js` re-exports the shared `track-runtime.js` constructor. Studio loads
+only the selected track definition. Preserve these compatibility exports.
+Circuit previews expose their existing track runtime as `route` for Studio's
+`track-tour.js`: user-started playback follows the start line, road and ramps.
+Preserve pause/scrub/copy-point behavior, restore overview on exit, and reset
+tour state on asset changes. Keep this camera tool separate from race state.
+See the circuit walkthrough section in the Studio knowledge note for proof.
+Thumbnail images live only in browser IndexedDB. Declare extra factory
+dependencies in the catalog for cache invalidation, and run the studio cache
+browser suite when changing its generation or persistence behavior.

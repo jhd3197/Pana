@@ -196,3 +196,15 @@ and renders each real circuit through the game at fixed positions, checks browse
 and shader errors and records palette/draw counts. Optional `PANA_COLOUR_TRACKS`
 selects a comma-separated subset. Before/after captures are in ignored
 `art/world-colour/`; the colour changes add no geometry, lights or rendering passes.
+
+## Notes for agents
+
+Rules that used to live in AGENTS.md (paths are relative to `Pana/`). Keep them
+true when you change this area.
+
+Chi Chi's five thermal landmarks live in `engine/models/props/thermal.js` and the
+Studio category `Termales`. `models/effects/thermal-steam.js` uses instanced camera-facing
+quads, seeded phases and absolute time. Keep its shader culling bounds broad;
+`group.userData.previewBounds` supplies a tighter Studio framing box. Tick the
+live shader material because Studio clones materials. Own ripple/steam material
+disposal, and do not bake animated roots into static batches.

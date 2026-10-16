@@ -138,3 +138,30 @@ pool saturation, two real GPU draws, anchored ripples, pause, airborne/landing,
 dry/stopped riders, removal, reset and idempotent disposal. It renders a real
 mounted horse from chase/side views and at 390 px. Proof is under ignored
 `art/galope/water-fx/`. GPU counts describe the effect only, not the whole scene.
+
+## Notes for agents
+
+Rules that used to live in AGENTS.md (paths are relative to `Pana/`). Keep them
+true when you change this area.
+
+Galope uses a host simulation at 20 Hz (`galope-v1`), with ordered route gates,
+bots, snapshots and host migration. `games/galope/public/course.js` owns the
+482 m horse circuit, terrain and water depth; `scene.js` uses the shared ranch,
+plants and fauna. Late arrivals spectate until replay. Keep decorations outside
+the 9 m recovery corridor and water geometry aligned with the terrain bed.
+Horses opt into `{locomotion:true}` and `userData.gallop(phase,speed,jump)`;
+ordinary Studio/Derrape horses retain their grazing rig. The rider uses the
+saved Pana character. See `docs/knowledge/galope.md` for proof and controls.
+Galope's `landscape.js` extends the scenery into Laguna del Hato (bays/island)
+and Caño del Morichal (winding channel), using the signed field in `course.js`.
+The minimap samples the same bed. The 11 `Vida llanera` props live in
+`engine/models/props/llano-life.js`; moriche and savanna grass have individual
+vegetation modules. All 13 appear in the actual map and Studio. Keep animated
+fire/chinchorro outside static batches, instance plants in spatial cells, and
+preserve the canoe's keel origin, landing deck height and fixed hammock anchors.
+The trail clips actual terrain triangles to avoid bank flicker; the far plain
+joins exact perimeter heights/colours. See the landscape section in that note.
+Galope's game-local `water-fx.js` pools ripples, wakes and hoof spray across nearby
+riders: two instanced draws, at most 640 triangles. Use the rider's gait phase,
+real water depth and paused render time; dispose the bed texture and instance
+resources. `course.DAYLIGHT` supplies its live scene and Studio tour palette.

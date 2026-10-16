@@ -62,3 +62,24 @@ Also run `games/derrape/tests/maps.browser.js` with
 `web/studio/tests/studio.browser.js` for category/search/preview/mobile checks,
 and `.\dev.ps1 check` from the repository root. Browser suites accept the
 existing external Playwright runtime; no testing dependency is added to the game.
+
+## Notes for agents
+
+Rules that used to live in AGENTS.md (paths are relative to `Pana/`). Keep them
+true when you change this area.
+
+Llanos 041–050 and Desierto 061–070 live in `engine/models/props/ranch.js` and
+`engine/models/props/desert.js`, with construction details in `models/core/rural-kit.js`.
+Their Studio categories each contain ten models. The giant cardón reuses the
+existing cactus sculpt; keep the smaller Cardón entry in Vegetación.
+Gates span 3–24 m and expose `userData.setOpen(0..1)`; fences span 2–30 m
+along X. Rock arches span 4–28 m. Keep gate, stable, arch, tire and well
+openings usable. The wind pump and puddle use absolute-time ticks; keep the
+water shader outside static batches. The rebuilt Llanos and Desierto circuits
+each use all ten models from their respective pack. Their game-local
+`*-layout.js` modules own routes and terrain; `*-world.js` owns placements.
+`country-details.js` supplies swept bridge decks, road shoulders and grasses.
+
+Llanos' connected water uses the terrain's grid and signed bed depth to avoid
+coplanar pond seams; keep both bridge channels below the racing road.
+See `docs/knowledge/llanos-desert-props.md` for parameters and proof.

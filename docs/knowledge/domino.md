@@ -58,3 +58,17 @@ The DOM rack remains available for keyboard, screen readers and small screens.
   tile raycasting, rules menu, mobile label bounds and actual Studio factories.
 - `npm run check`; model architecture and Studio cache regressions when changing
   model registration. Browser evidence lives under ignored `art/domino/`.
+
+## Notes for agents
+
+Rules that used to live in AGENTS.md (paths are relative to `Pana/`). Keep them
+true when you change this area.
+
+Dominó uses event-driven host snapshots (`domino-v1`), with four seats and
+alternating teams. Its pure `games/domino/public/rules.js` owns deals, legal
+moves, passes, scoring and a revision/sequence ledger. Empty seats are bots;
+late arrivals inherit a bot hand and overflow visitors spectate. Host migration
+preserves all hands, RNG and scores. `scene.js` uses the shared plaza and real
+seated Pana characters; physical tiles and the accessible rack share actions.
+The game-local table, chair and tile factories are registered in
+`web/studio/catalog/domino.js`. See `docs/knowledge/domino.md`.

@@ -77,3 +77,17 @@ ranges, joining cliff profiles, outward end faces, continuous bridge planks,
 usable stairs, and open tent/rim passages. They save front and rear contact
 sheets plus individual renders under ignored `art/studio/pueblo` and
 `art/studio/paramo`. Default models use 1–24 meshes and fewer than 29,000 triangles.
+
+## Notes for agents
+
+Rules that used to live in AGENTS.md (paths are relative to `Pana/`). Keep them
+true when you change this area.
+
+Pueblo 011–020 lives in `engine/models/props/pueblo.js`; Páramo structures 052–060
+live in `engine/models/props/mountain.js`. Both use `engine/models/core/architecture-kit.js`.
+Frailejón (051) and mountain pine (057) are exported by their vegetation modules and
+stay in Vegetación. Several Pueblo and Páramo models now appear in Derrape;
+keep Studio consumer metadata aligned with actual placements.
+Mountain bridges span 6–40 m, guardrails 2–30 m; their long axis is X.
+Cliff end profiles must match across seeds. The clock and cable car use
+absolute-time `userData.tick(t)`; dispose owned sign textures when released.

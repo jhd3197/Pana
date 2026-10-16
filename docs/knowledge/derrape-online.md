@@ -36,3 +36,18 @@ server (`PANA_TEST_URL`), two real browser clients.
 - Mangos: a throw replays on every screen, but only the victim's client decides a
   hit and reports it (`hit`), so a late report must not splat twice (`gone` set).
 - Pickups are per client; a remote car still hides crates/coins it drives through.
+
+## Notes for agents
+
+Rules that used to live in AGENTS.md (paths are relative to `Pana/`). Keep them
+true when you change this area.
+
+Derrape races online through a Colyseus room (`games/derrape/server/room.js`,
+`/colyseus`), not the `/ws` relay. `?room=<code>` joins; `&lead=1` makes that
+player host (a pana.sh party's Pana Mayor). Each client simulates the cars it
+owns (its own, plus bots if host) and sends stamped poses; remote cars are
+kinematic and interpolate on the sender's server-time stamp. Hits and pickups
+are decided by the owning client (`items.js` `remote*`/`emit`). Shared limits
+and pose packing live in `public/online-rules.js`, imported by both sides.
+Prove changes with `tests/online.browser.js` (two real clients). See
+`docs/knowledge/derrape-online.md`.

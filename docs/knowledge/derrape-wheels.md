@@ -65,3 +65,18 @@ grip floor when `roadGripAt` reports wet (0..1).
   flow (stats recompute, persistence across reload), drift sim (palo > calle
   `|vr|` on the stadium) and mud sim (barro > calle speed at roughness 1 in La
   Selva). Run with the server up: `node games/derrape/tests/wheels.browser.js`.
+
+## Notes for agents
+
+Rules that used to live in AGENTS.md (paths are relative to `Pana/`). Keep them
+true when you change this area.
+
+Swappable wheels (cauchos) live in `wheel-definitions.js`: five trade-off
+profiles composed per racer (`composeTune` at `makeRacer`, never mutating
+`def.tune`). `stepCar` reads the composed tune, scaling off-road roughness by
+`offroadResist` and flooring wet grip at `wetFloor`. Car builders take an
+optional wheel override; without one each car keeps its own wheels. The
+garage has a `2 Cauchos` step persisted in `localStorage 'derrape:wheels'`
+(fallback calle), and rivals wear thematic wheels (`AI_WHEELS`). The five
+wheels are registered in Studio under Vehículos. See
+`docs/knowledge/derrape-wheels.md`.

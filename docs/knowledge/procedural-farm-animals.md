@@ -98,3 +98,15 @@ Start with adobe walls and raised porches. Port the geometry into the existing
 architecture kit, retain Cheoma's notice, verify against Pana's Three r160, then
 register and place the actual factories. Do not introduce the entire village
 runtime just to obtain these components.
+
+## Notes for agents
+
+Rules that used to live in AGENTS.md (paths are relative to `Pana/`). Keep them
+true when you change this area.
+
+`engine/models/fauna/farm/` supplies the Fauna horse, chicken and cow, used in Los
+Llanos. Their SDF core is MIT code in `engine/vendor/procedural-animals/`;
+preserve its license and source attribution. Factories return owned native
+skinned meshes with absolute-time `userData.tick(t)` and an idempotent skeleton
+`userData.dispose()`. Keep animals outside static batches and racing lanes.
+See `docs/knowledge/procedural-farm-animals.md` for parameters and proof.

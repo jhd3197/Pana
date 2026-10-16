@@ -57,3 +57,14 @@ Chromium path; no runtime package was added. It tests real peers, mobile input,
 host departure, replay, offline recovery and existing games. `PANA_QA_OUTPUT`
 can point to a local directory for screenshots. `?debug` exposes `window.cocina`
 with the host simulation and test placement/advance helpers.
+
+## Notes for agents
+
+Rules that used to live in AGENTS.md (paths are relative to `Pana/`). Keep them
+true when you change this area.
+
+Cocina also uses a host simulation at 20 Hz (`cocina-v1`). Host migration
+restores the last kitchen snapshot, including orders and active food. See
+`docs/knowledge/cocina.md`. Plaza scenery and the original hunt layout now
+live in `engine/plaza.js` and `engine/plaza-layout.js`; cooking has its own
+station layout and collision rules. Existing Escondidas paths re-export them.

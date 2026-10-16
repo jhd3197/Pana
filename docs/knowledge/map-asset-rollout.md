@@ -115,3 +115,12 @@ screenshots there include both islands' fish through their actual water surfaces
   Its Escondidas/Derrape/Bululú startup and hub checks also passed, with no
   uncaught browser errors.
 - `npm run check` passed all 174 JavaScript files; `git diff --check` passed.
+
+## Notes for agents
+
+Rules that used to live in AGENTS.md (paths are relative to `Pana/`). Keep them
+true when you change this area.
+
+See `docs/knowledge/map-asset-rollout.md` for actual map coverage and the
+remaining Studio-only models. New Plaza garden props must stay outside player
+movement bounds; the race town supplies separate road-safe positions.

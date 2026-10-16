@@ -57,3 +57,23 @@ ledger of models outside Studio, embedded assemblies and dormant factories.
 Regenerate with `Pana/scripts/audit-inventory.browser.js`; edit the explicit
 ledger in `Pana/scripts/inventory-notes.js` when adding/removing inline scenery.
 Counts represent catalog entries or grouped families, not unique meshes.
+
+## Notes for agents
+
+Rules that used to live in AGENTS.md (paths are relative to `Pana/`). Keep them
+true when you change this area.
+
+`engine/models/fauna/` supplies the Fauna macaw, scarlet ibis, soaring vulture and
+natural capybara. Each species has its own module; the shared flight rig and
+`models/animation/orbit-bird.js` are separate. `capybaraForm` lives in
+`models/fauna/capybara/shape.js`, independent of monuments. Selva uses one macaw/one capybara; Llanos four ibis/three
+capybaras; Desierto two vultures. Keep flight roots outside static batches,
+preserve +Z tangent heading and absolute-time ticks, and reuse `capybaraForm`.
+Fauna now has ten entries (nine animals plus a fish school). The current source
+inventory, uncataloged/legacy ledger and priorities live in
+`docs/knowledge/model-inventory.md`; regenerate it with
+`scripts/audit-inventory.browser.js` after updating `scripts/inventory-notes.js`.
+`engine/models/fauna/aquatic/` supplies Pana-authored fish and schools to both islands.
+Keep their whole swimming envelope below waves and above the seabed, and pass
+path clearance to `placeReefSchools` in `engine/placement/reef-schools.js`. Do not bake animated fish. The Studio
+island preview uses the full Bululú board, including scenery and paths.

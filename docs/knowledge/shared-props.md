@@ -178,3 +178,28 @@ Waterfall moss, plants and creepers raycast against the actual displaced rocks;
 fixed decoration heights can leave vegetation visibly floating. Stone primitives
 must all receive vertex colors before batching when using the weathered palette.
 The Studio waterfall owns and disposes its animated canvas texture.
+
+## Notes for agents
+
+Rules that used to live in AGENTS.md (paths are relative to `Pana/`). Keep them
+true when you change this area.
+
+The vegetation catalog has twenty-four models. New plant factories live in
+individual files in `engine/models/vegetation/`; keep their seeds
+deterministic and their ground origin at y=0. Registration does not place
+plants into maps; list actual consumers in `usedBy`.
+Pana landmarks (statues, arch, fountains, kiosk) live in `engine/models/props/monuments.js`
+under the Studio category `Emblemas`. Reuse `capybaraForm` for any new
+four-legged capybara shape. Jungle ruins, bridges and the waterfall live in
+`engine/models/props/jungle.js` (Studio category `Selva`).
+`capybaraForm` clones a cached continuous sculpt; preserve geometry ownership.
+Shared water motion lives in `engine/models/effects/water-details.js` and uses absolute time
+so pausing, scrubbing and thumbnail capture agree. Bridge spans accept 4–40 m;
+hollow logs accept 3–20 m. Keep their passages empty and ground origins stable.
+
+`engine/models/effects/water-surface.js` supplies animated oceans, directional rivers, canals
+and ponds to Derrape and Studio. Its depth textures use actual sampled terrain;
+update the live shader material and dispose cloned uniform textures too.
+Environment owners compose `waterAnimator(group)` with their existing update;
+scenery water is already collected by the track runtime. Keep animated water
+outside static batches and preserve pond surface height inside a wrapper group.

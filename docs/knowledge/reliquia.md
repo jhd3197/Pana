@@ -109,3 +109,19 @@ The final visual pass corrected bridge landing height, added solid banks below
 entrance foliage, gave health text a dark backing and kept the compass clear of
 the guardian bar. Ambient wave offsets are individually checked for visibility
 and navigation so an anchor hidden behind a corner cannot expose its companions.
+
+## Notes for agents
+
+Rules that used to live in AGENTS.md (paths are relative to `Pana/`). Keep them
+true when you change this area.
+
+Reliquia uses a host simulation at 20 Hz (`reliquia-v1`). Its game-local
+`layout.js` owns walkability/navigation, `rules.js` owns combat, winches,
+revives and extraction, and `director.js` owns the seeded encounter schedule.
+Snapshots preserve RNG state and the action sequence ledger across host migration.
+Late arrivals join the camp or opened-gate checkpoint. Both wheels latch for
+twelve seconds; all non-spectating players must be revived and back at camp to
+extract. The mummy, guardian, sun relic, winch and lantern factories live in
+`engine/models/props/reliquia.js` and are registered in Studio. Keep rigid mummy
+parts batched independently of their animation pivots. The shared rope bridge's
+sag is mirrored by `groundAt()` in the game scene. See `docs/knowledge/reliquia.md`.

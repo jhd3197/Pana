@@ -93,3 +93,19 @@ the Studio previews; keyboard/preview/camera checks passed at 390, 768, 1280
 and 1440 px. Dominó's scene and ten rules tests passed after table extraction.
 The model architecture browser suite passed 212 compatibility symbols and
 selective cache invalidation. The final syntax check passed 339 JavaScript files.
+
+## Notes for agents
+
+Rules that used to live in AGENTS.md (paths are relative to `Pana/`). Keep them
+true when you change this area.
+
+Caída uses event-driven host snapshots (`caida-v1`) with 2/3/4 individual
+seats or four-seat partnerships. Its pure `games/caida/public/rules.js` owns
+rank captures, caídas, optional classic cantos, the últimas exception,
+scoring and the revision/sequence ledger. Empty seats are bots; late arrivals
+inherit their hands, and the oldest peer preserves the match on migration.
+These are trust-based rooms like Dominó, not server-private hands. Card
+artwork is shared by physical meshes and accessible controls. The card and
+score token are registered in `web/studio/catalog/caida.js`. Table/chair
+factories are shared in `engine/models/props/game-table.js`; Dominó preserves
+its old exports. See `docs/knowledge/caida.md` for explicit house rules.
