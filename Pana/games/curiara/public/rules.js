@@ -1,11 +1,12 @@
 // Curiara race simulation. Pure: the host runs it, guests render snapshots.
 // Boats move with paddle thrust relative to the water plus the river's
 // current; the river (river.js) owns banks, levels and currents.
-import { paddleState, stroke, hold, rudder, sync, step as pull, PADDLE } from './paddle.js';
+import { paddleState, stroke, hold, rudder, sync, step as pull, PADDLE } from '/engine/paddle.js';
 import { RIVER, TONINA, clamp, angle } from './river.js';
 
 export const FORMATS = { todos: { boats: 8, seats: 1 }, parejas: { boats: 4, seats: 2 } };
 export const CAPSIZE = 1.8;
+export const PHOTO = Object.freeze({ within: 7, gap: 2.2, real: 1.6, speed: .3 });
 export const SALPICON = Object.freeze({ cooldown: 4, reach: 2.5, shove: 2.6, tip: 12, spray: 1.3 });
 export const CAIMAN = Object.freeze({ reach: 3, tip: 40, jolt: 2.2 });
 export const BOAT = Object.freeze({ drag: .6, grip: 5, yawDamp: 2.6, brake: 2.6, reverse: -1.1, half: .62, length: 2.9, rudderSpeed: 3 });
@@ -85,7 +86,7 @@ export class Race {
       this.boats.push(this.newBoat(`c${i}`, members, this.boats.length));
     });
     for (const p of this.players) p.spectator = false;
-    Object.assign(this, { phase: 'countdown', countdown: 3, time: 0, finishGrace: null, snaps: {} });
+    Object.assign(this, { phase: 'countdown', countdown: 3, time: 0, finishGrace: null, snaps: {}, photo: null, slowmo: 0 });
     this.raceId++;
   }
   newBoat(id, crew, slot) {
@@ -104,13 +105,15 @@ export class Race {
     // A canoe right alongside? Sometimes it gets a ¡Salpicón!.
     if (b.splashCd <= 0 && this.boats.some(o => o !== b && Math.hypot(o.x - b.x, o.z - b.z) < 2.6) && seeded(k.r++)() < .04) input.splash = k.splash = (k.splash || 0) + 1;
     // Badly off line and nearly stopped: back-paddle to pivot round.
-    if (Math.abs(err) > 1.2 && b.v < 2.5) { input.back = true; input.steer = err > 0 ? -1 : 1; k.next = .3; return input; }
+    if (Math.abs(err) > 1.2 && b.v < 2.5 && !(b.crew.length === 2 && !b.crew[1].bot && !b.crew[1].empty)) { input.back = true; input.steer = err > 0 ? -1 : 1; k.next = .3; return input; }
     if (k.next <= 0) {
       // Everyone wobbles a little; now and then a bot loses the rhythm.
       const roll = seeded(k.r++), gap = PADDLE.sweet[0] + .005 + (1 - k.skill) * .2, noise = (roll() - .5) * (.08 + (1 - k.skill) * .3);
       k.next = roll() < .035 + (1 - k.skill) * .04 ? .75 + roll() * .5 : Math.max(.27, gap + noise);
       // Turn strokes repeat the side that pushes the bow toward the line.
-      const want = err > 0 ? 1 : -1, need = Math.abs(err) > .3 - k.skill * .06;
+      // With a pana on the helm behind, a bot in the proa just paddles.
+      const helm = b.crew.length === 2 && !b.crew[1].bot && !b.crew[1].empty;
+      const want = err > 0 ? 1 : -1, need = !helm && Math.abs(err) > .3 - k.skill * .06;
       const side = need ? want : -(b.paddle.side || want);
       input.strokes.push([++k.seq, side, this.time]);
     }
@@ -147,6 +150,13 @@ export class Race {
       this.countdown -= dt; if (this.countdown <= 0) { this.phase = 'racing'; this.countdown = 0; } return;
     }
     if (this.phase !== 'racing') return;
+    // A photo finish: the two leaders reach the line together, so the race
+    // runs slowly for a moment on every screen (the host owns the clock).
+    if (!this.photo && this.boats.length > 1 && this.boats.every(b => b.finish === null)) {
+      const [a, b] = standings(this);
+      if (this.river.LENGTH - a.progress < PHOTO.within && a.progress - b.progress < PHOTO.gap) { this.photo = { at: this.time, ids: [a.id, b.id] }; this.slowmo = PHOTO.real; }
+    }
+    if (this.slowmo > 0) { this.slowmo = Math.max(0, this.slowmo - dt); dt *= PHOTO.speed; }
     this.time += dt;
     for (const b of this.boats) this.steer(b, dt, inputs);
     for (const b of this.boats) this.splash(b);
@@ -370,7 +380,7 @@ export class Race {
   }
   boatOf(id) { return this.boats.find(b => b.crew.some(c => c.id === id)); }
   snapshot() {
-    return JSON.parse(JSON.stringify({ phase: this.phase, format: this.format, time: this.time, countdown: this.countdown, players: this.players, boats: this.boats, finishGrace: this.finishGrace, raceId: this.raceId, seed: this.seed, snaps: this.snaps }));
+    return JSON.parse(JSON.stringify({ phase: this.phase, format: this.format, time: this.time, countdown: this.countdown, players: this.players, boats: this.boats, finishGrace: this.finishGrace, raceId: this.raceId, seed: this.seed, snaps: this.snaps, photo: this.photo ?? null, slowmo: this.slowmo ?? 0 }));
   }
   static restore(snapshot, members, river = RIVER) {
     const race = new Race(river);

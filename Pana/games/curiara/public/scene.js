@@ -93,7 +93,7 @@ export function createRiverWorld(river = RIVER, { dress } = {}) {
   let disposed = false;
   return {
     group, water, river,
-    cull(camera, distance = 230) {
+    cull(camera, distance = 200) {
       for (const o of far) { const b = o.boundingSphere; o.visible = !b || camera.position.distanceTo(b.center) - b.radius < distance; }
     },
     update(t, dt = 0) { animateWater(t); for (const o of moving) o.userData.tick?.(t, dt); },

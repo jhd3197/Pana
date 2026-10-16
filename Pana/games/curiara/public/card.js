@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { loadAvatar } from '/engine/avatar.js';
-import { createCanoe } from './boat.js';
+import { createCanoe } from '/engine/models/vehicles/curiara.js';
 
 // Hub tile: the saved pana paddling the same curiara as the race.
 export function mount(canvas) {

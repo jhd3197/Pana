@@ -9,18 +9,19 @@ import { bindRenderer, pixelRatio } from '/engine/settings.js';
 import { RiverRoom } from './network.js';
 import { standings, FORMATS, COLORS } from './rules.js';
 import { RIVER, angle, formatTime } from './river.js';
-import { PADDLE, grade } from './paddle.js';
+import { PADDLE, grade } from '/engine/paddle.js';
 import { createRaceScene } from './scene.js';
-import { createCanoe } from './boat.js';
+import { createCanoe } from '/engine/models/vehicles/curiara.js';
 import { addLandscape } from './landscape.js';
 import { createRiverFX } from './water-fx.js';
+import { createMusic } from '/engine/music.js';
 
 const $ = id => document.getElementById(id), params = new URLSearchParams(location.search), avatar = loadAvatar(), name = loadName();
 const store = { get: k => { try { return localStorage.getItem(k); } catch { return null; } }, set: (k, v) => { try { localStorage.setItem(k, v); } catch { /* private mode */ } } };
 let format = FORMATS[store.get('curiara:format')] ? store.get('curiara:format') : 'todos';
 const code = roomFromUrl() || newRoomCode(); params.set('room', code); history.replaceState(null, '', `${location.pathname}?${params}`);
 const keys = new Set(), touch = new Set(), canoes = new Map(), touchButtons = [];
-let paused = false, state, world, ready = false, lastPhase = '', lastCountdown = '', lastRace = 0, drawClock = 0, disposed = false, snapshotAt = performance.now();
+let paused = false, quiet = false, state, world, ready = false, lastPhase = '', lastCountdown = '', lastRace = 0, drawClock = 0, disposed = false, snapshotAt = performance.now();
 const room = new RiverRoom({ code, name, avatar, onState: s => { state = s; snapshotAt = performance.now(); }, onStatus: (message, error = false) => { $('connection').textContent = message; $('practice').classList.toggle('hidden', !error); if (error) showNotice(message); } });
 state = room.state;
 
@@ -28,15 +29,16 @@ state = room.state;
 const strokes = [], local = { seq: 0, last: null, side: 0, splash: 0, streak: 0 };
 const clock = () => performance.now() / 1000;
 function clearInput() { keys.clear(); for (const b of touchButtons) b.release(); touch.clear(); }
-const menu = createGameMenu({ title: 'Curiara', sound, orientation: 'horizontal', note: () => room.members.size > 1 ? 'La carrera sigue mientras abres el menú.' : 'La carrera está en pausa.',
+const menu = createGameMenu({ title: 'Curiara', sound, orientation: 'libre', note: () => room.members.size > 1 ? 'La carrera sigue mientras abres el menú.' : 'La carrera está en pausa.',
   controls: [['A / ←', 'Remar a la izquierda'], ['D / →', 'Remar a la derecha'], ['A D A D', 'Alternar: recto y a toda'], ['D D / A A', 'Mismo lado: girar al lado contrario'], ['S / ↓', 'Ciar: frenar; con A o D, pivotar'], ['Espacio', '¡Salpicón! a la curiara de al lado'], ['M', 'Sonido'], ['Esc', 'Menú']],
   tips: ['Rema justo cuando el anillo pasa por la zona dorada: ¡Remazo!', 'En Parejas, la proa rema y la popa lleva el timón (A/D sostenido), cía y lanza el salpicón. Si la popa toca A o D justo con la remada: ¡Ahora!'],
-  invite: () => inviteUrl(code), actions: [{ id: 'local-race', label: 'Abrir carrera local', run: () => goLocal() }], onOpen() { paused = true; clearInput(); }, onClose() { paused = false; } });
+  invite: () => inviteUrl(code), actions: [{ id: 'local-race', label: 'Abrir carrera local', run: () => goLocal() }],
+  onOpen() { paused = true; clearInput(); if (room.members.size <= 1) music.pause(); }, onClose() { paused = false; music.resume(); } });
 const navButton = 'pk-btn pk-btn--sm game-menu-button';
 $('game-nav').append(menu.createInviteButton({ id: 'invite', label: 'Invitar', className: navButton }), menu.createSoundButton({ id: 'sound', className: navButton }), menu.createButton({ id: 'menu', className: navButton }));
 $('lobby-cta').append(menu.createInviteButton({ id: 'lobby-invite', label: 'Invitar panas', className: 'pk-btn' }));
 $('room-code').textContent = code.toUpperCase();
-const coarse = matchMedia('(pointer:coarse)').matches;
+const coarse = matchMedia('(pointer:coarse)').matches, music = createMusic(sound);
 function showNotice(text) { $('notice').textContent = text; $('notice').classList.remove('hidden'); clearTimeout(showNotice.timer); showNotice.timer = setTimeout(() => $('notice').classList.add('hidden'), 3000); }
 function unlock() { try { sound.unlock(); } catch { /* audio blocked */ } }
 function goLocal() { room.practice(); room.setFormat(format); $('practice').classList.add('hidden'); }
@@ -48,10 +50,11 @@ const myRole = () => { const b = myBoat(); if (!b) return 'solo'; return b.crew.
 let callTimer = 0;
 function call(text, kind = '') { const e = $('call'); e.textContent = text; e.className = `call ${kind}`; e.classList.remove('hidden'); void e.offsetWidth; callTimer = .9; }
 function tock(power) { sound.tone(1180, 0, .045, 'triangle', .07 * power); sound.tone(590, .01, .07, 'sine', .08 * power); }
-function stroke(side) {
+// `at` is the input event's own timestamp, so a slow frame never bends the rhythm.
+function stroke(side, at) {
   if (paused) return;
   unlock();
-  const t = clock();
+  const now = clock(), t = at > 0 && at <= now + .01 ? at : now;
   strokes.push([++local.seq, side, t]); if (strokes.length > 8) strokes.shift();
   if (state.phase !== 'racing' && state.phase !== 'countdown') return;
   const role = myRole(), b = myBoat();
@@ -72,7 +75,7 @@ window.addEventListener('keydown', e => {
   if (e.code === 'KeyM') { toggleMute(); return; }
   if (e.code in STROKE_KEYS || ['KeyS', 'ArrowDown', 'Space', 'KeyW', 'ArrowUp'].includes(e.code)) {
     e.preventDefault(); unlock();
-    if (!e.repeat && e.code in STROKE_KEYS) stroke(STROKE_KEYS[e.code]);
+    if (!e.repeat && e.code in STROKE_KEYS) stroke(STROKE_KEYS[e.code], e.timeStamp / 1000);
     if (!e.repeat && e.code === 'Space') local.splash++;
     keys.add(e.code);
   }
@@ -80,7 +83,7 @@ window.addEventListener('keydown', e => {
 window.addEventListener('keyup', e => keys.delete(e.code)); window.addEventListener('blur', clearInput);
 document.addEventListener('visibilitychange', () => { if (document.hidden) clearInput(); });
 for (const b of document.querySelectorAll('[data-stroke]')) touchButtons.push(holdButton(b, { paused: () => paused,
-  down: () => { touch.add(`s${b.dataset.stroke}`); stroke(Number(b.dataset.stroke)); }, up: () => touch.delete(`s${b.dataset.stroke}`) }));
+  down: e => { touch.add(`s${b.dataset.stroke}`); stroke(Number(b.dataset.stroke), e?.timeStamp / 1000); }, up: () => touch.delete(`s${b.dataset.stroke}`) }));
 for (const b of document.querySelectorAll('[data-input]')) touchButtons.push(holdButton(b, { paused: () => paused,
   down: () => { touch.add(b.dataset.input); unlock(); if (b.dataset.input === 'splash') local.splash++; }, up: () => touch.delete(b.dataset.input) }));
 function input() {
@@ -199,7 +202,8 @@ function tipText(b) {
   return 'Alterna A y D. Rema cuando el anillo llegue a la zona dorada.';
 }
 // What just happened to this pana's canoe, from the snapshot's counters.
-let seen = null;
+let seen = null, lastPhoto = null;
+function flash() { const e = $('flash'); e.classList.remove('is-on'); void e.offsetWidth; e.classList.add('is-on'); sound.tone(1600, 0, .05, 'square', .05); }
 function events(own) {
   if (!own) return;
   const now = { caps: own.capsizes, bitten: own.bitten || 0, drops: own.drops || 0, toninas: own.toninas || 0, sprayed: own.splashedAt || 0, soaked: own.soaked || 0, bumps: own.bumps || 0, syncs: own.paddle?.syncs || 0 };
@@ -235,7 +239,7 @@ function updateUI() {
   $('paddle-tip').textContent = tipText(own);
   $('role').classList.toggle('hidden', role === 'solo'); $('role').textContent = role === 'popa' ? 'Popa · timón' : 'Proa · remo';
   const loaded = own && own.splashCd <= 0; $('splash-state').textContent = loaded ? 'Salpicón listo' : `Salpicón ${Math.ceil(own?.splashCd || 0)} s`; $('splash-state').classList.toggle('is-ready', !!loaded);
-  $('keys-hint').classList.toggle('hidden', role === 'popa');
+  $('keys-hint').classList.toggle('hidden', role === 'popa'); $('helm-hint').classList.toggle('hidden', role !== 'popa');
   $('spray').classList.toggle('is-on', (own?.sprayed || 0) > 0);
   $('leaderboard').replaceChildren(...ordered.slice(0, 8).map((b, i) => {
     const li = document.createElement('li'); li.className = b === own ? 'pk-row is-me' : 'pk-row';
@@ -252,10 +256,15 @@ function updateUI() {
   if (playing) events(own);
   if (done && (lastPhase !== state.phase || $('result-board').childElementCount !== ordered.length)) {
     $('result-title').textContent = place === 1 ? (role === 'solo' ? '¡Ganaste, pana!' : '¡Ganaron, panas!') : own?.finish != null ? '¡Llegaste, pana!' : '¡Se cerró la carrera!';
-    $('result-copy').textContent = own?.finish != null ? `${place}.º lugar · ${formatTime(own.finish)} · ${own.remazos} remazos · ${own.capsizes} vueltas de campana` : 'La próxima es tuya. Rema en ritmo y busca el chorro.';
+    $('result-copy').textContent = own?.finish != null ? `${place}.º lugar · ${formatTime(own.finish)} · ${own.remazos} remazos · ${own.capsizes} ${own.capsizes === 1 ? 'vuelta' : 'vueltas'} de campana` : 'La próxima es tuya. Rema en ritmo y busca el chorro.';
     fillRoster($('result-board'), ordered.map((b, i) => ({ rank: i + 1, name: crewName(b) + (b.crew.every(c => c.bot || c.empty) ? ' · del río' : ''), detail: `${b.remazos} remazos${b.capsizes ? ` · volcó ${b.capsizes}` : ''}`, end: b.finish === null ? 'Sin llegar' : formatTime(b.finish), me: b === own })));
     if (lastPhase !== state.phase) sound.tone(660, 0, .25, 'triangle', .08);
   }
+  if (state.phase === 'racing' && !music.playing && !paused) music.play('amazonas');
+  if (state.phase !== 'racing' && state.phase !== 'countdown' && music.playing) music.stop();
+  const lead = ordered[0];
+  music.setTempo(state.slowmo > 0 ? .6 : lead && RIVER.LENGTH - lead.progress < 120 ? 1.14 : 1);
+  if (state.photo && state.photo.at !== lastPhoto) { lastPhoto = state.photo.at; call('¡Foto finish!', 'is-teal'); flash(); }
   lastPhase = state.phase; drawMap(own);
 }
 ensureCanoes(); ready = true; $('loading').classList.add('hidden'); room.connect(); updateUI();
@@ -281,8 +290,15 @@ function frame() {
     cameraGoal.set(q.x - Math.sin(camH) * 6.5 + Math.cos(camH) * 4.5, q.y + 3.2, q.z - Math.cos(camH) * 6.5 - Math.sin(camH) * 4.5);
     look.set(q.x + Math.cos(camH) * side, q.y + .9, q.z - Math.sin(camH) * side);
   } else {
-    cameraGoal.set(q.x - Math.sin(camH) * 8, q.y + 3.1, q.z - Math.cos(camH) * 8);
-    look.set(q.x + Math.sin(camH) * 7, q.y + 1, q.z + Math.cos(camH) * 7);
+    // Portrait phones look a little lower so the canoe clears the paddle panel.
+    const tall = innerHeight > innerWidth, back = tall ? 9.5 : 8;
+    cameraGoal.set(q.x - Math.sin(camH) * back, q.y + (tall ? 3.6 : 3.1), q.z - Math.cos(camH) * back);
+    look.set(q.x + Math.sin(camH) * 7, q.y + (tall ? -1.6 : 1), q.z + Math.cos(camH) * 7);
+  }
+  if (state.slowmo > 0 && state.photo) {
+    const line = RIVER.at(RIVER.LENGTH - 3.5, 0), side = RIVER.at(RIVER.LENGTH - 3.5, RIVER.halfWidth(RIVER.LENGTH - 3.5) - 2);
+    cameraGoal.set(side.x, q.y + 1.6, side.z); look.set(line.x, q.y + .5, line.z);
+    camera.position.copy(cameraGoal);
   }
   const floor = RIVER.groundAt(cameraGoal.x, cameraGoal.z) + 1.2; if (cameraGoal.y < floor) cameraGoal.y = floor;
   if (!cameraReady || camera.position.distanceTo(cameraGoal) > 30) { camera.position.copy(cameraGoal); cameraReady = true; } else camera.position.lerp(cameraGoal, 1 - Math.exp(-dt * 5));
@@ -295,15 +311,17 @@ function frame() {
   if (callTimer > 0) { callTimer -= dt; if (callTimer <= 0) $('call').classList.add('hidden'); }
   if (state.phase === 'racing' || state.phase === 'countdown') drawRing(own, t);
   drawClock += dt; if (drawClock > .1) { updateUI(); drawClock = 0; }
-  renderer.render(scene, camera); requestAnimationFrame(frame);
+  if (!quiet) renderer.render(scene, camera); requestAnimationFrame(frame);
 }
 requestAnimationFrame(frame);
 // Simulation runs at 20 Hz independent of rendering; guests send inputs at 20 Hz.
 let simulationTime = performance.now();
 const simulation = setInterval(() => { const now = performance.now(), dt = (now - simulationTime) / 1000; simulationTime = now; if (params.has('manual')) return; room.tick(dt, input(), paused && room.members.size <= 1); }, 50);
-if (params.has('debug')) window.curiara = { room, get state() { return state; }, world, canoes, input, RIVER, updateUI, stroke,
+if (params.has('debug')) window.curiara = { room, get state() { return state; }, world, canoes, input, RIVER, updateUI, stroke, music,
+  // Suites skip drawing while timing keys: software WebGL starves the tab.
+  quiet(value) { quiet = !!value; },
   manual(value) { if (value) params.set('manual', ''); else params.delete('manual'); simulationTime = performance.now(); },
   step(seconds, controls) { for (let t = 0; t < seconds; t += .05) room.tick(.05, controls ? controls() : input()); updateUI(); },
   place(id, s, offset = 0) { const b = room.game.boatOf(id), q = RIVER.at(s, offset); Object.assign(b, { x: q.x, z: q.z, h: q.h, s, progress: s, checkpoint: RIVER.gates.filter(g => g <= s).length, v: 0, lat: 0, w: 0, y: RIVER.levelAt(s, offset), vy: 0, air: 0, tip: 0, capsized: 0, grace: 0, channel: 'main' }); room.publish(); } };
-window.addEventListener('pagehide', () => { disposed = true; clearInterval(simulation); room.dispose(); for (const c of canoes.values()) c.dispose(); world.world.dispose(); world.sky.dispose(); unbind?.(); renderer.dispose(); }, { once: true });
+window.addEventListener('pagehide', () => { disposed = true; clearInterval(simulation); music.stop(); room.dispose(); for (const c of canoes.values()) c.dispose(); world.world.dispose(); world.sky.dispose(); unbind?.(); renderer.dispose(); }, { once: true });
 window.addEventListener('pageshow', event => { if (event.persisted) location.reload(); });

@@ -24,7 +24,7 @@ import { clockText, wrapAngle, raceOrder, aiPedals, resolveContact } from './rul
 import { CUPS, cupById, awardPoints, cupStandings, trophyFor, TROPHY_RANK, difficultyById, rubberBand, cleanLaps, BALLOONS, BATTLE_TIME, battleOrder, battleOver } from './modes.js';
 import { advanceLap, isOpenEdge, offCourse, stuckStep, ALL_SECTORS, RESCUE_TIME, OUT_TIME, STUCK_TIME, OPEN_MARGIN } from './course-rules.js';
 import { createHazards } from './hazards.js';
-import { createMusic } from './music.js';
+import { createMusic, TRACK_STYLE } from './music.js';
 import { padInput, pressed, keyInput, SPLIT_KEYS, wrongWayStep, WRONG_WAY_TIME, lapSplit } from './controls.js';
 import { PAINTS, HORNS, FLAMES, CATALOG, cleanWallet, earnings, buy, unlocked, unlockText, mirrorUnlocked, repaintHex } from './shop.js';
 import { soaringVulture } from '/engine/models/fauna/birds/soaring-vulture.js';
@@ -968,7 +968,7 @@ async function startRace(playerIndex, wheelId = garage.wheel, roster = null) {
       if (net.state.raceId !== race.netRace) return;
     } else if (!await step('¡Listo!', 1)) return;
     race.state = 'count';
-    music.play(T.id);
+    music.play(TRACK_STYLE[T.id]);
     $('count').textContent = '3';
     $('garage').classList.add('hidden');
     $('race').classList.remove('hidden');

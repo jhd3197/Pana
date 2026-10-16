@@ -1,11 +1,14 @@
 // A racing curiara: the shared dugout, one or two seated panas and their
-// paddles. The paddle pose is read from the boat's paddle state (paddle.js),
-// so a stroke on the host is a stroke on every screen.
+// paddles. The paddle pose is read from the canoe's paddle state
+// (/engine/paddle.js), so a stroke on the host is a stroke on every screen.
+// Used by Curiara and Bululú's river minigames. +Z is the bow, metres.
+//
+// update(dt, b, time) reads b.paddle {last, side, back, rudder}, b.capsized
+// (seconds left upside down), b.rollSide, b.vy, b.air, b.splashAt/splashSide.
 import * as THREE from 'three';
 import { riverCanoe } from '/engine/models/props/llano-life.js';
 import { buildCharacter } from '/engine/models/characters/pana/avatar-model.js';
 import { M, mesh, tube } from '/engine/models/core/primitives.js';
-import { PADDLE } from './paddle.js';
 
 // Thwarts of riverCanoe(): z −1.55 (popa) and .9 (proa). A solo pana sits aft.
 export const SEATS = { solo: [-1.55], pair: [.9, -1.55] };
@@ -23,7 +26,8 @@ function makePaddle(color) {
   return g;
 }
 
-export function createCanoe(crew, color = '#e2683c') {
+// `pull` is how long a stroke's pull lasts (PADDLE.pull in /engine/paddle.js).
+export function createCanoe(crew, color = '#e2683c', { pull = .3 } = {}) {
   const group = new THREE.Group(), hull = new THREE.Group(), tint = new THREE.Color(color).getHex();
   group.name = 'Curiara'; group.add(hull);
   const canoe = riverCanoe(); hull.add(canoe);
@@ -49,7 +53,7 @@ export function createCanoe(crew, color = '#e2683c') {
 
   // Pull: blade from the bow (catch) to the hip; recovery swings it forward.
   function posePaddle(p, side, since, back, time) {
-    const pull = PADDLE.pull, g = p.paddle, arms = p.body.arms;
+    const g = p.paddle, arms = p.body.arms;
     let sweep, lift;
     if (back) { sweep = .55 + Math.sin(time * 7) * .35; lift = 0; }
     else if (since < pull) { sweep = -.85 + 1.7 * ease(since / pull); lift = 0; }

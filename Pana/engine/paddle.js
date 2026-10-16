@@ -1,4 +1,5 @@
-// The curiara stroke model. Pure: no THREE, no DOM, no clock of its own.
+// The dugout-canoe stroke model, shared by Curiara and Bululú's river
+// minigames. Pure: no THREE, no DOM, no clock of its own.
 // Every stroke is a side (-1 left, +1 right) and a time in seconds; the gap to
 // the previous stroke decides what it is worth. Alternating in rhythm is full
 // power, the same side twice is a turn stroke, mashing is a weak chapoteo and a

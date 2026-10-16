@@ -49,7 +49,9 @@ export class RiverRoom extends HostRoom {
     if (!this.connected) return;
     if (this.isHost) {
       this.inputs.set(this.id, this.toRace(this.id, cleanInput(input)));
-      for (const [id, i] of this.inputs) if (id !== this.id && performance.now() - i.at > 600) this.inputs.delete(id);
+      // A quiet guest stops holding keys, but its strokes are events: a slow
+      // host tick must never drop them before the race has read them.
+      for (const [id, i] of this.inputs) if (id !== this.id && performance.now() - i.at > 600 && (i.back || i.steer)) this.inputs.set(id, { ...i, back: false, steer: 0 });
       // Catch up fixed steps when rendering delays a tick; publish once.
       if (!paused) for (let left = Math.min(1, dt); left > 1e-6; left -= .05) this.game.update(Math.min(.05, left), this.inputs);
       this.publish();

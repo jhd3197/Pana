@@ -14,6 +14,7 @@
 <body class="in-lobby">
   <canvas id="world" aria-label="Carrera de curiaras por el río"></canvas>
   <div id="spray" class="spray" aria-hidden="true"></div>
+  <div id="flash" class="flash" aria-hidden="true"></div>
   <header class="topbar"><nav id="game-nav" aria-label="Opciones del juego"></nav></header>
   <div id="loading" class="pk-loading" role="status"><span class="pk-ribbon">El Amazonas</span><b class="pk-title">Curiara</b><p class="pk-copy">Bajando las curiaras al agua…</p></div>
   <section id="lobby" class="pk-lobby hidden" aria-labelledby="title">
@@ -55,6 +56,7 @@
       </div>
     </div>
     <div class="pk-hints keyboard-hints" data-pana-hint id="keys-hint"><span><b>A</b> <b>D</b> remar alternando</span><span><b>D D</b> girar a la izquierda</span><span><b>S</b> ciar</span><span><b>Espacio</b> salpicón</span></div>
+    <div class="pk-hints keyboard-hints hidden" data-pana-hint id="helm-hint"><span><b>A D</b> sostener: timón</span><span><b>A D</b> justo con la remada: ¡Ahora!</span><span><b>S</b> ciar</span><span><b>Espacio</b> salpicón</span></div>
     <div class="touch-controls pk-touch-zone">
       <div class="touch-side"><button class="pk-touch pk-touch--lg stroke-btn" data-stroke="-1" aria-label="Remar a la izquierda">Izq.</button><button class="pk-touch" data-input="back" aria-label="Ciar: frenar y girar">Ciar</button></div>
       <div class="touch-side"><button class="pk-touch" data-input="splash" aria-label="Salpicón">Salpicón</button><button class="pk-touch pk-touch--lg stroke-btn" data-stroke="1" aria-label="Remar a la derecha">Der.</button></div>

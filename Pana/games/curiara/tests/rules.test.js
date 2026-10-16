@@ -203,3 +203,14 @@ test('snapshots carry hazards across host migration', () => {
   for (let t = 0; t < 2; t += .05) { r.update(.05, new Map()); restored.update(.05, new Map()); }
   assert.deepEqual(restored.snapshot(), r.snapshot(), 'and replay the same afterwards');
 });
+
+test('a photo finish slows the race clock for everyone, once', () => {
+  const r = duo(), [a, c] = r.boats, L = r.river.LENGTH;
+  put(r, a, L - 6.5, -1.5, { v: 5 }); put(r, c, L - 7.2, 1.5, { v: 5 });
+  const t0 = r.time; r.update(.05);
+  assert.ok(r.photo && r.slowmo > 0);
+  assert.ok(r.time - t0 < .05 * .5, 'race time runs slow');
+  for (let t = 0; t < 2; t += .05) r.update(.05);
+  assert.equal(r.slowmo, 0); const photo = r.photo;
+  r.update(.05); assert.equal(r.photo, photo, 'only once a race');
+});

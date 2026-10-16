@@ -13,6 +13,8 @@ import { orbitBird } from '/engine/models/animation/orbit-bird.js';
 import { morphoSwarm } from '/engine/models/fauna/morpho.js';
 import { tonina } from '/engine/models/fauna/aquatic/tonina.js';
 import { caiman } from '/engine/models/fauna/caiman.js';
+import { buildCharacter } from '/engine/models/characters/pana/avatar-model.js';
+import { randomAvatar } from '/engine/avatar.js';
 import { driftwood } from '/engine/models/props/beach.js';
 import { createTepui } from '/engine/island-landscape.js';
 import { SEA } from '/engine/island-terrain.js';
@@ -35,7 +37,8 @@ export function addLandscape({ group, river, moving, racers = [] }) {
     model.userData.assetId = id; group.add(model); reserved.push({ x, z, r }); count(id); if (animate) moving.push(model); return model;
   };
   const place = (x, z, scale, y) => ({ x, z, y: y ?? river.groundAt(x, z) - .1, rot: random() * TAU, scale });
-  const plant = (id, source, points, name) => { for (const m of instancePlacements(group, source, points, { name, cellSize: 90 })) m.userData.farCull = true; count(id, points.length); };
+  // Only the caño's own canopy casts shadows; the rest would double the cost.
+  const plant = (id, source, points, name, castShadow = false) => { for (const m of instancePlacements(group, source, points, { name, cellSize: 90, castShadow })) m.userData.farCull = true; count(id, points.length); };
 
   // ---- Landmarks first, so planting keeps out of their way.
   const at = (s, off) => river.at(s, off);
@@ -63,6 +66,29 @@ export function addLandscape({ group, river, moving, racers = [] }) {
       add('moriche-dock', moricheDock({ length }), d.x, d.z, { y: river.levelAt(s), rot: d.h + sign * Math.PI / 2, r: 0 });
     }
   }
+  // ---- A crowd at the landing cheers the canoes home.
+  {
+    const crowd = [], seats = 9;
+    for (let i = 0; i < seats; i++) {
+      const s = L - 30 + i * 3.2 + random(), p = at(s, river.halfWidth(s) + 2.4 + random() * 2.5);
+      const pana = buildCharacter(randomAvatar()); pana.group.scale.setScalar(.95);
+      pana.group.position.set(p.x, river.groundAt(p.x, p.z), p.z); pana.group.rotation.y = p.h - Math.PI / 2 + (random() - .5) * .6;
+      group.add(pana.group); crowd.push({ pana, base: pana.group.position.y, phase: random() * 6 });
+    }
+    count('crowd', crowd.length);
+    let last = 0;
+    racers.push((state, time) => {
+      // They wave as canoes come into view and jump when one finishes.
+      const near = (state.boats || []).some(b => L - (b.progress || 0) < 90), done = (state.boats || []).some(b => b.finish !== null && time - b.finish < 4);
+      const dt = Math.min(.1, Math.max(0, time - last)); last = time;
+      for (const c of crowd) {
+        c.pana.update(dt, { look: 0 });
+        const k = done ? 1 : near ? .55 : .1, beat = Math.sin(time * (done ? 11 : 7) + c.phase);
+        c.pana.group.position.y = c.base + Math.max(0, beat) * .28 * k;
+        c.pana.arms?.forEach((arm, j) => arm.rotation.set(-.6 - k * 2 + (j ? beat : -beat) * .4 * k, 0, (j ? -1 : 1) * .25 * k));
+      }
+    });
+  }
   // ---- The tepui of the Autana fills the view over the raudales.
   {
     const tepui = createTepui({ width: TEPUI.width, depth: TEPUI.depth, height: TEPUI.height, seed: 4, waterfall: true });
@@ -79,7 +105,7 @@ export function addLandscape({ group, river, moving, racers = [] }) {
     const half = river.halfWidth(s), p = at(s, side * (half + .5 + random() * 3.5));
     if (free(p.x, p.z, 1.5)) rocks.push({ x: p.x, z: p.z, y: river.groundAt(p.x, p.z) - .5, rot: random() * TAU, scale: .7 + random() * 1.1 });
   }
-  plant('laja-rock', lajaRock({ seed: 3 }), rocks, 'Lajas del raudal');
+  plant('laja-rock', lajaRock({ seed: 3 }), rocks, 'Lajas del raudal', true);
 
   // ---- Vegetation by tramo.
   const canopyNear = [], giants = [], canopyFar = [], understory = { monstera: [], heliconia: [], fern: [], tropicalBush: [], banana: [] }, mangroves = [], reedBeds = [], lilies = [], palms = [], trunks = [];
@@ -134,8 +160,8 @@ export function addLandscape({ group, river, moving, racers = [] }) {
     const p = river.branch.path.at(u, side * (river.branch.half + 1 + random() * 14));
     if (river.locate(p.x, p.z).edge > .5 && free(p.x, p.z, 1.5) && random() < .5) trunks.push({ x: p.x, z: p.z, y: river.groundAt(p.x, p.z) + .3, rot: random() * TAU, scale: .55 + random() * .35 });
   }
-  plant('ceiba', flora.ceiba({ seed: 21 }), canopyNear, 'Dosel del caño');
-  plant('jungle-giant', flora.jungleGiant({ seed: 9 }), giants, 'Gigantes del caño');
+  plant('ceiba', flora.ceiba({ seed: 21 }), canopyNear, 'Dosel del caño', true);
+  plant('jungle-giant', flora.jungleGiant({ seed: 9 }), giants, 'Gigantes del caño', true);
   plant('ceiba', flora.ceiba({ seed: 33, detail: 'distant' }), canopyFar, 'Selva');
   for (const [kind, points] of Object.entries(understory)) plant(kind.replace(/[A-Z]/g, c => `-${c.toLowerCase()}`), flora[kind]({ seed: 13 }), points, `Sotobosque · ${kind}`);
   plant('mangrove', flora.mangrove({ seed: 5 }), mangroves, 'Manglar del caño');
