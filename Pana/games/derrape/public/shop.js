@@ -2,6 +2,8 @@
 // buy — paint jobs, horns and turbo flames — plus the unlocks trophies give.
 // Plain data and math; game.js keeps it in localStorage and paints the cars.
 
+import { canonicalCupId } from './cup-definitions.js';
+
 export const PAINTS = [
   { id: 'fabrica', name: 'De fábrica', color: null, cost: 0 },
   { id: 'araguaney', name: 'Amarillo araguaney', color: '#ffc629', cost: 25 },
@@ -59,14 +61,17 @@ export function earnings({ collected = 0, place = 99, trophy = null } = {}) {
 }
 
 // Locked by a trophy? `trophies` is { cupId: 'oro' | 'plata' | 'bronce' }.
+const trophyEntries = (trophies) => Object.entries(trophies && typeof trophies === 'object' ? trophies : {})
+  .filter(([, trophy]) => ['oro', 'plata', 'bronce'].includes(trophy))
+  .map(([id, trophy]) => [canonicalCupId(id), trophy]);
 export function unlocked(item, trophies = {}) {
   if (!item.unlock) return true;
-  const golds = Object.values(trophies).filter(t => t === 'oro').length;
-  if (item.unlock === 'oro') return golds >= 1;
-  if (item.unlock === 'two-cups') return Object.keys(trophies).length >= 2;
+  const entries = trophyEntries(trophies);
+  if (item.unlock === 'oro') return entries.some(([, trophy]) => trophy === 'oro');
+  if (item.unlock === 'two-cups') return new Set(entries.map(([id]) => id)).size >= 2;
   return false;
 }
-export const unlockText = (item) => item.unlock === 'oro' ? 'Gana una copa con oro' : item.unlock === 'two-cups' ? 'Gana un trofeo en las dos copas' : '';
+export const unlockText = (item) => item.unlock === 'oro' ? 'Gana una copa con oro' : item.unlock === 'two-cups' ? 'Gana un trofeo en dos copas diferentes' : '';
 
 // Buying: spends coins once; owned items are free to equip forever.
 export function buy(wallet, kind, id, trophies) {
@@ -81,7 +86,7 @@ export function buy(wallet, kind, id, trophies) {
 }
 
 // Mirror mode opens up with your first trophy, like a classic unlock.
-export const mirrorUnlocked = (trophies = {}) => Object.keys(trophies).length >= 1;
+export const mirrorUnlocked = (trophies = {}) => trophyEntries(trophies).length >= 1;
 
 // ---- paint math (hex in, hex out; no Three.js) ----
 export function hexToHsl(hex) {

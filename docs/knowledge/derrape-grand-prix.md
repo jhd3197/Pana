@@ -74,3 +74,31 @@ seat; it does not inherit the previous entrant.
 Reference-device FPS, physical mobile thermals and real GPU frame-time claims
 remain separate from these software-browser measurements and must not be
 inferred from them. Phase 20 still requires an actual eight-human cup.
+
+## Phase 01 — catalogue and profile migration
+
+`public/cup-definitions.js` is the pure catalogue. Available cups have four
+`{ track, laps, capSeconds, estimatedSeconds }` stages; Agua exists only as
+unavailable metadata and has no garage button. `cupById` resolves the explicit
+`mango → pana` and `arepa → aventura` aliases. `modes.js` re-exports the
+catalogue during the transition.
+
+`public/cup-profile.js` owns `derrape:profile` version 2: setup, current-edition
+trophies, earlier-edition records, wallet and one-time receipts share one stored
+value. Migration reads but never deletes `derrape:setup`, `derrape:trophies` or
+`derrape:wallet`. Old cup wins become `{ source, edition: 1, label: 'Edición
+anterior' }` records, not wins on the new route order. Unlock credit is
+canonical, so Mango and Pana cannot count as two cups. The best current trophy
+is retained on replay. Storage denial leaves a working in-memory profile.
+
+`createProfileStore.save()` deliberately preserves the loaded object reference:
+the garage holds `profile.setup` and `profile.wallet` directly. Cleaning belongs
+on load/migration, not on every save where replacing those nested objects would
+stale the UI's references.
+
+Proof: `cup-profile.test.js` covers every legacy fixture, mixed current/legacy
+data, lower replay trophies, malformed JSON, blocked storage and idempotent
+receipts. `modes.browser.js` completed Copa Pana in its new order;
+`shop.browser.js` passed wallet, paint, horn and legacy-mirror flows. The pure
+shop tests also prove Mango + Pana is one unlock credit.
+

@@ -21,6 +21,8 @@ test('buying spends once; owned items stay owned; locks need trophies', () => {
   assert.equal(unlocked(gold, { mango: 'oro' }), true);
   assert.equal(unlocked(FLAMES.find(f => f.unlock), { mango: 'oro' }), false);
   assert.equal(unlocked(FLAMES.find(f => f.unlock), { mango: 'bronce', arepa: 'plata' }), true);
+  assert.equal(unlocked(FLAMES.find(f => f.unlock), { pana: 'bronce', aventura: 'plata' }), true);
+  assert.equal(unlocked(FLAMES.find(f => f.unlock), { mango: 'bronce', pana: 'plata' }), false, 'legacy and current Pana are one cup');
   assert.equal(mirrorUnlocked({}), false);
   assert.equal(mirrorUnlocked({ arepa: 'bronce' }), true);
 });

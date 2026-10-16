@@ -3,8 +3,8 @@ import assert from 'node:assert/strict';
 import { CUPS, awardPoints, cupStandings, trophyFor, rubberBand, DIFFICULTY, cleanLaps, battleOrder, battleOver, BATTLE_TIME } from '../public/modes.js';
 import { TRACK_IDS } from '../public/online-rules.js';
 
-test('two cups of four real tracks cover the whole circuit list', () => {
-  const all = CUPS.flatMap(c => c.tracks);
+test('two available cups of four real tracks cover the whole circuit list', () => {
+  const all = CUPS.flatMap(c => c.stages.map(stage => stage.track));
   assert.equal(all.length, 8);
   assert.deepEqual([...all].sort(), [...TRACK_IDS].sort());
 });

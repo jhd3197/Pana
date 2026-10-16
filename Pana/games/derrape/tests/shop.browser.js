@@ -18,7 +18,7 @@ try {
   const page = await browser.newPage({ viewport: { width: 1440, height: 900 } });
   page.on('pageerror', error => errors.push(String(error)));
   await page.goto(`${origin}/g/derrape/?debug&manual&track=estadio`);
-  await page.evaluate(() => { for (const k of ['derrape:setup', 'derrape:trophies', 'derrape:wallet']) localStorage.removeItem(k); });
+  await page.evaluate(() => { for (const k of ['derrape:setup', 'derrape:trophies', 'derrape:wallet', 'derrape:profile']) localStorage.removeItem(k); });
   await page.reload();
   await page.waitForFunction(() => window.garage?.car);
   assert.equal(await page.locator('#mirror').isDisabled(), true, 'mirror waits for a trophy');
@@ -63,7 +63,7 @@ try {
   await page.evaluate(() => toGarage());
 
   // A trophy unlocks mirror mode.
-  await page.evaluate(() => localStorage.setItem('derrape:trophies', JSON.stringify({ mango: 'bronce' })));
+  await page.evaluate(() => { localStorage.removeItem('derrape:profile'); localStorage.setItem('derrape:trophies', JSON.stringify({ mango: 'bronce' })); });
   await page.reload();
   await page.waitForFunction(() => window.garage?.car);
   assert.equal(await page.locator('#mirror').isDisabled(), false);

@@ -164,6 +164,7 @@ dd i { display: block; height: 100%; background: var(--car, var(--pk-coral)); bo
 .shop-item small { display: block; color: var(--pk-muted); font-weight: 700; }
 .shop-item .swatch { flex: none; width: 22px; height: 22px; border-radius: 50%; border: 2px solid var(--hud-ink); background: var(--swatch); }
 .mode-trophy { display: inline-block; width: 9px; height: 9px; margin-left: 5px; border-radius: 50%; background: var(--trophy); vertical-align: middle; }
+.mode-legacy { display: block; color: var(--pk-muted); font-size: 9px; }
 
 /* ---------- loading ---------- */
 .loading { z-index: 20; gap: 18px; background: linear-gradient(180deg, rgba(14, 11, 36, .2) 0%, rgba(14, 11, 36, .6) 45%, var(--pk-night) 85%); }

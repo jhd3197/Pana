@@ -25,7 +25,7 @@ try {
       buttons: Array.from({ length: 17 }, (_, i) => button(i === 7 ? fakePad.rt : i === 4 ? fakePad.lb : 0)) }];
   });
   await page.goto(`${origin}/g/derrape/?debug&manual&track=estadio`);
-  await page.evaluate(() => { localStorage.removeItem('derrape:setup'); });
+  await page.evaluate(() => { localStorage.removeItem('derrape:setup'); localStorage.removeItem('derrape:profile'); });
   await page.reload();
   await page.waitForFunction(() => window.garage?.car);
   await page.locator('#play').click();

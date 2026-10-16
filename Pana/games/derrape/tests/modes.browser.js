@@ -26,7 +26,7 @@ try {
   page.on('pageerror', error => errors.push(String(error)));
   await page.goto(`${origin}/g/derrape/?debug&manual`);
   // A bronze trophy unlocks mirror mode (the taller's first unlock).
-  await page.evaluate(() => { localStorage.removeItem('derrape:setup'); localStorage.setItem('derrape:trophies', JSON.stringify({ arepa: 'bronce' })); });
+  await page.evaluate(() => { localStorage.removeItem('derrape:setup'); localStorage.removeItem('derrape:profile'); localStorage.setItem('derrape:trophies', JSON.stringify({ arepa: 'bronce' })); });
   await page.reload();
   await page.waitForFunction(() => window.garage?.car);
 
@@ -48,8 +48,8 @@ try {
   await page.locator('#back').click();
   await page.locator('#mirror').click();
 
-  // A full Copa Mango: four tracks, same rivals, points, a trophy.
-  await page.locator('[data-mode="mango"]').click();
+  // A full Copa Pana: four tracks, same rivals, points, a trophy.
+  await page.locator('[data-mode="pana"]').click();
   const tracks = [], rivals = [];
   for (let n = 0; n < 4; n++) {
     if (n === 0) await page.locator('#play').click();
@@ -64,9 +64,9 @@ try {
     assert.equal(cup.again, n < 3 ? 'Siguiente pista' : 'Otra copa');
   }
   await page.screenshot({ path: join(output, 'modes-cup.png') });
-  assert.deepEqual(tracks, ['estadio', 'desierto', 'llanos', 'chichi']);
+  assert.deepEqual(tracks, ['estadio', 'plaza', 'llanos', 'bululu']);
   assert.equal(new Set(rivals).size, 1, 'the same rivals race the whole cup');
-  const trophy = await page.evaluate(() => JSON.parse(localStorage.getItem('derrape:trophies') || '{}').mango);
+  const trophy = await page.evaluate(() => JSON.parse(localStorage.getItem('derrape:profile') || '{}').trophies.pana);
   assert.equal(trophy, 'oro', 'winning every race wins gold');
   await page.locator('#back').click();
 

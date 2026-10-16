@@ -21,12 +21,13 @@ import { pixelRatio, bindRenderer } from '/engine/settings.js';
 import { shout } from '/engine/kit.js';
 import { LAPS, RIVALS, AI_WHEELS, POSE_HZ, FLAG, DRIFT_SHIFT, packPose, gridSlot } from './online-rules.js';
 import { clockText, wrapAngle, raceOrder, aiPedals, resolveContact } from './rules.js';
-import { CUPS, cupById, awardPoints, cupStandings, trophyFor, TROPHY_RANK, difficultyById, rubberBand, cleanLaps, BALLOONS, BATTLE_TIME, battleOrder, battleOver } from './modes.js';
+import { CUPS, cupById, cupTracks, awardPoints, cupStandings, trophyFor, difficultyById, rubberBand, cleanLaps, BALLOONS, BATTLE_TIME, battleOrder, battleOver } from './modes.js';
 import { advanceLap, isOpenEdge, offCourse, stuckStep, ALL_SECTORS, RESCUE_TIME, OUT_TIME, STUCK_TIME, OPEN_MARGIN } from './course-rules.js';
 import { createHazards } from './hazards.js';
 import { createMusic, TRACK_STYLE } from './music.js';
 import { padInput, pressed, keyInput, SPLIT_KEYS, wrongWayStep, WRONG_WAY_TIME, lapSplit } from './controls.js';
-import { PAINTS, HORNS, FLAMES, CATALOG, cleanWallet, earnings, buy, unlocked, unlockText, mirrorUnlocked, repaintHex } from './shop.js';
+import { PAINTS, HORNS, FLAMES, CATALOG, earnings, buy, unlocked, unlockText, mirrorUnlocked, repaintHex } from './shop.js';
+import { createProfileStore, recordCupTrophy, trophyCredits } from './cup-profile.js';
 import { soaringVulture } from '/engine/models/fauna/birds/soaring-vulture.js';
 import { DRIFT_MIN_SPEED, DRIFT_BOOST, HOP_SPEED, DRAFT_TIME, DRAFT_BOOST, driftLevel, driftSteer, driftCharge, startBoost, trickBoost, inSlipstream, loseCoins } from './drive-rules.js';
 
@@ -388,19 +389,17 @@ function applyPalette(pal) {
 }
 
 // ---------- race setup: mode, difficulty, laps, mirror (local races) ----------
-const setup = { mode: 'race', difficulty: 'normal', laps: 3, mirror: false, split: false };
-try { Object.assign(setup, JSON.parse(localStorage.getItem('derrape:setup') || '{}')); } catch { /* private mode */ }
-setup.laps = cleanLaps(setup.laps);
-if (!['race', 'battle', ...CUPS.map(c => c.id)].includes(setup.mode)) setup.mode = 'race';
-setup.mirror = setup.mirror === true;
-setup.split = setup.split === true;
+let profileStorage = null;
+try { profileStorage = localStorage; } catch { /* private mode */ }
+const profileStore = createProfileStore(profileStorage);
+const profile = profileStore.load();
+const setup = profile.setup;
 const isCupMode = (mode) => CUPS.some(c => c.id === mode);
 
 // ---------- the taller: wallet, paints, horns, turbo flames ----------
-let wallet = cleanWallet(null);
-try { wallet = cleanWallet(JSON.parse(localStorage.getItem('derrape:wallet') || 'null')); } catch { /* private mode */ }
+let wallet = profile.wallet;
 function saveWallet() {
-  try { localStorage.setItem('derrape:wallet', JSON.stringify(wallet)); } catch { /* private mode */ }
+  profileStore.save(profile);
   $('wallet-coins').textContent = wallet.coins;
   $('shop-coins').textContent = wallet.coins;
 }
@@ -465,11 +464,11 @@ $('open-shop').onclick = () => { sound.unlock(); renderShop(); $('shop').hidden 
 $('shop-close').onclick = () => { $('shop').hidden = true; $('open-shop').focus(); };
 
 function saveSetup() {
-  try { localStorage.setItem('derrape:setup', JSON.stringify(setup)); } catch { /* private mode */ }
+  profileStore.save(profile);
 }
 
 function loadTrophies() {
-  try { return JSON.parse(localStorage.getItem('derrape:trophies') || '{}'); } catch { return {}; }
+  return trophyCredits(profile);
 }
 
 function renderSetup() {
@@ -488,26 +487,34 @@ function renderSetup() {
   $('launch-note').innerHTML = `<span class="pk-dot"></span>${setup.split ? 'Dos panas contra 2 rivales' : 'Tú contra 3 rivales'}`;
   const battle = setup.mode === 'battle', cup = isCupMode(setup.mode) ? cupById(setup.mode) : null;
   for (const b of $('laps-pick').querySelectorAll('button')) b.disabled = battle;
-  const trophies = loadTrophies();
+  const trophies = profile.trophies, legacy = profile.legacyTrophies;
   for (const b of $('mode-pick').querySelectorAll('button')) {
-    const won = trophies[b.dataset.mode];
-    b.title = won ? `Trofeo de ${won}` : '';
+    const won = trophies[b.dataset.mode], earlier = legacy[b.dataset.mode];
+    const shown = won ?? earlier?.trophy;
+    b.title = shown ? `Trofeo de ${shown}${!won && earlier ? ' · Edición anterior' : ''}` : '';
     b.querySelector('.mode-trophy')?.remove();
-    if (won) {
+    b.querySelector('.mode-legacy')?.remove();
+    if (shown) {
       const dot = document.createElement('span');
       dot.className = 'mode-trophy';
-      dot.style.setProperty('--trophy', `var(--trophy-${won})`);
-      dot.setAttribute('aria-label', `trofeo de ${won}`);
+      dot.style.setProperty('--trophy', `var(--trophy-${shown})`);
+      dot.setAttribute('aria-label', `trofeo de ${shown}${!won && earlier ? ', edición anterior' : ''}`);
       b.append(dot);
+    }
+    if (!won && earlier) {
+      const label = document.createElement('small');
+      label.className = 'mode-legacy';
+      label.textContent = 'Edición anterior';
+      b.append(label);
     }
   }
   if (!mirrorOpen && !cup && setup.mode !== 'battle') $('setup-note').textContent = 'Gana un trofeo en una copa para desbloquear el modo espejo.';
   else $('setup-note').textContent = cup
-    ? `${cup.name}: ${cup.tracks.map(id => getTrack(id).name).join(' → ')}. Suma puntos en las cuatro.`
+    ? `${cup.name}: ${cupTracks(cup).map(id => getTrack(id).name).join(' → ')}. Suma puntos en las cuatro.`
     : battle ? 'Globos: tres globos por carro. Cada golpe revienta uno. Gana el último con globos.' : '';
   if (!net) {
     $('t-prev').disabled = $('t-next').disabled = !!cup;
-    if (cup) selectTrack(cup.tracks[0]);
+    if (cup) selectTrack(cupTracks(cup)[0]);
     else selectTrack(TRACKS[trackIndex].id);
   }
 }
@@ -846,7 +853,7 @@ async function startRace(playerIndex, wheelId = garage.wheel, roster = null) {
       const cup = cupById(setup.mode);
       const others = CARS.map((_, i) => i).filter(i => i !== playerIndex).sort(() => Math.random() - 0.5);
       const names = RIVALS.slice(0, 6).sort(() => Math.random() - 0.5);
-      race.cup = { id: cup.id, name: cup.name, tracks: cup.tracks, index: 0, results: [], over: false,
+      race.cup = { id: cup.id, name: cup.name, tracks: cupTracks(cup), index: 0, results: [], over: false,
         rivals: others.slice(0, RACERS - 1).map((car, i) => ({ car, name: names[i], wheel: AI_WHEELS[CARS[car].id], avatar: randomAvatar() })) };
     }
     selectTrack(race.cup.tracks[race.cup.index]);
@@ -1905,11 +1912,7 @@ function scoreCup(order) {
   if (cup.over) {
     const place = cup.table.findIndex(r => r.name === race.player.name);
     const trophy = trophyFor(place);
-    const trophies = loadTrophies();
-    if (trophy && (TROPHY_RANK[trophy] > (TROPHY_RANK[trophies[cup.id]] || 0))) {
-      trophies[cup.id] = trophy;
-      try { localStorage.setItem('derrape:trophies', JSON.stringify(trophies)); } catch { /* private mode */ }
-    }
+    if (trophy && recordCupTrophy(profile, cup.id, trophy)) profileStore.save(profile);
     cup.place = place;
     cup.trophy = trophy;
   }

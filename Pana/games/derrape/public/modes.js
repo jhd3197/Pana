@@ -2,11 +2,10 @@
 // catch-up that keeps races close, laps, and the balloon battle.
 // game.js runs them; tests/modes.test.js checks them. No Three.js, no DOM.
 
-export const CUPS = [
-  { id: 'mango', name: 'Copa Mango', tracks: ['estadio', 'desierto', 'llanos', 'chichi'] },
-  { id: 'arepa', name: 'Copa Arepa', tracks: ['selva', 'paramo', 'plaza', 'bululu'] },
-];
-export const cupById = (id) => CUPS.find(cup => cup.id === id) ?? CUPS[0];
+export {
+  CUPS, CUP_DEFINITIONS, CURRENT_CUP_EDITION, GP_STAGE_CAP_SECONDS,
+  LEGACY_CUP_ALIASES, canonicalCupId, cupById, cupDuration, cupTracks, validateCups,
+} from './cup-definitions.js';
 
 // Points by finishing place (1st first). Eight racers at most.
 export const POINTS = [15, 12, 10, 8, 6, 4, 2, 1];
