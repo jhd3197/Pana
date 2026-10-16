@@ -11,6 +11,9 @@ import { lajaRock, igapoTrunk, churuata, finishArch, moricheDock } from '/engine
 import { scarletMacaw } from '/engine/models/fauna/birds/scarlet-macaw.js';
 import { orbitBird } from '/engine/models/animation/orbit-bird.js';
 import { morphoSwarm } from '/engine/models/fauna/morpho.js';
+import { tonina } from '/engine/models/fauna/aquatic/tonina.js';
+import { caiman } from '/engine/models/fauna/caiman.js';
+import { driftwood } from '/engine/models/props/beach.js';
 import { createTepui } from '/engine/island-landscape.js';
 import { SEA } from '/engine/island-terrain.js';
 import { smooth } from './river.js';
@@ -19,7 +22,7 @@ const TAU = Math.PI * 2;
 // Straight downstream of the raudales, so it fills the view for the whole run.
 export const TEPUI = { x: 10, z: -1150, width: 100, depth: 70, height: 175 };
 
-export function addLandscape({ group, river, moving }) {
+export function addLandscape({ group, river, moving, racers = [] }) {
   const random = rng(5501), counts = group.userData.assetCounts, def = river.def;
   const [CANO, R1, R2, NEGRO] = [def.sectors[1][0], def.drops[0].s, def.drops[1].s, def.sectors[2][0]];
   const reserved = [];
@@ -168,6 +171,33 @@ export function addLandscape({ group, river, moving }) {
     const geo = new THREE.BufferGeometry(); geo.setAttribute('position', new THREE.Float32BufferAttribute(ps, 3)); geo.setAttribute('color', new THREE.Float32BufferAttribute(cs, 3)); geo.setIndex(ix); geo.computeVertexNormals();
     const canopy = new THREE.Mesh(geo, M(0xffffff, { vertexColors: true, roughness: 1, flatShading: true })); canopy.name = 'Selva lejana'; group.add(canopy);
   }
+
+  // ---- Logs on the caño's banks. One in three is a babo that snaps.
+  const babos = [];
+  for (const log of river.logs) {
+    const y = river.levelAt(log.s, log.offset) - .12, rot = log.h + log.side * (Math.PI / 2 - .35);
+    if (log.caiman) { const m = caiman({ seed: 10 + log.id }); m.scale.setScalar(1.15); add('caiman', m, log.x, log.z, { y, rot, r: 2, animate: true }); babos.push({ log, m }); }
+    else add('driftwood', driftwood(), log.x, log.z, { y: y - .05, rot: log.h + (random() - .5) * .6, r: 2 });
+  }
+  racers.push((state, time) => {
+    for (const { log, m } of babos) { const age = time - (state.snaps?.[log.id] ?? -99); m.userData.snap(age < 0 ? 0 : age < .12 ? age / .12 : age < .7 ? 1 - (age - .12) / .58 : 0); }
+  });
+  // ---- Toninas: a small pool that follows the race clock.
+  const pool = Array.from({ length: 6 }, (_, i) => { const t = tonina({ seed: i + 3 }); t.visible = false; group.add(t); return t; });
+  count('tonina', pool.length);
+  racers.push((state, time) => {
+    let used = 0;
+    if (state.phase === 'racing') for (const pod of river.toninasAt(time)) for (const k of [0, 1]) {
+      const d = pool[used++]; if (!d) break;
+      // Each dolphin arcs out of the water once, a beat apart.
+      const u = (pod.age - k * .22) / 1.1;
+      if (u < 0 || u > 1) { d.visible = false; continue; }
+      const s = pod.s - 3 + u * 9 + k, off = pod.offset + (k ? .9 : -.6), p = river.at(s, off);
+      d.visible = true; d.position.set(p.x, river.levelAt(s, off) - .45 + Math.sin(u * Math.PI) * 1.05, p.z);
+      d.rotation.set(-Math.cos(u * Math.PI) * .9, p.h, 0, 'YXZ'); d.userData.swim(time * 1.6 + k);
+    }
+    for (let i = used; i < pool.length; i++) pool[i].visible = false;
+  });
 
   // ---- Life: guacamayas over the water, morphos in the caño.
   for (let i = 0; i < 4; i++) {

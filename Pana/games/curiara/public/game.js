@@ -13,6 +13,7 @@ import { PADDLE, grade } from './paddle.js';
 import { createRaceScene } from './scene.js';
 import { createCanoe } from './boat.js';
 import { addLandscape } from './landscape.js';
+import { createRiverFX } from './water-fx.js';
 
 const $ = id => document.getElementById(id), params = new URLSearchParams(location.search), avatar = loadAvatar(), name = loadName();
 const store = { get: k => { try { return localStorage.getItem(k); } catch { return null; } }, set: (k, v) => { try { localStorage.setItem(k, v); } catch { /* private mode */ } } };
@@ -125,6 +126,7 @@ $('practice').onclick = () => goLocal();
 await new Promise(resolve => requestAnimationFrame(() => setTimeout(resolve, 30)));
 world = createRaceScene($('world'), RIVER, { dress: addLandscape }); const { renderer, scene, camera, sun } = world;
 renderer.setPixelRatio(pixelRatio(1.5)); const unbind = bindRenderer(renderer, 1.5);
+const fx = createRiverFX(RIVER); scene.add(fx.group);
 $('map-length').textContent = `${Math.round(RIVER.LENGTH)} M`; $('stat-length').textContent = `${Math.round(RIVER.LENGTH)} m`;
 
 // Minimap: the river's real shape, drawn once.
@@ -186,10 +188,32 @@ function tipText(b) {
   if (b.capsized > 0) return '¡Volcaste! Nadando de vuelta a la curiara…';
   if (b.sprayed > 0) return '¡Salpicón! No ves nada, sigue remando.';
   if (myRole() === 'popa') return 'Sostén A o D para el timón. Toca justo con la remada: ¡Ahora!';
+  if (b.whirl > .15) return '¡Remolino! Rema fuerte hacia afuera. Por el borde, la corriente te lleva.';
+  if (b.boost > 0) return '¡La estela de las toninas te empuja!';
   if (b.eddy > .3) return 'Remanso: el agua te frena. Rema hacia el chorro.';
+  const drop = RIVER.drops.find(d => b.s > d.s - d.span - 40 && b.s < d.s - d.span + 2);
+  if (drop) return 'Raudal adelante: elige carril. El rápido cae de golpe; ¡llega recto!';
+  if (b.channel === 'branch') return 'Atajo del igapó: corto, lento y lleno de troncos.';
   if (b.paddle?.quality === 'chapoteo') return 'Más despacio: alterna A y D con ritmo.';
   if (b.tip > 60) return 'Endereza la curiara: rema recto para calmarla.';
   return 'Alterna A y D. Rema cuando el anillo llegue a la zona dorada.';
+}
+// What just happened to this pana's canoe, from the snapshot's counters.
+let seen = null;
+function events(own) {
+  if (!own) return;
+  const now = { caps: own.capsizes, bitten: own.bitten || 0, drops: own.drops || 0, toninas: own.toninas || 0, sprayed: own.splashedAt || 0, soaked: own.soaked || 0, bumps: own.bumps || 0, syncs: own.paddle?.syncs || 0 };
+  if (seen) {
+    if (now.caps > seen.caps) { call('¡Volcaste!', 'is-soft'); sound.sweep(500, 90, .5, 'sine', .14); shake = .5; shakePower = .5; }
+    else if (now.bitten > seen.bitten) { call('¡Un babo!'); sound.bonk(1); shake = .35; shakePower = .4; }
+    else if (now.drops > seen.drops) { call(own.tip > 60 ? '¡Uy, casi!' : '¡Raudal!', 'is-teal'); sound.plop(); shake = .4; shakePower = .35; }
+    else if (now.sprayed > seen.sprayed) { call('¡Salpicón!', 'is-soft'); sound.splat?.(); }
+    else if (now.soaked > seen.soaked) { call('¡Te mojé!', 'is-teal'); sound.splat?.(); }
+    else if (now.toninas > seen.toninas) { call('¡Toninas!', 'is-teal'); sound.sweep(600, 1100, .3, 'sine', .07); }
+    else if (now.syncs > seen.syncs && myRole() !== 'solo') { call('¡Ahora!', 'is-teal'); tock(.8); }
+    if (now.bumps > seen.bumps) { shake = Math.max(shake, .2); shakePower = Math.max(shakePower, .2); sound.bonk(.5); }
+  }
+  seen = now;
 }
 function crewName(b) { return b.crew.filter(c => !c.empty).map(c => c.name).join(' y '); }
 function updateUI() {
@@ -224,7 +248,8 @@ function updateUI() {
   const count = state.phase === 'countdown' ? String(Math.max(1, Math.ceil(state.countdown))) : state.phase === 'racing' && state.time < .75 ? '¡REMA!' : '';
   $('countdown').classList.toggle('hidden', !count); $('countdown').textContent = count;
   if (count && count !== lastCountdown) { sound.tone(count === '¡REMA!' ? 740 : 370, 0, .12, 'triangle', .06); lastCountdown = count; }
-  if (state.raceId !== lastRace) { lastRace = state.raceId; cameraReady = false; clearInput(); local.last = null; local.side = 0; local.streak = 0; }
+  if (state.raceId !== lastRace) { lastRace = state.raceId; cameraReady = false; clearInput(); local.last = null; local.side = 0; local.streak = 0; fx.reset(); seen = null; }
+  if (playing) events(own);
   if (done && (lastPhase !== state.phase || $('result-board').childElementCount !== ordered.length)) {
     $('result-title').textContent = place === 1 ? (role === 'solo' ? '¡Ganaste, pana!' : '¡Ganaron, panas!') : own?.finish != null ? '¡Llegaste, pana!' : '¡Se cerró la carrera!';
     $('result-copy').textContent = own?.finish != null ? `${place}.º lugar · ${formatTime(own.finish)} · ${own.remazos} remazos · ${own.capsizes} vueltas de campana` : 'La próxima es tuya. Rema en ritmo y busca el chorro.';
@@ -234,7 +259,7 @@ function updateUI() {
   lastPhase = state.phase; drawMap(own);
 }
 ensureCanoes(); ready = true; $('loading').classList.add('hidden'); room.connect(); updateUI();
-const look = new THREE.Vector3(), cameraGoal = new THREE.Vector3(), target = new THREE.Vector3(); let cameraReady = false, elapsed = 0, camH = 0;
+const look = new THREE.Vector3(), cameraGoal = new THREE.Vector3(), target = new THREE.Vector3(); let cameraReady = false, elapsed = 0, camH = 0, shake = 0, shakePower = 0;
 const frameClock = new THREE.Clock();
 function frame() {
   if (disposed) return;
@@ -262,8 +287,11 @@ function frame() {
   const floor = RIVER.groundAt(cameraGoal.x, cameraGoal.z) + 1.2; if (cameraGoal.y < floor) cameraGoal.y = floor;
   if (!cameraReady || camera.position.distanceTo(cameraGoal) > 30) { camera.position.copy(cameraGoal); cameraReady = true; } else camera.position.lerp(cameraGoal, 1 - Math.exp(-dt * 5));
   camera.lookAt(look);
+  // Raudal landings and bumps shake the camera a little.
+  if (shake > 0) { shake = Math.max(0, shake - dt); const k = shake * shakePower; camera.position.x += (Math.random() - .5) * k; camera.position.y += (Math.random() - .5) * k; }
   sun.position.set(q.x - 40, q.y + 70, q.z + 30); sun.target.position.copy(q); sun.target.updateMatrixWorld();
-  world.world.update(elapsed, dt); world.world.cull(camera); world.sky.update(elapsed);
+  world.world.update(elapsed, dt); world.world.cull(camera); world.world.race(state, t); world.sky.update(elapsed);
+  fx.update(elapsed, boats.filter(b => b.id !== 'preview'), canoes, q, t);
   if (callTimer > 0) { callTimer -= dt; if (callTimer <= 0) $('call').classList.add('hidden'); }
   if (state.phase === 'racing' || state.phase === 'countdown') drawRing(own, t);
   drawClock += dt; if (drawClock > .1) { updateUI(); drawClock = 0; }
@@ -276,6 +304,6 @@ const simulation = setInterval(() => { const now = performance.now(), dt = (now 
 if (params.has('debug')) window.curiara = { room, get state() { return state; }, world, canoes, input, RIVER, updateUI, stroke,
   manual(value) { if (value) params.set('manual', ''); else params.delete('manual'); simulationTime = performance.now(); },
   step(seconds, controls) { for (let t = 0; t < seconds; t += .05) room.tick(.05, controls ? controls() : input()); updateUI(); },
-  place(id, s, offset = 0) { const b = room.game.boatOf(id), q = RIVER.at(s, offset); Object.assign(b, { x: q.x, z: q.z, h: q.h, s, progress: s, checkpoint: RIVER.gates.filter(g => g <= s).length, v: 0, lat: 0, w: 0, y: RIVER.levelAt(s, offset), vy: 0, channel: 'main' }); room.publish(); } };
+  place(id, s, offset = 0) { const b = room.game.boatOf(id), q = RIVER.at(s, offset); Object.assign(b, { x: q.x, z: q.z, h: q.h, s, progress: s, checkpoint: RIVER.gates.filter(g => g <= s).length, v: 0, lat: 0, w: 0, y: RIVER.levelAt(s, offset), vy: 0, air: 0, tip: 0, capsized: 0, grace: 0, channel: 'main' }); room.publish(); } };
 window.addEventListener('pagehide', () => { disposed = true; clearInterval(simulation); room.dispose(); for (const c of canoes.values()) c.dispose(); world.world.dispose(); world.sky.dispose(); unbind?.(); renderer.dispose(); }, { once: true });
 window.addEventListener('pageshow', event => { if (event.persisted) location.reload(); });

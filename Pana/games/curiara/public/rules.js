@@ -2,9 +2,12 @@
 // Boats move with paddle thrust relative to the water plus the river's
 // current; the river (river.js) owns banks, levels and currents.
 import { paddleState, stroke, hold, rudder, sync, step as pull, PADDLE } from './paddle.js';
-import { RIVER, clamp, angle } from './river.js';
+import { RIVER, TONINA, clamp, angle } from './river.js';
 
 export const FORMATS = { todos: { boats: 8, seats: 1 }, parejas: { boats: 4, seats: 2 } };
+export const CAPSIZE = 1.8;
+export const SALPICON = Object.freeze({ cooldown: 4, reach: 2.5, shove: 2.6, tip: 12, spray: 1.3 });
+export const CAIMAN = Object.freeze({ reach: 3, tip: 40, jolt: 2.2 });
 export const BOAT = Object.freeze({ drag: .6, grip: 5, yawDamp: 2.6, brake: 2.6, reverse: -1.1, half: .62, length: 2.9, rudderSpeed: 3 });
 export const COLORS = ['#e2683c', '#2f9e8f', '#e6b33a', '#7a5bc4', '#d64f7a', '#4d8fd6', '#8fb84a', '#c9824a'];
 const BOT_NAMES = ['Yanomami', 'Tuki', 'Arekuna', 'Wayuu', 'Chamán', 'Kerepakupai', 'Piaroa', 'Maipure', 'Yekuana', 'Sanema', 'Baré', 'Curripaco'];
@@ -22,7 +25,7 @@ export function seeded(seed) { let a = seed >>> 0 || 1; return () => { a = (a + 
 export class Race {
   constructor(river = RIVER) {
     this.river = river;
-    Object.assign(this, { phase: 'lobby', format: 'todos', time: 0, countdown: 3, players: [], boats: [], finishGrace: null, raceId: 0, seed: 1 });
+    Object.assign(this, { phase: 'lobby', format: 'todos', time: 0, countdown: 3, players: [], boats: [], finishGrace: null, raceId: 0, seed: 1, snaps: {} });
   }
   addPlayer(id, name, avatar = {}, seat = null) {
     let p = this.players.find(p => p.id === id);
@@ -55,7 +58,7 @@ export class Race {
   brain(i) {
     const r = seeded(this.seed * 977 + i * 131);
     // Skill sets rhythm accuracy and line error; igapó takers gamble on the cut.
-    return { skill: .62 + .33 * r(), phase: r() * 6.28, next: .2 + r() * .5, igapo: r() < .35, lane: r(), seq: 0, r: Math.floor(r() * 1e9) };
+    return { skill: .66 + .29 * r(), phase: r() * 6.28, next: .2 + r() * .5, igapo: r() < .35, lane: r(), seq: 0, r: Math.floor(r() * 1e9) };
   }
   // Which pana sits where. Chosen seats first, then join order, then bots.
   crews() {
@@ -82,7 +85,7 @@ export class Race {
       this.boats.push(this.newBoat(`c${i}`, members, this.boats.length));
     });
     for (const p of this.players) p.spectator = false;
-    Object.assign(this, { phase: 'countdown', countdown: 3, time: 0, finishGrace: null });
+    Object.assign(this, { phase: 'countdown', countdown: 3, time: 0, finishGrace: null, snaps: {} });
     this.raceId++;
   }
   newBoat(id, crew, slot) {
@@ -97,7 +100,9 @@ export class Race {
     const k = c.brain, look = 12 + b.v * 1.3;
     const target = this.lineTarget(b, c, look), err = angle(Math.atan2(target.x - b.x, target.z - b.z) - b.h);
     k.next -= dt;
-    const input = { strokes: [], back: false, steer: 0 };
+    const input = { strokes: [], back: false, steer: 0, splash: k.splash || 0 };
+    // A canoe right alongside? Sometimes it gets a ¡Salpicón!.
+    if (b.splashCd <= 0 && this.boats.some(o => o !== b && Math.hypot(o.x - b.x, o.z - b.z) < 2.6) && seeded(k.r++)() < .04) input.splash = k.splash = (k.splash || 0) + 1;
     // Badly off line and nearly stopped: back-paddle to pivot round.
     if (Math.abs(err) > 1.2 && b.v < 2.5) { input.back = true; input.steer = err > 0 ? -1 : 1; k.next = .3; return input; }
     if (k.next <= 0) {
@@ -127,6 +132,11 @@ export class Race {
       const lanes = d.lanes, pick = k.skill > .82 ? lanes.find(l => l.fast) || lanes[0] : lanes[Math.floor(k.lane * lanes.length)];
       line = (pick.from + pick.to) / 2;
     }
+    // Good bots skim the remolino's edge with the current; others keep clear.
+    const w = river.whirl;
+    if (w && s > w.s - 28 && s < w.s + 10) line = Math.min(line, w.offset - w.r - (k.skill > .86 ? .2 : 2.8));
+    // And they give the caimanes a wide berth (the clumsy ones forget).
+    if (k.skill > .75) for (const log of river.logs) if (log.caiman && log.s > s - 6 && log.s < s + 14 && Math.sign(line) === log.side) line = -log.side * 1.2;
     return clamp(line, -half, half);
   }
   update(dt, inputs = new Map()) {
@@ -139,7 +149,9 @@ export class Race {
     if (this.phase !== 'racing') return;
     this.time += dt;
     for (const b of this.boats) this.steer(b, dt, inputs);
+    for (const b of this.boats) this.splash(b);
     for (const b of this.boats) this.move(b, dt);
+    this.collide();
     this.order();
     const humans = this.boats.filter(b => b.crew.some(c => !c.bot));
     if (this.boats.some(b => b.finish !== null) && this.finishGrace === null) this.finishGrace = this.time + 30;
@@ -167,15 +179,22 @@ export class Race {
   }
   botBack(b, c, dt) {
     const k = c.brain, target = this.lineTarget(b, c, 9 + b.v), err = angle(Math.atan2(target.x - b.x, target.z - b.z) - b.h);
-    const input = { strokes: [], back: false, steer: Math.abs(err) > .08 ? (err > 0 ? -1 : 1) : 0 };
+    const input = { strokes: [], back: false, steer: Math.abs(err) > .08 ? (err > 0 ? -1 : 1) : 0, splash: k.splash || 0 };
+    if (b.splashCd <= 0 && this.boats.some(o => o !== b && Math.hypot(o.x - b.x, o.z - b.z) < 2.6) && seeded(k.r++)() < .04) input.splash = k.splash = (k.splash || 0) + 1;
     // Calls ¡Ahora! on the proa's stroke, as often as its skill allows.
     if (b.paddle.last != null && b.paddle.last > (k.called ?? -1) && this.time - b.paddle.last < .06 && seeded(k.r++)() < k.skill * .8) { k.called = b.paddle.last; input.strokes.push([++k.seq, 1, b.paddle.last + .03]); }
     return input;
   }
   move(b, dt) {
     const river = this.river, out = pull(b.paddle, dt);
-    b.splashCd = Math.max(0, b.splashCd - dt); b.sprayed = Math.max(0, b.sprayed - dt); b.jolt = Math.max(0, b.jolt - dt);
-    if (b.finish !== null) { b.v *= Math.exp(-1.5 * dt); }
+    b.splashCd = Math.max(0, b.splashCd - dt); b.sprayed = Math.max(0, b.sprayed - dt); b.jolt = Math.max(0, b.jolt - dt); b.grace = Math.max(0, (b.grace || 0) - dt);
+    if (b.capsized > 0) {
+      // Upside down: the panas swim it back; the river keeps carrying it.
+      b.capsized = Math.max(0, b.capsized - dt);
+      b.v *= Math.exp(-3 * dt); b.lat *= Math.exp(-3 * dt); b.w *= Math.exp(-3 * dt);
+      // Righted and pointing downstream again.
+      if (b.capsized === 0) { b.tip = 0; b.grace = 1; b.paddle.pulls = []; b.h = river.locate(b.x, b.z, b).h; }
+    } else if (b.finish !== null) b.v *= Math.exp(-1.5 * dt);
     else {
       b.v += out.thrust;
       if (out.brake) b.v += clamp(BOAT.reverse - b.v, -BOAT.brake * dt, BOAT.brake * dt);
@@ -184,14 +203,22 @@ export class Race {
     b.v -= BOAT.drag * b.v * dt;
     b.w *= Math.exp(-BOAT.yawDamp * dt);
     b.lat *= Math.exp(-BOAT.grip * dt);
-    const where = river.locate(b.x, b.z, b), flow = river.currentAt(b.x, b.z, where);
-    const turn = out.turn - out.rudder * PADDLE.rudder * clamp(Math.abs(b.v) / BOAT.rudderSpeed, .3, 1.2);
+    const where = river.locate(b.x, b.z, b), flow = river.currentAt(b.x, b.z, where), drift = b.capsized > 0 ? .7 : 1;
+    const turn = b.capsized > 0 ? 0 : out.turn - out.rudder * PADDLE.rudder * clamp(Math.abs(b.v) / BOAT.rudderSpeed, .3, 1.2);
     b.h = angle(b.h + (b.w + turn + flow.swirl) * dt);
     const fx = Math.sin(b.h), fz = Math.cos(b.h);
-    b.gx = fx * b.v - fz * b.lat + flow.x; b.gz = fz * b.v + fx * b.lat + flow.z; b.eddy = flow.eddy;
+    // Toninas' wake: a two-second strip of fast water.
+    let boost = 0;
+    if (where.channel === 'main') for (const pod of river.toninasAt(this.time)) if (pod.wake && where.s > pod.s - 2 && where.s < pod.s + TONINA.length && Math.abs(where.offset - pod.offset) < TONINA.width) boost = TONINA.push;
+    if (boost && !b.boost) b.toninas = (b.toninas || 0) + 1;
+    b.boost = boost;
+    const ux = Math.sin(where.h), uz = Math.cos(where.h);
+    b.gx = fx * b.v - fz * b.lat + (flow.x + ux * boost) * drift; b.gz = fz * b.v + fx * b.lat + (flow.z + uz * boost) * drift; b.eddy = flow.eddy;
     b.x += b.gx * dt; b.z += b.gz * dt;
+    b.whirl = river.whirl ? Math.max(0, 1 - Math.hypot(b.x - river.whirl.x, b.z - river.whirl.z) / river.whirl.r) : 0;
     this.banks(b, dt);
     this.water(b, dt);
+    this.hazards(b, dt, where);
     this.advance(b);
   }
   // Soft banks: push back in and lose the speed into them.
@@ -213,13 +240,128 @@ export class Race {
   }
   water(b, dt) {
     const w = this.river.locate(b.x, b.z, b), level = this.river.levelAt(w.s, w.offset);
+    b.landing = 0;
     if (b.y > level + .02 || b.vy > 0) { b.vy -= 9.8 * dt; b.y += b.vy * dt; b.air += dt; }
-    if (b.y <= level) { b.landing = b.air > .12 ? -b.vy : 0; b.y = level; b.vy = 0; b.air = 0; }
+    if (b.y <= level) {
+      if (b.air > .12) {
+        // A raudal landing: hard and crooked drops rock the canoe.
+        const impact = -b.vy, crooked = Math.abs(Math.sin(angle(b.h - w.h)));
+        b.landing = impact; b.drops = (b.drops || 0) + 1;
+        this.tip(b, Math.max(0, impact - 2.6) * 13 + crooked * impact * 14, 'raudal');
+      }
+      b.y = level; b.vy = 0; b.air = 0;
+    }
+  }
+  tip(b, amount, cause) {
+    if (b.capsized > 0 || b.grace > 0 || b.finish !== null || !(amount > 0)) return;
+    b.tip = Math.min(100, b.tip + amount); b.tipCause = cause;
+    if (b.tip >= 100) {
+      Object.assign(b, { capsized: CAPSIZE, capsizes: b.capsizes + 1, v: 0, w: 0, tip: 100 });
+      b.paddle.pulls = []; b.rollSide = b.lastHitSide || 1;
+    }
+  }
+  // Circles along the hull: stern, middle and bow.
+  hull(b) { const fx = Math.sin(b.h), fz = Math.cos(b.h); return [-1.9, 0, 1.9].map(d => ({ x: b.x + fx * d, z: b.z + fz * d, d })); }
+  // Push the hull out of a fixed circle; return how hard it hit.
+  bump(b, cx, cz, r) {
+    let worst = 0;
+    for (const c of this.hull(b)) {
+      const dx = c.x - cx, dz = c.z - cz, dist = Math.hypot(dx, dz) || 1e-3, gap = r + BOAT.half - dist;
+      if (gap <= 0) continue;
+      const nx = dx / dist, nz = dz / dist;
+      b.x += nx * gap; b.z += nz * gap;
+      const into = -(b.gx * nx + b.gz * nz);
+      if (into <= 0) continue;
+      // Take the speed into the rock out of the hull's own frame, and spin it.
+      const fx = Math.sin(b.h), fz = Math.cos(b.h), dvx = nx * into * 1.25, dvz = nz * into * 1.25, side = -nx * fz + nz * fx;
+      b.v += dvx * fx + dvz * fz; b.lat += -dvx * fz + dvz * fx; b.w += c.d * (-dvx * fz + dvz * fx) * .22;
+      b.gx += dvx; b.gz += dvz;
+      b.lastHitSide = -Math.sign(side) || 1;
+      worst = Math.max(worst, into * (.35 + Math.abs(side)));
+    }
+    return worst;
+  }
+  hazards(b, dt, where) {
+    const river = this.river;
+    let contact = false;
+    if (b.finish === null) {
+      // Rocks and the igapó trunks.
+      for (const list of [river.rocks, river.snags]) for (const r of list) if (Math.abs(r.x - b.x) < 5 && Math.abs(r.z - b.z) < 5) {
+        const hit = this.bump(b, r.x, r.z, r.r);
+        if (hit > 0) contact = true;
+        // Only a fresh knock rocks the canoe; leaning on a rock does not.
+        if (hit > .6 && this.time - (b.lastHit ?? -9) > .5) { this.tip(b, hit * 15, 'roca'); b.hits++; b.lastHit = this.time; }
+      }
+      // Pinned against rocks, the current swings the canoe round to slip past.
+      b.pinned = contact ? (b.pinned || 0) + dt : 0;
+      if (b.pinned > .5) { const along = Math.abs(angle(where.h - b.h)) < Math.PI / 2 ? where.h : where.h + Math.PI; b.h = angle(b.h + clamp(angle(along - b.h), -1.6 * dt, 1.6 * dt)); }
+      // The remolino's eye spins hard enough to roll you.
+      if (b.whirl > .7) this.tip(b, 18 * dt, 'remolino');
+      // Caimanes snap at canoes passing close; the logs just lie there.
+      if (where.channel === 'main') for (const log of river.logs) if (log.caiman && Math.abs(log.s - where.s) < 6) {
+        if (this.time - (this.snaps[log.id] ?? -99) < 4) continue;
+        if (this.hull(b).some(c => Math.hypot(c.x - log.x, c.z - log.z) < CAIMAN.reach)) {
+          this.snaps[log.id] = this.time;
+          const away = -log.side;
+          b.lat += away * CAIMAN.jolt; b.v *= .6; b.jolt = .6; b.lastHitSide = -away; b.bitten = (b.bitten || 0) + 1; b.caimanAt = this.time;
+          this.tip(b, CAIMAN.tip, 'caimán');
+        }
+      }
+    }
+    // Straight, steady paddling settles the canoe.
+    const steady = b.paddle.last != null && this.time - b.paddle.last < .9 && !['giro', 'chapoteo'].includes(b.paddle.quality) && Math.abs(b.w) < .3;
+    if (b.capsized === 0 && b.tip < 100) b.tip = Math.max(0, b.tip - (steady ? 14 : 4) * dt);
+  }
+  // Canoe against canoe: circles with mass. Bumping someone is fair play.
+  collide() {
+    const boats = this.boats.filter(b => b.capsized === 0);
+    for (let i = 0; i < boats.length; i++) for (let j = i + 1; j < boats.length; j++) {
+      const A = boats[i], B = boats[j];
+      if (Math.abs(A.x - B.x) > 7 || Math.abs(A.z - B.z) > 7) continue;
+      const ma = A.crew.filter(c => !c.empty).length, mb = B.crew.filter(c => !c.empty).length;
+      for (const a of this.hull(A)) for (const c of this.hull(B)) {
+        const dx = c.x - a.x, dz = c.z - a.z, dist = Math.hypot(dx, dz) || 1e-3, gap = BOAT.half * 2 - dist;
+        if (gap <= 0) continue;
+        const nx = dx / dist, nz = dz / dist, wa = mb / (ma + mb), wb = ma / (ma + mb);
+        A.x -= nx * gap * wa; A.z -= nz * gap * wa; B.x += nx * gap * wb; B.z += nz * gap * wb;
+        const closing = (A.gx - B.gx) * nx + (A.gz - B.gz) * nz;
+        if (closing <= 0) continue;
+        const impulse = closing * 1.3;
+        for (const [boat, sign, share] of [[A, -1, wa], [B, 1, wb]]) {
+          const fx = Math.sin(boat.h), fz = Math.cos(boat.h), dvx = sign * nx * impulse * share, dvz = sign * nz * impulse * share;
+          boat.v += dvx * fx + dvz * fz; boat.lat += -dvx * fz + dvz * fx; boat.gx += dvx; boat.gz += dvz;
+          boat.lastHitSide = Math.sign(-dvx * fz + dvz * fx) || 1;
+        }
+        if (closing > 1 && this.time - Math.max(A.lastBump ?? -9, B.lastBump ?? -9) > .5) {
+          this.tip(A, closing * 11 * wa, 'choque'); this.tip(B, closing * 11 * wb, 'choque');
+          A.bumps = (A.bumps || 0) + 1; B.bumps = (B.bumps || 0) + 1; A.lastBump = B.lastBump = this.time;
+        }
+      }
+    }
+  }
+  // ¡Salpicón!: a sideways paddle slap at the nearest canoe within reach.
+  splash(b) {
+    if (!b.splashWant || b.splashCd > 0 || b.capsized > 0 || b.finish !== null) return;
+    b.splashWant = false; b.splashCd = SALPICON.cooldown; b.splashes++; b.splashAt = this.time;
+    let target = null, best = Infinity;
+    for (const o of this.boats) {
+      if (o === b || o.capsized > 0 || o.finish !== null) continue;
+      for (const a of this.hull(b)) for (const c of this.hull(o)) { const d = Math.hypot(a.x - c.x, a.z - c.z) - BOAT.half * 2; if (d < best) { best = d; target = o; } }
+    }
+    const fx = Math.sin(b.h), fz = Math.cos(b.h);
+    if (!target || best > SALPICON.reach) { b.splashSide = 1; b.splashHit = null; return; }
+    const dx = target.x - b.x, dz = target.z - b.z, d = Math.hypot(dx, dz) || 1, side = Math.sign(-dx * fz + dz * fx) || 1;
+    b.splashSide = side; b.splashHit = target.id; b.soaked = (b.soaked || 0) + 1;
+    const tx = Math.sin(target.h), tz = Math.cos(target.h), px = dx / d * SALPICON.shove, pz = dz / d * SALPICON.shove;
+    target.lat += -px * tz + pz * tx; target.v += px * tx + pz * tz;
+    target.sprayed = SALPICON.spray; target.lastHitSide = -side; target.splashedBy = b.id; target.splashedAt = this.time;
+    this.tip(target, SALPICON.tip, 'salpicón');
   }
   advance(b) {
     const river = this.river, w = river.locate(b.x, b.z, b), delta = w.s - b.s;
     Object.assign(b, { s: w.s, u: w.u, channel: w.channel, offset: w.offset });
-    if (Math.abs(delta) < 8) b.progress = Math.max(b.progress, b.progress + delta);
+    // Point to point: progress is the furthest s reached, never double counted.
+    if (Math.abs(delta) < 8) b.progress = Math.max(b.progress, w.s);
     if (b.checkpoint < river.gates.length && b.progress >= river.gates[b.checkpoint]) b.checkpoint++;
     if (b.finish === null && b.checkpoint >= river.gates.length && b.progress >= river.LENGTH - 4) b.finish = this.time;
   }
@@ -228,7 +370,7 @@ export class Race {
   }
   boatOf(id) { return this.boats.find(b => b.crew.some(c => c.id === id)); }
   snapshot() {
-    return JSON.parse(JSON.stringify({ phase: this.phase, format: this.format, time: this.time, countdown: this.countdown, players: this.players, boats: this.boats, finishGrace: this.finishGrace, raceId: this.raceId, seed: this.seed }));
+    return JSON.parse(JSON.stringify({ phase: this.phase, format: this.format, time: this.time, countdown: this.countdown, players: this.players, boats: this.boats, finishGrace: this.finishGrace, raceId: this.raceId, seed: this.seed, snaps: this.snaps }));
   }
   static restore(snapshot, members, river = RIVER) {
     const race = new Race(river);

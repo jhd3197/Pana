@@ -85,8 +85,8 @@ export function createRiverWorld(river = RIVER, { dress } = {}) {
     const m = waterSurface(g, { kind: 'river', color: 0x4e6a3c, amplitude: .012, opacity: .92 });
     m.material.uniforms.deep.value.setHex(0x22301a); m.material.uniforms.sky.value.setHex(0x7d907a); m.name = 'Agua · igapó'; group.add(m); water.push(m);
   }
-  const moving = [];
-  dress?.({ group, river, moving });
+  const moving = [], racers = [];
+  dress?.({ group, river, moving, racers });
   const animateWater = waterAnimator(group);
   // Planted cells past the fog's thick part are skipped outright.
   const far = []; group.traverse(o => { if (o.userData.farCull) far.push(o); });
@@ -97,6 +97,8 @@ export function createRiverWorld(river = RIVER, { dress } = {}) {
       for (const o of far) { const b = o.boundingSphere; o.visible = !b || camera.position.distanceTo(b.center) - b.radius < distance; }
     },
     update(t, dt = 0) { animateWater(t); for (const o of moving) o.userData.tick?.(t, dt); },
+    // Creatures that follow the race clock (toninas, caimanes) so every screen agrees.
+    race(state, time) { for (const f of racers) f(state, time); },
     dispose() {
       if (disposed) return; disposed = true;
       const ds = [], gs = new Set(), ms = new Set(), ts = new Set();

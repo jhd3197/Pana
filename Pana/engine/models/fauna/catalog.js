@@ -1,6 +1,30 @@
 // Model metadata only: no Three.js, construction or game imports.
 export default [
   {
+    id: "tonina",
+    name: "Tonina (delfín rosado)",
+    category: "Fauna",
+    source: "/engine/models/fauna/aquatic/tonina.js",
+    factory: "tonina",
+    usedBy: ["Curiara"],
+    previewOptions: {"seed":7},
+    description: "Amazonas y Orinoco: delfín de río rosado con pico largo, frente abombada y cresta baja; la cola late al nadar.",
+    tags: ["animal","fauna","delfín","río","animado"],
+    pack: "wildlife"
+  },
+  {
+    id: "caiman",
+    name: "Babo",
+    category: "Fauna",
+    source: "/engine/models/fauna/caiman.js",
+    factory: "caiman",
+    usedBy: ["Curiara"],
+    previewOptions: {"seed":7},
+    description: "Caimán de anteojos tendido en la orilla como un tronco; abre las fauces y embiste con snap().",
+    tags: ["animal","fauna","caimán","río","animado"],
+    pack: "wildlife"
+  },
+  {
     id: "morpho",
     name: "Mariposas morpho",
     category: "Fauna",

@@ -72,7 +72,9 @@ export function makePath(nodes) {
   return { samples, length, at, nearest };
 }
 
-// A course definition becomes the river: see AMAZONAS in course.js.
+export const TONINA = Object.freeze({ period: 3.2, life: 3, rise: .55, boost: 2, length: 15, width: 1.9, push: 2.4 });
+
+// A course definition becomes the river: see AMAZONAS below.
 export function buildRiver(def) {
   const main = makePath(def.nodes), LENGTH = main.length;
   def.setup?.(main);
@@ -164,9 +166,23 @@ export function buildRiver(def) {
     return level - .15 + bank.lip * smooth(0, bank.run, q) + bank.rise * smooth(bank.run, bank.run + 40, q) * (.6 + .4 * Math.sin(x * .031 + Math.cos(z * .027) * 2));
   }
   const waterDepth = (x, z) => { const w = locate(x, z); return Math.max(0, levelAt(w.s, w.offset) - groundAt(x, z)); };
+  const logs = list(def.logs).map(l => { const p = main.at(l.s, l.offset); return { ...l, x: p.x, z: p.z, h: p.h }; });
+  const toninaSpots = list(def.toninas);
+  // Toninas surface on a fixed clock, so every screen shows the same pods
+  // without them riding in the snapshot. Their wake boosts for TONINA.boost s.
+  function toninasAt(time) {
+    if (!toninaSpots.length || time < 0) return [];
+    const out = [], P = TONINA.period;
+    for (let k = Math.max(0, Math.floor((time - TONINA.life) / P)); k <= Math.floor(time / P); k++) {
+      const spot = toninaSpots[(k * 7) % toninaSpots.length], age = time - k * P;
+      if (age < 0 || age > TONINA.life) continue;
+      out.push({ k, s: spot.s, offset: spot.offset + (k % 2 ? 2.4 : -2.4), t0: k * P, age, wake: age > TONINA.rise && age < TONINA.rise + TONINA.boost });
+    }
+    return out;
+  }
   const gates = Array.from({ length: def.gates }, (_, i) => (i + 1) * LENGTH / (def.gates + 1));
   const sector = s => (def.sectors.filter(([v]) => s >= v).at(-1) || def.sectors[0])[1];
-  return { def, main, branch, snags: branch?.snags || [], LENGTH, halfWidth, locate, levelAt, laneOf, drops, rocks, eddies, whirl, currentAt, groundAt, waterDepth, gates, sector, at: main.at };
+  return { def, main, branch, snags: branch?.snags || [], logs, toninaSpots, toninasAt, LENGTH, halfWidth, locate, levelAt, laneOf, drops, rocks, eddies, whirl, currentAt, groundAt, waterDepth, gates, sector, at: main.at };
 }
 
 export function formatTime(seconds) { return `${Math.floor(seconds / 60)}:${(seconds % 60).toFixed(2).padStart(5, '0')}`; }
@@ -181,8 +197,8 @@ const ease = (s, a, b, from, to) => from + (to - from) * smooth(a, b, s);
 const R1 = 398, R2 = 482, CANO = 330, NEGRO = 556;
 const lanes = (fastSide) => {
   const steps3 = [[-8, .5], [0, .5], [8, .5]], steps2 = [[-5, .75], [5, .75]], fast = [[0, 1.5]];
-  if (fastSide === 0) return [{ from: -10, to: -3.3, steps: steps3, boost: .5 }, { from: -2.7, to: 2.7, steps: fast, boost: 2.2, fast: true }, { from: 3.3, to: 10, steps: steps3, boost: .5 }];
-  return [{ from: -10, to: -3.8, steps: fast, boost: 2.2, fast: true }, { from: -3.2, to: 3.2, steps: steps2, boost: 1.1 }, { from: 3.8, to: 10, steps: steps3, boost: .5 }];
+  if (fastSide === 0) return [{ from: -12, to: -4.1, steps: steps3, boost: .5 }, { from: -3.2, to: 3.2, steps: fast, boost: 2.2, fast: true }, { from: 4.1, to: 12, steps: steps3, boost: .5 }];
+  return [{ from: -12, to: -5.2, steps: fast, boost: 2.2, fast: true }, { from: -4.3, to: 3.2, steps: steps2, boost: 1.1 }, { from: 4.1, to: 12, steps: steps3, boost: .5 }];
 };
 let curvature = () => 0, LEN = 1000;
 export const AMAZONAS = {
@@ -192,13 +208,13 @@ export const AMAZONAS = {
   setup(main) { curvature = s => main.at(s).k; LEN = main.length; },
   width(s) {
     let w = ease(s, 22, 48, 16, 10.5 + 1.6 * wave(s, .045, 1));
-    w = ease(s, CANO - 10, CANO + 30, w, 20.5);
+    w = ease(s, CANO - 10, CANO + 30, w, 24.5);
     w = ease(s, R2 + 25, NEGRO + 20, w, 34 + 4 * wave(s, .021, .4));
     return ease(s, LEN - 70, LEN - 25, w, 42);
   },
   top: 8, slope: .0028,
   depth: s => s < CANO ? 1.5 : s < NEGRO ? 1.3 : 3,
-  current: s => ease(s, CANO - 20, CANO + 20, 2.1, 2.4) + ease(s, R2 + 30, NEGRO, 0, -.3) - ease(s, LEN - 60, LEN - 20, 0, 1.2),
+  current: s => ease(s, CANO - 20, CANO + 20, 2.3, 2.5) + ease(s, R2 + 30, NEGRO, 0, -.3) - ease(s, LEN - 60, LEN - 20, 0, 1.2),
   // The chorro rides the outside of the caño's bends and snakes across the Río Negro.
   chorro(s) {
     const half = this.width(s) / 2;
@@ -206,7 +222,7 @@ export const AMAZONAS = {
     if (s < R2 + 20) return 0;
     return ease(s, R2 + 20, NEGRO + 10, 0, 1) * half * .55 * wave(s, .019, 2.2);
   },
-  chorroBoost: s => s < 40 ? 0 : s < CANO ? 1.3 : s < NEGRO ? 1.2 : s > LEN - 50 ? 0 : 2.6,
+  chorroBoost: s => s < 40 ? 0 : s < CANO ? 1.5 : s < NEGRO ? 1.2 : s > LEN - 50 ? 0 : 2.6,
   drops: [{ s: R1, span: 14, lanes: lanes(0) }, { s: R2, span: 14, lanes: lanes(1) }],
   bank(s, offset) {
     if (s < CANO) return { lip: 1.3, run: 2.2, rise: 7 };
@@ -237,14 +253,27 @@ export const AMAZONAS = {
     const out = [];
     // Laja bars split each raudal into its lanes; a few boulders in the Negro.
     for (const d of this.drops) {
-      for (let i = 1; i < d.lanes.length; i++) for (let ds = -d.span - 1; ds <= d.span - 2; ds += 2.4) out.push({ s: d.s + ds, offset: (d.lanes[i - 1].to + d.lanes[i].from) / 2, r: .85 + .25 * Math.abs(wave(ds, 1.7, d.s)) });
-      for (const side of [-1, 1]) out.push({ s: d.s - d.span - 3, offset: side * 11.5, r: 1.6 });
+      // Each bar starts with a small nose stone so canoes glance off it.
+      for (let i = 1; i < d.lanes.length; i++) for (let ds = -d.span - 1, k = 0; ds <= d.span - 2; ds += 1.9, k++) out.push({ s: d.s + ds, offset: (d.lanes[i - 1].to + d.lanes[i].from) / 2, r: k ? .62 + .14 * Math.abs(wave(ds, 1.7, d.s)) : .45 });
+      for (const side of [-1, 1]) out.push({ s: d.s - d.span - 3, offset: side * 13.2, r: 1.4 });
     }
     for (const [s, offset, r] of [[612, -9, 1.8], [690, 11, 2.2], [868, 9, 1.7], [252, 1.5, .9], [110, 0, .8]]) out.push({ s, offset, r });
     return out;
   },
   sectors: [[0, 'Caño de la Selva'], [CANO, 'Raudal del Autana'], [NEGRO, 'Río Negro'], [910, 'La churuata']],
   tints: [R1 - 16, R2 + 16], gates: 16,
+  // Logs on the caño's banks; one in three is a caimán.
+  logs() {
+    const out = [];
+    for (let s = 58, i = 0; s < CANO - 15; s += 23 + (i * 7) % 9, i++) {
+      if (s > 140 && s < 150) continue;
+      const side = i % 2 ? 1 : -1;
+      out.push({ id: i, s, offset: side * (this.width(s) / 2 - .35), side, caiman: i % 3 === 1 });
+    }
+    return out;
+  },
+  // Where pods of toninas surface in the Río Negro, near the chorro.
+  toninas() { const out = []; for (let s = NEGRO + 25; s < LEN - 70; s += 34) out.push({ s, offset: this.chorro(s) }); return out; },
 };
 // Step 0's grey box: a straight 200 m channel to tune the paddle on.
 export const GREYBOX = buildRiver({
