@@ -10,8 +10,10 @@ import { shout } from '/engine/kit.js';
 import { pixelRatio, bindRenderer } from '/engine/settings.js';
 import { OnlineNight, PracticeNight } from './network.js';
 import { createCampWorld, groundAt } from './scene.js';
-import { zoneAt, zoneById, FIRE, ZONES, BOUNDS, STATIONS, REACH, stationById, distance } from './layout.js';
-import { mummyCount, MIN_PLAYERS, taskById } from './rules.js';
+import { zoneAt, zoneById, FIRE, ZONES, BOUNDS, STATIONS, REACH, BELL, stationById, distance } from './layout.js';
+import { mummyCount, MIN_PLAYERS, taskById, WRAP_RANGE, REPORT_RANGE, BELL_RANGE } from './rules.js';
+import { createMeeting } from './ui.js';
+import { bandageWrap } from '/engine/models/props/embuste.js';
 import { openTask, HINTS } from './tasks.js';
 import { setBar } from '/engine/kit.js';
 
@@ -39,6 +41,7 @@ let toastTimer, last = performance.now(), elapsed = 0, rosterKey = '', uiClock =
 const actors = new Map(), keys = new Set(), touch = new Set();
 const me = () => view?.me;
 const rosterOf = seat => view?.roster.find(r => r.seat === seat);
+const nameOf = seat => rosterOf(seat)?.name || 'Alguien';
 const colorOf = seat => { const i = view?.roster.findIndex(r => r.seat === seat) ?? 0; return colors[Math.max(0, i) % colors.length]; };
 
 function notify(text) { if (!text) return; $('toast').textContent = text; show('toast', true); clearTimeout(toastTimer); toastTimer = setTimeout(() => show('toast', false), 3400); }
@@ -54,6 +57,7 @@ const menu = createGameMenu({
   onOpen() { paused = true; clearInput(); if (net && !net.online) net.paused = true; },
   onClose() { paused = false; if (net && !net.online) net.paused = false; },
 });
+const meeting = createMeeting({ act: (a, d) => net?.act(a, d), nameOf: s => nameOf(s), colorOf: s => colorOf(s) });
 const navButton = 'pk-btn pk-btn--sm';
 $('game-nav').append(menu.createInviteButton({ id: 'invite', className: navButton }), menu.createSoundButton({ id: 'sound', className: navButton }), menu.createButton({ id: 'menu', className: navButton }));
 $('lobby-cta').append(menu.createInviteButton({ id: 'lobby-invite', className: 'pk-btn' }));
@@ -104,6 +108,26 @@ function actorFor(seat) {
   a = { seat, root, character, tag, skin, seen: false }; actors.set(seat, a);
   return a;
 }
+// Momiitas show as see-through panas to other momiitas.
+function ghostly(a, on) {
+  if (a.ghostly === on) return; a.ghostly = on;
+  a.character.group.traverse(o => { for (const m of Array.isArray(o.material) ? o.material : o.material ? [o.material] : []) { m.transparent = on; m.opacity = on ? 0.42 : 1; m.depthWrite = !on; } });
+}
+// Wrapped panas: the pana's own model, frozen, under the shared bandages.
+const statues = new Map();
+function syncStatues() {
+  const list = view.phase === 'playing' ? view.statues : [];
+  for (const [seat, st] of statues) if (!list.some(s => s.seat === seat)) { st.character.dispose(); disposeObject(st.root); statues.delete(seat); }
+  for (const s of list) {
+    if (statues.has(s.seat)) continue;
+    const r = rosterOf(s.seat); if (!r) continue;
+    const root = new THREE.Group(), character = buildCharacter(r.avatar); character.update(0, {});
+    const box = new THREE.Box3().setFromObject(character.group), size = box.getSize(new THREE.Vector3());
+    const wrap = bandageWrap({ height: size.y * 0.98, radius: Math.max(size.x, size.z) * 0.5 });
+    root.add(character.group, wrap); root.position.set(s.x, groundAt(s.x, s.z), s.z); character.group.rotation.y = s.h || 0;
+    scene.add(root); statues.set(s.seat, { root, character });
+  }
+}
 function syncActors() {
   for (const [seat, a] of actors) if (!rosterOf(seat)) { removeActor(a); actors.delete(seat); }
   const seen = new Set(view.players.map(p => p.seat));
@@ -111,6 +135,7 @@ function syncActors() {
     const a = actorFor(p.seat); if (!a) continue;
     if (!a.seen) a.root.position.set(p.x, groundAt(p.x, p.z), p.z);
     a.seen = true; a.target = p;
+    ghostly(a, !!p.ghost);
   }
   for (const a of actors.values()) if (!seen.has(a.seat)) { a.seen = false; a.root.visible = false; }
 }
@@ -119,15 +144,19 @@ function syncActors() {
 function receive(v) {
   view = v;
   if (phase !== v.phase) enterPhase(v.phase);
-  syncActors();
+  syncActors(); syncStatues();
   for (const e of v.events) handleEvent(e);
   updateHud();
+  if (v.phase === 'meeting') meeting.render(v);
+  overlays();
 }
 function enterPhase(next) {
   const was = phase; phase = next;
   menu.close(); clearInput();
   document.body.classList.toggle('playing', next === 'playing');
+  if (next !== 'playing') closeTask(false);
   if (next === 'reveal') showReveal();
+  if (was === 'meeting') dock();
   if (next === 'playing' && was === 'reveal') { const p = me(); if (p) cameraTarget.set(p.x ?? 0, 0, p.z ?? 0); }
   updateLobby();
 }
@@ -139,6 +168,18 @@ function handleEvent(e) {
     else notify('Primera parte lista. Sigue con la segunda.');
   }
   if (e.kind === 'visual') sound.tone(520, 0, 0.3, 'triangle', 0.05);
+  if (e.kind === 'wrap') {
+    const mine = me().seat, by = nameOf(e.by), who = nameOf(e.seat);
+    if (e.seat === mine) { shout('¡Te envolvieron!', { tone: 'coral' }); notify(`${by} te envolvió. Ahora eres una momiita: sigue haciendo tareas.`); }
+    else if (e.by === mine) notify(`Envolviste a ${who}. Aléjate antes de que alguien llegue.`);
+    else if (view.partners.includes(e.by)) notify(`Tu compinche envolvió a ${who}.`);
+    else { shout('¡Lo viste todo!', { tone: 'coral' }); notify(`¡${by} envolvió a ${who}! Repórtalo.`); }
+    sound.tone(110, 0, 0.5, 'sawtooth', 0.05);
+  }
+  if (e.kind === 'meeting') { horn(); shout(e.body != null ? '¡Estatua de vendas!' : '¡Reunión!', { tone: 'coral' }); }
+  if (e.kind === 'vote') { shout('¡A votar!', { tone: 'yellow' }); sound.tone(440, 0, 0.15, 'square', 0.05); }
+  if (e.kind === 'eject') sound.tone(196, 0, 0.9, 'triangle', 0.06);
+  if (e.kind === 'morning') notify('La noche sigue. Cuidado con quedarte solo.');
   if (e.kind === 'night') shout('¡Cayó la noche!', { tone: 'yellow' });
   if (e.kind === 'left') notify(`${e.name} se fue del campamento${e.role === 'momia' ? ': era una momia.' : '.'}`);
   if (e.kind === 'end') sound.tone(e.winner === 'panas' ? 660 : 160, 0, 0.6, 'triangle', 0.08);
@@ -158,6 +199,7 @@ function updateLobby() {
   const inLobby = !view || view.phase === 'lobby' || lobby.phase === 'lobby';
   show('lobby', inLobby); show('loading', false);
   show('reveal', view?.phase === 'reveal'); show('hud', !!view && ['playing'].includes(view.phase));
+  overlays();
   show('results', view?.phase === 'ended');
   const connected = !!net?.connected, host = lobby.isHost;
   const count = lobby.players.length, filled = lobby.bots ? Math.max(6, count) : count;
@@ -179,6 +221,12 @@ function updateLobby() {
   $('again').textContent = host ? 'Otra noche' : 'Esperando al anfitrión…';
 }
 
+// The meeting card while they talk and vote; the verdict over the river after.
+function overlays() {
+  const stage = view?.phase === 'meeting' ? view.meeting?.stage : null;
+  show('meeting', !!stage && stage !== 'eject'); show('eject', stage === 'eject');
+  if (stage === 'eject') { const v = meeting.verdict(view); if (v) { $('eject-title').textContent = v.title; $('eject-copy').textContent = v.copy; } }
+}
 const myPose = () => view?.players.find(q => q.seat === view.me.seat);
 let tasksKey = '';
 function updateHud() {
@@ -204,7 +252,13 @@ function updateHud() {
   }
   setBar($('dawn-bar'), view.bar.total ? view.bar.done / view.bar.total : 0);
   const use = useTarget();
-  $('use').disabled = !use; $('use-label').textContent = use?.label || 'Usar';
+  $('use').disabled = !use || use.wait; $('use-label').textContent = use?.label || 'Usar';
+  document.body.classList.toggle('ghost', !!p.ghost); document.body.classList.toggle('mummy', mummy && !p.ghost);
+  show('ghost-note', !!p.ghost);
+  for (const id of ['wrap', 'sabotage', 'disguise']) show(id, mummy && !p.ghost);
+  $('report').disabled = !statueInReach(); show('report', !p.ghost);
+  $('wrap').disabled = !wrapInReach();
+  $('wrap').style.setProperty('--cool', String(mummy ? Math.min(1, (p.cooldown || 0) / 25) : 0));
   if (openPanel && !p.task && performance.now() - openPanel.opened > 1500) closeTask(false);
 }
 
@@ -214,8 +268,21 @@ function useTarget() {
   const t = p.tasks.filter(t => !t.done).map(t => ({ t, s: stationById(t.station) })).filter(({ s }) => distance(mine, s) <= REACH)
     .sort((a, b) => distance(mine, a.s) - distance(mine, b.s))[0];
   if (t) return { label: t.t.name, run: () => startTask(t.t) };
+  if (!p.ghost && p.emergencies > 0 && distance(mine, BELL) <= BELL_RANGE) {
+    return p.bellIn > 0 ? { label: `Campana en ${Math.ceil(p.bellIn)} s`, wait: true } : { label: 'Tocar la campana', run: () => net.act('bell') };
+  }
   return null;
 }
+const statueInReach = () => { const mine = myPose(); return !me()?.ghost && mine && view.statues.find(s => distance(mine, s) <= REPORT_RANGE); };
+// Client-side guess at a wrap target; the room decides.
+function wrapInReach() {
+  const p = me(), mine = myPose();
+  if (!mine || p.role !== 'momia' || p.ghost || p.cooldown > 0) return null;
+  return view.players.find(q => q.seat !== p.seat && !q.ghost && !q.prop && !view.partners.includes(q.seat) && distance(mine, q) <= WRAP_RANGE);
+}
+const doWrap = () => { if (wrapInReach()) net.act('wrap'); };
+const doReport = () => { if (statueInReach()) net.act('report'); };
+function horn() { sound.tone(196, 0, 0.35, 'sawtooth', 0.06); sound.tone(147, 0.32, 0.6, 'sawtooth', 0.06); }
 
 // ---------- the task panel ----------
 let openPanel = null;
@@ -275,12 +342,15 @@ addEventListener('keydown', e => {
   const key = e.key.toLowerCase(); if ([' ', 'arrowup', 'arrowdown', 'arrowleft', 'arrowright'].includes(key)) e.preventDefault();
   keys.add(key); if (e.repeat) return;
   if (key === 'm') toggleMute();
-  if (key === 'e' && !openPanel) useTarget()?.run();
+  if (key === 'e' && !openPanel) useTarget()?.run?.();
+  if (key === 'q' && !openPanel) doWrap();
+  if (key === 'r' && !openPanel) doReport();
 });
 addEventListener('keyup', e => keys.delete(e.key.toLowerCase())); addEventListener('blur', clearInput); document.addEventListener('visibilitychange', clearInput);
 for (const button of document.querySelectorAll('[data-move]')) holdButton(button, { paused: () => paused, down: () => touch.add(button.dataset.move), up: () => touch.delete(button.dataset.move) });
 
-holdButton($('use'), { paused: () => paused, down: () => { touch.add('use'); if (!openPanel) useTarget()?.run(); }, up: () => touch.delete('use') });
+holdButton($('use'), { paused: () => paused, down: () => { touch.add('use'); if (!openPanel) useTarget()?.run?.(); }, up: () => touch.delete('use') });
+$('wrap').onclick = doWrap; $('report').onclick = doReport;
 $('start').onclick = () => net?.start();
 $('again').onclick = () => net?.start();
 $('to-lobby').onclick = () => net?.toLobby();
@@ -306,18 +376,42 @@ function frame(now) {
   const mine = view && actors.get(me()?.seat);
   if (!view || view.phase === 'lobby') {
     const a = elapsed * 0.08; camera.position.set(Math.sin(a) * 26, 17, Math.cos(a) * 26); camera.lookAt(0, 0, 0);
+  } else if (view.phase === 'meeting' && view.meeting?.stage === 'eject' && view.meeting.result) {
+    river(dt);
+  } else if (view.phase === 'meeting') {
+    camera.position.lerp(temp.set(0, 13, 12), Math.min(1, dt * 3)); camera.lookAt(0, 0.5, 0);
   } else if (view.phase === 'reveal' && mine) {
     temp.copy(mine.root.position); camera.position.lerp(temp.clone().add(new THREE.Vector3(0, 2.4, 5.2)), Math.min(1, dt * 3)); camera.lookAt(temp.x, 1.2, temp.z);
   } else if (mine) {
     temp.copy(mine.root.position); cameraTarget.lerp(temp, Math.min(1, dt * 8));
     camera.position.set(cameraTarget.x, 16, cameraTarget.z + 11); camera.lookAt(cameraTarget.x, 0, cameraTarget.z);
   }
-  if (mine) lantern.position.set(mine.root.position.x + 0.8, 4.2, mine.root.position.z + 1.2);
+  if (view?.meeting?.stage !== 'eject') lantern.intensity = 30;
+  if (mine && view?.meeting?.stage !== 'eject') lantern.position.set(mine.root.position.x + 0.8, 4.2, mine.root.position.z + 1.2);
   darkness(mine);
   world.update(elapsed, view, dt); renderer.render(scene, camera);
   uiClock += dt; if (uiClock > 0.1 && view?.phase === 'playing') { uiClock = 0; minimap(); }
   requestAnimationFrame(frame);
 }
+// The curiara carries whoever was voted out down the river.
+let rider = null;
+function river(dt) {
+  const r = view.meeting.result, t = 1 - view.meeting.t / Math.max(0.1, (view.meeting.total || 6));
+  if (rider?.seat !== r.ejected) {
+    if (rider) { rider.character.dispose(); rider.character.group.removeFromParent(); rider = null; }
+    const who = r.ejected != null && rosterOf(r.ejected);
+    if (who) { const character = buildCharacter(who.avatar, { seated: true }); character.group.position.set(0, 0.62, -0.4); character.group.rotation.y = 0; world.canoe.add(character.group); rider = { seat: r.ejected, character }; }
+  }
+  rider?.character.update(dt, {});
+  world.canoe.position.x = THREE.MathUtils.lerp(world.canoe.position.x, r.ejected != null ? 22 - Math.min(1, Math.max(0, t)) * 42 : 23, Math.min(1, dt * 2));
+  camera.position.lerp(temp.set(world.canoe.position.x + 4, 6, 50), Math.min(1, dt * 2.5)); camera.lookAt(world.canoe.position.x, 0, 37);
+  lantern.position.set(world.canoe.position.x, 7, 37); lantern.intensity = 55;
+}
+function dock() {
+  if (rider) { rider.character.dispose(); rider.character.group.removeFromParent(); rider = null; }
+  world.canoe.position.x = 23;
+}
+
 // Minimap: the zones, your task stations and you (others only if your view has them).
 const mapCtx = $('minimap').getContext('2d');
 const MAP_W = 174, MAP_H = 196, mapScale = Math.min((MAP_W - 8) / (BOUNDS.maxX - BOUNDS.minX), (MAP_H - 8) / (BOUNDS.maxZ - BOUNDS.minZ));

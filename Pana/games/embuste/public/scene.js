@@ -175,7 +175,7 @@ export function createCampWorld() {
 
   // ---- El muelle ----
   place(staticRoot, wetlandLanding({ length: 8 }), 27, -0.95, 33.5);
-  const canoe = place(dynamic, riverCanoe(), 23, -0.45, 36.5, Math.PI / 2, 1);
+  const canoe = place(dynamic, riverCanoe(), 23, -0.45, 36.5, -Math.PI / 2, 1);
   { const s = stationById('prov-muelle'); for (let i = 0; i < 3; i++) place(staticRoot, crate(), s.x + (i - 1) * 0.5, i === 2 ? 0.5 : 0, s.z + (i === 2 ? 0 : 0.2), rand(), 0.4); }
   const dam = place(dynamic, damGate(), 36.5, -0.6, 33, Math.PI / 2, 1.2);
   const levers = FIXES.crecida.map(f => { const g = new THREE.Group(); g.position.set(f.x, 0, f.z); box(g, stoneWall, 0.6, 0.7, 0.6, 0, 0.35, 0); const arm = box(g, mat(0xb4472f), 0.12, 1.1, 0.12, 0, 0.9, 0); arm.rotation.z = 0.5; dynamic.add(g); return arm; });

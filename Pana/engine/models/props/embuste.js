@@ -67,3 +67,23 @@ export function campTent({ color = 0xb9a27a } = {}) {
   for (const s of [-1, 1]) g.add(tube([0, 1.7, s * 1.35], [s * 0.2, 0, s * 2.1], 0.012, ROPE));
   return g;
 }
+
+// Bandages that turn a pana into a statue: tilted wraps from feet to head and
+// a couple of loose ends. Sized for a body `height` tall and `radius` wide.
+export function bandageWrap({ height = 1.6, radius = 0.55 } = {}) {
+  const g = new THREE.Group(); g.name = 'Vendas de momia';
+  const cloth = [M(0xe6d6ae, { roughness: 1 }), M(0xd1bf93, { roughness: 1 }), M(0xbfae86, { roughness: 1 })];
+  const rows = Math.round(height / 0.11);
+  for (let i = 0; i < rows; i++) {
+    const t = i / (rows - 1), y = 0.06 + t * (height - 0.12);
+    // Wider at the belly, narrow at the ankles and neck, round at the head.
+    const r = radius * (t < 0.15 ? 0.62 + t * 2 : t < 0.6 ? 0.92 + Math.sin(t * Math.PI) * 0.12 : t < 0.68 ? 0.7 : 0.85 * Math.sin(Math.min(1, (1 - t) / 0.32) * Math.PI / 2) + 0.2);
+    const band = mesh(new THREE.TorusGeometry(r, 0.045, 5, 18), cloth[i % 3], 0, y, 0);
+    band.rotation.x = Math.PI / 2 + (i % 2 ? 0.16 : -0.12); band.rotation.y = i * 0.7; band.scale.z = 1.4;
+    g.add(band);
+  }
+  for (const [x, y, z, a] of [[radius * 0.8, height * 0.55, 0.1, -0.5], [-radius * 0.5, height * 0.3, radius * 0.6, 0.4]]) {
+    const end = box(0.09, height * 0.28, 0.02, cloth[0], x, y - height * 0.14, z); end.rotation.z = a; g.add(end);
+  }
+  return g;
+}

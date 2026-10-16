@@ -4,15 +4,34 @@
 // view(seat) is everything a screen is allowed to know; roles and anything out
 // of sight never leave the Night except through it.
 
-import { SEATS, distance, moveBody, sightClear, zoneAt, inBounds, stationById, near, REACH } from './layout.js';
+import { SEATS, BELL, distance, moveBody, sightClear, zoneAt, inBounds, stationById, near, REACH } from './layout.js';
 
 export const MIN_PLAYERS = 4, MAX_PLAYERS = 8;
 export const SPEED = 5, GHOST_SPEED = 6.2, RADIUS = 0.45;
 // Lantern radius in metres. Standing in the fogata's light adds `lit`.
 export const VISION = { pana: 7.5, momia: 10, lit: 5 };
 // Seconds. QUICK is for browser suites: a whole night in under a minute.
-export const TIMERS = { reveal: 5, task: 1, visual: 4 };
-export const QUICK = { timers: { reveal: 1.5, task: 0.1 } };
+export const TIMERS = { reveal: 5, task: 1, visual: 4, wrap: 25, firstWrap: 12, afterMeeting: 12, discuss: 30, vote: 30, eject: 6, bell: 15 };
+export const QUICK = { timers: { reveal: 1.5, task: 0.1, wrap: 3, firstWrap: 1, afterMeeting: 1, discuss: 2, vote: 6, eject: 2, bell: 1 } };
+export const WRAP_RANGE = 2.2, REPORT_RANGE = 4, BELL_RANGE = REACH + 0.5;
+
+// Quick chat for meetings, always available (free text is a room option).
+export const PHRASES = [
+  '¡Embuste!', 'Yo estaba en la mina', 'Yo estaba en la cocina', 'Yo estaba en el templo', 'Yo estaba en la cascada',
+  'Yo estaba en el muelle', 'Yo estaba en el depósito', 'Yo estaba en la radio', 'Yo hice el malacate, vean',
+  'Lo vi saliendo de un tronco', '¿Y tú qué hacías en la cava?', 'No vi nada', 'Saltemos esta vez', 'Yo confío en ti',
+];
+export const cleanText = t => String(t ?? '').replace(/[\u0000-\u001f]/g, ' ').replace(/[<>]/g, '').replace(/\s+/g, ' ').trim().slice(0, 80);
+
+// votes: Map voter → seat | 'skip'. The most votes goes down the river;
+// a tie, or skipping on top, sends nobody.
+export function tally(votes) {
+  const counts = new Map();
+  for (const target of votes.values()) counts.set(target, (counts.get(target) || 0) + 1);
+  const best = Math.max(0, ...counts.values()), top = [...counts].filter(([, n]) => n === best).map(([t]) => t);
+  const ejected = best > 0 && top.length === 1 && top[0] !== 'skip' ? top[0] : null;
+  return { counts: Object.fromEntries(counts), ejected, tie: top.length > 1, skipped: top.length === 1 && top[0] === 'skip' };
+}
 export const TASKS_EACH = 5;
 
 // The camp's chores. `seconds` is the least a task can take (times the task
@@ -81,7 +100,10 @@ export class Night {
     this.eventId = 0;
     this.ending = null;
     this.rand = seeded(1);
-    this.world = { winch: 0, lanterns: 0 };
+    this.world = { winch: 0, lanterns: 0, bell: 0 };
+    this.statues = [];
+    this.meeting = null;
+    this.nextBell = 0;
   }
 
   // ---------- roster ----------
@@ -92,6 +114,7 @@ export class Night {
     const p = {
       seat, name, avatar, bot, role: 'pana', alive: true, spectator: this.phase !== 'lobby',
       x: spot.x, z: spot.z, h: spot.h, moving: false, tasks: [], task: null,
+      cooldown: 0, emergencies: 1, known: false, ejected: false, said: -Infinity,
     };
     this.players.set(seat, p);
     return p;
@@ -126,10 +149,16 @@ export class Night {
     this.ending = null;
     this.events = [];
     const roles = dealRoles(seats, this.rand);
-    this.world = { winch: 0, lanterns: 0 };
+    this.world = { winch: 0, lanterns: 0, bell: 0 };
+    this.statues = [];
+    this.meeting = null;
+    this.nextBell = 0;
     shuffle(seats, this.rand).forEach((seat, i) => {
       const p = this.players.get(seat), spot = SEATS[i % SEATS.length];
-      Object.assign(p, { role: roles.get(seat), alive: true, spectator: false, x: spot.x, z: spot.z, h: spot.h, moving: false, task: null });
+      Object.assign(p, {
+        role: roles.get(seat), alive: true, spectator: false, x: spot.x, z: spot.z, h: spot.h, moving: false, task: null,
+        cooldown: this.timers.firstWrap, emergencies: 1, known: false, ejected: false, said: -Infinity,
+      });
       // Mummies get a list too: something to pretend with.
       p.tasks = shuffle(TASKS, this.rand).slice(0, this.options.tasks ?? TASKS_EACH).map(t => ({ id: t.id, step: 0 }));
     });
@@ -149,10 +178,9 @@ export class Night {
   // ---------- actions ----------
   // Every client action lands here; anything out of place is ignored.
   act(seat, action, data = {}) {
-    const p = this.players.get(seat);
-    if (!p || this.phase !== 'playing' || p.spectator) return false;
-    const handler = this.actions[action];
-    return handler ? !!handler.call(this, p, data) : false;
+    const p = this.players.get(seat), [phase, handler] = this.actions[action] || [];
+    if (!p || !handler || this.phase !== phase || p.spectator) return false;
+    return !!handler.call(this, p, data ?? {});
   }
 
   // The task whose next step is at this station, if any.
@@ -189,6 +217,119 @@ export class Night {
 
   cancelTask(p) { if (!p.task) return false; p.task = null; return true; }
 
+  // ---------- wraps and statues ----------
+  // The closest living pana a mummy could wrap right now.
+  wrapTarget(m) {
+    if (m.role !== 'momia' || this.ghost(m) || m.cooldown > 0) return null;
+    return [...this.players.values()]
+      .filter(p => p.role === 'pana' && !this.ghost(p) && distance(m, p) <= WRAP_RANGE && sightClear(m, p) && this.wrappable(p, m))
+      .sort((a, b) => distance(m, a) - distance(m, b))[0] || null;
+  }
+  wrappable() { return true; }
+
+  wrap(m) {
+    const p = this.wrapTarget(m);
+    if (!p) return false;
+    p.alive = false; p.task = null; p.moving = false;
+    m.cooldown = this.timers.wrap;
+    const statue = { seat: p.seat, x: +p.x.toFixed(2), z: +p.z.toFixed(2), h: +p.h.toFixed(2) };
+    this.statues.push(statue);
+    this.afterWrap?.(m, statue);
+    // The victim, the mummies and whoever had both in sight know who did it.
+    const witnesses = [...this.players.values()].filter(v => v !== p && v.role !== 'momia' && !this.ghost(v) && this.sees(v, statue) && this.seesPlayer(v, m)).map(v => v.seat);
+    const mummies = this.active().filter(v => v.role === 'momia').map(v => v.seat);
+    this.emit('wrap', { seat: p.seat, by: m.seat, x: statue.x, z: statue.z }, [p.seat, ...mummies, ...witnesses]);
+    this.checkEnd();
+    return true;
+  }
+
+  // A statue a living pana can see and reach to report.
+  statueNear(p) {
+    if (this.ghost(p)) return null;
+    return this.statues.find(s => distance(p, s) <= REPORT_RANGE && sightClear(p, s)) || null;
+  }
+  canCall() { return true; }
+
+  report(p) {
+    const statue = this.statueNear(p);
+    if (!statue || !this.canCall(p, true)) return false;
+    this.startMeeting(p, statue.seat);
+    return true;
+  }
+
+  ring(p) {
+    if (this.ghost(p) || p.emergencies < 1 || this.time < this.nextBell || !near(p, BELL, BELL_RANGE) || !this.canCall(p, false)) return false;
+    p.emergencies--;
+    this.world.bell = 2;
+    this.startMeeting(p, null);
+    return true;
+  }
+
+  // ---------- meetings ----------
+  startMeeting(by, body) {
+    this.phase = 'meeting';
+    this.meeting = { by: by.seat, body, stage: 'discuss', t: this.timers.discuss, votes: new Map(), chat: [], result: null, chatId: 0 };
+    let i = 0;
+    for (const p of this.players.values()) {
+      if (!p.alive) p.known = true;
+      p.task = null; p.moving = false;
+      if (p.spectator) continue;
+      const seat = SEATS[i++ % SEATS.length];
+      Object.assign(p, { x: seat.x, z: seat.z, h: seat.h });
+    }
+    this.meetingStarted?.();
+    this.emit('meeting', { by: by.seat, body });
+  }
+
+  vote(p, { target }) {
+    const m = this.meeting;
+    if (m.stage !== 'vote' || this.ghost(p) || m.votes.has(p.seat)) return false;
+    const t = target === 'skip' ? 'skip' : this.players.get(Number(target));
+    if (t !== 'skip' && (!t || this.ghost(t))) return false;
+    m.votes.set(p.seat, t === 'skip' ? 'skip' : t.seat);
+    this.emit('voted', { seat: p.seat });
+    if (this.active().filter(q => !this.ghost(q)).every(q => m.votes.has(q.seat))) m.t = 0;
+    return true;
+  }
+
+  chat(p, { text, phrase }) {
+    const m = this.meeting;
+    if (this.ghost(p) || this.time - p.said < 1) return false;
+    const line = Number.isInteger(phrase) && PHRASES[phrase] ? PHRASES[phrase] : this.options.chat ? cleanText(text) : '';
+    if (!line) return false;
+    p.said = this.time;
+    const entry = { id: ++m.chatId, seat: p.seat, text: line };
+    m.chat.push(entry); if (m.chat.length > 40) m.chat.shift();
+    this.emit('chat', entry);
+    return true;
+  }
+
+  updateMeeting(dt) {
+    const m = this.meeting;
+    m.t -= dt;
+    if (m.t > 0) return;
+    if (m.stage === 'discuss') { m.stage = 'vote'; m.t = this.timers.vote; this.emit('vote'); return; }
+    if (m.stage === 'vote') {
+      const result = tally(m.votes), out = result.ejected != null ? this.players.get(result.ejected) : null;
+      if (out) { out.alive = false; out.ejected = true; out.known = true; }
+      m.result = { ...result, role: out && this.options.reveal ? out.role : null };
+      m.stage = 'eject'; m.t = this.timers.eject;
+      this.emit('eject', { seat: out ? out.seat : null, tie: result.tie, skipped: result.skipped, role: m.result.role });
+      return;
+    }
+    this.endMeeting();
+  }
+
+  endMeeting() {
+    this.phase = 'playing';
+    this.meeting = null;
+    this.statues = [];
+    this.nextBell = this.time + this.timers.bell;
+    for (const p of this.players.values()) if (p.role === 'momia') p.cooldown = Math.max(p.cooldown, this.timers.afterMeeting);
+    this.emit('morning');
+    this.checkEnd();
+  }
+
   // Seats whose screen shows this point.
   viewers(point) { return [...this.players.values()].filter(v => this.sees(v, point)).map(v => v.seat); }
 
@@ -218,7 +359,10 @@ export class Night {
       if (this.timer <= 0) { this.phase = 'playing'; this.emit('night'); }
       return;
     }
+    if (this.phase === 'meeting') { this.updateMeeting(dt); return; }
     if (this.phase !== 'playing') return;
+    for (const p of this.players.values()) if (p.cooldown > 0) p.cooldown = Math.max(0, p.cooldown - dt);
+    this.world.bell = Math.max(0, this.world.bell - dt);
     this.world.winch = Math.max(0, this.world.winch - dt);
     this.world.lanterns = Math.max(0, this.world.lanterns - dt);
     for (const p of this.players.values()) this.move(p, p.task ? { x: 0, z: 0 } : cleanInput(inputs.get(p.seat)), dt);
@@ -263,9 +407,21 @@ export class Night {
   // Visual state of the map, only where this seat can see it.
   worldFor(me) {
     const w = {};
+    if (this.world.bell > 0) w.bell = 1;
     if (this.world.winch > 0 && this.sees(me, stationById('malacate'))) w.winch = +this.world.winch.toFixed(1);
     if (this.world.lanterns > 0 && this.sees(me, stationById('faroles'))) w.lanterns = Math.min(4, Math.ceil(this.world.lanterns / this.timers.visual));
     return w;
+  }
+
+  meetingView(me) {
+    const m = this.meeting, done = m.stage === 'eject';
+    return {
+      stage: m.stage, t: +Math.max(0, m.t).toFixed(1), total: this.timers[m.stage === 'eject' ? 'eject' : m.stage], by: m.by, body: m.body,
+      voted: [...m.votes.keys()], mine: m.votes.get(me.seat) ?? null,
+      votes: done ? [...m.votes].map(([voter, target]) => ({ voter, target })) : undefined,
+      result: done ? m.result : undefined,
+      chat: m.chat.slice(-30),
+    };
   }
 
   view(seat, since = 0) {
@@ -282,11 +438,18 @@ export class Night {
         vision: this.vision(me) === Infinity ? 0 : this.vision(me),
         tasks: me.tasks.map(t => { const def = taskById(t.id); return { id: t.id, name: def.name, step: t.step, steps: def.stations.length, station: def.stations[Math.min(t.step, def.stations.length - 1)], done: t.step >= def.stations.length }; }),
         task: me.task && { station: me.task.station, since: +(this.time - me.task.at).toFixed(2) },
+        cooldown: mummy ? +me.cooldown.toFixed(1) : undefined,
+        emergencies: me.emergencies, bellIn: +Math.max(0, this.nextBell - this.time).toFixed(1),
       },
+      statues: this.statues.filter(s => this.sees(me, s)),
+      meeting: this.meeting && this.meetingView(me),
       bar: this.bar(),
       world: this.worldFor(me),
       partners: mummy ? this.active().filter(p => p.role === 'momia' && p !== me).map(p => p.seat) : [],
-      roster: [...this.players.values()].map(p => ({ seat: p.seat, name: p.name, avatar: p.avatar, bot: p.bot || undefined, role: roleOf(p), spectator: p.spectator || undefined })),
+      roster: [...this.players.values()].map(p => ({
+        seat: p.seat, name: p.name, avatar: p.avatar, bot: p.bot || undefined, role: roleOf(p), spectator: p.spectator || undefined,
+        out: (ended || p === me ? !p.alive : p.known) || undefined, ejected: p.ejected || undefined,
+      })),
       players: lobby ? [] : [...this.players.values()].filter(p => this.seesPlayer(me, p)).map(pose),
       ending: this.ending,
       options: { reveal: this.options.reveal, chat: this.options.chat },
@@ -295,8 +458,14 @@ export class Night {
   }
 }
 
+// action → [the phase it belongs to, handler(player, data)]
 Night.prototype.actions = {
-  task: Night.prototype.startTask,
-  done: Night.prototype.finishTask,
-  cancel: Night.prototype.cancelTask,
+  task: ['playing', Night.prototype.startTask],
+  done: ['playing', Night.prototype.finishTask],
+  cancel: ['playing', Night.prototype.cancelTask],
+  wrap: ['playing', Night.prototype.wrap],
+  report: ['playing', Night.prototype.report],
+  bell: ['playing', Night.prototype.ring],
+  vote: ['meeting', Night.prototype.vote],
+  chat: ['meeting', Night.prototype.chat],
 };
