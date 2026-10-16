@@ -1,14 +1,15 @@
 // The world around the island, so it isn't floating in the middle of
 // nowhere: forested coves, sandstone tepuis, waterfalls, a lighthouse,
-// fishing villages and drifting clouds.
+// fishing villages. Atmosphere is supplied by the scene owner.
 
 import * as THREE from 'three';
-import { M, mesh, rng } from '/engine/props.js';
-import { casita, bake, palm } from './flora.js';
+import { M, mesh, rng } from '/engine/models/core/primitives.js';
+import { casita } from '/engine/models/props/island-house.js';
+import { bake } from '/engine/models/core/static-batch.js';
+import { palm } from '/engine/models/vegetation/palm.js';
 import { SEA } from './island-terrain.js';
 import { createIslet, createTepui } from './island-landscape.js';
 
-const dayCloud = new THREE.Color(0xffffff);
 
 function lighthouse() {
   const g = new THREE.Group();
@@ -48,43 +49,6 @@ function sailboat(color = '#ff4b4b') {
   sail.position.set(0, 3, -0.6);
   g.add(sail);
   return g;
-}
-
-// Soft, shaded cumulus silhouettes. Four reusable textures replace dozens of
-// lit polyhedra; the alpha falloff gives a feathery edge from any camera angle.
-function cloudTexture(seed, smoke = false) {
-  const r = rng(seed), canvas = document.createElement('canvas');
-  canvas.width = 512; canvas.height = 256;
-  const ctx = canvas.getContext('2d');
-  const puff = (x, y, radius) => {
-    const gradient = ctx.createRadialGradient(x, y, 0, x, y, radius);
-    gradient.addColorStop(0, 'rgba(255,255,255,1)');
-    gradient.addColorStop(0.68, 'rgba(255,255,255,1)');
-    gradient.addColorStop(0.85, 'rgba(255,255,255,0.8)');
-    gradient.addColorStop(1, 'rgba(255,255,255,0)');
-    ctx.fillStyle = gradient;
-    ctx.fillRect(x - radius, y - radius, radius * 2, radius * 2);
-  };
-  if (smoke) puff(256, 128, 117);
-  else {
-    // High central towers and a broad low base, rather than a row of bubbles.
-    for (let i = 0; i < 7; i++) {
-      const t = i / 6;
-      puff(70 + t * 365, 157 - Math.sin(t * Math.PI) * (35 + r() * 35), 47 + Math.sin(t * Math.PI) * 28 + r() * 15);
-    }
-    for (let i = 0; i < 8; i++) puff(90 + i * 46, 171 + r() * 7, 40 + r() * 12);
-  }
-  // Shade the unified silhouette, so overlapping puffs don't leave dark rings.
-  ctx.globalCompositeOperation = 'source-in';
-  const shade = ctx.createLinearGradient(0, 40, 0, 218);
-  shade.addColorStop(0, '#ffffff');
-  shade.addColorStop(0.45, '#f9fcff');
-  shade.addColorStop(1, '#bdcfde');
-  ctx.fillStyle = shade;
-  ctx.fillRect(0, 0, 512, 256);
-  const texture = new THREE.CanvasTexture(canvas);
-  texture.colorSpace = THREE.SRGBColorSpace;
-  return texture;
 }
 
 export function buildScenery(scene) {
@@ -163,20 +127,6 @@ export function buildScenery(scene) {
     boats.push(b);
   }
 
-  // clouds drifting high up
-  const clouds = [];
-  const cloudMats = Array.from({ length: 4 }, (_, i) => new THREE.SpriteMaterial({ map: cloudTexture(i + 20), color: 0xffffff, transparent: true, opacity: 0.94, depthWrite: false }));
-  for (let i = 0; i < 16; i++) {
-    const c = new THREE.Sprite(cloudMats[i % cloudMats.length]);
-    const a = rand() * Math.PI * 2, d = 470 + rand() * 100;
-    c.position.set(Math.cos(a) * d, 150 + rand() * 55, Math.sin(a) * d);
-    const width = 35 + rand() * 35;
-    c.scale.set(width, width * 0.5, 1);
-    c.userData = { angle: a, radius: d, speed: 0.0015 + rand() * 0.002 };
-    scene.add(c);
-    clouds.push(c);
-  }
-
   scene.add(bake(statics));
 
   return {
@@ -184,18 +134,13 @@ export function buildScenery(scene) {
       for (const f of anim) f(t);
       light.userData.beam.material.opacity = (1 - daylight) * 0.14;
       light.userData.lamp.material.emissiveIntensity = 0.4 + (1 - daylight) * 2;
-      for (const mat of cloudMats) mat.color.set(0x7388b1).lerp(dayCloud, daylight);
       for (const tepui of tepuis) tepui.update(t, daylight);
       for (const b of boats) {
         const u = b.userData;
         b.position.y = SEA - 0.1 + Math.sin(t * 1.3 + u.k) * 0.25;
         b.rotation.z = Math.sin(t * 1.1 + u.k) * 0.06;
       }
-      for (const c of clouds) {
-        c.userData.angle += c.userData.speed * dt;
-        c.position.x = Math.cos(c.userData.angle) * c.userData.radius;
-        c.position.z = Math.sin(c.userData.angle) * c.userData.radius;
-      }
+
     },
   };
 }

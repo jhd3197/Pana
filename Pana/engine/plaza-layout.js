@@ -1,5 +1,5 @@
 // Plain map data is shared by rendering, collision, AI and rule tests.
-import { propDefinition } from './plaza-catalog.js';
+import { propDefinition } from '/engine/models/props/plaza-definitions.js';
 
 export const BOUNDS = { x: 22, z: 19 };
 export const STALLS = [

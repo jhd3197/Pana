@@ -1,0 +1,123 @@
+// Model metadata only: no Three.js, construction or game imports.
+export default [
+  {
+    id: "scarlet-macaw",
+    name: "Guacamaya roja",
+    category: "Fauna",
+    source: "/engine/models/fauna/birds/scarlet-macaw.js",
+    factory: "scarletMacaw",
+    usedBy: ["Derrape"],
+    previewOptions: {"seed":7},
+    description: "Selva: alas rojas, amarillas y azules, cara clara, pico curvo y cola larga.",
+    tags: ["animal","fauna","ave","animado"],
+    pack: "wildlife"
+  },
+  {
+    id: "scarlet-ibis",
+    name: "Corocora roja",
+    category: "Fauna",
+    source: "/engine/models/fauna/birds/scarlet-ibis.js",
+    factory: "scarletIbis",
+    usedBy: ["Derrape","Galope"],
+    previewOptions: {"seed":7},
+    description: "Los Llanos: cuerpo esbelto, pico largo curvado y patas extendidas en vuelo.",
+    tags: ["animal","fauna","ave","animado"],
+    pack: "wildlife"
+  },
+  {
+    id: "soaring-vulture",
+    name: "Zamuro planeador",
+    category: "Fauna",
+    source: "/engine/models/fauna/birds/soaring-vulture.js",
+    factory: "soaringVulture",
+    usedBy: ["Derrape"],
+    previewOptions: {"seed":7},
+    description: "Desierto: alas anchas con plumas abiertas, cabeza desnuda y planeo suave.",
+    tags: ["animal","fauna","ave","animado"],
+    pack: "wildlife"
+  },
+  {
+    id: "wild-capybara",
+    name: "Chigüire",
+    category: "Fauna",
+    source: "/engine/models/fauna/capybara/wild-capybara.js",
+    factory: "wildCapybara",
+    usedBy: ["Derrape","Galope"],
+    previewOptions: {"seed":7},
+    description: "Selva y Los Llanos: capibara natural de cuatro patas, sin ropa, con orejas animadas.",
+    tags: ["animal","fauna","capibara","animado"],
+    pack: "wildlife"
+  },
+  {
+    id: "llanero-horse",
+    name: "Caballo llanero",
+    category: "Fauna",
+    source: "/engine/models/fauna/farm/llanero-horse.js",
+    factory: "llaneroHorse",
+    usedBy: ["Derrape","Galope"],
+    previewOptions: {"seed":7,"coat":"bay"},
+    description: "Caballo de hato con crin, lucero, medias claras y animación de pastoreo.",
+    tags: ["animal","hato","llanos","animado"],
+    pack: "farm"
+  },
+  {
+    id: "yard-chicken",
+    name: "Gallina de patio",
+    category: "Fauna",
+    source: "/engine/models/fauna/farm/yard-chicken.js",
+    factory: "yardChicken",
+    usedBy: ["Derrape"],
+    previewOptions: {"seed":7,"coat":"red"},
+    description: "Gallina de corral con cresta, alas plegadas y animación de picoteo.",
+    tags: ["animal","hato","llanos","animado"],
+    pack: "farm"
+  },
+  {
+    id: "hato-cow",
+    name: "Vaca del hato",
+    category: "Fauna",
+    source: "/engine/models/fauna/farm/hato-cow.js",
+    factory: "hatoCow",
+    usedBy: ["Derrape","Galope"],
+    previewOptions: {"seed":7,"coat":"pinto"},
+    description: "Vaca de manchas castañas, pezuñas partidas, cuernos y cola animada. Reemplaza la vaca antigua de Los Llanos.",
+    tags: ["animal","hato","llanos","animado"],
+    pack: "farm"
+  },
+  {
+    id: "reef-fish",
+    name: "Pez de arrecife",
+    category: "Fauna",
+    source: "/engine/models/fauna/aquatic/reef-fish.js",
+    factory: "reefFish",
+    usedBy: ["Bululú","Derrape"],
+    previewOptions: {"seed":7},
+    description: "Fauna marina de Pana: peces con aletas y cola animadas en las aguas de ambas islas.",
+    tags: ["pez","agua","isla","animado"],
+    pack: "reef"
+  },
+  {
+    id: "reef-fish-school",
+    name: "Cardumen costero",
+    category: "Fauna",
+    source: "/engine/models/fauna/aquatic/reef-fish-school.js",
+    factory: "reefFishSchool",
+    usedBy: ["Bululú","Derrape"],
+    previewOptions: {"seed":7},
+    description: "Fauna marina de Pana: peces con aletas y cola animadas en las aguas de ambas islas.",
+    tags: ["pez","agua","isla","animado"],
+    pack: "reef"
+  },
+  {
+    id: "beach-crab",
+    name: "Cangrejo de playa",
+    category: "Fauna",
+    source: "/engine/models/fauna/beach-crab.js",
+    factory: "beachCrab",
+    usedBy: ["Bululú","Derrape"],
+    previewOptions: null,
+    description: "Caparazón coral, ocho patas, ojos elevados y dos pinzas animadas.",
+    tags: ["costa","playa","puerto","Bululú"],
+    pack: "coastal"
+  },
+];

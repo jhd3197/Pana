@@ -1,0 +1,123 @@
+// Model metadata only: no Three.js, construction or game imports.
+export default [
+  {
+    id: "colonial-house",
+    name: "Casa colonial colorida",
+    category: "Pueblo",
+    source: "/engine/models/props/pueblo.js",
+    factory: "colonialHouse",
+    usedBy: ["Derrape"],
+    previewOptions: null,
+    description: "Fachada turquesa, puerta de arco, rejas, persianas y techo de tejas.",
+    tags: ["011","pueblo","casa","colonial"],
+    pack: "pueblo"
+  },
+  {
+    id: "corner-bodega",
+    name: "Bodega de esquina",
+    category: "Pueblo",
+    source: "/engine/models/props/pueblo.js",
+    factory: "cornerBodega",
+    usedBy: ["Derrape"],
+    previewOptions: null,
+    description: "Toldos a dos calles, estantes surtidos y cajas de mangos.",
+    tags: ["012","pueblo","tienda","bodega"],
+    pack: "pueblo"
+  },
+  {
+    id: "colonial-church",
+    name: "Iglesia colonial pequeña",
+    category: "Pueblo",
+    source: "/engine/models/props/pueblo.js",
+    factory: "colonialChurch",
+    usedBy: ["Derrape"],
+    previewOptions: null,
+    description: "Muros encalados, rosetón y campanario abierto con campana.",
+    tags: ["013","pueblo","iglesia","campana"],
+    pack: "pueblo"
+  },
+  {
+    id: "bus-stop-shelter",
+    name: "Parada de autobús",
+    category: "Pueblo",
+    source: "/engine/models/props/pueblo.js",
+    factory: "busStopShelter",
+    usedBy: ["Derrape"],
+    previewOptions: null,
+    description: "Marquesina, asientos y panel de ruta con paradas.",
+    tags: ["014","pueblo","parada","autobús"],
+    pack: "pueblo"
+  },
+  {
+    id: "street-food-kiosk",
+    name: "Puesto de arepas",
+    category: "Pueblo",
+    source: "/engine/models/props/pueblo.js",
+    factory: "streetFoodKiosk",
+    usedBy: ["Cocina","Derrape"],
+    previewOptions: null,
+    description: "Plancha con arepas, salsas y mostrador bajo un toldo a rayas.",
+    tags: ["015","pueblo","comida","kiosco","arepas"],
+    pack: "pueblo"
+  },
+  {
+    id: "plaza-clock-tower",
+    name: "Torre del reloj",
+    category: "Pueblo",
+    source: "/engine/models/props/pueblo.js",
+    factory: "plazaClockTower",
+    usedBy: ["Escondidas","Cocina","Derrape"],
+    previewOptions: null,
+    description: "Reloj de cuatro caras con agujas y segundero animados.",
+    tags: ["016","pueblo","plaza","reloj","torre"],
+    pack: "pueblo"
+  },
+  {
+    id: "basketball-hoop",
+    name: "Aro de baloncesto",
+    category: "Pueblo",
+    source: "/engine/models/props/pueblo.js",
+    factory: "basketballHoop",
+    usedBy: ["Derrape"],
+    previewOptions: null,
+    description: "Tablero, aro a 3,05 m y red tejida abierta.",
+    tags: ["017","pueblo","cancha","baloncesto"],
+    pack: "pueblo"
+  },
+  {
+    id: "rooftop-water-tank",
+    name: "Tanque de agua de azotea",
+    category: "Pueblo",
+    source: "/engine/models/props/pueblo.js",
+    factory: "rooftopWaterTank",
+    usedBy: ["Derrape"],
+    previewOptions: null,
+    description: "Tanque estriado con soporte, escalera, tubería y válvula.",
+    tags: ["018","pueblo","tanque","agua","azotea"],
+    pack: "pueblo"
+  },
+  {
+    id: "streetlight-pole",
+    name: "Farol de calle",
+    category: "Pueblo",
+    source: "/engine/models/props/pueblo.js",
+    factory: "streetlightPole",
+    usedBy: ["Escondidas","Cocina","Derrape"],
+    previewOptions: null,
+    description: "Poste curvado con brazo ornamental y lámpara cálida.",
+    tags: ["019","pueblo","farol","calle","luz"],
+    pack: "pueblo"
+  },
+  {
+    id: "park-bench",
+    name: "Banco de parque",
+    category: "Pueblo",
+    source: "/engine/models/props/pueblo.js",
+    factory: "parkBench",
+    usedBy: ["Escondidas","Cocina","Derrape"],
+    previewOptions: null,
+    description: "Listones de madera, patas de hierro y apoyabrazos curvos.",
+    tags: ["020","pueblo","banco","parque"],
+    pack: "pueblo"
+  },
+];

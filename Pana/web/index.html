@@ -4,8 +4,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Pana — juega con tus panas</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Luckiest+Guy&display=swap">
+  <link rel="stylesheet" href="/engine/kit.css">
+  <link rel="stylesheet" href="/engine/ui.css">
   <link rel="stylesheet" href="style.css">
   <script type="importmap">
     { "imports": {
@@ -14,56 +14,94 @@
     } }
   </script>
 </head>
-<body>
+<body data-view="jugar">
   <header class="topbar">
-    <a class="logo" href="/">PANA</a>
-    <span class="topbar-tag">juega con tus panas</span>
-    <span class="live" id="live"><i></i><span id="live-count">0</span> jugando</span>
+    <a class="pk-logo" href="#jugar">PANA</a>
+    <nav class="nav" aria-label="Secciones">
+      <a href="#jugar" data-view="jugar">Jugar</a>
+      <a href="#mi-pana" data-view="mi-pana">Mi pana</a>
+      <a href="#salas" data-view="salas">Salas</a>
+      <a href="/studio/library">Studio</a>
+    </nav>
+    <span class="pk-chip live" id="live"><i class="pk-dot"></i><b id="live-count">0</b> jugando</span>
+    <a class="me" href="#mi-pana" title="Editar tu pana">
+      <img id="pana-face" class="pk-avatar" alt="">
+      <b data-name>pana</b>
+    </a>
+    <span id="hub-actions" class="hub-actions"></span>
   </header>
 
   <main>
-    <!-- ---------- hero: your pana ---------- -->
-    <section class="hero">
-      <div class="stage">
-        <canvas id="pana-preview" aria-label="Tu pana en 3D. Arrástralo para girarlo, tócalo para que grite."></canvas>
-        <span class="stage-hint">Arrástralo · tócalo</span>
+    <!-- ---------- Jugar: featured game, your pana, games, rooms ---------- -->
+    <div class="home">
+      <section class="feature" id="feature" aria-labelledby="feature-name">
+        <div class="feature-art" id="feature-art"></div>
+        <div class="feature-body">
+          <span class="feature-tag" id="feature-tag">Destacado</span>
+          <h1 class="feature-name" id="feature-name">Pana</h1>
+          <p class="feature-copy" id="feature-copy">Cargando juegos…</p>
+          <div class="feature-cta">
+            <a id="play-featured" class="pk-btn pk-btn--primary pk-btn--lg" href="/g/derrape/">¡JUGAR!</a>
+            <button id="create-room" class="pk-btn feature-room" type="button">Crear sala</button>
+          </div>
+        </div>
+      </section>
+
+      <section class="pk-panel pk-panel--solid tu-pana" aria-labelledby="tu-pana-hello">
+        <span class="pk-eyebrow">Tu pana</span>
+        <h2 class="hello" id="tu-pana-hello">¡Epa, <span id="hello-name" data-name>pana</span>!</h2>
+        <ul class="pana-summary" id="pana-summary"></ul>
+        <a class="pk-btn pk-btn--sm edit-pana" href="#mi-pana">Editar pana</a>
+        <div class="tu-pana-stage" id="tu-pana-slot"></div>
+      </section>
+
+      <section class="games-wrap" aria-labelledby="games-title">
+        <h2 class="pk-heading" id="games-title">Juegos</h2>
+        <div id="games" class="games"></div>
+      </section>
+
+      <section class="pk-panel pk-panel--solid rooms-panel" id="salas" aria-labelledby="rooms-title">
+        <div class="rooms-head">
+          <h2 class="pk-eyebrow" id="rooms-title">Salas en vivo</h2>
+          <span class="rooms-count" id="rooms-count">0</span>
+        </div>
+        <div id="rooms" class="rooms"></div>
+      </section>
+    </div>
+
+    <!-- ---------- Mi pana: the character creator ---------- -->
+    <section class="pk-panel pk-panel--solid creator" id="mi-pana" aria-labelledby="creator-hello">
+      <div class="creator-stage" id="creator-slot">
+        <div class="stage" id="pana-stage">
+          <canvas id="pana-preview" aria-label="Tu pana en 3D. Arrástralo para girarlo, tócalo para que grite."></canvas>
+          <span class="stage-hint">Arrástralo · tócalo</span>
+        </div>
       </div>
 
-      <div class="hero-side">
-        <h1 class="hello">¡Epa, <span id="hello-name">pana</span>!</h1>
-        <p class="lead">Arma tu capibara y llévalo a todos los juegos. Nada que instalar: comparte el link y listo.</p>
+      <div class="creator-side">
+        <span class="pk-eyebrow">Mi pana</span>
+        <h1 class="hello hello--lg" id="creator-hello">¡Epa, <span data-name>pana</span>!</h1>
+        <p class="pk-copy">Arma tu capibara y llévalo a todos los juegos. Nada que instalar: comparte el link y listo.</p>
 
         <div class="name-row">
-          <label for="name">Tu nombre</label>
+          <label class="pk-eyebrow" for="name">Tu nombre</label>
           <input id="name" maxlength="16" placeholder="pana" autocomplete="nickname">
-          <button id="pana-random" class="btn btn-ghost" type="button">¡Sorpréndeme!</button>
+          <button id="pana-random" class="pk-btn" type="button">¡Sorpréndeme!</button>
         </div>
 
-        <div class="customizer">
-          <div class="tabs" id="pana-tabs" role="tablist"></div>
+        <div class="customizer pk-well">
+          <div class="pk-seg tabs" id="pana-tabs" role="tablist"></div>
           <div class="tab-body" id="pana-controls" role="tabpanel"></div>
         </div>
 
-        <a id="play-featured" class="btn btn-play" href="/g/derrape/">¡JUGAR!</a>
-        <a href="/studio.html" style="display:inline-block;margin-top:14px;color:inherit;font-size:13px">Pana Studio · Personajes, objetos y mapas ↗</a>
+        <a class="pk-btn pk-btn--primary pk-btn--block" href="#jugar">¡Listo, a jugar!</a>
+        <a class="studio-link" href="/studio/library">Pana Studio · Personajes, objetos y mapas</a>
       </div>
-    </section>
-
-    <!-- ---------- games ---------- -->
-    <section>
-      <h2 class="section-title">Juegos</h2>
-      <div id="games" class="games"></div>
-    </section>
-
-    <!-- ---------- live rooms ---------- -->
-    <section>
-      <h2 class="section-title">Salas en vivo</h2>
-      <div id="rooms" class="rooms"></div>
     </section>
   </main>
 
   <footer>
-    <span class="logo logo-small">PANA</span>
+    <span class="pk-logo logo-small">PANA</span>
     <span id="status">conectando…</span>
   </footer>
 

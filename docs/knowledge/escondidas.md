@@ -35,6 +35,7 @@ A departing host elects the next oldest client and returns the room to a fresh
 lobby, rather than trying to reconstruct partially received state. Remote inputs
 expire after 600ms so a lost connection cannot keep a player moving indefinitely.
 Solo menus pause simulation; multiplayer menus stop only local movement.
+The menu is the shared `engine/ui.js` dialog (see `pana-ui.md`).
 
 A disconnect must show the lobby with its practice fallback, even if it occurred
 during gameplay. Otherwise the fallback button exists inside a hidden container.
@@ -44,8 +45,8 @@ event must not clear the new local session's connected state.
 ## Shared assets
 
 Bululú's original `flora.js` is now a compatibility re-export of
-`/engine/flora.js`. Both games use exactly the same plant factories. The shared
-market kit is in `/engine/plaza-props.js`; its plain dimensions are in
+`/engine/models/vegetation/`. Both games use exactly the same plant factories. The shared
+market kit is in `/engine/models/props/plaza.js`; its plain dimensions are in
 `plaza-catalog.js`. Los Llanos uses the stall, barrel, crate and cooler directly.
 There are no cross-game asset imports. Add `three/addons/` to import maps,
 including the hub's, because the foliage batcher imports BufferGeometryUtils.
@@ -78,3 +79,11 @@ does not validate collisions; normal gameplay always does.
 
 Observed desktop gameplay was approximately 196 draw calls and 124k triangles
 including shadow passes. These are scene counts, not an FPS benchmark.
+
+## Notes for agents
+
+Rules that used to live in AGENTS.md (paths are relative to `Pana/`). Keep them
+true when you change this area.
+
+Escondidas uses a host-simulated round: clients send input/actions, and the
+room's host broadcasts snapshots at 20 Hz. See `docs/knowledge/escondidas.md` for role and recovery rules.

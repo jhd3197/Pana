@@ -43,8 +43,9 @@ export function inspect(runtime) {
   let meshes = 0, triangles = 0, vertices = 0;
   runtime.group.traverseVisible(o => {
     if (!o.isMesh) return;
-    meshes++; vertices += o.geometry.attributes.position.count;
-    triangles += (o.geometry.index?.count || o.geometry.attributes.position.count) / 3;
+    const copies = o.isInstancedMesh ? o.count : 1;
+    meshes++; vertices += o.geometry.attributes.position.count * copies;
+    triangles += (o.geometry.index?.count || o.geometry.attributes.position.count) / 3 * copies;
     bounds.union(new THREE.Box3().setFromObject(o));
     for (const m of Array.isArray(o.material) ? o.material : [o.material]) {
       materials.add(m); Object.values(m).forEach(value => { if (value?.isTexture) textures.add(value); });

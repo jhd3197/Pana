@@ -1,0 +1,26 @@
+import assert from 'node:assert/strict';
+import {Race,standings} from '../public/rules.js';
+import {at,nearest,LENGTH,JUMPS,WETLANDS,groundAt,waterDepth} from '../public/course.js';
+const tick=(r,t,input={})=>{for(let s=0;s<t;s+=.05)r.update(.05,new Map([[1,input]]));};
+const fresh=()=>{const r=new Race();r.addPlayer(1,'Pana');r.start(false);tick(r,3.1);return r;};
+const place=(r,s,offset=0)=>{const p=r.players[0],q=at(s,offset);Object.assign(p,{x:q.x,z:q.z,h:q.h,s:q.s,progress:s,checkpoint:Math.floor(s/(LENGTH/8))+1,speed:0});return p;};
+assert.ok(LENGTH>450&&LENGTH<550);
+for(let s=0;s<LENGTH;s+=2){const p=at(s);assert.ok(nearest(p.x,p.z).distance<.01);assert.ok(Number.isFinite(groundAt(p.x,p.z)));}
+for(const w of WETLANDS)assert.ok(waterDepth(w.x,w.z)>.4&&waterDepth(w.x,w.z)<.7);
+let r=fresh(),p=r.players[0];const before=p.progress;tick(r,1,{throttle:1});assert.ok(p.progress>before+3);assert.ok(p.speed>7);
+tick(r,.2,{throttle:-1});assert.ok(p.speed<5);
+r=fresh();p=place(r,5);tick(r,2,{throttle:1,sprint:true});assert.ok(p.stamina<60);assert.ok(p.speed>12);
+const spent=p.stamina;tick(r,1,{});assert.ok(p.stamina>spent);
+r=fresh();p=place(r,nearest(WETLANDS[0].x,WETLANDS[0].z).s);tick(r,1.5,{throttle:1,sprint:true});assert.ok(p.water>.3);assert.ok(p.speed<9);assert.equal(p.stamina,100);
+r=fresh();p=place(r,JUMPS[0].s-1);p.speed=12;tick(r,.2,{throttle:1});assert.equal(p.hits,1);assert.ok(p.stun>0);
+r=fresh();p=place(r,JUMPS[0].s-4);p.speed=12;tick(r,.5,{throttle:1,jump:true});assert.equal(p.hits,0);assert.ok(p.jumpY>.3);
+tick(r,1,{jump:true});assert.equal(p.jumpY,0);assert.ok(p.stamina>90,'holding jump does not repeatedly spend stamina');
+r=fresh();p=place(r,60,9);const progress=p.progress;r.reset(p);assert.equal(p.progress,progress);assert.ok(nearest(p.x,p.z).distance<.01);
+r=fresh();p=place(r,-1);p.h+=Math.PI;tick(r,1,{throttle:1});assert.equal(p.checkpoint,0,'backwards crossing cannot count a lap');
+r=fresh();r.addPlayer(2,'Late');assert.equal(r.players[1].spectator,true);r.start();assert.equal(r.players[1].spectator,false);assert.equal(r.players.length,6);
+r=fresh();r.start();tick(r,3.1);
+for(let t=0;t<120&&r.phase!=='finished';t+=.05)r.update(.05,new Map([[1,r.botInput(r.players[0])]]));
+assert.equal(r.phase,'finished');assert.ok(r.players[0].finish>60&&r.players[0].finish<120);assert.ok(r.players.every(p=>p.hits===0),'bots jump every obstacle');
+const restored=Race.restore(r.snapshot(),new Map([[1,{}]]));assert.deepEqual(restored.snapshot(),r.snapshot());
+assert.ok(standings(r)[0].finish!==null);r.start(false);assert.equal(r.time,0);assert.equal(r.players.length,1);assert.equal(r.players[0].finish,null);assert.equal(r.players[0].stamina,100);
+console.log('ok: course, shallow water, movement, braking, stamina, jump timing, recovery, ordered gates, bots, late join, snapshot, replay');

@@ -1,5 +1,6 @@
 import * as THREE from 'three';
-import { rng } from '/engine/props.js';
+import { createSky } from '/engine/sky.js';
+import { rng } from '/engine/models/core/primitives.js';
 
 export const SKY_MODES = ['day', 'night', 'cycle'];
 const TAU = Math.PI * 2;
@@ -28,22 +29,8 @@ export function createAtmosphere(scene, water, initialMode = 'day') {
   const horizon = new THREE.Color(), zenith = new THREE.Color();
   scene.background = horizon;
   scene.fog = new THREE.Fog(horizon, 300, 1100);
-  const sky = new THREE.Mesh(new THREE.SphereGeometry(1050, 32, 16), new THREE.ShaderMaterial({
-    side: THREE.BackSide, depthWrite: false,
-    uniforms: { horizon: { value: horizon }, zenith: { value: zenith } },
-    vertexShader: `varying vec3 vDirection;
-      void main() { vDirection = position; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`,
-    fragmentShader: `uniform vec3 horizon; uniform vec3 zenith; varying vec3 vDirection;
-      void main() {
-        float height = max(normalize(vDirection).y, 0.0);
-        gl_FragColor = vec4(mix(horizon, zenith, pow(height, 0.55)), 1.0);
-        #include <tonemapping_fragment>
-        #include <colorspace_fragment>
-      }`,
-  }));
-  sky.name = 'Island sky';
-  sky.renderOrder = -10;
-  scene.add(sky);
+  const sky = createSky({sunDisc:false,skySeed:31,cloudCover:.5});scene.add(sky.mesh);
+  let elapsed = 0;
 
   const glow = glowTexture();
   const sun = new THREE.Mesh(new THREE.SphereGeometry(19, 24, 16), new THREE.MeshBasicMaterial({ color: 0xffedb1, fog: false }));
@@ -96,7 +83,8 @@ export function createAtmosphere(scene, water, initialMode = 'day') {
     get phase() { return phase; },
     setMode(next) { if (SKY_MODES.includes(next)) mode = next; },
     follow(target) { focus.copy(target); },
-    update(dt) {
+    update(dt, absoluteTime) {
+      elapsed = absoluteTime ?? elapsed + dt;
       if (mode === 'cycle') phase = (phase + dt / CYCLE_SECONDS) % 1;
       else {
         const target = mode === 'night' ? 0.75 : 0.25;
@@ -108,6 +96,8 @@ export function createAtmosphere(scene, water, initialMode = 'day') {
       const dusk = (1 - smooth(0.05, 0.5, Math.abs(elevation))) * 0.7;
       mix(horizon, 'horizon').lerp(sunset, dusk);
       mix(zenith, 'zenith');
+      sky.mesh.material.uniforms.horizon.value.copy(horizon);sky.mesh.material.uniforms.zenith.value.copy(zenith);
+      sky.update(elapsed,daylight);
       scene.fog.color.copy(horizon);
       mix(water.color, 'water');
       mix(ambient.color, 'skyLight');
@@ -130,6 +120,7 @@ export function createAtmosphere(scene, water, initialMode = 'day') {
       // Keep directional shading consistent with the visible sun or moon.
       direction.copy(moon.position).lerp(sun.position, daylight).normalize().multiplyScalar(110);
       direction.y = Math.max(25, direction.y);
+      sky.mesh.material.uniforms.sunDirection.value.copy(direction).normalize();
       key.position.copy(focus).add(direction);
       key.target.position.copy(focus);
     },

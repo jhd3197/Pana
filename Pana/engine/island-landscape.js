@@ -1,7 +1,7 @@
 // Continuous terrain and sandstone table mountains for the archipelago.
 // Distant vegetation is instanced; the terrain functions also place props.
 import * as THREE from 'three';
-import { rng } from '/engine/props.js';
+import { rng } from '/engine/models/core/primitives.js';
 import { SEA, fbm, smooth } from './island-terrain.js';
 import { terrainMaterial } from './terrain-material.js';
 

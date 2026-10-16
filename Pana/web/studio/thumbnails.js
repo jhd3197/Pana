@@ -1,87 +1,88 @@
-import { fingerprints } from './fingerprints.js';
-import { thumbnailRenderer } from './preview.js';
+import { createFingerprinter } from './fingerprints.js';
 import { openDatabase, transaction } from './cache-store.js';
 
 const idle = () => new Promise(resolve => {
   if ('requestIdleCallback' in window) requestIdleCallback(resolve, { timeout: 1000 }); else setTimeout(resolve, 30);
 });
 
+// Only explicit requests may validate or construct previews. Replacing the queue
+// never appends the rest of the catalog.
 export function createThumbnails(assets, { onChange, isBusy = () => false }) {
-  const entries = new Map(), errors = new Map();
-  let db, renderer, keys, timer, job, epoch = 0, disposed = false, paused = false, validating = true, persistent = true, active = '', generated = 0, reused = 0, validationError = '', order = assets;
+  const entries = new Map(), errors = new Map(), byId = new Map(assets.map(asset => [asset.id, asset]));
+  let db, renderer, timer, job, disposed = false, initialized = false, paused = false;
+  let active = '', validating = false, persistent = true, generated = 0, reused = 0, order = [];
+  let fingerprint = createFingerprinter();
   const emit = () => { if (!disposed) onChange(api); };
-  function forget(id) { const entry = entries.get(id); if (entry) URL.revokeObjectURL(entry.url); entries.delete(id); }
-  function remember(record) { forget(record.id); entries.set(record.id, { ...record, url: URL.createObjectURL(record.blob) }); }
+  const forget = id => { const entry = entries.get(id); if (entry) URL.revokeObjectURL(entry.url); entries.delete(id); };
+  const remember = record => { forget(record.id); entries.set(record.id, { ...record, url: URL.createObjectURL(record.blob) }); };
+  const storageFailed = () => { persistent = false; db?.close(); db = null; };
   function schedule() { clearTimeout(timer); if (!disposed) timer = setTimeout(pump, 180); }
   async function pump() {
-    if (disposed || validating || job) return;
-    const asset = order.find(a => !entries.has(a.id) && !errors.has(a.id));
-    if (!asset || paused) return;
+    if (disposed || !initialized || job || paused) return;
     if (document.hidden || isBusy()) { schedule(); return; }
-    await idle(); if (disposed || paused || validating || job) return;
+    await idle();
+    if (disposed || paused || job) return;
     if (document.hidden || isBusy()) { schedule(); return; }
-    const token = epoch; active = asset.name; emit();
+    const asset = order.map(id => byId.get(id)).find(asset => !entries.has(asset.id) && !errors.has(asset.id));
+    if (!asset) return;
+    active = asset.name; validating = true; emit();
     job = (async () => {
       try {
-        renderer ||= thumbnailRenderer(); const result = await renderer.capture(asset);
-        if (disposed || token !== epoch) return;
-        const record = { id: asset.id, fingerprint: keys?.get(asset.id), ...result, createdAt: Date.now() };
+        const key = (await fingerprint([asset])).get(asset.id);
+        if (disposed) return;
+        validating = false;
+        let cached;
+        if (db) try { cached = await transaction(db, 'readonly', store => store.get(asset.id)); } catch { storageFailed(); }
+        if (disposed) return;
+        if (cached?.fingerprint === key && cached.blob instanceof Blob && cached.blob.size && Number.isFinite(cached.stats?.triangles)) {
+          remember(cached); reused++; return;
+        }
+        if (!order.includes(asset.id)) return;
+        if (!renderer) {
+          const { thumbnailRenderer } = await import('./preview.js');
+          if (disposed || paused || !order.includes(asset.id)) return;
+          renderer = thumbnailRenderer();
+        }
+        if (disposed || paused || !order.includes(asset.id) || document.hidden || isBusy()) return;
+        const result = await renderer.capture(asset);
+        if (disposed) return;
+        const record = { id: asset.id, fingerprint: key, ...result, createdAt: Date.now() };
         remember(record); generated++;
-        if (db && record.fingerprint) try { await transaction(db, 'readwrite', store => store.put(record)); } catch { persistent = false; db.close(); db = null; }
-      } catch (error) { if (!disposed && token === epoch) errors.set(asset.id, error.message); }
+        if (db) try { await transaction(db, 'readwrite', store => store.put(record)); } catch { storageFailed(); }
+      } catch (error) { if (!disposed) errors.set(asset.id, error.message); }
     })();
-    await job; job = null; active = ''; emit(); schedule();
-  }
-  async function validate() {
-    validating = true; emit();
-    let changed = false;
-    try {
-      const next = await fingerprints(assets);
-      changed = !!keys && assets.some(asset => keys.get(asset.id) !== next.get(asset.id));
-      keys = next; validationError = '';
-      for (const [id, entry] of entries) if (entry.fingerprint !== keys.get(id)) forget(id);
-      reused = entries.size;
-    } catch (error) {
-      validationError = error.message; keys = null;
-      // Keep existing images visible, but don't call them verified or persist new ones.
-      reused = 0;
-    }
-    validating = false; emit(); schedule();
-    return changed;
+    await job; job = null; active = ''; validating = false; emit(); schedule();
   }
   const api = {
     entries, errors,
-    get state() { return { paused, validating, persistent, active, generated, reused, validationError,
-      ready: entries.size, total: assets.length, bytes: [...entries.values()].reduce((n, entry) => n + entry.blob.size, 0) }; },
+    get state() { return { paused, validating: !initialized || validating, persistent, active, generated, reused, validationError: '',
+      ready: entries.size, total: assets.length, requested: order.length, completed: order.filter(id => entries.has(id)).length,
+      pending: order.filter(id => !entries.has(id) && !errors.has(id)).length,
+      bytes: [...entries.values()].reduce((n, entry) => n + entry.blob.size, 0) }; },
     toggle() { paused = !paused; emit(); schedule(); },
-    prioritize(ids) { const wanted = new Set(ids), byId = new Map(assets.map(asset => [asset.id, asset])); order = [...wanted].map(id => byId.get(id)).filter(Boolean).concat(assets.filter(a => !wanted.has(a.id))); },
+    prioritize(ids) { order = [...new Set(ids)].filter(id => byId.has(id)); emit(); schedule(); },
+    retry() { errors.clear(); fingerprint = createFingerprinter(); emit(); schedule(); },
     async regenerate() {
-      if (validating) return;
-      const wasPaused = paused; paused = true; epoch++; emit(); await job;
+      paused = true; await job;
       if (disposed) return;
-      for (const id of entries.keys()) forget(id); errors.clear(); generated = 0;
-      if (db) try { await transaction(db, 'readwrite', store => store.clear()); } catch { persistent = false; db.close(); db = null; }
-      const changed = await validate();
-      // ES modules are cached for the page lifetime. Reload changed code before
-      // labeling newly rendered images with its new fingerprint.
-      if (changed) { location.reload(); return; }
-      paused = wasPaused; emit(); schedule();
+      if (db) try { await transaction(db, 'readwrite', store => store.clear()); } catch { storageFailed(); }
+      // Reload so imported ES modules and new fingerprints agree.
+      location.reload();
     },
-    dispose() { disposed = true; epoch++; clearTimeout(timer); db?.close(); for (const id of entries.keys()) forget(id); Promise.resolve(job).finally(() => renderer?.dispose()); },
+    dispose() { disposed = true; clearTimeout(timer); db?.close(); for (const id of entries.keys()) forget(id); Promise.resolve(job).finally(() => renderer?.dispose()); },
   };
   (async () => {
     try {
       db = await openDatabase();
       if (disposed) { db.close(); return; }
-      db.onversionchange = () => { db?.close(); db = null; persistent = false; emit(); };
-      const records = await transaction(db, 'readonly', store => store.getAll());
+      db.onversionchange = () => { storageFailed(); emit(); };
+      // Prune IDs without reading every stored image into memory.
+      const ids = await transaction(db, 'readonly', store => store.getAllKeys());
       if (disposed) return;
-      const ids = new Set(assets.map(a => a.id));
-      for (const record of records) if (ids.has(record.id) && record.blob instanceof Blob && record.blob.size && Number.isFinite(record.stats?.triangles)) remember(record);
-      if (records.some(record => !ids.has(record.id))) await transaction(db, 'readwrite', store => { records.filter(record => !ids.has(record.id)).forEach(record => store.delete(record.id)); });
-      emit();
-    } catch { persistent = false; db?.close(); db = null; }
-    if (!disposed) await validate();
+      const removed = ids.filter(id => !byId.has(id));
+      if (removed.length) await transaction(db, 'readwrite', store => removed.forEach(id => store.delete(id)));
+    } catch { storageFailed(); }
+    initialized = true; emit(); schedule();
   })();
   return api;
 }

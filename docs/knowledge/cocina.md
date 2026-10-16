@@ -13,6 +13,7 @@ The oldest connected member becomes host. Unlike Hunt, Cocina restores the
 latest snapshot instead of discarding a live turn; stale human entries and
 station ownership are removed. New arrivals can immediately help.
 
+The menu is the shared one from `engine/ui.js` (see `pana-ui.md`).
 In solo or local practice the menu pauses simulation. In multiplayer it only
 stops that user's input. Input is cleared on blur and expires on the host after
 600 ms. A failed connection offers an explicit local kitchen; it does not
@@ -56,3 +57,14 @@ Chromium path; no runtime package was added. It tests real peers, mobile input,
 host departure, replay, offline recovery and existing games. `PANA_QA_OUTPUT`
 can point to a local directory for screenshots. `?debug` exposes `window.cocina`
 with the host simulation and test placement/advance helpers.
+
+## Notes for agents
+
+Rules that used to live in AGENTS.md (paths are relative to `Pana/`). Keep them
+true when you change this area.
+
+Cocina also uses a host simulation at 20 Hz (`cocina-v1`). Host migration
+restores the last kitchen snapshot, including orders and active food. See
+`docs/knowledge/cocina.md`. Plaza scenery and the original hunt layout now
+live in `engine/plaza.js` and `engine/plaza-layout.js`; cooking has its own
+station layout and collision rules. Existing Escondidas paths re-export them.

@@ -1,8 +1,13 @@
 import * as THREE from 'three';
 import { loadAvatar, loadName } from '/engine/avatar.js';
-import { buildCharacter } from '/engine/character.js';
-import { createPlazaProp, PLAZA_PROPS, propDefinition } from '/engine/plaza-props.js';
+import { buildCharacter } from '/engine/models/characters/pana/avatar-model.js';
+import { createPlazaProp, PLAZA_PROPS, propDefinition } from '/engine/models/props/plaza.js';
 import { sound } from '/engine/fx.js';
+import { createGameMenu, toggleMute } from '/engine/ui.js';
+import { fillRoster } from '/engine/results.js';
+import { inviteUrl, newRoomCode, roomFromUrl } from '/engine/invite.js';
+import { holdButton } from '/engine/touch.js';
+import { pixelRatio, bindRenderer } from '/engine/settings.js';
 import { createPlaza } from './plaza.js';
 import { MAP_PROPS, BLOCKERS, BOUNDS } from './layout.js';
 import { RULES } from './rules.js';
@@ -10,13 +15,13 @@ import { HuntRoom } from './network.js';
 
 const $ = id => document.getElementById(id), show = (id, visible) => $(id).classList.toggle('hidden', !visible);
 const qs = new URLSearchParams(location.search), DEBUG = qs.has('debug');
-const code = (qs.get('room') || Math.random().toString(36).slice(2, 8)).slice(0, 24);
+const code = roomFromUrl() || newRoomCode();
 const url = new URL(location.href); url.searchParams.set('room', code); history.replaceState(null, '', url);
 const avatar = loadAvatar(), name = loadName();
 await Promise.race([document.fonts.load('900 64px Nunito'), new Promise(resolve => setTimeout(resolve, 1600))]);
 
 const renderer = new THREE.WebGLRenderer({ canvas: $('world'), antialias: true });
-renderer.setPixelRatio(Math.min(devicePixelRatio, 1.75)); renderer.setSize(innerWidth, innerHeight);
+renderer.setPixelRatio(pixelRatio(1.75)); renderer.setSize(innerWidth, innerHeight); bindRenderer(renderer, 1.75);
 renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.13;
 const plaza = createPlaza(), { scene } = plaza;
@@ -42,16 +47,16 @@ for (const def of PLAZA_PROPS) previews.set(def.id, preview(createPlazaProp(def.
 const seekerFace = preview(buildCharacter({ ...avatar, hatColor: '#3d7bf2' }).group, true);
 $('seeker-face').src = seekerFace;
 for (const [i, def] of PLAZA_PROPS.entries()) {
-  const button = document.createElement('button'); button.type = 'button'; button.dataset.prop = def.id;
+  const button = document.createElement('button'); button.type = 'button'; button.className = 'pk-slot'; button.dataset.prop = def.id;
   button.setAttribute('aria-label', `${def.label}, tecla ${i + 1}`); button.setAttribute('aria-pressed', 'false');
   const img = document.createElement('img'); img.src = previews.get(def.id); img.alt = '';
   const label = document.createElement('b'); label.textContent = def.label;
-  const key = document.createElement('kbd'); key.textContent = i + 1;
+  const key = document.createElement('kbd'); key.className = 'pk-slot-n'; key.textContent = i + 1;
   button.append(img, label, key); button.onclick = () => transform(def.id); $('prop-list').append(button);
 }
 
 let state = { phase: 'lobby', players: [], round: 0, events: [] }, previousPhase = 'lobby';
-let preference = 'hide', paused = false, yaw = 0.28, pitch = 0.22, eventId = 0, uiKey = '', snapRound = -1;
+let drag = null, preference = 'hide', paused = false, yaw = 0.28, pitch = 0.22, eventId = 0, uiKey = '', snapRound = -1;
 let toastTimer, motionTime = 0, last = performance.now();
 let portraitKey = '';
 const keys = new Set(), touch = new Set(), actorRing = new THREE.Mesh(new THREE.RingGeometry(0.82, 0.88, 40), new THREE.MeshBasicMaterial({ color: 0x54e2ca, transparent: true, opacity: 0.8, depthWrite: false }));
@@ -59,6 +64,20 @@ actorRing.rotation.x = -Math.PI / 2; actorRing.position.y = 0.07; scene.add(acto
 const room = new HuntRoom({ code, name, avatar, onState: receive,
   onStatus(text, failed = false) { $('connection').textContent = text; show('practice', failed); if (failed) notify(text); updateHUD(); }, onNotice: notify });
 function notify(message) { $('toast').textContent = message; show('toast', true); clearTimeout(toastTimer); toastTimer = setTimeout(() => show('toast', false), 3300); }
+const menu = createGameMenu({
+  orientation: 'vertical',
+  title: 'Escondidas', heading: 'Un momentico.', resumeLabel: 'Volver a la plaza', sound, notify,
+  note: () => room.members.size === 1 ? 'La práctica queda en pausa mientras descansas.' : 'La ronda continúa para los demás panas.',
+  controls: [['W A S D / ↑ ← ↓ →', 'Moverte'], ['Arrastrar', 'Mirar'], ['Shift', 'Correr'], ['1 2 3 4 5', 'Transformarte'],
+    ['Q', 'Volver a pana'], ['E', 'Copiar objeto cercano o buscar'], ['M', 'Sonido']],
+  tips: ['Una revisión fallida espera 1,6 segundos.'],
+  invite: () => inviteUrl(code),
+  onOpen() { paused = true; keys.clear(); touch.clear(); drag = null; },
+  onClose() { paused = false; },
+});
+$('game-nav').append(menu.createInviteButton({ id: 'invite', className: 'pk-btn pk-btn--sm' }), menu.createSoundButton({ id: 'sound', className: 'pk-btn pk-btn--sm' }), menu.createButton({ id: 'menu', className: 'pk-btn pk-btn--sm' }));
+$('menu').querySelector('kbd')?.classList.add('pk-kbd');
+$('lobby-cta').append(menu.createInviteButton({ id: 'lobby-invite', className: 'pk-btn' }));
 function getMe() { return state.players.find(p => p.id === room.id); }
 
 function disposeActor(actor) {
@@ -97,17 +116,19 @@ function receive(next) {
 }
 function updateHUD() {
   const me = getMe(), active = room.connected && ['hide', 'hunt'].includes(state.phase), lobby = state.phase === 'lobby' || !room.connected;
-  show('lobby', lobby); show('scene-label', lobby); show('hud', active);
+  show('lobby', lobby); show('scene-label', lobby); show('hud', active); document.body.classList.toggle('in-lobby', lobby);
   show('results', room.connected && ['results', 'finished'].includes(state.phase));
   $('start').disabled = !room.connected || !room.isHost;
   $('start').textContent = !room.connected ? 'Entrando a la sala…' : room.isHost ? '¡A jugar! →' : 'Esperando al anfitrión…';
   $('role-hide').disabled = $('role-seek').disabled = !room.isHost;
+  $('room-code').textContent = room.offline ? '● Práctica' : `● Sala ${code}`;
   if (room.connected) $('connection').textContent = room.offline ? 'Práctica con 3 panas de la máquina.'
     : `Sala ${code} · ${room.members.size} pana${room.members.size === 1 ? '' : 's'} conectado${room.members.size === 1 ? '' : 's'}${room.members.size < 4 ? ' · completamos con bots' : ''}`;
   const rosterKey = [...room.members.values()].map(p => p.name).join('|');
   if ($('roster').dataset.key !== rosterKey) {
     $('roster').dataset.key = rosterKey; $('roster').replaceChildren();
     for (const p of room.members.values()) { const el = document.createElement('span'); el.textContent = p.name + (p.id === room.id ? ' (tú)' : ''); $('roster').append(el); }
+    $('roster').prepend(Object.assign(document.createElement('i'), { className: 'pk-dot' }));
   }
   if (lobby) { $('world').style.filter = ''; eventId = 0; return; }
   const seeker = state.players.find(p => p.id === state.seeker), seeking = me?.id === state.seeker;
@@ -133,13 +154,13 @@ function updateHUD() {
   $('world').style.filter = seeking && state.phase === 'hide' ? 'blur(30px) brightness(.45)' : '';
   show('disguise-panel', !seeking && !spectating);
   $('prop-name').textContent = propDefinition(me?.prop)?.label || 'Tu pana';
-  $('charges').textContent = Array.from({ length: RULES.changes }, (_, i) => i < (me?.changes || 0) ? '●' : '○').join(' ');
+  $('charges').replaceChildren(...Array.from({ length: RULES.changes }, (_, i) => Object.assign(document.createElement('i'), { className: i < (me?.changes || 0) ? 'on' : '' })));
   $('charges').setAttribute('aria-label', `${me?.changes || 0} cambios restantes`);
   $('disguise-tip').textContent = me?.prop ? 'Quédate quieto para camuflarte.' : 'Elige un objeto para camuflarte.';
   $('revert').disabled = !me?.prop || seeking || spectating;
   for (const button of $('prop-list').children) {
     const selected = button.dataset.prop === me?.prop;
-    button.classList.toggle('selected', selected); button.setAttribute('aria-pressed', String(selected));
+    button.classList.toggle('selected', selected); button.classList.toggle('is-active', selected); button.setAttribute('aria-pressed', String(selected));
     button.disabled = !active || seeking || spectating || (me?.changes ?? 0) <= 0 || selected;
   }
   const near = nearestProp();
@@ -155,13 +176,9 @@ function updateHUD() {
     $('result-round').textContent = state.phase === 'finished' ? 'PARTIDA TERMINADA' : `RONDA ${state.round} DE ${state.totalRounds}`;
     $('result-title').textContent = state.winner === 'hiders' ? '¡Bien escondidos!' : '¡Los pillaron a todos!';
     $('result-copy').textContent = 'Cada captura suma 1 punto. Sobrevivir a la ronda suma 3. El buscador cambia en cada ronda.';
-    $('scores').replaceChildren();
-    for (const p of [...state.players].sort((a, b) => b.score - a.score)) {
-      const row = document.createElement('div'); row.className = 'score-row';
-      const label = document.createElement('span'); label.textContent = p.name + (p.id === room.id ? ' (tú)' : '');
-      const detail = document.createElement('small'); detail.textContent = p.spectator ? 'Espectador' : p.id === state.seeker ? 'Buscador' : p.caught ? 'Encontrado' : 'A salvo';
-      const score = document.createElement('b'); score.textContent = p.score; row.append(label, detail, score); $('scores').append(row);
-    }
+    fillRoster($('scores'), [...state.players].sort((a, b) => b.score - a.score).map(p => ({
+      className: 'score-row', name: p.name + (p.id === room.id ? ' (tú)' : ''), me: p.id === room.id, end: p.score, score: true,
+      detail: p.spectator ? 'Espectador' : p.id === state.seeker ? 'Buscador' : p.caught ? 'Encontrado' : 'A salvo' })));
     $('next').disabled = !room.isHost;
     $('next').textContent = !room.isHost ? 'Esperando al anfitrión…' : state.phase === 'finished' ? 'Otra partida →' : 'Siguiente ronda →';
   }
@@ -178,24 +195,6 @@ function act() {
   if (room.id === state.seeker) room.action('check');
   else { const near = nearestProp(); if (near) transform(near.type); else notify('Acércate a un barril, caja, cava, mata o banco.'); }
 }
-function setPaused(value) {
-  paused = value; keys.clear(); touch.clear(); show('pause', value);
-  $('pause-copy').textContent = room.members.size === 1 ? 'La práctica queda en pausa mientras descansas.' : 'La ronda continúa para los demás panas.';
-  if (value) $('resume').focus();
-}
-async function invite() {
-  const share = new URL(location.href); share.search = ''; share.searchParams.set('room', code);
-  try { await navigator.clipboard.writeText(share.href); notify('¡Enlace copiado! Pásaselo a tus panas.'); }
-  catch { setPaused(true); show('share-label', true); $('share-url').value = share.href; $('share-url').select(); }
-}
-$('invite').onclick = $('copy-room').onclick = invite;
-$('menu').onclick = () => setPaused(!paused); $('resume').onclick = () => setPaused(false);
-$('sound').onclick = () => {
-  sound.unlock(); sound.muted = !sound.muted;
-  $('sound').textContent = sound.muted ? 'Sonido: no' : 'Sonido: sí';
-  $('sound').setAttribute('aria-pressed', String(!sound.muted)); $('sound').setAttribute('aria-label', sound.muted ? 'Activar sonido' : 'Silenciar sonido');
-};
-sound.muted = true;
 for (const mode of ['hide', 'seek']) $(`role-${mode}`).onclick = () => {
   preference = mode;
   for (const m of ['hide', 'seek']) { $(`role-${m}`).classList.toggle('selected', m === mode); $(`role-${m}`).setAttribute('aria-pressed', String(m === mode)); }
@@ -209,20 +208,18 @@ addEventListener('keydown', event => {
   const key = event.key.toLowerCase();
   if (['arrowup', 'arrowdown', 'arrowleft', 'arrowright', ' '].includes(key)) event.preventDefault();
   keys.add(key); if (event.repeat) return;
-  if (key === 'escape') setPaused(!paused);
   if (paused) return;
+  if (key === 'm') toggleMute();
   if (key === 'e') act(); if (key === 'q') transform(null);
   if (/^[1-5]$/.test(key)) transform(PLAZA_PROPS[Number(key) - 1].id);
 });
 addEventListener('keyup', event => keys.delete(event.key.toLowerCase()));
 addEventListener('blur', () => { keys.clear(); touch.clear(); });
 document.addEventListener('visibilitychange', () => { keys.clear(); touch.clear(); });
+// Held touch buttons (engine/touch.js).
 for (const button of document.querySelectorAll('[data-move]')) {
-  button.onpointerdown = event => { event.preventDefault(); button.setPointerCapture(event.pointerId); touch.add(button.dataset.move); };
-  const release = () => touch.delete(button.dataset.move);
-  button.onpointerup = button.onpointercancel = button.onlostpointercapture = release;
+  holdButton(button, { down: () => touch.add(button.dataset.move), up: () => touch.delete(button.dataset.move) });
 }
-let drag = null;
 $('world').onpointerdown = event => { if (paused) return; drag = { x: event.clientX, y: event.clientY }; $('world').setPointerCapture(event.pointerId); };
 $('world').onpointermove = event => {
   if (!drag) return;
@@ -240,8 +237,8 @@ function input() {
 const map = $('minimap').getContext('2d');
 function drawMap() {
   const W = 300, H = 270, scale = 5.7, px = x => W / 2 + x * scale, pz = z => H / 2 + z * scale;
-  map.clearRect(0, 0, W, H); map.fillStyle = '#595565'; map.fillRect(px(-BOUNDS.x), pz(-BOUNDS.z), BOUNDS.x * scale * 2, BOUNDS.z * scale * 2);
-  map.fillStyle = '#353145';
+  map.clearRect(0, 0, W, H); map.fillStyle = '#2e2558'; map.fillRect(px(-BOUNDS.x), pz(-BOUNDS.z), BOUNDS.x * scale * 2, BOUNDS.z * scale * 2);
+  map.fillStyle = '#120d2c';
   for (const b of BLOCKERS) {
     if (b.r) { map.beginPath(); map.arc(px(b.x), pz(b.z), Math.max(2, b.r * scale), 0, Math.PI * 2); map.fill(); }
     else map.fillRect(px(b.x - b.w / 2), pz(b.z - b.d / 2), b.w * scale, b.d * scale);
@@ -250,18 +247,19 @@ function drawMap() {
     if (p.caught || p.spectator) continue;
     // Do not reveal hiders to the seeker, even during preparations.
     if (p.id !== room.id && p.id !== state.seeker) continue;
-    map.fillStyle = p.id === room.id ? '#54e2ca' : '#ff7067';
-    map.strokeStyle = '#252137'; map.lineWidth = 2.5;
+    map.fillStyle = p.id === room.id ? '#ffc629' : '#ff4b4b';
+    map.strokeStyle = '#0e0b24'; map.lineWidth = 2.5;
     map.beginPath(); map.arc(px(p.x), pz(p.z), p.id === room.id ? 7 : 5, 0, Math.PI * 2); map.fill(); map.stroke();
     if (p.id === room.id) {
-      map.beginPath(); map.moveTo(px(p.x), pz(p.z)); map.lineTo(px(p.x) - Math.sin(yaw) * 13, pz(p.z) - Math.cos(yaw) * 13); map.strokeStyle = '#fff1d0'; map.stroke();
+      map.beginPath(); map.moveTo(px(p.x), pz(p.z)); map.lineTo(px(p.x) - Math.sin(yaw) * 13, pz(p.z) - Math.cos(yaw) * 13); map.strokeStyle = '#f3e9d7'; map.stroke();
     }
   }
 }
 
 const look = new THREE.Vector3(), desired = new THREE.Vector3();
 function frame(now) {
-  const dt = Math.min((now - last) / 1000, 0.06); last = now; motionTime += dt;
+  // rAF time can trail performance.now(); a negative dt would fling the camera.
+  const dt = Math.max(0, Math.min((now - last) / 1000, 0.06)); last = now; motionTime += dt;
   plaza.update(motionTime);
   const me = getMe(), active = ['hide', 'hunt'].includes(state.phase);
   for (const p of state.players) {
@@ -286,6 +284,11 @@ function frame(now) {
     desired.set(26 + Math.sin(motionTime * 0.06) * 2, 21, 32); camera.position.lerp(desired, 1 - Math.exp(-dt * 2));
     camera.lookAt(innerWidth < 600 ? 0 : -3, 1.5, -2); actorRing.visible = false;
   }
+  // The launcher column covers the left of the lobby; shift the plaza right of it.
+  const lobbyShift = (state.phase === 'lobby' || !room.connected) && innerWidth > 720 ? Math.min(560, innerWidth) / 2 : 0;
+  if (lobbyShift !== (camera.view?.enabled ? -camera.view.offsetX : 0)) {
+    if (lobbyShift) camera.setViewOffset(innerWidth, innerHeight, -lobbyShift, 0, innerWidth, innerHeight); else camera.clearViewOffset();
+  }
   drawMap(); renderer.render(scene, camera); requestAnimationFrame(frame);
 }
 let tickAt = performance.now();
@@ -293,10 +296,10 @@ const ticker = setInterval(() => {
   const now = performance.now(), dt = Math.min((now - tickAt) / 1000, 0.25); tickAt = now;
   room.tick(dt, input(), paused && room.members.size === 1);
 }, 50);
-addEventListener('resize', () => { camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix(); renderer.setSize(innerWidth, innerHeight); });
+addEventListener('resize', () => { camera.aspect = innerWidth / innerHeight; camera.clearViewOffset(); renderer.setSize(innerWidth, innerHeight); });
 addEventListener('pagehide', () => { clearInterval(ticker); room.dispose(); renderer.dispose(); previewRenderer.dispose(); });
 show('loading', false); show('lobby', true); room.connect(); requestAnimationFrame(frame);
 
-if (DEBUG) window.hunt = { room, get state() { return state; }, scene, renderer, camera, actors,
+if (DEBUG) window.hunt = { room, menu, get state() { return state; }, scene, renderer, camera, actors,
   step(seconds) { if (!room.isHost) return; for (let t = 0; t < seconds; t += 1 / 60) room.game.update(1 / 60, new Map()); room.tick(0, {}); },
   place(id, x, z) { if (!room.isHost) return; const p = room.game.players.find(p => p.id === id); if (p) Object.assign(p, { x, z }); room.tick(0, {}); } };

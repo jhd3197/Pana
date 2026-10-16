@@ -2,13 +2,19 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { sound, Puffs } from '/engine/fx.js';
 import { loadAvatar, loadName, randomAvatar } from '/engine/avatar.js';
-import { buildCharacter } from '/engine/character.js';
-import { makeMango } from '/engine/props.js';
+import { buildCharacter } from '/engine/models/characters/pana/avatar-model.js';
+import { makeMango } from '/engine/models/props/mango.js';
 import { createBoard, createToken, createDie, TILE_COUNT, FORK } from './board.js';
 import { RIVER, SEA, MAP_BOUNDS, beachMask } from './island.js';
 import atrapa from './minigames/atrapa.js';
 import caigas from './minigames/caigas.js';
 import { SKY_MODES } from './atmosphere.js';
+import * as rules from './rules.js';
+import { ICONS as SVG } from '/engine/icons.js';
+import { COLORS, RIVALS, START_COINS, PRICE, DOUBLES_BONUS, TREE_COINS } from './rules.js';
+import { createGameMenu, toggleMute } from '/engine/ui.js';
+import { holdButton } from '/engine/touch.js';
+import { pixelRatio, bindRenderer } from '/engine/settings.js';
 
 // every tile, sign and bubble is drawn on a canvas in the cartoon font, so
 // load it before building anything (but never hang on it)
@@ -24,7 +30,7 @@ const pick = (list) => list[Math.floor(Math.random() * list.length)];
 const QS = new URLSearchParams(location.search);
 const AUTO = QS.has('auto');
 const SPEED = Number(QS.get('speed')) || 1;
-const ROUNDS = Math.max(1, Math.min(20, Number(QS.get('rounds')) || 10));
+let ROUNDS = Math.max(1, Math.min(20, Number(QS.get('rounds')) || 10));   // the lobby can change it
 const DEBUG = QS.has('debug');
 const MINIGAMES = [atrapa, caigas];
 const FORCED = MINIGAMES.find((m) => m.id === QS.get('mini'));
@@ -32,11 +38,6 @@ const ONLY = MINIGAMES.find((m) => m.id === QS.get('play'));
 let savedSky = 'day';
 try { savedSky = localStorage.getItem('pana.bululu.sky') || 'day'; } catch { /* Storage can be disabled. */ }
 const skyMode = QS.get('sky') || savedSky;
-
-const COLORS = ['#ff4b4b', '#3d7bf2', '#ffc629', '#2fbf4a'];
-const RIVALS = ['Don Pancho', 'La Chama', 'El Gocho', 'Tía Carmen', 'El Catire', 'Yoli', 'Chuchú', 'La Nena'];
-const START_COINS = 10;
-const PRICE = 20;
 
 // ---------- players ----------
 const players = (() => {
@@ -62,7 +63,8 @@ const isHuman = (p) => p.human && !AUTO;
 
 // ---------- renderer ----------
 const renderer = new THREE.WebGLRenderer({ antialias: true });
-renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.setPixelRatio(pixelRatio(2));
+bindRenderer(renderer, 2);
 renderer.setSize(innerWidth, innerHeight);
 renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
@@ -72,14 +74,29 @@ document.body.prepend(renderer.domElement);
 const boardScene = new THREE.Scene();
 const boardCam = new THREE.PerspectiveCamera(50, innerWidth / innerHeight, 0.1, 1800);
 const board = createBoard(boardScene, { skyMode });
-const skyButtons = [...document.querySelectorAll('[data-sky]')];
 function selectSky(mode, save = true) {
   if (!SKY_MODES.includes(mode)) return;
   board.atmosphere.setMode(mode);
-  for (const button of skyButtons) button.setAttribute('aria-pressed', String(button.dataset.sky === mode));
+  for (const b of $('sky').children) b.setAttribute('aria-pressed', String(b.dataset.sky === mode));
   if (save) try { localStorage.setItem('pana.bululu.sky', mode); } catch { /* Keep the selection for this session. */ }
 }
-for (const button of skyButtons) button.addEventListener('click', () => selectSky(button.dataset.sky));
+
+// Esc pauses on game time: turns, timers, tweens and minigames all wait.
+let paused = false;
+const menu = createGameMenu({
+  title: 'Bululú', heading: 'Pausa', sound,
+  note: () => 'La partida está en pausa.',
+  controls: [['Espacio', 'Tirar los dados / saltar'], ['A D / ← →', 'Moverte en los minijuegos'], ['Tab', 'Ver el tablero'],
+    ['L', 'Cambiar la luz'], ['M', 'Sonido'], ['Esc', 'Pausa']],
+  tips: ['Junta 20 monedas y cómprale un Mango de oro al puesto del árbol. Gana el pana con más mangos de oro.'],
+  options: [{ id: 'sky', label: 'Luz de la isla', choices: [['day', 'Día'], ['night', 'Noche'], ['cycle', 'Ciclo']],
+    get: () => board.atmosphere.mode, set: mode => selectSky(mode) }],
+  actions: [{ id: 'restart', label: 'Empezar de nuevo', kind: 'secondary', run: () => location.reload() }],
+  onOpen() { paused = true; for (const k in held) held[k] = false; },
+  onClose() { paused = false; },
+});
+$('top-actions').prepend(menu.createButton({ id: 'menu', className: 'pk-btn menu-button' }));
+for (const b of $('sky').children) b.onclick = () => selectSky(b.dataset.sky);
 selectSky(board.atmosphere.mode, false);
 const puffs = new Puffs(boardScene);
 // two dice, plus a floating counter for the steps left once they're rolled
@@ -181,7 +198,7 @@ function setFreeLook(on) {
     cam.look.copy(looker.target);
   }
   $('look').classList.toggle('on', on);
-  $('look').innerHTML = on ? 'Volver <kbd>Tab</kbd>' : 'Ver tablero <kbd>Tab</kbd>';
+  $('look').innerHTML = `${on ? 'Volver' : 'Ver tablero'} <kbd class="pk-kbd" data-pana-hint>Tab</kbd>`;
   if (!on) $('places').value = '';
 }
 $('look').onclick = () => setFreeLook(!freeLook);
@@ -276,12 +293,12 @@ let jumpPressed = false;
 let actionWaiters = [];
 addEventListener('keydown', (e) => {
   // Let the atmosphere buttons retain native Space/Enter/Tab behavior.
-  if (e.target.closest?.('.sky-controls, .places')) return;
+  if (e.target.closest?.('.places')) return;
   const k = e.key.toLowerCase();
   if (k === ' ' || k.startsWith('arrow')) e.preventDefault();
   held[k] = true;
   if (!e.repeat && (k === ' ' || k === 'w' || k === 'arrowup')) jumpPressed = true;
-  if (k === 'm') sound.muted = !sound.muted;
+  if (k === 'm' && !e.repeat) toggleMute();
   if (k === 'l' && !e.repeat && view === boardView) {
     selectSky(SKY_MODES[(SKY_MODES.indexOf(board.atmosphere.mode) + 1) % SKY_MODES.length]);
   }
@@ -295,10 +312,9 @@ addEventListener('keyup', (e) => (held[e.key.toLowerCase()] = false));
 addEventListener('pointerdown', () => sound.unlock(), { once: false });
 
 // on-screen buttons for touch screens during minigames
+// (engine/touch.js: a finger sliding off the button still lets go)
 for (const [id, key] of [['t-left', 'a'], ['t-right', 'd'], ['t-jump', ' ']]) {
-  const el = $(id);
-  el.addEventListener('pointerdown', (e) => { e.preventDefault(); held[key] = true; if (key === ' ') jumpPressed = true; });
-  for (const ev of ['pointerup', 'pointerleave', 'pointercancel']) el.addEventListener(ev, () => (held[key] = false));
+  holdButton($(id), { down: () => { held[key] = true; if (key === ' ') jumpPressed = true; }, up: () => { held[key] = false; } });
 }
 
 function minigameInput() {
@@ -324,18 +340,8 @@ let miniIcon = 'mango';
 let turnOf = -1;
 let lastCards = '';
 
-function standings() {
-  return [...players].sort((a, b) => b.mangos - a.mangos || b.coins - a.coins);
-}
-function ranks() {
-  const order = standings();
-  const out = {};
-  order.forEach((p, k) => {
-    const prev = order[k - 1];
-    out[p.i] = prev && prev.mangos === p.mangos && prev.coins === p.coins ? out[prev.i] : k + 1;
-  });
-  return out;
-}
+const standings = () => rules.standings(players);
+const ranks = () => rules.ranks(players);
 
 function renderCards() {
   const r = ranks();
@@ -346,13 +352,14 @@ function renderCards() {
   $('cards').innerHTML = players.map((p) => {
     const crown = cardMode === 'board' ? r[p.i] === 1 && (p.mangos || p.coins !== START_COINS) : best > 0 && miniScores[p.i] === best;
     const stats = cardMode === 'board'
-      ? `<span>${ICONS.mango}<b>${p.mangos}</b></span><span>${ICONS.coin}<b>${p.coins}</b></span>`
+      ? `<span class="coins">${ICONS.coin}<b>${p.coins}</b></span><span class="mangos">${ICONS.mango}<b>${p.mangos}</b></span>`
       : `<span class="big">${ICONS[miniIcon]}<b>${miniScores[p.i]}</b></span>`;
     return `<div class="pcard${turnOf === p.i ? ' turn' : ''}" style="--c:${p.color}">
       ${cardMode === 'board' ? `<span class="medal m${r[p.i]}">${r[p.i]}</span>` : ''}
-      ${crown ? '<span class="crown">👑</span>' : ''}
+      ${crown ? `<span class="crown">${SVG.crown}</span>` : ''}
+      ${turnOf === p.i ? `<span class="tag">${p.human ? 'Tu turno' : 'Turno'}</span>` : ''}
       <img src="${p.portrait || ''}" alt="">
-      <div class="info"><small>P${p.i + 1} · ${escapeHtml(p.name)}</small><div class="vals">${stats}</div></div>
+      <div class="info"><small>${escapeHtml(p.name)}</small><div class="vals">${stats}</div></div>
     </div>`;
   }).join('');
 }
@@ -380,7 +387,8 @@ async function toast(title, sub = '', secs = 1.4, kind = '') {
 function ask(text, options, { auto = 0, delay = 0.5 } = {}) {
   const el = $('prompt');
   el.innerHTML = `<p>${text}</p><div class="row">${options.map((o, i) =>
-    `<button data-i="${i}" class="${i === 0 ? 'primary' : ''}">${o.label}${o.key ? ` <kbd>${o.key === ' ' ? 'Espacio' : o.key.toUpperCase()}</kbd>` : ''}</button>`).join('')}</div>`;
+    `<button data-i="${i}" class="pk-btn${i === 0 ? ' pk-btn--primary primary' : ''}">${o.label}${o.key ? ` <kbd class="pk-kbd" data-pana-hint>${o.key === ' ' ? 'Espacio' : o.key.toUpperCase()}</kbd>` : ''}</button>`).join('')}</div>`;
+  el.classList.toggle('bare', !text);
   el.classList.remove('hidden');
   return new Promise((resolve) => {
     const done = (i) => {
@@ -569,18 +577,7 @@ async function moveSteps(p, n, { counted = false } = {}) {
 }
 
 // steps from a tile to another, along the shortest route
-function stepsTo(from, goal) {
-  const seen = new Map([[from, 0]]);
-  const queue = [from];
-  while (queue.length) {
-    const t = queue.shift();
-    if (t === goal) return seen.get(t);
-    for (const n of board.tiles[t].next) {
-      if (!seen.has(n)) { seen.set(n, seen.get(t) + 1); queue.push(n); }
-    }
-  }
-  return Infinity;
-}
+const stepsTo = (from, goal) => rules.stepsTo(board.tiles, from, goal);
 
 // At the fork: stay on the shore, or pay the toll and take the hill shortcut.
 async function chooseRoute(p, [shore, hill]) {
@@ -598,7 +595,7 @@ async function chooseRoute(p, [shore, hill]) {
   } else {
     // head for the cart: take the hill if it gets there sooner, sometimes just for fun
     const viaHill = stepsTo(hill, board.standTile), viaShore = stepsTo(shore, board.standTile);
-    take = (p.coins >= PRICE + FORK.toll && viaHill < viaShore) || Math.random() < 0.3 ? 1 : 0;
+    take = rules.botTakesHill({ coins: p.coins, toll: FORK.toll, viaHill, viaShore, whim: Math.random() }) ? 1 : 0;
     await wait(0.8);
   }
   board.highlight = [];
@@ -608,9 +605,7 @@ async function chooseRoute(p, [shore, hill]) {
 }
 
 async function give(p, n, line) {
-  const before = p.coins;
-  p.coins = Math.max(0, p.coins + n);
-  const real = p.coins - before;
+  const real = rules.addCoins(p, n);
   p.token.bubble.say(line || (n >= 0 ? `+${n}` : `${n}`), 1);
   if (n >= 0) {
     sound.pickup();
@@ -627,7 +622,7 @@ async function give(p, n, line) {
 async function visitStand(p, landed) {
   const st = board.stand;
   focus(p.token.rest.clone().lerp(st.group.position, 0.5), 'close');
-  if (p.coins < PRICE) {
+  if (!rules.canBuy(p)) {
     st.bubble.say(p.human ? `¡Trae ${PRICE} monedas!` : '¡Sigue, sigue!', 1.3);
     await wait(landed ? 1.1 : 0.6);
     return;
@@ -642,8 +637,7 @@ async function visitStand(p, landed) {
     await wait(0.9);
     return;
   }
-  p.coins -= PRICE;
-  p.mangos += 1;
+  rules.buyMango(p);
   renderCards();
   // the golden mango arcs from the stand into the pana's arms
   const mg = makeMango({ gold: true });
@@ -666,18 +660,12 @@ async function visitStand(p, landed) {
 
 async function moveStand(p) {
   const st = board.stand;
-  const taken = new Set(players.map((o) => o.tile));
   // somewhere the panas will reach soon: ahead of them on average, but not
   // right under anyone's nose (the board is big; behind them is a whole lap)
-  const options = [], fallback = [];
-  for (let i = 0; i < TILE_COUNT; i++) {
-    if (i === board.standTile || taken.has(i) || board.standSpot(i).bad >= 30) continue;
-    const steps = players.map((o) => stepsTo(o.tile, i));
-    const avg = steps.reduce((a, b) => a + b, 0) / steps.length;
-    fallback.push(i);
-    if (Math.min(...steps) >= 4 && avg >= 8 && avg <= 24) options.push(i);
-  }
-  const next = pick(options.length ? options : fallback);
+  const next = pick(rules.standCandidates({
+    tileCount: TILE_COUNT, standTile: board.standTile, tiles: board.tiles, players,
+    isBad: (i) => board.standSpot(i).bad >= 30,
+  }));
   puffs.spawn(st.group.position.clone().setY(2), { color: 0xffffff, count: 14, spread: 4, size: 1.2, rise: 2, life: 1 });
   sound.whoosh();
   await tween(0.4, (k) => st.group.scale.setScalar(Math.max(0.01, 1 - k)));
@@ -703,12 +691,7 @@ const EVENTS = [
   {
     title: '¡Brindan los panas!', text: 'Cada pana te regala 2 monedas.',
     run: async (p) => {
-      for (const o of players) {
-        if (o === p) continue;
-        const n = Math.min(2, o.coins);
-        o.coins -= n;
-        p.coins += n;
-      }
+      rules.brindis(players, p);
       await give(p, 0, '¡Gracias, panas!');
     },
   },
@@ -734,27 +717,28 @@ async function shakeTree(p) {
   sound.whoosh();
   p.token.cheer = 0.8;
   await wait(0.6);
-  const r = Math.random();
-  if (r < 0.1) {
+  const fall = rules.treeOutcome(Math.random());
+  if (fall === 'mango') {
     p.mangos += 1;
     renderCards();
     sound.horn('fiesta');
     p.token.cheer = 1.6;
     puffs.spawn(p.token.group.position.clone().setY(p.token.rest.y + 3), { color: 0xffd23f, count: 14, spread: 2, size: 0.7, rise: 3, life: 1 });
     await toast('¡Cayó un Mango de oro!', `¡Gratis para ${escapeHtml(p.name)}!`, 1.8, 'gold');
-  } else if (r < 0.4) {
+  } else if (fall === 'coconut') {
     p.token.dizzy = 2;
-    await give(p, -4, '¡Un coco!');
+    await give(p, TREE_COINS.coconut, '¡Un coco!');
   } else {
-    await give(p, 8, '¡Llovieron monedas!');
+    await give(p, TREE_COINS.coins, '¡Llovieron monedas!');
   }
 }
 
 async function landOn(p) {
   const kind = board.tiles[p.tile].kind;
-  if (kind === 'blue' || kind === 'start') return give(p, 3);
+  const coins = rules.tileCoins(kind);
+  if (coins > 0) return give(p, coins);
+  if (coins < 0) return give(p, coins, pick(['¡Ay!', '¡Qué pava!', `${coins}`]));
   if (kind === 'tree') return shakeTree(p);
-  if (kind === 'red') return give(p, -3, pick(['¡Ay!', '¡Qué pava!', '-3']));
   const ev = pick(EVENTS);
   sound.tone(660, 0, 0.12, 'triangle', 0.08);
   sound.tone(880, 0.12, 0.18, 'triangle', 0.08);
@@ -777,10 +761,9 @@ async function takeTurn(p) {
   });
   tk.pin.visible = false;
   sound.unlock();
-  if (isHuman(p)) await ask('¡Tira los dados!', [{ label: '¡Tirar!', key: ' ' }]);
+  if (isHuman(p)) await ask('', [{ label: '¡Tira los dados!', key: ' ' }]);
   else await wait(0.9);
-  const roll = () => 1 + Math.floor(Math.random() * 6);
-  const a = roll(), b = roll(), n = a + b;
+  const { a, b, n, doubles } = rules.rollDice();
   dice[0].rolling = false;
   dice[0].show(a);
   sound.boing();
@@ -788,13 +771,12 @@ async function takeTurn(p) {
   dice[1].rolling = false;
   dice[1].show(b);
   sound.boing();
-  const doubles = a === b;
   tk.bubble.say(doubles ? '¡DOBLES!' : n >= 10 ? pick(['¡Epa!', '¡Dale!', `¡${n}!`]) : n <= 3 ? pick(['¿Nada más?', '¡Qué pava!']) : `¡${n}!`, 0.9);
   await wait(0.9);
   if (doubles) {
     sound.horn('fiesta');
-    await toast('¡Dobles!', '+5 monedas de premio', 1.2, 'gold');
-    await give(p, 5);
+    await toast('¡Dobles!', `+${DOUBLES_BONUS} monedas de premio`, 1.2, 'gold');
+    await give(p, DOUBLES_BONUS);
   }
   for (const d of dice) d.mesh.visible = false;
   counter.sprite.position.set(tk.rest.x, tk.rest.y + 4.6, tk.rest.z);
@@ -819,7 +801,7 @@ async function playMinigame(def) {
   setSign(def.title);
   $('mini-title').textContent = def.title;
   $('mini-howto').textContent = def.howto;
-  $('mini-keys').innerHTML = def.keys.map(([k, what]) => `<span><kbd>${k}</kbd> ${what}</span>`).join('');
+  $('mini-keys').innerHTML = def.keys.map(([k, what]) => `<span><kbd class="pk-kbd">${k}</kbd> ${what}</span>`).join('');
   $('mini-intro').classList.remove('hidden');
   if (isHuman(me)) await ask('', [{ label: '¡Listo!', key: ' ' }]);
   else await wait(2);
@@ -862,7 +844,7 @@ async function playMinigame(def) {
   setTimer(null);
   sound.horn('fiesta');
   $('winner').innerHTML = winners.length
-    ? `<span class="crown">👑</span><small>${winners.length > 1 ? 'GANADORES' : 'GANADOR'}</small><b>${winners.map((i) => escapeHtml(players[i].name)).join(' · ')}</b><em>+10 MONEDAS</em>`
+    ? `<span class="crown">${SVG.crown}</span><small>${winners.length > 1 ? 'GANADORES' : 'GANADOR'}</small><b>${winners.map((i) => escapeHtml(players[i].name)).join(' · ')}</b><em>+10 MONEDAS</em>`
     : '<small>NADIE GANÓ</small><b>¡Qué pena, panas!</b>';
   $('winner').classList.remove('hidden');
   await wait(3);
@@ -904,8 +886,14 @@ function updateMini(dt) {
 // ======================================================================
 async function intro() {
   $('intro-players').innerHTML = players.map((p) =>
-    `<div class="ip" style="--c:${p.color}"><img src="${p.portrait}" alt=""><b>P${p.i + 1}</b><span>${escapeHtml(p.name)}</span></div>`).join('');
-  $('intro-rounds').textContent = ROUNDS;
+    `<div class="ip" style="--c:${p.color}"><img src="${p.portrait}" alt=""><b>P${p.i + 1}</b><span>${p.human ? 'Tú' : escapeHtml(p.name)}</span></div>`).join('');
+  const pickRounds = (n) => {
+    ROUNDS = n;
+    $('intro-rounds').textContent = $('intro-rounds-n').textContent = n;
+    for (const b of $('intro-pick').children) b.setAttribute('aria-pressed', String(Number(b.dataset.rounds) === n));
+  };
+  for (const b of $('intro-pick').children) b.onclick = () => pickRounds(Number(b.dataset.rounds));
+  pickRounds(ROUNDS);
   $('intro').classList.remove('hidden');
   await new Promise((r) => {
     $('start').onclick = r;
@@ -934,8 +922,8 @@ async function results() {
   $('res-title').textContent = tied.length > 1 ? `¡Empate entre ${tied.map((p) => p.name).join(' y ')}!`
     : champ.human ? `¡Ganaste, ${champ.name}!` : `¡${champ.name} es el pana más pana!`;
   $('res-rows').innerHTML = order.map((p) => `
-    <div class="rrow" style="--c:${p.color}">
-      ${r[p.i] === 1 ? '<span class="crown">👑</span>' : ''}
+    <div class="rrow pk-row${p.human ? ' is-me' : ''}" style="--c:${p.color}">
+      ${r[p.i] === 1 ? `<span class="crown">${SVG.crown}</span>` : ''}
       <span class="medal m${r[p.i]}">${r[p.i]}</span>
       <img src="${p.portrait}" alt="">
       <span class="rname">${escapeHtml(p.name)}</span>
@@ -954,7 +942,7 @@ async function main() {
     for (;;) await playMinigame(ONLY);
   }
   for (round = 1; round <= ROUNDS; round++) {
-    setPlank(`RONDA ${round}/${ROUNDS}`);
+    setPlank(`RONDA ${round} / ${ROUNDS}`);
     overview();
     await toast(`Ronda ${round}`, round === ROUNDS ? '¡Última ronda!' : `de ${ROUNDS}`, 1.5, 'round');
     for (const p of players) await takeTurn(p);
@@ -967,7 +955,8 @@ async function main() {
 const clock = new THREE.Clock();
 let t = 0;
 function frame() {
-  const dt = Math.min(clock.getDelta(), 0.1) * SPEED;
+  const dt = paused ? 0 : Math.min(clock.getDelta(), 0.1) * SPEED;
+  if (paused) clock.getDelta();
   t += dt;
   stepJobs(dt);
   if (mini) updateMini(dt);
@@ -997,7 +986,7 @@ async function fastForward(seconds, dt = 1 / 30) {
     await null;   // let the turn logic's awaits run
   }
 }
-if (DEBUG) Object.assign(window, { players, board, MINIGAMES, layoutTokens, fastForward, renderer, boardScene, boardCam });
+if (DEBUG) Object.assign(window, { menu, players, board, MINIGAMES, layoutTokens, fastForward, renderer, boardScene, boardCam });
 
 frame();
 main();

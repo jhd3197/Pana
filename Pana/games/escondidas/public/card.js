@@ -1,8 +1,8 @@
 // Live hub artwork uses the very same reusable props as the playable map.
 import * as THREE from 'three';
 import { loadAvatar } from '/engine/avatar.js';
-import { buildCharacter } from '/engine/character.js';
-import { barrel, crate, planter } from '/engine/plaza-props.js';
+import { buildCharacter } from '/engine/models/characters/pana/avatar-model.js';
+import { barrel, crate, planter } from '/engine/models/props/plaza.js';
 
 export function mount(canvas) {
   const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true });

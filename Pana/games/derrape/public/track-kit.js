@@ -3,19 +3,22 @@
 // low-poly geometry and canvas textures, no asset files.
 // Props sit on y = 0 and face +Z unless they take an explicit transform.
 // Anything with userData.tick(t, dt) gets collected by makeTrack and
-// animated during the race. Generic props live in /engine/props.js;
-// all trees and leafy plants use the current /engine/flora.js builders.
+// animated during the race. Generic props live in /engine/models/props/;
+// all trees and leafy plants use the /engine/models/vegetation/ builders.
 
 import * as THREE from 'three';
 import { M, mesh, box, tube, canvasMat } from './car-kit.js';
-import { rng, woodSign as mapSign, watchtower, flagPole, rock } from '/engine/props.js';
-import * as flora from '/engine/flora.js';
-import { buildCharacter } from '/engine/character.js';
-import { randomAvatar } from '/engine/avatar.js';
+import { rng } from '/engine/models/core/primitives.js';
+import { woodSign as mapSign } from '/engine/models/props/wood-sign.js';
+import { watchtower } from '/engine/models/props/watchtower.js';
+import { flagPole } from '/engine/models/props/flags.js';
+import { rock } from '/engine/models/props/rock.js';
+import * as flora from '/engine/models/vegetation/index.js';
+import { bake } from '/engine/models/core/static-batch.js';
+import { waterPool, riverSurface } from '/engine/models/effects/water-surface.js';
 
 // Use the canonical foliage and batch its many leaflets before placement.
 // Cloning the source geometry in bake keeps shared assets safe on map switches.
-const { bake } = flora;
 const palm = options => bake(flora.palm(options));
 const mangoTree = options => bake(flora.mangoTree(options));
 const ceiba = options => bake(flora.ceiba(options));
@@ -258,49 +261,12 @@ function buildRamps(group, T) {
 
 // ---------- water ----------
 function waterPond(rx, rz, { color = 0x2e9db5, y = 0.04 } = {}) {
-  const g = new THREE.Group();
-  const w = new THREE.Mesh(new THREE.CircleGeometry(1, 28),
-    new THREE.MeshStandardMaterial({ color, transparent: true, opacity: 0.85, roughness: 0.15, metalness: 0.3 }));
-  w.rotation.x = -Math.PI / 2;
-  w.scale.set(rx, rz, 1);
-  w.position.y = y;
-  w.receiveShadow = true;
-  g.add(w);
-  const foam = new THREE.Mesh(new THREE.RingGeometry(0.94, 1, 28),
-    new THREE.MeshBasicMaterial({ color: 0xeaf7f7, transparent: true, opacity: 0.5, side: THREE.DoubleSide }));
-  foam.rotation.x = -Math.PI / 2;
-  foam.scale.set(rx, rz, 1);
-  foam.position.y = y + 0.01;
-  g.add(foam);
-  return g;
+  const group=new THREE.Group(),water=waterPool(rx,rz,{color});water.position.y=y;group.add(water);return group;
 }
 
 // A strip of water (river, stream) along control points.
 function waterRibbon(points, w, { color = 0x2e9db5, y = 0.03, closed = false } = {}) {
-  const curve = new THREE.CatmullRomCurve3(points.map(([x, z]) => new THREE.Vector3(x, 0, z)), closed, 'centripetal');
-  const N = Math.max(40, Math.round(curve.getLength() / 1.5));
-  const pts = curve.getSpacedPoints(N);
-  const verts = [];
-  const idx = [];
-  for (let i = 0; i <= N; i++) {
-    const p = pts[i % pts.length], p2 = pts[(i + 1) % pts.length];
-    const tx = p2.x - p.x, tz = p2.z - p.z;
-    const l = Math.hypot(tx, tz) || 1;
-    verts.push(p.x - tz / l * w / 2, y, p.z + tx / l * w / 2, p.x + tz / l * w / 2, y, p.z - tx / l * w / 2);
-    if (i < N) {
-      const a = i * 2;
-      idx.push(a, a + 1, a + 2, a + 1, a + 3, a + 2);
-    }
-  }
-  const geo = new THREE.BufferGeometry();
-  geo.setAttribute('position', new THREE.Float32BufferAttribute(verts, 3));
-  geo.setIndex(idx);
-  geo.computeVertexNormals();
-  const m = new THREE.Mesh(geo, new THREE.MeshStandardMaterial({
-    color, transparent: true, opacity: 0.85, roughness: 0.15, metalness: 0.3, side: THREE.DoubleSide,
-  }));
-  m.receiveShadow = true;
-  return m;
+  return riverSurface(points,w,()=>y,{color,closed});
 }
 
 // Waterfall sheet with scrolling stripes + foam at the base.
@@ -322,7 +288,8 @@ function waterfall(w, h, { color = 0xbfe8f2 } = {}) {
   foam.rotation.x = -Math.PI / 2;
   foam.position.y = 0.06;
   g.add(foam);
-  g.userData.tick = (t, dt) => { tex.offset.y -= dt * 1.4; };
+  g.userData.tick = t => { sheet.material.map.offset.y = -t * 1.4; };
+  g.userData.dispose=()=>{tex.dispose();if(sheet.material.map!==tex)sheet.material.map.dispose();};
   return g;
 }
 
@@ -509,69 +476,6 @@ function distantMountains({ r = 210, count = 10, color = 0x7a6a8a, snow = false,
   return g;
 }
 
-// ---------- critters ----------
-// Shared bird builder: toucan, macaw, ibis, seagull. Perches by default;
-// add flyCircle to make it orbit.
-function buildBird({ body = '#e8452c', wing = '#a5281b', beak = '#f4a259', tail = '#16161a', size = 1 } = {}) {
-  const g = new THREE.Group();
-  const b = mesh(new THREE.SphereGeometry(0.3, 8, 6), M(body, { roughness: 0.8 }));
-  b.scale.set(0.8, 0.9, 1.2);
-  b.position.y = 0.45;
-  g.add(b);
-  const head = mesh(new THREE.SphereGeometry(0.2, 8, 6), M(body, { roughness: 0.8 }), 0, 0.75, 0.28);
-  g.add(head);
-  const bk = mesh(new THREE.ConeGeometry(0.09, 0.42, 6), M(beak, { roughness: 0.6 }), 0, 0.73, 0.55);
-  bk.rotation.x = Math.PI / 2;
-  g.add(bk);
-  const tl = mesh(new THREE.ConeGeometry(0.12, 0.5, 4), M(tail, { roughness: 0.8 }), 0, 0.42, -0.5);
-  tl.rotation.x = -Math.PI / 2.3;
-  g.add(tl);
-  const wings = [];
-  for (const s of [1, -1]) {
-    const w = mesh(new THREE.BoxGeometry(0.5, 0.06, 0.34), M(wing, { roughness: 0.8 }), s * 0.28, 0.52, 0);
-    wings.push(w);
-    g.add(w);
-  }
-  let flying = false;
-  g.userData.tick = (t) => {
-    const flap = flying ? Math.sin(t * 14) * 0.9 : Math.sin(t * 2) * 0.08;
-    wings[0].rotation.z = flap;
-    wings[1].rotation.z = -flap;
-    if (!flying) head.rotation.y = Math.sin(t * 0.7) * 0.5;
-  };
-  g.scale.setScalar(size);
-  return {
-    group: g,
-    // orbit a point: circling ibis, condor on a thermal
-    flyCircle(group3, { cx, cz, cy = 14, r = 16, speed = 0.5, phase = 0 }) {
-      flying = true;
-      g.userData.tick = (t) => {
-        const a = t * speed + phase;
-        g.position.set(cx + Math.cos(a) * r, cy + Math.sin(t * 1.3 + phase) * 0.8, cz + Math.sin(a) * r);
-        g.rotation.y = -a - Math.PI / 2;
-        const flap = Math.sin(t * 14) * 0.7;
-        wings[0].rotation.z = flap;
-        wings[1].rotation.z = -flap;
-      };
-      group3.add(g);
-      return g;
-    },
-  };
-}
-
-// A scenery capybara: the same pana character, standing around grazing.
-function capybara({ seed = 1 } = {}) {
-  const phase = rng(seed)() * 6;
-  const pana = buildCharacter(randomAvatar(), {});
-  pana.armL.rotation.set(0, 0, 0.15);
-  pana.armR.rotation.set(0, 0, -0.15);
-  pana.group.userData.tick = (t, dt) => {
-    pana.update(dt, {});
-    pana.neck.rotation.x = 0.35 + Math.sin(t * 0.8 + phase) * 0.28;   // grazing
-  };
-  return pana.group;
-}
-
 function sectorSigns(group, T) {
   for (const [u, name] of T.def.sectors || []) {
     const p = placeOnTrack(T, T.TOTAL * u, T.HW + 6);
@@ -614,5 +518,4 @@ export {
   waterPond, waterRibbon, waterfall,
   bridge, flankBridge,
   palm, mangoTree, ceiba, pine, banana, bush, bake, windmill, arepaStand, dock, rowboat, sailboat, distantMountains,
-  buildBird, capybara,
 };

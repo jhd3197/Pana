@@ -3,11 +3,13 @@
 // the hill shortcut, the Mango de oro cart, the panas and the dice.
 
 import * as THREE from 'three';
-import { buildCharacter } from '/engine/character.js';
+import { buildCharacter } from '/engine/models/characters/pana/avatar-model.js';
 import { makeBubble } from '/engine/fx.js';
-import { M, mesh, box, canvasMat, makeMango, woodSign } from '/engine/props.js';
+import { M, mesh, box, canvasMat } from '/engine/models/core/primitives.js';
+import { makeMango } from '/engine/models/props/mango.js';
+import { woodSign } from '/engine/models/props/wood-sign.js';
 import { buildIsland, baseHeight, riverDist, landMask, beachMask, HILL } from './island.js';
-import { bake } from './flora.js';
+import { bake } from '/engine/models/core/static-batch.js';
 import { createIslandEnvironment, ISLAND_LOOP } from '/engine/island-environment.js';
 import { createAtmosphere } from './atmosphere.js';
 
@@ -270,7 +272,7 @@ function buildStand() {
     c.fillStyle = '#f3e9d7';
     c.textAlign = 'center';
     c.font = '30px "Luckiest Guy", system-ui, sans-serif';
-    ['EL MANGO HACE', 'TODO MÁS', 'BONITO ♥'].forEach((t, i) => c.fillText(t, 128, 66 + i * 40));
+    ['EL MANGO HACE', 'TODO MÁS', 'BONITO'].forEach((t, i) => c.fillText(t, 128, 66 + i * 40));
   }), 0, 0.95, 0));
   chalk.add(box(0.08, 0.8, 0.08, dark, -0.6, 0.3, -0.1));
   chalk.add(box(0.08, 0.8, 0.08, dark, 0.6, 0.3, -0.1));
@@ -471,7 +473,7 @@ export function createBoard(scene, { skyMode = 'day' } = {}) {
     // for the minimap
     pathDist, groundAt, landMask,
     update(t, dt) {
-      atmosphere.update(dt);
+      atmosphere.update(dt,t);
       environment.update(t, dt, atmosphere.daylight);
       // tiles you can pick at a fork bob up and down
       for (const tl of tiles) tl.mesh.position.y = tl.y - 0.2 + (board.highlight.includes(tl.i) ? 0.25 + Math.sin(t * 7) * 0.2 : 0);

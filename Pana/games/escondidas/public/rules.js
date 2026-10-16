@@ -1,4 +1,4 @@
-import { propDefinition } from '../../../engine/plaza-catalog.js';
+import { propDefinition } from '/engine/models/props/plaza-definitions.js';
 import { MAP_PROPS, move, blocked, safeSpot, clearSight, route } from './layout.js';
 
 export const RULES = Object.freeze({ changes: 3, hideSeconds: 15, huntSeconds: 100, rounds: 4, checkRange: 3.5, checkCooldown: 1.6 });

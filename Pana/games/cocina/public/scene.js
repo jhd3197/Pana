@@ -1,10 +1,10 @@
 import * as THREE from 'three';
 import { createPlaza } from '/engine/plaza.js';
-import { buildCharacter } from '/engine/character.js';
-import { bake } from '/engine/flora.js';
-import { M, box, mesh, tube } from '/engine/props.js';
-import { crate, planter, cooler, barrel } from '/engine/plaza-props.js';
-import { food, kitchenStation, kitchenSign, corn, cheese, sink } from '/engine/kitchen-props.js';
+import { buildCharacter } from '/engine/models/characters/pana/avatar-model.js';
+import { bake } from '/engine/models/core/static-batch.js';
+import { M, box, mesh, tube } from '/engine/models/core/primitives.js';
+import { crate, planter, cooler, barrel } from '/engine/models/props/plaza.js';
+import { food, kitchenStation, kitchenSign, corn, cheese, sink } from '/engine/models/props/kitchen.js';
 import { STATIONS, PREP_TIME, BURN_TIME, recipe } from './rules.js';
 
 const foodCache = new Map();

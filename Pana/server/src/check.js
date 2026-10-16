@@ -1,4 +1,4 @@
-// Syntax check for every .js file in server/, web/, games/ and engine/.
+// Syntax check for every .js file in server/, web/, games/, engine/ and scripts/.
 // Run: npm run check
 
 import { execFileSync } from 'node:child_process';
@@ -21,6 +21,7 @@ const files = [
   ...collectJs(config.paths.web),
   ...collectJs(config.paths.games),
   ...collectJs(config.paths.engine),
+  ...collectJs(path.join(config.paths.root, 'scripts')),
 ];
 
 let failed = 0;

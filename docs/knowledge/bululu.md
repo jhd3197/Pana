@@ -79,10 +79,10 @@ flow bugs and check balance.
 - **Foliage now uses smooth normals and vertex colors.** `bake()` must retain
   the color attribute and distinguish vertex-colored, flat/smooth and shadow
   settings in its material key. Bululú's curved palms now live in shared
-  `/engine/flora.js` (the game's `flora.js` re-exports it for compatibility); the
-  old `/engine/props.js` palm has been removed. Derrape and minigame stages
+  `/engine/models/vegetation/` (the game's `flora.js` re-exports it for compatibility); the
+  old shared-props palm has been removed. Derrape and minigame stages
   also use the same improved foliage.
-- **Sky controls:** Día / Noche / Ciclo, or `L`, saved under
+- **Sky controls:** Día / Noche / Ciclo in the pause menu's Ajustes tab (Esc), or `L`, saved under
   `pana.bululu.sky`. `?sky=day|night|cycle` overrides the saved preference for
   testing. A cycle takes 600 seconds of board simulation and pauses in
   minigames. Transitions ease through dawn/dusk; changing mode doesn't restart

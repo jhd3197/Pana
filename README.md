@@ -1,84 +1,109 @@
-# Pana
+<h1 align="center">Pana</h1>
 
-**Juega con tus panas.** A hub of free multiplayer browser games — share a link, friends join, no installs.
+<p align="center"><b>Juega con tus panas.</b></p>
 
-First game: **Derrape** — a goofy toy-car race. Jump ramps, flip over, lose your bumpers, honk *La Cucaracha*. Your pana (made in the hub) is the driver.
+<p align="center">Free browser games for you and your friends · share a link, they join, nothing to install</p>
 
-Choose from eight circuits, including **Plaza Pana** and **Isla Bululú**.
-Collect coins for up to 8% extra speed, smash wooden supply crates and carry two
-items. Throw forward with **Space**, backward with **X**, and switch with **Q**
-or **1/2**. Keep a mango equipped to block an incoming mango; each block spends
-one mango. The garage previews all eight detailed cars, and touch controls are
-available on phones.
-The plaza buildings, island terrain, trees and scenery use the same shared
-sources as the other games, so asset improvements carry through everywhere.
+<p align="center">
+  <a href="https://github.com/jhd3197/Pana/releases/latest"><img src="https://img.shields.io/github/v/release/jhd3197/Pana?color=ffc629&label=release" alt="Latest release"></a>
+  <a href="https://github.com/jhd3197/Pana/actions/workflows/test.yml"><img src="https://github.com/jhd3197/Pana/actions/workflows/test.yml/badge.svg?branch=dev" alt="Tests"></a>
+  <img src="https://img.shields.io/badge/node-%E2%89%A522-2ad1b2" alt="Node 22 or newer">
+  <img src="https://img.shields.io/badge/games-8-ff4b4b" alt="8 games">
+</p>
 
-Second game: **Bululú**: a party board game on Mango Island. Roll the die, collect monedas, buy the *Mango de oro*, and win a minigame after every round.
+<p align="center">
+  <img src="docs/screenshots/hub.jpg" alt="Pana's hub: a featured game, eight game tiles with live 3D art, and your own capybara pana" width="860">
+</p>
 
-Third game: **Escondidas · Pana Hunt** — hide in a colorful market plaza as a
-barrel, crate, cooler, plant or bench. Three transformations per round; 15 seconds
-to hide, then 100 seconds to hunt. Play solo with bots or share a room with up to
-8 panas. Roles rotate, with four rounds for a small group and up to eight for a
-full room. Uses the same saved character, Bululú foliage, and market props now
-also featured in Derrape's Los Llanos track.
+Pana is a hub of 3D party games that run in the browser. You make your pana (a
+capybara with your hat, glasses and outfit) once in the hub, and it plays every
+game with you: it drives your car, rides your horse, cooks your arepas and sits at
+the domino table. Open a game, send the link to your friends, and they're in the
+same room.
 
-Fourth game: **Pana Cocina** — a cooperative three-minute cooking rush in the
-same Plaza Pana. Collect ingredients, prepare arepas, cachapas, tequeños and
-empanadas, mind the stoves, and serve before orders expire. Play with two bot
-helpers or invite up to 8 panas. Includes touch controls, shared counters,
-fire recovery, team scores and replay. Panas now have animated legs, and the
-kitchen crew wears chef hats and aprons over their saved outfits.
+## Games
 
-## Run it
+| Game | What it is | Players |
+|---|---|---|
+| **Derrape** | Toy-car racing on eight circuits, with items, coins and swappable wheels | 1–8, online rooms |
+| **Bululú** | Party board game on Mango Island, with a minigame every round | 1 vs bots |
+| **Escondidas** | Prop hunt in a market plaza: hide as a barrel, crate or bench | 1–8, bots fill in |
+| **Pana Cocina** | Cooperative three-minute cooking rush: arepas, cachapas, tequeños | 1–8, bot helpers |
+| **Galope** | Horse racing around a Llanos ranch, through esteros and over logs | 1–8, bots fill in |
+| **Reliquia** | Cooperative expedition into a mine and the temple beneath it | 1–8 |
+| **Dominó** | Partnership dominoes to 100 at a 3D plaza table | 1–4, bots fill seats |
+| **Caída** | Spanish cards to 24 points, individual or in pairs | 1–4, bots fill seats |
+
+## Screenshots
+
+**Derrape:** race your pana with a mango and a jugo in your two item slots.
+
+![Derrape race HUD with the mango and jugo items, standings and the coin counter](docs/screenshots/derrape-item-icons.jpg)
+
+**Every game ends on the same card:** standings, your row highlighted, one button to play again.
+
+<p>
+  <img src="docs/screenshots/results-escondidas.jpg" alt="Escondidas results: round 1 of 4, scores for four panas" width="620">
+  <img src="docs/screenshots/results-cocina-phone.jpg" alt="Pana Cocina results on a phone: stars, points and the kitchen crew" width="200">
+</p>
+
+## Play
+
+The public site is on its way at **pana.sh**. Until then, run it on your computer
+and share it on your network:
 
 ```powershell
+git clone https://github.com/jhd3197/Pana
+cd Pana
 npm install
-npm start            # or: npm run dev  /  Pana\dev.ps1
-.\Pana\dev.ps1 studio # Pana Studio: character editor and asset library
+npm start                 # or .\dev.ps1 on Windows
 ```
 
-- Hub: http://localhost:8461
-- Derrape: http://localhost:8461/g/derrape/
-- Bululú: http://localhost:8461/g/bululu/
-- Escondidas: http://localhost:8461/g/escondidas/
-- Cocina: http://localhost:8461/g/cocina/
-- Pana Studio: http://localhost:8461/studio.html
-- Character editor: http://localhost:8461/personaje.html
-- Friends on your network: the dev script prints your LAN URL.
+Open http://localhost:8461. The dev script also prints a LAN address: friends on
+the same Wi-Fi open that, pick a game, and press *Invitar panas* to share the room.
 
-## Repository layout
+- **Pana Studio** (`.\dev.ps1 studio`): every shared character, prop, vehicle and
+  map with a live 3D preview and its source file.
+- **Character editor**: `/personaje.html`.
 
-Pana Studio preserves the character editor and catalogs shared objects, scenery,
-vehicles and maps with live previews and source paths. **Usar en los juegos**
-saves an outfit for the shared character used by all games. Agents add assets
-through the existing factories and `Pana/web/studio/catalog.js`; see
-[the studio guide](docs/knowledge/pana-studio.md). The catalog is managed in code;
-it is not yet a visual map-placement editor.
+## Releases
 
-The repo root stays clean on purpose — everything lives in [`Pana/`](Pana/):
+Every merge from `dev` into `main` is a release. The workflow stamps the
+`## Unreleased` notes in [CHANGELOG.md](CHANGELOG.md) with the next version, tags it,
+and publishes them as a [GitHub release](https://github.com/jhd3197/Pana/releases).
+What changed and when is always in the changelog.
 
-```
-Pana/                  ← this repo
-├── README.md          ← you are here
-├── package.json       ← npm workspace root: npm start / check / dev
-└── Pana/              ← the app
-    ├── dev.ps1        ← Windows dev launcher (start / check / setup)
-    ├── server/        ← pana-server: HTTP API + statics + WebSocket rooms
-    ├── web/           ← hub frontend: game list, live rooms, name picker
-    ├── games/         ← one folder per game (derrape, bululú…)
-    ├── engine/        ← shared game code
-    ├── docs/          ← architecture, deployment, plans/, knowledge/
-    └── AGENTS.md      ← rules for AI coding agents working in the repo
+## Develop
+
+One Node server, a static hub and one folder per game: plain ES modules with **no
+build step**, Three.js from a CDN, and Colyseus rooms for online play.
+
+```powershell
+npm run check             # syntax check of every .js file
+npm test                  # unit tests + house-rule checks (no browser needed)
+npm run test:browser      # Playwright suites; set PANA_PLAYWRIGHT_PATH
+.\dev.ps1 check -Browser  # all of the above
 ```
 
-## Roadmap
+```
+README.md, AGENTS.md, CHANGELOG.md, dev.ps1, package.json
+docs/                  architecture, deployment, knowledge/ (notes per area), screenshots/
+Pana/
+├── server/            HTTP, API and Colyseus rooms
+├── web/               the hub, character creator and Pana Studio
+├── games/<game>/      game.json + public/ (rules.js, network.js, scene.js, game.js) + tests/
+├── engine/            shared code: kit, menu, rooms, invites, results, icons, models
+├── scripts/           test runner and release tooling
+└── tests/             house-rule checks
+```
 
-- **Derrape** — toy-car race with goofy physics (playable now)
-- **Bululú**: party board game + minigames (playable now; more minigames coming)
-- **Escondidas**: prop hunt in Plaza Pana (playable now; solo bots + shared rooms)
-- **Cocina**: cooperative Venezuelan cooking in Plaza Pana (playable now; helpers + shared rooms)
-- **pana.sh** — public deploy
+- [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md): request flow, a game's files, rooms.
+- [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md): running it for real on pana.sh.
+- [docs/knowledge/](docs/knowledge/README.md): notes per game and per area.
 
-## Contributing / AI agents
+## Contributing
 
-See [Pana/AGENTS.md](Pana/AGENTS.md). This repo is designed to be built largely by AI coding agents — read that file first.
+Work happens on `dev`; `main` only takes merges from it. This repo is built largely
+by AI coding agents, so start with [AGENTS.md](AGENTS.md); it's short. A change
+players will notice adds a line under `## Unreleased` in
+[CHANGELOG.md](CHANGELOG.md) in the same commit: that line becomes the release notes.

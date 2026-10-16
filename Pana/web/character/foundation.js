@@ -1,2 +1,2 @@
 // Compatibility URL; the studio and games share one implementation.
-export * from '/engine/soft-character/foundation.js';
+export * from '/engine/models/characters/pana/foundation.js';

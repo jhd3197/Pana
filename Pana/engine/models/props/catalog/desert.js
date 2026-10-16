@@ -1,0 +1,123 @@
+// Model metadata only: no Three.js, construction or game imports.
+export default [
+  {
+    id: "giant-cactus",
+    name: "Cardón gigante",
+    category: "Desierto",
+    source: "/engine/models/props/desert.js",
+    factory: "giantCactus",
+    usedBy: ["Derrape"],
+    previewOptions: null,
+    description: "Cardón maduro con brazos, costillas, flores y un retoño basal.",
+    tags: ["061","desierto","cañón","desert"],
+    pack: "desert"
+  },
+  {
+    id: "sand-dune",
+    name: "Módulo de duna",
+    category: "Desierto",
+    source: "/engine/models/props/desert.js",
+    factory: "sandDune",
+    usedBy: ["Derrape"],
+    previewOptions: null,
+    description: "Cresta asimétrica y ondulaciones de arena con bordes a nivel del suelo.",
+    tags: ["062","desierto","cañón","desert"],
+    pack: "desert"
+  },
+  {
+    id: "desert-rock-arch",
+    name: "Arco de roca del desierto",
+    category: "Desierto",
+    source: "/engine/models/props/desert.js",
+    factory: "desertRockArch",
+    usedBy: ["Derrape"],
+    previewOptions: null,
+    description: "Arco erosionado de estratos cálidos con paso abierto y ancho ajustable.",
+    tags: ["063","desierto","cañón","desert"],
+    pack: "desert"
+  },
+  {
+    id: "abandoned-gas-station",
+    name: "Gasolinera abandonada",
+    category: "Desierto",
+    source: "/engine/models/props/desert.js",
+    factory: "abandonedGasStation",
+    usedBy: ["Derrape"],
+    previewOptions: null,
+    description: "Marquesina oxidada, surtidores con mangueras y local clausurado.",
+    tags: ["064","desierto","cañón","desert"],
+    pack: "desert"
+  },
+  {
+    id: "rusted-pickup",
+    name: "Camioneta oxidada",
+    category: "Desierto",
+    source: "/engine/models/props/desert.js",
+    factory: "rustedPickup",
+    usedBy: ["Derrape"],
+    previewOptions: null,
+    description: "Cabina con interior visible y cajón abierto de madera gastada.",
+    tags: ["065","desierto","cañón","desert"],
+    pack: "desert"
+  },
+  {
+    id: "roadside-tire-pile",
+    name: "Pila de cauchos",
+    category: "Desierto",
+    source: "/engine/models/props/desert.js",
+    factory: "roadsideTirePile",
+    usedBy: ["Derrape"],
+    previewOptions: null,
+    description: "Cauchos huecos apilados y uno recostado, con bandas de rodadura.",
+    tags: ["066","desierto","cañón","desert"],
+    pack: "desert"
+  },
+  {
+    id: "canyon-spire",
+    name: "Aguja de roca del cañón",
+    category: "Desierto",
+    source: "/engine/models/props/desert.js",
+    factory: "canyonSpire",
+    usedBy: ["Derrape"],
+    previewOptions: null,
+    description: "Columna irregular con estratos y bloques erosionados al pie.",
+    tags: ["067","desierto","cañón","desert"],
+    pack: "desert"
+  },
+  {
+    id: "broken-wagon",
+    name: "Carreta de madera rota",
+    category: "Desierto",
+    source: "/engine/models/props/desert.js",
+    factory: "brokenWagon",
+    usedBy: ["Derrape"],
+    previewOptions: null,
+    description: "Tablas faltantes, rueda con radios rotos y varas de tiro.",
+    tags: ["068","desierto","cañón","desert"],
+    pack: "desert"
+  },
+  {
+    id: "desert-warning-sign",
+    name: "Señal de peligro del desierto",
+    category: "Desierto",
+    source: "/engine/models/props/desert.js",
+    factory: "desertWarningSign",
+    usedBy: ["Derrape"],
+    previewOptions: null,
+    description: "Advertencia de cañón sobre poste de madera envejecida.",
+    tags: ["069","desierto","cañón","desert"],
+    pack: "desert"
+  },
+  {
+    id: "desert-well",
+    name: "Pozo viejo del desierto",
+    category: "Desierto",
+    source: "/engine/models/props/desert.js",
+    factory: "desertWell",
+    usedBy: ["Derrape"],
+    previewOptions: null,
+    description: "Brocal hueco de piedra, torno con cuerda, balde y pequeño tejado.",
+    tags: ["070","desierto","cañón","desert"],
+    pack: "desert"
+  },
+];

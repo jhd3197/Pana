@@ -15,7 +15,7 @@ try {
   await page.goto(`${origin}/g/derrape/?debug&auto&track=estadio`);
   await page.waitForFunction(() => window.getActiveTrack && garage.car);
   const ids = await page.evaluate(() => TRACKS.map(t => t.id));
-  assert.deepEqual(ids, ['estadio', 'desierto', 'llanos', 'playa', 'selva', 'paramo', 'plaza', 'bululu']);
+  assert.deepEqual(ids, ['estadio', 'desierto', 'llanos', 'chichi', 'selva', 'paramo', 'plaza', 'bululu']);
   const accessoryError = await page.evaluate(async () => {
     const THREE = await import('three');
     const { detachable } = await import('./car-kit.js');
@@ -29,10 +29,12 @@ try {
     return before.min.distanceTo(after.min)+before.max.distanceTo(after.max);
   });
   assert.ok(accessoryError < 1e-6, 'pre-positioned car accessories stay in place');
-  for (const id of [...ids, 'plaza', 'bululu', 'estadio']) {
+  const requested = process.env.PANA_MAP_TEST_TRACKS?.split(',');
+  if (requested) requested.forEach(id => assert.ok(ids.includes(id), `known requested track: ${id}`));
+  for (const id of requested || [...ids, 'plaza', 'bululu', 'estadio']) {
     const result = await page.evaluate(async id => {
       const THREE = await import('three');
-      toGarage(); buildTrack(id); startRace(0);
+      toGarage(); buildTrack(id); await startRace(0);
       const T = getActiveTrack();
       let roundtrip = 0, minRadius = Infinity, maxGrade = 0, protrusion = 0, finite = true, riverClear = true;
       let leftTurns = 0, rightTurns = 0;
@@ -46,7 +48,7 @@ try {
         if(signedTurn>0.01) leftTurns++;
         if(signedTurn<-0.01) rightTurns++;
         maxGrade = Math.max(maxGrade, Math.abs(T.heightAtS(s + 0.5) - T.heightAtS(s - 0.5)));
-        if (id === 'bululu') {
+        if (T.def.elevation) {
           const h = Math.atan2(c.x - b.x, c.y - b.y);
           for (const off of [-T.HW + 1, 0, T.HW - 1]) {
             const x = b.x - Math.cos(h) * off, z = b.y + Math.sin(h) * off;
@@ -81,9 +83,10 @@ try {
       }
       T.group.traverse(o => {
         if (o.geometry?.attributes.position) for (const v of o.geometry.attributes.position.array) if (!Number.isFinite(v)) finite = false;
-        if (o.name === 'island-river') {
+        if (o.name === 'island-river' || o.name === 'llanos-cano') {
           const pos = o.geometry.attributes.position, p = new THREE.Vector3();
           for (let i = 0; i < pos.count; i++) {
+            if(o.geometry.attributes.waterDepth?.getX(i)<=.015)continue;
             p.fromBufferAttribute(pos, i).applyMatrix4(o.matrixWorld);
             if (Math.abs(T.offsetOf(p.x, p.z)) < T.HW && p.y > T.surfaceAt(p.x, p.z) - 0.1) riverClear = false;
           }
@@ -102,7 +105,8 @@ try {
       });
       Object.assign(c, grid); c.inventory = [null, null]; race.items.clear();
       let pickups = 0, maxGroundError = 0;
-      for (let i = 0; i < 24000 && race.state !== 'end'; i++) {
+      const maxFrames=Math.max(24000,Math.ceil(T.TOTAL*3/20*60));
+      for (let i = 0; i < maxFrames && race.state !== 'end'; i++) {
         updateRace(1 / 60);
         const c = race.player;
         if (c.inventory.some(Boolean)) pickups++;
@@ -126,7 +130,7 @@ try {
     assert.equal(result.state, 'end', `${id}: AI finishes the race`);
     assert.equal(result.lap, 4, `${id}: completes three full laps after the start line`);
     assert.ok(result.itemRows, `${id}: all item rows work at their ground height`);
-    if (id === 'bululu') assert.ok(result.maxGroundError < 0.2, 'island: cars follow the slopes');
+    if (id === 'bululu' || id === 'plaza') assert.ok(result.maxGroundError < 0.2, `${id}: cars follow the slopes`);
     assert.deepEqual(errors, [], `${id}: browser errors`);
     console.log(JSON.stringify(result));
   }
@@ -136,7 +140,7 @@ try {
     return map.x >= panel.x && map.right <= panel.right && map.y >= panel.y && map.bottom <= panel.bottom;
   });
   assert.equal(minimap, true, 'minimap stays inside its map panel');
-  console.log('All eight maps and repeated switches passed.');
+  console.log(requested ? `Requested maps passed: ${requested.join(', ')}` : 'All eight maps and repeated switches passed.');
 } finally {
   await browser.close();
 }

@@ -4,7 +4,7 @@ The character editor lives at `/personaje.html`, inside Pana Studio. Its UI
 remains in `Pana/web/character/`, while the shared sculpt lives in
 `Pana/engine/soft-character/`. It uses the existing Three.js **0.160.0** CDN
 import map and static web server. The explicit “Usar en los juegos” action
-saves the wardrobe to the existing avatar schema; `engine/character.js`
+saves the wardrobe to the existing avatar schema; `engine/models/characters/pana/avatar-model.js`
 adapts this same sculpt for every game. See `pana-studio.md` for the catalog.
 
 ## Scope and reuse
@@ -39,7 +39,7 @@ pana.dispose(); // remove and release owned geometries/materials/texture/skeleto
 Model origin is at the feet, forward is +Z, height is approximately 3.6 units.
 `group`, `body`, `neck`, `head`, `arms`, `legs`, `armL`, `armR` and `carry` are
 available. `scale` is an optional construction argument. Games should use
-`buildCharacter(avatar, options)` from `/engine/character.js` for the avatar
+`buildCharacter(avatar, options)` from `/engine/models/characters/pana/avatar-model.js` for the avatar
 schema, game scale, seated drivers, carrying and legacy accessories. That
 adapter selects the reduced game tessellation profile; the editor retains
 full detail. Old `/character/` model URLs re-export the shared implementations.
@@ -236,3 +236,19 @@ subdivision, with the tested mixed hoodie/chef-hat/glasses character below 80k.
 The body, garment and apron fitting caches store bounded CPU templates; each
 character clones mutable geometry and owns its disposal. These caches do not
 share live skeletons, material colors or GPU geometry between players.
+
+## Notes for agents
+
+Rules that used to live in AGENTS.md (paths are relative to `Pana/`). Keep them
+true when you change this area.
+
+The character sculpt lives in `engine/models/characters/pana/`;
+`models/characters/pana/avatar-model.js` adapts it to saved
+avatars and gameplay. The full editor stays at
+`/personaje.html`; its old model module URLs only re-export shared sources.
+Games use the lighter sampling profile and must call `character.dispose()`
+when removing a character (detach shared carried props first).
+
+Characters stand on articulated legs by default. Pass `{ seated: true }` for
+vehicle drivers, `{ chef: true }` for cooking attire, and `walk` / `carry` /
+`run` in `update()` to animate the shared rig.

@@ -3,7 +3,9 @@
 
 import * as THREE from 'three';
 import { Puffs, sound } from '/engine/fx.js';
-import { M, mesh, makeMango, woodSign } from '/engine/props.js';
+import { M, mesh } from '/engine/models/core/primitives.js';
+import { makeMango } from '/engine/models/props/mango.js';
+import { woodSign } from '/engine/models/props/wood-sign.js';
 import { sunnyStage, makeActors, animateActor, rand, pick } from './stage.js';
 
 const LANE_Z = 3;            // where the panas stand
@@ -61,11 +63,11 @@ export default {
 
   create(ctx) {
     const scene = new THREE.Scene();
-    sunnyStage(scene);
+    const stage=sunnyStage(scene);
     const tree = mangoTree();
     tree.position.set(0, 0, -3.5);
     scene.add(tree);
-    const sign = woodSign(['ENTRE MÁS', 'MANGOS', 'MEJOR ♥'], { w: 4.6, h: 3.4 });
+    const sign = woodSign(['ENTRE MÁS', 'MANGOS', '¡MEJOR!'], { w: 4.6, h: 3.4 });
     sign.position.set(13.5, 0, -2);
     sign.rotation.y = -0.4;
     scene.add(sign);
@@ -130,7 +132,9 @@ export default {
       ai.target = best ? best.obj.position.x + ai.err : null;
     }
 
+    let skyTime=0;
     function update(dt, input) {
+      skyTime+=dt;stage.update(skyTime);
       clock += dt;
       spawnT -= dt;
       if (spawnT <= 0) {

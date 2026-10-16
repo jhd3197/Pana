@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
-import { buildSoftCharacter, REFERENCE_PALETTE } from './model.js';
+import { buildSoftCharacter, REFERENCE_PALETTE } from '/engine/models/characters/pana/model.js';
 import { saveAvatar } from '/engine/avatar.js';
 
 const canvas = document.querySelector('#character-canvas');

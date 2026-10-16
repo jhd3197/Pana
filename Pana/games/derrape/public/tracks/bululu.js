@@ -1,55 +1,108 @@
-// Bululú geography at racing scale: coast, river crossings and inland turns.
-import * as THREE from 'three';
-import { buildIsland, baseHeight } from '/engine/island-terrain.js';
-import { createIslandEnvironment } from '/engine/island-environment.js';
-
-const LAND = 3.2, HEIGHT = 1.7;
-const ROUTE = [[28,94],[0,97],[-35,90],[-72,74],[-99,45],[-102,14],[-86,-12],
-  [-63,-32],[-40,-30],[-24,-12],[-45,6],[-66,26],[-51,43],[-23,43],
-  [7,23],[29,-4],[35,-27],[65,-20],[89,8],[105,39],[86,68],[58,84]];
-
+import { TRACK_DEFINITIONS } from '../track-definitions.js';
+// Los Roques-inspired racing island. The Bululú board-game world stays independent.
+import { THREE,M,box,sign,smooth,hill,terrain,sea,put,foundation,scatter,instances,clear,finish,edges } from './world-kit.js';
+import { palm } from '/engine/models/vegetation/palm.js';
+import { mangrove } from '/engine/models/vegetation/mangrove.js';
+import { colonialHouse, colonialChurch, streetFoodKiosk } from '/engine/models/props/pueblo.js';
+import { waterAnimator } from '/engine/models/effects/water-surface.js';
+import { tideZone,tideWetness,tidalCrossing } from './bululu-tide.js';
+import { beachShade, beachHut, driftwood } from '/engine/models/props/beach.js';
+import { placeReefSchools } from '/engine/placement/reef-schools.js';
+import { souvenirKiosk } from '/engine/models/props/monuments.js';
+import { fishingBoat, coastalLighthouse, lifeguardTower, beachVolleyball, beachShower, rescueRingStand, fishingNetRack, fishCrates, channelBuoy } from '/engine/models/props/coastal.js';
+import { beachCrab } from '/engine/models/fauna/beach-crab.js';
+import { groundBeachCrab } from '/engine/placement/beach-crab.js';
+const SCALE=1.23;
+const ROUTE=[[-260,80],[-260,155],[-170,210],[-70,220],[10,170],[15,100],[65,60],[140,75],[220,130],[300,110],[335,35],[300,-35],[230,-70],[170,-130],[90,-195],[-5,-215],[-90,-175],[-120,-100],[-185,-65],[-255,-20]].map(([x,z])=>[x*SCALE,z*SCALE]);
+const roadHeight=(x,z)=>(3.2+hill(x,z,-270,-120,120,95,7))*(1-tideZone(x,z))+.48*tideZone(x,z);
+function baseHeight(x,z){
+  x/=SCALE;z/=SCALE;
+  const a=Math.hypot((x+195)/140,(z-35)/205),b=Math.hypot((x-215)/157,(z-35)/117),c=Math.hypot((x+5)/150,(z+180)/72);
+  const coast=Math.min(a,b,c);
+  let h=3.4-18*smooth(coast,.77,1.23)+hill(x,z,-245,-115,50,60,36);
+  // A sheltered harbor behind the village, mangrove lagoons and outlying cays.
+  const lagoon=Math.hypot((x+95)/49,(z-40)/63);
+  h=h*smooth(lagoon,.7,1.2)-4*(1-smooth(lagoon,.7,1.2));
+  for(const [cx,cz,rx,rz] of [[250,235,90,18],[420,-50,60,25],[30,-300,120,15]])h=Math.max(h,1.4-15*smooth(Math.hypot((x-cx)/rx,(z-cz)/rz),.65,1.3));
+  return h;
+}
 export default {
-  id: 'bululu', name: 'Isla Bululú',
-  blurb: 'Una isla entera: costa larga, curvas del río, selva y regreso por el puerto.',
-  points: ROUTE.map(([x,z])=>[x*LAND,z*LAND]),
-  rounded: true,
-  hw: 9, lineU: 0.035,
-  elevation: (x,z) => baseHeight(x/LAND,z/LAND)*HEIGHT + 0.3,
-  sectors: [[0,'Playa Cocotero'],[0.2,'Costa del río'],[0.36,'Quebrada del mango'],
-    [0.55,'Selva adentro'],[0.73,'Puerto de los panas']],
-  items: { boxes: [0.1,0.28,0.46,0.65,0.86], boxLanes: [-6,-2,2,6],
-    pads: [{u:0.17,off:0},{u:0.38,off:-4},{u:0.6,off:4},{u:0.8,off:0},{u:0.95,off:-4}] },
-  walls: true,
-  palette: { horizon:0xb7e2e7,skyTop:0x64bde9,hemiSky:0xe5f5ff,
-    hemiGround:0x829b55,hemiInt:1.8,sun:0xffedc2,sunInt:2.6,
-    ground:0x63b453,track:0xd9b77a,dune:0,fog:[150,650] },
-  environment(T) {
-    const group=new THREE.Group();
-    // Work in the shared island's coordinates; the road itself stays 18 m wide.
-    const island=buildIsland([],[],{road:(x,z)=>({
-      d:Math.abs(T.offsetOf(x*LAND,z*LAND))/LAND,
-      h:T.surfaceAt(x*LAND,z*LAND)/HEIGHT,width:(T.HW+5)/LAND,shoulder:12/LAND,
-    })});
-    group.add(island.group);
-    const environment=createIslandEnvironment(group,{island,layoutScale:LAND,heightScale:HEIGHT,
-      clearance:(x,z,r)=>Math.abs(T.offsetOf(x*LAND,z*LAND))>T.HW+r*LAND+4});
-    group.scale.set(LAND,HEIGHT,LAND);
-    return {group,groundAt:(x,z)=>island.groundAt(x/LAND,z/LAND)*HEIGHT,update:environment.update};
-  },
-  scenery(group,kit,T) {
-    const trees=new THREE.Group();
-    for(const p of kit.scatter(T,{seed:247,count:220,min:T.HW+10,max:T.HW+48})) {
-      if(T.terrainAt(p.x,p.z)<0.5) continue;
-      kit.at(trees,p.z>190?kit.palm({h:8+p.k*5,seed:Math.floor(p.s)}):
-        kit.ceiba({h:9+p.k*5,seed:Math.floor(p.s)}),p,p.rot);
+  ...TRACK_DEFINITIONS.find(track => track.id === 'bululu'),
+  points:ROUTE,rounded:true,hw:9,lineU:.025,elevation:roadHeight,
+  waterAt:(x,z,t,T)=>tideWetness(T,x,z,t),
+  previewBounds:[[-420,0,-400],[590,75,340]],
+  sectors:[[0,'Pueblo del faro'],[.23,'Playa Pana'],[.43,'Cayo de los panas'],[.65,'Lengua de arena'],[.84,'Puerto de colores']],
+  items:{boxes:[.1,.29,.48,.67,.87],boxLanes:[-6,-2,2,6],pads:[{u:.18,off:0},{u:.37,off:-4},{u:.59,off:4},{u:.79,off:0},{u:.95,off:-4}]},
+  walls:false,chevrons:true,
+  palette:{skySeed:31,cloudCover:0.28,horizon:0xade4ef,skyTop:0x189fd9,hemiSky:0xe4f7ff,hemiGround:0xb5a877,hemiInt:1.6,sun:0xfff3d9,sunInt:2.5,ground:0xf1dea1,track:0xddc79a,dune:0,fog:[550,1800]},
+  environment(T){
+    const group=new THREE.Group(),world=terrain(T,{bounds:[-650,-550,750,500],base:baseHeight,step:5,
+      cut:(x,z,h)=>{
+        const zone=tideZone(x,z),off=Math.abs(T.offsetOf(x,z));
+        const sand=zone*(1-smooth(off,T.HW+1,T.HW+5));h=h*(1-sand)+(T.surfaceAt(x,z)-.14)*sand;
+        const channel=zone*smooth(off,T.HW+2,T.HW+19);return h*(1-channel)-3*channel;
+      },
+      color:(x,z,y)=>y<.8?0xe9dfbd:y<5?0xf3e7c6:y<15?0xb3ae7d:0x979d88});
+    group.add(sea(world.groundAt,{opacity:.68}),world.land);
+    const village=new THREE.Group(),occupied=[];
+    const colors=[0x55a7a5,0xd88b75,0xe2bc60,0x82a9c3,0xd5d1aa];
+    let n=0;
+    for(const x of [-270,-240,-210])for(const z of [-5,28,61,94,127]){
+      if(!clear(T,x,z,13)||world.groundAt(x,z)<1)continue;
+      foundation(village,colonialHouse({seed:11+n,color:colors[n%colors.length]}),x,z,world.groundAt,{scale:1.65,radius:7,rotation:Math.PI/2});occupied.push([x,z]);n++;
     }
-    // Short wooden causeways make the river crossings legible while the
-    // continuous road remains the collision surface.
-    for (let s=0;s<T.TOTAL;s+=2.6) {
-      const p=kit.placeOnTrack(T,s);
-      if(p.y-T.terrainAt(p.x,p.z)<0.7) continue;
-      kit.flankBridge(trees,T,s,s+2.6);
+    foundation(village,colonialChurch(),-211,166,world.groundAt,{radius:10,scale:1.8,rotation:Math.PI});
+    for(const [x,z] of [[-173,52],[-174,93]])if(clear(T,x,z,10))foundation(village,streetFoodKiosk(),x,z,world.groundAt,{radius:6,scale:1.6,rotation:Math.PI/2});
+    group.add(village);village.name='roques-village';
+    const details=new THREE.Group();details.name='roques-beach-details';group.add(details);
+    const detail=(id,factory,x,z,radius,rotation=0)=>{
+      if(!clear(T,x,z,radius)||world.groundAt(x,z)<.6||occupied.some(([a,b])=>Math.hypot(x-a,z-b)<radius+10))return;
+      const object=foundation(details,factory(),x,z,world.groundAt,{radius,rotation});
+      object.userData.assetId=id;object.userData.footprintRadius=radius;occupied.push([x,z]);return object;
+    };
+    for(const [i,[x,z]]of [[255,50],[280,45],[270,75],[245,80]].entries())detail('beachShade',()=>beachShade(i%2?0xe77950:0x48a9aa),x,z,3);
+    detail('beachHut',beachHut,295,65,5,Math.PI);
+    const kiosk=detail('souvenir-kiosk',souvenirKiosk,-180,135,4,Math.PI/2);
+    for(const [x,z]of [[225,165],[290,150]])detail('driftwood',driftwood,x,z,3,.4);
+    const coast=new THREE.Group();coast.name='roques-coastal-props';group.add(coast);
+    const coastLand=(factory,x,z,radius,rotation=0)=>{
+      if(!clear(T,x,z,radius)||world.groundAt(x,z)<.6||occupied.some(([a,b])=>Math.hypot(x-a,z-b)<radius+10))return;
+      const object=foundation(coast,factory(),x,z,world.groundAt,{radius,rotation,color:0xd6c6a2});
+      object.userData.footprintRadius=radius;occupied.push([x,z]);return object;
+    };
+    coastLand(coastalLighthouse,-294,-155,2.7);
+    coastLand(lifeguardTower,285,110,3.5,Math.PI);
+    coastLand(beachVolleyball,260,20,10);
+    coastLand(beachShower,230,60,1.4);
+    coastLand(rescueRingStand,250,110,1.1,Math.PI);
+    coastLand(fishingNetRack,-185,10,2.5,Math.PI/2);
+    const coastAt=(factory,x,z,y,radius,rotation=0)=>{
+      const object=put(coast,factory(),x,z,y,rotation);object.userData.footprintRadius=radius;return object;
+    };
+    for(const [x,z] of [[-105,-8],[-88,85]])if(clear(T,x,z,1)&&world.groundAt(x,z)<-1)coastAt(channelBuoy,x,z,-.12,1);
+    for(const [i,[x,z]]of [[222,85],[224,87],[247,101],[249,99]].entries())if(clear(T,x,z,1.1)){
+      const crab=coastAt(beachCrab,x,z,world.groundAt(x,z),1.1);groundBeachCrab(crab,world.groundAt,i*1.7);
     }
-    group.add(kit.bake(trees, { cellSize: 100 }));
+    const schools=placeReefSchools(group,{spots:[[-120,0],[-113,32],[-105,65],[-88,94],[175,20],[210,-5]],groundAt:world.groundAt,clearance:(x,z,r)=>clear(T,x,z,r)});
+    const fixed=new THREE.Group();
+    // Low jetties and peñeros populate the harbor without filling the beach.
+    for(let i=0;i<6;i++){
+      const z=-6+i*24,x=-151+Math.sin(i)*5;
+      if(clear(T,x,z,7)){
+        fixed.add(box(22,.4,2.6,M(0x9d8461),x+7,1,z));
+        for(const dx of [-3,5,13,19])fixed.add(box(.3,3,.3,M(0x685b49),x+dx,-.2,z));
+        const bx=x+14,bz=z+6;
+        if([-4,0,4].every(dx=>[-4,0,4].every(dz=>world.groundAt(bx+dx,bz+dz)<-.8)))coastAt(()=>fishingBoat({color:colors[i%5]}),bx,bz,-.32,4,Math.PI/2);
+        if(i===1||i===3)coastAt(fishCrates,x+4,z,1.2,1.3);
+      }
+    }
+    put(group,sign('ISLA BULULÚ',16,2.4,{background:'#317c82'}),-235,187,6.7,Math.PI);
+    group.add(finish(fixed));
+    instances(group,palm({seed:32,h:10}),scatter(T,world.groundAt,{seed:1032,count:58,bounds:[-350,-210,420,240],margin:9,minY:1,accept:(x,z,y)=>y<9&&!occupied.some(([a,b])=>Math.hypot(x-a,z-b)<14)}),'island-palms');
+    instances(group,mangrove({seed:17}),scatter(T,world.groundAt,{seed:701,count:35,bounds:[-145,-45,0,150],margin:6,minY:-1.5,accept:(x,z,y)=>y<3}),'lagoon-mangroves');
+    const animateWater=waterAnimator(group),tide=tidalCrossing(T);group.add(tide.group);
+    const coastalTicks=coast.children.filter(o=>o.userData.tick);
+    return {group,groundAt:world.groundAt,update:t=>{animateWater(t);tide.update(t);kiosk?.userData.tick(t);schools.forEach(o=>o.userData.tick(t));coastalTicks.forEach(o=>o.userData.tick(t));}};
   },
+  scenery(group,kit,T){edges(group,kit,T,{style:'rope',step:7,skip:(s)=>{const p=T.pointAt(s);return tideZone(p.x,p.y)>.01;}});},
 };

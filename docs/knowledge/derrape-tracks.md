@@ -20,7 +20,8 @@ Derrape supports multiple maps. Everything lives in `games/derrape/public/`:
 
 - **Positive `off` is the `(-tz, tx)` side** of the direction of travel —
   `placeOnTrack`, `scatter`, items and walls all share this convention.
-- Cars are hard-confined to `|off| < HW - 1.6`; keep scenery at
+- Most circuits hard-confine cars to `|off| < HW - 1.6`; Selva opts into
+  drivable rough ground and natural obstacle collisions instead. Keep scenery at
   `|off| >= HW + 3`. Straddling props (gates, arches): pillars at
   `|off| >= 10`, lintel clearance `y >= 5.5`.
 - A straddling prop built along local X needs `rotation.y = p.h` (NOT
@@ -33,18 +34,19 @@ Derrape supports multiple maps. Everything lives in `games/derrape/public/`:
   disposed; materials come from shared caches (never dispose those).
 - Track choice persists in `localStorage['derrape:track']`; `?track=<id>`
   overrides. New maps also need their import added to `tracks.js`.
-- Keep loops gentle: min radius of curvature > 15, lap length 1,000–2,200, no
+- Keep loops drivable: min radius of curvature > 15, lap length 1,000–2,600, no
   self-intersections. Verify with a numeric spline check before shipping
   (control-point drafts often hide tight corners between points).
 
 ## Shared worlds (2026-10-14)
 
-The registry has eight maps: estadio, desierto, llanos, playa, selva, paramo,
-plaza and bululu. Plaza now extends the shared courtyard into a 1,404-unit town
-route; Bululú has a 2,112-unit coastal and inland course. The other six maps
-range from 1,091 to 1,175 units, with authored bends in both directions.
+The registry has eight maps: estadio, desierto, llanos, chichi, selva, paramo,
+plaza and bululu. Playa is consolidated into Bululú, including legacy ID and
+Studio bookmark migration. The five rebuilt routes are 2.04–2.60 km; see
+`venezuela-circuits.md` for current construction, landmarks and proof. The
+shared-world notes below describe the original integration and its contracts.
 
-- `track-kit.js` wraps `/engine/flora.js` builders with `bake()` so the current
+- `track-kit.js` wraps `/engine/models/vegetation/` builders with `bake()` so the current
   palm's many leaflets do not become hundreds of draw calls per tree. The
   obsolete `props.js` palm and Selva's duplicate ceiba were removed. Páramo
   now uses shared pines; Estadio uses shared mango trees, palms and market props.
@@ -93,11 +95,10 @@ and `PANA_TEST_URL` (server origin). No runtime dependency is added to the games
   fits the actual min/max route bounds, including asymmetric town routes.
 - The Plaza race uses the shared `house()` and `town:true` courtyard option;
   route clearance opens side streets and the front garden. Its other games
-  keep their default courtyard. The extended town is batched into 100-unit cells.
-- Bululú race geography scales by 3.2 in X/Z and 1.7 in Y. Its route leaves the
-  coast, crosses the river and returns through the forest and harbor. Shared
-  props compensate for that transform so trees and houses do not become giants.
-  Terrain road queries must divide distance/width by 3.2 and height by 1.7.
+  keep their default courtyard. The extended town is batched into 200-unit cells.
+- The original Bululú race scaled the board world by 3.2 in X/Z and 1.7 in Y.
+  That race environment has been replaced by authored Los Roques-inspired
+  terrain in `tracks/bululu.js`; the board keeps its original shared world.
 - Optional spatial cells in `flora.bake()` preserve frustum/shadow culling on
   large environments. Keep the default for existing compact game scenes.
 - Construct the finish stripe from along-road and across-road coordinates.
@@ -112,3 +113,186 @@ and `PANA_TEST_URL` (server origin). No runtime dependency is added to the games
 Validation also casts 480 clearance rays per map, tests every item row and
 completes three laps, then repeats Plaza/Bululú/Estadio map switches. Scenery
 rays exclude items and test the named `track-environment` / `track-scenery` groups.
+
+## Plaza street network and hill
+
+`tracks/plaza-layout.js` owns seven avenues, six cross streets, thirty blocks,
+the route and `townHeight`. `plaza-town.js` builds perimeter houses, gardens,
+the market, a wooded park, a hilltop terrace and outer neighborhoods. Building
+placements are independent of the racing spline; clearance filters remove
+conflicts with both the circuit and ordinary streets. Main avenues continue
+beyond the built blocks. The street network is scenery: racing retains the
+existing single-loop projection, lap logic and confinement to the marked route.
+
+The route rises from 0 to about 25.5 units, with a maximum grade near 0.321 and
+minimum turn radius above 19. The historic plaza stays flat. The same heightfield
+grounds foundations and city streets; terrain blends to a level cross-section
+under the race. Mesh clearance must be checked with rays, not just the analytic
+height function: coarse terrain interpolation can otherwise poke through road
+edges. Pavement, lawns and street markings use separated heights to avoid
+overlapping surfaces on slopes. Houses use retaining foundations sampled across
+their footprint, rather than floating at a single terrain point.
+
+The shared plaza's `town:true` option uses a courtyard-sized backing plane;
+the default 170-unit plane remains unchanged for Escondidas/Cocina. Low kerbs
+and temporary barriers replace the race's tyre stacks. Prop constructors and
+materials remain shared. Discard source geometry after batching, and retain
+shared materials. Before the waterfront extension, the town was about 1.40
+million triangles and 774 overview draw calls. Current render counts live in
+`venezuela-circuits.md` and the ignored visual-proof metrics.
+
+Optional `track.previewBounds` is a pair of min/max XYZ arrays for Studio;
+Plaza includes the surrounding neighborhoods instead of framing only the lap.
+Selva uses it too, to include the forest valley. Other tracks keep their existing camera bounds.
+
+`tests/plaza.browser.js [playwright-package] [browser-executable]` checks the
+hill, route projection, independent blocks, building/street clearance, foundations,
+actual terrain mesh clearance and render budgets, then renders three sections
+through the real race camera. Proof is local in ignored `art/studio/plaza/`.
+`PANA_MAP_TEST_TRACKS=plaza,estadio,plaza` selects a focused switch/race regression
+in `tests/maps.browser.js`; omitting it still runs all eight maps and repeats.
+
+## Selva river valley and temple tunnel
+
+`tracks/selva-layout.js` owns the river samples, gentle route elevation,
+interior ridge and tunnel interval. `selva-world.js` builds continuous terrain, a carved riverbed,
+a raised plank crossing, waterfall, stepped ruins and forest extending up the
+surrounding ridges. Trees and understory use the canonical `engine/models/vegetation/`
+factories. `selva-flora.js` owns the sixteen-species planting composition,
+including all twelve newer Studio plants. Scenery is merged into spatial material batches. Geometry is freed
+after baking while cached materials remain shared. The former tire wall is
+replaced by low wooden markers, stones and foliage.
+
+`selva-temple.js` builds an invented Maya-inspired ruin, with stepped stone
+portals and jade inlays. Its 68.5-unit passage follows the racing spline from
+u=0.445 to 0.505. Interior width is 25.2 units at road level; the corbelled roof
+rises to 16.2, with over 12 units of clearance above the outer racing lanes.
+The outer earth shell and end faces enclose a real void. Never raise the base
+heightfield across the road to make the tunnel hill: that would bury the track.
+Roof plants sample the outer shell separately. The race stays on the original
+1,141-unit loop, with a gentle maximum grade around 0.085.
+
+The riverbed also cuts below the bridge. Individual deck strips must sample
+the route at both ends; flat boxes intersect a curved, sloping road ribbon.
+The temple's base samples its rotated footprint on a broad earth terrace;
+flatten the terrain beneath it instead of exposing a tall box foundation.
+The interior ridge hides the far portal and cars leaving the passage from
+the early bend. Keep these sightlines blocked without burying the road.
+
+`tests/selva.browser.js` verifies every racing lane, actual terrain triangles,
+the roof over each lane and the full 11-unit chase-camera segment at both
+portals and inside the passage. It renders the actual race camera as well as
+Studio views. It currently measures roughly 3.90 million triangles, 661
+overview draw calls and 678 plant placements; render budgets are regression
+checked, not claims of frame rate on every device. Local proof is ignored at
+`art/studio/selva/`. Use `PANA_MAP_TEST_TRACKS=selva,estadio,selva` for the
+full-race, pickup and switching regression. Both tests accept the existing
+`PANA_PLAYWRIGHT_PATH`, `PANA_BROWSER_PATH` and `PANA_TEST_URL` variables.
+
+Planting uses habitat patches rather than the same roadside banana repeated
+around the lap: bamboo and broad-leaf understory in the shaded western forest,
+fruit/flower groves in clearings, mangles and reeds following the river itself,
+and agave/cardón on the exposed eastern ruin slope. Water lilies use y=0.3,
+the river's surface, rather than the riverbed. Roof plants use the tunnel shell.
+The old map-specific flower model has been removed in favor of shared heliconia.
+
+`meshHeight` interpolates the actual terrain triangles for plant origins and
+Selva's `T.terrainAt` driving surface. The
+analytic height function can diverge from the four-unit terrain grid on steep
+riverbanks; using it directly made narrow stems float. Keep road elevation
+independent of this terrain surface. Plant clearance uses each shared
+template's rotated footprint radius, with a safety margin outside the road.
+The regression checks all twelve additions, lily-pad height/bank bounds,
+sampled plant grounding, and forest camera clearance around the whole lap.
+
+### Selva off-road handling
+
+`selva.js` opts into `offroad: {fullAt:4.5, speed:0.36, accel:0.48, drag:0.75}`.
+`offroad.js` smoothly increases roughness outside the road edge. `stepCar`
+reduces acceleration, bleeds speed and applies drag; turbo retains the grass
+penalty. On a sustained full-throttle sample the starter car measures about
+11.7 m/s on grass versus 33 m/s on the road, or 17.6 m/s with grass turbo.
+There is no automatic steering or positional snap back to the racing line.
+
+`T.groundAt` blends onto the sampled mesh over the first two metres off-road.
+Vertical following uses the previous ground sample so descending a bank does
+not create a false ramp jump. `selva-driving.js` uses spatially indexed trunks
+and ruin footprints, local uphill grade, river banks, and the tunnel shell.
+Blocked velocity components are removed, allowing sliding and reverse escape.
+Limit tunnel collision to its actual lateral shell; testing only the spline
+parameter incorrectly creates invisible walls far out in the forest. A car
+that lands in water must be able to move toward shore even on a flat riverbed.
+Environment `constrainMotion` is optional and resets during every `T.build()`.
+Other circuits retain their existing road confinement.
+
+`tests/selva-driving.browser.js` exercises the real car simulation: grass speed
+with and without turbo, stationary shoulder control, steering back onto the
+road, trunk entry/reverse escape, steep banks, tunnel walls and river recovery.
+`tests/selva.browser.js` also traces 27 opponent sightlines and the far portal's
+cornice from three early-lap views. Keep these tests with the full map race and
+switch regression when tuning terrain or physics.
+
+## Notes for agents
+
+Rules that used to live in AGENTS.md (paths are relative to `Pana/`). Keep them
+true when you change this area.
+
+Derrape's eight circuits include Plaza Pana, Isla Bululú and Chi Chi. Playa
+is now a sector of the Los Roques-inspired race island; legacy `playa` IDs
+resolve to `bululu`. All trees come
+from `engine/models/vegetation/`.
+`createPlazaEnvironment()` provides scenery without lights, while
+`createIslandEnvironment()` shares Bululú's vegetation, harbor, sea and
+landmarks. Island terrain/scenery/beach modules now live in `engine/`;
+old Bululú paths re-export them. Keep gameplay in the games, and pass route
+clearance to the shared environment instead of copying its assets.
+`engine/sky.js` supplies scene-owned skies to outdoor games and Studio tours.
+Cloud wind uses absolute time; palettes accept `skySeed` and `cloudCover`.
+Keep the sky outside scenery batches/bounds; the tour disposes it on exit.
+Bululú still owns its day/night lights, stars and moon. Plaza bunting is a
+separate live mesh with fixed cable attachments and absolute-time cloth motion.
+The shared `house()` has tejas/balcon/tienda/terraza styles, registered in Studio;
+preserve the 5.4 m shell, ground origin and road clearance. Its painted trim
+is color-batched before the town repeats it. See `docs/knowledge/living-world.md`.
+Race routes are 1.14–4.88 km with bends in both directions. Plaza extends
+the shared courtyard into a pueblo. Its game-local `tracks/plaza-layout.js`
+owns the street grid and hill; `plaza-town.js` builds blocks independently of
+the racing line. Keep streets and buildings clear as well as the race lanes.
+`plaza-waterfront.js` adds Casas Botes and the Maracaibo-inspired bridge.
+The race island has its own light coastal terrain; the original Bululú
+board world stays independent. `world-kit.js` batches static landmarks and
+spatially instances shared flora. Do not pass instances through `bake()`.
+`tracks/world-horizon.js` joins the exact playable terrain-grid boundary to
+coarser surrounding land; keep that mesh as a child of the original terrain.
+It also extends coastal water without changing its near grid/depth-map domain.
+Preserve explicit Studio framing bounds rather than fitting the whole backdrop.
+Plaza's outer streets join residential lanes; Llanos' extra water samples the
+actual outer bank triangles and closes before its grid boundary. `landscape-kit.js`
+ground overlays use polygon offset for distant views. `ceiba({detail:'distant'})`
+is a lighter form of the same canonical tree for repeated groves. Estadio's
+parked cars reuse garage factories, remove/dispose the driver, and color-batch
+opaque trim before instancing. See `docs/knowledge/circuit-surroundings.md`.
+Páramo and Chi Chi use elevated, continuous roads over carved terrain;
+keep waterways below the road and inspect actual chase-camera views.
+Chi Chi now spans 195 m of elevation, with springs, mountainside switchbacks,
+forest, a dive village and river bridges. Its thermal shelf and bridge channels
+use the optional post-carve terrain cut. Wet grip is opt-in through `def.gripAt`
+and `roadGripAt()`; preserve dry defaults and normal road confinement elsewhere.
+Bululú's `bululu-tide.js` shares one absolute-time wash front between visible
+geometry and `def.waterAt(x,z,time,T)`. Use race time for grip, drag and tire
+spray; preserve at least 9.5 m of dry center at peak tide. This is an opt-in
+flooded edge, not a moving collision wall. Track cleanup collects disposers
+before invoking them because character disposal detaches scene children.
+See `docs/knowledge/venezuela-circuits.md` for construction and validation.
+Selva's `selva-world.js` builds the river valley and shared forest assets;
+`selva-temple.js` sweeps a hollow tunnel along the road. Keep the terrain
+below its driving surface and test the chase camera through both portals.
+`selva-flora.js` composes eighteen shared species by habitat, including the
+giant jungle tree and tropical bush. Keep its footprint clearance, water height,
+and sampled terrain grounding; do not duplicate plant geometry in the map.
+Selva opts into off-road drag through `offroad.js`. Its `selva-driving.js`
+constrains motion against trunks, steep banks and tunnel masonry, while grass
+leaves steering to the driver. Keep the interior ridge's tunnel-exit sightline
+tests and reset environment motion callbacks when rebuilding a track.
+The race island uses expanded geography
+with normal-sized assets. Keep those options opt-in for the original games.

@@ -3,7 +3,10 @@
 
 import * as THREE from 'three';
 import { Puffs, sound, makeBubble } from '/engine/fx.js';
-import { M, mesh, box, flagPole, watchtower, woodSign } from '/engine/props.js';
+import { M, mesh, box } from '/engine/models/core/primitives.js';
+import { flagPole } from '/engine/models/props/flags.js';
+import { watchtower } from '/engine/models/props/watchtower.js';
+import { woodSign } from '/engine/models/props/wood-sign.js';
 import { sunnyStage, makeActors, animateActor, rand, pick } from './stage.js';
 
 const DECK = 0.25;          // plank top height
@@ -28,7 +31,7 @@ export default {
 
   create(ctx) {
     const scene = new THREE.Scene();
-    sunnyStage(scene, { ground: null, grass: false });
+    const stage=sunnyStage(scene, { ground: null, grass: false });
     const puffs = new Puffs(scene);
 
     // sea
@@ -78,7 +81,7 @@ export default {
     const flag = flagPole({ h: 10 });
     flag.position.set(12.6, 0, -10);
     scene.add(flag);
-    const sign = woodSign(['PANAS', 'SIEMPRE', 'JUEGAN ♥'], { w: 4.4, h: 3.4 });
+    const sign = woodSign(['PANAS', 'SIEMPRE', '¡JUEGAN!'], { w: 4.4, h: 3.4 });
     sign.position.set(-12, 0, -8);
     sign.rotation.y = 0.5;
     scene.add(sign);
@@ -120,7 +123,9 @@ export default {
       if (a.player.human) sound.boing();
     }
 
+    let skyTime=0;
     function update(dt, input) {
+      skyTime+=dt;stage.update(skyTime);
       clock += dt;
       const w = (1.7 + clock * 0.11) * dir;
       flipT -= dt;

@@ -1,11 +1,30 @@
 // The same island environment for the board game and driving circuits.
 // Games supply path clearance; geography, vegetation and landmarks stay here.
 import * as THREE from 'three';
-import { M, mesh, box, rng, makeMango, woodSign, watchtower, flagPole, rock } from './props.js';
-import { mangoTree, ceiba, pine, banana, bush, casita, bake, palm, foliage } from './flora.js';
+import { M, mesh, box, rng } from '/engine/models/core/primitives.js';
+import { makeMango } from '/engine/models/props/mango.js';
+import { woodSign } from '/engine/models/props/wood-sign.js';
+import { watchtower } from '/engine/models/props/watchtower.js';
+import { flagPole } from '/engine/models/props/flags.js';
+import { rock } from '/engine/models/props/rock.js';
+import { mangoTree } from '/engine/models/vegetation/mango-tree.js';
+import { ceiba } from '/engine/models/vegetation/ceiba.js';
+import { pine } from '/engine/models/vegetation/pine.js';
+import { banana } from '/engine/models/vegetation/banana.js';
+import { bush } from '/engine/models/vegetation/bush.js';
+import { casita } from '/engine/models/props/island-house.js';
+import { bake } from '/engine/models/core/static-batch.js';
+import { palm } from '/engine/models/vegetation/palm.js';
+import { foliage } from '/engine/models/vegetation/canopy.js';
+import { hibiscus } from '/engine/models/vegetation/hibiscus.js';
+import { papaya } from '/engine/models/vegetation/papaya.js';
 import { riverDist, landMask, beachMask, fbm, SEA, PEAK, HILL } from './island-terrain.js';
 import { buildScenery } from './island-scenery.js';
-import { beachShade, beachHut, driftwood } from './beach-props.js';
+import { beachShade, beachHut, driftwood } from '/engine/models/props/beach.js';
+import { placeReefSchools } from '/engine/placement/reef-schools.js';
+import { fishingBoat, lifeguardTower, beachShower, rescueRingStand, fishingNetRack, fishCrates, channelBuoy } from '/engine/models/props/coastal.js';
+import { beachCrab } from '/engine/models/fauna/beach-crab.js';
+import { groundBeachCrab } from '/engine/placement/beach-crab.js';
 
 export const ISLAND_LOOP = [[28, 94], [0, 97], [-35, 91], [-70, 75], [-92, 48],
   [-103, 12], [-84, -18], [-49, -36], [-12, -34], [24, -36],
@@ -43,13 +62,14 @@ function mangoTreeBig(gold = true) {
 export function createIslandEnvironment(scene, { island, pathDist = island.pathDist,
   inShot = () => false, clearance = () => true, layoutScale = 1, heightScale = 1 } = {}) {
   const rand = rng(7), groundAt = island.groundAt;
+  const assetCounts={};scene.userData.assetCounts=assetCounts;
   const statics = new THREE.Group();
   const plank = M(0x9a6539, { roughness: 0.9 }), post = M(0x5c3a20, { roughness: 0.9 });
   // the sea: see-through enough that the sandy shallows show
   const waterGeo = new THREE.PlaneGeometry(2400, 2400, 90, 90);
   waterGeo.rotateX(-Math.PI / 2);
   const sea = new THREE.Mesh(waterGeo, new THREE.MeshStandardMaterial({
-    color: 0x279fba, roughness: 0.38, metalness: 0.08, transparent: true, opacity: 0.8,
+    color: 0x279fba, roughness: 0.38, metalness: 0.08, transparent: true, opacity: 0.66, depthWrite:false,
   }));
   sea.position.y = SEA;
   scene.add(sea);
@@ -70,14 +90,47 @@ export function createIslandEnvironment(scene, { island, pathDist = island.pathD
     obj.position.set(x, groundAt(x, z), z);
     obj.rotation.y = rot;
     into.add(obj);
+    if(obj.name)assetCounts[obj.name]=(assetCounts[obj.name]||0)+1;
     return obj;
   };
+  const schools=placeReefSchools(scene,{spots:[[138,22],[139,40],[146,58],[-52,119],[18,132]],groundAt,waterY:SEA,clearance:(x,z,r)=>pathDist(x,z)>r+4&&clearance(x,z,r)});
+  // Reserve coastal furniture before scattering plants. Keep each model root
+  // for animation, ownership and Studio placement inspection.
+  const coast=new THREE.Group();coast.name='island-coastal-props';scene.add(coast);
+  const coastalSpots=[];
+  const coastAt=(factory,x,z,y,radius,rotation=0)=>{
+    if(pathDist(x,z)<=radius+4||!clearance(x,z,radius))return;
+    const object=factory();object.position.set(x,y,z);object.rotation.y=rotation;
+    object.userData.footprintRadius=radius;coast.add(object);decor.push({x,z,obj:object});coastalSpots.push([x,z,radius]);return object;
+  };
+  const coastLand=(factory,x,z,radius,rotation=0)=>{
+    if(inShot(x,z)||groundAt(x,z)<.3||pathDist(x,z)<=radius+4||!clearance(x,z,radius))return;
+    const levels=[-radius,0,radius].flatMap(dx=>[-radius,0,radius].map(dz=>groundAt(x+dx,z+dz)));
+    const top=Math.max(...levels)+.06,bottom=Math.min(...levels)-.15;
+    coast.add(box(radius*2,top-bottom,radius*2,M(0xd6c6a2),x,(top+bottom)/2,z));
+    coastAt(factory,x,z,top,radius,rotation);
+  };
+  coastLand(lifeguardTower,17,75,3.5);
+  coastLand(beachShower,-18,73,1.4);
+  coastLand(fishingNetRack,113,-6,2.5,Math.PI/2);
+  // Dock height is SEA + 2.7; its planks are 0.2 m thick.
+  coastAt(fishCrates,133,24,SEA+2.8,1.3,Math.PI/2);
+  coastAt(rescueRingStand,154,24,SEA+2.8,1.1,Math.PI/2);
+  for(const [x,z] of [[143,31],[151,17]])if(groundAt(x,z)<SEA-1)coastAt(fishingBoat,x,z,SEA-.32,4,Math.PI/2);
+  for(const [x,z] of [[161,32],[157,9]])if(groundAt(x,z)<SEA-1)coastAt(channelBuoy,x,z,SEA-.12,1);
+  for(const [i,[x,z]]of [[10,109],[12,110],[65,96],[67,97]].entries())if(groundAt(x,z)>SEA+.6){
+    const crab=coastAt(beachCrab,x,z,groundAt(x,z),1.1);if(crab)groundBeachCrab(crab,groundAt,i*1.7);
+  }
+  // Fruit and flowering gardens reuse the library behind the harbor houses.
+  for(const [factory,x,z,seed] of [[hibiscus,112,1,87],[hibiscus,116,42,88],[papaya,112,37,89],[papaya,117,13,90]]) {
+    if(groundAt(x,z)>.3&&free(x,z,5)&&!inShot(x,z))place(factory({seed}),x,z);
+  }
 
   // plants: what grows depends on where you are
   for (let i = 0; i < 3400 * layoutScale; i++) {
     const x = (rand() - 0.5) * 310, z = -128 + rand() * 260;
     const y = groundAt(x, z);
-    if (y < 0.15 || !free(x, z, 4.6) || inShot(x, z) || harborSpace(x, z)) continue;
+    if (y < 0.15 || !free(x, z, 4.6) || inShot(x, z) || harborSpace(x, z)||coastalSpots.some(([a,b,r])=>Math.hypot(x-a,z-b)<r+3)) continue;
     const mtn = Math.hypot((x - PEAK.x) * 0.85, z - PEAK.z);
     const woods = fbm(x * 0.035 + 4, z * 0.035);
     const coast = landMask(x, z);
@@ -114,7 +167,7 @@ export function createIslandEnvironment(scene, { island, pathDist = island.pathD
   }
   for (let i = 0; i < 70; i++) {
     const x = (rand() - 0.5) * 220, z = -100 + rand() * 180;
-    if (groundAt(x, z) < 0.5 || !free(x, z, 4) || inShot(x, z) || harborSpace(x, z)) continue;
+    if (groundAt(x, z) < 0.5 || !free(x, z, 4) || inShot(x, z) || harborSpace(x, z)||coastalSpots.some(([a,b,r])=>Math.hypot(x-a,z-b)<r+2)) continue;
     place(rock(0.7 + rand() * 1.6, 0x8b8496, 500 + i), x, z);
   }
 
@@ -209,6 +262,8 @@ export function createIslandEnvironment(scene, { island, pathDist = island.pathD
       }
     },
     update(t, dt, daylight = 1) {
+      schools.forEach(o=>o.userData.tick(t));
+      coast.children.forEach(o=>o.userData.tick?.(t));
       const wp = waterGeo.attributes.position;
       for (let i = 0; i < wp.count; i++) {
         const x = waterBase[i * 3], z = waterBase[i * 3 + 2];

@@ -1,0 +1,123 @@
+// Model metadata only: no Three.js, construction or game imports.
+export default [
+  {
+    id: "ranch-house",
+    name: "Casa de hato llanero",
+    category: "Llanos",
+    source: "/engine/models/props/ranch.js",
+    factory: "llaneroRanchHouse",
+    usedBy: ["Derrape","Galope"],
+    previewOptions: null,
+    description: "Casa encalada con tejas, porche, persianas y un chinchorro tejido.",
+    tags: ["041","llanos","hato","ranch"],
+    pack: "ranch"
+  },
+  {
+    id: "corral-gate",
+    name: "Portón de corral",
+    category: "Llanos",
+    source: "/engine/models/props/ranch.js",
+    factory: "corralGate",
+    usedBy: ["Derrape","Galope"],
+    previewOptions: null,
+    description: "Dos hojas de madera con bisagras; ancho y apertura ajustables.",
+    tags: ["042","llanos","hato","ranch"],
+    pack: "ranch"
+  },
+  {
+    id: "hay-bale",
+    name: "Paca de heno",
+    category: "Llanos",
+    source: "/engine/models/props/ranch.js",
+    factory: "hayBale",
+    usedBy: ["Derrape","Galope"],
+    previewOptions: null,
+    description: "Rollo de paja con fibras en espiral y dos amarres.",
+    tags: ["043","llanos","hato","ranch"],
+    pack: "ranch"
+  },
+  {
+    id: "water-windmill",
+    name: "Molino de agua",
+    category: "Llanos",
+    source: "/engine/models/props/ranch.js",
+    factory: "waterWindmill",
+    usedBy: ["Derrape","Galope"],
+    previewOptions: null,
+    description: "Torre de celosía, rotor de dieciséis aspas y bomba animada.",
+    tags: ["044","llanos","hato","ranch"],
+    pack: "ranch"
+  },
+  {
+    id: "horse-stable",
+    name: "Caballeriza",
+    category: "Llanos",
+    source: "/engine/models/props/ranch.js",
+    factory: "horseStable",
+    usedBy: ["Derrape","Galope"],
+    previewOptions: null,
+    description: "Tres puestos con divisiones de madera, cama de paja y entrada abierta.",
+    tags: ["045","llanos","hato","ranch"],
+    pack: "ranch"
+  },
+  {
+    id: "feeding-trough",
+    name: "Comedero de ganado",
+    category: "Llanos",
+    source: "/engine/models/props/ranch.js",
+    factory: "feedingTrough",
+    usedBy: ["Derrape","Galope"],
+    previewOptions: null,
+    description: "Artesa abierta de madera con patas y forraje.",
+    tags: ["046","llanos","hato","ranch"],
+    pack: "ranch"
+  },
+  {
+    id: "ranch-fence",
+    name: "Cerca de hato",
+    category: "Llanos",
+    source: "/engine/models/props/ranch.js",
+    factory: "ranchFence",
+    usedBy: ["Derrape","Galope"],
+    previewOptions: null,
+    description: "Tres travesaños, postes y refuerzos; longitud ajustable.",
+    tags: ["047","llanos","hato","ranch"],
+    pack: "ranch"
+  },
+  {
+    id: "old-tractor",
+    name: "Tractor viejo",
+    category: "Llanos",
+    source: "/engine/models/props/ranch.js",
+    factory: "oldTractor",
+    usedBy: ["Derrape","Galope"],
+    previewOptions: null,
+    description: "Tractor rojo gastado con motor, escape, ruedas estriadas y enganche.",
+    tags: ["048","llanos","hato","ranch"],
+    pack: "ranch"
+  },
+  {
+    id: "mud-puddle",
+    name: "Módulo de charco de barro",
+    category: "Llanos",
+    source: "/engine/models/props/ranch.js",
+    factory: "mudPuddle",
+    usedBy: ["Derrape"],
+    previewOptions: null,
+    description: "Agua marrón con ondas suaves, orilla irregular y huellas.",
+    tags: ["049","llanos","hato","ranch"],
+    pack: "ranch"
+  },
+  {
+    id: "ranch-water-tower",
+    name: "Torre de agua del hato",
+    category: "Llanos",
+    source: "/engine/models/props/ranch.js",
+    factory: "ranchWaterTower",
+    usedBy: ["Derrape","Galope"],
+    previewOptions: null,
+    description: "Tanque acanalado sobre estructura de madera con escalera y tubería.",
+    tags: ["050","llanos","hato","ranch"],
+    pack: "ranch"
+  },
+];

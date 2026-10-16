@@ -1,19 +1,31 @@
+import { createSky } from '/engine/sky.js';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { CARS } from './cars.js';
-import { garageCards } from './garage-cards.js';
+import { WHEEL_DEFINITIONS, wheelById, composeTune } from './wheel-definitions.js';
+import { garageCards, wheelCards } from './garage-cards.js';
+import { paintNext } from './loading.js';
 import { sound, Puffs, Debris, makeBubble } from '/engine/fx.js';
 import { createItems, ITEMS, SPIN } from './items.js';
 import { activeItem, canBlock, coinMultiplier, COIN_SPEED, MAX_COINS } from './item-rules.js';
 import { TRACKS, getTrack, makeTrack } from './tracks.js';
+import { roughnessAt,roadGripAt,roadWaterAt } from './offroad.js';
 import { loadAvatar, loadName, randomAvatar } from '/engine/avatar.js';
+import { createGameMenu, toggleMute } from '/engine/ui.js';
+import { inviteUrl, newRoomCode, roomFromUrl } from '/engine/invite.js';
+import { fillRoster } from '/engine/results.js';
+import { ICONS as SVG } from '/engine/icons.js';
+import { holdButton } from '/engine/touch.js';
+import { pixelRatio, bindRenderer } from '/engine/settings.js';
+import { shout } from '/engine/kit.js';
+import { LAPS, RIVALS, AI_WHEELS, POSE_HZ, FLAG, packPose, gridSlot } from './online-rules.js';
+import { clockText, wrapAngle, raceOrder, aiPedals, resolveContact } from './rules.js';
 
 const $ = (id) => document.getElementById(id);
+const esc = (text) => String(text).replace(/[&<>"]/g, (ch) => `&#${ch.charCodeAt(0)};`);
 const rand = (a, b) => a + Math.random() * (b - a);
 const pick = (list) => list[Math.floor(Math.random() * list.length)];
-const wrapAngle = (a) => Math.atan2(Math.sin(a), Math.cos(a));
 
-const LAPS = 3;
 const G = 30;   // cartoon gravity: snappy jumps
 // test switches: ?auto lets the AI drive your car, ?speed=4 fast-forwards
 const QS = new URLSearchParams(location.search);
@@ -21,9 +33,12 @@ const AUTO = QS.has('auto');
 const SPEED = Number(QS.get('speed')) || 1;
 const DEBUG = QS.has('debug');
 
-// You drive as the pana you made in the hub; the rival is a random one.
+// You drive as the pana you made in the hub; the rivals are random ones.
 const ME = { name: loadName(), avatar: loadAvatar() };
-const RIVALS = ['Don Pancho', 'La Chama', 'El Gocho', 'Tía Carmen', 'El Catire', 'Yoli'];
+// ?room=<code> races online with panas (online.js); without it the race is local.
+// ?lead=1 marks the party's Pana Mayor, who hosts the room.
+const ROOM = roomFromUrl();
+let net = null;
 
 const LINES = {
   crash: ['¡AY!', '¡UEPA!', '¡Ñooo!', '¡Mi carro!', '¡Epa, chamo!', '¡Qué molleja!'],
@@ -43,7 +58,8 @@ class Spring {
 
 // ---------- renderer ----------
 const renderer = new THREE.WebGLRenderer({ antialias: true });
-renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.setPixelRatio(pixelRatio(2));
+bindRenderer(renderer, 2);
 renderer.setSize(innerWidth, innerHeight);
 renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
@@ -58,12 +74,14 @@ const garage = {
   scene: new THREE.Scene(),
   camera: new THREE.PerspectiveCamera(40, innerWidth / innerHeight, 0.1, 200),
   index: 0,
+  wheel: 'calle',
   spin: true,
   hop: new Spring(),
   honkT: 0,
   t: 0,
   focus: false,
   glide: 0,
+  cars: new Map(),
 };
 {
   const s = garage.scene;
@@ -76,7 +94,8 @@ const garage = {
   const key = new THREE.SpotLight(0xfff0d8, 220, 45, Math.PI / 5, 0.5, 1.6);
   key.position.set(6, 13, 8);
   key.castShadow = true;
-  key.shadow.mapSize.set(2048, 2048);
+  // The small turntable needs a quarter of the previous shadow texels.
+  key.shadow.mapSize.set(1024, 1024);
   key.shadow.bias = -0.0004;
   s.add(key);
   const rim = new THREE.DirectionalLight(0x9fb7ff, 1.6);
@@ -113,27 +132,61 @@ const garage = {
   garage.controls.maxPolarAngle = Math.PI * 0.49;
 }
 
+function garageCar(index) {
+  // Cache key includes the cauchos: the same car wears different wheels.
+  const key = `${index}:${garage.wheel}`;
+  if (!garage.cars.has(key)) {
+    if (garage.cars.size >= 16) garage.cars.delete(garage.cars.keys().next().value);
+    garage.cars.set(key, CARS[index].build(ME.avatar, wheelById(garage.wheel).wheel ?? undefined));
+  }
+  return garage.cars.get(key);
+}
+
 function showCar(i) {
   garage.index = (i + CARS.length) % CARS.length;
   const def = CARS[garage.index];
-  // Geometry belongs to the instance; cached paint/decal materials are shared.
-  garage.car?.driver.dispose();
-  garage.car?.root.traverse(o => o.geometry?.dispose());
   garage.turn.clear();
-  garage.car = def.build(ME.avatar);
+  // Bounded garage models; thumbnails borrow these same instances.
+  // Race models stay independent because their parts can break off.
+  garage.car = garageCar(garage.index);
   garage.turn.add(garage.car.root);
   garage.ring.material.color.set(def.color);
 
   document.documentElement.style.setProperty('--car', def.color);
   $('car-num').textContent = def.num;
+  $('car-of').textContent = `Carro ${garage.index + 1} de ${CARS.length}`;
   $('car-name').textContent = def.name;
   $('car-blurb').textContent = def.blurb;
-  $('stats').innerHTML = Object.entries(def.stats)
+  // Stats bars reflect the car + cauchos combo, recomputed from the composed tune.
+  const tune = composeTune(def.tune, wheelById(garage.wheel).profile);
+  const bar = (base, ratio) => Math.max(0.04, Math.min(1, base * ratio));
+  const stats = {
+    Velocidad: bar(def.stats.Velocidad, tune.top / def.tune.top),
+    'Aceleración': bar(def.stats['Aceleración'], tune.accel / def.tune.accel),
+    Manejo: bar(def.stats.Manejo, Math.sqrt((tune.turn / def.tune.turn) * (tune.grip / def.tune.grip))),
+    Peso: def.stats.Peso,
+  };
+  $('stats').innerHTML = Object.entries(stats)
     .map(([k, v]) => `<div><dt>${k}</dt><dd><i style="width:${Math.round(v * 100)}%"></i></dd></div>`)
     .join('');
   $('driver-name').textContent = ME.name;
   $('dots').innerHTML = CARS.map((_, j) => `<span class="${j === garage.index ? 'on' : ''}"></span>`).join('');
   for (const [j, button] of [...$('car-lineup').children].entries()) button.setAttribute('aria-pressed', String(j === garage.index));
+  net?.pick(garage.index, garage.wheel);
+}
+
+// Step 2: pick the cauchos. Rebuilds the turntable car and the stats bars,
+// and persists the choice for the next visit.
+function showWheel(id) {
+  const def = wheelById(id);
+  garage.wheel = def.id;
+  try { localStorage.setItem('derrape:wheels', def.id); } catch { /* private mode */ }
+  $('wheel-name').textContent = def.name;
+  $('wheel-blurb').textContent = def.blurb;
+  for (const [j, button] of [...$('wheel-lineup').children].entries()) {
+    button.setAttribute('aria-pressed', String(WHEEL_DEFINITIONS[j].id === def.id));
+  }
+  showCar(garage.index);
 }
 
 function garageHonk() {
@@ -209,8 +262,24 @@ $('honk').onclick = garageHonk;
 $('cam').onclick = () => setFocus(!garage.focus);
 $('play').onclick = () => {
   sound.unlock();
-  startRace(garage.index);
+  if (net) { if (net.isHost) net.start(); return; }
+  if (!joining) startRace(garage.index, garage.wheel);
 };
+$('go-online').onclick = () => { sound.unlock(); goOnline(newRoomCode(), true); };
+$('lobby-invite').onclick = () => menu.share();
+$('lobby-bots').onchange = (e) => net?.bots(e.target.checked);
+$('lobby-solo').onclick = () => { location.href = location.pathname; };
+// Step pills jump to the car strip, the cauchos strip or the track picker.
+for (const step of document.querySelectorAll('.step')) {
+  step.onclick = () => {
+    const target = step.dataset.step === 'car'
+      ? $('car-lineup').querySelector('[aria-pressed="true"]') ?? $('next')
+      : step.dataset.step === 'wheels'
+        ? $('wheel-lineup').querySelector('[aria-pressed="true"]') ?? $('wheel-lineup').firstElementChild
+        : $('t-next');
+    target?.focus();
+  };
+}
 
 // ======================================================================
 // Track: data-driven. Definitions live in tracks.js + tracks/*.js; the
@@ -238,10 +307,7 @@ race.debris = new Debris(race.scene);
   const s = race.scene;
   s.background = new THREE.Color(0xffd6a0);
   s.fog = new THREE.Fog(0xffd6a0, 80, 260);
-  // sky dome: warm at the horizon, blue overhead (recolored per track)
-  const domeGeo = new THREE.SphereGeometry(1200, 24, 12);
-  race.dome = new THREE.Mesh(domeGeo, new THREE.MeshBasicMaterial({ vertexColors: true, side: THREE.BackSide, fog: false }));
-  s.add(race.dome);
+  race.sky = createSky();s.add(race.sky.mesh);
   race.hemi = new THREE.HemisphereLight(0xfff1d6, 0xc08a5a, 1.6);
   s.add(race.hemi);
   const sun = new THREE.DirectionalLight(0xffd9a0, 2.4);
@@ -265,84 +331,138 @@ function applyPalette(pal) {
   race.hemi.intensity = pal.hemiInt ?? 1.6;
   race.sun.color.set(pal.sun);
   race.sun.intensity = pal.sunInt ?? 2.4;
-  const dp = race.dome.geometry.attributes.position;
-  const col = [];
-  const horizon = new THREE.Color(pal.horizon), top = new THREE.Color(pal.skyTop);
-  for (let i = 0; i < dp.count; i++) {
-    const c = horizon.clone().lerp(top, Math.pow(Math.max(0, dp.getY(i) / 1200), 0.6));
-    col.push(c.r, c.g, c.b);
-  }
-  race.dome.geometry.setAttribute('color', new THREE.Float32BufferAttribute(col, 3));
+  race.sky.setPalette(pal);race.sky.update(0);
 }
 
-// Swap the active track: rebuild all track-owned visuals and the items.
+// Browsing needs only route metadata. Keep the last built map for replay;
+// construct a different environment only after the player presses Play.
 let trackIndex = 0;
-function buildTrack(id) {
+const trackRoutes = new Map();
+function selectTrack(id) {
   const def = getTrack(id);
   trackIndex = TRACKS.indexOf(def);
   try { localStorage.setItem('derrape:track', def.id); } catch { /* private mode */ }
+  if (!trackRoutes.has(def.id)) trackRoutes.set(def.id, makeTrack(def));
+  const route = trackRoutes.get(def.id);
+  $('track-name').textContent = def.name;
+  $('track-blurb').textContent = `${(route.TOTAL / 1000).toFixed(2)} km por vuelta · ${LAPS} vueltas. ${def.blurb}`;
+  $('track-of').textContent = `Pista ${trackIndex + 1}/${TRACKS.length}`;
+  drawTrackPreview(route);
+  return route;
+}
+
+function beginTrack(id) {
+  let route = selectTrack(id);
+  if (race.trackReady && T === route) return false;
+  // A cancelled environment may have installed ground/collision closures.
+  // Retry with a fresh runtime instead of retaining those partial callbacks.
+  if (T === route) route = makeTrack(route.def);
   if (race.trackGroup) {
     race.items?.dispose();
     race.scene.remove(race.trackGroup);
-    race.trackGroup.traverse((o) => o.geometry?.dispose());
+    // Character disposal detaches children. Collect first so cleanup cannot
+    // mutate Three's active traversal when switching away from Los Llanos.
+    const disposers=[],geometries=new Set();
+    race.trackGroup.traverse(o=>{if(o.userData.dispose)disposers.push(o.userData.dispose);if(o.geometry)geometries.add(o.geometry);});
+    disposers.forEach(dispose=>dispose());geometries.forEach(geometry=>geometry.dispose());
+    // Built runtimes retain environment animation/terrain closures. Evict the
+    // old runtime too, so metadata caching cannot retain eight whole worlds.
+    trackRoutes.delete(T.id);
+    T.group = null;
   }
-  T = makeTrack(def);
-  race.trackGroup = T.build();
+  race.items = null;
+  race.trackGroup = null;
+  race.trackReady = false;
+  T = route;
+  trackRoutes.set(route.id, route);
+  return true;
+}
+
+function finishTrack() {
+  race.trackGroup = T.group;
   race.scene.add(race.trackGroup);
-  applyPalette(def.palette);
+  applyPalette(T.def.palette);
   race.items = createItems({
     scene: race.trackGroup, puffs: race.puffs, sound, G, track: T,
     crash: (c, power, side) => crash(c, power, side),
     say: (c, lines, time) => say(c, lines, time),
     standings: () => standings(),
+    emit: (kind, c, data) => { if (race.netRace && !c.remote) net.fx(c.netId, kind, data); },
   });
-  $('track-name').textContent = def.name;
-  $('track-blurb').textContent = `${(T.TOTAL / 1000).toFixed(2)} km por vuelta · ${LAPS} vueltas. ${def.blurb}`;
-  $('mm-track').textContent = def.name;
+  $('mm-track').textContent = T.name;
   $('mm-sub').textContent = `${(T.TOTAL / 1000).toFixed(2)} km por vuelta`;
   buildMinimap();
+  race.trackReady = true;
+}
+
+function buildTrack(id) {
+  if (!beginTrack(id)) return;
+  race.trackGroup = T.build();
+  finishTrack();
 }
 
 function switchTrack(i) {
   sound.unlock();
-  buildTrack(TRACKS[(i + TRACKS.length) % TRACKS.length].id);
+  if (net && !net.isHost) return;
+  const def = selectTrack(TRACKS[(i + TRACKS.length) % TRACKS.length].id).def;
+  net?.track(def.id);
 }
 
 // ---------- race HUD: standings board + minimap ----------
 function renderBoard(order, player) {
   $('board').innerHTML = order.map((c, i) =>
-    `<li class="${c === player ? 'me' : ''}"><i>${i + 1}</i><span class="chip" style="--c:${c.def.color}"></span>${c.name}</li>`
+    `<li class="pk-row${c === player ? ' me is-me' : ''}"><span class="pk-row-n">${i + 1}</span><span class="chip" style="--c:${c.def.color}"></span>${esc(c.name)}</li>`
   ).join('');
+}
+
+// Sample a route's centerline and fit it into a canvas with a margin.
+function fitRoute(route, canvas, margin) {
+  const N = 160;
+  const raw = [];
+  for (let i = 0; i < N; i++) raw.push(route.pointAt((i / N) * route.TOTAL));
+  const minX = Math.min(...raw.map(p=>p.x)), maxX = Math.max(...raw.map(p=>p.x));
+  const minZ = Math.min(...raw.map(p=>p.y)), maxZ = Math.max(...raw.map(p=>p.y));
+  const scale = Math.min((canvas.width-margin*2)/(maxX-minX), (canvas.height-margin*2)/(maxZ-minZ));
+  return raw.map(p=>[canvas.width/2+(p.x-(minX+maxX)/2)*scale,canvas.height/2+(p.y-(minZ+maxZ)/2)*scale]);
+}
+function strokeRoute(ctx, pts, width) {
+  ctx.lineJoin = 'round';
+  ctx.lineCap = 'round';
+  ctx.beginPath();
+  pts.forEach(([x, y], i) => (i ? ctx.lineTo(x, y) : ctx.moveTo(x, y)));
+  ctx.closePath();
+  ctx.strokeStyle = '#0e0b24';
+  ctx.lineWidth = width * 2;
+  ctx.stroke();
+  ctx.strokeStyle = '#f3e9d7';
+  ctx.lineWidth = width;
+  ctx.stroke();
+}
+
+// Garage preview of the selected circuit, with its start line.
+function drawTrackPreview(route) {
+  const canvas = $('track-map'), ctx = canvas.getContext('2d');
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  try {
+    const pts = fitRoute(route, canvas, 28);
+    strokeRoute(ctx, pts, 7);
+    const [x, y] = pts[Math.floor((route.LINE ?? 0) / route.TOTAL * pts.length) % pts.length];
+    ctx.beginPath(); ctx.arc(x, y, 9, 0, Math.PI * 2);
+    ctx.fillStyle = '#ffc629'; ctx.fill();
+    ctx.lineWidth = 3; ctx.strokeStyle = '#0e0b24'; ctx.stroke();
+  } catch { /* metadata without a centerline: keep the striped placeholder */ }
 }
 
 const mm = $('mm');
 const mmCtx = mm.getContext('2d');
 let mmPts = [];
 function buildMinimap() {
-  // sample the centerline and fit it into the canvas with a margin
-  const N = 160;
-  const raw = [];
-  for (let i = 0; i < N; i++) raw.push(T.pointAt((i / N) * T.TOTAL));
-  const margin = 16;
-  const minX = Math.min(...raw.map(p=>p.x)), maxX = Math.max(...raw.map(p=>p.x));
-  const minZ = Math.min(...raw.map(p=>p.y)), maxZ = Math.max(...raw.map(p=>p.y));
-  const scale = Math.min((mm.width-margin*2)/(maxX-minX), (mm.height-margin*2)/(maxZ-minZ));
-  mmPts = raw.map(p=>[mm.width/2+(p.x-(minX+maxX)/2)*scale,mm.height/2+(p.y-(minZ+maxZ)/2)*scale]);
+  mmPts = fitRoute(T, mm, 16);
 }
 
 function drawMinimap() {
   mmCtx.clearRect(0, 0, mm.width, mm.height);
-  mmCtx.lineJoin = 'round';
-  mmCtx.lineCap = 'round';
-  mmCtx.beginPath();
-  mmPts.forEach(([x, y], i) => (i ? mmCtx.lineTo(x, y) : mmCtx.moveTo(x, y)));
-  mmCtx.closePath();
-  mmCtx.strokeStyle = '#16161a';
-  mmCtx.lineWidth = 8;
-  mmCtx.stroke();
-  mmCtx.strokeStyle = '#f6f1e4';
-  mmCtx.lineWidth = 4;
-  mmCtx.stroke();
+  strokeRoute(mmCtx, mmPts, 4);
   for (const c of race.cars) {
     const i = Math.floor((paramOf(c.x, c.z) / T.TOTAL) * mmPts.length) % mmPts.length;
     const [x, y] = mmPts[i];
@@ -363,10 +483,11 @@ function drawMinimap() {
 // ======================================================================
 const RACERS = 4;
 
-function makeRacer(index, isPlayer, name) {
+function makeRacer(index, isPlayer, name, wheelId = 'calle', avatar = null) {
   const def = CARS[index];
-  const who = isPlayer ? ME : { name, avatar: randomAvatar() };
-  const car = def.build(who.avatar);
+  const wheel = wheelById(wheelId);
+  const who = isPlayer ? ME : { name, avatar: avatar || randomAvatar() };
+  const car = def.build(who.avatar, wheel.wheel ?? undefined);
   // Retain ownership even after a bumper detaches and expires from the scene.
   car.geometries = new Set();
   car.root.traverse(o => { if (o.geometry) car.geometries.add(o.geometry); });
@@ -375,6 +496,7 @@ function makeRacer(index, isPlayer, name) {
   race.scene.add(bubble.sprite);
   return {
     def, car, bubble, isPlayer, name: who.name,
+    wheel: wheel.id, tune: composeTune(def.tune, wheel.profile),   // stepCar drives with the composed tune
     skill: isPlayer ? 1 : rand(0.88, 0.97),   // rivals top out a bit below their car's max
     x: 0, z: 0, y: 0, h: Math.PI / 2, vx: 0, vz: 0, vy: 0, vf: 0, vr: 0, steer: 0, latAcc: 0, longAcc: 0,
     onGround: true, pitch: 0, roll: 0, pitchV: 0, rollV: 0,
@@ -403,46 +525,161 @@ function progressOf(c) {
   return (paramOf(c.x, c.z) - T.LINE + T.TOTAL) % T.TOTAL;
 }
 
+function disposeRacer(c) {
+  race.scene.remove(c.car.root);
+  c.car.driver.dispose();
+  race.scene.remove(c.bubble.sprite);
+  c.car.geometries.forEach(g => g.dispose());
+  c.bubble.sprite.material.map.dispose();
+  c.bubble.sprite.material.dispose();
+}
+
 function clearRace() {
   resetInput();
-  for (const c of race.cars) {
-    race.scene.remove(c.car.root);
-    c.car.driver.dispose();
-    race.scene.remove(c.bubble.sprite);
-    c.car.geometries.forEach(g => g.dispose());
-    c.bubble.sprite.material.map.dispose();
-    c.bubble.sprite.material.dispose();
-  }
+  race.cars.forEach(disposeRacer);
   race.cars = [];
   race.puffs.clear();
   race.debris.clear();
-  race.items.clear();
+  race.items?.clear();
+  race.player = null;
 }
 
-function startRace(playerIndex) {
-  clearRace();
-  const others = CARS.map((_, i) => i).filter((i) => i !== playerIndex).sort(() => Math.random() - 0.5);
-  const names = [...RIVALS].sort(() => Math.random() - 0.5);
-  race.cars = [makeRacer(playerIndex, true)];
-  for (let i = 1; i < RACERS; i++) race.cars.push(makeRacer(others[i - 1], false, names[i - 1]));
-  // a two-by-two grid; you start at the back so there's someone to pass
-  race.cars.forEach((c, i) => placeRacer(c, i % 2 ? -3.5 : 3.5, Math.floor((RACERS - 1 - i) / 2)));
-  race.player = race.cars[0];
-  race.playerIndex = playerIndex;
-  race.clock = 0;
-  race.count = 3.999;
-  race.boardT = 0;
-  race.state = 'count';
-  race.camPos = null;
-  $('garage').classList.add('hidden');
-  $('race').classList.remove('hidden');
-  $('result').classList.add('hidden');
+// Loading-screen tips: real rules only.
+const TIPS = [
+  [SVG.mango, 'Lleva un mango equipado: bloquea el mango que te lancen.'],
+  [SVG.coin, 'Cada moneda te da un poquito más de velocidad, hasta 10.'],
+  [SVG.crate, 'Rompe cajas de madera para conseguir objetos. Guardas hasta 2.'],
+  [SVG.juice, 'El jugo de mango te da un turbo: tómatelo en una recta.'],
+  [SVG.back, 'Lanza hacia atrás con X para frenar al que te persigue.'],
+];
+let loadGeneration = 0;
+// roster (online only): [{ id, kind, owner, name, avatar, car, wheel, slot }]
+// from the room. Without one the race is the local player plus three bots.
+async function startRace(playerIndex, wheelId = garage.wheel, roster = null) {
+  if (mode === 'loading') return;
+  const generation = ++loadGeneration;
+  mode = 'loading';
+  race.state = 'loading';
   garage.controls.enabled = false;
-  sound.startEngine();
-  mode = 'race';
+  $('loading').classList.remove('hidden');
+  $('loading').setAttribute('aria-busy', 'true');
+  $('garage').inert = $('race').inert = true;
+  $('loading-back').focus();
+  const def = TRACKS[trackIndex], tip = pick(TIPS);
+  $('loading-title').textContent = def.name;
+  $('loading-meta').textContent = `Derrape · Pista ${trackIndex + 1} de ${TRACKS.length} · ${LAPS} vueltas`;
+  $('loading-blurb').textContent = def.blurb;
+  $('loading-tip-icon').innerHTML = tip[0];
+  $('loading-tip').textContent = tip[1];
+  $('play').disabled = true;
+  sound.stopEngine();
+  const step = async (label, progress) => {
+    $('loading-status').textContent = label;
+    $('loading-progress').value = progress;
+    $('loading-pct').textContent = `${Math.round(progress * 100)}%`;
+    await paintNext();
+    return generation === loadGeneration;
+  };
+  try {
+    if (!await step('Preparando la pista…', 0.05)) return;
+    clearRace();
+    if (beginTrack(TRACKS[trackIndex].id)) {
+      let progress = 0.12;
+      for (const label of T.buildSteps()) {
+        race.trackGroup = T.group;
+        if (!await step(label, progress)) return;
+        progress += 0.1;
+      }
+      finishTrack();
+    }
+    if (!await step('Preparando los carros…', 0.5)) return;
+    if (roster) {
+      for (const [i, r] of roster.entries()) {
+        if (!await step(`Preparando los panas… ${i + 1}/${roster.length}`, 0.5 + (i + 1) / roster.length * 0.3)) return;
+        const mine = r.id === net.id;
+        const c = makeRacer(r.car, mine, r.name, r.wheel, mine ? null : r.avatar);
+        Object.assign(c, { netId: r.id, bot: r.kind === 'bot', remote: r.owner !== net.id, buf: [], gap: 1000 / POSE_HZ, delay: 120 });
+        const { lane, row } = gridSlot(r.slot);
+        placeRacer(c, lane, row);
+        race.cars.push(c);
+      }
+      // A reload mid-race puts this car back where the room last saw it.
+      for (const c of race.cars) if (!c.remote) resumePose(c, net.lastPose(c.netId));
+    } else {
+      const others = CARS.map((_, i) => i).filter((i) => i !== playerIndex).sort(() => Math.random() - 0.5);
+      const names = RIVALS.slice(0, 6).sort(() => Math.random() - 0.5);
+      race.cars = [makeRacer(playerIndex, true, undefined, wheelId)];
+      for (let i = 1; i < RACERS; i++) {
+        if (!await step(`Preparando los panas… ${i}/${RACERS}`, 0.5 + i * 0.08)) return;
+        race.cars.push(makeRacer(others[i - 1], false, names[i - 1], AI_WHEELS[CARS[others[i - 1]].id]));
+      }
+      // a two-by-two grid; you start at the back so there's someone to pass
+      race.cars.forEach((c, i) => placeRacer(c, i % 2 ? -3.5 : 3.5, Math.floor((RACERS - 1 - i) / 2)));
+    }
+    race.player = race.cars.find(c => c.isPlayer);
+    race.playerIndex = playerIndex;
+    race.playerWheel = wheelId;
+    race.clock = 0;
+    race.count = 3.999;
+    race.boardT = 0;
+    race.poseAt = 0;
+    race.camPos = null;
+    race.netRace = roster ? net.state.raceId : 0;
+    if (!await step('Todo listo. ¡A correr!', 0.9)) return;
+    renderer.toneMapping = THREE.NoToneMapping;
+    updateRace(0);
+    await renderer.compileAsync(race.scene, race.camera);
+    if (generation !== loadGeneration) return;
+    // Upload geometry and draw once behind the loading panel. The countdown
+    // starts only after this first frame, never while compilation is running.
+    renderer.render(race.scene, race.camera);
+    if (roster) {
+      // Everyone counts down together once every pana has loaded.
+      net.loaded();
+      if (!await step('Esperando a los panas…', 1)) return;
+      if (!await net.until(s => s.raceId !== race.netRace || s.startAt > 0, (s) => {
+        const racing = s.players.filter(p => p.racing), ready = racing.filter(p => p.loaded).length;
+        $('loading-status').textContent = `Esperando a los panas… ${ready}/${racing.length} listos`;
+      }) || generation !== loadGeneration) return;
+      if (net.state.raceId !== race.netRace) return;
+    } else if (!await step('¡Listo!', 1)) return;
+    race.state = 'count';
+    $('count').textContent = '3';
+    $('garage').classList.add('hidden');
+    $('race').classList.remove('hidden');
+    $('result').classList.add('hidden');
+    garage.controls.enabled = false;
+    sound.startEngine();
+    acc = 0;
+    clock.getDelta();
+    mode = 'race';
+    $('garage').inert = $('race').inert = false;
+    $('loading').classList.add('hidden');
+    renderer.domElement.tabIndex = -1;
+    renderer.domElement.focus({ preventScroll: true });
+  } catch (error) {
+    console.error('Derrape loading failed', error);
+    if (generation === loadGeneration) {
+      if (!race.trackReady && T?.group) race.trackGroup = T.group;
+      $('loading-status').textContent = 'No pudimos preparar la carrera. Vuelve al garaje e inténtalo otra vez.';
+      race.state = 'off';
+    }
+  } finally {
+    if (generation === loadGeneration) {
+      $('play').disabled = false;
+      $('loading').setAttribute('aria-busy', 'false');
+    }
+  }
 }
 
 function toGarage() {
+  if (race.netRace && net.state.raceId === race.netRace && !race.player?.done && ['loading', 'count', 'race'].includes(net.state.phase)) net.retire();
+  race.netRace = 0;
+  ++loadGeneration;
+  $('loading').classList.add('hidden');
+  $('loading').setAttribute('aria-busy', 'false');
+  $('garage').inert = $('race').inert = false;
+  $('play').disabled = false;
   race.state = 'off';
   clearRace();
   sound.stopEngine();
@@ -450,10 +687,46 @@ function toGarage() {
   $('garage').classList.remove('hidden');
   garage.controls.enabled = true;
   mode = 'garage';
+  if (net) renderLobby(net.state);
+  $('play').focus({ preventScroll: true });
 }
 
-$('again').onclick = () => startRace(race.playerIndex);
-$('back').onclick = toGarage;
+// Esc pauses the race (or opens the settings in the garage). Paused races
+// keep their clock, items and AI frozen until the menu closes.
+let paused = false;
+const menu = createGameMenu({
+  title: 'Derrape', heading: 'Pausa', sound, orientation: 'horizontal',
+  note: () => mode === 'race' ? (race.state === 'end' ? 'La carrera terminó.' : race.netRace ? 'Carrera online: no se detiene.' : 'La carrera está en pausa.') : 'Estás en el garaje.',
+  controls: [['W / ↑', 'Acelerar'], ['S / ↓', 'Frenar'], ['A D / ← →', 'Girar'], ['Espacio / E', 'Lanzar objeto adelante'],
+    ['X', 'Lanzar objeto atrás'], ['1 2', 'Elegir objeto'], ['Q', 'Cambiar objeto'], ['H', 'Claxon'], ['M', 'Sonido'], ['Esc', 'Pausa']],
+  tips: ['Rompe cajas de madera para conseguir objetos. Cada moneda da un poquito más de velocidad.'],
+  actions: [
+    { id: 'restart', label: 'Reiniciar carrera', kind: 'secondary', visible: () => mode === 'race' && !race.netRace, run: () => startRace(race.playerIndex, race.playerWheel) },
+    { id: 'to-garage', label: 'Volver al garaje', kind: 'secondary', visible: () => mode === 'race', run: () => toGarage() },
+  ],
+  invite: () => inviteLink(),
+  canOpen: () => mode !== 'loading',
+  onOpen() {
+    resetInput();
+    if (mode !== 'race' || race.netRace) return;
+    paused = true;
+    if (sound.engine) sound.engine.g.gain.setTargetAtTime(0, sound.ctx.currentTime, 0.05);
+  },
+  onClose() { paused = false; acc = 0; clock.getDelta(); },
+});
+$('race').querySelector('.hud-corner').append(menu.createButton({ id: 'pause', label: 'Pausa', className: 'pause-button pk-btn pk-btn--sm' }));
+$('garage').querySelector('.tools').prepend(menu.createButton({ id: 'settings', label: 'Ajustes', className: 'toggle pk-btn pk-btn--sm' }));
+for (const kbd of document.querySelectorAll('#pause kbd, #settings kbd')) kbd.classList.add('pk-kbd');
+
+$('again').onclick = () => {
+  if (!race.netRace) return startRace(race.playerIndex, race.playerWheel);
+  if (net.isHost) net.start();
+};
+$('back').onclick = () => {
+  if (race.netRace && net.isHost && net.state.phase === 'results') net.lobby();
+  else toGarage();
+};
+$('loading-back').onclick = toGarage;
 function itemAction(direction) {
   if (mode === 'race' && race.state === 'go') race.items.use(race.player, direction);
 }
@@ -465,30 +738,26 @@ $('throw-back').onclick = () => itemAction(-1);
 $('swap-item').onclick = () => selectSlot();
 for (let i = 0; i < 2; i++) $('item-slot-' + i).onclick = () => selectSlot(i);
 
-// Multi-touch keeps steering and throttle independent. Lost focus/capture
+// Multi-touch keeps steering and throttle independent (engine/touch.js). Lost focus
 // releases input, including a thumb dragged off a control or a cancelled touch.
-const pointers = new Map();
-function resetInput() { race.keys = {}; pointers.clear(); }
-for (const button of document.querySelectorAll('[data-drive]')) {
-  button.onpointerdown = e => {
-    e.preventDefault(); sound.unlock();
-    pointers.set(e.pointerId, button.dataset.drive);
-    button.setPointerCapture(e.pointerId);
-  };
-  button.onpointerup = button.onpointercancel = button.onlostpointercapture = e => pointers.delete(e.pointerId);
-}
+const touchHeld = new Set();
+const driveButtons = [...document.querySelectorAll('[data-drive]')].map(button => holdButton(button, {
+  down: () => { sound.unlock(); touchHeld.add(button.dataset.drive); },
+  up: () => touchHeld.delete(button.dataset.drive),
+}));
+function resetInput() { race.keys = {}; for (const b of driveButtons) b.release(); touchHeld.clear(); }
 addEventListener('blur', resetInput);
 document.addEventListener('visibilitychange', () => { if (document.hidden) resetInput(); });
 addEventListener('keydown', (e) => {
   if (e.target.closest('input, textarea, select, [contenteditable="true"]')) return;
   const k = e.key.toLowerCase();
   race.keys[k] = true;
-  if (k === 'escape' && mode === 'race') toGarage();
+  if (k === 'escape' && mode === 'loading') toGarage();
   if (k === 'h' && !e.repeat) {
     if (mode === 'race' && race.player) honk(race.player);
     else if (mode === 'garage') garageHonk();
   }
-  if (k === 'm') sound.muted = !sound.muted;
+  if (k === 'm' && !e.repeat) toggleMute();
   if ((k === ' ' || k === 'e') && mode === 'race' && race.state === 'go' && race.player) {
     e.preventDefault();
     if (!e.repeat) itemAction(race.keys.s || race.keys.arrowdown ? -1 : 1);
@@ -506,7 +775,7 @@ addEventListener('keyup', (e) => (race.keys[e.key.toLowerCase()] = false));
 
 function playerInput() {
   const k = { ...race.keys };
-  for (const key of pointers.values()) k[key] = true;
+  for (const key of touchHeld) k[key] = true;
   return {
     throttle: (k.w || k.arrowup ? 1 : 0) - (k.s || k.arrowdown ? 1 : 0),
     steer: (k.a || k.arrowleft ? 1 : 0) - (k.d || k.arrowright ? 1 : 0),
@@ -524,19 +793,21 @@ function aiInput(c) {
   target.y += tx / tl * c.lane * 0.8;
   const diff = wrapAngle(Math.atan2(target.x - c.x, target.y - c.z) - c.h);
   const gap = (c.lap * T.TOTAL + c.prog) - (race.player.lap * T.TOTAL + race.player.prog);
-  const throttle = Math.abs(diff) > 0.6 ? 0.55 : gap > 40 ? 0.75 : 1;
-  return { throttle, steer: Math.max(-1, Math.min(1, diff * 2.8)) };
+  return aiPedals(diff, gap);
 }
 
 function say(c, lines, time) {
-  c.bubble.say(typeof lines === 'string' ? lines : pick(lines), time);
+  const text = typeof lines === 'string' ? lines : pick(lines);
+  c.bubble.say(text, time);
+  if (race.netRace && !c.remote) net.fx(c.netId, 'say', { text, time });
 }
 
 function honk(c) {
   if (c.honkT > 0) return;
   c.honkT = sound.horn(c.def.horn);
-  say(c, LINES.honk[c.def.horn], c.honkT + 0.2);
+  c.bubble.say(LINES.honk[c.def.horn], c.honkT + 0.2);
   c.heave.v += 5;   // the whole car jumps when it honks
+  if (race.netRace && !c.remote) net.fx(c.netId, 'honk', {});
 }
 
 function popPart(c, power) {
@@ -564,9 +835,18 @@ function crash(c, power, side) {
 }
 
 function stepCar(c, input, dt) {
-  const t = c.def.tune;
+  const t = c.tune;   // car tune composed with the racer's cauchos (makeRacer)
   const boosting = c.boost > 0;
   const top = t.top * c.skill * coinMultiplier(c);
+  const terrain=T.def.offroad;
+  // Wheel off-road resistance scales every roughness penalty below (accel,
+  // speed cap, drag); slicks go negative and make rough ground worse.
+  const rough=(c.onGround?roughnessAt(T,c.x,c.z):0)*(1-t.offroadResist);
+  const water=c.onGround?roadWaterAt(T,c.x,c.z,race.clock):0;
+  // Rain cauchos keep a grip floor where the road reports wet.
+  const grip=Math.max(c.onGround?roadGripAt(T,c.x,c.z,race.clock):1,t.wetFloor);
+  const acceleration=t.accel*(1-rough*(1-(terrain?.accel??1)))*(1-water*.28);
+  const previous={x:c.x,z:c.z};
   if (c.spin > 0) input = { throttle: 0, steer: 0 };   // skidding on a peel: no control
   let fx = Math.sin(c.h), fz = Math.cos(c.h);
   let rx = -Math.cos(c.h), rz = Math.sin(c.h);
@@ -575,14 +855,19 @@ function stepCar(c, input, dt) {
   const prevVf = vf;
 
   if (c.onGround) {
-    if (boosting) vf += t.accel * 2.5 * dt;
-    else if (input.throttle > 0) vf += t.accel * input.throttle * dt;
-    else if (input.throttle < 0) vf -= (vf > 0 ? t.accel * 2.2 : t.accel * 0.6) * dt;
+    if (boosting) vf += acceleration * 2.5 * dt;
+    else if (input.throttle > 0) vf += acceleration * input.throttle * dt;
+    else if (input.throttle < 0) vf -= (vf > 0 ? t.accel * 2.2 * (.75+.25*grip) : acceleration * 0.6) * dt;
     else vf -= Math.sign(vf) * Math.min(Math.abs(vf), 6 * dt);
     // a turbo lifts the cap; when it ends the extra speed bleeds off instead of snapping
-    const cap = boosting ? top * 1.5 : Math.max(top, prevVf - 20 * dt);
-    vf = Math.max(-top * 0.4, Math.min(cap, vf));
-    vr *= Math.exp(-t.grip * dt);          // tires bite, a bit of slide remains
+    const surfaceTop=top*(1-rough*(1-(terrain?.speed??1)));
+    // Rough ground bleeds speed progressively; turbo still helps but cannot
+    // cancel the terrain penalty and turn the grass into the fastest route.
+    const cap = rough>0?Math.max(surfaceTop*(boosting?1.5:1),prevVf-48*dt):boosting?top*1.5:Math.max(top,prevVf-20*dt);
+    vf = Math.max(-surfaceTop * 0.4, Math.min(cap, vf));
+    vf*=Math.exp(-rough*(terrain?.drag??0)*dt);
+    vf*=Math.exp(-water*.7*dt); // shallow surf slows a kart without moving invisible walls
+    vr *= Math.exp(-t.grip * grip * dt);   // mineral runoff leaves more lateral slip
     c.steer += (input.steer - c.steer) * Math.min(1, dt * 8);
     const turn = c.steer * t.turn * Math.max(-1, Math.min(1, vf / 10)) * (1 - Math.abs(vf) / top * 0.3);
     c.h += turn * dt;
@@ -601,11 +886,14 @@ function stepCar(c, input, dt) {
   c.vr = vr;
   c.x += c.vx * dt;
   c.z += c.vz * dt;
+  T.constrainMotion?.(c,previous);
+  c.vf=c.vx*fx+c.vz*fz;c.vr=c.vx*rx+c.vz*rz;
 
   // ---- vertical: ramps, jumps, tumbles ----
   const g = groundAt(c.x, c.z);
   if (c.onGround) {
-    const followingTerrain = Math.abs(c.y - T.surfaceAt(c.x - c.vx * dt, c.z - c.vz * dt)) < 0.15;
+    const previousGround=terrain&&Math.abs(offsetOf(previous.x,previous.z))>T.HW?groundAt(previous.x,previous.z):T.surfaceAt(previous.x,previous.z);
+    const followingTerrain = Math.abs(c.y-previousGround)<0.15;
     if (g >= c.y - 0.08 || (followingTerrain && Math.abs(g - c.y) < 1.2)) {
       c.vy = (g - c.y) / dt;
       c.y = g;
@@ -662,7 +950,7 @@ function stepCar(c, input, dt) {
   // Works on any track shape: the wall normal is the gradient of offsetOf.
   const off = offsetOf(c.x, c.z);
   const limit = T.HW - 1.6;
-  if (Math.abs(off) > limit) {
+  if (!terrain && Math.abs(off) > limit) {
     const e = 0.6;
     let nx = offsetOf(c.x + e, c.z) - offsetOf(c.x - e, c.z);
     let nz = offsetOf(c.x, c.z + e) - offsetOf(c.x, c.z - e);
@@ -699,12 +987,15 @@ function stepCar(c, input, dt) {
   c.scream = Math.max(0, c.scream - dt);
   c.honkT = Math.max(0, c.honkT - dt);
 
-  // dust and damage smoke
+  // Tire spray, dust and damage smoke share the bounded particle pool.
   c.puffT -= dt;
   if (c.puffT <= 0) {
     const kicking = c.onGround && ((input.throttle > 0 && Math.abs(vf) < top * 0.55) || Math.abs(c.vr) > 4);
-    if (kicking) {
-      race.puffs.spawn(new THREE.Vector3(c.x - fx * 1.6, 0.25, c.z - fz * 1.6), { color: 0xe7bd8a, count: 1, size: 0.7, rise: 0.6, life: 0.7 });
+    if (water>.15&&c.onGround&&Math.abs(vf)>7) {
+      for(const side of [-1,1])race.puffs.spawn(new THREE.Vector3(c.x-fx*1.5+rx*side,c.y+.2,c.z-fz*1.5+rz*side),
+        {color:0xc1e9e3,count:1,size:.45,rise:1.2,life:.35,spread:.8});
+    } else if (kicking) {
+      race.puffs.spawn(new THREE.Vector3(c.x - fx * 1.6, c.y+0.25, c.z - fz * 1.6), { color: rough>0.1?0x889263:0xe7bd8a, count: 1, size: 0.7, rise: 0.6, life: 0.7 });
     }
     if (boosting) {
       race.puffs.spawn(new THREE.Vector3(c.x - fx * 2.2, c.y + 0.5, c.z - fz * 2.2), { color: pick([0xff7b1c, 0xffd23f]), count: 2, size: 0.6, rise: 0.4, life: 0.35, spread: 0.4 });
@@ -723,31 +1014,12 @@ function collideCars() {
 }
 
 function collidePair(a, b) {
-  if (Math.abs(a.y - b.y) > 1.6) return;
-  const dx = b.x - a.x, dz = b.z - a.z;
-  const d = Math.hypot(dx, dz);
-  const min = 3.3;
-  if (d <= 0 || d >= min) return;
-  const nx = dx / d, nz = dz / d;
-  const ma = a.def.tune.mass, mb = b.def.tune.mass;
-  const push = min - d;
-  a.x -= nx * push * mb / (ma + mb);
-  a.z -= nz * push * mb / (ma + mb);
-  b.x += nx * push * ma / (ma + mb);
-  b.z += nz * push * ma / (ma + mb);
-  const vrel = (a.vx - b.vx) * nx + (a.vz - b.vz) * nz;   // closing speed
-  if (vrel <= 0) return;
-  const j = 1.4 * vrel / (1 / ma + 1 / mb);
-  a.vx -= j / ma * nx; a.vz -= j / ma * nz;
-  b.vx += j / mb * nx; b.vz += j / mb * nz;
-  if (vrel > 7) {
-    sound.bonk(vrel / 8);
-    // which side each car got hit on decides which way it rolls
-    const sideA = Math.sign(nx * -Math.cos(a.h) + nz * Math.sin(a.h)) || 1;
-    const sideB = Math.sign(nx * Math.cos(b.h) - nz * Math.sin(b.h)) || 1;
-    crash(a, vrel * mb / (ma + mb) * 2, sideA);
-    crash(b, vrel * ma / (ma + mb) * 2, sideB);
-  } else if (vrel > 2) {
+  const hit = resolveContact(a, b);
+  if (hit?.kind === 'crash') {
+    sound.bonk(hit.speed / 8);
+    if (hit.a.hit) crash(a, hit.a.power, hit.a.side);
+    if (hit.b.hit) crash(b, hit.b.power, hit.b.side);
+  } else if (hit?.kind === 'bump') {
     sound.bonk(0.4);
   }
 }
@@ -794,10 +1066,15 @@ function syncCar(c, dt) {
 
 function updateRace(dt) {
   if (race.state === 'count') {
-    race.count -= dt;
+    // Online, the room's start time drives every countdown at once.
+    if (race.netRace) race.count = Math.min(3.999, 1 + (net.state.startAt - net.now()) / 1000);
+    else race.count -= dt;
     const n = Math.ceil(race.count) - 1;
     $('count').textContent = n > 0 ? n : '¡YA!';
-    if (race.count <= 1) race.state = 'go';
+    if (race.count <= 1) {
+      race.state = 'go';
+      if (race.netRace) race.clock = Math.max(0, (net.now() - net.state.startAt) / 1000);
+    }
   } else if (race.state === 'go' || race.state === 'end') {
     race.clock += dt;
     if (race.count > 0) {
@@ -805,6 +1082,10 @@ function updateRace(dt) {
       if (race.count <= 0) $('count').textContent = '';
     }
     for (const c of race.cars) {
+      if (c.remote) {
+        applyRemote(c, dt);
+        continue;
+      }
       if (c.done) {
         stepCar(c, { throttle: 0, steer: 0 }, dt);
         continue;
@@ -821,15 +1102,20 @@ function updateRace(dt) {
       if (c.lap > LAPS) {
         c.done = true;
         c.time = race.clock;
+        if (race.netRace) net.finish(c.netId, c.time);
         if (c.isPlayer) finish();
       }
     }
     collideCars();
+  } else if (race.netRace) {
+    // Rivals already on the grid still settle into place during the countdown.
+    for (const c of race.cars) if (c.remote) applyRemote(c, dt);
   }
   race.items.update(dt, race.cars, race.state === 'go' || race.state === 'end');
   for (const c of race.cars) syncCar(c, dt);
   race.puffs.update(dt);
   race.debris.update(dt);
+  race.sky.update(race.clock);
   for (const o of T.animated) o.userData.tick(race.clock, dt);   // scenery: flags, windmills, birds…
   sound.setEngine(race.player.vf);
 
@@ -838,15 +1124,23 @@ function updateRace(dt) {
   const order = standings();
   const place = order.indexOf(p);
   $('lap').textContent = `${Math.min(LAPS, Math.max(1, p.lap))}/${LAPS}`;
-  $('pos').textContent = `${place + 1}/${order.length}`;
+  if (race.shownPlace !== place) {
+    race.shownPlace = place;
+    $('pos').innerHTML = `${place + 1}<sup>º</sup>`;
+    $('pos').setAttribute('aria-label', `Posición ${place + 1} de ${order.length}`);
+  }
   $('leader').textContent = order[0] === p ? '¡Tú!' : order[0].name;
-  $('time').textContent = (p.done ? p.time : race.clock).toFixed(1);
+  $('time').textContent = clockText(p.done ? p.time : race.clock);
+  if (p.lap === LAPS && !p.finalLap && !p.done) {
+    p.finalLap = true;
+    shout('¡Vuelta final!');
+  }
   showItem(p);
 
   // speedometer + boost bar
   $('speed').textContent = Math.round(Math.abs(p.vf) * 4);
   const boost = $('boost');
-  const ratio = Math.min(1, Math.abs(p.vf) / (p.def.tune.top * 1.5));
+  const ratio = Math.min(1, Math.abs(p.vf) / (p.tune.top * 1.5));
   const lit = Math.round(ratio * 8);
   boost.classList.toggle('turbo', p.boost > 0);
   const segs = boost.children;
@@ -857,6 +1151,7 @@ function updateRace(dt) {
   if (race.boardT <= 0) {
     race.boardT = 0.2;
     renderBoard(order, p);
+    if (race.state === 'end') renderResults(order, p);
     const u = paramOf(p.x, p.z) / T.TOTAL;
     const sector = T.def.sectors?.filter(([start]) => u >= start).at(-1);
     if (sector) $('mm-sub').textContent = sector[1];
@@ -918,23 +1213,253 @@ function showItem(p) {
 
 // Finished cars by time, then everyone else by how far along they are.
 function standings() {
-  return [...race.cars].sort((a, b) => {
-    if (a.done && b.done) return a.time - b.time;
-    if (a.done !== b.done) return a.done ? -1 : 1;
-    return (b.lap * T.TOTAL + b.prog) - (a.lap * T.TOTAL + a.prog);
-  });
+  return raceOrder(race.cars, T.TOTAL);
 }
 
 function finish() {
   race.state = 'end';
   const p = race.player;
-  const place = 1 + race.cars.filter((c) => c !== p && c.done && c.time < p.time).length;
-  const winner = race.cars.find((c) => c.done && c.time < p.time);
-  $('result-title').textContent = place === 1 ? `¡Ganaste, ${p.name}!` : `${place}º lugar`;
-  $('result-time').textContent = `${p.def.name} · ${p.time.toFixed(1)} s · ${p.lost} piezas perdidas`
+  // A racer the room timed out has no time of its own: everyone finished ahead.
+  const ahead = (c) => c.done && (!p.done || c.time < p.time);
+  const place = 1 + race.cars.filter((c) => c !== p && ahead(c)).length;
+  const winner = race.cars.filter(ahead).sort((a, b) => a.time - b.time)[0];
+  $('result-title').textContent = !p.done ? 'Se acabó el tiempo' : place === 1 ? '¡Ganaste!' : `${place}º lugar`;
+  $('result-time').textContent = `${T.name} · ${LAPS} vueltas · ${p.done ? clockText(p.time) : 'sin terminar'} · ${p.def.name} · ${p.lost} piezas perdidas`
     + (winner && place > 1 ? ` · ganó ${winner.name}` : '');
+  if (race.netRace) updateResultActions(net.state);
+  else { $('again').textContent = 'Otra vez'; $('again').disabled = false; $('back').textContent = 'Garaje'; }
+  race.resultKey = '';
+  renderResults(standings(), p);
   $('result').classList.remove('hidden');
   $('result-coins').textContent = `${p.coinsCollected} monedas recogidas · +${Number((p.coins * COIN_SPEED * 100).toFixed(1)).toLocaleString('es-VE')}% de velocidad`;
+  $('again').focus({ preventScroll: true });
+}
+
+// Podium (top three, with their car pictures) and the full classification.
+// Rivals keep racing behind the results, so this refreshes as they finish.
+const PODIUM = [['var(--pk-yellow)', 260, 124], ['var(--pk-teal)', 190, 96], ['var(--pk-coral)', 140, 86]];
+function renderResults(order, player) {
+  const key = order.map(c => `${c.name}:${c.done}`).join();
+  if (key === race.resultKey) return;
+  race.resultKey = key;
+  const thumbs = $('car-lineup').querySelectorAll('img');
+  const who = (c) => {
+    const src = thumbs[CARS.indexOf(c.def)]?.getAttribute('src');
+    return src ? `<img src="${src}" alt="">` : `<b style="--car:${c.def.color}">${c.def.num}</b>`;
+  };
+  // Second, first, third, like a real podium.
+  $('podium').innerHTML = [1, 0, 2].filter(i => order[i]).map(i => {
+    const c = order[i], [color, h, w] = PODIUM[i];
+    return `<li style="--c:${color};--h:${h}px;--w:${w}px"><span class="who">${who(c)}</span>`
+      + `<span class="name">${esc(c.name)}</span><b class="place">${i + 1}</b></li>`;
+  }).join('');
+  fillRoster($('result-board'), order.map((c, i) => {
+    const chip = document.createElement('span');
+    chip.className = 'chip';
+    chip.style.setProperty('--c', c.def.color);
+    return { rank: i + 1, lead: chip, name: c.name, me: c === player,
+      end: c.done ? clockText(c.time) : `vuelta ${Math.min(LAPS, Math.max(1, c.lap))}/${LAPS}` };
+  }));
+}
+
+
+// ======================================================================
+// Online (online.js + server/room.js). Remote cars are kinematic: they
+// follow their owner's poses about 110 ms behind, never local physics.
+// ======================================================================
+// Poses carry the sender's estimate of server time, so bursts from a slow
+// frame still interpolate evenly. The delay follows each sender's own rate.
+function sendPoses() {
+  if (!race.netRace || !['go', 'end'].includes(race.state)) return;
+  const now = performance.now();
+  if (now - race.poseAt < 1000 / POSE_HZ) return;
+  race.poseAt = now;
+  const stamp = Math.round(net.now());
+  net.poses(race.cars.filter(c => !c.remote).map(c => [c.netId, stamp, ...packPose(c)]));
+}
+
+function resumePose(c, p) {
+  if (!p) return;
+  [c.x, c.y, c.z, c.h, c.pitch, c.roll, c.vf, c.steer] = p;
+  c.vx = Math.sin(c.h) * c.vf; c.vz = Math.cos(c.h) * c.vf;
+  c.lap = p[11]; c.prog = p[12]; c.coins = p[14];
+}
+
+function applyRemote(c, dt) {
+  const buf = c.buf;
+  if (!buf.length) { c.vx = c.vz = 0; return; }   // still on its grid slot
+  const at = net.now() - c.delay;
+  while (buf.length > 2 && buf[1].t <= at) buf.shift();
+  const a = buf[0], b = buf[1] || a;
+  const k = b === a ? 0 : Math.max(0, Math.min(1, (at - a.t) / (b.t - a.t)));
+  // Past the newest pose (a late packet), coast briefly along its heading.
+  const ahead = buf.length < 2 || at > b.t ? Math.min(0.25, (at - b.t) / 1000) : 0;
+  const P = a.p, Q = b.p;
+  const lerp = (i) => P[i] + (Q[i] - P[i]) * k, turn = (i) => P[i] + wrapAngle(Q[i] - P[i]) * k;
+  const h0 = c.h, vf0 = c.vf;
+  c.x = lerp(0); c.y = lerp(1); c.z = lerp(2); c.h = turn(3); c.pitch = turn(4); c.roll = turn(5);
+  c.vf = lerp(6); c.steer = lerp(7); c.spin = lerp(8); c.boost = Q[9];
+  const f = Q[10];
+  c.onGround = !!(f & FLAG.ground);
+  c.dizzy = f & FLAG.dizzy ? 1 : 0;
+  c.scream = f & FLAG.open ? 0.2 : 0;
+  c.full = !!(f & FLAG.full);
+  if (f & FLAG.done) c.done = true;
+  c.lap = Q[11]; c.prog = Q[12]; c.coins = Q[14];
+  // Parts that fell off on the owner's screen fall off here too.
+  for (let n = Q[13] - c.lost; n > 0; n--) popPart(c, 10);
+  c.lost = Math.max(c.lost, Q[13]);
+  c.vx = Math.sin(c.h) * c.vf; c.vz = Math.cos(c.h) * c.vf;
+  if (ahead > 0 && c.onGround) { c.x += c.vx * ahead; c.z += c.vz * ahead; }
+  c.latAcc = wrapAngle(c.h - h0) / dt * c.vf;
+  c.longAcc = (c.vf - vf0) / dt;
+}
+
+const racerById = (id) => race.cars.find(c => c.netId === id);
+
+function onNetPose(id, stamp, pose) {
+  const c = race.netRace && racerById(id);
+  if (!c?.remote) return;
+  const last = c.buf.at(-1);
+  if (last && stamp <= last.t) return;   // stale or duplicate
+  if (last) c.gap = c.gap * 0.8 + Math.min(1000, stamp - last.t) * 0.2;
+  c.delay = Math.max(100, Math.min(450, c.gap * 1.6 + 40));
+  c.buf.push({ t: stamp, p: pose });
+  if (c.buf.length > 24) c.buf.shift();
+}
+
+function onNetFx(id, kind, d) {
+  const c = race.netRace && racerById(id);
+  if (!c || !race.items || !d) return;
+  if (kind === 'throw') race.items.remoteThrow(c, d);
+  else if (kind === 'peel') race.items.remotePeel(c, d);
+  else if (kind === 'hit') race.items.remoteHit(c, d);
+  else if (kind === 'slip') race.items.remoteSlip(d);
+  else if (kind === 'honk' && c.honkT <= 0) {
+    c.honkT = sound.horn(c.def.horn);
+    c.bubble.say(LINES.honk[c.def.horn], c.honkT + 0.2);
+    c.heave.v += 5;
+  } else if (kind === 'say') c.bubble.say(String(d.text ?? '').slice(0, 40), Math.min(3, Number(d.time) || 1.2));
+}
+
+// Room state into the race: finishes, departures and bot control.
+function syncRacers(s) {
+  if (!race.netRace || s.raceId !== race.netRace) return;
+  for (const r of s.racers) {
+    const c = racerById(r.id);
+    if (!c) continue;
+    if (r.retired && !c.isPlayer) {
+      disposeRacer(c);
+      race.cars.splice(race.cars.indexOf(c), 1);
+      continue;
+    }
+    if (r.done && c.remote) { c.done = true; c.time = r.time; }
+    const owned = r.owner === net.id;
+    if (owned && c.remote) {
+      // The host left: this client now drives the bots from where they were.
+      c.remote = false; c.buf = [];
+      c.vx = Math.sin(c.h) * c.vf; c.vz = Math.cos(c.h) * c.vf;
+      c.lane = gridSlot(r.slot).lane;
+    } else if (!owned && !c.remote && !c.isPlayer) c.remote = true;
+  }
+}
+
+function onNetState(s) {
+  if (!s.racers) return;   // the room's first state has not arrived yet
+  const me = s.players.find(p => p.id === net.id);
+  const inRace = s.racers.some(r => r.id === net.id && !r.retired);
+  if (s.phase === 'loading' && inRace && s.raceId !== race.netRace && mode !== 'loading') {
+    selectTrack(s.track);
+    startRace(garage.index, garage.wheel, s.racers);
+  } else if (['count', 'race'].includes(s.phase) && inRace && !race.netRace && mode === 'garage' && me?.racing) {
+    // Back from a reload: rejoin the race already under way.
+    selectTrack(s.track);
+    startRace(garage.index, garage.wheel, s.racers);
+  } else if (s.phase === 'lobby' && race.netRace && mode !== 'garage') {
+    toGarage();
+  }
+  syncRacers(s);
+  if (s.phase === 'results' && race.netRace === s.raceId && mode === 'race' && race.player && !race.player.done && race.state !== 'end') finish();
+  if (mode === 'race' && race.state === 'end') updateResultActions(s);
+  if (mode === 'garage') {
+    if (!net.isHost && s.track && TRACKS[trackIndex]?.id !== s.track) selectTrack(s.track);
+    renderLobby(s);
+  }
+}
+
+function renderLobby(s) {
+  const host = net.isHost, live = !['lobby', 'results'].includes(s.phase);
+  const racing = s.players.find(p => p.id === net.id)?.racing;
+  $('lobby-code').textContent = net.code;
+  $('lobby-roster').innerHTML = s.players.map((p, i) =>
+    `<li class="pk-row${p.id === net.id ? ' is-me' : ''}${p.connected ? '' : ' away'}"><span class="pk-row-n">${p.id === s.host ? SVG.crown : i + 1}</span>`
+    + `<span class="chip" style="--c:${CARS[p.car]?.color || '#fff'}"></span>${esc(p.name)}`
+    + `<span class="pk-row-end">${p.connected ? esc(CARS[p.car]?.name || '') : 'reconectando…'}</span></li>`).join('');
+  const bots = Math.max(0, (s.bots ? Math.max(4, s.players.length) : s.players.length) - s.players.length);
+  $('launch-note').innerHTML = `<span class="pk-dot"></span>${s.players.length} ${s.players.length === 1 ? 'pana' : 'panas'}${bots ? ` + ${bots} ${bots === 1 ? 'rival' : 'rivales'}` : ''}`;
+  $('lobby-bots').checked = s.bots;
+  $('lobby-bots').disabled = !host || live;
+  $('t-prev').disabled = $('t-next').disabled = !host || live;
+  const hostName = s.players.find(p => p.id === s.host)?.name || 'el anfitrión';
+  $('lobby-status').textContent = live
+    ? (racing ? 'Tu carrera sigue en curso.' : 'Carrera en curso: entras en la próxima.')
+    : host ? 'Tú eliges la pista y das la salida.' : `${hostName} elige la pista y da la salida.`;
+  $('play').textContent = host ? (live ? 'Carrera en curso' : '¡ARRANCAR!') : live ? 'Carrera en curso' : `Esperando a ${hostName}`;
+  $('play').disabled = live || !host || mode !== 'garage';
+}
+
+function updateResultActions(s) {
+  const host = net.isHost;
+  $('again').textContent = host ? 'Otra carrera' : 'Esperando al anfitrión';
+  $('again').disabled = !host || s.phase !== 'results';
+  $('back').textContent = host ? 'Sala' : 'Garaje';
+}
+
+function inviteLink() {
+  return inviteUrl(net?.code || ROOM || newRoomCode());
+}
+
+let joining = null;
+async function goOnline(code, lead) {
+  if (net || joining) return joining;
+  $('lobby').hidden = false;
+  $('go-online').hidden = true;
+  $('lobby-code').textContent = code;
+  $('lobby-status').textContent = 'Conectando con la sala…';
+  $('play').disabled = true;
+  const url = new URL(location.href);
+  url.searchParams.set('room', code);
+  url.searchParams.delete('lead');
+  history.replaceState(null, '', url);
+  joining = (async () => {
+    try {
+      const { joinRace } = await import('./online.js');
+      net = await joinRace({ code, lead, name: ME.name, avatar: ME.avatar, car: garage.index, wheel: garage.wheel });
+    } catch (error) {
+      console.warn('Derrape online unavailable', error);
+      $('lobby-status').textContent = error?.full ? 'La sala está llena.' : 'No pudimos entrar a la sala. Puedes correr en local.';
+      $('play').disabled = false;
+      $('play').textContent = '¡JUGAR!';
+      $('lobby-solo').hidden = false;
+      return null;
+    } finally { joining = null; }
+    net.on('state', onNetState);
+    net.on('pose', onNetPose);
+    net.on('fx', onNetFx);
+    net.on('status', (text, bad) => {
+      $('net-status').textContent = text;
+      $('net-status').hidden = !text;
+      $('net-status').classList.toggle('bad', !!bad);
+    });
+    net.on('left', () => {
+      $('lobby-status').textContent = 'Saliste de la sala. Recarga para volver a entrar.';
+      $('lobby-solo').hidden = false;
+    });
+    $('lobby-solo').hidden = false;
+    onNetState(net.state);
+    return net;
+  })();
+  return joining;
 }
 
 // ======================================================================
@@ -950,17 +1475,18 @@ function frame() {
     renderer.toneMappingExposure = 1.05;
     updateGarage(dt);
     renderer.render(garage.scene, garage.camera);
-  } else {
+  } else if (mode === 'race') {
     renderer.toneMapping = THREE.NoToneMapping;
     // fixed physics steps: same race speed at any frame rate
-    acc += dt * SPEED;
+    if (!paused) acc += dt * SPEED;
     while (acc >= STEP && mode === 'race') {
       updateRace(STEP);
       acc -= STEP;
     }
+    sendPoses();
     renderer.render(race.scene, race.camera);
   }
-  requestAnimationFrame(frame);
+  if (!(DEBUG && QS.has('manual'))) requestAnimationFrame(frame);
 }
 
 function resize() {
@@ -973,22 +1499,38 @@ function resize() {
   // above the compact garage controls on a phone.
   const wide = innerWidth > 760;
   garage.camera.zoom = wide ? 1 : Math.min(0.86, innerWidth / innerHeight * 1.3);
-  garage.camera.setViewOffset(innerWidth, innerHeight, wide ? -150 : 0,
-    wide ? 35 : innerHeight * 0.17, innerWidth, innerHeight);
+  // The garage has a card on each side, so the car stays centered between them.
+  garage.camera.setViewOffset(innerWidth, innerHeight, wide ? -10 : 0,
+    wide ? 20 : innerHeight * 0.12, innerWidth, innerHeight);
 }
 addEventListener('resize', resize);
 resize();
 
-if (DEBUG) Object.assign(window, { race, garage, renderer, crash, startRace, updateRace, toGarage, ITEMS, TRACKS, buildTrack, getActiveTrack: () => T });
+if (DEBUG) Object.assign(window, { menu, race, garage, renderer, crash, stepCar, startRace, updateRace, toGarage, showWheel, ITEMS, TRACKS, buildTrack, getActiveTrack: () => T, getNet: () => net });
 
 // ?track=desierto wins; otherwise the last pick, otherwise the estadio
 let savedTrack = 'estadio';
 try { savedTrack = localStorage.getItem('derrape:track') || savedTrack; } catch { /* private mode */ }
-buildTrack(QS.get('track') || savedTrack);
-
-// bubbles use the cartoon font, so wait for it (but never block on it)
-Promise.race([document.fonts.ready, new Promise((r) => setTimeout(r, 1500))]).then(() => {
-  $('car-lineup').append(garageCards(CARS, ME.avatar, showCar));
-  showCar(0);
-  frame();
+// The cauchos from the last visit (fallback calle) dress the turntable car.
+try { garage.wheel = wheelById(localStorage.getItem('derrape:wheels')).id; } catch { /* private mode */ }
+selectTrack(QS.get('track') || savedTrack);
+showCar(0);
+frame();
+performance.mark('derrape:garage-ready');
+let lastGarageInput = performance.now();
+for (const event of ['pointerdown', 'wheel', 'keydown']) {
+  addEventListener(event, () => { lastGarageInput = performance.now(); }, { passive: true });
+}
+renderer.domElement.addEventListener('pointermove', event => {
+  if (event.buttons) lastGarageInput = performance.now();
 });
+const cards = garageCards(CARS, garageCar, showCar,
+  () => mode === 'garage' && performance.now() - lastGarageInput > 350);
+$('car-lineup').append(cards.fragment);
+cards.ready.catch(error => console.warn('Garage previews unavailable', error));
+const wheelStrip = wheelCards(WHEEL_DEFINITIONS, showWheel,
+  () => mode === 'garage' && performance.now() - lastGarageInput > 350);
+$('wheel-lineup').append(wheelStrip.fragment);
+wheelStrip.ready.catch(error => console.warn('Wheel previews unavailable', error));
+showWheel(garage.wheel);
+if (ROOM) goOnline(ROOM, QS.has('lead'));

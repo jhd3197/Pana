@@ -42,7 +42,7 @@ export function listGames() {
   return games;
 }
 
-export function handleApi(req, res, pathname, rooms, startedAt) {
+export async function handleApi(req, res, pathname, rooms, startedAt, colyseus) {
   if (req.method !== 'GET') {
     return sendJson(res, 405, { error: 'method not allowed' });
   }
@@ -52,7 +52,8 @@ export function handleApi(req, res, pathname, rooms, startedAt) {
     case '/api/games':
       return sendJson(res, 200, { games: listGames() });
     case '/api/rooms':
-      return sendJson(res, 200, { rooms: rooms.snapshot() });
+      // Relay rooms plus Colyseus rooms (games with a server/room.js).
+      return sendJson(res, 200, { rooms: [...rooms.snapshot(), ...await colyseus.snapshot().catch(() => [])] });
     default:
       return sendJson(res, 404, { error: 'not found' });
   }
