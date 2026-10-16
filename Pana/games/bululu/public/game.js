@@ -16,6 +16,7 @@ import embuste from './minigames/embuste.js';
 import remada from './minigames/remada.js';
 import raudal from './minigames/raudal.js';
 import remolino from './minigames/remolino.js';
+import chinazo from './minigames/chinazo.js';
 import { SKY_MODES } from './atmosphere.js';
 import * as rules from './rules.js';
 import { ICONS as SVG } from '/engine/icons.js';
@@ -40,7 +41,7 @@ const AUTO = QS.has('auto');
 const SPEED = Number(QS.get('speed')) || 1;
 let ROUNDS = Math.max(1, Math.min(20, Number(QS.get('rounds')) || 10));   // the lobby can change it
 const DEBUG = QS.has('debug');
-const MINIGAMES = [atrapa, caigas, caida, momia, coleo, choque, embuste, remada, raudal, remolino];
+const MINIGAMES = [atrapa, caigas, caida, momia, coleo, choque, embuste, remada, raudal, remolino, chinazo];
 const nextMinigame = rules.minigameBag(MINIGAMES);
 const FORCED = MINIGAMES.find((m) => m.id === QS.get('mini'));
 const ONLY = MINIGAMES.find((m) => m.id === QS.get('play'));
@@ -354,7 +355,7 @@ const aimHandlers = {
     if (paused || aim.pointer != null || (e.pointerType === 'mouse' && e.button !== 0)) return;
     e.preventDefault();
     sound.unlock();
-    canvasEl.setPointerCapture?.(e.pointerId);
+    try { canvasEl.setPointerCapture(e.pointerId); } catch { /* synthetic or already gone */ }
     aim.pointer = e.pointerId;
     if (e.pointerType === 'mouse') aimAtPointer(e);
     else aim.touch = { x: e.clientX, y: e.clientY };
@@ -424,6 +425,7 @@ const ICONS = {
   mummy: SVG.mummy.replace('pk-ico', 'ico'),
   canoe: SVG.canoe.replace('pk-ico', 'ico'),
   whirl: SVG.whirl.replace('pk-ico', 'ico'),
+  iguana: SVG.iguana.replace('pk-ico', 'ico'),
 };
 
 let cardMode = 'board';
@@ -1111,7 +1113,7 @@ async function fastForward(seconds, dt = 1 / 30) {
     await null;   // let the turn logic's awaits run
   }
 }
-if (DEBUG) Object.assign(window, { menu, players, board, MINIGAMES, layoutTokens, fastForward, renderer, boardScene, boardCam });
+if (DEBUG) Object.assign(window, { menu, players, board, MINIGAMES, layoutTokens, fastForward, renderer, boardScene, boardCam, minigame: () => mini });
 
 frame();
 main();

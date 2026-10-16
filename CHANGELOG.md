@@ -24,6 +24,11 @@ becomes the GitHub release's notes.
 - **Bululú has three river minigames: ¡Remada!, ¡Raudal! and ¡Remolino!.**
   Sprint 120 m in rhythm, dodge rocks and jump ledges down four rapids for
   mangos, or paddle away from a growing whirlpool and shove the others in.
+- **Bululú has ¡Chinazo!, a slingshot minigame against the iguanas in the mango tree.**
+  Aim with the mouse (or WASD, or drag a finger), pull the china and let
+  go: stones take a moment to land, so lead the runners. Three mamones a
+  load, a golden iguana worth 3, a guacamaya that costs 2 and a ¡Plaga!
+  for the last 10 seconds.
 - **Contributors have a phased roadmap for Derrape Grand Prix and four new water maps.**
   Plan 56 specifies three four-race cups, online championship continuity,
   shared scenery and verification across 22 implementation phases.

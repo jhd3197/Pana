@@ -481,6 +481,11 @@ body.mini-aim canvas { cursor: none; touch-action: none; }
   .keys { display: none; }
   .timer { top: 10px; left: auto; right: 12px; transform: none; padding: 6px 16px 6px 12px; }
   body.in-mini .touch { bottom: 210px; }
+  /* aim minigames need the whole field: the cards become a slim row at the top */
+  body.mini-aim .cards { top: 8px; bottom: auto; left: 132px; right: 124px; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+  body.mini-aim .pcard { padding: 4px 6px; }
+  body.mini-aim .pcard img { width: 24px; height: 24px; }
+  body.mini-aim .pcard small { display: none; }
   .timer b { font-size: 28px; }
   .prompt { top: auto; bottom: 206px; }
   .prompt .pk-btn--primary { font-size: 24px; }
