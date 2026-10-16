@@ -25,7 +25,8 @@ try {
   const page = await browser.newPage({ viewport: { width: 1440, height: 900 } });
   page.on('pageerror', error => errors.push(String(error)));
   await page.goto(`${origin}/g/derrape/?debug&manual`);
-  await page.evaluate(() => { localStorage.removeItem('derrape:setup'); localStorage.removeItem('derrape:trophies'); });
+  // A bronze trophy unlocks mirror mode (the taller's first unlock).
+  await page.evaluate(() => { localStorage.removeItem('derrape:setup'); localStorage.setItem('derrape:trophies', JSON.stringify({ arepa: 'bronce' })); });
   await page.reload();
   await page.waitForFunction(() => window.garage?.car);
 

@@ -1,0 +1,113 @@
+// Derrape's taller: coins you keep between races (the wallet), and what they
+// buy — paint jobs, horns and turbo flames — plus the unlocks trophies give.
+// Plain data and math; game.js keeps it in localStorage and paints the cars.
+
+export const PAINTS = [
+  { id: 'fabrica', name: 'De fábrica', color: null, cost: 0 },
+  { id: 'araguaney', name: 'Amarillo araguaney', color: '#ffc629', cost: 25 },
+  { id: 'caribe', name: 'Azul Caribe', color: '#1f6fe0', cost: 25 },
+  { id: 'pasion', name: 'Rojo pasión', color: '#d62c2c', cost: 25 },
+  { id: 'selva', name: 'Verde selva', color: '#2f9e4a', cost: 25 },
+  { id: 'orquidea', name: 'Morado orquídea', color: '#8e44c9', cost: 35 },
+  { id: 'mango', name: 'Naranja mango', color: '#ff8a1c', cost: 35 },
+  { id: 'flamenco', name: 'Rosado flamenco', color: '#ff6fa8', cost: 35 },
+  { id: 'azabache', name: 'Negro azabache', color: '#2a2a33', cost: 50 },
+  { id: 'nube', name: 'Blanco nube', color: '#ecebe6', cost: 50 },
+  { id: 'oro', name: 'Dorado campeón', color: '#e3ae39', cost: 0, unlock: 'oro' },
+];
+
+export const HORNS = [
+  { id: 'propio', name: 'El de fábrica', cost: 0 },
+  { id: 'meep', name: 'Meep meep', cost: 15 },
+  { id: 'cucaracha', name: 'La cucaracha', cost: 15 },
+  { id: 'grave', name: 'Corneta de gandola', cost: 15 },
+  { id: 'fiesta', name: 'Rumba', cost: 15 },
+];
+
+export const FLAMES = [
+  { id: 'fuego', name: 'Fuego', colors: [0xff7b1c, 0xffd23f], cost: 0 },
+  { id: 'hielo', name: 'Hielo', colors: [0x4fb6ff, 0xd8f3ff], cost: 30 },
+  { id: 'monte', name: 'Monte', colors: [0x2f9e4a, 0xb8f15a], cost: 30 },
+  { id: 'tricolor', name: 'Tricolor', colors: [0xffc629, 0x1f6fe0, 0xd62c2c], cost: 45 },
+  { id: 'arcoiris', name: 'Arcoíris', colors: [0xff4b4b, 0xff9a1f, 0xffe14d, 0x4caf50, 0x4fb6ff, 0xc45bff], cost: 0, unlock: 'two-cups' },
+];
+
+export const CATALOG = { paint: PAINTS, horn: HORNS, flame: FLAMES };
+
+export const newWallet = () => ({ coins: 0, owned: ['paint:fabrica', 'horn:propio', 'flame:fuego'], paint: {}, horn: 'propio', flame: 'fuego' });
+
+// Clean a stored wallet: unknown fields drop, numbers stay sane.
+export function cleanWallet(w) {
+  const base = newWallet();
+  if (!w || typeof w !== 'object') return base;
+  const owned = Array.isArray(w.owned) ? w.owned.filter(k => typeof k === 'string') : [];
+  return {
+    coins: Number.isFinite(w.coins) && w.coins > 0 ? Math.floor(w.coins) : 0,
+    owned: [...new Set([...base.owned, ...owned])],
+    paint: w.paint && typeof w.paint === 'object' ? { ...w.paint } : {},
+    horn: HORNS.some(h => h.id === w.horn) ? w.horn : 'propio',
+    flame: FLAMES.some(f => f.id === w.flame) ? w.flame : 'fuego',
+  };
+}
+
+// Coins earned for a race: what you picked up, plus a bonus by place, plus
+// a trophy bonus at the end of a cup.
+export const PLACE_BONUS = [10, 6, 3];
+export const TROPHY_BONUS = { oro: 40, plata: 25, bronce: 15 };
+export function earnings({ collected = 0, place = 99, trophy = null } = {}) {
+  return Math.max(0, collected) + (PLACE_BONUS[place] ?? 0) + (TROPHY_BONUS[trophy] ?? 0);
+}
+
+// Locked by a trophy? `trophies` is { cupId: 'oro' | 'plata' | 'bronce' }.
+export function unlocked(item, trophies = {}) {
+  if (!item.unlock) return true;
+  const golds = Object.values(trophies).filter(t => t === 'oro').length;
+  if (item.unlock === 'oro') return golds >= 1;
+  if (item.unlock === 'two-cups') return Object.keys(trophies).length >= 2;
+  return false;
+}
+export const unlockText = (item) => item.unlock === 'oro' ? 'Gana una copa con oro' : item.unlock === 'two-cups' ? 'Gana un trofeo en las dos copas' : '';
+
+// Buying: spends coins once; owned items are free to equip forever.
+export function buy(wallet, kind, id, trophies) {
+  const item = CATALOG[kind]?.find(i => i.id === id);
+  const key = `${kind}:${id}`;
+  if (!item || !unlocked(item, trophies)) return false;
+  if (wallet.owned.includes(key)) return true;
+  if (wallet.coins < item.cost) return false;
+  wallet.coins -= item.cost;
+  wallet.owned.push(key);
+  return true;
+}
+
+// Mirror mode opens up with your first trophy, like a classic unlock.
+export const mirrorUnlocked = (trophies = {}) => Object.keys(trophies).length >= 1;
+
+// ---- paint math (hex in, hex out; no Three.js) ----
+export function hexToHsl(hex) {
+  const n = parseInt(String(hex).replace('#', ''), 16);
+  const r = (n >> 16 & 255) / 255, g = (n >> 8 & 255) / 255, b = (n & 255) / 255;
+  const max = Math.max(r, g, b), min = Math.min(r, g, b), l = (max + min) / 2;
+  if (max === min) return [0, 0, l];
+  const d = max - min, s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+  const h = max === r ? (g - b) / d + (g < b ? 6 : 0) : max === g ? (b - r) / d + 2 : (r - g) / d + 4;
+  return [h / 6, s, l];
+}
+export function hslToHex(h, s, l) {
+  const f = (n) => {
+    const k = (n + h * 12) % 12, a = s * Math.min(l, 1 - l);
+    return Math.round(255 * (l - a * Math.max(-1, Math.min(k - 3, 9 - k, 1))));
+  };
+  return '#' + [f(0), f(8), f(4)].map(v => v.toString(16).padStart(2, '0')).join('');
+}
+
+// A body colour in the car's paint family moves to the new paint, keeping how
+// much darker or lighter it was (shadow panels stay shadowed). Others: null.
+export function repaintHex(hex, from, to) {
+  const [h, s, l] = hexToHsl(hex), [fh, fs, fl] = hexToHsl(from), [th, ts, tl] = hexToHsl(to);
+  const dh = Math.min(Math.abs(h - fh), 1 - Math.abs(h - fh));
+  if (dh > 0.045 || s < 0.3 || Math.abs(l - fl) > 0.28) return null;
+  const nl = Math.max(0.05, Math.min(0.95, tl + (l - fl)));
+  const ns = Math.max(0, Math.min(1, ts * (fs ? s / fs : 1)));
+  return hslToHex(th, ns, nl);
+}

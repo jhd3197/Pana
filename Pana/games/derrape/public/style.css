@@ -1,7 +1,7 @@
 /* Derrape on the Pana Kit (/engine/kit.css): tokens, fonts and HUD pieces
    come from the kit; this file places them over the 3D scene. */
 :root { color-scheme: dark; }
-body { --bar-top: #ffd65c; --me-rank: #b5121b; --slot-bg: #2c263e; --slot-line: #514b65; --slot-on: #3b3040; --slot-key: #bab2ca; --swap: #e0d8ec; --shield: #ffe58b; --coin-line: #63552f; --coin-rim: #f8bd37; --coin-face: #d88a20; --coin-shine: #ffed9a; --coin-label: #d7cba8; --coin-text: #ffdf72; --coin-cap: #aaa08c; --coin-full: #e3ae39; --boost: #4fb6ff; --drift-1: #4fb6ff; --drift-2: #ff9a1f; --drift-3: #c45bff; --pk-game: #ff4b4b; --pk-game-ink: #fff; --hud-edge: 2px solid rgba(255, 255, 255, .08); }
+body { --bar-top: #ffd65c; --me-rank: #b5121b; --slot-bg: #2c263e; --slot-line: #514b65; --slot-on: #3b3040; --slot-key: #bab2ca; --swap: #e0d8ec; --shield: #ffe58b; --coin-line: #63552f; --coin-rim: #f8bd37; --coin-face: #d88a20; --coin-shine: #ffed9a; --coin-label: #d7cba8; --coin-text: #ffdf72; --coin-cap: #aaa08c; --coin-full: #e3ae39; --boost: #4fb6ff; --hud-ink: #16161a; --trophy-oro: #ffc629; --trophy-plata: #c9ccd4; --trophy-bronce: #c47a3a; --drift-1: #4fb6ff; --drift-2: #ff9a1f; --drift-3: #c45bff; --pk-game: #ff4b4b; --pk-game-ink: #fff; --hud-edge: 2px solid rgba(255, 255, 255, .08); }
 
 * { box-sizing: border-box; }
 
@@ -136,7 +136,21 @@ dd i { display: block; height: 100%; background: var(--car, var(--pk-coral)); bo
 .setup-note { margin: 0; color: var(--pk-muted); font-size: 12px; line-height: 1.35; }
 .setup-note:empty { display: none; }
 .setup .pk-seg > button:disabled { opacity: .4; cursor: default; }
-#cup-table[hidden], #setup[hidden] { display: none; }
+#cup-table[hidden], #setup[hidden], #shop[hidden] { display: none; }
+.shop-open b { color: var(--coin-text); }
+.shop { position: fixed; z-index: 30; top: 50%; left: 50%; transform: translate(-50%, -50%); width: min(560px, calc(100vw - 32px)); max-height: calc(100vh - 40px); overflow-y: auto; padding: 18px 20px; display: flex; flex-direction: column; gap: 10px; }
+.shop-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; }
+.shop-head h2 { margin: 2px 0 0; font-family: var(--pk-display); font-weight: 400; letter-spacing: 1px; color: var(--pk-yellow); font-size: 26px; }
+.shop h3 { margin: 6px 0 0; font-size: 13px; color: var(--pk-muted); text-transform: uppercase; letter-spacing: 1px; }
+.shop-wallet { display: flex; align-items: center; gap: 8px; margin: 0; color: var(--coin-text); font-size: 18px; }
+.shop-note { margin: 0; color: var(--pk-muted); font-size: 12px; }
+.shop-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 8px; }
+.shop-item { display: flex; align-items: center; gap: 8px; padding: 8px; border: 1px solid var(--slot-line); border-radius: 10px; background: var(--slot-bg); color: var(--pk-text); font: 800 12px var(--pk-sans); text-align: left; }
+.shop-item[aria-pressed="true"] { border-color: var(--pk-yellow); background: var(--slot-on); }
+.shop-item:disabled { opacity: .45; cursor: default; }
+.shop-item small { display: block; color: var(--pk-muted); font-weight: 700; }
+.shop-item .swatch { flex: none; width: 22px; height: 22px; border-radius: 50%; border: 2px solid var(--hud-ink); background: var(--swatch); }
+.mode-trophy { display: inline-block; width: 9px; height: 9px; margin-left: 5px; border-radius: 50%; background: var(--trophy); vertical-align: middle; }
 
 /* ---------- loading ---------- */
 .loading { z-index: 20; gap: 18px; background: linear-gradient(180deg, rgba(14, 11, 36, .2) 0%, rgba(14, 11, 36, .6) 45%, var(--pk-night) 85%); }

@@ -10,6 +10,10 @@ becomes the GitHub release's notes.
 
 ### Added
 
+- **Derrape has a taller to spend your coins.** Every race pays into a
+  wallet you keep; paint your car, swap the horn or change the turbo
+  flame. Cup trophies show in the garage and unlock mirror mode, gold
+  paint and a rainbow flame.
 - **Derrape's tracks fight back.** Fall off or get stuck and a zamuro
   carries you back (or press R), take plank shortcuts on three tracks,
   dodge cows, a bus and rolling boulders, race to a Venezuelan groove

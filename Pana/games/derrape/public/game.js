@@ -25,6 +25,7 @@ import { CUPS, cupById, awardPoints, cupStandings, trophyFor, TROPHY_RANK, diffi
 import { advanceLap, isOpenEdge, offCourse, stuckStep, ALL_SECTORS, RESCUE_TIME, OUT_TIME, STUCK_TIME, OPEN_MARGIN } from './course-rules.js';
 import { createHazards } from './hazards.js';
 import { createMusic } from './music.js';
+import { PAINTS, HORNS, FLAMES, CATALOG, cleanWallet, earnings, buy, unlocked, unlockText, mirrorUnlocked, repaintHex } from './shop.js';
 import { soaringVulture } from '/engine/models/fauna/birds/soaring-vulture.js';
 import { DRIFT_MIN_SPEED, DRIFT_BOOST, HOP_SPEED, DRAFT_TIME, DRAFT_BOOST, driftLevel, driftSteer, driftCharge, startBoost, trickBoost, inSlipstream, loseCoins } from './drive-rules.js';
 
@@ -147,10 +148,11 @@ const garage = {
 
 function garageCar(index) {
   // Cache key includes the cauchos: the same car wears different wheels.
-  const key = `${index}:${garage.wheel}`;
+  const paint = paintFor(CARS[index]);
+  const key = `${index}:${garage.wheel}:${paint}`;
   if (!garage.cars.has(key)) {
     if (garage.cars.size >= 16) garage.cars.delete(garage.cars.keys().next().value);
-    garage.cars.set(key, CARS[index].build(ME.avatar, wheelById(garage.wheel).wheel ?? undefined));
+    garage.cars.set(key, repaintCar(CARS[index].build(ME.avatar, wheelById(garage.wheel).wheel ?? undefined), CARS[index].color, paint));
   }
   return garage.cars.get(key);
 }
@@ -205,8 +207,9 @@ function showWheel(id) {
 function garageHonk() {
   sound.unlock();
   const def = CARS[garage.index];
-  garage.honkT = sound.horn(def.horn);
-  garage.bubble.say(LINES.honk[def.horn], garage.honkT + 0.2);
+  const horn = wallet.horn !== 'propio' ? wallet.horn : def.horn;
+  garage.honkT = sound.horn(horn);
+  garage.bubble.say(LINES.honk[horn], garage.honkT + 0.2);
   garage.hop.v += 6;
 }
 
@@ -389,6 +392,74 @@ if (!['race', 'battle', ...CUPS.map(c => c.id)].includes(setup.mode)) setup.mode
 setup.mirror = setup.mirror === true;
 const isCupMode = (mode) => CUPS.some(c => c.id === mode);
 
+// ---------- the taller: wallet, paints, horns, turbo flames ----------
+let wallet = cleanWallet(null);
+try { wallet = cleanWallet(JSON.parse(localStorage.getItem('derrape:wallet') || 'null')); } catch { /* private mode */ }
+function saveWallet() {
+  try { localStorage.setItem('derrape:wallet', JSON.stringify(wallet)); } catch { /* private mode */ }
+  $('wallet-coins').textContent = wallet.coins;
+  $('shop-coins').textContent = wallet.coins;
+}
+const paintFor = (def) => PAINTS.find(p => p.id === wallet.paint[def.id])?.color ?? null;
+const hornFor = (c) => c.isPlayer && wallet.horn !== 'propio' ? wallet.horn : c.def.horn;
+const flameFor = (c) => (c.isPlayer ? FLAMES.find(f => f.id === wallet.flame) : null)?.colors ?? FLAMES[0].colors;
+
+// Shifts every body panel in the car's paint family to a new paint (the
+// driver keeps their own colours). Materials are shared, so swap in copies.
+const paintCache = new Map();
+function repaintCar(car, from, to) {
+  if (!to) return car;
+  const skip = new Set();
+  car.driver?.group?.traverse(o => skip.add(o));
+  car.root.traverse(o => {
+    if (!o.material || skip.has(o)) return;
+    const swap = (m) => {
+      if (!m.color) return m;
+      const hex = repaintHex('#' + m.color.getHexString(), from, to);
+      if (!hex) return m;
+      const key = m.uuid + hex;
+      if (!paintCache.has(key)) { const n = m.clone(); n.color.set(hex); paintCache.set(key, n); }
+      return paintCache.get(key);
+    };
+    o.material = Array.isArray(o.material) ? o.material.map(swap) : swap(o.material);
+  });
+  return car;
+}
+
+function renderShop() {
+  const trophies = loadTrophies(), def = CARS[garage.index];
+  const fill = (kind, root, current, swatch) => {
+    $(root).replaceChildren(...CATALOG[kind].map(item => {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'shop-item';
+      const owned = wallet.owned.includes(`${kind}:${item.id}`), open = unlocked(item, trophies);
+      b.setAttribute('aria-pressed', String(current === item.id));
+      b.disabled = !open || (!owned && wallet.coins < item.cost);
+      const price = !open ? unlockText(item) : current === item.id ? 'Puesto' : owned ? 'Tuyo' : `${item.cost} monedas`;
+      b.innerHTML = `${swatch ? `<span class="swatch" style="--swatch:${swatch(item)}"></span>` : ''}<span>${esc(item.name)}<small>${esc(price)}</small></span>`;
+      b.dataset.kind = kind; b.dataset.id = item.id;
+      b.onclick = () => {
+        if (!buy(wallet, kind, item.id, trophies)) return;
+        if (kind === 'paint') wallet.paint[def.id] = item.id;
+        else wallet[kind] = item.id;
+        sound.unlock(); sound.pickup();
+        saveWallet();
+        renderShop();
+        if (kind === 'paint') { garage.cars.clear(); showCar(garage.index); }
+        if (kind === 'horn') garageHonk();
+      };
+      return b;
+    }));
+  };
+  fill('paint', 'shop-paint', wallet.paint[def.id] ?? 'fabrica', (p) => p.color ?? def.color);
+  fill('horn', 'shop-horn', wallet.horn);
+  fill('flame', 'shop-flame', wallet.flame, (f) => '#' + f.colors[0].toString(16).padStart(6, '0'));
+  $('shop-title').textContent = `Personaliza ${def.name}`;
+}
+$('open-shop').onclick = () => { sound.unlock(); renderShop(); $('shop').hidden = false; $('shop-close').focus(); };
+$('shop-close').onclick = () => { $('shop').hidden = true; $('open-shop').focus(); };
+
 function saveSetup() {
   try { localStorage.setItem('derrape:setup', JSON.stringify(setup)); } catch { /* private mode */ }
 }
@@ -404,6 +475,10 @@ function renderSetup() {
   press('mode-pick', 'mode', setup.mode);
   press('difficulty-pick', 'difficulty', setup.difficulty);
   press('laps-pick', 'laps', setup.laps);
+  const mirrorOpen = mirrorUnlocked(loadTrophies());
+  if (!mirrorOpen) setup.mirror = false;
+  $('mirror').disabled = !mirrorOpen;
+  $('mirror').title = mirrorOpen ? '' : 'Gana un trofeo en una copa para desbloquear el modo espejo';
   $('mirror').setAttribute('aria-checked', String(setup.mirror));
   const battle = setup.mode === 'battle', cup = isCupMode(setup.mode) ? cupById(setup.mode) : null;
   for (const b of $('laps-pick').querySelectorAll('button')) b.disabled = battle;
@@ -411,10 +486,17 @@ function renderSetup() {
   for (const b of $('mode-pick').querySelectorAll('button')) {
     const won = trophies[b.dataset.mode];
     b.title = won ? `Trofeo de ${won}` : '';
-    b.classList.toggle('has-trophy', !!won);
-    b.dataset.trophy = won || '';
+    b.querySelector('.mode-trophy')?.remove();
+    if (won) {
+      const dot = document.createElement('span');
+      dot.className = 'mode-trophy';
+      dot.style.setProperty('--trophy', `var(--trophy-${won})`);
+      dot.setAttribute('aria-label', `trofeo de ${won}`);
+      b.append(dot);
+    }
   }
-  $('setup-note').textContent = cup
+  if (!mirrorOpen && !cup && setup.mode !== 'battle') $('setup-note').textContent = 'Gana un trofeo en una copa para desbloquear el modo espejo.';
+  else $('setup-note').textContent = cup
     ? `${cup.name}: ${cup.tracks.map(id => getTrack(id).name).join(' → ')}. Suma puntos en las cuatro.`
     : battle ? 'Globos: tres globos por carro. Cada golpe revienta uno. Gana el último con globos.' : '';
   if (!net) {
@@ -595,6 +677,7 @@ function makeRacer(index, isPlayer, name, wheelId = 'calle', avatar = null) {
   const wheel = wheelById(wheelId);
   const who = isPlayer ? ME : { name, avatar: avatar || randomAvatar() };
   const car = def.build(who.avatar, wheel.wheel ?? undefined);
+  if (isPlayer) repaintCar(car, def.color, paintFor(def));
   // Retain ownership even after a bumper detaches and expires from the scene.
   car.geometries = new Set();
   car.root.traverse(o => { if (o.geometry) car.geometries.add(o.geometry); });
@@ -843,6 +926,7 @@ async function startRace(playerIndex, wheelId = garage.wheel, roster = null) {
     race.netRace = roster ? net.state.raceId : 0;
     race.scene.scale.x = race.mirror ? -1 : 1;
     race.ended = false;
+    race.paid = false;
     if (!await step('Todo listo. ¡A correr!', 0.9)) return;
     renderer.toneMapping = THREE.NoToneMapping;
     updateRace(0);
@@ -909,6 +993,7 @@ function toGarage() {
   mode = 'garage';
   if (net) renderLobby(net.state);
   else { race.cup = null; renderSetup(); }
+  saveWallet();
   race.scene.scale.x = 1;
   $('play').focus({ preventScroll: true });
 }
@@ -1043,8 +1128,9 @@ function say(c, lines, time) {
 
 function honk(c) {
   if (c.honkT > 0) return;
-  c.honkT = sound.horn(c.def.horn);
-  c.bubble.say(LINES.honk[c.def.horn], c.honkT + 0.2);
+  const horn = hornFor(c);
+  c.honkT = sound.horn(horn);
+  c.bubble.say(LINES.honk[horn], c.honkT + 0.2);
   c.heave.v += 5;   // the whole car jumps when it honks
   if (race.netRace && !c.remote) net.fx(c.netId, 'honk', {});
 }
@@ -1310,7 +1396,7 @@ function stepCar(c, input, dt) {
       race.puffs.spawn(new THREE.Vector3(c.x - fx * 1.6, c.y+0.25, c.z - fz * 1.6), { color: rough>0.1?0x889263:0xe7bd8a, count: 1, size: 0.7, rise: 0.6, life: 0.7 });
     }
     if (boosting) {
-      race.puffs.spawn(new THREE.Vector3(c.x - fx * 2.2, c.y + 0.5, c.z - fz * 2.2), { color: pick([0xff7b1c, 0xffd23f]), count: 2, size: 0.6, rise: 0.4, life: 0.35, spread: 0.4 });
+      race.puffs.spawn(new THREE.Vector3(c.x - fx * 2.2, c.y + 0.5, c.z - fz * 2.2), { color: pick(flameFor(c)), count: 2, size: 0.6, rise: 0.4, life: 0.35, spread: 0.4 });
     }
     if (c.lost >= 2) {
       race.puffs.spawn(new THREE.Vector3(c.x + fx * 1.4, c.y + 1.6, c.z + fz * 1.4), { color: 0x4a4a52, count: 1, size: 0.6, rise: 2, life: 1 });
@@ -1745,6 +1831,15 @@ function finish() {
     if (cup.trophy) $('result-time').textContent += ` · trofeo de ${cup.trophy}`;
   }
   renderCup();
+  // The taller wallet keeps what you earned.
+  if (!race.paid) {
+    race.paid = true;
+    const rank = standings().indexOf(p);
+    const earned = earnings({ collected: p.coinsCollected, place: p.done || race.mode === 'battle' ? rank : 99, trophy: race.cup?.over ? race.cup.trophy : null });
+    wallet.coins += earned;
+    saveWallet();
+    race.earned = earned;
+  }
   if (race.netRace) updateResultActions(net.state);
   else {
     $('again').textContent = race.cup ? (race.cup.over ? 'Otra copa' : 'Siguiente pista') : 'Otra vez';
@@ -1753,7 +1848,7 @@ function finish() {
   race.resultKey = '';
   renderResults(standings(), p);
   $('result').classList.remove('hidden');
-  $('result-coins').textContent = `${p.coinsCollected} monedas recogidas · +${Number((p.coins * COIN_SPEED * 100).toFixed(1)).toLocaleString('es-VE')}% de velocidad`;
+  $('result-coins').textContent = `${p.coinsCollected} monedas recogidas · +${race.earned} al taller · tienes ${wallet.coins}`;
   $('again').focus({ preventScroll: true });
 }
 
@@ -2035,7 +2130,7 @@ function resize() {
 addEventListener('resize', resize);
 resize();
 
-if (DEBUG) Object.assign(window, { music, menu, race, garage, renderer, crash, stepCar, startRace, updateRace, toGarage, showWheel, ITEMS, TRACKS, buildTrack, setup, popBalloon, rescue, getActiveTrack: () => T, getNet: () => net });
+if (DEBUG) Object.assign(window, { music, getWallet: () => wallet, menu, race, garage, renderer, crash, stepCar, startRace, updateRace, toGarage, showWheel, ITEMS, TRACKS, buildTrack, setup, popBalloon, rescue, getActiveTrack: () => T, getNet: () => net });
 
 // ?track=desierto wins; otherwise the last pick, otherwise the estadio
 let savedTrack = 'estadio';
@@ -2063,4 +2158,5 @@ $('wheel-lineup').append(wheelStrip.fragment);
 wheelStrip.ready.catch(error => console.warn('Wheel previews unavailable', error));
 showWheel(garage.wheel);
 renderSetup();
+saveWallet();
 if (ROOM) goOnline(ROOM, QS.has('lead'));
