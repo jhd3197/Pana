@@ -9,7 +9,8 @@
     .\dev.ps1                 Start the Pana server (default)
     .\dev.ps1 server          Start the Pana server only
     .\dev.ps1 studio          Open Pana Studio; reuse an existing server
-    .\dev.ps1 check           Syntax-check every .js in server/, web/ and games/
+    .\dev.ps1 check           Syntax check + unit tests (npm run check, npm test)
+    .\dev.ps1 check -Browser  ...plus every Playwright suite (npm run test:browser)
     .\dev.ps1 setup           First-run setup: npm install
 
     Options: -Port 8461 -NoAutoPort -NoBrowser
@@ -213,6 +214,14 @@ switch ($mode) {
     'check' {
         Write-Header 'Pana checks'
         & node.exe (Join-Path $AppRoot 'server\src\check.js')
+        if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+        Write-Header 'Unit tests'
+        & npm.cmd test --prefix $RepoRoot
+        if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+        if ($args -contains '-Browser' -or $args -contains '--browser') {
+            Write-Header 'Browser suites'
+            & node.exe (Join-Path $AppRoot 'scripts	est-browser.js')
+        }
         exit $LASTEXITCODE
     }
     'setup' {
