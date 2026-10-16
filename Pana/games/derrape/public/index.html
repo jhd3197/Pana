@@ -110,6 +110,7 @@
           <label class="mirror-pick split-pick">2 jugadores <button id="split" type="button" class="pk-switch" role="switch" aria-checked="false" aria-label="Pantalla dividida para dos jugadores"></button></label>
           <label class="mirror-pick">Espejo <button id="mirror" type="button" class="pk-switch" role="switch" aria-checked="false" aria-label="Modo espejo"></button></label>
         </div>
+        <ol id="cup-stages" class="cup-stages" aria-label="Pistas de la copa" hidden></ol>
         <p id="setup-note" class="setup-note"></p>
       </section>
       <p id="launch-note" class="launch-note"><span class="pk-dot"></span>Tú contra 3 rivales</p>
@@ -136,6 +137,7 @@
     <div class="hud-top">
       <b id="pos" class="pk-place" aria-label="Posición">1<sup>º</sup></b>
       <div class="readouts">
+        <div id="stage-pill" class="pill pk-panel pk-readout" hidden><span class="pk-eyebrow">Copa</span><b id="stage-readout" class="pk-num small">1/4</b></div>
         <div class="pill pk-panel pk-readout"><span id="lap-label" class="pk-eyebrow">Vuelta</span><b id="lap" class="pk-num">1/3</b></div>
         <div class="pill pk-panel pk-readout"><span class="pk-eyebrow">Tiempo</span><b id="time" class="pk-num">0.0</b></div>
         <div id="best-pill" class="pill pk-panel pk-readout" hidden><span class="pk-eyebrow">Mejor vuelta</span><b id="lap-best" class="pk-num small">—</b></div>
@@ -224,6 +226,7 @@
         <div id="cup-table" class="res-table pk-panel pk-panel--solid" hidden>
           <span id="cup-title" class="pk-eyebrow">Copa</span>
           <ol id="cup-board" class="pk-roster"></ol>
+          <p id="cup-next" class="cup-next"></p>
         </div>
         <div class="res-coins pk-panel"><span class="coin-symbol" aria-hidden="true">I</span><p id="result-coins" class="result-coins"></p></div>
         <div class="res-actions">

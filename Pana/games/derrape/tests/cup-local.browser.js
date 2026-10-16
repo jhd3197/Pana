@@ -28,6 +28,7 @@ async function makePage() {
 const finishFixture = page => page.evaluate(() => {
   race.state = 'go'; race.count = 0;
   race.player.lap = race.laps + 1;
+  if (race.p2) race.p2.lap = race.laps + 1;
   for (let i = 0; i < 3 && race.state !== 'end'; i++) updateRace(1 / 60);
   return race.state;
 });
@@ -114,6 +115,16 @@ try {
   await page.evaluate(() => toGarage());
 
   await page.locator('[data-mode="pana"]').click();
+  const stageButtons = await page.locator('#cup-stages .cup-stage').count();
+  assert.equal(stageButtons, 4, 'cup selection lists all four tracks');
+  assert.match(await page.locator('#setup-note').textContent(), /Duración aproximada:/);
+  await page.locator('#cup-stages .cup-stage').nth(2).click();
+  assert.equal(await page.locator('#track-name').textContent(), 'Los Llanos');
+  assert.equal(await page.evaluate(() => window.getActiveTrack()?.id ?? null), 'estadio', 'browsing cup stages does not rebuild the 3D world');
+
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.screenshot({ path: join(output, 'setup-390x844.png') });
+  await page.setViewportSize({ width: 844, height: 390 });
   await page.locator('#split').click();
   await page.locator('#mirror').click();
   await page.locator('#play').click();
@@ -121,12 +132,40 @@ try {
   const split = await page.evaluate(() => ({
     cars: race.cars.length, guest: race.p2?.entrantId, player: race.player.entrantId,
     mirror: race.scene.scale.x, entrants: race.cup.session.entrants.length,
+    stagePill: !document.getElementById('stage-pill').hidden && document.getElementById('stage-readout').textContent,
   }));
   assert.equal(split.cars, 8);
   assert.equal(split.entrants, 8);
   assert.equal(split.guest, 'local-guest');
   assert.equal(split.player, 'local-player');
   assert.equal(split.mirror, -1);
+  assert.equal(split.stagePill, '1/4');
+  await page.screenshot({ path: join(output, 'mobile-landscape-844x390.png') });
+  assert.equal(await finishFixture(page), 'end');
+  await page.screenshot({ path: join(output, 'guest-results.png') });
+  const coinsAfterFirstFinish = await page.evaluate(() => getWallet().coins);
+  await page.evaluate(() => { finish(); renderResults(race.cars, race.player); renderCup(); });
+  assert.equal(await page.evaluate(() => getWallet().coins), coinsAfterFirstFinish, 'reopening results cannot pay a second bonus');
+
+  // Test long names, duplicate names and tied podium presentation
+  const tieCheck = await page.evaluate(() => {
+    const entrants = race.cup.session.entrants.map((e, idx) => idx < 2
+      ? { ...e, name: 'Pana Con Un Nombre Bastante Largo Iguales' }
+      : e);
+    race.cup.session.entrants = Object.freeze(entrants);
+    race.cars[0].name = entrants[0].name;
+    race.cars[1].name = entrants[1].name;
+    renderCup();
+    return {
+      rows: [...document.querySelectorAll('#cup-board li .pk-row-name')].map(n => n.firstChild.textContent),
+      details: [...document.querySelectorAll('#cup-board li .pk-row-name small')].map(n => n.textContent),
+      nextText: document.getElementById('cup-next').textContent,
+    };
+  });
+  assert.equal(tieCheck.rows.filter(n => n === 'Pana Con Un Nombre Bastante Largo Iguales').length, 2);
+  assert.ok(tieCheck.details.some(d => d.includes('pts')));
+  assert.match(tieCheck.nextText, /Siguiente:/);
+  await page.screenshot({ path: join(output, 'intermediate-standings.png') });
   await page.close();
 
   const proof = [];
@@ -168,7 +207,7 @@ try {
   }
   await writeFile(join(output, 'actual-cups.json'), JSON.stringify(proof, null, 2));
   assert.deepEqual(errors, []);
-  console.log(`derrape local cups: restart, abandon, replay, quick/battle, split/mirror and ${proof.length} actual four-race cups OK`);
+  console.log(`derrape local cups: restart, abandon, replay, quick/battle, split/mirror, UI/rewards and ${proof.length} actual four-race cups OK`);
 } finally {
   await browser.close();
 }

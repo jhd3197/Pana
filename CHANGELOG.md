@@ -95,6 +95,10 @@ becomes the GitHub release's notes.
 - **Derrape Grand Prix now keeps the same eight racers for all four rounds.**
   Rival looks and cars stay fixed, each track has its own lap preset, later grids
   follow championship position, and local split screen and mirror work throughout.
+- **Grand Prix garage previews, standings and podiums show the full cup story.**
+  Selecting a cup lists all four circuits with lap presets and estimated duration;
+  results show stage points, rank changes, tiebreaks, a 12-second next-track
+  intermission, a championship podium and one-time coin receipts.
 - **Contributors have one shared Grand Prix championship rulebook.** The pure
   renderer-free rules cover stable entrants, seeded grids, stage result ledgers,
   points, DNF/DNS/retirement and championship tiebreaks for local and online play.

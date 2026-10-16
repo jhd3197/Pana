@@ -29,6 +29,8 @@ import { createMusic, TRACK_STYLE } from './music.js';
 import { padInput, pressed, keyInput, SPLIT_KEYS, wrongWayStep, WRONG_WAY_TIME, lapSplit } from './controls.js';
 import { PAINTS, HORNS, FLAMES, CATALOG, earnings, buy, unlocked, unlockText, mirrorUnlocked, repaintHex } from './shop.js';
 import { createProfileStore, recordCupTrophy, trophyCredits } from './cup-profile.js';
+import { rewardCupCompletion, rewardCupStage } from './cup-rewards.js';
+import { CLASSIFICATION_TEXT, approximateCupText, cupStandingsView, nextStageText, rankChangeText, tiebreakText } from './cup-ui.js';
 import { soaringVulture } from '/engine/models/fauna/birds/soaring-vulture.js';
 import { DRIFT_MIN_SPEED, DRIFT_BOOST, HOP_SPEED, DRAFT_TIME, DRAFT_BOOST, driftLevel, driftSteer, driftCharge, startBoost, trickBoost, inSlipstream, loseCoins } from './drive-rules.js';
 
@@ -509,14 +511,42 @@ function renderSetup() {
       b.append(label);
     }
   }
+  const stagesEl = $('cup-stages');
+  stagesEl.hidden = !cup;
+  if (cup) {
+    stagesEl.replaceChildren(...cup.stages.map((stage, idx) => {
+      const li = document.createElement('li');
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'cup-stage';
+      btn.dataset.stage = String(idx);
+      btn.dataset.track = stage.track;
+      const trackDef = getTrack(stage.track);
+      btn.setAttribute('aria-pressed', String(TRACKS[trackIndex]?.id === stage.track));
+      btn.innerHTML = `<span>${idx + 1}. ${esc(trackDef.name)}</span><small>${stage.laps} ${stage.laps === 1 ? 'vuelta' : 'vueltas'}</small>`;
+      btn.onclick = () => {
+        selectTrack(stage.track, stage.laps);
+        for (const item of stagesEl.querySelectorAll('.cup-stage')) {
+          item.setAttribute('aria-pressed', String(item === btn));
+        }
+      };
+      li.append(btn);
+      return li;
+    }));
+  } else {
+    stagesEl.replaceChildren();
+  }
   if (!mirrorOpen && !cup && setup.mode !== 'battle') $('setup-note').textContent = 'Gana un trofeo en una copa para desbloquear el modo espejo.';
   else $('setup-note').textContent = cup
-    ? `${cup.name}: ${cupTracks(cup).map(id => getTrack(id).name).join(' → ')}. Suma puntos en las cuatro.`
+    ? `${cup.name}: ${cupTracks(cup).map(id => getTrack(id).name).join(' → ')}. ${approximateCupText(cup)}`
     : battle ? 'Globos: tres globos por carro. Cada golpe revienta uno. Gana el último con globos.' : '';
   if (!net) {
     $('t-prev').disabled = $('t-next').disabled = !!cup;
-    if (cup) selectTrack(cupTracks(cup)[0]);
-    else selectTrack(TRACKS[trackIndex].id);
+    if (cup) {
+      selectTrack(cup.stages[0].track, cup.stages[0].laps);
+      const firstBtn = stagesEl.querySelector('.cup-stage');
+      if (firstBtn) firstBtn.setAttribute('aria-pressed', 'true');
+    } else selectTrack(TRACKS[trackIndex].id);
   }
 }
 
@@ -530,17 +560,19 @@ $('split').onclick = () => { setup.split = !setup.split; saveSetup(); renderSetu
 // construct a different environment only after the player presses Play.
 let trackIndex = 0;
 const trackRoutes = new Map();
-function selectTrack(id) {
+function selectTrack(id, lapsOverride = null) {
   const def = getTrack(id);
   trackIndex = TRACKS.indexOf(def);
   try { localStorage.setItem('derrape:track', def.id); } catch { /* private mode */ }
   if (!trackRoutes.has(def.id)) trackRoutes.set(def.id, makeTrack(def));
   const route = trackRoutes.get(def.id);
   $('track-name').textContent = def.name;
-  const laps = net ? net.state?.laps || LAPS : setup.mode === 'battle' ? 0 : setup.laps;
+  const laps = lapsOverride ?? (net ? net.state?.laps || LAPS : setup.mode === 'battle' ? 0 : setup.laps);
   $('track-blurb').textContent = `${(route.TOTAL / 1000).toFixed(2)} km por vuelta · ${laps ? `${laps} ${laps === 1 ? 'vuelta' : 'vueltas'}` : 'batalla de globos'}. ${def.blurb}`
     + (def.rain ? ' Está lloviendo: los cauchos de lluvia agarran mejor.' : '');
-  $('track-of').textContent = `Pista ${trackIndex + 1}/${TRACKS.length}`;
+  const cup = !net && isCupMode(setup.mode) ? cupById(setup.mode) : null;
+  const cupStageIdx = cup ? cup.stages.findIndex(s => s.track === def.id) : -1;
+  $('track-of').textContent = cupStageIdx >= 0 ? `Carrera ${cupStageIdx + 1}/4` : `Pista ${trackIndex + 1}/${TRACKS.length}`;
   drawTrackPreview(route);
   return route;
 }
@@ -991,12 +1023,15 @@ async function startRace(playerIndex, wheelId = garage.wheel, roster = null) {
     race.p2 = race.cars.find(c => c.human === 2) ?? null;
     race.splits = []; race.lapSeen = 1; race.bestLap = null;
     $('best-pill').hidden = true;
+    $('stage-pill').hidden = !race.cup;
+    if (race.cup) $('stage-readout').textContent = `${race.cup.session.stageIndex + 1}/4`;
     $('race').classList.toggle('split', !!race.p2);
     $('p2-hud').hidden = !race.p2;
     resize();
     race.playerIndex = playerIndex;
     race.playerWheel = wheelId;
     race.clock = 0;
+    race.intermission = null;
     race.firstHumanFinish = null;
     race.stageCap = race.cup ? race.cup.definition.stages[race.cup.session.stageIndex].capSeconds : null;
     race.count = 3.999;
@@ -1830,6 +1865,16 @@ function updateRace(dt) {
   for (let i = 0; i < segs.length; i++) segs[i].classList.toggle('on', i < lit);
 
   // standings board + minimap, throttled
+  if (race.state === 'end' && race.cup && !race.netRace && race.intermission != null && race.cup.session.status === 'intermission') {
+    race.intermission = Math.max(0, race.intermission - dt);
+    $('cup-next').textContent = nextStageText(race.cup.definition, race.cup.session, race.intermission, id => getTrack(id).name);
+    if (race.intermission <= 0 && !(DEBUG && QS.has('manual'))) {
+      race.intermission = null;
+      advanceStage(race.cup.session);
+      startRace(race.playerIndex, race.playerWheel);
+      return;
+    }
+  }
   race.boardT -= dt;
   if (race.boardT <= 0) {
     race.boardT = 0.2;
@@ -1983,16 +2028,37 @@ function scoreCup() {
 
 function renderCup() {
   const session = race.cup?.session;
-  $('cup-table').hidden = !session?.finalized.some(Boolean);
-  if (!session?.finalized.some(Boolean)) return;
+  const active = !!session?.finalized.some(Boolean);
+  $('cup-table').hidden = !active;
+  if (!active) {
+    $('cup-next').textContent = '';
+    return;
+  }
+  const view = cupStandingsView(session, session.stageIndex);
   $('cup-title').textContent = `${race.cup.definition.name} · ${session.status === 'complete' ? 'Final' : `Carrera ${session.stageIndex + 1} de 4`}`;
-  const colors = new Map(race.cars.map(c => [c.entrantId, c.def.color]));
-  fillRoster($('cup-board'), championshipStandings(session).map((r, i) => {
+  const colors = new Map(race.cars.map(c => [c.entrantId || c.netId, c.def.color]));
+  fillRoster($('cup-board'), view.map((r, i) => {
     const chip = document.createElement('span');
     chip.className = 'chip';
-    chip.style.setProperty('--c', colors.get(r.id) || '#fff');
-    return { rank: i + 1, lead: chip, name: r.name, me: r.id === race.player.entrantId, end: `${r.points} pts` };
+    chip.style.setProperty('--c', colors.get(r.id) || CARS[r.entrant.loadout.car]?.color || '#fff');
+    const details = [
+      `+${r.racePoints} pts`,
+      r.classification ? CLASSIFICATION_TEXT[r.classification] : null,
+      r.stage > 0 || session.stageIndex > 0 ? rankChangeText(r.rankChange) : null,
+      r.decidedBy && i <= 2 ? tiebreakText(r.decidedBy) : null,
+    ].filter(Boolean).join(' · ');
+    return {
+      rank: i + 1,
+      lead: chip,
+      name: r.name,
+      detail: details,
+      me: r.id === (race.player.entrantId || race.player.netId),
+      end: `${r.points} pts`,
+      score: true,
+      className: r.rankChange > 0 ? 'rank-up' : r.rankChange < 0 ? 'rank-down' : '',
+    };
   }));
+  $('cup-next').textContent = nextStageText(race.cup.definition, session, race.intermission, id => getTrack(id).name);
 }
 
 function finish() {
@@ -2016,11 +2082,21 @@ function finish() {
   if (race.cup) {
     scoreCup();
     const session = race.cup.session;
-    if (session.status === 'complete') {
-      const cupPlace = championshipStandings(session).findIndex(row => row.id === LOCAL_PLAYER);
-      const trophy = cupTrophy(session, LOCAL_PLAYER);
+    if (session.status === 'intermission' && !race.netRace) race.intermission ??= 12;
+    else if (session.status === 'complete') {
+      race.intermission = null;
+      const cupRows = championshipStandings(session);
+      const myId = p.entrantId || p.netId || LOCAL_PLAYER;
+      const cupPlace = cupRows.findIndex(row => row.id === myId);
+      const trophy = cupTrophy(session, myId);
       $('result-title').textContent = cupPlace === 0 ? `¡Ganaste la ${race.cup.definition.name}!` : `${cupPlace + 1}º en la ${race.cup.definition.name}`;
       if (trophy) $('result-time').textContent += ` · trofeo de ${trophy}`;
+      const tiedPodium = cupRows.slice(0, 3).find(row => row.decidedBy);
+      if (tiedPodium) $('result-time').textContent += ` · ${tiebreakText(tiedPodium.decidedBy)}`;
+    }
+    if (race.p2) {
+      const p2CupPlace = championshipStandings(session).findIndex(row => row.id === LOCAL_GUEST);
+      if (p2CupPlace >= 0) $('result-time').textContent += ` · Copa Jugador 2: ${p2CupPlace + 1}º`;
     }
   }
   renderCup();
@@ -2028,10 +2104,30 @@ function finish() {
   if (!race.paid) {
     race.paid = true;
     const rank = standings().indexOf(p);
-    const earned = earnings({ collected: p.coinsCollected, place: p.done || race.mode === 'battle' ? rank : 99,
-      trophy: race.cup?.session.status === 'complete' ? cupTrophy(race.cup.session, LOCAL_PLAYER) : null });
-    wallet.coins += earned;
-    saveWallet();
+    let earned = 0;
+    if (race.cup) {
+      const session = race.cup.session;
+      const myId = p.entrantId || p.netId || LOCAL_PLAYER;
+      const stageRec = session.ledger.find(r => r.stage === session.stageIndex && r.id === myId);
+      const stagePlace = stageRec && stageRec.classification === 'finished' ? stageRec.place - 1 : 99;
+      earned += rewardCupStage(profile, {
+        sessionId: session.sessionId,
+        stage: session.stageIndex,
+        collected: p.coinsCollected,
+        place: stagePlace,
+      });
+      if (session.status === 'complete') {
+        earned += rewardCupCompletion(profile, {
+          sessionId: session.sessionId,
+          trophy: cupTrophy(session, myId),
+        });
+      }
+      saveWallet();
+    } else {
+      earned = earnings({ collected: p.coinsCollected, place: p.done || race.mode === 'battle' ? rank : 99 });
+      wallet.coins += earned;
+      saveWallet();
+    }
     race.earned = earned;
   }
   if (race.netRace) updateResultActions(net.state);
@@ -2050,7 +2146,9 @@ function finish() {
 // Rivals keep racing behind the results, so this refreshes as they finish.
 const PODIUM = [['var(--pk-yellow)', 260, 124], ['var(--pk-teal)', 190, 96], ['var(--pk-coral)', 140, 86]];
 function renderResults(order, player) {
-  const key = order.map(c => `${c.name}:${c.done}:${c.balloons}`).join();
+  const session = race.cup?.session;
+  const cupFinal = session?.status === 'complete';
+  const key = `${cupFinal}:${order.map(c => `${c.entrantId || c.netId || c.name}:${c.done}:${c.balloons}`).join()}`;
   if (key === race.resultKey) return;
   race.resultKey = key;
   const thumbs = $('car-lineup').querySelectorAll('img');
@@ -2058,19 +2156,30 @@ function renderResults(order, player) {
     const src = thumbs[CARS.indexOf(c.def)]?.getAttribute('src');
     return src ? `<img src="${src}" alt="">` : `<b style="--car:${c.def.color}">${c.def.num}</b>`;
   };
+  const podiumOrder = cupFinal
+    ? championshipStandings(session).map(row => race.cars.find(c => (c.entrantId || c.netId) === row.id) || {
+        name: row.name,
+        def: CARS[row.entrant.loadout.car] ?? CARS[0],
+      })
+    : order;
   // Second, first, third, like a real podium.
-  $('podium').innerHTML = [1, 0, 2].filter(i => order[i]).map(i => {
-    const c = order[i], [color, h, w] = PODIUM[i];
+  $('podium').innerHTML = [1, 0, 2].filter(i => podiumOrder[i]).map(i => {
+    const c = podiumOrder[i], [color, h, w] = PODIUM[i];
     return `<li style="--c:${color};--h:${h}px;--w:${w}px"><span class="who">${who(c)}</span>`
       + `<span class="name">${esc(c.name)}</span><b class="place">${i + 1}</b></li>`;
   }).join('');
+  const stageMap = session ? new Map(session.ledger.filter(r => r.stage === session.stageIndex).map(r => [r.id, r])) : null;
   fillRoster($('result-board'), order.map((c, i) => {
     const chip = document.createElement('span');
     chip.className = 'chip';
     chip.style.setProperty('--c', c.def.color);
-    return { rank: i + 1, lead: chip, name: c.name, me: c === player,
-      end: race.mode === 'battle' ? `${c.balloons} ${c.balloons === 1 ? 'globo' : 'globos'}`
-        : c.done ? clockText(c.time) : `vuelta ${Math.min(race.laps, Math.max(1, c.lap))}/${race.laps}` };
+    const rec = stageMap?.get(c.entrantId || c.netId);
+    const endText = race.mode === 'battle'
+      ? `${c.balloons} ${c.balloons === 1 ? 'globo' : 'globos'}`
+      : rec
+        ? `${c.done ? clockText(c.time) : CLASSIFICATION_TEXT[rec.classification] ?? 'Sin terminar'} · +${rec.points} pts`
+        : c.done ? clockText(c.time) : `vuelta ${Math.min(race.laps, Math.max(1, c.lap))}/${race.laps}`;
+    return { rank: i + 1, lead: chip, name: c.name, me: c === player, end: endText };
   }));
 }
 
@@ -2334,7 +2443,7 @@ function resize() {
 addEventListener('resize', resize);
 resize();
 
-if (DEBUG) Object.assign(window, { pollPads, music, getWallet: () => wallet, menu, race, garage, renderer, crash, stepCar, startRace, updateRace, toGarage, showWheel, ITEMS, TRACKS, buildTrack, setup, popBalloon, rescue, getActiveTrack: () => T, getNet: () => net });
+if (DEBUG) Object.assign(window, { pollPads, music, getWallet: () => wallet, menu, race, garage, renderer, crash, stepCar, startRace, updateRace, finish, renderResults, renderCup, toGarage, showWheel, ITEMS, TRACKS, buildTrack, setup, popBalloon, rescue, getActiveTrack: () => T, getNet: () => net });
 
 // ?track=desierto wins; otherwise the last pick, otherwise the estadio
 let savedTrack = 'estadio';

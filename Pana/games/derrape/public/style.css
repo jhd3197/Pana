@@ -134,9 +134,17 @@ dd i { display: block; height: 100%; background: var(--car, var(--pk-coral)); bo
 .mirror-pick .pk-switch::before { width: 18px; height: 18px; }
 .mirror-pick .pk-switch[aria-checked="true"]::before { transform: translateX(20px); }
 .setup-note { margin: 0; color: var(--pk-muted); font-size: 12px; line-height: 1.35; }
-.setup-note:empty { display: none; }
+.setup-note:empty, .cup-next:empty { display: none; }
 .setup .pk-seg > button:disabled { opacity: .4; cursor: default; }
-#cup-table[hidden], #setup[hidden], #shop[hidden], #wrong-way[hidden], #incoming[hidden], #p2-hud[hidden], #best-pill[hidden] { display: none; }
+.cup-stages { margin: 0; padding: 0; list-style: none; display: grid; grid-template-columns: 1fr 1fr; gap: 4px; }
+.cup-stage { display: flex; justify-content: space-between; align-items: center; gap: 6px; padding: 5px 8px; border: 1px solid var(--pk-line); border-radius: 8px; background: var(--pk-deep); color: var(--pk-text); font: 800 11px var(--pk-sans); text-align: left; }
+.cup-stage[aria-pressed="true"] { border-color: var(--pk-yellow); background: var(--pk-raised); }
+.cup-stage small { color: var(--pk-muted); font-size: 10px; font-weight: 700; white-space: nowrap; }
+.cup-next { margin: 2px 0 0; color: var(--pk-muted); font-size: 12px; font-weight: 800; }
+.res-table .pk-row { transition: transform 180ms ease-out; }
+.res-table .pk-row.rank-up { transform: translateY(-2px); }
+.res-table .pk-row.rank-down { transform: translateY(2px); }
+#cup-stages[hidden], #stage-pill[hidden], #cup-table[hidden], #setup[hidden], #shop[hidden], #wrong-way[hidden], #incoming[hidden], #p2-hud[hidden], #best-pill[hidden] { display: none; }
 .wrong-way { position: absolute; top: 34%; left: 50%; transform: translateX(-50%); display: flex; align-items: center; gap: 12px; padding: 10px 22px; border-radius: 14px; background: var(--pk-coral); color: var(--pk-text); font: 400 34px var(--pk-display); letter-spacing: 2px; pointer-events: none; animation: ww-blink .6s steps(2) infinite; }
 .ww-icon { width: 30px; height: 30px; border-radius: 50%; background: var(--pk-yellow); box-shadow: inset 0 0 0 4px var(--hud-ink); }
 @keyframes ww-blink { 50% { opacity: .55; } }
@@ -436,8 +444,8 @@ body:has(#loading:not(.hidden)) #garage { visibility: hidden; }
   .coins { top: 80px; bottom: auto; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .coins.picked .coin-symbol { transform: none; }
-  dd i, button, .coin-symbol { transition: none; }
+  .coins.picked .coin-symbol, .res-table .pk-row.rank-up, .res-table .pk-row.rank-down { transform: none; }
+  dd i, button, .coin-symbol, .res-table .pk-row { transition: none; }
 }
 
 /* ---------- online lobby ---------- */

@@ -153,3 +153,20 @@ that proof. `art/grand-prix/cup-local/actual-cups.json` records Pana stage times
 240-second cap. `modes.browser.js`, `loading.browser.js`, `comfort.browser.js`
 and `shop.browser.js` also passed.
 
+## Phase 04 — cup selection, standings, podium and rewards
+
+`public/cup-ui.js` formats approximate cup duration, stage-by-stage standings
+with rank movement (`Sube N`, `Baja N`, `Mantiene`), tiebreak explanations and
+the 12-second intermission countdown (`Siguiente: <pista> · <N> vueltas`).
+`public/cup-rewards.js` gates stage and cup-bonus payouts through
+`claimReceipt(profile, receiptKey(sessionId, ...))` so reopening results or
+refreshing after completion never pays a second bonus.
+
+In the garage, selecting a cup populates `#cup-stages` with four lightweight
+metadata-only stage buttons showing track order and lap presets without
+constructing additional 3D worlds. During a cup race, `#stage-pill` displays
+`1/4`..`4/4` alongside the lap counter. On stage completion, `#result-board`
+shows stage classifications and points while `#cup-board` shows cumulative
+standings, rank changes and tiebreaks, and the final podium displays the top
+three championship finishers.
+
