@@ -132,15 +132,6 @@ becomes the GitHub release's notes.
 - **¡Choque de carritos! brings the Derrape karts to Bululú.** Bump the others
   off a platform over the sea while its edge falls away. On phones, minigames
   that move in every direction show a d-pad.
-- **Race Derrape online with up to 8 panas.** Open a room from the garage or a
-  shared link; each pana drives their own car, bots fill the grid, and the room
-  keeps the order, finish times and results in sync.
-- **Every game ends on the same results card.** Standings, scores and the
-  "again" button sit in the same place in every game, and long names wrap instead
-  of breaking the layout.
-- **Crowns, coins, mangos and hearts are drawn icons.** Phones no longer swap them
-  for their own emoji, so Derrape's items, Bululú's winners and Reliquia's health
-  look the same everywhere.
 
 ### Changed
 
@@ -165,6 +156,29 @@ becomes the GitHub release's notes.
 - **Contributors have one shared Grand Prix championship rulebook.** The pure
   renderer-free rules cover stable entrants, seeded grids, stage result ledgers,
   points, DNF/DNS/retirement and championship tiebreaks for local and online play.
+
+### Fixed
+
+- **Bululú's dice show the numbers you rolled instead of always showing two fours.**
+  The result faces turn toward the camera when the dice stop, and online guests
+  see the correct faces even when consecutive rolls repeat.
+
+## 0.1.0 - 2026-10-16
+
+### Added
+
+- **Race Derrape online with up to 8 panas.** Open a room from the garage or a
+  shared link; each pana drives their own car, bots fill the grid, and the room
+  keeps the order, finish times and results in sync.
+- **Every game ends on the same results card.** Standings, scores and the
+  "again" button sit in the same place in every game, and long names wrap instead
+  of breaking the layout.
+- **Crowns, coins, mangos and hearts are drawn icons.** Phones no longer swap them
+  for their own emoji, so Derrape's items, Bululú's winners and Reliquia's health
+  look the same everywhere.
+
+### Changed
+
 - **Online play runs on Colyseus rooms.** Rooms choose the host, hand it over at
   once when the host leaves, and give a dropped pana 20 seconds to come back to
   the same seat.
@@ -177,9 +191,6 @@ becomes the GitHub release's notes.
 
 ### Fixed
 
-- **Bululú's dice show the numbers you rolled instead of always showing two fours.**
-  The result faces turn toward the camera when the dice stop, and online guests
-  see the correct faces even when consecutive rolls repeat.
 - **"Crear sala" no longer copies a dead link** for single-player games.
 
 **Every merge to `main` is now a release.** The changelog's Unreleased notes become
