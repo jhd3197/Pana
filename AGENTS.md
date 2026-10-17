@@ -75,6 +75,9 @@ Browser suites take `PANA_PLAYWRIGHT_PATH` (an external Playwright) and
 - Multiplayer changes are proven with a real two-client suite, not a page load.
 - Something non-obvious learned (a netcode trap, a tuning value, a deploy gotcha)
   goes in `docs/knowledge/<topic>.md`, the note for that area. Not in this file.
-- Bigger work starts as a numbered plan in `docs/plans/` (`NN_kebab-name.md`:
-  scope, files, proof). Update its status when done.
+- Bigger work starts as a numbered local plan in `docs/plans/` (`NN_kebab-name.md`:
+  scope, files, proof). Update its status when done. Plans stay on disk only and
+  must not be tracked in Git or published to GitHub. Never stage, commit or
+  force-add ignored plans, including when committing the work they describe.
+  Only an explicit user request to track a specific plan overrides this rule.
 - Update this file only when a rule here changes.

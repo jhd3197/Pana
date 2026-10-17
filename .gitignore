@@ -8,7 +8,7 @@ node_modules/
 .DS_Store
 Thumbs.db
 
-# Local planning and PR drafts (Faro convention)
+# Local-only planning and PR drafts. Never force-add these files.
 docs/plans/
 **/plans/
 
