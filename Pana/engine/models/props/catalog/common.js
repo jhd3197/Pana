@@ -20,4 +20,16 @@ export default [
     previewOptions: {"gold":true},
     pack: "common"
   },
+  {
+    id: "china",
+    name: "China (tirapiedras)",
+    category: "Objetos",
+    source: "/engine/models/props/china.js",
+    factory: "china",
+    usedBy: ["Bululú"],
+    previewOptions: null,
+    description: "Horqueta de guayabo, dos ligas y una badana de cuero; pull() estira las ligas hacia atrás.",
+    tags: ["juguete","china","Bululú","animado"],
+    pack: "common"
+  },
 ];

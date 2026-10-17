@@ -1,5 +1,22 @@
 # Garage and race loading
 
+## Shared quality now controls race detail
+
+The game-local `quality.js` listens to the existing shared settings. Alta uses
+2048-square sun shadows, 1,400 weather streaks and all optional race detail;
+Media uses 1024-square shadows, 700 streaks and road wear; Baja disables shadows,
+uses 280 streaks and hides optional road wear/pennants. Weather CPU iteration
+and splash frequency scale with the active streak count. Gameplay surfaces,
+colliders, item positions, physics ticks and the 20 Hz pose cadence do not change.
+
+Quality updates apply live and after map loading. Replacing shadow size releases
+the old render target. Race-specific code does not alter global quality semantics
+for other games. This is not automatic internet-quality detection or an FPS
+guarantee. The prior hardware measurements below describe the previous revision.
+
+Road aggregate is generated in the existing road shader. Quality uses a uniform
+to scale or disable it without recompiling. No new texture is fetched or allocated.
+
 The October 2026 profile found three costs on the menu's critical path: all eight
 thumbnail cars were constructed/rendered synchronously before the first garage
 frame, every selection rebuilt the driver, and track selection constructed the
@@ -55,3 +72,78 @@ The loading suite covers actual orbit input, all eight thumbnails, rapid car and
 track selection, cancellation before/partway through construction, replay reuse,
 retry after cancellation, and recovery from constructor failure. Screenshots and timings are saved in ignored
 `art/performance/` (or `PANA_TEST_ARTIFACTS`).
+
+### Repeated Grand Prix resource ownership
+
+Canvas signs/start banners/chevrons and individual car flags own textures;
+geometry disposal alone does not release those GPU allocations. Collect
+callbacks before traversed children can detach, retain owned car materials even
+when parts break off, and release maps as well as materials. `ownedMap` marks
+per-instance flag materials; cached vehicle plates/roundels stay shared.
+
+Compare the same warmed garage after evicting the last race world: different
+finish cameras upload different subsets of retained terrain. The lifetime suite
+runs three real Agua cups, including split/mirror, then compares geometry,
+texture, document/window listener and interval counts. It also cancels loading.
+
+### Full-grid car rendering
+
+Hardware profiling of the new worlds found rendering, rather than the roughly
+1 ms gameplay update, dominated eight-car frames. `racer-render.js` combines
+opaque sibling parts after painting, before the race records resource ownership.
+Equivalent solid-color trim stores its exact linear colors per vertex. The
+primary body paint retains its material color for customization and inspection.
+Every pivot and the entire animated pana hierarchy remain separate; transparent
+glass, mapped materials, custom shaders, partial draw ranges and morphs retain
+their original rendering. Garage and shared vehicle constructors are unchanged.
+
+The pixel comparison in `racer-render.browser.js` covers all eight cars in a
+steered/suspended pose, verifies unchanged triangles and precise world bounds,
+and exercises a detachable part. Original meshes fall from 225–259 to 173–184
+(including hidden wardrobe geometry); mean pixel-channel differences stay below
+0.002 out of 255. Batched materials belong to the racer and must be disposed
+alongside its geometries, including after ghost-material clones are released.
+
+`water-performance.proof.js` explicitly requires a hardware renderer and records
+the renderer, viewport, quality, loading time, p50/p95 RAF intervals, CPU update
+and render time, draw calls and live resources. Its smaller viewport remains a
+desktop GPU measurement. The physical Android benchmark was waived by the user;
+mobile layout/touch tests must not be described as measured phone frame rates.
+
+The four water worlds use 190 m spatial vegetation cells. Profiling found their
+95–120 m cells spent more CPU submitting small batches than they saved in GPU
+work on the reference desktop. The larger bounded cells retain the same seeds,
+placements and plant counts; they submit some extra off-screen triangles but
+fewer draw calls. Keep the 1.8M whole-environment triangle limit and ray tests.
+
+### Final reference measurement
+
+Source `bb7b838`, Windows, Ryzen 9 7950X, RTX 4090 via ANGLE/D3D11,
+installed Chrome 155.0.8059.80 in a normal window. Eight simulated racers,
+seed 1453678317, camera fractions 0 / .40 / .62, 30 warmup frames followed by
+120 measured frames per view. The accumulator consumes actual elapsed time,
+including extra physics ticks on slow frames. No other task browser suite ran
+during this measurement. Raw data: `art/grand-prix/hardware-window.json` and
+`hardware-window-final.log`. Earlier headless timings are diagnostic history.
+
+Desktop is 1280 × 800, DPR 1, quality Alta. Ranges span the three views:
+
+| Circuit | First playable frame | p50 frame (ms) | p95 frame (ms) | Mean FPS by view | Maximum draws |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Salinas | 3.33 s | 13.9–20.8 | 20.9–27.8 | 51.0–59.6 | 1,188 |
+| Delta | 2.47 s | 20.8 | 20.9–27.8 | 52.5–54.0 | 1,316 |
+| Cuevas | 2.11 s | 13.9–14.0 | 20.9–27.6 | 56.5–60.2 | 1,098 |
+| Salto | 2.23 s | 20.7–20.8 | 21.0–27.8 | 48.5–55.2 | 1,331 |
+
+The 844 × 390 Baja viewport ran on the same desktop GPU: p50 about 20.8 ms,
+p95 20.9–27.9 ms, 41.7–55.6 mean FPS by view and 2.73–3.11 s loading. It is
+not physical-phone performance. Across both profiles, the maximum submitted
+draws were 1,418, uploaded geometries 1,382 and textures 85. These are live GPU
+resource counts rather than browser heap estimates. Repeated-transition
+retention is established separately by the three-cup lifetime proof.
+
+All declared geometry/draw/effect/resource limits pass. The initial sustained
+60 FPS desktop goal is **not met consistently**, especially in dense views.
+Keep that performance target open; do not call these measurements locked 60 FPS
+or present the phone waiver as waiving the desktop target. A trial removing
+tiny shadow casters did not improve timings reliably and was not retained.

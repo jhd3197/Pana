@@ -43,6 +43,7 @@
       </select>
     </div>
     <div id="top-actions" class="top-actions">
+      <p id="online-status" class="pk-panel hidden" role="status"></p>
       <button id="look" class="pk-btn look">Ver tablero <kbd class="pk-kbd" data-pana-hint>Tab</kbd></button>
     </div>
     <div class="legend" aria-label="Casillas">
@@ -55,14 +56,26 @@
   </div>
 
   <div id="toast" class="toast hidden"></div>
+  <!-- aim minigames: one reticle per pana -->
+  <div id="reticles" class="reticles" aria-hidden="true"></div>
   <div id="count"></div>
   <div id="prompt" class="prompt hidden"></div>
   <div id="winner" class="winner pk-modal hidden"></div>
 
-  <div class="touch pk-touch-zone">
+  <div class="touch touch-1d pk-touch-zone">
     <button id="t-left" class="pk-touch pk-touch--lg" data-icon="left" aria-label="Izquierda"></button>
     <button id="t-jump" class="pk-touch pk-touch--lg pk-touch--go" data-icon="jump" aria-label="Saltar"></button>
     <button id="t-right" class="pk-touch pk-touch--lg" data-icon="right" aria-label="Derecha"></button>
+  </div>
+  <!-- minigames that move in two directions: the kit's d-pad and an action button -->
+  <div class="touch touch-2d pk-touch-zone">
+    <div class="pk-dpad" aria-label="Movimiento">
+      <button id="t2-up" class="pk-touch" data-icon="up" aria-label="Avanzar"></button>
+      <button id="t2-left" class="pk-touch" data-icon="left" aria-label="Izquierda"></button>
+      <button id="t2-down" class="pk-touch" data-icon="down" aria-label="Retroceder"></button>
+      <button id="t2-right" class="pk-touch" data-icon="right" aria-label="Derecha"></button>
+    </div>
+    <button id="t2-go" class="pk-touch pk-touch--lg pk-touch--go" data-icon="jump" aria-label="Acción"></button>
   </div>
 
   <!-- start screen: the shared launcher column over the live island -->
@@ -92,9 +105,13 @@
       </div>
     </div>
     <div class="pk-lobby-foot">
+      <p id="room-status" class="pk-copy" role="status">Juega con tus panas o practica con bots.</p>
       <div id="intro-players" class="iplayers"></div>
       <div class="pk-lobby-cta">
+        <button id="online" class="pk-btn pk-btn--teal">Jugar online</button>
+        <span id="invite" class="hidden"></span>
         <button id="start" class="pk-btn pk-btn--primary pk-btn--lg play">¡A jugar! <kbd class="pk-kbd" data-pana-hint>Espacio</kbd></button>
+        <button id="practice" class="pk-btn hidden">Jugar con bots</button>
       </div>
     </div>
   </section>

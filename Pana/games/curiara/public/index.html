@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#0e0b24">
+  <meta name="description" content="Carreras de curiaras por el Amazonas venezolano. Rema en ritmo, lee el chorro, baja los raudales y no te voltees.">
+  <title>Curiara · Pana</title>
+  <link rel="stylesheet" href="/engine/kit.css">
+  <link rel="stylesheet" href="/engine/ui.css">
+  <link rel="stylesheet" href="style.css">
+  <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}</script>
+</head>
+<body class="in-lobby">
+  <canvas id="world" aria-label="Carrera de curiaras por el río"></canvas>
+  <div id="spray" class="spray" aria-hidden="true"></div>
+  <div id="flash" class="flash" aria-hidden="true"></div>
+  <header class="topbar"><nav id="game-nav" aria-label="Opciones del juego"></nav></header>
+  <div id="loading" class="pk-loading" role="status"><span class="pk-ribbon">El Amazonas</span><b class="pk-title">Curiara</b><p class="pk-copy">Bajando las curiaras al agua…</p></div>
+  <section id="lobby" class="pk-lobby hidden" aria-labelledby="title">
+    <div class="pk-lobby-top"><a class="pk-back" href="/">← Todos los juegos</a><a class="pk-logo" href="/" aria-label="Volver a Pana">PANA</a></div>
+    <span class="pk-ribbon">Curiara · Río abajo</span>
+    <h1 id="title" class="pk-title">¡Rema, pana, rema!</h1>
+    <p class="pk-copy">Caño de selva, los raudales del Autana y el Río Negro hasta la churuata. Rema en ritmo, lee el chorro y no te voltees.</p>
+    <div class="pk-stats"><div class="pk-stat"><b id="stat-length">950 m</b><span>río abajo</span></div><div class="pk-stat"><b>3</b><span>tramos</span></div><div class="pk-stat"><b>1–8</b><span>panas</span></div></div>
+    <div class="pk-field format-picker"><span class="pk-eyebrow" id="format-label">Formato</span>
+      <div class="pk-seg" role="group" aria-labelledby="format-label"><button type="button" data-format="todos" aria-pressed="true">Todos contra todos</button><button type="button" data-format="parejas" aria-pressed="false">Parejas 2×2</button></div>
+      <p id="format-copy" class="format-copy">Una curiara por pana. Ocho curiaras en el agua.</p>
+      <div id="seats" class="seat-grid hidden" role="group" aria-label="Elige tu puesto"></div>
+      <label class="pk-check"><input id="bots" type="checkbox" checked> Completar con remeros del río</label></div>
+    <div class="pk-lobby-foot">
+      <div class="pk-lobby-room"><span class="pk-dot"></span><span id="connection" role="status">Conectando…</span><span class="pk-room-code">Sala <b id="room-code"></b></span></div>
+      <button id="practice" class="pk-btn pk-btn--ghost pk-btn--sm practice hidden">Remar en local</button>
+      <div class="pk-lobby-cta" id="lobby-cta"><button id="start" class="pk-btn pk-btn--primary pk-btn--lg" disabled>Preparando la salida…</button></div>
+    </div>
+  </section>
+  <div class="pk-hints lobby-hint" data-pana-hint><span><b>A D</b> remar alternando</span><span><b>S</b> ciar</span><span><b>Espacio</b> salpicón</span></div>
+  <main id="hud" class="hidden">
+    <div class="race-top">
+      <div class="pk-place position"><b id="place">1</b><sup>º</sup><span id="field-size" class="pk-eyebrow">de 8</span></div>
+      <div class="race-cards">
+        <div class="pk-panel pk-readout"><span class="pk-eyebrow">Tramo</span><b id="sector" class="pk-num">Caño de la Selva</b></div>
+        <div class="race-pair"><div class="pk-panel pk-readout"><span class="pk-eyebrow">Tiempo</span><b id="timer" class="pk-num">0:00.00</b></div><div class="pk-panel pk-readout"><span class="pk-eyebrow">Faltan</span><b id="left" class="pk-num">950 m</b></div></div>
+      </div>
+    </div>
+    <ol id="leaderboard" class="pk-roster" aria-label="Posiciones"></ol>
+    <div class="minimap pk-panel"><div class="map-head"><b>Río abajo</b><small id="map-length"></small></div><canvas id="map" width="140" height="240" aria-label="Mapa del río"></canvas></div>
+    <div id="call" class="call hidden" aria-live="polite"></div>
+    <div class="paddle-panel pk-panel">
+      <div class="ring-wrap"><canvas id="ring" width="132" height="132" aria-hidden="true"></canvas><b id="next-key" class="next-key">A</b></div>
+      <div class="paddle-info">
+        <div class="tip-head"><span class="pk-eyebrow">Equilibrio</span><span id="tip-label">firme</span></div>
+        <div class="pk-bar tip-bar"><i id="tip-fill"></i></div>
+        <p id="paddle-tip">Alterna A y D. Rema cuando el anillo llegue a la zona dorada.</p>
+        <div class="paddle-foot"><span id="role" class="pk-chip role hidden"></span><span class="speed"><b id="speed">0</b> km/h</span><span id="splash-state" class="splash-state">Salpicón listo</span></div>
+      </div>
+    </div>
+    <div class="pk-hints keyboard-hints" data-pana-hint id="keys-hint"><span><b>A</b> <b>D</b> remar alternando</span><span><b>D D</b> girar a la izquierda</span><span><b>S</b> ciar</span><span><b>Espacio</b> salpicón</span></div>
+    <div class="pk-hints keyboard-hints hidden" data-pana-hint id="helm-hint"><span><b>A D</b> sostener: timón</span><span><b>A D</b> justo con la remada: ¡Ahora!</span><span><b>S</b> ciar</span><span><b>Espacio</b> salpicón</span></div>
+    <div class="touch-controls pk-touch-zone">
+      <div class="touch-side"><button class="pk-touch pk-touch--lg stroke-btn" data-stroke="-1" aria-label="Remar a la izquierda">Izq.</button><button class="pk-touch" data-input="back" aria-label="Ciar: frenar y girar">Ciar</button></div>
+      <div class="touch-side"><button class="pk-touch" data-input="splash" aria-label="Salpicón">Salpicón</button><button class="pk-touch pk-touch--lg stroke-btn" data-stroke="1" aria-label="Remar a la derecha">Der.</button></div>
+    </div>
+  </main>
+  <div id="countdown" class="countdown hidden" role="status" aria-live="polite"></div>
+  <div id="notice" class="notice pk-chip hidden" role="status"></div>
+  <section id="results" class="pk-results hidden" aria-labelledby="result-title"><div class="result-paper pk-modal pk-results-card"><span class="pk-ribbon">La churuata</span><h2 id="result-title" class="pk-title">¡Llegaste, pana!</h2><p id="result-copy" class="pk-copy"></p><ol id="result-board" class="pk-roster"></ol><button id="again" class="pk-btn pk-btn--primary pk-btn--lg pk-btn--block">Otra carrera</button><a class="pk-back" href="/">← Volver a Pana</a></div></section>
+  <script type="module">import('./game.js').catch(error=>{console.error(error);const e=document.getElementById('loading');e.classList.remove('hidden');e.replaceChildren();const message=document.createElement('b');message.className='pk-heading';message.textContent='No pudimos botar las curiaras. Comprueba tu conexión y WebGL, y recarga la página.';const back=document.createElement('a');back.href='/';back.textContent='Volver a Pana';back.className='pk-btn pk-btn--primary';e.append(message,back);});</script>
+</body>
+</html>

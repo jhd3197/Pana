@@ -7,7 +7,7 @@ export function createSky(palette = {}) {
     time: { value: 0 }, daylight: { value: 1 }, cover: { value: .52 }, seed: { value: 7 },
     horizon: { value: new THREE.Color(0xc7e1e8) }, zenith: { value: new THREE.Color(0x458ec4) },
     sunDirection: { value: new THREE.Vector3(-.48, .72, .5).normalize() },
-    sunDisc: { value: 1 },
+    sunDisc: { value: 1 }, rainbow: { value: 0 }, flash: { value: 0 },
   };
   const material = new THREE.ShaderMaterial({
     side: THREE.BackSide, depthWrite: false, fog: false,
@@ -21,7 +21,7 @@ export function createSky(palette = {}) {
         gl_Position = clip.xyww;
       }`,
     fragmentShader: `
-      uniform float time, daylight, cover, seed, sunDisc;
+      uniform float time, daylight, cover, seed, sunDisc, rainbow, flash;
       uniform vec3 horizon, zenith, sunDirection;
       varying vec3 direction;
       float hash(vec2 p) {
@@ -45,6 +45,16 @@ export function createSky(palette = {}) {
         float sun = max(dot(d,sunDirection),0.0);
         color += vec3(1.0,.63,.29)*pow(sun,18.0)*.14*daylight;
         color += vec3(1.0,.83,.49)*smoothstep(.9993,.99965,sun)*sunDisc*daylight;
+        if (rainbow > .001 && d.y > .01) {
+          vec3 antiSun = normalize(vec3(-sunDirection.x, .18, -sunDirection.z));
+          float arc = dot(d, antiSun);
+          float band = (arc - .68) / .065;
+          if (band > 0.0 && band < 1.0) {
+            vec3 spectral = .5 + .5 * cos(6.28318 * (band * .82 - vec3(0.0, .33, .67)));
+            float envelope = sin(band * 3.14159) * smoothstep(.02, .16, d.y) * (1.0 - smoothstep(.42, .68, d.y));
+            color += spectral * envelope * rainbow * .26 * daylight;
+          }
+        }
         if (d.y > .015) {
           // Thin, stretched high cloud behind larger, lower cumulus banks.
           vec2 high = d.xz / (height+.12) * vec2(3.0,9.0) + vec2(time*.002,seed+43.0);
@@ -65,6 +75,9 @@ export function createSky(palette = {}) {
           cloudColor = mix(horizon,cloudColor,smoothstep(.03,.28,height));
           color = mix(color,cloudColor,cloud*visibility*.97);
         }
+        if (flash > .001) {
+          color = mix(color, vec3(.88, .93, 1.0), clamp(flash * .65, 0.0, .85));
+        }
         gl_FragColor = vec4(color,1.0);
         #include <colorspace_fragment>
       }`,
@@ -79,8 +92,12 @@ export function createSky(palette = {}) {
     u.horizon.value.set(p.horizon ?? 0xc7e1e8); u.zenith.value.set(p.skyTop ?? 0x458ec4);
     u.cover.value = p.cloudCover ?? .52; u.seed.value = p.skySeed ?? 7;
     u.sunDisc.value = p.sunDisc === false ? 0 : 1;
+    u.rainbow.value = p.rainbow ?? 0;
+    u.flash.value = p.flash ?? 0;
     if(p.sunDirection)u.sunDirection.value.copy(p.sunDirection).normalize();
   }
+  function setRainbow(v = 0) { live().rainbow.value = THREE.MathUtils.clamp(v, 0, 1); }
+  function setFlash(v = 0) { live().flash.value = THREE.MathUtils.clamp(v, 0, 1); }
   function update(t, daylight = 1) {
     live().time.value = t; live().daylight.value = THREE.MathUtils.clamp(daylight,0,1);
   }
@@ -88,5 +105,5 @@ export function createSky(palette = {}) {
   let disposed = false;
   function dispose() { if(disposed)return;disposed=true;mesh.removeFromParent();mesh.geometry.dispose();mesh.material.dispose(); }
   setPalette(palette);
-  return { mesh, setPalette, update, dispose };
+  return { mesh, setPalette, setRainbow, setFlash, update, dispose };
 }

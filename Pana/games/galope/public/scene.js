@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import {createSky} from '/engine/sky.js';
 import {M,box,tube} from '/engine/models/core/primitives.js';
-import {bake} from '/engine/models/core/static-batch.js';
+import {bake,instancePlacements} from '/engine/models/core/static-batch.js';
 import {sign} from '/engine/models/core/architecture-kit.js';
 import {llaneroRanchHouse,horseStable,corralGate,ranchFence,hayBale,feedingTrough,waterWindmill,ranchWaterTower,oldTractor} from '/engine/models/props/ranch.js';
 import {hatoCow} from '/engine/models/fauna/farm/hato-cow.js';
@@ -10,19 +10,11 @@ import {orbitBird} from '/engine/models/animation/orbit-bird.js';
 import {waterSurface,waterAnimator} from '/engine/models/effects/water-surface.js';
 import {at,nearest,LENGTH,HALF_WIDTH,WATER_Y,groundAt,JUMPS,courseRoute,DAYLIGHT} from './course.js';
 import {addLandscape} from './landscape.js';
+import {placeIguanas} from '/engine/placement/iguanas.js';
 
 // Static model prototypes are batched into instances; animated fauna/water stay live.
 function plantInstances(parent,source,placements,name,id){
-  const prototype=bake(source),owned=new Set();source.traverse(o=>{if(o.geometry)owned.add(o.geometry);});owned.forEach(g=>g.dispose());
-  prototype.updateMatrixWorld(true);const dummy=new THREE.Object3D();
-  const cells=new Map();for(const p of placements){const key=`${Math.floor(p.x/40)},${Math.floor(p.z/40)}`;if(!cells.has(key))cells.set(key,[]);cells.get(key).push(p);}
-  prototype.traverse(o=>{if(!o.isMesh)return;if(!placements.length){o.geometry.dispose();return;}
-    for(const points of cells.values()){
-      const mesh=new THREE.InstancedMesh(o.geometry,o.material,points.length);
-      points.forEach((p,i)=>{dummy.position.set(p.x,p.y,p.z);dummy.rotation.set(0,p.rot||0,0);dummy.scale.setScalar(p.scale||1);dummy.updateMatrix();mesh.setMatrixAt(i,dummy.matrix.clone().multiply(o.matrixWorld));});
-      mesh.name=name;mesh.castShadow=false;mesh.receiveShadow=true;mesh.computeBoundingSphere();parent.add(mesh);
-    }
-  });
+  instancePlacements(parent,source,placements,{name,cellSize:40,castShadow:false});
   if(id)parent.userData.assetCounts[id]=(parent.userData.assetCounts[id]||0)+placements.length;
 }
 export function createCourse(){
@@ -78,6 +70,12 @@ export function createCourse(){
   // Course-side rails leave a full nine-metre recovery corridor.
   const rails=new THREE.Group();
   for(const [a,b,off]of [[.015,.12,-11],[.48,.61,11],[.86,.96,-11]])for(let s=a*LENGTH;s<b*LENGTH;s+=7){const q=at(s,off),f=ranchFence({span:6.8});f.position.set(q.x,groundAt(q.x,q.z),q.z);f.rotation.y=q.h+Math.PI/2;rails.add(f);}
+  // Two iguanas sun on fence posts beside the course (a post every 2.27 m, 1.65 m tall).
+  const posts=[rails.children[3],rails.children[Math.floor(rails.children.length*.55)]].map((f,i)=>{
+    f.updateMatrixWorld(true);const top=f.localToWorld(new THREE.Vector3(i?1.13:-1.13,1.66,0)),along=new THREE.Vector3(1,0,0).transformDirection(f.matrixWorld);
+    return {x:top.x,y:top.y,z:top.z,up:[0,1,0],fwd:along.toArray(),pose:'perch'};
+  });
+  moving.push(placeIguanas(group,posts,{seed:12,scale:1.1}));assetCounts.iguana=posts.length;
   const batched=bake(rails);const oldGeo=new Set();rails.traverse(o=>{if(o.geometry)oldGeo.add(o.geometry);});oldGeo.forEach(g=>g.dispose());group.add(batched);assetCounts['ranch-fence']=rails.children.length;
   const start=at(0),gate=corralGate({span:12,open:1});gate.position.set(start.x,groundAt(start.x,start.z),start.z);gate.rotation.y=start.h;group.add(gate);assetCounts['corral-gate']=1;
   const arch=new THREE.Group();arch.position.copy(gate.position);arch.rotation.y=start.h;

@@ -1,6 +1,6 @@
 // One absolute-time shoreline drives both the visible wash and car response.
 import { THREE,M,box,sign,put,smooth,mix,placeOnTrack } from './world-kit.js';
-import { waterSurface } from '/engine/models/effects/water-surface.js';
+import { waterSurface, sampleWaterWave } from '/engine/models/effects/water-surface.js';
 
 export const TIDE_PERIOD=28;
 export const TIDE_START=.665,TIDE_END=.805;
@@ -57,7 +57,10 @@ export function tidalCrossing(T){
       }
     }
     pos.needsUpdate=true;uv.needsUpdate=true;wash.userData.tick(t);
-    buoys.forEach((b,i)=>{b.position.y=.3+Math.sin(t*1.2+i)*.1;b.rotation.z=Math.sin(t*.8+i)*.055;});
+    buoys.forEach((b,i)=>{
+      const w=sampleWaterWave(b.position.x,b.position.z,t+i*.7,.12);
+      b.position.y=.3+w.y;b.rotation.x=w.pitch;b.rotation.z=w.roll;
+    });
   }
   update(0);geo.computeVertexNormals();geo.computeBoundingBox();geo.computeBoundingSphere();
   group.userData.tide={period:TIDE_PERIOD,start:TIDE_START,end:TIDE_END};

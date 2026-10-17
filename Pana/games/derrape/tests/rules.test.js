@@ -39,7 +39,7 @@ test('cars apart, stacked or both remote never touch', () => {
 });
 
 test('a head-on hit pushes apart, trades momentum by mass and crashes', () => {
-  const a = car({ vx: 6 }), b = car({ x: 3, vx: -6, def: { tune: { mass: 3 } } });
+  const a = car({ vx: 10 }), b = car({ x: 3, vx: -10, def: { tune: { mass: 3 } } });
   const hit = resolveContact(a, b);
   assert.equal(hit.kind, 'crash');
   assert.ok(b.x - a.x >= CAR_RADIUS * 2 - 1e-9);

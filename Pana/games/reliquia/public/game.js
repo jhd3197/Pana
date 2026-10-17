@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { buildCharacter } from '/engine/models/characters/pana/avatar-model.js';
 import { loadAvatar, loadName } from '/engine/avatar.js';
-import { sound } from '/engine/fx.js';
+import { sound, Puffs, Shockwaves, createChargeRing, pulseSpeedLines, popCounter } from '/engine/fx.js';
 import { createGameMenu, toggleMute } from '/engine/ui.js';
 import { ICONS as SVG } from '/engine/icons.js';
 import { inviteUrl, newRoomCode, roomFromUrl } from '/engine/invite.js';
@@ -29,9 +29,14 @@ sun.shadow.mapSize.set(1024, 1024); Object.assign(sun.shadow.camera, { left: -24
 const fill = new THREE.DirectionalLight(0x77bca9, 1.3); fill.position.set(20, 15, -25); scene.add(fill);
 const lanternLight = new THREE.PointLight(0xffc267, 20, 15, 1.8); scene.add(lanternLight);
 const world = createExpeditionWorld(); scene.add(world.group);
+const puffs = new Puffs(scene);
+const shockwaves = new Shockwaves(scene);
+const chargeRing = createChargeRing({ radius: 1.55, color: 0x62f5c8 });
+scene.add(chargeRing.group);
 const camera = new THREE.PerspectiveCamera(48, innerWidth / innerHeight, 0.1, 250);
 let state = new Expedition().snapshot(), paused = false, failed = false, phase = '', lastEvent = 0, last = performance.now(), elapsed = 0, dead = false;
-let yaw = 0.25, pitch = 0.76, zoom = 15, toastTimer, rosterKey = '', uiElapsed = 0;
+let yaw = 0.25, pitch = 0.76, zoom = 15, toastTimer, rosterKey = '', uiElapsed = 0, shake = 0, chargeTickT = 0;
+const prevLatched = { west: false, east: false };
 const cameraTarget = new THREE.Vector3(0, 1.1, 15), temp = new THREE.Vector3(), desired = new THREE.Vector3();
 const actors = new Map(), enemyActors = new Map(), keys = new Set(), touch = new Set();
 const colors = ['#dfb86d', '#81c8c4', '#d2a0a0', '#a3bc74', '#d9966e', '#b7a8ce', '#6ea6d0', '#c1c5a6'];
@@ -79,7 +84,7 @@ function syncActors() {
       const lantern = expeditionLantern(); lantern.position.set(-0.6, 1.25, 0.1); root.add(lantern);
       const blade = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.8, 0.25), new THREE.MeshStandardMaterial({ color: 0xd8d3b4, metalness: 0.55, roughness: 0.35 }));
       blade.position.set(0.8, 1.2, 0.7); blade.rotation.z = -0.4; root.add(blade);
-      actor = { root, character, tag, carried, lantern, blade, skin }; actors.set(p.id, actor);
+      actor = { root, character, tag, carried, lantern, blade, skin, wasDodging: false, afterimageT: 0 }; actors.set(p.id, actor);
     }
     actor.carried.visible = state.carrier === p.id; actor.tag.visible = state.phase === 'playing'; actor.root.visible = !p.spectator;
   }
@@ -89,7 +94,7 @@ function syncActors() {
     const danger = new THREE.Mesh(new THREE.RingGeometry(e.kind === 'guardian' ? 3.55 : 1.9, e.kind === 'guardian' ? 3.8 : 2.2, 48), new THREE.MeshBasicMaterial({ color: 0xff7047, transparent: true, opacity: 0.8, depthWrite: false, side: THREE.DoubleSide }));
     danger.rotation.x = -Math.PI / 2; danger.position.y = 0.06; root.add(danger);
     const hp = new THREE.Mesh(new THREE.PlaneGeometry(1.2, 0.09), new THREE.MeshBasicMaterial({ color: 0xd6b871, side: THREE.DoubleSide })); hp.position.y = e.kind === 'guardian' ? 5.2 : 3; root.add(hp);
-    enemyActors.set(e.id, { root, model, danger, hp });
+    enemyActors.set(e.id, { root, model, danger, hp, prevWindup: 0 });
   }
 }
 function receive(next) {
@@ -100,7 +105,21 @@ function receive(next) {
     if (e.text) notify(e.text);
     if (e.kind === 'hit') sound.bonk(0.2);
     if (e.kind === 'swing') sound.tone(130, 0, 0.08, 'triangle', 0.025);
-    if (['gate', 'relic', 'win', 'revive'].includes(e.kind)) { sound.tone(440, 0, 0.16, 'sine', 0.08); sound.tone(660, 0.12, 0.2, 'sine', 0.06); }
+    if (e.kind === 'supply') {
+      sound.chestOpen('purple');
+      popCounter($('meds'));
+      const p = me();
+      if (p) {
+        shockwaves.ring(new THREE.Vector3(p.x, groundAt(p.x, p.z), p.z), { color: 0x62f5c8, maxRadius: 3.2, duration: 0.55 });
+        shockwaves.sparkle(new THREE.Vector3(p.x, groundAt(p.x, p.z) + 1.1, p.z), { color: 0x62f5c8 });
+      }
+    }
+    if (e.kind === 'relic') {
+      sound.chestOpen('gold');
+      shockwaves.ring(new THREE.Vector3(ALTAR.x, 0, ALTAR.z), { color: 0xffe066, maxRadius: 4.8, duration: 0.65 });
+      shockwaves.sparkle(new THREE.Vector3(ALTAR.x, 1.2, ALTAR.z), { color: 0xffe066 });
+    }
+    if (['gate', 'win', 'revive'].includes(e.kind)) { sound.tone(440, 0, 0.16, 'sine', 0.08); sound.tone(660, 0.12, 0.2, 'sine', 0.06); }
     if (e.kind === 'boss') sound.tone(90, 0, 0.8, 'triangle', 0.1);
     const big = SHOUTS[e.kind]; if (big) shout(big[0], { tone: big[1] });
   }
@@ -227,18 +246,82 @@ function frame(now) {
     temp.set(p.x, groundAt(p.x, p.z), p.z); if (a.root.position.distanceTo(temp) > 8) a.root.position.copy(temp); else a.root.position.lerp(temp, Math.min(1, dt * 16));
     const diff = Math.atan2(Math.sin(p.h - a.character.group.rotation.y), Math.cos(p.h - a.character.group.rotation.y)); a.character.group.rotation.y += diff * Math.min(1, dt * 14);
     a.character.group.rotation.z = p.downed ? 1.3 : p.dodge > 0 ? -0.25 : 0;
-    a.character.update(dt, { walk: p.moving && !p.downed ? 1 : 0, carry: state.carrier === p.id, run: p.dodge > 0, dizzy: p.downed });
+    const dodging = p.dodge > 0;
+    if (dodging && !a.wasDodging) {
+      if (p.id === room.id) { sound.whoosh(); pulseSpeedLines(260, 0.72); }
+      puffs.spawn(new THREE.Vector3(a.root.position.x, a.root.position.y + 0.15, a.root.position.z), {
+        color: 0xd9cdb0, count: 5, size: 0.48, rise: 0.9, life: 0.38, spread: 1.1,
+      });
+      shockwaves.ring(a.root.position, { color: 0x62f5c8, maxRadius: 1.9, duration: 0.34, opacity: 0.65 });
+    }
+    a.wasDodging = dodging;
+    if (dodging) {
+      a.character.group.scale.set(0.84, 0.86, 1.24);
+      a.afterimageT -= dt;
+      if (a.afterimageT <= 0) {
+        a.afterimageT = 0.065;
+        shockwaves.afterimage(a.character.group, { color: 0x62f5c8, duration: 0.22 });
+      }
+    } else {
+      a.character.group.scale.lerp(new THREE.Vector3(1, 1, 1), Math.min(1, dt * 14));
+    }
+    a.character.update(dt, { walk: p.moving && !p.downed ? 1 : 0, carry: state.carrier === p.id, run: dodging, dizzy: p.downed });
     a.blade.visible = !p.downed && state.carrier !== p.id;
     const angle = p.h + (p.attack > 0 ? (1 - p.attack / 0.3) * 3 - 1.5 : 0.5);
     a.blade.position.set(Math.sin(angle) * (p.attack > 0 ? 1.7 : 0.8), 1.35, Math.cos(angle) * (p.attack > 0 ? 1.7 : 0.8)); a.blade.rotation.y = angle; a.blade.rotation.z = p.attack > 0 ? 1.2 : -0.4;
   }
+  const localP = me();
   for (const e of state.enemies) {
     const a = enemyActors.get(e.id); temp.set(e.x, groundAt(e.x, e.z), e.z); a.root.position.lerp(temp, Math.min(1, dt * 15));
     a.model.rotation.y = e.h; a.model.userData.animate(elapsed + e.id, e.windup <= 0, e.windup > 0);
     a.model.position.y = e.hit > 0 ? 0.12 : 0; a.danger.visible = e.windup > 0; a.danger.material.opacity = 0.55 + Math.sin(elapsed * 18) * 0.2;
+    if (a.prevWindup > 0 && (e.windup || 0) <= 0) {
+      if (e.kind === 'guardian') {
+        shockwaves.explode(a.root.position, { radius: 4.2, scorch: true });
+        puffs.spawn(new THREE.Vector3(a.root.position.x, a.root.position.y + 0.35, a.root.position.z), {
+          color: 0xbdab7d, count: 10, size: 0.65, rise: 1.9, life: 0.65, spread: 2.8,
+        });
+        sound.explode(1.1);
+        if (localP) {
+          const d = distance(localP, e);
+          if (d < 28) shake = Math.min(0.9, shake + (1 - d / 28) * 0.72);
+        }
+      } else {
+        shockwaves.ring(a.root.position, { color: 0xff7047, maxRadius: 2.2, duration: 0.35, opacity: 0.65 });
+      }
+    }
+    a.prevWindup = e.windup || 0;
     a.hp.scale.x = Math.max(0.01, e.hp / e.maxHp); a.hp.quaternion.copy(camera.quaternion); a.hp.visible = e.hp < e.maxHp;
   }
-  const p = me(), a = p && actors.get(p.id);
+  for (const w of WINCHES) {
+    const latched = (state.winches?.[w.id]?.latched || 0) > 0;
+    if (latched && !prevLatched[w.id]) {
+      shockwaves.ring(new THREE.Vector3(w.x, groundAt(w.x, w.z), w.z), { color: 0x62f5c8, maxRadius: 3.6, duration: 0.5 });
+      sound.clickUp();
+    }
+    prevLatched[w.id] = latched;
+  }
+  const p = localP, a = p && actors.get(p.id);
+  const holdTarget = state.phase === 'playing' && p ? interaction(state, p) : null;
+  if (holdTarget && holdTarget.progress > 0 && holdTarget.progress < 1) {
+    const anchor = holdTarget.kind === 'winch' ? WINCHES.find(w => w.id === holdTarget.id)
+      : holdTarget.kind === 'revive' ? state.players.find(q => q.id === holdTarget.id)
+      : CAMP;
+    if (anchor) {
+      chargeRing.set(anchor.x, groundAt(anchor.x, anchor.z), anchor.z, holdTarget.progress);
+      chargeTickT -= dt;
+      if (chargeTickT <= 0) {
+        chargeTickT = 0.14;
+        sound.tick(Math.floor(holdTarget.progress * 10));
+      }
+    } else chargeRing.hide();
+  } else {
+    chargeRing.hide();
+    chargeTickT = 0;
+  }
+  puffs.update(dt);
+  shockwaves.update(dt);
+  shake = Math.max(0, shake - dt * 2.4);
   if (state.phase === 'lobby') {
     const mobile = innerWidth < 761;
     camera.position.set(mobile ? 25 : 29, mobile ? 33 : 26, mobile ? 34 : 33);
@@ -246,7 +329,13 @@ function frame(now) {
   } else if (a) {
     temp.copy(a.root.position); temp.y += 1.1; cameraTarget.lerp(temp, Math.min(1, dt * 8));
     desired.set(Math.sin(yaw) * Math.cos(pitch) * zoom, Math.sin(pitch) * zoom, Math.cos(yaw) * Math.cos(pitch) * zoom).add(cameraTarget);
-    camera.position.lerp(desired, Math.min(1, dt * 10)); camera.lookAt(cameraTarget);
+    camera.position.lerp(desired, Math.min(1, dt * 10));
+    if (shake > 0) {
+      camera.position.x += (Math.random() - 0.5) * shake * 0.7;
+      camera.position.y += (Math.random() - 0.5) * shake * 0.7;
+      camera.position.z += (Math.random() - 0.5) * shake * 0.7;
+    }
+    camera.lookAt(cameraTarget);
     sun.position.set(p.x - 16, 35, p.z + 23); sun.target.position.set(p.x, 0, p.z);
     const destination = state.relicTaken ? CAMP : !state.gateOpen ? { x: 40, z: -38 } : ALTAR;
     $('compass-arrow').style.transform = `rotate(${Math.atan2(destination.x - p.x, -(destination.z - p.z)) + yaw}rad)`;
@@ -260,6 +349,7 @@ function frame(now) {
 show('loading', false); room.connect(); requestAnimationFrame(frame);
 addEventListener('pagehide', () => {
   dead = true; clearInterval(ticker); clearTimeout(toastTimer); room.dispose(); menu.dispose?.(); unbind?.();
+  puffs.clear(); shockwaves.clear(); chargeRing.dispose();
   actors.forEach(removeActor); enemyActors.forEach(a => disposeObject(a.root)); world.dispose(); renderer.dispose();
 });
 if (qs.has('debug')) window.reliquia = { room, scene, camera, renderer, actors, enemyActors, world, menu, input, WINCHES, CAMP, ALTAR,

@@ -1,3 +1,4 @@
+import { random, inputFor } from '../online-rules.js';
 // ¡No te caigas! Four panas on a raft, a striped log sweeping around a
 // post. Jump it or take a swim. It speeds up, and sometimes flips direction.
 
@@ -16,7 +17,7 @@ const JUMP = 8, G = 22;          // clears the log if you jump 0.12–0.61 s bef
 
 // how early an AI pana jumps this pass; mistakes get likelier as it speeds up
 function aiTiming(clock) {
-  if (Math.random() < 0.03 + clock * 0.004) return pick([0.04, rand(0.66, 0.8)]);
+  if (random() < 0.03 + clock * 0.004) return pick([0.04, rand(0.66, 0.8)]);
   return rand(0.18, 0.45);
 }
 const wrap = (a) => Math.atan2(Math.sin(a), Math.cos(a));
@@ -92,7 +93,7 @@ export default {
     shout.sprite.position.set(0, 3.4, 0);
     scene.add(shout.sprite);
 
-    const camera = new THREE.PerspectiveCamera(50, innerWidth / innerHeight, 0.1, 400);
+    const camera = new THREE.PerspectiveCamera(50, (ctx.aspect || innerWidth / innerHeight), 0.1, 400);
     camera.position.set(0, 12.5, 15.5);
     camera.lookAt(0, 0.4, 0.6);
 
@@ -157,7 +158,7 @@ export default {
         }
         // jumping
         if (a.player.human && !ctx.auto) {
-          if (input.jump) jump(a);
+          if (inputFor(input, a.i).jump) jump(a);
         } else {
           // time until the next arm sweeps through us
           const [g1, g2] = gaps(a.phi).map((g) => (dir > 0 ? g : -g));

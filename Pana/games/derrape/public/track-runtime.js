@@ -1,6 +1,9 @@
 // Geometry/runtime shared by the race and Studio's individual map previews.
 import * as THREE from 'three';
 import * as kit from './track-kit.js';
+import { plankHeight, isOpenEdge, OPEN_MARGIN } from './course-rules.js';
+import { raceDetails } from './tracks/race-details.js';
+import { roadMaterial } from './tracks/road-material.js';
 
 // ---------- geometry backends ----------
 // The original stadium oval, kept verbatim so lap logic never regresses.
@@ -173,15 +176,15 @@ function buildRibbon(T, pal) {
     const N = Math.max(240, Math.round(T.TOTAL / 0.7));
     const verts = [];
     const idx = [];
+    const offsets=T.def.crossfall?[T.HW,0,-T.HW]:[T.HW,-T.HW],columns=offsets.length;
     for (let i = 0; i <= N; i++) {
       const s = (i / N) * T.TOTAL;
       const p = kit.placeOnTrack(T, s, 0);
       const tx = Math.sin(p.h), tz = Math.cos(p.h);
       // left edge (off +HW) = (-tz, tx) side, right edge = (tz, -tx)
-      verts.push(p.x - tz * T.HW, p.y, p.z + tx * T.HW, p.x + tz * T.HW, p.y, p.z - tx * T.HW);
+      for(const off of offsets){const x=p.x-tz*off,z=p.z+tx*off;verts.push(x,T.def.crossfall?T.surfaceAt(x,z):p.y,z);}
       if (i < N) {
-        const a = i * 2;
-        idx.push(a, a + 1, a + 2, a + 1, a + 3, a + 2);
+        for(let j=0;j<columns-1;j++){const a=i*columns+j;idx.push(a,a+1,a+columns,a+1,a+columns+1,a+columns);}
       }
     }
     geo = new THREE.BufferGeometry();
@@ -189,7 +192,10 @@ function buildRibbon(T, pal) {
     geo.setIndex(idx);
     geo.computeVertexNormals();
   }
-  const m = new THREE.Mesh(geo, new THREE.MeshStandardMaterial({ color: pal.track, roughness: 1, flatShading: true, side: THREE.DoubleSide }));
+  const material = roadMaterial(pal.track, ['selva','llanos','desierto','bululu','delta','salto'].includes(T.id));
+  const m = new THREE.Mesh(geo, material);
+  m.userData.dispose = () => material.dispose();
+  m.name='track-road';
   m.position.y = T.def.environment ? 0.12 : 0.03;
   m.receiveShadow = true;
   return m;
@@ -226,10 +232,33 @@ export function makeTrack(def) {
     return def.elevation(p.x, p.y);
   } : () => 0;
   T.surfaceAt = def.elevation ? (x, z) => T.heightAtS(geo.paramOf(x, z)) : () => 0;
+  if(def.crossfall)T.surfaceAt=(x,z)=>{const s=geo.paramOf(x,z);return T.heightAtS(s)+def.crossfall(s,geo.offsetOf(x,z),T);};
   T.terrainAt = (x, z) => terrainHeight(T, def.palette, x, z);
+  // Shortcut plank roads: { from: [u, offset], to: [u, offset], w, arch }.
+  const along = (u, off) => {
+    const s = u * geo.TOTAL, p = geo.pointAt(s), q = geo.pointAt(s + 0.5);
+    const tx = q.x - p.x, tz = q.y - p.y, l = Math.hypot(tx, tz) || 1;
+    return { x: p.x - tz / l * off, z: p.y + tx / l * off, y: T.heightAtS(s) };
+  };
+  T.shortcuts = (def.shortcuts || []).map(sc => ({ ...sc, a: along(...sc.from), b: along(...sc.to), w: sc.w ?? 6 }));
+  T.drops = def.drops || [];
+  T.plankAt = (x, z) => {
+    for (const sc of T.shortcuts) { const y = plankHeight(sc, x, z); if (y != null) return y; }
+    return null;
+  };
+  // Past an open edge (or far off the road) the real ground takes over, so
+  // a car that leaves the course falls to it.
+  T.openAt = (x, z, off = geo.offsetOf(x, z)) => {
+    const a = Math.abs(off);
+    if (a <= T.HW + 0.4) return false;
+    return a > T.HW + OPEN_MARGIN || isOpenEdge(T.drops, geo.paramOf(x, z) / geo.TOTAL, Math.sign(off));
+  };
   T.groundAt = (x, z) => {
+    const plank = T.shortcuts.length ? T.plankAt(x, z) : null;
+    if (plank != null) return plank;
     const base = T.surfaceAt(x, z);
     const off = geo.offsetOf(x, z);
+    if (!def.offroad && T.openAt(x, z, off)) return Math.min(base, T.terrainAt(x, z));
     if(def.offroad&&Math.abs(off)>T.HW) {
       const blend=THREE.MathUtils.smoothstep(Math.abs(off),T.HW,T.HW+2);
       return THREE.MathUtils.lerp(base,T.terrainAt(x,z),blend);
@@ -269,6 +298,7 @@ export function makeTrack(def) {
     if (def.fence) kit.fenceRing(group, T, def.fence);
     if (def.chevrons !== false) kit.chevrons(group, T);
     kit.buildRamps(group, T);
+    for (const sc of T.shortcuts) group.add(kit.plankRoad(T, sc));
     yield 'Terminando el paisaje…';
     // Shared environments are attached first; only collect track-owned ticks.
     const scenery = new THREE.Group();
@@ -278,6 +308,7 @@ export function makeTrack(def) {
     kit.sectorSigns(scenery, T);
     scenery.traverse((o) => { if (o.userData.tick) T.animated.push(o); });
     group.add(scenery);
+    group.add(raceDetails(T));
     T.group = group;
     return group;
   };

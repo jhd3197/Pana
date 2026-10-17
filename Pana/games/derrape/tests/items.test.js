@@ -55,3 +55,15 @@ test('swept collisions catch a pickup between frames and reject nearby misses', 
   assert.equal(segmentDistanceSq(10, 0, -8, 0, 8, 0), 4);
   assert.equal(segmentDistanceSq(1, 1, 0, 0, 0, 0), 2);
 });
+
+test('triple items carry three charges and ten coins power up the next item', async () => {
+  const { isJuiced, AIMED } = await import('../public/item-rules.js');
+  const c = racer();
+  addItem(c, 'jugo3', 0);
+  assert.equal(activeItem(c).n, 3);
+  consumeItem(c);
+  assert.equal(activeItem(c).n, 2);
+  assert.equal(isJuiced({ coins: 9 }), false);
+  assert.equal(isJuiced({ coins: 10 }), true);
+  assert.ok(AIMED.has('cohete') && AIMED.has('trampa') && !AIMED.has('totuma') && !AIMED.has('aguacero'));
+});

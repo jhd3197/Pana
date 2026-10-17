@@ -27,6 +27,25 @@ The board and race islands have different geography. Their fish use the same
 factory, but each environment owns its placements. The board's existing
 `createIslandEnvironment` remains independent of the Los Roques race terrain.
 
+## Iguanas (plan 57)
+
+The `iguana` model was built for ¡Chinazo! and placed on six maps without
+waiting in the preview-only list. Map iguanas come from
+`/engine/placement/iguanas.js`: `iguana({ lite: true })` bakes the pose into two
+meshes (body, head) with no shadow, and only `tick` runs (breathing and the
+head bob; lite iguanas don't blink). Each map ticks its group from its own
+update. They are not in `assetCounts` where a test counts exact pack types
+(Desierto); each instance carries `userData.assetId = 'iguana'` and a 0.7 m
+footprint for the map-assets audit.
+
+| Map | Placement |
+| --- | --- |
+| Isla Bululú | Four on the beach rocks nearest the southern shore (rocks already avoid every tile's camera line), one on the lighthouse islet and one clinging to the lighthouse tower. Initial board view: +8 draw calls (+1.5%) and +0.2% triangles; three meshes per iguana measured +2.4%, so the eyes merged into the head. |
+| Desierto (Derrape) | One on Pana Gas's canopy roof, one clinging to the station wall beside the door, two on the scree boulders nearest the start line. |
+| Curiara | Two in the `perch` pose on bare limbs that lean out over the caño (s = 95 and 205), about 5 m above the water. |
+| Galope | Two on course-side ranch-fence posts (`perch`), one in each of two fence runs. |
+| Plaza (Escondidas, Cocina, Plaza circuit) | One clinging to the church's front wall above the PLAZA PANA sign, outside the playable bounds. |
+
 ## Library models still awaiting placement
 
 These remain honestly marked `Pana Studio`; they were not forced into unsuitable

@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import {loadAvatar} from '/engine/avatar.js';
-import {createRider} from './rider.js';
+import {createRider} from '/engine/models/fauna/farm/llanero-rider.js';
 
 // Hub tile uses the same horse, tack and saved pana as the actual race.
 export function mount(canvas){

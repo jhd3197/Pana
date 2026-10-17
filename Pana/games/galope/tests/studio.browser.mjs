@@ -24,7 +24,7 @@ try{
     check(tourPose(model.route,0).position.distanceTo(tourPose(model.route,model.route.TOTAL).position)<1e-6,'lap seam');
     document.querySelector('#tour-play').click();tour.step(.1);check(tour.distance>0,'tour did not advance');document.querySelector('#tour-play').click();const stopped=tour.distance;tour.step(.1);check(tour.distance===stopped,'pause moved');
     const range=document.querySelector('#tour-progress');range.value=250;range.dispatchEvent(new Event('input'));check(Math.abs(tour.distance-model.route.TOTAL*.25)<.01,'scrub');
-    await document.querySelector('#tour-copy').onclick();check(copied.includes('#galope')&&copied.includes('25.0 %'),'copy point');
+    await document.querySelector('#tour-copy').onclick();check(copied.includes('/studio/assets/galope')&&copied.includes('25.0 %'),'copy point');
     document.querySelector('#tour-overview').click();check(!tour.active&&stage.camera.fov===34,'overview did not restore');
     const {llaneroHorse}=await import('/engine/models/fauna/farm/llanero-horse.js');
     const horse=llaneroHorse({locomotion:true}),skin=horse.getObjectByName('AnimalSkin'),idle=llaneroHorse();

@@ -8,6 +8,40 @@ islands, lighthouse, boats, clouds), `landscape.js` (organic islets and layered
 tepuis), `terrain-material.js` (procedural cliff weathering), `beach.js`
 (coastal props), `atmosphere.js` (day/night lighting and sky) and `minigames/*.js`.
 
+## Online play
+
+Bululú has four seats (`game.json` and `server/room.js`). A `?room=` link joins
+immediately; a direct visit offers **Jugar online** and **Jugar con bots**.
+`network.js` extends the shared `HostRoom`; it does not own connections or host
+election. The host chooses rounds and starts. Open seats remain bots.
+
+The host runs the board's async turn flow and publishes typed presentation and
+game snapshots at 10 Hz. A choice carries a prompt ID and is accepted only from
+its owner; stale and duplicate clicks cannot advance another player's turn.
+`online-view.js` reconstructs presentation with text nodes, never network HTML.
+Opening the menu blocks that player's controls but does not pause an online room.
+
+Minigames receive an array of per-seat controls through `inputFor()`; the old
+single input still works for practice. Their game-only randomness comes from
+`online-rules.js`, separate from Three.js UUIDs, effects and sound. The host sends
+the seed, frozen roster and exact simulation steps at 20 Hz. Guests replay those
+steps, including the initial update and outro. Keep gameplay random calls on this
+stream and pass it explicitly into pure sims. Chinazo uses a common 16:9 camera
+aspect online so screen-space hits agree on differently sized displays.
+
+Only the current minigame's history is retained. A guest arriving or reloading
+can request missing steps in chunks of 60; no payload approaches the room kit's
+256 KB limit. The roster freezes during a minigame; newly joined panas take a bot
+spot at the next board turn/minigame boundary. Host handoff restores the latest
+turn/minigame checkpoint (repeating that unfinished turn or minigame), preserving
+earlier coins, mangos and results. Never restore partially awarded prizes.
+An elected host must restore that runner before ticking a guest's replay: replay
+instances have no `finish` continuation. Prompt IDs include the host's seat so an
+answer in flight cannot accidentally answer a new host's first prompt. The host's
+**Otra vez** resets the board and scores in the same room for a rematch.
+
+Regression: `npm run test:browser -- bululu` includes real two-client room play.
+
 ## Test switches
 
 `?auto` (the AI plays you too), `?speed=3`, `?rounds=2`, `?mini=caigas`
@@ -113,4 +147,106 @@ flow bugs and check balance.
   just behind everyone, a whole lap off: 1 mango per game and 40–50 unspent
   coins. With "ahead" it's 6–7 mangos per game.
 - **Two dice**: a sum of 2–12, doubles give +5 monedas, and a gold counter sprite
-  counts down the steps.
+  counts down the steps. `createDie().show()` paints the +Z face (material 4).
+  The settling `Matrix4.lookAt(camera, die, up)` already points +Z at the
+  camera; adding a half-turn exposes the fixed four on the -Z face instead.
+  `tests/dice.browser.mjs` raycasts the visible face and counts its painted pips
+  for all six values on both dice. Guests must repaint stopped dice even when
+  `value` is unchanged: spinning changes the painted face independently of the
+  last result. The same suite checks repeated results with two real clients.
+- **Minigame order** comes from `rules.minigameBag`: each minigame once per
+  pass, shuffled, never the same twice in a row. `?mini=` still forces one.
+- **¡Caída! tuning** (simulated, 4 AIs, 40 games): a plain shuffled deck gives a
+  caída about 1 card in 13, far too rare for 30 s. Nudging the next card to match
+  30% of the time and dealing every 1.15 s down to 0.7 s gives about 7 caídas a
+  game. A card counts as a match once 60% through its flip. A match always stays
+  up at least 1.05 s, so AI reaction (0.30–0.62 s, ~0.08 s faster by the end) fits
+  inside it. Scores may go negative, or spamming Space would cost nothing at 0.
+  The rank is painted big on the felt under each spot: the cards' corner numbers
+  are unreadable at a party-game camera distance.
+- **Spanish cards** live in `/engine/models/props/spanish-cards.js`, shared with
+  Caída.
+- **¡Un, dos, tres, momia! tuning** (simulated, 150 games): AI reactions must be
+  timed from when she *starts* turning, not from the current state's clock. The
+  turn → watch hand-off resets `stateT`, and an AI that re-reacts there runs
+  straight into a catch. Freezing takes ~0.1 s (velocity eases at 20/s), the
+  grace is 0.4 s, AI reacts in 0.12–0.26 s with a 10% chance of being late.
+  Speed 1.8 over an 18.5-unit causeway, counts 0.8–2.2 s and looks of 1.4–2.4 s
+  give ~19 s games. No fake turn right after another: two in a row let the
+  whole field sprint home in 7 s.
+- **¡Coleo!** scrolls the world, not the camera: everything has a forward
+  distance `s` drawn at `z = -(s - anchor)`, and fences, palms and grass recycle
+  every 240 m. That's why `sunnyStage` takes `decor: false` (its fixed palms
+  would ride along). The bull is `hatoCow({locomotion: true})`: the farm rig now
+  builds running legs for cows as well as horses, keeping the udder and belly
+  on the body. The rider is `/engine/models/fauna/farm/llanero-rider.js`.
+- **¡Coleo! balance** (simulated, 100 games): pushing overlapping horses only
+  sideways froze the riders in their starting left-to-right row, and the end
+  seats won 2–3× as often. Near the bull, the horse farther from its line now
+  drops back instead, so riders cut behind each other. Tail window 2.5–3.9 m
+  behind and ±0.65 m across, bull swerving at 3.4 m/s every 1–1.9 s, a new bull
+  18 m ahead: about 8 tumbles a game. `stats()` reports grabs, misses, bulls and
+  time anyone was in reach.
+- **¡Embuste!** (from the full game, `docs/knowledge/embuste.md`): one of the
+  four panas is secretly a mummy, picked at random and possibly you. 19 s of
+  cranking winches (a real crank lights that pana's lantern; a mummy's crank
+  puffs sand 28% of the time, 63% when cranked within 0.28 s of the last), 8 s
+  to vote with ← → and Space, then the verdict. AI panas vote for whoever they
+  saw puff most, with a little noise; an AI mummy cranks a bit slower and votes
+  for a random pana. Catching the mummy pays every pana 50, plus 50 for voting
+  it; an uncaught mummy takes 100. Live chips stay at 0 until the verdict so
+  the scores can't give the mummy away. `stats()` reports the mummy, its sand
+  and the votes.
+- **Aim minigames** export `input: 'aim'`: `minigameInput()` returns
+  `{aim: {x, y}, pull, fire}` with `aim` in NDC. The mouse moves the reticle and
+  a press pulls; WASD / arrows steer it (0.8 NDC/s, rising to 2.3 over 0.45 s)
+  and Space pulls and releases; on touch a drag moves it 3× the finger (a
+  finger would hide an absolute reticle) and lifting fires. The pointer
+  handlers sit on the canvas only between `bindAim(true)` and the outro, so
+  the minimap and board never see them; `mini-aim` on the body hides the
+  cursor and the touch buttons, and on phones moves the cards to a slim row
+  at the top (at the bottom they covered the wall). A module can return
+  `reticles()` and the runner draws one per pana in `#reticles`.
+  `setPointerCapture` throws on synthetic events: it's in a try.
+- **¡Chinazo!** (`minigames/chinazo-sim.js` + `chinazo.js`): the stone lands
+  where the reticle was when it left, 0.25–0.42 s later, and hits the nearest
+  thing under that spot *then*, so everything is tested in screen space with
+  the sim's own copy of the camera. Tuning (`tests/chinazo.test.js`, 200 runs):
+  the plan's AI (0.25–0.5 s to pick, firing within 1.5 radii) let a simulated
+  decent human (perfect lead, 0.2 s) win 97%: the game is a reaction race
+  for scarce iguanas. What worked: bots pick in 0.22–0.34 s, fire within 0.7
+  hitbox radii (at 1.5 most stones missed even a still iguana), track the
+  lead point with feed-forward, skip an iguana someone's stone is already
+  flying at, and leave one to a pana whose reticle is clearly closer. Seats:
+  four home spots made the outer seats win ~30% and the inner ~19% (two
+  rivals each); two panas per screen half evens it out; the wall spans the
+  whole patio and sunbathers appear on both sides; shooters act in a fresh
+  order every frame. Result: 24–26% per seat, the decent human ~35%. Iguanas
+  are drawn 2.2× life size with a 1.3× hitbox. The falling iguana rustles
+  the leaves 0.5 s before it drops (0.6 s on screen); the AI ignores it.
+- **2D minigames** export `input: '2d'`: `minigameInput()` adds `z` (W/S, ↑/↓),
+  W stops being jump for them, and the body gets `mini-2d`, which swaps the
+  left/jump/right touch row for the kit's `.pk-dpad` plus an action button.
+- **¡Choque de carritos!** steers screen-relative (the d-pad points where the
+  kart should go, and it turns toward that), not like a car: with a fixed top-down
+  camera, relative steering fights the d-pad. The karts are
+  `/engine/models/vehicles/cars.js` `CAR_BUILDERS` at 0.72 scale; Derrape's
+  `cars.js` joins them to its stats. A kart that drops credits whoever drove
+  into it in the last 3 s. Simulated: ~17 knockouts per 45 s game.
+
+- **River minigames** (¡Remada!, ¡Raudal!, ¡Remolino!): their rules live in
+  `minigames/river-sims.js` (pure, no THREE) so `tests/river-minigames.test.js`
+  plays 200 all-AI rounds each for plan 52's balance rule (every seat wins
+  15–35%; nobody-scores runs fail the test). The modules only draw the sims.
+  Paddling is Curiara's model (`/engine/paddle.js`): a stroke is `x` reaching
+  ±1 (`axisStroke`), so A/D taps alternate. Canoes are
+  `/engine/models/vehicles/curiara.js`; `river-stage.js` adds water, banks and
+  actors. ¡Remada!: 120 m, AIs finish in ~22–30 s. ¡Raudal!: four parallel
+  rapids share one seeded pattern (rocks, mangos, a ledge every 5th row); a
+  jump counts .08–.45 s before the ledge, rocks cost a mango and .9 s of stun.
+  ¡Remolino!: canoes point outward on their own; the eye grows 1.6→6.5 m and
+  the pull 1.2→6.8 m/s, so even good rhythm drifts in by the end. Starting
+  in pairs and a swirl of 3.4/r made AIs meet and shove; spaced evenly they
+  never touched. ¡Toninas! (2v2 fruit) waits for team support in the runner.
+
+Plan 56: createTepui uses the shared waterfall factory with an explicit sloped run; the terrain heightAt and board routes are unchanged. Its update uses absolute time instead of texture-offset/sprite animation.

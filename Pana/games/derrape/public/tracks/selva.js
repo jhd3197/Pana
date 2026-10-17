@@ -11,6 +11,7 @@ export default {
   previewBounds:[[-225,0,-300],[370,85,130]],
   sectors:[[0,'Río turquesa'],[0.25,'Sendero de los tucanes'],[0.43,'Túnel del jaguar'],[0.6,'Bosque de ceibas'],[0.78,'La cascada']],
   ramps:[{u:0.30,len:9,h:1.8,hw:4.2},{u:0.82,len:9,h:2.2,hw:4.2}],
+  rain:0.7,
   items:{boxes:[0.12,0.31,0.51,0.72,0.91],boxLanes:[-6,-2,2,6],pads:[{u:0.26,off:0},{u:0.72,off:-4}]},
   walls:false,fence:false,
   offroad:{fullAt:4.5,speed:0.36,accel:0.48,drag:0.75},

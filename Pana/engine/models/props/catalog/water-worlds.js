@@ -1,0 +1,10 @@
+// Pure metadata; previews call the same factories placed in the circuits.
+export default [
+  {id:'waterfall-curtain',name:'Cortina de cascada',category:'Costa',source:'/engine/models/effects/waterfall.js',factory:'waterfall',usedBy:['Derrape','Bululú'],previewOptions:{width:14,height:28},pack:'water-worlds',description:'Cortina vertical con espuma y niebla local; animación reversible.'},
+  {id:'palafito-house',name:'Casa palafito',category:'Vida llanera',source:'/engine/models/props/delta.js',factory:'palafitoHouse',usedBy:['Derrape'],previewOptions:{variant:1,color:6856344},pack:'water-worlds',description:'Casa de tablas sobre pilotes, porche y acceso al embarcadero.'},
+  {id:'landing-shelter',name:'Cobertizo del embarcadero',category:'Vida llanera',source:'/engine/models/props/delta.js',factory:'landingShelter',usedBy:['Derrape','Galope'],previewOptions:null,pack:'water-worlds',description:'Plataforma cubierta de madera; ancho, fondo y altura del piso configurables.'},
+  {id:'stalactite-cluster',name:'Estalactitas del río',category:'Selva',source:'/engine/models/props/caves.js',factory:'stalactiteCluster',usedBy:['Derrape'],previewOptions:{seed:56},pack:'water-worlds',description:'Formaciones calcáreas colgantes; origen en el techo.'},
+  {id:'root-curtain',name:'Cortina de raíces',category:'Selva',source:'/engine/models/props/caves.js',factory:'rootCurtain',usedBy:['Derrape'],previewOptions:{length:6},pack:'water-worlds',description:'Raíces y hojas que descienden de una abertura; origen en el techo.'},
+  {id:'salt-pile',name:'Montón de sal',category:'Costa',source:'/engine/models/props/saltworks.js',factory:'saltPile',usedBy:['Derrape'],previewOptions:{seed:56},pack:'water-worlds',description:'Sal cosechada en un montón irregular junto al patio de carga.'},
+  {id:'sluice-gate',name:'Compuerta salinera',category:'Costa',source:'/engine/models/props/saltworks.js',factory:'sluiceGate',usedBy:['Derrape'],previewOptions:null,pack:'water-worlds',description:'Tablones, guías y volante para comunicar los estanques.'},
+];

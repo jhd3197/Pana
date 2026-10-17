@@ -1,3 +1,4 @@
+import { menuClick, menuStep } from './menu-helpers.js';
 // npm start, then node this file. Uses the same optional runtime paths as maps.browser.js.
 import assert from 'node:assert/strict';
 import { createRequire } from 'node:module';
@@ -19,6 +20,7 @@ try {
   await page.goto(`${origin}/g/derrape/?debug&manual&track=estadio`);
   await page.waitForFunction(() => window.garage?.car);
   assert.equal(await page.locator('.car-choice').count(), 8);
+  await menuStep(page, 'car');
   for (let i = 0; i < 8; i++) {
     await page.locator('.car-choice').nth(i).click();
     const car = await page.evaluate(() => {
@@ -35,7 +37,7 @@ try {
     await page.screenshot({ path: join(output, `garage-${i}.png`) });
   }
   await page.locator('.car-choice').first().click();
-  await page.locator('#play').click();
+  await menuClick(page, '#play');
   await page.waitForFunction(() => race.state === 'count');
 
   const pickups = await page.evaluate(async () => {
@@ -63,6 +65,9 @@ try {
     for (let i = 0; i < 490; i++) items.update(1 / 60, [], true);
     const coinRespawn = collected.m.visible && collected.down === 0;
     // Prepared active item stays ready while its reserve is opening.
+    // Some coin rows overlap supply rows: reset the inventory earned while
+    // visiting coins before isolating this active/reserve assertion.
+    c.inventory = [null, null]; c.selected = 0;
     addItem(c, 'mango', 0); addItem(c, 'jugo', 0.65);
     items.update(1 / 60, [c], true);
     const guardVisible = race.trackGroup.getObjectByName('held-mango')?.visible;
@@ -78,7 +83,7 @@ try {
     const place = (c, s) => {
       const a = T.pointAt(s), b = T.pointAt(s + 0.5);
       Object.assign(c, { x: a.x, z: a.y, y: T.groundAt(a.x, a.y), h: Math.atan2(b.x - a.x, b.y - a.y),
-        done: false, isPlayer: true, vx: 0, vz: 0, vf: 0, spin: 0, boost: 0, inventory: [null, null], selected: 0, lost: 0 });
+        done: false, isPlayer: true, vx: 0, vz: 0, vf: 0, spin: 0, boost: 0, phaseT: 0, impacts: [], coins: 0, inventory: [null, null], selected: 0, lost: 0 });
     };
     const reset = () => { race.items.clear(); place(owner, T.LINE + 35); place(victim, T.LINE + 48); };
     const step = () => { for (let i = 0; i < 100 && race.items.projectiles.length; i++) race.items.update(1 / 60, [owner, victim], true); };
@@ -154,7 +159,7 @@ try {
   const clean = await page.evaluate(() => race.items.fragments.pieces.length === 0 && race.items.projectiles.length === 0 &&
     !race.trackGroup.getObjectByName('held-mango'));
   assert.ok(clean, 'garage cleanup');
-  await page.locator('#play').click();
+  await menuClick(page, '#play');
   await page.waitForFunction(() => race.state === 'count');
   assert.equal(await page.evaluate(() => race.player.coinsCollected), 0);
   assert.deepEqual(await page.evaluate(() => race.player.inventory), [null, null]);
@@ -173,6 +178,10 @@ try {
   mobile.on('pageerror', error => errors.push(String(error)));
   await mobile.goto(`${origin}/g/derrape/?debug&manual&track=estadio`);
   await mobile.waitForFunction(() => window.garage?.car);
+  await mobile.locator('.pana-rotate').waitFor({state:'visible'});
+  await mobile.evaluate(async()=>{const {setSettings}=await import('/engine/settings.js');setSettings({orientation:'vertical'});});
+  await mobile.locator('.pana-rotate').waitFor({state:'hidden'});
+  await menuStep(mobile, 'car');
   const framed = await mobile.evaluate(async () => {
     const THREE = await import('three');
     garage.car.root.updateWorldMatrix(true, true);
@@ -185,7 +194,7 @@ try {
   });
   assert.ok(framed, 'portrait garage frames the entire car');
   await mobile.screenshot({ path: join(output, 'mobile-garage.png') });
-  await mobile.locator('#play').tap();
+  await menuClick(mobile, '#play');
   await mobile.waitForFunction(() => race.state === 'count');
   await mobile.evaluate(async () => {
     race.state = 'go'; race.count = 0;
@@ -201,8 +210,8 @@ try {
     const speed = document.querySelector('#speedo').getBoundingClientRect();
     const controls = [...document.querySelectorAll('.touch-drive button')].map(b => b.getBoundingClientRect());
     return { fits: item.x >= 0 && item.right <= speed.x && speed.right <= innerWidth && item.bottom <= innerHeight,
-      touchSize: controls.every(r => r.width >= 44 && r.height >= 44),
-      noOverlap: controls.every(r => r.bottom <= item.y) };
+      touchSize: controls.every(r => r.width >= 44 && r.height >= 44 && r.left >= 0 && r.right <= innerWidth),
+      noOverlap: controls.every(r => r.bottom <= item.y || r.top >= item.bottom || r.right <= item.left || r.left >= item.right) };
   });
   assert.ok(hud.fits && hud.touchSize && hud.noOverlap, 'mobile HUD and touch targets fit');
   await mobile.setViewportSize({ width: 320, height: 740 });

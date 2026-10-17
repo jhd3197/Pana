@@ -25,12 +25,14 @@ same room.
 
 | Game | What it is | Players |
 |---|---|---|
-| **Derrape** | Toy-car racing on eight circuits, with items, coins and swappable wheels | 1–8, online rooms |
+| **Derrape** | Toy-car racing on twelve circuits and three four-race Grand Prix cups, with items, coins and swappable wheels | 1–8 online; local split screen |
 | **Bululú** | Party board game on Mango Island, with a minigame every round | 1 vs bots |
 | **Escondidas** | Prop hunt in a market plaza: hide as a barrel, crate or bench | 1–8, bots fill in |
 | **Pana Cocina** | Cooperative three-minute cooking rush: arepas, cachapas, tequeños | 1–8, bot helpers |
 | **Galope** | Horse racing around a Llanos ranch, through esteros and over logs | 1–8, bots fill in |
 | **Reliquia** | Cooperative expedition into a mine and the temple beneath it | 1–8 |
+| **¡Embuste!** | Social deduction at the night camp: who is the mummy? | 4–8 online, bots for practice |
+| **Curiara** | Dugout-canoe race down the Amazonas: paddle in rhythm, alone or in pairs | 1–8, bots fill in |
 | **Dominó** | Partnership dominoes to 100 at a 3D plaza table | 1–4, bots fill seats |
 | **Caída** | Spanish cards to 24 points, individual or in pairs | 1–4, bots fill seats |
 

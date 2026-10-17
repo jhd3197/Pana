@@ -4,6 +4,9 @@ import * as THREE from 'three';
 import { rng } from '/engine/models/core/primitives.js';
 import { SEA, fbm, smooth } from './island-terrain.js';
 import { terrainMaterial } from './terrain-material.js';
+import { waterfall as waterfallEffect } from './models/effects/waterfall.js';
+import { waterPool } from './models/effects/water-surface.js';
+import { tickWind } from './models/vegetation/plant-kit.js';
 
 const sand = new THREE.Color(0xe7d3a0);
 const grass = new THREE.Color(0x679c4c);
@@ -77,41 +80,6 @@ export function createIslet({ radius = 40, height = 18, seed = 1, wooded = true 
   return { group, heightAt };
 }
 
-function waterfallTexture() {
-  const canvas = document.createElement('canvas');
-  canvas.width = 128; canvas.height = 256;
-  const ctx = canvas.getContext('2d'), random = rng(712);
-  const gradient = ctx.createLinearGradient(0, 0, 128, 0);
-  gradient.addColorStop(0, 'rgba(224,249,255,0)');
-  gradient.addColorStop(0.2, 'rgba(224,249,255,0.6)');
-  gradient.addColorStop(0.5, 'rgba(255,255,255,0.9)');
-  gradient.addColorStop(0.8, 'rgba(224,249,255,0.6)');
-  gradient.addColorStop(1, 'rgba(224,249,255,0)');
-  ctx.fillStyle = gradient;
-  ctx.fillRect(0, 0, 128, 256);
-  for (let i = 0; i < 85; i++) {
-    const x = 14 + random() * 100, y = random() * 256;
-    ctx.fillStyle = `rgba(255,255,255,${0.12 + random() * 0.38})`;
-    ctx.fillRect(x, y, 1 + random() * 2.5, 15 + random() * 70);
-  }
-  const texture = new THREE.CanvasTexture(canvas);
-  texture.colorSpace = THREE.SRGBColorSpace;
-  texture.wrapT = THREE.RepeatWrapping;
-  texture.repeat.y = 3;
-  return texture;
-}
-
-function mistTexture() {
-  const canvas = document.createElement('canvas');
-  canvas.width = canvas.height = 128;
-  const ctx = canvas.getContext('2d'), g = ctx.createRadialGradient(64, 64, 4, 64, 64, 64);
-  g.addColorStop(0, 'rgba(255,255,255,0.7)');
-  g.addColorStop(0.4, 'rgba(255,255,255,0.4)');
-  g.addColorStop(1, 'rgba(255,255,255,0)');
-  ctx.fillStyle = g; ctx.fillRect(0, 0, 128, 128);
-  return new THREE.CanvasTexture(canvas);
-}
-
 export function createTepui({ width = 115, depth = 75, height = 130, seed = 1, waterfall = false } = {}) {
   const group = new THREE.Group(), random = rng(seed);
   // Rock shelves interrupt the vertical wall; a broad talus apron grounds it.
@@ -178,43 +146,22 @@ export function createTepui({ width = 115, depth = 75, height = 130, seed = 1, w
   }
   addForest(group, points, seed + 1);
 
-  const mist = [], texture = waterfall ? waterfallTexture() : null;
+  let fall = null, pool = null;
   if (waterfall) {
     const a = Math.PI / 2, crestZ = depth * 0.64 * contour(a), footZ = depth * 1.13 * contour(a);
     const top = heightAt(0, crestZ - 0.4) + 0.5, bottom = heightAt(0, footZ) + 0.4;
-    const positions = [], uv = [], triangles = [];
-    for (let i = 0; i <= 48; i++) {
-      const t = i / 48, w = 2.2 + t * t * 4.5;
-      const z = crestZ + 6 + (footZ - crestZ - 6) * t * t;
-      for (const side of [-1, 1]) { positions.push(side * w + Math.sin(t * 7) * 0.35, top + (bottom - top) * t, z); uv.push((side + 1) / 2, 1 - t); }
-      if (i < 48) { const k = i * 2; triangles.push(k, k + 1, k + 2, k + 1, k + 3, k + 2); }
-    }
-    const geo = new THREE.BufferGeometry();
-    geo.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
-    geo.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2));
-    geo.setIndex(triangles); geo.computeVertexNormals();
-    const water = new THREE.Mesh(geo, new THREE.MeshStandardMaterial({ map: texture, color: 0xd6f3f5, transparent: true, roughness: 0.25, side: THREE.DoubleSide, depthWrite: false, emissive: 0x244858, emissiveIntensity: 0.15 }));
-    water.name = 'Tepui waterfall'; group.add(water);
-    const pool = new THREE.Mesh(new THREE.CircleGeometry(13, 40), new THREE.MeshStandardMaterial({ color: 0x54adb2, roughness: 0.2 }));
-    pool.rotation.x = -Math.PI / 2; pool.scale.y = 0.6; pool.position.set(0, bottom + 0.03, footZ + 3);
+    fall = waterfallEffect({ width: 11, height: top - bottom, run: footZ - crestZ - 6, seed });
+    fall.position.set(0, bottom, footZ); group.add(fall);
+    pool = waterPool(13, 7.8, { color: 0x54adb2, depth: 3.5 });
+    pool.position.set(0, bottom + 0.03, footZ + 3);
     group.add(pool);
-    const map = mistTexture();
-    for (let i = 0; i < 10; i++) {
-      const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map, color: 0xf2ffff, transparent: true, opacity: 0.35, depthWrite: false }));
-      sprite.userData = { x: (random() - 0.5) * 14, y: bottom + 3 + random() * 7, z: footZ + (random() - 0.5) * 12, phase: random() * 6 };
-      sprite.scale.set(16 + random() * 12, 10 + random() * 10, 1);
-      group.add(sprite); mist.push(sprite);
-    }
   }
   return {
     group, heightAt,
-    update(t, daylight = 1) {
-      if (texture) texture.offset.y = t * 0.34;
-      for (const puff of mist) {
-        const d = puff.userData;
-        puff.position.set(d.x + Math.sin(t * 0.16 + d.phase) * 4, d.y + Math.sin(t * 0.3 + d.phase) * 1.5, d.z);
-        puff.material.opacity = (0.2 + Math.sin(t * 0.4 + d.phase) * 0.07) * (0.45 + daylight * 0.55);
-      }
+    update(t) {
+      tickWind(t);
+      fall?.userData.tick(t);
+      pool?.userData.tick(t);
     },
   };
 }

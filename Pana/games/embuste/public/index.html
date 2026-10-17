@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#0e0b24"><meta name="description" content="Trajeron la reliquia al campamento. Esta noche una momia se esconde entre tus panas: haz las tareas, reúnanse en la fogata y descubran quién es.">
+  <title>¡Embuste! · ¿Quién es la momia?</title>
+  <link rel="stylesheet" href="/engine/kit.css"><link rel="stylesheet" href="/engine/ui.css"><link rel="stylesheet" href="style.css">
+  <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}</script>
+</head>
+<body>
+  <canvas id="world" aria-label="El campamento de noche"></canvas>
+  <div id="dark" class="dark" aria-hidden="true"></div>
+  <header class="topbar"><nav id="game-nav" aria-label="Opciones del juego"></nav></header>
+  <div id="loading" class="pk-loading" role="status"><span class="pk-ribbon">Una noche de Pana</span><b class="pk-title">¡Embuste!</b><p class="pk-copy">Prendiendo la fogata…</p></div>
+
+  <section id="lobby" class="pk-lobby lobby hidden" aria-labelledby="title">
+    <div class="pk-lobby-top"><a class="pk-back" href="/">← Todos los juegos</a><a class="pk-logo" href="/" aria-label="Pana">PANA</a></div>
+    <span class="pk-ribbon">Esta noche, en el campamento</span>
+    <div><h1 id="title" class="pk-title">¡Embuste!</h1><p class="pk-eyebrow subtitle">¿Quién es la momia?</p></div>
+    <p class="pk-copy"><b>Trajeron la reliquia al campamento.</b> Esta noche, uno de tus panas amaneció con vendas debajo de la camisa. Mantén la reliquia encendida hasta que llegue el bote… y descubre quién es la momia.</p>
+    <div class="pk-stats"><div class="pk-stat"><b>4–8</b><span>panas, cada uno en su pantalla</span></div><div class="pk-stat"><b id="stat-mummies">1–2</b><span>momias disfrazadas</span></div><div class="pk-stat"><b>1</b><span>noche hasta el bote</span></div></div>
+    <div class="pk-field"><span class="pk-eyebrow">Panas en la fogata</span><div id="lobby-team" class="lobby-team" aria-label="Panas en la sala"></div></div>
+    <div id="lobby-options" class="lobby-options">
+      <div class="option-row"><span id="opt-bots-label">Completar con bots de práctica</span><button id="opt-bots" class="pk-switch" role="switch" aria-checked="true" aria-labelledby="opt-bots-label"></button></div>
+      <div class="option-row"><span id="opt-reveal-label">Decir si el expulsado era momia</span><button id="opt-reveal" class="pk-switch" role="switch" aria-checked="true" aria-labelledby="opt-reveal-label"></button></div>
+      <div class="option-row"><span id="opt-chat-label">Chat libre en las reuniones</span><button id="opt-chat" class="pk-switch" role="switch" aria-checked="true" aria-labelledby="opt-chat-label"></button></div>
+    </div>
+    <div class="pk-lobby-foot">
+      <div class="pk-lobby-room"><i class="pk-dot" aria-hidden="true"></i><span id="connection" class="connection" role="status">Prendiendo la fogata…</span></div>
+      <div class="pk-lobby-cta" id="lobby-cta"><button id="start" class="pk-btn pk-btn--primary pk-btn--lg" disabled>Conectando…</button></div>
+      <button id="practice" class="pk-btn pk-btn--ghost pk-btn--sm">Practicar con bots en este navegador</button>
+      <p id="lobby-note" class="solo-note">Cada pana juega en su propio teléfono o computadora. Invítalos con el enlace de la sala.</p>
+    </div>
+  </section>
+
+  <aside id="story" class="story hidden" aria-label="La historia">
+    <span class="pk-eyebrow">Cuaderno de expedición · última noche</span>
+    <b class="pk-heading">Lo logramos.<br>¿O no?</b>
+    <p>Sacamos la reliquia del sol del templo y la trajimos al campamento. Esta noche celebramos en la fogata con arepas; el bote llega al amanecer.</p>
+    <p>Pero la reliquia despertó algo. Uno o dos panas tienen vendas debajo de la camisa: <b>momias disfrazadas</b> que quieren la reliquia de vuelta.</p>
+    <p>Mientras brille, la maldición espera. Prendan los faroles, giren el malacate, arreglen la radio… y si sale el sol, las momias vuelven a ser panas (un poco avergonzados).</p>
+  </aside>
+  <section id="reveal" class="reveal hidden" aria-live="polite">
+    <span class="pk-ribbon" id="reveal-ribbon">Esta noche eres…</span>
+    <h2 id="reveal-title" class="pk-title">Un pana</h2>
+    <p id="reveal-copy" class="pk-copy"></p>
+  </section>
+
+  <main id="hud" class="hidden">
+    <aside class="tasks pk-panel">
+      <span class="pk-eyebrow">Tareas · <em id="zone">La fogata</em></span>
+      <h2 id="objective">Mantén la reliquia encendida</h2>
+      <ul id="task-list" class="steps"></ul>
+    </aside>
+    <div class="dawn pk-panel"><span class="pk-eyebrow">Hasta el amanecer</span><div id="dawn-bar" class="pk-bar"><i></i></div></div>
+    <div id="alarm" class="alarm pk-panel hidden" role="alert"><b id="alarm-title"></b><span id="alarm-copy"></span><div id="alarm-bar" class="pk-bar"><i></i></div></div>
+    <aside class="map-wrap pk-panel"><canvas id="minimap" width="174" height="196" aria-label="Mapa del campamento"></canvas></aside>
+    <div id="hidden-note" class="hidden-note pk-panel hidden" role="status"><b id="hidden-title"></b><span id="hidden-copy"></span></div>
+    <div id="ghost-note" class="ghost-note pk-panel hidden"><b>Eres una momiita</b><span>Atraviesas paredes y puedes seguir haciendo tareas. En las reuniones no puedes hablar.</span></div>
+    <div class="actions pk-touch-zone">
+      <button id="report" class="pk-btn pk-btn--coral action-button" disabled><kbd class="pk-kbd">R</kbd><span>Reportar</span></button>
+      <button id="wrap" class="pk-btn pk-btn--coral action-button mummy-only hidden" disabled><kbd class="pk-kbd">Q</kbd><span>Envolver</span><i id="wrap-cool" class="cool"></i></button>
+      <button id="sabotage" class="pk-btn action-button mummy-only hidden"><kbd class="pk-kbd">F</kbd><span>Sabotaje</span><i id="sabotage-cool" class="cool"></i></button>
+      <button id="disguise" class="pk-btn action-button mummy-only hidden"><kbd class="pk-kbd">C</kbd><span id="disguise-label">Disfraz</span></button>
+      <button id="vent" class="pk-btn pk-btn--teal action-button hidden"><kbd class="pk-kbd">V</kbd><span>Al otro lado</span></button>
+      <button id="use" class="pk-btn pk-btn--primary action-button use" disabled><kbd class="pk-kbd">E</kbd><span id="use-label">Usar</span><i id="use-fill"></i></button>
+    </div>
+    <div id="sabotage-menu" class="sabotage-menu pk-panel hidden" role="menu" aria-label="Sabotajes"></div>
+    <div id="disguise-menu" class="sabotage-menu disguise-menu pk-panel hidden" role="menu" aria-label="Disfraces"></div>
+    <div class="controls pk-hints" data-pana-hint><span><b>W A S D</b> Moverte</span><span><b>E</b> Usar · mantén para reparar</span><span><b>R</b> Reportar</span></div>
+    <div class="touch-controls pk-touch-zone pk-dpad" aria-label="Movimiento"><button class="pk-touch" data-icon="up" data-move="up" aria-label="Arriba"></button><button class="pk-touch" data-icon="left" data-move="left" aria-label="Izquierda"></button><button class="pk-touch" data-icon="down" data-move="down" aria-label="Abajo"></button><button class="pk-touch" data-icon="right" data-move="right" aria-label="Derecha"></button></div>
+    <div id="disconnect" class="disconnect pk-panel hidden">Se cortó la conexión. <button id="offline-inline" class="pk-btn pk-btn--sm">Practicar con bots</button></div>
+  </main>
+
+  <section id="task" class="task-layer hidden" aria-labelledby="task-title">
+    <div class="pk-modal task-card">
+      <div class="task-head"><span class="pk-eyebrow" id="task-where"></span><h2 id="task-title" class="pk-heading"></h2><button id="task-close" class="pk-btn pk-btn--sm pk-btn--ghost" aria-label="Cerrar tarea">Salir</button></div>
+      <p id="task-hint" class="task-hint"></p>
+      <div id="task-body" class="task-body"></div>
+    </div>
+  </section>
+
+  <section id="meeting" class="meeting hidden" aria-labelledby="meeting-title">
+    <div class="pk-modal meeting-card">
+      <div class="meeting-head">
+        <div><span id="meeting-eyebrow" class="pk-ribbon">Reunión en la fogata</span><h2 id="meeting-title" class="pk-title">¡Reunión!</h2><p id="meeting-copy" class="pk-copy"></p></div>
+        <div class="meeting-clock"><b id="meeting-time" class="pk-num">0</b><span id="meeting-stage">para hablar</span></div>
+      </div>
+      <ol id="vote-list" class="vote-list" aria-label="Panas en la reunión"></ol>
+      <div class="meeting-foot">
+        <button id="skip" class="pk-btn pk-btn--ghost">No votar (saltar)</button>
+        <div class="chat">
+          <ol id="chat-log" class="chat-log" aria-live="polite"></ol>
+          <div id="phrases" class="phrases"></div>
+          <form id="chat-form" class="chat-form"><input id="chat-input" maxlength="80" autocomplete="off" placeholder="Escribe a tus panas…" aria-label="Mensaje"><button class="pk-btn pk-btn--sm" type="submit">Enviar</button></form>
+        </div>
+      </div>
+    </div>
+  </section>
+  <div id="eject" class="eject hidden" aria-live="polite"><b id="eject-title"></b><span id="eject-copy"></span></div>
+
+  <div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
+  <section id="results" class="pk-results hidden" aria-labelledby="result-title"><div class="pk-modal pk-results-card result-paper">
+    <span id="result-eyebrow" class="pk-ribbon">Amaneció</span><h2 id="result-title" class="pk-title">¡Llegó el bote!</h2><p id="result-copy" class="pk-copy"></p>
+    <ol id="result-roster" class="pk-roster"></ol>
+    <button id="again" class="pk-btn pk-btn--primary pk-btn--lg pk-btn--block">Otra noche</button>
+    <button id="to-lobby" class="pk-btn pk-btn--ghost pk-btn--block">Volver a la fogata</button>
+    <a class="pk-back" href="/">← Todos los juegos</a>
+  </div></section>
+  <script type="module">import('./game.js').catch(error => { console.error(error); const el = document.getElementById('loading'); el.textContent = 'No pudimos prender la fogata. Revisa tu conexión y WebGL, y recarga la página.'; el.classList.remove('hidden'); });</script>
+</body>
+</html>

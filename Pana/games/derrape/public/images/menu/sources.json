@@ -1,0 +1,179 @@
+{
+  "note": "User-provided artwork. Original PNGs are preserved in the sibling pana-photos/generated folder. Map art is illustrative; track-map draws the actual route.",
+  "images": [
+    {
+      "file": "salinas.webp",
+      "source": "Pastel Salt Lagoon Racetrack.png",
+      "width": 960,
+      "bytes": 133448
+    },
+    {
+      "file": "salinas-thumb.webp",
+      "source": "Pastel Salt Lagoon Racetrack.png",
+      "width": 320,
+      "bytes": 22172
+    },
+    {
+      "file": "cuevas.webp",
+      "source": "Tropical Canyon Cave Racetrack.png",
+      "width": 960,
+      "bytes": 163656
+    },
+    {
+      "file": "cuevas-thumb.webp",
+      "source": "Tropical Canyon Cave Racetrack.png",
+      "width": 320,
+      "bytes": 29256
+    },
+    {
+      "file": "delta.webp",
+      "source": "Tropical Wetland River Delta Racetrack.png",
+      "width": 960,
+      "bytes": 184886
+    },
+    {
+      "file": "delta-thumb.webp",
+      "source": "Tropical Wetland River Delta Racetrack.png",
+      "width": 320,
+      "bytes": 29832
+    },
+    {
+      "file": "salto.webp",
+      "source": "Tropical Waterfall Racing Circuit.png",
+      "width": 960,
+      "bytes": 152232
+    },
+    {
+      "file": "salto-thumb.webp",
+      "source": "Tropical Waterfall Racing Circuit.png",
+      "width": 320,
+      "bytes": 28596
+    },
+    {
+      "file": "bululu.webp",
+      "source": "Tropical Island Racing Paradise.png",
+      "width": 960,
+      "bytes": 146748
+    },
+    {
+      "file": "bululu-thumb.webp",
+      "source": "Tropical Island Racing Paradise.png",
+      "width": 320,
+      "bytes": 24404
+    },
+    {
+      "file": "plaza.webp",
+      "source": "Colorful Coastal Town Racetrack Diorama.png",
+      "width": 960,
+      "bytes": 199244
+    },
+    {
+      "file": "plaza-thumb.webp",
+      "source": "Colorful Coastal Town Racetrack Diorama.png",
+      "width": 320,
+      "bytes": 34366
+    },
+    {
+      "file": "selva.webp",
+      "source": "Tropical Jungle Racing Island.png",
+      "width": 960,
+      "bytes": 193656
+    },
+    {
+      "file": "selva-thumb.webp",
+      "source": "Tropical Jungle Racing Island.png",
+      "width": 320,
+      "bytes": 31016
+    },
+    {
+      "file": "desierto.webp",
+      "source": "Desert Oasis Racing Map.png",
+      "width": 960,
+      "bytes": 120986
+    },
+    {
+      "file": "desierto-thumb.webp",
+      "source": "Desert Oasis Racing Map.png",
+      "width": 320,
+      "bytes": 22826
+    },
+    {
+      "file": "llanos.webp",
+      "source": "Tropical Wetlands Racing Circuit.png",
+      "width": 960,
+      "bytes": 230992
+    },
+    {
+      "file": "llanos-thumb.webp",
+      "source": "Tropical Wetlands Racing Circuit.png",
+      "width": 320,
+      "bytes": 33544
+    },
+    {
+      "file": "paramo.webp",
+      "source": "Mountain Pass Cable Car Raceway.png",
+      "width": 960,
+      "bytes": 181920
+    },
+    {
+      "file": "paramo-thumb.webp",
+      "source": "Mountain Pass Cable Car Raceway.png",
+      "width": 320,
+      "bytes": 29770
+    },
+    {
+      "file": "chichi.webp",
+      "source": "Tropical Mountain Racing Island.png",
+      "width": 960,
+      "bytes": 181924
+    },
+    {
+      "file": "chichi-thumb.webp",
+      "source": "Tropical Mountain Racing Island.png",
+      "width": 320,
+      "bytes": 28342
+    },
+    {
+      "file": "estadio.webp",
+      "source": "Tropical Kart Racing Paradise.png",
+      "width": 960,
+      "bytes": 156682
+    },
+    {
+      "file": "estadio-thumb.webp",
+      "source": "Tropical Kart Racing Paradise.png",
+      "width": 320,
+      "bytes": 28966
+    },
+    {
+      "file": "raceAtmosphere.webp",
+      "source": "pana_festival_floating_atmosphere.png",
+      "width": 1600,
+      "bytes": 146394
+    },
+    {
+      "file": "raceForeground.webp",
+      "source": "pana_festival_foreground_extracted.png",
+      "width": 1600,
+      "bytes": 40730
+    },
+    {
+      "file": "raceActors.webp",
+      "source": "Capybara Rally Cars Racing.png",
+      "width": 1600,
+      "bytes": 183122
+    },
+    {
+      "file": "raceBackground.webp",
+      "source": "Sunlit Festive Hillside Village Street.png",
+      "width": 1600,
+      "bytes": 225898
+    },
+    {
+      "file": "raceMaster.webp",
+      "source": "Mediterranean Capybara Street Race.png",
+      "width": 1600,
+      "bytes": 183300
+    }
+  ]
+}

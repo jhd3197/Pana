@@ -69,9 +69,22 @@ with `roomState({ ...fields }, Member.extend({ ...memberFields }, 'Name'))`, cal
 `left`, `hostChanged` instead of overriding `onJoin`/`onLeave`. Browser side:
 `joinRoom('<game>', options)` and listen on the link. See `derrape-online.md`.
 
+When players must not see each other's data (¡Embuste!'s roles), run the game
+in the room and `client.send()` each seat its own filtered view instead of
+putting it in the shared state; see `embuste.md`.
+
 ## Proof
 
 Each migrated game keeps its own two-client browser suite (`games/<game>/tests/`).
 Run the server, then the suite with the Playwright path. Mobile portrait pages in
 some suites currently stop on the shared "rotate to landscape" dialog; that is not
 a network failure.
+
+### Full-room errors through the Colyseus HTTP adapter
+
+Colyseus 0.18's Node adapter passes a matchmaking `ServerError.code` to HTTP
+`writeHead`. A WebSocket-style 4009 code is not a valid HTTP status: its thrown
+range error falls through to a misleading 404. The room kit now uses 409 for
+capacity rejection; the client accepts 409 and legacy 4009. The plan-56
+`cup-failures.browser.js` capacity case joins eight independent sessions and
+asserts the ninth receives `full: true`, through the actual HTTP/SDK path.

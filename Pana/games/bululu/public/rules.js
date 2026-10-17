@@ -101,3 +101,21 @@ export function brindis(players, p) {
   }
   return total;
 }
+
+// Which minigame plays next: every one once per pass, shuffled, and never the
+// same one twice in a row across passes. Returns a draw() function.
+export function minigameBag(ids, random = Math.random) {
+  let bag = [], last = null;
+  return () => {
+    if (!bag.length) {
+      bag = [...ids];
+      for (let i = bag.length - 1; i > 0; i--) {
+        const j = Math.floor(random() * (i + 1));
+        [bag[i], bag[j]] = [bag[j], bag[i]];
+      }
+      if (bag.length > 1 && bag[bag.length - 1] === last) [bag[0], bag[bag.length - 1]] = [bag[bag.length - 1], bag[0]];
+    }
+    last = bag.pop();
+    return last;
+  };
+}

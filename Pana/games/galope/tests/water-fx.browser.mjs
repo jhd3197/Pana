@@ -42,7 +42,7 @@ try{
     window.waterModules={THREE,createHorseWaterFX};return {draws,triangles,maxSurface,maxSpray,pause:true,airborne:true,landing:true,dry:true,stopped:true,disposal:true};
   });
   await page.evaluate(async()=>{
-    const {THREE,createHorseWaterFX}=waterModules,{createRaceScene}=await import('/g/galope/scene.js'),course=await import('/g/galope/course.js'),{createRider}=await import('/g/galope/rider.js'),{loadAvatar}=await import('/engine/avatar.js');
+    const {THREE,createHorseWaterFX}=waterModules,{createRaceScene}=await import('/g/galope/scene.js'),course=await import('/g/galope/course.js'),{createRider}=await import('/engine/models/fauna/farm/llanero-rider.js'),{loadAvatar}=await import('/engine/avatar.js');
     const w=createRaceScene(document.querySelector('canvas'));w.renderer.setSize(1440,900,false);w.camera.aspect=1.6;w.camera.updateProjectionMatrix();
     const rider=createRider(loadAvatar(),'palomino',7);w.scene.add(rider.group);const riders=new Map([['horse',rider]]);
     const p={id:'horse',x:57,z:42,h:1.05,speed:6,jumpY:0},fx=createHorseWaterFX({waterY:course.WATER_Y,depthAt:course.waterDepth});w.scene.add(fx.group);

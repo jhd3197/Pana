@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#20856c">
+  <title>Billar · Pana</title>
+  <link rel="stylesheet" href="/engine/kit.css">
+  <link rel="stylesheet" href="/engine/ui.css">
+  <link rel="stylesheet" href="./style.css">
+  <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}</script>
+</head>
+<body class="in-lobby">
+  <header class="game-header">
+    <a class="pk-logo" href="/" aria-label="Pana, todos los juegos">PANA</a>
+    <span class="game-name">BILLAR</span>
+    <nav id="game-nav" aria-label="Menú del juego"></nav>
+  </header>
+  <main>
+    <section id="welcome" class="pk-lobby" aria-labelledby="title">
+      <a class="pk-back" href="/">← Todos los juegos</a>
+      <span class="pk-ribbon">La mesa de los panas</span>
+      <h1 id="title" class="pk-title">Billar</h1>
+      <p class="pk-copy intro">Una buena puntería.<br>Una última bola negra.</p>
+      <p class="pk-copy">Invita a un pana, mete las de tu grupo y deja la ocho para el final.</p>
+      <div class="pk-stats"><div class="pk-stat"><b>2</b><span>panas</span></div><div class="pk-stat"><b>15</b><span>bolas</span></div><div class="pk-stat"><b>8</b><span>al final</span></div></div>
+      <button id="rules" class="pk-btn pk-btn--ghost">Cómo se juega</button>
+      <div class="pk-lobby-foot">
+        <span id="room-code" class="pk-lobby-room"></span>
+        <p id="connection" class="pk-copy" role="status">Preparando la mesa…</p>
+        <button id="start" class="pk-btn pk-btn--primary pk-btn--lg pk-btn--block" disabled>Esperando a tu pana</button>
+        <div id="lobby-invite-slot"></div>
+        <button id="practice" class="pk-btn pk-btn--ghost pk-btn--block">Practicar a solas</button>
+      </div>
+    </section>
+    <section class="table-area" aria-label="Mesa de billar">
+      <div id="players" class="players">
+        <article id="player-0" class="player pk-panel"><img id="portrait-0" alt="" hidden><div><b id="name-0">Tu pana</b><span id="group-0">Mesa abierta</span><div id="balls-0" class="ball-track"></div></div></article>
+        <span class="versus">8</span>
+        <article id="player-1" class="player pk-panel"><img id="portrait-1" alt="" hidden><div><b id="name-1">Tu pana</b><span id="group-1">Mesa abierta</span><div id="balls-1" class="ball-track"></div></div></article>
+      </div>
+      <div class="table-wrap"><canvas id="table" tabindex="0" aria-label="Mesa: toca o arrastra para apuntar. Usa las flechas para afinar y espacio para tirar."></canvas></div>
+      <div class="table-caption"><span>BOLA OCHO</span><span>ENTRE PANAS</span></div>
+    </section>
+    <section id="play-controls" class="play-controls" hidden aria-label="Controles de tiro">
+      <div class="turn-copy"><b id="turn-status" aria-live="polite"></b><p id="message" role="status"></p></div>
+      <div class="shot-controls">
+        <label class="power-control" for="power"><span>Fuerza <output id="power-value">65%</output></span><input id="power" type="range" min="5" max="100" value="65"></label>
+        <div class="fine-controls pk-touch-zone"><button id="aim-left" class="pk-touch pk-touch--sm" data-icon="left" aria-label="Apuntar a la izquierda"></button><button id="aim-right" class="pk-touch pk-touch--sm" data-icon="right" aria-label="Apuntar a la derecha"></button></div>
+        <button id="shoot" class="pk-btn pk-btn--primary pk-btn--lg">Tirar <kbd class="pk-kbd" data-pana-hint>Espacio</kbd></button>
+      </div>
+      <p class="input-tip" data-pana-hint>Arrastra para apuntar · ← → afinar · ↑ ↓ fuerza · Espacio tirar</p>
+    </section>
+    <div id="recovery" class="pk-panel" hidden><p id="recovery-copy" role="status"></p><button id="local-fallback" class="pk-btn pk-btn--primary">Practicar a solas</button></div>
+  </main>
+  <section id="results" class="pk-results" hidden aria-labelledby="result-title">
+    <div class="pk-modal pk-results-card">
+      <span class="pk-ribbon">Mesa terminada</span><h2 id="result-title" class="pk-title"></h2>
+      <p id="result-copy" class="pk-copy"></p><ol id="result-board" class="pk-roster"></ol>
+      <button id="again" class="pk-btn pk-btn--primary pk-btn--block">La revancha</button>
+      <a class="pk-back" href="/">← Todos los juegos</a>
+    </div>
+  </section>
+  <p id="toast" role="status" hidden></p>
+  <script type="module" src="./game.js"></script>
+</body>
+</html>

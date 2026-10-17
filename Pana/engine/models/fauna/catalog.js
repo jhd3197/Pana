@@ -1,6 +1,49 @@
 // Model metadata only: no Three.js, construction or game imports.
 export default [
   {
+    id: 'flamingo', name: 'Flamenco de las salinas', category: 'Fauna',
+    source: '/engine/models/fauna/birds/flamingo.js', factory: 'flamingo',
+    usedBy: ['Derrape'], previewOptions: {pose:'stand',seed:7}, pack: 'wildlife',
+    description: 'Ave rosada de patas largas, cuello curvo y pico negro; poses de descanso y alimentación para colonias en aguas someras.',
+    tags: ['animal','fauna','ave','salinas','costa'],
+  },
+  {
+    id: "tonina",
+    name: "Tonina (delfín rosado)",
+    category: "Fauna",
+    source: "/engine/models/fauna/aquatic/tonina.js",
+    factory: "tonina",
+    usedBy: ["Curiara"],
+    previewOptions: {"seed":7},
+    description: "Amazonas y Orinoco: delfín de río rosado con pico largo, frente abombada y cresta baja; la cola late al nadar.",
+    tags: ["animal","fauna","delfín","río","animado"],
+    pack: "wildlife"
+  },
+  {
+    id: "caiman",
+    name: "Babo",
+    category: "Fauna",
+    source: "/engine/models/fauna/caiman.js",
+    factory: "caiman",
+    usedBy: ["Curiara"],
+    previewOptions: {"seed":7},
+    description: "Caimán de anteojos tendido en la orilla como un tronco; abre las fauces y embiste con snap().",
+    tags: ["animal","fauna","caimán","río","animado"],
+    pack: "wildlife"
+  },
+  {
+    id: "morpho",
+    name: "Mariposas morpho",
+    category: "Fauna",
+    source: "/engine/models/fauna/morpho.js",
+    factory: "morphoSwarm",
+    usedBy: ["Curiara"],
+    previewOptions: {"seed":7,"count":5,"radius":1.5},
+    description: "Selva: morphos azules iridiscentes que revolotean en círculos sobre el caño.",
+    tags: ["animal","fauna","mariposa","animado"],
+    pack: "wildlife"
+  },
+  {
     id: "scarlet-macaw",
     name: "Guacamaya roja",
     category: "Fauna",
@@ -107,6 +150,54 @@ export default [
     description: "Fauna marina de Pana: peces con aletas y cola animadas en las aguas de ambas islas.",
     tags: ["pez","agua","isla","animado"],
     pack: "reef"
+  },
+  {
+    id: "iguana",
+    name: "Iguana tomando sol",
+    category: "Fauna",
+    source: "/engine/models/fauna/iguana.js",
+    factory: "iguana",
+    usedBy: ["Bululú","Derrape","Curiara","Galope","Escondidas","Cocina"],
+    previewOptions: {"seed":7,"pose":"sun"},
+    description: "Iguana verde echada al sol con las patas abiertas: respira, parpadea y cabecea. Papada, escama redonda en la mejilla, cresta de espinas y cola anillada.",
+    tags: ["animal","fauna","iguana","reptil","animado"],
+    pack: "wildlife"
+  },
+  {
+    id: "iguana-perch",
+    name: "Iguana en la rama",
+    category: "Fauna",
+    source: "/engine/models/fauna/iguana.js",
+    factory: "iguana",
+    usedBy: ["Bululú","Curiara","Galope"],
+    previewOptions: {"seed":7,"pose":"perch"},
+    description: "La misma iguana agarrada a una rama, con la cola colgando.",
+    tags: ["animal","fauna","iguana","reptil","animado"],
+    pack: "wildlife"
+  },
+  {
+    id: "iguana-run",
+    name: "Iguana corriendo",
+    category: "Fauna",
+    source: "/engine/models/fauna/iguana.js",
+    factory: "iguana",
+    usedBy: ["Bululú"],
+    previewOptions: {"seed":7,"pose":"run","demo":"run"},
+    description: "Pose de carrera: patas en diagonal y la cola que se balancea, para corretear por ramas y paredes.",
+    tags: ["animal","fauna","iguana","reptil","animado"],
+    pack: "wildlife"
+  },
+  {
+    id: "iguana-golden",
+    name: "Iguana dorada",
+    category: "Fauna",
+    source: "/engine/models/fauna/iguana.js",
+    factory: "iguana",
+    usedBy: ["Bululú"],
+    previewOptions: {"seed":7,"golden":true,"pose":"sun","demo":"bonk"},
+    description: "La iguana de bonus de ¡Chinazo!: dorada y brillante. Aquí repite el bonk(): se voltea, patalea con estrellitas y se endereza.",
+    tags: ["animal","fauna","iguana","reptil","animado"],
+    pack: "wildlife"
   },
   {
     id: "beach-crab",

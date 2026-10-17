@@ -7,6 +7,7 @@
   <link rel="stylesheet" href="/engine/kit.css">
   <link rel="stylesheet" href="/engine/ui.css">
   <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="menu.css">
   <script type="importmap">
     { "imports": {
       "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
@@ -15,8 +16,12 @@
   </script>
 </head>
 <body>
+  <section id="menu-boot" class="menu-boot pk-loading" aria-busy="true" aria-label="Preparando Derrape">
+    <img src="./images/menu/raceMaster.webp" alt="" fetchpriority="high">
+    <div><h1>DERRAPE</h1><p role="status">Preparando el garaje…</p><a href="/" class="pk-btn pk-btn--sm">Volver al Hub</a></div>
+  </section>
   <!-- ---------- garage ---------- -->
-  <div id="garage" class="screen">
+  <div id="garage" class="screen menu-pending">
     <header class="bar">
       <a class="pk-btn pk-btn--sm hub-link" href="/">‹ Hub</a>
       <div class="brand">DERRAPE <span>garaje</span></div>
@@ -47,6 +52,7 @@
       <button id="cam" class="toggle pk-btn pk-btn--sm">Ver piloto</button>
       <button id="honk" class="toggle pk-btn pk-btn--sm">¡Pita! <kbd class="pk-kbd">H</kbd></button>
       <button id="spin" class="toggle pk-btn pk-btn--sm on">Girar</button>
+      <button id="open-shop" type="button" class="toggle pk-btn pk-btn--sm shop-open">Taller · <b id="wallet-coins">0</b> monedas</button>
       <span class="hint" data-pana-hint>Arrastra para girar · rueda para acercar</span>
     </div>
     <nav id="car-lineup" class="car-lineup" aria-label="Elige tu carro"></nav>
@@ -79,6 +85,40 @@
         <label class="lobby-bots"><input id="lobby-bots" type="checkbox" checked> Completar con rivales</label>
         <p id="lobby-status" class="lobby-status" role="status" aria-live="polite"></p>
       </section>
+      <section id="setup" class="setup" aria-label="Tipo de carrera">
+        <div class="setup-row">
+          <span class="pk-eyebrow">Modo</span>
+          <div id="mode-pick" class="pk-seg" role="group" aria-label="Modo de juego">
+            <button type="button" data-mode="race" aria-pressed="true">Carrera</button>
+            <button type="button" data-mode="pana" aria-pressed="false">Copa Pana</button>
+            <button type="button" data-mode="aventura" aria-pressed="false">Copa Aventura</button>
+            <button type="button" data-mode="agua" aria-pressed="false">Copa del Agua</button>
+            <button type="button" data-mode="battle" aria-pressed="false">Globos</button>
+          </div>
+        </div>
+        <div class="setup-row">
+          <span class="pk-eyebrow">Rivales</span>
+          <div id="difficulty-pick" class="pk-seg" role="group" aria-label="Dificultad">
+            <button type="button" data-difficulty="facil" aria-pressed="false">Fácil</button>
+            <button type="button" data-difficulty="normal" aria-pressed="true">Normal</button>
+            <button type="button" data-difficulty="dificil" aria-pressed="false">Difícil</button>
+          </div>
+        </div>
+        <div class="setup-row">
+          <span class="pk-eyebrow">Vueltas</span>
+          <div id="laps-pick" class="pk-seg" role="group" aria-label="Vueltas">
+            <button type="button" data-laps="1" aria-pressed="false">1</button>
+            <button type="button" data-laps="2" aria-pressed="false">2</button>
+            <button type="button" data-laps="3" aria-pressed="true">3</button>
+            <button type="button" data-laps="4" aria-pressed="false">4</button>
+            <button type="button" data-laps="5" aria-pressed="false">5</button>
+          </div>
+          <label class="mirror-pick split-pick">2 jugadores <button id="split" type="button" class="pk-switch" role="switch" aria-checked="false" aria-label="Pantalla dividida para dos jugadores"></button></label>
+          <label class="mirror-pick">Espejo <button id="mirror" type="button" class="pk-switch" role="switch" aria-checked="false" aria-label="Modo espejo"></button></label>
+        </div>
+        <ol id="cup-stages" class="cup-stages" aria-label="Pistas de la copa" hidden></ol>
+        <p id="setup-note" class="setup-note"></p>
+      </section>
       <p id="launch-note" class="launch-note"><span class="pk-dot"></span>Tú contra 3 rivales</p>
       <button id="play" class="play pk-btn pk-btn--primary pk-btn--lg pk-btn--block">¡JUGAR!</button>
       <button id="go-online" type="button" class="pk-btn pk-btn--block">Carrera online con panas</button>
@@ -86,13 +126,27 @@
     </section>
   </div>
 
+  <section id="shop" class="shop pk-panel pk-panel--solid" role="dialog" aria-modal="false" aria-labelledby="shop-title" hidden>
+    <header class="shop-head">
+      <div><span class="pk-eyebrow">Taller del garaje</span><h2 id="shop-title">Personaliza tu carro</h2></div>
+      <p class="shop-wallet"><span class="coin-symbol" aria-hidden="true">I</span><b id="shop-coins">0</b> monedas</p>
+    </header>
+    <p class="shop-note">Ganas monedas en cada carrera: las que recoges más un premio por el podio. La pintura es para el carro que tienes elegido.</p>
+    <h3>Pintura</h3><div id="shop-paint" class="shop-grid"></div>
+    <h3>Corneta</h3><div id="shop-horn" class="shop-grid"></div>
+    <h3>Llama del turbo</h3><div id="shop-flame" class="shop-grid"></div>
+    <button id="shop-close" type="button" class="pk-btn pk-btn--primary pk-btn--block">Listo</button>
+  </section>
+
   <!-- ---------- race ---------- -->
   <div id="race" class="screen hidden">
     <div class="hud-top">
       <b id="pos" class="pk-place" aria-label="Posición">1<sup>º</sup></b>
       <div class="readouts">
-        <div class="pill pk-panel pk-readout"><span class="pk-eyebrow">Vuelta</span><b id="lap" class="pk-num">1/3</b></div>
+        <div id="stage-pill" class="pill pk-panel pk-readout" hidden><span class="pk-eyebrow">Copa</span><b id="stage-readout" class="pk-num small">1/4</b></div>
+        <div class="pill pk-panel pk-readout"><span id="lap-label" class="pk-eyebrow">Vuelta</span><b id="lap" class="pk-num">1/3</b></div>
         <div class="pill pk-panel pk-readout"><span class="pk-eyebrow">Tiempo</span><b id="time" class="pk-num">0.0</b></div>
+        <div id="best-pill" class="pill pk-panel pk-readout" hidden><span class="pk-eyebrow">Mejor vuelta</span><b id="lap-best" class="pk-num small">—</b></div>
         <div class="pill pk-panel pk-readout leader"><span class="pk-eyebrow">Líder</span><b id="leader" class="pk-num small">—</b></div>
       </div>
     </div>
@@ -131,12 +185,14 @@
     <div id="speedo" class="pk-panel">
       <div class="kmh"><b id="speed">0</b><small>KM/H</small></div>
       <div id="boost"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+      <small id="drift-hint" hidden></small>
     </div>
 
     <div class="keys pk-hints" data-pana-hint>
       <span><kbd class="pk-kbd">W</kbd> Acelerar</span>
       <span><kbd class="pk-kbd">S</kbd> Frenar</span>
       <span><kbd class="pk-kbd">A D</kbd> Girar</span>
+      <span><kbd class="pk-kbd">Shift</kbd> Derrape</span>
       <span><kbd class="pk-kbd">H</kbd> Claxon</span>
       <span><kbd class="pk-kbd">Esc</kbd> Pausa</span>
     </div>
@@ -148,11 +204,19 @@
       </div>
       <div class="touch-pedals">
         <button class="pk-touch pk-touch--lg" data-drive="s" aria-label="Frenar">Freno</button>
+        <button class="pk-touch pk-touch--lg touch-drift" data-drive="shift" aria-label="Derrapar o saltar">Derrape</button>
         <button class="pk-touch pk-touch--lg pk-touch--go" data-drive="w" aria-label="Acelerar">Gas</button>
       </div>
     </div>
 
     <div id="count"></div>
+    <div id="wrong-way" class="wrong-way" role="alert" hidden><span class="ww-icon" aria-hidden="true"></span>¡CONTRAMANO!</div>
+    <div id="incoming" class="incoming pk-panel" role="status" hidden><span id="incoming-arrow" class="incoming-arrow" aria-hidden="true"></span><b id="incoming-text"></b></div>
+    <div id="p2-hud" class="p2-hud pk-panel" hidden>
+      <span class="pk-eyebrow">Jugador 2</span><b id="p2-pos" class="pk-place">1<sup>º</sup></b>
+      <span id="p2-lap"></span><span id="p2-item"></span>
+      <small class="p2-keys">Flechas · Shift der. derrapa · Enter objeto · Punto atrás · Coma cambia · Retroceso rescate</small>
+    </div>
     <p id="net-status" class="net-status pk-panel" role="status" aria-live="polite" hidden></p>
 
     <div id="result" class="result hidden" role="dialog" aria-labelledby="result-title">
@@ -165,6 +229,11 @@
         <div class="res-table pk-panel pk-panel--solid">
           <span class="pk-eyebrow">Clasificación</span>
           <ol id="result-board" class="pk-roster"></ol>
+        </div>
+        <div id="cup-table" class="res-table pk-panel pk-panel--solid" hidden>
+          <span id="cup-title" class="pk-eyebrow">Copa</span>
+          <ol id="cup-board" class="pk-roster"></ol>
+          <p id="cup-next" class="cup-next"></p>
         </div>
         <div class="res-coins pk-panel"><span class="coin-symbol" aria-hidden="true">I</span><p id="result-coins" class="result-coins"></p></div>
         <div class="res-actions">
@@ -179,6 +248,7 @@
   </div>
 
   <section id="loading" class="loading pk-loading hidden" role="dialog" aria-modal="true" aria-labelledby="loading-title" aria-busy="false">
+    <img id="loading-art" alt="" decoding="async">
     <div class="loading-main">
       <div class="loading-copy">
         <span id="loading-meta" class="pk-eyebrow">Derrape</span>

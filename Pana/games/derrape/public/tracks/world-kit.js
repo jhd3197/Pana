@@ -1,36 +1,26 @@
 // Game-local world construction: terrain, spatial instances and road furniture.
 import * as THREE from 'three';
 import { M, mesh, box, tube, rng } from '/engine/models/core/primitives.js';
-import { bake } from '/engine/models/core/static-batch.js';
+import { bake, instancePlacements } from '/engine/models/core/static-batch.js';
 import { terrainMaterial } from '/engine/terrain-material.js';
 import { sign as makeSign } from '/engine/models/core/architecture-kit.js';
 import { placeOnTrack } from '../track-kit.js';
 import { waterSurface, waterDepthMap, riverSurface } from '/engine/models/effects/water-surface.js';
 import { extendTerrain, extendWaterPlane } from './world-horizon.js';
 export { THREE, M, mesh, box, tube, rng, placeOnTrack };
-export function sign(...args){const panel=makeSign(...args);panel.userData.dispose=()=>panel.material.map.dispose();return panel;}
+export function sign(...args){const panel=makeSign(...args);panel.userData.dispose=()=>{panel.material.map.dispose();panel.material.dispose();};return panel;}
 export const smooth=THREE.MathUtils.smoothstep, mix=THREE.MathUtils.lerp;
 export const hill=(x,z,cx,cz,rx,rz,h)=>h*Math.exp(-(((x-cx)/rx)**2)-((z-cz)/rz)**2);
 
 export function finish(root,cellSize=110) {
-  const out=bake(root,{cellSize}),geos=new Set(),textures=new Set();
-  root.traverse(o=>{if(o.geometry)geos.add(o.geometry);if(o.material?.map?.isCanvasTexture)textures.add(o.material.map);});
-  geos.forEach(g=>g.dispose());if(textures.size)out.userData.dispose=()=>textures.forEach(t=>t.dispose());return out;
+  const out=bake(root,{cellSize}),geos=new Set(),textures=new Set(),materials=new Set();
+  root.traverse(o=>{if(o.geometry)geos.add(o.geometry);for(const m of [].concat(o.material||[]))if(m.map?.isCanvasTexture){textures.add(m.map);materials.add(m);}});
+  geos.forEach(g=>g.dispose());if(textures.size)out.userData.dispose=()=>{textures.forEach(t=>t.dispose());materials.forEach(m=>m.dispose());};return out;
 }
 
 // Keep prototypes out of the live scene; each spatial cell owns its buffers.
-export function instances(parent,source,placements,name,cellSize=110) {
-  const prototype=bake(source),cells=new Map(),used=new Set();
-  source.traverse(o=>{if(o.geometry)used.add(o.geometry);});used.forEach(g=>g.dispose());
-  for(const p of placements){const key=`${Math.floor(p.x/cellSize)},${Math.floor(p.z/cellSize)}`;if(!cells.has(key))cells.set(key,[]);cells.get(key).push(p);}
-  prototype.updateMatrixWorld(true);
-  for(const ps of cells.values())prototype.traverse(o=>{
-    if(!o.isMesh)return;const im=new THREE.InstancedMesh(o.geometry.clone(),o.material,ps.length),dummy=new THREE.Object3D();
-    ps.forEach((p,i)=>{dummy.position.set(p.x,p.y,p.z);dummy.rotation.y=p.rot||0;dummy.scale.setScalar(p.scale||1);dummy.updateMatrix();im.setMatrixAt(i,dummy.matrix.clone().multiply(o.matrixWorld));});
-    im.name=name;im.castShadow=true;im.receiveShadow=true;im.computeBoundingSphere();parent.add(im);
-  });
-  prototype.traverse(o=>o.geometry?.dispose());
-}
+// Shared with Galope and Curiara: engine/models/core/static-batch.js.
+export function instances(parent,source,placements,name,cellSize=110) {instancePlacements(parent,source,placements,{name,cellSize});}
 
 export function terrain(T,{bounds,base,color,name='world-terrain',step=5,carve=true,cut=(x,z,h)=>h}) {
   const [x0,z0,x1,z1]=bounds,nx=Math.ceil((x1-x0)/step),nz=Math.ceil((z1-z0)/step),dx=(x1-x0)/nx,dz=(z1-z0)/nz;
@@ -63,7 +53,12 @@ export function sea(base,{size=2200,y=0,opacity=1}={}) {
 }
 
 export function put(root,obj,x,z,y,rotation=0,scale=1) {obj.position.set(x,y,z);obj.rotation.y=rotation;obj.scale.setScalar(scale);root.add(obj);return obj;}
-export function clear(T,x,z,r=0){return Math.abs(T.offsetOf(x,z))>T.HW+r+5;}
+export function clear(T,x,z,r=0){
+  // Keep scenery off the road and off any shortcut planks.
+  if(T.shortcuts?.some(sc=>{const dx=sc.b.x-sc.a.x,dz=sc.b.z-sc.a.z,l=dx*dx+dz*dz,t=Math.max(0,Math.min(1,((x-sc.a.x)*dx+(z-sc.a.z)*dz)/(l||1)));
+    return Math.hypot(x-sc.a.x-dx*t,z-sc.a.z-dz*t)<sc.w/2+r+3;}))return false;
+  return Math.abs(T.offsetOf(x,z))>T.HW+r+5;
+}
 export function foundation(root,obj,x,z,groundAt,{rotation=0,scale=1,radius=5,color=0x999582}={}) {
   const levels=[];for(const dx of [-radius,0,radius])for(const dz of [-radius,0,radius])levels.push(groundAt(x+dx,z+dz));
   const top=Math.max(...levels)+.15,bottom=Math.min(...levels)-.3;
@@ -81,6 +76,7 @@ export function edges(group,kit,T,{style='steel',step=5,skip=()=>false}={}) {
   const g=new THREE.Group(),steel=M(0xa9b5af,{metalness:.45}),cream=M(0xe8ddc1),red=M(0xbf5947),wood=M(0x8a7353);
   for(let s=0;s<T.TOTAL;s+=step)for(const side of [-1,1]){
     if(skip(s,side))continue;const p=placeOnTrack(T,s,side*(T.HW+.8)),q=placeOnTrack(T,Math.min(s+step,T.TOTAL),side*(T.HW+.8));
+    if(T.openAt?.(p.x,p.z,side*(T.HW+1))||T.plankAt?.(p.x,p.z)!=null||T.plankAt?.(q.x,q.z)!=null)continue;
     if(style==='kerb'){
       const kerb=box(.75,.24,step+.1,Math.floor(s/step)%2?cream:red,p.x,p.y+.12,p.z);kerb.rotation.y=p.h;g.add(kerb);
     }else{

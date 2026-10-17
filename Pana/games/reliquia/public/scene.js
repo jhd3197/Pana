@@ -3,6 +3,7 @@ import { bake } from '/engine/models/core/static-batch.js';
 import { templeEntrance, ropeBridge, stoneTotem } from '/engine/models/props/jungle.js';
 import { fern } from '/engine/models/vegetation/fern.js';
 import { palm } from '/engine/models/vegetation/palm.js';
+import { tickWind } from '/engine/models/vegetation/plant-kit.js';
 import { expeditionWinch, expeditionLantern, sunRelic } from '/engine/models/props/reliquia.js';
 import { ROOMS, GATE, SHORTCUT, CAMP, WINCHES, ALTAR, SUPPLIES, OBSTACLES, floorAt } from './layout.js';
 
@@ -101,9 +102,27 @@ export function createExpeditionWorld() {
   box(staticRoot, trim, 12.5, 0.6, 2.1, 40, 6.1, GATE.z);
   const secret = new THREE.Group(); dynamic.add(secret); box(secret, darkStone, SHORTCUT.w, 3.8, SHORTCUT.d, SHORTCUT.x, 1.9, SHORTCUT.z);
   const wheels = WINCHES.map(w => { const g = expeditionWinch(); g.position.set(w.x, groundAt(w.x, w.z), w.z); dynamic.add(g); return { ...w, group: g }; });
+  const lidMat = mat(0xe0d8b5), crossMat = mat(0xa84e37);
   const supplies = SUPPLIES.map(s => {
-    const g = new THREE.Group(); g.position.set(s.x, 0, s.z); box(g, wood, 1.2, 0.7, 0.9, 0, 0.35, 0); box(g, mat(0xe0d8b5), 1.26, 0.12, 0.95, 0, 0.75, 0);
-    box(g, mat(0xa84e37), 0.15, 0.03, 0.55, 0, 0.83, 0); box(g, mat(0xa84e37), 0.5, 0.03, 0.15, 0, 0.83, 0); dynamic.add(g); return { ...s, group: g };
+    const g = new THREE.Group(); g.position.set(s.x, 0, s.z);
+    box(g, wood, 1.2, 0.7, 0.9, 0, 0.35, 0);
+    // Hinged lid at back edge (z = -0.45) for bouncy chest opening
+    const lid = new THREE.Group(); lid.position.set(0, 0.7, -0.45);
+    box(lid, lidMat, 1.26, 0.12, 0.95, 0, 0.05, 0.45);
+    box(lid, crossMat, 0.15, 0.03, 0.55, 0, 0.13, 0.45);
+    box(lid, crossMat, 0.5, 0.03, 0.15, 0, 0.13, 0.45);
+    g.add(lid);
+    // Inner rarity glow + floating medkit loot pop
+    const glowMat = new THREE.MeshBasicMaterial({ color: 0x62f5c8, transparent: true, opacity: 0, depthWrite: false });
+    const glow = new THREE.Mesh(new THREE.CircleGeometry(0.65, 16), glowMat);
+    glow.rotation.x = -Math.PI / 2; glow.position.y = 0.72; g.add(glow);
+    const loot = new THREE.Group(); loot.position.set(0, 0.5, 0); loot.visible = false;
+    box(loot, lidMat, 0.44, 0.3, 0.3, 0, 0, 0);
+    box(loot, crossMat, 0.08, 0.18, 0.32, 0, 0, 0);
+    box(loot, crossMat, 0.18, 0.08, 0.32, 0, 0, 0);
+    g.add(loot);
+    dynamic.add(g);
+    return { ...s, group: g, lid, glowMat, loot, openT: 0 };
   });
   const relic = sunRelic(); dynamic.add(relic);
   const torches = [];
@@ -117,10 +136,49 @@ export function createExpeditionWorld() {
   const originalGeometries = new Set(); staticRoot.traverse(o => { if (o.geometry) originalGeometries.add(o.geometry); }); originalGeometries.forEach(g => g.dispose());
   let gateHeight = 0, secretHeight = 0;
   function update(t, state = {}, dt = 0.016) {
+    tickWind(t, 0.85);
     gateHeight = THREE.MathUtils.damp(gateHeight, state.gateOpen ? -6 : 0, 4, dt); gate.position.y = gateHeight;
     secretHeight = THREE.MathUtils.damp(secretHeight, state.relicTaken ? -4 : 0, 4, dt); secret.position.y = secretHeight;
     wheels.forEach(w => { const s = state.winches?.[w.id]; w.group.userData.wheel.rotation.z = -(s?.progress || 0) * Math.PI * 2; });
-    supplies.forEach(s => { s.group.visible = !state.supplies?.includes(s.id); });
+    supplies.forEach(s => {
+      const opened = !!state.supplies?.includes(s.id);
+      if (!opened) {
+        s.openT = 0;
+        s.group.visible = true;
+        s.group.scale.set(1, 1, 1);
+        s.group.rotation.z = 0;
+        s.lid.rotation.x = 0;
+        s.glowMat.opacity = 0;
+        s.loot.visible = false;
+      } else {
+        s.openT += dt;
+        const p = s.openT;
+        if (p < 0.14) {
+          // Anticipation shake + squash
+          s.group.rotation.z = Math.sin(p * 95) * 0.12;
+          s.group.scale.set(1.14, 0.84, 1.14);
+        } else {
+          s.group.rotation.z = 0;
+          const u = Math.min(1, (p - 0.14) / 0.35);
+          const bounce = 1 + Math.sin(u * Math.PI) * 0.18 * (1 - u);
+          s.group.scale.set(2 - bounce, bounce, 2 - bounce);
+          // Bouncy lid snap open
+          const lidSnap = Math.min(1, (p - 0.14) / 0.22);
+          s.lid.rotation.x = -lidSnap * 1.95 - Math.sin(lidSnap * Math.PI) * 0.28;
+          s.glowMat.opacity = Math.max(0, 0.72 * (1 - (p - 0.14) / 1.4));
+          // Floating spinning loot pop
+          if (p < 1.35) {
+            s.loot.visible = true;
+            const lt = Math.min(1, (p - 0.14) / 0.85);
+            s.loot.position.y = 0.65 + Math.sin(lt * Math.PI) * 1.05;
+            s.loot.rotation.y = p * 6.5;
+            s.loot.scale.setScalar(lt < 0.8 ? 1 : Math.max(0.01, (1 - lt) * 5));
+          } else {
+            s.loot.visible = false;
+          }
+        }
+      }
+    });
     relic.visible = state.carrier == null;
     relic.position.set(state.relic?.x ?? ALTAR.x, state.relicTaken ? 0.15 : 1.2 + Math.sin(t * 2) * 0.1, state.relic?.z ?? ALTAR.z); relic.rotation.y = t * 0.6;
     torches.forEach((g, i) => { g.material.opacity = 0.11 + Math.sin(t * 3 + i) * 0.025; });

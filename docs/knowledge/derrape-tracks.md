@@ -1,5 +1,28 @@
 # Derrape track system
 
+## Road-level race detail
+
+`tracks/race-details.js` adds a small deterministic decoration group to all
+twelve current runtimes: paired bend/braking marks (ruts on earth roads), short
+painted edge blocks on paved tracks, and sector pennant clusters. Palettes vary
+by circuit. Marks follow the road surface and pennants sample actual terrain,
+reject water, large height differences and road/shortcut clearance conflicts.
+They do not add colliders or change the route. `detailLevel` connects these
+groups to the shared quality setting through `quality.js`.
+
+`tracks/road-material.js` adds distance-filtered aggregate grain and broad wear
+variation to the existing road draw. Earth roads use broader, stronger variation
+than asphalt. It is procedural, with no texture allocation. Its uniform follows
+quality (full / half / disabled); disposing the road releases its material.
+
+Opaque pennants use the existing batcher in four global material batches.
+Their few thousand triangles are cheaper to submit together: 190 m cells
+pushed Plaza's overview to 1,310 draws, above its unchanged 1,300 budget.
+Global batches bring that same overview to 1,248 draws with 4,434,126 triangles,
+passing both existing limits. This is a draw-count check, not an FPS measurement.
+The one road mark material is instance-owned and explicitly disposed on map replacement.
+No texture downloads, per-frame prop rebuilds or network scenery messages.
+
 Derrape supports multiple maps. Everything lives in `games/derrape/public/`:
 
 - `tracks.js` — registry (`TRACKS`, `getTrack`, `makeTrack`). Turns a track
@@ -296,3 +319,38 @@ leaves steering to the driver. Keep the interior ridge's tunnel-exit sightline
 tests and reset environment motion callbacks when rebuilding a track.
 The race island uses expanded geography
 with normal-sized assets. Keep those options opt-in for the original games.
+
+## Shortcuts, open edges, hazards, rain (plan 53)
+
+- `shortcuts: [{ from: [u, off], to: [u, off], w, arch }]` builds a plank
+  road (`track-kit.js plankRoad`). `T.plankAt` is the deck height; walls are
+  off on it, scenery (`world-kit clear`), rails (`edges`) and sector signs
+  step aside. Off the plank the car falls and the zamuro rescues it.
+- Pick chords with a scan of the *built* world, not the spline alone: test
+  the deck against `terrainAt` (hills bury it) and against non-instanced mesh
+  boxes (buildings). Batched city blocks slip past box tests, so look at a
+  top-down render too. Fixed landmarks that call `clear()` throw when a plank
+  crosses them (Los Llanos' water windmill did): drop that chord.
+- Keep the gain at 35–120 m once the plank's 0.72 speed cap without turbo is
+  counted, and never let a chord cross the line or skip two of the eight
+  checkpoint sectors (`course-rules.js advanceLap`).
+- `drops: [{ u0, u1, side }]` opens an edge (ground past it is the real
+  terrain). Only use it where the model has no rail or fence: every bridge and
+  water crossing found so far has one.
+- `hazards: [{ kind: 'cow' | 'bus' | 'rock', u, phase }]` cross on the race
+  clock, so online screens agree. Cows stay inside roadside fences; buses and
+  rocks need a cross-street or open dune on both sides.
+- `rain: 0..1` greys the palette, cuts grip (rain cauchos keep their floor)
+  and turns on the camera-following streaks.
+
+For artwork-inspired props, native placements, batching and clearance proof,
+see [Derrape scenery](derrape-scenery.md).
+
+### Optional crossfall
+
+Salinas alone supplies `def.crossfall(s, offset, T)`. `surfaceAt`, the road
+ribbon's center column and `placeOnTrack` use that same function. The outer
+positive lane rises up to 60 cm at the shallow crossing, preserving a dry line
+without changing other maps. Water depth gives the rendered road its existing
+13 cm clearance. `water-crossing.browser.js` checks 1,000 sections for a dry
+lane, every road vertex against physics, and three cars on street/rain tires.

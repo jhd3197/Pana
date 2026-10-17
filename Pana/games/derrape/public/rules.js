@@ -4,8 +4,8 @@
 
 export const CAR_RADIUS = 1.65;          // two cars touch closer than 2 × this
 export const CONTACT_HEIGHT = 1.6;       // a car this far above another passes over it
-export const BOUNCE = 1.4;               // 1 = dead stop, 2 = fully elastic
-export const CRASH_SPEED = 7;            // closing speed that pops parts
+export const BOUNCE = 1.08;              // mostly inelastic: door rubs stay grounded
+export const CRASH_SPEED = 14;           // only a hard impact interrupts a drift
 export const BUMP_SPEED = 2;             // closing speed that still makes a bonk
 
 // Race clock as m:ss.s (1:12.4), seconds only under a minute.
@@ -36,13 +36,14 @@ export function aiPedals(diff, gap) {
 // client resolves only its own car's share (a remote car's share is 0); the
 // rival's client resolves the other half from the same two poses.
 // Returns null without contact, else { speed, kind, a: {hit, power, side}, b: {…} }
-// where kind is 'crash', 'bump' or 'touch' and power feeds crash().
+// where kind is 'crash', 'bump' or 'touch'. Car contact power only feeds the
+// suspension response; airborne crashes belong to weapons and world hazards.
 export function resolveContact(a, b) {
   if (Math.abs(a.y - b.y) > CONTACT_HEIGHT) return null;
   const dx = b.x - a.x, dz = b.z - a.z;
   const d = Math.hypot(dx, dz), min = CAR_RADIUS * 2;
-  if (d <= 0 || d >= min) return null;
-  const nx = dx / d, nz = dz / d;
+  if (d >= min) return null;
+  const nx = d > 0.001 ? dx / d : Math.cos(a.h), nz = d > 0.001 ? dz / d : -Math.sin(a.h);
   const ma = a.def.tune.mass, mb = b.def.tune.mass;
   const ka = a.remote ? 0 : 1, kb = b.remote ? 0 : 1;
   if (!ka && !kb) return null;
@@ -53,14 +54,14 @@ export function resolveContact(a, b) {
   b.z += nz * push * ma / (ma + mb) * kb;
   const speed = (a.vx - b.vx) * nx + (a.vz - b.vz) * nz;   // closing speed
   if (speed <= 0) return { speed, kind: 'touch', a: { hit: false }, b: { hit: false } };
-  const j = BOUNCE * speed / (1 / ma + 1 / mb);
+  const j = BOUNCE * Math.min(speed, 18) / (1 / ma + 1 / mb);
   a.vx -= j / ma * nx * ka; a.vz -= j / ma * nz * ka;
   b.vx += j / mb * nx * kb; b.vz += j / mb * nz * kb;
   const kind = speed > CRASH_SPEED ? 'crash' : speed > BUMP_SPEED ? 'bump' : 'touch';
   // which side each car got hit on decides which way it rolls
   return {
     speed, kind,
-    a: { hit: !!ka, power: speed * mb / (ma + mb) * 2, side: Math.sign(nx * -Math.cos(a.h) + nz * Math.sin(a.h)) || 1 },
-    b: { hit: !!kb, power: speed * ma / (ma + mb) * 2, side: Math.sign(nx * Math.cos(b.h) - nz * Math.sin(b.h)) || 1 },
+    a: { hit: !!ka, power: Math.min(10, speed * mb / (ma + mb)), side: Math.sign(nx * -Math.cos(a.h) + nz * Math.sin(a.h)) || 1 },
+    b: { hit: !!kb, power: Math.min(10, speed * ma / (ma + mb)), side: Math.sign(nx * Math.cos(b.h) - nz * Math.sin(b.h)) || 1 },
   };
 }

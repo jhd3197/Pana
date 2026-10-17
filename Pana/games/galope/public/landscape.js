@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import {M,rng} from '/engine/models/core/primitives.js';
 import {ranchCaney,chinchorro,saddleStand,hitchingRail,campfire,coffeeTable,riverCanoe,wetlandLanding,floodedFence,trailSign,termiteMound} from '/engine/models/props/llano-life.js';
 import {driftwood} from '/engine/models/props/beach.js';
+import {landingShelter} from '/engine/models/props/delta.js';
 import {moriche} from '/engine/models/vegetation/moriche.js';
 import {savannaGrass} from '/engine/models/vegetation/savanna-grass.js';
 import {mangoTree} from '/engine/models/vegetation/mango-tree.js';
@@ -30,6 +31,8 @@ export function addLandscape({group,add,plantInstances,reserved}) {
   // foot of its piles; the canoe's origin is the keel, both explicit placements.
   const deck=add('wetland-landing',wetlandLanding({length:9}),87,45,.4,1,5);
   deck.position.y=.1;
+  const shelter=add('landing-shelter',landingShelter({width:2.4,depth:3,deck:.95,height:2.6}),87,45,.4,1,2);
+  shelter.position.y=.1;
   const canoe=add('river-canoe',riverCanoe(),84,47,.75,1,3.2);canoe.position.y=WATER_Y-.18;
   add('ranch-caney',ranchCaney(),102,49,.3,.85,4.5);
   add('coffee-table',coffeeTable(),102,49,.3,1,1.6);

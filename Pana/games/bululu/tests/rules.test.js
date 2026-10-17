@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   PRICE, DOUBLES_BONUS, standings, ranks, addCoins, canBuy, buyMango, rollDice, tileCoins,
-  treeOutcome, stepsTo, botTakesHill, standCandidates, brindis,
+  treeOutcome, stepsTo, botTakesHill, standCandidates, brindis, minigameBag,
 } from '../public/rules.js';
 
 const pana = (i, coins, mangos = 0, tile = 0) => ({ i, coins, mangos, tile });
@@ -85,4 +85,18 @@ test('brindis: each pana gives up to two coins', () => {
   const ps = [pana(0, 0), pana(1, 10), pana(2, 1), pana(3, 0)];
   assert.equal(brindis(ps, ps[0]), 3);
   assert.deepEqual(ps.map(p => p.coins), [3, 8, 0, 0]);
+});
+
+test('minigames come shuffled, each once per pass, never twice in a row', () => {
+  const ids = ['a', 'b', 'c', 'd'];
+  for (let seed = 1; seed <= 50; seed++) {
+    let s = seed;
+    const random = () => ((s = (s * 16807) % 2147483647) / 2147483647);
+    const draw = minigameBag(ids, random);
+    const seq = Array.from({ length: 40 }, draw);
+    for (let k = 0; k < 40; k += 4) assert.deepEqual([...seq.slice(k, k + 4)].sort(), ids);
+    for (let k = 1; k < 40; k++) assert.notEqual(seq[k], seq[k - 1]);
+  }
+  const one = minigameBag(['solo']);
+  assert.deepEqual([one(), one()], ['solo', 'solo']);
 });

@@ -8,6 +8,161 @@ becomes the GitHub release's notes.
 
 ## Unreleased
 
+### Added
+
+- **Derrape brings five new scenery models from the circuit artwork into the races.**
+  Plaza Pana gains an open music pavilion and a boat-repair yard; Salinas gains
+  salt-harvesting machinery and flamingos along its pink ponds. El Estadio has
+  detailed tire workshops, and Isla Bululú has its own boat yard. All five are
+  available in Studio; optional bird colonies follow the shared quality setting.
+- **Derrape adds assisted drifting, car specialties, safer recoveries and clearer item counterplay.**
+  Aguacero advances toward the leader in timed waves; the faster chancleta
+  pursues distant leaders. Car contacts stay grounded, and starts, rescues and
+  repeated impacts grant brief ghost protection. Drift, slipstream, jump and
+  surface talents make car and tire combinations matter. Gentler drift steering,
+  predictive edge help and stable turbo exits make corners easier to learn;
+  a release cue shows when a turbo is ready. Road wear and sector
+  pennants add circuit detail; shared quality settings now also reduce shadows,
+  weather and optional scenery without changing handling or pose frequency.
+- **Play paintball and Texas Hold’em with your panas, or practice against bots.**
+  ¡Pintura! brings a 3D arena for up to eight players with cover, reloads,
+  respawns and two-minute rounds. Póquer seats up to six with private cards,
+  free chips, no-limit betting, side pots and showdowns. Both use your saved
+  pana, shared invitations and menus, touch controls and local bot practice.
+- **Billar brings eight-ball pool to Pana for two friends or solo practice.**
+  Aim with mouse, touch or keyboard, choose shot power and pocket your group
+  before the eight. Shared rooms keep turns, fouls, ball in hand and rematches
+  in sync, including an unfinished shot when the host leaves.
+- **Bululú lets up to four panas play the board and minigames together online.**
+  Share a room invitation, take your own turns and control your own pana;
+  bots fill empty spots, and local practice remains available. If the host
+  leaves, another player continues from the current turn or minigame checkpoint.
+- **Derrape guides you from your panas to the starting grid in four illustrated steps.**
+  Choose solo, split screen or online, customize your real car, browse twelve
+  illustrated circuits and three cups, then race. Layered festival artwork adds
+  gentle pointer parallax; circuit art accompanies real loading progress, with
+  reduced-motion support and a start button that stays visible on phones.
+  Returning to the first step in an online room keeps its message above the navigation.
+  Earned trophies and older-edition badges remain visible on cup choices after reloading.
+- **Water shaders, living weather, and tactile game feel across Pana.**
+  Water surfaces and waterfalls add multi-wave displacement, dual caustics, crest foam, counter-scrolling ripples, and wave-synced boat buoyancy; tracks and islands add wind-swaying trees, angled rain with splashes, lightning and thunder, drifting snow, and post-shower rainbows; buttons, dashes, explosions, coin pickups, hold-to-charge triggers, and supply chests gain squash-and-stretch, shockwave rings, scorch decals, magnetic pull-in, flying HUD counters with combo badges, and rarity light and audio.
+- **Derrape adds Copa del Agua and four independently playable circuits.**
+  Race salt ponds, delta villages, river caves and the Tepuy waterfall in a
+  four-stage championship; Studio previews use the same track constructors.
+- **Salinas gives racers a dry line beside its shallow-water crossing.**
+  Road geometry, tire grip and visible water agree; repeated cups release
+  their signs and flag textures, portrait touch controls fit small phones,
+  the portrait podium stays above the standings, and full rooms report their
+  capacity correctly.
+- **Grand Prix keeps each pana's complete appearance through the championship.**
+  Paint, horn and flame choices follow the frozen entrant, and podium portraits
+  show the actual racers. Bululú shares the waterfall effect and Galope adds a
+  shelter to its existing lagoon landing.
+- **Derrape draws full racing grids with fewer calls while preserving the cars.**
+  Rigid parts share draw batches with their original colors; drivers, wheel
+  steering, suspension, flags and breakaway pieces keep their animations, while
+  the body paint retains its customization material. The water circuits also
+  group their unchanged vegetation into fewer draw batches.
+- **Derrape keeps your online Grand Prix together across four races.**
+  Copa Pana and Copa Aventura carry the same rivals, official standings and
+  one-time rewards through map changes, with synchronized loading and reload recovery.
+- **New game: Curiara, race dugout canoes down the Amazonas.**
+  Paddle with A and D in rhythm (no throttle): alternate to go straight,
+  stroke the same side twice to turn and hit the gold sweet spot for a
+  ¡Remazo!. Read the chorro through a jungle caño (or gamble on the igapó
+  cut), pick a lane down the raudales under the Autana tepui and cross the
+  Río Negro past toninas, caimanes and a remolino to the churuata. Hits,
+  bad drops and bumps fill the tip meter until you capsize; Space throws a
+  ¡Salpicón! at the canoe beside you. Up to 8 panas online, bots fill in.
+- **Curiara has Parejas: two panas share one canoe.** The proa paddles,
+  the popa holds the rudder, back-paddles and throws the salpicón, and a
+  tap right with the stroke calls ¡Ahora! for 15% more.
+- **Bululú has three river minigames: ¡Remada!, ¡Raudal! and ¡Remolino!.**
+  Sprint 120 m in rhythm, dodge rocks and jump ledges down four rapids for
+  mangos, or paddle away from a growing whirlpool and shove the others in.
+- **Bululú has ¡Chinazo!, a slingshot minigame against the iguanas in the mango tree.**
+  Aim with the mouse (or WASD, or drag a finger), pull the china and let
+  go: stones take a moment to land, so lead the runners. Three mamones a
+  load, a golden iguana worth 3, a guacamaya that costs 2 and a ¡Plaga!
+  for the last 10 seconds.
+- **Iguanas sun themselves around Pana's maps.** Look for them on
+  Bululú's beach rocks and lighthouse, Pana Gas in the Desierto, limbs over
+  Curiara's caño, Galope's fence posts and the plaza church's wall.
+- **Contributors have a phased roadmap for Derrape Grand Prix and four new water maps.**
+  Plan 56 specifies three four-race cups, online championship continuity,
+  shared scenery and verification across 22 implementation phases.
+- **New game: ¡Embuste!, find the mummy among your panas at the camp.**
+  Do chores until dawn while one or two secret mummies wrap panas, slip
+  through hollow logs, pose as barrels and sabotage the camp. Report the
+  statues, argue at the fogata and vote someone down the river. Each pana
+  plays on their own screen; practice with bots in the browser.
+- **Bululú has an ¡Embuste! minigame.** One of the four panas is secretly
+  a mummy faking the chores; watch for sand, then vote it out.
+- **Play Derrape with a controller or with a pana on the same screen.**
+  Gamepads drive and fire items, two players can race in split screen,
+  and the HUD warns about wrong-way driving and incoming items, shows
+  your best lap and lets you look behind with C.
+- **Derrape has a taller to spend your coins.** Every race pays into a
+  wallet you keep; paint your car, swap the horn or change the turbo
+  flame. Cup trophies show in the garage and unlock mirror mode, gold
+  paint and a rainbow flame.
+- **Derrape's tracks fight back.** Fall off or get stuck and a zamuro
+  carries you back (or press R), take plank shortcuts on three tracks,
+  dodge cows, a bus and rolling boulders, race to a Venezuelan groove
+  per track, and pack rain cauchos for wet Selva and Páramo.
+- **Derrape has cups, balloon battles and race options.** Win the Copa
+  Mango or Copa Arepa across four tracks for a gold, silver or bronze
+  trophy, pop rivals' balloons in Globos, and pick easy, normal or hard
+  rivals, 1 to 5 laps and mirror mode before you start.
+- **Derrape has six new items.** A cohete that chases the car ahead, the
+  chancleta that drops on the leader, a totuma shield, exploding trap
+  crates, an aguacero that soaks everyone ahead and a jarra with three
+  turbos. Ten coins power up whatever you use next.
+- **Derrape has real drifting.** Hold Shift (or the Derrape button) in a
+  bend: sparks go blue, orange and purple, and letting go fires a turbo.
+  Time the gas on the countdown for a rocket start, do tricks off ramps,
+  ride a rival's slipstream, and watch your coins: hits knock them off.
+- **Bululú has a new card minigame, ¡Caída!** Cards flip onto the table; slam
+  first when one matches the number before it, but a wrong slam costs a point.
+  Minigames now come up shuffled instead of always in the same order.
+- **¡Un, dos, tres, momia! joins Bululú.** Run for the relic while the temple
+  mummy counts and freeze when she turns; hide as a barrel to sneak closer.
+- **¡Coleo! comes to Bululú.** Chase bulls down the manga on horseback, get
+  right behind one and pull its tail to tumble it; most bulls wins.
+- **¡Choque de carritos! brings the Derrape karts to Bululú.** Bump the others
+  off a platform over the sea while its edge falls away. On phones, minigames
+  that move in every direction show a d-pad.
+
+### Changed
+
+- **Play Billar, Póquer and ¡Pintura! inside Pana's 3D plaza.**
+  Pool has a physical table, balls, cue and perspective aiming. Poker deals
+  cards onto the felt beside real chip stacks and seated panas. Paintball
+  follows your pana through a court built with shared town assets, with camera
+  orbit, touch controls and an optional overview. Fullscreen worlds replace
+  the inset tables; the new equipment is available in Pana Studio.
+
+- **Derrape's championships are now Copa Pana and Copa Aventura.** Each has a
+  new four-track order; Mango and Arepa trophies, coins and cosmetics stay
+  earned, with old route wins labeled "Edición anterior" instead of counting as
+  wins on the new routes.
+- **Derrape Grand Prix now keeps the same eight racers for all four rounds.**
+  Rival looks and cars stay fixed, each track has its own lap preset, later grids
+  follow championship position, and local split screen and mirror work throughout.
+- **Grand Prix garage previews, standings and podiums show the full cup story.**
+  Selecting a cup lists all four circuits with lap presets and estimated duration;
+  results show stage points, rank changes, tiebreaks, a 12-second next-track
+  intermission, a championship podium and one-time coin receipts.
+- **Contributors have one shared Grand Prix championship rulebook.** The pure
+  renderer-free rules cover stable entrants, seeded grids, stage result ledgers,
+  points, DNF/DNS/retirement and championship tiebreaks for local and online play.
+
+### Fixed
+
+- **Bululú's dice show the numbers you rolled instead of always showing two fours.**
+  The result faces turn toward the camera when the dice stop, and online guests
+  see the correct faces even when consecutive rolls repeat.
+
 ## 0.1.0 - 2026-10-16
 
 ### Added

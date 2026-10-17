@@ -4,7 +4,7 @@ import { createGameTable, createGameChair, disposeModel } from '/engine/models/p
 import { buildCharacter } from '/engine/models/characters/pana/avatar-model.js';
 import { normalizeAvatar } from '/engine/avatar.js';
 import { bindRenderer } from '/engine/settings.js';
-import { createSpanishCard, createScoreToken } from './models.js';
+import { createSpanishCard, createScoreToken } from '/engine/models/props/spanish-cards.js';
 import { deck, previewPlay, teamOf } from './rules.js';
 
 const UP = new THREE.Vector3(0, 1, 0), Y = 1.48;

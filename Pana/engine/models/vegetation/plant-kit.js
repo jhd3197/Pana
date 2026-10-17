@@ -3,10 +3,36 @@ import { M, mesh } from '/engine/models/core/primitives.js';
 import { leafBlade, taperedStem } from '/engine/models/core/botanical-shapes.js';
 import { bake } from '/engine/models/core/static-batch.js';
 
-const leafMaterial=M(0xffffff,{vertexColors:true,side:THREE.DoubleSide,flatShading:false,roughness:1});
-const bark=M(0x8b7350,{flatShading:false,roughness:1});
-const stemMaterial=M(0x527d39,{flatShading:false,roughness:1});
+const windUniform={value:0};
+const windStrength={value:1};
+
+function applyWindSway(material,amp=0.055){
+  material.onBeforeCompile=shader=>{
+    shader.uniforms.uWindTime=windUniform;
+    shader.uniforms.uWindStrength=windStrength;
+    shader.vertexShader=`uniform float uWindTime;\nuniform float uWindStrength;\n${shader.vertexShader}`.replace(
+      '#include <begin_vertex>',
+      `#include <begin_vertex>
+      float windHeight=clamp((transformed.y-0.15)*0.45,0.0,2.2);
+      float windBend=windHeight*windHeight*${amp.toFixed(4)}*uWindStrength;
+      float windPhase=uWindTime*1.85+transformed.x*0.37+transformed.z*0.41;
+      transformed.x+=sin(windPhase)*windBend;
+      transformed.z+=cos(windPhase*0.83+1.2)*windBend*0.65;`
+    );
+  };
+  material.customProgramCacheKey=()=>`pana-wind-${amp}`;
+  return material;
+}
+
+const leafMaterial=applyWindSway(M(0xffffff,{vertexColors:true,side:THREE.DoubleSide,flatShading:false,roughness:1}),0.06);
+const bark=applyWindSway(M(0x8b7350,{flatShading:false,roughness:1}),0.025);
+const stemMaterial=applyWindSway(M(0x527d39,{flatShading:false,roughness:1}),0.045);
 const TAU=Math.PI*2;
+
+function tickWind(t,strength=1){
+  windUniform.value=t;
+  windStrength.value=strength;
+}
 
 function finish(root,name) {
   const result=bake(root);result.name=name;
@@ -33,4 +59,4 @@ function cushion(group,position,size,tint,seed,small=false) {
 }
 
 
-export { leafMaterial, bark, stemMaterial, TAU, finish, stem, leaf, cushion };
+export { leafMaterial, bark, stemMaterial, TAU, finish, stem, leaf, cushion, tickWind, applyWindSway };

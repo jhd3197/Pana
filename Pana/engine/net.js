@@ -11,7 +11,7 @@
 import { normalizeAvatar } from './avatar.js';
 
 const SDK = 'https://cdn.jsdelivr.net/npm/@colyseus/sdk@0.18.5/dist/colyseus.js';
-export const ROOM_FULL = 4009;
+export const ROOM_FULL = 409;
 
 let sdk;
 function loadSdk() {
@@ -30,7 +30,7 @@ function loadSdk() {
 export const leadFromUrl = () => new URLSearchParams(location.search).has('lead');
 
 const parseAvatar = (json) => { try { return normalizeAvatar(JSON.parse(json || '{}')); } catch { return normalizeAvatar({}); } };
-const isFull = (error) => error?.code === ROOM_FULL || /full|lleno|locked/i.test(String(error?.message));
+const isFull = (error) => error?.code === ROOM_FULL || error?.code === 4009 || /full|lleno|locked/i.test(String(error?.message));
 
 // options: { code, lead, name, avatar, resume = true, ...game join options }
 // resume: a reload rejoins the same seat (Derrape's own room tracks each car).

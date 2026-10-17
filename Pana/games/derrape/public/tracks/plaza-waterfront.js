@@ -3,6 +3,7 @@ import { maracaiboBridge,canalVilla } from './world-landmarks.js';
 import { palm } from '/engine/models/vegetation/palm.js';
 import { waterSurface } from '/engine/models/effects/water-surface.js';
 import { extendWaterPlane } from './world-horizon.js';
+import { boatRepairYard } from '/engine/models/props/boat-yard.js';
 
 const FINGERS=[325,405,485,565];
 export function waterfrontHeight(x,z,land){
@@ -29,8 +30,13 @@ export function createWaterfront(T){
     fixed.add(box(5,.08,64,M(0xc2b699),cx,2.42,318));
     for(let row=0;row<3;row++)for(const side of [-1,1]){
       const x=cx+side*12,z=296+row*22;if(!clear(T,x,z,11))continue;
-      const house=canalVilla({seed:f*10+row,color:colors[(f+row)%5]});
-      put(houses,house,x,z,2.4,side*Math.PI/2,1.4);count++;
+      if(f===3&&row===2&&side===1) {
+        const yard=put(group,boatRepairYard(),x,z,2.4,0,1.15);
+        yard.userData.footprintRadius=10;yard.userData.support='waterfront-quay';
+      } else {
+        const house=canalVilla({seed:f*10+row,color:colors[(f+row)%5]});
+        put(houses,house,x,z,2.4,side*Math.PI/2,1.4);count++;
+      }
       const dockX=cx+side*28;fixed.add(box(13,.3,2.3,M(0x8a7558),dockX,1,z+5));
       for(const dx of [-5,5])fixed.add(box(.25,4,.25,M(0x695f4b),dockX+dx,-.7,z+5));
       put(fixed,boat(0xe5e2ce,{cabin:row%2===0}),dockX,z-2,.1,Math.PI/2,1.2);

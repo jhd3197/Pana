@@ -6,6 +6,7 @@ import { palm } from '/engine/models/vegetation/palm.js';
 import { cornerBodega, streetFoodKiosk, basketballHoop, rooftopWaterTank } from '/engine/models/props/pueblo.js';
 import { trophyMonument } from '/engine/models/props/monuments.js';
 import { stadiumGrounds } from './stadium-grounds.js';
+import { tireWorkshop } from '/engine/models/props/tire-workshop.js';
 
 export default {
   ...TRACK_DEFINITIONS.find(track => track.id === 'estadio'),
@@ -13,6 +14,7 @@ export default {
   rounded:true,hw:8,lineU:.045,elevation:()=>1.65,
   previewBounds:[[-430,0,-400],[515,55,475]],
   sectors:[[0,'Recta principal'],[.24,'Chicana del marcador'],[.43,'Horquilla del paddock'],[.63,'Doble cambio'],[.82,'Curva de la hinchada']],
+  shortcuts:[{from:[.2338,5.5],to:[.3579,5.5]}],
   items:{boxes:[.12,.32,.49,.69,.9],boxLanes:[-5.5,-1.8,1.8,5.5],pads:[{u:.055,off:0},{u:.37,off:-3},{u:.73,off:3}]},
   walls:false,chevrons:true,
   palette:{skySeed:23,cloudCover:0.28,horizon:0xb6def1,skyTop:0x278dd1,hemiSky:0xe4f3ff,hemiGround:0x5e8650,hemiInt:1.55,sun:0xfff2dd,sunInt:2.5,ground:0x60a34e,track:0x626e75,dune:0,fog:[350,1050]},
@@ -44,8 +46,14 @@ export default {
     group.add(finish(banners));
     // Pit garages and equipment face the long starting straight.
     for(let i=0;i<8;i++){
-      const x=-200+i*18;fixed.add(box(16,7,14,M(0xe6d7b8),x,4.5,220),box(14,4,.15,M(i%2?0x447d88:0xb95e43),x,3.2,212.9),box(17,.4,16,M(0x44565e),x,8.2,220));
-      put(group,sign(String(i+1).padStart(2,'0'),2,1,{background:'#243e48'}),x,212.7,6.3,Math.PI);
+      const x=-200+i*18;
+      if(i<2) {
+        const shop=put(group,tireWorkshop(),x,220,1.12,Math.PI,1.35);
+        shop.userData.footprintRadius=10;shop.userData.support='pit-apron';
+      } else {
+        fixed.add(box(16,7,14,M(0xe6d7b8),x,4.5,220),box(14,4,.15,M(i%2?0x447d88:0xb95e43),x,3.2,212.9),box(17,.4,16,M(0x44565e),x,8.2,220));
+        put(group,sign(String(i+1).padStart(2,'0'),2,1,{background:'#243e48'}),x,212.7,6.3,Math.PI);
+      }
     }
     for(const [x,z] of [[-105,135],[90,95],[-85,47],[80,47]]){
       if(!clear(T,x,z,4))continue;

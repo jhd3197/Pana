@@ -78,9 +78,11 @@
   background: var(--pk-raised); color: var(--pk-text);
   font: 800 15px/1.1 var(--pk-sans); text-decoration: none; text-align: center;
   cursor: pointer; -webkit-tap-highlight-color: transparent; touch-action: manipulation;
-  transition: transform 80ms, box-shadow 80ms, border-color 120ms, background 120ms;
+  box-shadow: 0 3px 0 rgba(0, 0, 0, .35);
+  transition: transform 200ms cubic-bezier(.34, 1.85, .64, 1), box-shadow 120ms, border-color 120ms, background 120ms;
 }
-.pk-btn:hover { border-color: var(--pk-line-strong); }
+.pk-btn:hover { border-color: var(--pk-line-strong); transform: translateY(-1px) scale(1.015); }
+.pk-btn:active:not(:disabled) { transform: translateY(3px) scale(.96, .92); box-shadow: 0 1px 0 rgba(0, 0, 0, .35); transition-duration: 55ms; }
 .pk-btn:focus-visible { outline: 3px solid var(--pk-yellow); outline-offset: 3px; }
 .pk-btn:disabled, .pk-btn[aria-disabled="true"] { opacity: .55; cursor: default; }
 .pk-btn--primary {
@@ -88,13 +90,15 @@
   font: 400 22px/1 var(--pk-display); letter-spacing: 1px;
   padding: 14px 24px 11px; box-shadow: 0 5px 0 var(--pk-yellow-edge);
 }
-.pk-btn--primary:hover { background: #ffd04d; }
-.pk-btn--primary:active:not(:disabled) { transform: translateY(3px); box-shadow: 0 2px 0 var(--pk-yellow-edge); }
+.pk-btn--primary:hover { background: #ffd04d; transform: translateY(-1px) scale(1.02); }
+.pk-btn--primary:active:not(:disabled) { transform: translateY(4px) scale(.95, .91); box-shadow: 0 1px 0 var(--pk-yellow-edge); }
 .pk-btn--lg { min-height: 64px; font-size: 30px; padding: 16px 28px 12px; box-shadow: 0 7px 0 var(--pk-yellow-edge); }
 .pk-btn--teal { border: 0; background: var(--pk-teal); color: #062a23; box-shadow: 0 4px 0 var(--pk-teal-edge); }
+.pk-btn--teal:active:not(:disabled) { transform: translateY(3px) scale(.95, .91); box-shadow: 0 1px 0 var(--pk-teal-edge); }
 .pk-btn--coral { border: 0; background: var(--pk-coral); color: #fff; box-shadow: 0 4px 0 var(--pk-coral-edge); }
+.pk-btn--coral:active:not(:disabled) { transform: translateY(3px) scale(.95, .91); box-shadow: 0 1px 0 var(--pk-coral-edge); }
 .pk-btn--danger { background: transparent; border-color: color-mix(in srgb, var(--pk-coral) 45%, transparent); color: var(--pk-coral); }
-.pk-btn--ghost { background: transparent; border-color: transparent; color: var(--pk-muted); }
+.pk-btn--ghost { background: transparent; border-color: transparent; color: var(--pk-muted); box-shadow: none; }
 .pk-btn--ghost:hover { color: var(--pk-text); border-color: transparent; }
 .pk-btn--sm { min-height: 34px; padding: 6px 12px; font-size: 13px; border-radius: var(--pk-r-sm); }
 .pk-btn--block { display: flex; width: 100%; }
@@ -309,12 +313,12 @@
   box-shadow: 0 5px 0 rgba(0, 0, 0, .45);
   cursor: pointer; touch-action: none; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none;
   -webkit-tap-highlight-color: transparent;
-  transition: transform 60ms, box-shadow 60ms, border-color 60ms, color 60ms;
+  transition: transform 180ms cubic-bezier(.34, 1.85, .64, 1), box-shadow 80ms, border-color 60ms, color 60ms;
 }
 .pk-touch[data-icon] { width: var(--pk-touch, 64px); padding: 0; }
 .pk-touch svg { flex: none; width: calc(var(--pk-touch, 64px) * .46); height: calc(var(--pk-touch, 64px) * .46); pointer-events: none; }
 .pk-touch > * { pointer-events: none; }
-.pk-touch.is-held { transform: translateY(4px); box-shadow: 0 1px 0 rgba(0, 0, 0, .45); border-color: var(--pk-yellow); color: var(--pk-yellow); }
+.pk-touch.is-held { transform: translateY(4px) scale(.94, .9); box-shadow: 0 1px 0 rgba(0, 0, 0, .45); border-color: var(--pk-yellow); color: var(--pk-yellow); transition-duration: 50ms; }
 .pk-touch--go { border-color: var(--pk-yellow-ink); background: var(--pk-yellow); color: var(--pk-yellow-ink); box-shadow: 0 5px 0 var(--pk-yellow-edge); }
 .pk-touch--go.is-held { color: var(--pk-yellow-ink); border-color: var(--pk-yellow-ink); box-shadow: 0 1px 0 var(--pk-yellow-edge); }
 .pk-touch--coral { border-color: #5a1012; background: var(--pk-coral); color: #fff; box-shadow: 0 5px 0 var(--pk-coral-edge); }
@@ -327,6 +331,38 @@
 .pk-dpad [data-icon="left"] { grid-column: 1; grid-row: 2; }
 .pk-dpad [data-icon="down"] { grid-column: 2; grid-row: 2; }
 .pk-dpad [data-icon="right"] { grid-column: 3; grid-row: 2; }
+
+/* ---------- juice: counter pop, combo badge, flying coin & speed lines ---------- */
+@keyframes pk-counter-pop {
+  0% { transform: scale(1); }
+  35% { transform: translateY(-3px) scale(1.36); color: var(--pk-yellow); filter: brightness(1.3); }
+  70% { transform: translateY(1px) scale(.94); }
+  100% { transform: scale(1); }
+}
+.pk-counter-pop { display: inline-block; animation: pk-counter-pop 280ms cubic-bezier(.34, 1.6, .64, 1); }
+.pk-combo-badge {
+  display: inline-flex; align-items: center; justify-content: center;
+  margin-left: 6px; padding: 2px 7px 1px; border-radius: 999px;
+  background: var(--pk-yellow); color: var(--pk-yellow-ink);
+  font: 400 14px/1 var(--pk-display); letter-spacing: .5px;
+  box-shadow: 0 2px 0 var(--pk-yellow-edge);
+  opacity: 0; transform: scale(.5); pointer-events: none;
+  transition: opacity 140ms, transform 180ms cubic-bezier(.34, 1.8, .64, 1);
+}
+.pk-combo-badge.is-on { opacity: 1; transform: scale(1.08) rotate(-4deg); }
+.pk-fly-coin {
+  position: fixed; z-index: 80; width: 18px; height: 18px; border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, #fff8c4, var(--fly-color, var(--pk-yellow)) 65%);
+  border: 2px solid var(--pk-yellow-ink); box-shadow: 0 0 12px var(--fly-color, var(--pk-yellow));
+  pointer-events: none;
+}
+.pk-speed-lines {
+  position: fixed; inset: 0; z-index: 4; pointer-events: none; opacity: 0;
+  background: repeating-conic-gradient(from 0deg at 50% 50%, rgba(255, 255, 255, .14) 0deg 1.4deg, transparent 1.4deg 9deg);
+  -webkit-mask-image: radial-gradient(circle at 50% 50%, transparent 46%, rgba(0, 0, 0, .55) 72%, #000 96%);
+  mask-image: radial-gradient(circle at 50% 50%, transparent 46%, rgba(0, 0, 0, .55) 72%, #000 96%);
+  transition: opacity 160ms ease-out;
+}
 
 /* "Gira tu teléfono": a game held the other way from the one it (or the player) wants */
 .pana-rotate {
@@ -352,7 +388,8 @@
   .pk-loading { padding: 24px 16px; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .pk-banner.pk-pop { animation: none; }
-  .pk-btn, .pk-bar > i, .pk-switch::before, .pk-touch { transition: none; }
+  .pk-banner.pk-pop, .pk-counter-pop { animation: none; }
+  .pk-btn, .pk-bar > i, .pk-switch::before, .pk-touch, .pk-combo-badge { transition: none; }
+  .pk-speed-lines { display: none; }
   .pana-rotate-phone { animation: none; }
 }

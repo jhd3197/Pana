@@ -11,8 +11,12 @@ import selva from './tracks/selva.js';
 import paramo from './tracks/paramo.js';
 import plaza from './tracks/plaza.js';
 import bululu from './tracks/bululu.js';
+import salto from './tracks/salto.js';
+import delta from './tracks/delta.js';
+import cuevas from './tracks/cuevas.js';
+import salinas from './tracks/salinas.js';
 
-export const TRACKS = [estadio, desierto, llanos, chichi, selva, paramo, plaza, bululu];
+export const TRACKS = [estadio, desierto, llanos, chichi, selva, paramo, plaza, bululu, salto, delta, cuevas, salinas];
 
 export function getTrack(id) {
   return TRACKS.find((t) => t.id === (id === 'playa' ? 'bululu' : id)) || TRACKS[0];

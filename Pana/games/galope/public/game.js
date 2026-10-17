@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import {loadAvatar,loadName} from '/engine/avatar.js';
-import {sound} from '/engine/fx.js';
+import {sound,setSpeedLines} from '/engine/fx.js';
 import {createGameMenu,toggleMute} from '/engine/ui.js';
 import {fillRoster} from '/engine/results.js';
 import {inviteUrl,newRoomCode,roomFromUrl} from '/engine/invite.js';
@@ -10,7 +10,8 @@ import {RaceRoom} from './network.js';
 import {standings} from './rules.js';
 import {at,angle,wrap,nearest,samples,LENGTH,LAPS,groundAt,waterDepth,WATER_Y,WETLANDS,JUMPS,sector,formatTime} from './course.js';
 import {createRaceScene} from './scene.js';
-import {createRider} from './rider.js';
+import {createRider} from '/engine/models/fauna/farm/llanero-rider.js';
+import {tickWind} from '/engine/models/vegetation/plant-kit.js';
 import {createHorseWaterFX} from './water-fx.js';
 
 const $=id=>document.getElementById(id),params=new URLSearchParams(location.search),avatar=loadAvatar(),name=loadName();
@@ -118,7 +119,7 @@ function updateUI(){
   lastPhase=state.phase;drawMap(own);
 }
 ensureRiders();ready=true;$('loading').classList.add('hidden');room.connect();updateUI();
-const clock=new THREE.Clock();let elapsed=0;
+const clock=new THREE.Clock();let elapsed=0,wasRemate=false;
 function frame(){
   if(disposed)return;const dt=Math.min(clock.getDelta(),.08),frozen=paused&&room.members.size<=1;if(!frozen)elapsed+=dt;
   const people=ensureRiders();
@@ -126,6 +127,12 @@ function frame(){
     r.group.visible=!p.spectator;r.group.position.lerp(new THREE.Vector3(p.x,y,p.z),blend);r.group.rotation.y+=angle(p.h-r.group.rotation.y)*blend;r.update(frozen?0:dt,p);
   }
   const own=people.find(p=>p.id===room.id),p=own&&!own.spectator?own:standings(state)[0]||people[0],r=riders.get(p.id),q=r.group.position,h=r.group.rotation.y;
+  const remate=state.phase==='racing'&&(p.speed||0)>13;
+  if(remate&&!wasRemate)sound.whoosh();
+  wasRemate=remate;
+  setSpeedLines(remate?Math.min(.78,(p.speed-13)*.22+.38):0);
+  const wantFov=remate?58:50;
+  if(Math.abs(camera.fov-wantFov)>.05){camera.fov+=(wantFov-camera.fov)*Math.min(1,dt*6);camera.updateProjectionMatrix();}
   if(state.phase==='lobby'){
     const mobile=innerWidth<700;cameraGoal.set(q.x-7,q.y+3.8,q.z+7);look.set(q.x+(mobile?0:-2.6),q.y+(mobile?.3:1.3),q.z+(mobile?0:-1.8));
     if(mobile)cameraGoal.set(q.x-6,q.y+4,q.z+8);
@@ -133,6 +140,7 @@ function frame(){
   if(!cameraReady){camera.position.copy(cameraGoal);cameraReady=true;}else camera.position.lerp(cameraGoal,1-Math.exp(-dt*5));camera.lookAt(look);
   // Follow the local rider with a bounded shadow frustum.
   sun.position.set(q.x-45,70,q.z+35);sun.target.position.set(q.x,0,q.z);sun.target.updateMatrixWorld();
+  tickWind(elapsed,.9);
   course.update(elapsed);world.sky.update(elapsed);
   waterFX.update(elapsed,people,riders,q);
   dust.visible=p.water<.04&&p.speed>4&&p.jumpY<.4;

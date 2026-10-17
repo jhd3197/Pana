@@ -1,6 +1,6 @@
 /* Bululú: Pana Kit (/engine/kit.css) dressed for the mango island. */
 :root { color-scheme: dark; }
-body { --wood: #b5753a; --wood-edge: #7a4a20; --coin-text: #ffdf72; --silver: #d6dbe6; --bronze: #e0a463; --coin-shine: #ffe58a; --coin-edge: #9a6400; --sea: #1d4f80; --tile-blue: #3d7bf2; --stat: #c9a2ff; --pk-game: #8e4de8; --pk-game-ink: #fff; }
+body { --wood: #b5753a; --wood-edge: #7a4a20; --coin-text: #ffdf72; --silver: #d6dbe6; --bronze: #e0a463; --coin-shine: #ffe58a; --coin-edge: #9a6400; --sea: #1d4f80; --tile-blue: #3d7bf2; --stat: #c9a2ff; --pk-game: #8e4de8; --pk-game-ink: #fff; --reticle-ink: #16161a; }
 
 * { box-sizing: border-box; }
 
@@ -395,6 +395,48 @@ body.in-mini .look, body.in-mini .side, body.in-mini .legend { display: none; }
 .results .row { display: flex; gap: 10px; }
 .results .row > * { flex: 1; }
 
+/* ---------- aim minigames: reticles instead of the cursor ---------- */
+.reticles { display: none; }
+body.mini-aim .reticles { display: block; position: fixed; inset: 0; pointer-events: none; z-index: 3; }
+body.mini-aim canvas { cursor: none; touch-action: none; }
+.reticle {
+  position: absolute; left: 0; top: 0;
+  width: 0; height: 0;
+  --c: #fff; --pull: 0;
+}
+/* a ring with four ticks in the pana's colour; the inner ring tightens as the china is pulled */
+.reticle::before, .reticle i {
+  content: ''; position: absolute; left: 0; top: 0;
+  border-radius: 50%;
+  translate: -50% -50%;
+}
+.reticle::before {
+  width: 34px; height: 34px;
+  border: 3px solid var(--c);
+  box-shadow: 0 0 0 2px rgba(22, 22, 26, 0.55), inset 0 0 0 2px rgba(22, 22, 26, 0.35);
+  background:
+    linear-gradient(var(--c), var(--c)) center top / 3px 8px no-repeat,
+    linear-gradient(var(--c), var(--c)) center bottom / 3px 8px no-repeat,
+    linear-gradient(var(--c), var(--c)) left center / 8px 3px no-repeat,
+    linear-gradient(var(--c), var(--c)) right center / 8px 3px no-repeat;
+  opacity: 0.8;
+}
+.reticle i {
+  width: calc(30px - var(--pull) * 22px); height: calc(30px - var(--pull) * 22px);
+  border: 2px solid var(--c);
+  opacity: calc(var(--pull) * 1.2);
+}
+.reticle.me::before { width: 46px; height: 46px; border-width: 4px; opacity: 1; }
+.reticle.me i { width: calc(40px - var(--pull) * 30px); height: calc(40px - var(--pull) * 30px); border-width: 3px; }
+.reticle.me { z-index: 1; }
+.reticle.empty::before { opacity: 0.4; }
+.reticle .ammo { position: absolute; top: 30px; left: 0; translate: -50% 0; display: flex; gap: 4px; }
+.reticle .ammo b {
+  width: 10px; height: 10px; border-radius: 50%;
+  background: var(--c); border: 2px solid var(--reticle-ink);
+}
+.reticle .ammo b.used { background: transparent; border-color: rgba(22, 22, 26, 0.45); }
+
 /* ---------- touch controls (minigames only) ---------- */
 .touch { display: none; }
 @media (pointer: coarse) {
@@ -407,6 +449,10 @@ body.in-mini .look, body.in-mini .side, body.in-mini .legend { display: none; }
     z-index: 4;
   }
   /* the buttons themselves are the kit's .pk-touch */
+  body.in-mini .touch-2d { align-items: flex-end; }
+  body.in-mini.mini-2d .touch-1d, body.in-mini:not(.mini-2d) .touch-2d { display: none; }
+  /* aim minigames: the whole screen is the control */
+  body.in-mini.mini-aim .touch { display: none; }
 }
 
 /* narrower screens: smaller cards between the logo and the right column */
@@ -435,6 +481,11 @@ body.in-mini .look, body.in-mini .side, body.in-mini .legend { display: none; }
   .keys { display: none; }
   .timer { top: 10px; left: auto; right: 12px; transform: none; padding: 6px 16px 6px 12px; }
   body.in-mini .touch { bottom: 210px; }
+  /* aim minigames need the whole field: the cards become a slim row at the top */
+  body.mini-aim .cards { top: 8px; bottom: auto; left: 132px; right: 124px; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+  body.mini-aim .pcard { padding: 4px 6px; }
+  body.mini-aim .pcard img { width: 24px; height: 24px; }
+  body.mini-aim .pcard small { display: none; }
   .timer b { font-size: 28px; }
   .prompt { top: auto; bottom: 206px; }
   .prompt .pk-btn--primary { font-size: 24px; }

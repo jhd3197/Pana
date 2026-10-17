@@ -15,6 +15,21 @@ export function waterDepthMap(groundAt,{size=2200,y=0,resolution=256}={}){
   return texture;
 }
 
+// Exact 4-wave displacement + analytical slope so boats, canoes and buoys can
+// ride the same wave math as the vertex shader (or rock in place cheaply).
+export function sampleWaterWave(x,z,t=0,amplitude=.07){
+  const p1=x*.19+z*.11-t*1.1,p2=x*-.13+z*.23-t*.85,p3=x*.29-z*.17-t*1.45,p4=x*-.21-z*.31-t*1.65;
+  const wave=Math.sin(p1)*.42+Math.sin(p2)*.28+Math.sin(p3)*.18+Math.sin(p4)*.12;
+  const dx=Math.cos(p1)*.19*.42+Math.cos(p2)*-.13*.28+Math.cos(p3)*.29*.18+Math.cos(p4)*-.21*.12;
+  const dz=Math.cos(p1)*.11*.42+Math.cos(p2)*.23*.28+Math.cos(p3)*-.17*.18+Math.cos(p4)*-.31*.12;
+  return {
+    wave,
+    y:wave*amplitude,
+    pitch:-dz*Math.max(amplitude*4.5,.18),
+    roll:dx*Math.max(amplitude*4.5,.22),
+  };
+}
+
 export function waterSurface(geometry,{kind='sea',color,depth=5,depthMap=null,size=2200,amplitude=.07,opacity=1}={}){
   const p=geometry.attributes.position;
   if(!geometry.attributes.waterDepth)geometry.setAttribute('waterDepth',new THREE.Float32BufferAttribute(new Float32Array(p.count).fill(depth),1));
@@ -33,13 +48,18 @@ export function waterSurface(geometry,{kind='sea',color,depth=5,depthMap=null,si
     vertexShader:`
       attribute float waterDepth; attribute float waterMask; attribute vec2 waterFlow;
       uniform float time; uniform float amplitude;
-      varying vec3 worldPosition; varying vec2 flowUV; varying float bedDepth; varying float edgeMask;
+      varying vec3 worldPosition; varying vec2 flowUV; varying float bedDepth; varying float edgeMask; varying float waveHeight;
       #include <fog_pars_vertex>
       void main(){
         vec3 transformed=position;vec4 world=modelMatrix*vec4(position,1.);
-        float wave=sin(world.x*.19+world.z*.11-time*1.1)*.6+sin(world.x*-.13+world.z*.23-time*.85)*.4;
-        // Keep shores, ponds and river edges attached to their banks.
-        transformed.y+=amplitude*wave*smoothstep(0.,2.,waterDepth);
+        // Layer 01: 4 sine waves at distinct angles push vertices up and down.
+        float wave=sin(world.x*.19+world.z*.11-time*1.1)*.42
+          +sin(world.x*-.13+world.z*.23-time*.85)*.28
+          +sin(world.x*.29-world.z*.17-time*1.45)*.18
+          +sin(world.x*-.21-world.z*.31-time*1.65)*.12;
+        float atten=smoothstep(0.,2.,waterDepth);
+        transformed.y+=amplitude*wave*atten;
+        waveHeight=wave*atten;
         worldPosition=(modelMatrix*vec4(transformed,1.)).xyz;flowUV=waterFlow;bedDepth=waterDepth;edgeMask=waterMask;
         vec4 mvPosition=modelViewMatrix*vec4(transformed,1.);
         gl_Position=projectionMatrix*mvPosition;
@@ -49,7 +69,7 @@ export function waterSurface(geometry,{kind='sea',color,depth=5,depthMap=null,si
       uniform float time; uniform float flowing; uniform float opacity; uniform float foamStrength;
       uniform vec3 shallow; uniform vec3 deep; uniform vec3 sky; uniform vec3 foam;
       uniform sampler2D depthMap; uniform float hasDepthMap; uniform float domain;
-      varying vec3 worldPosition; varying vec2 flowUV; varying float bedDepth; varying float edgeMask;
+      varying vec3 worldPosition; varying vec2 flowUV; varying float bedDepth; varying float edgeMask; varying float waveHeight;
       #include <fog_pars_fragment>
       float noise(vec2 p){return sin(p.x+sin(p.y*1.31))*sin(p.y*.87+cos(p.x*.73));}
       void main(){
@@ -59,27 +79,38 @@ export function waterSurface(geometry,{kind='sea',color,depth=5,depthMap=null,si
         vec2 p=mix(worldPosition.xz,flowUV,flowing);
         vec2 drift=mix(vec2(.72,.38),vec2(0.,1.8),flowing)*time;
         float detail=1.-smoothstep(90.,600.,distance(cameraPosition,worldPosition));
+        // Layer 05: dual counter-scrolling ripple normals bend light with no extra polygons.
         vec2 q=p-drift;
+        vec2 q2=p*1.28+drift*.62+vec2(4.1,-2.7);
         q+=vec2(noise(q*.09),noise(q.yx*.07+3.7))*2.5;
+        q2+=vec2(noise(q2*.11+1.9),noise(q2.yx*.08-2.3))*1.8;
         float a=q.x*.55+q.y*.32,b=q.x*-.31+q.y*.71;
-        float fine=noise(q*1.7)*.22+noise(q*.34)*.42;
-        vec3 normal=normalize(vec3((-.035*cos(a)+.025*cos(b))*detail,1.,(-.025*cos(a)-.045*cos(b))*detail));
+        float a2=q2.x*.48-q2.y*.39,b2=q2.x*.27+q2.y*.64;
+        float fine=noise(q*1.7)*.18+noise(q*.32)*.32+noise(q2*1.4)*.14;
+        vec3 normal=normalize(vec3(
+          (-.03*cos(a)+.022*cos(b)-.018*cos(a2))*detail,
+          1.,
+          (-.022*cos(a)-.038*cos(b)+.02*cos(b2))*detail
+        ));
         vec3 view=normalize(cameraPosition-worldPosition);
-        float fresnel=.06+.32*pow(1.-max(0.,dot(view,normal)),4.);
+        // Layer 06: Fresnel sky reflection at grazing angles + sun glint.
+        float fresnel=.06+.36*pow(1.-max(0.,dot(view,normal)),5.);
+        // Layer 02: depth color (turquoise shallows -> deep water).
         float body=1.-exp(-depth*.13);
         vec3 col=mix(shallow,deep,body)*(1.+fine*.08*detail+noise(p*.045-time*.08)*.025);
-        // Soft caustics only in the clear shallows; no painted grid on deep water.
-        float caustic=pow(max(0.,sin(a*2.6+fine)*sin(b*2.3-fine)),12.);
-        col+=shallow*caustic*.16*exp(-depth*.35)*detail;
+        // Layer 03: clear shallows with dual-layer dancing caustics.
+        float caustic=pow(max(0.,sin(a*2.6+fine)*sin(b*2.3-fine)+sin(a2*2.1)*sin(b2*2.4)*.35),10.);
+        col+=shallow*caustic*.18*exp(-depth*.35)*detail;
         col=mix(col,sky,fresnel);
         vec3 halfVector=normalize(view+normalize(vec3(-.45,.85,.25)));
         float glint=pow(max(0.,dot(normal,halfVector)),180.);
-        col+=vec3(.82,.88,.77)*glint*.32*detail;
-        // Broken, travelling shore breakers and longitudinal river streaks.
+        col+=vec3(.85,.9,.8)*glint*.36*detail;
+        // Layer 04: shore foam + wave-crest foam + longitudinal river streaks.
         float breaker=sin(depth*4.-time*1.7+noise(p*.24)*1.4)*.5+.5;
         float coastFoam=pow(breaker,9.)*(1.-smoothstep(.3,2.8,depth))*foamStrength*(.45+.55*smoothstep(-.4,.7,noise(p*.6-time*.13)));
-        float current=pow(max(0.,sin(q.x*2.8+noise(q*.4)*2.)),16.)*pow(max(0.,sin(q.y*.7)),4.)*.2*flowing;
-        col=mix(col,foam,clamp(coastFoam+current,0.,.78));
+        float crestFoam=smoothstep(.48,.86,waveHeight+.18*fine)*foamStrength*.42*smoothstep(1.1,3.5,depth);
+        float current=pow(max(0.,sin(q.x*2.8+noise(q*.4)*2.)),16.)*pow(max(0.,sin(q.y*.7)),4.)*.22*flowing;
+        col=mix(col,foam,clamp(coastFoam+crestFoam+current,0.,.82));
         gl_FragColor=vec4(col,opacity*smoothstep(.015,.16,depth)*edgeMask);
         #include <tonemapping_fragment>
         #include <colorspace_fragment>

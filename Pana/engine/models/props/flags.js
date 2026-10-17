@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { M, mesh, tube, canvasMat } from '/engine/models/core/primitives.js';
 
 function venezuelaFlag() {
-  return canvasMat(192, 128, (g) => {
+  const material = canvasMat(192, 128, (g) => {
     g.fillStyle = '#ffcc00';
     g.fillRect(0, 0, 192, 43);
     g.fillStyle = '#00247d';
@@ -17,10 +17,12 @@ function venezuelaFlag() {
       g.fill();
     }
   });
+  material.userData.ownedMap = true;
+  return material;
 }
 
 function panaFlag() {
-  return canvasMat(192, 128, (g) => {
+  const material = canvasMat(192, 128, (g) => {
     g.fillStyle = '#1a1336'; g.fillRect(0, 0, 192, 128);
     g.fillStyle = '#ffc629'; g.fillRect(0, 98, 192, 14);
     g.fillStyle = '#2ad1b2'; g.fillRect(0, 112, 192, 16);
@@ -33,6 +35,8 @@ function panaFlag() {
     g.fillStyle = '#ffc629'; g.textAlign = 'center'; g.textBaseline = 'middle';
     g.font = '44px "Luckiest Guy", system-ui, sans-serif'; g.fillText('PANA', 132, 54, 104);
   });
+  material.userData.ownedMap = true;
+  return material;
 }
 
 function flagPole({ h = 9, flag: design = 'venezuela' } = {}) {
@@ -62,6 +66,8 @@ function flagPole({ h = 9, flag: design = 'venezuela' } = {}) {
     f.geometry.computeVertexNormals();
   };
   g.userData.tick(0);
+  let disposed=false;
+  g.userData.dispose=()=>{if(disposed)return;disposed=true;fabric.map.dispose();fabric.dispose();};
   return g;
 }
 

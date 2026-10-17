@@ -1,4 +1,5 @@
 // Lightweight metadata. Constructors stay in tracks/<id>.js.
+import { WATER_TRACKS } from './tracks/water-track-definitions.js';
 export const TRACK_DEFINITIONS = [
   { id:'estadio',name:'El Estadio',
   blurb:'Un gran premio técnico: frenadas, chicanas, horquillas y la recta de las tribunas.', },
@@ -15,5 +16,6 @@ export const TRACK_DEFINITIONS = [
   { id: 'plaza', name: 'Plaza Pana',
   blurb: 'Del casco histórico a Casas Botes: cruza el gran puente del lago y vuelve por el mirador.', },
   { id:'bululu',name:'Isla Bululú',
-  blurb:'Los Roques entre cayos y lagunas: la marea invade los bordes de la lengua de arena. Busca el centro seco.', }
+  blurb:'Los Roques entre cayos y lagunas: la marea invade los bordes de la lengua de arena. Busca el centro seco.', },
+  ...WATER_TRACKS,
 ];
