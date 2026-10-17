@@ -44,6 +44,11 @@ Regression: `npm run test:browser -- bululu` includes real two-client room play.
 
 ## Test switches
 
+**Bolas Criollas** is `?play=criollas` / `?mini=criollas`: two throws per pana,
+four-way closest-to-mingo scoring, arrow-key direction/power and Space to throw.
+Its deterministic simulation and 3D court are shared with the standalone game;
+see [criollas.md](criollas.md) for controls, timing, physics and proof.
+
 `?auto` (the AI plays you too), `?speed=3`, `?rounds=2`, `?mini=caigas`
 (forces which minigame plays), `?play=atrapa` (skips the board and loops one
 minigame), `?debug` (puts `players`, `board`, `MINIGAMES`, `layoutTokens` and

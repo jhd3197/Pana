@@ -10,6 +10,12 @@ becomes the GitHub release's notes.
 
 ### Added
 
+- **Play Bolas Criollas on a shared 3D court, as a full game or a Bululú minigame.**
+  Invite up to four panas for red-versus-green matches with bots, eight balls per
+  team, arrimes, ground boches and 12- or 24-point house rules. Bululú adds a quick
+  two-throws-each contest. Both use saved panas, rolling collisions and a visible
+  aiming guide; the court and balls are also available in Pana Studio.
+
 - **Derrape's grass and trees gain procedural surface detail that follows graphics quality.**
   Seeded ground patches, visible 3D grass tufts, leaf mottling and bark grain
   enrich the circuits and their Studio previews. Rápida keeps simple surfaces;

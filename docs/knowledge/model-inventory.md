@@ -2,7 +2,7 @@
 
 Audited 2026-10-17. Generated from the real Studio registry plus a reviewed source ledger.
 
-**264 Studio resources**, including **18 Fauna entries**, **27 vegetation entries**, **14 vehicles** and **25 maps**. **13 resources are preview-only.** The separate ledger identifies **31 active uncataloged model families**, **46 scene/effect families** and **9 dormant factories/hooks**. These numbers must not be added into a “unique 3D models” total: maps contain models, variants share geometry, and some ledger rows group multiple related props.
+**266 Studio resources**, including **18 Fauna entries**, **27 vegetation entries**, **14 vehicles** and **25 maps**. **13 resources are preview-only.** The separate ledger identifies **31 active uncataloged model families**, **46 scene/effect families** and **9 dormant factories/hooks**. These numbers must not be added into a “unique 3D models” total: maps contain models, variants share geometry, and some ledger rows group multiple related props.
 
 Scope: current production geometry in `engine/` and the four games, including Bululú minigames, gameplay props, embedded wardrobe options and map scenery. Individual meshes, geometry helpers, UI/SVG art, generated screenshots, dependency internals and historical deleted revisions are excluded. Catalog consumer labels identify games, not instance counts. Active uncataloged entries were traced to their placement sources; presence in source does not guarantee visibility from every camera. Legacy rows are retained explicitly instead of being presented as new content.
 
@@ -303,7 +303,7 @@ The following list is generated, not manually copied. “In use” is the catalo
 | Circuito · Salinas del Viento · track-salinas | Derrape | [salinas.js](../../Pana/games/derrape/public/tracks/salinas.js) | makeTrack(definition).build |
 | Circuito · Puerto · track-puerto | Derrape | [puerto.js](../../Pana/games/derrape/public/tracks/puerto.js) | makeTrack(definition).build |
 
-### Objetos (61)
+### Objetos (63)
 
 | Name / ID | Status / games | Source | Constructor |
 | --- | --- | --- | --- |
@@ -353,6 +353,8 @@ The following list is generated, not manually copied. “In use” is the catalo
 | Casa larga del pueblo · colonial-long | Derrape | [colonial-house.js](../../Pana/engine/models/props/colonial-house.js) | colonialHouse |
 | Casa de la esquina · colonial-corner | Derrape | [colonial-house.js](../../Pana/engine/models/props/colonial-house.js) | colonialHouse |
 | Casa del portal · colonial-porch | Derrape | [colonial-house.js](../../Pana/engine/models/props/colonial-house.js) | colonialHouse |
+| Cancha de bolas criollas · criollas-court | Bolas Criollas, Bululú | [criollas.js](../../Pana/engine/models/props/criollas.js) | criollasCourt |
+| Bola criolla · criolla-ball | Bolas Criollas, Bululú | [criollas.js](../../Pana/engine/models/props/criollas.js) | criollaBall |
 | Arepa · food-arepa | Cocina | [kitchen.js](../../Pana/engine/models/props/kitchen.js) | food |
 | Cachapa · food-cachapa | Cocina | [kitchen.js](../../Pana/engine/models/props/kitchen.js) | food |
 | Tequeños · food-tequenos | Cocina | [kitchen.js](../../Pana/engine/models/props/kitchen.js) | food |

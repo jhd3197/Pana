@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#d88b4b"><title>Bolas Criollas · Pana</title>
+  <link rel="stylesheet" href="/engine/kit.css"><link rel="stylesheet" href="/engine/ui.css"><link rel="stylesheet" href="./style.css">
+  <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}</script>
+</head>
+<body class="in-lobby">
+  <header class="game-header"><a class="pk-logo" href="/" aria-label="Pana, todos los juegos">PANA</a><span>BOLAS CRIOLLAS</span><nav id="menu-slot" aria-label="Menú del juego"></nav></header>
+  <main>
+    <div id="court-wrap"><canvas id="court" tabindex="0" aria-label="Cancha de bolas criollas: toca para apuntar. Flechas para dirección y fuerza; espacio para lanzar."></canvas></div>
+    <section id="welcome" class="pk-lobby" aria-labelledby="title">
+      <a class="pk-back" href="/">← Todos los juegos</a>
+      <h1 id="title" class="pk-title">Bolas <br>Criollas</h1>
+      <p class="pk-copy">Arrima al mingo. Si una bola rival estorba, ¡sácala con un boche!</p>
+      <div class="pk-stats"><div class="pk-stat"><b>1–4</b><span>panas</span></div><div class="pk-stat"><b>2</b><span>equipos</span></div><div class="pk-stat"><b>8</b><span>bolas por equipo</span></div></div>
+      <fieldset><legend>Meta de la partida</legend><div class="pk-seg" id="target-options"><button data-target="12" aria-pressed="true">12 tantos</button><button data-target="24" aria-pressed="false">24 tantos</button></div></fieldset>
+      <div class="pk-lobby-foot"><p id="connection" class="pk-copy" role="status">Los puestos libres los juegan bots.</p><span id="room-code" class="pk-lobby-room"></span>
+        <button id="start" class="pk-btn pk-btn--primary pk-btn--lg pk-btn--block">Jugar online</button><div id="invite-slot"></div>
+        <button id="practice" class="pk-btn pk-btn--ghost pk-btn--block">Jugar con bots</button><button id="rules" class="pk-btn pk-btn--ghost pk-btn--block">Cómo se juega</button>
+      </div>
+      <ol id="lobby-roster" class="pk-roster"></ol>
+    </section>
+    <section id="scoreboard" aria-label="Marcador" hidden>
+      <div class="team-score pk-panel red"><span>ROJOS</span><b id="score-0">0</b><small id="left-0"></small></div>
+      <div class="hand-label"><b id="hand-number"></b><span id="target-label"></span></div>
+      <div class="team-score pk-panel green"><span>VERDES</span><b id="score-1">0</b><small id="left-1"></small></div>
+    </section>
+    <section id="controls" class="pk-panel" hidden aria-label="Lanzamiento">
+      <div class="turn-info"><b id="turn" aria-live="polite"></b><span id="measure"></span></div>
+      <div class="shot-row">
+        <div class="pk-seg" id="shot-options"><button data-mode="arrime" aria-pressed="true">Arrime</button><button data-mode="boche" aria-pressed="false">Boche rastrero</button></div>
+        <label class="power-control" for="power">Fuerza <output id="power-value">62%</output><input id="power" type="range" min="10" max="100" value="62"></label>
+        <div class="fine-controls pk-touch-zone"><button id="aim-left" class="pk-touch pk-touch--sm" data-icon="left" aria-label="Apuntar a la izquierda"></button><button id="aim-right" class="pk-touch pk-touch--sm" data-icon="right" aria-label="Apuntar a la derecha"></button></div>
+        <button id="shoot" class="pk-btn pk-btn--primary">Lanzar <kbd class="pk-kbd" data-pana-hint>Espacio</kbd></button>
+      </div>
+      <p class="control-hint" data-pana-hint>Toca la cancha para apuntar · ← → dirección · ↑ ↓ fuerza · Espacio lanzar</p>
+      <p class="guide-note">La guía marca el punto de frenado sin choques.</p>
+    </section>
+    <div id="recovery" class="pk-panel" hidden><p id="recovery-copy" role="status"></p><button id="fallback" class="pk-btn pk-btn--primary">Jugar con bots</button></div>
+  </main>
+  <section id="results" class="pk-results" hidden aria-labelledby="result-title"><div class="pk-modal pk-results-card">
+    <span id="result-ribbon" class="pk-ribbon"></span><h2 id="result-title" class="pk-title"></h2><p id="result-copy" class="pk-copy"></p>
+    <ol id="result-board" class="pk-roster"></ol><button id="next" class="pk-btn pk-btn--primary pk-btn--block"></button><a class="pk-back" href="/">← Todos los juegos</a>
+  </div></section>
+  <p id="toast" class="pk-panel" role="status" hidden></p>
+  <script type="module" src="./game.js"></script>
+</body></html>

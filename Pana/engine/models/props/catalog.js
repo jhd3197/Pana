@@ -21,6 +21,7 @@ import tableGames from './catalog/table-games.js';
 import circuitLife from './catalog/circuit-life.js';
 import colonialHouses from './catalog/colonial-houses.js';
 import puerto from './catalog/puerto.js';
+import criollas from './catalog/criollas.js';
 
 export default [
   ...ranch,
@@ -46,4 +47,5 @@ export default [
   ...circuitLife,
   ...colonialHouses,
   ...puerto,
+  ...criollas,
 ];

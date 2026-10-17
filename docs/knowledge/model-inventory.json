@@ -2,7 +2,7 @@
   "date": "2026-10-17",
   "scope": "Current production 3D resource/model families; catalog variants and scene assemblies are counted separately. No primitive-mesh count or deleted-history total.",
   "counts": {
-    "catalog": 264,
+    "catalog": 266,
     "categories": {
       "Fauna": 18,
       "Vegetación": 27,
@@ -10,7 +10,7 @@
       "Vida llanera": 13,
       "Desierto": 10,
       "Termales": 5,
-      "Objetos": 61,
+      "Objetos": 63,
       "Emblemas": 9,
       "Pueblo": 18,
       "Páramo": 8,
@@ -2883,6 +2883,34 @@
       "usedBy": [
         "Derrape"
       ],
+      "status": "in-use"
+    },
+    {
+      "id": "criollas-court",
+      "name": "Cancha de bolas criollas",
+      "category": "Objetos",
+      "source": "Pana/engine/models/props/criollas.js",
+      "factory": "criollasCourt",
+      "usedBy": [
+        "Bolas Criollas",
+        "Bululú"
+      ],
+      "previewOptions": {},
+      "status": "in-use"
+    },
+    {
+      "id": "criolla-ball",
+      "name": "Bola criolla",
+      "category": "Objetos",
+      "source": "Pana/engine/models/props/criollas.js",
+      "factory": "criollaBall",
+      "usedBy": [
+        "Bolas Criollas",
+        "Bululú"
+      ],
+      "previewOptions": {
+        "radius": 0.7
+      },
       "status": "in-use"
     },
     {
