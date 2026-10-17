@@ -34,6 +34,7 @@ try {
   const guest = await player('Guest', '');
   const host = await player('Leader', '&lead=1');
   await until(guest, () => getNet().state.players.length === 2);
+  await until(host, () => getNet().state.players.length === 2);
   let g = await state(guest), h = await state(host);
   assert.equal(h.isHost, true, 'the lead=1 player hosts');
   assert.equal(g.isHost, false);

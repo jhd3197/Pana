@@ -4,6 +4,7 @@
 // phase, host, roster, grid, start time, finish order and Grand Prix cup state.
 
 import { schema, t } from '@colyseus/schema';
+import { randomUUID } from 'node:crypto';
 import { PanaRoom, Member, roomState, avatarJson, MAX_MEMBERS } from '../../../server/src/room-kit.js';
 import { randomAvatar } from '../../../engine/avatar.js';
 import {
@@ -139,7 +140,7 @@ export default class DerrapeRoom extends PanaRoom {
     });
     this.onMessage('next', (client, m) => {
       if (!this.isHost(client) || !this.cupSession || this.state.phase !== 'results' || this.cupSession.status !== 'intermission') return;
-      if (m && !this.matchesContext(m)) return;
+      if (!this.matchesContext(m)) return;
       if (Date.now() - this.resultsAt >= GP_MIN_READ_MS) this.advanceCupStage();
     });
     this.onMessage('lobby', (client) => {
@@ -149,6 +150,7 @@ export default class DerrapeRoom extends PanaRoom {
       const p = this.state.players.get(client.sessionId);
       if (!p || !p.racing || !this.matchesContext(m)) return;
       p.loaded = true;
+      this.sendPoses(client);
     });
     this.onMessage('ping', (client, m) => client.send('pong', { c: m?.c, s: Date.now() }));
 
@@ -158,6 +160,7 @@ export default class DerrapeRoom extends PanaRoom {
       if (!['count', 'race'].includes(this.state.phase)) return;
       const list = Array.isArray(payload) ? payload : Array.isArray(payload?.list) ? payload.list : null;
       if (!list) return;
+      if (this.cupSession && Array.isArray(payload)) return;
       if (!Array.isArray(payload) && !this.matchesContext(payload)) return;
       const out = [];
       const maxLap = (this.state.laps || LAPS) + 1;
@@ -170,15 +173,16 @@ export default class DerrapeRoom extends PanaRoom {
         if (r.lap !== pose[11]) r.lap = Math.max(-1, Math.min(maxLap, pose[11] | 0));
         out.push(entry);
       }
-      if (out.length) this.broadcast('p', out, { except: client });
+      if (out.length) this.broadcast('p', this.cupSession ? { ...this.currentContext(), list: out } : out, { except: client });
     });
     // Throws, peels, hits, slips, honks and speech for the cars a client owns.
     this.onMessage('fx', (client, m) => {
       const r = m && this.state.racers.get(m.id);
       if (!r || r.owner !== client.sessionId || r.retired || r.dns || typeof m.k !== 'string' || m.k.length > 8) return;
-      if (m.raceId != null && !this.matchesContext(m)) return;
+      if (!['count', 'race'].includes(this.state.phase)) return;
+      if ((this.cupSession || m.raceId != null) && !this.matchesContext(m)) return;
       if (JSON.stringify(m.d ?? {}).length > 512) return;
-      this.broadcast('fx', { id: m.id, k: m.k, d: m.d ?? {}, raceId: this.state.raceId }, { except: client });
+      this.broadcast('fx', { ...this.currentContext(), id: m.id, k: m.k, d: m.d ?? {} }, { except: client });
     });
     this.onMessage('finish', (client, m) => {
       const r = m && this.state.racers.get(m.id);
@@ -204,7 +208,7 @@ export default class DerrapeRoom extends PanaRoom {
     });
     // Leaving a race for the garage: the car goes, the player stays in the room.
     this.onMessage('retire', (client, m) => {
-      if (m?.raceId != null && !this.matchesContext(m)) return;
+      if ((this.cupSession || m?.raceId != null) && !this.matchesContext(m)) return;
       this.retireHuman(client.sessionId);
     });
 
@@ -239,16 +243,25 @@ export default class DerrapeRoom extends PanaRoom {
     return this.canConfigure();
   }
 
+  currentContext() {
+    const ctx = { raceId: this.state.raceId };
+    if (this.cupSession) {
+      const stageIndex = this.cupSession.stageIndex;
+      ctx.sessionId = this.cupSession.sessionId;
+      ctx.stage = stageIndex;
+      ctx.attempt = this.cupSession.attempts[stageIndex] ?? 1;
+    }
+    return ctx;
+  }
+
   matchesContext(m) {
     if (!m || typeof m !== 'object') return false;
     if (m.raceId != null && m.raceId !== this.state.raceId) return false;
     if (!this.cupSession) return m.raceId === this.state.raceId;
     const stageIndex = this.cupSession.stageIndex;
     const attempt = this.cupSession.attempts[stageIndex];
-    if (m.sessionId != null && m.sessionId !== this.cupSession.sessionId) return false;
-    if (m.stage != null && m.stage !== stageIndex) return false;
-    if (m.attempt != null && m.attempt !== attempt) return false;
-    return true;
+    return m.raceId === this.state.raceId && m.sessionId === this.cupSession.sessionId
+      && m.stage === stageIndex && m.attempt === attempt;
   }
 
   stageCapMs() {
@@ -264,7 +277,12 @@ export default class DerrapeRoom extends PanaRoom {
   }
 
   joined(client) { this.sendPoses(client); }
-  returned(client) { this.sendPoses(client); }
+  returned(client) {
+    const r = this.state.racers.get(client.sessionId);
+    const p = this.state.players.get(client.sessionId);
+    if (p && r && !r.dns && !r.retired && this.state.phase === 'loading') p.racing = true;
+    this.sendPoses(client);
+  }
 
   left(client) {
     this.retireHuman(client.sessionId);
@@ -292,7 +310,7 @@ export default class DerrapeRoom extends PanaRoom {
   }
 
   sendPoses(client) {
-    client.send('poses', Object.fromEntries(this.poses));
+    client.send('poses', { ...this.currentContext(), poses: Object.fromEntries(this.poses) });
   }
 
   startRace() {
@@ -344,7 +362,7 @@ export default class DerrapeRoom extends PanaRoom {
   startCup(humans) {
     const cup = cupById(this.state.mode);
     const seed = `${this.code || 'room'}:${Date.now()}:${Math.random()}`;
-    const sessionId = `gp-${this.code || 'room'}-${Date.now()}`;
+    const sessionId = `gp-${randomUUID()}`;
     const total = Math.min(MAX_MEMBERS, this.state.bots ? Math.max(GP_GRID, humans.length) : humans.length);
     const taken = new Set(humans.map(([, p]) => p.car));
     const botCars = [

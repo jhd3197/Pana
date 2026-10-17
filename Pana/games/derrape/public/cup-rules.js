@@ -140,7 +140,9 @@ export function gridForStage(session, stageIndex = session.stageIndex) {
   if (stageIndex === 0) return [...session.initialGrid];
   const previous = new Map(stageResults(session, stageIndex - 1).map(record => [record.id, record]));
   const absent = new Set(session.absent);
-  const ordered = standings(session);
+  // A grid follows the last race, not cumulative championship points.
+  const ordered = standings(session).sort((a, b) =>
+    (previous.get(a.id)?.place ?? 99) - (previous.get(b.id)?.place ?? 99));
   const classified = ordered.filter(row => !absent.has(row.id) && CLASSIFIED.has(previous.get(row.id)?.classification));
   const last = ordered.filter(row => !classified.includes(row));
   return [...classified, ...last].map(row => row.id);

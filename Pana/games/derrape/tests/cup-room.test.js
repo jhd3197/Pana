@@ -249,3 +249,66 @@ test('host handoff transfers bot ownership without resetting skillSeed or scores
   send(guest, 'finish', { ...ctx, id: 'bot-1', time: 51.4 });
   assert.equal(room.state.racers.get('bot-1').done, true);
 });
+
+test('GP rejects missing context, legacy poses, foreign ownership and stale effects', () => {
+  const { room, send, join, broadcasts } = createTestRoom({ mode: 'pana' });
+  const { client: host } = join('host'), { client: guest } = join('guest');
+  send(host, 'start');
+  const ctx = room.currentContext();
+  for (const packet of [undefined, {}, { raceId: ctx.raceId }, { ...ctx, sessionId: 'old' }]) {
+    send(host, 'loaded', packet);
+    assert.equal(room.state.players.get('host').loaded, false);
+    send(host, 'retire', packet);
+    assert.deepEqual(room.cupSession.absent, []);
+  }
+  send(host, 'loaded', ctx); send(guest, 'loaded', ctx); room.tick();
+  room.state.startAt = Date.now() - 10; room.tick();
+  const before = broadcasts.length;
+  send(host, 'p', [validPosePacket('host')]);
+  send(host, 'p', { ...ctx, list: [validPosePacket('guest')] });
+  send(host, 'fx', { id: 'host', k: 'throw', d: {} });
+  send(host, 'fx', { ...ctx, stage: 3, id: 'host', k: 'throw', d: {} });
+  send(host, 'finish', { id: 'host', time: 40 });
+  assert.equal(broadcasts.length, before);
+  assert.equal(room.state.racers.get('host').done, false);
+});
+
+test('departures preserve accepted finishes and prior points, later stages are DNS', () => {
+  const { room, send, join } = createTestRoom({ mode: 'pana' });
+  const { client: host } = join('host'), { client: guest } = join('guest');
+  send(host, 'start');
+  const ctx = room.currentContext();
+  send(host, 'loaded', ctx); send(guest, 'loaded', ctx); room.tick();
+  room.state.startAt = Date.now() - 10; room.tick();
+  send(host, 'finish', { ...ctx, id: 'host', time: 50 });
+  room.onDrop(host); room.onLeave(host);
+  send(guest, 'finish', { ...ctx, id: 'guest', time: 55 }); room.tick();
+  assert.equal(room.cupSession.ledger.find(r => r.id === 'host').classification, 'finished');
+  const points = standings(room.cupSession).find(r => r.id === 'host').points;
+  room.resultsAt = Date.now() - GP_MIN_READ_MS - 1;
+  send(guest, 'next', ctx);
+  assert.equal(room.state.racers.get('host').dns, true);
+  const ctx2 = room.currentContext();
+  send(guest, 'loaded', ctx2); room.tick(); room.state.startAt = Date.now() - 10; room.tick();
+  send(guest, 'finish', { ...ctx2, id: 'guest', time: 70 }); room.tick();
+  assert.equal(standings(room.cupSession).find(r => r.id === 'host').points, points);
+  assert.equal(room.cupSession.ledger.find(r => r.id === 'host' && r.stage === 1).classification, 'dns');
+});
+
+test('late spectators stay outside locked roster and a new cup resets all race state', () => {
+  const { room, send, join } = createTestRoom({ mode: 'pana' });
+  const { client: host } = join('host'); send(host, 'start');
+  const sessionId = room.cupSession.sessionId;
+  const { client: spectator } = join('spectator');
+  assert.equal(room.state.players.get('spectator').racing, false);
+  assert.ok(!room.cupSession.entrants.some(e => e.id === spectator.sessionId));
+  send(spectator, 'loaded', room.currentContext());
+  assert.equal(room.state.players.get('spectator').loaded, false);
+  room.toLobby();
+  assert.equal(room.poses.size, 0); assert.equal(room.state.racers.size, 0);
+  send(host, 'mode', { mode: 'aventura' }); send(host, 'start');
+  assert.notEqual(room.cupSession.sessionId, sessionId);
+  assert.ok(room.cupSession.entrants.some(e => e.id === 'spectator'));
+  assert.equal(room.cupSession.ledger.length, 0);
+  assert.equal(room.state.track, 'desierto');
+});

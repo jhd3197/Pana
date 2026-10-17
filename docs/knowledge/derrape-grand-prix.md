@@ -204,3 +204,33 @@ legacy protocol rejection, 8-entrant roster persistence, stage-specific lap
 bounds, duplicate/stale packet rejection, DNS/all-DNS loading timeouts, and
 mid-cup host handoff.
 
+## Phase 06 — client continuity and recovery
+
+The client adapter now carries the full `(raceId, sessionId, stage, attempt)`
+context on readiness, poses, effects, finishes, withdrawal and advancement.
+The server rejects missing GP context as well as mismatched context; legacy
+array poses remain quick-race-only. Server-to-client snapshots and effects carry
+the same context, and the adapter clears its pose cache on every context change.
+Session IDs use UUIDs: a same-millisecond replay must not collide with receipts.
+
+The game keeps the official ledger outside scene lifetime, loads each next map,
+renders before readiness, restores poses on reload, transfers bot ownership,
+ghosts disconnected humans, and shows server-timed intermission and standings.
+Frozen room avatars are parsed before model construction. Reloaded finished
+players retain their accepted finish. Cancelling a loading stage withdraws the
+entrant rather than letting the next patch start the abandoned loader again.
+
+Proof during takeover: the repository check passed 253 tests. The focused
+ledger/room suites subsequently passed 18 tests, including missing context,
+ownership, departures after finishing, late spectators and fresh-cup resets.
+`cup-online.browser.js` completed all four Copa Pana stages with two independent
+browser contexts, duplicate names, an intentionally held readiness packet,
+remote motion, a mango throw and a stage-two token reload. Both clients agreed
+on all four ledgers and repeated final rendering did not pay twice.
+Manual-render test mode drives the actual steering, car and checkpoint simulation
+at 60 Hz and sends real poses; it is functional proof, not a frame-rate measure.
+The expanded host-loss/stale-message scenario is a separate subsequent gate.
+
+Subsequent starting grids now follow the immediately preceding race placement,
+not cumulative cup points; a regression proves the two orders can differ.
+

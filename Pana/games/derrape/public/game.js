@@ -19,7 +19,7 @@ import { ICONS as SVG } from '/engine/icons.js';
 import { holdButton } from '/engine/touch.js';
 import { pixelRatio, bindRenderer } from '/engine/settings.js';
 import { shout } from '/engine/kit.js';
-import { LAPS, RIVALS, AI_WHEELS, POSE_HZ, FLAG, DRIFT_SHIFT, FINISH_GRACE_MS, packPose, gridSlot } from './online-rules.js';
+import { LAPS, RIVALS, AI_WHEELS, POSE_HZ, FLAG, DRIFT_SHIFT, FINISH_GRACE_MS, GP_GRID, GP_INTERMISSION_MS, GP_MIN_READ_MS, packPose, gridSlot } from './online-rules.js';
 import { clockText, wrapAngle, raceOrder, aiPedals, resolveContact } from './rules.js';
 import { CUPS, cupById, cupTracks, difficultyById, rubberBand, cleanLaps, BALLOONS, BATTLE_TIME, battleOrder, battleOver } from './modes.js';
 import { abandonCup, advanceStage, beginStage, createCupSession, cupTrophy, finalizeStage, markRacing, markStarted, retryStage, seededOrder, seededUnit, standings as championshipStandings } from './cup-rules.js';
@@ -51,6 +51,7 @@ const ME = { name: loadName(), avatar: loadAvatar() };
 // ?room=<code> races online with panas (online.js); without it the race is local.
 // ?lead=1 marks the party's Pana Mayor, who hosts the room.
 const ROOM = roomFromUrl();
+const onlineModulePromise = ROOM ? import('./online.js') : null;
 let net = null;
 
 const LINES = {
@@ -283,7 +284,18 @@ $('honk').onclick = garageHonk;
 $('cam').onclick = () => setFocus(!garage.focus);
 $('play').onclick = () => {
   sound.unlock();
-  if (net) { if (net.isHost) net.start(); return; }
+  if (net) {
+    if (['loading', 'count', 'race'].includes(net.state.phase)) {
+      const myRacer = net.state.racers?.find(r => r.id === net.id);
+      if (myRacer && !myRacer.retired && !myRacer.dns) {
+        selectTrack(net.state.track, net.state.laps);
+        startRace(garage.index, garage.wheel, net.state.racers);
+      }
+      return;
+    }
+    if (net.isHost) net.start();
+    return;
+  }
   if (!joining) startRace(garage.index, garage.wheel);
 };
 $('go-online').onclick = () => { sound.unlock(); goOnline(newRoomCode(), true); };
@@ -478,20 +490,30 @@ function renderSetup() {
   const press = (root, attr, value) => {
     for (const b of $(root).querySelectorAll('button')) b.setAttribute('aria-pressed', String(b.dataset[attr] === String(value)));
   };
-  press('mode-pick', 'mode', setup.mode);
-  press('difficulty-pick', 'difficulty', setup.difficulty);
+  const activeMode = net ? (net.state?.mode || 'race') : setup.mode;
+  const activeDiff = net ? (net.state?.difficulty || 'normal') : setup.difficulty;
+  const hostCanConfig = !net || (net.isHost && ['lobby', 'results', 'complete'].includes(net.state?.phase));
+  press('mode-pick', 'mode', activeMode);
+  press('difficulty-pick', 'difficulty', activeDiff);
   press('laps-pick', 'laps', setup.laps);
+  const lapsRow = $('laps-pick').closest('.setup-row');
+  if (lapsRow) lapsRow.hidden = !!net;
   const mirrorOpen = mirrorUnlocked(loadTrophies());
   if (!mirrorOpen) setup.mirror = false;
   $('mirror').disabled = !mirrorOpen;
   $('mirror').title = mirrorOpen ? '' : 'Gana un trofeo en una copa para desbloquear el modo espejo';
   $('mirror').setAttribute('aria-checked', String(setup.mirror));
   $('split').setAttribute('aria-checked', String(setup.split));
-  const battle = setup.mode === 'battle', cup = isCupMode(setup.mode) ? cupById(setup.mode) : null;
-  $('launch-note').innerHTML = `<span class="pk-dot"></span>${cup ? (setup.split ? 'Dos panas contra 6 rivales' : 'Tú contra 7 rivales') : setup.split ? 'Dos panas contra 2 rivales' : 'Tú contra 3 rivales'}`;
+  const battle = activeMode === 'battle', cup = isCupMode(activeMode) ? cupById(activeMode) : null;
+  if (!net) {
+    $('launch-note').innerHTML = `<span class="pk-dot"></span>${cup ? (setup.split ? 'Dos panas contra 6 rivales' : 'Tú contra 7 rivales') : setup.split ? 'Dos panas contra 2 rivales' : 'Tú contra 3 rivales'}`;
+  }
   for (const b of $('laps-pick').querySelectorAll('button')) b.disabled = battle || !!cup;
+  for (const b of $('difficulty-pick').querySelectorAll('button')) b.disabled = !hostCanConfig;
   const trophies = profile.trophies, legacy = profile.legacyTrophies;
   for (const b of $('mode-pick').querySelectorAll('button')) {
+    b.hidden = !!net && b.dataset.mode === 'battle';
+    b.disabled = !hostCanConfig;
     const won = trophies[b.dataset.mode], earlier = legacy[b.dataset.mode];
     const shown = won ?? earlier?.trophy;
     b.title = shown ? `Trofeo de ${shown}${!won && earlier ? ' · Edición anterior' : ''}` : '';
@@ -536,7 +558,7 @@ function renderSetup() {
   } else {
     stagesEl.replaceChildren();
   }
-  if (!mirrorOpen && !cup && setup.mode !== 'battle') $('setup-note').textContent = 'Gana un trofeo en una copa para desbloquear el modo espejo.';
+  if (!mirrorOpen && !cup && activeMode !== 'battle') $('setup-note').textContent = 'Gana un trofeo en una copa para desbloquear el modo espejo.';
   else $('setup-note').textContent = cup
     ? `${cup.name}: ${cupTracks(cup).map(id => getTrack(id).name).join(' → ')}. ${approximateCupText(cup)}`
     : battle ? 'Globos: tres globos por carro. Cada golpe revienta uno. Gana el último con globos.' : '';
@@ -550,8 +572,20 @@ function renderSetup() {
   }
 }
 
-for (const b of document.querySelectorAll('#mode-pick button')) b.onclick = () => { setup.mode = b.dataset.mode; race.cup = null; saveSetup(); renderSetup(); };
-for (const b of document.querySelectorAll('#difficulty-pick button')) b.onclick = () => { setup.difficulty = b.dataset.difficulty; saveSetup(); renderSetup(); };
+for (const b of document.querySelectorAll('#mode-pick button')) b.onclick = () => {
+  if (net) {
+    if (net.isHost) net.mode(b.dataset.mode);
+    return;
+  }
+  setup.mode = b.dataset.mode; race.cup = null; saveSetup(); renderSetup();
+};
+for (const b of document.querySelectorAll('#difficulty-pick button')) b.onclick = () => {
+  if (net) {
+    if (net.isHost) net.difficulty(b.dataset.difficulty);
+    return;
+  }
+  setup.difficulty = b.dataset.difficulty; saveSetup(); renderSetup();
+};
 for (const b of document.querySelectorAll('#laps-pick button')) b.onclick = () => { setup.laps = cleanLaps(Number(b.dataset.laps)); saveSetup(); renderSetup(); };
 $('mirror').onclick = () => { setup.mirror = !setup.mirror; saveSetup(); renderSetup(); };
 $('split').onclick = () => { setup.split = !setup.split; saveSetup(); renderSetup(); };
@@ -570,7 +604,8 @@ function selectTrack(id, lapsOverride = null) {
   const laps = lapsOverride ?? (net ? net.state?.laps || LAPS : setup.mode === 'battle' ? 0 : setup.laps);
   $('track-blurb').textContent = `${(route.TOTAL / 1000).toFixed(2)} km por vuelta · ${laps ? `${laps} ${laps === 1 ? 'vuelta' : 'vueltas'}` : 'batalla de globos'}. ${def.blurb}`
     + (def.rain ? ' Está lloviendo: los cauchos de lluvia agarran mejor.' : '');
-  const cup = !net && isCupMode(setup.mode) ? cupById(setup.mode) : null;
+  const activeMode = net ? (net.state?.mode || 'race') : setup.mode;
+  const cup = isCupMode(activeMode) ? cupById(activeMode) : null;
   const cupStageIdx = cup ? cup.stages.findIndex(s => s.track === def.id) : -1;
   $('track-of').textContent = cupStageIdx >= 0 ? `Carrera ${cupStageIdx + 1}/4` : `Pista ${trackIndex + 1}/${TRACKS.length}`;
   drawTrackPreview(route);
@@ -751,9 +786,10 @@ const cupSkill = (entrant, difficulty) => difficulty.skill[0]
   + seededUnit(entrant.skillSeed) * (difficulty.skill[1] - difficulty.skill[0]);
 
 function makeRacer(index, isPlayer, name, wheelId = 'calle', avatar = null) {
+  if (typeof avatar === 'string') { try { avatar = JSON.parse(avatar); } catch { avatar = null; } }
   const def = CARS[index];
   const wheel = wheelById(wheelId);
-  const who = isPlayer ? ME : { name, avatar: avatar || randomAvatar() };
+  const who = { name: name ?? (isPlayer ? ME.name : 'Pana'), avatar: avatar || (isPlayer ? ME.avatar : randomAvatar()) };
   const car = def.build(who.avatar, wheel.wheel ?? undefined);
   if (isPlayer) repaintCar(car, def.color, paintFor(def));
   // Retain ownership even after a bumper detaches and expires from the scene.
@@ -859,6 +895,11 @@ function progressOf(c) {
 }
 
 function disposeRacer(c) {
+  const ownedMaterials = new Set();
+  c.car.root.traverse(o => {
+    for (const material of [].concat(o.material || [])) if (material.userData?.ghostClone) ownedMaterials.add(material);
+  });
+  ownedMaterials.forEach(material => material.dispose());
   race.scene.remove(c.car.root);
   c.car.driver.dispose();
   race.scene.remove(c.bubble.sprite);
@@ -904,30 +945,47 @@ let loadGeneration = 0;
 // roster (online only): [{ id, kind, owner, name, avatar, car, wheel, slot }]
 // from the room. Without one the race is the local player plus three bots.
 async function startRace(playerIndex, wheelId = garage.wheel, roster = null) {
-  if (mode === 'loading') return;
+  if (mode === 'loading' && (!roster || net?.state.raceId === race.loadingRaceId)) return;
   const generation = ++loadGeneration;
-  race.mode = roster ? 'race' : setup.mode === 'battle' ? 'battle' : isCupMode(setup.mode) ? 'cup' : 'race';
-  if (race.mode === 'cup') {
-    let session = race.cup?.session;
-    if (!session || session.cupId !== setup.mode || ['complete', 'abandoned'].includes(session.status)) {
-      session = createLocalCup(setup.mode, playerIndex, wheelId, setup.split, setup.difficulty);
-      race.cup = { definition: cupById(setup.mode), session, mirror: setup.mirror };
+  race.loadingRaceId = roster ? net.state.raceId : 0;
+  if (roster) {
+    if (net.cup) {
+      race.mode = 'cup';
+      race.cup = { definition: cupById(net.cup.cupId), session: net.cup, mirror: false };
+      race.diff = difficultyById(net.cup.difficulty || net.state.difficulty || 'normal');
+      race.laps = net.state.laps || race.cup.definition.stages[net.cup.stageIndex].laps;
+    } else {
+      race.mode = 'race';
+      race.cup = null;
+      race.diff = difficultyById(net.state.difficulty || 'normal');
+      race.laps = net.state.laps || LAPS;
     }
-    if (session.status === 'ready') beginStage(session);
-    else if (['loading', 'racing'].includes(session.status)) retryStage(session);
-    else return;
-    const stage = race.cup.definition.stages[session.stageIndex];
-    race.diff = difficultyById(session.difficulty);
-    race.laps = stage.laps;
-    race.mirror = race.cup.mirror;
-    race.split = session.entrants.some(entrant => entrant.id === LOCAL_GUEST);
-    selectTrack(stage.track);
+    race.mirror = false;
+    race.split = false;
   } else {
-    race.cup = null;
-    race.diff = difficultyById(roster ? 'normal' : setup.difficulty);
-    race.laps = roster ? (net.state.laps || LAPS) : race.mode === 'battle' ? 1 : setup.laps;
-    race.mirror = !roster && setup.mirror;
-    race.split = !roster && setup.split;
+    race.mode = setup.mode === 'battle' ? 'battle' : isCupMode(setup.mode) ? 'cup' : 'race';
+    if (race.mode === 'cup') {
+      let session = race.cup?.session;
+      if (!session || session.cupId !== setup.mode || ['complete', 'abandoned'].includes(session.status)) {
+        session = createLocalCup(setup.mode, playerIndex, wheelId, setup.split, setup.difficulty);
+        race.cup = { definition: cupById(setup.mode), session, mirror: setup.mirror };
+      }
+      if (session.status === 'ready') beginStage(session);
+      else if (['loading', 'racing'].includes(session.status)) retryStage(session);
+      else return;
+      const stage = race.cup.definition.stages[session.stageIndex];
+      race.diff = difficultyById(session.difficulty);
+      race.laps = stage.laps;
+      race.mirror = race.cup.mirror;
+      race.split = session.entrants.some(entrant => entrant.id === LOCAL_GUEST);
+      selectTrack(stage.track);
+    } else {
+      race.cup = null;
+      race.diff = difficultyById(setup.difficulty);
+      race.laps = race.mode === 'battle' ? 1 : setup.laps;
+      race.mirror = setup.mirror;
+      race.split = setup.split;
+    }
   }
   mode = 'loading';
   race.state = 'loading';
@@ -967,13 +1025,22 @@ async function startRace(playerIndex, wheelId = garage.wheel, roster = null) {
     }
     if (!await step('Preparando los carros…', 0.5)) return;
     if (roster) {
-      for (const [i, r] of roster.entries()) {
-        if (!await step(`Preparando los panas… ${i + 1}/${roster.length}`, 0.5 + (i + 1) / roster.length * 0.3)) return;
+      const activeRoster = roster.filter(r => (!r.retired && !r.dns) || r.id === net.id);
+      for (const [i, r] of activeRoster.entries()) {
+        if (!await step(`Preparando los panas… ${i + 1}/${activeRoster.length}`, 0.5 + (i + 1) / activeRoster.length * 0.3)) return;
         const mine = r.id === net.id;
-        const c = makeRacer(r.car, mine, r.name, r.wheel, mine ? null : r.avatar);
-        Object.assign(c, { netId: r.id, bot: r.kind === 'bot', remote: r.owner !== net.id, buf: [], gap: 1000 / POSE_HZ, delay: 120 });
+        const c = makeRacer(r.car, mine, r.name, r.wheel, r.avatar);
+        c.entrantId = r.id;
+        c.resuming = r.owner === net.id && net.state.startAt > 0;
+        if (r.kind === 'bot' && r.skillSeed) c.skill = cupSkill({ skillSeed: r.skillSeed }, race.diff);
+        Object.assign(c, { netId: r.id, bot: r.kind === 'bot', remote: r.owner !== net.id, buf: [], gap: 1000 / POSE_HZ, delay: 120, dns: !!r.dns, retired: !!r.retired });
         const { lane, row } = gridSlot(r.slot);
         placeRacer(c, lane, row);
+        if (r.dns || r.retired) {
+          c.done = true;
+          setGhost(c, true);
+          c.car.root.visible = false;
+        }
         race.cars.push(c);
       }
       // A reload mid-race puts this car back where the room last saw it.
@@ -1019,7 +1086,7 @@ async function startRace(playerIndex, wheelId = garage.wheel, roster = null) {
         race.cars.forEach((c, i) => placeRacer(c, i % 2 ? -3.5 : 3.5, Math.floor((RACERS - 1 - i) / 2)));
       }
     }
-    race.player = race.cars.find(c => c.isPlayer);
+    race.player = race.cars.find(c => c.isPlayer) ?? race.cars[0] ?? null;
     race.p2 = race.cars.find(c => c.human === 2) ?? null;
     race.splits = []; race.lapSeen = 1; race.bestLap = null;
     $('best-pill').hidden = true;
@@ -1043,6 +1110,7 @@ async function startRace(playerIndex, wheelId = garage.wheel, roster = null) {
     race.scene.scale.x = race.mirror ? -1 : 1;
     race.ended = false;
     race.paid = false;
+    race.earned = 0;
     if (!await step('Todo listo. ¡A correr!', 0.9)) return;
     renderer.toneMapping = THREE.NoToneMapping;
     updateRace(0);
@@ -1055,13 +1123,15 @@ async function startRace(playerIndex, wheelId = garage.wheel, roster = null) {
       // Everyone counts down together once every pana has loaded.
       net.loaded();
       if (!await step('Esperando a los panas…', 1)) return;
-      if (!await net.until(s => s.raceId !== race.netRace || s.startAt > 0, (s) => {
+      if (!await net.until(s => s.raceId !== race.netRace || s.startAt > 0 || s.phase === 'lobby', (s) => {
         const racing = s.players.filter(p => p.racing), ready = racing.filter(p => p.loaded).length;
         $('loading-status').textContent = `Esperando a los panas… ${ready}/${racing.length} listos`;
       }) || generation !== loadGeneration) return;
-      if (net.state.raceId !== race.netRace) return;
+      if (net.state.raceId !== race.netRace || net.state.phase === 'lobby') return;
+      syncRacers(net.state);
     } else if (!await step('¡Listo!', 1)) return;
-    if (race.cup) markRacing(race.cup.session);
+    if (race.cup && !roster) markRacing(race.cup.session);
+    race.loadingRaceId = 0;
     race.state = 'count';
     music.play(TRACK_STYLE[T.id]);
     $('count').textContent = '3';
@@ -1077,12 +1147,15 @@ async function startRace(playerIndex, wheelId = garage.wheel, roster = null) {
     $('loading').classList.add('hidden');
     renderer.domElement.tabIndex = -1;
     renderer.domElement.focus({ preventScroll: true });
+    if (roster && ['results', 'complete'].includes(net.state.phase)) finish();
   } catch (error) {
     console.error('Derrape loading failed', error);
     if (generation === loadGeneration) {
       if (!race.trackReady && T?.group) race.trackGroup = T.group;
       $('loading-status').textContent = 'No pudimos preparar la carrera. Vuelve al garaje e inténtalo otra vez.';
       race.state = 'off';
+      race.loadingRaceId = 0;
+      mode = 'garage';
     }
   } finally {
     if (generation === loadGeneration) {
@@ -1093,8 +1166,9 @@ async function startRace(playerIndex, wheelId = garage.wheel, roster = null) {
 }
 
 function toGarage() {
-  if (race.netRace && net.state.raceId === race.netRace && !race.player?.done && ['loading', 'count', 'race'].includes(net.state.phase)) net.retire();
+  if (net && (race.netRace || race.loadingRaceId) && ['loading', 'count', 'race'].includes(net.state.phase)) net.retire();
   race.netRace = 0;
+  race.loadingRaceId = 0;
   ++loadGeneration;
   $('loading').classList.add('hidden');
   $('loading').setAttribute('aria-busy', 'false');
@@ -1159,10 +1233,13 @@ $('again').onclick = () => {
     else if (race.cup?.session.status === 'complete') race.cup = null;
     return startRace(race.playerIndex, race.playerWheel);
   }
-  if (net.isHost) net.start();
+  if (net.isHost) {
+    if (net.cup?.status === 'intermission') net.next();
+    else net.start();
+  }
 };
 $('back').onclick = () => {
-  if (race.netRace && net.isHost && net.state.phase === 'results') net.lobby();
+  if (race.netRace && net.isHost && ['results', 'complete'].includes(net.state.phase)) net.lobby();
   else toGarage();
 };
 $('loading-back').onclick = toGarage;
@@ -1276,7 +1353,10 @@ function aiInput(c) {
   target.x += -tz / tl * c.lane * 0.8;
   target.y += tx / tl * c.lane * 0.8;
   const diff = wrapAngle(Math.atan2(target.x - c.x, target.y - c.z) - c.h);
-  const gap = (c.lap * T.TOTAL + c.prog) - (race.player.lap * T.TOTAL + race.player.prog);
+  const ref = race.netRace
+    ? (standings().find(r => !r.bot && !r.ghost && !r.dns && !r.retired) || race.player || race.cars[0])
+    : (race.player || race.cars[0]);
+  const gap = ref ? (c.lap * T.TOTAL + c.prog) - (ref.lap * T.TOTAL + ref.prog) : 0;
   // Catch-up: rivals far behind find a little extra, far ahead ease off.
   c.band = race.mode === 'battle' ? 1 : rubberBand(gap, race.diff);
   // Rivals drift through long bends and let go once the nose lines up.
@@ -1645,7 +1725,7 @@ function hitHazard(c, power, side, hz) {
 // "¡YA!": the player's timing decides a turbo or a stall; rivals sometimes
 // nail it too.
 function launchGrid() {
-  if (race.cup) for (const c of race.cars) markStarted(race.cup.session, c.entrantId);
+  if (race.cup && !race.netRace) for (const c of race.cars) markStarted(race.cup.session, c.entrantId);
   for (const c of race.cars) {
     if (c.remote) continue;
     const timing = c.isPlayer && !AUTO ? startBoost(race.throttleAt) : Math.random() < 0.35 ? startBoost(1.3) : startBoost(2.2);
@@ -1672,6 +1752,29 @@ function slipstreams(dt) {
   }
 }
 
+function setGhost(c, ghost) {
+  if (!!c.ghost === !!ghost) return;
+  c.ghost = !!ghost;
+  c.car.root.traverse(o => {
+    if (!o.material) return;
+    const apply = (m) => {
+      if (ghost) {
+        const clone = m.userData?.ghostClone ? m : m.clone();
+        clone.userData = { ...clone.userData, ghostClone: true, baseTransparent: m.transparent, baseOpacity: m.opacity ?? 1 };
+        clone.transparent = true;
+        clone.opacity = 0.42;
+        return clone;
+      }
+      if (m.userData?.ghostClone) {
+        m.transparent = !!m.userData.baseTransparent;
+        m.opacity = m.userData.baseOpacity ?? 1;
+      }
+      return m;
+    };
+    o.material = Array.isArray(o.material) ? o.material.map(apply) : apply(o.material);
+  });
+}
+
 function collideCars() {
   for (let i = 0; i < race.cars.length; i++) {
     for (let j = i + 1; j < race.cars.length; j++) collidePair(race.cars[i], race.cars[j]);
@@ -1679,6 +1782,7 @@ function collideCars() {
 }
 
 function collidePair(a, b) {
+  if (a.ghost || b.ghost || a.dns || b.dns || a.retired || b.retired) return;
   const hit = resolveContact(a, b);
   if (hit?.kind === 'crash') {
     sound.bonk(hit.speed / 8);
@@ -1771,7 +1875,7 @@ function updateRace(dt) {
     if (race.count <= 1) {
       race.state = 'go';
       if (race.netRace) race.clock = Math.max(0, (net.now() - net.state.startAt) / 1000);
-      launchGrid();
+      if (!race.netRace || net.now() - net.state.startAt < 1000) launchGrid();
     }
   } else if (race.state === 'go' || race.state === 'end') {
     race.clock += dt;
@@ -1865,14 +1969,22 @@ function updateRace(dt) {
   for (let i = 0; i < segs.length; i++) segs[i].classList.toggle('on', i < lit);
 
   // standings board + minimap, throttled
-  if (race.state === 'end' && race.cup && !race.netRace && race.intermission != null && race.cup.session.status === 'intermission') {
-    race.intermission = Math.max(0, race.intermission - dt);
-    $('cup-next').textContent = nextStageText(race.cup.definition, race.cup.session, race.intermission, id => getTrack(id).name);
-    if (race.intermission <= 0 && !(DEBUG && QS.has('manual'))) {
-      race.intermission = null;
-      advanceStage(race.cup.session);
-      startRace(race.playerIndex, race.playerWheel);
-      return;
+  if (race.state === 'end' && race.cup && race.cup.session.status === 'intermission') {
+    if (race.netRace) {
+      race.intermission = net.state.intermissionEndsAt > 0
+        ? Math.max(0, (net.state.intermissionEndsAt - net.now()) / 1000)
+        : 0;
+      $('cup-next').textContent = nextStageText(race.cup.definition, race.cup.session, race.intermission, id => getTrack(id).name);
+      updateResultActions(net.state);
+    } else if (race.intermission != null) {
+      race.intermission = Math.max(0, race.intermission - dt);
+      $('cup-next').textContent = nextStageText(race.cup.definition, race.cup.session, race.intermission, id => getTrack(id).name);
+      if (race.intermission <= 0 && !(DEBUG && QS.has('manual'))) {
+        race.intermission = null;
+        advanceStage(race.cup.session);
+        startRace(race.playerIndex, race.playerWheel);
+        return;
+      }
     }
   }
   race.boardT -= dt;
@@ -2007,6 +2119,18 @@ function endBattle() {
 }
 
 function scoreCup() {
+  if (race.netRace) {
+    if (net?.cup) {
+      race.cup = { definition: cupById(net.cup.cupId), session: net.cup, mirror: false };
+      const session = race.cup.session;
+      if (session.status === 'complete') {
+        const myId = race.player?.entrantId || race.player?.netId || net.id;
+        const trophy = cupTrophy(session, myId);
+        if (trophy && recordCupTrophy(profile, session.cupId, trophy)) profileStore.save(profile);
+      }
+    }
+    return;
+  }
   const session = race.cup.session;
   if (session.status !== 'racing') return;
   const results = session.entrants.map(entrant => {
@@ -2034,9 +2158,12 @@ function renderCup() {
     $('cup-next').textContent = '';
     return;
   }
-  const view = cupStandingsView(session, session.stageIndex);
-  $('cup-title').textContent = `${race.cup.definition.name} · ${session.status === 'complete' ? 'Final' : `Carrera ${session.stageIndex + 1} de 4`}`;
+  const finalizedStages = session.finalized.map((f, idx) => f ? idx : -1).filter(idx => idx >= 0);
+  const viewStage = session.finalized[session.stageIndex] ? session.stageIndex : (finalizedStages.at(-1) ?? session.stageIndex);
+  const view = cupStandingsView(session, viewStage);
+  $('cup-title').textContent = `${race.cup.definition.name} · ${session.status === 'complete' ? 'Final' : `Carrera ${viewStage + 1} de 4`}`;
   const colors = new Map(race.cars.map(c => [c.entrantId || c.netId, c.def.color]));
+  const myId = race.player?.entrantId || race.player?.netId || net?.id || LOCAL_PLAYER;
   fillRoster($('cup-board'), view.map((r, i) => {
     const chip = document.createElement('span');
     chip.className = 'chip';
@@ -2044,7 +2171,7 @@ function renderCup() {
     const details = [
       `+${r.racePoints} pts`,
       r.classification ? CLASSIFICATION_TEXT[r.classification] : null,
-      r.stage > 0 || session.stageIndex > 0 ? rankChangeText(r.rankChange) : null,
+      r.stage > 0 || viewStage > 0 ? rankChangeText(r.rankChange) : null,
       r.decidedBy && i <= 2 ? tiebreakText(r.decidedBy) : null,
     ].filter(Boolean).join(' · ');
     return {
@@ -2052,7 +2179,7 @@ function renderCup() {
       lead: chip,
       name: r.name,
       detail: details,
-      me: r.id === (race.player.entrantId || race.player.netId),
+      me: r.id === myId,
       end: `${r.points} pts`,
       score: true,
       className: r.rankChange > 0 ? 'rank-up' : r.rankChange < 0 ? 'rank-down' : '',
@@ -2063,13 +2190,16 @@ function renderCup() {
 
 function finish() {
   race.state = 'end';
-  const p = race.player;
+  if (race.netRace && net?.cup) {
+    race.cup = { definition: cupById(net.cup.cupId), session: net.cup, mirror: false };
+  }
+  const p = race.player ?? { done: false, time: 0, lost: 0, coinsCollected: 0, def: CARS[garage.index] ?? CARS[0], netId: net?.id, entrantId: net?.id };
   // A racer the room timed out has no time of its own: everyone finished ahead.
   const ahead = (c) => c.done && (!p.done || c.time < p.time);
   const place = 1 + race.cars.filter((c) => c !== p && ahead(c)).length;
   const winner = race.cars.filter(ahead).sort((a, b) => a.time - b.time)[0];
-  $('result-title').textContent = !p.done ? 'Se acabó el tiempo' : place === 1 ? '¡Ganaste!' : `${place}º lugar`;
-  $('result-time').textContent = `${T.name} · ${race.laps} ${race.laps === 1 ? 'vuelta' : 'vueltas'} · ${p.done ? clockText(p.time) : 'sin terminar'} · ${p.def.name} · ${p.lost} piezas perdidas`
+  $('result-title').textContent = p.dns ? 'No saliste a tiempo (DNS)' : !p.done ? 'Se acabó el tiempo' : place === 1 ? '¡Ganaste!' : `${place}º lugar`;
+  $('result-time').textContent = `${T?.name || ''} · ${race.laps} ${race.laps === 1 ? 'vuelta' : 'vueltas'} · ${p.done && !p.dns ? clockText(p.time) : 'sin terminar'} · ${p.def.name} · ${p.lost || 0} piezas perdidas`
     + (winner && place > 1 ? ` · ganó ${winner.name}` : '');
   if (race.bestLap != null) $('result-time').textContent += ` · mejor vuelta ${clockText(race.bestLap)}`;
   if (race.p2) $('result-time').textContent += ` · Jugador 2: ${standings().indexOf(race.p2) + 1}º`;
@@ -2082,11 +2212,16 @@ function finish() {
   if (race.cup) {
     scoreCup();
     const session = race.cup.session;
-    if (session.status === 'intermission' && !race.netRace) race.intermission ??= 12;
-    else if (session.status === 'complete') {
+    if (session.status === 'intermission') {
+      if (race.netRace) {
+        race.intermission = net.state.intermissionEndsAt > 0
+          ? Math.max(0, (net.state.intermissionEndsAt - net.now()) / 1000)
+          : 12;
+      } else race.intermission ??= 12;
+    } else if (session.status === 'complete') {
       race.intermission = null;
       const cupRows = championshipStandings(session);
-      const myId = p.entrantId || p.netId || LOCAL_PLAYER;
+      const myId = p.entrantId || p.netId || net?.id || LOCAL_PLAYER;
       const cupPlace = cupRows.findIndex(row => row.id === myId);
       const trophy = cupTrophy(session, myId);
       $('result-title').textContent = cupPlace === 0 ? `¡Ganaste la ${race.cup.definition.name}!` : `${cupPlace + 1}º en la ${race.cup.definition.name}`;
@@ -2100,20 +2235,22 @@ function finish() {
     }
   }
   renderCup();
-  // The taller wallet keeps what you earned.
-  if (!race.paid) {
+  // The taller wallet keeps what you earned. For online cups, wait until the
+  // server has finalized the current stage in cupJson before claiming receipts.
+  const canPay = !race.paid && (!race.netRace || !race.cup || !!race.cup.session.finalized?.[race.cup.session.stageIndex]);
+  if (canPay) {
     race.paid = true;
     const rank = standings().indexOf(p);
-    let earned = 0;
+    let earned = race.earned || 0;
     if (race.cup) {
       const session = race.cup.session;
-      const myId = p.entrantId || p.netId || LOCAL_PLAYER;
+      const myId = p.entrantId || p.netId || net?.id || LOCAL_PLAYER;
       const stageRec = session.ledger.find(r => r.stage === session.stageIndex && r.id === myId);
       const stagePlace = stageRec && stageRec.classification === 'finished' ? stageRec.place - 1 : 99;
       earned += rewardCupStage(profile, {
         sessionId: session.sessionId,
         stage: session.stageIndex,
-        collected: p.coinsCollected,
+        collected: p.coinsCollected || 0,
         place: stagePlace,
       });
       if (session.status === 'complete') {
@@ -2124,7 +2261,7 @@ function finish() {
       }
       saveWallet();
     } else {
-      earned = earnings({ collected: p.coinsCollected, place: p.done || race.mode === 'battle' ? rank : 99 });
+      earned = earnings({ collected: p.coinsCollected || 0, place: p.done || race.mode === 'battle' ? rank : 99 });
       wallet.coins += earned;
       saveWallet();
     }
@@ -2138,7 +2275,7 @@ function finish() {
   race.resultKey = '';
   renderResults(standings(), p);
   $('result').classList.remove('hidden');
-  $('result-coins').textContent = `${p.coinsCollected} monedas recogidas · +${race.earned} al taller · tienes ${wallet.coins}`;
+  $('result-coins').textContent = `${p.coinsCollected || 0} monedas recogidas · +${race.earned || 0} al taller · tienes ${wallet.coins}`;
   $('again').focus({ preventScroll: true });
 }
 
@@ -2148,7 +2285,23 @@ const PODIUM = [['var(--pk-yellow)', 260, 124], ['var(--pk-teal)', 190, 96], ['v
 function renderResults(order, player) {
   const session = race.cup?.session;
   const cupFinal = session?.status === 'complete';
-  const key = `${cupFinal}:${order.map(c => `${c.entrantId || c.netId || c.name}:${c.done}:${c.balloons}`).join()}`;
+  const stageMap = session ? new Map(session.ledger.filter(r => r.stage === session.stageIndex).map(r => [r.id, r])) : null;
+  const displayOrder = stageMap && stageMap.size
+    ? session.entrants.map(e => {
+        const car = race.cars.find(c => (c.entrantId || c.netId) === e.id);
+        const rec = stageMap.get(e.id);
+        return car || {
+          entrantId: e.id,
+          netId: e.id,
+          name: e.name,
+          def: CARS[e.loadout.car] ?? CARS[0],
+          done: rec?.classification === 'finished',
+          time: rec?.time ?? 0,
+          lap: race.laps,
+        };
+      }).sort((a, b) => (stageMap.get(a.entrantId || a.netId)?.place ?? 99) - (stageMap.get(b.entrantId || b.netId)?.place ?? 99))
+    : order;
+  const key = `${cupFinal}:${stageMap?.size || 0}:${displayOrder.map(c => `${c.entrantId || c.netId || c.name}:${c.done}:${c.balloons}`).join()}`;
   if (key === race.resultKey) return;
   race.resultKey = key;
   const thumbs = $('car-lineup').querySelectorAll('img');
@@ -2161,25 +2314,26 @@ function renderResults(order, player) {
         name: row.name,
         def: CARS[row.entrant.loadout.car] ?? CARS[0],
       })
-    : order;
+    : displayOrder;
   // Second, first, third, like a real podium.
   $('podium').innerHTML = [1, 0, 2].filter(i => podiumOrder[i]).map(i => {
     const c = podiumOrder[i], [color, h, w] = PODIUM[i];
     return `<li style="--c:${color};--h:${h}px;--w:${w}px"><span class="who">${who(c)}</span>`
       + `<span class="name">${esc(c.name)}</span><b class="place">${i + 1}</b></li>`;
   }).join('');
-  const stageMap = session ? new Map(session.ledger.filter(r => r.stage === session.stageIndex).map(r => [r.id, r])) : null;
-  fillRoster($('result-board'), order.map((c, i) => {
+  const myId = player?.entrantId || player?.netId || net?.id || LOCAL_PLAYER;
+  fillRoster($('result-board'), displayOrder.map((c, i) => {
     const chip = document.createElement('span');
     chip.className = 'chip';
     chip.style.setProperty('--c', c.def.color);
-    const rec = stageMap?.get(c.entrantId || c.netId);
+    const id = c.entrantId || c.netId;
+    const rec = stageMap?.get(id);
     const endText = race.mode === 'battle'
       ? `${c.balloons} ${c.balloons === 1 ? 'globo' : 'globos'}`
       : rec
-        ? `${c.done ? clockText(c.time) : CLASSIFICATION_TEXT[rec.classification] ?? 'Sin terminar'} · +${rec.points} pts`
+        ? `${rec.classification === 'finished' ? clockText(rec.time ?? c.time) : CLASSIFICATION_TEXT[rec.classification] ?? 'Sin terminar'} · +${rec.points} pts`
         : c.done ? clockText(c.time) : `vuelta ${Math.min(race.laps, Math.max(1, c.lap))}/${race.laps}`;
-    return { rank: i + 1, lead: chip, name: c.name, me: c === player, end: endText };
+    return { rank: i + 1, lead: chip, name: c.name, me: c === player || (id && id === myId), end: endText };
   }));
 }
 
@@ -2196,7 +2350,7 @@ function sendPoses() {
   if (now - race.poseAt < 1000 / POSE_HZ) return;
   race.poseAt = now;
   const stamp = Math.round(net.now());
-  net.poses(race.cars.filter(c => !c.remote).map(c => [c.netId, stamp, ...packPose(c)]));
+  net.poses(race.cars.filter(c => !c.remote && !c.dns && !c.retired).map(c => [c.netId, stamp, ...packPose(c)]));
 }
 
 function resumePose(c, p) {
@@ -2243,6 +2397,7 @@ const racerById = (id) => race.cars.find(c => c.netId === id);
 
 function onNetPose(id, stamp, pose) {
   const c = race.netRace && racerById(id);
+  if (c?.resuming && !c.remote) { resumePose(c, pose); c.resuming = false; }
   if (!c?.remote) return;
   const last = c.buf.at(-1);
   if (last && stamp <= last.t) return;   // stale or duplicate
@@ -2268,77 +2423,125 @@ function onNetFx(id, kind, d) {
   } else if (kind === 'say') c.bubble.say(String(d.text ?? '').slice(0, 40), Math.min(3, Number(d.time) || 1.2));
 }
 
-// Room state into the race: finishes, departures and bot control.
+// Room state into the race: finishes, departures, ghosting and bot control.
 function syncRacers(s) {
+  if (net?.cup) {
+    race.cup = { definition: cupById(net.cup.cupId), session: net.cup, mirror: false };
+  }
   if (!race.netRace || s.raceId !== race.netRace) return;
   for (const r of s.racers) {
     const c = racerById(r.id);
     if (!c) continue;
-    if (r.retired && !c.isPlayer) {
+    c.dns = !!r.dns;
+    c.retired = !!r.retired;
+    if ((r.retired || r.dns) && !c.isPlayer) {
       disposeRacer(c);
       race.cars.splice(race.cars.indexOf(c), 1);
       continue;
     }
-    if (r.done && c.remote) { c.done = true; c.time = r.time; }
+    if ((r.retired || r.dns) && c.isPlayer) {
+      c.done = true;
+      setGhost(c, true);
+      c.car.root.visible = false;
+    } else if (r.kind === 'human' && !c.isPlayer) {
+      const pl = s.players.find(p => p.id === r.id);
+      setGhost(c, !pl?.connected);
+    }
+    if (r.done) { c.done = true; c.time = r.time; }
     const owned = r.owner === net.id;
     if (owned && c.remote) {
       // The host left: this client now drives the bots from where they were.
       c.remote = false; c.buf = [];
       c.vx = Math.sin(c.h) * c.vf; c.vz = Math.cos(c.h) * c.vf;
       c.lane = gridSlot(r.slot).lane;
+      if (r.skillSeed) c.skill = cupSkill({ skillSeed: r.skillSeed }, race.diff);
     } else if (!owned && !c.remote && !c.isPlayer) c.remote = true;
   }
 }
 
 function onNetState(s) {
   if (!s.racers) return;   // the room's first state has not arrived yet
+  if (net.cup) {
+    race.cup = { definition: cupById(net.cup.cupId), session: net.cup, mirror: false };
+  } else if (s.mode === 'race') {
+    race.cup = null;
+  }
   const me = s.players.find(p => p.id === net.id);
-  const inRace = s.racers.some(r => r.id === net.id && !r.retired);
-  if (s.phase === 'loading' && inRace && s.raceId !== race.netRace && mode !== 'loading') {
-    selectTrack(s.track);
+  const myRacer = s.racers.find(r => r.id === net.id);
+  const inRace = !!myRacer && !myRacer.retired;
+  if (s.phase === 'loading' && inRace && s.raceId !== race.netRace && s.raceId !== race.loadingRaceId) {
+    selectTrack(s.track, s.laps);
     startRace(garage.index, garage.wheel, s.racers);
-  } else if (['count', 'race'].includes(s.phase) && inRace && !race.netRace && mode === 'garage' && me?.racing) {
+  } else if (['count', 'race', 'results', 'complete'].includes(s.phase) && inRace && !race.netRace && mode === 'garage' && me?.racing) {
     // Back from a reload: rejoin the race already under way.
-    selectTrack(s.track);
+    selectTrack(s.track, s.laps);
     startRace(garage.index, garage.wheel, s.racers);
-  } else if (s.phase === 'lobby' && race.netRace && mode !== 'garage') {
+  } else if (s.phase === 'lobby' && (race.netRace || mode === 'loading') && mode !== 'garage') {
     toGarage();
   }
   syncRacers(s);
-  if (s.phase === 'results' && race.netRace === s.raceId && mode === 'race' && race.player && !race.player.done && race.state !== 'end') finish();
+  if (['results', 'complete'].includes(s.phase) && race.netRace === s.raceId && mode === 'race') {
+    finish();
+  }
   if (mode === 'race' && race.state === 'end') updateResultActions(s);
   if (mode === 'garage') {
-    if (!net.isHost && s.track && TRACKS[trackIndex]?.id !== s.track) selectTrack(s.track);
+    if (s.track && TRACKS[trackIndex]?.id !== s.track) selectTrack(s.track, s.laps);
     renderLobby(s);
   }
 }
 
 function renderLobby(s) {
-  const host = net.isHost, live = !['lobby', 'results'].includes(s.phase);
+  const host = net.isHost, live = !['lobby', 'results', 'complete'].includes(s.phase);
   const racing = s.players.find(p => p.id === net.id)?.racing;
+  const myRacer = s.racers?.find(r => r.id === net.id);
+  const cup = isCupMode(s.mode) ? cupById(s.mode) : null;
   $('lobby-code').textContent = net.code;
   $('lobby-roster').innerHTML = s.players.map((p, i) =>
     `<li class="pk-row${p.id === net.id ? ' is-me' : ''}${p.connected ? '' : ' away'}"><span class="pk-row-n">${p.id === s.host ? SVG.crown : i + 1}</span>`
     + `<span class="chip" style="--c:${CARS[p.car]?.color || '#fff'}"></span>${esc(p.name)}`
     + `<span class="pk-row-end">${p.connected ? esc(CARS[p.car]?.name || '') : 'reconectando…'}</span></li>`).join('');
-  const bots = Math.max(0, (s.bots ? Math.max(4, s.players.length) : s.players.length) - s.players.length);
+  const gridTarget = cup ? GP_GRID : 4;
+  const bots = Math.max(0, (s.bots ? Math.max(gridTarget, s.players.length) : s.players.length) - s.players.length);
   $('launch-note').innerHTML = `<span class="pk-dot"></span>${s.players.length} ${s.players.length === 1 ? 'pana' : 'panas'}${bots ? ` + ${bots} ${bots === 1 ? 'rival' : 'rivales'}` : ''}`;
   $('lobby-bots').checked = s.bots;
   $('lobby-bots').disabled = !host || live;
-  $('t-prev').disabled = $('t-next').disabled = !host || live;
+  $('t-prev').disabled = $('t-next').disabled = !host || live || !!cup;
+  renderSetup();
   const hostName = s.players.find(p => p.id === s.host)?.name || 'el anfitrión';
-  $('lobby-status').textContent = live
-    ? (racing ? 'Tu carrera sigue en curso.' : 'Carrera en curso: entras en la próxima.')
-    : host ? 'Tú eliges la pista y das la salida.' : `${hostName} elige la pista y da la salida.`;
-  $('play').textContent = host ? (live ? 'Carrera en curso' : '¡ARRANCAR!') : live ? 'Carrera en curso' : `Esperando a ${hostName}`;
-  $('play').disabled = live || !host || mode !== 'garage';
+  if (s.notice) {
+    $('lobby-status').textContent = s.notice;
+  } else if (live) {
+    if (myRacer?.dns) $('lobby-status').textContent = 'No cargaste a tiempo esta etapa (DNS). Entras en la siguiente pista.';
+    else if (racing) $('lobby-status').textContent = 'Tu carrera sigue en curso.';
+    else if (cup) $('lobby-status').textContent = 'Campeonato en curso: espectador hasta la próxima copa.';
+    else $('lobby-status').textContent = 'Carrera en curso: entras en la próxima.';
+  } else {
+    $('lobby-status').textContent = host
+      ? (cup ? `Tú eliges la copa (${cup.name}) y das la salida.` : 'Tú eliges la pista y das la salida.')
+      : (cup ? `${hostName} preparó la ${cup.name}.` : `${hostName} elige la pista y da la salida.`);
+  }
+  const canRejoinStage = live && myRacer && !myRacer.retired && !myRacer.dns && mode === 'garage';
+  $('play').textContent = canRejoinStage ? 'Entrar a la pista' : host ? (live ? 'Carrera en curso' : '¡ARRANCAR!') : live ? 'Carrera en curso' : `Esperando a ${hostName}`;
+  $('play').disabled = (!canRejoinStage && (live || !host)) || mode !== 'garage';
 }
 
 function updateResultActions(s) {
   const host = net.isHost;
-  $('again').textContent = host ? 'Otra carrera' : 'Esperando al anfitrión';
-  $('again').disabled = !host || s.phase !== 'results';
-  $('back').textContent = host ? 'Sala' : 'Garaje';
+  const inCupIntermission = net.cup?.status === 'intermission' && s.phase === 'results';
+  const inCupComplete = net.cup?.status === 'complete' || s.phase === 'complete';
+  if (inCupIntermission) {
+    const remainingMs = s.intermissionEndsAt > 0 ? s.intermissionEndsAt - net.now() : 0;
+    const waitReadWindow = remainingMs > (GP_INTERMISSION_MS - GP_MIN_READ_MS);
+    $('again').textContent = host ? 'Siguiente pista' : 'Siguiente pista pronto…';
+    $('again').disabled = !host || waitReadWindow;
+  } else if (inCupComplete) {
+    $('again').textContent = host ? 'Otra copa' : 'Esperando al anfitrión';
+    $('again').disabled = !host || !['results', 'complete'].includes(s.phase);
+  } else {
+    $('again').textContent = host ? 'Otra carrera' : 'Esperando al anfitrión';
+    $('again').disabled = !host || s.phase !== 'results';
+  }
+  $('back').textContent = host && ['results', 'complete'].includes(s.phase) ? 'Sala' : 'Garaje';
 }
 
 function inviteLink() {
@@ -2350,7 +2553,7 @@ async function goOnline(code, lead) {
   if (net || joining) return joining;
   $('lobby').hidden = false;
   $('go-online').hidden = true;
-  $('setup').hidden = true;
+  $('setup').hidden = false;
   $('lobby-code').textContent = code;
   $('lobby-status').textContent = 'Conectando con la sala…';
   $('play').disabled = true;
@@ -2360,7 +2563,7 @@ async function goOnline(code, lead) {
   history.replaceState(null, '', url);
   joining = (async () => {
     try {
-      const { joinRace } = await import('./online.js');
+      const { joinRace } = await (onlineModulePromise || import('./online.js'));
       net = await joinRace({ code, lead, name: ME.name, avatar: ME.avatar, car: garage.index, wheel: garage.wheel });
     } catch (error) {
       console.warn('Derrape online unavailable', error);
@@ -2443,13 +2646,14 @@ function resize() {
 addEventListener('resize', resize);
 resize();
 
-if (DEBUG) Object.assign(window, { pollPads, music, getWallet: () => wallet, menu, race, garage, renderer, crash, stepCar, startRace, updateRace, finish, renderResults, renderCup, toGarage, showWheel, ITEMS, TRACKS, buildTrack, setup, popBalloon, rescue, getActiveTrack: () => T, getNet: () => net });
+if (DEBUG) Object.assign(window, { sendPoses, pollPads, music, getWallet: () => wallet, menu, race, garage, renderer, crash, stepCar, startRace, updateRace, finish, renderResults, renderCup, toGarage, showWheel, ITEMS, TRACKS, buildTrack, setup, popBalloon, rescue, getActiveTrack: () => T, getNet: () => net });
 
 // ?track=desierto wins; otherwise the last pick, otherwise the estadio
 let savedTrack = 'estadio';
 try { savedTrack = localStorage.getItem('derrape:track') || savedTrack; } catch { /* private mode */ }
 // The cauchos from the last visit (fallback calle) dress the turntable car.
 try { garage.wheel = wheelById(localStorage.getItem('derrape:wheels')).id; } catch { /* private mode */ }
+if (ROOM) goOnline(ROOM, QS.has('lead'));
 selectTrack(QS.get('track') || savedTrack);
 showCar(0);
 frame();
@@ -2472,4 +2676,3 @@ wheelStrip.ready.catch(error => console.warn('Wheel previews unavailable', error
 showWheel(garage.wheel);
 renderSetup();
 saveWallet();
-if (ROOM) goOnline(ROOM, QS.has('lead'));

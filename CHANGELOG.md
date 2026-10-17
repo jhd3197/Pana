@@ -10,6 +10,9 @@ becomes the GitHub release's notes.
 
 ### Added
 
+- **Derrape keeps your online Grand Prix together across four races.**
+  Copa Pana and Copa Aventura carry the same rivals, official standings and
+  one-time rewards through map changes, with synchronized loading and reload recovery.
 - **New game: Curiara, race dugout canoes down the Amazonas.**
   Paddle with A and D in rhythm (no throttle): alternate to go straight,
   stroke the same side twice to turn and hit the gold sweet spot for a

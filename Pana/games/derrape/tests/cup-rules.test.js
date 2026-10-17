@@ -210,6 +210,17 @@ test('restart changes the attempt without consuming a stage or accepting stale f
   assert.equal(session.ledger.length, 0);
 });
 
+test('the next grid follows the previous race even when overall standings differ', () => {
+  const session = make(4), [a, b, c, d] = ids(session);
+  finishByTime(session, [a, b, c, d]);
+  advanceStage(session);
+  finishByTime(session, [a, b, c, d]);
+  advanceStage(session);
+  finishByTime(session, [d, c, b, a]);
+  assert.equal(standings(session)[0].id, a);
+  assert.deepEqual(gridForStage(session, 3), [d, c, b, a]);
+});
+
 test('sparse grids and abandoned cups cannot award a championship trophy', () => {
   const session = make(1);
   const [only] = ids(session);
