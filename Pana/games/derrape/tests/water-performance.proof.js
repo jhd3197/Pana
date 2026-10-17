@@ -24,10 +24,14 @@ try{
       for(const u of [0,.4,.62])views.push(await page.evaluate(async u=>{
         const T=getActiveTrack(),p=T.pointAt(T.TOTAL*u),q=T.pointAt(T.TOTAL*u+1),c=race.player;
         Object.assign(c,{x:p.x,z:p.y,y:T.groundAt(p.x,p.y),h:Math.atan2(q.x-p.x,q.y-p.y),vx:0,vz:0,vf:0});race.camPos=null;
-        const frames=[],work=[],simulation=[],render=[];let last=0,draws=0,triangles=0;
+        const frames=[],work=[],simulation=[],render=[];let last=0,draws=0,triangles=0,accumulator=0;
         for(let i=0;i<150;i++){
           const now=await new Promise(requestAnimationFrame),start=performance.now();
-          updateRace(1/60);const simulated=performance.now();renderer.render(race.scene,race.camera);
+          // Match the production accumulator: slow frames must pay for all
+          // elapsed physics ticks rather than slowing the simulation down.
+          accumulator+=last?Math.min((now-last)/1000,.25):1/60;pollPads();
+          while(accumulator>=1/60){updateRace(1/60);accumulator-=1/60;}
+          const simulated=performance.now();renderer.render(race.scene,race.camera);
           if(i>29){frames.push(now-last);work.push(performance.now()-start);simulation.push(simulated-start);render.push(performance.now()-simulated);}last=now;
           draws=Math.max(draws,renderer.info.render.calls);triangles=Math.max(triangles,renderer.info.render.triangles);
         }
