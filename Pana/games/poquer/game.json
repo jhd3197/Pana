@@ -1,0 +1,6 @@
+{
+  "name": "Póquer",
+  "description": "Texas Hold’em entre panas. Dos cartas, cinco en la mesa y un buen farol. Fichas gratis, cartas privadas y bots para practicar.",
+  "players": 6,
+  "color": "#29a987"
+}

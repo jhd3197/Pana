@@ -10,6 +10,11 @@ becomes the GitHub release's notes.
 
 ### Added
 
+- **Play paintball and Texas Hold’em with your panas, or practice against bots.**
+  ¡Pintura! brings a 3D arena for up to eight players with cover, reloads,
+  respawns and two-minute rounds. Póquer seats up to six with private cards,
+  free chips, no-limit betting, side pots and showdowns. Both use your saved
+  pana, shared invitations and menus, touch controls and local bot practice.
 - **Billar brings eight-ball pool to Pana for two friends or solo practice.**
   Aim with mouse, touch or keyboard, choose shot power and pocket your group
   before the eight. Shared rooms keep turns, fouls, ball in hand and rematches
