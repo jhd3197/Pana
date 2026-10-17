@@ -61,8 +61,11 @@ pause overlay, sound toggle or invite flow, or handle Escape in a game.
 npm run test:browser -- domino   # only the suites whose path matches
 ```
 
-Browser suites take `PANA_PLAYWRIGHT_PATH` (an external Playwright) and
-`PANA_TEST_URL`; the runner starts a server if none answers. CI runs `check` and
+Playwright is a dev dependency: `npm install` is all browser suites need, so
+don't search the disk for one or set `PANA_PLAYWRIGHT_PATH` (that override is
+only for a different Playwright). `PANA_TEST_URL` picks the server; the runner
+starts one if none answers. A server left running on :8461 may serve stale
+code, so prefer a fresh port, e.g. `PANA_TEST_URL=http://localhost:8470`. CI runs `check` and
 `test` on every push to `dev`; every merge to `main` releases (`.github/workflows/release.yml`).
 
 ## When you finish a task

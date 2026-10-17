@@ -90,7 +90,7 @@ export function createTown(T) {
   const fountain=landmark(ceramicFountain(),-137.5,80,0,1.45,4.2,0.6);
   landmark(iceCreamCart(),-112,76,-0.3,1.6,2.2,0.35);
   landmark(fruitDeliveryTruck(),148,43,Math.PI/2,1.4,4.2,0.35);
-  landmark(laundryCourtyard(),218,-104,0.4,1.35,4.2,0.35);
+  landmark(laundryCourtyard(),224,-110,0.4,1.35,4.2,0.35);
   landmark(streetMural(),272,-103,Math.PI,1.4,3.8,0.35);
   function building(x,z,turn,seed,scale=1) {
     if(groundAt(x,z)<-0.4||x>270&&z>280)return;

@@ -1,11 +1,10 @@
 // Shaded outdoor café terrace with pergola, bistro tables, seating, espresso counter and planters.
-// Ground origin y=0, front +Z. Reuses planter, bush and kitchen food props.
+// Ground origin y=0, front +Z. Reuses plaza planters and kitchen food props.
 import * as THREE from 'three';
 import { M, mesh, box, tube } from '/engine/models/core/primitives.js';
 import { paintFinish, rounded, sign, curve, railing, palette as P } from '/engine/models/core/architecture-kit.js';
 import { cylinder, ring } from '/engine/models/core/rural-kit.js';
 import { planter } from './plaza.js';
-import { bush } from '../vegetation/bush.js';
 import { food } from './kitchen.js';
 
 export function cafeTerrace() {
@@ -28,15 +27,12 @@ export function cafeTerrace() {
     railing(g, [side * 4.0, 0.16, -2.7], [side * 4.0, 0.16, 2.7], { height: 0.88, material: P.iron, spacing: 0.55 });
     railing(g, [side * 4.0, 0.16, 2.7], [side * 1.4, 0.16, 2.7], { height: 0.88, material: P.iron, spacing: 0.55 });
   }
-  const pot = planter({ seed: 11 });
-  pot.scale.setScalar(0.78);
-  pot.position.set(-1.12, 0.16, 2.52);
-  g.add(pot);
-  g.add(cylinder(0.46, 0.34, 0.68, terracotta, 1.12, 0.5, 2.52, 10));
-  const rightPlant = bush({ seed: 25, flowers: true });
-  rightPlant.scale.setScalar(0.45);
-  rightPlant.position.set(1.12, 0.84, 2.52);
-  g.add(rightPlant);
+  for (const [x, seed] of [[-1.12, 11], [1.12, 25]]) {
+    const pot = planter({ seed });
+    pot.scale.setScalar(0.78);
+    pot.position.set(x, 0.16, 2.52);
+    g.add(pot);
+  }
 
   for (const side of [-1, 1]) {
     g.add(rounded(1.5, 0.42, 0.46, terracotta, side * 2.7, 0.37, 2.48, 0.04));

@@ -19,5 +19,8 @@
   },
   "dependencies": {
     "pana": "file:"
+  },
+  "devDependencies": {
+    "playwright": "^1.63.0"
   }
 }
