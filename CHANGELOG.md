@@ -10,6 +10,10 @@ becomes the GitHub release's notes.
 
 ### Added
 
+- **Billar brings eight-ball pool to Pana for two friends or solo practice.**
+  Aim with mouse, touch or keyboard, choose shot power and pocket your group
+  before the eight. Shared rooms keep turns, fouls, ball in hand and rematches
+  in sync, including an unfinished shot when the host leaves.
 - **Bululú lets up to four panas play the board and minigames together online.**
   Share a room invitation, take your own turns and control your own pana;
   bots fill empty spots, and local practice remains available. If the host
@@ -147,6 +151,9 @@ becomes the GitHub release's notes.
 
 ### Fixed
 
+- **Bululú's dice show the numbers you rolled instead of always showing two fours.**
+  The result faces turn toward the camera when the dice stop, and online guests
+  see the correct faces even when consecutive rolls repeat.
 - **"Crear sala" no longer copies a dead link** for single-player games.
 
 **Every merge to `main` is now a release.** The changelog's Unreleased notes become

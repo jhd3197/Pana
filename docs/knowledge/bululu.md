@@ -147,7 +147,13 @@ flow bugs and check balance.
   just behind everyone, a whole lap off: 1 mango per game and 40–50 unspent
   coins. With "ahead" it's 6–7 mangos per game.
 - **Two dice**: a sum of 2–12, doubles give +5 monedas, and a gold counter sprite
-  counts down the steps.
+  counts down the steps. `createDie().show()` paints the +Z face (material 4).
+  The settling `Matrix4.lookAt(camera, die, up)` already points +Z at the
+  camera; adding a half-turn exposes the fixed four on the -Z face instead.
+  `tests/dice.browser.mjs` raycasts the visible face and counts its painted pips
+  for all six values on both dice. Guests must repaint stopped dice even when
+  `value` is unchanged: spinning changes the painted face independently of the
+  last result. The same suite checks repeated results with two real clients.
 - **Minigame order** comes from `rules.minigameBag`: each minigame once per
   pass, shuffled, never the same twice in a row. `?mini=` still forces one.
 - **¡Caída! tuning** (simulated, 4 AIs, 40 games): a plain shuffled deck gives a

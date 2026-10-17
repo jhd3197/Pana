@@ -269,9 +269,8 @@ const boardView = {
       if (!die.mesh.visible) continue;
       if (die.rolling) die.spin(dt);
       else {
-        // settle with the shown face toward the camera
+        // lookAt's +Z points back toward the camera: this is the result face.
         const q = new THREE.Quaternion().setFromRotationMatrix(new THREE.Matrix4().lookAt(boardCam.position, die.mesh.position, new THREE.Vector3(0, 1, 0)));
-        q.multiply(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), Math.PI));
         die.mesh.quaternion.slerp(q, Math.min(1, dt * 12));
       }
     }
@@ -1279,7 +1278,11 @@ function applyOnline(state) {
   });
   state.dice.forEach((v, i) => {
     const d = dice[i]; d.mesh.position.fromArray(v.pos); d.mesh.visible = v.visible; d.rolling = v.rolling;
-    if (v.value && v.value !== d.value) { d.value = v.value; d.show(v.value); }
+    if (v.value) {
+      d.value = v.value;
+      // Spinning changes the painted face even when consecutive results match.
+      if (!v.rolling) d.show(v.value);
+    }
   });
   if (state.counter.value && state.counter.value !== counter.value) counter.set(state.counter.value);
   counter.sprite.position.fromArray(state.counter.pos); counter.sprite.visible = state.counter.visible;
@@ -1430,7 +1433,7 @@ async function fastForward(seconds, dt = 1 / 30) {
     await null;   // let the turn logic's awaits run
   }
 }
-if (DEBUG) Object.assign(window, { menu, players, board, MINIGAMES, layoutTokens, fastForward, renderer, boardScene, boardCam, minigame: () => mini, onlineState: () => ({ room, checkpoint, pendingChoice, miniFrame, me: me?.i }) });
+if (DEBUG) Object.assign(window, { menu, players, board, dice, MINIGAMES, layoutTokens, fastForward, renderer, boardScene, boardCam, minigame: () => mini, onlineState: () => ({ room, checkpoint, pendingChoice, miniFrame, me: me?.i }) });
 
 frame();
 main().catch(ignoreCancelled);
