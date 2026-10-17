@@ -98,3 +98,35 @@ The four water worlds use 190 m spatial vegetation cells. Profiling found their
 work on the reference desktop. The larger bounded cells retain the same seeds,
 placements and plant counts; they submit some extra off-screen triangles but
 fewer draw calls. Keep the 1.8M whole-environment triangle limit and ray tests.
+
+### Final reference measurement
+
+Source `bb7b838`, Windows, Ryzen 9 7950X, RTX 4090 via ANGLE/D3D11,
+installed Chrome 155.0.8059.80 in a normal window. Eight simulated racers,
+seed 1453678317, camera fractions 0 / .40 / .62, 30 warmup frames followed by
+120 measured frames per view. The accumulator consumes actual elapsed time,
+including extra physics ticks on slow frames. No other task browser suite ran
+during this measurement. Raw data: `art/grand-prix/hardware-window.json` and
+`hardware-window-final.log`. Earlier headless timings are diagnostic history.
+
+Desktop is 1280 × 800, DPR 1, quality Alta. Ranges span the three views:
+
+| Circuit | First playable frame | p50 frame (ms) | p95 frame (ms) | Mean FPS by view | Maximum draws |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Salinas | 3.33 s | 13.9–20.8 | 20.9–27.8 | 51.0–59.6 | 1,188 |
+| Delta | 2.47 s | 20.8 | 20.9–27.8 | 52.5–54.0 | 1,316 |
+| Cuevas | 2.11 s | 13.9–14.0 | 20.9–27.6 | 56.5–60.2 | 1,098 |
+| Salto | 2.23 s | 20.7–20.8 | 21.0–27.8 | 48.5–55.2 | 1,331 |
+
+The 844 × 390 Baja viewport ran on the same desktop GPU: p50 about 20.8 ms,
+p95 20.9–27.9 ms, 41.7–55.6 mean FPS by view and 2.73–3.11 s loading. It is
+not physical-phone performance. Across both profiles, the maximum submitted
+draws were 1,418, uploaded geometries 1,382 and textures 85. These are live GPU
+resource counts rather than browser heap estimates. Repeated-transition
+retention is established separately by the three-cup lifetime proof.
+
+All declared geometry/draw/effect/resource limits pass. The initial sustained
+60 FPS desktop goal is **not met consistently**, especially in dense views.
+Keep that performance target open; do not call these measurements locked 60 FPS
+or present the phone waiver as waiving the desktop target. A trial removing
+tiny shadow casters did not improve timings reliably and was not retained.

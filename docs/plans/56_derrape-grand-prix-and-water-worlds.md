@@ -1,8 +1,9 @@
 # 56 — Derrape Grand Prix and four living-water worlds
 
-Status: implementation delivered; final verification in progress. All three cups
-and twelve circuits are available. The completion audit below distinguishes
-implemented/verified work from outstanding reference-device evidence.
+Status: all gameplay/content phases implemented and committed; acceptance audit
+recorded. All three cups and twelve circuits are available. The sustained
+60 FPS desktop target remains open; physical-phone measurement was waived.
+Do not label the entire plan complete until the remaining performance gate is resolved.
 
 ## Outcome
 
@@ -724,7 +725,7 @@ green. No extra render target or global performance regression is introduced.
 
 ### Phase 10 — Salto: finished landform and driving route
 
-Status: implemented and functionally verified; reference-device release evidence is tracked in phase 20. Dependencies: 08, 09.
+Status: implemented and functionally verified. Final hardware results and the remaining frame-rate target are recorded in phase 20. Dependencies: 08, 09.
 
 **Work:** Author continuous upper river, rim, gorge, bridge foundations,
 gallery and return ascent. Reserve water/road heights before placing geology.
@@ -744,7 +745,7 @@ No shortcut is necessary for this phase to pass.
 
 ### Phase 11 — Salto: waterfall spectacle, habitat and release
 
-Status: implemented and functionally verified; reference-device release evidence is tracked in phase 20. Dependencies: 10.
+Status: implemented and functionally verified. Final hardware results and the remaining frame-rate target are recorded in phase 20. Dependencies: 10.
 
 **Work:** Finish source river, visible lip, waterfall curtain, spray impact,
 pool and downstream outlet. Compose jungle as habitat patches and cliff ledges,
@@ -766,7 +767,7 @@ water worlds are still being completed.
 
 ### Phase 12 — Delta: connected channels, village layout and route
 
-Status: implemented and functionally verified; reference-device release evidence is tracked in phase 20. Dependencies: 08, 09.
+Status: implemented and functionally verified. Final hardware results and the remaining frame-rate target are recorded in phase 20. Dependencies: 08, 09.
 
 **Work:** Author a connected channel network with meaningful banks and firm
 islands. Place the village street/deck layout independently of the race spline,
@@ -786,7 +787,7 @@ Use a built-world top-down capture to catch shortcuts through batched buildings.
 
 ### Phase 13 — Delta: palafitos, working waterfront and release
 
-Status: implemented and functionally verified; reference-device release evidence is tracked in phase 20. Dependencies: 12.
+Status: implemented and functionally verified. Final hardware results and the remaining frame-rate target are recorded in phase 20. Dependencies: 12.
 
 **Work:** Add a small varied family of stilt homes, shelters, landing/deck
 pieces and mooring details. Reuse coast boats, fish crates, nets and buoys.
@@ -805,7 +806,7 @@ repeated track switching before standalone release.
 
 ### Phase 14 — Cuevas: hollow geology and a reliable driving corridor
 
-Status: implemented and functionally verified; reference-device release evidence is tracked in phase 20. Dependencies: 08, 09.
+Status: implemented and functionally verified. Final hardware results and the remaining frame-rate target are recorded in phase 20. Dependencies: 08, 09.
 
 **Work:** Build explicit cave walls/ceilings and portals around the approved
 route. Keep the base terrain below the road; enclosing a tunnel by raising a
@@ -824,7 +825,7 @@ the lower river as the driving deck; no stacked racing lanes share X/Z.
 
 ### Phase 15 — Cuevas: daylight, water, atmosphere and release
 
-Status: implemented and functionally verified; reference-device release evidence is tracked in phase 20. Dependencies: 14.
+Status: implemented and functionally verified. Final hardware results and the remaining frame-rate target are recorded in phase 20. Dependencies: 14.
 
 **Work:** Compose daylight openings, mineral-colour variation, wet shelves,
 roots and a few readable rock formations. Use restrained ambient fill and
@@ -843,7 +844,7 @@ repeated switching. Release the standalone map after these checks pass.
 
 ### Phase 16 — Salinas: ponds, causeways and shallow-water driving
 
-Status: implemented and functionally verified; reference-device release evidence is tracked in phase 20. Dependencies: 08, 09.
+Status: implemented and functionally verified. Final hardware results and the remaining frame-rate target are recorded in phase 20. Dependencies: 08, 09.
 
 **Work:** Shape irregular salt ponds with separate beds, low banks and visible
 channel/sluice connections. Author wide sweepers, the shallow crossing, a viable
@@ -861,7 +862,7 @@ checkpoint and rescue proof passes on the actual built world.
 
 ### Phase 17 — Salinas: saltworks, horizon and release
 
-Status: implemented and functionally verified; reference-device release evidence is tracked in phase 20. Dependencies: 16.
+Status: implemented and functionally verified. Final hardware results and the remaining frame-rate target are recorded in phase 20. Dependencies: 16.
 
 **Work:** Add salt piles, sluices, simple working sheds, loading details and
 road markers. Keep the large sky/open-flat composition; use colour to distinguish
@@ -882,7 +883,7 @@ without advertising an unfinished Copa del Agua.
 
 ### Phase 18 — Assemble Copa del Agua and tune all three cups
 
-Status: implemented and functionally verified; reference-device release evidence is tracked in phase 20. Dependencies: 07, 11, 13, 15, 17.
+Status: implemented and functionally verified. Final hardware results and the remaining frame-rate target are recorded in phase 20. Dependencies: 07, 11, 13, 15, 17.
 
 **Work:** Enable Agua in the exact agreed order: Salinas → Delta → Cuevas →
 Salto. Set its final lap/cap presets, stage titles, selection previews and podium
@@ -911,7 +912,7 @@ checkpoint advantage. New maps work independently in Carrera rápida as well.
 
 ### Phase 19 — Prove reuse in other games and finish Studio coverage
 
-Status: implemented and functionally verified; reference-device release evidence is tracked in phase 20. Dependencies: relevant finished map/effect phases; after 18
+Status: implemented and functionally verified. Final hardware results and the remaining frame-rate target are recorded in phase 20. Dependencies: relevant finished map/effect phases; after 18
 for final inventory and release accounting.
 
 **Work:** Deliver two bounded second-consumer integrations: use the Salto
@@ -941,7 +942,7 @@ not second-game reuse. No unrelated Curiara work is overwritten.
 
 ### Phase 20 — Full accessibility, performance and regression pass
 
-Status: in progress. Geometry, controls, repeated lifetime, balance and software-browser regressions are verified; final hardware and multiplayer reruns remain. Dependencies: 18, 19.
+Status: functional, accessibility, geometry, resource and multiplayer verification passed. Hardware measurement is complete; the sustained 60 FPS desktop target remains open (48.5–60.2 mean FPS by sampled view). Physical-phone measurement was waived by the user. Dependencies: 18, 19.
 
 **Work:** Review the full championship from first click to final trophy on the
 reference desktop and mobile devices. Fix measured slow transitions, excessive
@@ -973,7 +974,7 @@ does not establish the advertised eight-human room behavior.
 
 ### Phase 21 — Documentation, final release and completion audit
 
-Status: in progress. Changelog, knowledge notes and reproducible proof suites are delivered; final acceptance awaits phase 20. Dependencies: 20.
+Status: documentation and completion audit delivered. Full-plan completion remains pending the phase 20 desktop performance target. No unfinished gameplay or content phase is hidden by this status. Dependencies: 20.
 
 **Work:** Consolidate final data, remove development-only public selections,
 finish Spanish copy and publish accurate player-facing changelog entries for
@@ -1096,24 +1097,55 @@ reliable four-map multiplayer experience.
 
 ## Final acceptance checklist
 
-- [ ] Copa Pana, Copa Aventura and Copa del Agua each have the agreed four maps.
-- [ ] Final catalogue contains twelve independently playable circuits.
-- [ ] Existing trophy/cosmetic progress survives migration with honest provenance.
-- [ ] Points, wins/tiebreaks and classification are identical locally and online.
-- [ ] Same entrants, avatars, loadouts and bot identities persist across four races.
-- [ ] Eight-human online cup works within the existing room cap; optional bots
+Scope adjustment authorized by the user during final verification: omit the
+physical-phone benchmark. A Samsung SM-S134DL was connected, but the user
+explicitly asked to skip that measurement. Desktop hardware timings, responsive
+390 px results, mobile landscape and held-touch/controller proof remain in
+scope. No emulated viewport is reported as physical-phone FPS.
+
+### Evidence index
+
+All paths in this table are relative to the repository root. Binary screenshots
+and raw metrics remain in the ignored `art/` workspace; the reproducible suites
+and this audit are committed.
+
+| Gate | Actual evidence |
+|---|---|
+| Repository checks | `art/grand-prix/release-final-check.log`: syntax/conventions and 260 tests pass |
+| All Derrape browser suites | `derrape-regression.log` plus focused passing reruns recorded in `docs/knowledge/derrape-grand-prix.md`; 30 current suites covered |
+| Eight humans, no bots | `art/grand-prix/8-human-cups.json`, `release-browser.log`: all four Agua stages, identical eight-entry ledgers |
+| Recovery and room limits | `online-final.log`, `cup-failures-fixed.log`, `quick-final.log`: reload, host handoff, stale packets, readiness DNS, late spectator, retirement, fresh cup and full-room rejection |
+| Balance and duration | `balance-{pana,aventura,agua}.json`: 270 seeded full cups / 1,080 stages; `duration-<cup>.json`: 11.37 / 9.98 / 10.50 real minutes |
+| Geometry, views and racing | `art/water-worlds/<map>/geometry.json`, `route.svg`, `overview.png`, nine `driver-*.png`, `mobile-landscape.png`, `eight-car-race.json` |
+| Wet and dry lanes | `art/water-worlds/salinas/crossing.json`: continuous dry lane, deck agreement, street/rain tires |
+| Input and rescue | `art/grand-prix/water-controls.json`: keyboard, held touch, controller, mango and safe rescue on each new map |
+| Repeated cups and disposal | `art/grand-prix/lifetime.json`: three real Agua cups, split/mirror, identical warmed garage resources, cancellation |
+| Results and appearance | `art/grand-prix/presentation/`, `racer-batching.json`: narrow-screen layout, duplicate names, tied standings, fallback portrait, eight-car pixel/animation equivalence |
+| Studio and consumers | `release-browser.log`, `consumers-and-studio.log`, `input-recheck.log`, `galope-recheck.log`: seven assets, twelve track tours, Bululú Chinazo and Galope riding/landscape/water/Studio |
+| Hardware performance | `art/grand-prix/hardware-window.json`: explicit GPU/browser/quality/camera/seed and frame/loading/resource measurements; physical phone waived |
+
+- [x] Copa Pana, Copa Aventura and Copa del Agua each have the agreed four maps.
+- [x] Final catalogue contains twelve independently playable circuits.
+- [x] Existing trophy/cosmetic progress survives migration with honest provenance.
+- [x] Points, wins/tiebreaks and classification are identical locally and online.
+- [x] Same entrants, avatars, loadouts and bot identities persist across four races.
+- [x] Eight-human online cup works within the existing room cap; optional bots
       fill to eight when space remains on the starting grid.
-- [ ] Local player two and local mirror remain functional on the new maps.
-- [ ] Real two-client cups pass progression, reconnect, host-loss and stale-event proof.
-- [ ] The typical-duration target is measured and per-stage laps are documented.
-- [ ] Each map delivers its promised signature moment from the chase camera.
-- [ ] Road, camera, items, checkpoints, rescue, bots and water all pass per-map proof.
-- [ ] New models/effects have real Studio previews, tours and correct ownership.
-- [ ] Two bounded second-game integrations are shipped and tested.
+- [x] Local player two and local mirror remain functional on the new maps.
+- [x] Real two-client cups pass progression, reconnect, host-loss and stale-event proof.
+- [x] The typical-duration target is measured and per-stage laps are documented.
+- [x] Each map delivers its promised signature moment from the chase camera.
+- [x] Road, camera, items, checkpoints, rescue, bots and water all pass per-map proof.
+- [x] New models/effects have real Studio previews, tours and correct ownership.
+- [x] Two bounded second-game integrations are shipped and tested.
 - [ ] Loading, repeated transitions, resource lifetime and reference-device budgets pass.
-- [ ] Keyboard, touch, controller, mobile results and reduced-effects paths pass.
-- [ ] `.\dev.ps1 check` and every affected game's required browser suites pass.
-- [ ] Changelog and knowledge notes describe implemented behavior; all phases
+      Loading/lifetime and hard geometry/draw/effect budgets pass. Desktop hardware
+      measures 48.5–60.2 mean FPS by view; sustained 60 FPS is still open.
+      Physical-phone measurement alone was waived. See the measured table in
+      `docs/knowledge/derrape-performance.md` and `art/grand-prix/hardware-window.json`.
+- [x] Keyboard, touch, controller, mobile results and reduced-effects paths pass.
+- [x] `.\dev.ps1 check` and every affected game's required browser suites pass.
+- [x] Changelog and knowledge notes describe implemented behavior; all phases
       have honest status and proof links/paths before the plan is marked complete.
 
 ## Deferred ideas after this plan

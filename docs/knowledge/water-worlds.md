@@ -90,7 +90,8 @@ The final geometry/camera run passes all four maps. Salto's expanded receiving
 pool/open gallery measures 1,514,749 environment triangles; the other final
 counts are Delta 1,705,138, Cuevas 1,043,390 and Salinas 764,805. Maximum sampled
 environment submissions (including track furniture/items, excluding racers)
-are 423 / 532 / 414 / 331 respectively, within the predeclared 850 limit.
+are 372 / 458 / 347 / 310 respectively after the final vegetation batching,
+within the predeclared 850 limit.
 Eight cars completed two actual laps in 161.3 / 97.9 / 112.0 / 118.3 simulated
 seconds. These remain geometry/functional results, not device FPS claims.
 
