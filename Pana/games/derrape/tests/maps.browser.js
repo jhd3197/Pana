@@ -101,7 +101,9 @@ try {
         race.items.clear(); c.inventory = [null, null]; c.selected = 0;
         Object.assign(c, { x: b.x, y: T.groundAt(b.x, b.z), z: b.z });
         race.items.update(1 / 60, [c], true);
-        return c.inventory.some(Boolean) && Math.abs(b.m.position.y - (b.y + 0.86)) < 0.01;
+        // The pickup anchor stays on the road; the visual now bobs by up to 6 cm.
+        const grounded = Math.abs(b.y - T.groundAt(b.x, b.z)) < 0.001;
+        return c.inventory.some(Boolean) && grounded && Math.abs(b.m.position.y - (b.y + 0.86)) <= 0.061;
       });
       Object.assign(c, grid); c.inventory = [null, null]; race.items.clear();
       let pickups = 0, maxGroundError = 0;
@@ -140,7 +142,7 @@ try {
     return map.x >= panel.x && map.right <= panel.right && map.y >= panel.y && map.bottom <= panel.bottom;
   });
   assert.equal(minimap, true, 'minimap stays inside its map panel');
-  console.log(requested ? `Requested maps passed: ${requested.join(', ')}` : 'All eight maps and repeated switches passed.');
+  console.log(requested ? `Requested maps passed: ${requested.join(', ')}` : 'All twelve maps and repeated switches passed.');
 } finally {
   await browser.close();
 }

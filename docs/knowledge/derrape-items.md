@@ -26,6 +26,9 @@ runtime dependencies. Derrape still runs a local four-car race with bots.
   pickups for results, including extras after the cap. Race order remains based
   on laps, progress and finish time. Coin lines respawn after eight seconds;
   crates after 2.5. Both use local terrain height and swept pickup checks.
+- Crate visuals bob 6 cm around `anchor.y + 0.86`; the pickup anchor itself stays
+  on local ground. Map regressions must check the grounded anchor and bounded
+  visual movement, not require the animated mesh to stay at one exact height.
 - `pickup-art.js` renders crates in material batches. Its unmerged plank template
   feeds `FragmentBurst`; temporary pieces reuse geometry/materials and are bounded
   to 160, bounce on local terrain, and shrink away. Never dispose shared plank
