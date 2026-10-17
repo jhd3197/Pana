@@ -2329,7 +2329,11 @@ function renderResults(order, player) {
       const model=c.car ?? c.def.build(avatar || ME.avatar,wheelById(entrant?.loadout.wheel||'calle').wheel);
       if(!c.car)repaintCar(model,c.def.color,PAINTS.find(p=>p.id===entrant?.loadout.paint)?.color??null);
       c.portrait=racerPortrait(renderer,model);
-      if(!c.car){const geometries=new Set();model.root.traverse(o=>{if(o.geometry)geometries.add(o.geometry);});for(const geometry of geometries)geometry.dispose();}
+      if(!c.car){
+        const geometries=new Set(),materials=new Set();
+        model.root.traverse(o=>{if(o.geometry)geometries.add(o.geometry);for(const m of [].concat(o.material||[]))if(m.userData.ownedMap)materials.add(m);});
+        model.driver.dispose();geometries.forEach(g=>g.dispose());materials.forEach(m=>{m.map.dispose();m.dispose();});
+      }
     }
     return `<img src="${c.portrait}" alt="">`;
   };

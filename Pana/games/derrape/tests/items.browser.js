@@ -176,6 +176,9 @@ try {
   mobile.on('pageerror', error => errors.push(String(error)));
   await mobile.goto(`${origin}/g/derrape/?debug&manual&track=estadio`);
   await mobile.waitForFunction(() => window.garage?.car);
+  await mobile.locator('.pana-rotate').waitFor({state:'visible'});
+  await mobile.evaluate(async()=>{const {setSettings}=await import('/engine/settings.js');setSettings({orientation:'vertical'});});
+  await mobile.locator('.pana-rotate').waitFor({state:'hidden'});
   const framed = await mobile.evaluate(async () => {
     const THREE = await import('three');
     garage.car.root.updateWorldMatrix(true, true);
@@ -190,11 +193,6 @@ try {
   await mobile.screenshot({ path: join(output, 'mobile-garage.png') });
   await mobile.locator('#play').tap();
   await mobile.waitForFunction(() => race.state === 'count');
-  // Portrait is an explicit shared setting; the default horizontal guard
-  // correctly prevents racing input until rotation or a preference change.
-  await mobile.locator('.pana-rotate').waitFor({state:'visible'});
-  await mobile.evaluate(async()=>{const {setSettings}=await import('/engine/settings.js');setSettings({orientation:'vertical'});});
-  await mobile.locator('.pana-rotate').waitFor({state:'hidden'});
   await mobile.evaluate(async () => {
     race.state = 'go'; race.count = 0;
     const { addItem } = await import('./item-rules.js');
@@ -209,8 +207,8 @@ try {
     const speed = document.querySelector('#speedo').getBoundingClientRect();
     const controls = [...document.querySelectorAll('.touch-drive button')].map(b => b.getBoundingClientRect());
     return { fits: item.x >= 0 && item.right <= speed.x && speed.right <= innerWidth && item.bottom <= innerHeight,
-      touchSize: controls.every(r => r.width >= 44 && r.height >= 44),
-      noOverlap: controls.every(r => r.bottom <= item.y) };
+      touchSize: controls.every(r => r.width >= 44 && r.height >= 44 && r.left >= 0 && r.right <= innerWidth),
+      noOverlap: controls.every(r => r.bottom <= item.y || r.top >= item.bottom || r.right <= item.left || r.left >= item.right) };
   });
   assert.ok(hud.fits && hud.touchSize && hud.noOverlap, 'mobile HUD and touch targets fit');
   await mobile.setViewportSize({ width: 320, height: 740 });

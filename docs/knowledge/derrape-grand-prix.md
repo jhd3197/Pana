@@ -9,7 +9,7 @@ The baseline made no runtime changes. Compatibility inputs live in
 `Pana/games/derrape/tests/cup-profile-fixtures.js`; screenshots and measurements
 are ignored under `art/grand-prix/baseline/`.
 
-### Current implementation inventory
+### Historical implementation inventory at baseline
 
 - `public/modes.js` has two cups, Mango and Arepa. `awardPoints()` and
   `cupStandings()` key totals by display name; the only tiebreak is the latest
@@ -173,7 +173,7 @@ three championship finishers.
 ## Phase 05 — server-owned online championship lifecycle
 
 `server/room.js` (`DerrapeRoom`) owns the authoritative Grand Prix session when
-`state.mode` is an available cup (`pana` or `aventura`). Before starting, the
+`state.mode` is an available cup (`pana`, `aventura` or `agua`). Before starting, the
 host can select `mode` and `difficulty` (`facil`, `normal`, `dificil`); track
 selection messages are ignored while a cup mode is active because the cup's
 first stage (`cup.stages[0]`) determines the initial track and lap count.
@@ -236,3 +236,38 @@ not cumulative cup points; a regression proves the two orders can differ.
 
 
 Frozen entrants now include paint, horn and flame identifiers. Podium images borrow the actual car hierarchy through one short-lived render target; they do not use the local garage's avatar for remote racers.
+
+## Final balance and lifetime measurements
+
+`cup-balance.browser.js` ran 30 full-cup seeds per difficulty (Easy, Normal,
+Hard): 90 championships per cup, 270 in total, 1,080 eight-car stage races.
+Every entrant finished within its stage cap. Pana and Agua recorded zero
+rescues. Aventura recorded 36 Selva recoveries across 720 car-runs on that
+existing off-road track (14 Normal, 22 Hard; at most two for one car). The
+main cluster is near (-88, -35), with isolated riverbank departures elsewhere;
+all recovered and finished, with no repeated rescue loop. Keep that location
+in future Selva handling work instead of hiding it with stronger catch-up.
+
+Normal mean car times by stage (seconds): Pana 140.0 / 161.8 / 145.3 / 126.7;
+Aventura 140.0 / 155.1 / 74.3 / 140.4; Agua 113.1 / 151.5 / 111.7 / 167.7.
+Normal first-to-last gaps are 18.6–23.3 s, 13.9–24.3 s and 15.0–26.3 s
+respectively. Leaders before the last race won 83%, 77% and 74% of cups; the
+champion's mean points per stage stayed between 13.0 and 14.1. These are seeded
+AI outcomes with the existing vehicle tunes and items, not human skill claims.
+Raw results: ignored `art/grand-prix/balance-{pana,aventura,agua}.json` and
+`balance-summary.json`.
+
+Unaccelerated Normal runs consumed elapsed wall time only, including loading,
+countdowns and three 12-second intermissions: Pana 11.37 minutes, Aventura
+9.98 minutes, Agua 10.50 minutes. Agua uses the final Salinas crossfall. Stage
+presets remain Pana 2/2/2/2, Aventura 2/1/2/2 and Agua 2/3/2/2. Proof files
+are `duration-<cup>.json`; the dedicated `cup-duration.proof.js` runs outside
+the regular ten-minute browser-suite timeout. Its 1 Hz render sampling proves
+timing, not frame performance.
+
+Three consecutive full Agua cups (the last two split-screen and mirrored)
+returned to the same warmed garage with 147 geometries, 17 textures, 27 global
+listeners and zero intervals after every cup. Both humans finished every stage.
+Cancellation returned to the garage with no racers; `lifetime.json` records all
+12 stage ledgers. Keyboard, controller, held touch, mango and rescue checks
+also passed separately on each new map with reduced quality.

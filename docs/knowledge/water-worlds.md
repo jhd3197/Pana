@@ -1,8 +1,8 @@
 # Derrape water worlds
 
-Plan: `docs/plans/56_derrape-grand-prix-and-water-worlds.md`. Draft routes are
-available only with `?waterDrafts`; production metadata remains unchanged until
-the release proofs pass. Each map has separate layout, world and definition
+Plan: `docs/plans/56_derrape-grand-prix-and-water-worlds.md`. The four routes
+are available in Carrera rápida, Copa del Agua and Studio without a debug flag.
+Each map has separate layout, world and definition
 modules. World geometry is game-local; reusable objects live in `engine/models`.
 
 ## Greybox geometry and budgets
@@ -81,4 +81,28 @@ and absolute-time animation. Galope places the canonical landing shelter on
 its existing dock without changing course/collision data.
 
 The focused Derrape unit suite passes 73 tests after twelve-track registration.
-Full multiplayer, Studio, resource and consumer regression proof is in progress.
+The final proof and remaining device-validation limits are recorded below and
+in the plan's completion audit.
+
+## Final map and control evidence
+
+The final geometry/camera run passes all four maps. Salto's expanded receiving
+pool/open gallery measures 1,514,749 environment triangles; the other final
+counts are Delta 1,705,138, Cuevas 1,043,390 and Salinas 764,805. Maximum sampled
+environment submissions (including track furniture/items, excluding racers)
+are 423 / 532 / 414 / 331 respectively, within the predeclared 850 limit.
+Eight cars completed two actual laps in 161.3 / 97.9 / 112.0 / 118.3 simulated
+seconds. These remain geometry/functional results, not device FPS claims.
+
+Each map folder now contains `route.svg`, an overview, nine real chase views,
+mobile landscape, geometry metrics, render counts and an eight-car race record.
+`water-controls.browser.js` additionally drives each built map with real W
+input, a controller, and a held CDP touch; throws a mango and verifies the
+zamuro returns the car to its safe road deck. Salinas' separate crossing suite
+checks the continuous dry lane and three cars with both street/rain tires.
+
+The seven shared water-world models pass actual Studio adapter renders. The
+waterfall submits three draws, reduces mist from 36 to 12 instances, supports
+absolute 0→17→0 scrubbing and disposes its own resources. Model architecture
+and twelve-map Studio tours passed. Bululú's two-client Chinazo suite and
+Galope's two-client riding/touch, landscape, water-FX and Studio suites passed.

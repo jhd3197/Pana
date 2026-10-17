@@ -53,15 +53,26 @@ try{
     await page.screenshot({path:`${output}/${id}-detail.png`});
   }
   await writeFile(`${output}/metrics.json`,JSON.stringify(results,null,2));
-  const budget={desierto:1600000,llanos:2500000,estadio:1000000,paramo:2000000,bululu:2200000,chichi:4500000,plaza:3000000};
+  // Full-scene inventories include the already-shipped outer neighborhoods
+  // and pastures. Plaza's current guard is owned by plaza.browser.js and
+  // circuit-surroundings.md; the former 3 M guard predated that expansion.
+  // surroundings.browser.js separately retains 900 draws / 3.5 M triangles
+  // for actual driving views. These overview guards do not replace it.
+  const budget={desierto:1600000,llanos:3100000,estadio:1000000,paramo:2000000,bululu:2200000,chichi:4500000,plaza:4600000};
+  const overviewCalls={plaza:1300,llanos:1100};
   for(const m of results){
     assert.ok(m.triangles<budget[m.id],`${m.id}: actual rendered triangle budget (${m.triangles})`);
-    assert.ok(m.drawCalls<1000,`${m.id}: draw-call budget`);
+    assert.ok(m.drawCalls<(overviewCalls[m.id]||1000),`${m.id}: draw-call budget`);
     assert.ok(m.radius>15,`${m.id}: safe inside corner radius`);assert.ok(m.grade<.4,`${m.id}: drivable gradient`);
     assert.equal(m.crossings,0,`${m.id}: racing line has no self-intersections`);
     if(['paramo','chichi'].includes(m.id))assert.ok(m.elevation>75,`${m.id}: sustained mountain descent/ascent`);
     const features={desierto:['pana-gas-yard','wind-carved-dunes','canyon-gateway-1','canyon-gateway-2','canyon-buttresses','desert-oasis','oasis-well-stop'],llanos:['hacienda-pana-yard','eastern-cattle-hato','llanos-cano','llanos-connected-wetlands','estero-road-bridges','llanos-roadside-arepera'],paramo:['summit-terminal','glacial-lake'],bululu:['roques-village','coastal-water'],chichi:['diving-school','chichi-river','coastal-lookout'],plaza:['plaza-waterfront','maracaibo-bridge','canal-water']}[m.id]||[];
-    if(['desierto','llanos'].includes(m.id)){assert.ok(m.length>1800,`${m.id}: expanded journey`);assert.equal(Object.keys(m.assetCounts).length,10,`${m.id}: all ten pack models placed`);assert.ok(Object.values(m.assetCounts).every(n=>n>0),`${m.id}: nonempty placements`);}
+    if(['desierto','llanos'].includes(m.id)){
+      assert.ok(m.length>1800,`${m.id}: expanded journey`);
+      if(m.id==='llanos')for(const name of ['ranch-house','horse-stable','ranch-water-tower','water-windmill','old-tractor','feeding-trough','hay-bale','ranch-fence','corral-gate','mud-puddle'])assert.ok(m.assetCounts[name]>0,`${m.id}: ${name} placed`);
+      else assert.equal(Object.keys(m.assetCounts).length,10,`${m.id}: all ten pack models placed`);
+      assert.ok(Object.values(m.assetCounts).every(n=>n>0),`${m.id}: nonempty placements`);
+    }
     for(const name of features)assert.ok(m.names.includes(name),`${m.id}: ${name} exists`);
   }
   assert.deepEqual(errors,[]);console.log('PASS: registry migration, landmarks, elevation, rendering budgets and visual captures.');

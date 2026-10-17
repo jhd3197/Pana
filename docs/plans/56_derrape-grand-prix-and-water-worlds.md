@@ -1,8 +1,8 @@
 # 56 — Derrape Grand Prix and four living-water worlds
 
-Status: in progress. Phases 00–06 are implemented; online fault verification
-and the water-world phases continue. See phase statuses and the knowledge notes
-for measured proof; the final acceptance checklist remains open.
+Status: implementation delivered; final verification in progress. All three cups
+and twelve circuits are available. The completion audit below distinguishes
+implemented/verified work from outstanding reference-device evidence.
 
 ## Outcome
 
@@ -656,8 +656,7 @@ remaining after transition.
 
 ### Phase 07 — Online fault coverage and first championship release
 
-Status: in progress. Strict context/ownership and departure unit proof passes;
-expanded browser fault and quick-race regression gates remain. Dependencies: 06.
+Status: done. Two-client four-stage recovery, host handoff, stale packets, real loading timeout, late spectator, retirement, fresh-cup reset and ninth-client capacity checks pass. See art/grand-prix/online-final.log and cup-failures-fixed.log.
 
 **Work:** Complete the failure matrix, refine Spanish state messages and ship
 Pana/Aventura as online and local championships. Keep Agua hidden. Document the
@@ -701,7 +700,7 @@ as numbers measured on the chosen reference profile, not "optimize later".
 
 ### Phase 09 — Water, wet-road and effect contracts
 
-Status: implemented; depth/effect/disposal verification in progress. Dependencies: 08.
+Status: done. Shared depth/crossfall, seven Studio assets, deterministic waterfall and repeated-cup lifetime checks pass. Dependencies: 08.
 
 **Work:** Connect each greybox's bed, flow coordinates, water surface and wet
 road sampling. Reuse existing `waterAt`/grip behavior. Add only missing curtain,
@@ -725,7 +724,7 @@ green. No extra render target or global performance regression is introduced.
 
 ### Phase 10 — Salto: finished landform and driving route
 
-Status: implemented; final release proof in progress. Dependencies: 08, 09.
+Status: implemented and functionally verified; reference-device release evidence is tracked in phase 20. Dependencies: 08, 09.
 
 **Work:** Author continuous upper river, rim, gorge, bridge foundations,
 gallery and return ascent. Reserve water/road heights before placing geology.
@@ -745,7 +744,7 @@ No shortcut is necessary for this phase to pass.
 
 ### Phase 11 — Salto: waterfall spectacle, habitat and release
 
-Status: implemented; final release proof in progress. Dependencies: 10.
+Status: implemented and functionally verified; reference-device release evidence is tracked in phase 20. Dependencies: 10.
 
 **Work:** Finish source river, visible lip, waterfall curtain, spray impact,
 pool and downstream outlet. Compose jungle as habitat patches and cliff ledges,
@@ -767,7 +766,7 @@ water worlds are still being completed.
 
 ### Phase 12 — Delta: connected channels, village layout and route
 
-Status: implemented; final release proof in progress. Dependencies: 08, 09.
+Status: implemented and functionally verified; reference-device release evidence is tracked in phase 20. Dependencies: 08, 09.
 
 **Work:** Author a connected channel network with meaningful banks and firm
 islands. Place the village street/deck layout independently of the race spline,
@@ -787,7 +786,7 @@ Use a built-world top-down capture to catch shortcuts through batched buildings.
 
 ### Phase 13 — Delta: palafitos, working waterfront and release
 
-Status: implemented; final release proof in progress. Dependencies: 12.
+Status: implemented and functionally verified; reference-device release evidence is tracked in phase 20. Dependencies: 12.
 
 **Work:** Add a small varied family of stilt homes, shelters, landing/deck
 pieces and mooring details. Reuse coast boats, fish crates, nets and buoys.
@@ -806,7 +805,7 @@ repeated track switching before standalone release.
 
 ### Phase 14 — Cuevas: hollow geology and a reliable driving corridor
 
-Status: implemented; final release proof in progress. Dependencies: 08, 09.
+Status: implemented and functionally verified; reference-device release evidence is tracked in phase 20. Dependencies: 08, 09.
 
 **Work:** Build explicit cave walls/ceilings and portals around the approved
 route. Keep the base terrain below the road; enclosing a tunnel by raising a
@@ -825,7 +824,7 @@ the lower river as the driving deck; no stacked racing lanes share X/Z.
 
 ### Phase 15 — Cuevas: daylight, water, atmosphere and release
 
-Status: implemented; final release proof in progress. Dependencies: 14.
+Status: implemented and functionally verified; reference-device release evidence is tracked in phase 20. Dependencies: 14.
 
 **Work:** Compose daylight openings, mineral-colour variation, wet shelves,
 roots and a few readable rock formations. Use restrained ambient fill and
@@ -844,7 +843,7 @@ repeated switching. Release the standalone map after these checks pass.
 
 ### Phase 16 — Salinas: ponds, causeways and shallow-water driving
 
-Status: implemented; final release proof in progress. Dependencies: 08, 09.
+Status: implemented and functionally verified; reference-device release evidence is tracked in phase 20. Dependencies: 08, 09.
 
 **Work:** Shape irregular salt ponds with separate beds, low banks and visible
 channel/sluice connections. Author wide sweepers, the shallow crossing, a viable
@@ -862,7 +861,7 @@ checkpoint and rescue proof passes on the actual built world.
 
 ### Phase 17 — Salinas: saltworks, horizon and release
 
-Status: implemented; final release proof in progress. Dependencies: 16.
+Status: implemented and functionally verified; reference-device release evidence is tracked in phase 20. Dependencies: 16.
 
 **Work:** Add salt piles, sluices, simple working sheds, loading details and
 road markers. Keep the large sky/open-flat composition; use colour to distinguish
@@ -883,7 +882,7 @@ without advertising an unfinished Copa del Agua.
 
 ### Phase 18 — Assemble Copa del Agua and tune all three cups
 
-Status: implemented; final release proof in progress. Dependencies: 07, 11, 13, 15, 17.
+Status: implemented and functionally verified; reference-device release evidence is tracked in phase 20. Dependencies: 07, 11, 13, 15, 17.
 
 **Work:** Enable Agua in the exact agreed order: Salinas → Delta → Cuevas →
 Salto. Set its final lap/cap presets, stage titles, selection previews and podium
@@ -912,7 +911,7 @@ checkpoint advantage. New maps work independently in Carrera rápida as well.
 
 ### Phase 19 — Prove reuse in other games and finish Studio coverage
 
-Status: implemented; final release proof in progress. Dependencies: relevant finished map/effect phases; after 18
+Status: implemented and functionally verified; reference-device release evidence is tracked in phase 20. Dependencies: relevant finished map/effect phases; after 18
 for final inventory and release accounting.
 
 **Work:** Deliver two bounded second-consumer integrations: use the Salto
@@ -942,7 +941,7 @@ not second-game reuse. No unrelated Curiara work is overwritten.
 
 ### Phase 20 — Full accessibility, performance and regression pass
 
-Status: pending. Dependencies: 18, 19.
+Status: in progress. Geometry, controls, repeated lifetime, balance and software-browser regressions are verified; final hardware and multiplayer reruns remain. Dependencies: 18, 19.
 
 **Work:** Review the full championship from first click to final trophy on the
 reference desktop and mobile devices. Fix measured slow transitions, excessive
@@ -974,7 +973,7 @@ does not establish the advertised eight-human room behavior.
 
 ### Phase 21 — Documentation, final release and completion audit
 
-Status: pending. Dependencies: 20.
+Status: in progress. Changelog, knowledge notes and reproducible proof suites are delivered; final acceptance awaits phase 20. Dependencies: 20.
 
 **Work:** Consolidate final data, remove development-only public selections,
 finish Spanish copy and publish accurate player-facing changelog entries for

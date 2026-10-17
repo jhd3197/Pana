@@ -2985,7 +2985,7 @@
       "anchor": "function flagPole",
       "where": "Bululú board; No te caigas; Selva",
       "note": "Active animated flag. Pana branded pedestal is a separate catalog entry.",
-      "line": 38
+      "line": 42
     },
     {
       "name": "Displaced rock",
@@ -3097,7 +3097,7 @@
       "anchor": "function rowboat",
       "where": "Selva; Llanos",
       "note": "Two active river boats. Keep shallow-water footprint when upgrading.",
-      "line": 427
+      "line": 432
     },
     {
       "name": "Canal/dive-village boat",
@@ -3275,7 +3275,7 @@
       "anchor": "function waterfall",
       "where": "Selva",
       "note": "Active older waterfall; separate from waterfallRocks in Chi Chi.",
-      "line": 273
+      "line": 278
     },
     {
       "name": "Pond and river wrappers",
@@ -3283,7 +3283,7 @@
       "anchor": "function waterPond",
       "where": "Selva",
       "note": "waterPond/waterRibbon wrap the shared water surface.",
-      "line": 263
+      "line": 268
     },
     {
       "name": "Country grass tufts",
@@ -3339,7 +3339,7 @@
       "anchor": "function chevrons",
       "where": "Derrape",
       "note": "Four route-generated furniture families; ramps depend on each track definition.",
-      "line": 143
+      "line": 144
     },
     {
       "name": "Race terrain and waterways",
@@ -3589,7 +3589,7 @@
       "anchor": "function windmill",
       "where": "No current production callsite",
       "note": "Current Llanos uses ranch-props.waterWindmill.",
-      "line": 354
+      "line": 359
     },
     {
       "name": "Old arepa stand",
@@ -3597,7 +3597,7 @@
       "anchor": "function arepaStand",
       "where": "No current production callsite",
       "note": "Current maps use streetFoodKiosk.",
-      "line": 384
+      "line": 389
     },
     {
       "name": "Generic dock",
@@ -3605,7 +3605,7 @@
       "anchor": "function dock",
       "where": "No current production callsite",
       "note": "Maps now build docks against their shore/deck.",
-      "line": 414
+      "line": 419
     },
     {
       "name": "Generic sailboat",
@@ -3613,7 +3613,7 @@
       "anchor": "function sailboat",
       "where": "No current production callsite",
       "note": "No production caller; internally uses rowboat, which remains active.",
-      "line": 439
+      "line": 444
     },
     {
       "name": "Generic plank/rope bridge",
@@ -3621,7 +3621,7 @@
       "anchor": "function bridge",
       "where": "No current production callsite",
       "note": "Active crossings have road-specific decks or newer shared factories.",
-      "line": 298
+      "line": 303
     },
     {
       "name": "Distant mountain ring",
@@ -3629,7 +3629,7 @@
       "anchor": "function distantMountains",
       "where": "No current production callsite",
       "note": "Current maps use their own terrain or island-landscape.",
-      "line": 458
+      "line": 463
     },
     {
       "name": "Old route landscape scatter",
@@ -3637,7 +3637,7 @@
       "anchor": "function routeLandscape",
       "where": "No current production callsite",
       "note": "Current worlds supply habitat-specific planting.",
-      "line": 502
+      "line": 507
     },
     {
       "name": "Tire-wall generator",
@@ -3645,7 +3645,7 @@
       "anchor": "function tireWall",
       "where": "Runtime hook only; current tracks disable walls",
       "note": "Code is still wired conditionally; distinguish dormant configuration from dead code.",
-      "line": 64
+      "line": 65
     },
     {
       "name": "Fence-ring generator",
@@ -3653,7 +3653,7 @@
       "anchor": "function fenceRing",
       "where": "Runtime hook only; no current track enables fence",
       "note": "Do not remove without checking future track configuration.",
-      "line": 100
+      "line": 101
     }
   ],
   "replaced": [

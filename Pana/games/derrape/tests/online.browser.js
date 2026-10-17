@@ -13,14 +13,20 @@ const errors = [];
 const code = 'test' + Math.random().toString(36).slice(2, 8);
 const step = (label) => console.log(`· ${label}`);
 
-async function player(name, query) {
+async function player(name) {
   const context = await browser.newContext({ viewport: { width: 1100, height: 700 } });
   await context.addInitScript((n) => localStorage.setItem('pana:name', n), name);
   const page = await context.newPage();
   page.on('pageerror', (e) => errors.push(`${name}: ${e}`));
+  // Warm both independent contexts before testing the room kit's deliberate
+  // 15-second party-leader window. Cold CDN/vehicle loading is not host election.
+  await page.goto(`${origin}/g/derrape/?debug&auto&speed=5`);
+  await page.waitForFunction(() => window.garage?.car, null, { timeout: 30000 });
+  return page;
+}
+async function join(page, query) {
   await page.goto(`${origin}/g/derrape/?debug&auto&speed=5&room=${code}${query}`);
   await page.waitForFunction(() => window.getNet?.()?.state.players.length > 0, null, { timeout: 30000 });
-  return page;
 }
 const state = (page) => page.evaluate(() => {
   const n = getNet();
@@ -31,8 +37,10 @@ const until = (page, fn, arg, timeout = 60000) => page.waitForFunction(fn, arg, 
 
 try {
   // Guest first: the party leader still hosts when they arrive.
-  const guest = await player('Guest', '');
-  const host = await player('Leader', '&lead=1');
+  const guest = await player('Guest');
+  const host = await player('Leader');
+  await join(guest, '');
+  await join(host, '&lead=1');
   await until(guest, () => getNet().state.players.length === 2);
   await until(host, () => getNet().state.players.length === 2);
   let g = await state(guest), h = await state(host);

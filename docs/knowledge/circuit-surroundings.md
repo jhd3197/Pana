@@ -85,3 +85,17 @@ Current screenshots and reports are in `art/surroundings/`, with actual Studio
 placement renders in `art/studio/map-rollout/`. These generated assets are
 ignored by Git. The source inventory records the new scene assemblies separately
 from their reused canonical props.
+
+Plan 56's full regression found the older Venezuela overview test still using
+pre-surroundings limits: Plaza 3 M / 1,000 and Llanos 2.5 M / 1,000. Those world
+constructors were unchanged by plan 56. Its measurements are 4,429,882 / 1,242
+and 2,977,495 / 1,032 respectively. The overview test now uses Plaza's already
+documented 4.6 M / 1,300 guard and a 3.1 M / 1,100 complete-pasture guard for
+Llanos. The stricter existing driving-view 900 submissions / 3.5 M geometry
+checks remain intact and passed all eight maps. This reconciles the old
+inventory test with the shipped surroundings; it is not a new FPS claim.
+
+The same legacy suite assumed Llanos had exactly ten asset IDs. The current
+world also places cows, horses and chickens. It now checks each of the ten
+required ranch IDs by name, while retaining positive-count checks for every
+additional asset.

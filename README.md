@@ -25,7 +25,7 @@ same room.
 
 | Game | What it is | Players |
 |---|---|---|
-| **Derrape** | Toy-car racing on eight circuits, with items, coins and swappable wheels | 1–8, online rooms |
+| **Derrape** | Toy-car racing on twelve circuits and three four-race Grand Prix cups, with items, coins and swappable wheels | 1–8 online; local split screen |
 | **Bululú** | Party board game on Mango Island, with a minigame every round | 1 vs bots |
 | **Escondidas** | Prop hunt in a market plaza: hide as a barrel, crate or bench | 1–8, bots fill in |
 | **Pana Cocina** | Cooperative three-minute cooking rush: arepas, cachapas, tequeños | 1–8, bot helpers |

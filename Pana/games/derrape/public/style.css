@@ -433,6 +433,14 @@ body:has(#loading:not(.hidden)) #garage { visibility: hidden; }
   #mm { width: 104px; height: 68px; }
   .mm-head { max-width: 104px; }
 }
+@media (max-width: 760px) and (pointer: coarse) {
+  .touch-drive { gap: 10px; }
+  .touch-drive > div { gap: 6px; }
+  .touch-drive .pk-touch { --pk-touch: 54px; min-width: 44px; padding: 0 5px; font-size: 13px; border-radius: 14px; }
+  .touch-steer .pk-touch { width: 48px; }
+  .touch-pedals { flex: 1; min-width: 0; }
+  .touch-pedals .pk-touch { flex: 1; min-width: 0; }
+}
 @media (max-height: 540px) and (pointer: coarse) {
   .touch-drive { bottom: max(12px, env(safe-area-inset-bottom)); }
   .item { left: 50%; bottom: max(10px, env(safe-area-inset-bottom)); width: 236px; padding: 8px; transform: translateX(-50%); }
