@@ -37,11 +37,11 @@ export function deltaWorld(T) {
   group.add(finish(village));
   const plantsOk=(x,z)=>!occupied.some(([a,b,r])=>Math.hypot(x-a,z-b)<r);
   instances(group,mangrove({seed:5}),scatter(T,world.groundAt,{seed:571,count:90,bounds:[-430,-390,430,390],minY:-.6,margin:8,
-    accept:(x,z)=>plantsOk(x,z)&&riverAt(x,z).distance>31&&riverAt(x,z).distance<62}),'delta-mangles',95);
+    accept:(x,z)=>plantsOk(x,z)&&riverAt(x,z).distance>31&&riverAt(x,z).distance<62}),'delta-mangles',190);
   instances(group,reeds({seed:7}),scatter(T,world.groundAt,{seed:572,count:85,bounds:[-430,-390,430,390],minY:-.5,margin:4,
-    accept:(x,z)=>plantsOk(x,z)&&riverAt(x,z).distance>25&&riverAt(x,z).distance<40}),'delta-reeds',95);
+    accept:(x,z)=>plantsOk(x,z)&&riverAt(x,z).distance>25&&riverAt(x,z).distance<40}),'delta-reeds',190);
   instances(group,palm({seed:6,h:9}),scatter(T,world.groundAt,{seed:573,count:45,bounds:[-430,-390,430,390],margin:9,
-    accept:(x,z)=>plantsOk(x,z)&&riverAt(x,z).distance>65}),'delta-island-palms',95);
+    accept:(x,z)=>plantsOk(x,z)&&riverAt(x,z).distance>65}),'delta-island-palms',190);
   group.userData.assetCounts=assetCounts;
   return {group,groundAt:world.groundAt,update:waterAnimator(group)};
 }

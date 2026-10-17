@@ -32,9 +32,9 @@ export function salinasWorld(T) {
   }
   group.add(finish(works));
   instances(group,palm({seed:59,h:9}),scatter(T,world.groundAt,{seed:591,count:35,bounds:[-480,-330,480,390],margin:12,
-    accept:(x,z)=>pondField(x,z)>1.3&&channelSample(x,z).distance>18}),'salinas-coastal-palms',120);
+    accept:(x,z)=>pondField(x,z)>1.3&&channelSample(x,z).distance>18}),'salinas-coastal-palms',190);
   instances(group,agave({seed:4}),scatter(T,world.groundAt,{seed:592,count:65,bounds:[-480,-330,480,390],margin:5,
-    accept:(x,z)=>pondField(x,z)>1.3&&channelSample(x,z).distance>12}),'salinas-dry-banks',120);
+    accept:(x,z)=>pondField(x,z)>1.3&&channelSample(x,z).distance>12}),'salinas-dry-banks',190);
   group.userData.assetCounts={saltPile:piles,sluiceGate:gates,landingShelter:shelters};
   return {group,groundAt:world.groundAt,update:waterAnimator(group)};
 }

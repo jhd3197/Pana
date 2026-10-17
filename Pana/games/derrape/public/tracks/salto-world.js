@@ -33,10 +33,10 @@ export function saltoWorld(T) {
   group.add(source);
   const fall=waterfall({width:120,height:139,seed:56});fall.position.set(0,7,0);group.add(fall);
   const vegetationOk=(x,z)=>riverAt(x,z).distance>40&&!(Math.abs(x)<145&&z>-155&&z<45);
-  instances(group,ceiba({seed:56,detail:'distant'}),scatter(T,world.groundAt,{seed:561,count:190,bounds:[-500,-450,500,420],margin:10,accept:vegetationOk}),'salto-canopy',110);
-  instances(group,palm({seed:5,h:10}),scatter(T,world.groundAt,{seed:562,count:55,bounds:[-420,-340,420,400],margin:9,accept:vegetationOk}),'salto-palms',110);
-  instances(group,fern({seed:4}),scatter(T,world.groundAt,{seed:563,count:110,bounds:[-420,-360,420,400],margin:5,accept:vegetationOk}),'salto-ferns',110);
-  instances(group,monstera({seed:9}),scatter(T,world.groundAt,{seed:564,count:65,bounds:[-420,-360,420,400],margin:6,accept:vegetationOk}),'salto-understory',110);
+  instances(group,ceiba({seed:56,detail:'distant'}),scatter(T,world.groundAt,{seed:561,count:190,bounds:[-500,-450,500,420],margin:10,accept:vegetationOk}),'salto-canopy',190);
+  instances(group,palm({seed:5,h:10}),scatter(T,world.groundAt,{seed:562,count:55,bounds:[-420,-340,420,400],margin:9,accept:vegetationOk}),'salto-palms',190);
+  instances(group,fern({seed:4}),scatter(T,world.groundAt,{seed:563,count:110,bounds:[-420,-360,420,400],margin:5,accept:vegetationOk}),'salto-ferns',190);
+  instances(group,monstera({seed:9}),scatter(T,world.groundAt,{seed:564,count:65,bounds:[-420,-360,420,400],margin:6,accept:vegetationOk}),'salto-understory',190);
   const camp=new THREE.Group();
   for(const [i,x,z]of [[0,-220,-300],[1,-198,-294],[2,-175,-288]])if(clear(T,x,z,8))put(camp,mountainTent({color:i%2?0xc99b55:0xa2654c}),x,z,world.groundAt(x,z),-.3);
   group.add(finish(camp));

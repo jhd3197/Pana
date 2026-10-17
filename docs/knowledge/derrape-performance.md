@@ -92,3 +92,9 @@ the renderer, viewport, quality, loading time, p50/p95 RAF intervals, CPU update
 and render time, draw calls and live resources. Its smaller viewport remains a
 desktop GPU measurement. The physical Android benchmark was waived by the user;
 mobile layout/touch tests must not be described as measured phone frame rates.
+
+The four water worlds use 190 m spatial vegetation cells. Profiling found their
+95–120 m cells spent more CPU submitting small batches than they saved in GPU
+work on the reference desktop. The larger bounded cells retain the same seeds,
+placements and plant counts; they submit some extra off-screen triangles but
+fewer draw calls. Keep the 1.8M whole-environment triangle limit and ray tests.

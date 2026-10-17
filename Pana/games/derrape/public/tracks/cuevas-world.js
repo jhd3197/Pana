@@ -27,10 +27,10 @@ export function cuevasWorld(T) {
   const outside=(x,z)=>{
     const u=T.paramOf(x,z)/T.TOTAL;return u<CAVE.from-.03||u>CAVE.to+.04;
   };
-  instances(group,ceiba({seed:58,detail:'distant'}),scatter(T,world.groundAt,{seed:581,count:170,bounds:[-470,-350,450,430],margin:11,accept:outside}),'cuevas-valley-forest',110);
-  instances(group,fern({seed:5}),scatter(T,world.groundAt,{seed:582,count:120,bounds:[-420,-320,420,400],margin:5,accept:outside}),'cuevas-fern-banks',110);
+  instances(group,ceiba({seed:58,detail:'distant'}),scatter(T,world.groundAt,{seed:581,count:170,bounds:[-470,-350,450,430],margin:11,accept:outside}),'cuevas-valley-forest',190);
+  instances(group,fern({seed:5}),scatter(T,world.groundAt,{seed:582,count:120,bounds:[-420,-320,420,400],margin:5,accept:outside}),'cuevas-fern-banks',190);
   instances(group,boulder(0x87938b),scatter(T,world.groundAt,{seed:583,count:95,bounds:[-470,-350,450,430],margin:10,scale:2,
-    accept:(x,z)=>outside(x,z)&&riverAt(x,z).distance>35}),'cuevas-outcrops',110);
+    accept:(x,z)=>outside(x,z)&&riverAt(x,z).distance>35}),'cuevas-outcrops',190);
   group.userData.assetCounts={stalactiteCluster:clusters,rootCurtain:roots};
   const animate=waterAnimator(group);
   return {group,groundAt:world.groundAt,update:animate};

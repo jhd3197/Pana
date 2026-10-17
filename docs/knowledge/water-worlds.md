@@ -56,12 +56,12 @@ The new waterfall takes explicit width/height and owns a curtain, foam and a
 Low quality reduces mist to 12 instances and curtain motion, preserving the
 visible water and wet-road cue. It allocates no reflection pass or texture.
 
-## Outstanding release proof
+## Release proof requirements
 
 Finished-scene screenshots, source/lip/pool continuity, mobile presentation,
 wet/dry tire behavior, Studio model previews, repeated resource disposal and
-two-client races are required after detailing. No physical-device FPS claim
-may be inferred from the headless reference above.
+two-client races are covered by the final evidence below. No physical-device
+FPS claim may be inferred from the historical headless reference above.
 
 ## Detailed-world proof and integration
 
@@ -73,8 +73,8 @@ reducing distant mangroves/reeds/palms fixed it without narrowing the route.
 The final Salinas water response samples the runtime deck plus the same 13 cm
 clearance used by the rendered water. Its causeways remain dry.
 
-Agua's initial release preset is 2/3/2/2 laps. Full-cup timing/balance and
-reference-device rendering remain separate gates; these accelerated driving
+Agua's release preset is 2/3/2/2 laps. Full-cup timing/balance and
+reference-device rendering are recorded separately; these accelerated driving
 times are not FPS claims. Shared waterfall supports a sloped run for Bululú;
 the effect owns three draws, 36 mist instances (12 at low quality), no targets,
 and absolute-time animation. Galope places the canonical landing shelter on
@@ -106,3 +106,9 @@ waterfall submits three draws, reduces mist from 36 to 12 instances, supports
 absolute 0→17→0 scrubbing and disposes its own resources. Model architecture
 and twelve-map Studio tours passed. Bululú's two-client Chinazo suite and
 Galope's two-client riding/touch, landscape, water-FX and Studio suites passed.
+
+Final vegetation uses 190 m cells with the same placements and whole-world
+triangle counts. `art/grand-prix/water-cells-geometry.log` rechecks all lane and
+chase rays plus the nine driver views after that render optimization. Desktop
+GPU timing is recorded in `derrape-performance.md`; the physical-phone run was
+explicitly waived by the user, without replacing it with emulated FPS claims.

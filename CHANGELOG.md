@@ -25,7 +25,8 @@ becomes the GitHub release's notes.
 - **Derrape draws full racing grids with fewer calls while preserving the cars.**
   Rigid parts share draw batches with their original colors; drivers, wheel
   steering, suspension, flags and breakaway pieces keep their animations, while
-  the body paint retains its customization material.
+  the body paint retains its customization material. The water circuits also
+  group their unchanged vegetation into fewer draw batches.
 - **Derrape keeps your online Grand Prix together across four races.**
   Copa Pana and Copa Aventura carry the same rivals, official standings and
   one-time rewards through map changes, with synchronized loading and reload recovery.
