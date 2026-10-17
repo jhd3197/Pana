@@ -155,6 +155,13 @@ try {
   await guest.setViewportSize({ width: 320, height: 740 });
   await fits(guest, '#play');
   await guest.screenshot({ path: `${output}/guest-room-320.png` });
+  await menuStep(guest, 'welcome');
+  const roomMessage = await guest.locator('#welcome-room').boundingBox();
+  const navigation = await guest.locator('.menu-footer').boundingBox();
+  assert.ok(roomMessage && roomMessage.y + roomMessage.height <= navigation.y, 'room message stays above navigation when revisiting Panas');
+  await guest.locator('#menu-next').click();
+  await step(guest, 'car');
+  await menuStep(guest, 'ready');
   await host.locator('#play').click();
   await Promise.all([host, guest].map(p => p.waitForFunction(() => race.cars.length === 4 && ['count', 'go'].includes(race.state), null, { timeout: 120000 })));
   assert.equal(await guest.evaluate(() => race.player.def.name), 'El Machito');

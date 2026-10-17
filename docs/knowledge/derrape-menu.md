@@ -38,6 +38,7 @@ controls are ready. It does not invent a startup percentage.
   garage's WebGL render is skipped while illustrated menu pages cover it.
 - Keep Play in the fixed footer. Ready options and the roster scroll separately
   on short phones, while the primary action remains reachable.
+  The online welcome page also reserves footer space when revisiting Panas.
 - Earlier garage CSS hides `.steps` and positions tools with `bottom` on
   phones. `menu.css` explicitly restores the step navigation and resets that
   bottom offset. Scope menu rules so the race HUD is unaffected.

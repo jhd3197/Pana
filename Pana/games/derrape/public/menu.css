@@ -32,12 +32,14 @@ body { --menu-paper: #fff3d8; --menu-ink: #282035; --menu-grass: #2d705d; }
 .festival-art.is-layered .festival-master { visibility: hidden !important; }
 .festival-art::after { content: ''; position: absolute; inset: 0; background: linear-gradient(90deg, rgba(0,0,0,.8), rgba(0,0,0,.38) 36%, transparent 67%), linear-gradient(0deg, rgba(0,0,0,.5), transparent 35%); }
 .menu-flow[data-menu-step="welcome"] .menu-pages { bottom: 30px; }
+.menu-flow[data-menu-step="welcome"]:has(#welcome-room:not([hidden])) .menu-pages { bottom: 92px; }
 .welcome-page { display: flex; align-items: center; position: relative; }
 .welcome-copy { width: min(450px, 44%); padding: 20px 0; }
 .welcome-copy > .pk-eyebrow { color: var(--pk-yellow); letter-spacing: 2px; }
 .welcome-copy h1 { font-size: clamp(52px, 6.7vw, 100px); line-height: .98; margin: 18px 0; color: var(--menu-paper); text-shadow: 0 4px 0 rgba(0,0,0,.2); }
 .welcome-copy h1 em { font-style: normal; color: var(--pk-yellow); }
 .welcome-copy > p:not(.pk-eyebrow) { font-size: 16px; line-height: 1.6; margin: 0 0 22px; color: var(--menu-paper); }
+.welcome-copy > .welcome-room:not([hidden]) { display: block; }
 .play-choices { display: grid; gap: 9px; max-width: 360px; }
 .play-choice.pk-btn { width: 100%; justify-content: flex-start; gap: 16px; padding: 12px 20px; min-height: 68px; background: var(--menu-paper); color: var(--menu-ink); border-color: transparent; text-align: left; border-radius: 12px; }
 .play-choice:first-child { background: var(--pk-yellow); }
