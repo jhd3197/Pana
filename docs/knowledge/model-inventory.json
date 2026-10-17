@@ -2,7 +2,7 @@
   "date": "2026-10-17",
   "scope": "Current production 3D resource/model families; catalog variants and scene assemblies are counted separately. No primitive-mesh count or deleted-history total.",
   "counts": {
-    "catalog": 266,
+    "catalog": 271,
     "categories": {
       "Fauna": 18,
       "Vegetación": 27,
@@ -15,11 +15,11 @@
       "Pueblo": 18,
       "Páramo": 8,
       "Selva": 14,
-      "Costa": 24,
+      "Costa": 27,
       "Personajes": 3,
       "Vestuario": 5,
       "Vehículos": 14,
-      "Mapas": 25
+      "Mapas": 27
     },
     "previewOnly": 13,
     "uncatalogedFamilies": 31,
@@ -2820,6 +2820,48 @@
       "status": "in-use"
     },
     {
+      "id": "casa-guipuzcoana",
+      "name": "Casa Guipuzcoana",
+      "category": "Costa",
+      "source": "Pana/engine/models/props/casa-guipuzcoana.js",
+      "factory": "casaGuipuzcoana",
+      "usedBy": [
+        "Derrape",
+        "Caída",
+        "Dominó",
+        "Póquer"
+      ],
+      "status": "in-use"
+    },
+    {
+      "id": "san-carlos-fortress",
+      "name": "Fuerte San Carlos",
+      "category": "Costa",
+      "source": "Pana/engine/models/props/san-carlos-fortress.js",
+      "factory": "sanCarlosFortress",
+      "usedBy": [
+        "Derrape",
+        "Caída",
+        "Dominó",
+        "Póquer"
+      ],
+      "status": "in-use"
+    },
+    {
+      "id": "port-silos",
+      "name": "Silos del puerto",
+      "category": "Costa",
+      "source": "Pana/engine/models/props/port-silos.js",
+      "factory": "portSilos",
+      "usedBy": [
+        "Derrape",
+        "Caída",
+        "Dominó",
+        "Póquer"
+      ],
+      "status": "in-use"
+    },
+    {
       "id": "shipping-container",
       "name": "Contenedor de carga",
       "category": "Costa",
@@ -3359,6 +3401,32 @@
       "status": "in-use"
     },
     {
+      "id": "table-guipuzcoana",
+      "name": "Casa Guipuzcoana",
+      "category": "Mapas",
+      "source": "Pana/engine/puerto-tables.js",
+      "factory": "createPuertoTableEnvironment",
+      "usedBy": [
+        "Caída",
+        "Dominó",
+        "Póquer"
+      ],
+      "status": "in-use"
+    },
+    {
+      "id": "table-san-carlos",
+      "name": "Fuerte San Carlos",
+      "category": "Mapas",
+      "source": "Pana/engine/puerto-tables.js",
+      "factory": "createPuertoTableEnvironment",
+      "usedBy": [
+        "Caída",
+        "Dominó",
+        "Póquer"
+      ],
+      "status": "in-use"
+    },
+    {
       "id": "colonial-collection",
       "name": "Cincuenta casas del pueblo",
       "category": "Mapas",
@@ -3842,7 +3910,7 @@
       "anchor": "function rowboat",
       "where": "Selva; Llanos",
       "note": "Two active river boats. Keep shallow-water footprint when upgrading.",
-      "line": 432
+      "line": 448
     },
     {
       "name": "Canal/dive-village boat",
@@ -4020,7 +4088,7 @@
       "anchor": "function waterfall",
       "where": "Selva",
       "note": "Active older waterfall; separate from waterfallRocks in Chi Chi.",
-      "line": 278
+      "line": 294
     },
     {
       "name": "Pond and river wrappers",
@@ -4028,7 +4096,7 @@
       "anchor": "function waterPond",
       "where": "Selva",
       "note": "waterPond/waterRibbon wrap the shared water surface.",
-      "line": 268
+      "line": 284
     },
     {
       "name": "Country grass tufts",
@@ -4334,7 +4402,7 @@
       "anchor": "function windmill",
       "where": "No current production callsite",
       "note": "Current Llanos uses ranch-props.waterWindmill.",
-      "line": 359
+      "line": 375
     },
     {
       "name": "Old arepa stand",
@@ -4342,7 +4410,7 @@
       "anchor": "function arepaStand",
       "where": "No current production callsite",
       "note": "Current maps use streetFoodKiosk.",
-      "line": 389
+      "line": 405
     },
     {
       "name": "Generic dock",
@@ -4350,7 +4418,7 @@
       "anchor": "function dock",
       "where": "No current production callsite",
       "note": "Maps now build docks against their shore/deck.",
-      "line": 419
+      "line": 435
     },
     {
       "name": "Generic sailboat",
@@ -4358,7 +4426,7 @@
       "anchor": "function sailboat",
       "where": "No current production callsite",
       "note": "No production caller; internally uses rowboat, which remains active.",
-      "line": 444
+      "line": 460
     },
     {
       "name": "Generic plank/rope bridge",
@@ -4366,7 +4434,7 @@
       "anchor": "function bridge",
       "where": "No current production callsite",
       "note": "Active crossings have road-specific decks or newer shared factories.",
-      "line": 303
+      "line": 319
     },
     {
       "name": "Distant mountain ring",
@@ -4374,7 +4442,7 @@
       "anchor": "function distantMountains",
       "where": "No current production callsite",
       "note": "Current maps use their own terrain or island-landscape.",
-      "line": 463
+      "line": 479
     },
     {
       "name": "Old route landscape scatter",
@@ -4382,7 +4450,7 @@
       "anchor": "function routeLandscape",
       "where": "No current production callsite",
       "note": "Current worlds supply habitat-specific planting.",
-      "line": 507
+      "line": 523
     },
     {
       "name": "Tire-wall generator",

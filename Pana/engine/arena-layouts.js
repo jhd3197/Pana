@@ -9,6 +9,13 @@ export const ARENAS = [
 ];
 export const validArena = id => ARENAS.some(map => map.id === id);
 export const arenaInfo = id => ARENAS.find(map => map.id === id) || ARENAS[0];
+// Landmark patios are table settings, not collision arenas for action games.
+export const TABLE_ARENAS = [...ARENAS,
+  {id:'guipuzcoana',name:'Casa Guipuzcoana',description:'La mesa en el patio, entre galerías de madera y brisa del puerto.'},
+  {id:'san-carlos',name:'Fuerte San Carlos',description:'Una partida en el castillo, con el Caribe al pie de la montaña.'},
+];
+export const validTableArena = id => TABLE_ARENAS.some(map=>map.id===id);
+export const tableArenaInfo = id => TABLE_ARENAS.find(map=>map.id===id)||TABLE_ARENAS[0];
 export const ARENA_SPAWNS = [{ x: -15, z: -15 }, { x: 15, z: 15 }, { x: 15, z: -15 }, { x: -15, z: 15 }, { x: 0, z: -16 }, { x: 0, z: 16 }, { x: -16, z: 0 }, { x: 16, z: 0 }];
 const cover = rows => rows.map(([x, z, w, d, h]) => ({ x, z, w, d, h, height: h }));
 const props = rows => rows.map(([type, x, z, h = 0], i) => ({ id: `prop-${i}`, type, x, z, h }));

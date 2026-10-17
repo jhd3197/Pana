@@ -1,27 +1,46 @@
 // Native port equipment. Metres, +Y up, doors/front +Z, ground origin.
 import * as THREE from 'three';
-import { M, box, mesh, tube } from '../core/primitives.js';
+import { M, box, mesh, tube, canvasMat } from '../core/primitives.js';
 import { paintFinish } from '../core/architecture-kit.js';
+import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 
-export function shippingContainer({ color = 0xc95339, length = 12.2 } = {}) {
-  const g = new THREE.Group(), paint = M(color), frame = M(0x354b52), metal = M(0xb5b9ad, { metalness: .5 });
-  g.add(box(2.44, 2.5, length, paint, 0, 1.3, 0));
-  for (const x of [-1.24, 1.24]) {
-    for (let z = -length / 2 + .22; z < length / 2; z += .28) g.add(box(.07, 2.25, .095, paint, x, 1.3, z));
-    for (const y of [.1, 2.55]) g.add(box(.13, .15, length + .08, frame, x, y, 0));
+export function shippingContainer({color=0xc95339,length=12.2,markings=true}={}){
+  const g=new THREE.Group(),paint=M(color,{roughness:.68,metalness:.25}),frame=M(new THREE.Color(color).multiplyScalar(.72).getHex(),{roughness:.6,metalness:.35}),metal=M(0xa6aca9,{metalness:.6,roughness:.45});
+  // Pressed corrugated steel: beveled crests and recessed valleys, with no
+  // hidden rib-box faces. End frames and locking gear stay three dimensional.
+  const positions=[],quad=(a,b,c,d)=>positions.push(...a,...b,...c,...a,...c,...d);
+  for(const side of [-1,1]){
+    const points=[];for(let z=-length/2+.13;z<length/2-.13;z+=.28)for(const [dz,r]of[[0,0],[.06,.06],[.17,.06],[.23,0]])points.push([side*(1.2+r),Math.min(length/2-.13,z+dz)]);
+    for(let i=1;i<points.length;i++){const [x,z]=points[i-1],[x2,z2]=points[i];const corners=[[x,.13,z],[x,2.51,z],[x2,2.51,z2],[x2,.13,z2]];if(side<0)corners.reverse();quad(...corners);}
+    for(const y of [.1,2.55])g.add(box(.13,.15,length+.08,frame,side*1.2,y,0));
   }
-  for (const z of [-length / 2, length / 2]) {
-    for (const x of [-1.19, 1.19]) g.add(box(.19, 2.6, .18, frame, x, 1.3, z));
-    for (const x of [-.57, .57]) {
-      g.add(box(1.07, 2.25, .06, paint, x, 1.3, z + Math.sign(z) * .045));
-      for (const dx of [-.32, .32]) g.add(tube([x + dx, .3, z + Math.sign(z) * .1], [x + dx, 2.3, z + Math.sign(z) * .1], .027, metal));
-      g.add(box(.25, .07, .07, metal, x, 1.05, z + Math.sign(z) * .15));
+  for(let x=-1.18;x<1.18;x+=.23){const a=Math.min(x+.07,1.18),b=Math.min(x+.15,1.18),c=Math.min(x+.23,1.18);
+    for(const [x0,y0,x1,y1]of[[x,2.5,a,2.56],[a,2.56,b,2.56],[b,2.56,c,2.5]])quad([x0,y0,-length/2],[x0,y0,length/2],[x1,y1,length/2],[x1,y1,-length/2]);
+  }
+  const shell=new THREE.BufferGeometry();shell.setAttribute('position',new THREE.Float32BufferAttribute(positions,3));shell.computeVertexNormals();g.add(mesh(shell,paint));
+  for(const z of [-length/2,length/2]){
+    g.add(box(2.35,2.4,.09,paint,0,1.3,z));
+    for(const x of [-1.18,1.18])g.add(box(.18,2.6,.18,frame,x,1.3,z));
+    if(z<0){for(let x=-.9;x<=.9;x+=.3)g.add(box(.08,2.3,.045,frame,x,1.3,z-.07));}
+    else for(const x of [-.58,.58]){
+      g.add(box(1.08,2.25,.08,paint,x,1.3,z+Math.sign(z)*.065));
+      for(const dx of [-.32,.32]){
+        const front=z+Math.sign(z)*.17;g.add(box(.06,2.12,.06,metal,x+dx,1.3,front),box(.3,.065,.09,metal,x+dx+.1,1,front));
+        for(const y of [.35,1.35,2.3])g.add(box(.15,.09,.08,frame,x+dx,y,front));
+      }
     }
-    for (const x of [-1.13, 1.13]) for (const y of [.1, 2.5]) g.add(box(.22, .17, .22, metal, x, y, z));
+    for(const x of [-1.13,1.13])for(const y of [.11,2.51])g.add(box(.2,.18,.2,metal,x,y,z));
   }
-  const out = paintFinish(g, 'shipping-container');
-  out.userData.dimensions = [2.52, 2.65, length + .3];
-  return out;
+  if(markings){
+  const marking=canvasMat(512,128,ctx=>{
+    ctx.clearRect(0,0,512,128);ctx.fillStyle='#eee7d6';ctx.font='800 48px sans-serif';ctx.fillText('GUAIRA',8,54);
+    ctx.font='700 22px monospace';ctx.fillText('TRANSPORTE MARÍTIMO',10,86);ctx.font='17px monospace';ctx.fillText('PANA 220106  45G1',10,115);
+  });marking.transparent=true;marking.depthWrite=false;
+  const labels=[];
+  for(const side of [-1,1]){const geo=new THREE.PlaneGeometry(Math.min(4.2,length*.65),1.05);geo.rotateY(side*Math.PI/2);geo.translate(side*1.275,1.55,0);labels.push(geo);}
+  g.add(mesh(mergeGeometries(labels,false),marking));labels.forEach(geo=>geo.dispose());
+  }
+  const out=paintFinish(g,'shipping-container');out.userData.dimensions=[2.55,2.65,length+.3];return out;
 }
 
 export function transitWarehouse() {

@@ -15,6 +15,7 @@ export function createScene(canvas) {
   const reduced = matchMedia('(prefers-reduced-motion: reduce)');
   let seats = [], version = '', view = 'plaza';
   function sync(state, me) {
+    stage.setMap(state.mapId);
     const players = tablePlayers(state), own = players.findIndex(p => p.id === me), ordered = own < 0 ? players : [...players.slice(own), ...players.slice(0, own)];
     const slots = ordered.length <= 2 ? [0, 3] : ordered.length <= 4 ? [0, 2, 3, 5] : [0, 1, 2, 3, 4, 5];
     seats = ordered.map((p, i) => ({ ...p, slot: slots[i] }));

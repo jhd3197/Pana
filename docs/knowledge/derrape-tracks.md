@@ -63,8 +63,11 @@ Derrape supports multiple maps. Everything lives in `games/derrape/public/`:
   disposed; materials come from shared caches (never dispose those).
 - Track choice persists in `localStorage['derrape:track']`; `?track=<id>`
   overrides. New maps also need their import added to `tracks.js`.
-- Keep loops drivable: min radius of curvature > 15, lap length 1,000–2,600, no
-  self-intersections. Verify with a numeric spline check before shipping
+- Keep loops drivable: min radius of curvature > 15 and a lap of at least 1,000 m.
+  Ordinary circuits are around 2 km; Puerto extends to 6.60 km and defaults to
+  one adventure lap, with an estimated 3–4 minute whole race. XZ crossings
+  require explicit layered heights, verified vertical clearance and moving-car
+  tests on both decks (see `puerto-circuit.md`). Verify with a numeric spline check before shipping
   (control-point drafts often hide tight corners between points).
 
 ## Shared worlds (2026-10-14)

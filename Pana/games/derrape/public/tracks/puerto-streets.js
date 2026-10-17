@@ -16,10 +16,10 @@ export function puertoStreets(T,ground) {
     }
     return cache.get(key);
   }
-  // A one-metre grid samples both axes; classify each cell once at junctions.
-  for(let z=-327;z<-10;z++)for(let x=-469;x<289;x++) {
-    const d=distance(x+.5,z+.5);if(d>8)continue;
-    const a=vertex(x,z),b=vertex(x+1,z),c=vertex(x,z+1),e=vertex(x+1,z+1);
+  // A two-metre grid samples both axes; classify each cell once at junctions.
+  for(let z=-390;z<-10;z+=2)for(let x=-469;x<301;x+=2) {
+    const d=distance(x+1,z+1);if(d>8)continue;
+    const a=vertex(x,z),b=vertex(x+2,z),c=vertex(x,z+2),e=vertex(x+2,z+2);
     if([a,b,c,e].some(p=>p.off<T.HW-1))continue;
     const color=d<5.5?asphalt:paving;
     for(const p of [a,c,b,b,c,e]) {positions.push(p.x,p.y,p.z);colors.push(color.r,color.g,color.b);}

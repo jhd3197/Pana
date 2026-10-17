@@ -65,3 +65,18 @@ Screenshots are ignored under `art/shared-maps/`. Run the four games' original
 browser suites as gameplay regressions too.
 Keep generated test room codes and suffixes within the invite kit's 24-character
 limit, or a supposedly separate phone/practice room can join the live match.
+
+## Puerto landmark tables
+
+`TABLE_ARENAS`, `validTableArena` and `tableArenaInfo` add Casa Guipuzcoana and
+Fuerte San Carlos to Caída, Dominó and Póquer. Keep these separate from `ARENAS`:
+these architectural interiors have no hunt/paint collision layout. The picker
+opts into landmarks explicitly; Billar retains its existing settings.
+`engine/puerto-tables.js` and Studio share the original prototype model factories.
+See `puerto-circuit.md` for scale, central clearance and texture ownership.
+
+Dominó includes `mapId` in its host snapshots and sequence/revision-checked lobby
+map action. Póquer's server validates a host-only lobby map message and publishes
+`mapId` with each player's private view. Both preserve the chosen world in
+practice. `engine/tests/puerto-tables.browser.js` proves both landmarks in all
+three games with real pairs, guest rejection, host migration and late arrivals.

@@ -1,3 +1,4 @@
+import { validTableArena } from '../../../engine/arena-layouts.js';
 // House rules are explicit in the UI: team block dominoes, opponents' pips score.
 // Pure data and deterministic shuffling keep host migration lossless.
 export const TARGET = 100;
@@ -37,7 +38,7 @@ export function chooseMove(state, seat = state.turn) {
 export class DominoGame {
   constructor(seed = 1) {
     this.rng = seed >>> 0 || 1;
-    this.phase = 'lobby'; this.round = 0; this.scores = [0, 0];
+    this.mapId = 'plaza'; this.phase = 'lobby'; this.round = 0; this.scores = [0, 0];
     this.players = BOT_NAMES.map((name, seat) => ({ id: null, name, avatar: {}, seat, hand: [] }));
     this.chain = []; this.turn = 0; this.starter = 0; this.passes = 0;
     this.revision = 0; this.ledger = {}; this.history = []; this.result = null;
@@ -126,6 +127,9 @@ export class DominoGame {
     const seat = this.players.findIndex(p => p.id === id);
     let accepted = false;
     if (data.action === 'start' && id === hostId) accepted = this.start();
+    else if (data.action === 'map' && id === hostId && this.phase === 'lobby' && validTableArena(data.mapId)) {
+      this.mapId = data.mapId; this.revision++; accepted = true;
+    }
     else if (seat >= 0 && data.action === 'play') accepted = this.play(seat, data.tile, data.end);
     else if (seat >= 0 && data.action === 'pass') accepted = this.pass(seat);
     if (accepted) this.ledger[id] = data.seq;

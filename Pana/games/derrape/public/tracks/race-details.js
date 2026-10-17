@@ -21,7 +21,7 @@ export function raceDetails(T) {
   function point(s, off) {
     const p = T.pointAt(s), q = T.pointAt(s + 0.5), h = Math.atan2(q.x - p.x, q.y - p.y);
     const x = p.x - Math.cos(h) * off, z = p.y + Math.sin(h) * off;
-    return [x, T.surfaceAt(x, z) + 0.145, z];
+    return [x, T.surfaceAt(x, z,T.heightAtS(s)) + 0.145, z];
   }
   function stripe(s, off, len, width, color) {
     const a = point(s, off-width/2), b = point(s, off+width/2);
@@ -29,6 +29,7 @@ export function raceDetails(T) {
     for (const v of [a,b,c,b,d,c]) { positions.push(...v); colors.push(color.r,color.g,color.b); }
   }
   for (let s = 20; s < T.TOTAL; s += 12) {
+    if(T.gapAt?.(s)||T.gapAt?.(s+7))continue;
     const a = T.pointAt(s-8), b = T.pointAt(s), c = T.pointAt(s+8);
     const turn = Math.atan2((b.x-a.x)*(c.y-b.y)-(b.y-a.y)*(c.x-b.x), (b.x-a.x)*(c.x-b.x)+(b.y-a.y)*(c.y-b.y));
     // Paired brake marks and compacted ruts follow bends, not a straight decal.

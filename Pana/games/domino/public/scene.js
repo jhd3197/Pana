@@ -1,9 +1,9 @@
 import * as THREE from 'three';
-import { createPlazaEnvironment } from '/engine/plaza.js';
+import { createArenaSlot } from '/engine/arenas.js';
 import { buildCharacter } from '/engine/models/characters/pana/avatar-model.js';
 import { normalizeAvatar } from '/engine/avatar.js';
 import { bindRenderer } from '/engine/settings.js';
-import { createDominoTable, createDominoChair, createDominoTile, disposeModel } from './table-model.js';
+import { createDominoTable, createDominoChair, createDominoTile } from './table-model.js';
 import { chainLayout } from './tiles.js';
 import { deck, legalEnds } from './rules.js';
 
@@ -26,8 +26,7 @@ export async function createDominoScene(canvas, { onTile, onEnd, onLoading = () 
   const sun = new THREE.DirectionalLight('#ffe4b1', 3.5); sun.position.set(-8, 16, 9); sun.castShadow = true;
   sun.shadow.mapSize.set(2048, 2048); Object.assign(sun.shadow.camera, { left: -12, right: 12, top: 12, bottom: -12, near: .5, far: 50 }); sun.shadow.normalBias = .025; sun.shadow.bias = -.00015; sun.shadow.radius = 3; scene.add(sun);
   onLoading('Abriendo la plaza…'); await nextFrame();
-  const plaza = createPlazaEnvironment({ cooking: true, clearance: (x, z) => Math.hypot(x, z) > 9 });
-  plaza.group.scale.setScalar(.72); scene.add(plaza.group);
+  const plaza = createArenaSlot(scene, { mode: 'table', plazaScale: .72 }); plaza.setMap('plaza');
   const table = createDominoTable(); scene.add(table);
   const chairs = [], characters = Array(4).fill(null), characterKeys = Array(4).fill(''), labels = [];
   for (let seat = 0; seat < 4; seat++) {
@@ -92,7 +91,7 @@ export async function createDominoScene(canvas, { onTile, onEnd, onLoading = () 
   await syncCharacters(BOT_LOOKS.map((_, seat) => ({ seat, id: null })));
   function update(stateValue, seat, chosen = null) {
     if (disposed) return;
-    state = stateValue; ownSeat = Math.max(0, seat); selected = chosen; cameraTarget();
+    state = stateValue; plaza.setMap(state.mapId); ownSeat = Math.max(0, seat); selected = chosen; cameraTarget();
     syncCharacters(state.players);
     const event = state.history.at(-1), key = `${state.round}:${state.history.length}`;
     if (lastEvent && key !== lastEvent && event) { actingSeat = event.seat; actTime = .9; }
@@ -183,7 +182,7 @@ export async function createDominoScene(canvas, { onTile, onEnd, onLoading = () 
     dispose() {
       disposed = true; unbind(); removeEventListener('resize', resize);
       canvas.removeEventListener('pointermove', move); canvas.removeEventListener('pointerdown', pointerDown); canvas.removeEventListener('pointerup', pointerUp);
-      characters.forEach(c => c?.dispose()); labels.forEach(l => l.remove()); tips.forEach(t => t.element.remove()); tiles.forEach(t => t.model.userData.dispose()); chairs.forEach(c => c.userData.dispose()); table.userData.dispose(); disposeModel(plaza.group); renderer.dispose();
+      characters.forEach(c => c?.dispose()); labels.forEach(l => l.remove()); tips.forEach(t => t.element.remove()); tiles.forEach(t => t.model.userData.dispose()); chairs.forEach(c => c.userData.dispose()); table.userData.dispose(); plaza.dispose(); renderer.dispose();
     },
   };
 }

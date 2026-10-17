@@ -7,6 +7,9 @@ export default class PokerRoom extends PanaRoom {
   state = new (roomState({}, undefined, 'PokerRoomState'))();
   onCreate(options) {
     super.onCreate(options); this.game = new Poker(); this.deadline = 0; this.lastTurn = '';
+    this.onMessage('map', (client,data) => {
+      if(this.isHost(client) && data?.revision === this.game.revision && this.game.setMap(data.mapId)) this.publish();
+    });
     this.onMessage('start', client => {
       if (!this.isHost(client) || !['lobby', 'finished'].includes(this.game.phase)) return;
       const humans = [...this.state.players.values()].filter(p => p.connected);

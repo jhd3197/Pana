@@ -2,44 +2,56 @@ import { TRACK_DEFINITIONS } from '../track-definitions.js';
 import { THREE,M,box,terrain,sea,finish,instances,scatter,edges,boulder } from './world-kit.js';
 import { ceiba } from '/engine/models/vegetation/ceiba.js';
 import { waterAnimator } from '/engine/models/effects/water-surface.js';
-import { ROUTE,FORT,baseHeight,roadHeight,coast,harborLand,townSites,townTerraces } from './puerto-layout.js';
+import { ROUTE,FORT,CASA,baseHeight,coast,harborLand,townSites,townTerraces,isFort,isMountain,roadStyle } from './puerto-layout.js';
 import { puertoHarbor } from './puerto-harbor.js';
 import { puertoTown } from './puerto-town.js';
+import { puertoFort } from './puerto-fort.js';
+import { puertoTunnel } from './puerto-tunnel.js';
 
 export default {
-  ...TRACK_DEFINITIONS.find(t=>t.id==='puerto'),points:ROUTE,rounded:true,hw:10,lineU:.025,elevation:roadHeight,
-  previewBounds:[[-470,-5,-440],[450,115,435]],walls:false,chevrons:true,
-  sectors:[[0,'Patio de contenedores'],[.16,'Las grúas'],[.3,'Avenida del mar'],[.44,'Subida del fortín'],[.6,'Mirador de La Guaira'],[.76,'Casco colonial'],[.9,'Los almacenes']],
-  items:{boxes:[.06,.21,.35,.49,.62,.76,.9],boxLanes:[-6,-2,2,6],pads:[{u:.12,off:0},{u:.34,off:-4},{u:.53,off:0},{u:.71,off:4},{u:.94,off:0}]},
-  palette:{skySeed:71,cloudCover:.3,horizon:0xb1e3ed,skyTop:0x389fd6,hemiSky:0xe4f5ff,hemiGround:0x75985d,hemiInt:1.7,sun:0xffefcc,sunInt:2.4,ground:0x7ea45e,track:0x727e80,dune:0,fog:[600,2200]},
-  environment(T) {
-    const sites=townSites(T),group=new THREE.Group(),world=terrain(T,{bounds:[-560,-560,520,470],base:baseHeight,step:4,
-      // Fort terrace stays flat, but never replaces the separate road surface.
-      cut:(x,z,h)=>Math.hypot(x-FORT.x,z-FORT.z)<43?FORT.y-.25:Math.abs(T.offsetOf(x,z))<T.HW+5?h:townTerraces(x,z,h,sites),
-      color:(x,z,y)=>harborLand(x,z)?0xaaa991:z>coast(x)-14?0xd1bf8a:y>80?0x749264:
-        new THREE.Color(0x83a85d).lerp(new THREE.Color(0xabc374),.5+.5*Math.sin(x*.025)*Math.cos(z*.018))});
-    group.add(world.land,sea(world.groundAt,{size:2400}));
-    const harbor=puertoHarbor(T);group.add(harbor.group,puertoTown(T,world,sites));
-    const forest=scatter(T,world.groundAt,{seed:713,count:260,bounds:[-600,-720,560,-350],margin:19,scale:2.8,
-      accept:(x,z)=>Math.hypot(x-FORT.x,z-FORT.z)>85});
-    instances(group,ceiba({seed:71,detail:'distant'}),forest,'puerto-mountain-forest',220);
-    // Rock revetments trace the coast instead of scattering props in the bay.
+  ...TRACK_DEFINITIONS.find(t=>t.id==='puerto'),points:ROUTE,rounded:true,layered:true,hw:11.5,lineU:.085,roadStyle,
+  gripAt:(x,z)=>roadStyle(x,z)==='mud' ? .76 : 1,
+  previewBounds:[[-700,-26,-1250],[600,290,510]],walls:false,chevrons:true,
+  sectors:[[0,'Túnel del puerto'],[.07,'Las tres grúas'],[.12,'Patio de contenedores'],[.17,'Casa Guipuzcoana'],[.29,'Camino de barro'],[.39,'Mirador del Caribe'],[.47,'Puerta de San Carlos'],[.53,'Rampa del patio'],[.57,'Vuelta a los baluartes'],[.75,'Salto del castillo'],[.86,'Bajada del pueblo']],
+  items:{boxes:[.045,.17,.28,.4,.52,.65,.71,.87,.95],boxLanes:[-6,-2,2,6],pads:[{u:.09,off:0},{u:.26,off:-4},{u:.46,off:0},{u:.6,off:4},{u:.91,off:0}]},
+  palette:{skySeed:71,cloudCover:.3,horizon:0xb1e3ed,skyTop:0x389fd6,hemiSky:0xe4f5ff,hemiGround:0x75985d,hemiInt:1.7,sun:0xffefcc,sunInt:2.4,ground:0x7ea45e,track:0x727e80,dune:0,fog:[900,2900]},
+  environment(T){
+    const lip=T.paramOf(-346,-1076,190.2),landing=T.paramOf(-420,-1148,170);
+    T.gaps=[{s0:lip,len:landing-lip-8}];
+    T.ramps=[{s0:lip-55,len:55,h:35,hw:11.3,followRoad:true}];
+    T.tunnel={s0:T.paramOf(-560,60,-10),s1:T.paramOf(-570,318,-1)};
+    const sites=townSites(T),group=new THREE.Group(),world=terrain(T,{bounds:[-760,-1250,600,510],base:baseHeight,step:4,
+      cut:(x,z,h)=>{
+        if(x<-620&&z>120&&z<320)return Math.min(h,-25);
+        if(T.gapAt(T.paramOf(x,z))&&Math.abs(T.offsetOf(x,z))<T.HW+30)return Math.min(h,FORT.y-8);
+        if(isFort(x,z))return FORT.y-.65;
+        const d=Math.max(Math.abs(x-CASA.x)/80,Math.abs(z-CASA.z)/58);
+        if(d<1)return CASA.y-.35;
+        const off=Math.abs(T.offsetOf(x,z));return off<T.HW+2?h:townTerraces(x,z,h,sites,off);
+      },
+      color:(x,z,y)=>y<-15?0x417f89:isFort(x,z)?0xa99470:harborLand(x,z)?0xaaa991:z>coast(x)-14?0xd1bf8a:isMountain(x,z)&&Math.abs(T.offsetOf(x,z))<25?0xa48558:
+        new THREE.Color(0x74945c).lerp(new THREE.Color(0xabc374),.5+.5*Math.sin(x*.025)*Math.cos(z*.018))});
+    const tunnel=puertoTunnel(T);
+    group.add(world.land,sea((x,z)=>harborLand(x,z)?Math.max(4.2,world.groundAt(x,z)):world.groundAt(x,z),{size:3000}),tunnel);
+    const harbor=puertoHarbor(T);group.add(harbor.group,puertoTown(T,world,sites),puertoFort(T));
+    const forest=scatter(T,world.groundAt,{seed:713,count:150,bounds:[-680,-1130,580,-350],margin:20,scale:3.2,accept:(x,z)=>!isFort(x,z)&&!sites.some(s=>Math.hypot(s.x-x,s.z-z)<27)&&!(x>-245&&x<270&&z>-490&&z<-245)});
+    instances(group,ceiba({seed:71,detail:'distant'}),forest,'puerto-mountain-forest',260);
     const rocks=[];
-    for(let x=-540;x<490;x+=11) {
-      const z=coast(x)+5;if(harborLand(x,z)||!((x>-55&&x<390)||x<-470))continue;
-      rocks.push({x,z,y:-.9,rot:x*.2,scale:1.2});
-    }
-    for(let z=70;z<410;z+=13)rocks.push({x:431,z,y:-.9,rot:z,scale:1.3});
-    for(let x=45;x<425;x+=13)rocks.push({x,z:420,y:-1,rot:x,scale:1.4});
-    instances(group,boulder(0xa8a691),rocks,'puerto-coastal-rocks',160);
+    for(let x=-680;x<490;x+=11){const z=coast(x)+5;if(harborLand(x,z)||!((x>-55&&x<390)||x<-640))continue;rocks.push({x,z,y:-.9,rot:x*.2,scale:1.2});}
+    for(let z=70;z<460;z+=13)rocks.push({x:431,z,y:-.9,rot:z,scale:1.3});
+    for(let x=-20;x<425;x+=13)rocks.push({x,z:470,y:-1,rot:x,scale:1.4});
+    instances(group,boulder(0xa8a691),rocks,'puerto-coastal-rocks',180);
     const retaining=new THREE.Group();
-    for(let s=0;s<T.TOTAL;s+=5) {
-      const p=T.pointAt(s);if(p.y>-180)continue;
-      const q=T.pointAt(s+.5),h=Math.atan2(q.x-p.x,q.y-p.y);
-      for(const side of [-1,1]) {const x=p.x-Math.cos(h)*side*(T.HW+1.6),z=p.y+Math.sin(h)*side*(T.HW+1.6),y=T.surfaceAt(x,z);const wall=box(.7,3.5,5.3,M(0xa7a38c),x,y-1.8,z);wall.rotation.y=h;retaining.add(wall);}
+    for(let s=0;s<T.TOTAL;s+=5){const p=T.pointAt(s);if(p.y>-250||isFort(p.x,p.y))continue;
+      if(T.gapAt(s))continue;const q=T.pointAt(s+.5),h=Math.atan2(q.x-p.x,q.y-p.y);
+      for(const side of [-1,1]){const x=p.x-Math.cos(h)*side*(T.HW+1.6),z=p.y+Math.sin(h)*side*(T.HW+1.6),y=T.surfaceAt(x,z),wall=box(.7,3.5,5.3,M(0xa7a38c),x,y-1.8,z);wall.rotation.y=h;retaining.add(wall);}
     }
     group.add(finish(retaining));const animateWater=waterAnimator(group);
-    return {group,groundAt:world.groundAt,update:t=>{animateWater(t);harbor.update(t);}};
+    return {group,groundAt:world.groundAt,update:t=>{animateWater(t);harbor.update(t);tunnel.userData.tick(t);}};
   },
-  scenery(group,kit,T) {edges(group,kit,T,{style:'kerb',step:5});edges(group,kit,T,{style:'steel',step:8,skip:s=>T.pointAt(s).y>-175});},
+  scenery(group,kit,T){
+    edges(group,kit,T,{style:'kerb',step:5,cellSize:220,skip:s=>{const p=T.pointAt(s);return roadStyle(p.x,p.y)!=='asphalt';}});
+    edges(group,kit,T,{style:'rope',step:6,cellSize:220,skip:s=>{const p=T.pointAt(s);return !isMountain(p.x,p.y)||isFort(p.x,p.y);}});
+    edges(group,kit,T,{style:'steel',step:8,cellSize:220,skip:s=>{const p=T.pointAt(s);return T.gapAt(s)||p.y>-175||isFort(p.x,p.y)||isMountain(p.x,p.y);}});
+  },
 };

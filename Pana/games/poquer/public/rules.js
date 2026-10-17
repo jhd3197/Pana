@@ -1,3 +1,4 @@
+import { validTableArena } from '../../../engine/arena-layouts.js';
 // Pure no-limit Hold'em. Cards are integers: suit * 13 + rank (deuce = 0).
 export const SMALL = 10, BIG = 20, STACK = 1000;
 export const HANDS = ['Carta alta', 'Pareja', 'Doble pareja', 'Trío', 'Escalera', 'Color', 'Full', 'Póquer', 'Escalera de color'];
@@ -62,7 +63,8 @@ export function settle(players, board, dealer) {
 }
 
 export class Poker {
-  constructor() { this.players = []; this.phase = 'lobby'; this.hand = 0; this.revision = 0; this.dealer = -1; this.board = []; this.turn = null; this.message = 'Invita a tus panas o juega con bots.'; this.result = null; }
+  constructor() { this.mapId = 'plaza'; this.players = []; this.phase = 'lobby'; this.hand = 0; this.revision = 0; this.dealer = -1; this.board = []; this.turn = null; this.message = 'Invita a tus panas o juega con bots.'; this.result = null; }
+  setMap(id) { if (this.phase !== 'lobby' || !validTableArena(id)) return false; this.mapId = id; this.revision++; return true; }
   add(id, info) {
     let p = this.players.find(p => p.id === id);
     if (p) { Object.assign(p, info, { connected: true }); return p; }
@@ -144,7 +146,7 @@ export class Poker {
     return this.act(p.id, 'call');
   }
   view(id) {
-    return { phase: this.phase, hand: this.hand, revision: this.revision, dealer: this.players[this.dealer]?.id, board: [...this.board], turn: this.turn,
+    return { mapId: this.mapId, phase: this.phase, hand: this.hand, revision: this.revision, dealer: this.players[this.dealer]?.id, board: [...this.board], turn: this.turn,
       currentBet: this.currentBet || 0, pot: this.players.reduce((sum, p) => sum + p.total, 0), message: this.message, result: this.result, legal: this.legal(id),
       players: this.players.map(({ hole, actedAt, ...p }) => ({ ...p, hole: p.id === id || (this.result?.showdown && !p.folded) ? [...hole] : hole.map(() => null),
         handName: this.result?.showdown && !p.folded ? HANDS[evaluate([...hole, ...this.board])[0]] : '' })) };

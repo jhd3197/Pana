@@ -26,10 +26,18 @@ becomes the GitHub release's notes.
   Patrulla and the other cantos explain themselves beside your hand, and Últimas
   announces the final hand and its no-clean-table-bonus rule.
 
-- **Race through Puerto, Derrape's new La Guaira-inspired coastal circuit.**
-  Drive past container stacks and harbor cranes, colorful colonial houses and
-  a hilltop fort overlooking the bay. The 2.45 km circuit works in local and
-  online races; six reusable harbor models are also available in Pana Studio.
+- **Race a much larger Puerto through La Guaira's terminal, hillside town and San Carlos.**
+  One adventure lap targets a 3–4 minute race, shown in the track picker and
+  start screen. Drive a submerged tunnel with sea windows beneath the original
+  silos, through three cranes and stacked cargo walls, up the mud climb and
+  around widened, guarded castle terraces before jumping onto the descent.
+  Connected town blocks have shops, courtyards and houses facing their streets.
+  Casa Guipuzcoana, the silos and San Carlos retain the supplied prototypes'
+  geometry and textures and are reusable in Pana Studio.
+
+- **Choose Casa Guipuzcoana or Fuerte San Carlos for Caída, Dominó and Póquer.**
+  Hosts select the setting in the lobby; everyone shares it through late joins,
+  host changes and practice, while each game keeps its own table and rules.
 
 - **Pana Studio can generate and customize Venezuelan-inspired colonial houses.**
   Generate collections of 50 houses from six families, six window designs,

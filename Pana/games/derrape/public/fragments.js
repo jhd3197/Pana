@@ -42,7 +42,7 @@ export class FragmentBurst {
       p.obj.rotation.x += p.spin.x * dt;
       p.obj.rotation.y += p.spin.y * dt;
       p.obj.rotation.z += p.spin.z * dt;
-      const floor = this.groundAt(p.obj.position.x, p.obj.position.z) + 0.07;
+      const floor = this.groundAt(p.obj.position.x, p.obj.position.z,p.obj.position.y) + 0.07;
       if (p.obj.position.y < floor) {
         p.obj.position.y = floor;
         p.velocity.y = Math.abs(p.velocity.y) * 0.28;

@@ -1,4 +1,4 @@
-import { validArena } from '../../../engine/arena-layouts.js';
+import { validTableArena } from '../../../engine/arena-layouts.js';
 // Pure deterministic rules. Table variants and sources are documented in caida.md.
 export const TARGET = 24;
 export const RANKS = [1, 2, 3, 4, 5, 6, 7, 10, 11, 12];
@@ -77,7 +77,7 @@ export class CaidaGame {
   }
   configure(options) {
     if (this.phase !== 'lobby' || !options || typeof options !== 'object' || Array.isArray(options)) return false;
-    if ('mapId' in options) { if (!validArena(options.mapId)) return false; this.mapId = options.mapId; }
+    if ('mapId' in options) { if (!validTableArena(options.mapId)) return false; this.mapId = options.mapId; }
     if (options.mode in MODES && options.mode !== this.options.mode) { this.options.mode = options.mode; this.resetSeats(); }
     if (typeof options.cantos === 'boolean') this.options.cantos = options.cantos;
     if (['easy', 'normal', 'hard'].includes(options.difficulty)) this.options.difficulty = options.difficulty;

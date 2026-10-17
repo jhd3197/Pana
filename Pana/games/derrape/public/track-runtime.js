@@ -46,14 +46,14 @@ function ovalMath({ S, R }) {
 
 // Closed Catmull-Rom loop through control points, arc-length parameterized
 // over a dense sample table so queries stay cheap.
-function splineMath(points, rounded = false) {
+function splineMath(points, rounded = false, layered = false) {
   // Two corner-cutting passes preserve straights but leave room to drift
   // around authored street junctions instead of creating needle hairpins.
   if (rounded) for (let pass = 0; pass < 2; pass++) {
     points = points.flatMap((a,i) => {
       const b = points[(i+1)%points.length];
-      return [[a[0]*0.75+b[0]*0.25,a[1]*0.75+b[1]*0.25],
-        [a[0]*0.25+b[0]*0.75,a[1]*0.25+b[1]*0.75]];
+      return [[a[0]*0.75+b[0]*0.25,a[1]*0.75+b[1]*0.25,(a[2]||0)*.75+(b[2]||0)*.25],
+        [a[0]*0.25+b[0]*0.75,a[1]*0.25+b[1]*0.75,(a[2]||0)*.25+(b[2]||0)*.75]];
     });
   }
   const curve = new THREE.CatmullRomCurve3(
@@ -62,6 +62,14 @@ function splineMath(points, rounded = false) {
   const TOTAL = curve.getLength();
   const N = Math.max(800, Math.round(TOTAL * 2.5));
   const pts = curve.getSpacedPoints(N);   // N+1 entries, last == first
+  // Height follows the same horizontal parameter. Measuring the 3D curve's
+  // length instead would shift grades, item rows and lap progress on climbs.
+  const elevated = new THREE.CatmullRomCurve3(points.map(([x,z,y=0])=>new THREE.Vector3(x,y,z)),true,'centripetal');
+  const heights = Array.from({length:N+1},(_,i)=>elevated.getPoint(curve.getUtoTmapping(i/N)).y);
+  function heightAt(s) {
+    const f=(((s%TOTAL)+TOTAL)%TOTAL)/TOTAL*N,i=Math.floor(f);
+    return heights[i]+(heights[i+1]-heights[i])*(f-i);
+  }
 
   function pointAt(s) {
     s = ((s % TOTAL) + TOTAL) % TOTAL;
@@ -72,17 +80,23 @@ function splineMath(points, rounded = false) {
     return new THREE.Vector2(a.x + (b.x - a.x) * t, a.z + (b.z - a.z) * t);
   }
 
-  function nearest(x, z) {
+  function nearest(x, z, height) {
     // coarse scan, then refine around the best sample
     let best = 0, bestD = Infinity;
     const stride = 16;
     for (let i = 0; i < N; i += stride) {
       const dx = pts[i].x - x, dz = pts[i].z - z;
-      const d = dx * dx + dz * dz;
+      const dy=layered&&Number.isFinite(height)?Math.max(0,Math.abs(heights[i]-height)-8)*2:0;
+      const d = dx * dx + dz * dz + dy*dy;
       if (d < bestD) { bestD = d; best = i; }
     }
     const coarse = best;
-    for (let k = -stride; k <= stride; k++) {
+    // Altitude selects the branch, then horizontal distance selects progress.
+    // A jumping car must not slide backwards along the route toward a sample
+    // whose elevation happens to be closer to its airborne height.
+    const refine=layered&&Number.isFinite(height)?Math.ceil(48*N/TOTAL):stride;
+    bestD=Infinity;
+    for (let k = -refine; k <= refine; k++) {
       const i = (coarse + k + N) % N;
       const dx = pts[i].x - x, dz = pts[i].z - z;
       const d = dx * dx + dz * dz;
@@ -102,14 +116,14 @@ function splineMath(points, rounded = false) {
     return result;
   }
 
-  function paramOf(x, z) {
-    return nearest(x, z).s % TOTAL;
+  function paramOf(x, z, height) {
+    return nearest(x, z, height).s % TOTAL;
   }
 
   // signed distance: positive on the (-tz, tx) side of the direction of
   // travel, matching the offset convention of placeOnTrack / items.js
-  function offsetOf(x, z) {
-    const p = nearest(x, z);
+  function offsetOf(x, z, height) {
+    const p = nearest(x, z, height);
     return p.d * p.side;
   }
 
@@ -118,7 +132,7 @@ function splineMath(points, rounded = false) {
     bx = Math.max(bx, Math.abs(p.x));
     bz = Math.max(bz, Math.abs(p.z));
   }
-  return { TOTAL, pointAt, paramOf, offsetOf, bounds: { x: bx, z: bz } };
+  return { TOTAL, pointAt, paramOf, offsetOf, heightAt, bounds: { x: bx, z: bz } };
 }
 
 // ---------- scenery base ----------
@@ -186,7 +200,7 @@ function buildRibbon(T, pal) {
       const tx = Math.sin(p.h), tz = Math.cos(p.h);
       // left edge (off +HW) = (-tz, tx) side, right edge = (tz, -tx)
       for(const off of offsets){const x=p.x-tz*off,z=p.z+tx*off;verts.push(x,T.def.crossfall?T.surfaceAt(x,z):p.y,z);}
-      if (i < N) {
+      if (i < N && !T.gapAt?.(s+T.TOTAL/N/2)) {
         for(let j=0;j<columns-1;j++){const a=i*columns+j;idx.push(a,a+1,a+columns,a+1,a+columns+1,a+columns);}
       }
     }
@@ -195,7 +209,16 @@ function buildRibbon(T, pal) {
     geo.setIndex(idx);
     geo.computeVertexNormals();
   }
-  const material = roadMaterial(pal.track, ['selva','llanos','desierto','bululu','delta','salto'].includes(T.id));
+  if(T.def.roadStyle){
+    const colors=[],surfaces=[],p=geo.attributes.position;
+    for(let i=0;i<p.count;i++){
+      const style=T.def.roadStyle(p.getX(i),p.getZ(i)),c=new THREE.Color(style==='mud'?0x98704a:style==='stone'?0xb5a07c:pal.track);
+      colors.push(c.r,c.g,c.b);surfaces.push(style==='mud'?1:style==='stone'?2:0);
+    }
+    geo.setAttribute('color',new THREE.Float32BufferAttribute(colors,3));
+    geo.setAttribute('roadSurface',new THREE.Float32BufferAttribute(surfaces,1));
+  }
+  const material = roadMaterial(T.def.roadStyle?0xffffff:pal.track, ['selva','llanos','desierto','bululu','delta','salto'].includes(T.id),!!T.def.roadStyle);
   const m = new THREE.Mesh(geo, material);
   m.userData.dispose = () => material.dispose();
   m.name='track-road';
@@ -217,7 +240,7 @@ function buildIsland(T, island) {
 
 // ---------- runtime ----------
 export function makeTrack(def) {
-  const geo = def.oval ? ovalMath(def.oval) : splineMath(def.points, def.rounded);
+  const geo = def.oval ? ovalMath(def.oval) : splineMath(def.points, def.rounded, def.layered);
   const T = {
     def, id: def.id, name: def.name,
     HW: def.hw,
@@ -228,13 +251,16 @@ export function makeTrack(def) {
     paramOf: geo.paramOf,
     offsetOf: geo.offsetOf,
     ramps: (def.ramps || []).map((r) => ({ ...r, s0: r.u != null ? r.u * geo.TOTAL : r.s0 })),
+    gaps: [],
     animated: [],
   };
-  T.heightAtS = def.elevation ? (s) => {
+  T.gapAt=s=>T.gaps.some(g=>(s-g.s0+T.TOTAL)%T.TOTAL<g.len);
+  const authoredHeight = def.points?.some(p=>p.length>2);
+  T.heightAtS = authoredHeight ? geo.heightAt : def.elevation ? (s) => {
     const p = geo.pointAt(s);
     return def.elevation(p.x, p.y);
   } : () => 0;
-  T.surfaceAt = def.elevation ? (x, z) => T.heightAtS(geo.paramOf(x, z)) : () => 0;
+  T.surfaceAt = authoredHeight || def.elevation ? (x, z, height) => T.heightAtS(geo.paramOf(x, z, height)) : () => 0;
   if(def.crossfall)T.surfaceAt=(x,z)=>{const s=geo.paramOf(x,z);return T.heightAtS(s)+def.crossfall(s,geo.offsetOf(x,z),T);};
   T.terrainAt = (x, z) => terrainHeight(T, def.palette, x, z);
   // Shortcut plank roads: { from: [u, offset], to: [u, offset], w, arch }.
@@ -256,18 +282,18 @@ export function makeTrack(def) {
     if (a <= T.HW + 0.4) return false;
     return a > T.HW + OPEN_MARGIN || isOpenEdge(T.drops, geo.paramOf(x, z) / geo.TOTAL, Math.sign(off));
   };
-  T.groundAt = (x, z) => {
+  T.groundAt = (x, z, height) => {
     const plank = T.shortcuts.length ? T.plankAt(x, z) : null;
     if (plank != null) return plank;
-    const base = T.surfaceAt(x, z);
-    const off = geo.offsetOf(x, z);
+    const s = geo.paramOf(x,z,height);
+    if(T.gapAt(s))return T.terrainAt(x,z);
+    const base = T.surfaceAt(x, z, height);
+    const off = geo.offsetOf(x, z, height);
     if (!def.offroad && T.openAt(x, z, off)) return Math.min(base, T.terrainAt(x, z));
     if(def.offroad&&Math.abs(off)>T.HW) {
       const blend=THREE.MathUtils.smoothstep(Math.abs(off),T.HW,T.HW+2);
       return THREE.MathUtils.lerp(base,T.terrainAt(x,z),blend);
     }
-    if (Math.abs(off) > 5) return base;
-    const s = geo.paramOf(x, z);
     for (const r of T.ramps) {
       const along = (s - r.s0 + T.TOTAL) % T.TOTAL;
       if (along <= r.len && Math.abs(off) < r.hw) return base + r.h * along / r.len;

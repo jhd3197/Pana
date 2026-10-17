@@ -1,8 +1,14 @@
-import { ARENAS } from '/engine/arena-layouts.js';
+import { ARENAS,TABLE_ARENAS } from '/engine/arena-layouts.js';
 import { TRACK_DEFINITIONS } from '/g/derrape/track-definitions.js';
 import { STATIONS } from '/g/cocina/rules.js';
 
 export const MAPS = [
+  ...TABLE_ARENAS.filter(map=>!ARENAS.some(a=>a.id===map.id)).map(map=>({
+    id:`table-${map.id}`,name:map.name,category:'Mapas',source:'/engine/puerto-tables.js',
+    dependencies:['/engine/models/props/casa-guipuzcoana.js','/engine/models/props/san-carlos-fortress.js','/engine/models/props/port-silos.js'],factory:'createPuertoTableEnvironment',
+    usedBy:['Caída','Dominó','Póquer'],game:'/g/caida/',description:map.description,
+    async build(){const {createPuertoTableEnvironment}=await import('/engine/puerto-tables.js');return createPuertoTableEnvironment(map.id);},
+  })),
   { id: 'colonial-collection', name: 'Cincuenta casas del pueblo', category: 'Mapas', source: '/engine/colonial-house-collection.js', factory: 'createColonialHouseCollection',
     houseMaker: true, usedBy: ['Pana Studio'], pack: 'casas-coloniales', description: 'Cincuenta casas con seis ventanas, tres techos, tres distribuciones y cuatro acabados de pared. Elige una casa para editarla o guarda la colección completa.',
     async build() { const { createColonialHouseCollection } = await import('/engine/colonial-house-collection.js'); return createColonialHouseCollection(); },

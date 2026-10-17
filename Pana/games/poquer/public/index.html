@@ -8,6 +8,7 @@
     <section id="lobby" class="pk-lobby lobby" aria-labelledby="title"><a class="pk-back" href="/">← Todos los juegos</a><span class="pk-ribbon">Una mesa entre panas</span><h1 id="title" class="pk-title">Póquer</h1><p class="pk-copy">Dos cartas solo para ti. Cinco en la mesa. Igualas, subes… o te guardas el farol.</p>
       <div class="pk-stats"><div class="pk-stat"><b>1–6</b><span>panas</span></div><div class="pk-stat"><b>1.000</b><span>fichas iniciales</span></div><div class="pk-stat"><b>10/20</b><span>ciegas</span></div></div>
       <p class="pk-copy">Si estás solo, tres bots se sientan contigo. Con amigos, la mesa es de ustedes.</p><p id="roster" class="pk-copy"></p>
+      <div id="map-picker"></div>
       <div class="pk-lobby-foot"><span id="room-code" class="pk-lobby-room"></span><p id="connection" class="pk-copy" role="status">Preparando la mesa…</p><button id="start" class="pk-btn pk-btn--primary pk-btn--lg pk-btn--block" disabled>Conectando…</button><button id="practice" class="pk-btn pk-btn--ghost pk-btn--block">Practicar con bots</button><button id="rules" class="pk-btn pk-btn--ghost pk-btn--sm">Reglas y manos</button></div>
     </section>
     <section id="table-stage" class="table-stage" aria-label="Mesa de póquer"><canvas id="world" aria-label="Tus panas alrededor de la mesa"></canvas><div id="seats" class="seats"></div><div class="board-area"><span id="street" class="pk-eyebrow">La mesa está lista</span><b id="pot">PANA</b><div id="board" class="cards board" aria-label="Cartas comunitarias"></div></div></section>

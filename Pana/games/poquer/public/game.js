@@ -1,3 +1,4 @@
+import { createMapPicker } from '/engine/map-picker.js';
 import { loadName, loadAvatar } from '/engine/avatar.js';
 import { inviteUrl, newRoomCode, roomFromUrl } from '/engine/invite.js';
 import { createGameMenu, toggleMute } from '/engine/ui.js';
@@ -16,6 +17,7 @@ const seatNodes = new Map();
 const room = new PokerConnection({ code, name: loadName(), avatar: loadAvatar(), onState: render, onStatus(text, failed = false) {
   $('connection').textContent = text; $('recovery-copy').textContent = text; $('recovery').hidden = !failed || room.state.phase === 'lobby';
 } });
+const mapPicker = createMapPicker($('map-picker'), mapId => room.setMap(mapId), { table: true, landmarks: true });
 const menu = createGameMenu({ title: 'Póquer · Pana', orientation: 'libre', sound,
   options: [{ id: 'view', label: 'Cámara', choices: [['plaza', 'En la plaza'], ['mesa', 'Sobre la mesa']], get: () => cameraView, set: value => { cameraView = value; world.setView(value); } }],
   note: () => room.local ? 'La práctica está en pausa.' : 'La mesa online sigue. Tienes 30 segundos por turno.',
@@ -37,6 +39,7 @@ $('fold').onclick = () => room.act('fold'); $('call').onclick = () => room.act('
 $('raise').onclick = () => { const value = Number($('amount').value), legal = room.state.legal; if (!legal || !Number.isInteger(value) || value > legal.max || value < Math.min(legal.min, legal.max)) { $('amount').reportValidity(); return; } room.act('raise', value); };
 addEventListener('keydown', event => { if (!menu.isOpen && !event.target.closest?.('input, textarea, select') && event.key.toLowerCase() === 'm') toggleMute(); });
 function render(state) {
+  mapPicker.update(state.mapId, room.connected && room.isHost && state.phase === 'lobby');
   const lobby = state.phase === 'lobby', finished = state.phase === 'finished', legal = state.legal, canAct = !!legal && room.connected && !menu.isOpen;
   document.body.classList.toggle('in-lobby', lobby); $('lobby').hidden = !lobby; $('controls').hidden = lobby || finished;
   $('start').disabled = !room.connected || !room.isHost; $('start').textContent = !room.connected ? 'Conectando…' : room.isHost ? '¡Repartir!' : 'El anfitrión abre la mesa';

@@ -74,7 +74,7 @@ export function scatter(T,groundAt,{seed=1,count,bounds,margin=10,minY=.3,scale=
   }return out;
 }
 
-export function edges(group,kit,T,{style='steel',step=5,skip=()=>false}={}) {
+export function edges(group,kit,T,{style='steel',step=5,skip=()=>false,cellSize=110}={}) {
   const g=new THREE.Group(),steel=M(0xa9b5af,{metalness:.45}),cream=M(0xe8ddc1),red=M(0xbf5947),wood=M(0x8a7353);
   for(let s=0;s<T.TOTAL;s+=step)for(const side of [-1,1]){
     if(skip(s,side))continue;const p=placeOnTrack(T,s,side*(T.HW+.8)),q=placeOnTrack(T,Math.min(s+step,T.TOTAL),side*(T.HW+.8));
@@ -86,7 +86,7 @@ export function edges(group,kit,T,{style='steel',step=5,skip=()=>false}={}) {
       g.add(tube([p.x,p.y+.86,p.z],[q.x,q.y+.86,q.z],style==='rope'?.035:.12,style==='rope'?cream:steel));
       if(Math.floor(s/step)%4===0)g.add(box(.22,.2,.22,cream,p.x,p.y+1.17,p.z));
     }
-  }group.add(finish(g));
+  }group.add(finish(g,cellSize));
 }
 
 export function stream(points,width,height,color=0x438e93){

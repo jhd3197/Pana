@@ -1,5 +1,6 @@
 import * as THREE from 'three';
-import { arenaInfo, arenaLayout, outsideTable } from './arena-layouts.js';
+import { arenaInfo, tableArenaInfo, arenaLayout, outsideTable } from './arena-layouts.js';
+import { createPuertoTableEnvironment } from './puerto-tables.js';
 import { createPlazaEnvironment } from './plaza.js';
 import { createPlazaProp, crate, marketStall } from './models/props/plaza.js';
 import { propDefinition } from './models/props/plaza-definitions.js';
@@ -24,7 +25,8 @@ const palettes = {
 // One world, three uses: hide-and-seek props, paintball cover, or a clear table
 // courtyard. All solid cover is built from the same bounds as the pure rules.
 export function createArenaEnvironment(id = 'plaza', { mode = 'hunt', props } = {}) {
-  id = arenaInfo(id).id;
+  id = (mode === 'table' ? tableArenaInfo : arenaInfo)(id).id;
+  if(id==='guipuzcoana'||id==='san-carlos')return createPuertoTableEnvironment(id);
   if (id === 'plaza') {
     const model = createPlazaEnvironment({ ...(mode === 'table' ? { cooking: true, clearance: (x, z, r = 0) => Math.hypot(x, z) - r > 10 } : {}), ...(props ? { mapProps: props } : {}) });
     return { ...model, id, dispose() { model.group.traverse(o => o.userData.dispose?.()); disposeModel(model.group); } };
@@ -153,7 +155,7 @@ export function createArenaSlot(scene, { mode = 'table', plazaScale = 1, props }
   let current;
   return {
     setMap(id = 'plaza') {
-      id = arenaInfo(id).id;
+      id = (mode === 'table' ? tableArenaInfo : arenaInfo)(id).id;
       if (current?.id === id) return;
       const next = createArenaEnvironment(id, { mode, props });
       if (id === 'plaza') next.group.scale.setScalar(plazaScale);

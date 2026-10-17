@@ -13,7 +13,7 @@ export function cargoShip() {
   g.add(box(19, .35, 66, M(0xb98b68), 0, 6.7, -4));
   for (const x of [-7.3, -3.65, 0, 3.65, 7.3]) for (const z of [-10, 4, 18]) for (let level = 0; level < (z === 18 ? 1 : 2); level++) {
     const colors = [0xc95740, 0x367f8c, 0xe6bb54, 0xe3d7bb];
-    const c = shippingContainer({ color: colors[(Math.round(x * 10) + 80 + level + z) % 4] }); c.position.set(x, 6.9 + level * 2.65, z); g.add(c);
+    const c = shippingContainer({ markings: false, color: colors[(Math.round(x * 10) + 80 + level + z) % 4] }); c.position.set(x, 6.9 + level * 2.65, z); g.add(c);
   }
   const white = M(0xf1e7ce), glass = M(0x315a6a);
   g.add(box(16, 10, 10, white, 0, 11.8, -29), box(18, 3, 11, white, 0, 18, -29), box(19, .35, 12, white, 0, 19.7, -29));

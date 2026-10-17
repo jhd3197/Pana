@@ -68,7 +68,7 @@ export class DominoRoom extends HostRoom {
   }
 
   practice() {
-    this.seq = 0; this.game = null; this.state = new DominoGame(Date.now()).snapshot();
+    this.seq = 0; this.game = null; this.state = { ...new DominoGame(Date.now()).snapshot(), mapId: this.state.mapId };
     super.practice('Mesa local · tú y tres bots');
   }
 }

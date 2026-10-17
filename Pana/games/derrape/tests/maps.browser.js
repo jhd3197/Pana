@@ -34,13 +34,13 @@ try {
   for (const id of requested || [...ids, 'plaza', 'bululu', 'estadio']) {
     const result = await page.evaluate(async id => {
       const THREE = await import('three');
-      toGarage(); buildTrack(id); await startRace(0);
+      toGarage(); buildTrack(id); setup.laps=3; await startRace(0);
       const T = getActiveTrack();
       let roundtrip = 0, minRadius = Infinity, maxGrade = 0, protrusion = 0, finite = true, riverClear = true;
       let leftTurns = 0, rightTurns = 0;
       for (let s = 0; s < T.TOTAL; s++) {
         const a = T.pointAt(s - 1), b = T.pointAt(s), c = T.pointAt(s + 1);
-        const q = T.paramOf(b.x, b.y), delta = Math.abs(s - q);
+        const q = T.paramOf(b.x, b.y,T.heightAtS(s)), delta = Math.abs(s - q);
         roundtrip = Math.max(roundtrip, Math.min(delta, T.TOTAL - delta));
         const turn = Math.atan2(c.y - b.y, c.x - b.x) - Math.atan2(b.y - a.y, b.x - a.x);
         minRadius = Math.min(minRadius, 1 / Math.abs(Math.atan2(Math.sin(turn), Math.cos(turn))));
@@ -48,11 +48,11 @@ try {
         if(signedTurn>0.01) leftTurns++;
         if(signedTurn<-0.01) rightTurns++;
         maxGrade = Math.max(maxGrade, Math.abs(T.heightAtS(s + 0.5) - T.heightAtS(s - 0.5)));
-        if (T.def.elevation) {
+        if (T.def.elevation || T.def.layered) {
           const h = Math.atan2(c.x - b.x, c.y - b.y);
           for (const off of [-T.HW + 1, 0, T.HW - 1]) {
             const x = b.x - Math.cos(h) * off, z = b.y + Math.sin(h) * off;
-            protrusion = Math.max(protrusion, T.terrainAt(x, z) - T.surfaceAt(x, z));
+            protrusion = Math.max(protrusion, T.terrainAt(x, z) - T.surfaceAt(x, z,T.heightAtS(s)));
           }
         }
       }
@@ -69,13 +69,15 @@ try {
       }
       const finishAligned=along<1.6 && Math.abs(across-T.HW)<0.15 && stripe.geometry.attributes.normal.getY(0)>0.9;
       const decor=[];
-      for(const name of ['track-environment','track-scenery']) T.group.getObjectByName(name)?.traverse(o=>{if(o.isMesh)decor.push(o);});
+      // The ocean shader discards land-covered fragments via its depth map.
+      // A CPU ray still hits that invisible global plane over a dry tunnel.
+      for(const name of ['track-environment','track-scenery']) T.group.getObjectByName(name)?.traverse(o=>{if(o.isMesh&&o.name!=='coastal-water')decor.push(o);});
       const ray=new THREE.Raycaster(new THREE.Vector3(),new THREE.Vector3(0,-1,0),0,2.9);
       const obstacles=[];
       for(let i=0;i<160;i++) {
         const s=T.TOTAL*i/160,a=T.pointAt(s),b=T.pointAt(s+0.5),h=Math.atan2(b.x-a.x,b.y-a.y);
         for(const off of [-6,0,6]) {
-          const x=a.x-Math.cos(h)*off,z=a.y+Math.sin(h)*off,y=T.groundAt(x,z);
+          const x=a.x-Math.cos(h)*off,z=a.y+Math.sin(h)*off,y=T.groundAt(x,z,T.heightAtS(s));
           ray.ray.origin.set(x,y+3.2,z);
           const hit=ray.intersectObjects(decor,false)[0];
           if(hit) obstacles.push({s,off,height:hit.point.y-y});
@@ -92,17 +94,17 @@ try {
           }
         }
       });
-      const startHeights = race.cars.every(c => Math.abs(c.y - T.groundAt(c.x, c.z)) < 0.001);
+      const startHeights = race.cars.every(c => Math.abs(c.y - T.groundAt(c.x, c.z,c.y)) < 0.001);
       // Exercise every row explicitly, including the elevated island boxes.
       // Racing alone is nondeterministic: opponents can collect a whole row.
       const c = race.player;
       const grid = { x: c.x, y: c.y, z: c.z };
       const itemRows = race.items.boxes.every(b => {
         race.items.clear(); c.inventory = [null, null]; c.selected = 0;
-        Object.assign(c, { x: b.x, y: T.groundAt(b.x, b.z), z: b.z });
+        Object.assign(c, { x: b.x, y: T.groundAt(b.x, b.z,b.y), z: b.z });
         race.items.update(1 / 60, [c], true);
         // The pickup anchor stays on the road; the visual now bobs by up to 6 cm.
-        const grounded = Math.abs(b.y - T.groundAt(b.x, b.z)) < 0.001;
+        const grounded = Math.abs(b.y - T.groundAt(b.x, b.z,b.y)) < 0.001;
         return c.inventory.some(Boolean) && grounded && Math.abs(b.m.position.y - (b.y + 0.86)) <= 0.061;
       });
       Object.assign(c, grid); c.inventory = [null, null]; race.items.clear();
@@ -112,7 +114,7 @@ try {
         updateRace(1 / 60);
         const c = race.player;
         if (c.inventory.some(Boolean)) pickups++;
-        if (c.onGround) maxGroundError = Math.max(maxGroundError, Math.abs(c.y - T.groundAt(c.x, c.z)));
+        if (c.onGround) maxGroundError = Math.max(maxGroundError, Math.abs(c.y - T.groundAt(c.x, c.z,c.y)));
       }
       return { id, length: T.TOTAL, roundtrip, minRadius, maxGrade, protrusion, finite, startHeights,
         pickups, itemRows, riverClear, maxGroundError, finishAligned, leftTurns, rightTurns, obstacles,

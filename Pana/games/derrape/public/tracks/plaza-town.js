@@ -171,7 +171,8 @@ export function createTown(T) {
   }
   plaza.group.scale.setScalar(2);group.add(plaza.group);
   const outskirts=plazaOutskirts(T,groundAt,building,occupied);group.add(outskirts);group.userData.surroundings=outskirts.userData.surroundings;
-  group.add(bake(ground,{cellSize:350}),bake(buildings,{cellSize:350}),bake(plants,{cellSize:350}));
+  // Smaller vegetation cells let road cameras cull trees behind the driver.
+  group.add(bake(ground,{cellSize:350}),bake(buildings,{cellSize:350}),bake(plants,{cellSize:180}));
   group.add(createWaterfront(T));
   const privateGeometries=new Set();
   for(const root of [ground,buildings,plants,...prototypes])root.traverse(o=>{if(o.geometry)privateGeometries.add(o.geometry);});
