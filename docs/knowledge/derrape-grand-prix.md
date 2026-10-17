@@ -275,3 +275,32 @@ listeners and zero intervals after every cup. Both humans finished every stage.
 Cancellation returned to the garage with no racers; `lifetime.json` records all
 12 stage ledgers. Keyboard, controller, held touch, mango and rescue checks
 also passed separately on each new map with reduced quality.
+
+## Release acceptance evidence
+
+The final eight-human run (`PANA_GP_CLIENTS=8 PANA_GP_CUPS=agua`) completed
+all four Agua stages with eight independent browser contexts, no bots, real
+steering/checkpoint simulation and identical accepted ledgers on every client.
+The four ledgers are in `art/grand-prix/8-human-cups.json`; the five-suite release
+batch, including model architecture, water assets, presentation and the existing
+Venezuela worlds, passed in `release-browser.log`.
+
+The full Derrape sweep and focused repairs cover all 30 current browser suites.
+`derrape-regression.log` preserves the initial failures instead of erasing them;
+their passing reruns are `cup-failures-fixed.log`, `online-final.log`,
+`quick-final.log`, `items-final4.log` and `release-browser.log`. Added map-control,
+crossing, lifetime, presentation and car-batching proofs have their own logs.
+The repository release check passes 260 tests (`release-final-check.log`).
+
+Presentation fixtures deliberately exercise duplicate long names, a points tie,
+all four finish classifications, an absent champion's fallback portrait and
+reduced motion. They do not establish race playability. The portrait podium
+needs intrinsic grid rows: two long standings tables otherwise squeeze its
+row to zero height and let it overlap the classification. On desktop, align the
+podium column to the start so a long results column cannot push it below the
+first screen. Screenshot and rectangle checks cover both layouts.
+
+The physical-phone benchmark was explicitly waived by the user during the
+final audit. A Samsung SM-S134DL was detected over USB, but no phone frame-rate
+result was produced. Desktop GPU timings and mobile-layout/touch proof remain
+separate evidence; see `derrape-performance.md` for that distinction.
