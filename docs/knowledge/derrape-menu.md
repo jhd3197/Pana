@@ -30,6 +30,8 @@ controls are ready. It does not invent a startup percentage.
 
 - `createMenuFlow` runs after the existing controls and handlers are created;
   it moves the actual elements rather than cloning them. Keep IDs stable.
+  Replacing mode-button labels must preserve the trophy and legacy badges that
+  the initial `renderSetup` has already restored from the player's profile.
 - `refresh` is read-only: calling `renderSetup` from it would recurse through
   `selectTrack`. Refresh after car, route, setup and room changes.
 - Cup stage buttons preview individual tracks. Ready shows the cup's first

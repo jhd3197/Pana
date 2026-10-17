@@ -72,7 +72,9 @@ export function createMenuFlow({ tracks, getState, pickTrack, localPlay, initial
     const label = document.createElement('span');
     label.innerHTML = `<b>${title}</b><small>${subtitle}</small>`;
     const img = new Image(); img.alt = ''; img.loading = 'lazy'; setMenuImage(img, trackArt(id, true));
-    button.replaceChildren(img, label);
+    // renderSetup has already restored earned and legacy trophies on startup.
+    const trophies = [...button.querySelectorAll('.mode-trophy, .mode-legacy')];
+    button.replaceChildren(img, label, ...trophies);
   }
   // Preserve #setup for its existing online visibility and options handlers.
   $('setup').querySelector('.setup-row').remove();
