@@ -16,7 +16,7 @@ export default [
     category: "Objetos",
     source: "/engine/models/props/beach.js",
     factory: "beachHut",
-    usedBy: ["Bululú","Derrape"],
+    usedBy: ["Bululú", "Derrape", "Escondidas", "¡Pintura!", "Billar", "Caída"],
     previewOptions: null,
     pack: "beach"
   },

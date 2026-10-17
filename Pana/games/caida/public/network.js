@@ -62,7 +62,7 @@ export class CaidaRoom extends HostRoom {
   }
 
   practice() {
-    this.seq = 0; this.game = null; this.state = new CaidaGame(Date.now()).snapshot();
+    this.seq = 0; this.game = null; this.state = { ...new CaidaGame(Date.now()).snapshot(), mapId: this.state.mapId };
     super.practice('Mesa local · juega con bots');
   }
 }

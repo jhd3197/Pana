@@ -280,6 +280,11 @@
 .pk-lobby-top { display: flex; justify-content: space-between; align-items: center; }
 .pk-lobby-top .pk-logo { font-size: 22px; text-shadow: 0 2px 0 var(--pk-coral); }
 .pk-field { display: flex; flex-direction: column; gap: 8px; align-items: flex-start; }
+.pk-map-picker { margin: 16px 0; width: 100%; }
+.pk-select { width: 100%; min-height: 44px; padding: 10px 12px; border: 1px solid var(--pk-line); border-radius: 10px; background: var(--pk-deep); color: var(--pk-text); font: inherit; cursor: pointer; }
+.pk-select:focus-visible { outline: 3px solid var(--pk-yellow); outline-offset: 3px; }
+.pk-select:disabled { opacity: .7; cursor: default; }
+.pk-map-picker small { margin: 0; font-size: 12px; line-height: 1.4; }
 .pk-lobby-foot { margin-top: auto; display: flex; flex-direction: column; gap: 12px; }
 .pk-lobby-room { display: flex; align-items: center; gap: 10px; font: 800 14px var(--pk-sans); }
 .pk-lobby-room .pk-room-code { margin-left: auto; color: var(--pk-teal); font-size: 13px; }

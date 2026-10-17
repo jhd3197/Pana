@@ -10,6 +10,18 @@ becomes the GitHub release's notes.
 
 ### Added
 
+- **Derrape adds eleven scenery models to its towns, coasts and countryside.**
+  Cafés, fountains, market carts, fishing structures, port equipment and other
+  landmarks now appear across six circuits and are available in Pana Studio.
+- **Escondidas reshuffles its objects every round and gives you more time to hide.**
+  All four maps get fresh prop positions and orientations shared by everyone in
+  the room. Hiding now lasts 30 seconds by default; hosts can choose 15, 20, 30,
+  45 or 60 seconds in the lobby, including local practice.
+- **Choose three new shared maps for Escondidas, Paintball, Billar and Caída.**
+  Puerto Coco, Hato del Sol and Ruinas del Mango bring distinct hiding routes,
+  paintball cover and scenery. Hosts preview and choose the map in the lobby;
+  table games use a clear central courtyard, and friends joining later see
+  the same setting. The original plaza and paintball court remain available.
 - **Derrape brings five new scenery models from the circuit artwork into the races.**
   Plaza Pana gains an open music pavilion and a boat-repair yard; Salinas gains
   salt-harvesting machinery and flamingos along its pink ponds. El Estadio has

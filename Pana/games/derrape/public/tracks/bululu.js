@@ -13,6 +13,10 @@ import { fishingBoat, coastalLighthouse, lifeguardTower, beachVolleyball, beachS
 import { beachCrab } from '/engine/models/fauna/beach-crab.js';
 import { groundBeachCrab } from '/engine/placement/beach-crab.js';
 import { boatRepairYard } from '/engine/models/props/boat-yard.js';
+import { iceCreamCart } from '/engine/models/props/ice-cream-cart.js';
+import { laundryCourtyard } from '/engine/models/props/laundry-courtyard.js';
+import { navigationBeacon } from '/engine/models/props/navigation-beacon.js';
+import { cargoHandcart } from '/engine/models/props/cargo-handcart.js';
 const SCALE=1.23;
 const ROUTE=[[-260,80],[-260,155],[-170,210],[-70,220],[10,170],[15,100],[65,60],[140,75],[220,130],[300,110],[335,35],[300,-35],[230,-70],[170,-130],[90,-195],[-5,-215],[-90,-175],[-120,-100],[-185,-65],[-255,-20]].map(([x,z])=>[x*SCALE,z*SCALE]);
 const roadHeight=(x,z)=>(3.2+hill(x,z,-270,-120,120,95,7))*(1-tideZone(x,z))+.48*tideZone(x,z);
@@ -78,6 +82,10 @@ export default {
     coastLand(rescueRingStand,250,110,1.1,Math.PI);
     coastLand(fishingNetRack,-185,10,2.5,Math.PI/2);
     coastLand(boatRepairYard,-185,-33,9,Math.PI/2);
+    coastLand(iceCreamCart,232,35,2.5,0.4);
+    coastLand(laundryCourtyard,-182,73,4.5,Math.PI/2);
+    coastLand(navigationBeacon,-185,-52,3.5,0);
+    coastLand(cargoHandcart,-185,-12,2.5,0.6);
     const coastAt=(factory,x,z,y,radius,rotation=0)=>{
       const object=put(coast,factory(),x,z,y,rotation);object.userData.footprintRadius=radius;return object;
     };

@@ -9,6 +9,9 @@ import { fishCrates } from '/engine/models/props/coastal.js';
 import { palm } from '/engine/models/vegetation/palm.js';
 import { agave } from '/engine/models/vegetation/agave.js';
 import { saltHarvester } from '/engine/models/props/salt-harvester.js';
+import { saltBoardwalk } from '/engine/models/props/salt-boardwalk.js';
+import { waterPumpStation } from '/engine/models/props/water-pump-station.js';
+import { cargoHandcart } from '/engine/models/props/cargo-handcart.js';
 import { flamingo } from '/engine/models/fauna/birds/flamingo.js';
 export function salinasWorld(T) {
   const group=new THREE.Group(),world=terrain(T,{bounds:[-600,-450,600,500],base:baseHeight,step:4,
@@ -38,6 +41,12 @@ export function salinasWorld(T) {
       for(let i=0;i<3;i++)put(works,fishCrates(),x-3+i*2.3,z+2,world.groundAt(x,z)+.4,h);shelters++;
     }
   }
+  const boardwalk=foundation(group,saltBoardwalk(),-115,148,world.groundAt,{rotation:0.1,scale:1.35,radius:8,color:0xccbea0});
+  boardwalk.userData.footprintRadius=8;boardwalk.userData.support='pond-dike';
+  const pump=foundation(group,waterPumpStation(),-140,-172,world.groundAt,{rotation:0.3,scale:1.35,radius:6,color:0xccbea0});
+  pump.userData.footprintRadius=6;pump.userData.support='sluice-bank';
+  const handcart=foundation(group,cargoHandcart(),15,312,world.groundAt,{rotation:-0.4,scale:1.5,radius:3,color:0xccbea0});
+  handcart.userData.footprintRadius=3;handcart.userData.support='salt-yard';
   group.add(finish(works));
   // Feet follow the real bank triangles. Pick shallow water close enough to
   // the circuit to see, and keep each bird clear of roads and sluice channels.

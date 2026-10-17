@@ -14,7 +14,8 @@ The host only starts rounds. Its departure cannot interrupt simulation.
   so a backgrounded or disconnected browser does not keep running or firing.
 - Projectile travel uses segment/AABB and segment/circle intersections. At
   29 units/second, testing only projectile endpoints misses thin cover.
-- All collision cover is defined once in `COVER`; scene geometry reads it.
+- All collision cover comes from `coverFor(mapId)`; scene geometry reads the
+  same bounds. `COVER` is the original plaza court's default layout.
 - A solo player starts with three bots; friends play without bots when two or
   more humans start the round. Live friends can join mid-round;
   when eight active slots are filled a joining friend replaces one bot.
@@ -52,3 +53,10 @@ picking, orbit, touch layouts and the actual Studio model constructors.
 Keep simulation in pure rules and room authorization on the server. Never add
 client-controlled score/position messages. Clear held input on blur and menus.
 Online matches continue through the shared menu; local practice pauses.
+
+## Shared map selection
+
+Puerto Coco, Hato del Sol and Ruinas del Mango are available in the lobby.
+The host chooses the setting; the selected map follows snapshots, practice,
+late joins and host changes. See [shared-arenas.md](shared-arenas.md) for
+layout variants, collision, table clearance, lifecycle and verification.

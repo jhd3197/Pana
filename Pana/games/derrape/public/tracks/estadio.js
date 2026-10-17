@@ -7,6 +7,7 @@ import { cornerBodega, streetFoodKiosk, basketballHoop, rooftopWaterTank } from 
 import { trophyMonument } from '/engine/models/props/monuments.js';
 import { stadiumGrounds } from './stadium-grounds.js';
 import { tireWorkshop } from '/engine/models/props/tire-workshop.js';
+import { streetMural } from '/engine/models/props/street-mural.js';
 
 export default {
   ...TRACK_DEFINITIONS.find(track => track.id === 'estadio'),
@@ -55,6 +56,8 @@ export default {
         put(group,sign(String(i+1).padStart(2,'0'),2,1,{background:'#243e48'}),x,212.7,6.3,Math.PI);
       }
     }
+    const mural=put(group,streetMural(),45,205,1.12,Math.PI,1.45);
+    mural.userData.footprintRadius=4;mural.userData.support='pit-apron';
     for(const [x,z] of [[-105,135],[90,95],[-85,47],[80,47]]){
       if(!clear(T,x,z,4))continue;
       fixed.add(tube([x,1,z],[x,31,z],.32,M(0x657b7d)),box(7,2,.8,M(0x344b55),x,31,z));

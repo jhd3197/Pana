@@ -2,7 +2,7 @@
 
 Audited 2026-10-17. Generated from the real Studio registry plus a reviewed source ledger.
 
-**232 Studio resources**, including **18 Fauna entries**, **24 vegetation entries**, **14 vehicles** and **19 maps**. **8 resources are preview-only.** The separate ledger identifies **31 active uncataloged model families**, **46 scene/effect families** and **9 dormant factories/hooks**. These numbers must not be added into a “unique 3D models” total: maps contain models, variants share geometry, and some ledger rows group multiple related props.
+**235 Studio resources**, including **18 Fauna entries**, **24 vegetation entries**, **14 vehicles** and **22 maps**. **8 resources are preview-only.** The separate ledger identifies **31 active uncataloged model families**, **46 scene/effect families** and **9 dormant factories/hooks**. These numbers must not be added into a “unique 3D models” total: maps contain models, variants share geometry, and some ledger rows group multiple related props.
 
 Scope: current production geometry in `engine/` and the four games, including Bululú minigames, gameplay props, embedded wardrobe options and map scenery. Individual meshes, geometry helpers, UI/SVG art, generated screenshots, dependency internals and historical deleted revisions are excluded. Catalog consumer labels identify games, not instance counts. Active uncataloged entries were traced to their placement sources; presence in source does not guarantee visibility from every camera. Legacy rows are retained explicitly instead of being presented as new content.
 
@@ -176,13 +176,13 @@ The following list is generated, not manually copied. “In use” is the catalo
 
 | Name / ID | Status / games | Source | Constructor |
 | --- | --- | --- | --- |
-| Peñero de pesca · fishing-boat | Bululú, Derrape | [coastal.js](../../Pana/engine/models/props/coastal.js) | fishingBoat |
-| Faro costero · coastal-lighthouse | Derrape | [coastal.js](../../Pana/engine/models/props/coastal.js) | coastalLighthouse |
+| Peñero de pesca · fishing-boat | Bululú, Derrape, Escondidas, ¡Pintura!, Billar, Caída | [coastal.js](../../Pana/engine/models/props/coastal.js) | fishingBoat |
+| Faro costero · coastal-lighthouse | Derrape, Escondidas, ¡Pintura!, Billar, Caída | [coastal.js](../../Pana/engine/models/props/coastal.js) | coastalLighthouse |
 | Torre de salvavidas · lifeguard-tower | Bululú, Derrape | [coastal.js](../../Pana/engine/models/props/coastal.js) | lifeguardTower |
 | Cancha de voleibol de playa · beach-volleyball | Derrape | [coastal.js](../../Pana/engine/models/props/coastal.js) | beachVolleyball |
 | Ducha de playa · beach-shower | Bululú, Derrape | [coastal.js](../../Pana/engine/models/props/coastal.js) | beachShower |
 | Puesto de salvavidas · rescue-ring-stand | Bululú, Derrape | [coastal.js](../../Pana/engine/models/props/coastal.js) | rescueRingStand |
-| Secadero de redes · fishing-net-rack | Bululú, Derrape | [coastal.js](../../Pana/engine/models/props/coastal.js) | fishingNetRack |
+| Secadero de redes · fishing-net-rack | Bululú, Derrape, Escondidas, ¡Pintura!, Billar, Caída | [coastal.js](../../Pana/engine/models/props/coastal.js) | fishingNetRack |
 | Cajas de pesca · fish-crates | Bululú, Derrape | [coastal.js](../../Pana/engine/models/props/coastal.js) | fishCrates |
 | Boya de canal · channel-buoy | Bululú, Derrape | [coastal.js](../../Pana/engine/models/props/coastal.js) | channelBuoy |
 | Cortina de cascada · waterfall-curtain | Derrape, Bululú | [waterfall.js](../../Pana/engine/models/effects/waterfall.js) | waterfall |
@@ -247,21 +247,24 @@ The following list is generated, not manually copied. “In use” is the catalo
 
 | Name / ID | Status / games | Source | Constructor |
 | --- | --- | --- | --- |
-| Casa de hato llanero · ranch-house | Derrape, Galope | [ranch.js](../../Pana/engine/models/props/ranch.js) | llaneroRanchHouse |
+| Casa de hato llanero · ranch-house | Derrape, Galope, Escondidas, ¡Pintura!, Billar, Caída | [ranch.js](../../Pana/engine/models/props/ranch.js) | llaneroRanchHouse |
 | Portón de corral · corral-gate | Derrape, Galope | [ranch.js](../../Pana/engine/models/props/ranch.js) | corralGate |
-| Paca de heno · hay-bale | Derrape, Galope | [ranch.js](../../Pana/engine/models/props/ranch.js) | hayBale |
-| Molino de agua · water-windmill | Derrape, Galope | [ranch.js](../../Pana/engine/models/props/ranch.js) | waterWindmill |
-| Caballeriza · horse-stable | Derrape, Galope | [ranch.js](../../Pana/engine/models/props/ranch.js) | horseStable |
-| Comedero de ganado · feeding-trough | Derrape, Galope | [ranch.js](../../Pana/engine/models/props/ranch.js) | feedingTrough |
-| Cerca de hato · ranch-fence | Derrape, Galope | [ranch.js](../../Pana/engine/models/props/ranch.js) | ranchFence |
-| Tractor viejo · old-tractor | Derrape, Galope | [ranch.js](../../Pana/engine/models/props/ranch.js) | oldTractor |
+| Paca de heno · hay-bale | Derrape, Galope, Escondidas, ¡Pintura!, Billar, Caída | [ranch.js](../../Pana/engine/models/props/ranch.js) | hayBale |
+| Molino de agua · water-windmill | Derrape, Galope, Escondidas, ¡Pintura!, Billar, Caída | [ranch.js](../../Pana/engine/models/props/ranch.js) | waterWindmill |
+| Caballeriza · horse-stable | Derrape, Galope, Escondidas, ¡Pintura!, Billar, Caída | [ranch.js](../../Pana/engine/models/props/ranch.js) | horseStable |
+| Comedero de ganado · feeding-trough | Derrape, Galope, Escondidas, ¡Pintura!, Billar, Caída | [ranch.js](../../Pana/engine/models/props/ranch.js) | feedingTrough |
+| Cerca de hato · ranch-fence | Derrape, Galope, Escondidas, ¡Pintura!, Billar, Caída | [ranch.js](../../Pana/engine/models/props/ranch.js) | ranchFence |
+| Tractor viejo · old-tractor | Derrape, Galope, Escondidas, ¡Pintura!, Billar, Caída | [ranch.js](../../Pana/engine/models/props/ranch.js) | oldTractor |
 | Módulo de charco de barro · mud-puddle | Derrape | [ranch.js](../../Pana/engine/models/props/ranch.js) | mudPuddle |
 | Torre de agua del hato · ranch-water-tower | Derrape, Galope | [ranch.js](../../Pana/engine/models/props/ranch.js) | ranchWaterTower |
 
-### Mapas (19)
+### Mapas (22)
 
 | Name / ID | Status / games | Source | Constructor |
 | --- | --- | --- | --- |
+| Puerto Coco · arena-puerto | Escondidas, ¡Pintura!, Billar, Caída | [arenas.js](../../Pana/engine/arenas.js) | createArenaEnvironment |
+| Hato del Sol · arena-hato | Escondidas, ¡Pintura!, Billar, Caída | [arenas.js](../../Pana/engine/arenas.js) | createArenaEnvironment |
+| Ruinas del Mango · arena-ruinas | Escondidas, ¡Pintura!, Billar, Caída | [arenas.js](../../Pana/engine/arenas.js) | createArenaEnvironment |
 | Reliquia · La mina del sol · reliquia | Reliquia | [scene.js](../../Pana/games/reliquia/public/scene.js) | createExpeditionWorld |
 | ¡Embuste! · El campamento y el templo · embuste | ¡Embuste! | [scene.js](../../Pana/games/embuste/public/scene.js) | createCampWorld |
 | Galope · La vuelta del estero · galope | Galope | [scene.js](../../Pana/games/galope/public/scene.js) | createCourse |
@@ -286,12 +289,12 @@ The following list is generated, not manually copied. “In use” is the catalo
 
 | Name / ID | Status / games | Source | Constructor |
 | --- | --- | --- | --- |
-| Barril · barrel | Escondidas, Cocina, Derrape, ¡Embuste!, ¡Pintura! | [plaza.js](../../Pana/engine/models/props/plaza.js) | barrel |
-| Caja · crate | Escondidas, Cocina, Derrape, ¡Embuste!, ¡Pintura! | [plaza.js](../../Pana/engine/models/props/plaza.js) | crate |
-| Cava · cooler | Escondidas, Cocina, Derrape, ¡Embuste! | [plaza.js](../../Pana/engine/models/props/plaza.js) | cooler |
-| Mata · planter | Escondidas, Cocina, Derrape | [plaza.js](../../Pana/engine/models/props/plaza.js) | planter |
-| Banco · bench | Escondidas, Cocina, Derrape | [plaza.js](../../Pana/engine/models/props/plaza.js) | bench |
-| Puesto de mercado · market-stall | Escondidas, Derrape, ¡Pintura! | [plaza.js](../../Pana/engine/models/props/plaza.js) | marketStall |
+| Barril · barrel | Escondidas, Cocina, Derrape, Billar, Caída, ¡Embuste!, ¡Pintura! | [plaza.js](../../Pana/engine/models/props/plaza.js) | barrel |
+| Caja · crate | Escondidas, Cocina, Derrape, Billar, Caída, ¡Embuste!, ¡Pintura! | [plaza.js](../../Pana/engine/models/props/plaza.js) | crate |
+| Cava · cooler | Escondidas, Cocina, Derrape, Billar, Caída, ¡Embuste! | [plaza.js](../../Pana/engine/models/props/plaza.js) | cooler |
+| Mata · planter | Escondidas, Cocina, Derrape, Billar, Caída | [plaza.js](../../Pana/engine/models/props/plaza.js) | planter |
+| Banco · bench | Escondidas, Cocina, Derrape, Billar, Caída | [plaza.js](../../Pana/engine/models/props/plaza.js) | bench |
+| Puesto de mercado · market-stall | Escondidas, Derrape, ¡Pintura!, Billar, Caída | [plaza.js](../../Pana/engine/models/props/plaza.js) | marketStall |
 | Farol de plaza · street-lamp | Escondidas, Cocina, Derrape, Billar, Póquer, ¡Pintura! | [plaza.js](../../Pana/engine/models/props/plaza.js) | streetLamp |
 | Casa del pueblo · house | Escondidas, Cocina, Derrape, Billar, Póquer, ¡Pintura! | [plaza-buildings.js](../../Pana/engine/models/props/plaza-buildings.js) | house |
 | Casa con balcón · house-balcony | Escondidas, Cocina, Derrape, Billar, Póquer, ¡Pintura! | [plaza-buildings.js](../../Pana/engine/models/props/plaza-buildings.js) | house |
@@ -302,7 +305,7 @@ The following list is generated, not manually copied. “In use” is the catalo
 | China (tirapiedras) · china | Bululú | [china.js](../../Pana/engine/models/props/china.js) | china |
 | Casita de isla · casita | Bululú | [island-house.js](../../Pana/engine/models/props/island-house.js) | casita |
 | Sombrilla de playa · beachShade | Bululú, Derrape | [beach.js](../../Pana/engine/models/props/beach.js) | beachShade |
-| Rancho de playa · beachHut | Bululú, Derrape | [beach.js](../../Pana/engine/models/props/beach.js) | beachHut |
+| Rancho de playa · beachHut | Bululú, Derrape, Escondidas, ¡Pintura!, Billar, Caída | [beach.js](../../Pana/engine/models/props/beach.js) | beachHut |
 | Tronco de playa · driftwood | Bululú, Derrape, Galope | [beach.js](../../Pana/engine/models/props/beach.js) | driftwood |
 | Mazorca · corn | Cocina | [kitchen.js](../../Pana/engine/models/props/kitchen.js) | corn |
 | Queso · cheese | Cocina | [kitchen.js](../../Pana/engine/models/props/kitchen.js) | cheese |
@@ -383,12 +386,12 @@ The following list is generated, not manually copied. “In use” is the catalo
 
 | Name / ID | Status / games | Source | Constructor |
 | --- | --- | --- | --- |
-| Entrada del templo de piedra · temple-entrance | Reliquia, ¡Embuste! | [jungle.js](../../Pana/engine/models/props/jungle.js) | templeEntrance |
+| Entrada del templo de piedra · temple-entrance | Reliquia, ¡Embuste!, Escondidas, ¡Pintura!, Billar, Caída | [jungle.js](../../Pana/engine/models/props/jungle.js) | templeEntrance |
 | Puente colgante de cuerdas · rope-bridge | Reliquia, ¡Embuste! | [jungle.js](../../Pana/engine/models/props/jungle.js) | ropeBridge |
 | Cascada entre rocas · waterfall-rocks | Derrape, ¡Embuste! | [jungle.js](../../Pana/engine/models/props/jungle.js) | waterfallRocks |
-| Arco de piedra con enredaderas · vine-arch | Derrape, ¡Embuste! | [jungle.js](../../Pana/engine/models/props/jungle.js) | vineArch |
+| Arco de piedra con enredaderas · vine-arch | Derrape, ¡Embuste!, Escondidas, ¡Pintura!, Billar, Caída | [jungle.js](../../Pana/engine/models/props/jungle.js) | vineArch |
 | Puente de bambú · bamboo-bridge | Preview only | [jungle.js](../../Pana/engine/models/props/jungle.js) | bambooBridge |
-| Tótem de piedra antiguo · stone-totem | Derrape, Reliquia, ¡Embuste! | [jungle.js](../../Pana/engine/models/props/jungle.js) | stoneTotem |
+| Tótem de piedra antiguo · stone-totem | Derrape, Reliquia, ¡Embuste!, Escondidas, ¡Pintura!, Billar, Caída | [jungle.js](../../Pana/engine/models/props/jungle.js) | stoneTotem |
 | Tronco hueco · hollow-log | Derrape, ¡Embuste! | [jungle.js](../../Pana/engine/models/props/jungle.js) | hollowLog |
 | Laja del Escudo Guayanés · laja-rock | Curiara | [amazonas.js](../../Pana/engine/models/props/amazonas.js) | lajaRock |
 | Tronco del igapó · igapo-trunk | Curiara | [amazonas.js](../../Pana/engine/models/props/amazonas.js) | igapoTrunk |
@@ -414,15 +417,15 @@ The following list is generated, not manually copied. “In use” is the catalo
 | --- | --- | --- | --- |
 | Palma moriche · moriche | Galope | [moriche.js](../../Pana/engine/models/vegetation/moriche.js) | moriche |
 | Paja de sabana · savanna-grass | Galope | [savanna-grass.js](../../Pana/engine/models/vegetation/savanna-grass.js) | savannaGrass |
-| Palmera · palm | Bululú, Derrape, Escondidas, Cocina, Reliquia, Billar, Póquer | [palm.js](../../Pana/engine/models/vegetation/palm.js) | palm |
-| Árbol de mango · mangoTree | Bululú, Derrape, Escondidas, Cocina, Galope, Billar, Póquer, ¡Pintura! | [mango-tree.js](../../Pana/engine/models/vegetation/mango-tree.js) | mangoTree |
+| Palmera · palm | Bululú, Derrape, Escondidas, Cocina, Reliquia, Billar, Póquer, ¡Pintura!, Caída | [palm.js](../../Pana/engine/models/vegetation/palm.js) | palm |
+| Árbol de mango · mangoTree | Bululú, Derrape, Escondidas, Cocina, Galope, Billar, Póquer, ¡Pintura!, Caída | [mango-tree.js](../../Pana/engine/models/vegetation/mango-tree.js) | mangoTree |
 | Ceiba · ceiba | Bululú, Derrape | [ceiba.js](../../Pana/engine/models/vegetation/ceiba.js) | ceiba |
 | Pino · pine | Bululú | [pine.js](../../Pana/engine/models/vegetation/pine.js) | pine |
 | Mata de cambur · banana | Bululú, Derrape | [banana.js](../../Pana/engine/models/vegetation/banana.js) | banana |
 | Arbusto · bush | Bululú, Derrape, Escondidas, Cocina, Billar, Póquer | [bush.js](../../Pana/engine/models/vegetation/bush.js) | bush |
 | Araguaney · araguaney | Derrape, ¡Pintura! | [araguaney.js](../../Pana/engine/models/vegetation/araguaney.js) | araguaney |
-| Bambú · bamboo | Derrape | [bamboo.js](../../Pana/engine/models/vegetation/bamboo.js) | bamboo |
-| Helecho · fern | Derrape, Reliquia | [fern.js](../../Pana/engine/models/vegetation/fern.js) | fern |
+| Bambú · bamboo | Derrape, Escondidas, ¡Pintura!, Billar, Caída | [bamboo.js](../../Pana/engine/models/vegetation/bamboo.js) | bamboo |
+| Helecho · fern | Derrape, Reliquia, Escondidas, ¡Pintura!, Billar, Caída | [fern.js](../../Pana/engine/models/vegetation/fern.js) | fern |
 | Monstera · monstera | Derrape | [monstera.js](../../Pana/engine/models/vegetation/monstera.js) | monstera |
 | Heliconia · heliconia | Derrape | [heliconia.js](../../Pana/engine/models/vegetation/heliconia.js) | heliconia |
 | Cardón · cactus | Derrape | [cactus.js](../../Pana/engine/models/vegetation/cactus.js) | cactus |

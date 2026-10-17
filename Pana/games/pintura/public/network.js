@@ -18,10 +18,15 @@ export class PaintConnection {
       this.onStatus('En línea con tus panas'); this.onState(this.state);
     } catch (error) { if (!this.local && !this.disposed) this.onStatus(error.full ? 'Sala llena. Abre otra cancha desde Pana.' : 'Sin conexión. Puedes practicar con bots.', true); }
   }
+  selectMap(mapId) {
+    if (!this.isHost || !this.connected) return;
+    if (this.local) { if (this.game.selectMap(mapId)) this.publish(); }
+    else this.link.send('map', { mapId });
+  }
   start() { if (this.local) { this.game.start(); this.publish(); } else if (this.connected) this.link.send('start'); }
   input(value) { this.current = cleanInput(value); if (!this.local && this.connected) this.link.send('input', this.current); }
   practice() {
-    this.local = true; this.link?.leave(); this.connected = true; this.game = new Arena();
+    this.local = true; this.link?.leave(); this.connected = true; this.game = new Arena(this.state.mapId);
     this.game.add(1, { name: this.name, avatar: this.avatar, bot: false });
     ['Coco', 'Lola', 'Cheo'].forEach((name, i) => this.game.add(1000 + i, { name, avatar: randomAvatar(), bot: true }));
     this.onStatus('Práctica con bots · a tu ritmo'); this.start();

@@ -109,3 +109,10 @@ artwork is shared by physical meshes and accessible controls. The card and
 score token are registered in `web/studio/catalog/caida.js`. Table/chair
 factories are shared in `engine/models/props/game-table.js`; Dominó preserves
 its old exports. See `docs/knowledge/caida.md` for explicit house rules.
+
+## Shared map selection
+
+Puerto Coco, Hato del Sol and Ruinas del Mango are available in the lobby.
+The host chooses the setting; the selected map follows snapshots, practice,
+late joins and host changes. See [shared-arenas.md](shared-arenas.md) for
+layout variants, collision, table clearance, lifecycle and verification.

@@ -1,3 +1,6 @@
+import { createArenaEnvironment } from '/engine/arenas.js';
+import { arenaInfo } from '/engine/arena-layouts.js';
+import { disposeModel } from '/engine/models/props/game-table.js';
 import * as THREE from 'three';
 import { buildCharacter } from '/engine/models/characters/pana/avatar-model.js';
 import { bindRenderer } from '/engine/settings.js';
@@ -22,9 +25,11 @@ export function createScene(canvas) {
   scene.add(new THREE.HemisphereLight('#fff2d6', '#68865c', 2.6));
   const sun = new THREE.DirectionalLight('#fff3da', 3.2); sun.position.set(-15, 35, 16); sun.castShadow = true;
   Object.assign(sun.shadow.camera, { left: -30, right: 30, top: 30, bottom: -30, far: 80 }); sun.shadow.mapSize.set(2048, 2048); sun.shadow.normalBias = .03; scene.add(sun);
+  const defaultCourt = new THREE.Group(); scene.add(defaultCourt);
+  let environment = null, mapId = 'plaza'; scene.userData.mapId = mapId;
   const materials = new Map(), avatars = new Map(), ballMeshes = new Map(), splats = new Map();
   const material = color => { if (!materials.has(color)) materials.set(color, new THREE.MeshStandardMaterial({ color, roughness: .85 })); return materials.get(color); };
-  const box = (w, h, d, color, x, y, z) => { const mesh = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), material(color)); mesh.position.set(x, y, z); mesh.castShadow = mesh.receiveShadow = true; scene.add(mesh); return mesh; };
+  const box = (w, h, d, color, x, y, z) => { const mesh = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), material(color)); mesh.position.set(x, y, z); mesh.castShadow = mesh.receiveShadow = true; defaultCourt.add(mesh); return mesh; };
   box(170, .3, 170, '#b4b387', 0, -.3, 0); box(37, .2, 37, '#cfb584', 0, -.08, 0);
   for (let i = -18; i < 18; i += 2) for (const z of [-18, 18]) box(1.1, .02, .13, '#f9ead1', i, .04, z);
   for (const side of [-1, 1]) {
@@ -58,14 +63,24 @@ export function createScene(canvas) {
     }
     box(o.w + .01, .24, o.d + .01, i % 2 ? '#dc7950' : '#398f99', o.x, o.h * .7, o.z);
   });
-  const surroundings = bake(scenery); scene.add(surroundings);
+  const surroundings = bake(scenery); defaultCourt.add(surroundings);
   const originalGeometry = new Set(); scenery.traverse(o => { if (o.geometry) originalGeometry.add(o.geometry); }); originalGeometry.forEach(g => g.dispose());
+  const defaultCameraBounds = [...cameraBounds];
+  function setMap(id) {
+    id = arenaInfo(id).id; if (mapId === id) return;
+    environment?.dispose(); environment = null; mapId = id; scene.userData.mapId = id;
+    defaultCourt.visible = id === 'plaza'; cameraBounds.length = 0;
+    if (id === 'plaza') cameraBounds.push(...defaultCameraBounds);
+    else { environment = createArenaEnvironment(id, { mode: 'paint' }); scene.add(environment.group); cameraBounds.push(...environment.cameraBounds); }
+    initialized = false;
+  }
   const ballGeo = new THREE.SphereGeometry(.16, 8, 6), splatGeo = new THREE.CircleGeometry(.48, 9), ringGeo = new THREE.RingGeometry(.75, .86, 32);
   const aim = new THREE.Mesh(new THREE.RingGeometry(.25, .32, 24), new THREE.MeshBasicMaterial({ color: '#ffffff', side: THREE.DoubleSide })); aim.rotation.x = -Math.PI / 2; aim.position.y = .05; scene.add(aim);
   const ray = new THREE.Raycaster(), plane = new THREE.Plane(new THREE.Vector3(0, 1, 0), -1.1), mouse = new THREE.Vector2(), point = new THREE.Vector3();
   const cameraRay = new THREE.Ray(), cameraDirection = new THREE.Vector3(), obstruction = new THREE.Vector3();
   function resize() { const w = canvas.clientWidth, h = canvas.clientHeight; if (canvas.width !== Math.round(w * renderer.getPixelRatio()) || canvas.height !== Math.round(h * renderer.getPixelRatio())) renderer.setSize(w, h, false); }
   function draw(state, id, dt, aimPoint) {
+    setMap(state.mapId); environment?.update(elapsed, dt);
     canvas.style.width = '100vw'; canvas.style.height = '100dvh';
     resize(); const aspect = canvas.clientWidth / canvas.clientHeight, lobby = state.phase === 'lobby';
     const me = state.players.find(p => p.id === id), close = cameraView === 'cerca' && !lobby, mobile = aspect < 1;
@@ -109,6 +124,6 @@ export function createScene(canvas) {
     movement(x, z) { return cameraView === 'cerca' ? { x: x * Math.cos(yaw) + z * Math.sin(yaw), z: -x * Math.sin(yaw) + z * Math.cos(yaw) } : { x, z }; },
     point(clientX, clientY) { const rect = canvas.getBoundingClientRect(); mouse.set((clientX - rect.left) / rect.width * 2 - 1, -(clientY - rect.top) / rect.height * 2 + 1); ray.setFromCamera(mouse, camera); return ray.ray.intersectPlane(plane, point)?.clone(); },
     screen(x, z) { const p = new THREE.Vector3(x, 1.1, z).project(camera), r = canvas.getBoundingClientRect(); return { x: r.left + (p.x + 1) / 2 * r.width, y: r.top + (1 - p.y) / 2 * r.height }; },
-    dispose() { unbind(); sky.dispose(); avatars.forEach(a => { a.marker.userData.dispose(); a.ring.removeFromParent(); a.ring.material.dispose(); a.dispose(); }); const geometries = new Set([ringGeo, ballGeo, splatGeo]), textures = new Set(); scene.traverse(o => { if (o.geometry) geometries.add(o.geometry); if (o.material?.map) textures.add(o.material.map); }); geometries.forEach(g => g.dispose()); textures.forEach(t => t.dispose()); materials.forEach(m => m.dispose()); aim.material.dispose(); renderer.dispose(); },
+    dispose() { unbind(); sky.dispose(); environment?.dispose(); disposeModel(defaultCourt); avatars.forEach(a => { a.marker.userData.dispose(); a.ring.removeFromParent(); a.ring.material.dispose(); a.dispose(); }); const geometries = new Set([ringGeo, ballGeo, splatGeo]), textures = new Set(); scene.traverse(o => { if (o.geometry) geometries.add(o.geometry); if (o.material?.map) textures.add(o.material.map); }); geometries.forEach(g => g.dispose()); textures.forEach(t => t.dispose()); materials.forEach(m => m.dispose()); aim.material.dispose(); renderer.dispose(); },
   };
 }

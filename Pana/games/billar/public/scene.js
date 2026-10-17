@@ -21,6 +21,7 @@ export function createPoolScene(canvas) {
   const bounds = new THREE.Box3(), vec = (x, y, height = POOL_SURFACE + .11) => new THREE.Vector3((x - 500) * .01, height, (y - 250) * .01);
   function line(mesh, from, to) { const a = mesh.geometry.attributes.position; a.setXYZ(0, from.x, from.y, from.z); a.setXYZ(1, to.x, to.y, to.z); a.needsUpdate = true; mesh.geometry.computeBoundingSphere(); mesh.computeLineDistances(); }
   function draw(state, { angle = 0, power = .65, active = false, placement = null, dt = .016 } = {}) {
+    stage.setMap(state.mapId);
     const { w, h } = stage.resize(), lobby = state.phase === 'lobby', portrait = w < 650 && h > w;
     rotation = portrait && !lobby ? Math.PI / 2 : 0;
     const short = h < 520 && w > h;

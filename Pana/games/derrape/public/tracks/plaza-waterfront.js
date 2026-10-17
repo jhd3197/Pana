@@ -4,6 +4,9 @@ import { palm } from '/engine/models/vegetation/palm.js';
 import { waterSurface } from '/engine/models/effects/water-surface.js';
 import { extendWaterPlane } from './world-horizon.js';
 import { boatRepairYard } from '/engine/models/props/boat-yard.js';
+import { fishAuctionCanopy } from '/engine/models/props/fish-auction-canopy.js';
+import { cargoHandcart } from '/engine/models/props/cargo-handcart.js';
+import { navigationBeacon } from '/engine/models/props/navigation-beacon.js';
 
 const FINGERS=[325,405,485,565];
 export function waterfrontHeight(x,z,land){
@@ -33,6 +36,9 @@ export function createWaterfront(T){
       if(f===3&&row===2&&side===1) {
         const yard=put(group,boatRepairYard(),x,z,2.4,0,1.15);
         yard.userData.footprintRadius=10;yard.userData.support='waterfront-quay';
+      } else if(f===1&&row===2&&side===1) {
+        const canopy=put(group,fishAuctionCanopy(),x,z,2.4,0,1.15);
+        canopy.userData.footprintRadius=8;canopy.userData.support='waterfront-quay';
       } else {
         const house=canalVilla({seed:f*10+row,color:colors[(f+row)%5]});
         put(houses,house,x,z,2.4,side*Math.PI/2,1.4);count++;
@@ -41,7 +47,15 @@ export function createWaterfront(T){
       for(const dx of [-5,5])fixed.add(box(.25,4,.25,M(0x695f4b),dockX+dx,-.7,z+5));
       put(fixed,boat(0xe5e2ce,{cabin:row%2===0}),dockX,z-2,.1,Math.PI/2,1.2);
     }
-    put(fixed,palm({seed:f+40,h:10}),cx,350,2.4);
+    if(f===1) {
+      const cart=put(group,cargoHandcart(),cx,347,2.46,0.25,1.45);
+      cart.userData.footprintRadius=2.5;cart.userData.support='waterfront-quay';
+    } else if(f===2) {
+      const beacon=put(group,navigationBeacon(),cx,350,2.46,0,1.25);
+      beacon.userData.footprintRadius=3.5;beacon.userData.support='waterfront-quay';
+    } else {
+      put(fixed,palm({seed:f+40,h:10}),cx,350,2.4);
+    }
   }
   const name=sign('CASAS BOTES · PLAZA PANA',23,2,{background:'#296b73'});put(group,name,450,266,6,Math.PI);
   // Keep unique sign ownership from house factories when batching their geometry.

@@ -288,3 +288,14 @@ See the circuit walkthrough section in the Studio knowledge note for proof.
 Thumbnail images live only in browser IndexedDB. Declare extra factory
 dependencies in the catalog for cache invalidation, and run the studio cache
 browser suite when changing its generation or persistence behavior.
+
+## Shared party maps
+
+`arena-puerto`, `arena-hato` and `arena-ruinas` preview Puerto Coco, Hato del Sol
+and Ruinas del Mango through the real `engine/arenas.js` hunt variant. They list
+Escondidas, Pintura, Billar and Caída as consumers. See
+[shared-arenas.md](shared-arenas.md) for collision, table clearance and lifecycle.
+
+Browser checks must return through `#back-library` before using `#search` to
+select another resource. Legacy hash links open the dedicated asset page,
+where the library's search controls are hidden.

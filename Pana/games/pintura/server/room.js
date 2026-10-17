@@ -9,6 +9,9 @@ export default class PaintRoom extends PanaRoom {
       const id = this.state.players.get(client.sessionId)?.seat;
       if (id != null) this.inputs.set(id, { value: cleanInput(data), at: Date.now() });
     });
+    this.onMessage('map', (client, data) => {
+      if (this.isHost(client) && this.game.selectMap(data?.mapId)) this.publish();
+    });
     this.onMessage('start', client => {
       if (!this.isHost(client) || this.game.phase === 'playing') return;
       this.game.players = this.game.players.filter(p => !p.bot && p.connected);

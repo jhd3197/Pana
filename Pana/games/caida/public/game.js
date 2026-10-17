@@ -1,3 +1,4 @@
+import { createMapPicker } from '/engine/map-picker.js';
 import { loadName, loadAvatar } from '/engine/avatar.js';
 import { createGameMenu, toggleMute } from '/engine/ui.js';
 import { fillRoster } from '/engine/results.js';
@@ -19,6 +20,7 @@ function notify(text) { $('toast').textContent = text; $('toast').classList.add(
 const room = new CaidaRoom({ code, name: loadName(), avatar: loadAvatar(), onState: render, onNotice: notify,
   onStatus(message, failed) { $('connection').textContent = message; $('practice').hidden = !failed; $('invite').disabled = $('lobby-invite').disabled = !room.connected || room.offline; render(room.state); },
 });
+const mapPicker = createMapPicker($('map-picker'), mapId => room.action('configure', { options: { mapId } }), { table: true });
 const menu = createGameMenu({ title: 'Caída · Pana', sound: audio,
   note: () => room.members.size > 1 ? 'La mesa sigue jugando mientras estás en el menú.' : 'La partida está en pausa. Los bots te esperan.',
   controls: [['1 2 3', 'Seleccionar una carta'], ['Enter', 'Jugar la carta seleccionada'], ['C', 'Cantar antes de jugar la primera carta'], ['H', 'Pedir una pista'], ['M', 'Activar o silenciar sonido'], ['Esc', 'Abrir o cerrar el menú']],
@@ -60,6 +62,7 @@ function hint() {
   notify(`${cardName(card)}: ${preview.points ? `puedes sumar ${preview.points} puntos.` : preview.capture.length ? `recoges ${preview.capture.length + 1} cartas.` : 'la dejas sobre la mesa.'}`);
 }
 function render(state) {
+  mapPicker.update(state.mapId, ready && room.connected && room.isHost && state.phase === 'lobby');
   document.body.classList.toggle('in-lobby', state.phase === 'lobby'); $('welcome').hidden = state.phase !== 'lobby';
   $('start').disabled = !ready || !room.connected || !room.isHost;
   $('start').textContent = !ready ? 'Preparando la mesa…' : !room.connected ? 'Conectando…' : room.isHost ? '¡Repartir!' : 'El anfitrión reparte';

@@ -32,12 +32,12 @@ test('seeker cannot move, inspect or disguise during hiding', () => {
   game.update(1, new Map([[1, { x: 1, z: 1 }]]));
   assert.equal(p.x, start.x); assert.equal(p.z, start.z);
   assert.equal(game.check(1), false); assert.match(game.transform(1, 'barrel'), /no puedes/);
-  advance(game, 15); assert.equal(game.phase, 'hunt');
+  advance(game, game.hideSeconds); assert.equal(game.phase, 'hunt');
   game.update(0.5, new Map([[1, { x: 1, z: 0 }]])); assert.ok(p.x > start.x);
 });
 test('line of sight and distance protect hiders; checks have a cooldown', () => {
   const game = session('seek'), seeker = game.players[0], hider = game.players[1];
-  advance(game, 16);
+  advance(game, game.hideSeconds + 1);
   Object.assign(seeker, { x: -4, z: 14 }); Object.assign(hider, { x: 6, z: 14 });
   assert.equal(game.check(1), false); assert.equal(seeker.cooldown, RULES.checkCooldown);
   hider.x = -2; assert.equal(game.check(1), false); assert.equal(hider.caught, false);
@@ -88,8 +88,8 @@ test('solo seeker patrols, respects camouflage and catches exposed nearby panas'
   const seeker = game.players.find(p => p.id === game.seeker), player = game.players[0];
   assert.equal(seeker.bot, true);
   const start = { x: seeker.x, z: seeker.z };
-  advance(game, 22); assert.ok(Math.hypot(seeker.x - start.x, seeker.z - start.z) > 2);
-  assert.equal(blocked(seeker.x, seeker.z), false);
+  advance(game, game.hideSeconds + 7); assert.ok(Math.hypot(seeker.x - start.x, seeker.z - start.z) > 2);
+  assert.equal(game.layout.blocked(seeker.x, seeker.z), false);
   Object.assign(seeker, { x: -4, z: 14 }); Object.assign(player, { x: 4, z: 14, prop: 'barrel', suspicion: 0 });
   game.update(0.05); assert.equal(player.suspicion, 0); assert.equal(player.caught, false);
   Object.assign(seeker, { x: -4, z: 14 }); Object.assign(player, { x: -2, z: 14, prop: null });

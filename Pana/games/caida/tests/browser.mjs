@@ -61,7 +61,8 @@ try {
   const studio = await browser.newPage({ viewport: { width: 1440, height: 900 } }); studio.on('pageerror', e => errors.push(e.message));
   await studio.goto(`${base}/studio.html#caida-card`); await studio.locator('#startup').waitFor({ state: 'hidden', timeout: 300000 });
   for (const id of ['caida-card', 'caida-score-token', 'domino-table', 'domino-chair']) {
-    await studio.locator('#search').fill(''); await studio.locator(`[data-asset="${id}"]`).click();
+    await studio.locator('#back-library').click();
+    await studio.locator('#search').fill(id); await studio.locator(`[data-asset="${id}"]`).click();
     await studio.waitForFunction(id => panaLibrary.selected === id && document.querySelector('#preview-status').hidden, id, { timeout: 90000 });
     assert.ok(await studio.evaluate(() => panaLibrary.current.group.children.length > 0));
   }

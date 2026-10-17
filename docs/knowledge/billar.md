@@ -80,3 +80,10 @@ Late-game shot fixtures exercise known pocket geometry through the same mouse
 controls. It also checks portrait/landscape touch layout, shared pause, keyboard
 input, offline fallback, saved-avatar portraits and hub discovery. Screenshots
 are saved under ignored `art/billar/`.
+
+## Shared map selection
+
+Puerto Coco, Hato del Sol and Ruinas del Mango are available in the lobby.
+The host chooses the setting; the selected map follows snapshots, practice,
+late joins and host changes. See [shared-arenas.md](shared-arenas.md) for
+layout variants, collision, table clearance, lifecycle and verification.

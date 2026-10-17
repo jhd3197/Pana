@@ -1,3 +1,4 @@
+import { validArena } from '../../../engine/arena-layouts.js';
 // Pure deterministic rules. Table variants and sources are documented in caida.md.
 export const TARGET = 24;
 export const RANKS = [1, 2, 3, 4, 5, 6, 7, 10, 11, 12];
@@ -60,7 +61,7 @@ export function chooseMove(state, seat = state.turn) {
 export class CaidaGame {
   constructor(seed = 1) {
     this.rng = seed >>> 0 || 1; this.options = { mode: 'duel', cantos: true, call: 'down', difficulty: 'normal' };
-    this.phase = 'lobby'; this.round = 0; this.handNumber = 0; this.dealer = 1; this.turn = 0;
+    this.mapId = 'plaza'; this.phase = 'lobby'; this.round = 0; this.handNumber = 0; this.dealer = 1; this.turn = 0;
     this.players = []; this.scores = []; this.stock = []; this.table = []; this.last = null;
     this.lastCapture = null; this.history = []; this.eventId = 0; this.result = null;
     this.revision = 0; this.ledger = {}; this.resetSeats();
@@ -72,7 +73,8 @@ export class CaidaGame {
     this.dealer = this.players.length - 1;
   }
   configure(options) {
-    if (this.phase !== 'lobby') return false;
+    if (this.phase !== 'lobby' || !options || typeof options !== 'object' || Array.isArray(options)) return false;
+    if ('mapId' in options) { if (!validArena(options.mapId)) return false; this.mapId = options.mapId; }
     if (options.mode in MODES && options.mode !== this.options.mode) { this.options.mode = options.mode; this.resetSeats(); }
     if (typeof options.cantos === 'boolean') this.options.cantos = options.cantos;
     if (['up', 'down'].includes(options.call)) this.options.call = options.call;

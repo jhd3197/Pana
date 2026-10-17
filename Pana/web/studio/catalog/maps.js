@@ -1,7 +1,14 @@
+import { ARENAS } from '/engine/arena-layouts.js';
 import { TRACK_DEFINITIONS } from '/g/derrape/track-definitions.js';
 import { STATIONS } from '/g/cocina/rules.js';
 
 export const MAPS = [
+  ...ARENAS.filter(map => map.id !== 'plaza').map(map => ({
+    id: `arena-${map.id}`, name: map.name, category: 'Mapas', source: '/engine/arenas.js',
+    dependencies: ['/engine/arena-layouts.js'], factory: 'createArenaEnvironment',
+    usedBy: ['Escondidas', '¡Pintura!', 'Billar', 'Caída'], game: '/g/escondidas/', description: map.description,
+    async build() { const { createArenaEnvironment } = await import('/engine/arenas.js'); return createArenaEnvironment(map.id); },
+  })),
   { id: 'reliquia', name: 'Reliquia · La mina del sol', category: 'Mapas', source: '/g/reliquia/scene.js', dependencies: ['/g/reliquia/layout.js','/engine/models/props/reliquia.js','/engine/models/props/jungle.js'], factory: 'createExpeditionWorld', usedBy: ['Reliquia'], game: '/g/reliquia/', description: 'Mina con puente colgante, dos ruedas cooperativas, patio de momias y cámara de la reliquia.',
     async build() { const { Box3, Vector3, Scene } = await import('three'); const { createExpeditionWorld } = await import('/g/reliquia/scene.js'); const model = createExpeditionWorld(); return { ...model, update: (t, dt) => model.update(t, {}, dt) }; },
   },
