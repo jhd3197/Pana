@@ -27,6 +27,7 @@ import { advanceLap, isOpenEdge, offCourse, stuckStep, ALL_SECTORS, RESCUE_TIME,
 import { createHazards } from './hazards.js';
 import { createMusic, TRACK_STYLE } from './music.js';
 import { racerPortrait } from './racer-portrait.js';
+import { batchRacer } from './racer-render.js';
 import { createWaterAmbience } from './water-ambience.js';
 import { padInput, pressed, keyInput, SPLIT_KEYS, wrongWayStep, WRONG_WAY_TIME, lapSplit } from './controls.js';
 import { PAINTS, HORNS, FLAMES, CATALOG, earnings, buy, unlocked, unlockText, mirrorUnlocked, repaintHex } from './shop.js';
@@ -797,6 +798,7 @@ function makeRacer(index, isPlayer, name, wheelId = 'calle', avatar = null, cosm
   const car = def.build(who.avatar, wheel.wheel ?? undefined);
   cosmetics=cleanCosmetics(cosmetics ?? (isPlayer ? raceStyle(index) : null));
   repaintCar(car, def.color, PAINTS.find(p=>p.id===cosmetics.paint)?.color ?? null);
+  batchRacer(car);
   // Retain ownership even after a bumper detaches and expires from the scene.
   car.geometries = new Set();
   car.ownedMaterials = new Set();
@@ -904,6 +906,7 @@ function progressOf(c) {
 }
 
 function disposeRacer(c) {
+  c.car.batchedMaterials.forEach(material=>material.dispose());
   c.car.ownedMaterials.forEach(material=>{material.map.dispose();material.dispose();});
   const ownedMaterials = new Set();
   c.car.root.traverse(o => {

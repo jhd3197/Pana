@@ -21,6 +21,9 @@ becomes the GitHub release's notes.
   Paint, horn and flame choices follow the frozen entrant, and podium portraits
   show the actual racers. Bululú shares the waterfall effect and Galope adds a
   shelter to its existing lagoon landing.
+- **Derrape draws full racing grids with fewer calls while preserving the cars.**
+  Rigid parts share draw batches with their original colors; drivers, wheel
+  steering, suspension, flags and breakaway pieces keep their animations.
 - **Derrape keeps your online Grand Prix together across four races.**
   Copa Pana and Copa Aventura carry the same rivals, official standings and
   one-time rewards through map changes, with synchronized loading and reload recovery.

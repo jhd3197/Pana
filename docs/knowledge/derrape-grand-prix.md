@@ -229,7 +229,11 @@ remote motion, a mango throw and a stage-two token reload. Both clients agreed
 on all four ledgers and repeated final rendering did not pay twice.
 Manual-render test mode drives the actual steering, car and checkpoint simulation
 at 60 Hz and sends real poses; it is functional proof, not a frame-rate measure.
-The expanded host-loss/stale-message scenario is a separate subsequent gate.
+The expanded host-loss/stale-message scenario subsequently passed in the final
+two-client suite (`art/grand-prix/online-final.log`, 201 seconds). The quick-race
+suite also passed (`quick-final.log`, 170 seconds). Its two independent browser
+contexts now warm assets before testing the shared 15-second party-leader join
+window; cold CDN/model load time must not silently change that test's premise.
 
 Subsequent starting grids now follow the immediately preceding race placement,
 not cumulative cup points; a regression proves the two orders can differ.
