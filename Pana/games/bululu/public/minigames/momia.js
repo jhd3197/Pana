@@ -1,3 +1,4 @@
+import { random, inputFor } from '../online-rules.js';
 // ¡Un, dos, tres, momia! Red light, green light at the temple. Run for the
 // relic while the mummy counts; freeze when she turns, or back to the start.
 // Space turns you into a barrel for a moment: barrels may creep while she looks.
@@ -77,7 +78,7 @@ export default {
     scene.add(momBubble.sprite);
     momBubble.sprite.position.set(GOAL + 4.4, 5.6, 0);
 
-    const camera = new THREE.PerspectiveCamera(50, innerWidth / innerHeight, 0.1, 400);
+    const camera = new THREE.PerspectiveCamera(50, (ctx.aspect || innerWidth / innerHeight), 0.1, 400);
     camera.position.set(0.5, 11.5, 19.5);
     camera.lookAt(0.5, 1.6, -1);
 
@@ -92,7 +93,7 @@ export default {
       a.prop.scale.setScalar(0.85);
       a.prop.visible = false;
       scene.add(a.prop);
-      a.ai = { react: 0, sneaky: Math.random() < 0.6, speed: rand(0.9, 1) };
+      a.ai = { react: 0, sneaky: random() < 0.6, speed: rand(0.9, 1) };
     });
     const human = (a) => a.player.human && !ctx.auto;
 
@@ -128,8 +129,8 @@ export default {
       if (next === 'turn' || next === 'fake') {
         turnedAt = clock;
         for (const a of actors) {
-          a.ai.react = rand(0.12, 0.26) + (Math.random() < 0.1 ? rand(0.2, 0.35) : 0);
-          a.ai.fooled = Math.random() < 0.5;
+          a.ai.react = rand(0.12, 0.26) + (random() < 0.1 ? rand(0.2, 0.35) : 0);
+          a.ai.fooled = random() < 0.5;
         }
       }
     }
@@ -149,7 +150,7 @@ export default {
         }
       }
       if (stateT < stateLen) return;
-      if (state === 'count') enter(!faked && Math.random() < 0.15 ? 'fake' : 'turn');
+      if (state === 'count') enter(!faked && random() < 0.15 ? 'fake' : 'turn');
       else if (state === 'turn') enter('watch');
       else if (state === 'watch') enter('back');
       else enter('count');
@@ -208,8 +209,8 @@ export default {
 
         let dir = 0;
         if (human(a)) {
-          dir = Math.max(0, input.x);
-          if (input.jump) disguise(a);
+          dir = Math.max(0, inputFor(input, a.i).x);
+          if (inputFor(input, a.i).jump) disguise(a);
         } else {
           const plan = think(a);
           dir = plan.dir;

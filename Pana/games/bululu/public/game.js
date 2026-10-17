@@ -24,6 +24,10 @@ import { COLORS, RIVALS, START_COINS, PRICE, DOUBLES_BONUS, TREE_COINS } from '.
 import { createGameMenu, toggleMute } from '/engine/ui.js';
 import { holdButton } from '/engine/touch.js';
 import { pixelRatio, bindRenderer } from '/engine/settings.js';
+import { inviteUrl, newRoomCode, roomFromUrl } from '/engine/invite.js';
+import { BululuRoom } from './network.js';
+import { IDLE_INPUT, seeded, withRandom } from './online-rules.js';
+import { readPresentation, writePresentation } from './online-view.js';
 
 // every tile, sign and bubble is drawn on a canvas in the cartoon font, so
 // load it before building anything (but never hang on it)
@@ -45,6 +49,12 @@ const MINIGAMES = [atrapa, caigas, caida, momia, coleo, choque, embuste, remada,
 const nextMinigame = rules.minigameBag(MINIGAMES);
 const FORCED = MINIGAMES.find((m) => m.id === QS.get('mini'));
 const ONLY = MINIGAMES.find((m) => m.id === QS.get('play'));
+const code = roomFromUrl() || newRoomCode();
+// Direct visits can choose online or bots. Hub/invite links join immediately.
+let online = !!roomFromUrl(), room = null, started = false, checkpoint = null;
+let promptSerial = 0, pendingChoice = null, resolveChoice = null, rejectChoice = null;
+let miniSerial = 0, miniFrame = 0, requestingFrames = false;
+let authority = 0;
 let savedSky = 'day';
 try { savedSky = localStorage.getItem('pana.bululu.sky') || 'day'; } catch { /* Storage can be disabled. */ }
 const skyMode = QS.get('sky') || savedSky;
@@ -68,7 +78,7 @@ const players = (() => {
     };
   });
 })();
-const me = players[0];
+let me = players[0];
 const isHuman = (p) => p.human && !AUTO;
 
 // ---------- renderer ----------
@@ -95,17 +105,22 @@ function selectSky(mode, save = true) {
 let paused = false;
 const menu = createGameMenu({
   title: 'Bululú', heading: 'Pausa', sound,
-  note: () => 'La partida está en pausa.',
+  note: () => online ? 'La partida online sigue mientras abres el menú.' : 'La partida está en pausa.',
+  invite: () => inviteUrl(code),
   controls: [['Espacio', 'Tirar los dados / saltar'], ['A D / ← →', 'Moverte en los minijuegos'], ['Tab', 'Ver el tablero'],
     ['Clic / Espacio', 'Estirar y soltar la china'], ['L', 'Cambiar la luz'], ['M', 'Sonido'], ['Esc', 'Pausa']],
   tips: ['Junta 20 monedas y cómprale un Mango de oro al puesto del árbol. Gana el pana con más mangos de oro.'],
   options: [{ id: 'sky', label: 'Luz de la isla', choices: [['day', 'Día'], ['night', 'Noche'], ['cycle', 'Ciclo']],
     get: () => board.atmosphere.mode, set: mode => selectSky(mode) }],
-  actions: [{ id: 'restart', label: 'Empezar de nuevo', kind: 'secondary', run: () => location.reload() }],
+  actions: [
+    { id: 'restart', label: 'Empezar de nuevo', kind: 'secondary', visible: () => !online, run: () => location.reload() },
+    { id: 'rejoin', label: 'Volver a entrar a la sala', kind: 'secondary', visible: () => online, run: () => location.reload() },
+  ],
   onOpen() { paused = true; for (const k in held) held[k] = false; aim.pull = aim.keyPull = false; },
   onClose() { paused = false; },
 });
 $('top-actions').prepend(menu.createButton({ id: 'menu', className: 'pk-btn menu-button' }));
+$('invite').append(menu.createInviteButton());
 for (const b of $('sky').children) b.onclick = () => selectSky(b.dataset.sky);
 selectSky(board.atmosphere.mode, false);
 const puffs = new Puffs(boardScene);
@@ -128,6 +143,7 @@ const counter = (() => {
   return {
     sprite,
     set(n) {
+      this.value = n;
       const g = c.getContext('2d');
       g.clearRect(0, 0, 128, 128);
       g.fillStyle = '#ffc629';
@@ -281,8 +297,8 @@ const boardView = {
 // time: waits and tweens run on game time (so ?speed and pauses work)
 // ======================================================================
 let jobs = [];
-const wait = (s) => new Promise((r) => jobs.push({ t: s, r }));
-const tween = (dur, fn) => new Promise((r) => jobs.push({ t: dur, dur, fn, r }));
+const wait = (s) => new Promise((r, reject) => jobs.push({ t: s, r, reject }));
+const tween = (dur, fn) => new Promise((r, reject) => jobs.push({ t: dur, dur, fn, r, reject }));
 function stepJobs(dt) {
   const done = [];
   for (const j of jobs) {
@@ -332,6 +348,11 @@ addEventListener('keyup', (e) => {
   }
 });
 addEventListener('pointerdown', () => sound.unlock(), { once: false });
+addEventListener('blur', () => {
+  for (const key in held) held[key] = false;
+  jumpPressed = false;
+  aim.pull = aim.keyPull = aim.fire = false;
+});
 
 // on-screen buttons for touch screens during minigames
 // (engine/touch.js: a finger sliding off the button still lets go)
@@ -453,7 +474,7 @@ function renderCards() {
     return `<div class="pcard${turnOf === p.i ? ' turn' : ''}" style="--c:${p.color}">
       ${cardMode === 'board' ? `<span class="medal m${r[p.i]}">${r[p.i]}</span>` : ''}
       ${crown ? `<span class="crown">${SVG.crown}</span>` : ''}
-      ${turnOf === p.i ? `<span class="tag">${p.human ? 'Tu turno' : 'Turno'}</span>` : ''}
+      ${turnOf === p.i ? `<span class="tag">${p === me ? 'Tu turno' : 'Turno'}</span>` : ''}
       <img src="${p.portrait || ''}" alt="">
       <div class="info"><small>${escapeHtml(p.name)}</small><div class="vals">${stats}</div></div>
     </div>`;
@@ -481,6 +502,17 @@ async function toast(title, sub = '', secs = 1.4, kind = '') {
 
 // A choice with buttons + keys. The AI (or ?auto) answers on its own.
 function ask(text, options, { auto = 0, delay = 0.5 } = {}) {
+  if (online) {
+    const player = players[turnOf] || players.find(p => p.seat === room.hostId);
+    pendingChoice = { id: `${room.id}:${++promptSerial}`, seat: player?.seat, text: text.replace(/<[^>]*>/g, ''), options, auto };
+    room.prompt = pendingChoice;
+    showOnlinePrompt(pendingChoice);
+    room.publish(captureOnline());
+    return new Promise((resolve, reject) => {
+      resolveChoice = resolve; rejectChoice = reject;
+      if (AUTO || !room.members.has(player?.seat)) wait(delay).then(() => finishChoice(auto)).catch(ignoreCancelled);
+    });
+  }
   const el = $('prompt');
   el.innerHTML = `<p>${text}</p><div class="row">${options.map((o, i) =>
     `<button data-i="${i}" class="pk-btn${i === 0 ? ' pk-btn--primary primary' : ''}">${o.label}${o.key ? ` <kbd class="pk-kbd" data-pana-hint>${o.key === ' ' ? 'Espacio' : o.key.toUpperCase()}</kbd>` : ''}</button>`).join('')}</div>`;
@@ -855,7 +887,7 @@ async function takeTurn(p) {
   renderCards();
   const tk = p.token;
   focus(tk.rest);
-  await toast(p.human ? '¡Tu turno!' : `Turno de ${escapeHtml(p.name)}`, '', 1, `p${p.i}`);
+  await toast(online ? `Turno de ${escapeHtml(p.name)}` : p.human ? '¡Tu turno!' : `Turno de ${escapeHtml(p.name)}`, '', 1, `p${p.i}`);
 
   // two dice spin over the pana's head
   dice.forEach((d, k) => {
@@ -869,11 +901,11 @@ async function takeTurn(p) {
   else await wait(0.9);
   const { a, b, n, doubles } = rules.rollDice();
   dice[0].rolling = false;
-  dice[0].show(a);
+  dice[0].value = a; dice[0].show(a);
   sound.boing();
   await wait(0.35);
   dice[1].rolling = false;
-  dice[1].show(b);
+  dice[1].value = b; dice[1].show(b);
   sound.boing();
   tk.bubble.say(doubles ? '¡DOBLES!' : n >= 10 ? pick(['¡Epa!', '¡Dale!', `¡${n}!`]) : n <= 3 ? pick(['¿Nada más?', '¡Qué pava!']) : `¡${n}!`, 0.9);
   await wait(0.9);
@@ -911,15 +943,18 @@ async function playMinigame(def) {
   else await wait(2);
   $('mini-intro').classList.add('hidden');
 
-  const game = def.create({ players, auto: AUTO });
-  game.camera.aspect = innerWidth / innerHeight;
+  const spec = online ? { serial: `${room.id}-${++miniSerial}-${Date.now()}`, seed: Math.floor(Math.random() * 2 ** 32),
+    id: def.id, players: playerData(), auto: AUTO, aspect: 16 / 9 } : null;
+  const game = createMini(def, spec);
+  game.camera.aspect = spec?.aspect || innerWidth / innerHeight;
   game.camera.updateProjectionMatrix();
   miniScores = [0, 0, 0, 0];
   miniIcon = def.icon;
   cardMode = 'mini';
   renderCards();
-  mini = { def, game, state: 'wait', left: def.time };
-  game.update(0.0001, def.input === 'aim' ? IDLE_AIM : { x: 0, jump: false });
+  mini = { def, game, spec, authoritative: true, state: 'wait', left: def.time };
+  if (online) { room.history = []; room.inputs.clear(); room.publish(captureOnline()); }
+  game.update(0.0001, online ? players.map(() => IDLE_INPUT) : def.input === 'aim' ? IDLE_AIM : { x: 0, jump: false });
   view = { scene: game.scene, camera: game.camera, update: () => {} };
   document.body.classList.add('in-mini');
   document.body.classList.toggle('mini-2d', def.input === '2d');
@@ -935,11 +970,11 @@ async function playMinigame(def) {
   }
   $('count').textContent = '¡YA!';
   sound.tone(880, 0, 0.3, 'square', 0.08);
-  wait(0.6).then(() => ($('count').textContent = ''));
+  wait(0.6).then(() => ($('count').textContent = '')).catch(ignoreCancelled);
   jumpPressed = false;
   aim.fire = aim.keyPull = false;
   mini.state = 'run';
-  await new Promise((r) => (mini.finish = r));
+  await new Promise((r, reject) => { mini.finish = r; mini.abort = reject; });
 
   // who won?
   const scores = game.scores();
@@ -1003,7 +1038,7 @@ function drawReticles(list) {
 function updateMini(dt) {
   const { game } = mini;
   if (mini.state === 'run') {
-    game.update(dt, minigameInput(dt));
+    game.update(dt, online ? room.takeInputs(players) : minigameInput(dt));
     if (game.reticles) drawReticles(game.reticles());
     mini.left -= dt;
     setTimer(Math.max(0, Math.ceil(mini.left)));
@@ -1023,20 +1058,26 @@ function updateMini(dt) {
 // ======================================================================
 async function intro() {
   $('intro-players').innerHTML = players.map((p) =>
-    `<div class="ip" style="--c:${p.color}"><img src="${p.portrait}" alt=""><b>P${p.i + 1}</b><span>${p.human ? 'Tú' : escapeHtml(p.name)}</span></div>`).join('');
+    `<div class="ip" style="--c:${p.color}"><img src="${p.portrait}" alt=""><b>P${p.i + 1}</b><span>${p === me ? 'Tú' : escapeHtml(p.name)}</span></div>`).join('');
   const pickRounds = (n) => {
+    if (online && !room?.isHost) return;
     ROUNDS = n;
     $('intro-rounds').textContent = $('intro-rounds-n').textContent = n;
     for (const b of $('intro-pick').children) b.setAttribute('aria-pressed', String(Number(b.dataset.rounds) === n));
   };
   for (const b of $('intro-pick').children) b.onclick = () => pickRounds(Number(b.dataset.rounds));
   pickRounds(ROUNDS);
+  if (!online) lobbyRoster();
   $('intro').classList.remove('hidden');
+  $('online').onclick = connectOnline;
+  $('practice').onclick = () => { const url = new URL(location.href); url.searchParams.delete('room'); url.searchParams.delete('lead'); location.href = url.href; };
+  if (online) connectOnline();
   await new Promise((r) => {
-    $('start').onclick = r;
-    const onKey = (k) => { if (k === ' ' || k === 'enter') r(); };
+    const start = () => { if (online) { if (room?.isHost && !started) beginOnline(null); } else r(); };
+    $('start').onclick = start;
+    const onKey = (k) => { if (k === ' ' || k === 'enter') start(); };
     actionWaiters.push(onKey);
-    if (AUTO) wait(1).then(r);
+    if (AUTO && !online) wait(1).then(r);
   });
   actionWaiters = [];
   sound.unlock();
@@ -1055,11 +1096,16 @@ async function results() {
   champ.token.cheer = 99;
   sound.horn('fiesta');
   await wait(1.2);
+  drawResults();
+}
+
+function drawResults() {
+  const order = standings(), r = ranks(), champ = order[0];
   const tied = order.filter((p) => r[p.i] === 1);
   $('res-title').textContent = tied.length > 1 ? `¡Empate entre ${tied.map((p) => p.name).join(' y ')}!`
-    : champ.human ? `¡Ganaste, ${champ.name}!` : `¡${champ.name} es el pana más pana!`;
+    : champ === me ? `¡Ganaste, ${champ.name}!` : `¡${champ.name} es el pana más pana!`;
   $('res-rows').innerHTML = order.map((p) => `
-    <div class="rrow pk-row${p.human ? ' is-me' : ''}" style="--c:${p.color}">
+    <div class="rrow pk-row${p === me ? ' is-me' : ''}" style="--c:${p.color}">
       ${r[p.i] === 1 ? `<span class="crown">${SVG.crown}</span>` : ''}
       <span class="medal m${r[p.i]}">${r[p.i]}</span>
       <img src="${p.portrait}" alt="">
@@ -1068,35 +1114,295 @@ async function results() {
       <span class="rv">${ICONS.coin}<b>${p.coins}</b></span>
     </div>`).join('');
   $('results').classList.remove('hidden');
-  $('again').onclick = () => location.reload();
+  $('again').disabled = online && !room.isHost;
+  $('again').textContent = online && !room.isHost ? 'Esperando al anfitrión…' : 'Otra vez';
+  $('again').onclick = () => online ? room.isHost && beginOnline(null) : location.reload();
 }
 
 async function main() {
   makePortraits();
   renderCards();
   await intro();
-  if (ONLY) {
-    for (;;) await playMinigame(ONLY);
+  started = true;
+  await runBoard();
+}
+
+async function runBoard(resume) {
+  const only = resume?.only || ONLY?.id;
+  if (only) {
+    for (;;) {
+      saveCheckpoint('mini', 0, MINIGAMES.find(m => m.id === only), only);
+      await playMinigame(MINIGAMES.find(m => m.id === only));
+    }
   }
-  for (round = 1; round <= ROUNDS; round++) {
+  for (round = resume?.round || 1; round <= ROUNDS; round++) {
     setPlank(`RONDA ${round} / ${ROUNDS}`);
     overview();
     await toast(`Ronda ${round}`, round === ROUNDS ? '¡Última ronda!' : `de ${ROUNDS}`, 1.5, 'round');
-    for (const p of players) await takeTurn(p);
-    await playMinigame(FORCED || nextMinigame());
+    const first = resume?.stage === 'mini' ? players.length : resume?.next || 0;
+    for (let i = first; i < players.length; i++) {
+      if (online) syncRoster();
+      saveCheckpoint('turn', i);
+      await takeTurn(players[i]);
+    }
+    const def = MINIGAMES.find(m => m.id === resume?.minigame) || FORCED || nextMinigame();
+    saveCheckpoint('mini', players.length, def);
+    await playMinigame(def);
+    resume = null;
   }
+  saveCheckpoint('done', 0);
   await results();
 }
+
+// Online board authority and presentation. Minigames replay the host's exact
+// input steps with a game-only random stream, independent of rendering/sound.
+const CANCELLED = new Error('Bululú host changed');
+function ignoreCancelled(error) { if (error !== CANCELLED) { console.error(error); $('room-status').textContent = 'No se pudo continuar la partida. Vuelve a entrar a la sala.'; } }
+function playerData() {
+  return players.map(({ i, color, avatar, human, name, coins, mangos, tile, seat }) => ({ i, color, avatar, human, name, coins, mangos, tile, seat }));
+}
+function applyPlayers(data) {
+  let changed = false;
+  data.forEach((p, i) => {
+    const old = players[i], rebuild = JSON.stringify([old.avatar, old.name]) !== JSON.stringify([p.avatar, p.name]);
+    Object.assign(old, p);
+    if (rebuild) {
+      boardScene.remove(old.token.group); old.token.pana.dispose();
+      old.token = createToken(old, i); old.token.dizzy = old.token.cheer = 0;
+      boardScene.add(old.token.group); changed = true;
+    }
+  });
+  me = players.find(p => p.seat === room?.id) || null;
+  layoutTokens();
+  if (changed) { makePortraits(); lastCards = ''; }
+}
+function lobbyRoster() {
+  $('intro-players').innerHTML = players.map(p =>
+    `<div class="ip" style="--c:${p.color}"><img src="${p.portrait}" alt=""><b>P${p.i + 1}</b><span>${escapeHtml(p.name)}${p === me ? ' · Tú' : p.human ? '' : ' · Bot'}</span></div>`).join('');
+  $('intro-rounds').textContent = $('intro-rounds-n').textContent = ROUNDS;
+  for (const b of $('intro-pick').children) {
+    b.disabled = online && (!room?.isHost || started);
+    b.setAttribute('aria-pressed', String(Number(b.dataset.rounds) === ROUNDS));
+  }
+  $('start').disabled = online && (!room?.isHost || started);
+  $('start').textContent = online ? room?.isHost ? '¡A jugar!' : 'Esperando al anfitrión…' : 'Jugar con bots';
+}
+function syncRoster() {
+  if (!room?.isHost) return;
+  const next = playerData();
+  for (const p of next) if (!room.members.has(p.seat)) p.human = false;
+  for (const m of room.members.values()) {
+    let p = next.find(p => p.seat === m.id);
+    p ||= next.find(p => !p.human);
+    if (p) Object.assign(p, { seat: m.id, name: m.name, avatar: m.avatar, human: true });
+  }
+  applyPlayers(next); lobbyRoster(); renderCards();
+}
+function finishChoice(choice) {
+  if (!resolveChoice) return;
+  const resolve = resolveChoice;
+  resolveChoice = rejectChoice = null; pendingChoice = room.prompt = null;
+  $('prompt').classList.add('hidden'); actionWaiters = [];
+  resolve(choice);
+}
+let shownPrompt = '';
+function showOnlinePrompt(prompt) {
+  const key = JSON.stringify([prompt, room.id]);
+  if (shownPrompt === key) return;
+  shownPrompt = key; actionWaiters = [];
+  const el = $('prompt'); el.replaceChildren(); el.classList.toggle('hidden', !prompt);
+  if (!prompt) return;
+  const mine = prompt.seat === room.id;
+  const text = document.createElement('p');
+  text.textContent = mine ? prompt.text : `Esperando a ${players.find(p => p.seat === prompt.seat)?.name || 'tu pana'}…`;
+  el.append(text); el.classList.toggle('bare', mine && !prompt.text);
+  if (!mine) return;
+  const row = document.createElement('div'); row.className = 'row'; el.append(row);
+  prompt.options.forEach((option, i) => {
+    const b = document.createElement('button'); b.className = 'pk-btn' + (i === 0 ? ' pk-btn--primary' : '');
+    b.textContent = option.label; b.onclick = () => room.choose(prompt.id, i); row.append(b);
+  });
+  actionWaiters.push(k => {
+    const i = prompt.options.findIndex(o => o.key === k || (o.key === ' ' && k === 'enter'));
+    if (i >= 0) room.choose(prompt.id, i);
+  });
+}
+function saveCheckpoint(stage, next, def, only) {
+  if (!online) return;
+  if (!mini) syncRoster();
+  checkpoint = { stage, next, round, rounds: ROUNDS, players: playerData(), stand: board.standTile, minigame: def?.id, only };
+  room.publish(captureOnline());
+}
+function captureOnline() {
+  return { started, rounds: ROUNDS, round, players: playerData(), checkpoint, prompt: pendingChoice,
+    turnOf, cardMode, miniScores, miniIcon, stand: board.standTile, highlight: board.highlight,
+    camera: { pos: cam.wantPos.toArray(), look: cam.wantLook.toArray() },
+    tokens: players.map(p => ({ pos: p.token.group.position.toArray(), rest: p.token.rest.toArray(),
+      rotation: p.token.group.rotation.y, cheer: p.token.cheer, dizzy: p.token.dizzy, pin: p.token.pin.visible })),
+    dice: dice.map(d => ({ pos: d.mesh.position.toArray(), visible: d.mesh.visible, rolling: d.rolling, value: d.value })),
+    counter: { pos: counter.sprite.position.toArray(), visible: counter.sprite.visible, value: counter.value },
+    mini: mini?.spec ? { ...mini.spec, state: mini.state, left: mini.left, winners: mini.winners, frames: room.history.length } : null,
+    presentation: readPresentation() };
+}
+function createMini(def, spec) {
+  if (!spec) return def.create({ players, auto: AUTO });
+  const rng = seeded(spec.seed);
+  const game = withRandom(rng, () => def.create({ players: spec.players, auto: spec.auto, aspect: spec.aspect, localIndex: me?.i ?? -1 }));
+  for (const method of ['update', 'outro']) {
+    const run = game[method].bind(game);
+    game[method] = (dt, input) => {
+      withRandom(rng, () => run(dt, input));
+      if (room.isHost) room.frame(spec.serial, { method, dt, input });
+    };
+  }
+  return game;
+}
+function clearMini() {
+  if (mini?.def.input === 'aim') bindAim(false);
+  mini = null; view = boardView; miniFrame = 0; requestingFrames = false;
+  document.body.classList.remove('in-mini', 'mini-2d', 'mini-aim');
+  $('reticles').replaceChildren(); setTimer(null);
+}
+function applyOnline(state) {
+  if (authority) stopAuthority();
+  started = state.started; ROUNDS = state.rounds; round = state.round;
+  checkpoint = state.checkpoint;
+  applyPlayers(state.players); lobbyRoster();
+  $('intro').classList.toggle('hidden', started); $('hud').classList.toggle('hidden', !started);
+  turnOf = state.turnOf; cardMode = state.cardMode; miniScores = state.miniScores; miniIcon = state.miniIcon;
+  if (board.standTile !== state.stand) board.setStand(state.stand);
+  board.highlight = state.highlight || [];
+  if (!freeLook) { cam.wantPos.fromArray(state.camera.pos); cam.wantLook.fromArray(state.camera.look); }
+  state.tokens.forEach((v, i) => {
+    const tk = players[i].token;
+    tk.rest.fromArray(v.pos); tk.group.rotation.y = v.rotation; tk.cheer = v.cheer; tk.dizzy = v.dizzy; tk.pin.visible = v.pin;
+  });
+  state.dice.forEach((v, i) => {
+    const d = dice[i]; d.mesh.position.fromArray(v.pos); d.mesh.visible = v.visible; d.rolling = v.rolling;
+    if (v.value && v.value !== d.value) { d.value = v.value; d.show(v.value); }
+  });
+  if (state.counter.value && state.counter.value !== counter.value) counter.set(state.counter.value);
+  counter.sprite.position.fromArray(state.counter.pos); counter.sprite.visible = state.counter.visible;
+  if (!state.mini) { if (mini) clearMini(); }
+  else {
+    const spec = state.mini;
+    if (mini?.spec?.serial !== spec.serial) {
+      clearMini(); setFreeLook(false);
+      const def = MINIGAMES.find(m => m.id === spec.id);
+      mini = { def, spec, game: createMini(def, spec), authoritative: false, state: spec.state, left: spec.left };
+      view = { scene: mini.game.scene, camera: mini.game.camera, update() {} };
+      document.body.classList.add('in-mini');
+      document.body.classList.toggle('mini-2d', def.input === '2d');
+      document.body.classList.toggle('mini-aim', def.input === 'aim' && spec.state !== 'outro');
+      if (def.input === 'aim') bindAim(true);
+    }
+    if (spec.state === 'outro' && mini.state !== 'outro') { bindAim(false); document.body.classList.remove('mini-aim'); }
+    mini.state = spec.state; mini.left = spec.left;
+    setTimer(spec.state === 'outro' ? null : Math.max(0, Math.ceil(spec.left)));
+    if (miniFrame < spec.frames && !requestingFrames) { requestingFrames = true; room.catchup(spec.serial, miniFrame); }
+  }
+  renderCards(); writePresentation(state.presentation); showOnlinePrompt(state.prompt);
+  const waiting = started && (!me || (mini && !mini.spec.players.some(p => p.seat === room.id)));
+  if (waiting) {
+    $('online-status').textContent = 'Estás viendo la partida. Te unes en el próximo turno o minijuego.';
+    $('online-status').classList.remove('hidden');
+  } else if (room.connected) $('online-status').classList.add('hidden');
+  $('results').classList.toggle('hidden', !state.presentation.results);
+  if (state.presentation.results) drawResults();
+}
+function applyFrames(message) {
+  if (mini?.spec?.serial !== message.serial) return;
+  if (message.from > miniFrame) {
+    if (!requestingFrames) { requestingFrames = true; room.catchup(message.serial, miniFrame); }
+    return;
+  }
+  requestingFrames = false;
+  const muted = sound.muted;
+  // Catch-up batches must not play a whole minute of effects at once.
+  if (message.frames.length > 1) sound.muted = true;
+  try {
+    for (let i = Math.max(0, miniFrame - message.from); i < message.frames.length; i++) {
+      const f = message.frames[i]; mini.game[f.method](f.dt, f.input); miniFrame++;
+    }
+  } finally { sound.muted = muted; }
+  if (mini.game.reticles && mini.state !== 'outro') drawReticles(mini.game.reticles());
+}
+function stopAuthority() {
+  authority = 0;
+  for (const j of jobs) j.reject?.(CANCELLED);
+  jobs = []; rejectChoice?.(CANCELLED); resolveChoice = rejectChoice = null;
+  mini?.abort?.(CANCELLED); clearMini(); pendingChoice = null;
+}
+function beginOnline(resume) {
+  stopAuthority(); authority = 1; started = true;
+  if (resume) {
+    applyPlayers(resume.players); ROUNDS = resume.rounds; round = resume.round;
+    board.setStand(resume.stand);
+  } else {
+    round = 1;
+    applyPlayers(playerData().map(p => ({ ...p, coins: START_COINS, mangos: 0, tile: 0 })));
+    board.setStand(7);
+  }
+  syncRoster(); layoutTokens();
+  for (const p of players) { p.token.group.position.copy(p.token.rest); p.token.hopping = false; p.token.pin.visible = true; }
+  for (const d of dice) d.mesh.visible = false;
+  counter.sprite.visible = false; board.stand.group.scale.setScalar(1);
+  for (const id of ['intro', 'prompt', 'winner', 'results', 'toast', 'mini-intro']) $(id).classList.add('hidden');
+  $('hud').classList.remove('hidden'); $('count').textContent = ''; cardMode = 'board'; setSign(''); actionWaiters = [];
+  if (!resume) saveCheckpoint(ONLY ? 'mini' : 'turn', 0, ONLY, ONLY?.id);
+  if (resume?.stage === 'done') { drawResults(); room.publish(captureOnline()); }
+  else runBoard(resume).catch(ignoreCancelled);
+}
+function connectOnline() {
+  if (room) return;
+  online = true;
+  const url = new URL(location.href); url.searchParams.set('room', code); history.replaceState(null, '', url);
+  $('online').classList.add('hidden'); $('invite').classList.remove('hidden'); $('practice').classList.remove('hidden');
+  room = new BululuRoom({ code, name: loadName(), avatar: loadAvatar(),
+    onStatus(text, bad) {
+      $('room-status').textContent = text;
+      $('online-status').textContent = text;
+      $('online-status').classList.toggle('hidden', !bad);
+    },
+    events: {
+      host(state) {
+        if (state?.started && state.checkpoint) beginOnline(state.checkpoint);
+        else if (started) beginOnline(null); // A retry reached a fresh room: drop the stale game.
+        else { syncRoster(); room.publish(captureOnline()); }
+      },
+      members() { if (room.isHost && !mini) syncRoster(); },
+      state: applyOnline, choice: finishChoice, frames: applyFrames,
+    },
+  });
+  lobbyRoster(); room.connect();
+}
+// Fixed simulation ticks keep background rendering from holding up the board.
+// The shared HostRoom still owns connectivity, members and host election.
+let onlineTicks = 0;
+setInterval(() => {
+  if (!online || !room?.connected) return;
+  if (mini?.state === 'run') room.controls(paused ? IDLE_INPUT : minigameInput(0.05));
+  if (!room.isHost) return;
+  // A replay has no board-runner continuation. After an election, always
+  // restore the checkpoint before a former guest can finish a minigame.
+  if (mini && !mini.authoritative) {
+    if (checkpoint) beginOnline(checkpoint);
+    return;
+  }
+  stepJobs(0.05 * SPEED);
+  if (mini) updateMini(0.05 * SPEED);
+  if (pendingChoice && !room.members.has(pendingChoice.seat)) finishChoice(pendingChoice.auto);
+  if (++onlineTicks % 2 === 0) { if (!started) lobbyRoster(); room.publish(captureOnline()); }
+}, 50);
 
 // ======================================================================
 const clock = new THREE.Clock();
 let t = 0;
 function frame() {
-  const dt = paused ? 0 : Math.min(clock.getDelta(), 0.1) * SPEED;
-  if (paused) clock.getDelta();
+  const dt = paused && !online ? 0 : Math.min(clock.getDelta(), 0.1) * SPEED;
+  if (paused && !online) clock.getDelta();
   t += dt;
-  stepJobs(dt);
-  if (mini) updateMini(dt);
+  if (!online) { stepJobs(dt); if (mini) updateMini(dt); }
   view.update(dt, t);
   renderer.render(view.scene, view.camera);
   requestAnimationFrame(frame);
@@ -1104,7 +1410,7 @@ function frame() {
 
 addEventListener('resize', () => {
   for (const c of [boardCam, mini?.game.camera].filter(Boolean)) {
-    c.aspect = innerWidth / innerHeight;
+    c.aspect = online && c === mini?.game.camera ? mini.spec.aspect : innerWidth / innerHeight;
     c.updateProjectionMatrix();
   }
   renderer.setSize(innerWidth, innerHeight);
@@ -1115,6 +1421,7 @@ boardCam.updateProjectionMatrix();
 // ?debug: fastForward(60) runs a minute of game time without rendering
 // (background tabs barely tick, so this is how to test a whole game)
 async function fastForward(seconds, dt = 1 / 30) {
+  if (online) throw new Error('Online play uses the room clock.');
   for (let s = 0; s < seconds; s += dt) {
     t += dt;
     stepJobs(dt);
@@ -1123,7 +1430,7 @@ async function fastForward(seconds, dt = 1 / 30) {
     await null;   // let the turn logic's awaits run
   }
 }
-if (DEBUG) Object.assign(window, { menu, players, board, MINIGAMES, layoutTokens, fastForward, renderer, boardScene, boardCam, minigame: () => mini });
+if (DEBUG) Object.assign(window, { menu, players, board, MINIGAMES, layoutTokens, fastForward, renderer, boardScene, boardCam, minigame: () => mini, onlineState: () => ({ room, checkpoint, pendingChoice, miniFrame, me: me?.i }) });
 
 frame();
-main();
+main().catch(ignoreCancelled);

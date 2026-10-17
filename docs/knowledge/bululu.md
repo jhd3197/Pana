@@ -8,6 +8,40 @@ islands, lighthouse, boats, clouds), `landscape.js` (organic islets and layered
 tepuis), `terrain-material.js` (procedural cliff weathering), `beach.js`
 (coastal props), `atmosphere.js` (day/night lighting and sky) and `minigames/*.js`.
 
+## Online play
+
+Bululú has four seats (`game.json` and `server/room.js`). A `?room=` link joins
+immediately; a direct visit offers **Jugar online** and **Jugar con bots**.
+`network.js` extends the shared `HostRoom`; it does not own connections or host
+election. The host chooses rounds and starts. Open seats remain bots.
+
+The host runs the board's async turn flow and publishes typed presentation and
+game snapshots at 10 Hz. A choice carries a prompt ID and is accepted only from
+its owner; stale and duplicate clicks cannot advance another player's turn.
+`online-view.js` reconstructs presentation with text nodes, never network HTML.
+Opening the menu blocks that player's controls but does not pause an online room.
+
+Minigames receive an array of per-seat controls through `inputFor()`; the old
+single input still works for practice. Their game-only randomness comes from
+`online-rules.js`, separate from Three.js UUIDs, effects and sound. The host sends
+the seed, frozen roster and exact simulation steps at 20 Hz. Guests replay those
+steps, including the initial update and outro. Keep gameplay random calls on this
+stream and pass it explicitly into pure sims. Chinazo uses a common 16:9 camera
+aspect online so screen-space hits agree on differently sized displays.
+
+Only the current minigame's history is retained. A guest arriving or reloading
+can request missing steps in chunks of 60; no payload approaches the room kit's
+256 KB limit. The roster freezes during a minigame; newly joined panas take a bot
+spot at the next board turn/minigame boundary. Host handoff restores the latest
+turn/minigame checkpoint (repeating that unfinished turn or minigame), preserving
+earlier coins, mangos and results. Never restore partially awarded prizes.
+An elected host must restore that runner before ticking a guest's replay: replay
+instances have no `finish` continuation. Prompt IDs include the host's seat so an
+answer in flight cannot accidentally answer a new host's first prompt. The host's
+**Otra vez** resets the board and scores in the same room for a rematch.
+
+Regression: `npm run test:browser -- bululu` includes real two-client room play.
+
 ## Test switches
 
 `?auto` (the AI plays you too), `?speed=3`, `?rounds=2`, `?mini=caigas`

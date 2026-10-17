@@ -1,3 +1,4 @@
+import { random, inputFor } from '../online-rules.js';
 // ¡Raudal! The current carries four curiaras down four rapids side by side,
 // three lanes each, over the same rocks, mangos and ledges. A/D switch lanes,
 // Space jumps a ledge just before it. Mangos are points; rocks cost one.
@@ -27,7 +28,7 @@ export default {
     const stage = sunnyStage(scene, { ground: null, grass: false, decor: false, horizon: 0xdfe6d2 });
     const puffs = new Puffs(scene);
     const humans = new Set(ctx.players.filter(p => p.human && !ctx.auto).map(p => p.i));
-    const sim = raudalSim({ humans }), end = sim.pattern.at(-1).s + 30;
+    const sim = raudalSim({ humans, random }), end = sim.pattern.at(-1).s + 30;
     const animateWater = riverWater(scene, { w: 4 * CHANNEL + 4, z0: 30, z1: -end, color: 0x86704a, deep: 0x3b2a14 });
     riverBanks(scene, { half: 2 * CHANNEL + 2, z0: 30, z1: -end, seed: 21 });
     // Laja walls between the rapids, rocks in the lanes, ledges across all four.
@@ -43,9 +44,9 @@ export default {
     // One floating mango per channel and row, picked or not.
     const mangos = [];
     for (const row of sim.pattern) if (!row.ledge && row.mango >= 0) for (let c = 0; c < 4; c++) {
-      const m = makeMango(); m.scale.setScalar(.75); m.position.set(laneX(c, row.mango), .35, -row.s); scene.add(m); mangos.push({ m, row, c, phase: Math.random() * 6 });
+      const m = makeMango(); m.scale.setScalar(.75); m.position.set(laneX(c, row.mango), .35, -row.s); scene.add(m); mangos.push({ m, row, c, phase: random() * 6 });
     }
-    const camera = new THREE.PerspectiveCamera(54, innerWidth / innerHeight, .1, 500);
+    const camera = new THREE.PerspectiveCamera(54, (ctx.aspect || innerWidth / innerHeight), .1, 500);
     const actors = canoeActors(scene, ctx.players);
     const seen = actors.map(() => ({ hits: 0, jumps: 0, splashes: 0, score: 0 }));
     let time = 0;
@@ -63,12 +64,12 @@ export default {
     }
     function update(dt, input) {
       time += dt;
-      const inputs = []; for (const i of humans) inputs[i] = input;
+      const inputs = []; for (const i of humans) inputs[i] = inputFor(input, i);
       sim.update(dt, inputs);
       for (const a of actors) {
         const c = sim.canoes[a.i], was = seen[a.i], at = new THREE.Vector3(laneX(a.i, c.x), .4, -sim.s), me = humans.has(a.i);
         if (c.hits > was.hits) { a.bubble.say(pick(['¡Ay, la piedra!', '¡Pum!', '¡Mi curiara!']), .8); puffs.spawn(at, { color: 0xe8efe8, count: 6, spread: 1, size: .6 }); if (me) sound.boing(); }
-        if (c.jumps > was.jumps) { if (Math.random() < .5) a.bubble.say('¡Salto!', .6); puffs.spawn(at, { color: 0xffffff, count: 8, spread: 1.4, size: .7, rise: 1.4 }); if (me) sound.tone(760, 0, .1, 'triangle', .06); }
+        if (c.jumps > was.jumps) { if (random() < .5) a.bubble.say('¡Salto!', .6); puffs.spawn(at, { color: 0xffffff, count: 8, spread: 1.4, size: .7, rise: 1.4 }); if (me) sound.tone(760, 0, .1, 'triangle', .06); }
         if (c.splashes > was.splashes) { a.bubble.say(pick(['¡Splash!', '¡Me mojé!']), .7); puffs.spawn(at, { color: 0xffffff, count: 10, spread: 1.6, size: .8 }); if (me) sound.plop(); }
         if (c.score > was.score && c.jumps === was.jumps && me) sound.pickup();
         Object.assign(was, { hits: c.hits, jumps: c.jumps, splashes: c.splashes, score: c.score });

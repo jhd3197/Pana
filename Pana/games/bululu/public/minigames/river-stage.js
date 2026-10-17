@@ -1,3 +1,4 @@
+import { random } from '../online-rules.js';
 // Shared bits for the river minigames: water, banks of selva and the four
 // panas in their curiaras (the same canoe as Curiara).
 import * as THREE from 'three';
@@ -30,8 +31,8 @@ export function riverBanks(scene, { half = 12, z0 = 20, z1 = -200, seed = 1 } = 
   const palms = [], rushes = [], roots = [];
   for (let z = z0; z > z1 - 20; z -= 5) for (const side of [-1, 1]) {
     rushes.push({ x: side * (half + rand(-.5, 1)), y: .1, z: z + rand(-2, 2), rot: rand(0, 6), scale: rand(.7, 1.1) });
-    if (Math.random() < .35) roots.push({ x: side * (half + rand(.5, 2)), y: .1, z: z + rand(-2, 2), rot: rand(0, 6), scale: rand(.7, 1) });
-    if (Math.random() < .45) palms.push({ x: side * (half + rand(4, 16)), y: .3, z: z + rand(-2, 2), rot: rand(0, 6), scale: rand(.8, 1.2) });
+    if (random() < .35) roots.push({ x: side * (half + rand(.5, 2)), y: .1, z: z + rand(-2, 2), rot: rand(0, 6), scale: rand(.7, 1) });
+    if (random() < .45) palms.push({ x: side * (half + rand(4, 16)), y: .3, z: z + rand(-2, 2), rot: rand(0, 6), scale: rand(.8, 1.2) });
   }
   instancePlacements(scene, moriche({ seed, h: 11 }), palms, { name: 'Morichales', castShadow: false });
   instancePlacements(scene, reeds({ seed: seed + 1 }), rushes, { name: 'Juncos', castShadow: false });

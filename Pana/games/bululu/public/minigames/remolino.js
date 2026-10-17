@@ -1,3 +1,4 @@
+import { random, inputFor } from '../online-rules.js';
 // ¡Remolino! A whirlpool grows in the middle of a laguna. Paddle in rhythm to
 // stay out of its eye and use Space to shove a neighbour toward it. The last
 // curiara outside the eye wins. Canoes point away from the eye on their own.
@@ -46,10 +47,10 @@ export default {
     for (let i = 0; i < 60; i++) { const a = i / 60 * Math.PI * 2; rushes.push({ x: Math.cos(a) * (REMOLINO.lagoon + rand(2.5, 4)), y: 0, z: Math.sin(a) * (REMOLINO.lagoon + rand(2.5, 4)), rot: rand(0, 6), scale: rand(.7, 1.1) }); }
     instancePlacements(scene, moriche({ seed: 31, h: 11 }), palms, { name: 'Morichal de la laguna', castShadow: false });
     instancePlacements(scene, reeds({ seed: 32 }), rushes, { name: 'Juncos de la laguna', castShadow: false });
-    const camera = new THREE.PerspectiveCamera(50, innerWidth / innerHeight, .1, 400);
+    const camera = new THREE.PerspectiveCamera(50, (ctx.aspect || innerWidth / innerHeight), .1, 400);
     camera.position.set(0, 23, 19); camera.lookAt(0, 0, 1.5);
     const humans = new Set(ctx.players.filter(p => p.human && !ctx.auto).map(p => p.i));
-    const sim = remolinoSim({ humans });
+    const sim = remolinoSim({ humans, random });
     const actors = canoeActors(scene, ctx.players);
     const seen = actors.map(() => ({ shoves: 0, shoved: 0, out: null, strokes: 0 }));
     let time = 0;
@@ -69,7 +70,7 @@ export default {
     }
     function update(dt, input) {
       time += dt;
-      const inputs = []; for (const i of humans) inputs[i] = input;
+      const inputs = []; for (const i of humans) inputs[i] = inputFor(input, i);
       sim.update(dt, inputs);
       for (const a of actors) {
         const c = sim.canoes[a.i], was = seen[a.i], me = humans.has(a.i), at = new THREE.Vector3(Math.cos(c.a) * c.r, .4, Math.sin(c.a) * c.r);

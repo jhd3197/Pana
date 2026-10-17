@@ -10,6 +10,10 @@ becomes the GitHub release's notes.
 
 ### Added
 
+- **Bululú lets up to four panas play the board and minigames together online.**
+  Share a room invitation, take your own turns and control your own pana;
+  bots fill empty spots, and local practice remains available. If the host
+  leaves, another player continues from the current turn or minigame checkpoint.
 - **Derrape guides you from your panas to the starting grid in four illustrated steps.**
   Choose solo, split screen or online, customize your real car, browse twelve
   illustrated circuits and three cups, then race. Layered festival artwork adds

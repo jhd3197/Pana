@@ -1,3 +1,4 @@
+import { random, inputFor } from '../online-rules.js';
 // ¡Atrapa los mangos! Panas with baskets under a mango tree. Mangos fall,
 // golden ones are worth 3, coconuts knock you silly for a moment.
 
@@ -74,7 +75,7 @@ export default {
     const puffs = new Puffs(scene);
     const shockwaves = new Shockwaves(scene);
 
-    const camera = new THREE.PerspectiveCamera(50, innerWidth / innerHeight, 0.1, 400);
+    const camera = new THREE.PerspectiveCamera(50, (ctx.aspect || innerWidth / innerHeight), 0.1, 400);
     camera.position.set(0, 6.2, 19);
     camera.lookAt(0, 4.2, 0);
 
@@ -97,7 +98,7 @@ export default {
     let clock = 0;
 
     function spawn() {
-      const r = Math.random();
+      const r = random();
       const kind = r < 0.12 ? 'gold' : r < 0.3 ? 'coco' : 'mango';
       const obj = kind === 'coco' ? coconut() : makeMango({ gold: kind === 'gold' });
       if (kind !== 'coco') obj.scale.setScalar(kind === 'gold' ? 0.95 : 0.85);
@@ -144,7 +145,7 @@ export default {
       spawnT -= dt;
       if (spawnT <= 0) {
         spawn();
-        if (Math.random() < 0.25) spawn();
+        if (random() < 0.25) spawn();
         spawnT = rand(0.3, 0.55);
       }
 
@@ -155,7 +156,7 @@ export default {
         if (a.streakT <= 0) a.streak = 0;
         let dir = 0;
         if (a.stun > 0) dir = 0;
-        else if (a.player.human && !ctx.auto) dir = input.x;
+        else if (a.player.human && !ctx.auto) dir = inputFor(input, a.i).x;
         else {
           a.ai.think -= dt;
           if (a.ai.think <= 0) {
@@ -226,7 +227,7 @@ export default {
           f.dead = true;
           if (f.kind !== 'coco') {
             puffs.spawn(p.clone(), { color: 0xffae2b, count: 5, spread: 0.9, size: 0.5, rise: 1, life: 0.6 });
-            if (Math.random() < 0.3) sound.splat();
+            if (random() < 0.3) sound.splat();
           } else sound.plop();
         }
       }

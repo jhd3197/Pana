@@ -1,3 +1,4 @@
+import { random, inputFor } from '../online-rules.js';
 // ¡Remada! Four curiaras, a straight 120 m sprint down a caño. No steering:
 // alternate A and D in rhythm. Mashing splashes; the sweet spot is a ¡Remazo!.
 // The paddle model is Curiara's (/engine/paddle.js); the race is river-sims.js.
@@ -31,9 +32,9 @@ export default {
       const buoy = new THREE.Mesh(new THREE.SphereGeometry(.28, 10, 8), new THREE.MeshStandardMaterial({ color: s % 40 ? 0xffc629 : 0xff6b4a, roughness: .5 }));
       buoy.position.set(x, .1, -s); scene.add(buoy);
     }
-    const camera = new THREE.PerspectiveCamera(52, innerWidth / innerHeight, .1, 500);
+    const camera = new THREE.PerspectiveCamera(52, (ctx.aspect || innerWidth / innerHeight), .1, 500);
     const humans = new Set(ctx.players.filter(p => p.human && !ctx.auto).map(p => p.i));
-    const sim = remadaSim({ humans });
+    const sim = remadaSim({ humans, random });
     const actors = canoeActors(scene, ctx.players);
     let time = 0, lastCount = 0, cam = 0;
     const said = new Set();
@@ -51,7 +52,7 @@ export default {
     }
     function update(dt, input) {
       time += dt;
-      const inputs = []; for (const i of humans) inputs[i] = input;
+      const inputs = []; for (const i of humans) inputs[i] = inputFor(input, i);
       sim.update(dt, inputs);
       for (const a of actors) {
         const r = sim.racers[a.i];
@@ -62,7 +63,7 @@ export default {
           else sound.tone(420, 0, .05, 'triangle', .04);
         }
         if (r.paddle.quality === 'remazo' && r.paddle.streak === 4 && !said.has(`${a.i}-${r.paddle.count}`)) { said.add(`${a.i}-${r.paddle.count}`); a.bubble.say('¡Remazo!', .8); }
-        if (r.paddle.quality === 'chapoteo' && Math.random() < .02) { a.bubble.say(pick(['¡Chapoteo!', '¡Splash!']), .6); puffs.spawn(new THREE.Vector3(LANES[a.i], .3, -r.s), { color: 0xeaf6f2, count: 4, spread: .8, size: .5 }); }
+        if (r.paddle.quality === 'chapoteo' && random() < .02) { a.bubble.say(pick(['¡Chapoteo!', '¡Splash!']), .6); puffs.spawn(new THREE.Vector3(LANES[a.i], .3, -r.s), { color: 0xeaf6f2, count: 4, spread: .8, size: .5 }); }
         if (r.finish != null && !said.has(`fin-${a.i}`)) { said.add(`fin-${a.i}`); a.bubble.say(sim.order[0] === a.i ? '¡Primero!' : '¡Llegué!', 1.2); if (humans.has(a.i)) sound.pickup(); }
       }
       draw(dt);

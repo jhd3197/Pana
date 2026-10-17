@@ -1,3 +1,4 @@
+import { random, inputFor } from '../online-rules.js';
 // ¡Coleo! The llanero rodeo: four panas on horseback chase a bull down the
 // manga. Get right behind it and pull its tail to tumble it. Each tumble is a
 // point, and a new bull bursts out ahead. Grab at air and your horse stumbles.
@@ -35,7 +36,7 @@ export default {
     const stage = sunnyStage(scene, { ground: null, decor: false, horizon: 0xf6e3b4 });
     const puffs = new Puffs(scene);
 
-    const camera = new THREE.PerspectiveCamera(50, innerWidth / innerHeight, 0.1, 500);
+    const camera = new THREE.PerspectiveCamera(50, (ctx.aspect || innerWidth / innerHeight), 0.1, 500);
     camera.position.set(0, 8.5, 7.5);
     camera.lookAt(0, 0.6, -6.5);
 
@@ -159,7 +160,7 @@ export default {
       } else {
         ai.inReach = 0;
         // now and then it misjudges and grabs from just too far
-        if (bull && Math.random() < dt * 0.25 && Math.abs(gapOf(a) - FOLLOW) < 1 && Math.abs(a.x - bull.x) < 1.1) press = true;
+        if (bull && random() < dt * 0.25 && Math.abs(gapOf(a) - FOLLOW) < 1 && Math.abs(a.x - bull.x) < 1.1) press = true;
       }
       return { dir, press };
     }
@@ -172,8 +173,8 @@ export default {
         let dir = 0;
         if (racing) {
           if (human(a)) {
-            dir = input.x;
-            if (input.jump) grab(a);
+            dir = inputFor(input, a.i).x;
+            if (inputFor(input, a.i).jump) grab(a);
           } else {
             const plan = think(a, dt);
             dir = plan.dir;

@@ -1,3 +1,4 @@
+import { random, inputFor } from '../online-rules.js';
 // ¡Chinazo! Duck Hunt in a Venezuelan patio: iguanas are eating the mangos
 // again, and the four panas have a china and a pocket of mamones. Aim with the
 // reticle, pull, let go. A hit goes ¡bonk!: the iguana flips into the bushes
@@ -185,12 +186,12 @@ export default {
     bushes(scene, r);
     const puffs = new Puffs(scene);
 
-    const camera = new THREE.PerspectiveCamera(CAMERA.fov, innerWidth / innerHeight, 0.1, 400);
+    const camera = new THREE.PerspectiveCamera(CAMERA.fov, (ctx.aspect || innerWidth / innerHeight), 0.1, 400);
     camera.position.set(...CAMERA.pos);
     camera.lookAt(...CAMERA.look);
 
     const humans = new Set(ctx.players.filter((p) => p.human && !ctx.auto).map((p) => p.i));
-    const sim = chinazoSim({ humans, aspect: camera.aspect });
+    const sim = chinazoSim({ humans, random, aspect: camera.aspect });
 
     // the four panas in a row, backs to us, each with a china
     const actors = makeActors(scene, ctx.players);
@@ -283,7 +284,7 @@ export default {
         puffs.spawn(at, { color: ig.golden ? 0xffd23f : 0xffffff, count: ig.golden ? 10 : 5, spread: 0.9, size: 0.45, rise: 1.4, life: 0.5 });
         a.cheer = 0.9;
         if (ig.golden) { a.bubble.say('¡DE ORO!', 1); sound.horn('fiesta'); }
-        else if (Math.random() < (mine ? 0.5 : 0.25)) a.bubble.say(pick(['¡Chinazo!', '¡Bonk!', '¡Toma!', '¡Fuera, iguana!']), 0.8);
+        else if (random() < (mine ? 0.5 : 0.25)) a.bubble.say(pick(['¡Chinazo!', '¡Bonk!', '¡Toma!', '¡Fuera, iguana!']), 0.8);
         if (mine) sound.pickup();
       } else if (e.type === 'bird') {
         const b = birds.get(e.bird);
@@ -342,7 +343,7 @@ export default {
         if (st.spin) l.g.rotateZ(st.spin);
         l.g.userData.tick(time + ig.seed);
         if (st.pose === 'run') l.g.userData.run(st.gait);
-        if (ig.golden && Math.random() < dt * 6) puffs.spawn(l.g.position.clone().add(new THREE.Vector3(0, 0.5, 0)), { color: 0xffe066, count: 1, spread: 1, size: 0.2, rise: 0.8, life: 0.5 });
+        if (ig.golden && random() < dt * 6) puffs.spawn(l.g.position.clone().add(new THREE.Vector3(0, 0.5, 0)), { color: 0xffe066, count: 1, spread: 1, size: 0.2, rise: 0.8, life: 0.5 });
       }
       // bonked ones: a pop, a flip with stars on the way down, then off they go
       for (let k = tumbling.length - 1; k >= 0; k--) {
@@ -361,7 +362,7 @@ export default {
           g.userData.tick(time);
         } else {
           // offended, it scurries away along the ground
-          if (!tb.run) { tb.run = Math.random() < 0.5 ? -1 : 1; g.userData.bonk(1); g.userData.pose('run'); }
+          if (!tb.run) { tb.run = random() < 0.5 ? -1 : 1; g.userData.bonk(1); g.userData.pose('run'); }
           g.rotation.set(0, tb.run * Math.PI / 2, 0);
           tb.p.x += tb.run * 5 * dt;
           g.position.copy(tb.p);
@@ -466,7 +467,7 @@ export default {
       time += dt;
       sim.cam.aspect = camera.aspect;
       const inputs = [];
-      for (const i of humans) inputs[i] = input;
+      for (const i of humans) inputs[i] = inputFor(input, i);
       sim.update(dt, inputs);
       for (const e of sim.events) handle(e);
       sim.events.length = 0;
@@ -488,7 +489,7 @@ export default {
       scene, camera, update, outro, actors, sim,
       scores: sim.scores, winners: sim.winners, stats: sim.stats,
       reticles: () => sim.shooters.map((sh) => ({
-        x: sh.aim.x, y: sh.aim.y, color: ctx.players[sh.i].color, me: humans.has(sh.i),
+        x: sh.aim.x, y: sh.aim.y, color: ctx.players[sh.i].color, me: sh.i === (ctx.localIndex ?? 0),
         pull: sh.pulling ? Math.min(1, sh.holdT / CHINAZO.fullPull) : 0,
         ammo: sh.reload > 0 ? 0 : sh.ammo, max: CHINAZO.ammo,
       })),

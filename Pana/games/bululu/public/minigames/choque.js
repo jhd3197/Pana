@@ -1,3 +1,4 @@
+import { random, inputFor } from '../online-rules.js';
 // ¡Choque de carritos! Bumper karts on a round wooden platform over the sea.
 // Knock the others into the water: whoever touched a kart last before it fell
 // gets the point. In the last seconds the outer ring of planks falls away.
@@ -87,15 +88,15 @@ export default {
       scene.add(m);
       return { m, alive: true, vy: 0, spin: 0 };
     });
-    let crumbleOrder = [...pieces.keys()].sort(() => Math.random() - 0.5);
+    let crumbleOrder = [...pieces.keys()].sort(() => random() - 0.5);
     let crumbleNext = TIME - CRUMBLE;
 
-    const camera = new THREE.PerspectiveCamera(45, innerWidth / innerHeight, 0.1, 500);
+    const camera = new THREE.PerspectiveCamera(45, (ctx.aspect || innerWidth / innerHeight), 0.1, 500);
     camera.position.set(0, 25, 21);
     camera.lookAt(0, -1.5, -1.6);
 
     // the karts: a different car for each pana
-    const ids = Object.keys(CAR_BUILDERS).sort(() => Math.random() - 0.5);
+    const ids = Object.keys(CAR_BUILDERS).sort(() => random() - 0.5);
     const actors = ctx.players.map((p, i) => {
       const id = ids[i % ids.length];
       const car = CAR_BUILDERS[id](p.avatar);
@@ -179,7 +180,7 @@ export default {
       const ang = Math.atan2(tx, tz) + ai.wobble;
       const aligned = Math.abs(wrap(ang - a.h)) < 0.3;
       const close = ai.target && Math.hypot(ai.target.x - a.x, ai.target.z - a.z) < 5.5;
-      return { x: Math.sin(ang), z: -Math.cos(ang), boost: aligned && close && Math.random() < dt * 3 };
+      return { x: Math.sin(ang), z: -Math.cos(ang), boost: aligned && close && random() < dt * 3 };
     }
 
     function drive(a, dt, input) {
@@ -308,7 +309,7 @@ export default {
       for (const a of actors) {
         if (a.falling) { fall(a, dt); continue; }
         let ctl;
-        if (human(a)) ctl = { x: input.x, z: input.z ?? 0, boost: input.jump };
+        if (human(a)) ctl = { x: inputFor(input, a.i).x, z: inputFor(input, a.i).z ?? 0, boost: inputFor(input, a.i).jump };
         else ctl = think(a, dt);
         drive(a, dt, ctl);
       }

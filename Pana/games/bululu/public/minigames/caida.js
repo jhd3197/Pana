@@ -1,3 +1,4 @@
+import { random, inputFor } from '../online-rules.js';
 // ¡Caída! Four panas around the card table. Cards flip from the deck one at a
 // time; when one matches the rank of the card before it, the first to slam
 // takes both. Slamming on no match costs a point and a moment of shame.
@@ -87,7 +88,7 @@ export default {
     deckCard.position.copy(DECK);
     scene.add(deckCard);
 
-    const camera = new THREE.PerspectiveCamera(45, innerWidth / innerHeight, 0.1, 400);
+    const camera = new THREE.PerspectiveCamera(45, (ctx.aspect || innerWidth / innerHeight), 0.1, 400);
     camera.position.set(0, 7.6, 6.4);
     camera.lookAt(0, 1, -1);
 
@@ -127,10 +128,16 @@ export default {
     function draw() {
       if (!deck.length) {
         const onFelt = new Set([before, now].filter(Boolean).map((c) => c.card.id));
-        deck = fullDeck().filter((c) => !onFelt.has(c.id)).sort(() => Math.random() - 0.5);
+        deck = fullDeck().filter((c) => !onFelt.has(c.id));
+        // A random sort comparator can consume a different stream in another
+        // browser. Fisher-Yates gives every client the same deck and RNG state.
+        for (let i = deck.length - 1; i > 0; i--) {
+          const j = Math.floor(random() * (i + 1));
+          [deck[i], deck[j]] = [deck[j], deck[i]];
+        }
       }
       // nudge a caída in now and then; a plain shuffle makes them too rare
-      if (now && Math.random() < MATCH_ODDS) {
+      if (now && random() < MATCH_ODDS) {
         const k = deck.findIndex((c) => c.rank === now.card.rank);
         if (k >= 0) deck.push(deck.splice(k, 1)[0]);
       }
@@ -158,7 +165,7 @@ export default {
         if (human(a)) continue;
         a.plan = null;
         if (match) a.plan = { at: clock + FLIP * 0.6 + aiReaction(progress), serial };
-        else if (before && Math.random() < 0.02) a.plan = { at: clock + FLIP + rand(0.25, 0.5), serial };
+        else if (before && random() < 0.02) a.plan = { at: clock + FLIP + rand(0.25, 0.5), serial };
       }
       const interval = 1.15 - 0.45 * progress;
       nextIn = match ? Math.max(interval, 1.05) : interval;
@@ -239,7 +246,7 @@ export default {
       for (const a of actors) {
         a.lock = Math.max(0, a.lock - dt);
         if (human(a)) {
-          if (input.jump) slam(a);
+          if (inputFor(input, a.i).jump) slam(a);
         } else if (a.plan && clock >= a.plan.at) {
           if (a.plan.serial === serial) slam(a);
           a.plan = null;

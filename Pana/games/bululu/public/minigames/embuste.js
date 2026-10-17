@@ -1,3 +1,4 @@
+import { random, inputFor } from '../online-rules.js';
 // ¡Embuste! in miniature: four panas crank their camp chores, one of them is
 // secretly a mummy faking it, then everyone votes. A real crank lights that
 // pana's lantern; a mummy's crank sometimes puffs sand from under the shirt.
@@ -33,11 +34,11 @@ export default {
     const relic = sunRelic(); relic.position.set(0, 1.2, -7.5); scene.add(relic);
     scene.add(mesh(new THREE.BoxGeometry(1.4, 1.1, 1.4), M(0x7c7a68, { roughness: 1 }), 0, 0.55, -7.5));
 
-    const camera = new THREE.PerspectiveCamera(48, innerWidth / innerHeight, 0.1, 400);
+    const camera = new THREE.PerspectiveCamera(48, (ctx.aspect || innerWidth / innerHeight), 0.1, 400);
     camera.position.set(0, 8.5, 14); camera.lookAt(0, 1.2, -1);
 
     const actors = makeActors(scene, ctx.players);
-    const mummyAt = Math.floor(Math.random() * actors.length);
+    const mummyAt = Math.floor(random() * actors.length);
     const human = (a) => a.player.human && !ctx.auto;
     actors.forEach((a, i) => {
       a.x = XS[i]; a.z = 2; a.y = 0;
@@ -53,10 +54,11 @@ export default {
       a.ring = mesh(new THREE.RingGeometry(0.9, 1.1, 32), new THREE.MeshBasicMaterial({ color: 0xffc629, transparent: true, opacity: 0.85, side: THREE.DoubleSide }), XS[i], 0.05, 2);
       a.ring.rotation.x = -Math.PI / 2; a.ring.visible = false; scene.add(a.ring);
     });
-    const me = actors.find(human);
+    const me = ctx.auto ? null : actors[ctx.localIndex ?? 0];
     if (me) me.bubble.say(me.mummy ? '¡Eres la momia! Gira despacito.' : 'Gira y vigila. ¿Quién suelta arena?', 2.6);
 
-    let clock = 0, pick_ = 0, verdict = null, lastX = 0;
+    let clock = 0, verdict = null;
+    const picks = actors.map(() => 0), lastXs = actors.map(() => 0);
 
     // One crank of a pana's winch. A real one lights the lantern; a fake one may puff sand.
     function crank(a) {
@@ -64,7 +66,7 @@ export default {
       a.last = clock; a.turn += 0.6;
       if (!a.mummy) { a.work++; a.light = 1; sound.tone(520 + a.i * 60, 0, 0.06, 'triangle', 0.03); return; }
       a.light = 0.35;   // a lantern that barely flickers is a tell too, for sharp eyes
-      if (Math.random() < SAND + (fast ? SAND_FAST : 0)) {
+      if (random() < SAND + (fast ? SAND_FAST : 0)) {
         a.sand++;
         puffs.spawn(new THREE.Vector3(a.x, 1.1, a.z + 0.2), { color: 0xd8c08a, count: 6, spread: 0.7, size: 0.45 });
         for (const b of actors) if (b !== a) b.suspect.set(a.i, (b.suspect.get(a.i) || 0) + 1);
@@ -75,7 +77,7 @@ export default {
     function aiVote(a) {
       if (a.mummy) { const others = actors.filter(b => b !== a); return pick(others).i; }
       let best = null, score = -1;
-      for (const b of actors) if (b !== a) { const s = (a.suspect.get(b.i) || 0) + Math.random() * 1.2; if (s > score) { score = s; best = b.i; } }
+      for (const b of actors) if (b !== a) { const s = (a.suspect.get(b.i) || 0) + random() * 1.2; if (s > score) { score = s; best = b.i; } }
       return best;
     }
 
@@ -108,7 +110,7 @@ export default {
       const voting = clock >= WORK && clock < VOTE;
       for (const a of actors) {
         if (clock < WORK) {
-          if (human(a)) { if (input.jump) crank(a); }
+          if (human(a)) { if (inputFor(input, a.i).jump) crank(a); }
           else if (clock >= a.ai.next) {
             crank(a);
             // An AI mummy cranks a touch slower than the rest, as the sly ones do.
@@ -123,14 +125,14 @@ export default {
         a.ring.visible = false;
       }
       // You pick with ← → and lock your vote with Space.
-      if (voting && me && me.vote == null) {
-        const others = actors.filter(a => a !== me);
-        const dir = Math.sign(input.x || 0);
-        if (dir && dir !== lastX) pick_ = (pick_ + dir + others.length) % others.length;
-        lastX = dir;
-        const target = others[pick_];
-        target.ring.visible = true; target.ring.material.opacity = 0.6 + Math.sin(clock * 8) * 0.3;
-        if (input.jump) cast(me, target.i);
+      for (const a of actors) if (voting && human(a) && a.vote == null) {
+        const others = actors.filter(b => b !== a);
+        const dir = Math.sign(inputFor(input, a.i).x || 0);
+        if (dir && dir !== lastXs[a.i]) picks[a.i] = (picks[a.i] + dir + others.length) % others.length;
+        lastXs[a.i] = dir;
+        const target = others[picks[a.i]];
+        if (a === me) { target.ring.visible = true; target.ring.material.opacity = 0.6 + Math.sin(clock * 8) * 0.3; }
+        if (inputFor(input, a.i).jump) cast(a, target.i);
       }
       if (clock >= VOTE && !verdict) {
         for (const a of actors) if (a.vote == null) cast(a, human(a) ? null : aiVote(a));

@@ -1,3 +1,4 @@
+import { random } from '../online-rules.js';
 // Shared bits for minigame scenes: a sunny tropical backdrop, the pana
 // players, and small helpers. Each minigame builds its own scene with these.
 
@@ -9,8 +10,8 @@ import { palm } from '/engine/models/vegetation/palm.js';
 import { M, mesh, rng } from '/engine/models/core/primitives.js';
 import { rock } from '/engine/models/props/rock.js';
 
-export const rand = (a, b) => a + Math.random() * (b - a);
-export const pick = (list) => list[Math.floor(Math.random() * list.length)];
+export const rand = (a, b) => a + random() * (b - a);
+export const pick = (list) => list[Math.floor(random() * list.length)];
 
 // Daylight sky, sun with shadows, distant green mountains. `decor: false` skips
 // the nearby palms and rocks (for scenes whose ground scrolls past the camera).
@@ -71,7 +72,7 @@ export function makeActors(scene, players) {
     scene.add(pana.group);
     const bubble = makeBubble();
     scene.add(bubble.sprite);
-    return { i, player: p, pana, bubble, x: 0, y: 0, z: 0, vx: 0, vy: 0, score: 0, stun: 0, t: Math.random() * 5 };
+    return { i, player: p, pana, bubble, x: 0, y: 0, z: 0, vx: 0, vy: 0, score: 0, stun: 0, t: random() * 5 };
   });
 }
 
