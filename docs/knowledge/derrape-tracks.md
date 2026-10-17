@@ -1,5 +1,28 @@
 # Derrape track system
 
+## Road-level race detail
+
+`tracks/race-details.js` adds a small deterministic decoration group to all
+twelve current runtimes: paired bend/braking marks (ruts on earth roads), short
+painted edge blocks on paved tracks, and sector pennant clusters. Palettes vary
+by circuit. Marks follow the road surface and pennants sample actual terrain,
+reject water, large height differences and road/shortcut clearance conflicts.
+They do not add colliders or change the route. `detailLevel` connects these
+groups to the shared quality setting through `quality.js`.
+
+`tracks/road-material.js` adds distance-filtered aggregate grain and broad wear
+variation to the existing road draw. Earth roads use broader, stronger variation
+than asphalt. It is procedural, with no texture allocation. Its uniform follows
+quality (full / half / disabled); disposing the road releases its material.
+
+Opaque pennants use the existing batcher in four global material batches.
+Their few thousand triangles are cheaper to submit together: 190 m cells
+pushed Plaza's overview to 1,310 draws, above its unchanged 1,300 budget.
+Global batches bring that same overview to 1,248 draws with 4,434,126 triangles,
+passing both existing limits. This is a draw-count check, not an FPS measurement.
+The one road mark material is instance-owned and explicitly disposed on map replacement.
+No texture downloads, per-frame prop rebuilds or network scenery messages.
+
 Derrape supports multiple maps. Everything lives in `games/derrape/public/`:
 
 - `tracks.js` — registry (`TRACKS`, `getTrack`, `makeTrack`). Turns a track
@@ -319,6 +342,9 @@ with normal-sized assets. Keep those options opt-in for the original games.
   rocks need a cross-street or open dune on both sides.
 - `rain: 0..1` greys the palette, cuts grip (rain cauchos keep their floor)
   and turns on the camera-following streaks.
+
+For artwork-inspired props, native placements, batching and clearance proof,
+see [Derrape scenery](derrape-scenery.md).
 
 ### Optional crossfall
 

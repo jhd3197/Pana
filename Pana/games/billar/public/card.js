@@ -1,4 +1,4 @@
-import { drawTable, drawBall } from './scene.js';
+import { drawTable, drawBall } from './preview.js';
 import { rack } from './rules.js';
 
 export function mount(canvas) {

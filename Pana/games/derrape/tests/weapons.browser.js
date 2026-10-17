@@ -33,7 +33,7 @@ try {
     const place = (c, s) => {
       const a = T.pointAt(s), b = T.pointAt(s + 0.5);
       Object.assign(c, { x: a.x, z: a.y, y: T.groundAt(a.x, a.y), h: Math.atan2(b.x - a.x, b.y - a.y), lap: 1, prog: (s - T.LINE + T.TOTAL) % T.TOTAL,
-        done: false, vx: 0, vz: 0, vf: 0, spin: 0, boost: 0, dizzy: 0, shield: 0, cloud: 0, coins: 0, inventory: [null, null], selected: 0, lost: 0 });
+        done: false, vx: 0, vz: 0, vf: 0, spin: 0, boost: 0, dizzy: 0, shield: 0, cloud: 0, phaseT: 0, impacts: [], coins: 0, inventory: [null, null], selected: 0, lost: 0 });
     };
     const reset = (gap) => { race.items.clear(); place(owner, T.LINE + 35); place(victim, T.LINE + 35 + gap); };
     const run = (seconds) => { for (let i = 0; i < seconds * 60 && race.items.projectiles.length; i++) race.items.update(1 / 60, [owner, victim], true); };
@@ -65,6 +65,8 @@ try {
 
     reset(40); addItem(owner, 'aguacero', 0);
     race.items.use(owner, 1);
+    out.rainWarning = victim.cloud === 0 && race.items.rainQueue.length === 1;
+    for (let i = 0; i < 60; i++) race.items.update(1 / 60, [owner, victim], true);
     out.rain = victim.cloud > 0 && !(owner.cloud > 0);
 
     reset(40); owner.coins = 10; addItem(owner, 'jugo', 0);

@@ -14,6 +14,7 @@ import { waterAnimator } from '/engine/models/effects/water-surface.js';
 import { colonialHouse, busStopShelter } from '/engine/models/props/pueblo.js';
 import { extendTerrain } from './world-horizon.js';
 import { plazaOutskirts } from './plaza-outskirts.js';
+import { plazaBandstand } from '/engine/models/props/plaza-bandstand.js';
 
 const COLORS=[0xedaf3f,0x35b4aa,0xeb7658,0x8ab34f,0xf2d38b,0x459fc6];
 const PAVING=0xd2bd95, ROAD=0x8b958c;
@@ -119,8 +120,9 @@ export function createTown(T) {
       const levels=Array.from({length:32},(_,i)=>groundAt(x+Math.cos(i*Math.PI/16)*25,z+Math.sin(i*Math.PI/16)*25));
       const y=Math.max(...levels)+0.4,bottom=Math.min(...levels)-0.3;
       buildings.add(mesh(new THREE.CylinderGeometry(24,25,y-bottom,32),M(0xc9b68e),x,(y+bottom)/2,z));
-      const pavilion=house({w:10,h:6,color:0xe8cc91,seed:2,label:'MIRADOR PANA'});
-      pavilion.scale.set(1.5,1.65,1.5);pavilion.position.set(x,y,z-7);buildings.add(pavilion);
+      const pavilion=plazaBandstand();
+      pavilion.scale.setScalar(1.5);pavilion.position.set(x,y,z-5);
+      pavilion.userData.footprintRadius=14;pavilion.userData.support='lookout-terrace';group.add(pavilion);
       for(let i=0;i<10;i++) {
         const pz=z+15+i*2.4,base=groundAt(x,pz)-0.2,top=THREE.MathUtils.lerp(y,groundAt(x,z+39)+0.3,i/10);
         const h=Math.max(0.25,top-base);buildings.add(box(12,h,2.6,M(0xe3cda5),x,base+h/2,pz));

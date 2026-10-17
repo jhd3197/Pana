@@ -12,12 +12,14 @@ const $ = id => document.getElementById(id), code = roomFromUrl() || newRoomCode
 const params = new URLSearchParams(location.search); params.set('room', code); history.replaceState(null, '', `${location.pathname}?${params}`);
 const held = new Set(), pads = []; let aim = null, firing = false, touchFire = false, queuedFire = false, queuedReload = false, stopped = false, lastPhase = 'lobby', lastAmmo = 12, lastHits = 0;
 const world = createScene($('world'));
+let cameraView = 'cerca', pointerPosition = null, orbitPointer = null;
 const room = new PaintConnection({ code, name: loadName(), avatar: loadAvatar(), onState: render, onStatus(text, failed = false) {
   $('connection').textContent = text; $('recovery-copy').textContent = text; $('recovery').hidden = !failed || room.state.phase === 'lobby';
 } });
 const menu = createGameMenu({ title: '¡Pintura! · Pana', orientation: 'libre', sound,
+  options: [{ id: 'view', label: 'Cámara', choices: [['cerca', 'Con tu pana'], ['cancha', 'Ver la cancha']], get: () => cameraView, set: value => { cameraView = value; world.setView(value); } }],
   note: () => room.local ? 'La práctica está en pausa.' : 'La ronda online sigue mientras estás en el menú.',
-  controls: [['WASD / Flechas', 'Moverte por la cancha'], ['Ratón / tocar cancha', 'Apuntar'], ['Clic / Espacio', 'Disparar pintura'], ['R', 'Recargar'], ['M', 'Sonido'], ['Esc', 'Menú']],
+  controls: [['WASD / Flechas', 'Moverte según la cámara'], ['Ratón / tocar cancha', 'Apuntar'], ['Clic / Espacio', 'Disparar pintura'], ['Q / E · arrastrar con clic derecho', 'Girar la cámara alrededor de tu pana'], ['R', 'Recargar'], ['M', 'Sonido'], ['Esc', 'Menú']],
   tips: ['Una pintada suma un punto. Gana quien llegue a diez o tenga más al terminar los dos minutos. Si empatan, comparten la victoria.',
     'Las barricadas frenan las bolas. Tienes doce por carga; recargas con R o automáticamente al vaciarla.',
     'Vuelves a la cancha 2,5 segundos después de una pintada. Al reaparecer tienes 1,5 segundos de protección; disparar la cancela.',
@@ -29,23 +31,26 @@ $('game-nav').append(menu.createInviteButton({ id: 'invite', className: 'pk-btn'
 $('room-code').textContent = `Sala ${code}`; $('rules').onclick = () => menu.open('controls');
 $('start').onclick = () => { sound.unlock(); room.start(); }; $('again').onclick = () => room.start();
 for (const id of ['practice', 'fallback']) $(id).onclick = () => { menu.close(); $('recovery').hidden = true; room.practice(); };
-function clearInput() { held.clear(); firing = touchFire = queuedFire = queuedReload = false; pads.forEach(p => p.release()); room.input({}); }
+function clearInput() { held.clear(); firing = touchFire = queuedFire = queuedReload = false; orbitPointer = null; pads.forEach(p => p.release()); room.input({}); }
 function active() { return room.connected && room.state.phase === 'playing' && !menu.isOpen; }
 for (const [id, key] of [['up', 'w'], ['left', 'a'], ['down', 's'], ['right', 'd'], ['reload', 'r']]) pads.push(holdButton($(id), { down: () => { held.add(key); if (key === 'r') queuedReload = true; }, up: () => held.delete(key), paused: () => !active() }));
 pads.push(holdButton($('fire'), { down: () => { touchFire = queuedFire = true; sound.unlock(); }, up: () => { touchFire = false; }, paused: () => !active() }));
-$('world').addEventListener('pointermove', event => { if (active()) aim = world.point(event.clientX, event.clientY); });
-$('world').addEventListener('pointerdown', event => { if (!active() || event.button !== 0) return; event.preventDefault(); $('world').focus({ preventScroll: true }); aim = world.point(event.clientX, event.clientY); firing = queuedFire = true; sound.unlock(); $('world').setPointerCapture(event.pointerId); });
-for (const type of ['pointerup', 'pointercancel']) $('world').addEventListener(type, () => { firing = false; });
+$('world').addEventListener('pointermove', event => { if (!active()) return; if (orbitPointer !== null) { world.orbit((event.clientX - orbitPointer) * -.007); orbitPointer = event.clientX; } else { pointerPosition = [event.clientX, event.clientY]; aim = world.point(...pointerPosition); } });
+$('world').addEventListener('pointerdown', event => { if (!active()) return; event.preventDefault(); $('world').focus({ preventScroll: true }); $('world').setPointerCapture(event.pointerId); if (event.button === 2) { orbitPointer = event.clientX; return; } if (event.button !== 0) return; pointerPosition = [event.clientX, event.clientY]; aim = world.point(...pointerPosition); firing = queuedFire = true; sound.unlock(); });
+$('world').addEventListener('contextmenu', event => event.preventDefault());
+for (const type of ['pointerup', 'pointercancel']) $('world').addEventListener(type, () => { firing = false; orbitPointer = null; });
+for (const [id, direction] of [['view-left', -1], ['view-right', 1]]) pads.push(holdButton($(id), { down: () => held.add(direction < 0 ? 'q' : 'e'), up: () => held.delete(direction < 0 ? 'q' : 'e'), paused: () => !active() }));
 addEventListener('blur', clearInput); document.addEventListener('visibilitychange', () => { if (document.hidden) clearInput(); });
 addEventListener('keydown', event => {
   if (menu.isOpen || event.target.closest?.('input, button, textarea, select, a')) return;
   const key = event.key.toLowerCase(); if (key === 'm') toggleMute();
-  if (['w', 'a', 's', 'd', 'r', ' ', 'arrowup', 'arrowleft', 'arrowdown', 'arrowright'].includes(key)) { event.preventDefault(); if (active()) { held.add(key); if (key === ' ') queuedFire = true; if (key === 'r') queuedReload = true; } }
+  if (['w', 'a', 's', 'd', 'q', 'e', 'r', ' ', 'arrowup', 'arrowleft', 'arrowdown', 'arrowright'].includes(key)) { event.preventDefault(); if (active()) { held.add(key); if (key === ' ') queuedFire = true; if (key === 'r') queuedReload = true; } }
 });
 addEventListener('keyup', event => held.delete(event.key.toLowerCase()));
 function input() {
   if (!active()) return {};
   const me = room.state.players.find(p => p.id === room.id); if (!me) return {};
+  if (pointerPosition) aim = world.point(...pointerPosition);
   let ax = aim ? aim.x - me.x : me.ax, az = aim ? aim.z - me.z : me.az;
   if (touchFire) {
     const nearest = room.state.players.filter(p => p.id !== me.id && p.connected && !p.respawn && !p.shield && !COVER.some(o => segmentBox(me.x, me.z, p.x - me.x, p.z - me.z, o) !== null))
@@ -53,8 +58,8 @@ function input() {
     if (nearest) { ax = nearest.x - me.x; az = nearest.z - me.z; }
   }
   const length = Math.hypot(ax, az) || 1;
-  return { x: Number(held.has('d') || held.has('arrowright')) - Number(held.has('a') || held.has('arrowleft')),
-    z: Number(held.has('s') || held.has('arrowdown')) - Number(held.has('w') || held.has('arrowup')),
+  return { ...world.movement(Number(held.has('d') || held.has('arrowright')) - Number(held.has('a') || held.has('arrowleft')),
+    Number(held.has('s') || held.has('arrowdown')) - Number(held.has('w') || held.has('arrowup'))),
     ax: ax / length, az: az / length, fire: queuedFire || firing || touchFire || held.has(' '), reload: queuedReload || held.has('r') };
 }
 function render(state) {
@@ -81,7 +86,7 @@ function render(state) {
 }
 let previous = performance.now(), stoppedAt = previous;
 const timer = setInterval(() => { const now = performance.now(), dt = (now - stoppedAt) / 1000; stoppedAt = now; room.input(input()); queuedFire = queuedReload = false; room.tick(dt, menu.isOpen); }, 50);
-function frame(now) { if (stopped) return; const dt = Math.min(.05, (now - previous) / 1000); previous = now; world.draw(room.state, room.id, dt, aim); requestAnimationFrame(frame); }
+function frame(now) { if (stopped) return; const dt = Math.min(.05, (now - previous) / 1000); previous = now; if (active()) world.orbit((Number(held.has('e')) - Number(held.has('q'))) * dt * 1.6); world.draw(room.state, room.id, dt, aim); requestAnimationFrame(frame); }
 render(room.state); room.connect(); requestAnimationFrame(frame);
 addEventListener('pagehide', () => { stopped = true; clearInterval(timer); room.dispose(); world.dispose(); }, { once: true });
 if (params.has('debug')) window.pinturaDebug = { room, world, menu, input };

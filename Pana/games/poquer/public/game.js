@@ -11,11 +11,13 @@ import { HANDS, tablePlayers } from './rules.js';
 const $ = id => document.getElementById(id), code = roomFromUrl() || newRoomCode();
 const params = new URLSearchParams(location.search); params.set('room', code); history.replaceState(null, '', `${location.pathname}?${params}`);
 const world = createScene($('world')); let stopped = false, lastRevision = -1, lastPhase = 'lobby', lastTurn = null;
+let cameraView = 'plaza';
 const seatNodes = new Map();
 const room = new PokerConnection({ code, name: loadName(), avatar: loadAvatar(), onState: render, onStatus(text, failed = false) {
   $('connection').textContent = text; $('recovery-copy').textContent = text; $('recovery').hidden = !failed || room.state.phase === 'lobby';
 } });
 const menu = createGameMenu({ title: 'Póquer · Pana', orientation: 'libre', sound,
+  options: [{ id: 'view', label: 'Cámara', choices: [['plaza', 'En la plaza'], ['mesa', 'Sobre la mesa']], get: () => cameraView, set: value => { cameraView = value; world.setView(value); } }],
   note: () => room.local ? 'La práctica está en pausa.' : 'La mesa online sigue. Tienes 30 segundos por turno.',
   controls: [['Ratón / dedo', 'Elige retirarte, igualar o subir'], ['Apuesta total', 'Escribe el total que quieres apostar en esta calle'], ['M', 'Sonido'], ['Esc', 'Menú']],
   tips: ['Texas Hold’em sin límite, con fichas gratis. Cada pana recibe dos cartas privadas y combina hasta cinco cartas de su mano y la mesa. Las ciegas son 10 y 20.',

@@ -83,7 +83,7 @@ try {
     const place = (c, s) => {
       const a = T.pointAt(s), b = T.pointAt(s + 0.5);
       Object.assign(c, { x: a.x, z: a.y, y: T.groundAt(a.x, a.y), h: Math.atan2(b.x - a.x, b.y - a.y),
-        done: false, isPlayer: true, vx: 0, vz: 0, vf: 0, spin: 0, boost: 0, coins: 0, inventory: [null, null], selected: 0, lost: 0 });
+        done: false, isPlayer: true, vx: 0, vz: 0, vf: 0, spin: 0, boost: 0, phaseT: 0, impacts: [], coins: 0, inventory: [null, null], selected: 0, lost: 0 });
     };
     const reset = () => { race.items.clear(); place(owner, T.LINE + 35); place(victim, T.LINE + 48); };
     const step = () => { for (let i = 0; i < 100 && race.items.projectiles.length; i++) race.items.update(1 / 60, [owner, victim], true); };

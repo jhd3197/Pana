@@ -17,6 +17,8 @@ import reliquia from './catalog/reliquia.js';
 import embuste from './catalog/embuste.js';
 import amazonas from './catalog/amazonas.js';
 import waterWorlds from './catalog/water-worlds.js';
+import tableGames from './catalog/table-games.js';
+import circuitLife from './catalog/circuit-life.js';
 
 export default [
   ...ranch,
@@ -38,4 +40,6 @@ export default [
   ...embuste,
   ...amazonas,
   ...waterWorlds,
+  ...tableGames,
+  ...circuitLife,
 ];

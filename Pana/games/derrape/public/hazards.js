@@ -74,7 +74,7 @@ export function createHazards(T, scene) {
       if (hz.kind === 'rock' && moving) hz.m.rotation.x += dt * 6 * dir;
       hz.m.userData.tick?.(t);
       for (const c of cars) {
-        if (c.remote || c.done || c.rescueT > 0) continue;
+        if (c.remote || c.done || c.ghost || c.phaseT > 0 || c.phaseRemote || c.rescueT > 0) continue;
         const last = hz.hitT.get(c) ?? -9;
         if (t - last < 1.5) continue;
         if (Math.hypot(c.x - hz.x, c.z - hz.z) < hz.k.radius + 1.4 && Math.abs(c.y - y) < 3) {

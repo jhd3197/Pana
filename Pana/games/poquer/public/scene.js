@@ -1,44 +1,73 @@
 import * as THREE from 'three';
+import { createTableWorld } from '/engine/table-world.js';
+import { createGameChair } from '/engine/models/props/game-table.js';
+import { createPokerTable, createPokerCard, createPokerChips } from '/engine/models/props/poker.js';
 import { buildCharacter } from '/engine/models/characters/pana/avatar-model.js';
-import { bindRenderer } from '/engine/settings.js';
+import { normalizeAvatar } from '/engine/avatar.js';
 import { tablePlayers } from './rules.js';
 
+const SEATS = [[0, 4.15], [-4.65, 2.2], [-4.65, -2.2], [0, -4.15], [4.65, -2.2], [4.65, 2.2]];
 export function createScene(canvas) {
-  const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true }); bindRenderer(renderer, 1.5);
-  renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap; renderer.toneMapping = THREE.ACESFilmicToneMapping;
-  const scene = new THREE.Scene(), camera = new THREE.OrthographicCamera(-14, 14, 10, -10, .1, 100), avatars = new Map();
-  camera.position.set(0, 16, 22); camera.lookAt(0, 0, 0);
-  scene.add(new THREE.HemisphereLight('#fff2d6', '#31544c', 2.5));
-  const lamp = new THREE.DirectionalLight('#ffe5b3', 3.5); lamp.position.set(-5, 18, 7); lamp.castShadow = true; Object.assign(lamp.shadow.camera, { left: -15, right: 15, top: 12, bottom: -12 }); lamp.shadow.mapSize.set(1024, 1024); scene.add(lamp);
-  const materials = [];
-  function mat(color) { const m = new THREE.MeshStandardMaterial({ color, roughness: .8 }); materials.push(m); return m; }
-  function oval(radius, height, y, color) { const mesh = new THREE.Mesh(new THREE.CylinderGeometry(radius, radius, height, 80), mat(color)); mesh.scale.z = .57; mesh.position.y = y; mesh.castShadow = mesh.receiveShadow = true; scene.add(mesh); return mesh; }
-  oval(10.2, .6, .8, '#6b4230'); oval(9.7, .3, 1.13, '#322d33'); oval(9.1, .12, 1.32, '#226b58');
-  const trim = new THREE.Mesh(new THREE.TorusGeometry(9.45, .045, 6, 90), mat('#d7ad64')); trim.rotation.x = Math.PI / 2; trim.scale.y = .57; trim.position.y = 1.33; scene.add(trim);
-  const chipGeo = new THREE.CylinderGeometry(.25, .25, .09, 20), chipMats = ['#e7c86f', '#c15a61', '#69aea0'].map(mat);
-  for (let i = 0; i < 12; i++) for (let j = 0; j < 3 + i % 5; j++) { const chip = new THREE.Mesh(chipGeo, chipMats[i % 3]); chip.position.set(-2.8 + i % 6 * 1.1, 1.46 + j * .1, (i < 6 ? -1 : 1) * 3.6); scene.add(chip); }
-  const seatPositions = [[0, 6.5], [-9, 3.2], [-9, -3.2], [0, -6.5], [9, -3.2], [9, 3.2]];
-  function position(slot) { return seatPositions[slot % 6]; }
-  let seats = [];
-  return { renderer, scene, camera, avatars,
-    draw(state, me, dt) {
-      canvas.style.width = '100%'; canvas.style.height = '100%';
-      const w = canvas.clientWidth, h = canvas.clientHeight, aspect = w / h;
-      if (canvas.width !== Math.round(w * renderer.getPixelRatio()) || canvas.height !== Math.round(h * renderer.getPixelRatio())) renderer.setSize(w, h, false);
-      const half = Math.max(7.4, 12.3 / aspect);
-      camera.left = -half * aspect; camera.right = half * aspect; camera.top = half; camera.bottom = -half; camera.updateProjectionMatrix();
-      const players = tablePlayers(state), own = players.findIndex(p => p.id === me); const ordered = own < 0 ? players : [...players.slice(own), ...players.slice(0, own)];
-      const slots = ordered.length <= 2 ? [0, 3] : ordered.length <= 4 ? [0, 2, 3, 5] : [0, 1, 2, 3, 4, 5];
-      seats = ordered.map((p, i) => ({ ...p, slot: slots[i] }));
-      for (const p of seats) {
-        let character = avatars.get(p.id);
-        if (!character) { character = buildCharacter(p.avatar, { seated: true }); scene.add(character.group); avatars.set(p.id, character); }
-        const [x, z] = position(p.slot); character.group.position.set(x, .5, z); character.group.rotation.y = Math.atan2(-x, -z); character.update(dt, {});
+  const stage = createTableWorld(canvas), { scene, camera, renderer } = stage;
+  const table = createPokerTable(); scene.add(table);
+  const avatars = new Map(), chairs = new Map(), cards = new Map(), chips = new Map();
+  const bounds = new THREE.Box3(new THREE.Vector3(-5.7, .45, -4.5), new THREE.Vector3(5.7, 2.8, 4.5));
+  const reduced = matchMedia('(prefers-reduced-motion: reduce)');
+  let seats = [], version = '', view = 'plaza';
+  function sync(state, me) {
+    const players = tablePlayers(state), own = players.findIndex(p => p.id === me), ordered = own < 0 ? players : [...players.slice(own), ...players.slice(0, own)];
+    const slots = ordered.length <= 2 ? [0, 3] : ordered.length <= 4 ? [0, 2, 3, 5] : [0, 1, 2, 3, 4, 5];
+    seats = ordered.map((p, i) => ({ ...p, slot: slots[i] }));
+    const liveCards = new Set(), liveChips = new Set();
+    function card(key, value, x, z, angle = 0) {
+      liveCards.add(key); let entry = cards.get(key);
+      if (!entry || entry.model.userData.card !== value) {
+        entry?.model.userData.dispose(); const model = createPokerCard({ card: value }); scene.add(model);
+        model.position.set(-2.8, 1.52, -.7); entry = { model, target: new THREE.Vector3(), angle }; cards.set(key, entry);
       }
-      for (const [id, avatar] of avatars) if (!players.some(p => p.id === id)) { avatar.dispose(); avatars.delete(id); }
-      renderer.render(scene, camera);
-    },
-    anchors() { return seats.map(p => { const [x, z] = position(p.slot); const q = new THREE.Vector3(x, z < -2 ? 3.5 : -.65, z + .4).project(camera); return { id: p.id, x: (q.x + 1) / 2 * 100, y: (1 - q.y) / 2 * 100 }; }); },
-    dispose() { avatars.forEach(a => a.dispose()); scene.traverse(o => o.geometry?.dispose()); materials.forEach(m => m.dispose()); renderer.dispose(); },
+      entry.target.set(x, 1.52, z); entry.angle = angle;
+    }
+    function stack(key, count, x, z, color) {
+      if (!count) return; liveChips.add(key); const size = Math.min(12, Math.max(1, Math.ceil(count / 100)));
+      let model = chips.get(key);
+      if (!model || model.userData.count !== size) { model?.userData.dispose(); model = createPokerChips({ count: size, color }); model.userData.count = size; chips.set(key, model); scene.add(model); }
+      model.position.set(x, 1.5, z);
+    }
+    state.board.forEach((c, i) => card(`board-${i}`, c, (i - 2) * .77, -.2));
+    // No hidden values are inferred: null private cards create only a back texture.
+    for (const p of seats) {
+      const [x, z] = SEATS[p.slot], angle = Math.atan2(x, z), key = JSON.stringify(normalizeAvatar(p.avatar));
+      let avatar = avatars.get(p.id);
+      if (!avatar || avatar.key !== key) { avatar?.dispose(); avatar = buildCharacter(p.avatar, { seated: true }); avatar.key = key; avatars.set(p.id, avatar); scene.add(avatar.group); }
+      let chair = chairs.get(p.id); if (!chair) { chair = createGameChair(); chairs.set(p.id, chair); scene.add(chair); }
+      chair.position.set(x, 0, z); chair.rotation.y = angle + Math.PI;
+      avatar.group.position.set(x, .76, z); avatar.group.rotation.y = angle + Math.PI;
+      if (!p.folded) p.hole.forEach((c, i) => {
+        const offset = (i - .5) * .68;
+        card(`hand-${p.id}-${i}`, c, x * .67 + Math.cos(angle) * offset, z * .65 - Math.sin(angle) * offset, angle);
+      });
+      stack(`stack-${p.id}`, p.chips, x * .72 - Math.cos(angle) * 1.02, z * .7 + Math.sin(angle) * 1.02, '#3a9990');
+      stack(`bet-${p.id}`, p.bet, x * .39, z * .4 + .5, '#c15a61');
+    }
+    stack('pot', state.pot, 0, -.98, '#c9a84c');
+    for (const [id, entry] of cards) if (!liveCards.has(id)) { entry.model.userData.dispose(); cards.delete(id); }
+    for (const [id, model] of chips) if (!liveChips.has(id)) { model.userData.dispose(); chips.delete(id); }
+    for (const [id, avatar] of avatars) if (!players.some(p => p.id === id)) { avatar.dispose(); avatars.delete(id); chairs.get(id)?.userData.dispose(); chairs.delete(id); }
+  }
+  function draw(state, me, dt) {
+    const next = JSON.stringify([state.revision, me, state.players.map(p => [p.id, p.avatar, p.chips, p.connected])]);
+    if (next !== version) { version = next; sync(state, me); }
+    const { w, h } = stage.resize(), lobby = state.phase === 'lobby', short = h < 520 && w > h, mobile = w < 650;
+    const safe = lobby ? w > 760 ? { x: 385, y: 80, width: w - 410, height: h - 105 } : { x: 14, y: 60, width: w - 28, height: Math.max(170, h - 480) }
+      : short ? { x: 22, y: 62, width: w - 340, height: h - 82 } : { x: mobile ? 30 : 55, y: mobile ? 113 : 100, width: w - (mobile ? 60 : 110), height: h - (mobile ? 380 : 320) };
+    safe.width = Math.max(200, safe.width); safe.height = Math.max(160, safe.height);
+    stage.frameCamera(bounds, [lobby ? .2 : 0, view === 'mesa' ? 2.2 : .8, 1], safe);
+    for (const p of seats) { const avatar = avatars.get(p.id); avatar.update(dt, {}); avatar.neck.rotation.x = .15; avatar.arms.forEach(arm => arm.rotation.x = p.id === state.turn ? -.75 : -.5); }
+    for (const entry of cards.values()) { entry.model.position.lerp(entry.target, reduced.matches ? 1 : 1 - Math.exp(-dt * 10)); entry.model.rotation.y = entry.angle; }
+    stage.draw(dt);
+  }
+  return { renderer, scene, camera, avatars, cards, chips, draw, setView(value) { view = value; },
+    anchors() { return seats.map(p => { const [x, z] = SEATS[p.slot], y = p.slot === 0 && camera.aspect > 1 ? .8 : z < 0 ? 3.35 : -.1, q = new THREE.Vector3(x, y, z + .3).project(camera); return { id: p.id, x: (q.x + 1) * 50, y: (1 - q.y) * 50 }; }); },
+    dispose() { avatars.forEach(a => a.dispose()); chairs.forEach(c => c.userData.dispose()); cards.forEach(c => c.model.userData.dispose()); chips.forEach(c => c.userData.dispose()); table.userData.dispose(); stage.dispose(); },
   };
 }

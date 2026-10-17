@@ -15,11 +15,18 @@ async function open(name, room = code, mobile = false) {
 try {
   if (process.env.PANA_BROWSER_MOBILE_ONLY !== '1') {
   const a = await open('Juan'), b = await open('María'); await wait(a, () => pinturaDebug.room.state.players.length === 2);
+  assert.equal(await a.evaluate(() => pinturaDebug.world.camera.isPerspectiveCamera), true);
   assert.ok(await b.locator('#start').isDisabled()); await wait(a, () => pinturaDebug.world.avatars.size === 2);
   await a.screenshot({ path: `${out}/lobby.png` }); await a.locator('#start').click(); await wait(b, () => pinturaDebug.room.state.phase === 'playing');
+  // This long cross-court shot uses the player's overview option. The follow
+  // camera and camera-relative touch movement are covered below and in 3d.browser.
+  for (const p of [a, b]) {
+    await p.locator('#menu').click(); await p.locator('#pana-tab-settings').click();
+    await p.locator('#pana-opt-view').getByRole('radio', { name: 'Ver la cancha', exact: true }).click(); await p.keyboard.press('Escape');
+  }
   await b.keyboard.press('Tab'); await b.locator('#world').click({ position: { x: 640, y: 400 } });
   await b.keyboard.down('w'); await wait(b, () => pinturaDebug.room.state.players.find(p => p.id === pinturaDebug.room.id).z < -13.5); await b.keyboard.up('w');
-  await b.waitForTimeout(300); // let the released key reach the authoritative tick
+  await wait(b, () => !pinturaDebug.room.state.players.find(p => p.id === pinturaDebug.room.id).walk);
   const guest = await b.evaluate(() => pinturaDebug.room.state.players.find(p => p.id === pinturaDebug.room.id));
   await wait(a, id => pinturaDebug.room.state.players.find(p => p.id === id)?.z < -13.5, guest.id);
   const target = await a.evaluate(p => pinturaDebug.world.screen(p.x, p.z), guest); await a.mouse.move(target.x, target.y); await a.mouse.down();
@@ -40,9 +47,9 @@ try {
   }
   const m = await open('Móvil', `${code}-mobile`, true); await m.screenshot({ path: `${out}/mobile-lobby.png` }); await m.locator('#practice').tap();
   await wait(m, () => pinturaDebug.room.local && pinturaDebug.room.state.phase === 'playing'); assert.ok(await m.locator('#fire').isVisible());
-  const x = await m.evaluate(() => pinturaDebug.room.state.players[0].x);
+  const start = await m.evaluate(() => { const p = pinturaDebug.room.state.players[0]; return { x: p.x, z: p.z, direction: pinturaDebug.world.movement(1, 0) }; });
   await m.locator('#right').dispatchEvent('pointerdown', { pointerId: 9, pointerType: 'touch', button: 0, buttons: 1 }); await m.waitForTimeout(450); await m.locator('#right').dispatchEvent('pointerup', { pointerId: 9, pointerType: 'touch', button: 0 });
-  assert.ok(await m.evaluate(() => pinturaDebug.room.state.players[0].x) > x);
+  assert.ok(await m.evaluate(start => { const p = pinturaDebug.room.state.players[0]; return (p.x - start.x) * start.direction.x + (p.z - start.z) * start.direction.z > .1; }, start));
   await m.locator('#fire').tap(); await m.screenshot({ path: `${out}/mobile-playing.png` });
   for (const id of ['fire', 'up', 'reload']) { const box = await m.locator(`#${id}`).boundingBox(); assert.ok(box.x >= 0 && box.y >= 0 && box.x + box.width <= 391 && box.y + box.height <= 845); }
   await m.locator('#menu').tap(); const time = await m.evaluate(() => pinturaDebug.room.state.time); await m.waitForTimeout(400); assert.equal(await m.evaluate(() => pinturaDebug.room.state.time), time); await m.locator('#pana-resume').tap();

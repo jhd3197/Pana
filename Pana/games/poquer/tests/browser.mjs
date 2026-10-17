@@ -29,10 +29,14 @@ try {
   assert.ok(av.state.players.find(p => p.id === av.id).hole.every(Number.isInteger));
   assert.deepEqual(av.state.players.find(p => p.id === bv.id).hole, [null, null]); assert.deepEqual(bv.state.players.find(p => p.id === av.id).hole, [null, null]);
   assert.equal('deck' in av.state, false);
+  await wait(a, () => poquerDebug.world.cards.size === 4);
+  assert.deepEqual(await a.evaluate(other => [...poquerDebug.world.cards].filter(([key]) => key.startsWith(`hand-${other}-`)).map(([, entry]) => entry.model.userData.card), bv.id), [null, null], 'opponent meshes contain only card backs');
+  assert.equal(await a.evaluate(() => poquerDebug.world.camera.isPerspectiveCamera), true);
   await b.evaluate(() => poquerDebug.room.act('raise', 1000)); await b.waitForTimeout(300); await same(a, b); assert.equal(await a.evaluate(() => poquerDebug.room.state.pot), 30);
   console.log('ok: two real clients receive distinct private cards; wrong-turn action rejected');
   await a.locator('#amount').fill('60'); await act(a, '#raise'); await same(a, b); assert.equal(await b.locator('#call').textContent(), 'Igualar 40');
   await act(b, '#call'); await same(a, b); assert.equal(await a.evaluate(() => poquerDebug.room.state.phase), 'flop');
+  await wait(a, () => poquerDebug.room.state.board.every((value, i) => poquerDebug.world.cards.get(`board-${i}`)?.model.userData.card === value));
   await a.screenshot({ path: `${out}/playing.png` });
   for (let n = 0; n < 12 && await a.evaluate(() => poquerDebug.room.state.phase !== 'finished'); n++) {
     const turn = await a.evaluate(() => poquerDebug.room.state.turn); const p = turn === av.id ? a : b; await act(p, '#call'); await same(a, b);

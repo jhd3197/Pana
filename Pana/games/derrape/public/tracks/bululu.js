@@ -12,6 +12,7 @@ import { souvenirKiosk } from '/engine/models/props/monuments.js';
 import { fishingBoat, coastalLighthouse, lifeguardTower, beachVolleyball, beachShower, rescueRingStand, fishingNetRack, fishCrates, channelBuoy } from '/engine/models/props/coastal.js';
 import { beachCrab } from '/engine/models/fauna/beach-crab.js';
 import { groundBeachCrab } from '/engine/placement/beach-crab.js';
+import { boatRepairYard } from '/engine/models/props/boat-yard.js';
 const SCALE=1.23;
 const ROUTE=[[-260,80],[-260,155],[-170,210],[-70,220],[10,170],[15,100],[65,60],[140,75],[220,130],[300,110],[335,35],[300,-35],[230,-70],[170,-130],[90,-195],[-5,-215],[-90,-175],[-120,-100],[-185,-65],[-255,-20]].map(([x,z])=>[x*SCALE,z*SCALE]);
 const roadHeight=(x,z)=>(3.2+hill(x,z,-270,-120,120,95,7))*(1-tideZone(x,z))+.48*tideZone(x,z);
@@ -76,6 +77,7 @@ export default {
     coastLand(beachShower,230,60,1.4);
     coastLand(rescueRingStand,250,110,1.1,Math.PI);
     coastLand(fishingNetRack,-185,10,2.5,Math.PI/2);
+    coastLand(boatRepairYard,-185,-33,9,Math.PI/2);
     const coastAt=(factory,x,z,y,radius,rotation=0)=>{
       const object=put(coast,factory(),x,z,y,rotation);object.userData.footprintRadius=radius;return object;
     };

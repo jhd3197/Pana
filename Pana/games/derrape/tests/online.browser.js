@@ -19,8 +19,7 @@ async function player(name) {
   await context.addInitScript((n) => localStorage.setItem('pana:name', n), name);
   const page = await context.newPage();
   page.on('pageerror', (e) => errors.push(`${name}: ${e}`));
-  // Warm both independent contexts before testing the room kit's deliberate
-  // 15-second party-leader window. Cold CDN/vehicle loading is not host election.
+  // Warm each independent garage before the room test.
   await page.goto(`${origin}/g/derrape/?debug&auto&speed=5`);
   await page.waitForFunction(() => window.garage?.car, null, { timeout: 30000 });
   return page;
@@ -40,11 +39,26 @@ try {
   // Guest first: the party leader still hosts when they arrive.
   const guest = await player('Guest');
   const host = await player('Leader');
+  // The SDK loads only on joining, so an offline garage warmup cannot prevent
+  // a cold CDN request from exceeding the room's 15-second leader window.
+  // Hold the real leader matchmaking request until the guest has joined.
+  // Both clients still use the normal app flow and real room host election.
+  let releaseLeader;
+  const leaderGate = new Promise(resolve => { releaseLeader = resolve; });
+  const matchmaking = '**/matchmake/joinOrCreate/derrape';
+  await host.route(matchmaking, async route => { await leaderGate; await route.continue(); });
+  const leaderReady = host.waitForRequest(r => r.method() === 'POST' && r.url().endsWith('/matchmake/joinOrCreate/derrape'), { timeout: 30000 });
+  await host.goto(`${origin}/g/derrape/?debug&auto&speed=5&room=${code}&lead=1`);
+  await leaderReady;
   await join(guest, '');
-  await join(host, '&lead=1');
+  releaseLeader();
+  await until(host, () => window.getNet?.()?.state.players.length === 2);
+  await host.unroute(matchmaking);
   await until(guest, () => getNet().state.players.length === 2);
   await until(host, () => getNet().state.players.length === 2);
   let g = await state(guest), h = await state(host);
+  const arrivals = h.players.map(p => p.joinedAt);
+  assert.ok(Math.max(...arrivals) - Math.min(...arrivals) < 15000, 'both players arrive inside the party-leader window');
   assert.equal(h.isHost, true, 'the lead=1 player hosts');
   assert.equal(g.isHost, false);
   assert.equal(g.players.find(p => p.id === h.id).name, 'Leader');
@@ -72,15 +86,16 @@ try {
 
   // Live remote cars: the guest's view of the host's car lies on the path the
   // host actually drove a moment ago (?speed=5 stretches the 110 ms delay).
-  await host.evaluate(() => { window.trail = []; window.trailTimer = setInterval(() => race.player && trail.push([race.player.x, race.player.z]), 20); });
+  await host.evaluate(() => { window.trail = []; window.trailTimer = setInterval(() => race.player && trail.push([race.player.x, race.player.z, getNet().now()]), 20); });
   await guest.waitForTimeout(1500);
-  const seen = await guest.evaluate((id) => { const c = race.cars.find(c => c.netId === id); return { x: c.x, z: c.z, buf: c.buf.length }; }, h.id);
+  const seen = await guest.evaluate((id) => { const c = race.cars.find(c => c.netId === id); return { x: c.x, z: c.z, buf: c.buf.length, now:getNet().now(), delay:c.delay, poses:c.buf.map(p=>({t:p.t,x:p.p[0],z:p.p[2]})) }; }, h.id);
   const gap = await host.evaluate(({ x, z }) => Math.min(...trail.slice(1).map(([bx, bz], i) => {
     const [ax, az] = trail[i], dx = bx - ax, dz = bz - az, l = dx * dx + dz * dz || 1;
     const k = Math.max(0, Math.min(1, ((x - ax) * dx + (z - az) * dz) / l));
     return Math.hypot(ax + dx * k - x, az + dz * k - z);
   })), seen);
   assert.ok(seen.buf > 0, 'poses are arriving');
+  if (gap >= 6) console.log(JSON.stringify({seen,trail:await host.evaluate(()=>({first:trail[0],last:trail.at(-1),count:trail.length,now:getNet().now()})),gap}));
   assert.ok(gap < 6, `remote car follows the real path (${gap.toFixed(1)} m off)`);
   step('remote cars follow their owners');
 

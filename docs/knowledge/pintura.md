@@ -23,6 +23,19 @@ The host only starts rounds. Its departure cannot interrupt simulation.
 
 ## Rendering and proof
 
+The court uses real shared pueblo houses, church, market stalls, benches,
+streetlights, araguaneyes, mango trees and crate geometry. Crates are fitted to
+the authoritative `COVER` bounds, so artwork never changes movement or shots.
+The paint marker is a canonical Studio asset in `engine/models/props/paintball.js`.
+
+The default perspective camera follows the player's pana and starts facing
+into the court. Q/E, right-button dragging and touch camera buttons orbit it.
+WASD and the touch pad are camera-relative; the server still receives world-space
+normalized movement. The shared menu offers a wide court overview, which retains
+world-axis controls. Pointer aiming is reprojected as the camera moves, at the
+same 1.1 m plane used by `screen()`. Keep those heights equal. Camera obstruction
+uses scenery bounds to pull in before buildings, trees or cover hide the player.
+
 The scene uses the saved shared pana sculpt, including its Three.js addons
 import-map entry. `bindRenderer` sets full-window inline canvas dimensions;
 reset the CSS size before reading layout so phone rotation resizes correctly.
@@ -31,6 +44,8 @@ reset the CSS size before reading layout so phone rotation resizes correctly.
 hit agreement, respawn, host departure, late join, natural round end, rematch,
 local pause and touch layouts. Screenshots are ignored under the game's `qa/`.
 `tests/rules.test.js` covers collisions, ammo, respawns, bots and win conditions.
+`engine/tests/table-games.browser.js` also checks all three new 3D scenes, camera
+picking, orbit, touch layouts and the actual Studio model constructors.
 
 ## Notes for agents
 

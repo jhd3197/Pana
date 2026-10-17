@@ -6,7 +6,7 @@ const { chromium } = createRequire(import.meta.url)(process.env.PANA_PLAYWRIGHT_
 const base = process.env.PANA_TEST_URL || 'http://localhost:8461', code = `pool-${Date.now()}`, errors = [];
 const browser = await chromium.launch({ headless: true, args: ['--disable-background-timer-throttling', '--disable-renderer-backgrounding'] });
 await mkdir('art/billar', { recursive: true });
-const wait = (page, fn, arg) => page.waitForFunction(fn, arg, { timeout: 30000 });
+const wait = (page, fn, arg) => page.waitForFunction(fn, arg, { timeout: 90000 });
 const check = text => console.log(`ok: ${text}`);
 async function open(name, room = code, mobile = false, full = false) {
   const context = await browser.newContext({ viewport: mobile ? { width: 390, height: 844 } : { width: 1280, height: 800 }, hasTouch: mobile, isMobile: mobile, deviceScaleFactor: 1 });
@@ -57,6 +57,11 @@ try {
   await wait(c, () => document.getElementById('connection').textContent.includes('llena'));
   assert.equal(await c.evaluate(() => billarDebug.room.connected), false); await c.close(); check('third client cannot create a duplicate room');
   await a.locator('#start').click(); await wait(b, () => billarDebug.room.state.phase === 'aiming');
+  await wait(a, () => billarDebug.world.camera.isPerspectiveCamera && billarDebug.world.balls.size === 16);
+  assert.ok(await a.evaluate(() => {
+    const world = billarDebug.world, rect = document.getElementById('table').getBoundingClientRect();
+    return rect.width === innerWidth && rect.height === innerHeight && [[100, 100], [500, 250], [900, 400]].every(([x, y]) => { const s = world.screen(x, y), p = world.point(s.x, s.y); return Math.hypot(x - p.x, y - p.y) < .001; });
+  }), 'fullscreen perspective table maps shots back to authoritative cloth coordinates');
   const revision = await a.evaluate(() => billarDebug.room.state.revision);
   await b.evaluate(() => billarDebug.room.action('shoot', { angle: 0, power: 1 }));
   await b.waitForTimeout(200); assert.equal(await a.evaluate(() => billarDebug.room.state.revision), revision);

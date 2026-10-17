@@ -5,7 +5,8 @@ import { makeMango } from '/engine/models/props/mango.js';
 import { FragmentBurst } from './fragments.js';
 import { ICONS as SVG } from '/engine/icons.js';
 import { crateArt, coinArt } from './pickup-art.js';
-import { activeItem, addItem, consumeItem, selectItem, canBlock, isMango, isJuiced, MAX_COINS, segmentDistanceSq } from './item-rules.js';
+import { activeItem, addItem, consumeItem, selectItem, canBlock, isMango, isJuiced, MAX_COINS, segmentDistanceSq, rainWave, chancletaSpeed } from './item-rules.js';
+import { isGhost } from './recovery-rules.js';
 import { makeRocket, makeChancleta, makeShield, makeTrap, makeCloud, ITEM_ICONS } from './item-art.js';
 import { loseCoins } from './drive-rules.js';
 
@@ -181,6 +182,8 @@ export function createItems(hooks) {
 
   let flying = [], peels = [], sparks = [];
   const held = new Map(), shields = new Map(), clouds = new Map();
+  let rainQueue = [];
+  const rainSeen = new Set();
   const byId = (id) => hooks.byId?.(id);
   const previous = new Map();
   let t = 0, seq = 0;
@@ -190,6 +193,7 @@ export function createItems(hooks) {
   const disposeGeometry = root => root.traverse(o => o.geometry?.dispose());
 
   function clear() {
+    rainQueue = []; rainSeen.clear();
     for (const entry of [...flying, ...peels, ...sparks]) entry.m.removeFromParent();
     for (const m of [...held.values(), ...shields.values(), ...clouds.values()]) m.removeFromParent();
     held.clear(); shields.clear(); clouds.clear(); previous.clear(); gone.clear(); fragments.clear();
@@ -237,7 +241,7 @@ export function createItems(hooks) {
 
   function use(c, direction = 1) {
     const item = activeItem(c);
-    if (!item || item.rolling > 0 || c.done || c.spin > 0) return false;
+    if (!item || item.rolling > 0 || c.done || c.spin > 0 || c.rescueT > 0) return false;
     direction = direction < 0 ? -1 : 1;
     const kind = item.kind, h = c.h + (direction < 0 ? Math.PI : 0);
     const fx = Math.sin(h), fz = Math.cos(h);
@@ -276,15 +280,15 @@ export function createItems(hooks) {
       hooks.say(c, LINES.rocket, 0.9);
     } else if (kind === 'chancleta') {
       // Flies high along the circuit and drops on whoever leads.
-      const order = hooks.standings().filter(o => !o.done);   // finished cars are out of reach
+      const order = hooks.standings().filter(o => !o.done && !o.dns && !o.retired && !o.ghost);
       const target = order[0] === c ? order[1] : order[0];
       if (!target) return false;
       const m = chancla.clone();
       m.position.set(c.x, c.y + 6, c.z);
       scene.add(m);
       const id = nextId(c), s = paramOf(c.x, c.z);
-      flying.push({ id, kind: 'chancleta', m, owner: c, h: c.h, speed: 72, travel: 1, vy: 0, t: 0, target, s, spin: 9 });
-      emit('throw', c, { id, kind: 'chancleta', x: c.x, y: c.y + 6, z: c.z, h: c.h, speed: 72, travel: 1, target: target.netId, s });
+      flying.push({ id, kind: 'chancleta', m, owner: c, h: c.h, speed: 110, travel: 1, vy: 0, t: 0, target, s, spin: 9 });
+      emit('throw', c, { id, kind: 'chancleta', x: c.x, y: c.y + 6, z: c.z, h: c.h, speed: 110, travel: 1, target: target.netId, s });
       sound.sweep(1200, 400, 0.6, 'triangle', 0.12);
       feedback(c, `¡La chancleta va por ${target.isPlayer ? 'ti' : target.name}!`, 1.6);
       hooks.say(c, LINES.chancla, 1.1);
@@ -294,11 +298,11 @@ export function createItems(hooks) {
       hooks.say(c, LINES.shield, 1);
     } else if (kind === 'aguacero') {
       // A downpour on everyone ahead: slower and slippery, unless on rain cauchos.
-      const order = hooks.standings(), at = order.indexOf(c);
-      const victims = (battling() ? order.filter(o => o !== c) : order.slice(0, at)).filter(o => !o.done);
       const time = juiced ? CLOUD_TIME * 1.5 : CLOUD_TIME;
-      for (const v of victims) rainOn(v, time);
-      emit('cloud', c, { ids: victims.map(v => v.netId), time });
+      const wave = rainWave(hooks.standings(), c, time, battling());
+      const victims = wave.map(w => w.target), id = nextId(c);
+      rainQueue.push(...wave);
+      emit('cloud', c, { id, at: hooks.now?.(), wave: wave.map(w => ({ id: w.target.netId, delay: w.delay, time: w.time })) });
       sound.sweep(220, 90, 0.9, 'sawtooth', 0.06);
       feedback(c, victims.length ? `¡Aguacero sobre ${victims.length} ${victims.length === 1 ? 'rival' : 'rivales'}!` : 'Nadie adelante: llovió en vano');
     } else if (kind === 'jugo' || kind === 'jugo3') {
@@ -345,6 +349,7 @@ export function createItems(hooks) {
   }
 
   function rainOn(v, time) {
+    if (v.done || v.dns || v.retired || isGhost(v)) return;
     v.cloud = Math.max(v.cloud || 0, time);
     if (!v.remote) hooks.say(v, LINES.rain, 1);
   }
@@ -504,10 +509,16 @@ export function createItems(hooks) {
   }
 
   function remoteCloud(d) {
-    const time = Math.min(8, Number(d.time) || CLOUD_TIME);
-    for (const id of Array.isArray(d.ids) ? d.ids : []) {
-      const v = byId(id);
-      if (v) rainOn(v, time);
+    if (d.id && rainSeen.has(d.id)) return;
+    if (d.id) rainSeen.add(d.id);
+    if (rainSeen.size > 64) rainSeen.delete(rainSeen.values().next().value);
+    const elapsed = Number.isFinite(d.at) && hooks.now ? Math.max(0, (hooks.now() - d.at) / 1000) : 0;
+    // Legacy clouds remain readable while all players refresh to the new client.
+    const wave = Array.isArray(d.wave) ? d.wave : (d.ids || []).map(id => ({ id, delay: 0, time: d.time }));
+    for (const w of wave.slice(0, 8)) {
+      const target = byId(w.id), delay = Math.max(0, Math.min(15, Number(w.delay) || 0));
+      const time = Math.max(0, Math.min(8, Number(w.time) || CLOUD_TIME) - Math.max(0, elapsed - delay));
+      if (target && time > 0) rainQueue.push({ target, delay: Math.max(0, delay - elapsed), time });
     }
   }
 
@@ -605,6 +616,15 @@ export function createItems(hooks) {
     });
     if (!racing) { for (const c of cars) { syncHeld(c); syncAuras(c); } return; }
 
+    for (const c of cars) c.rainIn = 0;
+    rainQueue = rainQueue.filter(w => {
+      if (!cars.includes(w.target) || w.target.done) return false;
+      w.delay -= dt;
+      if (w.delay <= 0) { rainOn(w.target, w.time); return false; }
+      w.target.rainIn = w.target.rainIn ? Math.min(w.target.rainIn, w.delay) : w.delay;
+      return true;
+    });
+
     const order = hooks.standings();
     for (const c of cars) {
       c.boost = Math.max(0, c.boost - dt);
@@ -680,6 +700,7 @@ export function createItems(hooks) {
         }
       }
       for (const p of peels) {
+        if (isGhost(c)) break;
         if (p.dead || (p.owner === c && p.t < p.safe) || c.spin > 0) continue;
         if (p.kind !== 'trampa' && !c.onGround) continue;
         const dist = Math.hypot(c.x - p.m.position.x, c.z - p.m.position.z);
@@ -745,8 +766,8 @@ export function createItems(hooks) {
       }
       // Resolve the nearest swept impact, independent of racer array order.
       const reach = f.kind === 'chancleta' ? 3.6 : 2.4;
-      const hits = cars.filter(c => !c.done && !(c === f.owner && f.t < (f.kind === 'chancleta' ? 99 : 0.6)) &&
-        (f.kind !== 'chancleta' || f.diving) &&
+      const hits = cars.filter(c => !f.dead && !c.done && !isGhost(c) && !(c === f.owner && f.t < (f.kind === 'chancleta' ? 99 : 0.6)) &&
+        (f.kind !== 'chancleta' || (f.diving && c === f.target)) &&
         segmentDistanceSq(c.x, c.z, old.x, old.z, pos.x, pos.z) < reach ** 2 &&
         Math.abs(c.y + 1 - pos.y) < (f.kind === 'chancleta' ? 3.5 : 2.2)).sort((a, b) =>
           Math.hypot(a.x - old.x, a.z - old.z) - Math.hypot(b.x - old.x, b.z - old.z));
@@ -764,7 +785,7 @@ export function createItems(hooks) {
         emit('hit', c, { id: f.id, kind: f.kind, blocked, x: pos.x, y: pos.y, z: pos.z });
       }
       if (c) f.dead = true;
-      const life = f.kind === 'chancleta' ? 16 : f.kind === 'cohete' ? 6 : 3;
+      const life = f.kind === 'chancleta' ? Math.max(45, T.TOTAL / 65 + 12) : f.kind === 'cohete' ? 6 : 3;
       if ((f.kind === 'mango' && Math.abs(offsetOf(pos.x, pos.z)) > T.HW - 0.4) || f.t > life) f.dead = true;
       if (f.dead) {
         if (f.kind === 'cohete' || f.kind === 'chancleta') explode(pos.clone());
@@ -792,23 +813,31 @@ export function createItems(hooks) {
     const pos = f.m.position, target = f.target;
     f.m.rotation.y += f.spin * dt;
     f.m.rotation.x = Math.sin(f.t * 7) * 0.5;
-    if (!target || target.done) { f.dead = true; return; }
+    if (!target || target.done || target.dns || target.retired || target.ghost) { f.dead = true; return; }
+    if (isGhost(target)) {
+      // Circle above a recovering target instead of wasting the item on the road.
+      pos.set(target.x + Math.sin(f.t * 4) * 4, target.y + 8, target.z + Math.cos(f.t * 4) * 4);
+      f.s = paramOf(target.x, target.z); f.diving = false;
+      return;
+    }
     const close = Math.hypot(target.x - pos.x, target.z - pos.z) < 16;
     if (f.diving || close) {
       f.diving = true;
       const dx = target.x - pos.x, dy = target.y + 1 - pos.y, dz = target.z - pos.z, d = Math.hypot(dx, dy, dz) || 1;
-      const v = 55 * dt;
+      const v = Math.max(125, Math.hypot(target.vx || 0, target.vz || 0) + 65) * dt;
       pos.x += dx / d * Math.min(v, d); pos.y += dy / d * Math.min(v, d); pos.z += dz / d * Math.min(v, d);
       return;
     }
-    f.s += f.speed * dt;
+    const gap = (paramOf(target.x, target.z) - f.s % T.TOTAL + T.TOTAL) % T.TOTAL;
+    f.speed = Math.max(f.speed, chancletaSpeed(gap, Math.max(0, target.vf || 0)));
+    f.s += Math.min(gap, f.speed * dt);
     const p = pointAt(f.s);
-    pos.x += (p.x - pos.x) * Math.min(1, dt * 8);
-    pos.z += (p.y - pos.z) * Math.min(1, dt * 8);
+    pos.x = p.x;
+    pos.z = p.y;
     pos.y += (groundAt(pos.x, pos.z) + 7 - pos.y) * Math.min(1, dt * 4);
   }
 
   return { clear, dispose, update, use, select, boxes, coins, pads, fragments,
     remoteThrow, remotePeel, remoteHit, remoteSlip, remoteCloud,
-    get projectiles() { return flying; }, get peels() { return peels; } };
+    get rainQueue() { return rainQueue; }, get projectiles() { return flying; }, get peels() { return peels; } };
 }

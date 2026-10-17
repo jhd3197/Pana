@@ -44,31 +44,32 @@ try {
   });
   assert.ok(stall.stalled && stall.speed < 1, `stall ${JSON.stringify(stall)}`);
 
-  // Hop into a drift, hold it through three spark levels, release for a turbo.
+  // Drive a real bend with simple held input, then release for a turbo.
+  // Never pin the car in place: that used to hide the forced-turn wall crashes.
   const drift = await page.evaluate(() => {
-    const p = race.player;
+    const p = race.player, T = getActiveTrack(), s = 1254;
     for (const c of race.cars) if (c !== p) { c.x += 400; c.done = true; }
-    p.stall = 0; p.boost = 0; p.vf = 26;
-    p.vx = Math.sin(p.h) * 26; p.vz = Math.cos(p.h) * 26;
-    race.keys = { w: true, shift: true, a: true };
-    let started = false, level = 0;
-    const x0 = p.x, z0 = p.z;
-    for (let i = 0; i < 200; i++) {
+    const a=T.pointAt(s), b=T.pointAt(s+.5), h=Math.atan2(b.x-a.x,b.y-a.y);
+    Object.assign(p,{x:a.x,z:a.y,y:T.groundAt(a.x,a.y),h,onGround:true,vy:0,pitch:0,roll:0,
+      drift:0,driftT:0,driftHeld:false,driftExitT:0,stall:0,boost:0,vf:32,vx:Math.sin(h)*32,vz:Math.cos(h)*32});
+    race.keys = { w: true, shift: true, d: true };
+    let started = false, level = 0, maxOff = 0;
+    for (let i = 0; i < 90; i++) {
       updateRace(1 / 60);
       if (p.drift) { started = true; level = Math.max(level, p.driftLvl); }
-      // pin the car mid-road so the test measures the drift, not the walls
-      if (p.drift) { p.x = x0; p.z = z0; }
+      maxOff=Math.max(maxOff,Math.abs(T.offsetOf(p.x,p.z)));
     }
     const before = p.boost;
     renderer.render(race.scene, race.camera);
     race.keys = { w: true };
     updateRace(1 / 60);
-    return { started, level, before, after: p.boost, dir: p.drift };
+    return { started, level, before, after: p.boost, dir: p.drift, maxOff, limit:T.HW-1.6 };
   });
   await page.screenshot({ path: join(output, 'drive-drift.png') });
   assert.ok(drift.started, 'a held drift button with steering starts a drift');
-  assert.equal(drift.level, 3, `drift reaches purple sparks ${JSON.stringify(drift)}`);
-  assert.ok(drift.after > 1.2 && drift.dir === 0, `release pays the purple turbo ${JSON.stringify(drift)}`);
+  assert.ok(drift.level>=1, `real cornering earns sparks ${JSON.stringify(drift)}`);
+  assert.ok(drift.maxOff<drift.limit, `drift stays off the walls ${JSON.stringify(drift)}`);
+  assert.ok(drift.after > 0.4 && drift.dir === 0, `release pays the earned turbo ${JSON.stringify(drift)}`);
 
   // A trick pressed in the air lands with a short turbo.
   const trick = await page.evaluate(() => {

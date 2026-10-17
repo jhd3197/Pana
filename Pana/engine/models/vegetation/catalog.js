@@ -16,7 +16,7 @@ export default [
     category: "Vegetación",
     source: "/engine/models/vegetation/palm.js",
     factory: "palm",
-    usedBy: ["Bululú","Derrape","Escondidas","Cocina","Reliquia"],
+    usedBy: ["Bululú","Derrape","Escondidas","Cocina","Reliquia","Billar","Póquer"],
     previewOptions: {"seed":7},
     pack: "vegetation"
   },
@@ -26,7 +26,7 @@ export default [
     category: "Vegetación",
     source: "/engine/models/vegetation/mango-tree.js",
     factory: "mangoTree",
-    usedBy: ["Bululú","Derrape","Escondidas","Cocina","Galope"],
+    usedBy: ["Bululú","Derrape","Escondidas","Cocina","Galope","Billar","Póquer","¡Pintura!"],
     previewOptions: {"seed":7},
     pack: "vegetation"
   },
@@ -66,7 +66,7 @@ export default [
     category: "Vegetación",
     source: "/engine/models/vegetation/bush.js",
     factory: "bush",
-    usedBy: ["Bululú","Derrape","Escondidas","Cocina"],
+    usedBy: ["Bululú","Derrape","Escondidas","Cocina","Billar","Póquer"],
     previewOptions: {"seed":7},
     pack: "vegetation"
   },
@@ -76,7 +76,7 @@ export default [
     category: "Vegetación",
     source: "/engine/models/vegetation/araguaney.js",
     factory: "araguaney",
-    usedBy: ["Derrape"],
+    usedBy: ["Derrape","¡Pintura!"],
     previewOptions: {"seed":7},
     description: "Copa de flores amarillas y tronco ramificado.",
     tags: ["árbol","flores","pueblo"],

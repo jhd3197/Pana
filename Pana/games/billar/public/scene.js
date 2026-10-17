@@ -1,112 +1,73 @@
-import { RADIUS, POCKETS, aimGuide, legalTarget, canPlace } from './rules.js';
-import { pixelRatio } from '/engine/settings.js';
-
-const COLORS = ['#f8f2dc', '#efc337', '#3775cc', '#d84c44', '#874ea2', '#eb8739', '#398e67', '#a43e4c', '#20242b'];
-function circle(ctx, x, y, r, fill) { ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fillStyle = fill; ctx.fill(); }
-function rounded(ctx, x, y, w, h, r, fill) { ctx.beginPath(); ctx.roundRect(x, y, w, h, r); ctx.fillStyle = fill; ctx.fill(); }
-
-export function drawBall(ctx, b, rotation = 0) {
-  const r = RADIUS, color = COLORS[b.id > 8 ? b.id - 8 : b.id];
-  circle(ctx, b.x + 2, b.y + 4, r + 1, '#0005');
-  ctx.save(); ctx.translate(b.x, b.y); ctx.rotate(-rotation);
-  circle(ctx, 0, 0, r, b.id > 8 ? '#f7f0d9' : color);
-  if (b.id > 8) { ctx.save(); ctx.beginPath(); ctx.arc(0, 0, r, 0, Math.PI * 2); ctx.clip(); ctx.fillStyle = color; ctx.fillRect(-r, -6, r * 2, 12); ctx.restore(); }
-  const shine = ctx.createRadialGradient(-4, -5, 0, 1, 3, 15);
-  shine.addColorStop(0, '#fff8'); shine.addColorStop(.4, '#fff0'); shine.addColorStop(1, '#0008'); circle(ctx, 0, 0, r, shine);
-  if (b.id) { circle(ctx, 0, 0, 5.6, '#fff9eb'); ctx.fillStyle = '#20242b'; ctx.font = 'bold 8px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(b.id, 0, .6); }
-  else circle(ctx, -3, -4, 2, '#fff9');
-  ctx.restore();
-}
-
-export function drawTable(ctx) {
-  ctx.save();
-  ctx.shadowColor = '#0009'; ctx.shadowBlur = 26; ctx.shadowOffsetY = 13;
-  rounded(ctx, -54, -54, 1108, 608, 38, '#251b16'); ctx.shadowColor = 'transparent';
-  const wood = ctx.createLinearGradient(0, -52, 0, 552);
-  wood.addColorStop(0, '#986440'); wood.addColorStop(.13, '#663c28'); wood.addColorStop(.88, '#613a28'); wood.addColorStop(1, '#a77546');
-  rounded(ctx, -50, -50, 1100, 600, 34, wood);
-  ctx.strokeStyle = '#d1a16538'; ctx.lineWidth = 1;
-  for (let i = 0; i < 7; i++) { ctx.beginPath(); ctx.roundRect(-46 + i * 3, -46 + i * 3, 1092 - i * 6, 592 - i * 6, 32); ctx.stroke(); }
-  rounded(ctx, -24, -24, 1048, 548, 15, '#103f33');
-  const felt = ctx.createLinearGradient(0, 0, 0, 500); felt.addColorStop(0, '#20856b'); felt.addColorStop(1, '#17654f');
-  ctx.fillStyle = felt; ctx.fillRect(0, 0, 1000, 500);
-  ctx.fillStyle = '#fff'; ctx.globalAlpha = .035;
-  for (let x = 3; x < 1000; x += 7) for (let y = 3; y < 500; y += 7) ctx.fillRect(x + (y % 2), y, 1, 1);
-  ctx.globalAlpha = 1;
-  ctx.strokeStyle = '#82bea055'; ctx.lineWidth = 2; ctx.strokeRect(1, 1, 998, 498);
-  ctx.fillStyle = '#083b2a';
-  for (const [x, w] of [[24, 450], [526, 450]]) {
-    ctx.beginPath(); ctx.moveTo(x - 14, -21); ctx.lineTo(x + w + 14, -21); ctx.lineTo(x + w, 0); ctx.lineTo(x, 0); ctx.fill();
-    ctx.beginPath(); ctx.moveTo(x, 500); ctx.lineTo(x + w, 500); ctx.lineTo(x + w + 14, 521); ctx.lineTo(x - 14, 521); ctx.fill();
-  }
-  for (const x of [0, 1000]) { ctx.beginPath(); ctx.moveTo(x, 28); ctx.lineTo(x + (x ? 21 : -21), 12); ctx.lineTo(x + (x ? 21 : -21), 488); ctx.lineTo(x, 472); ctx.fill(); }
-  for (const [x, y] of POCKETS) {
-    circle(ctx, x, y, 31, '#c6a36b'); circle(ctx, x, y, 27, '#332b23'); circle(ctx, x, y + 2, 24.5, '#090e0d');
-    ctx.beginPath(); ctx.arc(x, y + 2, 20, 0, Math.PI); ctx.strokeStyle = '#fff1'; ctx.lineWidth = 1; ctx.stroke();
-  }
-  ctx.fillStyle = '#dfc18a';
-  for (const x of [125, 250, 375, 625, 750, 875]) for (const y of [-36, 536]) { ctx.save(); ctx.translate(x, y); ctx.rotate(Math.PI / 4); ctx.fillRect(-2.5, -2.5, 5, 5); ctx.restore(); }
-  for (const y of [125, 250, 375]) for (const x of [-36, 1036]) { ctx.save(); ctx.translate(x, y); ctx.rotate(Math.PI / 4); ctx.fillRect(-2.5, -2.5, 5, 5); ctx.restore(); }
-  ctx.fillStyle = '#ddf1cf19'; ctx.textAlign = 'center'; ctx.font = '900 40px Nunito, sans-serif'; ctx.fillText('PANA', 500, 264);
-  circle(ctx, 250, 250, 2, '#c9e3cb66'); circle(ctx, 690, 250, 2, '#c9e3cb66');
-  ctx.restore();
-}
+import * as THREE from 'three';
+import { createTableWorld } from '/engine/table-world.js';
+import { createPoolTable, createPoolBall, createPoolCue, POOL_SURFACE } from '/engine/models/props/pool.js';
+import { buildCharacter } from '/engine/models/characters/pana/avatar-model.js';
+import { normalizeAvatar } from '/engine/avatar.js';
+import { RADIUS, aimGuide, legalTarget, canPlace } from './rules.js';
 
 export function createPoolScene(canvas) {
-  const ctx = canvas.getContext('2d'), background = document.createElement('canvas');
-  background.width = 1160; background.height = 660;
-  const bg = background.getContext('2d'); bg.translate(80, 80); drawTable(bg);
-  let scale = 1, rotation = 0, width = 1, height = 1;
-  const shown = new Map();
-  function layout(lobby = false) {
-    const box = canvas.getBoundingClientRect(); width = box.width; height = box.height;
-    const ratio = pixelRatio(2);
-    if (canvas.width !== Math.round(width * ratio) || canvas.height !== Math.round(height * ratio)) { canvas.width = Math.round(width * ratio); canvas.height = Math.round(height * ratio); }
-    rotation = !lobby && height > width * 1.1 ? Math.PI / 2 : 0;
-    scale = Math.min(width / (rotation ? 640 : 1140), height / (rotation ? 1140 : 640));
-    ctx.setTransform(ratio, 0, 0, ratio, width * ratio / 2, height * ratio / 2);
-    ctx.rotate(rotation); ctx.scale(scale, scale); ctx.translate(-500, -250);
-  }
+  const stage = createTableWorld(canvas), { scene, camera, renderer } = stage;
+  const table = createPoolTable(), cue = createPoolCue(); scene.add(table, cue);
+  const balls = new Map(), avatars = new Map(), shown = new Map();
+  for (let number = 0; number < 16; number++) { const ball = createPoolBall({ number }); scene.add(ball); balls.set(number, ball); }
+  const guideMaterial = new THREE.LineDashedMaterial({ color: '#fff4cc', dashSize: .09, gapSize: .07 });
+  const guide = new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(), new THREE.Vector3()]), guideMaterial); scene.add(guide);
+  const contact = new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(), new THREE.Vector3()]), guideMaterial); scene.add(contact);
+  const ring = new THREE.Mesh(new THREE.RingGeometry(RADIUS * .01, .135, 40), new THREE.MeshBasicMaterial({ color: '#fff4cc', side: THREE.DoubleSide })); ring.rotation.x = -Math.PI / 2; scene.add(ring);
+  const ghost = createPoolBall({ number: 0 }); ghost.traverse(o => { if (o.material) { o.material.transparent = true; o.material.opacity = .5; } }); scene.add(ghost);
+  const ray = new THREE.Raycaster(), pointer = new THREE.Vector2(), hit = new THREE.Vector3();
+  const plane = new THREE.Plane(new THREE.Vector3(0, 1, 0), -(POOL_SURFACE + .11));
+  let rotation = 0, view = 'plaza';
+  const bounds = new THREE.Box3(), vec = (x, y, height = POOL_SURFACE + .11) => new THREE.Vector3((x - 500) * .01, height, (y - 250) * .01);
+  function line(mesh, from, to) { const a = mesh.geometry.attributes.position; a.setXYZ(0, from.x, from.y, from.z); a.setXYZ(1, to.x, to.y, to.z); a.needsUpdate = true; mesh.geometry.computeBoundingSphere(); mesh.computeLineDistances(); }
   function draw(state, { angle = 0, power = .65, active = false, placement = null, dt = .016 } = {}) {
-    ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.clearRect(0, 0, canvas.width, canvas.height);
-    layout(state.phase === 'lobby');
-    ctx.drawImage(background, -80, -80);
-    if (state.phase === 'aiming' && active && !state.ballInHand) {
-      const cue = state.balls[0], guide = aimGuide(state, angle), dx = Math.cos(angle), dy = Math.sin(angle);
-      const valid = !guide.target || legalTarget(state, guide.target.id);
-      ctx.save(); ctx.strokeStyle = valid ? '#f3e9d799' : '#ff7777bb'; ctx.lineWidth = 1.6; ctx.setLineDash([7, 7]);
-      ctx.beginPath(); ctx.moveTo(cue.x, cue.y); ctx.lineTo(guide.x, guide.y); ctx.stroke(); ctx.setLineDash([]);
-      ctx.beginPath(); ctx.arc(guide.x, guide.y, RADIUS, 0, Math.PI * 2); ctx.stroke();
-      if (guide.target) {
-        const b = guide.target, length = Math.hypot(b.x - guide.x, b.y - guide.y);
-        ctx.beginPath(); ctx.moveTo(b.x, b.y); ctx.lineTo(b.x + (b.x - guide.x) / length * 72, b.y + (b.y - guide.y) / length * 72); ctx.stroke();
-      }
-      const pull = 22 + power * 28;
-      ctx.translate(cue.x - dx * pull, cue.y - dy * pull); ctx.rotate(angle);
-      const stick = ctx.createLinearGradient(-180, 0, 0, 0); stick.addColorStop(0, '#713f25'); stick.addColorStop(.45, '#b78346'); stick.addColorStop(1, '#f4d499');
-      ctx.fillStyle = stick; ctx.beginPath(); ctx.moveTo(0, -2.5); ctx.lineTo(-185, -5); ctx.lineTo(-185, 5); ctx.lineTo(0, 2.5); ctx.fill();
-      ctx.fillStyle = '#8ecbda'; ctx.fillRect(-2, -2.6, 4, 5.2); ctx.restore();
+    const { w, h } = stage.resize(), lobby = state.phase === 'lobby', portrait = w < 650 && h > w;
+    rotation = portrait && !lobby ? Math.PI / 2 : 0;
+    const short = h < 520 && w > h;
+    let safe;
+    if (lobby) safe = w > 760 ? { x: 385, y: 80, width: w - 410, height: h - 105 } : { x: 12, y: 64, width: w - 24, height: Math.max(160, h - 490) };
+    else safe = short ? { x: 18, y: 80, width: w - 255, height: h - 100 } : { x: 18, y: portrait ? 145 : 130, width: w - 36, height: h - (portrait ? 350 : 300) };
+    safe.height = Math.max(120, safe.height); safe.width = Math.max(200, safe.width);
+    bounds.min.set(-5.65, .8, -3.2); bounds.max.set(5.65, 2.65, 3.55);
+    if (lobby) { bounds.min.x = -6.8; bounds.max.x = 6.8; bounds.max.z = 4.5; }
+    const elevation = view === 'mesa' ? 2.5 : portrait ? 1.35 : .78;
+    stage.frameCamera(bounds, rotation ? [1, elevation, 0] : [lobby ? .24 : .08, elevation, 1], safe);
+    for (const [seat, p] of state.players.entries()) {
+      const visible = p.id !== null && (!state.practice || seat === 0), key = JSON.stringify(normalizeAvatar(p.avatar));
+      let avatar = avatars.get(seat);
+      if (visible && avatar?.key !== key) { avatar?.dispose(); avatar = buildCharacter(p.avatar); avatar.key = key; avatar.group.scale.setScalar(1.25); avatars.set(seat, avatar); scene.add(avatar.group); }
+      if (!avatar) continue;
+      avatar.group.visible = visible;
+      avatar.group.position.set(seat ? 6.15 : -6.15, 0, seat ? -.65 : 1.05); avatar.group.rotation.y = seat ? -Math.PI / 2 : Math.PI / 2;
+      avatar.update(dt, {}); avatar.neck.rotation.x = .17;
+      avatar.arms.forEach((arm, i) => arm.rotation.x = seat === state.turn && state.phase === 'aiming' ? -.55 + i * .08 : -.13);
     }
     for (const b of state.balls) {
-      if (b.pocketed) { shown.delete(b.id); continue; }
-      const old = shown.get(b.id);
-      const smooth = old && state.phase === 'rolling' ? Math.min(1, dt * 28) : 1;
-      const display = { ...b, x: old ? old.x + (b.x - old.x) * smooth : b.x, y: old ? old.y + (b.y - old.y) * smooth : b.y };
-      shown.set(b.id, display); drawBall(ctx, display, rotation);
+      const mesh = balls.get(b.id); mesh.visible = !b.pocketed && !(b.id === 0 && state.ballInHand && active);
+      const old = shown.get(b.id), smooth = old && state.phase === 'rolling' ? Math.min(1, dt * 28) : 1;
+      const display = { x: old ? old.x + (b.x - old.x) * smooth : b.x, y: old ? old.y + (b.y - old.y) * smooth : b.y };
+      if (old && state.phase === 'rolling') { mesh.userData.ball.rotation.z -= (display.x - old.x) / RADIUS; mesh.userData.ball.rotation.x += (display.y - old.y) / RADIUS; }
+      mesh.position.copy(vec(display.x, display.y, POOL_SURFACE)); shown.set(b.id, display);
     }
-    if (state.ballInHand && active) {
-      const point = placement || state.balls[0], valid = canPlace(state, point.x, point.y);
-      ctx.save(); ctx.globalAlpha = .6; drawBall(ctx, { id: 0, ...point }, rotation); ctx.globalAlpha = 1;
-      ctx.strokeStyle = valid ? '#ffc629' : '#ff4b4b'; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(point.x, point.y, RADIUS + 5, 0, Math.PI * 2); ctx.stroke(); ctx.restore();
+    const aiming = state.phase === 'aiming' && active && !state.ballInHand;
+    guide.visible = ring.visible = cue.visible = aiming; contact.visible = false; ghost.visible = state.ballInHand && active;
+    if (aiming) {
+      const b = state.balls[0], aim = aimGuide(state, angle), valid = !aim.target || legalTarget(state, aim.target.id);
+      guideMaterial.color.set(valid ? '#fff4cc' : '#ff7373'); ring.material.color.copy(guideMaterial.color);
+      line(guide, vec(b.x, b.y), vec(aim.x, aim.y)); ring.position.copy(vec(aim.x, aim.y, POOL_SURFACE + .012));
+      cue.position.copy(vec(b.x - Math.cos(angle) * (22 + power * 28), b.y - Math.sin(angle) * (22 + power * 28))); cue.rotation.y = -angle;
+      if (aim.target) { const dx = aim.target.x - aim.x, dy = aim.target.y - aim.y, length = Math.hypot(dx, dy) || 1; contact.visible = true; line(contact, vec(aim.target.x, aim.target.y), vec(aim.target.x + dx / length * 72, aim.target.y + dy / length * 72)); }
     }
+    if (ghost.visible) { const p = placement || state.balls[0]; ghost.position.copy(vec(p.x, p.y, POOL_SURFACE)); ring.visible = true; ring.position.copy(vec(p.x, p.y, POOL_SURFACE + .012)); ring.material.color.set(canPlace(state, p.x, p.y) ? '#ffc629' : '#ff4b4b'); }
+    stage.draw(dt);
   }
   function point(clientX, clientY) {
-    const box = canvas.getBoundingClientRect(), x = (clientX - box.left - width / 2) / scale, y = (clientY - box.top - height / 2) / scale;
-    return rotation ? { x: y + 500, y: -x + 250 } : { x: x + 500, y: y + 250 };
+    const rect = canvas.getBoundingClientRect(); pointer.set((clientX - rect.left) / rect.width * 2 - 1, -(clientY - rect.top) / rect.height * 2 + 1); ray.setFromCamera(pointer, camera);
+    if (!ray.ray.intersectPlane(plane, hit)) return null;
+    return { x: hit.x * 100 + 500, y: hit.z * 100 + 250 };
   }
-  function screen(x, y) {
-    const box = canvas.getBoundingClientRect(), u = x - 500, v = y - 250;
-    return { x: box.left + width / 2 + (rotation ? -v : u) * scale, y: box.top + height / 2 + (rotation ? u : v) * scale };
-  }
-  return { draw, point, screen, get rotation() { return rotation; } };
+  function screen(x, y) { const p = vec(x, y).project(camera), r = canvas.getBoundingClientRect(); return { x: r.left + (p.x + 1) / 2 * r.width, y: r.top + (1 - p.y) / 2 * r.height }; }
+  return { scene, camera, renderer, balls, avatars, draw, point, screen, setView(value) { view = value; }, get rotation() { return rotation; },
+    dispose() { balls.forEach(b => b.userData.dispose()); avatars.forEach(a => a.dispose()); table.userData.dispose(); cue.userData.dispose(); ghost.userData.dispose(); guide.geometry.dispose(); contact.geometry.dispose(); guideMaterial.dispose(); ring.geometry.dispose(); ring.material.dispose(); stage.dispose(); },
+  };
 }

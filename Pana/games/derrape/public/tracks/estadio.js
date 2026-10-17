@@ -6,6 +6,7 @@ import { palm } from '/engine/models/vegetation/palm.js';
 import { cornerBodega, streetFoodKiosk, basketballHoop, rooftopWaterTank } from '/engine/models/props/pueblo.js';
 import { trophyMonument } from '/engine/models/props/monuments.js';
 import { stadiumGrounds } from './stadium-grounds.js';
+import { tireWorkshop } from '/engine/models/props/tire-workshop.js';
 
 export default {
   ...TRACK_DEFINITIONS.find(track => track.id === 'estadio'),
@@ -45,8 +46,14 @@ export default {
     group.add(finish(banners));
     // Pit garages and equipment face the long starting straight.
     for(let i=0;i<8;i++){
-      const x=-200+i*18;fixed.add(box(16,7,14,M(0xe6d7b8),x,4.5,220),box(14,4,.15,M(i%2?0x447d88:0xb95e43),x,3.2,212.9),box(17,.4,16,M(0x44565e),x,8.2,220));
-      put(group,sign(String(i+1).padStart(2,'0'),2,1,{background:'#243e48'}),x,212.7,6.3,Math.PI);
+      const x=-200+i*18;
+      if(i<2) {
+        const shop=put(group,tireWorkshop(),x,220,1.12,Math.PI,1.35);
+        shop.userData.footprintRadius=10;shop.userData.support='pit-apron';
+      } else {
+        fixed.add(box(16,7,14,M(0xe6d7b8),x,4.5,220),box(14,4,.15,M(i%2?0x447d88:0xb95e43),x,3.2,212.9),box(17,.4,16,M(0x44565e),x,8.2,220));
+        put(group,sign(String(i+1).padStart(2,'0'),2,1,{background:'#243e48'}),x,212.7,6.3,Math.PI);
+      }
     }
     for(const [x,z] of [[-105,135],[90,95],[-85,47],[80,47]]){
       if(!clear(T,x,z,4))continue;

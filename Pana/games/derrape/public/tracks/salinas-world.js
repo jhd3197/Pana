@@ -1,4 +1,4 @@
-import { THREE, terrain, put, finish, instances, scatter, clear } from './world-kit.js';
+import { THREE, terrain, put, finish, instances, scatter, clear, foundation } from './world-kit.js';
 import { waterGrid } from './water-world-kit.js';
 import { waterAnimator } from '/engine/models/effects/water-surface.js';
 import { baseHeight, PONDS, WATER_Y, channelSample, pondField } from './salinas-layout.js';
@@ -8,6 +8,8 @@ import { landingShelter } from '/engine/models/props/delta.js';
 import { fishCrates } from '/engine/models/props/coastal.js';
 import { palm } from '/engine/models/vegetation/palm.js';
 import { agave } from '/engine/models/vegetation/agave.js';
+import { saltHarvester } from '/engine/models/props/salt-harvester.js';
+import { flamingo } from '/engine/models/fauna/birds/flamingo.js';
 export function salinasWorld(T) {
   const group=new THREE.Group(),world=terrain(T,{bounds:[-600,-450,600,500],base:baseHeight,step:4,
     cut:(x,z,h)=>channelSample(x,z).distance<3?Math.min(h,-.4):h,
@@ -19,7 +21,7 @@ export function salinasWorld(T) {
   }));
   group.add(waterGrid(T,world,{bounds:[-240,-170,590,460],step:3,sample:(x,z)=>({height:WATER_Y,along:channelSample(x,z).along,
     visible:pondField(x,z)>1.015&&channelSample(x,z).distance<8}),color:0x65bcb9,name:'salinas-sluice-channels'}));
-  const works=new THREE.Group();let piles=0,gates=0,shelters=0;
+  const works=new THREE.Group();let piles=0,gates=0,shelters=0,harvesters=0;
   for(const [x,z]of [[-205,-125],[-180,-130],[-150,-145],[-280,270],[-250,280],[-220,290],[-30,330],[0,350],[35,360]])if(clear(T,x,z,10)){
     put(works,saltPile({seed:590+piles,radius:6+(piles%3),height:3.5+(piles%2)}),x,z,world.groundAt(x,z));piles++;
   }
@@ -27,14 +29,39 @@ export function salinasWorld(T) {
     put(works,sluiceGate({width:7,height:3}),x,z,-.4,h);gates++;
   }
   for(const [x,z,h]of [[-235,-100,.3],[-200,280,-.6],[-150,290,-.3],[-15,345,0]])if(clear(T,x,z,14)){
-    put(works,landingShelter({width:10,depth:10,deck:.25,height:4,color:0xa27c65}),x,z,world.groundAt(x,z),h);
-    for(let i=0;i<3;i++)put(works,fishCrates(),x-3+i*2.3,z+2,world.groundAt(x,z)+.4,h);shelters++;
+    if(x===-235||x===-15) {
+      const station=foundation(group,saltHarvester(),x,z,world.groundAt,{rotation:h,scale:1.45,radius:13,color:0xccbea0});
+      station.userData.footprintRadius=13;station.userData.support='salt-yard';
+      harvesters++;
+    } else {
+      put(works,landingShelter({width:10,depth:10,deck:.25,height:4,color:0xa27c65}),x,z,world.groundAt(x,z),h);
+      for(let i=0;i<3;i++)put(works,fishCrates(),x-3+i*2.3,z+2,world.groundAt(x,z)+.4,h);shelters++;
+    }
   }
   group.add(finish(works));
+  // Feet follow the real bank triangles. Pick shallow water close enough to
+  // the circuit to see, and keep each bird clear of roads and sluice channels.
+  const colony=new THREE.Group(),poses=[[],[]];colony.name='salinas-flamingos';colony.userData.detailLevel=1;
+  for(const index of [0,2,4]) {
+    const p=PONDS[index],candidates=[],chosen=[];
+    for(let i=0;i<120;i++)for(const radial of [.94,.98,1.02]) {
+      const a=i*Math.PI/60,r=radial*(1+.045*Math.sin(a*5+p.x)),x=p.x+Math.cos(a)*p.rx*r,z=p.z+Math.sin(a)*p.rz*r;
+      const y=world.groundAt(x,z),depth=WATER_Y-y,distance=Math.abs(T.offsetOf(x,z));
+      if(depth<.08||depth>.5||distance>110||!clear(T,x,z,3)||channelSample(x,z).distance<13)continue;
+      candidates.push({x,z,y,rot:-a+Math.PI/2,scale:1.65,distance});
+    }
+    candidates.sort((a,b)=>a.distance-b.distance);
+    for(const p of candidates) {
+      if(chosen.some(q=>Math.hypot(p.x-q.x,p.z-q.z)<3.4))continue;
+      chosen.push(p);poses[chosen.length%2].push(p);if(chosen.length===8)break;
+    }
+  }
+  for(let i=0;i<2;i++)instances(colony,flamingo({pose:i?'feed':'stand',seed:i+1}),poses[i],`salt-flamingo-${i}`,Infinity);
+  colony.userData.placements=poses.flat();colony.userData.assetId='flamingo';group.add(colony);
   instances(group,palm({seed:59,h:9}),scatter(T,world.groundAt,{seed:591,count:35,bounds:[-480,-330,480,390],margin:12,
     accept:(x,z)=>pondField(x,z)>1.3&&channelSample(x,z).distance>18}),'salinas-coastal-palms',190);
   instances(group,agave({seed:4}),scatter(T,world.groundAt,{seed:592,count:65,bounds:[-480,-330,480,390],margin:5,
     accept:(x,z)=>pondField(x,z)>1.3&&channelSample(x,z).distance>12}),'salinas-dry-banks',190);
-  group.userData.assetCounts={saltPile:piles,sluiceGate:gates,landingShelter:shelters};
+  group.userData.assetCounts={saltPile:piles,sluiceGate:gates,landingShelter:shelters,saltHarvester:harvesters,flamingo:poses.flat().length};
   return {group,groundAt:world.groundAt,update:waterAnimator(group)};
 }

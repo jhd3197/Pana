@@ -35,3 +35,40 @@ main { position: relative; min-height: calc(100dvh - 76px); }
   #turn, #message { text-align: center; } .raise-control { justify-content: center; gap: 6px; } #limits { flex-basis: 100%; text-align: center; }
 }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
+
+/* The world is the page. HUD panels float over the playable plaza. */
+body { overflow: hidden; }
+main { position: static; min-height: 0; }
+.topbar { position: fixed; inset: 16px 24px auto; height: auto; padding: 0; z-index: 5; pointer-events: none; }
+.topbar > * { pointer-events: auto; } .table-label { background: var(--pk-night); padding: 8px 12px; border-radius: 8px; }
+.table-stage, .in-lobby .table-stage, body:not(.in-lobby) .table-stage { position: fixed; inset: 0; width: 100%; height: 100dvh; margin: 0; }
+.lobby { position: fixed; top: 84px; bottom: 24px; left: 24px; width: 335px; margin: 0; padding: 24px; gap: 12px; }
+.board-area { top: 82px; left: 24px; transform: none; background: var(--pk-night); border-radius: 10px; padding: 9px 20px; }
+#pot { font-size: 23px; margin: 2px 0 0; } #street { font-size: 10px; }
+/* Community faces are on the 3D felt; retain their text for assistive technology. */
+#board { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+.in-lobby .board-area { display: none; }
+.controls { position: fixed; z-index: 3; bottom: max(16px, env(safe-area-inset-bottom)); left: 50%; transform: translateX(-50%); width: min(780px, calc(100% - 48px)); padding: 16px 22px; margin: 0; border-radius: 16px; background: var(--pk-night); gap: 24px; }
+.seat { width: 124px; font-size: 11px; padding: 5px 8px; background: var(--pk-night); }
+.seat strong { color: var(--pk-yellow); } .seat.is-turn { box-shadow: 0 0 0 1px var(--pk-yellow); }
+.hand-area .card { width: 49px; height: 69px; } .hand-area .card b { font-size: 23px; }
+.raise-control { margin-top: 8px; } #message { margin-bottom: 8px; }
+@media (max-width: 760px) {
+  .topbar { inset: 12px 14px auto; } .table-label { display: none; }
+  .lobby { top: auto; left: 14px; right: 14px; bottom: 14px; width: auto; max-height: 420px; padding: 18px; gap: 8px; }
+  .lobby .pk-stats, .lobby > .pk-copy:not(#roster), .lobby .pk-ribbon { display: none; } .lobby .pk-title { font-size: 52px; } .lobby .pk-lobby-foot { gap: 7px; } .lobby .pk-btn { padding-top: 10px; padding-bottom: 10px; }
+  .in-lobby main, body:not(.in-lobby) main { display: block; }
+  .board-area { top: 65px; left: 50%; transform: translateX(-50%); padding: 6px 14px; } #pot { font-size: 20px; }
+  .controls { width: calc(100% - 24px); bottom: max(12px, env(safe-area-inset-bottom)); padding: 12px; gap: 9px; flex-wrap: wrap; }
+  .hand-area { width: 100%; display: flex; align-items: center; justify-content: center; gap: 12px; } .hand-area > span { margin: 0; font-size: 10px; }
+  .hand-area .card { width: 36px; height: 48px; } .hand-area .card b { font-size: 18px; } .hand-area .card svg { width: 15px; height: 15px; margin-top: 1px; }
+  .decision { flex-basis: 100%; } #turn { font-size: 13px; } #message { font-size: 11px; margin: 2px 0 7px; } .actions .pk-btn { padding: 10px 8px; font-size: 13px; } .raise-control { margin-top: 7px; gap: 7px; font-size: 11px; } #amount { padding: 4px; width: 70px; }
+  .seat { width: 88px; font-size: 10px; padding: 4px; } .seat span { font-size: 9px; } .seat strong { font-size: 10px; }
+}
+@media (max-height: 520px) and (orientation: landscape) {
+  .lobby { left: 16px; top: 65px; bottom: 12px; width: 320px; max-height: none; padding: 14px; gap: 7px; } .lobby .pk-title { font-size: 42px; } .lobby .pk-stats, .lobby > .pk-copy, .lobby .pk-ribbon, .lobby > .pk-back { display: none; } .lobby .pk-lobby-foot { margin: 0; gap: 5px; } .lobby .pk-btn { padding-top: 8px; padding-bottom: 8px; }
+  .controls { left: auto; right: 12px; top: 70px; bottom: 12px; transform: none; width: 300px; flex-direction: column; flex-wrap: nowrap; justify-content: center; padding: 12px; gap: 10px; }
+  .hand-area { width: 100%; justify-content: center; } .decision { flex: 0; } .raise-control { gap: 6px; } #limits { flex-basis: auto; } .actions .pk-btn { font-size: 12px; padding: 10px 6px; }
+  .board-area { left: 18px; top: 70px; transform: none; padding: 5px 12px; } #pot { font-size: 17px; } #street { font-size: 9px; }
+  .seat { width: 86px; font-size: 10px; }
+}

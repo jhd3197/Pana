@@ -1,6 +1,13 @@
 // Model metadata only: no Three.js, construction or game imports.
 export default [
   {
+    id: 'flamingo', name: 'Flamenco de las salinas', category: 'Fauna',
+    source: '/engine/models/fauna/birds/flamingo.js', factory: 'flamingo',
+    usedBy: ['Derrape'], previewOptions: {pose:'stand',seed:7}, pack: 'wildlife',
+    description: 'Ave rosada de patas largas, cuello curvo y pico negro; poses de descanso y alimentación para colonias en aguas someras.',
+    tags: ['animal','fauna','ave','salinas','costa'],
+  },
+  {
     id: "tonina",
     name: "Tonina (delfín rosado)",
     category: "Fauna",

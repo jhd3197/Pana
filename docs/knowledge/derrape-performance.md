@@ -1,5 +1,22 @@
 # Garage and race loading
 
+## Shared quality now controls race detail
+
+The game-local `quality.js` listens to the existing shared settings. Alta uses
+2048-square sun shadows, 1,400 weather streaks and all optional race detail;
+Media uses 1024-square shadows, 700 streaks and road wear; Baja disables shadows,
+uses 280 streaks and hides optional road wear/pennants. Weather CPU iteration
+and splash frequency scale with the active streak count. Gameplay surfaces,
+colliders, item positions, physics ticks and the 20 Hz pose cadence do not change.
+
+Quality updates apply live and after map loading. Replacing shadow size releases
+the old render target. Race-specific code does not alter global quality semantics
+for other games. This is not automatic internet-quality detection or an FPS
+guarantee. The prior hardware measurements below describe the previous revision.
+
+Road aggregate is generated in the existing road shader. Quality uses a uniform
+to scale or disable it without recompiling. No new texture is fetched or allocated.
+
 The October 2026 profile found three costs on the menu's critical path: all eight
 thumbnail cars were constructed/rendered synchronously before the first garage
 frame, every selection rebuilt the driver, and track selection constructed the

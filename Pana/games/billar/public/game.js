@@ -12,6 +12,7 @@ const params = new URLSearchParams(location.search); params.set('room', code);
 history.replaceState(null, '', `${location.pathname}?${params}`);
 let angle = 0, placement = null, held = 0, toastTimer, stopped = false, lastRevision = -1, previousPhase = 'lobby';
 const world = createPoolScene($('table')), portraitKeys = [], portraitCache = new Map();
+let cameraView = 'plaza';
 let portraitsModule;
 const audio = {
   muted: false, volume: .8, impl: null, unlocked: false,
@@ -39,6 +40,7 @@ const menu = createGameMenu({
     'Si alguien sale, su puesto queda libre para otro pana. La mesa conserva las bolas y el turno. El anfitrión empieza la revancha.',
   ],
   invite: () => inviteUrl(code), onOpen() { held = 0; pads.forEach(p => p.release()); render(room.state); },
+  options: [{ id: 'view', label: 'Cámara', choices: [['plaza', 'En la plaza'], ['mesa', 'Sobre la mesa']], get: () => cameraView, set: value => { cameraView = value; world.setView(value); } }],
   onClose() { if (room.state.phase !== 'finished') render(room.state); },
   canOpen: () => room.state.phase !== 'finished',
 });
@@ -70,6 +72,7 @@ const pads = [-1, 1].map((direction, i) => holdButton($(i ? 'aim-right' : 'aim-l
 function aim(event) {
   if (!ownTurn()) return;
   const point = world.point(event.clientX, event.clientY);
+  if (!point) return;
   if (room.state.ballInHand) placement = point;
   else { const cue = room.state.balls[0]; if (Math.hypot(point.x - cue.x, point.y - cue.y) > 4) angle = Math.atan2(point.y - cue.y, point.x - cue.x); }
 }
@@ -77,7 +80,7 @@ $('table').addEventListener('pointerdown', event => {
   if (!ownTurn()) return; event.preventDefault(); $('table').focus({ preventScroll: true }); $('table').setPointerCapture(event.pointerId); aim(event);
 });
 $('table').addEventListener('pointermove', event => { if (event.buttons || event.pointerType === 'mouse') aim(event); });
-$('table').addEventListener('pointerup', event => { if (ownTurn() && room.state.ballInHand) { aim(event); place(placement); } });
+$('table').addEventListener('pointerup', event => { if (ownTurn() && room.state.ballInHand) { aim(event); if (placement) place(placement); } });
 $('table').addEventListener('pointercancel', () => { placement = null; });
 addEventListener('blur', () => { held = 0; pads.forEach(p => p.release()); });
 addEventListener('keydown', event => {
@@ -148,7 +151,7 @@ async function updatePortrait(player, seat) {
     if (!portraitCache.has(key)) portraitCache.set(key, portrait(player.avatar));
     if (portraitCache.size > 8) portraitCache.delete(portraitCache.keys().next().value);
     const img = $(`portrait-${seat}`); img.src = portraitCache.get(key); img.hidden = false;
-  } catch { /* A blocked WebGL/CDN must not prevent the canvas game from starting. */ }
+  } catch { /* The in-world pana remains visible if its optional HUD portrait fails. */ }
 }
 
 let previous = performance.now();
@@ -163,5 +166,5 @@ function frame(now) {
   world.draw(room.state, { angle, power: Number($('power').value) / 100, active: ownTurn(), placement, dt }); requestAnimationFrame(frame);
 }
 render(room.state); room.connect(); requestAnimationFrame(frame);
-addEventListener('pagehide', () => { stopped = true; clearInterval(timer); clearTimeout(toastTimer); room.dispose(); }, { once: true });
+addEventListener('pagehide', () => { stopped = true; clearInterval(timer); clearTimeout(toastTimer); room.dispose(); world.dispose(); }, { once: true });
 if (params.has('debug')) window.billarDebug = { room, world, menu, get angle() { return angle; } };

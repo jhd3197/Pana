@@ -13,13 +13,15 @@ import { activeItem, canBlock, coinMultiplier, COIN_SPEED, MAX_COINS, AIMED, isJ
 import { ITEM_ICONS } from './item-art.js';
 import { TRACKS, getTrack, makeTrack } from './tracks.js';
 import { roughnessAt,roadGripAt,roadWaterAt } from './offroad.js';
+import { START_GHOST_TIME, RESCUE_GHOST_TIME, isGhost, recordImpact, stepProtection } from './recovery-rules.js';
 import { loadAvatar, loadName, randomAvatar } from '/engine/avatar.js';
 import { createGameMenu, toggleMute } from '/engine/ui.js';
 import { inviteUrl, newRoomCode, roomFromUrl } from '/engine/invite.js';
 import { fillRoster } from '/engine/results.js';
 import { ICONS as SVG } from '/engine/icons.js';
 import { holdButton } from '/engine/touch.js';
-import { pixelRatio, bindRenderer } from '/engine/settings.js';
+import { pixelRatio, bindRenderer, getSettings, onSettings } from '/engine/settings.js';
+import { applyRaceQuality } from './quality.js';
 import { shout } from '/engine/kit.js';
 import { LAPS, RIVALS, AI_WHEELS, POSE_HZ, FLAG, DRIFT_SHIFT, FINISH_GRACE_MS, GP_GRID, GP_INTERMISSION_MS, GP_MIN_READ_MS, packPose, gridSlot, cleanCosmetics } from './online-rules.js';
 import { clockText, wrapAngle, raceOrder, aiPedals, resolveContact } from './rules.js';
@@ -38,7 +40,7 @@ import { rewardCupCompletion, rewardCupStage } from './cup-rewards.js';
 import { CLASSIFICATION_TEXT, approximateCupText, cupStandingsView, nextStageText, rankChangeText, tiebreakText } from './cup-ui.js';
 import { soaringVulture } from '/engine/models/fauna/birds/soaring-vulture.js';
 import { tickWind } from '/engine/models/vegetation/plant-kit.js';
-import { DRIFT_MIN_SPEED, DRIFT_BOOST, HOP_SPEED, DRAFT_TIME, DRAFT_BOOST, driftLevel, driftSteer, driftCharge, startBoost, trickBoost, inSlipstream, loseCoins } from './drive-rules.js';
+import { DRIFT_MIN_SPEED, DRIFT_BOOST, HOP_SPEED, DRIFT_EXIT_TIME, DRAFT_TIME, DRAFT_BOOST, driftLevel, driftSteer, assistDrift, driftCharge, startBoost, trickBoost, inSlipstream, loseCoins } from './drive-rules.js';
 
 const $ = (id) => document.getElementById(id);
 const esc = (text) => String(text).replace(/[&<>"]/g, (ch) => `&#${ch.charCodeAt(0)};`);
@@ -187,12 +189,12 @@ function showCar(i) {
   $('car-blurb').textContent = def.blurb;
   // Stats bars reflect the car + cauchos combo, recomputed from the composed tune.
   const tune = composeTune(def.tune, wheelById(garage.wheel).profile);
-  const bar = (base, ratio) => Math.max(0.04, Math.min(1, base * ratio));
+  const bar = value => Math.max(0.04, Math.min(1, value));
   const stats = {
-    Velocidad: bar(def.stats.Velocidad, tune.top / def.tune.top),
-    'Aceleración': bar(def.stats['Aceleración'], tune.accel / def.tune.accel),
-    Manejo: bar(def.stats.Manejo, Math.sqrt((tune.turn / def.tune.turn) * (tune.grip / def.tune.grip))),
-    Peso: def.stats.Peso,
+    Velocidad: bar(tune.top / 42),
+    'Aceleración': bar(tune.accel / 30),
+    Manejo: bar(Math.sqrt(tune.turn * tune.grip) / 4.7),
+    Peso: bar(tune.mass / 1.5),
   };
   $('stats').innerHTML = Object.entries(stats)
     .map(([k, v]) => `<div><dt>${k}</dt><dd><i style="width:${Math.round(v * 100)}%"></i></dd></div>`)
@@ -364,7 +366,7 @@ race.rain = (() => {
       const windX = snow ? Math.sin(t * 1.4) * 0.45 : -0.35;
       const windZ = snow ? Math.cos(t * 1.1) * 0.35 : 0.18;
       const lenY = snow ? 0.55 : 1.45;
-      for (let i = 0; i < RAIN_DROPS; i++) {
+      for (let i = 0; i < Math.min(RAIN_DROPS, geo.drawRange.count / 2); i++) {
         const [x0, y0, z0] = seed[i];
         const cycle = ((y0 - t * fallSpeed) % 30 + 30) % 30;
         const y = cy - 8 + cycle;
@@ -376,7 +378,7 @@ race.rain = (() => {
 
       rippleT -= dt;
       if (rippleT <= 0) {
-        rippleT = storm ? 0.09 : 0.16;
+        rippleT = (storm ? 0.09 : 0.16) * RAIN_DROPS / Math.min(RAIN_DROPS, geo.drawRange.count / 2);
         const rx = cx + (Math.random() - 0.5) * 28;
         const rz = cz + (Math.random() - 0.5) * 28;
         const gy = groundAt(rx, rz);
@@ -719,11 +721,13 @@ function finishTrack() {
     cars: () => race.cars,
     byId: (id) => racerById(id),
     battle: () => race.mode === 'battle',
+    now: () => race.netRace ? net.now() : race.clock * 1000,
     itemDelay: () => race.diff?.itemDelay ?? 1,
-    slipped: (c) => popBalloon(c),
+    slipped: (c) => { popBalloon(c); recordImpact(c, race.clock, true); },
     emit: (kind, c, data) => { if (race.netRace && !c.remote) net.fx(c.netId, kind, data); },
   });
   race.hazards = createHazards(T, race.trackGroup);
+  applyRaceQuality(renderer, race, getSettings().quality);
   $('mm-track').textContent = T.name;
   $('mm-sub').textContent = `${(T.TOTAL / 1000).toFixed(2)} km por vuelta`;
   buildMinimap();
@@ -882,7 +886,7 @@ function makeRacer(index, isPlayer, name, wheelId = 'calle', avatar = null, cosm
     inventory: [null, null], selected: 0, useT: 0, boost: 0, spin: 0,
     coins: 0, coinsCollected: 0, coinFlash: 0, itemMessage: '', itemMessageT: 0,
     // driving skills (drive-rules.js): drift dir ±1 and its charge, hop, trick, draft, stall
-    drift: 0, driftT: 0, driftHeld: false, driftWindow: 0, driftYaw: 0, hopping: false,
+    drift: 0, driftT: 0, driftHeld: false, driftYaw: 0, driftExitT: 0, driftAssist: 0, driftLane: 0, hopping: false,
     trick: false, trickT: 0, draft: 0, stall: 0, aiDrift: false,
     shield: 0, cloud: 0, band: 1, balloons: 0, popT: 0, avatar: who.avatar,
     // course: checkpoint sectors, last safe road spot, rescue by the zamuro
@@ -944,8 +948,8 @@ function placeRacer(c, lane, row) {
   Object.assign(c, {
     lane, x: p.x - tz / l * lane, z: p.y + tx / l * lane, y: 0, h: Math.atan2(tx, tz),
     vx: 0, vz: 0, vy: 0, vf: 0, lap: 0, done: false, time: 0,
-    drift: 0, driftT: 0, hopping: false, trick: false, draft: 0, stall: 0, shield: 0, cloud: 0,
-    sectors: ALL_SECTORS, outT: 0, stuckT: 0, rescueT: 0,
+    drift: 0, driftT: 0, driftHeld: false, driftExitT: 0, driftAssist: 0, hopping: false, trick: false, draft: 0, stall: 0, shield: 0, cloud: 0,
+    sectors: ALL_SECTORS, outT: 0, stuckT: 0, rescueT: 0, phaseT: 0, phaseRemote: false, impacts: [],
   });
   c.y = groundAt(c.x, c.z);
   c.prog = progressOf(c);
@@ -969,7 +973,7 @@ function progressOf(c) {
 function disposeRacer(c) {
   c.car.batchedMaterials.forEach(material=>material.dispose());
   c.car.ownedMaterials.forEach(material=>{material.map.dispose();material.dispose();});
-  const ownedMaterials = new Set();
+  const ownedMaterials = new Set(c.car.ghostMaterials || []);
   c.car.root.traverse(o => {
     for (const material of [].concat(o.material || [])) if (material.userData?.ghostClone) ownedMaterials.add(material);
   });
@@ -1003,12 +1007,12 @@ const TIPS = [
   [SVG.crate, 'Rompe cajas de madera para conseguir objetos. Guardas hasta 2.'],
   [SVG.juice, 'El jugo de mango te da un turbo: tómatelo en una recta.'],
   [SVG.back, 'Lanza hacia atrás con X para frenar al que te persigue.'],
-  [ITEM_ICONS.drift, 'Derrapa con Shift: suelta con chispas moradas para el turbo más largo.'],
+  [ITEM_ICONS.drift, 'Mantén Shift y gira: la ayuda suaviza el derrape. Suelta Shift para salir con turbo.'],
   [ITEM_ICONS.drift, 'En una rampa, pulsa Shift en el aire para hacer un truco y caer con turbo.'],
   [ITEM_ICONS.cohete, 'El cohete persigue al carro que va justo delante de ti.'],
   [ITEM_ICONS.chancleta, 'La chancleta vuela por encima de la pista y cae sobre el líder.'],
   [ITEM_ICONS.totuma, 'La totuma protectora aguanta un golpe de lo que sea.'],
-  [ITEM_ICONS.aguacero, 'El aguacero moja a todos los que van delante. Los cauchos de lluvia lo aguantan.'],
+  [ITEM_ICONS.aguacero, 'El aguacero avanza hacia el líder cada 1,8 segundos. Cuanto más adelante, más dura.'],
   [ITEM_ICONS.trampa, 'Ojo con las cajas con banda roja: son trampas y explotan.'],
   [SVG.coin, 'Con 10 monedas tu próximo objeto sale potenciado.'],
   [SVG.back, '¿Atascado o te caíste? Pulsa R y el zamuro te devuelve a la pista.'],
@@ -1285,9 +1289,13 @@ const menu = createGameMenu({
   note: () => mode === 'race' ? (race.state === 'end' ? 'La carrera terminó.' : race.netRace ? 'Carrera online: no se detiene.' : 'La carrera está en pausa.') : 'Estás en el garaje.',
   controls: [['W / ↑', 'Acelerar'], ['S / ↓', 'Frenar'], ['A D / ← →', 'Girar'], ['Shift / K', 'Saltar y derrapar · truco en el aire'], ['Espacio / E', 'Lanzar objeto adelante'],
     ['X', 'Lanzar objeto atrás'], ['1 2', 'Elegir objeto'], ['Q', 'Cambiar objeto'], ['R', 'Pedir rescate al zamuro'], ['C', 'Mirar atrás'], ['Mando', 'RT gas · LT freno · RB derrape · LB/X objeto · Y rescate'], ['H', 'Claxon'], ['M', 'Sonido'], ['Esc', 'Pausa']],
-  tips: ['Mantén Shift en una curva para derrapar: chispas azules, naranjas y moradas dan más turbo al soltar.',
+  tips: ['Mantén Shift y gira para derrapar. La ayuda corrige si te acercas al borde; gira al otro lado para abrir la curva.',
+    'Suelta Shift al salir de la curva: el carro se estabiliza y las chispas dan turbo. No hace falta esperar a las moradas.',
     'Acelera justo al final del "1" para un arranque cohete. Si aceleras en el "3" se te ahoga el motor.',
-    'Rompe cajas de madera para conseguir objetos. Cada moneda da un poquito más de velocidad.'],
+    'Rompe cajas de madera para conseguir objetos. Cada moneda da un poquito más de velocidad.',
+    'Sales y vuelves del rescate como fantasma durante 3 segundos. Los roces entre carros ya no te lanzan al aire.',
+    'Cada carro tiene su talento: lee su ficha y combina cauchos con derrapes, rebufo o piruetas.',
+    'Calidad Rápida reduce sombras, lluvia y detalles para equipos lentos. No cambia la física ni reduce el retraso de internet.'],
   actions: [
     { id: 'restart', label: 'Reiniciar carrera', kind: 'secondary', visible: () => mode === 'race' && !race.netRace && (!race.cup || ['loading', 'racing'].includes(race.cup.session.status)), run: () => startRace(race.playerIndex, race.playerWheel) },
     { id: 'to-garage', label: 'Volver al garaje', kind: 'secondary', visible: () => mode === 'race', run: () => toGarage() },
@@ -1478,6 +1486,7 @@ function spillCoins(c, n) {
 }
 
 function crash(c, power, side) {
+  if (isGhost(c)) return;
   if (power >= 12) popBalloon(c);
   c.vy = Math.max(c.vy, power * 0.38 / c.def.tune.mass);
   c.onGround = false;
@@ -1486,13 +1495,14 @@ function crash(c, power, side) {
   c.pitchV += rand(-1, 1) * power * 0.12;
   c.dizzy = 1.4;
   c.scream = 1.2;
-  c.drift = 0; c.driftT = 0;
+  c.drift = 0; c.driftT = 0; c.driftExitT = 0;
   spillCoins(c, power >= 14 ? 2 : 1);
   say(c, LINES.crash);
   popPart(c, power);
   if (power > 14) popPart(c, power);
   race.puffs.spawn(new THREE.Vector3(c.x, c.y + 1, c.z), { color: 0xc8c8d0, count: 8, spread: 2 });
   if (c.isPlayer) race.shake = Math.min(1, race.shake + power * 0.05);
+  recordImpact(c, race.clock, true);
 }
 
 function stepCar(c, input, dt) {
@@ -1500,7 +1510,9 @@ function stepCar(c, input, dt) {
   const boosting = c.boost > 0;
   // Under an aguacero cloud the car is slower and slides, less so on rain cauchos.
   const rained = c.cloud > 0 ? (t.wetFloor >= 0.5 ? 0.93 : 0.74) : 1;
-  const top = t.top * c.skill * (c.band || 1) * coinMultiplier(c) * rained;
+  const wetGrip = (c.onGround ? roadGripAt(T,c.x,c.z,race.clock) : 1) * (1-(T.def.rain||0)*.4);
+  const wet = 1 - wetGrip;
+  const top = t.top * c.skill * (c.band || 1) * coinMultiplier(c) * rained * (1 - wet * t.wetDrag);
   const terrain=T.def.offroad;
   // Wheel off-road resistance scales every roughness penalty below (accel,
   // speed cap, drag); slicks go negative and make rough ground worse.
@@ -1508,14 +1520,17 @@ function stepCar(c, input, dt) {
   const water=c.onGround?roadWaterAt(T,c.x,c.z,race.clock):0;
   // Rain cauchos keep a grip floor where the road reports wet.
   // Rain (and an aguacero cloud) cut grip; rain cauchos keep a floor.
-  const grip=Math.max((c.onGround?roadGripAt(T,c.x,c.z,race.clock):1)*(c.cloud>0?.55:1)*(1-(T.def.rain||0)*.4),t.wetFloor);
-  const acceleration=t.accel*(1-rough*(1-(terrain?.accel??1)))*(1-water*.28);
+  const grip=Math.max(wetGrip*(c.cloud>0?.55:1),t.wetFloor);
+  const waterDrag = 1 - t.wetFloor * 0.65;
+  const acceleration=t.accel*(1-rough*(1-(terrain?.accel??1)))*(1-water*.28*waterDrag);
   const previous={x:c.x,z:c.z};
   if (c.spin > 0) input = { throttle: 0, steer: 0 };   // skidding on a peel: no control
   if (c.stall > 0) { c.stall -= dt; input = { ...input, throttle: 0 }; }   // flooded engine after a jumped start
-  // Drift button: on the ground it hops (a drift starts on landing with the
-  // stick held); in the air after a ramp it is a trick.
+  // A short entry hop; keep holding and turn whenever ready after landing.
+  // In the air after a ramp the same button is still a trick.
   const held = !!input.drift;
+  c.driftExitT = Math.max(0, (c.driftExitT || 0) - dt);
+  c.driftAssist = 0;
   if (held && !c.driftHeld && c.spin <= 0) {
     if (c.onGround && c.vf > 4) {
       c.vy = HOP_SPEED; c.onGround = false; c.airTime = 0; c.hopping = true;
@@ -1525,18 +1540,20 @@ function stepCar(c, input, dt) {
     }
   }
   c.driftHeld = held;
-  c.driftWindow = Math.max(0, c.driftWindow - dt);
-  if (!c.drift && held && c.onGround && c.driftWindow > 0 && Math.abs(input.steer) > 0.3 && c.vf > DRIFT_MIN_SPEED) {
+  if (!c.drift && held && c.onGround && Math.abs(input.steer) > 0.2 && c.vf > DRIFT_MIN_SPEED && c.spin <= 0 && c.stall <= 0) {
     c.drift = Math.sign(input.steer); c.driftT = 0;
+    c.driftExitT = 0;
+    c.driftLane = Math.max(-T.HW * 0.3, Math.min(T.HW * 0.3, offsetOf(c.x, c.z)));
     if (c.isPlayer) sound.skid(0.8);
   }
   if (c.drift && (!held || c.vf < DRIFT_MIN_SPEED * 0.75 || c.spin > 0)) {
     // Letting go pays the charged turbo; a spin-out or stall loses it.
     const level = driftLevel(c.driftT);
     if (!held && level && c.spin <= 0) {
-      c.boost = Math.max(c.boost, DRIFT_BOOST[level]);
+      c.boost = Math.max(c.boost, DRIFT_BOOST[level] * t.driftBoost);
       if (c.isPlayer) sound.turbo();
     }
+    if (!held && c.spin <= 0) c.driftExitT = DRIFT_EXIT_TIME;
     c.drift = 0; c.driftT = 0;
   }
   let fx = Math.sin(c.h), fz = Math.cos(c.h);
@@ -1565,13 +1582,37 @@ function stepCar(c, input, dt) {
     const cap = rough>0||onPlank?Math.max(surfaceTop*(boosting?1.5:1),prevVf-48*dt):boosting?top*1.5:Math.max(top,prevVf-20*dt);
     vf = Math.max(-surfaceTop * 0.4, Math.min(cap, vf));
     vf*=Math.exp(-rough*(terrain?.drag??0)*dt);
-    vf*=Math.exp(-water*.7*dt); // shallow surf slows a kart without moving invisible walls
+    vf*=Math.exp(-water*.7*waterDrag*dt); // rain tires displace shallow water better
     // A drift loosens the rear: less lateral grip, so the car slides outward.
-    vr *= Math.exp(-t.grip * grip * (c.drift ? 0.38 : 1) * dt);   // mineral runoff leaves more lateral slip
-    const steerIn = c.drift ? driftSteer(c.drift, input.steer) * 1.18 : input.steer;
-    c.steer += (steerIn - c.steer) * Math.min(1, dt * 8);
-    if (c.drift) { c.driftT += dt * driftCharge(c.drift, input.steer); c.driftLvl = driftLevel(c.driftT); }
-    const turn = c.steer * t.turn * Math.max(-1, Math.min(1, vf / 10)) * (1 - Math.abs(vf) / top * 0.3);
+    vr *= Math.exp(-t.grip * grip * (c.drift ? 0.62 : c.driftExitT > 0 ? 1.8 : 1) * dt);
+    const turnScale = t.turn * Math.max(-1, Math.min(1, vf / 10)) * (1 - Math.abs(vf) / top * 0.3);
+    let steerIn = c.drift ? driftSteer(c.drift, input.steer) : input.steer;
+    let cornering = false;
+    if ((c.drift || c.driftExitT > 0) && vf > DRIFT_MIN_SPEED * 0.75 && race.mode !== 'battle'
+      && Math.abs(offsetOf(c.x, c.z)) < T.HW && T.plankAt(c.x, c.z) == null) {
+      const s = paramOf(c.x, c.z), here = pointAt(s), ahead = pointAt(s + 1);
+      const roadHeading = Math.atan2(ahead.x - here.x, ahead.y - here.y);
+      // Wrong-way driving, shortcuts, real jumps and off-road terrain stay manual.
+      if (Math.cos(c.h - roadHeading) > 0.35) {
+        const look = 12 + vf * 0.45, aim = pointAt(s + look), next = pointAt(s + look + 1);
+        const angle = Math.atan2(next.x - aim.x, next.y - aim.y);
+        // Steering chooses a tighter/wider line even during a strong correction.
+        const lane = Math.max(-T.HW * 0.42, Math.min(T.HW * 0.42, (c.driftLane || 0) - input.steer * T.HW * 0.22));
+        cornering = c.drift * wrapAngle(angle - roadHeading) > 0.035;
+        const aimError = wrapAngle(Math.atan2(aim.x - Math.cos(angle) * lane - c.x, aim.y + Math.sin(angle) * lane - c.z) - c.h);
+        const projectedHeading = c.h + steerIn * turnScale * 0.3;
+        const projectedOffset = offsetOf(c.x + Math.sin(projectedHeading) * vf * 0.55, c.z + Math.cos(projectedHeading) * vf * 0.55);
+        const assist = assistDrift(steerIn, aimError, projectedOffset, T.HW, turnScale);
+        steerIn = assist.steer; c.driftAssist = assist.amount;
+      }
+    }
+    c.steer += (steerIn - c.steer) * Math.min(1, dt * (c.driftExitT > 0 ? 18 : c.driftAssist > 0.3 ? 12 : 8));
+    const turn = c.steer * turnScale;
+    if (c.drift) {
+      // Charge real cornering, not a held button on an assisted straight.
+      if (cornering || turn * c.drift > 0.18) c.driftT += dt * driftCharge(c.drift, input.steer) * t.driftCharge;
+      c.driftLvl = driftLevel(c.driftT);
+    }
     c.h += turn * dt;
     c.latAcc = turn * vf;
   } else {
@@ -1628,9 +1669,9 @@ function stepCar(c, input, dt) {
         c.pitch = wrapAngle(c.pitch);
         c.rollV = c.pitchV = 0;
         c.heave.v -= impact * 0.5;
-        if (c.hopping) { c.hopping = false; c.driftWindow = 0.3; }
+        if (c.hopping) c.hopping = false;
         if (c.trick) {
-          const bonus = trickBoost(c.airTime, true);
+          const bonus = trickBoost(c.airTime, true) * (t.trickBoost ?? 1);
           if (bonus) {
             c.boost = Math.max(c.boost, bonus);
             say(c, LINES.trick, 0.9);
@@ -1680,7 +1721,7 @@ function stepCar(c, input, dt) {
     if (vn > 0) {
       c.vx -= 1.4 * vn * nx * side;
       c.vz -= 1.4 * vn * nz * side;
-      if (vn > 9) {
+      if (vn > 9 && !isGhost(c)) {
         c.drift = 0; c.driftT = 0;   // a hard wall hit throws the drift away
         sound.bonk(vn / 10);
         say(c, LINES.wall, 0.8);
@@ -1690,6 +1731,7 @@ function stepCar(c, input, dt) {
         c.rollV += (Math.random() < 0.5 ? -1 : 1) * vn * 0.12;
         if (Math.random() < 0.4) popPart(c, vn);
         if (c.isPlayer) race.shake = Math.min(1, race.shake + 0.2);
+        recordImpact(c, race.clock);
       }
     }
   }
@@ -1747,7 +1789,8 @@ function stepCar(c, input, dt) {
 // back to the last safe stretch of road and drops it there, minus two coins.
 function rescue(c) {
   if (c.rescueT > 0 || c.done || race.state !== 'go') return false;
-  Object.assign(c, { rescueT: RESCUE_TIME, rescued: false, drift: 0, driftT: 0, boost: 0, trick: false, hopping: false, outT: 0, stuckT: 0, spin: 0 });
+  Object.assign(c, { rescueT: RESCUE_TIME, rescued: false, drift: 0, driftT: 0, driftExitT: 0, boost: 0, trick: false, hopping: false, outT: 0, stuckT: 0, spin: 0 });
+  c.phaseT = RESCUE_TIME + RESCUE_GHOST_TIME;
   spillCoins(c, 2);
   say(c, LINES.rescue, 1.3);
   if (c.isPlayer) sound.sweep(380, 980, 0.45, 'triangle', 0.08);
@@ -1781,13 +1824,14 @@ function stepRescue(c, dt) {
     c.onGround = true;
     c.pitch = c.roll = c.pitchV = c.rollV = 0;
     c.awayT = 1;
+    c.phaseT = RESCUE_GHOST_TIME;
+    c.impacts = [];
   }
 }
 
 // The zamuro model hovers over a car being rescued, then flies off.
 const vultures = new Map();
 function syncVulture(c, dt) {
-  if (c.remote && c.rescueT > 0) { c.rescueT = Math.max(0, c.rescueT - dt); if (c.rescueT === 0) c.awayT = 1; }
   c.awayT = Math.max(0, (c.awayT || 0) - dt);
   let v = vultures.get(c);
   if (!(c.rescueT > 0 || c.awayT > 0)) { if (v) v.visible = false; return; }
@@ -1818,6 +1862,7 @@ function hitHazard(c, power, side, hz) {
 function launchGrid() {
   if (race.cup && !race.netRace) for (const c of race.cars) markStarted(race.cup.session, c.entrantId);
   for (const c of race.cars) {
+    c.phaseT = START_GHOST_TIME;
     if (c.remote) continue;
     const timing = c.isPlayer && !AUTO ? startBoost(race.throttleAt) : Math.random() < 0.35 ? startBoost(1.3) : startBoost(2.2);
     if (timing.boost) {
@@ -1833,32 +1878,42 @@ function launchGrid() {
 function slipstreams(dt) {
   for (const c of race.cars) {
     if (c.remote || c.done) continue;
-    const wake = race.cars.some(o => o !== c && inSlipstream(o, c));
-    c.draft = wake ? c.draft + dt : Math.max(0, c.draft - dt * 2);
+    if (c.rescueT > 0) { c.draft = 0; continue; }
+    const wake = race.cars.some(o => o !== c && !o.done && !o.ghost && o.rescueT <= 0 && inSlipstream(o, c));
+    c.draft = wake ? c.draft + dt * (c.tune.draftCharge ?? 1) : Math.max(0, c.draft - dt * 2);
     if (c.draft >= DRAFT_TIME) {
       c.draft = 0;
-      c.boost = Math.max(c.boost, DRAFT_BOOST);
+      c.boost = Math.max(c.boost, DRAFT_BOOST * (c.tune.draftBoost ?? 1));
       if (c.isPlayer) { sound.turbo(); c.itemMessage = '¡Rebufo!'; c.itemMessageT = 1; }
     }
   }
 }
 
 function setGhost(c, ghost) {
-  if (!!c.ghost === !!ghost) return;
   c.ghost = !!ghost;
+  syncGhostAppearance(c);
+}
+
+function syncGhostAppearance(c) {
+  const ghost = isGhost(c);
+  if (!!c.ghostVisible === ghost) return;
+  c.ghostVisible = ghost;
   c.car.root.traverse(o => {
     if (!o.material) return;
     const apply = (m) => {
       if (ghost) {
         const clone = m.userData?.ghostClone ? m : m.clone();
-        clone.userData = { ...clone.userData, ghostClone: true, baseTransparent: m.transparent, baseOpacity: m.opacity ?? 1 };
+        (c.car.ghostMaterials ??= new Set()).add(clone);
+        if (!m.userData?.ghostClone) clone.userData = { ...clone.userData, ghostClone: true, baseTransparent: m.transparent, baseOpacity: m.opacity ?? 1 };
         clone.transparent = true;
-        clone.opacity = 0.42;
+        clone.opacity = Math.min(0.42, clone.userData.baseOpacity);
+        clone.needsUpdate = true;
         return clone;
       }
       if (m.userData?.ghostClone) {
         m.transparent = !!m.userData.baseTransparent;
         m.opacity = m.userData.baseOpacity ?? 1;
+        m.needsUpdate = true;
       }
       return m;
     };
@@ -1873,12 +1928,16 @@ function collideCars() {
 }
 
 function collidePair(a, b) {
-  if (a.ghost || b.ghost || a.dns || b.dns || a.retired || b.retired) return;
+  if (isGhost(a) || isGhost(b) || a.done || b.done || a.dns || b.dns || a.retired || b.retired) return;
   const hit = resolveContact(a, b);
   if (hit?.kind === 'crash') {
     sound.bonk(hit.speed / 8);
-    if (hit.a.hit) crash(a, hit.a.power, hit.a.side);
-    if (hit.b.hit) crash(b, hit.b.power, hit.b.side);
+    for (const [c, contact] of [[a, hit.a], [b, hit.b]]) if (contact.hit) {
+      c.heave.v -= Math.min(2, contact.power * 0.15);
+      c.drift = 0; c.driftT = 0;
+      if (race.mode === 'battle') popBalloon(c);
+      recordImpact(c, race.clock);
+    }
   } else if (hit?.kind === 'bump') {
     sound.bonk(0.4);
   }
@@ -1989,7 +2048,9 @@ function updateRace(dt, presentation = true) {
       if (race.count <= 0) $('count').textContent = '';
     }
     for (const c of race.cars) {
+      stepProtection(c, race.cars, dt);
       if (c.remote) {
+        if (c.rescueT > 0) { c.rescueT = Math.max(0, c.rescueT - dt); if (!c.rescueT) c.awayT = 1; }
         applyRemote(c, dt);
         continue;
       }
@@ -2027,6 +2088,7 @@ function updateRace(dt, presentation = true) {
     for (const c of race.cars) if (c.remote) applyRemote(c, dt);
   }
   race.items.update(dt, race.cars, race.state === 'go' || race.state === 'end');
+  for (const c of race.cars) syncGhostAppearance(c);
   race.hazards?.update(race.clock, dt, race.state === 'go' || race.state === 'end' ? race.cars : [], hitHazard);
   race.puffs.update(dt);
   race.debris.update(dt);
@@ -2077,6 +2139,16 @@ function updateRace(dt, presentation = true) {
   boost.classList.toggle('turbo', p.boost > 0);
   const charge = p.drift ? String(driftLevel(p.driftT)) : '';
   if (boost.dataset.drift !== charge) boost.dataset.drift = charge;
+  const driftHint = $('drift-hint');
+  driftHint.hidden = !p.drift;
+  const driftText = p.drift ? (Number(charge) ? 'Suelta: turbo' : 'Derrape asistido') : '';
+  if (driftHint.textContent !== driftText) driftHint.textContent = driftText;
+  const driftButton = document.querySelector('.touch-drift');
+  const driftAction = p.drift && Number(charge) ? '¡Suelta!' : 'Derrape';
+  if (driftButton.textContent !== driftAction) {
+    driftButton.textContent = driftAction;
+    driftButton.setAttribute('aria-label', driftAction === 'Derrape' ? 'Derrapar o saltar' : 'Suelta para recibir turbo');
+  }
   const segs = boost.children;
   for (let i = 0; i < segs.length; i++) segs[i].classList.toggle('on', i < lit);
 
@@ -2151,15 +2223,19 @@ function readRoad(p, dt) {
   for (const f of race.items.projectiles) {
     if (f.owner === p || f.dead) continue;
     const dx = f.m.position.x - p.x, dz = f.m.position.z - p.z, d = Math.hypot(dx, dz);
-    if ((f.target === p || f.kind === 'mango') && d < best) { best = d; threat = { f, dx, dz }; }
+    const distantChancleta = !threat && f.kind === 'chancleta' && f.target === p;
+    if ((f.target === p || f.kind === 'mango') && (d < best || distantChancleta)) {
+      best = Math.min(best, d); threat = { f, dx, dz };
+    }
   }
-  $('incoming').hidden = !threat;
+  $('incoming').hidden = !threat && !(p.rainIn > 0);
+  $('incoming-arrow').hidden = !threat;
   if (threat) {
     const names = { cohete: '¡Cohete!', chancleta: '¡La chancleta viene por ti!', mango: '¡Mango!' };
     $('incoming-text').textContent = names[threat.f.kind] || '¡Cuidado!';
     const rel = Math.atan2(threat.dx, threat.dz) - p.h;
     $('incoming-arrow').style.transform = `rotate(${(race.mirror ? 1 : -1) * rel}rad)`;
-  }
+  } else if (p.rainIn > 0) $('incoming-text').textContent = `Aguacero en ${Math.ceil(p.rainIn)} s`;
   // Lap splits: a new lap shows its time; the best one gets a shout.
   if (race.mode !== 'battle' && p.lap > race.lapSeen && p.lap <= race.laps + 1) {
     race.lapSeen = p.lap;
@@ -2486,6 +2562,7 @@ function resumePose(c, p) {
   [c.x, c.y, c.z, c.h, c.pitch, c.roll, c.vf, c.steer] = p;
   c.vx = Math.sin(c.h) * c.vf; c.vz = Math.cos(c.h) * c.vf;
   c.lap = p[11]; c.prog = p[12]; c.coins = p[14];
+  c.phaseT = RESCUE_GHOST_TIME;
 }
 
 function applyRemote(c, dt) {
@@ -2510,6 +2587,8 @@ function applyRemote(c, dt) {
   c.drift = f & FLAG.drift ? (f & FLAG.driftRight ? -1 : 1) : 0;
   c.driftLvl = (f >> DRIFT_SHIFT) & 3;
   c.shield = f & FLAG.shield ? 1 : 0;
+  c.phaseRemote = !!(f & FLAG.phase);
+  c.phaseT = 0;
   if (f & FLAG.done) c.done = true;
   c.lap = Q[11]; c.prog = Q[12]; c.coins = Q[14];
   // Parts that fell off on the owner's screen fall off here too.
@@ -2580,6 +2659,8 @@ function syncRacers(s) {
     if (owned && c.remote) {
       // The host left: this client now drives the bots from where they were.
       c.remote = false; c.buf = [];
+      c.phaseT = c.phaseRemote ? RESCUE_GHOST_TIME : (c.phaseT || 0);
+      c.phaseRemote = false;
       c.vx = Math.sin(c.h) * c.vf; c.vz = Math.cos(c.h) * c.vf;
       c.lane = gridSlot(r.slot).lane;
       if (r.skillSeed) c.skill = cupSkill({ skillSeed: r.skillSeed }, race.diff);
@@ -2775,7 +2856,7 @@ function resize() {
 addEventListener('resize', resize);
 resize();
 
-if (DEBUG) Object.assign(window, { disposeRacer, makeRacer, placeRacer, sendPoses, pollPads, music, getWallet: () => wallet, menu, race, garage, renderer, crash, stepCar, startRace, updateRace, finish, renderResults, renderCup, toGarage, showWheel, ITEMS, TRACKS, buildTrack, setup, popBalloon, rescue, getActiveTrack: () => T, getNet: () => net });
+if (DEBUG) Object.assign(window, { disposeRacer, makeRacer, placeRacer, collidePair, sendPoses, pollPads, music, getWallet: () => wallet, menu, race, garage, renderer, crash, stepCar, startRace, updateRace, finish, renderResults, renderCup, toGarage, showWheel, ITEMS, TRACKS, buildTrack, setup, popBalloon, rescue, getActiveTrack: () => T, getNet: () => net });
 
 // ?track=desierto wins; otherwise the last pick, otherwise the estadio
 let savedTrack = 'estadio';
@@ -2816,3 +2897,5 @@ menuFlow = createMenuFlow({
       canConfigure: !net || (net.isHost && ['lobby', 'results', 'complete'].includes(net.state?.phase)) };
   },
 });
+
+onSettings((s, changed) => { if (changed.includes('quality')) applyRaceQuality(renderer, race, s.quality); });

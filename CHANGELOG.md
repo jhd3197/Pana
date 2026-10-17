@@ -10,6 +10,20 @@ becomes the GitHub release's notes.
 
 ### Added
 
+- **Derrape brings five new scenery models from the circuit artwork into the races.**
+  Plaza Pana gains an open music pavilion and a boat-repair yard; Salinas gains
+  salt-harvesting machinery and flamingos along its pink ponds. El Estadio has
+  detailed tire workshops, and Isla Bululú has its own boat yard. All five are
+  available in Studio; optional bird colonies follow the shared quality setting.
+- **Derrape adds assisted drifting, car specialties, safer recoveries and clearer item counterplay.**
+  Aguacero advances toward the leader in timed waves; the faster chancleta
+  pursues distant leaders. Car contacts stay grounded, and starts, rescues and
+  repeated impacts grant brief ghost protection. Drift, slipstream, jump and
+  surface talents make car and tire combinations matter. Gentler drift steering,
+  predictive edge help and stable turbo exits make corners easier to learn;
+  a release cue shows when a turbo is ready. Road wear and sector
+  pennants add circuit detail; shared quality settings now also reduce shadows,
+  weather and optional scenery without changing handling or pose frequency.
 - **Play paintball and Texas Hold’em with your panas, or practice against bots.**
   ¡Pintura! brings a 3D arena for up to eight players with cover, reloads,
   respawns and two-minute rounds. Póquer seats up to six with private cards,
@@ -129,6 +143,13 @@ becomes the GitHub release's notes.
   look the same everywhere.
 
 ### Changed
+
+- **Play Billar, Póquer and ¡Pintura! inside Pana's 3D plaza.**
+  Pool has a physical table, balls, cue and perspective aiming. Poker deals
+  cards onto the felt beside real chip stacks and seated panas. Paintball
+  follows your pana through a court built with shared town assets, with camera
+  orbit, touch controls and an optional overview. Fullscreen worlds replace
+  the inset tables; the new equipment is available in Pana Studio.
 
 - **Derrape's championships are now Copa Pana and Copa Aventura.** Each has a
   new four-track order; Mango and Arepa trophies, coins and cosmetics stay

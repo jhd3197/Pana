@@ -11,10 +11,13 @@ the eight. No bots. The hub discovers its metadata and Canvas 2D preview.
 - `public/network.js`: `PoolRoom extends HostRoom`. The host simulates and sends
   complete snapshots at 20 Hz during shots and on actions or member changes.
 - `server/room.js`: the shared relay with `maxClients = 2`; no custom transport.
-- `public/scene.js`: cached wood/felt table, shaded numbered balls, cue and first
-  contact guide. `game.js` wires the shared menu, input, roster and results.
+- `public/scene.js`: perspective WebGL table in the shared plaza, physical
+  numbered balls, cue, first-contact guide and standing saved panas.
+  `engine/models/props/pool.js` owns the Studio-registered equipment.
+  `public/preview.js` keeps the lightweight Canvas 2D hub thumbnail separate.
+  `game.js` wires the shared menu, input, roster and results.
 - `public/portraits.js`: the actual saved Pana sculpt rendered to a portrait.
-  WebGL and audio load separately so a blocked CDN does not block the table.
+  The portrait is optional; the playable scene itself requires WebGL/Three.js.
 
 The first legal colored pot assigns solids/stripes, including on the break.
 A legal own-group pot retains the turn. A scratch, no contact, wrong first
@@ -53,6 +56,21 @@ power; Space/Enter shoots. With ball in hand, arrows move its proposed position
 and Enter confirms; mouse/touch places it directly. Narrow portrait play
 rotates the table, with inverse pointer coordinates and upright ball numbers.
 Solo practice pauses in the shared menu; a connected two-person match continues.
+The shared settings menu offers plaza and overhead table cameras.
+
+## 3D coordinate contract
+
+Rules stay at 1000 × 500 units; the cloth mesh is 10 × 5 metres. Map x to
+`(x - 500) / 100`, y to world Z `(y - 250) / 100`; cloth height is 1.55.
+Picking intersects the plane through ball centres, at 1.66, so `screen()` and
+`point()` remain exact inverses under perspective and portrait rotation.
+The renderer never advances physics. Rolling texture rotation and snapshot
+interpolation are cosmetic. Keep table bases below the cloth; an overlapping
+wood slab can silently hide the entire felt surface.
+
+`engine/table-world.js` shares the plaza, sky and lighting with Póquer. It fits
+the actual 3D bounds to the HUD's available screen rectangle using camera view
+offsets, while the canvas fills the viewport. Do not restore inset canvas padding.
 
 Run `npm run test:browser -- billar` with `PANA_PLAYWRIGHT_PATH` set to an external
 Playwright install. The browser suite uses actual independent Colyseus clients

@@ -1,5 +1,36 @@
 # Derrape online (Colyseus)
 
+## Temporary protection and item waves
+
+`FLAG.phase = 1024` carries start/rescue/pileup protection in the existing
+15-number, 20 Hz pose. The receiver's `phaseRemote` is distinct from `ghost`
+(disconnection), so room-state patches cannot clear temporary protection.
+Remote rescue timers advance in simulation, not vulture presentation: manual
+and hidden-render simulations must not leave a car immune forever.
+When bot ownership transfers, convert `phaseRemote` to a bounded local timer
+and clear the remote flag, or the new host would keep the bot ghosted forever.
+In a manual browser test, receiving a new pose does not mean interpolation has
+displayed it. Wait for `applyRemote` to consume its timestamp when asserting
+that protection has expired; advancing simulation in a tight loop does not
+advance the server clock.
+
+The guest-first host-election browser fixture gates the leader's real matchmaking
+request until the guest has joined, then checks that their server arrival times
+are less than 15 seconds apart. Warming an offline garage does not load the
+Colyseus SDK; a later cold CDN fetch can otherwise exhaust the deliberate party
+leader window and test a different scenario from the one intended.
+
+Aguacero sends one `cloud` effect with a unique ID, timestamp and at most seven
+target/delay/duration records. Keep this below the room's 512-character effect
+limit. Delayed recipients subtract elapsed server-clock time before scheduling;
+duplicate IDs are bounded to a 64-entry cache, reset with the item system.
+Chancleta damage is still decided exclusively by its victim's client, and its
+`hit` relay ends the same projectile on other screens.
+
+Render quality does not change pose cadence or gameplay. Procedural scenery
+never travels over the room connection. Lower shadows/details help local
+rendering and CPU headroom; they do not remove internet latency or packet loss.
+
 Plan: `docs/plans/51_colyseus-and-derrape-online.md`. Proof:
 `node Pana/games/derrape/tests/online.browser.js <playwright>` against a running
 server (`PANA_TEST_URL`), two real browser clients.

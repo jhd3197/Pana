@@ -2,6 +2,8 @@
 import * as THREE from 'three';
 import * as kit from './track-kit.js';
 import { plankHeight, isOpenEdge, OPEN_MARGIN } from './course-rules.js';
+import { raceDetails } from './tracks/race-details.js';
+import { roadMaterial } from './tracks/road-material.js';
 
 // ---------- geometry backends ----------
 // The original stadium oval, kept verbatim so lap logic never regresses.
@@ -190,7 +192,9 @@ function buildRibbon(T, pal) {
     geo.setIndex(idx);
     geo.computeVertexNormals();
   }
-  const m = new THREE.Mesh(geo, new THREE.MeshStandardMaterial({ color: pal.track, roughness: 1, flatShading: true, side: THREE.DoubleSide }));
+  const material = roadMaterial(pal.track, ['selva','llanos','desierto','bululu','delta','salto'].includes(T.id));
+  const m = new THREE.Mesh(geo, material);
+  m.userData.dispose = () => material.dispose();
   m.name='track-road';
   m.position.y = T.def.environment ? 0.12 : 0.03;
   m.receiveShadow = true;
@@ -304,6 +308,7 @@ export function makeTrack(def) {
     kit.sectorSigns(scenery, T);
     scenery.traverse((o) => { if (o.userData.tick) T.animated.push(o); });
     group.add(scenery);
+    group.add(raceDetails(T));
     T.group = group;
     return group;
   };

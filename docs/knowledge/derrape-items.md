@@ -1,5 +1,38 @@
 # Derrape vehicles, crates and combat
 
+## Friends playtest: waves, pursuit and recovery
+
+- Aguacero freezes the active order at release. The nearest rival ahead is hit
+  after .75 s; each next position follows 1.8 s later, with .4 s extra exposure.
+  The leader is last. The caller and anyone behind are excluded. A pending
+  wave appears in the incoming-item HUD; ghosted/finished racers skip the hit.
+- The caller relays one bounded schedule with an ID and server-clock timestamp.
+  Recipients subtract delivery latency, ignore duplicates and use the same
+  target order even if racers overtake. `items.clear()` discards pending waves.
+- Chancleta stays locked on its selected leader. Other cars cannot intercept
+  it. Pursuit speed is at least 110 m/s, at least 65 m/s faster than its target,
+  and initially large enough to close the route gap in roughly seven seconds.
+  It never slows during pursuit; its dive also overtakes turboing cars. The
+  old 16 s timeout is replaced by a route-aware safety lifetime of at least
+  45 s. The target sees the warning from launch, even outside the usual 60 m
+  incoming-item radius. A temporarily protected target is orbited until vulnerable; finished,
+  retired or disconnected targets cancel the projectile.
+- `recovery-rules.js` separates temporary protection from disconnected ghosts.
+  Launch and rescue grant 3 s; two distinct hard impacts within 3 s grant 2.5 s.
+  Expiry waits for space around the car. Ghosts ignore cars, hazards, peels and
+  projectiles; track boundaries still contain them. Items cannot fire during
+  the rescue itself. Ordinary car contacts trade capped horizontal momentum,
+  never call the airborne crash animation, and do not fling lightweight cars.
+- Ghost material clones retain original transparency/opacity across repeated
+  transitions. The racer owns all clones, including detached parts, for cleanup.
+
+`feedback.browser.js` proves the full-loop moving-target chase (62 m/s target,
+2,074 m initial gap, about 7.1 s to impact on Estadio), an interceptor, ordered
+rain, grounded contacts, launch/rescue protection, skill payouts and quality
+switching. `feedback-online.browser.js` uses two real room clients and a
+deliberately delayed rain delivery; it is functional proof, not a bandwidth or
+physical-device benchmark.
+
 Implemented 2026-10-14 with the existing Three.js 0.160.0 CDN imports; no new
 runtime dependencies. Derrape still runs a local four-car race with bots.
 

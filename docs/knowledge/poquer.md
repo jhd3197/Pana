@@ -43,10 +43,21 @@ pots, odd chips, departures and 200 deterministic randomized legal hands.
 betting through showdown, conservation, rematch, host departure, new arrivals,
 local bots, shared pause, and mobile layouts. `qa/` screenshots stay ignored.
 
-The shared 3D pana is seated around a Three.js felt table. HTML cards and
-controls remain sharp and accessible. Card suits use SVG artwork to avoid
-platform-dependent emoji glyphs. The canvas resets the inline dimensions
-from `bindRenderer` to its container before sizing.
+The shared 3D pana sits on the same chairs as Caída around a physical oval table
+in the plaza. `engine/models/props/poker.js` owns the table, textured cards and
+batched chip stacks, all registered in Studio. Community cards and dealt hands
+are meshes on the felt; the private hand also has a readable HUD copy. The
+community DOM representation remains available to assistive technology.
+
+Only the player's private server view reaches the renderer. A `null` card
+creates a back texture, never a concealed face; folded hands leave the table.
+Chip stacks reflect the current bankroll, wagers and pot. Stack geometry is
+batched to two material draws, avoiding hundreds of tiny draws on phones.
+
+`engine/table-world.js` supplies the same sky, plaza, lighting and perspective
+framing as Billar. The canvas fills the viewport. Reset inline CSS dimensions
+from `bindRenderer` before measuring, and fit game bounds to the space clear of
+HUD panels. The shared settings menu offers plaza and overhead cameras.
 
 ## Notes for agents
 

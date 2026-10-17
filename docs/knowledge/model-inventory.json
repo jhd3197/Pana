@@ -2,20 +2,20 @@
   "date": "2026-10-17",
   "scope": "Current production 3D resource/model families; catalog variants and scene assemblies are counted separately. No primitive-mesh count or deleted-history total.",
   "counts": {
-    "catalog": 220,
+    "catalog": 232,
     "categories": {
-      "Fauna": 17,
+      "Fauna": 18,
       "Vegetación": 24,
       "Llanos": 10,
       "Vida llanera": 13,
       "Desierto": 10,
       "Termales": 5,
-      "Objetos": 47,
+      "Objetos": 54,
       "Emblemas": 9,
-      "Pueblo": 10,
+      "Pueblo": 12,
       "Páramo": 8,
       "Selva": 14,
-      "Costa": 12,
+      "Costa": 14,
       "Personajes": 3,
       "Vestuario": 5,
       "Vehículos": 14,
@@ -27,6 +27,21 @@
     "dormantFactories": 9
   },
   "assets": [
+    {
+      "id": "flamingo",
+      "name": "Flamenco de las salinas",
+      "category": "Fauna",
+      "source": "Pana/engine/models/fauna/birds/flamingo.js",
+      "factory": "flamingo",
+      "usedBy": [
+        "Derrape"
+      ],
+      "previewOptions": {
+        "pose": "stand",
+        "seed": 7
+      },
+      "status": "in-use"
+    },
     {
       "id": "tonina",
       "name": "Tonina (delfín rosado)",
@@ -331,7 +346,9 @@
         "Derrape",
         "Escondidas",
         "Cocina",
-        "Reliquia"
+        "Reliquia",
+        "Billar",
+        "Póquer"
       ],
       "previewOptions": {
         "seed": 7
@@ -349,7 +366,10 @@
         "Derrape",
         "Escondidas",
         "Cocina",
-        "Galope"
+        "Galope",
+        "Billar",
+        "Póquer",
+        "¡Pintura!"
       ],
       "previewOptions": {
         "seed": 7
@@ -410,7 +430,9 @@
         "Bululú",
         "Derrape",
         "Escondidas",
-        "Cocina"
+        "Cocina",
+        "Billar",
+        "Póquer"
       ],
       "previewOptions": {
         "seed": 7
@@ -424,7 +446,8 @@
       "source": "Pana/engine/models/vegetation/araguaney.js",
       "factory": "araguaney",
       "usedBy": [
-        "Derrape"
+        "Derrape",
+        "¡Pintura!"
       ],
       "previewOptions": {
         "seed": 7
@@ -1110,7 +1133,8 @@
         "Escondidas",
         "Cocina",
         "Derrape",
-        "¡Embuste!"
+        "¡Embuste!",
+        "¡Pintura!"
       ],
       "previewOptions": null,
       "status": "in-use"
@@ -1125,7 +1149,8 @@
         "Escondidas",
         "Cocina",
         "Derrape",
-        "¡Embuste!"
+        "¡Embuste!",
+        "¡Pintura!"
       ],
       "previewOptions": null,
       "status": "in-use"
@@ -1181,7 +1206,8 @@
       "factory": "marketStall",
       "usedBy": [
         "Escondidas",
-        "Derrape"
+        "Derrape",
+        "¡Pintura!"
       ],
       "previewOptions": null,
       "status": "in-use"
@@ -1195,7 +1221,10 @@
       "usedBy": [
         "Escondidas",
         "Cocina",
-        "Derrape"
+        "Derrape",
+        "Billar",
+        "Póquer",
+        "¡Pintura!"
       ],
       "previewOptions": null,
       "status": "in-use"
@@ -1209,7 +1238,10 @@
       "usedBy": [
         "Escondidas",
         "Cocina",
-        "Derrape"
+        "Derrape",
+        "Billar",
+        "Póquer",
+        "¡Pintura!"
       ],
       "previewOptions": {
         "style": "tejas",
@@ -1226,7 +1258,10 @@
       "usedBy": [
         "Escondidas",
         "Cocina",
-        "Derrape"
+        "Derrape",
+        "Billar",
+        "Póquer",
+        "¡Pintura!"
       ],
       "previewOptions": {
         "style": "balcon",
@@ -1245,7 +1280,10 @@
       "usedBy": [
         "Escondidas",
         "Cocina",
-        "Derrape"
+        "Derrape",
+        "Billar",
+        "Póquer",
+        "¡Pintura!"
       ],
       "previewOptions": {
         "style": "tienda",
@@ -1264,7 +1302,10 @@
       "usedBy": [
         "Escondidas",
         "Cocina",
-        "Derrape"
+        "Derrape",
+        "Billar",
+        "Póquer",
+        "¡Pintura!"
       ],
       "previewOptions": {
         "style": "terraza",
@@ -1283,7 +1324,9 @@
       "usedBy": [
         "Escondidas",
         "Cocina",
-        "Derrape"
+        "Derrape",
+        "Billar",
+        "Póquer"
       ],
       "previewOptions": null,
       "status": "in-use"
@@ -1398,7 +1441,9 @@
       "factory": "streetFoodKiosk",
       "usedBy": [
         "Cocina",
-        "Derrape"
+        "Derrape",
+        "Billar",
+        "Póquer"
       ],
       "previewOptions": null,
       "status": "in-use"
@@ -1412,7 +1457,9 @@
       "usedBy": [
         "Escondidas",
         "Cocina",
-        "Derrape"
+        "Derrape",
+        "Billar",
+        "Póquer"
       ],
       "previewOptions": null,
       "status": "in-use"
@@ -1424,7 +1471,8 @@
       "source": "Pana/engine/models/props/pueblo.js",
       "factory": "basketballHoop",
       "usedBy": [
-        "Derrape"
+        "Derrape",
+        "¡Pintura!"
       ],
       "previewOptions": null,
       "status": "in-use"
@@ -1450,7 +1498,9 @@
       "usedBy": [
         "Escondidas",
         "Cocina",
-        "Derrape"
+        "Derrape",
+        "Billar",
+        "Póquer"
       ],
       "previewOptions": null,
       "status": "in-use"
@@ -1464,7 +1514,10 @@
       "usedBy": [
         "Escondidas",
         "Cocina",
-        "Derrape"
+        "Derrape",
+        "Billar",
+        "Póquer",
+        "¡Pintura!"
       ],
       "previewOptions": null,
       "status": "in-use"
@@ -2245,6 +2298,138 @@
       "status": "in-use"
     },
     {
+      "id": "pool-table",
+      "name": "Mesa de billar",
+      "category": "Objetos",
+      "source": "Pana/engine/models/props/pool.js",
+      "factory": "createPoolTable",
+      "usedBy": [
+        "Billar"
+      ],
+      "previewOptions": {},
+      "status": "in-use"
+    },
+    {
+      "id": "pool-ball",
+      "name": "Bola de billar",
+      "category": "Objetos",
+      "source": "Pana/engine/models/props/pool.js",
+      "factory": "createPoolBall",
+      "usedBy": [
+        "Billar"
+      ],
+      "previewOptions": {
+        "number": 9
+      },
+      "status": "in-use"
+    },
+    {
+      "id": "pool-cue",
+      "name": "Taco de billar",
+      "category": "Objetos",
+      "source": "Pana/engine/models/props/pool.js",
+      "factory": "createPoolCue",
+      "usedBy": [
+        "Billar"
+      ],
+      "previewOptions": {},
+      "status": "in-use"
+    },
+    {
+      "id": "poker-table",
+      "name": "Mesa de póquer",
+      "category": "Objetos",
+      "source": "Pana/engine/models/props/poker.js",
+      "factory": "createPokerTable",
+      "usedBy": [
+        "Póquer"
+      ],
+      "previewOptions": {},
+      "status": "in-use"
+    },
+    {
+      "id": "poker-card",
+      "name": "Carta de póquer",
+      "category": "Objetos",
+      "source": "Pana/engine/models/props/poker.js",
+      "factory": "createPokerCard",
+      "usedBy": [
+        "Póquer"
+      ],
+      "previewOptions": {
+        "card": 38
+      },
+      "status": "in-use"
+    },
+    {
+      "id": "poker-chips",
+      "name": "Fichas de póquer",
+      "category": "Objetos",
+      "source": "Pana/engine/models/props/poker.js",
+      "factory": "createPokerChips",
+      "usedBy": [
+        "Póquer"
+      ],
+      "previewOptions": {},
+      "status": "in-use"
+    },
+    {
+      "id": "paint-marker",
+      "name": "Marcadora de pintura",
+      "category": "Objetos",
+      "source": "Pana/engine/models/props/paintball.js",
+      "factory": "createPaintMarker",
+      "usedBy": [
+        "¡Pintura!"
+      ],
+      "previewOptions": {},
+      "status": "in-use"
+    },
+    {
+      "id": "plaza-bandstand",
+      "name": "Glorieta musical",
+      "category": "Pueblo",
+      "source": "Pana/engine/models/props/plaza-bandstand.js",
+      "factory": "plazaBandstand",
+      "usedBy": [
+        "Derrape"
+      ],
+      "status": "in-use"
+    },
+    {
+      "id": "salt-harvester",
+      "name": "Patio de cosecha de sal",
+      "category": "Costa",
+      "source": "Pana/engine/models/props/salt-harvester.js",
+      "factory": "saltHarvester",
+      "usedBy": [
+        "Derrape"
+      ],
+      "status": "in-use"
+    },
+    {
+      "id": "boat-repair-yard",
+      "name": "Astillero de peñeros",
+      "category": "Costa",
+      "source": "Pana/engine/models/props/boat-yard.js",
+      "factory": "boatRepairYard",
+      "usedBy": [
+        "Derrape"
+      ],
+      "status": "in-use"
+    },
+    {
+      "id": "tire-workshop",
+      "name": "Cauchera del circuito",
+      "category": "Pueblo",
+      "source": "Pana/engine/models/props/tire-workshop.js",
+      "factory": "tireWorkshop",
+      "usedBy": [
+        "Derrape"
+      ],
+      "status": "in-use"
+    },
+    {
       "id": "pana",
       "name": "Pana original",
       "category": "Personajes",
@@ -2920,7 +3105,8 @@
       "factory": "createDominoChair",
       "usedBy": [
         "Dominó",
-        "Caída"
+        "Caída",
+        "Póquer"
       ],
       "status": "in-use"
     },
@@ -3121,7 +3307,7 @@
       "anchor": "function basket",
       "where": "Atrapa los mangos",
       "note": "Held by players; needs a standalone preview adapter.",
-      "line": 18
+      "line": 19
     },
     {
       "name": "Coconut",
@@ -3129,7 +3315,7 @@
       "anchor": "function coconut",
       "where": "Atrapa los mangos",
       "note": "Falling hazard with three dark eyes.",
-      "line": 30
+      "line": 31
     },
     {
       "name": "Mango minigame tree (older)",
@@ -3137,7 +3323,7 @@
       "anchor": "function mangoTree",
       "where": "Atrapa los mangos",
       "note": "Old polygon canopy and random fruit placement. Modernize with shared flora while preserving catch lanes.",
-      "line": 39
+      "line": 40
     },
     {
       "name": "Board die",
@@ -3161,7 +3347,7 @@
       "anchor": "function createToken",
       "where": "Bululú board",
       "note": "Colored base under shared character; not a new character sculpt.",
-      "line": 497
+      "line": 515
     },
     {
       "name": "Breakable supply crate",
@@ -3185,7 +3371,7 @@
       "anchor": "function makePeel",
       "where": "Derrape item use",
       "note": "Three peel strips and seed; not the whole mango.",
-      "line": 74
+      "line": 76
     },
     {
       "name": "Kitchen sign",
@@ -3219,7 +3405,7 @@
       "anchor": "function createExpeditionWorld",
       "where": "Reliquia; Studio map",
       "note": "Authored walkable mine, swept shared bridge, timed winches, crypt, relic chamber and return tunnel. Five expedition models are cataloged independently.",
-      "line": 21
+      "line": 22
     },
     {
       "name": "Mounted horse and riding tack",
@@ -3355,7 +3541,7 @@
       "anchor": "function waterSurface",
       "where": "Derrape",
       "note": "Ocean, river, canal and pool configurations; not separate species/objects.",
-      "line": 18
+      "line": 33
     },
     {
       "name": "Bululú tide wash",
@@ -3379,7 +3565,7 @@
       "anchor": "function createIslet",
       "where": "Bululú board",
       "note": "Seeded neighboring islands and distant ridges.",
-      "line": 41
+      "line": 43
     },
     {
       "name": "Tepui and waterfall",
@@ -3387,7 +3573,7 @@
       "anchor": "function createTepui",
       "where": "Bululú board",
       "note": "Three mesas; one waterfall/mist landmark. Not the Selva waterfall.",
-      "line": 81
+      "line": 83
     },
     {
       "name": "Living sky and cloud layers",
@@ -3411,7 +3597,7 @@
       "anchor": "Low jetties",
       "where": "Bululú circuit",
       "note": "Inline harbor planks and pilings.",
-      "line": 88
+      "line": 90
     },
     {
       "name": "Plaza streets, gardens and mirador",
@@ -3419,7 +3605,7 @@
       "anchor": "function createTown",
       "where": "Plaza circuit",
       "note": "Street surfaces, block gardens, lookout terrace and stairs; shared houses/trees counted separately.",
-      "line": 36
+      "line": 37
     },
     {
       "name": "Plaza waterfront canals and docks",
@@ -3427,7 +3613,7 @@
       "anchor": "function createWaterfront",
       "where": "Plaza circuit",
       "note": "Canal network and moorings around canalVilla.",
-      "line": 19
+      "line": 20
     },
     {
       "name": "Continuous circuit surroundings",
@@ -3467,7 +3653,7 @@
       "anchor": "for(let i=0;i<10;i++)fixed.add",
       "where": "Estadio",
       "note": "Pitch stripes, markings and two goal frames.",
-      "line": 23
+      "line": 24
     },
     {
       "name": "Pit garages",
@@ -3475,7 +3661,7 @@
       "anchor": "Pit garages",
       "where": "Estadio",
       "note": "Eight inline garage blocks and numbered signs.",
-      "line": 46
+      "line": 47
     },
     {
       "name": "Floodlights and scoreboard",
@@ -3483,7 +3669,7 @@
       "anchor": "const score=",
       "where": "Estadio",
       "note": "Two inline landmark families.",
-      "line": 56
+      "line": 63
     },
     {
       "name": "Basketball court and banners",
@@ -3491,7 +3677,7 @@
       "anchor": "community half-court",
       "where": "Estadio",
       "note": "Court and sponsor panels; shared hoops already cataloged.",
-      "line": 70
+      "line": 77
     },
     {
       "name": "Chi Chi retaining walls and river bridges",
@@ -3515,7 +3701,7 @@
       "anchor": "function sunnyStage",
       "where": "Both Bululú minigames",
       "note": "Sky, ground, clouds and shared landscape props.",
-      "line": 17
+      "line": 18
     },
     {
       "name": "Raft and spinning striped log",
@@ -3523,7 +3709,7 @@
       "anchor": "// raft:",
       "where": "No te caigas",
       "note": "Player platforms, floats, central post, rotating obstacle and sandbars.",
-      "line": 45
+      "line": 46
     },
     {
       "name": "Minigame wave surface",
@@ -3531,7 +3717,7 @@
       "anchor": "const seaGeo",
       "where": "No te caigas",
       "note": "Older deformed plane, separate from the shared water shader.",
-      "line": 38
+      "line": 39
     },
     {
       "name": "Boost pad",
@@ -3539,7 +3725,7 @@
       "anchor": "function padTexture",
       "where": "Derrape",
       "note": "Animated ground marker, separate from collectible item models.",
-      "line": 98
+      "line": 100
     },
     {
       "name": "Puffs, debris and speech bubbles",
@@ -3547,7 +3733,7 @@
       "anchor": "export class Puffs",
       "where": "Bululú; Derrape",
       "note": "Particle/sprite effects, not scenery inventory counts.",
-      "line": 205
+      "line": 286
     },
     {
       "name": "Crate fragment bursts",
