@@ -1,5 +1,9 @@
 # Pueblo and Páramo models
 
+For the configurable colonial house maker, its six Studio presets and the planted
+street preview, see [colonial-houses.md](colonial-houses.md). The original Pueblo
+house's default geometry and footprint remain compatible with existing maps.
+
 Twenty standalone Three.js factories registered in Pana Studio. The buildings
 and props appear under **Pueblo** and **Páramo**; the two new plants remain in
 **Vegetación**. Search by the original three-digit number, Spanish name or ID.

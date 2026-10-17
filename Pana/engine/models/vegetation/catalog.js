@@ -1,5 +1,14 @@
 // Model metadata only: no Three.js, construction or game imports.
 export default [
+  ...[
+    ['garden-rosette', 'Mata de hojas anchas', 'garden-rosette', 'gardenRosette'],
+    ['trailing-vine', 'Enredadera colgante', 'trailing-vine', 'trailingVine'],
+    ['trinitaria', 'Trinitaria', 'trinitaria', 'trinitaria'],
+  ].map(([id, name, file, factory]) => ({
+    id, name, category: 'Vegetación', source: `/engine/models/vegetation/${file}.js`, factory,
+    usedBy: ['Pana Studio'], previewOptions: { seed: 7 }, pack: 'casas-coloniales',
+    tags: ['jardín', 'casa', 'plantas'],
+  })),
   {
     id:'moriche',name:'Palma moriche',category:'Vegetación',source:'/engine/models/vegetation/moriche.js',
     factory:'moriche',usedBy:['Galope'],previewOptions:{seed:7,h:10},

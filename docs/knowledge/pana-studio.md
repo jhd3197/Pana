@@ -1,5 +1,12 @@
 # Pana Studio
 
+The **casas-coloniales** pack includes a house recipe editor on its six preset
+pages, three plants, **Calle de las flores** and an editable 50-house collection.
+**Acabado de paredes** offers clean paint, soft plaster, painted-brick accents
+and exposed-brick patches, with a separate finish lock. The controls reuse the live
+inspector and export/import versioned JSON. See [colonial-houses.md](colonial-houses.md)
+for generation, placement and validation; this feature does not create map rooms.
+
 Run `.\dev.ps1 studio` from the repository root. It opens `/studio/library`, reuses a healthy Pana server and does
 not kill a running game. `-NoBrowser` prints the address without opening a tab;
 `-Port` selects a server port. If another application occupies that port, the

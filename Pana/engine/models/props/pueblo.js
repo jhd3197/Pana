@@ -4,6 +4,7 @@ import * as THREE from 'three';
 import { M, mesh, box, tube } from '/engine/models/core/primitives.js';
 import { makeMango } from '/engine/models/props/mango.js';
 import { bush } from '/engine/models/vegetation/bush.js';
+import { colonialHouse as recipeHouse } from './colonial-house.js';
 import { food } from '/engine/models/props/kitchen.js';
 import { finish, rounded, sign, curve, archPanel, archFrame, tiledRoof, shutterWindow, palette as P } from '/engine/models/core/architecture-kit.js';
 
@@ -42,7 +43,12 @@ function awning(g, w, y, z, colors = [0x3d8580, 0xf0dfb9]) {
 }
 
 // 011 · A single-storey colonial home with a tiled roof and grilled shutters.
-export function colonialHouse({ seed = 11, color = 0x529b9d } = {}) {
+export function colonialHouse(options = {}) {
+  if (options.spec || options.family) return recipeHouse(options);
+  return legacyColonialHouse(options);
+}
+
+function legacyColonialHouse({ seed = 11, color = 0x529b9d } = {}) {
   const g = new THREE.Group(), wall = M(color, { roughness: 0.95 });
   g.add(rounded(6.4, 4.2, 5.1, wall, 0, 2.2, 0, 0.08));
   g.add(rounded(6.65, 0.28, 5.35, P.cream, 0, 0.14, 0));

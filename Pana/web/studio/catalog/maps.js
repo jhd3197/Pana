@@ -3,6 +3,14 @@ import { TRACK_DEFINITIONS } from '/g/derrape/track-definitions.js';
 import { STATIONS } from '/g/cocina/rules.js';
 
 export const MAPS = [
+  { id: 'colonial-collection', name: 'Cincuenta casas del pueblo', category: 'Mapas', source: '/engine/colonial-house-collection.js', factory: 'createColonialHouseCollection',
+    houseMaker: true, usedBy: ['Pana Studio'], pack: 'casas-coloniales', description: 'Cincuenta casas con seis ventanas, tres techos, tres distribuciones y cuatro acabados de pared. Elige una casa para editarla o guarda la colección completa.',
+    async build() { const { createColonialHouseCollection } = await import('/engine/colonial-house-collection.js'); return createColonialHouseCollection(); },
+  },
+  { id: 'colonial-street', name: 'Calle de las flores', category: 'Mapas', source: '/engine/colonial-street.js', factory: 'createColonialStreet',
+    usedBy: ['Pana Studio'], pack: 'casas-coloniales', description: 'Diez casas generadas sobre una calle con pendiente, aceras, balcones y jardines. Muestra del creador de casas.',
+    async build() { const { createColonialStreet } = await import('/engine/colonial-street.js'); return createColonialStreet(); },
+  },
   ...ARENAS.filter(map => map.id !== 'plaza').map(map => ({
     id: `arena-${map.id}`, name: map.name, category: 'Mapas', source: '/engine/arenas.js',
     dependencies: ['/engine/arena-layouts.js'], factory: 'createArenaEnvironment',

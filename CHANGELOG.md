@@ -10,6 +10,14 @@ becomes the GitHub release's notes.
 
 ### Added
 
+- **Pana Studio can generate and customize Venezuelan-inspired colonial houses.**
+  Generate collections of 50 houses from six families, six window designs,
+  three roof shapes and three facade layouts, with balconies, porches and plants.
+  Four wall finishes add soft plaster shading and small painted or exposed-brick
+  patches, with their own seeded variation and lock.
+  Edit each house, lock choices while rerolling, save or load JSON collections,
+  and preview ten houses on Calle de las flores.
+
 - **Derrape adds eleven scenery models to its towns, coasts and countryside.**
   Cafés, fountains, market carts, fishing structures, port equipment and other
   landmarks now appear across six circuits and are available in Pana Studio.

@@ -2,26 +2,26 @@
   "date": "2026-10-17",
   "scope": "Current production 3D resource/model families; catalog variants and scene assemblies are counted separately. No primitive-mesh count or deleted-history total.",
   "counts": {
-    "catalog": 235,
+    "catalog": 257,
     "categories": {
       "Fauna": 18,
-      "Vegetación": 24,
+      "Vegetación": 27,
       "Llanos": 10,
       "Vida llanera": 13,
       "Desierto": 10,
       "Termales": 5,
-      "Objetos": 54,
+      "Objetos": 61,
       "Emblemas": 9,
-      "Pueblo": 12,
+      "Pueblo": 18,
       "Páramo": 8,
       "Selva": 14,
-      "Costa": 14,
+      "Costa": 18,
       "Personajes": 3,
       "Vestuario": 5,
       "Vehículos": 14,
-      "Mapas": 22
+      "Mapas": 24
     },
-    "previewOnly": 8,
+    "previewOnly": 19,
     "uncatalogedFamilies": 31,
     "sceneFamilies": 46,
     "dormantFactories": 9
@@ -303,6 +303,48 @@
       ],
       "previewOptions": null,
       "status": "in-use"
+    },
+    {
+      "id": "garden-rosette",
+      "name": "Mata de hojas anchas",
+      "category": "Vegetación",
+      "source": "Pana/engine/models/vegetation/garden-rosette.js",
+      "factory": "gardenRosette",
+      "usedBy": [
+        "Pana Studio"
+      ],
+      "previewOptions": {
+        "seed": 7
+      },
+      "status": "preview-only"
+    },
+    {
+      "id": "trailing-vine",
+      "name": "Enredadera colgante",
+      "category": "Vegetación",
+      "source": "Pana/engine/models/vegetation/trailing-vine.js",
+      "factory": "trailingVine",
+      "usedBy": [
+        "Pana Studio"
+      ],
+      "previewOptions": {
+        "seed": 7
+      },
+      "status": "preview-only"
+    },
+    {
+      "id": "trinitaria",
+      "name": "Trinitaria",
+      "category": "Vegetación",
+      "source": "Pana/engine/models/vegetation/trinitaria.js",
+      "factory": "trinitaria",
+      "usedBy": [
+        "Pana Studio"
+      ],
+      "previewOptions": {
+        "seed": 7
+      },
+      "status": "preview-only"
     },
     {
       "id": "moriche",
@@ -2509,6 +2551,268 @@
       "status": "in-use"
     },
     {
+      "id": "ice-cream-cart",
+      "name": "Carrito de helados",
+      "category": "Pueblo",
+      "source": "Pana/engine/models/props/ice-cream-cart.js",
+      "factory": "iceCreamCart",
+      "usedBy": [
+        "Derrape"
+      ],
+      "status": "in-use"
+    },
+    {
+      "id": "fish-auction-canopy",
+      "name": "Lonja de pescado",
+      "category": "Costa",
+      "source": "Pana/engine/models/props/fish-auction-canopy.js",
+      "factory": "fishAuctionCanopy",
+      "usedBy": [
+        "Derrape"
+      ],
+      "status": "in-use"
+    },
+    {
+      "id": "salt-boardwalk",
+      "name": "Pasarela salinera",
+      "category": "Costa",
+      "source": "Pana/engine/models/props/salt-boardwalk.js",
+      "factory": "saltBoardwalk",
+      "usedBy": [
+        "Derrape"
+      ],
+      "status": "in-use"
+    },
+    {
+      "id": "ceramic-fountain",
+      "name": "Fuente de cerámica pintada",
+      "category": "Pueblo",
+      "source": "Pana/engine/models/props/ceramic-fountain.js",
+      "factory": "ceramicFountain",
+      "usedBy": [
+        "Derrape"
+      ],
+      "status": "in-use"
+    },
+    {
+      "id": "cafe-terrace",
+      "name": "Terraza de café",
+      "category": "Pueblo",
+      "source": "Pana/engine/models/props/cafe-terrace.js",
+      "factory": "cafeTerrace",
+      "usedBy": [
+        "Derrape"
+      ],
+      "status": "in-use"
+    },
+    {
+      "id": "laundry-courtyard",
+      "name": "Patio con tendedero",
+      "category": "Pueblo",
+      "source": "Pana/engine/models/props/laundry-courtyard.js",
+      "factory": "laundryCourtyard",
+      "usedBy": [
+        "Derrape"
+      ],
+      "status": "in-use"
+    },
+    {
+      "id": "navigation-beacon",
+      "name": "Baliza de navegación",
+      "category": "Costa",
+      "source": "Pana/engine/models/props/navigation-beacon.js",
+      "factory": "navigationBeacon",
+      "usedBy": [
+        "Derrape"
+      ],
+      "status": "in-use"
+    },
+    {
+      "id": "cargo-handcart",
+      "name": "Carretilla de carga",
+      "category": "Objetos",
+      "source": "Pana/engine/models/props/cargo-handcart.js",
+      "factory": "cargoHandcart",
+      "usedBy": [
+        "Derrape"
+      ],
+      "status": "in-use"
+    },
+    {
+      "id": "fruit-delivery-truck",
+      "name": "Camión frutero",
+      "category": "Pueblo",
+      "source": "Pana/engine/models/props/fruit-delivery-truck.js",
+      "factory": "fruitDeliveryTruck",
+      "usedBy": [
+        "Derrape"
+      ],
+      "status": "in-use"
+    },
+    {
+      "id": "water-pump-station",
+      "name": "Estación de bombeo",
+      "category": "Costa",
+      "source": "Pana/engine/models/props/water-pump-station.js",
+      "factory": "waterPumpStation",
+      "usedBy": [
+        "Derrape"
+      ],
+      "status": "in-use"
+    },
+    {
+      "id": "street-mural",
+      "name": "Mural callejero",
+      "category": "Pueblo",
+      "source": "Pana/engine/models/props/street-mural.js",
+      "factory": "streetMural",
+      "usedBy": [
+        "Derrape"
+      ],
+      "status": "in-use"
+    },
+    {
+      "id": "colonial-yellow",
+      "name": "Casa amarilla",
+      "category": "Objetos",
+      "source": "Pana/engine/models/props/colonial-house.js",
+      "factory": "colonialHouse",
+      "usedBy": [
+        "Pana Studio"
+      ],
+      "previewOptions": {
+        "family": "casa-baja",
+        "width": 7.2,
+        "depth": 5.8,
+        "floors": 1,
+        "seed": 11,
+        "palette": "amarillo",
+        "planting": "entrada",
+        "door": "square",
+        "windowStyle": "reja",
+        "roof": "tejas",
+        "layout": "clasica"
+      },
+      "status": "preview-only"
+    },
+    {
+      "id": "colonial-balcony",
+      "name": "Casa azul con balcón",
+      "category": "Objetos",
+      "source": "Pana/engine/models/props/colonial-house.js",
+      "factory": "colonialHouse",
+      "usedBy": [
+        "Pana Studio"
+      ],
+      "previewOptions": {
+        "family": "casa-balcon",
+        "width": 7.2,
+        "depth": 5.8,
+        "floors": 2,
+        "seed": 22,
+        "palette": "azul",
+        "planting": "balcon",
+        "door": "square",
+        "windowStyle": "reja-curva",
+        "roof": "tejas",
+        "layout": "clasica"
+      },
+      "status": "preview-only"
+    },
+    {
+      "id": "colonial-crest",
+      "name": "Casa de la trinitaria",
+      "category": "Objetos",
+      "source": "Pana/engine/models/props/colonial-house.js",
+      "factory": "colonialHouse",
+      "usedBy": [
+        "Pana Studio"
+      ],
+      "previewOptions": {
+        "family": "casa-remate",
+        "width": 7.8,
+        "depth": 5.8,
+        "floors": 1,
+        "seed": 33,
+        "palette": "cielo",
+        "planting": "flores",
+        "door": "arch",
+        "windowStyle": "arco",
+        "roof": "tejas",
+        "layout": "clasica"
+      },
+      "status": "preview-only"
+    },
+    {
+      "id": "colonial-long",
+      "name": "Casa larga del pueblo",
+      "category": "Objetos",
+      "source": "Pana/engine/models/props/colonial-house.js",
+      "factory": "colonialHouse",
+      "usedBy": [
+        "Pana Studio"
+      ],
+      "previewOptions": {
+        "family": "casa-larga",
+        "width": 10.8,
+        "depth": 5.8,
+        "floors": 1,
+        "seed": 44,
+        "palette": "amarillo",
+        "planting": "ventanas",
+        "windowStyle": "postigos",
+        "roof": "tejas",
+        "layout": "clasica"
+      },
+      "status": "preview-only"
+    },
+    {
+      "id": "colonial-corner",
+      "name": "Casa de la esquina",
+      "category": "Objetos",
+      "source": "Pana/engine/models/props/colonial-house.js",
+      "factory": "colonialHouse",
+      "usedBy": [
+        "Pana Studio"
+      ],
+      "previewOptions": {
+        "family": "casa-esquina",
+        "width": 7.8,
+        "depth": 5.8,
+        "seed": 55,
+        "palette": "coral-crema",
+        "planting": "entrada",
+        "floors": 2,
+        "windowStyle": "doble",
+        "roof": "cuatro-aguas",
+        "layout": "clasica"
+      },
+      "status": "preview-only"
+    },
+    {
+      "id": "colonial-porch",
+      "name": "Casa del portal",
+      "category": "Objetos",
+      "source": "Pana/engine/models/props/colonial-house.js",
+      "factory": "colonialHouse",
+      "usedBy": [
+        "Pana Studio"
+      ],
+      "previewOptions": {
+        "family": "casa-portal",
+        "width": 7.8,
+        "depth": 5.8,
+        "floors": 1,
+        "seed": 66,
+        "palette": "turquesa",
+        "planting": "entrada",
+        "windowStyle": "celosia",
+        "roof": "tejas",
+        "layout": "clasica"
+      },
+      "status": "preview-only"
+    },
+    {
       "id": "pana",
       "name": "Pana original",
       "category": "Personajes",
@@ -2952,6 +3256,28 @@
         "Derrape"
       ],
       "status": "in-use"
+    },
+    {
+      "id": "colonial-collection",
+      "name": "Cincuenta casas del pueblo",
+      "category": "Mapas",
+      "source": "Pana/engine/colonial-house-collection.js",
+      "factory": "createColonialHouseCollection",
+      "usedBy": [
+        "Pana Studio"
+      ],
+      "status": "preview-only"
+    },
+    {
+      "id": "colonial-street",
+      "name": "Calle de las flores",
+      "category": "Mapas",
+      "source": "Pana/engine/colonial-street.js",
+      "factory": "createColonialStreet",
+      "usedBy": [
+        "Pana Studio"
+      ],
+      "status": "preview-only"
     },
     {
       "id": "arena-puerto",
@@ -3630,7 +3956,7 @@
       "anchor": "fisherman",
       "where": "Llanos",
       "note": "Dock planks and supports; capybaras now use shared wildlife.",
-      "line": 115
+      "line": 117
     },
     {
       "name": "Generic race edges",
@@ -3718,7 +4044,7 @@
       "anchor": "Low jetties",
       "where": "Bululú circuit",
       "note": "Inline harbor planks and pilings.",
-      "line": 90
+      "line": 98
     },
     {
       "name": "Plaza streets, gardens and mirador",
@@ -3726,7 +4052,7 @@
       "anchor": "function createTown",
       "where": "Plaza circuit",
       "note": "Street surfaces, block gardens, lookout terrace and stairs; shared houses/trees counted separately.",
-      "line": 37
+      "line": 43
     },
     {
       "name": "Plaza waterfront canals and docks",
@@ -3734,7 +4060,7 @@
       "anchor": "function createWaterfront",
       "where": "Plaza circuit",
       "note": "Canal network and moorings around canalVilla.",
-      "line": 20
+      "line": 23
     },
     {
       "name": "Continuous circuit surroundings",
@@ -3774,7 +4100,7 @@
       "anchor": "for(let i=0;i<10;i++)fixed.add",
       "where": "Estadio",
       "note": "Pitch stripes, markings and two goal frames.",
-      "line": 24
+      "line": 25
     },
     {
       "name": "Pit garages",
@@ -3782,7 +4108,7 @@
       "anchor": "Pit garages",
       "where": "Estadio",
       "note": "Eight inline garage blocks and numbered signs.",
-      "line": 47
+      "line": 48
     },
     {
       "name": "Floodlights and scoreboard",
@@ -3790,7 +4116,7 @@
       "anchor": "const score=",
       "where": "Estadio",
       "note": "Two inline landmark families.",
-      "line": 63
+      "line": 66
     },
     {
       "name": "Basketball court and banners",
@@ -3798,7 +4124,7 @@
       "anchor": "community half-court",
       "where": "Estadio",
       "note": "Court and sponsor panels; shared hoops already cataloged.",
-      "line": 77
+      "line": 80
     },
     {
       "name": "Chi Chi retaining walls and river bridges",

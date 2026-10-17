@@ -21,3 +21,6 @@ export { jungleGiant } from '/engine/models/vegetation/jungle-giant.js';
 export { tropicalBush } from '/engine/models/vegetation/tropical-bush.js';
 export { frailejon } from '/engine/models/vegetation/frailejon.js';
 export { mountainPine } from '/engine/models/vegetation/mountain-pine.js';
+export { gardenRosette } from './garden-rosette.js';
+export { trailingVine } from './trailing-vine.js';
+export { trinitaria } from './trinitaria.js';
