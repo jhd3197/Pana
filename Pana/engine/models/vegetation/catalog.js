@@ -16,7 +16,7 @@ export default [
   },
   {
     id:'savanna-grass',name:'Paja de sabana',category:'Vegetación',source:'/engine/models/vegetation/savanna-grass.js',
-    factory:'savannaGrass',usedBy:['Galope'],previewOptions:{seed:7,height:1.2,dry:true},
+    factory:'savannaGrass',usedBy:['Galope','Derrape'],previewOptions:{seed:7,height:1.2,dry:true},
     description:'Macolla de hojas arqueadas; versiones verde y seca para praderas.',tags:['llanos','hierba','sabana'],pack:'vegetation'
   },
   {

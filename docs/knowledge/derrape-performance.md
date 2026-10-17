@@ -2,6 +2,11 @@
 
 ## Shared quality now controls race detail
 
+Grass, canopy and bark surfaces also follow these tiers. The seeded shaders
+reuse existing draws, bypass detail on Baja, and filter fine patterns by pixel
+footprint. See [nature-surfaces.md](nature-surfaces.md) for geometry tags, material
+ownership and Studio cloning.
+
 The game-local `quality.js` listens to the existing shared settings. Alta uses
 2048-square sun shadows, 1,400 weather streaks and all optional race detail;
 Media uses 1024-square shadows, 700 streaks and road wear; Baja disables shadows,

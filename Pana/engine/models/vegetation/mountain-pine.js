@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { M, mesh, rng } from '/engine/models/core/primitives.js';
 import { leafMaterial, TAU, finish, stem } from '/engine/models/vegetation/plant-kit.js';
+import { natureSurface } from '/engine/models/core/nature-surface.js';
 
 export function mountainPine({seed=57,h=7}={}) {
   if(!Number.isFinite(h)||h<3||h>14)throw new RangeError('Mountain pine height must be between 3 and 14');
@@ -29,8 +30,8 @@ export function mountainPine({seed=57,h=7}={}) {
       }
     });
     const geo=new THREE.BufferGeometry();geo.setAttribute('position',new THREE.Float32BufferAttribute(positions,3));geo.setAttribute('color',new THREE.Float32BufferAttribute(colors,3));geo.setIndex(indices);geo.computeVertexNormals();
-    g.add(mesh(geo,leafMaterial));
+    g.add(mesh(natureSurface(geo, 'foliage'),leafMaterial));
   }
-  g.add(mesh(new THREE.ConeGeometry(h*.048,h*.22,9),M(0x416e57,{roughness:1}),0.12,h*.94,0));
+  g.add(mesh(natureSurface(new THREE.ConeGeometry(h*.048,h*.22,9), 'foliage'),M(0x416e57,{roughness:1}),0.12,h*.94,0));
   return finish(g,'mountainPine');
 }

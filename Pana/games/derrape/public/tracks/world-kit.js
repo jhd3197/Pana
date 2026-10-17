@@ -3,6 +3,7 @@ import * as THREE from 'three';
 import { M, mesh, box, tube, rng } from '/engine/models/core/primitives.js';
 import { bake, instancePlacements } from '/engine/models/core/static-batch.js';
 import { terrainMaterial } from '/engine/terrain-material.js';
+import { natureSurface } from '/engine/models/core/nature-surface.js';
 import { sign as makeSign } from '/engine/models/core/architecture-kit.js';
 import { placeOnTrack } from '../track-kit.js';
 import { waterSurface, waterDepthMap, riverSurface } from '/engine/models/effects/water-surface.js';
@@ -34,7 +35,8 @@ export function terrain(T,{bounds,base,color,name='world-terrain',step=5,carve=t
     if(i<nx&&j<nz){const a=j*(nx+1)+i;indices.push(a,a+nx+1,a+1,a+1,a+nx+1,a+nx+2);}
   }
   const geo=new THREE.BufferGeometry();geo.setAttribute('position',new THREE.Float32BufferAttribute(positions,3));geo.setAttribute('color',new THREE.Float32BufferAttribute(colors,3));geo.setIndex(indices);geo.computeVertexNormals();
-  const land=mesh(geo,terrainMaterial());land.name=name;
+  const land=mesh(natureSurface(geo,'grass'),terrainMaterial());land.name=name;
+  land.userData.grassGrid={bounds,nx,nz};
   const horizon=extendTerrain(land,{bounds,nx,nz,height:(x,z)=>cut(x,z,base(x,z)),color,biome:T.def.id});
   // The actual triangular mesh is the placement surface, including steep banks.
   const groundAt=(x,z)=>{

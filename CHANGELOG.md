@@ -10,6 +10,11 @@ becomes the GitHub release's notes.
 
 ### Added
 
+- **Derrape's grass and trees gain procedural surface detail that follows graphics quality.**
+  Seeded ground patches, visible 3D grass tufts, leaf mottling and bark grain
+  enrich the circuits and their Studio previews. Rápida keeps simple surfaces;
+  Equilibrada adds sparse tufts and Nítida fills out nearby grass, fading with distance.
+
 - **Caída lets each dealer cut the deck and choose 1 or 4 before every reparto.**
   The choice now happens at the table, with the previous reparto's score nearby.
   Patrulla and the other cantos explain themselves beside your hand, and Últimas

@@ -3,6 +3,7 @@ import { M, mesh, rng } from '/engine/models/core/primitives.js';
 import { leafBlade } from '/engine/models/core/botanical-shapes.js';
 import { bake } from '/engine/models/core/static-batch.js';
 import { bark, bladeMat, ribbon, frondMats } from '/engine/models/vegetation/canopy.js';
+import { natureSurface } from '/engine/models/core/nature-surface.js';
 
 export function palm({ h = 8, seed = 1 } = {}) {
   const r = rng(seed), g = new THREE.Group();
@@ -15,7 +16,7 @@ export function palm({ h = 8, seed = 1 } = {}) {
     p.setXYZ(i, p.getX(i) + dx * t * t, p.getY(i) + h / 2, p.getZ(i) + dz * t * t);
   }
   trunkGeo.computeVertexNormals();
-  g.add(mesh(trunkGeo, bark));
+  g.add(mesh(natureSurface(trunkGeo, 'bark'), bark));
   const collar = M(0xb69a6a, { roughness: 1, flatShading: false });
   for (let i = 1; i < 20; i++) {
     const t = i / 21;
@@ -47,7 +48,7 @@ export function palm({ h = 8, seed = 1 } = {}) {
   }
   // Upright new growth breaks the flat umbrella silhouette.
   for (let i = 0; i < 3; i++) {
-    const spear = mesh(leafBlade(1.45, 0.16, 0.2, 0x92b854, 7), bladeMat, dx, h - 0.1, dz);
+    const spear = mesh(natureSurface(leafBlade(1.45, 0.16, 0.2, 0x92b854, 7), 'foliage'), bladeMat, dx, h - 0.1, dz);
     spear.rotation.set(0, i * 2.1, 1.0); g.add(spear);
   }
   const result = bake(g); result.name = 'palm'; g.traverse(o => o.geometry?.dispose()); return result;

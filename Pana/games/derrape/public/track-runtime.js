@@ -4,6 +4,9 @@ import * as kit from './track-kit.js';
 import { plankHeight, isOpenEdge, OPEN_MARGIN } from './course-rules.js';
 import { raceDetails } from './tracks/race-details.js';
 import { roadMaterial } from './tracks/road-material.js';
+import { applyNatureMaterials } from './tracks/nature-material.js';
+import { raceGrass } from './tracks/grass-field.js';
+import { natureSurface } from '/engine/models/core/nature-surface.js';
 
 // ---------- geometry backends ----------
 // The original stadium oval, kept verbatim so lap logic never regresses.
@@ -151,7 +154,7 @@ function buildGround(T, pal) {
   }
   ground.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
   ground.computeVertexNormals();
-  const m = new THREE.Mesh(ground, new THREE.MeshStandardMaterial({ vertexColors: true, flatShading: true, roughness: 1 }));
+  const m = new THREE.Mesh(natureSurface(ground, 'grass'), new THREE.MeshStandardMaterial({ vertexColors: true, flatShading: true, roughness: 1 }));
   m.receiveShadow = true;
   return m;
 }
@@ -309,6 +312,8 @@ export function makeTrack(def) {
     scenery.traverse((o) => { if (o.userData.tick) T.animated.push(o); });
     group.add(scenery);
     group.add(raceDetails(T));
+    const grass = raceGrass(group, T); group.add(grass); if (grass.userData.tick) T.animated.push(grass);
+    applyNatureMaterials(group, T.id);
     T.group = group;
     return group;
   };

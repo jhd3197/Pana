@@ -368,7 +368,8 @@
       "source": "Pana/engine/models/vegetation/savanna-grass.js",
       "factory": "savannaGrass",
       "usedBy": [
-        "Galope"
+        "Galope",
+        "Derrape"
       ],
       "previewOptions": {
         "seed": 7,
@@ -3821,7 +3822,7 @@
       "anchor": "function boat",
       "where": "Plaza circuit; Chi Chi",
       "note": "Cabin option; different builder from the coast peñero and island sailboats.",
-      "line": 96
+      "line": 98
     },
     {
       "name": "Faceted boulder",
@@ -3829,7 +3830,7 @@
       "anchor": "function boulder",
       "where": "Páramo; Chi Chi; Desierto",
       "note": "Instanced geological scatter, separate from props.rock.",
-      "line": 106
+      "line": 108
     },
     {
       "name": "Catch basket",
@@ -3967,7 +3968,7 @@
       "anchor": "function pyramid",
       "where": "Selva",
       "note": "Stepped landmark outside the driving tunnel.",
-      "line": 55
+      "line": 57
     },
     {
       "name": "Road temple tunnel and portals",
@@ -3983,7 +3984,7 @@
       "anchor": "const deck =",
       "where": "Selva",
       "note": "Road-warped planks, piers and flankBridge rails. Anchor spacing normalized by the audit.",
-      "line": 149
+      "line": 151
     },
     {
       "name": "Simple waterfall sheet",
@@ -4047,7 +4048,7 @@
       "anchor": "function edges",
       "where": "Multiple Derrape circuits",
       "note": "Steel, timber and kerb variants, generated along the route.",
-      "line": 75
+      "line": 77
     },
     {
       "name": "Chevrons/start line/sector signs/ramps",
@@ -4063,7 +4064,7 @@
       "anchor": "function terrain",
       "where": "Derrape",
       "note": "Terrain, sea and stream generators; each map supplies shape and palette.",
-      "line": 25
+      "line": 26
     },
     {
       "name": "Water surface system",
@@ -4135,7 +4136,7 @@
       "anchor": "function createTown",
       "where": "Plaza circuit",
       "note": "Street surfaces, block gardens, lookout terrace and stairs; shared houses/trees counted separately.",
-      "line": 43
+      "line": 44
     },
     {
       "name": "Plaza waterfront canals and docks",
@@ -4151,7 +4152,7 @@
       "anchor": "function extendTerrain",
       "where": "All eight Derrape races",
       "note": "Exact grid-edge joins to coarser outer terrain; coastal water keeps its detailed near grid and gains a far apron.",
-      "line": 14
+      "line": 15
     },
     {
       "name": "Plaza outer neighborhoods",

@@ -1,5 +1,6 @@
 // A complete pueblo around a temporary street circuit.
 import * as THREE from 'three';
+import { natureSurface } from '/engine/models/core/nature-surface.js';
 import { createPlazaEnvironment } from '/engine/plaza.js';
 import { house } from '/engine/models/props/plaza-buildings.js';
 import { marketStall, streetLamp, bench } from '/engine/models/props/plaza.js';
@@ -57,6 +58,8 @@ export function createTown(T) {
     const c=lawn.clone().lerp(dry,0.26+0.16*Math.sin(p.getX(i)*0.013)*Math.cos(p.getZ(i)*0.017));colors.push(c.r,c.g,c.b);
   }
   land.geometry.setAttribute('color',new THREE.Float32BufferAttribute(colors,3));
+  natureSurface(land.geometry,'grass');
+  land.userData.grassGrid={bounds:[-650,-700,850,600],nx:300,nz:260};
   land.material=M(0xffffff,{vertexColors:true,flatShading:false,roughness:1});land.name='plaza-terrain';group.add(land);
   horizon=extendTerrain(land,{bounds:[-650,-700,850,600],nx:300,nz:260,height:groundAt,biome:'plaza',
     color:(x,z)=>lawn.clone().lerp(dry,.26+.16*Math.sin(x*.013)*Math.cos(z*.017))});

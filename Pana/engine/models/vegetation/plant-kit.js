@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { M, mesh } from '/engine/models/core/primitives.js';
 import { leafBlade, taperedStem } from '/engine/models/core/botanical-shapes.js';
 import { bake } from '/engine/models/core/static-batch.js';
+import { natureSurface } from '/engine/models/core/nature-surface.js';
 
 const windUniform={value:0};
 const windStrength={value:1};
@@ -40,10 +41,10 @@ function finish(root,name) {
   return result;
 }
 function stem(group,points,radius,tip,material=stemMaterial,segments=8) {
-  group.add(mesh(taperedStem(points,radius,tip,segments,6),material));
+  group.add(mesh(natureSurface(taperedStem(points,radius,tip,segments,6), 'bark'),material));
 }
 function leaf(group,length,width,position,rotation,tint=0x619e48,bend=0.15,segments=6) {
-  const m=mesh(leafBlade(length,width,bend,tint,segments),leafMaterial,...position);
+  const m=mesh(natureSurface(leafBlade(length,width,bend,tint,segments), 'foliage'),leafMaterial,...position);
   m.rotation.set(...rotation);group.add(m);return m;
 }
 function cushion(group,position,size,tint,seed,small=false) {
@@ -55,7 +56,7 @@ function cushion(group,position,size,tint,seed,small=false) {
     const c=dark.clone().lerp(light,0.62+y*0.3);colors.push(c.r,c.g,c.b);
   }
   geo.setAttribute('color',new THREE.Float32BufferAttribute(colors,3));geo.computeVertexNormals();
-  const m=mesh(geo,leafMaterial,...position);m.scale.set(...size);group.add(m);
+  const m=mesh(natureSurface(geo, 'foliage'),leafMaterial,...position);m.scale.set(...size);group.add(m);
 }
 
 

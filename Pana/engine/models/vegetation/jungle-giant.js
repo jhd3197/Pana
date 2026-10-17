@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { M, mesh, rng } from '/engine/models/core/primitives.js';
 import { TAU, finish, stem, leaf, cushion } from '/engine/models/vegetation/plant-kit.js';
+import { natureSurface } from '/engine/models/core/nature-surface.js';
 
 export function jungleGiant({seed=1}={}) {
   const r=rng(seed),g=new THREE.Group(),h=11.5+r()*1.5;
@@ -14,14 +15,14 @@ export function jungleGiant({seed=1}={}) {
     const c=low.clone().lerp(high,THREE.MathUtils.clamp(0.3+t*0.45+ridge*0.12+Math.sin(t*40+a*3)*0.04,0,1));colors.push(c.r,c.g,c.b);
   }
   trunk.setAttribute('color',new THREE.Float32BufferAttribute(colors,3));trunk.computeVertexNormals();
-  g.add(mesh(trunk,M(0xffffff,{vertexColors:true,flatShading:false,roughness:1})));
+  g.add(mesh(natureSurface(trunk,'bark'),M(0xffffff,{vertexColors:true,flatShading:false,roughness:1})));
   // Thin plank buttresses fan out from the base like the walls of a room.
   const fin=M(0x7a6646,{flatShading:false,roughness:1});
   for(let i=0;i<6;i++) {
     const a=i*TAU/6+r()*0.4,reach=2.4+r()*1.1,rise=2.6+r()*1.2,shape=new THREE.Shape();
     shape.moveTo(0.45,0);shape.lineTo(reach,0);shape.quadraticCurveTo(1.1,0.35,0.55,rise);shape.lineTo(0.35,rise);shape.closePath();
     const geo=new THREE.ExtrudeGeometry(shape,{depth:0.22,bevelEnabled:true,bevelSize:0.04,bevelThickness:0.04,bevelSegments:1,curveSegments:8});geo.translate(0,0,-0.11);
-    const m=mesh(geo,fin);m.rotation.y=-a;g.add(m);
+    const m=mesh(natureSurface(geo,'bark'),fin);m.rotation.y=-a;g.add(m);
   }
   const tints=[0x4f8d3e,0x5f9a45,0x3f7d3a],vine=M(0x5d6b3a,{flatShading:false,roughness:1});
   for(let i=0;i<5;i++) {
