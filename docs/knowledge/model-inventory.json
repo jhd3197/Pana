@@ -2,7 +2,7 @@
   "date": "2026-10-17",
   "scope": "Current production 3D resource/model families; catalog variants and scene assemblies are counted separately. No primitive-mesh count or deleted-history total.",
   "counts": {
-    "catalog": 257,
+    "catalog": 264,
     "categories": {
       "Fauna": 18,
       "Vegetación": 27,
@@ -15,13 +15,13 @@
       "Pueblo": 18,
       "Páramo": 8,
       "Selva": 14,
-      "Costa": 18,
+      "Costa": 24,
       "Personajes": 3,
       "Vestuario": 5,
       "Vehículos": 14,
-      "Mapas": 24
+      "Mapas": 25
     },
-    "previewOnly": 19,
+    "previewOnly": 13,
     "uncatalogedFamilies": 31,
     "sceneFamilies": 46,
     "dormantFactories": 9
@@ -2678,7 +2678,8 @@
       "source": "Pana/engine/models/props/colonial-house.js",
       "factory": "colonialHouse",
       "usedBy": [
-        "Pana Studio"
+        "Pana Studio",
+        "Derrape"
       ],
       "previewOptions": {
         "family": "casa-baja",
@@ -2693,7 +2694,7 @@
         "roof": "tejas",
         "layout": "clasica"
       },
-      "status": "preview-only"
+      "status": "in-use"
     },
     {
       "id": "colonial-balcony",
@@ -2702,7 +2703,8 @@
       "source": "Pana/engine/models/props/colonial-house.js",
       "factory": "colonialHouse",
       "usedBy": [
-        "Pana Studio"
+        "Pana Studio",
+        "Derrape"
       ],
       "previewOptions": {
         "family": "casa-balcon",
@@ -2717,7 +2719,7 @@
         "roof": "tejas",
         "layout": "clasica"
       },
-      "status": "preview-only"
+      "status": "in-use"
     },
     {
       "id": "colonial-crest",
@@ -2726,7 +2728,8 @@
       "source": "Pana/engine/models/props/colonial-house.js",
       "factory": "colonialHouse",
       "usedBy": [
-        "Pana Studio"
+        "Pana Studio",
+        "Derrape"
       ],
       "previewOptions": {
         "family": "casa-remate",
@@ -2741,7 +2744,7 @@
         "roof": "tejas",
         "layout": "clasica"
       },
-      "status": "preview-only"
+      "status": "in-use"
     },
     {
       "id": "colonial-long",
@@ -2750,7 +2753,8 @@
       "source": "Pana/engine/models/props/colonial-house.js",
       "factory": "colonialHouse",
       "usedBy": [
-        "Pana Studio"
+        "Pana Studio",
+        "Derrape"
       ],
       "previewOptions": {
         "family": "casa-larga",
@@ -2764,7 +2768,7 @@
         "roof": "tejas",
         "layout": "clasica"
       },
-      "status": "preview-only"
+      "status": "in-use"
     },
     {
       "id": "colonial-corner",
@@ -2773,7 +2777,8 @@
       "source": "Pana/engine/models/props/colonial-house.js",
       "factory": "colonialHouse",
       "usedBy": [
-        "Pana Studio"
+        "Pana Studio",
+        "Derrape"
       ],
       "previewOptions": {
         "family": "casa-esquina",
@@ -2787,7 +2792,7 @@
         "roof": "cuatro-aguas",
         "layout": "clasica"
       },
-      "status": "preview-only"
+      "status": "in-use"
     },
     {
       "id": "colonial-porch",
@@ -2796,7 +2801,8 @@
       "source": "Pana/engine/models/props/colonial-house.js",
       "factory": "colonialHouse",
       "usedBy": [
-        "Pana Studio"
+        "Pana Studio",
+        "Derrape"
       ],
       "previewOptions": {
         "family": "casa-portal",
@@ -2810,7 +2816,73 @@
         "roof": "tejas",
         "layout": "clasica"
       },
-      "status": "preview-only"
+      "status": "in-use"
+    },
+    {
+      "id": "shipping-container",
+      "name": "Contenedor de carga",
+      "category": "Costa",
+      "source": "Pana/engine/models/props/port-cargo.js",
+      "factory": "shippingContainer",
+      "usedBy": [
+        "Derrape"
+      ],
+      "status": "in-use"
+    },
+    {
+      "id": "transit-warehouse",
+      "name": "Almacén del muelle",
+      "category": "Costa",
+      "source": "Pana/engine/models/props/port-cargo.js",
+      "factory": "transitWarehouse",
+      "usedBy": [
+        "Derrape"
+      ],
+      "status": "in-use"
+    },
+    {
+      "id": "port-bollard",
+      "name": "Bolardo del puerto",
+      "category": "Costa",
+      "source": "Pana/engine/models/props/port-cargo.js",
+      "factory": "portBollard",
+      "usedBy": [
+        "Derrape"
+      ],
+      "status": "in-use"
+    },
+    {
+      "id": "port-crane",
+      "name": "Grúa del puerto",
+      "category": "Costa",
+      "source": "Pana/engine/models/props/port-crane.js",
+      "factory": "portCrane",
+      "usedBy": [
+        "Derrape"
+      ],
+      "status": "in-use"
+    },
+    {
+      "id": "cargo-ship",
+      "name": "Buque portacontenedores",
+      "category": "Costa",
+      "source": "Pana/engine/models/props/cargo-ship.js",
+      "factory": "cargoShip",
+      "usedBy": [
+        "Derrape"
+      ],
+      "status": "in-use"
+    },
+    {
+      "id": "coastal-fortress",
+      "name": "Fortín de la costa",
+      "category": "Costa",
+      "source": "Pana/engine/models/props/coastal-fort.js",
+      "factory": "coastalFortress",
+      "usedBy": [
+        "Derrape"
+      ],
+      "status": "in-use"
     },
     {
       "id": "pana",
@@ -3526,6 +3598,17 @@
       "name": "Circuito · Salinas del Viento",
       "category": "Mapas",
       "source": "Pana/games/derrape/public/tracks/salinas.js",
+      "factory": "makeTrack(definition).build",
+      "usedBy": [
+        "Derrape"
+      ],
+      "status": "in-use"
+    },
+    {
+      "id": "track-puerto",
+      "name": "Circuito · Puerto",
+      "category": "Mapas",
+      "source": "Pana/games/derrape/public/tracks/puerto.js",
       "factory": "makeTrack(definition).build",
       "usedBy": [
         "Derrape"

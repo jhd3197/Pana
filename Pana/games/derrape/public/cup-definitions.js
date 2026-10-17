@@ -1,5 +1,7 @@
 export const CURRENT_CUP_EDITION = 2;
 export const GP_STAGE_CAP_SECONDS = 240;
+// New standalone circuits do not silently change a saved cup edition's route.
+export const STANDALONE_TRACKS = ['puerto'];
 
 const stage = (track, laps = 2, estimatedSeconds = 150) => ({
   track, laps, capSeconds: GP_STAGE_CAP_SECONDS, estimatedSeconds,
@@ -71,5 +73,10 @@ export function validateCups(trackIds, { includeUnavailable = false } = {}) {
     covered.push(...ids);
   }
   if (new Set(covered).size !== covered.length) errors.push('a track appears in two available cups');
-  return { errors, covered };
+  for (const id of STANDALONE_TRACKS) {
+    if (!known.has(id)) errors.push(`unknown standalone track ${id}`);
+    if (covered.includes(id)) errors.push(`${id}: both a cup and standalone track`);
+  }
+  for (const id of known) if (!covered.includes(id) && !STANDALONE_TRACKS.includes(id)) errors.push(`${id}: no cup or standalone registration`);
+  return { errors, covered, standalone: [...STANDALONE_TRACKS] };
 }

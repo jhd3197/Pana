@@ -10,6 +10,16 @@ becomes the GitHub release's notes.
 
 ### Added
 
+- **Caída lets each dealer cut the deck and choose 1 or 4 before every reparto.**
+  The choice now happens at the table, with the previous reparto's score nearby.
+  Patrulla and the other cantos explain themselves beside your hand, and Últimas
+  announces the final hand and its no-clean-table-bonus rule.
+
+- **Race through Puerto, Derrape's new La Guaira-inspired coastal circuit.**
+  Drive past container stacks and harbor cranes, colorful colonial houses and
+  a hilltop fort overlooking the bay. The 2.45 km circuit works in local and
+  online races; six reusable harbor models are also available in Pana Studio.
+
 - **Pana Studio can generate and customize Venezuelan-inspired colonial houses.**
   Generate collections of 50 houses from six families, six window designs,
   three roof shapes and three facade layouts, with balconies, porches and plants.

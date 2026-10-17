@@ -4,8 +4,9 @@ import { createGameMenu, toggleMute } from '/engine/ui.js';
 import { fillRoster } from '/engine/results.js';
 import { inviteUrl, newRoomCode, roomFromUrl } from '/engine/invite.js';
 import { CaidaRoom } from './network.js';
-import { CaidaGame, canto, chooseMove, previewPlay, teamOf, cardName, MODES } from './rules.js';
+import { CaidaGame, canto, cantoDescription, chooseMove, previewPlay, teamOf, nextDealer, cardName, MODES } from './rules.js';
 import { cardButton } from './cards.js';
+import { createDealerUI } from './dealer-ui.js';
 
 const $ = id => document.getElementById(id), params = new URLSearchParams(location.search);
 const code = roomFromUrl() || newRoomCode();
@@ -21,6 +22,7 @@ const room = new CaidaRoom({ code, name: loadName(), avatar: loadAvatar(), onSta
   onStatus(message, failed) { $('connection').textContent = message; $('practice').hidden = !failed; $('invite').disabled = $('lobby-invite').disabled = !room.connected || room.offline; render(room.state); },
 });
 const mapPicker = createMapPicker($('map-picker'), mapId => room.action('configure', { options: { mapId } }), { table: true });
+const dealerUI = createDealerUI(room, () => audio.unlock());
 const menu = createGameMenu({ title: 'Caída · Pana', sound: audio,
   note: () => room.members.size > 1 ? 'La mesa sigue jugando mientras estás en el menú.' : 'La partida está en pausa. Los bots te esperan.',
   controls: [['1 2 3', 'Seleccionar una carta'], ['Enter', 'Jugar la carta seleccionada'], ['C', 'Cantar antes de jugar la primera carta'], ['H', 'Pedir una pista'], ['M', 'Activar o silenciar sonido'], ['Esc', 'Abrir o cerrar el menú']],
@@ -30,8 +32,8 @@ const menu = createGameMenu({ title: 'Caída · Pana', sound: audio,
     'Juega una carta del mismo número que una de la mesa para recoger ambas y todas las consecutivas que le sigan, sin saltos: después del 7 viene la sota. Si no hay coincidencia, tu carta se queda en la mesa.',
     '¡Caída! Solo si recoges la carta que el jugador anterior acaba de dejar: as a 7, un punto; sota, dos; caballo, tres; rey, cuatro. Recoger una carta vieja no es caída. En parejas no se puntúa una caída al compañero.',
     'Mesa limpia suma cuatro puntos si aún quedan cartas por repartir. En últimas no vale. En esta mesa, caída y mesa limpia suman juntas.',
-    'Al repartir se canta 4–3–2–1 o 1–2–3–4. Cada acierto suma el número cantado. Sin aciertos: mal echada, un punto para el siguiente jugador. Los números repetidos se devuelven al fondo antes de continuar.',
-    'Cantos clásicos de esta mesa: ronda (pareja), 1–4 según la carta; rondín (tres iguales), 5; patria (tres consecutivas), 6; vigía (pareja y carta adyacente), 7; registro (as, caballo, rey), 8. Solo el canto de mayor valor, antes de jugar tu primera carta. Puedes jugar sin cantarlo.',
+    'En cada reparto, quien reparte puede cortar la baraja una vez, boca abajo, y elige empezar por 1 o por 4: 1–2–3–4 o 4–3–2–1. Cada acierto suma el número cantado. Sin aciertos: mal echada, un punto para el siguiente jugador. Los números repetidos se devuelven al fondo antes de continuar.',
+    'Cantos clásicos de esta mesa: ronda (pareja), 1–4 según la carta; rondín (tres iguales), 5; patrulla, también llamada patria (tres consecutivas), 6; vigía (pareja y carta adyacente), 7; registro (as, caballo, rey), 8. Solo el canto de mayor valor, antes de jugar tu primera carta. Puedes jugar sin cantarlo.',
     'Aquí no se juega flor, matar cantos ni victoria automática por rondín. Puedes desactivar todos los cantos al abrir la mesa.',
     'La última persona que recoge se lleva las cartas sobrantes, sin puntos de mesa limpia. Al contar, suma cada carta por encima de 20 en uno contra uno o parejas, 13 con tres personas, y 10 con cuatro individuales. Si varios llegan a 24 al contar, se resuelve desde quien es mano.',
     'En dos parejas, tu compañero se sienta enfrente y comparten puntos y cartas recogidas. Los puestos vacíos los juegan bots. Un pana nuevo toma un puesto de bot; los demás observan hasta que haya espacio.',
@@ -65,11 +67,11 @@ function render(state) {
   mapPicker.update(state.mapId, ready && room.connected && room.isHost && state.phase === 'lobby');
   document.body.classList.toggle('in-lobby', state.phase === 'lobby'); $('welcome').hidden = state.phase !== 'lobby';
   $('start').disabled = !ready || !room.connected || !room.isHost;
-  $('start').textContent = !ready ? 'Preparando la mesa…' : !room.connected ? 'Conectando…' : room.isHost ? '¡Repartir!' : 'El anfitrión reparte';
+  $('start').textContent = !ready ? 'Preparando la mesa…' : !room.connected ? 'Conectando…' : room.isHost ? 'Abrir la mesa' : 'El anfitrión abre la mesa';
   for (const key of ['mode', 'cantos']) { $(key).disabled = !room.isHost; if (key === 'cantos') $(key).checked = state.options[key]; else $(key).value = state.options[key]; }
   for (const button of document.querySelectorAll('[data-option]')) { button.disabled = !room.isHost; button.setAttribute('aria-pressed', String(state.options[button.dataset.option] === button.dataset.value)); }
   $('lobby-roster').textContent = state.players.map(p => p.id === room.id ? 'Tú' : p.name).join(' · ');
-  $('round-label').textContent = state.phase === 'lobby' ? 'Mesa abierta' : `Reparto ${state.round} · mano ${state.handNumber}`;
+  $('round-label').textContent = state.phase === 'lobby' ? 'Mesa abierta' : state.phase === 'dealing' ? `Reparto ${state.round} · preparando` : `Reparto ${state.round} · mano ${state.handNumber}`;
   $('deck-info').textContent = state.phase === 'lobby' ? MODES[state.options.mode].label : `${state.stock.length} por repartir · ${state.table.length} en la mesa`;
   $('last-hand').hidden = state.phase !== 'playing' || state.stock.length > 0;
   $('scores').replaceChildren();
@@ -86,8 +88,8 @@ function render(state) {
   for (const e of state.history.filter(e => e.kind !== 'deal').slice(-4).reverse()) { const li = document.createElement('li'), name = document.createElement('strong'); li.className = e.kind; name.textContent = e.name; li.append(name, document.createTextNode(e.text)); $('history').append(li); }
   const newEvents = state.history.filter(e => e.id > previousEvent);
   if (newEvents.length) {
-    const event = [...newEvents].reverse().find(e => e.kind === 'score');
-    if (event) { $('announcement').textContent = `${event.name}: ${event.text}`; $('announcement').classList.add('show'); clearTimeout(announcementTimer); announcementTimer = setTimeout(() => $('announcement').classList.remove('show'), 2900); }
+    const event = [...newEvents].reverse().find(e => e.kind === 'score' || (e.kind === 'deal' && e.text.startsWith('¡Últimas!')));
+    if (event) { $('announcement').textContent = event.kind === 'deal' ? '¡Últimas! Última mano · ya no hay cuatro de mesa.' : `${event.name}: ${event.text}`; $('announcement').classList.add('show'); clearTimeout(announcementTimer); announcementTimer = setTimeout(() => $('announcement').classList.remove('show'), 4200); }
     if (newEvents.some(e => e.kind === 'play')) audio.tone(370, 0, .06, 'triangle', .06);
     if (event) audio.tone(720, .08, .12, 'sine', .05);
   }
@@ -98,6 +100,7 @@ function render(state) {
     renderResult(state); const key = `${state.round}:${state.phase}`;
     if (shownResult !== key) { shownResult = key; clearTimeout(resultTimer); resultTimer = setTimeout(showResult, 700); }
   } else { clearTimeout(resultTimer); if ($('result').open) closeResult(); shownResult = ''; }
+  dealerUI.update(state, ready);
 }
 function positionTools() {
   document.querySelector('.table-tools').style.top = room.state.phase === 'lobby' ? '' : `${document.querySelector('.scoreboard').getBoundingClientRect().bottom + 10}px`;
@@ -111,10 +114,13 @@ function renderHand(state) {
   if (focus) $('hand').querySelector(`[data-card="${focus}"]:not(:disabled)`)?.focus({ preventScroll: true });
   $('your-name').textContent = player ? `${player.name} · ${hand.length} cartas` : 'Estás mirando';
   $('capture-count').textContent = `${player?.captured.length || 0} RECOGIDAS`;
-  $('turn-status').textContent = !room.connected ? 'Reconectando…' : ended ? 'Reparto terminado' : state.phase === 'lobby' ? 'La mesa te espera.' : turn ? `¡Tu turno! · ${selected ? 'juégala o cambia' : 'elige una carta'}` : `Juega ${state.players[state.turn].name}`;
+  $('turn-status').textContent = !room.connected ? 'Reconectando…' : ended ? 'Reparto terminado' : state.phase === 'lobby' ? 'La mesa te espera.' : state.phase === 'dealing' ? `${state.players[state.dealer].name} prepara el reparto` : turn ? `¡Tu turno! · ${selected ? 'juégala o cambia' : 'elige una carta'}` : `Juega ${state.players[state.turn].name}`;
   $('turn-status').classList.toggle('active', turn); $('hint').disabled = !turn; $('play').disabled = !turn || !selected; $('play').hidden = ended; $('round-result').hidden = !ended;
-  const chant = turn && state.options.cantos && !player.announced ? canto(hand) : null;
-  $('chant').hidden = !chant; $('chant').textContent = chant ? `Cantar ${chant.name.toLowerCase()} +${chant.points}` : '';
+  const chant = state.phase === 'playing' && state.options.cantos && player && !player.announced ? canto(hand) : null;
+  $('chant').hidden = !chant; $('chant').disabled = !turn; $('chant').textContent = chant ? `Cantar ${chant.name.toLowerCase()} +${chant.points}` : '';
+  $('canto-preview').hidden = !chant;
+  $('canto-name').textContent = chant ? `${chant.name} · +${chant.points}` : '';
+  $('canto-help').textContent = chant ? `${cantoDescription(chant.name)}. ${turn ? 'Canta antes de jugar.' : 'Cántala cuando te toque.'}` : '';
   const card = hand.find(c => c.id === selected), preview = previewPlay(state, card, room.seat);
   $('table-cards').hidden = state.phase === 'lobby'; $('table-cards').replaceChildren();
   for (const tableCard of [...state.table].sort((a, b) => a.rank - b.rank)) {
@@ -134,7 +140,9 @@ function renderResult(state) {
     className: 'result-detail', me: room.seat >= 0 && team === teamOf(state, room.seat), end: `${score} / 24`, score: true,
     name: state.players.filter(p => teamOf(state, p.seat) === team).map(p => p.name).join(' + '),
     detail: `${state.result.counts[team] || 0} cartas${state.result.bonuses.length ? ` · +${state.result.bonuses[team]} al contar` : ''}` })));
-  $('next-round').disabled = !room.isHost || !room.connected; $('next-round').textContent = !room.isHost ? 'El anfitrión reparte' : state.phase === 'finished' ? 'Jugar la revancha →' : 'Siguiente reparto →';
+  const canStart = room.isHost || (state.phase === 'round-over' && room.seat === nextDealer(state));
+  $('next-round').disabled = !canStart || !room.connected;
+  $('next-round').textContent = !canStart ? state.phase === 'finished' ? 'El anfitrión abre la revancha' : `Ahora reparte ${state.players[nextDealer(state)].name}` : state.phase === 'finished' ? 'Jugar la revancha →' : 'Preparar siguiente reparto →';
 }
 function showResult() { if (!['round-over', 'finished'].includes(room.state.phase)) return; menu.close(); if (!$('result').open) $('result').showModal(); }
 function closeResult() { $('result').close(); }

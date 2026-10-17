@@ -20,6 +20,7 @@ import waterWorlds from './catalog/water-worlds.js';
 import tableGames from './catalog/table-games.js';
 import circuitLife from './catalog/circuit-life.js';
 import colonialHouses from './catalog/colonial-houses.js';
+import puerto from './catalog/puerto.js';
 
 export default [
   ...ranch,
@@ -44,4 +45,5 @@ export default [
   ...tableGames,
   ...circuitLife,
   ...colonialHouses,
+  ...puerto,
 ];

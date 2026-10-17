@@ -2,7 +2,7 @@
 
 Audited 2026-10-17. Generated from the real Studio registry plus a reviewed source ledger.
 
-**257 Studio resources**, including **18 Fauna entries**, **27 vegetation entries**, **14 vehicles** and **24 maps**. **19 resources are preview-only.** The separate ledger identifies **31 active uncataloged model families**, **46 scene/effect families** and **9 dormant factories/hooks**. These numbers must not be added into a “unique 3D models” total: maps contain models, variants share geometry, and some ledger rows group multiple related props.
+**264 Studio resources**, including **18 Fauna entries**, **27 vegetation entries**, **14 vehicles** and **25 maps**. **13 resources are preview-only.** The separate ledger identifies **31 active uncataloged model families**, **46 scene/effect families** and **9 dormant factories/hooks**. These numbers must not be added into a “unique 3D models” total: maps contain models, variants share geometry, and some ledger rows group multiple related props.
 
 Scope: current production geometry in `engine/` and the four games, including Bululú minigames, gameplay props, embedded wardrobe options and map scenery. Individual meshes, geometry helpers, UI/SVG art, generated screenshots, dependency internals and historical deleted revisions are excluded. Catalog consumer labels identify games, not instance counts. Active uncataloged entries were traced to their placement sources; presence in source does not guarantee visibility from every camera. Legacy rows are retained explicitly instead of being presented as new content.
 
@@ -59,12 +59,6 @@ These already exist. Their absence from a map is a placement gap, not a missing-
 | Asta con bandera Pana | pana-flagpole | [monuments.js](../../Pana/engine/models/props/monuments.js) |
 | Fuente de los capibaras | capybara-fountain | [monuments.js](../../Pana/engine/models/props/monuments.js) |
 | Puente de bambú | bamboo-bridge | [jungle.js](../../Pana/engine/models/props/jungle.js) |
-| Casa amarilla | colonial-yellow | [colonial-house.js](../../Pana/engine/models/props/colonial-house.js) |
-| Casa azul con balcón | colonial-balcony | [colonial-house.js](../../Pana/engine/models/props/colonial-house.js) |
-| Casa de la trinitaria | colonial-crest | [colonial-house.js](../../Pana/engine/models/props/colonial-house.js) |
-| Casa larga del pueblo | colonial-long | [colonial-house.js](../../Pana/engine/models/props/colonial-house.js) |
-| Casa de la esquina | colonial-corner | [colonial-house.js](../../Pana/engine/models/props/colonial-house.js) |
-| Casa del portal | colonial-porch | [colonial-house.js](../../Pana/engine/models/props/colonial-house.js) |
 | Cincuenta casas del pueblo | colonial-collection | [colonial-house-collection.js](../../Pana/engine/colonial-house-collection.js) |
 | Calle de las flores | colonial-street | [colonial-street.js](../../Pana/engine/colonial-street.js) |
 
@@ -183,7 +177,7 @@ These already exist. Their absence from a map is a placement gap, not a missing-
 
 The following list is generated, not manually copied. “In use” is the catalog’s current declared consumer status; detailed native placement proof exists for the fauna and recent packs. Color/seed variants are not separate rows unless Studio explicitly registers them. The seated driver now declares Derrape and the forced chef preview declares Cocina; normal wardrobe options remain shared across games.
 
-### Costa (18)
+### Costa (24)
 
 | Name / ID | Status / games | Source | Constructor |
 | --- | --- | --- | --- |
@@ -205,6 +199,12 @@ The following list is generated, not manually copied. “In use” is the catalo
 | Pasarela salinera · salt-boardwalk | Derrape | [salt-boardwalk.js](../../Pana/engine/models/props/salt-boardwalk.js) | saltBoardwalk |
 | Baliza de navegación · navigation-beacon | Derrape | [navigation-beacon.js](../../Pana/engine/models/props/navigation-beacon.js) | navigationBeacon |
 | Estación de bombeo · water-pump-station | Derrape | [water-pump-station.js](../../Pana/engine/models/props/water-pump-station.js) | waterPumpStation |
+| Contenedor de carga · shipping-container | Derrape | [port-cargo.js](../../Pana/engine/models/props/port-cargo.js) | shippingContainer |
+| Almacén del muelle · transit-warehouse | Derrape | [port-cargo.js](../../Pana/engine/models/props/port-cargo.js) | transitWarehouse |
+| Bolardo del puerto · port-bollard | Derrape | [port-cargo.js](../../Pana/engine/models/props/port-cargo.js) | portBollard |
+| Grúa del puerto · port-crane | Derrape | [port-crane.js](../../Pana/engine/models/props/port-crane.js) | portCrane |
+| Buque portacontenedores · cargo-ship | Derrape | [cargo-ship.js](../../Pana/engine/models/props/cargo-ship.js) | cargoShip |
+| Fortín de la costa · coastal-fortress | Derrape | [coastal-fort.js](../../Pana/engine/models/props/coastal-fort.js) | coastalFortress |
 
 ### Desierto (10)
 
@@ -273,7 +273,7 @@ The following list is generated, not manually copied. “In use” is the catalo
 | Módulo de charco de barro · mud-puddle | Derrape | [ranch.js](../../Pana/engine/models/props/ranch.js) | mudPuddle |
 | Torre de agua del hato · ranch-water-tower | Derrape, Galope | [ranch.js](../../Pana/engine/models/props/ranch.js) | ranchWaterTower |
 
-### Mapas (24)
+### Mapas (25)
 
 | Name / ID | Status / games | Source | Constructor |
 | --- | --- | --- | --- |
@@ -301,6 +301,7 @@ The following list is generated, not manually copied. “In use” is the catalo
 | Circuito · Delta de los Caños · track-delta | Derrape | [delta.js](../../Pana/games/derrape/public/tracks/delta.js) | makeTrack(definition).build |
 | Circuito · Cuevas del Río · track-cuevas | Derrape | [cuevas.js](../../Pana/games/derrape/public/tracks/cuevas.js) | makeTrack(definition).build |
 | Circuito · Salinas del Viento · track-salinas | Derrape | [salinas.js](../../Pana/games/derrape/public/tracks/salinas.js) | makeTrack(definition).build |
+| Circuito · Puerto · track-puerto | Derrape | [puerto.js](../../Pana/games/derrape/public/tracks/puerto.js) | makeTrack(definition).build |
 
 ### Objetos (61)
 
@@ -346,12 +347,12 @@ The following list is generated, not manually copied. “In use” is the catalo
 | Fichas de póquer · poker-chips | Póquer | [poker.js](../../Pana/engine/models/props/poker.js) | createPokerChips |
 | Marcadora de pintura · paint-marker | ¡Pintura! | [paintball.js](../../Pana/engine/models/props/paintball.js) | createPaintMarker |
 | Carretilla de carga · cargo-handcart | Derrape | [cargo-handcart.js](../../Pana/engine/models/props/cargo-handcart.js) | cargoHandcart |
-| Casa amarilla · colonial-yellow | Preview only | [colonial-house.js](../../Pana/engine/models/props/colonial-house.js) | colonialHouse |
-| Casa azul con balcón · colonial-balcony | Preview only | [colonial-house.js](../../Pana/engine/models/props/colonial-house.js) | colonialHouse |
-| Casa de la trinitaria · colonial-crest | Preview only | [colonial-house.js](../../Pana/engine/models/props/colonial-house.js) | colonialHouse |
-| Casa larga del pueblo · colonial-long | Preview only | [colonial-house.js](../../Pana/engine/models/props/colonial-house.js) | colonialHouse |
-| Casa de la esquina · colonial-corner | Preview only | [colonial-house.js](../../Pana/engine/models/props/colonial-house.js) | colonialHouse |
-| Casa del portal · colonial-porch | Preview only | [colonial-house.js](../../Pana/engine/models/props/colonial-house.js) | colonialHouse |
+| Casa amarilla · colonial-yellow | Derrape | [colonial-house.js](../../Pana/engine/models/props/colonial-house.js) | colonialHouse |
+| Casa azul con balcón · colonial-balcony | Derrape | [colonial-house.js](../../Pana/engine/models/props/colonial-house.js) | colonialHouse |
+| Casa de la trinitaria · colonial-crest | Derrape | [colonial-house.js](../../Pana/engine/models/props/colonial-house.js) | colonialHouse |
+| Casa larga del pueblo · colonial-long | Derrape | [colonial-house.js](../../Pana/engine/models/props/colonial-house.js) | colonialHouse |
+| Casa de la esquina · colonial-corner | Derrape | [colonial-house.js](../../Pana/engine/models/props/colonial-house.js) | colonialHouse |
+| Casa del portal · colonial-porch | Derrape | [colonial-house.js](../../Pana/engine/models/props/colonial-house.js) | colonialHouse |
 | Arepa · food-arepa | Cocina | [kitchen.js](../../Pana/engine/models/props/kitchen.js) | food |
 | Cachapa · food-cachapa | Cocina | [kitchen.js](../../Pana/engine/models/props/kitchen.js) | food |
 | Tequeños · food-tequenos | Cocina | [kitchen.js](../../Pana/engine/models/props/kitchen.js) | food |

@@ -10,6 +10,7 @@ const COLORS = {
   chichi: [0xe8c468, 0x458998], bululu: [0xf0d580, 0x53a7a5],
   salinas: [0xf0ddd3, 0xcb858f], delta: [0xd5ab69, 0x408a7a],
   cuevas: [0xc0c9c0, 0x6faaa3], salto: [0xd2bd8c, 0x6b9b87],
+  puerto: [0xe7c46c, 0x3c829a],
 };
 
 export function raceDetails(T) {

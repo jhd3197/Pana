@@ -111,7 +111,7 @@ export async function createCaidaScene(canvas, { onCard, onLoading = () => {} } 
       if (!p) continue;
       const label = labels[i]; label.replaceChildren(); label.classList.toggle('active', state.phase === 'playing' && state.turn === i);
       const title = document.createElement('strong'), note = document.createElement('span'); title.textContent = p.id === null ? `${p.name} · bot` : p.name;
-      note.textContent = state.phase === 'playing' && state.turn === i ? 'Su turno' : i === seat ? 'Tu puesto' : state.options.mode === 'teams' && i % 2 === ownSeat % 2 ? 'Tu pareja' : 'En la mesa'; label.append(title, note);
+      note.textContent = state.phase === 'dealing' && state.dealer === i ? 'Reparte' : p.announced ? `${p.announced.name} · +${p.announced.points}` : state.phase === 'playing' && state.turn === i ? 'Su turno' : i === seat ? 'Tu puesto' : state.options.mode === 'teams' && i % 2 === ownSeat % 2 ? 'Tu pareja' : 'En la mesa'; label.append(title, note);
     }
   }
   const cursor = new THREE.Vector2(), ray = new THREE.Raycaster(); let down;

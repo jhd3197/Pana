@@ -18,4 +18,6 @@ export const TRACK_DEFINITIONS = [
   { id:'bululu',name:'Isla Bululú',
   blurb:'Los Roques entre cayos y lagunas: la marea invade los bordes de la lengua de arena. Busca el centro seco.', },
   ...WATER_TRACKS,
+  { id:'puerto',name:'Puerto',
+  blurb:'Del patio de contenedores al fortín de La Guaira: grúas junto al mar, casas de colores y curvas con vista a la bahía.' },
 ];

@@ -1,5 +1,11 @@
 # Derrape track system
 
+## Puerto
+
+The thirteenth circuit joins a container terminal, colonial waterfront and
+hilltop fort inspired by La Guaira. Route, terrain, scenery, ownership and
+verification details are in `puerto-circuit.md`.
+
 ## Road-level race detail
 
 `tracks/race-details.js` adds a small deterministic decoration group to all

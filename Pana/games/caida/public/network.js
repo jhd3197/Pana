@@ -49,12 +49,20 @@ export class CaidaRoom extends HostRoom {
   publish() { this.state = this.game.snapshot(); this.onState(this.state); this.send({ kind: 'snapshot', state: this.state }); }
 
   tick(dt, paused = false) {
-    if (!this.connected || !this.isHost || this.game.phase !== 'playing' || paused || this.game.players[this.game.turn].id !== null) {
+    const preparing = this.game?.phase === 'dealing', seat = preparing ? this.game.dealer : this.game?.turn;
+    if (!this.connected || !this.isHost || !['playing', 'dealing'].includes(this.game.phase) || paused || this.game.players[seat].id !== null) {
       this.botElapsed = 0; return;
     }
     this.botElapsed += dt;
     if (this.botElapsed < 1.15) return;
     this.botElapsed = 0;
+    if (preparing) {
+      if (!this.game.dealCall) this.game.setCall(seat, this.game.random() < .5 ? 'up' : 'down');
+      if (this.game.cutAt === null) {
+        this.game.cutDeck(seat, 1 + Math.floor(this.game.random() * 39));
+      } else this.game.dealOpening(seat);
+      this.publish(); return;
+    }
     const player = this.game.players[this.game.turn];
     if (this.game.options.cantos && !player.announced && canto(player.hand)) this.game.chant(this.game.turn);
     else { const move = chooseMove(this.game); if (move) this.game.play(this.game.turn, move.card); }

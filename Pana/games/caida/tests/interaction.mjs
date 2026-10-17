@@ -9,8 +9,10 @@ try {
   const page = await browser.newPage({ viewport: { width: 390, height: 844 }, reducedMotion: 'reduce' });
   page.on('pageerror', e => errors.push(e.message));
   await page.goto(`${base}/g/caida/?room=interaction-${Date.now()}&debug`);
-  await page.waitForFunction(() => caidaDebug.world && caidaDebug.room.connected, null, { timeout: 90000 });
+  await page.waitForFunction(() => window.caidaDebug?.world && caidaDebug.room.connected, null, { timeout: 90000 });
   await page.locator('#cantos').uncheck(); await page.locator('#start').click();
+  await page.locator('#call-one').click(); await page.locator('#deal-cards').click();
+  await page.waitForFunction(() => caidaDebug.room.state.turn === caidaDebug.room.seat);
   assert.equal(await page.locator('.table-rank').count(), await page.evaluate(() => caidaDebug.room.state.table.length));
   await page.locator('.table-rank').first().click(); assert.equal(await page.locator('#toast').evaluate(e => e.classList.contains('show')), true);
   await page.keyboard.press('1'); assert.equal(await page.locator('.hand-card.selected').count(), 1);

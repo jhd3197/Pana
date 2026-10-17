@@ -5,8 +5,9 @@ The six `colonial-*` house presets in Pana Studio share one factory at
 or open `/studio/assets/colonial-balcony`. The same pack includes three individual
 plants, `/studio/assets/colonial-street`, a ten-house street with pavement and
 a slight grade, and `/studio/assets/colonial-collection`, an editable 50-house
-inspection yard. These entries currently list **Pana Studio** as their consumer;
-existing game maps retain their established scenery.
+inspection yard. The six house families also appear in Derrape's **Puerto**
+circuit, using low detail and map-owned earth terraces. The collection yard and
+street preview remain Studio tools. Other game maps retain their established scenery.
 
 ## Recipes and controls
 

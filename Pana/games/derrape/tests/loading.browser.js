@@ -21,7 +21,7 @@ try {
   assert.equal(initial.buttons, 8, 'all choices usable before previews finish');
   const tracks = await page.evaluate(() => {
     const start = performance.now();
-    for (let i = 0; i < 24; i++) document.getElementById('t-next').click();
+    for (let i = 0; i < TRACKS.length * 2; i++) document.getElementById('t-next').click();
     return { ms: performance.now() - start, built: !!race.trackGroup, name: document.getElementById('track-name').textContent };
   });
   assert.equal(tracks.built, false, 'rapid track selection never builds scenery');

@@ -15,8 +15,9 @@ import salto from './tracks/salto.js';
 import delta from './tracks/delta.js';
 import cuevas from './tracks/cuevas.js';
 import salinas from './tracks/salinas.js';
+import puerto from './tracks/puerto.js';
 
-export const TRACKS = [estadio, desierto, llanos, chichi, selva, paramo, plaza, bululu, salto, delta, cuevas, salinas];
+export const TRACKS = [estadio, desierto, llanos, chichi, selva, paramo, plaza, bululu, salto, delta, cuevas, salinas, puerto];
 
 export function getTrack(id) {
   return TRACKS.find((t) => t.id === (id === 'playa' ? 'bululu' : id)) || TRACKS[0];
