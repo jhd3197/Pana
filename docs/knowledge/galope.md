@@ -166,3 +166,5 @@ Galope's game-local `water-fx.js` pools ripples, wakes and hoof spray across nea
 riders: two instanced draws, at most 640 triangles. Use the rider's gait phase,
 real water depth and paused render time; dispose the bed texture and instance
 resources. `course.DAYLIGHT` supplies its live scene and Studio tour palette.
+
+Plan 56: the lagoon dock at (87,45) reuses landingShelter from the Delta model family, with a 2.4 by 3 m footprint. Course and collision rules remain unchanged.

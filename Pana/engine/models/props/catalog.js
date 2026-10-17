@@ -16,6 +16,7 @@ import kitchen from './catalog/kitchen.js';
 import reliquia from './catalog/reliquia.js';
 import embuste from './catalog/embuste.js';
 import amazonas from './catalog/amazonas.js';
+import waterWorlds from './catalog/water-worlds.js';
 
 export default [
   ...ranch,
@@ -36,4 +37,5 @@ export default [
   ...reliquia,
   ...embuste,
   ...amazonas,
+  ...waterWorlds,
 ];

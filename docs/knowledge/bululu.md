@@ -208,3 +208,5 @@ flow bugs and check balance.
   the pull 1.2→6.8 m/s, so even good rhythm drifts in by the end. Starting
   in pairs and a swirl of 3.4/r made AIs meet and shove; spaced evenly they
   never touched. ¡Toninas! (2v2 fruit) waits for team support in the runner.
+
+Plan 56: createTepui uses the shared waterfall factory with an explicit sloped run; the terrain heightAt and board routes are unchanged. Its update uses absolute time instead of texture-offset/sprite animation.

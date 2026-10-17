@@ -103,7 +103,7 @@ class RaceLink {
   }
 
   send(type, data) { this.link.send(type, data); }
-  pick(car, wheel) { this.send('pick', { car, wheel }); }
+  pick(car, wheel, cosmetics) { this.send('pick', { car, wheel, cosmetics }); }
   track(id) { this.send('track', { id }); }
   bots(on) { this.send('bots', { on }); }
   mode(mode) { this.send('mode', { mode }); }

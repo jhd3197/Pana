@@ -229,6 +229,6 @@ test('sparse grids and abandoned cups cannot award a championship trophy', () =>
   assert.equal(cupTrophy(session, only), null);
   assert.equal(beginStage(session), false);
   assert.equal(assertCupInvariants(session), true);
-  assert.throws(() => createCupSession({ cupId: 'agua', entrants: entrants(1) }), /not available/);
+  assert.throws(() => createCupSession({ cupId: 'unknown', entrants: entrants(1) }), /not available/);
   assert.throws(() => createCupSession({ cupId: 'pana', entrants: [entrants(1)[0], entrants(1)[0]] }), /unique/);
 });

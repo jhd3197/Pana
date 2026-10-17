@@ -25,12 +25,12 @@ export const CUP_DEFINITIONS = [
     ],
   },
   {
-    id: 'agua', name: 'Copa del Agua', edition: CURRENT_CUP_EDITION, available: false,
+    id: 'agua', name: 'Copa del Agua', edition: CURRENT_CUP_EDITION, available: true,
     stages: [
       stage('salinas', 2, 150),
-      stage('delta', 2, 150),
+      stage('delta', 3, 150),
       stage('cuevas', 2, 155),
-      stage('salto', 1, 145),
+      stage('salto', 2, 160),
     ],
   },
 ];

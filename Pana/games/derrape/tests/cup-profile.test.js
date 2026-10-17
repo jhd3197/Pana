@@ -11,12 +11,12 @@ import { LEGACY_PROFILE_FIXTURES } from './cup-profile-fixtures.js';
 const fixture = (id) => LEGACY_PROFILE_FIXTURES.find(item => item.id === id);
 
 test('available cups have four unique known stages and cover the existing circuits', () => {
-  assert.equal(CUPS.length, 2);
+  assert.equal(CUPS.length, 3);
   const { errors, covered } = validateCups(TRACK_IDS);
   assert.deepEqual(errors, []);
   assert.deepEqual([...covered].sort(), [...TRACK_IDS].sort());
-  assert.equal(CUP_DEFINITIONS.find(cup => cup.id === 'agua').available, false);
-  assert.equal(cupById('agua').id, 'pana', 'an unavailable cup is not selected accidentally');
+  assert.equal(CUP_DEFINITIONS.find(cup => cup.id === 'agua').available, true);
+  assert.equal(cupById('agua').id, 'agua');
   assert.equal(cupById('agua', { includeUnavailable: true }).stages.length, 4);
   assert.ok(cupDuration(CUPS[0]).minutes >= 10 && cupDuration(CUPS[0]).minutes <= 15);
 });
@@ -27,7 +27,7 @@ test('legacy setup choices resolve only to their canonical successor cups', () =
   assert.equal(cleanSetup({ mode: 'mango', laps: 2 }).mode, 'pana');
   assert.equal(cleanSetup({ mode: 'arepa', laps: 2 }).mode, 'aventura');
   assert.equal(cleanSetup({ mode: 'battle', laps: 2 }).mode, 'battle');
-  assert.equal(cleanSetup({ mode: 'agua', laps: 2 }).mode, 'race');
+  assert.equal(cleanSetup({ mode: 'agua', laps: 2 }).mode, 'agua');
   assert.equal(cleanSetup({ mode: 'not-a-mode', laps: 2 }).mode, 'race');
 });
 

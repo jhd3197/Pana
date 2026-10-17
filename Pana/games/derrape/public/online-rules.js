@@ -4,6 +4,7 @@
 import { CAR_DEFINITIONS } from './car-definitions.js';
 import { TRACK_DEFINITIONS } from './track-definitions.js';
 import { WHEEL_DEFINITIONS } from './wheel-definitions.js';
+import { PAINTS, HORNS, FLAMES } from './shop.js';
 
 export const LAPS = 3;
 export const MIN_GRID = 4;               // bots fill the grid up to four racers
@@ -29,6 +30,12 @@ export const cleanCar = (n) => Number.isInteger(n) && n >= 0 && n < CAR_COUNT ? 
 export const cleanWheel = (id) => WHEEL_IDS.includes(id) ? id : 'calle';
 export const cleanTrack = (id) => TRACK_IDS.includes(id === 'playa' ? 'bululu' : id) ? (id === 'playa' ? 'bululu' : id) : TRACK_IDS[0];
 export const cleanDifficulty = (id) => ['facil', 'normal', 'dificil'].includes(id) ? id : 'normal';
+export function cleanCosmetics(value) {
+  if(typeof value==='string'){try{value=JSON.parse(value);}catch{value=null;}}
+  return {paint:PAINTS.some(p=>p.id===value?.paint)?value.paint:'fabrica',
+    horn:HORNS.some(h=>h.id===value?.horn)?value.horn:'propio',
+    flame:FLAMES.some(f=>f.id===value?.flame)?value.flame:'fuego'};
+}
 
 // A pose is a flat array so 20 Hz updates stay small:
 // [x, y, z, h, pitch, roll, vf, steer, spin, boost, flags, lap, prog, lost, coins]

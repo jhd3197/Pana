@@ -3,9 +3,9 @@ import assert from 'node:assert/strict';
 import { CUPS, POINTS, trophyFor, rubberBand, DIFFICULTY, cleanLaps, battleOrder, battleOver, BATTLE_TIME } from '../public/modes.js';
 import { TRACK_IDS } from '../public/online-rules.js';
 
-test('two available cups of four real tracks cover the whole circuit list', () => {
+test('three available cups of four real tracks cover the whole circuit list', () => {
   const all = CUPS.flatMap(c => c.stages.map(stage => stage.track));
-  assert.equal(all.length, 8);
+  assert.equal(all.length, 12);
   assert.deepEqual([...all].sort(), [...TRACK_IDS].sort());
 });
 

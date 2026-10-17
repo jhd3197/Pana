@@ -234,3 +234,5 @@ The expanded host-loss/stale-message scenario is a separate subsequent gate.
 Subsequent starting grids now follow the immediately preceding race placement,
 not cumulative cup points; a regression proves the two orders can differ.
 
+
+Frozen entrants now include paint, horn and flame identifiers. Podium images borrow the actual car hierarchy through one short-lived render target; they do not use the local garage's avatar for remote racers.

@@ -13,6 +13,7 @@ const errors = [];
 const cups = [
   { id: 'pana', tracks: ['estadio', 'plaza', 'llanos', 'bululu'], laps: [2, 2, 2, 2] },
   { id: 'aventura', tracks: ['desierto', 'chichi', 'selva', 'paramo'], laps: [2, 1, 2, 2] },
+  { id: 'agua', tracks: ['salinas', 'delta', 'cuevas', 'salto'], laps: [2, 3, 2, 2] },
 ];
 
 async function makePage() {

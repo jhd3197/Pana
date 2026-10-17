@@ -10,6 +10,13 @@ becomes the GitHub release's notes.
 
 ### Added
 
+- **Derrape adds Copa del Agua and four independently playable circuits.**
+  Race salt ponds, delta villages, river caves and the Tepuy waterfall in a
+  four-stage championship; Studio previews use the same track constructors.
+- **Grand Prix keeps each pana's complete appearance through the championship.**
+  Paint, horn and flame choices follow the frozen entrant, and podium portraits
+  show the actual racers. Bululú shares the waterfall effect and Galope adds a
+  shelter to its existing lagoon landing.
 - **Derrape keeps your online Grand Prix together across four races.**
   Copa Pana and Copa Aventura carry the same rivals, official standings and
   one-time rewards through map changes, with synchronized loading and reload recovery.

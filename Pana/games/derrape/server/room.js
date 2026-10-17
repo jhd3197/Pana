@@ -10,7 +10,7 @@ import { randomAvatar } from '../../../engine/avatar.js';
 import {
   LAPS, MIN_GRID, GP_GRID, COUNTDOWN_MS, LOAD_TIMEOUT_MS, GP_LOAD_TIMEOUT_MS,
   FINISH_GRACE_MS, GP_INTERMISSION_MS, GP_MIN_READ_MS, GP_PROTOCOL,
-  RIVALS, AI_WHEELS, CAR_COUNT, cleanCar, cleanWheel, cleanTrack, cleanDifficulty, validPose,
+  RIVALS, AI_WHEELS, CAR_COUNT, cleanCar, cleanWheel, cleanTrack, cleanDifficulty, cleanCosmetics, validPose,
 } from '../public/online-rules.js';
 import { CAR_DEFINITIONS } from '../public/car-definitions.js';
 import { CUPS, canonicalCupId, cupById } from '../public/cup-definitions.js';
@@ -24,6 +24,7 @@ const isAvailableCup = (mode) => CUPS.some(c => c.id === canonicalCupId(mode));
 const cleanMode = (mode) => isAvailableCup(mode) ? canonicalCupId(mode) : 'race';
 
 const Player = Member.extend({
+  cosmetics: t.string().default('{}'),
   car: t.uint8(),
   wheel: t.string(),
   protocol: t.uint8().default(1),
@@ -32,6 +33,7 @@ const Player = Member.extend({
 }, 'Player');
 
 const Racer = schema({
+  cosmetics: t.string().default('{}'),
   kind: t.string(),        // 'human' | 'bot'
   owner: t.string(),       // sessionId that simulates this car
   name: t.string(),
@@ -103,6 +105,7 @@ export default class DerrapeRoom extends PanaRoom {
       if (!p || !m) return;
       p.car = cleanCar(m.car);
       p.wheel = cleanWheel(m.wheel);
+      p.cosmetics = JSON.stringify(cleanCosmetics(m.cosmetics));
     });
     this.onMessage('track', (client, m) => {
       if (this.isHost(client) && this.canConfigure() && !isAvailableCup(this.state.mode)) {
@@ -219,6 +222,7 @@ export default class DerrapeRoom extends PanaRoom {
     const p = super.createMember(client, options);
     p.car = cleanCar(options.car);
     p.wheel = cleanWheel(options.wheel);
+    p.cosmetics = JSON.stringify(cleanCosmetics(options.cosmetics));
     p.protocol = Number.isInteger(options.protocol) && options.protocol >= GP_PROTOCOL ? options.protocol : 1;
     return p;
   }
@@ -372,7 +376,7 @@ export default class DerrapeRoom extends PanaRoom {
     const botNames = seededOrder(RIVALS, `${seed}:names`);
     const entrants = humans.map(([id, p]) => ({
       id, name: p.name, kind: 'human', owner: id, avatar: p.avatar,
-      loadout: { car: p.car, wheel: p.wheel }, skillSeed: `${sessionId}:${id}`,
+      loadout: { car: p.car, wheel: p.wheel, ...cleanCosmetics(p.cosmetics) }, skillSeed: `${sessionId}:${id}`,
     }));
     for (let i = 0; entrants.length < total; i++) {
       const car = botCars[i % botCars.length];
@@ -427,6 +431,7 @@ export default class DerrapeRoom extends PanaRoom {
         avatar: typeof entrant.avatar === 'string' ? entrant.avatar : avatarJson(entrant.avatar),
         car: entrant.loadout.car,
         wheel: entrant.loadout.wheel,
+        cosmetics: JSON.stringify(cleanCosmetics(entrant.loadout)),
         slot,
         skillSeed: entrant.skillSeed,
         lap: 0,

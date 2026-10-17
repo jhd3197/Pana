@@ -42,10 +42,13 @@ const copyEntrant = (entrant, index) => {
     name: String(entrant.name ?? `Pana ${index + 1}`).slice(0, 40),
     kind: entrant.kind === 'human' ? 'human' : 'bot',
     owner: entrant.owner == null ? null : String(entrant.owner),
-    avatar: entrant.avatar ?? null,
+    avatar: entrant.avatar && typeof entrant.avatar==='object' ? Object.freeze({...entrant.avatar}) : entrant.avatar ?? null,
     loadout: Object.freeze({
       car: entrant.loadout?.car ?? entrant.car ?? 0,
       wheel: entrant.loadout?.wheel ?? entrant.wheel ?? 'calle',
+      paint: entrant.loadout?.paint ?? 'fabrica',
+      horn: entrant.loadout?.horn ?? 'propio',
+      flame: entrant.loadout?.flame ?? 'fuego',
     }),
     skillSeed: String(entrant.skillSeed ?? `${id}:skill`),
   });
