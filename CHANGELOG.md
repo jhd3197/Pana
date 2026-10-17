@@ -8,6 +8,8 @@ becomes the GitHub release's notes.
 
 ## Unreleased
 
+## 0.2.0 - 2026-10-17
+
 ### Added
 
 - **Derrape brings five new scenery models from the circuit artwork into the races.**
