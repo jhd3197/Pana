@@ -35,6 +35,10 @@ server (`PANA_TEST_URL`), two real browser clients.
   resolves the other half from the same poses.
 - Mangos: a throw replays on every screen, but only the victim's client decides a
   hit and reports it (`hit`), so a late report must not splat twice (`gone` set).
+- At accelerated test speeds, a mango may hit or expire between polling frames.
+  Confirm `items.use()` accepted the throw (spin recovery blocks it), then observe
+  that exact projectile ID attached to the guest scene when its `fx` arrives.
+  A later snapshot of the live projectile array can miss a successful relay.
 - Pickups are per client; a remote car still hides crates/coins it drives through.
 
 ## Notes for agents

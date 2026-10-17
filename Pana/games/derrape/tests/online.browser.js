@@ -85,11 +85,31 @@ try {
   step('remote cars follow their owners');
 
   // A mango the host throws flies on the guest's screen too.
+  // At 5x speed a projectile can hit or expire between polling snapshots.
+  // Observe its actual scene object at delivery, and match the exact throw ID.
+  await guest.evaluate(() => {
+    window.receivedMangos = [];
+    getNet().on('fx', (owner, kind, data) => {
+      if (kind !== 'throw' || data.kind !== 'mango') return;
+      const projectile = race.items.projectiles.find(f => f.id === data.id && f.owner.netId === owner);
+      if (projectile && race.scene.getObjectById(projectile.m.id) === projectile.m) receivedMangos.push({ owner, id: data.id });
+    });
+  });
   await host.evaluate(async () => {
     const { addItem } = await import('./item-rules.js');
-    race.player.inventory = [null, null]; addItem(race.player, 'mango', 0); race.items.use(race.player, 1);
+    window.throwTestMango = () => {
+      const car = race.player;
+      // Collisions temporarily prevent throwing; let the real recovery finish.
+      if (car.spin > 0 || car.done) return false;
+      car.inventory = [null, null]; addItem(car, 'mango', 0);
+      if (!race.items.use(car, 1)) return false;
+      window.testMangoId = race.items.projectiles.at(-1).id;
+      return true;
+    };
   });
-  await until(guest, (id) => race.items.projectiles.some(f => f.owner.netId === id), h.id, 5000);
+  await until(host, () => throwTestMango(), null, 5000);
+  const thrownId = await host.evaluate(() => testMangoId);
+  await until(guest, ({ owner, id }) => receivedMangos.some(f => f.owner === owner && f.id === id), { owner: h.id, id: thrownId }, 5000);
   step('mango throws are relayed');
 
   // Reload mid-race: the guest comes back to the same car.
