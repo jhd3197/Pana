@@ -1,3 +1,4 @@
+import { menuClick } from './menu-helpers.js';
 // npm start, then node this file. Comfort features in a real race: a game
 // controller drives and fires items, the wrong-way warning, the incoming
 // item arrow, lap splits, look back and two-player split screen.
@@ -28,7 +29,7 @@ try {
   await page.evaluate(() => { localStorage.removeItem('derrape:setup'); localStorage.removeItem('derrape:profile'); });
   await page.reload();
   await page.waitForFunction(() => window.garage?.car);
-  await page.locator('#play').click();
+  await menuClick(page, '#play');
   await page.waitForFunction(() => race.state === 'count');
 
   // Controller: RT accelerates, LB throws the held item.
@@ -87,8 +88,8 @@ try {
   await page.evaluate(() => toGarage());
 
   // Two players: split screen, the second pana drives with the arrows.
-  await page.locator('#split').click();
-  await page.locator('#play').click();
+  await menuClick(page, '#split');
+  await menuClick(page, '#play');
   await page.waitForFunction(() => race.state === 'count');
   const split = await page.evaluate(() => {
     race.state = 'go'; race.count = 0;

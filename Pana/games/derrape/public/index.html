@@ -7,6 +7,7 @@
   <link rel="stylesheet" href="/engine/kit.css">
   <link rel="stylesheet" href="/engine/ui.css">
   <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="menu.css">
   <script type="importmap">
     { "imports": {
       "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
@@ -15,8 +16,12 @@
   </script>
 </head>
 <body>
+  <section id="menu-boot" class="menu-boot pk-loading" aria-busy="true" aria-label="Preparando Derrape">
+    <img src="./images/menu/raceMaster.webp" alt="" fetchpriority="high">
+    <div><h1>DERRAPE</h1><p role="status">Preparando el garaje…</p><a href="/" class="pk-btn pk-btn--sm">Volver al Hub</a></div>
+  </section>
   <!-- ---------- garage ---------- -->
-  <div id="garage" class="screen">
+  <div id="garage" class="screen menu-pending">
     <header class="bar">
       <a class="pk-btn pk-btn--sm hub-link" href="/">‹ Hub</a>
       <div class="brand">DERRAPE <span>garaje</span></div>
@@ -242,6 +247,7 @@
   </div>
 
   <section id="loading" class="loading pk-loading hidden" role="dialog" aria-modal="true" aria-labelledby="loading-title" aria-busy="false">
+    <img id="loading-art" alt="" decoding="async">
     <div class="loading-main">
       <div class="loading-copy">
         <span id="loading-meta" class="pk-eyebrow">Derrape</span>

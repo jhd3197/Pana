@@ -1,3 +1,4 @@
+import { menuClick } from './menu-helpers.js';
 // npm start, then node this file. The bigger items in a real race: the cohete
 // homes on the car ahead, the chancleta finds the leader, the totuma soaks a
 // hit, a caja trampa explodes, the aguacero soaks everyone ahead, and a full
@@ -20,7 +21,7 @@ try {
   page.on('pageerror', error => errors.push(String(error)));
   await page.goto(`${origin}/g/derrape/?debug&manual&track=estadio`);
   await page.waitForFunction(() => window.garage?.car);
-  await page.locator('#play').click();
+  await menuClick(page, '#play');
   await page.waitForFunction(() => race.state === 'count');
 
   const result = await page.evaluate(async () => {

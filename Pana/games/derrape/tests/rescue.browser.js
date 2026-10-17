@@ -1,3 +1,4 @@
+import { menuClick } from './menu-helpers.js';
 // npm start, then node this file. The zamuro rescue in a real race: R asks
 // for it, a car thrown off the course is carried back, a stuck car is freed,
 // and none of it changes the lap count.
@@ -21,7 +22,7 @@ try {
   await page.evaluate(() => { localStorage.removeItem('derrape:setup'); localStorage.removeItem('derrape:profile'); });
   await page.reload();
   await page.waitForFunction(() => window.garage?.car);
-  await page.locator('#play').click();
+  await menuClick(page, '#play');
   await page.waitForFunction(() => race.state === 'count');
 
   // R: the zamuro lifts the player, shows up, and sets the car back on the road.

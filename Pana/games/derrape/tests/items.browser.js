@@ -1,3 +1,4 @@
+import { menuClick, menuStep } from './menu-helpers.js';
 // npm start, then node this file. Uses the same optional runtime paths as maps.browser.js.
 import assert from 'node:assert/strict';
 import { createRequire } from 'node:module';
@@ -19,6 +20,7 @@ try {
   await page.goto(`${origin}/g/derrape/?debug&manual&track=estadio`);
   await page.waitForFunction(() => window.garage?.car);
   assert.equal(await page.locator('.car-choice').count(), 8);
+  await menuStep(page, 'car');
   for (let i = 0; i < 8; i++) {
     await page.locator('.car-choice').nth(i).click();
     const car = await page.evaluate(() => {
@@ -35,7 +37,7 @@ try {
     await page.screenshot({ path: join(output, `garage-${i}.png`) });
   }
   await page.locator('.car-choice').first().click();
-  await page.locator('#play').click();
+  await menuClick(page, '#play');
   await page.waitForFunction(() => race.state === 'count');
 
   const pickups = await page.evaluate(async () => {
@@ -157,7 +159,7 @@ try {
   const clean = await page.evaluate(() => race.items.fragments.pieces.length === 0 && race.items.projectiles.length === 0 &&
     !race.trackGroup.getObjectByName('held-mango'));
   assert.ok(clean, 'garage cleanup');
-  await page.locator('#play').click();
+  await menuClick(page, '#play');
   await page.waitForFunction(() => race.state === 'count');
   assert.equal(await page.evaluate(() => race.player.coinsCollected), 0);
   assert.deepEqual(await page.evaluate(() => race.player.inventory), [null, null]);
@@ -179,6 +181,7 @@ try {
   await mobile.locator('.pana-rotate').waitFor({state:'visible'});
   await mobile.evaluate(async()=>{const {setSettings}=await import('/engine/settings.js');setSettings({orientation:'vertical'});});
   await mobile.locator('.pana-rotate').waitFor({state:'hidden'});
+  await menuStep(mobile, 'car');
   const framed = await mobile.evaluate(async () => {
     const THREE = await import('three');
     garage.car.root.updateWorldMatrix(true, true);
@@ -191,7 +194,7 @@ try {
   });
   assert.ok(framed, 'portrait garage frames the entire car');
   await mobile.screenshot({ path: join(output, 'mobile-garage.png') });
-  await mobile.locator('#play').tap();
+  await menuClick(mobile, '#play');
   await mobile.waitForFunction(() => race.state === 'count');
   await mobile.evaluate(async () => {
     race.state = 'go'; race.count = 0;

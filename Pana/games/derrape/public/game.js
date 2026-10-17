@@ -5,6 +5,8 @@ import { CARS } from './cars.js';
 import { WHEEL_DEFINITIONS, wheelById, composeTune } from './wheel-definitions.js';
 import { garageCards, wheelCards } from './garage-cards.js';
 import { paintNext } from './loading.js';
+import { createMenuFlow } from './menu-flow.js';
+import { setMenuImage, trackArt } from './menu-art.js';
 import { sound, Puffs, Debris, Shockwaves, makeBubble, setSpeedLines, flyToCounter } from '/engine/fx.js';
 import { createItems, ITEMS, SPIN } from './items.js';
 import { activeItem, canBlock, coinMultiplier, COIN_SPEED, MAX_COINS, AIMED, isJuiced } from './item-rules.js';
@@ -57,6 +59,7 @@ const ME = { name: loadName(), avatar: loadAvatar() };
 const ROOM = roomFromUrl();
 const onlineModulePromise = ROOM ? import('./online.js') : null;
 let net = null;
+let menuFlow = null;
 
 const LINES = {
   crash: ['¡AY!', '¡UEPA!', '¡Ñooo!', '¡Mi carro!', '¡Epa, chamo!', '¡Qué molleja!'],
@@ -198,6 +201,7 @@ function showCar(i) {
   $('dots').innerHTML = CARS.map((_, j) => `<span class="${j === garage.index ? 'on' : ''}"></span>`).join('');
   for (const [j, button] of [...$('car-lineup').children].entries()) button.setAttribute('aria-pressed', String(j === garage.index));
   net?.pick(garage.index, garage.wheel, raceStyle(garage.index));
+  menuFlow?.refresh();
 }
 
 // Step 2: pick the cauchos. Rebuilds the turntable car and the stats bars,
@@ -306,17 +310,6 @@ $('go-online').onclick = () => { sound.unlock(); goOnline(newRoomCode(), true); 
 $('lobby-invite').onclick = () => menu.share();
 $('lobby-bots').onchange = (e) => net?.bots(e.target.checked);
 $('lobby-solo').onclick = () => { location.href = location.pathname; };
-// Step pills jump to the car strip, the cauchos strip or the track picker.
-for (const step of document.querySelectorAll('.step')) {
-  step.onclick = () => {
-    const target = step.dataset.step === 'car'
-      ? $('car-lineup').querySelector('[aria-pressed="true"]') ?? $('next')
-      : step.dataset.step === 'wheels'
-        ? $('wheel-lineup').querySelector('[aria-pressed="true"]') ?? $('wheel-lineup').firstElementChild
-        : $('t-next');
-    target?.focus();
-  };
-}
 
 // ======================================================================
 // Track: data-driven. Definitions live in tracks.js + tracks/*.js; the
@@ -604,6 +597,8 @@ function renderSetup() {
       const trackDef = getTrack(stage.track);
       btn.setAttribute('aria-pressed', String(TRACKS[trackIndex]?.id === stage.track));
       btn.innerHTML = `<span>${idx + 1}. ${esc(trackDef.name)}</span><small>${stage.laps} ${stage.laps === 1 ? 'vuelta' : 'vueltas'}</small>`;
+      const art = new Image(); art.alt = ''; art.loading = 'lazy'; art.decoding = 'async';
+      setMenuImage(art, trackArt(stage.track, true)); btn.prepend(art);
       btn.onclick = () => {
         selectTrack(stage.track, stage.laps);
         for (const item of stagesEl.querySelectorAll('.cup-stage')) {
@@ -628,6 +623,7 @@ function renderSetup() {
       if (firstBtn) firstBtn.setAttribute('aria-pressed', 'true');
     } else selectTrack(TRACKS[trackIndex].id);
   }
+  menuFlow?.refresh();
 }
 
 for (const b of document.querySelectorAll('#mode-pick button')) b.onclick = () => {
@@ -667,6 +663,7 @@ function selectTrack(id, lapsOverride = null) {
   const cupStageIdx = cup ? cup.stages.findIndex(s => s.track === def.id) : -1;
   $('track-of').textContent = cupStageIdx >= 0 ? `Carrera ${cupStageIdx + 1}/4` : `Pista ${trackIndex + 1}/${TRACKS.length}`;
   drawTrackPreview(route);
+  menuFlow?.refresh();
   return route;
 }
 
@@ -1075,6 +1072,7 @@ async function startRace(playerIndex, wheelId = garage.wheel, roster = null) {
   $('loading-back').focus();
   const def = TRACKS[trackIndex], tip = pick(TIPS);
   $('loading-title').textContent = def.name;
+  setMenuImage($('loading-art'), trackArt(def.id));
   $('loading-meta').textContent = race.cup ? `${race.cup.definition.name} · Carrera ${race.cup.session.stageIndex + 1} de 4 · ${race.laps} ${race.laps === 1 ? 'vuelta' : 'vueltas'}`
     : race.mode === 'battle' ? `Derrape · Batalla de globos · ${def.name}` : `Derrape · Pista ${trackIndex + 1} de ${TRACKS.length} · ${race.laps} ${race.laps === 1 ? 'vuelta' : 'vueltas'}`;
   $('loading-blurb').textContent = def.blurb;
@@ -1275,6 +1273,7 @@ function toGarage() {
   $('race').classList.remove('split');
   $('p2-hud').hidden = $('wrong-way').hidden = $('incoming').hidden = true;
   resize();
+  menuFlow?.show('ready', false);
   $('play').focus({ preventScroll: true });
 }
 
@@ -2652,6 +2651,7 @@ function renderLobby(s) {
   const canRejoinStage = live && myRacer && !myRacer.retired && !myRacer.dns && mode === 'garage';
   $('play').textContent = canRejoinStage ? 'Entrar a la pista' : host ? (live ? 'Carrera en curso' : '¡ARRANCAR!') : live ? 'Carrera en curso' : `Esperando a ${hostName}`;
   $('play').disabled = (!canRejoinStage && (live || !host)) || mode !== 'garage';
+  menuFlow?.refresh();
 }
 
 function updateResultActions(s) {
@@ -2701,7 +2701,7 @@ async function goOnline(code, lead) {
       $('play').textContent = '¡JUGAR!';
       $('lobby-solo').hidden = false;
       return null;
-    } finally { joining = null; }
+    } finally { joining = null; menuFlow?.refresh(); }
     net.on('state', onNetState);
     net.on('pose', onNetPose);
     net.on('fx', onNetFx);
@@ -2729,7 +2729,7 @@ let acc = 0;
 
 function frame() {
   const dt = Math.min(clock.getDelta(), 0.25);
-  if (mode === 'garage') {
+  if (mode === 'garage' && (!menuFlow || menuFlow.step === 'car')) {
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
     renderer.toneMappingExposure = 1.05;
     updateGarage(dt);
@@ -2766,11 +2766,11 @@ function resize() {
   renderer.setSize(innerWidth, innerHeight);
   // Make room for the information panel and the lineup, with a centered car
   // above the compact garage controls on a phone.
-  const wide = innerWidth > 760;
-  garage.camera.zoom = wide ? 1 : Math.min(0.86, innerWidth / innerHeight * 1.3);
-  // The garage has a card on each side, so the car stays centered between them.
-  garage.camera.setViewOffset(innerWidth, innerHeight, wide ? -10 : 0,
-    wide ? 20 : innerHeight * 0.12, innerWidth, innerHeight);
+  const wide = innerWidth > 760 || (innerWidth >= 560 && innerWidth > innerHeight);
+  garage.camera.zoom = wide ? (innerHeight < 500 ? .8 : 1) : Math.min(0.86, innerWidth / innerHeight * 1.3);
+  // Center the car between the left details and the right-hand edge, above its lineup.
+  garage.camera.setViewOffset(innerWidth, innerHeight, wide ? -135 : 0,
+    wide ? 40 : -innerHeight * 0.03, innerWidth, innerHeight);
 }
 addEventListener('resize', resize);
 resize();
@@ -2805,3 +2805,14 @@ wheelStrip.ready.catch(error => console.warn('Wheel previews unavailable', error
 showWheel(garage.wheel);
 renderSetup();
 saveWallet();
+menuFlow = createMenuFlow({
+  tracks: TRACKS, initial: ROOM ? 'car' : 'welcome', pickTrack: switchTrack,
+  localPlay(split) { setup.split = split; saveSetup(); renderSetup(); },
+  getState: () => {
+    const activeMode = net?.state?.mode || setup.mode;
+    return { track: TRACKS[trackIndex], car: CARS[garage.index], wheel: wheelById(garage.wheel),
+      mode: activeMode, cup: isCupMode(activeMode) ? cupById(activeMode) : null,
+      online: !!net || !!joining, split: setup.split,
+      canConfigure: !net || (net.isHost && ['lobby', 'results', 'complete'].includes(net.state?.phase)) };
+  },
+});

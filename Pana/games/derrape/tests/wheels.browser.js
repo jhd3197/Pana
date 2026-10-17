@@ -1,3 +1,4 @@
+import { menuStep } from './menu-helpers.js';
 // Cauchos (custom wheels): composed-tune math, garage flow with persistence,
 // and real stepCar simulations for drift (palo vs calle) and mud (barro vs
 // calle). npm start, then node this file. Same idiom as items.browser.js.
@@ -39,6 +40,8 @@ try {
   // 2. Garage flow: five cauchos, selection recomputes stats and persists.
   assert.equal(await page.locator('.wheel-choice').count(), 5);
   const calleStats = await page.evaluate(() => [...document.querySelectorAll('#stats dd i')].map(i => i.style.width));
+  await menuStep(page, 'car');
+  await page.locator('[data-car-tab="wheels"]').click();
   await page.locator('.wheel-choice').nth(3).click();   // Llantas de palo
   const picked = await page.evaluate(() => ({
     stored: localStorage.getItem('derrape:wheels'),

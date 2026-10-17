@@ -1,3 +1,4 @@
+import { menuClick } from './menu-helpers.js';
 // npm start, then node this file. The garage setup drives real races: a full
 // four-track cup with points and a trophy, a balloon battle to the last car,
 // mirror mode, lap count and rival difficulty.
@@ -31,11 +32,11 @@ try {
   await page.waitForFunction(() => window.garage?.car);
 
   // Easy rivals, two laps, mirrored.
-  await page.locator('[data-difficulty="facil"]').click();
-  await page.locator('[data-laps="2"]').click();
-  await page.locator('#mirror').click();
+  await menuClick(page, '[data-difficulty="facil"]');
+  await menuClick(page, '[data-laps="2"]');
+  await menuClick(page, '#mirror');
   await page.screenshot({ path: join(output, 'modes-garage.png') });
-  await page.locator('#play').click();
+  await menuClick(page, '#play');
   await page.waitForFunction(() => race.state === 'count');
   const options = await page.evaluate(() => ({ laps: race.laps, mirror: race.scene.scale.x,
     skills: race.cars.filter(c => !c.isPlayer).map(c => c.skill), lap: document.getElementById('lap').textContent }));
@@ -46,13 +47,13 @@ try {
   await page.screenshot({ path: join(output, 'modes-mirror.png') });
   assert.equal(await finishRace(page), 'end');
   await page.locator('#back').click();
-  await page.locator('#mirror').click();
+  await menuClick(page, '#mirror');
 
   // A full Copa Pana: four tracks, same rivals, points, a trophy.
-  await page.locator('[data-mode="pana"]').click();
+  await menuClick(page, '[data-mode="pana"]');
   const tracks = [], rivals = [];
   for (let n = 0; n < 4; n++) {
-    if (n === 0) await page.locator('#play').click();
+    if (n === 0) await menuClick(page, '#play');
     else await page.locator('#again').click();
     await page.waitForFunction(() => race.state === 'count', null, { timeout: 120000 });
     const info = await page.evaluate(() => ({ track: getActiveTrack().id, rivals: race.cars.filter(c => !c.isPlayer).map(c => c.entrantId).sort().join() }));
@@ -71,8 +72,8 @@ try {
   await page.locator('#back').click();
 
   // Balloon battle: hits pop balloons, the last car standing wins.
-  await page.locator('[data-mode="battle"]').click();
-  await page.locator('#play').click();
+  await menuClick(page, '[data-mode="battle"]');
+  await menuClick(page, '#play');
   await page.waitForFunction(() => race.state === 'count', null, { timeout: 120000 });
   const battle = await page.evaluate(() => {
     race.state = 'go'; race.count = 0;

@@ -1,3 +1,4 @@
+import { menuClick } from './menu-helpers.js';
 // npm start, then node this file. The taller: a race pays into the wallet,
 // paint repaints the player's car on the turntable and in the race, horns
 // and flames equip, and trophies unlock mirror mode.
@@ -24,7 +25,7 @@ try {
   assert.equal(await page.locator('#mirror').isDisabled(), true, 'mirror waits for a trophy');
 
   // Win a race: the coins picked up plus the podium bonus land in the wallet.
-  await page.locator('#play').click();
+  await menuClick(page, '#play');
   await page.waitForFunction(() => race.state === 'count');
   const paid = await page.evaluate(() => {
     race.state = 'go'; race.count = 0;
@@ -37,7 +38,7 @@ try {
   await page.locator('#back').click();
 
   // Buy Azul Caribe: the turntable car turns blue and the wallet pays 25.
-  await page.locator('#open-shop').click();
+  await menuClick(page, '#open-shop');
   await page.locator('#shop-paint [data-id="caribe"]').click();
   await page.locator('#shop-horn [data-id="cucaracha"]').click();
   const shop = await page.evaluate(() => {
@@ -52,7 +53,7 @@ try {
   await page.locator('#shop-close').click();
 
   // The race car wears the paint too.
-  await page.locator('#play').click();
+  await menuClick(page, '#play');
   await page.waitForFunction(() => race.state === 'count');
   const raced = await page.evaluate(() => {
     const colours = new Set();

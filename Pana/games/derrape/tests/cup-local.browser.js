@@ -1,3 +1,4 @@
+import { menuClick } from './menu-helpers.js';
 import assert from 'node:assert/strict';
 import { createRequire } from 'node:module';
 import { mkdir, writeFile } from 'node:fs/promises';
@@ -35,8 +36,8 @@ const finishFixture = page => page.evaluate(() => {
 });
 
 async function selectCup(page, id) {
-  await page.locator(`[data-mode="${id}"]`).click();
-  await page.locator('#play').click();
+  await menuClick(page, `[data-mode="${id}"]`);
+  await menuClick(page, '#play');
   await page.waitForFunction(() => race.state === 'count', null, { timeout: 180000 });
 }
 
@@ -104,18 +105,18 @@ try {
   assert.equal(replay.ledger, 0);
   await page.evaluate(() => toGarage());
 
-  await page.locator('[data-mode="race"]').click();
-  await page.locator('#play').click();
+  await menuClick(page, '[data-mode="race"]');
+  await menuClick(page, '#play');
   await page.waitForFunction(() => race.state === 'count', null, { timeout: 180000 });
   assert.equal(await page.evaluate(() => ({ cup: race.cup, cars: race.cars.length }).cars), 4);
   await page.evaluate(() => toGarage());
-  await page.locator('[data-mode="battle"]').click();
-  await page.locator('#play').click();
+  await menuClick(page, '[data-mode="battle"]');
+  await menuClick(page, '#play');
   await page.waitForFunction(() => race.state === 'count', null, { timeout: 180000 });
   assert.equal(await page.evaluate(() => race.mode), 'battle');
   await page.evaluate(() => toGarage());
 
-  await page.locator('[data-mode="pana"]').click();
+  await menuClick(page, '[data-mode="pana"]');
   const stageButtons = await page.locator('#cup-stages .cup-stage').count();
   assert.equal(stageButtons, 4, 'cup selection lists all four tracks');
   assert.match(await page.locator('#setup-note').textContent(), /Duración aproximada:/);
@@ -126,9 +127,9 @@ try {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.screenshot({ path: join(output, 'setup-390x844.png') });
   await page.setViewportSize({ width: 844, height: 390 });
-  await page.locator('#split').click();
-  await page.locator('#mirror').click();
-  await page.locator('#play').click();
+  await menuClick(page, '#split');
+  await menuClick(page, '#mirror');
+  await menuClick(page, '#play');
   await page.waitForFunction(() => race.state === 'count', null, { timeout: 180000 });
   const split = await page.evaluate(() => ({
     cars: race.cars.length, guest: race.p2?.entrantId, player: race.player.entrantId,
@@ -172,7 +173,7 @@ try {
   const proof = [];
   for (const cup of cups) {
     const actual = await makePage();
-    await actual.locator('[data-difficulty="facil"]').click();
+    await menuClick(actual, '[data-difficulty="facil"]');
     await selectCup(actual, cup.id);
     const frozen = await actual.evaluate(() => JSON.stringify(race.cup.session.entrants));
     const stages = [];

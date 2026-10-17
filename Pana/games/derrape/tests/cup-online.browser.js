@@ -1,3 +1,4 @@
+import { menuClick } from './menu-helpers.js';
 // Derrape online Grand Prix: two real browser clients complete a four-race
 // championship in one Colyseus room, plus fault and recovery scenarios.
 // npm start, then: node games/derrape/tests/cup-online.browser.js [playwright path]
@@ -82,7 +83,7 @@ try {
   await guest.waitForTimeout(150);
   assert.equal((await readSnap(host)).state.mode, 'race', 'guest cannot select cup mode');
 
-  await host.click('#mode-pick button[data-mode="pana"]');
+  await menuClick(host, '#mode-pick button[data-mode="pana"]');
   await until(guest, () => getNet().state.mode === 'pana');
   const stageTracks = await guest.evaluate(() =>
     [...document.querySelectorAll('#cup-stages .cup-stage')].map(b => b.dataset.track));
@@ -97,7 +98,7 @@ try {
     net.loaded = () => { window.__heldLoaded = true; };
   });
 
-  await host.click('#play');
+  await menuClick(host, '#play');
   await until(guest, () => window.__heldLoaded === true, null, 60000);
   await host.waitForTimeout(300);
   h = await readSnap(host);

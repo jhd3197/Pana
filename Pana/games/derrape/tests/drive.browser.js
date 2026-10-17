@@ -1,3 +1,4 @@
+import { menuClick } from './menu-helpers.js';
 // npm start, then node this file. Proves the driving skills in a real race:
 // rocket start, stall, drift charge and release, ramp trick.
 import assert from 'node:assert/strict';
@@ -18,7 +19,7 @@ try {
   page.on('pageerror', error => errors.push(String(error)));
   await page.goto(`${origin}/g/derrape/?debug&manual&track=estadio`);
   await page.waitForFunction(() => window.garage?.car);
-  await page.locator('#play').click();
+  await menuClick(page, '#play');
   await page.waitForFunction(() => race.state === 'count');
 
   // Gas held from the second half of "1": rocket start.

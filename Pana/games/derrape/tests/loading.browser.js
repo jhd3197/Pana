@@ -1,3 +1,4 @@
+import { menuStep } from './menu-helpers.js';
 // Real startup, browsing, cancellation and replay. No frozen animation loop.
 import assert from 'node:assert/strict';
 import { createRequire } from 'node:module';
@@ -36,6 +37,7 @@ try {
   });
   assert.equal(cars.count, 8); assert.ok(cars.reused && cars.currentAttached);
   await page.screenshot({ path: `${output}/garage-after.png` });
+  await menuStep(page, 'car');
   const cameraBefore = await page.evaluate(() => garage.camera.position.toArray());
   await page.mouse.move(950, 400); await page.mouse.down(); await page.mouse.move(1150, 460, { steps: 8 }); await page.mouse.up();
   assert.notDeepEqual(await page.evaluate(() => garage.camera.position.toArray()), cameraBefore, 'drag rotates the garage camera');

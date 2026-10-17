@@ -1,3 +1,4 @@
+import { menuClick } from './menu-helpers.js';
 // Derrape online: two real browser clients in one Colyseus room. Lobby sync,
 // host controls, shared countdown, live remote cars, relayed mango throws,
 // one finish order, reload-and-resume, and host handoff with the bots.
@@ -51,7 +52,7 @@ try {
 
   // Guest's car pick reaches the room; host's track pick reaches the guest.
   await guest.evaluate(() => document.getElementById('next').click());
-  await host.click('#t-next');
+  await menuClick(host, '#t-next');
   await until(guest, () => getNet().state.track === 'desierto');
   await until(host, (id) => getNet().state.players.find(p => p.id === id)?.car === 1, g.id);
   assert.equal(await guest.evaluate(() => document.getElementById('track-name').textContent), 'Pana Desierto');
@@ -59,7 +60,7 @@ try {
   assert.equal(await guest.isDisabled('#play'), true, 'guests cannot start');
   step('host picks the track, guest picks a car');
 
-  await host.click('#play');
+  await menuClick(host, '#play');
   await until(host, () => race.state === 'go', null, 90000);
   await until(guest, () => race.state === 'go', null, 90000);
   h = await state(host); g = await state(guest);
