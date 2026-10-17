@@ -23,7 +23,7 @@ try {
       car.wheels.forEach(w=>w.spin.rotation.x=.7);car.driver.head.rotation.y=.25;
       const refs=[car.root,car.chassis,car.tumble,car.driver.group,car.driver.head,car.driver.armL,...car.detachables,...car.danglers,...car.wheels.flatMap(w=>[w.steer,w.spin]),car.flag].filter(Boolean);
       const matrices=refs.map(o=>{o.updateMatrix();return o.matrix.toArray();});
-      const before=stats(car.root),a=pixels();batchRacer(car);const after=stats(car.root),b=pixels();
+      const before=stats(car.root),a=pixels();batchRacer(car,def.color);const after=stats(car.root),b=pixels();
       let difference=0,changed=0;for(let j=0;j<a.length;j+=4){let delta=0;for(let k=0;k<3;k++){delta+=Math.abs(a[j+k]-b[j+k]);difference+=Math.abs(a[j+k]-b[j+k]);}if(delta>12)changed++;}
       const attached=refs.every((o,j)=>{let p=o;while(p&&p!==car.root)p=p.parent;return p===car.root&&o.matrix.toArray().every((v,k)=>v===matrices[j][k]);});
       const detached=car.detachables[0];if(detached){scene.attach(detached);detached.rotation.x+=.4;renderer.render(scene,camera);detached.removeFromParent();}

@@ -798,7 +798,7 @@ function makeRacer(index, isPlayer, name, wheelId = 'calle', avatar = null, cosm
   const car = def.build(who.avatar, wheel.wheel ?? undefined);
   cosmetics=cleanCosmetics(cosmetics ?? (isPlayer ? raceStyle(index) : null));
   repaintCar(car, def.color, PAINTS.find(p=>p.id===cosmetics.paint)?.color ?? null);
-  batchRacer(car);
+  batchRacer(car,PAINTS.find(p=>p.id===cosmetics.paint)?.color ?? def.color);
   // Retain ownership even after a bumper detaches and expires from the scene.
   car.geometries = new Set();
   car.ownedMaterials = new Set();

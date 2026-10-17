@@ -3,7 +3,8 @@
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 
-export function batchRacer(car) {
+export function batchRacer(car, paint = null) {
+  const paintColor = paint == null ? null : new THREE.Color(paint);
   car.batchedMaterials ??= new Set();
   const protectedParts = new Set([car.flag, ...car.detachables, ...car.danglers]);
   car.driver?.group.traverse(o => protectedParts.add(o));
@@ -20,6 +21,7 @@ export function batchRacer(car) {
       // Solid colors can share a shader with their exact linear color stored
       // per vertex. Keep texture/custom shader materials in their own bucket.
       const colored = m.isMeshStandardMaterial && !m.map
+        && (!paintColor || !m.color.equals(paintColor))
         && m.onBeforeCompile === THREE.Material.prototype.onBeforeCompile;
       let materialKey = m.uuid;
       if (colored) {

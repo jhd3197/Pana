@@ -291,6 +291,12 @@ their passing reruns are `cup-failures-fixed.log`, `online-final.log`,
 `quick-final.log`, `items-final4.log` and `release-browser.log`. Added map-control,
 crossing, lifetime, presentation and car-batching proofs have their own logs.
 The repository release check passes 260 tests (`release-final-check.log`).
+After car batching, `render-release-regression.log` rechecks lifetime, the
+two-client championship, results, items and loading. Its shop failure was fixed
+by retaining the primary paint material; `paint-batching-final.log` verifies
+both all eight car appearances and the unchanged shop test. Galope's corrected
+Studio URL is covered by `galope-recheck.log` (the riding rerun is in
+`input-recheck.log`).
 
 Presentation fixtures deliberately exercise duplicate long names, a points tie,
 all four finish classifications, an absent champion's fallback portrait and

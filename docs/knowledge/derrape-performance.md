@@ -74,14 +74,15 @@ texture, document/window listener and interval counts. It also cancels loading.
 Hardware profiling of the new worlds found rendering, rather than the roughly
 1 ms gameplay update, dominated eight-car frames. `racer-render.js` combines
 opaque sibling parts after painting, before the race records resource ownership.
-Equivalent solid-color materials store their exact linear colors per vertex.
+Equivalent solid-color trim stores its exact linear colors per vertex. The
+primary body paint retains its material color for customization and inspection.
 Every pivot and the entire animated pana hierarchy remain separate; transparent
 glass, mapped materials, custom shaders, partial draw ranges and morphs retain
 their original rendering. Garage and shared vehicle constructors are unchanged.
 
 The pixel comparison in `racer-render.browser.js` covers all eight cars in a
 steered/suspended pose, verifies unchanged triangles and precise world bounds,
-and exercises a detachable part. Original meshes fall from 225–259 to 172–184
+and exercises a detachable part. Original meshes fall from 225–259 to 173–184
 (including hidden wardrobe geometry); mean pixel-channel differences stay below
 0.002 out of 255. Batched materials belong to the racer and must be disposed
 alongside its geometries, including after ghost-material clones are released.
