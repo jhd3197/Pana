@@ -6,7 +6,8 @@ import {mkdir,writeFile} from 'node:fs/promises';
 import {execFileSync} from 'node:child_process';
 import {cpus,platform} from 'node:os';
 const {chromium}=createRequire(import.meta.url)(process.env.PANA_PLAYWRIGHT_PATH||'playwright');
-const browser=await chromium.launch({headless:true,args:['--enable-gpu','--use-angle=d3d11','--ignore-gpu-blocklist']}),proof=[],errors=[];
+const headless=process.env.PANA_PERF_WINDOW!=='1';
+const browser=await chromium.launch({headless,...(process.env.PANA_PERF_BROWSER?{channel:process.env.PANA_PERF_BROWSER}:{}),args:['--enable-gpu','--use-angle=d3d11','--ignore-gpu-blocklist']}),proof=[],errors=[];
 const seed=0x56a55eed;
 try{
   for(const profile of [{name:'desktop',width:1280,height:800,quality:'alta'},{name:'mobile-viewport-on-desktop-GPU',width:844,height:390,quality:'baja'}].filter(p=>!process.env.PANA_PERF_PROFILE||p.name===process.env.PANA_PERF_PROFILE)){
@@ -42,7 +43,7 @@ try{
       await cdp.detach();
       assert.ok(views.every(v=>v.draws<=3200),'eight-car draw budget');
       proof.push({id,profile,device,firstPlayableMs:loading,views});console.log(JSON.stringify(proof.at(-1)));
-      await mkdir('art/grand-prix',{recursive:true});await writeFile('art/grand-prix/hardware-rendering.json',JSON.stringify({revision:execFileSync('git',['rev-parse','HEAD'],{encoding:'utf8'}).trim(),seed,cpu:cpus()[0].model,platform:platform(),physicalMobile:false,physicalMobileStatus:'waived by user',proof},null,2));
+      await mkdir('art/grand-prix',{recursive:true});await writeFile(`art/grand-prix/hardware-${headless?'rendering':'window'}.json`,JSON.stringify({revision:execFileSync('git',['rev-parse','HEAD'],{encoding:'utf8'}).trim(),headless,seed,cpu:cpus()[0].model,platform:platform(),physicalMobile:false,physicalMobileStatus:'waived by user',proof},null,2));
     }
     await page.close();
   }
