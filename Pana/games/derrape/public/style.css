@@ -1,7 +1,7 @@
 /* Derrape on the Pana Kit (/engine/kit.css): tokens, fonts and HUD pieces
    come from the kit; this file places them over the 3D scene. */
 :root { color-scheme: dark; }
-body { --bar-top: #ffd65c; --me-rank: #b5121b; --slot-bg: #2c263e; --slot-line: #514b65; --slot-on: #3b3040; --slot-key: #bab2ca; --swap: #e0d8ec; --shield: #ffe58b; --coin-line: #63552f; --coin-rim: #f8bd37; --coin-face: #d88a20; --coin-shine: #ffed9a; --coin-label: #d7cba8; --coin-text: #ffdf72; --coin-cap: #aaa08c; --coin-full: #e3ae39; --boost: #4fb6ff; --hud-ink: #16161a; --trophy-oro: #ffc629; --trophy-plata: #c9ccd4; --trophy-bronce: #c47a3a; --drift-1: #4fb6ff; --drift-2: #ff9a1f; --drift-3: #c45bff; --pk-game: #ff4b4b; --pk-game-ink: #fff; --hud-edge: 2px solid rgba(255, 255, 255, .08); }
+body { --bar-top: #ffd65c; --me-rank: #b5121b; --slot-bg: #2c263e; --slot-line: #514b65; --slot-on: #3b3040; --slot-key: #bab2ca; --swap: #e0d8ec; --shield: #ffe58b; --coin-line: #63552f; --coin-rim: #f8bd37; --coin-face: #d88a20; --coin-shine: #ffed9a; --coin-label: #d7cba8; --coin-text: #ffdf72; --coin-cap: #aaa08c; --coin-full: #e3ae39; --boost: #4fb6ff; --hud-ink: #16161a; --trophy-oro: #ffc629; --trophy-plata: #c9ccd4; --trophy-bronce: #c47a3a; --drift-1: #4fb6ff; --drift-2: #ff9a1f; --drift-3: #c45bff; --rarity-blue: #4fb6ff; --rarity-purple: #c45bff; --rarity-gold: #ffc629; --pk-game: #ff4b4b; --pk-game-ink: #fff; --hud-edge: 2px solid rgba(255, 255, 255, .08); }
 
 * { box-sizing: border-box; }
 
@@ -228,10 +228,14 @@ body:has(#loading:not(.hidden)) #garage { visibility: hidden; }
 /* two item slots, bottom left */
 .item { position: absolute; bottom: 20px; left: 20px; width: 290px; padding: 12px; background: rgba(14, 11, 36, .94); }
 .inventory { align-items: center; }
-.slot { flex: 1; min-width: 0; width: auto; height: 84px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; padding: 8px 4px; color: var(--pk-muted); background: var(--slot-bg); border-color: var(--slot-line); }
+.slot { position: relative; flex: 1; min-width: 0; width: auto; height: 84px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; padding: 8px 4px; color: var(--pk-muted); background: var(--slot-bg); border-color: var(--slot-line); transition: transform 180ms cubic-bezier(.34, 1.8, .64, 1), box-shadow 180ms, border-color 140ms; }
 .slot.selected { border: 3px solid var(--pk-yellow); background: var(--slot-on); color: var(--pk-text); }
+.slot[data-rarity="blue"] { box-shadow: inset 0 0 18px rgba(79, 182, 255, .28), 0 0 10px rgba(79, 182, 255, .25); }
+.slot[data-rarity="purple"] { box-shadow: inset 0 0 20px rgba(196, 91, 255, .34), 0 0 12px rgba(196, 91, 255, .32); }
+.slot[data-rarity="gold"] { box-shadow: inset 0 0 24px rgba(255, 198, 41, .42), 0 0 16px rgba(255, 198, 41, .45); border-color: var(--rarity-gold); }
+.slot.rolling .item-icon { transform: scale(.92); opacity: .85; }
 .slot:disabled { opacity: 1; cursor: default; }
-.slot .item-icon { font-size: 36px; line-height: 1; }
+.slot .item-icon { font-size: 36px; line-height: 1; transition: transform 160ms cubic-bezier(.34, 1.8, .64, 1); }
 .slot .slot-key { position: absolute; top: 4px; left: 8px; font: 900 11px var(--pk-sans); color: var(--slot-key); }
 .slot small { max-width: 100%; font-size: 10px; font-weight: 800; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .slot i { position: absolute; right: 8px; top: 4px; font: 900 13px var(--pk-sans); font-style: normal; color: var(--pk-yellow); }

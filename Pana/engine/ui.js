@@ -73,6 +73,22 @@ export function createGameMenu({
     bindSound(sound);
     // Browsers only start audio after a gesture: the first one unlocks it.
     for (const type of ['pointerdown', 'keydown']) addEventListener(type, () => sound.unlock(), { capture: true, once: true });
+    if (!sound._uiClicksBound) {
+      sound._uiClicksBound = true;
+      addEventListener('pointerdown', e => {
+        const btn = e.target?.closest?.('button, .pk-btn');
+        if (btn && !btn.disabled && btn.getAttribute('aria-disabled') !== 'true') {
+          sound.unlock?.();
+          sound.clickDown?.();
+        }
+      }, { passive: true });
+      addEventListener('pointerup', e => {
+        const btn = e.target?.closest?.('button, .pk-btn');
+        if (btn && !btn.disabled && btn.getAttribute('aria-disabled') !== 'true') {
+          sound.clickUp?.();
+        }
+      }, { passive: true });
+    }
   }
   let isOpen = false, returnFocus = null;
 

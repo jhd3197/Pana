@@ -5,6 +5,8 @@ import { rng } from '/engine/models/core/primitives.js';
 import { SEA, fbm, smooth } from './island-terrain.js';
 import { terrainMaterial } from './terrain-material.js';
 import { waterfall as waterfallEffect } from './models/effects/waterfall.js';
+import { waterPool } from './models/effects/water-surface.js';
+import { tickWind } from './models/vegetation/plant-kit.js';
 
 const sand = new THREE.Color(0xe7d3a0);
 const grass = new THREE.Color(0x679c4c);
@@ -144,20 +146,22 @@ export function createTepui({ width = 115, depth = 75, height = 130, seed = 1, w
   }
   addForest(group, points, seed + 1);
 
-  let fall = null;
+  let fall = null, pool = null;
   if (waterfall) {
     const a = Math.PI / 2, crestZ = depth * 0.64 * contour(a), footZ = depth * 1.13 * contour(a);
     const top = heightAt(0, crestZ - 0.4) + 0.5, bottom = heightAt(0, footZ) + 0.4;
     fall = waterfallEffect({ width: 11, height: top - bottom, run: footZ - crestZ - 6, seed });
     fall.position.set(0, bottom, footZ); group.add(fall);
-    const pool = new THREE.Mesh(new THREE.CircleGeometry(13, 40), new THREE.MeshStandardMaterial({ color: 0x54adb2, roughness: 0.2 }));
-    pool.rotation.x = -Math.PI / 2; pool.scale.y = 0.6; pool.position.set(0, bottom + 0.03, footZ + 3);
+    pool = waterPool(13, 7.8, { color: 0x54adb2, depth: 3.5 });
+    pool.position.set(0, bottom + 0.03, footZ + 3);
     group.add(pool);
   }
   return {
     group, heightAt,
     update(t) {
+      tickWind(t);
       fall?.userData.tick(t);
+      pool?.userData.tick(t);
     },
   };
 }

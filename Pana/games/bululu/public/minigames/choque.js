@@ -3,7 +3,7 @@
 // gets the point. In the last seconds the outer ring of planks falls away.
 
 import * as THREE from 'three';
-import { Puffs, sound, makeBubble } from '/engine/fx.js';
+import { Puffs, Shockwaves, sound, makeBubble } from '/engine/fx.js';
 import { M, mesh } from '/engine/models/core/primitives.js';
 import { CAR_BUILDERS } from '/engine/models/vehicles/cars.js';
 import { palm } from '/engine/models/vegetation/palm.js';
@@ -51,6 +51,7 @@ export default {
     const scene = new THREE.Scene();
     const stage = sunnyStage(scene, { ground: null, grass: false });
     const puffs = new Puffs(scene);
+    const shockwaves = new Shockwaves(scene);
 
     // the sea, gently rolling
     const seaGeo = new THREE.PlaneGeometry(220, 220, 50, 50);
@@ -202,6 +203,7 @@ export default {
         a.vf = Math.max(a.vf, BOOST);
         if (human(a)) sound.turbo();
         puffs.spawn(new THREE.Vector3(a.x - Math.sin(a.h) * 1.4, 0.6, a.z - Math.cos(a.h) * 1.4), { color: 0xffc629, count: 4, spread: 0.5, size: 0.5, life: 0.4 });
+        shockwaves.ring(new THREE.Vector3(a.x, 0.02, a.z), { color: 0xffc629, maxRadius: 2.3, duration: 0.34, opacity: 0.65 });
       }
       const top = a.boost > 0 ? BOOST : TOP;
       a.vf += (throttle * top - a.vf) * Math.min(1, dt * (throttle ? ACCEL / top : 2.5));
@@ -238,6 +240,7 @@ export default {
           if (bPush > 0.5) A.hit = { by: B, t: clock };
           sound.bonk(Math.min(1, rel / 12));
           puffs.spawn(new THREE.Vector3(A.x + nx * BODY, 0.8, A.z + nz * BODY), { color: 0xffffff, count: 3, spread: 0.4, size: 0.5, rise: 1, life: 0.35 });
+          shockwaves.ring(new THREE.Vector3(A.x + nx * BODY, 0.03, A.z + nz * BODY), { color: 0xffffff, maxRadius: 2.1, duration: 0.28, opacity: 0.65 });
         }
       }
     }
@@ -263,6 +266,8 @@ export default {
         const c = a.car;
         c.root.position.set(a.x, a.y, a.z);
         c.root.rotation.y = a.h;
+        const boostStretch = a.boost > 0 ? Math.min(0.2, a.boost * 0.42) : 0;
+        c.chassis.scale.set(1 - boostStretch * 0.35, 1 - boostStretch * 0.4, 1 + boostStretch);
         for (const w of c.wheels) {
           w.spin.rotation.x += a.vf * dt / (c.radius * SCALE);
           if (w.front) w.steer.rotation.y = a.steer * 0.45;
@@ -287,6 +292,7 @@ export default {
         a.splashed = true;
         sound.splat();
         puffs.spawn(new THREE.Vector3(a.x, -1.2, a.z), { color: 0xe6f6ff, count: 10, spread: 1.6, size: 1, rise: 2.5, life: 0.8 });
+        shockwaves.ring(new THREE.Vector3(a.x, -1.65, a.z), { color: 0xe6f6ff, maxRadius: 3.4, duration: 0.55, opacity: 0.7 });
       }
       if (a.down <= 0) { a.splashed = false; respawn(a); }
     }
@@ -310,6 +316,7 @@ export default {
       for (const a of actors) if (!a.falling && !solidAt(a.x, a.z)) drop(a);
       draw(dt);
       puffs.update(dt);
+      shockwaves.update(dt);
     }
 
     function outro(dt, winners) {
@@ -322,6 +329,7 @@ export default {
       crumble(dt);
       draw(dt);
       puffs.update(dt);
+      shockwaves.update(dt);
     }
 
     return { scene, camera, update, outro, actors, scores: () => actors.map((a) => a.score) };

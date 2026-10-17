@@ -2,7 +2,7 @@
 import * as THREE from 'three';
 import { buildCharacter } from '/engine/models/characters/pana/avatar-model.js';
 import { loadAvatar, loadName } from '/engine/avatar.js';
-import { sound } from '/engine/fx.js';
+import { sound, Shockwaves, createChargeRing } from '/engine/fx.js';
 import { createGameMenu, toggleMute } from '/engine/ui.js';
 import { inviteUrl, newRoomCode, roomFromUrl } from '/engine/invite.js';
 import { holdButton } from '/engine/touch.js';
@@ -36,6 +36,9 @@ const moon = new THREE.HemisphereLight(0x6f7fd8, 0x121226, 0.9); scene.add(moon)
 const fireLight = new THREE.PointLight(0xff9a45, 90, 26, 1.5); fireLight.position.set(FIRE.x, 2.2, FIRE.z); scene.add(fireLight);
 const lantern = new THREE.PointLight(0xffd08a, 30, 14, 1.4); scene.add(lantern);
 const world = createCampWorld(); scene.add(world.group);
+const shockwaves = new Shockwaves(scene);
+const chargeRing = createChargeRing({ radius: 1.55, color: 0xffc629 }); scene.add(chargeRing.mesh);
+let lastFixStep = -1;
 const camera = new THREE.PerspectiveCamera(46, innerWidth / innerHeight, 0.1, 220);
 const cameraTarget = new THREE.Vector3(0, 0, 0), temp = new THREE.Vector3();
 
@@ -257,7 +260,12 @@ function handleEvent(e) {
   }
   if (e.kind === 'visual') sound.tone(520, 0, 0.3, 'triangle', 0.05);
   if (e.kind === 'alarm') { horn(); shout(SABOTAGES[e.sabotage].name, { tone: 'coral' }); }
-  if (e.kind === 'fixed') { notify(`${SABOTAGES[e.sabotage].name}: ¡arreglado!`); sound.tone(660, 0, 0.15, 'sine', 0.07); sound.tone(880, 0.12, 0.2, 'sine', 0.06); }
+  if (e.kind === 'fixed') {
+    notify(`${SABOTAGES[e.sabotage].name}: ¡arreglado!`);
+    sound.tone(660, 0, 0.15, 'sine', 0.07); sound.tone(880, 0.12, 0.2, 'sine', 0.06);
+    const mine = myPose();
+    if (mine) shockwaves.ring(mine.x, groundAt(mine.x, mine.z) + 0.08, mine.z, { color: 0x2ad1b2, maxRadius: 4.5, duration: 0.45 });
+  }
   if (e.kind === 'sabotaged' && e.sabotage === 'bejuco') notify('Trampa puesta. Solo las momias la ven.');
   if (e.kind === 'look') { shout('¡Momia!', { tone: 'coral' }); sound.tone(98, 0, 0.5, 'square', 0.06); }
   if (e.kind === 'frozen') notify('¡Te moviste! El guardián te congeló un momento.');
@@ -562,6 +570,16 @@ function frame(now) {
   if (guardian.visible) { guardian.rotation.y = THREE.MathUtils.damp(guardian.rotation.y, w.guardian === 'look' ? 0 : Math.PI, 8, dt); guardian.userData.animate(elapsed, false, w.guardian === 'look'); }
   fireLight.intensity = THREE.MathUtils.damp(fireLight.intensity, w.lightsOut ? 12 : 90, 3, dt);
   mood(dt); ambience();
+  shockwaves.update(dt);
+  if (mine && view?.phase === 'playing' && useTarget()?.hold && input().hold && view.sabotage && view.sabotage.kind !== 'momia') {
+    const prog = Math.max(0.05, view.sabotage.progress || 0);
+    chargeRing.update(mine.root.position.x, groundAt(mine.root.position.x, mine.root.position.z), mine.root.position.z, prog, elapsed);
+    const step = Math.floor(prog * 8);
+    if (step > lastFixStep) { lastFixStep = step; sound.tick(step); }
+  } else {
+    chargeRing.update(0, 0, 0, 0, elapsed);
+    lastFixStep = -1;
+  }
   world.update(elapsed, view, dt); if (!noRender) renderer.render(scene, camera);
   uiClock += dt; if (uiClock > 0.1 && view?.phase === 'playing') { uiClock = 0; minimap(); }
   requestAnimationFrame(frame);
@@ -616,7 +634,7 @@ if (qs.has('practice')) practice(); else goOnline();
 requestAnimationFrame(frame);
 addEventListener('pagehide', () => {
   dead = true; clearInterval(ticker); clearTimeout(toastTimer); net?.leave(); menu.dispose?.(); unbind?.();
-  actors.forEach(removeActor); world.dispose(); renderer.dispose();
+  actors.forEach(removeActor); shockwaves.dispose(); chargeRing.dispose(); world.dispose(); renderer.dispose();
 });
 if (qs.has('debug')) window.embuste = { scene, camera, renderer, actors, world, menu, input,
   debug: (m) => net?.debug?.(m),

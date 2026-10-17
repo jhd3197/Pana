@@ -3,6 +3,8 @@
 // solved and cleans up when disposed. Pointer events work for mouse and touch;
 // Space and Enter cover the hold-and-press tasks on a keyboard.
 
+import { sound } from '/engine/fx.js';
+
 const el = (tag, props = {}, ...children) => { const n = Object.assign(document.createElement(tag), props); n.append(...children); return n; };
 function canvas(body, w, h) { const c = el('canvas', { width: w, height: h }); body.append(c); return [c, c.getContext('2d')]; }
 // Pointer position in canvas pixels.
@@ -12,7 +14,7 @@ const COL = { night: '#0e0b24', deep: '#16123a', line: '#3a3270', text: '#f3ead7
 // A hold control: pointer on the button, or Space/Enter anywhere.
 function holder(button, onChange) {
   let down = false;
-  const set = v => { if (down !== v) { down = v; button.classList.toggle('is-held', v); onChange(v); } };
+  const set = v => { if (down !== v) { down = v; button.classList.toggle('is-held', v); v ? sound.clickDown() : sound.clickUp(); onChange(v); } };
   button.addEventListener('pointerdown', e => { e.preventDefault(); button.setPointerCapture?.(e.pointerId); set(true); });
   for (const t of ['pointerup', 'pointercancel', 'lostpointercapture']) button.addEventListener(t, () => set(false));
   const key = v => e => { if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); if (!e.repeat) set(v); } };
@@ -21,8 +23,8 @@ function holder(button, onChange) {
   return () => { removeEventListener('keydown', kd); removeEventListener('keyup', ku); };
 }
 function press(button, fn) {
-  button.addEventListener('pointerdown', e => { e.preventDefault(); fn(); });
-  const k = e => { if ((e.key === ' ' || e.key === 'Enter') && !e.repeat) { e.preventDefault(); fn(); } };
+  button.addEventListener('pointerdown', e => { e.preventDefault(); sound.clickDown(); fn(); });
+  const k = e => { if ((e.key === ' ' || e.key === 'Enter') && !e.repeat) { e.preventDefault(); sound.clickDown(); fn(); } };
   addEventListener('keydown', k); return () => removeEventListener('keydown', k);
 }
 function loop(fn) {
@@ -252,6 +254,7 @@ export function openTask(id, body, { step = 0, done, rand = Math.random }) {
   let fired = false;
   const finish = () => {
     if (fired) return; fired = true;
+    sound.pickup(1);
     body.append(el('div', { className: 'task-done', textContent: '¡Listo!' }));
     setTimeout(done, 450);
   };

@@ -10,19 +10,20 @@ import { makeRocket, makeChancleta, makeShield, makeTrap, makeCloud, ITEM_ICONS 
 import { loseCoins } from './drive-rules.js';
 
 export const ITEMS = {
-  mango: { icon: SVG.mango, name: 'Mango' },
-  mango3: { icon: SVG.mango, name: 'Mata de mango', n: 3 },
-  jugo: { icon: SVG.juice, name: 'Jugo de mango' },
+  mango: { icon: SVG.mango, name: 'Mango', rarity: 'blue' },
+  mango3: { icon: SVG.mango, name: 'Mata de mango', n: 3, rarity: 'purple' },
+  jugo: { icon: SVG.juice, name: 'Jugo de mango', rarity: 'blue' },
   concha: {
     icon: '<svg viewBox="0 0 40 40" width="1em" height="1em"><path d="M20 6c-4 6-14 10-14 22 4-4 8-6 12-6-3 4-4 8-3 12 2-5 5-8 9-9 2 3 5 5 10 6-2-5-2-10-5-13 2-5 0-9-9-12z" fill="#ffae2b" stroke="#16161a" stroke-width="2.5" stroke-linejoin="round"/><path d="M20 6c-2 5-6 8-9 12" fill="none" stroke="#7cc242" stroke-width="3" stroke-linecap="round"/><path d="M29 16c1 3 0 5-2 6" fill="none" stroke="#e8452c" stroke-width="3" stroke-linecap="round"/></svg>',
     name: 'Concha de mango',
+    rarity: 'blue',
   },
-  jugo3: { icon: SVG.juice, name: 'Jarra de jugo', n: 3 },
-  cohete: { icon: ITEM_ICONS.cohete, name: 'Cohete' },
-  chancleta: { icon: ITEM_ICONS.chancleta, name: 'La chancleta' },
-  totuma: { icon: ITEM_ICONS.totuma, name: 'Totuma protectora' },
-  trampa: { icon: ITEM_ICONS.trampa, name: 'Caja trampa' },
-  aguacero: { icon: ITEM_ICONS.aguacero, name: 'Aguacero' },
+  jugo3: { icon: SVG.juice, name: 'Jarra de jugo', n: 3, rarity: 'gold' },
+  cohete: { icon: ITEM_ICONS.cohete, name: 'Cohete', rarity: 'purple' },
+  chancleta: { icon: ITEM_ICONS.chancleta, name: 'La chancleta', rarity: 'gold' },
+  totuma: { icon: ITEM_ICONS.totuma, name: 'Totuma protectora', rarity: 'purple' },
+  trampa: { icon: ITEM_ICONS.trampa, name: 'Caja trampa', rarity: 'purple' },
+  aguacero: { icon: ITEM_ICONS.aguacero, name: 'Aguacero', rarity: 'gold' },
 };
 
 // odds for the leader (k=0) and the last car (k=1): the back of the pack gets the good stuff
@@ -516,7 +517,10 @@ export function createItems(hooks) {
     if (f) f.dead = true;
     const pos = f ? f.m.position.clone() : new THREE.Vector3(d.x, d.y, d.z);
     if (d.blocked) puffs.spawn(pos, { color: 0xfff0ac, count: 8, spread: 2.2, size: 0.5, life: 0.45 });
-    else if (!f && !gone.has(d.id)) splat(pos);
+    else if (!f && !gone.has(d.id)) {
+      if (f?.kind === 'cohete' || f?.kind === 'chancleta' || d.kind === 'cohete' || d.kind === 'chancleta') explode(pos);
+      else splat(pos);
+    }
   }
 
   function remoteSlip(d) {
@@ -527,10 +531,12 @@ export function createItems(hooks) {
   function explode(pos) {
     crate.pieces.position.copy(pos);
     crate.pieces.scale.setScalar(1);
-    puffs.spawn(pos, { color: 0xff7b1c, count: 10, spread: 2.6, size: 1, rise: 3, life: 0.6 });
-    puffs.spawn(pos, { color: 0x3a3a40, count: 8, spread: 3, size: 1.2, rise: 2, life: 1 });
-    fragments.burst(crate.pieces, { velocity: new THREE.Vector3(0, 4, 0), power: 9 });
-    sound.bonk(1.4);
+    puffs.spawn(pos, { color: 0xff9a1f, count: 14, spread: 3.2, size: 1.25, rise: 3.4, life: 0.75 });
+    puffs.spawn(pos, { color: 0x2e2c30, count: 12, spread: 3.6, size: 1.45, rise: 2.4, life: 1.65 });
+    fragments.burst(crate.pieces, { velocity: new THREE.Vector3(0, 5, 0), power: 11 });
+    hooks.explode?.(pos);
+    if (sound.explode) sound.explode(1.4);
+    else sound.bonk(1.4);
   }
 
   function update(dt, cars, racing) {
@@ -538,22 +544,63 @@ export function createItems(hooks) {
     padTex.offset.y -= dt * 1.6;
     fragments.update(dt);
     for (const b of boxes) {
+      const wasDown = b.down > 0;
       b.down = Math.max(0, b.down - dt);
       b.m.visible = b.down === 0;
-      b.m.scale.setScalar(Math.min(1, b.m.scale.x + dt * 6));
+      if (wasDown && b.down === 0) {
+        b.respawnT = 0.36;
+        puffs.spawn(b.m.position, { color: 0xe6d4b2, count: 3, spread: 1.1, size: 0.35, rise: 0.6, life: 0.35 });
+      }
+      if (b.respawnT > 0) {
+        b.respawnT = Math.max(0, b.respawnT - dt);
+        const u = 1 - b.respawnT / 0.36;
+        // Squash down then overshoot bounce up
+        const bounce = u < 0.35 ? 0.65 + (u / 0.35) * 0.55 : 1 + Math.sin((u - 0.35) / 0.65 * Math.PI) * 0.18 * (1 - u);
+        b.m.scale.set(1 / Math.sqrt(bounce), bounce, 1 / Math.sqrt(bounce));
+      } else {
+        b.m.scale.setScalar(Math.min(1, b.m.scale.x + dt * 6));
+      }
+      b.m.position.y = b.y + 0.86 + Math.sin(t * 2.4 + b.x * 0.2) * 0.06;
+      b.m.rotation.z = Math.sin(t * 1.8 + b.z * 0.2) * 0.035;
     }
     for (const coin of coins) {
       coin.down = Math.max(0, coin.down - dt);
       coin.m.visible = coin.down === 0;
+      if (coin.down > 0) {
+        coin.m.position.x = coin.x;
+        coin.m.position.z = coin.z;
+        continue;
+      }
+      // Step 1 (Magnet): pull nearby coins in smoothly before touching
+      let pulled = false;
+      if (racing) {
+        for (const c of cars) {
+          if (c.done || c.remote) continue;
+          const d = Math.hypot(c.x - coin.x, c.z - coin.z);
+          if (d < 3.4 && Math.abs(c.y - coin.y) < 2.6) {
+            coin.m.position.x += (c.x - coin.m.position.x) * Math.min(1, dt * 11);
+            coin.m.position.z += (c.z - coin.m.position.z) * Math.min(1, dt * 11);
+            pulled = true;
+            break;
+          }
+        }
+      }
+      if (!pulled) {
+        coin.m.position.x += (coin.x - coin.m.position.x) * Math.min(1, dt * 10);
+        coin.m.position.z += (coin.z - coin.m.position.z) * Math.min(1, dt * 10);
+      }
       coin.m.position.y = coin.y + 1.3 + Math.sin(t * 3 + coin.phase) * 0.12;
       coin.m.rotation.y = t * 2.2 + coin.phase;
     }
     sparks = sparks.filter(s => {
       s.age += dt;
-      if (s.age >= 0.32) { s.m.removeFromParent(); return false; }
-      s.m.position.lerp(new THREE.Vector3(s.car.x, s.car.y + 1.8, s.car.z), Math.min(1, dt * 15));
-      s.m.scale.setScalar(1 - s.age / 0.32);
-      s.m.rotation.y += dt * 12;
+      if (s.age >= 0.34) { s.m.removeFromParent(); return false; }
+      const k = s.age / 0.34;
+      s.m.position.lerp(new THREE.Vector3(s.car.x, s.car.y + 2.1, s.car.z), Math.min(1, dt * 16));
+      // Step 2 (Pop): scale up real quick (1 -> 1.48), then shrink away
+      const popScale = k < 0.28 ? 1 + (k / 0.28) * 0.48 : Math.max(0.01, 1.48 * (1 - (k - 0.28) / 0.72));
+      s.m.scale.setScalar(popScale);
+      s.m.rotation.y += dt * 16;
       return true;
     });
     if (!racing) { for (const c of cars) { syncHeld(c); syncAuras(c); } return; }
@@ -566,7 +613,22 @@ export function createItems(hooks) {
       c.cloud = Math.max(0, (c.cloud || 0) - dt);
       c.itemMessageT = Math.max(0, (c.itemMessageT || 0) - dt);
       c.coinFlash = Math.max(0, (c.coinFlash || 0) - dt);
-      for (const item of c.inventory) if (item) item.rolling = Math.max(0, item.rolling - dt);
+      c.coinStreakT = Math.max(0, (c.coinStreakT || 0) - dt);
+      if (c.coinStreakT <= 0) c.coinStreak = 0;
+      for (const item of c.inventory) {
+        if (!item) continue;
+        const prevRoll = item.rolling || 0;
+        item.rolling = Math.max(0, prevRoll - dt);
+        if (c.isPlayer && prevRoll > 0) {
+          if (Math.floor(prevRoll * 11) !== Math.floor(item.rolling * 11) && item.rolling > 0.05) {
+            sound.tick(Math.floor((1 - item.rolling) * 10));
+          }
+          if (item.rolling === 0) {
+            const rarity = isJuiced(c) ? 'gold' : ITEMS[item.kind]?.rarity || 'blue';
+            sound.chestOpen?.(rarity);
+          }
+        }
+      }
       // Ignore discontinuities (respawn/debug teleports), but sweep real turbo steps.
       const prev = previous.get(c);
       const start = prev && Math.hypot(prev.x - c.x, prev.z - c.z) < 12 ? prev : c;
@@ -589,17 +651,23 @@ export function createItems(hooks) {
       }
 
       for (const coin of coins) {
-        if (coin.down > 0 || !touches(coin, 1.9)) continue;
+        const coinTouch = touches(coin, 2.1) || Math.hypot(c.x - coin.m.position.x, c.z - coin.m.position.z) < 1.85;
+        if (coin.down > 0 || !coinTouch) continue;
+        const worldPos = coin.m.position.clone();
         coin.down = COIN_RESPAWN; coin.m.visible = false;
         c.coins = Math.min(MAX_COINS, (c.coins || 0) + 1);
         c.coinsCollected = (c.coinsCollected || 0) + 1;
         c.coinFlash = 0.35;
+        c.coinStreak = (c.coinStreak || 0) + 1;
+        c.coinStreakT = 1.45;
         const m = coin.m.clone(); m.visible = true; scene.add(m);
         sparks.push({ m, car: c, age: 0 });
+        hooks.coinPicked?.(c, worldPos, c.coinStreak);
         if (c.isPlayer) {
-          const pitch = 880 + c.coins * 35;
-          sound.tone(pitch, 0, 0.08, 'sine', 0.1);
-          sound.tone(pitch * 1.5, 0.055, 0.1, 'sine', 0.08);
+          // Step 3: bright chime whose pitch climbs with every coin in a row
+          const pitch = 880 + c.coins * 26 + Math.min(10, c.coinStreak) * 58;
+          sound.tone(pitch, 0, 0.08, 'sine', 0.11);
+          sound.tone(pitch * 1.5, 0.05, 0.1, 'sine', 0.085);
         }
       }
       if (c.onGround) for (const p of pads) {
@@ -614,7 +682,13 @@ export function createItems(hooks) {
       for (const p of peels) {
         if (p.dead || (p.owner === c && p.t < p.safe) || c.spin > 0) continue;
         if (p.kind !== 'trampa' && !c.onGround) continue;
-        if (Math.hypot(c.x - p.m.position.x, c.z - p.m.position.z) < (p.radius || 1.8) && Math.abs(c.y - p.m.position.y) < 3) {
+        const dist = Math.hypot(c.x - p.m.position.x, c.z - p.m.position.z);
+        // Step 1 (Explosion Anticipation): swell & pulse trap crate when a car gets close
+        if (p.kind === 'trampa' && dist < 6.5) {
+          const swell = 1 + Math.sin(t * 32) * 0.16;
+          p.m.scale.set(swell, 1 / Math.sqrt(swell), swell);
+        }
+        if (dist < (p.radius || 1.8) && Math.abs(c.y - p.m.position.y) < 3) {
           p.dead = true;
           if (p.kind === 'trampa') {
             const pos = p.m.position.clone();
@@ -687,12 +761,15 @@ export function createItems(hooks) {
           c.vx *= f.kind === 'chancleta' ? 0.2 : 0.4; c.vz *= f.kind === 'chancleta' ? 0.2 : 0.4; c.boost = 0;
           hooks.say(c, f.kind === 'chancleta' ? LINES.chanclaHit : LINES.hit, 1.2);
         }
-        emit('hit', c, { id: f.id, blocked, x: pos.x, y: pos.y, z: pos.z });
+        emit('hit', c, { id: f.id, kind: f.kind, blocked, x: pos.x, y: pos.y, z: pos.z });
       }
       if (c) f.dead = true;
       const life = f.kind === 'chancleta' ? 16 : f.kind === 'cohete' ? 6 : 3;
       if ((f.kind === 'mango' && Math.abs(offsetOf(pos.x, pos.z)) > T.HW - 0.4) || f.t > life) f.dead = true;
-      if (f.dead) splat(pos.clone());
+      if (f.dead) {
+        if (f.kind === 'cohete' || f.kind === 'chancleta') explode(pos.clone());
+        else splat(pos.clone());
+      }
     }
     flying = flying.filter(f => {
       if (!f.dead) return true;

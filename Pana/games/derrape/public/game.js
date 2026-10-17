@@ -5,9 +5,9 @@ import { CARS } from './cars.js';
 import { WHEEL_DEFINITIONS, wheelById, composeTune } from './wheel-definitions.js';
 import { garageCards, wheelCards } from './garage-cards.js';
 import { paintNext } from './loading.js';
-import { sound, Puffs, Debris, makeBubble } from '/engine/fx.js';
+import { sound, Puffs, Debris, Shockwaves, makeBubble, setSpeedLines, flyToCounter } from '/engine/fx.js';
 import { createItems, ITEMS, SPIN } from './items.js';
-import { activeItem, canBlock, coinMultiplier, COIN_SPEED, MAX_COINS, AIMED } from './item-rules.js';
+import { activeItem, canBlock, coinMultiplier, COIN_SPEED, MAX_COINS, AIMED, isJuiced } from './item-rules.js';
 import { ITEM_ICONS } from './item-art.js';
 import { TRACKS, getTrack, makeTrack } from './tracks.js';
 import { roughnessAt,roadGripAt,roadWaterAt } from './offroad.js';
@@ -35,6 +35,7 @@ import { createProfileStore, recordCupTrophy, trophyCredits } from './cup-profil
 import { rewardCupCompletion, rewardCupStage } from './cup-rewards.js';
 import { CLASSIFICATION_TEXT, approximateCupText, cupStandingsView, nextStageText, rankChangeText, tiebreakText } from './cup-ui.js';
 import { soaringVulture } from '/engine/models/fauna/birds/soaring-vulture.js';
+import { tickWind } from '/engine/models/vegetation/plant-kit.js';
 import { DRIFT_MIN_SPEED, DRIFT_BOOST, HOP_SPEED, DRAFT_TIME, DRAFT_BOOST, driftLevel, driftSteer, driftCharge, startBoost, trickBoost, inSlipstream, loseCoins } from './drive-rules.js';
 
 const $ = (id) => document.getElementById(id);
@@ -340,30 +341,78 @@ const race = {
   shake: 0,
 };
 race.puffs = new Puffs(race.scene);
+race.shockwaves = new Shockwaves(race.scene);
 const music = createMusic(sound);
 const waterAmbience = createWaterAmbience(sound);
 
-// Rain: streaks falling in a box that follows the camera.
+// Weather: angled rain + puddle ripples + lightning on Selva, snow/hail on Páramo.
 const RAIN_DROPS = 1400;
 race.rain = (() => {
   const pos = new Float32Array(RAIN_DROPS * 6);
   const geo = new THREE.BufferGeometry();
   geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
-  const lines = new THREE.LineSegments(geo, new THREE.LineBasicMaterial({ color: 0xb8d4ec, transparent: true, opacity: 0.55 }));
+  const mat = new THREE.LineBasicMaterial({ color: 0xb8d4ec, transparent: true, opacity: 0.55 });
+  const lines = new THREE.LineSegments(geo, mat);
   lines.frustumCulled = false;
   lines.visible = false;
   lines.name = 'rain';
   race.scene.add(lines);
   const seed = Array.from({ length: RAIN_DROPS }, () => [Math.random() * 60 - 30, Math.random() * 30, Math.random() * 60 - 30]);
+  let rippleT = 0;
+  let nextLightning = 6 + Math.random() * 8;
+  let flashVal = 0;
   return {
     lines,
-    update(cx, cy, cz, t) {
+    mat,
+    update(cx, cy, cz, t, dt = 0.016) {
+      const snow = T?.id === 'paramo';
+      const storm = (T?.def.rain || 0) >= 0.85;
+      const fallSpeed = snow ? 16 : 36;
+      const windX = snow ? Math.sin(t * 1.4) * 0.45 : -0.35;
+      const windZ = snow ? Math.cos(t * 1.1) * 0.35 : 0.18;
+      const lenY = snow ? 0.55 : 1.45;
       for (let i = 0; i < RAIN_DROPS; i++) {
-        const [x, y0, z] = seed[i];
-        const y = cy - 8 + ((y0 - t * 34) % 30 + 30) % 30;
-        pos.set([cx + x, y, cz + z, cx + x + 0.15, y + 1.3, cz + z], i * 6);
+        const [x0, y0, z0] = seed[i];
+        const cycle = ((y0 - t * fallSpeed) % 30 + 30) % 30;
+        const y = cy - 8 + cycle;
+        const x = cx + x0 + (30 - cycle) * (snow ? 0.08 * Math.sin(t + i) : -0.12);
+        const z = cz + z0;
+        pos.set([x, y, z, x + windX, y + lenY, z + windZ], i * 6);
       }
       geo.attributes.position.needsUpdate = true;
+
+      rippleT -= dt;
+      if (rippleT <= 0) {
+        rippleT = storm ? 0.09 : 0.16;
+        const rx = cx + (Math.random() - 0.5) * 28;
+        const rz = cz + (Math.random() - 0.5) * 28;
+        const gy = groundAt(rx, rz);
+        if (snow) {
+          race.puffs.spawn(new THREE.Vector3(rx, gy + 0.12, rz), {
+            color: 0xf2f7ff, count: 2, size: 0.22, rise: 1.8, life: 0.28, spread: 0.6,
+          });
+        } else {
+          race.shockwaves.ring(new THREE.Vector3(rx, gy, rz), {
+            color: 0xd8ecff, maxRadius: 0.9 + Math.random() * 0.6, duration: 0.42, opacity: 0.45,
+          });
+          race.puffs.spawn(new THREE.Vector3(rx, gy + 0.08, rz), {
+            color: 0xd8ecff, count: 1, size: 0.2, rise: 1.1, life: 0.22, spread: 0.35,
+          });
+        }
+      }
+
+      if (storm) {
+        nextLightning -= dt;
+        if (nextLightning <= 0) {
+          nextLightning = 9 + Math.random() * 11;
+          flashVal = 0.95;
+          setTimeout(() => { if (mode === 'race') sound.thunder(0.95); }, 260 + Math.random() * 320);
+        }
+      }
+      if (flashVal > 0) {
+        flashVal = Math.max(0, flashVal - dt * 3.8);
+        race.sky.setFlash(flashVal);
+      }
     },
   };
 })();
@@ -394,7 +443,11 @@ function applyPalette(pal) {
       sunInt: (pal.sunInt ?? 2.4) * 0.5, hemiInt: (pal.hemiInt ?? 1.6) * 0.85, cloudCover: 0.95,
       fog: [Math.min(pal.fog?.[0] ?? 80, 60), Math.min(pal.fog?.[1] ?? 260, 380)] };
   }
+  const hasRainbow = T?.id === 'salto' || T?.id === 'selva' || T?.id === 'bululu';
+  pal = { ...pal, rainbow: hasRainbow ? (T?.id === 'salto' ? 0.85 : 0.48) : 0 };
   race.rain.lines.visible = !!T?.def.rain;
+  race.rain.mat.color.setHex(T?.id === 'paramo' ? 0xf2f7ff : 0xb8d4ec);
+  race.rain.mat.opacity = T?.id === 'paramo' ? 0.78 : 0.58;
   race.scene.background.set(pal.horizon);
   race.scene.fog.color.set(pal.horizon);
   race.scene.fog.near = pal.fog?.[0] ?? 80;
@@ -653,6 +706,17 @@ function finishTrack() {
   race.items = createItems({
     scene: race.trackGroup, puffs: race.puffs, sound, G, track: T,
     crash: (c, power, side) => crash(c, power, side),
+    explode: (pos) => {
+      race.shockwaves.explode(pos, { radius: 4.8, scorch: true });
+      if (race.player) {
+        const d = Math.hypot(race.player.x - pos.x, race.player.z - pos.z);
+        if (d < 45) race.shake = Math.min(1.2, race.shake + (1 - d / 45) * 0.85);
+      }
+    },
+    coinPicked: (c, worldPos, streak) => {
+      race.shockwaves.sparkle(worldPos, { color: 0xffe066 });
+      if (c.isPlayer) flyToCounter(worldPos, race.camera, $('coin-count'), { streak });
+    },
     say: (c, lines, time) => say(c, lines, time),
     standings: () => standings(),
     cars: () => race.cars,
@@ -929,6 +993,8 @@ function clearRace() {
   race.cars = [];
   race.puffs.clear();
   race.debris.clear();
+  race.shockwaves.clear();
+  setSpeedLines(0);
   race.items?.clear();
   race.player = null;
 }
@@ -1463,6 +1529,7 @@ function stepCar(c, input, dt) {
   c.driftWindow = Math.max(0, c.driftWindow - dt);
   if (!c.drift && held && c.onGround && c.driftWindow > 0 && Math.abs(input.steer) > 0.3 && c.vf > DRIFT_MIN_SPEED) {
     c.drift = Math.sign(input.steer); c.driftT = 0;
+    if (c.isPlayer) sound.skid(0.8);
   }
   if (c.drift && (!held || c.vf < DRIFT_MIN_SPEED * 0.75 || c.spin > 0)) {
     // Letting go pays the charged turbo; a spin-out or stall loses it.
@@ -1482,7 +1549,13 @@ function stepCar(c, input, dt) {
   if (c.onGround) {
     if (boosting) vf += acceleration * 2.5 * dt;
     else if (input.throttle > 0) vf += acceleration * input.throttle * dt;
-    else if (input.throttle < 0) vf -= (vf > 0 ? t.accel * 2.2 * (.75+.25*grip) : acceleration * 0.6) * dt;
+    else if (input.throttle < 0) {
+      if (c.isPlayer && vf > 12 && (!c.skidT || race.clock - c.skidT > 0.38)) {
+        c.skidT = race.clock;
+        sound.skid(0.6);
+      }
+      vf -= (vf > 0 ? t.accel * 2.2 * (.75+.25*grip) : acceleration * 0.6) * dt;
+    }
     else vf -= Math.sign(vf) * Math.min(Math.abs(vf), 6 * dt);
     // a turbo lifts the cap; when it ends the extra speed bleeds off instead of snapping
     // Shortcut planks are bumpy: without a turbo they cost speed.
@@ -1654,6 +1727,9 @@ function stepCar(c, input, dt) {
     if (water>.15&&c.onGround&&Math.abs(vf)>7) {
       for(const side of [-1,1])race.puffs.spawn(new THREE.Vector3(c.x-fx*1.5+rx*side,c.y+.2,c.z-fz*1.5+rz*side),
         {color:0xc1e9e3,count:1,size:.45,rise:1.2,life:.35,spread:.8});
+      race.shockwaves.ring(new THREE.Vector3(c.x - fx * 1.2, c.y, c.z - fz * 1.2), {
+        color: 0xd8f4ef, maxRadius: 2.2, duration: 0.48, opacity: 0.55,
+      });
     } else if (kicking) {
       race.puffs.spawn(new THREE.Vector3(c.x - fx * 1.6, c.y+0.25, c.z - fz * 1.6), { color: rough>0.1?0x889263:0xe7bd8a, count: 1, size: 0.7, rise: 0.6, life: 0.7 });
     }
@@ -1854,6 +1930,20 @@ function syncCar(c, dt) {
   car.chassis.position.y = heave * 0.15 + (c.onGround ? Math.sin(race.clock * 22 + c.def.num) * 0.012 * Math.min(1, Math.abs(c.vf) / 8) : 0);
   car.chassis.rotation.x = sp;
   car.chassis.rotation.z = sr;
+  const boostStretch = c.boost > 0 ? Math.min(0.18, c.boost * 0.16) : 0;
+  const hopSquash = Math.max(-0.22, Math.min(0.22, heave * 0.08));
+  car.chassis.scale.set(
+    1 - boostStretch * 0.35 - hopSquash * 0.4,
+    1 - boostStretch * 0.45 + hopSquash,
+    1 + boostStretch - hopSquash * 0.35
+  );
+  if (c.boost > 0.4 && c.isPlayer) {
+    c.afterimageT = (c.afterimageT || 0) - dt;
+    if (c.afterimageT <= 0) {
+      c.afterimageT = 0.085;
+      race.shockwaves.afterimage(car.chassis, { color: pick(flameFor(c)), duration: 0.24 });
+    }
+  }
 
   for (const w of car.wheels) {
     w.spin.rotation.x += c.vf * dt / car.radius;
@@ -1941,11 +2031,13 @@ function updateRace(dt, presentation = true) {
   race.hazards?.update(race.clock, dt, race.state === 'go' || race.state === 'end' ? race.cars : [], hitHazard);
   race.puffs.update(dt);
   race.debris.update(dt);
+  race.shockwaves.update(dt);
   // The deterministic browser harness can run the same gameplay tick without
   // spending simulation time on poses, the minimap and DOM painting.
   if(!presentation)return;
   for (const c of race.cars) syncCar(c, dt);
   race.sky.update(race.clock);
+  tickWind(race.clock, T?.def.rain ? 1.45 : 1);
   for (const o of T.animated) o.userData.tick(race.clock, dt);   // scenery: flags, windmills, birds…
   sound.setEngine(race.player.vf);
   waterAmbience.update(T,race.player.x,race.player.z);
@@ -1979,6 +2071,7 @@ function updateRace(dt, presentation = true) {
 
   // speedometer + boost bar
   $('speed').textContent = Math.round(Math.abs(p.vf) * 4);
+  setSpeedLines(p.boost > 0 ? Math.min(0.85, p.boost) : 0);
   const boost = $('boost');
   const ratio = Math.min(1, Math.abs(p.vf) / (p.tune.top * 1.5));
   const lit = Math.round(ratio * 8);
@@ -2022,7 +2115,7 @@ function updateRace(dt, presentation = true) {
   followCam(race.camera, 'camPos', p, playerInput(1).look, dt);
   if (race.p2) followCam(race.camera2, 'camPos2', race.p2, playerInput(2).look, dt);
   const fx = Math.sin(p.h), fz = Math.cos(p.h);
-  if (race.rain.lines.visible) race.rain.update(p.x + fx * 10, p.y, p.z + fz * 10, race.clock);
+  if (race.rain.lines.visible) race.rain.update(p.x + fx * 10, p.y, p.z + fz * 10, race.clock, dt);
   race.sun.position.set(p.x - 30, p.y + 40, p.z + 25);
   race.sun.target.position.set(p.x, p.y, p.z);
 }
@@ -2030,15 +2123,17 @@ function updateRace(dt, presentation = true) {
 // Chase camera with a bit of shake; holding look-back (C) turns it around.
 function followCam(cam, key, p, look, dt) {
   const fx = Math.sin(p.h), fz = Math.cos(p.h), back = look ? -1 : 1;
-  const want = new THREE.Vector3(p.x - fx * 11 * back, Math.max(5, p.y + 5), p.z - fz * 11 * back);
+  const dist = p.boost > 0 ? 12.1 : 11;
+  const want = new THREE.Vector3(p.x - fx * dist * back, Math.max(5, p.y + 5), p.z - fz * dist * back);
   if (!race[key] || look !== race[key + 'Look']) race[key] = want.clone();
   race[key + 'Look'] = look;
-  race[key].lerp(want, Math.min(1, dt * 4));
+  race[key].lerp(want, Math.min(1, dt * (p.boost > 0 ? 5.5 : 4)));
   const sh = p.isPlayer ? race.shake * 0.6 : 0;
   // Mirror mode flips the whole scene on x; the camera follows in flipped space.
   const mx = race.mirror ? -1 : 1, at = race[key];
+  const lead = p.boost > 0 ? 5.2 : 4;
   cam.position.set(mx * at.x + rand(-sh, sh), at.y + rand(-sh, sh), at.z + rand(-sh, sh));
-  cam.lookAt(mx * (p.x + fx * 4 * back), p.y + 1.4, p.z + fz * 4 * back);
+  cam.lookAt(mx * (p.x + fx * lead * back), p.y + 1.4, p.z + fz * lead * back);
   const fov = p.boost > 0 ? 74 : 60;   // turbo stretches the view
   if (Math.abs(cam.fov - fov) > 0.05) {
     cam.fov += (fov - cam.fov) * Math.min(1, dt * 5);
@@ -2100,6 +2195,8 @@ function showItem(p) {
     $('item-label-' + i).textContent = label;
     const slot = $('item-slot-' + i);
     slot.classList.toggle('selected', selected);
+    slot.classList.toggle('rolling', !!(item && item.rolling > 0));
+    slot.dataset.rarity = item && item.rolling <= 0 ? (isJuiced(p) ? 'gold' : ITEMS[item.kind]?.rarity || 'blue') : '';
     slot.setAttribute('aria-pressed', String(selected));
     slot.setAttribute('aria-label', `Objeto ${i + 1}: ${label}${selected ? ', equipado' : ', seleccionar'}`);
     slot.disabled = !item || p.done;

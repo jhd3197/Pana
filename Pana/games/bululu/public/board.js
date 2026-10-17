@@ -457,6 +457,10 @@ export function createBoard(scene, { skyMode = 'day' } = {}) {
       stand.group.position.set(s.x, s.y, s.z);
       stand.group.rotation.y = s.h;
     },
+    pressTile(i) {
+      const tl = tiles[i];
+      if (tl) tl.pressT = 0.36;
+    },
     // a spot on a tile for pana number `slot`, so several fit together
     spot(i, slot, crowd) {
       const t = tiles[i];
@@ -475,8 +479,22 @@ export function createBoard(scene, { skyMode = 'day' } = {}) {
     update(t, dt) {
       atmosphere.update(dt,t);
       environment.update(t, dt, atmosphere.daylight);
-      // tiles you can pick at a fork bob up and down
-      for (const tl of tiles) tl.mesh.position.y = tl.y - 0.2 + (board.highlight.includes(tl.i) ? 0.25 + Math.sin(t * 7) * 0.2 : 0);
+      // tiles you can pick at a fork bob up and down; stepped-on tiles squash and bounce
+      for (const tl of tiles) {
+        let pressY = 0;
+        if (tl.pressT > 0) {
+          tl.pressT = Math.max(0, tl.pressT - dt);
+          const u = 1 - tl.pressT / 0.36;
+          const depress = Math.sin(u * Math.PI * 1.35) * (1 - u);
+          pressY = -depress * 0.14;
+          const sy = Math.max(0.68, 1 - depress * 0.28);
+          const sxz = 1 + (1 - sy) * 0.45;
+          tl.mesh.scale.set(sxz, sy, sxz);
+        } else {
+          tl.mesh.scale.set(1, 1, 1);
+        }
+        tl.mesh.position.y = tl.y - 0.2 + pressY + (board.highlight.includes(tl.i) ? 0.25 + Math.sin(t * 7) * 0.2 : 0);
+      }
       stand.keeper.update(dt, { look: Math.sin(t * 0.7) });
       stand.bubble.update(dt);
       stand.beam.material.opacity = 0.22 + Math.sin(t * 3) * 0.06;

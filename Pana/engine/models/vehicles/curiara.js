@@ -9,6 +9,7 @@ import * as THREE from 'three';
 import { riverCanoe } from '/engine/models/props/llano-life.js';
 import { buildCharacter } from '/engine/models/characters/pana/avatar-model.js';
 import { M, mesh, tube } from '/engine/models/core/primitives.js';
+import { sampleWaterWave } from '/engine/models/effects/water-surface.js';
 
 // Thwarts of riverCanoe(): z −1.55 (popa) and .9 (proa). A solo pana sits aft.
 export const SEATS = { solo: [-1.55], pair: [.9, -1.55] };
@@ -85,10 +86,13 @@ export function createCanoe(crew, color = '#e2683c', { pull = .3 } = {}) {
       const left = b.capsized || 0, t = left > 0 ? CAPSIZE - left : 0;
       const target = left > 0 ? (t < .35 ? ease(t / .35) : t < 1.35 ? 1 : 1 - ease((t - 1.35) / .45)) * Math.PI : 0;
       roll += (target - roll) * Math.min(1, dt * 14);
-      hull.rotation.z = roll * (b.rollSide || 1) + Math.sin(bob * 1.7) * .02 + (b.lean || 0);
-      hull.rotation.x = Math.sin(bob * 1.3) * .012 - (b.vy < -1 ? .18 : 0) + (b.air > 0 && b.vy > 0 ? -.06 : 0);
+      const wave = sampleWaterWave(b.x ?? group.position.x, b.z ?? group.position.z, bob, .035);
+      const surge = since < pull && !P.back ? Math.sin(since / pull * Math.PI) * (P.quality === 'sweet' ? .065 : .03) : 0;
+      hull.scale.set(1 - surge * .45, 1 - surge * .35, 1 + surge);
+      hull.rotation.z = roll * (b.rollSide || 1) + wave.roll + (b.lean || 0);
+      hull.rotation.x = wave.pitch - surge * .25 - (b.vy < -1 ? .18 : 0) + (b.air > 0 && b.vy > 0 ? -.06 : 0);
       // Upside down the keel shows above the water.
-      hull.position.y = -SINK + Math.sin(bob * 2.1) * .02 + roll / Math.PI * .72;
+      hull.position.y = -SINK + wave.y + roll / Math.PI * .72;
       const swimming = left > 0 && t > .3 && t < 1.55;
       if (swimming) { aboard.position.set(0, 0, 0); aboard.rotation.set(0, 0, 0); }
       else { aboard.position.copy(hull.position); aboard.rotation.copy(hull.rotation); }

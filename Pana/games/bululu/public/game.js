@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-import { sound, Puffs } from '/engine/fx.js';
+import { sound, Puffs, Shockwaves, popCounter } from '/engine/fx.js';
 import { loadAvatar, loadName, randomAvatar } from '/engine/avatar.js';
 import { buildCharacter } from '/engine/models/characters/pana/avatar-model.js';
 import { makeMango } from '/engine/models/props/mango.js';
@@ -109,6 +109,7 @@ $('top-actions').prepend(menu.createButton({ id: 'menu', className: 'pk-btn menu
 for (const b of $('sky').children) b.onclick = () => selectSky(b.dataset.sky);
 selectSky(board.atmosphere.mode, false);
 const puffs = new Puffs(boardScene);
+const shockwaves = new Shockwaves(boardScene);
 // two dice, plus a floating counter for the steps left once they're rolled
 const dice = [createDie(), createDie()];
 for (const d of dice) {
@@ -259,6 +260,7 @@ const boardView = {
       }
     }
     puffs.update(dt);
+    shockwaves.update(dt);
     if (freeLook) looker.update();
     else {
       cam.pos.lerp(cam.wantPos, Math.min(1, dt * 2.2));
@@ -657,6 +659,8 @@ async function hop(p, to) {
     counter.sprite.position.set(tk.group.position.x, tk.group.position.y + 4.6, tk.group.position.z);
   });
   tk.hopping = false;
+  board.pressTile(to);
+  shockwaves.ring(dest, { color: 0xffffff, maxRadius: 2.1, duration: 0.36, opacity: 0.65 });
   puffs.spawn(dest.clone().setY(dest.y + 0.2), { color: 0xffffff, count: 2, spread: 0.8, size: 0.4, rise: 0.6, life: 0.4 });
 }
 
@@ -702,14 +706,16 @@ async function give(p, n, line) {
   const real = rules.addCoins(p, n);
   p.token.bubble.say(line || (n >= 0 ? `+${n}` : `${n}`), 1);
   if (n >= 0) {
-    sound.pickup();
+    sound.pickup(Math.min(5, Math.max(0, Math.floor(n / 2))));
     p.token.cheer = 0.5;
     puffs.spawn(p.token.group.position.clone().setY(2.5), { color: 0xffc629, count: 6, spread: 1.2, size: 0.4, rise: 2, life: 0.7 });
+    shockwaves.sparkle(p.token.group.position.clone().setY(2.2), { color: 0xffd23f });
   } else {
     sound.bonk(0.6);
     p.token.dizzy = real < 0 ? 0.8 : 0;
   }
   renderCards();
+  if (n > 0) popCounter($('cards')?.children[p.i]?.querySelector('.coins b'));
   await wait(0.9);
 }
 
@@ -733,11 +739,13 @@ async function visitStand(p, landed) {
   }
   rules.buyMango(p);
   renderCards();
+  popCounter($('cards')?.children[p.i]?.querySelector('.mangos b'));
   // the golden mango arcs from the stand into the pana's arms
   const mg = makeMango({ gold: true });
   boardScene.add(mg);
   const from = st.group.position.clone().setY(4);
   const to = p.token.group.position.clone().setY(3);
+  sound.chestOpen('gold');
   sound.horn('fiesta');
   await tween(0.9, (k) => {
     mg.position.lerpVectors(from, to, k);
@@ -746,6 +754,8 @@ async function visitStand(p, landed) {
   });
   boardScene.remove(mg);
   puffs.spawn(to, { color: 0xffd23f, count: 12, spread: 2, size: 0.6, rise: 3, life: 1 });
+  shockwaves.ring(p.token.group.position, { color: 0xffe066, maxRadius: 4.2, duration: 0.65 });
+  shockwaves.sparkle(to, { color: 0xffe066 });
   p.token.cheer = 1.6;
   p.token.bubble.say('¡MANGO DE ORO!', 1.5);
   await toast(`¡${escapeHtml(p.name)} tiene un Mango de oro!`, `Ya van ${p.mangos}`, 1.6, 'gold');

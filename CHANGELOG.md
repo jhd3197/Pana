@@ -10,6 +10,8 @@ becomes the GitHub release's notes.
 
 ### Added
 
+- **Water shaders, living weather, and tactile game feel across Pana.**
+  Water surfaces and waterfalls add multi-wave displacement, dual caustics, crest foam, counter-scrolling ripples, and wave-synced boat buoyancy; tracks and islands add wind-swaying trees, angled rain with splashes, lightning and thunder, drifting snow, and post-shower rainbows; buttons, dashes, explosions, coin pickups, hold-to-charge triggers, and supply chests gain squash-and-stretch, shockwave rings, scorch decals, magnetic pull-in, flying HUD counters with combo badges, and rarity light and audio.
 - **Derrape adds Copa del Agua and four independently playable circuits.**
   Race salt ponds, delta villages, river caves and the Tepuy waterfall in a
   four-stage championship; Studio previews use the same track constructors.

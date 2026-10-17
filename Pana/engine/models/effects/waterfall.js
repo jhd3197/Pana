@@ -29,8 +29,9 @@ export function waterfall({width=10,height=30,run=0,seed=56,reduced=false}={}) {
         float threads=.5+.5*sin(flow.x*267.+fall*.16);
         float edge=smoothstep(0.,.045,flow.x)*smoothstep(0.,.045,1.-flow.x);
         float breaks=smoothstep(.08,.38,ribs+threads*.25);
-        float alpha=edge*(.24+.48*breaks);
-        vec3 col=mix(tint*.75,vec3(.94,.98,.94),ribs*.65+threads*.18);
+        float lip=smoothstep(.84,1.,flow.y)*.28+smoothstep(.18,0.,flow.y)*.34;
+        float alpha=edge*clamp(.24+.48*breaks+lip,0.,.92);
+        vec3 col=mix(tint*.75,vec3(.96,.99,.96),clamp(ribs*.65+threads*.18+lip*.6,0.,1.));
         gl_FragColor=vec4(col,alpha);
         #include <tonemapping_fragment>
         #include <colorspace_fragment>
@@ -42,11 +43,33 @@ export function waterfall({width=10,height=30,run=0,seed=56,reduced=false}={}) {
   const mist=steamField(origins,{seed,count:12,radius:Math.min(width*.18,9),rise:Math.min(height*.16,16),opacity:.2,drift:3});
   mist.name='waterfall-impact-mist';group.add(mist);
   const foamGeometry=new THREE.CircleGeometry(1,40);foamGeometry.rotateX(-Math.PI/2);
-  const foamMaterial=new THREE.MeshBasicMaterial({color:0xe5f0e8,transparent:true,opacity:.5,depthWrite:false,side:THREE.DoubleSide,forceSinglePass:true});
-  const foam=new THREE.Mesh(foamGeometry,foamMaterial);foam.position.set(0,.04,1.5);foam.scale.set(width*.55,1,Math.min(9,width*.22));foam.raycast=()=>{};group.add(foam);
-  group.userData.setReduced=value=>{mist.count=value?12:36;curtain.material.uniforms.motion.value=value?.35:1;};
+  const foamMaterial=new THREE.ShaderMaterial({
+    transparent:true,depthWrite:false,side:THREE.DoubleSide,forceSinglePass:true,fog:true,
+    uniforms:{...THREE.UniformsUtils.clone(THREE.UniformsLib.fog),time:{value:0},motion:{value:reduced?.35:1},foamColor:{value:new THREE.Color(0xeaf5ef)}},
+    vertexShader:`varying vec2 vUv;
+      #include <fog_pars_vertex>
+      void main(){vUv=uv*2.-1.;vec4 mvPosition=modelViewMatrix*vec4(position,1.);gl_Position=projectionMatrix*mvPosition;
+        #include <fog_vertex>
+      }`,
+    fragmentShader:`uniform float time;uniform float motion;uniform vec3 foamColor;varying vec2 vUv;
+      #include <fog_pars_fragment>
+      void main(){
+        float r=length(vUv);if(r>1.)discard;
+        float t=time*motion,angle=atan(vUv.y,vUv.x);
+        float core=smoothstep(.65,.08,r)*(.72+.28*sin(r*14.-t*5.+sin(angle*5.)*.6));
+        float rings=pow(max(0.,sin(r*19.-t*4.2+sin(angle*7.+t)*.35)),6.)*(1.-smoothstep(.35,.98,r));
+        float lace=smoothstep(.15,.85,.5+.5*sin(vUv.x*11.+t*1.7)*cos(vUv.y*13.-t*2.3))*(1.-r*.75)*.32;
+        float alpha=clamp((core*.65+rings*.58+lace)*(1.-smoothstep(.78,1.,r)),0.,.84);
+        gl_FragColor=vec4(foamColor,alpha);
+        #include <tonemapping_fragment>
+        #include <colorspace_fragment>
+        #include <fog_fragment>
+      }`,
+  });
+  const foam=new THREE.Mesh(foamGeometry,foamMaterial);foam.position.set(0,.04,1.5);foam.scale.set(width*.58,1,Math.min(9.5,width*.25));foam.raycast=()=>{};group.add(foam);
+  group.userData.setReduced=value=>{mist.count=value?12:36;curtain.material.uniforms.motion.value=foam.material.uniforms.motion.value=value?.35:1;};
   group.userData.setReduced(reduced);
-  group.userData.tick=t=>{curtain.material.uniforms.time.value=t;mist.userData.tick(t);foam.material.opacity=.46+.06*Math.sin(t*1.3);};
+  group.userData.tick=t=>{curtain.material.uniforms.time.value=t;foam.material.uniforms.time.value=t;mist.userData.tick(t);};
   group.userData.previewBounds=[[-width*.7,0,-Math.abs(run)-3],[width*.7,height+1,12]];
   group.userData.effectBudget={draws:3,particles:36,renderTargets:0};
   let disposed=false;

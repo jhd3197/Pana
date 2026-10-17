@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { loadAvatar, loadName } from '/engine/avatar.js';
-import { sound } from '/engine/fx.js';
+import { sound, pulseSpeedLines, setSpeedLines } from '/engine/fx.js';
 import { createGameMenu, toggleMute } from '/engine/ui.js';
 import { fillRoster } from '/engine/results.js';
 import { inviteUrl, newRoomCode, roomFromUrl } from '/engine/invite.js';
@@ -12,6 +12,7 @@ import { RIVER, angle, formatTime } from './river.js';
 import { PADDLE, grade } from '/engine/paddle.js';
 import { createRaceScene } from './scene.js';
 import { createCanoe } from '/engine/models/vehicles/curiara.js';
+import { tickWind } from '/engine/models/vegetation/plant-kit.js';
 import { addLandscape } from './landscape.js';
 import { createRiverFX } from './water-fx.js';
 import { createMusic } from '/engine/music.js';
@@ -63,7 +64,7 @@ function stroke(side, at) {
   if (role !== 'popa' && !keys.has('KeyS') && !keys.has('ArrowDown') && !touch.has('back')) {
     const gap = local.last == null ? Infinity : t - local.last, g = grade(gap, gap !== Infinity && side === local.side);
     local.streak = g.quality === 'remazo' ? local.streak + 1 : g.quality === 'chapoteo' || g.quality === 'arranque' ? 0 : local.streak;
-    if (g.quality === 'remazo') { tock(1); call(local.streak >= 3 ? `¡Remazo ×${local.streak}!` : '¡Remazo!'); }
+    if (g.quality === 'remazo') { tock(1); sound.whoosh(); pulseSpeedLines(220, 0.55); call(local.streak >= 3 ? `¡Remazo ×${local.streak}!` : '¡Remazo!'); }
     else if (g.quality === 'chapoteo') { sound.sweep(900, 300, .12, 'triangle', .05); if (Math.random() < .5) call('¡Chapoteo!', 'is-soft'); }
     else sound.tone(420, 0, .05, 'triangle', .04);
   }
@@ -303,9 +304,16 @@ function frame() {
   const floor = RIVER.groundAt(cameraGoal.x, cameraGoal.z) + 1.2; if (cameraGoal.y < floor) cameraGoal.y = floor;
   if (!cameraReady || camera.position.distanceTo(cameraGoal) > 30) { camera.position.copy(cameraGoal); cameraReady = true; } else camera.position.lerp(cameraGoal, 1 - Math.exp(-dt * 5));
   camera.lookAt(look);
+  const wantFov = (focus.boost > 0 || (focus.paddle?.quality === 'remazo' && t - (focus.paddle?.last || 0) < 0.35)) ? 59 : 52;
+  if (Math.abs(camera.fov - wantFov) > 0.05) {
+    camera.fov += (wantFov - camera.fov) * Math.min(1, dt * 6);
+    camera.updateProjectionMatrix();
+  }
+  if (own?.boost > 0) setSpeedLines(0.75);
   // Raudal landings and bumps shake the camera a little.
   if (shake > 0) { shake = Math.max(0, shake - dt); const k = shake * shakePower; camera.position.x += (Math.random() - .5) * k; camera.position.y += (Math.random() - .5) * k; }
   sun.position.set(q.x - 40, q.y + 70, q.z + 30); sun.target.position.copy(q); sun.target.updateMatrixWorld();
+  tickWind(elapsed, 0.9);
   world.world.update(elapsed, dt); world.world.cull(camera); world.world.race(state, t); world.sky.update(elapsed);
   fx.update(elapsed, boats.filter(b => b.id !== 'preview'), canoes, q, t);
   if (callTimer > 0) { callTimer -= dt; if (callTimer <= 0) $('call').classList.add('hidden'); }

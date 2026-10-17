@@ -2,7 +2,7 @@
 // golden ones are worth 3, coconuts knock you silly for a moment.
 
 import * as THREE from 'three';
-import { Puffs, sound } from '/engine/fx.js';
+import { Puffs, Shockwaves, sound } from '/engine/fx.js';
 import { M, mesh } from '/engine/models/core/primitives.js';
 import { makeMango } from '/engine/models/props/mango.js';
 import { woodSign } from '/engine/models/props/wood-sign.js';
@@ -72,6 +72,7 @@ export default {
     sign.rotation.y = -0.4;
     scene.add(sign);
     const puffs = new Puffs(scene);
+    const shockwaves = new Shockwaves(scene);
 
     const camera = new THREE.PerspectiveCamera(50, innerWidth / innerHeight, 0.1, 400);
     camera.position.set(0, 6.2, 19);
@@ -84,6 +85,10 @@ export default {
       const b = basket();
       b.position.set(0, 1.25, 0.85);
       a.pana.group.add(b);
+      a.basket = b;
+      a.catchPop = 0;
+      a.streak = 0;
+      a.streakT = 0;
       a.ai = { target: null, think: 0, err: 0, speed: SPEED * rand(0.78, 0.92) };
     });
 
@@ -146,6 +151,8 @@ export default {
       // move panas
       for (const a of actors) {
         a.stun = Math.max(0, a.stun - dt);
+        a.streakT = Math.max(0, (a.streakT || 0) - dt);
+        if (a.streakT <= 0) a.streak = 0;
         let dir = 0;
         if (a.stun > 0) dir = 0;
         else if (a.player.human && !ctx.auto) dir = input.x;
@@ -184,6 +191,11 @@ export default {
         const prev = p.y;
         f.vy -= G * dt;
         p.y += f.vy * dt;
+        // Magnetic pull-in toward the nearest unstunned basket when close
+        if (f.kind !== 'coco' && p.y > CATCH_Y && p.y < CATCH_Y + 1.45) {
+          const magnet = actors.find((c) => c.stun <= 0 && Math.abs(c.x - p.x) < 1.45);
+          if (magnet) p.x += (magnet.x - p.x) * Math.min(1, dt * 9.5);
+        }
         f.obj.rotation.z += f.spin * dt;
         f.obj.rotation.x += f.spin * 0.5 * dt;
         if (prev > CATCH_Y && p.y <= CATCH_Y) {
@@ -192,15 +204,21 @@ export default {
             f.dead = true;
             if (f.kind === 'coco') {
               a.stun = 1.3;
+              a.streak = 0;
               a.bubble.say(pick(['¡COCO!', '¡Ay, mi cabeza!', '¡Pum!']), 1);
               sound.bonk(0.9);
               puffs.spawn(p.clone(), { color: 0x8a6a4a, count: 5, spread: 0.8, size: 0.6 });
             } else {
               const pts = f.kind === 'gold' ? 3 : 1;
               a.score += pts;
+              a.streak = Math.min(8, (a.streak || 0) + 1);
+              a.streakT = 2.4;
+              a.catchPop = 0.22;
               if (f.kind === 'gold') a.bubble.say('¡DE ORO!', 0.8);
-              if (a.player.human || f.kind === 'gold') sound.pickup();
+              else if (a.streak >= 3) a.bubble.say(`×${a.streak}!`, 0.65);
+              if (a.player.human || f.kind === 'gold') sound.pickup(a.streak - 1);
               puffs.spawn(p.clone(), { color: f.kind === 'gold' ? 0xffd23f : 0xffae2b, count: 3, spread: 0.5, size: 0.4, rise: 1.5, life: 0.5 });
+              shockwaves.sparkle(p.clone(), { color: f.kind === 'gold' ? 0xffe066 : 0xffc629 });
             }
           }
         }
@@ -217,8 +235,17 @@ export default {
       for (const a of actors) {
         animateActor(a, dt, { moving: Math.abs(a.vx) / SPEED, open: a.stun > 0, dizzy: a.stun > 0, armsUp: 0.8 });
         a.pana.group.rotation.y = a.vx * 0.04;
+        if (a.catchPop > 0) {
+          a.catchPop = Math.max(0, a.catchPop - dt);
+          const u = 1 - a.catchPop / 0.22;
+          const s = 1 + Math.sin(u * Math.PI) * 0.28;
+          a.basket.scale.set(s, 2 - s, s);
+        } else {
+          a.basket.scale.set(1, 1, 1);
+        }
       }
       puffs.update(dt);
+      shockwaves.update(dt);
     }
 
     // everyone celebrates (or not) once time is up
@@ -231,6 +258,7 @@ export default {
       }
       for (const f of falling) f.obj.position.y = Math.max(0.4, f.obj.position.y - dt * 5);
       puffs.update(dt);
+      shockwaves.update(dt);
     }
 
     return { scene, camera, update, outro, scores: () => actors.map((a) => a.score), actors };

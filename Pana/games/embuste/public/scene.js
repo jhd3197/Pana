@@ -12,6 +12,8 @@ import { food } from '/engine/models/props/kitchen.js';
 import { campBell, radioSet, damGate, campTent } from '/engine/models/props/embuste.js';
 import { fern } from '/engine/models/vegetation/fern.js';
 import { palm } from '/engine/models/vegetation/palm.js';
+import { tickWind } from '/engine/models/vegetation/plant-kit.js';
+import { waterSurface, sampleWaterWave } from '/engine/models/effects/water-surface.js';
 import { ZONES, BOUNDS, FIRE, RELIC, BELL, STATIONS, VENTS, HIDES, FIXES, floorAt, zoneAt, stationById } from './layout.js';
 
 function box(root, material, w, h, d, x, y, z) { const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), material); m.position.set(x, y, z); m.castShadow = m.receiveShadow = true; root.add(m); return m; }
@@ -46,8 +48,9 @@ export function createCampWorld() {
   const ground = new THREE.Mesh(new THREE.PlaneGeometry(BOUNDS.maxX - BOUNDS.minX + 60, BOUNDS.maxZ - BOUNDS.minZ + 60), earth);
   ground.rotation.x = -Math.PI / 2; ground.position.set((BOUNDS.minX + BOUNDS.maxX) / 2, -0.32, (BOUNDS.minZ + BOUNDS.maxZ) / 2 - 8); ground.receiveShadow = true; group.add(ground);
   const ravine = box(group, mat(0x07090c), 9.4, 0.2, 14, BRIDGE_X, -3.2, 0); ravine.receiveShadow = false;
-  const river = new THREE.Mesh(new THREE.PlaneGeometry(90, 16), mat(0x1e5f72, { roughness: 0.25, metalness: 0.1, emissive: 0x0b2c38, emissiveIntensity: 0.6 }));
-  river.rotation.x = -Math.PI / 2; river.position.set(18, -0.3, 40); group.add(river);
+  const riverGeo = new THREE.PlaneGeometry(90, 16, 48, 12); riverGeo.rotateX(-Math.PI / 2);
+  const river = waterSurface(riverGeo, { kind: 'river', color: 0x28788a, depth: 3.2, amplitude: 0.035 });
+  river.position.set(18, -0.3, 40); group.add(river);
 
   // Floor: one-metre tiles, instanced, coloured by zone.
   const tiles = [];
@@ -210,6 +213,8 @@ export function createCampWorld() {
   // view: the seat's latest view (may be null in Studio).
   function update(t, view = null, dt = 0.016) {
     const w = view?.world || {};
+    tickWind(t, 0.85);
+    river.userData.tick?.(t);
     fire.userData.tick?.(t); falls.userData.tick?.(t);
     relic.rotation.y = t * 0.5; relic.position.y = 1.05 + Math.sin(t * 1.6) * 0.06;
     const blaze = view?.ending?.winner === 'panas';
@@ -223,7 +228,10 @@ export function createCampWorld() {
     flood = THREE.MathUtils.damp(flood, w.flood ? 1 : 0, 1.5, dt);
     river.position.y = -0.3 + flood * 0.25; dam.userData.setOpen(flood);
     levers.forEach(arm => { arm.rotation.z = w.flood ? 0.5 + Math.sin(t * 6) * 0.1 : -0.5; });
-    canoe.position.y = -0.45 + Math.sin(t * 1.3) * 0.04 + flood * 0.2;
+    const cw = sampleWaterWave(canoe.position.x, canoe.position.z, t, 0.055);
+    canoe.position.y = -0.45 + cw.y + flood * 0.2;
+    canoe.rotation.x = cw.pitch;
+    canoe.rotation.z = cw.roll;
     for (const [, v] of vents) { v.shake = Math.max(0, v.shake - dt); v.group.rotation.z = v.shake > 0 ? Math.sin(t * 40) * 0.04 : 0; }
     for (const [, h] of hides) { h.shake = Math.max(0, h.shake - dt); h.group.position.y = h.shake > 0 ? Math.abs(Math.sin(t * 30)) * 0.05 : 0; }
     for (const ring of rings.values()) if (ring.visible) ring.material.opacity = 0.45 + Math.sin(t * 4) * 0.25;
@@ -231,6 +239,7 @@ export function createCampWorld() {
   function mark(ids = new Set()) { for (const [id, ring] of rings) ring.visible = ids.has(id); }
   function shake(id) { const v = vents.get(id) || hides.get(id); if (v) v.shake = 0.9; }
   function dispose() {
+    river.userData.dispose?.();
     const geometries = new Set(); group.traverse(o => { if (o.geometry) geometries.add(o.geometry); if (o.material?.isMeshBasicMaterial) o.material.dispose(); });
     geometries.forEach(g => g.dispose()); owned.forEach(m => m.dispose()); owned.clear();
   }
