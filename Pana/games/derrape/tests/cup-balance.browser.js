@@ -14,7 +14,7 @@ try{
   await page.goto(`${process.env.PANA_TEST_URL||'http://localhost:8461'}/g/derrape/?debug&auto&manual`);
   await page.waitForFunction(()=>window.garage?.car,null,{timeout:90000});
   const entrants=Array.from({length:8},(_,i)=>({id:`driver-${i}`,name:`Rival ${i+1}`,kind:i?'bot':'human',loadout:{car:i,wheel:'calle'},skillSeed:`skill-${i}`}));
-  for(const cup of CUPS){
+  for(const cup of CUPS.filter(c=>!process.env.PANA_BALANCE_CUPS||process.env.PANA_BALANCE_CUPS.split(',').includes(c.id))){
     const sessions=[];
     for(const difficulty of ['facil','normal','dificil'])for(let seed=1;seed<=seeds;seed++)sessions.push(createCupSession({cupId:cup.id,sessionId:`balance-${cup.id}-${difficulty}-${seed}`,seed,difficulty,entrants}));
     for(const [stage,preset]of cup.stages.entries()){

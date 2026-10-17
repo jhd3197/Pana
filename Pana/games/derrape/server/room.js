@@ -342,7 +342,7 @@ export default class DerrapeRoom extends PanaRoom {
       p.racing = true;
       p.loaded = false;
       this.state.racers.set(id, new Racer({
-        kind: 'human', owner: id, name: p.name, avatar: p.avatar, car: p.car, wheel: p.wheel, slot: slots.pop(), lap: 0,
+        kind: 'human', owner: id, name: p.name, avatar: p.avatar, car: p.car, wheel: p.wheel, cosmetics: p.cosmetics, slot: slots.pop(), lap: 0,
       }));
     }
     for (const p of this.state.players.values()) if (!p.connected) { p.racing = false; p.loaded = false; }

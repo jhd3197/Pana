@@ -63,6 +63,9 @@ try {
     for (let i = 0; i < 490; i++) items.update(1 / 60, [], true);
     const coinRespawn = collected.m.visible && collected.down === 0;
     // Prepared active item stays ready while its reserve is opening.
+    // Some coin rows overlap supply rows: reset the inventory earned while
+    // visiting coins before isolating this active/reserve assertion.
+    c.inventory = [null, null]; c.selected = 0;
     addItem(c, 'mango', 0); addItem(c, 'jugo', 0.65);
     items.update(1 / 60, [c], true);
     const guardVisible = race.trackGroup.getObjectByName('held-mango')?.visible;
@@ -78,7 +81,7 @@ try {
     const place = (c, s) => {
       const a = T.pointAt(s), b = T.pointAt(s + 0.5);
       Object.assign(c, { x: a.x, z: a.y, y: T.groundAt(a.x, a.y), h: Math.atan2(b.x - a.x, b.y - a.y),
-        done: false, isPlayer: true, vx: 0, vz: 0, vf: 0, spin: 0, boost: 0, inventory: [null, null], selected: 0, lost: 0 });
+        done: false, isPlayer: true, vx: 0, vz: 0, vf: 0, spin: 0, boost: 0, coins: 0, inventory: [null, null], selected: 0, lost: 0 });
     };
     const reset = () => { race.items.clear(); place(owner, T.LINE + 35); place(victim, T.LINE + 48); };
     const step = () => { for (let i = 0; i < 100 && race.items.projectiles.length; i++) race.items.update(1 / 60, [owner, victim], true); };
@@ -187,6 +190,11 @@ try {
   await mobile.screenshot({ path: join(output, 'mobile-garage.png') });
   await mobile.locator('#play').tap();
   await mobile.waitForFunction(() => race.state === 'count');
+  // Portrait is an explicit shared setting; the default horizontal guard
+  // correctly prevents racing input until rotation or a preference change.
+  await mobile.locator('.pana-rotate').waitFor({state:'visible'});
+  await mobile.evaluate(async()=>{const {setSettings}=await import('/engine/settings.js');setSettings({orientation:'vertical'});});
+  await mobile.locator('.pana-rotate').waitFor({state:'hidden'});
   await mobile.evaluate(async () => {
     race.state = 'go'; race.count = 0;
     const { addItem } = await import('./item-rules.js');

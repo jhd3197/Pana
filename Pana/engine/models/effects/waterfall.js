@@ -12,7 +12,7 @@ export function waterfall({width=10,height=30,run=0,seed=56,reduced=false}={}) {
   for(let i=0;i<positions.count;i++){const descent=1-positions.getY(i)/height;positions.setZ(i,run*(descent*descent-1));}
   geometry.computeVertexNormals();
   const material=new THREE.ShaderMaterial({
-    transparent:true,depthWrite:false,side:THREE.DoubleSide,fog:true,
+    transparent:true,depthWrite:false,side:THREE.DoubleSide,forceSinglePass:true,fog:true,
     uniforms:{...THREE.UniformsUtils.clone(THREE.UniformsLib.fog),time:{value:0},tint:{value:new THREE.Color(0xc5e5df)},motion:{value:reduced?.35:1}},
     vertexShader:`uniform float time;uniform float motion;varying vec2 flow;
       #include <fog_pars_vertex>
@@ -42,7 +42,7 @@ export function waterfall({width=10,height=30,run=0,seed=56,reduced=false}={}) {
   const mist=steamField(origins,{seed,count:12,radius:Math.min(width*.18,9),rise:Math.min(height*.16,16),opacity:.2,drift:3});
   mist.name='waterfall-impact-mist';group.add(mist);
   const foamGeometry=new THREE.CircleGeometry(1,40);foamGeometry.rotateX(-Math.PI/2);
-  const foamMaterial=new THREE.MeshBasicMaterial({color:0xe5f0e8,transparent:true,opacity:.5,depthWrite:false,side:THREE.DoubleSide});
+  const foamMaterial=new THREE.MeshBasicMaterial({color:0xe5f0e8,transparent:true,opacity:.5,depthWrite:false,side:THREE.DoubleSide,forceSinglePass:true});
   const foam=new THREE.Mesh(foamGeometry,foamMaterial);foam.position.set(0,.04,1.5);foam.scale.set(width*.55,1,Math.min(9,width*.22));foam.raycast=()=>{};group.add(foam);
   group.userData.setReduced=value=>{mist.count=value?12:36;curtain.material.uniforms.motion.value=value?.35:1;};
   group.userData.setReduced(reduced);

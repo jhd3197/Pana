@@ -312,3 +312,15 @@ test('late spectators stay outside locked roster and a new cup resets all race s
   assert.equal(room.cupSession.ledger.length, 0);
   assert.equal(room.state.track, 'desierto');
 });
+
+test('appearance is validated, frozen for all stages and shared with every client', () => {
+  const {room,send,join}=createTestRoom({mode:'agua'});
+  const {client:host}=join('host',{cosmetics:{paint:'caribe',horn:'fiesta',flame:'hielo'}});
+  join('guest',{cosmetics:{paint:'foreign',horn:7,flame:'foreign'}});send(host,'start');
+  const saved=room.cupSession.entrants.find(e=>e.id==='host').loadout;
+  assert.deepEqual([saved.paint,saved.horn,saved.flame],['caribe','fiesta','hielo']);
+  send(host,'pick',{car:7,wheel:'barro',cosmetics:{paint:'pasion'}});
+  assert.equal(room.cupSession.entrants.find(e=>e.id==='host').loadout,saved);
+  assert.deepEqual(JSON.parse(room.state.racers.get('host').cosmetics),{paint:'caribe',horn:'fiesta',flame:'hielo'});
+  assert.equal(room.cupSession.entrants.find(e=>e.id==='guest').loadout.paint,'fabrica');
+});

@@ -55,3 +55,16 @@ The loading suite covers actual orbit input, all eight thumbnails, rapid car and
 track selection, cancellation before/partway through construction, replay reuse,
 retry after cancellation, and recovery from constructor failure. Screenshots and timings are saved in ignored
 `art/performance/` (or `PANA_TEST_ARTIFACTS`).
+
+### Repeated Grand Prix resource ownership
+
+Canvas signs/start banners/chevrons and individual car flags own textures;
+geometry disposal alone does not release those GPU allocations. Collect
+callbacks before traversed children can detach, retain owned car materials even
+when parts break off, and release maps as well as materials. `ownedMap` marks
+per-instance flag materials; cached vehicle plates/roundels stay shared.
+
+Compare the same warmed garage after evicting the last race world: different
+finish cameras upload different subsets of retained terrain. The lifetime suite
+runs three real Agua cups, including split/mirror, then compares geometry,
+texture, document/window listener and interval counts. It also cancels loading.

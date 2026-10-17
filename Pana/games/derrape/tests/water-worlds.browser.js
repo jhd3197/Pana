@@ -10,14 +10,14 @@ page.on('pageerror',e=>errors.push(String(e)));
 const origin=process.env.PANA_TEST_URL||'http://localhost:8461';
 const ids=(process.env.PANA_WATER_TRACKS||'salto,delta,cuevas,salinas').split(',');
 try{
-  await page.goto(`${origin}/g/derrape/?debug&auto&manual&waterDrafts`);
+  await page.goto(`${origin}/g/derrape/?debug&auto&manual`);
   await page.waitForFunction(()=>window.garage?.car,null,{timeout:90000});
   for(const id of ids){
     const out=`art/water-worlds/${id}`;await mkdir(out,{recursive:true});
     const result=await page.evaluate(async id=>{
       toGarage();setup.mode='race';setup.laps=2;buildTrack(id);await startRace(0);
       const T=getActiveTrack(),THREE=await import('three');
-      const result={id,length:T.TOTAL,minRadius:Infinity,maxGrade:0,projection:0,protrusion:0,clearance:[],cameras:[],triangles:0};
+      const result={id,length:T.TOTAL,minRadius:Infinity,maxGrade:0,projection:0,protrusion:0,clearance:[],cameras:[],triangles:0,route:Array.from({length:600},(_,i)=>T.pointAt(i*T.TOTAL/600).toArray())};
       for(let s=0;s<T.TOTAL;s+=1){
         const a=T.pointAt(s-1),b=T.pointAt(s),c=T.pointAt(s+1),h=Math.atan2(c.x-a.x,c.y-a.y);
         const turn=Math.atan2(c.y-b.y,c.x-b.x)-Math.atan2(b.y-a.y,b.x-a.x);
@@ -50,7 +50,9 @@ try{
       return result;
     },id);
     await writeFile(`${out}/geometry.json`,JSON.stringify(result,null,2));
-    console.log(JSON.stringify(result));
+    const xs=result.route.map(p=>p[0]),ys=result.route.map(p=>p[1]),xmin=Math.min(...xs)-40,ymin=Math.min(...ys)-40,w=Math.max(...xs)-xmin+40,h=Math.max(...ys)-ymin+40;
+    await writeFile(`${out}/route.svg`,`<svg xmlns="http://www.w3.org/2000/svg" viewBox="${xmin} ${ymin} ${w} ${h}"><rect x="${xmin}" y="${ymin}" width="${w}" height="${h}" fill="#eeeee5"/><polyline points="${[...result.route,result.route[0]].map(p=>p.join(',')).join(' ')}" fill="none" stroke="#2b564d" stroke-width="12"/><text x="${xmin+15}" y="${ymin+25}" font-family="sans-serif" font-size="18">${id} · ${(result.length/1000).toFixed(2)} km</text></svg>`);
+    console.log(JSON.stringify({...result,route:undefined}));
     assert.ok(result.length>=1500&&result.length<=2700,`${id}: length ${result.length}`);
     assert.ok(result.minRadius>15,`${id}: minimum radius ${result.minRadius}`);
     assert.ok(result.maxGrade<.25,`${id}: grade ${result.maxGrade}`);
@@ -59,14 +61,33 @@ try{
     assert.deepEqual(result.clearance,[],`${id}: car lanes clear`);
     assert.deepEqual(result.cameras,[],`${id}: forward/look-back chase segment clear`);
     assert.ok(result.triangles<1800000,`${id}: environment triangle budget`);
-    for(const u of [0,.18,.4,.62,.79]){
-      await page.evaluate(u=>{
+    const views=[];
+    for(const u of [0,.18,.4,.5,.55,.6,.62,.68,.79]){
+      const view=await page.evaluate(u=>{
         const T=getActiveTrack(),p=T.pointAt(T.TOTAL*u),q=T.pointAt(T.TOTAL*u+1),c=race.player;
         c.x=p.x;c.z=p.y;c.y=T.groundAt(c.x,c.z);c.h=Math.atan2(q.x-p.x,q.y-p.y);race.camPos=null;
         updateRace(0);document.getElementById('count').textContent='';renderer.render(race.scene,race.camera);
+        const frame={u,camera:race.camera.position.toArray(),draws:renderer.info.render.calls,triangles:renderer.info.render.triangles,memory:{...renderer.info.memory}};
+        race.cars.forEach(c=>c.car.root.visible=false);renderer.render(race.scene,race.camera);frame.environmentDraws=renderer.info.render.calls;
+        race.cars.forEach(c=>c.car.root.visible=true);renderer.render(race.scene,race.camera);return frame;
       },u);
       await page.screenshot({path:`${out}/driver-${Math.round(u*100)}.png`});
+      views.push(view);
+      assert.ok(view.environmentDraws<=850,`${id}: environment draw budget ${view.environmentDraws}`);
     }
+    await page.setViewportSize({width:844,height:390});
+    await page.evaluate(async()=>{await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));updateRace(0);document.getElementById('count').textContent='';renderer.render(race.scene,race.camera);});
+    await page.screenshot({path:`${out}/mobile-landscape.png`});
+    await page.setViewportSize({width:1280,height:800});
+    const overview=await page.evaluate(async()=>{
+      await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));document.getElementById('count').textContent='';
+      const THREE=await import('three'),T=getActiveTrack(),bounds=new THREE.Box3(new THREE.Vector3(...T.def.previewBounds[0]),new THREE.Vector3(...T.def.previewBounds[1])),center=bounds.getCenter(new THREE.Vector3());
+      const camera=new THREE.PerspectiveCamera(48,1280/800,1,5000);camera.position.copy(center).add(new THREE.Vector3(350,750,650));camera.lookAt(center);
+      const fog=race.scene.fog;race.scene.fog=null;race.sky.mesh.visible=false;renderer.render(race.scene,camera);
+      const png=renderer.domElement.toDataURL('image/png');race.scene.fog=fog;race.sky.mesh.visible=true;return png;
+    });
+    await writeFile(`${out}/overview.png`,Buffer.from(overview.split(',')[1],'base64'));
+    await writeFile(`${out}/render-views.json`,JSON.stringify({viewport:[1280,800],profile:'Headless Chromium; software WebGL, not physical-device FPS',views},null,2));
     if(!process.env.PANA_GEOMETRY_ONLY){
       await page.evaluate(async()=>{
         await startRace(0);

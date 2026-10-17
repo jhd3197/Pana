@@ -45,5 +45,7 @@ export function woodSign(lines, { w = 9, h = 4.4 } = {}) {
   });
   const board = mesh(new THREE.BoxGeometry(w, h, 0.3), panel, 0, h / 2 + 1.1, 0.1);
   g.add(board);
+  let disposed=false;
+  g.userData.dispose=()=>{if(disposed)return;disposed=true;panel.map.dispose();panel.dispose();};
   return g;
 }

@@ -21,7 +21,9 @@ import { normalizeAvatar } from '../../engine/avatar.js';
 
 export const MAX_MEMBERS = 8;
 export const RECONNECT_SECONDS = 20;
-export const ROOM_FULL = 4009;
+// onCreate failures travel over HTTP matchmaking. Colyseus 0.18's Node
+// adapter treats this as an HTTP status; a WebSocket close code becomes 404.
+export const ROOM_FULL = 409;
 // The lead (party's Pana Mayor) takes the host only while the room is new,
 // i.e. during the party's move. Later they join like anyone else, so a game
 // already running never hands over to a host without its state.

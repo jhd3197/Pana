@@ -32,7 +32,8 @@ const bush = options => bake(flora.bush(options));
 function placeOnTrack(T, s, off = 0) {
   const p = T.pointAt(s), p2 = T.pointAt(s + 0.5);
   const tx = p2.x - p.x, tz = p2.y - p.y, l = Math.hypot(tx, tz) || 1;
-  return { x: p.x - tz / l * off, y: T.heightAtS(s), z: p.y + tx / l * off, h: Math.atan2(tx, tz) };
+  const x=p.x-tz/l*off,z=p.y+tx/l*off;
+  return { x, y: T.def.crossfall?T.surfaceAt(x,z):T.heightAtS(s), z, h: Math.atan2(tx, tz) };
 }
 
 // Random spots beside the track, clear of the asphalt corridor.
@@ -188,6 +189,8 @@ function chevrons(group, T, { minCurve = 0.017 } = {}) {
     g.add(box(0.14, 1.5, 0.14, M(0x3a3a44), -0.9, 0.75, 0));
     g.add(box(0.14, 1.5, 0.14, M(0x3a3a44), 0.9, 0.75, 0));
     const b = mesh(new THREE.BoxGeometry(2.6, 1.15, 0.1), texCache.get(dir), 0, 1.9, 0);
+    const material=texCache.get(dir);
+    g.userData.dispose=()=>{if(material.userData.disposed)return;material.userData.disposed=true;material.map.dispose();material.dispose();};
     g.add(b);
     return g;
   };
@@ -224,6 +227,7 @@ function startLine(group, T) {
   }
   line.geometry.computeVertexNormals();
   line.name = 'finish-stripe';
+  line.userData.dispose=()=>{tex.dispose();line.material.dispose();};
   line.receiveShadow = true;
   group.add(line);
   const p = placeOnTrack(T, T.LINE);
@@ -238,6 +242,7 @@ function startLine(group, T) {
     }
   });
   gantry.add(mesh(new THREE.BoxGeometry(T.HW * 2 + 4.6, 1.4, 0.3), banner, 0, 7, 0));
+  gantry.userData.dispose=()=>{banner.map.dispose();banner.dispose();};
   at(group, gantry, p, p.h);
 }
 

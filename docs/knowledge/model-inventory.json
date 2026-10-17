@@ -1,25 +1,25 @@
 {
-  "date": "2026-10-16",
+  "date": "2026-10-17",
   "scope": "Current production 3D resource/model families; catalog variants and scene assemblies are counted separately. No primitive-mesh count or deleted-history total.",
   "counts": {
-    "catalog": 209,
+    "catalog": 220,
     "categories": {
       "Fauna": 17,
       "Vegetación": 24,
       "Llanos": 10,
-      "Vida llanera": 11,
+      "Vida llanera": 13,
       "Desierto": 10,
       "Termales": 5,
       "Objetos": 47,
       "Emblemas": 9,
       "Pueblo": 10,
       "Páramo": 8,
-      "Selva": 12,
-      "Costa": 9,
+      "Selva": 14,
+      "Costa": 12,
       "Personajes": 3,
       "Vestuario": 5,
       "Vehículos": 14,
-      "Mapas": 15
+      "Mapas": 19
     },
     "previewOnly": 8,
     "uncatalogedFamilies": 31,
@@ -2147,6 +2147,104 @@
       "status": "in-use"
     },
     {
+      "id": "waterfall-curtain",
+      "name": "Cortina de cascada",
+      "category": "Costa",
+      "source": "Pana/engine/models/effects/waterfall.js",
+      "factory": "waterfall",
+      "usedBy": [
+        "Derrape",
+        "Bululú"
+      ],
+      "previewOptions": {
+        "width": 14,
+        "height": 28
+      },
+      "status": "in-use"
+    },
+    {
+      "id": "palafito-house",
+      "name": "Casa palafito",
+      "category": "Vida llanera",
+      "source": "Pana/engine/models/props/delta.js",
+      "factory": "palafitoHouse",
+      "usedBy": [
+        "Derrape"
+      ],
+      "previewOptions": {
+        "variant": 1,
+        "color": 6856344
+      },
+      "status": "in-use"
+    },
+    {
+      "id": "landing-shelter",
+      "name": "Cobertizo del embarcadero",
+      "category": "Vida llanera",
+      "source": "Pana/engine/models/props/delta.js",
+      "factory": "landingShelter",
+      "usedBy": [
+        "Derrape",
+        "Galope"
+      ],
+      "previewOptions": null,
+      "status": "in-use"
+    },
+    {
+      "id": "stalactite-cluster",
+      "name": "Estalactitas del río",
+      "category": "Selva",
+      "source": "Pana/engine/models/props/caves.js",
+      "factory": "stalactiteCluster",
+      "usedBy": [
+        "Derrape"
+      ],
+      "previewOptions": {
+        "seed": 56
+      },
+      "status": "in-use"
+    },
+    {
+      "id": "root-curtain",
+      "name": "Cortina de raíces",
+      "category": "Selva",
+      "source": "Pana/engine/models/props/caves.js",
+      "factory": "rootCurtain",
+      "usedBy": [
+        "Derrape"
+      ],
+      "previewOptions": {
+        "length": 6
+      },
+      "status": "in-use"
+    },
+    {
+      "id": "salt-pile",
+      "name": "Montón de sal",
+      "category": "Costa",
+      "source": "Pana/engine/models/props/saltworks.js",
+      "factory": "saltPile",
+      "usedBy": [
+        "Derrape"
+      ],
+      "previewOptions": {
+        "seed": 56
+      },
+      "status": "in-use"
+    },
+    {
+      "id": "sluice-gate",
+      "name": "Compuerta salinera",
+      "category": "Costa",
+      "source": "Pana/engine/models/props/saltworks.js",
+      "factory": "sluiceGate",
+      "usedBy": [
+        "Derrape"
+      ],
+      "previewOptions": null,
+      "status": "in-use"
+    },
+    {
       "id": "pana",
       "name": "Pana original",
       "category": "Personajes",
@@ -2759,6 +2857,50 @@
       "status": "in-use"
     },
     {
+      "id": "track-salto",
+      "name": "Circuito · Salto del Tepuy",
+      "category": "Mapas",
+      "source": "Pana/games/derrape/public/tracks/salto.js",
+      "factory": "makeTrack(definition).build",
+      "usedBy": [
+        "Derrape"
+      ],
+      "status": "in-use"
+    },
+    {
+      "id": "track-delta",
+      "name": "Circuito · Delta de los Caños",
+      "category": "Mapas",
+      "source": "Pana/games/derrape/public/tracks/delta.js",
+      "factory": "makeTrack(definition).build",
+      "usedBy": [
+        "Derrape"
+      ],
+      "status": "in-use"
+    },
+    {
+      "id": "track-cuevas",
+      "name": "Circuito · Cuevas del Río",
+      "category": "Mapas",
+      "source": "Pana/games/derrape/public/tracks/cuevas.js",
+      "factory": "makeTrack(definition).build",
+      "usedBy": [
+        "Derrape"
+      ],
+      "status": "in-use"
+    },
+    {
+      "id": "track-salinas",
+      "name": "Circuito · Salinas del Viento",
+      "category": "Mapas",
+      "source": "Pana/games/derrape/public/tracks/salinas.js",
+      "factory": "makeTrack(definition).build",
+      "usedBy": [
+        "Derrape"
+      ],
+      "status": "in-use"
+    },
+    {
       "id": "domino-table",
       "name": "Mesa de dominó",
       "category": "Objetos",
@@ -3101,7 +3243,7 @@
       "anchor": "function addLandscape",
       "where": "Galope; Studio map",
       "note": "Hato gathering places, bank-connected canoe landing, moriche groves, green/dry grass, shore-only reeds and continuous far plain. All 13 new models have individual Studio previews.",
-      "line": 14
+      "line": 15
     },
     {
       "name": "Selva pyramid",
@@ -3237,7 +3379,7 @@
       "anchor": "function createIslet",
       "where": "Bululú board",
       "note": "Seeded neighboring islands and distant ridges.",
-      "line": 40
+      "line": 41
     },
     {
       "name": "Tepui and waterfall",
@@ -3245,7 +3387,7 @@
       "anchor": "function createTepui",
       "where": "Bululú board",
       "note": "Three mesas; one waterfall/mist landmark. Not the Selva waterfall.",
-      "line": 115
+      "line": 81
     },
     {
       "name": "Living sky and cloud layers",

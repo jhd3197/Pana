@@ -174,15 +174,15 @@ function buildRibbon(T, pal) {
     const N = Math.max(240, Math.round(T.TOTAL / 0.7));
     const verts = [];
     const idx = [];
+    const offsets=T.def.crossfall?[T.HW,0,-T.HW]:[T.HW,-T.HW],columns=offsets.length;
     for (let i = 0; i <= N; i++) {
       const s = (i / N) * T.TOTAL;
       const p = kit.placeOnTrack(T, s, 0);
       const tx = Math.sin(p.h), tz = Math.cos(p.h);
       // left edge (off +HW) = (-tz, tx) side, right edge = (tz, -tx)
-      verts.push(p.x - tz * T.HW, p.y, p.z + tx * T.HW, p.x + tz * T.HW, p.y, p.z - tx * T.HW);
+      for(const off of offsets){const x=p.x-tz*off,z=p.z+tx*off;verts.push(x,T.def.crossfall?T.surfaceAt(x,z):p.y,z);}
       if (i < N) {
-        const a = i * 2;
-        idx.push(a, a + 1, a + 2, a + 1, a + 3, a + 2);
+        for(let j=0;j<columns-1;j++){const a=i*columns+j;idx.push(a,a+1,a+columns,a+1,a+columns+1,a+columns);}
       }
     }
     geo = new THREE.BufferGeometry();
@@ -191,6 +191,7 @@ function buildRibbon(T, pal) {
     geo.computeVertexNormals();
   }
   const m = new THREE.Mesh(geo, new THREE.MeshStandardMaterial({ color: pal.track, roughness: 1, flatShading: true, side: THREE.DoubleSide }));
+  m.name='track-road';
   m.position.y = T.def.environment ? 0.12 : 0.03;
   m.receiveShadow = true;
   return m;
@@ -227,6 +228,7 @@ export function makeTrack(def) {
     return def.elevation(p.x, p.y);
   } : () => 0;
   T.surfaceAt = def.elevation ? (x, z) => T.heightAtS(geo.paramOf(x, z)) : () => 0;
+  if(def.crossfall)T.surfaceAt=(x,z)=>{const s=geo.paramOf(x,z);return T.heightAtS(s)+def.crossfall(s,geo.offsetOf(x,z),T);};
   T.terrainAt = (x, z) => terrainHeight(T, def.palette, x, z);
   // Shortcut plank roads: { from: [u, offset], to: [u, offset], w, arch }.
   const along = (u, off) => {

@@ -33,7 +33,7 @@ export function hollowGallery(T,{from,to,skylights=[],openSide=0,width=28,height
       positions.push(x,p.y+y+noise,z);
       const tint=c.clone().offsetHSL(.015*Math.sin(i*.2),0,.055*Math.sin(i*.45+j));colors.push(tint.r,tint.g,tint.b);
       const open=skylights.some(([a,b])=>u>=a&&u<=b);
-      if(i<n&&j<walls.length-1&&!(open&&j>=1&&j<=4)&&!(openSide===-1&&j===0)&&!(openSide===1&&j===5)){
+      if(i<n&&j<walls.length-1&&!(open&&j>=1&&j<=4)&&!(openSide===-1&&j<=1)&&!(openSide===1&&j>=4)){
         const a=i*walls.length+j,b=a+walls.length;indices.push(a,b,a+1,a+1,b,b+1);
       }
     });

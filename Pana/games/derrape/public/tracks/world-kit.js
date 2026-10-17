@@ -8,14 +8,14 @@ import { placeOnTrack } from '../track-kit.js';
 import { waterSurface, waterDepthMap, riverSurface } from '/engine/models/effects/water-surface.js';
 import { extendTerrain, extendWaterPlane } from './world-horizon.js';
 export { THREE, M, mesh, box, tube, rng, placeOnTrack };
-export function sign(...args){const panel=makeSign(...args);panel.userData.dispose=()=>panel.material.map.dispose();return panel;}
+export function sign(...args){const panel=makeSign(...args);panel.userData.dispose=()=>{panel.material.map.dispose();panel.material.dispose();};return panel;}
 export const smooth=THREE.MathUtils.smoothstep, mix=THREE.MathUtils.lerp;
 export const hill=(x,z,cx,cz,rx,rz,h)=>h*Math.exp(-(((x-cx)/rx)**2)-((z-cz)/rz)**2);
 
 export function finish(root,cellSize=110) {
-  const out=bake(root,{cellSize}),geos=new Set(),textures=new Set();
-  root.traverse(o=>{if(o.geometry)geos.add(o.geometry);if(o.material?.map?.isCanvasTexture)textures.add(o.material.map);});
-  geos.forEach(g=>g.dispose());if(textures.size)out.userData.dispose=()=>textures.forEach(t=>t.dispose());return out;
+  const out=bake(root,{cellSize}),geos=new Set(),textures=new Set(),materials=new Set();
+  root.traverse(o=>{if(o.geometry)geos.add(o.geometry);for(const m of [].concat(o.material||[]))if(m.map?.isCanvasTexture){textures.add(m.map);materials.add(m);}});
+  geos.forEach(g=>g.dispose());if(textures.size)out.userData.dispose=()=>{textures.forEach(t=>t.dispose());materials.forEach(m=>m.dispose());};return out;
 }
 
 // Keep prototypes out of the live scene; each spatial cell owns its buffers.

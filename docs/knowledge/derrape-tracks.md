@@ -319,3 +319,12 @@ with normal-sized assets. Keep those options opt-in for the original games.
   rocks need a cross-street or open dune on both sides.
 - `rain: 0..1` greys the palette, cuts grip (rain cauchos keep their floor)
   and turns on the camera-following streaks.
+
+### Optional crossfall
+
+Salinas alone supplies `def.crossfall(s, offset, T)`. `surfaceAt`, the road
+ribbon's center column and `placeOnTrack` use that same function. The outer
+positive lane rises up to 60 cm at the shallow crossing, preserving a dry line
+without changing other maps. Water depth gives the rendered road its existing
+13 cm clearance. `water-crossing.browser.js` checks 1,000 sections for a dry
+lane, every road vertex against physics, and three cars on street/rain tires.

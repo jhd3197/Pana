@@ -13,6 +13,9 @@ becomes the GitHub release's notes.
 - **Derrape adds Copa del Agua and four independently playable circuits.**
   Race salt ponds, delta villages, river caves and the Tepuy waterfall in a
   four-stage championship; Studio previews use the same track constructors.
+- **Salinas gives racers a dry line beside its shallow-water crossing.**
+  Road geometry, tire grip and visible water agree; repeated cups release
+  their signs and flag textures, and full rooms report their capacity correctly.
 - **Grand Prix keeps each pana's complete appearance through the championship.**
   Paint, horn and flame choices follow the frozen entrant, and podium portraits
   show the actual racers. Bululú shares the waterfall effect and Galope adds a

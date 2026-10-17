@@ -21,7 +21,7 @@ try{
   assert.equal(await b.locator('#start').isDisabled(),true);await a.locator('#start').click();
   await b.waitForFunction(()=>galope.state.phase==='racing',null,{timeout:90000});
   const ids=await a.evaluate(()=>({host:galope.room.id,guest:galope.state.players.find(p=>!p.bot&&p.id!==galope.room.id).id}));
-  await b.keyboard.down('w');await b.waitForFunction(()=>galope.state.players.find(p=>p.id===galope.room.id).progress>3);await b.keyboard.up('w');
+  await b.bringToFront();await b.keyboard.down('w');await b.waitForFunction(()=>galope.state.players.find(p=>p.id===galope.room.id).progress>3);await b.keyboard.up('w');
   await a.waitForFunction(id=>galope.state.players.find(p=>p.id===id).progress>0,ids.guest);check('two clients share countdown, bots and guest movement');
   await a.locator('#menu').click();const time=await a.evaluate(()=>galope.state.time);await a.waitForFunction(t=>galope.state.time>t+.15,time);await a.locator('#pana-resume').click();check('multiplayer menu keeps the race moving');
   await a.evaluate(()=>{galope.manual(true);galope.place(galope.room.id,galope.waterS);});await a.keyboard.down('w');
@@ -42,12 +42,16 @@ try{
   await b.close();
   const mobile=await open('Móvil',true,`${code}-touch`);await mobile.screenshot({path:`${output}/mobile-lobby.png`});
   assert.equal(await mobile.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);
+  // The shared horizontal-game guard intentionally blocks portrait play.
+  await mobile.locator('.pana-rotate').waitFor({state:'visible'});
+  await mobile.setViewportSize({width:844,height:390});
+  await mobile.locator('.pana-rotate').waitFor({state:'hidden'});
   await mobile.locator('#start').click();await mobile.waitForFunction(()=>galope.state.phase==='racing');
   const btn=await mobile.locator('[data-input="go"]').boundingBox(),cdp=await mobile.context().newCDPSession(mobile);
   await cdp.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[{x:btn.x+btn.width/2,y:btn.y+btn.height/2}]});
   await mobile.waitForFunction(()=>galope.state.players.find(p=>p.id===galope.room.id).speed>4);
   await mobile.screenshot({path:`${output}/mobile-race.png`});
-  await cdp.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});await cdp.detach();check('real held touch accelerates on a 390px screen');
+  await cdp.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});await cdp.detach();check('real held touch accelerates after rotating the 390px mobile screen');
   await mobile.evaluate(()=>{galope.room.cut();});await mobile.waitForFunction(()=>!galope.room.connected);
   await mobile.locator('#menu').click();await mobile.locator('#local-race').click();await mobile.waitForFunction(()=>galope.room.offline&&galope.state.phase==='lobby');
   await mobile.locator('#start').click();await mobile.waitForFunction(()=>galope.state.phase==='countdown');check('offline fallback starts a local race');

@@ -799,7 +799,11 @@ function makeRacer(index, isPlayer, name, wheelId = 'calle', avatar = null, cosm
   repaintCar(car, def.color, PAINTS.find(p=>p.id===cosmetics.paint)?.color ?? null);
   // Retain ownership even after a bumper detaches and expires from the scene.
   car.geometries = new Set();
-  car.root.traverse(o => { if (o.geometry) car.geometries.add(o.geometry); });
+  car.ownedMaterials = new Set();
+  car.root.traverse(o => {
+    if (o.geometry) car.geometries.add(o.geometry);
+    for(const material of [].concat(o.material||[]))if(material.userData.ownedMap)car.ownedMaterials.add(material);
+  });
   race.scene.add(car.root);
   const bubble = makeBubble();
   race.scene.add(bubble.sprite);
@@ -900,6 +904,7 @@ function progressOf(c) {
 }
 
 function disposeRacer(c) {
+  c.car.ownedMaterials.forEach(material=>{material.map.dispose();material.dispose();});
   const ownedMaterials = new Set();
   c.car.root.traverse(o => {
     for (const material of [].concat(o.material || [])) if (material.userData?.ghostClone) ownedMaterials.add(material);
@@ -1901,7 +1906,7 @@ function updateRace(dt, presentation = true) {
         stepCar(c, { throttle: 0, steer: 0 }, dt);
         continue;
       }
-      stepCar(c, c.isPlayer && !AUTO ? playerInput(1) : c.human === 2 ? playerInput(2) : aiInput(c), dt);
+      stepCar(c, c.isPlayer && !AUTO ? playerInput(1) : c.human === 2 && !AUTO ? playerInput(2) : aiInput(c), dt);
       if (c.outT > OUT_TIME || c.stuckT > STUCK_TIME) rescue(c);
       if (!c.isPlayer) {
         c.aiHonk -= dt;

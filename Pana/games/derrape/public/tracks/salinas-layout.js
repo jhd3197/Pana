@@ -10,6 +10,7 @@ export const CHANNELS = [[[-110,-100],[20,-100],[130,-65]],[[130,-65],[180,30],[
   [[-80,75],[30,95],[180,130]],[[180,130],[330,150],[425,160],[560,420]]];
 export const channelSample = (x,z) => CHANNELS.map(p=>channelAt(p,x,z)).sort((a,b)=>a.distance-b.distance)[0];
 export const roadHeight = (x,z) => 2.8-2.25*(1-smooth(Math.hypot(x-220,z-155),15,100));
+export const crossfall = (s,off,T) => .6*Math.max(0,Math.min(1,off/T.HW))*(1-smooth(T.heightAtS(s),.75,1.4));
 export const pondField = (x,z) => Math.min(...PONDS.map(p=>pondAt(p,x,z)));
 export const baseHeight = (x,z) => Math.min(-.8+3.4*smooth(pondField(x,z),.83,1.13)+.09*Math.sin(x*.1)*Math.sin(z*.12),-.4+3.1*smooth(channelSample(x,z).distance,3,8));
 export const wetness = (x,z,time,T) => {

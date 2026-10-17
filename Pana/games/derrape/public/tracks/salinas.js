@@ -1,9 +1,9 @@
 import { WATER_TRACKS } from './water-track-definitions.js';
-import { ROUTE, roadHeight, wetness } from './salinas-layout.js';
+import { ROUTE, roadHeight, wetness, crossfall } from './salinas-layout.js';
 import { salinasWorld } from './salinas-world.js';
 import { vergePosts } from './country-details.js';
 export default {
-  ...WATER_TRACKS.find(t=>t.id==='salinas'),points:ROUTE,rounded:true,hw:12,lineU:.025,elevation:roadHeight,waterAt:wetness,walls:false,chevrons:true,
+  ...WATER_TRACKS.find(t=>t.id==='salinas'),points:ROUTE,rounded:true,hw:12,lineU:.025,elevation:roadHeight,crossfall,waterAt:wetness,walls:false,chevrons:true,
   previewBounds:[[-560,-3,-400],[560,70,440]],
   sectors:[[0,'Salinas del pueblo'],[.18,'Llanura blanca'],[.35,'Curvas de los estanques'],[.48,'Cruce del agua'],[.63,'Calzadas de sal'],[.8,'Patio de carga']],
   items:{boxes:[.1,.26,.42,.6,.75,.9],boxLanes:[-8,-3,3,8],pads:[{u:.13,off:0},{u:.65,off:4},{u:.87,off:-4}]},
