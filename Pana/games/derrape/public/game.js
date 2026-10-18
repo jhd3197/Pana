@@ -23,7 +23,7 @@ import { holdButton } from '/engine/touch.js';
 import { pixelRatio, bindRenderer, getSettings, onSettings } from '/engine/settings.js';
 import { applyRaceQuality } from './quality.js';
 import { shout } from '/engine/kit.js';
-import { LAPS, RIVALS, AI_WHEELS, POSE_HZ, FLAG, DRIFT_SHIFT, FINISH_GRACE_MS, GP_GRID, GP_INTERMISSION_MS, GP_MIN_READ_MS, packPose, gridSlot, cleanCosmetics } from './online-rules.js';
+import { LAPS, lapsForTrack, RIVALS, AI_WHEELS, POSE_HZ, FLAG, DRIFT_SHIFT, FINISH_GRACE_MS, GP_GRID, GP_INTERMISSION_MS, GP_MIN_READ_MS, packPose, gridSlot, cleanCosmetics } from './online-rules.js';
 import { clockText, wrapAngle, raceOrder, aiPedals, resolveContact } from './rules.js';
 import { CUPS, cupById, cupTracks, difficultyById, rubberBand, cleanLaps, BALLOONS, BATTLE_TIME, battleOrder, battleOver } from './modes.js';
 import { abandonCup, advanceStage, beginStage, createCupSession, cupTrophy, finalizeStage, markRacing, markStarted, retryStage, seededOrder, seededUnit, standings as championshipStandings } from './cup-rules.js';
@@ -321,9 +321,9 @@ $('lobby-solo').onclick = () => { location.href = location.pathname; };
 let T = null;
 
 const pointAt = (s) => T.pointAt(s);
-const paramOf = (x, z) => T.paramOf(x, z);
-const offsetOf = (x, z) => T.offsetOf(x, z);
-const groundAt = (x, z) => T.groundAt(x, z);
+const paramOf = (x, z, y) => T.paramOf(x, z, y);
+const offsetOf = (x, z, y) => T.offsetOf(x, z, y);
+const groundAt = (x, z, y) => T.groundAt(x, z, y);
 
 const race = {
   scene: new THREE.Scene(),
@@ -642,23 +642,35 @@ for (const b of document.querySelectorAll('#difficulty-pick button')) b.onclick 
   }
   setup.difficulty = b.dataset.difficulty; saveSetup(); renderSetup();
 };
-for (const b of document.querySelectorAll('#laps-pick button')) b.onclick = () => { setup.laps = cleanLaps(Number(b.dataset.laps)); saveSetup(); renderSetup(); };
+for (const b of document.querySelectorAll('#laps-pick button')) b.onclick = () => { setup.laps = cleanLaps(Number(b.dataset.laps)); saveSetup(); renderSetup(); selectTrack(TRACKS[trackIndex].id); };
 $('mirror').onclick = () => { setup.mirror = !setup.mirror; saveSetup(); renderSetup(); };
 $('split').onclick = () => { setup.split = !setup.split; saveSetup(); renderSetup(); };
 
 // Browsing needs only route metadata. Keep the last built map for replay;
 // construct a different environment only after the player presses Play.
-let trackIndex = 0;
+let trackIndex = 0, selectedTrackId = null;
 const trackRoutes = new Map();
 function selectTrack(id, lapsOverride = null) {
   const def = getTrack(id);
+  if(!net&&lapsOverride==null&&selectedTrackId!==def.id&&(def.defaultLaps||selectedTrackId==='puerto')){
+    setup.laps=lapsForTrack(def.id);
+    for(const button of $('laps-pick').querySelectorAll('button'))button.setAttribute('aria-pressed',String(Number(button.dataset.laps)===setup.laps));
+  }
+  selectedTrackId=def.id;
   trackIndex = TRACKS.indexOf(def);
   try { localStorage.setItem('derrape:track', def.id); } catch { /* private mode */ }
   if (!trackRoutes.has(def.id)) trackRoutes.set(def.id, makeTrack(def));
   const route = trackRoutes.get(def.id);
   $('track-name').textContent = def.name;
   const laps = lapsOverride ?? (net ? net.state?.laps || LAPS : setup.mode === 'battle' ? 0 : setup.laps);
-  $('track-blurb').textContent = `${(route.TOTAL / 1000).toFixed(2)} km por vuelta · ${laps ? `${laps} ${laps === 1 ? 'vuelta' : 'vueltas'}` : 'batalla de globos'}. ${def.blurb}`
+  // Puerto's eight-car timing proof averages 170 s; this broader pace band
+  // leaves room for ordinary mistakes and item exchanges. Other maps use the
+  // same planning estimate until their own driving profiles are recorded.
+  const estimate=laps?[36,27].map(speed=>{
+    const seconds=Math.round(route.TOTAL*laps/speed/15)*15;
+    return `${Math.floor(seconds/60)}:${String(seconds%60).padStart(2,'0')}`;
+  }):[];
+  $('track-blurb').textContent = `${laps ? `${estimate[0]}–${estimate[1]} min aprox. · ${laps} ${laps === 1 ? 'vuelta' : 'vueltas'}` : 'batalla de globos'}. ${def.blurb}`
     + (def.rain ? ' Está lloviendo: los cauchos de lluvia agarran mejor.' : '');
   const activeMode = net ? (net.state?.mode || 'race') : setup.mode;
   const cup = isCupMode(activeMode) ? cupById(activeMode) : null;
@@ -805,7 +817,7 @@ function drawMinimap() {
   if (race.mirror) mmCtx.setTransform(-1, 0, 0, 1, mm.width, 0);
   strokeRoute(mmCtx, mmPts, 4);
   for (const c of race.cars) {
-    const i = Math.floor((paramOf(c.x, c.z) / T.TOTAL) * mmPts.length) % mmPts.length;
+    const i = Math.floor((paramOf(c.x, c.z, c.y) / T.TOTAL) * mmPts.length) % mmPts.length;
     const [x, y] = mmPts[i];
     mmCtx.beginPath();
     mmCtx.arc(x, y, c.isPlayer ? 5.5 : 4, 0, Math.PI * 2);
@@ -951,7 +963,7 @@ function placeRacer(c, lane, row) {
     drift: 0, driftT: 0, driftHeld: false, driftExitT: 0, driftAssist: 0, hopping: false, trick: false, draft: 0, stall: 0, shield: 0, cloud: 0,
     sectors: ALL_SECTORS, outT: 0, stuckT: 0, rescueT: 0, phaseT: 0, phaseRemote: false, impacts: [],
   });
-  c.y = groundAt(c.x, c.z);
+  c.y = groundAt(c.x, c.z, T.heightAtS(s));
   c.prog = progressOf(c);
   c.safe = { s, off: lane, back: false };
 }
@@ -961,13 +973,13 @@ function placeAlong(c, s, backwards) {
   const p = pointAt(s), p2 = pointAt(s + 0.5);
   const tx = p2.x - p.x, tz = p2.y - p.y;
   Object.assign(c, { x: p.x, z: p.y, h: Math.atan2(tx, tz) + (backwards ? Math.PI : 0), reverse: backwards && !c.isPlayer });
-  c.y = groundAt(c.x, c.z);
+  c.y = groundAt(c.x, c.z, T.heightAtS(s));
   c.prog = progressOf(c);
   c.safe = { s, off: 0, back: backwards };
 }
 
 function progressOf(c) {
-  return (paramOf(c.x, c.z) - T.LINE + T.TOTAL) % T.TOTAL;
+  return (paramOf(c.x, c.z, c.y) - T.LINE + T.TOTAL) % T.TOTAL;
 }
 
 function disposeRacer(c) {
@@ -1435,7 +1447,7 @@ function aiInput(c) {
   // aim ahead along the track, holding this car's own lane so the pack
   // doesn't pile into the middle (it still bumps when lanes cross)
   const way = c.reverse ? -1 : 1;
-  const s = paramOf(c.x, c.z) + way * (14 + Math.max(0, c.vf) * 0.25);
+  const s = paramOf(c.x, c.z, c.y) + way * (14 + Math.max(0, c.vf) * 0.25);
   const target = pointAt(s);
   const next = pointAt(s + way);
   const tx = next.x - target.x, tz = next.y - target.y, tl = Math.hypot(tx, tz) || 1;
@@ -1543,7 +1555,7 @@ function stepCar(c, input, dt) {
   if (!c.drift && held && c.onGround && Math.abs(input.steer) > 0.2 && c.vf > DRIFT_MIN_SPEED && c.spin <= 0 && c.stall <= 0) {
     c.drift = Math.sign(input.steer); c.driftT = 0;
     c.driftExitT = 0;
-    c.driftLane = Math.max(-T.HW * 0.3, Math.min(T.HW * 0.3, offsetOf(c.x, c.z)));
+    c.driftLane = Math.max(-T.HW * 0.3, Math.min(T.HW * 0.3, offsetOf(c.x, c.z, c.y)));
     if (c.isPlayer) sound.skid(0.8);
   }
   if (c.drift && (!held || c.vf < DRIFT_MIN_SPEED * 0.75 || c.spin > 0)) {
@@ -1589,8 +1601,8 @@ function stepCar(c, input, dt) {
     let steerIn = c.drift ? driftSteer(c.drift, input.steer) : input.steer;
     let cornering = false;
     if ((c.drift || c.driftExitT > 0) && vf > DRIFT_MIN_SPEED * 0.75 && race.mode !== 'battle'
-      && Math.abs(offsetOf(c.x, c.z)) < T.HW && T.plankAt(c.x, c.z) == null) {
-      const s = paramOf(c.x, c.z), here = pointAt(s), ahead = pointAt(s + 1);
+      && Math.abs(offsetOf(c.x, c.z, c.y)) < T.HW && T.plankAt(c.x, c.z) == null) {
+      const s = paramOf(c.x, c.z, c.y), here = pointAt(s), ahead = pointAt(s + 1);
       const roadHeading = Math.atan2(ahead.x - here.x, ahead.y - here.y);
       // Wrong-way driving, shortcuts, real jumps and off-road terrain stay manual.
       if (Math.cos(c.h - roadHeading) > 0.35) {
@@ -1601,7 +1613,7 @@ function stepCar(c, input, dt) {
         cornering = c.drift * wrapAngle(angle - roadHeading) > 0.035;
         const aimError = wrapAngle(Math.atan2(aim.x - Math.cos(angle) * lane - c.x, aim.y + Math.sin(angle) * lane - c.z) - c.h);
         const projectedHeading = c.h + steerIn * turnScale * 0.3;
-        const projectedOffset = offsetOf(c.x + Math.sin(projectedHeading) * vf * 0.55, c.z + Math.cos(projectedHeading) * vf * 0.55);
+        const projectedOffset = offsetOf(c.x + Math.sin(projectedHeading) * vf * 0.55, c.z + Math.cos(projectedHeading) * vf * 0.55,c.y);
         const assist = assistDrift(steerIn, aimError, projectedOffset, T.HW, turnScale);
         steerIn = assist.steer; c.driftAssist = assist.amount;
       }
@@ -1633,14 +1645,14 @@ function stepCar(c, input, dt) {
   c.vf=c.vx*fx+c.vz*fz;c.vr=c.vx*rx+c.vz*rz;
 
   // ---- vertical: ramps, jumps, tumbles ----
-  const g = groundAt(c.x, c.z);
+  const g = groundAt(c.x, c.z, c.y);
   if (c.onGround) {
-    const previousGround=terrain&&Math.abs(offsetOf(previous.x,previous.z))>T.HW?groundAt(previous.x,previous.z):T.surfaceAt(previous.x,previous.z);
+    const previousGround=terrain&&Math.abs(offsetOf(previous.x,previous.z))>T.HW?groundAt(previous.x,previous.z):T.surfaceAt(previous.x,previous.z,c.y);
     const followingTerrain = Math.abs(c.y-previousGround)<0.15;
     if (g >= c.y - 0.08 || (followingTerrain && Math.abs(g - c.y) < 1.2)) {
       c.vy = (g - c.y) / dt;
       c.y = g;
-      const ahead = groundAt(c.x + fx, c.z + fz), behind = groundAt(c.x - fx, c.z - fz);
+      const ahead = groundAt(c.x + fx, c.z + fz,c.y), behind = groundAt(c.x - fx, c.z - fz,c.y);
       c.pitch += (-Math.atan2(ahead - behind, 2) - c.pitch) * Math.min(1, dt * 12);
       c.roll += (0 - c.roll) * Math.min(1, dt * 10);
     } else {
@@ -1703,15 +1715,15 @@ function stepCar(c, input, dt) {
   // ---- tire walls ----
   // Works on any track shape: the wall normal is the gradient of offsetOf.
   // Shortcut planks and open edges have no wall: drive off them and you fall.
-  const off = offsetOf(c.x, c.z);
+  const off = offsetOf(c.x, c.z, c.y);
   const limit = T.HW - 1.6;
   const plank = T.shortcuts.length > 0 && T.plankAt(c.x, c.z) != null;
-  const edgeOpen = T.drops.length > 0 && isOpenEdge(T.drops, paramOf(c.x, c.z) / T.TOTAL, Math.sign(off));
+  const edgeOpen = T.drops.length > 0 && isOpenEdge(T.drops, paramOf(c.x, c.z, c.y) / T.TOTAL, Math.sign(off));
   const far = Math.abs(off) > T.HW + OPEN_MARGIN;
   if (!terrain && Math.abs(off) > limit && !plank && !edgeOpen && !far) {
     const e = 0.6;
-    let nx = offsetOf(c.x + e, c.z) - offsetOf(c.x - e, c.z);
-    let nz = offsetOf(c.x, c.z + e) - offsetOf(c.x, c.z - e);
+    let nx = offsetOf(c.x + e, c.z,c.y) - offsetOf(c.x - e, c.z,c.y);
+    let nz = offsetOf(c.x, c.z + e,c.y) - offsetOf(c.x, c.z - e,c.y);
     const nl = Math.hypot(nx, nz) || 1;
     nx /= nl; nz /= nl;   // points to the outside
     const side = Math.sign(off);
@@ -1750,7 +1762,7 @@ function stepCar(c, input, dt) {
   c.safeT -= dt;
   if (c.safeT <= 0 && c.onGround && !plank && Math.abs(off) < T.HW - 2 && c.spin <= 0
     && Math.abs(wrapAngle(c.roll)) < 0.3 && Math.abs(wrapAngle(c.pitch)) < 0.4) {
-    const s = paramOf(c.x, c.z), ahead = pointAt(s + 1), here = pointAt(s);
+    const s = paramOf(c.x, c.z, c.y), ahead = pointAt(s + 1), here = pointAt(s);
     const back = Math.cos(c.h - Math.atan2(ahead.x - here.x, ahead.y - here.y)) < 0;
     c.safe = { s, off: Math.max(-3, Math.min(3, off)), back };
     c.safeT = 0.3;
@@ -1808,19 +1820,19 @@ function stepRescue(c, dt) {
   if (k < 0.38) c.y += 7 * dt;   // lifted up and away
   else if (!c.rescued) {
     // Over the safe spot, facing along the road (or back, for battle bots).
-    const safe = c.safe ?? { s: paramOf(c.x, c.z), off: 0, back: false };
+    const safe = c.safe ?? { s: paramOf(c.x, c.z, c.y), off: 0, back: false };
     const p = pointAt(safe.s), q = pointAt(safe.s + 0.5);
     const tx = q.x - p.x, tz = q.y - p.y, l = Math.hypot(tx, tz) || 1;
     c.x = p.x - tz / l * safe.off; c.z = p.y + tx / l * safe.off;
     c.h = Math.atan2(tx, tz) + (safe.back ? Math.PI : 0);
-    c.y = groundAt(c.x, c.z) + 5;
+    c.y = groundAt(c.x, c.z, T.heightAtS(safe.s)) + 5;
     const prog = progressOf(c);
     advanceLap(c, c.prog, prog, T.TOTAL);
     c.prog = prog;
     c.rescued = true;
-  } else c.y = Math.max(groundAt(c.x, c.z), c.y - 7 * dt);   // lowered onto the road
+  } else c.y = Math.max(groundAt(c.x, c.z, c.y), c.y - 7 * dt);   // lowered onto the road
   if (c.rescueT <= 0) {
-    c.y = groundAt(c.x, c.z);
+    c.y = groundAt(c.x, c.z, c.y);
     c.onGround = true;
     c.pitch = c.roll = c.pitchV = c.rollV = 0;
     c.awayT = 1;
@@ -2176,7 +2188,7 @@ function updateRace(dt, presentation = true) {
     race.boardT = 0.2;
     renderBoard(order, p);
     if (race.state === 'end') renderResults(order, p);
-    const u = paramOf(p.x, p.z) / T.TOTAL;
+    const u = paramOf(p.x, p.z, p.y) / T.TOTAL;
     const sector = T.def.sectors?.filter(([start]) => u >= start).at(-1);
     if (sector) $('mm-sub').textContent = sector[1];
   }
@@ -2195,7 +2207,9 @@ function updateRace(dt, presentation = true) {
 function followCam(cam, key, p, look, dt) {
   const fx = Math.sin(p.h), fz = Math.cos(p.h), back = look ? -1 : 1;
   const dist = p.boost > 0 ? 12.1 : 11;
-  const want = new THREE.Vector3(p.x - fx * dist * back, Math.max(5, p.y + 5), p.z - fz * dist * back);
+  // Layered courses can descend below sea level. Follow the driving deck;
+  // clamping this camera to world y=5 puts it above an underwater tunnel.
+  const want = new THREE.Vector3(p.x - fx * dist * back, T.def.layered ? p.y + 5 : Math.max(5, p.y + 5), p.z - fz * dist * back);
   if (!race[key] || look !== race[key + 'Look']) race[key] = want.clone();
   race[key + 'Look'] = look;
   race[key].lerp(want, Math.min(1, dt * (p.boost > 0 ? 5.5 : 4)));
@@ -2214,7 +2228,7 @@ function followCam(cam, key, p, look, dt) {
 
 // Wrong way, incoming items and lap splits for the player.
 function readRoad(p, dt) {
-  const s = paramOf(p.x, p.z), a = pointAt(s), b = pointAt(s + 1);
+  const s = paramOf(p.x, p.z, p.y), a = pointAt(s), b = pointAt(s + 1);
   p.wrongT = wrongWayStep(p.wrongT || 0, p.h, Math.atan2(b.x - a.x, b.y - a.y), p.vf, dt);
   const wrong = race.mode !== 'battle' && race.state === 'go' && !p.done && p.rescueT <= 0 && p.wrongT > WRONG_WAY_TIME;
   if ($('wrong-way').hidden === wrong) $('wrong-way').hidden = !wrong;
@@ -2856,7 +2870,7 @@ function resize() {
 addEventListener('resize', resize);
 resize();
 
-if (DEBUG) Object.assign(window, { disposeRacer, makeRacer, placeRacer, collidePair, sendPoses, pollPads, music, getWallet: () => wallet, menu, race, garage, renderer, crash, stepCar, startRace, updateRace, finish, renderResults, renderCup, toGarage, showWheel, ITEMS, TRACKS, buildTrack, setup, popBalloon, rescue, getActiveTrack: () => T, getNet: () => net });
+if (DEBUG) Object.assign(window, { disposeRacer, makeRacer, placeRacer, aiInput, stepRescue, collidePair, sendPoses, pollPads, music, getWallet: () => wallet, menu, race, garage, renderer, crash, stepCar, startRace, updateRace, finish, renderResults, renderCup, toGarage, showWheel, ITEMS, TRACKS, buildTrack, setup, popBalloon, rescue, getActiveTrack: () => T, getNet: () => net });
 
 // ?track=desierto wins; otherwise the last pick, otherwise the estadio
 let savedTrack = 'estadio';
@@ -2891,7 +2905,7 @@ menuFlow = createMenuFlow({
   localPlay(split) { setup.split = split; saveSetup(); renderSetup(); },
   getState: () => {
     const activeMode = net?.state?.mode || setup.mode;
-    return { track: TRACKS[trackIndex], car: CARS[garage.index], wheel: wheelById(garage.wheel),
+    return { track: TRACKS[trackIndex], trackSummary: $('track-blurb').textContent, car: CARS[garage.index], wheel: wheelById(garage.wheel),
       mode: activeMode, cup: isCupMode(activeMode) ? cupById(activeMode) : null,
       online: !!net || !!joining, split: setup.split,
       canConfigure: !net || (net.isHost && ['lobby', 'results', 'complete'].includes(net.state?.phase)) };

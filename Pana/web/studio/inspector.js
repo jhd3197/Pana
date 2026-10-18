@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { createPreview, release, ownMaterials, inspect, fitCamera } from './preview.js';
 import { createTrackTour } from './track-tour.js';
+import { createHouseMaker } from './house-maker.js';
 
 export function createInspector({ copy }) {
   const $ = id => document.getElementById(id), canvas = $('preview');
@@ -11,6 +12,19 @@ export function createInspector({ copy }) {
   let current = null, generation = 0, stopped = false, loading = false, visible = false;
   let bounds = new THREE.Box3(), grid, wireframe = false, renderNeeded = true, animated = false;
   const number = value => value.toLocaleString('es');
+  const houseMaker = createHouseMaker({ container: document.querySelector('.details'), copy,
+    async change(asset, spec) {
+      const batch = Array.isArray(spec);
+      await select({ ...asset, category: batch ? 'Mapas' : 'Objetos', async build() {
+        if (batch) { const { createColonialHouseCollection } = await import('/engine/colonial-house-collection.js'); return createColonialHouseCollection({ houses: spec }); }
+        const { colonialHouse } = await import('/engine/models/props/colonial-house.js');
+        return { group: colonialHouse({ spec }) };
+      } }, true);
+      const ok = JSON.stringify(current?.group.userData[batch ? 'houseBatch' : 'houseSpec']) === JSON.stringify(spec);
+      if (ok) { $('asset-name').textContent = batch ? `Colección · ${spec.length} casas` : `Casa personalizada · semilla ${spec.seed}`; $('asset-category').textContent = 'Creador de casas'; }
+      return ok;
+    },
+  });
   const tour = createTrackTour({ scene, camera, controls, canvas, invalidate: () => { renderNeeded = true; }, overview: frame, copy, animate: (t, dt) => current?.update?.(t, dt) });
   const resize = () => {
     const w = canvas.clientWidth, h = canvas.clientHeight; if (!w || !h) return;
@@ -32,14 +46,15 @@ export function createInspector({ copy }) {
     grid.position.y = bounds.min.y - 0.01; grid.visible = $('grid').getAttribute('aria-pressed') === 'true';
     scene.add(grid); $('grid-scale').textContent = 'Cuadrícula ' + number(step) + ' u · XYZ';
   }
-  function clear() {
+  function clear(retainMaker = false) {
     generation++; loading = false; visible = false;
     tour.setTrack(null, null); release(current); current = null;
     controls.autoRotate = false; $('rotate').setAttribute('aria-pressed', 'false');
     $('draw-calls').textContent = ''; $('grid-scale').textContent = '';
+    if (!retainMaker) houseMaker.clear();
   }
-  async function select(asset) {
-    clear(); visible = true; loading = true; const ticket = generation;
+  async function select(asset, retainMaker = false) {
+    clear(retainMaker); visible = true; loading = true; const ticket = generation;
     $('preview-status').hidden = false; $('preview-status').classList.remove('error'); $('preview-status').textContent = 'Preparando la vista 3D…';
     $('retry-preview').hidden = true;
     for (const name of ['dimensions', 'geometry', 'vertices', 'materials', 'textures']) $(name).textContent = '—';
@@ -55,6 +70,7 @@ export function createInspector({ copy }) {
       $('geometry').textContent = number(stats.triangles) + ' tri · ' + number(stats.meshes) + ' mallas';
       for (const name of ['vertices', 'materials', 'textures']) $(name).textContent = number(stats[name]);
       current = runtime; resize(); updateGrid(); frame(); tour.setTrack(runtime.route, asset); $('preview-status').hidden = true;
+      if (asset.houseMaker && !retainMaker) houseMaker.show(asset, runtime.group.userData.houseBatch || runtime.group.userData.houseSpec);
     } catch (error) {
       release(runtime); if (ticket !== generation) return; current = null;
       $('preview-status').classList.add('error'); $('preview-status').textContent = 'No se pudo abrir este recurso: ' + error.message;
@@ -91,5 +107,5 @@ export function createInspector({ copy }) {
   }
   requestAnimationFrame(tick);
   return { select, clear, renderer, scene, camera, tour, get current() { return current; }, get loading() { return loading; },
-    dispose() { stopped = true; clear(); observer.disconnect(); controls.dispose(); document.removeEventListener('keydown', keydown); if (grid) { grid.geometry.dispose(); grid.material.dispose(); } stage.dispose(); } };
+    dispose() { stopped = true; clear(); houseMaker.dispose(); observer.disconnect(); controls.dispose(); document.removeEventListener('keydown', keydown); if (grid) { grid.geometry.dispose(); grid.material.dispose(); } stage.dispose(); } };
 }

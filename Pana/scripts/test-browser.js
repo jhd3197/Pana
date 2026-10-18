@@ -1,7 +1,8 @@
 // Runs every Playwright suite (*.browser.js / *.browser.mjs, games/*/tests/*.mjs)
 // one at a time against a Pana server, starting one if none answers.
 // Usage: npm run test:browser [-- <filter>...]   e.g. npm run test:browser -- domino caida
-// Env: PANA_PLAYWRIGHT_PATH (external Playwright), PANA_TEST_URL, PANA_SUITE_TIMEOUT (ms).
+// Playwright comes from the repo devDependencies; PANA_PLAYWRIGHT_PATH overrides it.
+// Env: PANA_TEST_URL, PANA_SUITE_TIMEOUT (ms).
 import { spawn } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';

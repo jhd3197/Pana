@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#0e0b24">
-  <meta name="description" content="Caída venezolana en 3D. Siéntate con tus panas, canta patria y llega primero a 24 puntos.">
+  <meta name="description" content="Caída venezolana en 3D. Siéntate con tus panas, canta patrulla y llega primero a 24 puntos.">
   <title>Caída · Pana</title>
   <link rel="stylesheet" href="/engine/kit.css">
   <link rel="stylesheet" href="/engine/ui.css">
@@ -21,21 +21,22 @@
       <div class="pk-lobby-top"><a class="pk-back" href="/">← Todos los juegos</a><a class="pk-logo" href="/" aria-label="Volver a Pana">PANA</a></div>
       <span class="pk-ribbon">Caída · la baraja de toda la vida</span>
       <h1 id="title" class="pk-title">Tres cartas, una buena jugada.</h1>
-      <p class="pk-copy">¡Esa era la mía! Canta patria, cuida la mesa y llega primero a 24 entre panas.</p>
+      <p class="pk-copy">¡Esa era la mía! Canta patrulla, cuida la mesa y llega primero a 24 entre panas.</p>
       <div class="pk-stats"><div class="pk-stat"><b>40</b><span>cartas</span></div><div class="pk-stat"><b>24</b><span>puntos para ganar</span></div><div class="pk-stat"><b>2–4</b><span>panas</span></div></div>
       <div class="pk-field"><label class="pk-eyebrow" for="mode">¿Cómo jugamos?</label><select id="mode" class="kit-select"><option value="duel">Dos panas · uno contra uno</option><option value="three">Tres panas · individual</option><option value="teams">Cuatro panas · por parejas</option><option value="four">Cuatro panas · individual</option></select></div>
       <div class="setup-row">
         <div class="pk-field"><span class="pk-eyebrow" id="difficulty-label">Los bots</span><div id="difficulty" class="pk-seg" role="group" aria-labelledby="difficulty-label"><button type="button" data-option="difficulty" data-value="easy">Tranquilos</button><button type="button" data-option="difficulty" data-value="normal">Pilas</button><button type="button" data-option="difficulty" data-value="hard">Memoriosos</button></div></div>
-        <div class="pk-field"><span class="pk-eyebrow" id="call-label">Al repartir</span><div id="call" class="pk-seg" role="group" aria-labelledby="call-label"><button type="button" data-option="call" data-value="down">4·3·2·1</button><button type="button" data-option="call" data-value="up">1·2·3·4</button></div></div>
       </div>
-      <div class="setup-foot"><label class="pk-check"><input type="checkbox" id="cantos" checked> Con cantos clásicos <span>Ronda, patria, vigía…</span></label><button id="rules" class="pk-btn pk-btn--ghost pk-btn--sm">Las reglas</button></div>
+      <div class="setup-foot"><label class="pk-check"><input type="checkbox" id="cantos" checked> Con cantos clásicos <span>Ronda, patrulla, vigía…</span></label><button id="rules" class="pk-btn pk-btn--ghost pk-btn--sm">Las reglas</button></div>
+      <div id="table-seating"></div>
+      <div id="map-picker"></div>
       <div class="pk-lobby-foot">
         <div class="pk-lobby-room"><span class="pk-dot"></span><span id="lobby-roster">Solo con bots o con tus panas</span><span id="lobby-room" class="pk-room-code"></span></div>
         <div class="pk-lobby-cta"><button id="start" class="pk-btn pk-btn--primary pk-btn--lg" disabled>Preparando la mesa…</button><span id="lobby-invite-slot"></span></div>
       </div>
     </section>
     <section class="scoreboard pk-panel" aria-label="Marcador"><div id="scores"></div><span class="score-target">a 24</span></section>
-    <div class="table-tools"><button id="camera-view" class="pk-btn pk-btn--sm" aria-pressed="false">Vista de mesa</button><span id="last-hand" hidden>¡ÚLTIMAS!</span></div>
+    <div class="table-tools"><button id="camera-view" class="pk-btn pk-btn--sm" aria-pressed="false">Vista de mesa</button><span id="last-hand" hidden>¡ÚLTIMAS! · Sin cuatro de mesa</span></div>
     <aside class="hud-right">
       <section class="table-info pk-panel" aria-label="La mesa">
         <span id="round-label">Mesa abierta</span>
@@ -45,10 +46,33 @@
       </section>
     </aside>
     <div id="announcement" class="announcement pk-banner pk-banner--teal" role="status" aria-live="polite"></div>
+    <section id="dealer-panel" class="dealer-layer" aria-labelledby="dealer-title" hidden>
+      <div class="dealer-card pk-modal">
+        <span id="dealer-kicker" class="pk-eyebrow">REPARTO 1</span>
+        <h2 id="dealer-title" class="pk-title pk-title--yellow" aria-live="polite">Te toca repartir.</h2>
+        <p id="dealer-description" class="pk-copy"></p>
+        <fieldset id="dealer-controls">
+          <legend class="sr-only">Preparar el reparto</legend>
+          <div class="cut-row">
+            <div id="deal-deck" class="deal-deck" aria-hidden="true"><canvas></canvas><canvas id="cut-top"></canvas></div>
+            <div class="cut-controls"><label for="cut-position">¿Por dónde cortamos?</label><input id="cut-position" type="range" min="1" max="39" value="20" aria-describedby="cut-value"><output id="cut-value" for="cut-position">20 y 20 cartas</output><button id="cut-deck" type="button" class="pk-btn pk-btn--sm">Cortar aquí</button></div>
+          </div>
+          <p id="cut-status" role="status">Baraja mezclada · corte opcional</p>
+          <span id="deal-call-label">¿Con cuál arrancas?</span>
+          <div class="deal-choices pk-seg" role="group" aria-labelledby="deal-call-label">
+            <button id="call-one" type="button" data-deal-call="up" aria-pressed="false"><b>1</b><span>1 · 2 · 3 · 4</span></button>
+            <button id="call-four" type="button" data-deal-call="down" aria-pressed="false"><b>4</b><span>4 · 3 · 2 · 1</span></button>
+          </div>
+          <button id="deal-cards" type="button" class="pk-btn pk-btn--primary pk-btn--block" disabled>Elige 1 o 4 para repartir</button>
+        </fieldset>
+        <details id="previous-round" hidden><summary id="previous-round-title">Reparto anterior</summary><div id="previous-round-scores" class="pk-roster"></div></details>
+      </div>
+    </section>
     <section id="rack" class="rack" aria-label="Tu mano">
       <div class="rack-help pk-panel">
         <strong id="your-name">Tu mano</strong>
         <span id="instruction">Elige una carta para ver tu jugada.</span>
+        <div id="canto-preview" hidden><strong id="canto-name"></strong><span id="canto-help"></span></div>
         <span class="rack-keys" data-pana-hint><kbd class="pk-kbd">1–3</kbd> elegir <kbd class="pk-kbd">C</kbd> cantar</span>
       </div>
       <div class="rack-center">
@@ -64,7 +88,7 @@
       </div>
     </section>
   </main>
-  <dialog id="result" aria-labelledby="result-title"><div class="result-content pk-modal pk-results-card"><span id="result-kicker" class="pk-ribbon">REPARTO TERMINADO</span><div class="result-mark" aria-hidden="true">24</div><h2 id="result-title" class="pk-title pk-title--yellow"></h2><p id="result-description" class="pk-copy"></p><div id="result-details" class="pk-roster"></div><button id="next-round" class="pk-btn pk-btn--primary pk-btn--block">Siguiente reparto →</button><button id="review" class="pk-btn pk-btn--ghost pk-btn--block">Ver la mesa</button></div></dialog>
+  <dialog id="result" aria-labelledby="result-title"><div class="result-content pk-modal pk-results-card"><span id="result-kicker" class="pk-ribbon">REPARTO TERMINADO</span><div class="result-mark" aria-hidden="true">24</div><h2 id="result-title" class="pk-title pk-title--yellow"></h2><p id="result-description" class="pk-copy"></p><div id="result-details" class="pk-roster"></div><button id="next-round" class="pk-btn pk-btn--primary pk-btn--block">Siguiente reparto →</button><button id="organize-table" class="pk-btn pk-btn--ghost pk-btn--block">Cambiar parejas · empezar de cero</button><button id="review" class="pk-btn pk-btn--ghost pk-btn--block">Ver la mesa</button></div></dialog>
   <div id="toast" role="status" aria-live="polite"></div>
   <script type="module">import('./game.js').catch(error => { console.error(error); document.getElementById('loading-copy').textContent = 'No pudimos abrir la mesa. Revisa tu conexión y recarga.'; });</script>
 </body>

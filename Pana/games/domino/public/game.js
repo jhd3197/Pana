@@ -1,3 +1,5 @@
+import { createTableSeating } from '/engine/table-seating.js';
+import { createMapPicker } from '/engine/map-picker.js';
 import { loadName, loadAvatar } from '/engine/avatar.js';
 import { createGameMenu, toggleMute } from '/engine/ui.js';
 import { fillRoster } from '/engine/results.js';
@@ -36,6 +38,9 @@ const room = new DominoRoom({ code, name, avatar, onState: render,
   }, onNotice: notify,
 });
 
+const seating = createTableSeating($('table-seating'), (from, to) => room.action('seat', { from, to }));
+$('organize-table').onclick = () => room.action('setup');
+const mapPicker = createMapPicker($('map-picker'), mapId => room.action('map', { mapId }), { table: true, landmarks: true });
 const menu = createGameMenu({
   title: 'Dominó · Pana', sound: audio,
   note: () => room.members.size > 1 ? 'La mesa sigue jugando mientras estás en el menú.' : 'La partida está en pausa. Los bots te esperan.',
@@ -99,6 +104,9 @@ function hint() {
 }
 
 function render(state) {
+  seating.update(state.players, { teams: true, enabled: room.connected && room.isHost && state.phase === 'lobby', ownId: room.id });
+  $('organize-table').disabled = !room.connected || !room.isHost;
+  mapPicker.update(state.mapId, room.connected && room.isHost && state.phase === 'lobby');
   const seat = room.seat, base = seat < 0 ? 0 : seat, team = base % 2;
   const last = state.history.at(-1), eventKey = `${state.round}:${state.history.length}:${state.chain.length}`;
   if (previousEvent && previousEvent !== eventKey && last?.kind === 'play') audio.tone(430, 0, .07, 'triangle', .09);

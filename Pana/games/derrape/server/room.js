@@ -8,7 +8,7 @@ import { randomUUID } from 'node:crypto';
 import { PanaRoom, Member, roomState, avatarJson, MAX_MEMBERS } from '../../../server/src/room-kit.js';
 import { randomAvatar } from '../../../engine/avatar.js';
 import {
-  LAPS, MIN_GRID, GP_GRID, COUNTDOWN_MS, LOAD_TIMEOUT_MS, GP_LOAD_TIMEOUT_MS,
+  LAPS, lapsForTrack, MIN_GRID, GP_GRID, COUNTDOWN_MS, LOAD_TIMEOUT_MS, GP_LOAD_TIMEOUT_MS,
   FINISH_GRACE_MS, GP_INTERMISSION_MS, GP_MIN_READ_MS, GP_PROTOCOL,
   RIVALS, AI_WHEELS, CAR_COUNT, cleanCar, cleanWheel, cleanTrack, cleanDifficulty, cleanCosmetics, validPose,
 } from '../public/online-rules.js';
@@ -91,6 +91,7 @@ export default class DerrapeRoom extends PanaRoom {
     this.cupSession = null;
     this.cupDef = null;
     this.state.track = cleanTrack(options.track);
+    this.state.laps = lapsForTrack(this.state.track);
     this.state.mode = cleanMode(options.mode);
     this.state.difficulty = cleanDifficulty(options.difficulty);
     if (isAvailableCup(this.state.mode)) {
@@ -110,6 +111,7 @@ export default class DerrapeRoom extends PanaRoom {
     this.onMessage('track', (client, m) => {
       if (this.isHost(client) && this.canConfigure() && !isAvailableCup(this.state.mode)) {
         this.state.track = cleanTrack(m?.id);
+        this.state.laps = lapsForTrack(this.state.track);
       }
     });
     this.onMessage('bots', (client, m) => {
@@ -123,7 +125,7 @@ export default class DerrapeRoom extends PanaRoom {
         this.state.track = cup.stages[0].track;
         this.state.laps = cup.stages[0].laps;
       } else {
-        this.state.laps = LAPS;
+        this.state.laps = lapsForTrack(this.state.track);
       }
     });
     this.onMessage('difficulty', (client, m) => {
@@ -335,7 +337,7 @@ export default class DerrapeRoom extends PanaRoom {
     this.state.racers.clear();
     this.poses.clear();
     this.firstFinish = 0;
-    this.state.laps = LAPS;
+    this.state.laps = lapsForTrack(this.state.track);
     const total = Math.min(MAX_MEMBERS, this.state.bots ? Math.max(MIN_GRID, humans.length) : humans.length);
     const slots = shuffle([...Array(total).keys()]);
     for (const [id, p] of humans) {

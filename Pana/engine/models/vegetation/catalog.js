@@ -1,5 +1,14 @@
 // Model metadata only: no Three.js, construction or game imports.
 export default [
+  ...[
+    ['garden-rosette', 'Mata de hojas anchas', 'garden-rosette', 'gardenRosette'],
+    ['trailing-vine', 'Enredadera colgante', 'trailing-vine', 'trailingVine'],
+    ['trinitaria', 'Trinitaria', 'trinitaria', 'trinitaria'],
+  ].map(([id, name, file, factory]) => ({
+    id, name, category: 'Vegetación', source: `/engine/models/vegetation/${file}.js`, factory,
+    usedBy: ['Pana Studio'], previewOptions: { seed: 7 }, pack: 'casas-coloniales',
+    tags: ['jardín', 'casa', 'plantas'],
+  })),
   {
     id:'moriche',name:'Palma moriche',category:'Vegetación',source:'/engine/models/vegetation/moriche.js',
     factory:'moriche',usedBy:['Galope'],previewOptions:{seed:7,h:10},
@@ -7,7 +16,7 @@ export default [
   },
   {
     id:'savanna-grass',name:'Paja de sabana',category:'Vegetación',source:'/engine/models/vegetation/savanna-grass.js',
-    factory:'savannaGrass',usedBy:['Galope'],previewOptions:{seed:7,height:1.2,dry:true},
+    factory:'savannaGrass',usedBy:['Galope','Derrape'],previewOptions:{seed:7,height:1.2,dry:true},
     description:'Macolla de hojas arqueadas; versiones verde y seca para praderas.',tags:['llanos','hierba','sabana'],pack:'vegetation'
   },
   {
@@ -16,7 +25,7 @@ export default [
     category: "Vegetación",
     source: "/engine/models/vegetation/palm.js",
     factory: "palm",
-    usedBy: ["Bululú","Derrape","Escondidas","Cocina","Reliquia","Billar","Póquer"],
+    usedBy: ["Bululú", "Derrape", "Escondidas", "Cocina", "Reliquia", "Billar", "Póquer", "¡Pintura!", "Caída"],
     previewOptions: {"seed":7},
     pack: "vegetation"
   },
@@ -26,7 +35,7 @@ export default [
     category: "Vegetación",
     source: "/engine/models/vegetation/mango-tree.js",
     factory: "mangoTree",
-    usedBy: ["Bululú","Derrape","Escondidas","Cocina","Galope","Billar","Póquer","¡Pintura!"],
+    usedBy: ["Bululú", "Derrape", "Escondidas", "Cocina", "Galope", "Billar", "Póquer", "¡Pintura!", "Caída"],
     previewOptions: {"seed":7},
     pack: "vegetation"
   },
@@ -88,7 +97,7 @@ export default [
     category: "Vegetación",
     source: "/engine/models/vegetation/bamboo.js",
     factory: "bamboo",
-    usedBy: ["Derrape"],
+    usedBy: ["Derrape", "Escondidas", "¡Pintura!", "Billar", "Caída"],
     previewOptions: {"seed":7},
     description: "Grupo de tallos con nudos y ramas de hojas finas.",
     tags: ["selva","tallos"],
@@ -100,7 +109,7 @@ export default [
     category: "Vegetación",
     source: "/engine/models/vegetation/fern.js",
     factory: "fern",
-    usedBy: ["Derrape","Reliquia"],
+    usedBy: ["Derrape", "Reliquia", "Escondidas", "¡Pintura!", "Billar", "Caída"],
     previewOptions: {"seed":7},
     description: "Frondas arqueadas y brotes enrollados para el suelo del bosque.",
     tags: ["selva","sotobosque"],

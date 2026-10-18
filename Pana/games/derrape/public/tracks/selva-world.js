@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { natureSurface } from '/engine/models/core/nature-surface.js';
 import { wildCapybara } from '/engine/models/fauna/capybara/wild-capybara.js';
 import { scarletMacaw } from '/engine/models/fauna/birds/scarlet-macaw.js';
 import { orbitBird } from '/engine/models/animation/orbit-bird.js';
@@ -36,7 +37,8 @@ function groundMesh(height) {
     const c=new THREE.Color().fromArray(colors,i*3).lerp(stone,exposed*0.9);c.toArray(colors,i*3);
   }
   geo.setAttribute('color',new THREE.Float32BufferAttribute(colors,3));
-  const land=mesh(geo,M(0xffffff,{vertexColors:true,roughness:1,flatShading:false}));land.name='selva-terrain';return land;
+  const land=mesh(natureSurface(geo,'grass'),M(0xffffff,{vertexColors:true,roughness:1,flatShading:false}));land.name='selva-terrain';
+  land.userData.grassGrid={bounds:[-390,-465,490,275],nx:220,nz:185};return land;
 }
 
 function meshHeight(land,fallback) {

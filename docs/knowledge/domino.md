@@ -36,6 +36,20 @@ the first available seat; it does not guarantee the old seat. A new empty room
 starts fresh rather than restoring stale disconnected state. Local fallback
 creates a fresh solo table and disables the network invite button.
 
+## Choosing partners
+
+The shared `engine/table-seating.js` lobby picker swaps table positions, not
+room member IDs. Teams remain seats 0+2 and 1+3. Only the host can submit `seat`
+actions, in the lobby, through the existing revision/sequence ledger. Results
+offer `setup` to reopen the same lobby and explicitly start scores from zero;
+it preserves roster, map, RNG and ledger while clearing hands and match state.
+Never reset the revision or ledger on setup: a delayed old action must remain
+invalid. Ordinary next-hand/rematch buttons still work without reopening setup.
+Snapshots and host migration preserve the chosen positions.
+
+The shared `engine/tests/table-seating.browser.js` proves two-client seating,
+results-to-lobby, host migration and mobile controls in all three table games.
+
 ## Rendering
 
 `table-model.js` owns the table, chair and tile factories; Studio adapters use

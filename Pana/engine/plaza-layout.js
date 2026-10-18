@@ -8,6 +8,7 @@ export const STALLS = [
   { x: 12, z: -11, h: 0, seed: 3 },
 ];
 export const TREES = [[-18, -12], [18, 12], [-18, 11], [18, -15], [-6, -16], [7, 16]];
+export const LAMPS = [[-19, -7], [19, 7], [-5, 7], [5, -7], [-20, 15], [20, -16]];
 const placements = [
   ['barrel', -8, 10], ['crate', -10, 11.8], ['cooler', -6.2, 11.4], ['planter', -12.5, 11], ['bench', -15, 7, 1.57],
   ['barrel', 8, 10], ['barrel', 9.7, 10.5], ['crate', 12, 10], ['cooler', 14, 11], ['planter', 15.5, 8],

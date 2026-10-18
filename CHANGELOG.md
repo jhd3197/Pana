@@ -12,6 +12,59 @@ becomes the GitHub release's notes.
 
 ### Added
 
+- **Choose your partners and seating in Caída, Dominó and Poker without leaving the room.**
+  Hosts can swap seats in the lobby and return to setup after a round. Changing
+  Caída or Dominó teams starts a fresh score; Poker keeps each player's chips.
+
+- **Play Bolas Criollas on a shared 3D court, as a full game or a Bululú minigame.**
+  Invite up to four panas for red-versus-green matches with bots, eight balls per
+  team, arrimes, ground boches and 12- or 24-point house rules. Bululú adds a quick
+  two-throws-each contest. Both use saved panas, rolling collisions and a visible
+  aiming guide; the court and balls are also available in Pana Studio.
+
+- **Derrape's grass and trees gain procedural surface detail that follows graphics quality.**
+  Seeded ground patches, visible 3D grass tufts, leaf mottling and bark grain
+  enrich the circuits and their Studio previews. Rápida keeps simple surfaces;
+  Equilibrada adds sparse tufts and Nítida fills out nearby grass, fading with distance.
+
+- **Caída lets each dealer cut the deck and choose 1 or 4 before every reparto.**
+  The choice now happens at the table, with the previous reparto's score nearby.
+  Patrulla and the other cantos explain themselves beside your hand, and Últimas
+  announces the final hand and its no-clean-table-bonus rule.
+
+- **Race a much larger Puerto through La Guaira's terminal, hillside town and San Carlos.**
+  One adventure lap targets a 3–4 minute race, shown in the track picker and
+  start screen. Drive a submerged tunnel with sea windows beneath the original
+  silos, through three cranes and stacked cargo walls, up the mud climb and
+  around widened, guarded castle terraces before jumping onto the descent.
+  Connected town blocks have shops, courtyards and houses facing their streets.
+  Casa Guipuzcoana, the silos and San Carlos retain the supplied prototypes'
+  geometry and textures and are reusable in Pana Studio.
+
+- **Choose Casa Guipuzcoana or Fuerte San Carlos for Caída, Dominó and Póquer.**
+  Hosts select the setting in the lobby; everyone shares it through late joins,
+  host changes and practice, while each game keeps its own table and rules.
+
+- **Pana Studio can generate and customize Venezuelan-inspired colonial houses.**
+  Generate collections of 50 houses from six families, six window designs,
+  three roof shapes and three facade layouts, with balconies, porches and plants.
+  Four wall finishes add soft plaster shading and small painted or exposed-brick
+  patches, with their own seeded variation and lock.
+  Edit each house, lock choices while rerolling, save or load JSON collections,
+  and preview ten houses on Calle de las flores.
+
+- **Derrape adds eleven scenery models to its towns, coasts and countryside.**
+  Cafés, fountains, market carts, fishing structures, port equipment and other
+  landmarks now appear across six circuits and are available in Pana Studio.
+- **Escondidas reshuffles its objects every round and gives you more time to hide.**
+  All four maps get fresh prop positions and orientations shared by everyone in
+  the room. Hiding now lasts 30 seconds by default; hosts can choose 15, 20, 30,
+  45 or 60 seconds in the lobby, including local practice.
+- **Choose three new shared maps for Escondidas, Paintball, Billar and Caída.**
+  Puerto Coco, Hato del Sol and Ruinas del Mango bring distinct hiding routes,
+  paintball cover and scenery. Hosts preview and choose the map in the lobby;
+  table games use a clear central courtyard, and friends joining later see
+  the same setting. The original plaza and paintball court remain available.
 - **Derrape brings five new scenery models from the circuit artwork into the races.**
   Plaza Pana gains an open music pavilion and a boat-repair yard; Salinas gains
   salt-harvesting machinery and flamingos along its pink ponds. El Estadio has

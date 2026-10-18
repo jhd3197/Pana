@@ -1,6 +1,6 @@
 import * as THREE from 'three';
-import { createPlazaEnvironment } from '/engine/plaza.js';
-import { createGameTable, createGameChair, disposeModel } from '/engine/models/props/game-table.js';
+import { createArenaSlot } from '/engine/arenas.js';
+import { createGameTable, createGameChair } from '/engine/models/props/game-table.js';
 import { buildCharacter } from '/engine/models/characters/pana/avatar-model.js';
 import { normalizeAvatar } from '/engine/avatar.js';
 import { bindRenderer } from '/engine/settings.js';
@@ -21,7 +21,7 @@ export async function createCaidaScene(canvas, { onCard, onLoading = () => {} } 
   const sun = new THREE.DirectionalLight('#ffe3ad', 3.1); sun.position.set(-6, 14, 8); sun.castShadow = true;
   sun.shadow.mapSize.set(2048, 2048); Object.assign(sun.shadow.camera, { left: -10, right: 10, top: 10, bottom: -10, near: 1, far: 40 }); sun.shadow.normalBias = .025; sun.shadow.bias = -.0001; scene.add(sun);
   onLoading('Preparando el patio…'); await new Promise(requestAnimationFrame);
-  const plaza = createPlazaEnvironment({ cooking: true, clearance: (x, z) => Math.hypot(x, z) > 9 }); plaza.group.scale.setScalar(.72); scene.add(plaza.group);
+  const plaza = createArenaSlot(scene, { mode: 'table', plazaScale: .72 }); plaza.setMap('plaza');
   const table = createGameTable({ feltColor: '#245e50', caption: 'CAÍDA · ENTRE PANAS' }); scene.add(table);
   const cards = new Map(), chairs = [], characters = [], characterKeys = [], labels = [], tokens = [];
   let state, ownSeat = 0, selected = null, cameraMode = 'patio', disposed = false, time = 0, hover = null, geometryVersion = '', animationId = 0;
@@ -68,7 +68,7 @@ export async function createCaidaScene(canvas, { onCard, onLoading = () => {} } 
   await syncCharacters(LOOKS.slice(0, 2).map((_, seat) => ({ seat, id: null })));
 
   function update(value, seat, chosen = null) {
-    if (disposed) return; state = value; ownSeat = Math.max(0, seat); selected = chosen; cameraTarget();
+    if (disposed) return; state = value; plaza.setMap(state.mapId); ownSeat = Math.max(0, seat); selected = chosen; cameraTarget();
     const version = JSON.stringify(state.players.map(p => [p.id, p.avatar]));
     if (version !== geometryVersion) { geometryVersion = version; syncCharacters(state.players); }
     const preview = selected ? previewPlay(state, state.players[ownSeat].hand.find(c => c.id === selected), ownSeat) : null;
@@ -111,7 +111,7 @@ export async function createCaidaScene(canvas, { onCard, onLoading = () => {} } 
       if (!p) continue;
       const label = labels[i]; label.replaceChildren(); label.classList.toggle('active', state.phase === 'playing' && state.turn === i);
       const title = document.createElement('strong'), note = document.createElement('span'); title.textContent = p.id === null ? `${p.name} · bot` : p.name;
-      note.textContent = state.phase === 'playing' && state.turn === i ? 'Su turno' : i === seat ? 'Tu puesto' : state.options.mode === 'teams' && i % 2 === ownSeat % 2 ? 'Tu pareja' : 'En la mesa'; label.append(title, note);
+      note.textContent = state.phase === 'dealing' && state.dealer === i ? 'Reparte' : p.announced ? `${p.announced.name} · +${p.announced.points}` : state.phase === 'playing' && state.turn === i ? 'Su turno' : i === seat ? 'Tu puesto' : state.options.mode === 'teams' && i % 2 === ownSeat % 2 ? 'Tu pareja' : 'En la mesa'; label.append(title, note);
     }
   }
   const cursor = new THREE.Vector2(), ray = new THREE.Raycaster(); let down;
@@ -144,7 +144,7 @@ export async function createCaidaScene(canvas, { onCard, onLoading = () => {} } 
   return { scene, camera, renderer, cards, characters, update, frame, setView(value) { cameraMode = value; cameraTarget(); },
     dispose() {
       disposed = true; unbind(); removeEventListener('resize', resize); canvas.removeEventListener('pointermove', pointerMove); canvas.removeEventListener('pointerdown', pointerDown); canvas.removeEventListener('pointerup', pointerUp);
-      cards.forEach(c => c.model.userData.dispose()); tokens.flat().forEach(t => t.userData.dispose()); characters.forEach(c => c?.dispose()); chairs.forEach(c => c.userData.dispose()); labels.forEach(l => l.remove()); table.userData.dispose(); disposeModel(plaza.group); renderer.dispose();
+      cards.forEach(c => c.model.userData.dispose()); tokens.flat().forEach(t => t.userData.dispose()); characters.forEach(c => c?.dispose()); chairs.forEach(c => c.userData.dispose()); labels.forEach(l => l.remove()); table.userData.dispose(); plaza.dispose(); renderer.dispose();
     },
   };
 }

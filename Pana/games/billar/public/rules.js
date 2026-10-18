@@ -1,3 +1,5 @@
+import { validArena } from '../../../engine/arena-layouts.js';
+
 // Casual eight-ball house rules. All physics uses fixed steps in table units.
 export const WIDTH = 1000, HEIGHT = 500, RADIUS = 11, POCKET_RADIUS = 25, STEP = 1 / 240;
 export const POCKETS = [[0, 0], [500, -6], [1000, 0], [0, 500], [500, 506], [1000, 500]];
@@ -16,7 +18,7 @@ export function rack() {
 }
 
 export function createGame(practice = false) {
-  return { phase: 'lobby', practice, players: [0, 1].map(() => ({ id: null, name: 'Esperando pana', avatar: {} })),
+  return { phase: 'lobby', mapId: 'plaza', practice, players: [0, 1].map(() => ({ id: null, name: 'Esperando pana', avatar: {} })),
     balls: rack(), groups: [null, null], turn: 0, revision: 0, round: 0, shots: 0, ballInHand: false,
     shot: null, result: null, message: 'La mesa está lista.' };
 }
@@ -47,10 +49,14 @@ function respot(state, id, preferredX = 690) {
 
 export function acceptAction(state, id, action, hostId) {
   if (!action || action.revision !== state.revision) return false;
+  if (action.action === 'map') {
+    if (id !== hostId || state.phase !== 'lobby' || !validArena(action.mapId)) return false;
+    state.mapId = action.mapId; state.revision++; return true;
+  }
   if (action.action === 'start') {
     if (id !== hostId || !['lobby', 'finished'].includes(state.phase) || (!state.practice && state.players.some(p => p.id === null))) return false;
     const fresh = createGame(state.practice);
-    Object.assign(state, fresh, { players: state.players, revision: state.revision + 1, round: state.round + 1,
+    Object.assign(state, fresh, { players: state.players, mapId: state.mapId, revision: state.revision + 1, round: state.round + 1,
       phase: 'aiming', message: state.practice ? 'Practica: mete las 15 bolas. Deja la ocho para el final.' : '¡A romper! La primera bola legal elige tu grupo.' });
     return true;
   }

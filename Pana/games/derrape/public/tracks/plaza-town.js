@@ -1,5 +1,6 @@
 // A complete pueblo around a temporary street circuit.
 import * as THREE from 'three';
+import { natureSurface } from '/engine/models/core/nature-surface.js';
 import { createPlazaEnvironment } from '/engine/plaza.js';
 import { house } from '/engine/models/props/plaza-buildings.js';
 import { marketStall, streetLamp, bench } from '/engine/models/props/plaza.js';
@@ -15,6 +16,12 @@ import { colonialHouse, busStopShelter } from '/engine/models/props/pueblo.js';
 import { extendTerrain } from './world-horizon.js';
 import { plazaOutskirts } from './plaza-outskirts.js';
 import { plazaBandstand } from '/engine/models/props/plaza-bandstand.js';
+import { cafeTerrace } from '/engine/models/props/cafe-terrace.js';
+import { ceramicFountain } from '/engine/models/props/ceramic-fountain.js';
+import { iceCreamCart } from '/engine/models/props/ice-cream-cart.js';
+import { fruitDeliveryTruck } from '/engine/models/props/fruit-delivery-truck.js';
+import { laundryCourtyard } from '/engine/models/props/laundry-courtyard.js';
+import { streetMural } from '/engine/models/props/street-mural.js';
 
 const COLORS=[0xedaf3f,0x35b4aa,0xeb7658,0x8ab34f,0xf2d38b,0x459fc6];
 const PAVING=0xd2bd95, ROAD=0x8b958c;
@@ -51,6 +58,8 @@ export function createTown(T) {
     const c=lawn.clone().lerp(dry,0.26+0.16*Math.sin(p.getX(i)*0.013)*Math.cos(p.getZ(i)*0.017));colors.push(c.r,c.g,c.b);
   }
   land.geometry.setAttribute('color',new THREE.Float32BufferAttribute(colors,3));
+  natureSurface(land.geometry,'grass');
+  land.userData.grassGrid={bounds:[-650,-700,850,600],nx:300,nz:260};
   land.material=M(0xffffff,{vertexColors:true,flatShading:false,roughness:1});land.name='plaza-terrain';group.add(land);
   horizon=extendTerrain(land,{bounds:[-650,-700,850,600],nx:300,nz:260,height:groundAt,biome:'plaza',
     color:(x,z)=>lawn.clone().lerp(dry,.26+.16*Math.sin(x*.013)*Math.cos(z*.017))});
@@ -71,6 +80,21 @@ export function createTown(T) {
     ground.add(surface(x+side*15-1.5,z+k*2.3-0.65,x+side*15+1.5,z+k*2.3+0.65,(x,z)=>groundAt(x,z)+0.25,0xe4dfc9,1));
   }
   const prototypes=Array.from({length:12},(_,i)=>i%5===4?colonialHouse({color:COLORS[i%6],seed:11+i}):house({w:7.3+(i%3)*.4,h:i%3===0?5.4:7.1+(i%2)*.8,color:COLORS[(i*5+Math.floor(i/4))%6],seed:i+21,style:['tejas','balcon','tienda','terraza'][i%4]})),occupied=[];
+  function landmark(model,x,z,turn=0,scale=1,radius=4,lift=0.35) {
+    const samples=[[0,0],[-radius,-radius],[radius,-radius],[-radius,radius],[radius,radius]].map(([dx,dz])=>groundAt(x+dx,z+dz));
+    const y=Math.max(...samples)+lift,bottom=Math.min(...samples)-0.15;
+    const pad=box(radius*1.85,y-bottom,radius*1.85,M(0xd6c39b),x,(y+bottom)/2,z);
+    pad.rotation.y=turn;buildings.add(pad);
+    model.position.set(x,y,z);model.rotation.y=turn;model.scale.setScalar(scale);
+    model.userData.footprintRadius=radius;model.userData.support='town-plinth';group.add(model);
+    occupied.push({x,z});return model;
+  }
+  landmark(cafeTerrace(),-162,78,0,1.35,4.5,0.35);
+  const fountain=landmark(ceramicFountain(),-137.5,80,0,1.45,4.2,0.6);
+  landmark(iceCreamCart(),-112,76,-0.3,1.6,2.2,0.35);
+  landmark(fruitDeliveryTruck(),148,43,Math.PI/2,1.4,4.2,0.35);
+  landmark(laundryCourtyard(),224,-110,0.4,1.35,4.2,0.35);
+  landmark(streetMural(),272,-103,Math.PI,1.4,3.8,0.35);
   function building(x,z,turn,seed,scale=1) {
     if(groundAt(x,z)<-0.4||x>270&&z>280)return;
     if(!clear(x,z,10*scale)||streetDistance(x,z)<STREET_HALF+8.5*scale||(Math.abs(x)<68&&z>-57&&z<48)||occupied.some(p=>Math.hypot(x-p.x,z-p.z)<12*scale))return;
@@ -147,14 +171,15 @@ export function createTown(T) {
   }
   plaza.group.scale.setScalar(2);group.add(plaza.group);
   const outskirts=plazaOutskirts(T,groundAt,building,occupied);group.add(outskirts);group.userData.surroundings=outskirts.userData.surroundings;
-  group.add(bake(ground,{cellSize:200}),bake(buildings,{cellSize:200}),bake(plants,{cellSize:200}));
+  // Smaller vegetation cells let road cameras cull trees behind the driver.
+  group.add(bake(ground,{cellSize:350}),bake(buildings,{cellSize:350}),bake(plants,{cellSize:180}));
   group.add(createWaterfront(T));
   const privateGeometries=new Set();
   for(const root of [ground,buildings,plants,...prototypes])root.traverse(o=>{if(o.geometry)privateGeometries.add(o.geometry);});
   privateGeometries.forEach(g=>g.dispose());
   group.userData.town={blocks:BLOCKS,buildings:placements,trees,avenues:AVENUES,streets:STREETS};
   const animateWater=waterAnimator(group);
-  return {group,groundAt,update(t,dt){plaza.update?.(t,dt);animateWater(t);}};
+  return {group,groundAt,update(t,dt){plaza.update?.(t,dt);fountain.userData.tick?.(t);animateWater(t);}};
 }
 
 export function raceEdges(group,kit,T) {

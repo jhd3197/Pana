@@ -2,6 +2,15 @@
 
 Implementation note for `docs/plans/56_derrape-grand-prix-and-water-worlds.md`.
 
+## Standalone circuit additions
+
+Puerto is available for normal local/online races and is explicitly listed in
+`cup-definitions.js` as a standalone track. Adding a circuit no longer requires
+changing an existing four-stage cup edition. `validateCups` still checks unique,
+known stages and now rejects any circuit missing from both the cup stages and
+the standalone list, or registered in both. Existing cup routes and profile
+migration remain unchanged.
+
 ## Phase 00 baseline
 
 Source revision: `3448e6d` plus the pre-existing, unrelated root package edits.

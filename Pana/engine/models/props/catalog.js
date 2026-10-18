@@ -19,6 +19,9 @@ import amazonas from './catalog/amazonas.js';
 import waterWorlds from './catalog/water-worlds.js';
 import tableGames from './catalog/table-games.js';
 import circuitLife from './catalog/circuit-life.js';
+import colonialHouses from './catalog/colonial-houses.js';
+import puerto from './catalog/puerto.js';
+import criollas from './catalog/criollas.js';
 
 export default [
   ...ranch,
@@ -42,4 +45,7 @@ export default [
   ...waterWorlds,
   ...tableGames,
   ...circuitLife,
+  ...colonialHouses,
+  ...puerto,
+  ...criollas,
 ];

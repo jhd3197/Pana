@@ -83,7 +83,7 @@ build step**, Three.js from a CDN, and Colyseus rooms for online play.
 ```powershell
 npm run check             # syntax check of every .js file
 npm test                  # unit tests + house-rule checks (no browser needed)
-npm run test:browser      # Playwright suites; set PANA_PLAYWRIGHT_PATH
+npm run test:browser      # Playwright suites (installed by npm install)
 .\dev.ps1 check -Browser  # all of the above
 ```
 

@@ -19,13 +19,29 @@ export class PokerConnection {
     } catch (error) { if (!this.local && !this.disposed) this.onStatus(error.full ? 'Sala llena. Abre otra mesa desde Pana.' : 'Sin conexión. Puedes practicar con bots.', true); }
   }
   start() { if (this.local) { this.game.start(); this.publish(); } else if (this.connected) this.link.send('start'); }
+  reseat(from, to) {
+    if (!this.connected || !this.isHost) return;
+    if (this.local) { if (this.game.reseat(from, to)) this.publish(); }
+    else this.link.send('seat', { from, to, revision: this.state.revision });
+  }
+  setup() {
+    if (!this.connected || !this.isHost) return;
+    if (this.local) { if (this.game.setup()) this.publish(); }
+    else this.link.send('setup', { revision: this.state.revision });
+  }
+  setMap(mapId) {
+    if (!this.connected || !this.isHost) return;
+    if (this.local) { if(this.game.setMap(mapId))this.publish(); }
+    else this.link.send('map', { mapId, revision: this.state.revision });
+  }
   act(action, amount) {
     if (!this.connected) return;
     if (this.local) { if (this.game.act(1, action, amount)) this.publish(); }
     else this.link.send('act', { action, amount, revision: this.state.revision });
   }
   practice() {
-    this.local = true; this.link?.leave(); this.connected = true; this.game = new Poker();
+    const mapId=this.state.mapId;
+    this.local = true; this.link?.leave(); this.connected = true; this.game = new Poker(); this.game.setMap(mapId);
     this.game.add(1, { name: this.name, avatar: this.avatar, bot: false });
     ['Coco', 'Lola', 'Cheo'].forEach((name, i) => this.game.add(1000 + i, { name, avatar: randomAvatar(), bot: true }));
     this.onStatus('Práctica con bots · a tu ritmo'); this.start();

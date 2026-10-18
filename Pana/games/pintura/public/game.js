@@ -1,3 +1,4 @@
+import { createMapPicker } from '/engine/map-picker.js';
 import { loadName, loadAvatar } from '/engine/avatar.js';
 import { inviteUrl, newRoomCode, roomFromUrl } from '/engine/invite.js';
 import { createGameMenu, toggleMute } from '/engine/ui.js';
@@ -6,7 +7,7 @@ import { fillRoster } from '/engine/results.js';
 import { sound } from '/engine/fx.js';
 import { PaintConnection } from './network.js';
 import { createScene } from './scene.js';
-import { COVER, TARGET, segmentBox } from './rules.js';
+import { coverFor, TARGET, segmentBox } from './rules.js';
 
 const $ = id => document.getElementById(id), code = roomFromUrl() || newRoomCode();
 const params = new URLSearchParams(location.search); params.set('room', code); history.replaceState(null, '', `${location.pathname}?${params}`);
@@ -16,6 +17,7 @@ let cameraView = 'cerca', pointerPosition = null, orbitPointer = null;
 const room = new PaintConnection({ code, name: loadName(), avatar: loadAvatar(), onState: render, onStatus(text, failed = false) {
   $('connection').textContent = text; $('recovery-copy').textContent = text; $('recovery').hidden = !failed || room.state.phase === 'lobby';
 } });
+const mapPicker = createMapPicker($('map-picker'), mapId => room.selectMap(mapId));
 const menu = createGameMenu({ title: '¡Pintura! · Pana', orientation: 'libre', sound,
   options: [{ id: 'view', label: 'Cámara', choices: [['cerca', 'Con tu pana'], ['cancha', 'Ver la cancha']], get: () => cameraView, set: value => { cameraView = value; world.setView(value); } }],
   note: () => room.local ? 'La práctica está en pausa.' : 'La ronda online sigue mientras estás en el menú.',
@@ -53,7 +55,7 @@ function input() {
   if (pointerPosition) aim = world.point(...pointerPosition);
   let ax = aim ? aim.x - me.x : me.ax, az = aim ? aim.z - me.z : me.az;
   if (touchFire) {
-    const nearest = room.state.players.filter(p => p.id !== me.id && p.connected && !p.respawn && !p.shield && !COVER.some(o => segmentBox(me.x, me.z, p.x - me.x, p.z - me.z, o) !== null))
+    const nearest = room.state.players.filter(p => p.id !== me.id && p.connected && !p.respawn && !p.shield && !coverFor(room.state.mapId).some(o => segmentBox(me.x, me.z, p.x - me.x, p.z - me.z, o) !== null))
       .sort((a, b) => Math.hypot(a.x - me.x, a.z - me.z) - Math.hypot(b.x - me.x, b.z - me.z))[0];
     if (nearest) { ax = nearest.x - me.x; az = nearest.z - me.z; }
   }
@@ -63,6 +65,7 @@ function input() {
     ax: ax / length, az: az / length, fire: queuedFire || firing || touchFire || held.has(' '), reload: queuedReload || held.has('r') };
 }
 function render(state) {
+  mapPicker.update(state.mapId, room.connected && room.isHost && state.phase === 'lobby');
   const lobby = state.phase === 'lobby', finished = state.phase === 'finished';
   $('lobby').hidden = !lobby; $('hud').hidden = lobby || finished; document.body.classList.toggle('in-lobby', lobby);
   $('start').disabled = !room.connected || !room.isHost; $('start').textContent = !room.connected ? 'Conectando…' : room.isHost ? '¡A la cancha!' : 'El anfitrión inicia la ronda';

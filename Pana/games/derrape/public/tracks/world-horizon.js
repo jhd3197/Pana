@@ -1,6 +1,7 @@
 // The playable grids stay untouched. Their exact boundary vertices join a
 // coarser landscape beyond the longest race fog distance, without a skirt wall.
 import * as THREE from 'three';
+import { natureSurface } from '/engine/models/core/nature-surface.js';
 
 function perimeter(nx,nz) {
   const edge=[];
@@ -33,6 +34,7 @@ export function extendTerrain(land,{bounds,nx,nz,height,color,biome}) {
   // Copy the inner normals too: the coarse outer strip should not outline the grid.
   const normals=geometry.attributes.normal,innerNormals=land.geometry.attributes.normal;
   edge.forEach((index,i)=>normals.setXYZ(i,innerNormals.getX(index),innerNormals.getY(index),innerNormals.getZ(index)));
+  if(land.geometry.attributes.natureSurface)natureSurface(geometry,'grass');
   const continuation=new THREE.Mesh(geometry,land.material);continuation.name=`${biome}-outer-landscape`;continuation.receiveShadow=true;
   continuation.userData.worldContinuation={edgeIndices:edge,bands:bands.length,bounds,reach:3800};
   // Locate a radial strip, then interpolate its real triangles. Placement and

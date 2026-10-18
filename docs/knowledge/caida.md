@@ -15,10 +15,17 @@ new dependency is required. `game.json` and `public/card.js` supply its hub tile
   cards score 1; sota/caballo/rey score 2/3/4. No partner caída bonus.
 - Clearing the table scores 4 only while the stock is nonempty. It stacks with a
   caída. No clean-table points during the final three-card hand (últimas).
+- Every reparto starts with a `dealing` phase: the dealer chooses 1 (ascending)
+  or 4 (descending), with neither preselected. The optional single face-down cut
+  rotates the shuffled 40-card stock; it does not reshuffle or expose cards.
+  Seat zero deals first, then the dealer rotates after the stock is exhausted.
+  Three-card hands within that reparto continue automatically; only the four
+  opening table cards use the chosen count.
 - Opening calls can ascend or descend. Match scores the called value; no match
   awards the next player 1. Duplicate opening ranks go to the bottom and are
   replaced without consuming the call position.
-- Optional classic cantos: ronda 1–4, rondín 5, patria 6, vigía 7, registro 8.
+- Optional classic cantos: ronda 1–4, rondín 5, patrulla (also patria) 6,
+  vigía 7, registro 8.
   One highest applicable canto, on the player's turn before their first card of
   that hand. Playing forfeits an unannounced canto. No flor, cancellation, or
   automatic rondín win. Announcements publicly expose the ranks; bots use them.
@@ -35,6 +42,10 @@ Regional accounts disagree on canto values; these choices are an explicit house
 variant displayed in the game's shared controls menu, not a universal standard.
 Stacking, counting order, three-player baseline and leftover fallback are also
 explicit implementation choices. Confirm other family variants before changing.
+The [canto table](https://es.scribd.com/doc/213704928/59857882-Cantos-Del-Juego-de-Baraja)
+also uses Patrulla for three consecutive ranks worth six points. The UI uses that
+name and keeps Patria as an alias in the rules; this is a naming change, not a
+new canto or a change to scores.
 
 ## Structure and networking
 
@@ -50,11 +61,41 @@ Host migration preserves the RNG, stock, scores, hands and sequence ledger.
 The menu pauses bots when solo; multiplayer continues while a menu is open.
 Disconnected clients may explicitly open an offline local table.
 
+The host opens the initial table and rematch. Between repartos, either the host
+or the next dealer may advance the results. `call`, `cut` and `deal` actions are
+validated against the actual dealer seat, not the host, with the usual revision
+and sequence checks. `start()` cannot restart a pending deal. `dealCall` resets
+to null on every reparto even though `options.call` remembers the last count.
+`cutAt`, `dealCall`, the rotated stock and `previousRound` survive migration.
+If the dealer leaves, the replacement bot must choose a count even when the
+human already cut: a cut alone does not mean the ritual is ready to deal.
+Bots preserve a committed human choice and cut. Solo pause also pauses dealing.
+
+`dealer-ui.js` owns the nonmodal dealer panel, accessible range cut, count
+buttons and previous-reparto recap, using the same card-back canvas as the table.
+The hand shows its available canto and explanation before its turn; only the
+acting seat can announce it. Últimas gets both a transient announcement and a
+persistent reminder that clean-table points no longer apply.
+
 As with Dominó, Pana's relay is trust-based. Full snapshots include hands and
 stock for host migration. Opponents' faces stay hidden in the normal interface,
 but this is not server-authoritative anti-cheat or cryptographic hand privacy.
 Do not present these rooms as suitable for competitive wagers. A secure server
 model would be a separate backend change.
+
+## Choosing partners and returning to setup
+
+The lobby uses `engine/table-seating.js` to swap players between seats, with
+0+2 and 1+3 visibly grouped in partnership mode. Host-only `seat` actions use
+the same revision/sequence checks as moves and are rejected outside the lobby.
+At results the host may send `setup` to reopen this room with scores reset;
+the mode, cantos, difficulty, map, roster, RNG and action ledger survive. A new
+deal starts from dealer zero. The usual next-reparto flow is unchanged.
+Keep revision monotonic and retain the ledger when resetting a match so delayed
+actions cannot apply to the new setup. Network member IDs never change on swaps.
+
+`engine/tests/table-seating.browser.js` exercises the UI over two real clients,
+including a full round, changing partners again, host departure and mobile.
 
 ## Models and interaction
 
@@ -76,16 +117,19 @@ same live scene. Screen-aligned hand buttons preserve touch readability.
 
 ```
 node Pana/games/caida/tests/rules.test.js
-node Pana/games/caida/tests/browser.mjs <absolute-playwright-package>
-node Pana/games/caida/tests/interaction.mjs <absolute-playwright-package>
-node Pana/engine/tests/model-architecture.test.js
-npm run check
+$env:PANA_TEST_URL = 'http://localhost:8470'
+npm run test:browser -- caida
+.\dev.ps1 check
 ```
 
 The pure suite includes 400 complete seeded matches across four modes, checking
 all 40 cards remain unique and conserved after every action. The browser suite
 covers two real clients, play/preview/capture, settings, migration, complete
 deals, mobile touch, offline fallback, new Studio models and hub discovery.
+`dealing.browser.js` adds dealer-only controls, the actual cut order, a fresh
+required choice on every reparto, late spectators, previous-reparto totals,
+últimas, a non-host dealer advancing results, migration during preparation,
+bot recovery when a dealer leaves after cutting, and Patrulla presentation.
 Screenshots are written to ignored `art/caida/`.
 
 Validated locally on 2026-10-15: rules and browser suites passed, including
@@ -109,3 +153,10 @@ artwork is shared by physical meshes and accessible controls. The card and
 score token are registered in `web/studio/catalog/caida.js`. Table/chair
 factories are shared in `engine/models/props/game-table.js`; Dominó preserves
 its old exports. See `docs/knowledge/caida.md` for explicit house rules.
+
+## Shared map selection
+
+Puerto Coco, Hato del Sol and Ruinas del Mango are available in the lobby.
+The host chooses the setting; the selected map follows snapshots, practice,
+late joins and host changes. See [shared-arenas.md](shared-arenas.md) for
+layout variants, collision, table clearance, lifecycle and verification.

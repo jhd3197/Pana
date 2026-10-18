@@ -9,17 +9,17 @@ export class HuntRoom extends HostRoom {
       full: 'La sala está llena (8 panas). Puedes practicar sin conexión.',
       offline: 'No pudimos conectar. Puedes practicar sin conexión.' } });
     this.inputs = new Map(); this.seq = 0; this.lastAction = new Map();
-    this.state = new HuntRound().snapshot();
+    this.state = new HuntRound('plaza', { layoutSeed: crypto.getRandomValues(new Uint32Array(1))[0] }).snapshot();
   }
   takeOver(previous) {
-    this.game = new HuntRound(); this.inputs.clear();
+    this.game = new HuntRound(this.state.mapId, this.state); this.inputs.clear();
     for (const p of this.members.values()) this.game.addPlayer(p.id, p.name, p.id === this.id ? this.avatar : p.avatar || {});
     this.state = this.game.snapshot(); this.onState(this.state);
     if (previous != null) this.onNotice('Cambió el anfitrión. Preparen una nueva partida.');
   }
   memberJoined(m, already) {
     if (this.isHost) this.game.addPlayer(m.id, m.name, {});
-    if (!already) this.onNotice(`${m.name} llegó a la plaza.`);
+    if (!already) this.onNotice(`${m.name} llegó a la sala.`);
   }
   memberLeft(id) {
     this.inputs.delete(id); this.lastAction.delete(id);
@@ -46,7 +46,9 @@ export class HuntRoom extends HostRoom {
     else this.send({ kind: 'notice', to: id, text });
   }
   handleAction(id, action) {
-    if (action.action === 'start' && id === this.hostId) this.game.start(id, action.preference);
+    if (action.action === 'map' && id === this.hostId) this.game.selectMap(action.mapId);
+    else if (action.action === 'configure' && id === this.hostId) this.game.configure(action.options);
+    else if (action.action === 'start' && id === this.hostId) this.game.start(id, action.preference);
     else if (action.action === 'transform') {
       const error = this.game.transform(id, action.prop);
       this.notice(id, error || (action.prop ? '¡Listo! Quédate quieto y pasa desapercibido.' : 'Volviste a ser pana.'));
@@ -73,7 +75,7 @@ export class HuntRoom extends HostRoom {
     } else this.send({ kind: 'input', ...input });
   }
   practice() {
-    this.state = new HuntRound().snapshot(); this.inputs.clear(); this.lastAction.clear();
+    this.state = new HuntRound(this.state.mapId, this.state).snapshot(); this.inputs.clear(); this.lastAction.clear();
     super.practice('Práctica con 3 panas de la máquina.');
   }
 }

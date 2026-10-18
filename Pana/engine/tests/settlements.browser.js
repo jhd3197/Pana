@@ -31,7 +31,9 @@ try {
       }); return h >>> 0;
     };
     const dispose = group => group.traverse(o => { o.geometry?.dispose(); o.userData.dispose?.(); });
-    const assets = ASSETS.filter(a => a.category === set.category || set.ids.includes(a.id)).sort((a,b) => a.tags[0].localeCompare(b.tags[0]));
+    // Category Pueblo also contains newer circuit-life models. This proof owns
+    // the original numbered packs, not every future asset sharing a category.
+    const assets = ASSETS.filter(a => a.pack === (set.category === 'Pueblo' ? 'pueblo' : 'mountain') || set.ids.includes(a.id)).sort((a,b) => a.tags[0].localeCompare(b.tags[0]));
     const models = [], details = [];
     for (const asset of assets) {
       const model = await asset.build(), twin = await asset.build(), owned = new Set();

@@ -1,8 +1,7 @@
 import * as THREE from 'three';
-import { createPlazaEnvironment } from '/engine/plaza.js';
+import { createArenaSlot } from '/engine/arenas.js';
 import { createSky } from '/engine/sky.js';
 import { bindRenderer } from '/engine/settings.js';
-import { disposeModel } from '/engine/models/props/game-table.js';
 
 // Shared outdoor stage for the pool and poker tables. Gameplay owns its meshes.
 export function createTableWorld(canvas) {
@@ -16,8 +15,7 @@ export function createTableWorld(canvas) {
   const sun = new THREE.DirectionalLight('#ffe1ab', 3); sun.position.set(-12, 22, 10); sun.castShadow = true;
   sun.shadow.mapSize.set(2048, 2048); Object.assign(sun.shadow.camera, { left: -15, right: 15, top: 15, bottom: -15, far: 55 });
   sun.shadow.normalBias = .025; sun.shadow.bias = -.0001; scene.add(sun);
-  const plaza = createPlazaEnvironment({ cooking: true, clearance: (x, z, radius = 0) => Math.hypot(x, z) - radius > 10 });
-  plaza.group.scale.setScalar(.85); scene.add(plaza.group);
+  const plaza = createArenaSlot(scene, { mode: 'table', plazaScale: .85 }); plaza.setMap('plaza');
   const camera = new THREE.PerspectiveCamera(42, 1, .1, 150);
   const target = new THREE.Vector3(), direction = new THREE.Vector3(), right = new THREE.Vector3(), up = new THREE.Vector3(), point = new THREE.Vector3();
   let time = 0;
@@ -43,7 +41,7 @@ export function createTableWorld(canvas) {
     camera.updateProjectionMatrix(); camera.updateMatrixWorld();
   }
   function draw(dt) { time += dt; plaza.update(time); sky.update(time); renderer.render(scene, camera); }
-  return { renderer, scene, camera, plaza, resize, frameCamera, draw,
-    dispose() { unbind(); sky.dispose(); disposeModel(plaza.group); renderer.dispose(); },
+  return { renderer, scene, camera, plaza, resize, frameCamera, draw, setMap: id => plaza.setMap(id),
+    dispose() { unbind(); sky.dispose(); plaza.dispose(); renderer.dispose(); },
   };
 }

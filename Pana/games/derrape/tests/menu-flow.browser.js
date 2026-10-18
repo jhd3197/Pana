@@ -52,7 +52,7 @@ try {
   await page.locator('#shop-close').click();
   await page.locator('#menu-next').click();
   await step(page, 'track');
-  assert.equal(await page.locator('.circuit-choice').count(), 12);
+  assert.equal(await page.locator('.circuit-choice').count(), 13);
   for (const button of await page.locator('.circuit-choice').all()) {
     const id = await button.getAttribute('data-circuit');
     await button.click();
@@ -167,5 +167,5 @@ try {
   assert.equal(await guest.evaluate(() => race.player.def.name), 'El Machito');
   await host.close(); await guest.close();
   assert.deepEqual(errors, []);
-  console.log('Illustrated menu: solo, split, twelve maps, three cups, tires, shop, keyboard, loading, mobile, reduced motion, missing artwork and two-client room passed.');
+  console.log('Illustrated menu: solo, split, thirteen maps, three cups, tires, shop, keyboard, loading, mobile, reduced motion, missing artwork and two-client room passed.');
 } finally { await browser.close(); }

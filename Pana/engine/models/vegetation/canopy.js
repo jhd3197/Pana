@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { M, mesh } from '/engine/models/core/primitives.js';
 import { leafBlade } from '/engine/models/core/botanical-shapes.js';
+import { natureSurface } from '/engine/models/core/nature-surface.js';
 
 // A small shared palette and smooth, gently lobed forms keep the island toy-like
 // without turning every crown into the same faceted disk. Colors survive bake().
@@ -32,12 +33,12 @@ export function foliage(radius, seed = 1, tint = 0x57a344) {
   }
   geo.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
   geo.scale(radius, radius, radius);
-  return mesh(geo, leafMat);
+  return mesh(natureSurface(geo, 'foliage'), leafMat);
 }
 
 function branch(from, to, bottom, top, mat = bark) {
   const a = new THREE.Vector3(...from), b = new THREE.Vector3(...to);
-  const m = mesh(new THREE.CylinderGeometry(top, bottom, a.distanceTo(b), 8), mat);
+  const m = mesh(natureSurface(new THREE.CylinderGeometry(top, bottom, a.distanceTo(b), 8), 'bark'), mat);
   m.position.copy(a).add(b).multiplyScalar(0.5);
   m.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), b.sub(a).normalize());
   return m;
@@ -56,11 +57,11 @@ function leafyCushion(size, seed, tint, small = false) {
     const c = dark.clone().lerp(light, shade); colors.push(c.r, c.g, c.b);
   }
   geo.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3)); geo.computeVertexNormals();
-  return mesh(geo, leafMat);
+  return mesh(natureSurface(geo, 'foliage'), leafMat);
 }
 function leafSprig(group, x, y, z, angle, size, seed, tint) {
   for (let j = -1; j <= 1; j++) {
-    const leaf = mesh(leafBlade(size * (j ? 0.8 : 1), size * 0.27, size * 0.2, tint, 6), bladeMat, x, y + Math.abs(j) * 0.025, z);
+    const leaf = mesh(natureSurface(leafBlade(size * (j ? 0.8 : 1), size * 0.27, size * 0.2, tint, 6), 'foliage'), bladeMat, x, y + Math.abs(j) * 0.025, z);
     leaf.rotation.set(0.5 + 0.15 * Math.sin(seed + j), angle + j * 0.65, 0.22 + Math.sin(seed) * 0.18); group.add(leaf);
   }
 }
@@ -80,7 +81,7 @@ function ribbon(length, width, rise, droop, seed = 0, n = 10) {
   geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
   geo.setIndex(indices);
   geo.computeVertexNormals();
-  return geo;
+  return natureSurface(geo, 'foliage');
 }
 
 const frondMats = [0x45934a, 0x65a64a, 0x86b657].map(color => M(color, { side: THREE.DoubleSide, flatShading: false, roughness: 1 }));

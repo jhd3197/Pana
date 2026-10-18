@@ -43,7 +43,7 @@ export class PoolRoom extends HostRoom {
     if (ended || this.broadcastElapsed >= .05) { this.broadcastElapsed = 0; this.publish(); }
   }
   practice() {
-    this.state = createGame(true); super.practice('Mesa de práctica · juega a tu ritmo');
+    this.state = { ...createGame(true), mapId: this.state.mapId }; super.practice('Mesa de práctica · juega a tu ritmo');
     this.action('start');
   }
 }

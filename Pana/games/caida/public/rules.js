@@ -1,3 +1,5 @@
+import { validTableArena } from '../../../engine/arena-layouts.js';
+import { swapSeats } from '../../../engine/seat-rules.js';
 // Pure deterministic rules. Table variants and sources are documented in caida.md.
 export const TARGET = 24;
 export const RANKS = [1, 2, 3, 4, 5, 6, 7, 10, 11, 12];
@@ -8,6 +10,8 @@ export const deck = () => SUITS.flatMap(suit => RANKS.map(rank => ({ id: `${suit
 export const cardName = c => `${({ 1: 'As', 10: 'Sota', 11: 'Caballo', 12: 'Rey' })[c.rank] || c.rank} de ${c.suit}`;
 export const fallPoints = rank => rank <= 7 ? 1 : rank - 8;
 export const teamOf = (state, seat) => state.options.mode === 'teams' ? seat % 2 : seat;
+export const nextDealer = state => state.phase === 'round-over' ? (state.dealer + 1) % state.players.length : 0;
+export const cantoDescription = name => ({ Ronda: 'Dos cartas iguales', Rondín: 'Tres cartas iguales', Patrulla: 'Tres cartas seguidas', Patria: 'Tres cartas seguidas', Vigía: 'Dos iguales y una vecina', Registro: 'As, caballo y rey' })[name] || name;
 const copy = value => JSON.parse(JSON.stringify(value));
 
 export function canto(hand) {
@@ -17,7 +21,7 @@ export function canto(hand) {
   const pair = a === b ? a : b === c ? b : null, other = a === b ? c : a;
   if (a === c) return { name: 'Rondín', points: 5, ranks };
   if (pair && Math.abs(RANKS.indexOf(pair) - RANKS.indexOf(other)) === 1) return { name: 'Vigía', points: 7, ranks };
-  if (RANKS.indexOf(b) === RANKS.indexOf(a) + 1 && RANKS.indexOf(c) === RANKS.indexOf(b) + 1) return { name: 'Patria', points: 6, ranks };
+  if (RANKS.indexOf(b) === RANKS.indexOf(a) + 1 && RANKS.indexOf(c) === RANKS.indexOf(b) + 1) return { name: 'Patrulla', points: 6, ranks };
   return pair ? { name: 'Ronda', points: fallPoints(pair), ranks } : null;
 }
 
@@ -60,9 +64,10 @@ export function chooseMove(state, seat = state.turn) {
 export class CaidaGame {
   constructor(seed = 1) {
     this.rng = seed >>> 0 || 1; this.options = { mode: 'duel', cantos: true, call: 'down', difficulty: 'normal' };
-    this.phase = 'lobby'; this.round = 0; this.handNumber = 0; this.dealer = 1; this.turn = 0;
+    this.mapId = 'plaza'; this.phase = 'lobby'; this.round = 0; this.handNumber = 0; this.dealer = 1; this.turn = 0;
     this.players = []; this.scores = []; this.stock = []; this.table = []; this.last = null;
     this.lastCapture = null; this.history = []; this.eventId = 0; this.result = null;
+    this.cutAt = null; this.dealCall = null; this.previousRound = null;
     this.revision = 0; this.ledger = {}; this.resetSeats();
   }
   resetSeats() {
@@ -72,14 +77,25 @@ export class CaidaGame {
     this.dealer = this.players.length - 1;
   }
   configure(options) {
-    if (this.phase !== 'lobby') return false;
+    if (this.phase !== 'lobby' || !options || typeof options !== 'object' || Array.isArray(options)) return false;
+    if ('mapId' in options) { if (!validTableArena(options.mapId)) return false; this.mapId = options.mapId; }
     if (options.mode in MODES && options.mode !== this.options.mode) { this.options.mode = options.mode; this.resetSeats(); }
     if (typeof options.cantos === 'boolean') this.options.cantos = options.cantos;
-    if (['up', 'down'].includes(options.call)) this.options.call = options.call;
     if (['easy', 'normal', 'hard'].includes(options.difficulty)) this.options.difficulty = options.difficulty;
     this.revision++; return true;
   }
   random() { let x = this.rng; x ^= x << 13; x ^= x >>> 17; x ^= x << 5; this.rng = x >>> 0; return this.rng / 4294967296; }
+  reseat(from, to) {
+    if (this.phase !== 'lobby' || !swapSeats(this.players, from, to)) return false;
+    this.revision++; return true;
+  }
+  setup() {
+    if (!['round-over', 'finished'].includes(this.phase)) return false;
+    const fresh = new CaidaGame(this.rng);
+    fresh.options = { ...this.options }; fresh.players = this.players; fresh.resetSeats();
+    Object.assign(this, fresh, { mapId: this.mapId, revision: this.revision + 1, ledger: this.ledger });
+    return true;
+  }
   addPlayer(id, name, avatar = {}) {
     const p = this.players.find(p => p.id === id) || this.players.find(p => p.id === null);
     if (!p) return false;
@@ -98,14 +114,32 @@ export class CaidaGame {
     }
   }
   start() {
-    if (this.phase === 'playing') return false;
-    if (this.phase === 'finished') { this.round = 0; this.scores.fill(0); this.dealer = this.players.length - 1; }
-    if (this.round) this.dealer = (this.dealer + 1) % this.players.length;
+    if (!['lobby', 'round-over', 'finished'].includes(this.phase)) return false;
+    this.previousRound = this.result ? copy({ round: this.round, result: this.result, scores: this.scores,
+      names: this.scores.map((_, team) => this.players.filter(p => teamOf(this, p.seat) === team).map(p => p.name).join(' + ')) }) : null;
+    this.dealer = nextDealer(this);
+    if (this.phase === 'finished') { this.round = 0; this.scores.fill(0); }
     this.round++; this.handNumber = 0; this.table = []; this.history = []; this.result = null; this.last = null; this.lastCapture = null;
+    this.cutAt = null; this.dealCall = null; this.turn = (this.dealer + 1) % this.players.length;
     this.stock = deck();
     for (let i = this.stock.length - 1; i > 0; i--) { const j = Math.floor(this.random() * (i + 1)); [this.stock[i], this.stock[j]] = [this.stock[j], this.stock[i]]; }
-    this.players.forEach(p => { p.hand = []; p.captured = []; }); this.phase = 'playing'; this.deal();
-    const calls = this.options.call === 'up' ? [1, 2, 3, 4] : [4, 3, 2, 1]; let points = 0;
+    this.players.forEach(p => { p.hand = []; p.captured = []; p.announced = null; }); this.phase = 'dealing';
+    this.log('dealer', this.dealer, 'Prepara el reparto');
+    this.revision++; return true;
+  }
+  setCall(seat, call) {
+    if (this.phase !== 'dealing' || seat !== this.dealer || !['up', 'down'].includes(call) || call === this.dealCall) return false;
+    this.dealCall = call; this.options.call = call; this.revision++; return true;
+  }
+  cutDeck(seat, at) {
+    if (this.phase !== 'dealing' || seat !== this.dealer || this.cutAt !== null || !Number.isInteger(at) || at < 1 || at >= this.stock.length) return false;
+    this.stock.push(...this.stock.splice(0, at)); this.cutAt = at;
+    this.log('cut', seat, 'Cortó la baraja'); this.revision++; return true;
+  }
+  dealOpening(seat) {
+    if (this.phase !== 'dealing' || seat !== this.dealer || !['up', 'down'].includes(this.dealCall)) return false;
+    this.phase = 'playing'; this.deal();
+    const calls = this.dealCall === 'up' ? [1, 2, 3, 4] : [4, 3, 2, 1]; let points = 0;
     for (const call of calls) {
       let card = this.stock.shift();
       while (this.table.some(c => c.rank === card.rank)) { this.stock.push(card); card = this.stock.shift(); }
@@ -165,10 +199,15 @@ export class CaidaGame {
   accept(id, data, hostId) {
     if (!Number.isSafeInteger(data.seq) || data.seq <= (this.ledger[id] || 0) || data.revision !== this.revision) return false;
     const seat = this.players.findIndex(p => p.id === id); let ok = false;
-    if (data.action === 'start' && id === hostId) ok = this.start();
+    if (data.action === 'start' && (id === hostId || (this.phase === 'round-over' && seat === nextDealer(this)))) ok = this.start();
     else if (data.action === 'configure' && id === hostId) ok = this.configure(data.options || {});
+    else if (data.action === 'seat' && id === hostId) ok = this.reseat(data.from, data.to);
+    else if (data.action === 'setup' && id === hostId) ok = this.setup();
     else if (seat >= 0 && data.action === 'play') ok = this.play(seat, data.card);
     else if (seat >= 0 && data.action === 'chant') ok = this.chant(seat);
+    else if (seat >= 0 && data.action === 'call') ok = this.setCall(seat, data.call);
+    else if (seat >= 0 && data.action === 'cut') ok = this.cutDeck(seat, data.at);
+    else if (seat >= 0 && data.action === 'deal') ok = this.dealOpening(seat);
     if (ok) this.ledger[id] = data.seq; return ok;
   }
   snapshot() { return copy({ ...this }); }

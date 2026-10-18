@@ -61,6 +61,15 @@ HUD panels. The shared settings menu offers plaza and overhead cameras.
 
 ## Notes for agents
 
+The shared lobby seating picker swaps player order with host-only `seat`
+messages validated against the current revision. Poker remains individual play.
+After results, `setup` returns to the same lobby, clearing dealt cards and bets
+while retaining each player's bankroll and the previous dealer's identity.
+`reseat` updates the dealer index to follow that identity; otherwise a seat swap
+would silently change who pays the next blinds. No seating edits are accepted
+during a hand. Only filtered `view()` data is published after setup or swaps.
+`engine/tests/table-seating.browser.js` proves this with two real clients.
+
 Never send a complete game snapshot to a client, even the host. Keep the deck
 inside the rules instance on the server. Only reveal live showdown hands.
 Do not replace side-pot accounting with an equal split of the entire pot.

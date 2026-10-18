@@ -17,6 +17,10 @@ export function applyRaceQuality(renderer, race, quality) {
   race.rain?.lines.geometry.setDrawRange(0,q.rain*2);
   race.trackGroup?.traverse(o => {
     if (o.userData.detailLevel != null) o.visible = o.userData.detailLevel <= q.detail;
-    if (o.material?.userData?.roadDetail) o.material.userData.roadDetail.value = q.detail / 2;
+    if (o.userData.grassField) o.count = q.detail === 2 ? o.userData.grassField.full : q.detail === 1 ? o.userData.grassField.medium : 0;
+    for (const material of [].concat(o.material || [])) {
+      if (material.userData.roadDetail) material.userData.roadDetail.value = q.detail / 2;
+      if (material.userData.natureDetail) material.userData.natureDetail.value = q.detail;
+    }
   });
 }

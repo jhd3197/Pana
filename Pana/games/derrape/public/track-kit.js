@@ -249,6 +249,22 @@ function startLine(group, T) {
 // Jump ramps: yellow wedge, black sides.
 function buildRamps(group, T) {
   for (const r of T.ramps) {
+    if(r.followRoad){
+      const pos=[],idx=[],n=Math.ceil(r.len),base=[];
+      for(let i=0;i<=n;i++){
+        const s=r.s0+r.len*i/n;
+        for(const side of [-1,1]){
+          const p=placeOnTrack(T,s,side*r.hw);pos.push(p.x,p.y+r.h*i/n+.02,p.z);base.push([p.x,p.y+.02,p.z]);
+        }
+        if(i<n){const a=i*2;idx.push(a,a+2,a+1,a+1,a+2,a+3);}
+      }
+      const geo=new THREE.BufferGeometry();geo.setAttribute('position',new THREE.Float32BufferAttribute(pos,3));geo.setIndex(idx);geo.computeVertexNormals();
+      const ramp=new THREE.Mesh(geo,M(0xc5a368,{side:THREE.DoubleSide}));ramp.name='fort-jump-ramp';ramp.receiveShadow=true;group.add(ramp);
+      const sides=[];
+      for(let i=0;i<n;i++)for(const side of [0,1]){const a=i*2+side,b=a+2;for(const v of [base[a],pos.slice(a*3,a*3+3),pos.slice(b*3,b*3+3),base[a],pos.slice(b*3,b*3+3),base[b]])sides.push(...v);}
+      const shell=new THREE.BufferGeometry();shell.setAttribute('position',new THREE.Float32BufferAttribute(sides,3));shell.computeVertexNormals();group.add(new THREE.Mesh(shell,M(0x8f8069,{side:THREE.DoubleSide})));
+      continue;
+    }
     const tri = new THREE.Shape([new THREE.Vector2(0, 0), new THREE.Vector2(r.len, 0), new THREE.Vector2(r.len, r.h)]);
     const ramp = new THREE.Mesh(new THREE.ExtrudeGeometry(tri, { depth: r.hw * 2, bevelEnabled: false }), [
       M(0x16161a),

@@ -5,7 +5,13 @@ import {mkdir,writeFile} from 'node:fs/promises';
 const {chromium}=createRequire(import.meta.url)(process.env.PANA_PLAYWRIGHT_PATH||'playwright');
 const browser=await chromium.launch({headless:true,...(process.env.PANA_BROWSER_PATH?{executablePath:process.env.PANA_BROWSER_PATH}:{})});
 const origin=process.env.PANA_TEST_URL||'http://localhost:8461',output='art/derrape-scenery';
-const ids=['plaza-bandstand','salt-harvester','boat-repair-yard','tire-workshop','flamingo'];
+const ids=[
+  'plaza-bandstand','salt-harvester','boat-repair-yard','tire-workshop','flamingo',
+  'ice-cream-cart','fish-auction-canopy','salt-boardwalk','ceramic-fountain','cafe-terrace',
+  'laundry-courtyard','navigation-beacon','cargo-handcart','fruit-delivery-truck',
+  'water-pump-station','street-mural',
+];
+const tracks=['plaza','salinas','estadio','bululu','delta','llanos'];
 await mkdir(output,{recursive:true});
 const errors=[],proof={models:[],maps:[]};
 try {
@@ -30,11 +36,11 @@ try {
       return {id,name:asset.name,usedBy:asset.usedBy,finite,min:b.min.toArray(),max:b.max.toArray(),...stats,draws:s.stage.renderer.info.render.calls};
     },id);
     assert.ok(result.finite&&result.triangles>200&&result.triangles<20000,JSON.stringify(result));
-    assert.ok(result.min[1]>=-.02&&result.max[1]>.5,`${id}: grounded model`);
+    assert.ok(result.min[1]>=-.02&&result.max[1]>.5,`${id}: grounded model ${JSON.stringify(result.min)}..${JSON.stringify(result.max)}`);
     assert.ok(result.usedBy.includes('Derrape'));
     proof.models.push(result);await page.screenshot({path:`${output}/model-${id}.png`});
   }
-  for(const track of ['plaza','salinas','estadio','bululu']) {
+  for(const track of tracks) {
     const result=await page.evaluate(async({track,ids})=>{
       const s=proofScene;if(s.model){s.model.group.removeFromParent();s.preview.release(s.model);}
       const {makeTrack,getTrack}=await import('/g/derrape/tracks.js'),{applyRaceQuality}=await import('/g/derrape/quality.js');
@@ -97,7 +103,7 @@ try {
   await page.close();
   const game=await browser.newPage({viewport:{width:1440,height:900}});game.on('pageerror',e=>errors.push(String(e)));
   await game.goto(`${origin}/g/derrape/?debug&manual&track=estadio`);await game.waitForFunction(()=>window.garage?.car);
-  for(const track of ['plaza','salinas','estadio','bululu']) {
+  for(const track of tracks) {
     const placed=proof.maps.find(m=>m.track===track).placements;
     await game.evaluate(async track=>{toGarage();buildTrack(track);await startRace(0);race.state='go';race.count=0;document.getElementById('count').textContent='';for(const c of race.cars)if(c!==race.player){c.done=true;c.x+=900;}},track);
     for(const p of placed.filter((p,i,a)=>a.findIndex(q=>q.id===p.id)===i)) {

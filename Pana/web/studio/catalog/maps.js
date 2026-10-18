@@ -1,7 +1,28 @@
+import { ARENAS,TABLE_ARENAS } from '/engine/arena-layouts.js';
 import { TRACK_DEFINITIONS } from '/g/derrape/track-definitions.js';
 import { STATIONS } from '/g/cocina/rules.js';
 
 export const MAPS = [
+  ...TABLE_ARENAS.filter(map=>!ARENAS.some(a=>a.id===map.id)).map(map=>({
+    id:`table-${map.id}`,name:map.name,category:'Mapas',source:'/engine/puerto-tables.js',
+    dependencies:['/engine/models/props/casa-guipuzcoana.js','/engine/models/props/san-carlos-fortress.js','/engine/models/props/port-silos.js'],factory:'createPuertoTableEnvironment',
+    usedBy:['Caída','Dominó','Póquer'],game:'/g/caida/',description:map.description,
+    async build(){const {createPuertoTableEnvironment}=await import('/engine/puerto-tables.js');return createPuertoTableEnvironment(map.id);},
+  })),
+  { id: 'colonial-collection', name: 'Cincuenta casas del pueblo', category: 'Mapas', source: '/engine/colonial-house-collection.js', factory: 'createColonialHouseCollection',
+    houseMaker: true, usedBy: ['Pana Studio'], pack: 'casas-coloniales', description: 'Cincuenta casas con seis ventanas, tres techos, tres distribuciones y cuatro acabados de pared. Elige una casa para editarla o guarda la colección completa.',
+    async build() { const { createColonialHouseCollection } = await import('/engine/colonial-house-collection.js'); return createColonialHouseCollection(); },
+  },
+  { id: 'colonial-street', name: 'Calle de las flores', category: 'Mapas', source: '/engine/colonial-street.js', factory: 'createColonialStreet',
+    usedBy: ['Pana Studio'], pack: 'casas-coloniales', description: 'Diez casas generadas sobre una calle con pendiente, aceras, balcones y jardines. Muestra del creador de casas.',
+    async build() { const { createColonialStreet } = await import('/engine/colonial-street.js'); return createColonialStreet(); },
+  },
+  ...ARENAS.filter(map => map.id !== 'plaza').map(map => ({
+    id: `arena-${map.id}`, name: map.name, category: 'Mapas', source: '/engine/arenas.js',
+    dependencies: ['/engine/arena-layouts.js'], factory: 'createArenaEnvironment',
+    usedBy: ['Escondidas', '¡Pintura!', 'Billar', 'Caída'], game: '/g/escondidas/', description: map.description,
+    async build() { const { createArenaEnvironment } = await import('/engine/arenas.js'); return createArenaEnvironment(map.id); },
+  })),
   { id: 'reliquia', name: 'Reliquia · La mina del sol', category: 'Mapas', source: '/g/reliquia/scene.js', dependencies: ['/g/reliquia/layout.js','/engine/models/props/reliquia.js','/engine/models/props/jungle.js'], factory: 'createExpeditionWorld', usedBy: ['Reliquia'], game: '/g/reliquia/', description: 'Mina con puente colgante, dos ruedas cooperativas, patio de momias y cámara de la reliquia.',
     async build() { const { Box3, Vector3, Scene } = await import('three'); const { createExpeditionWorld } = await import('/g/reliquia/scene.js'); const model = createExpeditionWorld(); return { ...model, update: (t, dt) => model.update(t, {}, dt) }; },
   },

@@ -26,7 +26,7 @@ try{
       return {forward:c.vf,slide:Math.abs(c.vr),groundError:Math.abs(c.y-T.groundAt(c.x,c.z))};
     }
     let dry,moist;try{dry=simulate(true);moist=simulate(false);}finally{T.def.gripAt=original;}
-    const defaults=TRACKS.filter(t=>t.id!=='chichi').map(def=>roadGripAt({def},wet.x,wet.z));
+    const defaults=TRACKS.filter(t=>!['chichi','puerto'].includes(t.id)).map(def=>roadGripAt({def},wet.x,wet.z));
     const steam=[];T.animated.forEach(o=>o.userData.tick?.(19,.016));
     T.group.traverse(o=>{if(o.material?.uniforms?.rise)steam.push({time:o.material.uniforms.time.value,opacity:o.material.uniforms.opacity.value,count:o.count});});
     let riverAboveRoad=0;const river=T.group.getObjectByName('chichi-river'),p=river.geometry.attributes.position;
@@ -41,7 +41,7 @@ try{
   assert.ok(driving.moist.slide>driving.dry.slide*1.15,'wet road retains more lateral slip in the real car simulation');
   assert.ok(driving.moist.forward>driving.dry.forward+.15,'wet braking needs more distance');
   assert.ok(driving.moist.groundError<.01&&driving.dry.groundError<.01,'both handling samples stay grounded');
-  assert.ok(driving.defaults.every(g=>g===1),'other circuits retain dry handling');
+  assert.ok(driving.defaults.every(g=>g===1),'circuits without authored wet or mud sections retain dry handling');
   assert.equal(driving.riverAboveRoad,0,'river stays below bridge driving decks');
   assert.ok(driving.steam.length>=8&&driving.steam.every(s=>s.time===19&&s.opacity<=.35),'environment ticks every localized steam field once');
   for(const [name,point] of [['springs',[128,-454]],['switchbacks',[-295,-295]],['forest',[-230,-90]],['dive-school',[-80,285]],['river',[170,275]],['climb',[315,-110]]]){

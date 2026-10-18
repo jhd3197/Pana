@@ -112,7 +112,7 @@ export function createMenuFlow({ tracks, getState, pickTrack, localPlay, initial
     setMenuImage($('ready-art'), trackArt(launchTrack.id));
     $('ready-title').textContent = cup?.name || state.track.name;
     $('ready-format').textContent = state.online ? 'Carrera con panas' : state.split ? 'Dos panas · pantalla dividida' : format;
-    $('ready-route').textContent = cup ? `La primera parada: ${launchTrack.name}. ${cup.stages.length} carreras para llevarte la copa.` : state.track.blurb;
+    $('ready-route').textContent = cup ? `La primera parada: ${launchTrack.name}. ${cup.stages.length} carreras para llevarte la copa.` : state.trackSummary || state.track.blurb;
     $('ready-car').textContent = state.car.name;
     $('ready-wheels').textContent = state.wheel.name;
     $('ready-controls').textContent = state.split && !state.online ? 'Pana 1: WASD · Pana 2: flechas. También pueden usar controles.' : 'Acelera con W o ↑ · derrapa con Shift · lanza con E. En el teléfono, toca los controles.';

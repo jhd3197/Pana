@@ -24,7 +24,7 @@ export function bake(root, { cellSize = Infinity } = {}) {
       m.matrixWorld.decompose(clone.position, clone.quaternion, clone.scale); keep.push(clone); return;
     }
     if (geo.index) { const indexed = geo; geo = indexed.toNonIndexed(); indexed.dispose(); }
-    for (const name of Object.keys(geo.attributes)) if (!['position', 'normal', 'color'].includes(name)) geo.deleteAttribute(name);
+    for (const name of Object.keys(geo.attributes)) if (!['position', 'normal', 'color', 'natureSurface'].includes(name)) geo.deleteAttribute(name);
     if (!geo.attributes.normal) geo.computeVertexNormals();
     geo.applyMatrix4(m.matrixWorld);
     // same look = same bucket, even when two builders made separate materials
@@ -39,6 +39,9 @@ export function bake(root, { cellSize = Infinity } = {}) {
   });
   const out = new THREE.Group();
   for (const { mat, geos, castShadow, receiveShadow } of buckets.values()) {
+    if (geos.some(g => g.attributes.natureSurface)) for (const g of geos) {
+      if (!g.attributes.natureSurface) g.setAttribute('natureSurface', new THREE.BufferAttribute(new Uint8Array(g.attributes.position.count), 1, true));
+    }
     const merged = new THREE.Mesh(mergeGeometries(geos, false), mat);
     merged.castShadow = castShadow;
     merged.receiveShadow = receiveShadow;

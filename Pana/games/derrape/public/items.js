@@ -130,7 +130,7 @@ export function createItems(hooks) {
   const along = (s, off = 0) => {
     const p = pointAt(s), p2 = pointAt(s + 0.5);
     const tx = p2.x - p.x, tz = p2.y - p.y, l = Math.hypot(tx, tz) || 1;
-    return { x: p.x - tz / l * off, z: p.y + tx / l * off, h: Math.atan2(tx, tz) };
+    return { x: p.x - tz / l * off, z: p.y + tx / l * off, y: T.heightAtS(s), h: Math.atan2(tx, tz) };
   };
   const fragments = new FragmentBurst(scene, groundAt);
   const padTex = padTexture();
@@ -143,7 +143,7 @@ export function createItems(hooks) {
     const geo = padGeo.clone();
     geo.rotateY(a.h); geo.translate(a.x, 0, a.z);
     const pos = geo.attributes.position;
-    for (let i = 0; i < pos.count; i++) pos.setY(i, groundAt(pos.getX(i), pos.getZ(i)) + (T.def.environment ? 0.16 : 0.06));
+    for (let i = 0; i < pos.count; i++) pos.setY(i, groundAt(pos.getX(i), pos.getZ(i), a.y) + (T.def.environment ? 0.16 : 0.06));
     geo.computeVertexNormals();
     const m = new THREE.Mesh(geo, padMat);
     m.receiveShadow = true;
@@ -158,7 +158,7 @@ export function createItems(hooks) {
   const boxes = [];
   for (const s of boxRows) for (const off of boxLanes) {
     const a = along(s, off), m = crate.visual.clone();
-    const y = groundAt(a.x, a.z);
+    const y = groundAt(a.x, a.z, a.y);
     m.position.set(a.x, y + 0.86, a.z);
     m.rotation.y = a.h;
     scene.add(m);
@@ -173,7 +173,7 @@ export function createItems(hooks) {
     for (let i = 0; i < 5; i++) {
       const off = [-3, 0, 3, 0][row % 4] + Math.sin(i / 4 * Math.PI) * (row % 2 ? -0.8 : 0.8);
       const a = along(u * T.TOTAL + i * 5, off), m = coin.clone();
-      const y = groundAt(a.x, a.z);
+      const y = groundAt(a.x, a.z, a.y);
       m.position.set(a.x, y + 1.3, a.z);
       scene.add(m);
       coins.push({ ...a, y, m, down: 0, phase: i * 0.3 });
@@ -254,7 +254,7 @@ export function createItems(hooks) {
       scene.add(m);
       // Find the direction along the circuit from the actual launch heading.
       // A reverse throw keeps travelling backward when it seeks the road.
-      const s = paramOf(c.x, c.z), a = pointAt(s), b = pointAt(s + 0.5);
+      const s = paramOf(c.x, c.z, c.y), a = pointAt(s), b = pointAt(s + 0.5);
       const travel = (b.x - a.x) * fx + (b.y - a.y) * fz >= 0 ? 1 : -1;
       const id = nextId(c);
       flying.push({ id, kind: 'mango', m, owner: c, h, speed, travel, vy: 3.5, t: 0, spin: rand(8, 14), seek: juiced ? 34 : 22 });
@@ -271,7 +271,7 @@ export function createItems(hooks) {
       m.rotation.y = h;
       scene.add(m);
       const id = nextId(c), speed = 50 + (juiced ? 12 : 0) + Math.max(0, c.vf * direction);
-      const s = paramOf(c.x, c.z), a = pointAt(s), b = pointAt(s + 0.5);
+      const s = paramOf(c.x, c.z, c.y), a = pointAt(s), b = pointAt(s + 0.5);
       const travel = (b.x - a.x) * fx + (b.y - a.y) * fz >= 0 ? 1 : -1;
       flying.push({ id, kind: 'cohete', m, owner: c, h, speed, travel, vy: 0, t: 0, target });
       emit('throw', c, { id, kind: 'cohete', x: m.position.x, y: m.position.y, z: m.position.z, h, speed, travel, target: target?.netId });
@@ -286,7 +286,7 @@ export function createItems(hooks) {
       const m = chancla.clone();
       m.position.set(c.x, c.y + 6, c.z);
       scene.add(m);
-      const id = nextId(c), s = paramOf(c.x, c.z);
+      const id = nextId(c), s = paramOf(c.x, c.z, c.y);
       flying.push({ id, kind: 'chancleta', m, owner: c, h: c.h, speed: 110, travel: 1, vy: 0, t: 0, target, s, spin: 9 });
       emit('throw', c, { id, kind: 'chancleta', x: c.x, y: c.y + 6, z: c.z, h: c.h, speed: 110, travel: 1, target: target.netId, s });
       sound.sweep(1200, 400, 0.6, 'triangle', 0.12);
@@ -313,7 +313,7 @@ export function createItems(hooks) {
     } else if (kind === 'trampa') {
       const m = trap.clone();
       const x = c.x + fx * 3.6, z = c.z + fz * 3.6;
-      m.position.set(x, groundAt(x, z) + 0.86, z);
+      m.position.set(x, groundAt(x, z,c.y) + 0.86, z);
       m.rotation.y = c.h;
       scene.add(m);
       const id = nextId(c);
@@ -323,7 +323,7 @@ export function createItems(hooks) {
       feedback(c, direction < 0 ? '¡Caja trampa detrás!' : '¡Caja trampa adelante!');
     } else if (kind === 'concha') {
       const m = peel.clone();
-      m.position.set(c.x + fx * 3.4, groundAt(c.x + fx * 3.4, c.z + fz * 3.4) + 0.15, c.z + fz * 3.4);
+      m.position.set(c.x + fx * 3.4, groundAt(c.x + fx * 3.4, c.z + fz * 3.4,c.y) + 0.15, c.z + fz * 3.4);
       m.rotation.y = Math.random() * 6;
       scene.add(m);
       const id = nextId(c);
@@ -694,7 +694,7 @@ export function createItems(hooks) {
         const dx = c.x - p.x, dz = c.z - p.z;
         const fwd = dx * Math.sin(p.h) + dz * Math.cos(p.h);
         const side = dx * Math.cos(p.h) - dz * Math.sin(p.h);
-        if (Math.abs(fwd) < PAD_L / 2 && Math.abs(side) < PAD_W / 2 + 0.6) {
+        if (Math.abs(c.y-p.y)<2 && Math.abs(fwd) < PAD_L / 2 && Math.abs(side) < PAD_W / 2 + 0.6) {
           if (c.boost < 0.5) sound.turbo();
           c.boost = Math.max(c.boost, 1.2);
         }
@@ -732,7 +732,7 @@ export function createItems(hooks) {
       if (f.kind === 'chancleta') {
         flyChancleta(f, dt);
       } else {
-        const s = paramOf(pos.x, pos.z), aim = pointAt(s + f.travel * 10);
+        const s = paramOf(pos.x, pos.z, pos.y), aim = pointAt(s + f.travel * 10);
         let want = Math.atan2(aim.x - pos.x, aim.y - pos.z), best = f.seek || 22;
         if (f.kind === 'cohete' && f.target && !f.target.done) {
           // Rockets follow the road until the target is close, then lock on.
@@ -754,12 +754,12 @@ export function createItems(hooks) {
         pos.x += Math.sin(f.h) * f.speed * dt;
         pos.z += Math.cos(f.h) * f.speed * dt;
         if (f.kind === 'cohete') {
-          pos.y += (groundAt(pos.x, pos.z) + 1.3 - pos.y) * Math.min(1, dt * 10);
+          pos.y += (groundAt(pos.x, pos.z, pos.y) + 1.3 - pos.y) * Math.min(1, dt * 10);
           f.m.rotation.set(0, f.h, 0);
           if (Math.random() < 0.6) puffs.spawn(pos.clone(), { color: pick([0xffae2b, 0xd8d8de]), count: 1, size: 0.4, rise: 0.3, life: 0.35, spread: 0.2 });
         } else {
           f.vy -= hooks.G * 0.6 * dt; pos.y += f.vy * dt;
-          const floor = groundAt(pos.x, pos.z) + 0.6;
+          const floor = groundAt(pos.x, pos.z, pos.y) + 0.6;
           if (pos.y < floor) { pos.y = floor; f.vy = Math.abs(f.vy) * 0.55 + 2; }
           f.m.rotation.x += f.spin * dt; f.m.rotation.y = f.h;
         }
@@ -786,7 +786,7 @@ export function createItems(hooks) {
       }
       if (c) f.dead = true;
       const life = f.kind === 'chancleta' ? Math.max(45, T.TOTAL / 65 + 12) : f.kind === 'cohete' ? 6 : 3;
-      if ((f.kind === 'mango' && Math.abs(offsetOf(pos.x, pos.z)) > T.HW - 0.4) || f.t > life) f.dead = true;
+      if ((f.kind === 'mango' && Math.abs(offsetOf(pos.x, pos.z, pos.y)) > T.HW - 0.4) || f.t > life) f.dead = true;
       if (f.dead) {
         if (f.kind === 'cohete' || f.kind === 'chancleta') explode(pos.clone());
         else splat(pos.clone());
@@ -817,7 +817,7 @@ export function createItems(hooks) {
     if (isGhost(target)) {
       // Circle above a recovering target instead of wasting the item on the road.
       pos.set(target.x + Math.sin(f.t * 4) * 4, target.y + 8, target.z + Math.cos(f.t * 4) * 4);
-      f.s = paramOf(target.x, target.z); f.diving = false;
+      f.s = paramOf(target.x, target.z, target.y); f.diving = false;
       return;
     }
     const close = Math.hypot(target.x - pos.x, target.z - pos.z) < 16;
@@ -828,13 +828,13 @@ export function createItems(hooks) {
       pos.x += dx / d * Math.min(v, d); pos.y += dy / d * Math.min(v, d); pos.z += dz / d * Math.min(v, d);
       return;
     }
-    const gap = (paramOf(target.x, target.z) - f.s % T.TOTAL + T.TOTAL) % T.TOTAL;
+    const gap = (paramOf(target.x, target.z, target.y) - f.s % T.TOTAL + T.TOTAL) % T.TOTAL;
     f.speed = Math.max(f.speed, chancletaSpeed(gap, Math.max(0, target.vf || 0)));
     f.s += Math.min(gap, f.speed * dt);
     const p = pointAt(f.s);
     pos.x = p.x;
     pos.z = p.y;
-    pos.y += (groundAt(pos.x, pos.z) + 7 - pos.y) * Math.min(1, dt * 4);
+    pos.y += (groundAt(pos.x, pos.z, pos.y) + 7 - pos.y) * Math.min(1, dt * 4);
   }
 
   return { clear, dispose, update, use, select, boxes, coins, pads, fragments,

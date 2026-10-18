@@ -24,6 +24,29 @@ export function finish(group, name) {
   return out;
 }
 
+export function paintFinish(group, name) {
+  group.traverse(o => {
+    if (!o.isMesh || o.material.map || o.material.bumpMap || Array.isArray(o.material) || o.material.transparent || o.material.emissive?.getHex()) return;
+    const m = o.material;
+    if (!m.vertexColors && !o.geometry.attributes.color) {
+      const prev = o.geometry, c = m.color, colors = new Float32Array(prev.attributes.position.count * 3);
+      for (let i = 0; i < colors.length; i += 3) { colors[i] = c.r; colors[i + 1] = c.g; colors[i + 2] = c.b; }
+      o.geometry = prev.clone();
+      o.geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+      prev.dispose();
+    }
+    const metallic = (m.metalness || 0) >= 0.25;
+    o.material = M(0xffffff, {
+      vertexColors: true,
+      flatShading: !!m.flatShading,
+      roughness: metallic ? 0.42 : 0.9,
+      metalness: metallic ? 0.45 : 0,
+      side: m.side,
+    });
+  });
+  return finish(group, name);
+}
+
 export function rounded(w, h, d, material, x = 0, y = 0, z = 0, radius = 0.045) {
   return mesh(new RoundedBoxGeometry(w, h, d, 1, Math.min(radius, w / 4, h / 4, d / 4)), material, x, y, z);
 }

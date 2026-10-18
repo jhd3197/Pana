@@ -87,7 +87,9 @@ try {
   // Live remote cars: the guest's view of the host's car lies on the path the
   // host actually drove a moment ago (?speed=5 stretches the 110 ms delay).
   await host.evaluate(() => { window.trail = []; window.trailTimer = setInterval(() => race.player && trail.push([race.player.x, race.player.z, getNet().now()]), 20); });
-  await guest.waitForTimeout(1500);
+  // Wait for an actual observed path. A fixed delay can expire with zero
+  // samples while another WebGL page is compiling, yielding Infinity below.
+  await host.waitForFunction(() => trail.length > 10 && trail.at(-1)[2] - trail[0][2] > 1500, null, { timeout: 30000 });
   const seen = await guest.evaluate((id) => { const c = race.cars.find(c => c.netId === id); return { x: c.x, z: c.z, buf: c.buf.length, now:getNet().now(), delay:c.delay, poses:c.buf.map(p=>({t:p.t,x:p.p[0],z:p.p[2]})) }; }, h.id);
   const gap = await host.evaluate(({ x, z }) => Math.min(...trail.slice(1).map(([bx, bz], i) => {
     const [ax, az] = trail[i], dx = bx - ax, dz = bz - az, l = dx * dx + dz * dz || 1;

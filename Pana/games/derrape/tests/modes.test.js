@@ -2,11 +2,12 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { CUPS, POINTS, trophyFor, rubberBand, DIFFICULTY, cleanLaps, battleOrder, battleOver, BATTLE_TIME } from '../public/modes.js';
 import { TRACK_IDS } from '../public/online-rules.js';
+import { STANDALONE_TRACKS } from '../public/cup-definitions.js';
 
-test('three available cups of four real tracks cover the whole circuit list', () => {
+test('three four-race cups and explicitly standalone tracks cover the circuit list', () => {
   const all = CUPS.flatMap(c => c.stages.map(stage => stage.track));
   assert.equal(all.length, 12);
-  assert.deepEqual([...all].sort(), [...TRACK_IDS].sort());
+  assert.deepEqual([...all, ...STANDALONE_TRACKS].sort(), [...TRACK_IDS].sort());
 });
 
 test('championship points and podium trophies keep the established scale', () => {

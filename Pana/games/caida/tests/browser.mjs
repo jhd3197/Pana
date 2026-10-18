@@ -27,6 +27,13 @@ async function advance(host, humans) {
   }
   await host.waitForFunction(r => caidaDebug.room.state.revision > r, state.revision); return true;
 }
+async function prepare(page) {
+  await page.waitForFunction(() => caidaDebug.room.state.phase === 'dealing');
+  if (await page.evaluate(() => caidaDebug.room.state.dealer === caidaDebug.room.seat)) {
+    await page.locator('#call-four').click(); await page.locator('#deal-cards').click();
+  }
+  await page.waitForFunction(() => caidaDebug.room.state.phase === 'playing');
+}
 try {
   const a = await open('Juan'), b = await open('María');
   await a.waitForFunction(() => caidaDebug.room.members.size === 2); await b.waitForFunction(() => caidaDebug.room.seat === 1);
@@ -34,7 +41,7 @@ try {
   assert.equal(await a.evaluate(() => caidaDebug.world.characters[0].group.userData.characterVersion), 'studio-v1');
   assert.equal(await b.locator('#start').isDisabled(), true); check('3D scene, Spanish cards, shared Pana characters and two connected seats');
   await a.locator('#cantos').uncheck(); await b.waitForFunction(() => !caidaDebug.room.state.options.cantos);
-  await a.locator('#start').click(); await b.waitForFunction(() => caidaDebug.room.state.phase === 'playing');
+  await a.locator('#start').click(); await prepare(a); await b.waitForFunction(() => caidaDebug.room.state.phase === 'playing');
   const humans = new Map([[await a.evaluate(() => caidaDebug.room.id), a], [await b.evaluate(() => caidaDebug.room.id), b]]);
   for (let i = 0; i < 8; i++) if (!await advance(a, humans)) break;
   await a.screenshot({ path: 'art/caida/desktop-playing.png' });
@@ -48,20 +55,22 @@ try {
   humans.clear(); humans.set(await b.evaluate(() => caidaDebug.room.id), b);
   for (let i = 0; i < 100; i++) if (!await advance(b, humans)) break;
   await b.locator('#result').waitFor({ state: 'visible' }); await b.screenshot({ path: 'art/caida/results.png' });
-  await b.locator('#next-round').click(); await b.waitForFunction(() => caidaDebug.room.state.phase === 'playing'); check('full deal, card counting and next round');
+  await b.locator('#next-round').click(); await prepare(b); check('full deal, card counting and next round');
   await b.close();
   const m = await open('Móvil', true, `${code}-mobile`); await m.screenshot({ path: 'art/caida/mobile-lobby.png' }); assert.equal(await m.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
-  await m.locator('#cantos').uncheck(); await m.locator('#start').tap();
+  await m.locator('#cantos').uncheck(); await m.locator('#start').tap(); await prepare(m);
+  await m.waitForFunction(() => caidaDebug.room.state.turn === caidaDebug.room.seat);
   await m.locator('.hand-card').first().tap(); assert.equal(await m.locator('#play').isDisabled(), false); await m.locator('#play').tap();
   await m.waitForTimeout(1500); await m.screenshot({ path: 'art/caida/mobile-playing.png' }); check('390px touch layout, selection and confirmation');
   await m.evaluate(() => { caidaDebug.room.cut(); }); await m.waitForFunction(() => !caidaDebug.room.connected);
-  await m.locator('#practice').click(); await m.locator('#mode').selectOption('teams'); await m.locator('#start').click();
+  await m.locator('#practice').click(); await m.locator('#mode').selectOption('teams'); await m.locator('#start').click(); await prepare(m);
   await m.waitForFunction(() => caidaDebug.room.state.players.length === 4 && caidaDebug.world.characters.filter(Boolean).length === 4); check('offline fallback and four-seat mode');
   await m.screenshot({ path: 'art/caida/mobile-teams.png' });
   const studio = await browser.newPage({ viewport: { width: 1440, height: 900 } }); studio.on('pageerror', e => errors.push(e.message));
   await studio.goto(`${base}/studio.html#caida-card`); await studio.locator('#startup').waitFor({ state: 'hidden', timeout: 300000 });
   for (const id of ['caida-card', 'caida-score-token', 'domino-table', 'domino-chair']) {
-    await studio.locator('#search').fill(''); await studio.locator(`[data-asset="${id}"]`).click();
+    await studio.locator('#back-library').click();
+    await studio.locator('#search').fill(id); await studio.locator(`[data-asset="${id}"]`).click();
     await studio.waitForFunction(id => panaLibrary.selected === id && document.querySelector('#preview-status').hidden, id, { timeout: 90000 });
     assert.ok(await studio.evaluate(() => panaLibrary.current.group.children.length > 0));
   }

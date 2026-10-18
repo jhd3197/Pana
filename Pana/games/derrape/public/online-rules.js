@@ -7,6 +7,7 @@ import { WHEEL_DEFINITIONS } from './wheel-definitions.js';
 import { PAINTS, HORNS, FLAMES } from './shop.js';
 
 export const LAPS = 3;
+export const lapsForTrack = id => TRACK_DEFINITIONS.find(t=>t.id===id)?.defaultLaps ?? LAPS;
 export const MIN_GRID = 4;               // bots fill the grid up to four racers
 export const GP_GRID = 8;                // Grand Prix defaults to eight racers
 export const POSE_HZ = 20;

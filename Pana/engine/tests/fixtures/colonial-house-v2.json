@@ -1,0 +1,308 @@
+{
+  "version": 2,
+  "seed": 103,
+  "family": "casa-baja",
+  "width": 6.8,
+  "depth": 5.4,
+  "floors": 1,
+  "floorHeight": 3.8,
+  "palette": "cielo",
+  "planting": "entrada",
+  "plantSeed": 103,
+  "door": "square",
+  "partyWalls": [],
+  "windowStyle": "reja",
+  "roof": "tejas",
+  "layout": "clasica",
+  "inputs": {
+    "seed": 103,
+    "family": "casa-baja",
+    "width": 6.8,
+    "depth": 5.4,
+    "floors": 1,
+    "floorHeight": 3.8,
+    "palette": "cielo",
+    "planting": "entrada",
+    "plantSeed": 103,
+    "door": "square",
+    "partyWalls": [],
+    "windowStyle": "reja",
+    "roof": "tejas",
+    "layout": "clasica"
+  },
+  "base": 0.18,
+  "bays": 2,
+  "balcony": false,
+  "porch": false,
+  "crest": false,
+  "faces": [
+    {
+      "id": "front",
+      "span": 6.8,
+      "z": 2.7,
+      "angle": 0,
+      "position": [
+        0,
+        0,
+        2.7
+      ],
+      "openings": [
+        {
+          "id": "front-0-0",
+          "face": "front",
+          "floor": 0,
+          "x": -1.55,
+          "bottom": 0.18,
+          "width": 1.35,
+          "height": 3.078,
+          "kind": "door",
+          "windowStyle": "reja",
+          "arch": false
+        },
+        {
+          "id": "front-0-1",
+          "face": "front",
+          "floor": 0,
+          "x": 1.55,
+          "bottom": 0.788,
+          "width": 1.23,
+          "height": 2.4699999999999998,
+          "kind": "window",
+          "windowStyle": "reja",
+          "arch": false
+        }
+      ]
+    },
+    {
+      "id": "rear",
+      "span": 6.8,
+      "z": 0,
+      "angle": 3.141592653589793,
+      "position": [
+        0,
+        0,
+        -2.7
+      ],
+      "openings": [
+        {
+          "id": "rear-0-0",
+          "face": "rear",
+          "floor": 0,
+          "x": -1.55,
+          "bottom": 0.788,
+          "width": 1.23,
+          "height": 2.4699999999999998,
+          "kind": "window",
+          "windowStyle": "reja",
+          "arch": false
+        },
+        {
+          "id": "rear-0-1",
+          "face": "rear",
+          "floor": 0,
+          "x": 1.55,
+          "bottom": 0.788,
+          "width": 1.23,
+          "height": 2.4699999999999998,
+          "kind": "window",
+          "windowStyle": "reja",
+          "arch": false
+        }
+      ]
+    },
+    {
+      "id": "left",
+      "span": 5.4,
+      "z": 0,
+      "angle": -1.5707963267948966,
+      "position": [
+        -3.4,
+        0,
+        0
+      ],
+      "openings": [
+        {
+          "id": "left-0-0",
+          "face": "left",
+          "floor": 0,
+          "x": -1.2000000000000002,
+          "bottom": 0.788,
+          "width": 1.23,
+          "height": 2.4699999999999998,
+          "kind": "window",
+          "windowStyle": "reja",
+          "arch": false
+        },
+        {
+          "id": "left-0-1",
+          "face": "left",
+          "floor": 0,
+          "x": 1.2000000000000002,
+          "bottom": 0.788,
+          "width": 1.23,
+          "height": 2.4699999999999998,
+          "kind": "window",
+          "windowStyle": "reja",
+          "arch": false
+        }
+      ]
+    },
+    {
+      "id": "right",
+      "span": 5.4,
+      "z": 0,
+      "angle": 1.5707963267948966,
+      "position": [
+        3.4,
+        0,
+        0
+      ],
+      "openings": [
+        {
+          "id": "right-0-0",
+          "face": "right",
+          "floor": 0,
+          "x": -1.2000000000000002,
+          "bottom": 0.788,
+          "width": 1.23,
+          "height": 2.4699999999999998,
+          "kind": "window",
+          "windowStyle": "reja",
+          "arch": false
+        },
+        {
+          "id": "right-0-1",
+          "face": "right",
+          "floor": 0,
+          "x": 1.2000000000000002,
+          "bottom": 0.788,
+          "width": 1.23,
+          "height": 2.4699999999999998,
+          "kind": "window",
+          "windowStyle": "reja",
+          "arch": false
+        }
+      ]
+    }
+  ],
+  "openings": [
+    {
+      "id": "front-0-0",
+      "face": "front",
+      "floor": 0,
+      "x": -1.55,
+      "bottom": 0.18,
+      "width": 1.35,
+      "height": 3.078,
+      "kind": "door",
+      "windowStyle": "reja",
+      "arch": false
+    },
+    {
+      "id": "front-0-1",
+      "face": "front",
+      "floor": 0,
+      "x": 1.55,
+      "bottom": 0.788,
+      "width": 1.23,
+      "height": 2.4699999999999998,
+      "kind": "window",
+      "windowStyle": "reja",
+      "arch": false
+    },
+    {
+      "id": "rear-0-0",
+      "face": "rear",
+      "floor": 0,
+      "x": -1.55,
+      "bottom": 0.788,
+      "width": 1.23,
+      "height": 2.4699999999999998,
+      "kind": "window",
+      "windowStyle": "reja",
+      "arch": false
+    },
+    {
+      "id": "rear-0-1",
+      "face": "rear",
+      "floor": 0,
+      "x": 1.55,
+      "bottom": 0.788,
+      "width": 1.23,
+      "height": 2.4699999999999998,
+      "kind": "window",
+      "windowStyle": "reja",
+      "arch": false
+    },
+    {
+      "id": "left-0-0",
+      "face": "left",
+      "floor": 0,
+      "x": -1.2000000000000002,
+      "bottom": 0.788,
+      "width": 1.23,
+      "height": 2.4699999999999998,
+      "kind": "window",
+      "windowStyle": "reja",
+      "arch": false
+    },
+    {
+      "id": "left-0-1",
+      "face": "left",
+      "floor": 0,
+      "x": 1.2000000000000002,
+      "bottom": 0.788,
+      "width": 1.23,
+      "height": 2.4699999999999998,
+      "kind": "window",
+      "windowStyle": "reja",
+      "arch": false
+    },
+    {
+      "id": "right-0-0",
+      "face": "right",
+      "floor": 0,
+      "x": -1.2000000000000002,
+      "bottom": 0.788,
+      "width": 1.23,
+      "height": 2.4699999999999998,
+      "kind": "window",
+      "windowStyle": "reja",
+      "arch": false
+    },
+    {
+      "id": "right-0-1",
+      "face": "right",
+      "floor": 0,
+      "x": 1.2000000000000002,
+      "bottom": 0.788,
+      "width": 1.23,
+      "height": 2.4699999999999998,
+      "kind": "window",
+      "windowStyle": "reja",
+      "arch": false
+    }
+  ],
+  "footprint": {
+    "width": 6.8,
+    "depth": 5.4
+  },
+  "envelope": {
+    "min": [
+      -4.5,
+      0,
+      -3.6
+    ],
+    "max": [
+      4.5,
+      5.48,
+      4.4
+    ]
+  },
+  "entrance": {
+    "x": -1.55,
+    "z": 2.7,
+    "width": 1.95,
+    "depth": 1.3
+  }
+}

@@ -1,4 +1,4 @@
-import { THREE, terrain, put, finish, instances, scatter, clear } from './world-kit.js';
+import { THREE, terrain, put, foundation, finish, instances, scatter, clear } from './world-kit.js';
 import { waterGrid } from './water-world-kit.js';
 import { waterAnimator } from '/engine/models/effects/water-surface.js';
 import { crossing } from './country-details.js';
@@ -6,6 +6,7 @@ import { baseHeight, riverAt, VILLAGE } from './delta-layout.js';
 import { palafitoHouse, landingShelter } from '/engine/models/props/delta.js';
 import { wetlandLanding, riverCanoe } from '/engine/models/props/llano-life.js';
 import { fishingBoat, fishCrates, fishingNetRack, channelBuoy } from '/engine/models/props/coastal.js';
+import { fishAuctionCanopy } from '/engine/models/props/fish-auction-canopy.js';
 import { mangrove } from '/engine/models/vegetation/mangrove.js';
 import { reeds } from '/engine/models/vegetation/reeds.js';
 import { palm } from '/engine/models/vegetation/palm.js';
@@ -34,6 +35,8 @@ export function deltaWorld(T) {
     put(village,i%2?fishingBoat():riverCanoe(),x,z,-.18,i*.6);
     put(village,channelBuoy(),x+6,z+4,-.2);
   }
+  const auction=foundation(group,fishAuctionCanopy(),-155,135,world.groundAt,{rotation:-0.4,scale:1.25,radius:7,color:0x8a795d});
+  auction.userData.footprintRadius=7;auction.userData.support='delta-landing';occupied.push([-155,135,18]);
   group.add(finish(village));
   const plantsOk=(x,z)=>!occupied.some(([a,b,r])=>Math.hypot(x-a,z-b)<r);
   instances(group,mangrove({seed:5}),scatter(T,world.groundAt,{seed:571,count:90,bounds:[-430,-390,430,390],minY:-.6,margin:8,

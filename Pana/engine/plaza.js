@@ -6,7 +6,7 @@ import { mangoTree } from '/engine/models/vegetation/mango-tree.js';
 import { bush } from '/engine/models/vegetation/bush.js';
 import { bake } from '/engine/models/core/static-batch.js';
 import { createPlazaProp, marketStall, streetLamp } from '/engine/models/props/plaza.js';
-import { MAP_PROPS, STALLS, TREES } from '/engine/plaza-layout.js';
+import { MAP_PROPS, STALLS, TREES, LAMPS } from '/engine/plaza-layout.js';
 import { streetFoodKiosk, plazaClockTower, parkBench, streetlightPole } from '/engine/models/props/pueblo.js';
 import { capybaraTopiary } from '/engine/models/props/monuments.js';
 
@@ -14,7 +14,7 @@ import { house, church, fountain } from '/engine/models/props/plaza-buildings.js
 import { placeIguanas } from '/engine/placement/iguanas.js';
 export { house, plazaFountain } from '/engine/models/props/plaza-buildings.js';
 
-export function createPlazaEnvironment({ cooking = false, clearance = () => true, town = false } = {}) {
+export function createPlazaEnvironment({ cooking = false, clearance = () => true, town = false, mapProps = MAP_PROPS } = {}) {
   const scene = new THREE.Group();
   const additions=[],assetCounts={};
   const addDetail=(id,factory,x,z,radius,rotation=0)=>{
@@ -66,12 +66,12 @@ export function createPlazaEnvironment({ cooking = false, clearance = () => true
     if(cooking)assetCounts['street-food-kiosk']=(assetCounts['street-food-kiosk']||0)+1;
     o.position.set(s.x, 0, s.z); o.rotation.y = s.h; staticGroup.add(o);
   }
-  for (const p of MAP_PROPS) {
+  for (const p of mapProps) {
     if (!clearance(p.x, p.z, 1.8)) continue;
     if (cooking && Math.abs(p.x) < 16 && p.z > -16) continue;
     const o = createPlazaProp(p.type); o.position.set(p.x, 0, p.z); o.rotation.y = p.h; staticGroup.add(o);
   }
-  for (const [i,[x, z]] of [[-19, -7], [19, 7], [-5, 7], [5, -7], [-20, 15], [20, -16]].entries()) {
+  for (const [i,[x, z]] of LAMPS.entries()) {
     if (!clearance(x, z, 1)) continue;
     if (cooking && Math.abs(x) < 16) continue;
     const o = i%2?streetlightPole():streetLamp(); o.position.set(x, 0, z); staticGroup.add(o);
@@ -148,7 +148,7 @@ export function createPlaza(options = {}) {
   sun.shadow.camera.top = 32; sun.shadow.camera.bottom = -32; sun.shadow.camera.far = 100;
   sun.shadow.normalBias = 0.035; sun.shadow.bias = -0.0001;
   scene.add(sun);
-  const environment = createPlazaEnvironment(options);
-  scene.add(environment.group);
-  return { scene, sky, update(t) { environment.update(t);sky.update(t); } };
+  const environment = options.environment === false ? null : createPlazaEnvironment(options);
+  if (environment) scene.add(environment.group);
+  return { scene, sky, update(t) { environment?.update(t);sky.update(t); } };
 }

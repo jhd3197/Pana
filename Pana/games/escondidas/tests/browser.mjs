@@ -18,7 +18,7 @@ async function newPage(name, mobile = false, code = room) {
   const context = await browser.newContext(mobile ? { viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true } : { viewport: { width: 1440, height: 900 } });
   const page = await context.newPage(); page.on('pageerror', error => errors.push(`${name}: ${error.message}`));
   await page.goto(`${base}/g/escondidas/?room=${code}&name=${name}&debug`);
-  await page.waitForFunction(() => window.hunt?.room.connected);
+  await page.waitForFunction(() => window.hunt?.room.connected, undefined, { timeout: 90000 });
   return page;
 }
 async function wire(game, code) {
@@ -49,7 +49,7 @@ try {
   assert.equal(await b.evaluate(() => hunt.state.players.find(p => p.id === hunt.room.id).prop), 'cooler');
   check('remote transformations stop after exactly three changes');
   const ids = await a.evaluate(() => ({ host: hunt.room.id, other: hunt.state.players.find(p => !p.bot && p.id !== hunt.room.id).id }));
-  await a.evaluate(({ host, other }) => { hunt.step(16); hunt.place(host, -2, 14); hunt.place(other, -4, 14); }, ids);
+  await a.evaluate(({ host, other }) => { hunt.step(hunt.state.hideSeconds + 1); hunt.place(host, -2, 14); hunt.place(other, -4, 14); }, ids);
   await b.waitForFunction(() => hunt.state.phase === 'hunt');
   await a.keyboard.press('e'); await b.waitForFunction(() => hunt.state.players.find(p => p.id === hunt.room.id).caught);
   check('capture and score synchronize between clients');

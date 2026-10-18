@@ -3,6 +3,7 @@ import * as THREE from 'three';
 import { M, mesh, box, tube, rng } from '/engine/models/core/primitives.js';
 import { bake, instancePlacements } from '/engine/models/core/static-batch.js';
 import { terrainMaterial } from '/engine/terrain-material.js';
+import { natureSurface } from '/engine/models/core/nature-surface.js';
 import { sign as makeSign } from '/engine/models/core/architecture-kit.js';
 import { placeOnTrack } from '../track-kit.js';
 import { waterSurface, waterDepthMap, riverSurface } from '/engine/models/effects/water-surface.js';
@@ -34,7 +35,8 @@ export function terrain(T,{bounds,base,color,name='world-terrain',step=5,carve=t
     if(i<nx&&j<nz){const a=j*(nx+1)+i;indices.push(a,a+nx+1,a+1,a+1,a+nx+1,a+nx+2);}
   }
   const geo=new THREE.BufferGeometry();geo.setAttribute('position',new THREE.Float32BufferAttribute(positions,3));geo.setAttribute('color',new THREE.Float32BufferAttribute(colors,3));geo.setIndex(indices);geo.computeVertexNormals();
-  const land=mesh(geo,terrainMaterial());land.name=name;
+  const land=mesh(natureSurface(geo,'grass'),terrainMaterial());land.name=name;
+  land.userData.grassGrid={bounds,nx,nz};
   const horizon=extendTerrain(land,{bounds,nx,nz,height:(x,z)=>cut(x,z,base(x,z)),color,biome:T.def.id});
   // The actual triangular mesh is the placement surface, including steep banks.
   const groundAt=(x,z)=>{
@@ -72,7 +74,7 @@ export function scatter(T,groundAt,{seed=1,count,bounds,margin=10,minY=.3,scale=
   }return out;
 }
 
-export function edges(group,kit,T,{style='steel',step=5,skip=()=>false}={}) {
+export function edges(group,kit,T,{style='steel',step=5,skip=()=>false,cellSize=110}={}) {
   const g=new THREE.Group(),steel=M(0xa9b5af,{metalness:.45}),cream=M(0xe8ddc1),red=M(0xbf5947),wood=M(0x8a7353);
   for(let s=0;s<T.TOTAL;s+=step)for(const side of [-1,1]){
     if(skip(s,side))continue;const p=placeOnTrack(T,s,side*(T.HW+.8)),q=placeOnTrack(T,Math.min(s+step,T.TOTAL),side*(T.HW+.8));
@@ -84,7 +86,7 @@ export function edges(group,kit,T,{style='steel',step=5,skip=()=>false}={}) {
       g.add(tube([p.x,p.y+.86,p.z],[q.x,q.y+.86,q.z],style==='rope'?.035:.12,style==='rope'?cream:steel));
       if(Math.floor(s/step)%4===0)g.add(box(.22,.2,.22,cream,p.x,p.y+1.17,p.z));
     }
-  }group.add(finish(g));
+  }group.add(finish(g,cellSize));
 }
 
 export function stream(points,width,height,color=0x438e93){

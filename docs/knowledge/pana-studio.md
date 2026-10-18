@@ -1,5 +1,12 @@
 # Pana Studio
 
+The **casas-coloniales** pack includes a house recipe editor on its six preset
+pages, three plants, **Calle de las flores** and an editable 50-house collection.
+**Acabado de paredes** offers clean paint, soft plaster, painted-brick accents
+and exposed-brick patches, with a separate finish lock. The controls reuse the live
+inspector and export/import versioned JSON. See [colonial-houses.md](colonial-houses.md)
+for generation, placement and validation; this feature does not create map rooms.
+
 Run `.\dev.ps1 studio` from the repository root. It opens `/studio/library`, reuses a healthy Pana server and does
 not kill a running game. `-NoBrowser` prints the address without opening a tab;
 `-Port` selects a server port. If another application occupies that port, the
@@ -288,3 +295,14 @@ See the circuit walkthrough section in the Studio knowledge note for proof.
 Thumbnail images live only in browser IndexedDB. Declare extra factory
 dependencies in the catalog for cache invalidation, and run the studio cache
 browser suite when changing its generation or persistence behavior.
+
+## Shared party maps
+
+`arena-puerto`, `arena-hato` and `arena-ruinas` preview Puerto Coco, Hato del Sol
+and Ruinas del Mango through the real `engine/arenas.js` hunt variant. They list
+Escondidas, Pintura, Billar and Caída as consumers. See
+[shared-arenas.md](shared-arenas.md) for collision, table clearance and lifecycle.
+
+Browser checks must return through `#back-library` before using `#search` to
+select another resource. Legacy hash links open the dedicated asset page,
+where the library's search controls are hidden.

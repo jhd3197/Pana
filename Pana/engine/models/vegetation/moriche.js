@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import {M,mesh,tube,rng} from '/engine/models/core/primitives.js';
 import {finish} from '/engine/models/core/architecture-kit.js';
 import {dimension} from '/engine/models/core/rural-kit.js';
+import {natureSurface} from '/engine/models/core/nature-surface.js';
 
 // Moriche has a stout ringed trunk and divided fan leaves, unlike the coconut palm.
 export function moriche({seed=7,h=10}={}) {
@@ -9,7 +10,7 @@ export function moriche({seed=7,h=10}={}) {
   const bark=M(0x8a7857,{roughness:1}),stalk=M(0x8c9453),dry=M(0x99804d,{side:THREE.DoubleSide});
   const leaves=[0x557f3c,0x6c9442,0x8ba952].map(c=>M(c,{roughness:1,side:THREE.DoubleSide}));
   const trunk=new THREE.CylinderGeometry(.29,.47,h,10,8),p=trunk.attributes.position;
-  for(let i=0;i<p.count;i++){const t=(p.getY(i)+h/2)/h;p.setXYZ(i,p.getX(i)+lean*t*t,p.getY(i)+h/2,p.getZ(i));}trunk.computeVertexNormals();g.add(mesh(trunk,bark));
+  for(let i=0;i<p.count;i++){const t=(p.getY(i)+h/2)/h;p.setXYZ(i,p.getX(i)+lean*t*t,p.getY(i)+h/2,p.getZ(i));}trunk.computeVertexNormals();g.add(mesh(natureSurface(trunk,'bark'),bark));
   for(let i=1;i<Math.floor(h*2.1);i++){const y=i/2.1,t=y/h,r=mesh(new THREE.TorusGeometry(.47-.18*t,.021,3,10),M(0xb39c70),lean*t*t,y,0);r.rotation.x=Math.PI/2;g.add(r);}
   for(let i=0;i<17;i++){
     const a=i*2.399,lower=i<3,length=lower?1.1+random()*.4:i>12?1.5+random()*.4:1.8+random()*.7;
@@ -25,7 +26,7 @@ export function moriche({seed=7,h=10}={}) {
       ps.push(baseX,baseY,0,endX-.1,lower?-1.65:.05,endZ-.11,endX+.13,lower?-1.48:.25,endZ,endX-.1,lower?-1.65:.05,endZ+.11);
       ix.push(k,k+1,k+2,k,k+2,k+3);
     }
-    const geo=new THREE.BufferGeometry();geo.setAttribute('position',new THREE.Float32BufferAttribute(ps,3));geo.setIndex(ix);geo.computeVertexNormals();leaf.add(mesh(geo,lower?dry:leaves[i%3]));g.add(leaf);
+    const geo=new THREE.BufferGeometry();geo.setAttribute('position',new THREE.Float32BufferAttribute(ps,3));geo.setIndex(ix);geo.computeVertexNormals();leaf.add(mesh(natureSurface(geo,'foliage'),lower?dry:leaves[i%3]));g.add(leaf);
   }
   for(let i=0;i<3;i++){
     const bunch=new THREE.Group();bunch.position.set(lean,h-.8,0);bunch.rotation.y=i*2.1;

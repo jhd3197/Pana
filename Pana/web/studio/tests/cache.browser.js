@@ -64,7 +64,9 @@ try {
   await page.unroute('**/engine/models/props/kitchen.js'); await page.locator('#retry-thumbnails').click(); await prepared(2);
   // Filters are URLs; sorting retains unmeasured metadata and does not construct it.
   await page.locator('#nav-library').click(); await page.locator('#game-filter').selectOption('Caída');
-  assert.equal(await page.locator('[data-asset]').count(), 4);
+  const caidaAssets = await page.evaluate(() => panaLibrary.assets.filter(a => a.usedBy.includes('Caída')).map(a => a.id).sort());
+  assert.ok(caidaAssets.length >= 4);
+  assert.deepEqual(await page.locator('[data-asset]').evaluateAll(nodes => nodes.map(n => n.dataset.asset).sort()), caidaAssets);
   await page.reload(); await ready(); assert.equal(await page.locator('#game-filter').inputValue(), 'Caída');
   await page.locator('#search').fill('zz-missing'); assert.equal(await page.locator('#empty').isVisible(), true);
   await page.locator('#clear-search').click(); await page.locator('#pack-filter').selectOption({ index: 1 });

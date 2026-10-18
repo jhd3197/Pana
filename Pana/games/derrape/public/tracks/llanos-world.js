@@ -16,6 +16,8 @@ import { hatoCow } from '/engine/models/fauna/farm/hato-cow.js';
 import { baseHeight,riverDistance,ESTEROS,WATER_Y,wetlandDistance } from './llanos-layout.js';
 import { grassTuft,entrance,crossing,vergePosts,dirtVerge } from './country-details.js';
 import { llanosLandscape } from './llanos-landscape.js';
+import { fruitDeliveryTruck } from '/engine/models/props/fruit-delivery-truck.js';
+import { waterPumpStation } from '/engine/models/props/water-pump-station.js';
 
 export function llanosEnvironment(T){
   const group=new THREE.Group(),counts={},occupied=[],moving=[];
@@ -126,6 +128,10 @@ export function llanosEnvironment(T){
     if(clear(T,x,z,radius))foundation(stop,factory(),x,z,world.groundAt,{rotation,scale,radius});occupied.push([x,z,radius+6]);
   }
   const stopBatch=finish(stop);stopBatch.name='llanos-roadside-arepera';group.add(stopBatch);
+  const truck=foundation(group,fruitDeliveryTruck(),-172,-112,world.groundAt,{rotation:2.1,scale:1.35,radius:5,color:0x9a936d});
+  truck.userData.footprintRadius=5;truck.userData.support='llanos-arepera';counts['fruit-delivery-truck']=1;occupied.push([-172,-112,12]);
+  const pump=foundation(group,waterPumpStation(),-52,-62,world.groundAt,{rotation:0.5,scale:1.25,radius:6,color:0x9a936d});
+  pump.userData.footprintRadius=6;pump.userData.support='estero-bank';counts['water-pump-station']=1;occupied.push([-52,-62,12]);
   const dry=(x,z)=>riverDistance(x,z)>34&&wetlandDistance(x,z)>1.35&&!occupied.some(([a,b,r])=>Math.hypot(x-a,z-b)<r);
   instances(group,grassTuft(0x7f9f3c),scatter(T,world.groundAt,{seed:415,count:2200,bounds:[-440,-365,440,290],margin:2,minY:1,scale:1.5,accept:dry}),'savanna-grasses',180);
   instances(group,mangoTree({seed:14,h:7,fruit:false}),scatter(T,world.groundAt,{seed:416,count:18,bounds:[-350,-280,-110,200],margin:9,scale:1.35,accept:dry}),'hato-shade-trees',180);

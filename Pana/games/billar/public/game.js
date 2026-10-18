@@ -1,3 +1,4 @@
+import { createMapPicker } from '/engine/map-picker.js';
 import { loadName, loadAvatar } from '/engine/avatar.js';
 import { inviteUrl, newRoomCode, roomFromUrl } from '/engine/invite.js';
 import { createGameMenu, toggleMute } from '/engine/ui.js';
@@ -27,6 +28,7 @@ const room = new PoolRoom({ code, name: loadName(), avatar: loadAvatar(), onStat
     $('recovery').hidden = !failed || room.state.phase === 'lobby'; render(room.state);
   },
 });
+const mapPicker = createMapPicker($('map-picker'), mapId => room.action('map', { mapId }), { table: true });
 const menu = createGameMenu({
   title: 'Billar · Pana', orientation: 'libre', sound: audio,
   note: () => room.members.size > 1 ? 'La mesa sigue jugando mientras estás en el menú.' : 'La mesa está en pausa.',
@@ -40,7 +42,7 @@ const menu = createGameMenu({
     'Si alguien sale, su puesto queda libre para otro pana. La mesa conserva las bolas y el turno. El anfitrión empieza la revancha.',
   ],
   invite: () => inviteUrl(code), onOpen() { held = 0; pads.forEach(p => p.release()); render(room.state); },
-  options: [{ id: 'view', label: 'Cámara', choices: [['plaza', 'En la plaza'], ['mesa', 'Sobre la mesa']], get: () => cameraView, set: value => { cameraView = value; world.setView(value); } }],
+  options: [{ id: 'view', label: 'Cámara', choices: [['plaza', 'Vista del lugar'], ['mesa', 'Sobre la mesa']], get: () => cameraView, set: value => { cameraView = value; world.setView(value); } }],
   onClose() { if (room.state.phase !== 'finished') render(room.state); },
   canOpen: () => room.state.phase !== 'finished',
 });
@@ -100,6 +102,7 @@ addEventListener('keydown', event => {
 });
 
 function render(state) {
+  mapPicker.update(state.mapId, room.connected && room.isHost && state.phase === 'lobby');
   const lobby = state.phase === 'lobby', ended = state.phase === 'finished';
   document.body.classList.toggle('in-lobby', lobby); $('welcome').hidden = !lobby; $('play-controls').hidden = lobby || ended;
   const ready = room.connected && (state.practice || state.players.every(p => p.id !== null));

@@ -1,3 +1,5 @@
+import { validTableArena } from '../../../engine/arena-layouts.js';
+import { swapSeats } from '../../../engine/seat-rules.js';
 // House rules are explicit in the UI: team block dominoes, opponents' pips score.
 // Pure data and deterministic shuffling keep host migration lossless.
 export const TARGET = 100;
@@ -37,7 +39,7 @@ export function chooseMove(state, seat = state.turn) {
 export class DominoGame {
   constructor(seed = 1) {
     this.rng = seed >>> 0 || 1;
-    this.phase = 'lobby'; this.round = 0; this.scores = [0, 0];
+    this.mapId = 'plaza'; this.phase = 'lobby'; this.round = 0; this.scores = [0, 0];
     this.players = BOT_NAMES.map((name, seat) => ({ id: null, name, avatar: {}, seat, hand: [] }));
     this.chain = []; this.turn = 0; this.starter = 0; this.passes = 0;
     this.revision = 0; this.ledger = {}; this.history = []; this.result = null;
@@ -75,6 +77,18 @@ export class DominoGame {
     this.players.forEach((p, i) => { p.hand = tiles.slice(i * 7, i * 7 + 7).sort((a, b) => a.a - b.a || a.b - b.b); });
     if (this.round === 1) this.starter = this.players.findIndex(p => p.hand.some(t => t.id === '6-6'));
     this.turn = this.starter; this.phase = 'playing'; this.revision++;
+    return true;
+  }
+
+  reseat(from, to) {
+    if (this.phase !== 'lobby' || !swapSeats(this.players, from, to)) return false;
+    this.revision++; return true;
+  }
+
+  setup() {
+    if (!['round-over', 'finished'].includes(this.phase)) return false;
+    const players = this.players.map(p => ({ ...p, hand: [] }));
+    Object.assign(this, new DominoGame(this.rng), { players, mapId: this.mapId, revision: this.revision + 1, ledger: this.ledger });
     return true;
   }
 
@@ -126,6 +140,11 @@ export class DominoGame {
     const seat = this.players.findIndex(p => p.id === id);
     let accepted = false;
     if (data.action === 'start' && id === hostId) accepted = this.start();
+    else if (data.action === 'seat' && id === hostId) accepted = this.reseat(data.from, data.to);
+    else if (data.action === 'setup' && id === hostId) accepted = this.setup();
+    else if (data.action === 'map' && id === hostId && this.phase === 'lobby' && validTableArena(data.mapId)) {
+      this.mapId = data.mapId; this.revision++; accepted = true;
+    }
     else if (seat >= 0 && data.action === 'play') accepted = this.play(seat, data.tile, data.end);
     else if (seat >= 0 && data.action === 'pass') accepted = this.pass(seat);
     if (accepted) this.ledger[id] = data.seq;

@@ -72,3 +72,14 @@ main { position: static; min-height: 0; }
   .board-area { left: 18px; top: 70px; transform: none; padding: 5px 12px; } #pot { font-size: 17px; } #street { font-size: 9px; }
   .seat { width: 86px; font-size: 10px; }
 }
+
+/* Keep the host's start and practice actions visible with the map selector. */
+@media (min-width:651px) and (min-height:501px) and (max-height:850px){
+  .lobby{top:70px;bottom:16px;padding:18px;gap:8px;}
+  .lobby .pk-title{font-size:54px;}
+  .lobby .pk-stat{padding:6px;}
+  .lobby .pk-stat b{font-size:22px;}
+  .lobby .pk-copy{font-size:12px;line-height:1.4;}
+  .lobby .pk-lobby-foot{gap:6px;}
+  .lobby .pk-btn--lg{padding:12px 16px;}
+}

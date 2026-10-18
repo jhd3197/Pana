@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#0e0b24">
-  <meta name="description" content="Tres cambios. Un buscador. Una plaza llena de escondites. Juega Pana Hunt con tus panas o practica contra la máquina.">
+  <meta name="description" content="Tres cambios. Un buscador. Cuatro mapas llenos de escondites. Juega Pana Hunt con tus panas o practica contra la máquina.">
   <title>Escondidas · Pana Hunt</title>
   <link rel="stylesheet" href="/engine/kit.css">
   <link rel="stylesheet" href="/engine/ui.css">
@@ -17,15 +17,17 @@
   <header>
     <nav id="game-nav" aria-label="Opciones de juego"></nav>
   </header>
-  <div id="loading" class="loading pk-panel" role="status">Abriendo la plaza…</div>
+  <div id="loading" class="loading pk-panel" role="status">Preparando el mapa…</div>
   <section id="lobby" class="pk-lobby hidden" aria-labelledby="intro-title">
     <div class="pk-lobby-top"><a class="pk-back" href="/">← Todos los juegos</a><a class="pk-logo" href="/" aria-label="Pana">PANA</a></div>
-    <span class="pk-ribbon">PLAZA PANA · MERCADO ESCONDIDO</span>
+    <span class="pk-ribbon">ESCONDIDAS · ENTRE PANAS</span>
     <h1 id="intro-title" class="pk-title">Por aquí hay un pana escondido.</h1>
     <p class="pk-copy">Ese barril se acaba de mover… Conviértete en un objeto y que no te pillen.</p>
-    <div class="pk-stats"><div class="pk-stat"><b>3</b><span>cambios por ronda</span></div><div class="pk-stat"><b>15s</b><span>para esconderte</span></div><div class="pk-stat"><b>1:40</b><span>para encontrarlos</span></div></div>
+    <div class="pk-stats"><div class="pk-stat"><b>3</b><span>cambios por ronda</span></div><div class="pk-stat"><b id="hide-seconds-stat">30s</b><span>para esconderte</span></div><div class="pk-stat"><b>1:40</b><span>para encontrarlos</span></div></div>
     <div class="pk-field"><span class="pk-eyebrow" id="role-label">Primera ronda: quiero…</span>
       <div class="pk-seg role-picker" role="group" aria-labelledby="role-label"><button id="role-hide" type="button" class="selected" aria-pressed="true">Esconderme</button><button id="role-seek" type="button" aria-pressed="false">Ser buscador</button></div></div>
+    <div id="map-picker"></div>
+    <div class="pk-field"><label class="pk-eyebrow" for="hide-seconds">Tiempo para esconderse</label><select id="hide-seconds" class="pk-select" aria-describedby="round-layout-note" disabled></select><small id="round-layout-note" class="pk-copy">Los objetos cambian de lugar en cada ronda.</small></div>
     <div class="pk-lobby-foot">
       <div class="pk-lobby-room"><div id="roster" class="roster"></div><span class="pk-room-code" id="room-code"></span></div>
       <p class="lobby-status"><span id="connection" role="status">Conectando…</span> <button id="practice" class="text-button hidden">Practicar sin conexión</button></p>
@@ -34,9 +36,9 @@
   </section>
   <div id="scene-label" class="scene-label"><span>BIENVENIDO A</span><b>La Plaza Pana</b><small>Más panas, menos drama.</small></div>
   <main id="hud" class="hidden">
-    <div class="clock-panel pk-panel"><span id="phase" class="phase-chip">ESCÓNDETE</span><b id="timer">00:15</b><small id="round">RONDA 1 / 4</small></div>
+    <div class="clock-panel pk-panel"><span id="phase" class="phase-chip">ESCÓNDETE</span><b id="timer">00:30</b><small id="round">RONDA 1 / 4</small></div>
     <div class="seeker-panel pk-panel"><div class="portrait"><img id="seeker-face" alt=""></div><div><small id="seeker-caption">BUSCADOR</small><b id="seeker-name">Coco</b><span id="remaining-players">3 panas escondidos</span></div></div>
-    <div id="center-message" class="center-message pk-panel hidden"><b>Cuenta hasta quince…</b><span>Los panas se están escondiendo.</span></div>
+    <div id="center-message" class="center-message pk-panel hidden"><b>Prepárate para buscar…</b><span>Los panas se están escondiendo.</span></div>
     <div id="crosshair" aria-hidden="true">+</div>
     <section id="disguise-panel" class="disguise-panel pk-panel" aria-label="Camuflaje">
       <div class="disguise-heading"><div><small id="role-title">QUE NO TE PILLEN</small><h2 id="prop-name">Tu pana</h2></div><div class="charges"><span>Cambios</span><b id="charges" aria-label="3 cambios restantes"></b></div></div>
@@ -57,7 +59,7 @@
   <script type="module">
     import('./game.js').catch(error => {
       console.error(error);
-      document.getElementById('loading').textContent = 'No pudimos abrir la plaza. Comprueba tu conexión y que WebGL esté disponible, y recarga la página.';
+      document.getElementById('loading').textContent = 'No pudimos abrir el mapa. Comprueba tu conexión y que WebGL esté disponible, y recarga la página.';
       document.getElementById('loading').classList.remove('hidden');
     });
   </script>

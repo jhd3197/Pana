@@ -86,6 +86,12 @@ placement renders in `art/studio/map-rollout/`. These generated assets are
 ignored by Git. The source inventory records the new scene assemblies separately
 from their reused canonical props.
 
+The Puerto regression pass reproduced Plaza's 3,520,879-triangle starting view
+on both unchanged HEAD and the working tree. Its town vegetation now uses 180 m
+batch cells instead of 350 m, allowing road cameras to cull more offscreen trees
+without removing models or reducing detail. The same view submits 3,493,683
+triangles / 680 draws; the original 3.5 M / 900 limits remain unchanged.
+
 Plan 56's full regression found the older Venezuela overview test still using
 pre-surroundings limits: Plaza 3 M / 1,000 and Llanos 2.5 M / 1,000. Those world
 constructors were unchanged by plan 56. Its measurements are 4,429,882 / 1,242

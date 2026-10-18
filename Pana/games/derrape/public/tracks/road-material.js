@@ -2,12 +2,16 @@ import * as THREE from 'three';
 
 // Fine aggregate and broad worn patches break up flat road color. Generated in
 // the existing road draw: no image download, texture allocation or extra mesh.
-export function roadMaterial(color, earth = false) {
+export function roadMaterial(color, earth = false, mixed = false) {
   const detail = { value: 1 };
-  const material = new THREE.MeshStandardMaterial({color,roughness:1,flatShading:true,side:THREE.DoubleSide});
+  const material = new THREE.MeshStandardMaterial({color,vertexColors:mixed,roughness:1,flatShading:true,side:THREE.DoubleSide});
   material.userData.roadDetail = detail;
-  material.customProgramCacheKey = () => `derrape-road-${earth ? 'earth' : 'asphalt'}`;
+  material.customProgramCacheKey = () => `derrape-road-${mixed?'mixed':earth ? 'earth' : 'asphalt'}`;
   material.onBeforeCompile = shader => {
+    if(mixed){
+      shader.vertexShader=`attribute float roadSurface; varying float vRoadSurface;\n${shader.vertexShader}`.replace('#include <begin_vertex>','#include <begin_vertex>\nvRoadSurface=roadSurface;');
+      shader.fragmentShader=`varying float vRoadSurface;\n${shader.fragmentShader}`;
+    }
     shader.uniforms.roadDetail = detail;
     shader.vertexShader = `varying vec2 vRoadPoint;\n${shader.vertexShader}`
       .replace('#include <begin_vertex>', '#include <begin_vertex>\nvRoadPoint = position.xz;');
@@ -26,6 +30,13 @@ if (roadDetail > 0.0) {
   float wear = mix(${earth ? '0.84,1.08' : '0.91,1.04'},patches);
   wear *= mix(1.0,0.88 + 0.24*grain,nearDetail);
   diffuseColor.rgb *= mix(1.0,wear,roadDetail);
+  ${mixed?`if(vRoadSurface>.5&&vRoadSurface<1.5){
+    float mud=roadNoise(vRoadPoint*.7);diffuseColor.rgb*=mix(.72,1.13,mud);
+  }else if(vRoadSurface>=1.5){
+    vec2 tile=vRoadPoint*vec2(1.4,2.0);tile.x+=mod(floor(tile.y),2.0)*.5;
+    vec2 edge=min(fract(tile),1.-fract(tile));float joint=smoothstep(.025,.065,min(edge.x,edge.y));
+    diffuseColor.rgb*=mix(.7,1.05,joint*nearDetail+(1.-nearDetail)*.8);
+  }`:''}
 }`);
   };
   return material;
