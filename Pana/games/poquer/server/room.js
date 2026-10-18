@@ -10,6 +10,12 @@ export default class PokerRoom extends PanaRoom {
     this.onMessage('map', (client,data) => {
       if(this.isHost(client) && data?.revision === this.game.revision && this.game.setMap(data.mapId)) this.publish();
     });
+    this.onMessage('seat', (client, data) => {
+      if (this.isHost(client) && data?.revision === this.game.revision && this.game.reseat(data.from, data.to)) this.publish();
+    });
+    this.onMessage('setup', (client, data) => {
+      if (this.isHost(client) && data?.revision === this.game.revision && this.game.setup()) this.publish();
+    });
     this.onMessage('start', client => {
       if (!this.isHost(client) || !['lobby', 'finished'].includes(this.game.phase)) return;
       const humans = [...this.state.players.values()].filter(p => p.connected);

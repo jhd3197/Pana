@@ -10,6 +10,10 @@ becomes the GitHub release's notes.
 
 ### Added
 
+- **Choose your partners and seating in Caída, Dominó and Poker without leaving the room.**
+  Hosts can swap seats in the lobby and return to setup after a round. Changing
+  Caída or Dominó teams starts a fresh score; Poker keeps each player's chips.
+
 - **Play Bolas Criollas on a shared 3D court, as a full game or a Bululú minigame.**
   Invite up to four panas for red-versus-green matches with bots, eight balls per
   team, arrimes, ground boches and 12- or 24-point house rules. Bululú adds a quick

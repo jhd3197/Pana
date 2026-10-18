@@ -280,6 +280,13 @@
 .pk-lobby-top { display: flex; justify-content: space-between; align-items: center; }
 .pk-lobby-top .pk-logo { font-size: 22px; text-shadow: 0 2px 0 var(--pk-coral); }
 .pk-field { display: flex; flex-direction: column; gap: 8px; align-items: flex-start; }
+.pk-seating { display: grid; gap: 8px; width: 100%; }
+.pk-lobby .pk-seating > .pk-copy { display: block; margin: 0; font-size: 13px; }
+.pk-seating-rows { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.pk-seating-rows label { display: grid; gap: 4px; min-width: 0; font: 800 12px var(--pk-sans); color: var(--pk-muted); }
+.pk-seating-rows select { width: 100%; min-width: 0; min-height: 44px; border: 1px solid #fff3; border-radius: 8px; padding: 8px; background: var(--pk-purple); color: var(--pk-text); font: 800 14px var(--pk-sans); }
+.pk-seating-rows select:focus-visible { outline: 2px solid var(--pk-yellow); outline-offset: 2px; }
+.pk-seating-rows select:disabled { opacity: .7; }
 .pk-map-picker { margin: 16px 0; width: 100%; }
 .pk-select { width: 100%; min-height: 44px; padding: 10px 12px; border: 1px solid var(--pk-line); border-radius: 10px; background: var(--pk-deep); color: var(--pk-text); font: inherit; cursor: pointer; }
 .pk-select:focus-visible { outline: 3px solid var(--pk-yellow); outline-offset: 3px; }

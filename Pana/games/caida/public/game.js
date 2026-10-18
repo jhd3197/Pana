@@ -1,3 +1,4 @@
+import { createTableSeating } from '/engine/table-seating.js';
 import { createMapPicker } from '/engine/map-picker.js';
 import { loadName, loadAvatar } from '/engine/avatar.js';
 import { createGameMenu, toggleMute } from '/engine/ui.js';
@@ -21,6 +22,8 @@ function notify(text) { $('toast').textContent = text; $('toast').classList.add(
 const room = new CaidaRoom({ code, name: loadName(), avatar: loadAvatar(), onState: render, onNotice: notify,
   onStatus(message, failed) { $('connection').textContent = message; $('practice').hidden = !failed; $('invite').disabled = $('lobby-invite').disabled = !room.connected || room.offline; render(room.state); },
 });
+const seating = createTableSeating($('table-seating'), (from, to) => room.action('seat', { from, to }));
+$('organize-table').onclick = () => room.action('setup');
 const mapPicker = createMapPicker($('map-picker'), mapId => room.action('configure', { options: { mapId } }), { table: true, landmarks: true });
 const dealerUI = createDealerUI(room, () => audio.unlock());
 const menu = createGameMenu({ title: 'Caída · Pana', sound: audio,
@@ -64,6 +67,9 @@ function hint() {
   notify(`${cardName(card)}: ${preview.points ? `puedes sumar ${preview.points} puntos.` : preview.capture.length ? `recoges ${preview.capture.length + 1} cartas.` : 'la dejas sobre la mesa.'}`);
 }
 function render(state) {
+  seating.update(state.players, { teams: state.options.mode === 'teams', enabled: room.connected && room.isHost && state.phase === 'lobby', ownId: room.id });
+  $('organize-table').disabled = !room.connected || !room.isHost;
+  $('organize-table').textContent = state.options.mode === 'teams' ? 'Cambiar parejas · empezar de cero' : 'Organizar mesa · empezar de cero';
   mapPicker.update(state.mapId, ready && room.connected && room.isHost && state.phase === 'lobby');
   document.body.classList.toggle('in-lobby', state.phase === 'lobby'); $('welcome').hidden = state.phase !== 'lobby';
   $('start').disabled = !ready || !room.connected || !room.isHost;

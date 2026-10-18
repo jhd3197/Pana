@@ -83,6 +83,20 @@ but this is not server-authoritative anti-cheat or cryptographic hand privacy.
 Do not present these rooms as suitable for competitive wagers. A secure server
 model would be a separate backend change.
 
+## Choosing partners and returning to setup
+
+The lobby uses `engine/table-seating.js` to swap players between seats, with
+0+2 and 1+3 visibly grouped in partnership mode. Host-only `seat` actions use
+the same revision/sequence checks as moves and are rejected outside the lobby.
+At results the host may send `setup` to reopen this room with scores reset;
+the mode, cantos, difficulty, map, roster, RNG and action ledger survive. A new
+deal starts from dealer zero. The usual next-reparto flow is unchanged.
+Keep revision monotonic and retain the ledger when resetting a match so delayed
+actions cannot apply to the new setup. Network member IDs never change on swaps.
+
+`engine/tests/table-seating.browser.js` exercises the UI over two real clients,
+including a full round, changing partners again, host departure and mobile.
+
 ## Models and interaction
 
 `cards.js` draws original Spanish card artwork, used identically for the 3D

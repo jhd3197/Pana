@@ -1,4 +1,5 @@
 import { validTableArena } from '../../../engine/arena-layouts.js';
+import { swapSeats } from '../../../engine/seat-rules.js';
 // House rules are explicit in the UI: team block dominoes, opponents' pips score.
 // Pure data and deterministic shuffling keep host migration lossless.
 export const TARGET = 100;
@@ -79,6 +80,18 @@ export class DominoGame {
     return true;
   }
 
+  reseat(from, to) {
+    if (this.phase !== 'lobby' || !swapSeats(this.players, from, to)) return false;
+    this.revision++; return true;
+  }
+
+  setup() {
+    if (!['round-over', 'finished'].includes(this.phase)) return false;
+    const players = this.players.map(p => ({ ...p, hand: [] }));
+    Object.assign(this, new DominoGame(this.rng), { players, mapId: this.mapId, revision: this.revision + 1, ledger: this.ledger });
+    return true;
+  }
+
   play(seat, tileId, end) {
     if (this.phase !== 'playing' || seat !== this.turn || !this.players[seat]) return false;
     const hand = this.players[seat].hand, index = hand.findIndex(t => t.id === tileId), tile = hand[index];
@@ -127,6 +140,8 @@ export class DominoGame {
     const seat = this.players.findIndex(p => p.id === id);
     let accepted = false;
     if (data.action === 'start' && id === hostId) accepted = this.start();
+    else if (data.action === 'seat' && id === hostId) accepted = this.reseat(data.from, data.to);
+    else if (data.action === 'setup' && id === hostId) accepted = this.setup();
     else if (data.action === 'map' && id === hostId && this.phase === 'lobby' && validTableArena(data.mapId)) {
       this.mapId = data.mapId; this.revision++; accepted = true;
     }

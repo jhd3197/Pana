@@ -45,6 +45,16 @@ the same tokens.
 | `pk-loading` | Full-screen loading card |
 | `pk-touch` (`--go --coral --sm --lg`, `data-icon="left/right/up/down/jump"`), `pk-dpad`, `pk-touch-zone` | On-screen touch controls (engine/touch.js). See "Touch controls" below |
 
+## Table seating
+
+Table games use `createTableSeating(container, onSwap)` from
+`engine/table-seating.js` in the lobby. Call `update(players, { teams, enabled,
+ownId })`; pairs are the alternating seats 0+2 and 1+3, and individual games
+show clockwise seat order. The controls send source/destination array indices;
+game rules validate host authority, phase and revision before swapping. Keep
+member IDs unchanged. The picker retains focus and avoids rebuilding on
+unchanged snapshots. Its styles are the shared `.pk-seating` classes.
+
 ## Icons and colours
 
 - **No emoji, no symbol glyphs** (👑 ⚙ ♥ ↗ 🥭) anywhere in the interface, canvas

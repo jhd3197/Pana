@@ -1,4 +1,5 @@
 import { validTableArena } from '../../../engine/arena-layouts.js';
+import { swapSeats } from '../../../engine/seat-rules.js';
 // Pure deterministic rules. Table variants and sources are documented in caida.md.
 export const TARGET = 24;
 export const RANKS = [1, 2, 3, 4, 5, 6, 7, 10, 11, 12];
@@ -84,6 +85,17 @@ export class CaidaGame {
     this.revision++; return true;
   }
   random() { let x = this.rng; x ^= x << 13; x ^= x >>> 17; x ^= x << 5; this.rng = x >>> 0; return this.rng / 4294967296; }
+  reseat(from, to) {
+    if (this.phase !== 'lobby' || !swapSeats(this.players, from, to)) return false;
+    this.revision++; return true;
+  }
+  setup() {
+    if (!['round-over', 'finished'].includes(this.phase)) return false;
+    const fresh = new CaidaGame(this.rng);
+    fresh.options = { ...this.options }; fresh.players = this.players; fresh.resetSeats();
+    Object.assign(this, fresh, { mapId: this.mapId, revision: this.revision + 1, ledger: this.ledger });
+    return true;
+  }
   addPlayer(id, name, avatar = {}) {
     const p = this.players.find(p => p.id === id) || this.players.find(p => p.id === null);
     if (!p) return false;
@@ -189,6 +201,8 @@ export class CaidaGame {
     const seat = this.players.findIndex(p => p.id === id); let ok = false;
     if (data.action === 'start' && (id === hostId || (this.phase === 'round-over' && seat === nextDealer(this)))) ok = this.start();
     else if (data.action === 'configure' && id === hostId) ok = this.configure(data.options || {});
+    else if (data.action === 'seat' && id === hostId) ok = this.reseat(data.from, data.to);
+    else if (data.action === 'setup' && id === hostId) ok = this.setup();
     else if (seat >= 0 && data.action === 'play') ok = this.play(seat, data.card);
     else if (seat >= 0 && data.action === 'chant') ok = this.chant(seat);
     else if (seat >= 0 && data.action === 'call') ok = this.setCall(seat, data.call);

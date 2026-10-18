@@ -19,6 +19,16 @@ export class PokerConnection {
     } catch (error) { if (!this.local && !this.disposed) this.onStatus(error.full ? 'Sala llena. Abre otra mesa desde Pana.' : 'Sin conexión. Puedes practicar con bots.', true); }
   }
   start() { if (this.local) { this.game.start(); this.publish(); } else if (this.connected) this.link.send('start'); }
+  reseat(from, to) {
+    if (!this.connected || !this.isHost) return;
+    if (this.local) { if (this.game.reseat(from, to)) this.publish(); }
+    else this.link.send('seat', { from, to, revision: this.state.revision });
+  }
+  setup() {
+    if (!this.connected || !this.isHost) return;
+    if (this.local) { if (this.game.setup()) this.publish(); }
+    else this.link.send('setup', { revision: this.state.revision });
+  }
   setMap(mapId) {
     if (!this.connected || !this.isHost) return;
     if (this.local) { if(this.game.setMap(mapId))this.publish(); }
