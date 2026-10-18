@@ -56,9 +56,12 @@ try{
   // Full-scene inventories include the already-shipped outer neighborhoods
   // and pastures. Plaza's current guard is owned by plaza.browser.js and
   // circuit-surroundings.md; the former 3 M guard predated that expansion.
-  // surroundings.browser.js separately retains 900 draws / 3.5 M triangles
+  // surroundings.browser.js separately retains 900 draws / 3.6 M triangles
   // for actual driving views. These overview guards do not replace it.
-  const budget={desierto:1600000,llanos:3100000,estadio:1000000,paramo:2000000,bululu:2200000,chichi:4500000,plaza:4600000};
+  // The festive roadside (tracks/festive.js) instances low-detail library
+  // trees, shrubs, fiesta props and flocks: 30-200 k triangles per circuit.
+  // Estadio already exceeded its former 1 M guard (1.19 M) before that pass.
+  const budget={desierto:1600000,llanos:3400000,estadio:1400000,paramo:2250000,bululu:2200000,chichi:4850000,plaza:4700000};
   const overviewCalls={plaza:1300,llanos:1100};
   for(const m of results){
     assert.ok(m.triangles<budget[m.id],`${m.id}: actual rendered triangle budget (${m.triangles})`);

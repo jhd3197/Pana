@@ -1,3 +1,4 @@
+import { meadow } from './festive.js';
 import { THREE, terrain, put, foundation, finish, instances, scatter, clear } from './world-kit.js';
 import { waterGrid } from './water-world-kit.js';
 import { waterAnimator } from '/engine/models/effects/water-surface.js';
@@ -13,7 +14,7 @@ import { palm } from '/engine/models/vegetation/palm.js';
 export function deltaWorld(T) {
   const group=new THREE.Group(),world=terrain(T,{bounds:[-510,-460,510,460],base:baseHeight,step:5,
     cut:(x,z,h)=>riverAt(x,z).distance<24?Math.min(h,-3.5):h,
-    color:(x,z,y)=>y<.5?0x627c59:0x7e9b58});
+    color:(x,z,y)=>y<.5?0x5f9e62:meadow(x,z,0x78b852)});
   group.add(world.land,waterGrid(T,world,{bounds:[-510,-460,510,460],sample:(x,z)=>({...riverAt(x,z),height:0}),color:0x4e9d95,name:'delta-channels'}));
   group.add(crossing(T,p=>riverAt(p.x,p.z).distance<45,{name:'delta-timber-causeways',wood:true,color:0x9d8261}));
   const village=new THREE.Group(),occupied=[],assetCounts={palafitoHouse:0,landingShelter:0};

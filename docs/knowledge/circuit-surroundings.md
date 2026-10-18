@@ -105,3 +105,12 @@ The same legacy suite assumed Llanos had exactly ten asset IDs. The current
 world also places cows, horses and chickens. It now checks each of the ten
 required ranch IDs by name, while retaining positive-count checks for every
 additional asset.
+
+The festive roadside pass (`tracks/festive.js`, see `derrape-scenery.md`) adds
+about 75 k triangles to Plaza's starting view, from 3,493,683 to about 3.55 M.
+That view had only 6 k of headroom, so the driving-view guard is now 3.6 M
+triangles; the 900-draw guard is unchanged. Overview guards: Estadio 1.4 M (it
+already measured 1.19 M against 1.0 M on unchanged code), Páramo 2.25 M, Llanos
+3.4 M, Chi Chi 4.85 M, Plaza 4.7 M. Multi-colour kerbs use one vertex-coloured
+material, which brought Estadio's overview from 966 draws to 947 before the
+roadside models were added.

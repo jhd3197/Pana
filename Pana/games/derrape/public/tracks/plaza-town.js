@@ -1,4 +1,5 @@
 // A complete pueblo around a temporary street circuit.
+import { festive } from './festive.js';
 import * as THREE from 'three';
 import { natureSurface } from '/engine/models/core/nature-surface.js';
 import { createPlazaEnvironment } from '/engine/plaza.js';
@@ -53,7 +54,7 @@ export function createTown(T) {
     return overWater(x,z)?land:THREE.MathUtils.lerp(T.surfaceAt(x,z)-0.3,land,blend);
   }
   const land=surface(-650,-700,850,600,groundAt,0xffffff,5);
-  const p=land.geometry.attributes.position,colors=[],lawn=new THREE.Color(0x6aa746),dry=new THREE.Color(0xb2b76a);
+  const p=land.geometry.attributes.position,colors=[],lawn=new THREE.Color(0x6cbb4a),dry=new THREE.Color(0xbcc65a);
   for(let i=0;i<p.count;i++) {
     const c=lawn.clone().lerp(dry,0.26+0.16*Math.sin(p.getX(i)*0.013)*Math.cos(p.getZ(i)*0.017));colors.push(c.r,c.g,c.b);
   }
@@ -183,6 +184,7 @@ export function createTown(T) {
 }
 
 export function raceEdges(group,kit,T) {
+  const town=T.group?.getObjectByName('track-environment')?.userData.town;
   const edges=new THREE.Group(),cream=M(0xe4d8b9),red=M(0xb9654e);
   // Low urban kerbs replace the enclosing stacks of tyres.
   for(let s=0;s<T.TOTAL;s+=4)for(const side of [-1,1]) {
@@ -198,4 +200,12 @@ export function raceEdges(group,kit,T) {
     kit.at(edges,gate,{x:px,z:pz,y:T.terrainAt(px,pz)+0.15},dx?Math.PI/2:0);
   }
   group.add(bake(edges,{cellSize:200}));edges.traverse(o=>o.geometry?.dispose());
+  // Feria de la plaza: bunting between lamp posts, balloon bunches, juice
+  // stands and trinitarias, kept clear of every house front.
+  festive(group,T,{seed:7,minY:.4,stands:240,banners:380,bunting:120,balloons:90,flags:200,butterflies:24,
+    avoid:(town?.buildings||[]).map(b=>({x:b.x,z:b.z,r:Math.max(b.width||8,b.depth||8)*.6+1.5})),
+    trees:[['apamate',10,[1,12]],['araguaney',8,[1,12]]],
+    plants:[['trinitaria',14,[0,8],.8],['hibiscus',20],['bromeliad',30,[0,5]]],
+    birds:[{kind:'macaw',flocks:2,size:4}],
+    vista:{shape:'hill',radius:820,hills:24,height:[90,200],colors:[0x6fb86a,0x58a878,0x84c46a],balloons:6}});
 }

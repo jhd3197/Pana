@@ -1,16 +1,19 @@
 // Small road-level cues, shared by the twelve circuits. No collision geometry,
 // images or network payload: the same seeded batches are built on every client.
-import { THREE, M, box, finish, clear } from './world-kit.js';
+import { THREE, clear } from './world-kit.js';
+import { instancePlacements } from '/engine/models/core/static-batch.js';
+import { fiestaFlags } from '/engine/models/props/fiesta.js';
 
 const EARTH = new Set(['selva', 'llanos', 'desierto', 'bululu', 'delta', 'salto']);
 const COLORS = {
-  estadio: [0xe5bd49, 0xc45543], plaza: [0xe4bd69, 0x418b92],
-  selva: [0xc18e4d, 0x599661], llanos: [0xd2b076, 0x8a5841],
-  desierto: [0xd98b51, 0xcdb37a], paramo: [0xe7dfc4, 0x7294a8],
-  chichi: [0xe8c468, 0x458998], bululu: [0xf0d580, 0x53a7a5],
-  salinas: [0xf0ddd3, 0xcb858f], delta: [0xd5ab69, 0x408a7a],
-  cuevas: [0xc0c9c0, 0x6faaa3], salto: [0xd2bd8c, 0x6b9b87],
-  puerto: [0xe7c46c, 0x3c829a],
+  // Bright festival pairs: a sunny light and a saturated accent per circuit.
+  estadio: [0xffc93c, 0xff4f5e], plaza: [0xffd060, 0x2fb5c8],
+  selva: [0xc18e4d, 0x599661], llanos: [0xffcf4a, 0xe8513a],
+  desierto: [0xff9a4a, 0x3ec1ff], paramo: [0xffe066, 0x8f6ff0],
+  chichi: [0xffd23f, 0x2fa8d8], bululu: [0xffe27a, 0xff6fb5],
+  salinas: [0xf0ddd3, 0xcb858f], delta: [0xffc24a, 0xff4a3d],
+  cuevas: [0xb6f0e0, 0x2fc4b0], salto: [0xffd060, 0xff5a4a],
+  puerto: [0xffd23f, 0x2f8fe0],
 };
 
 export function raceDetails(T) {
@@ -47,27 +50,22 @@ export function raceDetails(T) {
   const wear = new THREE.Mesh(geo,material); wear.name='road-wear'; wear.userData.detailLevel=1;
   wear.userData.dispose=()=>material.dispose(); root.add(wear);
 
-  const props = new THREE.Group();
-  const pole = M(0x77674f), cloth = [M(light), M(accent), M(0xe8dcc1)];
-  let count = 0;
-  // Clusters of trackside pennants frame sectors and braking zones. Both sides
-  // stay outside road and shortcut clearance, and follow the actual terrain.
+  // Clusters of library feather flags frame sectors and braking zones. Both
+  // sides stay outside road and shortcut clearance and follow the terrain.
+  const sites = [], signs = [], seen = new THREE.Vector3();
+  T.group?.traverse(o => { if (o.name === 'sign-board') { o.getWorldPosition(seen); signs.push([seen.x, seen.z, (o.geometry.parameters?.width || 6) / 2 + 5]); } });
+  for (const [u] of T.def.sectors || []) for (const ds of [0, 22, -22]) { const a = T.pointAt(T.TOTAL * u + ds); signs.push([a.x, a.y, T.HW + 16]); }
   for (let s = 35; s < T.TOTAL; s += 105) for (const side of [-1, 1]) {
     const p=point(s, side*(T.HW+10)), y=T.terrainAt(p[0],p[2]);
     if (!clear(T,p[0],p[2],1) || Math.abs(y-p[1])>3 || (T.def.waterAt?.(p[0],p[2],0,T)||0)>0.1) continue;
     const q=T.pointAt(s+1), a=T.pointAt(s), h=Math.atan2(q.x-a.x,q.y-a.y);
-    for (let k=0;k<3;k++) {
-      const x=p[0]+Math.sin(h)*k*2.6, z=p[2]+Math.cos(h)*k*2.6, ground=T.terrainAt(x,z);
-      if (!clear(T,x,z,1) || Math.abs(ground-y)>1.5) continue;
-      props.add(box(.12,3.8,.12,pole,x,ground+1.9,z));
-      const flag=box(1.0,1.6,.035,cloth[(count+k)%3],x,ground+2.8,z);
-      flag.rotation.y=h; props.add(flag);
-      count++;
-    }
+    const x=p[0]+Math.sin(h)*4.4, z=p[2]+Math.cos(h)*4.4;
+    if (!clear(T,x,z,1) || Math.abs(T.terrainAt(x,z)-y)>1.5) continue;
+    if (signs.some(([sx, sz, r]) => Math.hypot(sx - p[0], sz - p[2]) < r || Math.hypot(sx - x, sz - z) < r)) continue;
+    sites.push({ x: p[0], y, z: p[2], rot: h });
   }
-  // These low-poly accents total only a few thousand triangles. Four global
-  // material batches cost less than dozens of tiny spatial/shadow draws.
-  const flags=finish(props,Infinity); flags.name='sector-pennants'; flags.userData.detailLevel=2;
-  root.add(flags); root.userData.pennants=count;
+  const flags = new THREE.Group(); flags.name = 'sector-pennants'; flags.userData.detailLevel = 2;
+  if (sites.length) instancePlacements(flags, fiestaFlags({ seed: T.TOTAL | 0, colors: [light, accent, 0xfffaf0] }), sites, { name: 'sector-pennants', cellSize: Infinity });
+  root.add(flags); root.userData.pennants = sites.length * 3;
   return root;
 }

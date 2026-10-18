@@ -9,6 +9,7 @@ import { tideZone,tideWetness,tidalCrossing } from './bululu-tide.js';
 import { beachShade, beachHut, driftwood } from '/engine/models/props/beach.js';
 import { placeReefSchools } from '/engine/placement/reef-schools.js';
 import { souvenirKiosk } from '/engine/models/props/monuments.js';
+import { festive, meadow } from './festive.js';
 import { fishingBoat, coastalLighthouse, lifeguardTower, beachVolleyball, beachShower, rescueRingStand, fishingNetRack, fishCrates, channelBuoy } from '/engine/models/props/coastal.js';
 import { beachCrab } from '/engine/models/fauna/beach-crab.js';
 import { groundBeachCrab } from '/engine/placement/beach-crab.js';
@@ -39,7 +40,7 @@ export default {
   sectors:[[0,'Pueblo del faro'],[.23,'Playa Pana'],[.43,'Cayo de los panas'],[.65,'Lengua de arena'],[.84,'Puerto de colores']],
   items:{boxes:[.1,.29,.48,.67,.87],boxLanes:[-6,-2,2,6],pads:[{u:.18,off:0},{u:.37,off:-4},{u:.59,off:4},{u:.79,off:0},{u:.95,off:-4}]},
   walls:false,chevrons:true,
-  palette:{skySeed:31,cloudCover:0.28,horizon:0xade4ef,skyTop:0x189fd9,hemiSky:0xe4f7ff,hemiGround:0xb5a877,hemiInt:1.6,sun:0xfff3d9,sunInt:2.5,ground:0xf1dea1,track:0xddc79a,dune:0,fog:[550,1800]},
+  palette:{skySeed:31,cloudCover:0.28,horizon:0xbff4ee,skyTop:0x0f95f2,halo:1.1,hemiSky:0xd0e8ff,hemiGround:0xe0c27e,hemiInt:1.6,sun:0xffd99c,sunInt:2.7,ground:0xfbe2a0,track:0xf0c88e,dune:0,fog:[600,2200]},
   environment(T){
     const group=new THREE.Group(),world=terrain(T,{bounds:[-650,-550,750,500],base:baseHeight,step:5,
       cut:(x,z,h)=>{
@@ -47,7 +48,7 @@ export default {
         const sand=zone*(1-smooth(off,T.HW+1,T.HW+5));h=h*(1-sand)+(T.surfaceAt(x,z)-.14)*sand;
         const channel=zone*smooth(off,T.HW+2,T.HW+19);return h*(1-channel)-3*channel;
       },
-      color:(x,z,y)=>y<.8?0xe9dfbd:y<5?0xf3e7c6:y<15?0xb3ae7d:0x979d88});
+      color:(x,z,y)=>y<.8?0xf2e2b4:y<5?0xfbe9c4:y<15?meadow(x,z,0x93c45e):meadow(x,z,0x6fb065)});
     group.add(sea(world.groundAt,{opacity:.68}),world.land);
     const village=new THREE.Group(),occupied=[];
     const colors=[0x55a7a5,0xd88b75,0xe2bc60,0x82a9c3,0xd5d1aa];
@@ -114,5 +115,14 @@ export default {
     const coastalTicks=coast.children.filter(o=>o.userData.tick);
     return {group,groundAt:world.groundAt,update:t=>{animateWater(t);tide.update(t);kiosk?.userData.tick(t);schools.forEach(o=>o.userData.tick(t));coastalTicks.forEach(o=>o.userData.tick(t));}};
   },
-  scenery(group,kit,T){edges(group,kit,T,{style:'rope',step:7,skip:(s)=>{const p=T.pointAt(s);return tideZone(p.x,p.y)>.01;}});},
+  scenery(group,kit,T){
+    edges(group,kit,T,{style:'rope',step:7,skip:(s)=>{const p=T.pointAt(s);return tideZone(p.x,p.y)>.01;}});
+    // Beach carnival: toy palms, kiosks with striped umbrellas, balloons,
+    // gull flocks and far green cays on the turquoise sea.
+    festive(group,T,{seed:31,minY:1,accept:(x,z)=>tideZone(x,z)<.01,stand:'shade',stands:160,banners:420,bunting:200,balloons:120,flags:200,butterflies:16,
+      trees:[['palm',36,[0,16]],['bucare',6,[2,16]]],
+      plants:[['trinitaria',10,[1,12],.8],['hibiscus',20],['bromeliad',20,[0,6]]],
+      birds:[{kind:'macaw',flocks:1,size:4},{kind:'ibis',flocks:1,size:5,height:[14,24]}],
+      vista:{shape:'hill',hills:16,height:[40,110],colors:[0x58b86a,0x6fc46a,0x4fae7a],y:-6,balloons:4}});
+  },
 };

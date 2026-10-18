@@ -1,4 +1,5 @@
-import { THREE,terrain,put,foundation,scatter,instances,clear,finish,smooth,placeOnTrack,boulder } from './world-kit.js';
+import { THREE,terrain,put,foundation,scatter,instances,clear,finish,smooth,placeOnTrack } from './world-kit.js';
+import { lajaRock } from '/engine/models/props/amazonas.js';
 import { giantCactus, sandDune, desertRockArch, abandonedGasStation, rustedPickup, roadsideTirePile, canyonSpire, brokenWagon, desertWarningSign, desertWell } from '/engine/models/props/desert.js';
 import { palm } from '/engine/models/vegetation/palm.js';
 import { agave } from '/engine/models/vegetation/agave.js';
@@ -9,6 +10,8 @@ import { parkBench } from '/engine/models/props/pueblo.js';
 import { waterPool, waterAnimator } from '/engine/models/effects/water-surface.js';
 import { baseHeight,roadHeight,OASIS } from './desierto-layout.js';
 import { grassTuft,entrance,crossing,vergePosts,dirtVerge } from './country-details.js';
+import { festive } from './festive.js';
+
 
 export function desertEnvironment(T){
   const group=new THREE.Group(),fixed=new THREE.Group(),counts={},occupied=[];
@@ -100,7 +103,7 @@ export function desertEnvironment(T){
   instances(group,agave({seed:9}),scatter(T,world.groundAt,{seed:615,count:65,bounds:[-360,-320,370,270],margin:5,scale:1.2,accept}),'desert-agaves',180);
   instances(group,grassTuft(0xb5a16b),scatter(T,world.groundAt,{seed:616,count:330,bounds:[-360,-330,380,280],margin:3,scale:1.2,accept}),'desert-dry-grass',180);
   const scree=scatter(T,world.groundAt,{seed:619,count:65,bounds:[-380,-350,390,280],margin:6,scale:1,accept});
-  scree.forEach(p=>{p.y-=.5*p.scale;});instances(group,boulder(0xac7957),scree,'desert-scree',180);
+  scree.forEach(p=>{p.y-=.5*p.scale;});instances(group,lajaRock({seed:43,radius:2.6,color:0xc47e52}),scree,'desert-scree',180);
   for(const u of [.31,.41,.57,.7,.86]){
     const p=placeOnTrack(T,T.TOTAL*u,T.HW+5),m=desertWarningSign();put(fixed,m,p.x,p.z,world.groundAt(p.x,p.z),p.h+Math.PI,1.2);counts['desert-warning-sign']=(counts['desert-warning-sign']||0)+1;
   }
@@ -123,4 +126,10 @@ export function desertScenery(group,kit,T){
   group.add(crossing(T,(p,s)=>high(s),{name:'canyon-ledge-viaduct',color:0xb3987e}));
   group.add(vergePosts(T,{skip:high,color:0xe9d0a0,step:18}),dirtVerge(T,{shoulder:0xc9aa77,rut:0xa58d69,skip:high}));
   for(let i=0;i<2;i++)group.add(orbitBird(soaringVulture({seed:30+i}),{cx:70,cz:-110,cy:90+i*8,r:58+i*14,speed:.16,phase:i*3}));
+  // Desert fiesta: cactus-flower beds, bunting at the gas stop, red mesas far off.
+  festive(group,T,{seed:43,skip:high,stands:320,banners:420,bunting:260,balloons:150,flags:200,butterflies:20,
+    trees:[['bucare',10,[3,20]],['palm',14,[2,16]],['apamate',6,[4,20]]],
+    plants:[['agave',40,[0,12]],['hibiscus',16],['rosette',30,[0,6]]],
+    birds:[{kind:'macaw',flocks:1,size:4},{kind:'vulture',flocks:1,size:3,height:[60,80]}],
+    vista:{shape:'mesa',hills:22,height:[70,170],colors:[0xe0784a,0xd8664a,0xeb9a5a,0xc95a48],top:0xf0b060,balloons:5}});
 }

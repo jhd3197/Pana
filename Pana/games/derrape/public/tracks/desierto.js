@@ -11,6 +11,6 @@ export default {
   hazards:[{kind:'rock',u:.096},{kind:'rock',u:.096,phase:4.5}],
   items:{boxes:[.1,.25,.4,.56,.73,.9],boxLanes:[-6,-2,2,6],pads:[{u:.13,off:0},{u:.31,off:3},{u:.63,off:-3},{u:.94,off:0}]},
   walls:false,chevrons:true,
-  palette:{skySeed:43,cloudCover:0.19,horizon:0xc2e1ed,skyTop:0x328fca,hemiSky:0xeaf4ff,hemiGround:0xad7950,hemiInt:1.45,sun:0xffebc8,sunInt:2.5,ground:0xd5a252,track:0xc5a67a,dune:0,fog:[480,1450]},
+  palette:{skySeed:43,cloudCover:0.22,horizon:0xd3f1ec,skyTop:0x1b8cf0,halo:1.2,hemiSky:0xd6e6ff,hemiGround:0xd08a4e,hemiInt:1.45,sun:0xffcf8e,sunInt:2.7,ground:0xeaa955,track:0xdcac76,dune:0,fog:[520,1900]},
   environment:desertEnvironment,scenery:desertScenery,
 };

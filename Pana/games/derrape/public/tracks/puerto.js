@@ -1,5 +1,6 @@
 import { TRACK_DEFINITIONS } from '../track-definitions.js';
-import { THREE,M,box,terrain,sea,finish,instances,scatter,edges,boulder } from './world-kit.js';
+import { lajaRock } from '/engine/models/props/amazonas.js';
+import { THREE,M,box,terrain,sea,finish,instances,scatter,edges } from './world-kit.js';
 import { ceiba } from '/engine/models/vegetation/ceiba.js';
 import { waterAnimator } from '/engine/models/effects/water-surface.js';
 import { ROUTE,FORT,CASA,baseHeight,coast,harborLand,townSites,townTerraces,isFort,isMountain,roadStyle } from './puerto-layout.js';
@@ -7,6 +8,7 @@ import { puertoHarbor } from './puerto-harbor.js';
 import { puertoTown } from './puerto-town.js';
 import { puertoFort } from './puerto-fort.js';
 import { puertoTunnel } from './puerto-tunnel.js';
+import { festive, meadow } from './festive.js';
 
 export default {
   ...TRACK_DEFINITIONS.find(t=>t.id==='puerto'),points:ROUTE,rounded:true,layered:true,hw:11.5,lineU:.085,roadStyle,
@@ -14,7 +16,7 @@ export default {
   previewBounds:[[-700,-26,-1250],[600,290,510]],walls:false,chevrons:true,
   sectors:[[0,'Túnel del puerto'],[.07,'Las tres grúas'],[.12,'Patio de contenedores'],[.17,'Casa Guipuzcoana'],[.29,'Camino de barro'],[.39,'Mirador del Caribe'],[.47,'Puerta de San Carlos'],[.53,'Rampa del patio'],[.57,'Vuelta a los baluartes'],[.75,'Salto del castillo'],[.86,'Bajada del pueblo']],
   items:{boxes:[.045,.17,.28,.4,.52,.65,.71,.87,.95],boxLanes:[-6,-2,2,6],pads:[{u:.09,off:0},{u:.26,off:-4},{u:.46,off:0},{u:.6,off:4},{u:.91,off:0}]},
-  palette:{skySeed:71,cloudCover:.3,horizon:0xb1e3ed,skyTop:0x389fd6,hemiSky:0xe4f5ff,hemiGround:0x75985d,hemiInt:1.7,sun:0xffefcc,sunInt:2.4,ground:0x7ea45e,track:0x727e80,dune:0,fog:[900,2900]},
+  palette:{skySeed:71,cloudCover:.3,horizon:0xc3f1ec,skyTop:0x1592ee,halo:1,hemiSky:0xd2e6ff,hemiGround:0x7fae55,hemiInt:1.7,sun:0xffd79a,sunInt:2.6,ground:0x8cbc5c,track:0x736b78,dune:0,fog:[900,2900]},
   environment(T){
     const lip=T.paramOf(-346,-1076,190.2),landing=T.paramOf(-420,-1148,170);
     T.gaps=[{s0:lip,len:landing-lip-8}];
@@ -29,8 +31,8 @@ export default {
         if(d<1)return CASA.y-.35;
         const off=Math.abs(T.offsetOf(x,z));return off<T.HW+2?h:townTerraces(x,z,h,sites,off);
       },
-      color:(x,z,y)=>y<-15?0x417f89:isFort(x,z)?0xa99470:harborLand(x,z)?0xaaa991:z>coast(x)-14?0xd1bf8a:isMountain(x,z)&&Math.abs(T.offsetOf(x,z))<25?0xa48558:
-        new THREE.Color(0x74945c).lerp(new THREE.Color(0xabc374),.5+.5*Math.sin(x*.025)*Math.cos(z*.018))});
+      color:(x,z,y)=>y<-15?0x417f89:isFort(x,z)?0xa99470:harborLand(x,z)?0xd6c6a2:z>coast(x)-14?0xd1bf8a:isMountain(x,z)&&Math.abs(T.offsetOf(x,z))<25?0xa48558:
+        meadow(x,z,0x7fb85a,{bloom:0xff9fd0})});
     const tunnel=puertoTunnel(T);
     group.add(world.land,sea((x,z)=>harborLand(x,z)?Math.max(4.2,world.groundAt(x,z)):world.groundAt(x,z),{size:3000}),tunnel);
     const harbor=puertoHarbor(T);group.add(harbor.group,puertoTown(T,world,sites),puertoFort(T));
@@ -40,7 +42,7 @@ export default {
     for(let x=-680;x<490;x+=11){const z=coast(x)+5;if(harborLand(x,z)||!((x>-55&&x<390)||x<-640))continue;rocks.push({x,z,y:-.9,rot:x*.2,scale:1.2});}
     for(let z=70;z<460;z+=13)rocks.push({x:431,z,y:-.9,rot:z,scale:1.3});
     for(let x=-20;x<425;x+=13)rocks.push({x,z:470,y:-1,rot:x,scale:1.4});
-    instances(group,boulder(0xa8a691),rocks,'puerto-coastal-rocks',180);
+    instances(group,lajaRock({seed:71,radius:2.4,color:0x8a8478}),rocks,'puerto-coastal-rocks',180);
     const retaining=new THREE.Group();
     for(let s=0;s<T.TOTAL;s+=5){const p=T.pointAt(s);if(p.y>-250||isFort(p.x,p.y))continue;
       if(T.gapAt(s))continue;const q=T.pointAt(s+.5),h=Math.atan2(q.x-p.x,q.y-p.y);
@@ -50,8 +52,15 @@ export default {
     return {group,groundAt:world.groundAt,update:t=>{animateWater(t);harbor.update(t);tunnel.userData.tick(t);}};
   },
   scenery(group,kit,T){
-    edges(group,kit,T,{style:'kerb',step:5,cellSize:220,skip:s=>{const p=T.pointAt(s);return roadStyle(p.x,p.y)!=='asphalt';}});
+    edges(group,kit,T,{style:'kerb',step:5,cellSize:220,colors:[0xff4f5e,0xfffaf0,0x3ec1ff,0xfffaf0],skip:s=>{const p=T.pointAt(s);return roadStyle(p.x,p.y)!=='asphalt';}});
     edges(group,kit,T,{style:'rope',step:6,cellSize:220,skip:s=>{const p=T.pointAt(s);return !isMountain(p.x,p.y)||isFort(p.x,p.y);}});
     edges(group,kit,T,{style:'steel',step:8,cellSize:220,skip:s=>{const p=T.pointAt(s);return T.gapAt(s)||p.y>-175||isFort(p.x,p.y)||isMountain(p.x,p.y);}});
+    // Port festival: harbour bunting, kiosks, balloons and gulls; flowering
+    // trees up the mountain road.
+    festive(group,T,{seed:71,cell:1400,minY:.6,skip:s=>{const p=T.pointAt(s);return isFort(p.x,p.y);},stands:300,banners:420,bunting:180,balloons:140,flags:220,butterflies:24,
+      trees:[['apamate',14,[1,18]],['araguaney',12,[1,18]],['palm',14,[0,14]],['bucare',8,[1,18]]],
+      plants:[['hibiscus',30],['bromeliad',30,[0,6]],['trinitaria',10,[0,8],.8]],
+      birds:[{kind:'macaw',flocks:1,size:4},{kind:'ibis',flocks:1,size:5,height:[16,28]}],
+      vista:{shape:'peak',radius:1700,hills:22,height:[220,380],colors:[0x5fa585,0x6cb092,0x7aa9b8],balloons:5}});
   },
 };

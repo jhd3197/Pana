@@ -1,4 +1,6 @@
-import { THREE, terrain, finish, put, instances, scatter, placeOnTrack, boulder } from './world-kit.js';
+import { meadow } from './festive.js';
+import { THREE, terrain, finish, put, instances, scatter, placeOnTrack } from './world-kit.js';
+import { mossRock } from '/engine/models/vegetation/moss-rock.js';
 import { waterGrid, hollowGallery } from './water-world-kit.js';
 import { waterAnimator } from '/engine/models/effects/water-surface.js';
 import { crossing } from './country-details.js';
@@ -9,7 +11,7 @@ import { fern } from '/engine/models/vegetation/fern.js';
 export function cuevasWorld(T) {
   const group=new THREE.Group(),world=terrain(T,{bounds:[-550,-440,540,480],base:baseHeight,step:5,
     cut:(x,z,h)=>{const r=riverAt(x,z);return r.distance<13?Math.min(h,r.height-4):h;},
-    color:(x,z,y)=>z<0?0x7f8c7a:0x7e9a62});
+    color:(x,z,y)=>z<0?0x9aa27e:meadow(x,z,0x74b65a,{bloom:0xff9fd0})});
   group.add(world.land,waterGrid(T,world,{bounds:[-470,-280,240,480],sample:(x,z)=>({...riverAt(x,z),visible:riverAt(x,z).distance<32}),name:'cuevas-river'}));
   group.add(hollowGallery(T,{...CAVE,width:31,height:33,color:0x798681,name:'cuevas-shell'}));
   group.add(crossing(T,p=>riverAt(p.x,p.z).distance<28,{name:'cuevas-stone-bridge',color:0x8e9386}));
@@ -29,8 +31,8 @@ export function cuevasWorld(T) {
   };
   instances(group,ceiba({seed:58,detail:'distant'}),scatter(T,world.groundAt,{seed:581,count:170,bounds:[-470,-350,450,430],margin:11,accept:outside}),'cuevas-valley-forest',190);
   instances(group,fern({seed:5}),scatter(T,world.groundAt,{seed:582,count:120,bounds:[-420,-320,420,400],margin:5,accept:outside}),'cuevas-fern-banks',190);
-  instances(group,boulder(0x87938b),scatter(T,world.groundAt,{seed:583,count:95,bounds:[-470,-350,450,430],margin:10,scale:2,
-    accept:(x,z)=>outside(x,z)&&riverAt(x,z).distance>35}),'cuevas-outcrops',190);
+  instances(group,mossRock({seed:58,size:2.2}),scatter(T,world.groundAt,{seed:583,count:95,bounds:[-470,-350,450,430],margin:10,scale:2,
+    accept:(x,z)=>outside(x,z)&&riverAt(x,z).distance>35}),'cuevas-outcrops',500);
   group.userData.assetCounts={stalactiteCluster:clusters,rootCurtain:roots};
   const animate=waterAnimator(group);
   return {group,groundAt:world.groundAt,update:animate};

@@ -70,7 +70,8 @@ try {
         return {calls:renderer.info.render.calls,triangles:renderer.info.render.triangles};
       },{u,side});
       await page.screenshot({path:`${out}/${id}-${name}.png`});result[name]=stats;
-      if(!baseline){assert.ok(stats.calls<900,id+' bounded draw submissions');assert.ok(stats.triangles<3500000,id+' bounded driving-view geometry');}
+      // Plaza's start view was 3.49 M before the festive roadside (+45 k).
+      if(!baseline){assert.ok(stats.calls<900,id+' bounded draw submissions');assert.ok(stats.triangles<3600000,id+' bounded driving-view geometry');}
     }
     results.push(result);console.log(JSON.stringify(result));
     await page.evaluate(()=>{

@@ -10,6 +10,14 @@ becomes the GitHub release's notes.
 
 ### Added
 
+- **Derrape's circuits are dressed for a fiesta.** Eleven tracks have warm
+  golden sunlight, a glowing sun halo and brighter skies, roads and grass.
+  The roadsides have araguaney, apamate and bucare trees in bloom, flower
+  beds, balloons, bunting, checkered banners and ice-cream carts. Flocks of
+  macaws and scarlet ibis and morpho butterflies fly overhead, and rounded
+  far mountains, tepuys and hot-air balloons make each map feel bigger. The
+  fiesta props, apamate and bucare trees are in Pana Studio too.
+
 - **Eight new cars and a real Taller in Derrape.** La Pulga, El Caprichoso,
   El Por Puesto, El Burro, El Chigüire, La Chispa, El Tepuy and La Reina join
   the grid with rounded toy bodies. In the Taller you can try a body, wheels,
