@@ -7,6 +7,7 @@ import { VEHICLES } from './catalog/vehicles.js';
 import { MAPS } from './catalog/maps.js';
 import { DOMINO } from './catalog/domino.js';
 import { CAIDA } from './catalog/caida.js';
+import { LUDO } from './catalog/ludo.js';
 
 const adapted = (assets, source) => assets.map(asset => ({...asset, dependencies: [...(asset.dependencies || []), source]}));
 export const ASSETS = [
@@ -17,6 +18,7 @@ export const ASSETS = [
   ...adapted(MAPS, '/studio/catalog/maps.js'),
   ...adapted(DOMINO, '/studio/catalog/domino.js'),
   ...adapted(CAIDA, '/studio/catalog/caida.js'),
+  ...adapted(LUDO, '/studio/catalog/ludo.js'),
 ];
 export const CATEGORIES = ['Todos', 'Personajes', 'Vestuario', 'Objetos', 'Fauna', 'Emblemas', 'Pueblo', 'Selva', 'Llanos', 'Vida llanera', 'Páramo', 'Desierto', 'Termales', 'Costa', 'Ruinas', 'Mina', 'Cementerio', 'Campamento', 'Atmósfera', 'Vegetación', 'Vehículos', 'Mapas'];
 export function sourcePath(url) {

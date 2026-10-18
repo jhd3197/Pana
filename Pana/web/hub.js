@@ -230,7 +230,7 @@ async function loadGames() {
   try {
     ({ games } = await fetch('/api/games').then((r) => r.json()));
     gamesEl.innerHTML = '';
-    const order = ['derrape', 'galope', 'curiara', 'domino', 'caida', 'poquer', 'billar', 'criollas', 'bululu', 'cocina', 'escondidas', 'pintura', 'embuste', 'reliquia'];
+    const order = ['derrape', 'galope', 'curiara', 'domino', 'ludo', 'caida', 'poquer', 'billar', 'criollas', 'bululu', 'cocina', 'escondidas', 'pintura', 'embuste', 'reliquia'];
     games.sort((a, b) => order.indexOf(a.id) - order.indexOf(b.id));
     for (const game of games) { const card = gameCard(game); card.dataset.category = category(game); gamesEl.appendChild(card); }
     for (const label of categories) {

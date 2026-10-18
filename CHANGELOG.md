@@ -20,6 +20,10 @@ becomes the GitHub release's notes.
   Copa, Taller and Parrilla, with a garage that waits for its previews to finish.
   Navigation uses compact chevrons and avatar stills are reused across menus.
 
+- **Play Ludo in 3D with up to four panas or fill the table with bots.**
+  Roll the dice, capture rival pieces and race all four home with saved avatars,
+  shared invitations, touch and keyboard controls, host recovery and local play.
+
 - **Choose games from an illustrated launcher with category filters and a thumbnail rail.**
   Browse descriptions, create an invite link or enter a room code on desktop and
   phones. Hosting integrations can handle party launches and show member portraits;

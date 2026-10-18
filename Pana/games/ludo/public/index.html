@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#0e0b24">
+  <meta name="description" content="Ludo 3D con tus panas. Cuatro colores, un dado y una carrera hasta casa.">
+  <title>Ludo · Pana</title>
+  <link rel="stylesheet" href="/engine/kit.css">
+  <link rel="stylesheet" href="/engine/ui.css">
+  <link rel="stylesheet" href="style.css">
+  <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}</script>
+</head>
+<body class="in-lobby">
+  <div id="stage"><canvas id="world" aria-label="Tablero de Ludo en tres dimensiones. También puedes mover con los botones de ficha."></canvas></div>
+  <header class="topbar"><a class="pk-logo" href="/" aria-label="Volver a Pana">PANA</a><nav id="game-nav" aria-label="Opciones"></nav></header>
+  <section id="welcome" class="pk-lobby" aria-labelledby="lobby-title">
+    <span class="pk-ribbon">LA MESA ESTÁ LISTA</span>
+    <h1 id="lobby-title" class="pk-title">LUDO</h1>
+    <p class="pk-copy">Cuatro fichas. Un dado.<br>¡Todos quieren llegar a casa!</p>
+    <div class="pk-stats"><div class="pk-stat"><b>1–4</b><span>panas</span></div><div class="pk-stat"><b>4</b><span>fichas por pana</span></div></div>
+    <p class="pk-copy rules-summary">Saca un seis para salir. Captura a tus rivales y lleva tus cuatro fichas al centro con el número exacto.</p>
+    <ol id="lobby-roster" class="pk-roster" aria-label="Puestos de la mesa"></ol>
+    <button id="rules" class="pk-btn pk-btn--ghost">Cómo se juega</button>
+    <div class="pk-lobby-foot"><span id="lobby-room" class="pk-lobby-room"></span><button id="start" class="pk-btn pk-btn--primary pk-btn--lg" disabled>Preparando la mesa…</button><span id="lobby-invite-slot"></span></div>
+  </section>
+  <main id="hud" hidden>
+    <ol id="scoreboard" aria-label="Progreso de los jugadores"></ol>
+    <section class="action-panel pk-panel" aria-label="Tu turno">
+      <div class="turn-copy"><h2 id="turn" class="pk-heading" aria-live="polite"></h2><p id="event" role="status"></p></div>
+      <div class="play-controls"><output id="die" aria-label="Último dado">—</output><button id="roll" class="pk-btn pk-btn--primary">Tirar dado <kbd class="pk-kbd" data-pana-hint>Espacio</kbd></button><div id="pieces" aria-label="Elige una ficha"></div></div>
+    </section>
+    <button id="view" class="pk-btn pk-btn--sm" aria-pressed="false">Vista desde arriba</button>
+  </main>
+  <div class="connection"><span id="connection" role="status">Conectando…</span><button id="practice" class="pk-btn pk-btn--sm" hidden>Jugar en local</button></div>
+  <section id="results" class="pk-results" hidden aria-labelledby="result-title"><div class="pk-modal pk-results-card"><span class="pk-ribbon">TODOS A CASA</span><h2 id="result-title" class="pk-title"></h2><p class="pk-copy">¡La revancha está servida!</p><ol id="result-roster" class="pk-roster"></ol><button id="again" class="pk-btn pk-btn--primary pk-btn--block">Otra partida</button><a class="pk-back" href="/">← Todos los juegos</a></div></section>
+  <div id="loading" class="pk-loading"><div class="pk-panel"><h2 class="pk-heading">Preparando Ludo</h2><p id="loading-copy">Poniendo las fichas sobre la mesa…</p></div></div>
+  <script type="module">import('./game.js').catch(error=>{console.error(error);document.getElementById('loading-copy').textContent='No pudimos cargar Ludo. Revisa tu conexión y recarga la página.';});</script>
+</body>
+</html>
