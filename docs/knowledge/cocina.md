@@ -58,6 +58,12 @@ host departure, replay, offline recovery and existing games. `PANA_QA_OUTPUT`
 can point to a local directory for screenshots. `?debug` exposes `window.cocina`
 with the host simulation and test placement/advance helpers.
 
+Browser interaction fixtures must await `PANA_LOBBY_LOADING === false`, including
+late joins: a connected room can precede prepared shaders. The three-client suite
+extends its fixture round to ten minutes so software rendering cannot end it
+before the touch and host-migration assertions; it still ends the round explicitly
+to test results/replay. `PANA_QA_COMPACT=1` reduces desktop rendering cost.
+
 ## Notes for agents
 
 Rules that used to live in AGENTS.md (paths are relative to `Pana/`). Keep them
