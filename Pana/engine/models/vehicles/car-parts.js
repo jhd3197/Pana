@@ -1,5 +1,6 @@
-// Bolt-on garage parts that fit any v2 car: spoilers, roof cargo, decals,
-// stripes, a hood scoop and the paint finish. Every part is placed from the
+// Bolt-on garage parts that fit any v2 car: spoilers, roof cargo, front
+// bars, a roll cage, engine dress-up (scoop, blower, exhausts), decals,
+// stripes and the paint finish. Every part is placed from the
 // car's fit (car-kit.js shellBody/cabin): nose and tail faces, the top line,
 // the roof and the half width, so no car needs hand-tuned offsets.
 // cfg slot values of 'fabrica' (or missing) keep the car's own stock part;
@@ -7,7 +8,7 @@
 
 import * as THREE from 'three';
 import {
-  M, S, DECAL, CHROME, DARK, mesh, box, rbox, tube, extrudeX, roundel, flower, canvasMat, bothSides, detachable, domeLamp, AMBER,
+  M, S, DECAL, CHROME, DARK, mesh, box, rbox, tube, extrudeX, roundel, flower, canvasMat, bothSides, detachable, domeLamp, AMBER, makeWheel,
 } from './car-kit.js';
 
 export const stock = (cfg, slot) => !cfg?.[slot] || cfg[slot] === 'fabrica';
@@ -48,6 +49,26 @@ export function spoiler(car, kind, paint) {
       g.add(rbox(0.04, 0.34, 0.66, paint, s * span / 2, y + h + 0.04, z - 0.05, 0.015));
       const post = rbox(0.06, h + 0.04, 0.2, DARK(), s * span * 0.3, y + h / 2, z, 0.025);
       g.add(post);
+    }
+  } else if (kind === 'techo') {
+    // a lip off the back edge of the roof
+    const roof = fit.roof;
+    if (!roof) return;
+    const s = new THREE.Shape();
+    s.moveTo(0.14, 0.03); s.lineTo(-0.3, 0.0); s.lineTo(-0.36, -0.07); s.lineTo(0.1, -0.03); s.closePath();
+    g.add(mesh(extrudeX(s, -roof.half, roof.half, { bevel: 0.025 }), paint, 0, roof.y(roof.zR + 0.15) - 0.02, roof.zR));
+  } else if (kind === 'cisne') {
+    // swan neck: the wing hangs from curved posts that rise behind it
+    // no rear deck (the cabin runs to the tail): hang it off the roof instead
+    const roof = fit.roof, onRoof = !deck.roomy && roof;
+    const z = onRoof ? roof.zR + 0.15 : deck.z, y = onRoof ? roof.y(roof.zR + 0.25) : fit.topOf(z), h = onRoof ? 0.4 : 0.6;
+    const span = Math.min(fit.width + 0.05, 2 * fit.halfW(z) + 0.12);
+    g.add(foil(span, 0.6, 0.1, -0.14, paint, y + h, z - 0.04));
+    for (const s of [1, -1]) {
+      g.add(rbox(0.04, 0.32, 0.62, paint, s * span / 2, y + h + 0.03, z - 0.04, 0.015));
+      const x = s * span * 0.28;
+      g.add(tube([x, y, z + 0.22], [x, y + h * 0.8, z + 0.28], 0.035, DARK()));
+      g.add(tube([x, y + h * 0.8, z + 0.28], [x, y + h + 0.1, z + 0.04], 0.035, DARK()));
     }
   } else if (kind === 'rally') {
     const roof = fit.roof ?? { zR: deck.z + 0.4, y: () => deck.y + 0.2, half: fit.halfW(deck.z) };
@@ -108,6 +129,13 @@ export function roofCargo(car, kind) {
     const pot = S('#c8ccd4', { metalness: 0.7, roughness: 0.3 });
     g.add(mesh(new THREE.CylinderGeometry(0.26, 0.24, 0.32, 14), pot, 0.5, y + 0.16, z - 0.45));
     g.add(mesh(new THREE.CylinderGeometry(0.28, 0.28, 0.05, 14), pot, 0.5, y + 0.34, z - 0.45));
+  } else if (kind === 'repuesto') {
+    if (spot.rack) y = rack(g, z, y, Math.min(len, 1.6), Math.min(half - 0.05, 0.8));
+    const spare = makeWheel({ r: 0.52, w: 0.4, style: 'acero', rim: '#c9ced8', cap: '#c9ced8', tread: 'barro' });
+    spare.rotation.z = Math.PI / 2;
+    spare.position.set(0, y + 0.22, z);
+    g.add(spare);
+    for (const s of [1, -1]) g.add(rbox(0.05, 0.06, 1.1, M('#2e1d12'), s * 0.18, y + 0.44, z, 0.015));
   } else if (kind === 'cornetas') {
     const spk = S('#1b1820', { roughness: 0.45 }), cone = S('#4a4652', { roughness: 0.5 });
     g.add(rbox(1.5, 0.62, 0.62, spk, 0, y + 0.32, z, 0.09));
@@ -124,19 +152,19 @@ export function roofCargo(car, kind) {
   detachable(car, g);
 }
 
-let rayoMat = null;
-function rayo() {
-  rayoMat ||= canvasMat(512, 128, (g) => {
-    g.fillStyle = '#ffd23f'; g.strokeStyle = '#16161a'; g.lineWidth = 8; g.lineJoin = 'round';
+const rayoMats = new Map();
+function rayo(color = '#ffd23f') {
+  if (!rayoMats.has(color)) rayoMats.set(color, canvasMat(512, 128, (g) => {
+    g.fillStyle = color; g.strokeStyle = '#16161a'; g.lineWidth = 8; g.lineJoin = 'round';
     g.beginPath();
     g.moveTo(8, 72); g.lineTo(250, 50); g.lineTo(230, 80); g.lineTo(504, 36); g.lineTo(504, 58);
     g.lineTo(272, 100); g.lineTo(292, 70); g.lineTo(8, 92); g.closePath();
     g.stroke(); g.fill();
-  });
-  return new THREE.Mesh(new THREE.PlaneGeometry(2.6, 0.65), rayoMat);
+  }));
+  return new THREE.Mesh(new THREE.PlaneGeometry(2.6, 0.65), rayoMats.get(color));
 }
 
-export function decal(car, kind, num) {
+export function decal(car, kind, num, accent = '#ffd23f') {
   const fit = car.fit, c = car.chassis;
   // the door, between the arches
   const z = (Math.max(...fit.axles) + Math.min(...fit.axles)) / 2, y = (fit.sill + (fit.belt ?? fit.topOf(z))) / 2 + 0.06;
@@ -144,7 +172,7 @@ export function decal(car, kind, num) {
   else if (kind === 'flor') bothSides(c, () => flower(0.42), fit.halfW(z) + 0.015, y, z);
   else if (kind === 'rayo') {
     for (const s of [1, -1]) {
-      const d = rayo();
+      const d = rayo(accent);
       d.position.set(s * (fit.halfW(0) + 0.016), y - 0.05, 0);
       d.rotation.y = s * Math.PI / 2;
       d.scale.x = Math.min(1, (fit.zF - fit.zR - 0.6) / 2.6);
@@ -209,6 +237,92 @@ function hoodScoop(car) {
   car.chassis.add(rbox(0.64, 0.11, 0.04, DARK(), 0, y + 0.07, z + 0.34, 0.015));
 }
 
+// ---------- front bars, the roll cage and the engine ----------
+export function frente(car, kind) {
+  const fit = car.fit, g = new THREE.Group(), bar = S('#1d1d23', { roughness: 0.45, metalness: 0.3 });
+  const y0 = fit.sill + 0.12, z = fit.noseZ(y0 + 0.1) + 0.18;
+  if (kind === 'defensa') {
+    const y1 = Math.min(fit.topOf(fit.zF - 0.3), y0 + 0.75);
+    for (const s of [1, -1]) {
+      g.add(tube([s * 0.55, y0, z], [s * 0.55, y1 - 0.08, z + 0.04], 0.065, bar));
+      g.add(tube([s * 0.55, y0 + 0.25, z], [s * 0.95, y0 + 0.1, z - 0.18], 0.055, bar));
+    }
+    g.add(tube([-0.55, y1, z + 0.02], [0.55, y1, z + 0.02], 0.065, bar));
+    g.add(tube([-0.55, y0 + 0.36, z + 0.03], [0.55, y0 + 0.36, z + 0.03], 0.05, bar));
+  } else if (kind === 'faros') {
+    const y = Math.min(fit.topOf(fit.zF - 0.2) + 0.25, y0 + 0.9), w = Math.min(1.7, 2 * fit.halfW(z));
+    g.add(rbox(w, 0.07, 0.08, bar, 0, y - 0.22, z - 0.05, 0.03));
+    for (const k of [-0.375, -0.125, 0.125, 0.375]) {
+      const x = k * w * 1.6;
+      g.add(rbox(0.05, 0.16, 0.05, bar, x, y - 0.14, z - 0.05, 0.015));
+      const lamp = domeLamp(0.15, AMBER(), bar, 0.14);
+      lamp.position.set(x, y, z);
+      g.add(lamp);
+    }
+  } else if (kind === 'winche') {
+    const w = 2 * fit.halfW(z) + 0.1;
+    g.add(rbox(w, 0.34, 0.36, bar, 0, y0 + 0.08, z - 0.04, 0.06));
+    const drum = mesh(new THREE.CylinderGeometry(0.15, 0.15, 0.72, 14), S('#b9b3a6', { roughness: 0.85 }), 0, y0 + 0.1, z + 0.2);
+    drum.rotation.z = Math.PI / 2;
+    g.add(drum);
+    for (const s of [1, -1]) {
+      g.add(rbox(0.07, 0.34, 0.34, bar, s * 0.4, y0 + 0.1, z + 0.18, 0.02));
+      const shackle = mesh(new THREE.TorusGeometry(0.09, 0.03, 6, 12), S('#ff8a1f'), s * (w / 2 - 0.2), y0 - 0.02, z + 0.16);
+      shackle.rotation.y = Math.PI / 2;
+      g.add(shackle);
+    }
+    const hook = mesh(new THREE.TorusGeometry(0.1, 0.03, 6, 12, Math.PI * 1.5), S('#ff8a1f'), 0, y0 - 0.14, z + 0.32);
+    hook.rotation.y = Math.PI / 2;
+    g.add(hook);
+  } else return;
+  detachable(car, g);
+}
+
+// A roll cage inside the cabin: hoops at the windshield, the B pillar and
+// over the back, in the accent colour.
+export function jaula(car, color = '#1d1d23') {
+  const fit = car.fit, cab = fit.cabin;
+  if (!cab) return;
+  const mat = S(color, { roughness: 0.4, metalness: 0.35 }), half = cab.width / 2 - 0.12;
+  const top = fit.roof ? fit.roof.top - 0.2 : fit.belt + 1.05, low = fit.belt - 0.35;
+  const zA = cab.zF - 0.25, zB = (cab.zF + cab.zR) / 2 - 0.1, zC = cab.zR + 0.2;
+  const g = new THREE.Group();
+  for (const s of [1, -1]) {
+    g.add(tube([s * half, fit.belt, zA], [s * half, top, zB + 0.2], 0.05, mat));
+    g.add(tube([s * half, low, zB], [s * half, top, zB], 0.05, mat));
+    g.add(tube([s * half, top, zB], [s * half, fit.belt + 0.2, zC], 0.05, mat));
+  }
+  g.add(tube([-half, top, zB], [half, top, zB], 0.05, mat));
+  g.add(tube([-half, top, zB], [half, low + 0.3, zB], 0.04, mat));
+  car.chassis.add(g);
+}
+
+// Engine dress-up: chrome tailpipes for every upgrade, a scoop for turbo, a
+// chrome blower with stacks for carreras.
+export function motor(car, kind) {
+  const fit = car.fit, c = car.chassis;
+  const r = kind === 'carreras' ? 0.11 : 0.085, y = fit.sill + 0.05, z = fit.tailZ(y + 0.1);
+  for (const x of [0.5, -0.5]) {
+    const pipe = mesh(new THREE.CylinderGeometry(r, r * 1.1, 0.42, 12), CHROME(), x, y, z - 0.08);
+    pipe.rotation.x = Math.PI / 2;
+    c.add(pipe);
+    const soot = mesh(new THREE.CircleGeometry(r * 0.75, 10), DARK(), x, y, z - 0.295);
+    soot.rotation.y = Math.PI;
+    c.add(soot);
+  }
+  const cab = fit.cabin, hood = cab ? fit.zF - cab.zF : 0;
+  const hz = hood > 0.7 ? cab.zF + hood * 0.45 : fit.zR + 0.55, hy = fit.topOf(hz);
+  if (kind === 'turbo') hoodScoop(car);
+  else if (kind === 'carreras') {
+    c.add(rbox(0.66, 0.3, 0.6, CHROME(), 0, hy + 0.14, hz, 0.06));
+    c.add(rbox(0.74, 0.07, 0.66, DARK(), 0, hy + 0.01, hz, 0.025));
+    for (let k = 0; k < 3; k++) for (const s of [1, -1]) {
+      c.add(mesh(new THREE.CylinderGeometry(0.06, 0.075, 0.24, 10), CHROME(), s * 0.15, hy + 0.4, hz - 0.18 + k * 0.18));
+    }
+    c.add(rbox(0.36, 0.22, 0.07, DARK(), 0, hy + 0.12, hz + 0.33, 0.02));
+  }
+}
+
 // ---------- the paint finish ----------
 let camoTexture = null;
 function camo() {
@@ -239,6 +353,7 @@ function camo() {
 }
 export const FINISHES = {
   brillante: null,
+  satinado: { roughness: 0.58, metalness: 0.08 },
   mate: { roughness: 0.86, metalness: 0 },
   metalico: { roughness: 0.3, metalness: 0.35 },
   camuflaje: { roughness: 0.82, metalness: 0 },
@@ -266,12 +381,16 @@ export function finish(car, kind) {
 }
 
 // Apply a garage config to a freshly built car.
-export function dress(car, cfg = {}, { num = 1, accent = '#f3e9d7' } = {}) {
+// cfg.acento is the accent colour (stripes, rayo, cage, wings).
+export function dress(car, cfg = {}, { num = 1 } = {}) {
   if (!car.fit?.topOf) return car;   // older bodies have no fit
-  if (cfg.motor === 'turbo') hoodScoop(car);
-  if (!stock(cfg, 'aleron')) spoiler(car, cfg.aleron, car.paint);
+  const accent = cfg.acento ?? '#f3e9d7';
+  if (!stock(cfg, 'motor')) motor(car, cfg.motor);
+  if (!stock(cfg, 'aleron')) spoiler(car, cfg.aleron, cfg.acento ? S(cfg.acento, { roughness: 0.35 }) : car.paint);
   if (!stock(cfg, 'techo')) roofCargo(car, cfg.techo);
-  if (!stock(cfg, 'calcomania')) decal(car, cfg.calcomania, num);
+  if (!stock(cfg, 'frente')) frente(car, cfg.frente);
+  if (cfg.jaula === 'con') jaula(car, cfg.acento ?? '#1d1d23');
+  if (!stock(cfg, 'calcomania')) decal(car, cfg.calcomania, num, cfg.acento ?? '#ffd23f');
   if (!stock(cfg, 'franjas')) stripes(car, cfg.franjas, accent);
   if (!stock(cfg, 'acabado')) finish(car, cfg.acabado);
   return car;

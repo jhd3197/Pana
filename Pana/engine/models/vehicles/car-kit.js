@@ -371,6 +371,23 @@ function shellBody(car, { side, tub = side, width, axles, hub, archR, sill, slab
   return fit;
 }
 
+// The fit for a classic extruded body (profile() points [z, y] with a bevel),
+// so car-parts.js can dress the low-poly cars as well as the v2 bodies.
+function profileFit(car, points, width, bevel, { paint, axles, arch }) {
+  const poly = points.map(([z, y]) => new THREE.Vector2(z, y));
+  const zF = Math.max(...points.map(p => p[0])) + bevel, zR = Math.min(...points.map(p => p[0])) - bevel;
+  const sill = Math.min(...points.map(p => p[1])) - bevel;
+  const at = (along, v, pick, fallback) => { const hit = crossings(poly, along, v); return hit.length ? pick(...hit) : fallback; };
+  car.fit = {
+    ...car.fit, width, zF, zR, sill, hub: car.radius, axles, arch, taper: () => 1,
+    noseZ: y => at(true, y, Math.max, zF - bevel) + bevel,
+    tailZ: y => at(true, y, Math.min, zR + bevel) - bevel,
+    topOf: z => at(false, z, Math.max, sill + bevel) + bevel,
+    halfW: () => width / 2,
+  };
+  car.paint = paint;
+}
+
 // A flared arch over a wheel: an extruded half ring, axle at the origin.
 function archFlare(r, w, mat, lip = 0.16, drop = 0.12) {
   const th0 = -drop, sh = new THREE.Shape();
@@ -428,6 +445,9 @@ function treadBlocks(g, kind, r, w, rubber) {
   if (kind === 'barro') {
     const lug = new THREE.BoxGeometry(w * 0.46, r * 0.15, r * 0.26), side = new THREE.BoxGeometry(r * 0.1, r * 0.16, r * 0.22);
     ring(12, k => { const s = k % 2 ? 1 : -1; return [[lug, s * w * 0.2, r + r * 0.03, s * 0.3], [side, s * (w / 2 - 0.01), r - r * 0.06, 0]]; });
+  } else if (kind === 'todoterreno') {
+    const block = new THREE.BoxGeometry(w * 0.4, r * 0.1, r * 0.2);
+    ring(16, k => [[block, w * 0.21 + (k % 2 ? 0.04 : -0.04), r + r * 0.02, 0], [block, -w * 0.21 + (k % 2 ? -0.04 : 0.04), r + r * 0.02, 0]]);
   } else if (kind === 'lluvia') {
     const sipe = new THREE.BoxGeometry(w * 0.34, r * 0.05, r * 0.08);
     ring(18, () => [[sipe, w * 0.2, r + 0.004, 0.55], [sipe, -w * 0.2, r + 0.004, -0.55]]);
@@ -528,12 +548,12 @@ function rimFace(face, design, rimR, r, rimMat, capMat) {
   }
 }
 // spec: { r, w, style, rim, cap, tread, tire }. tread: calle | barro | lluvia |
-// slick | liso; tire is the rubber colour (wooden wheels pass brown).
+// todoterreno | slick | liso; tire is the rubber colour (wooden wheels pass brown).
 function makeWheel({ r, w, style = 'spokes', rim = '#c9ccd4', cap = '#d62828', tread = null, tire = '#1d1c21' }) {
   const g = new THREE.Group();
   const design = RIM_STYLE[style] ?? style;
   tread ??= design === 'acero' ? 'barro' : design === 'palo' ? 'liso' : 'calle';
-  const sh = r * (tread === 'slick' ? 0.07 : tread === 'barro' ? 0.17 : 0.11);
+  const sh = r * (tread === 'slick' ? 0.07 : tread === 'barro' ? 0.17 : tread === 'todoterreno' ? 0.14 : 0.11);
   const rimR = r * (tread === 'barro' ? 0.56 : design === 'disco' ? 0.6 : 0.64);
   const rubber = S(tire, { roughness: 0.92 });
   g.add(mesh(tireGeometry(r, w, rimR, sh), rubber));
@@ -594,7 +614,7 @@ function rig(spec) {
   inner.position.y = -1;
   tumble.add(inner);
   const lift = new THREE.Group();
-  lift.position.y = spec.base ? clamp(spec.wheel.r - spec.base.r, -0.06, 0.16) : 0;
+  lift.position.y = (spec.base ? clamp(spec.wheel.r - spec.base.r, -0.06, 0.16) : 0) + (spec.wheel.lift ?? 0);
   inner.add(lift);
   const chassis = new THREE.Group();   // rides the suspension
   lift.add(chassis);
@@ -791,6 +811,6 @@ function flower(size) {
 
 export {
   bevelBox, squareLamp, towLoop, bodyShell,
-  S, PAINT, LENS, AMBER, TAIL, roundedPath, archedSide, extrudeX, crossings, RB, rbox, shellBody, archFlare, domeLamp, rectLamp,
+  S, PAINT, LENS, AMBER, TAIL, roundedPath, archedSide, extrudeX, crossings, RB, rbox, shellBody, archFlare, domeLamp, rectLamp, profileFit,
   M, DECAL, CHROME, DARK, mesh, box, profile, strut, pane, tube, canvasMat, roundel, plate, bothSides, spot, makeWheel, fender, rig, detachable, cabin, lightBar, spareWheel, roundLamp, venezuelaFlag, flower,
 };

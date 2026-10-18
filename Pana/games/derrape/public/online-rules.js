@@ -22,7 +22,8 @@ export const GP_PROTOCOL = 2;
 
 export const RIVALS = ['Don Pancho', 'La Chama', 'El Gocho', 'Tía Carmen', 'El Catire', 'Yoli', 'El Pelúo', 'La Nena'];
 // Thematic cauchos per car, so rival loadouts show up in every race.
-export const AI_WHEELS = { chamo: 'calle', lancha: 'lluvia', machito: 'barro', bala: 'slick', toro: 'barro', familiar: 'lluvia', rumbera: 'palo', montanero: 'barro' };
+export const AI_WHEELS = { chamo: 'calle', lancha: 'lluvia', machito: 'barro', bala: 'slick', toro: 'barro', familiar: 'lluvia', rumbera: 'palo', montanero: 'barro',
+  escarabajo: 'calle', sedan: 'calle', buseta: 'lluvia', pickup: 'barro', jeep: 'barro', hatch: 'slick', rustico: 'barro', malibu: 'slick' };
 
 export const CAR_COUNT = CAR_DEFINITIONS.length;
 export const TRACK_IDS = TRACK_DEFINITIONS.map(t => t.id);

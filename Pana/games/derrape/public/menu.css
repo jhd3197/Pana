@@ -59,7 +59,11 @@ body { --menu-paper: #fff3d8; --menu-ink: #282035; --menu-grass: #2d705d; }
 .menu-flow .tools .hint { width: 100%; text-align: right; }
 .car-picker { position: absolute; bottom: 0; left: 314px; right: 0; display: flex; flex-direction: column; gap: 8px; }
 .car-tabs { align-self: flex-start; }
-.menu-flow .car-lineup, .menu-flow .wheel-lineup { position: static; width: 100%; display: flex; justify-content: center; gap: 8px; padding: 4px 4px 8px; }
+.menu-flow .car-lineup, .menu-flow .wheel-lineup { position: static; width: 100%; display: flex; justify-content: flex-start; gap: 8px; padding: 4px 4px 8px; }
+/* Centered while the cards fit; once 16 cars overflow, every card stays scrollable
+   (justify-content: center would push the first ones out of reach). */
+.menu-flow .car-lineup > :first-child, .menu-flow .wheel-lineup > :first-child { margin-left: auto; }
+.menu-flow .car-lineup > :last-child, .menu-flow .wheel-lineup > :last-child { margin-right: auto; }
 .menu-flow .car-choice, .menu-flow .wheel-choice { min-width: 70px; flex: 1 0 70px; max-width: 128px; border-radius: 12px; background: var(--pk-deep); }
 .menu-flow .car-choice[aria-pressed="true"], .menu-flow .wheel-choice[aria-pressed="true"] { border-color: var(--pk-yellow); background: var(--pk-raised); }
 .menu-flow .car-choice span, .menu-flow .wheel-choice span { font-size: 11px; }
@@ -308,7 +312,7 @@ body { --menu-paper: #fff3d8; --menu-ink: #282035; --menu-grass: #2d705d; }
   .menu-flow .info #car-blurb { max-width: none; font-size: 10px; }
   .menu-flow .info .driver { display: none; }
   .menu-flow .info #stats { display: grid; gap: 4px; margin: 0; }
-  .menu-flow #stats div { grid-template-columns: 72px 1fr; gap: 4px; }
+  .menu-flow #stats div { grid-template-columns: 72px 1fr 16px; gap: 4px; }
   .menu-flow #stats dt { font-size: 10px; }
   .menu-flow #stats dd { height: 5px; }
   .menu-flow .tools { left: 196px; top: 0; gap: 4px; }
