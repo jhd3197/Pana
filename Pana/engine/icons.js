@@ -28,6 +28,7 @@ export const ICONS = {
   gear: svg(`<path d="M17 3h6l1 5 4 2 4-3 4 4-3 4 2 4 5 1v6l-5 1-2 4 3 4-4 4-4-3-4 2-1 5h-6l-1-5-4-2-4 3-4-4 3-4-2-4-5-1v-6l5-1 2-4-3-4 4-4 4 3 4-2z" fill="currentColor"/><circle cx="20" cy="20" r="6" fill="var(--pk-night, #0e0b24)"/>`),
   share: svg(`<path d="M14 8h18v18" fill="none" stroke="currentColor" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M31 9L9 31" stroke="currentColor" stroke-width="4.5" stroke-linecap="round"/>`),
   heart: svg(`<path d="M20 34S5 25 5 14c0-5 4-8 8-8 3 0 6 2 7 5 1-3 4-5 7-5 4 0 8 3 8 8 0 11-15 20-15 20z" fill="#ff4b4b" stroke="${INK}" stroke-width="2.5" stroke-linejoin="round"/>`),
+  camera: svg('<circle cx="12" cy="11" r="5.5" fill="currentColor"/><circle cx="24" cy="11" r="5.5" fill="currentColor"/><rect x="5" y="17" width="23" height="15" rx="3.5" fill="currentColor"/><path d="M28 22l8-4.5v14L28 27z" fill="currentColor"/>'),
   heartEmpty: svg(`<path d="M20 34S5 25 5 14c0-5 4-8 8-8 3 0 6 2 7 5 1-3 4-5 7-5 4 0 8 3 8 8 0 11-15 20-15 20z" fill="none" stroke="currentColor" stroke-width="3" stroke-linejoin="round" opacity=".5"/>`),
 };
 

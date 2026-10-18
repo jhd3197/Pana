@@ -2,7 +2,7 @@
 
 Billar is a casual two-player eight-ball table at `/g/billar/`. It also has
 explicit local practice: one player pockets all fourteen colored balls before
-the eight. No bots. The hub discovers its metadata and Canvas 2D preview.
+the eight, and a local match against Pana Bot (`createGame(false, { bot: true })`). The hub discovers its metadata and Canvas 2D preview.
 
 ## Files and rules
 
@@ -57,6 +57,48 @@ and Enter confirms; mouse/touch places it directly. Narrow portrait play
 rotates the table, with inverse pointer coordinates and upright ball numbers.
 Solo practice pauses in the shared menu; a connected two-person match continues.
 The shared settings menu offers plaza and overhead table cameras.
+
+## Difficulty, guide and Pana Bot
+
+`engine/difficulty.js` is the one knob shared with Bolas Criollas: Fácil,
+Normal, Difícil, Experto. `state.difficulty` travels in snapshots. Online the
+host sets it in the lobby (or between games); a local table (practice or bot)
+accepts it any time from the menu. Each level's `guide` sets how much of the
+predicted shot the scene draws and `aimError` sets the bot's aim noise.
+
+`predictShot()` in rules.js uses the physics constants (friction, cushion
+restitution on the normal component only, contact restitution, follow factor)
+so the drawn object-ball path ends within a ball width of the simulated one
+for an unobstructed shot (tested). It ignores secondary collisions. Do not
+damp the whole speed at a cushion in the trace: step() damps only the
+component into the rail, and the prediction drifts by hundreds of units.
+
+Spin is an optional `{ x, y }` in [-1, 1] on the shoot action. Follow/draw adds
+`spin.y × .62 × contact impulse` along the shot direction at the cue ball's
+first contact; side english rotates the cue ball's next two cushion rebounds
+by `spin.x × .22` rad. The shot ledger carries both, so a mid-shot handoff
+finishes the same way.
+
+Pana Bot (seat 1, id `bot`) plays on the host in `PoolRoom.step` through
+`botReady`: ball in hand is its own visible step (`botPlacement`), then
+`botShot` picks the clear ghost-ball shot with the least cut and the shortest
+travel, sizing power from friction. Breaks aim at the apex at full power. With
+no clear pot it rolls firmly into the nearest legal ball. Over four seeded
+matches an Experto bot clears the table in fewer shots than a Fácil one.
+
+## Camera
+
+`taco` (default) rides behind the cue ball and turns with the aim; between
+shots it rises to a high view down the same line, and ball in hand looks
+straight down. Because the view moves with the cue, a drag turns the cue
+(.004 rad/px, Shift for fine) and a tap aims at the tapped spot; hover never
+aims. The picture is lifted above the bottom HUD with a view offset. `mesa`
+and `plaza` are the original framed views. The choice is remembered in
+`localStorage['pana:billar:view']`. Browser checks that aim by clicking a
+projected cloth point set that key to `plaza`; a separate section proves the
+taco camera, drag aiming, guides per difficulty, spin and bot turns.
+Standing panas wait off the table corners, and a pana within 1.8 m of the
+camera hides so it never fills the screen.
 
 ## 3D coordinate contract
 

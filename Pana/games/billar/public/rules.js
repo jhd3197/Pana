@@ -1,4 +1,6 @@
 import { validArena } from '../../../engine/arena-layouts.js';
+import { DEFAULT_DIFFICULTY, validDifficulty, difficultyInfo } from '../../../engine/difficulty.js';
+import { rng } from '../../../engine/random.js';
 
 // Casual eight-ball house rules. All physics uses fixed steps in table units.
 export const WIDTH = 1000, HEIGHT = 500, RADIUS = 11, POCKET_RADIUS = 25, STEP = 1 / 240;
@@ -7,6 +9,10 @@ export const groupOf = id => id > 0 && id < 8 ? 'solids' : id > 8 && id < 16 ? '
 export const groupName = group => group === 'solids' ? 'Lisas' : group === 'stripes' ? 'Rayadas' : 'Mesa abierta';
 const clone = value => structuredClone(value);
 const ball = (id, x, y) => ({ id, x, y, vx: 0, vy: 0, pocketed: false });
+// Rolling friction and the cushions, shared by the physics and the predictions.
+const FRICTION = 205, CUSHION = .84, CONTACT = .98, FOLLOW = .62, ENGLISH = .22;
+export const BOT_ID = 'bot';
+export const botPlayer = () => ({ id: BOT_ID, name: 'Pana Bot', avatar: { outfit: 'deportivo', outfitColor: '#3b8bff' }, bot: true });
 
 export function rack() {
   const balls = [ball(0, 250, 250)], order = [1, 9, 2, 10, 8, 3, 4, 11, 5, 12, 6, 13, 7, 14, 15];
@@ -17,8 +23,11 @@ export function rack() {
   return balls.sort((a, b) => a.id - b.id);
 }
 
-export function createGame(practice = false) {
-  return { phase: 'lobby', mapId: 'plaza', practice, players: [0, 1].map(() => ({ id: null, name: 'Esperando pana', avatar: {} })),
+// practice: one pana clears the whole rack. bot: a full match against Pana Bot.
+export function createGame(practice = false, { bot = false } = {}) {
+  const players = [0, 1].map(() => ({ id: null, name: 'Esperando pana', avatar: {} }));
+  if (bot) players[1] = botPlayer();
+  return { phase: 'lobby', mapId: 'plaza', difficulty: DEFAULT_DIFFICULTY, practice: practice && !bot, bot, players,
     balls: rack(), groups: [null, null], turn: 0, revision: 0, round: 0, shots: 0, ballInHand: false,
     shot: null, result: null, message: 'La mesa está lista.' };
 }
@@ -53,10 +62,16 @@ export function acceptAction(state, id, action, hostId) {
     if (id !== hostId || state.phase !== 'lobby' || !validArena(action.mapId)) return false;
     state.mapId = action.mapId; state.revision++; return true;
   }
+  if (action.action === 'difficulty') {
+    // Online it is fixed for the match; a local table may change it any time.
+    const local = state.practice || state.bot;
+    if (id !== hostId || (!local && !['lobby', 'finished'].includes(state.phase)) || !validDifficulty(action.difficulty)) return false;
+    state.difficulty = action.difficulty; state.revision++; return true;
+  }
   if (action.action === 'start') {
     if (id !== hostId || !['lobby', 'finished'].includes(state.phase) || (!state.practice && state.players.some(p => p.id === null))) return false;
-    const fresh = createGame(state.practice);
-    Object.assign(state, fresh, { players: state.players, mapId: state.mapId, revision: state.revision + 1, round: state.round + 1,
+    const fresh = createGame(state.practice, { bot: state.bot });
+    Object.assign(state, fresh, { players: state.players, mapId: state.mapId, difficulty: state.difficulty, revision: state.revision + 1, round: state.round + 1,
       phase: 'aiming', message: state.practice ? 'Practica: mete las 15 bolas. Deja la ocho para el final.' : '¡A romper! La primera bola legal elige tu grupo.' });
     return true;
   }
@@ -67,7 +82,10 @@ export function acceptAction(state, id, action, hostId) {
     state.ballInHand = false; state.revision++; state.message = 'Blanca colocada. Apunta y tira.'; return true;
   }
   if (action.action !== 'shoot' || state.ballInHand || !Number.isFinite(action.angle) || !Number.isFinite(action.power) || action.power < .05 || action.power > 1) return false;
-  state.shot = { first: null, rail: false, pocketed: [], elapsed: 0, eligible: remaining(state, state.turn).length === 0, breaking: state.shots === 0 };
+  const spin = action.spin ?? { x: 0, y: 0 };
+  if (![spin.x, spin.y].every(v => Number.isFinite(v) && Math.abs(v) <= 1)) return false;
+  state.shot = { first: null, rail: false, pocketed: [], elapsed: 0, eligible: remaining(state, state.turn).length === 0, breaking: state.shots === 0,
+    spin: { x: spin.x, y: spin.y }, dir: { x: Math.cos(action.angle), y: Math.sin(action.angle) }, english: 2 };
   const speed = 180 + action.power * 1600;
   state.balls[0].vx = Math.cos(action.angle) * speed; state.balls[0].vy = Math.sin(action.angle) * speed;
   state.phase = 'rolling'; state.shots++; state.revision++; state.message = 'Bolas en movimiento…';
@@ -112,11 +130,13 @@ export function step(state) {
       b.pocketed = true; b.vx = b.vy = 0; shot.pocketed.push(b.id); continue;
     }
     let rail = false;
-    if (b.x < RADIUS) { b.x = RADIUS; b.vx = Math.abs(b.vx) * .84; rail = true; }
-    if (b.x > WIDTH - RADIUS) { b.x = WIDTH - RADIUS; b.vx = -Math.abs(b.vx) * .84; rail = true; }
-    if (b.y < RADIUS) { b.y = RADIUS; b.vy = Math.abs(b.vy) * .84; rail = true; }
-    if (b.y > HEIGHT - RADIUS) { b.y = HEIGHT - RADIUS; b.vy = -Math.abs(b.vy) * .84; rail = true; }
+    if (b.x < RADIUS) { b.x = RADIUS; b.vx = Math.abs(b.vx) * CUSHION; rail = true; }
+    if (b.x > WIDTH - RADIUS) { b.x = WIDTH - RADIUS; b.vx = -Math.abs(b.vx) * CUSHION; rail = true; }
+    if (b.y < RADIUS) { b.y = RADIUS; b.vy = Math.abs(b.vy) * CUSHION; rail = true; }
+    if (b.y > HEIGHT - RADIUS) { b.y = HEIGHT - RADIUS; b.vy = -Math.abs(b.vy) * CUSHION; rail = true; }
     if (rail && shot.first !== null) shot.rail = true;
+    // Side spin bends the cue ball's first two cushion rebounds.
+    if (rail && b.id === 0 && shot.spin?.x && shot.english > 0) { shot.english--; [b.vx, b.vy] = turn(b.vx, b.vy, shot.spin.x * ENGLISH); }
   }
   for (let pass = 0; pass < 2; pass++) for (let i = 0; i < live.length; i++) for (let j = i + 1; j < live.length; j++) {
     const a = live[i], b = live[j]; if (a.pocketed || b.pocketed) continue;
@@ -126,14 +146,19 @@ export function step(state) {
     a.x -= nx * overlap; a.y -= ny * overlap; b.x += nx * overlap; b.y += ny * overlap;
     const approach = (a.vx - b.vx) * nx + (a.vy - b.vy) * ny;
     if (approach <= 0) continue;
-    const impulse = approach * .98;
+    const impulse = approach * CONTACT;
     a.vx -= impulse * nx; a.vy -= impulse * ny; b.vx += impulse * nx; b.vy += impulse * ny;
-    if (shot.first === null && (a.id === 0 || b.id === 0)) shot.first = a.id === 0 ? b.id : a.id;
+    if (shot.first === null && (a.id === 0 || b.id === 0)) {
+      shot.first = a.id === 0 ? b.id : a.id;
+      // Follow (top spin) keeps the cue ball rolling on; draw pulls it back.
+      const cue = a.id === 0 ? a : b, follow = (shot.spin?.y || 0) * FOLLOW * impulse;
+      if (shot.dir) { cue.vx += shot.dir.x * follow; cue.vy += shot.dir.y * follow; }
+    }
   }
   let moving = false;
   for (const b of live) {
     if (b.pocketed) continue;
-    const speed = Math.hypot(b.vx, b.vy), next = Math.max(0, speed - 205 * STEP);
+    const speed = Math.hypot(b.vx, b.vy), next = Math.max(0, speed - FRICTION * STEP);
     const ratio = speed > 5 ? next / speed : 0;
     b.vx *= ratio; b.vy *= ratio; if (ratio > 0) moving = true;
   }
@@ -156,6 +181,111 @@ export function aimGuide(state, angle) {
     if (hit >= 0 && hit < distance) { distance = hit; target = b; }
   }
   return { x: cue.x + dx * distance, y: cue.y + dy * distance, target };
+}
+
+// Rotates a velocity by an angle (side spin off a cushion).
+function turn(x, y, a) { const c = Math.cos(a), s = Math.sin(a); return [x * c - y * s, x * s + y * c]; }
+const launch = power => 180 + power * 1600;
+
+// Follows a ball rolling at `speed` from (x, y) along (dx, dy): cushion
+// rebounds, friction and pockets, with the same constants as step().
+export function trace(x, y, dx, dy, speed, { bounces = 0, english = 0 } = {}) {
+  const points = [{ x, y }];
+  let length = Math.hypot(dx, dy); if (!length || speed <= 5) return points;
+  dx /= length; dy /= length;
+  for (let leg = 0; leg <= bounces; leg++) {
+    const reach = speed * speed / (2 * FRICTION);
+    const toRail = Math.min(dx > 0 ? (WIDTH - RADIUS - x) / dx : dx < 0 ? (RADIUS - x) / dx : Infinity,
+      dy > 0 ? (HEIGHT - RADIUS - y) / dy : dy < 0 ? (RADIUS - y) / dy : Infinity);
+    let distance = Math.min(reach, Math.max(0, toRail));
+    for (const [px, py] of POCKETS) {
+      const along = (px - x) * dx + (py - y) * dy, side = Math.abs((px - x) * dy - (py - y) * dx);
+      if (along > 0 && along <= distance + POCKET_RADIUS && side < POCKET_RADIUS) { points.push({ x: x + dx * along, y: y + dy * along, pocket: true }); return points; }
+    }
+    x += dx * distance; y += dy * distance; points.push({ x, y });
+    if (distance >= reach || leg === bounces) break;
+    // A cushion damps only the speed into it, exactly like step().
+    speed = Math.sqrt(Math.max(0, speed * speed - 2 * FRICTION * distance));
+    let vx = dx * speed, vy = dy * speed;
+    if (x <= RADIUS + 1e-6 || x >= WIDTH - RADIUS - 1e-6) vx = -vx * CUSHION;
+    if (y <= RADIUS + 1e-6 || y >= HEIGHT - RADIUS - 1e-6) vy = -vy * CUSHION;
+    if (english && leg < 2) [vx, vy] = turn(vx, vy, english * ENGLISH);
+    speed = Math.hypot(vx, vy); dx = vx / speed; dy = vy / speed;
+  }
+  return points;
+}
+
+// The whole predicted shot for the aiming guide: the cue ball's line to the
+// first contact, then where the object ball and the cue ball go. Ignores later
+// collisions, like any player reading the table.
+export function predictShot(state, angle, power = .65, spin = { x: 0, y: 0 }, { bounces = 2 } = {}) {
+  const cue = state.balls[0], aim = aimGuide(state, angle), dx = Math.cos(angle), dy = Math.sin(angle);
+  const travelled = Math.hypot(aim.x - cue.x, aim.y - cue.y), v0 = launch(power);
+  const v1 = Math.sqrt(Math.max(0, v0 * v0 - 2 * FRICTION * travelled));
+  if (!aim.target) {
+    const path = trace(cue.x, cue.y, dx, dy, v0, { bounces, english: spin.x });
+    return { contact: { x: aim.x, y: aim.y }, target: null, cuePath: path.slice(1), objectPath: [] };
+  }
+  let nx = aim.target.x - aim.x, ny = aim.target.y - aim.y; const nl = Math.hypot(nx, ny) || 1; nx /= nl; ny /= nl;
+  const along = dx * nx + dy * ny, hit = v1 * along * CONTACT;
+  const objectPath = trace(aim.target.x, aim.target.y, nx, ny, hit, { bounces });
+  const cx = dx * v1 - nx * hit + dx * spin.y * FOLLOW * hit, cy = dy * v1 - ny * hit + dy * spin.y * FOLLOW * hit;
+  const cuePath = trace(aim.x, aim.y, cx, cy, Math.hypot(cx, cy), { bounces, english: spin.x });
+  return { contact: { x: aim.x, y: aim.y }, target: aim.target, objectPath, cuePath };
+}
+
+// --- Pana Bot -------------------------------------------------------------
+// Ghost-ball aiming: for every legal ball and pocket, find the clear, least cut
+// shot. The difficulty's aimError then spoils the angle a little.
+function clearPath(state, ax, ay, bx, by, ignore) {
+  const dx = bx - ax, dy = by - ay, length2 = dx * dx + dy * dy || 1;
+  return state.balls.every(o => {
+    if (o.pocketed || ignore.includes(o.id)) return true;
+    const t = Math.max(0, Math.min(1, ((o.x - ax) * dx + (o.y - ay) * dy) / length2));
+    return Math.hypot(o.x - ax - dx * t, o.y - ay - dy * t) >= RADIUS * 2;
+  });
+}
+function plans(state, from = state.balls[0]) {
+  const out = [];
+  for (const t of state.balls) {
+    if (t.pocketed || !legalTarget(state, t.id)) continue;
+    for (const [px, py] of POCKETS) {
+      const mx = px + (px === 0 ? 8 : px === WIDTH ? -8 : 0), my = py + (py <= 0 ? 8 : -8);
+      let ux = mx - t.x, uy = my - t.y; const far = Math.hypot(ux, uy); ux /= far; uy /= far;
+      const gx = t.x - ux * RADIUS * 2, gy = t.y - uy * RADIUS * 2;
+      if (gx < RADIUS || gx > WIDTH - RADIUS || gy < RADIUS || gy > HEIGHT - RADIUS) continue;
+      const near = Math.hypot(gx - from.x, gy - from.y); if (near < 1) continue;
+      const cut = ((gx - from.x) * ux + (gy - from.y) * uy) / near;
+      if (cut < .3 || !clearPath(state, from.x, from.y, gx, gy, [0, t.id]) || !clearPath(state, t.x, t.y, mx, my, [0, t.id])) continue;
+      const objectSpeed = Math.sqrt(2 * FRICTION * far * 1.25 + 60 * 60), cueSpeed = objectSpeed / (CONTACT * cut);
+      const power = (Math.sqrt(cueSpeed * cueSpeed + 2 * FRICTION * near) * 1.12 - 180) / 1600;
+      if (power > 1) continue;
+      out.push({ angle: Math.atan2(gy - from.y, gx - from.x), power: Math.max(.12, power), score: cut * cut * 1000 / (near + far * 1.4 + 60) });
+    }
+  }
+  return out.sort((a, b) => b.score - a.score);
+}
+export function botShot(state, seed = state.round * 977 + state.shots * 31) {
+  const random = rng(seed), error = difficultyInfo(state.difficulty).aimError, cue = state.balls[0];
+  const noise = () => (random() + random() + random() - 1.5) * 1.4;
+  let shot = plans(state)[0];
+  if (state.shots === 0) shot = { angle: Math.atan2(250 - cue.y, 690 - RADIUS * 2 - cue.x), power: 1 };
+  if (!shot) {
+    // Safety: roll firmly into the nearest legal ball so something reaches a cushion.
+    const t = state.balls.filter(b => !b.pocketed && legalTarget(state, b.id)).sort((a, b) => Math.hypot(a.x - cue.x, a.y - cue.y) - Math.hypot(b.x - cue.x, b.y - cue.y))[0];
+    shot = { angle: t ? Math.atan2(t.y - cue.y, t.x - cue.x) : random() * Math.PI * 2, power: .55 };
+  }
+  return { angle: shot.angle + noise() * error, power: Math.max(.05, Math.min(1, shot.power * (1 + noise() * error * 3))), spin: { x: 0, y: 0 } };
+}
+// Ball in hand: the free spot that leaves the best straight shot.
+export function botPlacement(state) {
+  let best = null;
+  for (let x = 60; x <= WIDTH - 60; x += 40) for (let y = 50; y <= HEIGHT - 50; y += 40) {
+    if (!canPlace(state, x, y)) continue;
+    const score = plans(state, { x, y })[0]?.score ?? 0;
+    if (!best || score > best.score) best = { x, y, score };
+  }
+  return best ? { x: best.x, y: best.y } : { x: 250, y: 250 };
 }
 
 export const snapshot = clone;

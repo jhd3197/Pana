@@ -27,12 +27,13 @@
       <div class="pk-stats"><div class="pk-stat"><b>2</b><span>panas</span></div><div class="pk-stat"><b>15</b><span>bolas</span></div><div class="pk-stat"><b>8</b><span>al final</span></div></div>
       <button id="rules" class="pk-btn pk-btn--ghost">Cómo se juega</button>
       <div id="map-picker"></div>
+      <div id="difficulty-picker"></div>
       <div class="pk-lobby-foot">
         <span id="room-code" class="pk-lobby-room"></span>
         <p id="connection" class="pk-copy" role="status">Preparando la mesa…</p>
         <button id="start" class="pk-btn pk-btn--primary pk-btn--lg pk-btn--block" disabled>Esperando a tu pana</button>
         <div id="lobby-invite-slot"></div>
-        <button id="practice" class="pk-btn pk-btn--ghost pk-btn--block">Practicar a solas</button>
+        <div class="local-play"><button id="versus" class="pk-btn pk-btn--ghost">Contra Pana Bot</button><button id="practice" class="pk-btn pk-btn--ghost">Practicar a solas</button></div>
       </div>
     </section>
     <section class="table-area" aria-label="Mesa de billar">
@@ -44,14 +45,22 @@
       <div class="table-wrap"><canvas id="table" tabindex="0" aria-label="Mesa: toca o arrastra para apuntar. Usa las flechas para afinar y espacio para tirar."></canvas></div>
       <div class="table-caption"><span>BOLA OCHO</span><span>ENTRE PANAS</span></div>
     </section>
+    <section id="side-controls" class="side-controls" hidden aria-label="Efecto y cámara">
+      <button id="spin" type="button" class="spin-pad" aria-label="Efecto de la blanca: toca dónde golpea el taco" aria-valuetext="al centro"><i id="spin-dot"></i></button>
+      <span class="side-label">Efecto</span>
+      <button id="camera" type="button" class="pk-btn camera-btn" aria-label="Cámara"></button>
+      <span class="side-label">Cámara <kbd class="pk-kbd" data-pana-hint>C</kbd></span>
+    </section>
+    <section id="power-bar" class="power-bar" hidden aria-label="Fuerza del tiro">
+      <label class="power-control" for="power"><span>Fuerza</span><input id="power" type="range" min="5" max="100" value="65" aria-orientation="vertical"><output id="power-value">65%</output></label>
+    </section>
     <section id="play-controls" class="play-controls" hidden aria-label="Controles de tiro">
       <div class="turn-copy"><b id="turn-status" aria-live="polite"></b><p id="message" role="status"></p></div>
       <div class="shot-controls">
-        <label class="power-control" for="power"><span>Fuerza <output id="power-value">65%</output></span><input id="power" type="range" min="5" max="100" value="65"></label>
         <div class="fine-controls pk-touch-zone"><button id="aim-left" class="pk-touch pk-touch--sm" data-icon="left" aria-label="Apuntar a la izquierda"></button><button id="aim-right" class="pk-touch pk-touch--sm" data-icon="right" aria-label="Apuntar a la derecha"></button></div>
         <button id="shoot" class="pk-btn pk-btn--primary pk-btn--lg">Tirar <kbd class="pk-kbd" data-pana-hint>Espacio</kbd></button>
       </div>
-      <p class="input-tip" data-pana-hint>Arrastra para apuntar · ← → afinar · ↑ ↓ fuerza · Espacio tirar</p>
+      <p class="input-tip" data-pana-hint>Arrastra a los lados para girar · ← → afinar · ↑ ↓ fuerza · Espacio tirar</p>
     </section>
     <div id="recovery" class="pk-panel" hidden><p id="recovery-copy" role="status"></p><button id="local-fallback" class="pk-btn pk-btn--primary">Practicar a solas</button></div>
   </main>

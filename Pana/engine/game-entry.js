@@ -97,10 +97,10 @@ document.addEventListener('pana:room-link', e => {
 // The game's own start control keeps host permissions and rules. This guard adds
 // only the real asset/readiness barrier, also for keyboard activation.
 root.addEventListener('click', e => {
-  const control = e.target.closest('#start, #play, #practice, #intro-start, #begin');
+  const control = e.target.closest('#start, #play, #practice, #versus, #intro-start, #begin');
   if (!control) return;
   const waiting = link?.state.players.some(p => p.connected !== false && (!p.assetsReady || !p.lobbyReady));
-  if (!loaded || !ready || (control.id !== 'practice' && waiting)) {
+  if (!loaded || !ready || (!['practice', 'versus'].includes(control.id) && waiting)) {
     e.preventDefault(); e.stopImmediatePropagation();
     status.textContent = loaded ? 'Falta que todos los panas estén listos.' : 'El juego todavía se está preparando.';
   }

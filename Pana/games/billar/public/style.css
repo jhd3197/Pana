@@ -1,5 +1,5 @@
 * { box-sizing: border-box; }
-body { --pk-game: #20856c; --sky: #c7e1e8; margin: 0; overflow: hidden; background: var(--sky); color: var(--pk-text); font-family: var(--pk-sans); }
+body { --pk-game: #20856c; --sky: #c7e1e8; --cue-white: #fffdf6; --cue-ivory: #f1ead8; --cue-shade: #cfc4ad; --spin-red: #ff4b4b; margin: 0; overflow: hidden; background: var(--sky); color: var(--pk-text); font-family: var(--pk-sans); }
 [hidden] { display: none !important; }
 button, input { font: inherit; } button { cursor: pointer; } button:disabled { cursor: default; }
 .game-header { position: fixed; z-index: 5; inset: 16px 24px auto; display: flex; align-items: center; gap: 18px; pointer-events: none; }
@@ -13,15 +13,35 @@ button, input { font: inherit; } button { cursor: pointer; } button:disabled { c
 #welcome .pk-stats { margin: 6px 0 0; grid-template-columns: repeat(3, 1fr); gap: 7px; } #welcome .pk-stat { padding: 8px; }
 #welcome .pk-lobby-foot { margin-top: auto; gap: 8px; } #welcome #connection { font-size: 12px; min-height: 18px; }
 #welcome #start { min-height: 50px; font-size: 25px; } #lobby-invite { width: 100%; }
+.local-play { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; } .local-play .pk-btn { padding-left: 6px; padding-right: 6px; white-space: nowrap; }
+.pk-difficulty .pk-seg { display: flex; } .pk-difficulty .pk-seg > button { flex: 1; } .pk-difficulty small { font-size: 12px; }
 .players { position: fixed; z-index: 2; top: 80px; left: 24px; right: 24px; display: flex; align-items: center; justify-content: space-between; gap: 16px; pointer-events: none; }
 .player { display: flex; align-items: center; gap: 6px; width: 245px; padding: 7px 12px 7px 7px; border: 1px solid transparent; }
 .player.is-turn { border-color: var(--pk-yellow); } .player img { width: 48px; height: 50px; object-fit: contain; flex-shrink: 0; }
 .player b { display: block; max-width: 165px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 900; }
 .player span { display: block; font-size: 12px; color: var(--pk-muted); } .versus, .table-caption { display: none; }
 .ball-track { display: flex; gap: 4px; height: 18px; margin-top: 5px; } .ball-track i { width: 16px; height: 16px; border: 1px solid var(--pk-text); border-radius: 50%; font: 800 10px var(--pk-sans); display: grid; place-items: center; font-style: normal; } .ball-track i.potted { opacity: .25; }
-.play-controls { position: fixed; z-index: 3; bottom: max(18px, env(safe-area-inset-bottom)); left: 50%; transform: translateX(-50%); width: min(740px, calc(100% - 48px)); padding: 16px 20px 10px; border-radius: 16px; background: var(--pk-night); }
-.turn-copy { display: flex; align-items: baseline; gap: 16px; margin-bottom: 12px; } #turn-status { color: var(--pk-yellow); white-space: nowrap; font-size: 18px; } #message { margin: 0; font-size: 12px; }
-.shot-controls { display: flex; gap: 18px; align-items: center; } .power-control { flex: 1; min-width: 0; } .power-control span { display: flex; justify-content: space-between; font-weight: 900; font-size: 12px; } .power-control input { width: 100%; height: 28px; accent-color: var(--pk-yellow); cursor: pointer; }
+.play-controls { position: fixed; z-index: 3; bottom: max(18px, env(safe-area-inset-bottom)); left: 50%; transform: translateX(-50%); width: min(620px, calc(100% - 260px)); padding: 16px 20px 10px; border-radius: 16px; background: var(--pk-night); }
+.turn-copy { display: flex; align-items: baseline; gap: 16px; margin-bottom: 10px; } #turn-status { color: var(--pk-yellow); white-space: nowrap; font-size: 18px; } #message { margin: 0; font-size: 12px; }
+.shot-controls { display: flex; gap: 18px; align-items: center; justify-content: flex-end; }
+/* Power: a tall bar on the right edge, filled in yellow from the bottom. */
+.power-bar { position: fixed; z-index: 3; right: 20px; top: 50%; transform: translateY(-50%); height: min(380px, 52vh); width: 76px; padding: 12px 0; border-radius: 18px; background: var(--pk-night); }
+.power-control { height: 100%; display: flex; flex-direction: column; align-items: center; gap: 8px; font-weight: 900; font-size: 11px; letter-spacing: .06em; text-transform: uppercase; }
+.power-control output { color: var(--pk-yellow); font-size: 15px; }
+.power-control input { --fill: 63%; flex: 1; width: 30px; margin: 0; writing-mode: vertical-lr; direction: rtl; appearance: none; -webkit-appearance: none; border-radius: 15px; cursor: pointer;
+  background: linear-gradient(to top, var(--pk-yellow) var(--fill), rgba(255, 255, 255, .14) var(--fill)); box-shadow: inset 0 0 0 2px rgba(255, 255, 255, .55); }
+.power-control input::-webkit-slider-thumb { -webkit-appearance: none; width: 38px; height: 38px; border-radius: 50%; background: var(--cue-white); border: 3px solid var(--pk-night); box-shadow: 0 3px 0 rgba(0, 0, 0, .3); }
+.power-control input::-moz-range-thumb { width: 34px; height: 34px; border-radius: 50%; background: var(--cue-white); border: 3px solid var(--pk-night); }
+.power-control input:disabled { opacity: .45; cursor: default; }
+/* English and camera: on the left edge, like a pool hall's chalk shelf. */
+.side-controls { position: fixed; z-index: 3; left: 20px; top: 50%; transform: translateY(-50%); display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 12px 10px; border-radius: 18px; background: var(--pk-night); }
+.spin-pad { position: relative; width: 76px; height: 76px; padding: 0; border: 3px solid var(--pk-night); border-radius: 50%; background: radial-gradient(circle at 35% 30%, var(--cue-white), var(--cue-ivory) 55%, var(--cue-shade)); box-shadow: 0 0 0 2px rgba(255, 255, 255, .6), 0 4px 0 rgba(0, 0, 0, .3); touch-action: none; }
+.spin-pad::before, .spin-pad::after { content: ''; position: absolute; left: 50%; top: 50%; background: rgba(43, 43, 43, .18); transform: translate(-50%, -50%); }
+.spin-pad::before { width: 70%; height: 2px; } .spin-pad::after { width: 2px; height: 70%; }
+#spin-dot { position: absolute; z-index: 1; left: calc(50% - 8px); top: calc(50% - 8px); width: 16px; height: 16px; border-radius: 50%; background: var(--spin-red); box-shadow: 0 0 0 2px var(--cue-white); transition: transform .08s; pointer-events: none; }
+.spin-pad:disabled { opacity: .5; }
+.side-label { font-size: 11px; font-weight: 900; letter-spacing: .06em; text-transform: uppercase; color: var(--pk-muted); }
+.camera-btn { margin-top: 8px; width: 56px; height: 48px; padding: 0; display: grid; place-items: center; font-size: 26px; }
 .fine-controls { display: flex; gap: 8px; position: static; } .fine-controls .pk-touch { position: static; display: grid; width: 44px; height: 44px; } #shoot { min-width: 165px; }
 .input-tip { color: var(--pk-muted); font-size: 11px; text-align: center; margin: 8px 0 0; }
 #recovery { position: fixed; z-index: 8; top: 30%; left: 50%; transform: translateX(-50%); width: min(90vw, 500px); padding: 20px; text-align: center; }
@@ -37,12 +57,19 @@ button, input { font: inherit; } button { cursor: pointer; } button:disabled { c
   .in-lobby .players { display: none; } .players { top: 70px; left: 12px; right: 12px; gap: 12px; } .player { width: auto; max-width: 49%; padding: 5px; flex: 1; } .player img { width: 36px; height: 44px; } .player b { font-size: 12px; max-width: 100px; } .player span { font-size: 10px; }
   .ball-track { gap: 2px; height: 12px; } .ball-track i { width: 11px; height: 11px; font-size: 7px; }
   .play-controls { bottom: max(12px, env(safe-area-inset-bottom)); width: calc(100% - 24px); padding: 13px; } .turn-copy { display: block; min-height: 44px; margin-bottom: 8px; } #turn-status { font-size: 17px; } #message { margin-top: 3px; font-size: 11px; }
-  .shot-controls { gap: 10px; } #shoot { min-width: 75px; padding: 13px; font-size: 20px; } #shoot kbd, .input-tip { display: none; } .fine-controls { gap: 5px; } .fine-controls .pk-touch { width: 34px; height: 38px; }
+  .shot-controls { gap: 10px; } #shoot { min-width: 75px; padding: 13px; font-size: 20px; flex: 1; } #shoot kbd, .input-tip { display: none; } .fine-controls { gap: 5px; } .fine-controls .pk-touch { width: 44px; height: 44px; }
+  .play-controls { width: calc(100% - 24px); }
+  .power-bar { right: 8px; top: auto; bottom: 200px; transform: none; height: min(250px, 34vh); width: 58px; }
+  .power-control input { width: 24px; } .power-control input::-webkit-slider-thumb { width: 30px; height: 30px; }
+  .side-controls { left: 8px; top: auto; bottom: 200px; transform: none; padding: 8px; }
+  .spin-pad { width: 58px; height: 58px; } .camera-btn { width: 46px; height: 42px; font-size: 22px; margin-top: 4px; } .side-label { font-size: 9px; } .side-label kbd { display: none; }
 }
 @media (max-height: 520px) and (orientation: landscape) {
   #welcome { left: 16px; top: 65px; bottom: 12px; width: 320px; max-height: none; padding: 14px; }
   #welcome > .pk-copy, #welcome .pk-stats, #welcome .pk-ribbon, #welcome > .pk-back { display: none; } #welcome .pk-title { font-size: 42px; margin: 0; } #welcome .pk-lobby-foot { margin: 0; gap: 5px; } #welcome .pk-btn { padding-top: 7px; padding-bottom: 7px; } #welcome #start { min-height: 40px; }
   .players { top: 65px; right: 250px; } .player { padding: 4px 8px; width: auto; } .player img { display: none; } .ball-track { height: 12px; margin: 2px 0; } .ball-track i { width: 11px; height: 11px; font-size: 7px; }
   .play-controls { top: 70px; bottom: 12px; right: 12px; left: auto; transform: none; width: 225px; display: flex; flex-direction: column; justify-content: center; padding: 14px; }
+  .power-bar { right: 248px; top: 70px; bottom: 12px; transform: none; height: auto; width: 60px; }
+  .side-controls { left: 12px; top: auto; bottom: 12px; transform: none; padding: 8px; } .spin-pad { width: 54px; height: 54px; } .camera-btn { width: 44px; height: 38px; font-size: 20px; margin-top: 2px; }
   .turn-copy { display: block; margin-bottom: 12px; } #message { margin-top: 8px; } .shot-controls { flex-wrap: wrap; gap: 12px; } .power-control { flex-basis: 100%; } #shoot { min-width: 85px; flex: 1; padding: 12px; font-size: 22px; } #shoot kbd, .input-tip { display: none; }
 }

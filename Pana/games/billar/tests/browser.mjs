@@ -8,13 +8,15 @@ const browser = await chromium.launch({ headless: true, args: ['--disable-backgr
 await mkdir('art/billar', { recursive: true });
 const wait = (page, fn, arg) => page.waitForFunction(fn, arg, { timeout: 90000 });
 const check = text => console.log(`ok: ${text}`);
-async function open(name, room = code, mobile = false, full = false) {
+// Most checks aim by clicking projected cloth points, so they use the still
+// overview camera; the behind-the-ball camera has its own section below.
+async function open(name, room = code, mobile = false, full = false, view = 'plaza') {
   const context = await browser.newContext({ viewport: mobile ? { width: 390, height: 844 } : { width: 1280, height: 800 }, hasTouch: mobile, isMobile: mobile, deviceScaleFactor: 1 });
-  await context.addInitScript(name => {
-    localStorage.setItem('pana:name', name);
+  await context.addInitScript(([name, view]) => {
+    localStorage.setItem('pana:name', name); localStorage.setItem('pana:billar:view', view);
     localStorage.setItem('pana:avatar', JSON.stringify({ hat: 'gorra', outfit: 'hoodie', outfitColor: '#3775cc' }));
     localStorage.setItem('pana:settings', JSON.stringify({ sound: false, quality: 'baja' }));
-  }, name);
+  }, [name, view]);
   const page = await context.newPage(); page.on('pageerror', error => errors.push(error.message));
   await page.goto(`${base}/g/billar/?room=${room}&debug`, { waitUntil: 'domcontentloaded' });
   await wait(page, () => !!window.billarDebug);
@@ -126,6 +128,26 @@ try {
   const landscapeShot = await m.locator('#shoot').boundingBox(); assert.ok(landscapeShot.y + landscapeShot.height <= 375);
   assert.equal(await m.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
   await m.close();
+
+  const bot = await open('Taco', `${code}-bot`, false, false, 'taco');
+  await bot.locator('#versus').click();
+  await wait(bot, () => billarDebug.room.offline && billarDebug.room.state.phase === 'aiming' && billarDebug.room.state.players[1].bot);
+  await wait(bot, () => { const c = billarDebug.world.camera.position, b = billarDebug.world.balls.get(0).position; return Math.hypot(c.x - b.x, c.z - b.z) < 3.5 && c.y > b.y + 1; });
+  assert.deepEqual(await bot.evaluate(() => billarDebug.world.guides), { aim: true, ghost: true, object: true }, 'normal guide reaches the rack');
+  const before = await bot.evaluate(() => billarDebug.angle), box = await bot.locator('#table').boundingBox();
+  await bot.mouse.move(box.x + box.width / 2, box.y + box.height / 2); await bot.mouse.down();
+  await bot.mouse.move(box.x + box.width / 2 + 80, box.y + box.height / 2, { steps: 4 }); await bot.mouse.up();
+  assert.ok(Math.abs(await bot.evaluate(() => billarDebug.angle) - before - .32) < .03, 'a sideways drag turns the cue');
+  await bot.evaluate(() => billarDebug.room.action('difficulty', { difficulty: 'experto' }));
+  // The guide follows on the next drawn frame.
+  await wait(bot, () => { const g = billarDebug.world.guides; return billarDebug.room.state.difficulty === 'experto' && g.aim && !g.ghost && !g.object; });
+  const pad = await bot.locator('#spin').boundingBox(); await bot.mouse.click(pad.x + pad.width / 2, pad.y + pad.height * .2);
+  await bot.locator('#table').focus(); await bot.keyboard.press('Space');
+  await wait(bot, () => billarDebug.room.state.phase === 'rolling'); assert.ok(await bot.evaluate(() => billarDebug.room.state.shot.spin.y) > .5, 'top spin travels with the shot');
+  await wait(bot, () => billarDebug.room.state.shots >= 2 || billarDebug.room.state.phase === 'finished', null);
+  await bot.screenshot({ path: 'art/billar/versus-bot.png' });
+  check('behind-the-ball camera, drag aiming, difficulty guides, english and Pana Bot turns work');
+  await bot.close();
 
   const offline = await open('Sin red', `${code}-offline`); await offline.evaluate(() => billarDebug.room.cut());
   await wait(offline, () => !billarDebug.room.connected); await offline.locator('#practice').click();

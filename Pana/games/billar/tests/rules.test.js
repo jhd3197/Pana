@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createGame, rack, acceptAction, step, finishShot, canPlace, remaining, legalTarget, aimGuide, RADIUS } from '../public/rules.js';
+import { createGame, rack, acceptAction, step, finishShot, canPlace, remaining, legalTarget, aimGuide, predictShot, botShot, botPlacement, BOT_ID, RADIUS } from '../public/rules.js';
 
 function game(practice = false) {
   const s = createGame(practice); s.players[0].id = 11; if (!practice) s.players[1].id = 22;
@@ -104,4 +104,48 @@ test('aim guide stops at first ball or cushion, including axis-aligned direction
 test('a disconnected opponent prevents shots until their seat is occupied', () => {
   const s = game(); s.players[1].id = null; assert.equal(action(s, 'shoot', { angle: 0, power: 1 }), false);
   s.players[1].id = 33; assert.ok(action(s, 'shoot', { angle: 0, power: 1 }));
+});
+
+test('only the host sets the difficulty, in the lobby or between games, and it survives a rematch', () => {
+  const s = createGame(); s.players[0].id = 11; s.players[1].id = 22;
+  assert.equal(acceptAction(s, 22, { action: 'difficulty', difficulty: 'experto', revision: 0 }, 11), false);
+  assert.equal(acceptAction(s, 11, { action: 'difficulty', difficulty: 'imposible', revision: 0 }, 11), false);
+  assert.ok(acceptAction(s, 11, { action: 'difficulty', difficulty: 'experto', revision: 0 }, 11));
+  assert.ok(action(s, 'start')); assert.equal(s.difficulty, 'experto');
+  assert.equal(action(s, 'difficulty', { difficulty: 'facil' }, 11), false);
+});
+test('spin is optional, bounded, and follow and draw change where the cue ball stops', () => {
+  const base = () => { const s = game(true); s.shots = 1; s.balls.forEach(b => { b.pocketed = ![0, 5].includes(b.id); }); Object.assign(s.balls[0], { x: 300, y: 250 }); Object.assign(s.balls[5], { x: 500, y: 250 }); return s; };
+  for (const spin of [{ x: 2, y: 0 }, { x: 0, y: NaN }, { x: '1', y: 0 }]) assert.equal(action(base(), 'shoot', { angle: 0, power: .5, spin }), false);
+  const stop = y => { const s = base(); assert.ok(action(s, 'shoot', { angle: 0, power: .25, spin: { x: 0, y } })); settle(s); return s.balls[0].x; };
+  const plain = stop(0), follow = stop(1), draw = stop(-1);
+  assert.ok(follow > plain + 40, `follow ${follow} vs ${plain}`); assert.ok(draw < plain - 40, `draw ${draw} vs ${plain}`);
+});
+test('the predicted object-ball path matches the simulated one', () => {
+  const s = game(true); s.shots = 1; s.balls.forEach(b => { b.pocketed = ![0, 3].includes(b.id); });
+  Object.assign(s.balls[0], { x: 300, y: 200 }); Object.assign(s.balls[3], { x: 520, y: 260 });
+  const angle = Math.atan2(260 - 6 - 200, 520 - 300), power = .4, p = predictShot(s, angle, power);
+  assert.equal(p.target.id, 3);
+  const end = p.objectPath.at(-1); action(s, 'shoot', { angle, power }); settle(s);
+  if (!s.balls[3].pocketed) assert.ok(Math.hypot(s.balls[3].x - end.x, s.balls[3].y - end.y) < 25, `predicted ${JSON.stringify(end)} got ${s.balls[3].x},${s.balls[3].y}`);
+  const free = game(true); free.balls.forEach(b => { b.pocketed = b.id !== 0; });
+  const bank = predictShot(free, .5, 1, undefined, { bounces: 2 }); assert.equal(bank.cuePath.length, 3);
+});
+test('Pana Bot plays a whole match and stronger bots pot more', () => {
+  function match(difficulty, seed) {
+    const s = createGame(false, { bot: true }); s.players[0] = { ...s.players[1], id: 'bot0' }; s.difficulty = difficulty;
+    s.round = seed; assert.ok(acceptAction(s, 'bot0', { action: 'start', revision: 0 }, 'bot0'));
+    let pots = 0, shots = 0;
+    while (s.phase === 'aiming' && shots < 400) {
+      const id = s.players[s.turn].id;
+      if (s.ballInHand) assert.ok(acceptAction(s, id, { action: 'place', revision: s.revision, ...botPlacement(s) }, 'bot0'));
+      const before = s.balls.filter(b => b.pocketed).length;
+      assert.ok(acceptAction(s, id, { action: 'shoot', revision: s.revision, ...botShot(s) }, 'bot0')); settle(s); shots++;
+      pots += s.balls.filter(b => b.pocketed).length - before;
+    }
+    assert.equal(s.phase, 'finished'); return shots;
+  }
+  const shots = d => [1, 2, 3, 4].reduce((sum, seed) => sum + match(d, seed), 0);
+  assert.ok(shots('experto') < shots('facil'), 'an expert bot clears the table in fewer shots');
+  assert.equal(createGame(false, { bot: true }).players[1].id, BOT_ID);
 });

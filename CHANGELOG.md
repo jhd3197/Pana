@@ -10,6 +10,12 @@ becomes the GitHub release's notes.
 
 ### Added
 
+- **Aim from behind the cue ball in Billar, and play Pana Bot on four difficulties.**
+  The new default camera bends over the shot like the player would, with a tall
+  power bar, a spin pad for follow, draw and side english, and a camera button
+  (C). Fácil shows where both balls go, including rebounds; Experto shows only
+  the cue's direction, and Pana Bot aims better as the difficulty rises.
+
 - **Race to real recorded songs in Derrape and Curiara, with a separate Música slider.**
   Every circuit has its own song (joropo in Los Llanos, gaita in the plaza, calipso
   in Chi Chi…), plus garage, battle and results music and a finish fanfare. The
