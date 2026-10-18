@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Pana — juega con tus panas</title>
+  <meta name="description" content="Elige un juego, invita a tus panas y juega desde el navegador. Carreras, cartas y aventuras sin instalar nada.">
   <link rel="stylesheet" href="/engine/kit.css">
   <link rel="stylesheet" href="/engine/ui.css">
   <link rel="stylesheet" href="style.css">
@@ -15,6 +16,7 @@
   </script>
 </head>
 <body data-view="jugar">
+  <a class="skip-link" href="#feature">Ir a los juegos</a>
   <header class="topbar">
     <a class="pk-logo" href="#jugar">PANA</a>
     <nav class="nav" aria-label="Secciones">
@@ -40,10 +42,14 @@
           <span class="feature-tag" id="feature-tag">Destacado</span>
           <h1 class="feature-name" id="feature-name">Pana</h1>
           <p class="feature-copy" id="feature-copy">Cargando juegos…</p>
+          <div class="feature-stats"><span id="feature-players"></span><span id="feature-mode"></span></div>
           <div class="feature-cta">
             <a id="play-featured" class="pk-btn pk-btn--primary pk-btn--lg" href="/g/derrape/">¡JUGAR!</a>
-            <button id="create-room" class="pk-btn feature-room" type="button">Crear sala</button>
+            <button id="create-room" class="pk-btn feature-room" type="button">Sala privada</button>
+            <button id="join-code" class="pk-btn feature-room" type="button">Tengo un código</button>
+            <div id="launcher-party-members" hidden></div>
           </div>
+          <p id="party-launch-note" class="party-launch-note" aria-live="polite"></p>
         </div>
       </section>
 
@@ -56,7 +62,13 @@
       </section>
 
       <section class="games-wrap" aria-labelledby="games-title">
-        <h2 class="pk-heading" id="games-title">Juegos</h2>
+        <div class="games-toolbar">
+          <h2 class="sr-only" id="games-title">Juegos</h2>
+          <div id="categories" class="categories" aria-label="Filtrar juegos"></div>
+          <span id="game-position" class="game-position"></span>
+          <button id="games-prev" class="rail-arrow" aria-label="Juego anterior" type="button">←</button>
+          <button id="games-next" class="rail-arrow" aria-label="Siguiente juego" type="button">→</button>
+        </div>
         <div id="games" class="games"></div>
       </section>
 
@@ -105,7 +117,23 @@
     <span id="status">conectando…</span>
   </footer>
 
+  <dialog id="room-dialog" class="launcher-dialog pk-modal" aria-labelledby="room-title">
+    <button type="button" class="dialog-close pk-btn" data-close-dialog aria-label="Cerrar">×</button>
+    <h2 id="room-title" class="pk-title">Sala privada</h2>
+    <p>Comparte este link con tus panas. Entrarán a la misma sala.</p>
+    <label for="room-link">Link de invitación</label>
+    <input id="room-link" readonly>
+    <div class="dialog-actions"><button id="room-copy" class="pk-btn" type="button">Copiar link</button><button id="room-enter" class="pk-btn pk-btn--primary" type="button">Entrar a la sala</button></div>
+  </dialog>
+  <dialog id="code-dialog" class="launcher-dialog pk-modal" aria-labelledby="code-title">
+    <button type="button" class="dialog-close pk-btn" data-close-dialog aria-label="Cerrar">×</button>
+    <h2 id="code-title" class="pk-title">Entra con tus panas</h2>
+    <form id="code-form"><label for="room-code">Código de sala del juego seleccionado</label>
+      <input id="room-code" required maxlength="24" pattern="[a-zA-Z0-9-]{1,24}" autocomplete="off" placeholder="Código de sala">
+      <button class="pk-btn pk-btn--primary" type="submit">Entrar a la sala</button>
+    </form>
+  </dialog>
+
   <script type="module" src="hub.js"></script>
-  <script type="module" src="pana.js"></script>
 </body>
 </html>

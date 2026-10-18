@@ -233,6 +233,14 @@ export function createGameMenu({
   addEventListener('keydown', e => {
     if (isOpen) {
       if (e.key === 'Escape') { e.preventDefault(); if (!e.repeat) close(); }
+      if (e.key === 'Tab') {
+        const focusable = [...dialog.querySelectorAll('button, a[href], input, select, textarea, [tabindex]')]
+          .filter(node => !node.disabled && node.tabIndex >= 0 && node.getClientRects().length);
+        const first = focusable[0], last = focusable.at(-1);
+        if (first && ((!e.shiftKey && document.activeElement === last) || (e.shiftKey && document.activeElement === first))) {
+          e.preventDefault(); (e.shiftKey ? last : first).focus();
+        }
+      }
       if (!dialog.contains(e.target)) e.stopImmediatePropagation();
       return;
     }

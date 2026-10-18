@@ -10,6 +10,12 @@ becomes the GitHub release's notes.
 
 ### Added
 
+- **Choose games from an illustrated launcher with category filters and a thumbnail rail.**
+  Browse descriptions, create an invite link or enter a room code on desktop and
+  phones. Hosting integrations can handle party launches and show member portraits;
+  the avatar editor loads only when opened. ¡Pintura! is now Pepazo, with existing
+  links preserved; all other game names stay the same.
+
 - **Choose your partners and seating in Caída, Dominó and Poker without leaving the room.**
   Hosts can swap seats in the lobby and return to setup after a round. Changing
   Caída or Dominó teams starts a fresh score; Poker keeps each player's chips.

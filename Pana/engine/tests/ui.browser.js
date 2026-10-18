@@ -37,6 +37,8 @@ try {
   check('games apply saved settings and follow live changes');
 
   // Esc opens the menu with focus inside; Tab stays in the dialog; Esc returns focus.
+  // The current garage reveals Play only on the final setup step.
+  await page.locator('#garage [data-step="ready"]').click();
   await page.locator('#play').focus();
   await page.keyboard.press('Escape');
   assert.equal(await page.evaluate(() => document.activeElement.id), 'pana-resume');

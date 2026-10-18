@@ -2,6 +2,7 @@ import { createGameMenu } from '/engine/ui.js';
 import { inviteUrl, newRoomCode, playUrl } from '/engine/invite.js';
 import { isOnline, meta, gameUrl as linkFor } from './games.js';
 import { icon } from '/engine/icons.js';
+import { categories, category, artUrl } from './launcher-art.js';
 
 const gamesEl = document.getElementById('games');
 const roomsEl = document.getElementById('rooms');
@@ -10,6 +11,7 @@ const nameInput = document.getElementById('name');
 const featured = document.getElementById('play-featured');
 const featureEl = document.getElementById('feature');
 const featureArt = document.getElementById('feature-art');
+let filter = 'Todos';
 
 // The same settings every game reads (sound, volume, resolution, hints).
 const settings = createGameMenu({ title: 'Pana', pause: false, hotkey: false });
@@ -30,6 +32,9 @@ function showView() {
     else a.removeAttribute('aria-current');
   }
   document.getElementById(view === 'mi-pana' ? 'creator-slot' : 'tu-pana-slot').append(stage);
+  if (view === 'mi-pana') import('./pana.js').catch(() => {
+    document.querySelector('.stage-hint').textContent = 'No se pudo cargar tu pana. Recarga para intentar otra vez.';
+  });
   scrollTo(0, 0);
 }
 addEventListener('hashchange', showView);
@@ -54,6 +59,13 @@ function gameUrl(game, room) {
 
 let games = [];
 let feat = null;
+function revealSelection() {
+  const card = feat && gamesEl.querySelector(`[data-id="${feat.id}"]`);
+  if (!card || card.hidden) return;
+  const left = card.getBoundingClientRect().left - gamesEl.getBoundingClientRect().left + gamesEl.scrollLeft;
+  gamesEl.scrollLeft = left - (gamesEl.clientWidth - card.clientWidth) / 2;
+}
+addEventListener('resize', () => requestAnimationFrame(revealSelection));
 function updateLinks() {
   for (const a of document.querySelectorAll('a[data-game]')) {
     const game = games.find((g) => g.id === a.dataset.game);
@@ -103,7 +115,9 @@ function gameCard(game) {
   const card = el('article', 'game');
   card.dataset.id = game.id;
   if (game.color) card.style.setProperty('--tone', game.color);
-  const art = el('canvas', 'game-art');
+  const url = artUrl(game);
+  const art = el(url ? 'img' : 'canvas', 'game-art');
+  if (url) { art.src = url; art.alt = ''; art.loading = 'lazy'; art.decoding = 'async'; }
   art.setAttribute('aria-hidden', 'true');
   const name = el('h3', 'game-name', shortName(game));
   name.setAttribute('aria-label', game.name);
@@ -118,7 +132,7 @@ function gameCard(game) {
     if (matchMedia('(max-width: 760px)').matches) featureEl.scrollIntoView({ behavior: 'smooth' });
   });
   card.append(art, body, pick);
-  lazyArt(game, art);
+  if (!url) lazyArt(game, art);
   return card;
 }
 
@@ -129,43 +143,98 @@ function feature(game) {
   feat = game;
   try { localStorage.setItem('pana:featured', game.id); } catch { /* storage off */ }
   featureEl.style.setProperty('--tone', game.color || 'var(--pk-coral)');
-  document.getElementById('feature-tag').textContent = `Destacado · ${meta(game)}`;
-  document.getElementById('feature-name').textContent = game.name;
+  document.getElementById('feature-tag').textContent = category(game);
+  document.getElementById('feature-name').textContent = shortName(game);
   document.getElementById('feature-copy').textContent = game.description;
+  document.getElementById('feature-players').textContent = meta(game);
+  document.getElementById('feature-mode').textContent = isOnline(game) ? 'En línea · Práctica' : 'Individual';
   featured.dataset.game = game.id;
+  featured.dataset.online = String(isOnline(game));
   featured.href = gameUrl(game, newRoomCode());
   document.getElementById('create-room').hidden = !isOnline(game);
+  document.getElementById('join-code').hidden = !isOnline(game);
+  document.dispatchEvent(new CustomEvent('pana:featured', { detail: { game: game.id } }));
   for (const c of gamesEl.children) c.querySelector('.game-pick').setAttribute('aria-pressed', String(c.dataset.id === game.id));
 
   for (const old of featureArt.querySelectorAll('canvas')) {
     if ('live' in old.dataset) old.getContext('webgl2')?.getExtension('WEBGL_lose_context')?.loseContext();
     old.remove();
   }
-  const art = el('canvas');
+  featureArt.replaceChildren();
+  const url = artUrl(game);
+  const art = el(url ? 'img' : 'canvas');
   art.setAttribute('aria-hidden', 'true');
+  if (url) { art.src = url; art.alt = ''; art.fetchPriority = 'high'; }
   featureArt.append(art);
-  mountArt(game, art);
+  if (!url) mountArt(game, art);
+  document.getElementById('game-position').textContent = `${games.filter(g => filter === 'Todos' || category(g) === filter).indexOf(game) + 1} / ${gamesEl.querySelectorAll('.game:not([hidden])').length}`;
+  revealSelection();
 }
 
-featured.addEventListener('click', () => { if (feat) featured.href = gameUrl(feat, newRoomCode()); });
+// Hosting sites can cancel this event to apply their party/account rules.
+// The account-free launcher works unchanged without an integration.
+function launch(game, url, source = 'play') {
+  const event = new CustomEvent('pana:launch', { cancelable: true, detail: { game: game.id, url, source } });
+  if (document.dispatchEvent(event)) location.href = url;
+}
+featured.addEventListener('click', e => {
+  e.preventDefault();
+  if (feat) launch(feat, gameUrl(feat, newRoomCode()));
+});
 
-// "Crear sala": a fresh room, its invite link on the clipboard, then go.
-document.getElementById('create-room').addEventListener('click', async (e) => {
+// A private room previews the invite link before entering.
+document.getElementById('create-room').addEventListener('click', () => {
   if (!feat || !isOnline(feat)) return;
+  const dialog = document.getElementById('room-dialog');
   const room = newRoomCode();
-  const btn = e.currentTarget;
-  try {
-    await navigator.clipboard.writeText(inviteUrl(room, feat.url));
-    btn.textContent = '¡Link copiado!';
-  } catch { /* no clipboard, the game can still invite */ }
-  setTimeout(() => { location.href = gameUrl(feat, room); }, 350);
+  document.getElementById('room-title').textContent = `Sala de ${shortName(feat)}`;
+  document.getElementById('room-link').value = inviteUrl(room, feat.url);
+  document.getElementById('room-copy').textContent = 'Copiar link';
+  document.getElementById('room-enter').onclick = () => launch(feat, gameUrl(feat, room), 'private');
+  dialog.showModal();
+});
+
+document.getElementById('room-copy').addEventListener('click', async e => {
+  const button = e.currentTarget;
+  try { await navigator.clipboard.writeText(document.getElementById('room-link').value); button.textContent = 'Link copiado'; }
+  catch { document.getElementById('room-link').select(); }
+});
+document.getElementById('join-code').addEventListener('click', () => document.getElementById('code-dialog').showModal());
+document.getElementById('code-form').addEventListener('submit', e => {
+  e.preventDefault();
+  const code = document.getElementById('room-code').value.trim();
+  if (feat && /^[a-z0-9-]{1,24}$/i.test(code)) launch(feat, gameUrl(feat, code), 'join');
+});
+for (const button of document.querySelectorAll('[data-close-dialog]')) button.addEventListener('click', () => button.closest('dialog').close());
+
+function filterGames(value) {
+  filter = value;
+  for (const button of document.querySelectorAll('button[data-category]')) button.setAttribute('aria-pressed', String(button.dataset.category === value));
+  for (const card of gamesEl.children) card.hidden = value !== 'Todos' && card.dataset.category !== value;
+  const visible = games.filter(g => value === 'Todos' || category(g) === value);
+  if (!visible.includes(feat)) feature(visible[0]);
+  document.getElementById('game-position').textContent = `${visible.indexOf(feat) + 1} / ${visible.length}`;
+}
+for (const direction of [-1, 1]) document.getElementById(direction < 0 ? 'games-prev' : 'games-next').addEventListener('click', () => {
+  const visible = games.filter(g => filter === 'Todos' || category(g) === filter);
+  if (!visible.length) return;
+  feature(visible[(visible.indexOf(feat) + direction + visible.length) % visible.length]);
+  gamesEl.querySelector(`[data-id="${feat.id}"]`).scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
 });
 
 async function loadGames() {
   try {
     ({ games } = await fetch('/api/games').then((r) => r.json()));
     gamesEl.innerHTML = '';
-    for (const game of games) gamesEl.appendChild(gameCard(game));
+    const order = ['derrape', 'galope', 'curiara', 'domino', 'caida', 'poquer', 'billar', 'criollas', 'bululu', 'cocina', 'escondidas', 'pintura', 'embuste', 'reliquia'];
+    games.sort((a, b) => order.indexOf(a.id) - order.indexOf(b.id));
+    for (const game of games) { const card = gameCard(game); card.dataset.category = category(game); gamesEl.appendChild(card); }
+    for (const label of categories) {
+      const button = el('button', 'category', `${label} ${games.filter(g => label === 'Todos' || category(g) === label).length}`);
+      button.type = 'button'; button.dataset.category = label; button.setAttribute('aria-pressed', String(label === filter));
+      button.addEventListener('click', () => filterGames(label));
+      document.getElementById('categories').append(button);
+    }
     let saved = null;
     try { saved = localStorage.getItem('pana:featured'); } catch { /* storage off */ }
     const first = games.find((g) => g.id === saved) || games.find((g) => g.id === 'derrape') || games[0];
@@ -198,6 +267,7 @@ async function loadRooms() {
       info.append(el('b', null, `${game ? shortName(game) : room.game} · ${room.players}/${room.max}`), el('span', 'names', room.names.join(', ')));
       const join = el('a', null, 'Unirse →');
       join.href = playUrl(`/g/${room.game}/`, room.room, playerName());
+      join.addEventListener('click', e => { e.preventDefault(); if (game) launch(game, join.href, 'join'); });
       join.setAttribute('aria-label', `Unirse a la sala ${room.room} de ${game?.name || room.game}`);
       row.append(bar, info, join);
       roomsEl.appendChild(row);

@@ -128,6 +128,11 @@ const clock = new THREE.Clock();
 let t = 0;
 let wave = 3;   // seconds until the next wave
 function frame() {
+  if (document.hidden || document.body.dataset.view !== 'mi-pana') {
+    clock.getDelta();
+    requestAnimationFrame(frame);
+    return;
+  }
   const dt = Math.min(clock.getDelta(), 0.1);
   t += dt;
   resize();

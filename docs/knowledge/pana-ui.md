@@ -74,6 +74,10 @@ setting can hide them.
   `ctx.destination`.
 - The hub uses `createGameMenu({ pause: false, hotkey: false })` as a
   settings-only dialog.
+- The shared menu explicitly wraps Tab and Shift+Tab across visible, enabled
+  controls. Native modal focus alone can still advance to browser chrome.
+  Browser checks must first reveal Derrape's final garage step before asserting
+  that closing the menu restores focus to its Play button.
 - Stable test IDs: `#pana-menu-dialog`, `#pana-resume`, `#pana-copy-room`,
   `#pana-set-sound`, `#pana-set-volume`, `#pana-set-quality`,
   `#pana-set-hints`, `#pana-tab-<game|settings|controls>`, plus each action's
