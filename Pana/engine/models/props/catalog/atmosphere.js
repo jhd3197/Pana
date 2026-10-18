@@ -1,0 +1,27 @@
+// Model metadata only: no Three.js, construction or game imports.
+const atmosphere=(id,name,file,factory,previewOptions,description,tags)=>({
+  id,name,category:'Atmósfera',source:`/engine/models/effects/${file}.js`,factory,
+  usedBy:['Pana Studio'],previewOptions,description,tags,pack:'atmosphere',
+});
+export default [
+  atmosphere('ground-fog','Neblina rastrera','atmosphere','groundFog',{width:30,depth:30},
+    'Tres capas de niebla translúcida a ras del suelo que se deslizan en direcciones distintas.',['niebla','cementerio','pantano','noche']),
+  atmosphere('light-shaft','Haz de luz con polvo','atmosphere','lightShaft',{radius:3,height:14},
+    'Columna de luz aditiva con rayos internos y motas de polvo en espiral; para cuevas y claros. Se aprecia mejor sobre fondo oscuro.',['luz','cueva','polvo','rayos']),
+  atmosphere('god-rays','Rayos entre el follaje','atmosphere','godRays',{count:7,spread:16,length:20},
+    'Haces de sol inclinados que atraviesan el dosel de la selva y respiran suavemente.',['luz','selva','sol','rayos']),
+  atmosphere('moon-disc','Luna con halo','atmosphere','moonDisc',{radius:6},
+    'Disco lunar con halo aditivo y mares oscuros para cielos nocturnos.',['noche','cielo','luna']),
+  atmosphere('fireflies','Luciérnagas','drifting-particles','fireflies',{count:90,radius:4},
+    'Puntos luminosos que flotan y oscilan sobre la maleza. Brillan sobre fondo oscuro.',['noche','selva','insectos','brillo']),
+  atmosphere('pollen-motes','Polen flotante','drifting-particles','floatingMotes',{count:260,width:10,height:5,depth:10,kind:'pollen'},
+    'Partículas de polen a la deriva para claros soleados.',['selva','polen','aire']),
+  atmosphere('mine-dust','Polvo de mina','drifting-particles','floatingMotes',{count:220,width:10,height:5,depth:10,kind:'dust'},
+    'Polvo cálido suspendido en túneles y cavernas iluminadas por lámparas.',['mina','cueva','polvo']),
+  atmosphere('gold-sparkles','Destellos dorados','drifting-particles','floatingMotes',{count:60,width:4,height:2,depth:4,kind:'sparkle'},
+    'Destellos fijos que parpadean en dos fases, como vetas de oro. Acepta puntos propios.',['mina','oro','brillo']),
+  atmosphere('falling-leaves','Hojas que caen','drifting-particles','fallingLeaves',{count:120,width:10,height:8,depth:10},
+    'Hojas en espiral que caen y reaparecen arriba, en verdes y otoñales.',['hojas','otoño','selva','viento']),
+  atmosphere('ember-plume','Chispas de fogata','drifting-particles','emberPlume',{count:90},
+    'Chispas que suben de una fogata y se apagan al enfriarse.',['fuego','fogata','chispas']),
+];

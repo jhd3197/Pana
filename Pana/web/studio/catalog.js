@@ -18,7 +18,7 @@ export const ASSETS = [
   ...adapted(DOMINO, '/studio/catalog/domino.js'),
   ...adapted(CAIDA, '/studio/catalog/caida.js'),
 ];
-export const CATEGORIES = ['Todos', 'Personajes', 'Vestuario', 'Objetos', 'Fauna', 'Emblemas', 'Pueblo', 'Selva', 'Llanos', 'Vida llanera', 'Páramo', 'Desierto', 'Termales', 'Costa', 'Vegetación', 'Vehículos', 'Mapas'];
+export const CATEGORIES = ['Todos', 'Personajes', 'Vestuario', 'Objetos', 'Fauna', 'Emblemas', 'Pueblo', 'Selva', 'Llanos', 'Vida llanera', 'Páramo', 'Desierto', 'Termales', 'Costa', 'Ruinas', 'Mina', 'Cementerio', 'Campamento', 'Atmósfera', 'Vegetación', 'Vehículos', 'Mapas'];
 export function sourcePath(url) {
   if (url.startsWith('/engine/')) return `Pana${url}`;
   if (url.startsWith('/studio/')) return `Pana/web${url}`;

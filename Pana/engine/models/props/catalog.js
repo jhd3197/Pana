@@ -22,6 +22,11 @@ import circuitLife from './catalog/circuit-life.js';
 import colonialHouses from './catalog/colonial-houses.js';
 import puerto from './catalog/puerto.js';
 import criollas from './catalog/criollas.js';
+import mine from './catalog/mine.js';
+import cemetery from './catalog/cemetery.js';
+import ruins from './catalog/ruins.js';
+import expeditionCamp from './catalog/expedition-camp.js';
+import atmosphere from './catalog/atmosphere.js';
 
 export default [
   ...ranch,
@@ -48,4 +53,9 @@ export default [
   ...colonialHouses,
   ...puerto,
   ...criollas,
+  ...mine,
+  ...cemetery,
+  ...ruins,
+  ...expeditionCamp,
+  ...atmosphere,
 ];
