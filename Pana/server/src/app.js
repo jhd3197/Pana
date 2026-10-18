@@ -14,7 +14,7 @@ function gamePublicDir(game) {
   return fs.existsSync(path.join(dir, 'index.html')) ? dir : null;
 }
 
-export function createRequestHandler(rooms, startedAt, colyseus) {
+export function createRequestHandler(startedAt, colyseus) {
   return (req, res) => {
     const url = new URL(req.url, 'http://localhost');
     const pathname = url.pathname;
@@ -22,7 +22,7 @@ export function createRequestHandler(rooms, startedAt, colyseus) {
     if (isColyseusPath(pathname) && colyseus.handle) return colyseus.handle(req, res);
 
     if (pathname.startsWith('/api/')) {
-      return handleApi(req, res, pathname, rooms, startedAt, colyseus);
+      return handleApi(req, res, pathname, startedAt, colyseus);
     }
 
     if (pathname.startsWith('/g/')) {
@@ -38,6 +38,8 @@ export function createRequestHandler(rooms, startedAt, colyseus) {
 
     // Shared code (characters, avatars) imported by the hub and the games
     if (pathname.startsWith('/engine/')) {
+      // Suites and fixtures stay on disk; only runtime code is served.
+      if (/^\/engine\/tests(\/|$)/.test(pathname)) return res.writeHead(404).end('not found');
       return serveStatic(res, config.paths.engine, pathname.slice('/engine/'.length));
     }
 

@@ -14,10 +14,15 @@
 // Hooks a subclass may define: joined(client, member, options),
 // dropped(client, member), returned(client, member), left(client, member),
 // hostChanged(id). Call super.onCreate(options) first in onCreate.
+//
+// Helpers for rooms that run the game themselves (poquer, pintura, embuste):
+// seatOf(client), connectedMembers(), onHostMessage(type, fn), memberAvatar(),
+// fillBots() and InputBuffer. The room's cap comes from game.json `players`
+// (colyseus.js), so a room never sets maxClients itself.
 
 import { Room, CloseCode, ServerError } from '@colyseus/core';
 import { schema, t } from '@colyseus/schema';
-import { normalizeAvatar } from '../../engine/avatar.js';
+import { normalizeAvatar, randomAvatar } from '../../engine/avatar.js';
 
 export const MAX_MEMBERS = 8;
 export const RECONNECT_SECONDS = 20;
@@ -35,8 +40,35 @@ export const avatarJson = (a) => {
   try { return JSON.stringify(normalizeAvatar(a && typeof a === 'object' ? a : {})).slice(0, 2048); } catch { return '{}'; }
 };
 
+// A stored avatar JSON string back to an object, never throwing.
+export const memberAvatar = (member) => { try { return JSON.parse(member?.avatar || '{}'); } catch { return {}; } };
+
+export const BOT_NAMES = ['Coco', 'Lola', 'Cheo', 'Nena', 'Toño', 'Mari', 'Pepe'];
+export const BOT_SEAT = 1000;
+// Adds `count` bots through add(seat, { name, avatar, bot: true }); bot seats
+// start at BOT_SEAT so they never collide with member seats.
+export function fillBots(count, add, { seat = BOT_SEAT, names = BOT_NAMES, avatar = randomAvatar } = {}) {
+  for (let i = 0; i < count; i++) add(seat + i, { name: names[i % names.length], avatar: avatar(), bot: true });
+}
+
+// Latest input per seat; inputs older than ttl ms count as released keys, so a
+// tab that stops sending (closed lid, lost Wi-Fi) stops moving.
+export class InputBuffer {
+  constructor(ttl = 600) { this.ttl = ttl; this.inputs = new Map(); }
+  set(seat, value) { if (seat != null) this.inputs.set(seat, { value, at: Date.now() }); }
+  delete(seat) { this.inputs.delete(seat); }
+  clear() { this.inputs.clear(); }
+  fresh(now = Date.now()) {
+    const out = new Map();
+    for (const [seat, input] of this.inputs) {
+      if (now - input.at > this.ttl) this.inputs.delete(seat); else out.set(seat, input.value);
+    }
+    return out;
+  }
+}
+
 export const Member = schema({
-  seat: t.uint16(),         // never reused within a room, like the /ws relay's ids
+  seat: t.uint16(),         // never reused within a room
   name: t.string(),
   avatar: t.string(),       // normalized avatar JSON
   joinedAt: t.number(),
@@ -83,8 +115,21 @@ export class PanaRoom extends Room {
     this.updateMetadata();
   }
 
-  onDispose() {
+  onDispose() { this.releaseCode(); }
+
+  releaseCode() {
     if (this.openKey && open.get(this.openKey) === this.roomId) open.delete(this.openKey);
+  }
+
+  // Colyseus sends every message handler, clock timer and lifecycle error here
+  // once a room defines this method, instead of letting one bad payload end
+  // the whole server. The offending call is skipped; the room keeps running.
+  onUncaughtException(error, method) {
+    const cause = error?.cause ?? error;
+    if (cause instanceof ServerError) return;                // expected, e.g. "full"
+    console.error(`[room ${this.roomName}:${this.code || this.roomId}] ${method} failed:`, cause?.stack || cause);
+    // A room that never finished creating must not hold its code as "full".
+    if (method === 'onCreate') this.releaseCode();
   }
 
   // A new arrival never inherits a departed pana's seat, so per-seat game data
@@ -136,11 +181,20 @@ export class PanaRoom extends Room {
 
   isHost(client) { return client.sessionId === this.state.host; }
 
-  nextHost(except) {
-    const live = [...this.state.players.entries()].filter(([id, p]) => id !== except && p.connected)
-      .sort((a, b) => a[1].joinedAt - b[1].joinedAt);
-    return live[0]?.[0] || '';
+  seatOf(client) { return this.state.players.get(client.sessionId)?.seat; }
+
+  // A message only the host may send (start, map, options); others are ignored.
+  onHostMessage(type, fn) {
+    this.onMessage(type, (client, message) => { if (this.isHost(client)) fn(client, message); });
   }
+
+  // Connected members by arrival, as [sessionId, member] pairs.
+  connectedMembers(except) {
+    return [...this.state.players.entries()].filter(([id, p]) => id !== except && p.connected)
+      .sort((a, b) => a[1].joinedAt - b[1].joinedAt);
+  }
+
+  nextHost(except) { return this.connectedMembers(except)[0]?.[0] || ''; }
 
   setHost(id) {
     const changed = this.state.host !== (id || '');

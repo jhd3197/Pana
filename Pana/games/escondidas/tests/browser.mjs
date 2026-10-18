@@ -6,12 +6,11 @@ import { mkdir } from 'node:fs/promises';
 import path from 'node:path';
 const require = createRequire(import.meta.url);
 const { chromium } = require(process.argv[2] || 'playwright');
-const { WebSocket } = require('ws');
 const base = process.env.PANA_QA_URL || 'http://localhost:8461';
 const output = process.env.PANA_QA_OUTPUT;
 if (output) await mkdir(output, { recursive: true });
 const browser = await chromium.launch({ headless: true, ...(process.argv[3] ? { executablePath: process.argv[3] } : {}) });
-const errors = [], sockets = [];
+const errors = [];
 const room = `qa-${Date.now().toString(36)}`;
 const check = text => console.log(`ok  ${text}`);
 async function newPage(name, mobile = false, code = room) {
@@ -20,13 +19,6 @@ async function newPage(name, mobile = false, code = room) {
   await page.goto(`${base}/g/escondidas/?room=${code}&name=${name}&debug`);
   await page.waitForFunction(() => window.hunt?.room.connected, undefined, { timeout: 90000 });
   return page;
-}
-async function wire(game, code) {
-  const socket = new WebSocket(base.replace(/^http/, 'ws') + '/ws'); sockets.push(socket);
-  await new Promise(resolve => socket.on('open', resolve));
-  const welcome = new Promise(resolve => socket.once('message', data => resolve(JSON.parse(data))));
-  socket.send(JSON.stringify({ t: 'join', game, room: code, name: 'QA' }));
-  assert.equal((await welcome).t, 'welcome'); return socket;
 }
 try {
   const a = await newPage('Juan'), b = await newPage('Ana');
@@ -98,10 +90,6 @@ try {
   await b.waitForFunction(() => hunt.camera.position.y < 4);
   if (output) await b.screenshot({ path: path.join(output, 'pana-hunt-gameplay.png') });
   check('connection failure offers playable local practice');
-  const isolationA = await wire('escondidas', room + '-wire'), isolationB = await wire('derrape', room + '-wire');
-  let leaked = false; isolationB.on('message', raw => { if (JSON.parse(raw).t === 'state') leaked = true; });
-  isolationA.send(JSON.stringify({ t: 'state', v: { game: 'hunt-v1', marker: 'isolation-check' } }));
-  await new Promise(resolve => setTimeout(resolve, 250)); assert.equal(leaked, false); check('same room code stays isolated between games');
   await b.goto(base + '/g/derrape/?track=llanos&debug'); await b.waitForFunction(() => window.race && window.garage);
   await b.evaluate(() => startRace(0)); check('Derrape loads and starts on Los Llanos with the market kit');
   await b.goto(base + '/g/bululu/?debug'); await b.waitForFunction(() => window.board && window.players);
@@ -111,4 +99,4 @@ try {
   assert.equal(await b.evaluate(async () => typeof (await import('/g/escondidas/card.js')).mount), 'function');
   check('hub discovers Escondidas and resolves its live artwork imports');
   assert.deepEqual(errors, []); check('no uncaught browser errors');
-} finally { for (const socket of sockets) socket.close(); await browser.close(); }
+} finally { await browser.close(); }

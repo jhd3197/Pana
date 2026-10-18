@@ -5,11 +5,10 @@ import { createRequire } from 'node:module';
 import { mkdir } from 'node:fs/promises';
 import path from 'node:path';
 const require = createRequire(import.meta.url), { chromium } = require(process.argv[2] || 'playwright');
-const { WebSocket } = require('ws');
 const base = process.env.PANA_QA_URL || 'http://localhost:8461', output = process.env.PANA_QA_OUTPUT;
 if (output) await mkdir(output, { recursive: true });
 const browser = await chromium.launch({ headless: true, ...(process.argv[3] ? { executablePath: process.argv[3] } : {}) });
-const errors = [], sockets = [], room = `cocina-qa-${Date.now().toString(36)}`;
+const errors = [], room = `cocina-qa-${Date.now().toString(36)}`;
 const check = text => console.log(`ok  ${text}`);
 async function page(name, mobile = false, code = room) {
   // Three simultaneous software-rendered clients can starve the input relay.
@@ -85,13 +84,6 @@ try {
   await b.waitForFunction(() => cocina.state.players.filter(p => p.bot).length === 2); await b.evaluate(() => cocina.step(45));
   assert.ok(await b.evaluate(() => cocina.state.served) > 0);
   if (output) await b.screenshot({ path: path.join(output, 'cocina-gameplay.png') }); check('disconnection fallback starts a playable local kitchen with working helpers');
-  for (const game of ['cocina', 'escondidas']) {
-    const socket = new WebSocket(base.replace(/^http/, 'ws') + '/ws'); sockets.push(socket);
-    await new Promise(resolve => socket.on('open', resolve)); const welcome = new Promise(resolve => socket.once('message', resolve));
-    socket.send(JSON.stringify({ t: 'join', game, room: room + '-isolation', name: 'QA' })); await welcome;
-  }
-  let leaked = false; sockets[1].on('message', raw => { if (JSON.parse(raw).t === 'state') leaked = true; });
-  sockets[0].send(JSON.stringify({ t: 'state', v: { game: 'cocina-v1', test: true } })); await b.waitForTimeout(200); assert.equal(leaked, false); check('identical room codes stay isolated between games');
   await b.goto(base + '/g/escondidas/?debug'); await b.waitForFunction(() => window.hunt?.room.connected); await b.locator('#start').click(); await b.waitForFunction(() => hunt.state.phase === 'hide');
   assert.equal(await b.evaluate(async () => (await import('/g/escondidas/plaza.js')).createPlaza === (await import('/engine/plaza.js')).createPlaza), true); check('Escondidas starts on the extracted shared plaza');
   await b.goto(base + '/g/derrape/?track=llanos&debug'); await b.waitForFunction(() => window.race && window.garage); await b.evaluate(() => startRace(0)); check('Derrape still starts with seated drivers');
@@ -104,4 +96,4 @@ try {
     console.log(await p.evaluate(() => window.cocina ? { phase: cocina.state.phase, remaining: cocina.state.remaining, id: cocina.room.id, connected: cocina.room.connected, players: cocina.state.players.map(p => ({ id: p.id, x: p.x, z: p.z, moving: p.moving })), lobby: document.getElementById('pana-lobby-shell')?.hidden } : location.href).catch(() => null));
   }
   throw error;
-} finally { for (const socket of sockets) socket.close(); await browser.close(); }
+} finally { await browser.close(); }

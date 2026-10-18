@@ -97,8 +97,10 @@ export class RoomLink {
   }
 
   on(event, fn) {
-    (this.handlers[event] ??= []).push(fn);
-    return () => this.handlers[event].splice(this.handlers[event].indexOf(fn), 1);
+    const list = (this.handlers[event] ??= []);
+    list.push(fn);
+    // Calling the returned unsubscribe twice must not remove someone else's handler.
+    return () => { const i = list.indexOf(fn); if (i >= 0) list.splice(i, 1); };
   }
   emit(event, ...args) { for (const fn of this.handlers[event] ?? []) fn(...args); }
 
@@ -173,6 +175,7 @@ export class RoomLink {
 //   statusText()                the connected status line
 // texts: { connecting, full, lost, offline }
 // ---------------------------------------------------------------------------
+const HELLO_RESERVED = new Set(['game', 'kind', 'avatar', 'id', 'name', '__proto__', 'constructor', 'prototype']);
 const TEXTS = {
   connecting: 'Conectando con tus panas…',
   full: 'Sala llena. Puedes jugar en local.',
@@ -282,7 +285,8 @@ export class HostRoom {
   hello_(id, v) {
     const member = this.members.get(id);
     member.avatar = normalizeAvatar(v.avatar || member.avatar || {});
-    for (const [k, value] of Object.entries(v)) if (!['game', 'kind', 'avatar'].includes(k)) member[k] = value;
+    // A hello's extras never overwrite who the member is.
+    for (const [k, value] of Object.entries(v)) if (!HELLO_RESERVED.has(k)) member[k] = value;
     this.memberHello?.(id, member);
   }
 

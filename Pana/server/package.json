@@ -2,14 +2,12 @@
   "name": "pana-server",
   "version": "0.1.0",
   "private": true,
-  "description": "Pana backend: HTTP API, static hosting for web + games, WebSocket rooms.",
+  "description": "Pana backend: HTTP API, static hosting for web + games, Colyseus rooms.",
   "type": "module",
   "main": "src/index.js",
   "dependencies": {
     "@colyseus/core": "^0.18.18",
     "@colyseus/schema": "^5.0.40",
-    "@colyseus/ws-transport": "^0.18.4",
-    "express": "^5.3.0",
-    "ws": "^8.18.0"
+    "@colyseus/ws-transport": "^0.18.4"
   }
 }

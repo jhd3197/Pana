@@ -73,7 +73,7 @@ if (!base) {
   const port = await freePort();
   base = `http://localhost:${port}`;
   const out = fs.openSync(serverLog, 'w');
-  server = spawn(process.execPath, ['server/src/index.js'], { cwd: app, env: { ...process.env, PANA_PORT: String(port), PANA_HOST: '127.0.0.1' }, stdio: ['ignore', out, out] });
+  server = spawn(process.execPath, ['server/src/index.js'], { cwd: app, env: { ...process.env, PANA_PORT: String(port), PANA_HOST: '127.0.0.1', PANA_DEBUG_ROOMS: '1' }, stdio: ['ignore', out, out] });
   for (let i = 0; i < 75 && server.exitCode === null && !(await healthy(base)); i++) await new Promise(r => setTimeout(r, 200));
   if (!(await healthy(base))) {
     killTree(server);

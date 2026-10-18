@@ -155,16 +155,6 @@ try {
   assert.ok(after.some((v, i) => v !== before[i]), 'bots keep driving under the new host');
   step('host handoff keeps the bots racing');
 
-  // The old relay still answers on /ws.
-  const relay = await guest.evaluate((o) => new Promise((resolve) => {
-    const ws = new WebSocket(o.replace('http', 'ws') + '/ws');
-    ws.onopen = () => ws.send(JSON.stringify({ t: 'join', game: 'test', room: 'x', name: 'n' }));
-    ws.onmessage = (e) => { resolve(JSON.parse(e.data).t); ws.close(); };
-    ws.onerror = () => resolve('error');
-  }), origin);
-  assert.equal(relay, 'welcome');
-  step('legacy /ws relay still works');
-
   assert.deepEqual(errors, []);
   console.log('derrape online: all good');
 } finally {

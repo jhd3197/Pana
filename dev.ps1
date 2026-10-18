@@ -163,6 +163,8 @@ function Start-PanaServer {
     $env:PANA_PORT = "$Port"
     $proc = Start-Process -FilePath 'node.exe' -WindowStyle Hidden -PassThru -WorkingDirectory $AppRoot `
         -ArgumentList @('server\src\index.js')
+    # Local servers honour test-only room options (Embuste ?quick); production never sets this.
+    $env:PANA_DEBUG_ROOMS = '1'
 
     Write-Host 'Press Ctrl+C to stop...' -ForegroundColor DarkGray
     try {

@@ -31,7 +31,7 @@ Render quality does not change pose cadence or gameplay. Procedural scenery
 never travels over the room connection. Lower shadows/details help local
 rendering and CPU headroom; they do not remove internet latency or packet loss.
 
-Plan: `docs/plans/51_colyseus-and-derrape-online.md`. Proof:
+Proof:
 `node Pana/games/derrape/tests/online.browser.js <playwright>` against a running
 server (`PANA_TEST_URL`), two real browser clients.
 
@@ -78,7 +78,7 @@ Rules that used to live in AGENTS.md (paths are relative to `Pana/`). Keep them
 true when you change this area.
 
 Derrape races online through a Colyseus room (`games/derrape/server/room.js`,
-`/colyseus`), not the `/ws` relay. `?room=<code>` joins; `&lead=1` makes that
+`/colyseus`). `?room=<code>` joins; `&lead=1` makes that
 player host (a pana.sh party's Pana Mayor). Each client simulates the cars it
 owns (its own, plus bots if host) and sends stamped poses; remote cars are
 kinematic and interpolate on the sender's server-time stamp. Hits and pickups

@@ -17,7 +17,8 @@ const MIME = {
 
 export function serveStatic(res, baseDir, relPath) {
   const target = path.normalize(path.join(baseDir, relPath));
-  if (!target.startsWith(baseDir)) {
+  // A bare prefix test would let a sibling such as web2/ through.
+  if (target !== baseDir && !target.startsWith(baseDir + path.sep)) {
     res.writeHead(403).end('forbidden');
     return;
   }
@@ -42,6 +43,7 @@ export function serveStatic(res, baseDir, relPath) {
       'Content-Type': MIME[path.extname(target).toLowerCase()] || 'application/octet-stream',
       'Content-Length': st.size,
     });
-    fs.createReadStream(target).pipe(res);
+    // A file removed between stat and open must not take the server down.
+    fs.createReadStream(target).on('error', () => res.destroy()).pipe(res);
   });
 }

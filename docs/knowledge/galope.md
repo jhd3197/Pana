@@ -71,7 +71,7 @@ remain outside static batches. Ranch models are never copied into game code.
 
 ## Rooms and controls
 
-`network.js` uses the existing `/ws` relay with `game: galope` and payload marker
+`network.js` extends `HostRoom` (the generic relay room) with payload marker
 `galope-v1`. The oldest member simulates at 20 Hz and broadcasts the whole race.
 Delayed render frames catch up in 50 ms physics steps (at most one second per
 network tick), publishing once so a busy GPU does not slow every simulated step.

@@ -22,15 +22,7 @@ async function ready(p, x, z) { await p.waitForFunction(({ x, z }) => { const p 
 try {
   const a = await page('Juan'), b = await page('Ana');
   await a.waitForFunction(() => reliquia.state.players.length === 2); await b.waitForFunction(() => reliquia.state.players.length === 2);
-  const isolated = await b.evaluate(async code => {
-    const join = (game, room) => new Promise((resolve, reject) => {
-      const ws = new WebSocket(`ws://${location.host}/ws`), timer = setTimeout(() => { ws.close(); reject(Error('isolation join timeout')); }, 5000);
-      ws.onopen = () => ws.send(JSON.stringify({ t: 'join', game, room, name: 'Isolation QA' }));
-      ws.onmessage = e => { const m = JSON.parse(e.data); if (m.t === 'welcome') { clearTimeout(timer); ws.close(); resolve(m.players.length); } };
-    });
-    return [await join('cocina', code), await join('reliquia', `other-${code}`)];
-  }, code);
-  assert.deepEqual(isolated, [0, 0]); assert.equal(await a.evaluate(() => reliquia.room.members.size), 2); check('game and room namespaces isolate other sessions');
+  assert.equal(await a.evaluate(() => reliquia.room.members.size), 2); check('both panas share one room');
   await a.setViewportSize({ width: 1440, height: 900 }); await a.screenshot({ path: path.join(output, 'lobby.png') }); await a.setViewportSize({ width: 1000, height: 760 });
   assert.equal(await b.locator('#start').isDisabled(), true); check('two browser clients share the lobby and host owns start');
   await a.locator('#start').click(); await b.waitForFunction(() => reliquia.state.phase === 'playing');
