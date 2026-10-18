@@ -10,6 +10,15 @@ becomes the GitHub release's notes.
 
 ### Added
 
+- **New game: ¿Quién quiere ser mi pana? (QQSMP).** A TV trivia show in
+  the plaza at night for up to six panas, with bots in empty podiums.
+  Everyone answers at once and answers stay secret until the host reveals
+  them by name, so "puse la B" on voice chat may be a bluff. Climb twelve
+  steps of mangos (4 and 8 are safe), use Copiarse, Mitad y mitad, Doble o
+  nada and Plantarse once each, then bet your mangos on the final question
+  for the Mango de oro. The hub card can now show a short name (QQSMP)
+  while the banner keeps the full one.
+
 - **The dominó table talks back too.** Open with the double six and you
   salí con la cochina; doubles, a last tile, a pass ("Ando limpio", then
   "Más aburrido que mocho en piñata"), ¡Dominó!, ¡Capicúa! and ¡Tranque!

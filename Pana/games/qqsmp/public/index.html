@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#d9a21b">
+  <meta name="description" content="El concurso de la plaza: todos responden a la vez y nadie ve lo que marcaste hasta la revelación. Sube tu escalera de mangos, cópiate si te atreves y llévate el Mango de oro.">
+  <title>¿Quién quiere ser mi pana? · Pana</title>
+  <link rel="stylesheet" href="/engine/kit.css">
+  <link rel="stylesheet" href="/engine/ui.css">
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="/engine/game-lobby.css">
+  <link rel="stylesheet" href="/engine/room-options.css">
+  <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}</script>
+</head>
+<body class="in-lobby">
+  <canvas id="world" aria-label="El estudio del concurso en tres dimensiones, con tus panas en sus podios"></canvas>
+  <div id="world-labels" aria-hidden="true"></div>
+  <header class="topbar"><a class="pk-logo" href="/" aria-label="Volver a Pana">PANA</a><nav id="game-nav" aria-label="Opciones"></nav></header>
+  <section id="lobby" class="pk-lobby" aria-labelledby="lobby-title">
+    <span class="pk-ribbon">QQSMP · EN VIVO DESDE LA PLAZA</span>
+    <h1 id="lobby-title" class="pk-title">¿Quién quiere ser mi pana?</h1>
+    <p class="pk-copy" data-room-description>Todos responden a la vez y nadie ve lo que marcaste hasta la revelación. Sube tu escalera de mangos, cópiate si te atreves y llévate el Mango de oro.</p>
+    <ol id="roster" class="pk-roster" aria-label="Podios del concurso" data-room-description></ol>
+    <button id="rules" class="pk-btn pk-btn--ghost" data-room-help>Cómo se juega</button>
+    <div id="room-options"></div>
+    <div class="pk-lobby-foot"><button id="start" class="pk-btn pk-btn--primary pk-btn--lg" disabled>Conectando…</button></div>
+  </section>
+  <main id="hud" hidden>
+    <aside id="ladder" class="ladder pk-panel" aria-label="Tu escalera de mangos"><span class="pk-eyebrow">Tu escalera</span><ol id="ladder-steps"></ol></aside>
+    <section class="quiz-panel pk-panel" aria-label="La pregunta">
+      <div class="quiz-top"><span id="category" class="pk-eyebrow"></span><span id="clock" class="clock pk-num" aria-live="off"></span></div>
+      <div id="timer" class="timer pk-bar"><i></i></div>
+      <h2 id="question" class="question"></h2>
+      <p id="host-line" class="host-line" aria-live="polite"></p>
+      <div id="answers" class="answers" role="group" aria-label="Respuestas">
+        <button class="answer" data-choice="0"><b>A</b><span></span></button>
+        <button class="answer" data-choice="1"><b>B</b><span></span></button>
+        <button class="answer" data-choice="2"><b>C</b><span></span></button>
+        <button class="answer" data-choice="3"><b>D</b><span></span></button>
+      </div>
+      <div id="bets" class="answers bets" role="group" aria-label="Tu apuesta" hidden></div>
+      <div id="copy-list" class="copy-list" role="group" aria-label="¿De quién te copias?" hidden></div>
+      <div id="comodines" class="comodines" role="group" aria-label="Comodines">
+        <button class="pk-btn pk-btn--sm" data-comodin="copy" title="Marca lo mismo que otro pana, sin ver qué puso">Copiarse</button>
+        <button class="pk-btn pk-btn--sm" data-comodin="half" title="Desaparecen dos respuestas malas, solo en tu pantalla">Mitad y mitad</button>
+        <button class="pk-btn pk-btn--sm" data-comodin="doble" title="Vale dos escalones; si fallas, bajas un escalón seguro más">Doble o nada</button>
+        <button class="pk-btn pk-btn--sm" data-comodin="plant" title="Guarda tus mangos y deja de jugar por la escalera">Plantarse</button>
+      </div>
+      <p id="event" class="event" role="status"></p>
+    </section>
+  </main>
+  <div class="connection"><span id="connection" role="status">Conectando…</span><button id="practice" class="pk-btn pk-btn--sm" hidden>Jugar en local</button></div>
+  <section id="results" class="pk-results" hidden aria-labelledby="result-title"><div class="pk-modal pk-results-card"><span class="pk-ribbon">CALABAZA, CALABAZA</span><h2 id="result-title" class="pk-title"></h2><ol id="result-roster" class="pk-roster"></ol><button id="again" class="pk-btn pk-btn--primary pk-btn--block">Otro concurso</button><a class="pk-back" href="/">Todos los juegos</a></div></section>
+  <div id="loading" class="pk-loading"><div class="pk-panel"><h2 class="pk-heading">Preparando el concurso</h2><p>Prendiendo los reflectores en la plaza…</p></div></div>
+  <script type="module" src="/engine/game-entry.js" data-pana-entry="./game.js"></script>
+</body>
+</html>

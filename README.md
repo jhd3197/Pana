@@ -39,6 +39,7 @@ same room.
 | **Ludo** | Roll, capture and race your four pieces home at a plaza table | 1–4, bots fill seats |
 | **Billar** | Eight/nine-ball pool with rotating teammates and timed shot charging | 2, 4 or 6 online, or practice |
 | **Bolas Criollas** | Roll close to the mingo or knock the rival's ball away, in teams | 1–6, bots fill seats |
+| **¿Quién quiere ser mi pana?** (QQSMP) | TV-style trivia: everyone answers in secret at once, climbs a ladder of mangos and bets the final | 1–6, bots fill seats |
 | **Pepazo** | Paintball between barricades: aim, paint your rivals, respawn | 1–8, bots fill in |
 
 ## Screenshots

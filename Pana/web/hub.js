@@ -133,6 +133,9 @@ function el(tag, cls, text) {
 }
 
 const shortName = (game) => game.name.split(' · ')[0];
+// The small card can carry its own short name (game.json tileName, e.g. QQSMP);
+// the banner keeps the full one.
+const tileName = (game) => game.tileName || shortName(game);
 
 // a game can ship card.js to draw live art on its tile
 function mountArt(game, canvas) {
@@ -171,7 +174,7 @@ function gameCard(game) {
   const art = el(url ? 'img' : 'canvas', 'game-art');
   if (url) { art.src = url; art.alt = ''; art.loading = 'lazy'; art.decoding = 'async'; }
   art.setAttribute('aria-hidden', 'true');
-  const name = el('h3', 'game-name', shortName(game));
+  const name = el('h3', 'game-name', tileName(game));
   name.setAttribute('aria-label', game.name);
   const body = el('div', 'game-body');
   body.append(name, el('span', 'game-meta', meta(game)));

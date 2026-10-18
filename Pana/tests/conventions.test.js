@@ -60,6 +60,7 @@ test('every game has the files the hub and the kit expect', () => {
     if (typeof json.description !== 'string' || !json.description) problems.push(`${id}: game.json needs a description`);
     if (!Number.isInteger(json.players) || json.players < 1 || json.players > 8) problems.push(`${id}: game.json players must be 1–8`);
     if (!/^#[0-9a-f]{6}$/i.test(json.color || '')) problems.push(`${id}: game.json color must be #rrggbb`);
+    if ('tileName' in json && (typeof json.tileName !== 'string' || !json.tileName || json.tileName.length > 12)) problems.push(`${id}: game.json tileName is a short name for the hub card (1–12 characters)`);
     if (!fs.existsSync(pub(id, 'card.js'))) problems.push(`${id}: no public/card.js for the hub tile`);
     if (!/href=["']\/engine\/kit\.css["']/.test(html)) problems.push(`${id}: index.html does not link /engine/kit.css`);
   }

@@ -11,7 +11,7 @@ function sendJson(res, status, data) {
 
 // A directory under games/ counts as a game when it has public/index.html.
 // Optional games/<id>/game.json provides display metadata (name, description,
-// players, color).
+// players, color, and tileName: a short name for the hub's small card).
 export function listGames() {
   const games = [];
   let entries = [];
@@ -31,6 +31,7 @@ export function listGames() {
     games.push({
       id: entry.name,
       name: meta.name || entry.name,
+      tileName: typeof meta.tileName === 'string' && meta.tileName ? meta.tileName : null,
       description: meta.description || '',
       players: meta.players || config.maxPlayersPerRoom,
       color: meta.color || null,
