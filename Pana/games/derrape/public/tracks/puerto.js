@@ -57,10 +57,10 @@ export default {
     edges(group,kit,T,{style:'steel',step:8,cellSize:220,skip:s=>{const p=T.pointAt(s);return T.gapAt(s)||p.y>-175||isFort(p.x,p.y)||isMountain(p.x,p.y);}});
     // Port festival: harbour bunting, kiosks, balloons and gulls; flowering
     // trees up the mountain road.
-    festive(group,T,{seed:71,cell:1400,minY:.6,skip:s=>{const p=T.pointAt(s);return isFort(p.x,p.y);},stands:300,banners:420,bunting:180,balloons:140,flags:220,butterflies:24,
-      trees:[['apamate',14,[1,18]],['araguaney',12,[1,18]],['palm',14,[0,14]],['bucare',8,[1,18]]],
-      plants:[['hibiscus',30],['bromeliad',30,[0,6]],['trinitaria',10,[0,8],.8]],
-      birds:[{kind:'macaw',flocks:1,size:4},{kind:'ibis',flocks:1,size:5,height:[16,28]}],
+    festive(group,T,{seed:71,minY:.6,skip:s=>{const p=T.pointAt(s);return isFort(p.x,p.y);},stands:300,banners:420,bunting:180,balloons:140,flags:220,butterflies:24,
+      trees:[['apamate',18,[1,18]],['araguaney',14,[1,18]],['bucare',8,[1,18]]],
+      plants:[['hibiscus',30],['bromeliad',30,[0,6]]],
+      birds:[{kind:'macaw',flocks:2,size:4}],
       vista:{shape:'peak',radius:1700,hills:22,height:[220,380],colors:[0x5fa585,0x6cb092,0x7aa9b8],balloons:5}});
   },
 };

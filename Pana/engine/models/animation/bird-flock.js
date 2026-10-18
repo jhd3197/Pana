@@ -26,7 +26,8 @@ export function birdFlock(prototype, { routes = [], size = 5, seed = 7, scale = 
     });
     const geometry = mergeGeometries(geos, false); geos.forEach(g => g.dispose());
     const mesh = new THREE.InstancedMesh(geometry, new THREE.MeshStandardMaterial({ vertexColors: true, roughness: .85 }), Math.max(1, count));
-    mesh.count = count; mesh.frustumCulled = false; mesh.castShadow = false; group.add(mesh);
+    // Decorative: never block camera, item or clearance rays.
+    mesh.count = count; mesh.frustumCulled = false; mesh.castShadow = false; mesh.raycast = () => {}; mesh.name = `${group.name} · ${child.name || 'parte'}`; group.add(mesh);
     return { child, mesh };
   });
   const birds = Array.from({ length: count }, (_, i) => {

@@ -191,7 +191,8 @@ try {
     assert.deepEqual(result.invalidTufts, [], 'Tufts remain grounded and outside the driving corridor');
     if (id === 'puerto') assert.ok(result.tuftCount > 500, 'Substantial roadside grass');
     if (id === 'salinas') assert.equal(result.tuftCount, 0);
-    if (id === 'puerto') { assert.ok(result.triangles < 3200000); assert.ok(result.draws < 900); }
+    // +200 k for the festive roadside (library trees, props, flocks).
+    if (id === 'puerto') { assert.ok(result.triangles < 3400000); assert.ok(result.draws < 900); }
     proof.maps.push(result);
     await page.screenshot({ path: `${output}/map-${id}.png` });
     if (id === 'puerto') for (const quality of ['baja', 'alta']) {

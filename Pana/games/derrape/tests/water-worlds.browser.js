@@ -60,7 +60,8 @@ try{
     assert.ok(result.protrusion<.1,`${id}: terrain below road`);
     assert.deepEqual(result.clearance,[],`${id}: car lanes clear`);
     assert.deepEqual(result.cameras,[],`${id}: forward/look-back chase segment clear`);
-    assert.ok(result.triangles<1800000,`${id}: environment triangle budget`);
+    // Delta carries ~185 k of festive roadside on a 1.76 M environment.
+    assert.ok(result.triangles<1950000,`${id}: environment triangle budget`);
     const views=[];
     for(const u of [0,.18,.4,.5,.55,.6,.62,.68,.79]){
       const view=await page.evaluate(u=>{

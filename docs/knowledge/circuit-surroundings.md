@@ -114,3 +114,9 @@ already measured 1.19 M against 1.0 M on unchanged code), Páramo 2.25 M, Llanos
 3.4 M, Chi Chi 4.85 M, Plaza 4.7 M. Multi-colour kerbs use one vertex-coloured
 material, which brought Estadio's overview from 966 draws to 947 before the
 roadside models were added.
+Other per-map guards account for the same roadside: Puerto 3.4 M in
+`puerto.browser.js` and `nature.browser.js` (3.15 M town plus about 195 k),
+the water-world environment guard 1.95 M (Delta 1.76 M plus about 185 k), and
+`plaza.browser.js` 4.7 M (4.55 M plus about 70 k). Roadside dressing is
+instanced with one cell per mesh. Spatial cells on a 6.6 km map multiplied
+Puerto's festive draws from 42 to 109.

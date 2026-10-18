@@ -97,7 +97,7 @@ export function festive(group, T, theme = {}) {
   };
   const every = (step, fn) => { if (!step) return; for (let s = r() * step; s < T.TOTAL; s += step * (.75 + r() * .5)) fn(s); };
   // Order matters: big things claim room first.
-  every(theme.stands, s => { if ((counts[theme.stand || 'cart'] || 0) >= (theme.maxStands ?? 5)) return; const p = spot(s, [0, 3], 1.5, undefined, 3.5); if (p) add(theme.stand || 'cart', null, p, p.h + Math.PI / 2 * p.side, 1, true); });
+  every(theme.stands, s => { if ((counts[theme.stand || 'cart'] || 0) >= (theme.maxStands ?? 3)) return; const p = spot(s, [0, 3], 1.5, undefined, 3.5); if (p) add(theme.stand || 'cart', null, p, p.h + Math.PI / 2 * p.side, 1, true); });
   every(theme.banners, s => { const p = spot(s, [0, 2], 1, undefined, 4); if (p) add('banner', null, p, p.h); });
   every(theme.bunting, s => { const p = spot(s, [0, 1.5], .5, undefined, 11); if (p) add('bunting', null, p, p.h); });
   for (const [kind, n, band = [1, 18], size = 1] of theme.trees || []) for (let i = 0; i < n; i++) {

@@ -62,7 +62,7 @@ export default {
     edges(group,kit,T,{style:'steel',step:6,skip:s=>{const p=T.pointAt(s);return riverDistance(p.x,p.y)<25;}});
     for(const u of [.07,.21,.4,.52,.7,.84,.95]){const p=kit.placeOnTrack(T,u*T.TOTAL,T.HW+5);kit.at(group,mountainSignpost(),p,p.h);}
     // Mountain-to-sea fiesta: flowering cloud forest, village bunting, macaws.
-    festive(group,T,{seed:29,cell:1400,minY:.6,skip:s=>{const p=T.pointAt(s);return riverDistance(p.x,p.y)<28;},stands:360,banners:480,bunting:260,balloons:180,flags:240,butterflies:50,
+    festive(group,T,{seed:29,minY:.6,skip:s=>{const p=T.pointAt(s);return riverDistance(p.x,p.y)<28;},stands:360,banners:480,bunting:260,balloons:180,flags:240,butterflies:50,
       trees:[['apamate',18,[2,22]],['bucare',14,[2,22]],['araguaney',12,[2,22]]],
       plants:[['trinitaria',14,[0,10],.9],['heliconia',30],['hibiscus',30],['bromeliad',40,[0,6]],['mossRock',30,[0,10]]],
       birds:[{kind:'macaw',flocks:3,size:5}],

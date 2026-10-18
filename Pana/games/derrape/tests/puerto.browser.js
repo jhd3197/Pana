@@ -106,7 +106,8 @@ try {
   assert.ok(result.containerWalls>=10&&result.siloClearance>11&&result.siloClearance<14,'full-height tunnel beneath the original silo bank');
   assert.ok(result.tunnelLength>300&&result.tunnelWindows>50,'substantial submerged tunnel with sea windows');
   assert.deepEqual(result.roofGaps,[],'continuous tunnel roof across bends and slopes');
-  assert.ok(result.triangles<3200000&&result.drawCalls<900,'map rendering budget');
+  // +200 k for the festive roadside (library trees, props, flocks).
+  assert.ok(result.triangles<3400000&&result.drawCalls<900,'map rendering budget');
   assert.ok(result.foundations.every(h=>h.embedded&&h.lift<4),'houses sit on grounded terraces below one storey');
   assert.ok(Math.abs(result.shipWaterline)<.001,'scaled ship meets sea level');
   // Use the real driver, vehicle, lighting and follow camera for the street-level proof.

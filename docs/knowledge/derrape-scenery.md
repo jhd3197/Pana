@@ -111,7 +111,7 @@ library model:
 - Fiesta props live in `engine/models/props/fiesta.js`: balloon bunches,
   feather flags, bunting, a checkered banner and a hot-air balloon. Each is one
   or two vertex-coloured meshes, with cloth on the shared plant wind. Stands
-  are the library `iceCreamCart`, or `beachShade` on Bululú, capped at 5 per
+  are the library `iceCreamCart`, or `beachShade` on Bululú, capped at 3 per
   track because a cart is 7.7 k triangles.
 - Flocks use `engine/models/animation/bird-flock.js`. It instances any
   flight-rig bird (`scarletMacaw`, `scarletIbis`, `soaringVulture`, created
@@ -120,7 +120,7 @@ library model:
   `morphoField`, which costs 2 draws. Both have `detailLevel = 1`, so Baja
   hides them.
 - Each model is instanced through `instancePlacements` with `cellSize`
-  Infinity, or 1400 m on Chi Chi and Puerto. Only trees and stands cast
+  Infinity (one instanced mesh per model mesh). Only trees and stands cast
   shadows. One spatial cell per mesh adds up fast: mossRock is 3 meshes, so
   scatter it with 500 m cells, not the old 110–220 m boulder cells.
 - `clear()` already enforces `HW + 5 + r`. Theme bands are metres beyond that.

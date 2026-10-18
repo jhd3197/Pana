@@ -55,7 +55,8 @@ export function morphoField({ points = [], seed = 7, radius = 2.2, scale = 1 } =
   const bodyMat = new THREE.MeshStandardMaterial({ color: 0x1d1a16, roughness: .9 }), body = new THREE.CylinderGeometry(.012, .008, .16, 5); body.rotateX(Math.PI / 2);
   const wings = new THREE.InstancedMesh(wing, mat, n * 2), bodies = new THREE.InstancedMesh(body, bodyMat, n);
   wings.count = points.length * 2; bodies.count = points.length;
-  for (const m of [wings, bodies]) { m.frustumCulled = false; m.castShadow = false; group.add(m); }
+  // Decorative: never block camera, item or clearance rays.
+  for (const m of [wings, bodies]) { m.frustumCulled = false; m.castShadow = false; m.raycast = () => {}; group.add(m); }
   group.name = 'Mariposas morpho · campo';
   const flies = points.map(p => ({ p, phase: random() * 6.28, r: radius * (.4 + random() * .6), speed: .25 + random() * .35, y: 1 + random() * 2, flap: 9 + random() * 5 }));
   const o = new THREE.Object3D(), w = new THREE.Object3D(), m = new THREE.Matrix4();

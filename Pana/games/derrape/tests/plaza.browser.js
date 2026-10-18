@@ -76,7 +76,8 @@ try {
   // The surroundings pass adds 51 homes, 26 gardens and 187 trees, using light
   // canopy prototypes. Allow that authored expansion while staying below the
   // pre-batching town's 5.28 M triangles / 1,383 overview draws.
-  assert.ok(metrics.triangles<4600000);assert.ok(metrics.drawCalls<1300);assert.deepEqual(errors,[]);
+  // Festive roadside adds ~70 k on top of the 4.55 M town.
+  assert.ok(metrics.triangles<4700000);assert.ok(metrics.drawCalls<1300);assert.deepEqual(errors,[]);
   console.log('PASS: town layout, hill, foundations, drivable geometry, real terrain clearance and render budgets');
   await page.close();
   const game=await browser.newPage({viewport:{width:1440,height:900}});

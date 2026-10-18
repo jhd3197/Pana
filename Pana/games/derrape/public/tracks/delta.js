@@ -17,7 +17,7 @@ export default {
     festive(g,T,{seed:57,minY:.45,maxDrop:2.5,stands:300,banners:480,bunting:200,balloons:200,flags:260,butterflies:40,
       trees:[['bucare',14,[1,18]],['apamate',12,[1,18]],['palm',16,[0,14]]],
       plants:[['heliconia',30],['hibiscus',20],['trinitaria',8,[0,10],.8]],
-      birds:[{kind:'ibis',flocks:4,size:6,height:[10,20]},{kind:'macaw',flocks:1,size:4}],
+      birds:[{kind:'ibis',flocks:3,size:5,height:[10,20]},{kind:'macaw',flocks:1,size:4}],
       vista:{shape:'hill',hills:20,height:[50,120],colors:[0x3f9a5a,0x4fae62,0x5fa86e],balloons:3}});
   },
 };
