@@ -10,6 +10,10 @@ becomes the GitHub release's notes.
 
 ### Added
 
+- **Browse aligned launcher pages and see your pana preparing before the editor opens.**
+  Shared page widths keep the header and content edges together. The character
+  editor shows loading until its model and graphics are ready, with retry on failure.
+
 - **Bolas Criollas and Ludo now have illustrated launcher cards and backgrounds.**
   Each game uses two supplied capybara illustrations, with smaller card files
   for quick browsing and large artwork for the featured game.

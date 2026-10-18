@@ -9,6 +9,13 @@ links and saved game IDs continue to work.
 
 ## Art and rendering
 
+Header, content and card rail use `--pk-page-width` / `--pk-page-gutter` from
+the kit; hosted social pages use the same values. Do not combine a larger
+`max-width` with an inherited smaller `width` on the header. The creator paints
+its loading state before importing `pana.js`, then awaits `sceneReady` (compiled
+shaders and first render). A failed import leaves a retry control; customization
+controls stay inert until ready. Switching views reuses the prepared renderer.
+
 `web/images/launcher/` contains the user's supplied launcher JPGs, already at 1440 × 960,
 plus the supplied Embuste camp PNG. The demo's `g-truco`, `g-farol`, `g-bola8`
 and `g-pepazo` assets map to `caida`, `poquer`, `billar` and `pintura` respectively.

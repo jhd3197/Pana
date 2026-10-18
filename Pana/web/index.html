@@ -86,6 +86,12 @@
       <div class="creator-stage" id="creator-slot">
         <div class="stage" id="pana-stage">
           <canvas id="pana-preview" aria-label="Tu pana en 3D. Arrástralo para girarlo, tócalo para que grite."></canvas>
+          <div class="pana-loading" id="pana-loading" role="status">
+            <img id="pana-loading-portrait" alt="" hidden>
+            <strong id="pana-loading-copy">Preparando tu pana…</strong>
+            <progress aria-label="Cargando el modelo de tu pana"></progress>
+            <button id="pana-loading-retry" class="pk-btn" hidden>Volver a intentar</button>
+          </div>
           <span class="stage-hint">Arrástralo · tócalo</span>
         </div>
       </div>
@@ -98,10 +104,10 @@
         <div class="name-row">
           <label class="pk-eyebrow" for="name">Tu nombre</label>
           <input id="name" maxlength="16" placeholder="pana" autocomplete="nickname">
-          <button id="pana-random" class="pk-btn" type="button">¡Sorpréndeme!</button>
+          <button id="pana-random" class="pk-btn" type="button" disabled>¡Sorpréndeme!</button>
         </div>
 
-        <div class="customizer pk-well">
+        <div class="customizer pk-well" inert>
           <div class="pk-seg tabs" id="pana-tabs" role="tablist"></div>
           <div class="tab-body" id="pana-controls" role="tabpanel"></div>
         </div>

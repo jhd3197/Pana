@@ -98,6 +98,7 @@ function shootFace() {
 
 function resize() {
   const w = canvas.clientWidth, h = canvas.clientHeight;
+  if (!w || !h) return;
   const pw = Math.round(w * renderer.getPixelRatio());
   if (canvas.width !== pw || canvas.height !== Math.round(h * renderer.getPixelRatio())) {
     renderer.setSize(w, h, false);
@@ -242,4 +243,10 @@ document.getElementById('pana-random').onclick = () => {
 
 rebuild();
 render();
-frame();
+export const sceneReady = (async () => {
+  resize();
+  await renderer.compileAsync(scene, camera);
+  renderer.render(scene, camera);
+  if (canvas.clientWidth) { shootFace(); needFace = false; }
+  frame();
+})();

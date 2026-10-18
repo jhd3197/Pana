@@ -28,6 +28,29 @@ document.getElementById('hub-actions').append(gear);
 // ---------- views: #jugar (default), #mi-pana, #salas ----------
 // The one pana canvas moves between the "Tu pana" card and the creator.
 const stage = document.getElementById('pana-stage');
+let creatorLoading;
+function loadCreator() {
+  if (creatorLoading) return;
+  const loading = document.getElementById('pana-loading');
+  stage.setAttribute('aria-busy', 'true');
+  const portrait = cachedPortrait(loadAvatar());
+  if (portrait) { const img = document.getElementById('pana-loading-portrait'); img.src = portrait; img.hidden = false; }
+  creatorLoading = (async () => {
+    // Paint the loading state before cached modules can start building the model.
+    await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+    const module = await import('./pana.js');
+    await module.sceneReady;
+    loading.hidden = true;
+    stage.setAttribute('aria-busy', 'false');
+    document.querySelector('.customizer').inert = false;
+    document.getElementById('pana-random').disabled = false;
+  })().catch(() => {
+    document.getElementById('pana-loading-copy').textContent = 'No pudimos preparar tu pana. Intenta otra vez.';
+    loading.querySelector('progress').hidden = true;
+    const retry = document.getElementById('pana-loading-retry'); retry.hidden = false; retry.onclick = () => location.reload();
+    stage.setAttribute('aria-busy', 'false');
+  });
+}
 function showView() {
   const view = { '#mi-pana': 'mi-pana', '#salas': 'salas' }[location.hash] || 'jugar';
   document.body.dataset.view = view;
@@ -36,9 +59,7 @@ function showView() {
     else a.removeAttribute('aria-current');
   }
   document.getElementById(view === 'mi-pana' ? 'creator-slot' : 'tu-pana-slot').append(stage);
-  if (view === 'mi-pana') import('./pana.js').catch(() => {
-    document.querySelector('.stage-hint').textContent = 'No se pudo cargar tu pana. Recarga para intentar otra vez.';
-  });
+  if (view === 'mi-pana') loadCreator();
   scrollTo(0, 0);
 }
 addEventListener('hashchange', showView);
