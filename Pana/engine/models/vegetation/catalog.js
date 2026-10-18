@@ -92,6 +92,16 @@ export default [
     pack: "vegetation"
   },
   {
+    id: "apamate", name: "Apamate", category: "Vegetación", source: "/engine/models/vegetation/araguaney.js", factory: "araguaney",
+    usedBy: ["Derrape"], previewOptions: { seed: 7, bloom: "pink" },
+    description: "El araguaney en flor rosada: misma copa, floración de apamate.", tags: ["árbol", "flores", "rosado"], pack: "vegetation"
+  },
+  {
+    id: "bucare", name: "Bucare en flor", category: "Vegetación", source: "/engine/models/vegetation/araguaney.js", factory: "araguaney",
+    usedBy: ["Derrape"], previewOptions: { seed: 7, bloom: "coral" },
+    description: "Copa de flores coral y anaranjadas, sombra de los cafetales.", tags: ["árbol", "flores", "coral"], pack: "vegetation"
+  },
+  {
     id: "bamboo",
     name: "Bambú",
     category: "Vegetación",

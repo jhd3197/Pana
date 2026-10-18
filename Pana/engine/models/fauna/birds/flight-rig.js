@@ -4,8 +4,10 @@ import { finish } from '/engine/models/core/architecture-kit.js';
 
 const dark=M(0x202627,{roughness:.85,flatShading:false});
 const mat=color=>M(color,{roughness:.88,flatShading:false});
+// detail 'low' (flocks): coarser spheres and bills, fewer primaries, no toes.
+let LOW=false;
 function oval(g,color,at,scale,rotation=0){
-  const o=mesh(new THREE.SphereGeometry(1,12,8),typeof color==='number'?mat(color):color,...at);
+  const o=mesh(new THREE.SphereGeometry(1,LOW?7:12,LOW?5:8),typeof color==='number'?mat(color):color,...at);
   o.scale.set(...scale);o.rotation.x=rotation;g.add(o);return o;
 }
 function feather(g,color,from,to,width){
@@ -16,14 +18,15 @@ function feather(g,color,from,to,width){
 function bill(g,points,radius,color=dark){
   const curve=new THREE.CatmullRomCurve3(points.map(p=>new THREE.Vector3(...p)));
   // Taper to a closed point along the curve instead of a blunt tube end.
-  const geometry=new THREE.TubeGeometry(curve,18,radius,8,false),p=geometry.attributes.position;
-  for(let i=0;i<=18;i++){
-    const center=curve.getPointAt(i/18),scale=Math.max(.015,1-i/18);
-    for(let j=0;j<=8;j++){const k=i*9+j;p.setXYZ(k,center.x+(p.getX(k)-center.x)*scale,center.y+(p.getY(k)-center.y)*scale,center.z+(p.getZ(k)-center.z)*scale);}
+  const n=LOW?6:18,m=LOW?5:8,geometry=new THREE.TubeGeometry(curve,n,radius,m,false),p=geometry.attributes.position;
+  for(let i=0;i<=n;i++){
+    const center=curve.getPointAt(i/n),scale=Math.max(.015,1-i/n);
+    for(let j=0;j<=m;j++){const k=i*(m+1)+j;p.setXYZ(k,center.x+(p.getX(k)-center.x)*scale,center.y+(p.getY(k)-center.y)*scale,center.z+(p.getZ(k)-center.z)*scale);}
   }
   geometry.computeVertexNormals();g.add(mesh(geometry,color));
 }
-export function bird(spec,{seed=7}={}){
+export function bird(spec,{seed=7,detail='game'}={}){
+  LOW=detail==='low';
   const kind=spec.kind,phase=rng(seed)()*Math.PI*2,g=new THREE.Group(),body=new THREE.Group(),wings=[];
   oval(body,spec.body,[0,1.05,0],[kind==='ibis'?.19:.26,.26,.49]);
   const head=kind==='ibis'?[0,1.44,.67]:[0,1.38,.4];
@@ -44,7 +47,7 @@ export function bird(spec,{seed=7}={}){
     // Legs trail behind the body in flight; three curved toes remain visible.
     const y=kind==='ibis'?.74:.82,z=kind==='ibis'?-1.05:-.36;
     body.add(tube([s*.12,.93,-.15],[s*.12,y,z],.022,kind==='ibis'?mat(0x914438):dark));
-    for(let toe=-1;toe<=1;toe++)body.add(tube([s*.12,y,z],[s*.12+toe*.045,y-.055,z-.12],.013,dark));
+    if(!LOW)for(let toe=-1;toe<=1;toe++)body.add(tube([s*.12,y,z],[s*.12+toe*.045,y-.055,z-.12],.013,dark));
   }
   for(let i=-2;i<=2;i++)feather(body,kind==='macaw'?(i%2?0x2e68a2:0xbb3532):spec.body,[i*.05,1.03,-.34],[i*.1,.85,-.55-spec.tail*(1-Math.abs(i)*.12)],.075);
   g.add(finish(body,`${spec.name} · cuerpo`));
@@ -58,10 +61,11 @@ export function bird(spec,{seed=7}={}){
     const surface=new THREE.ExtrudeGeometry(outline,{depth:.05,bevelEnabled:false,steps:1});
     surface.rotateX(Math.PI/2);surface.translate(0,.01,0);pieces.add(mesh(surface,mat(spec.wing)));
     oval(pieces,spec.wing,[side*.36,0,-.06],[.48,.09,.26]);
-    for(let i=0;i<9;i++){
-      const t=i/8,x=.25+t*(spec.span-.35),length=(kind==='vulture'?.58:.44)+t*.16;
-      feather(pieces,i>(kind==='macaw'?4:6)?spec.tip:spec.wing,[side*x,0,.08-t*.22],[side*(x+.22),-.025,-length-t*.16],.085);
-      if(kind==='macaw'&&i<7)feather(pieces,0xe6b73d,[side*x,.045,.04-t*.16],[side*(x+.14),.045,-.24-t*.16],.07);
+    const primaries=LOW?5:9;
+    for(let i=0;i<primaries;i++){
+      const t=i/(primaries-1),x=.25+t*(spec.span-.35),length=(kind==='vulture'?.58:.44)+t*.16;
+      feather(pieces,t>(kind==='macaw'?.5:.75)?spec.tip:spec.wing,[side*x,0,.08-t*.22],[side*(x+.22),-.025,-length-t*.16],.085);
+      if(kind==='macaw'&&i<(LOW?3:7))feather(pieces,0xe6b73d,[side*x,.045,.04-t*.16],[side*(x+.14),.045,-.24-t*.16],.07);
     }
     wing.add(finish(pieces,`${spec.name} · ala`));wing.position.set(side*.18,1.15,0);g.add(wing);wings.push(wing);
   }
@@ -69,5 +73,5 @@ export function bird(spec,{seed=7}={}){
     previewBounds:[[-spec.span-.4,0,-1.7],[spec.span+.4,2.6,1.4]],
     tick(t){const flap=Math.sin(t*spec.rate+phase)*spec.flap;wings[0].rotation.z=-flap;wings[1].rotation.z=flap;},
   };
-  g.userData.tick(0);return g;
+  g.userData.tick(0);LOW=false;return g;
 }

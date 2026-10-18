@@ -5,11 +5,13 @@ import { bake } from '/engine/models/core/static-batch.js';
 import { bark, bladeMat, ribbon, frondMats } from '/engine/models/vegetation/canopy.js';
 import { natureSurface } from '/engine/models/core/nature-surface.js';
 
-export function palm({ h = 8, seed = 1 } = {}) {
-  const r = rng(seed), g = new THREE.Group();
+// detail 'low': a coarser trunk without collar rings and fewer, wider
+// leaflets, for long roadside rows and beaches.
+export function palm({ h = 8, seed = 1, detail = 'game' } = {}) {
+  const r = rng(seed), g = new THREE.Group(), low = detail === 'low';
   const bend = 0.6 + r() * 1.1, turn = r() * Math.PI * 2;
   const dx = Math.cos(turn) * bend, dz = Math.sin(turn) * bend;
-  const trunkGeo = new THREE.CylinderGeometry(0.18, 0.36, h, 12, 18);
+  const trunkGeo = new THREE.CylinderGeometry(0.18, 0.36, h, low ? 6 : 12, low ? 6 : 18);
   const p = trunkGeo.attributes.position;
   for (let i = 0; i < p.count; i++) {
     const t = (p.getY(i) + h / 2) / h;
@@ -18,24 +20,25 @@ export function palm({ h = 8, seed = 1 } = {}) {
   trunkGeo.computeVertexNormals();
   g.add(mesh(natureSurface(trunkGeo, 'bark'), bark));
   const collar = M(0xb69a6a, { roughness: 1, flatShading: false });
-  for (let i = 1; i < 20; i++) {
+  for (let i = 1; i < (low ? 0 : 20); i++) {
     const t = i / 21;
     const ring = mesh(new THREE.TorusGeometry(0.36 - t * 0.18, 0.017, 3, 9), collar, dx * t * t, h * t, dz * t * t);
     ring.rotation.x = Math.PI / 2;
     g.add(ring);
   }
-  const n = 8 + seed % 3;
+  const n = low ? 7 : 8 + seed % 3;
   for (let i = 0; i < n; i++) {
     const frond = new THREE.Group();
     frond.position.set(dx, h - 0.1, dz);
     frond.rotation.y = i / n * Math.PI * 2 + r() * 0.25;
     const length = 3.2 + r() * 1.2, rise = 0.8 + r() * 0.7, droop = 0.85 + r() * 0.75;
     frond.add(mesh(ribbon(length, 0.065, rise, droop), frondMats[2]));
-    for (let k = 1; k < 10; k++) {
-      const t = k / 10;
+    const leaflets = low ? 5 : 10;
+    for (let k = 1; k < leaflets; k++) {
+      const t = k / leaflets;
       const leafletLength = (0.35 + Math.sin(t * Math.PI) * 0.85) * (length / 3.7);
       for (const side of [-1, 1]) {
-        const leaf = mesh(ribbon(leafletLength * (1 + side * 0.06), 0.16, 0.04, 0.24 + t * 0.2, k, 5), frondMats[(i + k) % 3], t * length, Math.sin(t * Math.PI * 0.85) * rise - t * t * droop, 0);
+        const leaf = mesh(ribbon(leafletLength * (1 + side * 0.06), low ? 0.3 : 0.16, 0.04, 0.24 + t * 0.2, k, low ? 3 : 5), frondMats[(i + k) % 3], t * length, Math.sin(t * Math.PI * 0.85) * rise - t * t * droop, 0);
         leaf.rotation.y = side * (0.9 + t * 0.35);
         frond.add(leaf);
       }
