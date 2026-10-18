@@ -1,72 +1,158 @@
 import * as THREE from 'three';
 import { criollasCourt, criollaBall } from './models/props/criollas.js';
 import { buildCharacter } from './models/characters/pana/avatar-model.js';
-import { palm } from './models/vegetation/palm.js';
+import { createPlazaProp, streetLamp } from './models/props/plaza.js';
+import { createArenaSlot } from './arenas.js';
 import { createSky } from './sky.js';
+import { guideRibbon, trimPath, pathLength } from './aim-guide.js';
 import { COURT, TEAM_COLORS, landing, distance } from './bolas-criollas.js';
 
-export function createBolasWorld({ aspect = 16 / 9, individual = false } = {}) {
-  const scene = new THREE.Scene(); scene.background = new THREE.Color('#d8e4ca');
-  scene.fog = new THREE.Fog('#d8e4ca', 65, 180);
-  const sky = createSky({ skyTop: '#78bbdf', horizon: '#f9e4b8', skySeed: 32, cloudCover: .33 }); scene.add(sky.mesh);
-  scene.add(new THREE.HemisphereLight('#fff5d9', '#71814f', 2));
-  const sun = new THREE.DirectionalLight('#fff1d1', 2.6); sun.position.set(-18, 28, 10); sun.castShadow = true;
-  Object.assign(sun.shadow.camera, { left: -25, right: 25, top: 25, bottom: -25, near: 1, far: 80 });
-  sun.shadow.mapSize.set(1024, 1024); sun.shadow.bias = -.0005; scene.add(sun);
+// Papel picado over the court: two poles, a sagging cord and cloth flags that
+// sway with absolute time (one live mesh, no per-flag objects).
+function bunting(z, colors) {
+  const group = new THREE.Group(); group.name = 'Papel picado';
+  const wood = new THREE.MeshStandardMaterial({ color: '#8b5e3c', roughness: .9 });
+  for (const x of [-7.6, 7.6]) {
+    const pole = new THREE.Mesh(new THREE.CylinderGeometry(.07, .09, 7.2, 8), wood); pole.position.set(x, 3.6, z); pole.castShadow = true; group.add(pole);
+  }
+  const sag = x => 7 - Math.cos(x / 7.6 * Math.PI / 2) * .55;
+  const cord = new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(Array.from({ length: 13 }, (_, i) => new THREE.Vector3(-7.6 + i * 15.2 / 12, sag(-7.6 + i * 15.2 / 12), z))), 24, .018, 4), wood);
+  group.add(cord);
+  const positions = [], base = [], weights = [], color = [], index = [];
+  for (let i = 0, x = -7.1; x < 7.2; x += .7, i++) {
+    const c = new THREE.Color(colors[i % colors.length]), o = positions.length / 3;
+    for (const [dx, dy] of [[-.26, 0], [.26, 0], [0, -.55]]) { positions.push(x + dx, sag(x + dx) + dy, z); weights.push(-dy / .55); color.push(c.r, c.g, c.b); }
+    index.push(o, o + 1, o + 2);
+  }
+  base.push(...positions);
+  const geometry = new THREE.BufferGeometry();
+  geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3).setUsage(THREE.DynamicDrawUsage));
+  geometry.setAttribute('color', new THREE.Float32BufferAttribute(color, 3)); geometry.setIndex(index); geometry.computeVertexNormals();
+  const flags = new THREE.Mesh(geometry, new THREE.MeshStandardMaterial({ vertexColors: true, roughness: .85, side: THREE.DoubleSide }));
+  flags.frustumCulled = false; group.add(flags);
+  group.userData.tick = t => {
+    const p = geometry.attributes.position;
+    for (let i = 0; i < p.count; i++) p.setZ(i, base[i * 3 + 2] + weights[i] * (.18 + Math.sin(t * 1.9 - base[i * 3] * .45) * .2));
+    p.needsUpdate = true;
+  };
+  return group;
+}
+
+// Court-side dressing from the brand board: chalk scoreboard on posts,
+// planters at the corners, the team cooler and a crate of spare bolas.
+function dressing() {
+  const group = new THREE.Group(); group.name = 'Court dressing';
+  const place = (object, x, z, angle = 0) => { object.position.set(x, 0, z); object.rotation.y = angle; group.add(object); return object; };
+  for (const [x, z] of [[-7.6, -13.6], [7.6, -13.6], [-7.6, 13.9], [7.6, 13.9]]) place(createPlazaProp('planter'), x, z);
+  for (const [x, z] of [[-7.9, -9.2], [7.9, 6.2], [-7.9, 7.4]]) place(streetLamp(), x, z);
+  place(createPlazaProp('cooler'), -8.1, -1.1, .4);
+  place(createPlazaProp('cooler', { color: 0x2ba972 }), 8.1, -.6, -.3);
+  const crate = place(createPlazaProp('crate'), 2.2, 12.9, .15); crate.scale.setScalar(.7);
+  for (const [i, x] of [-.28, 0, .28].entries()) {
+    const ball = criollaBall({ color: TEAM_COLORS[i % 2], radius: .16 }); ball.position.set(x, .62, 0); crate.add(ball);
+  }
+  return group;
+}
+
+export function createBolasWorld({ aspect = 16 / 9, individual = false, venue = 'plaza' } = {}) {
+  // Warm late-morning light: golden sun, soft blue fill, a creamy horizon.
+  const scene = new THREE.Scene(); scene.background = new THREE.Color('#f6dfb4');
+  scene.fog = new THREE.Fog('#f6dfb4', 70, 190);
+  const sky = createSky({ skyTop: '#4fa8e8', horizon: '#fbe2b2', skySeed: 32, cloudCover: .3 }); scene.add(sky.mesh);
+  scene.add(new THREE.HemisphereLight('#fff3da', '#c08a5a', 2.1));
+  const sun = new THREE.DirectionalLight('#ffd9a0', 3.1); sun.position.set(-18, 28, 12); sun.castShadow = true;
+  Object.assign(sun.shadow.camera, { left: -26, right: 26, top: 26, bottom: -26, near: 1, far: 90 });
+  sun.shadow.mapSize.set(2048, 2048); sun.shadow.bias = -.0005; sun.shadow.normalBias = .03; scene.add(sun);
+  const venueSlot = createArenaSlot(scene, { mode: 'court' }); venueSlot.setMap(venue);
   const court = criollasCourt({ width: COURT.halfWidth * 2, length: COURT.halfLength * 2 }); scene.add(court);
-  const lawn = new THREE.Mesh(new THREE.PlaneGeometry(260, 260), new THREE.MeshStandardMaterial({ color: '#78995a', roughness: 1 }));
-  lawn.rotation.x = -Math.PI / 2; lawn.position.y = -.3; lawn.receiveShadow = true; scene.add(lawn);
-  for (let i = 0; i < 7; i++) {
-    const p = palm({ h: 5 + i % 3, seed: i + 101 });
-    p.position.set((i % 2 ? -1 : 1) * (14 + i * 2), -.3, -14 - i * 4); scene.add(p);
-  }
-  // Low, rounded hills leave the court legible against a warm horizon.
-  for (let i = 0; i < 7; i++) {
-    const hill = new THREE.Mesh(new THREE.SphereGeometry(1, 24, 12), new THREE.MeshStandardMaterial({ color: i % 2 ? '#719976' : '#87aa82', roughness: 1 }));
-    hill.position.set((i - 3) * 22, -1, -65 - i % 2 * 12); hill.scale.set(23, 11 + i % 3 * 4, 19); scene.add(hill);
-  }
+  const flags = [bunting(-1, ['#ff4b4b', '#ffc83d', '#3b8bff', '#2baa72', '#ff7a6b']), bunting(-9, ['#00c2d8', '#ffc83d', '#ff4b4b', '#2baa72'])];
+  scene.add(dressing(), ...flags);
+  // The chalkboard scoreboard stands on two posts behind the far end.
   const signCanvas = document.createElement('canvas'); signCanvas.width = 1024; signCanvas.height = 256;
   const signTex = new THREE.CanvasTexture(signCanvas); signTex.colorSpace = THREE.SRGBColorSpace;
-  const sign = new THREE.Mesh(new THREE.PlaneGeometry(9, 2.25), new THREE.MeshStandardMaterial({ map: signTex, roughness: .9, side: THREE.DoubleSide }));
-  sign.position.set(0, 2, -13.4); scene.add(sign);
+  const board = new THREE.Group(); board.name = 'Pizarra'; board.position.set(0, 0, -14.4); scene.add(board);
+  const sign = new THREE.Mesh(new THREE.PlaneGeometry(7.2, 1.8), new THREE.MeshStandardMaterial({ map: signTex, roughness: .9 }));
+  sign.position.y = 2.25; board.add(sign);
+  const frameWood = new THREE.MeshStandardMaterial({ color: '#8b5e3c', roughness: .85 });
+  const frame = new THREE.Mesh(new THREE.BoxGeometry(7.6, 2.2, .14), frameWood); frame.position.set(0, 2.25, -.09); frame.castShadow = true; board.add(frame);
+  for (const x of [-3.4, 3.4]) { const post = new THREE.Mesh(new THREE.BoxGeometry(.22, 3.4, .22), frameWood); post.position.set(x, 1.7, -.12); post.castShadow = true; board.add(post); }
   let signText = '';
   function caption(text = 'BOLAS CRIOLLAS', sub = 'ARRIMA CON TUS PANAS') {
     const key = text + sub; if (key === signText) return; signText = key;
-    const c = signCanvas.getContext('2d'); c.fillStyle = '#214b40'; c.fillRect(0, 0, 1024, 256);
-    c.strokeStyle = '#d8ba78'; c.lineWidth = 5; c.strokeRect(12, 12, 1000, 232);
-    c.textAlign = 'center'; c.fillStyle = '#fff0cb'; c.font = '64px "Luckiest Guy", sans-serif'; c.fillText(text, 512, 116, 950);
-    c.fillStyle = '#eacb7f'; c.font = 'bold 31px Nunito, sans-serif'; c.fillText(sub, 512, 191, 950); signTex.needsUpdate = true;
+    const c = signCanvas.getContext('2d'); c.fillStyle = '#245a43'; c.fillRect(0, 0, 1024, 256);
+    c.strokeStyle = 'rgba(255, 248, 225, .25)'; c.lineWidth = 3; c.strokeRect(14, 14, 996, 228);
+    c.textAlign = 'center'; c.fillStyle = '#fff6dc'; c.font = '68px "Luckiest Guy", sans-serif'; c.fillText(text, 512, 118, 950);
+    c.fillStyle = '#ffc83d'; c.font = 'bold 33px Nunito, sans-serif'; c.fillText(sub, 512, 196, 950); signTex.needsUpdate = true;
   }
   caption();
   const camera = new THREE.PerspectiveCamera(42, aspect, .1, 500);
-  function fit(nextAspect = camera.aspect, overhead = false) {
-    camera.aspect = nextAspect; camera.updateProjectionMatrix();
+  // The legacy wide framing (Bululú, and the 'cancha' view): the whole court in shot.
+  function framing(nextAspect, overhead, out) {
     const wide = nextAspect > 1.65;
     const direction = new THREE.Vector3(overhead ? .03 : wide ? 1 : .34, overhead ? 1.5 : .95, wide && !overhead ? .25 : 1).normalize();
-    let dist = 22;
+    let dist = 22; const probe = camera.clone(); probe.aspect = nextAspect; probe.clearViewOffset(); probe.updateProjectionMatrix();
     for (let n = 0; n < 50; n++) {
-      camera.position.copy(direction).multiplyScalar(dist); camera.lookAt(0, 0, 0); camera.updateMatrixWorld();
+      probe.position.copy(direction).multiplyScalar(dist); probe.lookAt(0, 0, 0); probe.updateMatrixWorld();
       const fits = [-7.5, 7.5].every(x => [-13.8, 13.8].every(z => [0, 3.5].every(y => {
-        const p = new THREE.Vector3(x, y, z).project(camera); return Math.abs(p.x) < .94 && Math.abs(p.y) < .93;
+        const p = new THREE.Vector3(x, y, z).project(probe); return Math.abs(p.x) < .94 && Math.abs(p.y) < .93;
       })));
       if (fits) break; dist *= 1.055;
     }
+    out.pos.copy(probe.position); out.look.set(0, 0, 0); out.up.set(0, 1, 0);
+  }
+  const pose = { pos: new THREE.Vector3(), look: new THREE.Vector3(), up: new THREE.Vector3(0, 1, 0) }, want = { pos: new THREE.Vector3(), look: new THREE.Vector3(), up: new THREE.Vector3(0, 1, 0) };
+  let posed = false;
+  function apply() { camera.position.copy(pose.pos); camera.up.copy(pose.up); camera.lookAt(pose.look); camera.updateMatrixWorld(); }
+  function fit(nextAspect = camera.aspect, overhead = false) {
+    camera.aspect = nextAspect; camera.clearViewOffset(); camera.updateProjectionMatrix();
+    framing(nextAspect, overhead, want); pose.pos.copy(want.pos); pose.look.copy(want.look); pose.up.copy(want.up); posed = true; apply();
   }
   fit();
+  // Bolas Criollas' own cameras. 'calce': behind and above the thrower, looking
+  // down the court (follows the rolling ball a little). 'arriba': straight
+  // down, long axis across a wide screen. 'cancha': the classic wide framing.
+  function view(mode, { aspect: nextAspect = camera.aspect, dt = 0, originX = 0, focus = null, lift = 0, width = 1, height = 1 } = {}) {
+    camera.aspect = nextAspect;
+    if (lift) camera.setViewOffset(width, height, 0, lift, width, height); else camera.clearViewOffset();
+    camera.updateProjectionMatrix();
+    const portrait = nextAspect < 1;
+    if (mode === 'calce') {
+      // Over the thrower's right shoulder, so the pana stays in the corner of the shot.
+      const back = portrait ? 9.6 : 7.4, up = portrait ? 8.4 : 4.9;
+      want.pos.set(originX * .6 + (portrait ? .8 : 1.9), up, COURT.launchZ + back); want.up.set(0, 1, 0);
+      want.look.set(focus ? focus.x * .35 : 0, 0, focus ? Math.min(COURT.launchZ - 6, focus.z) * .5 - 2.5 : -3);
+    } else if (mode === 'arriba') {
+      const tan = Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)), across = !portrait;
+      // Long axis across the screen when it is wider than tall.
+      const along = COURT.halfLength + 1.6, side = COURT.halfWidth + 2.6;
+      const h = across ? Math.max(side / tan, along / (tan * nextAspect)) : Math.max(along / tan, side / (tan * nextAspect));
+      want.pos.set(0, h * 1.04, 0); want.look.set(0, 0, 0); want.up.set(across ? -1 : 0, 0, across ? 0 : -1);
+    } else framing(nextAspect, false, want);
+    // Cords seen from straight above would read as lines across the court.
+    flags.forEach(f => { f.visible = mode !== 'arriba'; });
+    if (!posed || !dt) { pose.pos.copy(want.pos); pose.look.copy(want.look); pose.up.copy(want.up); posed = true; }
+    else { const k = 1 - Math.exp(-dt * 3.2); pose.pos.lerp(want.pos, k); pose.look.lerp(want.look, k); pose.up.lerp(want.up, k).normalize(); }
+    apply();
+  }
   const actors = [], ballMeshes = new Map(), guides = [];
   const marker = new THREE.Mesh(new THREE.RingGeometry(.42, .49, 48), new THREE.MeshBasicMaterial({ color: '#ffdc61', side: THREE.DoubleSide, depthWrite: false }));
   marker.rotation.x = -Math.PI / 2; scene.add(marker);
   const measureLine = new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(), new THREE.Vector3()]), new THREE.LineDashedMaterial({ color: '#fff6d6', dashSize: .16, gapSize: .1 })); scene.add(measureLine);
+  // Fácil also previews where struck balls come to rest: a ring per ball.
+  const restMaterial = new THREE.MeshBasicMaterial({ color: '#ffffff', side: THREE.DoubleSide, transparent: true, opacity: .85, depthWrite: false });
+  const rests = Array.from({ length: 6 }, () => { const m = new THREE.Mesh(new THREE.RingGeometry(.2, .27, 32), restMaterial); m.rotation.x = -Math.PI / 2; m.visible = false; scene.add(m); return m; });
   function makeGuide(color) {
-    const line = new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(), new THREE.Vector3()]), new THREE.LineDashedMaterial({ color, dashSize: .22, gapSize: .16, transparent: true, opacity: .75 }));
-    const ring = new THREE.Mesh(new THREE.RingGeometry(.33, .38, 40), new THREE.MeshBasicMaterial({ color, side: THREE.DoubleSide, transparent: true, opacity: .9 }));
+    const line = guideRibbon(color, .12, { opacity: .95, segments: 24 });
+    const ring = new THREE.Mesh(new THREE.RingGeometry(.33, .41, 40), new THREE.MeshBasicMaterial({ color: '#ffffff', side: THREE.DoubleSide, transparent: true, opacity: .95, depthWrite: false }));
     ring.rotation.x = -Math.PI / 2; scene.add(line, ring); return { line, ring };
   }
   let clock = 0, lastPitch = null, lastBallCount = 0;
-  function draw(pitch, players, { dt = 0, turn = -1, shots = [], winners = [], caption: title, subtitle } = {}) {
-    clock += dt; sky.update(clock);
+  const NORMAL = { reach: 1, ghost: true, after: 0 };
+  function draw(pitch, players, { dt = 0, turn = -1, shots = [], winners = [], caption: title, subtitle, guide = NORMAL, preview = null } = {}) {
+    clock += dt; sky.update(clock); venueSlot.update(clock, dt); flags.forEach(f => f.userData.tick(clock));
     if (title) caption(title, subtitle);
     while (actors.length < players.length) { actors.push({ key: null, pana: null, throwTime: 0 }); guides.push(makeGuide(players[actors.length - 1].color || TEAM_COLORS[(actors.length - 1) % 2])); }
+    rests.forEach(r => { r.visible = false; });
     players.forEach((p, i) => {
       const a = actors[i], key = JSON.stringify(p.avatar);
       if (key !== a.key) {
@@ -82,13 +168,17 @@ export function createBolasWorld({ aspect = 16 / 9, individual = false } = {}) {
       a.pana.update(dt, { walk: 0, open: winners.includes(i) }); a.throwTime = Math.max(0, a.throwTime - dt);
       if (a.throwTime) a.pana.armR.rotation.x = -Math.sin(a.throwTime / .65 * Math.PI) * 1.8;
       if (winners.includes(i)) a.pana.armL.rotation.x = a.pana.armR.rotation.x = -2.4;
-      const shot = shots[i], guide = guides[i]; guide.line.visible = guide.ring.visible = !!shot;
+      const shot = shots[i], g = guides[i]; g.line.visible = g.ring.visible = false;
       a.held.visible = !!shot || onCalce;
       if (shot) {
-        const fromX = shot.originX || 0, to = landing(shot, fromX);
-        const points = guide.line.geometry.attributes.position;
-        points.setXYZ(0, fromX, .05, COURT.launchZ); points.setXYZ(1, to.x, .05, to.z); points.needsUpdate = true;
-        guide.line.geometry.computeBoundingSphere(); guide.line.computeLineDistances(); guide.ring.position.set(to.x, .04, to.z);
+        // The difficulty decides how much of the throw the guide gives away.
+        const fromX = shot.originX || 0, to = landing(shot, fromX), from = { x: fromX, z: COURT.launchZ };
+        const full = guide.after >= 1 && preview, path = full && preview.path?.length > 1 ? [from, ...preview.path] : [from, to];
+        const reach = guide.reach >= 1 ? pathLength(path) : Math.max(1.2, pathLength([from, to]) * guide.reach);
+        g.line.userData.set(trimPath(path, reach), .045);
+        g.ring.visible = guide.ghost && guide.reach >= 1; g.ring.position.set(to.x, .05, to.z);
+        if (full) { const end = path.at(-1); g.ring.position.set(end.x, .05, end.z);
+          preview.moved?.slice(0, rests.length).forEach((b, n) => { rests[n].visible = !b.out; rests[n].position.set(b.x, .05, b.z); }); }
       }
     });
     // IDs restart each hand; clear old rolling orientations at that boundary.
@@ -119,10 +209,10 @@ export function createBolasWorld({ aspect = 16 / 9, individual = false } = {}) {
   const ray = new THREE.Raycaster(), plane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
   function point(x, y, rect) { ray.setFromCamera(new THREE.Vector2((x - rect.left) / rect.width * 2 - 1, 1 - (y - rect.top) / rect.height * 2), camera); return ray.ray.intersectPlane(plane, new THREE.Vector3()); }
   function dispose() {
-    actors.forEach(a => a.pana?.dispose());
+    actors.forEach(a => a.pana?.dispose()); venueSlot.dispose();
     const geometries = new Set(), materials = new Set(), textures = new Set();
     scene.traverse(o => { if (o.geometry) geometries.add(o.geometry); for (const m of [o.material].flat().filter(Boolean)) { materials.add(m); for (const v of Object.values(m)) if (v?.isTexture) textures.add(v); } });
     geometries.forEach(g => g.dispose()); materials.forEach(m => m.dispose()); textures.forEach(t => t.dispose());
   }
-  return { scene, camera, draw, fit, point, dispose, actors, caption };
+  return { scene, camera, draw, fit, view, point, dispose, actors, caption, setVenue: id => venueSlot.setMap(id), get venue() { return scene.userData.mapId; } };
 }

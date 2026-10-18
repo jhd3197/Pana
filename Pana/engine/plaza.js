@@ -14,7 +14,7 @@ import { house, church, fountain } from '/engine/models/props/plaza-buildings.js
 import { placeIguanas } from '/engine/placement/iguanas.js';
 export { house, plazaFountain } from '/engine/models/props/plaza-buildings.js';
 
-export function createPlazaEnvironment({ cooking = false, clearance = () => true, town = false, mapProps = MAP_PROPS } = {}) {
+export function createPlazaEnvironment({ cooking = false, clearance = () => true, town = false, mapProps = MAP_PROPS, fountain: withFountain = true, openFloor = null } = {}) {
   const scene = new THREE.Group();
   const additions=[],assetCounts={};
   const addDetail=(id,factory,x,z,radius,rotation=0)=>{
@@ -28,7 +28,10 @@ export function createPlazaEnvironment({ cooking = false, clearance = () => true
   // Individual paving slabs give the plaza its warm, tactile scale.
   const stoneColors = [0xe3c58f, 0xe7c896, 0xeacf9e, 0xdabd8c, 0xedd2a3, 0xe5c094];
   for (let z = -22; z < 22; z += 1.5) for (let x = -26; x < 26; x += 2.25) {
-    staticGroup.add(box(2.2, 0.08, 1.45, M(stoneColors[Math.floor(random() * stoneColors.length)]), x + (Math.round(z / 1.5) % 2) * 1.12, -0.02, z));
+    const color = stoneColors[Math.floor(random() * stoneColors.length)], sx = x + (Math.round(z / 1.5) % 2) * 1.12;
+    // A court laid into the square (openFloor half-extents) replaces the slabs under it.
+    if (openFloor && Math.abs(sx) < openFloor.x + 1.1 && Math.abs(z) < openFloor.z + .7) continue;
+    staticGroup.add(box(2.2, 0.08, 1.45, M(color), sx, -0.02, z));
   }
   // The north facade and side streets frame a playable, open courtyard.
   const houses = [
@@ -112,11 +115,12 @@ export function createPlazaEnvironment({ cooking = false, clearance = () => true
     mountain.scale.set(17 + random() * 10, 13 + random() * 17, 12 + random() * 8);
     mountain.rotation.y = random() * 4; staticGroup.add(mountain);
   }
-  const f = fountain(); if (cooking) f.group.position.z = -11; staticGroup.add(f.group);
+  // A court laid over the square (Bolas Criollas) takes the fountain's place.
+  const f = withFountain ? fountain() : null; if (f) { if (cooking) f.group.position.z = -11; staticGroup.add(f.group); }
   const batch=bake(staticGroup),textures=new Set(),geometry=new Set();
   staticGroup.traverse(o=>{if(o.geometry)geometry.add(o.geometry);if(o.material?.map?.isCanvasTexture)textures.add(o.material.map);});
   // The fountain's character has already been frozen into the batch.
-  f.capy.dispose();geometry.forEach(g=>g.dispose());
+  f?.capy.dispose();geometry.forEach(g=>g.dispose());
   batch.userData.dispose=()=>textures.forEach(t=>t.dispose());scene.add(batch);
   // The south garden is outside both games' movement bounds. Town consumers
   // still supply road clearance, including the complete footprint of each prop.
@@ -131,7 +135,7 @@ export function createPlazaEnvironment({ cooking = false, clearance = () => true
     const dot = mesh(new THREE.SphereGeometry(0.035, 4, 3), M(0xe1ffed, { emissive: 0xa1e9df, emissiveIntensity: 0.4 }), Math.cos(a) * r, 0.8, Math.sin(a) * r);
     sparkles.add(dot);
   }
-  scene.add(sparkles);
+  if (f) scene.add(sparkles);
   if (cooking) sparkles.position.z = -11;
   return { group: scene, update(t) { wind(t);iguanas.userData.tick(t);additions.forEach(o=>o.userData.tick?.(t));sparkles.children.forEach((m, i) => { m.position.y = 0.85 + Math.abs(Math.sin(t * 2.1 + i)) * 0.3; }); } };
 }

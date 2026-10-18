@@ -8,7 +8,7 @@
 //   guide.bounces cushion rebounds previewed when nothing is hit
 //   aimError      a bot's typical aiming error, in radians
 export const DIFFICULTIES = Object.freeze([
-  { id: 'facil', label: 'Fácil', note: 'Guía completa con rebotes. Los bots juegan relajados.',
+  { id: 'facil', label: 'Fácil', note: 'Guía completa, con choques y rebotes. Los bots rivales juegan relajados.',
     guide: { reach: 1, ghost: true, after: 1, bounces: 2 }, aimError: .05 },
   { id: 'normal', label: 'Normal', note: 'La guía marca el contacto y un poco del recorrido.',
     guide: { reach: 1, ghost: true, after: .35, bounces: 1 }, aimError: .02 },

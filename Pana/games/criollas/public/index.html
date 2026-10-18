@@ -17,6 +17,8 @@
       <p class="pk-copy">Arrima al mingo. Si una bola rival estorba, ¡sácala con un boche!</p>
       <div class="pk-stats"><div class="pk-stat"><b>1–4</b><span>panas</span></div><div class="pk-stat"><b>2</b><span>equipos</span></div><div class="pk-stat"><b>8</b><span>bolas por equipo</span></div></div>
       <fieldset><legend>Meta de la partida</legend><div class="pk-seg" id="target-options"><button data-target="12" aria-pressed="true">12 tantos</button><button data-target="24" aria-pressed="false">24 tantos</button></div></fieldset>
+      <div id="map-picker"></div>
+      <div id="difficulty-picker"></div>
       <div class="pk-lobby-foot"><p id="connection" class="pk-copy" role="status">Los puestos libres los juegan bots.</p><span id="room-code" class="pk-lobby-room"></span>
         <button id="start" class="pk-btn pk-btn--primary pk-btn--lg pk-btn--block">Jugar online</button><div id="invite-slot"></div>
         <button id="practice" class="pk-btn pk-btn--ghost pk-btn--block">Jugar con bots</button><button id="rules" class="pk-btn pk-btn--ghost pk-btn--block">Cómo se juega</button>
@@ -28,16 +30,22 @@
       <div class="hand-label"><b id="hand-number"></b><span id="target-label"></span></div>
       <div class="team-score pk-panel green"><span>VERDES</span><b id="score-1">0</b><small id="left-1"></small></div>
     </section>
+    <section id="side-controls" class="side-controls" hidden aria-label="Cámara">
+      <button id="camera" type="button" class="pk-btn camera-btn" aria-label="Cámara"></button>
+      <span class="side-label">Cámara <kbd class="pk-kbd" data-pana-hint>C</kbd></span>
+    </section>
+    <section id="power-bar" class="pk-power" hidden aria-label="Fuerza del lanzamiento">
+      <label class="pk-power-control" for="power"><span>Fuerza</span><input id="power" type="range" min="10" max="100" value="62" aria-orientation="vertical"><output id="power-value">62%</output></label>
+    </section>
     <section id="controls" class="pk-panel" hidden aria-label="Lanzamiento">
       <div class="turn-info"><b id="turn" aria-live="polite"></b><span id="measure"></span></div>
       <div class="shot-row">
         <div class="pk-seg" id="shot-options"><button data-mode="arrime" aria-pressed="true">Arrime</button><button data-mode="boche" aria-pressed="false">Boche rastrero</button></div>
-        <label class="power-control" for="power">Fuerza <output id="power-value">62%</output><input id="power" type="range" min="10" max="100" value="62"></label>
         <div class="fine-controls pk-touch-zone"><button id="aim-left" class="pk-touch pk-touch--sm" data-icon="left" aria-label="Apuntar a la izquierda"></button><button id="aim-right" class="pk-touch pk-touch--sm" data-icon="right" aria-label="Apuntar a la derecha"></button></div>
         <button id="shoot" class="pk-btn pk-btn--primary">Lanzar <kbd class="pk-kbd" data-pana-hint>Espacio</kbd></button>
       </div>
       <p class="control-hint" data-pana-hint>Toca la cancha para apuntar · ← → dirección · ↑ ↓ fuerza · Espacio lanzar</p>
-      <p class="guide-note">La guía marca el punto de frenado sin choques.</p>
+      <p id="guide-note" class="guide-note"></p>
     </section>
     <div id="recovery" class="pk-panel" hidden><p id="recovery-copy" role="status"></p><button id="fallback" class="pk-btn pk-btn--primary">Jugar con bots</button></div>
   </main>

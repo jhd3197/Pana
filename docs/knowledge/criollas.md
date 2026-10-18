@@ -36,6 +36,34 @@ Bot tuning: fixed per-seat aim offsets and launch order produced wins of
 throw time instead; the same sample gives 54/52/56/43 (ties count for each
 winner). Never tie a bot's accuracy profile permanently to its seat.
 
+## Place, cameras and difficulty
+
+The host picks the place (any shared arena, `state.mapId`) and the difficulty
+in the lobby; before connecting, the lobby edits the local table. A local game
+(`state.local`, set by practice) may change difficulty any time; online, only
+between hands. The world swaps its venue from the state handler in game.js,
+not from the frame loop: background pages may not draw, and a peer must still
+end up on the host's map.
+
+Cameras: `calce` (default) stands over the thrower's right shoulder and leans
+toward the rolling ball; `arriba` looks straight down with the long axis across
+a wide screen (court bunting hides there); `cancha` is the old wide framing,
+still used for the lobby and by Bululú via `fit()`. The choice is remembered in
+`localStorage['pana:criollas:view']`; C cycles it.
+
+Guides: Normal draws the line to the stopping point with a ring. Fácil plays
+the throw out on a copy of the pitch (`previewThrow`, same fixed steps) and
+draws the real path with rest rings for every ball it moves; it is recomputed
+only when the aim changes. Difícil and Experto draw 40% and 14% of the line.
+
+Bots: `botThrow` uses `BOT_ERROR` (metres from the mingo per difficulty) for
+bots on a team without a human; a human's teammates always play Normal.
+Difícil and Experto bots throw a boche through a rival ball within .35 m of the
+mingo when their own best ball is more than .8 m away. Bots arrime to a point
+just short of the mingo on the thrower's side: aiming at its centre made the
+sharpest bots knock it away and score worse than Normal ones.
+`botShot` without `error` is Bululú's tuned bot, unchanged.
+
 ## Physics and room recovery
 
 Coordinates are metres, +Y up, +Z toward the calce at Z=9.8. The court is 11×24 m.

@@ -14,6 +14,8 @@ async function open(name, query = '', viewport = { width: 1280, height: 800 }, t
   await page.goto(`${base}/g/criollas/?debug&${query}`, { waitUntil: 'domcontentloaded' });
   await wait(page, () => !!window.criollasDebug); console.log(`Loaded ${name}`); return page;
 }
+// Background pages may not run animation frames: draw a couple of seconds by hand.
+const frames = page => page.evaluate(() => { const d = criollasDebug; for (let i = 0; i < 60; i++) d.world.render(d.room.state, { dt: .05, shot: d.shot, active: d.room.state.turn === d.room.seat }); });
 async function screenshot(page, name) {
   await page.evaluate(() => { const d = criollasDebug; d.world.render(d.room.state, { dt: .016, shot: d.shot, active: d.room.state.turn === d.room.seat }); });
   await page.screenshot({ path: `art/criollas/${name}.png` });
@@ -28,6 +30,12 @@ try {
   assert.equal(await guest.evaluate(() => criollasDebug.room.seat), 1);
   assert.equal(await guest.evaluate(() => criollasDebug.room.state.players[0].avatar.outfitColor), '#3d7bf2');
   await screenshot(host, 'lobby');
+  // The host chooses the place and difficulty; the guest sees both and cannot change them.
+  await host.locator('#map-choice').selectOption('hato'); await host.locator('#difficulty-options [data-difficulty="dificil"]').click();
+  await wait(guest, () => criollasDebug.room.state.mapId === 'hato' && criollasDebug.room.state.difficulty === 'dificil' && criollasDebug.world.venue === 'hato');
+  assert.equal(await guest.locator('#map-choice').isDisabled(), true);
+  assert.equal(await guest.locator('#difficulty-options [data-difficulty="facil"]').isDisabled(), true);
+  console.log('PASS host-chosen court and difficulty reach the guest');
   await host.locator('#start').click(); await wait(guest, () => criollasDebug.room.state.phase === 'aiming');
   await guest.evaluate(() => criollasDebug.room.action('shoot', { angle: 0, power: .5 }));
   await host.waitForTimeout(200); assert.equal(await host.evaluate(() => criollasDebug.room.state.shots), 0);
@@ -98,6 +106,21 @@ try {
   assert.equal(await mobile.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
   await mobile.context().close();
   console.log('PASS portrait/landscape layout, shared pause and keyboard launch');
+  const solo = await open('Solo');
+  await solo.locator('#practice').click(); await wait(solo, () => criollasDebug.room.state.phase === 'aiming' && criollasDebug.room.state.turn === 0);
+  // Behind the thrower by default: the camera stands past the calce, above head height.
+  await frames(solo); assert(await solo.evaluate(() => { const c = criollasDebug.world.camera.position; return c.z > 15 && c.y > 3; }));
+  await solo.evaluate(() => criollasDebug.room.action('difficulty', { difficulty: 'facil' }));
+  await frames(solo); assert(await solo.evaluate(() => criollasDebug.room.state.difficulty === 'facil' && criollasDebug.world.guides.preview));
+  await screenshot(solo, 'facil');
+  await solo.locator('#court').focus(); await solo.keyboard.press('c');
+  await frames(solo); assert(await solo.evaluate(() => criollasDebug.world.view === 'arriba' && criollasDebug.world.camera.position.y > 20));
+  await screenshot(solo, 'arriba');
+  await solo.evaluate(() => criollasDebug.room.action('difficulty', { difficulty: 'experto' }));
+  await frames(solo); assert.equal(await solo.evaluate(() => criollasDebug.world.guides.preview), false);
+  await solo.locator('#shoot').click(); await wait(solo, () => criollasDebug.room.state.shots >= 2);
+  await solo.context().close();
+  console.log('PASS thrower and overhead cameras, local difficulty changes and the Fácil preview');
   assert.deepEqual(errors, []);
   const games = await (await fetch(`${base}/api/games`)).json(); assert(JSON.stringify(games).includes('criollas'));
 } finally { await browser.close(); }

@@ -265,6 +265,24 @@
 .pk-hints { display: grid; gap: 4px; justify-items: end; font: 800 13px var(--pk-sans); color: var(--pk-text); text-shadow: 0 1px 2px rgba(0, 0, 0, .6); }
 .pk-hints b { color: var(--pk-yellow); font-weight: 900; }
 
+/* Power bar: a tall meter on the right edge for aim-and-shoot games (Billar,
+   Bolas Criollas), filled in yellow from the bottom. The game sets --fill on
+   the input (0–100%) when its value changes.
+   <section class="pk-power"><label class="pk-power-control" for="power"><span>Fuerza</span>
+     <input id="power" type="range" aria-orientation="vertical"><output></output></label></section> */
+.pk-power { position: fixed; z-index: 3; right: 20px; top: 50%; transform: translateY(-50%); height: min(380px, 52vh); width: 76px; padding: 12px 0; border-radius: 18px; background: var(--pk-night); }
+.pk-power-control { height: 100%; display: flex; flex-direction: column; align-items: center; gap: 8px; font-weight: 900; font-size: 11px; letter-spacing: .06em; text-transform: uppercase; }
+.pk-power-control output { color: var(--pk-yellow); font-size: 15px; }
+.pk-power-control input { --fill: 60%; flex: 1; width: 30px; margin: 0; writing-mode: vertical-lr; direction: rtl; appearance: none; -webkit-appearance: none; border-radius: 15px; cursor: pointer;
+  background: linear-gradient(to top, var(--pk-yellow) var(--fill), rgba(255, 255, 255, .14) var(--fill)); box-shadow: inset 0 0 0 2px rgba(255, 255, 255, .55); }
+.pk-power-control input::-webkit-slider-thumb { -webkit-appearance: none; width: 38px; height: 38px; border-radius: 50%; background: #fffdf6; border: 3px solid var(--pk-night); box-shadow: 0 3px 0 rgba(0, 0, 0, .3); }
+.pk-power-control input::-moz-range-thumb { width: 34px; height: 34px; border-radius: 50%; background: #fffdf6; border: 3px solid var(--pk-night); }
+.pk-power-control input:disabled { opacity: .45; cursor: default; }
+@media (max-width: 760px) {
+  .pk-power { right: 8px; top: auto; bottom: 200px; transform: none; height: min(250px, 34vh); width: 58px; }
+  .pk-power-control input { width: 24px; } .pk-power-control input::-webkit-slider-thumb { width: 30px; height: 30px; }
+}
+
 /* ---------- lobby / launcher ----------
    A left column over the game's live 3D scene:
    <section class="pk-lobby">

@@ -103,6 +103,15 @@ right, at the bottom edge, in both orientations.
 - **Pause / settings:** the shared menu; do not build one.
 - **Results:** the shared results screen below; do not build one.
 
+## Power bar and difficulty
+
+Aim-and-shoot games (Billar, Bolas Criollas) put their power on the right edge:
+`<section class="pk-power"><label class="pk-power-control" for="power">…</label></section>`,
+a vertical range input filled from the bottom. The game sets `--fill` on the
+input whenever its value changes (the fill is a gradient, not a native track).
+`engine/difficulty.js#createDifficultyPicker` renders the shared Fácil–Experto
+choice; `engine/aim-guide.js` draws ground guides as flat strips, never 1 px lines.
+
 ## Results screen
 
 Every game ends a round on the same card: a dimmed layer over the scene with one

@@ -86,7 +86,36 @@ export function measure(pitch, teamOf = owner => owner % 2) {
   return { team: first.team, points: ids.length, ids };
 }
 // Deterministic variety, independent of visual randomness and client frame rate.
-export function botShot(pitch, serial, originX = 0) {
+// Without `error` this is Bululú's tuned bot, unchanged. With it (metres), the
+// aim lands within about that distance of the mingo; a `boche` target {x, z}
+// throws hard through that ball instead of arriming.
+export function botShot(pitch, serial, originX = 0, { error, boche } = {}) {
   const m = pitch.balls[0], a = serial * 2.399963;
-  return aimAt(m.x + Math.sin(a) * (.35 + serial % 3 * .12), m.z + Math.cos(a) * .6, originX);
+  if (error === undefined) return aimAt(m.x + Math.sin(a) * (.35 + serial % 3 * .12), m.z + Math.cos(a) * .6, originX);
+  const spread = error * (.35 + (serial * .618034 % 1) * .9);
+  if (boche) {
+    const dx = boche.x - originX, dz = boche.z - COURT.launchZ, l = Math.hypot(dx, dz) || 1;
+    const shot = aimAt(boche.x + dx / l * 3.5 + Math.sin(a) * spread * .25, boche.z + dz / l * 3.5, originX, 'boche');
+    return { ...shot, power: clamp(shot.power, .1, 1) };
+  }
+  // Arrime stops just short of the mingo on the thrower's side, like a player
+  // would: aiming at its centre knocks it away.
+  const tx = originX - m.x, tz = COURT.launchZ - m.z, tl = Math.hypot(tx, tz) || 1, short = m.radius + COURT.radius + .05;
+  return aimAt(m.x + tx / tl * short + Math.sin(a) * spread, m.z + tz / tl * short + Math.cos(a) * spread, originX);
+}
+
+// The whole throw played out on a copy of the pitch, for the Fácil guide: the
+// thrown ball's path and where every ball it moved comes to rest.
+export function previewThrow(pitch, owner, shot, x = 0, { seconds = 9, every = 6 } = {}) {
+  const copyPitch = copy(pitch), before = new Map(copyPitch.balls.map(b => [b.id, { x: b.x, z: b.z }]));
+  const thrown = throwBall(copyPitch, owner, shot, x); if (!thrown) return null;
+  const path = [];
+  for (let n = 0; n < seconds / STEP && moving(copyPitch); n++) {
+    stepPitch(copyPitch);
+    if (n % every === 0 && !thrown.out) path.push({ x: thrown.x, z: thrown.z });
+  }
+  if (!thrown.out) path.push({ x: thrown.x, z: thrown.z });
+  const moved = copyPitch.balls.filter(b => before.has(b.id) && Math.hypot(b.x - before.get(b.id).x, b.z - before.get(b.id).z) > .03)
+    .map(b => ({ id: b.id, x: b.x, z: b.z, out: b.out }));
+  return { path, moved, out: thrown.out };
 }

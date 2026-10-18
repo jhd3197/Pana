@@ -8,7 +8,8 @@ export default {
   howto: 'Tienes dos bolas. Arrima al mingo dorado: gana quien quede más cerca. La línea muestra dónde frenaría tu bola sin choques. Si el mingo sale, nadie gana.',
   keys: [['← →', 'apuntar'], ['↑ ↓', 'fuerza'], ['Espacio', 'lanzar']],
   create(ctx) {
-    const world = createBolasWorld({ aspect: ctx.aspect || innerWidth / innerHeight, individual: true });
+    // Isla Bululú plays its criollas on the beach court at Puerto Coco.
+    const world = createBolasWorld({ aspect: ctx.aspect || innerWidth / innerHeight, individual: true, venue: 'puerto' });
     const sim = createCriollasMini(ctx.players.map(p => p.human && !ctx.auto), random);
     const local = ctx.localIndex ?? ctx.players.findIndex(p => p.human);
     // A camera-facing readout stays legible when the wide camera sees the sign

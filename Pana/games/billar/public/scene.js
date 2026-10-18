@@ -4,52 +4,19 @@ import { createPoolTable, createPoolBall, createPoolCue, POOL_SURFACE } from '/e
 import { buildCharacter } from '/engine/models/characters/pana/avatar-model.js';
 import { normalizeAvatar } from '/engine/avatar.js';
 import { difficultyInfo } from '/engine/difficulty.js';
+import { guideRibbon, trimPath, pathLength } from '/engine/aim-guide.js';
 import { RADIUS, predictShot, legalTarget, canPlace } from './rules.js';
 
 // Camera views: 'taco' rides behind the cue ball like a player bending over
 // the shot; 'plaza' frames the table in its setting; 'mesa' looks straight down.
 export const VIEWS = [['taco', 'Detrás de la bola'], ['mesa', 'Desde arriba'], ['plaza', 'Vista del lugar']];
 
-// A flat strip on the cloth: WebGL lines are one pixel wide, far too faint for
-// an aiming guide seen from behind the ball.
-function ribbon(color, width, opacity = .92, segments = 8) {
-  const geometry = new THREE.BufferGeometry();
-  geometry.setAttribute('position', new THREE.BufferAttribute(new Float32Array(segments * 4 * 3), 3));
-  const index = []; for (let i = 0; i < segments; i++) { const o = i * 4; index.push(o, o + 2, o + 1, o + 1, o + 2, o + 3); }
-  geometry.setIndex(index);
-  const mesh = new THREE.Mesh(geometry, new THREE.MeshBasicMaterial({ color, transparent: true, opacity, depthWrite: false, side: THREE.DoubleSide }));
-  mesh.frustumCulled = false; mesh.renderOrder = 2;
-  mesh.userData.set = (points, height) => {
-    const p = geometry.attributes.position; let n = 0;
-    for (let i = 0; i + 1 < points.length && n < segments; i++) {
-      const a = points[i], b = points[i + 1], dx = b.x - a.x, dz = b.z - a.z, l = Math.hypot(dx, dz);
-      if (l < 1e-4) continue;
-      const sx = -dz / l * width / 2, sz = dx / l * width / 2, o = n * 4;
-      p.setXYZ(o, a.x + sx, height, a.z + sz); p.setXYZ(o + 1, a.x - sx, height, a.z - sz);
-      p.setXYZ(o + 2, b.x + sx, height, b.z + sz); p.setXYZ(o + 3, b.x - sx, height, b.z - sz); n++;
-    }
-    geometry.setDrawRange(0, n * 6); p.needsUpdate = true; mesh.visible = n > 0;
-  };
-  return mesh;
-}
-// The first `length` units of a polyline (table units).
-function cut(points, length) {
-  if (!points.length) return [];
-  const out = [points[0]];
-  for (let i = 1; i < points.length && length > 0; i++) {
-    const a = out.at(-1), b = points[i], l = Math.hypot(b.x - a.x, b.y - a.y);
-    if (l <= length) { out.push(b); length -= l; } else { out.push({ x: a.x + (b.x - a.x) * length / l, y: a.y + (b.y - a.y) * length / l }); length = 0; }
-  }
-  return out;
-}
-const pathLength = points => points.reduce((sum, p, i) => i ? sum + Math.hypot(p.x - points[i - 1].x, p.y - points[i - 1].y) : 0, 0);
-
 export function createPoolScene(canvas) {
   const stage = createTableWorld(canvas), { scene, camera, renderer } = stage;
   const table = createPoolTable(), cue = createPoolCue(); scene.add(table, cue);
   const balls = new Map(), avatars = new Map(), shown = new Map();
   for (let number = 0; number < 16; number++) { const ball = createPoolBall({ number }); scene.add(ball); balls.set(number, ball); }
-  const aimLine = ribbon('#ffffff', .03), objectLine = ribbon('#ffffff', .03, .85), cueLine = ribbon('#7fe9f5', .028, .85);
+  const aimLine = guideRibbon('#ffffff', .03), objectLine = guideRibbon('#ffffff', .03, { opacity: .85 }), cueLine = guideRibbon('#7fe9f5', .028, { opacity: .85 });
   scene.add(aimLine, objectLine, cueLine);
   const ring = new THREE.Mesh(new THREE.RingGeometry(RADIUS * .0085, RADIUS * .01 + .006, 40), new THREE.MeshBasicMaterial({ color: '#ffffff', side: THREE.DoubleSide, transparent: true, depthWrite: false }));
   ring.rotation.x = -Math.PI / 2; ring.renderOrder = 3; scene.add(ring);
@@ -98,20 +65,19 @@ export function createPoolScene(canvas) {
     const info = difficultyInfo(state.difficulty).guide, b = state.balls[0];
     const shot = predictShot(state, angle, power, spin, { bounces: info.bounces });
     const valid = !shot.target || legalTarget(state, shot.target.id), color = valid ? '#ffffff' : '#ff6b6b';
-    const full = [{ x: b.x, y: b.y }, shot.contact], reach = pathLength(full) * info.reach;
+    const full = [b, shot.contact].map(flat), reach = pathLength(full) * info.reach;
     // Expert play still shows a stub of direction, never less than a cue's length.
-    const line = cut(full, Math.max(info.reach < 1 ? 90 : 0, reach));
-    aimLine.material.color.set(color); aimLine.userData.set(line.map(flat), POOL_SURFACE + .004);
+    aimLine.material.color.set(color); aimLine.userData.set(trimPath(full, Math.max(info.reach < 1 ? .9 : 0, reach)), POOL_SURFACE + .004);
     const reaches = info.reach >= 1;
     ring.visible = ghost.visible = reaches && info.ghost;
     ring.material.color.set(color); ring.position.copy(vec(shot.contact.x, shot.contact.y, POOL_SURFACE + .006));
     ghost.position.copy(vec(shot.contact.x, shot.contact.y, POOL_SURFACE));
-    const after = path => cut(path, pathLength(path) * info.after);
+    const after = path => { const world = path.map(flat); return trimPath(world, pathLength(world) * info.after); };
     objectLine.material.color.set(color);
-    objectLine.userData.set(reaches && info.after ? after(shot.objectPath).map(flat) : [], POOL_SURFACE + .005);
+    objectLine.userData.set(reaches && info.after ? after(shot.objectPath) : [], POOL_SURFACE + .005);
     // With nothing to hit, the cue ball's own banks continue past the first cushion.
     const cuePath = shot.target ? [shot.contact, ...shot.cuePath.slice(1)] : shot.cuePath;
-    cueLine.userData.set(reaches && info.after ? after(cuePath).map(flat) : [], POOL_SURFACE + .006);
+    cueLine.userData.set(reaches && info.after ? after(cuePath) : [], POOL_SURFACE + .006);
   }
   function draw(state, { angle = 0, power = .65, spin = { x: 0, y: 0 }, active = false, placement = null, dt = .016 } = {}) {
     stage.setMap(state.mapId);
@@ -171,6 +137,6 @@ export function createPoolScene(canvas) {
     setView(value) { view = value; chasing = false; lastMode = ''; }, get view() { return view; }, get rotation() { return rotation; },
     get guides() { return { aim: aimLine.visible, ghost: ghost.visible, object: objectLine.visible }; },
     dispose() { balls.forEach(b => b.userData.dispose()); avatars.forEach(a => a.dispose()); table.userData.dispose(); cue.userData.dispose(); ghost.userData.dispose();
-      for (const m of [aimLine, objectLine, cueLine, ring]) { m.geometry.dispose(); m.material.dispose(); } stage.dispose(); },
+      for (const m of [aimLine, objectLine, cueLine]) m.userData.dispose(); ring.geometry.dispose(); ring.material.dispose(); stage.dispose(); },
   };
 }

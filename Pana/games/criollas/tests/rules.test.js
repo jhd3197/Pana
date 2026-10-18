@@ -62,3 +62,44 @@ test('fixed physics is independent of cosmetic randomness', () => {
   for (let t = 0; t < 8; t += STEP) { stepPitch(a); Math.random(); stepPitch(b); }
   assert.deepEqual(a, b);
 });
+
+test('the host picks the place and the difficulty; both survive the next game', async () => {
+  const g = createGame(); g.players[0].id = 10; g.players[1].id = 20;
+  assert.equal(acceptAction(g, 20, { action: 'map', mapId: 'hato', revision: g.revision }, 10), false);
+  assert.equal(acceptAction(g, 10, { action: 'map', mapId: 'luna', revision: g.revision }, 10), false);
+  assert(acceptAction(g, 10, { action: 'map', mapId: 'hato', revision: g.revision }, 10));
+  assert(acceptAction(g, 10, { action: 'difficulty', difficulty: 'experto', revision: g.revision }, 10));
+  assert(acceptAction(g, 10, { action: 'start', revision: g.revision }, 10));
+  assert.equal(g.mapId, 'hato'); assert.equal(g.difficulty, 'experto');
+  assert.equal(acceptAction(g, 10, { action: 'difficulty', difficulty: 'facil', revision: g.revision }, 10), false, 'not mid-hand');
+});
+test('rival bots arrime closer on harder settings; your own team keeps Normal', async () => {
+  const { botThrow, BOT_ERROR } = await import('../public/rules.js');
+  const { throwBall: put } = await import('/engine/bolas-criollas.js');
+  function mean(difficulty, team) {
+    let sum = 0;
+    for (let n = 0; n < 40; n++) {
+      const g = createGame(); g.players[0].id = 10; g.difficulty = difficulty; g.turn = team; g.shots = n; g.hand = n % 5; g.phase = 'aiming';
+      g.pitch = createPitch(Math.sin(n) * 1.2, -6); const b = put(g.pitch, team, botThrow(g)); settle(g.pitch);
+      sum += Math.hypot(b.x - g.pitch.balls[0].x, b.z - g.pitch.balls[0].z);
+    }
+    return sum / 40;
+  }
+  assert(mean('experto', 1) < mean('normal', 1) && mean('normal', 1) < mean('facil', 1));
+  assert(Math.abs(mean('experto', 0) - mean('normal', 0)) < 1e-9, 'a human team plays with Normal bots');
+  assert.equal(Object.keys(BOT_ERROR).length, 4);
+});
+test('a sharp bot plays a boche at a rival ball kissing the mingo', async () => {
+  const { botThrow } = await import('../public/rules.js');
+  const g = createGame(); g.players[0].id = 10; g.difficulty = 'experto'; g.turn = 1; g.phase = 'aiming';
+  g.pitch = createPitch(0, -6); ball(g.pitch, 0, .1, -5.6);
+  assert.equal(botThrow(g).mode, 'boche');
+  g.difficulty = 'facil'; assert.equal(botThrow(g).mode, 'arrime');
+});
+test('the Fácil preview matches the real throw, collisions included', async () => {
+  const { previewThrow } = await import('/engine/bolas-criollas.js');
+  const pitch = createPitch(0, -5), shot = { ...aimAt(0, -5), mode: 'boche' };
+  const preview = previewThrow(pitch, 0, shot); const b = throwBall(pitch, 0, shot); settle(pitch);
+  const end = preview.path.at(-1); assert(Math.hypot(end.x - b.x, end.z - b.z) < 1e-9);
+  const mingo = preview.moved.find(m => m.id === 0); assert(Math.hypot(mingo.x - pitch.balls[0].x, mingo.z - pitch.balls[0].z) < 1e-9);
+});

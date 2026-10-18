@@ -3,17 +3,26 @@ import { loadName, loadAvatar } from '/engine/avatar.js';
 import { inviteUrl, newRoomCode, roomFromUrl } from '/engine/invite.js';
 import { createGameMenu, toggleMute } from '/engine/ui.js';
 import { holdButton } from '/engine/touch.js';
+import { ICONS } from '/engine/icons.js';
+import { createMapPicker } from '/engine/map-picker.js';
+import { createDifficultyPicker, difficultyInfo, DIFFICULTIES } from '/engine/difficulty.js';
 import { fillRoster } from '/engine/results.js';
 import { sound } from '/engine/fx.js';
 import { aimAt, clamp, measure, distance } from '/engine/bolas-criollas.js';
 import { CriollasRoom } from './network.js';
 import { TEAM_NAMES } from './rules.js';
-import { createScene } from './scene.js';
+import { createScene, VIEWS } from './scene.js';
 
 await Promise.race([document.fonts.load('64px "Luckiest Guy"'), new Promise(resolve => setTimeout(resolve, 1500))]);
 const $ = id => document.getElementById(id), code = roomFromUrl() || newRoomCode();
 const params = new URLSearchParams(location.search), world = createScene($('court'));
-let shot = { angle: 0, power: .62, mode: 'arrime' }, held = 0, toastTimer, stopped = false, connecting = false, view = 'cancha', lastRevision = -1, previousPhase = 'lobby';
+let shot = { angle: 0, power: .62, mode: 'arrime' }, held = 0, toastTimer, stopped = false, connecting = false, view = 'calce', lastRevision = -1, previousPhase = 'lobby';
+// The camera is a personal preference, remembered on this device.
+try { const saved = localStorage.getItem('pana:criollas:view'); if (VIEWS.some(([v]) => v === saved)) view = saved; } catch { /* storage may be blocked */ }
+function setView(value) {
+  view = value; world.setView(value); $('camera').setAttribute('aria-label', `Cámara: ${VIEWS.find(([v]) => v === value)[1]}`);
+  try { localStorage.setItem('pana:criollas:view', value); } catch { /* storage may be blocked */ }
+}
 let pads = [];
 const room = new CriollasRoom({ code, name: loadName(), avatar: loadAvatar(), onState: render, onNotice: notify,
   onStatus(message, failed = false) {
@@ -25,7 +34,7 @@ const room = new CriollasRoom({ code, name: loadName(), avatar: loadAvatar(), on
 room.state.players[0] = { id: null, name: loadName(), avatar: loadAvatar() };
 const menu = createGameMenu({ title: 'Bolas Criollas', orientation: 'libre', sound,
   note: () => room.offline ? 'La partida está en pausa.' : 'La sala sigue jugando mientras estás en el menú.',
-  controls: [['Ratón / dedo', 'Toca la cancha para dirigir la bola'], ['← →', 'Afina la dirección'], ['↑ ↓', 'Ajusta la fuerza'], ['Espacio / Enter', 'Lanza tu bola'], ['M', 'Sonido'], ['Esc', 'Menú']],
+  controls: [['Ratón / dedo', 'Toca la cancha para dirigir la bola'], ['← →', 'Afina la dirección'], ['↑ ↓', 'Ajusta la fuerza'], ['Espacio / Enter', 'Lanza tu bola'], ['C', 'Cambia la cámara'], ['M', 'Sonido'], ['Esc', 'Menú']],
   tips: [
     'Reglas de la casa: dos equipos, rojos y verdes, con ocho bolas cada uno. Cada pana lanza cuatro; los bots cubren los puestos libres. Los jugadores del mismo equipo se alternan.',
     'El mingo se coloca automáticamente al comenzar la mano. Arrima tu bola lo más cerca posible o usa un boche rastrero para desplazar las otras bolas. El mingo también se mueve con los golpes.',
@@ -33,16 +42,29 @@ const menu = createGameMenu({ title: 'Bolas Criollas', orientation: 'libre', sou
     'Al gastar las dieciséis bolas, el equipo más cercano suma un tanto por cada bola más cerca del mingo que la mejor del rival. A igual distancia, la mano no da tantos.',
     'Las bolas que cruzan la línea quedan fuera. Si sale el mingo, la mano es nula: nadie suma. El anfitrión abre la siguiente mano o la revancha.',
     'Gana quien llegue a la meta elegida, 12 o 24 tantos. Esta versión casual usa una cancha compacta, mingo automático y boches por el suelo.',
-    'La línea de tiro indica dónde frenaría la bola si no chocara. Cambiar a boche aumenta la velocidad: baja la fuerza si quieres mantener la misma distancia.',
+    'La línea de tiro indica dónde frenaría la bola si no chocara. En Fácil muestra también los choques y dónde quedan las bolas; en Difícil y Experto se acorta. Cambiar a boche aumenta la velocidad: baja la fuerza si quieres mantener la misma distancia.',
+    'La dificultad también afina a los bots rivales: en Difícil y Experto sacan con boche las bolas que se pegan al mingo. Los bots de tu equipo juegan siempre en Normal.',
   ],
   invite: () => inviteUrl(code),
-  options: [{ id: 'view', label: 'Cámara', choices: [['cancha', 'Vista de la cancha'], ['arriba', 'Desde arriba']], get: () => view, set(value) { view = value; world.setView(value); } }],
+  options: [{ id: 'view', label: 'Cámara', choices: VIEWS, get: () => view, set: setView },
+    { id: 'difficulty', label: 'Dificultad', choices: DIFFICULTIES.map(d => [d.id, d.label]), get: () => room.state.difficulty, set: setDifficulty }],
   onOpen() { held = 0; pads.forEach(p => p.release()); render(room.state); }, onClose() { render(room.state); },
 });
 $('menu-slot').append(menu.createButton({ id: 'menu', className: 'pk-btn' }));
 const inviteButton = menu.createInviteButton({ id: 'invite', className: 'pk-btn pk-btn--block' });
 $('invite-slot').append(inviteButton); $('invite-slot').hidden = true;
 $('rules').onclick = () => menu.open('controls');
+$('camera').innerHTML = ICONS.camera;
+$('camera').onclick = () => setView(VIEWS[(VIEWS.findIndex(([v]) => v === view) + 1) % VIEWS.length][0]);
+setView(view);
+// Before connecting, the lobby edits the local table; online, the host decides.
+function setting(action, key, value) {
+  if (room.connected) { if (!room.action(action, { [key]: value })) notify('Solo el anfitrión lo cambia, antes de la mano.'); }
+  else { room.state[key] = value; render(room.state); }
+}
+function setDifficulty(value) { setting('difficulty', 'difficulty', value); }
+const mapPicker = createMapPicker($('map-picker'), mapId => setting('map', 'mapId', mapId));
+const difficultyPicker = createDifficultyPicker($('difficulty-picker'), setDifficulty);
 $('start').onclick = () => {
   if (!room.connected) {
     if (connecting) return; connecting = true;
@@ -62,7 +84,7 @@ for (const button of $('target-options').children) button.onclick = () => {
 for (const button of $('shot-options').children) button.onclick = () => {
   if (!ownTurn()) return; shot.mode = button.dataset.mode; render(room.state);
 };
-$('power').oninput = () => { shot.power = Number($('power').value) / 100; $('power-value').textContent = `${$('power').value}%`; };
+$('power').oninput = () => { shot.power = Number($('power').value) / 100; $('power-value').textContent = `${$('power').value}%`; $('power').style.setProperty('--fill', `${($('power').value - 10) / .9}%`); };
 function notify(text) { $('toast').textContent = text; $('toast').hidden = false; clearTimeout(toastTimer); toastTimer = setTimeout(() => { $('toast').hidden = true; }, 3500); }
 function ownTurn() { return room.connected && !menu.isOpen && room.state.phase === 'aiming' && room.seat === room.state.turn; }
 function shoot() { if (ownTurn()) { sound.unlock(); room.action('shoot', shot); } }
@@ -79,6 +101,7 @@ addEventListener('blur', () => { held = 0; pads.forEach(p => p.release()); });
 addEventListener('keydown', event => {
   if (menu.isOpen || event.target.closest?.('input, button, a, select, textarea')) return;
   if (event.key.toLowerCase() === 'm') toggleMute();
+  if (event.key.toLowerCase() === 'c' && !event.ctrlKey && !event.metaKey && room.state.phase !== 'lobby') $('camera').click();
   if (!ownTurn()) return;
   if (['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', ' ', 'Enter'].includes(event.key)) event.preventDefault();
   if (event.key === 'ArrowLeft') shot.angle = clamp(shot.angle - .008, -.65, .65);
@@ -95,6 +118,12 @@ function render(g) {
   $('start').textContent = connecting ? 'Conectando…' : !room.connected ? 'Jugar online' : room.isHost ? '¡A jugar!' : 'El anfitrión empieza';
   $('start').disabled = connecting || room.connected && !room.isHost;
   for (const button of $('target-options').children) { button.setAttribute('aria-pressed', String(Number(button.dataset.target) === g.target)); button.disabled = room.connected && !room.isHost; }
+  // The court's surroundings follow the state, not the frame loop (hidden tabs don't draw).
+  if (g.mapId && world.venue !== g.mapId) world.setVenue(g.mapId);
+  mapPicker.update(g.mapId, lobby && (!room.connected || room.isHost));
+  difficultyPicker.update(g.difficulty, lobby && (!room.connected || room.isHost));
+  $('guide-note').textContent = difficultyInfo(g.difficulty).note;
+  $('side-controls').hidden = $('power-bar').hidden = lobby;
   if (lobby) fillRoster($('lobby-roster'), g.players.map((p, i) => ({ name: p.name, detail: `${TEAM_NAMES[i % 2]}${p.id === null && (room.connected || i > 0) ? ' · bot' : ''}`, me: p.id !== null && p.id === room.id || !room.connected && i === 0 })));
   for (let t = 0; t < 2; t++) { $(`score-${t}`).textContent = g.scores[t]; $(`left-${t}`).textContent = `${g.remaining.reduce((sum, n, i) => sum + (i % 2 === t ? n : 0), 0)} bolas por tirar`; }
   $('hand-number').textContent = `MANO ${g.hand}`; $('target-label').textContent = `A ${g.target} tantos`;
@@ -104,6 +133,7 @@ function render(g) {
   $('measure').textContent = best ? `${TEAM_NAMES[lead.team]} ganan · ${distance(g.pitch, best).toFixed(2)} m del mingo` : 'El mingo está en juego';
   for (const id of ['shoot', 'power', 'aim-left', 'aim-right']) $(id).disabled = !active;
   $('power').value = Math.round(shot.power * 100); $('power-value').textContent = `${$('power').value}%`;
+  $('power').style.setProperty('--fill', `${($('power').value - 10) / .9}%`);
   for (const button of $('shot-options').children) { button.setAttribute('aria-pressed', String(button.dataset.mode === shot.mode)); button.disabled = !active; }
   $('results').hidden = !result;
   if (result) {

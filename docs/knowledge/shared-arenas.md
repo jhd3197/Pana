@@ -38,6 +38,15 @@ See [escondidas.md](escondidas.md) for clearance and snapshot requirements.
 New arrivals also pass their lobby position through the selected map's
 `safeSpot`: the old fixed position at (-4, 13) is inside Hato's southern hay.
 
+## Court variant
+
+`mode: 'court'` (Bolas Criollas, through `engine/bolas-world.js`) keeps every
+prop, tree, stall and cover box outside `COURT_CLEAR` (±8.8 m across, ±17 m
+along Z: the 11 × 24 m court, its benches, the calce and the thrower's camera).
+On the plaza it also drops the fountain and opens the paving over the court
+(`openFloor`): the slabs' tops sit 2 cm above the court surface and would
+otherwise paint over the clay. Bululú's criollas minigame uses Puerto Coco.
+
 ## Room and lifecycle contract
 
 Map choice is a validated host-only lobby action. Escondidas and Billar carry

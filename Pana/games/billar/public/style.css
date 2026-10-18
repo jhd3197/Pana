@@ -24,15 +24,6 @@ button, input { font: inherit; } button { cursor: pointer; } button:disabled { c
 .play-controls { position: fixed; z-index: 3; bottom: max(18px, env(safe-area-inset-bottom)); left: 50%; transform: translateX(-50%); width: min(620px, calc(100% - 260px)); padding: 16px 20px 10px; border-radius: 16px; background: var(--pk-night); }
 .turn-copy { display: flex; align-items: baseline; gap: 16px; margin-bottom: 10px; } #turn-status { color: var(--pk-yellow); white-space: nowrap; font-size: 18px; } #message { margin: 0; font-size: 12px; }
 .shot-controls { display: flex; gap: 18px; align-items: center; justify-content: flex-end; }
-/* Power: a tall bar on the right edge, filled in yellow from the bottom. */
-.power-bar { position: fixed; z-index: 3; right: 20px; top: 50%; transform: translateY(-50%); height: min(380px, 52vh); width: 76px; padding: 12px 0; border-radius: 18px; background: var(--pk-night); }
-.power-control { height: 100%; display: flex; flex-direction: column; align-items: center; gap: 8px; font-weight: 900; font-size: 11px; letter-spacing: .06em; text-transform: uppercase; }
-.power-control output { color: var(--pk-yellow); font-size: 15px; }
-.power-control input { --fill: 63%; flex: 1; width: 30px; margin: 0; writing-mode: vertical-lr; direction: rtl; appearance: none; -webkit-appearance: none; border-radius: 15px; cursor: pointer;
-  background: linear-gradient(to top, var(--pk-yellow) var(--fill), rgba(255, 255, 255, .14) var(--fill)); box-shadow: inset 0 0 0 2px rgba(255, 255, 255, .55); }
-.power-control input::-webkit-slider-thumb { -webkit-appearance: none; width: 38px; height: 38px; border-radius: 50%; background: var(--cue-white); border: 3px solid var(--pk-night); box-shadow: 0 3px 0 rgba(0, 0, 0, .3); }
-.power-control input::-moz-range-thumb { width: 34px; height: 34px; border-radius: 50%; background: var(--cue-white); border: 3px solid var(--pk-night); }
-.power-control input:disabled { opacity: .45; cursor: default; }
 /* English and camera: on the left edge, like a pool hall's chalk shelf. */
 .side-controls { position: fixed; z-index: 3; left: 20px; top: 50%; transform: translateY(-50%); display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 12px 10px; border-radius: 18px; background: var(--pk-night); }
 .spin-pad { position: relative; width: 76px; height: 76px; padding: 0; border: 3px solid var(--pk-night); border-radius: 50%; background: radial-gradient(circle at 35% 30%, var(--cue-white), var(--cue-ivory) 55%, var(--cue-shade)); box-shadow: 0 0 0 2px rgba(255, 255, 255, .6), 0 4px 0 rgba(0, 0, 0, .3); touch-action: none; }
@@ -59,8 +50,6 @@ button, input { font: inherit; } button { cursor: pointer; } button:disabled { c
   .play-controls { bottom: max(12px, env(safe-area-inset-bottom)); width: calc(100% - 24px); padding: 13px; } .turn-copy { display: block; min-height: 44px; margin-bottom: 8px; } #turn-status { font-size: 17px; } #message { margin-top: 3px; font-size: 11px; }
   .shot-controls { gap: 10px; } #shoot { min-width: 75px; padding: 13px; font-size: 20px; flex: 1; } #shoot kbd, .input-tip { display: none; } .fine-controls { gap: 5px; } .fine-controls .pk-touch { width: 44px; height: 44px; }
   .play-controls { width: calc(100% - 24px); }
-  .power-bar { right: 8px; top: auto; bottom: 200px; transform: none; height: min(250px, 34vh); width: 58px; }
-  .power-control input { width: 24px; } .power-control input::-webkit-slider-thumb { width: 30px; height: 30px; }
   .side-controls { left: 8px; top: auto; bottom: 200px; transform: none; padding: 8px; }
   .spin-pad { width: 58px; height: 58px; } .camera-btn { width: 46px; height: 42px; font-size: 22px; margin-top: 4px; } .side-label { font-size: 9px; } .side-label kbd { display: none; }
 }
@@ -69,7 +58,7 @@ button, input { font: inherit; } button { cursor: pointer; } button:disabled { c
   #welcome > .pk-copy, #welcome .pk-stats, #welcome .pk-ribbon, #welcome > .pk-back { display: none; } #welcome .pk-title { font-size: 42px; margin: 0; } #welcome .pk-lobby-foot { margin: 0; gap: 5px; } #welcome .pk-btn { padding-top: 7px; padding-bottom: 7px; } #welcome #start { min-height: 40px; }
   .players { top: 65px; right: 250px; } .player { padding: 4px 8px; width: auto; } .player img { display: none; } .ball-track { height: 12px; margin: 2px 0; } .ball-track i { width: 11px; height: 11px; font-size: 7px; }
   .play-controls { top: 70px; bottom: 12px; right: 12px; left: auto; transform: none; width: 225px; display: flex; flex-direction: column; justify-content: center; padding: 14px; }
-  .power-bar { right: 248px; top: 70px; bottom: 12px; transform: none; height: auto; width: 60px; }
+  .pk-power { right: 248px; top: 70px; bottom: 12px; transform: none; height: auto; width: 60px; }
   .side-controls { left: 12px; top: auto; bottom: 12px; transform: none; padding: 8px; } .spin-pad { width: 54px; height: 54px; } .camera-btn { width: 44px; height: 38px; font-size: 20px; margin-top: 2px; }
   .turn-copy { display: block; margin-bottom: 12px; } #message { margin-top: 8px; } .shot-controls { flex-wrap: wrap; gap: 12px; } .power-control { flex-basis: 100%; } #shoot { min-width: 85px; flex: 1; padding: 12px; font-size: 22px; } #shoot kbd, .input-tip { display: none; }
 }

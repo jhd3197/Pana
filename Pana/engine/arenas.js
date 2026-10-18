@@ -22,13 +22,19 @@ const palettes = {
   ruinas: { ground: '#617d52', court: '#a6ad83', trim: '#47756a', sky: '#c0d6cc', stone: '#858c76' },
 };
 
-// One world, three uses: hide-and-seek props, paintball cover, or a clear table
-// courtyard. All solid cover is built from the same bounds as the pure rules.
+// A Bolas Criollas court (11 × 24 m, long axis Z) with its benches, calce and
+// the thrower's camera: everything inside this rectangle stays clear.
+export const COURT_CLEAR = { x: 8.8, z: 17 };
+const outsideCourt = (x, z, r = 0) => Math.abs(x) - r > COURT_CLEAR.x || Math.abs(z) - r > COURT_CLEAR.z;
+
+// One world, four uses: hide-and-seek props, paintball cover, a clear table
+// courtyard, or an open court. All solid cover is built from the same bounds as the pure rules.
 export function createArenaEnvironment(id = 'plaza', { mode = 'hunt', props } = {}) {
   id = (mode === 'table' ? tableArenaInfo : arenaInfo)(id).id;
   if(id==='guipuzcoana'||id==='san-carlos')return createPuertoTableEnvironment(id);
   if (id === 'plaza') {
-    const model = createPlazaEnvironment({ ...(mode === 'table' ? { cooking: true, clearance: (x, z, r = 0) => Math.hypot(x, z) - r > 10 } : {}), ...(props ? { mapProps: props } : {}) });
+    const model = createPlazaEnvironment({ ...(mode === 'table' ? { cooking: true, clearance: (x, z, r = 0) => Math.hypot(x, z) - r > 10 } : {}),
+      ...(mode === 'court' ? { fountain: false, clearance: outsideCourt, openFloor: { x: 6.1, z: 12.6 } } : {}), ...(props ? { mapProps: props } : {}) });
     return { ...model, id, dispose() { model.group.traverse(o => o.userData.dispose?.()); disposeModel(model.group); } };
   }
   const layout = arenaLayout(id), palette = palettes[id], group = new THREE.Group(), statics = new THREE.Group(), animated = [], cameraBounds = [];
@@ -104,6 +110,7 @@ export function createArenaEnvironment(id = 'plaza', { mode = 'hunt', props } = 
 
   for (const o of layout.cover) {
     if (mode === 'table' && !outsideTable(o)) continue;
+    if (mode === 'court' && !outsideCourt(o.x, o.z, Math.max(o.w, o.d) / 2)) continue;
     const solid = new THREE.Group(); solid.name = 'Arena cover';
     if (id === 'ruinas') {
       // Solid core fills every collision box; stone joints and moss stay inside it.
@@ -128,6 +135,7 @@ export function createArenaEnvironment(id = 'plaza', { mode = 'hunt', props } = 
   }
   if (mode !== 'paint') for (const p of props || layout.props) {
     if (mode === 'table' && !outsideTable({ ...p, r: propDefinition(p.type).radius })) continue;
+    if (mode === 'court' && !outsideCourt(p.x, p.z, propDefinition(p.type).radius)) continue;
     place(createPlazaProp(p.type), p.x, p.z, { angle: p.h, assetId: p.type, perimeter: false });
   }
   if (mode === 'table') {

@@ -16,6 +16,13 @@ becomes the GitHub release's notes.
   (C). Fácil shows where both balls go, including rebounds; Experto shows only
   the cue's direction, and Pana Bot aims better as the difficulty rises.
 
+- **Throw Bolas Criollas from behind your pana, on a court in the plaza.**
+  The court now sits in Plaza Pana under papel picado, with benches, coolers,
+  planters and a chalk scoreboard; the host can move it to Puerto Coco, Hato del
+  Sol or Ruinas del Mango. Pick Fácil to see where every ball ends up, or
+  Experto for rival bots that knock your ball away. A camera button switches to
+  a straight-down view. Bululú's criollas minigame moved to the beach court.
+
 - **Race to real recorded songs in Derrape and Curiara, with a separate Música slider.**
   Every circuit has its own song (joropo in Los Llanos, gaita in the plaza, calipso
   in Chi Chi…), plus garage, battle and results music and a finish fanfare. The
