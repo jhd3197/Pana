@@ -21,13 +21,23 @@ export function waterGrid(T,world,{bounds,step=5,sample,color=0x459c97,name='riv
   water.raycast=()=>{};return water;
 }
 
-export function hollowGallery(T,{from,to,skylights=[],openSide=0,width=28,height=29,color=0x777e70,name='river-cave'}) {
+// Gaussian "halls" on a constant size: hallProfile(28,[{u:.3,add:14,spread:.02}])
+// returns u => 28 + 14·exp(-((u-.3)/.02)²/2) + …, for hollowGallery's
+// widthAt/heightAt and for anything placed against the same walls.
+export function hallProfile(base,halls=[]) {
+  return u=>halls.reduce((sum,{u:at,add,spread=.02})=>{const d=(u-at)/spread;return sum+add*Math.exp(-d*d/2);},base);
+}
+
+// A shell around the road from u=from to u=to. widthAt(u)/heightAt(u) open it
+// into halls; without them it keeps the constant width and height.
+export function hollowGallery(T,{from,to,skylights=[],openSide=0,width=28,height=29,widthAt=null,heightAt=null,color=0x777e70,name='river-cave'}) {
   const group=new THREE.Group();group.name=name;
-  const walls=[[-width,-5],[-width,12],[-width*.78,height*.8],[0,height],[width*.78,height*.8],[width,12],[width,-5]];
+  const W=widthAt||(()=>width),H=heightAt||(()=>height);
+  const profile=(w,h)=>[[-w,-5],[-w,12],[-w*.78,h*.8],[0,h],[w*.78,h*.8],[w,12],[w,-5]],walls=profile(width,height);
   const positions=[],colors=[],indices=[],n=Math.ceil((to-from)*T.TOTAL/3),c=new THREE.Color(color);
   for(let i=0;i<=n;i++){
     const u=from+(to-from)*i/n,p=placeOnTrack(T,u*T.TOTAL);
-    walls.forEach(([off,y],j)=>{
+    profile(W(u),H(u)).forEach(([off,y],j)=>{
       const noise=j===0||j===6?0:Math.sin(i*.71+j*2.1)*1.3;
       const x=p.x+Math.cos(p.h)*off,z=p.z-Math.sin(p.h)*off;
       positions.push(x,p.y+y+noise,z);
@@ -41,5 +51,5 @@ export function hollowGallery(T,{from,to,skylights=[],openSide=0,width=28,height
   const geometry=new THREE.BufferGeometry();geometry.setAttribute('position',new THREE.Float32BufferAttribute(positions,3));
   geometry.setAttribute('color',new THREE.Float32BufferAttribute(colors,3));geometry.setIndex(indices);geometry.computeVertexNormals();
   group.add(mesh(geometry,M(0xffffff,{vertexColors:true,roughness:.94,side:THREE.DoubleSide})));
-  group.userData.corridor={from,to,width,height,skylights};return group;
+  group.userData.corridor={from,to,width,height,widthAt:W,heightAt:H,skylights};return group;
 }

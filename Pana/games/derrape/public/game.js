@@ -453,6 +453,12 @@ function applyPalette(pal) {
   race.scene.fog.color.set(pal.horizon);
   race.scene.fog.near = pal.fog?.[0] ?? 80;
   race.scene.fog.far = pal.fog?.[1] ?? 260;
+  // Big maps fog out further than the default far plane; never clip what the
+  // fog still shows.
+  for (const cam of [race.camera, race.camera2]) {
+    const far = Math.max(1800, race.scene.fog.far);
+    if (cam.far !== far) { cam.far = far; cam.updateProjectionMatrix(); }
+  }
   race.hemi.color.set(pal.hemiSky);
   race.hemi.groundColor.set(pal.hemiGround);
   race.hemi.intensity = pal.hemiInt ?? 1.6;

@@ -363,3 +363,34 @@ positive lane rises up to 60 cm at the shallow crossing, preserving a dry line
 without changing other maps. Water depth gives the rendered road its existing
 13 cm clearance. `water-crossing.browser.js` checks 1,000 sections for a dry
 lane, every road vertex against physics, and three cars on street/rain tires.
+
+## Distance raster, point tags and far plane
+
+- Spline tracks build a distance raster on the first `paramOf`/`offsetOf`
+  call (not when the menu browses routes): a grid of about 2 m cells
+  covering the route plus 96 m, each storing the nearest centreline sample.
+  Two sweeps of a vector distance transform keep the build linear: 5–20 ms
+  for 1–2.7 km tracks, about 70 ms for Puerto's 562k cells. `nearest()`
+  then refines ±6 m of route around the samples named by the four cells
+  around the point: 0.2–0.5 µs per call, against 0.65–3 µs for the old
+  stride-16 scan, which grew with track length. Outside the grid it falls
+  back to the scan (`T.nearestScan`).
+- Layered tracks (Puerto) flag raster cells where a sample more than 60 m
+  along the route, at a height differing by 2 m or more, lies within 40 m.
+  Height-aware lookups in those cells use the scan with its altitude
+  penalty, so stacked roads keep choosing the branch by height.
+  `maps.browser.js` checks that the raster never finds a farther road
+  than the scan.
+- `T.roadDistance(x, z)` (bilinear raster distance, within about half a
+  cell near the road) and `T.clearOfRoad(x, z, margin)` are the cheap
+  scenery-exclusion and off-course queries; `T.raster` exposes the grid.
+- Points may carry a 4th tag, `[x, z, y, tag]`: `g` ground (default), `b`
+  bridge, `l` ledge, `a` arch, `t` tunnel. Use `[x, z, undefined, 'b']` on
+  an `elevation` track: only a numeric 3rd element switches to authored
+  heights. Rounded corner cuts keep the tag of the nearer point.
+  `T.tagAt(s)` and `T.tagRuns()` (`[{tag, from, to}]` in u, a run across
+  the line has `to > 1`) let builders put structure on each run.
+- The race cameras' far plane is `max(1800, fog far)`, set with the palette.
+- `hollowGallery` accepts `widthAt(u)` and `heightAt(u)`; `hallProfile(base,
+  [{u, add, spread}])` builds Gaussian halls. The corridor in
+  `userData.corridor` carries both functions for placement against walls.

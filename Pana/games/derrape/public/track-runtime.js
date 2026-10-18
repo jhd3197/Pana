@@ -45,15 +45,20 @@ function ovalMath({ S, R }) {
 }
 
 // Closed Catmull-Rom loop through control points, arc-length parameterized
-// over a dense sample table so queries stay cheap.
+// over a dense sample table so queries stay cheap. A point may carry a 4th
+// element, a structure tag ([x, z, y, tag]): 'g' ground (default), 'b' bridge,
+// 'l' ledge, 'a' arch, 't' tunnel. Pass `undefined` as y to tag a point whose
+// height comes from `elevation`.
+export const POINT_TAGS = ['g', 'b', 'l', 'a', 't'];
 function splineMath(points, rounded = false, layered = false) {
   // Two corner-cutting passes preserve straights but leave room to drift
   // around authored street junctions instead of creating needle hairpins.
+  // Each cut point keeps the tag of the control point it sits nearer to.
   if (rounded) for (let pass = 0; pass < 2; pass++) {
     points = points.flatMap((a,i) => {
       const b = points[(i+1)%points.length];
-      return [[a[0]*0.75+b[0]*0.25,a[1]*0.75+b[1]*0.25,(a[2]||0)*.75+(b[2]||0)*.25],
-        [a[0]*0.25+b[0]*0.75,a[1]*0.25+b[1]*0.75,(a[2]||0)*.25+(b[2]||0)*.75]];
+      return [[a[0]*0.75+b[0]*0.25,a[1]*0.75+b[1]*0.25,(a[2]||0)*.75+(b[2]||0)*.25,a[3]],
+        [a[0]*0.25+b[0]*0.75,a[1]*0.25+b[1]*0.75,(a[2]||0)*.25+(b[2]||0)*.75,b[3]]];
     });
   }
   const curve = new THREE.CatmullRomCurve3(
@@ -70,6 +75,17 @@ function splineMath(points, rounded = false, layered = false) {
     const f=(((s%TOTAL)+TOTAL)%TOTAL)/TOTAL*N,i=Math.floor(f);
     return heights[i]+(heights[i+1]-heights[i])*(f-i);
   }
+  // Per-sample tags: a sample takes the tag of the control point nearest to it
+  // in curve parameter, so a run of tagged points covers half a segment past
+  // its first and last point.
+  let tags = null;
+  if (points.some(p => p[3] && p[3] !== 'g')) {
+    const M = points.length;
+    tags = Array.from({length:N+1},(_,i)=>{
+      const t = curve.getUtoTmapping(i/N)*M, k = Math.floor(t), f = t-k;
+      return points[(f<.5?k:k+1)%M][3] || 'g';
+    });
+  }
 
   function pointAt(s) {
     s = ((s % TOTAL) + TOTAL) % TOTAL;
@@ -80,7 +96,24 @@ function splineMath(points, rounded = false, layered = false) {
     return new THREE.Vector2(a.x + (b.x - a.x) * t, a.z + (b.z - a.z) * t);
   }
 
-  function nearest(x, z, height) {
+  // Project onto the nearest segment, rather than snapping cars to a sample.
+  // Continuous progress also keeps terrain heights smooth while driving.
+  function project(best, x, z) {
+    let result = null;
+    for (let k = -1; k <= 0; k++) {
+      const i = (best + k + N) % N, a = pts[i], b = pts[i + 1];
+      const dx = b.x - a.x, dz = b.z - a.z;
+      const u = THREE.MathUtils.clamp(((x - a.x) * dx + (z - a.z) * dz) / (dx * dx + dz * dz || 1), 0, 1);
+      const ox = x - a.x - dx * u, oz = z - a.z - dz * u;
+      const d = Math.hypot(ox, oz);
+      if (!result || d < result.d) result = { s: ((i + u) / N) * TOTAL, d, side: ox * -dz + oz * dx >= 0 ? 1 : -1 };
+    }
+    return result;
+  }
+
+  // The original search, kept for points outside the raster and for
+  // altitude-ambiguous cells of layered tracks.
+  function nearestScan(x, z, height) {
     // coarse scan, then refine around the best sample
     let best = 0, bestD = Infinity;
     const stride = 16;
@@ -102,18 +135,35 @@ function splineMath(points, rounded = false, layered = false) {
       const d = dx * dx + dz * dz;
       if (d < bestD) { bestD = d; best = i; }
     }
-    // Project onto the nearest segment, rather than snapping cars to a sample.
-    // Continuous progress also keeps terrain heights smooth while driving.
-    let result = null;
-    for (let k = -1; k <= 0; k++) {
-      const i = (best + k + N) % N, a = pts[i], b = pts[i + 1];
-      const dx = b.x - a.x, dz = b.z - a.z;
-      const u = THREE.MathUtils.clamp(((x - a.x) * dx + (z - a.z) * dz) / (dx * dx + dz * dz || 1), 0, 1);
-      const ox = x - a.x - dx * u, oz = z - a.z - dz * u;
-      const d = Math.hypot(ox, oz);
-      if (!result || d < result.d) result = { s: ((i + u) / N) * TOTAL, d, side: ox * -dz + oz * dx >= 0 ? 1 : -1 };
+    return project(best, x, z);
+  }
+
+  // Built on first use: browsing the track list only needs the route.
+  let built = null;
+  const raster = () => built ??= buildRaster(pts, N, TOTAL, heights, layered);
+  const span = Math.ceil(6 * N / TOTAL);
+  const apart = (a, b) => { const g = Math.abs(a - b); return Math.min(g, N - g) > span; };
+  // Constant-time lookup: the four cells around the point name their nearest
+  // samples; refine a few metres of route around each distinct one.
+  function nearest(x, z, height) {
+    const { x0, z0, cell, nx, nz, index, ambiguous } = raster();
+    const fx = (x - x0) / cell - .5, fz = (z - z0) / cell - .5;
+    const i0 = Math.floor(fx), j0 = Math.floor(fz);
+    if (i0 < 0 || j0 < 0 || i0 + 1 >= nx || j0 + 1 >= nz) return nearestScan(x, z, height);
+    const c = j0 * nx + i0;
+    if (ambiguous && Number.isFinite(height) && (ambiguous[c] | ambiguous[c + 1] | ambiguous[c + nx] | ambiguous[c + nx + 1])) return nearestScan(x, z, height);
+    let best = -1, bestD = Infinity, first = -1, second = -1;
+    for (let q = 0; q < 4; q++) {
+      const centre = index[c + (q & 1) + (q >> 1) * nx];
+      if (first >= 0 && !apart(centre, first)) continue;
+      if (second >= 0 && !apart(centre, second)) continue;
+      if (first < 0) first = centre; else second = centre;
+      for (let o = -span; o <= span; o++) {
+        const i = (centre + o + N) % N, dx = pts[i].x - x, dz = pts[i].z - z, d = dx * dx + dz * dz;
+        if (d < bestD) { bestD = d; best = i; }
+      }
     }
-    return result;
+    return project(best, x, z);
   }
 
   function paramOf(x, z, height) {
@@ -132,7 +182,114 @@ function splineMath(points, rounded = false, layered = false) {
     bx = Math.max(bx, Math.abs(p.x));
     bz = Math.max(bz, Math.abs(p.z));
   }
-  return { TOTAL, pointAt, paramOf, offsetOf, heightAt, bounds: { x: bx, z: bz } };
+  // Runs of equal tags along u in [0, 1). A run crossing the start line is
+  // reported once, with to > 1.
+  function tagRuns() {
+    if (!tags) return [{ tag: 'g', from: 0, to: 1 }];
+    const runs = [];
+    for (let i = 0; i < N; i++) {
+      if (!runs.length || runs.at(-1).tag !== tags[i]) runs.push({ tag: tags[i], from: i / N, to: (i + 1) / N });
+      else runs.at(-1).to = (i + 1) / N;
+    }
+    if (runs.length > 1 && runs[0].tag === runs.at(-1).tag) { const head = runs.shift(); runs.at(-1).to = 1 + head.to; }
+    return runs;
+  }
+  const tagAt = s => tags ? tags[Math.round((((s % TOTAL) + TOTAL) % TOTAL) / TOTAL * N)] : 'g';
+
+  return { TOTAL, pointAt, paramOf, offsetOf, heightAt, nearest, nearestScan, raster, tagAt, tagRuns, bounds: { x: bx, z: bz } };
+}
+
+// ---------- distance raster ----------
+// A coarse grid over the route (plus a margin) storing, per cell, the nearest
+// centreline sample and its distance from the cell centre. Seeds are the
+// samples themselves; two raster sweeps propagate nearest-sample indices
+// (a vector distance transform), so the build is linear in the cell count.
+// Layered tracks also flag cells where another branch at a different height
+// is close enough for the car's altitude to change which branch it is on.
+const RASTER_MARGIN = 96, RASTER_MAX_CELLS = 1.2e6, AMBIGUOUS_RADIUS = 40;
+function buildRaster(pts, N, TOTAL, heights, layered) {
+  const started = performance.now();
+  const px = new Float32Array(N), pz = new Float32Array(N);
+  let minX = Infinity, minZ = Infinity, maxX = -Infinity, maxZ = -Infinity;
+  for (let i = 0; i < N; i++) {
+    px[i] = pts[i].x; pz[i] = pts[i].z;
+    minX = Math.min(minX, px[i]); maxX = Math.max(maxX, px[i]); minZ = Math.min(minZ, pz[i]); maxZ = Math.max(maxZ, pz[i]);
+  }
+  minX -= RASTER_MARGIN; minZ -= RASTER_MARGIN; maxX += RASTER_MARGIN; maxZ += RASTER_MARGIN;
+  const cell = Math.max(2, Math.sqrt((maxX - minX) * (maxZ - minZ) / RASTER_MAX_CELLS));
+  const nx = Math.ceil((maxX - minX) / cell), nz = Math.ceil((maxZ - minZ) / cell), count = nx * nz;
+  const index = new Int32Array(count).fill(-1), dist = new Float32Array(count).fill(Infinity);
+  const cx = new Float32Array(nx), cz = new Float32Array(nz);
+  for (let i = 0; i < nx; i++) cx[i] = minX + (i + .5) * cell;
+  for (let j = 0; j < nz; j++) cz[j] = minZ + (j + .5) * cell;
+  const offer = (c, i, j, k) => {
+    if (k < 0) return;
+    const dx = px[k] - cx[i], dz = pz[k] - cz[j], d = dx * dx + dz * dz;
+    if (d < dist[c]) { dist[c] = d; index[c] = k; }
+  };
+  for (let k = 0; k < N; k++) {
+    const i = Math.floor((px[k] - minX) / cell), j = Math.floor((pz[k] - minZ) / cell);
+    offer(j * nx + i, i, j, k);
+  }
+  // One forward and one backward sweep; nearest() refines around the
+  // result, so the transform's rare one-cell errors never reach callers.
+  for (let j = 0; j < nz; j++) {
+    for (let i = 0; i < nx; i++) {
+      const c = j * nx + i;
+      if (i > 0) offer(c, i, j, index[c - 1]);
+      if (j > 0) { offer(c, i, j, index[c - nx]); if (i > 0) offer(c, i, j, index[c - nx - 1]); if (i < nx - 1) offer(c, i, j, index[c - nx + 1]); }
+    }
+    for (let i = nx - 2; i >= 0; i--) offer(j * nx + i, i, j, index[j * nx + i + 1]);
+  }
+  for (let j = nz - 1; j >= 0; j--) {
+    for (let i = nx - 1; i >= 0; i--) {
+      const c = j * nx + i;
+      if (i < nx - 1) offer(c, i, j, index[c + 1]);
+      if (j < nz - 1) { offer(c, i, j, index[c + nx]); if (i > 0) offer(c, i, j, index[c + nx - 1]); if (i < nx - 1) offer(c, i, j, index[c + nx + 1]); }
+    }
+    for (let i = 1; i < nx; i++) offer(j * nx + i, i, j, index[j * nx + i - 1]);
+  }
+  for (let c = 0; c < count; c++) dist[c] = Math.sqrt(dist[c]);
+  let ambiguous = null;
+  if (layered) {
+    // Splat samples into nearby cells; a cell is ambiguous when a sample far
+    // along the route, at a different height, lies within reach of it.
+    ambiguous = new Uint8Array(count);
+    const reach = Math.ceil(AMBIGUOUS_RADIUS / cell), apart = Math.ceil(60 * N / TOTAL), step = Math.max(1, Math.floor(N / TOTAL * 1.5));
+    for (let k = 0; k < N; k += step) {
+      const ci = Math.floor((px[k] - minX) / cell), cj = Math.floor((pz[k] - minZ) / cell);
+      for (let j = Math.max(0, cj - reach); j <= Math.min(nz - 1, cj + reach); j++) for (let i = Math.max(0, ci - reach); i <= Math.min(nx - 1, ci + reach); i++) {
+        const c = j * nx + i;
+        if (ambiguous[c]) continue;
+        const near = index[c], gap = Math.abs(near - k);
+        if (Math.min(gap, N - gap) < apart || Math.abs(heights[near] - heights[k]) < 2) continue;
+        const dx = px[k] - cx[i], dz = pz[k] - cz[j];
+        if (dx * dx + dz * dz <= AMBIGUOUS_RADIUS * AMBIGUOUS_RADIUS) ambiguous[c] = 1;
+      }
+    }
+  }
+  const locate = (x, z) => {
+    const fx = (x - minX) / cell - .5, fz = (z - minZ) / cell - .5, i = Math.floor(fx), j = Math.floor(fz);
+    if (i < 0 || j < 0 || i + 1 >= nx || j + 1 >= nz) return null;
+    return { c: j * nx + i, tx: fx - i, tz: fz - j };
+  };
+  return {
+    x0: minX, z0: minZ, cell, nx, nz, index, distance: dist, ambiguous,
+    buildMs: performance.now() - started,
+    // Approximate centreline distance, bilinear between cell centres (within
+    // about half a cell near the road); null outside the grid.
+    distanceAt(x, z) {
+      const q = locate(x, z); if (!q) return null;
+      const { c, tx, tz } = q;
+      return (dist[c] * (1 - tx) + dist[c + 1] * tx) * (1 - tz) + (dist[c + nx] * (1 - tx) + dist[c + nx + 1] * tx) * tz;
+    },
+    // Route distance s of the sample nearest the cell holding (x, z); null
+    // outside the grid.
+    sampleAt(x, z) {
+      const q = locate(x, z); if (!q) return null;
+      return index[q.c + (q.tx > .5 ? 1 : 0) + (q.tz > .5 ? nx : 0)] / N * TOTAL;
+    },
+  };
 }
 
 // ---------- scenery base ----------
@@ -255,7 +412,20 @@ export function makeTrack(def) {
     animated: [],
   };
   T.gapAt=s=>T.gaps.some(g=>(s-g.s0+T.TOTAL)%T.TOTAL<g.len);
-  const authoredHeight = def.points?.some(p=>p.length>2);
+  // Spline tracks also expose the distance raster and structure tags. The
+  // oval keeps its analytic distance and has neither.
+  T.nearest = geo.nearest ?? ((x, z) => { const o = geo.offsetOf(x, z); return { s: geo.paramOf(x, z), d: Math.abs(o), side: Math.sign(o) || 1 }; });
+  T.nearestScan = geo.nearestScan ?? T.nearest;
+  Object.defineProperty(T, 'raster', { get: () => geo.raster?.() ?? null, enumerable: true });
+  // Approximate centreline distance for scenery exclusion and off-course
+  // checks; exact (and slower) outside the raster.
+  T.roadDistance = (x, z) => T.raster?.distanceAt(x, z) ?? Math.abs(geo.offsetOf(x, z));
+  T.clearOfRoad = (x, z, margin = 0) => T.roadDistance(x, z) > T.HW + margin;
+  T.tagAt = geo.tagAt ?? (() => 'g');
+  T.tagRuns = geo.tagRuns ?? (() => [{ tag: 'g', from: 0, to: 1 }]);
+  // A tag-only point ([x, z, undefined, 'b']) must not switch an elevation
+  // track to authored heights.
+  const authoredHeight = def.points?.some(p=>typeof p[2]==='number');
   T.heightAtS = authoredHeight ? geo.heightAt : def.elevation ? (s) => {
     const p = geo.pointAt(s);
     return def.elevation(p.x, p.y);

@@ -56,6 +56,16 @@ try {
           }
         }
       }
+      // The distance raster must find the same road as the exhaustive scan.
+      // Equidistant branches may differ, so compare distances, not progress.
+      let rasterGap = 0;
+      for (let s = 0; s < T.TOTAL; s += 2) {
+        const a = T.pointAt(s), b = T.pointAt(s + 0.5), h = Math.atan2(b.x - a.x, b.y - a.y);
+        for (const off of [-T.HW - 6, -T.HW, 0, T.HW, T.HW + 6]) {
+          const x = a.x - Math.cos(h) * off, z = a.y + Math.sin(h) * off, y = T.heightAtS(s);
+          rasterGap = Math.max(rasterGap, T.nearest(x, z, y).d - T.nearestScan(x, z, y).d);
+        }
+      }
       T.group.updateMatrixWorld(true);
       const stripe=T.group.getObjectByName('finish-stripe');
       const start=T.pointAt(T.LINE), ahead=T.pointAt(T.LINE+0.5);
@@ -117,7 +127,7 @@ try {
         if (c.onGround) maxGroundError = Math.max(maxGroundError, Math.abs(c.y - T.groundAt(c.x, c.z,c.y)));
       }
       return { id, length: T.TOTAL, roundtrip, minRadius, maxGrade, protrusion, finite, startHeights,
-        pickups, itemRows, riverClear, maxGroundError, finishAligned, leftTurns, rightTurns, obstacles,
+        pickups, itemRows, riverClear, maxGroundError, rasterGap, finishAligned, leftTurns, rightTurns, obstacles,
         state: race.state, lap: race.player.lap, seconds: race.clock };
     }, id);
     assert.equal(result.finite, true, `${id}: finite scenery geometry`);
@@ -127,6 +137,7 @@ try {
     assert.ok(result.finishAligned, `${id}: finish stripe spans across the road`);
     assert.deepEqual(result.obstacles, [], `${id}: scenery stays outside driving lanes`);
     assert.ok(result.roundtrip < 0.01, `${id}: continuous route projection`);
+    assert.ok(result.rasterGap < 0.05, `${id}: raster lookup matches the scan (${result.rasterGap})`);
     assert.ok(result.minRadius > 15, `${id}: safe corner radius ${result.minRadius}`);
     assert.ok(result.maxGrade < 0.4, `${id}: drivable grade`);
     assert.ok(result.protrusion < 0.1, `${id}: no terrain through the road`);
