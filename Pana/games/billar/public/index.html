@@ -7,6 +7,7 @@
   <title>Billar · Pana</title>
   <link rel="stylesheet" href="/engine/kit.css">
   <link rel="stylesheet" href="/engine/ui.css">
+  <link rel="stylesheet" href="/engine/room-options.css">
   <link rel="stylesheet" href="./style.css">
   <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}</script>
 <link rel="stylesheet" href="/engine/game-lobby.css">
@@ -22,12 +23,14 @@
       <a class="pk-back" href="/">← Todos los juegos</a>
       <span class="pk-ribbon">La mesa de los panas</span>
       <h1 id="title" class="pk-title">Billar</h1>
-      <p class="pk-copy intro">Una buena puntería.<br>Una última bola negra.</p>
-      <p class="pk-copy">Invita a un pana, mete las de tu grupo y deja la ocho para el final.</p>
-      <div class="pk-stats"><div class="pk-stat"><b>2</b><span>panas</span></div><div class="pk-stat"><b>15</b><span>bolas</span></div><div class="pk-stat"><b>8</b><span>al final</span></div></div>
-      <button id="rules" class="pk-btn pk-btn--ghost">Cómo se juega</button>
-      <div id="map-picker"></div>
-      <div id="difficulty-picker"></div>
+      <p class="pk-copy intro" data-room-description>Una buena puntería.<br>Una última bola negra.</p>
+      <p class="pk-copy" data-room-description>Hasta seis panas en dos equipos. Tú y tus compañeros se turnan el taco después de cada tiro.</p>
+      <div class="pk-stats" data-room-description><div class="pk-stat"><b>2–6</b><span>panas</span></div><div class="pk-stat"><b>2</b><span>equipos</span></div><div class="pk-stat"><b>8 / 9</b><span>modalidades</span></div></div>
+      <button id="rules" class="pk-btn pk-btn--ghost" data-room-help>Cómo se juega</button>
+      <div id="map-picker" data-room-extra></div>
+      <div id="difficulty-picker" data-room-extra></div>
+      <div id="room-options"></div>
+      <div id="seating"></div>
       <div class="pk-lobby-foot">
         <span id="room-code" class="pk-lobby-room"></span>
         <p id="connection" class="pk-copy" role="status">Preparando la mesa…</p>
@@ -56,6 +59,8 @@
     </section>
     <section id="play-controls" class="play-controls" hidden aria-label="Controles de tiro">
       <div class="turn-copy"><b id="turn-status" aria-live="polite"></b><p id="message" role="status"></p></div>
+      <div id="called-pocket" class="called-pocket" hidden><label for="pocket">Tronera cantada</label><select id="pocket"><option value="">Elige una tronera</option><option value="0">Tronera 1</option><option value="1">Tronera 2</option><option value="2">Tronera 3</option><option value="3">Tronera 4</option><option value="4">Tronera 5</option><option value="5">Tronera 6</option></select></div>
+      <p id="shot-clock" class="shot-clock" hidden></p>
       <div class="shot-controls pk-touch-zone">
         <div class="fine-controls pk-touch-zone"><button id="aim-left" class="pk-touch pk-touch--sm" data-icon="left" aria-label="Apuntar a la izquierda"></button><button id="aim-right" class="pk-touch pk-touch--sm" data-icon="right" aria-label="Apuntar a la derecha"></button></div>
         <button id="shoot" class="pk-btn pk-btn--primary pk-btn--lg" aria-describedby="charge-tip">Mantén para tirar <kbd class="pk-kbd" data-pana-hint>Espacio</kbd></button>
@@ -70,6 +75,7 @@
       <span class="pk-ribbon">Mesa terminada</span><h2 id="result-title" class="pk-title"></h2>
       <p id="result-copy" class="pk-copy"></p><ol id="result-board" class="pk-roster"></ol>
       <button id="again" class="pk-btn pk-btn--primary pk-btn--block">La revancha</button>
+      <button id="organize-table" class="pk-btn pk-btn--block">Ajustar la sala</button>
       <a class="pk-back" href="/">← Todos los juegos</a>
     </div>
   </section>

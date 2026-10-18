@@ -40,7 +40,7 @@ try {
   const c = await open('Luis'); await wait(c, () => pinturaDebug.room.state.phase === 'playing'); assert.equal(await c.evaluate(() => pinturaDebug.room.state.round), 1);
   console.log('ok: respawn, host departure and late arrival preserve the running round');
   // The real round clock or a player reaching ten ends this without a debug server mutation.
-  await wait(b, () => pinturaDebug.room.state.phase === 'finished', undefined, 150000); await wait(c, () => pinturaDebug.room.state.phase === 'finished');
+  await wait(b, () => pinturaDebug.room.state.phase === 'finished', undefined, 210000); await wait(c, () => pinturaDebug.room.state.phase === 'finished');
   const scores = await b.evaluate(() => pinturaDebug.room.state.players.map(p => [p.id, p.score])); assert.deepEqual(await c.evaluate(() => pinturaDebug.room.state.players.map(p => [p.id, p.score])), scores);
   await b.screenshot({ path: `${out}/results.png` }); await b.locator('#again').click(); await wait(c, () => pinturaDebug.room.state.round === 2 && pinturaDebug.room.state.phase === 'playing');
   console.log('ok: real round end agrees across clients and the new host starts a clean rematch');

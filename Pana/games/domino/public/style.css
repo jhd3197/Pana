@@ -182,3 +182,8 @@ body:not(.in-lobby) .world-label.partner{visibility:hidden}
   .toast{top:180px;font-size:12px}
 }
 @media(prefers-reduced-motion:reduce){*,*:before,*:after{transition:none!important;animation:none!important}}
+
+.extended-roster{position:fixed;z-index:4;top:110px;left:24px;display:grid;gap:4px;padding:10px 14px;font:700 12px var(--pk-sans);pointer-events:none;max-width:210px}.extended-roster[hidden]{display:none}.extended-roster .is-turn{color:var(--pk-yellow)}
+#quick-chat{padding:8px;font:700 12px var(--pk-sans)}#quick-chat summary{cursor:pointer}#chat-buttons{display:grid;gap:6px;margin-top:6px}
+.hand.large-hand{gap:5px}.large-hand .domino{width:40px;height:80px;flex-shrink:0}
+@media(max-width:720px){.extended-roster{top:82px;left:12px;max-width:180px;font-size:10px;padding:7px}.hand.large-hand{gap:3px;width:100%;overflow-x:auto;justify-content:flex-start}.large-hand .domino{width:30px;height:64px}#quick-chat{position:absolute;bottom:4px;right:8px}#quick-chat[open]{bottom:44px}}

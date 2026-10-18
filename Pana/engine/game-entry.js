@@ -4,6 +4,7 @@ import { loadAvatar, loadName } from './avatar.js';
 import { cachedPortrait } from './portrait-cache.js';
 import { icon } from './icons.js';
 import { inviteUrl, roomFromUrl } from './invite.js';
+import { finalizeRoomOptions } from './room-options.js';
 
 const tag = document.querySelector('script[data-pana-entry]');
 const game = location.pathname.match(/\/g\/([^/]+)/)?.[1];
@@ -16,23 +17,26 @@ const root = el('section', 'pk-game-lobby'); root.id = 'pana-lobby-shell'; root.
 root.style.setProperty('--lobby-image', `url("/images/launcher/${game}.jpg")`);
 const head = el('header', 'pk-game-lobby-head'), back = el('a', 'pk-btn', ' Juegos'); back.prepend(icon('chevronLeft')); back.href = '/';
 const title = el('h1', 'pk-title', document.title.split(/[·—]/)[0].trim());
-const invite = el('button', 'pk-btn pk-btn--teal', 'Copiar link'); invite.type = 'button';
+const invite = el('button', 'pk-btn pk-btn--teal', 'Copiar link'); invite.type = 'button'; invite.id = 'pana-lobby-invite';
 const roomCode = el('b', 'pk-game-lobby-code');
-const roomBox = el('div', 'pk-game-lobby-room'); roomBox.append(roomCode, invite); head.append(back, title, roomBox);
+const roomDetails = el('div', 'pk-game-lobby-room-details'); roomDetails.append(el('span', 'pk-eyebrow', 'Código de sala'), roomCode);
+const roomBox = el('div', 'pk-game-lobby-room'); roomBox.append(roomDetails, invite); head.append(back, title, roomBox);
 const layout = el('div', 'pk-game-lobby-layout'), rosterBox = el('section', 'pk-game-lobby-roster');
 const rosterLabel = el('h2', 'pk-eyebrow', 'Panas en la sala'), roster = el('div', 'pk-game-lobby-players'); roster.id = 'pana-lobby-roster';
 rosterBox.append(rosterLabel, roster);
 const settings = el('section', 'pk-game-lobby-settings'); settings.append(el('h2', 'pk-eyebrow', 'Ajustes de la sala'));
 if (original) { original.inert = true; settings.append(original); }
-// Curiara already owns the authoritative boat/seat controls; present those in
-// the large roster area instead of creating another team-selection protocol.
+// Games supply their authoritative team/seat model to the same card renderer.
+// The entry shell only docks those controls; it never assigns players itself.
 function dockSeats() {
-  if (game !== 'curiara') return;
-  const seats = document.getElementById('seats');
-  if (!seats) return;
-  rosterBox.append(seats);
-  const showSeats = () => { roster.hidden = !seats.classList.contains('hidden'); };
-  new MutationObserver(showSeats).observe(seats, { attributes: true, attributeFilter: ['class'] });
+  if (!original) return;
+  const controls = [...original.querySelectorAll('[data-pana-roster]')];
+  const showSeats = () => { roster.hidden = controls.some(node => !node.hidden && !node.classList.contains('hidden')); };
+  for (const node of [...controls, ...original.querySelectorAll('[data-room-personal]')]) {
+    const placeholder = document.createComment('roster control home'); node.before(placeholder);
+    docked.push({ node, placeholder, target: rosterBox });
+    new MutationObserver(showSeats).observe(node, { attributes: true, attributeFilter: ['class', 'hidden'] });
+  }
   showSeats();
 }
 layout.append(rosterBox, settings);
@@ -40,6 +44,7 @@ const footer = el('footer', 'pk-game-lobby-foot'), status = el('p', 'pk-copy', '
 const readyButton = el('button', 'pk-btn pk-btn--primary', 'Preparando…'); readyButton.id = 'pana-lobby-ready'; readyButton.disabled = true;
 const change = el('a', 'pk-btn', 'Cambiar pana'); change.href = '/#mi-pana';
 footer.append(status, change, readyButton); root.append(head, layout, footer); document.body.append(root); document.body.classList.add('pana-in-lobby');
+const actionTray = el('div', 'pk-game-lobby-actions'); footer.append(actionTray, readyButton);
 window.PANA_LOBBY_LOADING = true;
 document.addEventListener('pana:load-stage', e => { if (!failed) status.textContent = e.detail; });
 
@@ -63,6 +68,7 @@ function renderRoster() {
   invite.disabled = !roomCode.textContent;
   if (key === signature) return; signature = key;
   rosterLabel.textContent = `Panas en la sala · ${players.length} / ${maxPlayers}`;
+  roster.dataset.capacity = maxPlayers;
   roster.replaceChildren();
   for (const p of players) {
     const mine = p.id === (link?.id || 'local'), host = p.id === link?.state.host || !link;
@@ -82,6 +88,8 @@ invite.addEventListener('click', async () => {
 });
 readyButton.addEventListener('click', () => { ready = !ready; link?.send('lobby-ready', { ready }); updateReady(); renderRoster(); });
 function updateReady() {
+  root.dataset.host = String(!link || link.isHost);
+  readyButton.hidden = loaded && ready && (!link || link.isHost);
   readyButton.disabled = !loaded;
   readyButton.textContent = !loaded ? 'Preparando…' : ready ? 'Listo · esperar' : '¡Estoy listo!';
   readyButton.setAttribute('aria-pressed', String(ready));
@@ -161,14 +169,18 @@ try {
   const url = new URL(tag.dataset.panaEntry, location.href); url.pathname = prefix + url.pathname.replace(/^\/_v\/[^/]+/, '');
   const module = await import(url.href);
   await module.sceneReady;
+  finalizeRoomOptions(original);
   dockSeats();
-  for (const id of ['menu', 'sound', 'invite']) {
+  const actions = original?.querySelector('.pk-lobby-foot');
+  if (actions) {
+    const placeholder = document.createComment('lobby actions home'); actions.before(placeholder);
+    docked.push({ node: actions, placeholder, target: actionTray });
+  }
+  for (const id of ['menu', 'sound']) {
     const node = document.getElementById(id);
     if (!node || root.contains(node)) continue;
     const placeholder = document.createComment('lobby control home'); node.before(placeholder);
-    const target = id === 'invite' ? roomBox : head;
-    docked.push({ node, placeholder, target });
-    if (id === 'invite') invite.hidden = true;
+    docked.push({ node, placeholder, target: head });
   }
   loaded = true; window.PANA_LOBBY_LOADING = false; window.PANA_PREPARED = true;
   if (original) original.inert = false;

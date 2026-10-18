@@ -26,7 +26,7 @@ export function cellFor(seat, progress, piece = 0) {
 export function legalMoves(state, seat = state.turn) {
   if (state.phase !== 'playing' || state.turn !== seat || !state.die) return [];
   return state.players[seat].pieces.flatMap((p, i) =>
-    p < 0 ? state.die === 6 ? [i] : [] : p < HOME && p + state.die <= HOME ? [i] : []);
+    p < 0 ? state.die === 6 || state.die === 1 && state.options?.entry === 'one-six' ? [i] : [] : p < HOME && p + state.die <= HOME ? [i] : []);
 }
 export function chooseMove(state) {
   let best = null, score = -Infinity;
@@ -42,6 +42,7 @@ export function chooseMove(state) {
 export class LudoGame {
   constructor(seed = Date.now()) {
     this.rng = (seed >>> 0) || 1;
+    this.options = defaultLudoOptions();
     this.players = ['Tito', 'Lola', 'Nina', 'Beto'].map((name, seat) => ({ seat, id: null, name, avatar: {}, pieces: [-1,-1,-1,-1] }));
     this.phase = 'lobby'; this.turn = 0; this.die = 0; this.lastDie = 0;
     this.sixes = 0; this.winner = null; this.revision = 0; this.round = 0;
@@ -69,7 +70,7 @@ export class LudoGame {
     for (const p of this.players) p.pieces.fill(-1);
     this.phase = 'playing'; this.turn = 0; this.die = 0; this.lastDie = 0;
     this.sixes = 0; this.winner = null; this.round++; this.revision++;
-    this.event = '¡A jugar! Saca un seis para salir.'; return true;
+    this.event = this.options.entry === 'six' ? '¡A jugar! Saca un seis para salir.' : '¡A jugar! Con uno o seis puedes salir.'; return true;
   }
   nextTurn() { this.turn = (this.turn + 1) % 4; this.die = 0; this.sixes = 0; }
   roll() {
@@ -78,7 +79,7 @@ export class LudoGame {
     this.die = 1 + Math.floor(this.rng / 4294967296 * 6); this.lastDie = this.die;
     this.sixes = this.die === 6 ? this.sixes + 1 : 0;
     this.event = `${this.players[this.turn].name} sacó ${this.die}.`;
-    if (this.sixes === 3) { this.event += ' Tres seis seguidos: pierde el turno.'; this.nextTurn(); }
+    if (this.sixes === 3 && this.options.threeSixes) { this.event += ' Tres seis seguidos: pierde el turno.'; this.nextTurn(); }
     else if (!legalMoves(this).length) {
       this.event += ' Sin movimientos.';
       if (this.die === 6) this.die = 0; else this.nextTurn();
@@ -98,7 +99,7 @@ export class LudoGame {
     }
     this.event = `${p.name} ${next === HOME ? 'llevó una ficha a casa' : from < 0 ? 'sacó una ficha' : `movió la ficha ${piece + 1}`}.${captured ? ` Capturó ${captured}.` : ''}`;
     if (p.pieces.every(v => v === HOME)) { this.phase = 'finished'; this.winner = this.turn; this.die = 0; }
-    else if (this.die === 6) { this.die = 0; this.event += ' Vuelve a tirar.'; }
+    else if (this.die === 6 || captured && this.options.captureBonus) { this.die = 0; this.event += ' Vuelve a tirar.'; }
     else this.nextTurn();
     this.revision++; return true;
   }
@@ -107,10 +108,15 @@ export class LudoGame {
     const seat = this.players.findIndex(p => p.id === id);
     if (seat < 0) return false;
     let ok = false;
-    if (data.action === 'start' && id === hostId) ok = this.start();
+    if (data.action === 'options' && id === hostId && this.phase === 'lobby') {
+      const next = ludoOptions(this.options, data.options);
+      if (next) { this.options = next; this.revision++; ok = true; }
+    }
+    else if (data.action === 'start' && id === hostId) ok = this.start();
     else if (data.action === 'roll' && seat === this.turn) ok = this.roll();
     else if (data.action === 'move' && seat === this.turn) ok = this.move(data.piece);
     if (ok) this.ledger[id] = data.seq;
     return ok;
   }
 }
+import { defaultLudoOptions, ludoOptions } from './options.js';

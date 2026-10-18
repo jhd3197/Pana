@@ -1,3 +1,5 @@
+import { createRoomOptions } from '/engine/room-options.js';
+import { FIELDS, DEFAULT_OPTIONS } from './options.js';
 import { prepareScene } from '/engine/game-load.js';
 import * as THREE from 'three';
 import { buildCharacter } from '/engine/models/characters/pana/avatar-model.js';
@@ -60,6 +62,7 @@ $('lobby-cta').append(menu.createInviteButton({ id: 'lobby-invite', className: '
 const room = new ExpeditionRoom({ code, name, avatar, onState: receive, onNotice: notify,
   onStatus(text, error = false) { failed = error; $('connection').textContent = text; show('practice', error); show('disconnect', error && state.phase === 'playing'); menu.update(); updateUI(); },
 });
+const optionsUI = createRoomOptions($('room-options'), { title: 'Reliquia', fields: FIELDS, change: options => room.action('configure', { options }), reset: () => room.action('configure', { options: DEFAULT_OPTIONS }) });
 const me = () => state.players.find(p => p.id === room.id);
 
 function label(text, color) {
@@ -139,6 +142,10 @@ function missionSteps() {
 }
 let stepsKey = '';
 function updateUI() {
+  optionsUI.update(state.options || DEFAULT_OPTIONS, room.connected && room.isHost && state.phase !== 'playing');
+  if (['playing', 'hide', 'hunt'].includes(state.phase) && optionsUI.isOpen) optionsUI.close();
+  $('minimap').parentElement.hidden = state.options?.map === false;
+  $('mission-steps').hidden = state.options?.hints === false;
   const playing = state.phase === 'playing', p = me();
   show('lobby', state.phase === 'lobby'); show('location-card', state.phase === 'lobby'); show('hud', playing); show('results', state.phase === 'results');
   $('start').disabled = !room.connected || !room.isHost;
@@ -155,28 +162,30 @@ function updateUI() {
       const value = document.createElement('b'); value.className = 'pk-row-end'; row.append(face, name, value); $('team').append(row);
     });
   }
-  state.players.forEach(p => { const row = $('team').querySelector(`[data-player="${p.id}"]`); if (!row) return; const value = row.querySelector('b'); if (p.downed || p.spectator) value.textContent = p.downed ? 'AYUDA' : 'EN ESPERA'; else value.innerHTML = hearts(p.hp); value.title = `${Math.ceil(p.hp)} de vitalidad`; row.classList.toggle('fallen', p.downed); row.classList.toggle('waiting', p.spectator); });
+  state.players.forEach(p => { const row = $('team').querySelector(`[data-player="${p.id}"]`); if (!row) return; const value = row.querySelector('b'); if (p.downed || p.spectator) value.textContent = p.downed ? state.options?.revive === false ? 'FUERA' : 'AYUDA' : 'EN ESPERA'; else value.innerHTML = hearts(p.hp); value.title = `${Math.ceil(p.hp)} de vitalidad`; row.classList.toggle('fallen', p.downed); row.classList.toggle('waiting', p.spectator); });
   $('objective').textContent = state.relicTaken ? 'Vuelvan al campamento' : !state.gateOpen ? 'Abre el templo' : !state.guardianDefeated ? 'Vence al guardián' : 'Toma la reliquia';
-  $('objective').title = objective(state);
+  if (state.options?.hints === false) $('objective').textContent = 'Explora el templo';
+  $('objective').title = state.options?.hints === false ? '' : objective(state);
   const steps = missionSteps(), key = steps.map(s => s.text + s.state).join('|');
   if (key !== stepsKey) { stepsKey = key; $('mission-steps').replaceChildren(...steps.map(s => { const li = document.createElement('li'); li.className = `is-${s.state}`; li.textContent = s.text; return li; })); }
   $('region').textContent = p ? regionAt(p).name : 'Campamento';
   $('health-number').textContent = Math.ceil(p?.hp || 0); $('health-fill').parentElement.style.setProperty('--pk-value', String((p?.hp || 0) / 100));
   $('meds').textContent = `×${p?.heals || 0}`; $('slot-meds').classList.toggle('is-empty', !p?.heals); $('slot-relic').classList.toggle('is-active', state.carrier === p?.id); $('slot-relic').classList.toggle('is-empty', state.carrier !== p?.id);
-  $('player-note').textContent = state.carrier === p?.id ? 'Llevas la reliquia. Tus panas te cubren.' : p?.downed ? 'Un pana puede levantarte.' : state.relicTaken ? 'El túnel de regreso está abierto.' : 'Juntos hasta la salida.';
+  $('player-note').textContent = state.carrier === p?.id ? 'Llevas la reliquia. Tus panas te cubren.' : p?.downed ? state.options?.revive === false ? 'Esta expedición no permite revivir.' : 'Un pana puede levantarte.' : state.relicTaken ? 'El túnel de regreso está abierto.' : 'Juntos hasta la salida.';
   const target = interaction(state, p); show('interact', playing && !!target && !paused);
   if (target) { $('interaction-label').textContent = target.text; $('interaction-fill').style.width = `${Math.min(1, target.progress) * 100}%`; }
   for (const id of ['attack', 'dodge', 'heal']) $(id).disabled = !room.connected || !p || p.downed || p.spectator || (id === 'dodge' && p.dodgeCooldown > 0) || (id === 'heal' && (p.hp >= 100 || !p.heals));
+  $('downed').querySelector('span').textContent = state.options?.revive === false ? 'Te quedas fuera de esta expedición. Tus panas todavía pueden regresar.' : 'Un amigo puede levantarte manteniendo E a tu lado.';
   show('downed', playing && !!p?.downed); document.body.classList.toggle('hurt', !!p && p.hit > 0);
   const guardian = state.enemies.find(e => e.kind === 'guardian');
   const bossVisible = playing && !!guardian && !!p && distance(p, guardian) < 32;
-  show('boss', bossVisible); show('compass', !bossVisible);
+  show('boss', bossVisible); show('compass', !bossVisible && state.options?.hints !== false);
   if (guardian) $('boss-fill').parentElement.style.setProperty('--pk-value', String(guardian.hp / guardian.maxHp));
   $('destination').textContent = state.relicTaken ? 'CAMPAMENTO' : !state.gateOpen ? 'LAS RUEDAS' : 'LA RELIQUIA';
   if (state.phase === 'results') {
     $('result-eyebrow').textContent = state.outcome === 'win' ? 'Expedición completada' : 'El templo sigue en pie';
     $('result-title').textContent = state.outcome === 'win' ? 'Volvimos juntos.' : 'Una vuelta más.';
-    $('result-copy').textContent = state.outcome === 'win' ? 'Una reliquia recuperada. Una historia más para contar con tus panas.' : 'Las momias ganaron esta vez. Esquiven las marcas rojas y levanten a sus panas antes de seguir.';
+    $('result-copy').textContent = state.outcome === 'win' ? 'Una reliquia recuperada. Una historia más para contar con tus panas.' : state.options?.revive === false ? 'Las momias ganaron esta vez. Esquiven las marcas rojas y cúbranse: aquí cada caída es definitiva.' : 'Las momias ganaron esta vez. Esquiven las marcas rojas y levanten a sus panas antes de seguir.';
     $('result-time').textContent = `${Math.floor(state.time / 60)}:${String(Math.floor(state.time % 60)).padStart(2, '0')}`;
     $('result-kills').textContent = state.kills; $('result-revives').textContent = state.players.reduce((n, p) => n + p.revives, 0);
   }
@@ -345,7 +354,10 @@ function frame(now) {
     $('compass-arrow').style.transform = `rotate(${Math.atan2(destination.x - p.x, -(destination.z - p.z)) + yaw}rad)`;
     compass(p, destination);
   }
-  lanternLight.position.set(p?.x || 0, 2.8, p?.z || 15);
+  const lightBearer = state.options?.lightAllocation === 'shared' ? state.players.find(p => !p.downed && !p.spectator) : p;
+  lanternLight.visible = state.options?.lanterns !== false;
+  lanternLight.position.set(lightBearer?.x ?? 0, 2.8, lightBearer?.z ?? 15);
+  for (const [id, a] of actors) a.lantern.visible = state.options?.lanterns !== false && (state.options?.lightAllocation === 'each' || id === lightBearer?.id);
   world.update(elapsed, state, dt); renderer.render(scene, camera);
   if (uiElapsed > 0.1) { minimap(); uiElapsed = 0; }
   requestAnimationFrame(frame);

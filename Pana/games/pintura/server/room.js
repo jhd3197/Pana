@@ -4,7 +4,9 @@ export default class PaintRoom extends PanaRoom {
   state = new (roomState({}, undefined, 'PaintRoomState'))();
   onCreate(options) {
     super.onCreate(options); this.game = new Arena(); this.inputs = new InputBuffer(350);
+    this.onMessage('move-seat', (client, data) => { const actor = this.seatOf(client); if (this.game.moveSeat(actor, data?.from, data?.to, this.isHost(client) ? actor : null)) this.publish(); });
     this.onMessage('input', (client, data) => this.inputs.set(this.seatOf(client), cleanInput(data)));
+    this.onHostMessage('configure', (client, data) => { if (this.game.configure(data?.options)) this.publish(); });
     this.onHostMessage('map', (client, data) => { if (this.game.selectMap(data?.mapId)) this.publish(); });
     this.onHostMessage('difficulty', (client, data) => { if (this.game.selectDifficulty(data?.difficulty)) this.publish(); });
     this.onHostMessage('start', () => {

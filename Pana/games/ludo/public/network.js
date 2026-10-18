@@ -3,8 +3,8 @@ import { LudoGame, chooseMove } from './rules.js';
 
 export class LudoRoom extends TableRoom {
   constructor(options) {
-    super({ ...options, game: 'ludo', protocol: 'ludo-v1' }, {
-      fresh: () => new LudoGame().snapshot(),
+    super({ ...options, game: 'ludo', protocol: 'ludo-v2' }, {
+      fresh: prev => ({ ...new LudoGame().snapshot(), ...(prev?.options ? { options: { ...prev.options } } : {}) }),
       restore: (state, members) => LudoGame.restore(state, members),
       snapshot: (game) => game.snapshot(),
       accept: (game, id, data, hostId) => game.accept(id, data, hostId),

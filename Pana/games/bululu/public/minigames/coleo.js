@@ -1,5 +1,5 @@
 import { random, inputFor } from '../online-rules.js';
-// ¡Coleo! The llanero rodeo: four panas on horseback chase a bull down the
+// ¡Coleo! The llanero rodeo: six panas on horseback chase a bull down the
 // manga. Get right behind it and pull its tail to tumble it. Each tumble is a
 // point, and a new bull bursts out ahead. Grab at air and your horse stumbles.
 
@@ -73,14 +73,14 @@ export default {
 
     // the riders
     const actors = ctx.players.map((p, i) => {
-      const rider = createRider(p.avatar, COATS[i], 7 + i);
+      const rider = createRider(p.avatar, COATS[i % COATS.length], 7 + i);
       rider.group.rotation.order = 'YXZ';
       scene.add(rider.group);
       const bubble = makeBubble();
       scene.add(bubble.sprite);
       return {
         i, player: p, rider, bubble, score: 0,
-        x: -3 + i * 2, s: 0, v: BULL_SPEED, vx: 0,
+        x: -3 + i * 6 / (ctx.players.length - 1), s: 0, v: BULL_SPEED, vx: 0,
         stumble: 0, reach: 0, cool: 0,
         ai: { tx: 0, think: 0, inReach: 0, react: rand(0.18, 0.42), lane: rand(-0.3, 0.3) },
       };

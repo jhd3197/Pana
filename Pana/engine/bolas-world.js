@@ -162,7 +162,7 @@ export function createBolasWorld({ aspect = 16 / 9, individual = false, venue = 
         a.held.position.set(-.6, .95, .32); a.pana.group.add(a.held);
       }
       const onCalce = turn === i;
-      const x = individual ? (i - 1.5) * 2.1 : onCalce ? -.65 : (i % 2 ? 1 : -1) * 6.8;
+      const x = individual ? (i - (players.length - 1) / 2) * Math.min(2.1, 6.3 / Math.max(1, players.length - 1)) : onCalce ? -.65 : (i % 2 ? 1 : -1) * 6.8;
       const z = individual ? 11.3 : onCalce ? 11.25 : 7.2 - Math.floor(i / 2) * 3;
       a.pana.group.position.set(x, winners.includes(i) ? Math.abs(Math.sin(clock * 6)) * .28 : 0, z);
       a.pana.group.rotation.y = individual || onCalce ? Math.PI : i % 2 ? -1.2 : 1.2;

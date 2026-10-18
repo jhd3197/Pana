@@ -50,7 +50,7 @@ export default {
     const camera = new THREE.PerspectiveCamera(50, (ctx.aspect || innerWidth / innerHeight), .1, 400);
     camera.position.set(0, 23, 19); camera.lookAt(0, 0, 1.5);
     const humans = new Set(ctx.players.filter(p => p.human && !ctx.auto).map(p => p.i));
-    const sim = remolinoSim({ humans, random });
+    const sim = remolinoSim({ humans, random, count: ctx.players.length });
     const actors = canoeActors(scene, ctx.players);
     const seen = actors.map(() => ({ shoves: 0, shoved: 0, out: null, strokes: 0 }));
     let time = 0;

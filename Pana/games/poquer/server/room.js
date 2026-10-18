@@ -6,8 +6,12 @@ export default class PokerRoom extends PanaRoom {
   onCreate(options) {
     super.onCreate(options); this.game = new Poker(); this.deadline = 0; this.lastTurn = '';
     const current = (fn) => (client, data) => { if (data?.revision === this.game.revision && fn(data)) this.publish(); };
+    this.onHostMessage('options', current(data => this.game.configure(data.options, data.mapId)));
     this.onHostMessage('map', current(data => this.game.setMap(data.mapId)));
-    this.onHostMessage('seat', current(data => this.game.reseat(data.from, data.to)));
+    this.onMessage('seat', (client, data) => {
+      const id = this.seatOf(client);
+      if (id != null && data?.revision === this.game.revision && this.game.reseat(data.from, data.to, id, this.isHost(client) ? id : null)) this.publish();
+    });
     this.onHostMessage('setup', current(() => this.game.setup()));
     this.onHostMessage('start', () => {
       if (!['lobby', 'finished'].includes(this.game.phase)) return;
@@ -43,7 +47,7 @@ export default class PokerRoom extends PanaRoom {
   }
   publish() {
     const key = `${this.game.hand}:${this.game.revision}:${this.game.turn}`;
-    if (key !== this.lastTurn) { this.lastTurn = key; this.deadline = Date.now() + (this.game.players.find(p => p.id === this.game.turn)?.bot ? 1100 : 30000); }
+    if (key !== this.lastTurn) { this.lastTurn = key; this.deadline = Date.now() + (this.game.players.find(p => p.id === this.game.turn)?.bot ? 1100 : this.game.options.turnSeconds * 1000); }
     for (const client of this.clients) {
       const id = this.seatOf(client);
       if (id != null) client.send('view', { ...this.game.view(id), deadline: this.deadline });

@@ -65,7 +65,7 @@ export function sunnyStage(scene, { ground = 0xd9a46c, grass = true, sky = 0x7cc
   return { sun, update: atmosphere.update };
 }
 
-// The four panas as minigame actors (no pedestal).
+// The panas as minigame actors (no pedestal).
 export function makeActors(scene, players) {
   return players.map((p, i) => {
     const pana = buildCharacter(p.avatar);

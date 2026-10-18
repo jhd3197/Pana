@@ -33,7 +33,7 @@ the simulation cap. Enemy damage/health do not change with temporary intensity;
 guardian health scales with the roster when it spawns.
 
 The oldest peer owns the expedition. Peers send inputs and sequenced actions
-through `{t:'state',v:{game:'reliquia-v1',kind,...}}`; only host snapshots render
+through `{t:'state',v:{game:'reliquia-v2',kind,...}}`; only host snapshots render
 as authoritative state. Remote inputs expire after 600 ms. Snapshots include
 RNG state, Director timers, enemies, winches, supplies, relic ownership, events
 and the action sequence ledger. Navigation paths are a derived cache and are
@@ -122,7 +122,7 @@ between model previews, since asset detail views hide the library tiles.
 Rules that used to live in AGENTS.md (paths are relative to `Pana/`). Keep them
 true when you change this area.
 
-Reliquia uses a host simulation at 20 Hz (`reliquia-v1`). Its game-local
+Reliquia uses a host simulation at 20 Hz (`reliquia-v2`). Its game-local
 `layout.js` owns walkability/navigation, `rules.js` owns combat, winches,
 revives and extraction, and `director.js` owns the seeded encounter schedule.
 Snapshots preserve RNG state and the action sequence ledger across host migration.
@@ -132,3 +132,33 @@ extract. The mummy, guardian, sun relic, winch and lantern factories live in
 `engine/models/props/reliquia.js` and are registered in Studio. Keep rigid mummy
 parts batched independently of their animation pivots. The shared rope bridge's
 sag is mirrored by `groundAt()` in the game scene. See `docs/knowledge/reliquia.md`.
+
+
+## Expedition options
+
+The shared lobby configures Selva/Tepuy temple variants, difficulty, shared or
+individual carried lanterns, one/two/three simultaneous ordinary mummies,
+pressure-plate density, revives, the minimap, objective hints and lanterns.
+Both temple variants preserve the authored route; Tepuy has cooler stone and
+a shifted plate pattern rather than a renamed unrelated map. Pressure plates
+are real mesh hazards: they are safe for three seconds and active for two,
+with staggered phases. Three/six/nine plates implement density. Their positions
+and timing come from the same pure rules used for damage. A hit has a
+1.2-second per-player trap cooldown. Dodging also protects against plate hits.
+
+Difficulty changes enemy health, damage and movement speed. The mummy choice
+caps ordinary mummies independently of the guardian. With revives disabled,
+fallen teammates remain out and surviving panas can extract without them.
+Turning hints off removes the mission steps and objective compass, but nearby
+interaction prompts remain usable. A shared carried lantern follows the first
+standing pana; individual lanterns follow each pana. Disabling lanterns hides
+both carried lanterns and the temple lamps/light pools.
+
+Only the host changes these options before a run. Snapshots, practice, replays
+and lobby or live host migration preserve the choices. Rooms retain eight
+human seats. The action ledger also covers configure messages so stale room
+choices cannot be replayed after migration.
+
+The mission steps and minimap container have explicit `[hidden]` display rules.
+The steps grid would otherwise override the browser hidden style and reveal
+hints when that option is off.

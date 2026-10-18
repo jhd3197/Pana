@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { Arena, blocked, cleanInput, segmentBox, COVER, SIZE } from '../public/rules.js';
 const arena = () => { const g = new Arena(); g.add(1, { name: 'A', avatar: {} }); g.add(2, { name: 'B', avatar: {} }); g.start(); return g; };
 test('inputs are finite, bounded and diagonal movement is normalized', () => {
-  assert.deepEqual(cleanInput(null), { x: 0, z: 0, ax: 0, az: -1, fire: false, reload: false });
+  assert.deepEqual(cleanInput(null), { x: 0, z: 0, ax: 0, az: -1, weapon: 'pistol', fire: false, reload: false });
   const input = cleanInput({ x: 99, z: 99, ax: Infinity, az: NaN, fire: 'yes' }); assert.ok(Math.abs(Math.hypot(input.x, input.z) - 1) < 1e-9); assert.equal(input.fire, false);
 });
 test('movement stops at arena walls and cover, sliding along free axes', () => {
@@ -33,7 +33,7 @@ test('ammo, cooldown, manual reload and automatic reload are enforced', () => {
 });
 test('timer, target score and rematches produce clean rounds', () => {
   const g = arena(); g.time = .01; g.step(.05); assert.equal(g.phase, 'finished');
-  g.start(); assert.equal(g.round, 2); assert.equal(g.time, 120); assert.equal(g.players[0].score, 0);
+  g.start(); assert.equal(g.round, 2); assert.equal(g.time, 180); assert.equal(g.players[0].score, 0);
   g.players[0].score = 10; g.step(.05); assert.equal(g.phase, 'finished'); assert.equal(g.balls.length, 0);
 });
 test('bots move and fire without escaping the playable arena', () => {
@@ -44,7 +44,7 @@ test('bots move and fire without escaping the playable arena', () => {
 
 test('bot marksmanship follows the difficulty; only the lobby or results change it', () => {
   function hits(difficulty) {
-    const g = new Arena('plaza', difficulty); g.add(1, { name: 'Blanco', avatar: {} }); g.add(2, { name: 'Bot', avatar: {}, bot: true });
+    const g = new Arena('plaza', difficulty, { lives: 0 }); g.add(1, { name: 'Blanco', avatar: {} }); g.add(2, { name: 'Bot', avatar: {}, bot: true });
     g.start(); const target = g.players[0], bot = g.players[1];
     for (let n = 0; n < 900; n++) {
       Object.assign(bot, { x: -6, z: -14 }); Object.assign(target, { x: 6, z: -14, shield: 0 });

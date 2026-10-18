@@ -8,6 +8,7 @@
   <title>Curiara · Pana</title>
   <link rel="stylesheet" href="/engine/kit.css">
   <link rel="stylesheet" href="/engine/ui.css">
+  <link rel="stylesheet" href="/engine/room-options.css">
   <link rel="stylesheet" href="style.css">
   <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}</script>
 <link rel="stylesheet" href="/engine/game-lobby.css">
@@ -22,13 +23,13 @@
     <div class="pk-lobby-top"><a class="pk-back" href="/">← Todos los juegos</a><a class="pk-logo" href="/" aria-label="Volver a Pana">PANA</a></div>
     <span class="pk-ribbon">Curiara · Río abajo</span>
     <h1 id="title" class="pk-title">¡Rema, pana, rema!</h1>
-    <p class="pk-copy">Caño de selva, los raudales del Autana y el Río Negro hasta la churuata. Rema en ritmo, lee el chorro y no te voltees.</p>
-    <div class="pk-stats"><div class="pk-stat"><b id="stat-length">950 m</b><span>río abajo</span></div><div class="pk-stat"><b>3</b><span>tramos</span></div><div class="pk-stat"><b>1–8</b><span>panas</span></div></div>
-    <div class="pk-field format-picker"><span class="pk-eyebrow" id="format-label">Formato</span>
-      <div class="pk-seg" role="group" aria-labelledby="format-label"><button type="button" data-format="todos" aria-pressed="true">Todos contra todos</button><button type="button" data-format="parejas" aria-pressed="false">Parejas 2×2</button></div>
+    <p class="pk-copy" data-room-description>Caño de selva, los raudales del Autana y el Río Negro hasta la churuata. Rema en ritmo, lee el chorro y no te voltees.</p>
+    <div class="pk-stats" data-room-description><div class="pk-stat"><b id="stat-length">950 m</b><span>río abajo</span></div><div class="pk-stat"><b>3</b><span>tramos</span></div><div class="pk-stat"><b>1–8</b><span>panas</span></div></div>
+    <div class="pk-field format-picker" data-room-personal><span class="pk-eyebrow" id="format-label">Tu puesto</span>
       <p id="format-copy" class="format-copy">Una curiara por pana. Ocho curiaras en el agua.</p>
-      <div id="seats" class="seat-grid hidden" role="group" aria-label="Elige tu puesto"></div>
-      <label class="pk-check"><input id="bots" type="checkbox" checked> Completar con remeros del río</label></div>
+      <div id="seats" data-pana-roster hidden aria-label="Elige tu puesto"></div>
+      <label class="pk-check" data-room-extra><input id="bots" type="checkbox" checked> Completar con remeros del río</label></div>
+    <div id="room-options" aria-label="Ajustes de la sala"></div>
     <div class="pk-lobby-foot">
       <div class="pk-lobby-room"><span class="pk-dot"></span><span id="connection" role="status">Conectando…</span><span class="pk-room-code">Sala <b id="room-code"></b></span></div>
       <button id="practice" class="pk-btn pk-btn--ghost pk-btn--sm practice hidden">Remar en local</button>

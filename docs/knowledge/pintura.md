@@ -3,13 +3,13 @@
 The player-facing name is Pepazo. Keep `/g/pintura/`, the `pintura` room type,
 debug handles and stored IDs unchanged so existing links continue to work.
 
-`/g/pintura/` is an eight-seat, server-simulated free-for-all. The own Colyseus
+`/g/pintura/` is an eight-seat, server-simulated arena with team and free-for-all modes. The own Colyseus
 room extends `PanaRoom`; `Arena` in `public/rules.js` also runs local practice.
 The host only starts rounds. Its departure cannot interrupt simulation.
 
 ## Rules and input
 
-- Two minutes or ten paint hits; ties share victory. One hit eliminates a pana
+- Three minutes by default or ten paint hits; ties share victory. One hit eliminates a pana
   for 2.5 seconds. Spawn protection lasts 1.5 seconds and firing cancels it.
 - Twelve paintballs, 0.25-second firing interval, 1.3-second reload. Empty
   magazines reload automatically. Server ticks are 50 ms.
@@ -84,3 +84,29 @@ Puerto Coco, Hato del Sol and Ruinas del Mango are available in the lobby.
 The host chooses the setting; the selected map follows snapshots, practice,
 late joins and host changes. See [shared-arenas.md](shared-arenas.md) for
 layout variants, collision, table clearance, lifecycle and verification.
+
+
+## Room options and team play
+
+The shared lobby offers free-for-all or two alternating-seat teams, three/five
+minutes, one/three/unlimited lives, sticky paint, permitted markers, friendly
+fire, faster reloads and capture-the-flag. Eight seats remain available. Teams
+share a color and score. A finite-life player stays out after the last hit;
+the surviving player/team wins even if its hit count is lower. Disconnecting
+alone does not end an otherwise live round. The server alone validates settings
+and accepts them only outside a running round.
+
+Pistols fire every 0.25 seconds; the automatic marker every 0.13 seconds; the
+scatter marker sends three shorter-range balls every 0.75 seconds. Keyboard
+1/2/3 or the shared pause menu selects the marker; pistol-only rooms override
+that input. Fast reload is 0.55 seconds instead of 1.3. Sticky paint slows the
+victim for seven seconds including the respawn wait. Friendly hits can consume
+a life when enabled but never award points.
+
+Flag mode uses two teams even when the ordinary mode is free-for-all. Pick up
+the rival flag by touching it, then return to your base while your own flag is
+home. Touching a dropped friendly flag returns it; getting painted drops a
+carried flag. Three captures win, or the clock/finite-life victory ends the
+round. Flags and team scores are authoritative snapshot data and have 3D meshes.
+
+Team and flag lobbies show the shared avatar roster, with four orange and four turquoise positions. Stable `player.seat` positions are separate from network IDs; team is seat parity. Any connected pana can move their own card, including swapping an occupied position; only the host can arrange other players. The server rejects live-round moves and preserves choices through start, rematch and host departure. With multiple humans, both teams need a player before starting; solo practice still fills bots. Reconnecting into a full arena cannot duplicate another player's position.

@@ -15,6 +15,7 @@ async function open(game, debug, room, mobile = false) {
   const page = await context.newPage(); page.on('pageerror', e => errors.push(`${game}: ${e.message}`));
   await page.goto(`${base}/g/${game}/?room=${room}&debug`, { waitUntil: 'domcontentloaded' });
   await wait(page, debug => window[debug]?.room.connected && (debug !== 'caidaDebug' || window[debug].world), debug);
+  await wait(page, () => window.PANA_LOBBY_LOADING === false);
   return page;
 }
 const state = (page, debug) => page.evaluate(debug => window[debug].room.state, debug);
@@ -39,6 +40,8 @@ try {
     const code = `${game.slice(0, 2)}-${Date.now().toString(36)}`, a = await open(game, debug, code), b = await open(game, debug, code);
     await wait(a, debug => window[debug].room.isHost, debug);
     await wait(b, () => document.querySelector('#map-choice').disabled);
+    const advancedMap = ['billar', 'caida'].includes(game);
+    if (advancedMap) await a.locator('#pana-room-more').click();
     for (const mapId of maps) {
       await a.selectOption('#map-choice', mapId);
       for (const page of [a, b]) await wait(page, ({ debug, mapId }) => {
@@ -49,6 +52,7 @@ try {
     }
     await attemptMap(b, game, debug, 'puerto'); await a.waitForTimeout(350);
     assert.equal((await state(a, debug)).mapId, 'ruinas');
+    if (advancedMap) await a.locator('#pana-room-done').click();
     await a.locator('#start').click(); await wait(b, debug => window[debug].room.state.phase !== 'lobby', debug);
     await attemptMap(a, game, debug, 'hato'); await a.waitForTimeout(350);
     assert.equal((await state(b, debug)).mapId, 'ruinas');
@@ -62,6 +66,7 @@ try {
     await leave(newcomer, debug); await leave(b, debug);
     console.log(`ok: ${game} all maps agree across peers; guest/mid-round rejection; late join and host change`);
     const mobile = await open(game, debug, `${code}-phone`, true);
+    if (advancedMap) await mobile.locator('#pana-room-more').click();
     for (const mapId of maps) {
       await mobile.selectOption('#map-choice', mapId);
       await wait(mobile, ({ debug, mapId }) => window[debug].room.state.mapId === mapId, { debug, mapId });
@@ -69,6 +74,7 @@ try {
     await mobile.locator('#map-choice').scrollIntoViewIfNeeded();
     assert.equal(await mobile.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
     await mobile.screenshot({ path: `${out}/${game}-phone-picker.png` });
+    if (advancedMap) await mobile.locator('#pana-room-done').click();
     await mobile.locator(game === 'billar' ? '#practice' : '#start').click({ timeout: 30000 });
     await wait(mobile, debug => window[debug].room.state.phase !== 'lobby', debug);
     assert.equal((await state(mobile, debug)).mapId, 'ruinas');

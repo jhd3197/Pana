@@ -5,8 +5,12 @@ import { createGameMenu, toggleMute } from '/engine/ui.js';
 import { holdButton } from '/engine/touch.js';
 import { ICONS } from '/engine/icons.js';
 import { createMapPicker } from '/engine/map-picker.js';
-import { createDifficultyPicker, difficultyInfo, DIFFICULTIES } from '/engine/difficulty.js';
+import { difficultyInfo, DIFFICULTIES } from '/engine/difficulty.js';
+import { createRoomOptions } from '/engine/room-options.js';
+import { optionDefaults } from '/engine/room-options-rules.js';
+import { CRIOLLAS_OPTIONS, criollasOptions } from './options.js';
 import { fillRoster } from '/engine/results.js';
+import { createLobbyRoster } from '/engine/lobby-roster.js';
 import { sound } from '/engine/fx.js';
 import { aimAt, clamp, measure, distance } from '/engine/bolas-criollas.js';
 import { CriollasRoom } from './network.js';
@@ -31,15 +35,16 @@ const room = new CriollasRoom({ code, name: loadName(), avatar: loadAvatar(), on
     $('recovery').hidden = !failed || room.state.phase === 'lobby'; render(room.state);
   },
 });
+const teamRoster = createLobbyRoster($('lobby-roster'), { onMove: (from, to) => room.action('swap', { from, to }) });
 room.state.players[0] = { id: null, name: loadName(), avatar: loadAvatar() };
 const menu = createGameMenu({ title: 'Bolas Criollas', orientation: 'libre', sound,
   note: () => room.offline ? 'La partida está en pausa.' : 'La sala sigue jugando mientras estás en el menú.',
   controls: [['Ratón / dedo', 'Toca la cancha para dirigir la bola'], ['← →', 'Afina la dirección'], ['↑ ↓', 'Ajusta la fuerza'], ['Espacio / Enter', 'Lanza tu bola'], ['C', 'Cambia la cámara'], ['M', 'Sonido'], ['Esc', 'Menú']],
   tips: [
-    'Reglas de la casa: dos equipos, rojos y verdes, con ocho bolas cada uno. Cada pana lanza cuatro; los bots cubren los puestos libres. Los jugadores del mismo equipo se alternan.',
+    'Reglas de la casa: dos equipos de tres, rojos y verdes. Cada pana lanza dos o cuatro bolas; los bots cubren los puestos libres. Los compañeros rotan sus lanzamientos.',
     'El mingo se coloca automáticamente al comenzar la mano. Arrima tu bola lo más cerca posible o usa un boche rastrero para desplazar las otras bolas. El mingo también se mueve con los golpes.',
     'Juega el equipo que está más lejos del mingo. Si ya no le quedan bolas, juega el otro. Un empate de distancia alterna el equipo que lanza.',
-    'Al gastar las dieciséis bolas, el equipo más cercano suma un tanto por cada bola más cerca del mingo que la mejor del rival. A igual distancia, la mano no da tantos.',
+    'Al gastar todas las bolas, el equipo más cercano suma un tanto por cada bola más cerca del mingo que la mejor del rival. A igual distancia, la mano no da tantos.',
     'Las bolas que cruzan la línea quedan fuera. Si sale el mingo, la mano es nula: nadie suma. El anfitrión abre la siguiente mano o la revancha.',
     'Gana quien llegue a la meta elegida, 12 o 24 tantos. Esta versión casual usa una cancha compacta, mingo automático y boches por el suelo.',
     'La línea de tiro indica dónde frenaría la bola si no chocara. En Fácil muestra también los choques y dónde quedan las bolas; en Difícil y Experto se acorta. Cambiar a boche aumenta la velocidad: baja la fuerza si quieres mantener la misma distancia.',
@@ -64,7 +69,12 @@ function setting(action, key, value) {
 }
 function setDifficulty(value) { setting('difficulty', 'difficulty', value); }
 const mapPicker = createMapPicker($('map-picker'), mapId => setting('map', 'mapId', mapId), { courts: true });
-const difficultyPicker = createDifficultyPicker($('difficulty-picker'), setDifficulty);
+function changeOptions(patch, resetMap = false) {
+  if (room.connected) room.action('options', { options: patch, resetMap });
+  else { const next = criollasOptions(room.state, patch); if (next) { Object.assign(room.state, next); if (resetMap) room.state.mapId = 'plaza'; room.state.remaining.fill(room.state.ballsPerPlayer); render(room.state); } }
+}
+const roomOptions = createRoomOptions($('room-options'), { title: 'Bolas Criollas', fields: CRIOLLAS_OPTIONS,
+  change: changeOptions, reset: () => changeOptions(optionDefaults(CRIOLLAS_OPTIONS), true) });
 $('start').onclick = () => {
   if (!room.connected) {
     if (connecting) return; connecting = true;
@@ -77,10 +87,6 @@ for (const id of ['practice', 'fallback']) $(id).onclick = () => {
   room.practice();
 };
 $('next').onclick = () => room.action(room.state.phase === 'finished' ? 'start' : 'next');
-for (const button of $('target-options').children) button.onclick = () => {
-  if (room.connected) room.action('target', { target: Number(button.dataset.target) });
-  else { room.state.target = Number(button.dataset.target); render(room.state); }
-};
 for (const button of $('shot-options').children) button.onclick = () => {
   if (!ownTurn()) return; shot.mode = button.dataset.mode; render(room.state);
 };
@@ -117,14 +123,15 @@ function render(g) {
   $('invite-slot').hidden = !room.connected || room.offline;
   $('start').textContent = connecting ? 'Conectando…' : !room.connected ? 'Jugar online' : room.isHost ? '¡A jugar!' : 'El anfitrión empieza';
   $('start').disabled = connecting || room.connected && !room.isHost;
-  for (const button of $('target-options').children) { button.setAttribute('aria-pressed', String(Number(button.dataset.target) === g.target)); button.disabled = room.connected && !room.isHost; }
+  roomOptions.update(g, lobby && (!room.connected || room.isHost));
+  if (!lobby && roomOptions.isOpen) roomOptions.close();
   // The court's surroundings follow the state, not the frame loop (hidden tabs don't draw).
   if (g.mapId && world.venue !== g.mapId) world.setVenue(g.mapId);
   mapPicker.update(g.mapId, lobby && (!room.connected || room.isHost));
-  difficultyPicker.update(g.difficulty, lobby && (!room.connected || room.isHost));
   $('guide-note').textContent = difficultyInfo(g.difficulty).note;
   $('side-controls').hidden = $('power-bar').hidden = lobby;
-  if (lobby) fillRoster($('lobby-roster'), g.players.map((p, i) => ({ name: p.name, detail: `${TEAM_NAMES[i % 2]}${p.id === null && (room.connected || i > 0) ? ' · bot' : ''}`, me: p.id !== null && p.id === room.id || !room.connected && i === 0 })));
+  $('lobby-roster').hidden = !lobby;
+  if (lobby) teamRoster.update(TEAM_NAMES.map((title, team) => ({ id: team, title, color: team ? '#299e72' : '#ed5949', seats: g.players.map((player, key) => ({ key, player: { ...player, bot: player.id === null } })).filter(s => s.key % 2 === team) })), { ownId: room.id, hostId: room.hostId, enabled: room.connected, canArrange: room.isHost, members: room.link?.state.players || [...room.members.values()] });
   for (let t = 0; t < 2; t++) { $(`score-${t}`).textContent = g.scores[t]; $(`left-${t}`).textContent = `${g.remaining.reduce((sum, n, i) => sum + (i % 2 === t ? n : 0), 0)} bolas por tirar`; }
   $('hand-number').textContent = `MANO ${g.hand}`; $('target-label').textContent = `A ${g.target} tantos`;
   const player = g.players[g.turn];
@@ -161,7 +168,7 @@ function frame(now) {
 }
 if (roomFromUrl()) connecting = true;
 render(room.state); if (roomFromUrl()) room.connect(); requestAnimationFrame(frame);
-addEventListener('pagehide', () => { stopped = true; clearInterval(timer); clearTimeout(toastTimer); room.dispose(); world.dispose(); }, { once: true });
+addEventListener('pagehide', () => { stopped = true; clearInterval(timer); clearTimeout(toastTimer); teamRoster.dispose(); room.dispose(); world.dispose(); }, { once: true });
 if (params.has('debug')) window.criollasDebug = { room, world, menu, get shot() { return shot; } };
 
 await prepareScene(world);

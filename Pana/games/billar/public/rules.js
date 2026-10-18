@@ -1,6 +1,8 @@
 import { validArena } from '../../../engine/arena-layouts.js';
 import { DEFAULT_DIFFICULTY, validDifficulty, difficultyInfo } from '../../../engine/difficulty.js';
 import { rng } from '../../../engine/random.js';
+import { canMoveSeats } from '../../../engine/seat-rules.js';
+import { defaultPoolOptions, poolOptions, teamOf, occupiedSeats, canStartPool, poolConnected, nextShooter, passPoolTurn, winPoolRack } from './match-rules.js';
 
 // Casual eight-ball house rules. All physics uses fixed steps in table units.
 export const WIDTH = 1000, HEIGHT = 500, RADIUS = 11, POCKET_RADIUS = 25, STEP = 1 / 240;
@@ -14,34 +16,47 @@ const FRICTION = 205, CUSHION = .84, CONTACT = .98, FOLLOW = .62, ENGLISH = .22;
 export const BOT_ID = 'bot';
 export const botPlayer = () => ({ id: BOT_ID, name: 'Pana Bot', avatar: { outfit: 'deportivo', outfitColor: '#3b8bff' }, bot: true });
 
-export function rack() {
+export function rack(variant = 'eight') {
   const balls = [ball(0, 250, 250)], order = [1, 9, 2, 10, 8, 3, 4, 11, 5, 12, 6, 13, 7, 14, 15];
   let i = 0;
   for (let row = 0; row < 5; row++) for (let col = 0; col <= row; col++) {
     balls.push(ball(order[i++], 690 + row * (RADIUS * 2 + .25) * Math.sqrt(3) / 2, 250 + (col - row / 2) * (RADIUS * 2 + .25)));
   }
-  return balls.sort((a, b) => a.id - b.id);
+  balls.sort((a, b) => a.id - b.id);
+  if (variant === 'nine') {
+    const order = [1, 2, 3, 4, 9, 5, 6, 7, 8]; let n = 0;
+    for (const [row, count] of [1, 2, 3, 2, 1].entries()) for (let col = 0; col < count; col++) {
+      Object.assign(balls[order[n++]], { x: 690 + row * (RADIUS * 2 + .25) * Math.sqrt(3) / 2, y: 250 + (col - (count - 1) / 2) * (RADIUS * 2 + .25) });
+    }
+    for (const b of balls) if (b.id > 9) b.pocketed = true;
+  }
+  return balls;
 }
 
 // practice: one pana clears the whole rack. bot: a full match against Pana Bot.
 export function createGame(practice = false, { bot = false } = {}) {
-  const players = [0, 1].map(() => ({ id: null, name: 'Esperando pana', avatar: {} }));
+  const players = Array.from({ length: 6 }, () => ({ id: null, name: 'Esperando pana', avatar: {} }));
   if (bot) players[1] = botPlayer();
   return { phase: 'lobby', mapId: 'plaza', difficulty: DEFAULT_DIFFICULTY, practice: practice && !bot, bot, players,
     balls: rack(), groups: [null, null], turn: 0, revision: 0, round: 0, shots: 0, ballInHand: false,
+    options: defaultPoolOptions(), activeSeats: [], teamTurns: [-1, -1], scores: [0, 0], breaker: 0, turnElapsed: 0,
     shot: null, result: null, message: 'La mesa está lista.' };
 }
 
 export function remaining(state, seat) {
-  return state.balls.filter(b => !b.pocketed && b.id !== 0 && b.id !== 8 && (state.practice || !state.groups[seat] || groupOf(b.id) === state.groups[seat]));
+  if (state.options.variant === 'nine') return state.balls.filter(b => !b.pocketed && b.id > 0);
+  const group = state.groups[teamOf(seat)];
+  return state.balls.filter(b => !b.pocketed && b.id !== 0 && b.id !== 8 && (state.practice || !group || groupOf(b.id) === group));
 }
 export function legalTarget(state, id, seat = state.turn) {
   if (id === 0) return false;
+  if (state.options.variant === 'nine') return id === Math.min(...remaining(state, seat).map(b => b.id));
   if (id === 8) return remaining(state, seat).length === 0;
-  return state.practice || !state.groups[seat] || groupOf(id) === state.groups[seat];
+  return state.practice || !state.groups[teamOf(seat)] || groupOf(id) === state.groups[teamOf(seat)];
 }
 export function canPlace(state, x, y) {
   return Number.isFinite(x) && Number.isFinite(y) && x >= RADIUS && x <= WIDTH - RADIUS && y >= RADIUS && y <= HEIGHT - RADIUS
+    && (!state.ballInHand || state.options.foulPlacement !== 'kitchen' || x <= WIDTH / 4)
     && POCKETS.every(([px, py]) => Math.hypot(x - px, y - py) > POCKET_RADIUS + RADIUS)
     && state.balls.every(b => b.id === 0 || b.pocketed || Math.hypot(x - b.x, y - b.y) >= RADIUS * 2 + .2);
 }
@@ -58,6 +73,30 @@ function respot(state, id, preferredX = 690) {
 
 export function acceptAction(state, id, action, hostId) {
   if (!action || action.revision !== state.revision) return false;
+  if (action.action === 'reset-options') {
+    if (id !== hostId || state.phase !== 'lobby') return false;
+    Object.assign(state, { options: defaultPoolOptions(), mapId: 'plaza', difficulty: DEFAULT_DIFFICULTY,
+      scores: [0, 0], balls: rack(), revision: state.revision + 1 });
+    return true;
+  }
+  if (action.action === 'setup') {
+    if (id !== hostId || state.phase !== 'finished') return false;
+    const { players, options, mapId, difficulty, practice, bot, revision } = state;
+    Object.assign(state, createGame(practice, { bot }), { players, options, mapId, difficulty, revision: revision + 1, balls: rack(options.variant) });
+    return true;
+  }
+  if (action.action === 'swap') {
+    if (state.phase !== 'lobby' || !canMoveSeats(state.players, action.from, action.to, id, hostId)) return false;
+    [state.players[action.from], state.players[action.to]] = [state.players[action.to], state.players[action.from]];
+    state.revision++; return true;
+  }
+  if (action.action === 'options') {
+    if (id !== hostId || !['lobby', 'finished'].includes(state.phase)) return false;
+    const options = poolOptions(state.options, action.options); if (!options) return false;
+    state.options = options; state.scores = [0, 0]; if (state.result) state.result.matchFinished = true;
+    if (state.phase === 'lobby') state.balls = rack(options.variant);
+    state.revision++; return true;
+  }
   if (action.action === 'map') {
     if (id !== hostId || state.phase !== 'lobby' || !validArena(action.mapId)) return false;
     state.mapId = action.mapId; state.revision++; return true;
@@ -69,23 +108,31 @@ export function acceptAction(state, id, action, hostId) {
     state.difficulty = action.difficulty; state.revision++; return true;
   }
   if (action.action === 'start') {
-    if (id !== hostId || !['lobby', 'finished'].includes(state.phase) || (!state.practice && state.players.some(p => p.id === null))) return false;
+    if (id !== hostId || !['lobby', 'finished'].includes(state.phase) || !canStartPool(state)) return false;
     const fresh = createGame(state.practice, { bot: state.bot });
+    const continuing = state.phase === 'finished' && state.result?.matchFinished === false;
+    const breaker = continuing ? state.options.breakPolicy === 'alternate' ? 1 - state.breaker : state.options.breakPolicy === 'winner' ? state.result.team : 1 - state.result.team : 0;
     Object.assign(state, fresh, { players: state.players, mapId: state.mapId, difficulty: state.difficulty, revision: state.revision + 1, round: state.round + 1,
-      phase: 'aiming', message: state.practice ? 'Practica: mete las 15 bolas. Deja la ocho para el final.' : '¡A romper! La primera bola legal elige tu grupo.' });
+      options: state.options, balls: rack(state.options.variant), activeSeats: occupiedSeats(state), scores: continuing ? state.scores : [0, 0], breaker,
+      phase: 'aiming', message: state.options.variant === 'nine' ? '¡A romper! Toca primero la bola de menor número y busca la nueve.' : state.practice ? 'Practica: mete las 15 bolas. Deja la ocho para el final.' : '¡A romper! La primera bola legal elige tu grupo.' });
+    state.turn = nextShooter(state, breaker);
+    if (state.options.variant === 'nine') state.message = 'Bola 9: toca primero la bola de menor número. La nueve gana la mesa.';
     return true;
   }
-  if (state.phase !== 'aiming' || state.players[state.turn].id !== id || (!state.practice && state.players.some(p => p.id === null))) return false;
+  if (state.phase !== 'aiming' || state.players[state.turn].id !== id || !poolConnected(state)) return false;
   if (action.action === 'place') {
     if (!state.ballInHand || !canPlace(state, action.x, action.y)) return false;
     Object.assign(state.balls[0], { x: action.x, y: action.y, pocketed: false });
-    state.ballInHand = false; state.revision++; state.message = 'Blanca colocada. Apunta y tira.'; return true;
+    state.ballInHand = false; state.kitchenShot = state.options.foulPlacement === 'kitchen'; state.revision++; state.message = 'Blanca colocada. Apunta y tira.'; return true;
   }
   if (action.action !== 'shoot' || state.ballInHand || !Number.isFinite(action.angle) || !Number.isFinite(action.power) || action.power < .05 || action.power > 1) return false;
+  if (state.options.calledPocket && (!Number.isInteger(action.pocket) || action.pocket < 0 || action.pocket >= POCKETS.length)) return false;
   const spin = action.spin ?? { x: 0, y: 0 };
   if (![spin.x, spin.y].every(v => Number.isFinite(v) && Math.abs(v) <= 1)) return false;
   state.shot = { first: null, rail: false, pocketed: [], elapsed: 0, eligible: remaining(state, state.turn).length === 0, breaking: state.shots === 0,
-    spin: { x: spin.x, y: spin.y }, dir: { x: Math.cos(action.angle), y: Math.sin(action.angle) }, english: 2 };
+    spin: { x: spin.x, y: spin.y }, dir: { x: Math.cos(action.angle), y: Math.sin(action.angle) }, english: 2,
+    lowest: Math.min(...remaining(state, state.turn).map(b => b.id)), called: action.pocket ?? null, pockets: {}, kitchen: !!state.kitchenShot, crossed: false, kitchenFoul: false };
+  state.kitchenShot = false;
   const speed = 180 + action.power * 1600;
   state.balls[0].vx = Math.cos(action.angle) * speed; state.balls[0].vy = Math.sin(action.angle) * speed;
   state.phase = 'rolling'; state.shots++; state.revision++; state.message = 'Bolas en movimiento…';
@@ -93,31 +140,42 @@ export function acceptAction(state, id, action, hostId) {
 }
 
 export function finishShot(state) {
-  const shot = state.shot, seat = state.turn;
+  const shot = state.shot, seat = state.turn, team = teamOf(seat);
   const scratch = shot.pocketed.includes(0);
-  let foul = scratch ? 'La blanca cayó.' : shot.first === null ? 'La blanca no tocó ninguna bola.'
+  const called = id => !state.options.calledPocket || shot.pockets?.[id] === shot.called;
+  if (state.options.variant === 'nine') {
+    const foul = scratch || shot.kitchenFoul || shot.first !== shot.lowest || (!shot.rail && !shot.pocketed.length);
+    if (shot.pocketed.includes(9) && !foul && called(9)) { winPoolRack(state, team, '¡La nueve entró limpia!'); return; }
+    if (shot.pocketed.includes(9)) respot(state, 9);
+    const keep = !foul && shot.pocketed.some(id => id > 0 && id !== 9 && called(id));
+    passPoolTurn(state, keep); state.ballInHand = foul;
+    if (scratch) respot(state, 0, 200);
+    state.phase = 'aiming'; state.shot = null; state.revision++;
+    state.message = foul ? 'Falta. Coloca la blanca.' : keep ? 'Buena bola. Sigue tu equipo.' : 'Cambio de turno.';
+    return;
+  }
+  let foul = scratch ? 'La blanca cayó.' : shot.kitchenFoul ? 'La blanca debe salir de la cocina antes de tocar una bola.' : shot.first === null ? 'La blanca no tocó ninguna bola.'
     : shot.first === 8 ? !shot.eligible ? 'Tocaste la ocho antes de tiempo.' : ''
-      : !state.practice && state.groups[seat] && groupOf(shot.first) !== state.groups[seat] ? 'Tocaste primero una bola rival.' : '';
+      : !state.practice && state.groups[team] && groupOf(shot.first) !== state.groups[team] ? 'Tocaste primero una bola rival.' : '';
   if (!foul && !shot.rail && !shot.pocketed.length) foul = 'Ninguna bola llegó a una banda después del contacto.';
   const eight = shot.pocketed.includes(8);
   if (eight && shot.breaking) respot(state, 8);
   else if (eight) {
-    const won = shot.eligible && !foul;
-    state.result = { winner: won ? seat : state.practice ? null : 1 - seat,
-      reason: won ? '¡La ocho entró limpia!' : scratch ? 'La ocho entró con la blanca.' : 'La ocho entró antes de tiempo.' };
-    state.phase = 'finished'; state.message = state.result.reason; state.shot = null; state.revision++; return;
+    const won = shot.eligible && !foul && called(8);
+    winPoolRack(state, won ? team : state.practice ? null : 1 - team,
+      won ? '¡La ocho entró limpia!' : scratch ? 'La ocho entró con la blanca.' : !called(8) ? 'La ocho entró en otra tronera.' : 'La ocho entró antes de tiempo.'); return;
   }
-  if (!state.practice && !state.groups[seat] && !foul) {
-    const first = shot.pocketed.find(id => groupOf(id));
-    if (first) { state.groups[seat] = groupOf(first); state.groups[1 - seat] = groupOf(first) === 'solids' ? 'stripes' : 'solids'; }
+  if (!state.practice && !state.groups[team] && !foul) {
+    const first = shot.pocketed.find(id => groupOf(id) && called(id));
+    if (first) { state.groups[team] = groupOf(first); state.groups[1 - team] = groupOf(first) === 'solids' ? 'stripes' : 'solids'; }
   }
-  const keep = !foul && shot.pocketed.some(id => groupOf(id) && (state.practice || groupOf(id) === state.groups[seat]));
-  if (!state.practice && !keep) state.turn = 1 - seat;
+  const keep = !foul && shot.pocketed.some(id => groupOf(id) && called(id) && (state.practice || groupOf(id) === state.groups[team]));
+  passPoolTurn(state, keep);
   state.ballInHand = !!foul;
   if (scratch) respot(state, 0, 250);
   state.phase = 'aiming'; state.shot = null; state.revision++;
   state.message = foul ? `${foul} ${state.practice ? 'Coloca la blanca y sigue.' : 'Bola en mano para tu rival.'}`
-    : eight && shot.breaking ? 'La ocho vuelve a la mesa después del saque.' : keep ? '¡Buena bola! Sigue tu turno.' : 'Cambio de turno.';
+    : eight && shot.breaking ? 'La ocho vuelve a la mesa después del saque.' : keep ? '¡Buena bola! Sigue tu equipo.' : 'Cambio de turno.';
 }
 
 export function step(state) {
@@ -126,8 +184,10 @@ export function step(state) {
   shot.elapsed += STEP;
   for (const b of live) {
     b.x += b.vx * STEP; b.y += b.vy * STEP;
-    if (POCKETS.some(([x, y]) => Math.hypot(b.x - x, b.y - y) < POCKET_RADIUS)) {
-      b.pocketed = true; b.vx = b.vy = 0; shot.pocketed.push(b.id); continue;
+    if (b.id === 0 && b.x > WIDTH / 4) shot.crossed = true;
+    const pocket = POCKETS.findIndex(([x, y]) => Math.hypot(b.x - x, b.y - y) < POCKET_RADIUS);
+    if (pocket >= 0) {
+      b.pocketed = true; b.vx = b.vy = 0; shot.pocketed.push(b.id); shot.pockets[b.id] = pocket; continue;
     }
     let rail = false;
     if (b.x < RADIUS) { b.x = RADIUS; b.vx = Math.abs(b.vx) * CUSHION; rail = true; }
@@ -150,6 +210,7 @@ export function step(state) {
     a.vx -= impulse * nx; a.vy -= impulse * ny; b.vx += impulse * nx; b.vy += impulse * ny;
     if (shot.first === null && (a.id === 0 || b.id === 0)) {
       shot.first = a.id === 0 ? b.id : a.id;
+      shot.kitchenFoul = shot.kitchen && !shot.crossed;
       // Follow (top spin) keeps the cue ball rolling on; draw pulls it back.
       const cue = a.id === 0 ? a : b, follow = (shot.spin?.y || 0) * FOLLOW * impulse;
       if (shot.dir) { cue.vx += shot.dir.x * follow; cue.vy += shot.dir.y * follow; }
@@ -166,6 +227,15 @@ export function step(state) {
     state.balls.forEach(b => { b.vx = b.vy = 0; }); finishShot(state); return true;
   }
   return false;
+}
+
+export function advanceShotClock(state, dt) {
+  if (state.phase !== 'aiming' || !state.options.shotSeconds || !poolConnected(state)) return false;
+  state.turnElapsed += Math.max(0, dt);
+  if (state.turnElapsed < state.options.shotSeconds) return false;
+  passPoolTurn(state); state.ballInHand = true; state.revision++;
+  state.message = 'Se acabó el tiempo. Bola en mano para el otro equipo.';
+  return true;
 }
 
 // Find the first contact for the visible aim guide; no prediction through balls.
@@ -247,20 +317,22 @@ function clearPath(state, ax, ay, bx, by, ignore) {
 }
 function plans(state, from = state.balls[0]) {
   const out = [];
+  const kitchen = state.kitchenShot || state.ballInHand && state.options.foulPlacement === 'kitchen';
   for (const t of state.balls) {
     if (t.pocketed || !legalTarget(state, t.id)) continue;
-    for (const [px, py] of POCKETS) {
+    for (const [pocket, [px, py]] of POCKETS.entries()) {
       const mx = px + (px === 0 ? 8 : px === WIDTH ? -8 : 0), my = py + (py <= 0 ? 8 : -8);
       let ux = mx - t.x, uy = my - t.y; const far = Math.hypot(ux, uy); ux /= far; uy /= far;
       const gx = t.x - ux * RADIUS * 2, gy = t.y - uy * RADIUS * 2;
       if (gx < RADIUS || gx > WIDTH - RADIUS || gy < RADIUS || gy > HEIGHT - RADIUS) continue;
+      if (kitchen && gx <= WIDTH / 4) continue;
       const near = Math.hypot(gx - from.x, gy - from.y); if (near < 1) continue;
       const cut = ((gx - from.x) * ux + (gy - from.y) * uy) / near;
       if (cut < .3 || !clearPath(state, from.x, from.y, gx, gy, [0, t.id]) || !clearPath(state, t.x, t.y, mx, my, [0, t.id])) continue;
       const objectSpeed = Math.sqrt(2 * FRICTION * far * 1.25 + 60 * 60), cueSpeed = objectSpeed / (CONTACT * cut);
       const power = (Math.sqrt(cueSpeed * cueSpeed + 2 * FRICTION * near) * 1.12 - 180) / 1600;
       if (power > 1) continue;
-      out.push({ angle: Math.atan2(gy - from.y, gx - from.x), power: Math.max(.12, power), score: cut * cut * 1000 / (near + far * 1.4 + 60) });
+      out.push({ angle: Math.atan2(gy - from.y, gx - from.x), pocket, power: Math.max(.12, power), score: cut * cut * 1000 / (near + far * 1.4 + 60) });
     }
   }
   return out.sort((a, b) => b.score - a.score);
@@ -273,9 +345,10 @@ export function botShot(state, seed = state.round * 977 + state.shots * 31) {
   if (!shot) {
     // Safety: roll firmly into the nearest legal ball so something reaches a cushion.
     const t = state.balls.filter(b => !b.pocketed && legalTarget(state, b.id)).sort((a, b) => Math.hypot(a.x - cue.x, a.y - cue.y) - Math.hypot(b.x - cue.x, b.y - cue.y))[0];
-    shot = { angle: t ? Math.atan2(t.y - cue.y, t.x - cue.x) : random() * Math.PI * 2, power: .55 };
+    const bank = state.kitchenShot && t && t.x - RADIUS * 2 <= WIDTH / 4;
+    shot = { angle: t ? Math.atan2(t.y - cue.y, (bank ? 2 * (WIDTH - RADIUS) - t.x : t.x) - cue.x) : random() * Math.PI * 2, power: bank ? .85 : .55 };
   }
-  return { angle: shot.angle + noise() * error, power: Math.max(.05, Math.min(1, shot.power * (1 + noise() * error * 3))), spin: { x: 0, y: 0 } };
+  return { angle: shot.angle + noise() * error, power: Math.max(.05, Math.min(1, shot.power * (1 + noise() * error * 3))), spin: { x: 0, y: 0 }, pocket: shot.pocket ?? 0 };
 }
 // Ball in hand: the free spot that leaves the best straight shot.
 export function botPlacement(state) {

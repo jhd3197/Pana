@@ -34,6 +34,43 @@ switching a live hero loses the old WebGL context. The player's 3D editor import
 `pana.js` on opening Mi pana and stops rendering while hidden. Real game scenes
 and the shared avatar models are unchanged.
 
+## Shared game-room lobby
+
+`engine/game-entry.js` owns the illustrated room shell used after choosing a
+game. The header has the room code and the shared `#pana-lobby-invite` Copiar
+link button, using `inviteUrl()` so personal/debug/host parameters never leak
+into an invitation. Existing footer invite controls are hidden in this shell;
+in-game invitations remain available through the shared pause menu.
+
+The host keeps the game's original start button and its existing permission
+and rule checks. Guests see the shared ready toggle instead of a disabled host
+start button. Everyone begins ready, but assets count as loaded only after
+`sceneReady`/preparation completes. The shell blocks start clicks and document
+Space/Enter shortcuts until every connected member is ready and loaded. A
+focused roster/settings button receives its native click without also invoking
+the game's start shortcut. Once loaded and ready, the host's redundant ready
+button hides; guests can toggle between ready and waiting.
+
+Before revealing the prepared lobby, entry adopts controls marked
+`data-room-primary`, `data-room-extra` and `data-room-help` through the shared
+room-options component. Primary choices stay in the settings panel; extras and
+help move into Más ajustes. That single button is always the final settings
+entry. Markup keeps its original IDs/listeners and the game remains responsible
+for host authorization, synchronized values and resets.
+
+Game-owned `[data-pana-roster]` containers move to the left roster area, hiding
+generic member cards while visible. `[data-room-personal]` controls move there
+too. The shared `lobby-roster.js` renderer displays grouped avatar cards;
+`table-seating.js` adapts alternating table indices into teams. Its full group,
+seat and permission API is documented in `pana-ui.md`. Team selection stays in
+these cards rather than a dropdown inside advanced settings.
+
+The original `.pk-lobby-foot` docks into the shared footer, and menu/sound
+buttons dock into the header. Comment placeholders remember each control's
+home. When the original lobby hides, entry restores docked nodes to those
+positions. It only moves a node when its parent/location actually changes:
+re-inserting it on every HUD update loses focus and interrupts clicks.
+
 ## Hosting boundary
 
 All new launcher actions dispatch a cancelable `pana:launch` event on `document`

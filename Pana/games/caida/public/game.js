@@ -1,3 +1,5 @@
+import { createRoomOptions } from '/engine/room-options.js';
+import { FIELDS, DEFAULT_OPTIONS } from './options.js';
 import { prepareScene } from '/engine/game-load.js';
 import { createTableSeating } from '/engine/table-seating.js';
 import { createMapPicker } from '/engine/map-picker.js';
@@ -23,6 +25,7 @@ function notify(text) { $('toast').textContent = text; $('toast').classList.add(
 const room = new CaidaRoom({ code, name: loadName(), avatar: loadAvatar(), onState: render, onNotice: notify,
   onStatus(message, failed) { $('connection').textContent = message; $('practice').hidden = !failed; $('invite').disabled = $('lobby-invite').disabled = !room.connected || room.offline; render(room.state); },
 });
+const optionsUI = createRoomOptions($('room-options'), { title: 'Caída', fields: FIELDS, change: options => room.action('configure', { options }), reset: () => room.action('configure', { options: { ...DEFAULT_OPTIONS, mapId: 'plaza' } }) });
 const seating = createTableSeating($('table-seating'), (from, to) => room.action('seat', { from, to }));
 $('organize-table').onclick = () => room.action('setup');
 const mapPicker = createMapPicker($('map-picker'), mapId => room.action('configure', { options: { mapId } }), { table: true, landmarks: true });
@@ -34,13 +37,13 @@ const menu = createGameMenu({ title: 'Caída · Pana', sound: audio,
     'Gana quien llegue primero a 24 puntos. Son 40 cartas: as, 2, 3, 4, 5, 6, 7, sota (10), caballo (11) y rey (12), en cuatro palos. Los palos no cambian las capturas.',
     'Se dan tres cartas por persona y cuatro cartas distintas a la mesa. El siguiente al repartidor empieza. Cuando todos juegan sus tres cartas, se reparten tres más. El repartidor cambia después de agotar la baraja.',
     'Juega una carta del mismo número que una de la mesa para recoger ambas y todas las consecutivas que le sigan, sin saltos: después del 7 viene la sota. Si no hay coincidencia, tu carta se queda en la mesa.',
-    '¡Caída! Solo si recoges la carta que el jugador anterior acaba de dejar: as a 7, un punto; sota, dos; caballo, tres; rey, cuatro. Recoger una carta vieja no es caída. En parejas no se puntúa una caída al compañero.',
+    '¡Caída! Solo si recoges la carta que el jugador anterior acaba de dejar: as a 7, un punto; sota, dos; caballo, tres; rey, cuatro. Recoger una carta vieja no es caída. En equipos no se puntúa una caída al compañero.',
     'Mesa limpia suma cuatro puntos si aún quedan cartas por repartir. En últimas no vale. En esta mesa, caída y mesa limpia suman juntas.',
     'En cada reparto, quien reparte puede cortar la baraja una vez, boca abajo, y elige empezar por 1 o por 4: 1–2–3–4 o 4–3–2–1. Cada acierto suma el número cantado. Sin aciertos: mal echada, un punto para el siguiente jugador. Los números repetidos se devuelven al fondo antes de continuar.',
     'Cantos clásicos de esta mesa: ronda (pareja), 1–4 según la carta; rondín (tres iguales), 5; patrulla, también llamada patria (tres consecutivas), 6; vigía (pareja y carta adyacente), 7; registro (as, caballo, rey), 8. Solo el canto de mayor valor, antes de jugar tu primera carta. Puedes jugar sin cantarlo.',
     'Aquí no se juega flor, matar cantos ni victoria automática por rondín. Puedes desactivar todos los cantos al abrir la mesa.',
-    'La última persona que recoge se lleva las cartas sobrantes, sin puntos de mesa limpia. Al contar, suma cada carta por encima de 20 en uno contra uno o parejas, 13 con tres personas, y 10 con cuatro individuales. Si varios llegan a 24 al contar, se resuelve desde quien es mano.',
-    'En dos parejas, tu compañero se sienta enfrente y comparten puntos y cartas recogidas. Los puestos vacíos los juegan bots. Un pana nuevo toma un puesto de bot; los demás observan hasta que haya espacio.',
+    'La última persona que recoge se lleva las cartas sobrantes, sin puntos de mesa limpia. Al contar, suma cada carta por encima de 20 en uno contra uno o parejas, 13 con tres personas, 10 con cuatro individuales y 6 con seis individuales. Los equipos de tres usan la base de 20. Si varios llegan a 24 al contar, se resuelve desde quien es mano.',
+    'En parejas o equipos de tres, los compañeros ocupan puestos alternos y comparten puntos y cartas recogidas. Los puestos vacíos los juegan bots. Un pana nuevo toma un puesto de bot; los demás observan hasta que haya espacio.',
   ],
   actions: [{ id: 'new-table', label: 'Abrir otra mesa', run: () => { location.href = '/g/caida/'; } }],
   invite: () => inviteUrl(code),
@@ -51,8 +54,6 @@ $('lobby-invite-slot').replaceWith(menu.createInviteButton({ id: 'lobby-invite',
 $('lobby-room').textContent = `Sala ${code}`;
 $('rules').onclick = () => menu.open('controls'); $('practice').onclick = () => room.practice();
 $('start').onclick = () => { audio.unlock(); room.action('start'); }; $('next-round').onclick = () => room.action('start');
-for (const key of ['mode', 'cantos']) $(key).onchange = () => room.action('configure', { options: { [key]: key === 'cantos' ? $(key).checked : $(key).value } });
-for (const button of document.querySelectorAll('[data-option]')) button.onclick = () => room.action('configure', { options: { [button.dataset.option]: button.dataset.value } });
 let view = 'patio'; $('camera-view').onclick = () => { view = view === 'patio' ? 'mesa' : 'patio'; world?.setView(view); $('camera-view').textContent = view === 'mesa' ? 'Vista del patio' : 'Vista de mesa'; $('camera-view').setAttribute('aria-pressed', String(view === 'mesa')); };
 $('play').onclick = playSelected; $('chant').onclick = () => room.action('chant'); $('hint').onclick = hint;
 $('review').onclick = closeResult; $('round-result').onclick = showResult;
@@ -68,15 +69,15 @@ function hint() {
   notify(`${cardName(card)}: ${preview.points ? `puedes sumar ${preview.points} puntos.` : preview.capture.length ? `recoges ${preview.capture.length + 1} cartas.` : 'la dejas sobre la mesa.'}`);
 }
 function render(state) {
-  seating.update(state.players, { teams: state.options.mode === 'teams', enabled: room.connected && room.isHost && state.phase === 'lobby', ownId: room.id });
+  optionsUI.update(state.options, room.connected && room.isHost && state.phase === 'lobby');
+  if (state.phase !== 'lobby' && optionsUI.isOpen) optionsUI.close();
+  seating.update(state.players, { teams: MODES[state.options.mode].teams, enabled: room.connected && state.phase === 'lobby', canArrange: room.isHost, members: room.link?.state.players || [], ownId: room.id, hostId: room.hostId });
   $('organize-table').disabled = !room.connected || !room.isHost;
-  $('organize-table').textContent = state.options.mode === 'teams' ? 'Cambiar parejas · empezar de cero' : 'Organizar mesa · empezar de cero';
+  $('organize-table').textContent = MODES[state.options.mode].teams ? 'Cambiar equipos · empezar de cero' : 'Organizar mesa · empezar de cero';
   mapPicker.update(state.mapId, ready && room.connected && room.isHost && state.phase === 'lobby');
   document.body.classList.toggle('in-lobby', state.phase === 'lobby'); $('welcome').hidden = state.phase !== 'lobby';
   $('start').disabled = !ready || !room.connected || !room.isHost;
   $('start').textContent = !ready ? 'Preparando la mesa…' : !room.connected ? 'Conectando…' : room.isHost ? 'Abrir la mesa' : 'El anfitrión abre la mesa';
-  for (const key of ['mode', 'cantos']) { $(key).disabled = !room.isHost; if (key === 'cantos') $(key).checked = state.options[key]; else $(key).value = state.options[key]; }
-  for (const button of document.querySelectorAll('[data-option]')) { button.disabled = !room.isHost; button.setAttribute('aria-pressed', String(state.options[button.dataset.option] === button.dataset.value)); }
   $('lobby-roster').textContent = state.players.map(p => p.id === room.id ? 'Tú' : p.name).join(' · ');
   $('round-label').textContent = state.phase === 'lobby' ? 'Mesa abierta' : state.phase === 'dealing' ? `Reparto ${state.round} · preparando` : `Reparto ${state.round} · mano ${state.handNumber}`;
   $('deck-info').textContent = state.phase === 'lobby' ? MODES[state.options.mode].label : `${state.stock.length} por repartir · ${state.table.length} en la mesa`;
@@ -86,8 +87,8 @@ function render(state) {
   state.scores.forEach((score, team) => {
     const players = state.players.filter(p => teamOf(state, p.seat) === team), row = document.createElement('div'); row.className = `score-row${team === ownTeam ? ' active' : ''}`;
     const name = document.createElement('span'), number = document.createElement('strong'), sub = document.createElement('small'), progress = document.createElement('div');
-    name.className = 'score-name pk-eyebrow'; number.className = 'pk-num'; name.textContent = state.options.mode === 'teams' ? team === ownTeam ? 'Nosotros' : 'Ellos' : players[0].id === room.id ? 'Tú' : players[0].name;
-    number.textContent = score; sub.textContent = score >= 12 ? 'En buena' : state.options.mode === 'teams' ? players.map(p => p.name).join(' + ') : `${players[0].captured.length} cartas recogidas`;
+    name.className = 'score-name pk-eyebrow'; number.className = 'pk-num'; name.textContent = MODES[state.options.mode].teams ? team === ownTeam ? 'Nosotros' : 'Ellos' : players[0].id === room.id ? 'Tú' : players[0].name;
+    number.textContent = score; sub.textContent = score >= 12 ? 'En buena' : MODES[state.options.mode].teams ? players.map(p => p.name).join(' + ') : `${players[0].captured.length} cartas recogidas`;
     progress.className = 'progress'; for (let i = 0; i < 24; i++) { const tick = document.createElement('i'); if (i < score) tick.className = 'filled'; progress.append(tick); }
     row.append(name, number, sub, progress); $('scores').append(row);
   });
@@ -110,7 +111,7 @@ function render(state) {
   dealerUI.update(state, ready);
 }
 function positionTools() {
-  document.querySelector('.table-tools').style.top = room.state.phase === 'lobby' ? '' : `${document.querySelector('.scoreboard').getBoundingClientRect().bottom + 10}px`;
+  document.querySelector('.table-tools').style.top = room.state.phase === 'lobby' ? '' : `${Math.max(innerWidth <= 720 ? 106 : 132, document.querySelector('.scoreboard').getBoundingClientRect().bottom + 10)}px`;
 }
 addEventListener('resize', positionTools);
 function renderHand(state) {
@@ -166,6 +167,11 @@ let frameTime = performance.now(); function frame(now) { if (stopped) return; co
 addEventListener('pagehide', () => { stopped = true; clearInterval(timer); clearTimeout(resultTimer); clearTimeout(toastTimer); clearTimeout(announcementTimer); room.dispose(); world?.dispose(); }, { once: true });
 render(room.state); room.connect();
 export const sceneReady = import('./scene.js').then(m => m.createCaidaScene($('world'), { onCard: selectCard, onLoading: text => { $('loading-copy').textContent = text; } })).then(async scene => {
-  if (stopped) { scene.dispose(); return; } world = scene; await prepareScene(world); ready = true; render(room.state); $('loading').hidden = true;
+  if (stopped) { scene.dispose(); return; }
+  // Room snapshots can arrive during compilation. Keep them from replacing
+  // avatar materials until the initial scene has finished preparing.
+  await prepareScene(scene);
+  if (stopped) { scene.dispose(); return; }
+  world = scene; ready = true; render(room.state); $('loading').hidden = true;
 }).catch(error => { console.error(error); $('loading-copy').textContent = 'No pudimos cargar la mesa. Comprueba tu conexión y WebGL.'; const button = document.createElement('button'); button.className = 'pk-btn pk-btn--primary'; button.textContent = 'Volver a intentar'; button.onclick = () => location.reload(); $('loading').append(button); throw error; });
 if (params.has('debug')) window.caidaDebug = { room, menu, CaidaGame, chooseMove, previewPlay, canto, render, get world() { return world; } };

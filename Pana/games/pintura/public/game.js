@@ -1,6 +1,9 @@
+import { createLobbyRoster } from '/engine/lobby-roster.js';
+import { createRoomOptions } from '/engine/room-options.js';
+import { FIELDS, DEFAULT_OPTIONS } from './options.js';
 import { prepareScene } from '/engine/game-load.js';
 import { createMapPicker } from '/engine/map-picker.js';
-import { createDifficultyPicker } from '/engine/difficulty.js';
+import { createDifficultyPicker, DEFAULT_DIFFICULTY } from '/engine/difficulty.js';
 import { loadName, loadAvatar } from '/engine/avatar.js';
 import { inviteUrl, newRoomCode, roomFromUrl } from '/engine/invite.js';
 import { createGameMenu, toggleMute } from '/engine/ui.js';
@@ -9,24 +12,29 @@ import { fillRoster } from '/engine/results.js';
 import { sound } from '/engine/fx.js';
 import { PaintConnection } from './network.js';
 import { createScene } from './scene.js';
-import { coverFor, TARGET, segmentBox } from './rules.js';
+import { coverFor, TARGET, segmentBox, paintSeats } from './rules.js';
 
 const $ = id => document.getElementById(id), code = roomFromUrl() || newRoomCode();
 const params = new URLSearchParams(location.search); params.set('room', code); history.replaceState(null, '', `${location.pathname}?${params}`);
 const held = new Set(), pads = []; let aim = null, firing = false, touchFire = false, queuedFire = false, queuedReload = false, stopped = false, lastPhase = 'lobby', lastAmmo = 12, lastHits = 0;
 const world = createScene($('world'));
+let weapon = 'pistol';
 let cameraView = 'cerca', pointerPosition = null, orbitPointer = null;
 const room = new PaintConnection({ code, name: loadName(), avatar: loadAvatar(), onState: render, onStatus(text, failed = false) {
   $('connection').textContent = text; $('recovery-copy').textContent = text; $('recovery').hidden = !failed || room.state.phase === 'lobby';
+} });
+const teamRoster = createLobbyRoster($('team-roster'), { onMove: (from, to) => room.moveSeat(from, to) });
+const optionsUI = createRoomOptions($('room-options'), { title: 'Pepazo', fields: FIELDS, change: options => room.configure(options), reset() {
+  room.configure(DEFAULT_OPTIONS); room.selectMap('plaza'); room.selectDifficulty(DEFAULT_DIFFICULTY);
 } });
 const mapPicker = createMapPicker($('map-picker'), mapId => room.selectMap(mapId));
 const difficultyPicker = createDifficultyPicker($('difficulty-picker'), difficulty => room.selectDifficulty(difficulty), { label: 'Puntería de los bots',
   notes: { facil: 'Los bots fallan seguido y disparan menos.', normal: 'Bots con buena mano, pero se les va alguna.', dificil: 'Los bots apuntan fino y no sueltan el gatillo.', experto: 'Casi no fallan: muévete y cúbrete.' } });
 const menu = createGameMenu({ title: 'Pepazo · Pana', orientation: 'libre', sound,
-  options: [{ id: 'view', label: 'Cámara', choices: [['cerca', 'Con tu pana'], ['cancha', 'Ver la cancha']], get: () => cameraView, set: value => { cameraView = value; world.setView(value); } }],
+  options: [{ id: 'weapon', label: 'Marcadora (si la sala permite todas)', choices: [['pistol', 'Pistola'], ['scatter', 'Escopeta'], ['rapid', 'Automática']], get: () => weapon, set: value => { weapon = value; } }, { id: 'view', label: 'Cámara', choices: [['cerca', 'Con tu pana'], ['cancha', 'Ver la cancha']], get: () => cameraView, set: value => { cameraView = value; world.setView(value); } }],
   note: () => room.local ? 'La práctica está en pausa.' : 'La ronda online sigue mientras estás en el menú.',
-  controls: [['WASD / Flechas', 'Moverte según la cámara'], ['Ratón / tocar cancha', 'Apuntar'], ['Clic / Espacio', 'Disparar pintura'], ['Q / E · arrastrar con clic derecho', 'Girar la cámara alrededor de tu pana'], ['R', 'Recargar'], ['M', 'Sonido'], ['Esc', 'Menú']],
-  tips: ['Una pintada suma un punto. Gana quien llegue a diez o tenga más al terminar los dos minutos. Si empatan, comparten la victoria.',
+  controls: [['WASD / Flechas', 'Moverte según la cámara'], ['Ratón / tocar cancha', 'Apuntar'], ['Clic / Espacio', 'Disparar pintura'], ['Q / E · arrastrar con clic derecho', 'Girar la cámara alrededor de tu pana'], ['R', 'Recargar'], ['1 / 2 / 3', 'Pistola / escopeta / automática'], ['M', 'Sonido'], ['Esc', 'Menú']],
+  tips: ['Una pintada suma un punto. Gana quien llegue a diez o lidere al terminar el tiempo. Con vidas limitadas también gana el último pana o equipo en pie. En bandera gana el equipo con tres capturas.',
     'Las barricadas frenan las bolas. Tienes doce por carga; recargas con R o automáticamente al vaciarla.',
     'Vuelves a la cancha 2,5 segundos después de una pintada. Al reaparecer tienes 1,5 segundos de protección; disparar la cancela.',
     'En teléfono usa las flechas y mantén Pinta: apuntas al rival visible más cercano. También puedes tocar la cancha para apuntar.',
@@ -49,7 +57,7 @@ for (const [id, direction] of [['view-left', -1], ['view-right', 1]]) pads.push(
 addEventListener('blur', clearInput); document.addEventListener('visibilitychange', () => { if (document.hidden) clearInput(); });
 addEventListener('keydown', event => {
   if (menu.isOpen || event.target.closest?.('input, button, textarea, select, a')) return;
-  const key = event.key.toLowerCase(); if (key === 'm') toggleMute();
+  const key = event.key.toLowerCase(); if (['1', '2', '3'].includes(key)) weapon = ['pistol', 'scatter', 'rapid'][Number(key) - 1]; if (key === 'm') toggleMute();
   if (['w', 'a', 's', 'd', 'q', 'e', 'r', ' ', 'arrowup', 'arrowleft', 'arrowdown', 'arrowright'].includes(key)) { event.preventDefault(); if (active()) { held.add(key); if (key === ' ') queuedFire = true; if (key === 'r') queuedReload = true; } }
 });
 addEventListener('keyup', event => held.delete(event.key.toLowerCase()));
@@ -59,32 +67,43 @@ function input() {
   if (pointerPosition) aim = world.point(...pointerPosition);
   let ax = aim ? aim.x - me.x : me.ax, az = aim ? aim.z - me.z : me.az;
   if (touchFire) {
-    const nearest = room.state.players.filter(p => p.id !== me.id && p.connected && !p.respawn && !p.shield && !coverFor(room.state.mapId).some(o => segmentBox(me.x, me.z, p.x - me.x, p.z - me.z, o) !== null))
+    const nearest = room.state.players.filter(p => p.id !== me.id && p.connected && !p.respawn && !p.eliminated && !p.shield && (!(room.state.options?.mode === 'teams' || room.state.options?.flag) || p.team !== me.team) && !coverFor(room.state.mapId).some(o => segmentBox(me.x, me.z, p.x - me.x, p.z - me.z, o) !== null))
       .sort((a, b) => Math.hypot(a.x - me.x, a.z - me.z) - Math.hypot(b.x - me.x, b.z - me.z))[0];
     if (nearest) { ax = nearest.x - me.x; az = nearest.z - me.z; }
   }
   const length = Math.hypot(ax, az) || 1;
-  return { ...world.movement(Number(held.has('d') || held.has('arrowright')) - Number(held.has('a') || held.has('arrowleft')),
+  return { weapon, ...world.movement(Number(held.has('d') || held.has('arrowright')) - Number(held.has('a') || held.has('arrowleft')),
     Number(held.has('s') || held.has('arrowdown')) - Number(held.has('w') || held.has('arrowup'))),
     ax: ax / length, az: az / length, fire: queuedFire || firing || touchFire || held.has(' '), reload: queuedReload || held.has('r') };
 }
 function render(state) {
+  optionsUI.update(state.options || DEFAULT_OPTIONS, room.connected && room.isHost && state.phase !== 'playing');
+  if (['playing', 'hide', 'hunt'].includes(state.phase) && optionsUI.isOpen) optionsUI.close();
   mapPicker.update(state.mapId, room.connected && room.isHost && state.phase === 'lobby');
   difficultyPicker.update(state.difficulty, room.connected && room.isHost && state.phase !== 'playing');
+  $('round-minutes').textContent = `${(state.options?.duration || 180) / 60} min`;
+  $('win-target').textContent = state.options?.flag ? 3 : TARGET;
+  $('win-target-label').textContent = state.options?.flag ? 'banderas para ganar' : 'pintadas para ganar';
   const lobby = state.phase === 'lobby', finished = state.phase === 'finished';
   $('lobby').hidden = !lobby; $('hud').hidden = lobby || finished; document.body.classList.toggle('in-lobby', lobby);
-  $('start').disabled = !room.connected || !room.isHost; $('start').textContent = !room.connected ? 'Conectando…' : room.isHost ? '¡A la cancha!' : 'El anfitrión inicia la ronda';
+  const teams = state.options?.mode === 'teams' || state.options?.flag, people = state.players.filter(p => p.connected);
+  const missingTeam = teams && people.length > 1 && new Set(people.map(p => p.team)).size < 2;
+  $('team-roster').hidden = !teams;
+  $('roster').hidden = teams;
+  if (teams) teamRoster.update(['Naranja', 'Turquesa'].map((title, team) => ({ id: team, title, color: team ? '#29c5cd' : '#f28b42', seats: paintSeats(state.players).map((player, key) => ({ key, player })).filter(s => s.key % 2 === team) })), { ownId: room.id, hostId: room.local ? room.id : room.link?.state.players.find(p => p.id === room.link.state.host)?.seat, enabled: room.connected && lobby, canArrange: room.isHost, members: room.link?.state.players || [] });
+  $('start').disabled = !room.connected || !room.isHost || missingTeam; $('start').textContent = !room.connected ? 'Conectando…' : missingTeam ? 'Falta un pana en el otro equipo' : room.isHost ? '¡A la cancha!' : 'El anfitrión inicia la ronda';
   $('invite').disabled = room.local || !room.connected; $('roster').textContent = state.players.filter(p => p.connected).map(p => p.name).join(' · ');
   const me = state.players.find(p => p.id === room.id), order = [...state.players].sort((a, b) => b.score - a.score || a.hits - b.hits);
   $('score').textContent = `${me?.score || 0} / ${TARGET}`; $('position').textContent = `${Math.max(1, order.findIndex(p => p.id === room.id) + 1)} de ${state.players.length} panas`;
   const seconds = Math.ceil(state.time); $('timer').textContent = `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`;
-  $('ammo').textContent = me?.reload > 0 ? `Recargando ${me.reload.toFixed(1)} s` : `${me?.ammo ?? 12} / 12 bolas`;
-  $('feed').textContent = state.message; $('respawn').hidden = !me?.respawn; $('respawn').textContent = `¡Te pintaron! Vuelves en ${Math.ceil(me?.respawn || 0)}`;
+  $('ammo').textContent = me?.reload > 0 ? `Recargando ${me.reload.toFixed(1)} s` : `${me?.ammo ?? 12} / 12 · ${{ pistol: 'Pistola', scatter: 'Escopeta', rapid: 'Automática' }[me?.weapon || 'pistol']}${state.options?.lives ? ` · ${Math.max(0, state.options.lives - (me?.hits || 0))} vidas` : ''}`;
+  $('feed').textContent = `${state.message}${state.options?.mode === 'teams' || state.options?.flag ? ` · Naranja ${state.teamScores?.[0] || 0} — Turquesa ${state.teamScores?.[1] || 0}` : ''}`; $('respawn').hidden = !me?.respawn && !me?.eliminated; $('respawn').textContent = me?.eliminated ? 'Sin vidas · observando la ronda' : `¡Te pintaron! Vuelves en ${Math.ceil(me?.respawn || 0)}`;
   if (me && state.phase === 'playing') { if (me.ammo < lastAmmo) sound.tone(260, 0, .045, 'triangle', .05); if (me.hits > lastHits) sound.tone(130, 0, .16, 'sine', .1); lastAmmo = me.ammo; lastHits = me.hits; }
   $('results').hidden = !finished;
   if (finished) {
-    menu.close(); const winners = order.filter(p => p.score === order[0]?.score);
+    menu.close(); const winners = order.filter(p => state.winners?.includes(p.id));
     $('result-title').textContent = winners.length > 1 ? '¡Empate de pintura!' : `¡Ganó ${winners[0]?.name}!`;
+    if (state.options?.mode === 'teams' || state.options?.flag) $('result-title').textContent = new Set(winners.map(p => p.team)).size !== 1 ? '¡Empate de equipos!' : `¡Ganó el equipo ${winners[0]?.team === 0 ? 'naranja' : 'turquesa'}!`;
     $('result-copy').textContent = `${order[0]?.score || 0} pintadas en la mejor marca. ¿Otra ronda?`;
     fillRoster($('result-board'), order.map((p, i) => ({ rank: i + 1, name: p.name, detail: `${p.hits} recibidas${p.bot ? ' · Bot' : ''}`, end: p.score, score: true, me: p.id === room.id })));
     $('again').disabled = !room.isHost || !room.connected; $('again').textContent = room.isHost ? 'Otra ronda' : 'El anfitrión prepara la revancha';
@@ -96,7 +115,7 @@ let previous = performance.now(), stoppedAt = previous;
 const timer = setInterval(() => { const now = performance.now(), dt = (now - stoppedAt) / 1000; stoppedAt = now; room.input(input()); queuedFire = queuedReload = false; room.tick(dt, menu.isOpen); }, 50);
 function frame(now) { if (stopped) return; const dt = Math.min(.05, (now - previous) / 1000); previous = now; if (active()) world.orbit((Number(held.has('e')) - Number(held.has('q'))) * dt * 1.6); world.draw(room.state, room.id, dt, aim); requestAnimationFrame(frame); }
 render(room.state); room.connect(); requestAnimationFrame(frame);
-addEventListener('pagehide', () => { stopped = true; clearInterval(timer); room.dispose(); world.dispose(); }, { once: true });
+addEventListener('pagehide', () => { stopped = true; clearInterval(timer); teamRoster.dispose(); room.dispose(); world.dispose(); }, { once: true });
 if (params.has('debug')) window.pinturaDebug = { room, world, menu, input };
 
 await prepareScene(world);

@@ -12,6 +12,8 @@ import { buildIsland, baseHeight, riverDist, landMask, beachMask, HILL } from '.
 import { bake } from '/engine/models/core/static-batch.js';
 import { createIslandEnvironment, ISLAND_LOOP } from '/engine/island-environment.js';
 import { createAtmosphere } from './atmosphere.js';
+import { createHarborBoard } from './harbor-board.js';
+import { configuredTileKind } from './options.js';
 
 export const TILE_COUNT = 80;        // the coastal loop; the shortcut's tiles come after
 // the Atajo del cerro: leaves the loop near `start`, climbs over the hill
@@ -428,18 +430,42 @@ export function createBoard(scene, { skyMode = 'day' } = {}) {
   const shortcutSign = woodSign(['ATAJO', 'DEL CERRO', `PEAJE ${FORK.toll}`], { w: 3.4, h: 2.6 });
   shortcutSign.position.set(fs.x + 5, groundAt(fs.x + 5, fs.z + 3.5), fs.z + 3.5);
   shortcutSign.rotation.y = 0.15;
-  scene.add(shortcutSign, bake(statics));
+  const roads = bake(statics);
+  scene.add(shortcutSign, roads);
   decor.push({ x: shortcutSign.position.x, z: shortcutSign.position.z, obj: shortcutSign });
 
   // ---- stand ----
   const stand = buildStand();
   scene.add(stand.group);
+  const islandTiles = [...tiles];
+  for (const tile of tiles) tile.baseKind = tile.kind;
+  let harbor = null;
   const board = {
+    mode: 'isla', mainCount: TILE_COUNT,
+    configure(options) {
+      if (options.board === 'muelle' && !harbor) harbor = createHarborBoard(scene, tileTop, groundAt);
+      board.mode = options.board;
+      const onIsland = options.board === 'isla';
+      for (const tile of islandTiles) tile.mesh.visible = onIsland;
+      roads.visible = shortcutSign.visible = onIsland;
+      if (harbor) harbor.group.visible = !onIsland;
+      tiles.splice(0, tiles.length, ...(onIsland ? islandTiles : harbor.tiles));
+      board.mainCount = onIsland ? TILE_COUNT : harbor.tiles.length;
+      for (const tile of tiles) {
+        tile.kind = configuredTileKind(tile.i, tile.baseKind, options.surprises);
+        tile.mesh.material[2] = tileTop(tile.kind);
+      }
+    },
     tiles, curve, stand, standTile: 0, groundAt, highlight: [], atmosphere,
     // beside tile i, on whichever side is further from the camera (so the
     // tile doesn't hide it), and never in the river or on another tile
     standSpot(i) {
       const t = tiles[i];
+      if (board.mode === 'muelle') {
+        const length = Math.hypot(t.inX, t.inZ);
+        const x = t.x + t.inX / length * 4.6, z = t.z + t.inZ / length * 4.6;
+        return { x, y: harbor.deck, z, h: Math.atan2(t.x - x, t.z - z), bad: 0 };
+      }
       const l = Math.hypot(t.inX, t.inZ) || 1;
       let best = null;
       for (const side of [1, -1]) {
@@ -465,8 +491,8 @@ export function createBoard(scene, { skyMode = 'day' } = {}) {
     spot(i, slot, crowd) {
       const t = tiles[i];
       if (crowd <= 1) return { x: t.x, y: t.y, z: t.z };
-      const a = (slot / 4) * Math.PI * 2 + Math.PI / 4;
-      return { x: t.x + Math.cos(a) * 0.85, y: t.y, z: t.z + Math.sin(a) * 0.85 };
+      const a = (slot / crowd) * Math.PI * 2 + Math.PI / 4;
+      return { x: t.x + Math.cos(a) * (crowd > 4 ? 1.2 : .85), y: t.y, z: t.z + Math.sin(a) * (crowd > 4 ? 1.2 : .85) };
     },
     // fade the big tree while it stands between the camera and any of `spots`
     seeThrough: environment.seeThrough,

@@ -1,4 +1,9 @@
 // Table positions are separate from the room's stable member IDs.
+export function canMoveSeats(players, from, to, actorId, hostId) {
+  if (actorId == null || !Number.isInteger(from) || !Number.isInteger(to) || from === to ||
+      from < 0 || to < 0 || from >= players.length || to >= players.length) return false;
+  return actorId === hostId || players[from]?.id === actorId || players[to]?.id === actorId;
+}
 export function swapSeats(players, from, to) {
   if (!Number.isInteger(from) || !Number.isInteger(to) || from === to ||
       from < 0 || to < 0 || from >= players.length || to >= players.length) return false;

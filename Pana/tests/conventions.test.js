@@ -34,6 +34,24 @@ function walkAll(dir, keep, out = []) {
 const pub = (id, file) => path.join(gamesDir, id, 'public', file);
 const meta = (id) => JSON.parse(read(path.join(gamesDir, id, 'game.json')));
 
+test('shared room menus include their stylesheet and use pure validated option fields', () => {
+  for (const id of games) {
+    const source = read(pub(id, 'game.js'));
+    if (!source.includes('createRoomOptions')) continue;
+    assert(read(pub(id, 'index.html')).includes('/engine/room-options.css'), `${id}: missing shared room options styles`);
+    const help = read(pub(id, 'index.html')).match(/<button\b[^>]*\bid="rules"[^>]*>/)?.[0];
+    if (help) assert(help.includes('data-room-help'), `${id}: lobby help must use the shared advanced panel`);
+    const modules = walk(path.join(gamesDir, id, 'public'), n => n.endsWith('.js')).map(read).join('\n');
+    assert(modules.includes('room-options-rules.js'), `${id}: options must use the pure typed validator`);
+  }
+  for (const kind of ['table', 'live']) {
+    const root = path.join(app, 'scripts', 'templates', kind, 'public');
+    assert(read(path.join(root, 'game.js.tmpl')).includes('createRoomOptions'), `${kind}: scaffold misses room settings`);
+    assert(read(path.join(root, 'options.js.tmpl')).includes('applyRoomOptions'), `${kind}: scaffold options must be validated`);
+    assert(read(path.join(root, 'index.html.tmpl')).includes('data-room-help'), `${kind}: scaffold help must follow the shared settings layout`);
+  }
+});
+
 test('every game has the files the hub and the kit expect', () => {
   const problems = [];
   for (const id of games) {

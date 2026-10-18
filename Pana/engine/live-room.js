@@ -4,7 +4,7 @@
 // actions and render the snapshots.
 //
 //   class KitchenRoom extends LiveRoom {
-//     constructor(options) { super({ ...options, game: 'cocina', protocol: 'cocina-v1' }); }
+//     constructor(options) { super({ ...options, game: 'cocina', protocol: 'cocina-v2' }); }
 //     cleanInput(raw) { return { x: axis(raw?.x), z: axis(raw?.z), dash: !!raw?.dash }; }
 //     takeOver(previous) { super.takeOver(previous); this.game = …; this.publish(); }
 //     handle(id, data) { … }       // an action that passed the seq check

@@ -26,19 +26,19 @@ same room.
 | Game | What it is | Players |
 |---|---|---|
 | **Derrape** | Toy-car racing on twelve circuits and three four-race Grand Prix cups, with items, coins and swappable wheels | 1–8 online; local split screen |
-| **Bululú** | Party board game on Mango Island, with a minigame every round | 1 vs bots |
+| **Bululú** | Island or harbor party board, with a minigame every round | 1–6, bots fill seats |
 | **Escondidas** | Prop hunt in a market plaza: hide as a barrel, crate or bench | 1–8, bots fill in |
-| **Pana Cocina** | Cooperative three-minute cooking rush: arepas, cachapas, tequeños | 1–8, bot helpers |
+| **Pana Cocina** | Cooperative cooking shifts with configurable orders and kitchen rules | 1–8, bot helpers |
 | **Galope** | Horse racing around a Llanos ranch, through esteros and over logs | 1–8, bots fill in |
 | **Reliquia** | Cooperative expedition into a mine and the temple beneath it | 1–8 |
 | **¡Embuste!** | Social deduction at the night camp: who is the mummy? | 4–8 online, bots for practice |
-| **Curiara** | Dugout-canoe race down the Amazonas: paddle in rhythm, alone or in pairs | 1–8, bots fill in |
-| **Dominó** | Partnership dominoes to 100 at a 3D plaza table | 1–4, bots fill seats |
-| **Caída** | Spanish cards to 24 points, individual or in pairs | 1–4, bots fill seats |
-| **Póquer** | Texas Hold'em with free chips, private cards and bluffing bots | 1–6, bots fill seats |
+| **Curiara** | Dugout-canoe races with solo paddlers or two-person crews | 1–8, bots fill in |
+| **Dominó** | Individual or team dominoes with configurable hands and scoring | 1–6, bots fill seats |
+| **Caída** | Spanish cards to 24 points, individually or in teams | 1–6, bots fill seats |
+| **Póquer** | Texas Hold'em or Omaha with free chips and configurable betting limits | 1–6, bots fill seats |
 | **Ludo** | Roll, capture and race your four pieces home at a plaza table | 1–4, bots fill seats |
-| **Billar** | Eight-ball pool on a 3D table in the plaza | 2 online, or practice |
-| **Bolas Criollas** | Roll close to the mingo or knock the rival's ball away, in teams | 1–4, bots fill seats |
+| **Billar** | Eight/nine-ball pool with rotating teammates and timed shot charging | 2, 4 or 6 online, or practice |
+| **Bolas Criollas** | Roll close to the mingo or knock the rival's ball away, in teams | 1–6, bots fill seats |
 | **Pepazo** | Paintball between barricades: aim, paint your rivals, respawn | 1–8, bots fill in |
 
 ## Screenshots

@@ -1,7 +1,7 @@
 // Bululú's board rules: plain data and pure functions, no Three.js and no DOM.
 // game.js plays them out with tokens, dice and toasts; tests/rules.test.js checks them.
 
-export const COLORS = ['#ff4b4b', '#3d7bf2', '#ffc629', '#2fbf4a'];
+export const COLORS = ['#ff4b4b', '#3d7bf2', '#ffc629', '#2fbf4a', '#ad70ec', '#ff8e3d'];
 export const RIVALS = ['Don Pancho', 'La Chama', 'El Gocho', 'Tía Carmen', 'El Catire', 'Yoli', 'Chuchú', 'La Nena'];
 export const START_COINS = 10;
 export const PRICE = 20;            // one Mango de oro at the stand
@@ -43,9 +43,9 @@ export function buyMango(p) {
 }
 
 // Two dice; doubles pay DOUBLES_BONUS.
-export function rollDice(random = Math.random) {
-  const a = 1 + Math.floor(random() * 6), b = 1 + Math.floor(random() * 6);
-  return { a, b, n: a + b, doubles: a === b };
+export function rollDice(random = Math.random, count = 2) {
+  const a = 1 + Math.floor(random() * 6), b = count === 1 ? 0 : 1 + Math.floor(random() * 6);
+  return { a, b, n: a + b, doubles: count === 2 && a === b };
 }
 
 // Coins for landing on a plain tile; null for tiles with their own effect (tree, event).

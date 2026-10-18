@@ -60,7 +60,7 @@ check('snapshot restore preserves RNG, cards, scores and late join seats', () =>
   const restored = CaidaGame.restore(g.snapshot(), new Map([[2, { id: 2, name: 'B' }], [3, { id: 3, name: 'C' }]]));
   assert.deepEqual(restored.players.map(p => p.hand), g.players.map(p => p.hand)); assert.deepEqual(restored.scores, g.scores); assert.equal(restored.rng, g.rng); assert.equal(restored.players[0].id, 3);
 });
-check('400 seeded complete matches across all modes conserve every card', () => {
+check('600 seeded complete matches across all modes conserve every card', () => {
   for (const mode of Object.keys(MODES)) for (let seed = 1; seed <= 100; seed++) {
     const g = new CaidaGame(seed); g.configure({ mode, cantos: seed % 2 === 0 }); g.start(); let actions = 0;
     while (g.phase !== 'finished' && actions++ < 3000) {

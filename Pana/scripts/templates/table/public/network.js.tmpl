@@ -6,7 +6,7 @@ import { TableGame, botMove } from './rules.js';
 export class {{Class}}Room extends TableRoom {
   constructor(options) {
     super({ ...options, game: '{{id}}', protocol: '{{id}}-v1' }, {
-      fresh: () => new TableGame().snapshot(),
+      fresh: prev => ({ ...new TableGame().snapshot(), ...(prev?.options ? { options: { ...prev.options } } : {}) }),
       restore: (state, members) => TableGame.restore(state, members),
       snapshot: (game) => game.snapshot(),
       accept: (game, id, data, hostId) => game.accept(id, data, hostId),
@@ -18,7 +18,7 @@ export class {{Class}}Room extends TableRoom {
   // Bots play on the host after a short pause, so their turn reads on screen.
   step(dt) {
     const game = this.game;
-    if (!this.botReady(dt, game.phase === 'playing' && game.players[game.turn].id === null)) return false;
+    if (!this.botReady(dt, game.phase === 'playing' && game.players[game.turn].id === null, game.options.cpuSeconds)) return false;
     if (botMove(game) === 'roll') game.roll();
     return true;
   }

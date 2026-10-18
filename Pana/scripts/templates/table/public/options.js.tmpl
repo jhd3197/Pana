@@ -1,0 +1,7 @@
+import { optionDefaults, applyRoomOptions } from '/engine/room-options-rules.js';
+export const ROOM_OPTIONS = [
+  { id: 'target', label: 'Meta', default: {{target}}, choices: [[{{target}}, '{{target}} puntos'], [{{target}} * 2, 'Partida larga']] },
+  { id: 'cpuSeconds', label: 'Velocidad CPU', default: .85, advanced: true, choices: [[.85, 'Normal'], [.35, 'Rápida']] },
+];
+export const defaultOptions = () => optionDefaults(ROOM_OPTIONS);
+export const roomOptions = (current, patch) => applyRoomOptions(ROOM_OPTIONS, current, patch);

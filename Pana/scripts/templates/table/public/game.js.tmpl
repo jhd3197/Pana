@@ -6,7 +6,8 @@ import { inviteUrl } from '/engine/invite.js';
 import { sound } from '/engine/fx.js';
 import { roomCode, bootGame } from '/engine/game-shell.js';
 import { {{Class}}Room } from './network.js';
-import { TARGET } from './rules.js';
+import { createRoomOptions } from '/engine/room-options.js';
+import { ROOM_OPTIONS, defaultOptions } from './options.js';
 
 const $ = (id) => document.getElementById(id), params = new URLSearchParams(location.search);
 const code = roomCode();
@@ -15,10 +16,12 @@ const room = new {{Class}}Room({ code, name: loadName(), avatar: loadAvatar(), o
   onNotice: (text) => { $('event').textContent = text; },
   onStatus(text, failed = false) { $('connection').textContent = text; $('practice').hidden = !failed; render(room.state); },
 });
+const roomOptions = createRoomOptions($('room-options'), { title: '{{name}}', fields: ROOM_OPTIONS,
+  change: options => room.action('options', { options }), reset: () => room.action('options', { options: defaultOptions() }) });
 const menu = createGameMenu({ title: '{{name}} · Pana', sound, orientation: 'libre',
   note: () => room.members.size > 1 ? 'La partida sigue mientras estás en el menú.' : 'La partida está en pausa. Los bots te esperan.',
   controls: [['Espacio', 'Tirar el dado'], ['Ratón / toque', 'Botón Tirar dado'], ['M', 'Activar o silenciar el sonido']],
-  tips: [`Tira el dado en tu turno. El primero en llegar a ${TARGET} puntos gana.`, 'Los puestos vacíos juegan con bots; un pana que llega toma su silla.'],
+  tips: ['Tira el dado en tu turno. El primero en llegar a la meta de la sala gana.', 'Los puestos vacíos juegan con bots; un pana que llega toma su silla.'],
   invite: () => room.offline ? null : inviteUrl(code),
 });
 $('game-nav').append(menu.createInviteButton({ id: 'invite', className: 'pk-btn' }), menu.createButton({ id: 'menu', className: 'pk-btn' }));
@@ -32,6 +35,8 @@ function act(action) { if (menu.isOpen || !myTurn()) return; sound.unlock(); roo
 
 function render(state) {
   const lobby = state.phase === 'lobby', ended = state.phase === 'finished';
+  roomOptions.update(state.options, lobby && room.isHost);
+  if (!lobby && roomOptions.isOpen) roomOptions.close();
   document.body.classList.toggle('in-lobby', lobby); $('lobby').hidden = !lobby; $('hud').hidden = lobby;
   $('start').disabled = !world || !room.connected || !room.isHost;
   $('start').textContent = !room.connected ? 'Conectando…' : room.isHost ? '¡A jugar!' : 'Espera al anfitrión';

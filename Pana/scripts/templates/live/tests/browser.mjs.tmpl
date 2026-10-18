@@ -10,6 +10,8 @@ try {
   const guest = await openGame(browser, '{{id}}', { name: 'Bruno', room, query: 'debug' });
   await waitFor(host, () => {{id}}Debug.room.state.players.length === 2);
   assert.equal(await host.evaluate(() => {{id}}Debug.world.camera.isPerspectiveCamera), true, 'the plaza is a 3D scene');
+  await host.locator('[data-room-option="seconds"][data-value="30"]').click();
+  await waitFor(guest, () => {{id}}Debug.room.state.options.seconds === 30);
   await host.locator('#start').click();
   await waitFor(guest, () => {{id}}Debug.room.state.phase === 'playing');
   const me = () => {{id}}Debug.room.state.players.find(p => p.id === {{id}}Debug.room.id);

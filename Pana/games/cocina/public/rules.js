@@ -1,3 +1,4 @@
+import { DEFAULT_OPTIONS, validOptions } from './options.js';
 // Plain simulation, shared by the host, UI and Node tests. No browser globals.
 export const RECIPES = [
   { id: 'arepa', name: 'Arepa', ingredients: 'Masa + queso', cook: 6, points: 80, color: '#e7ad4d' },
@@ -52,12 +53,15 @@ function route(from, target) {
 const clone = value => JSON.parse(JSON.stringify(value));
 const SPAWNS = [[-6, 6], [-3.5, 6], [-1, 6], [1.5, 6], [-6, 9.5], [-0.5, 10.8], [8.5, 7], [9, 10]];
 export class Kitchen {
-  constructor() {
-    this.phase = 'lobby'; this.remaining = DURATION; this.players = []; this.orders = [];
+  constructor(options = {}) {
+    this.options = { ...DEFAULT_OPTIONS, ...(validOptions(options) ? options : {}) }; this.switched = false; this.kitchen = this.options.kitchen;
+    this.phase = 'lobby'; this.remaining = this.options.duration; this.players = []; this.orders = [];
     this.stations = STATIONS.map(s => ({ id: s.id, item: null, progress: 0, fire: 0 }));
     this.score = 0; this.served = 0; this.missed = 0; this.burnt = 0; this.combo = 0;
     this.orderId = 0; this.eventId = 0; this.events = []; this.helpers = true; this.botPaths = new Map();
   }
+  configure(options) { if (this.phase === 'playing' || !validOptions(options)) return false; Object.assign(this.options, options); this.kitchen = this.options.kitchen; this.remaining = this.options.duration; return true; }
+  get burnTime() { return this.options.fire === 'fast' ? 5 : BURN_TIME; }
   addPlayer(id, name, avatar = {}) {
     const existing = this.players.find(p => p.id === id);
     if (existing) { existing.avatar = avatar; return; }
@@ -80,18 +84,19 @@ export class Kitchen {
       this.players.push({ id, name: names[i], avatar: { fur: '#dfa460', outfitColor: colors[i], glasses: 'none', face: i === 1 ? 'lengua' : 'ojazos' }, bot: true, x: -2 + i * 2, z: 6, h: 0, held: null, moving: false, dash: 0, cooldown: 0, deliveries: 0 });
     }
   }
-  start(helpers = true) {
+  start(helpers = this.options.helpers) {
     const people = this.players.filter(p => !p.bot).map(p => ({ id: p.id, name: p.name, avatar: p.avatar }));
-    Object.assign(this, new Kitchen()); this.helpers = helpers;
+    Object.assign(this, new Kitchen({ ...this.options, helpers })); this.helpers = helpers;
     for (const p of people) this.addPlayer(p.id, p.name, p.avatar);
     this.phase = 'playing'; this.fillBots();
-    for (let i = 0; i < 4; i++) this.addOrder(i);
+    for (let i = 0; i < ({ easy: 3, normal: 4, chaos: 5 }[this.options.difficulty]); i++) this.addOrder(i % RECIPES.length);
     this.event('¡Abierta la cocina! Primero busca los ingredientes.', 'start');
   }
   event(text, kind = 'notice') { this.events = [{ id: ++this.eventId, text, kind }]; }
   addOrder(index) {
-    const id = ++this.orderId, r = RECIPES[index ?? ((id * 7 + Math.floor(id / 4)) % 4)];
-    this.orders.push({ id, recipe: r.id, remaining: 65 + this.orders.length * 9, total: 65 + this.orders.length * 9 });
+    const id = ++this.orderId, r = this.options.orders === 'arepa' ? RECIPES[0] : RECIPES[index ?? ((id * 7 + Math.floor(id / 4)) % 4)];
+    const patience = (65 + this.orders.length * 9) * ({ easy: 1.5, normal: 1, chaos: .65 }[this.options.difficulty]);
+    this.orders.push({ id, recipe: r.id, remaining: patience, total: patience });
   }
   interact(id, stationId) {
     if (this.phase !== 'playing') return '';
@@ -111,7 +116,7 @@ export class Kitchen {
       const order = this.orders.find(o => o.recipe === held.recipe);
       if (!order) return 'No hay un pedido de ese plato. Déjalo en la mesa.';
       this.combo = Math.min(5, this.combo + 1);
-      const points = recipe(held.recipe).points + (this.combo - 1) * 10;
+      const points = recipe(held.recipe).points + (this.options.tips ? (this.combo - 1) * 10 : 0);
       this.score += points; this.served++; p.deliveries++; p.held = null;
       this.orders = this.orders.filter(o => o.id !== order.id); this.addOrder();
       this.event(`¡${recipe(held.recipe).name} servida! +${points}`, 'serve'); return '';
@@ -150,8 +155,9 @@ export class Kitchen {
     if (this.phase !== 'playing') return;
     dt = Math.max(0, Math.min(dt, 0.1)); this.remaining = Math.max(0, this.remaining - dt);
     if (!this.remaining) { this.phase = 'results'; this.players.forEach(p => { p.moving = false; }); return; }
+    if (this.options.switchKitchen && !this.switched && this.remaining <= this.options.duration / 2) { this.switched = true; this.kitchen = this.kitchen === 'mercado' ? 'playa' : 'mercado'; this.event('¡Mudanza! La cocina sigue en ' + (this.kitchen === 'playa' ? 'la playa.' : 'el mercado.')); }
     for (const order of [...this.orders]) {
-      order.remaining -= dt;
+      if (this.options.impatient) order.remaining -= dt;
       if (order.remaining <= 0) { this.orders = this.orders.filter(o => o.id !== order.id); this.missed++; this.combo = 0; this.event(`Se fue un pedido de ${recipe(order.recipe).name.toLowerCase()}.`, 'miss'); this.addOrder(); }
     }
     for (const s of this.stations) {
@@ -163,7 +169,7 @@ export class Kitchen {
       if (def.type === 'stove') {
         const done = recipe(s.item.recipe).cook;
         if (s.progress >= done) s.item.stage = 'cooked';
-        if (s.progress >= done + BURN_TIME) { s.item.stage = 'burnt'; s.fire = 2; this.burnt++; this.combo = 0; this.event('¡Se quemó! Acércate al fogón y pulsa E dos veces.', 'fire'); }
+        if (s.progress >= done + this.burnTime) { s.item.stage = 'burnt'; s.fire = 2; this.burnt++; this.combo = 0; this.event('¡Se quemó! Acércate al fogón y pulsa E dos veces.', 'fire'); }
       }
     }
     for (const p of this.players) {
@@ -188,7 +194,7 @@ export class Kitchen {
       if (p.moving) p.h = Math.atan2(dx, dz);
     }
   }
-  snapshot() { return clone({ phase: this.phase, remaining: this.remaining, players: this.players, stations: this.stations, orders: this.orders, score: this.score, served: this.served, missed: this.missed, burnt: this.burnt, combo: this.combo, helpers: this.helpers, orderId: this.orderId, eventId: this.eventId, events: this.events }); }
+  snapshot() { return clone({ options: this.options, kitchen: this.kitchen, switched: this.switched, phase: this.phase, remaining: this.remaining, players: this.players, stations: this.stations, orders: this.orders, score: this.score, served: this.served, missed: this.missed, burnt: this.burnt, combo: this.combo, helpers: this.helpers, orderId: this.orderId, eventId: this.eventId, events: this.events }); }
   restore(state, members) {
     Object.assign(this, clone(state)); this.botPaths = new Map();
     for (const p of [...this.players]) if (!p.bot && !members.has(p.id)) this.removePlayer(p.id);

@@ -10,6 +10,7 @@
   <link rel="stylesheet" href="/engine/ui.css">
   <link rel="stylesheet" href="style.css">
   <link rel="stylesheet" href="/engine/game-lobby.css">
+  <link rel="stylesheet" href="/engine/room-options.css">
   <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}</script>
 </head>
 <body class="in-lobby">
@@ -18,9 +19,10 @@
   <section id="lobby" class="pk-lobby" aria-labelledby="lobby-title">
     <span class="pk-ribbon">LA MESA ESTÁ LISTA</span>
     <h1 id="lobby-title" class="pk-title">{{name}}</h1>
-    <p class="pk-copy">{{description}}</p>
-    <ol id="roster" class="pk-roster" aria-label="Puestos de la mesa"></ol>
-    <button id="rules" class="pk-btn pk-btn--ghost">Cómo se juega</button>
+    <p class="pk-copy" data-room-description>{{description}}</p>
+    <ol id="roster" class="pk-roster" aria-label="Puestos de la mesa" data-room-description></ol>
+    <button id="rules" class="pk-btn pk-btn--ghost" data-room-help>Cómo se juega</button>
+    <div id="room-options"></div>
     <div class="pk-lobby-foot"><button id="start" class="pk-btn pk-btn--primary pk-btn--lg" disabled>Conectando…</button></div>
   </section>
   <main id="hud" hidden>

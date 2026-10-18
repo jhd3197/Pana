@@ -24,7 +24,7 @@ export function createDominoTile({ a = 6, b = 6 } = {}) {
   const values = [a, b], total = PIPS[a].length + PIPS[b].length;
   if (total) {
     const dots = new THREE.InstancedMesh(new THREE.CylinderGeometry(.019, .016, .003, 12), black, total), matrix = new THREE.Matrix4(); let index = 0;
-    values.forEach((value, half) => { for (const pip of PIPS[value]) { matrix.makeTranslation((pip % 3 - 1) * .066, .137, (half ? .14 : -.14) + (Math.floor(pip / 3) - 1) * .066); dots.setMatrixAt(index++, matrix); } });
+    values.forEach((value, half) => { for (const pip of PIPS[value]) { matrix.makeTranslation((pip % 3 - 1) * .066, .137, (half ? .14 : -.14) + (Math.floor(pip / 3) - (value>9?1.5:1)) * (value>9?.05:.066)); dots.setMatrixAt(index++, matrix); } });
     dots.instanceMatrix.needsUpdate = true; face.add(dots);
   }
   const cover = rounded(group, back, .279, .009, .559, .02, 0, .14, 0);

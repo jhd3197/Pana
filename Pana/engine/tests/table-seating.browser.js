@@ -30,17 +30,23 @@ try {
   for (const game of ['caida', 'domino', 'poquer']) {
     const code = `seating-${game}-${Date.now()}`, a = await open(game, code, 'Ana'), b = await open(game, code, 'Luis');
     await a.waitForFunction(() => seatingRoom.state.players.filter(p => p.id !== null && !p.bot).length === 2);
-    if (game === 'caida') await a.locator('#mode').selectOption('teams');
+    if (game === 'caida') await a.locator('[data-room-option="format"][data-value="teams"]').click();
     await synced(a, b);
     const before = await state(a), from = 1, to = game === 'poquer' ? 0 : 2;
-    assert.equal(await b.locator('#table-seating select').first().isDisabled(), true);
+    assert.equal(await b.locator('#table-seating select').count(), 0);
+    assert.equal(await b.locator('#table-seating [data-roster-select]').count(), 0);
     await b.evaluate(() => {
-      if (seatingGame === 'poquer') seatingRoom.link.send('seat', { from: 1, to: 0, revision: seatingRoom.state.revision });
-      else seatingRoom.action('seat', { from: 1, to: 2 });
+      if (seatingGame === 'poquer') seatingRoom.link.send('seat', { from: 0, to: 99, revision: seatingRoom.state.revision });
+      else seatingRoom.action('seat', { from: 0, to: 2 });
     });
-    await b.waitForTimeout(250);
-    assert.deepEqual((await state(a)).players.map(p => p.id), before.players.map(p => p.id));
-    await a.locator(`#table-seating select[data-seat="${from}"]`).selectOption(String(to));
+    await b.locator(`#table-seating [data-roster-move="${to}"]`).click();
+    await a.waitForFunction(({ to, id }) => seatingRoom.state.players[to].id === id, { to, id: before.players[from].id });
+    await b.locator(`#table-seating [data-roster-move="${from}"]`).click();
+    await a.waitForFunction(ids => seatingRoom.state.players.every((p, i) => p.id === ids[i]), before.players.map(p => p.id));
+    await synced(a, b);
+    await a.locator(`#table-seating [data-roster-select="${from}"]`).click();
+    await a.locator(`#table-seating [data-roster-move="${to}"]`).click();
+    await a.waitForFunction(({ to, id }) => seatingRoom.state.players[to].id === id, { to, id: before.players[from].id });
     await b.waitForFunction(({ to, id }) => seatingRoom.state.players[to].id === id, { to, id: before.players[from].id });
     assert.equal((await state(a)).players[from].id, before.players[to].id);
     await a.locator('#table-seating').scrollIntoViewIfNeeded();
@@ -82,7 +88,8 @@ try {
       assert.deepEqual(reset.players.map(p => p.chips), ended.players.map(p => p.chips));
       assert.ok(reset.players.every(p => !p.hole.length));
     } else assert.deepEqual(reset.scores, [0, 0]);
-    await a.locator(`#table-seating select[data-seat="${from}"]`).selectOption(String(to));
+    await a.locator(`#table-seating [data-roster-select="${to}"]`).click();
+    await a.locator(`#table-seating [data-roster-move="${from}"]`).click();
     await b.waitForFunction(ids => seatingRoom.state.players.every((p, i) => p.id === ids[i]), before.players.map(p => p.id));
     await a.close();
     await b.waitForFunction(() => seatingRoom.isHost);
@@ -94,12 +101,12 @@ try {
       arrival = await open(game, code, 'Rosa');
       await b.waitForFunction(() => seatingRoom.state.players.filter(p => p.connected).length === 2);
     }
-    assert.equal(await b.locator('#table-seating select').first().isDisabled(), false);
+    assert.equal(await b.locator('#table-seating [data-roster-select]').first().isDisabled(), false);
     await b.setViewportSize({ width: 390, height: 844 });
     await b.locator('#table-seating').scrollIntoViewIfNeeded();
     assert.equal(await b.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
-    for (const select of await b.locator('#table-seating select').all()) {
-      const box = await select.boundingBox(); assert.ok(box.x >= 0 && box.x + box.width <= 390 && box.height >= 44);
+    for (const button of await b.locator('#table-seating button:visible').all()) {
+      const box = await button.boundingBox(); assert.ok(box.x >= 0 && box.x + box.width <= 390 && box.height >= 44);
     }
     await b.screenshot({ path: `art/table-seating/${game}-mobile.png` });
     await b.locator('#start').click();

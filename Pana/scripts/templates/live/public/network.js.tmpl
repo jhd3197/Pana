@@ -21,7 +21,8 @@ export class {{Class}}Room extends LiveRoom {
   memberHello(id, m) { this.memberJoined(m); }
   memberLeft(id) { super.memberLeft(id); if (this.isHost) { this.game.removePlayer(id); this.publish(); } }
   handle(id, data) {
+    if (data.action === 'options' && id === this.hostId && this.game.configure(data.options)) this.publish();
     if (data.action === 'start' && id === this.hostId && this.game.phase !== 'playing') { this.game.start(data.bots !== false); this.publish(); }
   }
-  practice() { this.state = new Rush().snapshot(); super.practice('Ronda local · tú y los bots'); }
+  practice() { this.state = { ...new Rush().snapshot(), options: { ...this.state.options } }; super.practice('Ronda local · tú y los bots'); }
 }

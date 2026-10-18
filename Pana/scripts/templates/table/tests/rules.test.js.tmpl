@@ -4,6 +4,17 @@ import { TableGame, SEATS, TARGET } from '../public/rules.js';
 
 const act = (game, id, action, seq) => game.accept(id, { action, seq, revision: game.revision }, 1);
 
+test('room options are host-only, validated and determine the winning score', () => {
+  const game = new TableGame(5); game.addPlayer(1, 'Ana'); game.addPlayer(2, 'Bruno');
+  const configure = (id, options, seq) => game.accept(id, { action: 'options', options, seq, revision: game.revision }, 1);
+  assert.equal(configure(2, { target: TARGET * 2 }, 1), false);
+  assert.equal(configure(1, { target: 'bad' }, 1), false);
+  assert(configure(1, { target: TARGET * 2, cpuSeconds: .35 }, 2));
+  game.start(); game.players[0].score = TARGET; game.roll(); assert.equal(game.phase, 'playing');
+  assert.equal(configure(1, { target: TARGET }, 3), false);
+  const restored = TableGame.restore(game.snapshot(), new Map()); assert.deepEqual(restored.options, game.options);
+});
+
 test('a pana takes a bot seat and gives it back, keeping the score', () => {
   const game = new TableGame(7);
   assert.equal(game.addPlayer(1, 'Ana', {}), true);

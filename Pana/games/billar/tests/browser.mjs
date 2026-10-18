@@ -2,6 +2,8 @@
 import assert from 'node:assert/strict';
 import { createRequire } from 'node:module';
 import { mkdir } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { waitPrepared } from '../../../tests/browser-kit.js';
 const { chromium } = createRequire(import.meta.url)(process.env.PANA_PLAYWRIGHT_PATH || 'playwright');
 const base = process.env.PANA_TEST_URL || 'http://localhost:8461', code = `pool-${Date.now()}`, errors = [];
@@ -65,10 +67,13 @@ try {
   await a.locator('#portrait-0').waitFor({ state: 'visible', timeout: 90000 });
   assert.ok(await a.locator('#portrait-0').evaluate(img => img.naturalWidth === 160));
   await a.screenshot({ path: 'art/billar/lobby.png' }); check('lobby renders the saved shared pana and two-player room');
+  await a.locator('#pana-room-more').click();
+  await a.screenshot({ path: join(tmpdir(), 'pana-billar-options-desktop.png') });
+  await a.locator('#pana-room-done').click();
   const practiceBox = await a.locator('#practice').boundingBox(); assert.ok(practiceBox.y + practiceBox.height <= 800, 'laptop lobby actions fit');
   const c = await open('Tercero', code, false, true);
-  await wait(c, () => document.getElementById('connection').textContent.includes('llena'));
-  assert.equal(await c.evaluate(() => billarDebug.room.connected), false); await c.close(); check('third client cannot create a duplicate room');
+  await wait(c, () => billarDebug.room.connected && billarDebug.room.seat === 2);
+  await c.close(); await wait(a, () => billarDebug.room.members.size === 2); check('third client joins the same room and can leave before a duel');
   await a.locator('#start').click(); await wait(b, () => billarDebug.room.state.phase === 'aiming');
   await wait(a, () => billarDebug.world.camera.isPerspectiveCamera && billarDebug.world.balls.size === 16);
   assert.ok(await a.evaluate(() => {

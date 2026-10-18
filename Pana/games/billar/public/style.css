@@ -33,6 +33,9 @@ button, input { font: inherit; } button { cursor: pointer; } button:disabled { c
 #shoot { touch-action: none; }
 #shoot.is-charging { transform: translateY(3px); box-shadow: 0 1px 0 var(--pk-yellow-edge); }
 .charge-tip { margin: 10px 0 0; color: var(--pk-text); font-size: 12px; text-align: center; }
+.called-pocket { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin: 8px 0; font-size: 12px; }
+.called-pocket select { max-width: 65%; padding: 8px; border: 1px solid var(--pk-line); border-radius: 8px; color: var(--pk-text); background: var(--pk-purple); }
+.shot-clock { margin: 6px 0; color: var(--pk-yellow); font-size: 13px; font-weight: 900; font-variant-numeric: tabular-nums; }
 /* English and camera: on the left edge, like a pool hall's chalk shelf. */
 .side-controls { position: fixed; z-index: 3; left: 20px; top: 50%; transform: translateY(-50%); display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 12px 10px; border-radius: 18px; background: var(--pk-night); }
 .spin-pad { position: relative; width: 76px; height: 76px; padding: 0; border: 3px solid var(--pk-night); border-radius: 50%; background: radial-gradient(circle at 35% 30%, var(--cue-white), var(--cue-ivory) 55%, var(--cue-shade)); box-shadow: 0 0 0 2px rgba(255, 255, 255, .6), 0 4px 0 rgba(0, 0, 0, .3); touch-action: none; }

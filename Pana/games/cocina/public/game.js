@@ -1,3 +1,5 @@
+import { createRoomOptions } from '/engine/room-options.js';
+import { FIELDS, DEFAULT_OPTIONS } from './options.js';
 import { prepareScene } from '/engine/game-load.js';
 import * as THREE from 'three';
 import { buildCharacter } from '/engine/models/characters/pana/avatar-model.js';
@@ -72,6 +74,7 @@ $('lobby-cta').append(menu.createInviteButton({ id: 'lobby-invite', className: '
 const room = new KitchenRoom({ code, name, avatar, onState: receive, onNotice: notify, onStatus(text, failed = false) {
   $('connection').textContent = text; show('practice', failed); canGoOffline = failed; menu.update(); if (failed) notify(text); updateUI();
 } });
+const optionsUI = createRoomOptions($('room-options'), { title: 'Pana Cocina', fields: FIELDS, change: options => room.action('configure', { options }), reset: () => room.action('configure', { options: DEFAULT_OPTIONS }) });
 const me = () => state.players.find(p => p.id === room.id);
 const colors = ['#eb574b', '#4789e3', '#3aae77', '#e4b52c', '#a974d5', '#e584a9', '#57bcc0', '#e68a3c'];
 function actorLabel(p, color) {
@@ -124,11 +127,12 @@ function chip(i, p) {
 }
 const stars = score => score >= 1500 ? 3 : score >= 850 ? 2 : score >= 350 ? 1 : 0;
 function updateUI() {
+  optionsUI.update(state.options || DEFAULT_OPTIONS, room.connected && room.isHost && state.phase !== 'playing');
+  if (['playing', 'hide', 'hunt'].includes(state.phase) && optionsUI.isOpen) optionsUI.close();
   const playing = state.phase === 'playing', player = me();
   document.body.classList.toggle('is-playing', playing);
   show('lobby', state.phase === 'lobby'); show('welcome-label', state.phase === 'lobby'); show('hud', playing); show('results', state.phase === 'results');
   $('start').disabled = !room.connected || !room.isHost; $('start').textContent = !room.connected ? 'Entrando a la cocina…' : room.isHost ? '¡A cocinar! →' : 'El anfitrión abre la cocina';
-  $('helpers').disabled = $('solo').disabled = !room.isHost;
   show('lobby-status', !room.connected);
   $('room-code').textContent = room.offline ? '● Cocina local' : `● Sala ${code}`;
   const lk = state.players.map(p => `${p.id}:${p.name}`).join('|');
@@ -138,10 +142,12 @@ function updateUI() {
     $('lobby-names').textContent = people.map(p => p.id === room.id ? `${p.name} (tú)` : p.name).join(', ');
   }
   $('again').disabled = !room.connected || !room.isHost; $('again').textContent = room.isHost ? 'Otro turno →' : 'Esperando al anfitrión…';
+  $('shift-minutes').textContent = `${(state.options?.duration || 180) / 60} min`;
   $('timer').textContent = `${String(Math.floor(Math.ceil(state.remaining) / 60)).padStart(2, '0')}:${String(Math.ceil(state.remaining) % 60).padStart(2, '0')}`;
   $('timer').parentElement.classList.toggle('urgent', state.remaining < 30);
   $('score').textContent = state.score; $('stars').textContent = '★ '.repeat(stars(state.score)) + '☆ '.repeat(3 - stars(state.score));
   const orderKey = state.orders.map(o => o.id).join(',');
+  $('orders').style.setProperty('--order-count', Math.max(1, state.orders.length));
   if (orderKey !== renderedOrders) {
     renderedOrders = orderKey; $('orders').replaceChildren();
     for (const order of state.orders) {
@@ -154,7 +160,7 @@ function updateUI() {
     }
   }
   for (const order of state.orders) {
-    const el = $('orders').querySelector(`[data-order="${order.id}"]`); const left = Math.max(0, order.remaining / order.total); el.querySelector('i').style.width = `${left * 100}%`; el.classList.toggle('urgent', order.remaining < 18); el.classList.toggle('half', left < 0.5); el.setAttribute('aria-label', `${recipe(order.recipe).name}, ${Math.ceil(order.remaining)} segundos`);
+    const el = $('orders').querySelector(`[data-order="${order.id}"]`); const left = Math.max(0, order.remaining / order.total); el.querySelector('i').style.width = `${left * 100}%`; el.classList.toggle('urgent', state.options.impatient && order.remaining < 18); el.classList.toggle('half', state.options.impatient && left < 0.5); el.setAttribute('aria-label', `${recipe(order.recipe).name}, ${state.options.impatient ? `${Math.ceil(order.remaining)} segundos` : 'sin prisa'}`);
   }
   const tk = state.players.map(p => `${p.id}:${p.name}:${p.held ? `${p.held.recipe}:${p.held.stage}` : ''}`).join('|');
   if (tk !== teamKey) {
@@ -185,10 +191,7 @@ function updateUI() {
   }
 }
 function interact() { if (!paused && state.phase === 'playing') room.action('interact'); }
-$('start').onclick = () => room.action('start', { helpers: $('helpers').checked });
-// "Con ayudantes" is the real checkbox; "Solo panas" just clears it.
-const syncHelpers = () => { $('solo').classList.toggle('is-on', !$('helpers').checked); $('solo').setAttribute('aria-pressed', String(!$('helpers').checked)); };
-$('helpers').addEventListener('change', syncHelpers); $('solo').onclick = () => { $('helpers').checked = false; syncHelpers(); }; syncHelpers();
+$('start').onclick = () => room.action('start');
 $('again').onclick = () => { lastEvent = 0; room.action('start', { helpers: state.helpers }); };
 $('action').onclick = interact;
 $('practice').onclick = () => room.practice();

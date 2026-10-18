@@ -6,6 +6,22 @@ import { createGame, acceptAction, shoot, step, nextHand } from '../public/rules
 function settle(pitch) { for (let n = 0; n < 2000 && moving(pitch); n++) stepPitch(pitch); assert.equal(moving(pitch), false); }
 function ball(pitch, owner, x, z) { pitch.balls.push({ id: pitch.nextId++, owner, x, z, vx: 0, vz: 0, radius: .25, out: false }); }
 function start() { const g = createGame(); g.players[0].id = 10; g.players[1].id = 20; assert(acceptAction(g, 10, { action: 'start', revision: g.revision }, 10)); return g; }
+test('six seats rotate across both teams and short hands allocate two balls each', () => {
+  const g = createGame(); g.players.forEach((p, i) => p.id = i + 1);
+  const action = (id, options) => acceptAction(g, id, { action: 'options', options, revision: g.revision }, 1);
+  assert.equal(action(2, { ballsPerPlayer: 2 }), false);
+  assert.equal(action(1, { ballsPerPlayer: 3 }), false);
+  assert(action(1, { ballsPerPlayer: 2 })); nextHand(g);
+  assert.deepEqual(g.remaining, Array(6).fill(2));
+  const visited = new Set();
+  for (let n = 0; n < 12; n++) {
+    assert.equal(g.phase, 'aiming'); visited.add(g.turn);
+    assert(shoot(g, { angle: 0, power: .1 })); while (g.phase === 'rolling') step(g);
+  }
+  assert.equal(visited.size, 6); assert.equal(g.phase, 'hand');
+  assert.deepEqual(g.remaining, Array(6).fill(0));
+  assert.equal(action(1, { ballsPerPlayer: 4 }), false);
+});
 test('an unobstructed arrime stops at the guide point at fixed steps', () => {
   const pitch = createPitch(-4, -8), shot = { angle: .12, power: .55, mode: 'arrime' };
   const b = throwBall(pitch, 0, shot); settle(pitch); const target = landing(shot);
@@ -103,4 +119,21 @@ test('the Fácil preview matches the real throw, collisions included', async () 
   const preview = previewThrow(pitch, 0, shot); const b = throwBall(pitch, 0, shot); settle(pitch);
   const end = preview.path.at(-1); assert(Math.hypot(end.x - b.x, end.z - b.z) < 1e-9);
   const mingo = preview.moved.find(m => m.id === 0); assert(Math.hypot(mingo.x - pitch.balls[0].x, mingo.z - pitch.balls[0].z) < 1e-9);
+});
+
+test('team roster authorizes self swaps and host arrangements only before a hand', () => {
+ const g=createGame();g.players[0].id=1;g.players[1].id=2;g.players[2].id=3;
+ const swap=(actor,from,to,revision=g.revision)=>acceptAction(g,actor,{action:'swap',from,to,revision},1);
+ assert.equal(swap(2,0,2),false);assert.equal(swap(2,1,0),true);assert.equal(g.players[0].id,2);
+ assert.equal(swap(2,0,3,0),false,'stale revision');assert.equal(swap(1,2,5),true);assert.equal(g.players[5].id,3);
+ const order=g.players.map(p=>p.id);assert(acceptAction(g,1,{action:'start',revision:g.revision},1));
+ assert.deepEqual(g.players.map(p=>p.id),order);assert.equal(swap(2,0,1),false);
+ assert.deepEqual(copy(g).players.map(p=>p.id),order);
+});
+
+test('host reset restores the primary map and rule defaults atomically',()=>{
+ const g=createGame();g.mapId='hato';g.target=24;g.difficulty='experto';g.ballsPerPlayer=2;
+ const action={action:'options',options:{target:12,difficulty:'normal',ballsPerPlayer:4},resetMap:true,revision:0};
+ assert.equal(acceptAction(g,2,action,1),false);assert.equal(g.mapId,'hato');
+ assert(acceptAction(g,1,action,1));assert.equal(g.mapId,'plaza');assert.equal(g.target,12);assert.equal(g.difficulty,'normal');assert.deepEqual(g.remaining,Array(6).fill(4));assert.equal(g.revision,1);
 });

@@ -3,9 +3,9 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { sound, Puffs, Shockwaves, popCounter } from '/engine/fx.js';
 import { loadAvatar, loadName, randomAvatar } from '/engine/avatar.js';
-import { buildCharacter } from '/engine/models/characters/pana/avatar-model.js';
+import { makePortraits, drawReticles } from './presentation.js';
 import { makeMango } from '/engine/models/props/mango.js';
-import { createBoard, createToken, createDie, TILE_COUNT, FORK } from './board.js';
+import { createBoard, createToken, createDie, FORK } from './board.js';
 import { RIVER, SEA, MAP_BOUNDS, beachMask } from './island.js';
 import atrapa from './minigames/atrapa.js';
 import caigas from './minigames/caigas.js';
@@ -30,6 +30,8 @@ import { inviteUrl, newRoomCode, roomFromUrl } from '/engine/invite.js';
 import { BululuRoom } from './network.js';
 import { IDLE_INPUT, seeded, withRandom } from './online-rules.js';
 import { readPresentation, writePresentation } from './online-view.js';
+import { createRoomOptions } from '/engine/room-options.js';
+import { OPTION_FIELDS, DEFAULT_OPTIONS, cleanOptions, applyOptions, minigamePool, cpuPace, stealMango, awardFinalBonus } from './options.js';
 
 // every tile, sign and bubble is drawn on a canvas in the cartoon font, so
 // load it before building anything (but never hang on it)
@@ -48,7 +50,8 @@ const SPEED = Number(QS.get('speed')) || 1;
 let ROUNDS = Math.max(1, Math.min(20, Number(QS.get('rounds')) || 10));   // the lobby can change it
 const DEBUG = QS.has('debug');
 const MINIGAMES = [atrapa, caigas, caida, momia, coleo, choque, embuste, remada, raudal, remolino, chinazo, criollas];
-const nextMinigame = rules.minigameBag(MINIGAMES);
+let options = { ...DEFAULT_OPTIONS, rounds: ROUNDS };
+let nextMinigame = rules.minigameBag(MINIGAMES);
 const FORCED = MINIGAMES.find((m) => m.id === QS.get('mini'));
 const ONLY = MINIGAMES.find((m) => m.id === QS.get('play'));
 const code = roomFromUrl() || newRoomCode();
@@ -76,7 +79,7 @@ const players = (() => {
     return {
       i, color, avatar, human: i === 0,
       name: i === 0 ? loadName() : names[i - 1],
-      coins: START_COINS, mangos: 0, tile: 0, token: null,
+      coins: START_COINS, mangos: 0, miniWins: 0, tile: 0, token: null,
     };
   });
 })();
@@ -322,7 +325,7 @@ let jumpPressed = false;
 let actionWaiters = [];
 addEventListener('keydown', (e) => {
   // Let the atmosphere buttons retain native Space/Enter/Tab behavior.
-  if (e.target.closest?.('.places')) return;
+  if (e.target.closest?.('.places') || (!started && e.target.closest?.('button, input, select, textarea, a'))) return;
   const k = e.key.toLowerCase();
   if (k === ' ' || k.startsWith('arrow')) e.preventDefault();
   held[k] = true;
@@ -453,7 +456,7 @@ const ICONS = {
 };
 
 let cardMode = 'board';
-let miniScores = [0, 0, 0, 0];
+let miniScores = players.map(() => 0);
 let miniIcon = 'mango';
 let turnOf = -1;
 let lastCards = '';
@@ -534,31 +537,6 @@ function ask(text, options, { auto = 0, delay = 0.5 } = {}) {
     if (AUTO) wait(delay).then(() => done(auto));
     else actionWaiters.push(onKey);
   });
-}
-
-// ---------- portraits for the player cards ----------
-function makePortraits() {
-  const pr = new THREE.WebGLRenderer({ antialias: true, alpha: true, preserveDrawingBuffer: true });
-  pr.setSize(128, 128);
-  const scene = new THREE.Scene();
-  scene.add(new THREE.HemisphereLight(0xffffff, 0x8a6a4a, 2.2));
-  const key = new THREE.DirectionalLight(0xffffff, 1.4);
-  key.position.set(2, 3, 4);
-  scene.add(key);
-  const pcam = new THREE.PerspectiveCamera(28, 1, 0.1, 20);
-  pcam.position.set(0.9, 1.55, 2.9);
-  pcam.lookAt(0, 1.38, 0);
-  for (const p of players) {
-    const c = buildCharacter(p.avatar);
-    c.group.rotation.y = 0.35;
-    c.update(0, { look: 0 });
-    scene.add(c.group);
-    pr.render(scene, pcam);
-    p.portrait = pr.domElement.toDataURL();
-    c.dispose();
-  }
-  pr.dispose();
-  pr.forceContextLoss();
 }
 
 // ======================================================================
@@ -800,7 +778,7 @@ async function moveStand(p) {
   // somewhere the panas will reach soon: ahead of them on average, but not
   // right under anyone's nose (the board is big; behind them is a whole lap)
   const next = pick(rules.standCandidates({
-    tileCount: TILE_COUNT, standTile: board.standTile, tiles: board.tiles, players,
+    tileCount: board.mainCount, standTile: board.standTile, tiles: board.tiles, players,
     isBad: (i) => board.standSpot(i).bad >= 30,
   }));
   puffs.spawn(st.group.position.clone().setY(2), { color: 0xffffff, count: 14, spread: 4, size: 1.2, rise: 2, life: 1 });
@@ -818,6 +796,11 @@ async function moveStand(p) {
 }
 
 const EVENTS = [
+  { title: '¡Mango prestado!', text: 'Le robas un Mango de oro al pana que más tiene.', run: async p => {
+    const target = stealMango(players, p, options.stealing);
+    renderCards();
+    await toast(target ? `¡Un mango de ${escapeHtml(target.name)}!` : '¡No hay mangos para robar!', '', 1.4, 'gold');
+  } },
   { title: '¡Arepa de la suerte!', text: 'Encontraste una arepa rellena de monedas.', run: (p) => give(p, 6, '¡Qué rica!') },
   { title: '¡Ay, la cartera!', text: 'Se te cayó la cartera en el río.', run: (p) => give(p, -5, '¡Mi plata!') },
   {
@@ -876,7 +859,7 @@ async function landOn(p) {
   if (coins > 0) return give(p, coins);
   if (coins < 0) return give(p, coins, pick(['¡Ay!', '¡Qué pava!', `${coins}`]));
   if (kind === 'tree') return shakeTree(p);
-  const ev = pick(EVENTS);
+  const ev = pick(options.stealing ? EVENTS : EVENTS.slice(1));
   sound.tone(660, 0, 0.12, 'triangle', 0.08);
   sound.tone(880, 0.12, 0.18, 'triangle', 0.08);
   await toast(ev.title, ev.text, 1.9, 'event');
@@ -892,21 +875,21 @@ async function takeTurn(p) {
 
   // two dice spin over the pana's head
   dice.forEach((d, k) => {
-    d.mesh.visible = true;
-    d.rolling = true;
+    d.mesh.visible = k < options.dice;
+    d.rolling = k < options.dice;
     d.mesh.position.set(tk.rest.x + (k ? 0.95 : -0.95), tk.rest.y + 4.8, tk.rest.z);
   });
   tk.pin.visible = false;
   sound.unlock();
   if (isHuman(p)) await ask('', [{ label: '¡Tira los dados!', key: ' ' }]);
   else await wait(0.9);
-  const { a, b, n, doubles } = rules.rollDice();
+  const { a, b, n, doubles } = rules.rollDice(Math.random, options.dice);
   dice[0].rolling = false;
   dice[0].value = a; dice[0].show(a);
   sound.boing();
   await wait(0.35);
   dice[1].rolling = false;
-  dice[1].value = b; dice[1].show(b);
+  dice[1].value = b; if (b) dice[1].show(b);
   sound.boing();
   tk.bubble.say(doubles ? '¡DOBLES!' : n >= 10 ? pick(['¡Epa!', '¡Dale!', `¡${n}!`]) : n <= 3 ? pick(['¿Nada más?', '¡Qué pava!']) : `¡${n}!`, 0.9);
   await wait(0.9);
@@ -949,7 +932,7 @@ async function playMinigame(def) {
   const game = createMini(def, spec);
   game.camera.aspect = spec?.aspect || innerWidth / innerHeight;
   game.camera.updateProjectionMatrix();
-  miniScores = [0, 0, 0, 0];
+  miniScores = players.map(() => 0);
   miniIcon = def.icon;
   cardMode = 'mini';
   renderCards();
@@ -997,7 +980,7 @@ async function playMinigame(def) {
   $('winner').classList.remove('hidden');
   await wait(3);
   $('winner').classList.add('hidden');
-  for (const i of winners) players[i].coins += 10;
+  for (const i of winners) { players[i].coins += 10; players[i].miniWins = (players[i].miniWins || 0) + 1; }
 
   mini = null;
   view = boardView;
@@ -1010,30 +993,6 @@ async function playMinigame(def) {
     players[i].token.cheer = 1.2;
     players[i].token.bubble.say('+10', 1.2);
   }
-}
-
-// Aim minigames draw a reticle per pana over the canvas: { x, y } in NDC, its
-// color, how far the china is pulled (0..1), and for you the stones left.
-function drawReticles(list) {
-  const box = $('reticles');
-  while (box.children.length < list.length) {
-    const el = document.createElement('div');
-    el.className = 'reticle';
-    el.innerHTML = '<i></i><span class="ammo"></span>';
-    box.append(el);
-  }
-  list.forEach((r, i) => {
-    const el = box.children[i];
-    el.style.setProperty('--c', r.color);
-    el.style.setProperty('--pull', r.pull.toFixed(2));
-    el.style.transform = `translate(${((r.x + 1) / 2) * innerWidth}px, ${((1 - r.y) / 2) * innerHeight}px)`;
-    el.classList.toggle('me', !!r.me);
-    el.classList.toggle('empty', r.ammo === 0);
-    if (r.me) {
-      const pips = r.ammo == null ? '' : '<b></b>'.repeat(r.ammo) + '<b class="used"></b>'.repeat(Math.max(0, (r.max || 3) - r.ammo));
-      if (el.dataset.pips !== pips) el.querySelector('.ammo').innerHTML = el.dataset.pips = pips;
-    }
-  });
 }
 
 function updateMini(dt) {
@@ -1057,17 +1016,33 @@ function updateMini(dt) {
 // ======================================================================
 // start and end
 // ======================================================================
+
+// Options remain part of the host checkpoint, including after host migration.
+function syncOptions(next) {
+  const previous = options;
+  options = cleanOptions(next);
+  options.rounds = ROUNDS;
+  if (previous.minigames !== options.minigames) nextMinigame = rules.minigameBag(minigamePool(MINIGAMES, options));
+  if (previous.board !== options.board || previous.surprises !== options.surprises) {
+    board.configure(options); board.setStand(7); layoutTokens(); drawMapBase(); overview();
+  }
+}
+function changeOptions(patch) {
+  if (started || (online && !room?.isHost)) return;
+  const next = applyOptions(options, patch); if (!next) return;
+  if (patch.rounds != null) ROUNDS = patch.rounds;
+  syncOptions(next);
+  for (const p of players) { p.coins = options.startCoins; p.tile = 0; }
+  layoutTokens(); lobbyRoster(); renderCards();
+  if (online) room.publish(captureOnline());
+}
+const roomOptions = createRoomOptions($('room-options'), { title: 'Bululú', fields: OPTION_FIELDS,
+  change: changeOptions, reset: () => changeOptions(DEFAULT_OPTIONS) });
+function boardPace() { return mini || turnOf < 0 ? 1 : cpuPace(options, isHuman(players[turnOf])); }
+
 async function intro() {
   $('intro-players').innerHTML = players.map((p) =>
     `<div class="ip" style="--c:${p.color}"><img src="${p.portrait}" alt=""><b>P${p.i + 1}</b><span>${p === me ? 'Tú' : escapeHtml(p.name)}</span></div>`).join('');
-  const pickRounds = (n) => {
-    if (online && !room?.isHost) return;
-    ROUNDS = n;
-    $('intro-rounds').textContent = $('intro-rounds-n').textContent = n;
-    for (const b of $('intro-pick').children) b.setAttribute('aria-pressed', String(Number(b.dataset.rounds) === n));
-  };
-  for (const b of $('intro-pick').children) b.onclick = () => pickRounds(Number(b.dataset.rounds));
-  pickRounds(ROUNDS);
   if (!online) lobbyRoster();
   $('intro').classList.remove('hidden');
   $('online').onclick = connectOnline;
@@ -1076,7 +1051,7 @@ async function intro() {
   await new Promise((r) => {
     const start = () => { if (online) { if (room?.isHost && !started) beginOnline(null); } else r(); };
     $('start').onclick = start;
-    const onKey = (k) => { if (k === ' ' || k === 'enter') start(); };
+    const onKey = (k) => { if (!roomOptions.isOpen && (k === ' ' || k === 'enter')) start(); };
     actionWaiters.push(onKey);
     if (AUTO && !online) wait(1).then(r);
   });
@@ -1121,10 +1096,12 @@ function drawResults() {
 }
 
 async function main() {
-  makePortraits();
+  makePortraits(players);
   renderCards();
   await intro();
-  started = true;
+  started = true; roomOptions.close();
+  for (const p of players) { p.coins = options.startCoins; p.miniWins = 0; }
+  board.setStand(7);
   await runBoard();
 }
 
@@ -1151,7 +1128,9 @@ async function runBoard(resume) {
     await playMinigame(def);
     resume = null;
   }
+  const bonus = awardFinalBonus(players, options.finalBonus);
   saveCheckpoint('done', 0);
+  if (bonus.length) await toast('¡Bonus final!', `Un Mango de oro por más victorias: ${bonus.map(i => escapeHtml(players[i].name)).join(' · ')}`, 2.5, 'gold');
   await results();
 }
 
@@ -1160,7 +1139,7 @@ async function runBoard(resume) {
 const CANCELLED = new Error('Bululú host changed');
 function ignoreCancelled(error) { if (error !== CANCELLED) { console.error(error); $('room-status').textContent = 'No se pudo continuar la partida. Vuelve a entrar a la sala.'; } }
 function playerData() {
-  return players.map(({ i, color, avatar, human, name, coins, mangos, tile, seat }) => ({ i, color, avatar, human, name, coins, mangos, tile, seat }));
+  return players.map(({ i, color, avatar, human, name, coins, mangos, miniWins, tile, seat }) => ({ i, color, avatar, human, name, coins, mangos, miniWins, tile, seat }));
 }
 function applyPlayers(data) {
   let changed = false;
@@ -1175,16 +1154,13 @@ function applyPlayers(data) {
   });
   me = players.find(p => p.seat === room?.id) || null;
   layoutTokens();
-  if (changed) { makePortraits(); lastCards = ''; }
+  if (changed) { makePortraits(players); lastCards = ''; }
 }
 function lobbyRoster() {
   $('intro-players').innerHTML = players.map(p =>
     `<div class="ip" style="--c:${p.color}"><img src="${p.portrait}" alt=""><b>P${p.i + 1}</b><span>${escapeHtml(p.name)}${p === me ? ' · Tú' : p.human ? '' : ' · Bot'}</span></div>`).join('');
   $('intro-rounds').textContent = $('intro-rounds-n').textContent = ROUNDS;
-  for (const b of $('intro-pick').children) {
-    b.disabled = online && (!room?.isHost || started);
-    b.setAttribute('aria-pressed', String(Number(b.dataset.rounds) === ROUNDS));
-  }
+  roomOptions.update(options, !started && (!online || room?.isHost));
   $('start').disabled = online && (!room?.isHost || started);
   $('start').textContent = online ? room?.isHost ? '¡A jugar!' : 'Esperando al anfitrión…' : 'Jugar con bots';
 }
@@ -1231,11 +1207,11 @@ function showOnlinePrompt(prompt) {
 function saveCheckpoint(stage, next, def, only) {
   if (!online) return;
   if (!mini) syncRoster();
-  checkpoint = { stage, next, round, rounds: ROUNDS, players: playerData(), stand: board.standTile, minigame: def?.id, only };
+  checkpoint = { stage, next, round, rounds: ROUNDS, options: { ...options }, players: playerData(), stand: board.standTile, minigame: def?.id, only };
   room.publish(captureOnline());
 }
 function captureOnline() {
-  return { started, rounds: ROUNDS, round, players: playerData(), checkpoint, prompt: pendingChoice,
+  return { started, options: { ...options }, rounds: ROUNDS, round, players: playerData(), checkpoint, prompt: pendingChoice,
     turnOf, cardMode, miniScores, miniIcon, stand: board.standTile, highlight: board.highlight,
     camera: { pos: cam.wantPos.toArray(), look: cam.wantLook.toArray() },
     tokens: players.map(p => ({ pos: p.token.group.position.toArray(), rest: p.token.rest.toArray(),
@@ -1267,6 +1243,8 @@ function clearMini() {
 function applyOnline(state) {
   if (authority) stopAuthority();
   started = state.started; ROUNDS = state.rounds; round = state.round;
+  syncOptions(state.options);
+  if (started && roomOptions.isOpen) roomOptions.close();
   checkpoint = state.checkpoint;
   applyPlayers(state.players); lobbyRoster();
   $('intro').classList.toggle('hidden', started); $('hud').classList.toggle('hidden', !started);
@@ -1339,13 +1317,14 @@ function stopAuthority() {
   mini?.abort?.(CANCELLED); clearMini(); pendingChoice = null;
 }
 function beginOnline(resume) {
-  stopAuthority(); authority = 1; started = true;
+  stopAuthority(); authority = 1; started = true; roomOptions.close();
   if (resume) {
+    syncOptions(resume.options);
     applyPlayers(resume.players); ROUNDS = resume.rounds; round = resume.round;
     board.setStand(resume.stand);
   } else {
     round = 1;
-    applyPlayers(playerData().map(p => ({ ...p, coins: START_COINS, mangos: 0, tile: 0 })));
+    applyPlayers(playerData().map(p => ({ ...p, coins: options.startCoins, mangos: 0, miniWins: 0, tile: 0 })));
     board.setStand(7);
   }
   syncRoster(); layoutTokens();
@@ -1394,7 +1373,7 @@ setInterval(() => {
     if (checkpoint) beginOnline(checkpoint);
     return;
   }
-  stepJobs(0.05 * SPEED);
+  stepJobs(0.05 * SPEED * boardPace());
   if (mini) updateMini(0.05 * SPEED);
   if (pendingChoice && !room.members.has(pendingChoice.seat)) finishChoice(pendingChoice.auto);
   if (++onlineTicks % 2 === 0) { if (!started) lobbyRoster(); room.publish(captureOnline()); }
@@ -1407,7 +1386,7 @@ function frame() {
   const dt = paused && !online ? 0 : Math.min(clock.getDelta(), 0.1) * SPEED;
   if (paused && !online) clock.getDelta();
   t += dt;
-  if (!online) { stepJobs(dt); if (mini) updateMini(dt); }
+  if (!online) { stepJobs(dt * boardPace()); if (mini) updateMini(dt); }
   view.update(dt, t);
   renderer.render(view.scene, view.camera);
   requestAnimationFrame(frame);
@@ -1435,7 +1414,7 @@ async function fastForward(seconds, dt = 1 / 30) {
     await null;   // let the turn logic's awaits run
   }
 }
-if (DEBUG) Object.assign(window, { menu, players, board, dice, MINIGAMES, layoutTokens, fastForward, renderer, boardScene, boardCam, minigame: () => mini, onlineState: () => ({ room, checkpoint, pendingChoice, miniFrame, me: me?.i }) });
+if (DEBUG) Object.assign(window, { menu, players, board, dice, MINIGAMES, layoutTokens, fastForward, renderer, boardScene, boardCam, minigame: () => mini, onlineState: () => ({ room, checkpoint, pendingChoice, miniFrame, me: me?.i, options }), changeOptions });
 
 frame();
 main().catch(ignoreCancelled);

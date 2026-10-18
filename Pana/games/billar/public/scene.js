@@ -5,7 +5,10 @@ import { buildCharacter } from '/engine/models/characters/pana/avatar-model.js';
 import { normalizeAvatar } from '/engine/avatar.js';
 import { difficultyInfo } from '/engine/difficulty.js';
 import { guideRibbon, trimPath, pathLength } from '/engine/aim-guide.js';
-import { RADIUS, predictShot, legalTarget, canPlace } from './rules.js';
+import { RADIUS, POCKETS, predictShot, legalTarget, canPlace } from './rules.js';
+import { cafeTerrace } from '/engine/models/props/cafe-terrace.js';
+import { disposeModel } from '/engine/models/props/game-table.js';
+import { pocketMarker } from './pocket-markers.js';
 
 // Camera views: 'taco' rides behind the cue ball like a player bending over
 // the shot; 'plaza' frames the table in its setting; 'mesa' looks straight down.
@@ -14,6 +17,14 @@ export const VIEWS = [['taco', 'Detrás de la bola'], ['mesa', 'Desde arriba'], 
 export function createPoolScene(canvas) {
   const stage = createTableWorld(canvas), { scene, camera, renderer } = stage;
   const table = createPoolTable(), cue = createPoolCue(); scene.add(table, cue);
+  const cafe = cafeTerrace(); cafe.position.set(0, 0, -7.5); cafe.visible = false; scene.add(cafe);
+  // Numbers stay facing the player, including behind-cue and portrait cameras.
+  const pocketLabels = POCKETS.map(([x, y], i) => {
+    const sprite = pocketMarker(i + 1);
+    sprite.position.set((x - 500) / 100, POOL_SURFACE + .65, (y - 250) / 100); sprite.scale.set(.38, .38, 1); scene.add(sprite); return sprite;
+  });
+  const kitchen = new THREE.Mesh(new THREE.PlaneGeometry(2.5, 5), new THREE.MeshBasicMaterial({ color: '#ffca28', transparent: true, opacity: .16, depthWrite: false }));
+  kitchen.rotation.x = -Math.PI / 2; kitchen.position.set(-3.75, POOL_SURFACE + .008, 0); scene.add(kitchen);
   const balls = new Map(), avatars = new Map(), shown = new Map();
   for (let number = 0; number < 16; number++) { const ball = createPoolBall({ number }); scene.add(ball); balls.set(number, ball); }
   const aimLine = guideRibbon('#ffffff', .03), objectLine = guideRibbon('#ffffff', .03, { opacity: .85 }), cueLine = guideRibbon('#7fe9f5', .028, { opacity: .85 });
@@ -62,7 +73,7 @@ export function createPoolScene(canvas) {
     stage.frameCamera(bounds, rotation ? [1, elevation, 0] : [lobby ? .24 : .08, elevation, 1], safe);
   }
   function guide(state, { angle, power, spin }) {
-    const info = difficultyInfo(state.difficulty).guide, b = state.balls[0];
+    const info = state.options.guide === 'long' ? difficultyInfo('facil').guide : state.options.guide === 'short' ? difficultyInfo('dificil').guide : difficultyInfo(state.difficulty).guide, b = state.balls[0];
     const shot = predictShot(state, angle, power, spin, { bounces: info.bounces });
     const valid = !shot.target || legalTarget(state, shot.target.id), color = valid ? '#ffffff' : '#ff6b6b';
     const full = [b, shot.contact].map(flat), reach = pathLength(full) * info.reach;
@@ -79,10 +90,13 @@ export function createPoolScene(canvas) {
     const cuePath = shot.target ? [shot.contact, ...shot.cuePath.slice(1)] : shot.cuePath;
     cueLine.userData.set(reaches && info.after ? after(cuePath) : [], POOL_SURFACE + .006);
   }
-  function draw(state, { angle = 0, power = .65, spin = { x: 0, y: 0 }, active = false, placement = null, dt = .016 } = {}) {
+  function draw(state, { angle = 0, power = .65, spin = { x: 0, y: 0 }, active = false, placement = null, calledPocket = -1, dt = .016 } = {}) {
     stage.setMap(state.mapId);
+    cafe.visible = state.options.venue === 'cafe';
     const { w, h } = stage.resize(), lobby = state.phase === 'lobby', portrait = w < 650 && h > w;
     const aiming = state.phase === 'aiming' && !state.ballInHand;
+    kitchen.visible = active && state.ballInHand && state.options.foulPlacement === 'kitchen';
+    pocketLabels.forEach((sprite, i) => { sprite.visible = state.options.calledPocket && aiming; sprite.material.color.set(i === calledPocket ? '#ffca28' : '#ffffff'); sprite.scale.setScalar(i === calledPocket ? .5 : .38); });
     rotation = portrait && !lobby && view !== 'taco' ? Math.PI / 2 : 0;
     const short = h < 520 && w > h;
     let safe;
@@ -96,7 +110,8 @@ export function createPoolScene(canvas) {
       if (visible && avatar?.key !== key) { avatar?.dispose(); avatar = buildCharacter(p.avatar); avatar.key = key; avatar.group.scale.setScalar(1.25); avatars.set(seat, avatar); scene.add(avatar.group); }
       if (!avatar) continue;
       // Each pana waits off a corner, facing the cloth, clear of the shot line.
-      avatar.group.position.set(seat ? 6.5 : -6.5, 0, seat ? -3.7 : 3.7); avatar.group.rotation.y = Math.atan2(-avatar.group.position.x, -avatar.group.position.z);
+      const row = Math.floor(seat / 2);
+      avatar.group.position.set(seat % 2 ? 6.5 : -6.5, 0, (seat % 2 ? -1 : 1) * (3.7 - row * 2.8)); avatar.group.rotation.y = Math.atan2(-avatar.group.position.x, -avatar.group.position.z);
       // A pana right beside the low camera would fill the screen: step out of shot.
       avatar.group.visible = visible && Math.hypot(camera.position.x - avatar.group.position.x, camera.position.z - avatar.group.position.z) > 1.8;
       avatar.update(dt, {}); avatar.neck.rotation.x = .17;
@@ -114,7 +129,7 @@ export function createPoolScene(canvas) {
     for (const m of [aimLine, objectLine, cueLine]) m.visible = false;
     ring.visible = false; ghost.visible = false;
     if (mine) {
-      guide(state, { angle, power, spin });
+      if (state.options.guide !== 'none') guide(state, { angle, power, spin });
       // The tip offsets with the chosen english, and pulls back with power.
       const b = state.balls[0], pull = 22 + power * 28, side = spin.x * RADIUS * .55;
       cue.position.copy(vec(b.x - Math.cos(angle) * pull - Math.sin(angle) * side, b.y - Math.sin(angle) * pull + Math.cos(angle) * side));
@@ -136,7 +151,8 @@ export function createPoolScene(canvas) {
   return { scene, camera, renderer, balls, avatars, draw, point, screen,
     setView(value) { view = value; chasing = false; lastMode = ''; }, get view() { return view; }, get rotation() { return rotation; },
     get guides() { return { aim: aimLine.visible, ghost: ghost.visible, object: objectLine.visible }; },
-    dispose() { balls.forEach(b => b.userData.dispose()); avatars.forEach(a => a.dispose()); table.userData.dispose(); cue.userData.dispose(); ghost.userData.dispose();
+    dispose() { balls.forEach(b => b.userData.dispose()); avatars.forEach(a => a.dispose()); table.userData.dispose(); cue.userData.dispose(); ghost.userData.dispose(); disposeModel(cafe);
+      pocketLabels.forEach(s => { s.material.map.dispose(); s.material.dispose(); }); kitchen.geometry.dispose(); kitchen.material.dispose();
       for (const m of [aimLine, objectLine, cueLine]) m.userData.dispose(); ring.geometry.dispose(); ring.material.dispose(); stage.dispose(); },
   };
 }

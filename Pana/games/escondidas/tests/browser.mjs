@@ -15,9 +15,10 @@ const room = `qa-${Date.now().toString(36)}`;
 const check = text => console.log(`ok  ${text}`);
 async function newPage(name, mobile = false, code = room) {
   const context = await browser.newContext(mobile ? { viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true } : { viewport: { width: 1440, height: 900 } });
+  await context.addInitScript(() => localStorage.setItem('pana:settings', JSON.stringify({ quality: 'baja' })));
   const page = await context.newPage(); page.on('pageerror', error => errors.push(`${name}: ${error.message}`));
   await page.goto(`${base}/g/escondidas/?room=${code}&name=${name}&debug`);
-  await page.waitForFunction(() => window.hunt?.room.connected, undefined, { timeout: 90000 });
+  await page.waitForFunction(() => window.hunt?.room.connected && window.PANA_PREPARED === true, undefined, { timeout: 120000 });
   return page;
 }
 try {
@@ -59,7 +60,7 @@ try {
   await c.waitForFunction(() => hunt.state.phase === 'lobby');
   assert.equal(await b.locator('#world').evaluate(el => el.style.filter), '');
   check('host departure returns survivors to a usable, unblurred lobby');
-  await b.locator('#role-seek').click(); await b.locator('#start').click();
+  await b.locator('#pana-room-more').click(); await b.locator('#role-seek').click(); await b.locator('#pana-room-done').click(); await b.locator('#start').click();
   await c.waitForFunction(() => hunt.state.phase === 'hide');
   const initialX = await c.evaluate(() => hunt.state.players.find(p => p.id === hunt.room.id).x);
   const button = await c.locator('[data-move="right"]').boundingBox();
@@ -86,7 +87,7 @@ try {
   await b.evaluate(() => hunt.room.cut());
   await b.waitForFunction(() => !hunt.room.connected); await b.locator('#practice').click();
   await b.waitForFunction(() => hunt.room.offline && hunt.state.phase === 'lobby');
-  await b.locator('#role-hide').click(); await b.locator('#start').click(); await b.keyboard.press('1');
+  await b.locator('#pana-room-more').click(); await b.locator('#role-hide').click(); await b.locator('#pana-room-done').click(); await b.locator('#start').click(); await b.keyboard.press('1');
   await b.waitForFunction(() => hunt.camera.position.y < 4);
   if (output) await b.screenshot({ path: path.join(output, 'pana-hunt-gameplay.png') });
   check('connection failure offers playable local practice');

@@ -9,7 +9,7 @@ async function open(game,code,mobile=false){
   const ctx=await browser.newContext({viewport:mobile?{width:390,height:844}:{width:1280,height:850},isMobile:mobile,hasTouch:mobile});
   await ctx.addInitScript(()=>{localStorage.setItem('pana:name','Pana del puerto');localStorage.setItem('pana:settings',JSON.stringify({sound:false,quality:'baja'}));});
   const p=await ctx.newPage();p.on('pageerror',e=>{errors.push(`${game}: ${e.message}`);console.error(`${game}: ${e.stack}`);});await p.goto(`${base}/g/${game}/?debug&room=${code}`);
-  await wait(p,key=>window[key]?.room.connected&&window[key].world,`${game}Debug`);return p;
+  await wait(p,key=>window[key]?.room.connected&&window[key].world,`${game}Debug`);await wait(p,()=>window.PANA_LOBBY_LOADING===false);return p;
 }
 async function mapped(p,key,id){await wait(p,({key,id})=>window[key].room.state.mapId===id&&window[key].world.scene.userData.mapId===id,{key,id});}
 async function attempt(p,key,id){await p.evaluate(({key,id})=>{const r=window[key].room;if(key==='poquerDebug')r.link.send('map',{mapId:id,revision:r.state.revision});else r.action(key==='caidaDebug'?'configure':'map',{mapId:id,options:{mapId:id}});},{key,id});}
@@ -18,6 +18,7 @@ try{
   for(const game of ['caida','domino','poquer']){
     const key=`${game}Debug`,code=`pt-${game.slice(0,2)}-${Date.now().toString(36)}`,a=await open(game,code),b=await open(game,code);
     await wait(a,key=>window[key].room.isHost,key);assert.equal(await b.locator('#map-choice').isDisabled(),true);
+    await a.locator('#pana-room-more').click();
     for(const id of ['guipuzcoana','san-carlos','guipuzcoana','san-carlos']){
       await a.selectOption('#map-choice',id);await mapped(a,key,id);await mapped(b,key,id);
       assert.equal(await b.locator('#map-choice').inputValue(),id);
@@ -25,7 +26,9 @@ try{
     await attempt(b,key,'guipuzcoana');await attempt(a,key,'invalid');await a.waitForTimeout(300);await mapped(a,key,'san-carlos');
     // Migrating in the lobby must preserve the setting and enable the next host.
     await close(a,key);await wait(b,key=>window[key].room.isHost,key);await mapped(b,key,'san-carlos');
+    await b.locator('#pana-room-more').click();
     await b.selectOption('#map-choice','guipuzcoana');await mapped(b,key,'guipuzcoana');
+    await b.locator('#pana-room-done').click();
     await b.locator('#start').click();await wait(b,key=>window[key].room.state.phase!=='lobby',key);
     await attempt(b,key,'san-carlos');await b.waitForTimeout(300);await mapped(b,key,'guipuzcoana');
     const late=await open(game,code);await mapped(late,key,'guipuzcoana');
@@ -33,10 +36,12 @@ try{
     assert.equal(await b.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);
     await close(late,key);await close(b,key);
     const phone=await open(game,`${code}-p`,true);
+    await phone.locator('#pana-room-more').click();
     await phone.selectOption('#map-choice','san-carlos');await mapped(phone,key,'san-carlos');
     await phone.locator('#map-choice').scrollIntoViewIfNeeded();assert.equal(await phone.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);
     await phone.screenshot({path:`${out}/${game}-phone-picker.png`});
     // Local fallback keeps the last agreed world, as does an ordinary start.
+    await phone.locator('#pana-room-done').click();
     await phone.evaluate(key=>window[key].room.practice(),key);await mapped(phone,key,'san-carlos');
     if(game!=='poquer')await phone.locator('#start').click();
     await wait(phone,key=>window[key].room.state.phase!=='lobby',key);

@@ -2,11 +2,11 @@ import { TableRoom } from '/engine/table-room.js';
 import { createGame, acceptAction, step, STEP, copy, botPlayer } from './rules.js';
 
 // The table setting (goal, place, difficulty) survives new rooms and practice.
-const keepTarget = (prev) => prev ? { ...createGame(), target: prev.target, mapId: prev.mapId || 'plaza', difficulty: prev.difficulty || 'normal' } : createGame();
+const keepTarget = (prev) => prev ? { ...createGame(), target: prev.target, ballsPerPlayer: prev.ballsPerPlayer || 4, remaining: Array(6).fill(prev.ballsPerPlayer || 4), mapId: prev.mapId || 'plaza', difficulty: prev.difficulty || 'normal' } : createGame();
 
 export class CriollasRoom extends TableRoom {
   constructor(options) {
-    super({ ...options, game: 'criollas', protocol: 'criollas-v1', texts: {
+    super({ ...options, game: 'criollas', protocol: 'criollas-v2', texts: {
       handoff: 'Cambió el anfitrión. La mano continúa.',
       practice: 'Jugando con bots · tus panas pueden entrar por invitación en una sala online.', ...options.texts } }, {
       fresh: keepTarget,
@@ -14,11 +14,11 @@ export class CriollasRoom extends TableRoom {
       restore: (state) => copy(state),
       snapshot: copy,
       accept: acceptAction,
-      valid: (state) => state?.players?.length === 4,
+      valid: (state) => state?.players?.length === 6,
     });
     this.accumulator = 0; this.broadcastElapsed = 0;
   }
-  statusText() { const n = this.members.size; return `${n} pana${n === 1 ? '' : 's'} conectado${n === 1 ? '' : 's'} · ${4 - n} puesto${4 - n === 1 ? '' : 's'} con bots`; }
+  statusText() { const n = this.members.size; return `${n} pana${n === 1 ? '' : 's'} conectado${n === 1 ? '' : 's'} · ${6 - n} puesto${6 - n === 1 ? '' : 's'} con bots`; }
   seatMembers() {
     this.game.players.forEach((p, i) => { if (p.id !== null && !this.members.has(p.id)) this.game.players[i] = botPlayer(i); });
     for (const m of this.members.values()) {

@@ -3,6 +3,7 @@
 // panas run around the plaza for ROUND seconds and the most mangos wins.
 // Replace it with the real game, keeping snapshot(), restore() and update().
 import { draw, clamp } from '/engine/random.js';
+import { defaultOptions, roomOptions } from './options.js';
 
 export const ROUND = 60, ARENA = 12, SPEED = 6, REACH = 1.1, MANGOS = 6, BOT_SEAT = 1000, MIN_PLAYERS = 4;
 export const BOT_NAMES = ['Coco', 'Lola', 'Cheo', 'Nena', 'Toño', 'Mari', 'Pepe', 'Cuqui'];
@@ -16,11 +17,13 @@ export function cleanInput(raw) {
 export class Rush {
   constructor(seed = Date.now()) {
     this.seed = (seed >>> 0) || 1;
+    this.options = defaultOptions();
     this.players = []; this.mangos = []; this.nextMango = 1;
     this.phase = 'lobby'; this.time = ROUND; this.round = 0; this.winner = null;
   }
 
   snapshot() { return JSON.parse(JSON.stringify(this)); }
+  configure(patch) { const next = this.phase === 'lobby' && roomOptions(this.options, patch); if (!next) return false; this.options = next; return true; }
 
   // A new host continues from the last snapshot without the panas who left.
   static restore(state, members) {
@@ -43,8 +46,8 @@ export class Rush {
     this.players = this.players.filter(p => !p.bot);
     for (let i = 0; withBots && this.players.length < MIN_PLAYERS; i++) this.addPlayer(BOT_SEAT + i, BOT_NAMES[i], {}, true);
     for (const p of this.players) Object.assign(p, { score: 0, moving: false }, this.spot());
-    this.mangos = Array.from({ length: MANGOS }, () => ({ id: this.nextMango++, ...this.spot() }));
-    Object.assign(this, { phase: 'playing', time: ROUND, winner: null }); this.round++;
+    this.mangos = Array.from({ length: this.options.mangos }, () => ({ id: this.nextMango++, ...this.spot() }));
+    Object.assign(this, { phase: 'playing', time: this.options.seconds, winner: null }); this.round++;
   }
 
   // Bots run for the nearest mango.

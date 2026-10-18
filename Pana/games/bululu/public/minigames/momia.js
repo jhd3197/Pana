@@ -13,7 +13,6 @@ import { sunnyStage, makeActors, animateActor, rand, pick } from './stage.js';
 
 const TIME = 30;
 const START = -11, GOAL = 7.5;      // x where the panas start and where the relic is touched
-const LANES = [3, 1, -1, -3];
 const SPEED = 1.8;
 const CREEP = 0.4;                 // disguised speed, as a share of SPEED
 const STILL = 0.6;                 // slower than this counts as frozen
@@ -85,7 +84,7 @@ export default {
     const actors = makeActors(scene, ctx.players);
     actors.forEach((a, i) => {
       a.x = START;
-      a.z = LANES[i];
+      a.z = -3 + i * 6 / (actors.length - 1);
       a.y = 0.2;
       a.disguised = 0;
       a.disguises = DISGUISES;

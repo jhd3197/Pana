@@ -25,14 +25,15 @@ async function layout(page) {
     return { mapId: s.mapId, seed: s.layoutSeed, hideSeconds: s.hideSeconds, props: data.props };
   });
 }
+async function chooseHide(page, seconds) { await page.locator('#pana-room-more').click(); await page.locator(`[data-room-option="hideSeconds"][data-value="${seconds}"]`).click(); await page.locator('#pana-room-done').click(); }
 async function leave(page) { await page.evaluate(() => hunt.room.dispose()); await page.context().close(); }
 try {
   const host = await open(), guest = await open(true);
   await wait(host, () => hunt.room.isHost && hunt.room.members.size === 2);
-  assert.equal(await host.locator('#hide-seconds').inputValue(), '30');
-  assert.deepEqual(await host.locator('#hide-seconds option').evaluateAll(options => options.map(o => Number(o.value))), [15, 20, 30, 45, 60]);
-  assert.equal(await guest.locator('#hide-seconds').isDisabled(), true);
-  await host.selectOption('#hide-seconds', '45');
+  assert.equal(await host.locator('[data-room-option="hideSeconds"][data-value="30"]').getAttribute('aria-pressed'), 'true');
+  assert.deepEqual(await host.locator('[data-room-option="hideSeconds"]').evaluateAll(options => options.map(o => Number(o.dataset.value))), [15, 20, 30, 45, 60]);
+  assert.equal(await guest.locator('[data-room-option="hideSeconds"]').first().isDisabled(), true);
+  await chooseHide(host, 45);
   await wait(guest, () => hunt.state.hideSeconds === 45 && document.querySelector('#hide-seconds-stat').textContent === '45s');
   await guest.evaluate(() => hunt.room.action('configure', { options: { hideSeconds: 15 } }));
   await host.evaluate(() => hunt.room.action('configure', { options: { hideSeconds: -10 } }));
@@ -45,7 +46,7 @@ try {
   }
   await host.screenshot({ path: `${out}/laptop-lobby.png` });
   const lobby = await layout(host);
-  await host.locator('#role-seek').click(); await host.locator('#start').click();
+  await host.locator('#pana-room-more').click(); await host.locator('#role-seek').click(); await host.locator('#pana-room-done').click(); await host.locator('#start').click();
   await wait(guest, () => hunt.state.phase === 'hide');
   const first = await layout(host);
   assert.notEqual(first.seed, lobby.seed); assert.notDeepEqual(first.props, lobby.props);
@@ -69,13 +70,13 @@ try {
   await wait(guest, () => hunt.room.isHost && hunt.state.phase === 'lobby');
   await wait(late, () => hunt.state.phase === 'lobby');
   assert.deepEqual(second, await layout(guest)); assert.deepEqual(second, await layout(late));
-  assert.equal(await guest.locator('#hide-seconds').isEnabled(), true);
-  await guest.selectOption('#hide-seconds', '60'); await guest.selectOption('#map-choice', 'hato');
+  assert.equal(await guest.locator('[data-room-option="hideSeconds"]').first().isEnabled(), true);
+  await chooseHide(guest, 60); await guest.selectOption('#map-choice', 'hato');
   await wait(late, () => hunt.state.hideSeconds === 60 && hunt.state.mapId === 'hato');
-  await guest.locator('#hide-seconds').scrollIntoViewIfNeeded();
+  await guest.locator('#pana-room-more').scrollIntoViewIfNeeded();
   assert.equal(await guest.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
   await guest.screenshot({ path: `${out}/phone-settings.png` });
-  await guest.locator('#role-seek').tap(); await guest.locator('#start').tap();
+  await guest.locator('#pana-room-more').tap(); await guest.locator('#role-seek').tap(); await guest.locator('#pana-room-done').tap(); await guest.locator('#start').tap();
   await wait(late, () => hunt.state.phase === 'hide');
   assert.deepEqual(await layout(guest), await layout(late));
   assert.equal(await guest.evaluate(() => hunt.state.remaining > 55 && hunt.state.remaining <= 60), true);

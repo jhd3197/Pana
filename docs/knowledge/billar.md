@@ -1,6 +1,7 @@
 # Billar
 
-Billar is a casual two-player eight-ball table at `/g/billar/`. It also has
+Billar is a casual eight/nine-ball table for two balanced teams of one to three
+players at `/g/billar/`. It also has
 explicit local practice: one player pockets all fourteen colored balls before
 the eight, and a local match against Pana Bot (`createGame(false, { bot: true })`). The hub discovers its metadata and Canvas 2D preview.
 
@@ -10,7 +11,7 @@ the eight, and a local match against Pana Bot (`createGame(false, { bot: true })
   guide and house rules. `tests/rules.test.js` checks collisions and outcomes.
 - `public/network.js`: `PoolRoom extends HostRoom`. The host simulates and sends
   complete snapshots at 20 Hz during shots and on actions or member changes.
-- `server/room.js`: the shared relay with `maxClients = 2`; no custom transport.
+- `server/room.js`: the shared relay; `game.json` sets its six-player cap.
 - `public/scene.js`: perspective WebGL table in the shared plaza, physical
   numbered balls, cue, first-contact guide and standing saved panas.
   `engine/models/props/pool.js` owns the Studio-registered equipment.
@@ -20,11 +21,12 @@ the eight, and a local match against Pana Bot (`createGame(false, { bot: true })
   The portrait is optional; the playable scene itself requires WebGL/Three.js.
 
 The first legal colored pot assigns solids/stripes, including on the break.
-A legal own-group pot retains the turn. A scratch, no contact, wrong first
+A legal own-group pot retains the team's turn, with the next teammate shooting.
+A scratch, no contact, wrong first
 contact or neither a pot nor a cushion after contact grants the other player
 ball in hand anywhere unobstructed. Potted object balls stay down after fouls.
 Potting the eight before clearing the group, or with a scratch, loses. The
-group must already be clear when the shot starts. No called pocket is required.
+group must already be clear when the shot starts. Called pockets are optional.
 An eight potted on the opening break is respotted. These are the displayed
 house rules, not a claim to implement tournament rules.
 
@@ -44,10 +46,38 @@ of up to one snapshot is possible on sudden disconnect. Guests interpolate
 positions for display only. Gameplay revisions change on actions/outcomes,
 not on every physics snapshot, so duplicate or stale shots cannot fire twice.
 
-Game slots are separate from never-reused room seat IDs. A departing player
-leaves their group and turn in place; a newcomer inherits that free table slot.
-A shot already rolling finishes, but further shots wait for both players.
+Game slots are separate from never-reused room seat IDs. Even slots share one
+team, odd slots the other. Starting freezes `activeSeats`; a late arrival in an
+unused slot watches until the next match, while replacing a departed active
+slot resumes that role. A shot already rolling finishes, but further shots
+wait for all active players. `teamTurns` advances each team's shooter after
+every shot, including a legal pot. The host can rearrange seats in the lobby.
 The kit owns membership, host election, reconnection and invitations.
+
+## Room options
+
+`match-rules.js` declares typed room choices and pure team/match helpers.
+`room-options.js` displays primary choices and the shared advanced dialog.
+The host's validated options persist through practice, rematches and migration.
+`reset-options` restores rules, Plaza, normal difficulty and the rack in one
+host-authorized lobby revision, preserving all player seats.
+Eight-ball remains the default. Nine-ball racks only 1–9, requires the lowest
+live ball first, allows a legal combination into 9 to win, and respots a nine
+potted with a foul or into an uncalled pocket. Physical ball arrays remain 16
+entries so renderers and snapshots retain stable IDs.
+
+Called-pocket mode numbers all six physical pockets with camera-facing markers.
+Only a pot in the called pocket retains the team turn; a wrong-pocket eight
+loses. Kitchen fouls restrict placement to x <= 250 and require the cue to cross
+that boundary before its first object contact. The scene highlights that area.
+These are explicit house rules rather than tournament rule claims.
+
+Best-of 1/3/5 tracks team rack scores, with alternating/winner/loser break policy
+between racks. The 30/60-second clock includes placement time and pauses when
+an active player is absent; expiration passes to the next team with ball in
+hand. Clock snapshots do not increment the gameplay revision, so normal clock
+updates cannot cancel a held shot. Café adds the shared café terrace setting;
+long/short/no guide overrides the difficulty-driven guide without changing bots.
 
 ## Controls and proof
 
@@ -63,7 +93,7 @@ Left/right refine angle; up/down no longer select power.
 With ball in hand, arrows move its proposed position
 and Enter confirms; mouse/touch places it directly. Narrow portrait play
 rotates the table, with inverse pointer coordinates and upright ball numbers.
-Solo practice pauses in the shared menu; a connected two-person match continues.
+Solo practice pauses in the shared menu; connected multiplayer continues.
 The shared settings menu offers plaza and overhead table cameras.
 
 ## Difficulty, guide and Pana Bot
@@ -138,3 +168,10 @@ Puerto Coco, Hato del Sol and Ruinas del Mango are available in the lobby.
 The host chooses the setting; the selected map follows snapshots, practice,
 late joins and host changes. See [shared-arenas.md](shared-arenas.md) for
 layout variants, collision, table clearance, lifecycle and verification.
+
+
+The shared avatar-card roster groups the six seats into alternating teams.
+Guests use Cambiar/Unirme aquí to swap or move themselves before the break;
+the host may select any occupied card and then a destination. `swap` rejects
+unrelated guest rearrangements and all moves after the lobby. Player IDs stay
+stable, so moving between teams does not change room ownership or identity.

@@ -107,7 +107,7 @@ export default {
       scene.add(ring);
       const bubble = makeBubble();
       scene.add(bubble.sprite);
-      const a0 = Math.PI / 4 + i * Math.PI / 2;
+      const a0 = Math.PI / 4 + i * Math.PI * 2 / ctx.players.length;
       return {
         i, player: p, car, ring, bubble, id, mass: MASS[id] ?? 1, score: 0,
         x: Math.cos(a0) * 5, z: -Math.sin(a0) * 5, y: 0, h: 0,

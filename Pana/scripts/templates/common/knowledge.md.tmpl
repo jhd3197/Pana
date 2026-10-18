@@ -10,6 +10,8 @@ Made with `.\dev.ps1 new-game {{id}} -Kind {{kind}}`: a {{kindText}} on the shar
 
 - `public/rules.js`: pure rules (no DOM, no Three.js), tested by `tests/rules.test.js`.
 - `public/network.js`: the room; bots and host handoff come from the base class.
+- `public/options.js`: typed choices for the shared room panel and advanced
+  dialog; actions validate patches before publishing the selected values.
 - `public/scene.js`: the 3D world.
 - `public/game.js`: wiring only (engine/game-shell.js runs loading and loops).
 - `tests/browser.mjs`: two real clients (`npm run test:browser -- {{id}}`).

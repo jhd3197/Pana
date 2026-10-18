@@ -3,7 +3,7 @@ import { createPitch, throwBall, stepPitch, moving, closest, botShot, clamp, STE
 export function createCriollasMini(humans, random) {
   const pitch = createPitch((random() - .5) * 2, -5.5 - random());
   const players = humans.map((human, i) => ({ human, left: 2, angle: 0, power: .62, cooldown: 0,
-    aimSeed: Math.floor(random() * 10000), next: 1 + random() * 2.5, originX: (i - 1.5) * 2.1 }));
+    aimSeed: Math.floor(random() * 10000), next: 1 + random() * 2.5, originX: (i - (humans.length - 1) / 2) * Math.min(2.1, 6.3 / (humans.length - 1)) }));
   let clock = 0, accumulator = 0;
   function update(dt, inputs) {
     dt = Number.isFinite(dt) ? Math.max(0, dt) : 0; clock += dt;

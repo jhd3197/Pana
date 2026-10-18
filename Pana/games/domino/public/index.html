@@ -8,12 +8,13 @@
   <title>Dominó · Pana</title>
   <link rel="stylesheet" href="/engine/kit.css">
   <link rel="stylesheet" href="/engine/ui.css">
+  <link rel="stylesheet" href="/engine/room-options.css">
   <link rel="stylesheet" href="style.css">
   <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}</script>
 <link rel="stylesheet" href="/engine/game-lobby.css">
 </head>
 <body class="in-lobby">
-  <canvas id="world" aria-label="Mesa de dominó en 3D con cuatro panas en la plaza"></canvas>
+  <canvas id="world" aria-label="Mesa de dominó en 3D con tus panas en la plaza"></canvas>
   <div class="scene-vignette"></div>
   <div id="world-labels" aria-hidden="true"></div>
   <header class="topbar"><nav id="game-nav" aria-label="Opciones de la mesa"></nav></header>
@@ -22,13 +23,14 @@
     <section id="welcome" class="pk-lobby welcome" aria-labelledby="title">
       <div class="pk-lobby-top"><a class="pk-back" href="/">← Todos los juegos</a><a class="pk-logo" href="/" aria-label="Volver a Pana">PANA</a></div>
       <span class="pk-ribbon">Dominó · la partida del sábado</span>
-      <h1 id="title" class="pk-title">Arma pareja y llega a 100.</h1>
-      <p class="pk-copy">Cuatro sillas, dos parejas y un buen rato entre panas. Canta paso, tranca esa vaina y lleva a tu equipo a 100.</p>
-      <div class="pk-stats"><div class="pk-stat"><b>28</b><span>fichas</span></div><div class="pk-stat"><b>2 × 2</b><span>por parejas</span></div><div class="pk-stat"><b>100</b><span>puntos para ganar</span></div></div>
+      <h1 id="title" class="pk-title">Arma tu mesa, pana.</h1>
+      <p class="pk-copy" data-room-description>Cuatro o seis panas, por equipos o cada quien. Elige las reglas de tu mesa y canta paso.</p>
+      <div class="pk-stats" data-room-description><div class="pk-stat"><b>28</b><span>fichas</span></div><div class="pk-stat"><b>2 × 2</b><span>por parejas</span></div><div class="pk-stat"><b>100</b><span>puntos para ganar</span></div></div>
+      <div id="room-options"></div><p id="deck-copy" class="pk-copy" data-room-extra></p>
       <div id="table-seating"></div>
-      <div id="map-picker"></div>
-      <div class="pk-field"><span class="pk-eyebrow">Cámara</span><div class="pk-seg" role="group" aria-label="Cámara"><button type="button" data-view="plaza" aria-pressed="true">Vista de plaza</button><button type="button" data-view="mesa" aria-pressed="false">Vista de mesa</button></div></div>
-      <button id="rules" class="pk-btn pk-btn--ghost pk-btn--sm rules-link">¿Cómo se juega?</button>
+      <div id="map-picker" data-room-extra></div>
+      <div class="pk-field" data-room-extra><span class="pk-eyebrow">Cámara</span><div class="pk-seg" role="group" aria-label="Cámara"><button type="button" data-view="plaza" aria-pressed="true">Vista de plaza</button><button type="button" data-view="mesa" aria-pressed="false">Vista de mesa</button></div></div>
+      <button id="rules" class="pk-btn pk-btn--ghost pk-btn--sm rules-link" data-room-help>¿Cómo se juega?</button>
       <div class="pk-lobby-foot">
         <div class="pk-lobby-room"><span class="pk-dot"></span><span id="lobby-roster">Tu pareja te espera enfrente</span><span id="lobby-room" class="pk-room-code"></span></div>
         <div class="pk-lobby-cta"><button id="start" class="pk-btn pk-btn--primary pk-btn--lg" disabled>Preparando la mesa…</button><span id="lobby-invite-slot"></span></div>
@@ -40,6 +42,7 @@
       <div class="score-team theirs"><span id="their-label" class="pk-eyebrow">Ellos</span><strong id="their-score" class="pk-num">0</strong><small id="their-names">Lola + Nina</small><div class="score-track pk-bar rival"><i id="their-progress"></i></div></div>
       <span class="score-target">a 100</span>
     </section>
+    <div id="extended-roster" class="pk-panel extended-roster" hidden></div>
     <div id="partner-card" class="seat-chip" hidden></div>
     <div id="rival-left" class="seat-card" hidden></div>
     <div id="rival-right" class="seat-card" hidden></div>
@@ -54,7 +57,7 @@
       <div class="rack-help pk-panel">
         <div class="you"><strong id="your-name">Tú</strong><span id="hand-count">7 fichas</span></div>
         <span id="instruction">Reparte las fichas para empezar.</span>
-        <span class="rack-keys" data-pana-hint><kbd class="pk-kbd">1–7</kbd> ficha <kbd class="pk-kbd">A</kbd><kbd class="pk-kbd">B</kbd> punta</span>
+        <span class="rack-keys" data-pana-hint><kbd class="pk-kbd">1–0</kbd> ficha <kbd class="pk-kbd">A</kbd><kbd class="pk-kbd">B</kbd> punta</span>
       </div>
       <div class="rack-center">
         <div class="turn-row"><div id="turn-status" role="status" aria-live="polite">La mesa te espera.</div><div id="end-actions" hidden><button id="play-left" class="end-button pk-btn pk-btn--primary"></button><button id="play-right" class="end-button pk-btn pk-btn--primary"></button><button id="cancel-selection" class="pk-btn pk-btn--sm">Cancelar</button></div></div>
@@ -64,6 +67,7 @@
         <section class="activity-panel pk-panel" aria-label="Últimas jugadas"><div class="panel-heading"><span>EN LA MESA</span><span id="move-count">0 JUGADAS</span></div><ol id="activity"></ol></section>
         <button id="round-result" class="pk-btn pk-btn--primary" hidden>Ver resultado</button>
         <button id="pass" class="pk-btn" hidden>Pasar <kbd class="pk-kbd" data-pana-hint>P</kbd></button>
+        <details id="quick-chat" class="pk-panel"><summary>Chat rápido</summary><div id="chat-buttons"></div></details>
         <button id="hint" class="pk-btn" disabled>Pista <kbd class="pk-kbd" data-pana-hint>H</kbd></button>
         <button id="camera-view" class="pk-btn" title="Cambiar entre la plaza y una vista más alta de la mesa">◈ Vista de mesa</button>
       </div>

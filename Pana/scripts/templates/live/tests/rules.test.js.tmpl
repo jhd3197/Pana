@@ -2,6 +2,15 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { Rush, cleanInput, ARENA, MIN_PLAYERS, ROUND } from '../public/rules.js';
 
+test('room choices change real duration and mango count and survive restore', () => {
+  const game = new Rush(5); game.addPlayer(1, 'Ana');
+  assert.equal(game.configure({ seconds: '30' }), false);
+  assert(game.configure({ seconds: 30, mangos: 12 })); game.start();
+  assert.equal(game.time, 30); assert.equal(game.mangos.length, 12);
+  assert.equal(game.configure({ seconds: 90 }), false);
+  assert.deepEqual(Rush.restore(game.snapshot(), new Map()).options, game.options);
+});
+
 test('a solo start fills the plaza with bots and resets the round', () => {
   const game = new Rush(5);
   game.addPlayer(1, 'Ana');

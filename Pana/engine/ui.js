@@ -250,6 +250,7 @@ export function createGameMenu({
       return;
     }
     if (!hotkey || e.key !== 'Escape' || e.repeat || !canOpen()) return;
+    if (document.querySelector('dialog[open]')) return;
     if (e.target.closest?.('input, textarea, select, [contenteditable="true"]')) return;
     e.preventDefault(); e.stopImmediatePropagation(); open('game');
   }, true);

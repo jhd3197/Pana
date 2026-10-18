@@ -4,7 +4,7 @@ import {LiveRoom} from '/engine/live-room.js';
 // Host simulation on the shared live room (engine/live-room.js), with snapshot migration.
 export class RaceRoom extends LiveRoom {
   constructor({coat,...options}){
-    super({...options,game:'galope',protocol:'galope-v1',texts:{
+    super({...options,game:'galope',protocol:'galope-v2',texts:{
       connecting:'Conectando con el hato…',full:'Sala llena. Abre una carrera local.',
       lost:'Se perdió la conexión. Reconectando…',offline:'Sin conexión. Puedes correr en local.'}},{valid:state=>Array.isArray(state?.players)});
     this.coat=coat;this.state=new Race().snapshot();
@@ -22,6 +22,7 @@ export class RaceRoom extends LiveRoom {
   memberLeft(id){super.memberLeft(id);if(this.isHost)this.game.removePlayer(id);}
   memberHello(id,m){if(this.isHost){this.game.addPlayer(id,m.name,m.avatar,m.coat);this.publish();}}
   choose(coat){this.coat=coat;const m=this.members.get(this.id);if(m)m.coat=coat;if(this.isHost){this.game.addPlayer(this.id,this.name,this.avatar,coat);this.publish();}else this.send({kind:'hello',avatar:this.avatar,coat});}
+  configure(patch){if(this.isHost&&this.game?.configure(patch))this.publish();}
   start(bots=true){if(this.isHost&&this.connected&&['lobby','finished'].includes(this.game.phase)){this.game.start(bots);this.publish();}}
-  practice(){this.state=new Race().snapshot();super.practice('Carrera local · tú y los jinetes');}
+  practice(){const local=new Race();local.configure(this.state.options);this.state=local.snapshot();super.practice('Carrera local · tú y los jinetes');}
 }

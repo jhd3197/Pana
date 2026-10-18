@@ -9,7 +9,7 @@ const now = () => performance.now() / 1000;
 // seen (clock difference plus the quickest delivery).
 export class RiverRoom extends LiveRoom {
   constructor({ seat = null, ...options }) {
-    super({ ...options, game: 'curiara', protocol: 'curiara-v1', texts: {
+    super({ ...options, game: 'curiara', protocol: 'curiara-v2', texts: {
       connecting: 'Remando hacia la sala…', full: 'Sala llena. Abre una carrera local.',
       lost: 'Se perdió la conexión. Reconectando…', offline: 'Sin conexión. Puedes remar en local.' } }, { valid: (state) => Array.isArray(state?.boats) });
     this.seat = seat; this.clocks = new Map(); this.state = new Race().snapshot();
@@ -44,12 +44,22 @@ export class RiverRoom extends LiveRoom {
   // A quiet guest stops holding keys, but its strokes are events: a slow host
   // tick must never drop them before the race has read them.
   expire(id, input) { if (input.back || input.steer) this.inputs.set(id, { ...input, back: false, steer: 0 }); }
-  message(id, data) { if (data.kind === 'seat' && this.isHost) { this.game.chooseSeat(id, data.seat); this.publish(); } }
+  message(id, data) {
+    if (!this.isHost) return;
+    if (data.kind === 'move-seat' && this.game.moveSeat(id, data.from, data.to, this.hostId)) this.publish();
+    else if (data.kind === 'seat' && this.game.chooseSeat(id, data.seat)) this.publish();
+  }
+  moveSeat(from, to) {
+    if (!this.connected) return;
+    if (this.isHost) { if (this.game.moveSeat(this.id, from, to, this.hostId)) this.publish(); }
+    else this.send({ kind: 'move-seat', from, to });
+  }
   chooseSeat(seat) {
     this.seat = seat; const m = this.members.get(this.id); if (m) m.seat = seat;
     if (this.isHost) { this.game.chooseSeat(this.id, seat); this.publish(); } else this.send({ kind: 'seat', seat });
   }
+  configure(patch) { if(this.isHost && this.game?.configure(patch))this.publish(); }
   setFormat(format) { if (this.isHost && this.game) { this.game.setFormat(format); this.seat = null; this.publish(); } }
-  start(bots = true) { if (this.isHost && this.connected && ['lobby', 'finished'].includes(this.game.phase)) { this.game.start(bots); this.publish(); } }
-  practice() { this.state = new Race().snapshot(); this.clocks.clear(); super.practice('Carrera local · tú y los remeros del río'); }
+  start(bots = true) { if (this.isHost && this.connected && ['lobby', 'finished'].includes(this.game.phase)) { if(!this.game.canStart()){this.onNotice('Hay más panas que puestos. Elige cuatro parejas o Solo.');return;}this.game.start(bots); this.publish(); } }
+  practice() { const local = new Race(); local.configure(this.state.options); this.state = local.snapshot(); this.clocks.clear(); super.practice('Carrera local · tú y los remeros del río'); }
 }

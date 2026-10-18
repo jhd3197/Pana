@@ -17,6 +17,13 @@ is Spanish. The hub discovers `game.json` and categorizes it as Mesa.
 
 These variants are stated in the shared menu's Controles tab.
 
+The shared room panel also offers entry with one or six, an optional capture
+bonus roll and an optional third-six penalty. Defaults retain classic behavior.
+Only the host changes them in the lobby; typed validation rejects an entire
+invalid patch. Snapshots, rematches and local fallback preserve the options.
+Ludo remains four players because its authored board has four private lanes and
+four colors; increasing room metadata alone would overlap lanes and pieces.
+
 ## Coordinates and ownership
 
 Pure `rules.js` is the authority for the ring and rendering coordinates. Progress

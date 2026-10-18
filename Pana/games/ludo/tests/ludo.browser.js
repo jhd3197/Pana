@@ -6,13 +6,13 @@ const browser=await chromium.launch({headless:true}),errors=[];
 await mkdir('art/ludo',{recursive:true});
 async function open(name,mobile=false,roomCode=code){
   const context=await browser.newContext({viewport:mobile?{width:390,height:844}:{width:1440,height:1000},isMobile:mobile,hasTouch:mobile});
-  await context.addInitScript(name=>{localStorage.setItem('pana:name',name);localStorage.setItem('pana:avatar',JSON.stringify({hat:'gorra',outfitColor:'#3d7bf2'}));},name);
+  await context.addInitScript(name=>{localStorage.setItem('pana:name',name);localStorage.setItem('pana:settings',JSON.stringify({quality:'baja',sound:false}));localStorage.setItem('pana:avatar',JSON.stringify({hat:'gorra',outfitColor:'#3d7bf2'}));},name);
   const page=await context.newPage();page.setDefaultTimeout(20000);page.on('pageerror',e=>errors.push(e.message));
   await page.goto(`${base}/g/ludo/?room=${roomCode}&debug`);
   await page.waitForFunction(()=>window.ludoDebug?.world&&ludoDebug.room.connected,null,{timeout:90000});
   // A pana joining mid-game never sees the lobby, so wait for preparation, then for Ready only in the lobby.
   await page.waitForFunction(()=>window.PANA_PREPARED===true,null,{timeout:90000});
-  if(await page.locator('#pana-lobby-shell').isVisible())await page.locator('#pana-lobby-ready:not([disabled])').waitFor({timeout:90000});
+  if(await page.locator('#pana-lobby-shell').isVisible())await page.waitForFunction(()=>window.PANA_PREPARED===true&&!document.querySelector('#pana-lobby-ready')?.disabled,null,{timeout:90000});
   await page.locator('#loading').waitFor({state:'hidden'});return page;
 }
 async function sync(a,b){
@@ -23,6 +23,17 @@ try{
   const a=await open('Juan'),b=await open('Ana');
   await a.waitForFunction(()=>ludoDebug.room.members.size===2);await b.waitForFunction(()=>ludoDebug.room.seat===1);
   assert.ok(await b.locator('#start').isDisabled());
+  await a.locator('[data-room-option="entry"][data-value="one-six"]').click();
+  await a.locator('#pana-room-more').click();
+  await a.locator('[data-room-option="captureBonus"][data-value="true"]').click();
+  await a.locator('[data-room-option="threeSixes"][data-value="false"]').click();
+  await b.waitForFunction(()=>ludoDebug.room.state.options.threeSixes===false);
+  assert.deepEqual(await b.evaluate(()=>ludoDebug.room.state.options),{entry:'one-six',captureBonus:true,threeSixes:false});
+  await b.locator('#pana-room-more').click();
+  assert.ok(await b.locator('[data-room-option="captureBonus"][data-value="false"]').isDisabled());
+  await b.locator('#pana-room-done').click();
+  await a.locator('#pana-room-reset').click();await a.locator('#pana-room-done').click();
+  await b.waitForFunction(()=>ludoDebug.room.state.options.entry==='six'&&ludoDebug.room.state.options.threeSixes);
   assert.equal(await a.evaluate(()=>ludoDebug.world.characters[0].group.userData.characterVersion),'studio-v1');
   assert.equal(await a.evaluate(()=>ludoDebug.world.characters[0].avatar.hat),'gorra');
   await a.screenshot({path:'art/ludo/desktop-lobby.png'});

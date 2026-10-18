@@ -1,5 +1,5 @@
 import { random, inputFor } from '../online-rules.js';
-// ¡Embuste! in miniature: four panas crank their camp chores, one of them is
+// ¡Embuste! in miniature: six panas crank their camp chores, one of them is
 // secretly a mummy faking it, then everyone votes. A real crank lights that
 // pana's lantern; a mummy's crank sometimes puffs sand from under the shirt.
 // Cranking too fast makes more sand, so a sly mummy (you, maybe) takes it easy.
@@ -13,14 +13,14 @@ import { campTent, bandageWrap } from '/engine/models/props/embuste.js';
 import { sunnyStage, makeActors, animateActor, rand, pick } from './stage.js';
 
 const TIME = 30, WORK = 19, VOTE = 27;        // seconds: work until WORK, vote until VOTE, then the verdict
-const XS = [-6, -2, 2, 6];                    // one station per pana
+// Stations are spaced to fit the complete roster.
 const SAND = 0.28, SAND_FAST = 0.35;          // chance a mummy crank puffs sand; more when mashing
 const FAST = 0.28;                            // a crank sooner than this after the last one is mashing
 
 export default {
   id: 'embuste',
   title: '¡Embuste!',
-  howto: 'Uno de los cuatro es una momia que finge trabajar. Gira tu malacate con Espacio y mira bien: la momia suelta arena. Al final, elige con ← → y vota con Espacio. Si te toca ser la momia, gira despacito para que no se note.',
+  howto: 'Uno de los panas es una momia que finge trabajar. Gira tu malacate con Espacio y mira bien: la momia suelta arena. Al final, elige con ← → y vota con Espacio. Si te toca ser la momia, gira despacito para que no se note.',
   keys: [['Espacio', 'girar · votar'], ['← →', 'elegir a quién']],
   icon: 'mummy',
   time: TIME,
@@ -35,9 +35,10 @@ export default {
     scene.add(mesh(new THREE.BoxGeometry(1.4, 1.1, 1.4), M(0x7c7a68, { roughness: 1 }), 0, 0.55, -7.5));
 
     const camera = new THREE.PerspectiveCamera(48, (ctx.aspect || innerWidth / innerHeight), 0.1, 400);
-    camera.position.set(0, 8.5, 14); camera.lookAt(0, 1.2, -1);
+    camera.position.set(0, 9.5, 18); camera.lookAt(0, 1.2, -1);
 
     const actors = makeActors(scene, ctx.players);
+    const XS = actors.map((_, i) => (i - (actors.length - 1) / 2) * 3);
     const mummyAt = Math.floor(random() * actors.length);
     const human = (a) => a.player.human && !ctx.auto;
     actors.forEach((a, i) => {

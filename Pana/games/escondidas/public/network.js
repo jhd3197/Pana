@@ -1,11 +1,11 @@
 // Round authority stays with the room's host (engine/live-room.js). All gameplay
-// data rides the kit's relay messages under the 'hunt-v1' protocol.
+// data rides the kit's relay messages under the 'hunt-v2' protocol.
 import { HuntRound } from './rules.js';
 import { LiveRoom, axis } from '/engine/live-room.js';
 
 export class HuntRoom extends LiveRoom {
   constructor(options) {
-    super({ ...options, game: 'escondidas', protocol: 'hunt-v1', texts: {
+    super({ ...options, game: 'escondidas', protocol: 'hunt-v2', texts: {
       full: 'La sala está llena (8 panas). Puedes practicar sin conexión.',
       offline: 'No pudimos conectar. Puedes practicar sin conexión.',
       waiting: 'Espera a reconectar o entra a practicar.' } });
@@ -42,7 +42,7 @@ export class HuntRoom extends LiveRoom {
       this.notice(id, error || (action.prop ? '¡Listo! Quédate quieto y pasa desapercibido.' : 'Volviste a ser pana.'));
     } else if (action.action === 'check') {
       const p = this.game.players.find(p => p.id === id);
-      if (!p || p.cooldown > 0 || this.game.phase !== 'hunt' || id !== this.game.seeker) return;
+      if (!p || p.cooldown > 0 || this.game.phase !== 'hunt' || !this.game.isSeeker(id)) return;
       this.notice(id, this.game.check(id) ? '¡Ajá! Aquí había un pana.' : 'Nada por aquí… Prueba con otro objeto.');
     }
     this.state = this.game.snapshot(); this.onState(this.state);

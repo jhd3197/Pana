@@ -1,17 +1,17 @@
 // npm start; node Pana/games/galope/tests/browser.mjs [playwright-package]
 import assert from 'node:assert/strict';
-import {createRequire} from 'node:module';
+import { launch, waitPrepared } from '../../../tests/browser-kit.js';
 import {mkdir} from 'node:fs/promises';
-const {chromium}=createRequire(import.meta.url)(process.argv[2]||'playwright');
-const browser=await chromium.launch({headless:true}),base=process.env.PANA_QA_URL||'http://localhost:8461';
+const browser=await launch(),base=process.env.PANA_QA_URL||'http://localhost:8461';
 const output='art/galope';await mkdir(output,{recursive:true});const errors=[],code=`galope-${Date.now()}`;
 const check=text=>console.log(`ok: ${text}`);
 async function open(name,mobile=false,room=code){
   const ctx=await browser.newContext(mobile?{viewport:{width:390,height:844},deviceScaleFactor:1,isMobile:true,hasTouch:true}:{viewport:{width:1024,height:720},deviceScaleFactor:1});
-  const p=await ctx.newPage();p.on('pageerror',e=>{errors.push(e.message);console.log('page error:',e.message);});
+  await ctx.addInitScript(() => localStorage.setItem('pana:settings',JSON.stringify({sound:false,music:false,quality:'baja'})));
+ const p=await ctx.newPage();p.on('pageerror',e=>{errors.push(e.message);console.log('page error:',e.message);});
   p.on('console',m=>{if(m.type()==='error'&&!m.text().includes('favicon'))console.log('console:',m.text());});
   await p.goto(`${base}/g/galope/?room=${room}&name=${name}&debug`);
-  await p.waitForFunction(()=>window.galope?.room.connected,null,{timeout:90000});return p;
+  await p.waitForFunction(()=>window.galope?.room.connected,null,{timeout:90000});await waitPrepared(p);return p;
 }
 try{
   const a=await open('Juan');await a.locator('#start').waitFor({state:'visible'});

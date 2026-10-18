@@ -62,7 +62,7 @@ try {
   // Invite copies a clean room link.
   await page.goto(`${base}/g/cocina/?name=QA&debug`);
   await page.waitForFunction(() => window.cocina?.room.connected);
-  await page.locator('#invite').click();
+  await page.locator('#pana-lobby-invite').click();
   const link = await page.evaluate(() => navigator.clipboard.readText());
   assert.match(link, /\/g\/cocina\/\?room=/); assert.doesNotMatch(link, /debug|name=/);
   check('invite copies the room link without debug or name');

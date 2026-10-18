@@ -1,4 +1,4 @@
-export const PIPS = [[], [4], [0, 8], [0, 4, 8], [0, 2, 6, 8], [0, 2, 4, 6, 8], [0, 2, 3, 5, 6, 8]];
+export const PIPS = [[], [4], [0, 8], [0, 4, 8], [0, 2, 6, 8], [0, 2, 4, 6, 8], [0, 2, 3, 5, 6, 8], [0,2,3,4,5,6,8], [0,1,2,3,5,6,7,8], [0,1,2,3,4,5,6,7,8], [0,2,3,4,5,6,7,8,9,11], [0,1,2,3,4,5,6,7,8,9,11], [0,1,2,3,4,5,6,7,8,9,10,11]];
 export function domino(tile, { back = false, button = false } = {}) {
   const element = document.createElement(button ? 'button' : 'div');
   element.className = `domino${back ? ' back' : ''}`;
@@ -7,7 +7,8 @@ export function domino(tile, { back = false, button = false } = {}) {
   element.setAttribute('aria-label', `${tile.a} con ${tile.b}`);
   for (const value of [tile.a, tile.b]) {
     const face = document.createElement('span'); face.className = 'pip-face'; face.setAttribute('aria-hidden', 'true');
-    for (let i = 0; i < 9; i++) {
+    if(value>9)face.style.gridTemplateRows='repeat(4,1fr)';
+    for (let i = 0; i < (value>9?12:9); i++) {
       const pip = document.createElement('i'); pip.className = `pip${PIPS[value].includes(i) ? '' : ' hidden-pip'}`; face.append(pip);
     }
     element.append(face);

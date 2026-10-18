@@ -200,8 +200,9 @@ const lanes = (fastSide) => {
   if (fastSide === 0) return [{ from: -12, to: -4.1, steps: steps3, boost: .5 }, { from: -3.2, to: 3.2, steps: fast, boost: 2.2, fast: true }, { from: 4.1, to: 12, steps: steps3, boost: .5 }];
   return [{ from: -12, to: -5.2, steps: fast, boost: 2.2, fast: true }, { from: -4.3, to: 3.2, steps: steps2, boost: 1.1 }, { from: 4.1, to: 12, steps: steps3, boost: .5 }];
 };
+export function amazonasDefinition() {
 let curvature = () => 0, LEN = 1000;
-export const AMAZONAS = {
+return {
   nodes: [[0, 46], [0, 14], [-12, -16], [-6, -44], [10, -62], [16, -88], [30, -106], [52, -114], [66, -136], [60, -164], [40, -180], [22, -196],
     [8, -222], [2, -258], [-1, -296], [1, -334], [5, -372], [4, -408],
     [-6, -446], [-30, -486], [-42, -532], [-30, -580], [4, -620], [28, -664], [24, -712], [4, -752], [-6, -790], [-8, -818]],
@@ -275,6 +276,8 @@ export const AMAZONAS = {
   // Where pods of toninas surface in the Río Negro, near the chorro.
   toninas() { const out = []; for (let s = NEGRO + 25; s < LEN - 70; s += 34) out.push({ s, offset: this.chorro(s) }); return out; },
 };
+}
+export const AMAZONAS = amazonasDefinition();
 // Step 0's grey box: a straight 200 m channel to tune the paddle on.
 export const GREYBOX = buildRiver({
   nodes: [[0, 0], [0, -100], [0, -200]], width: () => 14, top: 2, slope: 0, depth: () => 1.5,
@@ -282,3 +285,23 @@ export const GREYBOX = buildRiver({
   sectors: [[0, 'Canal de prueba']], gates: 4,
 });
 export const RIVER = buildRiver(AMAZONAS);
+
+// Each definition owns its curvature/length closure: building another map cannot
+// mutate an active race's current, banks or shortcut geometry.
+export function configuredRiver(options = {}) {
+  if ((!options.river || options.river === 'amazonas') && options.falls !== false && options.items !== false) return RIVER;
+  const def = amazonasDefinition(), kind = options.river || 'amazonas';
+  if (kind !== 'amazonas') {
+    const scale = kind === 'orinoco' ? 1.6 : .72;
+    def.nodes = def.nodes.map(([x,z]) => [x * scale, z]);
+    def.branch = { ...def.branch, nodes: def.branch.nodes.map(([x,z]) => [x * scale,z]) };
+    const width = def.width; def.width = s => width(s) * (kind === 'orinoco' ? 1.35 : .96);
+    def.sectors = [[0,kind === 'orinoco' ? 'Caño del Orinoco' : 'Caroní'], [360,'Los raudales'], [600,kind === 'orinoco' ? 'Playas del Orinoco' : 'Curvas del Caroní'], [910,'La churuata']];
+    if(kind === 'orinoco'){def.look = () => ({sand:1});def.bank=()=>({lip:.6,run:9,rise:5});}
+  }
+  if (options.falls === false) def.drops = [];
+  if(options.items === false){def.rocks=()=>[];def.logs=()=>[];def.toninas=()=>[];}
+  const river=buildRiver(def);
+  if(options.items === false){river.snags=[];if(river.branch)river.branch.snags=[];}
+  return river;
+}

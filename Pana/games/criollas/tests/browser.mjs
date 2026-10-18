@@ -31,10 +31,10 @@ try {
   assert.equal(await guest.evaluate(() => criollasDebug.room.state.players[0].avatar.outfitColor), '#3d7bf2');
   await screenshot(host, 'lobby');
   // The host chooses the place and difficulty; the guest sees both and cannot change them.
-  await host.locator('#map-choice').selectOption('hato'); await host.locator('#difficulty-options [data-difficulty="dificil"]').click();
+  await host.locator('#map-choice').selectOption('hato'); await host.locator('[data-room-option="difficulty"][data-value="dificil"]').click();
   await wait(guest, () => criollasDebug.room.state.mapId === 'hato' && criollasDebug.room.state.difficulty === 'dificil' && criollasDebug.world.venue === 'hato');
   assert.equal(await guest.locator('#map-choice').isDisabled(), true);
-  assert.equal(await guest.locator('#difficulty-options [data-difficulty="facil"]').isDisabled(), true);
+  assert.equal(await guest.locator('[data-room-option="difficulty"][data-value="facil"]').isDisabled(), true);
   console.log('PASS host-chosen court and difficulty reach the guest');
   await host.locator('#start').click(); await wait(guest, () => criollasDebug.room.state.phase === 'aiming');
   await guest.evaluate(() => criollasDebug.room.action('shoot', { angle: 0, power: .5 }));
@@ -52,14 +52,14 @@ try {
   const late = await open('Caro', `room=${code}`); await wait(late, () => criollasDebug.room.state.hand === 1 && criollasDebug.room.seat >= 0);
   assert(await late.evaluate(() => criollasDebug.room.state.pitch.balls.length >= 3));
   await late.context().close();
-  // The actual room adapter must reject the fifth session.
+  // The actual room adapter must reject the seventh session.
   assert.equal(await guest.evaluate(async () => {
     const { joinRoom } = await import('/engine/net.js'), links = [], code = `cap-${Date.now()}`;
-    try { for (let i = 0; i < 4; i++) links.push(await joinRoom('criollas', { code, name: 'Pana', resume: false }));
-      try { links.push(await joinRoom('criollas', { code, name: 'Quinto', resume: false })); return false; } catch (e) { return e.full === true; }
+    try { for (let i = 0; i < 6; i++) links.push(await joinRoom('criollas', { code, name: 'Pana', resume: false }));
+      try { links.push(await joinRoom('criollas', { code, name: 'Séptimo', resume: false })); return false; } catch (e) { return e.full === true; }
     } finally { await Promise.all(links.map(l => l.leave())); }
   }), true);
-  console.log('PASS reload, late join and four-seat room capacity');
+  console.log('PASS reload, late join and six-seat room capacity');
   // Force a fresh host-owned turn, then leave while the real shot is rolling.
   await host.evaluate(() => { const r = criollasDebug.room; r.game.phase = 'aiming'; r.game.turn = r.seat; r.game.remaining[r.seat] = 1; r.game.pitch.balls.forEach(b => { b.vx = b.vz = 0; }); r.game.revision++; r.publish(); });
   await host.locator('#shoot').click(); await wait(guest, () => criollasDebug.room.state.phase === 'rolling');
@@ -72,7 +72,7 @@ try {
   await guest.evaluate(async () => {
     const r = criollasDebug.room, { createPitch } = await import('/engine/bolas-criollas.js');
     r.game.pitch = createPitch(); r.game.pitch.balls.push({ id: 1, owner: r.seat, x: .6, z: -6, vx: 0, vz: 0, radius: .25, out: false }); r.game.pitch.nextId = 2;
-    r.game.scores = [11, 11]; r.game.remaining = [0, 0, 0, 0]; r.game.remaining[r.seat] = 1; r.game.turn = r.seat; r.game.phase = 'aiming'; r.game.revision++; r.publish();
+    r.game.scores = [11, 11]; r.game.remaining = Array(6).fill(0); r.game.remaining[r.seat] = 1; r.game.turn = r.seat; r.game.phase = 'aiming'; r.game.revision++; r.publish();
   });
   const spectator = await open('Dani', `room=${code}`); await wait(spectator, () => criollasDebug.room.state.scores[0] === 11);
   await guest.locator('#power').fill('10'); await guest.locator('#power').dispatchEvent('input'); await guest.locator('#shoot').click();

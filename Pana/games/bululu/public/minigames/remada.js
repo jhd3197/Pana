@@ -10,7 +10,7 @@ import { sunnyStage, pick } from './stage.js';
 import { riverWater, riverBanks, canoeActors, drawCanoe } from './river-stage.js';
 import { remadaSim, REMADA } from './river-sims.js';
 
-const LANES = [-4.5, -1.5, 1.5, 4.5];
+
 
 export default {
   id: 'remada',
@@ -21,6 +21,7 @@ export default {
   time: REMADA.time,
 
   create(ctx) {
+    const LANES = ctx.players.map((_, i) => (i - (ctx.players.length - 1) / 2) * 2.5);
     const scene = new THREE.Scene();
     const stage = sunnyStage(scene, { ground: null, grass: false, decor: false, horizon: 0xd8e8d0 });
     const puffs = new Puffs(scene);
@@ -28,13 +29,13 @@ export default {
     riverBanks(scene, { half: 9, z0: 30, z1: -REMADA.length - 50, seed: 11 });
     const arch = finishArch({ span: 18, label: 'META', secondary: '¡REMADA!' }); arch.position.set(0, -.1, -REMADA.length); scene.add(arch);
     // Distance buoys every 20 m.
-    for (let s = 20; s < REMADA.length; s += 20) for (const x of [-6.2, 6.2]) {
+    for (let s = 20; s < REMADA.length; s += 20) for (const x of [-8.2, 8.2]) {
       const buoy = new THREE.Mesh(new THREE.SphereGeometry(.28, 10, 8), new THREE.MeshStandardMaterial({ color: s % 40 ? 0xffc629 : 0xff6b4a, roughness: .5 }));
       buoy.position.set(x, .1, -s); scene.add(buoy);
     }
     const camera = new THREE.PerspectiveCamera(52, (ctx.aspect || innerWidth / innerHeight), .1, 500);
     const humans = new Set(ctx.players.filter(p => p.human && !ctx.auto).map(p => p.i));
-    const sim = remadaSim({ humans, random });
+    const sim = remadaSim({ humans, random, count: ctx.players.length });
     const actors = canoeActors(scene, ctx.players);
     let time = 0, lastCount = 0, cam = 0;
     const said = new Set();
@@ -45,7 +46,7 @@ export default {
         drawCanoe(a, dt, time, { x: LANES[a.i], z: -r.s, h: Math.PI, paddle: r.paddle });
       }
       // Follow the pack, leaning toward the leader.
-      const lead = Math.max(...sim.racers.map(r => r.s)), mean = sim.racers.reduce((n, r) => n + r.s, 0) / 4;
+      const lead = Math.max(...sim.racers.map(r => r.s)), mean = sim.racers.reduce((n, r) => n + r.s, 0) / actors.length;
       cam += ((lead * .6 + mean * .4) - cam) * Math.min(1, dt * 3);
       camera.position.set(0, 7.5, -cam + 11); camera.lookAt(0, .5, -cam - 9);
       stage.update(time); animateWater(time); puffs.update(dt);

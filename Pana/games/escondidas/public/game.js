@@ -1,3 +1,5 @@
+import { createRoomOptions } from '/engine/room-options.js';
+import { FIELDS, DEFAULT_OPTIONS } from './options.js';
 import { prepareScene } from '/engine/game-load.js';
 import * as THREE from 'three';
 import { loadAvatar, loadName } from '/engine/avatar.js';
@@ -14,7 +16,7 @@ import { createHuntEnvironment } from './scene.js';
 import { createMapPicker } from '/engine/map-picker.js';
 import { arenaInfo } from '/engine/arena-layouts.js';
 import { huntLayout } from './layout.js';
-import { RULES, HIDE_TIMES } from './rules.js';
+import { RULES } from './rules.js';
 import { HuntRoom } from './network.js';
 import { elapsedClock } from '/engine/live-room.js';
 
@@ -64,14 +66,16 @@ for (const [i, def] of PLAZA_PROPS.entries()) {
 let state = { mapId: 'plaza', layoutSeed: 1, hideSeconds: RULES.hideSeconds, phase: 'lobby', players: [], round: 0, events: [] }, previousPhase = 'lobby';
 let drag = null, preference = 'hide', paused = false, yaw = 0.28, pitch = 0.22, eventId = 0, uiKey = '', snapRound = -1;
 let toastTimer, motionTime = 0, last = performance.now();
-let portraitKey = '';
+let portraitKey = '', hintId = 0;
 const keys = new Set(), touch = new Set(), actorRing = new THREE.Mesh(new THREE.RingGeometry(0.82, 0.88, 40), new THREE.MeshBasicMaterial({ color: 0x54e2ca, transparent: true, opacity: 0.8, depthWrite: false }));
 actorRing.rotation.x = -Math.PI / 2; actorRing.position.y = 0.07; scene.add(actorRing);
 const room = new HuntRoom({ code, name, avatar, onState: receive,
   onStatus(text, failed = false) { $('connection').textContent = text; show('practice', failed); if (failed) notify(text); updateHUD(); }, onNotice: notify });
+const optionsUI = createRoomOptions($('room-options'), { title: 'Escondidas', fields: FIELDS, change: options => room.action('configure', { options }), reset() {
+  room.action('configure', { options: DEFAULT_OPTIONS }); room.action('map', { mapId: 'plaza' }); $('role-hide').click();
+} });
+const isSeeker = id => state.seekers?.includes(id) ?? id === state.seeker;
 const mapPicker = createMapPicker($('map-picker'), mapId => room.action('map', { mapId }));
-for (const seconds of HIDE_TIMES) $('hide-seconds').append(new Option(`${seconds} segundos`, seconds));
-$('hide-seconds').onchange = () => room.action('configure', { options: { hideSeconds: Number($('hide-seconds').value) } });
 function notify(message) { $('toast').textContent = message; show('toast', true); clearTimeout(toastTimer); toastTimer = setTimeout(() => show('toast', false), 3300); }
 const menu = createGameMenu({
   orientation: 'vertical',
@@ -120,13 +124,15 @@ function receive(next) {
     previousPhase = state.phase;
   }
   const latest = state.events.at(-1);
+  if (state.hint && isSeeker(room.id) && state.hint.id !== hintId) { hintId = state.hint.id; sound.tone(state.hint.kind === 'whistle' ? 1100 : 300, 0, .3, 'sine', .12); notify(`Pista: se oyen pasos ${state.hint.z < (getMe()?.z || 0) ? 'al norte' : 'al sur'}.`); }
   if (latest && latest.id !== eventId) { eventId = latest.id; notify(latest.text); }
   updateHUD();
 }
 function updateHUD() {
+  optionsUI.update(state.options || DEFAULT_OPTIONS, room.connected && room.isHost && state.phase === 'lobby');
+  if (['playing', 'hide', 'hunt'].includes(state.phase) && optionsUI.isOpen) optionsUI.close();
   mapPicker.update(state.mapId, room.connected && room.isHost && state.phase === 'lobby');
-  $('hide-seconds').value = state.hideSeconds || RULES.hideSeconds;
-  $('hide-seconds').disabled = !room.connected || !room.isHost || state.phase !== 'lobby';
+  $('hunt-seconds-stat').textContent = `${(state.options?.huntSeconds || RULES.huntSeconds) / 60}:00`;
   $('hide-seconds-stat').textContent = `${state.hideSeconds || RULES.hideSeconds}s`;
   $('world').setAttribute('aria-label', `${arenaInfo(state.mapId).name}, escenario de Escondidas`);
   $('scene-label').querySelector('b').textContent = arenaInfo(state.mapId).name;
@@ -147,15 +153,15 @@ function updateHUD() {
     $('roster').prepend(Object.assign(document.createElement('i'), { className: 'pk-dot' }));
   }
   if (lobby) { $('world').style.filter = ''; eventId = 0; return; }
-  const seeker = state.players.find(p => p.id === state.seeker), seeking = me?.id === state.seeker;
+  const seeking = isSeeker(me?.id), seeker = seeking ? me : state.players.find(p => isSeeker(p.id));
   const nextPortraitKey = JSON.stringify(seeker?.avatar || {});
   if (nextPortraitKey !== portraitKey) { portraitKey = nextPortraitKey; $('seeker-face').src = preview(buildCharacter(seeker?.avatar || {}).group, true); }
   $('timer').textContent = `${String(Math.floor(Math.ceil(Math.max(0, state.remaining)) / 60)).padStart(2, '0')}:${String(Math.ceil(Math.max(0, state.remaining)) % 60).padStart(2, '0')}`;
   $('phase').textContent = state.phase === 'hide' ? seeking ? 'ESPERA TU TURNO' : '¡A ESCONDERSE!' : seeking ? '¡A BUSCAR!' : '¡QUE NO TE PILLEN!';
   $('round').textContent = `RONDA ${state.round} / ${state.totalRounds}`;
-  $('seeker-name').textContent = seeking ? '¡Eres tú!' : seeker?.name || 'Buscador';
+  $('seeker-name').textContent = seeking ? '¡Eres tú!' : state.players.filter(p => isSeeker(p.id)).map(p => p.name).join(' + ') || 'Buscador';
   $('seeker-caption').textContent = seeker?.bot ? 'BUSCADOR · MÁQUINA' : 'BUSCADOR';
-  const left = state.players.filter(p => p.id !== state.seeker && !p.caught && !p.spectator).length;
+  const left = state.players.filter(p => !isSeeker(p.id) && !p.caught && !p.spectator).length;
   $('remaining-players').textContent = `${left} pana${left !== 1 ? 's' : ''} escondido${left !== 1 ? 's' : ''}`;
   const spectating = me?.spectator || me?.caught;
   show('center-message', active && (spectating || seeking && state.phase === 'hide'));
@@ -168,6 +174,7 @@ function updateHUD() {
   }
   // A seeker cannot peek at preparations using the scene or the minimap.
   $('world').style.filter = seeking && state.phase === 'hide' ? 'blur(30px) brightness(.45)' : '';
+  $('minimap').closest('aside').hidden = seeking && (!state.options?.seekerMap || state.phase === 'hide');
   show('disguise-panel', !seeking && !spectating);
   $('prop-name').textContent = propDefinition(me?.prop)?.label || 'Tu pana';
   $('charges').replaceChildren(...Array.from({ length: RULES.changes }, (_, i) => Object.assign(document.createElement('i'), { className: i < (me?.changes || 0) ? 'on' : '' })));
@@ -177,12 +184,12 @@ function updateHUD() {
   for (const button of $('prop-list').children) {
     const selected = button.dataset.prop === me?.prop;
     button.classList.toggle('selected', selected); button.classList.toggle('is-active', selected); button.setAttribute('aria-pressed', String(selected));
-    button.disabled = !active || seeking || spectating || (me?.changes ?? 0) <= 0 || selected;
+    button.disabled = state.options?.disguises === 'barrels' && button.dataset.prop !== 'barrel' || !active || seeking || spectating || (me?.changes ?? 0) <= 0 || selected;
   }
   const near = nearestProp();
   $('action-label').textContent = spectating ? 'Observando la ronda' : seeking
     ? state.phase === 'hide' ? 'Espera a que termine la cuenta' : me?.cooldown > 0 ? `Revisando… ${me.cooldown.toFixed(1)} s` : 'Revisar alrededor'
-    : near ? `Copiar ${propDefinition(near.type).label.toLowerCase()}` : 'Acércate a un objeto para copiar';
+    : near ? `Copiar ${propDefinition(near.type).label.toLowerCase()}` : state.options?.disguises === 'barrels' ? 'Acércate a un barril para copiar' : 'Acércate a un objeto para copiar';
   $('action').disabled = spectating || seeking && (state.phase !== 'hunt' || me?.cooldown > 0) || !seeking && (!near || me?.changes <= 0);
   const suspicion = me?.suspicion || 0; show('suspicion', suspicion > 3 && !spectating && !seeking);
   $('suspicion-fill').style.width = `${suspicion}%`;
@@ -194,7 +201,7 @@ function updateHUD() {
     $('result-copy').textContent = 'Cada captura suma 1 punto. Sobrevivir a la ronda suma 3. El buscador cambia en cada ronda.';
     fillRoster($('scores'), [...state.players].sort((a, b) => b.score - a.score).map(p => ({
       className: 'score-row', name: p.name + (p.id === room.id ? ' (tú)' : ''), me: p.id === room.id, end: p.score, score: true,
-      detail: p.spectator ? 'Espectador' : p.id === state.seeker ? 'Buscador' : p.caught ? 'Encontrado' : 'A salvo' })));
+      detail: p.spectator ? 'Espectador' : isSeeker(p.id) ? 'Buscador' : p.caught ? 'Encontrado' : 'A salvo' })));
     $('next').disabled = !room.isHost;
     $('next').textContent = !room.isHost ? 'Esperando al anfitrión…' : state.phase === 'finished' ? 'Otra partida →' : 'Siguiente ronda →';
   }
@@ -202,14 +209,14 @@ function updateHUD() {
 
 function nearestProp() {
   const p = getMe(); if (!p) return null;
-  return huntLayout(state.mapId, state.layoutSeed).props.filter(o => Math.hypot(o.x - p.x, o.z - p.z) < 3.8)
+  return huntLayout(state.mapId, state.layoutSeed).props.filter(o => (state.options?.disguises !== 'barrels' || o.type === 'barrel') && Math.hypot(o.x - p.x, o.z - p.z) < 3.8)
     .sort((a, b) => Math.hypot(a.x - p.x, a.z - p.z) - Math.hypot(b.x - p.x, b.z - p.z))[0];
 }
 function transform(id) { room.action('transform', { prop: id }); }
 function act() {
   if (paused) return;
-  if (room.id === state.seeker) room.action('check');
-  else { const near = nearestProp(); if (near) transform(near.type); else notify('Acércate a un barril, caja, cava, mata o banco.'); }
+  if (isSeeker(room.id)) room.action('check');
+  else { const near = nearestProp(); if (near) transform(near.type); else notify(state.options?.disguises === 'barrels' ? 'Acércate a un barril.' : 'Acércate a un barril, caja, cava, mata o banco.'); }
 }
 for (const mode of ['hide', 'seek']) $(`role-${mode}`).onclick = () => {
   preference = mode;
@@ -263,7 +270,7 @@ function drawMap() {
   for (const p of state.players) {
     if (p.caught || p.spectator) continue;
     // Do not reveal hiders to the seeker, even during preparations.
-    if (p.id !== room.id && p.id !== state.seeker) continue;
+    if (p.id !== room.id && !isSeeker(p.id)) continue;
     map.fillStyle = p.id === room.id ? '#ffc629' : '#ff4b4b';
     map.strokeStyle = '#0e0b24'; map.lineWidth = 2.5;
     map.beginPath(); map.arc(px(p.x), pz(p.z), p.id === room.id ? 7 : 5, 0, Math.PI * 2); map.fill(); map.stroke();
@@ -307,7 +314,9 @@ function frame(now) {
   if (lobbyShift !== (camera.view?.enabled ? -camera.view.offsetX : 0)) {
     if (lobbyShift) camera.setViewOffset(innerWidth, innerHeight, -lobbyShift, 0, innerWidth, innerHeight); else camera.clearViewOffset();
   }
-  drawMap(); renderer.render(scene, camera); requestAnimationFrame(frame);
+  drawMap();
+  if (state.hint && isSeeker(room.id)) { map.fillStyle = '#ffc629'; map.beginPath(); map.arc(150 + state.hint.x * 5.7, 135 + state.hint.z * 5.7, state.hint.kind === 'whistle' ? 9 : 20, 0, Math.PI * 2); map.strokeStyle = '#ffc629'; map.stroke(); }
+  renderer.render(scene, camera); requestAnimationFrame(frame);
 }
 // Real elapsed time (the room catches up in fixed steps): a host in a
 // background tab gets timers about once a second.

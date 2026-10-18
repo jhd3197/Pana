@@ -123,7 +123,16 @@ export function createScene(canvas) {
   const ray = new THREE.Raycaster(), plane = new THREE.Plane(new THREE.Vector3(0, 1, 0), -1.1), mouse = new THREE.Vector2(), point = new THREE.Vector3();
   const cameraRay = new THREE.Ray(), cameraDirection = new THREE.Vector3(), obstruction = new THREE.Vector3();
   function resize() { const w = canvas.clientWidth, h = canvas.clientHeight; if (canvas.width !== Math.round(w * renderer.getPixelRatio()) || canvas.height !== Math.round(h * renderer.getPixelRatio())) renderer.setSize(w, h, false); }
+  const flags = [0, 1].map(team => {
+    const root = new THREE.Group(), pole = new THREE.Mesh(new THREE.CylinderGeometry(.045, .045, 2.7, 8), material('#f8f0d2'));
+    root.name = `Bandera ${team}`;
+    pole.position.y = 1.35; root.add(pole);
+    const cloth = new THREE.Mesh(new THREE.BoxGeometry(1.1, .65, .06), material(team ? '#29c5cd' : '#f28b42')); cloth.position.set(.55, 2.2, 0); root.add(cloth); scene.add(root); return root;
+  });
+  const bases = flags.map((_, team) => { const ring = new THREE.Mesh(new THREE.RingGeometry(1.7, 1.95, 32), material(team ? '#29c5cd' : '#f28b42')); ring.rotation.x = -Math.PI / 2; scene.add(ring); return ring; });
   function draw(state, id, dt, aimPoint) {
+    flags.forEach((root, i) => { const flag = state.flags?.[i]; root.visible = !!state.options?.flag && !!flag && state.phase === 'playing'; if (flag) root.position.set(flag.x, flag.carrier == null ? 0 : 2, flag.z); });
+    bases.forEach((ring, i) => { const flag = state.flags?.[i]; ring.visible = flags[i].visible; if (flag) ring.position.set(flag.homeX, .035, flag.homeZ); });
     setMap(state.mapId); environment?.update(elapsed, dt);
     canvas.style.width = '100vw'; canvas.style.height = '100dvh';
     resize(); const aspect = canvas.clientWidth / canvas.clientHeight, lobby = state.phase === 'lobby';
@@ -148,9 +157,14 @@ export function createScene(canvas) {
         avatar = buildCharacter(p.avatar); avatar.group.position.set(p.x, 0, p.z); scene.add(avatar.group);
         const ring = new THREE.Mesh(ringGeo, new THREE.MeshBasicMaterial({ color: p.color, side: THREE.DoubleSide })); ring.rotation.x = -Math.PI / 2; ring.position.y = .05; avatar.group.add(ring);
         const marker = createPaintMarker({ color: p.color }); marker.position.set(.48, .95, .25); avatar.group.add(marker);
-        avatar.ring = ring; avatar.marker = marker; avatars.set(p.id, avatar);
+        avatar.ring = ring; avatar.marker = marker; avatar.paintColor = p.color; avatars.set(p.id, avatar);
       }
-      avatar.group.visible = p.connected && p.respawn <= 0;
+      if (avatar.paintColor !== p.color) {
+        avatar.marker.removeFromParent(); avatar.marker.userData.dispose();
+        avatar.marker = createPaintMarker({ color: p.color }); avatar.marker.position.set(.48, .95, .25); avatar.group.add(avatar.marker); avatar.paintColor = p.color;
+      }
+      avatar.ring.material.color.set(p.color);
+      avatar.group.visible = p.connected && !p.eliminated && p.respawn <= 0;
       if (Math.hypot(avatar.group.position.x - p.x, avatar.group.position.z - p.z) > 6) avatar.group.position.set(p.x, 0, p.z);
       else avatar.group.position.lerp(new THREE.Vector3(p.x, 0, p.z), 1 - Math.exp(-dt * 20));
       avatar.group.rotation.y = Math.atan2(p.ax, p.az); avatar.ring.scale.setScalar(p.id === id ? 1.25 : 1); avatar.ring.visible = p.shield <= 0 || Math.floor(performance.now() / 140) % 2 === 0;

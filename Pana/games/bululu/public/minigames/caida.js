@@ -18,7 +18,7 @@ const DECK = new THREE.Vector3(0, TOP, -1.75);
 const FLIP = 0.26;                 // seconds a card takes from the deck to the felt
 const LOCK = 0.8;                  // lockout after a wrong slam
 const MATCH_ODDS = 0.3;            // how often the deck is nudged into a caída
-const SPOTS = [[-3.5, 0.3], [-1.45, -3.3], [1.45, -3.3], [3.5, 0.3]];
+
 
 const RANKS = [1, 2, 3, 4, 5, 6, 7, 10, 11, 12];
 const SUITS = ['oros', 'copas', 'espadas', 'bastos'];
@@ -93,8 +93,9 @@ export default {
     camera.lookAt(0, 1, -1);
 
     const actors = makeActors(scene, ctx.players);
+    const spots = actors.map((_, i) => { const a = Math.PI + i * Math.PI / (actors.length - 1); return [Math.cos(a) * 3.8, Math.sin(a) * 3.8]; });
     actors.forEach((a, i) => {
-      [a.x, a.z] = SPOTS[i];
+      [a.x, a.z] = spots[i];
       a.home = new THREE.Vector2(a.x, a.z);
       a.face = Math.atan2(-a.x, -a.z);
       a.pana.group.rotation.order = 'YXZ';

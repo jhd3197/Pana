@@ -1,3 +1,4 @@
+import { embusteOptions } from '../public/options.js';
 // ¡Embuste! online: the room runs the whole night (docs/plans/54_embuste.md,
 // option 2). Social deduction lives on secrets, so no client ever gets a
 // snapshot of the Night: each seat gets its own `view` (its role, what its
@@ -39,7 +40,7 @@ export default class EmbusteRoom extends PanaRoom {
 
     this.onHostMessage('options', (client, m) => {
       if (this.night.phase !== 'lobby' || !m) return;
-      for (const k of ['bots', 'reveal', 'chat']) if (k in m) this.state[k] = !!m[k];
+      const next = embusteOptions(this.state, m); if (next) Object.assign(this.state, next);
     });
     this.onHostMessage('start', () => { if (['lobby', 'ended'].includes(this.night.phase)) this.startNight(); });
     this.onHostMessage('lobby', () => { if (this.night.phase === 'ended') this.toLobby(); });

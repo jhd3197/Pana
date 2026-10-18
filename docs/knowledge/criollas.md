@@ -1,14 +1,15 @@
 # Bolas Criollas
 
-`/g/criollas/` is a casual 3D team game for 1–4 humans with bots in the other
-seats. `/g/bululu/?play=criollas` practices the four-way minigame. Both use
+`/g/criollas/` is a casual 3D team game for 1–6 humans with bots in the other
+seats. `/g/bululu/?play=criollas` practices the six-way minigame. Both use
 `engine/bolas-criollas.js` (pure physics) and `engine/bolas-world.js` (presentation).
 The clay court and striped balls are owned-resource factories in
 `engine/models/props/criollas.js`, registered as `criollas-court` and `criolla-ball`.
 
 ## House rules
 
-Full game: seats 0/2 are red, 1/3 green. Four balls each, eight per team. The
+Full game: seats 0/2/4 are red, 1/3/5 green. Four balls each by default, twelve
+per team; the host can select two per pana for a shorter hand. The
 losing team throws; teammates alternate whenever possible. When that team has
 no balls, the other finishes. Count each winning-team ball closer than the
 best opponent. Surface gaps within 5 mm tie. Choose 12 or 24 points in the lobby.
@@ -23,7 +24,7 @@ were checked against the federation's
 The older source has different competition targets; the selectable targets,
 automated mingo and compact court are deliberate adaptations.
 
-Bululú: four individuals, two balls each, shared mingo and simultaneous throws.
+Bululú: six individuals, two balls each, shared mingo and simultaneous throws.
 Arrow X adjusts angle, Z adjusts power, jump throws. Each pana has a 2.5 s
 cooldown; input closes after 30 s and the last balls settle before results.
 The runner's 38 s maximum leaves time for that final throw. The closest surface
@@ -44,6 +45,13 @@ in the lobby; before connecting, the lobby edits the local table. A local game
 between hands. The world swaps its venue from the state handler in game.js,
 not from the frame loop: background pages may not draw, and a peer must still
 end up on the host's map.
+
+Room target and difficulty use the shared segmented controls. “Más ajustes”
+sets balls per player; only the host can change this before play. Those choices
+survive practice, start and host migration. Team rotation scans all remaining
+seats rather than assuming a single partner; exhausted players are skipped.
+The shared individual-mode court centers/spaces all six actors within 6.3 m,
+matching Bululú's throw origins.
 
 Cameras: `calce` (default) stands over the thrower's right shoulder and leans
 toward the rolling ball; `arriba` looks straight down with the long axis across
@@ -73,7 +81,7 @@ average pre/post-drag velocity, so an unobstructed arrime stops at the same
 position as its guide. Equal playing balls exchange impulses with restitution
 .72; the mingo has one third of their mass. No physics runs in rendering.
 
-`CriollasRoom` extends `HostRoom`; the shared relay caps the room at four seats.
+`CriollasRoom` extends `TableRoom`; the shared relay caps the room at six seats.
 Snapshots during motion run at 20 Hz and include all velocities, remaining
 balls, turn, teammate rotation, scores and bot timer. Actions include a revision
 and must come from the current player (or host for lobby/results). Handoff
@@ -100,3 +108,7 @@ Use a fresh explicitly loopback-bound port if necessary: on this machine an
 unrelated process bound to 127.0.0.1:8474 answered instead of Pana listening on
 0.0.0.0:8474. `PANA_HOST=127.0.0.1`, `PANA_PORT=18461` avoids ambiguous listeners;
 verify `/api/health` before interpreting game load failures.
+
+The lobby uses the shared grouped avatar roster: red seats 0/2/4 and green seats 1/3/5. Panas can swap their own card with another human or bot; the host can arrange anyone. Revisioned swap actions are valid only in the lobby. The players array remains the authority for teams and turn order, so starting and host migration preserve the selected arrangement.
+
+Restablecer returns the venue, difficulty and rule values to their defaults in one revisioned options action.

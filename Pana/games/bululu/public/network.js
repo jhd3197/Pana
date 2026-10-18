@@ -3,8 +3,8 @@ import { acceptsChoice, cleanInput, IDLE_INPUT } from './online-rules.js';
 
 export class BululuRoom extends HostRoom {
   constructor(options) {
-    super({ ...options, game: 'bululu', protocol: 'bululu-v1',
-      texts: { full: 'Sala llena: ya hay cuatro panas. Puedes jugar con bots.' } });
+    super({ ...options, game: 'bululu', protocol: 'bululu-v2',
+      texts: { full: 'Sala llena: ya hay seis panas. Puedes jugar con bots.' } });
     this.events = options.events;
     this.inputs = new Map();
     this.history = [];
@@ -15,7 +15,7 @@ export class BululuRoom extends HostRoom {
   memberJoined() { this.events.members(); this.publish(); }
   memberLeft(id) { this.inputs.delete(id); this.events.members(); }
   memberHello() { this.events.members(); this.publish(); }
-  statusText() { return `Sala ${this.code} · ${this.members.size}/4 panas`; }
+  statusText() { return `Sala ${this.code} · ${this.members.size}/6 panas`; }
   publish(state = this.state) {
     if (!this.isHost || !state) return;
     this.state = state;

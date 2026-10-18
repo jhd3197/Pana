@@ -8,7 +8,7 @@ await mkdir('art/caida', { recursive: true });
 async function open(name, room = code) {
   console.log(`Opening ${name}`);
   const context = await browser.newContext({ viewport: { width: 1280, height: 720 }, reducedMotion: 'reduce' });
-  await context.addInitScript(name => localStorage.setItem('pana:name', name), name);
+  await context.addInitScript(name => { localStorage.setItem('pana:name', name); localStorage.setItem('pana:settings', JSON.stringify({ quality: 'baja', sound: false })); }, name);
   const page = await context.newPage(); page.setDefaultTimeout(30000);
   page.on('pageerror', e => { errors.push(e.message); console.log('PAGE ERROR', e.message); });
   await page.goto(`${base}/g/caida/?room=${room}&debug`);
@@ -19,7 +19,7 @@ async function sync(page, revision) { await page.waitForFunction(r => caidaDebug
 try {
   const a = await open('Ana'), b = await open('Beto');
   await a.waitForFunction(() => caidaDebug.room.members.size === 2);
-  await a.locator('#cantos').uncheck();
+  await a.locator('#pana-room-more').click(); await a.locator('[data-room-option="cantos"][data-value="false"]').click(); await a.locator('#pana-room-done').click();
   await a.evaluate(() => { caidaDebug.room.game.rng = 1; });
   await a.locator('#start').click(); await b.waitForFunction(() => caidaDebug.room.state.phase === 'dealing');
   console.log('Both clients reached the dealer screen');

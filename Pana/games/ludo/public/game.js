@@ -6,6 +6,8 @@ import { inviteUrl, newRoomCode, roomFromUrl } from '/engine/invite.js';
 import { sound } from '/engine/fx.js';
 import { LudoRoom } from './network.js';
 import { HOME, COLORS, COLOR_NAMES, legalMoves, chooseMove } from './rules.js';
+import { createRoomOptions } from '/engine/room-options.js';
+import { LUDO_OPTIONS, defaultLudoOptions } from './options.js';
 
 const $=id=>document.getElementById(id),params=new URLSearchParams(location.search);
 const code=roomFromUrl()||newRoomCode();
@@ -14,14 +16,16 @@ let world=null,stopped=false,topView=false,lastRevision=-1,lastRound=0;
 const room=new LudoRoom({code,name:loadName(),avatar:loadAvatar(),onState:render,
   onStatus(text,failed=false){$('connection').textContent=text;$('practice').hidden=!failed;render(room.state);},
 });
+const roomOptions=createRoomOptions($('room-options'),{title:'Ludo',fields:LUDO_OPTIONS,
+  change:options=>room.action('options',{options}),reset:()=>room.action('options',{options:defaultLudoOptions()})});
 const menu=createGameMenu({title:'Ludo · Pana',sound,orientation:'libre',
   note:()=>room.members.size>1?'La partida continúa mientras estás en el menú.':'La partida está en pausa. Los bots te esperan.',
   controls:[['Espacio','Tirar el dado'],['1 2 3 4','Mover una ficha disponible'],['Ratón / toque','Tocar una ficha marcada o su botón'],['M','Activar o silenciar el sonido']],
   tips:[
     'Cada pana tiene cuatro fichas. Gana quien lleva las cuatro hasta el centro.',
-    'Necesitas un seis para sacar una ficha. Al salir, ese seis se usa completo: la ficha queda en la casilla de salida.',
-    'Un seis permite volver a tirar. El tercer seis seguido pierde ese lanzamiento y termina el turno; los movimientos anteriores se conservan.',
-    'Las casillas con un círculo son seguras. En las demás, caer sobre fichas rivales las devuelve a su patio. Capturar no da un turno extra.',
+    'El anfitrión elige si sales con seis o con uno y seis. Al salir, la ficha queda en la casilla de salida.',
+    'Un seis permite volver a tirar. Si la sala activa la regla, el tercer seis seguido pierde ese lanzamiento y termina el turno; los movimientos anteriores se conservan.',
+    'Las casillas con un círculo son seguras. En las demás, caer sobre fichas rivales las devuelve a su patio. La sala puede dar otra tirada al capturar.',
     'Las fichas pueden compartir casilla y no forman barreras. El pasillo de tu color es privado. Debes sacar el número exacto para llegar a casa.',
     'Si no tienes movimiento, el turno pasa automáticamente. Los puestos vacíos juegan con bots; un pana que llega hereda las fichas de un bot.',
   ],invite:()=>room.offline?null:inviteUrl(code),
@@ -46,6 +50,9 @@ function ownTurn(){return !!world&&room.connected&&room.state.phase==='playing'&
 function act(action,values={}){if(menu.isOpen||!ownTurn())return;sound.unlock();room.action(action,values);}
 function render(state){
   const lobby=state.phase==='lobby',ended=state.phase==='finished',seat=room.seat;
+  roomOptions.update(state.options,lobby&&room.isHost);
+  if(!lobby&&roomOptions.isOpen)roomOptions.close();
+  document.querySelector('.rules-summary').textContent=state.options.entry==='six'?'Saca un seis para salir. Captura a tus rivales y lleva tus cuatro fichas al centro con el número exacto.':'Sal con uno o seis. Captura a tus rivales y lleva tus cuatro fichas al centro con el número exacto.';
   document.body.classList.toggle('in-lobby',lobby);$('welcome').hidden=!lobby;$('hud').hidden=lobby;
   $('start').disabled=!world||!room.connected||!room.isHost;
   $('start').textContent=!world?'Preparando la mesa…':!room.connected?'Conectando…':room.isHost?'¡Jugar!':'Espera al anfitrión';

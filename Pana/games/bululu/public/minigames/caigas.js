@@ -1,5 +1,5 @@
 import { random, inputFor } from '../online-rules.js';
-// ¡No te caigas! Four panas on a raft, a striped log sweeping around a
+// ¡No te caigas! Up to six panas on a raft, a striped log sweeping around a
 // post. Jump it or take a swim. It speeds up, and sometimes flips direction.
 
 import * as THREE from 'three';
@@ -45,12 +45,12 @@ export default {
 
     // raft: one colored platform per player plus a hub
     const colors = ctx.players.map((p) => p.color);
-    const raft = new THREE.Group();
-    [[1, 1], [-1, 1], [-1, -1], [1, -1]].forEach(([sx, sz], i) => {   // same order as the panas
+    const raft = new THREE.Group(), platform = ctx.players.length > 4 ? 2.4 : 4.4;
+    ctx.players.map((_, i) => { const a = -Math.PI / 4 - i * Math.PI * 2 / ctx.players.length; return [Math.cos(a) * 1.4, -Math.sin(a) * 1.4]; }).forEach(([sx, sz], i) => {   // same order as the panas
       const c = new THREE.Color(colors[i]).multiplyScalar(0.85);
-      raft.add(box(4.4, 0.5, 4.4, M(`#${c.getHexString()}`, { roughness: 0.8 }), sx * 2.5, 0, sz * 2.5));
+      raft.add(box(platform, 0.5, platform, M(`#${c.getHexString()}`, { roughness: 0.8 }), sx * 2.5, 0, sz * 2.5));
       for (let k = -1; k <= 1; k++) {   // plank seams
-        raft.add(box(4.3, 0.02, 0.06, M(0x3a2a1a), sx * 2.5, DECK + 0.005, sz * 2.5 + k * 1.1));
+        raft.add(box(platform - .1, 0.02, 0.06, M(0x3a2a1a), sx * 2.5, DECK + 0.005, sz * 2.5 + k * platform / 4));
       }
     });
     raft.add(mesh(new THREE.CylinderGeometry(1.4, 1.4, 0.5, 12), M(0x6b4a2a), 0, 0, 0));
@@ -99,7 +99,7 @@ export default {
 
     const actors = makeActors(scene, ctx.players);
     actors.forEach((a, i) => {
-      a.phi = [-Math.PI / 4, -3 * Math.PI / 4, 3 * Math.PI / 4, Math.PI / 4][i];
+      a.phi = -Math.PI / 4 - i * Math.PI * 2 / actors.length;
       a.x = Math.cos(a.phi) * RING;
       a.z = -Math.sin(a.phi) * RING;
       a.y = DECK;

@@ -20,6 +20,8 @@ import { createMeeting } from './ui.js';
 import { bandageWrap } from '/engine/models/props/embuste.js';
 import { openTask, HINTS } from './tasks.js';
 import { setBar } from '/engine/kit.js';
+import { createRoomOptions } from '/engine/room-options.js';
+import { EMBUSTE_OPTIONS, defaultEmbusteOptions } from './options.js';
 
 const $ = id => document.getElementById(id), show = (id, on) => $(id).classList.toggle('hidden', !on);
 const qs = new URLSearchParams(location.search), code = roomFromUrl() || newRoomCode();
@@ -45,6 +47,8 @@ const cameraTarget = new THREE.Vector3(0, 0, 0), temp = new THREE.Vector3();
 
 // ---------- state ----------
 let net = null, view = null, lobby = { phase: 'lobby', players: [], isHost: false }, paused = false, dead = false, phase = '';
+const roomOptions = createRoomOptions($('lobby-options'), { title: '¡Embuste!', fields: EMBUSTE_OPTIONS,
+  change: patch => net?.options(patch), reset: () => net?.options(defaultEmbusteOptions()) });
 let toastTimer, last = performance.now(), elapsed = 0, rosterKey = '', uiClock = 0, endedAt = 0;
 const actors = new Map(), keys = new Set(), touch = new Set();
 const me = () => view?.me;
@@ -311,8 +315,8 @@ function updateLobby() {
   $('start').disabled = !connected || !host || (!lobby.bots && count < MIN_PLAYERS && !quick);
   $('start').textContent = !connected ? 'Conectando…' : !host ? 'El anfitrión prende la fogata' : !lobby.bots && count < MIN_PLAYERS ? `Faltan panas (mínimo ${MIN_PLAYERS})` : '¡Que caiga la noche!';
   $('stat-mummies').textContent = mummyCount(Math.min(8, filled));
-  $('lobby-options').classList.toggle('is-guest', !host);
-  for (const k of ['bots', 'reveal', 'chat']) $(`opt-${k}`).setAttribute('aria-checked', String(lobby[k] !== false));
+  roomOptions.update({ ...defaultEmbusteOptions(), ...lobby }, !!host && inLobby);
+  if (!inLobby && roomOptions.isOpen) roomOptions.close();
   $('practice').textContent = net && !net.online ? 'Volver a la sala online' : 'Practicar con bots en este navegador';
   const key = lobby.players.map(p => `${p.seat}:${p.name}:${p.host}`).join('|');
   if (key !== rosterKey) {
@@ -529,7 +533,6 @@ $('again').onclick = () => net?.start();
 $('to-lobby').onclick = () => net?.toLobby();
 $('practice').onclick = () => (net && !net.online ? (net.leave(), view = null, goOnline()) : practice());
 $('offline-inline').onclick = () => practice();
-for (const k of ['bots', 'reveal', 'chat']) $(`opt-${k}`).onclick = () => { if (lobby.isHost) net?.options({ [k]: lobby[k] === false }); };
 
 // ---------- frame ----------
 function resize() { renderer.setSize(innerWidth, innerHeight); camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix(); }

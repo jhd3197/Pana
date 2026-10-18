@@ -1,6 +1,6 @@
 {
   "name": "Dominó",
   "description": "La partida del sábado. Arma pareja, canta paso y lleva tu equipo a 100. Juega con tus panas o completa la mesa con bots.",
-  "players": 4,
+  "players": 6,
   "color": "#24634f"
 }

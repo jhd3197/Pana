@@ -10,6 +10,10 @@ try {
   const guest = await openGame(browser, '{{id}}', { name: 'Bruno', room, query: 'debug' });
   await waitFor(host, () => {{id}}Debug.room.state.players.filter(p => p.id !== null).length === 2);
   assert.equal(await host.evaluate(() => {{id}}Debug.world.camera.isPerspectiveCamera), true, 'the table is a 3D scene');
+  await host.locator('#pana-room-more').click();
+  await host.locator('[data-room-option="cpuSeconds"][data-value="0.35"]').click();
+  await waitFor(guest, () => {{id}}Debug.room.state.options.cpuSeconds === .35);
+  await host.locator('#pana-room-done').click();
   await host.locator('#start').click();
   await waitFor(guest, () => {{id}}Debug.room.state.phase === 'playing');
   // Each pana rolls whenever it is their turn; bots roll on the host.

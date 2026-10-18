@@ -44,7 +44,7 @@ Extend `HostRoom`; keep only the game's rules.
 import { HostRoom } from '/engine/net.js';
 export class KitchenRoom extends HostRoom {
   constructor({ code, name, avatar, onState, onStatus, onNotice }) {
-    super({ game: 'cocina', protocol: 'cocina-v1', code, name, avatar, onState, onStatus, onNotice,
+    super({ game: 'cocina', protocol: 'cocina-v2', code, name, avatar, onState, onStatus, onNotice,
       texts: { connecting: '…', full: '…', lost: '…', offline: '…' } });
     // game-only fields
   }
@@ -118,9 +118,16 @@ authority. `engine/tests/lobby.browser.js` proves a real two-client ready hold,
 host launch, game preparation failures and each shared lobby's entry.
 
 Each migrated game keeps its own two-client browser suite (`games/<game>/tests/`).
-Run the server, then the suite with the Playwright path. Mobile portrait pages in
-some suites currently stop on the shared "rotate to landscape" dialog; that is not
-a network failure.
+Before the next revision-bearing action, wait for the acting client's view as
+well as the other client's acknowledgement. Private views can reach the guest
+before the host has processed its own update. For consecutive roster clicks,
+also wait for the acting client's rendered own-seat card: its click handler
+captures the seat shown in that snapshot. A stale source is correctly rejected
+by the room's permission check.
+
+Run `npm run test:browser -- <game>`; the runner starts a fresh server and uses
+the repository's Playwright dependency. Mobile portrait pages may show the
+shared "rotate to landscape" dialog; handle that UI before testing gameplay.
 
 ### Full-room errors through the Colyseus HTTP adapter
 

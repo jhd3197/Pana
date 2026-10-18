@@ -3,6 +3,7 @@
 // to {{target}} points at a table: replace it with the real game, keeping
 // snapshot(), restore() and accept() (engine/table-room.js relies on them).
 import { draw } from '/engine/random.js';
+import { defaultOptions, roomOptions } from './options.js';
 
 export const SEATS = {{players}};
 export const TARGET = {{target}};
@@ -12,6 +13,7 @@ const bot = (seat) => ({ seat, id: null, name: BOT_NAMES[seat], avatar: {}, scor
 export class TableGame {
   constructor(seed = Date.now()) {
     this.seed = (seed >>> 0) || 1;
+    this.options = defaultOptions();
     this.players = Array.from({ length: SEATS }, (_, seat) => bot(seat));
     this.phase = 'lobby'; this.turn = 0; this.lastRoll = 0; this.winner = null; this.round = 0;
     this.revision = 0; this.ledger = {};
@@ -49,7 +51,7 @@ export class TableGame {
     const p = this.players[this.turn];
     this.lastRoll = 1 + Math.floor(draw(this) * 6);
     p.score += this.lastRoll;
-    if (p.score >= TARGET) { this.phase = 'finished'; this.winner = p.seat; } else this.turn = (this.turn + 1) % SEATS;
+    if (p.score >= this.options.target) { this.phase = 'finished'; this.winner = p.seat; } else this.turn = (this.turn + 1) % SEATS;
     this.revision++; return true;
   }
 
@@ -58,6 +60,10 @@ export class TableGame {
   accept(id, data, hostId) {
     if (!data || data.revision !== this.revision || !Number.isSafeInteger(data.seq) || data.seq <= (this.ledger[id] || 0)) return false;
     this.ledger[id] = data.seq;
+    if (data.action === 'options' && id === hostId && this.phase === 'lobby') {
+      const next = roomOptions(this.options, data.options); if (!next) return false;
+      this.options = next; this.revision++; return true;
+    }
     if (data.action === 'start') {
       if (id !== hostId || this.phase === 'playing') return false;
       this.start(); return true;

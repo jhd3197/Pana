@@ -8,6 +8,7 @@
   <title>Caída · Pana</title>
   <link rel="stylesheet" href="/engine/kit.css">
   <link rel="stylesheet" href="/engine/ui.css">
+  <link rel="stylesheet" href="/engine/room-options.css">
   <link rel="stylesheet" href="style.css">
   <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}</script>
 <link rel="stylesheet" href="/engine/game-lobby.css">
@@ -22,15 +23,11 @@
       <div class="pk-lobby-top"><a class="pk-back" href="/">← Todos los juegos</a><a class="pk-logo" href="/" aria-label="Volver a Pana">PANA</a></div>
       <span class="pk-ribbon">Caída · la baraja de toda la vida</span>
       <h1 id="title" class="pk-title">Tres cartas, una buena jugada.</h1>
-      <p class="pk-copy">¡Esa era la mía! Canta patrulla, cuida la mesa y llega primero a 24 entre panas.</p>
-      <div class="pk-stats"><div class="pk-stat"><b>40</b><span>cartas</span></div><div class="pk-stat"><b>24</b><span>puntos para ganar</span></div><div class="pk-stat"><b>2–4</b><span>panas</span></div></div>
-      <div class="pk-field"><label class="pk-eyebrow" for="mode">¿Cómo jugamos?</label><select id="mode" class="kit-select"><option value="duel">Dos panas · uno contra uno</option><option value="three">Tres panas · individual</option><option value="teams">Cuatro panas · por parejas</option><option value="four">Cuatro panas · individual</option></select></div>
-      <div class="setup-row">
-        <div class="pk-field"><span class="pk-eyebrow" id="difficulty-label">Los bots</span><div id="difficulty" class="pk-seg" role="group" aria-labelledby="difficulty-label"><button type="button" data-option="difficulty" data-value="easy">Tranquilos</button><button type="button" data-option="difficulty" data-value="normal">Pilas</button><button type="button" data-option="difficulty" data-value="hard">Memoriosos</button></div></div>
-      </div>
-      <div class="setup-foot"><label class="pk-check"><input type="checkbox" id="cantos" checked> Con cantos clásicos <span>Ronda, patrulla, vigía…</span></label><button id="rules" class="pk-btn pk-btn--ghost pk-btn--sm">Las reglas</button></div>
+      <p class="pk-copy" data-room-description>¡Esa era la mía! Canta patrulla, cuida la mesa y llega primero a 24 entre panas.</p>
+      <div class="pk-stats" data-room-description><div class="pk-stat"><b>40</b><span>cartas</span></div><div class="pk-stat"><b>24</b><span>puntos para ganar</span></div><div class="pk-stat"><b>2–6</b><span>panas</span></div></div>
+      <div id="room-options"></div><button id="rules" class="pk-btn pk-btn--ghost pk-btn--sm" data-room-help>Las reglas</button>
       <div id="table-seating"></div>
-      <div id="map-picker"></div>
+      <div id="map-picker" data-room-extra></div>
       <div class="pk-lobby-foot">
         <div class="pk-lobby-room"><span class="pk-dot"></span><span id="lobby-roster">Solo con bots o con tus panas</span><span id="lobby-room" class="pk-room-code"></span></div>
         <div class="pk-lobby-cta"><button id="start" class="pk-btn pk-btn--primary pk-btn--lg" disabled>Preparando la mesa…</button><span id="lobby-invite-slot"></span></div>

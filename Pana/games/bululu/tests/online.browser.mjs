@@ -106,12 +106,12 @@ try {
     const { joinRoom } = await import('/engine/net.js');
     const code = `capacity-${Date.now()}`, links = [];
     try {
-      for (let i = 0; i < 4; i++) links.push(await joinRoom('bululu', { code, name: `Pana ${i}`, resume: false }));
-      try { links.push(await joinRoom('bululu', { code, name: 'Quinto', resume: false })); return false; }
+      for (let i = 0; i < 6; i++) links.push(await joinRoom('bululu', { code, name: `Pana ${i}`, resume: false }));
+      try { links.push(await joinRoom('bululu', { code, name: 'Séptimo', resume: false })); return false; }
       catch (error) { return error.full === true; }
     } finally { await Promise.all(links.map(link => link.leave())); }
   }), true);
-  console.log('PASS fifth player gets a full-room response');
+  console.log('PASS seventh player gets a full-room response');
   await host.context().close();
   await wait(guest, () => onlineState().room.isHost);
   assert.equal(await guest.locator('#results').isVisible(), true);

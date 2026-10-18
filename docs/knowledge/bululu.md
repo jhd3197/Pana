@@ -10,10 +10,12 @@ tepuis), `terrain-material.js` (procedural cliff weathering), `beach.js`
 
 ## Online play
 
-Bululú has four seats (`game.json` and `server/room.js`). A `?room=` link joins
+Bululú has six seats (`game.json`; the shared relay reads the cap). A `?room=` link joins
 immediately; a direct visit offers **Jugar online** and **Jugar con bots**.
 `network.js` extends the shared `HostRoom`; it does not own connections or host
 election. The host chooses rounds and starts. Open seats remain bots.
+The six-seat snapshot/minigame format uses `bululu-v2`; a four-seat v1 page
+cannot replay a six-player seed and must reload before joining the new room.
 
 The host runs the board's async turn flow and publishes typed presentation and
 game snapshots at 10 Hz. A choice carries a prompt ID and is accepted only from
@@ -42,10 +44,50 @@ answer in flight cannot accidentally answer a new host's first prompt. The host'
 
 Regression: `npm run test:browser -- bululu` includes real two-client room play.
 
+## Room settings and six-player play
+
+The shared room-options panel exposes the prototype's main and advanced choices.
+Only the host may change options, before starting. The full validated options
+travel in every room snapshot and checkpoint; host migration and rematches keep
+those selections. Empty seats are bots. `options.js` is the pure schema/rule
+module and `harbor-board.js` builds the alternate 32-tile timber pier circuit.
+The original island retains its 80-tile loop and hill shortcut. Switching boards
+also updates the minimap, stand destinations and token positions.
+
+- **Rondas:** 10, 15 or 20 (the short-round query remains for tests).
+- **Tranquilos:** Caída, Embuste and Criollas, with no running, dodging or rhythm
+  races. Each still appears once per shuffled pass.
+- **Monedas al inicio:** 5, 10 or 20, including rematches.
+- **Casillas sorpresa:** Pocas removes alternate original event tiles; Muchas
+  adds an event every third tile. Tile paint and landing rules stay in agreement.
+- **Robar mangos:** adds a surprise event that transfers one mango from the
+  richest mango owner to the active pana. Disabling it removes that event.
+- **Bonus final:** one golden mango to the player with most minigame wins;
+  tied leaders each get one, and zero victories earn no bonus. Award before
+  saving the finished checkpoint so migration cannot repeat the award.
+- **Dados:** one d6 without doubles, or the existing two-d6 sum and +5 doubles.
+  A hidden second die must not paint a zero face: there is no zero-pip material.
+- **Velocidad CPU:** Rápida advances bot board animations and waits 2.5× faster;
+  human turns and every minigame keep their normal simulation speed.
+
+All twelve minigames use the roster length. River and Chinazo pure simulations
+accept `count` (default four keeps their existing balance benchmarks stable).
+Actor positions, cards, canoe channels, raft platforms and aiming origins include
+seats five and six. Criollas keeps all six throwing origins inside the court;
+Remada and Raudal widen camera/lanes to include the full roster. Board tokens
+use six distinct positions when they share a tile.
+
+Proof: `options.test.js` covers all settings and six-seat pure simulations;
+`minigames-online.browser.mjs` runs all twelve with six independent human input
+streams, checks deterministic replay and finite scene transforms;
+`six-players.browser.mjs` opens six real clients in separate browser contexts
+(two full games plus four real room connections), synchronizes every
+option, plays all six board turns, shoots from seat six and elects a new host.
+
 ## Test switches
 
 **Bolas Criollas** is `?play=criollas` / `?mini=criollas`: two throws per pana,
-four-way closest-to-mingo scoring, arrow-key direction/power and Space to throw.
+up-to-six-way closest-to-mingo scoring, arrow-key direction/power and Space to throw.
 Its deterministic simulation and 3D court are shared with the standalone game;
 see [criollas.md](criollas.md) for controls, timing, physics and proof.
 
@@ -193,7 +235,7 @@ flow bugs and check balance.
   18 m ahead: about 8 tumbles a game. `stats()` reports grabs, misses, bulls and
   time anyone was in reach.
 - **¡Embuste!** (from the full game, `docs/knowledge/embuste.md`): one of the
-  four panas is secretly a mummy, picked at random and possibly you. 19 s of
+  six panas is secretly a mummy, picked at random and possibly you. 19 s of
   cranking winches (a real crank lights that pana's lantern; a mummy's crank
   puffs sand 28% of the time, 63% when cranked within 0.28 s of the last), 8 s
   to vote with ← → and Space, then the verdict. AI panas vote for whoever they
@@ -246,7 +288,7 @@ flow bugs and check balance.
   Paddling is Curiara's model (`/engine/paddle.js`): a stroke is `x` reaching
   ±1 (`axisStroke`), so A/D taps alternate. Canoes are
   `/engine/models/vehicles/curiara.js`; `river-stage.js` adds water, banks and
-  actors. ¡Remada!: 120 m, AIs finish in ~22–30 s. ¡Raudal!: four parallel
+  actors. ¡Remada!: 120 m, AIs finish in ~22–30 s. ¡Raudal!: six parallel
   rapids share one seeded pattern (rocks, mangos, a ledge every 5th row); a
   jump counts .08–.45 s before the ledge, rocks cost a mango and .9 s of stun.
   ¡Remolino!: canoes point outward on their own; the eye grows 1.6→6.5 m and

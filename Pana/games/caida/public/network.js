@@ -1,23 +1,22 @@
 import { CaidaGame, chooseMove, canto } from './rules.js';
 import { TableRoom } from '/engine/table-room.js';
 
-const keepMap = (prev) => prev?.mapId ? { mapId: prev.mapId } : {};
+const freshGame = previous => { const game = new CaidaGame(Date.now()); if (previous?.options) { const { format, cantos, difficulty } = previous.options; game.configure({ format: format || 'individual', cantos, difficulty, mapId: previous.mapId || 'plaza' }); } return game.snapshot(); };
 
 // Host simulation on the shared table room (engine/table-room.js), with snapshot migration.
 export class CaidaRoom extends TableRoom {
   constructor(options) {
-    super({ ...options, game: 'caida', protocol: 'caida-v1', texts: { practice: 'Mesa local · juega con bots', ...options.texts } }, {
-      fresh: (prev) => ({ ...new CaidaGame(Date.now()).snapshot(), ...keepMap(prev) }),
+    super({ ...options, game: 'caida', protocol: 'caida-v2', texts: { practice: 'Mesa local · juega con bots', ...options.texts } }, {
+      fresh: freshGame,
       restore: (state, members) => CaidaGame.restore(state, members),
       snapshot: (game) => game.snapshot(),
       accept: (game, id, data, hostId) => game.accept(id, data, hostId),
-      valid: (state) => [2, 3, 4].includes(state?.players?.length),
+      valid: (state) => [2, 3, 4, 6].includes(state?.players?.length),
     });
   }
 
   seatMembers() {
-    for (const m of this.members.values()) this.game.addPlayer(m.id, m.name,
-      m.avatar || this.game.players.find(p => p.id === m.id)?.avatar || {});
+    this.game.syncMembers([...this.members.values()]);
   }
   unseat(id) { this.game.removePlayer(id); }
   // Changing the table size reseats everyone.

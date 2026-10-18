@@ -7,10 +7,11 @@ const base = process.env.PANA_QA_URL || 'http://localhost:8461', errors = [];
 await mkdir('art/caida', { recursive: true });
 try {
   const page = await browser.newPage({ viewport: { width: 390, height: 844 }, reducedMotion: 'reduce' });
+  await page.addInitScript(() => localStorage.setItem('pana:settings', JSON.stringify({ quality: 'baja', sound: false })));
   page.on('pageerror', e => errors.push(e.message));
   await page.goto(`${base}/g/caida/?room=interaction-${Date.now()}&debug`);
   await page.waitForFunction(() => window.caidaDebug?.world && caidaDebug.room.connected, null, { timeout: 90000 });
-  await page.locator('#cantos').uncheck(); await page.locator('#start').click();
+  await page.locator('#pana-room-more').click(); await page.locator('[data-room-option="cantos"][data-value="false"]').click(); await page.locator('#pana-room-done').click(); await page.locator('#start').click();
   await page.locator('#call-one').click(); await page.locator('#deal-cards').click();
   await page.waitForFunction(() => caidaDebug.room.state.turn === caidaDebug.room.seat);
   assert.equal(await page.locator('.table-rank').count(), await page.evaluate(() => caidaDebug.room.state.table.length));

@@ -1,6 +1,6 @@
 import { random, inputFor } from '../online-rules.js';
 // ¡Chinazo! Duck Hunt in a Venezuelan patio: iguanas are eating the mangos
-// again, and the four panas have a china and a pocket of mamones. Aim with the
+// again, and the panas have a china and a pocket of mamones. Aim with the
 // reticle, pull, let go. A hit goes ¡bonk!: the iguana flips into the bushes
 // with dizzy stars and runs off, offended. The golden one is worth 3; the
 // guacamaya costs 2. The rules live in chinazo-sim.js.
@@ -16,7 +16,7 @@ import { iguana } from '/engine/models/fauna/iguana.js';
 import { china } from '/engine/models/props/china.js';
 import { scarletMacaw } from '/engine/models/fauna/birds/scarlet-macaw.js';
 import { sunnyStage, makeActors, pick } from './stage.js';
-import { chinazoSim, CHINAZO, CAMERA, SEATS, TRUNK, BRANCHES, WALL, ROOF, BUSHES, MANGOS, RUSTLE } from './chinazo-sim.js';
+import { chinazoSim, CHINAZO, CAMERA, seatsFor, TRUNK, BRANCHES, WALL, ROOF, BUSHES, MANGOS, RUSTLE } from './chinazo-sim.js';
 
 const S = CHINAZO.scale;
 const up = new THREE.Vector3(0, 1, 0);
@@ -191,12 +191,13 @@ export default {
     camera.lookAt(...CAMERA.look);
 
     const humans = new Set(ctx.players.filter((p) => p.human && !ctx.auto).map((p) => p.i));
-    const sim = chinazoSim({ humans, random, aspect: camera.aspect });
+    const sim = chinazoSim({ humans, random, aspect: camera.aspect, count: ctx.players.length });
+    const seats = seatsFor(ctx.players.length);
 
-    // the four panas in a row, backs to us, each with a china
+    // the panas in a row, backs to us, each with a china
     const actors = makeActors(scene, ctx.players);
     actors.forEach((a, i) => {
-      [a.x, a.y, a.z] = SEATS[i];
+      [a.x, a.y, a.z] = seats[i];
       a.pana.group.rotation.y = Math.PI;
       a.china = china();
       a.china.scale.setScalar(4);

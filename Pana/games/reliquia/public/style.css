@@ -39,6 +39,7 @@ body.hurt .vignette{box-shadow:inset 0 0 90px rgba(255,75,75,.45)}
 .mission em{font-style:normal;color:var(--pk-muted)}
 .mission h2{margin:0;font:400 24px/1 var(--pk-display);letter-spacing:.5px;color:var(--pk-text)}
 .steps{display:grid;gap:6px;margin:2px 0 0;padding:0;list-style:none}
+.steps[hidden],.map-wrap[hidden]{display:none}
 .steps li{display:flex;align-items:center;gap:8px;font:700 13px var(--pk-sans);color:var(--pk-muted)}
 .steps li::before{content:'';flex:none;display:grid;place-items:center;width:18px;height:18px;border:2px solid currentColor;border-radius:5px;font:900 11px/1 var(--pk-sans);color:inherit}
 .steps li.is-now{color:var(--pk-text)}

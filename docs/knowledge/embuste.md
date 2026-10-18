@@ -55,6 +55,12 @@ and real witnesses only). The Colyseus state carries only the roster, the
 phase and the host's three options. Clients send `input` (`x`, `z`, `hold`)
 and `act` (`{ action, ...data }`); the rules ignore anything out of place.
 
+The shared room menu keeps bot filling in the primary panel and puts role
+reveal and free chat in “Más ajustes”. Reset sends the declared defaults through
+the same host-only server action. Both server and practice use strict typed
+validation; string booleans and unknown keys reject the whole patch. The
+existing eight-player cap and private per-seat views remain unchanged.
+
 Practice runs the same `Night` and `Brains` in the browser
 (`network.js` `PracticeNight`), stepping by real elapsed time so a busy page
 does not slow the night down. Bots fill a room to six when the host leaves

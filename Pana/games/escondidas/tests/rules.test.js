@@ -57,8 +57,8 @@ test('timeout, scoring, rotating roles, every player seeks and replay resets sco
   assert.equal(game.phase, 'finished'); game.start(1, 'seek');
   assert.equal(game.round, 1); assert.ok(game.players.every(p => p.score === 0));
 });
-test('a full eight-player room has eight seeker turns', () => {
-  const game = new HuntRound();
+test('an eight-round room gives every player a seeker turn', () => {
+  const game = new HuntRound(); game.configure({ rounds: 8 });
   for (let id = 1; id <= 8; id++) game.addPlayer(id, `Pana ${id}`, {});
   const seekers = new Set();
   for (let i = 0; i < 8; i++) { game.start(1, 'hide'); seekers.add(game.seeker); game.finish('hiders', 'Done'); }

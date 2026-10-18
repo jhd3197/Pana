@@ -1,0 +1,26 @@
+.pk-lobby-team-roster { display:grid; grid-template-columns:repeat(var(--roster-groups,1),minmax(0,1fr)); gap:18px; width:100%; min-width:0; }
+.pk-roster-group { --roster-color:var(--pk-game); display:flex; flex-direction:column; border:2px solid color-mix(in srgb,var(--roster-color) 65%,transparent); border-radius:20px; padding:16px; background:color-mix(in srgb,var(--roster-color) 8%,var(--pk-night)); min-width:0; }
+.pk-roster-heading { display:flex; align-items:center; flex-wrap:wrap; gap:10px; min-height:44px; margin-bottom:14px; }
+.pk-roster-heading h3 { color:color-mix(in srgb,var(--roster-color) 70%,white); margin:0; font-size:20px; font-weight:900; }
+.pk-roster-count,.pk-roster-own { font-size:13px; font-weight:900; }
+.pk-roster-own { margin-left:auto; color:var(--roster-color); }
+.pk-roster-cards { display:grid; flex:1; grid-template-columns:repeat(var(--roster-seats,3),minmax(0,1fr)); gap:12px; }
+.pk-roster-card { position:relative; display:flex; flex-direction:column; align-items:center; justify-content:flex-end; gap:8px; min-width:0; padding:14px 10px; border:2px solid var(--pk-line); border-radius:15px; background:var(--pk-night); text-align:center; }
+.pk-roster-card.is-own { border-color:var(--pk-yellow); }
+.pk-roster-card.is-selected { outline:3px solid var(--pk-yellow); outline-offset:3px; }
+.pk-roster-card.is-empty { border-style:dashed; justify-content:center; min-height:190px; }
+.pk-roster-card.is-empty>svg { width:32px; height:32px; color:var(--pk-muted); }
+.pk-roster-portrait { width:100%; max-width:150px; height:140px; object-fit:contain; }
+.pk-roster-name { width:100%; overflow-wrap:anywhere; }
+.pk-roster-host { align-self:flex-start; font-size:11px; font-weight:900; text-transform:uppercase; padding:4px 7px; border-radius:5px; color:var(--pk-night); background:var(--pk-yellow); }
+.pk-roster-status { color:var(--pk-muted); font-size:12px; font-weight:800; text-transform:uppercase; }
+.pk-roster-action { min-height:44px; padding:9px 12px; border:1px solid var(--pk-line); border-radius:9px; color:inherit; background:transparent; font:inherit; font-weight:800; font-size:14px; cursor:pointer; }
+.pk-roster-card>.pk-roster-action { width:100%; }
+.pk-roster-action:hover:not(:disabled) { background:color-mix(in srgb,var(--roster-color) 20%,transparent); }
+.pk-roster-action:disabled { opacity:.45; cursor:default; }
+.pk-roster-action:focus-visible { outline:3px solid var(--pk-yellow); outline-offset:2px; }
+@media(max-width:520px) { .pk-roster-group { padding:10px; } .pk-roster-cards { grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; } .pk-roster-portrait { height:112px; } }
+
+@media(max-width:900px) { .pk-lobby-team-roster { grid-template-columns:1fr; } }
+
+.pk-lobby-team-roster[hidden],.pk-lobby-team-roster.hidden { display:none; }

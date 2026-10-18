@@ -74,7 +74,7 @@ test('Director completes its cycle, respects caps and avoids visible ambient spa
   place(g, 1, 33, -36); place(g, 2, 34, -35); assert.equal(g.wave(3), true); assert.ok(g.enemies.length > 0);
   for (const e of g.enemies) for (const p of g.players) { assert.ok(distance(p, e) > 10); assert.equal(lineClear(p, e, g, 0.05), false); }
   for (const e of g.enemies) assert.ok(g.players.some(p => findPath(e, p, g).length));
-  for (let i = 0; i < 25; i++) g.spawn(2, -12); assert.equal(g.enemies.length, 14);
+  for (let i = 0; i < 25; i++) g.spawn(2, -12); assert.equal(g.enemies.length, g.options.mummies);
   const a = setup(), b = setup(); a.gateOpen = b.gateOpen = true;
   step(a, 10); step(b, 10); assert.deepEqual(a.snapshot(), b.snapshot());
 });

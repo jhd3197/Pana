@@ -3,7 +3,8 @@
   <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="theme-color" content="#f28b42"><meta name="description" content="Paintball gratis entre panas. Esquiva, apunta y pinta en una cancha 3D.">
   <title>Pepazo · Pana</title>
-  <link rel="stylesheet" href="/engine/kit.css"><link rel="stylesheet" href="/engine/ui.css"><link rel="stylesheet" href="./style.css">
+  <link rel="stylesheet" href="/engine/kit.css"><link rel="stylesheet" href="/engine/ui.css">
+  <link rel="stylesheet" href="/engine/room-options.css"><link rel="stylesheet" href="./style.css">
   <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}</script>
 <link rel="stylesheet" href="/engine/game-lobby.css">
 </head><body class="in-lobby">
@@ -12,16 +13,16 @@
   <section id="lobby" class="pk-lobby lobby" aria-labelledby="title">
     <a class="pk-back" href="/">← Todos los juegos</a><span class="pk-ribbon">Paintball entre panas</span>
     <h1 id="title" class="pk-title">Pepazo</h1>
-    <p class="pk-copy">Corre entre las barricadas y pinta a tus rivales. Si te pintan, sacúdete y vuelve a la cancha.</p>
-    <div class="pk-stats"><div class="pk-stat"><b>1–8</b><span>panas</span></div><div class="pk-stat"><b>2 min</b><span>por ronda</span></div><div class="pk-stat"><b>10</b><span>para ganar</span></div></div>
-    <p class="pk-copy instructions">WASD para moverte · ratón para apuntar · clic para disparar · R para recargar.</p>
-    <p id="roster" class="pk-copy"></p>
-    <div id="map-picker"></div>
-    <div id="difficulty-picker"></div>
-    <div class="pk-lobby-foot"><span id="room-code" class="pk-lobby-room"></span><p id="connection" class="pk-copy" role="status">Preparando la cancha…</p>
+    <p class="pk-copy" data-room-description>Corre entre las barricadas y pinta a tus rivales. Elige equipos, vidas o captura la bandera.</p>
+    <div class="pk-stats" data-room-description><div class="pk-stat"><b>1–8</b><span>panas</span></div><div class="pk-stat"><b id="round-minutes">3 min</b><span>por ronda</span></div><div class="pk-stat"><b id="win-target">10</b><span id="win-target-label">pintadas para ganar</span></div></div>
+    <p class="pk-copy instructions" data-room-description>WASD para moverte · ratón para apuntar · clic para disparar · R para recargar.</p>
+    <p id="roster" class="pk-copy"></p><div id="team-roster" data-pana-roster hidden></div>
+    <div id="map-picker" data-room-primary></div>
+    <div id="difficulty-picker" data-room-extra></div>
+    <div id="room-options"></div><div class="pk-lobby-foot"><span id="room-code" class="pk-lobby-room"></span><p id="connection" class="pk-copy" role="status">Preparando la cancha…</p>
       <button id="start" class="pk-btn pk-btn--primary pk-btn--lg pk-btn--block" disabled>Conectando…</button>
       <button id="practice" class="pk-btn pk-btn--ghost pk-btn--block">Practicar con bots</button>
-      <button id="rules" class="pk-btn pk-btn--ghost pk-btn--sm">Cómo se juega</button>
+      <button id="rules" class="pk-btn pk-btn--ghost pk-btn--sm" data-room-help>Cómo se juega</button>
     </div>
   </section>
   <section id="hud" hidden aria-label="Marcador"><div class="score-panel pk-panel"><span class="pk-eyebrow">Pintadas</span><b id="score" class="pk-num">0 / 10</b><span id="position"></span></div><div class="timer-panel pk-panel"><b id="timer" class="pk-num">2:00</b><span id="ammo">12 / 12</span></div>

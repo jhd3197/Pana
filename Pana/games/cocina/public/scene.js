@@ -1,5 +1,6 @@
+import { createArenaEnvironment } from '/engine/arenas.js';
 import * as THREE from 'three';
-import { createPlaza } from '/engine/plaza.js';
+import { createPlazaEnvironment, createPlaza } from '/engine/plaza.js';
 import { buildCharacter } from '/engine/models/characters/pana/avatar-model.js';
 import { bake } from '/engine/models/core/static-batch.js';
 import { M, box, mesh, tube } from '/engine/models/core/primitives.js';
@@ -14,7 +15,9 @@ export function mealModel(id, stage = 'cooked', plated = true) {
   return foodCache.get(key).clone();
 }
 export function createKitchenScene({ labelsRoot = document.getElementById('station-labels') } = {}) {
-  const plaza = createPlaza({ cooking: true }), { scene } = plaza, set = new THREE.Group();
+  const plaza = createPlaza({ environment: false }), { scene } = plaza, set = new THREE.Group();
+  const market = createPlazaEnvironment({ cooking: true }), beach = createArenaEnvironment('puerto', { mode: 'court', props: [] });
+  scene.add(market.group, beach.group); beach.group.visible = false;
   set.add(box(25, 0.15, 19, M('#b97c53'), -0.5, 0, 4));
   const colors = ['#c68259', '#ca8d61', '#c17d55', '#d19366', '#d69b6b'];
   for (let z = -5; z < 13; z += 1.5) for (let x = -12; x < 12; x += 1.5) set.add(box(1.47, 0.07, 1.47, M(colors[Math.abs(Math.round(x * 4 + z * 7)) % colors.length]), x, 0.1, z));
@@ -78,9 +81,9 @@ export function createKitchenScene({ labelsRoot = document.getElementById('stati
   const target = new THREE.Vector3();
   return {
     scene, ring,
-    dispose() { stations.forEach(v => v.tag.remove()); demoChefs.forEach(chef => { chef.carry.clear(); chef.dispose(); }); },
+    dispose() { beach.dispose(); stations.forEach(v => v.tag.remove()); demoChefs.forEach(chef => { chef.carry.clear(); chef.dispose(); }); },
     update(t, state, camera, nearest, showLabels) {
-      plaza.update(t);
+      plaza.update(t); const atBeach = state.kitchen === 'playa'; market.group.visible = !atBeach; beach.group.visible = atBeach; (atBeach ? beach : market).update?.(t);
       demo.visible = state.phase === 'lobby';
       if (demo.visible) demoChefs.forEach((chef, i) => { chef.update(1 / 60, { carry: true }); chef.neck.rotation.z = Math.sin(t * 1.8 + i * 2) * 0.1; });
       for (const data of state.stations) {
@@ -99,7 +102,7 @@ export function createKitchenScene({ labelsRoot = document.getElementById('stati
         else if (data.item && (def.type === 'prep' || def.type === 'stove')) {
           const max = def.type === 'prep' ? PREP_TIME : recipe(data.item.recipe).cook;
           ready = data.progress >= max; progress = Math.min(1, data.progress / max);
-          label = ready ? def.type === 'stove' ? `¡Listo! ${Math.ceil(max + BURN_TIME - data.progress)}s` : '¡Preparado!' : def.type === 'stove' ? 'Cocinando…' : 'Preparando…';
+          label = ready ? def.type === 'stove' ? `¡Listo! ${Math.ceil(max + (state.options?.fire === 'fast' ? 5 : BURN_TIME) - data.progress)}s` : '¡Preparado!' : def.type === 'stove' ? 'Cocinando…' : 'Preparando…';
         } else if (nearest?.id === def.id) label = def.label;
         else if (def.type === 'supply') label = def.label;
         if (showLabels && label) {

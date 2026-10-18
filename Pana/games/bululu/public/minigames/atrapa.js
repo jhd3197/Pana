@@ -81,7 +81,7 @@ export default {
 
     const actors = makeActors(scene, ctx.players);
     actors.forEach((a, i) => {
-      a.x = a.home = -7.5 + i * 5;
+      a.x = a.home = -7.5 + i * 15 / (actors.length - 1);
       a.z = LANE_Z;
       const b = basket();
       b.position.set(0, 1.25, 0.85);

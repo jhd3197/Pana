@@ -14,6 +14,19 @@ becomes the GitHub release's notes.
   names, the META gantry, shop fronts and warnings use chunky lettering that
   always fits its board, and feather flags replace the blank pennant panels.
 
+- **Build your room with the same quick settings and Más ajustes menus.**
+  Hosts can choose the prototype's playable rules, maps, timers and team
+  formats, with live updates for guests and a one-click reset. Join or swap
+  teams through the same grouped pana cards. Más ajustes ends the settings
+  panel, and start controls stay visible on small screens. Caída offers
+  Individual or Equipos and adjusts its seats as friends join.
+
+- **Bring six panas to Billar, Bululú, Caída, Dominó and Bolas Criollas.**
+  Billar supports two teams of three with rotating shooters, Bola 9,
+  called pockets and multi-rack matches. Bululú's board and all twelve
+  minigames support six players; the other table games rotate every seat.
+  Games with eight-player rooms retain them; Ludo keeps four colours.
+
 - **Derrape's circuits are dressed for a fiesta.** Eleven tracks have warm
   golden sunlight, a glowing sun halo and brighter skies, roads and grass.
   The roadsides have araguaney, apamate and bucare trees in bloom, flower

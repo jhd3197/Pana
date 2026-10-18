@@ -28,7 +28,7 @@ export const TEPUI = { x: 10, z: -1150, width: 100, depth: 70, height: 175 };
 
 export function addLandscape({ group, river, moving, racers = [] }) {
   const random = rng(5501), counts = group.userData.assetCounts, def = river.def;
-  const [CANO, R1, R2, NEGRO] = [def.sectors[1][0], def.drops[0].s, def.drops[1].s, def.sectors[2][0]];
+  const [CANO, NEGRO] = [def.sectors[1][0], def.sectors[2][0]];
   const reserved = [];
   const count = (id, n = 1) => { counts[id] = (counts[id] || 0) + n; };
   const free = (x, z, r) => !reserved.some(p => Math.hypot(x - p.x, z - p.z) < p.r + r);
@@ -49,7 +49,8 @@ export function addLandscape({ group, river, moving, racers = [] }) {
     add('vine-arch', arch, q.x, q.z, { y: river.levelAt(72) - .3, rot: q.h, scale: (half * 2 + 2) / 9.3, r: 0 });
     const b = at(262, 0), bridge = ropeBridge({ span: 14, seed: 44 }), banks = [-1, 1].map(side => { const p = at(262, side * (river.halfWidth(262) + 3)); return river.groundAt(p.x, p.z); });
     add('rope-bridge', bridge, b.x, b.z, { y: Math.max(...banks) - .3, rot: b.h, scale: (river.halfWidth(262) * 2 + 6) / 20, r: 0 });
-    for (const [s, side] of [[R1 - 22, 1], [R2 - 24, -1], [R1 + 30, -1]]) {
+    const falls = river.drops.flatMap((drop, i) => i === 0 ? [[drop.s - 22, 1], [drop.s + 30, -1]] : [[drop.s - 24, -1]]);
+    for (const [s, side] of falls) {
       const half2 = river.halfWidth(s), p = at(s, side * (half2 + 4.5));
       add('waterfall-rocks', waterfallRocks({ seed: 50 + s }), p.x, p.z, { y: river.groundAt(p.x, p.z) - .6, rot: p.h + side * Math.PI / 2, scale: 1.3, r: 7, animate: true });
     }

@@ -3,7 +3,7 @@
 // covered automatically. CI runs this suite on every push.
 // Run: node Pana/engine/tests/all-games.browser.js   (env PANA_TEST_URL)
 import assert from 'node:assert/strict';
-import { games, launch, openGame } from '../../tests/browser-kit.js';
+import { games, launch, openGame, waitPrepared } from '../../tests/browser-kit.js';
 
 // Games that keep their own pre-game menu instead of the shared lobby, and why.
 const OWN_MENU = { derrape: 'four-step garage menu (docs/knowledge/derrape-menu.md)' };
@@ -13,8 +13,10 @@ const failures = [];
 try {
   for (const game of only) {
     const started = Date.now();
+    let page;
     try {
-      const page = await openGame(browser, game, { room: `smoke-${game}-${Date.now()}` });
+      page = await openGame(browser, game, { room: `smoke-${game}-${Date.now()}`, wait: false });
+      await waitPrepared(page);
       const view = await page.evaluate(() => ({
         lobby: !!document.querySelector('#pana-lobby-shell'),
         // A canvas already bound to WebGL refuses a 2D context; asking for WebGL
@@ -25,12 +27,37 @@ try {
       if (!view.lobby && !OWN_MENU[game]) failures.push(`${game}: no shared lobby (#pana-lobby-shell)`);
       if (!view.webgl) failures.push(`${game}: no WebGL canvas; every game is a 3D scene`);
       if (view.overflow) failures.push(`${game}: page scrolls sideways`);
+      if (!OWN_MENU[game]) {
+        for (const viewport of [{ width: 860, height: 560 }, { width: 390, height: 844 }, { width: 667, height: 375 }]) {
+          await page.setViewportSize(viewport);
+          const footerFits = await page.locator('.pk-game-lobby-foot').first().evaluate(footer => {
+            const r = footer.getBoundingClientRect();
+            return r.y >= 0 && r.bottom <= innerHeight + 1 && r.right <= innerWidth + 1;
+          });
+          if (!footerFits) failures.push(`${game}: lobby actions clipped at ${viewport.width}×${viewport.height}`);
+          const leftovers = await page.locator('.pk-game-lobby-settings').evaluate(settings => {
+            const more = settings.querySelector('#pana-room-more');
+            if (!more || more.hidden) return ['missing Más ajustes'];
+            const bottom = more.getBoundingClientRect().bottom;
+            return [...settings.querySelectorAll('*')].filter(el =>
+              el !== more && !el.contains(more) && !more.contains(el) &&
+              el.checkVisibility({ checkOpacity: true, checkVisibilityCSS: true }) &&
+              el.getClientRects().length && el.getBoundingClientRect().bottom > bottom + 1
+            ).map(el => el.id || el.className || el.tagName);
+          });
+          if (leftovers.length) failures.push(`${game}: controls after Más ajustes: ${leftovers.join(', ')}`);
+        }
+      }
       failures.push(...page.errors);
       await page.context().close();
       console.log(`${failures.some(f => f.startsWith(game)) ? 'FAIL' : 'ok  '}  ${game}  (${((Date.now() - started) / 1000).toFixed(1)}s)`);
     } catch (error) {
       failures.push(`${game}: ${error.message.split('\n')[0]}`);
+      if (page) failures.push(...page.errors);
       console.log(`FAIL  ${game}`);
+    } finally {
+      // A failed preparation must not leave a scene rendering during later games.
+      for (const context of browser.contexts()) await context.close();
     }
   }
   assert.deepEqual(failures, []);

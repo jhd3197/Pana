@@ -65,7 +65,7 @@ body:has(#results:not(.hidden)) #hud { display: none; }
   left: 250px; right: 250px; top: 18px;
   z-index: 3;
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 10px;
 }
 .pcard {
@@ -284,6 +284,7 @@ body.in-mini .look, body.in-mini .side, body.in-mini .legend { display: none; }
 .toast span { font: 800 16px var(--pk-sans); opacity: .9; }
 .toast.event, .toast.gold, .toast.p2 { --tc: var(--pk-yellow); --tink: var(--pk-yellow-ink); }
 .toast.p0 { --tc: var(--pk-coral); } .toast.p1 { --tc: #3d7bf2; } .toast.p3 { --tc: #2fbf4a; }
+.toast.p4 { --tc: var(--pk-game); } .toast.p5 { --tc: var(--pk-coral); }
 @keyframes pop { from { transform: translate(-50%, -50%) rotate(-3deg) scale(.6); opacity: 0; } }
 
 .prompt {
@@ -355,7 +356,7 @@ body.in-mini .look, body.in-mini .side, body.in-mini .legend { display: none; }
 .spaces .tile.yellow { font-size: 26px; }
 .spaces .ico { width: 14px; height: 14px; border-width: 2px; }
 .spaces small { font: 700 12px/1.25 var(--pk-sans); color: var(--pk-muted); }
-.iplayers { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+.iplayers { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
 .ip { display: flex; align-items: center; gap: 8px; min-width: 0; }
 .ip img { width: 38px; height: 38px; flex: none; border-radius: 50%; object-fit: cover; background: color-mix(in srgb, var(--c) 45%, #fff); border: 2px solid var(--c); }
 .ip b { display: none; }
@@ -482,7 +483,7 @@ body.mini-aim canvas { cursor: none; touch-action: none; }
   .timer { top: 10px; left: auto; right: 12px; transform: none; padding: 6px 16px 6px 12px; }
   body.in-mini .touch { bottom: 210px; }
   /* aim minigames need the whole field: the cards become a slim row at the top */
-  body.mini-aim .cards { top: 8px; bottom: auto; left: 132px; right: 124px; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+  body.mini-aim .cards { top: 8px; bottom: auto; left: 132px; right: 124px; grid-template-columns: repeat(3, 1fr); gap: 6px; }
   body.mini-aim .pcard { padding: 4px 6px; }
   body.mini-aim .pcard img { width: 24px; height: 24px; }
   body.mini-aim .pcard small { display: none; }
