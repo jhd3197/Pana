@@ -1,5 +1,6 @@
 import * as THREE from 'three';
-import { arenaInfo, tableArenaInfo, arenaLayout, outsideTable } from './arena-layouts.js';
+import { arenaInfo, tableArenaInfo, courtArenaInfo, arenaLayout, outsideTable } from './arena-layouts.js';
+import { createEstadioEnvironment } from './estadio.js';
 import { createPuertoTableEnvironment } from './puerto-tables.js';
 import { createPlazaEnvironment } from './plaza.js';
 import { createPlazaProp, crate, marketStall } from './models/props/plaza.js';
@@ -21,6 +22,7 @@ import { createAmbientLife } from './ambient-life.js';
 // lane, strolling paths and a patch of sky, all outside every mode's play area.
 const LIFE = {
   plaza: { lane: [[-34, -19.4], [34, -19.4]], walks: [[[-22.4, -15], [-22.4, 18.4], [22.4, 18.4], [22.4, -15]], [[22.4, 18.4], [-22.4, 18.4], [-22.4, -15]], [[22.4, 6], [22.4, -14]]], sky: { x: 0, z: -6, radius: 17, height: 15 } },
+  estadio: { lane: [[22.3, -75], [22.3, 75]], walks: [[[-13, -20], [-13, 24], [8, 24]], [[8, 24], [-13, 24], [-13, -16]]], sky: { x: -6, z: -10, radius: 20, height: 18 } },
   arena: { lane: [[20.6, -40], [20.6, 40]], walks: [[[-20.4, -16], [-20.4, 20.4], [16, 20.4]], [[16, 20.4], [-20.4, 20.4], [-20.4, -12]]], sky: { x: 0, z: 0, radius: 19, height: 16 } },
 };
 
@@ -37,9 +39,11 @@ const outsideCourt = (x, z, r = 0) => Math.abs(x) - r > COURT_CLEAR.x || Math.ab
 
 // One world, four uses: hide-and-seek props, paintball cover, a clear table
 // courtyard, or an open court. All solid cover is built from the same bounds as the pure rules.
+const infoFor = mode => mode === 'table' ? tableArenaInfo : mode === 'court' ? courtArenaInfo : arenaInfo;
 export function createArenaEnvironment(id = 'plaza', { mode = 'hunt', props } = {}) {
-  id = (mode === 'table' ? tableArenaInfo : arenaInfo)(id).id;
+  id = infoFor(mode)(id).id;
   if(id==='guipuzcoana'||id==='san-carlos')return createPuertoTableEnvironment(id);
+  if (id === 'estadio') return createEstadioEnvironment();
   if (id === 'plaza') {
     const model = createPlazaEnvironment({ ...(mode === 'table' ? { cooking: true, clearance: (x, z, r = 0) => Math.hypot(x, z) - r > 10 } : {}),
       ...(mode === 'court' ? { fountain: false, clearance: outsideCourt, openFloor: { x: 6.1, z: 12.6 } } : {}), ...(props ? { mapProps: props } : {}) });
@@ -172,7 +176,7 @@ export function createArenaSlot(scene, { mode = 'table', plazaScale = 1, props }
   let current, life = null;
   return {
     setMap(id = 'plaza') {
-      id = (mode === 'table' ? tableArenaInfo : arenaInfo)(id).id;
+      id = infoFor(mode)(id).id;
       if (current?.id === id) return;
       const next = createArenaEnvironment(id, { mode, props });
       if (id === 'plaza') next.group.scale.setScalar(plazaScale);

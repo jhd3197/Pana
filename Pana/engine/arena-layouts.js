@@ -15,6 +15,12 @@ export const TABLE_ARENAS = [...ARENAS,
   {id:'san-carlos',name:'Fuerte San Carlos',description:'Una partida en el castillo, con el Caribe al pie de la montaña.'},
 ];
 export const validTableArena = id => TABLE_ARENAS.some(map=>map.id===id);
+// Court games (Bolas Criollas) also play beside the stadium straight.
+export const COURT_ARENAS = [...ARENAS,
+  { id: 'estadio', name: 'Estadio Pana', description: 'Frente a la tribuna, donde pasa la carrera de Derrape.' },
+];
+export const validCourtArena = id => COURT_ARENAS.some(map => map.id === id);
+export const courtArenaInfo = id => COURT_ARENAS.find(map => map.id === id) || COURT_ARENAS[0];
 export const tableArenaInfo = id => TABLE_ARENAS.find(map=>map.id===id)||TABLE_ARENAS[0];
 export const ARENA_SPAWNS = [{ x: -15, z: -15 }, { x: 15, z: 15 }, { x: 15, z: -15 }, { x: -15, z: 15 }, { x: 0, z: -16 }, { x: 0, z: 16 }, { x: -16, z: 0 }, { x: 16, z: 0 }];
 const cover = rows => rows.map(([x, z, w, d, h]) => ({ x, z, w, d, h, height: h }));

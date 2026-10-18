@@ -67,6 +67,7 @@ test('the host picks the place and the difficulty; both survive the next game', 
   const g = createGame(); g.players[0].id = 10; g.players[1].id = 20;
   assert.equal(acceptAction(g, 20, { action: 'map', mapId: 'hato', revision: g.revision }, 10), false);
   assert.equal(acceptAction(g, 10, { action: 'map', mapId: 'luna', revision: g.revision }, 10), false);
+  assert(acceptAction(g, 10, { action: 'map', mapId: 'estadio', revision: g.revision }, 10), 'the stadium is a court venue');
   assert(acceptAction(g, 10, { action: 'map', mapId: 'hato', revision: g.revision }, 10));
   assert(acceptAction(g, 10, { action: 'difficulty', difficulty: 'experto', revision: g.revision }, 10));
   assert(acceptAction(g, 10, { action: 'start', revision: g.revision }, 10));

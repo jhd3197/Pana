@@ -35,6 +35,8 @@ becomes the GitHub release's notes.
   Sol or Ruinas del Mango. Pick Fácil to see where every ball ends up, or
   Experto for rival bots that knock your ball away. A camera button switches to
   a straight-down view. Bululú's criollas minigame moved to the beach court.
+  Or play at Estadio Pana, in front of a cheering grandstand while the Derrape
+  race roars down the straight.
 
 - **Race to real recorded songs in Derrape and Curiara, with a separate Música slider.**
   Every circuit has its own song (joropo in Los Llanos, gaita in the plaza, calipso

@@ -1,5 +1,5 @@
 import { createPitch, throwBall, stepPitch, moving, measure, botShot, distance, copy, STEP } from '/engine/bolas-criollas.js';
-import { validArena } from '/engine/arena-layouts.js';
+import { validCourtArena } from '/engine/arena-layouts.js';
 import { DEFAULT_DIFFICULTY, validDifficulty } from '/engine/difficulty.js';
 export { STEP, copy };
 export const TEAM_NAMES = ['Rojos', 'Verdes'];
@@ -27,7 +27,7 @@ export function acceptAction(g, id, data, hostId) {
   if (data.action === 'target' && id === hostId && g.phase === 'lobby' && [12, 24].includes(data.target)) {
     g.target = data.target; g.revision++; return true;
   }
-  if (data.action === 'map' && id === hostId && g.phase === 'lobby' && validArena(data.mapId)) {
+  if (data.action === 'map' && id === hostId && g.phase === 'lobby' && validCourtArena(data.mapId)) {
     g.mapId = data.mapId; g.revision++; return true;
   }
   // Difficulty sets the guide and how well rival bots play. Online the host may

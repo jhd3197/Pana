@@ -63,7 +63,7 @@ function setting(action, key, value) {
   else { room.state[key] = value; render(room.state); }
 }
 function setDifficulty(value) { setting('difficulty', 'difficulty', value); }
-const mapPicker = createMapPicker($('map-picker'), mapId => setting('map', 'mapId', mapId));
+const mapPicker = createMapPicker($('map-picker'), mapId => setting('map', 'mapId', mapId), { courts: true });
 const difficultyPicker = createDifficultyPicker($('difficulty-picker'), setDifficulty);
 $('start').onclick = () => {
   if (!room.connected) {

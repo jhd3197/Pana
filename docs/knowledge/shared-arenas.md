@@ -47,6 +47,13 @@ On the plaza it also drops the fountain and opens the paving over the court
 (`openFloor`): the slabs' tops sit 2 cm above the court surface and would
 otherwise paint over the clay. Bululú's criollas minigame uses Puerto Coco.
 
+`COURT_ARENAS` adds Estadio Pana (`engine/estadio.js`) for court games only:
+the court on the concourse in front of a seven-tier grandstand with an
+instanced cheering crowd, light towers, and the race straight at x ≈ 22 where
+the background karts pass. It has no hunt/paint layout, so it never joins
+`ARENAS`. Its factory props are baked, then their cached materials are cloned
+before disposal, as in the other arenas.
+
 ## Room and lifecycle contract
 
 Map choice is a validated host-only lobby action. Escondidas and Billar carry
