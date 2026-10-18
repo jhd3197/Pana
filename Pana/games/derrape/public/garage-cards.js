@@ -102,7 +102,7 @@ export function wheelCards(wheels, onSelect, canRender) {
         await paintNext();
         while (!canRender() || document.hidden) await new Promise(resolve => setTimeout(resolve, 150));
         // calle has no spec of its own: preview it as the classic street wheel.
-        const wheel = makeWheel(def.wheel ?? { r: 0.69, w: 0.68, style: 'spokes', rim: '#6b707e', cap: '#e0262f' });
+        const wheel = makeWheel(def.wheel ?? { r: 0.69, w: 0.68, style: 'cinco', rim: '#6b707e', cap: '#e0262f' });
         wheel.rotation.y = 0.55;
         scene.add(wheel);
         try {
