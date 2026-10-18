@@ -357,3 +357,11 @@ body { --menu-paper: #fff3d8; --menu-ink: #282035; --menu-grass: #2d705d; }
 .track-page.is-cup .format-picker>button:not(.cup-choice){flex-direction:row;align-items:center;min-height:52px}
 .track-page.is-cup .format-picker>button:not(.cup-choice)>img{width:70px;height:52px}
 @media(max-width:700px){.track-page.is-cup .format-picker{grid-template-columns:1fr}.track-page.is-cup .cup-choice{grid-row:auto}.track-page.is-cup .cup-collage img{height:100px}.track-page.is-cup .cup-choice b{font-size:26px}.format-picker .cup-route small{display:block}}
+
+/* With the taller open, the car strip lives left of the docked panel and
+   scrolls (wheel, drag or the scrollbar) instead of running beneath it. */
+.menu-flow .car-lineup { scroll-snap-type: x proximity; scroll-padding: 0 8px; }
+.menu-flow .car-choice { scroll-snap-align: start; }
+@media (min-width: 900px) { body.shop-open .menu-flow .car-picker { right: 480px; } }
+/* A phone has no room for both: the taller's own Carro tab picks the car. */
+@media (max-width: 899px) { body.shop-open .menu-flow .car-picker { display: none; } }

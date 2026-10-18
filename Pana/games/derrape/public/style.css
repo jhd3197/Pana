@@ -170,10 +170,10 @@ dd i { display: block; height: 100%; background: var(--car, var(--pk-coral)); bo
 #race.split #speedo { left: auto; right: calc(50% + 16px); bottom: 110px; transform: none; }
 #race.split .coins { right: calc(50% + 16px); }
 .shop-open b { color: var(--coin-text); }
-.shop { position: fixed; z-index: 30; top: 50%; left: 50%; transform: translate(-50%, -50%); width: min(560px, calc(100vw - 32px)); max-height: calc(100vh - 40px); overflow-y: auto; padding: 18px 20px; display: flex; flex-direction: column; gap: 10px; }
+.shop { position: fixed; z-index: 30; top: 50%; left: 50%; transform: translate(-50%, -50%); width: min(560px, calc(100vw - 32px)); max-height: calc(100vh - 40px); overflow: hidden; padding: 18px 20px; display: flex; flex-direction: column; gap: 10px; }
 /* On a wide screen the taller docks to the right so the car and its stats stay in view. */
 /* On a phone it is a bottom sheet, so the tried parts show on the car above. */
-@media (max-width: 899px) { .shop { top: auto; bottom: 8px; transform: translateX(-50%); max-height: 58vh; } }
+@media (max-width: 899px) { .shop { top: auto; bottom: 8px; left: 8px; right: 8px; width: auto; transform: none; max-height: 52vh; padding: 10px 12px; } .shop-note { display: none; } }
 /* A landscape phone docks it to the right half instead, like the desktop. */
 @media (max-width: 899px) and (orientation: landscape) { .shop { top: 8px; bottom: 8px; left: auto; right: 8px; transform: none; width: 52vw; max-height: none; padding: 10px 12px; } .shop-note { display: none; } }
 @media (min-width: 900px) { .shop { top: 92px; bottom: 112px; left: auto; right: 24px; transform: none; width: 440px; max-height: none; } }
@@ -185,7 +185,10 @@ dd i { display: block; height: 100%; background: var(--car, var(--pk-coral)); bo
 .shop-tabs { display: flex; flex-wrap: wrap; }
 .shop-tabs button { flex: 1 1 auto; }
 .shop-tabs button[aria-selected="true"] { background: var(--slot-on); color: var(--pk-yellow); }
-.shop-body { display: flex; flex-direction: column; gap: 8px; }
+/* Only the cards scroll: the tabs, the try bar and Listo stay put (and a
+   whole-panel scroller over the WebGL canvas left a dark ghost on phones). */
+.shop-body { display: flex; flex-direction: column; gap: 8px; flex: 1 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; }
+.shop-head, .shop-note, .shop-tabs, .shop-try, #shop-close { flex: none; }
 .shop-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(124px, 1fr)); gap: 8px; margin-top: 6px; }
 .shop-swatches { grid-template-columns: repeat(auto-fill, minmax(84px, 1fr)); gap: 6px; }
 .shop-swatch { align-items: center; padding: 6px; }
@@ -205,7 +208,7 @@ dd i { display: block; height: 100%; background: var(--car, var(--pk-coral)); bo
 .pill.down { color: var(--loss); border-color: var(--loss); }
 .pill.peso { color: var(--pk-muted); border-color: var(--slot-line); }
 .shop-item .swatch { flex: none; width: 22px; height: 22px; border-radius: 50%; border: 2px solid var(--hud-ink); background: var(--swatch); }
-.shop-try { position: sticky; bottom: 0; display: flex; align-items: center; gap: 8px; padding: 10px; border: 1px dashed var(--pk-yellow); border-radius: 10px; background: var(--slot-on); }
+.shop-try { display: flex; align-items: center; gap: 8px; padding: 10px; border: 1px dashed var(--pk-yellow); border-radius: 10px; background: var(--slot-on); }
 .shop-try p { flex: 1; margin: 0; font-size: 12px; }
 .shop-try[hidden] { display: none; }
 .mode-trophy { display: inline-block; width: 9px; height: 9px; margin-left: 5px; border-radius: 50%; background: var(--trophy); vertical-align: middle; }
@@ -536,3 +539,19 @@ body:has(#loading:not(.hidden)) #garage { visibility: hidden; }
   .launch .setup { order: 10; }
   .launch .play { margin-top: 0; }
 }
+/* Short screens give the taller's cards the room: a smaller head, compact tabs. */
+@media (max-height: 760px) {
+  .shop-note { display: none; }
+  .shop-head h2 { font-size: 20px; }
+  .shop-tabs button { min-height: 32px; padding: 4px 8px; font-size: 13px; }
+}
+@media (max-width: 899px), (max-height: 500px) {
+  .shop { gap: 6px; }
+  .shop-head .pk-eyebrow { display: none; }
+  .shop-head h2 { font-size: 17px; }
+  .shop-wallet { font-size: 14px; }
+  .shop-tabs button { min-height: 28px; padding: 2px 6px; font-size: 12px; }
+  .shop-try { padding: 6px 8px; }
+  #shop-close { min-height: 34px; font-size: 16px; }
+}
+@media (max-height: 500px) { .shop-head h2 { display: none; } }

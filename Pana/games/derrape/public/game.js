@@ -3,7 +3,7 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { CARS } from './cars.js';
 import { WHEEL_DEFINITIONS, wheelById, composeTune } from './wheel-definitions.js';
-import { garageCards, wheelCards } from './garage-cards.js';
+import { garageCards, wheelCards, sideScroll } from './garage-cards.js';
 import { createTaller } from './taller.js';
 import { partsProfile, renderConfig } from './parts.js';
 import { studioEnvironment, studioRims, showroomPaint } from './garage-stage.js';
@@ -201,7 +201,11 @@ function showCar(i) {
   taller.renderStats();
   $('driver-name').textContent = ME.name;
   $('dots').innerHTML = CARS.map((_, j) => `<span class="${j === garage.index ? 'on' : ''}"></span>`).join('');
-  for (const [j, button] of [...$('car-lineup').children].entries()) button.setAttribute('aria-pressed', String(j === garage.index));
+  for (const [j, button] of [...$('car-lineup').children].entries()) {
+    button.setAttribute('aria-pressed', String(j === garage.index));
+    // keep the chosen car in view once 16 cards overflow the strip
+    if (j === garage.index && button.offsetParent) button.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+  }
   net?.pick(garage.index, garage.wheel, raceStyle(garage.index));
   menuFlow?.refresh();
 }
@@ -2841,6 +2845,7 @@ const clock = new THREE.Clock();
 const STEP = 1 / 60;
 let acc = 0;
 
+const FINE_POINTER = matchMedia('(pointer: fine)').matches;
 function frame() {
   const dt = Math.min(clock.getDelta(), 0.25);
   if (mode === 'garage' && (!menuFlow || menuFlow.step === 'car')) {
@@ -2848,7 +2853,8 @@ function frame() {
     renderer.toneMappingExposure = 1.05;
     updateGarage(dt);
     // A soft bloom on lamps and the ring, unless the quality is set low.
-    if (getSettings().quality !== 'baja') (garage.bloom ??= garageBloom(renderer, garage.scene, garage.camera)).render();
+    // Phones skip it: their high pixel ratio smears the glow.
+    if (getSettings().quality !== 'baja' && FINE_POINTER) (garage.bloom ??= garageBloom(renderer, garage.scene, garage.camera)).render();
     else renderer.render(garage.scene, garage.camera);
   } else if (mode === 'race') {
     renderer.toneMapping = THREE.NoToneMapping;
@@ -2918,6 +2924,7 @@ cards.ready.catch(error => console.warn('Garage previews unavailable', error));
 const wheelStrip = wheelCards(WHEEL_DEFINITIONS, pickWheel,
   () => mode === 'garage' && performance.now() - lastGarageInput > 350);
 $('wheel-lineup').append(wheelStrip.fragment);
+sideScroll($('car-lineup'), $('wheel-lineup'));
 wheelStrip.ready.catch(error => console.warn('Wheel previews unavailable', error));
 showWheel(garage.wheel);
 renderSetup();

@@ -143,8 +143,8 @@ export function createTaller({ $, wallet, cars, getIndex, selectCar, getWheel, s
     $('shop-title').textContent = `Personaliza ${car.name}`;
     $('shop-coins').textContent = wallet.coins;
     for (const b of $('shop-tabs').children) b.setAttribute('aria-selected', String(b.dataset.tab === tab));
-    const shop = $('shop'), scroll = shop.scrollTop;
-    $('shop-body').replaceChildren(...TABS.find(t => t.id === tab).kinds.map(kind => {
+    const body = $('shop-body'), scroll = body.scrollTop;
+    body.replaceChildren(...TABS.find(t => t.id === tab).kinds.map(kind => {
       const group = document.createElement('section');
       group.className = 'shop-group';
       const h = document.createElement('h3'); h.textContent = TITLES[kind];
@@ -156,10 +156,10 @@ export function createTaller({ $, wallet, cars, getIndex, selectCar, getWheel, s
     }));
     renderTry();
     renderStats();
-    shop.scrollTop = scroll;
+    body.scrollTop = scroll;
   }
 
-  function setTab(id) { tab = id; hover = null; render(); onTab(tab); }
+  function setTab(id) { tab = id; hover = null; render(); $('shop-body').scrollTop = 0; onTab(tab); }
   $('shop-tabs').replaceChildren(...TABS.map(t => {
     const b = document.createElement('button');
     b.type = 'button'; b.setAttribute('role', 'tab'); b.dataset.tab = t.id; b.textContent = t.label;

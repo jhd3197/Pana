@@ -120,3 +120,12 @@ export function wheelCards(wheels, onSelect, canRender) {
   });
   return { fragment, ready };
 }
+
+// A mouse wheel scrolls the car and caucho strips sideways once they overflow.
+export function sideScroll(...strips) {
+  for (const strip of strips) strip.addEventListener('wheel', (e) => {
+    if (Math.abs(e.deltaY) <= Math.abs(e.deltaX) || strip.scrollWidth <= strip.clientWidth) return;
+    strip.scrollLeft += e.deltaY;
+    e.preventDefault();
+  }, { passive: false });
+}
