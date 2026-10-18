@@ -9,7 +9,7 @@
 import * as THREE from 'three';
 import { M, mesh, box, tube, canvasMat } from '/engine/models/vehicles/car-kit.js';
 import { rng } from '/engine/models/core/primitives.js';
-import { woodSign as mapSign } from '/engine/models/props/wood-sign.js';
+import { woodSign as mapSign, signBoard } from '/engine/models/props/wood-sign.js';
 import { watchtower } from '/engine/models/props/watchtower.js';
 import { flagPole } from '/engine/models/props/flags.js';
 import { rock } from '/engine/models/props/rock.js';
@@ -169,9 +169,10 @@ function chevrons(group, T, { minCurve = 0.017 } = {}) {
   const board = (dir) => {
     if (!texCache.has(dir)) {
       texCache.set(dir, canvasMat(192, 96, (g) => {
-        g.fillStyle = '#ffd23f';
-        g.fillRect(0, 0, 192, 96);
-        g.fillStyle = '#16161a';
+        // Chunky rounded board with a dark rim, like the wooden signs.
+        g.fillStyle = '#16161a'; g.beginPath(); g.roundRect(0, 0, 192, 96, 22); g.fill();
+        g.fillStyle = '#ffd23f'; g.beginPath(); g.roundRect(6, 6, 180, 84, 17); g.fill();
+        g.fillStyle = '#16161a'; g.lineJoin = 'round';
         for (const x of [8, 68, 128]) {
           g.beginPath();
           const s = dir;
@@ -186,8 +187,8 @@ function chevrons(group, T, { minCurve = 0.017 } = {}) {
       }));
     }
     const g = new THREE.Group();
-    g.add(box(0.14, 1.5, 0.14, M(0x3a3a44), -0.9, 0.75, 0));
-    g.add(box(0.14, 1.5, 0.14, M(0x3a3a44), 0.9, 0.75, 0));
+    g.add(box(0.18, 1.5, 0.18, M(0x6b4226, { roughness: 0.9 }), -0.9, 0.75, 0));
+    g.add(box(0.18, 1.5, 0.18, M(0x6b4226, { roughness: 0.9 }), 0.9, 0.75, 0));
     const b = mesh(new THREE.BoxGeometry(2.6, 1.15, 0.1), texCache.get(dir), 0, 1.9, 0);
     const material=texCache.get(dir);
     g.userData.dispose=()=>{if(material.userData.disposed)return;material.userData.disposed=true;material.map.dispose();material.dispose();};
@@ -232,17 +233,15 @@ function startLine(group, T) {
   group.add(line);
   const p = placeOnTrack(T, T.LINE);
   const gantry = new THREE.Group();
-  for (const side of [-1, 1]) gantry.add(box(0.55, 7, 0.55, M(0x384d50), side * (T.HW + 2), 3.5, 0));
-  const banner = canvasMat(1024, 128, ctx => {
-    ctx.fillStyle = '#f8df9b'; ctx.fillRect(0, 0, 1024, 128);
-    ctx.fillStyle = '#263b40'; ctx.font = '900 85px sans-serif';
-    ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText('META', 512, 68);
-    for (let x = 0; x < 6; x++) for (let y = 0; y < 4; y++) if ((x + y) % 2) {
-      ctx.fillRect(x * 32, y * 32, 32, 32); ctx.fillRect(832 + x * 32, y * 32, 32, 32);
-    }
-  });
-  gantry.add(mesh(new THREE.BoxGeometry(T.HW * 2 + 4.6, 1.4, 0.3), banner, 0, 7, 0));
-  gantry.userData.dispose=()=>{banner.map.dispose();banner.dispose();};
+  for (const side of [-1, 1]) gantry.add(box(0.55, 7, 0.55, M(0x6b4226, { roughness: 0.9 }), side * (T.HW + 2), 3.5, 0));
+  // The library's cartoon board, on both faces, with race-flag ends.
+  const span = T.HW * 2 + 4.6;
+  gantry.add(box(span + .4, .5, .5, M(0x5c3a20, { roughness: .9 }), 0, 7.95, 0));
+  for (const face of [1, -1]) {
+    const board = signBoard({ lines: ['META'], w: span, h: 1.9, accent: '#ff4f6d', checkers: true });
+    board.position.set(0, 7, face * .2); board.rotation.y = face > 0 ? 0 : Math.PI; gantry.add(board);
+  }
+  gantry.userData.dispose = () => gantry.traverse(o => { if (o !== gantry) o.userData.dispose?.(); });
   at(group, gantry, p, p.h);
 }
 

@@ -4,12 +4,14 @@ import { M, mesh, box, tube, rng } from '/engine/models/core/primitives.js';
 import { bake, instancePlacements } from '/engine/models/core/static-batch.js';
 import { terrainMaterial } from '/engine/terrain-material.js';
 import { natureSurface } from '/engine/models/core/nature-surface.js';
-import { sign as makeSign } from '/engine/models/core/architecture-kit.js';
+import { signBoard } from '/engine/models/props/wood-sign.js';
 import { placeOnTrack } from '../track-kit.js';
 import { waterSurface, waterDepthMap, riverSurface } from '/engine/models/effects/water-surface.js';
 import { extendTerrain, extendWaterPlane } from './world-horizon.js';
 export { THREE, M, mesh, box, tube, rng, placeOnTrack };
-export function sign(...args){const panel=makeSign(...args);panel.userData.dispose=()=>{panel.material.map.dispose();panel.material.dispose();};return panel;}
+// Every circuit board is the library's cartoon signBoard; the old flat colour
+// becomes a brighter trim around the wooden panel.
+export function sign(text,w,h,{background='#285b58'}={}){return signBoard({lines:text,w,h,accent:'#'+new THREE.Color(background).offsetHSL(0,.12,.16).getHexString()});}
 export const smooth=THREE.MathUtils.smoothstep, mix=THREE.MathUtils.lerp;
 export const hill=(x,z,cx,cz,rx,rz,h)=>h*Math.exp(-(((x-cx)/rx)**2)-((z-cz)/rz)**2);
 

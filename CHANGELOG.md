@@ -10,6 +10,10 @@ becomes the GitHub release's notes.
 
 ### Added
 
+- **Every sign on Derrape's circuits is a cartoon wooden board.** Track
+  names, the META gantry, shop fronts and warnings use chunky lettering that
+  always fits its board, and feather flags replace the blank pennant panels.
+
 - **Derrape's circuits are dressed for a fiesta.** Eleven tracks have warm
   golden sunlight, a glowing sun halo and brighter skies, roads and grass.
   The roadsides have araguaney, apamate and bucare trees in bloom, flower
