@@ -1,15 +1,19 @@
 // Runs every Playwright suite (*.browser.js / *.browser.mjs, games/*/tests/*.mjs)
-// one at a time against a Pana server, starting one if none answers.
+// one at a time against a Pana server.
 // Usage: npm run test:browser [-- <filter>...]   e.g. npm run test:browser -- domino caida
 // Playwright comes from the repo devDependencies; PANA_PLAYWRIGHT_PATH overrides it.
-// Env: PANA_TEST_URL, PANA_SUITE_TIMEOUT (ms).
-import { spawn } from 'node:child_process';
+// Env: PANA_TEST_URL (reuse that server instead of starting a fresh one),
+//      PANA_SUITE_TIMEOUT (ms per suite).
+// Without PANA_TEST_URL the runner starts its own server on a free loopback port,
+// so a stale server left on :8461 can never answer for the code under test.
+import { spawn, spawnSync } from 'node:child_process';
 import fs from 'node:fs';
+import net from 'node:net';
+import os from 'node:os';
 import path from 'node:path';
 
 const app = path.resolve(import.meta.dirname, '..');
 const repo = path.resolve(app, '..');
-const base = process.env.PANA_TEST_URL || 'http://localhost:8461';
 const timeout = Number(process.env.PANA_SUITE_TIMEOUT) || 10 * 60_000;
 const filters = process.argv.slice(2).map(f => f.toLowerCase());
 
@@ -42,30 +46,59 @@ const suites = ['engine', 'games', 'web']
   .sort()
   .flatMap(runsOf);
 
-async function healthy() {
-  try { return (await fetch(`${base}/api/health`)).ok; } catch { return false; }
+// child.kill() on Windows leaves Chromium children running; end the whole tree.
+function killTree(child) {
+  if (!child || child.exitCode !== null) return;
+  if (process.platform === 'win32') spawnSync('taskkill', ['/pid', String(child.pid), '/T', '/F'], { stdio: 'ignore' });
+  else child.kill('SIGKILL');
 }
 
-let server = null;
-if (!(await healthy())) {
-  console.log(`No server at ${base}; starting one.`);
-  const env = { ...process.env, PANA_PORT: new URL(base).port || '80' };
-  server = spawn(process.execPath, ['server/src/index.js'], { cwd: app, env, stdio: 'ignore' });
-  for (let i = 0; i < 50 && !(await healthy()); i++) await new Promise(r => setTimeout(r, 200));
-  if (!(await healthy())) { server.kill(); console.error('Pana did not start.'); process.exit(1); }
+const freePort = () => new Promise((resolve, reject) => {
+  const probe = net.createServer().once('error', reject).listen(0, '127.0.0.1', () => {
+    const { port } = probe.address(); probe.close(() => resolve(port));
+  });
+});
+
+async function healthy(url) {
+  try { return (await fetch(`${url}/api/health`)).ok; } catch { return false; }
 }
+
+let base = process.env.PANA_TEST_URL, server = null;
+const serverLog = path.join(os.tmpdir(), `pana-test-server-${process.pid}.log`);
+if (base && !(await healthy(base))) {
+  console.error(`PANA_TEST_URL=${base} does not answer /api/health. Start it, or unset PANA_TEST_URL to let the runner start one.`);
+  process.exit(1);
+}
+if (!base) {
+  const port = await freePort();
+  base = `http://localhost:${port}`;
+  const out = fs.openSync(serverLog, 'w');
+  server = spawn(process.execPath, ['server/src/index.js'], { cwd: app, env: { ...process.env, PANA_PORT: String(port), PANA_HOST: '127.0.0.1' }, stdio: ['ignore', out, out] });
+  for (let i = 0; i < 75 && server.exitCode === null && !(await healthy(base)); i++) await new Promise(r => setTimeout(r, 200));
+  if (!(await healthy(base))) {
+    killTree(server);
+    console.error(`Pana did not start on ${base}. Server output:\n${fs.readFileSync(serverLog, 'utf8').trim()}`);
+    process.exit(1);
+  }
+  console.log(`Started a fresh Pana server at ${base} (log: ${serverLog}).`);
+}
+
+let current = null;
+const cleanup = () => { killTree(current); killTree(server); };
+process.on('exit', cleanup);
+for (const signal of ['SIGINT', 'SIGTERM']) process.on(signal, () => { cleanup(); process.exit(130); });
 
 function run({ file, args, label }) {
   return new Promise(done => {
     const started = Date.now();
     const env = { ...process.env, PANA_TEST_URL: base, PANA_QA_URL: base };
-    const child = spawn(process.execPath, [file, ...args], { cwd: repo, env, stdio: ['ignore', 'pipe', 'pipe'] });
+    const child = current = spawn(process.execPath, [file, ...args], { cwd: repo, env, stdio: ['ignore', 'pipe', 'pipe'] });
     let log = '';
     child.stdout.on('data', d => { log += d; });
     child.stderr.on('data', d => { log += d; });
-    const timer = setTimeout(() => { log += `\nTimed out after ${timeout} ms`; child.kill(); }, timeout);
+    const timer = setTimeout(() => { log += `\nTimed out after ${timeout} ms`; killTree(child); }, timeout);
     child.on('close', code => {
-      clearTimeout(timer);
+      clearTimeout(timer); current = null;
       done({ label, ok: code === 0, seconds: ((Date.now() - started) / 1000).toFixed(1), log });
     });
   });
@@ -78,8 +111,9 @@ for (const suite of suites) {
   console.log(`${result.ok ? 'ok  ' : 'FAIL'}  ${result.label}  (${result.seconds}s)`);
   if (!result.ok) console.log(result.log.trim().split('\n').slice(-15).map(line => `      ${line}`).join('\n'));
 }
-server?.kill();
+cleanup();
 
 const failed = results.filter(r => !r.ok);
 console.log(`\n${results.length - failed.length}/${results.length} browser suites passed`);
+if (failed.length && server) console.log(`Server log: ${serverLog}`);
 process.exit(failed.length ? 1 : 0);

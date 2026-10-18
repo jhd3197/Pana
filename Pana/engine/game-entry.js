@@ -150,7 +150,7 @@ try {
     docked.push({ node, placeholder, target });
     if (id === 'invite') invite.hidden = true;
   }
-  loaded = true; window.PANA_LOBBY_LOADING = false;
+  loaded = true; window.PANA_LOBBY_LOADING = false; window.PANA_PREPARED = true;
   if (original) original.inert = false;
   link?.send('lobby-ready', { ready, loaded: true });
   document.dispatchEvent(new Event('pana:game-prepared'));

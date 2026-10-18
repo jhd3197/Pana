@@ -5,7 +5,8 @@
 //   node Pana/scripts/changelog.js notes 0.2.0       that version's section: the release notes
 //
 // next: the first release is package.json's version; after that a patch, a minor when a commit
-// since the last tag starts with "feat:", a major when one says "BREAKING CHANGE".
+// since the last tag has a "Release: minor" trailer line (older history: a "feat:" subject),
+// a major when one says "BREAKING CHANGE". Subjects carry no prefixes (AGENTS.md, "Commits").
 import fs from 'node:fs';
 import path from 'node:path';
 import { execFileSync } from 'node:child_process';
@@ -36,7 +37,7 @@ export function bump(last, messages, base) {
   if (!last) return base;
   const [major, minor, patch] = last.replace(/^v/, '').split('.').map(Number);
   if (messages.some(m => /BREAKING CHANGE/.test(m))) return `${major + 1}.0.0`;
-  if (messages.some(m => /^feat(\(.+\))?!?:/m.test(m))) return `${major}.${minor + 1}.0`;
+  if (messages.some(m => /^Release:\s*minor\s*$/im.test(m) || /^feat(\(.+\))?!?:/m.test(m))) return `${major}.${minor + 1}.0`;
   return `${major}.${minor}.${patch + 1}`;
 }
 

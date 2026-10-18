@@ -180,6 +180,7 @@ function showCar(i) {
   // Race models stay independent because their parts can break off.
   garage.car = garageCar(garage.index);
   garage.turn.add(garage.car.root);
+  window.PANA_PREPARED = true; // the shared readiness signal (tests/browser-kit.js)
   garage.ring.material.color.set(def.color);
 
   document.documentElement.style.setProperty('--car', def.color);
