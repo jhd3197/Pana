@@ -29,6 +29,9 @@ becomes the GitHub release's notes.
   or stripes on the turntable before buying; each part shows its "+2 Vel" on
   the stat bars and changes the car a little in every race, online too.
 
+- **Cuevas del Río opens through rock arches, and cliffs look warm and rounded.**
+  The cave roof is closed, with light falling through two small skylights,
+  and every map's cliff faces lose their dark stripes.
 - **Pana Selva is twice as long, with a jaguar cave and a plateau.** Climb
   through a cave with a temple pyramid, a cenote and two jaguars, cross the
   flower plateau, come down a timber ledge and splash through the ford.

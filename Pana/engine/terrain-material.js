@@ -1,7 +1,8 @@
 import * as THREE from 'three';
 
-// World-space grain, sediment bands and rain streaks add scale to cliff faces
-// without large texture downloads or visible UV seams. Flat ground stays soft.
+// World-space blotches and speckle give cliff faces scale and a warm,
+// rounded cartoon look without texture downloads or UV seams. Flat ground
+// keeps its own colour.
 export function terrainMaterial() {
   const material = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 1 });
   material.onBeforeCompile = shader => {
@@ -25,13 +26,14 @@ export function terrainMaterial() {
     shader.fragmentShader = shader.fragmentShader.replace('#include <color_fragment>', `#include <color_fragment>
       vec3 terrainP = vTerrainPosition;
       float cliff = 1.0 - smoothstep(0.38, 0.77, abs(normalize(vTerrainNormal).y));
-      float grain = terrainNoise(terrainP * 1.8) * 0.19 + terrainNoise(terrainP * 0.35) * 0.23;
-      float warp = terrainNoise(terrainP * vec3(0.07, 0.015, 0.07));
-      float bedding = smoothstep(0.83, 0.98, sin(terrainP.y * 1.55 + warp * 3.0) * 0.5 + 0.5);
-      float fractures = smoothstep(0.64, 0.83, terrainNoise(terrainP * vec3(0.65, 0.025, 0.65)));
-      float weather = 0.84 + grain - bedding * 0.23 - fractures * 0.32;
-      diffuseColor.rgb *= mix(1.0, weather, cliff);`);
+      // Rounded, toy-like rock: soft blotches of lighter and warmer stone and
+      // a fine speckle, no horizontal bands or dark fracture lines.
+      float blotch = terrainNoise(terrainP * 0.16) * 0.55 + terrainNoise(terrainP * 0.45) * 0.45;
+      float speckle = terrainNoise(terrainP * 2.4);
+      vec3 warm = diffuseColor.rgb * vec3(1.12, 1.0, 0.86);
+      vec3 rock = mix(diffuseColor.rgb, warm, 0.6) * (0.9 + blotch * 0.22 + speckle * 0.05);
+      diffuseColor.rgb = mix(diffuseColor.rgb, rock, cliff);`);
   };
-  material.customProgramCacheKey = () => 'bululu-weathered-terrain-v1';
+  material.customProgramCacheKey = () => 'pana-warm-terrain-v2';
   return material;
 }
