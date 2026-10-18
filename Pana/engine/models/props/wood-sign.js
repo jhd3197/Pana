@@ -16,32 +16,24 @@ export function woodSign(lines, { w = 9, h = 4.4 } = {}) {
     }
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    const [top, bottom] = lines;
-    ctx.font = '96px "Luckiest Guy", system-ui, sans-serif';
-    ctx.lineWidth = 14;
     ctx.strokeStyle = '#16161a';
-    if (lines.length > 2) {
-      const size = Math.min(72, 230 / lines.length);
+    ctx.lineJoin = 'round';
+    // Every line is shrunk to fit inside the board's margins, so long names
+    // like "Campamento del Río" never run off the edge.
+    const rows = lines.filter(Boolean);
+    const lineH = Math.min(rows.length > 2 ? 210 / rows.length : 96, 96);
+    rows.forEach((line, i) => {
+      let size = lineH;
+      ctx.font = `${size}px "Luckiest Guy", system-ui, sans-serif`;
+      const width = ctx.measureText(line).width + size / 3.5;
+      if (width > 460) size = Math.floor(size * 460 / width);
       ctx.font = `${size}px "Luckiest Guy", system-ui, sans-serif`;
       ctx.lineWidth = size / 7;
-      lines.forEach((line, i) => {
-        const y = 128 + (i - (lines.length - 1) / 2) * size * 1.05;
-        ctx.fillStyle = i === lines.length - 1 ? '#ffd23f' : '#fdf6e3';
-        ctx.strokeText(line, 256, y);
-        ctx.fillText(line, 256, y);
-      });
-    } else if (bottom) {
-      ctx.fillStyle = '#fdf6e3';
-      ctx.strokeText(top, 256, 82);
-      ctx.fillText(top, 256, 82);
-      ctx.fillStyle = '#ffd23f';
-      ctx.strokeText(bottom, 256, 180);
-      ctx.fillText(bottom, 256, 180);
-    } else {
-      ctx.fillStyle = '#ffd23f';
-      ctx.strokeText(top, 256, 136);
-      ctx.fillText(top, 256, 136);
-    }
+      const y = rows.length === 1 ? 136 : 128 + (i - (rows.length - 1) / 2) * lineH * 1.02;
+      ctx.fillStyle = i === rows.length - 1 ? '#ffd23f' : '#fdf6e3';
+      ctx.strokeText(line, 256, y);
+      ctx.fillText(line, 256, y);
+    });
   });
   const board = mesh(new THREE.BoxGeometry(w, h, 0.3), panel, 0, h / 2 + 1.1, 0.1);
   g.add(board);
