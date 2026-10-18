@@ -25,6 +25,20 @@ gear.setAttribute('aria-label', 'Ajustes');
 gear.title = 'Ajustes';
 document.getElementById('hub-actions').append(gear);
 
+// The shared lobby song plays on the hub too, once a tap or key has unlocked
+// audio. fx.js and music.js load on that first gesture so the hub stays light.
+let hubMusic = null;
+function hubSong() {
+  hubMusic ??= Promise.all([import('/engine/fx.js'), import('/engine/music.js'), import('/engine/settings.js')])
+    .then(([{ sound }, { createMusic }, { bindSound }]) => {
+      bindSound(sound);
+      sound.unlock();
+      createMusic(sound).play('lobby', { fallback: false });
+    })
+    .catch(() => { /* music is a nicety: the hub works without it */ });
+}
+for (const type of ['pointerdown', 'keydown']) addEventListener(type, hubSong, { capture: true, once: true });
+
 // ---------- views: #jugar (default), #mi-pana, #salas ----------
 // The one pana canvas moves between the "Tu pana" card and the creator.
 const stage = document.getElementById('pana-stage');
