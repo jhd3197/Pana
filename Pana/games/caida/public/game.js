@@ -1,3 +1,4 @@
+import { prepareScene } from '/engine/game-load.js';
 import { createTableSeating } from '/engine/table-seating.js';
 import { createMapPicker } from '/engine/map-picker.js';
 import { loadName, loadAvatar } from '/engine/avatar.js';
@@ -164,7 +165,7 @@ let lastTick = performance.now(); const timer = setInterval(() => { const now = 
 let frameTime = performance.now(); function frame(now) { if (stopped) return; const dt = Math.min(.05, (now - frameTime) / 1000); frameTime = now; world?.frame(dt); requestAnimationFrame(frame); } requestAnimationFrame(frame);
 addEventListener('pagehide', () => { stopped = true; clearInterval(timer); clearTimeout(resultTimer); clearTimeout(toastTimer); clearTimeout(announcementTimer); room.dispose(); world?.dispose(); }, { once: true });
 render(room.state); room.connect();
-import('./scene.js').then(m => m.createCaidaScene($('world'), { onCard: selectCard, onLoading: text => { $('loading-copy').textContent = text; } })).then(scene => {
-  if (stopped) { scene.dispose(); return; } world = scene; ready = true; render(room.state); $('loading').hidden = true;
-}).catch(error => { console.error(error); $('loading-copy').textContent = 'No pudimos cargar la mesa. Comprueba tu conexión y WebGL.'; const button = document.createElement('button'); button.className = 'pk-btn pk-btn--primary'; button.textContent = 'Volver a intentar'; button.onclick = () => location.reload(); $('loading').append(button); });
+export const sceneReady = import('./scene.js').then(m => m.createCaidaScene($('world'), { onCard: selectCard, onLoading: text => { $('loading-copy').textContent = text; } })).then(async scene => {
+  if (stopped) { scene.dispose(); return; } world = scene; await prepareScene(world); ready = true; render(room.state); $('loading').hidden = true;
+}).catch(error => { console.error(error); $('loading-copy').textContent = 'No pudimos cargar la mesa. Comprueba tu conexión y WebGL.'; const button = document.createElement('button'); button.className = 'pk-btn pk-btn--primary'; button.textContent = 'Volver a intentar'; button.onclick = () => location.reload(); $('loading').append(button); throw error; });
 if (params.has('debug')) window.caidaDebug = { room, menu, CaidaGame, chooseMove, previewPlay, canto, render, get world() { return world; } };

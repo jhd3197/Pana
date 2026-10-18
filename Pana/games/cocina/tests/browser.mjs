@@ -17,8 +17,9 @@ async function page(name, mobile = false, code = room) {
   const desktop = process.env.PANA_QA_COMPACT ? { width: 900, height: 650 } : { width: 1440, height: 900 };
   const ctx = await browser.newContext(mobile ? { viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true } : { viewport: desktop });
   const p = await ctx.newPage(); p.on('pageerror', e => errors.push(`${name}: ${e.message}`));
-  await p.goto(`${base}/g/cocina/?name=${name}&room=${code}&debug`);
-  await p.waitForFunction(() => window.cocina?.room.connected, null, { timeout: Number(process.env.PANA_QA_TIMEOUT) || 30000 }); return p;
+  const timeout = Number(process.env.PANA_QA_TIMEOUT) || 120000;
+  await p.goto(`${base}/g/cocina/?name=${name}&room=${code}&debug`, { waitUntil: 'domcontentloaded', timeout });
+  await p.waitForFunction(() => window.cocina?.room.connected && window.PANA_LOBBY_LOADING === false, null, { timeout }); return p;
 }
 async function position(host, id, station) {
   await host.evaluate(({ id, station }) => { const s = cocina.STATIONS.find(s => s.id === station); cocina.place(id, s.x, s.z + s.d / 2 + 0.65); cocina.room.game.players.find(p => p.id === id).cooldown = 0; }, { id, station });
@@ -30,6 +31,9 @@ try {
   assert.equal(await b.locator('#start').isDisabled(), true); check('two browsers share a lobby; only host can start');
   if (output) await a.screenshot({ path: path.join(output, 'cocina-lobby.png') });
   await a.locator('#helpers').uncheck(); await a.locator('#start').click(); await b.waitForFunction(() => cocina.state.phase === 'playing');
+  // Three software-rendered clients can outlast the normal three-minute round.
+  // Keep this interaction fixture alive; the results check below ends it explicitly.
+  await a.evaluate(() => { cocina.room.game.remaining = 600; cocina.room.publish(); });
   const ids = await a.evaluate(() => ({ host: cocina.room.id, guest: cocina.state.players.find(p => p.id !== cocina.room.id).id }));
   const initial = await b.evaluate(() => cocina.state.players.find(p => p.id === cocina.room.id).x);
   await b.keyboard.down('d'); await b.waitForFunction(x => cocina.state.players.find(p => p.id === cocina.room.id).x > x + 0.5, initial); await b.keyboard.up('d');
@@ -55,6 +59,9 @@ try {
   const btn = await c.locator('[data-move="right"]').boundingBox(); const x0 = await c.evaluate(() => cocina.state.players.find(p => p.id === cocina.room.id).x);
   // Use an actual held touch on the emulated phone, not a compatibility mouse.
   const touch = await c.context().newCDPSession(c);
+  if (output) await c.screenshot({ path: path.join(output, 'cocina-before-touch.png') });
+  assert.equal(await c.evaluate(({ x, y }) => document.elementFromPoint(x, y)?.closest('[data-move]')?.dataset.move,
+    { x: btn.x + btn.width / 2, y: btn.y + btn.height / 2 }), 'right', 'the prepared game exposes the touch control');
   await touch.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: btn.x + btn.width / 2, y: btn.y + btn.height / 2 }] });
   await c.waitForFunction(x => cocina.state.players.find(p => p.id === cocina.room.id).x > x + 0.5, x0);
   await touch.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] }); await touch.detach();
@@ -92,4 +99,9 @@ try {
   await b.goto(base + '/'); await b.getByRole('heading', { name: 'Pana Cocina', exact: true }).waitFor();
   if (output) await b.screenshot({ path: path.join(output, 'cocina-hub.png') }); check('hub discovers Cocina and renders the chef artwork');
   assert.deepEqual(errors, []); check('no uncaught browser errors');
+} catch (error) {
+  for (const context of browser.contexts()) for (const p of context.pages()) {
+    console.log(await p.evaluate(() => window.cocina ? { phase: cocina.state.phase, remaining: cocina.state.remaining, id: cocina.room.id, connected: cocina.room.connected, players: cocina.state.players.map(p => ({ id: p.id, x: p.x, z: p.z, moving: p.moving })), lobby: document.getElementById('pana-lobby-shell')?.hidden } : location.href).catch(() => null));
+  }
+  throw error;
 } finally { for (const socket of sockets) socket.close(); await browser.close(); }

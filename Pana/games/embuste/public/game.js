@@ -1,3 +1,4 @@
+import { prepareScene } from '/engine/game-load.js';
 // ¡Embuste! wiring: input → network (room or practice) → view → scene and HUD.
 import * as THREE from 'three';
 import { buildCharacter } from '/engine/models/characters/pana/avatar-model.js';
@@ -573,11 +574,11 @@ function frame(now) {
   shockwaves.update(dt);
   if (mine && view?.phase === 'playing' && useTarget()?.hold && input().hold && view.sabotage && view.sabotage.kind !== 'momia') {
     const prog = Math.max(0.05, view.sabotage.progress || 0);
-    chargeRing.update(mine.root.position.x, groundAt(mine.root.position.x, mine.root.position.z), mine.root.position.z, prog, elapsed);
+    chargeRing.set(mine.root.position.x, groundAt(mine.root.position.x, mine.root.position.z), mine.root.position.z, prog);
     const step = Math.floor(prog * 8);
     if (step > lastFixStep) { lastFixStep = step; sound.tick(step); }
   } else {
-    chargeRing.update(0, 0, 0, 0, elapsed);
+    chargeRing.hide();
     lastFixStep = -1;
   }
   world.update(elapsed, view, dt); if (!noRender) renderer.render(scene, camera);
@@ -640,3 +641,5 @@ if (qs.has('debug')) window.embuste = { scene, camera, renderer, actors, world, 
   debug: (m) => net?.debug?.(m),
   use: () => useTarget()?.run(), solve: () => openPanel && finishTask(openPanel), get panel() { return openPanel; },
   get net() { return net; }, get view() { return view; }, get lobby() { return lobby; } };
+
+await prepareScene({ renderer, scene, camera });

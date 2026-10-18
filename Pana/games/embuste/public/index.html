@@ -6,6 +6,7 @@
   <title>¡Embuste! · ¿Quién es la momia?</title>
   <link rel="stylesheet" href="/engine/kit.css"><link rel="stylesheet" href="/engine/ui.css"><link rel="stylesheet" href="style.css">
   <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}</script>
+<link rel="stylesheet" href="/engine/game-lobby.css">
 </head>
 <body>
   <canvas id="world" aria-label="El campamento de noche"></canvas>
@@ -107,6 +108,6 @@
     <button id="to-lobby" class="pk-btn pk-btn--ghost pk-btn--block">Volver a la fogata</button>
     <a class="pk-back" href="/">← Todos los juegos</a>
   </div></section>
-  <script type="module">import('./game.js').catch(error => { console.error(error); const el = document.getElementById('loading'); el.textContent = 'No pudimos prender la fogata. Revisa tu conexión y WebGL, y recarga la página.'; el.classList.remove('hidden'); });</script>
+  <script type="module" src="/engine/game-entry.js" data-pana-entry="./game.js"></script>
 </body>
 </html>

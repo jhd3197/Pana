@@ -16,6 +16,34 @@ Maintenance release: no changes you will notice.
 
 ### Added
 
+- **See interaction progress while reviving panas and turning Reliquia's wheels.**
+  The game now attaches the shared progress ring's mesh correctly.
+
+- **Browse aligned launcher pages and see your pana preparing before the editor opens.**
+  Shared page widths keep the header and content edges together. The character
+  editor shows loading until its model and graphics are ready, with retry on failure.
+
+- **Bolas Criollas and Ludo now have illustrated launcher cards and backgrounds.**
+  Each game uses two supplied capybara illustrations, with smaller card files
+  for quick browsing and large artwork for the featured game.
+  Ludo also prepares its table behind the shared illustrated ready lobby.
+
+- **Prepare games in illustrated lobbies with saved pana portraits and shared readiness.**
+  Browse real settings while scenes and shaders prepare, wait for friends before
+  starting, and retry failed loading. Curiara shows boat seating; Derrape follows
+  Copa, Taller and Parrilla, with a garage that waits for its previews to finish.
+  Navigation uses compact chevrons and avatar stills are reused across menus.
+
+- **Play Ludo in 3D with up to four panas or fill the table with bots.**
+  Roll the dice, capture rival pieces and race all four home with saved avatars,
+  shared invitations, touch and keyboard controls, host recovery and local play.
+
+- **Choose games from an illustrated launcher with category filters and a thumbnail rail.**
+  Browse descriptions, create an invite link or enter a room code on desktop and
+  phones. Hosting integrations can handle party launches and show member portraits;
+  the avatar editor loads only when opened. ¡Pintura! is now Pepazo, with existing
+  links preserved; all other game names stay the same.
+
 - **Choose your partners and seating in Caída, Dominó and Poker without leaving the room.**
   Hosts can swap seats in the lobby and return to setup after a round. Changing
   Caída or Dominó teams starts a fresh score; Poker keeps each player's chips.

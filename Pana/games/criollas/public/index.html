@@ -5,6 +5,7 @@
   <meta name="theme-color" content="#d88b4b"><title>Bolas Criollas · Pana</title>
   <link rel="stylesheet" href="/engine/kit.css"><link rel="stylesheet" href="/engine/ui.css"><link rel="stylesheet" href="./style.css">
   <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}</script>
+<link rel="stylesheet" href="/engine/game-lobby.css">
 </head>
 <body class="in-lobby">
   <header class="game-header"><a class="pk-logo" href="/" aria-label="Pana, todos los juegos">PANA</a><span>BOLAS CRIOLLAS</span><nav id="menu-slot" aria-label="Menú del juego"></nav></header>
@@ -45,5 +46,5 @@
     <ol id="result-board" class="pk-roster"></ol><button id="next" class="pk-btn pk-btn--primary pk-btn--block"></button><a class="pk-back" href="/">← Todos los juegos</a>
   </div></section>
   <p id="toast" class="pk-panel" role="status" hidden></p>
-  <script type="module" src="./game.js"></script>
+  <script type="module" src="/engine/game-entry.js" data-pana-entry="./game.js"></script>
 </body></html>

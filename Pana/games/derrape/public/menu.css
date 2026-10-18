@@ -337,3 +337,19 @@ body { --menu-paper: #fff3d8; --menu-ink: #282035; --menu-grass: #2d705d; }
   .ready-driver > svg { display: none; }
   .ready-driver b { font-size: 22px; }
 }
+
+/* Illustrated cup choices show the actual four stages of each competition. */
+.cup-collage{display:grid;grid-template-columns:1fr 1fr;width:100%;overflow:hidden}
+.format-picker .cup-collage img{height:100px}
+.format-picker .cup-route{display:grid;grid-template-columns:1fr 1fr;gap:4px 12px;margin-top:12px}
+.format-picker .cup-route small{font-size:12px;color:var(--pk-text)}
+.track-page.is-cup .track-layout{display:block;overflow:auto}
+.track-page.is-cup .track-feature,.track-page.is-cup .circuit-list{display:none}
+.track-page.is-cup .format-picker{grid-template-columns:repeat(3,minmax(0,1fr));gap:18px}
+.track-page.is-cup .cup-choice{grid-row:1;border-radius:24px}
+.track-page.is-cup .cup-collage img{height:clamp(90px,15vh,160px)}
+.track-page.is-cup .cup-choice>span:not(.mode-trophy){padding:20px}
+.track-page.is-cup .cup-choice b{font-size:30px}
+.track-page.is-cup .format-picker>button:not(.cup-choice){flex-direction:row;align-items:center;min-height:52px}
+.track-page.is-cup .format-picker>button:not(.cup-choice)>img{width:70px;height:52px}
+@media(max-width:700px){.track-page.is-cup .format-picker{grid-template-columns:1fr}.track-page.is-cup .cup-choice{grid-row:auto}.track-page.is-cup .cup-collage img{height:100px}.track-page.is-cup .cup-choice b{font-size:26px}.format-picker .cup-route small{display:block}}

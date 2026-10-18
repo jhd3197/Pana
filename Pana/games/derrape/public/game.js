@@ -2881,7 +2881,6 @@ if (ROOM) goOnline(ROOM, QS.has('lead'));
 selectTrack(QS.get('track') || savedTrack);
 showCar(0);
 frame();
-performance.mark('derrape:garage-ready');
 let lastGarageInput = performance.now();
 for (const event of ['pointerdown', 'wheel', 'keydown']) {
   addEventListener(event, () => { lastGarageInput = performance.now(); }, { passive: true });
@@ -2901,7 +2900,8 @@ showWheel(garage.wheel);
 renderSetup();
 saveWallet();
 menuFlow = createMenuFlow({
-  tracks: TRACKS, initial: ROOM ? 'car' : 'welcome', pickTrack: switchTrack,
+  tracks: TRACKS, initial: ROOM ? 'track' : 'welcome', pickTrack: switchTrack,
+  prepared: Promise.all([cards.ready, wheelStrip.ready, renderer.compileAsync(garage.scene, garage.camera)]).then(() => renderer.render(garage.scene, garage.camera)),
   localPlay(split) { setup.split = split; saveSetup(); renderSetup(); },
   getState: () => {
     const activeMode = net?.state?.mode || setup.mode;

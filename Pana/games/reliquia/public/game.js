@@ -1,3 +1,4 @@
+import { prepareScene } from '/engine/game-load.js';
 import * as THREE from 'three';
 import { buildCharacter } from '/engine/models/characters/pana/avatar-model.js';
 import { loadAvatar, loadName } from '/engine/avatar.js';
@@ -32,7 +33,7 @@ const world = createExpeditionWorld(); scene.add(world.group);
 const puffs = new Puffs(scene);
 const shockwaves = new Shockwaves(scene);
 const chargeRing = createChargeRing({ radius: 1.55, color: 0x62f5c8 });
-scene.add(chargeRing.group);
+scene.add(chargeRing.mesh);
 const camera = new THREE.PerspectiveCamera(48, innerWidth / innerHeight, 0.1, 250);
 let state = new Expedition().snapshot(), paused = false, failed = false, phase = '', lastEvent = 0, last = performance.now(), elapsed = 0, dead = false;
 let yaw = 0.25, pitch = 0.76, zoom = 15, toastTimer, rosterKey = '', uiElapsed = 0, shake = 0, chargeTickT = 0;
@@ -357,3 +358,5 @@ if (qs.has('debug')) window.reliquia = { room, scene, camera, renderer, actors, 
   step(seconds) { if (!room.isHost) return; for (let t = 0; t < seconds; t += 0.05) room.game.update(Math.min(0.05, seconds - t), room.inputs); room.publish(); },
   place(id, x, z) { const p = room.game?.players.find(p => p.id === id); if (p) { p.x = x; p.z = z; room.publish(); } },
 };
+
+await prepareScene({ renderer, scene, camera });

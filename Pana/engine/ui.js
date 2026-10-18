@@ -10,6 +10,7 @@
 import { getSettings, setSettings, onSettings, bindSound, QUALITY } from './settings.js';
 import { ORIENTATIONS, guardOrientation, isTouch } from './touch.js';
 import { icon } from './icons.js';
+import './navigation.js';
 
 // From next to this module, so a versioned copy (pana.sh's /_v/<version>/engine/) loads its own kit.
 for (const name of ['kit.css', 'ui.css']) {
@@ -233,6 +234,14 @@ export function createGameMenu({
   addEventListener('keydown', e => {
     if (isOpen) {
       if (e.key === 'Escape') { e.preventDefault(); if (!e.repeat) close(); }
+      if (e.key === 'Tab') {
+        const focusable = [...dialog.querySelectorAll('button, a[href], input, select, textarea, [tabindex]')]
+          .filter(node => !node.disabled && node.tabIndex >= 0 && node.getClientRects().length);
+        const first = focusable[0], last = focusable.at(-1);
+        if (first && ((!e.shiftKey && document.activeElement === last) || (e.shiftKey && document.activeElement === first))) {
+          e.preventDefault(); (e.shiftKey ? last : first).focus();
+        }
+      }
       if (!dialog.contains(e.target)) e.stopImmediatePropagation();
       return;
     }

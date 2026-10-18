@@ -1,11 +1,11 @@
 {
-  "date": "2026-10-17",
+  "date": "2026-10-18",
   "scope": "Current production 3D resource/model families; catalog variants and scene assemblies are counted separately. No primitive-mesh count or deleted-history total.",
   "counts": {
-    "catalog": 271,
+    "catalog": 391,
     "categories": {
       "Fauna": 18,
-      "Vegetación": 27,
+      "Vegetación": 42,
       "Llanos": 10,
       "Vida llanera": 13,
       "Desierto": 10,
@@ -16,12 +16,17 @@
       "Páramo": 8,
       "Selva": 14,
       "Costa": 27,
+      "Mina": 24,
+      "Cementerio": 30,
+      "Ruinas": 20,
+      "Campamento": 21,
+      "Atmósfera": 10,
       "Personajes": 3,
       "Vestuario": 5,
       "Vehículos": 14,
       "Mapas": 27
     },
-    "previewOnly": 13,
+    "previewOnly": 133,
     "uncatalogedFamilies": 31,
     "sceneFamilies": 46,
     "dormantFactories": 9
@@ -722,6 +727,222 @@
         "seed": 7
       },
       "status": "in-use"
+    },
+    {
+      "id": "dead-tree",
+      "name": "Árbol seco",
+      "category": "Vegetación",
+      "source": "Pana/engine/models/vegetation/dead-tree.js",
+      "factory": "deadTree",
+      "usedBy": [
+        "Pana Studio"
+      ],
+      "previewOptions": {
+        "seed": 7
+      },
+      "status": "preview-only"
+    },
+    {
+      "id": "dead-tree-leafy",
+      "name": "Árbol nudoso con follaje",
+      "category": "Vegetación",
+      "source": "Pana/engine/models/vegetation/dead-tree.js",
+      "factory": "deadTree",
+      "usedBy": [
+        "Pana Studio"
+      ],
+      "previewOptions": {
+        "seed": 11,
+        "leaves": true,
+        "height": 7
+      },
+      "status": "preview-only"
+    },
+    {
+      "id": "broadleaf-tree-spreading",
+      "name": "Árbol de selva extendido",
+      "category": "Vegetación",
+      "source": "Pana/engine/models/vegetation/broadleaf-tree.js",
+      "factory": "broadleafTree",
+      "usedBy": [
+        "Pana Studio"
+      ],
+      "previewOptions": {
+        "seed": 7,
+        "variant": 0
+      },
+      "status": "preview-only"
+    },
+    {
+      "id": "broadleaf-tree-tiered",
+      "name": "Árbol de selva en pisos",
+      "category": "Vegetación",
+      "source": "Pana/engine/models/vegetation/broadleaf-tree.js",
+      "factory": "broadleafTree",
+      "usedBy": [
+        "Pana Studio"
+      ],
+      "previewOptions": {
+        "seed": 7,
+        "variant": 1
+      },
+      "status": "preview-only"
+    },
+    {
+      "id": "broadleaf-tree-round",
+      "name": "Árbol de copa redonda",
+      "category": "Vegetación",
+      "source": "Pana/engine/models/vegetation/broadleaf-tree.js",
+      "factory": "broadleafTree",
+      "usedBy": [
+        "Pana Studio"
+      ],
+      "previewOptions": {
+        "seed": 7,
+        "variant": 2
+      },
+      "status": "preview-only"
+    },
+    {
+      "id": "broadleaf-tree-tall",
+      "name": "Árbol de selva alto",
+      "category": "Vegetación",
+      "source": "Pana/engine/models/vegetation/broadleaf-tree.js",
+      "factory": "broadleafTree",
+      "usedBy": [
+        "Pana Studio"
+      ],
+      "previewOptions": {
+        "seed": 7,
+        "variant": 3
+      },
+      "status": "preview-only"
+    },
+    {
+      "id": "ceiba-gateway",
+      "name": "Ceiba portal",
+      "category": "Vegetación",
+      "source": "Pana/engine/models/vegetation/ceiba-gateway.js",
+      "factory": "ceibaGateway",
+      "usedBy": [
+        "Pana Studio"
+      ],
+      "previewOptions": {
+        "seed": 7
+      },
+      "status": "preview-only"
+    },
+    {
+      "id": "emergent-tree",
+      "name": "Árbol emergente",
+      "category": "Vegetación",
+      "source": "Pana/engine/models/vegetation/emergent-tree.js",
+      "factory": "emergentTree",
+      "usedBy": [
+        "Pana Studio"
+      ],
+      "previewOptions": {
+        "seed": 7
+      },
+      "status": "preview-only"
+    },
+    {
+      "id": "strangler-fig",
+      "name": "Matapalo sobre ruinas",
+      "category": "Vegetación",
+      "source": "Pana/engine/models/vegetation/strangler-fig.js",
+      "factory": "stranglerFig",
+      "usedBy": [
+        "Pana Studio"
+      ],
+      "previewOptions": {
+        "seed": 7
+      },
+      "status": "preview-only"
+    },
+    {
+      "id": "elephant-ear",
+      "name": "Oreja de elefante",
+      "category": "Vegetación",
+      "source": "Pana/engine/models/vegetation/elephant-ear.js",
+      "factory": "elephantEar",
+      "usedBy": [
+        "Pana Studio"
+      ],
+      "previewOptions": {
+        "seed": 7
+      },
+      "status": "preview-only"
+    },
+    {
+      "id": "bromeliad",
+      "name": "Bromelia",
+      "category": "Vegetación",
+      "source": "Pana/engine/models/vegetation/bromeliad.js",
+      "factory": "bromeliad",
+      "usedBy": [
+        "Pana Studio"
+      ],
+      "previewOptions": {
+        "seed": 7
+      },
+      "status": "preview-only"
+    },
+    {
+      "id": "rafflesia",
+      "name": "Flor gigante",
+      "category": "Vegetación",
+      "source": "Pana/engine/models/vegetation/rafflesia.js",
+      "factory": "rafflesia",
+      "usedBy": [
+        "Pana Studio"
+      ],
+      "previewOptions": {
+        "seed": 7
+      },
+      "status": "preview-only"
+    },
+    {
+      "id": "wild-mushrooms",
+      "name": "Hongos silvestres",
+      "category": "Vegetación",
+      "source": "Pana/engine/models/vegetation/wild-mushrooms.js",
+      "factory": "wildMushrooms",
+      "usedBy": [
+        "Pana Studio"
+      ],
+      "previewOptions": {
+        "seed": 7
+      },
+      "status": "preview-only"
+    },
+    {
+      "id": "moss-rock",
+      "name": "Roca con musgo",
+      "category": "Vegetación",
+      "source": "Pana/engine/models/vegetation/moss-rock.js",
+      "factory": "mossRock",
+      "usedBy": [
+        "Pana Studio"
+      ],
+      "previewOptions": {
+        "seed": 7
+      },
+      "status": "preview-only"
+    },
+    {
+      "id": "forest-litter",
+      "name": "Hojarasca",
+      "category": "Vegetación",
+      "source": "Pana/engine/models/vegetation/forest-litter.js",
+      "factory": "forestLitter",
+      "usedBy": [
+        "Pana Studio"
+      ],
+      "previewOptions": {
+        "seed": 7
+      },
+      "status": "preview-only"
     },
     {
       "id": "ranch-house",
@@ -2956,6 +3177,1489 @@
       "status": "in-use"
     },
     {
+      "id": "gold-miner",
+      "name": "Minero",
+      "category": "Mina",
+      "source": "Pana/engine/models/props/mine-miner.js",
+      "factory": "miner",
+      "usedBy": [
+        "Pana Studio"
+      ],
+      "previewOptions": {
+        "seed": 3,
+        "pose": "dig"
+      },
+      "status": "preview-only"
+    },
+    {
+      "id": "mine-cart",
+      "name": "Vagoneta minera",
+      "category": "Mina",
+      "source": "Pana/engine/models/props/mine.js",
+      "factory": "mineCart",
+      "usedBy": [
+        "Pana Studio"
+      ],
+      "previewOptions": {
+        "seed": 41,
+        "load": "gold"
+      },
+      "status": "preview-only"
+    },
+    {
+      "id": "mine-track",
+      "name": "Vía minera con caballetes",
+      "category": "Mina",
+      "source": "Pana/engine/models/props/mine.js",
+      "factory": "mineTrack",
+      "usedBy": [
+        "Pana Studio"
+      ],
+      "previewOptions": {
+        "groundHeight": 0
+      },
+      "status": "preview-only"
+    },
+    {
+      "id": "gold-vein",
+      "name": "Veta de oro",
+      "category": "Mina",
+      "source": "Pana/engine/models/props/mine.js",
+      "factory": "goldVein",
+      "usedBy": [
+        "Pana Studio"
+      ],
+      "previewOptions": {
+        "seed": 21
+      },
+      "status": "preview-only"
+    },
+    {
+      "id": "ore-pile",
+      "name": "Montón de mineral",
+      "category": "Mina",
+      "source": "Pana/engine/models/props/mine.js",
+      "factory": "orePile",
+      "usedBy": [
+        "Pana Studio"
+      ],
+      "previewOptions": {
+        "seed": 22
+      },
+      "status": "preview-only"
+    },
+    {
+      "id": "mine-crate",
+      "name": "Caja minera",
+      "category": "Mina",
+      "source": "Pana/engine/models/props/mine.js",
+      "factory": "mineCrate",
+      "usedBy": [
+        "Pana Studio"
+      ],
+      "previewOptions": {
+        "seed": 11
+      },
+      "status": "preview-only"
+    },
+    {
+      "id": "tnt-crate",
+      "name": "Caja de dinamita",
+      "category": "Mina",
+      "source": "Pana/engine/models/props/mine.js",
+      "factory": "mineCrate",
+      "usedBy": [
+        "Pana Studio"
+      ],
+      "previewOptions": {
+        "seed": 12,
+        "tnt": true
+      },
+      "status": "preview-only"
+    },
+    {
+      "id": "mine-barrel",
+      "name": "Barril minero",
+      "category": "Mina",
+      "source": "Pana/engine/models/props/mine.js",
+      "factory": "mineBarrel",
+      "usedBy": [
+        "Pana Studio"
+      ],
+      "previewOptions": {
+        "gold": true
+      },
+      "status": "preview-only"
+    },
+    {
+      "id": "mine-lantern",
+      "name": "Farol de mina",
+      "category": "Mina",
+      "source": "Pana/engine/models/props/mine.js",
+      "factory": "mineLantern",
+      "usedBy": [
+        "Pana Studio"
+      ],
+      "previewOptions": {
+        "light": false
+      },
+      "status": "preview-only"
+    },
+    {
+      "id": "mine-lantern-post",
+      "name": "Poste con farol",
+      "category": "Mina",
+      "source": "Pana/engine/models/props/mine.js",
+      "factory": "mineLanternPost",
+      "usedBy": [
+        "Pana Studio"
+      ],
+      "previewOptions": {
+        "light": false
+      },
+      "status": "preview-only"
+    },
+    {
+      "id": "bulb-wire",
+      "name": "Guirnalda de bombillos",
+      "category": "Mina",
+      "source": "Pana/engine/models/props/mine.js",
+      "factory": "bulbWire",
+      "usedBy": [
+        "Pana Studio"
+      ],
+      "previewOptions": {
+        "span": 10
+      },
+      "status": "preview-only"
+    },
+    {
+      "id": "mine-ladder",
+      "name": "Escalera de mano",
+      "category": "Mina",
+      "source": "Pana/engine/models/props/mine.js",
+      "factory": "mineLadder",
+      "usedBy": [
+        "Pana Studio"
+      ],
+      "previewOptions": {
+        "height": 4
+      },
+      "status": "preview-only"
+    },
+    {
+      "id": "mine-stairs",
+      "name": "Escalera de tablas",
+      "category": "Mina",
+      "source": "Pana/engine/models/props/mine.js",
+      "factory": "mineStairs",
+      "usedBy": [
+        "Pana Studio"
+      ],
+      "previewOptions": {
+        "steps": 7
+      },
+      "status": "preview-only"
+    },
+    {
+      "id": "mine-pickaxe",
+      "name": "Pico",
+      "category": "Mina",
+      "source": "Pana/engine/models/props/mine.js",
+      "factory": "minePickaxe",
+      "usedBy": [
+        "Pana Studio"
+      ],
+      "previewOptions": null,
+      "status": "preview-only"
+    },
+    {
+      "id": "mine-shovel",
+      "name": "Pala",
+      "category": "Mina",
+      "source": "Pana/engine/models/props/mine.js",
+      "factory": "mineShovel",
+      "usedBy": [
+        "Pana Studio"
+      ],
+      "previewOptions": null,
+      "status": "preview-only"
+    },
+    {
+      "id": "mine-wheelbarrow",
+      "name": "Carretilla minera",
+      "category": "Mina",
+      "source": "Pana/engine/models/props/mine.js",
+      "factory": "mineWheelbarrow",
+      "usedBy": [
+        "Pana Studio"
+      ],
+      "previewOptions": {
+        "seed": 31
+      },
+      "status": "preview-only"
+    },
+    {
+      "id": "mine-portal",
+      "name": "Boca de mina",
+      "category": "Mina",
+      "source": "Pana/engine/models/props/mine.js",
+      "factory": "minePortal",
+      "usedBy": [
+        "Pana Studio"
+      ],
+      "previewOptions": {
+        "seed": 51,
+        "name": "MINA 1"
+      },
+      "status": "preview-only"
+    },
+    {
+      "id": "mine-support",
+      "name": "Marco de entibado",
+      "category": "Mina",
+      "source": "Pana/engine/models/props/mine.js",
+      "factory": "mineSupport",
+      "usedBy": [
+        "Pana Studio"
+      ],
+      "previewOptions": {
+        "width": 2.8
+      },
+      "status": "preview-only"
+    },
+    {
+      "id": "mine-scaffold",
+      "name": "Andamio de veta",
+      "category": "Mina",
+      "source": "Pana/engine/models/props/mine.js",
+      "factory": "mineScaffold",
+      "usedBy": [
+        "Pana Studio"
+      ],
+      "previewOptions": {
+        "seed": 61
+      },
+      "status": "preview-only"
+    },
+    {
+      "id": "miner-shack",
+      "name": "Caseta de mineros",
+      "category": "Mina",
+      "source": "Pana/engine/models/props/mine.js",
+      "factory": "minerShack",
+      "usedBy": [
+        "Pana Studio"
+      ],
+      "previewOptions": {
+        "seed": 71
+      },
+      "status": "preview-only"
+    },
+    {
+      "id": "assay-table",
+      "name": "Mesa de pesaje de oro",
+      "category": "Mina",
+      "source": "Pana/engine/models/props/mine.js",
+      "factory": "assayTable",
+      "usedBy": [
+        "Pana Studio"
+      ],
+      "previewOptions": {
+        "seed": 81
+      },
+      "status": "preview-only"
+    },
+    {
+      "id": "water-wheel",
+      "name": "Rueda hidráulica",
+      "category": "Mina",
+      "source": "Pana/engine/models/props/mine.js",
+      "factory": "waterWheel",
+      "usedBy": [
+        "Pana Studio"
+      ],
+      "previewOptions": {
+        "radius": 3
+      },
+      "status": "preview-only"
+    },
+    {
+      "id": "stamp-mill",
+      "name": "Molino de pisones",
+      "category": "Mina",
+      "source": "Pana/engine/models/props/mine.js",
+      "factory": "stampMill",
+      "usedBy": [
+        "Pana Studio"
+      ],
+      "previewOptions": {
+        "seed": 91
+      },
+      "status": "preview-only"
+    },
+    {
+      "id": "lift-tower",
+      "name": "Torre de ascensor minero",
+      "category": "Mina",
+      "source": "Pana/engine/models/props/mine.js",
+      "factory": "liftTower",
+      "usedBy": [
+        "Pana Studio"
+      ],
+      "previewOptions": {
+        "height": 14
+      },
+      "status": "preview-only"
+    },
+    {
+      "id": "grave-headstone",
+      "name": "Lápida redondeada",
+      "category": "Cementerio",
+      "source": "Pana/engine/models/props/cemetery.js",
+      "factory": "grave",
+      "usedBy": [
+        "Pana Studio"
+      ],
+      "previewOptions": {
+        "type": "headstone",
+        "seed": 7
+      },
+      "status": "preview-only"
+    },
+    {
+      "id": "grave-celtic",
+      "name": "Cruz celta",
+      "category": "Cementerio",
+      "source": "Pana/engine/models/props/cemetery.js",
+      "factory": "grave",
+      "usedBy": [
+        "Pana Studio"
+      ],
+      "previewOptions": {
+        "type": "celtic",
+        "seed": 7
+      },
+      "status": "preview-only"
+    },
+    {
+      "id": "grave-obelisk",
+      "name": "Obelisco funerario",
+      "category": "Cementerio",
+      "source": "Pana/engine/models/props/cemetery.js",
+      "factory": "grave",
+      "usedBy": [
+        "Pana Studio"
+      ],
+      "previewOptions": {
+        "type": "obelisk",
+        "seed": 7
+      },
+      "status": "preview-only"
+    },
+    {
+      "id": "grave-ledger",
+      "name": "Losa sepulcral",
+      "category": "Cementerio",
+      "source": "Pana/engine/models/props/cemetery.js",
+      "factory": "grave",
+      "usedBy": [
+        "Pana Studio"
+      ],
+      "previewOptions": {
+        "type": "ledger",
+        "seed": 7
+      },
+      "status": "preview-only"
+    },
+    {
+      "id": "grave-wooden",
+      "name": "Cruz de madera",
+      "category": "Cementerio",
+      "source": "Pana/engine/models/props/cemetery.js",
+      "factory": "grave",
+      "usedBy": [
+        "Pana Studio"
+      ],
+      "previewOptions": {
+        "type": "wooden",
+        "seed": 7
+      },
+      "status": "preview-only"
+    },
+    {
+      "id": "jack-o-lantern",
+      "name": "Calabaza tallada",
+      "category": "Cementerio",
+      "source": "Pana/engine/models/props/cemetery.js",
+      "factory": "pumpkin",
+      "usedBy": [
+        "Pana Studio"
+      ],
+      "previewOptions": {
+        "size": 0.6,
+        "lit": true,
+        "seed": 3
+      },
+      "status": "preview-only"
+    },
+    {
+      "id": "skull",
+      "name": "Calavera",
+      "category": "Cementerio",
+      "source": "Pana/engine/models/props/cemetery.js",
+      "factory": "skull",
+      "usedBy": [
+        "Pana Studio"
+      ],
+      "previewOptions": {
+        "size": 0.5
+      },
+      "status": "preview-only"
+    },
+    {
+      "id": "grave-candles",
+      "name": "Velas de tumba",
+      "category": "Cementerio",
+      "source": "Pana/engine/models/props/cemetery.js",
+      "factory": "graveCandles",
+      "usedBy": [
+        "Pana Studio"
+      ],
+      "previewOptions": {
+        "count": 5,
+        "seed": 4
+      },
+      "status": "preview-only"
+    },
+    {
+      "id": "coffin",
+      "name": "Ataúd cerrado",
+      "category": "Cementerio",
+      "source": "Pana/engine/models/props/cemetery.js",
+      "factory": "coffin",
+      "usedBy": [
+        "Pana Studio"
+      ],
+      "previewOptions": {
+        "open": false
+      },
+      "status": "preview-only"
+    },
+    {
+      "id": "coffin-open",
+      "name": "Ataúd abierto",
+      "category": "Cementerio",
+      "source": "Pana/engine/models/props/cemetery.js",
+      "factory": "coffin",
+      "usedBy": [
+        "Pana Studio"
+      ],
+      "previewOptions": {
+        "open": true
+      },
+      "status": "preview-only"
+    },
+    {
+      "id": "open-grave",
+      "name": "Fosa abierta",
+      "category": "Cementerio",
+      "source": "Pana/engine/models/props/cemetery.js",
+      "factory": "openGrave",
+      "usedBy": [
+        "Pana Studio"
+      ],
+      "previewOptions": {
+        "seed": 5
+      },
+      "status": "preview-only"
+    },
+    {
+      "id": "iron-fence",
+      "name": "Reja de hierro",
+      "category": "Cementerio",
+      "source": "Pana/engine/models/props/cemetery.js",
+      "factory": "ironFence",
+      "usedBy": [
+        "Pana Studio"
+      ],
+      "previewOptions": {
+        "length": 8,
+        "seed": 3
+      },
+      "status": "preview-only"
+    },
+    {
+      "id": "stone-pillar-urn",
+      "name": "Pilar de piedra con urna",
+      "category": "Cementerio",
+      "source": "Pana/engine/models/props/cemetery.js",
+      "factory": "stonePillar",
+      "usedBy": [
+        "Pana Studio"
+      ],
+      "previewOptions": {
+        "height": 2.4,
+        "top": "urn"
+      },
+      "status": "preview-only"
+    },
+    {
+      "id": "stone-pillar-skull",
+      "name": "Pilar de piedra con calavera",
+      "category": "Cementerio",
+      "source": "Pana/engine/models/props/cemetery.js",
+      "factory": "stonePillar",
+      "usedBy": [
+        "Pana Studio"
+      ],
+      "previewOptions": {
+        "height": 2.4,
+        "top": "skull"
+      },
+      "status": "preview-only"
+    },
+    {
+      "id": "stone-pillar-lantern",
+      "name": "Pilar de piedra con farol",
+      "category": "Cementerio",
+      "source": "Pana/engine/models/props/cemetery.js",
+      "factory": "stonePillar",
+      "usedBy": [
+        "Pana Studio"
+      ],
+      "previewOptions": {
+        "height": 2.4,
+        "top": "lantern"
+      },
+      "status": "preview-only"
+    },
+    {
+      "id": "cemetery-lantern",
+      "name": "Farol de hierro",
+      "category": "Cementerio",
+      "source": "Pana/engine/models/props/cemetery.js",
+      "factory": "cemeteryLantern",
+      "usedBy": [
+        "Pana Studio"
+      ],
+      "previewOptions": {},
+      "status": "preview-only"
+    },
+    {
+      "id": "cemetery-lamp-post",
+      "name": "Poste de farol",
+      "category": "Cementerio",
+      "source": "Pana/engine/models/props/cemetery.js",
+      "factory": "cemeteryLampPost",
+      "usedBy": [
+        "Pana Studio"
+      ],
+      "previewOptions": {},
+      "status": "preview-only"
+    },
+    {
+      "id": "mausoleum-dark",
+      "name": "Mausoleo con puerta cerrada",
+      "category": "Cementerio",
+      "source": "Pana/engine/models/props/cemetery.js",
+      "factory": "mausoleum",
+      "usedBy": [
+        "Pana Studio"
+      ],
+      "previewOptions": {
+        "door": "dark",
+        "seed": 7
+      },
+      "status": "preview-only"
+    },
+    {
+      "id": "mausoleum-barred",
+      "name": "Mausoleo con reja",
+      "category": "Cementerio",
+      "source": "Pana/engine/models/props/cemetery.js",
+      "factory": "mausoleum",
+      "usedBy": [
+        "Pana Studio"
+      ],
+      "previewOptions": {
+        "door": "barred",
+        "seed": 7
+      },
+      "status": "preview-only"
+    },
+    {
+      "id": "mausoleum-glow",
+      "name": "Mausoleo con brillo verde",
+      "category": "Cementerio",
+      "source": "Pana/engine/models/props/cemetery.js",
+      "factory": "mausoleum",
+      "usedBy": [
+        "Pana Studio"
+      ],
+      "previewOptions": {
+        "door": "glow",
+        "seed": 7
+      },
+      "status": "preview-only"
+    },
+    {
+      "id": "cemetery-gate",
+      "name": "Portón del cementerio",
+      "category": "Cementerio",
+      "source": "Pana/engine/models/props/cemetery.js",
+      "factory": "cemeteryGate",
+      "usedBy": [
+        "Pana Studio"
+      ],
+      "previewOptions": {
+        "walls": 6,
+        "seed": 3
+      },
+      "status": "preview-only"
+    },
+    {
+      "id": "cemetery-chapel",
+      "name": "Capilla en ruinas",
+      "category": "Cementerio",
+      "source": "Pana/engine/models/props/cemetery-chapel.js",
+      "factory": "cemeteryChapel",
+      "usedBy": [
+        "Pana Studio"
+      ],
+      "previewOptions": {
+        "seed": 7
+      },
+      "status": "preview-only"
+    },
+    {
+      "id": "crooked-mansion",
+      "name": "Mansión embrujada",
+      "category": "Cementerio",
+      "source": "Pana/engine/models/props/crooked-mansion.js",
+      "factory": "crookedMansion",
+      "usedBy": [
+        "Pana Studio"
+      ],
+      "previewOptions": {
+        "seed": 7
+      },
+      "status": "preview-only"
+    },
+    {
+      "id": "scarecrow",
+      "name": "Espantapájaros",
+      "category": "Cementerio",
+      "source": "Pana/engine/models/props/cemetery.js",
+      "factory": "scarecrow",
+      "usedBy": [
+        "Pana Studio"
+      ],
+      "previewOptions": {
+        "seed": 2
+      },
+      "status": "preview-only"
+    },
+    {
+      "id": "graveyard-well",
+      "name": "Pozo de piedra",
+      "category": "Cementerio",
+      "source": "Pana/engine/models/props/cemetery.js",
+      "factory": "graveyardWell",
+      "usedBy": [
+        "Pana Studio"
+      ],
+      "previewOptions": {
+        "seed": 2
+      },
+      "status": "preview-only"
+    },
+    {
+      "id": "swamp-boardwalk",
+      "name": "Pasarela del pantano",
+      "category": "Cementerio",
+      "source": "Pana/engine/models/props/cemetery.js",
+      "factory": "boardwalk",
+      "usedBy": [
+        "Pana Studio"
+      ],
+      "previewOptions": {
+        "length": 16,
+        "seed": 2
+      },
+      "status": "preview-only"
+    },
+    {
+      "id": "stilt-shack",
+      "name": "Choza sobre pilotes",
+      "category": "Cementerio",
+      "source": "Pana/engine/models/props/cemetery.js",
+      "factory": "stiltShack",
+      "usedBy": [
+        "Pana Studio"
+      ],
+      "previewOptions": {},
+      "status": "preview-only"
+    },
+    {
+      "id": "rowboat",
+      "name": "Bote de remos",
+      "category": "Cementerio",
+      "source": "Pana/engine/models/props/cemetery.js",
+      "factory": "rowboat",
+      "usedBy": [
+        "Pana Studio"
+      ],
+      "previewOptions": {
+        "sunk": false
+      },
+      "status": "preview-only"
+    },
+    {
+      "id": "rowboat-sunk",
+      "name": "Bote medio hundido",
+      "category": "Cementerio",
+      "source": "Pana/engine/models/props/cemetery.js",
+      "factory": "rowboat",
+      "usedBy": [
+        "Pana Studio"
+      ],
+      "previewOptions": {
+        "sunk": true
+      },
+      "status": "preview-only"
+    },
+    {
+      "id": "wisp",
+      "name": "Fuego fatuo",
+      "category": "Cementerio",
+      "source": "Pana/engine/models/props/cemetery.js",
+      "factory": "wisp",
+      "usedBy": [
+        "Pana Studio"
+      ],
+      "previewOptions": {
+        "seed": 3,
+        "radius": 2
+      },
+      "status": "preview-only"
+    },
+    {
+      "id": "prasat",
+      "name": "Torre prasat",
+      "category": "Ruinas",
+      "source": "Pana/engine/models/props/ruins.js",
+      "factory": "prasat",
+      "usedBy": [
+        "Pana Studio"
+      ],
+      "previewOptions": {
+        "seed": 71
+      },
+      "status": "preview-only"
+    },
+    {
+      "id": "prasat-broken",
+      "name": "Torre prasat derrumbada",
+      "category": "Ruinas",
+      "source": "Pana/engine/models/props/ruins.js",
+      "factory": "prasat",
+      "usedBy": [
+        "Pana Studio"
+      ],
+      "previewOptions": {
+        "seed": 72,
+        "broken": true,
+        "laterite": false
+      },
+      "status": "preview-only"
+    },
+    {
+      "id": "bayon-face",
+      "name": "Rostro de Bayón",
+      "category": "Ruinas",
+      "source": "Pana/engine/models/props/ruins.js",
+      "factory": "bayonFace",
+      "usedBy": [
+        "Pana Studio"
+      ],
+      "previewOptions": {
+        "seed": 72
+      },
+      "status": "preview-only"
+    },
+    {
+      "id": "olmec-head",
+      "name": "Cabeza olmeca",
+      "category": "Ruinas",
+      "source": "Pana/engine/models/props/ruins.js",
+      "factory": "olmecHead",
+      "usedBy": [
+        "Pana Studio"
+      ],
+      "previewOptions": {
+        "seed": 73
+      },
+      "status": "preview-only"
+    },
+    {
+      "id": "ruin-column",
+      "name": "Columna de tambores",
+      "category": "Ruinas",
+      "source": "Pana/engine/models/props/ruins.js",
+      "factory": "ruinColumn",
+      "usedBy": [
+        "Pana Studio"
+      ],
+      "previewOptions": {
+        "seed": 74
+      },
+      "status": "preview-only"
+    },
+    {
+      "id": "ruin-column-broken",
+      "name": "Columna rota",
+      "category": "Ruinas",
+      "source": "Pana/engine/models/props/ruins.js",
+      "factory": "ruinColumn",
+      "usedBy": [
+        "Pana Studio"
+      ],
+      "previewOptions": {
+        "seed": 9,
+        "broken": true
+      },
+      "status": "preview-only"
+    },
+    {
+      "id": "fallen-column",
+      "name": "Columna caída",
+      "category": "Ruinas",
+      "source": "Pana/engine/models/props/ruins.js",
+      "factory": "fallenColumn",
+      "usedBy": [
+        "Pana Studio"
+      ],
+      "previewOptions": {
+        "seed": 75
+      },
+      "status": "preview-only"
+    },
+    {
+      "id": "ruin-rubble",
+      "name": "Escombros del templo",
+      "category": "Ruinas",
+      "source": "Pana/engine/models/props/ruins.js",
+      "factory": "ruinRubble",
+      "usedBy": [
+        "Pana Studio"
+      ],
+      "previewOptions": {
+        "seed": 76
+      },
+      "status": "preview-only"
+    },
+    {
+      "id": "ruin-stairs",
+      "name": "Escalinata en ruinas",
+      "category": "Ruinas",
+      "source": "Pana/engine/models/props/ruins.js",
+      "factory": "ruinStairs",
+      "usedBy": [
+        "Pana Studio"
+      ],
+      "previewOptions": {
+        "seed": 77,
+        "broken": true
+      },
+      "status": "preview-only"
+    },
+    {
+      "id": "stela",
+      "name": "Estela de glifos",
+      "category": "Ruinas",
+      "source": "Pana/engine/models/props/ruins.js",
+      "factory": "stela",
+      "usedBy": [
+        "Pana Studio"
+      ],
+      "previewOptions": {
+        "seed": 78
+      },
+      "status": "preview-only"
+    },
+    {
+      "id": "sun-seal",
+      "name": "Sello solar",
+      "category": "Ruinas",
+      "source": "Pana/engine/models/props/ruins.js",
+      "factory": "sunSeal",
+      "usedBy": [
+        "Pana Studio"
+      ],
+      "previewOptions": {
+        "seed": 79
+      },
+      "status": "preview-only"
+    },
+    {
+      "id": "ruin-brazier",
+      "name": "Pebetero de piedra",
+      "category": "Ruinas",
+      "source": "Pana/engine/models/props/ruins.js",
+      "factory": "brazier",
+      "usedBy": [
+        "Pana Studio"
+      ],
+      "previewOptions": {
+        "seed": 80
+      },
+      "status": "preview-only"
+    },
+    {
+      "id": "plank-bridge",
+      "name": "Puente de tablas",
+      "category": "Ruinas",
+      "source": "Pana/engine/models/props/ruins.js",
+      "factory": "plankBridge",
+      "usedBy": [
+        "Pana Studio"
+      ],
+      "previewOptions": {
+        "seed": 81
+      },
+      "status": "preview-only"
+    },
+    {
+      "id": "plank-bridge-broken",
+      "name": "Puente de tablas roto",
+      "category": "Ruinas",
+      "source": "Pana/engine/models/props/ruins.js",
+      "factory": "plankBridge",
+      "usedBy": [
+        "Pana Studio"
+      ],
+      "previewOptions": {
+        "seed": 82,
+        "broken": true
+      },
+      "status": "preview-only"
+    },
+    {
+      "id": "rock-tower",
+      "name": "Pilar del abismo",
+      "category": "Ruinas",
+      "source": "Pana/engine/models/props/ruins.js",
+      "factory": "rockTower",
+      "usedBy": [
+        "Pana Studio"
+      ],
+      "previewOptions": {
+        "seed": 82,
+        "height": 10
+      },
+      "status": "preview-only"
+    },
+    {
+      "id": "ruin-paving",
+      "name": "Enlosado del templo",
+      "category": "Ruinas",
+      "source": "Pana/engine/models/props/ruins.js",
+      "factory": "ruinPaving",
+      "usedBy": [
+        "Pana Studio"
+      ],
+      "previewOptions": {
+        "seed": 83
+      },
+      "status": "preview-only"
+    },
+    {
+      "id": "stalagmites",
+      "name": "Estalagmitas",
+      "category": "Ruinas",
+      "source": "Pana/engine/models/props/ruins.js",
+      "factory": "stalagmites",
+      "usedBy": [
+        "Pana Studio"
+      ],
+      "previewOptions": {
+        "seed": 84
+      },
+      "status": "preview-only"
+    },
+    {
+      "id": "ruin-gate",
+      "name": "Portal de la selva",
+      "category": "Ruinas",
+      "source": "Pana/engine/models/props/ruins.js",
+      "factory": "ruinGate",
+      "usedBy": [
+        "Pana Studio"
+      ],
+      "previewOptions": {
+        "seed": 85
+      },
+      "status": "preview-only"
+    },
+    {
+      "id": "carved-stele",
+      "name": "Piedra tallada antigua",
+      "category": "Ruinas",
+      "source": "Pana/engine/models/props/ruins.js",
+      "factory": "carvedStele",
+      "usedBy": [
+        "Pana Studio"
+      ],
+      "previewOptions": {
+        "seed": 86
+      },
+      "status": "preview-only"
+    },
+    {
+      "id": "rock-facade",
+      "name": "Fachada tallada en roca",
+      "category": "Ruinas",
+      "source": "Pana/engine/models/props/ruins.js",
+      "factory": "rockFacade",
+      "usedBy": [
+        "Pana Studio"
+      ],
+      "previewOptions": {
+        "seed": 87
+      },
+      "status": "preview-only"
+    },
+    {
+      "id": "expedition-campfire",
+      "name": "Fogata de expedición",
+      "category": "Campamento",
+      "source": "Pana/engine/models/props/expedition-camp.js",
+      "factory": "expeditionCampfire",
+      "usedBy": [
+        "Pana Studio"
+      ],
+      "previewOptions": {
+        "seed": 3
+      },
+      "status": "preview-only"
+    },
+    {
+      "id": "expedition-tent",
+      "name": "Carpa de expedición",
+      "category": "Campamento",
+      "source": "Pana/engine/models/props/expedition-camp.js",
+      "factory": "expeditionTent",
+      "usedBy": [
+        "Pana Studio"
+      ],
+      "previewOptions": {
+        "color": "mustard"
+      },
+      "status": "preview-only"
+    },
+    {
+      "id": "expedition-tent-olive",
+      "name": "Carpa de expedición verde oliva",
+      "category": "Campamento",
+      "source": "Pana/engine/models/props/expedition-camp.js",
+      "factory": "expeditionTent",
+      "usedBy": [
+        "Pana Studio"
+      ],
+      "previewOptions": {
+        "color": "olive",
+        "seed": 5
+      },
+      "status": "preview-only"
+    },
+    {
+      "id": "glass-lantern",
+      "name": "Farol de vidrio",
+      "category": "Campamento",
+      "source": "Pana/engine/models/props/expedition-camp.js",
+      "factory": "glassLantern",
+      "usedBy": [
+        "Pana Studio"
+      ],
+      "previewOptions": null,
+      "status": "preview-only"
+    },
+    {
+      "id": "supply-crate",
+      "name": "Caja de suministros",
+      "category": "Campamento",
+      "source": "Pana/engine/models/props/expedition-camp.js",
+      "factory": "supplyCrate",
+      "usedBy": [
+        "Pana Studio"
+      ],
+      "previewOptions": {
+        "size": 0.8
+      },
+      "status": "preview-only"
+    },
+    {
+      "id": "hooped-barrel",
+      "name": "Barril con aros",
+      "category": "Campamento",
+      "source": "Pana/engine/models/props/expedition-camp.js",
+      "factory": "hoopedBarrel",
+      "usedBy": [
+        "Pana Studio"
+      ],
+      "previewOptions": null,
+      "status": "preview-only"
+    },
+    {
+      "id": "grain-sack",
+      "name": "Saco de víveres",
+      "category": "Campamento",
+      "source": "Pana/engine/models/props/expedition-camp.js",
+      "factory": "grainSack",
+      "usedBy": [
+        "Pana Studio"
+      ],
+      "previewOptions": null,
+      "status": "preview-only"
+    },
+    {
+      "id": "expedition-backpack",
+      "name": "Morral de expedición",
+      "category": "Campamento",
+      "source": "Pana/engine/models/props/expedition-camp.js",
+      "factory": "expeditionBackpack",
+      "usedBy": [
+        "Pana Studio"
+      ],
+      "previewOptions": null,
+      "status": "preview-only"
+    },
+    {
+      "id": "rolled-blanket",
+      "name": "Cobija enrollada",
+      "category": "Campamento",
+      "source": "Pana/engine/models/props/expedition-camp.js",
+      "factory": "rolledBlanket",
+      "usedBy": [
+        "Pana Studio"
+      ],
+      "previewOptions": null,
+      "status": "preview-only"
+    },
+    {
+      "id": "camp-bucket",
+      "name": "Tobo de campamento",
+      "category": "Campamento",
+      "source": "Pana/engine/models/props/expedition-camp.js",
+      "factory": "campBucket",
+      "usedBy": [
+        "Pana Studio"
+      ],
+      "previewOptions": null,
+      "status": "preview-only"
+    },
+    {
+      "id": "camp-bench",
+      "name": "Banco de campamento",
+      "category": "Campamento",
+      "source": "Pana/engine/models/props/expedition-camp.js",
+      "factory": "campBench",
+      "usedBy": [
+        "Pana Studio"
+      ],
+      "previewOptions": null,
+      "status": "preview-only"
+    },
+    {
+      "id": "camp-tools",
+      "name": "Herramientas en el tocón",
+      "category": "Campamento",
+      "source": "Pana/engine/models/props/expedition-camp.js",
+      "factory": "campTools",
+      "usedBy": [
+        "Pana Studio"
+      ],
+      "previewOptions": null,
+      "status": "preview-only"
+    },
+    {
+      "id": "camp-cookware",
+      "name": "Ollas y cesta",
+      "category": "Campamento",
+      "source": "Pana/engine/models/props/expedition-camp.js",
+      "factory": "campCookware",
+      "usedBy": [
+        "Pana Studio"
+      ],
+      "previewOptions": null,
+      "status": "preview-only"
+    },
+    {
+      "id": "supply-pile",
+      "name": "Pila de suministros",
+      "category": "Campamento",
+      "source": "Pana/engine/models/props/expedition-camp.js",
+      "factory": "supplyPile",
+      "usedBy": [
+        "Pana Studio"
+      ],
+      "previewOptions": {
+        "seed": 5
+      },
+      "status": "preview-only"
+    },
+    {
+      "id": "investigation-table",
+      "name": "Mesa de investigación",
+      "category": "Campamento",
+      "source": "Pana/engine/models/props/expedition-camp.js",
+      "factory": "investigationTable",
+      "usedBy": [
+        "Pana Studio"
+      ],
+      "previewOptions": null,
+      "status": "preview-only"
+    },
+    {
+      "id": "comm-shelter",
+      "name": "Refugio de radio",
+      "category": "Campamento",
+      "source": "Pana/engine/models/props/expedition-camp.js",
+      "factory": "commShelter",
+      "usedBy": [
+        "Pana Studio"
+      ],
+      "previewOptions": null,
+      "status": "preview-only"
+    },
+    {
+      "id": "storage-shelter",
+      "name": "Depósito de suministros",
+      "category": "Campamento",
+      "source": "Pana/engine/models/props/expedition-camp.js",
+      "factory": "storageShelter",
+      "usedBy": [
+        "Pana Studio"
+      ],
+      "previewOptions": {
+        "seed": 4
+      },
+      "status": "preview-only"
+    },
+    {
+      "id": "expedition-jeep",
+      "name": "Jeep de expedición",
+      "category": "Campamento",
+      "source": "Pana/engine/models/props/expedition-camp.js",
+      "factory": "expeditionJeep",
+      "usedBy": [
+        "Pana Studio"
+      ],
+      "previewOptions": null,
+      "status": "preview-only"
+    },
+    {
+      "id": "expedition-watchtower",
+      "name": "Mirador de expedición",
+      "category": "Campamento",
+      "source": "Pana/engine/models/props/expedition-camp.js",
+      "factory": "expeditionWatchtower",
+      "usedBy": [
+        "Pana Studio"
+      ],
+      "previewOptions": null,
+      "status": "preview-only"
+    },
+    {
+      "id": "plank-footbridge",
+      "name": "Puente de tablas",
+      "category": "Campamento",
+      "source": "Pana/engine/models/props/expedition-camp.js",
+      "factory": "plankFootbridge",
+      "usedBy": [
+        "Pana Studio"
+      ],
+      "previewOptions": {
+        "length": 10
+      },
+      "status": "preview-only"
+    },
+    {
+      "id": "log-gateway",
+      "name": "Portal de troncos",
+      "category": "Campamento",
+      "source": "Pana/engine/models/props/expedition-camp.js",
+      "factory": "logGateway",
+      "usedBy": [
+        "Pana Studio"
+      ],
+      "previewOptions": {
+        "text": "CAMPAMENTO PERDIDO"
+      },
+      "status": "preview-only"
+    },
+    {
+      "id": "ground-fog",
+      "name": "Neblina rastrera",
+      "category": "Atmósfera",
+      "source": "Pana/engine/models/effects/atmosphere.js",
+      "factory": "groundFog",
+      "usedBy": [
+        "Pana Studio"
+      ],
+      "previewOptions": {
+        "width": 30,
+        "depth": 30
+      },
+      "status": "preview-only"
+    },
+    {
+      "id": "light-shaft",
+      "name": "Haz de luz con polvo",
+      "category": "Atmósfera",
+      "source": "Pana/engine/models/effects/atmosphere.js",
+      "factory": "lightShaft",
+      "usedBy": [
+        "Pana Studio"
+      ],
+      "previewOptions": {
+        "radius": 3,
+        "height": 14
+      },
+      "status": "preview-only"
+    },
+    {
+      "id": "god-rays",
+      "name": "Rayos entre el follaje",
+      "category": "Atmósfera",
+      "source": "Pana/engine/models/effects/atmosphere.js",
+      "factory": "godRays",
+      "usedBy": [
+        "Pana Studio"
+      ],
+      "previewOptions": {
+        "count": 7,
+        "spread": 16,
+        "length": 20
+      },
+      "status": "preview-only"
+    },
+    {
+      "id": "moon-disc",
+      "name": "Luna con halo",
+      "category": "Atmósfera",
+      "source": "Pana/engine/models/effects/atmosphere.js",
+      "factory": "moonDisc",
+      "usedBy": [
+        "Pana Studio"
+      ],
+      "previewOptions": {
+        "radius": 6
+      },
+      "status": "preview-only"
+    },
+    {
+      "id": "fireflies",
+      "name": "Luciérnagas",
+      "category": "Atmósfera",
+      "source": "Pana/engine/models/effects/drifting-particles.js",
+      "factory": "fireflies",
+      "usedBy": [
+        "Pana Studio"
+      ],
+      "previewOptions": {
+        "count": 90,
+        "radius": 4
+      },
+      "status": "preview-only"
+    },
+    {
+      "id": "pollen-motes",
+      "name": "Polen flotante",
+      "category": "Atmósfera",
+      "source": "Pana/engine/models/effects/drifting-particles.js",
+      "factory": "floatingMotes",
+      "usedBy": [
+        "Pana Studio"
+      ],
+      "previewOptions": {
+        "count": 260,
+        "width": 10,
+        "height": 5,
+        "depth": 10,
+        "kind": "pollen"
+      },
+      "status": "preview-only"
+    },
+    {
+      "id": "mine-dust",
+      "name": "Polvo de mina",
+      "category": "Atmósfera",
+      "source": "Pana/engine/models/effects/drifting-particles.js",
+      "factory": "floatingMotes",
+      "usedBy": [
+        "Pana Studio"
+      ],
+      "previewOptions": {
+        "count": 220,
+        "width": 10,
+        "height": 5,
+        "depth": 10,
+        "kind": "dust"
+      },
+      "status": "preview-only"
+    },
+    {
+      "id": "gold-sparkles",
+      "name": "Destellos dorados",
+      "category": "Atmósfera",
+      "source": "Pana/engine/models/effects/drifting-particles.js",
+      "factory": "floatingMotes",
+      "usedBy": [
+        "Pana Studio"
+      ],
+      "previewOptions": {
+        "count": 60,
+        "width": 4,
+        "height": 2,
+        "depth": 4,
+        "kind": "sparkle"
+      },
+      "status": "preview-only"
+    },
+    {
+      "id": "falling-leaves",
+      "name": "Hojas que caen",
+      "category": "Atmósfera",
+      "source": "Pana/engine/models/effects/drifting-particles.js",
+      "factory": "fallingLeaves",
+      "usedBy": [
+        "Pana Studio"
+      ],
+      "previewOptions": {
+        "count": 120,
+        "width": 10,
+        "height": 8,
+        "depth": 10
+      },
+      "status": "preview-only"
+    },
+    {
+      "id": "ember-plume",
+      "name": "Chispas de fogata",
+      "category": "Atmósfera",
+      "source": "Pana/engine/models/effects/drifting-particles.js",
+      "factory": "emberPlume",
+      "usedBy": [
+        "Pana Studio"
+      ],
+      "previewOptions": {
+        "count": 90
+      },
+      "status": "preview-only"
+    },
+    {
       "id": "pana",
       "name": "Pana original",
       "category": "Personajes",
@@ -3456,7 +5160,7 @@
       "factory": "createArenaEnvironment",
       "usedBy": [
         "Escondidas",
-        "¡Pintura!",
+        "Pepazo",
         "Billar",
         "Caída"
       ],
@@ -3470,7 +5174,7 @@
       "factory": "createArenaEnvironment",
       "usedBy": [
         "Escondidas",
-        "¡Pintura!",
+        "Pepazo",
         "Billar",
         "Caída"
       ],
@@ -3484,7 +5188,7 @@
       "factory": "createArenaEnvironment",
       "usedBy": [
         "Escondidas",
-        "¡Pintura!",
+        "Pepazo",
         "Billar",
         "Caída"
       ],

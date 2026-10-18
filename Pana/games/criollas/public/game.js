@@ -1,3 +1,4 @@
+import { prepareScene } from '/engine/game-load.js';
 import { loadName, loadAvatar } from '/engine/avatar.js';
 import { inviteUrl, newRoomCode, roomFromUrl } from '/engine/invite.js';
 import { createGameMenu, toggleMute } from '/engine/ui.js';
@@ -132,3 +133,5 @@ if (roomFromUrl()) connecting = true;
 render(room.state); if (roomFromUrl()) room.connect(); requestAnimationFrame(frame);
 addEventListener('pagehide', () => { stopped = true; clearInterval(timer); clearTimeout(toastTimer); room.dispose(); world.dispose(); }, { once: true });
 if (params.has('debug')) window.criollasDebug = { room, world, menu, get shot() { return shot; } };
+
+await prepareScene(world);

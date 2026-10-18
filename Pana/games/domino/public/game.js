@@ -1,3 +1,4 @@
+import { prepareScene } from '/engine/game-load.js';
 import { createTableSeating } from '/engine/table-seating.js';
 import { createMapPicker } from '/engine/map-picker.js';
 import { loadName, loadAvatar } from '/engine/avatar.js';
@@ -248,12 +249,12 @@ function frame(now) { if (stopped) return; const dt = Math.min(.05, (now - frame
 requestAnimationFrame(frame);
 addEventListener('pagehide', () => { stopped = true; clearInterval(timer); clearTimeout(toastTimer); room.dispose(); world?.dispose(); }, { once: true });
 render(room.state); room.connect();
-import('./scene.js').then(module => module.createDominoScene($('world'), { onTile: selectTile, onEnd: playSelected, onLoading: message => { $('loading-copy').textContent = message; } })).then(scene => {
+export const sceneReady = import('./scene.js').then(module => module.createDominoScene($('world'), { onTile: selectTile, onEnd: playSelected, onLoading: message => { $('loading-copy').textContent = message; } })).then(async scene => {
   if (stopped) { scene.dispose(); return; }
-  world = scene; worldReady = true; world.update(room.state, room.seat); if (view !== 'plaza') world.setView(view); render(room.state); $('loading').hidden = true;
+  world = scene; await prepareScene(world); worldReady = true; world.update(room.state, room.seat); if (view !== 'plaza') world.setView(view); render(room.state); $('loading').hidden = true;
 }).catch(error => {
   console.error(error); $('loading-copy').textContent = 'No pudimos cargar la plaza. Comprueba tu conexión y WebGL.';
-  const reload = document.createElement('button'); reload.className = 'pk-btn pk-btn--primary'; reload.textContent = 'Volver a intentar'; reload.onclick = () => location.reload(); $('loading').append(reload);
+  const reload = document.createElement('button'); reload.className = 'pk-btn pk-btn--primary'; reload.textContent = 'Volver a intentar'; reload.onclick = () => location.reload(); $('loading').append(reload); throw error;
 });
 // Opt-in diagnostics for repeatable browser regression tests.
 if (params.has('debug')) window.dominoDebug = { room, legalMoves, chooseMove, menu, render, get world() { return world; } };

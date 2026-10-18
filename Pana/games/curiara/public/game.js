@@ -1,3 +1,5 @@
+import { prepareScene } from '/engine/game-load.js';
+import { cachedPortrait } from '/engine/portrait-cache.js';
 import * as THREE from 'three';
 import { loadAvatar, loadName } from '/engine/avatar.js';
 import { sound, pulseSpeedLines, setSpeedLines } from '/engine/fx.js';
@@ -110,12 +112,18 @@ function drawSeats() {
   if (grid.dataset.key === key) return; grid.dataset.key = key;
   grid.replaceChildren(...Array.from({ length: FORMATS.parejas.boats }, (_, boat) => {
     const row = document.createElement('div'); row.className = 'seat-boat'; row.style.setProperty('--boat', COLORS[boat]);
-    const dot = document.createElement('i'); row.append(dot);
+    const heading = document.createElement('b'); heading.className = 'seat-heading'; heading.textContent = `Curiara ${boat + 1}`; row.append(heading);
     for (const pos of [0, 1]) {
       const who = state.players.find(p => p.seat && p.seat.boat === boat && p.seat.pos === pos), mine = who && who.id === room.id;
       const button = document.createElement('button'); button.type = 'button';
       button.setAttribute('aria-pressed', String(!!mine)); button.disabled = !!who && !mine;
       button.textContent = who ? who.name : pos ? 'Popa' : 'Proa';
+      if (who) {
+        const img = document.createElement('img'); img.alt = ''; const cached = cachedPortrait(who.avatar || {});
+        if (cached) img.src = cached;
+        else import('/engine/portrait.js').then(m => m.portrait(who.avatar || {})).then(src => { img.src = src; }).catch(() => {});
+        button.prepend(img);
+      }
       const small = document.createElement('small'); small.textContent = pos ? 'timón' : 'remo'; button.append(small);
       button.setAttribute('aria-label', `Curiara ${boat + 1}, ${pos ? 'popa' : 'proa'}${who ? `, ${who.name}` : ''}`);
       button.onclick = () => room.chooseSeat(mine ? null : { boat, pos });
@@ -123,6 +131,12 @@ function drawSeats() {
     }
     return row;
   }));
+  const unseated = state.players.filter(p => !p.seat);
+  if (unseated.length) {
+    const waiting = document.createElement('p'); waiting.className = 'seat-unassigned';
+    waiting.textContent = `Por elegir puesto: ${unseated.map(p => p.name).join(', ')}. Toca una proa o popa libre.`;
+    grid.prepend(waiting);
+  }
 }
 $('start').onclick = $('again').onclick = () => { unlock(); room.start($('bots').checked); };
 $('practice').onclick = () => goLocal();
@@ -333,3 +347,5 @@ if (params.has('debug')) window.curiara = { room, get state() { return state; },
   place(id, s, offset = 0) { const b = room.game.boatOf(id), q = RIVER.at(s, offset); Object.assign(b, { x: q.x, z: q.z, h: q.h, s, progress: s, checkpoint: RIVER.gates.filter(g => g <= s).length, v: 0, lat: 0, w: 0, y: RIVER.levelAt(s, offset), vy: 0, air: 0, tip: 0, capsized: 0, grace: 0, channel: 'main' }); room.publish(); } };
 window.addEventListener('pagehide', () => { disposed = true; clearInterval(simulation); music.stop(); room.dispose(); for (const c of canoes.values()) c.dispose(); world.world.dispose(); world.sky.dispose(); unbind?.(); renderer.dispose(); }, { once: true });
 window.addEventListener('pageshow', event => { if (event.persisted) location.reload(); });
+
+await prepareScene(world);

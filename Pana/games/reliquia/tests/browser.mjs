@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { createRequire } from 'node:module';
-import { mkdir } from 'node:fs/promises';
+import { mkdir, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 const require = createRequire(import.meta.url), { chromium } = require(process.argv[2] || 'playwright');
 const base = process.env.PANA_QA_URL || 'http://localhost:8461';
@@ -10,10 +10,12 @@ const errors = [], code = `reliquia-qa-${Date.now().toString(36)}`;
 const check = text => console.log(`ok  ${text}`);
 async function page(name, mobile = false) {
   const ctx = await browser.newContext(mobile ? { viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true } : { viewport: { width: 1000, height: 760 } });
-  const p = await ctx.newPage(); p.setDefaultTimeout(25000); p.on('pageerror', e => { errors.push(`${name}: ${e.message}`); console.log('ERROR', name, e.message); });
+  // Keep multiple real software-rendered clients responsive during held input.
+  await ctx.addInitScript(() => localStorage.setItem('pana:settings', JSON.stringify({ quality: 'baja', sound: false })));
+  const p = await ctx.newPage(); p.setDefaultTimeout(90000); p.on('pageerror', e => { errors.push(`${name}: ${e.message}`); console.log('ERROR', name, e.message); });
   p.on('console', m => { if (m.type() === 'error' && !m.text().includes('favicon')) { errors.push(`${name}: ${m.text()}`); console.log('ERROR', name, m.text()); } });
   await p.goto(`${base}/g/reliquia/?room=${code}&name=${name}&debug`);
-  await p.waitForFunction(() => window.reliquia?.room.connected, null, { timeout: 60000 }); return p;
+  await p.waitForFunction(() => window.reliquia?.room.connected && window.PANA_LOBBY_LOADING === false, null, { timeout: 120000 }); return p;
 }
 async function place(host, id, x, z) { await host.evaluate(({ id, x, z }) => reliquia.place(id, x, z), { id, x, z }); }
 async function ready(p, x, z) { await p.waitForFunction(({ x, z }) => { const p = reliquia.state.players.find(p => p.id === reliquia.room.id); return Math.hypot(p.x - x, p.z - z) < 0.3; }, { x, z }); }
@@ -87,4 +89,11 @@ try {
   console.log('render', await b.evaluate(() => ({ calls: reliquia.renderer.info.render.calls, triangles: reliquia.renderer.info.render.triangles })));
   await b.goto(base + '/'); await b.getByRole('heading', { name: 'Reliquia', exact: true }).waitFor(); check('hub discovers Reliquia');
   assert.deepEqual(errors, []); check('no uncaught browser errors');
+} catch (error) {
+  const clients = [];
+  for (const context of browser.contexts()) for (const p of context.pages()) {
+    clients.push(await p.evaluate(() => window.reliquia ? { state: reliquia.state, id: reliquia.room.id, input: reliquia.input(), received: [...reliquia.room.inputs], focus: document.activeElement?.tagName, menu: reliquia.menu.isOpen, lobby: document.getElementById('pana-lobby-shell')?.hidden } : location.href).catch(() => null));
+  }
+  await writeFile(path.join(output, 'failure.json'), JSON.stringify(clients, null, 2));
+  throw error;
 } finally { await browser.close(); }

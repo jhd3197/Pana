@@ -1,8 +1,8 @@
 # Pana — current model inventory
 
-Audited 2026-10-17. Generated from the real Studio registry plus a reviewed source ledger.
+Audited 2026-10-18. Generated from the real Studio registry plus a reviewed source ledger.
 
-**271 Studio resources**, including **18 Fauna entries**, **27 vegetation entries**, **14 vehicles** and **27 maps**. **13 resources are preview-only.** The separate ledger identifies **31 active uncataloged model families**, **46 scene/effect families** and **9 dormant factories/hooks**. These numbers must not be added into a “unique 3D models” total: maps contain models, variants share geometry, and some ledger rows group multiple related props.
+**391 Studio resources**, including **18 Fauna entries**, **42 vegetation entries**, **14 vehicles** and **27 maps**. **133 resources are preview-only.** The separate ledger identifies **31 active uncataloged model families**, **46 scene/effect families** and **9 dormant factories/hooks**. These numbers must not be added into a “unique 3D models” total: maps contain models, variants share geometry, and some ledger rows group multiple related props.
 
 Scope: current production geometry in `engine/` and the four games, including Bululú minigames, gameplay props, embedded wardrobe options and map scenery. Individual meshes, geometry helpers, UI/SVG art, generated screenshots, dependency internals and historical deleted revisions are excluded. Catalog consumer labels identify games, not instance counts. Active uncataloged entries were traced to their placement sources; presence in source does not guarantee visibility from every camera. Legacy rows are retained explicitly instead of being presented as new content.
 
@@ -51,6 +51,21 @@ These already exist. Their absence from a map is a placement gap, not a missing-
 | Mata de hojas anchas | garden-rosette | [garden-rosette.js](../../Pana/engine/models/vegetation/garden-rosette.js) |
 | Enredadera colgante | trailing-vine | [trailing-vine.js](../../Pana/engine/models/vegetation/trailing-vine.js) |
 | Trinitaria | trinitaria | [trinitaria.js](../../Pana/engine/models/vegetation/trinitaria.js) |
+| Árbol seco | dead-tree | [dead-tree.js](../../Pana/engine/models/vegetation/dead-tree.js) |
+| Árbol nudoso con follaje | dead-tree-leafy | [dead-tree.js](../../Pana/engine/models/vegetation/dead-tree.js) |
+| Árbol de selva extendido | broadleaf-tree-spreading | [broadleaf-tree.js](../../Pana/engine/models/vegetation/broadleaf-tree.js) |
+| Árbol de selva en pisos | broadleaf-tree-tiered | [broadleaf-tree.js](../../Pana/engine/models/vegetation/broadleaf-tree.js) |
+| Árbol de copa redonda | broadleaf-tree-round | [broadleaf-tree.js](../../Pana/engine/models/vegetation/broadleaf-tree.js) |
+| Árbol de selva alto | broadleaf-tree-tall | [broadleaf-tree.js](../../Pana/engine/models/vegetation/broadleaf-tree.js) |
+| Ceiba portal | ceiba-gateway | [ceiba-gateway.js](../../Pana/engine/models/vegetation/ceiba-gateway.js) |
+| Árbol emergente | emergent-tree | [emergent-tree.js](../../Pana/engine/models/vegetation/emergent-tree.js) |
+| Matapalo sobre ruinas | strangler-fig | [strangler-fig.js](../../Pana/engine/models/vegetation/strangler-fig.js) |
+| Oreja de elefante | elephant-ear | [elephant-ear.js](../../Pana/engine/models/vegetation/elephant-ear.js) |
+| Bromelia | bromeliad | [bromeliad.js](../../Pana/engine/models/vegetation/bromeliad.js) |
+| Flor gigante | rafflesia | [rafflesia.js](../../Pana/engine/models/vegetation/rafflesia.js) |
+| Hongos silvestres | wild-mushrooms | [wild-mushrooms.js](../../Pana/engine/models/vegetation/wild-mushrooms.js) |
+| Roca con musgo | moss-rock | [moss-rock.js](../../Pana/engine/models/vegetation/moss-rock.js) |
+| Hojarasca | forest-litter | [forest-litter.js](../../Pana/engine/models/vegetation/forest-litter.js) |
 | Defensa vial de montaña | mountain-guardrail | [mountain.js](../../Pana/engine/models/props/mountain.js) |
 | Puente colgante de montaña | mountain-suspension-bridge | [mountain.js](../../Pana/engine/models/props/mountain.js) |
 | Estatua gigante de capibara | capybara-statue | [monuments.js](../../Pana/engine/models/props/monuments.js) |
@@ -59,6 +74,111 @@ These already exist. Their absence from a map is a placement gap, not a missing-
 | Asta con bandera Pana | pana-flagpole | [monuments.js](../../Pana/engine/models/props/monuments.js) |
 | Fuente de los capibaras | capybara-fountain | [monuments.js](../../Pana/engine/models/props/monuments.js) |
 | Puente de bambú | bamboo-bridge | [jungle.js](../../Pana/engine/models/props/jungle.js) |
+| Minero | gold-miner | [mine-miner.js](../../Pana/engine/models/props/mine-miner.js) |
+| Vagoneta minera | mine-cart | [mine.js](../../Pana/engine/models/props/mine.js) |
+| Vía minera con caballetes | mine-track | [mine.js](../../Pana/engine/models/props/mine.js) |
+| Veta de oro | gold-vein | [mine.js](../../Pana/engine/models/props/mine.js) |
+| Montón de mineral | ore-pile | [mine.js](../../Pana/engine/models/props/mine.js) |
+| Caja minera | mine-crate | [mine.js](../../Pana/engine/models/props/mine.js) |
+| Caja de dinamita | tnt-crate | [mine.js](../../Pana/engine/models/props/mine.js) |
+| Barril minero | mine-barrel | [mine.js](../../Pana/engine/models/props/mine.js) |
+| Farol de mina | mine-lantern | [mine.js](../../Pana/engine/models/props/mine.js) |
+| Poste con farol | mine-lantern-post | [mine.js](../../Pana/engine/models/props/mine.js) |
+| Guirnalda de bombillos | bulb-wire | [mine.js](../../Pana/engine/models/props/mine.js) |
+| Escalera de mano | mine-ladder | [mine.js](../../Pana/engine/models/props/mine.js) |
+| Escalera de tablas | mine-stairs | [mine.js](../../Pana/engine/models/props/mine.js) |
+| Pico | mine-pickaxe | [mine.js](../../Pana/engine/models/props/mine.js) |
+| Pala | mine-shovel | [mine.js](../../Pana/engine/models/props/mine.js) |
+| Carretilla minera | mine-wheelbarrow | [mine.js](../../Pana/engine/models/props/mine.js) |
+| Boca de mina | mine-portal | [mine.js](../../Pana/engine/models/props/mine.js) |
+| Marco de entibado | mine-support | [mine.js](../../Pana/engine/models/props/mine.js) |
+| Andamio de veta | mine-scaffold | [mine.js](../../Pana/engine/models/props/mine.js) |
+| Caseta de mineros | miner-shack | [mine.js](../../Pana/engine/models/props/mine.js) |
+| Mesa de pesaje de oro | assay-table | [mine.js](../../Pana/engine/models/props/mine.js) |
+| Rueda hidráulica | water-wheel | [mine.js](../../Pana/engine/models/props/mine.js) |
+| Molino de pisones | stamp-mill | [mine.js](../../Pana/engine/models/props/mine.js) |
+| Torre de ascensor minero | lift-tower | [mine.js](../../Pana/engine/models/props/mine.js) |
+| Lápida redondeada | grave-headstone | [cemetery.js](../../Pana/engine/models/props/cemetery.js) |
+| Cruz celta | grave-celtic | [cemetery.js](../../Pana/engine/models/props/cemetery.js) |
+| Obelisco funerario | grave-obelisk | [cemetery.js](../../Pana/engine/models/props/cemetery.js) |
+| Losa sepulcral | grave-ledger | [cemetery.js](../../Pana/engine/models/props/cemetery.js) |
+| Cruz de madera | grave-wooden | [cemetery.js](../../Pana/engine/models/props/cemetery.js) |
+| Calabaza tallada | jack-o-lantern | [cemetery.js](../../Pana/engine/models/props/cemetery.js) |
+| Calavera | skull | [cemetery.js](../../Pana/engine/models/props/cemetery.js) |
+| Velas de tumba | grave-candles | [cemetery.js](../../Pana/engine/models/props/cemetery.js) |
+| Ataúd cerrado | coffin | [cemetery.js](../../Pana/engine/models/props/cemetery.js) |
+| Ataúd abierto | coffin-open | [cemetery.js](../../Pana/engine/models/props/cemetery.js) |
+| Fosa abierta | open-grave | [cemetery.js](../../Pana/engine/models/props/cemetery.js) |
+| Reja de hierro | iron-fence | [cemetery.js](../../Pana/engine/models/props/cemetery.js) |
+| Pilar de piedra con urna | stone-pillar-urn | [cemetery.js](../../Pana/engine/models/props/cemetery.js) |
+| Pilar de piedra con calavera | stone-pillar-skull | [cemetery.js](../../Pana/engine/models/props/cemetery.js) |
+| Pilar de piedra con farol | stone-pillar-lantern | [cemetery.js](../../Pana/engine/models/props/cemetery.js) |
+| Farol de hierro | cemetery-lantern | [cemetery.js](../../Pana/engine/models/props/cemetery.js) |
+| Poste de farol | cemetery-lamp-post | [cemetery.js](../../Pana/engine/models/props/cemetery.js) |
+| Mausoleo con puerta cerrada | mausoleum-dark | [cemetery.js](../../Pana/engine/models/props/cemetery.js) |
+| Mausoleo con reja | mausoleum-barred | [cemetery.js](../../Pana/engine/models/props/cemetery.js) |
+| Mausoleo con brillo verde | mausoleum-glow | [cemetery.js](../../Pana/engine/models/props/cemetery.js) |
+| Portón del cementerio | cemetery-gate | [cemetery.js](../../Pana/engine/models/props/cemetery.js) |
+| Capilla en ruinas | cemetery-chapel | [cemetery-chapel.js](../../Pana/engine/models/props/cemetery-chapel.js) |
+| Mansión embrujada | crooked-mansion | [crooked-mansion.js](../../Pana/engine/models/props/crooked-mansion.js) |
+| Espantapájaros | scarecrow | [cemetery.js](../../Pana/engine/models/props/cemetery.js) |
+| Pozo de piedra | graveyard-well | [cemetery.js](../../Pana/engine/models/props/cemetery.js) |
+| Pasarela del pantano | swamp-boardwalk | [cemetery.js](../../Pana/engine/models/props/cemetery.js) |
+| Choza sobre pilotes | stilt-shack | [cemetery.js](../../Pana/engine/models/props/cemetery.js) |
+| Bote de remos | rowboat | [cemetery.js](../../Pana/engine/models/props/cemetery.js) |
+| Bote medio hundido | rowboat-sunk | [cemetery.js](../../Pana/engine/models/props/cemetery.js) |
+| Fuego fatuo | wisp | [cemetery.js](../../Pana/engine/models/props/cemetery.js) |
+| Torre prasat | prasat | [ruins.js](../../Pana/engine/models/props/ruins.js) |
+| Torre prasat derrumbada | prasat-broken | [ruins.js](../../Pana/engine/models/props/ruins.js) |
+| Rostro de Bayón | bayon-face | [ruins.js](../../Pana/engine/models/props/ruins.js) |
+| Cabeza olmeca | olmec-head | [ruins.js](../../Pana/engine/models/props/ruins.js) |
+| Columna de tambores | ruin-column | [ruins.js](../../Pana/engine/models/props/ruins.js) |
+| Columna rota | ruin-column-broken | [ruins.js](../../Pana/engine/models/props/ruins.js) |
+| Columna caída | fallen-column | [ruins.js](../../Pana/engine/models/props/ruins.js) |
+| Escombros del templo | ruin-rubble | [ruins.js](../../Pana/engine/models/props/ruins.js) |
+| Escalinata en ruinas | ruin-stairs | [ruins.js](../../Pana/engine/models/props/ruins.js) |
+| Estela de glifos | stela | [ruins.js](../../Pana/engine/models/props/ruins.js) |
+| Sello solar | sun-seal | [ruins.js](../../Pana/engine/models/props/ruins.js) |
+| Pebetero de piedra | ruin-brazier | [ruins.js](../../Pana/engine/models/props/ruins.js) |
+| Puente de tablas | plank-bridge | [ruins.js](../../Pana/engine/models/props/ruins.js) |
+| Puente de tablas roto | plank-bridge-broken | [ruins.js](../../Pana/engine/models/props/ruins.js) |
+| Pilar del abismo | rock-tower | [ruins.js](../../Pana/engine/models/props/ruins.js) |
+| Enlosado del templo | ruin-paving | [ruins.js](../../Pana/engine/models/props/ruins.js) |
+| Estalagmitas | stalagmites | [ruins.js](../../Pana/engine/models/props/ruins.js) |
+| Portal de la selva | ruin-gate | [ruins.js](../../Pana/engine/models/props/ruins.js) |
+| Piedra tallada antigua | carved-stele | [ruins.js](../../Pana/engine/models/props/ruins.js) |
+| Fachada tallada en roca | rock-facade | [ruins.js](../../Pana/engine/models/props/ruins.js) |
+| Fogata de expedición | expedition-campfire | [expedition-camp.js](../../Pana/engine/models/props/expedition-camp.js) |
+| Carpa de expedición | expedition-tent | [expedition-camp.js](../../Pana/engine/models/props/expedition-camp.js) |
+| Carpa de expedición verde oliva | expedition-tent-olive | [expedition-camp.js](../../Pana/engine/models/props/expedition-camp.js) |
+| Farol de vidrio | glass-lantern | [expedition-camp.js](../../Pana/engine/models/props/expedition-camp.js) |
+| Caja de suministros | supply-crate | [expedition-camp.js](../../Pana/engine/models/props/expedition-camp.js) |
+| Barril con aros | hooped-barrel | [expedition-camp.js](../../Pana/engine/models/props/expedition-camp.js) |
+| Saco de víveres | grain-sack | [expedition-camp.js](../../Pana/engine/models/props/expedition-camp.js) |
+| Morral de expedición | expedition-backpack | [expedition-camp.js](../../Pana/engine/models/props/expedition-camp.js) |
+| Cobija enrollada | rolled-blanket | [expedition-camp.js](../../Pana/engine/models/props/expedition-camp.js) |
+| Tobo de campamento | camp-bucket | [expedition-camp.js](../../Pana/engine/models/props/expedition-camp.js) |
+| Banco de campamento | camp-bench | [expedition-camp.js](../../Pana/engine/models/props/expedition-camp.js) |
+| Herramientas en el tocón | camp-tools | [expedition-camp.js](../../Pana/engine/models/props/expedition-camp.js) |
+| Ollas y cesta | camp-cookware | [expedition-camp.js](../../Pana/engine/models/props/expedition-camp.js) |
+| Pila de suministros | supply-pile | [expedition-camp.js](../../Pana/engine/models/props/expedition-camp.js) |
+| Mesa de investigación | investigation-table | [expedition-camp.js](../../Pana/engine/models/props/expedition-camp.js) |
+| Refugio de radio | comm-shelter | [expedition-camp.js](../../Pana/engine/models/props/expedition-camp.js) |
+| Depósito de suministros | storage-shelter | [expedition-camp.js](../../Pana/engine/models/props/expedition-camp.js) |
+| Jeep de expedición | expedition-jeep | [expedition-camp.js](../../Pana/engine/models/props/expedition-camp.js) |
+| Mirador de expedición | expedition-watchtower | [expedition-camp.js](../../Pana/engine/models/props/expedition-camp.js) |
+| Puente de tablas | plank-footbridge | [expedition-camp.js](../../Pana/engine/models/props/expedition-camp.js) |
+| Portal de troncos | log-gateway | [expedition-camp.js](../../Pana/engine/models/props/expedition-camp.js) |
+| Neblina rastrera | ground-fog | [atmosphere.js](../../Pana/engine/models/effects/atmosphere.js) |
+| Haz de luz con polvo | light-shaft | [atmosphere.js](../../Pana/engine/models/effects/atmosphere.js) |
+| Rayos entre el follaje | god-rays | [atmosphere.js](../../Pana/engine/models/effects/atmosphere.js) |
+| Luna con halo | moon-disc | [atmosphere.js](../../Pana/engine/models/effects/atmosphere.js) |
+| Luciérnagas | fireflies | [drifting-particles.js](../../Pana/engine/models/effects/drifting-particles.js) |
+| Polen flotante | pollen-motes | [drifting-particles.js](../../Pana/engine/models/effects/drifting-particles.js) |
+| Polvo de mina | mine-dust | [drifting-particles.js](../../Pana/engine/models/effects/drifting-particles.js) |
+| Destellos dorados | gold-sparkles | [drifting-particles.js](../../Pana/engine/models/effects/drifting-particles.js) |
+| Hojas que caen | falling-leaves | [drifting-particles.js](../../Pana/engine/models/effects/drifting-particles.js) |
+| Chispas de fogata | ember-plume | [drifting-particles.js](../../Pana/engine/models/effects/drifting-particles.js) |
 | Cincuenta casas del pueblo | colonial-collection | [colonial-house-collection.js](../../Pana/engine/colonial-house-collection.js) |
 | Calle de las flores | colonial-street | [colonial-street.js](../../Pana/engine/colonial-street.js) |
 
@@ -177,6 +297,82 @@ These already exist. Their absence from a map is a placement gap, not a missing-
 
 The following list is generated, not manually copied. “In use” is the catalog’s current declared consumer status; detailed native placement proof exists for the fauna and recent packs. Color/seed variants are not separate rows unless Studio explicitly registers them. The seated driver now declares Derrape and the forced chef preview declares Cocina; normal wardrobe options remain shared across games.
 
+### Atmósfera (10)
+
+| Name / ID | Status / games | Source | Constructor |
+| --- | --- | --- | --- |
+| Neblina rastrera · ground-fog | Preview only | [atmosphere.js](../../Pana/engine/models/effects/atmosphere.js) | groundFog |
+| Haz de luz con polvo · light-shaft | Preview only | [atmosphere.js](../../Pana/engine/models/effects/atmosphere.js) | lightShaft |
+| Rayos entre el follaje · god-rays | Preview only | [atmosphere.js](../../Pana/engine/models/effects/atmosphere.js) | godRays |
+| Luna con halo · moon-disc | Preview only | [atmosphere.js](../../Pana/engine/models/effects/atmosphere.js) | moonDisc |
+| Luciérnagas · fireflies | Preview only | [drifting-particles.js](../../Pana/engine/models/effects/drifting-particles.js) | fireflies |
+| Polen flotante · pollen-motes | Preview only | [drifting-particles.js](../../Pana/engine/models/effects/drifting-particles.js) | floatingMotes |
+| Polvo de mina · mine-dust | Preview only | [drifting-particles.js](../../Pana/engine/models/effects/drifting-particles.js) | floatingMotes |
+| Destellos dorados · gold-sparkles | Preview only | [drifting-particles.js](../../Pana/engine/models/effects/drifting-particles.js) | floatingMotes |
+| Hojas que caen · falling-leaves | Preview only | [drifting-particles.js](../../Pana/engine/models/effects/drifting-particles.js) | fallingLeaves |
+| Chispas de fogata · ember-plume | Preview only | [drifting-particles.js](../../Pana/engine/models/effects/drifting-particles.js) | emberPlume |
+
+### Campamento (21)
+
+| Name / ID | Status / games | Source | Constructor |
+| --- | --- | --- | --- |
+| Fogata de expedición · expedition-campfire | Preview only | [expedition-camp.js](../../Pana/engine/models/props/expedition-camp.js) | expeditionCampfire |
+| Carpa de expedición · expedition-tent | Preview only | [expedition-camp.js](../../Pana/engine/models/props/expedition-camp.js) | expeditionTent |
+| Carpa de expedición verde oliva · expedition-tent-olive | Preview only | [expedition-camp.js](../../Pana/engine/models/props/expedition-camp.js) | expeditionTent |
+| Farol de vidrio · glass-lantern | Preview only | [expedition-camp.js](../../Pana/engine/models/props/expedition-camp.js) | glassLantern |
+| Caja de suministros · supply-crate | Preview only | [expedition-camp.js](../../Pana/engine/models/props/expedition-camp.js) | supplyCrate |
+| Barril con aros · hooped-barrel | Preview only | [expedition-camp.js](../../Pana/engine/models/props/expedition-camp.js) | hoopedBarrel |
+| Saco de víveres · grain-sack | Preview only | [expedition-camp.js](../../Pana/engine/models/props/expedition-camp.js) | grainSack |
+| Morral de expedición · expedition-backpack | Preview only | [expedition-camp.js](../../Pana/engine/models/props/expedition-camp.js) | expeditionBackpack |
+| Cobija enrollada · rolled-blanket | Preview only | [expedition-camp.js](../../Pana/engine/models/props/expedition-camp.js) | rolledBlanket |
+| Tobo de campamento · camp-bucket | Preview only | [expedition-camp.js](../../Pana/engine/models/props/expedition-camp.js) | campBucket |
+| Banco de campamento · camp-bench | Preview only | [expedition-camp.js](../../Pana/engine/models/props/expedition-camp.js) | campBench |
+| Herramientas en el tocón · camp-tools | Preview only | [expedition-camp.js](../../Pana/engine/models/props/expedition-camp.js) | campTools |
+| Ollas y cesta · camp-cookware | Preview only | [expedition-camp.js](../../Pana/engine/models/props/expedition-camp.js) | campCookware |
+| Pila de suministros · supply-pile | Preview only | [expedition-camp.js](../../Pana/engine/models/props/expedition-camp.js) | supplyPile |
+| Mesa de investigación · investigation-table | Preview only | [expedition-camp.js](../../Pana/engine/models/props/expedition-camp.js) | investigationTable |
+| Refugio de radio · comm-shelter | Preview only | [expedition-camp.js](../../Pana/engine/models/props/expedition-camp.js) | commShelter |
+| Depósito de suministros · storage-shelter | Preview only | [expedition-camp.js](../../Pana/engine/models/props/expedition-camp.js) | storageShelter |
+| Jeep de expedición · expedition-jeep | Preview only | [expedition-camp.js](../../Pana/engine/models/props/expedition-camp.js) | expeditionJeep |
+| Mirador de expedición · expedition-watchtower | Preview only | [expedition-camp.js](../../Pana/engine/models/props/expedition-camp.js) | expeditionWatchtower |
+| Puente de tablas · plank-footbridge | Preview only | [expedition-camp.js](../../Pana/engine/models/props/expedition-camp.js) | plankFootbridge |
+| Portal de troncos · log-gateway | Preview only | [expedition-camp.js](../../Pana/engine/models/props/expedition-camp.js) | logGateway |
+
+### Cementerio (30)
+
+| Name / ID | Status / games | Source | Constructor |
+| --- | --- | --- | --- |
+| Lápida redondeada · grave-headstone | Preview only | [cemetery.js](../../Pana/engine/models/props/cemetery.js) | grave |
+| Cruz celta · grave-celtic | Preview only | [cemetery.js](../../Pana/engine/models/props/cemetery.js) | grave |
+| Obelisco funerario · grave-obelisk | Preview only | [cemetery.js](../../Pana/engine/models/props/cemetery.js) | grave |
+| Losa sepulcral · grave-ledger | Preview only | [cemetery.js](../../Pana/engine/models/props/cemetery.js) | grave |
+| Cruz de madera · grave-wooden | Preview only | [cemetery.js](../../Pana/engine/models/props/cemetery.js) | grave |
+| Calabaza tallada · jack-o-lantern | Preview only | [cemetery.js](../../Pana/engine/models/props/cemetery.js) | pumpkin |
+| Calavera · skull | Preview only | [cemetery.js](../../Pana/engine/models/props/cemetery.js) | skull |
+| Velas de tumba · grave-candles | Preview only | [cemetery.js](../../Pana/engine/models/props/cemetery.js) | graveCandles |
+| Ataúd cerrado · coffin | Preview only | [cemetery.js](../../Pana/engine/models/props/cemetery.js) | coffin |
+| Ataúd abierto · coffin-open | Preview only | [cemetery.js](../../Pana/engine/models/props/cemetery.js) | coffin |
+| Fosa abierta · open-grave | Preview only | [cemetery.js](../../Pana/engine/models/props/cemetery.js) | openGrave |
+| Reja de hierro · iron-fence | Preview only | [cemetery.js](../../Pana/engine/models/props/cemetery.js) | ironFence |
+| Pilar de piedra con urna · stone-pillar-urn | Preview only | [cemetery.js](../../Pana/engine/models/props/cemetery.js) | stonePillar |
+| Pilar de piedra con calavera · stone-pillar-skull | Preview only | [cemetery.js](../../Pana/engine/models/props/cemetery.js) | stonePillar |
+| Pilar de piedra con farol · stone-pillar-lantern | Preview only | [cemetery.js](../../Pana/engine/models/props/cemetery.js) | stonePillar |
+| Farol de hierro · cemetery-lantern | Preview only | [cemetery.js](../../Pana/engine/models/props/cemetery.js) | cemeteryLantern |
+| Poste de farol · cemetery-lamp-post | Preview only | [cemetery.js](../../Pana/engine/models/props/cemetery.js) | cemeteryLampPost |
+| Mausoleo con puerta cerrada · mausoleum-dark | Preview only | [cemetery.js](../../Pana/engine/models/props/cemetery.js) | mausoleum |
+| Mausoleo con reja · mausoleum-barred | Preview only | [cemetery.js](../../Pana/engine/models/props/cemetery.js) | mausoleum |
+| Mausoleo con brillo verde · mausoleum-glow | Preview only | [cemetery.js](../../Pana/engine/models/props/cemetery.js) | mausoleum |
+| Portón del cementerio · cemetery-gate | Preview only | [cemetery.js](../../Pana/engine/models/props/cemetery.js) | cemeteryGate |
+| Capilla en ruinas · cemetery-chapel | Preview only | [cemetery-chapel.js](../../Pana/engine/models/props/cemetery-chapel.js) | cemeteryChapel |
+| Mansión embrujada · crooked-mansion | Preview only | [crooked-mansion.js](../../Pana/engine/models/props/crooked-mansion.js) | crookedMansion |
+| Espantapájaros · scarecrow | Preview only | [cemetery.js](../../Pana/engine/models/props/cemetery.js) | scarecrow |
+| Pozo de piedra · graveyard-well | Preview only | [cemetery.js](../../Pana/engine/models/props/cemetery.js) | graveyardWell |
+| Pasarela del pantano · swamp-boardwalk | Preview only | [cemetery.js](../../Pana/engine/models/props/cemetery.js) | boardwalk |
+| Choza sobre pilotes · stilt-shack | Preview only | [cemetery.js](../../Pana/engine/models/props/cemetery.js) | stiltShack |
+| Bote de remos · rowboat | Preview only | [cemetery.js](../../Pana/engine/models/props/cemetery.js) | rowboat |
+| Bote medio hundido · rowboat-sunk | Preview only | [cemetery.js](../../Pana/engine/models/props/cemetery.js) | rowboat |
+| Fuego fatuo · wisp | Preview only | [cemetery.js](../../Pana/engine/models/props/cemetery.js) | wisp |
+
 ### Costa (27)
 
 | Name / ID | Status / games | Source | Constructor |
@@ -284,9 +480,9 @@ The following list is generated, not manually copied. “In use” is the catalo
 | Fuerte San Carlos · table-san-carlos | Caída, Dominó, Póquer | [puerto-tables.js](../../Pana/engine/puerto-tables.js) | createPuertoTableEnvironment |
 | Cincuenta casas del pueblo · colonial-collection | Preview only | [colonial-house-collection.js](../../Pana/engine/colonial-house-collection.js) | createColonialHouseCollection |
 | Calle de las flores · colonial-street | Preview only | [colonial-street.js](../../Pana/engine/colonial-street.js) | createColonialStreet |
-| Puerto Coco · arena-puerto | Escondidas, ¡Pintura!, Billar, Caída | [arenas.js](../../Pana/engine/arenas.js) | createArenaEnvironment |
-| Hato del Sol · arena-hato | Escondidas, ¡Pintura!, Billar, Caída | [arenas.js](../../Pana/engine/arenas.js) | createArenaEnvironment |
-| Ruinas del Mango · arena-ruinas | Escondidas, ¡Pintura!, Billar, Caída | [arenas.js](../../Pana/engine/arenas.js) | createArenaEnvironment |
+| Puerto Coco · arena-puerto | Escondidas, Pepazo, Billar, Caída | [arenas.js](../../Pana/engine/arenas.js) | createArenaEnvironment |
+| Hato del Sol · arena-hato | Escondidas, Pepazo, Billar, Caída | [arenas.js](../../Pana/engine/arenas.js) | createArenaEnvironment |
+| Ruinas del Mango · arena-ruinas | Escondidas, Pepazo, Billar, Caída | [arenas.js](../../Pana/engine/arenas.js) | createArenaEnvironment |
 | Reliquia · La mina del sol · reliquia | Reliquia | [scene.js](../../Pana/games/reliquia/public/scene.js) | createExpeditionWorld |
 | ¡Embuste! · El campamento y el templo · embuste | ¡Embuste! | [scene.js](../../Pana/games/embuste/public/scene.js) | createCampWorld |
 | Galope · La vuelta del estero · galope | Galope | [scene.js](../../Pana/games/galope/public/scene.js) | createCourse |
@@ -307,6 +503,35 @@ The following list is generated, not manually copied. “In use” is the catalo
 | Circuito · Cuevas del Río · track-cuevas | Derrape | [cuevas.js](../../Pana/games/derrape/public/tracks/cuevas.js) | makeTrack(definition).build |
 | Circuito · Salinas del Viento · track-salinas | Derrape | [salinas.js](../../Pana/games/derrape/public/tracks/salinas.js) | makeTrack(definition).build |
 | Circuito · Puerto · track-puerto | Derrape | [puerto.js](../../Pana/games/derrape/public/tracks/puerto.js) | makeTrack(definition).build |
+
+### Mina (24)
+
+| Name / ID | Status / games | Source | Constructor |
+| --- | --- | --- | --- |
+| Minero · gold-miner | Preview only | [mine-miner.js](../../Pana/engine/models/props/mine-miner.js) | miner |
+| Vagoneta minera · mine-cart | Preview only | [mine.js](../../Pana/engine/models/props/mine.js) | mineCart |
+| Vía minera con caballetes · mine-track | Preview only | [mine.js](../../Pana/engine/models/props/mine.js) | mineTrack |
+| Veta de oro · gold-vein | Preview only | [mine.js](../../Pana/engine/models/props/mine.js) | goldVein |
+| Montón de mineral · ore-pile | Preview only | [mine.js](../../Pana/engine/models/props/mine.js) | orePile |
+| Caja minera · mine-crate | Preview only | [mine.js](../../Pana/engine/models/props/mine.js) | mineCrate |
+| Caja de dinamita · tnt-crate | Preview only | [mine.js](../../Pana/engine/models/props/mine.js) | mineCrate |
+| Barril minero · mine-barrel | Preview only | [mine.js](../../Pana/engine/models/props/mine.js) | mineBarrel |
+| Farol de mina · mine-lantern | Preview only | [mine.js](../../Pana/engine/models/props/mine.js) | mineLantern |
+| Poste con farol · mine-lantern-post | Preview only | [mine.js](../../Pana/engine/models/props/mine.js) | mineLanternPost |
+| Guirnalda de bombillos · bulb-wire | Preview only | [mine.js](../../Pana/engine/models/props/mine.js) | bulbWire |
+| Escalera de mano · mine-ladder | Preview only | [mine.js](../../Pana/engine/models/props/mine.js) | mineLadder |
+| Escalera de tablas · mine-stairs | Preview only | [mine.js](../../Pana/engine/models/props/mine.js) | mineStairs |
+| Pico · mine-pickaxe | Preview only | [mine.js](../../Pana/engine/models/props/mine.js) | minePickaxe |
+| Pala · mine-shovel | Preview only | [mine.js](../../Pana/engine/models/props/mine.js) | mineShovel |
+| Carretilla minera · mine-wheelbarrow | Preview only | [mine.js](../../Pana/engine/models/props/mine.js) | mineWheelbarrow |
+| Boca de mina · mine-portal | Preview only | [mine.js](../../Pana/engine/models/props/mine.js) | minePortal |
+| Marco de entibado · mine-support | Preview only | [mine.js](../../Pana/engine/models/props/mine.js) | mineSupport |
+| Andamio de veta · mine-scaffold | Preview only | [mine.js](../../Pana/engine/models/props/mine.js) | mineScaffold |
+| Caseta de mineros · miner-shack | Preview only | [mine.js](../../Pana/engine/models/props/mine.js) | minerShack |
+| Mesa de pesaje de oro · assay-table | Preview only | [mine.js](../../Pana/engine/models/props/mine.js) | assayTable |
+| Rueda hidráulica · water-wheel | Preview only | [mine.js](../../Pana/engine/models/props/mine.js) | waterWheel |
+| Molino de pisones · stamp-mill | Preview only | [mine.js](../../Pana/engine/models/props/mine.js) | stampMill |
+| Torre de ascensor minero · lift-tower | Preview only | [mine.js](../../Pana/engine/models/props/mine.js) | liftTower |
 
 ### Objetos (63)
 
@@ -420,6 +645,31 @@ The following list is generated, not manually copied. “In use” is the catalo
 | Puente colgante de montaña · mountain-suspension-bridge | Preview only | [mountain.js](../../Pana/engine/models/props/mountain.js) | mountainSuspensionBridge |
 | Señal de senderos · mountain-signpost | Derrape | [mountain.js](../../Pana/engine/models/props/mountain.js) | mountainSignpost |
 
+### Ruinas (20)
+
+| Name / ID | Status / games | Source | Constructor |
+| --- | --- | --- | --- |
+| Torre prasat · prasat | Preview only | [ruins.js](../../Pana/engine/models/props/ruins.js) | prasat |
+| Torre prasat derrumbada · prasat-broken | Preview only | [ruins.js](../../Pana/engine/models/props/ruins.js) | prasat |
+| Rostro de Bayón · bayon-face | Preview only | [ruins.js](../../Pana/engine/models/props/ruins.js) | bayonFace |
+| Cabeza olmeca · olmec-head | Preview only | [ruins.js](../../Pana/engine/models/props/ruins.js) | olmecHead |
+| Columna de tambores · ruin-column | Preview only | [ruins.js](../../Pana/engine/models/props/ruins.js) | ruinColumn |
+| Columna rota · ruin-column-broken | Preview only | [ruins.js](../../Pana/engine/models/props/ruins.js) | ruinColumn |
+| Columna caída · fallen-column | Preview only | [ruins.js](../../Pana/engine/models/props/ruins.js) | fallenColumn |
+| Escombros del templo · ruin-rubble | Preview only | [ruins.js](../../Pana/engine/models/props/ruins.js) | ruinRubble |
+| Escalinata en ruinas · ruin-stairs | Preview only | [ruins.js](../../Pana/engine/models/props/ruins.js) | ruinStairs |
+| Estela de glifos · stela | Preview only | [ruins.js](../../Pana/engine/models/props/ruins.js) | stela |
+| Sello solar · sun-seal | Preview only | [ruins.js](../../Pana/engine/models/props/ruins.js) | sunSeal |
+| Pebetero de piedra · ruin-brazier | Preview only | [ruins.js](../../Pana/engine/models/props/ruins.js) | brazier |
+| Puente de tablas · plank-bridge | Preview only | [ruins.js](../../Pana/engine/models/props/ruins.js) | plankBridge |
+| Puente de tablas roto · plank-bridge-broken | Preview only | [ruins.js](../../Pana/engine/models/props/ruins.js) | plankBridge |
+| Pilar del abismo · rock-tower | Preview only | [ruins.js](../../Pana/engine/models/props/ruins.js) | rockTower |
+| Enlosado del templo · ruin-paving | Preview only | [ruins.js](../../Pana/engine/models/props/ruins.js) | ruinPaving |
+| Estalagmitas · stalagmites | Preview only | [ruins.js](../../Pana/engine/models/props/ruins.js) | stalagmites |
+| Portal de la selva · ruin-gate | Preview only | [ruins.js](../../Pana/engine/models/props/ruins.js) | ruinGate |
+| Piedra tallada antigua · carved-stele | Preview only | [ruins.js](../../Pana/engine/models/props/ruins.js) | carvedStele |
+| Fachada tallada en roca · rock-facade | Preview only | [ruins.js](../../Pana/engine/models/props/ruins.js) | rockFacade |
+
 ### Selva (14)
 
 | Name / ID | Status / games | Source | Constructor |
@@ -449,7 +699,7 @@ The following list is generated, not manually copied. “In use” is the catalo
 | Casa de las termas · thermal-bathhouse | Derrape | [thermal.js](../../Pana/engine/models/props/thermal.js) | thermalBathhouse |
 | Mirador de Chi Chi · thermal-lookout | Derrape | [thermal.js](../../Pana/engine/models/props/thermal.js) | thermalLookout |
 
-### Vegetación (27)
+### Vegetación (42)
 
 | Name / ID | Status / games | Source | Constructor |
 | --- | --- | --- | --- |
@@ -480,6 +730,21 @@ The following list is generated, not manually copied. “In use” is the catalo
 | Arbusto tropical grande · tropicalBush | Derrape | [tropical-bush.js](../../Pana/engine/models/vegetation/tropical-bush.js) | tropicalBush |
 | Frailejón · frailejon | Derrape | [frailejon.js](../../Pana/engine/models/vegetation/frailejon.js) | frailejon |
 | Pino de montaña · mountainPine | Derrape | [mountain-pine.js](../../Pana/engine/models/vegetation/mountain-pine.js) | mountainPine |
+| Árbol seco · dead-tree | Preview only | [dead-tree.js](../../Pana/engine/models/vegetation/dead-tree.js) | deadTree |
+| Árbol nudoso con follaje · dead-tree-leafy | Preview only | [dead-tree.js](../../Pana/engine/models/vegetation/dead-tree.js) | deadTree |
+| Árbol de selva extendido · broadleaf-tree-spreading | Preview only | [broadleaf-tree.js](../../Pana/engine/models/vegetation/broadleaf-tree.js) | broadleafTree |
+| Árbol de selva en pisos · broadleaf-tree-tiered | Preview only | [broadleaf-tree.js](../../Pana/engine/models/vegetation/broadleaf-tree.js) | broadleafTree |
+| Árbol de copa redonda · broadleaf-tree-round | Preview only | [broadleaf-tree.js](../../Pana/engine/models/vegetation/broadleaf-tree.js) | broadleafTree |
+| Árbol de selva alto · broadleaf-tree-tall | Preview only | [broadleaf-tree.js](../../Pana/engine/models/vegetation/broadleaf-tree.js) | broadleafTree |
+| Ceiba portal · ceiba-gateway | Preview only | [ceiba-gateway.js](../../Pana/engine/models/vegetation/ceiba-gateway.js) | ceibaGateway |
+| Árbol emergente · emergent-tree | Preview only | [emergent-tree.js](../../Pana/engine/models/vegetation/emergent-tree.js) | emergentTree |
+| Matapalo sobre ruinas · strangler-fig | Preview only | [strangler-fig.js](../../Pana/engine/models/vegetation/strangler-fig.js) | stranglerFig |
+| Oreja de elefante · elephant-ear | Preview only | [elephant-ear.js](../../Pana/engine/models/vegetation/elephant-ear.js) | elephantEar |
+| Bromelia · bromeliad | Preview only | [bromeliad.js](../../Pana/engine/models/vegetation/bromeliad.js) | bromeliad |
+| Flor gigante · rafflesia | Preview only | [rafflesia.js](../../Pana/engine/models/vegetation/rafflesia.js) | rafflesia |
+| Hongos silvestres · wild-mushrooms | Preview only | [wild-mushrooms.js](../../Pana/engine/models/vegetation/wild-mushrooms.js) | wildMushrooms |
+| Roca con musgo · moss-rock | Preview only | [moss-rock.js](../../Pana/engine/models/vegetation/moss-rock.js) | mossRock |
+| Hojarasca · forest-litter | Preview only | [forest-litter.js](../../Pana/engine/models/vegetation/forest-litter.js) | forestLitter |
 
 ### Vehículos (14)
 

@@ -1,3 +1,4 @@
+import { prepareScene } from '/engine/game-load.js';
 import * as THREE from 'three';
 import {loadAvatar,loadName} from '/engine/avatar.js';
 import {sound,setSpeedLines} from '/engine/fx.js';
@@ -163,3 +164,5 @@ if(params.has('debug'))window.galope={room,get state(){return state;},world,ride
 window.addEventListener('pagehide',()=>{disposed=true;clearInterval(simulation);room.dispose();for(const r of riders.values())r.dispose();course.dispose();world.sky.dispose();waterFX.dispose();dustGeometry.dispose();dustMaterial.dispose();unbind?.();renderer.dispose();},{once:true});
 // Back/forward cache restores a disposed WebGL scene; rebuild and rejoin safely.
 window.addEventListener('pageshow',event=>{if(event.persisted)location.reload();});
+
+await prepareScene(world);

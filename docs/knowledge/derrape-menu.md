@@ -1,7 +1,8 @@
 # Derrape illustrated menu
 
 `public/menu-flow.js` arranges the existing garage controls into four pages:
-panas, car, circuit and ready. `game.js` still owns setup, car tuning, saved
+Panas, Copa, Taller and Parrilla (internal IDs welcome, track, car, ready).
+`game.js` still owns setup, car tuning, saved
 profile, race loading and Colyseus authority. The menu never creates a room,
 simulates a race or writes setup independently. Back/next changes only the
 visible page; returning from a race or cancelling loading opens Ready.
@@ -24,7 +25,10 @@ never gates Play or loading progress. Map illustrations are thematic previews;
 the small route canvas still draws actual track geometry.
 The initial HTML also shows the complete festival illustration while game
 modules load; `createMenuFlow` removes that shared-kit loading screen when the
-controls are ready. It does not invent a startup percentage.
+controls, car/wheel thumbnails and compiled garage shaders are ready. The
+`prepared` promise rejects into a visible retry action rather than removing the
+loading screen early. It does not invent a startup percentage. Cup cards use
+four real stage IDs from `cup-definitions.js`, not duplicated route data.
 
 ## Integration traps
 

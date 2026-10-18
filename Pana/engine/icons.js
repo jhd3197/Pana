@@ -8,6 +8,9 @@ const svg = (body, label = '') =>
 const INK = '#16161a';
 
 export const ICONS = {
+  chevronLeft: svg('<path d="m24 10-8 10 8 10" fill="none" stroke="currentColor" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>'),
+  plus: svg('<path d="M20 9v22M9 20h22" fill="none" stroke="currentColor" stroke-width="6" stroke-linecap="round"/>'),
+  chevronRight: svg('<path d="m16 10 8 10-8 10" fill="none" stroke="currentColor" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>'),
   mango: svg(`<path d="M8 24c0-10 9-17 18-15 6 1 8 7 7 13-2 9-11 13-18 11-4-1-7-4-7-9z" fill="#ffc629" stroke="#9a6400" stroke-width="3"/><path d="M27 9c1-3 4-5 7-5-1 3-3 5-7 5z" fill="#3a9d3a"/><path d="M14 17c2-3 5-4 8-4" stroke="#fff3b0" stroke-width="3" fill="none" stroke-linecap="round"/>`),
   juice: svg(`<path d="M11 13h18l-2 22H13z" fill="#ffae2b" stroke="${INK}" stroke-width="2.5" stroke-linejoin="round"/><path d="M11 13l4-6h10l4 6" fill="#fff3b0" stroke="${INK}" stroke-width="2.5" stroke-linejoin="round"/><path d="M24 7l3-5" stroke="${INK}" stroke-width="2.5" stroke-linecap="round"/><path d="M14 22h12" stroke="#7cc242" stroke-width="3"/>`),
   coin: svg(`<circle cx="20" cy="20" r="14" fill="#ffc629" stroke="#9a6400" stroke-width="3"/><circle cx="20" cy="20" r="8" fill="none" stroke="#ffe58a" stroke-width="2.5"/><path d="M15 15c2-2 4-3 6-3" stroke="#fff3b0" stroke-width="2.5" fill="none" stroke-linecap="round"/>`),

@@ -1,3 +1,4 @@
+import { prepareScene } from '/engine/game-load.js';
 import { createMapPicker } from '/engine/map-picker.js';
 import { loadName, loadAvatar } from '/engine/avatar.js';
 import { inviteUrl, newRoomCode, roomFromUrl } from '/engine/invite.js';
@@ -18,7 +19,7 @@ const room = new PaintConnection({ code, name: loadName(), avatar: loadAvatar(),
   $('connection').textContent = text; $('recovery-copy').textContent = text; $('recovery').hidden = !failed || room.state.phase === 'lobby';
 } });
 const mapPicker = createMapPicker($('map-picker'), mapId => room.selectMap(mapId));
-const menu = createGameMenu({ title: '¡Pintura! · Pana', orientation: 'libre', sound,
+const menu = createGameMenu({ title: 'Pepazo · Pana', orientation: 'libre', sound,
   options: [{ id: 'view', label: 'Cámara', choices: [['cerca', 'Con tu pana'], ['cancha', 'Ver la cancha']], get: () => cameraView, set: value => { cameraView = value; world.setView(value); } }],
   note: () => room.local ? 'La práctica está en pausa.' : 'La ronda online sigue mientras estás en el menú.',
   controls: [['WASD / Flechas', 'Moverte según la cámara'], ['Ratón / tocar cancha', 'Apuntar'], ['Clic / Espacio', 'Disparar pintura'], ['Q / E · arrastrar con clic derecho', 'Girar la cámara alrededor de tu pana'], ['R', 'Recargar'], ['M', 'Sonido'], ['Esc', 'Menú']],
@@ -93,3 +94,5 @@ function frame(now) { if (stopped) return; const dt = Math.min(.05, (now - previ
 render(room.state); room.connect(); requestAnimationFrame(frame);
 addEventListener('pagehide', () => { stopped = true; clearInterval(timer); room.dispose(); world.dispose(); }, { once: true });
 if (params.has('debug')) window.pinturaDebug = { room, world, menu, input };
+
+await prepareScene(world);

@@ -1,12 +1,13 @@
 import { ICONS } from '/engine/icons.js';
 import { createFestivalArt, setMenuImage, trackArt } from './menu-art.js';
+import { cupById } from './cup-definitions.js';
 
-const STEPS = ['welcome', 'car', 'track', 'ready'];
-const LABELS = ['Panas', 'Carro', 'Circuito', '¡A correr!'];
+const STEPS = ['welcome', 'track', 'car', 'ready'];
+const LABELS = ['Panas', 'Copa', 'Taller', 'Parrilla'];
 const MODES = { race: ['Una carrera', 'La pista que tú quieras', 'estadio'], pana: ['Copa Pana', '4 pistas · de la ciudad al mar', 'plaza'], aventura: ['Copa Aventura', '4 pistas · descubre lo salvaje', 'selva'], agua: ['Copa del Agua', '4 pistas · salta, cruza, derrapa', 'salto'], battle: ['Globos', 'Aguanta hasta el final', 'bululu'] };
 
 // The flow only arranges existing controls. Race setup and room authority stay in game.js.
-export function createMenuFlow({ tracks, getState, pickTrack, localPlay, initial = 'welcome' }) {
+export function createMenuFlow({ tracks, getState, pickTrack, localPlay, prepared, initial = 'welcome' }) {
   const $ = id => document.getElementById(id);
   const root = $('garage');
   let step = initial;
@@ -75,6 +76,17 @@ export function createMenuFlow({ tracks, getState, pickTrack, localPlay, initial
     // renderSetup has already restored earned and legacy trophies on startup.
     const trophies = [...button.querySelectorAll('.mode-trophy, .mode-legacy')];
     button.replaceChildren(img, label, ...trophies);
+    if (['pana', 'aventura', 'agua'].includes(button.dataset.mode)) {
+      const cup = cupById(button.dataset.mode);
+      const collage = document.createElement('div'); collage.className = 'cup-collage';
+      const route = document.createElement('span'); route.className = 'cup-route';
+      for (const [i, stage] of cup.stages.entries()) {
+        const shot = new Image(); shot.alt = ''; shot.loading = 'lazy';
+        setMenuImage(shot, trackArt(stage.track, true)); collage.append(shot);
+        const stop = document.createElement('small'); stop.textContent = `${i + 1} ${tracks.find(t => t.id === stage.track)?.name || stage.track}`; route.append(stop);
+      }
+      img.replaceWith(collage); label.append(route); button.classList.add('cup-choice');
+    }
   }
   // Preserve #setup for its existing online visibility and options handlers.
   $('setup').querySelector('.setup-row').remove();
@@ -106,6 +118,7 @@ export function createMenuFlow({ tracks, getState, pickTrack, localPlay, initial
   }
   function refresh() {
     const state = getState(), cup = state.cup;
+    page('track').classList.toggle('is-cup', !!cup);
     const format = MODES[state.mode]?.[0] || 'Carrera';
     const launchTrack = cup ? tracks.find(t => t.id === cup.stages[0].track) : state.track;
     setMenuImage($('circuit-art'), trackArt(state.track.id));
@@ -128,7 +141,7 @@ export function createMenuFlow({ tracks, getState, pickTrack, localPlay, initial
     $('welcome-room').hidden = !state.online;
     $('menu-next').hidden = step === 'ready' || (step === 'welcome' && !state.online);
     $('play').hidden = step !== 'ready';
-    $('menu-next').textContent = step === 'welcome' ? 'Elegir carro' : step === 'car' ? 'Elegir circuito' : 'Continuar';
+    $('menu-next').textContent = step === 'welcome' ? 'Elegir aventura' : step === 'track' ? 'Siguiente · Taller' : 'Siguiente · Parrilla';
     $('menu-back').hidden = step === 'welcome';
     footer.hidden = step === 'welcome' && !state.online;
   }
@@ -149,12 +162,20 @@ export function createMenuFlow({ tracks, getState, pickTrack, localPlay, initial
   for (const button of root.querySelectorAll('[data-car-tab]')) button.onclick = () => carTab(button.dataset.carTab);
   $('menu-back').onclick = () => show(STEPS[STEPS.indexOf(step) - 1]);
   $('menu-next').onclick = () => show(STEPS[STEPS.indexOf(step) + 1]);
-  $('play-solo').onclick = () => { localPlay(false); show('car'); };
-  $('play-together').onclick = () => { localPlay(true); show('car'); };
-  online.addEventListener('click', () => show('car'));
+  $('play-solo').onclick = () => { localPlay(false); show('track'); };
+  $('play-together').onclick = () => { localPlay(true); show('track'); };
+  online.addEventListener('click', () => show('track'));
   $('change-car').onclick = () => show('car');
   carTab('cars'); show(initial, false);
-  root.classList.remove('menu-pending');
-  $('menu-boot').remove();
+  prepared.then(() => {
+    root.classList.remove('menu-pending'); $('menu-boot').remove();
+    performance.mark('derrape:garage-ready');
+  }).catch(error => {
+    console.error('Garage preparation failed', error);
+    const boot = $('menu-boot'); boot.replaceChildren();
+    const message = document.createElement('p'); message.textContent = 'No pudimos preparar el taller.';
+    const retry = document.createElement('button'); retry.className = 'pk-btn'; retry.textContent = 'Volver a intentar'; retry.onclick = () => location.reload();
+    boot.append(message, retry);
+  });
   return { refresh, show, get step() { return step; } };
 }

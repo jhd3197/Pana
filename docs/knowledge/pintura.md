@@ -1,4 +1,7 @@
-# ¡Pintura! — paintball
+# Pepazo — paintball
+
+The player-facing name is Pepazo. Keep `/g/pintura/`, the `pintura` room type,
+debug handles and stored IDs unchanged so existing links continue to work.
 
 `/g/pintura/` is an eight-seat, server-simulated free-for-all. The own Colyseus
 room extends `PanaRoom`; `Arena` in `public/rules.js` also runs local practice.

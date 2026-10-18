@@ -75,6 +75,15 @@ putting it in the shared state; see `embuste.md`.
 
 ## Proof
 
+The illustrated lobby adds `assetsReady` and `lobbyReady` to each shared member.
+`joinRoom()` announces its `RoomLink` through `pana:room-link`; `lobby-ready`
+messages may update only the sender's flags. New illustrated clients join with
+`lobbyLoading: true`; older clients default ready. The UI prevents starting until
+connected members have prepared assets and have not opted to wait. This is a
+cooperative readiness signal, not anti-cheat or a replacement for game host
+authority. `engine/tests/lobby.browser.js` proves a real two-client ready hold,
+host launch, game preparation failures and each shared lobby's entry.
+
 Each migrated game keeps its own two-client browser suite (`games/<game>/tests/`).
 Run the server, then the suite with the Playwright path. Mobile portrait pages in
 some suites currently stop on the shared "rotate to landscape" dialog; that is not

@@ -37,6 +37,8 @@ try {
   check('games apply saved settings and follow live changes');
 
   // Esc opens the menu with focus inside; Tab stays in the dialog; Esc returns focus.
+  // The current garage reveals Play only on the final setup step.
+  await page.locator('#garage [data-step="ready"]').click();
   await page.locator('#play').focus();
   await page.keyboard.press('Escape');
   assert.equal(await page.evaluate(() => document.activeElement.id), 'pana-resume');
@@ -66,7 +68,7 @@ try {
   check('invite copies the room link without debug or name');
 
   // M toggles the shared mute everywhere.
-  await page.locator('#world').click({ position: { x: 700, y: 400 } });
+  await page.locator('#pana-lobby-status').click();
   const before = await page.locator('#sound').getAttribute('aria-pressed');
   await page.keyboard.press('m');
   assert.notEqual(await page.locator('#sound').getAttribute('aria-pressed'), before);

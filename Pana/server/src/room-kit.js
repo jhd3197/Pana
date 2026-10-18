@@ -41,6 +41,8 @@ export const Member = schema({
   avatar: t.string(),       // normalized avatar JSON
   joinedAt: t.number(),
   connected: t.boolean().default(true),
+  assetsReady: t.boolean().default(true), // old clients have no illustrated loading lobby
+  lobbyReady: t.boolean().default(true),
 }, 'Member');
 
 export function roomState(fields = {}, memberClass = Member, name = 'PanaState') {
@@ -72,6 +74,12 @@ export class PanaRoom extends Room {
       this.updateMetadata();
     });
     this.onMessage('ping', (client, m) => client.send('pong', { c: m?.c, s: Date.now() }));
+    this.onMessage('lobby-ready', (client, message) => {
+      const member = this.state.players.get(client.sessionId);
+      if (!member || !message || typeof message !== 'object') return;
+      if (typeof message.loaded === 'boolean') member.assetsReady = message.loaded;
+      if (typeof message.ready === 'boolean') member.lobbyReady = message.ready;
+    });
     this.updateMetadata();
   }
 
@@ -84,6 +92,7 @@ export class PanaRoom extends Room {
   createMember(client, options) {
     return new this.memberClass({
       seat: this.nextSeat++, name: cleanName(options.name), avatar: avatarJson(options.avatar), joinedAt: Date.now(),
+      assetsReady: !options.lobbyLoading,
     });
   }
 

@@ -271,4 +271,24 @@ export default [
     tags: ["057","páramo","montaña","árbol"],
     pack: "vegetation"
   },
+  ...[
+    ['dead-tree', 'Árbol seco', 'dead-tree', 'deadTree', { seed: 7 }, 'Ramas retorcidas que se bifurcan sin hojas, con raíces abiertas; cementerio y páramo.', ['árbol', 'seco', 'cementerio', 'tenebroso']],
+    ['dead-tree-leafy', 'Árbol nudoso con follaje', 'dead-tree', 'deadTree', { seed: 11, leaves: true, height: 7 }, 'El mismo ramaje retorcido con matas facetadas en las puntas.', ['árbol', 'bosque', 'follaje']],
+    ['broadleaf-tree-spreading', 'Árbol de selva extendido', 'broadleaf-tree', 'broadleafTree', { seed: 7, variant: 0 }, 'Tronco serpenteante, ramas abiertas con copas facetadas y bejucos.', ['selva', 'árbol', 'copa']],
+    ['broadleaf-tree-tiered', 'Árbol de selva en pisos', 'broadleaf-tree', 'broadleafTree', { seed: 7, variant: 1 }, 'Copa apilada en tres pisos que se estrechan hacia arriba.', ['selva', 'árbol', 'pisos']],
+    ['broadleaf-tree-round', 'Árbol de copa redonda', 'broadleaf-tree', 'broadleafTree', { seed: 7, variant: 2 }, 'Árbol bajo con una copa grande y ladeada, tipo chupeta.', ['selva', 'árbol', 'bajo']],
+    ['broadleaf-tree-tall', 'Árbol de selva alto', 'broadleaf-tree', 'broadleafTree', { seed: 7, variant: 3 }, 'Variante alta y oscura que sobresale del dosel.', ['selva', 'árbol', 'alto']],
+    ['ceiba-gateway', 'Ceiba portal', 'ceiba-gateway', 'ceibaGateway', { seed: 7 }, 'Ceiba monumental con copa de sombrilla, contrafuertes y raíces que forman un arco sobre el camino.', ['selva', 'ceiba', 'hito', 'arco']],
+    ['emergent-tree', 'Árbol emergente', 'emergent-tree', 'emergentTree', { seed: 7 }, 'Tronco con contrafuertes de tabla, ramas en abanico, bromelias y bejucos.', ['selva', 'árbol', 'contrafuertes']],
+    ['strangler-fig', 'Matapalo sobre ruinas', 'strangler-fig', 'stranglerFig', { seed: 7 }, 'Troncos trenzados y raíces aéreas que envuelven un pequeño santuario de piedra.', ['selva', 'ruinas', 'matapalo', 'hito']],
+    ['elephant-ear', 'Oreja de elefante', 'elephant-ear', 'elephantEar', { seed: 7 }, 'Hojas anchas en forma de remo con nervio oscuro.', ['selva', 'sotobosque', 'hojas']],
+    ['bromeliad', 'Bromelia', 'bromeliad', 'bromeliad', { seed: 7 }, 'Roseta de hojas rígidas con corazón rojo; también crece en las ramas.', ['selva', 'epífita', 'flor']],
+    ['rafflesia', 'Flor gigante', 'rafflesia', 'rafflesia', { seed: 7 }, 'Rafflesia carmesí de cinco pétalos con verrugas blancas.', ['selva', 'flor', 'rareza']],
+    ['wild-mushrooms', 'Hongos silvestres', 'wild-mushrooms', 'wildMushrooms', { seed: 7 }, 'Grupo de hongos de sombrero rojo con puntos blancos.', ['bosque', 'hongos', 'suelo']],
+    ['moss-rock', 'Roca con musgo', 'moss-rock', 'mossRock', { seed: 7 }, 'Piedra facetada con cojines de musgo para el suelo del bosque.', ['bosque', 'roca', 'musgo']],
+    ['forest-litter', 'Hojarasca', 'forest-litter', 'forestLitter', { seed: 7 }, 'Hojas secas de otoño y una rama caída.', ['bosque', 'suelo', 'hojas']],
+  ].map(([id, name, file, factory, previewOptions, description, tags]) => ({
+    id, name, category: 'Vegetación', source: `/engine/models/vegetation/${file}.js`, factory,
+    usedBy: ['Pana Studio'], previewOptions, description, tags, pack: 'vegetation',
+  })),
 ];

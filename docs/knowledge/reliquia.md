@@ -112,6 +112,13 @@ and navigation so an anchor hidden behind a corner cannot expose its companions.
 
 ## Notes for agents
 
+The shared `createChargeRing` exposes `mesh`, `set` and `hide`, not `group`.
+Attach `chargeRing.mesh` to the scene so held-interaction progress is visible.
+Headless two/three-client checks use the player's low-quality setting and await
+actual scene preparation: heavy software rendering can stretch a 2.4-second
+revive beyond 25 wall-clock seconds. Studio checks must return to the library
+between model previews, since asset detail views hide the library tiles.
+
 Rules that used to live in AGENTS.md (paths are relative to `Pana/`). Keep them
 true when you change this area.
 

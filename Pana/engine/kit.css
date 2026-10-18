@@ -10,6 +10,9 @@
 @import url('https://fonts.googleapis.com/css2?family=Luckiest+Guy&family=Nunito:wght@600;700;800;900&display=swap');
 
 :root {
+  /* Shared page edges for the launcher and hosted account screens. */
+  --pk-page-width: 1720px;
+  --pk-page-gutter: 36px;
   /* brand palette */
   --pk-night: #0e0b24;        /* page background */
   --pk-purple: #1a1336;       /* panels */
@@ -46,6 +49,7 @@
 }
 
 /* ---------- type ---------- */
+@media (max-width: 860px) { :root { --pk-page-gutter: 16px; } }
 .pk-display { font-family: var(--pk-display); font-weight: 400; letter-spacing: .04em; line-height: 1; }
 .pk-logo {
   font: 400 30px/1 var(--pk-display); letter-spacing: 1px;
@@ -405,3 +409,4 @@
   .pk-speed-lines { display: none; }
   .pana-rotate-phone { animation: none; }
 }
+.pk-nav-chevron { display:inline-block; width:1em; height:1em; vertical-align:-.12em; flex:none; }
