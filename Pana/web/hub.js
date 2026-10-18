@@ -25,19 +25,32 @@ gear.setAttribute('aria-label', 'Ajustes');
 gear.title = 'Ajustes';
 document.getElementById('hub-actions').append(gear);
 
-// The shared lobby song plays on the hub too, once a tap or key has unlocked
-// audio. fx.js and music.js load on that first gesture so the hub stays light.
-let hubMusic = null;
+// The shared lobby song plays on the hub too. Its modules and the song itself
+// load once the page has, so the first tap or key (browsers keep audio locked
+// until one) starts it at once; where autoplay is allowed it starts on its own.
+let hubMusic = null, hubPlaying = false, heard = false;
 function hubSong() {
-  hubMusic ??= Promise.all([import('/engine/fx.js'), import('/engine/music.js'), import('/engine/settings.js')])
+  if (hubPlaying || !hubMusic) return;
+  const { sound, music } = hubMusic;
+  sound.unlock();
+  if (sound.ctx.state !== 'running' && !heard) return;
+  hubPlaying = true;
+  music.play('lobby', { fallback: false });
+}
+function loadHubSong() {
+  Promise.all([import('/engine/fx.js'), import('/engine/music.js'), import('/engine/settings.js')])
     .then(([{ sound }, { createMusic }, { bindSound }]) => {
       bindSound(sound);
       sound.unlock();
-      createMusic(sound).play('lobby', { fallback: false });
+      hubMusic = { sound, music: createMusic(sound) };
+      hubMusic.music.preload('lobby');
+      hubSong();
     })
     .catch(() => { /* music is a nicety: the hub works without it */ });
 }
-for (const type of ['pointerdown', 'keydown']) addEventListener(type, hubSong, { capture: true, once: true });
+if (document.readyState === 'complete') loadHubSong();
+else addEventListener('load', loadHubSong, { once: true });
+for (const type of ['pointerdown', 'keydown']) addEventListener(type, () => { heard = true; hubSong(); }, { capture: true });
 
 // ---------- views: #jugar (default), #mi-pana, #salas ----------
 // The one pana canvas moves between the "Tu pana" card and the creator.
