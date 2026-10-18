@@ -1,3 +1,4 @@
+import { prepareScene } from '/engine/game-load.js';
 import * as THREE from 'three';
 import { buildCharacter } from '/engine/models/characters/pana/avatar-model.js';
 import { loadAvatar, loadName } from '/engine/avatar.js';
@@ -235,3 +236,5 @@ addEventListener('pagehide', () => { clearInterval(ticker); room.dispose(); });
 if (qs.has('debug')) window.cocina = { room, camera, actors, renderer, menu, get state() { return state; },
   step(seconds) { if (!room.isHost) return; for (let i = 0; i < seconds; i += 0.05) room.game.update(Math.min(0.05, seconds - i)); room.publish(); },
   place(id, x, z) { const p = room.game?.players.find(p => p.id === id); if (p) { p.x = x; p.z = z; room.publish(); } }, STATIONS };
+
+await prepareScene({ renderer, scene, camera });

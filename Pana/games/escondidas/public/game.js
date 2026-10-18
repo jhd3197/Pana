@@ -1,3 +1,4 @@
+import { prepareScene } from '/engine/game-load.js';
 import * as THREE from 'three';
 import { loadAvatar, loadName } from '/engine/avatar.js';
 import { buildCharacter } from '/engine/models/characters/pana/avatar-model.js';
@@ -319,3 +320,5 @@ show('loading', false); show('lobby', true); room.connect(); requestAnimationFra
 if (DEBUG) window.hunt = { room, menu, environment, get state() { return state; }, scene, renderer, camera, actors,
   step(seconds) { if (!room.isHost) return; for (let t = 0; t < seconds; t += 1 / 60) room.game.update(1 / 60, new Map()); room.tick(0, {}); },
   place(id, x, z) { if (!room.isHost) return; const p = room.game.players.find(p => p.id === id); if (p) Object.assign(p, { x, z }); room.tick(0, {}); } };
+
+await prepareScene({ renderer, scene, camera });

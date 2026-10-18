@@ -1,5 +1,31 @@
 # Shared game UI: pause menu and settings
 
+## Illustrated loading lobbies and portraits
+
+Games with the shared `.pk-lobby` load `engine/game-entry.js` using
+`data-pana-entry="./game.js"` and link `engine/game-lobby.css` last. The light
+entry paints the illustrated roster first, then dynamically imports the real
+game module. It moves existing controls, keeping their IDs, event handlers and
+host permissions. Curiara's real seat picker moves into the roster area in pairs
+mode. Do not add settings from mockups unless the game implements those rules.
+
+At the end of game initialization, await `prepareScene({renderer,scene,camera})`
+from `engine/game-load.js`. It decodes material images, compiles shaders and
+renders once for GPU upload. Caída and Dominó export `sceneReady` for their lazy
+scene import. A failed preparation keeps retry/back controls; elapsed time never
+marks a game ready. Rendering pauses behind the illustrated lobby, while room
+messages continue. Visibility follows the original lobby's hidden state, including
+late joins into active games. Later round/minigame assets retain their own loaders.
+
+Portraits use `portrait-cache.js`, keyed by the complete normalized wardrobe,
+with at most 24 local 256px images. `portrait.js` lazily renders a missing image
+once and disposes its WebGL context. The creator captures from its existing
+renderer after edits. Hosted accounts may store the same image; public Pana
+continues to need no account. Bump the cache prefix when the model/camera changes.
+
+Navigation uses the shared SVG chevrons. `navigation.js` converts legacy arrow
+text on buttons/links, leaving keyboard hints and touch direction keys alone.
+
 Every game and the hub use one pause menu and one settings store:
 
 - `engine/settings.js` — `pana:settings` in localStorage: `sound`, `volume`

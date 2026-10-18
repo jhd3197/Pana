@@ -68,7 +68,7 @@ try {
   check('invite copies the room link without debug or name');
 
   // M toggles the shared mute everywhere.
-  await page.locator('#world').click({ position: { x: 700, y: 400 } });
+  await page.locator('#pana-lobby-status').click();
   const before = await page.locator('#sound').getAttribute('aria-pressed');
   await page.keyboard.press('m');
   assert.notEqual(await page.locator('#sound').getAttribute('aria-pressed'), before);

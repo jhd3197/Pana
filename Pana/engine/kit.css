@@ -405,3 +405,4 @@
   .pk-speed-lines { display: none; }
   .pana-rotate-phone { animation: none; }
 }
+.pk-nav-chevron { display:inline-block; width:1em; height:1em; vertical-align:-.12em; flex:none; }

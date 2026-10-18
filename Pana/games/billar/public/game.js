@@ -1,3 +1,4 @@
+import { prepareScene } from '/engine/game-load.js';
 import { createMapPicker } from '/engine/map-picker.js';
 import { loadName, loadAvatar } from '/engine/avatar.js';
 import { inviteUrl, newRoomCode, roomFromUrl } from '/engine/invite.js';
@@ -171,3 +172,5 @@ function frame(now) {
 render(room.state); room.connect(); requestAnimationFrame(frame);
 addEventListener('pagehide', () => { stopped = true; clearInterval(timer); clearTimeout(toastTimer); room.dispose(); world.dispose(); }, { once: true });
 if (params.has('debug')) window.billarDebug = { room, world, menu, get angle() { return angle; } };
+
+await prepareScene(world);

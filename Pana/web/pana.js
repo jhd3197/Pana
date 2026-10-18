@@ -5,6 +5,7 @@
 import * as THREE from 'three';
 import { buildCharacter } from '/engine/models/characters/pana/avatar-model.js';
 import { COLORS, FURS, OPTIONS, loadAvatar, randomAvatar, saveAvatar } from '/engine/avatar.js';
+import { savePortrait } from '/engine/portrait-cache.js';
 
 // colorless: option ids where the color swatches don't apply
 const TABS = [
@@ -72,7 +73,7 @@ function rebuild() {
 // in the same task (the drawing buffer is still valid there).
 const faceCam = new THREE.PerspectiveCamera(16, 1, 0.1, 50);
 const faceCanvas = document.createElement('canvas');
-faceCanvas.width = faceCanvas.height = 96;
+faceCanvas.width = faceCanvas.height = 256;
 const neckAt = new THREE.Vector3();
 function shootFace() {
   const spin = turn.rotation.y;
@@ -87,9 +88,11 @@ function shootFace() {
   const s = Math.min(canvas.width, canvas.height);
   const ctx = faceCanvas.getContext('2d');
   ctx.fillStyle = '#3a2a78';
-  ctx.fillRect(0, 0, 96, 96);
-  ctx.drawImage(canvas, (canvas.width - s) / 2, (canvas.height - s) / 2, s, s, 0, 0, 96, 96);
-  if (faceEl) faceEl.src = faceCanvas.toDataURL();
+  ctx.fillRect(0, 0, 256, 256);
+  ctx.drawImage(canvas, (canvas.width - s) / 2, (canvas.height - s) / 2, s, s, 0, 0, 256, 256);
+  const portrait = faceCanvas.toDataURL('image/webp', .85);
+  if (faceEl) faceEl.src = portrait;
+  savePortrait(avatar, portrait, true);
   turn.rotation.y = spin;
 }
 

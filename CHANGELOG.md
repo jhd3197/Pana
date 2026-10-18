@@ -10,6 +10,12 @@ becomes the GitHub release's notes.
 
 ### Added
 
+- **Prepare games in illustrated lobbies with saved pana portraits and shared readiness.**
+  Browse real settings while scenes and shaders prepare, wait for friends before
+  starting, and retry failed loading. Curiara shows boat seating; Derrape follows
+  Copa, Taller and Parrilla, with a garage that waits for its previews to finish.
+  Navigation uses compact chevrons and avatar stills are reused across menus.
+
 - **Choose games from an illustrated launcher with category filters and a thumbnail rail.**
   Browse descriptions, create an invite link or enter a room code on desktop and
   phones. Hosting integrations can handle party launches and show member portraits;

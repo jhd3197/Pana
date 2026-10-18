@@ -2,6 +2,8 @@ import { createGameMenu } from '/engine/ui.js';
 import { inviteUrl, newRoomCode, playUrl } from '/engine/invite.js';
 import { isOnline, meta, gameUrl as linkFor } from './games.js';
 import { icon } from '/engine/icons.js';
+import { loadAvatar } from '/engine/avatar.js';
+import { cachedPortrait } from '/engine/portrait-cache.js';
 import { categories, category, artUrl } from './launcher-art.js';
 
 const gamesEl = document.getElementById('games');
@@ -12,6 +14,8 @@ const featured = document.getElementById('play-featured');
 const featureEl = document.getElementById('feature');
 const featureArt = document.getElementById('feature-art');
 let filter = 'Todos';
+const savedFace = cachedPortrait(loadAvatar());
+if (savedFace) document.getElementById('pana-face').src = savedFace;
 
 // The same settings every game reads (sound, volume, resolution, hints).
 const settings = createGameMenu({ title: 'Pana', pause: false, hotkey: false });

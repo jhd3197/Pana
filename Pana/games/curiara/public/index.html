@@ -10,6 +10,7 @@
   <link rel="stylesheet" href="/engine/ui.css">
   <link rel="stylesheet" href="style.css">
   <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}</script>
+<link rel="stylesheet" href="/engine/game-lobby.css">
 </head>
 <body class="in-lobby">
   <canvas id="world" aria-label="Carrera de curiaras por el río"></canvas>
@@ -65,6 +66,6 @@
   <div id="countdown" class="countdown hidden" role="status" aria-live="polite"></div>
   <div id="notice" class="notice pk-chip hidden" role="status"></div>
   <section id="results" class="pk-results hidden" aria-labelledby="result-title"><div class="result-paper pk-modal pk-results-card"><span class="pk-ribbon">La churuata</span><h2 id="result-title" class="pk-title">¡Llegaste, pana!</h2><p id="result-copy" class="pk-copy"></p><ol id="result-board" class="pk-roster"></ol><button id="again" class="pk-btn pk-btn--primary pk-btn--lg pk-btn--block">Otra carrera</button><a class="pk-back" href="/">← Volver a Pana</a></div></section>
-  <script type="module">import('./game.js').catch(error=>{console.error(error);const e=document.getElementById('loading');e.classList.remove('hidden');e.replaceChildren();const message=document.createElement('b');message.className='pk-heading';message.textContent='No pudimos botar las curiaras. Comprueba tu conexión y WebGL, y recarga la página.';const back=document.createElement('a');back.href='/';back.textContent='Volver a Pana';back.className='pk-btn pk-btn--primary';e.append(message,back);});</script>
+  <script type="module" src="/engine/game-entry.js" data-pana-entry="./game.js"></script>
 </body>
 </html>

@@ -16,6 +16,7 @@ async function load(page, query = '') {
   watch(page);
   await page.goto(`${origin}/g/derrape/?debug${query}`);
   await page.locator('.menu-flow').waitFor();
+  await page.locator('#menu-boot').waitFor({ state: 'hidden', timeout: 120000 });
 }
 async function fits(page, selector) {
   const box = await page.locator(selector).boundingBox(), view = page.viewportSize();
@@ -33,6 +34,7 @@ try {
   await page.screenshot({ path: `${output}/startup.png` });
   releaseStartup();
   await page.locator('.menu-flow').waitFor();
+  await page.locator('#menu-boot').waitFor({ state: 'hidden', timeout: 120000 });
   assert.equal(await page.locator('#menu-boot').count(), 0);
   await step(page, 'welcome');
   await page.waitForFunction(() => document.querySelector('.festival-art').classList.contains('is-layered'));
@@ -43,6 +45,8 @@ try {
   await page.waitForFunction(() => !document.querySelector('.festival-art').classList.contains('is-layered'));
   await page.locator('#play-solo').focus();
   await page.keyboard.press('Enter');
+  await step(page, 'track');
+  await menuStep(page, 'car');
   await step(page, 'car');
   await page.locator('.car-choice').nth(6).click();
   await page.locator('[data-car-tab="wheels"]').click();
@@ -50,7 +54,7 @@ try {
   await page.locator('#open-shop').click();
   assert.ok(await page.locator('#shop').isVisible());
   await page.locator('#shop-close').click();
-  await page.locator('#menu-next').click();
+  await menuStep(page, 'track');
   await step(page, 'track');
   assert.equal(await page.locator('.circuit-choice').count(), 13);
   for (const button of await page.locator('.circuit-choice').all()) {
@@ -67,17 +71,20 @@ try {
     await page.locator(`[data-mode="${id}"]`).click();
     assert.equal(await page.locator('.cup-stage').count(), 4);
     assert.ok(await page.locator('#circuit-grid').isHidden());
-    await page.locator('.cup-stage').nth(2).click();
+    assert.equal(await page.locator('.cup-choice img').count(), 12);
     await page.locator('#menu-next').click();
-    // Previewing stage three does not change where a championship begins.
+    await page.locator('#menu-next').click();
+    // Each championship starts at its actual first circuit.
     assert.match(await page.locator('#ready-route').textContent(), /La primera parada:/);
-    await page.locator('#menu-back').click();
+    await menuStep(page, 'track');
   }
   await page.locator('[data-mode="battle"]').click();
   await page.locator('[data-mode="race"]').click();
   await page.locator('[data-circuit="estadio"]').click();
   await page.waitForFunction(() => [...document.querySelectorAll('#circuit-grid img, #mode-pick img')].every(i => i.naturalWidth > 0));
   await page.screenshot({ path: `${output}/circuits.png` });
+  await page.locator('#menu-next').click();
+  await step(page, 'car');
   await page.locator('#menu-next').click();
   await step(page, 'ready');
   assert.equal(await page.locator('#ready-car').textContent(), 'La Rumbera');
@@ -123,9 +130,9 @@ try {
   await fallback.route('**/images/menu/**', route => route.abort());
   await load(fallback, '&manual');
   await fallback.locator('#play-solo').click();
-  await fallback.locator('#menu-next').click();
   await fallback.locator('[data-circuit="plaza"]').click();
   assert.equal(await fallback.locator('#track-name').textContent(), 'Plaza Pana');
+  await fallback.locator('#menu-next').click();
   await fallback.locator('#menu-next').click();
   assert.ok(await fallback.locator('#play').isEnabled());
   await fallback.locator('#play').click();
@@ -141,12 +148,15 @@ try {
   await load(guest, `&manual&room=${code}`);
   await guest.waitForFunction(() => getNet()?.state.players.length === 2);
   await host.waitForFunction(() => getNet()?.state.players.length === 2);
+  await menuStep(guest, 'car');
   await guest.locator('.car-choice').nth(2).click();
   await menuStep(host, 'track');
   await menuStep(guest, 'track');
   assert.ok(await guest.locator('[data-circuit="plaza"]').isDisabled());
   await host.locator('[data-circuit="plaza"]').click();
   await guest.waitForFunction(() => document.getElementById('track-name').textContent === 'Plaza Pana');
+  await host.locator('#menu-next').click();
+  await guest.locator('#menu-next').click();
   await host.locator('#menu-next').click();
   await guest.locator('#menu-next').click();
   assert.equal(await host.locator('#lobby-roster li').count(), 2);
@@ -160,7 +170,7 @@ try {
   const navigation = await guest.locator('.menu-footer').boundingBox();
   assert.ok(roomMessage && roomMessage.y + roomMessage.height <= navigation.y, 'room message stays above navigation when revisiting Panas');
   await guest.locator('#menu-next').click();
-  await step(guest, 'car');
+  await step(guest, 'track');
   await menuStep(guest, 'ready');
   await host.locator('#play').click();
   await Promise.all([host, guest].map(p => p.waitForFunction(() => race.cars.length === 4 && ['count', 'go'].includes(race.state), null, { timeout: 120000 })));

@@ -1,3 +1,4 @@
+import { prepareScene } from '/engine/game-load.js';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { sound, Puffs, Shockwaves, popCounter } from '/engine/fx.js';
@@ -1438,3 +1439,5 @@ if (DEBUG) Object.assign(window, { menu, players, board, dice, MINIGAMES, layout
 
 frame();
 main().catch(ignoreCancelled);
+
+await prepareScene({ renderer, scene: boardScene, camera: boardCam });

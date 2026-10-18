@@ -1,3 +1,4 @@
+import { prepareScene } from '/engine/game-load.js';
 import { createMapPicker } from '/engine/map-picker.js';
 import { loadName, loadAvatar } from '/engine/avatar.js';
 import { inviteUrl, newRoomCode, roomFromUrl } from '/engine/invite.js';
@@ -93,3 +94,5 @@ function frame(now) { if (stopped) return; const dt = Math.min(.05, (now - previ
 render(room.state); room.connect(); requestAnimationFrame(frame);
 addEventListener('pagehide', () => { stopped = true; clearInterval(timer); room.dispose(); world.dispose(); }, { once: true });
 if (params.has('debug')) window.pinturaDebug = { room, world, menu, input };
+
+await prepareScene(world);

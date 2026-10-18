@@ -1,3 +1,4 @@
+import { prepareScene } from '/engine/game-load.js';
 import { createTableSeating } from '/engine/table-seating.js';
 import { createMapPicker } from '/engine/map-picker.js';
 import { loadName, loadAvatar } from '/engine/avatar.js';
@@ -105,3 +106,5 @@ function frame(now) { if (stopped) return; const dt = Math.min(.05, (now - previ
 render(room.state); room.connect(); requestAnimationFrame(frame);
 addEventListener('pagehide', () => { stopped = true; clearInterval(timer); room.dispose(); world.dispose(); }, { once: true });
 if (params.has('debug')) window.poquerDebug = { room, world, menu };
+
+await prepareScene(world);

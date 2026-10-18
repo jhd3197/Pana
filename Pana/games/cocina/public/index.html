@@ -10,6 +10,7 @@
   <link rel="stylesheet" href="/engine/ui.css">
   <link rel="stylesheet" href="style.css">
   <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}</script>
+<link rel="stylesheet" href="/engine/game-lobby.css">
 </head>
 <body>
   <canvas id="world" aria-label="Cocina cooperativa en la Plaza Pana"></canvas>
@@ -49,6 +50,6 @@
     <div class="pk-stats result-stats"><div class="pk-stat"><b id="result-score">0</b><span>puntos</span></div><div class="pk-stat"><b id="result-served">0</b><span>servidos</span></div><div class="pk-stat"><b id="result-missed">0</b><span>perdidos</span></div></div>
     <ul id="result-team" class="pk-roster"></ul><button id="again" class="pk-btn pk-btn--primary pk-btn--block">Otro turno →</button><a class="pk-back" href="/">← Todos los juegos</a>
   </div></section>
-  <script type="module">import('./game.js').catch(error => { console.error(error); const el = document.getElementById('loading'); el.textContent = 'No pudimos abrir la cocina. Comprueba la conexión y WebGL, y recarga la página.'; el.classList.remove('hidden'); });</script>
+  <script type="module" src="/engine/game-entry.js" data-pana-entry="./game.js"></script>
 </body>
 </html>

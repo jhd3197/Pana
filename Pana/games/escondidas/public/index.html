@@ -10,6 +10,7 @@
   <link rel="stylesheet" href="/engine/ui.css">
   <link rel="stylesheet" href="style.css">
   <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}</script>
+<link rel="stylesheet" href="/engine/game-lobby.css">
 </head>
 <body>
   <canvas id="world" aria-label="Plaza Pana, escenario de Escondidas"></canvas>
@@ -56,12 +57,6 @@
     <span class="pk-eyebrow" id="result-round">RONDA TERMINADA</span><h2 id="result-title" class="pk-title">¡Bien escondidos!</h2><p id="result-copy" class="pk-copy"></p>
     <ul id="scores" class="scores pk-roster"></ul><button id="next" class="pk-btn pk-btn--primary pk-btn--block">Siguiente ronda →</button><a href="/" class="pk-back">← Volver a Pana</a>
   </div></section>
-  <script type="module">
-    import('./game.js').catch(error => {
-      console.error(error);
-      document.getElementById('loading').textContent = 'No pudimos abrir el mapa. Comprueba tu conexión y que WebGL esté disponible, y recarga la página.';
-      document.getElementById('loading').classList.remove('hidden');
-    });
-  </script>
+  <script type="module" src="/engine/game-entry.js" data-pana-entry="./game.js"></script>
 </body>
 </html>

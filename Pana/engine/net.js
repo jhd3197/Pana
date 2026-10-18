@@ -47,12 +47,14 @@ export async function joinRoom(game, { resume = true, ...options }) {
     try { room = await client.reconnect(token); } catch { room = null; }
   }
   try {
-    room ??= await client.joinOrCreate(game, { ...options, lead: !!options.lead });
+    room ??= await client.joinOrCreate(game, { ...options, lead: !!options.lead, lobbyLoading: !!window.PANA_LOBBY_LOADING });
   } catch (error) {
     if (isFull(error)) error.full = true;
     throw error;
   }
-  return new RoomLink(room, options.code, key);
+  const link = new RoomLink(room, options.code, key);
+  document.dispatchEvent(new CustomEvent('pana:room-link', { detail: link }));
+  return link;
 }
 
 export class RoomLink {

@@ -1,3 +1,4 @@
+import { prepareScene } from '/engine/game-load.js';
 import * as THREE from 'three';
 import { buildCharacter } from '/engine/models/characters/pana/avatar-model.js';
 import { loadAvatar, loadName } from '/engine/avatar.js';
@@ -357,3 +358,5 @@ if (qs.has('debug')) window.reliquia = { room, scene, camera, renderer, actors, 
   step(seconds) { if (!room.isHost) return; for (let t = 0; t < seconds; t += 0.05) room.game.update(Math.min(0.05, seconds - t), room.inputs); room.publish(); },
   place(id, x, z) { const p = room.game?.players.find(p => p.id === id); if (p) { p.x = x; p.z = z; room.publish(); } },
 };
+
+await prepareScene({ renderer, scene, camera });

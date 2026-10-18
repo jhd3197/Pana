@@ -10,6 +10,7 @@
 import { getSettings, setSettings, onSettings, bindSound, QUALITY } from './settings.js';
 import { ORIENTATIONS, guardOrientation, isTouch } from './touch.js';
 import { icon } from './icons.js';
+import './navigation.js';
 
 // From next to this module, so a versioned copy (pana.sh's /_v/<version>/engine/) loads its own kit.
 for (const name of ['kit.css', 'ui.css']) {
