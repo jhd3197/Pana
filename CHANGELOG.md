@@ -10,6 +10,13 @@ becomes the GitHub release's notes.
 
 ### Added
 
+- **Eight new cars and a real Taller in Derrape.** La Pulga, El Caprichoso,
+  El Por Puesto, El Burro, El Chigüire, La Chispa, El Tepuy and La Reina join
+  the grid with rounded toy bodies. In the Taller you can try a body, wheels,
+  motor, alerón, front bar, roof cargo, roll cage, finish, accent, rims, decal
+  or stripes on the turntable before buying; each part shows its "+2 Vel" on
+  the stat bars and changes the car a little in every race, online too.
+
 - **Salinas del Viento is twice as long and dives into a hidden salt mine.**
   North of the flats the road plunges down a salt cut into a closed tunnel:
   three dim halls of glowing crystals, salt pools, a waterfall and a plank

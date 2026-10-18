@@ -37,6 +37,26 @@ export const WHEEL_DEFINITIONS = [
     profile: { top: 0.995, accel: 1.03, turn: 1.03, grip: 1.05, offroad: 0.2, wet: 0.9, wetDrag: 0.04 },
     wheel: { r: 0.66, w: 0.62, style: 'malla', rim: '#5fb4c9', cap: '#173a4a', tread: 'lluvia' },
   },
+  // Taller wheels: these cost coins (the five above are free). lift raises
+  // the body on top of what a bigger tire already does.
+  {
+    id: 'clasicas', name: 'Clásicas', color: '#dfe2e8', cost: 25,
+    blurb: 'Banda blanca y cromo, puro estilo. Un pelín más de punta y un poco menos de agarre.',
+    profile: { top: 1.015, accel: 1, turn: 1, grip: 0.95, offroad: 0, wet: 0, wetDrag: 0.3 },
+    wheel: { r: 0.66, w: 0.6, style: 'disco', rim: '#dfe2e8', cap: '#c9ccd4', tread: 'calle' },
+  },
+  {
+    id: 'ligeras', name: 'Rines ligeros', color: '#ff4b4b', cost: 30,
+    blurb: 'Livianitos: arrancan de una y doblan mejor, pero ceden un poco de punta.',
+    profile: { top: 0.985, accel: 1.14, turn: 1.04, grip: 1, offroad: 0, wet: 0, wetDrag: 0.25 },
+    wheel: { r: 0.6, w: 0.6, style: 'turbo', rim: '#f1f0ec', cap: '#ff4b4b', tread: 'calle' },
+  },
+  {
+    id: 'todoterreno', name: 'Todoterreno', color: '#c9ced8', cost: 40,
+    blurb: 'Pa’ tierra, piedras y huecos: quitan la mitad del castigo del barro y suben el carro.',
+    profile: { top: 0.99, accel: 1, turn: 1, grip: 1.05, offroad: 0.5, wet: 0.4, wetDrag: 0.2 },
+    wheel: { r: 0.74, w: 0.72, style: 'acero', rim: '#c9ced8', cap: '#e8323c', tread: 'todoterreno', lift: 0.08 },
+  },
 ];
 
 export function wheelById(id) {

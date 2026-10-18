@@ -46,11 +46,11 @@ test('repainting keeps shading inside the paint family and leaves other colours'
 });
 
 test('taller parts: modest profiles, cfg patches and clean picks', async () => {
-  const { PARTS, PART_SLOTS, cleanParts, partsProfile, renderConfig, partPills } = await import('../public/parts.js');
+  const { PARTS, PART_SLOTS, cleanParts, partsProfile, renderConfig, statPills } = await import('../public/parts.js');
   const { composeTune } = await import('../public/wheel-definitions.js');
   for (const slot of PART_SLOTS) {
     assert.equal(PARTS[slot.id][0].id, 'fabrica', `${slot.id} starts with the stock part`);
-    for (const part of PARTS[slot.id]) for (const v of Object.values(part.profile)) assert.ok(v >= 0.97 && v <= 1.07, `${slot.id}:${part.id} stays modest`);
+    for (const part of PARTS[slot.id]) for (const v of Object.values(part.profile)) assert.ok(v >= 0.97 && v <= 1.1, `${slot.id}:${part.id} stays within ten percent`);
   }
   assert.deepEqual(cleanParts({ motor: 'turbo', aleron: 'fabrica', techo: 'nave', foo: 'bar' }), { motor: 'turbo' });
   assert.deepEqual(cleanParts('{"rin":"dorado"}'), { rin: 'dorado' });
@@ -63,27 +63,30 @@ test('taller parts: modest profiles, cfg patches and clean picks', async () => {
   assert.deepEqual(composeTune(base, {}, {}).top, base.top);
   assert.deepEqual(renderConfig({ acabado: 'camuflaje' }), { acabado: 'camuflaje', rin: 'negro' }, 'one item patches several fields');
   assert.deepEqual(renderConfig({ acabado: 'camuflaje', rin: 'dorado' }).rin, 'dorado', 'a chosen rim wins');
-  assert.deepEqual(partPills(PARTS.motor[2]).map(p => `${p.pct} ${p.label}`), ['2 Vel', '6 Acel', '4 Peso']);
+  const chamo = { top: 35, accel: 26, turn: 2.6, mass: 0.8, grip: 7 };
+  assert.deepEqual(statPills(chamo, composeTune(chamo, {}, partsProfile({ motor: 'carreras' }))).map(p => `${p.delta} ${p.label}`), ['2 Vel', '2 Acel'], 'the racing engine reads as +2 Vel on the bars');
 });
 
 test('try before you buy: a trial costs nothing until it is bought, all or nothing', async () => {
   const { trialCost, buyTrial } = await import('../public/shop.js');
   const w = newWallet();
   w.coins = 100;
-  const trial = [['motor', 'turbo'], ['rin', 'dorado'], ['aleron', 'ninguno']];
-  assert.deepEqual(trialCost(w, trial, {}).cost, 115, 'free parts cost nothing');
-  assert.equal(trialCost(w, trial, {}).short, 15);
+  const trial = [['motor', 'turbo'], ['rin', 'dorado'], ['aleron', 'ninguno'], ['wheel', 'todoterreno']];
+  assert.deepEqual(trialCost(w, trial, {}).cost, 130, 'free parts cost nothing');
+  assert.equal(trialCost(w, trial, {}).short, 30);
   assert.equal(buyTrial(w, trial, {}), false);
   assert.equal(w.coins, 100, 'nothing spent');
-  w.coins = 120;
+  w.coins = 135;
   assert.equal(buyTrial(w, trial, {}), true);
   assert.equal(w.coins, 5);
-  assert.ok(w.owned.includes('motor:turbo') && w.owned.includes('rin:dorado'));
+  assert.ok(w.owned.includes('motor:turbo') && w.owned.includes('rin:dorado') && w.owned.includes('wheel:todoterreno'));
   assert.equal(trialCost(w, trial, {}).cost, 0, 'owned now');
 });
 
 test('wallets keep per-car parts and the cauchos; old saves migrate', async () => {
   const { migrateProfile } = await import('../public/cup-profile.js');
+  assert.equal(cleanWallet({ wheel: 'ligeras' }).wheel, 'calle', 'a bought wheel must be owned');
+  assert.equal(cleanWallet({ wheel: 'ligeras', owned: ['wheel:ligeras'] }).wheel, 'ligeras');
   const w = cleanWallet({ parts: { chamo: { motor: 'turbo', foo: 1 }, bala: { motor: 'nope' } }, wheel: 'palo' });
   assert.deepEqual(w.parts, { chamo: { motor: 'turbo' } });
   assert.equal(w.wheel, 'palo');

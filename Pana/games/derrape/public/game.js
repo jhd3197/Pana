@@ -6,7 +6,9 @@ import { WHEEL_DEFINITIONS, wheelById, composeTune } from './wheel-definitions.j
 import { garageCards, wheelCards } from './garage-cards.js';
 import { createTaller } from './taller.js';
 import { partsProfile, renderConfig } from './parts.js';
-import { studioEnvironment, studioRims } from './garage-stage.js';
+import { studioEnvironment, studioRims, showroomPaint } from './garage-stage.js';
+import { garageBloom } from './garage-bloom.js';
+import { owns } from './shop.js';
 import { paintNext } from './loading.js';
 import { createMenuFlow } from './menu-flow.js';
 import { setMenuImage, trackArt } from './menu-art.js';
@@ -169,11 +171,12 @@ const garage = {
 
 function garageCar(index) {
   // Cache key includes the cauchos, paint and taller parts (worn or tried).
-  const { paint, cfg } = taller.look(CARS[index]);
-  const key = `${index}:${garage.wheel}:${paint}:${JSON.stringify(cfg)}`;
+  const { paint, cfg, wheel } = taller.look(CARS[index]);
+  const key = `${index}:${wheel}:${paint}:${JSON.stringify(cfg)}`;
   if (!garage.cars.has(key)) {
-    if (garage.cars.size >= 16) garage.cars.delete(garage.cars.keys().next().value);
-    garage.cars.set(key, repaintCar(CARS[index].build(ME.avatar, wheelById(garage.wheel).wheel ?? undefined, cfg), CARS[index].color, paint));
+    if (garage.cars.size >= 20) garage.cars.delete(garage.cars.keys().next().value);
+    const car = showroomPaint(CARS[index].build(ME.avatar, wheelById(wheel).wheel ?? undefined, cfg));
+    garage.cars.set(key, repaintCar(car, CARS[index].color, paint));
   }
   return garage.cars.get(key);
 }
@@ -229,7 +232,8 @@ function garageHonk(tryHorn) {
 
 function updateGarage(dt) {
   garage.t += dt;
-  if (garage.spin) garage.turn.rotation.y += dt * 0.35;
+  if (garage.frame) garage.turn.rotation.y += (0 - wrapAngle(garage.turn.rotation.y)) * Math.min(1, dt * 3);
+  else if (garage.spin) garage.turn.rotation.y += dt * 0.35;
   const car = garage.car;
   const hop = garage.hop.step(0, 180, 9, dt);
   car.chassis.position.y = hop * 0.12 + Math.sin(garage.t * 2) * 0.02;
@@ -263,9 +267,24 @@ function updateGarageCamera(dt) {
     garage.controls.target.lerp(head, k);
     garage.camera.position.lerp(head.clone().add(out), k);
   } else {
-    garage.controls.target.lerp(GARAGE_TARGET, k);
-    garage.camera.position.lerp(GARAGE_CAM, k);
+    garage.controls.target.lerp(garage.frame?.[1] ?? GARAGE_TARGET, k);
+    garage.camera.position.lerp(garage.frame?.[0] ?? GARAGE_CAM, k);
   }
+}
+
+// Each taller tab frames the part it sells, with the turntable stopped.
+const V3 = (x, y, z) => new THREE.Vector3(x, y, z);
+const TAB_FRAMES = {
+  ruedas: [V3(7.6, 2.4, 6.8), V3(0.6, 1.0, 0.8)],
+  motor: [V3(5.2, 5.4, 9.0), V3(0, 1.5, 1.2)],
+  aleron: [V3(-6, 5, -8.8), V3(0, 2.0, -1.2)],
+  extras: [V3(4.2, 4.4, 10), V3(0, 1.8, 0.4)],
+  pintura: [V3(11, 3.8, 3.4), V3(0, 1.6, 0)],
+};
+function frameTab(tab) {
+  if (garage.focus) setFocus(false);
+  garage.frame = TAB_FRAMES[tab] ?? null;
+  garage.glide = 1.4;
 }
 
 function setFocus(on) {
@@ -508,9 +527,17 @@ function repaintCar(car, from, to) {
 // The taller UI (taller.js): tabs of parts, hover stat previews and
 // try-before-buy on the turntable car. Closing it takes off what was only tried.
 const taller = createTaller({
-  $, wallet, sound, getDef: () => CARS[garage.index], wheelProfile: () => wheelById(garage.wheel).profile,
+  $, wallet, sound, cars: CARS, getIndex: () => garage.index, selectCar: i => showCar(i),
+  getWheel: () => garage.wheel, setWheel: id => showWheel(id), onTab: frameTab,
   trophies: () => loadTrophies(), save: saveWallet, refreshCar: () => showCar(garage.index), onHorn: garageHonk,
 });
+// The cauchos strip: owned wheels go on at once, others open the taller to try.
+function pickWheel(id) {
+  if (owns(wallet, 'wheel', id)) return showWheel(id);
+  if ($('shop').hidden) $('open-shop').click();
+  taller.open('wheel');
+  taller.tryItem('wheel', id);
+}
 $('open-shop').onclick = () => {
   sound.unlock(); taller.open(); $('shop').hidden = false;
   document.body.classList.add('shop-open'); resize(); $('shop-close').focus();
@@ -518,7 +545,7 @@ $('open-shop').onclick = () => {
 $('shop-close').onclick = () => { $('shop').hidden = true; $('open-shop').focus(); };
 new MutationObserver(() => {
   if (!$('shop').hidden) return;
-  taller.close(); document.body.classList.remove('shop-open'); resize();
+  taller.close(); document.body.classList.remove('shop-open'); garage.frame = null; garage.glide = 1.2; resize();
 }).observe($('shop'), { attributes: true, attributeFilter: ['hidden'] });
 
 function saveSetup() {
@@ -2824,7 +2851,9 @@ function frame() {
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
     renderer.toneMappingExposure = 1.05;
     updateGarage(dt);
-    renderer.render(garage.scene, garage.camera);
+    // A soft bloom on lamps and the ring, unless the quality is set low.
+    if (getSettings().quality !== 'baja') (garage.bloom ??= garageBloom(renderer, garage.scene, garage.camera)).render();
+    else renderer.render(garage.scene, garage.camera);
   } else if (mode === 'race') {
     renderer.toneMapping = THREE.NoToneMapping;
     pollPads();
@@ -2855,6 +2884,7 @@ function resize() {
     cam.updateProjectionMatrix();
   }
   renderer.setSize(innerWidth, innerHeight);
+  garage.bloom?.size();
   // Make room for the information panel and the lineup, with a centered car
   // above the compact garage controls on a phone.
   const wide = innerWidth > 760 || (innerWidth >= 560 && innerWidth > innerHeight);
@@ -2889,7 +2919,7 @@ const cards = garageCards(CARS, garageCar, showCar,
   () => mode === 'garage' && performance.now() - lastGarageInput > 350);
 $('car-lineup').append(cards.fragment);
 cards.ready.catch(error => console.warn('Garage previews unavailable', error));
-const wheelStrip = wheelCards(WHEEL_DEFINITIONS, showWheel,
+const wheelStrip = wheelCards(WHEEL_DEFINITIONS, pickWheel,
   () => mode === 'garage' && performance.now() - lastGarageInput > 350);
 $('wheel-lineup').append(wheelStrip.fragment);
 wheelStrip.ready.catch(error => console.warn('Wheel previews unavailable', error));

@@ -71,10 +71,17 @@ dl div { display: grid; grid-template-columns: 96px 1fr; align-items: center; ga
 dt { color: var(--pk-muted); font-size: 13px; font-weight: 700; }
 dd { position: relative; margin: 0; height: 9px; background: var(--pk-deep); border-radius: 5px; overflow: hidden; }
 dd i { display: block; height: 100%; background: var(--car, var(--pk-coral)); border-radius: 5px; transition: width .35s; }
-/* taller preview: green for what a part adds, a red outline for what it costs */
-dd s { position: absolute; top: 0; bottom: 0; border-radius: 5px; }
-dd s.gain { background: var(--gain); }
-dd s.loss { box-shadow: inset 0 0 0 2px var(--loss); }
+/* The garage stats: ten segments a bar and the points, with the taller's
+   preview: green for what a part adds, a red outline for what it costs. */
+#stats div { grid-template-columns: 96px 1fr 18px; }
+#stats dd { display: flex; gap: 2px; background: none; overflow: visible; }
+#stats dd i { flex: 1; width: auto; background: var(--pk-deep); border-radius: 2px; transition: background .2s; }
+#stats dd i.on { background: var(--car, var(--pk-coral)); }
+#stats dd i.up { background: var(--gain); }
+#stats dd i.down { background: var(--pk-deep); box-shadow: inset 0 0 0 2px var(--loss); }
+#stats .n { font: 800 12px var(--pk-sans); color: var(--pk-text); text-align: right; }
+#stats .n.up { color: var(--gain); }
+#stats .n.down { color: var(--loss); }
 
 .tools { position: absolute; left: 350px; top: 96px; right: 380px; display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
 .tools .pk-btn { background: var(--pk-purple); color: var(--pk-muted); font-weight: 700; }
@@ -167,17 +174,22 @@ dd s.loss { box-shadow: inset 0 0 0 2px var(--loss); }
 /* On a wide screen the taller docks to the right so the car and its stats stay in view. */
 /* On a phone it is a bottom sheet, so the tried parts show on the car above. */
 @media (max-width: 899px) { .shop { top: auto; bottom: 8px; transform: translateX(-50%); max-height: 58vh; } }
+/* A landscape phone docks it to the right half instead, like the desktop. */
+@media (max-width: 899px) and (orientation: landscape) { .shop { top: 8px; bottom: 8px; left: auto; right: 8px; transform: none; width: 52vw; max-height: none; padding: 10px 12px; } .shop-note { display: none; } }
 @media (min-width: 900px) { .shop { top: 92px; bottom: 112px; left: auto; right: 24px; transform: none; width: 440px; max-height: none; } }
 .shop-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; }
 .shop-head h2 { margin: 2px 0 0; font-family: var(--pk-display); font-weight: 400; letter-spacing: 1px; color: var(--pk-yellow); font-size: 26px; }
 .shop h3 { margin: 6px 0 0; font-size: 13px; color: var(--pk-muted); text-transform: uppercase; letter-spacing: 1px; }
 .shop-wallet { display: flex; align-items: center; gap: 8px; margin: 0; color: var(--coin-text); font-size: 18px; }
 .shop-note { margin: 0; color: var(--pk-muted); font-size: 12px; }
-.shop-tabs { display: flex; }
-.shop-tabs button { flex: 1; }
+.shop-tabs { display: flex; flex-wrap: wrap; }
+.shop-tabs button { flex: 1 1 auto; }
 .shop-tabs button[aria-selected="true"] { background: var(--slot-on); color: var(--pk-yellow); }
 .shop-body { display: flex; flex-direction: column; gap: 8px; }
 .shop-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(124px, 1fr)); gap: 8px; margin-top: 6px; }
+.shop-swatches { grid-template-columns: repeat(auto-fill, minmax(84px, 1fr)); gap: 6px; }
+.shop-swatch { align-items: center; padding: 6px; }
+.shop-swatch .shop-text b { font-size: 11px; }
 .shop-item { display: flex; align-items: flex-start; gap: 8px; padding: 8px; border: 1px solid var(--slot-line); border-radius: 10px; background: var(--slot-bg); color: var(--pk-text); font: 800 12px var(--pk-sans); text-align: left; }
 .shop-item[aria-pressed="true"] { border-color: var(--pk-yellow); background: var(--slot-on); }
 .shop-item.trying { border-style: dashed; }

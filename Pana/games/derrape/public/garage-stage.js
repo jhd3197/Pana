@@ -40,3 +40,27 @@ export function studioRims(scene, scale = 1) {
   scene.add(violet, cyan);
   return [violet, cyan];
 }
+
+// Showroom paint: the turntable car's body panels get a clearcoat (garage
+// only; race cars keep their plain shared materials).
+const clearcoats = new Map();
+export function showroomPaint(car) {
+  const hex = car.paint?.color.getHex();
+  if (hex == null) return car;
+  const skip = new Set();
+  car.driver?.group.traverse(o => skip.add(o));
+  car.root.traverse(o => {
+    const m = o.material;
+    if (!o.isMesh || skip.has(o) || !m?.isMeshStandardMaterial || m.isMeshPhysicalMaterial) return;
+    if (m.color.getHex() !== hex && m !== car.paint) return;
+    if (!clearcoats.has(m.uuid)) {
+      const coat = new THREE.MeshPhysicalMaterial();
+      THREE.MeshStandardMaterial.prototype.copy.call(coat, m);
+      coat.clearcoat = m.roughness > 0.7 ? 0.1 : 0.75;
+      coat.clearcoatRoughness = 0.12;
+      clearcoats.set(m.uuid, coat);
+    }
+    o.material = clearcoats.get(m.uuid);
+  });
+  return car;
+}

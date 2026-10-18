@@ -37,12 +37,13 @@ export const FLAMES = [
   { id: 'arcoiris', name: 'Arcoíris', colors: [0xff4b4b, 0xff9a1f, 0xffe14d, 0x4caf50, 0x4fb6ff, 0xc45bff], cost: 0, unlock: 'two-cups' },
 ];
 
-export const CATALOG = { paint: PAINTS, horn: HORNS, flame: FLAMES, ...PARTS };
+export const CATALOG = { paint: PAINTS, horn: HORNS, flame: FLAMES, wheel: WHEEL_DEFINITIONS.map(w => ({ ...w, cost: w.cost ?? 0 })), ...PARTS };
 
 // paint and parts are per car ({ carId: ... }); horn, flame and the cauchos
 // are the driver's. Owned keys are 'kind:id' and free items count as owned.
 export const newWallet = () => ({ coins: 0, owned: ['paint:fabrica', 'horn:propio', 'flame:fuego'], paint: {}, parts: {}, horn: 'propio', flame: 'fuego', wheel: 'calle' });
 export const owns = (wallet, kind, id) => wallet.owned.includes(`${kind}:${id}`) || CATALOG[kind]?.find(i => i.id === id)?.cost === 0;
+const ownsWheel = (owned, id) => owned.includes(`wheel:${id}`) || !(WHEEL_DEFINITIONS.find(w => w.id === id)?.cost);
 
 // Clean a stored wallet: unknown fields drop, numbers stay sane.
 export function cleanWallet(w) {
@@ -58,7 +59,7 @@ export function cleanWallet(w) {
       : {},
     horn: HORNS.some(h => h.id === w.horn) ? w.horn : 'propio',
     flame: FLAMES.some(f => f.id === w.flame) ? w.flame : 'fuego',
-    wheel: WHEEL_DEFINITIONS.some(d => d.id === w.wheel) ? w.wheel : 'calle',
+    wheel: WHEEL_DEFINITIONS.some(d => d.id === w.wheel) && ownsWheel(owned, w.wheel) ? w.wheel : 'calle',
   };
 }
 

@@ -39,7 +39,7 @@ try {
 
   // Try Azul Caribe on the turntable, then buy it: the wallet pays 25.
   await menuClick(page, '#open-shop');
-  await page.locator('[data-tab="estilo"]').click();
+  await page.locator('[data-tab="pintura"]').click();
   await page.locator('#shop-paint [data-id="caribe"]').click();
   assert.match(await page.locator('#shop-try').textContent(), /Probando\s+Azul Caribe/);
   assert.equal(await page.evaluate(() => getWallet().coins), 40, 'trying is free');
@@ -73,17 +73,18 @@ try {
   // bought, and a bought turbo really changes the race car's tune and looks.
   await page.evaluate(() => { getWallet().coins = 100; });
   await menuClick(page, '#open-shop');
-  await page.locator('[data-tab="rendimiento"]').click();
+  await page.locator('[data-tab="motor"]').click();
   await page.locator('#shop-motor [data-id="turbo"]').hover();
-  assert.equal(await page.locator('#stats dd s.gain').count() > 0, true, 'hover shows the gain on the bars');
-  assert.match(await page.locator('#shop-motor [data-id="turbo"] .pills').textContent(), /\+6% Acel/);
+  assert.equal(await page.locator('#stats dd i.up').count() > 0, true, 'hover shows the gain on the bars');
+  assert.match(await page.locator('#shop-motor [data-id="turbo"] .pills').textContent(), /\+1 Vel/);
   await page.locator('#shop-motor [data-id="turbo"]').click();
+  await page.locator('[data-tab="aleron"]').click();
   await page.locator('#shop-aleron [data-id="rally"]').click();
-  assert.match(await page.locator('#shop-buy').textContent(), /Te faltan 50 monedas/, 'turbo + rally cost 150');
+  assert.match(await page.locator('#shop-buy').textContent(), /Te faltan 30 monedas/, 'turbo + rally cost 130');
   await page.locator('#shop-aleron [data-id="rally"]').click();   // take the wing off again
   await page.locator('#shop-buy').click();
   const parts = await page.evaluate(() => ({ coins: getWallet().coins, parts: getWallet().parts.chamo, trying: !document.getElementById('shop-try').hidden }));
-  assert.deepEqual(parts, { coins: 10, parts: { motor: 'turbo' }, trying: false });
+  assert.deepEqual(parts, { coins: 25, parts: { motor: 'turbo' }, trying: false });
   await page.locator('#shop-close').click();
   await menuClick(page, '#play');
   await page.waitForFunction(() => race.state === 'count');
