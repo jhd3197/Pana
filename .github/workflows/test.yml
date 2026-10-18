@@ -32,7 +32,6 @@ jobs:
         run: npm test
 
   # Every game in a real browser: prepares a 3D scene, shows the lobby, no errors.
-  # The full Playwright run (~80 min) stays local: .\dev.ps1 check -Browser
   browser-smoke:
     runs-on: ubuntu-latest
     timeout-minutes: 20
@@ -50,3 +49,53 @@ jobs:
       - run: npx playwright install --with-deps chromium
       - name: All games smoke
         run: node Pana/scripts/test-browser.js all-games.browser lobby.browser
+
+  # The suites of the games this push or PR touched (engine changes add the
+  # engine suites). Two at a time on the 4-core runner.
+  browser-changed:
+    if: github.event_name != 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+      - run: npx playwright install --with-deps chromium
+      - name: Suites for what changed
+        run: node Pana/scripts/test-browser.js --jobs 2 --changed=${{ github.event_name == 'pull_request' && format('origin/{0}', github.base_ref) || github.event.before }}
+
+  # Every suite, split across four runners by Pana/tests/browser-timings.json
+  # (refresh it with `npm run test:browser -- --record`). Runs on PRs into main
+  # and by hand. Not blocking yet: some suites still fail on unchanged code.
+  browser-full:
+    if: (github.event_name == 'pull_request' && github.base_ref == 'main') || github.event_name == 'workflow_dispatch'
+    continue-on-error: true
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3, 4]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+      - run: npx playwright install --with-deps chromium
+      - name: Shard ${{ matrix.shard }} of 4
+        run: node Pana/scripts/test-browser.js --jobs 2 --shard ${{ matrix.shard }}/4
