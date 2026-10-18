@@ -1,26 +1,46 @@
 import * as THREE from 'three';
-import { M, rng } from '/engine/models/core/primitives.js';
-import { stemMaterial, TAU, finish, stem, leaf, cushion } from '/engine/models/vegetation/plant-kit.js';
+import { growTree, ellipsoid, paint, tube, addMesh, barkMat, TAU, treeDetail } from '/engine/models/vegetation/tree-kit.js';
+import { lerp } from '/engine/random.js';
 
-export function mangrove({seed=1}={}) {
-  const r=rng(seed),g=new THREE.Group(),wood=M(0x827563,{roughness:1,flatShading:false}),h=3.5+r()*0.45;
-  stem(g,[[0,0,0],[-0.18,1.5,0.12],[0.12,h,0]],0.29,0.09,wood,12);
-  for(let i=0;i<8;i++) {
-    const a=i*TAU/8+r()*0.15,reach=1.3+r()*0.6,x=Math.cos(a)*reach,z=Math.sin(a)*reach;
-    stem(g,[[x,0.02,z],[x*0.86,0.65,z*0.86],[x*0.45,1.55,z*0.45],[0,2.1+r()*0.3,0]],0.075,0.15,wood,12);
-    if(i%2===0)stem(g,[[x*1.1,0.01,z-0.35],[x*0.9,0.6,z-0.14],[x*0.65,1.1,z*0.65]],0.04,0.075,wood);
-  }
-  for(let i=0;i<6;i++) {
-    const a=i*TAU/6,reach=1.1+r()*0.55,x=Math.cos(a)*reach,z=Math.sin(a)*reach,y=h+r()*0.55;
-    stem(g,[[0,1.9,0],[x*0.5,y-0.55,z*0.5],[x,y,z]],0.14,0.025,wood);
-    cushion(g,[x,y,z],[1.04,0.52,0.93],i%2?0x477c45:0x5a8c48,seed+i);
-    for(let j=0;j<7;j++) {
-      const b=j*TAU/7,pos=[x+Math.cos(b)*0.88,y-0.1,z+Math.sin(b)*0.8];
-      if(j%2===0)cushion(g,[pos[0],y+0.06,pos[2]],[0.4,0.3,0.38],0x568947,seed+i+j,true);
-      leaf(g,0.46,0.17,pos,[0,-b,-0.18],0x6c9d54,0.1);
-      if(j===2||j===5)stem(g,[pos,[pos[0],y-0.52,pos[2]]],0.025,0.008,stemMaterial,4);
+// Mangle: stands on stilt roots arching down into the water, with aerial
+// roots dropping from the limbs, a glossy crown and hanging propagules.
+const MANGLE = {
+  name: 'mangrove',
+  height: 6.5,
+  skeleton: s => ({
+    trunk: 3 * s, trunkR: 0.2 * s, trunkTaper: 0.6, clear: 0.55, minY: 0.05, lean: 0.15, depth: 3, kids: [5, 3, 3],
+    angle: [0.95, 0.75, 0.7], lenRatio: [1, 0.6, 0.55], radRatio: [0.6, 0.6, 0.55], upturn: [0, 0.035, 0.02, 0],
+    wobble: 0.3, taper: 0.4, envelope: ellipsoid(0, 4.4 * s, 0, 3.6 * s, 1.9 * s, 3.6 * s),
+  }),
+  bark: { bark: 0x5a4636, barkLight: 0x7d6650, ridges: 6 },
+  foliage: { kind: 'leaf', size: 0.95, tints: [0x2d6234, 0x37703a, 0x2a5a30], blades: 26, bladeLen: 0.42, bladeWidth: 0.36, flat: 0.55, along: 2, alongFrom: 2 },
+  fruit: (parts, r, skeleton, s, lite) => {
+    for (const tip of skeleton.tips) if (r() < (lite ? 0.2 : 0.45)) {
+      const len = (0.3 + r() * 0.25) * s, pod = new THREE.CylinderGeometry(0.012 * s, 0.02 * s, len, 5);
+      paint(pod, (c, x, y) => c.set(y > 0 ? 0x6f8a3a : 0x5a4a2a));
+      pod.translate(tip.p.x, tip.p.y - len / 2 - 0.15 * s, tip.p.z); parts.fruit.push(pod);
     }
-  }
-  cushion(g,[0,h+0.48,0],[1.35,0.6,1.15],0x568947,seed+20);
-  return finish(g,'mangrove');
+  },
+  extra: (group, parts, r, skeleton, s, o) => {
+    const light = new THREE.Color(0x6b5440), dark = new THREE.Color(0x3d3326);
+    const colorAt = (c, t, a, p) => c.copy(dark).lerp(light, Math.min(1, p.y * 0.8 + 0.2) * (0.8 + 0.2 * Math.sin(a * 3)));
+    const trunk = skeleton.branches[0], stilts = o.lite ? 7 : 12;
+    for (let i = 0; i < stilts; i++) {
+      const height = (0.6 + r() * 1.3) * s, a = i / stilts * TAU + r() * 0.4, reach = (1 + r() * 1.3) * s;
+      const k = Math.max(1, Math.round(height / trunk.pts[trunk.pts.length - 1].y * (trunk.pts.length - 1))), from = trunk.pts[Math.min(k, trunk.pts.length - 1)];
+      const foot = new THREE.Vector3(from.x + Math.cos(a) * reach, 0.04 * s, from.z + Math.sin(a) * reach);
+      const knee = new THREE.Vector3(lerp(from.x, foot.x, 0.55), from.y + 0.35 * s, lerp(from.z, foot.z, 0.55));
+      const pts = new THREE.QuadraticBezierCurve3(from, knee, foot).getPoints(10);
+      addMesh(group, tube(pts, pts.map((p, j) => lerp(0.07, 0.045, j / 10) * s), 6, colorAt, t => 1 + Math.pow(t, 10) * 0.5), barkMat, 'bark');
+    }
+    for (const b of skeleton.branches) if (b.depth === 1 && r() < 0.8) {
+      const from = b.pts[Math.floor(b.pts.length * 0.6)], pts = [];
+      for (let j = 0; j <= 6; j++) pts.push(new THREE.Vector3(from.x + Math.sin(j) * 0.04, lerp(from.y, -0.02, j / 6), from.z + Math.cos(j) * 0.04));
+      addMesh(group, tube(pts, pts.map(() => 0.025 * s), 4, colorAt), barkMat, 'bark');
+    }
+  },
+};
+
+export function mangrove({ seed = 1, detail = 'game', leaves = true, fruit = true, scale = 0.85 } = {}) {
+  return growTree(MANGLE, { seed, detail: treeDetail(detail), leaves, fruit, scale });
 }

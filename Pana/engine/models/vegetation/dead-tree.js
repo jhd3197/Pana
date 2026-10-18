@@ -1,38 +1,27 @@
 import * as THREE from 'three';
-import { rng } from '/engine/models/core/primitives.js';
-import { finish } from '/engine/models/vegetation/plant-kit.js';
-import { barkMat, limb, facet } from '/engine/models/vegetation/faceted-kit.js';
+import { growSkeleton, barkTubes, blade, aim, paint, newParts, finishTree, treeDetail } from '/engine/models/vegetation/tree-kit.js';
+import { rng, clamp } from '/engine/random.js';
 
-// Recursive gnarled tree: every bough splits into two or three thinner, jittered
-// children that never droop far below horizontal. Bare by default (cemetery,
-// páramo, burnt savanna); `leaves` caps the finest twigs with faceted clumps.
-export function deadTree({ seed = 1, height = 6, depth = 4, leaves = false, tint = leaves ? 0x5c4a3a : 0x3b3330,
-  leafTints = [0x4f8d3e, 0x67b443, 0x2f6a30] } = {}) {
-  const r = rng(seed), g = new THREE.Group(), size = height / 4.6;
-  const dark = barkMat(tint), light = barkMat(new THREE.Color(tint).offsetHSL(0, -0.02, 0.07).getHex());
-  const grow = (a, dir, len, radius, level) => {
-    const b = a.clone().addScaledVector(dir, len);
-    limb(g, a.toArray(), b.toArray(), radius, radius * 0.7, level > 2 ? dark : light, level > 2 ? 8 : 6);
-    if (level === 0 || len < 0.35) {
-      if (leaves) {
-        const s = Math.max(0.55, len * 0.9) * (0.9 + r() * 0.5);
-        facet(g, [b.x, b.y + s * 0.2, b.z], [s, s * 0.7, s], [r() * 3, r() * 3, r() * 3], leafTints[(r() * leafTints.length) | 0], r() * 40);
-      }
-      return;
+// Árbol seco: gnarled limbs on four levels, grey cracked bark and Spanish
+// moss (barba de palo) hanging from them with `leaves`; bare by default, the
+// cemetery, páramo, burnt-savanna tree. `height` is about the tree height.
+export function deadTree({ seed = 1, height = 6, detail = 'game', leaves = false, scale = height / 6 } = {}) {
+  const r = rng(seed), s = scale, level = treeDetail(detail), lite = level !== 'full', low = level === 'low' || level === 'far';
+  const skeleton = growSkeleton(r, {
+    trunk: 3.2 * s, trunkR: 0.32 * s, trunkTaper: 0.55, trunkWobble: 0.2, lean: 0.35, clear: 0.45, depth: lite ? 3 : 4, kids: [4, 3, 3, 2],
+    angle: [0.8, 0.8, 0.75, 0.7], lenRatio: [1, 0.62, 0.6, 0.55], radRatio: [0.62, 0.6, 0.55, 0.5], upturn: [0, 0.01, 0.03, 0.04, 0.04],
+    wobble: 0.6, taper: 0.35, angleJitter: 0.6,
+  });
+  const group = new THREE.Group(), parts = newParts();
+  barkTubes(group, skeleton.branches, { bark: 0x7d7a72, barkLight: 0xa9a59a, barkDark: 0.5, ridges: 13, ridgeTwist: 1.8, height: 8 * s, minRadius: 0.008,
+    trunkShape: (t, a) => 1 + Math.pow(1 - t, 8) * (0.4 + 0.7 * Math.max(0, Math.cos(a * 3 + 2)) ** 2) + 0.07 * Math.sin(a * 5 + t * 9) });
+  if (leaves) {
+    const top = new THREE.Color(0xa7ae8a), tipColor = new THREE.Color(0x6f765c);
+    for (const b of skeleton.branches) if (b.depth >= 1 && b.depth <= 3) for (let i = 1; i < b.pts.length; i += 2) if (r() < (lite ? 0.25 : 0.5)) {
+      const len = (0.5 + r() * 1.1) * s, strand = blade(len, len * 0.06, len * 0.05, 3);
+      paint(strand, (c, x) => c.copy(top).lerp(tipColor, clamp(x / len)));
+      parts.leaves.push(aim(strand, new THREE.Vector3((r() - 0.5) * 0.2, -1, (r() - 0.5) * 0.2), b.pts[i]));
     }
-    const n = level > 2 ? 2 + (r() * 2 | 0) : 2;
-    for (let i = 0; i < n; i++) {
-      const next = dir.clone().add(new THREE.Vector3((r() - 0.5) * 1.4, (r() - 0.2) * 0.7, (r() - 0.5) * 1.4)).normalize();
-      if (next.y < -0.25) next.y = -0.25;
-      grow(b, next.normalize(), len * (0.62 + r() * 0.2), radius * 0.66, level - 1);
-    }
-  };
-  const lean = new THREE.Vector3((r() - 0.5) * 0.4, 1, (r() - 0.5) * 0.4).normalize();
-  grow(new THREE.Vector3(0, -0.3, 0), lean, size * (1.6 + r() * 0.8), size * 0.32, depth);
-  // Surface roots splay from the collar into the ground.
-  for (let i = 0; i < 4; i++) {
-    const a = i / 4 * Math.PI * 2 + r() * 1.2;
-    limb(g, [0, size * 0.45, 0], [Math.cos(a) * size * 0.95, -0.15, Math.sin(a) * size * 0.95], size * 0.15, size * 0.05, dark, 6);
   }
-  return finish(g, leaves ? 'leafyTree' : 'deadTree');
+  return finishTree(group, parts, leaves ? 'leafyTree' : 'deadTree', { crownRadius: 3 * s, petals: null });
 }

@@ -56,12 +56,12 @@ try {
     await page.evaluate(i=>{const {models,stage,inspect,fitCamera}=vegetationProof;fitCamera(stage.camera,inspect(models[i]).bounds,false,'side');stage.renderer.render(stage.scene,stage.camera);},i);
     await page.screenshot({path:`${output}/${metrics.details[i].id}-side.png`});
   }
-  assert.equal(metrics.vegetation.length,44);assert.equal(new Set(metrics.vegetation).size,44);
-  for (const id of ['garden-rosette', 'trailing-vine', 'trinitaria', 'apamate', 'bucare']) assert.ok(metrics.vegetation.includes(id));
+  assert.equal(metrics.vegetation.length,50);assert.equal(new Set(metrics.vegetation).size,50);
+  for (const id of ['garden-rosette', 'trailing-vine', 'trinitaria', 'apamate', 'bucare', 'saman', 'yagrumo', 'cacao', 'zancona', 'manaca', 'tree-fern']) assert.ok(metrics.vegetation.includes(id));
   for(const m of metrics.details) {
     assert.ok(m.triangles<12000,`${m.id} triangle budget`);assert.ok(m.meshes<=6,`${m.id} draw-call budget`);
     assert.ok(m.minY>=-0.08,`${m.id} grounded origin`);assert.ok(m.dimensions.every(d=>d>0.1&&d<12));
   }
   assert.deepEqual(errors,[]);await writeFile(`${output}/metrics.json`,JSON.stringify(metrics,null,2));console.log(JSON.stringify(metrics,null,2));
-  console.log('PASS: forty-two catalog plants; deterministic/varied seeds, geometry ownership, ground origins, batching and twelve render proofs');
+  console.log('PASS: fifty catalog plants; deterministic/varied seeds, geometry ownership, ground origins, batching and twelve render proofs');
 }finally{await browser.close();}

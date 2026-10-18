@@ -1,36 +1,38 @@
 import * as THREE from 'three';
-import { M, mesh, rng } from '/engine/models/core/primitives.js';
-import { finish } from '/engine/models/vegetation/plant-kit.js';
-import { barkMat, limb, buttress, canopyBlob, hangingVine, bromeliadRosette } from '/engine/models/vegetation/faceted-kit.js';
+import { growTree, ellipsoid, buttress, spiralVine, liana, bromeliad, hangingVine, branchPoints, treeDetail } from '/engine/models/vegetation/tree-kit.js';
 
-const BARKS = [0x6b5340, 0x8a6c52, 0x7d7a5c];
+// Gigante de la selva: the emergent that rises above everything. Huge plank
+// buttresses, a pale bole, a high crown, lianas spiralling up the trunk and
+// slung between limbs, bromeliads on the branches.
+const GIGANTE = {
+  name: 'emergentTree',
+  height: 24,
+  skeleton: s => ({
+    trunk: 17 * s, trunkR: 0.85 * s, trunkTaper: 0.45, clear: 0.8, lean: 0.05, trunkWobble: 0.03, trunkSegments: 32,
+    depth: 3, kids: [7, 4, 3], angle: [1.05, 0.65, 0.6], lenRatio: [0.46, 0.55, 0.55], radRatio: [0.45, 0.55, 0.55],
+    upturn: [0, 0.04, 0.03, 0.02], wobble: 0.2, taper: 0.35, maxY: 0.75, minY: -0.1, segments: [0, 9, 6, 5],
+    envelope: ellipsoid(0, 20.5 * s, 0, 8.5 * s, 3.4 * s, 8.5 * s, 6 * s),
+    trunkShape: buttress({ height: 0.15, count: 5, amp: 4.2, sharp: 12 }),
+  }),
+  bark: { bark: 0x9a9480, barkLight: 0xc0baa3, barkDark: 0.72, ridges: 4, mossBand: 2.5 },
+  foliage: { kind: 'leaf', size: 1.4, tints: [0x356f33, 0x427d39, 0x4f8a3e], blades: 24, bladeLen: 0.5, bladeWidth: 0.32, flat: 0.5, along: 2, alongFrom: 2, keep: 0.85 },
+  extra: (group, parts, r, skeleton, s, o) => {
+    const trunk = skeleton.branches[0];
+    for (let i = 0; i < (o.lite ? 2 : 3); i++) spiralVine(group, r, trunk, { from: 0.06, to: 0.78 + r() * 0.15, turns: 1.2 + r() * 1.6, radius: (0.035 + r() * 0.02) * s, pad: 1 });
+    for (const spot of branchPoints(skeleton, r, 2)) {
+      const foot = new THREE.Vector3(spot.p.x * 0.35 + (r() - 0.5) * 2, -0.02, spot.p.z * 0.35 + (r() - 0.5) * 2);
+      liana(group, r, spot.p, foot, { sag: 0.3, radius: 0.035 * s, wiggle: 0.25, swing: (1.5 + r() * 1.5) * s, n: 24 });
+    }
+    for (let i = 0; i < (o.lite ? 2 : 4); i++) {
+      const [a, b] = branchPoints(skeleton, r, 2);
+      if (b && a.branch !== b.branch) liana(group, r, a.p, b.p, { sag: (2 + r() * 3) * s, radius: 0.03 * s, wiggle: 0.1 });
+    }
+    if (!o.leaves) return;
+    for (const spot of branchPoints(skeleton, r, o.lite ? 4 : 9)) bromeliad(parts, r, spot.p.clone().add(new THREE.Vector3(0, spot.rad, 0)), 0.55 * s);
+    for (const spot of branchPoints(skeleton, r, o.lite ? 4 : 10, 2)) hangingVine(parts, r, spot.p, (3 + r() * 6) * s, { s, lite: o.lite });
+  },
+};
 
-// Rainforest emergent: a gently wandering trunk on plank buttresses, boughs
-// angled up and out to flat faceted crowns, with lianas and epiphytes.
-export function emergentTree({ seed = 1, scale = 1 } = {}) {
-  const r = rng(seed), g = new THREE.Group(), s = scale;
-  const h = (11 + r() * 10) * s, wood = barkMat(BARKS[(r() * 3) | 0]), roots = barkMat(0x5d4636), vine = barkMat(0x3b6b2a);
-  let p = new THREE.Vector3(0, -0.4, 0), radius = 0.72 * s * (0.85 + r() * 0.4);
-  const base = radius, dir = new THREE.Vector3((r() - 0.5) * 0.16, 1, (r() - 0.5) * 0.16).normalize();
-  for (let i = 0; i < 5; i++) {
-    const q = p.clone().addScaledVector(dir, h / 5);
-    limb(g, p.toArray(), q.toArray(), radius, radius * 0.86, wood, 8);
-    radius *= 0.86; p = q;
-    dir.add(new THREE.Vector3((r() - 0.5) * 0.12, 0, (r() - 0.5) * 0.12)).normalize();
-  }
-  const fins = 3 + (r() * 3 | 0);
-  for (let i = 0; i < fins; i++) buttress(g, i / fins * Math.PI * 2 + r(), base * 0.75, (1.8 + r() * 1.4) * s, (2.4 + r() * 1.8) * s, 0.26 * s, roots);
-  if (r() < 0.4) g.add(mesh(new THREE.CylinderGeometry(base * 0.97, base * 0.97, h * 0.1, 6), M(0x4a6b34, { roughness: 1 }), 0, h * 0.12, 0));
-  const top = p.toArray(), n = 3 + (r() * 3 | 0);
-  for (let i = 0; i < n; i++) {
-    const a = i / n * Math.PI * 2 + r(), L = (3 + r() * 3.5) * s;
-    const d = new THREE.Vector3(Math.cos(a), 0.45 + r() * 0.45, Math.sin(a)).normalize();
-    const e = [top[0] + d.x * L, top[1] + d.y * L, top[2] + d.z * L];
-    limb(g, top, e, radius * 0.7, radius * 0.4, wood, 6);
-    canopyBlob(g, [e[0], e[1] + 0.6 * s, e[2]], (2.2 + r() * 1.6) * s, r, [0x3f8a35, 0x5fae3c, 0x2a6a2c, 0x8cc04a, 0x2f7a52]);
-    if (r() < 0.55) hangingVine(g, [e[0] + r() - 0.5, e[1] - 0.5, e[2] + r() - 0.5], 3 + r() * 8 * s, r, vine, [0x5fae3c, 0x3f8a35]);
-    if (r() < 0.4) bromeliadRosette(g, e, 0.6 * s, r);
-  }
-  canopyBlob(g, [top[0], top[1] + 1.2 * s, top[2]], (2.6 + r() * 1.5) * s, r, [0x3f8a35, 0x5fae3c, 0x2a6a2c]);
-  return finish(g, 'emergentTree');
+export function emergentTree({ seed = 1, scale = 1, detail = 'game', leaves = true } = {}) {
+  return growTree(GIGANTE, { seed, detail: treeDetail(detail), leaves, scale });
 }

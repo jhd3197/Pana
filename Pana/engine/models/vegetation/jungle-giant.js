@@ -1,53 +1,41 @@
 import * as THREE from 'three';
-import { M, mesh, rng } from '/engine/models/core/primitives.js';
-import { TAU, finish, stem, leaf, cushion } from '/engine/models/vegetation/plant-kit.js';
-import { natureSurface } from '/engine/models/core/nature-surface.js';
+import { growTree, ellipsoid, figs, tube, addMesh, barkMat, treeDetail } from '/engine/models/vegetation/tree-kit.js';
+import { lerp } from '/engine/random.js';
 
-export function jungleGiant({seed=1}={}) {
-  const r=rng(seed),g=new THREE.Group(),h=11.5+r()*1.5;
-  const trunk=new THREE.CylinderGeometry(1,1,1,22,16),p=trunk.attributes.position,colors=[];
-  const low=new THREE.Color(0x66563b),high=new THREE.Color(0xa69771);
-  for(let i=0;i<p.count;i++) {
-    const t=p.getY(i)+0.5,x=p.getX(i),z=p.getZ(i),a=Math.atan2(z,x);
-    const ridge=Math.pow(Math.max(0,Math.cos(a*6+seed)),3);
-    const radius=0.92-t*0.42+Math.pow(1-t,5)*(0.45+ridge*0.55)+ridge*0.05;
-    p.setXYZ(i,x*radius+Math.sin(t*Math.PI*0.8)*0.3,t*h,z*radius);
-    const c=low.clone().lerp(high,THREE.MathUtils.clamp(0.3+t*0.45+ridge*0.12+Math.sin(t*40+a*3)*0.04,0,1));colors.push(c.r,c.g,c.b);
-  }
-  trunk.setAttribute('color',new THREE.Float32BufferAttribute(colors,3));trunk.computeVertexNormals();
-  g.add(mesh(natureSurface(trunk,'bark'),M(0xffffff,{vertexColors:true,flatShading:false,roughness:1})));
-  // Thin plank buttresses fan out from the base like the walls of a room.
-  const fin=M(0x7a6646,{flatShading:false,roughness:1});
-  for(let i=0;i<6;i++) {
-    const a=i*TAU/6+r()*0.4,reach=2.4+r()*1.1,rise=2.6+r()*1.2,shape=new THREE.Shape();
-    shape.moveTo(0.45,0);shape.lineTo(reach,0);shape.quadraticCurveTo(1.1,0.35,0.55,rise);shape.lineTo(0.35,rise);shape.closePath();
-    const geo=new THREE.ExtrudeGeometry(shape,{depth:0.22,bevelEnabled:true,bevelSize:0.04,bevelThickness:0.04,bevelSegments:1,curveSegments:8});geo.translate(0,0,-0.11);
-    const m=mesh(natureSurface(geo,'bark'),fin);m.rotation.y=-a;g.add(m);
-  }
-  const tints=[0x4f8d3e,0x5f9a45,0x3f7d3a],vine=M(0x5d6b3a,{flatShading:false,roughness:1});
-  for(let i=0;i<5;i++) {
-    const a=i*TAU/5+r()*0.5,reach=3.4+r()*1.4,y=h+1.2+r()*1.6,x=Math.cos(a)*reach,z=Math.sin(a)*reach,tint=tints[i%3];
-    stem(g,[[0.25,h*0.82,0],[x*0.45,h+0.4,z*0.45],[x,y,z]],0.42,0.12,fin,10);
-    cushion(g,[x,y+0.55,z],[2.35+r()*0.5,1.25,2.2+r()*0.4],tint,seed+i);
-    cushion(g,[x*1.3,y+0.1,z*1.3],[1.4,0.7,1.3],tints[(i+1)%3],seed+i+9,true);
-    for(let j=0;j<7;j++) {
-      const angle=j*TAU/7+a,tx=x+Math.cos(angle)*2.05,tz=z+Math.sin(angle)*1.95,ty=y+0.3+r()*0.65;
-      cushion(g,[tx,ty,tz],[0.65+r()*0.2,0.48+r()*0.15,0.6+r()*0.2],tints[(i+j)%3],seed+i*7+j,true);
-      for(let k=0;k<3;k++)leaf(g,0.48,0.16,[tx,ty+0.3,tz],[0.3,-angle+k*0.5,0.3],k===0?0x8bae51:tint,0.1,5);
+// Caucho de raíces: long horizontal limbs drop aerial roots that reach the
+// ground and thicken into new trunks, so one tree becomes a small grove.
+// The selva's big canopy tree (factory name kept for every map using it).
+const CAUCHO = {
+  name: 'jungleGiant',
+  height: 11,
+  skeleton: s => ({
+    trunk: 4.4 * s, trunkR: 0.62 * s, trunkTaper: 0.7, clear: 0.7, lean: 0.05, depth: 3, kids: [7, 4, 3],
+    angle: [1.25, 0.7, 0.65], lenRatio: [1.8, 0.5, 0.5], radRatio: [0.5, 0.55, 0.55], upturn: [0, 0.012, 0.03, 0.02],
+    minY: -0.02, maxY: 0.35, wobble: 0.16, taper: 0.4, segments: [0, 12, 6, 5],
+    envelope: ellipsoid(0, 7.8 * s, 0, 9.5 * s, 3 * s, 9.5 * s, 7 * s),
+    trunkShape: (t, a) => 1 + 0.2 * Math.max(0, Math.cos(a * 4 + t * 6)) ** 2 + Math.pow(1 - t, 8) * 0.9,
+  }),
+  bark: { bark: 0x77705f, barkLight: 0x9a9380, ridges: 8, ridgeTwist: 2.5 },
+  foliage: { kind: 'leaf', size: 1.1, tints: [0x2a5c2e, 0x336a34, 0x3b7238], blades: 24, bladeLen: 0.42, bladeWidth: 0.42, flat: 0.55, along: 2, alongFrom: 2 },
+  fruit: (parts, r, skeleton, s) => figs(parts, r, skeleton, s, { chance: 0.3, color: 0xb8432c }),
+  extra: (group, parts, r, skeleton, s) => {
+    const dark = new THREE.Color(0x857d6b), light = new THREE.Color(0x9f9884);
+    const colorAt = (c, t, a) => c.copy(dark).lerp(light, 0.5 + 0.5 * Math.sin(a * 3 + t * 8));
+    for (const b of skeleton.branches) if (b.depth === 1) for (let i = 3; i < b.pts.length; i += 2) {
+      const from = b.pts[i], along = i / b.pts.length;
+      if (r() < 0.42) {   // a prop root that reached the ground: a new trunk
+        const rad = lerp(0.16, 0.06, along) * s * (0.7 + r() * 0.6), pts = [];
+        for (let j = 0; j <= 10; j++) { const t = j / 10; pts.push(new THREE.Vector3(from.x + Math.sin(t * 6 + i) * 0.04, lerp(from.y, rad * 0.6, t), from.z + Math.cos(t * 5 + i) * 0.04)); }
+        addMesh(group, tube(pts, pts.map(() => rad), 7, colorAt, t => 1 + Math.pow(t, 8) * 1.1 + 0.08 * Math.sin(t * 20)), barkMat, 'bark');
+      } else if (r() < 0.5) {   // a thin root still on its way down
+        const len = (0.8 + r() * 2.2) * s, pts = [];
+        for (let j = 0; j <= 6; j++) pts.push(new THREE.Vector3(from.x, from.y - len * j / 6, from.z));
+        addMesh(group, tube(pts, pts.map(() => 0.015 * s), 3, colorAt), barkMat, 'bark');
+      }
     }
-    // Lianas drop from each limb; leaves alternate along their length.
-    for(let k=0;k<2;k++) {
-      const sx=x*(0.55+k*0.4),sz=z*(0.55+k*0.4),len=4+r()*4.5,top=y-0.2;
-      const pts=Array.from({length:6},(_,j)=>[sx+Math.sin(j*1.1+seed+k)*0.25,top-len*j/5,sz+Math.cos(j*0.9+i)*0.2]);
-      stem(g,pts,0.05,0.03,vine,12);
-      for(let j=1;j<6;j++)leaf(g,0.36,0.13,[pts[j][0],pts[j][1]+len*0.08,pts[j][2]],[0,j*2.1+i,-1.1],0x4f8d3e,0.05,4);
-    }
-    // Bromeliad rosette in the fork.
-    const bx=x*0.45,by=h+0.55,bz=z*0.45;
-    for(let j=0;j<7;j++)leaf(g,0.55,0.12,[bx,by,bz],[0,j*TAU/7,0.8],j%2?0xc0473a:0x6a9a3f,0.12,5);
-  }
-  cushion(g,[0.4,h+3.2,0],[3.4,1.5,3.2],0x5a9743,seed+40);
-  for(let i=0;i<6;i++) {const a=i*TAU/6+0.5,x=Math.cos(a)*2.4,z=Math.sin(a)*2.4;cushion(g,[x,h+2.2+r()*0.8,z],[2.0,0.95,1.9],tints[i%3],seed+50+i);}
-  cushion(g,[-1.2,h+2.4,1.4],[2.2,1.0,2.0],0x4f8d3e,seed+41);
-  return finish(g,'jungleGiant');
+  },
+};
+
+export function jungleGiant({ seed = 1, scale = 1, detail = 'game', leaves = true, fruit = true } = {}) {
+  return growTree(CAUCHO, { seed, detail: treeDetail(detail), leaves, fruit, scale });
 }

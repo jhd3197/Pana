@@ -4,7 +4,7 @@ Derrape's thirteen circuits opt into seeded surface detail at the end of
 `track-runtime.js` construction. Studio's circuit previews use the same build.
 Other games and standalone model previews keep their existing materials.
 Ground and trees use procedural surface shading, with nearby 3D grass tufts
-layered over the ground. Existing tree shapes remain unchanged.
+layered over the ground. Tree shapes come from `venezuelan-trees.md`.
 
 `tracks/nature-material.js` owns `natureStyle(id, seed = 73)` and
 `applyNatureMaterials(group, id, seed)`. A recipe contains its seed, coordinate

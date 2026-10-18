@@ -16,6 +16,13 @@ becomes the GitHub release's notes.
   prices. Coins you pick up in a race are exchanged one for one for
   mangos at the finish, plus the podium and trophy prizes.
 
+- **Every map grows the new Árboles Pana trees.** Mangos, ceibas,
+  araguaneyes, apamates, cocoteros, moriches, pinos, mangles and the selva
+  giants are rebuilt with real branching limbs, leafy clumps, fruit and
+  flowers, and they sway in the wind. Samanes shade the Plaza parks and the
+  Llanos pastures, and Selva adds yagrumos, cacao, tree ferns and walking
+  palms. Pana Studio lists all eighteen species.
+
 - **Every sign on Derrape's circuits is a cartoon wooden board.** Track
   names, the META gantry, shop fronts and warnings use chunky lettering that
   always fits its board, and feather flags replace the blank pennant panels.

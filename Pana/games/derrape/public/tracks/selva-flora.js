@@ -9,13 +9,15 @@ import { tunnelRoofHeight } from './selva-temple.js';
 
 const TAU=Math.PI*2;
 export const JUNGLE_ADDITIONS=['araguaney','bamboo','fern','monstera','heliconia','cactus',
-  'mangrove','papaya','agave','waterLily','hibiscus','reeds','jungleGiant','tropicalBush'];
+  'mangrove','papaya','agave','waterLily','hibiscus','reeds','jungleGiant','tropicalBush',
+  'yagrumo','zancona','manaca','treeFern','cacao'];
 
 export function jungleFlora(T,groundAt,reservations) {
   const r=rng(5721),source=new THREE.Group(),placements=[],templates=new Map();
   for(const kind of ['ceiba','palm','banana','bush',...JUNGLE_ADDITIONS]) {
     templates.set(kind,Array.from({length:kind==='ceiba'?3:2},(_,i)=>{
-      const root=flora[kind]({seed:17+i*19,h:9+i*2}),bounds=new THREE.Box3().setFromObject(root);
+      // the canopy ceibas stay narrow-crowned so the valley keeps its density
+      const root=flora[kind]({seed:17+i*19,h:9+i*2,...kind==='ceiba'?{scale:0.5}:{}}),bounds=new THREE.Box3().setFromObject(root);
       const radius=Math.hypot(Math.max(Math.abs(bounds.min.x),Math.abs(bounds.max.x)),Math.max(Math.abs(bounds.min.z),Math.abs(bounds.max.z)));
       return {root,radius};
     }));
@@ -90,6 +92,13 @@ export function jungleFlora(T,groundAt,reservations) {
     const offset=side*(18+r()*4),p=placeOnTrack(T,s,offset),y=T.heightAtS(s)+tunnelRoofHeight(offset)-0.25;
     add(side===1?'bamboo':'monstera',p.x,p.z,side===1?1.3:2.2,'roof',{roof:true,y});
     add('fern',p.x+side*2,p.z,1.8,'roof',{roof:true,y:y-0.6});
+  }
+  // Understorey trees: cacao and tree ferns in the shade, yagrumos in the
+  // clearings, stilt and clump palms along the forest edge.
+  for(let i=0;i<36;i++) {
+    const s=r()*T.TOTAL,p=placeOnTrack(T,s,(r()<0.5?-1:1)*(20+r()*26));
+    const kind=['cacao','treeFern','yagrumo','zancona','manaca','cacao'][i%6];
+    add(kind,p.x,p.z,0.9+r()*0.35,'understorey-trees');
   }
   // Merge into spatial material batches; release all temporary/template geometry.
   const group=bake(source,{cellSize:140}),owned=new Set();

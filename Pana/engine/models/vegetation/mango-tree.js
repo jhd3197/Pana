@@ -1,45 +1,21 @@
-import * as THREE from 'three';
-import { mesh, rng } from '/engine/models/core/primitives.js';
-import { taperedStem } from '/engine/models/core/botanical-shapes.js';
-import { bake } from '/engine/models/core/static-batch.js';
-import { bark, branch, leafyCushion, leafSprig } from '/engine/models/vegetation/canopy.js';
-import { makeMango } from '/engine/models/props/mango.js';
+import { growTree, ellipsoid, hangingFruit, treeDetail } from '/engine/models/vegetation/tree-kit.js';
 
-export function mangoTree({ seed = 1, h = 3.2, fruit = true } = {}) {
-  const r = rng(seed);
-  const g = new THREE.Group();
-  g.add(branch([0, 0, 0], [0.2, h, 0], 0.38, 0.19));
-  for (let i = 0; i < 5; i++) {
-    const a = i * Math.PI * 0.4 + seed;
-    g.add(mesh(taperedStem([[Math.cos(a) * 0.65, 0.035, Math.sin(a) * 0.65], [Math.cos(a) * 0.3, 0.18, Math.sin(a) * 0.3], [0.02, 0.65, 0]], 0.045, 0.12, 5, 6), bark));
-  }
-  const tint = [0x64a847, 0x76ac49, 0x4f9b48][seed % 3];
-  for (let i = 0; i < 5; i++) {
-    const a = (i / 5) * Math.PI * 2 + r();
-    const rr = 0.95 + r() * 0.35;
-    const x = Math.cos(a) * 1.05, z = Math.sin(a) * 1.05, y = h + 0.45 + r() * 0.65;
-    g.add(branch([0.1, h * 0.6, 0], [x, y, z], 0.16, 0.06));
-    const pad = leafyCushion(rr, seed + i, tint); pad.position.set(x, y, z); pad.scale.y = 0.82; g.add(pad);
-    for (let j = 0; j < 3; j++) {
-      const turn = a + j * Math.PI * 2 / 3, px = x + Math.cos(turn) * rr * 0.65, pz = z + Math.sin(turn) * rr * 0.65;
-      const tuft = leafyCushion(0.58 + j * 0.06, seed + i + j, j % 3 ? tint : 0x79a448, true);
-      tuft.position.set(px, y + rr * 0.1, pz); tuft.scale.y = 0.85; g.add(tuft);
-      leafSprig(g, px, y + rr * 0.54, pz, -turn, 0.4, seed + i * 6 + j, tint);
-    }
-  }
-  for (let i = 0; i < 3; i++) {
-    const a = i * 2.1 + seed, top = leafyCushion(0.95, seed + 20 + i, tint);
-    top.position.set(Math.cos(a) * 0.6, h + 1.2 + i * 0.15, Math.sin(a) * 0.6); top.scale.set(1, 0.85, 0.95); g.add(top);
-  }
-  if (fruit) {
-    for (let i = 0; i < 5; i++) {
-      const m = makeMango();
-      m.scale.setScalar(0.4);
-      const a = i * 2.4 + seed, y = h + (i % 3) * 0.22;
-      m.position.set(Math.cos(a) * 1.72, y, Math.sin(a) * 1.72); m.rotation.z = Math.sin(a) * 0.3;
-      g.add(branch([m.position.x, y + 0.22, m.position.z], [m.position.x * 0.85, y + 0.65, m.position.z * 0.85], 0.012, 0.018));
-      g.add(m);
-    }
-  }
-  const result = bake(g); result.name = 'mangoTree'; g.traverse(o => o.geometry?.dispose()); return result;
+// Mango: a dense, round, dark green crown on five strong limbs, with mangos
+// hanging from green to red. `h` is the old trunk height (3.2 → a ~6 m tree).
+const MANGO = {
+  name: 'mangoTree',
+  height: 7,
+  skeleton: s => ({
+    trunk: 2.6 * s, trunkR: 0.34 * s, trunkTaper: 0.6, clear: 0.68, minY: 0.08, lean: 0.12, depth: 3, kids: [5, 4, 3],
+    angle: [0.8, 0.72, 0.7], lenRatio: [1.6, 0.58, 0.55], radRatio: [0.62, 0.58, 0.55], upturn: [0, 0.035, 0.02, 0],
+    wobble: 0.22, taper: 0.4, envelope: ellipsoid(0, 5 * s, 0, 4.2 * s, 2.6 * s, 4.2 * s),
+    trunkShape: (t, a) => 1 + Math.pow(1 - t, 7) * (0.45 + 0.8 * Math.max(0, Math.cos(a * 5)) ** 2),
+  }),
+  bark: { bark: 0x6b4f37, barkLight: 0x8a6c4f, ridges: 9 },
+  foliage: { kind: 'leaf', size: 1.05, tints: [0x2f6b2c, 0x3c7d33, 0x4c8c38], blades: 26, bladeLen: 0.6, bladeWidth: 0.22, flat: 0.62, along: 2, alongFrom: 2 },
+  fruit: (parts, r, skeleton, s, lite) => hangingFruit(parts, r, skeleton, { count: lite ? 8 : 18, size: 0.11 * s, colors: [0x7aa63a, 0xf2b52c, 0xe0472b] }),
+};
+
+export function mangoTree({ seed = 1, h = 3.2, fruit = true, leaves = true, detail = 'game', scale = (h + 2) / 7.2 } = {}) {
+  return growTree(MANGO, { seed, detail: treeDetail(detail), leaves, fruit, scale });
 }

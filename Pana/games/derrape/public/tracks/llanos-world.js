@@ -3,6 +3,7 @@ import { THREE,M,mesh,box,tube,terrain,put,foundation,scatter,instances,clear,fi
 import { llaneroRanchHouse, corralGate, hayBale, waterWindmill, horseStable, feedingTrough, ranchFence, oldTractor, mudPuddle, ranchWaterTower } from '/engine/models/props/ranch.js';
 import { palm } from '/engine/models/vegetation/palm.js';
 import { mangoTree } from '/engine/models/vegetation/mango-tree.js';
+import { saman } from '/engine/models/vegetation/saman.js';
 import { araguaney } from '/engine/models/vegetation/araguaney.js';
 import { reeds } from '/engine/models/vegetation/reeds.js';
 import { waterLily } from '/engine/models/vegetation/water-lily.js';
@@ -137,6 +138,8 @@ export function llanosEnvironment(T){
   const dry=(x,z)=>riverDistance(x,z)>34&&wetlandDistance(x,z)>1.35&&!occupied.some(([a,b,r])=>Math.hypot(x-a,z-b)<r);
   instances(group,grassTuft(0x7f9f3c),scatter(T,world.groundAt,{seed:415,count:2200,bounds:[-440,-365,440,290],margin:2,minY:1,scale:1.5,accept:dry}),'savanna-grasses',180);
   instances(group,mangoTree({seed:14,h:7,fruit:false}),scatter(T,world.groundAt,{seed:416,count:18,bounds:[-350,-280,-110,200],margin:9,scale:1.35,accept:dry}),'hato-shade-trees',180);
+  // A few wide samanes, the llano's shade tree, stand apart in the pastures.
+  instances(group,saman({seed:15}),scatter(T,world.groundAt,{seed:419,count:6,bounds:[-350,-280,-110,200],margin:16,accept:dry}),'hato-samanes',180);
   instances(group,araguaney({seed:11}),scatter(T,world.groundAt,{seed:417,count:9,bounds:[-300,-240,290,200],margin:10,scale:1.4,accept:dry}),'savanna-araguaneyes',180);
   instances(group,palm({seed:17,h:9}),scatter(T,world.groundAt,{seed:418,count:20,bounds:[-150,-340,360,280],margin:9,scale:1.1,accept:dry}),'savanna-palms',180);
   const landscape=llanosLandscape(T,world,occupied);group.add(landscape);group.userData.surroundings=landscape.userData.surroundings;

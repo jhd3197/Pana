@@ -10,6 +10,7 @@ import { bake } from '/engine/models/core/static-batch.js';
 import { palm } from '/engine/models/vegetation/palm.js';
 import { mangoTree } from '/engine/models/vegetation/mango-tree.js';
 import { ceiba } from '/engine/models/vegetation/ceiba.js';
+import { saman } from '/engine/models/vegetation/saman.js';
 import { AVENUES, STREETS, BLOCKS, STREET_HALF, townHeight, streetDistance } from './plaza-layout.js';
 import { waterfrontHeight,overWater,createWaterfront } from './plaza-waterfront.js';
 import { waterAnimator } from '/engine/models/effects/water-surface.js';
@@ -121,7 +122,7 @@ export function createTown(T) {
   function tree(x,z,seed,large=false) {
     if(groundAt(x,z)<-0.4||x>270&&z>280)return;
     if(!clear(x,z,6)||streetDistance(x,z)<15||occupied.some(p=>Math.hypot(x-p.x,z-p.z)<9))return;
-    const model=large?ceiba({seed}):seed%3?mangoTree({seed,h:6+seed%3,fruit:false}):palm({seed,h:9+seed%4});
+    const model=large==='saman'?saman({seed}):large?ceiba({seed}):seed%3?mangoTree({seed,h:6+seed%3,fruit:false}):palm({seed,h:9+seed%4});
     const lift=x>-300&&x<405&&z>-310&&z<275?0.47:0.03;
     model.position.set(x,groundAt(x,z)+lift,z);plants.add(model);trees.push({x,z});
   }
@@ -130,7 +131,8 @@ export function createTown(T) {
     if(b.kind==='historic')continue;
     if(b.kind==='homes'){tree(x,z,seed);if(b.x1-b.x0>130)tree(x+22,z,seed+1);}
     if(b.kind==='park') {
-      for(let i=0;i<9;i++)tree(x+(i%3-1)*22,z+(Math.floor(i/3)-1)*22,seed+i,true);
+      // a samán shades the middle of each park, ceibas around it
+      for(let i=0;i<9;i++)tree(x+(i%3-1)*22,z+(Math.floor(i/3)-1)*22,seed+i,i===4?'saman':true);
       ground.add(surface(x-2,b.z0+12,x+2,b.z1-12,(x,z)=>groundAt(x,z)+0.56,0xdfc99e,2,outsideLane));
     }
     if(b.kind==='market') {

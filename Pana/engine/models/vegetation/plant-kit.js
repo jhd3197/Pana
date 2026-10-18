@@ -60,4 +60,7 @@ function cushion(group,position,size,tint,seed,small=false) {
 }
 
 
-export { leafMaterial, bark, stemMaterial, TAU, finish, stem, leaf, cushion, tickWind, applyWindSway };
+// The tree kit's own shader reads the same clock, so one tickWind moves every plant.
+const windUniforms={time:windUniform,strength:windStrength};
+
+export { leafMaterial, bark, stemMaterial, TAU, finish, stem, leaf, cushion, tickWind, applyWindSway, windUniforms };
