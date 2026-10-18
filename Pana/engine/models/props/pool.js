@@ -19,7 +19,7 @@ function own(group) { let disposed = false; group.userData.dispose = () => { if 
 // Grounded, metres. The cloth is 10 × 5: rules coordinates map at 1 cm/unit.
 export function createPoolTable() {
   const group = new THREE.Group(); group.name = 'Billar de la plaza';
-  const wood = mat('#79482e'), edge = mat('#bc8350'), felt = mat('#207c64', { roughness: 1 }), cushion = mat('#17563f'), brass = mat('#d6b578', { metalness: .65, roughness: .32 }), dark = mat('#171a16');
+  const wood = mat('#8b5e3c'), edge = mat('#d8884b'), felt = mat('#1f9e5e', { roughness: 1 }), cushion = mat('#187d4c'), brass = mat('#d6b578', { metalness: .65, roughness: .32 }), dark = mat('#171a16');
   // Cut the six pockets through every layer, so the cloth never sits on a
   // solid wooden slab and the recessed leather cups have genuine depth.
   for (const [w, d, h, y, material] of [[11.1, 6.1, .42, 1.02, wood], [11.2, 6.2, .15, 1.365, edge]]) {

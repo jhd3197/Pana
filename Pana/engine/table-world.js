@@ -2,15 +2,16 @@ import * as THREE from 'three';
 import { createArenaSlot } from '/engine/arenas.js';
 import { createSky } from '/engine/sky.js';
 import { bindRenderer } from '/engine/settings.js';
+import { WARM_DAY } from '/engine/look.js';
 
 // Shared outdoor stage for every table game (Billar, Póquer, Ludo, Dominó,
 // Caída): renderer, sky, light, sun shadows and the plaza arena around the
 // table. Gameplay owns its meshes. Options tune the light for each table;
-// the defaults are the pool and poker look.
+// the defaults are the shared warm day (engine/look.js).
 const STAGE = {
-  exposure: 1.05, background: '#c7e1e8', fog: [40, 115], sky: true, fov: 42,
-  hemi: ['#e6f6ff', '#b38b60', 2.2],
-  sun: { color: '#ffe1ab', intensity: 3, position: [-12, 22, 10], box: 15, far: 55, bias: -.0001 },
+  exposure: WARM_DAY.exposure, background: WARM_DAY.background, fog: [40, 115], sky: true, fov: 42,
+  hemi: [...WARM_DAY.hemi.slice(0, 2), 2.2],
+  sun: { color: WARM_DAY.sun.color, intensity: 3, position: [-12, 22, 10], box: 15, far: 55, bias: -.0001 },
   plazaScale: .85,
   fit: 'canvas',   // a stage inside the page; full-window tables pass 'window'
 };
@@ -22,7 +23,7 @@ export function createTableWorld(canvas, options = {}) {
   renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = o.exposure;
   const unbind = bindRenderer(renderer, 1.5, { fit: o.fit }), scene = new THREE.Scene();
   scene.background = new THREE.Color(o.background); scene.fog = new THREE.Fog(o.background, ...o.fog);
-  const sky = o.sky ? createSky() : null; if (sky) scene.add(sky.mesh);
+  const sky = o.sky ? createSky(WARM_DAY.sky) : null; if (sky) scene.add(sky.mesh);
   scene.add(new THREE.HemisphereLight(...o.hemi));
   const sun = new THREE.DirectionalLight(o.sun.color, o.sun.intensity); sun.position.set(...o.sun.position); sun.castShadow = true;
   sun.shadow.mapSize.set(2048, 2048); Object.assign(sun.shadow.camera, { left: -o.sun.box, right: o.sun.box, top: o.sun.box, bottom: -o.sun.box, near: .5, far: o.sun.far });
