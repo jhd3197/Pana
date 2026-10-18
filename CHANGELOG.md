@@ -10,6 +10,10 @@ becomes the GitHub release's notes.
 
 ### Added
 
+- **Bolas Criollas and Ludo now have illustrated launcher cards and backgrounds.**
+  Each game uses two supplied capybara illustrations, with smaller card files
+  for quick browsing and large artwork for the featured game.
+
 - **Prepare games in illustrated lobbies with saved pana portraits and shared readiness.**
   Browse real settings while scenes and shaders prepare, wait for friends before
   starting, and retry failed loading. Curiara shows boat seating; Derrape follows

@@ -13,7 +13,7 @@ let link, loaded = false, failed = false, ready = true, signature = '';
 let maxPlayers = 8;
 const docked = [];
 const root = el('section', 'pk-game-lobby'); root.id = 'pana-lobby-shell'; root.setAttribute('aria-label', 'Sala del juego');
-if (game !== 'criollas') root.style.setProperty('--lobby-image', `url("/images/launcher/${game}.${game === 'embuste' ? 'png' : 'jpg'}")`);
+root.style.setProperty('--lobby-image', `url("/images/launcher/${game}.${game === 'embuste' ? 'png' : 'jpg'}")`);
 const head = el('header', 'pk-game-lobby-head'), back = el('a', 'pk-btn', ' Juegos'); back.prepend(icon('chevronLeft')); back.href = '/';
 const title = el('h1', 'pk-title', document.title.split(/[·—]/)[0].trim());
 const invite = el('button', 'pk-btn pk-btn--teal', 'Copiar link'); invite.type = 'button';

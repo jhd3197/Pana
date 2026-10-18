@@ -119,7 +119,7 @@ function gameCard(game) {
   const card = el('article', 'game');
   card.dataset.id = game.id;
   if (game.color) card.style.setProperty('--tone', game.color);
-  const url = artUrl(game);
+  const url = artUrl(game, true);
   const art = el(url ? 'img' : 'canvas', 'game-art');
   if (url) { art.src = url; art.alt = ''; art.loading = 'lazy'; art.decoding = 'async'; }
   art.setAttribute('aria-hidden', 'true');

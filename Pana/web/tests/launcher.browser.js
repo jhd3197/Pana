@@ -16,10 +16,19 @@ try {
   await page.evaluate(() => document.fonts.ready);
   assert.equal(await page.locator('#feature-name').textContent(), 'Derrape');
   assert.equal(await page.locator('#feature-art canvas').count(), 0);
-  assert.equal(await page.locator('.game-art[src]').count(), 13);
+  assert.equal(await page.locator('.game-art[src]').count(), await page.locator('.game').count());
   await page.screenshot({ path: `${output}/launcher-desktop.png` });
   await page.locator('button[data-category="Mesa"]').click();
-  assert.equal(await page.locator('.game:visible').count(), 5);
+  assert.equal(await page.locator('.game:visible').count(), await page.locator('[data-id="ludo"]').count() ? 6 : 5);
+  for (const game of ['criollas', 'ludo']) {
+    if (!await page.locator(`[data-id="${game}"]`).count()) continue;
+    const card = page.locator(`[data-id="${game}"] img`);
+    assert.match(await card.getAttribute('src'), new RegExp(`${game}-card\\.jpg$`));
+    await card.evaluate(img => img.decode());
+    await page.locator(`[data-id="${game}"] button`).click();
+    assert.match(await page.locator('#feature-art img').getAttribute('src'), new RegExp(`${game}\\.jpg$`));
+    await page.locator('#feature-art img').evaluate(img => img.decode());
+  }
   await page.locator('[data-id="caida"] button').click();
   assert.equal(await page.locator('#feature-name').textContent(), 'Caída');
   await page.locator('#create-room').click();

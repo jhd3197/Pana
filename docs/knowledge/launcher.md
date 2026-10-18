@@ -14,8 +14,13 @@ plus the supplied Embuste camp PNG. The demo's `g-truco`, `g-farol`, `g-bola8`
 and `g-pepazo` assets map to `caida`, `poquer`, `billar` and `pintura` respectively.
 The source bundle is **Game launcher and UI flow (1) / Pana Launcher.dc.html**.
 Its ready-sized artwork is used unchanged, with CSS `object-fit` and transform
-transitions rather than generated/upscaled replacement files. Bolas Criollas has
-no supplied illustration and keeps its existing live preview.
+transitions rather than generated/upscaled replacement files. Bolas Criollas and
+Ludo use the supplied Tropical Capybara Bocce Challenge / Capybara Ludo Fiesta
+images as 1440-pixel JPEG backgrounds. Capybara Bocce in the Tropical Sun /
+Capybara Ludo Fiesta in the Plaza provide separate 640-pixel card images, also
+used by the private social pages. These are resized exports of the supplied PNGs,
+not generated replacements. `artUrl(game, true)` selects a card variant when one
+exists; the default selects the large hero/lobby illustration.
 
 Cards load images lazily. Only a game without an illustration loads `card.js`;
 switching a live hero loses the old WebGL context. The player's 3D editor imports
