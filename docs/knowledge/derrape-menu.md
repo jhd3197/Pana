@@ -55,3 +55,35 @@ Proof: `tests/menu-flow.browser.js` covers artwork, local/split play, all maps
 and cups, customization, keyboard, phone layouts, reduced motion, failed image
 requests, loading retry and two actual clients with host/guest restrictions.
 Existing loading, modes, cup and online suites retain their gameplay assertions.
+
+## Taller parts and the v2 car kit
+
+- Cars are built on `engine/models/vehicles/car-kit.js` v2: a filleted side
+  profile (`roundedPath`) with arches cut from `axle`/`archR`/`sill`, two
+  tapered side slabs plus a center tub (`shellBody`), `extrudeX` for any
+  extruded part and cached rounded boxes (`RB`/`rbox`). `shellBody` returns a
+  fit (`noseZ`, `tailZ`, `topOf`, `halfW`); `cabin` adds `fit.roof`,
+  `fit.belt` and `fit.cabin`. The fit already includes the tub's 0.03 bevel:
+  extrusion bevels grow the outline, so a decal placed on the raw profile is
+  buried under the paint.
+- `car-parts.js` dresses any fitted car from a render config: spoiler (pato,
+  gt, rally), roof cargo (barra, cava, maletas, cornetas; a pickup's bed or an
+  open car's deck via `fit.cargo`), decals, stripes, a turbo hood scoop and the
+  paint finish. `'fabrica'` keeps the builder's stock part; builders skip
+  their stock spoiler/roof/decal/stripes/finish when a slot asks for another.
+- Wheels are lathe tires with tread blocks and a rim face (cinco, acero, disco,
+  malla, turbo, palo). Every rim part shares one metal material look so
+  `batchRacer` merges a wheel into 2–3 draws; per-car race meshes stayed at
+  173–184 after batching (was 173–184), body triangles grew from ~2–4k to
+  ~6–10k against a 137k driver. A wheel bigger than the car's own lifts the
+  body (`rig` `lift` group) because `chassis.position.y` is the suspension.
+- `parts.js` is shared by the garage, race and room. Parts change the tune
+  only through `composeTune(tune, wheelProfile, partsProfile(parts))`, kept
+  within ±6% (`shop.test.js` enforces 0.97–1.07 per part). Mass now comes from
+  the composed tune in contacts, so cargo really pushes harder.
+- Equipped parts live per car in `wallet.parts`, the cauchos in
+  `wallet.wheel` (migrated once from `derrape:wheels`, which is still
+  mirrored). `cleanCosmetics` adds `parts` only when some are set, so older
+  rooms and the cup ledger see the same three-field cosmetics as before.
+- Debug pages opened with `?manual` never re-render the garage, so a
+  screenshot there shows the first frame; use `?debug` alone to see a change.

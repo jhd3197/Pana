@@ -1,7 +1,7 @@
 /* Derrape on the Pana Kit (/engine/kit.css): tokens, fonts and HUD pieces
    come from the kit; this file places them over the 3D scene. */
 :root { color-scheme: dark; }
-body { --bar-top: #ffd65c; --me-rank: #b5121b; --slot-bg: #2c263e; --slot-line: #514b65; --slot-on: #3b3040; --slot-key: #bab2ca; --swap: #e0d8ec; --shield: #ffe58b; --coin-line: #63552f; --coin-rim: #f8bd37; --coin-face: #d88a20; --coin-shine: #ffed9a; --coin-label: #d7cba8; --coin-text: #ffdf72; --coin-cap: #aaa08c; --coin-full: #e3ae39; --boost: #4fb6ff; --hud-ink: #16161a; --trophy-oro: #ffc629; --trophy-plata: #c9ccd4; --trophy-bronce: #c47a3a; --drift-1: #4fb6ff; --drift-2: #ff9a1f; --drift-3: #c45bff; --rarity-blue: #4fb6ff; --rarity-purple: #c45bff; --rarity-gold: #ffc629; --pk-game: #ff4b4b; --pk-game-ink: #fff; --hud-edge: 2px solid rgba(255, 255, 255, .08); }
+body { --gain: #5fe08a; --loss: #ff5a5a; --bar-top: #ffd65c; --me-rank: #b5121b; --slot-bg: #2c263e; --slot-line: #514b65; --slot-on: #3b3040; --slot-key: #bab2ca; --swap: #e0d8ec; --shield: #ffe58b; --coin-line: #63552f; --coin-rim: #f8bd37; --coin-face: #d88a20; --coin-shine: #ffed9a; --coin-label: #d7cba8; --coin-text: #ffdf72; --coin-cap: #aaa08c; --coin-full: #e3ae39; --boost: #4fb6ff; --hud-ink: #16161a; --trophy-oro: #ffc629; --trophy-plata: #c9ccd4; --trophy-bronce: #c47a3a; --drift-1: #4fb6ff; --drift-2: #ff9a1f; --drift-3: #c45bff; --rarity-blue: #4fb6ff; --rarity-purple: #c45bff; --rarity-gold: #ffc629; --pk-game: #ff4b4b; --pk-game-ink: #fff; --hud-edge: 2px solid rgba(255, 255, 255, .08); }
 
 * { box-sizing: border-box; }
 
@@ -69,8 +69,12 @@ kbd.pk-kbd { min-width: 22px; height: 22px; padding: 0 6px; font-size: 11px; }
 dl { margin: 4px 0 0; display: grid; gap: 10px; }
 dl div { display: grid; grid-template-columns: 96px 1fr; align-items: center; gap: 10px; }
 dt { color: var(--pk-muted); font-size: 13px; font-weight: 700; }
-dd { margin: 0; height: 9px; background: var(--pk-deep); border-radius: 5px; overflow: hidden; }
+dd { position: relative; margin: 0; height: 9px; background: var(--pk-deep); border-radius: 5px; overflow: hidden; }
 dd i { display: block; height: 100%; background: var(--car, var(--pk-coral)); border-radius: 5px; transition: width .35s; }
+/* taller preview: green for what a part adds, a red outline for what it costs */
+dd s { position: absolute; top: 0; bottom: 0; border-radius: 5px; }
+dd s.gain { background: var(--gain); }
+dd s.loss { box-shadow: inset 0 0 0 2px var(--loss); }
 
 .tools { position: absolute; left: 350px; top: 96px; right: 380px; display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
 .tools .pk-btn { background: var(--pk-purple); color: var(--pk-muted); font-weight: 700; }
@@ -160,17 +164,38 @@ dd i { display: block; height: 100%; background: var(--car, var(--pk-coral)); bo
 #race.split .coins { right: calc(50% + 16px); }
 .shop-open b { color: var(--coin-text); }
 .shop { position: fixed; z-index: 30; top: 50%; left: 50%; transform: translate(-50%, -50%); width: min(560px, calc(100vw - 32px)); max-height: calc(100vh - 40px); overflow-y: auto; padding: 18px 20px; display: flex; flex-direction: column; gap: 10px; }
+/* On a wide screen the taller docks to the right so the car and its stats stay in view. */
+/* On a phone it is a bottom sheet, so the tried parts show on the car above. */
+@media (max-width: 899px) { .shop { top: auto; bottom: 8px; transform: translateX(-50%); max-height: 58vh; } }
+@media (min-width: 900px) { .shop { top: 92px; bottom: 112px; left: auto; right: 24px; transform: none; width: 440px; max-height: none; } }
 .shop-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; }
 .shop-head h2 { margin: 2px 0 0; font-family: var(--pk-display); font-weight: 400; letter-spacing: 1px; color: var(--pk-yellow); font-size: 26px; }
 .shop h3 { margin: 6px 0 0; font-size: 13px; color: var(--pk-muted); text-transform: uppercase; letter-spacing: 1px; }
 .shop-wallet { display: flex; align-items: center; gap: 8px; margin: 0; color: var(--coin-text); font-size: 18px; }
 .shop-note { margin: 0; color: var(--pk-muted); font-size: 12px; }
-.shop-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 8px; }
-.shop-item { display: flex; align-items: center; gap: 8px; padding: 8px; border: 1px solid var(--slot-line); border-radius: 10px; background: var(--slot-bg); color: var(--pk-text); font: 800 12px var(--pk-sans); text-align: left; }
+.shop-tabs { display: flex; }
+.shop-tabs button { flex: 1; }
+.shop-tabs button[aria-selected="true"] { background: var(--slot-on); color: var(--pk-yellow); }
+.shop-body { display: flex; flex-direction: column; gap: 8px; }
+.shop-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(124px, 1fr)); gap: 8px; margin-top: 6px; }
+.shop-item { display: flex; align-items: flex-start; gap: 8px; padding: 8px; border: 1px solid var(--slot-line); border-radius: 10px; background: var(--slot-bg); color: var(--pk-text); font: 800 12px var(--pk-sans); text-align: left; }
 .shop-item[aria-pressed="true"] { border-color: var(--pk-yellow); background: var(--slot-on); }
+.shop-item.trying { border-style: dashed; }
 .shop-item:disabled { opacity: .45; cursor: default; }
-.shop-item small { display: block; color: var(--pk-muted); font-weight: 700; }
+.shop-item small { display: block; color: var(--pk-muted); font-weight: 700; margin-top: 2px; }
+.shop-text { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.shop-item .tag, .shop-item .price { font-style: normal; font-size: 11px; }
+.shop-item .tag { color: var(--pk-yellow); }
+.shop-item .price { color: var(--coin-text); }
+.shop-item .pills { display: flex; flex-wrap: wrap; gap: 3px; }
+.shop-item .pill { padding: 1px 6px; border-radius: 6px; font-size: 10px; border: 1px solid; }
+.pill.up { color: var(--gain); border-color: var(--gain); }
+.pill.down { color: var(--loss); border-color: var(--loss); }
+.pill.peso { color: var(--pk-muted); border-color: var(--slot-line); }
 .shop-item .swatch { flex: none; width: 22px; height: 22px; border-radius: 50%; border: 2px solid var(--hud-ink); background: var(--swatch); }
+.shop-try { position: sticky; bottom: 0; display: flex; align-items: center; gap: 8px; padding: 10px; border: 1px dashed var(--pk-yellow); border-radius: 10px; background: var(--slot-on); }
+.shop-try p { flex: 1; margin: 0; font-size: 12px; }
+.shop-try[hidden] { display: none; }
 .mode-trophy { display: inline-block; width: 9px; height: 9px; margin-left: 5px; border-radius: 50%; background: var(--trophy); vertical-align: middle; }
 .mode-legacy { display: block; color: var(--pk-muted); font-size: 9px; }
 

@@ -45,13 +45,16 @@ export function wheelById(id) {
 
 // Pure: returns a new tune, never mutates the car definition. Surface resistance
 // and skill payouts combine with the car's talent as well as its basic stats.
-export function composeTune(tune, profile = {}) {
+// parts is the taller's multiplier profile (parts.js partsProfile).
+export function composeTune(tune, profile = {}, parts = {}) {
+  const k = (field) => (profile[field] ?? 1) * (parts[field] ?? 1);
   return {
     ...tune,
-    top: tune.top * (profile.top ?? 1),
-    accel: tune.accel * (profile.accel ?? 1),
-    turn: tune.turn * (profile.turn ?? 1),
-    grip: tune.grip * (profile.grip ?? 1),
+    top: tune.top * k('top'),
+    accel: tune.accel * k('accel'),
+    turn: tune.turn * k('turn'),
+    grip: tune.grip * k('grip'),
+    mass: tune.mass * k('mass'),
     offroadResist: 1 - (1 - (tune.offroadResist ?? 0)) * (1 - (profile.offroad ?? 0)),
     wetFloor: Math.max(tune.wetFloor ?? 0, profile.wet ?? 0),
     wetDrag: profile.wetDrag ?? 0.25,

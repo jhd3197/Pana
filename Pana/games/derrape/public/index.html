@@ -131,10 +131,14 @@
       <div><span class="pk-eyebrow">Taller del garaje</span><h2 id="shop-title">Personaliza tu carro</h2></div>
       <p class="shop-wallet"><span class="coin-symbol" aria-hidden="true">I</span><b id="shop-coins">0</b> monedas</p>
     </header>
-    <p class="shop-note">Ganas monedas en cada carrera: las que recoges más un premio por el podio. La pintura es para el carro que tienes elegido.</p>
-    <h3>Pintura</h3><div id="shop-paint" class="shop-grid"></div>
-    <h3>Corneta</h3><div id="shop-horn" class="shop-grid"></div>
-    <h3>Llama del turbo</h3><div id="shop-flame" class="shop-grid"></div>
+    <p class="shop-note">Ganas monedas en cada carrera: las que recoges más un premio por el podio. Lo que no es tuyo lo puedes probar gratis; la pintura y las piezas van en el carro que tienes elegido.</p>
+    <div id="shop-tabs" class="shop-tabs pk-seg" role="tablist" aria-label="Secciones del taller"></div>
+    <div id="shop-body" class="shop-body"></div>
+    <div id="shop-try" class="shop-try" role="status" hidden>
+      <p id="shop-try-text"></p>
+      <button id="shop-untry" type="button" class="pk-btn pk-btn--sm">Quitar</button>
+      <button id="shop-buy" type="button" class="pk-btn pk-btn--sm pk-btn--primary">Comprar</button>
+    </div>
     <button id="shop-close" type="button" class="pk-btn pk-btn--primary pk-btn--block">Listo</button>
   </section>
 

@@ -1,8 +1,11 @@
 // Derrape's taller: coins you keep between races (the wallet), and what they
-// buy — paint jobs, horns and turbo flames — plus the unlocks trophies give.
+// buy — paint jobs, horns, turbo flames and the parts in parts.js — plus the
+// unlocks trophies give.
 // Plain data and math; game.js keeps it in localStorage and paints the cars.
 
 import { canonicalCupId } from './cup-definitions.js';
+import { PARTS, cleanParts } from './parts.js';
+import { WHEEL_DEFINITIONS } from './wheel-definitions.js';
 
 export const PAINTS = [
   { id: 'fabrica', name: 'De fábrica', color: null, cost: 0 },
@@ -34,9 +37,12 @@ export const FLAMES = [
   { id: 'arcoiris', name: 'Arcoíris', colors: [0xff4b4b, 0xff9a1f, 0xffe14d, 0x4caf50, 0x4fb6ff, 0xc45bff], cost: 0, unlock: 'two-cups' },
 ];
 
-export const CATALOG = { paint: PAINTS, horn: HORNS, flame: FLAMES };
+export const CATALOG = { paint: PAINTS, horn: HORNS, flame: FLAMES, ...PARTS };
 
-export const newWallet = () => ({ coins: 0, owned: ['paint:fabrica', 'horn:propio', 'flame:fuego'], paint: {}, horn: 'propio', flame: 'fuego' });
+// paint and parts are per car ({ carId: ... }); horn, flame and the cauchos
+// are the driver's. Owned keys are 'kind:id' and free items count as owned.
+export const newWallet = () => ({ coins: 0, owned: ['paint:fabrica', 'horn:propio', 'flame:fuego'], paint: {}, parts: {}, horn: 'propio', flame: 'fuego', wheel: 'calle' });
+export const owns = (wallet, kind, id) => wallet.owned.includes(`${kind}:${id}`) || CATALOG[kind]?.find(i => i.id === id)?.cost === 0;
 
 // Clean a stored wallet: unknown fields drop, numbers stay sane.
 export function cleanWallet(w) {
@@ -47,8 +53,12 @@ export function cleanWallet(w) {
     coins: Number.isFinite(w.coins) && w.coins > 0 ? Math.floor(w.coins) : 0,
     owned: [...new Set([...base.owned, ...owned])],
     paint: w.paint && typeof w.paint === 'object' ? { ...w.paint } : {},
+    parts: w.parts && typeof w.parts === 'object' && !Array.isArray(w.parts)
+      ? Object.fromEntries(Object.entries(w.parts).map(([car, parts]) => [car, cleanParts(parts)]).filter(([, parts]) => Object.keys(parts).length))
+      : {},
     horn: HORNS.some(h => h.id === w.horn) ? w.horn : 'propio',
     flame: FLAMES.some(f => f.id === w.flame) ? w.flame : 'fuego',
+    wheel: WHEEL_DEFINITIONS.some(d => d.id === w.wheel) ? w.wheel : 'calle',
   };
 }
 
@@ -78,7 +88,7 @@ export function buy(wallet, kind, id, trophies) {
   const item = CATALOG[kind]?.find(i => i.id === id);
   const key = `${kind}:${id}`;
   if (!item || !unlocked(item, trophies)) return false;
-  if (wallet.owned.includes(key)) return true;
+  if (owns(wallet, kind, id)) return true;
   if (wallet.coins < item.cost) return false;
   wallet.coins -= item.cost;
   wallet.owned.push(key);
@@ -115,4 +125,22 @@ export function repaintHex(hex, from, to) {
   const nl = Math.max(0.05, Math.min(0.95, tl + (l - fl)));
   const ns = Math.max(0, Math.min(1, ts * (fs ? s / fs : 1)));
   return hslToHex(th, ns, nl);
+}
+
+// Try before you buy: what the trial would cost and what it still needs.
+// trial is [[kind, id], ...]; owned or free items cost nothing.
+export function trialCost(wallet, trial, trophies) {
+  const missing = trial.filter(([kind, id]) => !owns(wallet, kind, id));
+  const cost = missing.reduce((sum, [kind, id]) => sum + (CATALOG[kind]?.find(i => i.id === id)?.cost ?? 0), 0);
+  const locked = missing.some(([kind, id]) => { const item = CATALOG[kind]?.find(i => i.id === id); return !item || !unlocked(item, trophies); });
+  return { missing, cost, short: Math.max(0, cost - wallet.coins), locked };
+}
+
+// Buy everything in a trial at once, or nothing.
+export function buyTrial(wallet, trial, trophies) {
+  const { missing, cost, locked } = trialCost(wallet, trial, trophies);
+  if (locked || cost > wallet.coins) return false;
+  wallet.coins -= cost;
+  for (const [kind, id] of missing) wallet.owned.push(`${kind}:${id}`);
+  return true;
 }

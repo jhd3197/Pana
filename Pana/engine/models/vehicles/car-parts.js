@@ -240,7 +240,7 @@ function camo() {
 export const FINISHES = {
   brillante: null,
   mate: { roughness: 0.86, metalness: 0 },
-  metalico: { roughness: 0.26, metalness: 0.5 },
+  metalico: { roughness: 0.3, metalness: 0.35 },
   camuflaje: { roughness: 0.82, metalness: 0 },
 };
 const finishCache = new Map();

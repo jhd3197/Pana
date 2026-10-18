@@ -5,6 +5,7 @@ import { CAR_DEFINITIONS } from './car-definitions.js';
 import { TRACK_DEFINITIONS } from './track-definitions.js';
 import { WHEEL_DEFINITIONS } from './wheel-definitions.js';
 import { PAINTS, HORNS, FLAMES } from './shop.js';
+import { cleanParts } from './parts.js';
 
 export const LAPS = 3;
 export const lapsForTrack = id => TRACK_DEFINITIONS.find(t=>t.id===id)?.defaultLaps ?? LAPS;
@@ -33,9 +34,12 @@ export const cleanTrack = (id) => TRACK_IDS.includes(id === 'playa' ? 'bululu' :
 export const cleanDifficulty = (id) => ['facil', 'normal', 'dificil'].includes(id) ? id : 'normal';
 export function cleanCosmetics(value) {
   if(typeof value==='string'){try{value=JSON.parse(value);}catch{value=null;}}
+  // Taller parts ride along only when set; unknown slots or ids are dropped.
+  const parts=cleanParts(value?.parts);
   return {paint:PAINTS.some(p=>p.id===value?.paint)?value.paint:'fabrica',
     horn:HORNS.some(h=>h.id===value?.horn)?value.horn:'propio',
-    flame:FLAMES.some(f=>f.id===value?.flame)?value.flame:'fuego'};
+    flame:FLAMES.some(f=>f.id===value?.flame)?value.flame:'fuego',
+    ...(Object.keys(parts).length?{parts}:{})};
 }
 
 // A pose is a flat array so 20 Hz updates stay small:
