@@ -48,10 +48,15 @@ try {
   }
   const m = await open('Móvil', `${code}-mobile`, true); await m.screenshot({ path: `${out}/mobile-lobby.png` }); await m.locator('#practice').tap();
   await wait(m, () => pinturaDebug.room.local && pinturaDebug.room.state.phase === 'playing'); assert.ok(await m.locator('#fire').isVisible());
+  // A bot's hit would respawn the pana elsewhere mid-check: shield it while touch movement is measured.
+  await wait(m, () => pinturaDebug.room.game.players[0].respawn === 0);
+  await m.evaluate(() => { pinturaDebug.room.game.players[0].shield = 30; });
   const start = await m.evaluate(() => { const p = pinturaDebug.room.state.players[0]; return { x: p.x, z: p.z, direction: pinturaDebug.world.movement(1, 0) }; });
   // Hold until the pana has moved (state, not a fixed sleep), then release.
   await m.locator('#right').dispatchEvent('pointerdown', { pointerId: 9, pointerType: 'touch', button: 0, buttons: 1 });
-  await wait(m, start => { const p = pinturaDebug.room.state.players[0]; return (p.x - start.x) * start.direction.x + (p.z - start.z) * start.direction.z > .1; }, start, 20000);
+  // Measure along the input the pad actually sent: the camera's yaw (and so the
+  // pad's world direction) is only known once the first playing frame drew.
+  await wait(m, start => { const p = pinturaDebug.room.state.players[0], c = pinturaDebug.room.current; return (c.x || c.z) && (p.x - start.x) * c.x + (p.z - start.z) * c.z > .1; }, start, 20000);
   await m.locator('#right').dispatchEvent('pointerup', { pointerId: 9, pointerType: 'touch', button: 0 });
   await m.locator('#fire').tap(); await m.screenshot({ path: `${out}/mobile-playing.png` });
   for (const id of ['fire', 'up', 'reload']) { const box = await m.locator(`#${id}`).boundingBox(); assert.ok(box.x >= 0 && box.y >= 0 && box.x + box.width <= 391 && box.y + box.height <= 845); }

@@ -20,6 +20,9 @@ becomes the GitHub release's notes.
   Bolas Criollas share one golden late-morning light and sky, and the pool
   table has bright green cloth and honey wood.
 
+- **Choose how sharp Pintura's bots shoot.** The host picks Fácil to Experto in
+  the lobby: easy bots spray and pause, expert bots rarely miss.
+
 - **Pintura looks like a paint battle.** The plaza court has warm stone
   paving, crates and ground splattered from earlier games, bunting on wooden
   posts, and every hit leaves a glossy splat with drips.

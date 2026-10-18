@@ -6,6 +6,7 @@ export default class PaintRoom extends PanaRoom {
     super.onCreate(options); this.game = new Arena(); this.inputs = new InputBuffer(350);
     this.onMessage('input', (client, data) => this.inputs.set(this.seatOf(client), cleanInput(data)));
     this.onHostMessage('map', (client, data) => { if (this.game.selectMap(data?.mapId)) this.publish(); });
+    this.onHostMessage('difficulty', (client, data) => { if (this.game.selectDifficulty(data?.difficulty)) this.publish(); });
     this.onHostMessage('start', () => {
       if (this.game.phase === 'playing') return;
       this.game.players = this.game.players.filter(p => !p.bot && p.connected);

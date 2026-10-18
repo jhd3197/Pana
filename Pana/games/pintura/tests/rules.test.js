@@ -41,3 +41,18 @@ test('bots move and fire without escaping the playable arena', () => {
   for (let i = 0; i < 1200 && g.phase === 'playing'; i++) { g.step(.05); fired ||= g.balls.length > 0; assert.equal(blocked(g.players[1].x, g.players[1].z), false); }
   assert.ok(fired); assert.ok(g.players[0].hits > 0);
 });
+
+test('bot marksmanship follows the difficulty; only the lobby or results change it', () => {
+  function hits(difficulty) {
+    const g = new Arena('plaza', difficulty); g.add(1, { name: 'Blanco', avatar: {} }); g.add(2, { name: 'Bot', avatar: {}, bot: true });
+    g.start(); const target = g.players[0], bot = g.players[1];
+    for (let n = 0; n < 900; n++) {
+      Object.assign(bot, { x: -6, z: -14 }); Object.assign(target, { x: 6, z: -14, shield: 0 });
+      g.step(.05, new Map([[1, {}]])); if (g.phase !== 'playing') break;
+    }
+    return bot.score;
+  }
+  assert.ok(hits('experto') > hits('facil'), `experto ${hits('experto')} vs facil ${hits('facil')}`);
+  const g = new Arena(); assert.ok(g.selectDifficulty('dificil')); assert.equal(g.view().difficulty, 'dificil');
+  assert.equal(g.selectDifficulty('imposible'), false); g.add(1, { name: 'A', avatar: {} }); g.start(); assert.equal(g.selectDifficulty('facil'), false);
+});

@@ -1,5 +1,6 @@
 import { prepareScene } from '/engine/game-load.js';
 import { createMapPicker } from '/engine/map-picker.js';
+import { createDifficultyPicker } from '/engine/difficulty.js';
 import { loadName, loadAvatar } from '/engine/avatar.js';
 import { inviteUrl, newRoomCode, roomFromUrl } from '/engine/invite.js';
 import { createGameMenu, toggleMute } from '/engine/ui.js';
@@ -19,6 +20,8 @@ const room = new PaintConnection({ code, name: loadName(), avatar: loadAvatar(),
   $('connection').textContent = text; $('recovery-copy').textContent = text; $('recovery').hidden = !failed || room.state.phase === 'lobby';
 } });
 const mapPicker = createMapPicker($('map-picker'), mapId => room.selectMap(mapId));
+const difficultyPicker = createDifficultyPicker($('difficulty-picker'), difficulty => room.selectDifficulty(difficulty), { label: 'Puntería de los bots',
+  notes: { facil: 'Los bots fallan seguido y disparan menos.', normal: 'Bots con buena mano, pero se les va alguna.', dificil: 'Los bots apuntan fino y no sueltan el gatillo.', experto: 'Casi no fallan: muévete y cúbrete.' } });
 const menu = createGameMenu({ title: 'Pepazo · Pana', orientation: 'libre', sound,
   options: [{ id: 'view', label: 'Cámara', choices: [['cerca', 'Con tu pana'], ['cancha', 'Ver la cancha']], get: () => cameraView, set: value => { cameraView = value; world.setView(value); } }],
   note: () => room.local ? 'La práctica está en pausa.' : 'La ronda online sigue mientras estás en el menú.',
@@ -67,6 +70,7 @@ function input() {
 }
 function render(state) {
   mapPicker.update(state.mapId, room.connected && room.isHost && state.phase === 'lobby');
+  difficultyPicker.update(state.difficulty, room.connected && room.isHost && state.phase !== 'playing');
   const lobby = state.phase === 'lobby', finished = state.phase === 'finished';
   $('lobby').hidden = !lobby; $('hud').hidden = lobby || finished; document.body.classList.toggle('in-lobby', lobby);
   $('start').disabled = !room.connected || !room.isHost; $('start').textContent = !room.connected ? 'Conectando…' : room.isHost ? '¡A la cancha!' : 'El anfitrión inicia la ronda';

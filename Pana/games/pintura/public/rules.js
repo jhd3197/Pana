@@ -1,4 +1,5 @@
 import { arenaInfo, arenaLayout, ARENA_SPAWNS, validArena } from '../../../engine/arena-layouts.js';
+import { DEFAULT_DIFFICULTY, validDifficulty } from '../../../engine/difficulty.js';
 
 export const SIZE = 18, DURATION = 120, TARGET = 10, SPEED = 7, RADIUS = .55;
 export const COLORS = ['#f28b42', '#29c5cd', '#d363a6', '#a1bd43', '#8d85df', '#f0c34c', '#ed615c', '#64b898'];
@@ -9,6 +10,9 @@ export const COVER = [
 ];
 export const SPAWNS = [{ x: -14, z: -14 }, { x: 14, z: 14 }, { x: 14, z: -14 }, { x: -14, z: 14 }, { x: 0, z: -15 }, { x: 0, z: 15 }, { x: -15, z: 0 }, { x: 15, z: 0 }];
 const clamp = (n, lo, hi) => Math.max(lo, Math.min(hi, n));
+// Bot marksmanship per difficulty: aim wobble (radians) and how much of the
+// time a bot with a clear line keeps the trigger down (sine threshold).
+export const BOT_SKILL = { facil: { wobble: .16, trigger: .45 }, normal: { wobble: .07, trigger: -.2 }, dificil: { wobble: .035, trigger: -.5 }, experto: { wobble: .012, trigger: -.8 } };
 export function cleanInput(input = {}) {
   if (!input || typeof input !== 'object') input = {};
   const num = n => Number.isFinite(n) ? clamp(n, -1, 1) : 0;
@@ -35,10 +39,14 @@ function segmentCircle(x, z, dx, dz, p) {
   const t = (-b - Math.sqrt(disc)) / (2 * a); return t >= 0 && t <= 1 ? t : null;
 }
 export class Arena {
-  constructor(mapId = 'plaza') { this.mapId = arenaInfo(mapId).id; this.phase = 'lobby'; this.players = []; this.balls = []; this.splats = []; this.time = DURATION; this.round = 0; this.serial = 0; this.message = 'La cancha está lista.'; }
+  constructor(mapId = 'plaza', difficulty = DEFAULT_DIFFICULTY) { this.mapId = arenaInfo(mapId).id; this.difficulty = validDifficulty(difficulty) ? difficulty : DEFAULT_DIFFICULTY; this.phase = 'lobby'; this.players = []; this.balls = []; this.splats = []; this.time = DURATION; this.round = 0; this.serial = 0; this.message = 'La cancha está lista.'; }
   selectMap(id) {
     if (this.phase !== 'lobby' || !validArena(id)) return false;
     this.mapId = id; this.players.forEach((p, i) => Object.assign(p, spawnsFor(id)[i % 8])); return true;
+  }
+  selectDifficulty(id) {
+    if (this.phase === 'playing' || !validDifficulty(id)) return false;
+    this.difficulty = id; return true;
   }
   add(id, info) {
     let p = this.players.find(p => p.id === id);
@@ -64,11 +72,13 @@ export class Arena {
     const q = enemies[0]; if (!q) return cleanInput();
     const dx = q.x - p.x, dz = q.z - p.z, length = Math.hypot(dx, dz) || 1;
     const clear = !coverFor(this.mapId).some(o => segmentBox(p.x, p.z, dx, dz, o) !== null);
-    const t = (DURATION - this.time) * .7 + p.id, strafe = Math.sin(t) > 0 ? 1 : -1;
+    const t = (DURATION - this.time) * .7 + p.id, strafe = Math.sin(t) > 0 ? 1 : -1, skill = BOT_SKILL[this.difficulty] || BOT_SKILL.normal;
+    // A deterministic wobble around the true line: weaker bots spray, sharp ones rarely miss.
+    const wobble = Math.sin(t * 2.3 + p.id * 1.7) * skill.wobble, aimX = dx / length * Math.cos(wobble) - dz / length * Math.sin(wobble), aimZ = dx / length * Math.sin(wobble) + dz / length * Math.cos(wobble);
     let x = clear ? dx / length * (length > 9 ? .8 : -.25) - dz / length * strafe * .6 : Math.cos(t * .6);
     let z = clear ? dz / length * (length > 9 ? .8 : -.25) + dx / length * strafe * .6 : Math.sin(t * .6);
     if (blocked(p.x + x * 1.4, p.z + z * 1.4, RADIUS, this.mapId)) { x = -dz / length; z = dx / length; }
-    return cleanInput({ x, z, ax: dx / length, az: dz / length, fire: clear && length < 24 && Math.sin(t * 3) > -.2, reload: p.ammo < 3 && !clear });
+    return cleanInput({ x, z, ax: aimX, az: aimZ, fire: clear && length < 24 && Math.sin(t * 3) > skill.trigger, reload: p.ammo < 3 && !clear });
   }
   step(dt, inputs = new Map()) {
     if (this.phase !== 'playing') return; dt = clamp(dt, 0, .05); this.time = Math.max(0, this.time - dt);
@@ -106,5 +116,5 @@ export class Arena {
     this.balls = this.balls.filter(b => b.life > 0); this.splats = this.splats.filter(s => (s.life -= dt) > 0).slice(-64);
     if (this.time <= 0 || this.players.some(p => p.score >= TARGET)) { this.phase = 'finished'; this.balls = []; }
   }
-  view() { return { mapId: this.mapId, phase: this.phase, round: this.round, time: this.time, players: this.players.map(p => ({ ...p })), balls: this.balls.map(b => ({ ...b })), splats: this.splats.map(s => ({ ...s })), message: this.message }; }
+  view() { return { mapId: this.mapId, difficulty: this.difficulty, phase: this.phase, round: this.round, time: this.time, players: this.players.map(p => ({ ...p })), balls: this.balls.map(b => ({ ...b })), splats: this.splats.map(s => ({ ...s })), message: this.message }; }
 }

@@ -23,10 +23,15 @@ export class PaintConnection {
     if (this.local) { if (this.game.selectMap(mapId)) this.publish(); }
     else this.link.send('map', { mapId });
   }
+  selectDifficulty(difficulty) {
+    if (!this.isHost || !this.connected) return;
+    if (this.local) { if (this.game.selectDifficulty(difficulty)) this.publish(); }
+    else this.link.send('difficulty', { difficulty });
+  }
   start() { if (this.local) { this.game.start(); this.publish(); } else if (this.connected) this.link.send('start'); }
   input(value) { this.current = cleanInput(value); if (!this.local && this.connected) this.link.send('input', this.current); }
   practice() {
-    this.local = true; this.link?.leave(); this.connected = true; this.game = new Arena(this.state.mapId);
+    this.local = true; this.link?.leave(); this.connected = true; this.game = new Arena(this.state.mapId, this.state.difficulty);
     this.game.add(1, { name: this.name, avatar: this.avatar, bot: false });
     ['Coco', 'Lola', 'Cheo'].forEach((name, i) => this.game.add(1000 + i, { name, avatar: randomAvatar(), bot: true }));
     this.onStatus('Práctica con bots · a tu ritmo'); this.start();

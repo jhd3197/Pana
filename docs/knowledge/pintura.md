@@ -63,6 +63,15 @@ are glossy alpha-tested planes, four shapes per colour, with polygon offset so
 they never fight the paving. Scene files may not paint 2D canvases
 (conventions test): texture painters live in engine model files.
 
+## Bot difficulty
+
+`Arena.difficulty` (host message `difficulty`, lobby or results only) picks a
+`BOT_SKILL` row: a deterministic aim wobble around the true line and the
+trigger threshold on the bots' firing sine. Over a 45 s duel against a
+stationary pana an Experto bot scores more than a Fácil one (rules test).
+The phone browser check measures movement along `room.current` (the input
+the pad sent), not a direction captured before the first frame set the yaw.
+
 ## Notes for agents
 
 Keep simulation in pure rules and room authorization on the server. Never add
