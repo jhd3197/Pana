@@ -12,6 +12,7 @@ import { bake } from '/engine/models/core/static-batch.js';
 import { branch, leafyCushion, paleBark } from '/engine/models/vegetation/canopy.js';
 import { bush } from '/engine/models/vegetation/bush.js';
 import { makeMango } from '/engine/models/props/mango.js';
+import { colonialHouse } from '/engine/models/props/colonial-house.js';
 import { iguana } from '/engine/models/fauna/iguana.js';
 import { china } from '/engine/models/props/china.js';
 import { scarletMacaw } from '/engine/models/fauna/birds/scarlet-macaw.js';
@@ -75,26 +76,24 @@ function mangoTree(scene, r) {
   scene.add(bake(g));
 }
 
+// The patio house is a house-maker house (colonial-house.js) like every
+// other street house, with the zinc roof the iguanas walk on. Its front eave
+// sits exactly on ROOF's plane; the maker's 3.6 m minimum storey is sunk
+// below the patio wall, where the camera never sees it.
 function house(scene) {
-  const g = new THREE.Group();
-  const wall = M(0xf2c9a0, { roughness: 1 }), trim = M(0x3d8f8a, { roughness: 0.8 });
-  const w = ROOF.x1 - ROOF.x0, d = ROOF.front[1] - ROOF.ridge[1], cx = (ROOF.x0 + ROOF.x1) / 2, cz = (ROOF.front[1] + ROOF.ridge[1]) / 2;
-  g.add(box(w - 0.4, ROOF.front[0], d - 0.4, wall, cx, ROOF.front[0] / 2, cz));
-  g.add(box(1.1, 1.0, 0.1, trim, cx - 2.5, 2.2, ROOF.front[1] + 0.16));
-  g.add(box(1.1, 1.0, 0.1, trim, cx + 2.4, 2.2, ROOF.front[1] + 0.16));
-  // a single-slope zinc roof, corrugated, rising toward the back
-  const len = Math.hypot(d, ROOF.ridge[0] - ROOF.front[0]) + 0.6;
-  const geo = new THREE.PlaneGeometry(w + 0.6, len, 48, 1);
-  const p = geo.attributes.position;
-  for (let i = 0; i < p.count; i++) p.setZ(i, Math.sin(p.getX(i) * 9) * 0.04);
-  geo.computeVertexNormals();
-  const zinc = new THREE.Mesh(geo, M(0xc9d2d4, { metalness: 0.35, roughness: 0.5, side: THREE.DoubleSide, flatShading: false }));
-  zinc.rotation.x = -Math.PI / 2 + Math.atan2(ROOF.ridge[0] - ROOF.front[0], d);
-  zinc.position.set(cx, (ROOF.front[0] + ROOF.ridge[0]) / 2 + 0.05, cz);
-  zinc.castShadow = zinc.receiveShadow = true;
-  g.add(zinc);
-  for (let i = 0; i < 4; i++) g.add(box(0.9, 0.02, 0.5, M(0x9a6a44, { roughness: 1 }), cx - 3 + i * 2.3, ROOF.front[0] + 0.5 + i * 0.12, cz + 0.4 - i * 0.5));
-  scene.add(g);
+  const height = 3.6, depth = 4.5, cx = (ROOF.x0 + ROOF.x1) / 2;
+  const g = colonialHouse({ seed: 7, family: 'casa-baja', floors: 1, width: ROOF.x1 - ROOF.x0 - 0.4, depth, floorHeight: height,
+    roof: 'zinc', palette: 'crema', wallColor: 0xf2c9a0, wallFinish: 'ladrillo-visto', planting: 'ventanas' });
+  const spec = g.userData.houseSpec, top = spec.base + height;
+  g.position.set(cx, ROOF.front[0] - top, ROOF.front[1] - depth / 2);
+  // loose planks weighing the zinc down, lying on the roof plane
+  const pitch = (ROOF.ridge[0] - ROOF.front[0]) / (ROOF.front[1] - ROOF.ridge[1]);
+  for (let i = 0; i < 4; i++) {
+    const z = ROOF.front[1] - 0.6 - i * 0.5, plank = box(0.9, 0.02, 0.5, M(0x9a6a44, { roughness: 1 }));
+    plank.position.set(cx - 3 + i * 2.3, ROOF.front[0] + (ROOF.front[1] - z) * pitch + 0.09, z); plank.rotation.x = Math.atan(pitch);
+    scene.add(plank);
+  }
+  scene.add(bake(g));
 }
 
 function bloqueWall(scene) {

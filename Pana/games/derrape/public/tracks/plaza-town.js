@@ -81,7 +81,7 @@ export function createTown(T) {
     ground.add(surface(x+k*2.3-0.65,z+side*15-1.5,x+k*2.3+0.65,z+side*15+1.5,(x,z)=>groundAt(x,z)+0.24,0xe4dfc9,1));
     ground.add(surface(x+side*15-1.5,z+k*2.3-0.65,x+side*15+1.5,z+k*2.3+0.65,(x,z)=>groundAt(x,z)+0.25,0xe4dfc9,1));
   }
-  const prototypes=Array.from({length:12},(_,i)=>i%5===4?colonialHouse({color:COLORS[i%6],seed:11+i}):house({w:7.3+(i%3)*.4,h:i%3===0?5.4:7.1+(i%2)*.8,color:COLORS[(i*5+Math.floor(i/4))%6],seed:i+21,style:['tejas','balcon','tienda','terraza'][i%4]})),occupied=[];
+  const prototypes=Array.from({length:12},(_,i)=>i%5===4?colonialHouse({color:COLORS[i%6],seed:11+i,detail:'low'}):house({w:7.3+(i%3)*.4,h:i%3===0?5.4:7.1+(i%2)*.8,color:COLORS[(i*5+Math.floor(i/4))%6],seed:i+21,style:['tejas','balcon','tienda','terraza'][i%4],detail:'low'})),occupied=[];
   function landmark(model,x,z,turn=0,scale=1,radius=4,lift=0.35) {
     const samples=[[0,0],[-radius,-radius],[radius,-radius],[-radius,radius],[radius,radius]].map(([dx,dz])=>groundAt(x+dx,z+dz));
     const y=Math.max(...samples)+lift,bottom=Math.min(...samples)-0.15;

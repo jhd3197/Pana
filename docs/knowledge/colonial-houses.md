@@ -5,9 +5,48 @@ The six `colonial-*` house presets in Pana Studio share one factory at
 or open `/studio/assets/colonial-balcony`. The same pack includes three individual
 plants, `/studio/assets/colonial-street`, a ten-house street with pavement and
 a slight grade, and `/studio/assets/colonial-collection`, an editable 50-house
-inspection yard. The six house families also appear in Derrape's **Puerto**
-circuit, using low detail and map-owned earth terraces. The collection yard and
-street preview remain Studio tools. Other game maps retain their established scenery.
+inspection yard. The collection yard and street preview remain Studio tools.
+
+## One maker for every street house
+
+Every street house in every map is built by `colonialHouse()` in
+`colonial-house.js`, so a change to its windows, roofs or wall finishes
+reaches all of them. The other entry points are thin adapters:
+
+- `house()` in `plaza-buildings.js` (the shared plaza in `engine/plaza.js`,
+  Derrape's Plaza circuit, Pintura): `style` picks the family and roof
+  (`tejas` casa-baja, `balcon` casa-balcon or casa-remate, `tienda`
+  casa-portal or casa-esquina, `terraza` casa-remate with azotea), `h` the
+  floors, the seed the finish; `label` adds the shop sign. Still 5.4 deep,
+  ground origin, baked to a few draws.
+- `colonialHouse()` in `pueblo.js` without a recipe: a 6.4 × 5.1 casa-baja
+  (Bululú, Chichí, Plaza).
+- `canalVilla()` in Derrape's `world-landmarks.js`: a 9 × 7 casa-balcon.
+- Puerto calls the maker directly.
+
+`wallColor` repaints a recipe's walls with the map's colour without changing
+the recipe. The `street houses build through the colonial house maker` test
+in `engine/tests/colonial-house.test.js` fails when an adapter stops using
+the maker or a new file hand-builds shutters; cabins, the ranch and the
+bathhouse are allowed as other building types.
+
+- Bululú's Chinazo patio house uses the maker's `zinc` roof (one corrugated
+  slope rising to the back at `ZINC_PITCH`); its front eave sits on the
+  sim's `ROOF` plane and the storey below the 3.6 m minimum is sunk behind
+  the patio wall. `zinc` has `pick: false`, so seeds and batches never roll
+  it and older recipes keep their roofs.
+
+Finishes are sized to read from a passing car: brick patches up to about
+2.4 × 1.6 m in 0.5 m square bricks, two on a front wall and one on the
+others, and painted brick tinted toward chalk over a dark mortar.
+
+`detail: 'low'` is the street build that maps clone by the dozen (Plaza,
+canal villas, Puerto): square trim, straight bars instead of curved
+grilles, fewer arch segments, a plain rear wall, side windows as frames
+with a closed panel, finishes on the front wall only (flat bricks), square
+hip cappings and wider roof tiles. A low house is 3–8k triangles against
+5–29k for `game`; Plaza's scene stays at about 4.62M (old houses: 4.50M),
+and Puerto, Chichí and Bululú are lighter than before.
 
 ## Recipes and controls
 

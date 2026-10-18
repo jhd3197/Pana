@@ -21,6 +21,11 @@ becomes the GitHub release's notes.
   victim answers back ("¡Me agarró fuera de base!", "Más salado que pescado
   en Semana Santa"). Everyone at the table sees the same line.
 
+- **Every town's houses come from the Creador de casas.** Derrape's Plaza
+  and canal villas, Puerto, Bululú (Chinazo's patio included), Chichí and
+  the shared plaza now wear the maker's grilles, lanterns, roofs and wall
+  finishes, and the brick finishes are big enough to see from the road.
+
 - **Derrape's Taller is a showroom you shop in with mangos.** The Taller
   page opens with the garage panel docked beside the car: live stat bars,
   one row of tabs and two columns of parts with their stat pills and mango

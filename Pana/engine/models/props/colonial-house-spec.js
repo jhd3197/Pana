@@ -1,5 +1,6 @@
 // Renderer-free, versioned house recipes. Cosmetic streams never move the shell.
 import { HOUSE_VERSION, HOUSE_FAMILIES, HOUSE_PALETTES, HOUSE_PLANTING, HOUSE_WINDOWS, HOUSE_ROOFS, HOUSE_LAYOUTS, HOUSE_FINISHES } from './colonial-house-definitions.js';
+const ROLLED_ROOFS = HOUSE_ROOFS.filter(r => r.pick !== false);
 
 export function houseRandom(seed, channel) {
   let value = seed >>> 0;
@@ -40,7 +41,7 @@ export function createHouseSpec(options = {}) {
   if (!['arch', 'square'].includes(door)) throw new RangeError(`door: ${door}`);
   const windows = houseRandom(seed, 'windows'), roofChoice = houseRandom(seed, 'roof'), layoutChoice = houseRandom(seed, 'layout');
   const windowStyle = option(HOUSE_WINDOWS, options.windowStyle ?? choose(HOUSE_WINDOWS, windows).id, 'windowStyle').id;
-  const roof = option(HOUSE_ROOFS, options.roof ?? choose(HOUSE_ROOFS, roofChoice).id, 'roof').id;
+  const roof = option(HOUSE_ROOFS, options.roof ?? choose(ROLLED_ROOFS, roofChoice).id, 'roof').id;
   const layout = option(HOUSE_LAYOUTS, options.layout ?? choose(HOUSE_LAYOUTS, layoutChoice).id, 'layout').id;
   const wallFinish = option(HOUSE_FINISHES, options.wallFinish ?? choose(HOUSE_FINISHES, houseRandom(seed, 'finish')).id, 'wallFinish').id;
   const finishSeed = options.finishSeed ?? seed;
@@ -123,7 +124,7 @@ export function createHouseBatch(seed = 1, count = 50) {
     const family = HOUSE_FAMILIES[i % HOUSE_FAMILIES.length];
     specs.push(createHouseSpec({ seed: (seed + i * 7919) >>> 0, family: family.id,
       windowStyle: HOUSE_WINDOWS[(Math.floor(i / 6) + i) % HOUSE_WINDOWS.length].id,
-      roof: HOUSE_ROOFS[(Math.floor(i / 12) + i) % HOUSE_ROOFS.length].id,
+      roof: ROLLED_ROOFS[(Math.floor(i / 12) + i) % ROLLED_ROOFS.length].id,
       layout: HOUSE_LAYOUTS[Math.floor(i / 18) % HOUSE_LAYOUTS.length].id,
       floors: family.floors[Math.floor(i / 6) % family.floors.length],
       planting: HOUSE_PLANTING[i % HOUSE_PLANTING.length].id,

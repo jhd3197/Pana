@@ -1,5 +1,5 @@
+import { colonialHouse } from '/engine/models/props/colonial-house.js';
 import { THREE,M,mesh,box,tube,sign,finish } from './world-kit.js';
-import { tiledRoof, shutterWindow, archPanel, archFrame, railing } from '/engine/models/core/architecture-kit.js';
 
 // Angular glazed mountain terminal, inspired by the supplied Mérida reference.
 export function summitTerminal(label='PICO PANA'){
@@ -103,21 +103,11 @@ export function grandstand({length=90,rows=9,color=0xe4b748}={}){
   return finish(g);
 }
 
-// Two-storey waterfront villas with canal-facing balconies and tiled roofs.
-export function canalVilla({seed=1,color=0xe5cc9c}={}){
-  const g=new THREE.Group(),wall=M(color),cream=M(0xece0bf),iron=M(0x3e625f),door=M(0x52797c);
-  g.add(box(9,8,7,wall,0,4.2,0),box(9.3,.4,7.3,cream,0,.2,0));
-  for(const y of [.8,4.2,8.2])g.add(box(9.2,.18,7.2,cream,0,y,0));
-  for(const x of [-3,0,3]){
-    g.add(archPanel(1.7,3,.1,door,x,.4,3.55),archFrame(1.7,3,.16,cream,x,.4,3.62));
-    shutterWindow(g,x,6.15,3.58,{w:1.4,h:2.2,color:0x52797c});
-  }
-  g.add(box(9.4,.24,1.7,cream,0,4.2,4.2));
-  for(const x of [-4.3,4.3])g.add(box(.25,4,.25,cream,x,2.2,4.85));
-  railing(g,[-4.55,4.32,5.02],[4.55,4.32,5.02],{height:.95,material:iron,spacing:.5});
-  for(const x of [-4.55,4.55])railing(g,[x,4.32,3.55],[x,4.32,5.02],{height:.95,material:iron,spacing:.5});
-  tiledRoof(g,{w:9,d:7,y:8.3,rise:1.8,wall,seed});
-  const rear=new THREE.Group();rear.rotation.y=Math.PI;
-  for(const x of [-2.7,2.7])for(const y of [2.1,6.1])shutterWindow(rear,x,y,3.57,{w:1.2,h:1.8,color:0x52797c});g.add(rear);
-  return finish(g);
+// Two-storey waterfront villas with canal-facing balconies and tiled roofs,
+// built by the shared house maker so they wear its windows and finishes.
+const VILLA_FINISHES=['ladrillo-visto','ladrillo-pintado','cal'];
+export function canalVilla({seed=1,color=0xe5cc9c,detail='game'}={}){
+  const s=Math.abs(Math.floor(seed))>>>0;
+  return colonialHouse({seed:s,family:'casa-balcon',floors:2,width:9,depth:7,floorHeight:4,roof:'tejas',
+    wallFinish:VILLA_FINISHES[s%VILLA_FINISHES.length],wallColor:color,planting:'balcon',detail});
 }
