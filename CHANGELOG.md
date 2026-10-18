@@ -35,13 +35,6 @@ becomes the GitHub release's notes.
   far mountains, tepuys and hot-air balloons make each map feel bigger. The
   fiesta props, apamate and bucare trees are in Pana Studio too.
 
-- **Eight new cars and a real Taller in Derrape.** La Pulga, El Caprichoso,
-  El Por Puesto, El Burro, El Chigüire, La Chispa, El Tepuy and La Reina join
-  the grid with rounded toy bodies. In the Taller you can try a body, wheels,
-  motor, alerón, front bar, roof cargo, roll cage, finish, accent, rims, decal
-  or stripes on the turntable before buying; each part shows its "+2 Vel" on
-  the stat bars and changes the car a little in every race, online too.
-
 - **Cuevas del Río opens through rock arches, and cliffs look warm and rounded.**
   The cave roof is closed, with light falling through two small skylights,
   and every map's cliff faces lose their dark stripes.
@@ -56,6 +49,13 @@ becomes the GitHub release's notes.
 - **Time your release to control shot strength in Billar.**
   Hold the shot button or Space/Enter to reveal a rising and falling power
   meter, then release to shoot. The red zone delivers the strongest shots.
+
+- **Eight new cars and a real Taller in Derrape.** La Pulga, El Caprichoso,
+  El Por Puesto, El Burro, El Chigüire, La Chispa, El Tepuy and La Reina join
+  the grid with rounded toy bodies. In the Taller you can try a body, wheels,
+  motor, alerón, front bar, roof cargo, roll cage, finish, accent, rims, decal
+  or stripes on the turntable before buying; each part shows its "+2 Vel" on
+  the stat bars and changes the car a little in every race, online too.
 
 - **Jaguars, glowing cave crystals and foaming cascades in Pana Studio.**
   A prowling, sitting or black jaguar, a carved stone jaguar statue and
