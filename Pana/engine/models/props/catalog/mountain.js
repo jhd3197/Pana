@@ -96,4 +96,14 @@ export default [
     tags: ["060","páramo","montaña","sendero","señal"],
     pack: "mountain"
   },
+  {
+    id: "rock-arch", name: "Arco de roca", category: "Páramo", source: "/engine/models/props/mountain.js", factory: "rockArch",
+    usedBy: ["Derrape"], previewOptions: {"span":8,"height":9}, description: "Boca de cueva natural: rocas redondeadas en medio arco con musgo arriba y contrafuertes enterrados.",
+    tags: ["roca","cueva","arco","entrada"], pack: "mountain"
+  },
+  {
+    id: "timber-trestle", name: "Caballete de madera", category: "Páramo", source: "/engine/models/props/mountain.js", factory: "timberTrestle",
+    usedBy: ["Derrape"], previewOptions: {"height":8,"width":3}, description: "Dos postes con sombrero y cruz de San Andrés para sostener cornisas y puentes.",
+    tags: ["madera","puente","cornisa"], pack: "mountain"
+  },
 ];

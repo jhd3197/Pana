@@ -29,4 +29,5 @@ export default [
   mine('water-wheel', 'Rueda hidráulica', 'waterWheel', 'Rueda de paletas que gira sobre su eje, para un río o canal.', ['rueda', 'agua', 'animado'], { radius: 3 }),
   mine('stamp-mill', 'Molino de pisones', 'stampMill', 'Estructura de madera con tolva, árbol de levas y cinco pisones que golpean.', ['molino', 'máquina', 'animado'], { seed: 91 }),
   mine('lift-tower', 'Torre de ascensor minero', 'liftTower', 'Castillete arriostrado con polea; la jaula sube y baja con un minero.', ['ascensor', 'torre', 'animado'], { height: 14 }),
+  mine('mine-gate', 'Portal de la mina de sal', 'mineGate', 'Pórtico de madera del ancho de la carretera, con riostras, letrero y faroles.', ['entrada', 'portal', 'sal'], { span: 8, height: 7 }),
 ];

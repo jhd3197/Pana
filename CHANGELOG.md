@@ -10,9 +10,10 @@ becomes the GitHub release's notes.
 
 ### Added
 
-- **Salinas del Viento is twice as long and dives into a salt mine.** After the
-  ford the road enters a pink mountain: three domed halls of glowing
-  crystals, salt pools, a waterfall, skylights and a plank shortcut.
+- **Salinas del Viento is twice as long and dives into a hidden salt mine.**
+  North of the flats the road plunges down a salt cut into a closed tunnel:
+  three dim halls of glowing crystals, salt pools, a waterfall and a plank
+  shortcut, then climbs back into the sun.
 
 - **Time your release to control shot strength in Billar.**
   Hold the shot button or Space/Enter to reveal a rising and falling power

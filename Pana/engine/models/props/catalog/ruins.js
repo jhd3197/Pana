@@ -27,5 +27,11 @@ export default [
   ['jaguar-statue', 'Jaguar de piedra', 'jaguarStatue', { seed: 11 }, 'Jaguar sentado tallado en piedra gastada sobre un plinto escalonado, ojos de jade.', ['selva', 'jaguar', 'escultura', 'ruinas']],
   ['jaguar-relief', 'Relieve del jaguar', 'jaguarRelief', { seed: 13 }, 'Dintel con un jaguar caminando en bajorrelieve, rosetas taladradas y greca escalonada.', ['selva', 'jaguar', 'dintel', 'ruinas']],
 ].map(([id, name, factory, previewOptions, description, tags]) => ({
-  id, name, category: 'Ruinas', source: '/engine/models/props/jaguar-stone.js', factory, usedBy: ['Pana Studio'], previewOptions, description, tags, pack: 'ruins',
+  id, name, category: 'Ruinas', source: '/engine/models/props/jaguar-stone.js', factory, usedBy: ['Derrape'], previewOptions, description, tags, pack: 'ruins',
+}))).concat([
+  ['maya-portal', 'Portal maya cubierto de selva', 'mayaPortal', { span: 10 }, 'Arco falso de piedra escalonado con dintel, greca, relieve del jaguar, cresta con jade, raíces, musgo y lianas.', ['selva', 'templo', 'portal', 'cueva']],
+  ['stepped-pyramid', 'Pirámide escalonada', 'steppedPyramid', { seed: 61 }, 'Cinco cuerpos con musgo, escalinata frontal y santuario con techo dorado.', ['selva', 'templo', 'pirámide']],
+  ['cenote', 'Cenote', 'cenote', { radius: 7 }, 'Pozo de agua turquesa rodeado de piedras labradas y musgo; agua animada.', ['selva', 'agua', 'cueva', 'animado']],
+].map(([id, name, factory, previewOptions, description, tags]) => ({
+  id, name, category: 'Ruinas', source: '/engine/models/props/maya-temple.js', factory, usedBy: ['Derrape'], previewOptions, description, tags, pack: 'ruins',
 })));

@@ -2,7 +2,7 @@ import { THREE, terrain, put, finish, instances, scatter, clear, foundation } fr
 import { waterGrid } from './water-world-kit.js';
 import { waterAnimator } from '/engine/models/effects/water-surface.js';
 import { baseHeight, PONDS, WATER_Y, channelSample, pondField, CAVE, CAVE_PROFILE } from './salinas-layout.js';
-import { saltCave, caveMountain, caveColor, caveFog } from './salt-cave.js';
+import { saltCave, undergroundGround, caveFloorGround, tunnelMouths, caveFog } from './salt-cave.js';
 import { pondAt } from './water-world-math.js';
 import { saltPile, sluiceGate } from '/engine/models/props/saltworks.js';
 import { landingShelter } from '/engine/models/props/delta.js';
@@ -15,12 +15,17 @@ import { waterPumpStation } from '/engine/models/props/water-pump-station.js';
 import { cargoHandcart } from '/engine/models/props/cargo-handcart.js';
 import { flamingo } from '/engine/models/fauna/birds/flamingo.js';
 export function salinasWorld(T) {
-  const group=new THREE.Group(),world=terrain(T,{bounds:[-640,-450,620,960],base:caveMountain(T,CAVE,CAVE_PROFILE,baseHeight),step:5,
+  // The flats stay open; north of them the road dives down a salt cut into
+  // a closed mine under the ground (salt-cave.js).
+  const base=undergroundGround(T,CAVE,CAVE_PROFILE,baseHeight);
+  const group=new THREE.Group(),world=terrain(T,{bounds:[-640,-450,620,960],base,step:5,carve:false,
     cut:(x,z,h)=>channelSample(x,z).distance<3?Math.min(h,-.4):h,
-    color:caveColor(T,CAVE,CAVE_PROFILE,(x,z,y)=>y<.8?0xc5bfae:0xdedbce)});
+    color:(x,z,y)=>y<-2?0xe9cfd9:y<.8?0xc5bfae:0xdedbce});
   group.add(world.land);
-  const mine=saltCave(T,CAVE,CAVE_PROFILE,{groundAt:world.groundAt,name:'salinas-mine'});
-  group.add(mine.group);caveFog(T,CAVE,world.land);
+  world.groundAt=caveFloorGround(T,CAVE,CAVE_PROFILE,world.groundAt);
+  const mouths=tunnelMouths(T,CAVE,CAVE_PROFILE,world.land,baseHeight,{name:'salinas-mine'});group.add(mouths);
+  const mine=saltCave(T,CAVE,CAVE_PROFILE,{groundAt:world.groundAt,name:'salinas-mine',dim:true,floor:true});
+  group.add(mine.group);caveFog(T,CAVE,world.land,{color:0x3a2350,near:12,far:230});
   for(const [i,p]of PONDS.entries())group.add(waterGrid(T,world,{
     bounds:[p.x-p.rx*1.1,p.z-p.rz*1.1,p.x+p.rx*1.1,p.z+p.rz*1.1],step:3,
     sample:(x,z)=>({height:WATER_Y,visible:pondAt(p,x,z)<1.04,along:z}),color:p.color,name:`salt-pond-${i}`,
@@ -77,5 +82,5 @@ export function salinasWorld(T) {
   group.userData.assetCounts={saltPile:piles,sluiceGate:gates,landingShelter:shelters,saltHarvester:harvesters,flamingo:poses.flat().length};
   group.userData.assetCounts.mine=mine.group.userData.assetCounts;
   const water=waterAnimator(group);
-  return {group,groundAt:world.groundAt,update:(t,dt)=>{water(t);mine.update(t,dt);}};
+  return {group,groundAt:world.groundAt,update:(t,dt)=>{water(t);mine.update(t,dt);mouths.userData.tick(t);}};
 }

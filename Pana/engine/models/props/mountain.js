@@ -255,3 +255,41 @@ export function mountainSignpost({ seed = 60 } = {}) {
   const plaque = sign(['SENDERO PANA', 'cuida la montaña'], 0.68, 0.46); plaque.position.set(0, 1.37, 0.14); g.add(plaque);
   return finish(g, 'mountainSignpost');
 }
+
+// A natural rock arch for cave mouths: rounded boulders stacked along a
+// half-ellipse, mossy on top, wide enough for a road. Opening `span`
+// half-wide and `height` tall, centred on x = 0, facing +Z, `depth` deep.
+export function rockArch({ span = 14, height = 13, depth = 8, seed = 57, color = 0xb59a78 } = {}) {
+  const g = new THREE.Group(), r = rng(seed), base = new THREE.Color(color), light = base.clone().offsetHSL(0, .02, .12), moss = new THREE.Color(0x67a84a);
+  const material = M(0xffffff, { vertexColors: true, roughness: 1 });
+  const stone = (x, y, z, sx, sy, sz, top) => {
+    const geo = new THREE.IcosahedronGeometry(1, 2), p = geo.attributes.position, colors = [];
+    for (let i = 0; i < p.count; i++) {
+      const px = p.getX(i), py = p.getY(i), pz = p.getZ(i), k = 1 + Math.sin(px * 3 + pz * 4 + seed) * .07;
+      p.setXYZ(i, px * sx * k, py * sy * k, pz * sz * k);
+      const c = base.clone().lerp(light, .5 + py * .35); if (top && py > .45) c.lerp(moss, .75); colors.push(c.r, c.g, c.b);
+    }
+    geo.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3)); geo.computeVertexNormals();
+    g.add(mesh(geo, material, x, y, z));
+  };
+  const n = 15;
+  for (let i = 0; i <= n; i++) {
+    const a = Math.PI * i / n, x = -Math.cos(a) * (span + 3), y = Math.sin(a) * height, size = 3.4 + r() * 1.2;
+    for (let k = 0; k < Math.ceil(depth / 4); k++) stone(x + (r() - .5), Math.max(size * .6, y + (r() - .5)), -k * 3.6 + (r() - .5), size, size * (.8 + r() * .3), 2.6 + r(), y > height * .6);
+  }
+  // Buttress boulders bury the feet in the slope.
+  for (const s of [-1, 1]) for (let k = 0; k < 4; k++) stone(s * (span + 6 + r() * 4), 2 + r() * 3, -k * 2.5, 4 + r() * 2, 4 + r() * 2, 3.5, true);
+  g.name = 'rock-arch'; g.userData.previewBounds = [[-span - 12, 0, -depth - 3], [span + 12, height + 5, 4]];
+  return g;
+}
+
+// One timber trestle bent: two battered posts, a cap and an X brace, from
+// the ground up to `height`, `width` across. Origin at the ground, centred.
+export function timberTrestle({ height = 8, width = 3 } = {}) {
+  const g = new THREE.Group(), wood = M(0x8a5a32, { roughness: 1 }), dark = M(0x6a4326, { roughness: 1 });
+  for (const s of [-1, 1]) { const post = box(.5, height, .5, wood, s * width / 2, height / 2, 0); post.rotation.z = s * .05; g.add(post); }
+  g.add(box(width + 1, .5, .7, dark, 0, height + .1, 0));
+  if (height > 3) for (const s of [-1, 1]) { const brace = box(.25, Math.hypot(width, height * .8), .25, dark, 0, height * .45, .3); brace.rotation.z = s * Math.atan2(width, height * .8); g.add(brace); }
+  g.name = 'timber-trestle'; g.userData.previewBounds = [[-width, 0, -1], [width, height + 1, 1]];
+  return g;
+}

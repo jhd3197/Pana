@@ -3,7 +3,7 @@ import { ROUTE, roadHeight, wetness, crossfall } from './salinas-layout.js';
 import { salinasWorld } from './salinas-world.js';
 import { vergePosts } from './country-details.js';
 export default {
-  ...WATER_TRACKS.find(t=>t.id==='salinas'),points:ROUTE,rounded:true,hw:12,lineU:.025,elevation:roadHeight,crossfall,waterAt:wetness,walls:false,chevrons:true,
+  ...WATER_TRACKS.find(t=>t.id==='salinas'),points:ROUTE,rounded:true,layered:true,hw:12,lineU:.025,elevation:roadHeight,crossfall,waterAt:wetness,walls:false,chevrons:true,
   previewBounds:[[-600,-3,-400],[560,100,900]],
   sectors:[[0,'Salinas del pueblo'],[.12,'Llanura blanca'],[.24,'Cruce del agua'],[.36,'Boca de la mina'],[.43,'Sala de los cristales'],[.54,'Gran domo de sal'],[.66,'Cascada rosada'],[.78,'Salida de la mina'],[.88,'Calzadas de sal']],
   items:{boxes:[.08,.19,.33,.43,.53,.63,.73,.84,.94],boxLanes:[-8,-3,3,8],pads:[{u:.13,off:0},{u:.5,off:-4},{u:.71,off:4},{u:.9,off:-4}]},
