@@ -28,6 +28,7 @@ import ruins from './catalog/ruins.js';
 import expeditionCamp from './catalog/expedition-camp.js';
 import atmosphere from './catalog/atmosphere.js';
 import crystals from './catalog/crystals.js';
+import fiesta from './catalog/fiesta.js';
 
 export default [
   ...ranch,
@@ -60,4 +61,5 @@ export default [
   ...expeditionCamp,
   ...atmosphere,
   ...crystals,
+  ...fiesta,
 ];

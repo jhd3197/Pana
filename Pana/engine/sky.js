@@ -7,7 +7,7 @@ export function createSky(palette = {}) {
     time: { value: 0 }, daylight: { value: 1 }, cover: { value: .52 }, seed: { value: 7 },
     horizon: { value: new THREE.Color(0xc7e1e8) }, zenith: { value: new THREE.Color(0x458ec4) },
     sunDirection: { value: new THREE.Vector3(-.48, .72, .5).normalize() },
-    sunDisc: { value: 1 }, rainbow: { value: 0 }, flash: { value: 0 },
+    sunDisc: { value: 1 }, rainbow: { value: 0 }, flash: { value: 0 }, halo: { value: 0 },
   };
   const material = new THREE.ShaderMaterial({
     side: THREE.BackSide, depthWrite: false, fog: false,
@@ -21,7 +21,7 @@ export function createSky(palette = {}) {
         gl_Position = clip.xyww;
       }`,
     fragmentShader: `
-      uniform float time, daylight, cover, seed, sunDisc, rainbow, flash;
+      uniform float time, daylight, cover, seed, sunDisc, rainbow, flash, halo;
       uniform vec3 horizon, zenith, sunDirection;
       varying vec3 direction;
       float hash(vec2 p) {
@@ -45,6 +45,9 @@ export function createSky(palette = {}) {
         float sun = max(dot(d,sunDirection),0.0);
         color += vec3(1.0,.63,.29)*pow(sun,18.0)*.14*daylight;
         color += vec3(1.0,.83,.49)*smoothstep(.9993,.99965,sun)*sunDisc*daylight;
+        // Optional warm halo: a broad golden bloom around the sun disc that
+        // also warms the sky low on the sun's side. 0 keeps the classic sky.
+        color += vec3(1.0,.74,.4)*(pow(sun,5.0)*.22+pow(sun,40.0)*.45+pow(sun,400.0)*.6)*halo*daylight;
         if (rainbow > .001 && d.y > .01) {
           vec3 antiSun = normalize(vec3(-sunDirection.x, .18, -sunDirection.z));
           float arc = dot(d, antiSun);
@@ -94,6 +97,7 @@ export function createSky(palette = {}) {
     u.sunDisc.value = p.sunDisc === false ? 0 : 1;
     u.rainbow.value = p.rainbow ?? 0;
     u.flash.value = p.flash ?? 0;
+    u.halo.value = p.halo ?? 0;
     if(p.sunDirection)u.sunDirection.value.copy(p.sunDirection).normalize();
   }
   function setRainbow(v = 0) { live().rainbow.value = THREE.MathUtils.clamp(v, 0, 1); }
