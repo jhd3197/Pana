@@ -1,0 +1,78 @@
+// Wiring only: input → rules (through the room) → scene and HUD.
+import { loadName, loadAvatar } from '/engine/avatar.js';
+import { createGameMenu, toggleMute } from '/engine/ui.js';
+import { fillRoster } from '/engine/results.js';
+import { inviteUrl } from '/engine/invite.js';
+import { holdButton, drawIcons } from '/engine/touch.js';
+import { sound } from '/engine/fx.js';
+import { roomCode, bootGame } from '/engine/game-shell.js';
+import { {{Class}}Room } from './network.js';
+import { ROUND } from './rules.js';
+
+const $ = (id) => document.getElementById(id), params = new URLSearchParams(location.search);
+const code = roomCode();
+let world = null;
+const room = new {{Class}}Room({ code, name: loadName(), avatar: loadAvatar(), onState: render,
+  onNotice: (text) => { $('event').textContent = text; },
+  onStatus(text, failed = false) { $('connection').textContent = text; $('practice').hidden = !failed; render(room.state); },
+});
+const menu = createGameMenu({ title: '{{name}} · Pana', sound, orientation: 'libre',
+  note: () => room.members.size > 1 ? 'La ronda sigue mientras estás en el menú.' : 'La ronda está en pausa.',
+  controls: [['W A S D / flechas', 'Correr'], ['Toque', 'Flechas en pantalla'], ['M', 'Activar o silenciar el sonido']],
+  tips: [`Recoge todos los mangos que puedas en ${ROUND} segundos.`, 'Si estás solo, unos bots corren contigo.'],
+  invite: () => room.offline ? null : inviteUrl(code),
+});
+$('game-nav').append(menu.createInviteButton({ id: 'invite', className: 'pk-btn' }), menu.createButton({ id: 'menu', className: 'pk-btn' }));
+$('rules').onclick = () => menu.open('controls');
+$('start').onclick = $('again').onclick = () => { sound.unlock(); room.action('start'); };
+$('practice').onclick = () => room.practice();
+
+// Keyboard and on-screen arrows feed one stick.
+const keys = new Set(), touch = new Set();
+const held = (...names) => names.some(name => keys.has(name) || touch.has(name));
+function input() {
+  if (menu.isOpen) return { x: 0, z: 0 };
+  return { x: Number(held('d', 'arrowright')) - Number(held('a', 'arrowleft')), z: Number(held('s', 'arrowdown')) - Number(held('w', 'arrowup')) };
+}
+addEventListener('keydown', (event) => {
+  if (menu.isOpen || event.target.closest?.('input, textarea, select, [contenteditable]')) return;
+  const key = event.key.toLowerCase();
+  if (key === 'm' && !event.repeat) toggleMute();
+  if (/^(w|a|s|d|arrow(up|down|left|right))$/.test(key)) { event.preventDefault(); keys.add(key); }
+});
+addEventListener('keyup', (event) => keys.delete(event.key.toLowerCase()));
+addEventListener('blur', () => { keys.clear(); touch.clear(); });
+drawIcons();
+for (const [id, key] of [['up', 'w'], ['down', 's'], ['left', 'a'], ['right', 'd']]) {
+  holdButton($(id), { down: () => touch.add(key), up: () => touch.delete(key), paused: () => menu.isOpen });
+}
+
+function render(state) {
+  const lobby = state.phase === 'lobby', ended = state.phase === 'finished';
+  document.body.classList.toggle('in-lobby', lobby); $('lobby').hidden = !lobby; $('hud').hidden = lobby;
+  $('start').disabled = !world || !room.connected || !room.isHost;
+  $('start').textContent = !room.connected ? 'Conectando…' : room.isHost ? '¡A correr!' : 'Espera al anfitrión';
+  const ranked = [...state.players].sort((a, b) => b.score - a.score);
+  const rows = ranked.map((p, i) => ({ rank: i + 1, name: p.id === room.id ? `${p.name} · tú` : p.name, detail: p.bot ? 'Bot' : 'Pana', end: p.score, score: true, me: p.id === room.id }));
+  fillRoster($('roster'), rows);
+  const me = state.players.find(p => p.id === room.id);
+  $('timer').textContent = `${Math.ceil(state.time)} s`;
+  $('score').textContent = `${me?.score ?? 0} mangos`;
+  $('results').hidden = !ended; $('again').disabled = !room.connected || !room.isHost;
+  if (ended) {
+    $('result-title').textContent = `¡Ganó ${ranked[0]?.name ?? 'nadie'}!`;
+    fillRoster($('result-roster'), rows);
+  }
+  world?.update(state);
+}
+
+render(room.state); room.connect();
+export const { sceneReady } = bootGame({
+  load: async () => (await import('./scene.js')).create{{Class}}Scene($('world')),
+  ready: (created) => { world = created; render(room.state); },
+  tickMs: 50,
+  tick: (dt) => room.tick(dt, input(), menu.isOpen && room.members.size <= 1),
+  frame: (dt, scene) => scene.frame(dt),
+  dispose: () => room.dispose(),
+});
+if (params.has('debug')) window.{{id}}Debug = { room, menu, input, get world() { return world; } };

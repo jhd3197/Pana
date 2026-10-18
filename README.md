@@ -8,7 +8,7 @@
   <a href="https://github.com/jhd3197/Pana/releases/latest"><img src="https://img.shields.io/github/v/release/jhd3197/Pana?color=ffc629&label=release" alt="Latest release"></a>
   <a href="https://github.com/jhd3197/Pana/actions/workflows/test.yml"><img src="https://github.com/jhd3197/Pana/actions/workflows/test.yml/badge.svg?branch=dev" alt="Tests"></a>
   <img src="https://img.shields.io/badge/node-%E2%89%A522-2ad1b2" alt="Node 22 or newer">
-  <img src="https://img.shields.io/badge/games-8-ff4b4b" alt="8 games">
+  <img src="https://img.shields.io/badge/games-15-ff4b4b" alt="15 games">
 </p>
 
 <p align="center">
@@ -35,6 +35,11 @@ same room.
 | **Curiara** | Dugout-canoe race down the Amazonas: paddle in rhythm, alone or in pairs | 1–8, bots fill in |
 | **Dominó** | Partnership dominoes to 100 at a 3D plaza table | 1–4, bots fill seats |
 | **Caída** | Spanish cards to 24 points, individual or in pairs | 1–4, bots fill seats |
+| **Póquer** | Texas Hold'em with free chips, private cards and bluffing bots | 1–6, bots fill seats |
+| **Ludo** | Roll, capture and race your four pieces home at a plaza table | 1–4, bots fill seats |
+| **Billar** | Eight-ball pool on a 3D table in the plaza | 2 online, or practice |
+| **Bolas Criollas** | Roll close to the mingo or knock the rival's ball away, in teams | 1–4, bots fill seats |
+| **Pepazo** | Paintball between barricades: aim, paint your rivals, respawn | 1–8, bots fill in |
 
 ## Screenshots
 

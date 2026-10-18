@@ -2,7 +2,7 @@
 
 Social deduction at the expedition camp, at `/g/embuste/`: Reliquia's sequel.
 Panas keep the camp running until dawn; one mummy (4–6 players) or two (7–8)
-wrap them one by one. Plan: `docs/plans/54_embuste.md`. No production
+wrap them one by one. No production
 dependency or build step was added.
 
 ## How a night plays

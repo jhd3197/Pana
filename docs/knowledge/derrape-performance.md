@@ -128,8 +128,7 @@ installed Chrome 155.0.8059.80 in a normal window. Eight simulated racers,
 seed 1453678317, camera fractions 0 / .40 / .62, 30 warmup frames followed by
 120 measured frames per view. The accumulator consumes actual elapsed time,
 including extra physics ticks on slow frames. No other task browser suite ran
-during this measurement. Raw data: `art/grand-prix/hardware-window.json` and
-`hardware-window-final.log`. Earlier headless timings are diagnostic history.
+during this measurement. Raw data (local, untracked): `art/grand-prix/hardware-window.json`. Earlier headless timings are diagnostic history.
 
 Desktop is 1280 × 800, DPR 1, quality Alta. Ranges span the three views:
 

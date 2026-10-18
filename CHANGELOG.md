@@ -13,6 +13,15 @@ becomes the GitHub release's notes.
 - **See interaction progress while reviving panas and turning Reliquia's wheels.**
   The game now attaches the shared progress ring's mesh correctly.
 
+- **Start a new game already in 3D with `.\dev.ps1 new-game <id> -Kind table|live`.**
+  The scaffold creates a playable plaza table or a real-time plaza game with your
+  pana, shared rooms, rules tests and a two-client browser suite that pass from
+  the first run. Contributors: AGENTS.md now says every game is 3D.
+
+- **Ludo sits at a real table in the plaza instead of looking straight down at a flat board.**
+  It shares Billar's and Póquer's 3D stage (sky, fountain, framed camera); the top
+  view is still a button away.
+
 - **Browse aligned launcher pages and see your pana preparing before the editor opens.**
   Shared page widths keep the header and content edges together. The character
   editor shows loading until its model and graphics are ready, with retry on failure.

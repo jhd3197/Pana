@@ -69,6 +69,11 @@ to test results/replay. `PANA_QA_COMPACT=1` reduces desktop rendering cost.
 Rules that used to live in AGENTS.md (paths are relative to `Pana/`). Keep them
 true when you change this area.
 
+- The kitchen is 3D with an isometric (orthographic) camera on purpose: every
+  station stays readable at once, like a cooking-rush board. It is the one
+  orthographic exception in `tests/conventions.test.js` (`ISOMETRIC`); other
+  games use a perspective camera.
+
 Cocina also uses a host simulation at 20 Hz (`cocina-v1`). Host migration
 restores the last kitchen snapshot, including orders and active food. See
 `docs/knowledge/cocina.md`. Plaza scenery and the original hunt layout now

@@ -313,6 +313,7 @@
   background: radial-gradient(900px 500px at 70% 20%, #2a1b5e, transparent 70%), var(--pk-night);
   color: var(--pk-text); font-family: var(--pk-sans);
 }
+.pk-loading[hidden] { display: none; }
 .pk-loading .pk-title { font-size: clamp(44px, 8vw, 88px); }
 
 /* ---------- touch controls (engine/touch.js) ----------

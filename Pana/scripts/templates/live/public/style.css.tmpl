@@ -1,0 +1,11 @@
+/* {{name}}: a full-window 3D plaza under the kit's HUD. The game's own colours
+   are named custom properties on this rule (--pk-game matches game.json). */
+body { --pk-game: {{color}}; margin: 0; overflow: hidden; background: var(--pk-night); color: var(--pk-text); font-family: var(--pk-sans); }
+#world { position: fixed; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; }
+.topbar { position: fixed; top: 16px; left: 20px; right: 20px; display: flex; align-items: center; justify-content: space-between; z-index: 4; }
+#game-nav { display: flex; gap: 8px; }
+#lobby { position: fixed; left: 24px; top: 84px; bottom: 32px; width: min(340px, calc(100vw - 48px)); overflow-y: auto; }
+.status-panel { position: fixed; left: 50%; top: 74px; transform: translateX(-50%); display: flex; gap: 16px; align-items: baseline; padding: 10px 18px; }
+#touch { position: fixed; left: 20px; bottom: 36px; display: none; }
+@media (pointer: coarse) { #touch { display: block; } }
+.connection { position: fixed; left: 50%; bottom: 6px; transform: translateX(-50%); display: flex; gap: 8px; align-items: center; font-size: 12px; }

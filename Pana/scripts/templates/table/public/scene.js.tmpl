@@ -1,0 +1,75 @@
+// {{name}}'s 3D table on the shared plaza stage (engine/table-world.js): the
+// panas sit in chairs around it and their score stacks up in chips.
+import * as THREE from 'three';
+import { createTableWorld } from '/engine/table-world.js';
+import { createGameTable, createGameChair, disposeModel } from '/engine/models/props/game-table.js';
+import { buildCharacter } from '/engine/models/characters/pana/avatar-model.js';
+import { normalizeAvatar } from '/engine/avatar.js';
+import { SEATS, TARGET } from './rules.js';
+
+export const SEAT_COLORS = ['#ee3024', '#2ad1b2', '#ffc629', '#3d7bf2', '#ff8a3d', '#9b5de5', '#6bbf59', '#ff6fae'];
+
+export function create{{Class}}Scene(canvas) {
+  const stage = createTableWorld(canvas), { renderer, scene, camera } = stage, own = new THREE.Group();
+  scene.add(own);
+  own.add(createGameTable({ caption: '{{caption}}' }));
+  const chipGeometry = new THREE.CylinderGeometry(.16, .16, .06, 20);
+  const chipMaterials = SEAT_COLORS.map(color => new THREE.MeshStandardMaterial({ color, roughness: .5 }));
+  const seats = Array.from({ length: SEATS }, (_, seat) => {
+    const angle = seat / SEATS * Math.PI * 2, chair = createGameChair();
+    chair.position.set(Math.sin(angle) * 4.6, 0, Math.cos(angle) * 4.6); chair.rotation.y = angle + Math.PI; own.add(chair);
+    const chips = new THREE.Group(); chips.position.set(Math.sin(angle) * 2.3, 1.42, Math.cos(angle) * 2.3); own.add(chips);
+    return { chair, chips, character: null, key: '' };
+  });
+  const die = new THREE.Mesh(new THREE.BoxGeometry(.5, .5, .5), new THREE.MeshStandardMaterial({ color: '#fff8ea', roughness: .4 }));
+  die.position.set(0, 1.7, 0); die.castShadow = true; own.add(die);
+  // The table, chairs and seated panas, framed between the HUD bars.
+  const bounds = new THREE.Box3(new THREE.Vector3(-5.4, 0, -5.4), new THREE.Vector3(5.4, 2.8, 5.4));
+  let current = null, spin = 0;
+
+  function update(state) {
+    if (current && state.revision !== current.revision && state.lastRoll !== current.lastRoll) spin = .6;
+    current = state;
+    for (const p of state.players) {
+      const seat = seats[p.seat], look = normalizeAvatar(p.id === null ? { outfitColor: SEAT_COLORS[p.seat], face: 'feliz' } : p.avatar);
+      const key = JSON.stringify(look);
+      if (seat.key !== key) {
+        seat.character?.dispose();
+        seat.character = buildCharacter(look, { seated: true }); seat.key = key;
+        seat.character.group.position.copy(seat.chair.position); seat.character.group.position.y = .76;
+        seat.character.group.rotation.y = seat.chair.rotation.y;
+        own.add(seat.character.group);
+      }
+      const chips = Math.min(p.score, TARGET);
+      while (seat.chips.children.length < chips) {
+        const chip = new THREE.Mesh(chipGeometry, chipMaterials[p.seat % chipMaterials.length]);
+        chip.position.y = seat.chips.children.length * .065; chip.castShadow = true; seat.chips.add(chip);
+      }
+      while (seat.chips.children.length > chips) seat.chips.remove(seat.chips.children.at(-1));
+    }
+  }
+
+  function frame(dt) {
+    // Keep the whole table clear of the top bar and the action panel below.
+    const { w, h } = stage.resize(), margin = Math.min(24, w * .04), top = 70, bottom = h > 520 ? 200 : 130;
+    stage.frameCamera(bounds, [0, 1.2, 1], { x: margin, y: top, width: Math.max(160, w - margin * 2), height: Math.max(120, h - top - bottom) });
+    if (spin > 0) {
+      spin -= dt; die.rotation.x += dt * 14; die.rotation.z += dt * 9;
+      die.position.y = 1.7 + Math.sin(Math.max(0, spin) / .6 * Math.PI) * .5;
+    } else die.position.y = 1.7;
+    seats.forEach((seat, i) => {
+      const character = seat.character; if (!character) return;
+      character.update(dt, {});
+      const won = current?.winner === i, turn = current?.phase === 'playing' && current.turn === i;
+      character.arms.forEach(arm => { arm.rotation.x = won ? -1.8 : turn ? -.9 : -.5; });
+    });
+    stage.draw(dt);
+  }
+
+  function dispose() {
+    seats.forEach(seat => seat.character?.dispose());
+    chipMaterials.forEach(material => material.dispose()); chipGeometry.dispose();
+    disposeModel(own); stage.dispose();
+  }
+  return { renderer, scene, camera, update, frame, dispose };
+}

@@ -1,0 +1,27 @@
+// Two real clients: both prepare the 3D table, the guest takes a bot's chair,
+// the host starts, turns pass between panas and bots, and both agree on the
+// winner. Run: npm run test:browser -- {{id}}
+import assert from 'node:assert/strict';
+import { launch, openGame, waitFor } from '../../../tests/browser-kit.js';
+
+const browser = await launch(), room = `{{id}}-${Date.now()}`;
+try {
+  const host = await openGame(browser, '{{id}}', { name: 'Ana', room, query: 'debug' });
+  const guest = await openGame(browser, '{{id}}', { name: 'Bruno', room, query: 'debug' });
+  await waitFor(host, () => {{id}}Debug.room.state.players.filter(p => p.id !== null).length === 2);
+  assert.equal(await host.evaluate(() => {{id}}Debug.world.camera.isPerspectiveCamera), true, 'the table is a 3D scene');
+  await host.locator('#start').click();
+  await waitFor(guest, () => {{id}}Debug.room.state.phase === 'playing');
+  // Each pana rolls whenever it is their turn; bots roll on the host.
+  for (const page of [host, guest]) {
+    await page.evaluate(() => setInterval(() => {
+      const { room } = window.{{id}}Debug;
+      if (room.state.phase === 'playing' && room.seat === room.state.turn) room.action('roll');
+    }, 150));
+  }
+  await waitFor(host, () => {{id}}Debug.room.state.phase === 'finished', undefined, 120_000);
+  await waitFor(guest, () => {{id}}Debug.room.state.phase === 'finished');
+  assert.equal(await guest.evaluate(() => {{id}}Debug.room.state.winner), await host.evaluate(() => {{id}}Debug.room.state.winner));
+  assert.deepEqual([...host.errors, ...guest.errors], []);
+  console.log('PASS {{id}}: two clients share a 3D table, take turns with bots and agree on the winner.');
+} finally { await browser.close(); }

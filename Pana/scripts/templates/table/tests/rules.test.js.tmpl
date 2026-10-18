@@ -1,0 +1,41 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { TableGame, SEATS, TARGET } from '../public/rules.js';
+
+const act = (game, id, action, seq) => game.accept(id, { action, seq, revision: game.revision }, 1);
+
+test('a pana takes a bot seat and gives it back, keeping the score', () => {
+  const game = new TableGame(7);
+  assert.equal(game.addPlayer(1, 'Ana', {}), true);
+  assert.equal(game.players[0].id, 1);
+  game.players[0].score = 4;
+  game.removePlayer(1);
+  assert.deepEqual([game.players[0].id, game.players[0].score], [null, 4]);
+});
+
+test('only the host starts, only the player in turn rolls, and a repeat is refused', () => {
+  const game = new TableGame(7);
+  game.addPlayer(1, 'Ana'); game.addPlayer(2, 'Bruno');
+  assert.equal(act(game, 2, 'start', 1), false);
+  assert.equal(act(game, 1, 'start', 1), true);
+  assert.equal(act(game, 2, 'roll', 2), false, 'not your turn');
+  assert.equal(act(game, 1, 'roll', 2), true);
+  assert.equal(act(game, 1, 'roll', 2), false, 'same seq again');
+});
+
+test(`the first to ${TARGET} wins, with every seat taking turns`, () => {
+  const game = new TableGame(3);
+  game.start();
+  const turns = [];
+  while (game.phase === 'playing') { turns.push(game.turn); game.roll(); }
+  assert.ok(game.players[game.winner].score >= TARGET);
+  assert.deepEqual([...new Set(turns.slice(0, SEATS))].sort(), [...Array(SEATS).keys()]);
+});
+
+test('a restored snapshot rolls the same dice as the original', () => {
+  const game = new TableGame(11);
+  game.start(); game.roll();
+  const copy = TableGame.restore(game.snapshot(), new Map());
+  game.roll(); copy.roll();
+  assert.equal(copy.lastRoll, game.lastRoll);
+});

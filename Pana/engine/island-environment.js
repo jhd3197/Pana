@@ -203,8 +203,8 @@ export function createIslandEnvironment(scene, { island, pathDist = island.pathD
 
   // signs that face the camera, near the path
   const signs = [
-    [['PANAS', 'JUEGAN', 'MEJOR ♥'], -62, -8],
-    [['RISAS', 'MANGOS', 'PANAS', 'SIEMPRE ♥'], 60, -14],
+    [['PANAS', 'JUEGAN', 'MEJOR'], -62, -8],
+    [['RISAS', 'MANGOS', 'PANAS', 'SIEMPRE'], 60, -14],
     [['PICO', 'PANA', '4.765 m'], 14, -44],
     [['PLAYA', 'COCOTERO'], 34, 80],
     [['PUERTO', 'DE LOS PANAS'], 117, 43],

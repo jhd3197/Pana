@@ -1,0 +1,69 @@
+// {{name}}'s 3D world on the shared plaza stage (engine/table-world.js, full
+// window): every pana runs around the plaza after the mangos.
+import * as THREE from 'three';
+import { createTableWorld } from '/engine/table-world.js';
+import { buildCharacter } from '/engine/models/characters/pana/avatar-model.js';
+import { normalizeAvatar } from '/engine/avatar.js';
+import { disposeModel } from '/engine/models/props/game-table.js';
+import { ARENA } from './rules.js';
+
+const BOT_COLORS = ['#2ad1b2', '#ffc629', '#3d7bf2', '#ff8a3d', '#9b5de5', '#6bbf59', '#ff6fae', '#ee3024'];
+
+function mangoModel() {
+  const group = new THREE.Group();
+  const fruit = new THREE.Mesh(new THREE.SphereGeometry(.32, 18, 14), new THREE.MeshStandardMaterial({ color: '#ffa62b', roughness: .45 }));
+  fruit.scale.set(1, 1.2, .9); fruit.castShadow = true;
+  const leaf = new THREE.Mesh(new THREE.ConeGeometry(.12, .34, 8), new THREE.MeshStandardMaterial({ color: '#4d9a4a', roughness: .7 }));
+  leaf.position.set(.1, .42, 0); leaf.rotation.z = -.7;
+  group.add(fruit, leaf); return group;
+}
+
+export function create{{Class}}Scene(canvas) {
+  const stage = createTableWorld(canvas, { fit: 'window', plazaScale: 1 }), { renderer, scene, camera } = stage;
+  const own = new THREE.Group(); scene.add(own);
+  const panas = new Map(), mangos = new Map();
+  const bounds = new THREE.Box3(new THREE.Vector3(-ARENA - 1, 0, -ARENA - 1), new THREE.Vector3(ARENA + 1, 2, ARENA + 1));
+  let current = null, time = 0;
+
+  function update(state) {
+    current = state;
+    const live = new Set();
+    state.players.forEach((p, i) => {
+      live.add(p.id);
+      const look = normalizeAvatar(p.bot ? { outfitColor: BOT_COLORS[i % BOT_COLORS.length], face: 'feliz' } : p.avatar), key = JSON.stringify(look);
+      let entry = panas.get(p.id);
+      if (entry?.key !== key) {
+        entry?.character.dispose();
+        const character = buildCharacter(look); own.add(character.group);
+        if (!entry) character.group.position.set(p.x, 0, p.z);
+        else character.group.position.copy(entry.character.group.position);
+        entry = { character, key }; panas.set(p.id, entry);
+      }
+      entry.target = p;
+    });
+    for (const [id, entry] of panas) if (!live.has(id)) { entry.character.dispose(); own.remove(entry.character.group); panas.delete(id); }
+    const shown = new Set(state.mangos.map(m => m.id));
+    for (const m of state.mangos) {
+      if (!mangos.has(m.id)) { const model = mangoModel(); model.position.set(m.x, .5, m.z); own.add(model); mangos.set(m.id, model); }
+    }
+    for (const [id, model] of mangos) if (!shown.has(id)) { disposeModel(model); own.remove(model); mangos.delete(id); }
+  }
+
+  function frame(dt) {
+    time += dt;
+    const { w, h } = stage.resize();
+    stage.frameCamera(bounds, [0, 1.5, 1], { x: 16, y: 70, width: Math.max(160, w - 32), height: Math.max(120, h - 150) });
+    // Snapshots arrive at 20 Hz; ease toward them so motion stays smooth.
+    for (const { character, target } of panas.values()) {
+      if (!target) continue;
+      character.group.position.lerp(new THREE.Vector3(target.x, 0, target.z), 1 - Math.exp(-dt * 12));
+      character.group.rotation.y = target.heading;
+      character.update(dt, { walk: target.moving ? 1 : 0, open: current?.phase === 'finished' && current.winner === target.id });
+    }
+    for (const model of mangos.values()) { model.rotation.y += dt * 1.6; model.position.y = .5 + Math.sin(time * 3 + model.position.x) * .08; }
+    stage.draw(dt);
+  }
+
+  function dispose() { panas.forEach(entry => entry.character.dispose()); disposeModel(own); stage.dispose(); }
+  return { renderer, scene, camera, update, frame, dispose };
+}

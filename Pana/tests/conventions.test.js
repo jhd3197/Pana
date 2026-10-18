@@ -21,6 +21,16 @@ function walk(dir, keep, out = []) {
   return out;
 }
 
+// Like walk(), but into tests/ folders too (for rules about the suites themselves).
+function walkAll(dir, keep, out = []) {
+  for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+    const full = path.join(dir, entry.name);
+    if (entry.isDirectory()) { if (!['node_modules', 'vendor'].includes(entry.name)) walkAll(full, keep, out); }
+    else if (keep(entry.name)) out.push(full);
+  }
+  return out;
+}
+
 const pub = (id, file) => path.join(gamesDir, id, 'public', file);
 const meta = (id) => JSON.parse(read(path.join(gamesDir, id, 'game.json')));
 
@@ -164,6 +174,149 @@ test('game stylesheets keep raw colours in custom properties', () => {
       const raw = (value.match(/#[0-9a-f]{3,8}\b/gi) || []).filter(hex => !NEUTRAL.test(hex));
       if (raw.length) problems.push(`${rel(file)}: ${decl.trim().slice(0, 80)}`);
     }
+  }
+  assert.deepEqual(problems, []);
+});
+
+// ---------- Every game is 3D (AGENTS.md, "Every game is 3D") ----------
+// The playable view is a Three.js scene with a perspective camera and the
+// player's own pana. engine/tests/all-games.browser.js also checks, in a real
+// browser, that every game draws into a WebGL canvas.
+// An orthographic (isometric) main camera needs a reason here.
+const ISOMETRIC = { cocina: 'isometric kitchen view (docs/knowledge/cocina.md)' };
+
+test('every game is a 3D scene with the player\'s pana', () => {
+  const problems = [];
+  for (const id of games) {
+    const files = walk(path.join(gamesDir, id, 'public'), n => n.endsWith('.js')).filter(f => !/[\\/](card|preview)\.js$/.test(f));
+    const code = files.map(read).join('\n');
+    if (!/from\s*['"]three['"]/.test(code)) problems.push(`${id}: no Three.js scene (import 'three')`);
+    if (!/\/engine\/avatar\.js/.test(code)) problems.push(`${id}: never loads the player's pana (/engine/avatar.js)`);
+    if (/new\s+THREE\.OrthographicCamera/.test(code) && !ISOMETRIC[id]) problems.push(`${id}: orthographic main camera; use a PerspectiveCamera (or justify an isometric view in ISOMETRIC)`);
+    for (const file of files.filter(f => /[\\/]scene\.js$/.test(f))) {
+      if (/getContext\(\s*['"]2d['"]\s*\)/.test(read(file))) problems.push(`${rel(file)}: draws the scene with a 2D canvas`);
+    }
+  }
+  assert.deepEqual(problems, []);
+});
+
+// ---------- The file split (docs/ARCHITECTURE.md, "A game's files") ----------
+test('rules files are pure: no DOM, no Three.js, no browser storage', () => {
+  const problems = [];
+  for (const id of games) {
+    for (const file of walk(path.join(gamesDir, id, 'public'), n => /(^|-)rules\.js$/.test(n))) {
+      const src = read(file).replace(/\/\/.*$/gm, '').replace(/\/\*[\s\S]*?\*\//g, '');
+      for (const [pattern, what] of [[/\bdocument\./, 'document'], [/\bwindow\./, 'window'], [/from\s*['"]three/, 'Three.js'], [/requestAnimationFrame/, 'requestAnimationFrame'], [/localStorage/, 'localStorage']]) {
+        if (pattern.test(src)) problems.push(`${rel(file)}: uses ${what}`);
+      }
+    }
+  }
+  assert.deepEqual(problems, []);
+});
+
+test('every game has rules tests and a browser suite', () => {
+  const problems = [];
+  for (const id of games) {
+    const dir = path.join(gamesDir, id, 'tests');
+    const files = fs.existsSync(dir) ? fs.readdirSync(dir) : [];
+    if (!files.some(f => f.endsWith('.test.js'))) problems.push(`${id}: no tests/*.test.js for its rules`);
+    if (!files.some(f => /\.browser\.m?js$/.test(f) || f.endsWith('.mjs'))) problems.push(`${id}: no browser suite in tests/`);
+  }
+  assert.deepEqual(problems, []);
+});
+
+// game.js is wiring only. These files predate the limit; they may shrink, never grow.
+const GAME_JS_LIMIT = 600, GAME_JS_ALLOWED = { derrape: 2950, bululu: 1450, embuste: 650 };
+test(`game.js stays wiring (at most ${GAME_JS_LIMIT} lines)`, () => {
+  const problems = [];
+  for (const id of games) {
+    const file = pub(id, 'game.js');
+    if (!fs.existsSync(file)) continue;
+    const lines = read(file).split('\n').length, limit = GAME_JS_ALLOWED[id] ?? GAME_JS_LIMIT;
+    if (lines > limit) problems.push(`${id}: game.js has ${lines} lines (limit ${limit}); move rules to rules.js, rendering to scene.js, DOM to ui.js`);
+  }
+  assert.deepEqual(problems, []);
+});
+
+// ---------- Shared pieces ----------
+// Games that keep their own pre-game menu instead of the shared lobby, and why.
+const OWN_MENU = { derrape: 'four-step garage menu (docs/knowledge/derrape-menu.md)' };
+test('every game page loads the shared UI, lobby and pinned Three.js', () => {
+  const problems = [];
+  for (const id of games) {
+    const html = read(pub(id, 'index.html'));
+    if (!/href=["']\/engine\/ui\.css["']/.test(html)) problems.push(`${id}: index.html does not link /engine/ui.css`);
+    if (!OWN_MENU[id] && !/\/engine\/game-entry\.js["'][^>]*data-pana-entry/.test(html)) problems.push(`${id}: index.html does not load /engine/game-entry.js with data-pana-entry`);
+    if (!html.replace(/\s/g, '').includes('"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js"')) problems.push(`${id}: import map does not pin three@0.160.0`);
+  }
+  assert.deepEqual(problems, []);
+});
+
+test('rooms take their size from game.json', () => {
+  const problems = [];
+  for (const id of games) {
+    for (const file of walkAll(path.join(gamesDir, id), n => n.endsWith('.js')).filter(f => /[\\/]server[\\/]/.test(f))) {
+      if (/maxClients\s*=/.test(read(file))) problems.push(`${rel(file)}: sets maxClients; game.json players is the cap (server/src/colyseus.js)`);
+    }
+  }
+  assert.deepEqual(problems, []);
+});
+
+// ---------- Everything the player sees, not just the games ----------
+test('no emoji or emoji-prone glyphs anywhere in engine/ or web/', () => {
+  const files = ['engine', 'web'].flatMap(dir => walk(path.join(app, dir), n => /\.(html|js|css)$/.test(n)));
+  const problems = [];
+  for (const file of files) {
+    read(file).split('\n').forEach((line, i) => {
+      if (/^\s*(\/\/|\*|\/\*)/.test(line)) return;
+      for (const m of line.matchAll(EMOJI)) problems.push(`${rel(file)}:${i + 1} ${m[0]} (U+${m[0].codePointAt(0).toString(16).toUpperCase()})`);
+    });
+  }
+  assert.deepEqual(problems, []);
+});
+
+test('served images stay small (at most 600 KB)', () => {
+  const problems = [];
+  for (const dir of [path.join(app, 'web', 'images'), ...games.map(id => path.join(gamesDir, id, 'public'))]) {
+    if (!fs.existsSync(dir)) continue;
+    for (const file of walk(dir, n => /\.(png|jpe?g|webp|gif)$/i.test(n))) {
+      const size = fs.statSync(file).size;
+      if (size > 600 * 1024) problems.push(`${rel(file)}: ${Math.round(size / 1024)} KB; export a JPEG or WebP`);
+    }
+  }
+  assert.deepEqual(problems, []);
+});
+
+// ---------- Tests and docs that agents keep rewriting ----------
+// Browser suites wait on game state, never on the clock. Existing sleeps may
+// be removed; this number may only go down.
+const MAX_FIXED_SLEEPS = 62;
+test(`browser suites add no fixed sleeps (waitForTimeout at most ${MAX_FIXED_SLEEPS})`, () => {
+  const suites = ['engine', 'games', 'web'].flatMap(dir => walkAll(path.join(app, dir), n => /\.m?js$/.test(n)));
+  const count = suites.reduce((n, file) => n + (read(file).match(/waitForTimeout\(/g) || []).length, 0);
+  assert.ok(count <= MAX_FIXED_SLEEPS, `${count} waitForTimeout calls; wait on state instead (tests/browser-kit.js waitFor)`);
+});
+
+test('every game has a knowledge note listed in the docs index and the README', () => {
+  const repo = path.resolve(app, '..'), knowledge = path.join(repo, 'docs', 'knowledge');
+  const index = read(path.join(knowledge, 'README.md')), readme = read(path.join(repo, 'README.md'));
+  const problems = [];
+  for (const id of games) {
+    if (!fs.existsSync(path.join(knowledge, `${id}.md`))) problems.push(`${id}: no docs/knowledge/${id}.md`);
+    if (!index.includes(`\`${id}.md\``)) problems.push(`${id}: missing from docs/knowledge/README.md`);
+    const name = meta(id).name.split(' · ')[0].replace(/[¡!]/g, '');
+    if (!readme.includes(name)) problems.push(`${id}: "${name}" missing from README.md's games table`);
+  }
+  assert.deepEqual(problems, []);
+});
+
+test('knowledge notes state results inline, never a local plan or log', () => {
+  const knowledge = path.resolve(app, '..', 'docs', 'knowledge');
+  const problems = [];
+  for (const name of fs.readdirSync(knowledge).filter(n => n.endsWith('.md'))) {
+    read(path.join(knowledge, name)).split('\n').forEach((line, i) => {
+      if (/docs\/plans\/|\bplans\/\d\d|[\w-]+\.log\b/.test(line)) problems.push(`docs/knowledge/${name}:${i + 1} ${line.trim().slice(0, 80)}`);
+    });
   }
   assert.deepEqual(problems, []);
 });

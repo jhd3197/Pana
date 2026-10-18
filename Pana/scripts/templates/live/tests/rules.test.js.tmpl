@@ -1,0 +1,45 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { Rush, cleanInput, ARENA, MIN_PLAYERS, ROUND } from '../public/rules.js';
+
+test('a solo start fills the plaza with bots and resets the round', () => {
+  const game = new Rush(5);
+  game.addPlayer(1, 'Ana');
+  game.start();
+  assert.equal(game.players.length, MIN_PLAYERS);
+  assert.equal(game.phase, 'playing');
+  assert.equal(game.time, ROUND);
+});
+
+test('running onto a mango scores it and a new one appears', () => {
+  const game = new Rush(5);
+  const ana = game.addPlayer(1, 'Ana');
+  game.start(false);
+  Object.assign(ana, { x: 0, z: 0 });
+  game.mangos = [{ id: 99, x: 1.5, z: 0 }];
+  const before = game.mangos[0].id;
+  for (let i = 0; i < 10; i++) game.update(.05, new Map([[1, { x: 1, z: 0 }]]));
+  assert.ok(ana.score >= 1);
+  assert.notEqual(game.mangos[0].id, before);
+});
+
+test('nobody leaves the plaza and junk input is a released stick', () => {
+  const game = new Rush(5);
+  const ana = game.addPlayer(1, 'Ana');
+  game.start(false);
+  game.mangos = [];
+  for (let i = 0; i < 200; i++) game.update(.05, new Map([[1, { x: 1, z: -1 }]]));
+  assert.ok(Math.abs(ana.x) <= ARENA && Math.abs(ana.z) <= ARENA);
+  assert.deepEqual(cleanInput({ x: 9, z: 'up' }), { x: 1, z: 0 });
+});
+
+test('the round ends on time and a restore drops panas who left', () => {
+  const game = new Rush(5);
+  game.addPlayer(1, 'Ana'); game.addPlayer(2, 'Bruno');
+  game.start();
+  game.update(ROUND + 1);
+  assert.equal(game.phase, 'finished');
+  const copy = Rush.restore(game.snapshot(), new Map([[1, {}]]));
+  assert.equal(copy.players.some(p => p.id === 2), false);
+  assert.equal(copy.players.some(p => p.id === 1), true);
+});

@@ -1,0 +1,27 @@
+// Two real clients: both prepare the 3D plaza, the guest's own keys move its
+// pana on the host, the host starts and both agree on the result.
+// Run: npm run test:browser -- {{id}}
+import assert from 'node:assert/strict';
+import { launch, openGame, waitFor } from '../../../tests/browser-kit.js';
+
+const browser = await launch(), room = `{{id}}-${Date.now()}`;
+try {
+  const host = await openGame(browser, '{{id}}', { name: 'Ana', room, query: 'debug' });
+  const guest = await openGame(browser, '{{id}}', { name: 'Bruno', room, query: 'debug' });
+  await waitFor(host, () => {{id}}Debug.room.state.players.length === 2);
+  assert.equal(await host.evaluate(() => {{id}}Debug.world.camera.isPerspectiveCamera), true, 'the plaza is a 3D scene');
+  await host.locator('#start').click();
+  await waitFor(guest, () => {{id}}Debug.room.state.phase === 'playing');
+  const me = () => {{id}}Debug.room.state.players.find(p => p.id === {{id}}Debug.room.id);
+  const start = await guest.evaluate(me);
+  await guest.locator('#world').click({ position: { x: 640, y: 400 } });
+  await guest.keyboard.down('d');
+  await waitFor(host, ({ id, x }) => {{id}}Debug.room.state.players.find(p => p.id === id).x > x + 1, start);
+  await guest.keyboard.up('d');
+  // End the round now instead of waiting a minute: the host owns the clock.
+  await host.evaluate(() => { {{id}}Debug.room.game.time = .01; });
+  await waitFor(guest, () => {{id}}Debug.room.state.phase === 'finished');
+  assert.equal(await guest.evaluate(() => {{id}}Debug.room.state.winner), await host.evaluate(() => {{id}}Debug.room.state.winner));
+  assert.deepEqual([...host.errors, ...guest.errors], []);
+  console.log('PASS {{id}}: two clients share a 3D plaza, guest input moves on the host, both agree on the result.');
+} finally { await browser.close(); }
