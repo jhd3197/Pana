@@ -10,6 +10,9 @@ becomes the GitHub release's notes.
 
 ### Added
 
+- **See interaction progress while reviving panas and turning Reliquia's wheels.**
+  The game now attaches the shared progress ring's mesh correctly.
+
 - **Browse aligned launcher pages and see your pana preparing before the editor opens.**
   Shared page widths keep the header and content edges together. The character
   editor shows loading until its model and graphics are ready, with retry on failure.

@@ -33,7 +33,7 @@ const world = createExpeditionWorld(); scene.add(world.group);
 const puffs = new Puffs(scene);
 const shockwaves = new Shockwaves(scene);
 const chargeRing = createChargeRing({ radius: 1.55, color: 0x62f5c8 });
-scene.add(chargeRing.group);
+scene.add(chargeRing.mesh);
 const camera = new THREE.PerspectiveCamera(48, innerWidth / innerHeight, 0.1, 250);
 let state = new Expedition().snapshot(), paused = false, failed = false, phase = '', lastEvent = 0, last = performance.now(), elapsed = 0, dead = false;
 let yaw = 0.25, pitch = 0.76, zoom = 15, toastTimer, rosterKey = '', uiElapsed = 0, shake = 0, chargeTickT = 0;

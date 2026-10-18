@@ -55,6 +55,8 @@ the group, and requires a server-confirmed leave before a guest plays separately
 It also guards direct guest game-page requests and strips forged guest `lead`
 parameters. These behavior changes require deploying the private gateway too;
 updating only this repository changes the launcher but not party authorization.
+The hosted gateway also requires a signed-in session for launcher illustrations;
+anonymous `/images/launcher/*` requests return 404 even when the files are deployed.
 
 ## Proof
 
