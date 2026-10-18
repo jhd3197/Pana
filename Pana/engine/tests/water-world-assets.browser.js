@@ -12,7 +12,7 @@ try{
     const THREE=await import('three');window.__T=THREE;window.__renderer=new THREE.WebGLRenderer({antialias:true,preserveDrawingBuffer:true});__renderer.setSize(720,560);document.body.appendChild(__renderer.domElement);
     window.__assets=(await import('/studio/catalog.js')).ASSETS.filter(a=>a.pack==='water-worlds');return __assets.map(a=>a.id);
   });
-  assert.equal(ids.length,7);const proof=[];
+  assert.equal(ids.length,8);const proof=[];
   for(const id of ids){
     const result=await page.evaluate(async id=>{
       const THREE=__T,asset=__assets.find(a=>a.id===id),model=await asset.build(),scene=new THREE.Scene();scene.background=new THREE.Color(0x22333c);scene.add(model.group);
