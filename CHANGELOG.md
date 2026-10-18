@@ -16,6 +16,10 @@ becomes the GitHub release's notes.
   (C). Fácil shows where both balls go, including rebounds; Experto shows only
   the cue's direction, and Pana Bot aims better as the difficulty rises.
 
+- **Pintura looks like a paint battle.** The plaza court has warm stone
+  paving, crates and ground splattered from earlier games, bunting on wooden
+  posts, and every hit leaves a glossy splat with drips.
+
 - **The plaza feels alive around every table and court.** A pack of karts
   from Derrape races past in front of the houses, panas stroll along the edges
   and guacamayas circle overhead while you play Billar, Dominó, Póquer, Ludo,

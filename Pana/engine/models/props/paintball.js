@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { rng } from '../../random.js';
 import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
 import { bake } from '/engine/models/core/static-batch.js';
 import { disposeModel } from './game-table.js';
@@ -19,4 +20,31 @@ export function createPaintMarker({ color = '#f28b42' } = {}) {
   const result = bake(root); const geometry = new Set(); root.traverse(o => { if (o.geometry) geometry.add(o.geometry); }); geometry.forEach(g => g.dispose());
   result.name = 'Marcadora de pintura'; let disposed = false;
   result.userData.dispose = () => { if (!disposed) { disposed = true; disposeModel(result); } }; return result;
+}
+
+// The paint-battle look: glossy splats with drips and droplets. A white blob
+// on a transparent canvas, tinted by each material's colour.
+export function splatTexture(seed) {
+  const canvas = document.createElement('canvas'); canvas.width = canvas.height = 256;
+  const g = canvas.getContext('2d'), r = rng(seed); g.fillStyle = g.strokeStyle = '#fff'; g.lineCap = 'round';
+  g.beginPath(); g.arc(128, 128, 58, 0, Math.PI * 2); g.fill();
+  for (let i = 0; i < 11; i++) {
+    const a = r() * Math.PI * 2, d = 46 + r() * 44, size = 12 + r() * 24, x = 128 + Math.cos(a) * d, y = 128 + Math.sin(a) * d;
+    g.lineWidth = size * 1.3; g.beginPath(); g.moveTo(128, 128); g.lineTo(x, y); g.stroke();
+    g.beginPath(); g.arc(x, y, size, 0, Math.PI * 2); g.fill();
+  }
+  for (let i = 0; i < 10; i++) { const a = r() * Math.PI * 2, d = 100 + r() * 24; g.beginPath(); g.arc(128 + Math.cos(a) * d, 128 + Math.sin(a) * d, 3 + r() * 6, 0, Math.PI * 2); g.fill(); }
+  const texture = new THREE.CanvasTexture(canvas); texture.colorSpace = THREE.SRGBColorSpace; return texture;
+}
+// Warm stone paving for the court, like the plaza's slabs.
+export function pavingTexture() {
+  const canvas = document.createElement('canvas'); canvas.width = canvas.height = 512;
+  const g = canvas.getContext('2d'), r = rng(51), stones = ['#ecd09f', '#e6c690', '#f0d6a8', '#e2bf8b', '#eccb97'];
+  g.fillStyle = '#c99f6e'; g.fillRect(0, 0, 512, 512);
+  for (let y = 0; y < 8; y++) for (let x = -1; x < 8; x++) {
+    const ox = (y % 2) * 32; g.fillStyle = stones[Math.floor(r() * stones.length)];
+    g.beginPath(); g.roundRect(x * 64 + ox + 3, y * 64 + 3, 58, 58, 7); g.fill();
+  }
+  const texture = new THREE.CanvasTexture(canvas); texture.colorSpace = THREE.SRGBColorSpace;
+  texture.wrapS = texture.wrapT = THREE.RepeatWrapping; texture.repeat.set(4.6, 4.6); texture.anisotropy = 4; return texture;
 }

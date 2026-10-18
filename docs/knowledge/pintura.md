@@ -51,6 +51,18 @@ local pause and touch layouts. Screenshots are ignored under the game's `qa/`.
 `engine/tests/table-games.browser.js` also checks all three new 3D scenes, camera
 picking, orbit, touch layouts and the actual Studio model constructors.
 
+## Look
+
+The plaza court follows the paint-battle brand board: `engine/look.js`
+(`WARM_DAY`, `PALETTE`, `BUNTING`) for light and colours, stone paving and
+splat textures painted by `engine/models/props/paintball.js`
+(`pavingTexture`, `splatTexture`), decals on crates and paving from earlier
+games, bunting along the top rope, paint buckets and tyre stacks outside the
+fence. All of it is cosmetic: collision still comes from `COVER`. Hit splats
+are glossy alpha-tested planes, four shapes per colour, with polygon offset so
+they never fight the paving. Scene files may not paint 2D canvases
+(conventions test): texture painters live in engine model files.
+
 ## Notes for agents
 
 Keep simulation in pure rules and room authorization on the server. Never add
