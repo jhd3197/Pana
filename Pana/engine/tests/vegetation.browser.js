@@ -56,8 +56,8 @@ try {
     await page.evaluate(i=>{const {models,stage,inspect,fitCamera}=vegetationProof;fitCamera(stage.camera,inspect(models[i]).bounds,false,'side');stage.renderer.render(stage.scene,stage.camera);},i);
     await page.screenshot({path:`${output}/${metrics.details[i].id}-side.png`});
   }
-  assert.equal(metrics.vegetation.length,42);assert.equal(new Set(metrics.vegetation).size,42);
-  for (const id of ['garden-rosette', 'trailing-vine', 'trinitaria']) assert.ok(metrics.vegetation.includes(id));
+  assert.equal(metrics.vegetation.length,44);assert.equal(new Set(metrics.vegetation).size,44);
+  for (const id of ['garden-rosette', 'trailing-vine', 'trinitaria', 'apamate', 'bucare']) assert.ok(metrics.vegetation.includes(id));
   for(const m of metrics.details) {
     assert.ok(m.triangles<12000,`${m.id} triangle budget`);assert.ok(m.meshes<=6,`${m.id} draw-call budget`);
     assert.ok(m.minY>=-0.08,`${m.id} grounded origin`);assert.ok(m.dimensions.every(d=>d>0.1&&d<12));
