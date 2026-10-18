@@ -22,7 +22,7 @@ export const CUP_DEFINITIONS = [
     stages: [
       stage('desierto', 2, 145),
       stage('chichi', 1, 175),
-      stage('selva', 2, 90),
+      stage('selva', 2, 185),
       stage('paramo', 2, 155),
     ],
   },

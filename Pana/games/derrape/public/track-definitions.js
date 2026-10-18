@@ -10,7 +10,7 @@ export const TRACK_DEFINITIONS = [
   { id:'chichi',name:'Chi Chi',
   blurb:'De las termas entre nubes al pueblo de buceo: curvas de montaña, bosque húmedo, playa y una larga subida junto al río.', },
   { id:'selva',name:'Pana Selva',
-  blurb:'Corre entre ceibas y bambúes, cruza el río de los mangles y entra al túnel del jaguar entre flores y ruinas.', },
+  blurb:'Sube por la cueva del jaguar hasta la meseta de las flores, baja por la cornisa, cruza el vado y el río de los mangles entre ceibas y ruinas.', },
   { id:'paramo',name:'Pana Páramo',
   blurb:'Sube entre frailejones, enlaza las horquillas de la laguna y corona el teleférico.', },
   { id: 'plaza', name: 'Plaza Pana',

@@ -17,6 +17,9 @@ becomes the GitHub release's notes.
   or stripes on the turntable before buying; each part shows its "+2 Vel" on
   the stat bars and changes the car a little in every race, online too.
 
+- **Pana Selva is twice as long, with a jaguar cave and a plateau.** Climb
+  through a cave with a temple pyramid, a cenote and two jaguars, cross the
+  flower plateau, come down a timber ledge and splash through the ford.
 - **Salinas del Viento is twice as long and dives into a hidden salt mine.**
   North of the flats the road plunges down a salt cut into a closed tunnel:
   three dim halls of glowing crystals, salt pools, a waterfall and a plank
