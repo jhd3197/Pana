@@ -103,7 +103,7 @@ pause overlay, sound toggle or invite flow, or handle Escape in a game. Never se
 .\dev.ps1 studio          # open Pana Studio on the running server
 npm run test:browser -- all-games  # every game prepares a 3D scene without errors
 npm run test:browser -- --changed  # only the suites for what changed since dev
-npm run test:browser -- --jobs 8   # the full set, eight suites at a time
+npm run test:browser -- --jobs 4   # the full set, four suites at a time
 ```
 
 Playwright is a dev dependency: `npm install` is all browser suites need, so
@@ -111,8 +111,10 @@ don't search the disk for one or set `PANA_PLAYWRIGHT_PATH`. The runner starts
 its own fresh server on a free port, so a stale server on :8461 can never answer
 for new code; set `PANA_TEST_URL` only to test a server you started yourself.
 Suites run several at a time against one server (each makes its own room),
-slowest first by `Pana/tests/browser-timings.json`; a failure reruns alone once
-and is reported as flaky if it then passes. Refresh the timings with `--record`
+slowest first by `Pana/tests/browser-timings.json`; a failure reruns once at half
+the concurrency and is reported as flaky if it then passes. More than about
+one suite per eight CPU threads overloads software WebGL and makes suites time
+out. Refresh the timings with `--record`
 after adding or speeding up suites. CI runs `check`, `test`, the all-games smoke
 and the `--changed` suites on every push to `dev`; PRs into `main` also run every
 suite in four `--shard k/4` jobs. Every merge to `main` releases

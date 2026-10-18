@@ -3,14 +3,16 @@
 // Usage: npm run test:browser [-- <filter>...] [--jobs N] [--changed[=base]]
 //                             [--shard k/n] [--retries N] [--record]
 //   <filter>     only suites whose path contains it (domino caida)
-//   --jobs N     suites run at once (default: a quarter of the CPUs, 1–6; PANA_BROWSER_JOBS)
+//   --jobs N     suites run at once (default: an eighth of the CPUs, 1–4; PANA_BROWSER_JOBS).
+//                Software WebGL is CPU-bound: 6 at once on 32 threads made suites
+//                time out and the run slower than serial
 //   --changed    only suites for what changed since `dev` (or =<base>), committed or not:
 //                a game's own suites; engine/server/tests changes add the engine suites
 //                and the every-game smoke
 //   --shard k/n  run the k-th of n balanced slices (CI matrix); every shard
 //                reads the same committed timings, so the slices never overlap
-//   --retries N  rerun a failed suite alone up to N times (default 1); a pass on
-//                retry is reported as flaky
+//   --retries N  rerun a failed suite up to N times (default 1), at half the
+//                concurrency; a pass on retry is reported as flaky
 //   --record     write this run's suite times to Pana/tests/browser-timings.json
 // Suites already create unique rooms, so they can share the server. Slowest
 // first (by the timings file), so a long suite never starts last.
@@ -36,7 +38,7 @@ while (argv.length) {
   if (!flag) filters.push(arg.toLowerCase());
   else flags[flag[1]] = flag[2] ?? (['jobs', 'shard', 'retries'].includes(flag[1]) ? argv.shift() : true);
 }
-const jobs = Math.max(1, Number(flags.jobs) || Number(process.env.PANA_BROWSER_JOBS) || Math.min(6, Math.max(1, Math.floor(os.cpus().length / 4))));
+const jobs = Math.max(1, Number(flags.jobs) || Number(process.env.PANA_BROWSER_JOBS) || Math.min(4, Math.max(1, Math.floor(os.cpus().length / 8))));
 const retries = flags.retries === undefined ? 1 : Number(flags.retries) || 0;
 
 function collect(dir, out = []) {
@@ -185,24 +187,28 @@ await Promise.all(Array.from({ length: Math.min(jobs, queue.length) }, async () 
     const result = await run(suite);
     results.set(suite.label, result);
     if (result.ok || !retries) report(result);
-    else console.log(`retry ${suite.label} (failed after ${result.seconds.toFixed(1)}s, rerunning alone at the end)`);
+    else console.log(`retry ${suite.label} (failed after ${result.seconds.toFixed(1)}s, rerunning at the end)`);
   }
 }));
 
-// Failures rerun one at a time, without the load of the parallel run.
-const flaky = [];
-for (const suite of suites) {
-  for (let attempt = 0; attempt < retries && !results.get(suite.label).ok; attempt++) {
-    const result = await run(suite);
-    if (result.ok) flaky.push(suite.label);
-    results.set(suite.label, result);
-    report(result, result.ok ? '  · passed on retry' : '');
+// Failures rerun under half the load of the parallel run (one at a time took
+// longer than the whole parallel phase when many suites had timed out).
+const flaky = [], again = suites.filter(suite => retries && !results.get(suite.label).ok);
+await Promise.all(Array.from({ length: Math.min(Math.max(1, Math.floor(jobs / 2)), again.length) }, async () => {
+  for (let suite; (suite = again.shift());) {
+    for (let attempt = 0; attempt < retries && !results.get(suite.label).ok; attempt++) {
+      const result = await run(suite);
+      if (result.ok) flaky.push(suite.label);
+      results.set(suite.label, result);
+      report(result, result.ok ? '  · passed on retry' : '');
+    }
   }
-}
+}));
 cleanup();
 
 if (flags.record) {
-  for (const [label, r] of results) if (r.ok) timings[label] = Math.round(r.seconds);
+  // A failing suite still holds a slot that long, so its time counts too.
+  for (const [label, r] of results) timings[label] = Math.round(r.seconds);
   fs.writeFileSync(timingsFile, `${JSON.stringify(Object.fromEntries(Object.entries(timings).sort()), null, 2)}\n`);
   console.log(`Recorded suite times in ${path.relative(repo, timingsFile)}`);
 }
