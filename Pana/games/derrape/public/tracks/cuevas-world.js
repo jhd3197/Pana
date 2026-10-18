@@ -5,12 +5,13 @@ import { waterGrid, hollowGallery } from './water-world-kit.js';
 import { waterAnimator } from '/engine/models/effects/water-surface.js';
 import { crossing } from './country-details.js';
 import { baseHeight, riverAt, CAVE } from './cuevas-layout.js';
-import { caveMountain, caveCrystals, tintShell } from './salt-cave.js';
+import { caveMountain, caveFormations, tintShell } from './salt-cave.js';
+import { riverSurface } from '/engine/models/effects/water-surface.js';
 import { mineLanternPost } from '/engine/models/props/mine.js';
 import { fireflies } from '/engine/models/effects/drifting-particles.js';
 import { wildMushrooms } from '/engine/models/vegetation/wild-mushrooms.js';
 import { rockArch } from '/engine/models/props/mountain.js';
-import { lightShaft } from '/engine/models/effects/atmosphere.js';
+import { lightShaft, glowPool } from '/engine/models/effects/atmosphere.js';
 import { stalactiteCluster, rootCurtain } from '/engine/models/props/caves.js';
 import { ceiba } from '/engine/models/vegetation/ceiba.js';
 import { fern } from '/engine/models/vegetation/fern.js';
@@ -28,8 +29,15 @@ export function cuevasWorld(T) {
   // spectrum crystals stuck to the rock, lanterns along the road, fireflies.
   tintShell(shell,{ring:[0x5f8f52,0x4f9a7c,0x3f8e8a,0xb08a5a],emissive:0x16443a,intensity:.55});
   const surface=shell.userData.corridor.surface,profile={widthAt:()=>31};
-  const crystals=caveCrystals(T,CAVE,profile,shell,{palette:[0x5fe08a,0x3fd6e0,0x9b5cff,0xffb43a],seed:58,step:8,density:.8,glow:1.3,
-    avoid:(x,z)=>riverAt(x,z).distance<16,name:'cuevas-crystals'});group.add(crystals);
+  // The cave's own stream runs beside the road, foaming down the climb and
+  // lit by cyan glow pools; formations keep clear of its banks.
+  const streamPts=[],STREAM_OFF=-(T.HW+5.5);
+  for(let u=CAVE.from+.004;u<CAVE.to-.004;u+=6/T.TOTAL){const q=placeOnTrack(T,u*T.TOTAL,STREAM_OFF);streamPts.push([q.x,q.z]);}
+  const stream=riverSurface(streamPts,6,(x,z)=>T.surfaceAt(x,z)-.35,{color:0x3fe6d8,foam:true});stream.name='cuevas-cave-stream';group.add(stream);
+  const nearStream=(x,z)=>{const n=T.nearest(x,z),off=n.d*n.side;return Math.abs(off-STREAM_OFF)<7;};
+  for(let u=CAVE.from+.02;u<CAVE.to-.01;u+=38/T.TOTAL){const q=placeOnTrack(T,u*T.TOTAL,STREAM_OFF),pool=glowPool({radius:7,color:0x3fe6d8,intensity:.35});pool.position.set(q.x,q.y-.3,q.z);group.add(pool);}
+  const crystals=caveFormations(T,CAVE,profile,shell,{palette:[0x5fe08a,0x3fd6e0,0x9b5cff,0xffb43a],seed:58,glow:1.3,lights:4,giantEvery:130,
+    avoid:(x,z)=>riverAt(x,z).distance<16||nearStream(x,z),name:'cuevas-formations'});group.add(crystals);
   const lamps=new THREE.Group(),glow=[];
   for(let u=CAVE.from+.012;u<CAVE.to-.006;u+=36/T.TOTAL)for(const side of [-1,1]){
     const p=placeOnTrack(T,u*T.TOTAL,side*(T.HW+2.2));if(riverAt(p.x,p.z).distance<15)continue;
@@ -68,5 +76,5 @@ export function cuevasWorld(T) {
     accept:(x,z)=>outside(x,z)&&riverAt(x,z).distance>35}),'cuevas-outcrops',500);
   group.userData.assetCounts={stalactiteCluster:clusters,rootCurtain:roots};
   const animate=waterAnimator(group);
-  return {group,groundAt:world.groundAt,update:t=>{animate(t);beams.forEach(b=>b.userData.tick(t));crystals.userData.tick(t);bugs.userData.tick(t);}};
+  return {group,groundAt:world.groundAt,update:t=>{animate(t);beams.forEach(b=>b.userData.tick(t));crystals.userData.tick(t);bugs.userData.tick(t);stream.userData.tick(t);}};
 }

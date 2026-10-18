@@ -11,7 +11,8 @@ import { hollowGallery } from './water-world-kit.js';
 import { lightShaft } from '/engine/models/effects/atmosphere.js';
 import { floatingMotes } from '/engine/models/effects/drifting-particles.js';
 import { crystalField } from '/engine/models/props/crystals.js';
-import { caveCrystals } from './salt-cave.js';
+import { caveFormations } from './salt-cave.js';
+import { glowPool } from '/engine/models/effects/atmosphere.js';
 import { rootCurtain, stalactiteCluster } from '/engine/models/props/caves.js';
 import { brazier } from '/engine/models/props/ruins.js';
 import { jaguar } from '/engine/models/fauna/jaguar.js';
@@ -41,7 +42,7 @@ export function jaguarCave(T, cave, { widthAt, heightAt }, { seed = 61 } = {}) {
   group.add(shell);
 
   // Crystals in jade, gold and turquoise, stuck to the rock.
-  const crystals = caveCrystals(T, cave, { widthAt }, shell, { palette: JADE_CRYSTALS, seed, step: 7, stretch: .04, glow: 1.2, density: .7, name: 'selva-cave-crystals' });
+  const crystals = caveFormations(T, cave, { widthAt }, shell, { palette: JADE_CRYSTALS, seed, glow: 1.2, rock: 0xb9a27a, giantEvery: 400, chandeliers: 3, name: 'selva-cave-formations' });
   group.add(crystals); ticks.push(crystals.userData.tick);
 
   // The temple hall: pyramid on the inner side, cenote on the outer side.
@@ -72,6 +73,7 @@ export function jaguarCave(T, cave, { widthAt, heightAt }, { seed = 61 } = {}) {
   });
   const giantField = crystalField(giants, { palette: JADE_CRYSTALS, seed: seed + 9, glow: 1.5 });
   giantField.name = 'selva-cave-giants'; group.add(giantField); ticks.push(giantField.userData.tick);
+  for (const g of giants) { const pool = glowPool({ radius: 9, color: JADE_CRYSTALS[g.color], intensity: .5 }); pool.position.set(g.x, g.y + .03, g.z); group.add(pool); }
   for (const g of giants) {
     const light = new THREE.PointLight(JADE_CRYSTALS[g.color], 700, 60, 1.6); light.position.set(g.x, g.y + g.size, g.z); group.add(light);
   }

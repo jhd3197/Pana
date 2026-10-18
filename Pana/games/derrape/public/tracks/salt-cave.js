@@ -8,7 +8,8 @@ import { THREE, M, finish, put, placeOnTrack, smooth, mix, rng } from './world-k
 import { hollowGallery, hallProfile } from './water-world-kit.js';
 import { riverSurface } from '/engine/models/effects/water-surface.js';
 import { waterfall } from '/engine/models/effects/waterfall.js';
-import { lightShaft } from '/engine/models/effects/atmosphere.js';
+import { lightShaft, glowPool } from '/engine/models/effects/atmosphere.js';
+import { mossRock } from '/engine/models/vegetation/moss-rock.js';
 import { floatingMotes } from '/engine/models/effects/drifting-particles.js';
 import { crystalField } from '/engine/models/props/crystals.js';
 import { stalactiteCluster } from '/engine/models/props/caves.js';
@@ -120,33 +121,67 @@ export function tintShell(shell, { ring, emissive, intensity = .5 }) {
 const SALT_SHELL = { ring: [SALT_CAVE.floor, SALT_CAVE.rock, 0xd070b0, 0xa66ad0], emissive: 0x7a2860, intensity: .6 };
 const DIM_SHELL = { ring: [0x7a4a7a, 0x6a3f72, 0x4f3170, 0x3a2a66], emissive: 0x2a1040, intensity: .5 };
 
-// Crystal clusters stuck to a shell: on the walls, the shoulders, the crown
-// and the floor, each embedded in the rock and pointing out of its surface.
-// One instanced field per stretch of route so distant halls cull.
-export function caveCrystals(T, cave, { widthAt }, shell, { palette, seed = 31, step = 6, stretch = .05, glow = 1.4, density = 1, avoid = () => false, name = 'cave-crystals' } = {}) {
-  const group = new THREE.Group(), random = rng(seed), ticks = [], surface = shell.userData.corridor.surface;
-  const skylit = u => cave.skylights.some(([a, b]) => u > a - .006 && u < b + .006);
-  for (let u0 = cave.from; u0 < cave.to; u0 += stretch) {
-    const clusters = [], colour = () => Math.floor(random() * palette.length);
-    for (let u = u0 + .002; u < Math.min(u0 + stretch, cave.to - .004); u += step / T.TOTAL) for (const side of [-1, 1]) {
-      const w = widthAt(u), y0 = T.heightAtS(u * T.TOTAL), p0 = placeOnTrack(T, u * T.TOTAL, 0), n = [side * Math.cos(p0.h), 0, -side * Math.sin(p0.h)];
-      const stick = (off, normal, size) => { const q = placeOnTrack(T, u * T.TOTAL, off); clusters.push({ x: q.x, y: y0 + surface(u, off) + .35, z: q.z, normal, size, color: colour() }); };
-      for (let k = 0; k < 2 * density; k++) {
-        // The vertical wall: x = ±w from 5 m below the road to 10.5 m above it.
-        const q = placeOnTrack(T, u * T.TOTAL, side * (w + .6)), big = random() < .25;
-        clusters.push({ x: q.x, y: y0 + .3 + random() * (k ? 10 : 4), z: q.z, normal: [n[0], .3 + random() * .5, n[2]], size: big ? 2.4 + random() * 1.4 : 1 + random() * 1.4, color: colour() });
-      }
-      if (random() < .5 * density) stick(side * w * (.8 + random() * .18), [n[0] * .8, -.5, n[2] * .8], 1 + random() * 1.3);
-      if (random() < .5 * density && !skylit(u)) stick(side * w * random() * .7, [n[0] * .25, -1, n[2] * .25], 1 + random() * 1.5);
-      if (random() < .45 * density) {
-        const q = placeOnTrack(T, u * T.TOTAL, side * (T.HW + 5 + random() * Math.max(2, w - T.HW - 12)));
-        if (!avoid(q.x, q.z)) clusters.push({ x: q.x, y: y0 - .6, z: q.z, normal: [n[0] * .3 + (random() - .5) * .4, 1, n[2] * .3], size: .9 + random() * 2, color: colour() });
-      }
-    }
-    const field = crystalField(clusters, { palette, seed: seed + Math.round(u0 * 1000), glow, pulse: .3, brightest: 0 });
-    field.name = name; group.add(field); ticks.push(field.userData.tick);
+// Crystal formations anchored in the rock, grouped rather than sprinkled:
+//  - boulder bumps along the wall base give the walls relief,
+//  - crystal beds grow from rubble at the foot of the walls,
+//  - ledges: a boulder half sunk in the wall carrying a chunky cluster,
+//  - giants (2-4 times car height) on rubble beside the road, each with a
+//    glow pool on the floor; only the first `lights` giants get a real light,
+//  - a few dense chandeliers hanging from rock knobs in the crown.
+// Every piece is a library model (mossRock, crystalField, glowPool).
+export function caveFormations(T, cave, { widthAt }, shell, { palette, seed = 31, rock = null, moss = true, glow = 1.4,
+  bedEvery = 30, ledgeEvery = 46, giantEvery = 150, bumpEvery = 11, chandeliers = 4, lights = 0, avoid = () => false, name = 'cave-formations' } = {}) {
+  const group = new THREE.Group(), random = rng(seed), surface = shell.userData.corridor.surface, rocks = new THREE.Group();
+  const clusters = [], giants = [], pools = [], colour = () => Math.floor(random() * palette.length);
+  const span = cave.to - cave.from, length = span * T.TOTAL, road = u => T.heightAtS(u * T.TOTAL);
+  const inward = (u, side) => { const p = placeOnTrack(T, u * T.TOTAL, 0); return [side * Math.cos(p.h), 0, -side * Math.sin(p.h)]; };
+  const boulder = (x, y, z, size, turn = random() * 6) => put(rocks, mossRock({ seed: Math.floor(random() * 1e4), size, color: rock, moss }), x, z, y, turn);
+  const along = (every, fn) => { for (let d = every * (.3 + random() * .5); d < length - 8; d += every * (.75 + random() * .5)) fn(cave.from + d / T.TOTAL); };
+  // Wall relief.
+  along(bumpEvery, u => { for (const side of [-1, 1]) { const w = widthAt(u), q = placeOnTrack(T, u * T.TOTAL, side * (w - .8)); if (!avoid(q.x, q.z)) boulder(q.x, road(u) - 1.2, q.z, 2.2 + random() * 2.6); } });
+  // Beds at the wall base.
+  let bedSide = 1;
+  along(bedEvery, u => {
+    const side = bedSide = -bedSide, w = widthAt(u), n = inward(u, side), c = placeOnTrack(T, u * T.TOTAL, side * (w - 4.5));
+    if (avoid(c.x, c.z)) return;
+    const y = road(u) - .6, tint = colour();
+    for (let k = 0; k < 3; k++) boulder(c.x + (random() - .5) * 5, y - .4, c.z + (random() - .5) * 5, 1.1 + random() * 1.2);
+    for (let k = 0; k < 4 + Math.floor(random() * 3); k++) clusters.push({ x: c.x + (random() - .5) * 5, y, z: c.z + (random() - .5) * 5, normal: [n[0] * .35 + (random() - .5) * .3, 1, n[2] * .35], size: 1.8 + random() * 1.6, color: random() < .7 ? tint : colour(), count: 8 });
+  });
+  // Ledges: big boulders against the wall, resting on the floor, a cluster on top.
+  along(ledgeEvery, u => {
+    const side = random() < .5 ? -1 : 1, w = widthAt(u), n = inward(u, side), q = placeOnTrack(T, u * T.TOTAL, side * (w - 1)), size = 3.8 + random() * 1.6, y = road(u) - .6 + size * .45;
+    boulder(q.x, y - size * .45, q.z, size);
+    const top = placeOnTrack(T, u * T.TOTAL, side * (w - size * .45));
+    clusters.push({ x: top.x, y: y + size * .2, z: top.z, normal: [n[0] * .5, 1, n[2] * .5], size: 1.6 + random() * 1.2, color: colour(), count: 9 });
+  });
+  // Giants beside the road.
+  let giantSide = 1;
+  along(giantEvery, u => {
+    const side = giantSide = -giantSide, n = inward(u, side), c = placeOnTrack(T, u * T.TOTAL, side * (T.HW + 8 + random() * 3));
+    if (avoid(c.x, c.z)) return;
+    const y = road(u) - .6, tint = colour();
+    boulder(c.x, y - 1, c.z, 3.2); boulder(c.x + 2.5, y - .6, c.z - 2, 1.8); boulder(c.x - 2.2, y - .6, c.z + 2.4, 1.6);
+    giants.push({ x: c.x, y: y + .8, z: c.z, normal: [n[0] * .2, 1, n[2] * .2], size: 4.5 + random() * 2, count: 13, color: tint });
+    clusters.push({ x: c.x + 2.4, y: y + .3, z: c.z - 2, normal: [n[0] * .5, 1, n[2] * .5], size: 2.2, color: tint, count: 6 });
+    pools.push([c.x, y + .02, c.z, palette[tint]]);
+  });
+  // Chandeliers: a rock knob in the crown with a dense cluster hanging down.
+  for (let k = 0; k < chandeliers; k++) {
+    const u = cave.from + span * (k + .5) / chandeliers + (random() - .5) * span * .05;
+    if (cave.skylights.some(([a, b]) => u > a - .01 && u < b + .01)) continue;
+    const off = (random() - .5) * widthAt(u) * .4, q = placeOnTrack(T, u * T.TOTAL, off), y = road(u) + surface(u, off), tint = colour();
+    const knob = mossRock({ seed: 900 + k, size: 3, color: rock, moss: false }); knob.rotation.x = Math.PI; put(rocks, knob, q.x, q.z, y + 1.2, random() * 6);
+    for (let i = 0; i < 9; i++) clusters.push({ x: q.x + (random() - .5) * 3.5, y: y - .3, z: q.z + (random() - .5) * 3.5, normal: [(random() - .5) * .5, -1, (random() - .5) * .5], size: 1.2 + random() * 1.4, color: random() < .75 ? tint : colour(), count: 6 });
   }
-  group.name = name; group.userData.tick = t => ticks.forEach(tick => tick(t));
+  group.add(finish(rocks));
+  const field = crystalField(clusters, { palette, seed, glow, pulse: .3, brightest: 0 }); field.name = `${name}-crystals`; group.add(field);
+  const big = crystalField(giants, { palette, seed: seed + 1, glow: glow + .2, pulse: .25, brightest: 0 }); big.name = `${name}-giants`; group.add(big);
+  for (const [x, y, z, c] of pools) { const g = glowPool({ radius: 9, color: c, intensity: .5 }); g.position.set(x, y, z); group.add(g); }
+  const lamps = giants.slice(0, lights).map(g => { const l = new THREE.PointLight(palette[g.color], 900, 70, 1.6); l.position.set(g.x, g.y + g.size, g.z); group.add(l); return l; });
+  group.name = name;
+  group.userData.giants = giants;
+  group.userData.tick = t => { field.userData.tick(t); big.userData.tick(t); lamps.forEach((l, i) => { l.intensity = 900 * (.85 + .15 * Math.sin(t * 1.1 + i * 1.7)); }); };
   return group;
 }
 
@@ -210,8 +245,8 @@ export function saltCave(T, cave, profile, { groundAt, seed = 207, name = 'salt-
 
   // Crystals on walls, shoulders, crown and floor; giants in each hall carry
   // the only real lights.
-  const crystals = caveCrystals(T, cave, profile, shell, { palette: SALT_CAVE.crystals, seed, avoid: (x, z) => nearPool(x, z, 2), name: `${name}-crystals` });
-  group.add(crystals); ticks.push(crystals.userData.tick); const fields = crystals.children.length;
+  const crystals = caveFormations(T, cave, profile, shell, { palette: SALT_CAVE.crystals, seed, rock: dim ? 0x8a5a8e : 0xe7b3cb, moss: false, avoid: (x, z) => nearPool(x, z, 3), name: `${name}-formations` });
+  group.add(crystals); ticks.push(crystals.userData.tick); const fields = 2;
   const giants = [];
   cave.halls.forEach((hall, i) => {
     for (const side of [-1, 1]) {
@@ -221,6 +256,7 @@ export function saltCave(T, cave, profile, { groundAt, seed = 207, name = 'salt-
   });
   const giantField = crystalField(giants, { palette: SALT_CAVE.crystals, seed: seed + 50, glow: 1.5, pulse: .25 });
   giantField.name = `${name}-giant-crystals`; group.add(giantField); ticks.push(giantField.userData.tick);
+  for (const g of giants) { const pool = glowPool({ radius: 11, color: SALT_CAVE.crystals[g.color], intensity: .55 }); pool.position.set(g.x, g.y + .03, g.z); group.add(pool); }
   const lights = giants.slice(0, 6).map(g => {
     const light = new THREE.PointLight(SALT_CAVE.crystals[g.color], 1100, 80, 1.6); light.position.set(g.x, g.y + g.size * 1.1, g.z);
     light.name = `${name}-crystal-light`; group.add(light); return light;

@@ -203,3 +203,16 @@ export function moonDisc({radius=16,color=0xf3efd9,halo=0xdcd7ff,craters=6}={}){
   return owned(group,[glow],[disc,haloMaterial,crater],geometries);
 }
 
+
+// A pool of coloured light on the ground or a wall: an additive disc with a
+// soft radial falloff. Cheap stand-in for the light a glowing object casts.
+export function glowPool({ radius = 8, color = 0xff6fc0, intensity = .55 } = {}) {
+  const group = new THREE.Group(); group.name = 'glow-pool';
+  const tint = new THREE.Color(color), rgb = `${tint.r * 255 | 0},${tint.g * 255 | 0},${tint.b * 255 | 0}`;
+  const map = canvasTexture(128, 128, x => { const g = x.createRadialGradient(64, 64, 0, 64, 64, 64); g.addColorStop(0, `rgba(${rgb},1)`); g.addColorStop(.45, `rgba(${rgb},.45)`); g.addColorStop(1, `rgba(${rgb},0)`); x.fillStyle = g; x.fillRect(0, 0, 128, 128); });
+  const material = new THREE.MeshBasicMaterial({ map, transparent: true, opacity: intensity, blending: THREE.AdditiveBlending, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -4, fog: false });
+  const geometry = new THREE.CircleGeometry(radius, 32); geometry.rotateX(-Math.PI / 2);
+  const disc = new THREE.Mesh(geometry, material); disc.position.y = .05; disc.raycast = () => {}; disc.renderOrder = 1; group.add(disc);
+  group.userData.previewBounds = [[-radius, 0, -radius], [radius, 1, radius]];
+  return owned(group, [map], [material], [geometry]);
+}
