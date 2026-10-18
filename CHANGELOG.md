@@ -10,6 +10,11 @@ becomes the GitHub release's notes.
 
 ### Added
 
+- **Jaguars, glowing cave crystals and foaming cascades in Pana Studio.**
+  A prowling, sitting or black jaguar, a carved stone jaguar statue and
+  lintel, rainbow crystal clusters that pulse, cave skylights with dust
+  and rain, and streams that whiten down their steps, ready for new maps.
+
 - **Aim from behind the cue ball in Billar, and play Pana Bot on four difficulties.**
   The new default camera bends over the shot like the player would, with a tall
   power bar, a spin pad for follow, draw and side english, and a camera button

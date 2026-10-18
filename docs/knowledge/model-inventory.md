@@ -2,7 +2,7 @@
 
 Audited 2026-10-18. Generated from the real Studio registry plus a reviewed source ledger.
 
-**391 Studio resources**, including **18 Fauna entries**, **42 vegetation entries**, **14 vehicles** and **27 maps**. **133 resources are preview-only.** The separate ledger identifies **31 active uncataloged model families**, **46 scene/effect families** and **9 dormant factories/hooks**. These numbers must not be added into a “unique 3D models” total: maps contain models, variants share geometry, and some ledger rows group multiple related props.
+**403 Studio resources**, including **21 Fauna entries**, **42 vegetation entries**, **14 vehicles** and **27 maps**. **142 resources are preview-only.** The separate ledger identifies **31 active uncataloged model families**, **46 scene/effect families** and **9 dormant factories/hooks**. These numbers must not be added into a “unique 3D models” total: maps contain models, variants share geometry, and some ledger rows group multiple related props.
 
 Scope: current production geometry in `engine/` and the four games, including Bululú minigames, gameplay props, embedded wardrobe options and map scenery. Individual meshes, geometry helpers, UI/SVG art, generated screenshots, dependency internals and historical deleted revisions are excluded. Catalog consumer labels identify games, not instance counts. Active uncataloged entries were traced to their placement sources; presence in source does not guarantee visibility from every camera. Legacy rows are retained explicitly instead of being presented as new content.
 
@@ -48,6 +48,9 @@ These already exist. Their absence from a map is a placement gap, not a missing-
 
 | Studio name | ID | Source |
 | --- | --- | --- |
+| Jaguar | jaguar | [jaguar.js](../../Pana/engine/models/fauna/jaguar.js) |
+| Jaguar sentado | jaguar-sitting | [jaguar.js](../../Pana/engine/models/fauna/jaguar.js) |
+| Jaguar negro | black-jaguar | [jaguar.js](../../Pana/engine/models/fauna/jaguar.js) |
 | Mata de hojas anchas | garden-rosette | [garden-rosette.js](../../Pana/engine/models/vegetation/garden-rosette.js) |
 | Enredadera colgante | trailing-vine | [trailing-vine.js](../../Pana/engine/models/vegetation/trailing-vine.js) |
 | Trinitaria | trinitaria | [trinitaria.js](../../Pana/engine/models/vegetation/trinitaria.js) |
@@ -74,6 +77,7 @@ These already exist. Their absence from a map is a placement gap, not a missing-
 | Asta con bandera Pana | pana-flagpole | [monuments.js](../../Pana/engine/models/props/monuments.js) |
 | Fuente de los capibaras | capybara-fountain | [monuments.js](../../Pana/engine/models/props/monuments.js) |
 | Puente de bambú | bamboo-bridge | [jungle.js](../../Pana/engine/models/props/jungle.js) |
+| Arroyo en cascada | cascade-stream | [water-surface.js](../../Pana/engine/models/effects/water-surface.js) |
 | Minero | gold-miner | [mine-miner.js](../../Pana/engine/models/props/mine-miner.js) |
 | Vagoneta minera | mine-cart | [mine.js](../../Pana/engine/models/props/mine.js) |
 | Vía minera con caballetes | mine-track | [mine.js](../../Pana/engine/models/props/mine.js) |
@@ -148,6 +152,8 @@ These already exist. Their absence from a map is a placement gap, not a missing-
 | Portal de la selva | ruin-gate | [ruins.js](../../Pana/engine/models/props/ruins.js) |
 | Piedra tallada antigua | carved-stele | [ruins.js](../../Pana/engine/models/props/ruins.js) |
 | Fachada tallada en roca | rock-facade | [ruins.js](../../Pana/engine/models/props/ruins.js) |
+| Jaguar de piedra | jaguar-statue | [jaguar-stone.js](../../Pana/engine/models/props/jaguar-stone.js) |
+| Relieve del jaguar | jaguar-relief | [jaguar-stone.js](../../Pana/engine/models/props/jaguar-stone.js) |
 | Fogata de expedición | expedition-campfire | [expedition-camp.js](../../Pana/engine/models/props/expedition-camp.js) |
 | Carpa de expedición | expedition-tent | [expedition-camp.js](../../Pana/engine/models/props/expedition-camp.js) |
 | Carpa de expedición verde oliva | expedition-tent-olive | [expedition-camp.js](../../Pana/engine/models/props/expedition-camp.js) |
@@ -171,6 +177,7 @@ These already exist. Their absence from a map is a placement gap, not a missing-
 | Portal de troncos | log-gateway | [expedition-camp.js](../../Pana/engine/models/props/expedition-camp.js) |
 | Neblina rastrera | ground-fog | [atmosphere.js](../../Pana/engine/models/effects/atmosphere.js) |
 | Haz de luz con polvo | light-shaft | [atmosphere.js](../../Pana/engine/models/effects/atmosphere.js) |
+| Tragaluz de cueva | skylight-beam | [atmosphere.js](../../Pana/engine/models/effects/atmosphere.js) |
 | Rayos entre el follaje | god-rays | [atmosphere.js](../../Pana/engine/models/effects/atmosphere.js) |
 | Luna con halo | moon-disc | [atmosphere.js](../../Pana/engine/models/effects/atmosphere.js) |
 | Luciérnagas | fireflies | [drifting-particles.js](../../Pana/engine/models/effects/drifting-particles.js) |
@@ -179,6 +186,8 @@ These already exist. Their absence from a map is a placement gap, not a missing-
 | Destellos dorados | gold-sparkles | [drifting-particles.js](../../Pana/engine/models/effects/drifting-particles.js) |
 | Hojas que caen | falling-leaves | [drifting-particles.js](../../Pana/engine/models/effects/drifting-particles.js) |
 | Chispas de fogata | ember-plume | [drifting-particles.js](../../Pana/engine/models/effects/drifting-particles.js) |
+| Racimo de cristales | crystal-cluster | [crystals.js](../../Pana/engine/models/props/crystals.js) |
+| Cristales del arcoíris | crystal-garden | [crystals.js](../../Pana/engine/models/props/crystals.js) |
 | Cincuenta casas del pueblo | colonial-collection | [colonial-house-collection.js](../../Pana/engine/colonial-house-collection.js) |
 | Calle de las flores | colonial-street | [colonial-street.js](../../Pana/engine/colonial-street.js) |
 
@@ -239,9 +248,9 @@ These already exist. Their absence from a map is a placement gap, not a missing-
 | Generic race edges | Multiple Derrape circuits | [world-kit.js](../../Pana/games/derrape/public/tracks/world-kit.js#L77) | Steel, timber and kerb variants, generated along the route. |
 | Chevrons/start line/sector signs/ramps | Derrape | [track-kit.js](../../Pana/games/derrape/public/track-kit.js#L144) | Four route-generated furniture families; ramps depend on each track definition. |
 | Race terrain and waterways | Derrape | [world-kit.js](../../Pana/games/derrape/public/tracks/world-kit.js#L26) | Terrain, sea and stream generators; each map supplies shape and palette. |
-| Water surface system | Derrape | [water-surface.js](../../Pana/engine/models/effects/water-surface.js#L33) | Ocean, river, canal and pool configurations; not separate species/objects. |
+| Water surface system | Derrape | [water-surface.js](../../Pana/engine/models/effects/water-surface.js#L36) | Ocean, river, canal and pool configurations; not separate species/objects. |
 | Bululú tide wash | Bululú circuit | [bululu-tide.js](../../Pana/games/derrape/public/tracks/bululu-tide.js#L20) | Animated surface tied to tire grip and wetness. |
-| Board island terrain | Bululú board | [island-terrain.js](../../Pana/engine/island-terrain.js#L97) | Shoreline, beach, hills, river and path cuts. |
+| Board island terrain | Bululú board | [island-terrain.js](../../Pana/engine/island-terrain.js#L79) | Shoreline, beach, hills, river and path cuts. |
 | Forested islet/ridge | Bululú board | [island-landscape.js](../../Pana/engine/island-landscape.js#L43) | Seeded neighboring islands and distant ridges. |
 | Tepui and waterfall | Bululú board | [island-landscape.js](../../Pana/engine/island-landscape.js#L83) | Three mesas; one waterfall/mist landmark. Not the Selva waterfall. |
 | Living sky and cloud layers | Derrape; Galope; Escondidas; Cocina; Bululú and minigames; Studio tours | [sky.js](../../Pana/engine/sky.js#L5) | One procedural sky draw, seeded cumulus and wisps, absolute-time wind and day/night tint. Scene-owned, outside scenery bounds. |
@@ -263,7 +272,7 @@ These already exist. Their absence from a map is a placement gap, not a missing-
 | Raft and spinning striped log | No te caigas | [caigas.js](../../Pana/games/bululu/public/minigames/caigas.js#L46) | Player platforms, floats, central post, rotating obstacle and sandbars. |
 | Minigame wave surface | No te caigas | [caigas.js](../../Pana/games/bululu/public/minigames/caigas.js#L39) | Older deformed plane, separate from the shared water shader. |
 | Boost pad | Derrape | [items.js](../../Pana/games/derrape/public/items.js#L100) | Animated ground marker, separate from collectible item models. |
-| Puffs, debris and speech bubbles | Bululú; Derrape | [fx.js](../../Pana/engine/fx.js#L286) | Particle/sprite effects, not scenery inventory counts. |
+| Puffs, debris and speech bubbles | Bululú; Derrape | [fx.js](../../Pana/engine/fx.js#L303) | Particle/sprite effects, not scenery inventory counts. |
 | Crate fragment bursts | Derrape | [fragments.js](../../Pana/games/derrape/public/fragments.js#L6) | Gameplay fragments reused from crate art. |
 | Steam, fire and order dressing | Cocina | [scene.js](../../Pana/games/cocina/public/scene.js#L65) | Cooking state effects; recipes also have raw/prepared/cooked/burned variants. |
 | Thermal steam and water details | Chi Chi; shared fountains/waterfalls | [thermal-steam.js](../../Pana/engine/models/effects/thermal-steam.js#L5) | Reusable steam, droplets and ripple systems; water details also in water-details.js. |
@@ -297,12 +306,13 @@ These already exist. Their absence from a map is a placement gap, not a missing-
 
 The following list is generated, not manually copied. “In use” is the catalog’s current declared consumer status; detailed native placement proof exists for the fauna and recent packs. Color/seed variants are not separate rows unless Studio explicitly registers them. The seated driver now declares Derrape and the forced chef preview declares Cocina; normal wardrobe options remain shared across games.
 
-### Atmósfera (10)
+### Atmósfera (11)
 
 | Name / ID | Status / games | Source | Constructor |
 | --- | --- | --- | --- |
 | Neblina rastrera · ground-fog | Preview only | [atmosphere.js](../../Pana/engine/models/effects/atmosphere.js) | groundFog |
 | Haz de luz con polvo · light-shaft | Preview only | [atmosphere.js](../../Pana/engine/models/effects/atmosphere.js) | lightShaft |
+| Tragaluz de cueva · skylight-beam | Preview only | [atmosphere.js](../../Pana/engine/models/effects/atmosphere.js) | skylightBeam |
 | Rayos entre el follaje · god-rays | Preview only | [atmosphere.js](../../Pana/engine/models/effects/atmosphere.js) | godRays |
 | Luna con halo · moon-disc | Preview only | [atmosphere.js](../../Pana/engine/models/effects/atmosphere.js) | moonDisc |
 | Luciérnagas · fireflies | Preview only | [drifting-particles.js](../../Pana/engine/models/effects/drifting-particles.js) | fireflies |
@@ -373,7 +383,7 @@ The following list is generated, not manually copied. “In use” is the catalo
 | Bote medio hundido · rowboat-sunk | Preview only | [cemetery.js](../../Pana/engine/models/props/cemetery.js) | rowboat |
 | Fuego fatuo · wisp | Preview only | [cemetery.js](../../Pana/engine/models/props/cemetery.js) | wisp |
 
-### Costa (27)
+### Costa (28)
 
 | Name / ID | Status / games | Source | Constructor |
 | --- | --- | --- | --- |
@@ -387,6 +397,7 @@ The following list is generated, not manually copied. “In use” is the catalo
 | Cajas de pesca · fish-crates | Bululú, Derrape | [coastal.js](../../Pana/engine/models/props/coastal.js) | fishCrates |
 | Boya de canal · channel-buoy | Bululú, Derrape | [coastal.js](../../Pana/engine/models/props/coastal.js) | channelBuoy |
 | Cortina de cascada · waterfall-curtain | Derrape, Bululú | [waterfall.js](../../Pana/engine/models/effects/waterfall.js) | waterfall |
+| Arroyo en cascada · cascade-stream | Preview only | [water-surface.js](../../Pana/engine/models/effects/water-surface.js) | cascadeStream |
 | Montón de sal · salt-pile | Derrape | [saltworks.js](../../Pana/engine/models/props/saltworks.js) | saltPile |
 | Compuerta salinera · sluice-gate | Derrape | [saltworks.js](../../Pana/engine/models/props/saltworks.js) | sluiceGate |
 | Patio de cosecha de sal · salt-harvester | Derrape | [salt-harvester.js](../../Pana/engine/models/props/salt-harvester.js) | saltHarvester |
@@ -434,7 +445,7 @@ The following list is generated, not manually copied. “In use” is the catalo
 | Fuente de los capibaras · capybara-fountain | Preview only | [monuments.js](../../Pana/engine/models/props/monuments.js) | capybaraFountain |
 | Kiosco de recuerdos Pana · souvenir-kiosk | Derrape | [monuments.js](../../Pana/engine/models/props/monuments.js) | souvenirKiosk |
 
-### Fauna (18)
+### Fauna (21)
 
 | Name / ID | Status / games | Source | Constructor |
 | --- | --- | --- | --- |
@@ -456,6 +467,9 @@ The following list is generated, not manually copied. “In use” is the catalo
 | Iguana corriendo · iguana-run | Bululú | [iguana.js](../../Pana/engine/models/fauna/iguana.js) | iguana |
 | Iguana dorada · iguana-golden | Bululú | [iguana.js](../../Pana/engine/models/fauna/iguana.js) | iguana |
 | Cangrejo de playa · beach-crab | Bululú, Derrape | [beach-crab.js](../../Pana/engine/models/fauna/beach-crab.js) | beachCrab |
+| Jaguar · jaguar | Preview only | [jaguar.js](../../Pana/engine/models/fauna/jaguar.js) | jaguar |
+| Jaguar sentado · jaguar-sitting | Preview only | [jaguar.js](../../Pana/engine/models/fauna/jaguar.js) | jaguar |
+| Jaguar negro · black-jaguar | Preview only | [jaguar.js](../../Pana/engine/models/fauna/jaguar.js) | jaguar |
 
 ### Llanos (10)
 
@@ -504,7 +518,7 @@ The following list is generated, not manually copied. “In use” is the catalo
 | Circuito · Salinas del Viento · track-salinas | Derrape | [salinas.js](../../Pana/games/derrape/public/tracks/salinas.js) | makeTrack(definition).build |
 | Circuito · Puerto · track-puerto | Derrape | [puerto.js](../../Pana/games/derrape/public/tracks/puerto.js) | makeTrack(definition).build |
 
-### Mina (24)
+### Mina (26)
 
 | Name / ID | Status / games | Source | Constructor |
 | --- | --- | --- | --- |
@@ -532,8 +546,10 @@ The following list is generated, not manually copied. “In use” is the catalo
 | Rueda hidráulica · water-wheel | Preview only | [mine.js](../../Pana/engine/models/props/mine.js) | waterWheel |
 | Molino de pisones · stamp-mill | Preview only | [mine.js](../../Pana/engine/models/props/mine.js) | stampMill |
 | Torre de ascensor minero · lift-tower | Preview only | [mine.js](../../Pana/engine/models/props/mine.js) | liftTower |
+| Racimo de cristales · crystal-cluster | Preview only | [crystals.js](../../Pana/engine/models/props/crystals.js) | crystalCluster |
+| Cristales del arcoíris · crystal-garden | Preview only | [crystals.js](../../Pana/engine/models/props/crystals.js) | crystalGarden |
 
-### Objetos (63)
+### Objetos (66)
 
 | Name / ID | Status / games | Source | Constructor |
 | --- | --- | --- | --- |
@@ -600,6 +616,9 @@ The following list is generated, not manually copied. “In use” is the catalo
 | Ficha de dominó · domino-tile | Dominó | [table-model.js](../../Pana/games/domino/public/table-model.js) | createDominoTile |
 | Carta española · caida-card | Caída | [spanish-cards.js](../../Pana/engine/models/props/spanish-cards.js) | createSpanishCard |
 | Ficha de Caída · caida-score-token | Caída | [spanish-cards.js](../../Pana/engine/models/props/spanish-cards.js) | createScoreToken |
+| Tablero de Ludo · ludo-board | Ludo | [board-model.js](../../Pana/games/ludo/public/board-model.js) | createLudoBoard |
+| Ficha de Ludo · ludo-pawn | Ludo | [board-model.js](../../Pana/games/ludo/public/board-model.js) | createLudoPawn |
+| Dado de Ludo · ludo-die | Ludo | [board-model.js](../../Pana/games/ludo/public/board-model.js) | createLudoDie |
 
 ### Personajes (3)
 
@@ -645,7 +664,7 @@ The following list is generated, not manually copied. “In use” is the catalo
 | Puente colgante de montaña · mountain-suspension-bridge | Preview only | [mountain.js](../../Pana/engine/models/props/mountain.js) | mountainSuspensionBridge |
 | Señal de senderos · mountain-signpost | Derrape | [mountain.js](../../Pana/engine/models/props/mountain.js) | mountainSignpost |
 
-### Ruinas (20)
+### Ruinas (22)
 
 | Name / ID | Status / games | Source | Constructor |
 | --- | --- | --- | --- |
@@ -669,6 +688,8 @@ The following list is generated, not manually copied. “In use” is the catalo
 | Portal de la selva · ruin-gate | Preview only | [ruins.js](../../Pana/engine/models/props/ruins.js) | ruinGate |
 | Piedra tallada antigua · carved-stele | Preview only | [ruins.js](../../Pana/engine/models/props/ruins.js) | carvedStele |
 | Fachada tallada en roca · rock-facade | Preview only | [ruins.js](../../Pana/engine/models/props/ruins.js) | rockFacade |
+| Jaguar de piedra · jaguar-statue | Preview only | [jaguar-stone.js](../../Pana/engine/models/props/jaguar-stone.js) | jaguarStatue |
+| Relieve del jaguar · jaguar-relief | Preview only | [jaguar-stone.js](../../Pana/engine/models/props/jaguar-stone.js) | jaguarRelief |
 
 ### Selva (14)
 

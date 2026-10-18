@@ -23,4 +23,9 @@ export default [
   ['rock-facade', 'Fachada tallada en roca', 'rockFacade', { seed: 87 }, 'Columnata, frontón con disco de oro y nichos oscuros en la pared de roca.', ['templo', 'fachada', 'cueva', 'ruinas']],
 ].map(([id, name, factory, previewOptions, description, tags]) => ({
   id, name, category: 'Ruinas', source, factory, usedBy: ['Pana Studio'], previewOptions, description, tags, pack: 'ruins',
-}));
+})).concat([
+  ['jaguar-statue', 'Jaguar de piedra', 'jaguarStatue', { seed: 11 }, 'Jaguar sentado tallado en piedra gastada sobre un plinto escalonado, ojos de jade.', ['selva', 'jaguar', 'escultura', 'ruinas']],
+  ['jaguar-relief', 'Relieve del jaguar', 'jaguarRelief', { seed: 13 }, 'Dintel con un jaguar caminando en bajorrelieve, rosetas taladradas y greca escalonada.', ['selva', 'jaguar', 'dintel', 'ruinas']],
+].map(([id, name, factory, previewOptions, description, tags]) => ({
+  id, name, category: 'Ruinas', source: '/engine/models/props/jaguar-stone.js', factory, usedBy: ['Pana Studio'], previewOptions, description, tags, pack: 'ruins',
+})));

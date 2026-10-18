@@ -2,31 +2,31 @@
   "date": "2026-10-18",
   "scope": "Current production 3D resource/model families; catalog variants and scene assemblies are counted separately. No primitive-mesh count or deleted-history total.",
   "counts": {
-    "catalog": 391,
+    "catalog": 403,
     "categories": {
-      "Fauna": 18,
+      "Fauna": 21,
       "Vegetación": 42,
       "Llanos": 10,
       "Vida llanera": 13,
       "Desierto": 10,
       "Termales": 5,
-      "Objetos": 63,
+      "Objetos": 66,
       "Emblemas": 9,
       "Pueblo": 18,
       "Páramo": 8,
       "Selva": 14,
-      "Costa": 27,
-      "Mina": 24,
+      "Costa": 28,
+      "Mina": 26,
       "Cementerio": 30,
-      "Ruinas": 20,
+      "Ruinas": 22,
       "Campamento": 21,
-      "Atmósfera": 10,
+      "Atmósfera": 11,
       "Personajes": 3,
       "Vestuario": 5,
       "Vehículos": 14,
       "Mapas": 27
     },
-    "previewOnly": 133,
+    "previewOnly": 142,
     "uncatalogedFamilies": 31,
     "sceneFamilies": 46,
     "dormantFactories": 9
@@ -308,6 +308,52 @@
       ],
       "previewOptions": null,
       "status": "in-use"
+    },
+    {
+      "id": "jaguar",
+      "name": "Jaguar",
+      "category": "Fauna",
+      "source": "Pana/engine/models/fauna/jaguar.js",
+      "factory": "jaguar",
+      "usedBy": [
+        "Pana Studio"
+      ],
+      "previewOptions": {
+        "seed": 7,
+        "pose": "prowl"
+      },
+      "status": "preview-only"
+    },
+    {
+      "id": "jaguar-sitting",
+      "name": "Jaguar sentado",
+      "category": "Fauna",
+      "source": "Pana/engine/models/fauna/jaguar.js",
+      "factory": "jaguar",
+      "usedBy": [
+        "Pana Studio"
+      ],
+      "previewOptions": {
+        "seed": 8,
+        "pose": "sit"
+      },
+      "status": "preview-only"
+    },
+    {
+      "id": "black-jaguar",
+      "name": "Jaguar negro",
+      "category": "Fauna",
+      "source": "Pana/engine/models/fauna/jaguar.js",
+      "factory": "jaguar",
+      "usedBy": [
+        "Pana Studio"
+      ],
+      "previewOptions": {
+        "seed": 9,
+        "pose": "prowl",
+        "melanistic": true
+      },
+      "status": "preview-only"
     },
     {
       "id": "garden-rosette",
@@ -2559,6 +2605,20 @@
       "status": "in-use"
     },
     {
+      "id": "cascade-stream",
+      "name": "Arroyo en cascada",
+      "category": "Costa",
+      "source": "Pana/engine/models/effects/water-surface.js",
+      "factory": "cascadeStream",
+      "usedBy": [
+        "Pana Studio"
+      ],
+      "previewOptions": {
+        "rain": 0.8
+      },
+      "status": "preview-only"
+    },
+    {
       "id": "palafito-house",
       "name": "Casa palafito",
       "category": "Vida llanera",
@@ -4231,6 +4291,34 @@
       "status": "preview-only"
     },
     {
+      "id": "jaguar-statue",
+      "name": "Jaguar de piedra",
+      "category": "Ruinas",
+      "source": "Pana/engine/models/props/jaguar-stone.js",
+      "factory": "jaguarStatue",
+      "usedBy": [
+        "Pana Studio"
+      ],
+      "previewOptions": {
+        "seed": 11
+      },
+      "status": "preview-only"
+    },
+    {
+      "id": "jaguar-relief",
+      "name": "Relieve del jaguar",
+      "category": "Ruinas",
+      "source": "Pana/engine/models/props/jaguar-stone.js",
+      "factory": "jaguarRelief",
+      "usedBy": [
+        "Pana Studio"
+      ],
+      "previewOptions": {
+        "seed": 13
+      },
+      "status": "preview-only"
+    },
+    {
       "id": "expedition-campfire",
       "name": "Fogata de expedición",
       "category": "Campamento",
@@ -4530,6 +4618,22 @@
       "status": "preview-only"
     },
     {
+      "id": "skylight-beam",
+      "name": "Tragaluz de cueva",
+      "category": "Atmósfera",
+      "source": "Pana/engine/models/effects/atmosphere.js",
+      "factory": "skylightBeam",
+      "usedBy": [
+        "Pana Studio"
+      ],
+      "previewOptions": {
+        "radius": 2.4,
+        "height": 16,
+        "rain": 120
+      },
+      "status": "preview-only"
+    },
+    {
       "id": "god-rays",
       "name": "Rayos entre el follaje",
       "category": "Atmósfera",
@@ -4656,6 +4760,36 @@
       ],
       "previewOptions": {
         "count": 90
+      },
+      "status": "preview-only"
+    },
+    {
+      "id": "crystal-cluster",
+      "name": "Racimo de cristales",
+      "category": "Mina",
+      "source": "Pana/engine/models/props/crystals.js",
+      "factory": "crystalCluster",
+      "usedBy": [
+        "Pana Studio"
+      ],
+      "previewOptions": {
+        "size": 1.6,
+        "color": 0
+      },
+      "status": "preview-only"
+    },
+    {
+      "id": "crystal-garden",
+      "name": "Cristales del arcoíris",
+      "category": "Mina",
+      "source": "Pana/engine/models/props/crystals.js",
+      "factory": "crystalGarden",
+      "usedBy": [
+        "Pana Studio"
+      ],
+      "previewOptions": {
+        "radius": 4,
+        "clusters": 8
       },
       "status": "preview-only"
     },
@@ -5477,6 +5611,39 @@
         "Caída"
       ],
       "status": "in-use"
+    },
+    {
+      "id": "ludo-board",
+      "name": "Tablero de Ludo",
+      "category": "Objetos",
+      "source": "Pana/games/ludo/public/board-model.js",
+      "factory": "createLudoBoard",
+      "usedBy": [
+        "Ludo"
+      ],
+      "status": "in-use"
+    },
+    {
+      "id": "ludo-pawn",
+      "name": "Ficha de Ludo",
+      "category": "Objetos",
+      "source": "Pana/games/ludo/public/board-model.js",
+      "factory": "createLudoPawn",
+      "usedBy": [
+        "Ludo"
+      ],
+      "status": "in-use"
+    },
+    {
+      "id": "ludo-die",
+      "name": "Dado de Ludo",
+      "category": "Objetos",
+      "source": "Pana/games/ludo/public/board-model.js",
+      "factory": "createLudoDie",
+      "usedBy": [
+        "Ludo"
+      ],
+      "status": "in-use"
     }
   ],
   "uncataloged": [
@@ -5872,7 +6039,7 @@
       "anchor": "function waterSurface",
       "where": "Derrape",
       "note": "Ocean, river, canal and pool configurations; not separate species/objects.",
-      "line": 33
+      "line": 36
     },
     {
       "name": "Bululú tide wash",
@@ -5888,7 +6055,7 @@
       "anchor": "function buildIsland",
       "where": "Bululú board",
       "note": "Shoreline, beach, hills, river and path cuts.",
-      "line": 97
+      "line": 79
     },
     {
       "name": "Forested islet/ridge",
@@ -6064,7 +6231,7 @@
       "anchor": "export class Puffs",
       "where": "Bululú; Derrape",
       "note": "Particle/sprite effects, not scenery inventory counts.",
-      "line": 286
+      "line": 303
     },
     {
       "name": "Crate fragment bursts",

@@ -27,6 +27,7 @@ import cemetery from './catalog/cemetery.js';
 import ruins from './catalog/ruins.js';
 import expeditionCamp from './catalog/expedition-camp.js';
 import atmosphere from './catalog/atmosphere.js';
+import crystals from './catalog/crystals.js';
 
 export default [
   ...ranch,
@@ -58,4 +59,5 @@ export default [
   ...ruins,
   ...expeditionCamp,
   ...atmosphere,
+  ...crystals,
 ];
