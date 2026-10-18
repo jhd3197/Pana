@@ -76,7 +76,7 @@ test('online games use the shared room kit', () => {
     if (!fs.existsSync(pub(id, 'network.js'))) continue;
     const net = read(pub(id, 'network.js'));
     if (/new WebSocket\(|\/ws['"`]/.test(net)) problems.push(`${id}: network.js opens its own socket`);
-    if (!/\/engine\/net\.js/.test(net)) problems.push(`${id}: network.js does not use /engine/net.js`);
+    if (!/\/engine\/(net|table-room|live-room)\.js/.test(net)) problems.push(`${id}: network.js does not use the room kit (/engine/net.js, table-room.js or live-room.js)`);
   }
   for (const id of games) {
     const code = walk(path.join(gamesDir, id, 'public'), n => n.endsWith('.js')).map(read).join('\n');

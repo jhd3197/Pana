@@ -10,7 +10,9 @@ async function open(name,mobile=false,roomCode=code){
   const page=await context.newPage();page.setDefaultTimeout(20000);page.on('pageerror',e=>errors.push(e.message));
   await page.goto(`${base}/g/ludo/?room=${roomCode}&debug`);
   await page.waitForFunction(()=>window.ludoDebug?.world&&ludoDebug.room.connected,null,{timeout:90000});
-  await page.locator('#pana-lobby-ready:not([disabled])').waitFor({timeout:90000});
+  // A pana joining mid-game never sees the lobby, so wait for preparation, then for Ready only in the lobby.
+  await page.waitForFunction(()=>window.PANA_PREPARED===true,null,{timeout:90000});
+  if(await page.locator('#pana-lobby-shell').isVisible())await page.locator('#pana-lobby-ready:not([disabled])').waitFor({timeout:90000});
   await page.locator('#loading').waitFor({state:'hidden'});return page;
 }
 async function sync(a,b){

@@ -6,6 +6,7 @@
 
 import * as THREE from 'three';
 import { terrainMaterial } from './terrain-material.js';
+import { fbm2 } from './random.js';
 
 export const SEA = -1.3;
 export const PEAK = { x: 4, z: -76 };
@@ -16,27 +17,8 @@ const clamp01 = (t) => Math.max(0, Math.min(1, t));
 export const smooth = (t) => { t = clamp01(t); return t * t * (3 - 2 * t); };
 
 // ---------- noise ----------
-function hash(x, z) {
-  const s = Math.sin(x * 127.1 + z * 311.7) * 43758.5453;
-  return s - Math.floor(s);
-}
-function vnoise(x, z) {
-  const xi = Math.floor(x), zi = Math.floor(z);
-  const xf = x - xi, zf = z - zi;
-  const u = xf * xf * (3 - 2 * xf), v = zf * zf * (3 - 2 * zf);
-  const a = hash(xi, zi), b = hash(xi + 1, zi), c = hash(xi, zi + 1), d = hash(xi + 1, zi + 1);
-  return a + (b - a) * u + (c - a) * v + (a - b - c + d) * u * v;
-}
-// smooth 0..1 noise with detail
-export function fbm(x, z) {
-  let s = 0, amp = 0.5, f = 1;
-  for (let i = 0; i < 4; i++) {
-    s += amp * vnoise(x * f, z * f);
-    f *= 2.03;
-    amp *= 0.5;
-  }
-  return s / 0.9375;
-}
+// smooth 0..1 noise with detail (engine/random.js)
+export const fbm = (x, z) => fbm2(x, z);
 
 // ---------- shape ----------
 // 1 inland, 0 out at sea; the coast wobbles

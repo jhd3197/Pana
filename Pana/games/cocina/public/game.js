@@ -13,6 +13,7 @@ import { shout } from '/engine/kit.js';
 import { pixelRatio, bindRenderer } from '/engine/settings.js';
 import { Kitchen, RECIPES, STATIONS, recipe, nearestStation } from './rules.js';
 import { KitchenRoom } from './network.js';
+import { elapsedClock } from '/engine/live-room.js';
 import { createKitchenScene, mealModel } from './scene.js';
 
 const $ = id => document.getElementById(id), show = (id, v) => $(id).classList.toggle('hidden', !v);
@@ -214,7 +215,9 @@ function input() {
   const angle = Math.atan2(camera.position.x + 0.5, camera.position.z - 2), c = Math.cos(angle), s = Math.sin(angle);
   return { x: x * c + y * s, z: -x * s + y * c, dash: keys.has('shift') || touch.has('dash') };
 }
-const ticker = setInterval(() => room.tick(0.05, input(), paused && (room.offline || room.members.size === 1)), 50);
+// Real elapsed time: a host in a background tab gets timers once a second.
+const simClock = elapsedClock();
+const ticker = setInterval(() => room.tick(simClock(), input(), paused && (room.offline || room.members.size === 1)), 50);
 function frame(now) {
   const dt = Math.min(0.06, (now - last) / 1000); last = now; elapsed += dt;
   if (aimWidth !== innerWidth || aimHeight !== innerHeight) resize();

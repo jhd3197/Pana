@@ -1,9 +1,8 @@
 import * as THREE from 'three';
-import { createArenaSlot } from '/engine/arenas.js';
+import { createTableWorld } from '/engine/table-world.js';
 import { createGameTable, createGameChair } from '/engine/models/props/game-table.js';
 import { buildCharacter } from '/engine/models/characters/pana/avatar-model.js';
 import { normalizeAvatar } from '/engine/avatar.js';
-import { bindRenderer } from '/engine/settings.js';
 import { createSpanishCard, createScoreToken } from '/engine/models/props/spanish-cards.js';
 import { deck, previewPlay, teamOf } from './rules.js';
 
@@ -11,17 +10,11 @@ const UP = new THREE.Vector3(0, 1, 0), Y = 1.48;
 const LOOKS = [{ hat: 'llanero', outfitColor: '#dc7854' }, { hat: 'pesca', hatColor: '#ddad58', outfitColor: '#4c9385', glasses: 'redondos', face: 'feliz' }, { hat: 'gorra', outfitColor: '#b8c279' }, { hat: 'band', outfitColor: '#c96c59' }];
 
 export async function createCaidaScene(canvas, { onCard, onLoading = () => {} } = {}) {
-  const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' });
-  renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-  renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.04;
-  const unbind = bindRenderer(renderer, 1.5), scene = new THREE.Scene();
-  scene.background = new THREE.Color('#d8c69e'); scene.fog = new THREE.Fog('#d8c69e', 24, 60);
-  const camera = new THREE.PerspectiveCamera(36, innerWidth / innerHeight, .1, 100);
-  scene.add(new THREE.HemisphereLight('#e8f2ed', '#997a57', 2.4));
-  const sun = new THREE.DirectionalLight('#ffe3ad', 3.1); sun.position.set(-6, 14, 8); sun.castShadow = true;
-  sun.shadow.mapSize.set(2048, 2048); Object.assign(sun.shadow.camera, { left: -10, right: 10, top: 10, bottom: -10, near: 1, far: 40 }); sun.shadow.normalBias = .025; sun.shadow.bias = -.0001; scene.add(sun);
-  onLoading('Preparando el patio…'); await new Promise(requestAnimationFrame);
-  const plaza = createArenaSlot(scene, { mode: 'table', plazaScale: .72 }); plaza.setMap('plaza');
+  onLoading('Preparando el patio…');
+  const stage = createTableWorld(canvas, { fit: 'window', exposure: 1.04, background: '#d8c69e', fog: [24, 60], sky: false, fov: 36, plazaScale: .72,
+    hemi: ['#e8f2ed', '#997a57', 2.4], sun: { color: '#ffe3ad', intensity: 3.1, position: [-6, 14, 8], box: 10, far: 40 } });
+  const { renderer, scene, camera, plaza } = stage;
+  await new Promise(requestAnimationFrame);
   const table = createGameTable({ feltColor: '#245e50', caption: 'CAÍDA · ENTRE PANAS' }); scene.add(table);
   const cards = new Map(), chairs = [], characters = [], characterKeys = [], labels = [], tokens = [];
   let state, ownSeat = 0, selected = null, cameraMode = 'patio', disposed = false, time = 0, hover = null, geometryVersion = '', animationId = 0;
@@ -125,7 +118,7 @@ export async function createCaidaScene(canvas, { onCard, onLoading = () => {} } 
   const pointerUp = e => { if (down && Math.hypot(down[0] - e.clientX, down[1] - e.clientY) < 12) { const id = pick(e); if (id) onCard?.(id); } down = null; };
   canvas.addEventListener('pointermove', pointerMove); canvas.addEventListener('pointerdown', pointerDown); canvas.addEventListener('pointerup', pointerUp);
   function frame(dt) {
-    if (disposed) return; time += dt; plaza.update(time); camera.position.lerp(desiredCamera, 1 - Math.exp(-dt * 5)); camera.lookAt(target);
+    if (disposed) return; time += dt; camera.position.lerp(desiredCamera, 1 - Math.exp(-dt * 5)); camera.lookAt(target);
     for (const [id, card] of cards) {
       card.lift = Math.max(0, card.lift - dt * 1.6); const dest = card.target.clone(); dest.y += Math.sin(card.lift * Math.PI) * .7 + (id === hover ? .08 : 0);
       card.model.position.lerp(dest, reduced.matches ? 1 : 1 - Math.exp(-dt * 9)); card.model.quaternion.slerp(card.rotation, reduced.matches ? 1 : 1 - Math.exp(-dt * 10));
@@ -138,13 +131,13 @@ export async function createCaidaScene(canvas, { onCard, onLoading = () => {} } 
       projected.copy(c.group.position); projected.y = 3.1; projected.project(camera);
       labels[i].style.left = `${THREE.MathUtils.clamp((projected.x * .5 + .5) * innerWidth, 65, innerWidth - 65)}px`; labels[i].style.top = `${(-projected.y * .5 + .5) * innerHeight}px`;
     });
-    renderer.render(scene, camera);
+    stage.draw(dt);
   }
   const resize = () => { renderer.setSize(innerWidth, innerHeight); cameraTarget(); }; addEventListener('resize', resize);
   return { scene, camera, renderer, cards, characters, update, frame, setView(value) { cameraMode = value; cameraTarget(); },
     dispose() {
-      disposed = true; unbind(); removeEventListener('resize', resize); canvas.removeEventListener('pointermove', pointerMove); canvas.removeEventListener('pointerdown', pointerDown); canvas.removeEventListener('pointerup', pointerUp);
-      cards.forEach(c => c.model.userData.dispose()); tokens.flat().forEach(t => t.userData.dispose()); characters.forEach(c => c?.dispose()); chairs.forEach(c => c.userData.dispose()); labels.forEach(l => l.remove()); table.userData.dispose(); plaza.dispose(); renderer.dispose();
+      disposed = true; removeEventListener('resize', resize); canvas.removeEventListener('pointermove', pointerMove); canvas.removeEventListener('pointerdown', pointerDown); canvas.removeEventListener('pointerup', pointerUp);
+      cards.forEach(c => c.model.userData.dispose()); tokens.flat().forEach(t => t.userData.dispose()); characters.forEach(c => c?.dispose()); chairs.forEach(c => c.userData.dispose()); labels.forEach(l => l.remove()); table.userData.dispose(); stage.dispose();
     },
   };
 }

@@ -1,37 +1,28 @@
 import * as THREE from 'three';
 import { buildCharacter } from '/engine/models/characters/pana/avatar-model.js';
 import { normalizeAvatar } from '/engine/avatar.js';
-import { bindRenderer } from '/engine/settings.js';
+import { createTableWorld } from '/engine/table-world.js';
 import { createGameTable, createGameChair, disposeModel } from '/engine/models/props/game-table.js';
 import { createLudoBoard, createLudoPawn, createLudoDie, boardPoint } from './board-model.js';
 import { COLORS, HOME, legalMoves } from './rules.js';
 
 export function createLudoScene(canvas, { onPiece } = {}) {
-  const renderer=new THREE.WebGLRenderer({canvas,antialias:true});
-  renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;
-  renderer.toneMapping=THREE.ACESFilmicToneMapping;
-  const unbind=bindRenderer(renderer,1.5), scene=new THREE.Scene();scene.background=new THREE.Color('#b6c6b1');
-  const camera=new THREE.OrthographicCamera(-6,6,6,-6,.1,80);
-  camera.position.set(0,15,10);camera.lookAt(0,1,0);
-  scene.add(new THREE.HemisphereLight('#fff1d5','#74866d',2.6));
-  const sun=new THREE.DirectionalLight('#ffe4b3',3.2);sun.position.set(-7,13,6);sun.castShadow=true;sun.shadow.mapSize.set(1024,1024);
-  Object.assign(sun.shadow.camera,{left:-9,right:9,top:9,bottom:-9});sun.shadow.normalBias=.03;scene.add(sun);
-  const floor=new THREE.Mesh(new THREE.PlaneGeometry(200,200),new THREE.MeshStandardMaterial({color:'#94aa89',roughness:1}));floor.rotation.x=-Math.PI/2;floor.receiveShadow=true;scene.add(floor);
-  const rug=new THREE.Mesh(new THREE.CylinderGeometry(6.4,6.4,.04,64),new THREE.MeshStandardMaterial({color:'#dbccb0',roughness:1}));rug.position.y=.025;rug.receiveShadow=true;scene.add(rug);
+  // The shared plaza stage (perspective camera, sky, sun) like Billar and Póquer.
+  const stage=createTableWorld(canvas),{renderer,scene,camera}=stage,own=new THREE.Group();scene.add(own);
   // Reuse the shared table and chairs; the board sits above the felt.
-  const table=createGameTable({feltColor:'#334f49',caption:''});scene.add(table);
-  const board=createLudoBoard();board.position.y=1.46;scene.add(board);
+  const table=createGameTable({feltColor:'#334f49',caption:''});own.add(table);
+  const board=createLudoBoard();board.position.y=1.46;own.add(board);
   const chairs=[],characters=[],keys=[];
   for(let seat=0;seat<4;seat++){
     const angle=-Math.PI/4+seat*Math.PI/2;
-    const chair=createGameChair();chair.position.set(Math.sin(angle)*4.6,0,Math.cos(angle)*4.6);chair.rotation.y=angle+Math.PI;scene.add(chair);chairs.push(chair);
+    const chair=createGameChair();chair.position.set(Math.sin(angle)*4.6,0,Math.cos(angle)*4.6);chair.rotation.y=angle+Math.PI;own.add(chair);chairs.push(chair);
   }
   const pawns=[];
   for(let seat=0;seat<4;seat++)for(let piece=0;piece<4;piece++){
-    const model=createLudoPawn({seat,number:piece+1});model.userData.piece=piece;model.userData.seat=seat;scene.add(model);
+    const model=createLudoPawn({seat,number:piece+1});model.userData.piece=piece;model.userData.seat=seat;own.add(model);
     pawns.push({model,seat,piece,target:new THREE.Vector3(),initialized:false,playable:false});
   }
-  const diePivot=new THREE.Group(),die=createLudoDie();die.position.y=-.215;diePivot.add(die);diePivot.position.set(3.08,1.675,0);scene.add(diePivot);
+  const diePivot=new THREE.Group(),die=createLudoDie();die.position.y=-.215;diePivot.add(die);diePivot.position.set(3.08,1.675,0);own.add(diePivot);
   const ray=new THREE.Raycaster(),cursor=new THREE.Vector2();let current=null,time=0,rollTime=0,dieTarget=new THREE.Euler(),lastRoll='',disposed=false;
   function pick(event){
     const r=canvas.getBoundingClientRect();cursor.set((event.clientX-r.left)/r.width*2-1,-(event.clientY-r.top)/r.height*2+1);ray.setFromCamera(cursor,camera);
@@ -48,7 +39,7 @@ export function createLudoScene(canvas, { onPiece } = {}) {
       if(keys[p.seat]!==key){
         characters[p.seat]?.dispose();const character=buildCharacter(avatar,{seated:true});
         character.group.position.copy(chairs[p.seat].position);character.group.position.y=.76;character.group.rotation.y=chairs[p.seat].rotation.y;
-        scene.add(character.group);characters[p.seat]=character;keys[p.seat]=key;
+        own.add(character.group);characters[p.seat]=character;keys[p.seat]=key;
       }
     }
     const legal=legalMoves(state,ownSeat), occupancy=new Map();
@@ -64,16 +55,13 @@ export function createLudoScene(canvas, { onPiece } = {}) {
     if(key!==lastRoll && state.lastDie){rollTime=.55;const turns={1:[0,0,0],2:[-Math.PI/2,0,0],3:[0,0,Math.PI/2],4:[0,0,-Math.PI/2],5:[Math.PI/2,0,0],6:[Math.PI,0,0]};dieTarget.set(...turns[state.lastDie]);}
     lastRoll=key;
   }
-  const size=new THREE.Vector2();
+  // The table, chairs and seated panas, framed inside the canvas between the HUD bars.
+  const bounds=new THREE.Box3(new THREE.Vector3(-5.2,0,-5.2),new THREE.Vector3(5.2,2.6,5.2));
+  let top=false;
   function frame(dt){
     if(disposed)return;time+=dt;
-    // bindRenderer sizes to the window; this game's canvas lives inside a stage.
-    canvas.style.width='100%';canvas.style.height='100%';
-    const w=canvas.clientWidth,h=canvas.clientHeight;renderer.getSize(size);
-    if(w&&h&&(size.x!==w||size.y!==h)){
-      renderer.setSize(w,h,false);const aspect=w/h,span=Math.max(h<400&&w>h?4.6:5.4,5.1/aspect);
-      camera.left=-span*aspect;camera.right=span*aspect;camera.top=span;camera.bottom=-span;camera.updateProjectionMatrix();
-    }
+    const {w,h}=stage.resize(),margin=Math.min(24,w*.04);
+    stage.frameCamera(bounds,top?[0,6,.35]:[0,1.15,1],{x:margin,y:margin,width:Math.max(160,w-margin*2),height:Math.max(120,h-margin*2)});
     for(const p of pawns){
       const distance=p.model.position.distanceTo(p.target);p.model.position.lerp(p.target,1-Math.exp(-dt*9));
       p.model.scale.setScalar(p.playable?1.05+Math.sin(time*4)*.05:1);
@@ -85,10 +73,10 @@ export function createLudoScene(canvas, { onPiece } = {}) {
     });
     if(rollTime>0){rollTime-=dt;diePivot.rotation.x+=dt*18;diePivot.rotation.z+=dt*12;diePivot.position.y=1.675+Math.sin(Math.max(0,rollTime)/.55*Math.PI)*.45;}
     else {diePivot.rotation.copy(dieTarget);diePivot.position.y=1.675;}
-    renderer.render(scene,camera);
+    stage.draw(dt);
   }
-  function setView(top){camera.position.set(0,top?19:15,top?.01:10);camera.lookAt(0,1,0);}
+  function setView(value){top=!!value;}
   function projectPiece(seat,piece){const p=pawns.find(p=>p.seat===seat&&p.piece===piece),v=p.model.position.clone();v.y+=.2;v.project(camera);const r=canvas.getBoundingClientRect();return{x:r.left+(v.x+1)*r.width/2,y:r.top+(1-v.y)*r.height/2};}
-  function dispose(){disposed=true;unbind();canvas.removeEventListener('click',click);canvas.removeEventListener('pointermove',hover);characters.forEach(c=>c.dispose());disposeModel(scene);renderer.dispose();}
+  function dispose(){disposed=true;canvas.removeEventListener('click',click);canvas.removeEventListener('pointermove',hover);characters.forEach(c=>c.dispose());disposeModel(own);stage.dispose();}
   return {update,frame,setView,dispose,characters,pawns,projectPiece,renderer,scene,camera};
 }

@@ -237,7 +237,7 @@ function filterGames(value) {
   for (const button of document.querySelectorAll('button[data-category]')) button.setAttribute('aria-pressed', String(button.dataset.category === value));
   for (const card of gamesEl.children) card.hidden = value !== 'Todos' && card.dataset.category !== value;
   const visible = games.filter(g => value === 'Todos' || category(g) === value);
-  if (!visible.includes(feat)) feature(visible[0]);
+  if (!visible.includes(feat) && visible.length) feature(visible[0]);
   document.getElementById('game-position').textContent = `${visible.indexOf(feat) + 1} / ${visible.length}`;
 }
 for (const direction of [-1, 1]) document.getElementById(direction < 0 ? 'games-prev' : 'games-next').addEventListener('click', () => {
@@ -252,7 +252,9 @@ async function loadGames() {
     ({ games } = await fetch('/api/games').then((r) => r.json()));
     gamesEl.innerHTML = '';
     const order = ['derrape', 'galope', 'curiara', 'domino', 'ludo', 'caida', 'poquer', 'billar', 'criollas', 'bululu', 'cocina', 'escondidas', 'pintura', 'embuste', 'reliquia'];
-    games.sort((a, b) => order.indexOf(a.id) - order.indexOf(b.id));
+    // Unlisted (new) games go after the curated order, not before it.
+    const rank = (g) => { const i = order.indexOf(g.id); return i < 0 ? order.length : i; };
+    games.sort((a, b) => rank(a) - rank(b) || a.name.localeCompare(b.name));
     for (const game of games) { const card = gameCard(game); card.dataset.category = category(game); gamesEl.appendChild(card); }
     for (const label of categories) {
       const button = el('button', 'category', `${label} ${games.filter(g => label === 'Todos' || category(g) === label).length}`);
@@ -302,4 +304,6 @@ async function loadRooms() {
 
 syncName();
 loadGames();
-setInterval(loadRooms, 3000);
+// Live rooms refresh every 3 s while the hub is visible, and at once on return.
+setInterval(() => { if (!document.hidden) loadRooms(); }, 3000);
+document.addEventListener('visibilitychange', () => { if (!document.hidden) loadRooms(); });

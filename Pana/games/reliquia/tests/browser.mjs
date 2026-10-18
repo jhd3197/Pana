@@ -56,6 +56,9 @@ try {
   await c.screenshot({ path: path.join(output, 'mobile.png') }); check('late arrival receives the checkpoint and real touch movement works');
   const kills = await b.evaluate(() => reliquia.state.kills); await a.close(); await b.waitForFunction(() => reliquia.room.isHost);
   assert.equal(await b.evaluate(() => reliquia.state.gateOpen), true); assert.equal(await b.evaluate(() => reliquia.state.kills), kills); check('host migration preserves the active run and opened gate');
+  // Both QA panas are scripted into the guardian's arena; keep them standing
+  // while the host (now simulating at real speed) runs the encounter.
+  await b.evaluate(() => { for (const p of reliquia.room.game.players) Object.assign(p, { invulnerable: 100, downed: false, hp: 100 }); });
   await place(b, ids.b, 40, -96); await place(b, cId, 42, -96);
   await b.waitForFunction(() => reliquia.state.enemies.some(e => e.kind === 'guardian'));
   // Place the encounter for QA; damage still goes through normal sequenced input.

@@ -3,25 +3,36 @@ import { createArenaSlot } from '/engine/arenas.js';
 import { createSky } from '/engine/sky.js';
 import { bindRenderer } from '/engine/settings.js';
 
-// Shared outdoor stage for the pool and poker tables. Gameplay owns its meshes.
-export function createTableWorld(canvas) {
+// Shared outdoor stage for every table game (Billar, Póquer, Ludo, Dominó,
+// Caída): renderer, sky, light, sun shadows and the plaza arena around the
+// table. Gameplay owns its meshes. Options tune the light for each table;
+// the defaults are the pool and poker look.
+const STAGE = {
+  exposure: 1.05, background: '#c7e1e8', fog: [40, 115], sky: true, fov: 42,
+  hemi: ['#e6f6ff', '#b38b60', 2.2],
+  sun: { color: '#ffe1ab', intensity: 3, position: [-12, 22, 10], box: 15, far: 55, bias: -.0001 },
+  plazaScale: .85,
+  fit: 'canvas',   // a stage inside the page; full-window tables pass 'window'
+};
+
+export function createTableWorld(canvas, options = {}) {
+  const o = { ...STAGE, ...options, sun: { ...STAGE.sun, ...options.sun } };
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' });
   renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-  renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.05;
-  const unbind = bindRenderer(renderer, 1.5), scene = new THREE.Scene();
-  scene.background = new THREE.Color('#c7e1e8'); scene.fog = new THREE.Fog('#c7e1e8', 40, 115);
-  const sky = createSky(); scene.add(sky.mesh);
-  scene.add(new THREE.HemisphereLight('#e6f6ff', '#b38b60', 2.2));
-  const sun = new THREE.DirectionalLight('#ffe1ab', 3); sun.position.set(-12, 22, 10); sun.castShadow = true;
-  sun.shadow.mapSize.set(2048, 2048); Object.assign(sun.shadow.camera, { left: -15, right: 15, top: 15, bottom: -15, far: 55 });
-  sun.shadow.normalBias = .025; sun.shadow.bias = -.0001; scene.add(sun);
-  const plaza = createArenaSlot(scene, { mode: 'table', plazaScale: .85 }); plaza.setMap('plaza');
-  const camera = new THREE.PerspectiveCamera(42, 1, .1, 150);
+  renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = o.exposure;
+  const unbind = bindRenderer(renderer, 1.5, { fit: o.fit }), scene = new THREE.Scene();
+  scene.background = new THREE.Color(o.background); scene.fog = new THREE.Fog(o.background, ...o.fog);
+  const sky = o.sky ? createSky() : null; if (sky) scene.add(sky.mesh);
+  scene.add(new THREE.HemisphereLight(...o.hemi));
+  const sun = new THREE.DirectionalLight(o.sun.color, o.sun.intensity); sun.position.set(...o.sun.position); sun.castShadow = true;
+  sun.shadow.mapSize.set(2048, 2048); Object.assign(sun.shadow.camera, { left: -o.sun.box, right: o.sun.box, top: o.sun.box, bottom: -o.sun.box, near: .5, far: o.sun.far });
+  sun.shadow.normalBias = .025; sun.shadow.bias = o.sun.bias; scene.add(sun);
+  const plaza = createArenaSlot(scene, { mode: 'table', plazaScale: o.plazaScale }); plaza.setMap('plaza');
+  const camera = new THREE.PerspectiveCamera(o.fov, 1, .1, 150);
   const target = new THREE.Vector3(), direction = new THREE.Vector3(), right = new THREE.Vector3(), up = new THREE.Vector3(), point = new THREE.Vector3();
   let time = 0;
   function resize() {
-    // bindRenderer owns resolution, but its window-sized inline styles must not own layout.
-    canvas.style.width = '100%'; canvas.style.height = '100%';
+    // The canvas fills its CSS box; only its resolution follows that box.
     const rect = canvas.getBoundingClientRect(), w = Math.max(1, rect.width), h = Math.max(1, rect.height);
     if (canvas.width !== Math.round(w * renderer.getPixelRatio()) || canvas.height !== Math.round(h * renderer.getPixelRatio())) renderer.setSize(w, h, false);
     return { w, h };
@@ -40,8 +51,8 @@ export function createTableWorld(canvas) {
     camera.setViewOffset(w, h, w / 2 - safe.x - safe.width / 2, h / 2 - safe.y - safe.height / 2, w, h);
     camera.updateProjectionMatrix(); camera.updateMatrixWorld();
   }
-  function draw(dt) { time += dt; plaza.update(time); sky.update(time); renderer.render(scene, camera); }
-  return { renderer, scene, camera, plaza, resize, frameCamera, draw, setMap: id => plaza.setMap(id),
-    dispose() { unbind(); sky.dispose(); plaza.dispose(); renderer.dispose(); },
+  function draw(dt) { time += dt; plaza.update(time); sky?.update(time); renderer.render(scene, camera); }
+  return { renderer, scene, camera, plaza, sun, resize, frameCamera, draw, setMap: id => plaza.setMap(id),
+    dispose() { unbind(); sky?.dispose(); plaza.dispose(); renderer.dispose(); },
   };
 }

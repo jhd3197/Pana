@@ -16,6 +16,7 @@ import { arenaInfo } from '/engine/arena-layouts.js';
 import { huntLayout } from './layout.js';
 import { RULES, HIDE_TIMES } from './rules.js';
 import { HuntRoom } from './network.js';
+import { elapsedClock } from '/engine/live-room.js';
 
 const $ = id => document.getElementById(id), show = (id, visible) => $(id).classList.toggle('hidden', !visible);
 const qs = new URLSearchParams(location.search), DEBUG = qs.has('debug');
@@ -308,11 +309,10 @@ function frame(now) {
   }
   drawMap(); renderer.render(scene, camera); requestAnimationFrame(frame);
 }
-let tickAt = performance.now();
-const ticker = setInterval(() => {
-  const now = performance.now(), dt = Math.min((now - tickAt) / 1000, 0.25); tickAt = now;
-  room.tick(dt, input(), paused && room.members.size === 1);
-}, 50);
+// Real elapsed time (the room catches up in fixed steps): a host in a
+// background tab gets timers about once a second.
+const simClock = elapsedClock();
+const ticker = setInterval(() => room.tick(simClock(), input(), paused && room.members.size === 1), 50);
 addEventListener('resize', () => { camera.aspect = innerWidth / innerHeight; camera.clearViewOffset(); renderer.setSize(innerWidth, innerHeight); });
 addEventListener('pagehide', () => { clearInterval(ticker); room.dispose(); environment.dispose(); plaza.sky.dispose(); renderer.dispose(); previewRenderer.dispose(); });
 show('loading', false); show('lobby', true); room.connect(); requestAnimationFrame(frame);

@@ -11,11 +11,34 @@ member lists or host election in a game.
 
 `server/src/colyseus.js` registers a room for every game automatically (its own
 `server/room.js` or the relay room), under the game's id with `filterBy(['code'])`.
-The legacy `/ws` relay still runs for old cached clients; no game uses it.
+The legacy `/ws` relay is gone; every game talks to Colyseus under `/colyseus`.
 
-## A host-simulated game (Cocina, Galope, Dominó…)
+## Two ready-made rooms: TableRoom and LiveRoom
 
-Extend `HostRoom`; keep only the game's rules. Reference: `games/galope/public/network.js`.
+Most host-simulated games are one of two shapes, and each shape has a base class
+on top of `HostRoom`. Start there (the `new-game` scaffold does); drop to plain
+`HostRoom` only for a game that fits neither.
+
+- **`engine/table-room.js` `TableRoom`**: turn-based, the whole game is one
+  snapshot (Dominó, Caída, Ludo, Billar, Bolas Criollas). Give it `fresh`,
+  `restore`, `snapshot`, `accept` and `valid`; implement `seatMembers()`,
+  optionally `unseat(id)` and `step(dt)` (bots via `botReady(dt, botTurn)`, or
+  physics). It owns seq numbers from the room's ledger, snapshot routing, a
+  revision guard (the same host never moves backwards), the host-change notice
+  and practice. Unit tests: `engine/tests/table-room.test.js`.
+- **`engine/live-room.js` `LiveRoom`**: real time, the host steps the game at
+  20 Hz with everyone's latest input (Cocina, Escondidas, Reliquia, Galope,
+  Curiara). Implement `cleanInput(raw)`, `takeOver`, `handle(id, action)` and the
+  member hooks (call `super.takeOver`/`super.memberLeft`). It expires stale
+  inputs, drops repeated actions, routes `notice(id, text)`, and steps the game
+  in fixed 50 ms slices from real elapsed time. Drive it with `elapsedClock()`:
+  a host in a background tab gets timers about once a second, and a fixed
+  `tick(0.05)` would slow the game twenty times for everyone.
+  Unit tests: `engine/tests/live-room.test.js`.
+
+## A host-simulated game on HostRoom directly
+
+Extend `HostRoom`; keep only the game's rules.
 
 ```js
 import { HostRoom } from '/engine/net.js';
@@ -68,6 +91,16 @@ with `roomState({ ...fields }, Member.extend({ ...memberFields }, 'Name'))`, cal
 `super.onCreate(options)` first, and use the hooks `joined`, `dropped`, `returned`,
 `left`, `hostChanged` instead of overriding `onJoin`/`onLeave`. Browser side:
 `joinRoom('<game>', options)` and listen on the link. See `derrape-online.md`.
+
+A room that runs the game itself (Póquer, Pintura, ¡Embuste!) uses the kit's
+helpers instead of its own: `seatOf(client)`, `connectedMembers()`,
+`onHostMessage(type, fn)` for host-only commands, `memberAvatar(member)`,
+`fillBots(count, add)` (seats from `BOT_SEAT`) and `InputBuffer(ttl)` for latest
+inputs that expire. Never set `maxClients` (game.json `players` is the cap) and
+never register `ping`/`me`/`lobby-ready` again: Colyseus stacks handlers, so a
+second registration answers every message twice. `server/tests/room-kit.test.js`
+fails on any duplicate, and `server/tests/harness.js` runs a room without
+Colyseus for unit tests.
 
 When players must not see each other's data (¡Embuste!'s roles), run the game
 in the room and `client.send()` each seat its own filtered view instead of

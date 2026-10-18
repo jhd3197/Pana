@@ -125,9 +125,12 @@ function visibility() {
   const hidden = original.hidden || original.classList.contains('hidden') || original.style.display === 'none';
   root.hidden = hidden;
   document.body.classList.toggle('pana-in-lobby', !root.hidden);
+  // Games re-set `hidden` on every HUD render, and each set fires the observer.
+  // Move a docked control only when it is in the wrong place: re-inserting it
+  // would detach it many times a second (lost focus, missed clicks).
   for (const { node, placeholder, target } of docked) {
-    if (hidden) placeholder.parentNode.insertBefore(node, placeholder);
-    else target.append(node);
+    if (hidden) { if (node.nextSibling !== placeholder) placeholder.parentNode.insertBefore(node, placeholder); }
+    else if (node.parentNode !== target) target.append(node);
   }
 }
 if (original) new MutationObserver(visibility).observe(original, { attributes: true, attributeFilter: ['hidden', 'class', 'style'] });

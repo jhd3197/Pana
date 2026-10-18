@@ -1,8 +1,7 @@
 import * as THREE from 'three';
-import { createArenaSlot } from '/engine/arenas.js';
+import { createTableWorld } from '/engine/table-world.js';
 import { buildCharacter } from '/engine/models/characters/pana/avatar-model.js';
 import { normalizeAvatar } from '/engine/avatar.js';
-import { bindRenderer } from '/engine/settings.js';
 import { createDominoTable, createDominoChair, createDominoTile } from './table-model.js';
 import { chainLayout } from './tiles.js';
 import { deck, legalEnds } from './rules.js';
@@ -16,17 +15,11 @@ const BOT_LOOKS = [
 ];
 const nextFrame = () => new Promise(requestAnimationFrame);
 export async function createDominoScene(canvas, { onTile, onEnd, onLoading = () => {} } = {}) {
-  const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' });
-  renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-  renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.12;
-  const unbind = bindRenderer(renderer, 1.5);
-  const scene = new THREE.Scene(); scene.background = new THREE.Color('#e5cd9f'); scene.fog = new THREE.Fog('#e5cd9f', 28, 65);
-  const camera = new THREE.PerspectiveCamera(38, innerWidth / innerHeight, .1, 100);
-  scene.add(new THREE.HemisphereLight('#e4f1ff', '#a4815a', 2.2));
-  const sun = new THREE.DirectionalLight('#ffe4b1', 3.5); sun.position.set(-8, 16, 9); sun.castShadow = true;
-  sun.shadow.mapSize.set(2048, 2048); Object.assign(sun.shadow.camera, { left: -12, right: 12, top: 12, bottom: -12, near: .5, far: 50 }); sun.shadow.normalBias = .025; sun.shadow.bias = -.00015; sun.shadow.radius = 3; scene.add(sun);
-  onLoading('Abriendo la plaza…'); await nextFrame();
-  const plaza = createArenaSlot(scene, { mode: 'table', plazaScale: .72 }); plaza.setMap('plaza');
+  onLoading('Abriendo la plaza…');
+  const stage = createTableWorld(canvas, { fit: 'window', exposure: 1.12, background: '#e5cd9f', fog: [28, 65], sky: false, fov: 38, plazaScale: .72,
+    hemi: ['#e4f1ff', '#a4815a', 2.2], sun: { color: '#ffe4b1', intensity: 3.5, position: [-8, 16, 9], box: 12, far: 50, bias: -.00015 } });
+  const { renderer, scene, camera, plaza } = stage; stage.sun.shadow.radius = 3;
+  await nextFrame();
   const table = createDominoTable(); scene.add(table);
   const chairs = [], characters = Array(4).fill(null), characterKeys = Array(4).fill(''), labels = [];
   for (let seat = 0; seat < 4; seat++) {
@@ -146,7 +139,7 @@ export async function createDominoScene(canvas, { onTile, onEnd, onLoading = () 
   }
   function frame(dt) {
     if (disposed) return;
-    time += dt; plaza.update(time); actTime = Math.max(0, actTime - dt);
+    time += dt; actTime = Math.max(0, actTime - dt);
     camera.position.lerp(desiredCamera, 1 - Math.exp(-dt * 4)); camera.lookAt(target);
     for (const [id, t] of tiles) {
       const lift = id === hover || id === selected ? .1 : 0;
@@ -174,15 +167,15 @@ export async function createDominoScene(canvas, { onTile, onEnd, onLoading = () 
       projected.copy(tip.position).project(camera);
       tip.element.style.left = `${(projected.x * .5 + .5) * innerWidth}px`; tip.element.style.top = `${(-projected.y * .5 + .5) * innerHeight}px`;
     }
-    renderer.render(scene, camera);
+    stage.draw(dt);
   }
   const resize = () => { renderer.setSize(innerWidth, innerHeight); cameraTarget(); }; addEventListener('resize', resize);
   return { scene, camera, renderer, characters, tiles, update, frame,
     setView(value) { cameraMode = value; cameraTarget(); },
     dispose() {
-      disposed = true; unbind(); removeEventListener('resize', resize);
+      disposed = true; removeEventListener('resize', resize);
       canvas.removeEventListener('pointermove', move); canvas.removeEventListener('pointerdown', pointerDown); canvas.removeEventListener('pointerup', pointerUp);
-      characters.forEach(c => c?.dispose()); labels.forEach(l => l.remove()); tips.forEach(t => t.element.remove()); tiles.forEach(t => t.model.userData.dispose()); chairs.forEach(c => c.userData.dispose()); table.userData.dispose(); plaza.dispose(); renderer.dispose();
+      characters.forEach(c => c?.dispose()); labels.forEach(l => l.remove()); tips.forEach(t => t.element.remove()); tiles.forEach(t => t.model.userData.dispose()); chairs.forEach(c => c.userData.dispose()); table.userData.dispose(); stage.dispose();
     },
   };
 }

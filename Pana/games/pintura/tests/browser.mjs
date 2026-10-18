@@ -10,7 +10,8 @@ async function open(name, room = code, mobile = false) {
   const context = await browser.newContext({ viewport: mobile ? { width: 390, height: 844 } : { width: 1280, height: 800 }, isMobile: mobile, hasTouch: mobile, deviceScaleFactor: 1 });
   await context.addInitScript(name => { localStorage.setItem('pana:name', name); localStorage.setItem('pana:settings', JSON.stringify({ sound: false, quality: 'baja' })); localStorage.setItem('pana:avatar', JSON.stringify({ outfit: 'hoodie', outfitColor: '#3775cc', hat: 'gorra' })); }, name);
   const p = await context.newPage(); p.on('pageerror', e => errors.push(e.message)); await p.goto(`${base}/g/pintura/?room=${room}&debug`, { waitUntil: 'domcontentloaded' });
-  await wait(p, () => window.pinturaDebug?.room.connected && pinturaDebug.room.id); return p;
+  // Prepared, not just connected: the shared lobby docks the menu until the scene is ready.
+  await wait(p, () => window.pinturaDebug?.room.connected && pinturaDebug.room.id && window.PANA_PREPARED === true, undefined, 120000); return p;
 }
 try {
   if (process.env.PANA_BROWSER_MOBILE_ONLY !== '1') {
@@ -48,8 +49,10 @@ try {
   const m = await open('Móvil', `${code}-mobile`, true); await m.screenshot({ path: `${out}/mobile-lobby.png` }); await m.locator('#practice').tap();
   await wait(m, () => pinturaDebug.room.local && pinturaDebug.room.state.phase === 'playing'); assert.ok(await m.locator('#fire').isVisible());
   const start = await m.evaluate(() => { const p = pinturaDebug.room.state.players[0]; return { x: p.x, z: p.z, direction: pinturaDebug.world.movement(1, 0) }; });
-  await m.locator('#right').dispatchEvent('pointerdown', { pointerId: 9, pointerType: 'touch', button: 0, buttons: 1 }); await m.waitForTimeout(450); await m.locator('#right').dispatchEvent('pointerup', { pointerId: 9, pointerType: 'touch', button: 0 });
-  assert.ok(await m.evaluate(start => { const p = pinturaDebug.room.state.players[0]; return (p.x - start.x) * start.direction.x + (p.z - start.z) * start.direction.z > .1; }, start));
+  // Hold until the pana has moved (state, not a fixed sleep), then release.
+  await m.locator('#right').dispatchEvent('pointerdown', { pointerId: 9, pointerType: 'touch', button: 0, buttons: 1 });
+  await wait(m, start => { const p = pinturaDebug.room.state.players[0]; return (p.x - start.x) * start.direction.x + (p.z - start.z) * start.direction.z > .1; }, start, 20000);
+  await m.locator('#right').dispatchEvent('pointerup', { pointerId: 9, pointerType: 'touch', button: 0 });
   await m.locator('#fire').tap(); await m.screenshot({ path: `${out}/mobile-playing.png` });
   for (const id of ['fire', 'up', 'reload']) { const box = await m.locator(`#${id}`).boundingBox(); assert.ok(box.x >= 0 && box.y >= 0 && box.x + box.width <= 391 && box.y + box.height <= 845); }
   await m.locator('#menu').tap(); const time = await m.evaluate(() => pinturaDebug.room.state.time); await m.waitForTimeout(400); assert.equal(await m.evaluate(() => pinturaDebug.room.state.time), time); await m.locator('#pana-resume').tap();

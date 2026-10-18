@@ -240,6 +240,22 @@ becomes the GitHub release's notes.
 
 ### Fixed
 
+- **A host whose tab is in the background no longer slows the game for everyone.**
+  Cocina, Reliquia and Escondidas now step the game by real elapsed time, so a
+  minimised host keeps the round at full speed.
+
+- **The menu and invite buttons stay put while you play.**
+  The shared lobby no longer re-inserts them on every HUD update, which could
+  swallow clicks and drop keyboard focus.
+
+- **Four-seat tables turn a fifth pana away instead of seating them where they can't play.**
+  Every room now takes its size from the game, so Caída, Dominó and Ludo stop at four,
+  and a full Póquer table gives a bot's chair to the arriving pana between hands.
+
+- **One bad message can no longer end every game on the server.**
+  A room that hits an error skips that message and keeps playing; the old `/ws`
+  relay is gone and Derrape no longer answers every clock ping twice.
+
 - **Bululú's dice show the numbers you rolled instead of always showing two fours.**
   The result faces turn toward the camera when the dice stop, and online guests
   see the correct faces even when consecutive rolls repeat.

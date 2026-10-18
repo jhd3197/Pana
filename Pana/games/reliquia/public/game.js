@@ -13,6 +13,7 @@ import { mummy, sunRelic, expeditionLantern } from '/engine/models/props/reliqui
 import { Expedition, interaction, objective } from './rules.js';
 import { ExpeditionRoom } from './network.js';
 import { createExpeditionWorld, groundAt } from './scene.js';
+import { elapsedClock } from '/engine/live-room.js';
 import { CAMP, ALTAR, WINCHES, ROOMS, regionAt, distance } from './layout.js';
 
 const $ = id => document.getElementById(id), show = (id, on) => $(id).classList.toggle('hidden', !on);
@@ -238,7 +239,9 @@ function compass(p, destination) {
 }
 function resize() { renderer.setSize(innerWidth, innerHeight); camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix(); }
 addEventListener('resize', resize); resize();
-const ticker = setInterval(() => { if (!qs.has('manual')) room.tick(0.05, input(), paused && (room.offline || room.members.size === 1)); }, 50);
+// Real elapsed time: a host in a background tab gets timers once a second.
+const simClock = elapsedClock();
+const ticker = setInterval(() => { const dt = simClock(); if (!qs.has('manual')) room.tick(dt, input(), paused && (room.offline || room.members.size === 1)); }, 50);
 function frame(now) {
   if (dead) return;
   const dt = Math.min(0.06, (now - last) / 1000); last = now; elapsed += dt; uiElapsed += dt;

@@ -65,11 +65,16 @@ export function pixelRatio(max = 2) {
 }
 
 // Keeps a renderer's pixel ratio in step with the quality setting.
-export function bindRenderer(renderer, max = 2) {
+// fit 'window' (full-screen games) sizes the canvas to the window, inline
+// styles included; fit 'canvas' (a stage inside the page, e.g. table-world)
+// keeps the canvas's own CSS box and only sets its resolution.
+export function bindRenderer(renderer, max = 2, { fit = 'window' } = {}) {
   return onSettings((s, changed) => {
     if (!changed.includes('quality')) return;
     renderer.setPixelRatio(pixelRatio(max));
-    renderer.setSize(innerWidth, innerHeight);
+    const canvas = renderer.domElement;
+    if (fit === 'canvas') renderer.setSize(canvas.clientWidth || innerWidth, canvas.clientHeight || innerHeight, false);
+    else renderer.setSize(innerWidth, innerHeight);
   });
 }
 
