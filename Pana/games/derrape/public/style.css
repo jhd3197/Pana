@@ -1,7 +1,7 @@
 /* Derrape on the Pana Kit (/engine/kit.css): tokens, fonts and HUD pieces
    come from the kit; this file places them over the 3D scene. */
 :root { color-scheme: dark; }
-body { --gain: #5fe08a; --loss: #ff5a5a; --bar-top: #ffd65c; --me-rank: #b5121b; --slot-bg: #2c263e; --slot-line: #514b65; --slot-on: #3b3040; --slot-key: #bab2ca; --swap: #e0d8ec; --shield: #ffe58b; --coin-line: #63552f; --coin-rim: #f8bd37; --coin-face: #d88a20; --coin-shine: #ffed9a; --coin-label: #d7cba8; --coin-text: #ffdf72; --coin-cap: #aaa08c; --coin-full: #e3ae39; --boost: #4fb6ff; --hud-ink: #16161a; --trophy-oro: #ffc629; --trophy-plata: #c9ccd4; --trophy-bronce: #c47a3a; --drift-1: #4fb6ff; --drift-2: #ff9a1f; --drift-3: #c45bff; --rarity-blue: #4fb6ff; --rarity-purple: #c45bff; --rarity-gold: #ffc629; --pk-game: #ff4b4b; --pk-game-ink: #fff; --hud-edge: 2px solid rgba(255, 255, 255, .08); }
+body { --gain: #5fe08a; --loss: #ff5a5a; --bar-top: #ffd65c; --me-rank: #b5121b; --slot-bg: #2c263e; --slot-line: #514b65; --slot-on: #3b3040; --slot-key: #bab2ca; --swap: #e0d8ec; --shield: #ffe58b; --coin-line: #63552f; --coin-rim: #f8bd37; --coin-face: #d88a20; --coin-shine: #ffed9a; --mango: #ffb52e; --mango-ink: #2a1702; --taller-panel: rgba(21, 13, 37, .92); --taller-card: rgba(255, 255, 255, .045); --taller-card-on: rgba(255, 255, 255, .1); --taller-line: rgba(186, 160, 255, .16); --taller-accent: #ffb02e; --taller-ink: #f6f1ff; --taller-muted: #a99dc8; --taller-good: #55e08a; --taller-bad: #ff5a6e; --coin-label: #d7cba8; --coin-text: #ffdf72; --coin-cap: #aaa08c; --coin-full: #e3ae39; --boost: #4fb6ff; --hud-ink: #16161a; --trophy-oro: #ffc629; --trophy-plata: #c9ccd4; --trophy-bronce: #c47a3a; --drift-1: #4fb6ff; --drift-2: #ff9a1f; --drift-3: #c45bff; --rarity-blue: #4fb6ff; --rarity-purple: #c45bff; --rarity-gold: #ffc629; --pk-game: #ff4b4b; --pk-game-ink: #fff; --hud-edge: 2px solid rgba(255, 255, 255, .08); }
 
 * { box-sizing: border-box; }
 
@@ -170,47 +170,81 @@ dd i { display: block; height: 100%; background: var(--car, var(--pk-coral)); bo
 #race.split #speedo { left: auto; right: calc(50% + 16px); bottom: 110px; transform: none; }
 #race.split .coins { right: calc(50% + 16px); }
 .shop-open b { color: var(--coin-text); }
-.shop { position: fixed; z-index: 30; top: 50%; left: 50%; transform: translate(-50%, -50%); width: min(560px, calc(100vw - 32px)); max-height: calc(100vh - 40px); overflow: hidden; padding: 18px 20px; display: flex; flex-direction: column; gap: 10px; }
-/* On a wide screen the taller docks to the right so the car and its stats stay in view. */
-/* On a phone it is a bottom sheet, so the tried parts show on the car above. */
-@media (max-width: 899px) { .shop { top: auto; bottom: 8px; left: 8px; right: 8px; width: auto; transform: none; max-height: 52vh; padding: 10px 12px; } .shop-note { display: none; } }
-/* A landscape phone docks it to the right half instead, like the desktop. */
-@media (max-width: 899px) and (orientation: landscape) { .shop { top: 8px; bottom: 8px; left: auto; right: 8px; transform: none; width: 52vw; max-height: none; padding: 10px 12px; } .shop-note { display: none; } }
-@media (min-width: 900px) { .shop { top: 92px; bottom: 112px; left: auto; right: 24px; transform: none; width: 440px; max-height: none; } }
-.shop-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; }
-.shop-head h2 { margin: 2px 0 0; font-family: var(--pk-display); font-weight: 400; letter-spacing: 1px; color: var(--pk-yellow); font-size: 26px; }
-.shop h3 { margin: 6px 0 0; font-size: 13px; color: var(--pk-muted); text-transform: uppercase; letter-spacing: 1px; }
-.shop-wallet { display: flex; align-items: center; gap: 8px; margin: 0; color: var(--coin-text); font-size: 18px; }
-.shop-note { margin: 0; color: var(--pk-muted); font-size: 12px; }
-.shop-tabs { display: flex; flex-wrap: wrap; }
-.shop-tabs button { flex: 1 1 auto; }
-.shop-tabs button[aria-selected="true"] { background: var(--slot-on); color: var(--pk-yellow); }
-/* Only the cards scroll: the tabs, the try bar and Listo stay put (and a
-   whole-panel scroller over the WebGL canvas left a dark ghost on phones). */
-.shop-body { display: flex; flex-direction: column; gap: 8px; flex: 1 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; }
-.shop-head, .shop-note, .shop-tabs, .shop-try, #shop-close { flex: none; }
-.shop-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(124px, 1fr)); gap: 8px; margin-top: 6px; }
-.shop-swatches { grid-template-columns: repeat(auto-fill, minmax(84px, 1fr)); gap: 6px; }
-.shop-swatch { align-items: center; padding: 6px; }
-.shop-swatch .shop-text b { font-size: 11px; }
-.shop-item { display: flex; align-items: flex-start; gap: 8px; padding: 8px; border: 1px solid var(--slot-line); border-radius: 10px; background: var(--slot-bg); color: var(--pk-text); font: 800 12px var(--pk-sans); text-align: left; }
-.shop-item[aria-pressed="true"] { border-color: var(--pk-yellow); background: var(--slot-on); }
-.shop-item.trying { border-style: dashed; }
+.shop-open .mango-symbol { width: 18px; height: 18px; font-size: 18px; margin: 0 3px 0 4px; }
+/* The Taller de Panas: a glass column docked right on a wide screen (a
+   bottom sheet on a phone) with the stats, one row of tabs, two columns of
+   part cards and the try-before-buy bar. Only the cards scroll, since a
+   whole-panel scroller over the WebGL canvas left a dark ghost on phones. */
+.shop { position: fixed; z-index: 30; top: 102px; bottom: 92px; right: clamp(16px, 3vw, 48px); width: 420px; display: grid; grid-template-rows: auto auto auto 1fr auto; overflow: hidden;
+  background: var(--taller-panel); color: var(--taller-ink); border: 1px solid var(--taller-line); border-radius: 22px; box-shadow: 0 18px 50px rgba(0, 0, 0, .45); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); }
+.shop-head { display: flex; align-items: center; gap: 10px; padding: 14px 14px 4px 16px; }
+.shop-head h2 { flex: 1; margin: 0; font: 400 24px/1 var(--pk-display); letter-spacing: .5px; color: var(--taller-ink); }
+.shop-wallet { display: flex; align-items: center; gap: 6px; margin: 0; padding: 3px 12px 3px 6px; border-radius: 999px; background: rgba(255, 181, 46, .12); border: 1px solid rgba(255, 181, 46, .35); color: var(--taller-ink); font: 400 19px/1 var(--pk-display); letter-spacing: .5px; font-variant-numeric: tabular-nums; }
+.shop-wallet .mango-symbol { width: 22px; height: 22px; font-size: 22px; }
+.shop-close { flex: none; width: 34px; height: 34px; display: grid; place-items: center; padding: 0; border-radius: 50%; border: 1px solid var(--taller-line); background: rgba(255, 255, 255, .06); color: var(--taller-muted); font-size: 16px; cursor: pointer; }
+.shop-close:hover { color: var(--taller-ink); background: var(--taller-card-on); }
+.shop-close svg { width: 1em; height: 1em; }
+.shop-stats { margin: 0; padding: 8px 16px 12px; gap: 6px; }
+.shop-stats div { grid-template-columns: 92px 1fr 22px; gap: 10px; }
+.shop-stats dt { color: var(--taller-muted); font-size: 12px; font-weight: 700; white-space: nowrap; }
+.shop-stats dd { display: grid; grid-template-columns: repeat(10, 1fr); gap: 3px; height: 9px; background: none; overflow: visible; }
+.shop-stats dd i { height: 9px; border-radius: 3px; background: rgba(255, 255, 255, .08); transition: background .2s; }
+.shop-stats dd i.on { background: var(--taller-ink); }
+.shop-stats dd i.up { background: var(--taller-good); }
+.shop-stats dd i.down { background: transparent; box-shadow: inset 0 0 0 1.5px var(--taller-bad); }
+.shop-stats .n { font: 400 14px/1 var(--pk-display); text-align: right; font-variant-numeric: tabular-nums; }
+.shop-stats .n.up { color: var(--taller-good); }
+.shop-stats .n.down { color: var(--taller-bad); }
+.shop-tabs { display: flex; gap: 2px; padding: 0 10px 10px; overflow-x: auto; scrollbar-width: none; border-bottom: 1px solid var(--taller-line); }
+.shop-tabs::-webkit-scrollbar { display: none; }
+.shop-tabs button { flex: 1 0 auto; padding: 8px 6px; border: 0; border-radius: 12px; background: transparent; color: var(--taller-muted); font: 800 12.5px var(--pk-sans); white-space: nowrap; cursor: pointer; }
+.shop-tabs button:hover { color: var(--taller-ink); }
+.shop-tabs button[aria-selected="true"] { background: var(--taller-card-on); color: var(--taller-ink); }
+.shop-body { display: grid; gap: 14px; align-content: start; min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding: 12px; scrollbar-width: thin; }
+.shop h3 { margin: 0 4px; font: 700 11px var(--pk-sans); letter-spacing: .14em; text-transform: uppercase; color: var(--taller-muted); }
+.shop-group { display: grid; gap: 8px; }
+.shop-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.shop-item { display: flex; align-items: flex-start; gap: 8px; min-width: 0; padding: 10px 10px 9px; border: 1.5px solid transparent; border-radius: 14px; background: var(--taller-card); color: var(--taller-ink); font: 700 12px var(--pk-sans); text-align: left; cursor: pointer; transition: background .15s, border-color .15s; }
+.shop-item:hover { background: var(--taller-card-on); }
+.shop-item[aria-pressed="true"] { border-color: var(--taller-accent); }
+.shop-item.trying { border-color: var(--taller-ink); border-style: dashed; }
 .shop-item:disabled { opacity: .45; cursor: default; }
-.shop-item small { display: block; color: var(--pk-muted); font-weight: 700; margin-top: 2px; }
-.shop-text { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
-.shop-item .tag, .shop-item .price { font-style: normal; font-size: 11px; }
-.shop-item .tag { color: var(--pk-yellow); }
-.shop-item .price { color: var(--coin-text); }
+.shop-text { display: grid; gap: 5px; align-content: start; min-width: 0; }
+.shop-item b { font: 400 16px/1.05 var(--pk-display); letter-spacing: .3px; }
+.shop-item small { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; color: var(--taller-muted); font-size: 11.5px; font-weight: 600; line-height: 1.35; }
+.shop-item .tag, .shop-item .price { font-style: normal; font-size: 11.5px; font-weight: 800; }
+.shop-item .tag { color: var(--taller-muted); }
+.shop-item[aria-pressed="true"] .tag { color: var(--taller-accent); }
+.shop-item .price { display: flex; align-items: center; gap: 4px; color: var(--mango); font: 400 14px/1 var(--pk-display); letter-spacing: .3px; }
+.shop-item .price .mango-symbol { width: 15px; height: 15px; font-size: 15px; }
 .shop-item .pills { display: flex; flex-wrap: wrap; gap: 3px; }
-.shop-item .pill { padding: 1px 6px; border-radius: 6px; font-size: 10px; border: 1px solid; }
-.pill.up { color: var(--gain); border-color: var(--gain); }
-.pill.down { color: var(--loss); border-color: var(--loss); }
-.pill.peso { color: var(--pk-muted); border-color: var(--slot-line); }
-.shop-item .swatch { flex: none; width: 22px; height: 22px; border-radius: 50%; border: 2px solid var(--hud-ink); background: var(--swatch); }
-.shop-try { display: flex; align-items: center; gap: 8px; padding: 10px; border: 1px dashed var(--pk-yellow); border-radius: 10px; background: var(--slot-on); }
-.shop-try p { flex: 1; margin: 0; font-size: 12px; }
+.shop-item .pill { min-width: 0; gap: 0; padding: 2px 6px; border-radius: 99px; font-size: 10.5px; font-weight: 800; background: rgba(255, 255, 255, .07); color: var(--taller-muted); }
+.pill.up { color: var(--taller-good); background: rgba(85, 224, 138, .12); }
+.pill.down { color: var(--taller-bad); background: rgba(255, 90, 110, .12); }
+.pill.peso { color: var(--taller-muted); }
+.shop-item .swatch { flex: none; width: 22px; height: 22px; border-radius: 50%; border: 2px solid rgba(255, 255, 255, .18); background: var(--swatch); }
+.shop-grid.shop-swatches { grid-template-columns: repeat(auto-fill, minmax(84px, 1fr)); gap: 6px; }
+.shop-swatch { align-items: center; padding: 7px; }
+.shop-swatch .shop-text { gap: 2px; }
+.shop-swatch .shop-text b { font: 800 11px var(--pk-sans); letter-spacing: 0; }
+.shop-swatch .price { font-size: 12px; }
+.shop-swatch .swatch { width: 26px; height: 26px; }
+.shop-swatch[aria-pressed="true"] .swatch { border-color: #fff; box-shadow: 0 0 0 2px var(--taller-accent); }
+.shop-try { display: flex; align-items: center; gap: 8px; padding: 12px 14px; border-top: 1px solid var(--taller-line); background: rgba(0, 0, 0, .22); }
+.shop-try p { flex: 1; min-width: 0; margin: 0; color: var(--taller-muted); font-size: 12.5px; line-height: 1.3; }
+.shop-try p b { color: var(--taller-ink); }
 .shop-try[hidden] { display: none; }
+.shop-btn { display: flex; align-items: center; gap: 6px; padding: 9px 16px; border: 0; border-radius: 999px; background: var(--mango); color: var(--mango-ink); font: 400 15px/1 var(--pk-display); letter-spacing: .4px; white-space: nowrap; cursor: pointer; }
+.shop-btn .mango-symbol { width: 17px; height: 17px; font-size: 17px; }
+.shop-btn .mango-symbol svg { filter: none; }
+.shop-btn--ghost { background: transparent; color: var(--taller-ink); border: 1px solid var(--taller-line); font: 800 13px var(--pk-sans); }
+.shop-btn:disabled { opacity: .55; cursor: not-allowed; }
+/* On a phone it is a bottom sheet, so the tried parts show on the car above;
+   a landscape phone docks it to the right half instead, like the desktop. */
+@media (max-width: 899px) { .shop { top: auto; bottom: 74px; left: 8px; right: 8px; width: auto; height: 52vh; border-radius: 18px; } .shop-stats { padding: 4px 14px 8px; gap: 3px; } .shop-stats dd, .shop-stats dd i { height: 7px; } }
+@media (max-width: 899px) and (orientation: landscape) { .shop { top: 86px; bottom: 74px; left: auto; right: 8px; width: 52vw; height: auto; } }
+/* A short landscape phone: the steps share the brand row, so the panel starts just below it. */
+@media (max-width: 760px) and (orientation: landscape) { .shop { top: 60px; } .shop-stats { display: none; } }
 .mode-trophy { display: inline-block; width: 9px; height: 9px; margin-left: 5px; border-radius: 50%; background: var(--trophy); vertical-align: middle; }
 .mode-legacy { display: block; color: var(--pk-muted); font-size: 9px; }
 
@@ -296,7 +330,11 @@ body:has(#loading:not(.hidden)) #garage { visibility: hidden; }
   display: flex; align-items: center; gap: 12px; min-width: 170px;
   padding: 12px 18px; border-color: var(--coin-line); background: rgba(14, 11, 36, .94); pointer-events: none;
 }
+/* Coins are what a race pays; the taller exchanges them for mangos. */
 .coin-symbol { flex: none; display: grid; place-items: center; width: 36px; height: 40px; border: 4px solid var(--coin-rim); border-radius: 50%; background: var(--coin-face); color: var(--coin-shine); font: 400 22px/1 var(--pk-display); padding-top: 3px; transition: transform 120ms; }
+/* The taller's money is the mango: engine/icons.js's mango, filled in by game.js. */
+.mango-symbol { flex: none; display: inline-grid; place-items: center; width: 40px; height: 40px; font-size: 40px; line-height: 0; transition: transform 120ms; }
+.mango-symbol svg { display: block; filter: drop-shadow(0 2px 0 rgba(0, 0, 0, .35)); }
 .coins .pk-eyebrow { color: var(--coin-label); font-size: 10px; letter-spacing: 1px; }
 .coins b { font-size: 28px; line-height: 1.1; color: var(--coin-text); font-variant-numeric: tabular-nums; }
 .coin-cap { color: var(--coin-cap); font-size: 12px; }
@@ -355,7 +393,7 @@ body:has(#loading:not(.hidden)) #garage { visibility: hidden; }
 .res-table .pk-row-n { width: 22px; font-size: 16px; color: inherit; }
 .res-table .pk-row-end { font-size: 14px; color: inherit; font-variant-numeric: tabular-nums; }
 .res-coins { display: flex; align-items: center; gap: 12px; padding: 14px 18px; border-color: var(--coin-line); }
-.res-coins .coin-symbol { width: 30px; height: 34px; font-size: 18px; }
+.res-coins .mango-symbol { width: 34px; height: 34px; font-size: 34px; }
 .result p.result-coins { margin: 0; color: var(--coin-text); font-size: 14px; font-weight: 800; }
 .res-actions { margin-top: auto; display: flex; flex-direction: column; gap: 10px; }
 .res-actions .row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
@@ -419,6 +457,7 @@ body:has(#loading:not(.hidden)) #garage { visibility: hidden; }
   #board { display: none; }
   .coins { top: 128px; bottom: auto; left: 12px; right: auto; min-width: 0; padding: 8px 12px; gap: 8px; }
   .coin-symbol { width: 26px; height: 30px; font-size: 16px; border-width: 3px; }
+  .mango-symbol { width: 28px; height: 28px; font-size: 28px; }
   .coins b { font-size: 22px; }
   .item { bottom: 14px; left: 12px; width: 252px; padding: 10px; }
   .slot { height: 70px; }
@@ -502,7 +541,7 @@ body:has(#loading:not(.hidden)) #garage { visibility: hidden; }
 }
 @media (prefers-reduced-motion: reduce) {
   .coins.picked .coin-symbol, .res-table .pk-row.rank-up, .res-table .pk-row.rank-down { transform: none; }
-  dd i, button, .coin-symbol, .res-table .pk-row { transition: none; }
+  dd i, button, .coin-symbol, .mango-symbol, .res-table .pk-row { transition: none; }
 }
 
 /* ---------- online lobby ---------- */
@@ -539,19 +578,10 @@ body:has(#loading:not(.hidden)) #garage { visibility: hidden; }
   .launch .setup { order: 10; }
   .launch .play { margin-top: 0; }
 }
-/* Short screens give the taller's cards the room: a smaller head, compact tabs. */
+/* Short screens give the taller's cards the room: less air around the stats. */
 @media (max-height: 760px) {
-  .shop-note { display: none; }
-  .shop-head h2 { font-size: 20px; }
-  .shop-tabs button { min-height: 32px; padding: 4px 8px; font-size: 13px; }
+  .shop-stats { gap: 3px; padding-bottom: 8px; }
+  .shop-stats dd, .shop-stats dd i { height: 7px; }
+  .shop-head { padding-top: 10px; }
 }
-@media (max-width: 899px), (max-height: 500px) {
-  .shop { gap: 6px; }
-  .shop-head .pk-eyebrow { display: none; }
-  .shop-head h2 { font-size: 17px; }
-  .shop-wallet { font-size: 14px; }
-  .shop-tabs button { min-height: 28px; padding: 2px 6px; font-size: 12px; }
-  .shop-try { padding: 6px 8px; }
-  #shop-close { min-height: 34px; font-size: 16px; }
-}
-@media (max-height: 500px) { .shop-head h2 { display: none; } }
+@media (max-height: 500px) { .shop-stats { display: none; } }

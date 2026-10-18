@@ -75,12 +75,12 @@ try {
   await menuClick(page, '#open-shop');
   await page.locator('[data-tab="motor"]').click();
   await page.locator('#shop-motor [data-id="turbo"]').hover();
-  assert.equal(await page.locator('#stats dd i.up').count() > 0, true, 'hover shows the gain on the bars');
+  assert.equal(await page.locator('#shop-stats dd i.up').count() > 0, true, 'hover shows the gain on the bars');
   assert.match(await page.locator('#shop-motor [data-id="turbo"] .pills').textContent(), /\+1 Vel/);
   await page.locator('#shop-motor [data-id="turbo"]').click();
   await page.locator('[data-tab="aleron"]').click();
   await page.locator('#shop-aleron [data-id="rally"]').click();
-  assert.match(await page.locator('#shop-buy').textContent(), /Te faltan 30 monedas/, 'turbo + rally cost 130');
+  assert.match(await page.locator('#shop-buy').textContent(), /Te faltan 30 mangos/, 'turbo + rally cost 130');
   await page.locator('#shop-aleron [data-id="rally"]').click();   // take the wing off again
   await page.locator('#shop-buy').click();
   const parts = await page.evaluate(() => ({ coins: getWallet().coins, parts: getWallet().parts.chamo, trying: !document.getElementById('shop-try').hidden }));

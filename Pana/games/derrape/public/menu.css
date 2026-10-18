@@ -358,10 +358,26 @@ body { --menu-paper: #fff3d8; --menu-ink: #282035; --menu-grass: #2d705d; }
 .track-page.is-cup .format-picker>button:not(.cup-choice)>img{width:70px;height:52px}
 @media(max-width:700px){.track-page.is-cup .format-picker{grid-template-columns:1fr}.track-page.is-cup .cup-choice{grid-row:auto}.track-page.is-cup .cup-collage img{height:100px}.track-page.is-cup .cup-choice b{font-size:26px}.format-picker .cup-route small{display:block}}
 
-/* With the taller open, the car strip lives left of the docked panel and
-   scrolls (wheel, drag or the scrollbar) instead of running beneath it. */
+/* The Taller page opens with the panel docked (taller.js). While it is
+   open the left side is just the build's title, as in the showroom, and the
+   panel's Carro tab picks the car, so the strip waits until it is hidden. */
 .menu-flow .car-lineup { scroll-snap-type: x proximity; scroll-padding: 0 8px; }
 .menu-flow .car-choice { scroll-snap-align: start; }
-@media (min-width: 900px) { body.shop-open .menu-flow .car-picker { right: 480px; } }
-/* A phone has no room for both: the taller's own Carro tab picks the car. */
-@media (max-width: 899px) { body.shop-open .menu-flow .car-picker { display: none; } }
+.menu-flow .info .info-eyebrow, .menu-flow .info .car-build { display: none; }
+body.shop-open .menu-flow .car-picker, body.shop-open .menu-flow #open-shop { display: none; }
+body.shop-open .menu-flow .info { background: none; border-color: transparent; box-shadow: none; padding: 4px 0 0; gap: 4px; width: min(360px, calc(100vw - 540px)); pointer-events: none; }
+body.shop-open .menu-flow .info > * { pointer-events: auto; }
+body.shop-open .menu-flow .info .info-head { order: 5; margin-top: 10px; }
+body.shop-open .menu-flow .info .pick { margin-left: 0; }
+body.shop-open .menu-flow .info .info-eyebrow { display: block; order: -1; margin: 6px 0 0; color: var(--taller-muted); letter-spacing: .16em; }
+body.shop-open .menu-flow .info h1 { font-size: clamp(34px, 4.2vw, 56px); line-height: .95; color: var(--taller-ink); text-shadow: 0 4px 0 rgba(0, 0, 0, .35); }
+body.shop-open .menu-flow .info .car-build { display: block; color: var(--taller-muted); font-size: 13px; font-weight: 700; }
+body.shop-open .menu-flow .info #stats, body.shop-open .menu-flow .info .num, body.shop-open .menu-flow .info-head > .pk-eyebrow, body.shop-open .menu-flow .info #car-blurb { display: none; }
+body.shop-open .menu-flow .tools { top: auto; bottom: 0; left: 0; right: auto; justify-content: flex-start; }
+body.shop-open .menu-flow .tools .hint { display: none; }
+@media (max-width: 899px) {
+  body.shop-open .menu-flow .info { width: 100%; padding: 0; }
+  body.shop-open .menu-flow .info .info-eyebrow, body.shop-open .menu-flow .info .car-build, body.shop-open .menu-flow .info .info-head { display: none; }
+  body.shop-open .menu-flow .info h1 { font-size: 28px; }
+  body.shop-open .menu-flow .tools { top: 64px; bottom: auto; }
+}

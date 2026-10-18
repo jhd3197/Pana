@@ -1,5 +1,5 @@
-// Derrape's taller: coins you keep between races (the wallet), and what they
-// buy — paint jobs, horns, turbo flames and the parts in parts.js — plus the
+// Derrape's taller: mangos you keep between races (the wallet; its field is
+// still called coins), and what they buy — paint jobs, horns, turbo flames and the parts in parts.js — plus the
 // unlocks trophies give.
 // Plain data and math; game.js keeps it in localStorage and paints the cars.
 
@@ -63,8 +63,8 @@ export function cleanWallet(w) {
   };
 }
 
-// Coins earned for a race: what you picked up, plus a bonus by place, plus
-// a trophy bonus at the end of a cup.
+// Mangos earned for a race: the coins you picked up, exchanged one for one,
+// plus a bonus by place, plus a trophy bonus at the end of a cup.
 export const PLACE_BONUS = [10, 6, 3];
 export const TROPHY_BONUS = { oro: 40, plata: 25, bronce: 15 };
 export function earnings({ collected = 0, place = 99, trophy = null } = {}) {

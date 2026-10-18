@@ -2,7 +2,7 @@
 import assert from 'node:assert/strict';
 import { createRequire } from 'node:module';
 import { mkdir } from 'node:fs/promises';
-import { menuStep } from './menu-helpers.js';
+import { hideTaller, menuStep } from './menu-helpers.js';
 const { chromium } = createRequire(import.meta.url)(process.env.PANA_PLAYWRIGHT_PATH || 'playwright');
 const browser = await chromium.launch({ headless: true,
   ...(process.env.PANA_BROWSER_PATH ? { executablePath: process.env.PANA_BROWSER_PATH } : {}) });
@@ -48,6 +48,9 @@ try {
   await step(page, 'track');
   await menuStep(page, 'car');
   await step(page, 'car');
+  assert.ok(await page.locator('#shop').isVisible(), 'the Taller page opens with the taller docked');
+  await page.screenshot({ path: `${output}/taller.png` });
+  await hideTaller(page);
   await page.locator('.car-choice').nth(6).click();
   await page.locator('[data-car-tab="wheels"]').click();
   await page.locator('.wheel-choice').nth(3).click();
@@ -149,6 +152,7 @@ try {
   await guest.waitForFunction(() => getNet()?.state.players.length === 2);
   await host.waitForFunction(() => getNet()?.state.players.length === 2);
   await menuStep(guest, 'car');
+  await hideTaller(guest);
   await guest.locator('.car-choice').nth(2).click();
   await menuStep(host, 'track');
   await menuStep(guest, 'track');

@@ -1,4 +1,4 @@
-import { menuClick, menuStep } from './menu-helpers.js';
+import { hideTaller, menuClick, menuStep } from './menu-helpers.js';
 // npm start, then node this file. Uses the same optional runtime paths as maps.browser.js.
 import assert from 'node:assert/strict';
 import { createRequire } from 'node:module';
@@ -21,6 +21,7 @@ try {
   await page.waitForFunction(() => window.garage?.car);
   assert.equal(await page.locator('.car-choice').count(), 16);
   await menuStep(page, 'car');
+  await hideTaller(page);
   for (let i = 0; i < 16; i++) {
     await page.locator('.car-choice').nth(i).click();
     const car = await page.evaluate(() => {

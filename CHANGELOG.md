@@ -10,6 +10,12 @@ becomes the GitHub release's notes.
 
 ### Added
 
+- **Derrape's Taller is a showroom you shop in with mangos.** The Taller
+  page opens with the garage panel docked beside the car: live stat bars,
+  one row of tabs and two columns of parts with their stat pills and mango
+  prices. Coins you pick up in a race are exchanged one for one for
+  mangos at the finish, plus the podium and trophy prizes.
+
 - **Every sign on Derrape's circuits is a cartoon wooden board.** Track
   names, the META gantry, shop fronts and warnings use chunky lettering that
   always fits its board, and feather flags replace the blank pennant panels.

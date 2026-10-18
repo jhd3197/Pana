@@ -4,7 +4,7 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { CARS } from './cars.js';
 import { WHEEL_DEFINITIONS, wheelById, composeTune } from './wheel-definitions.js';
 import { garageCards, wheelCards, sideScroll } from './garage-cards.js';
-import { createTaller } from './taller.js';
+import { createTaller, dockTaller, exchangeText } from './taller.js';
 import { partsProfile, renderConfig } from './parts.js';
 import { studioEnvironment, studioRims, showroomPaint } from './garage-stage.js';
 import { garageBloom } from './garage-bloom.js';
@@ -538,15 +538,7 @@ function pickWheel(id) {
   taller.open('wheel');
   taller.tryItem('wheel', id);
 }
-$('open-shop').onclick = () => {
-  sound.unlock(); taller.open(); $('shop').hidden = false;
-  document.body.classList.add('shop-open'); resize(); $('shop-close').focus();
-};
-$('shop-close').onclick = () => { $('shop').hidden = true; $('open-shop').focus(); };
-new MutationObserver(() => {
-  if (!$('shop').hidden) return;
-  taller.close(); document.body.classList.remove('shop-open'); garage.frame = null; garage.glide = 1.2; resize();
-}).observe($('shop'), { attributes: true, attributeFilter: ['hidden'] });
+const openShop = dockTaller({ $, taller, sound, resize: () => resize(), onClosed: () => { garage.frame = null; garage.glide = 1.2; } });
 
 function saveSetup() {
   profileStore.save(profile);
@@ -2504,7 +2496,7 @@ function finish() {
   race.resultKey = '';
   renderResults(standings(), p);
   $('result').classList.remove('hidden');
-  $('result-coins').textContent = `${p.coinsCollected || 0} monedas recogidas · +${race.earned || 0} al taller · tienes ${wallet.coins}`;
+  $('result-coins').textContent = exchangeText(p.coinsCollected || 0, race.earned || 0, wallet.coins);
   $('again').focus({ preventScroll: true });
 }
 
@@ -2930,7 +2922,7 @@ showWheel(garage.wheel);
 renderSetup();
 saveWallet();
 menuFlow = createMenuFlow({
-  tracks: TRACKS, initial: ROOM ? 'track' : 'welcome', pickTrack: switchTrack,
+  tracks: TRACKS, openTaller: openShop, initial: ROOM ? 'track' : 'welcome', pickTrack: switchTrack,
   prepared: Promise.all([cards.ready, wheelStrip.ready, renderer.compileAsync(garage.scene, garage.camera)]).then(() => renderer.render(garage.scene, garage.camera)),
   localPlay(split) { setup.split = split; saveSetup(); renderSetup(); },
   getState: () => {

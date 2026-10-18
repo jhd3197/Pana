@@ -1,11 +1,13 @@
-// The taller (garage shop) UI: tabs of cards for the body, wheels, engine,
-// spoiler, extras, paint and horn. Hovering a card previews it on the five
+// The taller (garage shop) UI, laid out like the Taller de Panas showroom:
+// tabs of cards for the body, wheels, engine, spoiler, extras, paint and
+// horn, priced in mangos (the wallet's coins). Hovering a card previews it on the five
 // garage stat bars and its "+2 Vel" pills; clicking something you don't own
 // puts it on the turntable car to try ("Probando …") until you buy it or
 // take it off. Plain DOM: game.js owns the 3D car and the camera.
 import { CATALOG, PAINTS, owns, unlocked, unlockText, trialCost, buyTrial } from './shop.js';
 import { PART_SLOTS, STATS, partById, partsProfile, renderConfig, statPoints, statPills } from './parts.js';
 import { composeTune, wheelById } from './wheel-definitions.js';
+import { ICONS } from '/engine/icons.js';
 
 const TABS = [
   { id: 'carro', label: 'Carro', kinds: ['car'] },
@@ -21,10 +23,38 @@ const PART_KINDS = new Set(PART_SLOTS.map(s => s.id));
 const SWATCHES = new Set(['paint', 'acento', 'rin']);
 const VISUAL = new Set(['paint', 'wheel', ...PART_KINDS]);
 const esc = (text) => String(text).replace(/[&<>"]/g, (ch) => `&#${ch.charCodeAt(0)};`);
+const MANGO = `<span class="mango-symbol" aria-hidden="true">${ICONS.mango}</span>`;
+export const mangos = (n) => `${n} ${n === 1 ? 'mango' : 'mangos'}`;
+
+// A race pays in coins; the taller takes mangos, one for one, plus the
+// podium (and trophy) prize in mangos.
+export function exchangeText(collected, earned, total) {
+  const prize = Math.max(0, earned - collected);
+  return `${collected} ${collected === 1 ? 'moneda' : 'monedas'} → ${mangos(collected)}${prize ? ` · +${mangos(prize)} de premio` : ''} · tienes ${mangos(total)} pa'l taller`;
+}
+
+// The Taller page opens with the panel docked; its close button tucks it
+// away to show the car strip, and "Taller" brings it back. Returns open().
+export function dockTaller({ $, taller, sound, resize, onClosed }) {
+  const open = () => {
+    sound.unlock(); taller.open(); $('shop').hidden = false;
+    document.body.classList.add('shop-open'); resize();
+  };
+  $('open-shop').onclick = () => { open(); $('shop-close').focus(); };
+  $('shop-close').onclick = () => { $('shop').hidden = true; document.body.classList.remove('shop-open'); $('open-shop').focus(); };
+  for (const el of document.querySelectorAll('.mango-symbol')) el.innerHTML = ICONS.mango;
+  $('shop-close').innerHTML = ICONS.close;
+  new MutationObserver(() => {
+    if (!$('shop').hidden) return;
+    taller.close(); document.body.classList.remove('shop-open'); onClosed(); resize();
+  }).observe($('shop'), { attributes: true, attributeFilter: ['hidden'] });
+  return open;
+}
 
 // Paint the five 10-segment bars for a tune, with an optional preview tune:
 // gained segments light green, lost ones keep a red outline.
 export function renderStatBars(root, tune, preview = null) {
+  if (!root) return;
   const a = statPoints(tune), b = preview ? statPoints(preview) : a;
   root.innerHTML = STATS.map(([name], k) => {
     const segs = Array.from({ length: 10 }, (_, i) => `<i class="${i < Math.min(a[k], b[k]) ? 'on' : b[k] > a[k] && i < b[k] ? 'up' : b[k] < a[k] && i < a[k] ? 'down' : ''}"></i>`).join('');
@@ -67,7 +97,20 @@ export function createTaller({ $, wallet, cars, getIndex, selectCar, getWheel, s
 
   function renderStats() {
     sync();
-    renderStatBars($('stats'), baseTune(), hover ? tuneWith(...hover) : null);
+    const preview = hover ? tuneWith(...hover) : null;
+    renderStatBars($('stats'), baseTune(), preview);
+    renderStatBars($('shop-stats'), baseTune(), preview);
+    renderBuild();
+  }
+
+  // The line under the car's name: what it wears (or tries) beyond stock.
+  function renderBuild() {
+    const build = $('car-build');
+    if (!build) return;
+    const wheel = current('wheel'), parts = partsWith();
+    const names = [wheel !== 'calle' ? wheelById(wheel).name : null,
+      ...PART_SLOTS.map(({ id }) => parts[id] && parts[id] !== 'fabrica' ? partById(id, parts[id])?.name : null)].filter(Boolean);
+    build.textContent = names.length ? names.join(' · ') : 'De fábrica';
   }
 
   function equip(kind, id) {
@@ -109,13 +152,13 @@ export function createTaller({ $, wallet, cars, getIndex, selectCar, getWheel, s
     b.disabled = !open;
     const tag = !open ? `<small>${esc(unlockText(item))}</small>`
       : isEquipped ? `<em class="tag">${isCar ? 'Tu carro' : 'Equipado'}</em>` : have ? (isCar ? '' : '<em class="tag">Tuyo</em>')
-        : `<em class="price">${item.cost} monedas</em>`;
+        : `<em class="price" aria-label="${mangos(item.cost)}">${MANGO}${item.cost}</em>`;
     const color = kind === 'paint' ? item.color ?? def().color : kind === 'flame' ? '#' + item.colors[0].toString(16).padStart(6, '0')
       : kind === 'acento' || kind === 'rin' ? item.color ?? '#8a8496' : isCar ? item.color : null;
     const after = tuneWith(kind, item.id);
     // pills compare against what this slot holds now, so a downgrade reads as one
     const pills = after && !isEquipped ? statPills(tuneWith(kind, equipped(kind)), after).map(p => `<span class="pill ${p.label === 'Peso' ? 'peso' : p.delta > 0 ? 'up' : 'down'}">${p.delta > 0 ? '+' : ''}${p.delta} ${p.label}</span>`).join('') : '';
-    const blurb = SWATCHES.has(kind) || isCar ? '' : item.blurb;
+    const blurb = SWATCHES.has(kind) ? '' : item.blurb;
     b.innerHTML = `${color ? `<span class="swatch" style="--swatch:${color}"></span>` : ''}<span class="shop-text"><b>${isCar ? `${item.num} · ` : ''}${esc(item.name)}</b>${blurb ? `<small>${esc(blurb)}</small>` : ''}${pills ? `<span class="pills">${pills}</span>` : ''}${tag}</span>`;
     if (SWATCHES.has(kind)) b.title = item.name;
     const enter = () => { if (!after) return; hover = [kind, item.id]; renderStats(); };
@@ -135,12 +178,11 @@ export function createTaller({ $, wallet, cars, getIndex, selectCar, getWheel, s
     $('shop-try-text').innerHTML = `Probando <b>${esc(names)}</b>`;
     const buy = $('shop-buy');
     buy.disabled = short > 0;
-    buy.textContent = short > 0 ? `Te faltan ${short} monedas` : `Comprar · ${cost} monedas`;
+    buy.innerHTML = short > 0 ? `Te faltan ${mangos(short)}` : `Comprar ${MANGO}${cost}`;
+    buy.setAttribute('aria-label', short > 0 ? `Te faltan ${mangos(short)}` : `Comprar por ${mangos(cost)}`);
   }
 
   function render() {
-    const car = def();
-    $('shop-title').textContent = `Personaliza ${car.name}`;
     $('shop-coins').textContent = wallet.coins;
     for (const b of $('shop-tabs').children) b.setAttribute('aria-selected', String(b.dataset.tab === tab));
     const body = $('shop-body'), scroll = body.scrollTop;

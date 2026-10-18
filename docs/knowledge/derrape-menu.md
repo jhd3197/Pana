@@ -95,5 +95,16 @@ Existing loading, modes, cup and online suites retain their gameplay assertions.
   turntable car only, and bloom (`garage-bloom.js`) unless quality is `baja`,
   which browser suites force. Each Taller tab stops the turntable and frames
   its part (`TAB_FRAMES` in game.js).
+- Money: races pay **coins** (the trail pickups, the HUD counter) because
+  mangos are the thrown item; the finish exchanges them 1:1 for **mangos**,
+  the Taller's currency (`exchangeText` in taller.js). The wallet field is
+  still `wallet.coins` so saves, cup receipts and rooms stay compatible;
+  only player-facing Taller text says mangos.
+- Entering the Taller step opens the panel docked (`openTaller` in
+  `createMenuFlow`, `dockTaller` in taller.js). While `body.shop-open` the
+  car strip and `#open-shop` hide and the info card becomes the showroom
+  title (eyebrow, car name, `#car-build`); the stats render twice, into
+  `#stats` and the panel's `#shop-stats`. Suites that click the strip call
+  `hideTaller` from `tests/menu-helpers.js` first.
 - Debug pages opened with `?manual` never re-render the garage, so a
   screenshot there shows the first frame; use `?debug` alone to see a change.
