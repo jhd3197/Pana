@@ -51,7 +51,7 @@ export function createTableWorld(canvas, options = {}) {
     camera.setViewOffset(w, h, w / 2 - safe.x - safe.width / 2, h / 2 - safe.y - safe.height / 2, w, h);
     camera.updateProjectionMatrix(); camera.updateMatrixWorld();
   }
-  function draw(dt) { time += dt; plaza.update(time); sky?.update(time); renderer.render(scene, camera); }
+  function draw(dt) { time += dt; plaza.update(time, dt); sky?.update(time); renderer.render(scene, camera); }
   return { renderer, scene, camera, plaza, sun, resize, frameCamera, draw, setMap: id => plaza.setMap(id),
     dispose() { unbind(); sky?.dispose(); plaza.dispose(); renderer.dispose(); },
   };

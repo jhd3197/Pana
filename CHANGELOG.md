@@ -16,6 +16,11 @@ becomes the GitHub release's notes.
   (C). Fácil shows where both balls go, including rebounds; Experto shows only
   the cue's direction, and Pana Bot aims better as the difficulty rises.
 
+- **The plaza feels alive around every table and court.** A pack of karts
+  from Derrape races past in front of the houses, panas stroll along the edges
+  and guacamayas circle overhead while you play Billar, Dominó, Póquer, Ludo,
+  Caída or Bolas Criollas.
+
 - **Throw Bolas Criollas from behind your pana, on a court in the plaza.**
   The court now sits in Plaza Pana under papel picado, with benches, coolers,
   planters and a chalk scoreboard; the host can move it to Puerto Coco, Hato del

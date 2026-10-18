@@ -27,6 +27,22 @@ Plaza bunting is one live subdivided mesh. The cable/top vertices remain fixed;
 only cloth below them moves. Updating directly from time makes backward scrubbing
 and pauses reproducible without inserting animated geometry into static batches.
 
+## Background life at tables and courts
+
+`engine/ambient-life.js` adds a pack of Derrape karts crossing a lane every
+19 s (alternating direction), panas walking there-and-back paths and macaws
+circling overhead. `createArenaSlot` attaches it for `table` and `court` modes
+only, from the per-map `LIFE` routes in arenas.js (plaza: the lane runs in
+front of the north facades at z = −19.4, walks hug x = ±22.4 and the south
+garden; the three party maps share one set just outside their curbs). Hunt
+and paint maps get none: a walking pana there would read as a player.
+
+Everything is a function of absolute time, so peers and pauses agree.
+`baja` quality uses two karts, two walkers and one bird. The life group is a
+child of the arena group (it inherits the plaza's table scale) but it must be
+detached before the arena disposes: car parts' dispose hooks remove nodes, and
+removing a node during the arena's traversal throws mid-walk.
+
 ## Validation
 
 - `npm run check`

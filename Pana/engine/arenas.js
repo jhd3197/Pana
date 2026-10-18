@@ -15,6 +15,14 @@ import { fern } from './models/vegetation/fern.js';
 import { bake } from './models/core/static-batch.js';
 import { disposeModel } from './models/props/game-table.js';
 import { waterSurface, sampleWaterWave } from './models/effects/water-surface.js';
+import { createAmbientLife } from './ambient-life.js';
+
+// Where background life may move on each map (see ambient-life.js): a kart
+// lane, strolling paths and a patch of sky, all outside every mode's play area.
+const LIFE = {
+  plaza: { lane: [[-34, -19.4], [34, -19.4]], walks: [[[-22.4, -15], [-22.4, 18.4], [22.4, 18.4], [22.4, -15]], [[22.4, 18.4], [-22.4, 18.4], [-22.4, -15]], [[22.4, 6], [22.4, -14]]], sky: { x: 0, z: -6, radius: 17, height: 15 } },
+  arena: { lane: [[20.6, -40], [20.6, 40]], walks: [[[-20.4, -16], [-20.4, 20.4], [16, 20.4]], [[16, 20.4], [-20.4, 20.4], [-20.4, -12]]], sky: { x: 0, z: 0, radius: 19, height: 16 } },
+};
 
 const palettes = {
   puerto: { ground: '#dfc79b', court: '#ecd7ae', trim: '#3b9298', sky: '#badde5', stone: '#a77b51' },
@@ -159,19 +167,25 @@ export function createArenaEnvironment(id = 'plaza', { mode = 'hunt', props } = 
 }
 
 // Rebuild only on a changed map ID; table/game objects and cameras stay mounted.
+const ARENAS_WITH_LIFE = new Set(['puerto', 'hato', 'ruinas']);
 export function createArenaSlot(scene, { mode = 'table', plazaScale = 1, props } = {}) {
-  let current;
+  let current, life = null;
   return {
     setMap(id = 'plaza') {
       id = (mode === 'table' ? tableArenaInfo : arenaInfo)(id).id;
       if (current?.id === id) return;
       const next = createArenaEnvironment(id, { mode, props });
       if (id === 'plaza') next.group.scale.setScalar(plazaScale);
-      current?.dispose(); current = next; scene.add(current.group); scene.userData.mapId = id;
+      life?.dispose(); current?.dispose(); current = next; scene.add(current.group); scene.userData.mapId = id;
+      // Tables and courts get background life; action maps stay readable for play.
+      const routes = (mode === 'table' || mode === 'court') && (LIFE[id] || (ARENAS_WITH_LIFE.has(id) ? LIFE.arena : null));
+      life = routes ? createAmbientLife(routes, { seed: id.length * 31 + 7 }) : null;
+      if (life) current.group.add(life.group);
     },
     get group() { return current?.group; },
     get current() { return current; },
-    update(t, dt) { current?.update(t, dt); },
-    dispose() { current?.dispose(); current = null; },
+    get life() { return life; },
+    update(t, dt) { current?.update(t, dt); life?.update(t, dt); },
+    dispose() { life?.dispose(); life = null; current?.dispose(); current = null; },
   };
 }
