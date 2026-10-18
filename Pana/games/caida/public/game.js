@@ -11,11 +11,12 @@ import { CaidaRoom } from './network.js';
 import { CaidaGame, canto, cantoDescription, chooseMove, previewPlay, teamOf, nextDealer, cardName, MODES } from './rules.js';
 import { cardButton } from './cards.js';
 import { createDealerUI } from './dealer-ui.js';
+import { barksFor } from './barks.js';
 
 const $ = id => document.getElementById(id), params = new URLSearchParams(location.search);
 const code = roomFromUrl() || newRoomCode();
 params.set('room', code); history.replaceState(null, '', `${location.pathname}?${params}`);
-let world = null, ready = false, stopped = false, selected = null, previousEvent = 0, shownResult = '', resultTimer, toastTimer, announcementTimer;
+let world = null, ready = false, stopped = false, selected = null, previousEvent = 0, barksPrimed = false, shownResult = '', resultTimer, toastTimer, announcementTimer;
 const audio = { muted: false, volume: .8, unlocked: false, impl: null,
   unlock() { this.unlocked = true; this.impl?.unlock(); }, setVolume(v) { this.volume = v; this.impl?.setVolume(v); },
   tone(...args) { if (this.impl) { this.impl.muted = this.muted; this.impl.tone(...args); } },
@@ -100,7 +101,10 @@ function render(state) {
     if (event) { $('announcement').textContent = event.kind === 'deal' ? '¡Últimas! Última mano · ya no hay cuatro de mesa.' : `${event.name}: ${event.text}`; $('announcement').classList.add('show'); clearTimeout(announcementTimer); announcementTimer = setTimeout(() => $('announcement').classList.remove('show'), 4200); }
     if (newEvents.some(e => e.kind === 'play')) audio.tone(370, 0, .06, 'triangle', .06);
     if (event) audio.tone(720, .08, .12, 'sine', .05);
+    // Arriving mid-game replays the whole history: only bark at what happens live.
+    if (barksPrimed) for (const bark of barksFor(state, newEvents)) world?.say(bark.seat, bark.text, bark.time);
   }
+  if (world) barksPrimed = true;
   previousEvent = state.eventId;
   renderHand(state);
   const ended = ['round-over', 'finished'].includes(state.phase);

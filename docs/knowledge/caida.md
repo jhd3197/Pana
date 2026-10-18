@@ -114,6 +114,21 @@ Select with tap/click or 1–3, then confirm with the play button or Enter.
 C announces a canto; H selects a suggested move. Both table cameras use the
 same live scene. Screen-aligned hand buttons preserve touch readability.
 
+## Barks
+
+`public/barks.js` turns new history events into speech bubbles: the dealer
+on `dealer` and `opening` (mal echada complains), the singer on a canto
+`score`, the capturer and the `victim` on a caída (`salado` once the same
+pana has been fallen on twice that reparto), the capturer and the next seat
+on a mesa limpia, the `leftovers` recipient (ñapa), and a winner and a loser
+when the match ends. Plain drops stay quiet. Lines come from the shared
+`engine/frases.js` dictionary, picked with a seed built from the event, so
+every client shows the same line and nothing extra is sent. Play events carry
+`victim` and score events carry `reason` for this. `game.js` skips the first
+render so a mid-game arrival does not replay old barks. The scene draws one
+DOM bubble per seat above its name chip and flips it below when the chip is
+near the top edge; it sits above the HUD because it only lasts a few seconds.
+
 ## Verification
 
 ```

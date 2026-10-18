@@ -136,7 +136,7 @@ export class CaidaGame {
   award(seat, points, reason) {
     if (!points || this.phase === 'finished') return;
     const team = teamOf(this, seat); this.scores[team] += points;
-    this.log('score', seat, `${reason} · +${points}`, { points });
+    this.log('score', seat, `${reason} · +${points}`, { points, reason });
     if (this.scores[team] >= TARGET) {
       this.phase = 'finished'; this.result = { winner: team, reason, counts: this.counts(), bonuses: [], points };
     }
@@ -194,13 +194,14 @@ export class CaidaGame {
     const player = this.players[seat], index = player.hand.findIndex(c => c.id === id);
     if (index < 0) return false;
     const card = player.hand[index], move = previewPlay(this, card, seat);
+    const victim = move.fall ? this.last?.seat ?? null : null;   // who dropped the card that fell
     player.hand.splice(index, 1);
     if (player.announced) { const i = player.announced.ranks.indexOf(card.rank); if (i >= 0) player.announced.ranks.splice(i, 1); }
     if (move.capture.length) {
       player.captured.push(card, ...this.table.filter(c => move.capture.includes(c.id)));
       this.table = this.table.filter(c => !move.capture.includes(c.id)); this.lastCapture = seat; this.last = null;
     } else { this.table.push(card); this.last = { id, seat }; }
-    this.log('play', seat, `${cardName(card)}${move.capture.length ? ` · recoge ${move.capture.length + 1}` : ' · a la mesa'}`, { card, captured: move.capture, fall: move.fall, clean: move.clean });
+    this.log('play', seat, `${cardName(card)}${move.capture.length ? ` · recoge ${move.capture.length + 1}` : ' · a la mesa'}`, { card, captured: move.capture, fall: move.fall, clean: move.clean, victim });
     if (move.points) this.award(seat, move.points, [move.fall ? `Caída de ${card.rank === 10 ? 'sota' : card.rank === 11 ? 'caballo' : card.rank === 12 ? 'rey' : card.rank}` : '', move.clean ? 'Mesa limpia' : ''].filter(Boolean).join(' + '));
     if (this.phase !== 'finished') {
       this.turn = (seat + 1) % this.players.length;

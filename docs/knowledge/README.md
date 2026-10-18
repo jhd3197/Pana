@@ -12,7 +12,7 @@ Written by whoever learned the lesson, human or AI, for whoever comes next.
 |---|---|
 | Starting a game | `AGENTS.md`, then `.\dev.ps1 new-game <id> -Kind table\|live` (`Pana/scripts/templates/`) |
 | Hub and launcher | `launcher.md` |
-| Shared UI and look | `pana-kit.md` (kit, results, icons, colours, touch), `pana-ui.md` (menu, settings, invites) |
+| Shared UI and look | `pana-kit.md` (kit, results, icons, colours, touch), `pana-ui.md` (menu, settings, invites); NPC barks come from `Pana/engine/frases.js` (dichos by mood, seeded `pickLine`, `crude` lines opt-in) |
 | Online rooms | `pana-net.md` (room kit, `TableRoom`, `LiveRoom`), `derrape-online.md` |
 | Characters | `character-reference.md` |
 | Pana Studio and models | `pana-studio.md`, `model-inventory.md`, `shared-props.md`, `shared-arenas.md`, `living-world.md`, `nature-surfaces.md`, `venezuelan-trees.md`, `colonial-houses.md`, `folio-grab-list.md` |

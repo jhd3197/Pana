@@ -10,6 +10,11 @@ becomes the GitHub release's notes.
 
 ### Added
 
+- **The panas at the Caída table talk.** A comic bubble pops over whoever
+  just dealt, sang a canto, made a caída or swept the table, and the
+  victim answers back ("¡Me agarró fuera de base!", "Más salado que pescado
+  en Semana Santa"). Everyone at the table sees the same line.
+
 - **Derrape's Taller is a showroom you shop in with mangos.** The Taller
   page opens with the garage panel docked beside the car: live stat bars,
   one row of tabs and two columns of parts with their stat pills and mango
