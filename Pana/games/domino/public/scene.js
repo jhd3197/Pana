@@ -3,6 +3,7 @@ import * as THREE from 'three';
 import { createTableWorld } from '/engine/table-world.js';
 import { buildCharacter } from '/engine/models/characters/pana/avatar-model.js';
 import { normalizeAvatar } from '/engine/avatar.js';
+import { createSeatBubbles } from '/engine/seat-bubbles.js';
 import { createDominoTable, createDominoChair, createDominoTile } from './table-model.js';
 import { chainLayout } from './tiles.js';
 import { deck, legalEnds } from './rules.js';
@@ -29,6 +30,7 @@ export async function createDominoScene(canvas, { onTile, onEnd, onLoading = () 
     chair.visible=seat<4;scene.add(chair); chairs.push(chair);
     const label = document.createElement('div'); label.className = 'world-label'; label.hidden = true; document.getElementById('world-labels').append(label); labels.push(label);
   }
+  const bubbles = createSeatBubbles(document.getElementById('world-labels'), 6);
   const tiles = new Map();
   for (const tile of deck()) {
     const model = createDominoTile(tile); model.userData.tileId = tile.id; scene.add(model);
@@ -147,7 +149,7 @@ export async function createDominoScene(canvas, { onTile, onEnd, onLoading = () 
   }
   function frame(dt) {
     if (disposed) return;
-    time += dt; actTime = Math.max(0, actTime - dt);
+    time += dt; actTime = Math.max(0, actTime - dt); bubbles.tick(dt);
     camera.position.lerp(desiredCamera, 1 - Math.exp(-dt * 4)); camera.lookAt(target);
     for (const [id, t] of tiles) {
       const lift = id === hover || id === selected ? .1 : 0;
@@ -168,6 +170,7 @@ export async function createDominoScene(canvas, { onTile, onEnd, onLoading = () 
         const half = labels[i].offsetWidth / 2;
         labels[i].style.left = `${THREE.MathUtils.clamp((projected.x * .5 + .5) * innerWidth, half + 8, innerWidth - half - 8)}px`;
         labels[i].style.top = `${(-projected.y * .5 + .5) * innerHeight}px`;
+        bubbles.place(i, (projected.x * .5 + .5) * innerWidth, (-projected.y * .5 + .5) * innerHeight);
       }
     });
     for (const tip of tips) {
@@ -180,10 +183,11 @@ export async function createDominoScene(canvas, { onTile, onEnd, onLoading = () 
   const resize = () => { renderer.setSize(innerWidth, innerHeight); cameraTarget(); }; addEventListener('resize', resize);
   return { scene, camera, renderer, characters, tiles, update, frame,
     setView(value) { cameraMode = value; cameraTarget(); },
+    say: bubbles.say,
     dispose() {
       disposed = true; removeEventListener('resize', resize);
       canvas.removeEventListener('pointermove', move); canvas.removeEventListener('pointerdown', pointerDown); canvas.removeEventListener('pointerup', pointerUp);
-      characters.forEach(c => c?.dispose()); labels.forEach(l => l.remove()); tips.forEach(t => t.element.remove()); tiles.forEach(t => t.model.userData.dispose()); chairs.forEach(c => c.userData.dispose()); table.userData.dispose(); stage.dispose();
+      characters.forEach(c => c?.dispose()); labels.forEach(l => l.remove()); bubbles.dispose(); tips.forEach(t => t.element.remove()); tiles.forEach(t => t.model.userData.dispose()); chairs.forEach(c => c.userData.dispose()); table.userData.dispose(); stage.dispose();
     },
   };
 }

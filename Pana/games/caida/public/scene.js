@@ -3,6 +3,7 @@ import { createTableWorld } from '/engine/table-world.js';
 import { createGameTable, createGameChair } from '/engine/models/props/game-table.js';
 import { buildCharacter } from '/engine/models/characters/pana/avatar-model.js';
 import { normalizeAvatar } from '/engine/avatar.js';
+import { createSeatBubbles } from '/engine/seat-bubbles.js';
 import { createSpanishCard, createScoreToken } from '/engine/models/props/spanish-cards.js';
 import { deck, previewPlay, teamOf, MODES } from './rules.js';
 
@@ -16,7 +17,7 @@ export async function createCaidaScene(canvas, { onCard, onLoading = () => {} } 
   const { renderer, scene, camera, plaza } = stage;
   await new Promise(requestAnimationFrame);
   const table = createGameTable({ feltColor: '#245e50', caption: 'CAÍDA · ENTRE PANAS' }); scene.add(table);
-  const cards = new Map(), chairs = [], characters = [], characterKeys = [], labels = [], bubbles = [], tokens = [];
+  const cards = new Map(), chairs = [], characters = [], characterKeys = [], labels = [], tokens = [];
   let state, ownSeat = 0, selected = null, cameraMode = 'patio', disposed = false, time = 0, hover = null, geometryVersion = '', animationId = 0;
   const desiredCamera = new THREE.Vector3(), target = new THREE.Vector3(), projected = new THREE.Vector3();
   const reduced = matchMedia('(prefers-reduced-motion: reduce)');
@@ -27,9 +28,9 @@ export async function createCaidaScene(canvas, { onCard, onLoading = () => {} } 
   for (let seat = 0; seat < 6; seat++) {
     const chair = createGameChair(); scene.add(chair); chairs.push(chair);
     const label = document.createElement('div'); label.className = 'world-label'; label.hidden = true; document.getElementById('world-labels').append(label); labels.push(label);
-    const bubble = document.createElement('div'); bubble.className = 'world-bubble'; bubble.hidden = true; document.getElementById('world-labels').append(bubble); bubbles.push({ el: bubble, until: 0 });
     const scoreTokens = Array.from({ length: 12 }, () => { const token = createScoreToken(); scene.add(token); return token; }); tokens.push(scoreTokens);
   }
+  const bubbles = createSeatBubbles(document.getElementById('world-labels'), 6);
   const angleOf = seat => seat * Math.PI * 2 / (state?.players.length || 2);
   function cameraTarget(immediate = false) {
     const mobile = innerWidth < 700, angle = angleOf(ownSeat) + (cameraMode === 'mesa' ? .02 : .17);
@@ -120,7 +121,7 @@ export async function createCaidaScene(canvas, { onCard, onLoading = () => {} } 
   const pointerUp = e => { if (down && Math.hypot(down[0] - e.clientX, down[1] - e.clientY) < 12) { const id = pick(e); if (id) onCard?.(id); } down = null; };
   canvas.addEventListener('pointermove', pointerMove); canvas.addEventListener('pointerdown', pointerDown); canvas.addEventListener('pointerup', pointerUp);
   function frame(dt) {
-    if (disposed) return; time += dt; camera.position.lerp(desiredCamera, 1 - Math.exp(-dt * 5)); camera.lookAt(target);
+    if (disposed) return; time += dt; bubbles.tick(dt); camera.position.lerp(desiredCamera, 1 - Math.exp(-dt * 5)); camera.lookAt(target);
     for (const [id, card] of cards) {
       card.lift = Math.max(0, card.lift - dt * 1.6); const dest = card.target.clone(); dest.y += Math.sin(card.lift * Math.PI) * .7 + (id === hover ? .08 : 0);
       card.model.position.lerp(dest, reduced.matches ? 1 : 1 - Math.exp(-dt * 9)); card.model.quaternion.slerp(card.rotation, reduced.matches ? 1 : 1 - Math.exp(-dt * 10));
@@ -132,20 +133,16 @@ export async function createCaidaScene(canvas, { onCard, onLoading = () => {} } 
       c.arms.forEach((arm, j) => arm.rotation.set(-.62 - (active ? .08 : 0), 0, (j ? -1 : 1) * .13));
       projected.copy(c.group.position); projected.y = 3.1; projected.project(camera);
       labels[i].style.left = `${THREE.MathUtils.clamp((projected.x * .5 + .5) * innerWidth, 65, innerWidth - 65)}px`; labels[i].style.top = `${(-projected.y * .5 + .5) * innerHeight}px`;
-      const bubble = bubbles[i]; bubble.el.hidden = time > bubble.until || !state?.players[i];
-      if (!bubble.el.hidden) {   // above the name chip; far seats near the top edge get it below
-        const x = labels[i].style.left, y = (-projected.y * .5 + .5) * innerHeight, below = y - 24 - bubble.el.offsetHeight < 8;
-        bubble.el.classList.toggle('below', below); bubble.el.style.left = x; bubble.el.style.top = `${below ? y + 24 : y - 24}px`;
-      }
+      bubbles.place(i, (projected.x * .5 + .5) * innerWidth, (-projected.y * .5 + .5) * innerHeight);
     });
     stage.draw(dt);
   }
   const resize = () => { renderer.setSize(innerWidth, innerHeight); cameraTarget(); }; addEventListener('resize', resize);
   return { scene, camera, renderer, cards, characters, update, frame, setView(value) { cameraMode = value; cameraTarget(); },
-    say(seat, text, duration = 1.6) { const bubble = bubbles[seat]; if (!bubble) return; bubble.el.textContent = text; bubble.until = time + duration; bubble.el.classList.remove('pop'); void bubble.el.offsetWidth; bubble.el.classList.add('pop'); },
+    say: bubbles.say,
     dispose() {
       disposed = true; removeEventListener('resize', resize); canvas.removeEventListener('pointermove', pointerMove); canvas.removeEventListener('pointerdown', pointerDown); canvas.removeEventListener('pointerup', pointerUp);
-      cards.forEach(c => c.model.userData.dispose()); tokens.flat().forEach(t => t.userData.dispose()); characters.forEach(c => c?.dispose()); chairs.forEach(c => c.userData.dispose()); labels.forEach(l => l.remove()); bubbles.forEach(b => b.el.remove()); table.userData.dispose(); stage.dispose();
+      cards.forEach(c => c.model.userData.dispose()); tokens.flat().forEach(t => t.userData.dispose()); characters.forEach(c => c?.dispose()); chairs.forEach(c => c.userData.dispose()); labels.forEach(l => l.remove()); bubbles.dispose(); table.userData.dispose(); stage.dispose();
     },
   };
 }

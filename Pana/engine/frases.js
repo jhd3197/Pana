@@ -10,6 +10,7 @@ export const FRASES = {
   sorpresa: ['¡Me agarró fuera de base!', '¡Ñooo!', '¡Epa!', '¡Qué molleja!'],
   queja: ['La masa no está pa\' bollo', 'Estoy arrecho', 'Tú sabes cómo es', 'Llevándola'],
   salado: ['Más salado que pescado en Semana Santa', '¡Qué pavoso!'],
+  aburrido: ['Más aburrido que mocho en piñata', '¿Y la papa?'],
   ñapa: ['¡Con ñapa!', '¡Ñapa pa\' mí!', 'El que no llora no mama'],
   burla: ['Te quedaste sin el chivo y sin el mecate', 'Puro camburipeo', 'No llevas aura'],
   derrota: ['No nos despechamos, nos enguayabamos', 'Te perdiste del mapa', '¡Vamos por la revancha!'],

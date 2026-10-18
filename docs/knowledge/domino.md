@@ -64,6 +64,20 @@ The scene keeps one mesh group for each tile in the selected deck and tweens its
 Opponents' racks always use opaque backs, including from the higher camera.
 The DOM rack remains available for keyboard, screen readers and small screens.
 
+## Barks
+
+`public/barks.js` turns new history events into speech bubbles over the
+seats (`engine/seat-bubbles.js`, lines from `engine/frases.js`, seeded by the
+event so every client agrees). Opening with the 6-6 is la cochina; a double
+and the last tile in hand get a line; a pass says ¡Paso! the first time,
+then aburrido and salado for the same pana that mano. When a mano ends
+(`ended`: the render where the phase leaves `playing`), the winner shouts
+¡Dominó! or ¡Capicúa! (or ¡Tranque! on a block), the partner cheers and a
+rival grumbles; a finished match adds cierre/derrota. History events carry
+an `id` that counts up within the mano for this. The results dialog waits
+1.6 s after a live mano ends so those barks are seen; joining an ended
+mano shows it at once. Quick chat also appears in the speaker's bubble.
+
 ## Proof
 
 - `node --test Pana/games/domino/tests/rules.test.js`: 10 rule/invariant tests,

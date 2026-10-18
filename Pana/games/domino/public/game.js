@@ -9,6 +9,7 @@ import { fillRoster } from '/engine/results.js';
 import { inviteUrl, newRoomCode, roomFromUrl } from '/engine/invite.js';
 import { DominoRoom } from './network.js';
 import { legalEnds, legalMoves, chooseMove, pips, TARGET } from './rules.js';
+import { barksFor } from './barks.js';
 import { domino } from './tiles.js';
 
 const $ = id => document.getElementById(id);
@@ -19,6 +20,7 @@ const name = loadName(), avatar = loadAvatar();
 let chatSeen=0;
 let selected = null, shownResult = '', toastTimer, previousEvent = '', previousPhase = 'lobby';
 let quiet=false;
+let barkRound = -1, barkId = 0, barksPrimed = false, resultTimer;
 let world = null, worldReady = false, view = 'plaza', stopped = false;
 
 // Audio is optional; a delayed audio module never prevents the table from loading.
@@ -114,7 +116,7 @@ function render(state) {
   roomOptions.update(state.options,room.isHost&&room.connected&&state.phase==='lobby');
   $('deck-copy').textContent=`Doble ${maxPip(state.options)} · ${state.options.handSize} fichas por pana · ${state.players.length} puestos · sin robo`;
   $('quick-chat').hidden=!state.options.quickChat||room.seat<0;
-  const chat=state.chat?.at(-1);if(chat&&chat.id!==chatSeen){chatSeen=chat.id;notify(`${chat.name}: ${CHAT[chat.message]}`);}
+  const chat=state.chat?.at(-1);if(chat&&chat.id!==chatSeen){chatSeen=chat.id;notify(`${chat.name}: ${CHAT[chat.message]}`);world?.say(chat.seat,CHAT[chat.message],2);}
   seating.update(state.players, { teams: state.options.mode==='teams', enabled: room.connected && state.phase === 'lobby', canArrange: room.isHost, members: room.link?.state.players || [], ownId: room.id, hostId: room.hostId });
   $('organize-table').disabled = !room.connected || !room.isHost;
   mapPicker.update(state.mapId, room.connected && room.isHost && state.phase === 'lobby');
@@ -144,8 +146,13 @@ function render(state) {
   const resultId = `${state.round}:${state.phase}`;
   if (ended) {
     renderResult(state, team);
-    if (shownResult !== resultId) { shownResult = resultId; showResult(); }
-  } else { if ($('result').open) closeResult(); if (state.phase === 'playing' && previousPhase !== 'playing') shownResult = ''; }
+    // A mano that just ended waits a beat so its barks are seen before the results cover the table.
+    if (shownResult !== resultId) { shownResult = resultId; clearTimeout(resultTimer); resultTimer = setTimeout(showResult, previousPhase === 'playing' ? 1600 : 0); }
+  } else { clearTimeout(resultTimer); if ($('result').open) closeResult(); if (state.phase === 'playing' && previousPhase !== 'playing') shownResult = ''; }
+  // Arriving mid-game replays the whole history: only bark at what happens live.
+  const fresh = state.round === barkRound ? state.history.filter(e => e.id > barkId) : state.history;
+  if (barksPrimed) for (const bark of barksFor(state, fresh, { ended: ended && previousPhase === 'playing' })) world.say(bark.seat, bark.text, bark.time);
+  barkRound = state.round; barkId = state.history.at(-1)?.id || 0; if (world) barksPrimed = true;
   previousPhase = state.phase;
 }
 
@@ -240,6 +247,7 @@ function renderResult(state, team) {
   $('next-round').disabled = !room.isHost || !room.connected;
 }
 function showResult() {
+  if (!['round-over', 'finished'].includes(room.state.phase)) return;
   menu.close(); $('result').hidden = false;
   if (!$('result').open) $('result').showModal();
 }
@@ -264,7 +272,7 @@ const timer = setInterval(() => {
 let frameTime = performance.now();
 function frame(now) { if (stopped) return; const dt = Math.min(.05, (now - frameTime) / 1000); frameTime = now; if(!quiet)world?.frame(dt); requestAnimationFrame(frame); }
 requestAnimationFrame(frame);
-addEventListener('pagehide', () => { stopped = true; clearInterval(timer); clearTimeout(toastTimer); roomOptions.dispose();room.dispose(); world?.dispose(); }, { once: true });
+addEventListener('pagehide', () => { stopped = true; clearInterval(timer); clearTimeout(toastTimer); clearTimeout(resultTimer); roomOptions.dispose();room.dispose(); world?.dispose(); }, { once: true });
 render(room.state); room.connect();
 export const sceneReady = import('./scene.js').then(module => module.createDominoScene($('world'), { onTile: selectTile, onEnd: playSelected, onLoading: message => { $('loading-copy').textContent = message; } })).then(async scene => {
   if (stopped) { scene.dispose(); return; }

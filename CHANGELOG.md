@@ -10,6 +10,12 @@ becomes the GitHub release's notes.
 
 ### Added
 
+- **The dominó table talks back too.** Open with the double six and you
+  salí con la cochina; doubles, a last tile, a pass ("Ando limpio", then
+  "Más aburrido que mocho en piñata"), ¡Dominó!, ¡Capicúa! and ¡Tranque!
+  pop over the pana who did it, and quick chat now shows over the speaker.
+  The results wait a moment so you can see the last shout.
+
 - **The panas at the Caída table talk.** A comic bubble pops over whoever
   just dealt, sang a canto, made a caída or swept the table, and the
   victim answers back ("¡Me agarró fuera de base!", "Más salado que pescado

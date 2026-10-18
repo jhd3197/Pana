@@ -125,9 +125,10 @@ when the match ends. Plain drops stay quiet. Lines come from the shared
 `engine/frases.js` dictionary, picked with a seed built from the event, so
 every client shows the same line and nothing extra is sent. Play events carry
 `victim` and score events carry `reason` for this. `game.js` skips the first
-render so a mid-game arrival does not replay old barks. The scene draws one
-DOM bubble per seat above its name chip and flips it below when the chip is
-near the top edge; it sits above the HUD because it only lasts a few seconds.
+render so a mid-game arrival does not replay old barks. The scene draws them with
+the shared `engine/seat-bubbles.js` (`.pk-bubble` in kit.css): one bubble per
+seat above its name chip, flipped below when the chip is near the top edge,
+and above the HUD because it only lasts a few seconds.
 
 ## Verification
 

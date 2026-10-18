@@ -167,7 +167,8 @@ export class DominoGame {
     if(this.phase==='finished'){const best=Math.max(...this.scores),leaders=this.scores.map((score,i)=>score===best?i:-1).filter(i=>i>=0);this.result.matchWinner=leaders.length===1?leaders[0]:null;}
   }
 
-  record(event) { this.history.push(event); if (this.history.length > 32) this.history.shift(); }
+  // Ids count up within a round (history resets on start), so clients can tell new events apart.
+  record(event) { event.id = (this.history.at(-1)?.id || 0) + 1; this.history.push(event); if (this.history.length > 32) this.history.shift(); }
 
   accept(id, data, hostId) {
     if (!Number.isSafeInteger(data.seq) || data.seq <= (this.ledger[id] || 0) || data.revision !== this.revision) return false;

@@ -31,6 +31,8 @@
   --pk-teal-edge: #148f78;
   --pk-cocoa: #8b5e3c;
   --pk-hud: rgba(14, 11, 36, .88); /* HUD cards over a 3D scene */
+  --pk-bubble-ink: #16161a;   /* comic speech bubbles (engine/seat-bubbles.js) */
+  --pk-bubble-paper: #fff;
 
   /* per-game accent: games override on body */
   --pk-game: var(--pk-yellow);
@@ -242,6 +244,19 @@
 .pk-slot > .pk-slot-n { position: absolute; top: 5px; left: 8px; font-size: 11px; color: var(--pk-muted); }
 .pk-slot > .pk-slot-count { position: absolute; top: 4px; right: 7px; color: var(--pk-yellow); font-weight: 900; }
 .pk-slot.is-active { border-color: var(--pk-yellow); background: rgba(255, 198, 41, .1); }
+
+/* speech bubble over a seated pana: engine/seat-bubbles.js. The same white
+   comic bubble Derrape draws over its cars; short-lived, so it may cover the HUD. */
+.pk-bubble{position:absolute;z-index:5;transform:translate(-50%,-100%);max-width:220px;padding:7px 14px 5px;border:3px solid var(--pk-bubble-ink);border-radius:18px;background:var(--pk-bubble-paper);color:var(--pk-bubble-ink);font:20px/1.05 var(--pk-display);text-align:center;box-shadow:0 4px 0 rgba(0,0,0,.25);pointer-events:none}
+.pk-bubble::after{content:'';position:absolute;left:50%;bottom:-11px;width:16px;height:16px;border:solid var(--pk-bubble-ink);border-width:0 3px 3px 0;background:var(--pk-bubble-paper);transform:translateX(-50%) rotate(45deg)}
+.pk-bubble.below{transform:translate(-50%,0)}
+.pk-bubble.below::after{top:-11px;bottom:auto;transform:translateX(-50%) rotate(225deg)}
+.pk-bubble.pop{animation:pk-bubble-pop .22s cubic-bezier(.3,1.6,.6,1)}
+.pk-bubble.below.pop{animation-name:pk-bubble-pop-below}
+@keyframes pk-bubble-pop{from{transform:translate(-50%,-100%) scale(.4)}}
+@keyframes pk-bubble-pop-below{from{transform:translate(-50%,0) scale(.4)}}
+@media (max-width: 720px){.pk-bubble{max-width:150px;padding:5px 10px 3px;font-size:15px}}
+@media (prefers-reduced-motion: reduce){.pk-bubble.pop{animation:none}}
 
 /* tilted shout: ¡VUELTA FINAL!, ¡TRONCO! */
 .pk-banner {
