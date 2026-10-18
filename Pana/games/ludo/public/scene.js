@@ -90,5 +90,5 @@ export function createLudoScene(canvas, { onPiece } = {}) {
   function setView(top){camera.position.set(0,top?19:15,top?.01:10);camera.lookAt(0,1,0);}
   function projectPiece(seat,piece){const p=pawns.find(p=>p.seat===seat&&p.piece===piece),v=p.model.position.clone();v.y+=.2;v.project(camera);const r=canvas.getBoundingClientRect();return{x:r.left+(v.x+1)*r.width/2,y:r.top+(1-v.y)*r.height/2};}
   function dispose(){disposed=true;unbind();canvas.removeEventListener('click',click);canvas.removeEventListener('pointermove',hover);characters.forEach(c=>c.dispose());disposeModel(scene);renderer.dispose();}
-  return {update,frame,setView,dispose,characters,pawns,projectPiece,renderer};
+  return {update,frame,setView,dispose,characters,pawns,projectPiece,renderer,scene,camera};
 }

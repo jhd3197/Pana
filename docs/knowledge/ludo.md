@@ -34,6 +34,11 @@ This uses the existing trusted-friends host model, not server anti-cheat.
 
 ## Visuals and controls
 
+The shared illustrated entry loads the table behind the lobby and waits for
+`sceneReady` (textures, shader compilation and first render). `scene.js` exposes
+its renderer, scene and camera for this preparation. Lobby portraits use the
+shared cache and the supplied Ludo illustration; readiness uses shared rooms.
+
 `board-model.js` owns the board, numbered pawn and six-face die factories, also
 registered in Studio. The playing scene and hub preview share those factories.
 The scene uses the shared game table/chairs and actual saved Pana avatars.

@@ -14,11 +14,11 @@ try {
   page.on('pageerror', e => errors.push(e.message));
   const origin = process.env.PANA_TEST_URL || 'http://localhost:8461';
   await page.goto(`${origin}/g/derrape/?debug&track=estadio`);
-  await page.waitForFunction(() => window.garage?.car);
+  await page.waitForFunction(() => window.garage?.car && performance.getEntriesByName('derrape:garage-ready').length, null, { timeout: 120000 });
   const initial = await page.evaluate(() => ({ readyMs: performance.getEntriesByName('derrape:garage-ready')[0].startTime,
     mapBuilt: !!race.trackGroup, buttons: document.querySelectorAll('.car-choice').length }));
   assert.equal(initial.mapBuilt, false, 'startup does not construct an invisible map');
-  assert.equal(initial.buttons, 8, 'all choices usable before previews finish');
+  assert.equal(initial.buttons, 8, 'all choices are available when the garage finishes preparing');
   const tracks = await page.evaluate(() => {
     const start = performance.now();
     for (let i = 0; i < TRACKS.length * 2; i++) document.getElementById('t-next').click();

@@ -1,4 +1,5 @@
 import { loadName, loadAvatar } from '/engine/avatar.js';
+import { prepareScene } from '/engine/game-load.js';
 import { createGameMenu, toggleMute } from '/engine/ui.js';
 import { fillRoster } from '/engine/results.js';
 import { inviteUrl, newRoomCode, roomFromUrl } from '/engine/invite.js';
@@ -89,8 +90,8 @@ let frameTime=performance.now();
 function frame(now){if(stopped)return;world?.frame(Math.min(.05,(now-frameTime)/1000));frameTime=now;requestAnimationFrame(frame);}
 requestAnimationFrame(frame);
 render(room.state);room.connect();
-import('./scene.js').then(({createLudoScene})=>{
-  if(stopped)return;world=createLudoScene($('world'),{onPiece:piece=>act('move',{piece})});render(room.state);$('loading').hidden=true;
-}).catch(error=>{console.error(error);$('loading-copy').textContent='No pudimos abrir la mesa. Comprueba tu conexión y WebGL.';const button=document.createElement('button');button.className='pk-btn';button.textContent='Reintentar';button.onclick=()=>location.reload();$('loading').append(button);});
+export const sceneReady=import('./scene.js').then(async({createLudoScene})=>{
+  if(stopped)return;world=createLudoScene($('world'),{onPiece:piece=>act('move',{piece})});await prepareScene(world);render(room.state);$('loading').hidden=true;
+}).catch(error=>{console.error(error);$('loading-copy').textContent='No pudimos abrir la mesa. Comprueba tu conexión y WebGL.';const button=document.createElement('button');button.className='pk-btn';button.textContent='Reintentar';button.onclick=()=>location.reload();$('loading').append(button);throw error;});
 addEventListener('pagehide',()=>{stopped=true;clearInterval(timer);room.dispose();world?.dispose();},{once:true});
 if(params.has('debug'))window.ludoDebug={room,menu,chooseMove,legalMoves,get world(){return world;}};

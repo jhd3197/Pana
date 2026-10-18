@@ -35,7 +35,7 @@ try {
   assert.equal(await guest.evaluate(() => ['countdown', 'racing'].includes(window.curiara.state.phase)), true);
   await host.context().close(); await guest.context().close();
   console.log('PASS two-client Curiara: actual loaded state, readiness hold, host start, both enter game.');
-  const games = process.env.PANA_LOBBY_GAMES?.split(',').filter(Boolean) || ['billar', 'bululu', 'caida', 'cocina', 'criollas', 'domino', 'embuste', 'escondidas', 'galope', 'pintura', 'poquer', 'reliquia'];
+  const games = process.env.PANA_LOBBY_GAMES?.split(',').filter(Boolean) || ['billar', 'bululu', 'caida', 'cocina', 'criollas', 'domino', 'embuste', 'escondidas', 'galope', 'ludo', 'pintura', 'poquer', 'reliquia'];
   for (const game of games) {
     const page = await open(game, 'Pana', 'qa-' + game + '-' + Date.now());
     assert.equal(await page.locator('#pana-lobby-shell').isVisible(), true, game);
