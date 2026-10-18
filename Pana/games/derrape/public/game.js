@@ -29,7 +29,7 @@ import { CUPS, cupById, cupTracks, difficultyById, rubberBand, cleanLaps, BALLOO
 import { abandonCup, advanceStage, beginStage, createCupSession, cupTrophy, finalizeStage, markRacing, markStarted, retryStage, seededOrder, seededUnit, standings as championshipStandings } from './cup-rules.js';
 import { advanceLap, isOpenEdge, offCourse, stuckStep, ALL_SECTORS, RESCUE_TIME, OUT_TIME, STUCK_TIME, OPEN_MARGIN } from './course-rules.js';
 import { createHazards } from './hazards.js';
-import { createMusic, TRACK_STYLE } from './music.js';
+import { createMusic, TRACK_STYLE, GARAGE_SONG, RESULTS_SONG, songFor, finishSting } from './music.js';
 import { racerPortrait } from './racer-portrait.js';
 import { batchRacer } from './racer-render.js';
 import { createWaterAmbience } from './water-ambience.js';
@@ -339,6 +339,11 @@ const race = {
 race.puffs = new Puffs(race.scene);
 race.shockwaves = new Shockwaves(race.scene);
 const music = createMusic(sound);
+// Garage music starts with the first tap (browsers keep audio locked until then).
+function garageMusic() {
+  if (mode === 'garage' && sound.ctx && music.song !== GARAGE_SONG) music.play(GARAGE_SONG, { fallback: 'calipso' });
+}
+for (const type of ['pointerdown', 'keydown']) addEventListener(type, () => setTimeout(garageMusic), true);
 const waterAmbience = createWaterAmbience(sound);
 
 // Weather: angled rain + puddle ripples + lightning on Selva, snow/hail on Páramo.
@@ -1093,6 +1098,7 @@ async function startRace(playerIndex, wheelId = garage.wheel, roster = null) {
   $('loading-meta').textContent = race.cup ? `${race.cup.definition.name} · Carrera ${race.cup.session.stageIndex + 1} de 4 · ${race.laps} ${race.laps === 1 ? 'vuelta' : 'vueltas'}`
     : race.mode === 'battle' ? `Derrape · Batalla de globos · ${def.name}` : `Derrape · Pista ${trackIndex + 1} de ${TRACKS.length} · ${race.laps} ${race.laps === 1 ? 'vuelta' : 'vueltas'}`;
   $('loading-blurb').textContent = def.blurb;
+  music.preload(songFor(def.id, race.mode));
   $('loading-tip-icon').innerHTML = tip[0];
   $('loading-tip').textContent = tip[1];
   $('play').disabled = true;
@@ -1228,7 +1234,7 @@ async function startRace(playerIndex, wheelId = garage.wheel, roster = null) {
     if (race.cup && !roster) markRacing(race.cup.session);
     race.loadingRaceId = 0;
     race.state = 'count';
-    music.play(TRACK_STYLE[T.id]);
+    music.play(songFor(T.id, race.mode), { fallback: TRACK_STYLE[T.id] });
     $('count').textContent = '3';
     $('garage').classList.add('hidden');
     $('race').classList.remove('hidden');
@@ -1278,6 +1284,7 @@ function toGarage() {
   $('garage').classList.remove('hidden');
   garage.controls.enabled = true;
   mode = 'garage';
+  garageMusic();
   if (net) renderLobby(net.state);
   else {
     if (race.cup) abandonCup(race.cup.session);
@@ -2139,6 +2146,7 @@ function updateRace(dt, presentation = true) {
     shout('¡Vuelta final!');
     music.setTempo(1.14);
   }
+  music.muffle(p.spin > 0 && !race.p2); // a spin-out dulls the band until you recover
   showItem(p);
   readRoad(p, dt);
   if (race.p2) showP2(order);
@@ -2416,6 +2424,9 @@ function finish() {
     $('result-time').textContent = `${T.name} · batalla de globos · ${p.balloons} ${p.balloons === 1 ? 'globo' : 'globos'} · ${p.def.name}`
       + (p.balloons === 0 ? ` · aguantaste ${clockText(p.outAt ?? race.clock)}` : '');
   }
+  const won = race.mode === 'battle' ? p.balloons > 0 && standings()[0] === p : p.done && !p.dns && place === 1;
+  music.play(RESULTS_SONG, { fallback: 'calipso' });
+  music.sting(finishSting(won));
   if (race.cup) {
     scoreCup();
     const session = race.cup.session;

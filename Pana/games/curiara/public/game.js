@@ -275,7 +275,7 @@ function updateUI() {
     fillRoster($('result-board'), ordered.map((b, i) => ({ rank: i + 1, name: crewName(b) + (b.crew.every(c => c.bot || c.empty) ? ' · del río' : ''), detail: `${b.remazos} remazos${b.capsizes ? ` · volcó ${b.capsizes}` : ''}`, end: b.finish === null ? 'Sin llegar' : formatTime(b.finish), me: b === own })));
     if (lastPhase !== state.phase) sound.tone(660, 0, .25, 'triangle', .08);
   }
-  if (state.phase === 'racing' && !music.playing && !paused) music.play('amazonas');
+  if (state.phase === 'racing' && !music.playing && !paused) music.play('curiara-amazonas', { fallback: 'amazonas' });
   if (state.phase !== 'racing' && state.phase !== 'countdown' && music.playing) music.stop();
   const lead = ordered[0];
   music.setTempo(state.slowmo > 0 ? .6 : lead && RIVER.LENGTH - lead.progress < 120 ? 1.14 : 1);

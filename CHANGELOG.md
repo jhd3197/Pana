@@ -10,6 +10,11 @@ becomes the GitHub release's notes.
 
 ### Added
 
+- **Race to real recorded songs in Derrape and Curiara, with a separate Música slider.**
+  Every circuit has its own song (joropo in Los Llanos, gaita in the plaza, calipso
+  in Chi Chi…), plus garage, battle and results music and a finish fanfare. The
+  music speeds up on the final lap and dulls while you spin out.
+
 - **See interaction progress while reviving panas and turning Reliquia's wheels.**
   The game now attaches the shared progress ring's mesh correctly.
 
