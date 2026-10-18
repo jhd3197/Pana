@@ -15,6 +15,7 @@ import { stalactiteCluster } from '/engine/models/props/caves.js';
 import { stalagmites } from '/engine/models/props/ruins.js';
 import { mineSupport, mineLanternPost, mineCart, mineTrack, mineGate } from '/engine/models/props/mine.js';
 import { saltPool } from '/engine/models/props/saltworks.js';
+import { rockArch } from '/engine/models/props/mountain.js';
 
 export const SALT_CAVE = {
   salt: 0xffe6ef, rock: 0xe08fb8, rockDeep: 0xa65a9c, floor: 0xf0b0cc,
@@ -76,7 +77,7 @@ export function tunnelMouths(T, cave, { widthAt, heightAt }, land, ground, { nam
   const inLid = i => dOf[i] < widthAt(uOf[i]) + 12 && ((uOf[i] >= cave.from && uOf[i] <= cave.from + reach) || (uOf[i] <= cave.to && uOf[i] >= cave.to - reach));
   for (let t = 0; t < index.length; t += 3) if (!(inLid(index[t]) || inLid(index[t + 1]) || inLid(index[t + 2]))) kept.push(index[t], index[t + 1], index[t + 2]);
   geo.setIndex(kept);
-  const rock = material ?? M(0xf6e4ec, { roughness: .9, emissive: 0x7a3a65, emissiveIntensity: .3, side: THREE.DoubleSide }), glints = [];
+  const rock = material ?? M(0xf6e4ec, { roughness: .9, emissive: 0x7a3a65, emissiveIntensity: .3, side: THREE.DoubleSide });
   const ribbon = (u0, u1, height) => {
     const pos = [], idx = [], cols = 16, rows = 8;
     for (let r = 0; r <= rows; r++) for (let c = 0; c <= cols; c++) {
@@ -96,27 +97,57 @@ export function tunnelMouths(T, cave, { widthAt, heightAt }, land, ground, { nam
     // Lid over the first metres of tunnel, apron in front of the face.
     group.add(ribbon(u, u + dir * reach * 1.1, (p) => ground(p.x, p.z) + .05));
     group.add(ribbon(u - dir * 9 / T.TOTAL, u, (p, uu) => { const n = T.nearest(p.x, p.z), road = T.heightAtS(uu * T.TOTAL) - .65; return mix(road, ground(p.x, p.z), smooth(n.d, T.HW + 3, T.HW + 14)) - .04; }));
-    // Crystals crowd the cut face around the opening.
-    for (let k = 0; k < 9; k++) {
-      const x = (k / 8 * 2 - 1) * (w + 8), y = Math.abs(x) < w ? h + 1 + (k % 3) : 1 + (k % 4) * 3;
-      glints.push({ x: q.x + Math.cos(q.h) * x, y: q.y + y, z: q.z - Math.sin(q.h) * x, normal: [-Math.sin(q.h) * dir, .6, -Math.cos(q.h) * dir], size: 1.6 + (k % 3), color: k % 5 });
-    }
+    // A library rock arch in salt colours frames the opening in the cut face.
+    const arch = rockArch({ span: w - 1, height: h + 1, depth: 6, seed: 211 + dir, color: 0xf1d3df });
+    arch.position.set(q.x, q.y - .8, q.z); arch.rotation.y = q.h + (dir > 0 ? Math.PI : 0); group.add(arch);
     const gate = mineGate({ span: T.HW + 3, height: Math.min(11, h - 1) }); gate.position.set(q.x, q.y - .3, q.z); gate.rotation.y = q.h + (dir > 0 ? Math.PI : 0); gate.translateZ(.8); group.add(gate);
   }
-  const crystals = crystalField(glints, { palette: SALT_CAVE.crystals, seed: 97, glow: 1.3 }); group.add(crystals);
-  group.userData.tick = crystals.userData.tick;
+  group.userData.tick = () => {};
   group.name = `${name}-mouths`; return group;
 }
 
 // Pink walls deepening to violet under the dome, with a soft emissive so the
 // cave stays candy-coloured where no light reaches.
-// `dim` is the mysterious deep mine: violet rock, a faint glow, crystals carry the light.
-function tintShell(shell, dim) {
-  const m = shell.children[0], c = m.geometry.attributes.color;
-  const ring = (dim ? [0x7a4a7a, 0x6a3f72, 0x4f3170, 0x3a2a66, 0x4f3170, 0x6a3f72, 0x7a4a7a] : [SALT_CAVE.floor, SALT_CAVE.rock, 0xd070b0, 0xa66ad0, 0xd070b0, SALT_CAVE.rock, SALT_CAVE.floor]).map(h => new THREE.Color(h));
+// Colour a hollowGallery shell by profile vertex (floor edge, wall top,
+// shoulder, crown) and give it a soft glow so a cave never reads dark.
+export function tintShell(shell, { ring, emissive, intensity = .5 }) {
+  const m = shell.children[0], c = m.geometry.attributes.color, colours = [...ring, ...ring.slice(0, 3).reverse()].map(h => new THREE.Color(h));
   const tint = new THREE.Color();
-  for (let i = 0; i < c.count; i++) { tint.copy(ring[i % 7]).multiplyScalar(.9 + .2 * Math.sin(i * 1.7) * Math.sin(i * .31)); c.setXYZ(i, tint.r, tint.g, tint.b); }
-  m.material = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: .8, flatShading: true, side: THREE.DoubleSide, emissive: dim ? 0x2a1040 : 0x7a2860, emissiveIntensity: dim ? .5 : .6 });
+  for (let i = 0; i < c.count; i++) { tint.copy(colours[i % 7]).multiplyScalar(.9 + .2 * Math.sin(i * 1.7) * Math.sin(i * .31)); c.setXYZ(i, tint.r, tint.g, tint.b); }
+  m.material = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: .8, flatShading: true, side: THREE.DoubleSide, emissive, emissiveIntensity: intensity });
+}
+// `dim` is the mysterious deep mine: violet rock, a faint glow, crystals carry the light.
+const SALT_SHELL = { ring: [SALT_CAVE.floor, SALT_CAVE.rock, 0xd070b0, 0xa66ad0], emissive: 0x7a2860, intensity: .6 };
+const DIM_SHELL = { ring: [0x7a4a7a, 0x6a3f72, 0x4f3170, 0x3a2a66], emissive: 0x2a1040, intensity: .5 };
+
+// Crystal clusters stuck to a shell: on the walls, the shoulders, the crown
+// and the floor, each embedded in the rock and pointing out of its surface.
+// One instanced field per stretch of route so distant halls cull.
+export function caveCrystals(T, cave, { widthAt }, shell, { palette, seed = 31, step = 6, stretch = .05, glow = 1.4, density = 1, avoid = () => false, name = 'cave-crystals' } = {}) {
+  const group = new THREE.Group(), random = rng(seed), ticks = [], surface = shell.userData.corridor.surface;
+  const skylit = u => cave.skylights.some(([a, b]) => u > a - .006 && u < b + .006);
+  for (let u0 = cave.from; u0 < cave.to; u0 += stretch) {
+    const clusters = [], colour = () => Math.floor(random() * palette.length);
+    for (let u = u0 + .002; u < Math.min(u0 + stretch, cave.to - .004); u += step / T.TOTAL) for (const side of [-1, 1]) {
+      const w = widthAt(u), y0 = T.heightAtS(u * T.TOTAL), p0 = placeOnTrack(T, u * T.TOTAL, 0), n = [side * Math.cos(p0.h), 0, -side * Math.sin(p0.h)];
+      const stick = (off, normal, size) => { const q = placeOnTrack(T, u * T.TOTAL, off); clusters.push({ x: q.x, y: y0 + surface(u, off) + .35, z: q.z, normal, size, color: colour() }); };
+      for (let k = 0; k < 2 * density; k++) {
+        // The vertical wall: x = ±w from 5 m below the road to 10.5 m above it.
+        const q = placeOnTrack(T, u * T.TOTAL, side * (w + .6)), big = random() < .25;
+        clusters.push({ x: q.x, y: y0 + .3 + random() * (k ? 10 : 4), z: q.z, normal: [n[0], .3 + random() * .5, n[2]], size: big ? 2.4 + random() * 1.4 : 1 + random() * 1.4, color: colour() });
+      }
+      if (random() < .5 * density) stick(side * w * (.8 + random() * .18), [n[0] * .8, -.5, n[2] * .8], 1 + random() * 1.3);
+      if (random() < .5 * density && !skylit(u)) stick(side * w * random() * .7, [n[0] * .25, -1, n[2] * .25], 1 + random() * 1.5);
+      if (random() < .45 * density) {
+        const q = placeOnTrack(T, u * T.TOTAL, side * (T.HW + 5 + random() * Math.max(2, w - T.HW - 12)));
+        if (!avoid(q.x, q.z)) clusters.push({ x: q.x, y: y0 - .6, z: q.z, normal: [n[0] * .3 + (random() - .5) * .4, 1, n[2] * .3], size: .9 + random() * 2, color: colour() });
+      }
+    }
+    const field = crystalField(clusters, { palette, seed: seed + Math.round(u0 * 1000), glow, pulse: .3, brightest: 0 });
+    field.name = name; group.add(field); ticks.push(field.userData.tick);
+  }
+  group.name = name; group.userData.tick = t => ticks.forEach(tick => tick(t));
+  return group;
 }
 
 export function saltCave(T, cave, profile, { groundAt, seed = 207, name = 'salt-cave', dim = false, floor = false } = {}) {
@@ -127,7 +158,7 @@ export function saltCave(T, cave, profile, { groundAt, seed = 207, name = 'salt-
   const skylit = u => cave.skylights.some(([a, b]) => u > a - .006 && u < b + .006);
 
   const shell = hollowGallery(T, { from: cave.from, to: cave.to, skylights: cave.skylights, widthAt, heightAt, color: SALT_CAVE.rock, name: `${name}-shell` });
-  tintShell(shell, dim); group.add(shell);
+  tintShell(shell, dim ? DIM_SHELL : SALT_SHELL); group.add(shell);
   // Under a flat there is no terrain below the shell: give it a salt floor.
   if (floor) {
     const pos = [], col = [], idx = [], n = Math.ceil((cave.to - cave.from) * T.TOTAL / 3), cols = 8, tint = new THREE.Color();
@@ -177,29 +208,10 @@ export function saltCave(T, cave, profile, { groundAt, seed = 207, name = 'salt-
     pools.push({ x: (chan[0][0] + chan.at(-1)[0]) / 2, z: (chan[0][1] + chan.at(-1)[1]) / 2, r: 24 });
   }
 
-  // Crystals on walls, dome and floor: one instanced field per stretch so
-  // far halls cull. Giants in each hall carry the only real lights.
-  const stretch = .05; let fields = 0;
-  for (let u0 = cave.from; u0 < cave.to; u0 += stretch) {
-    const clusters = [];
-    for (let u = u0 + .002; u < Math.min(u0 + stretch, cave.to - .004); u += 6 / T.TOTAL) for (const side of [-1, 1]) {
-      const w = widthAt(u), h = heightAt(u), y0 = road(u), n = inward(at(u, 0), side);
-      for (let k = 0; k < 2; k++) {
-        const wall = at(u + (random() - .5) * .002, side * (w - 1.2)), big = random() < .25;
-        clusters.push({ x: wall.x, y: y0 + .3 + random() * (k ? 11 : 4), z: wall.z, normal: [n[0], .3 + random() * .5, n[2]], size: big ? 2.6 + random() * 1.6 : 1.1 + random() * 1.5, color: Math.floor(random() * 5) });
-      }
-      if (random() < .55 && !skylit(u)) {
-        const top = at(u, side * w * (.25 + random() * .3));
-        clusters.push({ x: top.x, y: y0 + h * .88, z: top.z, normal: [n[0] * .3, -1, n[2] * .3], size: 1 + random() * 1.6, color: Math.floor(random() * 5) });
-      }
-      if (random() < .5) {
-        const q = at(u, side * (T.HW + 5 + random() * Math.max(2, w - T.HW - 12)));
-        if (!nearPool(q.x, q.z, 2)) clusters.push({ x: q.x, y: y0 - .6, z: q.z, normal: [n[0] * .3 + (random() - .5) * .4, 1, n[2] * .3], size: .9 + random() * 2.2, color: Math.floor(random() * 5) });
-      }
-    }
-    const field = crystalField(clusters, { palette: SALT_CAVE.crystals, seed: seed + fields, glow: 1.4, pulse: .3, brightest: 0 });
-    field.name = `${name}-crystals`; group.add(field); ticks.push(field.userData.tick); fields++;
-  }
+  // Crystals on walls, shoulders, crown and floor; giants in each hall carry
+  // the only real lights.
+  const crystals = caveCrystals(T, cave, profile, shell, { palette: SALT_CAVE.crystals, seed, avoid: (x, z) => nearPool(x, z, 2), name: `${name}-crystals` });
+  group.add(crystals); ticks.push(crystals.userData.tick); const fields = crystals.children.length;
   const giants = [];
   cave.halls.forEach((hall, i) => {
     for (const side of [-1, 1]) {
@@ -220,7 +232,7 @@ export function saltCave(T, cave, profile, { groundAt, seed = 207, name = 'salt-
   let hanging = 0, rising = 0;
   for (let u = cave.from + .01; u < cave.to - .01; u += 20 / T.TOTAL) {
     const side = hanging % 2 ? 1 : -1, w = widthAt(u), y0 = road(u);
-    if (!skylit(u)) { const p = at(u, side * w * .35); put(formations, stalactiteCluster({ seed: seed + 500 + hanging, length: 5 + heightAt(u) * .12 }), p.x, p.z, y0 + heightAt(u) * .9, p.h); hanging++; }
+    if (!skylit(u)) { const p = at(u, side * w * .35); put(formations, stalactiteCluster({ seed: seed + 500 + hanging, length: 5 + heightAt(u) * .12 }), p.x, p.z, y0 + shell.userData.corridor.surface(u, side * w * .35) + .3, p.h); hanging++; }
     const q = at(u + 5 / T.TOTAL, -side * (w - 5));
     if (!nearPool(q.x, q.z, 3)) { put(formations, stalagmites({ seed: seed + 560 + rising, count: 7, height: 3 + random() * 3 }), q.x, q.z, y0 - .6, random() * 6); rising++; }
   }

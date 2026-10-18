@@ -11,6 +11,7 @@ import { hollowGallery } from './water-world-kit.js';
 import { lightShaft } from '/engine/models/effects/atmosphere.js';
 import { floatingMotes } from '/engine/models/effects/drifting-particles.js';
 import { crystalField } from '/engine/models/props/crystals.js';
+import { caveCrystals } from './salt-cave.js';
 import { rootCurtain, stalactiteCluster } from '/engine/models/props/caves.js';
 import { brazier } from '/engine/models/props/ruins.js';
 import { jaguar } from '/engine/models/fauna/jaguar.js';
@@ -39,17 +40,9 @@ export function jaguarCave(T, cave, { widthAt, heightAt }, { seed = 61 } = {}) {
   m.material = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: .85, flatShading: true, side: THREE.DoubleSide, emissive: 0x2a7a64, emissiveIntensity: .6 });
   group.add(shell);
 
-  // Crystals in jade, gold and turquoise, one instanced field per stretch.
-  for (let u0 = cave.from; u0 < cave.to; u0 += .04) {
-    const clusters = [];
-    for (let u = u0 + .002; u < Math.min(u0 + .04, cave.to - .004); u += 7 / T.TOTAL) for (const side of [-1, 1]) {
-      const w = widthAt(u), h = heightAt(u), y0 = road(u), n = inward(at(u, 0), side), wall = at(u, side * (w - 1));
-      clusters.push({ x: wall.x, y: y0 + .3 + random() * 7, z: wall.z, normal: [n[0], .3 + random() * .5, n[2]], size: 1 + random() * 1.8, color: Math.floor(random() * 4) });
-      if (random() < .4 && !skylit(u)) { const t = at(u, side * w * (.2 + random() * .3)); clusters.push({ x: t.x, y: y0 + h * .9, z: t.z, normal: [n[0] * .3, -1, n[2] * .3], size: 1 + random() * 1.3, color: Math.floor(random() * 4) }); }
-    }
-    const field = crystalField(clusters, { palette: JADE_CRYSTALS, seed: seed + Math.round(u0 * 1000), glow: 1.2, pulse: .3, brightest: 0 });
-    field.name = 'selva-cave-crystals'; group.add(field); ticks.push(field.userData.tick);
-  }
+  // Crystals in jade, gold and turquoise, stuck to the rock.
+  const crystals = caveCrystals(T, cave, { widthAt }, shell, { palette: JADE_CRYSTALS, seed, step: 7, stretch: .04, glow: 1.2, density: .7, name: 'selva-cave-crystals' });
+  group.add(crystals); ticks.push(crystals.userData.tick);
 
   // The temple hall: pyramid on the inner side, cenote on the outer side.
   const hall = cave.halls[0], hallY = road(hall.u) - .6;
@@ -91,12 +84,12 @@ export function jaguarCave(T, cave, { widthAt, heightAt }, { seed = 61 } = {}) {
   }
   for (const [a, b] of cave.skylights) for (const side of [-1, 1]) {
     const u = side < 0 ? a : b, p = at(u, side * 7);
-    const roots = rootCurtain({ seed: seed + torches, length: 8, width: 7 }); roots.position.set(p.x, road(u) + heightAt(u) * .85, p.z); roots.rotation.y = p.h; statics.add(roots);
+    const roots = rootCurtain({ seed: seed + torches, length: 8, width: 7 }); roots.position.set(p.x, road(u) + shell.userData.corridor.surface(u, side * 7) + .3, p.z); roots.rotation.y = p.h; statics.add(roots);
   }
   for (let u = cave.from + .01; u < cave.to - .01; u += 26 / T.TOTAL) {
     if (skylit(u)) continue;
-    const p = at(u, (random() - .5) * widthAt(u)), drip = stalactiteCluster({ seed: seed + Math.round(u * 999), length: 4 });
-    drip.position.set(p.x, road(u) + heightAt(u) * .88, p.z); statics.add(drip);
+    const off = (random() - .5) * widthAt(u), p = at(u, off), drip = stalactiteCluster({ seed: seed + Math.round(u * 999), length: 4 });
+    drip.position.set(p.x, road(u) + shell.userData.corridor.surface(u, off) + .3, p.z); statics.add(drip);
   }
   // Portals at both mouths with braziers and jungle creeping round their feet.
   const span = T.HW + 3;

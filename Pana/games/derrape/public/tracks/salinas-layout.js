@@ -3,9 +3,9 @@ import { smooth, pondAt, channelAt } from './water-world-math.js';
 export const ROUTE = [[-260,-180],[-70,-245],[130,-220],[285,-120],[310,55],[205,150],[215,270],[300,470],[260,700],[60,800],
   [-160,760],[-280,590],[-320,400],[-245,190],[-305,40],[-220,-45]];
 export const PONDS = [
-  {x:-110,z:-100,rx:120,rz:72,color:0xd38e9e}, {x:130,z:-65,rx:120,rz:90,color:0x55b8b3},
-  {x:180,z:130,rx:97,rz:65,color:0xcd899b}, {x:-80,z:75,rx:115,rz:65,color:0x58b4b8},
-  {x:425,z:160,rx:100,rz:155,color:0xdb9d9c}, {x:-435,z:-50,rx:100,rz:180,color:0x7cb9b9},
+  {x:-110,z:-100,rx:120,rz:72,color:0xf08fb4}, {x:130,z:-65,rx:120,rz:90,color:0x2fd2cc},
+  {x:180,z:130,rx:97,rz:65,color:0xf39ab8}, {x:-80,z:75,rx:115,rz:65,color:0x36cfd2},
+  {x:425,z:160,rx:100,rz:155,color:0xf5a6bd}, {x:-435,z:-50,rx:100,rz:180,color:0x4fd8d0},
 ];
 export const WATER_Y = .9;
 export const CHANNELS = [[[-110,-100],[20,-100],[130,-65]],[[130,-65],[180,30],[180,130]],

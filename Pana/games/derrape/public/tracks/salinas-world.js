@@ -20,7 +20,8 @@ export function salinasWorld(T) {
   const base=undergroundGround(T,CAVE,CAVE_PROFILE,baseHeight);
   const group=new THREE.Group(),world=terrain(T,{bounds:[-640,-450,620,960],base,step:5,carve:false,
     cut:(x,z,h)=>channelSample(x,z).distance<3?Math.min(h,-.4):h,
-    color:(x,z,y)=>y<-2?0xe9cfd9:y<.8?0xc5bfae:0xdedbce});
+    // Bright white salt crust, pink where the brine wets it.
+    color:(x,z,y)=>y<-2?0xf3dbe6:y<.8?0xf6d6e0:0xfdf3f6});
   group.add(world.land);
   world.groundAt=caveFloorGround(T,CAVE,CAVE_PROFILE,world.groundAt);
   const mouths=tunnelMouths(T,CAVE,CAVE_PROFILE,world.land,baseHeight,{name:'salinas-mine'});group.add(mouths);
@@ -31,8 +32,11 @@ export function salinasWorld(T) {
     sample:(x,z)=>({height:WATER_Y,visible:pondAt(p,x,z)<1.04,along:z}),color:p.color,name:`salt-pond-${i}`,
   }));
   group.add(waterGrid(T,world,{bounds:[-240,-170,590,460],step:3,sample:(x,z)=>({height:WATER_Y,along:channelSample(x,z).along,
-    visible:pondField(x,z)>1.015&&channelSample(x,z).distance<8}),color:0x65bcb9,name:'salinas-sluice-channels'}));
+    visible:pondField(x,z)>1.015&&channelSample(x,z).distance<8}),color:0x2fd2cc,name:'salinas-sluice-channels'}));
   const works=new THREE.Group();let piles=0,gates=0,shelters=0,harvesters=0;
+  // Harvest mounds dot the flats between the pans (library salt piles).
+  for(const p of scatter(T,world.groundAt,{seed:597,count:26,bounds:[-520,-380,520,380],margin:12,minY:.5,
+    accept:(x,z)=>pondField(x,z)>1.18&&channelSample(x,z).distance>12}))put(works,saltPile({seed:620+piles,radius:3+(piles%3),height:2+(piles%2)}),p.x,p.z,p.y-.1,p.rot),piles++;
   for(const [x,z]of [[-205,-125],[-180,-130],[-150,-145],[-280,270],[-250,280],[-220,290],[-30,330],[0,350],[35,360]])if(clear(T,x,z,10)){
     put(works,saltPile({seed:590+piles,radius:6+(piles%3),height:3.5+(piles%2)}),x,z,world.groundAt(x,z));piles++;
   }
