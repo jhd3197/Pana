@@ -4,7 +4,7 @@ import { createRequire } from 'node:module';
 import { readdir, readFile } from 'node:fs/promises';
 const { chromium } = createRequire(import.meta.url)(process.env.PANA_PLAYWRIGHT_PATH || 'playwright');
 const engine=new URL('../',import.meta.url),aliases=[];
-for(const dir of ['', 'soft-character/']) for(const name of await readdir(new URL(dir,engine))) {
+for(const dir of ['']) for(const name of await readdir(new URL(dir,engine))) {
   if(!name.endsWith('.js'))continue;
   const source=await readFile(new URL(dir+name,engine),'utf8');
   if(!source.startsWith('// Compatibility URL.'))continue;

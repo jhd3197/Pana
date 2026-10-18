@@ -10,8 +10,8 @@ try {
   await page.setContent(`<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}</script>`);
   const results = await page.evaluate(async () => {
     const THREE = await import('three');
-    const { buildSoftCharacter } = await import('/engine/soft-character/model.js');
-    const { clothDepths } = await import('/engine/soft-character/cloth-front.js');
+    const { buildSoftCharacter } = await import('/engine/models/characters/pana/model.js');
+    const { clothDepths } = await import('/engine/models/characters/pana/cloth-front.js');
     const results = [];
     for (const quality of ['game', 'studio']) {
       const model = buildSoftCharacter({ quality });

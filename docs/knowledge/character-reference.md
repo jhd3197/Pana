@@ -2,7 +2,7 @@
 
 The character editor lives at `/personaje.html`, inside Pana Studio. Its UI
 remains in `Pana/web/character/`, while the shared sculpt lives in
-`Pana/engine/soft-character/`. It uses the existing Three.js **0.160.0** CDN
+`Pana/engine/models/characters/pana/`. It uses the existing Three.js **0.160.0** CDN
 import map and static web server. The explicit “Usar en los juegos” action
 saves the wardrobe to the existing avatar schema; `engine/models/characters/pana/avatar-model.js`
 adapts this same sculpt for every game. See `pana-studio.md` for the catalog.
@@ -16,7 +16,7 @@ interpretation, not a recovered mesh from the image. The fine fur, phoneme-based
 lip sync, fingers and production costume range are still future work.
 
 ```js
-import { buildSoftCharacter } from '/engine/soft-character/model.js';
+import { buildSoftCharacter } from '/engine/models/characters/pana/model.js';
 
 const pana = buildSoftCharacter({ outfit: 'shirt', color: '#ee3024' });
 scene.add(pana.group);

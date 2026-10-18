@@ -90,7 +90,6 @@ export function step(state, dt) {
 // Seconds since the last stroke, as the HUD's stroke ring and the paddle
 // animation read it. Infinity before the first stroke.
 export const since = (state, t) => state.last == null ? Infinity : t - state.last;
-export const inSweetSpot = (state, t) => { const g = since(state, t); return g >= PADDLE.sweet[0] && g <= PADDLE.sweet[1]; };
 
 // Bululú-style input is `{x}`: a stroke is x reaching -1 or +1 from anywhere else.
 export function axisStroke(previous, x) {

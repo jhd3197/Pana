@@ -29,7 +29,6 @@ export const BOX = new THREE.BoxGeometry(1, 1, 1);
 export const CYL = new THREE.CylinderGeometry(1, 1, 1, 12);
 export const CYL6 = new THREE.CylinderGeometry(1, 1, 1, 6);
 export const CYL4 = new THREE.CylinderGeometry(0.7, 1, 1, 4).rotateY(Math.PI / 4);
-export const TAPER = new THREE.CylinderGeometry(0.62, 1, 1, 6);
 export const CONE = new THREE.ConeGeometry(1, 1, 8);
 export const CONE4 = new THREE.ConeGeometry(1, 1, 4).rotateY(Math.PI / 4);
 export const SPH = new THREE.SphereGeometry(1, 12, 8);

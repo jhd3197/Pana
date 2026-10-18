@@ -212,10 +212,10 @@ so model edits refresh dependent thumbnails on reload without manual cache clear
 
 ## One character source
 
-`engine/soft-character/` owns the approved capybara sculpt, smooth connected
+`engine/models/characters/pana/` owns the approved capybara sculpt, smooth connected
 garments, exposed-body topology, expressions and eyewear. `/personaje.html`
-retains the full editor. Old `web/character/*.js` model URLs are re-exports only;
-do not edit a second implementation there. The editor and games use the same
+retains the full editor; its UI files in `web/character/` import the sculpt
+from there, and there is no second implementation. The editor and games use the same
 surfaces and rig. `engine/models/characters/pana/avatar-model.js` adapts that model to saved avatar data
 and the established `buildCharacter()` game API.
 

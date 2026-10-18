@@ -88,10 +88,10 @@ any imported model, texture or code. Code and asset licenses may differ.
 
 ## Compatibility and validation
 
-Old URLs such as `/engine/wildlife.js`, `/engine/flora.js`, `/engine/props.js`
-and `/engine/soft-character/model.js` are re-exports. They contain no second
-implementation and must not receive new geometry. Existing names and function
-identity are preserved; new code imports canonical files directly.
+Every model has one canonical file under `engine/models/`; the old alias URLs
+(`/engine/wildlife.js`, `/engine/flora.js`, `/engine/props.js`,
+`/engine/soft-character/*`, `/character/*.js`) have been removed. Import the
+canonical file directly; never add an alias that re-exports a model.
 
 Run from the repository root with the local server active:
 

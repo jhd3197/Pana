@@ -25,10 +25,10 @@ resources, map consumers, missing previews and older code, see the
 | `fx.js` | Audio, particle bursts, debris and speech bubbles |
 | `ui.js`, `settings.js` | Shared game menu, settings persistence and hints |
 
-Old model URLs (`props.js`, `flora.js`, `wildlife.js`, `farm-animals.js`,
-`character.js`, `soft-character/*`, and the old prop/helper files) remain
-compatibility re-exports. Edit the canonical files under `models/`; do not put
-new geometry into aliases. The source inspector and inventory use actual model
+Models have one home: `models/` (the pana itself is
+`models/characters/pana/`). The old alias URLs (`props.js`, `flora.js`,
+`wildlife.js`, `character.js`, `soft-character/*`) are gone; import canonical
+files directly. The source inspector and inventory use actual model
 paths. `plaza.js` still re-exports `house` and `plazaFountain` for compatibility,
 while their implementations live in `models/props/plaza-buildings.js`.
 

@@ -11,7 +11,7 @@
 // Orientation: createGameMenu({ orientation: 'horizontal' }) calls guardOrientation for the game's
 // default, and the player can change it in Ajustes (settings.js `orientation`).
 
-import { getSettings, onSettings, setSettings } from './settings.js';
+import { getSettings, onSettings } from './settings.js';
 
 const svg = body => `<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">${body}</svg>`;
 const arrow = d => svg(`<path d="${d}" fill="currentColor" stroke="currentColor" stroke-width="2.4" stroke-linejoin="round"/>`);
@@ -147,5 +147,4 @@ export function guardOrientation(gameDefault = 'libre') {
 }
 
 // For the hub and tests: forget a "Jugar así" and choose again.
-export function setOrientation(value) { setSettings({ orientation: value }); }
 export const isTouch = () => TOUCH.matches;

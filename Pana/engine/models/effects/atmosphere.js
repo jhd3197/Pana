@@ -132,9 +132,3 @@ export function moonDisc({radius=16,color=0xf3efd9,halo=0xdcd7ff,craters=6}={}){
   return owned(group,[glow],[disc,haloMaterial,crater],geometries);
 }
 
-// Brightness envelope for a multi-strike lightning flash, 0..1. `t` is seconds
-// since the strike began; drive hemisphere/sky intensities with it.
-export function lightningEnvelope(t){
-  if(!(t>=0&&t<.6))return 0;
-  return t<.08?1:t<.16?.2:t<.26?.8:Math.max(0,1-(t-.26)/.34)*.5;
-}
