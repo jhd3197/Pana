@@ -25,6 +25,9 @@ import { ICONS as SVG } from '/engine/icons.js';
 import { COLORS, RIVALS, START_COINS, PRICE, DOUBLES_BONUS, TREE_COINS } from './rules.js';
 import { createGameMenu, toggleMute } from '/engine/ui.js';
 import { holdButton } from '/engine/touch.js';
+import { bindDiceThrow, cleanPower } from '/engine/dice-throw.js';
+import { namesList } from '/engine/roll-off.js';
+import { createDiceTable, rollOffOrder } from './dice-table.js';
 import { pixelRatio, bindRenderer } from '/engine/settings.js';
 import { inviteUrl, newRoomCode, roomFromUrl } from '/engine/invite.js';
 import { BululuRoom } from './network.js';
@@ -85,6 +88,8 @@ const players = (() => {
 })();
 let me = players[0];
 const isHuman = (p) => p.human && !AUTO;
+// Who plays when in each round, decided by the opening roll-off.
+let order = players.map((p) => p.i);
 
 // ---------- renderer ----------
 const renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -130,12 +135,13 @@ for (const b of $('sky').children) b.onclick = () => selectSky(b.dataset.sky);
 selectSky(board.atmosphere.mode, false);
 const puffs = new Puffs(boardScene);
 const shockwaves = new Shockwaves(boardScene);
-// two dice, plus a floating counter for the steps left once they're rolled
+// two dice, thrown onto the board (dice-table.js), plus a floating counter for the steps left
 const dice = [createDie(), createDie()];
 for (const d of dice) {
   d.mesh.visible = false;
   boardScene.add(d.mesh);
 }
+const diceTable = createDiceTable({ dice, board, camera: boardCam, puffs });
 const counter = (() => {
   const c = document.createElement('canvas');
   c.width = c.height = 128;
@@ -209,7 +215,7 @@ function focus(at, kind = 'mid') {
   cam.wantPos.set(at.x + o[0], at.y + o[1], at.z + o[2]);
 }
 // pull back for the start of a round, around whoever goes first
-function overview(at = players[0].token.rest) {
+function overview(at = players[order[0]].token.rest) {
   focus(at, 'far');
 }
 overview();
@@ -270,15 +276,7 @@ const boardView = {
       tk.pin.scale.set(0.95 * s, 1.04 * s, 1);
       tk.pin.position.y = 3.1 + s * 0.4 + Math.sin(t * 2.5 + p.i) * 0.1;
     }
-    for (const die of dice) {
-      if (!die.mesh.visible) continue;
-      if (die.rolling) die.spin(dt);
-      else {
-        // lookAt's +Z points back toward the camera: this is the result face.
-        const q = new THREE.Quaternion().setFromRotationMatrix(new THREE.Matrix4().lookAt(boardCam.position, die.mesh.position, new THREE.Vector3(0, 1, 0)));
-        die.mesh.quaternion.slerp(q, Math.min(1, dt * 12));
-      }
-    }
+    diceTable.update(dt, t, thrower?.shaking ? thrower.power : 0);
     puffs.update(dt);
     shockwaves.update(dt);
     if (freeLook) looker.update();
@@ -321,7 +319,7 @@ const ease = (k) => k * k * (3 - 2 * k);
 // input
 // ======================================================================
 const held = {};
-let jumpPressed = false;
+let jumpPressed = false, pullPressed = false;
 let actionWaiters = [];
 addEventListener('keydown', (e) => {
   // Let the atmosphere buttons retain native Space/Enter/Tab behavior.
@@ -332,6 +330,7 @@ addEventListener('keydown', (e) => {
   // in 2D and aim minigames W / ↑ move, so only Space is the action
   if (!e.repeat && (k === ' ' || (!mini2d() && !miniAim() && (k === 'w' || k === 'arrowup')))) jumpPressed = true;
   if (!e.repeat && k === ' ' && miniAim()) aim.keyPull = true;
+  if (!e.repeat && k === ' ') pullPressed = true;
   if (k === 'm' && !e.repeat) toggleMute();
   if (k === 'l' && !e.repeat && view === boardView) {
     selectSky(SKY_MODES[(SKY_MODES.indexOf(board.atmosphere.mode) + 1) % SKY_MODES.length]);
@@ -361,7 +360,7 @@ addEventListener('blur', () => {
 // on-screen buttons for touch screens during minigames
 // (engine/touch.js: a finger sliding off the button still lets go)
 for (const [id, key] of [['t-left', 'a'], ['t-right', 'd'], ['t-jump', ' '], ['t2-up', 'w'], ['t2-down', 's'], ['t2-left', 'a'], ['t2-right', 'd'], ['t2-go', ' ']]) {
-  holdButton($(id), { down: () => { held[key] = true; if (key === ' ') jumpPressed = true; }, up: () => { held[key] = false; } });
+  holdButton($(id), { down: () => { held[key] = true; if (key === ' ') jumpPressed = pullPressed = true; }, up: () => { held[key] = false; } });
 }
 
 // Aim minigames (`input: 'aim'`) get a reticle in NDC (−1..1) instead. The mouse
@@ -434,7 +433,10 @@ function minigameInput(dt = 0) {
   }
   if (!mini2d()) return { x, jump };
   const z = (held.w || held.arrowup ? 1 : 0) - (held.s || held.arrowdown ? 1 : 0);
-  return { x, z, jump };
+  // Holding the action (Bolas Criollas charges with it); a quick tap still counts once.
+  const pull = !!held[' '] || pullPressed;
+  pullPressed = false;
+  return { x, z, jump, pull };
 }
 
 // ======================================================================
@@ -518,27 +520,64 @@ function ask(text, options, { auto = 0, delay = 0.5 } = {}) {
     });
   }
   const el = $('prompt');
+  closeThrower();
   el.innerHTML = `<p>${text}</p><div class="row">${options.map((o, i) =>
     `<button data-i="${i}" class="pk-btn${i === 0 ? ' pk-btn--primary primary' : ''}">${o.label}${o.key ? ` <kbd class="pk-kbd" data-pana-hint>${o.key === ' ' ? 'Espacio' : o.key.toUpperCase()}</kbd>` : ''}</button>`).join('')}</div>`;
   el.classList.toggle('bare', !text);
   el.classList.remove('hidden');
   return new Promise((resolve) => {
-    const done = (i) => {
+    const done = (i, power) => {
       el.classList.add('hidden');
       actionWaiters = actionWaiters.filter((w) => w !== onKey);
-      sound.unlock();
+      closeThrower(); sound.unlock();
+      thrownPower = cleanPower(power, rand(0.4, 0.9));
       resolve(i);
     };
     const onKey = (k) => {
-      const i = options.findIndex((o) => o.key === k || (o.key === ' ' && k === 'enter'));
+      const i = options.findIndex((o) => !o.toss && (o.key === k || (o.key === ' ' && k === 'enter')));
       if (i >= 0) done(i);
     };
-    el.querySelectorAll('button').forEach((b) => (b.onclick = () => done(Number(b.dataset.i))));
+    el.querySelectorAll('button').forEach((b, i) => options[i].toss ? openThrower(b, (power) => done(i, power)) : (b.onclick = () => done(i)));
     if (AUTO) wait(delay).then(() => done(auto));
     else actionWaiters.push(onKey);
   });
 }
 
+// ---------- dice: shake, throw, and the roll-off for who starts (dice-table.js) ----------
+let thrower = null, thrownPower = 0.5;
+// A prompt button that throws: hold it (or Space / Enter) to shake the dice and
+// let go to throw them; a flick across the island throws harder.
+function openThrower(button, onThrow) {
+  closeThrower();
+  thrower = bindDiceThrow({ button, surface: canvasEl, keys: [' ', 'Enter'],
+    canThrow: () => !paused && !freeLook && !!thrower, onStart: () => sound.unlock(),
+    onThrow: (power) => { closeThrower(); onThrow(power); } });
+}
+function closeThrower() { thrower?.dispose(); thrower = null; }
+// How hard p throws: a human shakes and lets go, a bot just throws.
+async function askThrow(p, text, label) {
+  if (!isHuman(p)) { await wait(0.9); return rand(0.35, 0.95); }
+  await ask(text, [{ label, key: ' ', toss: true }]); return thrownPower;
+}
+async function rollOff() {
+  setPlank('¿QUIÉN EMPIEZA?');
+  overview(players[0].token.rest);
+  await toast('¿Quién empieza?', 'Cada pana tira un dado: el más alto sale primero', 1.8, 'round');
+  order = await rollOffOrder(players.map((p) => p.i), (i) => openingThrow(players[i]),
+    (tie) => toast('¡Empate!', `${namesList(tie.map((i) => escapeHtml(players[i].name)))} tiran otra vez`, 1.4, 'event'));
+  turnOf = -1; renderCards(); overview(); sound.horn('fiesta');
+  await toast(`¡Empieza ${escapeHtml(players[order[0]].name)}!`, order.map((i, k) => `${k + 1}. ${escapeHtml(players[i].name)}`).join(' · '), 2.4, `p${order[0]}`);
+}
+async function openingThrow(p) {
+  turnOf = p.i; renderCards(); focus(p.token.rest); diceTable.hold(p, 1);
+  const power = await askThrow(p, 'Tira el dado: el más alto empieza', '¡Tira para empezar!');
+  const value = rules.rollDice(Math.random, 1).a;
+  await wait(diceTable.toss(p, [value], power));
+  sound.boing(); p.token.bubble.say(value === 6 ? '¡SEIS!' : `¡${value}!`, 0.8);
+  await wait(0.7);
+  dice[0].mesh.visible = false; p.token.pin.visible = true;
+  return value;
+}
 // ======================================================================
 // minimap: the whole island at a glance; tap it to look there
 // ======================================================================
@@ -873,26 +912,14 @@ async function takeTurn(p) {
   focus(tk.rest);
   await toast(online ? `Turno de ${escapeHtml(p.name)}` : p.human ? '¡Tu turno!' : `Turno de ${escapeHtml(p.name)}`, '', 1, `p${p.i}`);
 
-  // two dice spin over the pana's head
-  dice.forEach((d, k) => {
-    d.mesh.visible = k < options.dice;
-    d.rolling = k < options.dice;
-    d.mesh.position.set(tk.rest.x + (k ? 0.95 : -0.95), tk.rest.y + 4.8, tk.rest.z);
-  });
-  tk.pin.visible = false;
-  sound.unlock();
-  if (isHuman(p)) await ask('', [{ label: '¡Tira los dados!', key: ' ' }]);
-  else await wait(0.9);
+  // the dice spin over the pana's head until they're thrown onto the board
+  diceTable.hold(p, options.dice);
+  const power = await askThrow(p, 'Mantén para agitar y suelta para tirar', options.dice === 1 ? '¡Tira el dado!' : '¡Tira los dados!');
   const { a, b, n, doubles } = rules.rollDice(Math.random, options.dice);
-  dice[0].rolling = false;
-  dice[0].value = a; dice[0].show(a);
-  sound.boing();
-  await wait(0.35);
-  dice[1].rolling = false;
-  dice[1].value = b; if (b) dice[1].show(b);
+  await wait(diceTable.toss(p, options.dice === 1 ? [a] : [a, b], power));
   sound.boing();
   tk.bubble.say(doubles ? '¡DOBLES!' : n >= 10 ? pick(['¡Epa!', '¡Dale!', `¡${n}!`]) : n <= 3 ? pick(['¿Nada más?', '¡Qué pava!']) : `¡${n}!`, 0.9);
-  await wait(0.9);
+  await wait(0.7);
   if (doubles) {
     sound.horn('fiesta');
     await toast('¡Dobles!', `+${DOUBLES_BONUS} monedas de premio`, 1.2, 'gold');
@@ -1113,6 +1140,8 @@ async function runBoard(resume) {
       await playMinigame(MINIGAMES.find(m => m.id === only));
     }
   }
+  if (resume) order = resume.order || players.map((p) => p.i);
+  else await rollOff();
   for (round = resume?.round || 1; round <= ROUNDS; round++) {
     setPlank(`RONDA ${round} / ${ROUNDS}`);
     overview();
@@ -1121,7 +1150,7 @@ async function runBoard(resume) {
     for (let i = first; i < players.length; i++) {
       if (online) syncRoster();
       saveCheckpoint('turn', i);
-      await takeTurn(players[i]);
+      await takeTurn(players[order[i]]);
     }
     const def = MINIGAMES.find(m => m.id === resume?.minigame) || FORCED || nextMinigame();
     saveCheckpoint('mini', players.length, def);
@@ -1175,18 +1204,19 @@ function syncRoster() {
   }
   applyPlayers(next); lobbyRoster(); renderCards();
 }
-function finishChoice(choice) {
+function finishChoice(choice, power) {
   if (!resolveChoice) return;
   const resolve = resolveChoice;
   resolveChoice = rejectChoice = null; pendingChoice = room.prompt = null;
-  $('prompt').classList.add('hidden'); actionWaiters = [];
+  $('prompt').classList.add('hidden'); actionWaiters = []; closeThrower();
+  thrownPower = cleanPower(power, rand(0.4, 0.9));
   resolve(choice);
 }
 let shownPrompt = '';
 function showOnlinePrompt(prompt) {
   const key = JSON.stringify([prompt, room.id]);
   if (shownPrompt === key) return;
-  shownPrompt = key; actionWaiters = [];
+  shownPrompt = key; actionWaiters = []; closeThrower();
   const el = $('prompt'); el.replaceChildren(); el.classList.toggle('hidden', !prompt);
   if (!prompt) return;
   const mine = prompt.seat === room.id;
@@ -1197,17 +1227,19 @@ function showOnlinePrompt(prompt) {
   const row = document.createElement('div'); row.className = 'row'; el.append(row);
   prompt.options.forEach((option, i) => {
     const b = document.createElement('button'); b.className = 'pk-btn' + (i === 0 ? ' pk-btn--primary' : '');
-    b.textContent = option.label; b.onclick = () => room.choose(prompt.id, i); row.append(b);
+    b.textContent = option.label; row.append(b);
+    if (option.toss) openThrower(b, power => room.choose(prompt.id, i, power));
+    else b.onclick = () => room.choose(prompt.id, i);
   });
   actionWaiters.push(k => {
-    const i = prompt.options.findIndex(o => o.key === k || (o.key === ' ' && k === 'enter'));
+    const i = prompt.options.findIndex(o => !o.toss && (o.key === k || (o.key === ' ' && k === 'enter')));
     if (i >= 0) room.choose(prompt.id, i);
   });
 }
 function saveCheckpoint(stage, next, def, only) {
   if (!online) return;
   if (!mini) syncRoster();
-  checkpoint = { stage, next, round, rounds: ROUNDS, options: { ...options }, players: playerData(), stand: board.standTile, minigame: def?.id, only };
+  checkpoint = { stage, next, round, rounds: ROUNDS, options: { ...options }, players: playerData(), stand: board.standTile, minigame: def?.id, only, order };
   room.publish(captureOnline());
 }
 function captureOnline() {
@@ -1216,7 +1248,7 @@ function captureOnline() {
     camera: { pos: cam.wantPos.toArray(), look: cam.wantLook.toArray() },
     tokens: players.map(p => ({ pos: p.token.group.position.toArray(), rest: p.token.rest.toArray(),
       rotation: p.token.group.rotation.y, cheer: p.token.cheer, dizzy: p.token.dizzy, pin: p.token.pin.visible })),
-    dice: dice.map(d => ({ pos: d.mesh.position.toArray(), visible: d.mesh.visible, rolling: d.rolling, value: d.value })),
+    dice: dice.map(d => ({ pos: d.mesh.position.toArray(), visible: d.mesh.visible, rolling: d.rolling, value: d.value, toss: d.spec || null })), order,
     counter: { pos: counter.sprite.position.toArray(), visible: counter.sprite.visible, value: counter.value },
     mini: mini?.spec ? { ...mini.spec, state: mini.state, left: mini.left, winners: mini.winners, frames: room.history.length } : null,
     presentation: readPresentation() };
@@ -1248,7 +1280,7 @@ function applyOnline(state) {
   checkpoint = state.checkpoint;
   applyPlayers(state.players); lobbyRoster();
   $('intro').classList.toggle('hidden', started); $('hud').classList.toggle('hidden', !started);
-  turnOf = state.turnOf; cardMode = state.cardMode; miniScores = state.miniScores; miniIcon = state.miniIcon;
+  turnOf = state.turnOf; cardMode = state.cardMode; if (state.order) order = state.order; miniScores = state.miniScores; miniIcon = state.miniIcon;
   if (board.standTile !== state.stand) board.setStand(state.stand);
   board.highlight = state.highlight || [];
   if (!freeLook) { cam.wantPos.fromArray(state.camera.pos); cam.wantLook.fromArray(state.camera.look); }
@@ -1256,14 +1288,7 @@ function applyOnline(state) {
     const tk = players[i].token;
     tk.rest.fromArray(v.pos); tk.group.rotation.y = v.rotation; tk.cheer = v.cheer; tk.dizzy = v.dizzy; tk.pin.visible = v.pin;
   });
-  state.dice.forEach((v, i) => {
-    const d = dice[i]; d.mesh.position.fromArray(v.pos); d.mesh.visible = v.visible; d.rolling = v.rolling;
-    if (v.value) {
-      d.value = v.value;
-      // Spinning changes the painted face even when consecutive results match.
-      if (!v.rolling) d.show(v.value);
-    }
-  });
+  state.dice.forEach((v, i) => diceTable.apply(dice[i], v));
   if (state.counter.value && state.counter.value !== counter.value) counter.set(state.counter.value);
   counter.sprite.position.fromArray(state.counter.pos); counter.sprite.visible = state.counter.visible;
   if (!state.mini) { if (mini) clearMini(); }
@@ -1329,7 +1354,7 @@ function beginOnline(resume) {
   }
   syncRoster(); layoutTokens();
   for (const p of players) { p.token.group.position.copy(p.token.rest); p.token.hopping = false; p.token.pin.visible = true; }
-  for (const d of dice) d.mesh.visible = false;
+  for (const d of dice) { d.mesh.visible = false; d.toss = d.spec = null; }
   counter.sprite.visible = false; board.stand.group.scale.setScalar(1);
   for (const id of ['intro', 'prompt', 'winner', 'results', 'toast', 'mini-intro']) $(id).classList.add('hidden');
   $('hud').classList.remove('hidden'); $('count').textContent = ''; cardMode = 'board'; setSign(''); actionWaiters = [];
@@ -1414,7 +1439,8 @@ async function fastForward(seconds, dt = 1 / 30) {
     await null;   // let the turn logic's awaits run
   }
 }
-if (DEBUG) Object.assign(window, { menu, players, board, dice, MINIGAMES, layoutTokens, fastForward, renderer, boardScene, boardCam, minigame: () => mini, onlineState: () => ({ room, checkpoint, pendingChoice, miniFrame, me: me?.i, options }), changeOptions });
+if (DEBUG) Object.assign(window, { menu, players, board, dice, MINIGAMES, layoutTokens, fastForward, renderer, boardScene, boardCam, minigame: () => mini, onlineState: () => ({ room, checkpoint, pendingChoice, miniFrame, me: me?.i, options, order }), changeOptions });
+if (DEBUG) Object.defineProperty(window, 'thrower', { get: () => thrower });
 
 frame();
 main().catch(ignoreCancelled);

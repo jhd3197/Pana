@@ -10,7 +10,7 @@ import { fillRoster } from '/engine/results.js';
 import { PoolRoom } from './network.js';
 import { groupName, groupOf, canPlace, remaining } from './rules.js';
 import { createPoolScene, VIEWS } from './scene.js';
-import { shotPower } from './shot-charge.js';
+import { shotPower, paintCharge } from '/engine/shot-charge.js';
 import { POOL_OPTIONS, teamOf, playingSeats, poolConnected, canStartPool } from './match-rules.js';
 import { createRoomOptions } from '/engine/room-options.js';
 import { createTableSeating } from '/engine/table-seating.js';
@@ -106,11 +106,7 @@ function ownTurn() { return !menu.isOpen && !roomOptions.isOpen && room.connecte
 function updateCharge(now = performance.now()) {
   if (!charge) return;
   power = shotPower(now - charge.started);
-  const percent = Math.round(power * 100);
-  $('power').setAttribute('aria-valuenow', percent);
-  $('power-fill').style.clipPath = `inset(${(1 - power) * 100}% 0 0)`;
-  $('power-marker').style.bottom = `${power * 100}%`;
-  $('power-value').textContent = `${percent}%`;
+  paintCharge($('power'), power, $('power-value'));
 }
 function chargeValid() { return ownTurn() && !room.state.ballInHand && charge?.revision === room.state.revision; }
 function cancelCharge() {

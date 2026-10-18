@@ -42,7 +42,9 @@ button:disabled { cursor: default; opacity: .5; }
 .shot-row { display: flex; align-items: center; gap: 18px; }.shot-row > .pk-seg { flex-shrink: 0; margin-right: auto; }
 .fine-controls { display: flex; gap: 6px; }.fine-controls .pk-touch { --pk-touch: 44px; position: static; width: 44px; height: 44px; }
 .control-hint, .guide-note { margin: 9px 0 0; text-align: center; font-size: 11px; color: var(--pk-muted); }.guide-note { margin-top: 3px; }
-#shoot { white-space: nowrap; }
+#shoot { white-space: nowrap; touch-action: none; }
+#shoot.is-charging { transform: translateY(3px); }
+#power-bar { pointer-events: none; }
 #toast { position: absolute; z-index: 30; left: 50%; top: 75px; transform: translateX(-50%); padding: 14px 20px; }
 #recovery { position: absolute; z-index: 20; left: 50%; top: 40%; transform: translate(-50%, -50%); padding: 20px; }
 @media (max-width: 700px) {

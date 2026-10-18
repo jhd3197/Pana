@@ -11,7 +11,7 @@
 <body class="in-lobby">
   <header class="game-header"><a class="pk-logo" href="/" aria-label="Pana, todos los juegos">PANA</a><span>BOLAS CRIOLLAS</span><nav id="menu-slot" aria-label="Menú del juego"></nav></header>
   <main>
-    <div id="court-wrap"><canvas id="court" tabindex="0" aria-label="Cancha de bolas criollas: toca para apuntar. Flechas para dirección y fuerza; espacio para lanzar."></canvas></div>
+    <div id="court-wrap"><canvas id="court" tabindex="0" aria-label="Cancha de bolas criollas: toca para apuntar. Flechas para la dirección; mantén espacio y suelta para lanzar."></canvas></div>
     <section id="welcome" class="pk-lobby" aria-labelledby="title">
       <a class="pk-back" href="/">← Todos los juegos</a>
       <h1 id="title" class="pk-title">Bolas <br>Criollas</h1>
@@ -35,16 +35,16 @@
       <span class="side-label">Cámara <kbd class="pk-kbd" data-pana-hint>C</kbd></span>
     </section>
     <section id="power-bar" class="pk-power" hidden aria-label="Fuerza del lanzamiento">
-      <label class="pk-power-control" for="power"><span>Fuerza</span><input id="power" type="range" min="10" max="100" value="62" aria-orientation="vertical"><output id="power-value">62%</output></label>
+      <div class="pk-power-control"><span id="power-label">Fuerza</span><div id="power" class="pk-charge" role="meter" aria-labelledby="power-label" aria-valuemin="10" aria-valuemax="100" aria-valuenow="10"><i class="pk-charge-fill"></i><i class="pk-charge-marker"></i></div><span id="power-value" aria-hidden="true">10%</span><span>Suelta</span></div>
     </section>
     <section id="controls" class="pk-panel" hidden aria-label="Lanzamiento">
       <div class="turn-info"><b id="turn" aria-live="polite"></b><span id="measure"></span></div>
       <div class="shot-row">
         <div class="pk-seg" id="shot-options"><button data-mode="arrime" aria-pressed="true">Arrime</button><button data-mode="boche" aria-pressed="false">Boche rastrero</button></div>
         <div class="fine-controls pk-touch-zone"><button id="aim-left" class="pk-touch pk-touch--sm" data-icon="left" aria-label="Apuntar a la izquierda"></button><button id="aim-right" class="pk-touch pk-touch--sm" data-icon="right" aria-label="Apuntar a la derecha"></button></div>
-        <button id="shoot" class="pk-btn pk-btn--primary">Lanzar <kbd class="pk-kbd" data-pana-hint>Espacio</kbd></button>
+        <button id="shoot" class="pk-btn pk-btn--primary">Mantén para lanzar <kbd class="pk-kbd" data-pana-hint>Espacio</kbd></button>
       </div>
-      <p class="control-hint" data-pana-hint>Toca la cancha para apuntar · ← → dirección · ↑ ↓ fuerza · Espacio lanzar</p>
+      <p class="control-hint" data-pana-hint>Toca la cancha para apuntar · ← → dirección · Mantén Espacio: la fuerza sube y baja, suelta para lanzar</p>
       <p id="guide-note" class="guide-note"></p>
     </section>
     <div id="recovery" class="pk-panel" hidden><p id="recovery-copy" role="status"></p><button id="fallback" class="pk-btn pk-btn--primary">Jugar con bots</button></div>

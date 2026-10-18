@@ -28,7 +28,7 @@ export class BululuRoom extends HostRoom {
     } else if (v.kind === 'input' && this.isHost && v.serial === this.state?.mini?.serial) {
       this.input(id, v.input);
     } else if (v.kind === 'choice' && this.isHost && acceptsChoice(this.prompt, id, v)) {
-      this.events.choice(v.choice);
+      this.events.choice(v.choice, v.power);
     } else if (v.kind === 'frames' && id === this.hostId && !this.isHost && (v.to == null || v.to === this.id)) {
       this.events.frames(v);
     } else if (v.kind === 'catchup' && this.isHost && v.serial === this.state?.mini?.serial && Number.isInteger(v.from) && v.from >= 0) {
@@ -37,9 +37,10 @@ export class BululuRoom extends HostRoom {
         this.send({ kind: 'frames', to: id, serial: v.serial, from, frames: this.history.slice(from, from + 60) });
     }
   }
-  choose(prompt, choice) {
-    const message = { kind: 'choice', prompt, choice };
-    if (this.isHost) { if (acceptsChoice(this.prompt, this.id, message)) this.events.choice(choice); }
+  // power: how hard a thrown die flew (0–1), for prompts that throw dice.
+  choose(prompt, choice, power) {
+    const message = { kind: 'choice', prompt, choice, power };
+    if (this.isHost) { if (acceptsChoice(this.prompt, this.id, message)) this.events.choice(choice, power); }
     else this.send(message);
   }
   input(id, value) {
@@ -47,6 +48,8 @@ export class BululuRoom extends HostRoom {
     // Do not lose a tap between two simulation ticks, or repeat it on every tick.
     next.jump ||= !!previous?.jump;
     next.fire ||= !!previous?.fire;
+    // A held action the simulation never saw (a quick tap) still counts once.
+    next.pull ||= !!previous?.pull && !previous.read;
     this.inputs.set(id, { ...next, at: performance.now() });
   }
   controls(value) {
@@ -58,7 +61,7 @@ export class BululuRoom extends HostRoom {
       const input = this.inputs.get(p.seat);
       if (!input || performance.now() - input.at > 600) return cleanInput(IDLE_INPUT);
       const next = cleanInput(input);
-      input.jump = input.fire = false;
+      input.jump = input.fire = false; input.read = true;
       return next;
     });
   }

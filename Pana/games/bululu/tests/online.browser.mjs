@@ -60,20 +60,31 @@ try {
   await guest.evaluate(id => onlineState().room.choose(id, 0), first);
   await host.waitForTimeout(300);
   assert.equal(await host.evaluate(() => onlineState().pendingChoice.id), first, 'guest cannot roll host dice');
+  assert.match(await host.locator('#prompt').textContent(), /Tira para empezar/);
   await clickPrompt(host, 'Tira');
-  console.log('Host rolled');
-  // Resolve any purchase on the host's first turn, then wait for the guest.
-  for (let i = 0; i < 100; i++) {
-    const s = await host.evaluate(() => ({ seat: onlineState().pendingChoice?.seat, host: onlineState().room.id, tile: players[1].tile }));
-    if (s.seat && s.seat !== s.host) break;
-    const buttons = host.locator('#prompt:not(.hidden) button');
-    if (await buttons.count()) await buttons.first().click();
-    await host.waitForTimeout(150);
+  console.log('Host threw for the roll-off');
+  // The guest throws for the roll-off with a real hold: their power reaches the host.
+  await wait(guest, () => !!window.thrower);
+  await guest.evaluate(() => document.activeElement?.blur());
+  await guest.keyboard.down(' ');
+  await wait(guest, () => thrower?.shaking && thrower.power > .6);
+  await guest.keyboard.up(' ');
+  await wait(host, () => dice[0].spec?.power > .6);
+  await wait(guest, () => dice[0].spec?.power > .6);
+  console.log('Guest threw hard and both screens fly the same die');
+  // Answer every prompt with its owner's real button until the guest has moved.
+  for (let i = 0; i < 300 && !(await host.evaluate(() => players[1].tile > 0)); i++) {
+    for (const page of [host, guest]) {
+      const buttons = page.locator('#prompt:not(.hidden) button');
+      if (await buttons.count()) await buttons.first().click({ timeout: 2000 }).catch(() => {});
+    }
+    await host.waitForTimeout(100);
   }
-  await clickPrompt(guest, 'Tira');
-  console.log('Guest rolled');
   await wait(host, () => players[1].tile > 0);
-  console.log('PASS two-player lobby and remote dice; wrong-seat choices rejected');
+  const order = await host.evaluate(() => onlineState().order);
+  assert.deepEqual([...order].sort(), [0, 1, 2, 3, 4, 5]);
+  assert.deepEqual(await guest.evaluate(() => onlineState().order), order);
+  console.log('PASS two-player lobby, roll-off order and remote dice; wrong-seat choices rejected');
 
   // Finish the round using the actual prompts; no direct state edits.
   for (let i = 0; i < 250; i++) {

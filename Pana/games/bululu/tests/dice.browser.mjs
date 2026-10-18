@@ -59,6 +59,31 @@ try {
   console.log('PASS both dice face the camera with the correct pips for all six values');
   await local.context().close();
 
+  // A real local game opens with the roll-off: hold Space to shake, let go to throw.
+  const thrown = await open();
+  await thrown.locator('#start').click();
+  await thrown.evaluate(async () => { for (let i = 0; i < 80 && !window.thrower; i++) await fastForward(0.25); });
+  assert.match(await thrown.locator('#prompt').textContent(), /Tira para empezar/);
+  await thrown.evaluate(() => document.activeElement?.blur());
+  await thrown.keyboard.down(' ');
+  await wait(thrown, () => thrower?.shaking && thrower.power > 0.6);
+  await thrown.keyboard.up(' ');
+  const flight = await thrown.evaluate(() => ({ flying: !!dice[0].toss, power: dice[0].spec?.power, value: dice[0].spec?.value, from: dice[0].spec?.from[1], to: dice[0].spec?.to[1] }));
+  assert.ok(flight.flying && flight.power > 0.6 && flight.from > flight.to, `the die flies from the hand down onto the board: ${JSON.stringify(flight)}`);
+  const landed = await thrown.evaluate(async () => {
+    const THREE = await import('three');
+    for (let i = 0; i < 60 && dice[0].toss; i++) await fastForward(0.05);
+    const die = dice[0]; die.mesh.updateMatrixWorld(true);
+    const direction = die.mesh.position.clone().sub(boardCam.position).normalize();
+    const [hit] = new THREE.Raycaster(boardCam.position, direction).intersectObject(die.mesh);
+    return { resting: !die.toss, pips: readDiePips(die.mesh.material[hit.face.materialIndex]), at: die.mesh.position.toArray(), spot: die.spec.to };
+  });
+  assert.ok(landed.resting);
+  assert.equal(landed.pips, flight.value, 'it lands showing the rolled value to the camera');
+  landed.at.forEach((v, i) => assert.ok(Math.abs(v - landed.spot[i]) < 1e-6, 'it rests where it was thrown'));
+  console.log('PASS a held, released throw flies the die onto the board and lands on the rolled face');
+  await thrown.context().close();
+
   const room = `dice-${Date.now()}`;
   const host = await open(`room=${room}`);
   await wait(host, () => onlineState().room?.isHost);

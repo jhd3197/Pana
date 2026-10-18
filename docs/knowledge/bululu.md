@@ -201,6 +201,17 @@ flow bugs and check balance.
   for all six values on both dice. Guests must repaint stopped dice even when
   `value` is unchanged: spinning changes the painted face independently of the
   last result. The same suite checks repeated results with two real clients.
+- **Throwing the dice**: a human's dice prompt is a throw button (`toss: true`
+  option): hold it, Space or Enter to shake the spinning dice, let go to throw;
+  a flick across the canvas throws harder. Prompt keys never answer a throw
+  option, or Space would answer on keydown. `room.choose(prompt, choice, power)`
+  carries the power to the host. `dice-table.js` throws from over the head to
+  the board in front of the pana; the host publishes each die's spec
+  (`serial`, from, to, power, seed, value) and guests replay it with
+  `createToss`, ignoring snapshot positions until it lands.
+- **Who starts**: before round 1 every pana throws one die (`rollOffOrder`);
+  ties throw again among themselves, so the whole turn `order` comes out of the
+  dice. It travels in snapshots and checkpoints; a resumed game keeps it.
 - **Minigame order** comes from `rules.minigameBag`: each minigame once per
   pass, shuffled, never the same twice in a row. `?mini=` still forces one.
 - **¡Caída! tuning** (simulated, 4 AIs, 40 games): a plain shuffled deck gives a

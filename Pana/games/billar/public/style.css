@@ -24,10 +24,6 @@ button, input { font: inherit; } button { cursor: pointer; } button:disabled { c
 .play-controls { position: fixed; z-index: 3; bottom: max(18px, env(safe-area-inset-bottom)); left: 50%; transform: translateX(-50%); width: min(620px, calc(100% - 260px)); padding: 16px 20px 10px; border-radius: 16px; background: var(--pk-night); }
 .turn-copy { display: flex; align-items: baseline; gap: 16px; margin-bottom: 10px; } #turn-status { color: var(--pk-yellow); white-space: nowrap; font-size: 18px; } #message { margin: 0; font-size: 12px; }
 .shot-controls { display: flex; gap: 18px; align-items: center; justify-content: flex-end; }
-.charge-track { position: relative; flex: 1; min-height: 0; width: 28px; border: 2px solid var(--pk-muted); border-radius: 12px; background: linear-gradient(to top, var(--pk-teal) 0% 45%, var(--pk-yellow) 45% 82%, var(--pk-coral) 82% 100%); }
-.charge-track::before { content: ''; position: absolute; inset: 0; border-radius: 10px; background: var(--pk-night); opacity: .65; }
-#power-fill { position: absolute; inset: 0; border-radius: 10px; background: inherit; clip-path: inset(95% 0 0); }
-#power-marker { position: absolute; left: -7px; right: -7px; height: 5px; bottom: 5%; transform: translateY(50%); border-radius: 3px; background: var(--cue-white); box-shadow: 0 0 0 2px var(--pk-night); }
 #power-value { color: var(--pk-yellow); font-size: 15px; font-variant-numeric: tabular-nums; }
 #power-bar { pointer-events: none; }
 #shoot { touch-action: none; }

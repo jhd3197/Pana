@@ -42,8 +42,13 @@ try {
   await screenshot(host, 'desktop');
   await host.locator('#shoot').click(); await wait(guest, () => criollasDebug.room.state.phase === 'rolling');
   await wait(guest, () => criollasDebug.room.state.phase === 'aiming' && criollasDebug.room.state.turn === 1);
-  await guest.locator('#power').fill('30'); await guest.locator('#power').dispatchEvent('input');
-  await guest.locator('#shoot').click(); await wait(host, () => criollasDebug.room.state.shots === 2);
+  // Hold Space: the meter shows while the force rises, and letting go throws at that force.
+  await guest.locator('#court').focus(); await guest.keyboard.down('Space');
+  // Animation frames are stubbed here: the force is sampled from the hold time at release.
+  await wait(guest, () => criollasDebug.charge && performance.now() - criollasDebug.charge.started > 400 && !document.querySelector('#power-bar').hidden);
+  await guest.keyboard.up('Space'); await wait(host, () => criollasDebug.room.state.shots === 2);
+  assert.equal(await guest.evaluate(() => document.querySelector('#power-bar').hidden), true);
+  assert.ok(await guest.evaluate(() => criollasDebug.shot.power) >= .3, 'the throw used the charged force');
   assert.equal(await host.evaluate(() => criollasDebug.room.state.pitch.balls.at(-1).owner), 1);
   await wait(host, () => criollasDebug.room.state.phase !== 'rolling');
   console.log('PASS real two-client throws, seat ownership and saved avatars');
@@ -75,7 +80,7 @@ try {
     r.game.scores = [11, 11]; r.game.remaining = Array(6).fill(0); r.game.remaining[r.seat] = 1; r.game.turn = r.seat; r.game.phase = 'aiming'; r.game.revision++; r.publish();
   });
   const spectator = await open('Dani', `room=${code}`); await wait(spectator, () => criollasDebug.room.state.scores[0] === 11);
-  await guest.locator('#power').fill('10'); await guest.locator('#power').dispatchEvent('input'); await guest.locator('#shoot').click();
+  await guest.locator('#shoot').click();
   await wait(spectator, () => criollasDebug.room.state.phase === 'finished');
   assert.deepEqual(await spectator.evaluate(() => criollasDebug.room.state.scores), await guest.evaluate(() => criollasDebug.room.state.scores));
   await screenshot(guest, 'results'); await guest.locator('#next').click();

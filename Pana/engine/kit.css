@@ -293,6 +293,14 @@
 .pk-power-control input::-webkit-slider-thumb { -webkit-appearance: none; width: 38px; height: 38px; border-radius: 50%; background: #fffdf6; border: 3px solid var(--pk-night); box-shadow: 0 3px 0 rgba(0, 0, 0, .3); }
 .pk-power-control input::-moz-range-thumb { width: 34px; height: 34px; border-radius: 50%; background: #fffdf6; border: 3px solid var(--pk-night); }
 .pk-power-control input:disabled { opacity: .45; cursor: default; }
+/* Charge meter: the hold-and-release version of the power bar (Billar, Bolas
+   Criollas). engine/shot-charge.js paintCharge() moves the fill and marker.
+   <div id="power" class="pk-charge" role="meter" aria-valuemin="5" aria-valuemax="100">
+     <i class="pk-charge-fill"></i><i class="pk-charge-marker"></i></div> */
+.pk-charge { position: relative; flex: 1; min-height: 0; width: 28px; border: 2px solid var(--pk-muted); border-radius: 12px; background: linear-gradient(to top, var(--pk-teal) 0% 45%, var(--pk-yellow) 45% 82%, var(--pk-coral) 82% 100%); }
+.pk-charge::before { content: ''; position: absolute; inset: 0; border-radius: 10px; background: var(--pk-night); opacity: .65; }
+.pk-charge-fill { position: absolute; inset: 0; border-radius: 10px; background: inherit; clip-path: inset(95% 0 0); }
+.pk-charge-marker { position: absolute; left: -7px; right: -7px; height: 5px; bottom: 5%; transform: translateY(50%); border-radius: 3px; background: #fffdf6; box-shadow: 0 0 0 2px var(--pk-night); }
 @media (max-width: 760px) {
   .pk-power { right: 8px; top: auto; bottom: 200px; transform: none; height: min(250px, 34vh); width: 58px; }
   .pk-power-control input { width: 24px; } .pk-power-control input::-webkit-slider-thumb { width: 30px; height: 30px; }

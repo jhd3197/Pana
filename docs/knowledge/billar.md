@@ -84,7 +84,7 @@ long/short/no guide overrides the difficulty-driven guide without changing bots.
 Point/drag to aim, then hold the shot button or Space/Enter. The power meter
 appears only while held: it rises from 5% to 100% in one second, falls over the
 next second and repeats. Release shoots at the current strength; the red top
-marks strong shots. `shot-charge.js` samples elapsed time, including at release,
+marks strong shots. `engine/shot-charge.js` (shared with Bolas Criollas) samples elapsed time, including at release,
 so frame rate does not change the timing. Aiming and spin lock while charging.
 Blur, hidden tabs, pointer cancellation, menu opening and changed gameplay
 revisions cancel without firing. Shared `holdButton` also calls `up` on lost

@@ -69,7 +69,8 @@ test('all pure minigame simulations include six finite scores and independent la
     if (sim.racers) assert(sim.racers[5].strokes > 0);
   }
   const bowls = createCriollasMini(Array(6).fill(true), seeded(99));
-  bowls.update(.05, Array.from({ length: 6 }, (_, i) => ({ jump: i === 5 })));
+  bowls.update(.05, Array.from({ length: 6 }, (_, i) => ({ pull: i === 5 })));
+  bowls.update(.05, Array.from({ length: 6 }, () => ({})));
   assert.deepEqual(bowls.players.map(p => p.left), [2, 2, 2, 2, 2, 1]);
   assert.equal(bowls.scores().length, 6);
 });

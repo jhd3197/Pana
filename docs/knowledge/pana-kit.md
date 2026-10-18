@@ -105,10 +105,22 @@ right, at the bottom edge, in both orientations.
 
 ## Power bar and difficulty
 
-Aim-and-shoot games (Billar, Bolas Criollas) put their power on the right edge:
-`<section class="pk-power"><label class="pk-power-control" for="power">…</label></section>`,
-a vertical range input filled from the bottom. The game sets `--fill` on the
-input whenever its value changes (the fill is a gradient, not a native track).
+Aim-and-shoot games (Billar, Bolas Criollas) put their power on the right edge
+in a `.pk-power` panel. Power is charged, never picked with a slider: hold the
+shot button, Space or Enter and `engine/shot-charge.js#shotPower` rises for one
+second, falls for the next and repeats; letting go shoots at that value. The
+meter is a `.pk-charge` track (`role="meter"`) with `.pk-charge-fill` and
+`.pk-charge-marker`, painted by `paintCharge(meter, power, label)`, and shown only
+while charging. Only a real `pointerup` may shoot; lost capture, blur, hidden
+tabs, the menu and a changed revision cancel.
+
+Dice are thrown, not clicked: `engine/dice-throw.js#bindDiceThrow` turns a held
+button, Space or a flick across the canvas into a 0–1 power (`throwPower`: a
+longer shake or faster flick throws harder; a tap on the canvas is still a
+click). The rules still pick the number. `createToss` is the pure flight (arc,
+shrinking bounces, a tumble that ends exactly on the rolled face: orientation =
+rotate(axis, turn) · final). Ludo and Bululú use both, and `engine/roll-off.js`
+for the opening throw that decides who starts.
 `engine/difficulty.js#createDifficultyPicker` renders the shared Fácil–Experto
 choice; `engine/aim-guide.js` draws ground guides as flat strips, never 1 px lines.
 

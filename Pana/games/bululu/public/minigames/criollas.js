@@ -6,7 +6,7 @@ import { createCriollasMini } from './criollas-sim.js';
 export default {
   id: 'criollas', title: '¡Bolas Criollas!', icon: 'coin', input: '2d', time: 38,
   howto: 'Tienes dos bolas. Arrima al mingo dorado: gana quien quede más cerca. La línea muestra dónde frenaría tu bola sin choques. Si el mingo sale, nadie gana.',
-  keys: [['← →', 'apuntar'], ['↑ ↓', 'fuerza'], ['Espacio', 'lanzar']],
+  keys: [['← →', 'apuntar'], ['Mantén Espacio', 'fuerza'], ['Suelta', 'lanzar']],
   create(ctx) {
     // Isla Bululú plays its criollas on the beach court at Puerto Coco.
     const world = createBolasWorld({ aspect: ctx.aspect || innerWidth / innerHeight, individual: true, venue: 'puerto' });
@@ -28,7 +28,7 @@ export default {
         c.fillStyle = '#0e0b24'; c.beginPath(); c.roundRect(0, 0, 768, 144, 22); c.fill();
         c.textAlign = 'center'; c.fillStyle = '#ffc629'; c.font = '38px "Luckiest Guy", sans-serif'; c.fillText(label, 384, 59);
         c.fillStyle = '#f3e9d7'; c.font = 'bold 26px Nunito, sans-serif';
-        c.fillText(p.left ? '← → Apunta · ↑ ↓ Fuerza · Espacio Lanza' : '¡Listo! Mira dónde quedan las bolas.', 384, 112); texture.needsUpdate = true;
+        c.fillText(p.left ? '← → Apunta · Mantén Espacio y suelta para lanzar' : '¡Listo! Mira dónde quedan las bolas.', 384, 112); texture.needsUpdate = true;
       }
       const width = Math.min(3.5, world.camera.aspect * 3.4); hud.scale.set(width, width * 144 / 768, 1); hud.visible = !sim.over();
       const shots = sim.players.map(s => s.human && s.left && !s.cooldown && sim.clock < 30 ? s : null);

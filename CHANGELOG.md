@@ -19,6 +19,22 @@ becomes the GitHub release's notes.
   for the Mango de oro. The hub card can now show a short name (QQSMP)
   while the banner keeps the full one.
 
+- **You throw the dice now, con arrechera.** In Ludo and Bululú hold the
+  button or Space to shake the dice and let go, or flick them across the
+  table: the harder you shake or flick, the wilder they fly and bounce
+  before landing on the number. Every pana in the room sees the same throw.
+
+- **The dice decide who starts.** Ludo and Bululú open with everyone
+  throwing one die; the highest goes first and a tie throws again.
+
+- **Eating a ficha in Ludo hits harder.** Fichas hop cell by cell; the one
+  you land on flies home spinning, the panas at the table cheer and rage,
+  and a callout says who ate whom.
+
+- **Bolas Criollas charges its throw like Billar.** Hold Lanzar or Space and
+  the force rises and falls; let go to throw. The slider is gone, and
+  Bululú's Bolas Criollas minigame works the same way.
+
 - **The dominó table talks back too.** Open with the double six and you
   salí con la cochina; doubles, a last tile, a pass ("Ando limpio", then
   "Más aburrido que mocho en piñata"), ¡Dominó!, ¡Capicúa! and ¡Tranque!

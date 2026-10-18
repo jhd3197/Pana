@@ -25,7 +25,9 @@ The older source has different competition targets; the selectable targets,
 automated mingo and compact court are deliberate adaptations.
 
 Bululú: six individuals, two balls each, shared mingo and simultaneous throws.
-Arrow X adjusts angle, Z adjusts power, jump throws. Each pana has a 2.5 s
+Arrow X adjusts angle; holding the action (`input.pull`) charges with the shared
+`shotPower` on the sim clock and letting go throws. Bululú latches a tap so a
+quick press still reaches the host as one held tick. Each pana has a 2.5 s
 cooldown; input closes after 30 s and the last balls settle before results.
 The runner's 38 s maximum leaves time for that final throw. The closest surface
 gap wins, including ties within 5 mm. HUD scores express proximity; actual
@@ -45,6 +47,10 @@ in the lobby; before connecting, the lobby edits the local table. A local game
 between hands. The world swaps its venue from the state handler in game.js,
 not from the frame loop: background pages may not draw, and a peer must still
 end up on the host's map.
+
+Force is charged like Billar: hold Lanzar, Space or Enter and the meter rises
+and falls; release throws at that force (never below the rules' 10%). The guide
+line follows the charging force, so it grows while held. Arrows only aim.
 
 Room target and difficulty use the shared segmented controls. “Más ajustes”
 sets balls per player; only the host can change this before play. Those choices

@@ -1,4 +1,5 @@
 // Progress is relative to each seat: -1 yard, 0–50 ring, 51–55 lane, 56 home.
+// A match opens with the 'order' phase: everyone throws once, the highest starts.
 export const HOME = 56;
 export const COLORS = ['#ff4b4b', '#2ad1b2', '#ffc629', '#3d7bf2'];
 export const COLOR_NAMES = ['Rojo', 'Verde', 'Amarillo', 'Azul'];
@@ -46,6 +47,7 @@ export class LudoGame {
     this.players = ['Tito', 'Lola', 'Nina', 'Beto'].map((name, seat) => ({ seat, id: null, name, avatar: {}, pieces: [-1,-1,-1,-1] }));
     this.phase = 'lobby'; this.turn = 0; this.die = 0; this.lastDie = 0;
     this.sixes = 0; this.winner = null; this.revision = 0; this.round = 0;
+    this.order = null; this.toss = { seat: 0, power: .5 };
     this.ledger = {}; this.event = 'Invita a tus panas o juega con bots.';
   }
   snapshot() { return JSON.parse(JSON.stringify(this)); }
@@ -68,15 +70,36 @@ export class LudoGame {
   start() {
     if (!['lobby', 'finished'].includes(this.phase)) return false;
     for (const p of this.players) p.pieces.fill(-1);
-    this.phase = 'playing'; this.turn = 0; this.die = 0; this.lastDie = 0;
+    this.phase = 'order'; this.turn = 0; this.die = 0; this.lastDie = 0;
     this.sixes = 0; this.winner = null; this.round++; this.revision++;
-    this.event = this.options.entry === 'six' ? '¡A jugar! Saca un seis para salir.' : '¡A jugar! Con uno o seis puedes salir.'; return true;
+    this.order = { rolls: [0, 0, 0, 0], contenders: [0, 1, 2, 3] };
+    this.event = '¿Quién empieza? Cada pana tira el dado: el más alto sale primero.'; return true;
+  }
+  // One throw of the roll-off. A tie at the top throws again, only among the tied.
+  orderRoll(value) {
+    const { rolls, contenders } = this.order, p = this.players[this.turn];
+    rolls[this.turn] = value; this.event = `${p.name} sacó ${value}.`;
+    const next = contenders.find(seat => !rolls[seat]);
+    if (next !== undefined) { this.turn = next; return; }
+    const [top] = rollOffGroups(contenders.map(seat => ({ id: seat, value: rolls[seat] })));
+    if (top.length > 1) {
+      this.event += ` Empate a ${rolls[top[0]]} entre ${namesList(top.map(seat => this.players[seat].name))}: tiran otra vez.`;
+      for (const seat of top) rolls[seat] = 0;
+      this.order.contenders = top; this.turn = top[0];
+      return;
+    }
+    this.phase = 'playing'; this.turn = top[0]; this.sixes = 0;
+    this.event += ` ¡Empieza ${this.players[top[0]].name} con ${rolls[top[0]]}! ${this.options.entry === 'six' ? 'Saca un seis para salir.' : 'Con uno o seis puedes salir.'}`;
   }
   nextTurn() { this.turn = (this.turn + 1) % 4; this.die = 0; this.sixes = 0; }
-  roll() {
-    if (this.phase !== 'playing' || this.die) return false;
+  // power only changes how the die flies on screen; bots throw with a varied arm.
+  roll(power) {
+    if (!['playing', 'order'].includes(this.phase) || this.die) return false;
     this.rng = (Math.imul(this.rng, 1664525) + 1013904223) >>> 0;
-    this.die = 1 + Math.floor(this.rng / 4294967296 * 6); this.lastDie = this.die;
+    const value = 1 + Math.floor(this.rng / 4294967296 * 6);
+    this.toss = { seat: this.turn, power: cleanPower(power, .35 + (this.rng & 255) / 255 * .6) };
+    if (this.phase === 'order') { this.lastDie = value; this.orderRoll(value); this.revision++; return true; }
+    this.die = value; this.lastDie = this.die;
     this.sixes = this.die === 6 ? this.sixes + 1 : 0;
     this.event = `${this.players[this.turn].name} sacó ${this.die}.`;
     if (this.sixes === 3 && this.options.threeSixes) { this.event += ' Tres seis seguidos: pierde el turno.'; this.nextTurn(); }
@@ -113,10 +136,12 @@ export class LudoGame {
       if (next) { this.options = next; this.revision++; ok = true; }
     }
     else if (data.action === 'start' && id === hostId) ok = this.start();
-    else if (data.action === 'roll' && seat === this.turn) ok = this.roll();
+    else if (data.action === 'roll' && seat === this.turn) ok = this.roll(data.power);
     else if (data.action === 'move' && seat === this.turn) ok = this.move(data.piece);
     if (ok) this.ledger[id] = data.seq;
     return ok;
   }
 }
 import { defaultLudoOptions, ludoOptions } from './options.js';
+import { rollOffGroups, namesList } from '../../../engine/roll-off.js';
+import { cleanPower } from '../../../engine/dice-throw.js';

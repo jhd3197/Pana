@@ -31,7 +31,8 @@
     <ol id="scoreboard" aria-label="Progreso de los jugadores"></ol>
     <section class="action-panel pk-panel" aria-label="Tu turno">
       <div class="turn-copy"><h2 id="turn" class="pk-heading" aria-live="polite"></h2><p id="event" role="status"></p></div>
-      <div class="play-controls"><output id="die" aria-label="Último dado">—</output><button id="roll" class="pk-btn pk-btn--primary">Tirar dado <kbd class="pk-kbd" data-pana-hint>Espacio</kbd></button><div id="pieces" aria-label="Elige una ficha"></div></div>
+      <div class="play-controls"><output id="die" aria-label="Último dado">—</output><button id="roll" class="pk-btn pk-btn--primary" aria-describedby="roll-tip">Agita y suelta <kbd class="pk-kbd" data-pana-hint>Espacio</kbd></button><div id="pieces" aria-label="Elige una ficha"></div></div>
+      <p id="roll-tip" class="roll-tip" data-pana-hint>Mantén el botón o Espacio para agitar el dado y suelta para tirar, o arrástralo y suéltalo sobre la mesa.</p>
     </section>
     <button id="view" class="pk-btn pk-btn--sm" aria-pressed="false">Vista desde arriba</button>
   </main>
