@@ -85,3 +85,16 @@ export function signBoard({ lines = ['¡DALE', 'PANA!'], w = 8, h = 2.2, accent 
   board.userData.dispose = () => { if (disposed) return; disposed = true; material.map.dispose(); material.dispose(); };
   return board;
 }
+
+// A free-standing painted banner: the signBoard on two wooden posts, painted
+// on both faces. Ground origin, board facing ±Z.
+export function signBanner({ lines = ['¡DALE', 'PANA!'], w = 8, h = 2.6, accent = '#ff4f6d', height = 2.2 } = {}) {
+  const g = new THREE.Group(), wood = M(0x6b4226, { roughness: 0.9 });
+  for (const x of [-w / 2 + .25, w / 2 - .25]) g.add(box(.32, height + h + .3, .32, wood, x, (height + h + .3) / 2, 0));
+  for (const face of [1, -1]) {
+    const board = signBoard({ lines, w, h, accent }); board.position.set(0, height + h / 2, face * .18); board.rotation.y = face > 0 ? 0 : Math.PI; g.add(board);
+  }
+  g.add(box(w, h * .92, .3, M(0x5c3a20, { roughness: .9 }), 0, height + h / 2, 0));
+  g.userData.dispose = () => g.children.forEach(o => o.userData.dispose?.());
+  return g;
+}
