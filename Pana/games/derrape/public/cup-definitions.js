@@ -29,7 +29,7 @@ export const CUP_DEFINITIONS = [
   {
     id: 'agua', name: 'Copa del Agua', edition: CURRENT_CUP_EDITION, available: true,
     stages: [
-      stage('salinas', 2, 130),
+      stage('salinas', 2, 205),
       stage('delta', 3, 165),
       stage('cuevas', 2, 125),
       stage('salto', 2, 180),

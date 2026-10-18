@@ -10,6 +10,10 @@ becomes the GitHub release's notes.
 
 ### Added
 
+- **Salinas del Viento is twice as long and dives into a salt mine.** After the
+  ford the road enters a pink mountain: three domed halls of glowing
+  crystals, salt pools, a waterfall, skylights and a plank shortcut.
+
 - **Jaguars, glowing cave crystals and foaming cascades in Pana Studio.**
   A prowling, sitting or black jaguar, a carved stone jaguar statue and
   lintel, rainbow crystal clusters that pulse, cave skylights with dust

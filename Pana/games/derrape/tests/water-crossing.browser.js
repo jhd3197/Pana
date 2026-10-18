@@ -21,7 +21,7 @@ try{
     for(const index of [0,2,3])for(const wheel of ['calle','lluvia']){
       const c=makeRacer(index,false,'Prueba',wheel);c.skill=1;
       function run(offset){
-        const p=placeOnTrack(T,T.TOTAL*.445,offset);
+        const p=placeOnTrack(T,T.TOTAL*.283,offset);
         Object.assign(c,{x:p.x,z:p.z,y:T.groundAt(p.x,p.z),h:p.h,vx:Math.sin(p.h)*20-Math.cos(p.h)*4,vz:Math.cos(p.h)*20+Math.sin(p.h)*4,
           vf:20,vr:4,vy:0,onGround:true,pitch:0,roll:0,pitchV:0,rollV:0,steer:0,boost:0,spin:0,coins:0,lap:1,cloud:0,stall:0,drift:0});
         const wet=roadWaterAt(T,p.x,p.z),grip=roadGripAt(T,p.x,p.z);

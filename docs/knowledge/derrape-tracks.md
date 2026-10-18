@@ -394,3 +394,19 @@ lane, every road vertex against physics, and three cars on street/rain tires.
 - `hollowGallery` accepts `widthAt(u)` and `heightAt(u)`; `hallProfile(base,
   [{u, add, spread}])` builds Gaussian halls. The corridor in
   `userData.corridor` carries both functions for placement against walls.
+
+## Salt mine under Salinas (tracks/salt-cave.js)
+
+- Salinas runs 2.83 km: the old salt-flat loop, then a detour north through
+  a salt mine (u .385–.765) under a pink mountain. The ford moved from
+  u .445 to u .283; `water-crossing.browser.js` follows it.
+- `salt-cave.js` is reusable: `caveMountain` wraps a track's ground (flat
+  hall floors, an 80 m mountain over the shell, the caller's ground past the
+  mouths), `caveColor` paints it, `saltCave` builds the shell, crystals
+  (one instanced field per 5% of route, so far halls cull), pools, waterfall,
+  formations, mine timbers, portals, beams and motes, and `caveFog` turns
+  the fog rosy and close while the camera is inside. Layouts that Node tests
+  import keep their own hall profile maths (no Three.js).
+- Six point lights on the giant crystals are the only lights; the shell and
+  formations use a pink emissive so the cave never reads dark. Environment
+  draws peak near 840 with eight cars at u .79 (budget 850 without cars).

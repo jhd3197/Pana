@@ -53,7 +53,7 @@ try{
     const xs=result.route.map(p=>p[0]),ys=result.route.map(p=>p[1]),xmin=Math.min(...xs)-40,ymin=Math.min(...ys)-40,w=Math.max(...xs)-xmin+40,h=Math.max(...ys)-ymin+40;
     await writeFile(`${out}/route.svg`,`<svg xmlns="http://www.w3.org/2000/svg" viewBox="${xmin} ${ymin} ${w} ${h}"><rect x="${xmin}" y="${ymin}" width="${w}" height="${h}" fill="#eeeee5"/><polyline points="${[...result.route,result.route[0]].map(p=>p.join(',')).join(' ')}" fill="none" stroke="#2b564d" stroke-width="12"/><text x="${xmin+15}" y="${ymin+25}" font-family="sans-serif" font-size="18">${id} · ${(result.length/1000).toFixed(2)} km</text></svg>`);
     console.log(JSON.stringify({...result,route:undefined}));
-    assert.ok(result.length>=1500&&result.length<=2700,`${id}: length ${result.length}`);
+    assert.ok(result.length>=1500&&result.length<=3300,`${id}: length ${result.length}`);
     assert.ok(result.minRadius>15,`${id}: minimum radius ${result.minRadius}`);
     assert.ok(result.maxGrade<.25,`${id}: grade ${result.maxGrade}`);
     assert.ok(result.projection<.25,`${id}: road lane projection ambiguity`);

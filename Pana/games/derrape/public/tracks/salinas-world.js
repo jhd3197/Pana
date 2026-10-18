@@ -1,7 +1,8 @@
 import { THREE, terrain, put, finish, instances, scatter, clear, foundation } from './world-kit.js';
 import { waterGrid } from './water-world-kit.js';
 import { waterAnimator } from '/engine/models/effects/water-surface.js';
-import { baseHeight, PONDS, WATER_Y, channelSample, pondField } from './salinas-layout.js';
+import { baseHeight, PONDS, WATER_Y, channelSample, pondField, CAVE, CAVE_PROFILE } from './salinas-layout.js';
+import { saltCave, caveMountain, caveColor, caveFog } from './salt-cave.js';
 import { pondAt } from './water-world-math.js';
 import { saltPile, sluiceGate } from '/engine/models/props/saltworks.js';
 import { landingShelter } from '/engine/models/props/delta.js';
@@ -14,10 +15,12 @@ import { waterPumpStation } from '/engine/models/props/water-pump-station.js';
 import { cargoHandcart } from '/engine/models/props/cargo-handcart.js';
 import { flamingo } from '/engine/models/fauna/birds/flamingo.js';
 export function salinasWorld(T) {
-  const group=new THREE.Group(),world=terrain(T,{bounds:[-600,-450,600,500],base:baseHeight,step:4,
+  const group=new THREE.Group(),world=terrain(T,{bounds:[-640,-450,620,960],base:caveMountain(T,CAVE,CAVE_PROFILE,baseHeight),step:5,
     cut:(x,z,h)=>channelSample(x,z).distance<3?Math.min(h,-.4):h,
-    color:(x,z,y)=>y<.8?0xc5bfae:0xdedbce});
+    color:caveColor(T,CAVE,CAVE_PROFILE,(x,z,y)=>y<.8?0xc5bfae:0xdedbce)});
   group.add(world.land);
+  const mine=saltCave(T,CAVE,CAVE_PROFILE,{groundAt:world.groundAt,name:'salinas-mine'});
+  group.add(mine.group);caveFog(T,CAVE,world.land);
   for(const [i,p]of PONDS.entries())group.add(waterGrid(T,world,{
     bounds:[p.x-p.rx*1.1,p.z-p.rz*1.1,p.x+p.rx*1.1,p.z+p.rz*1.1],step:3,
     sample:(x,z)=>({height:WATER_Y,visible:pondAt(p,x,z)<1.04,along:z}),color:p.color,name:`salt-pond-${i}`,
@@ -72,5 +75,7 @@ export function salinasWorld(T) {
   instances(group,agave({seed:4}),scatter(T,world.groundAt,{seed:592,count:65,bounds:[-480,-330,480,390],margin:5,
     accept:(x,z)=>pondField(x,z)>1.3&&channelSample(x,z).distance>12}),'salinas-dry-banks',190);
   group.userData.assetCounts={saltPile:piles,sluiceGate:gates,landingShelter:shelters,saltHarvester:harvesters,flamingo:poses.flat().length};
-  return {group,groundAt:world.groundAt,update:waterAnimator(group)};
+  group.userData.assetCounts.mine=mine.group.userData.assetCounts;
+  const water=waterAnimator(group);
+  return {group,groundAt:world.groundAt,update:(t,dt)=>{water(t);mine.update(t,dt);}};
 }

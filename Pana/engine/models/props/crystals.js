@@ -33,7 +33,7 @@ function crystalPrism() {
 // toward the tips. The time uniform is owned by the field.
 function crystalMaterial(color, time, { glow, pulse, speed }) {
   const material = new THREE.MeshStandardMaterial({
-    color: new THREE.Color(color).lerp(new THREE.Color(0xffffff), .25), emissive: color, emissiveIntensity: glow,
+    color: new THREE.Color(color).lerp(new THREE.Color(0xffffff), .12), emissive: color, emissiveIntensity: glow,
     roughness: .18, metalness: .05, flatShading: true,
   });
   material.onBeforeCompile = shader => {
