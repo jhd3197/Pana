@@ -2,6 +2,7 @@
 import assert from 'node:assert/strict';
 import { createRequire } from 'node:module';
 import { mkdir } from 'node:fs/promises';
+import { waitPrepared } from '../../../tests/browser-kit.js';
 const { chromium } = createRequire(import.meta.url)(process.env.PANA_PLAYWRIGHT_PATH || 'playwright');
 const base = process.env.PANA_TEST_URL || 'http://localhost:8461', code = `pool-${Date.now()}`, errors = [];
 const browser = await chromium.launch({ headless: true, args: ['--disable-background-timer-throttling', '--disable-renderer-backgrounding'] });
@@ -20,13 +21,23 @@ async function open(name, room = code, mobile = false, full = false, view = 'pla
   const page = await context.newPage(); page.on('pageerror', error => errors.push(error.message));
   await page.goto(`${base}/g/billar/?room=${room}&debug`, { waitUntil: 'domcontentloaded' });
   await wait(page, () => !!window.billarDebug);
+  await waitPrepared(page);
   if (!full) await wait(page, () => billarDebug.room.connected);
   return page;
 }
 async function target(page, x, y) {
   const point = await page.evaluate(([x, y]) => billarDebug.world.screen(x, y), [x, y]); await page.mouse.click(point.x, point.y);
 }
-async function power(page, value) { await page.locator('#power').fill(String(value)); }
+async function beginShot(page) {
+  const box = await page.locator('#shoot').boundingBox();
+  await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2); await page.mouse.down();
+}
+async function powerReached(page, value) {
+  await wait(page, value => !document.getElementById('power-bar').hidden && Number(document.getElementById('power').getAttribute('aria-valuenow')) >= value, value);
+}
+async function shoot(page, value) {
+  await beginShot(page); await powerReached(page, value); await page.mouse.up();
+}
 async function same(a, b) {
   const state = await a.evaluate(() => billarDebug.room.state);
   await wait(b, revision => billarDebug.room.state.revision === revision, state.revision);
@@ -67,33 +78,39 @@ try {
   const revision = await a.evaluate(() => billarDebug.room.state.revision);
   await b.evaluate(() => billarDebug.room.action('shoot', { angle: 0, power: 1 }));
   await b.waitForTimeout(200); assert.equal(await a.evaluate(() => billarDebug.room.state.revision), revision);
-  await target(a, 690, 250); await power(a, 100); await a.locator('#shoot').click();
+  assert.ok(await a.locator('#power-bar').isHidden(), 'meter is hidden before holding');
+  await target(a, 690, 250); await beginShot(a); await powerReached(a, 90);
+  assert.equal(await a.evaluate(() => billarDebug.room.state.shots), 0, 'holding does not shoot');
+  await a.screenshot({ path: 'art/billar/charging.png' });
+  await wait(a, () => Number(document.getElementById('power').getAttribute('aria-valuenow')) < 30);
+  await powerReached(a, 95); await a.mouse.up();
+  assert.ok(await a.locator('#power-bar').isHidden(), 'release hides the meter');
   await wait(b, () => billarDebug.room.state.phase === 'rolling');
   await wait(a, () => billarDebug.room.state.phase === 'aiming'); await same(a, b);
   assert.equal(await b.evaluate(() => billarDebug.room.state.shots), 1); await b.screenshot({ path: 'art/billar/playing.png' });
   check('mouse break physically disperses the rack and two clients agree; wrong-seat shot rejected');
 
   await fixture(a, 'pot'); await same(a, b);
-  await target(b, 70, 70); await power(b, 22); await b.locator('#shoot').click();
+  await target(b, 70, 70); await shoot(b, 22);
   await wait(a, () => billarDebug.room.state.phase === 'rolling');
   await wait(b, () => billarDebug.room.state.shots === 3 && billarDebug.room.state.phase === 'aiming'); await same(a, b);
   assert.equal(await b.evaluate(() => billarDebug.room.state.balls[1].pocketed), true);
   assert.equal(await b.evaluate(() => billarDebug.room.state.turn), 1); check('guest cue shot pots a solid and keeps the turn');
 
-  await fixture(a, 'scratch'); await same(a, b); await target(b, 0, 0); await power(b, 30); await b.locator('#shoot').click();
+  await fixture(a, 'scratch'); await same(a, b); await target(b, 0, 0); await shoot(b, 30);
   await wait(a, () => billarDebug.room.state.ballInHand); await same(a, b);
   assert.equal(await a.evaluate(() => billarDebug.room.state.turn), 0);
   await target(a, 850, 350); assert.equal(await a.evaluate(() => billarDebug.room.state.ballInHand), true);
   await target(a, 300, 200); await wait(b, () => !billarDebug.room.state.ballInHand);
   assert.ok(Math.abs(await b.evaluate(() => billarDebug.room.state.balls[0].x) - 300) < 1); check('scratch awards rival ball in hand; occupied placements are rejected');
 
-  await fixture(a, 'eight'); await same(a, b); await target(b, 70, 70); await power(b, 22); await b.locator('#shoot').click();
+  await fixture(a, 'eight'); await same(a, b); await target(b, 70, 70); await shoot(b, 22);
   await a.locator('#results').waitFor({ state: 'visible' }); await b.locator('#results').waitFor({ state: 'visible' });
   assert.equal(await a.evaluate(() => billarDebug.room.state.result.winner), 1); assert.ok(await b.locator('#again').isDisabled());
   await b.screenshot({ path: 'art/billar/results.png' }); await a.locator('#again').click(); await wait(b, () => billarDebug.room.state.round === 2); await same(a, b);
   check('legal eight produces shared results and the host can start a clean rematch');
 
-  await target(a, 690, 250); await power(a, 100); await a.locator('#shoot').click();
+  await target(a, 690, 250); await shoot(a, 95);
   await wait(b, () => billarDebug.room.state.phase === 'rolling' && billarDebug.room.state.shot.elapsed > .2);
   await a.close(); await wait(b, () => billarDebug.room.isHost);
   await wait(b, () => billarDebug.room.state.phase === 'aiming');
@@ -117,7 +134,14 @@ try {
   await m.screenshot({ path: 'art/billar/mobile-playing.png' });
   assert.equal(await m.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
   const shotBox = await m.locator('#shoot').boundingBox(); assert.ok(shotBox.y + shotBox.height <= 844);
-  await m.locator('#shoot').tap(); await wait(m, () => billarDebug.room.state.phase === 'rolling');
+  // Native touch input stays held while the meter cycles, then releases one shot.
+  const touchSession = await m.context().newCDPSession(m);
+  const finger = { x: shotBox.x + shotBox.width / 2, y: shotBox.y + shotBox.height / 2 };
+  await touchSession.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [finger] });
+  await powerReached(m, 85); await m.screenshot({ path: 'art/billar/mobile-charging.png' });
+  assert.equal(await m.evaluate(() => billarDebug.room.state.shots), 0);
+  await touchSession.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+  await wait(m, () => billarDebug.room.state.phase === 'rolling');
   await m.locator('#menu').tap(); const elapsed = await m.evaluate(() => billarDebug.room.state.shot.elapsed); await m.waitForTimeout(300);
   assert.equal(await m.evaluate(() => billarDebug.room.state.shot.elapsed), elapsed);
   await m.locator('#pana-resume').tap(); await wait(m, () => billarDebug.room.state.phase === 'aiming');
@@ -142,7 +166,7 @@ try {
   // The guide follows on the next drawn frame.
   await wait(bot, () => { const g = billarDebug.world.guides; return billarDebug.room.state.difficulty === 'experto' && g.aim && !g.ghost && !g.object; });
   const pad = await bot.locator('#spin').boundingBox(); await bot.mouse.click(pad.x + pad.width / 2, pad.y + pad.height * .2);
-  await bot.locator('#table').focus(); await bot.keyboard.press('Space');
+  await bot.locator('#table').focus(); await bot.keyboard.down('Space'); await powerReached(bot, 70); await bot.keyboard.up('Space');
   await wait(bot, () => billarDebug.room.state.phase === 'rolling'); assert.ok(await bot.evaluate(() => billarDebug.room.state.shot.spin.y) > .5, 'top spin travels with the shot');
   await wait(bot, () => billarDebug.room.state.shots >= 2 || billarDebug.room.state.phase === 'finished', null);
   await bot.screenshot({ path: 'art/billar/versus-bot.png' });
@@ -152,7 +176,26 @@ try {
   const offline = await open('Sin red', `${code}-offline`); await offline.evaluate(() => billarDebug.room.cut());
   await wait(offline, () => !billarDebug.room.connected); await offline.locator('#practice').click();
   assert.equal(await offline.evaluate(() => billarDebug.room.state.phase), 'aiming');
-  await offline.locator('#table').focus(); await offline.keyboard.press('ArrowRight'); await offline.keyboard.press('Space');
+  await offline.locator('#shoot').focus(); await offline.keyboard.down('Space'); await powerReached(offline, 40);
+  await offline.keyboard.down('Space'); await offline.keyboard.press('Enter');
+  assert.ok(await offline.locator('#power-bar').isVisible(), 'repeat and unrelated release keep the original charge');
+  await offline.keyboard.press('Escape'); await offline.keyboard.up('Space');
+  assert.ok(await offline.locator('#power-bar').isHidden());
+  assert.equal(await offline.evaluate(() => billarDebug.room.state.shots), 0, 'pause cancels without shooting');
+  await offline.locator('#pana-resume').click();
+  for (const interruption of ['blur', 'pointercancel', 'lostpointercapture', 'revision']) {
+    await beginShot(offline); await powerReached(offline, 30);
+    await offline.evaluate(interruption => {
+      if (interruption === 'blur') window.dispatchEvent(new Event('blur'));
+      else if (interruption === 'revision') billarDebug.room.action('difficulty', { difficulty: 'experto' });
+      else document.getElementById('shoot').dispatchEvent(new PointerEvent(interruption, { pointerId: 1 }));
+    }, interruption);
+    await offline.mouse.up();
+    assert.ok(await offline.locator('#power-bar').isHidden());
+    assert.equal(await offline.evaluate(() => billarDebug.room.state.shots), 0, `${interruption} cancels without shooting`);
+  }
+  await offline.locator('#table').focus(); await offline.keyboard.press('ArrowRight');
+  await offline.keyboard.down('Enter'); await powerReached(offline, 60); await offline.keyboard.up('Enter');
   await wait(offline, () => billarDebug.room.state.phase === 'rolling'); check('keyboard shots and local fallback after a lost connection work');
   await offline.goto(`${base}/`); await offline.getByRole('heading', { name: 'Billar', exact: true }).waitFor();
   assert.equal(await offline.getByRole('heading', { name: 'Billar', exact: true }).count(), 1);

@@ -10,12 +10,14 @@ import { fillRoster } from '/engine/results.js';
 import { PoolRoom } from './network.js';
 import { groupName, groupOf, canPlace, remaining } from './rules.js';
 import { createPoolScene, VIEWS } from './scene.js';
+import { shotPower } from './shot-charge.js';
 
 const $ = id => document.getElementById(id), code = roomFromUrl() || newRoomCode();
 const params = new URLSearchParams(location.search); params.set('room', code);
 history.replaceState(null, '', `${location.pathname}?${params}`);
 let angle = 0, placement = null, held = 0, toastTimer, stopped = false, lastRevision = -1, previousPhase = 'lobby', drag = null;
 const spin = { x: 0, y: 0 };
+let charge = null, power = .65;
 const world = createPoolScene($('table')), portraitKeys = [], portraitCache = new Map();
 // The chosen camera is a personal preference, remembered on this device.
 let cameraView = 'taco';
@@ -43,7 +45,7 @@ const difficultyPicker = createDifficultyPicker($('difficulty-picker'), difficul
 const menu = createGameMenu({
   title: 'Billar · Pana', orientation: 'libre', sound: audio,
   note: () => room.members.size > 1 ? 'La mesa sigue jugando mientras estás en el menú.' : 'La mesa está en pausa.',
-  controls: [['Ratón / dedo', 'Toca la mesa para apuntar; detrás de la bola, arrastra a los lados para girar'], ['← →', 'Afina la dirección del taco'], ['↑ ↓', 'Ajusta la fuerza del tiro'], ['Espacio / Enter', 'Tira; con bola en mano, confirma la posición'], ['Flechas con bola en mano', 'Mueve la blanca antes de colocarla'], ['Efecto', 'Toca la bola blanca del panel para darle efecto'], ['C', 'Cambia la cámara'], ['M', 'Sonido'], ['Esc', 'Menú']],
+  controls: [['Ratón / dedo', 'Toca la mesa para apuntar; detrás de la bola, arrastra a los lados para girar'], ['← →', 'Afina la dirección del taco'], ['Mantener Tirar / Espacio / Enter', 'La fuerza sube y baja: suelta para tirar. Rojo es más fuerte'], ['Enter con bola en mano', 'Confirma la posición'], ['Flechas con bola en mano', 'Mueve la blanca antes de colocarla'], ['Efecto', 'Toca la bola blanca del panel para darle efecto'], ['C', 'Cambia la cámara'], ['M', 'Sonido'], ['Esc', 'Menú']],
   tips: [
     'Reglas de la casa: dos panas, lisas (1–7) contra rayadas (9–15). La primera bola que metas sin falta elige tu grupo, incluso en el saque.',
     'Toca primero una bola de tu grupo. Después del contacto, mete una bola o haz que cualquiera llegue a una banda. Si metes una de las tuyas sin falta, sigues tirando.',
@@ -54,7 +56,7 @@ const menu = createGameMenu({
     'Efecto: arriba la blanca sigue después del choque, abajo regresa y a los lados cambia el rebote en las bandas.',
     'Si alguien sale, su puesto queda libre para otro pana. La mesa conserva las bolas y el turno. El anfitrión empieza la revancha.',
   ],
-  invite: () => inviteUrl(code), onOpen() { held = 0; pads.forEach(p => p.release()); render(room.state); },
+  invite: () => inviteUrl(code), onOpen() { clearInput(); render(room.state); },
   options: [{ id: 'view', label: 'Cámara', choices: VIEWS, get: () => cameraView, set: setCamera },
     // Local tables change difficulty any time; an online match keeps the host's choice.
     { id: 'difficulty', label: 'Dificultad', choices: DIFFICULTIES.map(d => [d.id, d.label]), get: () => room.state.difficulty,
@@ -92,24 +94,54 @@ $('spin').addEventListener('keydown', event => {
 
 function notify(text) { $('toast').textContent = text; $('toast').hidden = false; clearTimeout(toastTimer); toastTimer = setTimeout(() => { $('toast').hidden = true; }, 3200); }
 function ownTurn() { return !menu.isOpen && room.connected && room.state.phase === 'aiming' && room.seat === room.state.turn && (room.offline || room.state.players.every(p => p.id !== null)); }
-function shoot() {
-  if (!ownTurn()) return;
+function updateCharge(now = performance.now()) {
+  if (!charge) return;
+  power = shotPower(now - charge.started);
+  const percent = Math.round(power * 100);
+  $('power').setAttribute('aria-valuenow', percent);
+  $('power-fill').style.clipPath = `inset(${(1 - power) * 100}% 0 0)`;
+  $('power-marker').style.bottom = `${power * 100}%`;
+  $('power-value').textContent = `${percent}%`;
+}
+function chargeValid() { return ownTurn() && !room.state.ballInHand && charge?.revision === room.state.revision; }
+function cancelCharge() {
+  charge = null; power = .65;
+  $('power-bar').hidden = true; $('shoot').classList.remove('is-charging');
+  $('shoot').firstChild.textContent = room.state.ballInHand ? 'Colocar ' : 'Mantén para tirar ';
+  for (const id of ['aim-left', 'aim-right', 'spin']) $(id).disabled = !ownTurn() || room.state.ballInHand;
+}
+function beginCharge(source) {
+  if (!ownTurn() || charge) return;
   if (room.state.ballInHand) { place(placement || room.state.balls[0]); return; }
-  audio.unlock(); room.action('shoot', { angle, power: Number($('power').value) / 100, spin: { ...spin } });
+  audio.unlock(); held = 0; drag = null;
+  charge = { source, started: performance.now(), revision: room.state.revision };
+  $('power-bar').hidden = false; $('shoot').classList.add('is-charging');
+  $('shoot').firstChild.textContent = 'Suelta para tirar ';
+  for (const id of ['aim-left', 'aim-right', 'spin']) $(id).disabled = true;
+  updateCharge();
+}
+function releaseCharge(source) {
+  if (charge?.source !== source) return;
+  const valid = chargeValid(); updateCharge();
+  const shot = { angle, power, spin: { ...spin } }; cancelCharge();
+  if (valid) room.action('shoot', shot);
 }
 function place(point) {
   if (!canPlace(room.state, point.x, point.y)) { notify('Pon la blanca en un lugar libre, lejos de las troneras.'); return; }
   room.action('place', point); placement = null;
 }
-$('shoot').onclick = shoot;
-$('power').oninput = () => { $('power-value').textContent = `${$('power').value}%`; $('power').style.setProperty('--fill', `${($('power').value - 5) / .95}%`); };
-$('power').oninput();
 const pads = [-1, 1].map((direction, i) => holdButton($(i ? 'aim-right' : 'aim-left'), {
-  down: () => { if (ownTurn()) { held = direction; angle += direction * .006; } }, up: () => { held = 0; }, paused: () => !ownTurn() || room.state.ballInHand,
+  down: () => { if (ownTurn()) { held = direction; angle += direction * .006; } }, up: () => { held = 0; }, paused: () => !ownTurn() || room.state.ballInHand || !!charge,
 }));
+pads.push(holdButton($('shoot'), {
+  down: () => beginCharge('pointer'),
+  up: event => { if (event?.type === 'pointerup') releaseCharge('pointer'); else cancelCharge(); },
+  paused: () => !ownTurn() || !!charge,
+}));
+function clearInput() { cancelCharge(); held = 0; drag = null; pads.forEach(p => p.release()); }
 
 function aim(event) {
-  if (!ownTurn()) return;
+  if (!ownTurn() || charge) return;
   const point = world.point(event.clientX, event.clientY);
   if (!point) return;
   if (room.state.ballInHand) placement = point;
@@ -119,7 +151,7 @@ function aim(event) {
 // would chase itself: a drag turns the cue, a tap aims at the spot.
 const chasing = () => world.view === 'taco' && !room.state.ballInHand;
 $('table').addEventListener('pointerdown', event => {
-  if (!ownTurn()) return; event.preventDefault(); $('table').focus({ preventScroll: true }); $('table').setPointerCapture(event.pointerId);
+  if (!ownTurn() || charge) return; event.preventDefault(); $('table').focus({ preventScroll: true }); $('table').setPointerCapture(event.pointerId);
   if (chasing()) drag = { x: event.clientX, angle, moved: false }; else aim(event);
 });
 $('table').addEventListener('pointermove', event => {
@@ -133,13 +165,16 @@ $('table').addEventListener('pointerup', event => {
   if (ownTurn() && room.state.ballInHand) { aim(event); if (placement) place(placement); }
 });
 $('table').addEventListener('pointercancel', () => { placement = null; drag = null; });
-addEventListener('blur', () => { held = 0; pads.forEach(p => p.release()); });
+addEventListener('blur', clearInput);
+document.addEventListener('visibilitychange', () => { if (document.hidden) clearInput(); });
 addEventListener('keydown', event => {
-  if (menu.isOpen || event.target.closest?.('input, button, a, textarea, select')) return;
+  if (menu.isOpen || (event.target.id !== 'shoot' && event.target.closest?.('input, button, a, textarea, select'))) return;
   if (event.key.toLowerCase() === 'm') toggleMute();
   if (event.key.toLowerCase() === 'c' && !event.ctrlKey && !event.metaKey && room.state.phase !== 'lobby') $('camera').click();
   if (!ownTurn()) return;
   if (['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', ' ', 'Enter'].includes(event.key)) event.preventDefault();
+  if (event.key === ' ' || event.key === 'Enter') { if (!event.repeat) beginCharge(event.key); return; }
+  if (charge) return;
   if (room.state.ballInHand && event.key.startsWith('Arrow')) {
     const point = placement || { x: room.state.balls[0].x, y: room.state.balls[0].y };
     let x = event.key === 'ArrowLeft' ? -8 : event.key === 'ArrowRight' ? 8 : 0;
@@ -147,8 +182,9 @@ addEventListener('keydown', event => {
     if (world.rotation) [x, y] = [y, -x];
     placement = { x: point.x + x, y: point.y + y };
   } else if (event.key === 'ArrowLeft' || event.key === 'ArrowRight') angle += (event.key === 'ArrowLeft' ? -1 : 1) * (event.shiftKey ? .002 : .012);
-  else if (event.key === 'ArrowUp' || event.key === 'ArrowDown') { $('power').value = Number($('power').value) + (event.key === 'ArrowUp' ? 5 : -5); $('power').oninput(); }
-  if (!event.repeat && (event.key === ' ' || event.key === 'Enter')) shoot();
+});
+addEventListener('keyup', event => {
+  if (charge?.source === event.key) { event.preventDefault(); releaseCharge(event.key); }
 });
 
 function render(state) {
@@ -172,13 +208,15 @@ function render(state) {
     updatePortrait(player, seat);
   }
   const active = ownTurn();
+  if (charge && !chargeValid()) clearInput();
   $('turn-status').textContent = !room.connected ? 'Reconectando…' : !ready ? 'Esperando a tu pana' : state.phase === 'rolling' ? 'Rodando…'
     : active ? state.ballInHand ? 'Coloca la blanca' : '¡Tu turno!' : `Turno de ${state.players[state.turn].name}`;
   $('message').textContent = state.ballInHand && active ? 'Toca un lugar libre de la mesa. Después apunta y tira.' : state.message;
-  $('shoot').disabled = !active; $('power').disabled = !active || state.ballInHand;
-  for (const id of ['aim-left', 'aim-right', 'spin']) $(id).disabled = !active || state.ballInHand;
-  $('side-controls').hidden = $('power-bar').hidden = lobby || ended;
-  $('shoot').firstChild.textContent = state.ballInHand ? 'Colocar ' : 'Tirar ';
+  $('shoot').disabled = !active;
+  $('charge-tip').hidden = !active || state.ballInHand;
+  for (const id of ['aim-left', 'aim-right', 'spin']) $(id).disabled = !active || state.ballInHand || !!charge;
+  $('side-controls').hidden = lobby || ended; $('power-bar').hidden = !charge;
+  $('shoot').firstChild.textContent = state.ballInHand ? 'Colocar ' : charge ? 'Suelta para tirar ' : 'Mantén para tirar ';
   if (state.revision !== lastRevision) {
     if (state.phase === 'rolling' && previousPhase !== 'rolling') audio.tone(360, 0, .06, 'triangle', .12);
     if (previousPhase === 'rolling' && state.phase !== 'rolling') { placement = null; setSpin(0, 0); audio.tone(600, 0, .08, 'sine', .08); }
@@ -217,8 +255,9 @@ let frameTime = performance.now();
 function frame(now) {
   if (stopped) return;
   const dt = Math.min(.05, (now - frameTime) / 1000); frameTime = now;
-  if (ownTurn()) angle += held * dt * .45;
-  world.draw(room.state, { angle, power: Number($('power').value) / 100, spin, active: ownTurn(), placement, dt }); requestAnimationFrame(frame);
+  if (charge) { if (chargeValid()) updateCharge(now); else clearInput(); }
+  if (ownTurn() && !charge) angle += held * dt * .45;
+  world.draw(room.state, { angle, power, spin, active: ownTurn(), placement, dt }); requestAnimationFrame(frame);
 }
 render(room.state); room.connect(); requestAnimationFrame(frame);
 addEventListener('pagehide', () => { stopped = true; clearInterval(timer); clearTimeout(toastTimer); room.dispose(); world.dispose(); }, { once: true });

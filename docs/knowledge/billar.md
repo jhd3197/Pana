@@ -51,8 +51,16 @@ The kit owns membership, host election, reconnection and invitations.
 
 ## Controls and proof
 
-Point/drag to aim, choose power, then press Tirar. Arrow keys refine angle and
-power; Space/Enter shoots. With ball in hand, arrows move its proposed position
+Point/drag to aim, then hold the shot button or Space/Enter. The power meter
+appears only while held: it rises from 5% to 100% in one second, falls over the
+next second and repeats. Release shoots at the current strength; the red top
+marks strong shots. `shot-charge.js` samples elapsed time, including at release,
+so frame rate does not change the timing. Aiming and spin lock while charging.
+Blur, hidden tabs, pointer cancellation, menu opening and changed gameplay
+revisions cancel without firing. Shared `holdButton` also calls `up` on lost
+capture and programmatic release: only an actual `pointerup` may shoot.
+Left/right refine angle; up/down no longer select power.
+With ball in hand, arrows move its proposed position
 and Enter confirms; mouse/touch places it directly. Narrow portrait play
 rotates the table, with inverse pointer coordinates and upright ball numbers.
 Solo practice pauses in the shared menu; a connected two-person match continues.
@@ -114,13 +122,14 @@ wood slab can silently hide the entire felt surface.
 the actual 3D bounds to the HUD's available screen rectangle using camera view
 offsets, while the canvas fills the viewport. Do not restore inset canvas padding.
 
-Run `npm run test:browser -- billar` with `PANA_PLAYWRIGHT_PATH` set to an external
-Playwright install. The browser suite uses actual independent Colyseus clients
+Run `npm run test:browser -- billar` with the repo's Playwright dev dependency.
+The browser suite uses actual independent Colyseus clients
 for a full-rack break, guest shots, turn rejection, room capacity, ball in hand,
 results, rematch, host departure mid-shot, late arrival and reload recovery.
 Late-game shot fixtures exercise known pocket geometry through the same mouse
 controls. It also checks portrait/landscape touch layout, shared pause, keyboard
-input, offline fallback, saved-avatar portraits and hub discovery. Screenshots
+input, charge cycles and interruption without firing, offline fallback,
+saved-avatar portraits and hub discovery. Screenshots
 are saved under ignored `art/billar/`.
 
 ## Shared map selection

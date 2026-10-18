@@ -14,6 +14,10 @@ becomes the GitHub release's notes.
   ford the road enters a pink mountain: three domed halls of glowing
   crystals, salt pools, a waterfall, skylights and a plank shortcut.
 
+- **Time your release to control shot strength in Billar.**
+  Hold the shot button or Space/Enter to reveal a rising and falling power
+  meter, then release to shoot. The red zone delivers the strongest shots.
+
 - **Jaguars, glowing cave crystals and foaming cascades in Pana Studio.**
   A prowling, sitting or black jaguar, a carved stone jaguar statue and
   lintel, rainbow crystal clusters that pulse, cave skylights with dust

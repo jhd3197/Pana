@@ -52,15 +52,16 @@
       <span class="side-label">Cámara <kbd class="pk-kbd" data-pana-hint>C</kbd></span>
     </section>
     <section id="power-bar" class="pk-power" hidden aria-label="Fuerza del tiro">
-      <label class="pk-power-control" for="power"><span>Fuerza</span><input id="power" type="range" min="5" max="100" value="65" aria-orientation="vertical"><output id="power-value">65%</output></label>
+      <div class="pk-power-control"><span id="power-label">Fuerza</span><div id="power" class="charge-track" role="meter" aria-labelledby="power-label" aria-valuemin="5" aria-valuemax="100" aria-valuenow="5"><i id="power-fill"></i><i id="power-marker"></i></div><span id="power-value" aria-hidden="true">5%</span><span>Suelta</span></div>
     </section>
     <section id="play-controls" class="play-controls" hidden aria-label="Controles de tiro">
       <div class="turn-copy"><b id="turn-status" aria-live="polite"></b><p id="message" role="status"></p></div>
-      <div class="shot-controls">
+      <div class="shot-controls pk-touch-zone">
         <div class="fine-controls pk-touch-zone"><button id="aim-left" class="pk-touch pk-touch--sm" data-icon="left" aria-label="Apuntar a la izquierda"></button><button id="aim-right" class="pk-touch pk-touch--sm" data-icon="right" aria-label="Apuntar a la derecha"></button></div>
-        <button id="shoot" class="pk-btn pk-btn--primary pk-btn--lg">Tirar <kbd class="pk-kbd" data-pana-hint>Espacio</kbd></button>
+        <button id="shoot" class="pk-btn pk-btn--primary pk-btn--lg" aria-describedby="charge-tip">Mantén para tirar <kbd class="pk-kbd" data-pana-hint>Espacio</kbd></button>
       </div>
-      <p class="input-tip" data-pana-hint>Arrastra a los lados para girar · ← → afinar · ↑ ↓ fuerza · Espacio tirar</p>
+      <p id="charge-tip" class="charge-tip">Mantén pulsado: la fuerza sube y baja. Suelta para tirar.</p>
+      <p class="input-tip" data-pana-hint>Arrastra para girar · ← → afinar · Mantén Espacio y suelta</p>
     </section>
     <div id="recovery" class="pk-panel" hidden><p id="recovery-copy" role="status"></p><button id="local-fallback" class="pk-btn pk-btn--primary">Practicar a solas</button></div>
   </main>
