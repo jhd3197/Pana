@@ -8,6 +8,10 @@ becomes the GitHub release's notes.
 
 ## Unreleased
 
+## 0.3.1 - 2026-10-18
+
+Maintenance release: no changes you will notice.
+
 ## 0.3.0 - 2026-10-18
 
 Maintenance release: no changes you will notice.
