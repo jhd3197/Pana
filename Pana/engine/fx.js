@@ -7,8 +7,10 @@ export const sound = {
   ctx: null,
   muted: false,
   volume: 1,
+  musicVolume: 0.5,
   engine: null,
   master: null,
+  musicBus: null,
 
   unlock() {
     if (!this.ctx) this.ctx = new (window.AudioContext || window.webkitAudioContext)();
@@ -23,6 +25,21 @@ export const sound = {
       this.master.connect(this.ctx.destination);
     }
     return this.master;
+  },
+
+  // music rides its own gain under the master, so its slider leaves effects alone
+  musicOut() {
+    if (!this.musicBus) {
+      this.musicBus = this.ctx.createGain();
+      this.musicBus.gain.value = this.musicVolume;
+      this.musicBus.connect(this.out());
+    }
+    return this.musicBus;
+  },
+
+  setMusicVolume(v) {
+    this.musicVolume = Math.min(1, Math.max(0, v));
+    if (this.musicBus) this.musicBus.gain.setTargetAtTime(this.musicVolume, this.ctx.currentTime, 0.02);
   },
 
   setVolume(v) {

@@ -13,6 +13,7 @@ export const QUALITY = {
 export const DEFAULTS = Object.freeze({
   sound: true,     // all game sound on or off
   volume: 0.8,     // master volume, 0–1
+  music: 0.5,      // music level under the master volume, 0–1
   quality: 'alta', // render resolution, see QUALITY
   hints: true,     // on-screen keyboard reminders ([data-pana-hint])
   orientation: 'juego', // phones: 'juego' (each game's own default), 'horizontal' or 'vertical'
@@ -23,6 +24,7 @@ function normalize(raw = {}) {
   const out = { ...DEFAULTS };
   if (typeof raw.sound === 'boolean') out.sound = raw.sound;
   if (Number.isFinite(raw.volume)) out.volume = Math.min(1, Math.max(0, raw.volume));
+  if (Number.isFinite(raw.music)) out.music = Math.min(1, Math.max(0, raw.music));
   if (raw.quality in QUALITY) out.quality = raw.quality;
   if (typeof raw.hints === 'boolean') out.hints = raw.hints;
   if (ORIENTATION_CHOICES.includes(raw.orientation)) out.orientation = raw.orientation;
@@ -83,5 +85,6 @@ export function bindSound(sound) {
   return onSettings(s => {
     sound.muted = !s.sound;
     sound.setVolume?.(s.volume);
+    sound.setMusicVolume?.(s.music);
   });
 }

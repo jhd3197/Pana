@@ -120,10 +120,27 @@ window.addEventListener('keydown', e => {
     status.textContent = loaded ? 'Falta que todos los panas estén listos.' : 'El juego todavía se está preparando.';
   }
 }, true);
+// The shared lobby song plays while the lobby shows, once a tap has unlocked
+// audio. fx.js and music.js load only after the game did, so the lobby stays light.
+let lobbyMusic = null, heard = false;
+async function lobbySong() {
+  if (!loaded) return;
+  try {
+    lobbyMusic ??= Promise.all([import('./fx.js'), import('./music.js'), import('./settings.js')])
+      .then(([{ sound }, { createMusic }, { bindSound }]) => { bindSound(sound); return { sound, music: createMusic(sound) }; });
+    const { sound, music } = await lobbyMusic;
+    if (!root.hidden && heard) {
+      sound.unlock();
+      if (music.song !== 'lobby') music.play('lobby', { fallback: false });
+    } else if (root.hidden && music.playing) music.stop(0.4);
+  } catch { /* music is a nicety: the lobby works without it */ }
+}
+for (const type of ['pointerdown', 'keydown']) addEventListener(type, () => { heard = true; lobbySong(); }, { capture: true });
 function visibility() {
   if (!loaded || !original) return;
   const hidden = original.hidden || original.classList.contains('hidden') || original.style.display === 'none';
   root.hidden = hidden;
+  lobbySong();
   document.body.classList.toggle('pana-in-lobby', !root.hidden);
   // Games re-set `hidden` on every HUD render, and each set fires the observer.
   // Move a docked control only when it is in the wrong place: re-inserting it
