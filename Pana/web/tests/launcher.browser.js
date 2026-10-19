@@ -38,12 +38,13 @@ try {
   assert.equal(await page.evaluate(() => navigator.clipboard.readText()), await page.locator('#room-link').inputValue());
   await page.locator('#room-dialog [data-close-dialog]').click();
   await page.locator('button[data-category="Fiesta"]').click();
-  if (await page.locator('[data-id="tambor"]').count()) {
-    const card = page.locator('[data-id="tambor"] img');
-    assert.match(await card.getAttribute('src'), /tambor-card\.jpg$/);
+  for (const game of ['tambor', 'stop']) {
+    if (!await page.locator(`[data-id="${game}"]`).count()) continue;
+    const card = page.locator(`[data-id="${game}"] img`);
+    assert.match(await card.getAttribute('src'), new RegExp(`${game}-card\\.jpg$`));
     await card.evaluate(img => img.decode());
-    await page.locator('[data-id="tambor"] button').click();
-    assert.match(await page.locator('#feature-art img').getAttribute('src'), /tambor\.jpg$/);
+    await page.locator(`[data-id="${game}"] button`).click();
+    assert.match(await page.locator('#feature-art img').getAttribute('src'), new RegExp(`${game}\\.jpg$`));
     await page.locator('#feature-art img').evaluate(img => img.decode());
   }
   await page.locator('[data-id="pintura"] button').click();
