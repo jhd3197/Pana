@@ -94,7 +94,7 @@ def encode(audio, out):
     with tempfile.TemporaryDirectory() as tmp:
         wav = Path(tmp) / "x.wav"
         sf.write(wav, audio, RATE)
-        subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-i", str(wav), "-codec:a", "libmp3lame", "-b:a", "128k", str(out)], check=True)
+        subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-i", str(wav), "-codec:a", "libmp3lame", "-b:a", "80k", str(out)], check=True)
 
 
 def url_for(out):

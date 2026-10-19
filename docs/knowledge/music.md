@@ -40,7 +40,9 @@ royalty-free material per its authors), cloned next to this repo at
 4. Cut the loop: `uv run python ../Pana/Pana/scripts/music/loop.py --only <id>`.
    It beat-tracks the take, picks the loop pair whose surrounding bars match
    best (chroma + MFCC), crossfades one beat, normalises to -20 LUFS, encodes
-   128 kb/s mp3 and rewrites `engine/music-tracks.js`. Loop data is kept in
+   80 kb/s mp3 (about 1 MB a song; re-encoding the 128 kb/s originals with the
+   same ffmpeg kept every sample in place, so loop points survive) and rewrites
+   `engine/music-tracks.js`. Loop data is kept in
    `scripts/music/loops.json`.
 
 Settings that mattered: `acestep-v15-xl-sft` at 50 steps with the 1.7B LM fits a
