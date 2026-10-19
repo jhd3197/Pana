@@ -4,6 +4,18 @@ import { createDirector, updateDirector, random } from './director.js';
 import { clamp } from '../../../engine/random.js';
 const clone = value => JSON.parse(JSON.stringify(value));
 export const alive = p => !p.downed && !p.spectator;
+// One explorer's movement for dt: the host's simulation, and a guest's
+// prediction of its own explorer (engine/predict.js). It writes only p; the
+// world decides the gate, the shortcut and who carries the relic.
+export function stepExplorer(p, input, dt, world) {
+  const ix = Number.isFinite(input.x) ? clamp(input.x, -1, 1) : 0, iz = Number.isFinite(input.z) ? clamp(input.z, -1, 1) : 0;
+  const length = Math.hypot(ix, iz), ux = length > 0 ? ix / Math.max(1, length) : 0, uz = length > 0 ? iz / Math.max(1, length) : 0;
+  p.moving = length > 0.1;
+  if (p.moving) p.h = Math.atan2(ux, uz);
+  const speed = p.dodge > 0 ? 13 : world.carrier === p.id ? 4.6 : input.sprint ? 7.2 : 5.8;
+  moveBody(p, p.dodge > 0 ? Math.sin(p.h) * speed * dt : ux * speed * dt, p.dodge > 0 ? Math.cos(p.h) * speed * dt : uz * speed * dt, world);
+  p.dodge = Math.max(0, p.dodge - dt);
+}
 export function objective(s) {
   if (s.relicTaken) return 'Regresen juntos al campamento con la reliquia';
   if (!s.gateOpen) return 'Activen las dos ruedas para abrir el templo';
@@ -135,12 +147,8 @@ export class Expedition {
       p.moving = false; if (!alive(p)) continue;
       const trap = this.traps.find(trap => distance(p, trap) < 1.1 && trapActive(this.time, trap));
       if (trap && (p.trapCooldown || 0) <= this.time) { this.damage(p, 18); p.trapCooldown = this.time + 1.2; this.event('trap', '¡Cuidado con las losas rojas!'); }
-      const input = inputs.get(p.id) || {}, ix = Number.isFinite(input.x) ? clamp(input.x, -1, 1) : 0, iz = Number.isFinite(input.z) ? clamp(input.z, -1, 1) : 0;
-      const length = Math.hypot(ix, iz), ux = length > 0 ? ix / Math.max(1, length) : 0, uz = length > 0 ? iz / Math.max(1, length) : 0;
-      if (length > 0.1) { p.h = Math.atan2(ux, uz); p.moving = true; }
-      const speed = p.dodge > 0 ? 13 : this.carrier === p.id ? 4.6 : input.sprint ? 7.2 : 5.8;
-      moveBody(p, p.dodge > 0 ? Math.sin(p.h) * speed * dt : ux * speed * dt, p.dodge > 0 ? Math.cos(p.h) * speed * dt : uz * speed * dt, this);
-      p.dodge = Math.max(0, p.dodge - dt);
+      const input = inputs.get(p.id) || {};
+      stepExplorer(p, input, dt, this);
       if (input.hold) {
         const target = interaction(this, p);
         if (target?.kind === 'winch' && !usedWinches.has(target.id)) {

@@ -64,7 +64,8 @@ const room = new ExpeditionRoom({ code, name, avatar, onState: receive, onNotice
   onStatus(text, error = false) { failed = error; $('connection').textContent = text; show('practice', error); show('disconnect', error && state.phase === 'playing'); menu.update(); updateUI(); },
 });
 const optionsUI = createRoomOptions($('room-options'), { title: 'Reliquia', fields: FIELDS, change: options => room.action('configure', { options }), reset: () => room.action('configure', { options: DEFAULT_OPTIONS }) });
-const me = () => state.players.find(p => p.id === room.id);
+// A guest draws its own explorer where it predicts it (ExpeditionRoom's predict), not a round trip behind.
+const me = () => room.predicted ?? state.players.find(p => p.id === room.id);
 
 function label(text, color) {
   const canvas = document.createElement('canvas'); canvas.width = 256; canvas.height = 64;
@@ -255,8 +256,9 @@ const ticker = setInterval(() => { const dt = simClock(); if (!qs.has('manual'))
 function frame(now) {
   if (dead) return;
   const dt = Math.min(0.06, (now - last) / 1000); last = now; elapsed += dt; uiElapsed += dt;
-  for (const p of state.players) {
-    const a = actors.get(p.id); if (!a) continue;
+  for (const shown of state.players) {
+    const a = actors.get(shown.id); if (!a) continue;
+    const p = shown.id === room.id ? me() : shown;
     temp.set(p.x, groundAt(p.x, p.z), p.z); if (a.root.position.distanceTo(temp) > 8) a.root.position.copy(temp); else a.root.position.lerp(temp, Math.min(1, dt * 16));
     const diff = Math.atan2(Math.sin(p.h - a.character.group.rotation.y), Math.cos(p.h - a.character.group.rotation.y)); a.character.group.rotation.y += diff * Math.min(1, dt * 14);
     a.character.group.rotation.z = p.downed ? 1.3 : p.dodge > 0 ? -0.25 : 0;

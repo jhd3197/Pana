@@ -1,4 +1,4 @@
-import { Expedition } from './rules.js';
+import { Expedition, stepExplorer, alive } from './rules.js';
 import { LiveRoom, axis } from '/engine/live-room.js';
 
 // Host-simulated expedition on the shared live room (engine/live-room.js), with snapshot migration.
@@ -7,7 +7,14 @@ export class ExpeditionRoom extends LiveRoom {
     super({ ...options, game: 'reliquia', protocol: 'reliquia-v2', texts: {
       connecting: 'Conectando con la expedición…', full: 'Sala llena. Abre otra expedición desde Pana.',
       lost: 'Se cortó la conexión. Reconectando…', offline: 'Sin conexión. Puedes abrir una expedición local.',
-      waiting: 'Espera a reconectar o abre una expedición local.' } }, { valid: (state) => !!state?.players });
+      waiting: 'Espera a reconectar o abre una expedición local.' } }, {
+      valid: (state) => !!state?.players,
+      // Your own explorer moves the moment you press a key; the host corrects it.
+      predict: {
+        body: (state, id) => state.phase === 'playing' ? state.players.find(p => p.id === id && alive(p)) : null,
+        step: stepExplorer,
+      },
+    });
     this.state = new Expedition().snapshot();
   }
   statusText() { return `Sala ${this.code} · ${this.members.size} pana${this.members.size === 1 ? '' : 's'}`; }
