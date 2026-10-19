@@ -9,7 +9,7 @@ const browser = await launch();
 const configs = [
   ['escondidas', 'hunt', { rounds: 6, disguises: 'barrels', seekers: 2, hideSeconds: 45, hints: 'whistle', moveDisguised: false, seekerMap: true, huntSeconds: 240 }],
   ['cocina', 'cocina', { kitchen: 'playa', duration: 300, difficulty: 'chaos', orders: 'arepa', impatient: false, fire: 'fast', tips: false, switchKitchen: true, helpers: false }],
-  ['pintura', 'pinturaDebug', { mode: 'teams', duration: 300, lives: 1, paint: 'sticky', weapons: 'pistol', friendlyFire: true, fastReload: true, flag: true }],
+  ['pintura', 'pinturaDebug', { mode: 'teams', duration: 300, toughness: 5, lives: 1, paint: 'sticky', weapons: 'pistol', friendlyFire: true, fastReload: true, flag: true }],
   ['reliquia', 'reliquia', { temple: 'tepuy', difficulty: 'hard', lightAllocation: 'each', mummies: 3, traps: 'many', revive: false, map: false, hints: false, lanterns: false }],
 ];
 try {

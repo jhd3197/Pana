@@ -25,9 +25,10 @@
       <button id="rules" class="pk-btn pk-btn--ghost pk-btn--sm" data-room-help>Cómo se juega</button>
     </div>
   </section>
-  <section id="hud" hidden aria-label="Marcador"><div class="score-panel pk-panel"><span class="pk-eyebrow">Pintadas</span><b id="score" class="pk-num">0 / 10</b><span id="position"></span></div><div class="timer-panel pk-panel"><b id="timer" class="pk-num">2:00</b><span id="ammo">12 / 12</span><span id="aguante" class="aguante" role="img"></span></div>
+  <section id="hud" hidden aria-label="Marcador"><div class="score-panel pk-panel"><span class="pk-eyebrow">Pintadas</span><b id="score" class="pk-num">0 / 10</b><span id="position"></span></div><div class="timer-panel pk-panel"><b id="timer" class="pk-num">2:00</b><span id="ammo">12 / 12</span><span id="aguante" class="aguante" role="img"></span><span id="stamina" class="stamina" aria-hidden="true"></span></div>
     <p id="feed" class="feed pk-panel" aria-live="polite"></p><p id="respawn" class="respawn pk-banner" hidden></p>
-    <div class="pk-hints" data-pana-hint>WASD caminar · Ratón mirar · Clic pintar · R recargar · Esc menú</div>
+    <div class="pk-hints" data-pana-hint>WASD caminar · Shift correr · Ratón mirar · Clic pintar · Tab tabla · Esc menú</div>
+    <section id="scoreboard" class="scoreboard pk-panel" hidden aria-label="Tabla de la ronda"><span class="pk-eyebrow">Tabla</span><b id="board-title"></b><ol id="board-list" class="pk-roster"></ol></section>
     <div class="crosshair" aria-hidden="true"><i></i><i></i><i></i><i></i></div><div class="hitmarker" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
     <div id="callout" class="callout" aria-live="polite"><b id="callout-title"></b><span id="callout-detail"></span></div><p id="variant" class="variant pk-banner"></p><ol id="killfeed" class="killfeed" aria-label="Pintadas recientes"></ol><p class="lock-hint pk-banner">Haz clic para mirar con el ratón</p>
     <canvas id="minimap" class="minimap" aria-label="Mapa de la cancha" hidden></canvas><div class="paint-flash" aria-hidden="true"></div>

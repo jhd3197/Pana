@@ -4,7 +4,7 @@ import { huntLayout, nextLayoutSeed } from './layout.js';
 import { validArena, arenaInfo } from '../../../engine/arena-layouts.js';
 
 export const HIDE_TIMES = Object.freeze([15, 20, 30, 45, 60]);
-export const RULES = Object.freeze({ changes: 3, hideSeconds: 30, huntSeconds: 180, rounds: 4, checkRange: 3.5, checkCooldown: 1.6 });
+export const RULES = Object.freeze({ changes: 3, hideSeconds: 30, huntSeconds: 180, rounds: 4, checkRange: 3.5, aimRange: 7, checkCooldown: 1.6 });
 const distance = (a, b) => Math.hypot(a.x - b.x, a.z - b.z);
 export const playerRadius = p => propDefinition(p.prop)?.radius || 0.5;
 
@@ -53,8 +53,8 @@ export class HuntRound {
     if (wasSeeker && !this.seekers.length && ['hide', 'hunt'].includes(this.phase)) this.finish('hiders', 'El buscador salió de la sala.');
     else this.checkEnd();
   }
-  event(text) {
-    this.events.push({ id: ++this.revision, text });
+  event(text, found = null) {
+    this.events.push({ id: ++this.revision, text, ...(found ? { found } : {}) });
     this.events = this.events.slice(-4);
   }
   start(hostId, preference = 'hide') {
@@ -106,11 +106,20 @@ export class HuntRound {
     p.prop = type; p.changes--;
     return null;
   }
-  check(id) {
+  // First person: `aim` is the seeker's heading and the check hits whatever
+  // sits under the crosshair within 7 m. One hit and the hider is found.
+  // Without an aim (old clients, tests) it searches 3.5 m around the seeker.
+  check(id, aim) {
     const p = this.players.find(p => p.id === id);
     if (!p || !this.isSeeker(id) || this.phase !== 'hunt' || p.cooldown > 0) return false;
     p.cooldown = RULES.checkCooldown;
-    const target = this.players.filter(t => !t.spectator && !t.caught && !this.isSeeker(t.id) && distance(p, t) <= RULES.checkRange && this.layout.clearSight(p, t))
+    const aimed = Number.isFinite(aim), fx = Math.sin(aim), fz = Math.cos(aim);
+    const inReach = t => {
+      if (!aimed) return distance(p, t) <= RULES.checkRange;
+      const dx = t.x - p.x, dz = t.z - p.z, along = dx * fx + dz * fz;
+      return along > 0 && along <= RULES.aimRange + playerRadius(t) && Math.abs(dx * fz - dz * fx) <= playerRadius(t) + .35;
+    };
+    const target = this.players.filter(t => !t.spectator && !t.caught && !this.isSeeker(t.id) && inReach(t) && this.layout.clearSight(p, t))
       .sort((a, b) => distance(p, a) - distance(p, b))[0];
     if (target) { this.capture(target, id); return true; }
     return false;
@@ -120,7 +129,7 @@ export class HuntRound {
     p.caught = true; p.moving = false; p.suspicion = 0;
     const seeker = this.players.find(s => s.id === seekerId);
     if (seeker) seeker.score += 1;
-    this.event(`¡Encontraron a ${p.name}!`);
+    this.event(`¡Encontraron a ${p.name}!`, { seeker: seekerId, hider: p.id, distance: seeker ? Math.round(distance(seeker, p) * 10) / 10 : 0 });
     this.checkEnd();
   }
   checkEnd() {
@@ -156,7 +165,10 @@ export class HuntRound {
       const before = { x: p.x, z: p.z };
       this.layout.move(p, dx * speed * dt, dz * speed * dt, playerRadius(p));
       p.moving = distance(before, p) > 0.001;
-      if (p.moving) p.h = Math.atan2(dx, dz);
+      // Panas face where they look; a disguise only turns when it moves, so
+      // glancing around never spins a suspicious barrel.
+      if (!p.prop && Number.isFinite(input.look)) p.h = input.look;
+      else if (p.moving) p.h = Math.atan2(dx, dz);
     }
     if (this.phase !== 'hunt') return;
     if (this.options.hints !== 'none' && this.elapsed >= this.hintAt) {

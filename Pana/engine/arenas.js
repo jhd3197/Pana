@@ -176,13 +176,14 @@ export function createArenaEnvironment(id = 'plaza', { mode = 'hunt', props, cov
 
 // Rebuild only on a changed map ID; table/game objects and cameras stay mounted.
 const ARENAS_WITH_LIFE = new Set(['puerto', 'hato', 'ruinas']);
-export function createArenaSlot(scene, { mode = 'table', plazaScale = 1, props } = {}) {
+// `size` and `cover` (a function of the map id) pass through to the environment.
+export function createArenaSlot(scene, { mode = 'table', plazaScale = 1, props, size, cover } = {}) {
   let current, life = null;
   return {
     setMap(id = 'plaza') {
       id = infoFor(mode)(id).id;
       if (current?.id === id) return;
-      const next = createArenaEnvironment(id, { mode, props });
+      const next = createArenaEnvironment(id, { mode, props, ...(size ? { size } : {}), ...(cover ? { cover: cover(id) } : {}) });
       if (id === 'plaza') next.group.scale.setScalar(plazaScale);
       life?.dispose(); current?.dispose(); current = next; scene.add(current.group); scene.userData.mapId = id;
       // Tables and courts get background life; action maps stay readable for play.

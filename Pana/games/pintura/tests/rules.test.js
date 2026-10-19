@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { Arena, blocked, cleanInput, segmentBox, coverFor, COVER, SIZE } from '../public/rules.js';
 const arena = (options = { toughness: 1 }) => { const g = new Arena('plaza', 'normal', options); g.add(1, { name: 'A', avatar: {} }); g.add(2, { name: 'B', avatar: {} }); g.start(); return g; };
 test('inputs are finite, bounded and diagonal movement is normalized', () => {
-  assert.deepEqual(cleanInput(null), { x: 0, z: 0, ax: 0, az: -1, weapon: 'pistol', fire: false, reload: false });
+  assert.deepEqual(cleanInput(null), { x: 0, z: 0, ax: 0, az: -1, weapon: 'pistol', fire: false, reload: false, sprint: false });
   const input = cleanInput({ x: 99, z: 99, ax: Infinity, az: NaN, fire: 'yes' }); assert.ok(Math.abs(Math.hypot(input.x, input.z) - 1) < 1e-9); assert.equal(input.fire, false);
 });
 test('movement stops at arena walls and cover, sliding along free axes', () => {
@@ -105,4 +105,13 @@ test('each round plays the next of three fixed layouts', () => {
   g.phase = 'finished'; g.start(); assert.equal(g.variant, 2);
   g.phase = 'finished'; g.start(); assert.equal(g.variant, 0);
   assert.notDeepEqual(coverFor('plaza', 1), coverFor('plaza', 0)); assert.ok(coverFor('muelle', 2).length !== coverFor('muelle', 0).length);
+});
+
+test('Shift sprints faster for three seconds, holds fire, then recovers', () => {
+  const g = arena(), p = g.players[0]; Object.assign(p, { x: -20, z: 20 });
+  for (let i = 0; i < 20; i++) g.step(.05, new Map([[1, { x: 1, sprint: true }]]));
+  assert.ok(p.x > -20 + 7 * 1.4 * .95, `sprinted to ${p.x}`); assert.ok(p.stamina < .7); assert.equal(p.sprint, true);
+  const ammo = p.ammo; g.step(.05, new Map([[1, { x: 1, sprint: true, fire: true }]])); assert.equal(p.ammo, ammo - 1, 'firing cancels the sprint');
+  for (let i = 0; i < 80; i++) g.step(.05, new Map([[1, { x: -1, sprint: true }]])); assert.ok(p.stamina < .05); assert.equal(p.sprint, false);
+  for (let i = 0; i < 40; i++) g.step(.05); assert.ok(p.stamina > .35);
 });

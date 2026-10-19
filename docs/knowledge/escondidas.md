@@ -9,13 +9,23 @@ the hub. No build step or additional production dependency. Tested on Three.js
 - Three transformations to one of five shared props per round. Reverting to a
   pana is free, but never replenishes changes. Selecting the current or an invalid
   form does not consume a change. A larger disguise must fit its collision radius.
-- WASD/arrows to move, drag to orbit, Shift to run as a pana, 1–5 to change, Q to
-  revert, E to copy the closest map object or inspect as a seeker. Mobile has
-  directional buttons, prop selection, revert and action controls.
+- First person by default (`engine/first-person.js`: pointer lock, touch drag to
+  look). WASD/arrows walk where you look, Shift runs as a pana, 1–5 change, Q
+  reverts, E copies the closest map object. V (or the menu's Cámara option)
+  switches to the old orbit camera behind your pana so a hider can check the
+  disguise. Tab shows the match table. Mobile has directional buttons, prop
+  selection, revert and action controls; dragging the scene looks around.
+- Disguised hiders see from 85% of the prop's height. Only an undisguised pana
+  turns to the look heading (`input.look`); a disguise turns only when it moves,
+  so looking around never spins a barrel in front of the seeker.
 - 30 seconds hiding by default + 180 seconds seeking. The host can choose
   15, 20, 30, 45 or 60 hiding seconds in the lobby. The seeker cannot move or inspect
-  during preparation and its view is obscured. A human seeker inspects within
-  3.5 units with line of sight; a missed check has a 1.6-second cooldown.
+  during preparation and its view is obscured. A human seeker aims: clicking or
+  E sends `check` with `aim` (heading, forward = sin h, cos h) and catches the
+  nearest hider under the crosshair within 7 m (`aimRange` plus the disguise
+  radius, ±radius + .35 m sideways) with line of sight. One hit and done; a
+  miss has a 1.6-second cooldown. Without an aim the old 3.5 m search applies.
+  Captures carry `found` (seeker, hider, distance) for the "¡Te encontré!" callout.
 - Bot seekers patrol using the collision map and chase visible movement. A
   suspicion meter grows near the seeker; stationary props are harder to detect.
   Bots fill a small room to four participants. The host chooses 3, 4, 6 or 8 rounds; eight rounds rotate through a full room.
@@ -94,6 +104,15 @@ Puerto Coco, Hato del Sol and Ruinas del Mango are available in the lobby.
 The host chooses the setting; the selected map follows snapshots, practice,
 late joins and host changes. See [shared-arenas.md](shared-arenas.md) for
 layout variants, collision, table clearance, lifecycle and verification.
+
+## Bigger maps
+
+`layout.js` `mapData(id)` plays every map 1.5× larger (`SPREAD`) with each map's
+props doubled. The plaza scales whole: `createArenaSlot` gets `plazaScale: 1.5`
+and the plaza's solids (fountain, stalls, trees, lamps) grow ×1.5 in collision,
+bounds 33 × 28.5. Shared arenas take `size: 27` and the spread cover (positions
+×1.5, boxes ×1.15). The arrival lane is z 10.5–15.5, x −8–19. `huntLayout(id)`
+with no seed uses seed 1; nothing uses the unscaled shared layout any more.
 
 ## Round layouts and hiding time
 

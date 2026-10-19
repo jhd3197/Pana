@@ -9,7 +9,7 @@ const { chromium } = require(process.argv[2] || 'playwright');
 const base = process.env.PANA_QA_URL || 'http://localhost:8461';
 const output = process.env.PANA_QA_OUTPUT;
 if (output) await mkdir(output, { recursive: true });
-const browser = await chromium.launch({ headless: true, ...(process.argv[3] ? { executablePath: process.argv[3] } : {}) });
+const browser = await chromium.launch({ headless: true, args: ['--disable-background-timer-throttling', '--disable-renderer-backgrounding', '--disable-backgrounding-occluded-windows'], ...(process.argv[3] ? { executablePath: process.argv[3] } : {}) });
 const errors = [];
 const room = `qa-${Date.now().toString(36)}`;
 const check = text => console.log(`ok  ${text}`);
@@ -27,7 +27,8 @@ try {
   await b.waitForFunction(() => hunt.room.members.size === 2);
   check('two real clients join one room');
   if (output) await a.screenshot({ path: path.join(output, 'pana-hunt-lobby.png') });
-  await a.getByRole('button', { name: 'Ser buscador', exact: true }).click();
+  // The role picker lives in the shared room menu's "more" panel.
+  await a.locator('#pana-room-more').click(); await a.getByRole('button', { name: 'Ser buscador', exact: true }).click(); await a.locator('#pana-room-done').click();
   await a.locator('#start').click(); await b.waitForFunction(() => hunt.state.phase === 'hide');
   assert.equal(await a.evaluate(() => hunt.state.seeker === hunt.room.id), true);
   const before = await b.evaluate(() => hunt.state.players.find(p => p.id === hunt.room.id).x);
@@ -44,7 +45,8 @@ try {
   const ids = await a.evaluate(() => ({ host: hunt.room.id, other: hunt.state.players.find(p => !p.bot && p.id !== hunt.room.id).id }));
   await a.evaluate(({ host, other }) => { hunt.step(hunt.state.hideSeconds + 1); hunt.place(host, -2, 14); hunt.place(other, -4, 14); }, ids);
   await b.waitForFunction(() => hunt.state.phase === 'hunt');
-  await a.keyboard.press('e'); await b.waitForFunction(() => hunt.state.players.find(p => p.id === hunt.room.id).caught);
+  // First person: the seeker turns to put the hider under the crosshair, then checks.
+  await a.evaluate(() => { hunt.aimAt(-4, 14); }); await a.keyboard.press('e'); await b.waitForFunction(() => hunt.state.players.find(p => p.id === hunt.room.id).caught);
   check('capture and score synchronize between clients');
   const c = await newPage('Luisa', true);
   await c.waitForFunction(() => hunt.state.players.find(p => p.id === hunt.room.id)?.spectator);

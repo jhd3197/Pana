@@ -56,3 +56,7 @@ body.round-start .variant { display: block; position: fixed; left: 50%; top: 30%
 @keyframes feed-in { from { opacity: 0; transform: translateX(-12px); } to { opacity: 1; transform: none; } }
 @media (max-width: 600px) { .killfeed { top: 150px; left: 12px; } .killfeed li { font-size: 11px; padding: 4px 8px; } .aguante .pip { width: 11px; height: 11px; } }
 @media (max-height: 520px) { .killfeed { top: 130px; } }
+.stamina { display: block; height: 4px; margin-top: 6px; border-radius: 2px; background: linear-gradient(90deg, var(--pip) calc(var(--left, 1) * 100%), #fff2 0); transition: opacity .4s; }
+.stamina--full { opacity: 0; }
+.scoreboard { position: fixed; z-index: 8; left: 50%; top: 50%; transform: translate(-50%, -50%); width: min(460px, 92vw); max-height: 80dvh; overflow: auto; padding: 18px 20px; display: grid; gap: 8px; }
+.scoreboard b { font-size: 20px; }

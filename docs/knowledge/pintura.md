@@ -54,6 +54,8 @@ streetlights, araguaneyes, mango trees and crate geometry. Crates are fitted to
 the authoritative `COVER` bounds, so artwork never changes movement or shots.
 The paint marker is a canonical Studio asset in `engine/models/props/paintball.js`.
 
+Look input is `engine/first-person.js` (`createLookControls`), shared with Escondidas: it owns pointer lock, drag-to-look and the saved sensitivity (`pana:look-sensitivity`); the scene keeps yaw/pitch. Shift sprints 45% faster while `stamina` lasts (3 s, refills in 5 s) and holds fire; Tab shows the round table.
+
 The default camera is first person (`primera`): the camera sits at eye height
 (1.55 m) over the smoothed avatar, the own avatar is hidden, and the marker is a
 camera child that kicks on each shot and pulls back when cover is in front.

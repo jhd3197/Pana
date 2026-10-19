@@ -11,7 +11,7 @@ export class HuntRoom extends LiveRoom {
       waiting: 'Espera a reconectar o entra a practicar.' } });
     this.state = new HuntRound('plaza', { layoutSeed: crypto.getRandomValues(new Uint32Array(1))[0] }).snapshot();
   }
-  cleanInput(raw) { return { x: axis(raw?.x), z: axis(raw?.z), sprint: !!raw?.sprint }; }
+  cleanInput(raw) { return { x: axis(raw?.x), z: axis(raw?.z), sprint: !!raw?.sprint, ...(Number.isFinite(raw?.look) ? { look: raw.look } : {}) }; }
   takeOver(previous) {
     super.takeOver(previous);
     this.game = new HuntRound(this.state.mapId, this.state);
@@ -43,7 +43,7 @@ export class HuntRoom extends LiveRoom {
     } else if (action.action === 'check') {
       const p = this.game.players.find(p => p.id === id);
       if (!p || p.cooldown > 0 || this.game.phase !== 'hunt' || !this.game.isSeeker(id)) return;
-      this.notice(id, this.game.check(id) ? '¡Ajá! Aquí había un pana.' : 'Nada por aquí… Prueba con otro objeto.');
+      this.notice(id, this.game.check(id, Number.isFinite(action.aim) ? action.aim : undefined) ? '¡Ajá! Aquí había un pana.' : 'Nada por aquí… Prueba con otro objeto.');
     }
     this.state = this.game.snapshot(); this.onState(this.state);
   }

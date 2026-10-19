@@ -14,6 +14,7 @@ import { PaintConnection } from './network.js';
 import { createScene } from './scene.js';
 import { createMinimap } from './minimap.js';
 import { sfx } from './sounds.js';
+import { createLookControls, SENSITIVITY_CHOICES } from '/engine/first-person.js';
 import { coverFor, TARGET, segmentBox, paintSeats, variantName } from './rules.js';
 
 const $ = id => document.getElementById(id), code = roomFromUrl() || newRoomCode();
@@ -21,10 +22,7 @@ const params = new URLSearchParams(location.search); params.set('room', code); h
 const held = new Set(), pads = []; let aim = null, firing = false, touchFire = false, queuedFire = false, queuedReload = false, stopped = false, lastPhase = 'lobby', lastEvent = null, lastRound = 0, lastLocal = false, lastBall = 0, lastKiller = '';
 const canvas = $('world'), world = createScene(canvas), minimap = createMinimap($('minimap'));
 let weapon = 'pistol';
-// Mouse look turns this many radians per pixel; touch drags turn 2.5× faster.
-const SENSITIVITY = { baja: .0014, media: .0024, alta: .0038 };
-let sensitivity = 'media'; try { sensitivity = SENSITIVITY[localStorage.getItem('pana:pepazo-mouse')] ? localStorage.getItem('pana:pepazo-mouse') : 'media'; } catch {}
-let cameraView = 'primera', pointerPosition = null, lookPointer = null;
+let cameraView = 'primera', pointerPosition = null;
 const room = new PaintConnection({ code, name: loadName(), avatar: loadAvatar(), onState: render, onStatus(text, failed = false) {
   $('connection').textContent = text; $('recovery-copy').textContent = text; $('recovery').hidden = !failed || room.state.phase === 'lobby';
 } });
@@ -38,60 +36,52 @@ const difficultyPicker = createDifficultyPicker($('difficulty-picker'), difficul
 const menu = createGameMenu({ title: 'Pepazo · Pana', orientation: 'libre', sound,
   options: [{ id: 'weapon', label: 'Marcadora (si la sala permite todas)', choices: [['pistol', 'Pistola'], ['scatter', 'Escopeta'], ['rapid', 'Automática']], get: () => weapon, set: value => { weapon = value; } },
     { id: 'view', label: 'Cámara', choices: [['primera', 'Primera persona'], ['cancha', 'Ver la cancha']], get: () => cameraView, set: value => { cameraView = value; world.setView(value); } },
-    { id: 'mouse', label: 'Sensibilidad al mirar', choices: [['baja', 'Baja'], ['media', 'Media'], ['alta', 'Alta']], get: () => sensitivity, set: value => { sensitivity = value; try { localStorage.setItem('pana:pepazo-mouse', value); } catch {} } }],
+    { id: 'mouse', label: 'Sensibilidad al mirar', choices: SENSITIVITY_CHOICES, get: () => looking.sensitivity, set: value => { looking.sensitivity = value; } }],
   note: () => room.local ? 'La práctica está en pausa.' : 'La ronda online sigue mientras estás en el menú.',
-  controls: [['WASD / Flechas', 'Caminar hacia donde miras'], ['Ratón', 'Mirar y apuntar (haz clic en la cancha para capturarlo)'], ['Clic / Espacio', 'Disparar pintura'], ['Q / E', 'Girar sin ratón'], ['R', 'Recargar'], ['1 / 2 / 3', 'Pistola / escopeta / automática'], ['M', 'Sonido'], ['Esc', 'Soltar el ratón y abrir el menú']],
+  controls: [['WASD / Flechas', 'Caminar hacia donde miras'], ['Ratón', 'Mirar y apuntar (haz clic en la cancha para capturarlo)'], ['Clic / Espacio', 'Disparar pintura'], ['Shift', 'Correr (no puedes disparar corriendo)'], ['Tab', 'Ver la tabla'], ['Q / E', 'Girar sin ratón'], ['R', 'Recargar'], ['1 / 2 / 3', 'Pistola / escopeta / automática'], ['M', 'Sonido'], ['Esc', 'Soltar el ratón y abrir el menú']],
   tips: ['Una pintada suma un punto. Gana quien llegue a diez o lidere al terminar el tiempo. Con vidas limitadas también gana el último pana o equipo en pie. En bandera gana el equipo con tres capturas.',
     'Las barricadas frenan las bolas. Tienes doce por carga; recargas con R o automáticamente al vaciarla.',
     'Vuelves a la cancha 2,5 segundos después de una pintada. Al reaparecer tienes 1,5 segundos de protección; disparar la cancela.',
     'En teléfono camina con las flechas y arrastra el dedo por la pantalla para mirar. Mantén Pinta: la mira se pega al rival visible que tengas delante.',
     'El mapa de la esquina muestra a tu equipo y solo a los rivales que tienes a la vista.',
     'Si estás solo, tres bots entran contigo. Con amigos la cancha es de ustedes. Puedes invitar hasta ocho panas.'],
-  invite: () => inviteUrl(code), onOpen() { clearInput(); releasePointer(); }, onClose() {}, canOpen: () => room.state.phase !== 'finished',
+  invite: () => inviteUrl(code), onOpen() { clearInput(); looking.release(); }, onClose() {}, canOpen: () => room.state.phase !== 'finished',
 });
 $('game-nav').append(menu.createInviteButton({ id: 'invite', className: 'pk-btn' }), menu.createButton({ id: 'menu', className: 'pk-btn' }));
 $('room-code').textContent = `Sala ${code}`; $('rules').onclick = () => menu.open('controls');
 $('start').onclick = () => { sound.unlock(); room.start(); }; $('again').onclick = () => room.start();
 for (const id of ['practice', 'fallback']) $(id).onclick = () => { menu.close(); $('recovery').hidden = true; room.practice(); };
-const locked = () => document.pointerLockElement === canvas;
-function lockPointer() { if (cameraView !== 'primera' || locked() || !canvas.requestPointerLock) return; try { canvas.requestPointerLock()?.catch?.(() => {}); } catch {} }
-function releasePointer() { if (locked()) document.exitPointerLock(); }
-function clearInput() { held.clear(); firing = touchFire = queuedFire = queuedReload = false; lookPointer = null; pads.forEach(p => p.release()); room.input({}); }
+function clearInput() { held.clear(); firing = touchFire = queuedFire = queuedReload = false; pads.forEach(p => p.release()); room.input({}); }
 function active() { return room.connected && room.state.phase === 'playing' && !menu.isOpen; }
 for (const [id, key] of [['up', 'w'], ['left', 'a'], ['down', 's'], ['right', 'd'], ['reload', 'r']]) pads.push(holdButton($(id), { down: () => { held.add(key); if (key === 'r') queuedReload = true; }, up: () => held.delete(key), paused: () => !active() }));
 pads.push(holdButton($('fire'), { down: () => { touchFire = queuedFire = true; sound.unlock(); }, up: () => { touchFire = false; }, paused: () => !active() }));
-document.addEventListener('pointerlockchange', () => {
-  document.body.classList.toggle('mouse-locked', locked());
-  // Esc releases the mouse before the page sees the key, so releasing it opens the menu.
-  if (!locked() && active() && cameraView === 'primera') menu.open('game');
-});
-canvas.addEventListener('pointermove', event => {
-  if (!active()) return;
-  if (cameraView === 'cancha') { pointerPosition = [event.clientX, event.clientY]; aim = world.point(...pointerPosition); return; }
-  const turn = SENSITIVITY[sensitivity];
-  if (locked()) world.look(-event.movementX * turn, -event.movementY * turn);
-  else if (lookPointer?.id === event.pointerId) {
-    // Touch, or a mouse whose browser refused pointer lock: drag to look.
-    world.look(-(event.clientX - lookPointer.x) * turn * 2.5, -(event.clientY - lookPointer.y) * turn * 2.5);
-    Object.assign(lookPointer, { x: event.clientX, y: event.clientY });
-  }
-});
+const looking = createLookControls(canvas, { enabled: () => active() && cameraView === 'primera', look: (yaw, pitch) => world.look(yaw, pitch),
+  press(event) { sound.unlock(); if (event.button === 0) firing = queuedFire = true; },
+  release(event) { if (event.button === 0 || event.type === 'pointercancel') firing = false; },
+  unlocked: () => menu.open('game') });
+// The overview keeps the plane-projected mouse aim.
+canvas.addEventListener('pointermove', event => { if (active() && cameraView === 'cancha') { pointerPosition = [event.clientX, event.clientY]; aim = world.point(...pointerPosition); } });
 canvas.addEventListener('pointerdown', event => {
-  if (!active()) return; event.preventDefault(); canvas.focus({ preventScroll: true }); sound.unlock();
-  if (cameraView === 'cancha') { if (event.button !== 0) return; pointerPosition = [event.clientX, event.clientY]; aim = world.point(...pointerPosition); firing = queuedFire = true; return; }
-  if (locked()) { if (event.button === 0) firing = queuedFire = true; return; }
-  canvas.setPointerCapture(event.pointerId); lookPointer = { id: event.pointerId, x: event.clientX, y: event.clientY };
-  if (event.pointerType === 'mouse') lockPointer();
+  if (!active() || cameraView !== 'cancha' || event.button !== 0) return; event.preventDefault(); sound.unlock();
+  pointerPosition = [event.clientX, event.clientY]; aim = world.point(...pointerPosition); firing = queuedFire = true;
 });
-canvas.addEventListener('contextmenu', event => event.preventDefault());
-for (const type of ['pointerup', 'pointercancel']) canvas.addEventListener(type, event => { if (event.button === 0 || type === 'pointercancel') firing = false; if (lookPointer?.id === event.pointerId) lookPointer = null; });
+for (const type of ['pointerup', 'pointercancel']) canvas.addEventListener(type, () => { if (cameraView === 'cancha') firing = false; });
 addEventListener('blur', clearInput); document.addEventListener('visibilitychange', () => { if (document.hidden) clearInput(); });
 addEventListener('keydown', event => {
   if (menu.isOpen || event.target.closest?.('input, button, textarea, select, a')) return;
   const key = event.key.toLowerCase(); if (['1', '2', '3'].includes(key)) weapon = ['pistol', 'scatter', 'rapid'][Number(key) - 1]; if (key === 'm') toggleMute();
-  if (['w', 'a', 's', 'd', 'q', 'e', 'r', ' ', 'arrowup', 'arrowleft', 'arrowdown', 'arrowright'].includes(key)) { event.preventDefault(); if (active()) { held.add(key); if (key === ' ') queuedFire = true; if (key === 'r') queuedReload = true; } }
+  if (key === 'tab') { event.preventDefault(); if (room.state.phase === 'playing') showBoard(true); }
+  if (['w', 'a', 's', 'd', 'q', 'e', 'r', ' ', 'shift', 'arrowup', 'arrowleft', 'arrowdown', 'arrowright'].includes(key)) { event.preventDefault(); if (active()) { held.add(key); if (key === ' ') queuedFire = true; if (key === 'r') queuedReload = true; } }
 });
-addEventListener('keyup', event => held.delete(event.key.toLowerCase()));
+addEventListener('keyup', event => { const key = event.key.toLowerCase(); held.delete(key); if (key === 'tab') showBoard(false); });
+// Hold Tab: everyone's knockouts, times painted and current streak.
+function showBoard(open) {
+  $('scoreboard').hidden = !open; if (!open) return;
+  const state = room.state, teams = state.options?.mode === 'teams' || state.options?.flag;
+  $('board-title').textContent = teams ? `Naranja ${state.teamScores?.[0] || 0} — Turquesa ${state.teamScores?.[1] || 0}` : `${variantName(state.mapId, state.variant || 0)} · ronda ${state.round}`;
+  fillRoster($('board-list'), [...state.players].filter(p => p.connected).sort((a, b) => b.score - a.score || a.hits - b.hits).map((p, i) => ({ rank: i + 1, name: p.name,
+    detail: `${p.hits} recibidas${p.streak > 1 ? ` · racha de ${p.streak}` : ''}${p.bot ? ' · Bot' : ''}`, end: p.score, score: true, me: p.id === room.id })));
+}
 function input() {
   if (!active()) return {};
   const me = room.state.players.find(p => p.id === room.id); if (!me) return {};
@@ -108,7 +98,7 @@ function input() {
   }
   const length = Math.hypot(ax, az) || 1;
   return { weapon, ...world.movement(Number(held.has('d') || held.has('arrowright')) - Number(held.has('a') || held.has('arrowleft')),
-    Number(held.has('s') || held.has('arrowdown')) - Number(held.has('w') || held.has('arrowup'))),
+    Number(held.has('s') || held.has('arrowdown')) - Number(held.has('w') || held.has('arrowup'))), sprint: held.has('shift'),
     ax: ax / length, az: az / length, fire: queuedFire || firing || touchFire || held.has(' '), reload: queuedReload || held.has('r') };
 }
 // A short CSS pulse: a hit marker on the crosshair or a paint flash when hit.
@@ -185,10 +175,12 @@ function render(state) {
   for (const e of events) if (e.n > lastEvent) { lastEvent = e.n; if (state.phase === 'playing') announce(e, state); }
   if (state.phase === 'playing') shots(state, me); else lastBall = 0;
   aguante(state, me);
+  $('stamina').style.setProperty('--left', String(me?.stamina ?? 1)); $('stamina').classList.toggle('stamina--full', (me?.stamina ?? 1) >= 1);
+  if (!$('scoreboard').hidden) showBoard(true);
   if (state.phase === 'playing' && state.round !== lastRound) { lastRound = state.round; $('variant').textContent = `Cancha ${variantName(state.mapId, state.variant || 0)}`; flash('round-start'); }
   $('results').hidden = !finished;
   if (finished) {
-    menu.close(); releasePointer(); const winners = order.filter(p => state.winners?.includes(p.id));
+    menu.close(); looking.release(); showBoard(false); const winners = order.filter(p => state.winners?.includes(p.id));
     $('result-title').textContent = winners.length > 1 ? '¡Empate de pintura!' : `¡Ganó ${winners[0]?.name}!`;
     if (state.options?.mode === 'teams' || state.options?.flag) $('result-title').textContent = new Set(winners.map(p => p.team)).size !== 1 ? '¡Empate de equipos!' : `¡Ganó el equipo ${winners[0]?.team === 0 ? 'naranja' : 'turquesa'}!`;
     $('result-copy').textContent = `${order[0]?.score || 0} pintadas en la mejor marca. ¿Otra ronda?`;
@@ -207,7 +199,7 @@ function frame(now) {
   world.draw(room.state, room.id, dt, aim); minimap.draw(room.state, room.id, world.forward()); requestAnimationFrame(frame);
 }
 render(room.state); room.connect(); requestAnimationFrame(frame);
-addEventListener('pagehide', () => { stopped = true; clearInterval(timer); teamRoster.dispose(); releasePointer(); room.dispose(); world.dispose(); }, { once: true });
+addEventListener('pagehide', () => { stopped = true; clearInterval(timer); teamRoster.dispose(); looking.dispose(); room.dispose(); world.dispose(); }, { once: true });
 if (params.has('debug')) window.pinturaDebug = { room, world, menu, input };
 
 await prepareScene(world);

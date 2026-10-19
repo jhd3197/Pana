@@ -29,7 +29,7 @@ export function cleanInput(input = {}) {
   const num = n => Number.isFinite(n) ? clamp(n, -1, 1) : 0;
   let x = num(input.x), z = num(input.z), length = Math.hypot(x, z); if (length > 1) { x /= length; z /= length; }
   let ax = num(input.ax), az = num(input.az); length = Math.hypot(ax, az); if (length > .01) { ax /= length; az /= length; } else { ax = 0; az = -1; }
-  return { x, z, ax, az, weapon: ['pistol', 'scatter', 'rapid'].includes(input.weapon) ? input.weapon : 'pistol', fire: input.fire === true, reload: input.reload === true };
+  return { x, z, ax, az, weapon: ['pistol', 'scatter', 'rapid'].includes(input.weapon) ? input.weapon : 'pistol', fire: input.fire === true, reload: input.reload === true, sprint: input.sprint === true };
 }
 export const spawnsFor = id => id === 'muelle' ? MUELLE_SPAWNS : arenaLayout(id) ? PAINT_SPAWNS : SPAWNS;
 // Half-width of each map's court: the container yard is larger still.
@@ -112,13 +112,13 @@ export class Arena {
     if (seat === undefined) return null;
     const team = seat % 2, color = COLORS[(this.options.mode === 'teams' || this.options.flag) ? team : seat];
     if (p) { Object.assign(p, info, { connected: true, seat, team, color }); return p; }
-    p = { id, ...info, connected: true, seat, team, eliminated: false, slow: 0, weapon: 'pistol', ...spawnsFor(this.mapId)[this.players.length % 8], ax: 0, az: -1, score: 0, hits: 0, paint: 0, stains: [], calm: 0, streak: 0, nemesis: null, ammo: 12, reload: 0, cooldown: 0, respawn: 0, shield: 1.5, color };
+    p = { id, ...info, connected: true, seat, team, eliminated: false, slow: 0, weapon: 'pistol', ...spawnsFor(this.mapId)[this.players.length % 8], ax: 0, az: -1, score: 0, hits: 0, paint: 0, stains: [], calm: 0, streak: 0, nemesis: null, stamina: 1, sprint: false, ammo: 12, reload: 0, cooldown: 0, respawn: 0, shield: 1.5, color };
     this.players.push(p); return p;
   }
   start() {
     if (this.phase === 'playing' || !this.canStart()) return false;
     this.players = this.players.filter(p => p.connected); this.phase = 'playing'; this.survivors = null; this.round++; this.variant = (this.round - 1) % VARIANTS; this.time = this.options.duration; this.teamScores = [0, 0]; this.flags = spawnsFor(this.mapId).slice(0, 2).map(({ x, z }, team) => ({ team, x, z, homeX: x, homeZ: z, carrier: null })); this.balls = []; this.splats = [];
-    this.players.forEach((p, i) => Object.assign(p, spawnsFor(this.mapId)[i % 8], { eliminated: false, slow: 0, color: (this.options.mode === 'teams' || this.options.flag) ? COLORS[p.team] : COLORS[i % 8], score: 0, hits: 0, paint: 0, stains: [], calm: 0, streak: 0, nemesis: null, ammo: 12, reload: 0, cooldown: 0, respawn: 0, shield: 1.5 }));
+    this.players.forEach((p, i) => Object.assign(p, spawnsFor(this.mapId)[i % 8], { eliminated: false, slow: 0, color: (this.options.mode === 'teams' || this.options.flag) ? COLORS[p.team] : COLORS[i % 8], score: 0, hits: 0, paint: 0, stains: [], calm: 0, streak: 0, nemesis: null, stamina: 1, sprint: false, ammo: 12, reload: 0, cooldown: 0, respawn: 0, shield: 1.5 }));
     this.message = `¡A pintar! Cancha ${variantName(this.mapId, this.variant).toLowerCase()}.`; return true;
   }
   respawn(p) {
@@ -126,7 +126,7 @@ export class Arena {
       const nearest = s => Math.min(...this.players.filter(q => q.id !== p.id && q.connected && !q.respawn && !q.eliminated && !this.sameTeam(p, q)).map(q => Math.hypot(q.x - s.x, q.z - s.z)), 100);
       return nearest(b) - nearest(a);
     })[0];
-    Object.assign(p, spawn, { ammo: 12, reload: 0, cooldown: 0, shield: 1.5, paint: 0, stains: [], calm: 0 });
+    Object.assign(p, spawn, { ammo: 12, reload: 0, cooldown: 0, shield: 1.5, paint: 0, stains: [], calm: 0, stamina: 1 });
   }
   bot(p) {
     const enemies = this.players.filter(q => q.id !== p.id && q.connected && !q.respawn && !q.eliminated && !this.sameTeam(p, q)).sort((a, b) => Math.hypot(a.x - p.x, a.z - p.z) - Math.hypot(b.x - p.x, b.z - p.z));
@@ -160,11 +160,14 @@ export class Arena {
       const input = p.bot ? this.bot(p) : cleanInput(inputs.get(p.id));
       p.weapon = this.options.weapons === 'pistol' ? 'pistol' : input.weapon;
       p.ax = input.ax; p.az = input.az;
-      const speed = SPEED * (p.slow > 0 ? .45 : 1), x = p.x + input.x * speed * dt, z = p.z + input.z * speed * dt;
+      // Shift sprints 45% faster for up to three seconds; sprinting holds fire.
+      const sprinting = input.sprint && !input.fire && p.stamina > 0 && !!(input.x || input.z);
+      p.stamina = clamp(p.stamina + (sprinting ? -dt / 3 : dt / 5), 0, 1); p.sprint = sprinting;
+      const speed = SPEED * (p.slow > 0 ? .45 : 1) * (sprinting ? 1.45 : 1), x = p.x + input.x * speed * dt, z = p.z + input.z * speed * dt;
       if (!blocked(x, p.z, RADIUS, this.mapId, this.variant)) p.x = x; if (!blocked(p.x, z, RADIUS, this.mapId, this.variant)) p.z = z;
       p.walk = !!(input.x || input.z);
       if ((input.reload || p.ammo === 0) && !p.reload && p.ammo < 12) p.reload = this.options.fastReload ? .55 : 1.3;
-      if (input.fire && !p.cooldown && !p.reload && p.ammo > 0) {
+      if (input.fire && !sprinting && !p.cooldown && !p.reload && p.ammo > 0) {
         p.ammo--; p.cooldown = p.weapon === 'rapid' ? .13 : p.weapon === 'scatter' ? .75 : .25; p.shield = 0;
         for (const angle of p.weapon === 'scatter' ? [-.18, 0, .18] : [0]) this.balls.push({ id: ++this.serial, owner: p.id, color: p.color, x: p.x, z: p.z, vx: (p.ax * Math.cos(angle) - p.az * Math.sin(angle)) * BALL_SPEED, vz: (p.az * Math.cos(angle) + p.ax * Math.sin(angle)) * BALL_SPEED, life: p.weapon === 'scatter' ? .5 : 1.5 });
       }

@@ -7,7 +7,8 @@ import { propDefinition } from '../../../engine/models/props/plaza-definitions.j
 
 for (const { id } of ARENAS) test(`${id}: seeded props vary, stay clear and remain reachable`, () => {
   const original = id === 'plaza' ? MAP_PROPS : arenaLayout(id).props, saved = JSON.stringify(original);
-  const types = original.map(p => p.type).sort(), footprints = new Set();
+  // Escondidas doubles each map's props over its 1.5× larger court.
+  const types = [...original, ...original].map(p => p.type).sort(), footprints = new Set();
   for (let seed = 1; seed <= 100; seed++) {
     const props = roundProps(id, seed), layout = huntLayout(id, seed);
     assert.deepEqual(props, roundProps(id, seed));

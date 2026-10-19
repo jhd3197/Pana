@@ -19,6 +19,7 @@ import { huntLayout } from './layout.js';
 import { RULES } from './rules.js';
 import { HuntRoom } from './network.js';
 import { elapsedClock } from '/engine/live-room.js';
+import { createLookControls, SENSITIVITY_CHOICES } from '/engine/first-person.js';
 
 const $ = id => document.getElementById(id), show = (id, visible) => $(id).classList.toggle('hidden', !visible);
 const qs = new URLSearchParams(location.search), DEBUG = qs.has('debug');
@@ -33,7 +34,7 @@ renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadow
 renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.13;
 const plaza = createPlaza({ environment: false }), { scene } = plaza;
 const environment = createHuntEnvironment(scene); environment.setMap('plaza');
-const camera = new THREE.PerspectiveCamera(49, innerWidth / innerHeight, 0.1, 200);
+const camera = new THREE.PerspectiveCamera(49, innerWidth / innerHeight, 0.05, 260);
 camera.position.set(25, 20, 32); camera.lookAt(-1, 1.5, -2);
 const actors = new Map(), previews = new Map();
 const previewRenderer = new THREE.WebGLRenderer({ alpha: true, antialias: true, preserveDrawingBuffer: true });
@@ -66,6 +67,8 @@ for (const [i, def] of PLAZA_PROPS.entries()) {
 let state = { mapId: 'plaza', layoutSeed: 1, hideSeconds: RULES.hideSeconds, phase: 'lobby', players: [], round: 0, events: [] }, previousPhase = 'lobby';
 let drag = null, preference = 'hide', paused = false, yaw = 0.28, pitch = 0.22, eventId = 0, uiKey = '', snapRound = -1;
 let toastTimer, motionTime = 0, last = performance.now();
+// First person by default; V (or the menu) switches to the camera behind your pana.
+let view = 'primera', lookPitch = 0, bob = 0, eye = 1.55, lastCooldown = 0;
 let portraitKey = '', hintId = 0;
 const keys = new Set(), touch = new Set(), actorRing = new THREE.Mesh(new THREE.RingGeometry(0.82, 0.88, 40), new THREE.MeshBasicMaterial({ color: 0x54e2ca, transparent: true, opacity: 0.8, depthWrite: false }));
 actorRing.rotation.x = -Math.PI / 2; actorRing.position.y = 0.07; scene.add(actorRing);
@@ -81,11 +84,14 @@ const menu = createGameMenu({
   orientation: 'vertical',
   title: 'Escondidas', heading: 'Un momentico.', resumeLabel: 'Volver al juego', sound, notify,
   note: () => room.members.size === 1 ? 'La práctica queda en pausa mientras descansas.' : 'La ronda continúa para los demás panas.',
-  controls: [['W A S D / ↑ ← ↓ →', 'Moverte'], ['Arrastrar', 'Mirar'], ['Shift', 'Correr'], ['1 2 3 4 5', 'Transformarte'],
-    ['Q', 'Volver a pana'], ['E', 'Copiar objeto cercano o buscar'], ['M', 'Sonido']],
-  tips: ['Una revisión fallida espera 1,6 segundos.'],
+  controls: [['W A S D / ↑ ← ↓ →', 'Caminar hacia donde miras'], ['Ratón', 'Mirar (haz clic para capturarlo)'], ['Clic / E', 'Buscador: revisar lo que tienes en la mira'], ['Shift', 'Correr'], ['1 2 3 4 5', 'Transformarte'],
+    ['Q', 'Volver a pana'], ['E', 'Escondido: copiar el objeto cercano'], ['V', 'Ver tu disfraz desde atrás'], ['Tab', 'Ver la tabla'], ['M', 'Sonido'], ['Esc', 'Soltar el ratón y abrir el menú']],
+  tips: ['Buscador: apunta al objeto sospechoso y haz clic. Si es un pana, lo pillaste a la primera. Si fallas, esperas 1,6 segundos.',
+    'Escondido: pulsa V para ver tu disfraz desde atrás y comprobar que pasas desapercibido.'],
+  options: [{ id: 'view', label: 'Cámara', choices: [['primera', 'Primera persona'], ['tercera', 'Detrás de tu pana']], get: () => view, set: value => { view = value; } },
+    { id: 'mouse', label: 'Sensibilidad al mirar', choices: SENSITIVITY_CHOICES, get: () => looking.sensitivity, set: value => { looking.sensitivity = value; } }],
   invite: () => inviteUrl(code),
-  onOpen() { paused = true; keys.clear(); touch.clear(); drag = null; },
+  onOpen() { paused = true; keys.clear(); touch.clear(); drag = null; looking.release(); },
   onClose() { paused = false; },
 });
 $('game-nav').append(menu.createInviteButton({ id: 'invite', className: 'pk-btn pk-btn--sm' }), menu.createSoundButton({ id: 'sound', className: 'pk-btn pk-btn--sm' }), menu.createButton({ id: 'menu', className: 'pk-btn pk-btn--sm' }));
@@ -111,7 +117,7 @@ function syncActors() {
       const root = new THREE.Group(); root.add(model); root.position.set(p.x, 0, p.z); root.rotation.y = p.h;
       scene.add(root); a = { root, model, character, prop: disguise, skin }; actors.set(p.id, a);
     }
-    a.root.visible = !p.spectator && !p.caught;
+    a.root.visible = !p.spectator && !p.caught && !(p.id === room.id && firstPerson());
     if (state.round !== snapRound) a.root.position.set(p.x, 0, p.z);
   }
   snapRound = state.round;
@@ -119,13 +125,17 @@ function syncActors() {
 function receive(next) {
   state = next; environment.setMap(state.mapId, state.layoutSeed); syncActors();
   if (state.phase !== previousPhase) {
-    if (state.phase === 'hide') { yaw = 0.28; uiKey = ''; sound.tone(660, 0, 0.15, 'sine', 0.1); }
+    if (state.phase === 'hide') { yaw = isSeeker(room.id) ? Math.PI : 0.28; lookPitch = 0; uiKey = ''; sound.tone(660, 0, 0.15, 'sine', 0.1); }
     if (state.phase === 'hunt') { sound.tone(440, 0, 0.2, 'triangle', 0.12); sound.tone(660, 0.22, 0.25, 'triangle', 0.12); }
     previousPhase = state.phase;
   }
   const latest = state.events.at(-1);
   if (state.hint && isSeeker(room.id) && state.hint.id !== hintId) { hintId = state.hint.id; sound.tone(state.hint.kind === 'whistle' ? 1100 : 300, 0, .3, 'sine', .12); notify(`Pista: se oyen pasos ${state.hint.z < (getMe()?.z || 0) ? 'al norte' : 'al sur'}.`); }
-  if (latest && latest.id !== eventId) { eventId = latest.id; notify(latest.text); }
+  if (latest && latest.id !== eventId) {
+    for (const e of state.events) if (e.id > eventId && e.found && ['hide', 'hunt', 'results', 'finished'].includes(state.phase)) found(e.found);
+    eventId = latest.id; notify(latest.text);
+  }
+  if (['results', 'finished'].includes(state.phase)) { looking.release(); showBoard(false); }
   updateHUD();
 }
 function updateHUD() {
@@ -188,7 +198,7 @@ function updateHUD() {
   }
   const near = nearestProp();
   $('action-label').textContent = spectating ? 'Observando la ronda' : seeking
-    ? state.phase === 'hide' ? 'Espera a que termine la cuenta' : me?.cooldown > 0 ? `Revisando… ${me.cooldown.toFixed(1)} s` : 'Revisar alrededor'
+    ? state.phase === 'hide' ? 'Espera a que termine la cuenta' : me?.cooldown > 0 ? `Revisando… ${me.cooldown.toFixed(1)} s` : 'Revisar lo que está en la mira'
     : near ? `Copiar ${propDefinition(near.type).label.toLowerCase()}` : state.options?.disguises === 'barrels' ? 'Acércate a un barril para copiar' : 'Acércate a un objeto para copiar';
   $('action').disabled = spectating || seeking && (state.phase !== 'hunt' || me?.cooldown > 0) || !seeking && (!near || me?.changes <= 0);
   const suspicion = me?.suspicion || 0; show('suspicion', suspicion > 3 && !spectating && !seeking);
@@ -207,6 +217,26 @@ function updateHUD() {
   }
 }
 
+// One hit and done: the seeker gets a callout with the distance.
+function found({ seeker, hider, distance }) {
+  const who = state.players.find(p => p.id === hider)?.name || 'un pana';
+  if (seeker === room.id) {
+    $('callout-title').textContent = state.players.filter(p => !isSeeker(p.id) && !p.caught && !p.spectator).length ? '¡Te encontré!' : '¡Los pillé a todos!';
+    $('callout-detail').textContent = `${who} · ${distance} m`; document.body.classList.remove('called'); void document.body.offsetWidth; document.body.classList.add('called');
+    [660, 880, 1320].forEach((f, i) => sound.tone(f, i * .07, .11, 'triangle', .08));
+  } else if (hider === room.id) { sound.sweep(520, 110, .6, 'triangle', .12); }
+  else sound.tone(520, 0, .12, 'sine', .06);
+}
+// Hold Tab for the match table.
+function showBoard(open) {
+  $('scoreboard').hidden = !open; if (!open) return;
+  $('board-title').textContent = `Ronda ${state.round} de ${state.totalRounds}`;
+  fillRoster($('board-list'), [...state.players].sort((a, b) => b.score - a.score).map((p, i) => ({ rank: i + 1, name: p.name + (p.id === room.id ? ' (tú)' : ''), me: p.id === room.id, end: p.score, score: true,
+    detail: p.spectator ? 'Espectador' : isSeeker(p.id) ? 'Buscador' : p.caught ? 'Encontrado' : 'Escondido' })));
+}
+function firstPerson() { const me = getMe(); return view === 'primera' && ['hide', 'hunt'].includes(state.phase) && !!me && !me.spectator && !me.caught; }
+// The rules' heading (forward = sin h, cos h) for the camera's yaw.
+function heading() { return yaw + Math.PI; }
 function nearestProp() {
   const p = getMe(); if (!p) return null;
   return huntLayout(state.mapId, state.layoutSeed).props.filter(o => (state.options?.disguises !== 'barrels' || o.type === 'barrel') && Math.hypot(o.x - p.x, o.z - p.z) < 3.8)
@@ -215,7 +245,7 @@ function nearestProp() {
 function transform(id) { room.action('transform', { prop: id }); }
 function act() {
   if (paused) return;
-  if (isSeeker(room.id)) room.action('check');
+  if (isSeeker(room.id)) { room.action('check', { aim: heading() }); sound.sweep(900, 500, .12, 'square', .05); }
   else { const near = nearestProp(); if (near) transform(near.type); else notify(state.options?.disguises === 'barrels' ? 'Acércate a un barril.' : 'Acércate a un barril, caja, cava, mata o banco.'); }
 }
 for (const mode of ['hide', 'seek']) $(`role-${mode}`).onclick = () => {
@@ -230,22 +260,29 @@ addEventListener('keydown', event => {
   if (event.target.closest?.('input, select, textarea')) return;
   const key = event.key.toLowerCase();
   if (['arrowup', 'arrowdown', 'arrowleft', 'arrowright', ' '].includes(key)) event.preventDefault();
+  if (key === 'tab') { event.preventDefault(); if (['hide', 'hunt'].includes(state.phase)) showBoard(true); return; }
   keys.add(key); if (event.repeat) return;
   if (paused) return;
+  if (key === 'v') view = view === 'primera' ? 'tercera' : 'primera';
   if (key === 'm') toggleMute();
   if (key === 'e') act(); if (key === 'q') transform(null);
   if (/^[1-5]$/.test(key)) transform(PLAZA_PROPS[Number(key) - 1].id);
 });
-addEventListener('keyup', event => keys.delete(event.key.toLowerCase()));
+addEventListener('keyup', event => { const key = event.key.toLowerCase(); keys.delete(key); if (key === 'tab') showBoard(false); });
 addEventListener('blur', () => { keys.clear(); touch.clear(); });
 document.addEventListener('visibilitychange', () => { keys.clear(); touch.clear(); });
 // Held touch buttons (engine/touch.js).
 for (const button of document.querySelectorAll('[data-move]')) {
   holdButton(button, { down: () => touch.add(button.dataset.move), up: () => touch.delete(button.dataset.move) });
 }
-$('world').onpointerdown = event => { if (paused) return; drag = { x: event.clientX, y: event.clientY }; $('world').setPointerCapture(event.pointerId); };
+const looking = createLookControls($('world'), { enabled: () => !paused && firstPerson(),
+  look(dyaw, dpitch) { yaw += dyaw; lookPitch = THREE.MathUtils.clamp(lookPitch + dpitch, -.75, .6); },
+  press(event) { if (event.button === 0 && isSeeker(room.id)) act(); },
+  unlocked: () => menu.open('game') });
+// The camera behind your pana (V) and the lobby keep drag-to-orbit.
+$('world').onpointerdown = event => { if (paused || firstPerson()) return; drag = { x: event.clientX, y: event.clientY }; $('world').setPointerCapture(event.pointerId); };
 $('world').onpointermove = event => {
-  if (!drag) return;
+  if (!drag || firstPerson()) return;
   yaw -= (event.clientX - drag.x) * 0.006; pitch = THREE.MathUtils.clamp(pitch + (event.clientY - drag.y) * 0.004, 0.18, 0.95);
   drag = { x: event.clientX, y: event.clientY };
 };
@@ -254,13 +291,13 @@ function input() {
   if (paused) return { x: 0, z: 0 };
   const x = Number(keys.has('d') || keys.has('arrowright') || touch.has('right')) - Number(keys.has('a') || keys.has('arrowleft') || touch.has('left'));
   const z = Number(keys.has('s') || keys.has('arrowdown') || touch.has('down')) - Number(keys.has('w') || keys.has('arrowup') || touch.has('up'));
-  return { x: x * Math.cos(yaw) + z * Math.sin(yaw), z: z * Math.cos(yaw) - x * Math.sin(yaw), sprint: keys.has('shift') };
+  return { x: x * Math.cos(yaw) + z * Math.sin(yaw), z: z * Math.cos(yaw) - x * Math.sin(yaw), sprint: keys.has('shift'), ...(firstPerson() ? { look: heading() } : {}) };
 }
 
 const map = $('minimap').getContext('2d');
 function drawMap() {
   const { bounds: BOUNDS, blockers: BLOCKERS } = huntLayout(state.mapId, state.layoutSeed);
-  const W = 300, H = 270, scale = 5.7, px = x => W / 2 + x * scale, pz = z => H / 2 + z * scale;
+  const W = 300, H = 270, scale = Math.min((W - 12) / (BOUNDS.x * 2), (H - 12) / (BOUNDS.z * 2)), px = x => W / 2 + x * scale, pz = z => H / 2 + z * scale;
   map.clearRect(0, 0, W, H); map.fillStyle = '#2e2558'; map.fillRect(px(-BOUNDS.x), pz(-BOUNDS.z), BOUNDS.x * scale * 2, BOUNDS.z * scale * 2);
   map.fillStyle = '#120d2c';
   for (const b of BLOCKERS) {
@@ -295,7 +332,21 @@ function frame(now) {
     a.model.position.y = p.moving && active ? Math.abs(Math.sin(motionTime * 12)) * 0.08 : 0;
     if (a.character) a.character.update(dt, { open: p.moving, walk: p.moving ? 1 : 0 });
   }
-  if (active && me && !me.spectator && !me.caught) {
+  document.body.classList.toggle('first-person', firstPerson());
+  document.body.classList.toggle('seeking', isSeeker(room.id) && state.phase === 'hunt');
+  if (firstPerson()) {
+    // Eyes at pana height, or at the top of the disguise you are wearing.
+    const p = actors.get(me.id)?.root.position || new THREE.Vector3(me.x, 0, me.z);
+    eye = THREE.MathUtils.damp(eye, me.prop ? Math.max(.55, (propDefinition(me.prop)?.height || 1) * .85) : 1.55, 10, dt);
+    bob += me.moving ? dt * (keys.has('shift') ? 13 : 9) : 0;
+    camera.position.set(p.x, eye + (me.moving ? Math.abs(Math.sin(bob)) * .045 : 0), p.z);
+    camera.rotation.set(lookPitch, yaw, 0, 'YXZ'); camera.fov = innerWidth < innerHeight ? 78 : 70; camera.updateProjectionMatrix();
+    actorRing.visible = false;
+    if (me.cooldown > lastCooldown + .5) $('crosshair').classList.add('cooling');
+    if (!me.cooldown) $('crosshair').classList.remove('cooling');
+    lastCooldown = me.cooldown || 0;
+  } else if (active && me && !me.spectator && !me.caught) {
+    if (camera.fov !== 49) { camera.fov = 49; camera.updateProjectionMatrix(); }
     const p = actors.get(me.id)?.root.position || new THREE.Vector3(me.x, 0, me.z);
     const dist = innerWidth < 600 ? 11.5 : 9;
     desired.set(p.x + Math.sin(yaw) * Math.cos(pitch) * dist, 1.7 + Math.sin(pitch) * dist, p.z + Math.cos(yaw) * Math.cos(pitch) * dist);
@@ -306,7 +357,8 @@ function frame(now) {
     actorRing.visible = true; actorRing.position.set(p.x, 0.07, p.z);
     actorRing.scale.setScalar(me.prop ? propDefinition(me.prop).radius / 0.7 : 0.9);
   } else {
-    desired.set(26 + Math.sin(motionTime * 0.06) * 2, 21, 32); camera.position.lerp(desired, 1 - Math.exp(-dt * 2));
+    if (camera.fov !== 49) { camera.fov = 49; camera.updateProjectionMatrix(); }
+    desired.set(39 + Math.sin(motionTime * 0.06) * 3, 31, 48); camera.position.lerp(desired, 1 - Math.exp(-dt * 2));
     camera.lookAt(innerWidth < 600 ? 0 : -3, 1.5, -2); actorRing.visible = false;
   }
   // The launcher column covers the left of the lobby; shift the plaza right of it.
@@ -315,7 +367,7 @@ function frame(now) {
     if (lobbyShift) camera.setViewOffset(innerWidth, innerHeight, -lobbyShift, 0, innerWidth, innerHeight); else camera.clearViewOffset();
   }
   drawMap();
-  if (state.hint && isSeeker(room.id)) { map.fillStyle = '#ffc629'; map.beginPath(); map.arc(150 + state.hint.x * 5.7, 135 + state.hint.z * 5.7, state.hint.kind === 'whistle' ? 9 : 20, 0, Math.PI * 2); map.strokeStyle = '#ffc629'; map.stroke(); }
+  if (state.hint && isSeeker(room.id)) { const { bounds } = huntLayout(state.mapId, state.layoutSeed), k = Math.min(288 / (bounds.x * 2), 258 / (bounds.z * 2)); map.fillStyle = '#ffc629'; map.beginPath(); map.arc(150 + state.hint.x * k, 135 + state.hint.z * k, state.hint.kind === 'whistle' ? 9 : 20, 0, Math.PI * 2); map.strokeStyle = '#ffc629'; map.stroke(); }
   renderer.render(scene, camera); requestAnimationFrame(frame);
 }
 // Real elapsed time (the room catches up in fixed steps): a host in a
@@ -323,10 +375,12 @@ function frame(now) {
 const simClock = elapsedClock();
 const ticker = setInterval(() => room.tick(simClock(), input(), paused && room.members.size === 1), 50);
 addEventListener('resize', () => { camera.aspect = innerWidth / innerHeight; camera.clearViewOffset(); renderer.setSize(innerWidth, innerHeight); });
-addEventListener('pagehide', () => { clearInterval(ticker); room.dispose(); environment.dispose(); plaza.sky.dispose(); renderer.dispose(); previewRenderer.dispose(); });
+addEventListener('pagehide', () => { clearInterval(ticker); looking.dispose(); room.dispose(); environment.dispose(); plaza.sky.dispose(); renderer.dispose(); previewRenderer.dispose(); });
 show('loading', false); show('lobby', true); room.connect(); requestAnimationFrame(frame);
 
-if (DEBUG) window.hunt = { room, menu, environment, get state() { return state; }, scene, renderer, camera, actors,
+if (DEBUG) window.hunt = { room, menu, environment, get state() { return state; }, scene, renderer, camera, actors, get view() { return view; },
+  // Turn the first-person view to face a point (QA).
+  aimAt(x, z) { const me = getMe(); yaw = Math.atan2(-(x - me.x), -(z - me.z)); lookPitch = 0; },
   step(seconds) { if (!room.isHost) return; for (let t = 0; t < seconds; t += 1 / 60) room.game.update(1 / 60, new Map()); room.tick(0, {}); },
   place(id, x, z) { if (!room.isHost) return; const p = room.game.players.find(p => p.id === id); if (p) Object.assign(p, { x, z }); room.tick(0, {}); } };
 

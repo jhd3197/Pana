@@ -29,6 +29,14 @@ becomes the GitHub release's notes.
   marker, a kill feed and new sounds for shots, hits and knockouts.
   Every map has three fixed layouts (Clásica, Girada, Cerrada; Muelle:
   Patio, Laberinto, Torres) that change each round.
+- **Escondidas is first person on bigger maps, and Pepazo can sprint.**
+  Seekers aim at the suspicious object and click: one hit and the hider is
+  found ("¡Te encontré! Lola · 5 m"), a miss waits 1.6 s. Hiders see from
+  their disguise's height and press V to check it from behind. Every
+  Escondidas map is 1.5× larger with twice the props. In Pepazo, Shift
+  sprints for three seconds (no shooting while you run), and Tab shows the
+  table in both games. Mouse sensitivity is one shared setting.
+
 
 - **New game: Chapita.** Barrio baseball with a bottle cap and a
   palo de escoba for up to eight panas in two teams, bots in the empty
