@@ -10,6 +10,8 @@ import { M, mesh } from '/engine/models/core/primitives.js';
 import { expeditionWinch, expeditionLantern, sunRelic } from '/engine/models/props/reliquia.js';
 import { campfire } from '/engine/models/props/llano-life.js';
 import { campTent, bandageWrap } from '/engine/models/props/embuste.js';
+import { ruinPaving, ruinColumn, fallenColumn, stela, ruinRubble, brazier } from '/engine/models/props/ruins.js';
+import { expeditionTent, supplyPile, investigationTable, expeditionWatchtower } from '/engine/models/props/expedition-camp.js';
 import { sunnyStage, makeActors, animateActor, rand, pick } from './stage.js';
 
 const TIME = 30, WORK = 19, VOTE = 27;        // seconds: work until WORK, vote until VOTE, then the verdict
@@ -21,6 +23,24 @@ const FAST = 0.28, CAREFUL = 0.75;      // gaps (s) that count as mashing, and a
 const NOTICE = 0.6, NOTICE_DIM = 0.02;  // chance a bot sees a lit lantern; spots a dim one
 const SEE_NEAR = 0.55, SEE_FAR = 0.15;  // chance a bot sees sand within two stations; farther
 const IDLE = 2, NOISE = 2.1;            // weight of never seeing someone work; vote noise
+
+// The dig the panas work for: ruins round the relic, the expedition's tents,
+// supplies and lookout around the clearing, all from the shared library.
+function digSite(scene) {
+  const put = (o, x, z, ry = 0) => { o.position.set(x, 0, z); o.rotation.y = ry; scene.add(o); return o; };
+  put(ruinPaving({ w: 9, d: 5 }), 0, -7.6);
+  put(ruinColumn({ seed: 4, height: 4.2 }), -3.6, -8.8);
+  put(ruinColumn({ seed: 5, height: 2.6, broken: true }), 3.6, -8.8);
+  put(fallenColumn({ length: 4 }), 6.2, -7.2, 0.5);
+  put(stela({ seed: 9 }), -6.4, -9.4, 0.3);
+  put(ruinRubble({ seed: 6, spread: 2 }), 5, -10);
+  for (const x of [-1.9, 1.9]) put(brazier({ seed: 80 + (x > 0 ? 1 : 0) }), x, -6.4);
+  put(campTent(), -10, -6.5, 0.5);
+  put(expeditionTent({ color: 'mustard', seed: 2 }), 10.5, -7, -0.6);
+  put(supplyPile({ seed: 5 }), -12.5, -1.5, 0.8);
+  put(investigationTable(), 12.5, -2, -1.1);
+  put(expeditionWatchtower({ height: 6 }), -15, -12, 0.4);
+}
 
 export default {
   id: 'embuste',
@@ -36,9 +56,9 @@ export default {
     const stage = sunnyStage(scene, { ground: 0x8a7a58, horizon: 0xf0c99a, sky: 0x6e8fd0 });
     const puffs = new Puffs(scene);
     const fire = campfire(); fire.position.set(0, 0, -4.5); fire.scale.setScalar(1.4); scene.add(fire);
-    const tent = campTent(); tent.position.set(-9, 0, -7); tent.rotation.y = 0.5; scene.add(tent);
     const relic = sunRelic(); relic.position.set(0, 1.2, -7.5); scene.add(relic);
     scene.add(mesh(new THREE.BoxGeometry(1.4, 1.1, 1.4), M(0x7c7a68, { roughness: 1 }), 0, 0.55, -7.5));
+    digSite(scene);
 
     const camera = new THREE.PerspectiveCamera(48, (ctx.aspect || innerWidth / innerHeight), 0.1, 400);
     camera.position.set(0, 9.5, 18); camera.lookAt(0, 1.2, -1);

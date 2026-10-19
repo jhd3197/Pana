@@ -457,6 +457,11 @@ becomes the GitHub release's notes.
 
 ### Changed
 
+- **¡Atrapa los mangos! and ¡Embuste! got real places to play.** The mango
+  yard has a proper mango tree, crates of the day's pick and bunting; the
+  Embuste camp is now a dig site with ruins round the relic, braziers,
+  tents, supplies and a lookout tower.
+
 - **Bululú shows how far the mango cart is.** Your turn and the dice
   prompt say how many tiles away the cart is, and at the fork each route
   says how many tiles it takes to reach it.
