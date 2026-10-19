@@ -2069,7 +2069,14 @@ function updateRace(dt, presentation = true) {
   race.shockwaves.update(dt);
   // The deterministic browser harness can run the same gameplay tick without
   // spending simulation time on poses, the minimap and DOM painting.
-  if(!presentation)return;
+  if (presentation) presentRace(dt);
+}
+
+// Poses, camera, scenery animation and the HUD: once per drawn frame, for the
+// time the physics steps covered (frame() runs several steps on a slow frame).
+// HUD text is written only when it changes: a write invalidates layout even when equal.
+function setText(id, text) { const el = $(id); if (el.textContent !== text) el.textContent = text; }
+function presentRace(dt) {
   for (const c of race.cars) syncCar(c, dt);
   race.sky.update(race.clock);
   tickWind(race.clock, T?.def.rain ? 1.45 : 1);
@@ -2082,19 +2089,19 @@ function updateRace(dt, presentation = true) {
   const order = standings();
   const place = order.indexOf(p);
   if (race.mode === 'battle') {
-    $('lap-label').textContent = 'Globos';
-    $('lap').textContent = `${p.balloons}/${BALLOONS}`;
+    setText('lap-label', 'Globos');
+    setText('lap', `${p.balloons}/${BALLOONS}`);
   } else {
-    $('lap-label').textContent = 'Vuelta';
-    $('lap').textContent = `${Math.min(race.laps, Math.max(1, p.lap))}/${race.laps}`;
+    setText('lap-label', 'Vuelta');
+    setText('lap', `${Math.min(race.laps, Math.max(1, p.lap))}/${race.laps}`);
   }
   if (race.shownPlace !== place) {
     race.shownPlace = place;
     $('pos').innerHTML = `${place + 1}<sup>º</sup>`;
     $('pos').setAttribute('aria-label', `Posición ${place + 1} de ${order.length}`);
   }
-  $('leader').textContent = order[0] === p ? '¡Tú!' : order[0].name;
-  $('time').textContent = race.mode === 'battle' ? clockText(Math.max(0, BATTLE_TIME - race.clock)) : clockText(p.done ? p.time : race.clock);
+  setText('leader', order[0] === p ? '¡Tú!' : order[0].name);
+  setText('time', race.mode === 'battle' ? clockText(Math.max(0, BATTLE_TIME - race.clock)) : clockText(p.done ? p.time : race.clock));
   if (race.mode !== 'battle' && race.laps > 1 && p.lap === race.laps && !p.finalLap && !p.done) {
     p.finalLap = true;
     shout('¡Vuelta final!');
@@ -2106,7 +2113,7 @@ function updateRace(dt, presentation = true) {
   if (race.p2) showP2(order);
 
   // speedometer + boost bar
-  $('speed').textContent = Math.round(Math.abs(p.vf) * 4);
+  setText('speed', String(Math.round(Math.abs(p.vf) * 4)));
   setSpeedLines(p.boost > 0 ? Math.min(0.85, p.boost) : 0);
   const boost = $('boost');
   const ratio = Math.min(1, Math.abs(p.vf) / (p.tune.top * 1.5));
@@ -2167,12 +2174,13 @@ function updateRace(dt, presentation = true) {
 }
 
 // Chase camera with a bit of shake; holding look-back (C) turns it around.
+const camWant = new THREE.Vector3();
 function followCam(cam, key, p, look, dt) {
   const fx = Math.sin(p.h), fz = Math.cos(p.h), back = look ? -1 : 1;
   const dist = p.boost > 0 ? 12.1 : 11;
   // Layered courses can descend below sea level. Follow the driving deck;
   // clamping this camera to world y=5 puts it above an underwater tunnel.
-  const want = new THREE.Vector3(p.x - fx * dist * back, T.def.layered ? p.y + 5 : Math.max(5, p.y + 5), p.z - fz * dist * back);
+  const want = camWant.set(p.x - fx * dist * back, T.def.layered ? p.y + 5 : Math.max(5, p.y + 5), p.z - fz * dist * back);
   if (!race[key] || look !== race[key + 'Look']) race[key] = want.clone();
   race[key + 'Look'] = look;
   race[key].lerp(want, Math.min(1, dt * (p.boost > 0 ? 5.5 : 4)));
@@ -2785,7 +2793,7 @@ async function goOnline(code, lead) {
 // ======================================================================
 let mode = 'garage';
 const clock = new THREE.Clock();
-const STEP = 1 / 60;
+const STEP = 1 / 60, MAX_CATCHUP = 5 * STEP - 1e-9;
 let acc = 0;
 
 const FINE_POINTER = matchMedia('(pointer: fine)').matches;
@@ -2804,10 +2812,15 @@ function frame() {
     pollPads();
     // fixed physics steps: same race speed at any frame rate
     if (!paused) acc += dt * SPEED;
+    let stepped = 0;
     while (acc >= STEP && mode === 'race') {
-      updateRace(STEP);
-      acc -= STEP;
+      updateRace(STEP, false);
+      acc -= STEP; stepped += STEP;
+      // After a stall, run a few steps and let the race lose the rest: catching
+      // up fully would make this frame late too, and the next, and so on.
+      if (stepped >= MAX_CATCHUP) { acc = 0; break; }
     }
+    if (stepped && mode === 'race') presentRace(stepped);
     sendPoses();
     if (race.p2) {
       const w = innerWidth, h = innerHeight;
