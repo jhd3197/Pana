@@ -4,6 +4,7 @@ import { bake } from '/engine/models/core/static-batch.js';
 import { buildCharacter } from '/engine/models/characters/pana/avatar-model.js';
 import { addWaterMotion } from '/engine/models/effects/water-details.js';
 import { colonialHouse } from './colonial-house.js';
+import { clamp } from '../../random.js';
 
 function lettering(words, color = '#fff0ca', bg = '#387c82', w = 4, h = 1.1) {
   return mesh(new THREE.PlaneGeometry(w, h), canvasMat(768, 192, ctx => {
@@ -20,7 +21,6 @@ function lettering(words, color = '#fff0ca', bg = '#387c82', w = 4, h = 1.1) {
 // the style picks the family and roof, the seed the finish and details.
 const STYLES = ['tejas', 'balcon', 'tienda', 'terraza'];
 const FINISHES = ['ladrillo-visto', 'ladrillo-pintado', 'cal', 'ladrillo-visto', 'ladrillo-pintado'];
-const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
 export function house({ w = 7, h = 6, color = 0xe5b965, seed = 1, label = '', style, detail = 'game' } = {}) {
   style = STYLES.includes(style) ? style : STYLES[((seed % 4) + 4) % 4];
   const s = Math.abs(Math.floor(seed)) >>> 0, floors = h > 6 ? 2 : 1;

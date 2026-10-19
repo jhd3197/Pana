@@ -6,6 +6,7 @@ import * as THREE from 'three';
 import { mergeGeometries, toCreasedNormals } from 'three/addons/utils/BufferGeometryUtils.js';
 import { buildCharacter } from '/engine/models/characters/pana/avatar-model.js';
 import { venezuelaFlag } from '/engine/models/props/flags.js';
+import { clamp } from '../../random.js';
 
 const mats = new Map();
 function M(color, extra = {}) {
@@ -233,7 +234,6 @@ function spot(size, color) {
 }
 
 // ---------- kit v2: filleted, tapered bodies ----------
-const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 
 // Smooth-shaded materials for the filleted v2 parts (the low-poly helpers
 // above stay flat shaded). Paint gets a little sheen; acabado can change it.

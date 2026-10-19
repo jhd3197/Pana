@@ -2,6 +2,7 @@
 // tricks, slipstream and coin loss. game.js applies them in stepCar;
 // tests/drive-rules.test.js checks them. No Three.js, no DOM.
 
+import { clamp } from '../../../engine/random.js';
 export const DRIFT_MIN_SPEED = 12;          // m/s needed to start (and keep) a drift
 export const DRIFT_LEVELS = [0.75, 1.6, 2.5]; // charge (s) for blue, orange, purple sparks
 export const DRIFT_BOOST = [0, 0.55, 0.95, 1.45];   // turbo seconds per level on release
@@ -18,7 +19,6 @@ export function driftSteer(dir, steer) {
   return dir * (0.15 + into * 0.7);
 }
 
-const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
 const smooth = v => { const t = clamp(v, 0, 1); return t * t * (3 - 2 * t); };
 
 // Only intervene when the projected path approaches an edge, or the driver

@@ -3,6 +3,7 @@ import { DEFAULT_OPTIONS, validOptions } from './options.js';
 import { paintArenaInfo, arenaLayout, ARENA_SPAWNS, validPaintArena } from '../../../engine/arena-layouts.js';
 import { MUELLE_COVERS, MUELLE_SPAWNS, MUELLE_SIZE } from './muelle-layout.js';
 import { DEFAULT_DIFFICULTY, validDifficulty } from '../../../engine/difficulty.js';
+import { clamp } from '../../../engine/random.js';
 
 // Pepazo plays a 54 m court: every map's cover spreads 1.5× from the centre and
 // an outer ring of barricades keeps the long perimeter lanes from staying open.
@@ -20,7 +21,6 @@ const PLAZA_COVER = [
 export const COVER = spread(PLAZA_COVER);
 export const SPAWNS = [{ x: -14, z: -14 }, { x: 14, z: 14 }, { x: 14, z: -14 }, { x: -14, z: 14 }, { x: 0, z: -15 }, { x: 0, z: 15 }, { x: -15, z: 0 }, { x: 15, z: 0 }].map(p => ({ x: p.x * SPREAD, z: p.z * SPREAD }));
 const PAINT_SPAWNS = ARENA_SPAWNS.map(p => ({ x: p.x * SPREAD, z: p.z * SPREAD }));
-const clamp = (n, lo, hi) => Math.max(lo, Math.min(hi, n));
 // Bot marksmanship per difficulty: aim wobble (radians) and how much of the
 // time a bot with a clear line keeps the trigger down (sine threshold).
 export const BOT_SKILL = { facil: { wobble: .16, trigger: .45 }, normal: { wobble: .07, trigger: -.2 }, dificil: { wobble: .035, trigger: -.5 }, experto: { wobble: .012, trigger: -.8 } };

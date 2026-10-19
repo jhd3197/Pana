@@ -5,8 +5,8 @@
 // Every sim takes `humans`: a Set of seat indices the players drive. AIs play
 // the other seats. update(dt, inputs) takes inputs[i] = {x, jump} per human.
 import { paddleState, stroke, step, axisStroke, PADDLE } from '/engine/paddle.js';
+import { clamp } from '../../../../engine/random.js';
 
-const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 const TAU = Math.PI * 2;
 
 // An AI paddler: strokes alternate near the sweet spot, with its own wobble,

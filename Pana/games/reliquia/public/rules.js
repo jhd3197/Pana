@@ -1,8 +1,8 @@
 import { DEFAULT_OPTIONS, validOptions } from './options.js';
 import { CAMP, GATE, WINCHES, ALTAR, SUPPLIES, SPAWNS, distance, lineClear, moveBody, walkable, findPath } from './layout.js';
 import { createDirector, updateDirector, random } from './director.js';
+import { clamp } from '../../../engine/random.js';
 const clone = value => JSON.parse(JSON.stringify(value));
-const clamp = (n, lo, hi) => Math.max(lo, Math.min(hi, n));
 export const alive = p => !p.downed && !p.spectator;
 export function objective(s) {
   if (s.relicTaken) return 'Regresen juntos al campamento con la reliquia';

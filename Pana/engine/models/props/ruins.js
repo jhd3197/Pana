@@ -6,6 +6,7 @@ import * as THREE from 'three';
 import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
 import { M, rng } from '/engine/models/core/primitives.js';
 import { bake } from '/engine/models/core/static-batch.js';
+import { lerp } from '../../random.js';
 
 const PAL = {
   stoneA: 0xa29c84, stoneB: 0xb4a882, stoneC: 0x8f8c77, stoneD: 0x66645a,
@@ -47,7 +48,6 @@ function T(x, y, z, rx = 0, ry = 0, rz = 0, sx = 1, sy = 1, sz = 1) {
 }
 const C = (P, L) => P.clone().multiply(L);
 const I = new THREE.Matrix4();
-const lerp = (a, b, t) => a + (b - a) * t;
 
 function finish(B, name) {
   const out = bake(B.group); out.name = name;

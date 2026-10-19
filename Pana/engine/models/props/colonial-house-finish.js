@@ -1,13 +1,13 @@
 import * as THREE from 'three';
 import { M, mesh } from '../core/primitives.js';
 import { houseRandom } from './colonial-house-spec.js';
+import { clamp } from '../../random.js';
 
 // Vertex-colored paint and shallow brick accents survive the existing static bake.
 // No textures, transparency, shader hooks or per-seed cached materials are needed.
 const paint = M(0xffffff, { vertexColors: true, flatShading: true, roughness: 0.9 });
 const clay = [0xb4573a, 0xc96a45, 0x9e4a31, 0xd27d52, 0xa85a3c].map(c => new THREE.Color(c));
 const mortar = new THREE.Color(0xd9ccb2), chalk = new THREE.Color(0xf2e4c9);
-const clamp = (n, lo = 0, hi = 1) => Math.max(lo, Math.min(hi, n));
 
 function colored(geometry, color) {
   const position = geometry.attributes.position, values = new Float32Array(position.count * 3);
