@@ -127,6 +127,8 @@ option, plays all six board turns, shoots from seat six and elects a new host.
   shadow map, including objects the minigame removed mid-game. Six rounds of
   Atrapa now stay at 1,100–1,120 geometries and 81–86 textures.
   `phone.browser.mjs` and `lifetime.browser.mjs` cover both.
+- `sunnyStage` asks for a 1024² sun shadow map at *Rápida* (baja) quality and
+  2048² otherwise; minigames had requested 2048² on every device.
 
 ## Runner hooks and fairness rules
 
