@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#ff5a3d">
+  <meta name="description" content="Una rueda de tambor con tus panas: unos tocan el tambor, dos bailan en el centro siguiendo al MCP. Falla tres llamados y te saca: ¡Sal de la rueda!">
+  <title>La Rueda de Tambor · Pana</title>
+  <link rel="stylesheet" href="/engine/kit.css">
+  <link rel="stylesheet" href="/engine/ui.css">
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="/engine/game-lobby.css">
+  <link rel="stylesheet" href="/engine/room-options.css">
+  <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}</script>
+</head>
+<body class="in-lobby">
+  <canvas id="world" aria-label="La rueda de tambor en la playa, en tres dimensiones"></canvas>
+  <header class="topbar"><a class="pk-logo" href="/" aria-label="Volver a Pana">PANA</a><nav id="game-nav" aria-label="Opciones"></nav></header>
+  <section id="lobby" class="pk-lobby" aria-labelledby="lobby-title">
+    <span class="pk-ribbon">LA RUEDA ESTÁ LISTA</span>
+    <h1 id="lobby-title" class="pk-title">La Rueda de Tambor</h1>
+    <p class="pk-copy" data-room-description>Unos tocan el tambor y dos bailan en el centro siguiendo al MCP. Falla tres llamados y te saca: <b>¡Sal de la rueda!</b> Entra el próximo pana.</p>
+    <ol id="roster" class="pk-roster" aria-label="Panas en la rueda" data-room-description></ol>
+    <button id="rules" class="pk-btn pk-btn--ghost" data-room-help>Cómo se juega</button>
+    <div id="room-options"></div>
+    <div class="calibrate-row"><button id="calibrate" class="pk-btn pk-btn--sm">Ajustar el golpe</button><span id="latency"></span></div>
+    <div class="pk-lobby-foot"><button id="start" class="pk-btn pk-btn--primary pk-btn--lg" disabled>Conectando…</button></div>
+  </section>
+  <main id="hud" hidden>
+    <section class="song-panel pk-panel" aria-label="La canción">
+      <div class="song-head"><b id="song-name" class="pk-heading"></b><span id="role" class="role-chip"></span></div>
+      <div class="progress" aria-hidden="true"><i id="progress"></i></div>
+      <div class="meters">
+        <label>Sabor <span class="meter"><i id="sabor"></i></span></label>
+        <label>Bulla <span class="meter meter--bulla"><i id="bulla"></i></span></label>
+      </div>
+    </section>
+    <p id="shout" class="shout" role="status" aria-live="polite"></p>
+    <section id="call" class="call-card" hidden aria-live="assertive">
+      <div class="call-ring" aria-hidden="true"><i id="call-ring"></i></div>
+      <b id="call-name" class="pk-heading"></b>
+      <span id="call-hint"></span>
+      <span id="call-partner" class="call-partner"></span>
+      <div id="misses" class="misses" aria-label="Fallas"></div>
+    </section>
+    <section id="drum" class="drum-panel pk-panel" hidden aria-label="Tu tambor">
+      <div class="drum-head"><b id="station-name"></b><span id="combo"></span></div>
+      <canvas id="lane" width="320" height="230" aria-hidden="true"></canvas>
+      <span id="station-hint" class="hint"></span>
+    </section>
+    <section id="crowd" class="crowd-panel pk-panel" hidden aria-label="La gente">
+      <b id="line-place"></b>
+      <div class="crowd-buttons">
+        <button id="clap" class="pk-btn pk-btn--primary">Aplaudir <kbd class="pk-kbd">Espacio</kbd></button>
+        <button id="want-in" class="pk-btn">¡Quiero entrar! <kbd class="pk-kbd">Q</kbd></button>
+        <button id="jump" class="pk-btn" hidden>¡Entro! <kbd class="pk-kbd">E</kbd></button>
+      </div>
+      <div id="dichos" class="dichos"></div>
+    </section>
+    <p id="flash" class="flash" aria-hidden="true"></p>
+    <span id="event" class="event" role="status"></span>
+    <div id="touch" class="pk-touch-zone">
+      <div class="pads">
+        <button id="t-left" class="pk-touch" data-icon="left" aria-label="Izquierda"></button>
+        <button id="t-down" class="pk-touch" data-icon="down" aria-label="Abajo"></button>
+        <button id="t-up" class="pk-touch" data-icon="up" aria-label="Arriba"></button>
+        <button id="t-right" class="pk-touch" data-icon="right" aria-label="Derecha"></button>
+      </div>
+      <button id="t-space" class="pk-touch pk-touch--go" aria-label="Golpe">Golpe</button>
+    </div>
+  </main>
+  <div class="connection"><span id="connection" role="status">Conectando…</span><button id="practice" class="pk-btn pk-btn--sm" hidden>Jugar en local</button></div>
+  <section id="calibration" class="pk-results" hidden aria-labelledby="calibration-title"><div class="pk-modal pk-results-card">
+    <span class="pk-ribbon">AJUSTE</span><h2 id="calibration-title" class="pk-title">Toca cuando suene el golpe</h2>
+    <p class="pk-copy">Ocho golpes. Toca <kbd class="pk-kbd">Espacio</kbd> o el botón justo cuando los oigas. Así la rueda sabe cuánto tarda el sonido en llegarte.</p>
+    <div class="calibration-dots" id="calibration-dots"></div>
+    <button id="calibration-tap" class="pk-btn pk-btn--primary pk-btn--block">¡Golpe!</button>
+    <p id="calibration-result" class="pk-copy"></p>
+    <button id="calibration-close" class="pk-btn pk-btn--ghost pk-btn--block">Listo</button>
+  </div></section>
+  <section id="results" class="pk-results" hidden aria-labelledby="result-title"><div class="pk-modal pk-results-card">
+    <span class="pk-ribbon">SE ACABÓ LA RUEDA</span><h2 id="result-title" class="pk-title"></h2>
+    <ul id="titles" class="titles"></ul>
+    <ol id="result-roster" class="pk-roster"></ol>
+    <button id="again" class="pk-btn pk-btn--primary pk-btn--block">Otra rueda</button><a class="pk-back" href="/">Todos los juegos</a>
+  </div></section>
+  <div id="loading" class="pk-loading"><div class="pk-panel"><h2 class="pk-heading">Preparando la rueda</h2><p>Templando los cueros del tambor…</p></div></div>
+  <script type="module" src="/engine/game-entry.js" data-pana-entry="./game.js"></script>
+</body>
+</html>

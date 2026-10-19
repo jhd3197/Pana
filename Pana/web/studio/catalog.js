@@ -9,6 +9,7 @@ import { DOMINO } from './catalog/domino.js';
 import { CAIDA } from './catalog/caida.js';
 import { LUDO } from './catalog/ludo.js';
 import { QQSMP } from './catalog/qqsmp.js';
+import { TAMBOR } from './catalog/tambor.js';
 
 const adapted = (assets, source) => assets.map(asset => ({...asset, dependencies: [...(asset.dependencies || []), source]}));
 export const ASSETS = [
@@ -21,6 +22,7 @@ export const ASSETS = [
   ...adapted(CAIDA, '/studio/catalog/caida.js'),
   ...adapted(LUDO, '/studio/catalog/ludo.js'),
   ...adapted(QQSMP, '/studio/catalog/qqsmp.js'),
+  ...adapted(TAMBOR, '/studio/catalog/tambor.js'),
 ];
 export const CATEGORIES = ['Todos', 'Personajes', 'Vestuario', 'Objetos', 'Fauna', 'Emblemas', 'Pueblo', 'Selva', 'Llanos', 'Vida llanera', 'Páramo', 'Desierto', 'Termales', 'Costa', 'Ruinas', 'Mina', 'Cementerio', 'Campamento', 'Atmósfera', 'Vegetación', 'Vehículos', 'Mapas'];
 export function sourcePath(url) {

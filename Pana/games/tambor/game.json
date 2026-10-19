@@ -1,0 +1,7 @@
+{
+  "name": "La Rueda de Tambor",
+  "tileName": "TAMBOR",
+  "description": "Una rueda de tambor con tus panas: unos tocan el tambor y dos bailan en el centro siguiendo al MCP. Falla tres llamados y te saca: ¡Sal de la rueda! Entra el próximo pana.",
+  "players": 8,
+  "color": "#ff5a3d"
+}

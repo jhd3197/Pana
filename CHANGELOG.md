@@ -10,6 +10,17 @@ becomes the GitHub release's notes.
 
 ### Added
 
+- **New game: La Rueda de Tambor.** A tambor party on the beach by the
+  pink shack (or the malecón at night) for up to eight panas, with bots on
+  the drums and in the crowd. Drummers keep the beat on four stations
+  (Palo, Mano, Charrasca, Caracol) and fill the Sabor; two dancers follow
+  the MCP's calls (¡Cadera!, ¡Vuelta!, ¡Pañuelo!, ¡Pégate!, ¡Abajo!,
+  ¡Golpe!) and three misses get you "¡Sal de la rueda!"; la gente claps
+  for Bulla and can cut the line once. Roles rotate every song, titles
+  close the game. Also Relevo, Toque libre and ¡Golpe! (repeat the MCP's
+  pattern or you're out). Music plays and is judged on each pana's own
+  computer, so voice-chat lag never ruins anyone's timing.
+
 - **New game: ¿Quién quiere ser mi pana? (QQSMP).** A TV trivia show in
   the plaza at night for up to six panas, with bots in empty podiums.
   Everyone answers at once and answers stay secret until the host reveals
