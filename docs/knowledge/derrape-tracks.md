@@ -31,8 +31,14 @@ No texture downloads, per-frame prop rebuilds or network scenery messages.
 
 Derrape supports multiple maps. Everything lives in `games/derrape/public/`:
 
-- `tracks.js` — registry (`TRACKS`, `getTrack`, `makeTrack`). Turns a track
-  definition into the runtime `T`: `pointAt/paramOf/offsetOf/groundAt`,
+- `tracks.js` — registry (`TRACKS`, `getTrack`, `loadTrack`, `makeTrack`).
+  `TRACKS` starts as names and blurbs (`track-definitions.js`); `loadTrack(id)`
+  imports `tracks/<id>.js` and fills that entry with its full definition (about
+  100 modules of world per map, so only the picked one loads). The garage shows
+  name and blurb at once and the route preview when the module lands; the
+  loading screen awaits it. Debug pages (`?debug`) load every map before
+  `PANA_PREPARED`, so suites can still call `buildTrack(id)` synchronously.
+  `makeTrack` turns a loaded definition into the runtime `T`: `pointAt/paramOf/offsetOf/groundAt`,
   `TOTAL`, `HW`, `LINE`, `ramps`, `animated`, and `T.build()` which returns
   the scenery group. Two geometry backends: `oval: {S, R}` (exact original
   math, retained as an optional backend) and `points: [[x, z], ...]` (closed centripetal
@@ -62,7 +68,8 @@ Derrape supports multiple maps. Everything lives in `games/derrape/public/`:
   the garage disposes pads/boxes with the group. Only geometries are
   disposed; materials come from shared caches (never dispose those).
 - Track choice persists in `localStorage['derrape:track']`; `?track=<id>`
-  overrides. New maps also need their import added to `tracks.js`.
+  overrides. A new map needs its entry in `track-definitions.js`; `tracks.js`
+  finds `tracks/<id>.js` by id.
 - Keep loops drivable: min radius of curvature > 15 and a lap of at least 1,000 m.
   Ordinary circuits are around 2 km; Puerto extends to 6.60 km and defaults to
   one adventure lap, with an estimated 3–4 minute whole race. XZ crossings

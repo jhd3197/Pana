@@ -8,6 +8,14 @@ islands, lighthouse, boats, clouds), `landscape.js` (organic islets and layered
 tepuis), `terrain-material.js` (procedural cliff weathering), `beach.js`
 (coastal props), `atmosphere.js` (day/night lighting and sky) and `minigames/*.js`.
 
+`minigames/index.js` lists the minigames by id and title only; each module
+loads when it is dealt (`loadMinigame`) and the rest fetch in idle time after
+the board is up, so the board opens with 91 modules instead of 181. A guest
+that gets a minigame it hasn't downloaded yet draws it once it lands and
+catches up on frames. A new minigame needs its line in `index.js`
+(`tests/minigames.test.js` checks ids and titles). Debug pages preload all of
+them: the suites fast-forward in simulated time and can't wait on a download.
+
 ## Online play
 
 Bululú has six seats (`game.json`; the shared relay reads the cap). A `?room=` link joins
