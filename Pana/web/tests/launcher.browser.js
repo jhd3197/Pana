@@ -19,8 +19,8 @@ try {
   assert.equal(await page.locator('.game-art[src]').count(), await page.locator('.game').count());
   await page.screenshot({ path: `${output}/launcher-desktop.png` });
   await page.locator('button[data-category="Mesa"]').click();
-  assert.equal(await page.locator('.game:visible').count(), await page.locator('[data-id="ludo"]').count() ? 6 : 5);
-  for (const game of ['criollas', 'ludo']) {
+  assert.equal(await page.locator('.game:visible').count(), await page.locator('[data-id="ludo"]').count() ? 7 : 6);
+  for (const game of ['criollas', 'ludo', 'qqsmp']) {
     if (!await page.locator(`[data-id="${game}"]`).count()) continue;
     const card = page.locator(`[data-id="${game}"] img`);
     assert.match(await card.getAttribute('src'), new RegExp(`${game}-card\\.jpg$`));
