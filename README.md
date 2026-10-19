@@ -12,7 +12,7 @@
 </p>
 
 <p align="center">
-  <img src="docs/screenshots/hub.jpg" alt="Pana's hub: a featured game, eight game tiles with live 3D art, and your own capybara pana" width="860">
+  <img src="docs/screenshots/hub.jpg" alt="Pana's hub: Derrape featured with its illustrated art, category tabs and a row of all 20 games" width="860">
 </p>
 
 Pana is a hub of 3D party games that run in the browser. You make your pana (a
