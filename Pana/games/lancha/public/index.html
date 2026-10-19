@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#0e0b24">
+  <meta name="description" content="Carreras de lanchas con motor fuera de borda por el Sipapo y el Orinoco. Acelera, salta los raudales, esquiva los caimanes y usa el turbo.">
+  <title>Lancha · Pana</title>
+  <link rel="stylesheet" href="/engine/kit.css">
+  <link rel="stylesheet" href="/engine/ui.css">
+  <link rel="stylesheet" href="/engine/room-options.css">
+  <link rel="stylesheet" href="/engine/game-lobby.css">
+  <link rel="stylesheet" href="style.css">
+  <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}</script>
+</head>
+<body class="in-lobby">
+  <canvas id="world" aria-label="Carrera de lanchas por el río"></canvas>
+  <div id="flash" class="flash" aria-hidden="true"></div>
+  <header class="topbar"><nav id="game-nav" aria-label="Opciones del juego"></nav></header>
+  <div id="loading" class="pk-loading" role="status"><span class="pk-ribbon">El Orinoco</span><b class="pk-title">Lancha</b><p class="pk-copy">Echándole gasolina a los motores…</p></div>
+  <section id="lobby" class="pk-lobby hidden" aria-labelledby="title">
+    <div class="pk-lobby-top"><a class="pk-back" href="/">← Todos los juegos</a><a class="pk-logo" href="/" aria-label="Volver a Pana">PANA</a></div>
+    <span class="pk-ribbon">Lancha · Fuera de borda</span>
+    <h1 id="title" class="pk-title">¡Dale gas, pana!</h1>
+    <p class="pk-copy" data-room-description>Del Caño del Sipapo a los raudales de Atures y por el Orinoco abierto hasta Puerto Ayacucho. Sostén el acelerador, salta los raudales y esquiva los caimanes.</p>
+    <div class="pk-stats" data-room-description><div class="pk-stat"><b id="stat-length">1830 m</b><span>río abajo</span></div><div class="pk-stat"><b>2</b><span>raudales</span></div><div class="pk-stat"><b>1–8</b><span>panas</span></div></div>
+    <ol id="roster" class="pk-roster lobby-roster" aria-label="Panas en el muelle" data-room-description></ol>
+    <div id="room-options" aria-label="Ajustes de la sala"></div>
+    <div class="pk-lobby-foot">
+      <div class="pk-lobby-room"><span class="pk-dot"></span><span id="connection" role="status">Conectando…</span><span class="pk-room-code">Sala <b id="room-code"></b></span></div>
+      <button id="practice" class="pk-btn pk-btn--ghost pk-btn--sm practice hidden">Correr en local</button>
+      <div class="pk-lobby-cta" id="lobby-cta"><button id="start" class="pk-btn pk-btn--primary pk-btn--lg" disabled>Preparando la salida…</button></div>
+    </div>
+  </section>
+  <div class="pk-hints lobby-hint" data-pana-hint><span><b>W</b> sostener: acelerar</span><span><b>A D</b> girar</span><span><b>Espacio</b> turbo</span></div>
+  <main id="hud" class="hidden">
+    <div class="race-top">
+      <div class="pk-place position"><b id="place">1</b><sup>º</sup><span id="field-size" class="pk-eyebrow">de 8</span></div>
+      <div class="race-cards">
+        <div class="pk-panel pk-readout"><span class="pk-eyebrow">Tramo</span><b id="sector" class="pk-num">Caño del Sipapo</b></div>
+        <div class="race-pair"><div class="pk-panel pk-readout"><span class="pk-eyebrow">Tiempo</span><b id="timer" class="pk-num">0:00.00</b></div><div class="pk-panel pk-readout"><span class="pk-eyebrow">Faltan</span><b id="left" class="pk-num">1830 m</b></div></div>
+      </div>
+    </div>
+    <ol id="leaderboard" class="pk-roster" aria-label="Posiciones"></ol>
+    <div class="minimap pk-panel"><div class="map-head"><b>Río abajo</b><small id="map-length"></small></div><canvas id="map" width="140" height="240" aria-label="Mapa del río"></canvas></div>
+    <div id="call" class="call hidden" aria-live="polite"></div>
+    <div class="drive-panel pk-panel">
+      <div class="gauge"><b id="speed" class="pk-num">0</b><span>km/h</span></div>
+      <div class="drive-info">
+        <div class="meter-head"><span class="pk-eyebrow">Turbo</span><span id="turbo-label">cargando</span></div>
+        <div class="pk-bar turbo-bar"><i id="turbo-fill"></i><em aria-hidden="true"></em></div>
+        <p id="drive-tip">Sostén W para acelerar. No lo machaques: sostenido vas más rápido.</p>
+        <div class="drive-foot"><span id="motor" class="motor">Motor en marcha</span><span id="throttle-state" class="throttle-state"></span></div>
+      </div>
+    </div>
+    <div class="pk-hints keyboard-hints" data-pana-hint><span><b>W</b> sostener: acelerar</span><span><b>A D</b> girar</span><span><b>S</b> frenar y retroceder</span><span><b>Espacio</b> turbo</span></div>
+    <div class="touch-controls pk-touch-zone">
+      <div class="touch-side"><button class="pk-touch pk-touch--lg" data-input="left" aria-label="Girar a la izquierda">Izq.</button><button class="pk-touch pk-touch--lg" data-input="right" aria-label="Girar a la derecha">Der.</button></div>
+      <div class="touch-side"><div class="touch-stack"><button class="pk-touch" data-input="turbo" aria-label="Turbo">Turbo</button><button class="pk-touch" data-input="back" aria-label="Frenar y retroceder">Freno</button></div><button class="pk-touch pk-touch--lg gas" data-input="gas" aria-label="Acelerar: sostén">Gas</button></div>
+    </div>
+  </main>
+  <div id="countdown" class="countdown hidden" role="status" aria-live="polite"></div>
+  <div id="notice" class="notice pk-chip hidden" role="status"></div>
+  <section id="results" class="pk-results hidden" aria-labelledby="result-title"><div class="result-paper pk-modal pk-results-card"><span class="pk-ribbon">Puerto Ayacucho</span><h2 id="result-title" class="pk-title">¡Llegaste, pana!</h2><p id="result-copy" class="pk-copy"></p><ol id="result-board" class="pk-roster"></ol><button id="again" class="pk-btn pk-btn--primary pk-btn--lg pk-btn--block">Otra carrera</button><a class="pk-back" href="/">← Volver a Pana</a></div></section>
+  <script type="module" src="/engine/game-entry.js" data-pana-entry="./game.js"></script>
+</body>
+</html>

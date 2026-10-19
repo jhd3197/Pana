@@ -12,6 +12,9 @@ export const CAPSIZE = 1.8;
 export const PHOTO = Object.freeze({ within: 7, gap: 2.2, real: 1.6, speed: .3 });
 export const SALPICON = Object.freeze({ cooldown: 4, reach: 2.5, shove: 2.6, tip: 12, spray: 1.3 });
 export const CAIMAN = Object.freeze({ reach: 3, tip: 40, jolt: 2.2 });
+// Remo automático: W held strokes steadily for you, a little below a good
+// rhythm, so learning the ring still pays.
+export const AUTO = Object.freeze({ gap: .42, power: 1.05 });
 export const BOAT = Object.freeze({ drag: .6, grip: 5, yawDamp: 2.6, brake: 2.6, reverse: -1.1, half: .62, length: 2.9, rudderSpeed: 3 });
 export const COLORS = ['#e2683c', '#2f9e8f', '#e6b33a', '#7a5bc4', '#d64f7a', '#4d8fd6', '#8fb84a', '#c9824a'];
 const BOT_NAMES = ['Yanomami', 'Tuki', 'Arekuna', 'Wayuu', 'Chamán', 'Kerepakupai', 'Piaroa', 'Maipure', 'Yekuana', 'Sanema', 'Baré', 'Curripaco'];
@@ -20,7 +23,7 @@ const START = { rows: [26, 18.5, 11, 3.5], offsets: [-2.1, 2.1] };
 
 export function cleanInput(input = {}) {
   const strokes = Array.isArray(input.strokes) ? input.strokes.slice(-8).filter(s => Array.isArray(s) && Number.isFinite(s[0]) && Number.isFinite(s[2])).map(([seq, side, t]) => [seq | 0, side < 0 ? -1 : 1, +t]) : [];
-  return { strokes, back: !!input.back, steer: clamp(Math.sign(Number(input.steer) || 0), -1, 1), splash: Number(input.splash) | 0 };
+  return { strokes, back: !!input.back, steer: clamp(Math.sign(Number(input.steer) || 0), -1, 1), splash: Number(input.splash) | 0, auto: !!input.auto };
 }
 
 // Seeded so a race replays the same way on any host.
@@ -154,6 +157,7 @@ export class Race {
     if (w && s > w.s - 28 && s < w.s + 10) line = Math.min(line, w.offset - w.r - (k.skill > .86 ? .2 : 2.8));
     // And they give the caimanes a wide berth (the clumsy ones forget).
     if (k.skill > .75) for (const log of river.logs) if (log.caiman && log.s > s - 6 && log.s < s + 14 && Math.sign(line) === log.side) line = -log.side * 1.2;
+    if (k.skill > .72 && this.options.items) for (const c of river.caimanesAt(this.time)) if (c.s > s - 6 && c.s < s + 20 && Math.abs(line - c.offset) < 4) line = c.offset - c.dir * 4.5;
     return clamp(line, -half, half);
   }
   update(dt, inputs = new Map()) {
@@ -189,9 +193,10 @@ export class Race {
     const fresh = (c, list) => { const last = b.seen[c.seat] ?? -1, out = list.filter(s => s[0] > last); if (list.length) b.seen[c.seat] = Math.max(last, ...list.map(s => s[0])); return out.sort((x, y) => x[2] - y[2]); };
     const front = b.crew[0], back = two ? b.crew[1] : front, fi = read(front), bi = two ? read(back) : fi;
     if (b.finish !== null || b.capsized > 0) { b.seen[0] = Math.max(b.seen[0] ?? -1, ...fi.strokes.map(s => s[0])); if (two) b.seen[1] = Math.max(b.seen[1] ?? -1, ...bi.strokes.map(s => s[0])); hold(P, false); rudder(P, 0); return; }
-    const pivot = two && back.empty ? fi.steer : bi.steer;
+    const pivot = two && back.empty ? fi.steer : bi.steer, auto = fi.auto && !front.bot && !fi.back;
     hold(P, bi.back || (two && back.empty && fi.back), pivot);
-    rudder(P, two && !back.empty && !bi.back ? bi.steer : 0);
+    // With the remo automático, the front pana's A/D are a rudder.
+    rudder(P, two && !back.empty && !bi.back ? bi.steer : auto ? fi.steer : 0);
     for (const [, side, t] of fresh(front, fi.strokes)) {
       const at = Math.min(t, this.time);
       if(this.options.paddling === 'tap' && P.last != null && at-P.last < .25)continue;
@@ -199,6 +204,10 @@ export class Race {
       if(this.options.paddling === 'tap' && q !== 'ciar'){P.pulls.at(-1)[0]=PADDLE.impulse;P.quality='bueno';P.power=1;}
       if (q !== 'ciar') b.strokes++;
       if (q === 'remazo' && this.options.paddling === 'rhythm') b.remazos++;
+    }
+    if (auto && !P.back && (P.last == null || this.time - P.last >= AUTO.gap)) {
+      const q = stroke(P, -(P.side || 1), this.time);
+      if (q !== 'ciar') { P.pulls.at(-1)[0] = PADDLE.impulse * AUTO.power; Object.assign(P, { quality: 'bueno', power: AUTO.power, streak: 0 }); b.strokes++; }
     }
     if (two) for (const [, , t] of fresh(back, bi.strokes)) sync(P, Math.min(t, this.time));
     b.splashWant = (two ? bi.splash : fi.splash) > (b.seen.splash ?? 0);
@@ -329,20 +338,24 @@ export class Race {
       if (b.pinned > .5) { const along = Math.abs(angle(where.h - b.h)) < Math.PI / 2 ? where.h : where.h + Math.PI; b.h = angle(b.h + clamp(angle(along - b.h), -1.6 * dt, 1.6 * dt)); }
       // The remolino's eye spins hard enough to roll you.
       if (b.whirl > .7) this.tip(b, 18 * dt, 'remolino');
-      // Caimanes snap at canoes passing close; the logs just lie there.
-      if (this.options.items && where.channel === 'main') for (const log of river.logs) if (log.caiman && Math.abs(log.s - where.s) < 6) {
-        if (this.time - (this.snaps[log.id] ?? -99) < 4) continue;
-        if (this.hull(b).some(c => Math.hypot(c.x - log.x, c.z - log.z) < CAIMAN.reach)) {
-          this.snaps[log.id] = this.time;
-          const away = -log.side;
-          b.lat += away * CAIMAN.jolt; b.v *= .6; b.jolt = .6; b.lastHitSide = -away; b.bitten = (b.bitten || 0) + 1; b.caimanAt = this.time;
-          this.tip(b, CAIMAN.tip, 'caimán');
-        }
+      // Caimanes snap at canoes passing close, on the banks and swimming
+      // across the open river; the logs just lie there.
+      if (this.options.items && where.channel === 'main') {
+        for (const log of river.logs) if (log.caiman && Math.abs(log.s - where.s) < 6) this.bite(b, log, -log.side);
+        for (const c of river.caimanesAt(this.time)) if (Math.abs(c.s - where.s) < 8) this.bite(b, c, Math.sign(where.offset - c.offset) || 1);
       }
+      // Channel buoys only nudge the hull aside.
+      for (const r of river.buoys) if (Math.abs(r.x - b.x) < 4 && Math.abs(r.z - b.z) < 4) this.bump(b, r.x, r.z, r.r);
     }
     // Straight, steady paddling settles the canoe.
     const steady = b.paddle.last != null && this.time - b.paddle.last < .9 && !['giro', 'chapoteo'].includes(b.paddle.quality) && Math.abs(b.w) < .3;
     if (b.capsized === 0 && b.tip < 100) b.tip = Math.max(0, b.tip - (steady ? 14 : 4) * dt);
+  }
+  bite(b, c, away) {
+    if (this.time - (this.snaps[c.id] ?? -99) < 4 || !this.hull(b).some(p => Math.hypot(p.x - c.x, p.z - c.z) < CAIMAN.reach)) return;
+    this.snaps[c.id] = this.time;
+    b.lat += away * CAIMAN.jolt; b.v *= .6; b.jolt = .6; b.lastHitSide = -away; b.bitten = (b.bitten || 0) + 1; b.caimanAt = this.time;
+    this.tip(b, CAIMAN.tip, 'caimán');
   }
   // Canoe against canoe: circles with mass. Bumping someone is fair play.
   collide() {

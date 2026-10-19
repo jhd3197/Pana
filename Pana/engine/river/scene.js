@@ -1,10 +1,11 @@
-// The river world: terrain and water built from river.js, plus lights and sky.
+// The river world (Curiara, Lancha): terrain and water built from river.js,
+// plus lights and sky.
 // Scenery dressing lives in landscape.js; this file owns only the ground truth
 // shared with the simulation (banks, bed, levels, raudal faces).
 import * as THREE from 'three';
 import { createSky } from '/engine/sky.js';
 import { waterSurface, waterAnimator } from '/engine/models/effects/water-surface.js';
-import { RIVER, smooth } from './river.js';
+import { smooth } from './river.js';
 
 export const DAYLIGHT = { horizon: 0xc9dccf, skyTop: 0x3f8fc4, cloudCover: .46, skySeed: 31, hemiSky: 0xe6f4ff, hemiGround: 0x4a6a3a, hemiInt: 1.45, sun: 0xfff0d2, sunInt: 2.4, fog: [90, 1100] };
 
@@ -39,8 +40,8 @@ function ribbon(path, river, { from = 0, to = path.length, extra = 1.6, half, st
   return geo;
 }
 
-export function createRiverWorld(river = RIVER, { dress } = {}) {
-  const group = new THREE.Group(); group.name = 'Curiara · el río';
+export function createRiverWorld(river, { dress } = {}) {
+  const group = new THREE.Group(); group.name = 'El río';
   group.userData.assetCounts = {};
   // Terrain grid over the river's bounds.
   const all = [...river.main.samples, ...(river.branch?.path.samples || [])];
@@ -113,11 +114,12 @@ export function createRiverWorld(river = RIVER, { dress } = {}) {
   };
 }
 
-export function createRaceScene(canvas, river = RIVER, options = {}) {
+export function createRaceScene(canvas, river, options = {}) {
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
   renderer.setClearColor(DAYLIGHT.horizon); renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap;
   renderer.outputColorSpace = THREE.SRGBColorSpace; renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 1;
-  const scene = new THREE.Scene(); scene.fog = new THREE.Fog(DAYLIGHT.horizon, ...DAYLIGHT.fog);
+  // A longer course can push the fog out with `def.fog`.
+  const fog = river.def.fog || DAYLIGHT.fog, scene = new THREE.Scene(); scene.fog = new THREE.Fog(DAYLIGHT.horizon, ...fog);
   const sky = createSky(DAYLIGHT); scene.add(sky.mesh);
   scene.add(new THREE.HemisphereLight(DAYLIGHT.hemiSky, DAYLIGHT.hemiGround, DAYLIGHT.hemiInt));
   const sun = new THREE.DirectionalLight(DAYLIGHT.sun, DAYLIGHT.sunInt);
@@ -125,6 +127,6 @@ export function createRaceScene(canvas, river = RIVER, options = {}) {
   Object.assign(sun.shadow.camera, { left: -26, right: 26, top: 26, bottom: -26, far: 180 });
   sun.shadow.bias = -.0003; sun.shadow.normalBias = .035; scene.add(sun, sun.target);
   const world = createRiverWorld(river, options); scene.add(world.group);
-  const camera = new THREE.PerspectiveCamera(55, 1, .1, 1600);
+  const camera = new THREE.PerspectiveCamera(55, 1, .1, Math.max(1600, fog[1] + 500));
   return { renderer, scene, camera, sun, world, sky };
 }

@@ -1,7 +1,8 @@
-// River effects: two pooled draws for the whole field (surface rings and
-// airborne spray) plus three static, animated sheets (the chorro's streaks,
-// the raudales' whitewater and the remolino's spiral). Same budget idea as
-// Galope's pool: fixed sizes, no per-canoe materials, events stay in world space.
+// River effects (Curiara, Lancha): two pooled draws for the whole field
+// (surface rings and airborne spray) plus three static, animated sheets (the
+// chorro's streaks, the raudales' whitewater and the remolino's spiral). Same
+// budget idea as Galope's pool: fixed sizes, no per-boat materials, events
+// stay in world space.
 import * as THREE from 'three';
 
 export const FX_BUDGET = Object.freeze({ rings: 160, spray: 320, boats: 8, distance: 55 });
@@ -107,7 +108,7 @@ function strip(river, from, to, offset, half, lift = .035, step = 1) {
 }
 
 export function createRiverFX(river) {
-  const group = new THREE.Group(); group.name = 'Curiara · agua viva';
+  const group = new THREE.Group(); group.name = 'Agua viva';
   const sheets = [];
   // The chorro, everywhere it carries a boost.
   const L = river.LENGTH;
@@ -186,10 +187,16 @@ export function createRiverFX(river) {
       // Bow wave and wake rings with distance travelled.
       prev.distance += moved;
       const speed = Math.hypot(b.gx || 0, b.gz || 0);
-      if (speed > 1.5 && prev.distance > .8 && !(b.capsized > 0) && !(b.air > 0)) {
+      const gap = Math.max(.8, speed * .12);
+      if (speed > 1.5 && prev.distance > gap && !(b.capsized > 0) && !(b.air > 0)) {
         ring(t, q.x + fx * 2.6, y + .03, q.z + fz * 2.6, h, .5 + Math.min(.6, Math.abs(b.v || 0) * .1), true);
         ring(t, q.x - fx * 2.4, y + .03, q.z - fz * 2.4, h, .45, true);
-        prev.distance %= .8;
+        prev.distance %= gap;
+      }
+      // An outboard (Lancha) throws a rooster tail behind the stern while it pulls.
+      if (b.throttle > .2 && speed > 3 && !(b.air > 0) && !(b.stalled > 0)) {
+        prev.tail = (prev.tail || 0) + dt * (6 + speed * .6);
+        for (; prev.tail > 1; prev.tail--) burst(t, q.x - fx * 2.6, y + .1, q.z - fz * 2.6, { n: 2, up: 1.2 + speed * .08, out: .5, vx: -fx * (1 + speed * .25), vz: -fz * (1 + speed * .25), size: .045, life: .55 });
       }
       Object.assign(prev, now);
     }
@@ -206,6 +213,8 @@ export function createRiverFX(river) {
           burst(t, at.x, y + .05, at.z, { n: 1 + Math.round(h * 2), up: 1.2 + h * 1.6, out: .6, vx: Math.sin(at.h) * 1.5, vz: Math.cos(at.h) * 1.5, size: .05 + h * .03, life: .7 });
         }
       }
+      // Swimming caimanes leave a V of ripples behind the head.
+      for (const c of river.caimanesAt(raceTime)) if (random() < .14 && Math.hypot(c.x - focus.x, c.z - focus.z) < 70) ring(t, c.x, c.y + .03, c.z, c.h, .6, true);
       // Toninas break the surface and dive again.
       for (const pod of river.toninasAt(raceTime)) {
         if (Math.abs(pod.age - .1) < .05 || Math.abs(pod.age - 1.1) < .05) {

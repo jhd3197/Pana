@@ -3,6 +3,7 @@ const field = (id, label, choices, value = choices[0][0], advanced = false) => (
 export const FIELDS = [
   field('river', 'Río', [['amazonas', 'Amazonas'], ['caroni', 'Caroní'], ['orinoco', 'Orinoco']]),
   field('rapids', 'Rápidos', [['easy', 'Suaves'], ['hard', 'Bravos']], 'hard'),
+  field('guide', 'Guía en el agua', [[true, 'Sí'], [false, 'No']], true),
   field('crew', 'Remeros', [['todos', 'Solo'], ['duos', 'En pareja · 2×2'], ['triples', '2×2×2'], ['parejas', '2×2×2×2']]),
   field('current', 'Corriente', [['normal', 'Normal'], ['slow', 'Lenta'], ['hard', 'Brava']], 'normal', true),
   field('paddling', 'Remadas', [['tap', 'Toque'], ['rhythm', 'Ritmo']], 'rhythm', true),

@@ -1,6 +1,7 @@
-// World dressing around the river. Every shape comes from the shared model
-// library; this file only decides where things stand. The river (river.js)
-// is the ground truth: nothing is planted in the water a canoe can reach.
+// World dressing around a river course (Curiara, Lancha). Every shape comes
+// from the shared model library; this file only decides where things stand.
+// The river (river.js) is the ground truth: nothing is planted in the water a
+// boat can reach.
 import * as THREE from 'three';
 import { M, rng } from '/engine/models/core/primitives.js';
 import { instancePlacements, bake } from '/engine/models/core/static-batch.js';
@@ -18,12 +19,14 @@ import { branch, leafyCushion } from '/engine/models/vegetation/canopy.js';
 import { buildCharacter } from '/engine/models/characters/pana/avatar-model.js';
 import { randomAvatar } from '/engine/avatar.js';
 import { driftwood } from '/engine/models/props/beach.js';
+import { channelBuoy } from '/engine/models/props/coastal.js';
 import { createTepui } from '/engine/island-landscape.js';
 import { SEA } from '/engine/island-terrain.js';
 import { smooth } from './river.js';
 
 const TAU = Math.PI * 2;
 // Straight downstream of the raudales, so it fills the view for the whole run.
+// A course can move it with `def.tepui`.
 export const TEPUI = { x: 10, z: -1150, width: 100, depth: 70, height: 175 };
 
 export function addLandscape({ group, river, moving, racers = [] }) {
@@ -59,7 +62,7 @@ export function addLandscape({ group, river, moving, racers = [] }) {
   const L = river.LENGTH;
   {
     const q = at(L - 8, 0);
-    add('finish-arch', finishArch({ span: river.halfWidth(L - 8) * 2 + 2 }), q.x, q.z, { y: river.levelAt(L - 8) - .2, rot: q.h, r: 0 });
+    add('finish-arch', finishArch({ span: river.halfWidth(L - 8) * 2 + 2, ...def.finish }), q.x, q.z, { y: river.levelAt(L - 8) - .2, rot: q.h, r: 0 });
     const c = at(L - 16, river.halfWidth(L - 16) + 13);
     add('churuata', churuata({ radius: 6.5 }), c.x, c.z, { r: 9 });
     const c2 = at(L + 2, -(river.halfWidth(L) + 12));
@@ -94,10 +97,10 @@ export function addLandscape({ group, river, moving, racers = [] }) {
   }
   // ---- The tepui of the Autana fills the view over the raudales.
   {
-    const tepui = createTepui({ width: TEPUI.width, depth: TEPUI.depth, height: TEPUI.height, seed: 4, waterfall: true });
-    tepui.group.position.set(TEPUI.x, river.levelAt(NEGRO) - SEA - 3, TEPUI.z); tepui.group.rotation.y = .5;
-    tepui.group.name = 'Tepui del Autana'; group.add(tepui.group); count('tepui');
-    reserved.push({ x: TEPUI.x, z: TEPUI.z, r: 135 });
+    const T = { ...TEPUI, ...def.tepui }, tepui = createTepui({ width: T.width, depth: T.depth, height: T.height, seed: 4, waterfall: true });
+    tepui.group.position.set(T.x, river.levelAt(NEGRO) - SEA - 3, T.z); tepui.group.rotation.y = .5;
+    tepui.group.name = T.name || 'Tepui del Autana'; group.add(tepui.group); count('tepui');
+    reserved.push({ x: T.x, z: T.z, r: 135 });
   }
 
   // ---- Rocks in the river (the same list the canoes collide with).
@@ -211,6 +214,21 @@ export function addLandscape({ group, river, moving, racers = [] }) {
   racers.push((state, time) => {
     for (const { log, m } of babos) { const age = time - (state.snaps?.[log.id] ?? -99); m.userData.snap(age < 0 ? 0 : age < .12 ? age / .12 : age < .7 ? 1 - (age - .12) / .58 : 0); }
   });
+  // ---- Babos crossing the open river on the race clock (river.caimanesAt).
+  const swimmers = river.swimmers.map((c, i) => { const m = caiman({ seed: 30 + i }); m.scale.setScalar(1.3); group.add(m); count('caiman'); return m; });
+  if (swimmers.length) racers.push((state, time) => {
+    river.caimanesAt(time).forEach((c, i) => {
+      const m = swimmers[i], age = time - (state.snaps?.[c.id] ?? -99);
+      m.position.set(c.x, c.y - .2 + Math.sin(time * 2 + i) * .03, c.z); m.rotation.y = c.h;
+      m.userData.snap(age < 0 ? 0 : age < .12 ? age / .12 : age < .7 ? 1 - (age - .12) / .58 : 0); m.userData.tick?.(time);
+    });
+  });
+  // ---- Channel buoys (river.buoys): coral on the left of the line, teal on
+  // the right, so the open water reads as a lane at a glance.
+  for (const side of [-1, 1]) {
+    const points = river.buoys.filter(b => b.side === side).map(b => ({ x: b.x, z: b.z, y: river.levelAt(b.s, b.offset) - .35, rot: random() * TAU, scale: 1 }));
+    if (points.length) plant('channel-buoy', channelBuoy({ color: side < 0 ? 0xda6850 : 0x2f9e8f }), points, 'Boyas del canal');
+  }
   // ---- Toninas: a small pool that follows the race clock.
   const pool = Array.from({ length: 6 }, (_, i) => { const t = tonina({ seed: i + 3 }); t.visible = false; group.add(t); return t; });
   count('tonina', pool.length);

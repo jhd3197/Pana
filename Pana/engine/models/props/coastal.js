@@ -193,11 +193,11 @@ export function fishCrates() {
   return asset(g,'fish-crates','Cajas de pesca');
 }
 
-export function channelBuoy() {
-  const g=new THREE.Group(),body=new THREE.Group();
-  body.add(cylinder(.54,.7,.32,C.coral,0,.3,0,20),cylinder(.3,.54,.65,C.coral,0,.785,0,20));
+export function channelBuoy({color=null}={}) {
+  const g=new THREE.Group(),body=new THREE.Group(),paint=color==null?C.coral:M(color);
+  body.add(cylinder(.54,.7,.32,paint,0,.3,0,20),cylinder(.3,.54,.65,paint,0,.785,0,20));
   body.add(cylinder(.29,.32,.22,C.cream,0,.84,0,20),cylinder(.045,.045,1.05,C.steel,0,1.46));
-  body.add(mesh(new THREE.ConeGeometry(.24,.38,16),C.coral,0,2.08));
+  body.add(mesh(new THREE.ConeGeometry(.24,.38,16),paint,0,2.08));
   body.add(ring(.1,.028,C.steel,0,2.35));
   const bob=finish(body,'Boya');g.add(bob);
   g.userData.tick=(t=0)=>{if(!Number.isFinite(t))return;bob.position.y=.045*Math.sin(t*1.4);bob.rotation.z=.045*Math.sin(t*.9);bob.rotation.x=.025*Math.sin(t*1.2);};

@@ -10,6 +10,18 @@ becomes the GitHub release's notes.
 
 ### Added
 
+- **Race lanchas with an outboard motor in the new game Lancha.** Hold W
+  for gas and steer with A and D (no rhythm, nothing to mash) down the
+  Caño del Sipapo, over the Raudales de Atures and across the open Orinoco
+  to Puerto Ayacucho. Straight jumps, the chorro and the toninas fill a
+  turbo; caimanes bite your motor dead. Up to 8 panas, river drivers fill
+  the start, and an automatic throttle makes it playable for anyone.
+- **Both river races help you find the way.** A gold guide drawn on the
+  water around your boat points at the best line and a trail of arrows
+  follows it, steering round caimanes that now swim across the open river.
+  Coral and green buoys mark the channel where the river opens up. In
+  Curiara, holding W paddles for you while A and D steer, and mashing the
+  keys now says plainly that it slows the canoe.
 - **Build your pana with the new visual wardrobe and use the whole look in games.**
   Mi pana now has accessory previews, outfits, face details, prints, neckwear,
   backpacks, undo/redo and portable outfit codes. Existing avatars migrate;
@@ -41,7 +53,6 @@ becomes the GitHub release's notes.
   Escondidas map is 1.5× larger with twice the props. In Pepazo, Shift
   sprints for three seconds (no shooting while you run), and Tab shows the
   table in both games. Mouse sensitivity is one shared setting.
-
 
 - **New game: Chapita.** Barrio baseball with a bottle cap and a
   palo de escoba for up to eight panas in two teams, bots in the empty

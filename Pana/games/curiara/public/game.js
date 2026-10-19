@@ -14,11 +14,13 @@ import { RiverRoom } from './network.js';
 import { standings, FORMATS, COLORS, crewGrid } from './rules.js';
 import { RIVER as DEFAULT_RIVER, configuredRiver, angle, formatTime } from './river.js';
 import { PADDLE, grade } from '/engine/paddle.js';
-import { createRaceScene, createRiverWorld } from './scene.js';
+import { createRaceScene, createRiverWorld } from '/engine/river/scene.js';
 import { createCanoe } from '/engine/models/vehicles/curiara.js';
 import { tickWind } from '/engine/models/vegetation/plant-kit.js';
-import { addLandscape } from './landscape.js';
-import { createRiverFX } from './water-fx.js';
+import { addLandscape } from '/engine/river/landscape.js';
+import { createRiverFX } from '/engine/river/water-fx.js';
+import { createRiverGuide } from '/engine/river/guide.js';
+import { createRiverMinimap } from '/engine/river/minimap.js';
 import { createMusic } from '/engine/music.js';
 
 let RIVER=DEFAULT_RIVER;
@@ -35,12 +37,12 @@ const crewRoster = createLobbyRoster($('seats'), { onMove: (from, to) => room.mo
 const roomOptions=createRoomOptions($('room-options'),{title:'Curiara',fields:FIELDS,change:patch=>{if(patch.crew){format=patch.crew;store.set('curiara:format',format);}room.configure(patch);},reset:()=>{$('bots').checked=true;room.configure(cleanOptions());}});
 for(const button of document.querySelectorAll('[data-room-option=crew]'))button.dataset.format=button.dataset.value;
 // Strokes keep the pana's own clock; the host maps them onto race time.
-const strokes = [], local = { seq: 0, last: null, side: 0, splash: 0, streak: 0 };
+const strokes = [], local = { seq: 0, last: null, side: 0, splash: 0, streak: 0, mash: 0 };
 const clock = () => performance.now() / 1000;
 function clearInput() { keys.clear(); for (const b of touchButtons) b.release(); touch.clear(); }
 const menu = createGameMenu({ title: 'Curiara', sound, orientation: 'libre', note: () => room.members.size > 1 ? 'La carrera sigue mientras abres el menú.' : 'La carrera está en pausa.',
-  controls: [['A / ←', 'Remar a la izquierda'], ['D / →', 'Remar a la derecha'], ['A D A D', 'Alternar: recto y a toda'], ['D D / A A', 'Mismo lado: girar al lado contrario'], ['S / ↓', 'Ciar: frenar; con A o D, pivotar'], ['Espacio', '¡Salpicón! a la curiara de al lado'], ['M', 'Sonido'], ['Esc', 'Menú']],
-  tips: ['Rema justo cuando el anillo pasa por la zona dorada: ¡Remazo!', 'En Parejas, la proa rema y la popa lleva el timón (A/D sostenido), cía y lanza el salpicón. Si la popa toca A o D justo con la remada: ¡Ahora!'],
+  controls: [['W / ↑ sostenido', 'Remo automático; A y D llevan el timón'], ['A / ←', 'Remar a la izquierda'], ['D / →', 'Remar a la derecha'], ['A D A D', 'Alternar: recto y a toda'], ['D D / A A', 'Mismo lado: girar al lado contrario'], ['S / ↓', 'Ciar: frenar; con A o D, pivotar'], ['Espacio', '¡Salpicón! a la curiara de al lado'], ['M', 'Sonido'], ['Esc', 'Menú']],
+  tips: ['¿Te cuesta el ritmo? Sostén W: la curiara rema sola y tú solo giras con A y D.', 'Machacar las teclas frena la curiara. Con calma se va más rápido.', 'Sigue las flechas doradas en el agua: marcan el chorro y esquivan los caimanes.', 'Rema justo cuando el anillo pasa por la zona dorada: ¡Remazo!', 'En Parejas, la proa rema y la popa lleva el timón (A/D sostenido), cía y lanza el salpicón. Si la popa toca A o D justo con la remada: ¡Ahora!'],
   invite: () => inviteUrl(code), actions: [{ id: 'local-race', label: 'Abrir carrera local', run: () => goLocal() }],
   onOpen() { paused = true; clearInput(); if (room.members.size <= 1) music.pause(); }, onClose() { paused = false; music.resume(); } });
 const navButton = 'pk-btn pk-btn--sm game-menu-button';
@@ -63,6 +65,7 @@ function tock(power) { sound.tone(1180, 0, .045, 'triangle', .07 * power); sound
 function stroke(side, at) {
   if (paused || roomOptions.isOpen) return;
   unlock();
+  if (autoHeld() && myRole() !== 'popa') return;
   const now = clock(), t = at > 0 && at <= now + .01 ? at : now;
   strokes.push([++local.seq, side, t]); if (strokes.length > 8) strokes.shift();
   if (state.phase !== 'racing' && state.phase !== 'countdown') return;
@@ -73,7 +76,7 @@ function stroke(side, at) {
     const gap = local.last == null ? Infinity : t - local.last, g = state.options.paddling==='tap'?{quality:'bueno'}:grade(gap, gap !== Infinity && side === local.side);
     local.streak = g.quality === 'remazo' ? local.streak + 1 : g.quality === 'chapoteo' || g.quality === 'arranque' ? 0 : local.streak;
     if (g.quality === 'remazo') { tock(1); sound.whoosh(); pulseSpeedLines(220, 0.55); call(local.streak >= 3 ? `¡Remazo ×${local.streak}!` : '¡Remazo!'); }
-    else if (g.quality === 'chapoteo') { sound.sweep(900, 300, .12, 'triangle', .05); if (Math.random() < .5) call('¡Chapoteo!', 'is-soft'); }
+    else if (g.quality === 'chapoteo') { sound.sweep(900, 300, .12, 'triangle', .05); call(++local.mash % 3 ? '¡Chapoteo!' : '¡Más calma!', 'is-soft'); }
     else sound.tone(420, 0, .05, 'triangle', .04);
   }
   local.last = t; local.side = side;
@@ -95,10 +98,11 @@ for (const b of document.querySelectorAll('[data-stroke]')) touchButtons.push(ho
   down: e => { touch.add(`s${b.dataset.stroke}`); stroke(Number(b.dataset.stroke), e?.timeStamp / 1000); }, up: () => touch.delete(`s${b.dataset.stroke}`) }));
 for (const b of document.querySelectorAll('[data-input]')) touchButtons.push(holdButton(b, { paused: () => paused,
   down: () => { touch.add(b.dataset.input); unlock(); if (b.dataset.input === 'splash') local.splash++; }, up: () => touch.delete(b.dataset.input) }));
+const autoHeld = () => keys.has('KeyW') || keys.has('ArrowUp') || touch.has('auto');
 function input() {
   if (paused) return { strokes: strokes.slice(), splash: local.splash };
   const left = keys.has('KeyA') || keys.has('ArrowLeft') || touch.has('s-1'), right = keys.has('KeyD') || keys.has('ArrowRight') || touch.has('s1');
-  return { strokes: strokes.slice(), back: keys.has('KeyS') || keys.has('ArrowDown') || touch.has('back'), steer: Number(right) - Number(left), splash: local.splash };
+  return { strokes: strokes.slice(), back: keys.has('KeyS') || keys.has('ArrowDown') || touch.has('back'), steer: Number(right) - Number(left), splash: local.splash, auto: autoHeld() };
 }
 
 // Lobby: format and, in Parejas, the seat picker.
@@ -121,34 +125,14 @@ renderer.setPixelRatio(pixelRatio(1.5)); const unbind = bindRenderer(renderer, 1
 let fx = createRiverFX(RIVER); scene.add(fx.group);
 $('map-length').textContent = `${Math.round(RIVER.LENGTH)} M`; $('stat-length').textContent = `${Math.round(RIVER.LENGTH)} m`;
 
-// Minimap: the river's real shape, drawn once.
-const mapCtx = $('map').getContext('2d'), MAP = { w: 140, h: 240 }, mapBase = document.createElement('canvas'); mapBase.width = MAP.w; mapBase.height = MAP.h;
-let mapScale=1,bx,bz;
-function drawMapBase(){
-const pts = [...RIVER.main.samples, ...(RIVER.branch?.path.samples || [])];bx = [Math.min(...pts.map(p => p.x)), Math.max(...pts.map(p => p.x))];bz = [Math.min(...pts.map(p => p.z)), Math.max(...pts.map(p => p.z))];
-mapScale = Math.min((MAP.w - 20) / (bx[1] - bx[0] || 1), (MAP.h - 20) / (bz[1] - bz[0] || 1));
-
-{
-  const c = mapBase.getContext('2d');c.clearRect(0,0,MAP.w,MAP.h); c.lineCap = c.lineJoin = 'round';
-  const path = (samples, width, color) => { c.strokeStyle = color; c.lineWidth = width; c.beginPath(); samples.forEach((p, i) => i ? c.lineTo(...xy(p.x, p.z)) : c.moveTo(...xy(p.x, p.z))); c.stroke(); };
-  if (RIVER.branch) path(RIVER.branch.path.samples, 3, '#3d6a4a');
-  path(RIVER.main.samples, 5, '#4f8f8a');
-  for (const d of RIVER.drops) { const p = RIVER.at(d.s); c.fillStyle = '#e8f4f0'; c.fillRect(...xy(p.x, p.z).map(v => v - 2.5), 5, 5); }
-  const end = RIVER.at(RIVER.LENGTH); c.fillStyle = '#ffc629'; c.beginPath(); c.arc(...xy(end.x, end.z), 4, 0, Math.PI * 2); c.fill();
-}
-}
-// North (upstream) at the top: larger z is drawn higher up.
-const xy = (x, z) => [MAP.w / 2 + (x - (bx[0] + bx[1]) / 2) * mapScale, MAP.h / 2 - (z - (bz[0] + bz[1]) / 2) * mapScale];
-drawMapBase();
+// Minimap: the river's real shape, drawn once; the guide on the water.
+const minimap = createRiverMinimap($('map'), RIVER);
+const guide = createRiverGuide(); scene.add(guide.group);
 let riverKey=JSON.stringify(['amazonas',true,true]);
 function applyRiverOptions(){
  const key=JSON.stringify([state.options.river,state.options.falls,state.options.items]);if(key===riverKey)return;riverKey=key;
  RIVER=configuredRiver(state.options);world.world.dispose();fx.dispose();world.world=createRiverWorld(RIVER,{dress:addLandscape});scene.add(world.world.group);fx=createRiverFX(RIVER);scene.add(fx.group);
- $('map-length').textContent=`${Math.round(RIVER.LENGTH)} M`;$('stat-length').textContent=`${Math.round(RIVER.LENGTH)} m`;drawMapBase();
-}
-function drawMap(own) {
-  const c = mapCtx; c.clearRect(0, 0, MAP.w, MAP.h); c.drawImage(mapBase, 0, 0);
-  for (const b of state.boats) { c.fillStyle = b.color; c.beginPath(); c.arc(...xy(b.x, b.z), b === own ? 4.5 : 2.8, 0, Math.PI * 2); c.fill(); if (b === own) { c.strokeStyle = '#fff'; c.lineWidth = 1.5; c.stroke(); } }
+ $('map-length').textContent=`${Math.round(RIVER.LENGTH)} M`;$('stat-length').textContent=`${Math.round(RIVER.LENGTH)} m`;minimap.rebuild(RIVER);
 }
 function resize() { const w = innerWidth, h = innerHeight; renderer.setSize(w, h, false); camera.aspect = w / h; camera.updateProjectionMatrix(); }
 resize(); window.addEventListener('resize', resize);
@@ -190,6 +174,10 @@ function tipText(b) {
   if (b.finish !== null) return '¡En la churuata! Esperando a tus panas.';
   if (b.capsized > 0) return '¡Volcaste! Nadando de vuelta a la curiara…';
   if (b.sprayed > 0) return '¡Salpicón! No ves nada, sigue remando.';
+  const caiman = RIVER.caimanesAt(state.time).find(c => c.s > b.s && c.s < b.s + 30 && Math.abs(c.offset - (b.offset || 0)) < 7);
+  if (caiman && state.options.items) return '¡Caimán cruzando adelante! Sigue las flechas doradas para esquivarlo.';
+  if (b.paddle?.quality === 'chapoteo' && myRole() !== 'popa') return 'Machacar frena la curiara. Alterna A y D con calma, o sostén W y rema solo.';
+  if (autoHeld() && myRole() !== 'popa') return 'Remo automático: A y D llevan el timón. Con ritmo propio vas más rápido.';
   if(state.options.paddling==='tap'&&myRole()!=='popa')return 'Toca A y D para remar. Cada toque vale igual; evita machacar las teclas.';
   if (myRole() === 'popa') return 'Sostén A o D para el timón. Toca justo con la remada: ¡Ahora!';
   if (b.whirl > .15) return '¡Remolino! Rema fuerte hacia afuera. Por el borde, la corriente te lleva.';
@@ -198,9 +186,8 @@ function tipText(b) {
   const drop = RIVER.drops.find(d => b.s > d.s - d.span - 40 && b.s < d.s - d.span + 2);
   if (drop) return 'Raudal adelante: elige carril. El rápido cae de golpe; ¡llega recto!';
   if (b.channel === 'branch') return 'Atajo del igapó: corto, lento y lleno de troncos.';
-  if (b.paddle?.quality === 'chapoteo') return 'Más despacio: alterna A y D con ritmo.';
   if (b.tip > 60) return 'Endereza la curiara: rema recto para calmarla.';
-  return 'Alterna A y D. Rema cuando el anillo llegue a la zona dorada.';
+  return 'Alterna A y D en la zona dorada del anillo, o sostén W y rema solo.';
 }
 // What just happened to this pana's canoe, from the snapshot's counters.
 let seen = null, lastPhoto = null;
@@ -270,7 +257,7 @@ function updateUI() {
   const lead = ordered[0];
   music.setTempo(state.slowmo > 0 ? .6 : lead && RIVER.LENGTH - lead.progress < 120 ? 1.14 : 1);
   if (state.photo && state.photo.at !== lastPhoto) { lastPhoto = state.photo.at; call('¡Foto finish!', 'is-teal'); flash(); }
-  lastPhase = state.phase; drawMap(own);
+  lastPhase = state.phase; minimap.draw(state.boats, own);
 }
 ensureCanoes(); ready = true; $('loading').classList.add('hidden'); room.connect(); updateUI();
 const look = new THREE.Vector3(), cameraGoal = new THREE.Vector3(), target = new THREE.Vector3(); let cameraReady = false, elapsed = 0, camH = 0, shake = 0, shakePower = 0;
@@ -320,9 +307,11 @@ function frame() {
   tickWind(elapsed, 0.9);
   world.world.update(elapsed, dt); world.world.cull(camera); world.world.race(state, t); world.sky.update(elapsed);
   fx.update(elapsed, boats.filter(b => b.id !== 'preview'), canoes, q, t);
+  guide.update(RIVER, own && canoes.get(own.id) ? { ...own, x: canoes.get(own.id).group.position.x, z: canoes.get(own.id).group.position.z, h: canoes.get(own.id).group.rotation.y } : null, t, { on: state.options.guide && state.phase === 'racing', clock: elapsed });
   if (callTimer > 0) { callTimer -= dt; if (callTimer <= 0) $('call').classList.add('hidden'); }
-  $('ring').classList.toggle('hidden',state.options.paddling==='tap');
-  if(state.options.paddling==='tap')$('next-key').textContent='A / D';
+  const steady = state.options.paddling === 'tap' || (autoHeld() && myRole() !== 'popa');
+  $('ring').classList.toggle('hidden', steady);
+  if (steady) $('next-key').textContent = autoHeld() ? 'W' : 'A / D';
   else if (state.phase === 'racing' || state.phase === 'countdown') drawRing(own, t);
   drawClock += dt; if (drawClock > .1) { updateUI(); drawClock = 0; }
   if (!quiet) renderer.render(scene, camera); requestAnimationFrame(frame);
@@ -337,7 +326,7 @@ if (params.has('debug')) window.curiara = { room, get state() { return state; },
   manual(value) { if (value) params.set('manual', ''); else params.delete('manual'); simulationTime = performance.now(); },
   step(seconds, controls) { for (let t = 0; t < seconds; t += .05) room.tick(.05, controls ? controls() : input()); updateUI(); },
   place(id, s, offset = 0) { const b = room.game.boatOf(id), q = RIVER.at(s, offset); Object.assign(b, { x: q.x, z: q.z, h: q.h, s, progress: s, checkpoint: RIVER.gates.filter(g => g <= s).length, v: 0, lat: 0, w: 0, y: RIVER.levelAt(s, offset), vy: 0, air: 0, tip: 0, capsized: 0, grace: 0, channel: 'main' }); room.publish(); } };
-window.addEventListener('pagehide', () => { disposed = true; clearInterval(simulation); music.stop(); crewRoster.dispose(); roomOptions.dispose();room.dispose(); for (const c of canoes.values()) c.dispose(); world.world.dispose();fx.dispose(); world.sky.dispose(); unbind?.(); renderer.dispose(); }, { once: true });
+window.addEventListener('pagehide', () => { disposed = true; clearInterval(simulation); music.stop(); crewRoster.dispose(); roomOptions.dispose();room.dispose(); guide.dispose(); for (const c of canoes.values()) c.dispose(); world.world.dispose();fx.dispose(); world.sky.dispose(); unbind?.(); renderer.dispose(); }, { once: true });
 window.addEventListener('pageshow', event => { if (event.persisted) location.reload(); });
 
 await prepareScene(world);

@@ -33,6 +33,7 @@ same room.
 | **Reliquia** | Cooperative expedition into a mine and the temple beneath it | 1–8 |
 | **¡Embuste!** | Social deduction at the night camp: who is the mummy? | 4–8 online, bots for practice |
 | **Curiara** | Dugout-canoe races with solo paddlers or two-person crews | 1–8, bots fill in |
+| **Lancha** | Outboard-motor boat races down the Sipapo and the Orinoco: hold the gas, jump the raudales, dodge caimanes | 1–8, bots fill in |
 | **Dominó** | Individual or team dominoes with configurable hands and scoring | 1–6, bots fill seats |
 | **Caída** | Spanish cards to 24 points, individually or in teams | 1–6, bots fill seats |
 | **Póquer** | Texas Hold'em or Omaha with free chips and configurable betting limits | 1–6, bots fill seats |

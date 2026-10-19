@@ -12,16 +12,20 @@ river. Two formats: **Todos contra todos** (8 canoes, one pana each) and
   model. `stroke(state, side, t)` grades the gap to the previous stroke;
   `step(state, dt)` delivers each stroke's impulse over `PADDLE.pull` s.
   State is a plain object so a race snapshot carries it across migration.
-- `public/river.js` (pure): `buildRiver(def)` turns a course definition into
-  splines with distance `s` and signed `offset` (positive = right bank looking
-  downstream), `locate()` (main channel or igapó branch), `levelAt()` (raudal
-  steps per lane), `currentAt()` (chorro, eddies, whirlpool), `groundAt()`,
-  rocks, snags, logs, toninas and gates. `AMAZONAS` is the race; `GREYBOX` is
-  the step-0 straight channel kept for tuning (`new Race(GREYBOX)`).
+- `/engine/river/river.js` (pure, shared with Lancha): `buildRiver(def)`
+  turns a course definition into splines with distance `s` and signed
+  `offset` (positive = right bank looking downstream), `locate()` (main
+  channel or igapó branch), `levelAt()` (raudal steps per lane), `currentAt()`
+  (chorro, eddies, whirlpool), `groundAt()`, rocks, snags, logs, toninas,
+  swimming caimanes, the guide line, buoys and gates.
+- `public/river.js`: Curiara's courses only, re-exporting the shared helpers.
+  `AMAZONAS` is the race; `GREYBOX` is the step-0 straight channel kept for
+  tuning (`new Race(GREYBOX)`).
 - `public/rules.js` (pure): `Race`, boat physics, hazards, bots, snapshots.
-- `public/scene.js` terrain and per-tramo water; `public/landscape.js` the
-  dressing; `public/water-fx.js` pooled ripples/spray and the chorro,
-  whitewater and remolino sheets; `public/network.js` the host room.
+- Shared with Lancha in `/engine/river/`: `scene.js` terrain and per-tramo
+  water, `landscape.js` the dressing, `water-fx.js` pooled ripples/spray and
+  the chorro, whitewater and remolino sheets, `guide.js` the guide on the
+  water, `minimap.js` the HUD map. `public/network.js` is the host room.
 - Models: `/engine/models/vehicles/curiara.js` (`createCanoe`: the shared
   `riverCanoe()` with one or two seated panas and animated paddles),
   `/engine/models/props/amazonas.js` (laja, igapó trunk, churuata, moriche
@@ -42,6 +46,36 @@ newcomer near 2.8, mashing 2.1.
 
 The ¡Ahora! bonus: the popa's tap within .12 s of the proa's stroke (either
 order) adds 15% to that stroke, once.
+
+## Helpers
+
+Curiara is hard for newcomers: they mash A/D believing faster is better,
+which is a chapoteo, and lose the line once the river opens up. So:
+
+- **Remo automático**: W held (or the touch Auto button) strokes for you
+  every .42 s, alternating, at 1.05× a plain stroke, never a ¡Remazo!; A/D
+  become a rudder and send no strokes. Still water: auto 4.6 m/s, a good
+  rhythm 6.1, mashing 2.1. The ring hides and the key reads W.
+- Every chapoteo now calls out (every third one "¡Más calma!") and the tip
+  line says mashing slows the canoe.
+- **Guía en el agua** (room option, on): a ring round your own boat with a
+  pointer toward `river.guideAt(s + 14)`, gold on line, coral when pointing
+  away, pulsing faster the further off you are; and seven chevrons along the
+  line ahead, lit in a wave that runs downstream. Client-side only; it reads
+  the same race clock, so it agrees with the swimming caimanes.
+- `river.guideLine(s)` is the chorro, the fast lane through each raudal, the
+  remolino's edge 1.2 m out, clear of rocks and bank caimanes, sampled each
+  metre and box-smoothed over 13 m so the chevrons never jump.
+  `guideAt(s, time)` also swerves 4.5 m round swimming caimanes, on the side
+  they swim away from.
+- **Buoys** (`def.buoys`): pairs 6 m either side of the guide every 40 m in
+  the Río Negro (coral left, teal right), skipped near raudales, the remolino
+  and rocks. They only nudge the hull; no tip.
+- **Swimming caimanes** (`def.caimanes`): three cross the Río Negro back and
+  forth on the race clock (`river.caimanesAt(time)`, periods 24–30 s, spans
+  8–9 m), so no snapshot field. Same bite as a bank babo (+40 tip, 2.2 m/s
+  jolt, once per 4 s each, ids `n0…`). Bots over skill .72 swerve round them.
+  The guide warns "¡Caimán cruzando adelante!" within 30 m.
 
 ## River and hazards
 

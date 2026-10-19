@@ -43,7 +43,7 @@ export class RiverRoom extends LiveRoom {
   }
   // A quiet guest stops holding keys, but its strokes are events: a slow host
   // tick must never drop them before the race has read them.
-  expire(id, input) { if (input.back || input.steer) this.inputs.set(id, { ...input, back: false, steer: 0 }); }
+  expire(id, input) { if (input.back || input.steer || input.auto) this.inputs.set(id, { ...input, back: false, steer: 0, auto: false }); }
   message(id, data) {
     if (!this.isHost) return;
     if (data.kind === 'move-seat' && this.game.moveSeat(id, data.from, data.to, this.hostId)) this.publish();
