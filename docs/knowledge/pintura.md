@@ -95,6 +95,26 @@ houses, market stalls, street lamps and palms. Factory materials are cloned
 before baking, as in the shared arenas. The sea and quay are at −Z; the colonial
 street at +Z.
 
+## Cancha de Noche
+
+Pepazo-only night field (`noche` in `PAINT_ARENAS`, never in `ARENAS`). Same
+pattern as Muelle: `public/noche-layout.js` is renderer-free and holds
+`NOCHE_COVERS` (three variants: Torre, Inflables, Tubos), `NOCHE_SPAWNS` and
+the floodlight `MASTS`. Each cover row carries a `kind` (pallet, can, dorito,
+snake, brick, tube, tower) so `public/noche.js` picks the bunker model, fitted
+to the row's box. Bunkers, masts and LED rope are Studio models in
+`engine/models/props/glow-paintball.js` (pack `glow-paintball`); the tower is the
+shared `watchtower`, the trees beyond the net are `deadTree`.
+
+Lighting is per map: an environment may return `lighting` (see `NIGHT` in
+`noche.js`) and `scene.js` `light()` applies it, or `DAY` when it has none:
+background, fog, hemisphere, sun, exposure, sky visibility and `glow`. With
+`glow` on, balls are unlit with an additive halo, new splats are emissive, and
+a forward spotlight on the camera works as a headlamp. Splat materials are
+cached per glow state, so switching maps never reuses a lit one in the dark.
+The map holds six spotlights and one point light under the tower; keep the
+count low, every lit material pays for each one.
+
 ## Look
 
 The plaza court (fence, paving, bunting and pueblo spread with `SIZE`/`SPREAD`) follows the paint-battle brand board: `engine/look.js`
@@ -124,7 +144,7 @@ Online matches continue through the shared menu; local practice pauses.
 
 ## Shared map selection
 
-Puerto Coco, Hato del Sol, Ruinas del Mango and Muelle de La Guaira are available in the lobby.
+Puerto Coco, Hato del Sol, Ruinas del Mango, Muelle de La Guaira and Cancha de Noche are available in the lobby.
 The host chooses the setting; the selected map follows snapshots, practice,
 late joins and host changes. See [shared-arenas.md](shared-arenas.md) for
 layout variants, collision, table clearance, lifecycle and verification.

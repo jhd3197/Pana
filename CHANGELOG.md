@@ -10,6 +10,12 @@ becomes the GitHub release's notes.
 
 ### Added
 
+- **Pepazo has a night map: Cancha de Noche.** Red floodlights, purple
+  UV light and glowing LED rope lines light a field of pallets,
+  inflatable bunkers, plastic tubes and a lookout tower. Paintballs glow
+  as they fly, splats shine in the dark, and a headlamp lights the way in
+  first person. Three layouts rotate by round: Torre, Inflables and Tubos.
+
 - **Bululú parties come in short and minigame-only.** Pick 5 rounds for
   a quick party, or *Solo minijuegos* to skip the board and play
   minigames back to back. Any minigame can be practised alone from the

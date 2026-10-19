@@ -2,6 +2,7 @@ import { canMoveSeats } from '../../../engine/seat-rules.js';
 import { DEFAULT_OPTIONS, validOptions } from './options.js';
 import { paintArenaInfo, arenaLayout, ARENA_SPAWNS, validPaintArena } from '../../../engine/arena-layouts.js';
 import { MUELLE_COVERS, MUELLE_SPAWNS, MUELLE_SIZE } from './muelle-layout.js';
+import { NOCHE_COVERS, NOCHE_SPAWNS, NOCHE_SIZE } from './noche-layout.js';
 import { DEFAULT_DIFFICULTY, validDifficulty } from '../../../engine/difficulty.js';
 import { clamp } from '../../../engine/random.js';
 
@@ -31,13 +32,13 @@ export function cleanInput(input = {}) {
   let ax = num(input.ax), az = num(input.az); length = Math.hypot(ax, az); if (length > .01) { ax /= length; az /= length; } else { ax = 0; az = -1; }
   return { x, z, ax, az, weapon: ['pistol', 'scatter', 'rapid'].includes(input.weapon) ? input.weapon : 'pistol', fire: input.fire === true, reload: input.reload === true, sprint: input.sprint === true };
 }
-export const spawnsFor = id => id === 'muelle' ? MUELLE_SPAWNS : arenaLayout(id) ? PAINT_SPAWNS : SPAWNS;
+export const spawnsFor = id => id === 'muelle' ? MUELLE_SPAWNS : id === 'noche' ? NOCHE_SPAWNS : arenaLayout(id) ? PAINT_SPAWNS : SPAWNS;
 // Half-width of each map's court: the container yard is larger still.
-export const sizeFor = id => id === 'muelle' ? MUELLE_SIZE : SIZE;
+export const sizeFor = id => id === 'muelle' ? MUELLE_SIZE : id === 'noche' ? NOCHE_SIZE : SIZE;
 // Every map has three fixed layouts and the round number picks one, so a rematch
 // plays a different court. Not random: everyone learns them.
 export const VARIANTS = 3;
-const VARIANT_NAMES = { muelle: ['Patio', 'Laberinto', 'Torres'], default: ['Clásica', 'Girada', 'Cerrada'] };
+const VARIANT_NAMES = { muelle: ['Patio', 'Laberinto', 'Torres'], noche: ['Torre', 'Inflables', 'Tubos'], default: ['Clásica', 'Girada', 'Cerrada'] };
 export const variantName = (id, variant = 0) => (VARIANT_NAMES[id] || VARIANT_NAMES.default)[variant % VARIANTS];
 const gap = (a, b) => Math.max(Math.abs(a.x - b.x) - (a.w + b.w) / 2, Math.abs(a.z - b.z) - (a.d + b.d) / 2);
 // "Girada" turns the cover a quarter; the spawns and ring are symmetric under it.
@@ -60,6 +61,7 @@ export function coverFor(id, variant = 0) {
   const key = `${id}:${variant}`; if (covers.has(key)) return covers.get(key);
   let cover;
   if (id === 'muelle') cover = MUELLE_COVERS[variant];
+  else if (id === 'noche') cover = NOCHE_COVERS[variant];
   else {
     const layout = arenaLayout(id), base = layout ? spread(layout.cover) : COVER;
     cover = [base, rotate(base), closed(base, layout ? id : 'plaza')][variant];

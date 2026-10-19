@@ -15,10 +15,11 @@ export const TABLE_ARENAS = [...ARENAS,
   {id:'san-carlos',name:'Fuerte San Carlos',description:'Una partida en el castillo, con el Caribe al pie de la montaña.'},
 ];
 export const validTableArena = id => TABLE_ARENAS.some(map=>map.id===id);
-// Pepazo's own maps: the shared arenas plus the container yard, which has no
-// hunt or table layout, so it never joins `ARENAS`.
+// Pepazo's own maps: the shared arenas plus the container yard and the night
+// field, which have no hunt or table layout, so they never join `ARENAS`.
 export const PAINT_ARENAS = [...ARENAS,
   { id: 'muelle', name: 'Muelle de La Guaira', description: 'Contenedores apilados, la grúa del puerto y la calle colonial frente al mar.' },
+  { id: 'noche', name: 'Cancha de Noche', description: 'Reflectores rojos, luz morada y pintura que brilla en la oscuridad.' },
 ];
 export const validPaintArena = id => PAINT_ARENAS.some(map => map.id === id);
 export const paintArenaInfo = id => PAINT_ARENAS.find(map => map.id === id) || PAINT_ARENAS[0];

@@ -1,6 +1,8 @@
 import { createArenaEnvironment } from '/engine/arenas.js';
 import { paintArenaInfo } from '/engine/arena-layouts.js';
 import { createMuelle } from './muelle.js';
+import { createNoche } from './noche.js';
+import { glowTexture } from '/engine/models/props/glow-paintball.js';
 import { disposeModel } from '/engine/models/props/game-table.js';
 import * as THREE from 'three';
 import { buildCharacter } from '/engine/models/characters/pana/avatar-model.js';
@@ -29,16 +31,29 @@ export function createScene(canvas) {
   const sky = createSky(WARM_DAY.sky); scene.add(sky.mesh);
   const camera = new THREE.PerspectiveCamera(72, 1, .05, 220), target = new THREE.Vector3(), destination = new THREE.Vector3(); scene.add(camera);
   let cameraView = 'primera', elapsed = 0, initialized = false, yaw = 0, pitch = 0, previousPhase = 'lobby', wasDown = false, lift = 0, bob = 0, sway = 0, kick = 0, shake = 0, sprintFov = 0, lastAmmo = 12;
-  scene.add(new THREE.HemisphereLight(WARM_DAY.hemi[0], WARM_DAY.hemi[1], 2.5));
+  const hemi = new THREE.HemisphereLight(WARM_DAY.hemi[0], WARM_DAY.hemi[1], 2.5); scene.add(hemi);
   const sun = new THREE.DirectionalLight(WARM_DAY.sun.color, 3.2); sun.position.set(-15, 35, 16); sun.castShadow = true; scene.add(sun.target);
   Object.assign(sun.shadow.camera, { left: -30, right: 30, top: 30, bottom: -30, far: 80 }); sun.shadow.mapSize.setScalar(shadowSize(2048)); sun.shadow.normalBias = .03; scene.add(sun);
+  // Maps may bring their own light (the night field); everything else plays in the warm day.
+  const DAY = { background: WARM_DAY.background, fog: [90, 190], hemi: [WARM_DAY.hemi[0], WARM_DAY.hemi[1], 2.5], sun: [WARM_DAY.sun.color, 3.2], exposure: 1.05, sky: true, glow: false };
+  // At night a headlamp follows the camera and paint glows: balls carry a halo, splats shine.
+  const headlamp = new THREE.SpotLight('#fff1d6', 60, 30, .42, .6, 1.3); headlamp.visible = false; headlamp.position.set(0, .1, 0); headlamp.target.position.set(0, -.6, -10); camera.add(headlamp, headlamp.target);
+  const halo = glowTexture(), halos = new Map();
+  const haloMaterial = color => { if (!halos.has(color)) halos.set(color, new THREE.SpriteMaterial({ map: halo, color, blending: THREE.AdditiveBlending, depthWrite: false, transparent: true })); return halos.get(color); };
+  let glow = false;
+  function light(look) {
+    scene.background.set(look.background); scene.fog.color.set(look.background); [scene.fog.near, scene.fog.far] = look.fog;
+    hemi.color.set(look.hemi[0]); hemi.groundColor.set(look.hemi[1]); hemi.intensity = look.hemi[2];
+    sun.color.set(look.sun[0]); sun.intensity = look.sun[1]; renderer.toneMappingExposure = look.exposure;
+    sky.mesh.visible = look.sky !== false; glow = !!look.glow; headlamp.visible = glow;
+  }
   const defaultCourt = new THREE.Group(); scene.add(defaultCourt);
   let environment = null, mapId = ''; scene.userData.mapId = mapId;
   const materials = new Map(), avatars = new Map(), ballMeshes = new Map(), splats = new Map();
   const material = color => { if (!materials.has(color)) materials.set(color, new THREE.MeshStandardMaterial({ color, roughness: .85 })); return materials.get(color); };
   // Hits splat as glossy blobs, four shapes per colour.
   const hitTextures = [11, 12, 13, 14].map(splatTexture), hitMaterials = new Map();
-  const splatMaterial = (color, id) => { const key = `${color}:${id % 4}`; if (!hitMaterials.has(key)) hitMaterials.set(key, new THREE.MeshStandardMaterial({ color, map: hitTextures[id % 4], transparent: true, alphaTest: .4, roughness: .3, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -4 })); return hitMaterials.get(key); };
+  const splatMaterial = (color, id) => { const key = `${color}:${id % 4}:${glow}`; if (!hitMaterials.has(key)) hitMaterials.set(key, new THREE.MeshStandardMaterial({ color, map: hitTextures[id % 4], transparent: true, alphaTest: .4, roughness: .3, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -4, ...(glow ? { emissive: color, emissiveIntensity: 1.1 } : {}) })); return hitMaterials.get(key); };
   const box = (w, h, d, color, x, y, z) => { const mesh = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), material(color)); mesh.position.set(x, y, z); mesh.castShadow = mesh.receiveShadow = true; defaultCourt.add(mesh); return mesh; };
   const fence = SIZE + 1, span = fence * 2 - 1;
   box(200, .3, 200, '#dcb985', 0, -.3, 0);
@@ -128,7 +143,8 @@ export function createScene(canvas) {
     environment?.dispose(); environment = null; crates?.dispose(); crates = null; mapId = id; variant = layout; scene.userData.mapId = id;
     defaultCourt.visible = id === 'plaza'; cameraBounds.length = 0;
     if (id === 'plaza') { crates = plazaCover(coverFor(id, layout)); defaultCourt.add(crates.group); cameraBounds.push(...defaultCameraBounds, ...crates.bounds); }
-    else { environment = id === 'muelle' ? createMuelle(layout) : createArenaEnvironment(id, { mode: 'paint', size: SIZE, cover: coverFor(id, layout) }); scene.add(environment.group); cameraBounds.push(...environment.cameraBounds); }
+    else { environment = id === 'muelle' ? createMuelle(layout) : id === 'noche' ? createNoche(layout) : createArenaEnvironment(id, { mode: 'paint', size: SIZE, cover: coverFor(id, layout) }); scene.add(environment.group); cameraBounds.push(...environment.cameraBounds); }
+    light(environment?.lighting || DAY);
     initialized = false;
   }
   // Paint bursts: impacts, knockouts. Stains are glossy blobs stuck to a pana's body.
@@ -257,8 +273,16 @@ export function createScene(canvas) {
     }
     camera.updateProjectionMatrix(); camera.updateMatrixWorld();
     sun.position.set(camera.position.x - 15, 35, camera.position.z + 16); sun.target.position.set(camera.position.x, 0, camera.position.z);
-    for (const b of state.balls) { let mesh = ballMeshes.get(b.id); if (!mesh) { mesh = new THREE.Mesh(ballGeo, material(b.color)); scene.add(mesh); ballMeshes.set(b.id, mesh); } mesh.position.set(b.x, 1.1, b.z); }
-    for (const [id, mesh] of ballMeshes) if (!state.balls.some(b => b.id === id)) { mesh.removeFromParent(); ballMeshes.delete(id); }
+    for (const b of state.balls) {
+      let mesh = ballMeshes.get(b.id);
+      if (!mesh) {
+        mesh = new THREE.Mesh(ballGeo, glow ? new THREE.MeshBasicMaterial({ color: b.color }) : material(b.color)); scene.add(mesh); ballMeshes.set(b.id, mesh);
+        // Unlit balls with a halo read as tracers in the dark.
+        if (glow) { const trail = new THREE.Sprite(haloMaterial(b.color)); trail.scale.setScalar(1.1); mesh.add(trail); }
+      }
+      mesh.position.set(b.x, 1.1, b.z);
+    }
+    for (const [id, mesh] of ballMeshes) if (!state.balls.some(b => b.id === id)) { mesh.removeFromParent(); if (mesh.material.isMeshBasicMaterial) mesh.material.dispose(); ballMeshes.delete(id); }
     for (const s of state.splats) { let mesh = splats.get(s.id); if (!mesh) { mesh = new THREE.Mesh(splatGeo, splatMaterial(s.color, s.id)); stick(mesh, s, coverFor(state.mapId, state.variant || 0)); scene.add(mesh); splats.set(s.id, mesh); if (s.life > 8.6) puffs.spawn({ x: s.x, y: mesh.position.y > .5 ? mesh.position.y : 1.1, z: s.z }, { color: s.color, count: 3, spread: .3, size: .28, rise: .8, life: .35 }); } mesh.scale.setScalar(Math.min(1, s.life)); }
     for (const [id, mesh] of splats) if (!state.splats.some(s => s.id === id)) { mesh.removeFromParent(); splats.delete(id); }
     aim.visible = !lobby && !first && !!aimPoint; if (aimPoint) aim.position.set(aimPoint.x, .07, aimPoint.z);
@@ -274,6 +298,6 @@ export function createScene(canvas) {
     movement(x, z) { return cameraView === 'primera' ? { x: x * Math.cos(yaw) + z * Math.sin(yaw), z: -x * Math.sin(yaw) + z * Math.cos(yaw) } : { x, z }; },
     point(clientX, clientY) { const rect = canvas.getBoundingClientRect(); mouse.set((clientX - rect.left) / rect.width * 2 - 1, -(clientY - rect.top) / rect.height * 2 + 1); ray.setFromCamera(mouse, camera); return ray.ray.intersectPlane(plane, point)?.clone(); },
     screen(x, z) { const p = new THREE.Vector3(x, 1.1, z).project(camera), r = canvas.getBoundingClientRect(); return { x: r.left + (p.x + 1) / 2 * r.width, y: r.top + (1 - p.y) / 2 * r.height }; },
-    dispose() { unbind(); puffs.clear(); glossy.forEach(m => m.dispose()); stainGeo.dispose(); sky.dispose(); environment?.dispose(); disposeModel(defaultCourt); held?.userData.dispose(); hitMaterials.forEach(m => m.dispose()); hitTextures.forEach(t => t.dispose()); avatars.forEach(a => { a.marker.userData.dispose(); a.ring.removeFromParent(); a.ring.material.dispose(); a.dispose(); }); const geometries = new Set([ringGeo, ballGeo, splatGeo]), textures = new Set(); scene.traverse(o => { if (o.geometry) geometries.add(o.geometry); if (o.material?.map) textures.add(o.material.map); }); geometries.forEach(g => g.dispose()); textures.forEach(t => t.dispose()); materials.forEach(m => m.dispose()); aim.material.dispose(); renderer.dispose(); },
+    dispose() { unbind(); puffs.clear(); halos.forEach(m => m.dispose()); halo.dispose(); glossy.forEach(m => m.dispose()); stainGeo.dispose(); sky.dispose(); environment?.dispose(); disposeModel(defaultCourt); held?.userData.dispose(); hitMaterials.forEach(m => m.dispose()); hitTextures.forEach(t => t.dispose()); avatars.forEach(a => { a.marker.userData.dispose(); a.ring.removeFromParent(); a.ring.material.dispose(); a.dispose(); }); const geometries = new Set([ringGeo, ballGeo, splatGeo]), textures = new Set(); scene.traverse(o => { if (o.geometry) geometries.add(o.geometry); if (o.material?.map) textures.add(o.material.map); }); geometries.forEach(g => g.dispose()); textures.forEach(t => t.dispose()); materials.forEach(m => m.dispose()); aim.material.dispose(); renderer.dispose(); },
   };
 }

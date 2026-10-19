@@ -113,7 +113,7 @@ try {
     renderer.dispose();
     const { createScene } = await import('/g/pintura/scene.js'), { Arena, spawnsFor } = await import('/g/pintura/rules.js');
     const canvas = document.createElement('canvas'); document.body.append(canvas); const paint = createScene(canvas);
-    for (const id of ['puerto', 'hato', 'ruinas', 'muelle']) {
+    for (const id of ['puerto', 'hato', 'ruinas', 'muelle', 'noche']) {
       const game = new Arena(id); game.add(1, { name: 'Camera', avatar: {} }); game.start();
       for (const spawn of spawnsFor(id)) {
         Object.assign(game.players[0], spawn);
