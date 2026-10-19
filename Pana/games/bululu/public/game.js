@@ -7,6 +7,7 @@ import { makePortraits, drawReticles } from './presentation.js';
 import { makeMango } from '/engine/models/props/mango.js';
 import { createBoard, createToken, createDie, FORK } from './board.js';
 import { createMinimap } from './minimap.js';
+import { track, release, resources } from './minigames/lifetime.js';
 import atrapa from './minigames/atrapa.js';
 import caigas from './minigames/caigas.js';
 import caida from './minigames/caida.js';
@@ -912,6 +913,7 @@ async function playMinigame(def) {
 
   mini = null;
   view = boardView;
+  freeMini(game);
   document.body.classList.remove('in-mini');
   cardMode = 'board';
   setSign('');
@@ -1154,10 +1156,13 @@ function captureOnline() {
     mini: mini?.spec ? { ...mini.spec, state: mini.state, left: mini.left, winners: mini.winners, frames: room.history.length } : null,
     presentation: readPresentation() };
 }
+// Board resources survive a minigame's teardown; everything else it made is freed.
+function freeMini(game) { if (game) release(game.scene, resources(boardScene)); }
 function createMini(def, spec) {
-  if (!spec) return def.create({ players, auto: AUTO });
+  if (!spec) { const game = def.create({ players, auto: AUTO }); track(game.scene); return game; }
   const rng = seeded(spec.seed);
   const game = withRandom(rng, () => def.create({ players: spec.players, auto: spec.auto, aspect: spec.aspect, localIndex: me?.i ?? -1 }));
+  track(game.scene);
   for (const method of ['update', 'outro']) {
     const run = game[method].bind(game);
     game[method] = (dt, input) => {
@@ -1169,7 +1174,9 @@ function createMini(def, spec) {
 }
 function clearMini() {
   if (mini?.def.input === 'aim') bindAim(false);
+  const game = mini?.game;
   mini = null; view = boardView; miniFrame = 0; requestingFrames = false;
+  freeMini(game);
   document.body.classList.remove('in-mini', 'mini-2d', 'mini-aim');
   $('reticles').replaceChildren(); setTimer(null);
 }
