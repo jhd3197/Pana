@@ -7,7 +7,7 @@ import { ServerError } from '@colyseus/core';
 import { PanaRoom, roomState, ROOM_FULL, InputBuffer, fillBots, memberAvatar, BOT_SEAT } from '../src/room-kit.js';
 import { cappedRoom } from '../src/colyseus.js';
 import RelayRoom from '../src/relay-room.js';
-import { serveStatic } from '../src/static.js';
+import { serveStatic, MIME } from '../src/static.js';
 import { createTestRoom } from './harness.js';
 
 const games = path.resolve(import.meta.dirname, '..', '..', 'games');
@@ -106,4 +106,22 @@ test('static files never leave their folder', async () => {
   assert.equal(await status('../web2/secret.txt'), 403);
   assert.equal(await status('missing.txt'), 404);
   fs.rmSync(root, { recursive: true, force: true });
+});
+
+// An unknown type goes out as application/octet-stream, which some phones refuse to draw.
+test('every file Pana serves has a content type', () => {
+  const app = path.resolve(import.meta.dirname, '..', '..');
+  const missing = new Set();
+  const walk = (dir, served) => {
+    for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+      if (['node_modules', 'tests', 'qa', 'vendor'].includes(entry.name)) continue;
+      const full = path.join(dir, entry.name);
+      if (entry.isDirectory()) walk(full, served || entry.name === 'public');
+      else if (served && !['.md', ''].includes(path.extname(entry.name)) && !MIME[path.extname(entry.name).toLowerCase()]) missing.add(path.relative(app, full));
+    }
+  };
+  walk(path.join(app, 'web'), true);
+  walk(path.join(app, 'engine'), true);
+  walk(games, false);
+  assert.deepEqual([...missing], []);
 });
