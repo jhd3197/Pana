@@ -42,7 +42,7 @@ try {
       if(id==='track-llanos')check(counts['hato-cow']===8&&counts['llanero-horse']===3&&counts['yard-chicken']===8,'farm counts');
       if(id==='track-desierto'||id==='track-llanos')check(Object.keys(counts).length>=10,'incomplete regional pack');
       if(id.startsWith('track-')) {
-        const {TRACKS,makeTrack}=await import('/g/derrape/tracks.js'),T=makeTrack(TRACKS.find(t=>`track-${t.id}`===id));
+        const {TRACKS,makeTrack,loadTracks}=await import('/g/derrape/tracks.js');await loadTracks();const T=makeTrack(TRACKS.find(t=>`track-${t.id}`===id));
         for(const d of details)check(Math.abs(T.offsetOf(d.position[0],d.position[2]))>T.HW+d.radius+1.5,`${d.id} intrudes into the driving corridor`);
       }
       if(id==='plaza'||id==='cocina')for(const d of details)check(Math.abs(d.position[0])-d.radius>=22||Math.abs(d.position[2])-d.radius>=19,`${d.id} enters player movement bounds`);

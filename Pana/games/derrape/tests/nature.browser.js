@@ -161,7 +161,7 @@ try {
   proof.maps = [];
   for (const id of ['puerto', 'plaza', 'selva', 'llanos', 'salinas']) {
     const result = await page.evaluate(async id => {
-      const s = natureProof, { makeTrack, getTrack } = await import('/g/derrape/tracks.js');
+      const s = natureProof, { makeTrack, getTrack, loadTrack } = await import('/g/derrape/tracks.js'); await loadTrack(id);
       if (s.world) s.preview.release({ group: s.world });
       const T = makeTrack(getTrack(id)), group = T.build(); s.world = group; s.T = T;
       s.preview.ownMaterials({ group }); s.stage.scene.add(group);

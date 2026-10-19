@@ -12,7 +12,7 @@ try {
   await page.goto(`${base}/studio/settings.html`);
   await page.setContent(`<html><head><script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}</script><style>body{margin:0}canvas{display:block;width:100vw;height:100vh}</style></head><body><canvas></canvas></body></html>`);
   const metrics=await page.evaluate(async()=>{
-    const THREE=await import('three'),{makeTrack,getTrack}=await import('/g/derrape/tracks.js');
+    const THREE=await import('three'),{makeTrack,getTrack,loadTrack}=await import('/g/derrape/tracks.js');await loadTrack('plaza');
     const {createPreview,inspect,fitCamera,ownMaterials}=await import('/studio/preview.js');
     const T=makeTrack(getTrack('plaza')),group=T.build(),model={group};ownMaterials(model);
     const town=group.getObjectByName('track-environment').userData.town;

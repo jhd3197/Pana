@@ -57,7 +57,7 @@ try {
       records.push({id,buildMs,...info.stats,minY,maxFootDrift,feedTime,headY});models.push(model);
     }
     // A full native Llanos build proves registration, placement, terrain and ticks.
-    const {TRACKS,makeTrack}=await import('/g/derrape/tracks.js');
+    const {TRACKS,makeTrack,loadTrack}=await import('/g/derrape/tracks.js');await loadTrack('llanos');
     const T=makeTrack(TRACKS.find(t=>t.id==='llanos')),map=T.build();
     const environment=map.getObjectByName('track-environment'),fauna=map.getObjectByName('llanos-farm-animals');
     check(fauna?.children.length===19,'Expected three horses, eight chickens and eight cows');

@@ -16,7 +16,8 @@ import { sound, Puffs, Debris, Shockwaves, makeBubble, setSpeedLines, flyToCount
 import { createItems, ITEMS, SPIN } from './items.js';
 import { activeItem, canBlock, coinMultiplier, COIN_SPEED, MAX_COINS, AIMED, isJuiced } from './item-rules.js';
 import { ITEM_ICONS } from './item-art.js';
-import { TRACKS, getTrack, makeTrack } from './tracks.js';
+import { TRACKS, getTrack, makeTrack, loadTrack, loadTracks, trackLoaded } from './tracks.js';
+import { createMinimap, drawTrackPreview } from './route-map.js';
 import { roughnessAt,roadGripAt,roadWaterAt } from './offroad.js';
 import { START_GHOST_TIME, RESCUE_GHOST_TIME, isGhost, recordImpact, stepProtection } from './recovery-rules.js';
 import { loadAvatar, loadName, randomAvatar } from '/engine/avatar.js';
@@ -668,10 +669,19 @@ function selectTrack(id, lapsOverride = null) {
   selectedTrackId=def.id;
   trackIndex = TRACKS.indexOf(def);
   try { localStorage.setItem('derrape:track', def.id); } catch { /* private mode */ }
-  if (!trackRoutes.has(def.id)) trackRoutes.set(def.id, makeTrack(def));
-  const route = trackRoutes.get(def.id);
   $('track-name').textContent = def.name;
   const laps = lapsOverride ?? (net ? net.state?.laps || LAPS : setup.mode === 'battle' ? 0 : setup.laps);
+  // The map's module is still downloading: name and blurb now, route and times when it lands.
+  if (!trackLoaded(def.id)) {
+    $('track-blurb').textContent = def.blurb;
+    const map = $('track-map'); map.getContext('2d').clearRect(0, 0, map.width, map.height);
+    loadTrack(def.id).then(() => { if (selectedTrackId === def.id) selectTrack(def.id, lapsOverride); })
+      .catch(error => console.warn('Track unavailable', def.id, error));
+    menuFlow?.refresh();
+    return null;
+  }
+  if (!trackRoutes.has(def.id)) trackRoutes.set(def.id, makeTrack(def));
+  const route = trackRoutes.get(def.id);
   // Puerto's eight-car timing proof averages 170 s; this broader pace band
   // leaves room for ordinary mistakes and item exchanges. Other maps use the
   // same planning estimate until their own driving profiles are recorded.
@@ -685,7 +695,7 @@ function selectTrack(id, lapsOverride = null) {
   const cup = isCupMode(activeMode) ? cupById(activeMode) : null;
   const cupStageIdx = cup ? cup.stages.findIndex(s => s.track === def.id) : -1;
   $('track-of').textContent = cupStageIdx >= 0 ? `Carrera ${cupStageIdx + 1}/4` : `Pista ${trackIndex + 1}/${TRACKS.length}`;
-  drawTrackPreview(route);
+  drawTrackPreview($('track-map'), route);
   menuFlow?.refresh();
   return route;
 }
@@ -751,7 +761,7 @@ function finishTrack() {
   applyRaceQuality(renderer, race, getSettings().quality);
   $('mm-track').textContent = T.name;
   $('mm-sub').textContent = `${(T.TOTAL / 1000).toFixed(2)} km por vuelta`;
-  buildMinimap();
+  minimap.build(T);
   race.trackReady = true;
 }
 
@@ -764,8 +774,9 @@ function buildTrack(id) {
 function switchTrack(i) {
   sound.unlock();
   if (net && !net.isHost) return;
-  const def = selectTrack(TRACKS[(i + TRACKS.length) % TRACKS.length].id).def;
-  net?.track(def.id);
+  const { id } = TRACKS[(i + TRACKS.length) % TRACKS.length];
+  selectTrack(id);
+  net?.track(id);
 }
 
 // ---------- race HUD: standings board + minimap ----------
@@ -775,70 +786,8 @@ function renderBoard(order, player) {
   ).join('');
 }
 
-// Sample a route's centerline and fit it into a canvas with a margin.
-function fitRoute(route, canvas, margin) {
-  const N = 160;
-  const raw = [];
-  for (let i = 0; i < N; i++) raw.push(route.pointAt((i / N) * route.TOTAL));
-  const minX = Math.min(...raw.map(p=>p.x)), maxX = Math.max(...raw.map(p=>p.x));
-  const minZ = Math.min(...raw.map(p=>p.y)), maxZ = Math.max(...raw.map(p=>p.y));
-  const scale = Math.min((canvas.width-margin*2)/(maxX-minX), (canvas.height-margin*2)/(maxZ-minZ));
-  return raw.map(p=>[canvas.width/2+(p.x-(minX+maxX)/2)*scale,canvas.height/2+(p.y-(minZ+maxZ)/2)*scale]);
-}
-function strokeRoute(ctx, pts, width) {
-  ctx.lineJoin = 'round';
-  ctx.lineCap = 'round';
-  ctx.beginPath();
-  pts.forEach(([x, y], i) => (i ? ctx.lineTo(x, y) : ctx.moveTo(x, y)));
-  ctx.closePath();
-  ctx.strokeStyle = '#0e0b24';
-  ctx.lineWidth = width * 2;
-  ctx.stroke();
-  ctx.strokeStyle = '#f3e9d7';
-  ctx.lineWidth = width;
-  ctx.stroke();
-}
-
-// Garage preview of the selected circuit, with its start line.
-function drawTrackPreview(route) {
-  const canvas = $('track-map'), ctx = canvas.getContext('2d');
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-  try {
-    const pts = fitRoute(route, canvas, 28);
-    strokeRoute(ctx, pts, 7);
-    const [x, y] = pts[Math.floor((route.LINE ?? 0) / route.TOTAL * pts.length) % pts.length];
-    ctx.beginPath(); ctx.arc(x, y, 9, 0, Math.PI * 2);
-    ctx.fillStyle = '#ffc629'; ctx.fill();
-    ctx.lineWidth = 3; ctx.strokeStyle = '#0e0b24'; ctx.stroke();
-  } catch { /* metadata without a centerline: keep the striped placeholder */ }
-}
-
-const mm = $('mm');
-const mmCtx = mm.getContext('2d');
-let mmPts = [];
-function buildMinimap() {
-  mmPts = fitRoute(T, mm, 16);
-}
-
-function drawMinimap() {
-  mmCtx.setTransform(1, 0, 0, 1, 0, 0);
-  mmCtx.clearRect(0, 0, mm.width, mm.height);
-  if (race.mirror) mmCtx.setTransform(-1, 0, 0, 1, mm.width, 0);
-  strokeRoute(mmCtx, mmPts, 4);
-  for (const c of race.cars) {
-    const i = Math.floor((paramOf(c.x, c.z, c.y) / T.TOTAL) * mmPts.length) % mmPts.length;
-    const [x, y] = mmPts[i];
-    mmCtx.beginPath();
-    mmCtx.arc(x, y, c.isPlayer ? 5.5 : 4, 0, Math.PI * 2);
-    mmCtx.fillStyle = c.def.color;
-    mmCtx.fill();
-    if (c.isPlayer) {
-      mmCtx.lineWidth = 2;
-      mmCtx.strokeStyle = '#fff';
-      mmCtx.stroke();
-    }
-  }
-}
+const minimap = createMinimap($('mm'));
+const lapProgress = (c) => paramOf(c.x, c.z, c.y) / T.TOTAL;
 
 // ======================================================================
 // Racers
@@ -1118,6 +1067,8 @@ async function startRace(playerIndex, wheelId = garage.wheel, roster = null) {
   try {
     if (!await step('Preparando la pista…', 0.05)) return;
     clearRace();
+    await loadTrack(TRACKS[trackIndex].id);
+    if (generation !== loadGeneration) return;
     if (beginTrack(TRACKS[trackIndex].id)) {
       let progress = 0.12;
       for (const label of T.buildSteps()) {
@@ -2204,7 +2155,7 @@ function updateRace(dt, presentation = true) {
     const sector = T.def.sectors?.filter(([start]) => u >= start).at(-1);
     if (sector) $('mm-sub').textContent = sector[1];
   }
-  drawMinimap();
+  minimap.draw(race.cars, lapProgress, race.mirror);
 
   race.shake = Math.max(0, race.shake - dt * 2);
   followCam(race.camera, 'camPos', p, playerInput(1).look, dt);
@@ -2891,7 +2842,10 @@ function resize() {
 addEventListener('resize', resize);
 resize();
 
-if (DEBUG) Object.assign(window, { disposeRacer, makeRacer, placeRacer, aiInput, stepRescue, collidePair, sendPoses, pollPads, music, getWallet: () => wallet, taller, menu, race, garage, renderer, crash, stepCar, startRace, updateRace, finish, renderResults, renderCup, toGarage, showWheel, ITEMS, TRACKS, buildTrack, setup, popBalloon, rescue, getActiveTrack: () => T, getNet: () => net });
+if (DEBUG) Object.assign(window, { loadTrack, disposeRacer, makeRacer, placeRacer, aiInput, stepRescue, collidePair, sendPoses, pollPads, music, getWallet: () => wallet, taller, menu, race, garage, renderer, crash, stepCar, startRace, updateRace, finish, renderResults, renderCup, toGarage, showWheel, ITEMS, TRACKS, buildTrack, setup, popBalloon, rescue, getActiveTrack: () => T, getNet: () => net });
+// Suites call buildTrack() and read TRACKS synchronously: every map loads before
+// PANA_PREPARED (showCar below). startRace() loads its own map either way.
+if (DEBUG) await loadTracks();
 
 // ?track=desierto wins; otherwise the last pick, otherwise the estadio
 let savedTrack = 'estadio';

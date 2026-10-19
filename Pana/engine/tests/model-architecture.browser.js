@@ -32,6 +32,7 @@ try {
       for(const name of alias.names){check(old[name]!==undefined&&old[name]===canonical[name],`Broken alias ${alias.old}#${name}`);symbols++;}
     }
     const registry = await import('/g/derrape/tracks.js'), runtime = await import('/g/derrape/track-runtime.js');
+    await registry.loadTracks();
     const { TRACK_DEFINITIONS } = await import('/g/derrape/track-definitions.js');
     const { CARS } = await import('/g/derrape/cars.js'), { CAR_DEFINITIONS } = await import('/g/derrape/car-definitions.js');
     check(registry.makeTrack === runtime.makeTrack, 'Track runtime compatibility export changed identity');

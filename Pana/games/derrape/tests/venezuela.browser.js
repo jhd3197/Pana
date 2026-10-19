@@ -14,7 +14,7 @@ try{
   await page.goto(`${base}/studio/settings.html`);
   await page.setContent(`<html><head><script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}</script><style>body{margin:0}canvas{display:block;width:100vw;height:100vh}</style></head><body><canvas></canvas></body></html>`);
   await page.evaluate(async()=>{
-    const THREE=await import('three'),tracks=await import('/g/derrape/tracks.js'),preview=await import('/studio/preview.js');
+    const THREE=await import('three'),tracks=await import('/g/derrape/tracks.js'),preview=await import('/studio/preview.js');await tracks.loadTracks();
     const stage=preview.createPreview(document.querySelector('canvas'),true);stage.renderer.setSize(1500,1050,false);stage.camera.aspect=1500/1050;
     window.proof={THREE,tracks,preview,stage};
   });
