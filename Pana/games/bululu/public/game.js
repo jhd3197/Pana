@@ -6,7 +6,7 @@ import { loadAvatar, loadName, randomAvatar } from '/engine/avatar.js';
 import { makePortraits, drawReticles } from './presentation.js';
 import { makeMango } from '/engine/models/props/mango.js';
 import { createBoard, createToken, createDie, FORK } from './board.js';
-import { RIVER, SEA, MAP_BOUNDS, beachMask } from './island.js';
+import { createMinimap } from './minimap.js';
 import atrapa from './minigames/atrapa.js';
 import caigas from './minigames/caigas.js';
 import caida from './minigames/caida.js';
@@ -578,113 +578,14 @@ async function openingThrow(p) {
   dice[0].mesh.visible = false; p.token.pin.visible = true;
   return value;
 }
-// ======================================================================
-// minimap: the whole island at a glance; tap it to look there
-// ======================================================================
-const MAP = MAP_BOUNDS;
-const mapEl = $('minimap');
-const mapCtx = mapEl.getContext('2d');
-const mapBase = document.createElement('canvas');
-mapBase.width = mapEl.width;
-mapBase.height = mapEl.height;
-const toMap = (x, z) => [(x - MAP.x0) / (MAP.x1 - MAP.x0) * mapEl.width, (z - MAP.z0) / (MAP.z1 - MAP.z0) * mapEl.height];
-const TILE_COLORS = { blue: '#3d7bf2', red: '#ff4b4b', event: '#ffd23f', start: '#2ad1b2', tree: '#8e4de8' };
-function drawMapBase() {
-  const g = mapBase.getContext('2d');
-  const W = mapBase.width, H = mapBase.height, step = 4;
-  for (let py = 0; py < H; py += step) {
-    for (let px = 0; px < W; px += step) {
-      const x = MAP.x0 + (px / W) * (MAP.x1 - MAP.x0), z = MAP.z0 + (py / H) * (MAP.z1 - MAP.z0);
-      const h = board.groundAt(x, z);
-      let c;
-      if (h < SEA - 2) c = '#1d4f80';
-      else if (h < SEA + 0.2) c = '#3a8fb0';
-      else if (h < 0.4 || beachMask(x, z) > 0.45) c = '#e6c88c';
-      else if (h > 24) c = '#b4adbb';
-      else if (h > 9) c = '#3f7f4a';
-      else c = h > 4 ? '#55a04c' : '#66b356';
-      g.fillStyle = c;
-      g.fillRect(px, py, step, step);
-    }
-  }
-  g.strokeStyle = '#45bde0';
-  g.lineWidth = 5;
-  g.lineJoin = g.lineCap = 'round';
-  g.beginPath();
-  RIVER.forEach(([x, z], i) => (i ? g.lineTo(...toMap(x, z)) : g.moveTo(...toMap(x, z))));
-  g.stroke();
-  // the path, then the tiles on it
-  g.strokeStyle = 'rgba(255, 240, 210, 0.7)';
-  g.lineWidth = 4;
-  for (const t of board.tiles) for (const n of t.next) {
-    const u = board.tiles[n];
-    g.beginPath();
-    g.moveTo(...toMap(t.x, t.z));
-    g.lineTo(...toMap(u.x, u.z));
-    g.stroke();
-  }
-  for (const t of board.tiles) {
-    const [x, y] = toMap(t.x, t.z);
-    g.fillStyle = TILE_COLORS[t.kind];
-    g.fillRect(x - 4, y - 4, 8, 8);
-  }
-}
-drawMapBase();
-let mapT = 0;
-function drawMap(dt, t) {
-  mapT -= dt;
-  if (mapT > 0) return;
-  mapT = 0.1;
-  const g = mapCtx;
-  g.drawImage(mapBase, 0, 0);
-  // where the camera is looking
-  const [cx, cy] = toMap(cam.look.x, cam.look.z);
-  g.strokeStyle = 'rgba(255, 255, 255, 0.6)';
-  g.lineWidth = 3;
-  g.strokeRect(cx - 34, cy - 24, 68, 48);
-  // the cart: a pulsing gold star
-  const sp = board.stand.group.position;
-  const [sx, sy] = toMap(sp.x, sp.z);
-  const pulse = 1 + Math.sin(t * 6) * 0.15;
-  g.fillStyle = '#ffc629';
-  g.strokeStyle = '#6b4200';
-  g.lineWidth = 3;
-  g.beginPath();
-  for (let k = 0; k < 10; k++) {
-    const r = (k % 2 ? 6 : 14) * pulse, a = (k / 10) * Math.PI * 2 - Math.PI / 2;
-    g.lineTo(sx + Math.cos(a) * r, sy + Math.sin(a) * r);
-  }
-  g.closePath();
-  g.fill();
-  g.stroke();
-  // the panas
-  for (const p of players) {
-    const pos = p.token.group.position;
-    const [x, y] = toMap(pos.x, pos.z);
-    const r = turnOf === p.i ? 11 + Math.sin(t * 8) * 2 : 9;
-    g.fillStyle = p.color;
-    g.strokeStyle = '#fff';
-    g.lineWidth = 3;
-    g.beginPath();
-    g.arc(x, y, r, 0, Math.PI * 2);
-    g.fill();
-    g.stroke();
-    g.fillStyle = '#fff';
-    g.font = '14px "Luckiest Guy", system-ui, sans-serif';
-    g.textAlign = 'center';
-    g.textBaseline = 'middle';
-    g.fillText(String(p.i + 1), x, y + 1);
-  }
-}
-mapEl.addEventListener('click', (e) => {
-  const r = mapEl.getBoundingClientRect();
-  const x = MAP.x0 + ((e.clientX - r.left) / r.width) * (MAP.x1 - MAP.x0);
-  const z = MAP.z0 + ((e.clientY - r.top) / r.height) * (MAP.z1 - MAP.z0);
+// minimap: the whole island at a glance; tap it to look there (minimap.js)
+const minimap = createMinimap($('minimap'), { board, players, focus: () => cam.look, turnOf: () => turnOf, look(x, z) {
   if (!freeLook) setFreeLook(true);
   const y = board.groundAt(x, z);
   looker.target.set(x, y, z);
   boardCam.position.set(x, y + 34, z + 40);
-});
+} });
+const drawMap = minimap.draw, drawMapBase = minimap.drawBase;
 
 // ======================================================================
 // board turns
