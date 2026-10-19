@@ -39,6 +39,16 @@ try {
   const initial = await b.evaluate(() => cocina.state.players.find(p => p.id === cocina.room.id).x);
   await b.keyboard.down('d'); await b.waitForFunction(x => cocina.state.players.find(p => p.id === cocina.room.id).x > x + 0.5, initial); await b.keyboard.up('d');
   await a.waitForFunction(id => cocina.state.players.find(p => p.id === id).x > -3.2, ids.guest); check('remote movement reaches the host simulation');
+  // Prediction: with the host's snapshots held back (a slow link), the guest's own
+  // cook still walks on its input; once they flow again it lands where the host has it.
+  await b.waitForFunction(() => cocina.room.predicted);
+  await a.evaluate(() => { cocina.room.publish = () => {}; });
+  const stalled = await b.evaluate(() => ({ predicted: cocina.room.predicted.x, shown: cocina.state.players.find(p => p.id === cocina.room.id).x }));
+  await b.keyboard.down('a'); await b.waitForFunction(x => cocina.room.predicted.x < x - 0.8, stalled.predicted); await b.keyboard.up('a');
+  assert.equal(await b.evaluate(() => cocina.state.players.find(p => p.id === cocina.room.id).x), stalled.shown, 'no snapshot arrived while predicting');
+  await a.evaluate(() => { delete cocina.room.publish; });
+  await b.waitForFunction(() => { const me = cocina.state.players.find(p => p.id === cocina.room.id); return Math.abs(me.x - cocina.room.predicted.x) < 0.3 && Math.abs(me.z - cocina.room.predicted.z) < 0.3; });
+  check('the guest moves its own cook at once and settles on the host position');
   await position(a, ids.host, 'supply-arepa'); await a.keyboard.press('e'); await held(a, 'raw');
   await position(a, ids.host, 'prep-1'); await a.keyboard.press('e'); await held(a, null);
   await a.evaluate(() => cocina.step(2.5));

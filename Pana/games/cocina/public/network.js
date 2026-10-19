@@ -1,4 +1,4 @@
-import { Kitchen } from './rules.js';
+import { Kitchen, stepCook } from './rules.js';
 import { LiveRoom, axis } from '/engine/live-room.js';
 
 // The room's host owns the kitchen (engine/live-room.js); a new host restores the last snapshot.
@@ -7,7 +7,13 @@ export class KitchenRoom extends LiveRoom {
     super({ ...options, game: 'cocina', protocol: 'cocina-v2', texts: {
       connecting: 'Conectando con tus panas…', full: 'Sala llena. Puedes abrir tu propia cocina.',
       lost: 'Se cortó la conexión. Reconectando…', offline: 'Sin conexión. Puedes seguir en una cocina local.',
-      waiting: 'Espera a reconectar o abre una cocina local.' } });
+      waiting: 'Espera a reconectar o abre una cocina local.' } }, {
+      // Your own cook moves the moment you press a key; the host corrects it.
+      predict: {
+        body: (state, id) => state.phase === 'playing' ? state.players.find(p => p.id === id && !p.bot) : null,
+        step: (body, input, dt) => stepCook(body, input, dt),
+      },
+    });
     this.state = new Kitchen().snapshot();
   }
   cleanInput(raw) { return { x: axis(raw?.x), z: axis(raw?.z), dash: !!raw?.dash }; }

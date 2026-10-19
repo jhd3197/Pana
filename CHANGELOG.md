@@ -463,6 +463,11 @@ becomes the GitHub release's notes.
 
 ### Changed
 
+- **Online, your own cook and explorer move the moment you press a key.**
+  In Pana Cocina and Reliquia a guest no longer waits for the host to see
+  the key before their pana walks; the host still has the last word, so
+  everyone ends up in the same place.
+
 - **Derrape and Bululú start with half the download.** Derrape fetches
   only the map you pick and Bululú only the minigame being played, and the
   music is about a third smaller.

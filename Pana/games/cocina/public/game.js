@@ -76,7 +76,8 @@ const room = new KitchenRoom({ code, name, avatar, onState: receive, onNotice: n
   $('connection').textContent = text; show('practice', failed); canGoOffline = failed; menu.update(); if (failed) notify(text); updateUI();
 } });
 const optionsUI = createRoomOptions($('room-options'), { title: 'Pana Cocina', fields: FIELDS, change: options => room.action('configure', { options }), reset: () => room.action('configure', { options: DEFAULT_OPTIONS }) });
-const me = () => state.players.find(p => p.id === room.id);
+// A guest draws its own cook where it predicts it (KitchenRoom's predict), not a round trip behind.
+const me = () => room.predicted ?? state.players.find(p => p.id === room.id);
 const colors = ['#eb574b', '#4789e3', '#3aae77', '#e4b52c', '#a974d5', '#e584a9', '#57bcc0', '#e68a3c'];
 function actorLabel(p, color) {
   const mat = canvasMat(256, 96, ctx => {
@@ -222,12 +223,14 @@ function input() {
 // Real elapsed time: a host in a background tab gets timers once a second.
 const simClock = elapsedClock();
 const ticker = setInterval(() => room.tick(simClock(), input(), paused && (room.offline || room.members.size === 1)), 50);
+const actorTarget = new THREE.Vector3();
 function frame(now) {
   const dt = Math.min(0.06, (now - last) / 1000); last = now; elapsed += dt;
   if (aimWidth !== innerWidth || aimHeight !== innerHeight) resize();
-  for (const p of state.players) {
-    const a = actors.get(p.id); if (!a) continue;
-    a.root.position.lerp(new THREE.Vector3(p.x, 0.16, p.z), Math.min(1, dt * 17));
+  for (const shown of state.players) {
+    const a = actors.get(shown.id); if (!a) continue;
+    const p = shown.id === room.id ? me() : shown;
+    a.root.position.lerp(actorTarget.set(p.x, 0.16, p.z), Math.min(1, dt * 17));
     let delta = p.h - a.character.group.rotation.y; delta = Math.atan2(Math.sin(delta), Math.cos(delta)); a.character.group.rotation.y += delta * Math.min(1, dt * 15);
     a.character.update(dt, { walk: p.moving ? 1 : 0, carry: !!p.held, run: p.dash > 1.7, open: p.dash > 1.7 });
     a.label.visible = state.phase === 'playing';

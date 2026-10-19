@@ -31,6 +31,18 @@ export function move(p, dx, dz) {
     if (!blocked(p.x, p.z + dz / n)) p.z += dz / n;
   }
 }
+// One cook's movement for dt: the host's simulation, and a guest's prediction
+// of its own cook (engine/predict.js). It only reads and writes p.
+export function stepCook(p, input, dt, speed = 5) {
+  p.dash = Math.max(0, p.dash - dt);
+  let dx = Number.isFinite(input.x) ? input.x : 0, dz = Number.isFinite(input.z) ? input.z : 0;
+  const len = Math.hypot(dx, dz); if (len > 0) { dx /= Math.max(1, len); dz /= Math.max(1, len); }
+  if (input.dash && p.dash === 0) p.dash = 2;
+  if (p.dash > 1.7) speed *= 1.9;
+  const x = p.x, z = p.z; move(p, dx * dt * speed, dz * dt * speed);
+  p.moving = Math.hypot(x - p.x, z - p.z) > 0.001;
+  if (p.moving) p.h = Math.atan2(dx, dz);
+}
 export function distance(p, s) { return Math.hypot(Math.max(0, Math.abs(p.x - s.x) - s.w / 2), Math.max(0, Math.abs(p.z - s.z) - s.d / 2)); }
 export function nearestStation(p) {
   return STATIONS.filter(s => distance(p, s) < 1.15).sort((a, b) => distance(p, a) - distance(p, b))[0];
@@ -173,7 +185,7 @@ export class Kitchen {
       }
     }
     for (const p of this.players) {
-      p.cooldown = Math.max(0, p.cooldown - dt); p.dash = Math.max(0, p.dash - dt);
+      p.cooldown = Math.max(0, p.cooldown - dt);
       let input = inputs.get(p.id) || { x: 0, z: 0 }, speed = 5;
       if (p.bot) {
         const target = this.botTarget(p); p.target = target?.id;
@@ -185,13 +197,7 @@ export class Kitchen {
           const next = nav.path[0]; input = next ? { x: next.x - p.x, z: next.z - p.z } : { x: 0, z: 0 }; speed = 3.6;
         }
       }
-      let dx = Number.isFinite(input.x) ? input.x : 0, dz = Number.isFinite(input.z) ? input.z : 0;
-      const len = Math.hypot(dx, dz); if (len > 0) { dx /= Math.max(1, len); dz /= Math.max(1, len); }
-      if (input.dash && p.dash === 0) p.dash = 2;
-      if (p.dash > 1.7) speed *= 1.9;
-      const before = { x: p.x, z: p.z }; move(p, dx * dt * speed, dz * dt * speed);
-      p.moving = Math.hypot(before.x - p.x, before.z - p.z) > 0.001;
-      if (p.moving) p.h = Math.atan2(dx, dz);
+      stepCook(p, input, dt, speed);
     }
   }
   snapshot() { return clone({ options: this.options, kitchen: this.kitchen, switched: this.switched, phase: this.phase, remaining: this.remaining, players: this.players, stations: this.stations, orders: this.orders, score: this.score, served: this.served, missed: this.missed, burnt: this.burnt, combo: this.combo, helpers: this.helpers, orderId: this.orderId, eventId: this.eventId, events: this.events }); }
