@@ -89,19 +89,20 @@
     <div class="pk-lobby-top"><a class="pk-back" href="/">← Todos los juegos</a><a class="pk-logo" href="/">PANA</a></div>
     <span class="pk-ribbon">Isla del mango</span>
     <h1 class="pk-title">Tira. Junta. Gana el <span class="gold">Mango de oro</span>.</h1>
-    <p class="pk-copy" data-room-description>Junta 20 monedas y cómprale un <b>Mango de oro</b> al puesto del árbol.
+    <p class="pk-copy board-only" data-room-description>Junta 20 monedas y cómprale un <b>Mango de oro</b> al puesto del árbol.
       Después de cada ronda hay un minijuego: el ganador se lleva 10 monedas.
       Tras <b id="intro-rounds">10</b> rondas, gana el pana con más mangos de oro.</p>
-    <div class="pk-stats" data-room-description>
+    <div class="pk-stats board-only" data-room-description>
       <div class="pk-stat"><b id="intro-rounds-n">10</b><span>rondas</span></div>
       <div class="pk-stat"><b>20</b><span>monedas = 1 mango</span></div>
       <div class="pk-stat"><b>+10</b><span>por minijuego</span></div>
     </div>
-    <div class="spaces" aria-label="Casillas" data-room-description>
+    <div class="spaces board-only" aria-label="Casillas" data-room-description>
       <div><span class="tile blue"><i class="ico coin"></i>+3</span><small>Gana 3 monedas</small></div>
       <div><span class="tile red"><i class="ico coin"></i>−3</span><small>Pierde 3 monedas</small></div>
       <div><span class="tile yellow">?</span><small>Evento loco</small></div>
     </div>
+    <p id="intro-rules" class="pk-copy intro-rules" data-room-description></p>
     <div id="room-options"></div>
     <div class="pk-lobby-foot">
       <p id="room-status" class="pk-copy" role="status">Juega con tus panas o practica con bots.</p>
@@ -112,6 +113,9 @@
         <button id="start" class="pk-btn pk-btn--primary pk-btn--lg play">¡A jugar! <kbd class="pk-kbd" data-pana-hint>Espacio</kbd></button>
         <button id="practice" class="pk-btn hidden">Jugar con bots</button>
       </div>
+      <label id="practice-pick" class="practice-pick">Practicar un minijuego
+        <select id="practice-mini"><option value="">Elige uno…</option></select>
+      </label>
     </div>
   </section>
 
@@ -130,7 +134,7 @@
   <div id="results" class="panel pk-modal results hidden">
     <span class="pk-eyebrow">Después de todas las rondas…</span>
     <h2 id="res-title" class="pk-title pk-title--yellow"></h2>
-    <p class="sub pk-copy">El pana con más mangos de oro gana. Si hay empate, ganan las monedas.</p>
+    <p id="res-sub" class="sub pk-copy">El pana con más mangos de oro gana. Si hay empate, ganan las monedas.</p>
     <div id="res-rows" class="rrows pk-roster"></div>
     <p class="note">¡Que gane el pana más pana!</p>
     <div class="row">

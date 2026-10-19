@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { applyOptions, cleanOptions, DEFAULT_OPTIONS, OPTION_FIELDS, configuredTileKind, minigamePool, cpuPace, stealMango, awardFinalBonus } from '../public/options.js';
+import { applyOptions, cleanOptions, DEFAULT_OPTIONS, OPTION_FIELDS, configuredTileKind, minigamePool, cpuPace, stealMango, awardFinalBonus, rulesSummary } from '../public/options.js';
 import { rollDice } from '../public/rules.js';
 import { seeded } from '../public/online-rules.js';
 import { chinazoSim } from '../public/minigames/chinazo-sim.js';
@@ -38,6 +38,8 @@ test('calm games exclude movement races; CPU pacing never accelerates a human tu
   assert.deepEqual(minigamePool(list, { minigames: 'calm' }).map(m => m.id), ['caida', 'embuste', 'criollas']);
   assert.equal(cpuPace({ cpu: 'fast' }, true), 1);
   assert(cpuPace({ cpu: 'fast' }, false) > cpuPace({ cpu: 'normal' }, false));
+  assert(cpuPace({ cpu: 'normal' }, false) > 1, 'bots move faster than a human turn even at Normal');
+  assert.equal(cpuPace({ cpu: 'normal' }, true), 1);
 });
 
 test('stealing conserves mangos and the toggle prevents all transfers', () => {
@@ -73,4 +75,13 @@ test('all pure minigame simulations include six finite scores and independent la
   bowls.update(.05, Array.from({ length: 6 }, () => ({})));
   assert.deepEqual(bowls.players.map(p => p.left), [2, 2, 2, 2, 2, 1]);
   assert.equal(bowls.scores().length, 6);
+});
+
+test('the lobby explains the bonus, stealing and the minigame-only party', () => {
+  const board = rulesSummary(DEFAULT_OPTIONS, 10).join(' ');
+  assert.match(board, /Mango de oro extra/); assert.match(board, /robarle/);
+  assert.equal(rulesSummary({ ...DEFAULT_OPTIONS, finalBonus: false, stealing: false }, 10).length, 0);
+  const minis = rulesSummary({ ...DEFAULT_OPTIONS, mode: 'minis', stealing: true }, 5).join(' ');
+  assert.match(minis, /^5 minijuegos seguidos/); assert.doesNotMatch(minis, /robarle/);
+  assert.equal(cleanOptions({ mode: 'minis', rounds: 5 }).rounds, 5);
 });

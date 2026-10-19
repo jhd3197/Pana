@@ -368,6 +368,12 @@ body.in-mini .look, body.in-mini .side, body.in-mini .legend, body.in-mini .keys
 .ip b { display: none; }
 .ip span { font: 800 13px var(--pk-sans); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .intro .pk-lobby-cta { grid-template-columns: 1fr; }
+body.mode-minis .board-only { display: none; }
+.intro-rules:empty { display: none; }
+.intro-rules { color: var(--pk-text); }
+.practice-pick { display: flex; align-items: center; justify-content: center; gap: 8px; color: var(--pk-muted); font: 700 13px var(--pk-sans); }
+.practice-pick[hidden] { display: none; }
+.practice-pick select { min-height: 34px; padding: 4px 10px; border: 1px solid var(--pk-line); border-radius: 10px; background: rgba(14, 11, 36, .92); color: var(--pk-text); font: 700 13px var(--pk-sans); }
 
 /* ---------- dialogs: minigame intro and results ---------- */
 .panel {

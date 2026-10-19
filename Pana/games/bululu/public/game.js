@@ -37,7 +37,7 @@ import { BululuRoom } from './network.js';
 import { IDLE_INPUT, seeded, withRandom } from './online-rules.js';
 import { readPresentation, writePresentation } from './online-view.js';
 import { createRoomOptions } from '/engine/room-options.js';
-import { OPTION_FIELDS, DEFAULT_OPTIONS, cleanOptions, applyOptions, minigamePool, cpuPace, stealMango, awardFinalBonus } from './options.js';
+import { OPTION_FIELDS, DEFAULT_OPTIONS, cleanOptions, applyOptions, minigamePool, cpuPace, stealMango, awardFinalBonus, rulesSummary } from './options.js';
 
 // every tile, sign and bubble is drawn on a canvas in the cartoon font, so
 // load it before building anything (but never hang on it)
@@ -456,7 +456,7 @@ function openThrower(button, onThrow) {
 function closeThrower() { thrower?.dispose(); thrower = null; }
 // How hard p throws: a human shakes and lets go, a bot just throws.
 async function askThrow(p, text, label) {
-  if (!isHuman(p)) { await wait(0.9); return rand(0.35, 0.95); }
+  if (!isHuman(p)) { await wait(0.5); return rand(0.35, 0.95); }
   await ask(text, [{ label, key: ' ', toss: true }]); return thrownPower;
 }
 async function rollOff() {
@@ -474,7 +474,7 @@ async function openingThrow(p) {
   const value = rules.rollDice(Math.random, 1).a;
   await wait(diceTable.toss(p, [value], power));
   sound.boing(); p.token.bubble.say(value === 6 ? '¡SEIS!' : `¡${value}!`, 0.8);
-  await wait(0.7);
+  await wait(isHuman(p) ? 0.7 : 0.35);
   dice[0].mesh.visible = false; p.token.pin.visible = true;
   return value;
 }
@@ -902,6 +902,9 @@ async function intro() {
   if (!online) lobbyRoster();
   $('intro').classList.remove('hidden');
   $('online').onclick = connectOnline;
+  // Any minigame on its own, against bots, from the lobby (the ?play= loop).
+  for (const m of MINIGAMES) $('practice-mini').append(new Option(m.title, m.id));
+  $('practice-mini').onchange = (e) => { if (!e.target.value) return; const url = new URL(location.href); url.searchParams.set('play', e.target.value); url.searchParams.delete('room'); location.href = url.href; };
   $('practice').onclick = () => { const url = new URL(location.href); url.searchParams.delete('room'); url.searchParams.delete('lead'); location.href = url.href; };
   if (online) connectOnline();
   await new Promise((r) => {
@@ -934,6 +937,7 @@ async function results() {
 function drawResults() {
   const order = standings(), r = ranks(), champ = order[0];
   const tied = order.filter((p) => r[p.i] === 1);
+  $('res-sub').textContent = options.mode === 'minis' ? 'Gana quien tenga más mangos de oro; si no, quien juntó más monedas ganando minijuegos.' : 'El pana con más mangos de oro gana. Si hay empate, ganan las monedas.';
   $('res-title').textContent = tied.length > 1 ? `¡Empate entre ${tied.map((p) => p.name).join(' y ')}!`
     : champ === me ? `¡Ganaste, ${champ.name}!` : `¡${champ.name} es el pana más pana!`;
   $('res-rows').innerHTML = order.map((p) => `
@@ -969,6 +973,24 @@ async function runBoard(resume) {
       await playMinigame(MINIGAMES.find(m => m.id === only));
     }
   }
+  if (options.mode === 'minis') await runMinis(resume);
+  else await runRounds(resume);
+  const bonus = awardFinalBonus(players, options.finalBonus);
+  saveCheckpoint('done', 0);
+  if (bonus.length) await toast('¡Bonus final!', `Un Mango de oro por más victorias: ${bonus.map(i => escapeHtml(players[i].name)).join(' · ')}`, 2.5, 'gold');
+  await results();
+}
+// Solo minijuegos: no board, just `ROUNDS` minigames from the shuffled bag.
+async function runMinis(resume) {
+  for (round = resume?.round || 1; round <= ROUNDS; round++) {
+    setPlank(`MINIJUEGO ${round} / ${ROUNDS}`);
+    const def = MINIGAMES.find(m => m.id === resume?.minigame) || FORCED || nextMinigame();
+    saveCheckpoint('mini', players.length, def);
+    await playMinigame(def);
+    resume = null;
+  }
+}
+async function runRounds(resume) {
   if (resume) order = resume.order || players.map((p) => p.i);
   else await rollOff();
   for (round = resume?.round || 1; round <= ROUNDS; round++) {
@@ -986,10 +1008,6 @@ async function runBoard(resume) {
     await playMinigame(def);
     resume = null;
   }
-  const bonus = awardFinalBonus(players, options.finalBonus);
-  saveCheckpoint('done', 0);
-  if (bonus.length) await toast('¡Bonus final!', `Un Mango de oro por más victorias: ${bonus.map(i => escapeHtml(players[i].name)).join(' · ')}`, 2.5, 'gold');
-  await results();
 }
 
 // Online, every pana in the room says ¡Listo! for themselves before a
@@ -1055,6 +1073,9 @@ function lobbyRoster() {
   $('intro-players').innerHTML = players.map(p =>
     `<div class="ip" style="--c:${p.color}"><img src="${p.portrait}" alt=""><b>P${p.i + 1}</b><span>${escapeHtml(p.name)}${p === me ? ' · Tú' : p.human ? '' : ' · Bot'}</span></div>`).join('');
   $('intro-rounds').textContent = $('intro-rounds-n').textContent = ROUNDS;
+  document.body.classList.toggle('mode-minis', options.mode === 'minis');
+  $('intro-rules').textContent = rulesSummary(options, ROUNDS).join(' ');
+  $('practice-pick').hidden = online;
   roomOptions.update(options, !started && (!online || room?.isHost));
   $('start').disabled = online && (!room?.isHost || started);
   $('start').textContent = online ? room?.isHost ? '¡A jugar!' : 'Esperando al anfitrión…' : 'Jugar con bots';
@@ -1302,7 +1323,7 @@ async function fastForward(seconds, dt = 1 / 30) {
   if (online) throw new Error('Online play uses the room clock.');
   for (let s = 0; s < seconds; s += dt) {
     t += dt;
-    stepJobs(dt);
+    stepJobs(dt * boardPace());
     if (mini) updateMini(dt);
     view.update(dt, t);
     await null;   // let the turn logic's awaits run

@@ -62,7 +62,9 @@ module and `harbor-board.js` builds the alternate 32-tile timber pier circuit.
 The original island retains its 80-tile loop and hill shortcut. Switching boards
 also updates the minimap, stand destinations and token positions.
 
-- **Rondas:** 10, 15 or 20 (the short-round query remains for tests).
+- **Partida:** *Con tablero* or *Solo minijuegos*: `rounds` minigames from the
+  shuffled bag, no board, +10 a win and the usual final bonus (`runMinis`).
+- **Rondas:** 5, 10, 15 or 20 (the short-round query remains for tests).
 - **Tranquilos:** Caída, Embuste and Criollas, with no running, dodging or rhythm
   races. Each still appears once per shuffled pass.
 - **Monedas al inicio:** 5, 10 or 20, including rematches.
@@ -75,8 +77,14 @@ also updates the minimap, stand destinations and token positions.
   saving the finished checkpoint so migration cannot repeat the award.
 - **Dados:** one d6 without doubles, or the existing two-d6 sum and +5 doubles.
   A hidden second die must not paint a zero face: there is no zero-pip material.
-- **Velocidad CPU:** Rápida advances bot board animations and waits 2.5× faster;
+- **Velocidad CPU:** bots' board turns run 1.5× at Normal and 2.5× at Rápida;
   human turns and every minigame keep their normal simulation speed.
+  Bot opening throws also wait less. Simulated whole parties (bots in every
+  seat, `pacing.browser.mjs`): 10 rounds took 1,128 s with bots at 1× and
+  805 s now (36% of it in minigames, first one at 73 s); 5 rounds 459 s;
+  Solo minijuegos with 5 games 192 s. The lobby summarises the bonus,
+  stealing and short presets (`rulesSummary`) and offers any minigame alone
+  (*Practicar un minijuego*, the `?play=` loop).
 
 All twelve minigames use the roster length. River and Chinazo pure simulations
 accept `count` (default four keeps their existing balance benchmarks stable).

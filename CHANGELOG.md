@@ -10,6 +10,13 @@ becomes the GitHub release's notes.
 
 ### Added
 
+- **Bululú parties come in short and minigame-only.** Pick 5 rounds for
+  a quick party, or *Solo minijuegos* to skip the board and play
+  minigames back to back. Any minigame can be practised alone from the
+  lobby, and bots take their board turns faster, so a 10-round party is
+  about a third shorter. The lobby now explains the final bonus and
+  mango stealing before you start.
+
 - **Race lanchas with an outboard motor in the new game Lancha.** Hold W
   for gas and steer with A and D (no rhythm, nothing to mash) down the
   Caño del Sipapo, over the Raudales de Atures and across the open Orinoco
