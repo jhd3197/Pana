@@ -87,13 +87,6 @@ try {
     await page.evaluate(([p,t])=>{const {camera,renderer,scene}=proof;camera.position.set(...p);camera.lookAt(...t);renderer.render(scene,camera);},[position,target]);
     await page.screenshot({path:`${out}/${name}.png`});
   }
-  // Menu artwork is captured from the shipped map, never from the reference photo.
-  if(process.env.PANA_CAPTURE_PUERTO_ART==='1') {
-    const data=await page.evaluate(()=>{const {camera,renderer,scene}=proof;renderer.setSize(1200,750);camera.aspect=1.6;camera.updateProjectionMatrix();camera.position.set(1050,1000,1300);camera.lookAt(-30,70,-260);renderer.render(scene,camera);return renderer.domElement.toDataURL('image/webp',.9).split(',')[1];});
-    await writeFile('Pana/games/derrape/public/images/menu/puerto.webp',Buffer.from(data,'base64'));
-    const thumb=await page.evaluate(()=>{const {camera,renderer,scene}=proof;renderer.setSize(480,300);renderer.render(scene,camera);return renderer.domElement.toDataURL('image/webp',.85).split(',')[1];});
-    await writeFile('Pana/games/derrape/public/images/menu/puerto-thumb.webp',Buffer.from(thumb,'base64'));
-  }
   assert.ok(result.length>5300&&result.length<6800,'expanded harbor and mountain circuit');assert.ok(result.radius>15,`radius ${result.radius}`);
   assert.ok(result.grade<.4,`grade ${result.grade}`);assert.ok(result.elevation>170,'real climb to the fort');
   assert.ok(result.protrusion<.1,'no terrain enters the full road width, including both curbs');

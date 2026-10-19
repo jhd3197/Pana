@@ -144,6 +144,6 @@ with a landing. The general maps suite completes three laps and collects each
 item row. Native table proof uses two clients, host migration, rejected guest
 and mid-game actions, late arrivals, phone practice and independent disposal.
 
-Ignored evidence lives in `art/studio/puerto/`. `PANA_CAPTURE_PUERTO_ART=1`
-refreshes the shipped menu WebPs from the actual map; clear it afterward.
+Ignored evidence lives in `art/studio/puerto/`. The menu WebPs are
+illustrated art (see `images/menu/sources.json`), not captures.
 Local plan 75 stays ignored and untracked.
