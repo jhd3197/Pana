@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { Arena, blocked, cleanInput, segmentBox, COVER, SIZE } from '../public/rules.js';
-const arena = () => { const g = new Arena(); g.add(1, { name: 'A', avatar: {} }); g.add(2, { name: 'B', avatar: {} }); g.start(); return g; };
+import { Arena, blocked, cleanInput, segmentBox, coverFor, COVER, SIZE } from '../public/rules.js';
+const arena = (options = { toughness: 1 }) => { const g = new Arena('plaza', 'normal', options); g.add(1, { name: 'A', avatar: {} }); g.add(2, { name: 'B', avatar: {} }); g.start(); return g; };
 test('inputs are finite, bounded and diagonal movement is normalized', () => {
   assert.deepEqual(cleanInput(null), { x: 0, z: 0, ax: 0, az: -1, weapon: 'pistol', fire: false, reload: false });
   const input = cleanInput({ x: 99, z: 99, ax: Infinity, az: NaN, fire: 'yes' }); assert.ok(Math.abs(Math.hypot(input.x, input.z) - 1) < 1e-9); assert.equal(input.fire, false);
@@ -61,16 +61,16 @@ test('every Pepazo map has clear spawns, open passages and one connected court',
   const { PAINT_ARENAS, ARENAS } = await import('../../../engine/arena-layouts.js');
   const { coverFor, spawnsFor, sizeFor } = await import('../public/rules.js');
   assert.ok(!ARENAS.some(m => m.id === 'muelle'), 'the container yard stays out of the shared hunt/table maps');
-  for (const { id } of PAINT_ARENAS) {
-    const cover = coverFor(id), size = sizeFor(id);
+  for (const { id } of PAINT_ARENAS) for (const variant of [0, 1, 2]) {
+    const cover = coverFor(id, variant), size = sizeFor(id);
     assert.ok(size >= SIZE && size >= 27, `${id}: the larger court`);
     cover.forEach((a, i) => cover.slice(i + 1).forEach(b => assert.ok(Math.max(Math.abs(a.x - b.x) - (a.w + b.w) / 2, Math.abs(a.z - b.z) - (a.d + b.d) / 2) >= 2.2, `${id}: passage between ${a.x},${a.z} and ${b.x},${b.z}`)));
-    for (const s of spawnsFor(id)) assert.equal(blocked(s.x, s.z, 2, id), false, `${id}: spawn ${s.x},${s.z} has room`);
+    for (const s of spawnsFor(id)) assert.equal(blocked(s.x, s.z, 2, id, variant), false, `${id}/${variant}: spawn ${s.x},${s.z} has room`);
     const key = (x, z) => `${x},${z}`, free = new Set();
-    for (let x = 1 - size; x < size; x += .5) for (let z = 1 - size; z < size; z += .5) if (!blocked(x, z, .55, id)) free.add(key(x, z));
+    for (let x = 1 - size; x < size; x += .5) for (let z = 1 - size; z < size; z += .5) if (!blocked(x, z, .55, id, variant)) free.add(key(x, z));
     const start = spawnsFor(id)[0], queue = [[start.x, start.z]], seen = new Set([key(start.x, start.z)]);
     while (queue.length) { const [x, z] = queue.pop(); for (const [dx, dz] of [[.5, 0], [-.5, 0], [0, .5], [0, -.5]]) { const k = key(x + dx, z + dz); if (free.has(k) && !seen.has(k)) { seen.add(k); queue.push([x + dx, z + dz]); } } }
-    assert.equal(seen.size, free.size, `${id}: every free cell is reachable`);
+    assert.equal(seen.size, free.size, `${id}/${variant}: every free cell is reachable`);
   }
 });
 
@@ -81,4 +81,28 @@ test('the container yard is selectable, keeps bots inside and flags at its spawn
   for (let i = 0; i < 900 && g.phase === 'playing'; i++) { g.step(.05); for (const p of g.players) assert.equal(blocked(p.x, p.z, .55, 'muelle'), false); }
   const flags = new Arena('muelle', 'normal', { flag: true }); flags.add(1, { name: 'A' }); flags.add(2, { name: 'B' }); flags.start();
   for (const f of flags.flags) assert.equal(blocked(f.homeX, f.homeZ, 1.4, 'muelle'), false);
+});
+
+test('aguante: three pepazos take a pana out, quiet seconds wash the paint off', () => {
+  const g = arena({}), [a, b] = g.players;
+  const shoot = () => { Object.assign(a, { x: -3, z: -4, shield: 0, cooldown: 0, reload: 0, ammo: 12 }); Object.assign(b, { x: 3, z: -4, shield: 0 }); g.step(.05, new Map([[1, { ax: 1, az: 0, fire: true }]])); for (let i = 0; i < 4; i++) g.step(.05); };
+  shoot(); shoot(); assert.equal(b.paint, 2); assert.equal(b.stains.length, 2); assert.equal(b.respawn, 0); assert.equal(a.score, 0);
+  assert.deepEqual(g.events.map(e => [e.type, e.owner, e.victim, e.distance]), [['hit', 1, 2, 6], ['hit', 1, 2, 6]]);
+  for (let i = 0; i < 120; i++) g.step(.05); assert.equal(b.paint, 0, 'paint washes off');
+  shoot(); shoot(); shoot(); assert.ok(b.respawn > 0); assert.equal(a.score, 1);
+  const out = g.events.at(-1); assert.equal(out.type, 'out'); assert.equal(out.distance, 6); assert.equal(out.streak, 1);
+  for (let i = 0; i < 60; i++) g.step(.05); assert.equal(b.paint, 0); assert.deepEqual(b.stains, []);
+});
+test('knockouts track streaks and revenge', () => {
+  const g = arena(), [a, b] = g.players;
+  g.hit(b, a, a.color); assert.equal(g.events.at(-1).streak, 1); b.respawn = 0;
+  g.hit(b, a, a.color); assert.equal(g.events.at(-1).streak, 2); b.respawn = 0;
+  g.hit(a, b, b.color); assert.equal(g.events.at(-1).revenge, true); assert.equal(a.streak, 0);
+});
+test('each round plays the next of three fixed layouts', () => {
+  const g = arena(); assert.equal(g.variant, 0);
+  g.phase = 'finished'; g.start(); assert.equal(g.view().variant, 1);
+  g.phase = 'finished'; g.start(); assert.equal(g.variant, 2);
+  g.phase = 'finished'; g.start(); assert.equal(g.variant, 0);
+  assert.notDeepEqual(coverFor('plaza', 1), coverFor('plaza', 0)); assert.ok(coverFor('muelle', 2).length !== coverFor('muelle', 0).length);
 });

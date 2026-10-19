@@ -15,7 +15,8 @@ import { bake } from '/engine/models/core/static-batch.js';
 import { createPaintMarker, splatTexture, pavingTexture } from '/engine/models/props/paintball.js';
 import { rng } from '/engine/random.js';
 import { WARM_DAY, PALETTE, BUNTING } from '/engine/look.js';
-import { COVER, SIZE, SPREAD, coverFor } from './rules.js';
+import { Puffs } from '/engine/fx.js';
+import { SIZE, SPREAD, coverFor } from './rules.js';
 
 // First person: the camera sits at the pana's eyes and the marker is held in view.
 const EYE = 1.55, LOOK_UP = .55, LOOK_DOWN = -.7;
@@ -27,12 +28,12 @@ export function createScene(canvas) {
   const scene = new THREE.Scene(); scene.background = new THREE.Color(WARM_DAY.background); scene.fog = new THREE.Fog(WARM_DAY.background, 90, 190);
   const sky = createSky(WARM_DAY.sky); scene.add(sky.mesh);
   const camera = new THREE.PerspectiveCamera(72, 1, .05, 220), target = new THREE.Vector3(), destination = new THREE.Vector3(); scene.add(camera);
-  let cameraView = 'primera', elapsed = 0, initialized = false, yaw = 0, pitch = 0, previousPhase = 'lobby', wasDown = false, lift = 0, bob = 0, sway = 0, kick = 0, lastAmmo = 12;
+  let cameraView = 'primera', elapsed = 0, initialized = false, yaw = 0, pitch = 0, previousPhase = 'lobby', wasDown = false, lift = 0, bob = 0, sway = 0, kick = 0, shake = 0, lastAmmo = 12;
   scene.add(new THREE.HemisphereLight(WARM_DAY.hemi[0], WARM_DAY.hemi[1], 2.5));
   const sun = new THREE.DirectionalLight(WARM_DAY.sun.color, 3.2); sun.position.set(-15, 35, 16); sun.castShadow = true; scene.add(sun.target);
   Object.assign(sun.shadow.camera, { left: -30, right: 30, top: 30, bottom: -30, far: 80 }); sun.shadow.mapSize.set(2048, 2048); sun.shadow.normalBias = .03; scene.add(sun);
   const defaultCourt = new THREE.Group(); scene.add(defaultCourt);
-  let environment = null, mapId = 'plaza'; scene.userData.mapId = mapId;
+  let environment = null, mapId = ''; scene.userData.mapId = mapId;
   const materials = new Map(), avatars = new Map(), ballMeshes = new Map(), splats = new Map();
   const material = color => { if (!materials.has(color)) materials.set(color, new THREE.MeshStandardMaterial({ color, roughness: .85 })); return materials.get(color); };
   // Hits splat as glossy blobs, four shapes per colour.
@@ -77,29 +78,34 @@ export function createScene(canvas) {
     place(streetLamp(), side * 20.5, -12); place(streetLamp(), side * 20.5, 11);
     place(basketballHoop(), side * 17, 21, Math.PI); place(barrel(), side * 21.5, 20);
   }
-  COVER.forEach((o, i) => {
-    cameraBounds.push(new THREE.Box3(new THREE.Vector3(o.x - o.w / 2, 0, o.z - o.d / 2), new THREE.Vector3(o.x + o.w / 2, o.h, o.z + o.d / 2)));
-    // Fit real crate geometry inside the authoritative COVER box, including height.
-    const columns = Math.ceil(o.w / 2), rows = Math.ceil(o.d / 2);
-    for (let x = 0; x < columns; x++) for (let z = 0; z < rows; z++) {
-      const model = crate(), bounds = new THREE.Box3().setFromObject(model), size = bounds.getSize(new THREE.Vector3());
-      const wrapper = new THREE.Group(); model.position.sub(bounds.min); wrapper.add(model); wrapper.scale.set(o.w / columns / size.x, o.h / size.y, o.d / rows / size.z);
-      wrapper.position.set(o.x - o.w / 2 + x * o.w / columns, 0, o.z - o.d / 2 + z * o.d / rows); scenery.add(wrapper);
-    }
-    box(o.w + .01, .24, o.d + .01, i % 2 ? PALETTE.coral : PALETTE.turquesa, o.x, o.h * .7, o.z);
-  });
   // Old battles left their mark: splats on every crate stack and the paving.
   const splatTextures = [1, 2, 3, 4].map(splatTexture), paint = [PALETTE.rojo, PALETTE.azul, PALETTE.amarillo, PALETTE.turquesa, PALETTE.verde];
   const decal = (color, n) => new THREE.MeshStandardMaterial({ color, map: splatTextures[n % 4], transparent: true, alphaTest: .4, roughness: .3, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2 });
+  // The plaza's crate stacks follow the round's layout, so they rebuild with it.
+  function plazaCover(cover) {
+    const group = new THREE.Group(), crates = new THREE.Group(), bounds = [], r = rng(31);
+    cover.forEach((o, i) => {
+      bounds.push(new THREE.Box3(new THREE.Vector3(o.x - o.w / 2, 0, o.z - o.d / 2), new THREE.Vector3(o.x + o.w / 2, o.h, o.z + o.d / 2)));
+      // Fit real crate geometry inside the authoritative cover box, including height.
+      const columns = Math.ceil(o.w / 2), rows = Math.ceil(o.d / 2);
+      for (let x = 0; x < columns; x++) for (let z = 0; z < rows; z++) {
+        const model = crate(), box3 = new THREE.Box3().setFromObject(model), size = box3.getSize(new THREE.Vector3());
+        const wrapper = new THREE.Group(); model.position.sub(box3.min); wrapper.add(model); wrapper.scale.set(o.w / columns / size.x, o.h / size.y, o.d / rows / size.z);
+        wrapper.position.set(o.x - o.w / 2 + x * o.w / columns, 0, o.z - o.d / 2 + z * o.d / rows); crates.add(wrapper);
+      }
+      const band = new THREE.Mesh(new THREE.BoxGeometry(o.w + .01, .24, o.d + .01), material(i % 2 ? PALETTE.coral : PALETTE.turquesa)); band.position.set(o.x, o.h * .7, o.z); band.castShadow = band.receiveShadow = true; group.add(band);
+      for (let k = 0; k < 3; k++) {
+        const face = Math.floor(r() * 4), size = .9 + r() * .9, mark = new THREE.Mesh(new THREE.PlaneGeometry(size, size), decal(paint[(i + k) % paint.length], i + k));
+        const u = (r() - .5) * .7, v = o.h * (.25 + r() * .5);
+        if (face < 2) mark.position.set(o.x + u * o.w, v, o.z + (face ? 1 : -1) * (o.d / 2 + .02)); else mark.position.set(o.x + (face === 3 ? 1 : -1) * (o.w / 2 + .02), v, o.z + u * o.d);
+        mark.rotation.set(0, face === 1 ? 0 : face === 0 ? Math.PI : face === 3 ? Math.PI / 2 : -Math.PI / 2, r() * 6); mark.userData.decal = true; group.add(mark);
+      }
+    });
+    group.add(bake(crates)); const original = new Set(); crates.traverse(o => { if (o.geometry) original.add(o.geometry); }); original.forEach(g => g.dispose());
+    // Decal materials are this layout's own; crate and band materials are shared.
+    return { group, bounds, dispose() { group.removeFromParent(); group.traverse(o => { o.geometry?.dispose(); if (o.userData.decal) o.material.dispose(); }); } };
+  }
   const r = rng(77);
-  COVER.forEach((o, i) => {
-    for (let k = 0; k < 3; k++) {
-      const face = Math.floor(r() * 4), size = .9 + r() * .9, mark = new THREE.Mesh(new THREE.PlaneGeometry(size, size), decal(paint[(i + k) % paint.length], i + k));
-      const u = (r() - .5) * .7, v = o.h * (.25 + r() * .5);
-      if (face < 2) mark.position.set(o.x + u * o.w, v, o.z + (face ? 1 : -1) * (o.d / 2 + .02)); else mark.position.set(o.x + (face === 3 ? 1 : -1) * (o.w / 2 + .02), v, o.z + u * o.d);
-      mark.rotation.set(0, face === 1 ? 0 : face === 0 ? Math.PI : face === 3 ? Math.PI / 2 : -Math.PI / 2, r() * 6); defaultCourt.add(mark);
-    }
-  });
   for (let k = 0; k < 48; k++) {
     const size = 1 + r() * 1.8, mark = new THREE.Mesh(new THREE.PlaneGeometry(size, size), decal(paint[k % paint.length], k));
     mark.rotation.set(-Math.PI / 2, 0, r() * 6); mark.position.set((r() - .5) * span, .025 + k * .0004, (r() - .5) * span); defaultCourt.add(mark);
@@ -116,13 +122,27 @@ export function createScene(canvas) {
   const surroundings = bake(scenery); defaultCourt.add(surroundings);
   const originalGeometry = new Set(); scenery.traverse(o => { if (o.geometry) originalGeometry.add(o.geometry); }); originalGeometry.forEach(g => g.dispose());
   const defaultCameraBounds = [...cameraBounds];
-  function setMap(id) {
-    id = paintArenaInfo(id).id; if (mapId === id) return;
-    environment?.dispose(); environment = null; mapId = id; scene.userData.mapId = id;
+  let crates = null, variant = 0;
+  function setMap(id, layout = 0) {
+    id = paintArenaInfo(id).id; if (mapId === id && variant === layout && (crates || environment)) return;
+    environment?.dispose(); environment = null; crates?.dispose(); crates = null; mapId = id; variant = layout; scene.userData.mapId = id;
     defaultCourt.visible = id === 'plaza'; cameraBounds.length = 0;
-    if (id === 'plaza') cameraBounds.push(...defaultCameraBounds);
-    else { environment = id === 'muelle' ? createMuelle() : createArenaEnvironment(id, { mode: 'paint', size: SIZE, cover: coverFor(id) }); scene.add(environment.group); cameraBounds.push(...environment.cameraBounds); }
+    if (id === 'plaza') { crates = plazaCover(coverFor(id, layout)); defaultCourt.add(crates.group); cameraBounds.push(...defaultCameraBounds, ...crates.bounds); }
+    else { environment = id === 'muelle' ? createMuelle(layout) : createArenaEnvironment(id, { mode: 'paint', size: SIZE, cover: coverFor(id, layout) }); scene.add(environment.group); cameraBounds.push(...environment.cameraBounds); }
     initialized = false;
+  }
+  // Paint bursts: impacts, knockouts. Stains are glossy blobs stuck to a pana's body.
+  const puffs = new Puffs(scene), stainGeo = new THREE.SphereGeometry(.12, 10, 8), glossy = new Map();
+  const gloss = color => { if (!glossy.has(color)) glossy.set(color, new THREE.MeshStandardMaterial({ color, roughness: .25 })); return glossy.get(color); };
+  function syncStains(avatar, p) {
+    const stains = p.stains || [];
+    while (avatar.stains.length > stains.length) avatar.stains.shift().removeFromParent();
+    while (avatar.stains.length < stains.length) {
+      const blob = new THREE.Mesh(stainGeo), n = avatar.stainCount++, a = n * 2.4 + p.id * 1.3;
+      blob.position.set(Math.sin(a) * .26, .7 + (n * .37) % .75, Math.cos(a) * .26); blob.rotation.y = a; blob.scale.set(1.2 + (n % 3) * .25, 1.4, .45);
+      avatar.group.add(blob); avatar.stains.push(blob);
+    }
+    avatar.stains.forEach((blob, i) => { blob.material = gloss(stains[i]); });
   }
   const ballGeo = new THREE.SphereGeometry(.16, 8, 6), splatGeo = new THREE.PlaneGeometry(1.25, 1.25), ringGeo = new THREE.RingGeometry(.75, .86, 32);
   const aim = new THREE.Mesh(new THREE.RingGeometry(.25, .32, 24), new THREE.MeshBasicMaterial({ color: '#ffffff', side: THREE.DoubleSide })); aim.rotation.x = -Math.PI / 2; aim.position.y = .05; scene.add(aim);
@@ -159,7 +179,7 @@ export function createScene(canvas) {
   function draw(state, id, dt, aimPoint) {
     flags.forEach((root, i) => { const flag = state.flags?.[i]; root.visible = !!state.options?.flag && !!flag && state.phase === 'playing'; if (flag) root.position.set(flag.x, flag.carrier == null ? 0 : 2, flag.z); });
     bases.forEach((ring, i) => { const flag = state.flags?.[i]; ring.visible = flags[i].visible; if (flag) ring.position.set(flag.homeX, .035, flag.homeZ); });
-    setMap(state.mapId); environment?.update(elapsed, dt);
+    setMap(state.mapId, state.variant || 0); environment?.update(elapsed, dt);
     canvas.style.width = '100vw'; canvas.style.height = '100dvh';
     resize(); const aspect = canvas.clientWidth / canvas.clientHeight, lobby = state.phase === 'lobby';
     const me = state.players.find(p => p.id === id), first = cameraView === 'primera' && !lobby && !!me, mobile = aspect < 1;
@@ -175,18 +195,34 @@ export function createScene(canvas) {
         avatar = buildCharacter(p.avatar); avatar.group.position.set(p.x, 0, p.z); scene.add(avatar.group);
         const ring = new THREE.Mesh(ringGeo, new THREE.MeshBasicMaterial({ color: p.color, side: THREE.DoubleSide })); ring.rotation.x = -Math.PI / 2; ring.position.y = .05; avatar.group.add(ring);
         const marker = createPaintMarker({ color: p.color }); marker.position.set(.48, .95, .25); avatar.group.add(marker);
-        avatar.ring = ring; avatar.marker = marker; avatar.paintColor = p.color; avatars.set(p.id, avatar);
+        avatar.ring = ring; avatar.marker = marker; avatar.paintColor = p.color; avatar.stains = []; avatar.stainCount = 0; avatar.flinch = 0; avatar.paint = p.paint || 0; avatar.out = p.respawn > 0 || p.eliminated ? 9 : 0;
+        avatar.group.rotation.order = 'YXZ'; avatars.set(p.id, avatar);
       }
+      // A pepazo makes the pana flinch; the last one bursts paint and topples them.
+      if ((p.paint || 0) > avatar.paint) { avatar.flinch = 1; if (p.id === id) shake = Math.max(shake, .8); }
+      avatar.paint = p.paint || 0;
+      const down = p.respawn > 0 || p.eliminated;
+      if (down && avatar.out === 0) {
+        avatar.out = 1e-6; if (p.id === id) shake = 1.2;
+        const color = p.stains?.at(-1) || p.color;
+        puffs.spawn({ x: avatar.group.position.x, y: 1, z: avatar.group.position.z }, { color, count: 14, spread: 1, size: .7, rise: 2.4, life: .9 });
+      }
+      if (!down) avatar.out = 0; else avatar.out += dt;
+      syncStains(avatar, p);
       if (avatar.paintColor !== p.color) {
         avatar.marker.removeFromParent(); avatar.marker.userData.dispose();
         avatar.marker = createPaintMarker({ color: p.color }); avatar.marker.position.set(.48, .95, .25); avatar.group.add(avatar.marker); avatar.paintColor = p.color;
       }
       avatar.ring.material.color.set(p.color);
-      avatar.group.visible = p.connected && !p.eliminated && p.respawn <= 0 && !(first && p.id === id);
+      const falling = down && avatar.out < .9;
+      avatar.group.visible = p.connected && (!down || falling) && !(first && p.id === id);
       if (Math.hypot(avatar.group.position.x - p.x, avatar.group.position.z - p.z) > 6) avatar.group.position.set(p.x, 0, p.z);
       else avatar.group.position.lerp(new THREE.Vector3(p.x, 0, p.z), 1 - Math.exp(-dt * 20));
-      avatar.group.rotation.y = Math.atan2(p.ax, p.az); avatar.ring.scale.setScalar(p.id === id ? 1.25 : 1); avatar.ring.visible = p.shield <= 0 || Math.floor(performance.now() / 140) % 2 === 0;
-      avatar.update(dt, { walk: p.walk, run: p.walk });
+      avatar.flinch = Math.max(0, avatar.flinch - dt * 5);
+      const fall = falling ? Math.min(1, avatar.out / .45) : 0;
+      avatar.group.rotation.set(-avatar.flinch * .35 - fall * 1.35, Math.atan2(p.ax, p.az), Math.sin(avatar.out * 9) * fall * .2);
+      avatar.group.position.y = -fall * .25; avatar.ring.scale.setScalar(p.id === id ? 1.25 : 1); avatar.ring.visible = p.shield <= 0 || Math.floor(performance.now() / 140) % 2 === 0;
+      if (!falling) avatar.update(dt, { walk: p.walk, run: p.walk });
     }
     for (const [id, avatar] of avatars) if (!state.players.some(p => p.id === id)) { avatar.marker.userData.dispose(); avatar.ring.removeFromParent(); avatar.ring.material.dispose(); avatar.dispose(); avatars.delete(id); }
     camera.aspect = aspect;
@@ -198,7 +234,9 @@ export function createScene(canvas) {
       kick = Math.max(0, kick - dt * 6); lastAmmo = me.ammo;
       camera.fov = mobile ? 80 : 72;
       camera.position.set(body.x, EYE + lift + Math.abs(Math.sin(bob)) * .05 * sway, body.z);
-      camera.rotation.set(pitch - lift * .22 + kick * .03, yaw, Math.sin(bob) * .008 * sway, 'YXZ');
+      shake = Math.max(0, shake - dt * 3);
+      const jolt = shake * shake * .05;
+      camera.rotation.set(pitch - lift * .22 + kick * .03 + (Math.random() - .5) * jolt, yaw + (Math.random() - .5) * jolt, Math.sin(bob) * .008 * sway + (Math.random() - .5) * jolt, 'YXZ');
       // Pull the marker in when the pana stands against cover, so it never pokes through.
       camera.updateMatrixWorld(); camera.getWorldDirection(front); front.y = 0; front.normalize(); frontRay.set(camera.position, front);
       let clearance = 2;
@@ -219,10 +257,10 @@ export function createScene(canvas) {
     sun.position.set(camera.position.x - 15, 35, camera.position.z + 16); sun.target.position.set(camera.position.x, 0, camera.position.z);
     for (const b of state.balls) { let mesh = ballMeshes.get(b.id); if (!mesh) { mesh = new THREE.Mesh(ballGeo, material(b.color)); scene.add(mesh); ballMeshes.set(b.id, mesh); } mesh.position.set(b.x, 1.1, b.z); }
     for (const [id, mesh] of ballMeshes) if (!state.balls.some(b => b.id === id)) { mesh.removeFromParent(); ballMeshes.delete(id); }
-    for (const s of state.splats) { let mesh = splats.get(s.id); if (!mesh) { mesh = new THREE.Mesh(splatGeo, splatMaterial(s.color, s.id)); stick(mesh, s, coverFor(state.mapId)); scene.add(mesh); splats.set(s.id, mesh); } mesh.scale.setScalar(Math.min(1, s.life)); }
+    for (const s of state.splats) { let mesh = splats.get(s.id); if (!mesh) { mesh = new THREE.Mesh(splatGeo, splatMaterial(s.color, s.id)); stick(mesh, s, coverFor(state.mapId, state.variant || 0)); scene.add(mesh); splats.set(s.id, mesh); if (s.life > 8.6) puffs.spawn({ x: s.x, y: mesh.position.y > .5 ? mesh.position.y : 1.1, z: s.z }, { color: s.color, count: 3, spread: .3, size: .28, rise: .8, life: .35 }); } mesh.scale.setScalar(Math.min(1, s.life)); }
     for (const [id, mesh] of splats) if (!state.splats.some(s => s.id === id)) { mesh.removeFromParent(); splats.delete(id); }
     aim.visible = !lobby && !first && !!aimPoint; if (aimPoint) aim.position.set(aimPoint.x, .07, aimPoint.z);
-    elapsed += dt; sky.update(elapsed); renderer.render(scene, camera);
+    puffs.update(dt); elapsed += dt; sky.update(elapsed); renderer.render(scene, camera);
   }
   return { renderer, scene, camera, avatars, draw,
     setView(value) { cameraView = value; initialized = false; },
@@ -234,6 +272,6 @@ export function createScene(canvas) {
     movement(x, z) { return cameraView === 'primera' ? { x: x * Math.cos(yaw) + z * Math.sin(yaw), z: -x * Math.sin(yaw) + z * Math.cos(yaw) } : { x, z }; },
     point(clientX, clientY) { const rect = canvas.getBoundingClientRect(); mouse.set((clientX - rect.left) / rect.width * 2 - 1, -(clientY - rect.top) / rect.height * 2 + 1); ray.setFromCamera(mouse, camera); return ray.ray.intersectPlane(plane, point)?.clone(); },
     screen(x, z) { const p = new THREE.Vector3(x, 1.1, z).project(camera), r = canvas.getBoundingClientRect(); return { x: r.left + (p.x + 1) / 2 * r.width, y: r.top + (1 - p.y) / 2 * r.height }; },
-    dispose() { unbind(); sky.dispose(); environment?.dispose(); disposeModel(defaultCourt); held?.userData.dispose(); hitMaterials.forEach(m => m.dispose()); hitTextures.forEach(t => t.dispose()); avatars.forEach(a => { a.marker.userData.dispose(); a.ring.removeFromParent(); a.ring.material.dispose(); a.dispose(); }); const geometries = new Set([ringGeo, ballGeo, splatGeo]), textures = new Set(); scene.traverse(o => { if (o.geometry) geometries.add(o.geometry); if (o.material?.map) textures.add(o.material.map); }); geometries.forEach(g => g.dispose()); textures.forEach(t => t.dispose()); materials.forEach(m => m.dispose()); aim.material.dispose(); renderer.dispose(); },
+    dispose() { unbind(); puffs.clear(); glossy.forEach(m => m.dispose()); stainGeo.dispose(); sky.dispose(); environment?.dispose(); disposeModel(defaultCourt); held?.userData.dispose(); hitMaterials.forEach(m => m.dispose()); hitTextures.forEach(t => t.dispose()); avatars.forEach(a => { a.marker.userData.dispose(); a.ring.removeFromParent(); a.ring.material.dispose(); a.dispose(); }); const geometries = new Set([ringGeo, ballGeo, splatGeo]), textures = new Set(); scene.traverse(o => { if (o.geometry) geometries.add(o.geometry); if (o.material?.map) textures.add(o.material.map); }); geometries.forEach(g => g.dispose()); textures.forEach(t => t.dispose()); materials.forEach(m => m.dispose()); aim.material.dispose(); renderer.dispose(); },
   };
 }

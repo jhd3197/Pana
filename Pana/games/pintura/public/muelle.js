@@ -9,15 +9,15 @@ import { bake } from '/engine/models/core/static-batch.js';
 import { disposeModel } from '/engine/models/props/game-table.js';
 import { waterSurface } from '/engine/models/effects/water-surface.js';
 import { rng } from '/engine/random.js';
-import { MUELLE_SIZE, STACKS, CRANE, STALLS, MUELLE_COVER } from './muelle-layout.js';
+import { MUELLE_SIZE, STACK_SETS, CRANE, STALLS, MUELLE_COVERS } from './muelle-layout.js';
 
 const PAINT = [0xc95339, 0x2f6f8f, 0x3e8a5c, 0xe0a63a, 0x7a4f8f, 0xd9d2c3, 0x355c7d, 0xd8793a];
 // Containers stacked beyond the fence on the west yard: [x, z, levels].
 const YARD = [[-40, -24, 3], [-40, -10, 4], [-40, 4, 2], [-40, 18, 3], [-46, -17, 2], [-46, -3, 3], [-46, 11, 4], [-52, -24, 4], [-52, -10, 2], [-52, 4, 3], [-52, 18, 2]];
 
 // The container yard on the La Guaira waterfront. Collision comes from
-// MUELLE_COVER; every visible stack, crane leg and stall is built from those rows.
-export function createMuelle() {
+// MUELLE_COVERS[variant]; every visible stack, crane leg and stall is built from those rows.
+export function createMuelle(variant = 0) {
   const group = new THREE.Group(), statics = new THREE.Group(), animated = [], cameraBounds = [], materials = new Map(), r = rng(220106);
   group.name = 'Muelle de La Guaira'; group.userData.mapId = 'muelle';
   const material = color => { if (!materials.has(color)) materials.set(color, new THREE.MeshStandardMaterial({ color, roughness: .9 })); return materials.get(color); };
@@ -52,9 +52,9 @@ export function createMuelle() {
       put(container, x + (axis === 'z' ? nudge : 0), z + (axis === 'x' ? nudge : 0), angle + (level ? (r() - .5) * .03 : 0), level * 2.65);
     }
   };
-  for (const row of STACKS) stack(...row);
+  for (const row of STACK_SETS[variant]) stack(...row);
   for (const [x, z, levels] of YARD) stack(x, z, 'z', levels, 12.2);
-  for (const o of MUELLE_COVER) cameraBounds.push(new THREE.Box3(new THREE.Vector3(o.x - o.w / 2, 0, o.z - o.d / 2), new THREE.Vector3(o.x + o.w / 2, o.h, o.z + o.d / 2)));
+  for (const o of MUELLE_COVERS[variant]) cameraBounds.push(new THREE.Box3(new THREE.Vector3(o.x - o.w / 2, 0, o.z - o.d / 2), new THREE.Vector3(o.x + o.w / 2, o.h, o.z + o.d / 2)));
 
   // Gantry cranes: one straddles the quay edge, the other works the far berth.
   put(portCrane(), CRANE.x, CRANE.z); put(portCrane(), 47, -size - 11);

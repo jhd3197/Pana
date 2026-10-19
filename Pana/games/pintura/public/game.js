@@ -13,11 +13,12 @@ import { sound } from '/engine/fx.js';
 import { PaintConnection } from './network.js';
 import { createScene } from './scene.js';
 import { createMinimap } from './minimap.js';
-import { coverFor, TARGET, segmentBox, paintSeats } from './rules.js';
+import { sfx } from './sounds.js';
+import { coverFor, TARGET, segmentBox, paintSeats, variantName } from './rules.js';
 
 const $ = id => document.getElementById(id), code = roomFromUrl() || newRoomCode();
 const params = new URLSearchParams(location.search); params.set('room', code); history.replaceState(null, '', `${location.pathname}?${params}`);
-const held = new Set(), pads = []; let aim = null, firing = false, touchFire = false, queuedFire = false, queuedReload = false, stopped = false, lastPhase = 'lobby', lastAmmo = 12, lastHits = 0, lastScore = 0;
+const held = new Set(), pads = []; let aim = null, firing = false, touchFire = false, queuedFire = false, queuedReload = false, stopped = false, lastPhase = 'lobby', lastEvent = null, lastRound = 0, lastLocal = false, lastBall = 0, lastKiller = '';
 const canvas = $('world'), world = createScene(canvas), minimap = createMinimap($('minimap'));
 let weapon = 'pistol';
 // Mouse look turns this many radians per pixel; touch drags turn 2.5× faster.
@@ -99,7 +100,7 @@ function input() {
   else { if (pointerPosition) aim = world.point(...pointerPosition); ax = aim ? aim.x - me.x : me.ax; az = aim ? aim.z - me.z : me.az; }
   if (touchFire) {
     // Touch aim assist: the visible rival closest to the crosshair (in first person, within 20°).
-    const length = Math.hypot(ax, az) || 1, rivals = room.state.players.filter(p => p.id !== me.id && p.connected && !p.respawn && !p.eliminated && !p.shield && (!(room.state.options?.mode === 'teams' || room.state.options?.flag) || p.team !== me.team) && !coverFor(room.state.mapId).some(o => segmentBox(me.x, me.z, p.x - me.x, p.z - me.z, o) !== null));
+    const length = Math.hypot(ax, az) || 1, rivals = room.state.players.filter(p => p.id !== me.id && p.connected && !p.respawn && !p.eliminated && !p.shield && (!(room.state.options?.mode === 'teams' || room.state.options?.flag) || p.team !== me.team) && !coverFor(room.state.mapId, room.state.variant || 0).some(o => segmentBox(me.x, me.z, p.x - me.x, p.z - me.z, o) !== null));
     const off = p => Math.acos(Math.max(-1, Math.min(1, ((p.x - me.x) * ax + (p.z - me.z) * az) / length / (Math.hypot(p.x - me.x, p.z - me.z) || 1))));
     const target = cameraView === 'primera' ? rivals.filter(p => off(p) < .35 && Math.hypot(p.x - me.x, p.z - me.z) < 40).sort((a, b) => off(a) - off(b))[0]
       : rivals.sort((a, b) => Math.hypot(a.x - me.x, a.z - me.z) - Math.hypot(b.x - me.x, b.z - me.z))[0];
@@ -112,6 +113,49 @@ function input() {
 }
 // A short CSS pulse: a hit marker on the crosshair or a paint flash when hit.
 function flash(name) { document.body.classList.remove(name); void document.body.offsetWidth; document.body.classList.add(name); }
+// Knockout callouts: the distance always, plus the moments worth shouting about.
+function callout(e, state) {
+  const victim = state.players.find(p => p.id === e.victim)?.name || 'un pana';
+  const title = e.revenge ? '¡Venganza!' : e.streak >= 5 ? '¡Imparable!' : e.streak === 4 ? '¡Cuádruple!' : e.streak === 3 ? '¡Triple!' : e.streak === 2 ? '¡Doble pepazo!' : '¡Pepazo!';
+  const tag = e.distance >= 25 ? ' · ¡Tiro largo!' : e.distance <= 4 ? ' · ¡A quemarropa!' : '';
+  $('callout-title').textContent = title; $('callout-detail').textContent = `${victim} · ${e.distance} m${tag}`;
+  $('callout').classList.toggle('callout--long', e.distance >= 25); flash('called');
+  clearTimeout(callout.timer); callout.timer = setTimeout(() => document.body.classList.remove('called'), 1900);
+}
+function feedLine(e, state) {
+  const owner = state.players.find(p => p.id === e.owner), victim = state.players.find(p => p.id === e.victim), item = document.createElement('li');
+  const name = (p, fallback) => { const b = document.createElement('b'); b.textContent = p?.name || fallback; b.style.color = p?.color || ''; return b; };
+  item.append(name(owner, 'Un pana'), ' pintó a ', name(victim, 'un pana'), ` · ${e.distance} m${e.distance >= 25 ? ' · tiro largo' : ''}`);
+  $('killfeed').prepend(item); while ($('killfeed').children.length > 4) $('killfeed').lastChild.remove();
+  setTimeout(() => item.remove(), 6000);
+}
+function announce(e, state) {
+  const mine = e.owner === room.id, me = e.victim === room.id;
+  if (e.type === 'out') feedLine(e, state);
+  if (mine && e.type === 'hit') { sfx.hitTick(); flash('hitmark'); }
+  if (mine && e.type === 'out') { sfx.knockout(e.distance >= 25, e.streak || 1); flash('scored'); callout(e, state); }
+  if (me) {
+    document.body.style.setProperty('--paint-hurt', `${e.color}aa`); flash('painted');
+    if (e.type === 'out') { sfx.out(); lastKiller = `${state.players.find(p => p.id === e.owner)?.name || 'Un pana'} te pintó desde ${e.distance} m`; } else sfx.hurt();
+  }
+}
+// Hearing the court: every new paintball pops, quieter with distance.
+function shots(state, me) {
+  const owners = new Set();
+  for (const b of state.balls) {
+    if (b.id <= lastBall) continue;
+    if (owners.has(b.owner)) continue; owners.add(b.owner);
+    const shooter = state.players.find(p => p.id === b.owner), d = me ? Math.hypot(b.x - me.x, b.z - me.z) : 20;
+    sfx.shot(b.owner === room.id ? 1 : .7 / (1 + d / 7), shooter?.weapon);
+  }
+  lastBall = Math.max(lastBall, ...state.balls.map(b => b.id));
+}
+function aguante(state, me) {
+  const total = state.options?.toughness || 3, left = me ? Math.max(0, total - (me.paint || 0)) : total, key = `${total}:${left}`;
+  if ($('aguante').dataset.key === key) return; $('aguante').dataset.key = key;
+  $('aguante').replaceChildren(...Array.from({ length: total }, (_, i) => { const pip = document.createElement('i'); pip.className = i < left ? 'pip' : 'pip pip--painted'; return pip; }));
+  $('aguante').setAttribute('aria-label', `Aguante ${left} de ${total}`);
+}
 function render(state) {
   optionsUI.update(state.options || DEFAULT_OPTIONS, room.connected && room.isHost && state.phase !== 'playing');
   if (['playing', 'hide', 'hunt'].includes(state.phase) && optionsUI.isOpen) optionsUI.close();
@@ -133,8 +177,15 @@ function render(state) {
   $('score').textContent = `${me?.score || 0} / ${TARGET}`; $('position').textContent = `${Math.max(1, order.findIndex(p => p.id === room.id) + 1)} de ${state.players.length} panas`;
   const seconds = Math.ceil(state.time); $('timer').textContent = `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`;
   $('ammo').textContent = me?.reload > 0 ? `Recargando ${me.reload.toFixed(1)} s` : `${me?.ammo ?? 12} / 12 · ${{ pistol: 'Pistola', scatter: 'Escopeta', rapid: 'Automática' }[me?.weapon || 'pistol']}${state.options?.lives ? ` · ${Math.max(0, state.options.lives - (me?.hits || 0))} vidas` : ''}`;
-  $('feed').textContent = `${state.message}${state.options?.mode === 'teams' || state.options?.flag ? ` · Naranja ${state.teamScores?.[0] || 0} — Turquesa ${state.teamScores?.[1] || 0}` : ''}`; $('respawn').hidden = !me?.respawn && !me?.eliminated; $('respawn').textContent = me?.eliminated ? 'Sin vidas · observando la ronda' : `¡Te pintaron! Vuelves en ${Math.ceil(me?.respawn || 0)}`;
-  if (me && state.phase === 'playing') { if (me.ammo < lastAmmo) sound.tone(260, 0, .045, 'triangle', .05); if (me.hits > lastHits) { sound.tone(130, 0, .16, 'sine', .1); flash('painted'); } if (me.score > lastScore) { sound.tone(720, 0, .07, 'square', .04); flash('scored'); } lastAmmo = me.ammo; lastHits = me.hits; lastScore = me.score; }
+  $('feed').textContent = `${state.message}${state.options?.mode === 'teams' || state.options?.flag ? ` · Naranja ${state.teamScores?.[0] || 0} — Turquesa ${state.teamScores?.[1] || 0}` : ''}`; $('respawn').hidden = !me?.respawn && !me?.eliminated; $('respawn').textContent = me?.eliminated ? `${lastKiller || '¡Te pintaron!'} · sin vidas, observando la ronda` : `${lastKiller || '¡Te pintaron!'} · vuelves en ${Math.ceil(me?.respawn || 0)}`;
+  // Events and balls are numbered per simulation: starting practice begins a new count.
+  if (room.local !== lastLocal) { lastLocal = room.local; lastEvent = null; lastBall = 0; lastRound = 0; }
+  const events = state.events || [];
+  if (lastEvent === null) lastEvent = Math.max(0, ...events.map(e => e.n));
+  for (const e of events) if (e.n > lastEvent) { lastEvent = e.n; if (state.phase === 'playing') announce(e, state); }
+  if (state.phase === 'playing') shots(state, me); else lastBall = 0;
+  aguante(state, me);
+  if (state.phase === 'playing' && state.round !== lastRound) { lastRound = state.round; $('variant').textContent = `Cancha ${variantName(state.mapId, state.variant || 0)}`; flash('round-start'); }
   $('results').hidden = !finished;
   if (finished) {
     menu.close(); releasePointer(); const winners = order.filter(p => state.winners?.includes(p.id));

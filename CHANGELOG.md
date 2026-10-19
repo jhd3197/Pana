@@ -20,6 +20,15 @@ becomes the GitHub release's notes.
   a container yard under the port crane, with the cargo ship at the quay
   and a colonial street of houses and stalls. "Ver la cancha" keeps the
   overview camera.
+- **Pepazo hits feel like hits.** It takes three pepazos to knock a pana
+  out (Aguante: 1, 3 or 5 in the room options) and the paint washes off
+  after a few quiet seconds. Stains stick to the pana's body, they flinch
+  on each hit and topple in a paint burst on the knockout. Every knockout
+  calls out the distance ("¡Pepazo! Coco · 23 m"), with ¡Tiro largo!,
+  ¡A quemarropa!, ¡Doble!/¡Triple!, ¡Imparable! and ¡Venganza!, a hit
+  marker, a kill feed and new sounds for shots, hits and knockouts.
+  Every map has three fixed layouts (Clásica, Girada, Cerrada; Muelle:
+  Patio, Laberinto, Torres) that change each round.
 - **New game: ¡Stop!** The notebook word game at a plaza table for up to
   eight panas, with bots in the empty chairs. The turn pana stops the
   letter wheel with ¡Para!, everyone fills a secret notebook page (the

@@ -9,8 +9,9 @@ The host only starts rounds. Its departure cannot interrupt simulation.
 
 ## Rules and input
 
-- Three minutes by default or ten paint hits; ties share victory. One hit eliminates a pana
-  for 2.5 seconds. Spawn protection lasts 1.5 seconds and firing cancels it.
+- Three minutes by default or ten knockouts; ties share victory. `toughness` (Aguante, default 3)
+  pepazos knock a pana out for 2.5 seconds; `paint` counts hits taken and `stains` keeps
+  their colours. After 4 s without a hit one pepazo washes off every 1.5 s; respawn clears both. Spawn protection lasts 1.5 seconds and firing cancels it.
 - Twelve paintballs, 0.25-second firing interval, 1.3-second reload. Empty
   magazines reload automatically. Server ticks are 50 ms.
 - Movement is normalized and clamped server-side. Input expires after 350 ms,
@@ -27,6 +28,24 @@ The host only starts rounds. Its departure cannot interrupt simulation.
   when eight active slots are filled a joining friend replaces one bot.
 - Touch steering uses `engine/touch.js`. Holding Pinta aims at the nearest
   visible opponent, excluding cover-obstructed and shielded opponents.
+
+## Knockout events and layouts
+
+`Arena.events` (last 12, numbered by `eventSerial`) carries `hit`/`out` with
+owner, victim, rounded distance, the owner's knockout `streak` and `revenge`
+(knocking out your last killer). Clients announce only numbers above the last
+one seen; local practice starts a new count, so `game.js` resets on
+`room.local` changes. Ball ids drive the shot sounds the same way.
+Callouts: ≥25 m Tiro largo, ≤4 m A quemarropa, streaks 2–5+, Venganza.
+`sounds.js` synthesizes them on the shared `sound` context (no files).
+
+Each map has `VARIANTS` (3) fixed layouts; `start()` sets `variant` to
+`(round - 1) % 3`, so the lobby and first round always use layout 0. Shared
+maps: 0 spread, 1 rotated a quarter (spawns and ring are symmetric), 2 adds
+2.6 m crate stacks from `FILL` wherever they keep 2.4 m passages and room around
+spawns. Muelle hand-writes `STACK_SETS`. Everything reading cover passes the
+variant (`coverFor`, `blocked`, scene, minimap, touch assist); the scene rebuilds
+cover only when map or variant changes. A rules test checks all fifteen layouts.
 
 ## Rendering and proof
 

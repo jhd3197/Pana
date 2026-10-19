@@ -10,7 +10,7 @@ export function createMinimap(canvas) {
       const px = Math.round(canvas.clientWidth * devicePixelRatio);
       if (canvas.width !== px) canvas.width = canvas.height = px;
       const size = sizeFor(state.mapId), scale = px / (size * 2 + 2), at = v => (v + size + 1) * scale;
-      const me = state.players.find(p => p.id === id), teams = state.options?.mode === 'teams' || state.options?.flag, cover = coverFor(state.mapId);
+      const me = state.players.find(p => p.id === id), teams = state.options?.mode === 'teams' || state.options?.flag, cover = coverFor(state.mapId, state.variant || 0);
       g.clearRect(0, 0, px, px);
       g.fillStyle = 'rgba(20, 32, 38, .62)'; g.beginPath(); g.roundRect(0, 0, px, px, px * .08); g.fill();
       g.fillStyle = 'rgba(244, 233, 210, .85)';
