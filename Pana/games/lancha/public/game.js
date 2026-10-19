@@ -22,9 +22,11 @@ import { FIELDS, cleanOptions } from './options.js';
 import { RIVER as DEFAULT_RIVER, courseRiver } from './course.js';
 import { standings, COLORS, TURBO, SLOTS } from './rules.js';
 import { LanchaRoom } from './network.js';
+import { createToast } from '/engine/hud.js';
 
 let RIVER = DEFAULT_RIVER;
 const $ = id => document.getElementById(id), params = new URLSearchParams(location.search), avatar = loadAvatar(), name = loadName();
+const showNotice = createToast($('notice'), { ms: 3000 });
 const code = roomFromUrl() || newRoomCode(); params.set('room', code); history.replaceState(null, '', `${location.pathname}?${params}`);
 const keys = new Set(), touch = new Set(), boats3d = new Map(), touchButtons = [], local = { turbo: 0 };
 let paused = false, quiet = false, state, world, ready = false, lastPhase = '', lastCountdown = '', lastRace = 0, drawClock = 0, disposed = false, snapshotAt = performance.now();
@@ -44,7 +46,6 @@ $('game-nav').append(menu.createInviteButton({ id: 'invite', label: 'Invitar', c
 $('lobby-cta').append(menu.createInviteButton({ id: 'lobby-invite', label: 'Invitar panas', className: 'pk-btn' }));
 $('room-code').textContent = code.toUpperCase();
 const music = createMusic(sound);
-function showNotice(text) { $('notice').textContent = text; $('notice').classList.remove('hidden'); clearTimeout(showNotice.timer); showNotice.timer = setTimeout(() => $('notice').classList.add('hidden'), 3000); }
 function unlock() { try { sound.unlock(); } catch { /* audio blocked */ } }
 function goLocal() { room.practice(); $('practice').classList.add('hidden'); }
 const myBoat = () => state.boats.find(b => b.driver.id === room.id);

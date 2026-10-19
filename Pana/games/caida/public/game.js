@@ -12,17 +12,18 @@ import { CaidaGame, canto, cantoDescription, chooseMove, previewPlay, teamOf, ne
 import { cardButton } from './cards.js';
 import { createDealerUI } from './dealer-ui.js';
 import { barksFor } from './barks.js';
+import { createToast } from '/engine/hud.js';
 
 const $ = id => document.getElementById(id), params = new URLSearchParams(location.search);
+const notify = createToast($('toast'), { ms: 3600 });
 const code = roomFromUrl() || newRoomCode();
 params.set('room', code); history.replaceState(null, '', `${location.pathname}?${params}`);
-let world = null, ready = false, stopped = false, selected = null, previousEvent = 0, barksPrimed = false, shownResult = '', resultTimer, toastTimer, announcementTimer;
+let world = null, ready = false, stopped = false, selected = null, previousEvent = 0, barksPrimed = false, shownResult = '', resultTimer, announcementTimer;
 const audio = { muted: false, volume: .8, unlocked: false, impl: null,
   unlock() { this.unlocked = true; this.impl?.unlock(); }, setVolume(v) { this.volume = v; this.impl?.setVolume(v); },
   tone(...args) { if (this.impl) { this.impl.muted = this.muted; this.impl.tone(...args); } },
 };
 import('/engine/fx.js').then(({ sound }) => { audio.impl = sound; sound.setVolume(audio.volume); if (audio.unlocked) sound.unlock(); }).catch(() => {});
-function notify(text) { $('toast').textContent = text; $('toast').classList.add('show'); clearTimeout(toastTimer); toastTimer = setTimeout(() => $('toast').classList.remove('show'), 3600); }
 const room = new CaidaRoom({ code, name: loadName(), avatar: loadAvatar(), onState: render, onNotice: notify,
   onStatus(message, failed) { $('connection').textContent = message; $('practice').hidden = !failed; $('invite').disabled = $('lobby-invite').disabled = !room.connected || room.offline; render(room.state); },
 });
@@ -168,7 +169,7 @@ addEventListener('keydown', event => {
 });
 let lastTick = performance.now(); const timer = setInterval(() => { const now = performance.now(), dt = Math.min(.25, (now - lastTick) / 1000); lastTick = now; room.tick(dt, menu.isOpen && room.members.size <= 1); }, 100);
 let frameTime = performance.now(); function frame(now) { if (stopped) return; const dt = Math.min(.05, (now - frameTime) / 1000); frameTime = now; world?.frame(dt); requestAnimationFrame(frame); } requestAnimationFrame(frame);
-addEventListener('pagehide', () => { stopped = true; clearInterval(timer); clearTimeout(resultTimer); clearTimeout(toastTimer); clearTimeout(announcementTimer); room.dispose(); world?.dispose(); }, { once: true });
+addEventListener('pagehide', () => { stopped = true; clearInterval(timer); clearTimeout(resultTimer); notify.dispose(); clearTimeout(announcementTimer); room.dispose(); world?.dispose(); }, { once: true });
 render(room.state); room.connect();
 export const sceneReady = import('./scene.js').then(m => m.createCaidaScene($('world'), { onCard: selectCard, onLoading: text => { $('loading-copy').textContent = text; } })).then(async scene => {
   if (stopped) { scene.dispose(); return; }

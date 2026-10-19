@@ -17,8 +17,10 @@ import { ExpeditionRoom } from './network.js';
 import { createExpeditionWorld, groundAt } from './scene.js';
 import { elapsedClock } from '/engine/live-room.js';
 import { CAMP, ALTAR, WINCHES, ROOMS, regionAt, distance } from './layout.js';
+import { createToast } from '/engine/hud.js';
 
 const $ = id => document.getElementById(id), show = (id, on) => $(id).classList.toggle('hidden', !on);
+const notify = createToast($('toast'), { ms: 3600 });
 const qs = new URLSearchParams(location.search), code = roomFromUrl() || newRoomCode();
 const url = new URL(location.href); url.searchParams.set('room', code); history.replaceState(null, '', url);
 const avatar = loadAvatar(), name = qs.get('name')?.slice(0, 16) || loadName();
@@ -39,12 +41,11 @@ const chargeRing = createChargeRing({ radius: 1.55, color: 0x62f5c8 });
 scene.add(chargeRing.mesh);
 const camera = new THREE.PerspectiveCamera(48, innerWidth / innerHeight, 0.1, 250);
 let state = new Expedition().snapshot(), paused = false, failed = false, phase = '', lastEvent = 0, last = performance.now(), elapsed = 0, dead = false;
-let yaw = 0.25, pitch = 0.76, zoom = 15, toastTimer, rosterKey = '', uiElapsed = 0, shake = 0, chargeTickT = 0;
+let yaw = 0.25, pitch = 0.76, zoom = 15, rosterKey = '', uiElapsed = 0, shake = 0, chargeTickT = 0;
 const prevLatched = { west: false, east: false };
 const cameraTarget = new THREE.Vector3(0, 1.1, 15), temp = new THREE.Vector3(), desired = new THREE.Vector3();
 const actors = new Map(), enemyActors = new Map(), keys = new Set(), touch = new Set();
 const colors = ['#dfb86d', '#81c8c4', '#d2a0a0', '#a3bc74', '#d9966e', '#b7a8ce', '#6ea6d0', '#c1c5a6'];
-function notify(text) { if (!text) return; $('toast').textContent = text; show('toast', true); clearTimeout(toastTimer); toastTimer = setTimeout(() => show('toast', false), 3600); }
 function clearInput() { keys.clear(); touch.clear(); }
 const menu = createGameMenu({
   orientation: 'vertical',
@@ -364,7 +365,7 @@ function frame(now) {
 }
 show('loading', false); room.connect(); requestAnimationFrame(frame);
 addEventListener('pagehide', () => {
-  dead = true; clearInterval(ticker); clearTimeout(toastTimer); room.dispose(); menu.dispose?.(); unbind?.();
+  dead = true; clearInterval(ticker); notify.dispose(); room.dispose(); menu.dispose?.(); unbind?.();
   puffs.clear(); shockwaves.clear(); chargeRing.dispose();
   actors.forEach(removeActor); enemyActors.forEach(a => disposeObject(a.root)); world.dispose(); renderer.dispose();
 });

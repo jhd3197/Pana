@@ -17,11 +17,13 @@ import { aimAt, clamp, measure, distance } from '/engine/bolas-criollas.js';
 import { CriollasRoom } from './network.js';
 import { TEAM_NAMES } from './rules.js';
 import { createScene, VIEWS } from './scene.js';
+import { createToast } from '/engine/hud.js';
 
 await Promise.race([document.fonts.load('64px "Luckiest Guy"'), new Promise(resolve => setTimeout(resolve, 1500))]);
 const $ = id => document.getElementById(id), code = roomFromUrl() || newRoomCode();
+const notify = createToast($('toast'), { ms: 3500 });
 const params = new URLSearchParams(location.search), world = createScene($('court'));
-let shot = { angle: 0, power: .62, mode: 'arrime' }, charge = null, held = 0, toastTimer, stopped = false, connecting = false, view = 'calce', lastRevision = -1, previousPhase = 'lobby';
+let shot = { angle: 0, power: .62, mode: 'arrime' }, charge = null, held = 0, stopped = false, connecting = false, view = 'calce', lastRevision = -1, previousPhase = 'lobby';
 // The camera is a personal preference, remembered on this device.
 try { const saved = localStorage.getItem('pana:criollas:view'); if (VIEWS.some(([v]) => v === saved)) view = saved; } catch { /* storage may be blocked */ }
 function setView(value) {
@@ -91,7 +93,6 @@ $('next').onclick = () => room.action(room.state.phase === 'finished' ? 'start' 
 for (const button of $('shot-options').children) button.onclick = () => {
   if (!ownTurn() || charge) return; shot.mode = button.dataset.mode; render(room.state);
 };
-function notify(text) { $('toast').textContent = text; $('toast').hidden = false; clearTimeout(toastTimer); toastTimer = setTimeout(() => { $('toast').hidden = true; }, 3500); }
 function ownTurn() { return room.connected && !menu.isOpen && room.state.phase === 'aiming' && room.seat === room.state.turn; }
 // Like Billar: hold the button, Space or Enter and the force rises and falls;
 // letting go throws at that force. The rules never accept less than 10%.
@@ -197,7 +198,7 @@ function frame(now) {
 }
 if (roomFromUrl()) connecting = true;
 render(room.state); if (roomFromUrl()) room.connect(); requestAnimationFrame(frame);
-addEventListener('pagehide', () => { stopped = true; clearInterval(timer); clearTimeout(toastTimer); teamRoster.dispose(); room.dispose(); world.dispose(); }, { once: true });
+addEventListener('pagehide', () => { stopped = true; clearInterval(timer); notify.dispose(); teamRoster.dispose(); room.dispose(); world.dispose(); }, { once: true });
 if (params.has('debug')) window.criollasDebug = { room, world, menu, get shot() { return shot; }, get charge() { return charge; } };
 
 await prepareScene(world);

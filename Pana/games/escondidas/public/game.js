@@ -20,8 +20,10 @@ import { RULES } from './rules.js';
 import { HuntRoom } from './network.js';
 import { elapsedClock } from '/engine/live-room.js';
 import { createLookControls, SENSITIVITY_CHOICES } from '/engine/first-person.js';
+import { createToast } from '/engine/hud.js';
 
 const $ = id => document.getElementById(id), show = (id, visible) => $(id).classList.toggle('hidden', !visible);
+const notify = createToast($('toast'), { ms: 3300 });
 const qs = new URLSearchParams(location.search), DEBUG = qs.has('debug');
 const code = roomFromUrl() || newRoomCode();
 const url = new URL(location.href); url.searchParams.set('room', code); history.replaceState(null, '', url);
@@ -66,7 +68,7 @@ for (const [i, def] of PLAZA_PROPS.entries()) {
 
 let state = { mapId: 'plaza', layoutSeed: 1, hideSeconds: RULES.hideSeconds, phase: 'lobby', players: [], round: 0, events: [] }, previousPhase = 'lobby';
 let drag = null, preference = 'hide', paused = false, yaw = 0.28, pitch = 0.22, eventId = 0, uiKey = '', snapRound = -1;
-let toastTimer, motionTime = 0, last = performance.now();
+let motionTime = 0, last = performance.now();
 // First person by default; V (or the menu) switches to the camera behind your pana.
 let view = 'primera', lookPitch = 0, bob = 0, eye = 1.55, lastCooldown = 0;
 let portraitKey = '', hintId = 0;
@@ -79,7 +81,6 @@ const optionsUI = createRoomOptions($('room-options'), { title: 'Escondidas', fi
 } });
 const isSeeker = id => state.seekers?.includes(id) ?? id === state.seeker;
 const mapPicker = createMapPicker($('map-picker'), mapId => room.action('map', { mapId }));
-function notify(message) { $('toast').textContent = message; show('toast', true); clearTimeout(toastTimer); toastTimer = setTimeout(() => show('toast', false), 3300); }
 const menu = createGameMenu({
   orientation: 'vertical',
   title: 'Escondidas', heading: 'Un momentico.', resumeLabel: 'Volver al juego', sound, notify,

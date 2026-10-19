@@ -22,8 +22,10 @@ import { openTask, HINTS } from './tasks.js';
 import { setBar } from '/engine/kit.js';
 import { createRoomOptions } from '/engine/room-options.js';
 import { EMBUSTE_OPTIONS, defaultEmbusteOptions } from './options.js';
+import { createToast } from '/engine/hud.js';
 
 const $ = id => document.getElementById(id), show = (id, on) => $(id).classList.toggle('hidden', !on);
+const notify = createToast($('toast'), { ms: 3400 });
 const qs = new URLSearchParams(location.search), code = roomFromUrl() || newRoomCode();
 const url = new URL(location.href); url.searchParams.set('room', code); history.replaceState(null, '', url);
 const avatar = loadAvatar(), name = qs.get('name')?.slice(0, 16) || loadName(), quick = qs.has('quick');
@@ -49,14 +51,13 @@ const cameraTarget = new THREE.Vector3(0, 0, 0), temp = new THREE.Vector3();
 let net = null, view = null, lobby = { phase: 'lobby', players: [], isHost: false }, paused = false, dead = false, phase = '';
 const roomOptions = createRoomOptions($('lobby-options'), { title: '¡Embuste!', fields: EMBUSTE_OPTIONS,
   change: patch => net?.options(patch), reset: () => net?.options(defaultEmbusteOptions()) });
-let toastTimer, last = performance.now(), elapsed = 0, rosterKey = '', uiClock = 0, endedAt = 0;
+let last = performance.now(), elapsed = 0, rosterKey = '', uiClock = 0, endedAt = 0;
 const actors = new Map(), keys = new Set(), touch = new Set();
 const me = () => view?.me;
 const rosterOf = seat => view?.roster.find(r => r.seat === seat);
 const nameOf = seat => rosterOf(seat)?.name || 'Alguien';
 const colorOf = seat => { const i = view?.roster.findIndex(r => r.seat === seat) ?? 0; return colors[Math.max(0, i) % colors.length]; };
 
-function notify(text) { if (!text) return; $('toast').textContent = text; show('toast', true); clearTimeout(toastTimer); toastTimer = setTimeout(() => show('toast', false), 3400); }
 function clearInput() { keys.clear(); touch.clear(); }
 
 const menu = createGameMenu({
@@ -637,7 +638,7 @@ function darkness(mine) {
 if (qs.has('practice')) practice(); else goOnline();
 requestAnimationFrame(frame);
 addEventListener('pagehide', () => {
-  dead = true; clearInterval(ticker); clearTimeout(toastTimer); net?.leave(); menu.dispose?.(); unbind?.();
+  dead = true; clearInterval(ticker); notify.dispose(); net?.leave(); menu.dispose?.(); unbind?.();
   actors.forEach(removeActor); shockwaves.dispose(); chargeRing.dispose(); world.dispose(); renderer.dispose();
 });
 if (qs.has('debug')) window.embuste = { scene, camera, renderer, actors, world, menu, input,

@@ -22,9 +22,11 @@ import { createRiverFX } from '/engine/river/water-fx.js';
 import { createRiverGuide } from '/engine/river/guide.js';
 import { createRiverMinimap } from '/engine/river/minimap.js';
 import { createMusic } from '/engine/music.js';
+import { createToast } from '/engine/hud.js';
 
 let RIVER=DEFAULT_RIVER;
 const $ = id => document.getElementById(id), params = new URLSearchParams(location.search), avatar = loadAvatar(), name = loadName();
+const showNotice = createToast($('notice'), { ms: 3000 });
 const store = { get: k => { try { return localStorage.getItem(k); } catch { return null; } }, set: (k, v) => { try { localStorage.setItem(k, v); } catch { /* private mode */ } } };
 let format = FORMATS[store.get('curiara:format')] ? store.get('curiara:format') : 'todos';
 const code = roomFromUrl() || newRoomCode(); params.set('room', code); history.replaceState(null, '', `${location.pathname}?${params}`);
@@ -50,7 +52,6 @@ $('game-nav').append(menu.createInviteButton({ id: 'invite', label: 'Invitar', c
 $('lobby-cta').append(menu.createInviteButton({ id: 'lobby-invite', label: 'Invitar panas', className: 'pk-btn' }));
 $('room-code').textContent = code.toUpperCase();
 const coarse = matchMedia('(pointer:coarse)').matches, music = createMusic(sound);
-function showNotice(text) { $('notice').textContent = text; $('notice').classList.remove('hidden'); clearTimeout(showNotice.timer); showNotice.timer = setTimeout(() => $('notice').classList.add('hidden'), 3000); }
 function unlock() { try { sound.unlock(); } catch { /* audio blocked */ } }
 function goLocal() { room.practice(); $('practice').classList.add('hidden'); }
 

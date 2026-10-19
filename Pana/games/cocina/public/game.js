@@ -17,8 +17,10 @@ import { Kitchen, RECIPES, STATIONS, recipe, nearestStation } from './rules.js';
 import { KitchenRoom } from './network.js';
 import { elapsedClock } from '/engine/live-room.js';
 import { createKitchenScene, mealModel } from './scene.js';
+import { createToast } from '/engine/hud.js';
 
 const $ = id => document.getElementById(id), show = (id, v) => $(id).classList.toggle('hidden', !v);
+const notify = createToast($('toast'), { ms: 3100 });
 const qs = new URLSearchParams(location.search), code = roomFromUrl() || newRoomCode();
 const url = new URL(location.href); url.searchParams.set('room', code); history.replaceState(null, '', url);
 await Promise.race([document.fonts.load('900 48px Nunito'), new Promise(resolve => setTimeout(resolve, 1200))]);
@@ -29,7 +31,7 @@ renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure
 const world = createKitchenScene(), { scene } = world;
 const camera = new THREE.OrthographicCamera(-20, 20, 15, -15, 0.1, 200);
 const actors = new Map(), keys = new Set(), touch = new Set(), previews = new Map();
-let state = new Kitchen().snapshot(), paused = false, canGoOffline = false, lastEvent = 0, lastPhase = '', toastTimer, renderedOrders = '', teamKey = '', heldKey = '', last = performance.now(), elapsed = 0;
+let state = new Kitchen().snapshot(), paused = false, canGoOffline = false, lastEvent = 0, lastPhase = '', renderedOrders = '', teamKey = '', heldKey = '', last = performance.now(), elapsed = 0;
 let aimWidth = innerWidth, aimHeight = innerHeight;
 function resize() {
   renderer.setSize(innerWidth, innerHeight); aimWidth = innerWidth; aimHeight = innerHeight;
@@ -55,7 +57,6 @@ for (const r of RECIPES) for (const stage of ['raw', 'prepared', 'cooked']) {
 }
 artRenderer.dispose();
 for (const r of RECIPES) { const img = document.createElement('img'); img.src = previews.get(`${r.id}:cooked`); img.alt = r.name; $('tasting').append(img); }
-function notify(text) { $('toast').textContent = text; show('toast', true); clearTimeout(toastTimer); toastTimer = setTimeout(() => show('toast', false), 3100); }
 const menu = createGameMenu({
   orientation: 'vertical',
   title: 'Pana Cocina', heading: '¿Y la sazón?', resumeLabel: 'Volver a cocinar', sound, notify,

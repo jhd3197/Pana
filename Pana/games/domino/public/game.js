@@ -11,14 +11,16 @@ import { DominoRoom } from './network.js';
 import { legalEnds, legalMoves, chooseMove, pips, TARGET } from './rules.js';
 import { barksFor } from './barks.js';
 import { domino } from './tiles.js';
+import { createToast } from '/engine/hud.js';
 
 const $ = id => document.getElementById(id);
+const notify = createToast($('toast'), { ms: 3500 });
 const params = new URLSearchParams(location.search);
 const code = roomFromUrl() || newRoomCode();
 params.set('room', code); history.replaceState(null, '', `${location.pathname}?${params}`);
 const name = loadName(), avatar = loadAvatar();
 let chatSeen=0;
-let selected = null, shownResult = '', toastTimer, previousEvent = '', previousPhase = 'lobby';
+let selected = null, shownResult = '', previousEvent = '', previousPhase = 'lobby';
 let quiet=false;
 let barkRound = -1, barkId = 0, barksPrimed = false, resultTimer;
 let world = null, worldReady = false, view = 'plaza', stopped = false;
@@ -32,10 +34,6 @@ const audio = {
 };
 import('/engine/fx.js').then(({ sound }) => { audio.impl = sound; sound.setVolume(audio.volume); if (audio.unlocked) sound.unlock(); }).catch(() => {});
 
-function notify(message) {
-  $('toast').textContent = message; $('toast').classList.add('show');
-  clearTimeout(toastTimer); toastTimer = setTimeout(() => $('toast').classList.remove('show'), 3500);
-}
 
 const room = new DominoRoom({ code, name, avatar, onState: render,
   onStatus(message, failed = false) {
@@ -272,7 +270,7 @@ const timer = setInterval(() => {
 let frameTime = performance.now();
 function frame(now) { if (stopped) return; const dt = Math.min(.05, (now - frameTime) / 1000); frameTime = now; if(!quiet)world?.frame(dt); requestAnimationFrame(frame); }
 requestAnimationFrame(frame);
-addEventListener('pagehide', () => { stopped = true; clearInterval(timer); clearTimeout(toastTimer); clearTimeout(resultTimer); roomOptions.dispose();room.dispose(); world?.dispose(); }, { once: true });
+addEventListener('pagehide', () => { stopped = true; clearInterval(timer); notify.dispose(); clearTimeout(resultTimer); roomOptions.dispose();room.dispose(); world?.dispose(); }, { once: true });
 render(room.state); room.connect();
 export const sceneReady = import('./scene.js').then(module => module.createDominoScene($('world'), { onTile: selectTile, onEnd: playSelected, onLoading: message => { $('loading-copy').textContent = message; } })).then(async scene => {
   if (stopped) { scene.dispose(); return; }

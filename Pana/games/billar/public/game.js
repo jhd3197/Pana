@@ -14,11 +14,13 @@ import { shotPower, paintCharge } from '/engine/shot-charge.js';
 import { POOL_OPTIONS, teamOf, playingSeats, poolConnected, canStartPool } from './match-rules.js';
 import { createRoomOptions } from '/engine/room-options.js';
 import { createTableSeating } from '/engine/table-seating.js';
+import { createToast } from '/engine/hud.js';
 
 const $ = id => document.getElementById(id), code = roomFromUrl() || newRoomCode();
+const notify = createToast($('toast'), { ms: 3200 });
 const params = new URLSearchParams(location.search); params.set('room', code);
 history.replaceState(null, '', `${location.pathname}?${params}`);
-let angle = 0, placement = null, held = 0, toastTimer, stopped = false, lastRevision = -1, previousPhase = 'lobby', drag = null;
+let angle = 0, placement = null, held = 0, stopped = false, lastRevision = -1, previousPhase = 'lobby', drag = null;
 const spin = { x: 0, y: 0 };
 let charge = null, power = .65;
 const world = createPoolScene($('table')), portraitKeys = [], portraitCache = new Map();
@@ -101,7 +103,6 @@ $('spin').addEventListener('keydown', event => {
   if (event.key === 'Home' || event.key === '0') setSpin(0, 0);
 });
 
-function notify(text) { $('toast').textContent = text; $('toast').hidden = false; clearTimeout(toastTimer); toastTimer = setTimeout(() => { $('toast').hidden = true; }, 3200); }
 function ownTurn() { return !menu.isOpen && !roomOptions.isOpen && room.connected && room.state.phase === 'aiming' && room.seat === room.state.turn && poolConnected(room.state); }
 function updateCharge(now = performance.now()) {
   if (!charge) return;
@@ -282,7 +283,7 @@ function frame(now) {
   world.draw(room.state, { angle, power, spin, active: ownTurn(), placement, calledPocket: $('pocket').value === '' ? -1 : Number($('pocket').value), dt }); requestAnimationFrame(frame);
 }
 render(room.state); room.connect(); requestAnimationFrame(frame);
-addEventListener('pagehide', () => { stopped = true; clearInterval(timer); clearTimeout(toastTimer); room.dispose(); world.dispose(); }, { once: true });
+addEventListener('pagehide', () => { stopped = true; clearInterval(timer); notify.dispose(); room.dispose(); world.dispose(); }, { once: true });
 if (params.has('debug')) window.billarDebug = { room, world, menu, get angle() { return angle; } };
 
 await prepareScene(world);
