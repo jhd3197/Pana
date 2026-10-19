@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { createBolasWorld } from '/engine/bolas-world.js';
 import { previewThrow } from '/engine/bolas-criollas.js';
 import { difficultyInfo } from '/engine/difficulty.js';
-import { onSettings, pixelRatio } from '/engine/settings.js';
+import { bindRenderer, pixelRatio } from '/engine/settings.js';
 
 // 'calce' stands behind the thrower looking down the court; 'arriba' looks
 // straight down; 'cancha' is the wide side view.
@@ -18,7 +18,7 @@ export function createScene(canvas) {
     const rect = canvas.getBoundingClientRect(); size = { w: Math.max(1, rect.width), h: Math.max(1, rect.height) };
     renderer.setSize(size.w, size.h, false);
   }
-  const unbind = onSettings(() => { renderer.setPixelRatio(pixelRatio(1.5)); resize(); });
+  const unbind = bindRenderer(renderer, 1.5, { fit: 'canvas' });
   const observer = new ResizeObserver(resize); observer.observe(canvas); resize();
   return { ...world, renderer,
     render(state, { dt, shot, active }) {

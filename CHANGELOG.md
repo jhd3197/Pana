@@ -457,6 +457,11 @@ becomes the GitHub release's notes.
 
 ### Changed
 
+- **Games run smoother on phones.** A phone now starts on *Equilibrada*
+  instead of *Nítida*, shadow detail follows the quality you pick, and
+  when a game can't keep up it draws fewer pixels by itself until you
+  choose a quality again.
+
 - **You can always find your own pana in a Bululú minigame.** A ring in
   your colour at your feet and a chevron over your head mark you, even
   when friends wear the same outfit.

@@ -6,7 +6,7 @@
 // they move.
 import * as THREE from 'three';
 import { createSky } from '/engine/sky.js';
-import { bindRenderer } from '/engine/settings.js';
+import { bindRenderer, shadowSize } from '/engine/settings.js';
 import { buildCharacter } from '/engine/models/characters/pana/avatar-model.js';
 import { normalizeAvatar, randomAvatar } from '/engine/avatar.js';
 import { disposeModel } from '/engine/models/props/game-table.js';
@@ -43,7 +43,7 @@ export function createTamborScene(canvas) {
   const scene = new THREE.Scene(), camera = new THREE.PerspectiveCamera(40, 1, .1, 260);
   const sky = createSky(); scene.add(sky.mesh);
   const hemi = new THREE.HemisphereLight(); scene.add(hemi);
-  const key = new THREE.DirectionalLight(); key.castShadow = true; key.shadow.mapSize.set(2048, 2048);
+  const key = new THREE.DirectionalLight(); key.castShadow = true; key.shadow.mapSize.setScalar(shadowSize(2048));
   Object.assign(key.shadow.camera, { left: -14, right: 14, top: 14, bottom: -14, near: .5, far: 60 }); key.shadow.normalBias = .025; key.shadow.bias = -.0001;
   scene.add(key);
   const rueda = new THREE.Group(); scene.add(rueda);

@@ -12,6 +12,7 @@ import { capybaraTopiary } from '/engine/models/props/monuments.js';
 
 import { house, church, fountain } from '/engine/models/props/plaza-buildings.js';
 import { placeIguanas } from '/engine/placement/iguanas.js';
+import { shadowSize } from '/engine/settings.js';
 export { house, plazaFountain } from '/engine/models/props/plaza-buildings.js';
 
 export function createPlazaEnvironment({ cooking = false, clearance = () => true, town = false, mapProps = MAP_PROPS, fountain: withFountain = true, openFloor = null } = {}) {
@@ -148,7 +149,7 @@ export function createPlaza(options = {}) {
   scene.add(new THREE.HemisphereLight(0xe6f6ff, 0xc98d62, 2));
   const sun = new THREE.DirectionalLight(0xffe1ab, 3.2);
   sun.position.set(-24, 38, 18); sun.castShadow = true;
-  sun.shadow.mapSize.set(2048, 2048); sun.shadow.camera.left = -34; sun.shadow.camera.right = 34;
+  sun.shadow.mapSize.setScalar(shadowSize(2048)); sun.shadow.camera.left = -34; sun.shadow.camera.right = 34;
   sun.shadow.camera.top = 32; sun.shadow.camera.bottom = -32; sun.shadow.camera.far = 100;
   sun.shadow.normalBias = 0.035; sun.shadow.bias = -0.0001;
   scene.add(sun);

@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { createArenaSlot } from '/engine/arenas.js';
 import { createSky } from '/engine/sky.js';
-import { bindRenderer } from '/engine/settings.js';
+import { bindRenderer, shadowSize } from '/engine/settings.js';
 import { WARM_DAY } from '/engine/look.js';
 
 // Shared outdoor stage for every table game (Billar, Póquer, Ludo, Dominó,
@@ -27,7 +27,7 @@ export function createTableWorld(canvas, options = {}) {
   const sky = o.sky ? createSky(WARM_DAY.sky) : null; if (sky) scene.add(sky.mesh);
   scene.add(new THREE.HemisphereLight(...o.hemi));
   const sun = new THREE.DirectionalLight(o.sun.color, o.sun.intensity); sun.position.set(...o.sun.position); sun.castShadow = true;
-  sun.shadow.mapSize.set(2048, 2048); Object.assign(sun.shadow.camera, { left: -o.sun.box, right: o.sun.box, top: o.sun.box, bottom: -o.sun.box, near: .5, far: o.sun.far });
+  sun.shadow.mapSize.setScalar(shadowSize(2048)); Object.assign(sun.shadow.camera, { left: -o.sun.box, right: o.sun.box, top: o.sun.box, bottom: -o.sun.box, near: .5, far: o.sun.far });
   sun.shadow.normalBias = .025; sun.shadow.bias = o.sun.bias; scene.add(sun);
   const plaza = o.arena ? createArenaSlot(scene, { mode: 'table', plazaScale: o.plazaScale }) : null; plaza?.setMap('plaza');
   const camera = new THREE.PerspectiveCamera(o.fov, 1, .1, 150);

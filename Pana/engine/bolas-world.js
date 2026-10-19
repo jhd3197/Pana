@@ -7,6 +7,7 @@ import { createSky } from './sky.js';
 import { guideRibbon, trimPath, pathLength } from './aim-guide.js';
 import { COURT, TEAM_COLORS, landing, distance } from './bolas-criollas.js';
 import { WARM_DAY, BUNTING } from './look.js';
+import { shadowSize } from '/engine/settings.js';
 
 // Papel picado over the court: two poles, a sagging cord and cloth flags that
 // sway with absolute time (one live mesh, no per-flag objects).
@@ -63,7 +64,7 @@ export function createBolasWorld({ aspect = 16 / 9, individual = false, venue = 
   scene.add(new THREE.HemisphereLight(...WARM_DAY.hemi));
   const sun = new THREE.DirectionalLight(WARM_DAY.sun.color, WARM_DAY.sun.intensity); sun.position.set(-18, 28, 12); sun.castShadow = true;
   Object.assign(sun.shadow.camera, { left: -26, right: 26, top: 26, bottom: -26, near: 1, far: 90 });
-  sun.shadow.mapSize.set(2048, 2048); sun.shadow.bias = -.0005; sun.shadow.normalBias = .03; scene.add(sun);
+  sun.shadow.mapSize.setScalar(shadowSize(2048)); sun.shadow.bias = -.0005; sun.shadow.normalBias = .03; scene.add(sun);
   const venueSlot = createArenaSlot(scene, { mode: 'court' }); venueSlot.setMap(venue);
   const court = criollasCourt({ width: COURT.halfWidth * 2, length: COURT.halfLength * 2 }); scene.add(court);
   const flags = [bunting(-1, BUNTING), bunting(-9, [...BUNTING].reverse())];

@@ -6,6 +6,7 @@ import * as THREE from 'three';
 import { createSky } from '/engine/sky.js';
 import { waterSurface, waterAnimator } from '/engine/models/effects/water-surface.js';
 import { smooth } from './river.js';
+import { shadowSize } from '/engine/settings.js';
 
 export const DAYLIGHT = { horizon: 0xc9dccf, skyTop: 0x3f8fc4, cloudCover: .46, skySeed: 31, hemiSky: 0xe6f4ff, hemiGround: 0x4a6a3a, hemiInt: 1.45, sun: 0xfff0d2, sunInt: 2.4, fog: [90, 1100] };
 
@@ -123,7 +124,7 @@ export function createRaceScene(canvas, river, options = {}) {
   const sky = createSky(DAYLIGHT); scene.add(sky.mesh);
   scene.add(new THREE.HemisphereLight(DAYLIGHT.hemiSky, DAYLIGHT.hemiGround, DAYLIGHT.hemiInt));
   const sun = new THREE.DirectionalLight(DAYLIGHT.sun, DAYLIGHT.sunInt);
-  sun.position.set(-40, 70, 30); sun.castShadow = true; sun.shadow.mapSize.set(1024, 1024);
+  sun.position.set(-40, 70, 30); sun.castShadow = true; sun.shadow.mapSize.setScalar(shadowSize(1024));
   Object.assign(sun.shadow.camera, { left: -26, right: 26, top: 26, bottom: -26, far: 180 });
   sun.shadow.bias = -.0003; sun.shadow.normalBias = .035; scene.add(sun, sun.target);
   const world = createRiverWorld(river, options); scene.add(world.group);

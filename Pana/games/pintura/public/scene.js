@@ -4,7 +4,7 @@ import { createMuelle } from './muelle.js';
 import { disposeModel } from '/engine/models/props/game-table.js';
 import * as THREE from 'three';
 import { buildCharacter } from '/engine/models/characters/pana/avatar-model.js';
-import { bindRenderer } from '/engine/settings.js';
+import { bindRenderer, shadowSize } from '/engine/settings.js';
 import { createSky } from '/engine/sky.js';
 import { house, church } from '/engine/models/props/plaza-buildings.js';
 import { crate, barrel, marketStall, streetLamp } from '/engine/models/props/plaza.js';
@@ -31,7 +31,7 @@ export function createScene(canvas) {
   let cameraView = 'primera', elapsed = 0, initialized = false, yaw = 0, pitch = 0, previousPhase = 'lobby', wasDown = false, lift = 0, bob = 0, sway = 0, kick = 0, shake = 0, sprintFov = 0, lastAmmo = 12;
   scene.add(new THREE.HemisphereLight(WARM_DAY.hemi[0], WARM_DAY.hemi[1], 2.5));
   const sun = new THREE.DirectionalLight(WARM_DAY.sun.color, 3.2); sun.position.set(-15, 35, 16); sun.castShadow = true; scene.add(sun.target);
-  Object.assign(sun.shadow.camera, { left: -30, right: 30, top: 30, bottom: -30, far: 80 }); sun.shadow.mapSize.set(2048, 2048); sun.shadow.normalBias = .03; scene.add(sun);
+  Object.assign(sun.shadow.camera, { left: -30, right: 30, top: 30, bottom: -30, far: 80 }); sun.shadow.mapSize.setScalar(shadowSize(2048)); sun.shadow.normalBias = .03; scene.add(sun);
   const defaultCourt = new THREE.Group(); scene.add(defaultCourt);
   let environment = null, mapId = ''; scene.userData.mapId = mapId;
   const materials = new Map(), avatars = new Map(), ballMeshes = new Map(), splats = new Map();

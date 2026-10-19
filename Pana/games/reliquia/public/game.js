@@ -10,7 +10,7 @@ import { ICONS as SVG } from '/engine/icons.js';
 import { inviteUrl, newRoomCode, roomFromUrl } from '/engine/invite.js';
 import { holdButton as hold } from '/engine/touch.js';
 import { shout } from '/engine/kit.js';
-import { pixelRatio, bindRenderer } from '/engine/settings.js';
+import { pixelRatio, bindRenderer, shadowSize } from '/engine/settings.js';
 import { mummy, sunRelic, expeditionLantern } from '/engine/models/props/reliquia.js';
 import { Expedition, interaction, objective } from './rules.js';
 import { ExpeditionRoom } from './network.js';
@@ -29,7 +29,7 @@ renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure
 const scene = new THREE.Scene(); scene.background = new THREE.Color(0x183b34); scene.fog = new THREE.FogExp2(0x183b34, 0.012);
 scene.add(new THREE.HemisphereLight(0xe4f2d3, 0x425c4a, 2.25));
 const sun = new THREE.DirectionalLight(0xffd49a, 3.3); sun.position.set(-16, 35, 23); sun.castShadow = true;
-sun.shadow.mapSize.set(1024, 1024); Object.assign(sun.shadow.camera, { left: -24, right: 24, top: 24, bottom: -24, near: 1, far: 100 }); sun.shadow.bias = -0.001; sun.shadow.normalBias = 0.06; scene.add(sun, sun.target);
+sun.shadow.mapSize.setScalar(shadowSize(1024)); Object.assign(sun.shadow.camera, { left: -24, right: 24, top: 24, bottom: -24, near: 1, far: 100 }); sun.shadow.bias = -0.001; sun.shadow.normalBias = 0.06; scene.add(sun, sun.target);
 const fill = new THREE.DirectionalLight(0x77bca9, 1.3); fill.position.set(20, 15, -25); scene.add(fill);
 const lanternLight = new THREE.PointLight(0xffc267, 20, 15, 1.8); scene.add(lanternLight);
 const world = createExpeditionWorld(); scene.add(world.group);

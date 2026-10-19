@@ -12,6 +12,7 @@ import {at,nearest,LENGTH,HALF_WIDTH,WATER_Y,groundAt,JUMPS,courseRoute,DAYLIGHT
 import {raceJumps, origin} from './options.js';
 import {addLandscape} from './landscape.js';
 import {placeIguanas} from '/engine/placement/iguanas.js';
+import { shadowSize } from '/engine/settings.js';
 
 // Static model prototypes are batched into instances; animated fauna/water stay live.
 function plantInstances(parent,source,placements,name,id){
@@ -109,7 +110,7 @@ export function createRaceScene(canvas){
   const scene=new THREE.Scene();scene.fog=new THREE.Fog(DAYLIGHT.horizon,...DAYLIGHT.fog);
   const sky=createSky(DAYLIGHT);scene.add(sky.mesh);
   scene.add(new THREE.HemisphereLight(DAYLIGHT.hemiSky,DAYLIGHT.hemiGround,DAYLIGHT.hemiInt));
-  const sun=new THREE.DirectionalLight(DAYLIGHT.sun,DAYLIGHT.sunInt);sun.position.set(-50,70,35);sun.castShadow=true;sun.shadow.mapSize.set(1024,1024);sun.shadow.camera.left=-25;sun.shadow.camera.right=25;sun.shadow.camera.top=25;sun.shadow.camera.bottom=-25;sun.shadow.camera.far=180;sun.shadow.bias=-.0003;sun.shadow.normalBias=.035;scene.add(sun,sun.target);
+  const sun=new THREE.DirectionalLight(DAYLIGHT.sun,DAYLIGHT.sunInt);sun.position.set(-50,70,35);sun.castShadow=true;sun.shadow.mapSize.setScalar(shadowSize(1024));sun.shadow.camera.left=-25;sun.shadow.camera.right=25;sun.shadow.camera.top=25;sun.shadow.camera.bottom=-25;sun.shadow.camera.far=180;sun.shadow.bias=-.0003;sun.shadow.normalBias=.035;scene.add(sun,sun.target);
   const course=createCourse();scene.add(course.group);
   const camera=new THREE.PerspectiveCamera(52,1,.1,450);
   return {renderer,scene,camera,sun,course,sky};
