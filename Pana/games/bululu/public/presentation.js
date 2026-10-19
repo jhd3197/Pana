@@ -67,3 +67,12 @@ export function drawProgress(list) {
   });
 }
 
+// A minigame's hint(): { text, tone } for what you should be doing right now
+// (your secret role, the phase, a cue that it's time), or null for nothing.
+export function drawHint(hint) {
+  const el = $('mini-hint');
+  el.hidden = !hint?.text;
+  if (!hint?.text) return;
+  if (el.textContent !== hint.text) el.textContent = hint.text;
+  el.dataset.tone = hint.tone || '';
+}

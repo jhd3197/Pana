@@ -3,7 +3,7 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { sound, Puffs, Shockwaves, popCounter } from '/engine/fx.js';
 import { loadAvatar, loadName, randomAvatar } from '/engine/avatar.js';
-import { makePortraits, drawReticles, drawProgress } from './presentation.js';
+import { makePortraits, drawReticles, drawProgress, drawHint } from './presentation.js';
 import { makeMango } from '/engine/models/props/mango.js';
 import { createBoard, createToken, createDie, FORK } from './board.js';
 import { createMinimap } from './minimap.js';
@@ -793,7 +793,7 @@ async function playMinigame(def) {
   // the pointer is the board's again (and the cursor comes back)
   if (def.input === 'aim') bindAim(false);
   document.body.classList.remove('mini-aim');
-  setTimer(null);
+  setTimer(null); drawHint(null);
   sound.horn('fiesta');
   $('winner').innerHTML = winners.length
     ? `<span class="crown">${SVG.crown}</span><small>${winners.length > 1 ? 'GANADORES' : 'GANADOR'}</small><b>${winners.map((i) => escapeHtml(players[i].name)).join(' · ')}</b><em>+10 MONEDAS</em>`
@@ -805,7 +805,7 @@ async function playMinigame(def) {
 
   mini = null;
   view = boardView;
-  freeMini(game); frameMini(); drawProgress(null);
+  freeMini(game); frameMini(); drawProgress(null); drawHint(null);
   document.body.classList.remove('in-mini');
   cardMode = 'board';
   setSign('');
@@ -835,7 +835,7 @@ function enterMini() {
     b.setAttribute('aria-label', action === 'jump' ? 'Saltar' : action || 'Acción');
   }
   if (def.input === 'aim') bindAim(true);
-  drawProgress(null);
+  drawProgress(null); drawHint(null);
   frameMini();
 }
 // Fits the minigame camera to the screen (framing.js). A module with a fixed
@@ -854,6 +854,7 @@ function updateMini(dt) {
     game.update(dt, online ? room.takeInputs(players) : minigameInput(dt));
     if (game.reticles) drawReticles(game.reticles(), miniBox());
     if (game.progress) drawProgress(game.progress());
+    drawHint(game.hint?.());
     mini.left -= dt;
     setTimer(Math.max(0, Math.ceil(mini.left)));
     miniScores = game.scores();
@@ -1101,7 +1102,7 @@ function clearMini() {
   const game = mini?.game;
   mini = null; view = boardView; miniFrame = 0; requestingFrames = false;
   freeMini(game);
-  document.body.classList.remove('in-mini', 'mini-2d', 'mini-aim'); frameMini(); drawProgress(null);
+  document.body.classList.remove('in-mini', 'mini-2d', 'mini-aim'); frameMini(); drawProgress(null); drawHint(null);
   $('reticles').replaceChildren(); setTimer(null);
 }
 function applyOnline(state) {
@@ -1163,6 +1164,7 @@ function applyFrames(message) {
   } finally { sound.muted = muted; }
   if (mini.game.reticles && mini.state !== 'outro') drawReticles(mini.game.reticles(), miniBox());
   if (mini.game.progress) drawProgress(mini.game.progress());
+  drawHint(mini.state === 'outro' ? null : mini.game.hint?.());
 }
 function stopAuthority() {
   authority = 0;

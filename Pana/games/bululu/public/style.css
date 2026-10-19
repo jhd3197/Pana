@@ -1,6 +1,6 @@
 /* Bululú: Pana Kit (/engine/kit.css) dressed for the mango island. */
 :root { color-scheme: dark; }
-body { --wood: #b5753a; --wood-edge: #7a4a20; --coin-text: #ffdf72; --silver: #d6dbe6; --bronze: #e0a463; --coin-shine: #ffe58a; --coin-edge: #9a6400; --sea: #1d4f80; --tile-blue: #3d7bf2; --stat: #c9a2ff; --pk-game: #8e4de8; --pk-game-ink: #fff; --reticle-ink: #16161a; }
+body { --wood: #b5753a; --wood-edge: #7a4a20; --coin-text: #ffdf72; --silver: #d6dbe6; --bronze: #e0a463; --coin-shine: #ffe58a; --coin-edge: #9a6400; --sea: #1d4f80; --tile-blue: #3d7bf2; --stat: #c9a2ff; --pk-game: #8e4de8; --pk-game-ink: #fff; --reticle-ink: #16161a; --hint-ok: #2fbf4a; --hint-ok-edge: #17682a; --hint-bad-edge: #5a1012; }
 
 * { box-sizing: border-box; }
 
@@ -444,6 +444,17 @@ body.mini-aim canvas { cursor: none; touch-action: none; }
 }
 .reticle .ammo b.used { background: transparent; border-color: rgba(22, 22, 26, 0.45); }
 
+/* ---------- minigame hint: your role, the phase, a cue ---------- */
+.mini-hint {
+  position: fixed; left: 50%; top: 150px; translate: -50% 0; z-index: 4;
+  max-width: min(560px, calc(100vw - 32px)); margin: 0; padding: 7px 16px;
+  border: 1px solid var(--pk-line); border-radius: 999px; background: rgba(14, 11, 36, .86);
+  font: 800 15px/1.3 var(--pk-sans); text-align: center; pointer-events: none;
+}
+.mini-hint[data-tone="go"] { background: var(--pk-yellow); border-color: var(--pk-yellow-edge); color: var(--pk-yellow-ink); }
+.mini-hint[data-tone="bad"] { background: var(--pk-coral); border-color: var(--hint-bad-edge); color: #fff; }
+.mini-hint[data-tone="ok"] { background: var(--hint-ok); border-color: var(--hint-ok-edge); color: #fff; }
+
 /* ---------- race progress: one track, a dot per pana ---------- */
 .progress {
   position: fixed; left: 50%; bottom: 22px; translate: -50% 0; z-index: 4;
@@ -541,6 +552,7 @@ body.mini-aim canvas { cursor: none; touch-action: none; }
   body.in-mini .timer svg { width: 20px; height: 20px; }
   body.in-mini .touch { bottom: calc(14px + env(safe-area-inset-bottom)); }
   body.in-mini .reticles { top: 0; }
+  .mini-hint { top: 44px; font-size: 13px; padding: 5px 12px; }
   #count { font-size: 110px; }
 }
 /* You, among six cards: your own colour around the card and a small tab. */

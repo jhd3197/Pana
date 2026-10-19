@@ -14,13 +14,18 @@ import { sunnyStage, makeActors, animateActor, rand, pick } from './stage.js';
 
 const TIME = 30, WORK = 19, VOTE = 27;        // seconds: work until WORK, vote until VOTE, then the verdict
 // Stations are spaced to fit the complete roster.
-const SAND = 0.28, SAND_FAST = 0.35;          // chance a mummy crank puffs sand; more when mashing
-const FAST = 0.28;                            // a crank sooner than this after the last one is mashing
+// Tuned on 60 seeds against five bots: a careful mummy (a crank every ~0.8 s)
+// wins ~45%, a bot mummy ~30%, a masher ~2%, one that never cranks never.
+const SAND = 0.28, SAND_FAST = 0.63, SAND_CAREFUL = 0.05;   // chance a mummy crank puffs sand
+const FAST = 0.28, CAREFUL = 0.75;      // gaps (s) that count as mashing, and as careful
+const NOTICE = 0.6, NOTICE_DIM = 0.02;  // chance a bot sees a lit lantern; spots a dim one
+const SEE_NEAR = 0.55, SEE_FAR = 0.15;  // chance a bot sees sand within two stations; farther
+const IDLE = 2, NOISE = 2.1;            // weight of never seeing someone work; vote noise
 
 export default {
   id: 'embuste',
   title: '¡Embuste!',
-  howto: 'Uno de los panas es una momia que finge trabajar. Gira tu malacate con Espacio y mira bien: la momia suelta arena. Al final, elige con ← → y vota con Espacio. Si te toca ser la momia, gira despacito para que no se note.',
+  howto: 'Uno de los panas es una momia que finge trabajar. Gira tu malacate con Espacio y mira bien: la momia suelta arena. Al final, elige con ← → y vota con Espacio. Si te toca ser la momia, gira sin apuro: así casi no suelta arena. Pero si no giras, se nota.',
   keys: [['Espacio', 'girar · votar'], ['← →', 'elegir a quién']],
   touch: { action: '¡Dale!' },
   icon: 'mummy',
@@ -52,7 +57,7 @@ export default {
       a.turn = 0; a.last = -1; a.work = 0; a.light = 0; a.sand = 0;
       a.vote = null; a.votes = 0; a.voteAt = rand(WORK + 1.5, VOTE - 1);
       a.ai = { every: rand(0.5, 0.8), next: rand(0.2, 0.8) };
-      a.suspect = new Map();
+      a.suspect = new Map(); a.seen = new Map();
       a.ring = mesh(new THREE.RingGeometry(0.9, 1.1, 32), new THREE.MeshBasicMaterial({ color: 0xffc629, transparent: true, opacity: 0.85, side: THREE.DoubleSide }), XS[i], 0.05, 2);
       a.ring.rotation.x = -Math.PI / 2; a.ring.visible = false; scene.add(a.ring);
     });
@@ -64,22 +69,42 @@ export default {
 
     // One crank of a pana's winch. A real one lights the lantern; a fake one may puff sand.
     function crank(a) {
-      const fast = clock - a.last < FAST;
+      const gap = clock - a.last;
       a.last = clock; a.turn += 0.6;
-      if (!a.mummy) { a.work++; a.light = 1; sound.tone(520 + a.i * 60, 0, 0.06, 'triangle', 0.03); return; }
+      // Bots watch the lanterns: a lit one counts as work they saw, a dim one
+      // is a tell some of them catch. A pana nobody sees working is suspect.
+      const bots = actors.filter(b => b !== a && !human(b));
+      if (!a.mummy) {
+        a.work++; a.light = 1; sound.tone(520 + a.i * 60, 0, 0.06, 'triangle', 0.03);
+        for (const b of bots) if (random() < NOTICE) b.seen.set(a.i, (b.seen.get(a.i) || 0) + 1);
+        return;
+      }
       a.light = 0.35;   // a lantern that barely flickers is a tell too, for sharp eyes
-      if (random() < SAND + (fast ? SAND_FAST : 0)) {
+      for (const b of bots) {
+        if (random() < NOTICE) b.seen.set(a.i, (b.seen.get(a.i) || 0) + 1);
+        if (random() < NOTICE_DIM) b.suspect.set(a.i, (b.suspect.get(a.i) || 0) + 0.4);
+      }
+      // Mashing spills sand; a careful, unhurried crank hardly does, but a
+      // lantern that seldom lights is its own giveaway.
+      if (random() < (gap < FAST ? SAND_FAST : gap >= CAREFUL ? SAND_CAREFUL : SAND)) {
         a.sand++;
         puffs.spawn(new THREE.Vector3(a.x, 1.1, a.z + 0.2), { color: 0xd8c08a, count: 6, spread: 0.7, size: 0.45 });
-        for (const b of actors) if (b !== a) b.suspect.set(a.i, (b.suspect.get(a.i) || 0) + 1);
+        for (const b of bots) if (random() < (Math.abs(b.i - a.i) <= 2 ? SEE_NEAR : SEE_FAR)) b.suspect.set(a.i, (b.suspect.get(a.i) || 0) + 1);
       }
     }
 
-    // AI suspicion: the sand they saw, a little noise, and never themselves.
+    // AI suspicion: the sand and dim lanterns they saw, how little they saw
+    // someone work compared with the rest, a little noise, never themselves.
     function aiVote(a) {
       if (a.mummy) { const others = actors.filter(b => b !== a); return pick(others).i; }
-      let best = null, score = -1;
-      for (const b of actors) if (b !== a) { const s = (a.suspect.get(b.i) || 0) + random() * 1.2; if (s > score) { score = s; best = b.i; } }
+      const others = actors.filter(b => b !== a);
+      const usual = Math.max(1, others.reduce((n, b) => n + (a.seen.get(b.i) || 0), 0) / others.length);
+      let best = null, score = -Infinity;
+      for (const b of others) {
+        const idle = Math.max(0, 1 - (a.seen.get(b.i) || 0) / usual);
+        const s = (a.suspect.get(b.i) || 0) + idle * IDLE + random() * NOISE;
+        if (s > score) { score = s; best = b.i; }
+      }
       return best;
     }
 
@@ -115,8 +140,8 @@ export default {
           if (human(a)) { if (inputFor(input, a.i).jump) crank(a); }
           else if (clock >= a.ai.next) {
             crank(a);
-            // An AI mummy cranks a touch slower than the rest, as the sly ones do.
-            a.ai.next = clock + a.ai.every * (a.mummy ? rand(1, 1.35) : rand(0.85, 1.15));
+            // An AI mummy cranks carefully, a touch slower than the rest, as the sly ones do.
+            a.ai.next = clock + (a.mummy ? rand(0.72, 0.95) : a.ai.every * rand(0.85, 1.15));
           }
         } else if (voting && !human(a) && clock >= a.voteAt) cast(a, aiVote(a));
         a.light = Math.max(0, a.light - dt * 1.6);
@@ -160,8 +185,17 @@ export default {
       puffs.update(dt);
     }
 
+    // What you should be doing right now, for the runner's hint line.
+    function hint() {
+      if (!me || verdict) return null;
+      if (clock < WORK) return me.mummy ? { text: 'Eres la MOMIA: gira despacito. Si no giras, se nota.', tone: 'bad' } : { text: 'Gira tu malacate y mira quién suelta arena', tone: '' };
+      if (me.vote != null) return { text: `Votaste por ${actors[me.vote].player.name}`, tone: '' };
+      const others = actors.filter(b => b !== me);
+      return { text: `¡A votar! ← → elige · Espacio vota por ${others[picks[me.i]].player.name}`, tone: 'go' };
+    }
+
     return {
-      scene, camera, update, outro, actors,
+      scene, camera, update, outro, actors, hint,
       scores: () => actors.map((a) => a.score || 0),
       over: () => !!verdict && clock > VOTE + 2.5,
       winners: () => { const top = Math.max(...actors.map(a => a.score || 0)); return actors.filter(a => (a.score || 0) === top).map(a => a.i); },

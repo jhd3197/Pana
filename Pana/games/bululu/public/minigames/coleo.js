@@ -298,6 +298,17 @@ export default {
       puffs.update(dt);
     }
 
-    return { scene, camera, update, outro, actors, scores: () => actors.map((a) => a.score), stats: () => ({ ...stats, reachTime: +stats.reachTime.toFixed(1) }) };
+    // When the tail is yours to grab, for the runner's hint line.
+    const me = actors[ctx.localIndex ?? ctx.players.findIndex((p) => p.human && !ctx.auto)];
+    function hint() {
+      if (!me || !bull) return null;
+      if (me.stumble > 0) return { text: '¡Te revolcaste! Ya te levantas', tone: 'bad' };
+      if (inReach(me)) return { text: '¡JALA LA COLA AHORA!', tone: 'go' };
+      const gap = gapOf(me);
+      if (gap <= REACH.near) return { text: 'Muy encima del toro: frena un poquito', tone: '' };
+      if (gap >= REACH.far) return { text: 'Acércate al toro', tone: '' };
+      return { text: 'Ponte justo detrás de la cola', tone: '' };
+    }
+    return { scene, camera, update, outro, actors, hint, scores: () => actors.map((a) => a.score), stats: () => ({ ...stats, reachTime: +stats.reachTime.toFixed(1) }) };
   },
 };

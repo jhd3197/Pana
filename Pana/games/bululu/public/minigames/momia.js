@@ -256,8 +256,19 @@ export default {
       puffs.update(dt);
     }
 
+    // Run or freeze, and the disguises you have left, for the runner's hint line.
+    const me = actors[ctx.localIndex ?? ctx.players.findIndex((p) => p.human && !ctx.auto)];
+    function hint() {
+      if (!me || winner) return null;
+      const left = `Disfraces: ${me.disguises}`;
+      if (me.stun > 0) return { text: '¡Te pilló! De vuelta al inicio', tone: 'bad' };
+      if (me.disguised > 0) return { text: `Disfrazado: avanza despacito · ${left}`, tone: 'ok' };
+      if (turning() || state === 'fake') return { text: `¡QUIETO! Te está mirando · ${left}`, tone: 'bad' };
+      return { text: `¡CORRE! Está contando · ${left}`, tone: 'go' };
+    }
+
     return {
-      scene, camera, update, outro, actors,
+      scene, camera, update, outro, actors, hint,
       scores: () => actors.map((a) => a.score),
       over: () => !!winner,
       winners: () => (winner ? [winner.i] : []),

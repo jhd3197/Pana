@@ -334,6 +334,16 @@ export default {
       shockwaves.update(dt);
     }
 
-    return { scene, camera, update, outro, actors, scores: () => actors.map((a) => a.score) };
+    // The collapse warning and your turbo, for the runner's hint line.
+    const me = actors[ctx.localIndex ?? ctx.players.findIndex((p) => p.human && !ctx.auto)];
+    function hint() {
+      if (!me) return null;
+      const soon = TIME - CRUMBLE - clock;
+      if (me.falling) return { text: '¡Al agua! Vuelves enseguida', tone: 'bad' };
+      if (soon > 0 && soon < 4) return { text: `¡El borde se cae en ${Math.ceil(soon)}! Vete al centro`, tone: 'bad' };
+      const turbo = me.cool > 0 ? `Turbo en ${Math.ceil(me.cool)} s` : 'Turbo listo (Espacio)';
+      return { text: clock >= TIME - CRUMBLE ? `El borde se está cayendo · ${turbo}` : `Empuja a los demás fuera · ${turbo}`, tone: me.cool > 0 ? '' : 'ok' };
+    }
+    return { scene, camera, update, outro, actors, hint, scores: () => actors.map((a) => a.score) };
   },
 };

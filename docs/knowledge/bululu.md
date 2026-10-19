@@ -107,6 +107,21 @@ option, plays all six board turns, shoots from seat six and elects a new host.
   Atrapa now stay at 1,100–1,120 geometries and 81–86 textures.
   `phone.browser.mjs` and `lifetime.browser.mjs` cover both.
 
+## Runner hooks and fairness rules
+
+- A module may return `progress()` → `[{ color, at: 0..1, me }]` (a race
+  strip at the bottom; Remada) and `hint()` → `{ text, tone }` with tone
+  `go`, `bad`, `ok` or none (a line under the cards: Embuste's secret role
+  and vote, Momia's run/freeze and disguises, Coleo's grab cue, Choque's
+  collapse warning and turbo). Guests compute both from their own replay.
+- Anything that can tie within one simulation step must not fall back on
+  actor order: Caída collects every slam of the step and draws the caída's
+  taker from the game stream; Atrapa's magnet and catch take the nearest
+  basket and draw exact ties. Online a step is 50 ms.
+- Remada's camera follows the pack but stays between 25 m behind and level
+  with your canoe, so a trailing or idle local canoe never leaves the view.
+  `fairness.browser.mjs` covers all four at 20 Hz on seeded streams.
+
 ## Test switches
 
 **Bolas Criollas** is `?play=criollas` / `?mini=criollas`: two throws per pana,
@@ -270,14 +285,18 @@ flow bugs and check balance.
   time anyone was in reach.
 - **¡Embuste!** (from the full game, `docs/knowledge/embuste.md`): one of the
   six panas is secretly a mummy, picked at random and possibly you. 19 s of
-  cranking winches (a real crank lights that pana's lantern; a mummy's crank
-  puffs sand 28% of the time, 63% when cranked within 0.28 s of the last), 8 s
-  to vote with ← → and Space, then the verdict. AI panas vote for whoever they
-  saw puff most, with a little noise; an AI mummy cranks a bit slower and votes
-  for a random pana. Catching the mummy pays every pana 50, plus 50 for voting
-  it; an uncaught mummy takes 100. Live chips stay at 0 until the verdict so
-  the scores can't give the mummy away. `stats()` reports the mummy, its sand
-  and the votes.
+  cranking winches, 8 s to vote with ← → and Space, then the verdict. A real
+  crank lights that pana's lantern; a mummy's crank is dim and may puff sand:
+  63% when mashing (< 0.28 s), 28% at a normal pace, 5% when careful
+  (≥ 0.75 s). Bots see a lit lantern 60% of the time, a sand puff 55% within
+  two stations and 15% farther, and a dim lantern 2%. They vote for the most
+  suspect: sand seen, plus 2 × how far below the usual amount of work they
+  saw that pana do, plus noise up to 2.1. Before that idle term, a human
+  mummy who never cranked won 24 of 30 seeds against bots, while any mummy
+  who cranked was caught almost every time. Now, 60 seeds: careful mummy
+  ~45%, bot mummy ~30%, masher ~2%, idle 0%. Catching the mummy pays every
+  pana 50, plus 50 for voting it; an uncaught mummy takes 100. Live chips
+  stay at 0 until the verdict. `stats()` reports the mummy, its sand and votes.
 - **Aim minigames** export `input: 'aim'`: `minigameInput()` returns
   `{aim: {x, y}, pull, fire}` with `aim` in NDC. The mouse moves the reticle and
   a press pulls; WASD / arrows steer it (0.8 NDC/s, rising to 2.3 over 0.45 s)
@@ -334,18 +353,6 @@ Plan 56: createTepui uses the shared waterfall factory with an explicit sloped r
 
 ## Audit findings to preserve when improving the game
 
-- **Remada's pack camera can abandon the local player.** With seed 5, six seats,
-  seat zero human and idle, and five bots, after 12 seconds at 20 Hz the human
-  is still at 0 m while bots reach 40.7–49.4 m. Its projected position has
-  NDC z above 1: it is outside the view. Retain local-player visibility or
-  provide a deliberate trailing-player view.
-- **Caída awards same-step matches by actor iteration order.** Its sequential
-  slam loop clears the cards for the first successful actor. The online step
-  is 50 ms; simultaneous taps need an explicit tie rule independent of seat.
-- **Embuste bots do not suspect inactivity.** A human mummy that never cranks
-  or votes won 24 of 30 seeded games (seeds 1–30, six seats, 20 Hz) against
-  five bots. Suspicion tracks emitted sand, which inactivity never produces.
-  This is a bot-play result, not evidence about six-human matches.
 - **River balance benchmarks still default to four seats.** Six-seat presence
   and replay checks are separate from balance. A six-seat audit over 200 seeds
   per river game at both 60 and 20 Hz found a winner in every run, with fractional

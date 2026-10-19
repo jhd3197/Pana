@@ -450,6 +450,13 @@ becomes the GitHub release's notes.
 
 ### Changed
 
+- **Bululú's minigames tell you what to do right now.** A line under the
+  cards shows your secret role and the vote in ¡Embuste!, run or freeze
+  and your disguises left in ¡Momia!, when to grab the tail in ¡Coleo!,
+  and the collapse warning and turbo in ¡Choque!. In ¡Embuste! a mummy
+  who never cranks now gets caught: bots notice whose lantern never
+  lights, while a careful, unhurried crank hardly spills any sand.
+
 - **¡Remada! keeps your canoe in the picture.** The camera no longer
   races off with the leaders and leaves you behind. A ring on the water
   around your canoe shows your rhythm: it turns green in the ¡Remazo!
