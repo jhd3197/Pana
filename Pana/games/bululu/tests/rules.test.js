@@ -100,3 +100,13 @@ test('minigames come shuffled, each once per pass, never twice in a row', () => 
   const one = minigameBag(['solo']);
   assert.deepEqual([one(), one()], ['solo', 'solo']);
 });
+
+test('a saved minigame bag continues the same pass after a host change', () => {
+  const ids = ['a', 'b', 'c', 'd', 'e'];
+  const host = minigameBag(ids, () => 0.37);
+  const first = [host(), host()];
+  const resumed = minigameBag(ids, () => 0.37, host.save());
+  const rest = [resumed(), resumed(), resumed()];
+  assert.deepEqual([...first, ...rest].sort(), ids, 'every minigame once per pass, none repeated');
+  assert.notEqual(resumed(), rest[2], 'the next pass never repeats the last one');
+});

@@ -517,6 +517,10 @@ becomes the GitHub release's notes.
 
 ### Fixed
 
+- **An idle player can't stall an online Bululú game.** A board choice
+  nobody answers is taken automatically after 30 seconds, and a host
+  change no longer reshuffles the minigames, so none repeats early.
+
 - **Bululú's ¡Caída! no longer favours the first seats.** When several
   panas slap in the same instant, a fair draw picks who takes the cards
   instead of the seat order; a wrong slap now says −1.

@@ -104,9 +104,11 @@ export function brindis(players, p) {
 
 // Which minigame plays next: every one once per pass, shuffled, and never the
 // same one twice in a row across passes. Returns a draw() function.
-export function minigameBag(ids, random = Math.random) {
-  let bag = [], last = null;
-  return () => {
+// `saved` ({ bag, last } from next.save()) continues a bag after a host
+// change, so the no-repeat promise holds across hosts.
+export function minigameBag(ids, random = Math.random, saved = null) {
+  let bag = saved ? [...saved.bag] : [], last = saved?.last ?? null;
+  const next = () => {
     if (!bag.length) {
       bag = [...ids];
       for (let i = bag.length - 1; i > 0; i--) {
@@ -118,4 +120,6 @@ export function minigameBag(ids, random = Math.random) {
     last = bag.pop();
     return last;
   };
+  next.save = () => ({ bag: [...bag], last });
+  return next;
 }

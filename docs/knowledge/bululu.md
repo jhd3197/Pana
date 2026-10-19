@@ -49,6 +49,13 @@ Before an online minigame every connected human answers its own ¡Listo!
 or `READY_WAIT` (15 s), whichever comes first; bots and `?auto` never wait.
 The check travels in the snapshot as `ready` so guests draw the chips and
 their own button. Formerly only the host's seat was asked.
+Any other online prompt takes its default after `PROMPT_WAIT` (30 s) if
+its connected owner never answers (a dice prompt throws), so an idle tab
+cannot stall the room. Checkpoints carry the minigame bag as ids
+(`saveBag`/`restoreBag`, `minigameBag(ids, random, saved)`): an elected
+host keeps dealing the same pass instead of reshuffling, so no minigame
+repeats early after a migration. The restarted minigame still gets a new
+seed.
 
 Regression: `npm run test:browser -- bululu` includes real two-client room play.
 

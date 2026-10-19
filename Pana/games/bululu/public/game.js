@@ -406,7 +406,9 @@ async function toast(title, sub = '', secs = 1.4, kind = '') {
   el.className = 'toast hidden';
 }
 
-// A choice with buttons + keys. The AI (or ?auto) answers on its own.
+// A choice with buttons + keys. The AI (or ?auto) answers on its own; online,
+// an unanswered prompt takes its default after PROMPT_WAIT seconds.
+const PROMPT_WAIT = 30;
 function ask(text, options, { auto = 0, delay = 0.5 } = {}) {
   if (online) {
     const player = players[turnOf] || players.find(p => p.seat === room.hostId);
@@ -417,6 +419,8 @@ function ask(text, options, { auto = 0, delay = 0.5 } = {}) {
     return new Promise((resolve, reject) => {
       resolveChoice = resolve; rejectChoice = reject;
       if (AUTO || !room.members.has(player?.seat)) wait(delay).then(() => finishChoice(auto)).catch(ignoreCancelled);
+      // A pana who stays connected but never answers doesn't stall the room.
+      else { const id = pendingChoice.id; wait(PROMPT_WAIT).then(() => pendingChoice?.id === id && finishChoice(auto)).catch(ignoreCancelled); }
     });
   }
   const el = $('prompt');
@@ -1125,10 +1129,18 @@ function showOnlinePrompt(prompt) {
     if (i >= 0) room.choose(prompt.id, i);
   });
 }
+// The shuffled minigame bag travels in checkpoints as ids, so a new host
+// keeps dealing the same pass instead of starting a fresh one.
+const byId = (id) => MINIGAMES.find(m => m.id === id) || null;
+function saveBag() { const { bag, last } = nextMinigame.save(); return { bag: bag.map(m => m.id), last: last?.id ?? null }; }
+function restoreBag(saved) {
+  const bag = saved.bag.map(byId).filter(Boolean);
+  nextMinigame = rules.minigameBag(minigamePool(MINIGAMES, options), Math.random, { bag, last: byId(saved.last) });
+}
 function saveCheckpoint(stage, next, def, only) {
   if (!online) return;
   if (!mini) syncRoster();
-  checkpoint = { stage, next, round, rounds: ROUNDS, options: { ...options }, players: playerData(), stand: board.standTile, minigame: def?.id, only, order };
+  checkpoint = { stage, next, round, rounds: ROUNDS, options: { ...options }, players: playerData(), stand: board.standTile, minigame: def?.id, only, order, bag: saveBag() };
   room.publish(captureOnline());
 }
 function captureOnline() {
@@ -1238,6 +1250,7 @@ function beginOnline(resume) {
   stopAuthority(); authority = 1; started = true; roomOptions.close();
   if (resume) {
     syncOptions(resume.options);
+    if (resume.bag) restoreBag(resume.bag);
     applyPlayers(resume.players); ROUNDS = resume.rounds; round = resume.round;
     board.setStand(resume.stand);
   } else {
