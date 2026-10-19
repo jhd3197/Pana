@@ -463,6 +463,10 @@ becomes the GitHub release's notes.
 
 ### Changed
 
+- **Lancha and Chapita have their own launcher art.** Lancha's tile shows
+  the race jumping the Raudales de Atures, and Chapita's in-game picture
+  is replaced by a batter launching the flag-painted chapita.
+
 - **Online, your own pana moves the moment you press a key.** In Pana
   Cocina, Reliquia, Escondidas, Galope and Lancha a guest no longer waits for
   the host to see the key before their pana, horse or lancha moves; the host
