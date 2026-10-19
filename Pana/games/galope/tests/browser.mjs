@@ -23,6 +23,15 @@ try{
   const ids=await a.evaluate(()=>({host:galope.room.id,guest:galope.state.players.find(p=>!p.bot&&p.id!==galope.room.id).id}));
   await b.bringToFront();await b.keyboard.down('w');await b.waitForFunction(()=>galope.state.players.find(p=>p.id===galope.room.id).progress>3);await b.keyboard.up('w');
   await a.waitForFunction(id=>galope.state.players.find(p=>p.id===id).progress>0,ids.guest);check('two clients share countdown, bots and guest movement');
+  // Prediction: with the host's snapshots held back the guest's horse still runs; then it settles on the host's.
+  await b.waitForFunction(()=>!!galope.room.predicted);await a.evaluate(()=>{galope.room.publish=()=>{};});
+  // The horse still coasts: let snapshots already on the wire land (30 frames with none) before reading.
+  await b.evaluate(()=>new Promise(done=>{let last=galope.state,quiet=0;const tick=()=>{if(galope.state===last)quiet++;else{last=galope.state;quiet=0;}if(quiet>30)done();else requestAnimationFrame(tick);};tick();}));
+  const stalled=await b.evaluate(()=>({predicted:galope.room.predicted.progress,shown:galope.state.players.find(p=>p.id===galope.room.id).progress}));
+  await b.keyboard.down('w');await b.waitForFunction(p=>galope.room.predicted.progress>p+3,stalled.predicted);await b.keyboard.up('w');
+  assert.equal(await b.evaluate(()=>galope.state.players.find(p=>p.id===galope.room.id).progress),stalled.shown,'no snapshot arrived while predicting');
+  await a.evaluate(()=>{delete galope.room.publish;});
+  await b.waitForFunction(()=>{const me=galope.state.players.find(p=>p.id===galope.room.id),p=galope.room.predicted;return p&&Math.hypot(me.x-p.x,me.z-p.z)<1.5;});check('the guest runs its own horse at once and settles on the host position');
   await a.locator('#menu').click();const time=await a.evaluate(()=>galope.state.time);await a.waitForFunction(t=>galope.state.time>t+.15,time);await a.locator('#pana-resume').click();check('multiplayer menu keeps the race moving');
   await a.evaluate(()=>{galope.manual(true);galope.place(galope.room.id,galope.waterS);});await a.keyboard.down('w');
   await a.evaluate(()=>galope.step(1,galope.input()));

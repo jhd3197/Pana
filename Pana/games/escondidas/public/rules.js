@@ -7,6 +7,26 @@ export const HIDE_TIMES = Object.freeze([15, 20, 30, 45, 60]);
 export const RULES = Object.freeze({ changes: 3, hideSeconds: 30, huntSeconds: 180, rounds: 4, checkRange: 3.5, aimRange: 7, checkCooldown: 1.6 });
 const distance = (a, b) => Math.hypot(a.x - b.x, a.z - b.z);
 export const playerRadius = p => propDefinition(p.prop)?.radius || 0.5;
+// Caught, watching, or the seeker while the others hide: this pana can't move.
+const frozen = (p, round) => p.caught || p.spectator || (round.seekers.includes(p.id) && round.phase === 'hide');
+
+// One pana's movement for dt: the host's round, and a guest's prediction of
+// itself (engine/predict.js). It writes only p; `round` is the HuntRound or a
+// snapshot of it (map, layout seed, seekers, phase, options).
+export function stepPana(p, input, dt, round) {
+  if (frozen(p, round)) { p.moving = false; return; }
+  let dx = Number.isFinite(input.x) ? input.x : 0, dz = Number.isFinite(input.z) ? input.z : 0;
+  const length = Math.hypot(dx, dz);
+  if (length > 1) { dx /= length; dz /= length; }
+  const speed = p.prop && !round.options.moveDisguised ? 0 : p.prop ? 3.1 : input.sprint ? 6.2 : 4.6;
+  const before = { x: p.x, z: p.z };
+  huntLayout(round.mapId, round.layoutSeed).move(p, dx * speed * dt, dz * speed * dt, playerRadius(p));
+  p.moving = distance(before, p) > 0.001;
+  // Panas face where they look; a disguise only turns when it moves, so
+  // glancing around never spins a suspicious barrel.
+  if (!p.prop && Number.isFinite(input.look)) p.h = input.look;
+  else if (p.moving) p.h = Math.atan2(dx, dz);
+}
 
 export class HuntRound {
   constructor(mapId = 'plaza', { layoutSeed = 1, hideSeconds = RULES.hideSeconds, options = {} } = {}) {
@@ -155,20 +175,8 @@ export class HuntRound {
     }
     for (const p of this.players) {
       p.cooldown = Math.max(0, p.cooldown - dt);
-      if (p.caught || p.spectator || (this.isSeeker(p.id) && this.phase === 'hide')) { p.moving = false; continue; }
-      let input = inputs.get(p.id) || {};
-      if (p.bot) input = this.botInput(p);
-      let dx = Number.isFinite(input.x) ? input.x : 0, dz = Number.isFinite(input.z) ? input.z : 0;
-      const length = Math.hypot(dx, dz);
-      if (length > 1) { dx /= length; dz /= length; }
-      const speed = p.prop && !this.options.moveDisguised ? 0 : p.prop ? 3.1 : input.sprint ? 6.2 : 4.6;
-      const before = { x: p.x, z: p.z };
-      this.layout.move(p, dx * speed * dt, dz * speed * dt, playerRadius(p));
-      p.moving = distance(before, p) > 0.001;
-      // Panas face where they look; a disguise only turns when it moves, so
-      // glancing around never spins a suspicious barrel.
-      if (!p.prop && Number.isFinite(input.look)) p.h = input.look;
-      else if (p.moving) p.h = Math.atan2(dx, dz);
+      if (frozen(p, this)) { p.moving = false; continue; }
+      stepPana(p, p.bot ? this.botInput(p) : inputs.get(p.id) || {}, dt, this);
     }
     if (this.phase !== 'hunt') return;
     if (this.options.hints !== 'none' && this.elapsed >= this.hintAt) {

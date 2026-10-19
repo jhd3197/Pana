@@ -134,7 +134,8 @@ const clock=new THREE.Clock();let elapsed=0,wasRemate=false;
 function frame(){
   if(disposed)return;const dt=Math.min(clock.getDelta(),.08),frozen=paused&&room.members.size<=1;if(!frozen)elapsed+=dt;
   const people=ensureRiders();
-  for(const p of people){const r=riders.get(p.id),y=groundAt(p.x,p.z)+(p.jumpY||0),blend=1-Math.exp(-dt*18);
+  // Your own horse where you predict it (RaceRoom's predict), not a round trip behind.
+  for(const shown of people){const p=shown.id===room.id?room.predicted??shown:shown,r=riders.get(p.id),y=groundAt(p.x,p.z)+(p.jumpY||0),blend=1-Math.exp(-dt*18);
     r.group.visible=!p.spectator;r.group.position.lerp(new THREE.Vector3(p.x,y,p.z),blend);r.group.rotation.y+=angle(p.h-r.group.rotation.y)*blend;r.update(frozen?0:dt,p);
   }
   const own=people.find(p=>p.id===room.id),p=own&&!own.spectator?own:standings(state)[0]||people[0],r=riders.get(p.id),q=r.group.position,h=r.group.rotation.y;

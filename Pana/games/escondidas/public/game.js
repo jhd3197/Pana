@@ -98,7 +98,8 @@ const menu = createGameMenu({
 $('game-nav').append(menu.createInviteButton({ id: 'invite', className: 'pk-btn pk-btn--sm' }), menu.createSoundButton({ id: 'sound', className: 'pk-btn pk-btn--sm' }), menu.createButton({ id: 'menu', className: 'pk-btn pk-btn--sm' }));
 $('menu').querySelector('kbd')?.classList.add('pk-kbd');
 $('lobby-cta').append(menu.createInviteButton({ id: 'lobby-invite', className: 'pk-btn' }));
-function getMe() { return state.players.find(p => p.id === room.id); }
+// A guest sees itself where it predicts it (HuntRoom's predict), not a round trip behind.
+function getMe() { return room.predicted ?? state.players.find(p => p.id === room.id); }
 
 function disposeActor(actor) {
   scene.remove(actor.root);
@@ -305,7 +306,8 @@ function drawMap() {
     if (b.r) { map.beginPath(); map.arc(px(b.x), pz(b.z), Math.max(2, b.r * scale), 0, Math.PI * 2); map.fill(); }
     else map.fillRect(px(b.x - b.w / 2), pz(b.z - b.d / 2), b.w * scale, b.d * scale);
   }
-  for (const p of state.players) {
+  for (const shown of state.players) {
+    const p = shown.id === room.id ? getMe() : shown;
     if (p.caught || p.spectator) continue;
     // Do not reveal hiders to the seeker, even during preparations.
     if (p.id !== room.id && !isSeeker(p.id)) continue;
@@ -324,8 +326,9 @@ function frame(now) {
   const dt = Math.max(0, Math.min((now - last) / 1000, 0.06)); last = now; motionTime += dt;
   plaza.update(motionTime); environment.update(motionTime, dt);
   const me = getMe(), active = ['hide', 'hunt'].includes(state.phase);
-  for (const p of state.players) {
-    const a = actors.get(p.id); if (!a) continue;
+  for (const shown of state.players) {
+    const a = actors.get(shown.id); if (!a) continue;
+    const p = shown.id === room.id ? me ?? shown : shown;
     a.root.position.x = THREE.MathUtils.damp(a.root.position.x, p.x, 18, dt);
     a.root.position.z = THREE.MathUtils.damp(a.root.position.z, p.z, 18, dt);
     const delta = Math.atan2(Math.sin(p.h - a.root.rotation.y), Math.cos(p.h - a.root.rotation.y));

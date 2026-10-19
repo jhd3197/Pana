@@ -35,6 +35,17 @@ try {
   await b.keyboard.down('d');
   await b.waitForFunction(x => hunt.state.players.find(p => p.id === hunt.room.id).x > x + 0.8, before);
   await b.keyboard.up('d'); check('remote input moves the player on the host');
+  // Prediction: with the host's snapshots held back the guest still walks; then it settles on the host's position.
+  await b.waitForFunction(() => !!hunt.room.predicted);
+  await a.evaluate(() => { hunt.room.publish = () => {}; });
+  const stalled = await b.evaluate(() => { const p = hunt.room.predicted, me = hunt.state.players.find(q => q.id === hunt.room.id); return { x: p.x, z: p.z, shown: [me.x, me.z] }; });
+  await b.keyboard.down('d');
+  await b.waitForFunction(s => Math.hypot(hunt.room.predicted.x - s.x, hunt.room.predicted.z - s.z) > 0.8, stalled);
+  await b.keyboard.up('d');
+  assert.deepEqual(await b.evaluate(() => { const me = hunt.state.players.find(q => q.id === hunt.room.id); return [me.x, me.z]; }), stalled.shown, 'no snapshot arrived while predicting');
+  await a.evaluate(() => { delete hunt.room.publish; });
+  await b.waitForFunction(() => { const me = hunt.state.players.find(q => q.id === hunt.room.id), p = hunt.room.predicted; return p && Math.hypot(me.x - p.x, me.z - p.z) < 0.3; });
+  check('the guest walks its own pana at once and settles on the host position');
   for (const key of ['1', '2', '3']) {
     await b.keyboard.press(key);
     await b.waitForFunction(k => hunt.state.players.find(p => p.id === hunt.room.id).changes === 3 - Number(k), key);

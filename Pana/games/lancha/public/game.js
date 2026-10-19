@@ -196,7 +196,9 @@ function frame() {
   if (disposed) return;
   const dt = Math.min(frameClock.getDelta(), .08), frozen = paused && room.members.size <= 1; if (!frozen) elapsed += dt;
   const boats = ensureBoats(), t = state.time + (state.phase === 'racing' && !frozen ? Math.min(.1, (performance.now() - snapshotAt) / 1000) : 0);
-  for (const b of boats) {
+  for (const shown of boats) {
+    // Your own lancha where you predict it (LanchaRoom's predict), not a round trip behind.
+    const b = shown.driver.id === room.id ? room.predicted ?? shown : shown;
     const m = boats3d.get(b.id), blend = 1 - Math.exp(-dt * 16);
     // Teleports (host migration, a fresh race) snap instead of gliding.
     target.set(b.x, b.y, b.z); if (m.group.position.distanceTo(target) > 20) m.group.position.copy(target); else m.group.position.lerp(target, blend);

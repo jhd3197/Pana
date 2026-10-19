@@ -7,6 +7,56 @@ const BOT_NAMES=['Marisela','El Catire','Florentino','Luz','Cimarrón','Rosalía
 export function cleanInput(input={}) {
   return {throttle:clamp(Number(input.throttle)||0,-1,1),steer:clamp(Number(input.steer)||0,-1,1),sprint:!!input.sprint,jump:!!input.jump,reset:!!input.reset};
 }
+// Recover to earned progress; neither a shortcut nor an extra checkpoint.
+export function resetRider(p,options) {
+  const q=routeAt(p.progress,0,options);Object.assign(p,{x:q.x,z:q.z,h:q.h,s:q.s,speed:0,jumpY:0,vy:0,stun:.2,resetCooldown:2});
+}
+
+// One rider's step for dt (input already cleaned): the host's race, and a
+// guest's prediction of its own horse (engine/predict.js). It writes only p;
+// `race` is the Race or a snapshot of it (options, time, the other riders).
+export function stepRider(p,i,dt,race) {
+  p.resetCooldown=Math.max(0,p.resetCooldown-dt);
+  if(i.reset&&!p.resetHeld&&p.resetCooldown===0)resetRider(p,race.options);
+  p.resetHeld=i.reset;
+  if(race.options.jumpHelp&&p.speed>2&&raceJumps(race.options).some(j=>distanceAhead(p.s,j.s,race.options)<Math.max(3,p.speed*.4)))i.jump=true;
+  if(i.jump&&!p.jumpHeld&&p.jumpY===0&&p.stamina>8){p.vy=race.options.jumps==='crazy'?7.4:5.9;p.stamina-=8;}
+  p.jumpHeld=i.jump;
+  if(p.jumpY>0||p.vy>0){p.vy-=14*dt;p.jumpY=Math.max(0,p.jumpY+p.vy*dt);if(!p.jumpY)p.vy=0;}
+  const oldS=p.s,road=nearest(p.x,p.z);
+  p.water=waterDepth(p.x,p.z);
+  if(p.stamina<1)p.exhausted=true;
+  if(p.stamina>25)p.exhausted=false;
+  const sprint=i.sprint&&!p.exhausted&&i.throttle>0&&p.water<.12;
+  p.stamina=clamp(p.stamina+(sprint?-24:13)*dt,0,100);
+  p.stun=Math.max(0,p.stun-dt);
+  let top=sprint?18:12;
+  top*=1-.54*clamp(p.water/.5,0,1);
+  if(road.distance>HALF_WIDTH&&!race.options.shortcuts)top*=.62;
+  top*=race.options.weather==='storm'?.82:race.options.weather==='rain'?.92:1;
+  const ahead=race.players.some(o=>o.id!==p.id&&!o.spectator&&o.finish===null&&distanceAhead(p.s,o.s,race.options)>1&&distanceAhead(p.s,o.s,race.options)<9&&Math.hypot(o.x-p.x,o.z-p.z)<10);
+  p.drafting=!!(race.options.drafting&&ahead);if(p.drafting)top*=1.15;
+  if(p.stun>0)top*=.2;
+  const target=i.throttle>0?top:i.throttle<0?0:0;
+  const acceleration=i.throttle<0?23:i.throttle>0?8:5;
+  p.speed+=clamp(target-p.speed,-acceleration*dt,acceleration*dt);
+  if(race.options.weather==='storm')p.h+=Math.sin(race.time*2+p.s*.04)*.12*dt;
+  p.h+=i.steer*(1.65-clamp(p.speed/28,0,.6))*dt*clamp(p.speed/2,.2,1);
+  p.x+=Math.sin(p.h)*p.speed*dt;p.z+=Math.cos(p.h)*p.speed*dt;
+  let next=nearest(p.x,p.z);
+  // Soft corridor keeps horses clear of the actual ranch buildings and trees.
+  if(next.distance>9){p.x=next.x+(p.x-next.x)*9/next.distance;p.z=next.z+(p.z-next.z)*9/next.distance;p.speed*=.94;next=nearest(p.x,p.z);}
+  const delta=(wrap(next.s-oldS+LENGTH/2,LENGTH)-LENGTH/2)*direction(race.options);p.s=next.s;
+  if(Math.abs(delta)<5){
+    for(const j of raceJumps(race.options))if(delta>0&&distanceAhead(oldS,j.s,race.options)<=delta&&p.jumpY<j.height){p.stun=.85;p.speed*=.28;p.hits++;}
+    p.progress+=delta;
+  }
+  // Gates every eighth of the route, in order; reverse crossings never add laps.
+  const gate=p.checkpoint*LENGTH/8;
+  if(p.progress>=gate&&p.progress<gate+LENGTH/8&&next.distance<8)p.checkpoint++;
+  if(p.progress>=race.options.laps*LENGTH&&p.checkpoint>=race.options.laps*8+1){p.finish=race.time;p.speed=0;}
+}
+
 export class Race {
   constructor(){this.options=cleanOptions();this.phase='lobby';this.time=0;this.countdown=3;this.players=[];this.finishGrace=null;this.raceId=0;}
   configure(patch={}){if(!['lobby','finished'].includes(this.phase))return false;const next=applyRoomOptions(FIELDS,this.options,patch);if(!next)return false;this.options=next;this.players.forEach((p,i)=>this.grid(p,i));return true;}
@@ -34,10 +84,7 @@ export class Race {
     const nextLog=raceJumps(this.options).some(j=>distanceAhead(p.s,j.s,this.options)<Math.max(3,p.speed*(this.options.jumps==='crazy'?.43:.37)));
     return {throttle:1,steer:clamp(angle(target-p.h)*2.4,-1,1),sprint:p.stamina>35&&Math.abs(angle(target-p.h))<.3&&p.water<.1,jump:nextLog};
   }
-  reset(p) {
-    // Recover to earned progress; neither a shortcut nor an extra checkpoint.
-    const q=routeAt(p.progress,0,this.options);Object.assign(p,{x:q.x,z:q.z,h:q.h,s:q.s,speed:0,jumpY:0,vy:0,stun:.2,resetCooldown:2});
-  }
+  reset(p) { resetRider(p,this.options); }
   update(dt,inputs=new Map()) {
     dt=clamp(dt,0,.05);
     if(this.phase==='countdown'){this.countdown-=dt;if(this.countdown<=0){this.phase='racing';this.countdown=0;}return;}
@@ -46,45 +93,7 @@ export class Race {
     for(const p of this.players){
       if(p.spectator||p.finish!==null)continue;
       const i=cleanInput(p.bot?this.botInput(p):inputs.get(p.id));
-      p.resetCooldown=Math.max(0,p.resetCooldown-dt);
-      if(i.reset&&!p.resetHeld&&p.resetCooldown===0)this.reset(p);
-      p.resetHeld=i.reset;
-      if(this.options.jumpHelp&&p.speed>2&&raceJumps(this.options).some(j=>distanceAhead(p.s,j.s,this.options)<Math.max(3,p.speed*.4)))i.jump=true;
-      if(i.jump&&!p.jumpHeld&&p.jumpY===0&&p.stamina>8){p.vy=this.options.jumps==='crazy'?7.4:5.9;p.stamina-=8;}
-      p.jumpHeld=i.jump;
-      if(p.jumpY>0||p.vy>0){p.vy-=14*dt;p.jumpY=Math.max(0,p.jumpY+p.vy*dt);if(!p.jumpY)p.vy=0;}
-      const oldS=p.s,road=nearest(p.x,p.z);
-      p.water=waterDepth(p.x,p.z);
-      if(p.stamina<1)p.exhausted=true;
-      if(p.stamina>25)p.exhausted=false;
-      const sprint=i.sprint&&!p.exhausted&&i.throttle>0&&p.water<.12;
-      p.stamina=clamp(p.stamina+(sprint?-24:13)*dt,0,100);
-      p.stun=Math.max(0,p.stun-dt);
-      let top=sprint?18:12;
-      top*=1-.54*clamp(p.water/.5,0,1);
-      if(road.distance>HALF_WIDTH&&!this.options.shortcuts)top*=.62;
-      top*=this.options.weather==='storm'?.82:this.options.weather==='rain'?.92:1;
-      const ahead=this.players.some(o=>o!==p&&!o.spectator&&o.finish===null&&distanceAhead(p.s,o.s,this.options)>1&&distanceAhead(p.s,o.s,this.options)<9&&Math.hypot(o.x-p.x,o.z-p.z)<10);
-      p.drafting=!!(this.options.drafting&&ahead);if(p.drafting)top*=1.15;
-      if(p.stun>0)top*=.2;
-      const target=i.throttle>0?top:i.throttle<0?0:0;
-      const acceleration=i.throttle<0?23:i.throttle>0?8:5;
-      p.speed+=clamp(target-p.speed,-acceleration*dt,acceleration*dt);
-      if(this.options.weather==='storm')p.h+=Math.sin(this.time*2+p.s*.04)*.12*dt;
-      p.h+=i.steer*(1.65-clamp(p.speed/28,0,.6))*dt*clamp(p.speed/2,.2,1);
-      p.x+=Math.sin(p.h)*p.speed*dt;p.z+=Math.cos(p.h)*p.speed*dt;
-      let next=nearest(p.x,p.z);
-      // Soft corridor keeps horses clear of the actual ranch buildings and trees.
-      if(next.distance>9){p.x=next.x+(p.x-next.x)*9/next.distance;p.z=next.z+(p.z-next.z)*9/next.distance;p.speed*=.94;next=nearest(p.x,p.z);}
-      const delta=(wrap(next.s-oldS+LENGTH/2,LENGTH)-LENGTH/2)*direction(this.options);p.s=next.s;
-      if(Math.abs(delta)<5){
-        for(const j of raceJumps(this.options))if(delta>0&&distanceAhead(oldS,j.s,this.options)<=delta&&p.jumpY<j.height){p.stun=.85;p.speed*=.28;p.hits++;}
-        p.progress+=delta;
-      }
-      // Gates every eighth of the route, in order; reverse crossings never add laps.
-      const gate=p.checkpoint*LENGTH/8;
-      if(p.progress>=gate&&p.progress<gate+LENGTH/8&&next.distance<8)p.checkpoint++;
-      if(p.progress>=this.options.laps*LENGTH&&p.checkpoint>=this.options.laps*8+1){p.finish=this.time;p.speed=0;}
+      stepRider(p,i,dt,this);
     }
     const racers=this.players.filter(p=>!p.spectator),humans=racers.filter(p=>!p.bot);
     if(racers.some(p=>p.finish!==null)&&this.finishGrace===null)this.finishGrace=this.time+45;

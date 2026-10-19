@@ -49,12 +49,15 @@ on top of `HostRoom`. Start there (the `new-game` scaffold does); drop to plain
   prediction from the host's body and replays the inputs it hadn't applied, so
   the host stays the authority and a guest walks without waiting a round trip.
   `step` must be the very function the host's `update` uses for that body
-  (Cocina `stepCook`, Reliquia `stepExplorer`) and touch only the body; `body`
-  returns null outside play. Bodies pushed by actions (a dodge, a carry) still
-  move when the host says so. Not predicted yet: Escondidas, Galope and
-  Lancha each move one body per player in `update()` and are candidates once
-  that movement is split into a pure step; a Curiara canoe is shared by two
-  paddlers, and Tambor's input is song hits, not movement.
+  (Cocina `stepCook`, Reliquia `stepExplorer`, Escondidas `stepPana`, Galope
+  `stepRider`) and touch only the body; `body` returns null outside play.
+  Lancha drives the boat with `Race.drive` inside a private copy of the latest
+  snapshot (one per snapshot, river cached by course options), since driving
+  reads the river, the time and the hazards. Anything that compares bodies
+  must compare ids: the predicted body is a copy, so `o !== p` would find
+  yourself in the snapshot (Galope's drafting did). Bodies pushed by actions
+  (a dodge, a carry) still move when the host says so. Not predicted: a
+  Curiara canoe is shared by two paddlers, and Tambor's input is song hits.
 
 ## A host-simulated game on HostRoom directly
 

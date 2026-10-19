@@ -1,6 +1,6 @@
 // Round authority stays with the room's host (engine/live-room.js). All gameplay
 // data rides the kit's relay messages under the 'hunt-v2' protocol.
-import { HuntRound } from './rules.js';
+import { HuntRound, stepPana } from './rules.js';
 import { LiveRoom, axis } from '/engine/live-room.js';
 
 export class HuntRoom extends LiveRoom {
@@ -8,7 +8,13 @@ export class HuntRoom extends LiveRoom {
     super({ ...options, game: 'escondidas', protocol: 'hunt-v2', texts: {
       full: 'La sala está llena (8 panas). Puedes practicar sin conexión.',
       offline: 'No pudimos conectar. Puedes practicar sin conexión.',
-      waiting: 'Espera a reconectar o entra a practicar.' } });
+      waiting: 'Espera a reconectar o entra a practicar.' } }, {
+      // Your own pana moves the moment you press a key; the host corrects it.
+      predict: {
+        body: (state, id) => ['hide', 'hunt'].includes(state.phase) ? state.players.find(p => p.id === id && !p.bot) : null,
+        step: stepPana,
+      },
+    });
     this.state = new HuntRound('plaza', { layoutSeed: crypto.getRandomValues(new Uint32Array(1))[0] }).snapshot();
   }
   cleanInput(raw) { return { x: axis(raw?.x), z: axis(raw?.z), sprint: !!raw?.sprint, ...(Number.isFinite(raw?.look) ? { look: raw.look } : {}) }; }

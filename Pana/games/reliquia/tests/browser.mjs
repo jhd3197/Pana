@@ -30,6 +30,13 @@ try {
   const initial = await b.evaluate(() => reliquia.state.players.find(p => p.id === reliquia.room.id).x);
   await b.keyboard.down('d'); await b.waitForFunction(x => reliquia.state.players.find(p => p.id === reliquia.room.id).x > x + 1, initial); await b.keyboard.up('d');
   await a.waitForFunction(({ id, x }) => reliquia.state.players.find(p => p.id === id).x > x + 1, { id: ids.b, x: initial }); check('remote keyboard input moves the shared player');
+  // Prediction: with the host's snapshots held back the guest still walks; then it settles on the host's position.
+  await b.waitForFunction(() => !!reliquia.room.predicted); await a.evaluate(() => { reliquia.room.publish = () => {}; });
+  const stalled = await b.evaluate(() => { const p = reliquia.room.predicted, me = reliquia.state.players.find(q => q.id === reliquia.room.id); return { x: p.x, shown: me.x }; });
+  await b.keyboard.down('a'); await b.waitForFunction(x => reliquia.room.predicted.x < x - 0.8, stalled.x); await b.keyboard.up('a');
+  assert.equal(await b.evaluate(() => reliquia.state.players.find(q => q.id === reliquia.room.id).x), stalled.shown, 'no snapshot arrived while predicting');
+  await a.evaluate(() => { delete reliquia.room.publish; });
+  await b.waitForFunction(() => { const me = reliquia.state.players.find(q => q.id === reliquia.room.id), p = reliquia.room.predicted; return p && Math.hypot(me.x - p.x, me.z - p.z) < 0.3; }); check('the guest walks its own explorer at once and settles on the host position');
   await place(a, ids.b, 0, -3); await ready(b, 0, -3);
   await a.evaluate(() => { reliquia.room.game.spawn(0, -5); reliquia.room.publish(); });
   await b.keyboard.press('Space');

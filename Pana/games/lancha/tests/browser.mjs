@@ -30,6 +30,20 @@ try {
   await guest.keyboard.up('w');
   await waitFor(host, id => lanchaDebug.state.boats.find(b => b.driver.id === id).throttle === 0, id);
   check('holding W on the guest drives its lancha on the host; letting go cuts the gas');
+  // Prediction: with the host's snapshots held back, the guest's own lancha still
+  // answers W; once they flow again it lands where the host has it.
+  await waitFor(guest, () => !!lanchaDebug.room.predicted);
+  await host.evaluate(() => { lanchaDebug.room.publish = () => {}; });
+  // The lancha still coasts: let snapshots already on the wire land (30 frames with none) before reading.
+  await guest.evaluate(() => new Promise(done => { let last = lanchaDebug.state, quiet = 0; const tick = () => { if (lanchaDebug.state === last) quiet++; else { last = lanchaDebug.state; quiet = 0; } if (quiet > 30) done(); else requestAnimationFrame(tick); }; tick(); }));
+  const stalled = await guest.evaluate(id => ({ predicted: lanchaDebug.room.predicted.progress, shown: lanchaDebug.state.boats.find(b => b.driver.id === id).progress }), id);
+  await guest.keyboard.down('w');
+  await waitFor(guest, p => lanchaDebug.room.predicted.progress > p + 4, stalled.predicted, 60_000);
+  await guest.keyboard.up('w');
+  assert.equal(await guest.evaluate(id => lanchaDebug.state.boats.find(b => b.driver.id === id).progress, id), stalled.shown, 'no snapshot arrived while predicting');
+  await host.evaluate(() => { delete lanchaDebug.room.publish; });
+  await waitFor(guest, id => { const b = lanchaDebug.state.boats.find(b => b.driver.id === id), p = lanchaDebug.room.predicted; return p && Math.hypot(b.x - p.x, b.z - p.z) < 1.5; }, id, 60_000);
+  check('the guest drives its own lancha at once and settles on the host position');
   await quiet(false);
   await waitFor(guest, () => lanchaDebug.guide.group.visible === true);
   check('the gold guide shows on the water around the guest');

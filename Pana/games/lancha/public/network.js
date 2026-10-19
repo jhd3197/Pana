@@ -1,4 +1,17 @@
 import { Race, cleanInput } from './rules.js';
+import { courseRiver } from './course.js';
+
+// A private copy of the latest snapshot to drive your own lancha in
+// (Race.drive also reads the river, the time and the hazards). One per
+// snapshot; the river is rebuilt only when the course options change.
+let ghost = null, ghostOf = null, river = null, riverKey = '';
+function ghostRace(state) {
+  if (ghostOf === state) return ghost;
+  const key = `${state.options?.falls}:${state.options?.items}`;
+  if (key !== riverKey) { riverKey = key; river = courseRiver(state.options || {}); }
+  ghostOf = state;
+  return (ghost = Object.assign(new Race(), structuredClone(state), { river }));
+}
 import { LiveRoom } from '/engine/live-room.js';
 
 // Host simulation on the shared live room (engine/live-room.js): the host
@@ -8,7 +21,14 @@ export class LanchaRoom extends LiveRoom {
   constructor(options) {
     super({ ...options, game: 'lancha', protocol: 'lancha-v1', texts: {
       connecting: 'Arrancando hacia la sala…', full: 'Sala llena. Abre una carrera local.',
-      lost: 'Se perdió la conexión. Reconectando…', offline: 'Sin conexión. Puedes correr en local.' } }, { valid: (state) => Array.isArray(state?.boats) });
+      lost: 'Se perdió la conexión. Reconectando…', offline: 'Sin conexión. Puedes correr en local.' } }, {
+      valid: (state) => Array.isArray(state?.boats),
+      // Your own lancha answers the throttle at once; the host corrects it.
+      predict: {
+        body: (state, id) => state.phase === 'racing' ? state.boats.find(b => b.driver.id === id && b.finish === null) : null,
+        step: (boat, input, dt, state) => ghostRace(state).drive(boat, dt, cleanInput(input)),
+      },
+    });
     this.state = new Race().snapshot();
   }
   cleanInput(raw) { return cleanInput(raw); }

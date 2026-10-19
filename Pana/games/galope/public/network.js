@@ -1,4 +1,4 @@
-import {Race,cleanInput} from './rules.js';
+import {Race,cleanInput,stepRider} from './rules.js';
 import {LiveRoom} from '/engine/live-room.js';
 
 // Host simulation on the shared live room (engine/live-room.js), with snapshot migration.
@@ -6,7 +6,12 @@ export class RaceRoom extends LiveRoom {
   constructor({coat,...options}){
     super({...options,game:'galope',protocol:'galope-v2',texts:{
       connecting:'Conectando con el hato…',full:'Sala llena. Abre una carrera local.',
-      lost:'Se perdió la conexión. Reconectando…',offline:'Sin conexión. Puedes correr en local.'}},{valid:state=>Array.isArray(state?.players)});
+      lost:'Se perdió la conexión. Reconectando…',offline:'Sin conexión. Puedes correr en local.'}},{valid:state=>Array.isArray(state?.players),
+      // Your own horse answers at once; the host corrects it.
+      predict:{
+        body:(state,id)=>state.phase==='racing'?state.players.find(p=>p.id===id&&!p.spectator&&p.finish===null):null,
+        step:(p,input,dt,state)=>stepRider(p,cleanInput(input),dt,state),
+      }});
     this.coat=coat;this.state=new Race().snapshot();
   }
   cleanInput(raw){return cleanInput(raw);}
