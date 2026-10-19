@@ -308,3 +308,36 @@ flow bugs and check balance.
   never touched. ¡Toninas! (2v2 fruit) waits for team support in the runner.
 
 Plan 56: createTepui uses the shared waterfall factory with an explicit sloped run; the terrain heightAt and board routes are unchanged. Its update uses absolute time instead of texture-offset/sprite animation.
+
+## Audit findings to preserve when improving the game
+
+- **Passing replay tests does not prove mobile usability.** At 844×390 the six
+  minigame score cards occupy about 185 vertical pixels and obscure actors;
+  the menu overlaps the first card. At 390×844, Atrapa's fixed camera loses
+  the outer four actors. Bululú leaves the shared menu's orientation at
+  `libre`; the default player setting therefore does not request landscape.
+  Online cameras use a fixed 16:9 aspect while the canvas fills the viewport;
+  fitting the display must preserve Chinazo's shared aiming coordinates.
+- **Minigame cleanup is missing at runner boundaries.** `playMinigame` and
+  `clearMini` drop the instance without disposing its scene resources. Five
+  rendered Atrapa practice rounds on one low-quality renderer grew registered
+  geometries from 1,122 to 2,925 and textures from 93 to 233. These are resource
+  counts, not memory bytes. Removed falling objects need ownership too, since
+  traversing only the remaining scene at teardown will miss them.
+- **Remada's pack camera can abandon the local player.** With seed 5, six seats,
+  seat zero human and idle, and five bots, after 12 seconds at 20 Hz the human
+  is still at 0 m while bots reach 40.7–49.4 m. Its projected position has
+  NDC z above 1: it is outside the view. Retain local-player visibility or
+  provide a deliberate trailing-player view.
+- **Caída awards same-step matches by actor iteration order.** Its sequential
+  slam loop clears the cards for the first successful actor. The online step
+  is 50 ms; simultaneous taps need an explicit tie rule independent of seat.
+- **Embuste bots do not suspect inactivity.** A human mummy that never cranks
+  or votes won 24 of 30 seeded games (seeds 1–30, six seats, 20 Hz) against
+  five bots. Suspicion tracks emitted sand, which inactivity never produces.
+  This is a bot-play result, not evidence about six-human matches.
+- **River balance benchmarks still default to four seats.** Six-seat presence
+  and replay checks are separate from balance. A six-seat audit over 200 seeds
+  per river game at both 60 and 20 Hz found a winner in every run, with fractional
+  seat win shares spanning 11.3–20.7%. Keep count and tick rate explicit in
+  future balance tests; do not reuse four-seat percentage bounds for six seats.
