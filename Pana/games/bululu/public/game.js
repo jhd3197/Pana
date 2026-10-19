@@ -539,8 +539,9 @@ async function chooseRoute(p, [shore, hill]) {
   focus(p.token.rest.clone().lerp(board.tiles[hill].mesh.position, 0.4), 'mid');
   let take;
   if (isHuman(p)) {
+    const viaShore = stepsTo(shore, board.standTile) + 1, viaHill = stepsTo(hill, board.standTile) + 1;
     take = await ask(`¿Por dónde vas? El <b>Atajo del cerro</b> es más corto, pero cuesta ${FORK.toll} monedas y es más peligroso.`,
-      [{ label: 'Por la orilla', key: '1' }, { label: `Atajo (−${FORK.toll})`, key: '2' }]);
+      [{ label: `Por la orilla (${viaShore} al puesto)`, key: '1' }, { label: `Atajo −${FORK.toll} (${viaHill} al puesto)`, key: '2' }]);
   } else {
     // head for the cart: take the hill if it gets there sooner, sometimes just for fun
     const viaHill = stepsTo(hill, board.standTile), viaShore = stepsTo(shore, board.standTile);
@@ -711,11 +712,12 @@ async function takeTurn(p) {
   renderCards();
   const tk = p.token;
   focus(tk.rest);
-  await toast(online ? `Turno de ${escapeHtml(p.name)}` : p.human ? '¡Tu turno!' : `Turno de ${escapeHtml(p.name)}`, '', 1, `p${p.i}`);
+  const cart = stepsTo(p.tile, board.standTile);
+  await toast(online ? `Turno de ${escapeHtml(p.name)}` : p.human ? '¡Tu turno!' : `Turno de ${escapeHtml(p.name)}`, `Puesto del mango a ${cart} casillas`, 1, `p${p.i}`);
 
   // the dice spin over the pana's head until they're thrown onto the board
   diceTable.hold(p, options.dice);
-  const power = await askThrow(p, 'Mantén para agitar y suelta para tirar', options.dice === 1 ? '¡Tira el dado!' : '¡Tira los dados!');
+  const power = await askThrow(p, `Mantén para agitar y suelta para tirar · el puesto está a ${cart} casillas`, options.dice === 1 ? '¡Tira el dado!' : '¡Tira los dados!');
   const { a, b, n, doubles } = rules.rollDice(Math.random, options.dice);
   await wait(diceTable.toss(p, options.dice === 1 ? [a] : [a, b], power));
   sound.boing();

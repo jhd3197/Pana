@@ -457,6 +457,10 @@ becomes the GitHub release's notes.
 
 ### Changed
 
+- **Bululú shows how far the mango cart is.** Your turn and the dice
+  prompt say how many tiles away the cart is, and at the fork each route
+  says how many tiles it takes to reach it.
+
 - **Everyone says ¡Listo! before an online Bululú minigame.** Each pana
   gets their own button and sees who is ready; it starts when all are,
   or after 15 seconds. Before, only the host was asked.
