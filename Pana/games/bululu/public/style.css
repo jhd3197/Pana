@@ -387,6 +387,12 @@ body.in-mini .look, body.in-mini .side, body.in-mini .legend, body.in-mini .keys
 .mkeys span { display: flex; align-items: center; gap: 6px; }
 .prize { margin: 0; color: var(--pk-muted); font-size: 15px; }
 .prize b { color: var(--pk-yellow); }
+.mready { display: grid; justify-items: center; gap: 8px; }
+.mready .chips { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; }
+.mready .chip { padding: 4px 10px; border: 2px solid var(--c); border-radius: 999px; color: var(--pk-muted); font: 800 13px var(--pk-sans); }
+.mready .chip.on { background: var(--c); color: #fff; }
+.mready small { color: var(--pk-muted); font: 700 13px var(--pk-sans); }
+.mready .pk-btn--primary { font-size: 26px; padding: 12px 26px 9px; }
 
 .results { display: grid; gap: 12px; }
 .results .sub { font-size: 15px; }

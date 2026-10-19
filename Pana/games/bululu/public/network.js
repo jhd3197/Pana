@@ -27,6 +27,8 @@ export class BululuRoom extends HostRoom {
       this.events.state(v.state);
     } else if (v.kind === 'input' && this.isHost && v.serial === this.state?.mini?.serial) {
       this.input(id, v.input);
+    } else if (v.kind === 'ready' && this.isHost && typeof v.id === 'string') {
+      this.events.ready(id, v.id);
     } else if (v.kind === 'choice' && this.isHost && acceptsChoice(this.prompt, id, v)) {
       this.events.choice(v.choice, v.power);
     } else if (v.kind === 'frames' && id === this.hostId && !this.isHost && (v.to == null || v.to === this.id)) {
@@ -42,6 +44,11 @@ export class BululuRoom extends HostRoom {
     const message = { kind: 'choice', prompt, choice, power };
     if (this.isHost) { if (acceptsChoice(this.prompt, this.id, message)) this.events.choice(choice, power); }
     else this.send(message);
+  }
+  // ¡Listo! before a minigame: each pana answers the host's check for itself.
+  ready(check) {
+    if (this.isHost) this.events.ready(this.id, check);
+    else this.send({ kind: 'ready', id: check });
   }
   input(id, value) {
     const next = cleanInput(value), previous = this.inputs.get(id);

@@ -44,6 +44,12 @@ instances have no `finish` continuation. Prompt IDs include the host's seat so a
 answer in flight cannot accidentally answer a new host's first prompt. The host's
 **Otra vez** resets the board and scores in the same room for a rematch.
 
+Before an online minigame every connected human answers its own ¡Listo!
+(`kind: 'ready'` with the host's check id). The host waits for all of them
+or `READY_WAIT` (15 s), whichever comes first; bots and `?auto` never wait.
+The check travels in the snapshot as `ready` so guests draw the chips and
+their own button. Formerly only the host's seat was asked.
+
 Regression: `npm run test:browser -- bululu` includes real two-client room play.
 
 ## Room settings and six-player play

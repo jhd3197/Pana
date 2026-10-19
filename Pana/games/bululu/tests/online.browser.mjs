@@ -136,7 +136,11 @@ try {
   const a = await open('Caro', `room=${nextCode}&play=chinazo`);
   const b = await open('Dani', `room=${nextCode}&play=chinazo`);
   await wait(b, () => players.filter(p => p.human).length === 2);
-  await a.locator('#start').click(); await clickPrompt(a, 'Listo');
+  await a.locator('#start').click();
+  // each pana says ¡Listo! for itself before an online minigame
+  await a.locator('#mini-ready button').click({ timeout: 60000 });
+  await wait(b, () => !document.querySelector('#mini-ready').hidden && document.querySelectorAll('#mini-ready .chip.on').length === 1);
+  await b.locator('#mini-ready button').click({ timeout: 60000 });
   await wait(b, () => minigame()?.state === 'run');
   await b.keyboard.down(' ');
   await wait(a, () => minigame().game.sim.shooters[1].pulling);
@@ -148,7 +152,7 @@ try {
   console.log('PASS reloaded guest catches up the running minigame');
   await a.context().close();
   await wait(b, () => onlineState().room.isHost);
-  await clickPrompt(b, 'Listo');
+  await b.locator('#mini-ready button').click({ timeout: 60000 });
   await wait(b, () => minigame()?.state === 'run');
   console.log('PASS new host resumes from the minigame checkpoint');
   assert.deepEqual(errors, []);

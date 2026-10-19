@@ -19,7 +19,8 @@ try {
   const code = `mini-bolas-${Date.now()}`, host = await open('Ana', `room=${code}&play=criollas`), guest = await open('Beto', `room=${code}`);
   await wait(host, () => players.filter(p => p.human).length === 2);
   await host.locator('#start').click();
-  await host.locator('#prompt button').filter({ hasText: 'Listo' }).click({ timeout: 120000 });
+  await host.locator('#mini-ready button').click({ timeout: 120000 });
+  await guest.locator('#mini-ready button').click({ timeout: 120000 });
   await wait(guest, () => minigame()?.state === 'run' && minigame()?.def.id === 'criollas');
   console.log('Both playing Criollas');
   await host.locator('#menu').click();

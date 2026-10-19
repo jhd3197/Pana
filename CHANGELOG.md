@@ -450,6 +450,10 @@ becomes the GitHub release's notes.
 
 ### Changed
 
+- **Everyone says ¡Listo! before an online Bululú minigame.** Each pana
+  gets their own button and sees who is ready; it starts when all are,
+  or after 15 seconds. Before, only the host was asked.
+
 - **Bululú's minigames tell you what to do right now.** A line under the
   cards shows your secret role and the vote in ¡Embuste!, run or freeze
   and your disguises left in ¡Momia!, when to grab the tail in ¡Coleo!,

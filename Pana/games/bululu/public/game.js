@@ -751,7 +751,8 @@ async function playMinigame(def) {
   $('mini-howto').textContent = def.howto;
   $('mini-keys').innerHTML = def.keys.map(([k, what]) => `<span><kbd class="pk-kbd">${k}</kbd> ${what}</span>`).join('');
   $('mini-intro').classList.remove('hidden');
-  if (isHuman(me)) await ask('', [{ label: '¡Listo!', key: ' ' }]);
+  if (online) await everyoneReady();
+  else if (isHuman(me)) await ask('', [{ label: '¡Listo!', key: ' ' }]);
   else await wait(2);
   $('mini-intro').classList.add('hidden');
 
@@ -991,6 +992,43 @@ async function runBoard(resume) {
   await results();
 }
 
+// Online, every pana in the room says ¡Listo! for themselves before a
+// minigame; bots don't wait, and after READY_WAIT seconds it starts anyway.
+const READY_WAIT = 15;
+let readyCheck = null, shownReady = '';
+async function everyoneReady() {
+  const seats = players.filter(p => p.human && room.members.has(p.seat)).map(p => p.seat);
+  readyCheck = { id: `${room.id}:${++promptSerial}`, seats, done: AUTO ? [...seats] : [], left: READY_WAIT };
+  for (let t = 0; t < READY_WAIT && seats.some(s => room.members.has(s) && !readyCheck.done.includes(s)); t += 0.25) {
+    readyCheck.left = Math.ceil(READY_WAIT - t); showReady(readyCheck);
+    await wait(0.25);
+  }
+  readyCheck = null; showReady(null);
+}
+function markReady(seat, id) {
+  if (readyCheck?.id !== id || !readyCheck.seats.includes(seat) || readyCheck.done.includes(seat)) return;
+  readyCheck.done.push(seat); showReady(readyCheck); room.publish(captureOnline());
+}
+function showReady(check) {
+  const key = JSON.stringify([check, room?.id]);
+  if (key === shownReady) return;
+  shownReady = key;
+  const box = $('mini-ready'); box.replaceChildren(); box.hidden = !check;
+  if (!check) return;
+  const row = document.createElement('div'); row.className = 'chips'; box.append(row);
+  for (const seat of check.seats) {
+    const p = players.find(o => o.seat === seat), chip = document.createElement('span');
+    chip.className = `chip${check.done.includes(seat) ? ' on' : ''}`; chip.style.setProperty('--c', p?.color || '#fff');
+    chip.textContent = p?.name || 'Pana'; row.append(chip);
+  }
+  const mine = check.seats.includes(room.id) && !check.done.includes(room.id);
+  const note = document.createElement('small'); note.textContent = mine ? `Empieza en ${check.left} s` : `Esperando a los panas… ${check.left} s`; box.append(note);
+  if (!mine) return;
+  const go = document.createElement('button'); go.className = 'pk-btn pk-btn--primary'; go.textContent = '¡Listo!';
+  go.onclick = () => room.ready(check.id); box.append(go);
+  actionWaiters.push(k => { if (k === ' ' || k === 'enter') room.ready(check.id); });
+}
+
 // Online board authority and presentation. Minigames replay the host's exact
 // input steps with a game-only random stream, independent of rendering/sound.
 const CANCELLED = new Error('Bululú host changed');
@@ -1078,6 +1116,7 @@ function captureOnline() {
       rotation: p.token.group.rotation.y, cheer: p.token.cheer, dizzy: p.token.dizzy, pin: p.token.pin.visible })),
     dice: dice.map(d => ({ pos: d.mesh.position.toArray(), visible: d.mesh.visible, rolling: d.rolling, value: d.value, toss: d.spec || null })), order,
     counter: { pos: counter.sprite.position.toArray(), visible: counter.sprite.visible, value: counter.value },
+    ready: readyCheck,
     mini: mini?.spec ? { ...mini.spec, state: mini.state, left: mini.left, winners: mini.winners, frames: room.history.length } : null,
     presentation: readPresentation() };
 }
@@ -1138,7 +1177,7 @@ function applyOnline(state) {
     setTimer(spec.state === 'outro' ? null : Math.max(0, Math.ceil(spec.left)));
     if (miniFrame < spec.frames && !requestingFrames) { requestingFrames = true; room.catchup(spec.serial, miniFrame); }
   }
-  renderCards(); writePresentation(state.presentation); showOnlinePrompt(state.prompt);
+  renderCards(); writePresentation(state.presentation); showOnlinePrompt(state.prompt); showReady(state.ready);
   const waiting = started && (!me || (mini && !mini.spec.players.some(p => p.seat === room.id)));
   if (waiting) {
     $('online-status').textContent = 'Estás viendo la partida. Te unes en el próximo turno o minijuego.';
@@ -1170,7 +1209,7 @@ function stopAuthority() {
   authority = 0;
   for (const j of jobs) j.reject?.(CANCELLED);
   jobs = []; rejectChoice?.(CANCELLED); resolveChoice = rejectChoice = null;
-  mini?.abort?.(CANCELLED); clearMini(); pendingChoice = null;
+  mini?.abort?.(CANCELLED); clearMini(); pendingChoice = null; readyCheck = null;
 }
 function beginOnline(resume) {
   stopAuthority(); authority = 1; started = true; roomOptions.close();
@@ -1211,7 +1250,7 @@ function connectOnline() {
         else { syncRoster(); room.publish(captureOnline()); }
       },
       members() { if (room.isHost && !mini) syncRoster(); },
-      state: applyOnline, choice: finishChoice, frames: applyFrames,
+      state: applyOnline, choice: finishChoice, frames: applyFrames, ready: markReady,
     },
   });
   lobbyRoster(); room.connect();
@@ -1269,7 +1308,7 @@ async function fastForward(seconds, dt = 1 / 30) {
     await null;   // let the turn logic's awaits run
   }
 }
-if (DEBUG) Object.assign(window, { menu, players, board, dice, MINIGAMES, layoutTokens, fastForward, renderer, boardScene, boardCam, minigame: () => mini, onlineState: () => ({ room, checkpoint, pendingChoice, miniFrame, me: me?.i, options, order }), changeOptions });
+if (DEBUG) Object.assign(window, { menu, players, board, dice, MINIGAMES, layoutTokens, fastForward, renderer, boardScene, boardCam, minigame: () => mini, onlineState: () => ({ room, checkpoint, pendingChoice, ready: readyCheck, miniFrame, me: me?.i, options, order }), changeOptions });
 if (DEBUG) Object.defineProperty(window, 'thrower', { get: () => thrower });
 
 frame();
