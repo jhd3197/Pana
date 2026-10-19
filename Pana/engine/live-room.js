@@ -125,8 +125,13 @@ export class LiveRoom extends HostRoom {
     if (!this.connected) return;
     if (!this.isHost) { this.sendInput(input, dt); return; }
     this.inputs.set(this.id, { ...this.ownInput(input), at: performance.now() });
-    const now = performance.now();
-    for (const [id, value] of this.inputs) if (id !== this.id && now - value.at > this.live.inputTtl) this.expire(id, value);
+    // A guest's input expires once it is older than inputTtl AND nothing came
+    // since the previous tick. A host that ticks slowly (a busy phone, a tab in
+    // the background firing timers about once a second) would otherwise drop a
+    // held key on every tick, and the guest would freeze.
+    const now = performance.now(), previous = this.lastTick ?? now;
+    for (const [id, value] of this.inputs) if (id !== this.id && now - value.at > this.live.inputTtl && value.at < previous) this.expire(id, value);
+    this.lastTick = now;
     if (!paused) for (let left = Math.min(this.live.maxCatchUp, dt); left > 1e-6; left -= STEP) this.game.update(Math.min(STEP, left), this.inputs);
     this.publish();
   }

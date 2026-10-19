@@ -45,6 +45,19 @@ test('stale guest inputs expire and repeated actions are dropped', () => {
   assert.deepEqual(room.handled, [[2, 1], [2, 2]]);
 });
 
+test('a slow host keeps a held key that arrived since its previous tick', () => {
+  const room = new WalkRoom();
+  room.practice();
+  room.tick(STEP, {});
+  room.lastTick -= 1000;                       // the host's last tick was a second ago
+  room.receive(2, { kind: 'input', input: { x: 1 } });
+  room.inputs.get(2).at -= 900;                // received 900 ms ago: past inputTtl, but after that tick
+  room.tick(1, {});
+  assert.equal(room.inputs.get(2)?.x, 1, 'still held');
+  room.tick(STEP, {});                         // nothing new since: now it expires
+  assert.equal(room.inputs.has(2), false);
+});
+
 test('guests send their cleaned input instead of stepping', () => {
   const room = new WalkRoom();
   room.id = 2; room.hostId = 1; room.connected = true; room.link = {};
