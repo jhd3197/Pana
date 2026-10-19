@@ -14,6 +14,7 @@ const STAGE = {
   sun: { color: WARM_DAY.sun.color, intensity: 3, position: [-12, 22, 10], box: 15, far: 55, bias: -.0001 },
   plazaScale: .85,
   fit: 'canvas',   // a stage inside the page; full-window tables pass 'window'
+  arena: true,     // false: no plaza, the game builds its own surroundings (Chapita's street)
 };
 
 export function createTableWorld(canvas, options = {}) {
@@ -28,7 +29,7 @@ export function createTableWorld(canvas, options = {}) {
   const sun = new THREE.DirectionalLight(o.sun.color, o.sun.intensity); sun.position.set(...o.sun.position); sun.castShadow = true;
   sun.shadow.mapSize.set(2048, 2048); Object.assign(sun.shadow.camera, { left: -o.sun.box, right: o.sun.box, top: o.sun.box, bottom: -o.sun.box, near: .5, far: o.sun.far });
   sun.shadow.normalBias = .025; sun.shadow.bias = o.sun.bias; scene.add(sun);
-  const plaza = createArenaSlot(scene, { mode: 'table', plazaScale: o.plazaScale }); plaza.setMap('plaza');
+  const plaza = o.arena ? createArenaSlot(scene, { mode: 'table', plazaScale: o.plazaScale }) : null; plaza?.setMap('plaza');
   const camera = new THREE.PerspectiveCamera(o.fov, 1, .1, 150);
   const target = new THREE.Vector3(), direction = new THREE.Vector3(), right = new THREE.Vector3(), up = new THREE.Vector3(), point = new THREE.Vector3();
   let time = 0;
@@ -52,8 +53,8 @@ export function createTableWorld(canvas, options = {}) {
     camera.setViewOffset(w, h, w / 2 - safe.x - safe.width / 2, h / 2 - safe.y - safe.height / 2, w, h);
     camera.updateProjectionMatrix(); camera.updateMatrixWorld();
   }
-  function draw(dt) { time += dt; plaza.update(time, dt); sky?.update(time); renderer.render(scene, camera); }
-  return { renderer, scene, camera, plaza, sun, resize, frameCamera, draw, setMap: id => plaza.setMap(id),
-    dispose() { unbind(); sky?.dispose(); plaza.dispose(); renderer.dispose(); },
+  function draw(dt) { time += dt; plaza?.update(time, dt); sky?.update(time); renderer.render(scene, camera); }
+  return { renderer, scene, camera, plaza, sun, resize, frameCamera, draw, setMap: id => plaza?.setMap(id),
+    dispose() { unbind(); sky?.dispose(); plaza?.dispose(); renderer.dispose(); },
   };
 }
