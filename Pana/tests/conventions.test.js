@@ -5,6 +5,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import { isOnline, gameUrl } from '../web/games.js';
+import { staticImports } from './import-graph.js';
 
 const app = path.resolve(import.meta.dirname, '..');
 const rel = (file) => path.relative(app, file).split(path.sep).join('/');
@@ -240,6 +241,20 @@ test('every game has rules tests and a browser suite', () => {
     const files = fs.existsSync(dir) ? fs.readdirSync(dir) : [];
     if (!files.some(f => f.endsWith('.test.js'))) problems.push(`${id}: no tests/*.test.js for its rules`);
     if (!files.some(f => /\.browser\.m?js$/.test(f) || f.endsWith('.mjs'))) problems.push(`${id}: no browser suite in tests/`);
+  }
+  assert.deepEqual(problems, []);
+});
+
+// Without a bundler every static import is a request, and each level of imports
+// waits for the one above it. A game's first load stays small; worlds, maps and
+// minigames that aren't on screen yet load with import() (Derrape's tracks.js,
+// Bululú's minigames/index.js).
+const FIRST_LOAD_MODULES = 160;
+test(`a game's first load is at most ${FIRST_LOAD_MODULES} modules`, () => {
+  const problems = [];
+  for (const id of games) {
+    const { files } = staticImports(pub(id, 'game.js'));
+    if (files.size > FIRST_LOAD_MODULES) problems.push(`${id}: ${files.size} modules before game.js runs`);
   }
   assert.deepEqual(problems, []);
 });
