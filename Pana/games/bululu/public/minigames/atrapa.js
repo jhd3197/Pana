@@ -139,6 +139,19 @@ export default {
       ai.target = best ? best.obj.position.x + ai.err : null;
     }
 
+    // The closest unstunned basket within `range` of x. Overlapping baskets
+    // must not hand the fruit to whoever comes first in the seat order; an
+    // exact tie is drawn from the game's random stream.
+    function nearest(x, range) {
+      let best = [], bestD = range;
+      for (const c of actors) {
+        if (c.stun > 0) continue;
+        const d = Math.abs(c.x - x);
+        if (d < bestD - 1e-9) { best = [c]; bestD = d; } else if (Math.abs(d - bestD) <= 1e-9) best.push(c);
+      }
+      return best.length > 1 ? best[Math.floor(random() * best.length)] : best[0] || null;
+    }
+
     let skyTime=0;
     function update(dt, input) {
       skyTime+=dt;stage.update(skyTime);
@@ -195,13 +208,13 @@ export default {
         p.y += f.vy * dt;
         // Magnetic pull-in toward the nearest unstunned basket when close
         if (f.kind !== 'coco' && p.y > CATCH_Y && p.y < CATCH_Y + 1.45) {
-          const magnet = actors.find((c) => c.stun <= 0 && Math.abs(c.x - p.x) < 1.45);
+          const magnet = nearest(p.x, 1.45);
           if (magnet) p.x += (magnet.x - p.x) * Math.min(1, dt * 9.5);
         }
         f.obj.rotation.z += f.spin * dt;
         f.obj.rotation.x += f.spin * 0.5 * dt;
         if (prev > CATCH_Y && p.y <= CATCH_Y) {
-          const a = actors.find((c) => Math.abs(c.x - p.x) < 0.95 && c.stun <= 0);
+          const a = nearest(p.x, 0.95);
           if (a) {
             f.dead = true;
             if (f.kind === 'coco') {
@@ -263,6 +276,6 @@ export default {
       shockwaves.update(dt);
     }
 
-    return { scene, camera, update, outro, scores: () => actors.map((a) => a.score), actors };
+    return { scene, camera, update, outro, scores: () => actors.map((a) => a.score), actors, falling: () => falling };
   },
 };

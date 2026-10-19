@@ -491,6 +491,8 @@ becomes the GitHub release's notes.
 - **Bululú's ¡Caída! no longer favours the first seats.** When several
   panas slap in the same instant, a fair draw picks who takes the cards
   instead of the seat order; a wrong slap now says −1.
+- **In ¡Atrapa los mangos! the closest basket gets the mango.** Two
+  overlapping baskets used to hand it to whoever sat first.
 
 - **End-of-round cards fit on phones again.** The shared results card and
   other kit modals counted their padding outside their width and spilled
