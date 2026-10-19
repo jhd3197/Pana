@@ -14,8 +14,16 @@ import { WebSocketTransport } from '@colyseus/ws-transport';
 import { config } from './config.js';
 import { listGames } from './api.js';
 import RelayRoom from './relay-room.js';
+import { MAX_MEMBERS } from './room-kit.js';
 
 export const PREFIX = '/colyseus';
+
+// game.json `players` is the room's cap: a fifth visitor to a four-seat table
+// is refused instead of sitting in a room they can't play.
+export function cappedRoom(RoomClass, players) {
+  const cap = Math.max(1, Math.min(MAX_MEMBERS, Number(players) || MAX_MEMBERS));
+  return class extends RoomClass { maxClients = cap; };
+}
 export const isColyseusPath = (url) => url === PREFIX || url.startsWith(PREFIX + '/') || url.startsWith(PREFIX + '?');
 
 export async function attachColyseus(server) {
@@ -27,10 +35,10 @@ export async function attachColyseus(server) {
   // Every game gets a room under its id: its own server/room.js, or the
   // generic host-relay room (relay-room.js) that engine/net.js HostRoom uses.
   const games = [];
-  for (const { id } of listGames()) {
+  for (const { id, players } of listGames()) {
     const file = path.join(config.paths.games, id, 'server', 'room.js');
     const RoomClass = fs.existsSync(file) ? (await import(pathToFileURL(file).href)).default : RelayRoom;
-    matchMaker.defineRoomType(id, RoomClass).filterBy(['code']);
+    matchMaker.defineRoomType(id, cappedRoom(RoomClass, players)).filterBy(['code']);
     games.push(RoomClass === RelayRoom ? id : `${id} (own room)`);
   }
   await matchMaker.accept();
@@ -52,7 +60,7 @@ export async function attachColyseus(server) {
     await matchMaker.driver.shutdown?.();
   }
 
-  // Live rooms for /api/rooms, in the relay's shape.
+  // Live rooms for /api/rooms.
   async function snapshot() {
     const rooms = await matchMaker.query({});
     return rooms.map((r) => ({

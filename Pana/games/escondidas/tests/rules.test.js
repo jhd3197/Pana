@@ -24,7 +24,7 @@ test('repeated or invalid forms never consume a change; large forms need room', 
   assert.equal(game.transform(1, 'barrel'), null); assert.equal(p.changes, 2);
   assert.match(game.transform(1, 'barrel'), /Ya tienes/); assert.equal(p.changes, 2);
   assert.match(game.transform(1, 'spaceship'), /no existe/); assert.equal(p.changes, 2);
-  p.x = 21; p.z = 0;
+  p.x = game.layout.bounds.x - 1; p.z = 0;
   assert.match(game.transform(1, 'bench'), /espacio/); assert.equal(p.changes, 2);
 });
 test('seeker cannot move, inspect or disguise during hiding', () => {
@@ -57,8 +57,8 @@ test('timeout, scoring, rotating roles, every player seeks and replay resets sco
   assert.equal(game.phase, 'finished'); game.start(1, 'seek');
   assert.equal(game.round, 1); assert.ok(game.players.every(p => p.score === 0));
 });
-test('a full eight-player room has eight seeker turns', () => {
-  const game = new HuntRound();
+test('an eight-round room gives every player a seeker turn', () => {
+  const game = new HuntRound(); game.configure({ rounds: 8 });
   for (let id = 1; id <= 8; id++) game.addPlayer(id, `Pana ${id}`, {});
   const seekers = new Set();
   for (let i = 0; i < 8; i++) { game.start(1, 'hide'); seekers.add(game.seeker); game.finish('hiders', 'Done'); }
@@ -94,4 +94,20 @@ test('solo seeker patrols, respects camouflage and catches exposed nearby panas'
   game.update(0.05); assert.equal(player.suspicion, 0); assert.equal(player.caught, false);
   Object.assign(seeker, { x: -4, z: 14 }); Object.assign(player, { x: -2, z: 14, prop: null });
   advance(game, 2); assert.equal(player.caught, true);
+});
+
+test('first person: the seeker finds what is under the crosshair, one hit and done', () => {
+  const game = session('seek'), seeker = game.players[0], hider = game.players[1];
+  advance(game, game.hideSeconds + 1);
+  Object.assign(seeker, { x: -4, z: 14 }); Object.assign(hider, { x: 2, z: 14 });
+  assert.equal(game.check(1, 0), false, 'looking the other way misses'); assert.equal(seeker.cooldown, RULES.checkCooldown);
+  advance(game, 2); assert.equal(game.check(1, Math.PI / 2), true, '6 m straight ahead is within reach');
+  assert.equal(hider.caught, true); assert.equal(seeker.score, 1);
+  const found = game.events.at(-1).found; assert.deepEqual([found.seeker, found.hider, found.distance], [1, hider.id, 6]);
+});
+test('looking around turns a pana but never spins a disguise', () => {
+  const game = session(), p = game.players[0];
+  game.update(.05, new Map([[1, { look: 1.2 }]])); assert.equal(p.h, 1.2);
+  game.transform(1, 'barrel'); const h = p.h;
+  game.update(.05, new Map([[1, { look: 2.5 }]])); assert.equal(p.h, h);
 });

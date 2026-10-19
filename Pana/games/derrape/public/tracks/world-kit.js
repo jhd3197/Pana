@@ -2,14 +2,16 @@
 import * as THREE from 'three';
 import { M, mesh, box, tube, rng } from '/engine/models/core/primitives.js';
 import { bake, instancePlacements } from '/engine/models/core/static-batch.js';
-import { terrainMaterial } from '/engine/terrain-material.js';
+import { terrainMaterial } from '/engine/worlds/terrain-material.js';
 import { natureSurface } from '/engine/models/core/nature-surface.js';
-import { sign as makeSign } from '/engine/models/core/architecture-kit.js';
+import { signBoard } from '/engine/models/props/wood-sign.js';
 import { placeOnTrack } from '../track-kit.js';
 import { waterSurface, waterDepthMap, riverSurface } from '/engine/models/effects/water-surface.js';
 import { extendTerrain, extendWaterPlane } from './world-horizon.js';
 export { THREE, M, mesh, box, tube, rng, placeOnTrack };
-export function sign(...args){const panel=makeSign(...args);panel.userData.dispose=()=>{panel.material.map.dispose();panel.material.dispose();};return panel;}
+// Every circuit board is the library's cartoon signBoard; the old flat colour
+// becomes a brighter trim around the wooden panel.
+export function sign(text,w,h,{background='#285b58'}={}){return signBoard({lines:text,w,h,accent:'#'+new THREE.Color(background).offsetHSL(0,.12,.16).getHexString()});}
 export const smooth=THREE.MathUtils.smoothstep, mix=THREE.MathUtils.lerp;
 export const hill=(x,z,cx,cz,rx,rz,h)=>h*Math.exp(-(((x-cx)/rx)**2)-((z-cz)/rz)**2);
 
@@ -74,13 +76,18 @@ export function scatter(T,groundAt,{seed=1,count,bounds,margin=10,minY=.3,scale=
   }return out;
 }
 
-export function edges(group,kit,T,{style='steel',step=5,skip=()=>false,cellSize=110}={}) {
+export function edges(group,kit,T,{style='steel',step=5,skip=()=>false,cellSize=110,colors=null}={}) {
   const g=new THREE.Group(),steel=M(0xa9b5af,{metalness:.45}),cream=M(0xe8ddc1),red=M(0xbf5947),wood=M(0x8a7353);
+  // Optional festive kerbs cycle through a list of paints instead of red/cream,
+  // as vertex colours on one material so extra paints cost no extra draws.
+  const painted=M(0xffffff,{vertexColors:true,roughness:.45}),paint=(geo,hex)=>{
+    const rgb=new THREE.Color(hex).toArray(),n=geo.attributes.position.count;geo.setAttribute('color',new THREE.Float32BufferAttribute(Array.from({length:n*3},(_,i)=>rgb[i%3]),3));return geo;};
   for(let s=0;s<T.TOTAL;s+=step)for(const side of [-1,1]){
     if(skip(s,side))continue;const p=placeOnTrack(T,s,side*(T.HW+.8)),q=placeOnTrack(T,Math.min(s+step,T.TOTAL),side*(T.HW+.8));
     if(T.openAt?.(p.x,p.z,side*(T.HW+1))||T.plankAt?.(p.x,p.z)!=null||T.plankAt?.(q.x,q.z)!=null)continue;
     if(style==='kerb'){
-      const kerb=box(.75,.24,step+.1,Math.floor(s/step)%2?cream:red,p.x,p.y+.12,p.z);kerb.rotation.y=p.h;g.add(kerb);
+      const kerb=box(.75,.24,step+.1,colors?painted:Math.floor(s/step)%2?cream:red,p.x,p.y+.12,p.z);
+      if(colors)paint(kerb.geometry,colors[Math.floor(s/step)%colors.length]);kerb.rotation.y=p.h;g.add(kerb);
     }else{
       g.add(box(.16,1.15,.16,style==='rope'?wood:steel,p.x,p.y+.56,p.z));
       g.add(tube([p.x,p.y+.86,p.z],[q.x,q.y+.86,q.z],style==='rope'?.035:.12,style==='rope'?cream:steel));

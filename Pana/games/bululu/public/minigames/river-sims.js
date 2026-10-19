@@ -1,12 +1,12 @@
 // Pure cores of Bululú's river minigames, shared with Curiara's paddle model
-// (/engine/paddle.js). No THREE here: the minigame modules draw these, and
+// (/engine/play/paddle.js). No THREE here: the minigame modules draw these, and
 // tests/river-minigames.test.js plays thousands of rounds for balance.
 //
 // Every sim takes `humans`: a Set of seat indices the players drive. AIs play
 // the other seats. update(dt, inputs) takes inputs[i] = {x, jump} per human.
-import { paddleState, stroke, step, axisStroke, PADDLE } from '/engine/paddle.js';
+import { paddleState, stroke, step, axisStroke, PADDLE } from '/engine/play/paddle.js';
+import { clamp } from '../../../../engine/random.js';
 
-const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 const TAU = Math.PI * 2;
 
 // An AI paddler: strokes alternate near the sweet spot, with its own wobble,
@@ -30,9 +30,9 @@ function strokeFrom(p, input, time) { const side = axisStroke(p.prevX, input?.x 
 
 // ---------- ¡Remada! · 4 canoes, a straight 120 m sprint ----------
 export const REMADA = Object.freeze({ length: 120, time: 35, drag: .6 });
-export function remadaSim({ humans = new Set(), random = Math.random } = {}) {
+export function remadaSim({ humans = new Set(), random = Math.random, count = 4 } = {}) {
   let time = 0;
-  const order = [], racers = [0, 1, 2, 3].map(i => ({ i, ...paddler(), s: 0, finish: null, strokes: 0, ai: humans.has(i) ? null : rhythm(random) }));
+  const order = [], racers = Array.from({ length: count }, (_, i) => ({ i, ...paddler(), s: 0, finish: null, strokes: 0, ai: humans.has(i) ? null : rhythm(random) }));
   return {
     racers, order, get time() { return time; },
     update(dt, inputs = []) {
@@ -60,7 +60,7 @@ export function remadaSim({ humans = new Set(), random = Math.random } = {}) {
   };
 }
 
-// ---------- ¡Raudal! · four rapids side by side, three lanes each ----------
+// ---------- ¡Raudal! · parallel rapids side by side, three lanes each ----------
 // The current carries everyone at the same speed over the same pattern of
 // rocks, mangos and ledges. A/D switch lanes, Space jumps a ledge.
 export const RAUDAL = Object.freeze({ time: 35, speed: 8, row: 7, ledgeEvery: 5, jump: [.08, .45], stun: .9, ledgeStun: .6, lanes: 3 });
@@ -74,9 +74,9 @@ export function raudalPattern(random = Math.random, length = RAUDAL.time * RAUDA
   }
   return rows;
 }
-export function raudalSim({ humans = new Set(), random = Math.random, pattern = raudalPattern(random) } = {}) {
+export function raudalSim({ humans = new Set(), random = Math.random, count = 4, pattern = raudalPattern(random) } = {}) {
   let time = 0, s = 0;
-  const canoes = [0, 1, 2, 3].map(i => ({ i, lane: 1, x: 1, score: 0, stun: 0, jumping: 0, jumpAt: -9, prevX: 0, hits: 0, jumps: 0, splashes: 0, got: new Set(), passed: 0,
+  const canoes = Array.from({ length: count }, (_, i) => ({ i, lane: 1, x: 1, score: 0, stun: 0, jumping: 0, jumpAt: -9, prevX: 0, hits: 0, jumps: 0, splashes: 0, got: new Set(), passed: 0,
     ai: humans.has(i) ? null : { skill: .5 + random() * .5, plan: null, jumpIn: null } }));
   const ahead = (c, from, to) => pattern.filter(r => r.s > from && r.s <= to);
   function think(c, dt) {
@@ -134,9 +134,9 @@ export function raudalSim({ humans = new Set(), random = Math.random, pattern = 
 // Canoes point outward on their own; strokes push them away from the eye.
 // Space shoves a neighbour toward it. Last one out of the eye wins.
 export const REMOLINO = Object.freeze({ time: 35, lagoon: 13, eye: [1.6, 6.5], pull: [1.2, 6.8], radius: 1.15, shove: 2.6, reach: 2.6, cooldown: 3, stun: .45, swirl: 3.4 });
-export function remolinoSim({ humans = new Set(), random = Math.random } = {}) {
+export function remolinoSim({ humans = new Set(), random = Math.random, count = 4 } = {}) {
   let time = 0, done = false;
-  const canoes = [0, 1, 2, 3].map(i => ({ i, ...paddler(), r: 8.5, a: i * TAU / 4 + (i % 2 ? -.5 : .5), out: null, stun: 0, cd: 1 + random(), shoves: 0, shoved: 0, ai: humans.has(i) ? null : { ...rhythm(random), mean: .4 + random() * .5 } }));
+  const canoes = Array.from({ length: count }, (_, i) => ({ i, ...paddler(), r: 8.5, a: i * TAU / count + (i % 2 ? -.5 : .5), out: null, stun: 0, cd: 1 + random(), shoves: 0, shoved: 0, ai: humans.has(i) ? null : { ...rhythm(random), mean: .4 + random() * .5 } }));
   const eye = () => REMOLINO.eye[0] + (REMOLINO.eye[1] - REMOLINO.eye[0]) * clamp(time / REMOLINO.time, 0, 1);
   const pull = c => (REMOLINO.pull[0] + (REMOLINO.pull[1] - REMOLINO.pull[0]) * clamp(time / REMOLINO.time, 0, 1)) * (.9 + .5 * (1 - c.r / REMOLINO.lagoon));
   const xy = c => [Math.cos(c.a) * c.r, Math.sin(c.a) * c.r];

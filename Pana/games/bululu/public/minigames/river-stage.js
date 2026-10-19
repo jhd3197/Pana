@@ -1,5 +1,5 @@
 import { random } from '../online-rules.js';
-// Shared bits for the river minigames: water, banks of selva and the four
+// Shared bits for the river minigames: water, banks of selva and the
 // panas in their curiaras (the same canoe as Curiara).
 import * as THREE from 'three';
 import { makeBubble } from '/engine/fx.js';

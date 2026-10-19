@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { createTableWorld } from '/engine/table-world.js';
+import { createTableWorld } from '/engine/worlds/table-world.js';
 import { createGameChair } from '/engine/models/props/game-table.js';
 import { createPokerTable, createPokerCard, createPokerChips } from '/engine/models/props/poker.js';
 import { buildCharacter } from '/engine/models/characters/pana/avatar-model.js';
@@ -44,10 +44,11 @@ export function createScene(canvas) {
       chair.position.set(x, 0, z); chair.rotation.y = angle + Math.PI;
       avatar.group.position.set(x, .76, z); avatar.group.rotation.y = angle + Math.PI;
       if (!p.folded) p.hole.forEach((c, i) => {
-        const offset = (i - .5) * .68;
+        const offset = (i - (p.hole.length - 1) / 2) * (p.hole.length > 2 ? .55 : .68);
         card(`hand-${p.id}-${i}`, c, x * .67 + Math.cos(angle) * offset, z * .65 - Math.sin(angle) * offset, angle);
       });
-      stack(`stack-${p.id}`, p.chips, x * .72 - Math.cos(angle) * 1.02, z * .7 + Math.sin(angle) * 1.02, '#3a9990');
+      const stackOffset = p.hole.length > 2 ? 1.6 : 1.02;
+      stack(`stack-${p.id}`, p.chips, x * .72 - Math.cos(angle) * stackOffset, z * .7 + Math.sin(angle) * stackOffset, '#3a9990');
       stack(`bet-${p.id}`, p.bet, x * .39, z * .4 + .5, '#c15a61');
     }
     stack('pot', state.pot, 0, -.98, '#c9a84c');

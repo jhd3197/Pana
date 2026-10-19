@@ -12,7 +12,7 @@ export default [
   {
     id:'moriche',name:'Palma moriche',category:'Vegetación',source:'/engine/models/vegetation/moriche.js',
     factory:'moriche',usedBy:['Galope'],previewOptions:{seed:7,h:10},
-    description:'Palma de hojas en abanico, tronco anillado y racimos de frutos.',tags:['llanos','morichal','palma'],pack:'vegetation'
+    description:'La palma del llano: tronco recto con cicatrices, abanicos plegados, falda de hojas secas y racimos de frutos.',tags:['llanos','morichal','palma'],pack:'vegetation'
   },
   {
     id:'savanna-grass',name:'Paja de sabana',category:'Vegetación',source:'/engine/models/vegetation/savanna-grass.js',
@@ -21,12 +21,14 @@ export default [
   },
   {
     id: "palm",
-    name: "Palmera",
+    name: "Cocotero",
     category: "Vegetación",
     source: "/engine/models/vegetation/palm.js",
     factory: "palm",
     usedBy: ["Bululú", "Derrape", "Escondidas", "Cocina", "Reliquia", "Billar", "Póquer", "¡Pintura!", "Caída"],
     previewOptions: {"seed":7},
+    description: "Tronco curvo con anillos, pencas con foliolos de verdad, pencas secas abajo, cogollo nuevo y cocos.",
+    tags: ["palma","playa","cocos"],
     pack: "vegetation"
   },
   {
@@ -37,6 +39,8 @@ export default [
     factory: "mangoTree",
     usedBy: ["Bululú", "Derrape", "Escondidas", "Cocina", "Galope", "Billar", "Póquer", "¡Pintura!", "Caída"],
     previewOptions: {"seed":7},
+    description: "Copa densa y redonda de verde oscuro, cinco ramas fuertes y mangos colgando de verde a rojo.",
+    tags: ["árbol","fruta","plaza"],
     pack: "vegetation"
   },
   {
@@ -47,16 +51,20 @@ export default [
     factory: "ceiba",
     usedBy: ["Bululú","Derrape"],
     previewOptions: {"seed":7},
+    description: "El gigante: raíces tabulares, tronco pálido con espinas, pisos de ramas horizontales y copa plana.",
+    tags: ["árbol","gigante","plaza"],
     pack: "vegetation"
   },
   {
     id: "pine",
-    name: "Pino",
+    name: "Pino caribe",
     category: "Vegetación",
     source: "/engine/models/vegetation/pine.js",
     factory: "pine",
     usedBy: ["Bululú"],
-    previewOptions: {"seed":7},
+    previewOptions: {"seed":7,"h":14},
+    description: "Fuste recto con verticilos de ramas que se acortan hacia arriba, mechones de agujas y piñas.",
+    tags: ["árbol","pino","sabana"],
     pack: "vegetation"
   },
   {
@@ -87,9 +95,19 @@ export default [
     factory: "araguaney",
     usedBy: ["Derrape","¡Pintura!"],
     previewOptions: {"seed":7},
-    description: "Copa de flores amarillas y tronco ramificado.",
+    description: "El árbol nacional: tronco torcido que abre en forma de copa y florece todo amarillo.",
     tags: ["árbol","flores","pueblo"],
     pack: "vegetation"
+  },
+  {
+    id: "apamate", name: "Apamate", category: "Vegetación", source: "/engine/models/vegetation/araguaney.js", factory: "araguaney",
+    usedBy: ["Derrape"], previewOptions: { seed: 7, bloom: "pink" },
+    description: "Más alto y derecho, copa ovalada de flores rosadas mezcladas con hojas.", tags: ["árbol", "flores", "rosado"], pack: "vegetation"
+  },
+  {
+    id: "bucare", name: "Bucare en flor", category: "Vegetación", source: "/engine/models/vegetation/araguaney.js", factory: "araguaney",
+    usedBy: ["Derrape"], previewOptions: { seed: 7, bloom: "coral" },
+    description: "Copa de flores coral y anaranjadas, sombra de los cafetales.", tags: ["árbol", "flores", "coral"], pack: "vegetation"
   },
   {
     id: "bamboo",
@@ -159,7 +177,7 @@ export default [
     factory: "mangrove",
     usedBy: ["Derrape"],
     previewOptions: {"seed":7},
-    description: "Raíces arqueadas y copa extendida para costas y lagunas.",
+    description: "Parado sobre raíces zancos que se arquean al agua, raíces aéreas, copa brillante y propágulos colgando.",
     tags: ["árbol","costa","raíces"],
     pack: "vegetation"
   },
@@ -225,13 +243,13 @@ export default [
   },
   {
     id: "jungleGiant",
-    name: "Árbol gigante de la selva",
+    name: "Caucho de raíces",
     category: "Vegetación",
     source: "/engine/models/vegetation/jungle-giant.js",
     factory: "jungleGiant",
     usedBy: ["Derrape"],
     previewOptions: {"seed":7},
-    description: "Tronco con raíces tabulares, copa en pisos, lianas y bromelias.",
+    description: "Las ramas largas sueltan raíces que bajan al suelo y se vuelven troncos nuevos: un solo árbol es un bosquecito.",
     tags: ["selva","árbol","lianas"],
     pack: "vegetation"
   },
@@ -272,15 +290,15 @@ export default [
     pack: "vegetation"
   },
   ...[
-    ['dead-tree', 'Árbol seco', 'dead-tree', 'deadTree', { seed: 7 }, 'Ramas retorcidas que se bifurcan sin hojas, con raíces abiertas; cementerio y páramo.', ['árbol', 'seco', 'cementerio', 'tenebroso']],
-    ['dead-tree-leafy', 'Árbol nudoso con follaje', 'dead-tree', 'deadTree', { seed: 11, leaves: true, height: 7 }, 'El mismo ramaje retorcido con matas facetadas en las puntas.', ['árbol', 'bosque', 'follaje']],
+    ['dead-tree', 'Árbol seco', 'dead-tree', 'deadTree', { seed: 7 }, 'Ramas nudosas a cuatro niveles y corteza gris agrietada; cementerio y páramo.', ['árbol', 'seco', 'cementerio', 'tenebroso']],
+    ['dead-tree-leafy', 'Árbol seco con barba de palo', 'dead-tree', 'deadTree', { seed: 11, leaves: true, height: 7 }, 'El mismo ramaje nudoso con barba de palo colgando de las ramas.', ['árbol', 'seco', 'barba de palo']],
     ['broadleaf-tree-spreading', 'Árbol de selva extendido', 'broadleaf-tree', 'broadleafTree', { seed: 7, variant: 0 }, 'Tronco serpenteante, ramas abiertas con copas facetadas y bejucos.', ['selva', 'árbol', 'copa']],
     ['broadleaf-tree-tiered', 'Árbol de selva en pisos', 'broadleaf-tree', 'broadleafTree', { seed: 7, variant: 1 }, 'Copa apilada en tres pisos que se estrechan hacia arriba.', ['selva', 'árbol', 'pisos']],
     ['broadleaf-tree-round', 'Árbol de copa redonda', 'broadleaf-tree', 'broadleafTree', { seed: 7, variant: 2 }, 'Árbol bajo con una copa grande y ladeada, tipo chupeta.', ['selva', 'árbol', 'bajo']],
     ['broadleaf-tree-tall', 'Árbol de selva alto', 'broadleaf-tree', 'broadleafTree', { seed: 7, variant: 3 }, 'Variante alta y oscura que sobresale del dosel.', ['selva', 'árbol', 'alto']],
     ['ceiba-gateway', 'Ceiba portal', 'ceiba-gateway', 'ceibaGateway', { seed: 7 }, 'Ceiba monumental con copa de sombrilla, contrafuertes y raíces que forman un arco sobre el camino.', ['selva', 'ceiba', 'hito', 'arco']],
-    ['emergent-tree', 'Árbol emergente', 'emergent-tree', 'emergentTree', { seed: 7 }, 'Tronco con contrafuertes de tabla, ramas en abanico, bromelias y bejucos.', ['selva', 'árbol', 'contrafuertes']],
-    ['strangler-fig', 'Matapalo sobre ruinas', 'strangler-fig', 'stranglerFig', { seed: 7 }, 'Troncos trenzados y raíces aéreas que envuelven un pequeño santuario de piedra.', ['selva', 'ruinas', 'matapalo', 'hito']],
+    ['emergent-tree', 'Gigante de la selva', 'emergent-tree', 'emergentTree', { seed: 7, scale: 0.5 }, 'El emergente: raíces tabulares enormes, fuste pálido, copa alta, bejucos en espiral y bromelias en las ramas.', ['selva', 'árbol', 'contrafuertes']],
+    ['strangler-fig', 'Matapalo sobre ruinas', 'strangler-fig', 'stranglerFig', { seed: 7 }, 'Higuerón estrangulador: una jaula de raíces claras abraza el tronco viejo y envuelve un pequeño santuario de piedra.', ['selva', 'ruinas', 'matapalo', 'hito']],
     ['elephant-ear', 'Oreja de elefante', 'elephant-ear', 'elephantEar', { seed: 7 }, 'Hojas anchas en forma de remo con nervio oscuro.', ['selva', 'sotobosque', 'hojas']],
     ['bromeliad', 'Bromelia', 'bromeliad', 'bromeliad', { seed: 7 }, 'Roseta de hojas rígidas con corazón rojo; también crece en las ramas.', ['selva', 'epífita', 'flor']],
     ['rafflesia', 'Flor gigante', 'rafflesia', 'rafflesia', { seed: 7 }, 'Rafflesia carmesí de cinco pétalos con verrugas blancas.', ['selva', 'flor', 'rareza']],
@@ -290,5 +308,17 @@ export default [
   ].map(([id, name, file, factory, previewOptions, description, tags]) => ({
     id, name, category: 'Vegetación', source: `/engine/models/vegetation/${file}.js`, factory,
     usedBy: ['Pana Studio'], previewOptions, description, tags, pack: 'vegetation',
+  })),
+  // The Árboles Pana additions planted in Derrape (Plaza, Llanos, Selva).
+  ...[
+    ['saman', 'Samán', 'saman', 'saman', { seed: 7 }, 'Tronco corto y grueso, ramas enormes casi horizontales y una sombrilla plana muy ancha con flores rosadas tipo pompón.', ['árbol', 'plaza', 'sombra']],
+    ['yagrumo', 'Yagrumo', 'selva-trees', 'yagrumo', { seed: 7 }, 'Tronco pálido con anillos, ramas en candelabro y sombrillas de hojas enormes, verdes arriba y plateadas abajo.', ['selva', 'árbol', 'hojas']],
+    ['cacao', 'Cacao', 'selva-trees', 'cacao', { seed: 7 }, 'Arbolito de sombra: hojas largas que cuelgan, algunas nuevas y rojizas, y mazorcas saliendo del tronco.', ['selva', 'árbol', 'fruta']],
+    ['zancona', 'Palma zancona', 'selva-palms', 'zancona', { seed: 7 }, 'La palma que camina: arranca en el aire sobre un cono de raíces zancos, con capitel verde y pocas pencas anchas.', ['selva', 'palma', 'raíces']],
+    ['manaca', 'Palma manaca', 'selva-palms', 'manaca', { seed: 7 }, 'Una macolla de tallos finos de todas las alturas, foliolos que cuelgan como flecos y racimos morados.', ['selva', 'palma', 'macolla']],
+    ['tree-fern', 'Helecho arborescente', 'selva-palms', 'treeFern', { seed: 7 }, 'Tronco peludo marrón, corona de frondas finas que se arquean, frondas secas colgando y cayados enrollados arriba.', ['selva', 'helecho', 'sotobosque']],
+  ].map(([id, name, file, factory, previewOptions, description, tags]) => ({
+    id, name, category: 'Vegetación', source: `/engine/models/vegetation/${file}.js`, factory,
+    usedBy: ['Derrape'], previewOptions, description, tags, pack: 'vegetation',
   })),
 ];

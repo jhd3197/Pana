@@ -31,8 +31,14 @@ No texture downloads, per-frame prop rebuilds or network scenery messages.
 
 Derrape supports multiple maps. Everything lives in `games/derrape/public/`:
 
-- `tracks.js` — registry (`TRACKS`, `getTrack`, `makeTrack`). Turns a track
-  definition into the runtime `T`: `pointAt/paramOf/offsetOf/groundAt`,
+- `tracks.js` — registry (`TRACKS`, `getTrack`, `loadTrack`, `makeTrack`).
+  `TRACKS` starts as names and blurbs (`track-definitions.js`); `loadTrack(id)`
+  imports `tracks/<id>.js` and fills that entry with its full definition (about
+  100 modules of world per map, so only the picked one loads). The garage shows
+  name and blurb at once and the route preview when the module lands; the
+  loading screen awaits it. Debug pages (`?debug`) load every map before
+  `PANA_PREPARED`, so suites can still call `buildTrack(id)` synchronously.
+  `makeTrack` turns a loaded definition into the runtime `T`: `pointAt/paramOf/offsetOf/groundAt`,
   `TOTAL`, `HW`, `LINE`, `ramps`, `animated`, and `T.build()` which returns
   the scenery group. Two geometry backends: `oval: {S, R}` (exact original
   math, retained as an optional backend) and `points: [[x, z], ...]` (closed centripetal
@@ -62,7 +68,8 @@ Derrape supports multiple maps. Everything lives in `games/derrape/public/`:
   the garage disposes pads/boxes with the group. Only geometries are
   disposed; materials come from shared caches (never dispose those).
 - Track choice persists in `localStorage['derrape:track']`; `?track=<id>`
-  overrides. New maps also need their import added to `tracks.js`.
+  overrides. A new map needs its entry in `track-definitions.js`; `tracks.js`
+  finds `tracks/<id>.js` by id.
 - Keep loops drivable: min radius of curvature > 15 and a lap of at least 1,000 m.
   Ordinary circuits are around 2 km; Puerto extends to 6.60 km and defaults to
   one adventure lap, with an estimated 3–4 minute whole race. XZ crossings
@@ -278,7 +285,7 @@ from `engine/models/vegetation/`.
 landmarks. Island terrain/scenery/beach modules now live in `engine/`;
 old Bululú paths re-export them. Keep gameplay in the games, and pass route
 clearance to the shared environment instead of copying its assets.
-`engine/sky.js` supplies scene-owned skies to outdoor games and Studio tours.
+`engine/worlds/sky.js` supplies scene-owned skies to outdoor games and Studio tours.
 Cloud wind uses absolute time; palettes accept `skySeed` and `cloudCover`.
 Keep the sky outside scenery batches/bounds; the tour disposes it on exit.
 Bululú still owns its day/night lights, stars and moon. Plaza bunting is a
@@ -363,3 +370,50 @@ positive lane rises up to 60 cm at the shallow crossing, preserving a dry line
 without changing other maps. Water depth gives the rendered road its existing
 13 cm clearance. `water-crossing.browser.js` checks 1,000 sections for a dry
 lane, every road vertex against physics, and three cars on street/rain tires.
+
+## Distance raster, point tags and far plane
+
+- Spline tracks build a distance raster on the first `paramOf`/`offsetOf`
+  call (not when the menu browses routes): a grid of about 2 m cells
+  covering the route plus 96 m, each storing the nearest centreline sample.
+  Two sweeps of a vector distance transform keep the build linear: 5–20 ms
+  for 1–2.7 km tracks, about 70 ms for Puerto's 562k cells. `nearest()`
+  then refines ±6 m of route around the samples named by the four cells
+  around the point: 0.2–0.5 µs per call, against 0.65–3 µs for the old
+  stride-16 scan, which grew with track length. Outside the grid it falls
+  back to the scan (`T.nearestScan`).
+- Layered tracks (Puerto) flag raster cells where a sample more than 60 m
+  along the route, at a height differing by 2 m or more, lies within 40 m.
+  Height-aware lookups in those cells use the scan with its altitude
+  penalty, so stacked roads keep choosing the branch by height.
+  `maps.browser.js` checks that the raster never finds a farther road
+  than the scan.
+- `T.roadDistance(x, z)` (bilinear raster distance, within about half a
+  cell near the road) and `T.clearOfRoad(x, z, margin)` are the cheap
+  scenery-exclusion and off-course queries; `T.raster` exposes the grid.
+- Points may carry a 4th tag, `[x, z, y, tag]`: `g` ground (default), `b`
+  bridge, `l` ledge, `a` arch, `t` tunnel. Use `[x, z, undefined, 'b']` on
+  an `elevation` track: only a numeric 3rd element switches to authored
+  heights. Rounded corner cuts keep the tag of the nearer point.
+  `T.tagAt(s)` and `T.tagRuns()` (`[{tag, from, to}]` in u, a run across
+  the line has `to > 1`) let builders put structure on each run.
+- The race cameras' far plane is `max(1800, fog far)`, set with the palette.
+- `hollowGallery` accepts `widthAt(u)` and `heightAt(u)`; `hallProfile(base,
+  [{u, add, spread}])` builds Gaussian halls. The corridor in
+  `userData.corridor` carries both functions for placement against walls.
+
+## Salt mine under Salinas (tracks/salt-cave.js)
+
+- Salinas runs 2.83 km: the old salt-flat loop, then a detour north through
+  a salt mine (u .385–.765) under a pink mountain. The ford moved from
+  u .445 to u .283; `water-crossing.browser.js` follows it.
+- `salt-cave.js` is reusable: `caveMountain` wraps a track's ground (flat
+  hall floors, an 80 m mountain over the shell, the caller's ground past the
+  mouths), `caveColor` paints it, `saltCave` builds the shell, crystals
+  (one instanced field per 5% of route, so far halls cull), pools, waterfall,
+  formations, mine timbers, portals, beams and motes, and `caveFog` turns
+  the fog rosy and close while the camera is inside. Layouts that Node tests
+  import keep their own hall profile maths (no Three.js).
+- Six point lights on the giant crystals are the only lights; the shell and
+  formations use a pink emissive so the cave never reads dark. Environment
+  draws peak near 840 with eight cars at u .79 (budget 850 without cars).

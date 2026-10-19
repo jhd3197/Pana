@@ -8,7 +8,7 @@
   <a href="https://github.com/jhd3197/Pana/releases/latest"><img src="https://img.shields.io/github/v/release/jhd3197/Pana?color=ffc629&label=release" alt="Latest release"></a>
   <a href="https://github.com/jhd3197/Pana/actions/workflows/test.yml"><img src="https://github.com/jhd3197/Pana/actions/workflows/test.yml/badge.svg?branch=dev" alt="Tests"></a>
   <img src="https://img.shields.io/badge/node-%E2%89%A522-2ad1b2" alt="Node 22 or newer">
-  <img src="https://img.shields.io/badge/games-8-ff4b4b" alt="8 games">
+  <img src="https://img.shields.io/badge/games-15-ff4b4b" alt="15 games">
 </p>
 
 <p align="center">
@@ -26,15 +26,25 @@ same room.
 | Game | What it is | Players |
 |---|---|---|
 | **Derrape** | Toy-car racing on twelve circuits and three four-race Grand Prix cups, with items, coins and swappable wheels | 1–8 online; local split screen |
-| **Bululú** | Party board game on Mango Island, with a minigame every round | 1 vs bots |
+| **Bululú** | Island or harbor party board, with a minigame every round | 1–6, bots fill seats |
 | **Escondidas** | Prop hunt in a market plaza: hide as a barrel, crate or bench | 1–8, bots fill in |
-| **Pana Cocina** | Cooperative three-minute cooking rush: arepas, cachapas, tequeños | 1–8, bot helpers |
+| **Pana Cocina** | Cooperative cooking shifts with configurable orders and kitchen rules | 1–8, bot helpers |
 | **Galope** | Horse racing around a Llanos ranch, through esteros and over logs | 1–8, bots fill in |
 | **Reliquia** | Cooperative expedition into a mine and the temple beneath it | 1–8 |
 | **¡Embuste!** | Social deduction at the night camp: who is the mummy? | 4–8 online, bots for practice |
-| **Curiara** | Dugout-canoe race down the Amazonas: paddle in rhythm, alone or in pairs | 1–8, bots fill in |
-| **Dominó** | Partnership dominoes to 100 at a 3D plaza table | 1–4, bots fill seats |
-| **Caída** | Spanish cards to 24 points, individual or in pairs | 1–4, bots fill seats |
+| **Curiara** | Dugout-canoe races with solo paddlers or two-person crews | 1–8, bots fill in |
+| **Lancha** | Outboard-motor boat races down the Sipapo and the Orinoco: hold the gas, jump the raudales, dodge caimanes | 1–8, bots fill in |
+| **Dominó** | Individual or team dominoes with configurable hands and scoring | 1–6, bots fill seats |
+| **Caída** | Spanish cards to 24 points, individually or in teams | 1–6, bots fill seats |
+| **Póquer** | Texas Hold'em or Omaha with free chips and configurable betting limits | 1–6, bots fill seats |
+| **Ludo** | Roll, capture and race your four pieces home at a plaza table | 1–4, bots fill seats |
+| **Billar** | Eight/nine-ball pool with rotating teammates and timed shot charging | 2, 4 or 6 online, or practice |
+| **Bolas Criollas** | Roll close to the mingo or knock the rival's ball away, in teams | 1–6, bots fill seats |
+| **¿Quién quiere ser mi pana?** (QQSMP) | TV-style trivia: everyone answers in secret at once, climbs a ladder of mangos and bets the final | 1–6, bots fill seats |
+| **Chapita** | Barrio baseball with a bottle cap and a broomstick: read the float, the drop or the curve; where the cap lands is the hit | 1–8 in two teams, bots fill seats |
+| **¡Stop!** | The notebook word game: a letter, a secret sheet, ¡STOP!, then the table votes on what counts | 1–8, bots fill seats |
+| **La Rueda de Tambor** | A tambor party: drum the beat, dance the MCP's calls in the middle or get thrown out of the rueda; plus Relevo, Toque libre and ¡Golpe! | 1–8, bots fill drums and crowd |
+| **Pepazo** | Paintball between barricades: aim, paint your rivals, respawn | 1–8, bots fill in |
 
 ## Screenshots
 
@@ -66,7 +76,8 @@ the same Wi-Fi open that, pick a game, and press *Invitar panas* to share the ro
 
 - **Pana Studio** (`.\dev.ps1 studio`): every shared character, prop, vehicle and
   map with a live 3D preview and its source file.
-- **Character editor**: `/personaje.html`.
+- **Character editor**: `/personaje.html` — visual wardrobe, accessory previews,
+  undo/redo and outfit codes; save the complete look for every game.
 
 ## Releases
 

@@ -19,8 +19,8 @@ try {
   assert.equal(await page.locator('.game-art[src]').count(), await page.locator('.game').count());
   await page.screenshot({ path: `${output}/launcher-desktop.png` });
   await page.locator('button[data-category="Mesa"]').click();
-  assert.equal(await page.locator('.game:visible').count(), await page.locator('[data-id="ludo"]').count() ? 6 : 5);
-  for (const game of ['criollas', 'ludo']) {
+  assert.equal(await page.locator('.game:visible').count(), await page.locator('[data-id="ludo"]').count() ? 7 : 6);
+  for (const game of ['criollas', 'ludo', 'qqsmp']) {
     if (!await page.locator(`[data-id="${game}"]`).count()) continue;
     const card = page.locator(`[data-id="${game}"] img`);
     assert.match(await card.getAttribute('src'), new RegExp(`${game}-card\\.jpg$`));
@@ -38,6 +38,15 @@ try {
   assert.equal(await page.evaluate(() => navigator.clipboard.readText()), await page.locator('#room-link').inputValue());
   await page.locator('#room-dialog [data-close-dialog]').click();
   await page.locator('button[data-category="Fiesta"]').click();
+  for (const game of ['tambor', 'stop', 'chapita']) {
+    if (!await page.locator(`[data-id="${game}"]`).count()) continue;
+    const card = page.locator(`[data-id="${game}"] img`);
+    assert.match(await card.getAttribute('src'), new RegExp(`${game}-card\\.jpg$`));
+    await card.evaluate(img => img.decode());
+    await page.locator(`[data-id="${game}"] button`).click();
+    assert.match(await page.locator('#feature-art img').getAttribute('src'), new RegExp(`${game}\\.jpg$`));
+    await page.locator('#feature-art img').evaluate(img => img.decode());
+  }
   await page.locator('[data-id="pintura"] button').click();
   assert.equal(await page.locator('#feature-name').textContent(), 'Pepazo');
   await page.locator('#open-settings').click();

@@ -3,8 +3,8 @@ import { acceptsChoice, cleanInput, IDLE_INPUT } from './online-rules.js';
 
 export class BululuRoom extends HostRoom {
   constructor(options) {
-    super({ ...options, game: 'bululu', protocol: 'bululu-v1',
-      texts: { full: 'Sala llena: ya hay cuatro panas. Puedes jugar con bots.' } });
+    super({ ...options, game: 'bululu', protocol: 'bululu-v2',
+      texts: { full: 'Sala llena: ya hay seis panas. Puedes jugar con bots.' } });
     this.events = options.events;
     this.inputs = new Map();
     this.history = [];
@@ -15,7 +15,7 @@ export class BululuRoom extends HostRoom {
   memberJoined() { this.events.members(); this.publish(); }
   memberLeft(id) { this.inputs.delete(id); this.events.members(); }
   memberHello() { this.events.members(); this.publish(); }
-  statusText() { return `Sala ${this.code} · ${this.members.size}/4 panas`; }
+  statusText() { return `Sala ${this.code} · ${this.members.size}/6 panas`; }
   publish(state = this.state) {
     if (!this.isHost || !state) return;
     this.state = state;
@@ -27,38 +27,48 @@ export class BululuRoom extends HostRoom {
       this.events.state(v.state);
     } else if (v.kind === 'input' && this.isHost && v.serial === this.state?.mini?.serial) {
       this.input(id, v.input);
+    } else if (v.kind === 'ready' && this.isHost && typeof v.id === 'string') {
+      this.events.ready(id, v.id);
     } else if (v.kind === 'choice' && this.isHost && acceptsChoice(this.prompt, id, v)) {
-      this.events.choice(v.choice);
+      this.events.choice(v.choice, v.power);
     } else if (v.kind === 'frames' && id === this.hostId && !this.isHost && (v.to == null || v.to === this.id)) {
       this.events.frames(v);
     } else if (v.kind === 'catchup' && this.isHost && v.serial === this.state?.mini?.serial && Number.isInteger(v.from) && v.from >= 0) {
       // One short history, cleared at the next minigame. Stay below 256 KB.
       for (let from = v.from; from < this.history.length; from += 60)
-        this.send({ kind: 'frames', to: id, serial: v.serial, from, frames: this.history.slice(from, from + 60) });
+        this.send({ kind: 'frames', to: id, serial: v.serial, from, frames: this.history.slice(from, from + 60) }, id);
     }
   }
-  choose(prompt, choice) {
-    const message = { kind: 'choice', prompt, choice };
-    if (this.isHost) { if (acceptsChoice(this.prompt, this.id, message)) this.events.choice(choice); }
-    else this.send(message);
+  // power: how hard a thrown die flew (0–1), for prompts that throw dice.
+  choose(prompt, choice, power) {
+    const message = { kind: 'choice', prompt, choice, power };
+    if (this.isHost) { if (acceptsChoice(this.prompt, this.id, message)) this.events.choice(choice, power); }
+    else this.send(message, 'host');
+  }
+  // ¡Listo! before a minigame: each pana answers the host's check for itself.
+  ready(check) {
+    if (this.isHost) this.events.ready(this.id, check);
+    else this.send({ kind: 'ready', id: check }, 'host');
   }
   input(id, value) {
     const next = cleanInput(value), previous = this.inputs.get(id);
     // Do not lose a tap between two simulation ticks, or repeat it on every tick.
     next.jump ||= !!previous?.jump;
     next.fire ||= !!previous?.fire;
+    // A held action the simulation never saw (a quick tap) still counts once.
+    next.pull ||= !!previous?.pull && !previous.read;
     this.inputs.set(id, { ...next, at: performance.now() });
   }
   controls(value) {
     if (this.isHost) this.input(this.id, value);
-    else this.send({ kind: 'input', serial: this.state?.mini?.serial, input: cleanInput(value) });
+    else this.send({ kind: 'input', serial: this.state?.mini?.serial, input: cleanInput(value) }, 'host');
   }
   takeInputs(players) {
     return players.map(p => {
       const input = this.inputs.get(p.seat);
       if (!input || performance.now() - input.at > 600) return cleanInput(IDLE_INPUT);
       const next = cleanInput(input);
-      input.jump = input.fire = false;
+      input.jump = input.fire = false; input.read = true;
       return next;
     });
   }
@@ -67,5 +77,5 @@ export class BululuRoom extends HostRoom {
     this.history.push(frame);
     this.send({ kind: 'frames', serial, from, frames: [frame] });
   }
-  catchup(serial, from) { this.send({ kind: 'catchup', serial, from }); }
+  catchup(serial, from) { this.send({ kind: 'catchup', serial, from }, 'host'); }
 }

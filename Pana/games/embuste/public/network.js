@@ -1,3 +1,4 @@
+import { embusteOptions } from './options.js';
 // ¡Embuste!'s two ways to play the night, with one interface for game.js:
 // - OnlineNight: the game's own Colyseus room (games/embuste/server/room.js),
 //   joined through the shared kit (engine/net.js). The room runs the Night and
@@ -126,7 +127,7 @@ export class PracticeNight extends Emitter {
     for (const p of [...this.night.players.values()]) if (p.bot) this.night.players.delete(p.seat);
     this.night.toLobby();
   }
-  options(patch) { this.lobby = { ...this.lobby, ...patch }; this.emit('lobby', this.lobby); }
+  options(patch) { const next = this.night.phase === 'lobby' && embusteOptions(this.lobby, patch); if (!next) return; this.lobby = { ...this.lobby, ...next }; this.emit('lobby', this.lobby); }
   debug(m) { debugNight(this.night, 1, m); }
   leave() { clearInterval(this.timer); }
 }

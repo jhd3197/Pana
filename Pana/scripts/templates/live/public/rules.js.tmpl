@@ -1,0 +1,81 @@
+// {{name}}: pure rules, plain data in and out (no DOM, no Three.js), so the
+// host, the screen and Node tests all share them. The scaffold is a mango rush:
+// panas run around the plaza for ROUND seconds and the most mangos wins.
+// Replace it with the real game, keeping snapshot(), restore() and update().
+import { draw, clamp } from '/engine/random.js';
+import { defaultOptions, roomOptions } from './options.js';
+
+export const ROUND = 60, ARENA = 12, SPEED = 6, REACH = 1.1, MANGOS = 6, BOT_SEAT = 1000, MIN_PLAYERS = 4;
+export const BOT_NAMES = ['Coco', 'Lola', 'Cheo', 'Nena', 'Toño', 'Mari', 'Pepe', 'Cuqui'];
+
+// What a member may send each tick: a stick from -1 to 1 on each axis.
+export function cleanInput(raw) {
+  const axis = (v) => Number.isFinite(v) ? clamp(v, -1, 1) : 0;
+  return { x: axis(raw?.x), z: axis(raw?.z) };
+}
+
+export class Rush {
+  constructor(seed = Date.now()) {
+    this.seed = (seed >>> 0) || 1;
+    this.options = defaultOptions();
+    this.players = []; this.mangos = []; this.nextMango = 1;
+    this.phase = 'lobby'; this.time = ROUND; this.round = 0; this.winner = null;
+  }
+
+  snapshot() { return JSON.parse(JSON.stringify(this)); }
+  configure(patch) { const next = this.phase === 'lobby' && roomOptions(this.options, patch); if (!next) return false; this.options = next; return true; }
+
+  // A new host continues from the last snapshot without the panas who left.
+  static restore(state, members) {
+    const game = Object.assign(new Rush(), JSON.parse(JSON.stringify(state)));
+    game.players = game.players.filter(p => p.bot || members.has(p.id));
+    return game;
+  }
+
+  spot() { return { x: (draw(this) * 2 - 1) * ARENA, z: (draw(this) * 2 - 1) * ARENA }; }
+
+  addPlayer(id, name, avatar = {}, bot = false) {
+    const known = this.players.find(p => p.id === id);
+    if (known) return Object.assign(known, { name, avatar });
+    const player = { id, name, avatar, bot, score: 0, heading: 0, moving: false, ...this.spot() };
+    this.players.push(player); return player;
+  }
+  removePlayer(id) { this.players = this.players.filter(p => p.id !== id); }
+
+  start(withBots = true) {
+    this.players = this.players.filter(p => !p.bot);
+    for (let i = 0; withBots && this.players.length < MIN_PLAYERS; i++) this.addPlayer(BOT_SEAT + i, BOT_NAMES[i], {}, true);
+    for (const p of this.players) Object.assign(p, { score: 0, moving: false }, this.spot());
+    this.mangos = Array.from({ length: this.options.mangos }, () => ({ id: this.nextMango++, ...this.spot() }));
+    Object.assign(this, { phase: 'playing', time: this.options.seconds, winner: null }); this.round++;
+  }
+
+  // Bots run for the nearest mango.
+  botInput(p) {
+    const target = this.mangos.reduce((best, m) => !best || Math.hypot(m.x - p.x, m.z - p.z) < Math.hypot(best.x - p.x, best.z - p.z) ? m : best, null);
+    return target ? { x: target.x - p.x, z: target.z - p.z } : { x: 0, z: 0 };
+  }
+
+  update(dt, inputs = new Map()) {
+    if (this.phase !== 'playing') return;
+    this.time = Math.max(0, this.time - dt);
+    for (const p of this.players) {
+      const input = p.bot ? this.botInput(p) : inputs.get(p.id) || { x: 0, z: 0 };
+      const length = Math.hypot(input.x, input.z);
+      p.moving = length > .05;
+      if (p.moving) {
+        const scale = Math.min(1, length) / length;
+        p.x = clamp(p.x + input.x * scale * SPEED * dt, -ARENA, ARENA);
+        p.z = clamp(p.z + input.z * scale * SPEED * dt, -ARENA, ARENA);
+        p.heading = Math.atan2(input.x, input.z);
+      }
+      for (const mango of this.mangos) {
+        if (Math.hypot(mango.x - p.x, mango.z - p.z) > REACH) continue;
+        p.score++; Object.assign(mango, { id: this.nextMango++ }, this.spot());
+      }
+    }
+    if (this.time > 0) return;
+    this.phase = 'finished';
+    this.winner = [...this.players].sort((a, b) => b.score - a.score)[0]?.id ?? null;
+  }
+}

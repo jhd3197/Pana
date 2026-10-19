@@ -20,8 +20,12 @@ import { createMeeting } from './ui.js';
 import { bandageWrap } from '/engine/models/props/embuste.js';
 import { openTask, HINTS } from './tasks.js';
 import { setBar } from '/engine/kit.js';
+import { createRoomOptions } from '/engine/room-options.js';
+import { EMBUSTE_OPTIONS, defaultEmbusteOptions } from './options.js';
+import { createToast } from '/engine/hud.js';
 
 const $ = id => document.getElementById(id), show = (id, on) => $(id).classList.toggle('hidden', !on);
+const notify = createToast($('toast'), { ms: 3400 });
 const qs = new URLSearchParams(location.search), code = roomFromUrl() || newRoomCode();
 const url = new URL(location.href); url.searchParams.set('room', code); history.replaceState(null, '', url);
 const avatar = loadAvatar(), name = qs.get('name')?.slice(0, 16) || loadName(), quick = qs.has('quick');
@@ -45,14 +49,15 @@ const cameraTarget = new THREE.Vector3(0, 0, 0), temp = new THREE.Vector3();
 
 // ---------- state ----------
 let net = null, view = null, lobby = { phase: 'lobby', players: [], isHost: false }, paused = false, dead = false, phase = '';
-let toastTimer, last = performance.now(), elapsed = 0, rosterKey = '', uiClock = 0, endedAt = 0;
+const roomOptions = createRoomOptions($('lobby-options'), { title: '¡Embuste!', fields: EMBUSTE_OPTIONS,
+  change: patch => net?.options(patch), reset: () => net?.options(defaultEmbusteOptions()) });
+let last = performance.now(), elapsed = 0, rosterKey = '', uiClock = 0, endedAt = 0;
 const actors = new Map(), keys = new Set(), touch = new Set();
 const me = () => view?.me;
 const rosterOf = seat => view?.roster.find(r => r.seat === seat);
 const nameOf = seat => rosterOf(seat)?.name || 'Alguien';
 const colorOf = seat => { const i = view?.roster.findIndex(r => r.seat === seat) ?? 0; return colors[Math.max(0, i) % colors.length]; };
 
-function notify(text) { if (!text) return; $('toast').textContent = text; show('toast', true); clearTimeout(toastTimer); toastTimer = setTimeout(() => show('toast', false), 3400); }
 function clearInput() { keys.clear(); touch.clear(); }
 
 const menu = createGameMenu({
@@ -311,8 +316,8 @@ function updateLobby() {
   $('start').disabled = !connected || !host || (!lobby.bots && count < MIN_PLAYERS && !quick);
   $('start').textContent = !connected ? 'Conectando…' : !host ? 'El anfitrión prende la fogata' : !lobby.bots && count < MIN_PLAYERS ? `Faltan panas (mínimo ${MIN_PLAYERS})` : '¡Que caiga la noche!';
   $('stat-mummies').textContent = mummyCount(Math.min(8, filled));
-  $('lobby-options').classList.toggle('is-guest', !host);
-  for (const k of ['bots', 'reveal', 'chat']) $(`opt-${k}`).setAttribute('aria-checked', String(lobby[k] !== false));
+  roomOptions.update({ ...defaultEmbusteOptions(), ...lobby }, !!host && inLobby);
+  if (!inLobby && roomOptions.isOpen) roomOptions.close();
   $('practice').textContent = net && !net.online ? 'Volver a la sala online' : 'Practicar con bots en este navegador';
   const key = lobby.players.map(p => `${p.seat}:${p.name}:${p.host}`).join('|');
   if (key !== rosterKey) {
@@ -529,7 +534,6 @@ $('again').onclick = () => net?.start();
 $('to-lobby').onclick = () => net?.toLobby();
 $('practice').onclick = () => (net && !net.online ? (net.leave(), view = null, goOnline()) : practice());
 $('offline-inline').onclick = () => practice();
-for (const k of ['bots', 'reveal', 'chat']) $(`opt-${k}`).onclick = () => { if (lobby.isHost) net?.options({ [k]: lobby[k] === false }); };
 
 // ---------- frame ----------
 function resize() { renderer.setSize(innerWidth, innerHeight); camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix(); }
@@ -634,7 +638,7 @@ function darkness(mine) {
 if (qs.has('practice')) practice(); else goOnline();
 requestAnimationFrame(frame);
 addEventListener('pagehide', () => {
-  dead = true; clearInterval(ticker); clearTimeout(toastTimer); net?.leave(); menu.dispose?.(); unbind?.();
+  dead = true; clearInterval(ticker); notify.dispose(); net?.leave(); menu.dispose?.(); unbind?.();
   actors.forEach(removeActor); shockwaves.dispose(); chargeRing.dispose(); world.dispose(); renderer.dispose();
 });
 if (qs.has('debug')) window.embuste = { scene, camera, renderer, actors, world, menu, input,

@@ -1,27 +1,27 @@
-import { ARENAS,TABLE_ARENAS } from '/engine/arena-layouts.js';
+import { ARENAS,TABLE_ARENAS } from '/engine/worlds/arena-layouts.js';
 import { TRACK_DEFINITIONS } from '/g/derrape/track-definitions.js';
 import { STATIONS } from '/g/cocina/rules.js';
 
 export const MAPS = [
   ...TABLE_ARENAS.filter(map=>!ARENAS.some(a=>a.id===map.id)).map(map=>({
-    id:`table-${map.id}`,name:map.name,category:'Mapas',source:'/engine/puerto-tables.js',
+    id:`table-${map.id}`,name:map.name,category:'Mapas',source:'/engine/worlds/puerto-tables.js',
     dependencies:['/engine/models/props/casa-guipuzcoana.js','/engine/models/props/san-carlos-fortress.js','/engine/models/props/port-silos.js'],factory:'createPuertoTableEnvironment',
     usedBy:['Caída','Dominó','Póquer'],game:'/g/caida/',description:map.description,
-    async build(){const {createPuertoTableEnvironment}=await import('/engine/puerto-tables.js');return createPuertoTableEnvironment(map.id);},
+    async build(){const {createPuertoTableEnvironment}=await import('/engine/worlds/puerto-tables.js');return createPuertoTableEnvironment(map.id);},
   })),
-  { id: 'colonial-collection', name: 'Cincuenta casas del pueblo', category: 'Mapas', source: '/engine/colonial-house-collection.js', factory: 'createColonialHouseCollection',
+  { id: 'colonial-collection', name: 'Cincuenta casas del pueblo', category: 'Mapas', source: '/engine/worlds/colonial-house-collection.js', factory: 'createColonialHouseCollection',
     houseMaker: true, usedBy: ['Pana Studio'], pack: 'casas-coloniales', description: 'Cincuenta casas con seis ventanas, tres techos, tres distribuciones y cuatro acabados de pared. Elige una casa para editarla o guarda la colección completa.',
-    async build() { const { createColonialHouseCollection } = await import('/engine/colonial-house-collection.js'); return createColonialHouseCollection(); },
+    async build() { const { createColonialHouseCollection } = await import('/engine/worlds/colonial-house-collection.js'); return createColonialHouseCollection(); },
   },
-  { id: 'colonial-street', name: 'Calle de las flores', category: 'Mapas', source: '/engine/colonial-street.js', factory: 'createColonialStreet',
+  { id: 'colonial-street', name: 'Calle de las flores', category: 'Mapas', source: '/engine/worlds/colonial-street.js', factory: 'createColonialStreet',
     usedBy: ['Pana Studio'], pack: 'casas-coloniales', description: 'Diez casas generadas sobre una calle con pendiente, aceras, balcones y jardines. Muestra del creador de casas.',
-    async build() { const { createColonialStreet } = await import('/engine/colonial-street.js'); return createColonialStreet(); },
+    async build() { const { createColonialStreet } = await import('/engine/worlds/colonial-street.js'); return createColonialStreet(); },
   },
   ...ARENAS.filter(map => map.id !== 'plaza').map(map => ({
-    id: `arena-${map.id}`, name: map.name, category: 'Mapas', source: '/engine/arenas.js',
-    dependencies: ['/engine/arena-layouts.js'], factory: 'createArenaEnvironment',
+    id: `arena-${map.id}`, name: map.name, category: 'Mapas', source: '/engine/worlds/arenas.js',
+    dependencies: ['/engine/worlds/arena-layouts.js'], factory: 'createArenaEnvironment',
     usedBy: ['Escondidas', 'Pepazo', 'Billar', 'Caída'], game: '/g/escondidas/', description: map.description,
-    async build() { const { createArenaEnvironment } = await import('/engine/arenas.js'); return createArenaEnvironment(map.id); },
+    async build() { const { createArenaEnvironment } = await import('/engine/worlds/arenas.js'); return createArenaEnvironment(map.id); },
   })),
   { id: 'reliquia', name: 'Reliquia · La mina del sol', category: 'Mapas', source: '/g/reliquia/scene.js', dependencies: ['/g/reliquia/layout.js','/engine/models/props/reliquia.js','/engine/models/props/jungle.js'], factory: 'createExpeditionWorld', usedBy: ['Reliquia'], game: '/g/reliquia/', description: 'Mina con puente colgante, dos ruedas cooperativas, patio de momias y cámara de la reliquia.',
     async build() { const { Box3, Vector3, Scene } = await import('three'); const { createExpeditionWorld } = await import('/g/reliquia/scene.js'); const model = createExpeditionWorld(); return { ...model, update: (t, dt) => model.update(t, {}, dt) }; },
@@ -32,11 +32,14 @@ export const MAPS = [
   { id: 'galope', name: 'Galope · La vuelta del estero', category: 'Mapas', source: '/g/galope/scene.js', dependencies: ['/g/galope/course.js','/g/galope/landscape.js'], factory: 'createCourse', usedBy: ['Galope'], game: '/g/galope/', description: 'Circuito de 482 m entre el hato, una laguna con isla y un caño sinuoso: caneyes, curiara, chinchorros y morichales.',
     async build() { const { Box3, Vector3, Scene } = await import('three'); const {createCourse}=await import('/g/galope/scene.js');return {...createCourse(),bounds:new Box3(new Vector3(-140,0,-112),new Vector3(145,20,105))}; },
   },
-  { id: 'curiara', name: 'Curiara · Río abajo', category: 'Mapas', source: '/g/curiara/scene.js', dependencies: ['/g/curiara/river.js','/g/curiara/landscape.js','/engine/models/props/amazonas.js','/engine/island-landscape.js'], factory: 'createRiverWorld', usedBy: ['Curiara'], game: '/g/curiara/', description: 'Río de 962 m: caño bajo el dosel con atajo del igapó, raudales del Autana bajo el tepui y el Río Negro con playas hasta la churuata.',
-    async build() { const { Box3, Vector3 } = await import('three'); const [{ createRiverWorld }, { RIVER }, { addLandscape }] = await Promise.all([import('/g/curiara/scene.js'), import('/g/curiara/river.js'), import('/g/curiara/landscape.js')]); const model = createRiverWorld(RIVER, { dress: addLandscape }), b = model.group.userData.bounds; return { ...model, groundAt: RIVER.groundAt, bounds: new Box3(new Vector3(b.minX + 60, 0, b.minZ + 60), new Vector3(b.maxX - 60, 30, b.maxZ - 60)) }; },
+  { id: 'curiara', name: 'Curiara · Río abajo', category: 'Mapas', source: '/engine/river/scene.js', dependencies: ['/g/curiara/river.js','/engine/river/river.js','/engine/river/landscape.js','/engine/models/props/amazonas.js','/engine/worlds/island-landscape.js'], factory: 'createRiverWorld', usedBy: ['Curiara'], game: '/g/curiara/', description: 'Río de 962 m: caño bajo el dosel con atajo del igapó, raudales del Autana bajo el tepui y el Río Negro con playas hasta la churuata.',
+    async build() { const { Box3, Vector3 } = await import('three'); const [{ createRiverWorld }, { RIVER }, { addLandscape }] = await Promise.all([import('/engine/river/scene.js'), import('/g/curiara/river.js'), import('/engine/river/landscape.js')]); const model = createRiverWorld(RIVER, { dress: addLandscape }), b = model.group.userData.bounds; return { ...model, groundAt: RIVER.groundAt, bounds: new Box3(new Vector3(b.minX + 60, 0, b.minZ + 60), new Vector3(b.maxX - 60, 30, b.maxZ - 60)) }; },
   },
-  { id: 'plaza', name: 'Plaza Pana', category: 'Mapas', source: '/engine/plaza.js', factory: 'createPlazaEnvironment', usedBy: ['Escondidas', 'Cocina', 'Derrape'], game: '/g/escondidas/',
-    async build() { const { Box3, Vector3, Scene } = await import('three'); const { createPlazaEnvironment } = await import('/engine/plaza.js'); return { ...createPlazaEnvironment(), bounds: new Box3(new Vector3(-28, 0, -24), new Vector3(28, 15, 28)) }; },
+  { id: 'lancha', name: 'Lancha · Sipapo y Orinoco', category: 'Mapas', source: '/engine/river/scene.js', dependencies: ['/g/lancha/course.js','/engine/river/river.js','/engine/river/landscape.js','/engine/models/props/amazonas.js','/engine/models/props/coastal.js','/engine/worlds/island-landscape.js'], factory: 'createRiverWorld', usedBy: ['Lancha'], game: '/g/lancha/', description: 'Río de 1827 m para lanchas: Caño del Sipapo con su igapó, los Raudales de Atures con saltos y el Orinoco abierto con boyas, toninas y caimanes hasta Puerto Ayacucho.',
+    async build() { const { Box3, Vector3 } = await import('three'); const [{ createRiverWorld }, { RIVER }, { addLandscape }] = await Promise.all([import('/engine/river/scene.js'), import('/g/lancha/course.js'), import('/engine/river/landscape.js')]); const model = createRiverWorld(RIVER, { dress: addLandscape }), b = model.group.userData.bounds; return { ...model, groundAt: RIVER.groundAt, bounds: new Box3(new Vector3(b.minX + 60, 0, b.minZ + 60), new Vector3(b.maxX - 60, 30, b.maxZ - 60)) }; },
+  },
+  { id: 'plaza', name: 'Plaza Pana', category: 'Mapas', source: '/engine/worlds/plaza.js', factory: 'createPlazaEnvironment', usedBy: ['Escondidas', 'Cocina', 'Derrape'], game: '/g/escondidas/',
+    async build() { const { Box3, Vector3, Scene } = await import('three'); const { createPlazaEnvironment } = await import('/engine/worlds/plaza.js'); return { ...createPlazaEnvironment(), bounds: new Box3(new Vector3(-28, 0, -24), new Vector3(28, 15, 28)) }; },
   },
   { id: 'cocina', name: 'Cocina de la plaza', category: 'Mapas', source: '/g/cocina/scene.js', factory: 'createKitchenScene', usedBy: ['Cocina'], game: '/g/cocina/',
     async build() { const { Box3, Vector3, Scene } = await import('three');
@@ -46,7 +49,7 @@ export const MAPS = [
       return { group: model.scene, bounds: new Box3(new Vector3(-28, 0, -24), new Vector3(28, 15, 28)), update: t => model.update(t, state, null, null, false), dispose: () => model.dispose() };
     },
   },
-  { id: 'isla', name: 'Isla Bululú', category: 'Mapas', source: '/g/bululu/board.js', factory: 'createBoard', dependencies:['/engine/island-environment.js','/engine/island-terrain.js','/engine/models/fauna/aquatic/reef-fish.js','/engine/models/fauna/aquatic/reef-fish-school.js','/engine/placement/reef-schools.js'], usedBy: ['Bululú'], game: '/g/bululu/', description: 'Tablero completo con sus caminos, pueblo, vegetación, mar y peces. El circuito de carreras tiene su propia geografía costera.',
+  { id: 'isla', name: 'Isla Bululú', category: 'Mapas', source: '/g/bululu/board.js', factory: 'createBoard', dependencies:['/engine/worlds/island-environment.js','/engine/worlds/island-terrain.js','/engine/models/fauna/aquatic/reef-fish.js','/engine/models/fauna/aquatic/reef-fish-school.js','/engine/placement/reef-schools.js'], usedBy: ['Bululú'], game: '/g/bululu/', description: 'Tablero completo con sus caminos, pueblo, vegetación, mar y peces. El circuito de carreras tiene su propia geografía costera.',
     async build() { const { Box3, Vector3, Scene } = await import('three');
       const {createBoard}=await import('/g/bululu/board.js'),group=new Scene(),board=createBoard(group);
       const lights=[];group.traverse(o=>{if(o.isLight)lights.push(o);});lights.forEach(o=>o.removeFromParent());

@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { PADDLE, paddleState, stroke, step, hold, rudder, sync, grade, axisStroke, createPaddler } from '/engine/paddle.js';
+import { PADDLE, paddleState, stroke, step, hold, rudder, sync, grade, axisStroke, createPaddler } from '/engine/play/paddle.js';
 
 // Paddles a lone canoe on still water: v gains thrust and loses linear drag.
 function paddle(gaps, { seconds = 20, sides } = {}) {

@@ -1,6 +1,6 @@
 // A racing curiara: the shared dugout, one or two seated panas and their
 // paddles. The paddle pose is read from the canoe's paddle state
-// (/engine/paddle.js), so a stroke on the host is a stroke on every screen.
+// (/engine/play/paddle.js), so a stroke on the host is a stroke on every screen.
 // Used by Curiara and Bululú's river minigames. +Z is the bow, metres.
 //
 // update(dt, b, time) reads b.paddle {last, side, back, rudder}, b.capsized
@@ -27,7 +27,7 @@ function makePaddle(color) {
   return g;
 }
 
-// `pull` is how long a stroke's pull lasts (PADDLE.pull in /engine/paddle.js).
+// `pull` is how long a stroke's pull lasts (PADDLE.pull in /engine/play/paddle.js).
 export function createCanoe(crew, color = '#e2683c', { pull = .3 } = {}) {
   const group = new THREE.Group(), hull = new THREE.Group(), tint = new THREE.Color(color).getHex();
   group.name = 'Curiara'; group.add(hull);

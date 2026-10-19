@@ -10,6 +10,8 @@ import { isGhost } from './recovery-rules.js';
 import { makeRocket, makeChancleta, makeShield, makeTrap, makeCloud, ITEM_ICONS } from './item-art.js';
 import { loseCoins } from './drive-rules.js';
 
+const sparkTarget = new THREE.Vector3();   // scratch: sparks fly to their car every step
+
 export const ITEMS = {
   mango: { icon: SVG.mango, name: 'Mango', rarity: 'blue' },
   mango3: { icon: SVG.mango, name: 'Mata de mango', n: 3, rarity: 'purple' },
@@ -607,7 +609,7 @@ export function createItems(hooks) {
       s.age += dt;
       if (s.age >= 0.34) { s.m.removeFromParent(); return false; }
       const k = s.age / 0.34;
-      s.m.position.lerp(new THREE.Vector3(s.car.x, s.car.y + 2.1, s.car.z), Math.min(1, dt * 16));
+      s.m.position.lerp(sparkTarget.set(s.car.x, s.car.y + 2.1, s.car.z), Math.min(1, dt * 16));
       // Step 2 (Pop): scale up real quick (1 -> 1.48), then shrink away
       const popScale = k < 0.28 ? 1 + (k / 0.28) * 0.48 : Math.max(0.01, 1.48 * (1 - (k - 0.28) / 0.72));
       s.m.scale.setScalar(popScale);

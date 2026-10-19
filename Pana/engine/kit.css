@@ -31,6 +31,8 @@
   --pk-teal-edge: #148f78;
   --pk-cocoa: #8b5e3c;
   --pk-hud: rgba(14, 11, 36, .88); /* HUD cards over a 3D scene */
+  --pk-bubble-ink: #16161a;   /* comic speech bubbles (engine/play/seat-bubbles.js) */
+  --pk-bubble-paper: #fff;
 
   /* per-game accent: games override on body */
   --pk-game: var(--pk-yellow);
@@ -130,7 +132,7 @@
 .pk-panel--solid { background: var(--pk-purple); }
 .pk-well { padding: 12px 14px; border: 1px solid var(--pk-line); border-radius: var(--pk-r); background: var(--pk-deep); }
 .pk-modal {
-  width: min(560px, calc(100vw - 32px)); padding: 28px;
+  width: min(560px, calc(100vw - 32px)); padding: 28px; box-sizing: border-box;
   border: 1px solid var(--pk-line); border-radius: 22px;
   background: radial-gradient(600px 300px at 50% -20%, #2a1b5e, transparent 70%), var(--pk-purple);
   color: var(--pk-text); box-shadow: 0 10px 0 rgba(0, 0, 0, .35), 0 30px 60px rgba(0, 0, 0, .45);
@@ -243,6 +245,19 @@
 .pk-slot > .pk-slot-count { position: absolute; top: 4px; right: 7px; color: var(--pk-yellow); font-weight: 900; }
 .pk-slot.is-active { border-color: var(--pk-yellow); background: rgba(255, 198, 41, .1); }
 
+/* speech bubble over a seated pana: engine/play/seat-bubbles.js. The same white
+   comic bubble Derrape draws over its cars; short-lived, so it may cover the HUD. */
+.pk-bubble{position:absolute;z-index:5;transform:translate(-50%,-100%);max-width:220px;padding:7px 14px 5px;border:3px solid var(--pk-bubble-ink);border-radius:18px;background:var(--pk-bubble-paper);color:var(--pk-bubble-ink);font:20px/1.05 var(--pk-display);text-align:center;box-shadow:0 4px 0 rgba(0,0,0,.25);pointer-events:none}
+.pk-bubble::after{content:'';position:absolute;left:50%;bottom:-11px;width:16px;height:16px;border:solid var(--pk-bubble-ink);border-width:0 3px 3px 0;background:var(--pk-bubble-paper);transform:translateX(-50%) rotate(45deg)}
+.pk-bubble.below{transform:translate(-50%,0)}
+.pk-bubble.below::after{top:-11px;bottom:auto;transform:translateX(-50%) rotate(225deg)}
+.pk-bubble.pop{animation:pk-bubble-pop .22s cubic-bezier(.3,1.6,.6,1)}
+.pk-bubble.below.pop{animation-name:pk-bubble-pop-below}
+@keyframes pk-bubble-pop{from{transform:translate(-50%,-100%) scale(.4)}}
+@keyframes pk-bubble-pop-below{from{transform:translate(-50%,0) scale(.4)}}
+@media (max-width: 720px){.pk-bubble{max-width:150px;padding:5px 10px 3px;font-size:15px}}
+@media (prefers-reduced-motion: reduce){.pk-bubble.pop{animation:none}}
+
 /* tilted shout: ¡VUELTA FINAL!, ¡TRONCO! */
 .pk-banner {
   display: inline-block; padding: 12px 26px 8px; border-radius: 12px;
@@ -264,6 +279,32 @@
 /* keyboard reminders, bottom-right */
 .pk-hints { display: grid; gap: 4px; justify-items: end; font: 800 13px var(--pk-sans); color: var(--pk-text); text-shadow: 0 1px 2px rgba(0, 0, 0, .6); }
 .pk-hints b { color: var(--pk-yellow); font-weight: 900; }
+
+/* Power bar: a tall meter on the right edge for aim-and-shoot games (Billar,
+   Bolas Criollas), filled in yellow from the bottom. The game sets --fill on
+   the input (0–100%) when its value changes.
+   <section class="pk-power"><label class="pk-power-control" for="power"><span>Fuerza</span>
+     <input id="power" type="range" aria-orientation="vertical"><output></output></label></section> */
+.pk-power { position: fixed; z-index: 3; right: 20px; top: 50%; transform: translateY(-50%); height: min(380px, 52vh); width: 76px; padding: 12px 0; border-radius: 18px; background: var(--pk-night); }
+.pk-power-control { height: 100%; display: flex; flex-direction: column; align-items: center; gap: 8px; font-weight: 900; font-size: 11px; letter-spacing: .06em; text-transform: uppercase; }
+.pk-power-control output { color: var(--pk-yellow); font-size: 15px; }
+.pk-power-control input { --fill: 60%; flex: 1; width: 30px; margin: 0; writing-mode: vertical-lr; direction: rtl; appearance: none; -webkit-appearance: none; border-radius: 15px; cursor: pointer;
+  background: linear-gradient(to top, var(--pk-yellow) var(--fill), rgba(255, 255, 255, .14) var(--fill)); box-shadow: inset 0 0 0 2px rgba(255, 255, 255, .55); }
+.pk-power-control input::-webkit-slider-thumb { -webkit-appearance: none; width: 38px; height: 38px; border-radius: 50%; background: #fffdf6; border: 3px solid var(--pk-night); box-shadow: 0 3px 0 rgba(0, 0, 0, .3); }
+.pk-power-control input::-moz-range-thumb { width: 34px; height: 34px; border-radius: 50%; background: #fffdf6; border: 3px solid var(--pk-night); }
+.pk-power-control input:disabled { opacity: .45; cursor: default; }
+/* Charge meter: the hold-and-release version of the power bar (Billar, Bolas
+   Criollas). engine/play/shot-charge.js paintCharge() moves the fill and marker.
+   <div id="power" class="pk-charge" role="meter" aria-valuemin="5" aria-valuemax="100">
+     <i class="pk-charge-fill"></i><i class="pk-charge-marker"></i></div> */
+.pk-charge { position: relative; flex: 1; min-height: 0; width: 28px; border: 2px solid var(--pk-muted); border-radius: 12px; background: linear-gradient(to top, var(--pk-teal) 0% 45%, var(--pk-yellow) 45% 82%, var(--pk-coral) 82% 100%); }
+.pk-charge::before { content: ''; position: absolute; inset: 0; border-radius: 10px; background: var(--pk-night); opacity: .65; }
+.pk-charge-fill { position: absolute; inset: 0; border-radius: 10px; background: inherit; clip-path: inset(95% 0 0); }
+.pk-charge-marker { position: absolute; left: -7px; right: -7px; height: 5px; bottom: 5%; transform: translateY(50%); border-radius: 3px; background: #fffdf6; box-shadow: 0 0 0 2px var(--pk-night); }
+@media (max-width: 760px) {
+  .pk-power { right: 8px; top: auto; bottom: 200px; transform: none; height: min(250px, 34vh); width: 58px; }
+  .pk-power-control input { width: 24px; } .pk-power-control input::-webkit-slider-thumb { width: 30px; height: 30px; }
+}
 
 /* ---------- lobby / launcher ----------
    A left column over the game's live 3D scene:
@@ -313,6 +354,7 @@
   background: radial-gradient(900px 500px at 70% 20%, #2a1b5e, transparent 70%), var(--pk-night);
   color: var(--pk-text); font-family: var(--pk-sans);
 }
+.pk-loading[hidden] { display: none; }
 .pk-loading .pk-title { font-size: clamp(44px, 8vw, 88px); }
 
 /* ---------- touch controls (engine/touch.js) ----------

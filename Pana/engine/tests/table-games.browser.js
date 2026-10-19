@@ -48,7 +48,7 @@ try {
         const { world, room } = window[`${game}Debug`], canvas = world.renderer.domElement, rect = canvas.getBoundingClientRect();
         let error = 0;
         if (game === 'billar') { const s = world.screen(500, 250), q = world.point(s.x, s.y); error = Math.hypot(q.x - 500, q.y - 250); }
-        if (game === 'pintura') { const me = room.state.players.find(p => p.id === room.id), s = world.screen(me.x, me.z), q = world.point(s.x, s.y); error = Math.hypot(q.x - me.x, q.z - me.z); }
+        if (game === 'pintura') { const me = room.state.players.find(p => p.id === room.id), f = world.forward(), x = me.x + f.x * 6, z = me.z + f.z * 6, s = world.screen(x, z), q = world.point(s.x, s.y); error = Math.hypot(q.x - x, q.z - z); }
         return { perspective: world.camera.isPerspectiveCamera, error, w: rect.width, h: rect.height, overflow: document.documentElement.scrollWidth > innerWidth, draws: world.renderer.info.render.calls };
       }, game);
       assert.ok(info.perspective && info.error < .001, `${game}: perspective picking matches game coordinates`);
@@ -57,15 +57,15 @@ try {
         const labels = [...document.querySelectorAll('.seat')].map(n => n.getBoundingClientRect());
         return labels.every((a, i) => labels.slice(i + 1).every(b => a.right <= b.left || b.right <= a.left || a.bottom <= b.top || b.bottom <= a.top));
       }), `poker player labels remain separate at ${width}×${height}`);
-      const buttons = game === 'billar' ? ['shoot'] : game === 'poquer' ? ['call', 'raise'] : ['fire', 'view-left', 'view-right'];
+      const buttons = game === 'billar' ? ['shoot'] : game === 'poquer' ? ['call', 'raise'] : ['fire', 'reload'];
       for (const id of buttons) { const b = await p.locator(`#${id}`).boundingBox(); assert.ok(b.x >= 0 && b.y >= 0 && b.x + b.width <= width + 1 && b.y + b.height <= height + 1, `${game}/${id}: reachable at ${width}×${height}`); }
       await p.screenshot({ path: `${out}/${game}-${width}-proof.png` });
     }
     if (game === 'pintura') {
       await p.setViewportSize({ width: 1280, height: 800 });
-      const before = await p.evaluate(() => pinturaDebug.world.camera.position.toArray());
-      await p.locator('#world').focus(); await p.keyboard.down('e'); await p.waitForTimeout(400); await p.keyboard.up('e');
-      const after = await p.evaluate(() => pinturaDebug.world.camera.position.toArray()); assert.ok(Math.hypot(after[0] - before[0], after[2] - before[2]) > 1, 'orbit turns the real follow camera');
+      const before = await p.evaluate(() => pinturaDebug.world.camera.getWorldDirection(new pinturaDebug.world.camera.position.constructor()).toArray());
+      await p.locator('#world').focus(); await p.keyboard.down('e'); await p.waitForFunction(start => Math.abs(pinturaDebug.world.yaw - start) > .5, await p.evaluate(() => pinturaDebug.world.yaw)); await p.keyboard.up('e');
+      const after = await p.evaluate(() => pinturaDebug.world.camera.getWorldDirection(new pinturaDebug.world.camera.position.constructor()).toArray()); assert.ok(Math.hypot(after[0] - before[0], after[2] - before[2]) > .3, 'Q/E turn the real first-person camera');
     }
     await context.close(); console.log(`ok: ${game} 3D stage, picking, laptop and touch layouts`);
   }

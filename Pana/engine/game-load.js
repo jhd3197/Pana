@@ -8,10 +8,12 @@ export async function prepareScene({ renderer, scene, camera }) {
       for (const value of Object.values(material)) if (value?.isTexture && value.image instanceof HTMLImageElement) images.add(value.image);
     }
   });
-  await Promise.all([...images].map(image => image.decode()));
+  // A broken image falls back to Three.js's own upload; it must not block the game.
+  await Promise.allSettled([...images].map(image => image.decode()));
   document.dispatchEvent(new CustomEvent('pana:load-stage', { detail: 'Preparando los gráficos…' }));
   await renderer.compileAsync(scene, camera);
-  const render = renderer.render.bind(renderer);
+  // Keep the real render once, so preparing a second scene never wraps it twice.
+  const render = renderer.panaRender ??= renderer.render.bind(renderer);
   render(scene, camera); // Upload geometry/textures and draw before calling this ready.
   if (document.getElementById('pana-lobby-shell')) {
     // Game simulation/networking continue; the illustrated lobby needs no live world render.

@@ -1,4 +1,4 @@
-import { menuStep } from './menu-helpers.js';
+import { hideTaller, menuStep } from './menu-helpers.js';
 // Cauchos (custom wheels): composed-tune math, garage flow with persistence,
 // and real stepCar simulations for drift (palo vs calle) and mud (barro vs
 // calle). npm start, then node this file. Same idiom as items.browser.js.
@@ -30,23 +30,24 @@ try {
       fallback: wheelById('no-existe').id,
     };
   });
-  assert.equal(math.count, 5);
+  assert.equal(math.count, 8);
   assert.ok(math.slick > math.calle && math.calle > math.palo, 'grip order: slick > calle > palo');
   assert.ok(math.barroResist > math.calleResist, 'barro resists roughness, calle does not');
   assert.ok(math.lluviaFloor > 0.5, 'lluvia keeps a wet grip floor');
   assert.ok(math.baseIntact, 'composeTune never mutates the car tune');
   assert.equal(math.fallback, 'calle');
 
-  // 2. Garage flow: five cauchos, selection recomputes stats and persists.
-  assert.equal(await page.locator('.wheel-choice').count(), 5);
-  const calleStats = await page.evaluate(() => [...document.querySelectorAll('#stats dd i')].map(i => i.style.width));
+  // 2. Garage flow: eight cauchos, selection recomputes stats and persists.
+  assert.equal(await page.locator('.wheel-choice').count(), 8);
+  const calleStats = await page.evaluate(() => [...document.querySelectorAll('#stats .n')].map(n => n.textContent));
   await menuStep(page, 'car');
+  await hideTaller(page);
   await page.locator('[data-car-tab="wheels"]').click();
   await page.locator('.wheel-choice').nth(3).click();   // Llantas de palo
   const picked = await page.evaluate(() => ({
     stored: localStorage.getItem('derrape:wheels'),
     name: document.getElementById('wheel-name').textContent,
-    stats: [...document.querySelectorAll('#stats dd i')].map(i => i.style.width),
+    stats: [...document.querySelectorAll('#stats .n')].map(n => n.textContent),
     radius: garage.car.radius,
   }));
   assert.equal(picked.stored, 'palo');

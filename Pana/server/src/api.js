@@ -11,7 +11,7 @@ function sendJson(res, status, data) {
 
 // A directory under games/ counts as a game when it has public/index.html.
 // Optional games/<id>/game.json provides display metadata (name, description,
-// players, color).
+// players, color, and tileName: a short name for the hub's small card).
 export function listGames() {
   const games = [];
   let entries = [];
@@ -31,6 +31,7 @@ export function listGames() {
     games.push({
       id: entry.name,
       name: meta.name || entry.name,
+      tileName: typeof meta.tileName === 'string' && meta.tileName ? meta.tileName : null,
       description: meta.description || '',
       players: meta.players || config.maxPlayersPerRoom,
       color: meta.color || null,
@@ -42,7 +43,7 @@ export function listGames() {
   return games;
 }
 
-export async function handleApi(req, res, pathname, rooms, startedAt, colyseus) {
+export async function handleApi(req, res, pathname, startedAt, colyseus) {
   if (req.method !== 'GET') {
     return sendJson(res, 405, { error: 'method not allowed' });
   }
@@ -52,8 +53,7 @@ export async function handleApi(req, res, pathname, rooms, startedAt, colyseus) 
     case '/api/games':
       return sendJson(res, 200, { games: listGames() });
     case '/api/rooms':
-      // Relay rooms plus Colyseus rooms (games with a server/room.js).
-      return sendJson(res, 200, { rooms: [...rooms.snapshot(), ...await colyseus.snapshot().catch(() => [])] });
+      return sendJson(res, 200, { rooms: await colyseus.snapshot().catch(() => []) });
     default:
       return sendJson(res, 404, { error: 'not found' });
   }

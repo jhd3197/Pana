@@ -7,7 +7,7 @@
   <link rel="stylesheet" href="/engine/kit.css"><link rel="stylesheet" href="/engine/ui.css"><link rel="stylesheet" href="style.css">
   <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}</script>
 <link rel="stylesheet" href="/engine/game-lobby.css">
-</head>
+<link rel="stylesheet" href="/engine/room-options.css"></head>
 <body>
   <canvas id="world" aria-label="El campamento de noche"></canvas>
   <div id="dark" class="dark" aria-hidden="true"></div>
@@ -18,14 +18,10 @@
     <div class="pk-lobby-top"><a class="pk-back" href="/">← Todos los juegos</a><a class="pk-logo" href="/" aria-label="Pana">PANA</a></div>
     <span class="pk-ribbon">Esta noche, en el campamento</span>
     <div><h1 id="title" class="pk-title">¡Embuste!</h1><p class="pk-eyebrow subtitle">¿Quién es la momia?</p></div>
-    <p class="pk-copy"><b>Trajeron la reliquia al campamento.</b> Esta noche, uno de tus panas amaneció con vendas debajo de la camisa. Mantén la reliquia encendida hasta que llegue el bote… y descubre quién es la momia.</p>
-    <div class="pk-stats"><div class="pk-stat"><b>4–8</b><span>panas, cada uno en su pantalla</span></div><div class="pk-stat"><b id="stat-mummies">1–2</b><span>momias disfrazadas</span></div><div class="pk-stat"><b>1</b><span>noche hasta el bote</span></div></div>
+    <p class="pk-copy" data-room-description><b>Trajeron la reliquia al campamento.</b> Esta noche, uno de tus panas amaneció con vendas debajo de la camisa. Mantén la reliquia encendida hasta que llegue el bote… y descubre quién es la momia.</p>
+    <div class="pk-stats" data-room-description><div class="pk-stat"><b>4–8</b><span>panas, cada uno en su pantalla</span></div><div class="pk-stat"><b id="stat-mummies">1–2</b><span>momias disfrazadas</span></div><div class="pk-stat"><b>1</b><span>noche hasta el bote</span></div></div>
     <div class="pk-field"><span class="pk-eyebrow">Panas en la fogata</span><div id="lobby-team" class="lobby-team" aria-label="Panas en la sala"></div></div>
-    <div id="lobby-options" class="lobby-options">
-      <div class="option-row"><span id="opt-bots-label">Completar con bots de práctica</span><button id="opt-bots" class="pk-switch" role="switch" aria-checked="true" aria-labelledby="opt-bots-label"></button></div>
-      <div class="option-row"><span id="opt-reveal-label">Decir si el expulsado era momia</span><button id="opt-reveal" class="pk-switch" role="switch" aria-checked="true" aria-labelledby="opt-reveal-label"></button></div>
-      <div class="option-row"><span id="opt-chat-label">Chat libre en las reuniones</span><button id="opt-chat" class="pk-switch" role="switch" aria-checked="true" aria-labelledby="opt-chat-label"></button></div>
-    </div>
+    <div id="lobby-options" class="lobby-options"></div>
     <div class="pk-lobby-foot">
       <div class="pk-lobby-room"><i class="pk-dot" aria-hidden="true"></i><span id="connection" class="connection" role="status">Prendiendo la fogata…</span></div>
       <div class="pk-lobby-cta" id="lobby-cta"><button id="start" class="pk-btn pk-btn--primary pk-btn--lg" disabled>Conectando…</button></div>

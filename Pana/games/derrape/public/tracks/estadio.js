@@ -8,6 +8,7 @@ import { trophyMonument } from '/engine/models/props/monuments.js';
 import { stadiumGrounds } from './stadium-grounds.js';
 import { tireWorkshop } from '/engine/models/props/tire-workshop.js';
 import { streetMural } from '/engine/models/props/street-mural.js';
+import { festive, meadow } from './festive.js';
 
 export default {
   ...TRACK_DEFINITIONS.find(track => track.id === 'estadio'),
@@ -18,9 +19,9 @@ export default {
   shortcuts:[{from:[.2338,5.5],to:[.3579,5.5]}],
   items:{boxes:[.12,.32,.49,.69,.9],boxLanes:[-5.5,-1.8,1.8,5.5],pads:[{u:.055,off:0},{u:.37,off:-3},{u:.73,off:3}]},
   walls:false,chevrons:true,
-  palette:{skySeed:23,cloudCover:0.28,horizon:0xb6def1,skyTop:0x278dd1,hemiSky:0xe4f3ff,hemiGround:0x5e8650,hemiInt:1.55,sun:0xfff2dd,sunInt:2.5,ground:0x60a34e,track:0x626e75,dune:0,fog:[350,1050]},
+  palette:{skySeed:23,cloudCover:0.3,horizon:0xc4f0ea,skyTop:0x1a8ff0,halo:1,hemiSky:0xd2e6ff,hemiGround:0x7fb24e,hemiInt:1.55,sun:0xffd79c,sunInt:2.7,ground:0x6cc04a,track:0x675f72,dune:0,fog:[380,1500]},
   environment(T){
-    const group=new THREE.Group(),world=terrain(T,{bounds:[-620,-570,620,520],base:()=>1,color:(x,z)=>Math.abs(T.offsetOf(x,z))<22?0xc5bfa8:0x62a849,step:7});group.add(world.land);
+    const group=new THREE.Group(),world=terrain(T,{bounds:[-620,-570,620,520],base:()=>1,color:(x,z)=>Math.abs(T.offsetOf(x,z))<22?0xf3d49c:meadow(x,z,0x6cc04a,{bloom:0xffd23f}),step:7});group.add(world.land);
     const fixed=new THREE.Group(),white=M(0xefe8cf);
     for(let i=0;i<10;i++)fixed.add(box(13,.12,60,M(i%2?0x4f956b:0x5aa376),-63.5+i*13,1.17,90));
     for(const z of [60,120])fixed.add(box(130,.04,.25,white,-5,1.25,z));
@@ -87,5 +88,13 @@ export default {
     const grounds=stadiumGrounds(T,world.groundAt);group.add(grounds);group.userData.surroundings=grounds.userData.surroundings;
     return {group,groundAt:world.groundAt};
   },
-  scenery(group,kit,T){edges(group,kit,T,{style:'kerb',step:3});},
+  scenery(group,kit,T){
+    edges(group,kit,T,{style:'kerb',step:3,colors:[0xff4f5e,0xfffaf0,0xffc93c,0xfffaf0]});
+    // Race-day festival: flags, bunting, balloons and blossom trees on the infield.
+    festive(group,T,{seed:23,stands:300,banners:230,bunting:150,balloons:95,flags:120,butterflies:50,
+      trees:[['araguaney',22,[1,22]],['apamate',18,[1,22]],['palm',10,[2,20]]],
+      plants:[['hibiscus',26],['trinitaria',10,[0,8],.9],['heliconia',30],['bromeliad',40,[0,6]]],
+      birds:[{kind:'macaw',flocks:2,size:5}],
+      vista:{center:[-20,-40],radius:900,hills:26,height:[60,150],colors:[0x7cc45a,0x5fb06a,0x9ad070,0x6fae8c],balloons:6}});
+  },
 };

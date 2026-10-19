@@ -42,7 +42,9 @@
           <button id="next" class="pk-btn pk-btn--sm" aria-label="Carro siguiente">›</button>
         </div>
       </div>
+      <p class="info-eyebrow pk-eyebrow">Taller de Panas</p>
       <h1 id="car-name"></h1>
+      <p id="car-build" class="car-build"></p>
       <p id="car-blurb"></p>
       <dl id="stats"></dl>
       <p class="driver">Maneja: <b id="driver-name"></b> · <a href="/">cambiar mi pana</a></p>
@@ -52,7 +54,7 @@
       <button id="cam" class="toggle pk-btn pk-btn--sm">Ver piloto</button>
       <button id="honk" class="toggle pk-btn pk-btn--sm">¡Pita! <kbd class="pk-kbd">H</kbd></button>
       <button id="spin" class="toggle pk-btn pk-btn--sm on">Girar</button>
-      <button id="open-shop" type="button" class="toggle pk-btn pk-btn--sm shop-open">Taller · <b id="wallet-coins">0</b> monedas</button>
+      <button id="open-shop" type="button" class="toggle pk-btn pk-btn--sm shop-open">Taller · <span class="mango-symbol" aria-hidden="true"></span><b id="wallet-coins">0</b> mangos</button>
       <span class="hint" data-pana-hint>Arrastra para girar · rueda para acercar</span>
     </div>
     <nav id="car-lineup" class="car-lineup" aria-label="Elige tu carro"></nav>
@@ -126,16 +128,20 @@
     </section>
   </div>
 
-  <section id="shop" class="shop pk-panel pk-panel--solid" role="dialog" aria-modal="false" aria-labelledby="shop-title" hidden>
+  <section id="shop" class="shop" role="region" aria-labelledby="shop-title" hidden>
     <header class="shop-head">
-      <div><span class="pk-eyebrow">Taller del garaje</span><h2 id="shop-title">Personaliza tu carro</h2></div>
-      <p class="shop-wallet"><span class="coin-symbol" aria-hidden="true">I</span><b id="shop-coins">0</b> monedas</p>
+      <h2 id="shop-title">Tu carro</h2>
+      <p class="shop-wallet" aria-label="Mangos disponibles"><span class="mango-symbol" aria-hidden="true"></span><b id="shop-coins">0</b></p>
+      <button id="shop-close" type="button" class="shop-close" aria-label="Ocultar el taller" title="Ocultar el taller"></button>
     </header>
-    <p class="shop-note">Ganas monedas en cada carrera: las que recoges más un premio por el podio. La pintura es para el carro que tienes elegido.</p>
-    <h3>Pintura</h3><div id="shop-paint" class="shop-grid"></div>
-    <h3>Corneta</h3><div id="shop-horn" class="shop-grid"></div>
-    <h3>Llama del turbo</h3><div id="shop-flame" class="shop-grid"></div>
-    <button id="shop-close" type="button" class="pk-btn pk-btn--primary pk-btn--block">Listo</button>
+    <dl id="shop-stats" class="shop-stats"></dl>
+    <div id="shop-tabs" class="shop-tabs" role="tablist" aria-label="Secciones del taller"></div>
+    <div id="shop-body" class="shop-body"></div>
+    <div id="shop-try" class="shop-try" role="status" hidden>
+      <p id="shop-try-text"></p>
+      <button id="shop-untry" type="button" class="shop-btn shop-btn--ghost">Quitar</button>
+      <button id="shop-buy" type="button" class="shop-btn"></button>
+    </div>
   </section>
 
   <!-- ---------- race ---------- -->
@@ -160,7 +166,7 @@
 
     <ol id="board" class="pk-roster"></ol>
 
-    <div id="coins" class="coins pk-panel" title="Cada moneda da +0,8% de velocidad, hasta 10. La posición decide quién gana.">
+    <div id="coins" class="coins pk-panel" title="Cada moneda da +0,8% de velocidad, hasta 10. Al final de la carrera se cambian por mangos.">
       <span class="coin-symbol" aria-hidden="true">I</span>
       <div><small class="pk-eyebrow">Monedas</small><b id="coin-count">00</b><span class="coin-cap"> / 10</span><span id="coin-bonus">+0% velocidad</span></div>
     </div>
@@ -235,7 +241,7 @@
           <ol id="cup-board" class="pk-roster"></ol>
           <p id="cup-next" class="cup-next"></p>
         </div>
-        <div class="res-coins pk-panel"><span class="coin-symbol" aria-hidden="true">I</span><p id="result-coins" class="result-coins"></p></div>
+        <div class="res-coins pk-panel"><span class="mango-symbol" aria-hidden="true"></span><p id="result-coins" class="result-coins"></p></div>
         <div class="res-actions">
           <button id="again" class="play pk-btn pk-btn--primary pk-btn--lg pk-btn--block">Otra vez</button>
           <div class="row">

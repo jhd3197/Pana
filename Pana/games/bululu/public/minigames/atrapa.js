@@ -7,6 +7,9 @@ import { Puffs, Shockwaves, sound } from '/engine/fx.js';
 import { M, mesh } from '/engine/models/core/primitives.js';
 import { makeMango } from '/engine/models/props/mango.js';
 import { woodSign } from '/engine/models/props/wood-sign.js';
+import { mangoTree } from '/engine/models/vegetation/mango-tree.js';
+import { supplyCrate } from '/engine/models/props/expedition-camp.js';
+import { buntingLine } from '/engine/models/props/fiesta.js';
 import { sunnyStage, makeActors, animateActor, rand, pick } from './stage.js';
 
 const LANE_Z = 3;            // where the panas stand
@@ -37,21 +40,25 @@ function coconut() {
   return g;
 }
 
-function mangoTree() {
-  const g = new THREE.Group();
-  g.add(mesh(new THREE.CylinderGeometry(1.1, 1.8, 8, 7), M(0x7a5232, { roughness: 1 }), 0, 4, 0));
-  const leaf = M(0x3d9142, { roughness: 0.9 }), dark = M(0x2f7a37, { roughness: 0.9 });
-  for (const [x, y, z, r, d] of [[0, 10, 0, 5, 0], [-5.5, 8.6, 0.8, 3.8, 1], [5.5, 8.8, 0.5, 3.9, 1], [-2.6, 11.6, -0.6, 3.2, 1], [2.8, 11.8, -0.4, 3.3, 0], [-8.4, 8, -0.5, 2.6, 0], [8.4, 8.2, -0.6, 2.6, 0]]) {
-    g.add(mesh(new THREE.IcosahedronGeometry(r, 0), d ? dark : leaf, x, y, z));
+// The yard's mango tree: the library's tree, big and set back so every
+// falling mango drops in front of its crown, with crates of the day's pick.
+function yard(scene) {
+  const tree = mangoTree({ seed: 4, scale: 2.05 });
+  tree.position.set(0, 0, -9.5);
+  scene.add(tree);
+  for (const [x, z, r, n] of [[-12.5, -1.5, 0.3, 3], [12.2, -4.5, -0.4, 2], [-10.8, 1.2, -0.2, 2]]) {
+    const crate = supplyCrate({ size: 0.95 });
+    crate.position.set(x, 0, z); crate.rotation.y = r;
+    for (let k = 0; k < n; k++) {
+      const m = makeMango({ gold: k === 0 && n === 3 });
+      m.scale.setScalar(0.7); m.position.set((k - (n - 1) / 2) * 0.32, 0.98, 0); m.rotation.z = k * 0.7;
+      crate.add(m);
+    }
+    scene.add(crate);
   }
-  for (let i = 0; i < 12; i++) {
-    const m = makeMango();
-    m.scale.setScalar(0.8);
-    m.position.set(rand(-9, 9), rand(6.8, 8.2), rand(2.4, 3.6));
-    m.rotation.z = rand(-0.4, 0.4);
-    g.add(m);
-  }
-  return g;
+  const bunting = buntingLine({ span: 26, seed: 5, height: 5.2 });
+  bunting.rotation.y = Math.PI / 2; bunting.position.set(0, 0, -4.5);
+  scene.add(bunting);
 }
 
 export default {
@@ -59,15 +66,14 @@ export default {
   title: '¡Atrapa los mangos!',
   howto: 'Muévete y atrapa los mangos con tu cesta. Los de oro valen 3. ¡Ojo con los cocos!',
   keys: [['A D / ← →', 'moverte']],
+  touch: { action: null },
   icon: 'mango',
   time: 30,
 
   create(ctx) {
     const scene = new THREE.Scene();
     const stage=sunnyStage(scene);
-    const tree = mangoTree();
-    tree.position.set(0, 0, -3.5);
-    scene.add(tree);
+    yard(scene);
     const sign = woodSign(['ENTRE MÁS', 'MANGOS', '¡MEJOR!'], { w: 4.6, h: 3.4 });
     sign.position.set(13.5, 0, -2);
     sign.rotation.y = -0.4;
@@ -79,9 +85,9 @@ export default {
     camera.position.set(0, 6.2, 19);
     camera.lookAt(0, 4.2, 0);
 
-    const actors = makeActors(scene, ctx.players);
+    const actors = makeActors(scene, ctx.players, ctx);
     actors.forEach((a, i) => {
-      a.x = a.home = -7.5 + i * 5;
+      a.x = a.home = -7.5 + i * 15 / (actors.length - 1);
       a.z = LANE_Z;
       const b = basket();
       b.position.set(0, 1.25, 0.85);
@@ -136,6 +142,19 @@ export default {
         if (score > bestScore) { bestScore = score; best = f; }
       }
       ai.target = best ? best.obj.position.x + ai.err : null;
+    }
+
+    // The closest unstunned basket within `range` of x. Overlapping baskets
+    // must not hand the fruit to whoever comes first in the seat order; an
+    // exact tie is drawn from the game's random stream.
+    function nearest(x, range) {
+      let best = [], bestD = range;
+      for (const c of actors) {
+        if (c.stun > 0) continue;
+        const d = Math.abs(c.x - x);
+        if (d < bestD - 1e-9) { best = [c]; bestD = d; } else if (Math.abs(d - bestD) <= 1e-9) best.push(c);
+      }
+      return best.length > 1 ? best[Math.floor(random() * best.length)] : best[0] || null;
     }
 
     let skyTime=0;
@@ -194,13 +213,13 @@ export default {
         p.y += f.vy * dt;
         // Magnetic pull-in toward the nearest unstunned basket when close
         if (f.kind !== 'coco' && p.y > CATCH_Y && p.y < CATCH_Y + 1.45) {
-          const magnet = actors.find((c) => c.stun <= 0 && Math.abs(c.x - p.x) < 1.45);
+          const magnet = nearest(p.x, 1.45);
           if (magnet) p.x += (magnet.x - p.x) * Math.min(1, dt * 9.5);
         }
         f.obj.rotation.z += f.spin * dt;
         f.obj.rotation.x += f.spin * 0.5 * dt;
         if (prev > CATCH_Y && p.y <= CATCH_Y) {
-          const a = actors.find((c) => Math.abs(c.x - p.x) < 0.95 && c.stun <= 0);
+          const a = nearest(p.x, 0.95);
           if (a) {
             f.dead = true;
             if (f.kind === 'coco') {
@@ -262,6 +281,6 @@ export default {
       shockwaves.update(dt);
     }
 
-    return { scene, camera, update, outro, scores: () => actors.map((a) => a.score), actors };
+    return { scene, camera, update, outro, scores: () => actors.map((a) => a.score), actors, falling: () => falling };
   },
 };

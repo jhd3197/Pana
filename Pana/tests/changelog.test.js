@@ -35,10 +35,12 @@ test('a changelog without Unreleased is an error', () => {
   assert.throws(() => stamp('# Changelog\n', '1.0.0', 'x'), /Unreleased/);
 });
 
-test('the first release is package.json; then patch, feat: minor, BREAKING CHANGE major', () => {
+test('the first release is package.json; then patch, Release: minor (or feat:) minor, BREAKING CHANGE major', () => {
   assert.equal(bump('', ['anything'], '0.1.0'), '0.1.0');
   assert.equal(bump('v0.1.0', ['Fix a thing'], '0.1.0'), '0.1.1');
   assert.equal(bump('v0.1.3', ['feat: rooms'], '0.1.0'), '0.2.0');
+  assert.equal(bump('v0.1.3', ['Add rooms\n\nWhy rooms.\n\nRelease: minor'], '0.1.0'), '0.2.0');
+  assert.equal(bump('v0.1.3', ['Add rooms\n\nA minor detail.'], '0.1.0'), '0.1.4');
   assert.equal(bump('v0.4.2', ['Rework\n\nBREAKING CHANGE: new protocol'], '0.1.0'), '1.0.0');
 });
 

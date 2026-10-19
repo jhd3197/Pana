@@ -94,3 +94,46 @@ and structural helpers when building an assembly or a new visual variant.
 | 28 | Jungle trailhead camp | Selva, Salto del Tepuy |
 | 29 | Pottery kiln yard | Plaza artisan district |
 | 30 | Harbor travel-ticket booth | Plaza waterfront, Bululú |
+
+## Festive roadside (`tracks/festive.js`)
+
+Eleven circuits (all but Selva and Salinas) call `festive(group, T, theme)` from
+their `scenery`. It only decides placement. Everything it places is a Studio
+library model:
+
+- Trees and shrubs use the low variants: `araguaney({detail:'low', bloom})`,
+  where bloom `pink` is the Studio "Apamate" and `coral` is "Bucare en flor",
+  plus `palm`, `hibiscus`, `heliconia` and `trinitaria` with `detail:'low'`,
+  and `bromeliad`, `agave`, `gardenRosette`, `mossRock` and `lajaRock`. Low
+  variants cost 15–25 % of the full model (an araguaney goes from 9.7 k to
+  1.4 k triangles). When a model is too heavy for roadside use, add a
+  `detail:'low'` path to that model. Never add a one-off look-alike.
+- Fiesta props live in `engine/models/props/fiesta.js`: balloon bunches,
+  feather flags, bunting, a checkered banner and a hot-air balloon. Each is one
+  or two vertex-coloured meshes, with cloth on the shared plant wind. Stands
+  are the library `iceCreamCart`, or `beachShade` on Bululú, capped at 3 per
+  track because a cart is 7.7 k triangles.
+- Flocks use `engine/models/animation/bird-flock.js`. It instances any
+  flight-rig bird (`scarletMacaw`, `scarletIbis`, `soaringVulture`, created
+  with `detail:'low'`). Each child, the body and each wing, merges into one
+  vertex-coloured instanced mesh, so a species costs 3 draws. Morphos use
+  `morphoField`, which costs 2 draws. Both have `detailLevel = 1`, so Baja
+  hides them.
+- Each model is instanced through `instancePlacements` with `cellSize`
+  Infinity (one instanced mesh per model mesh). Only trees and stands cast
+  shadows. One spatial cell per mesh adds up fast: mossRock is 3 meshes, so
+  scatter it with 500 m cells, not the old 110–220 m boulder cells.
+- `clear()` already enforces `HW + 5 + r`. Theme bands are metres beyond that.
+  Placement skips gaps, water, ground below `minY`, ground more than `maxDrop`
+  from the road (tunnels, bridges, cliffs), and existing
+  `userData.footprintRadius`. Plaza passes its house footprints as `avoid`.
+- The only geometry `festive.js` builds itself is the distant horizon: one
+  merged mesh of hills, rounded peaks or tepuy mesas past the playable area. Its
+  ring sits at `max(1.25 × route reach + 150, 0.72 × fog far)`. Nearer hills
+  read as blobs, and cones read as pyramids. `meadow(x, z, base)` varies grass
+  colour in broad warm and deep patches for the terrain colour functions.
+- Palettes set `halo` (`engine/worlds/sky.js`, default 0) for the golden glow around
+  the sun. Horizons stay pale aqua or cream. A peach horizon under a blue
+  zenith blends to lavender-grey.
+- Races keep `NoToneMapping`. ACES at 0.86–1.0 dulled the display-referred
+  vertex colours without softening anything the palettes don't already handle.

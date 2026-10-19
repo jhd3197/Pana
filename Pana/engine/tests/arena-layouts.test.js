@@ -1,17 +1,17 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { ARENAS, ARENA_SPAWNS, arenaLayout, createHuntLayout, outsideTable } from '../arena-layouts.js';
+import { ARENAS, ARENA_SPAWNS, arenaLayout, createHuntLayout, outsideTable } from '../worlds/arena-layouts.js';
 import { propDefinition } from '../models/props/plaza-definitions.js';
 import { HuntRound } from '../../games/escondidas/public/rules.js';
-import { Arena, blocked, RADIUS } from '../../games/pintura/public/rules.js';
+import { Arena, blocked, RADIUS, coverFor, spawnsFor } from '../../games/pintura/public/rules.js';
 import { createGame, acceptAction, snapshot } from '../../games/billar/public/rules.js';
 import { CaidaGame } from '../../games/caida/public/rules.js';
 
 for (const { id } of ARENAS.filter(m => m.id !== 'plaza')) {
   test(`${id}: spawns and every disguise have reachable space; navigation cannot cut cover`, () => {
     const layout = createHuntLayout(id), from = ARENA_SPAWNS[0];
+    for (const p of spawnsFor(id)) assert.equal(blocked(p.x, p.z, RADIUS, id), false, 'Pepazo spreads the cover over its larger court');
     for (const p of ARENA_SPAWNS) {
-      assert.equal(blocked(p.x, p.z, RADIUS, id), false);
       assert.equal(layout.blocked(p.x, p.z, .65), false);
       assert.ok(layout.route(from, p).length > 0, `Disconnected spawn ${JSON.stringify(p)}`);
     }
@@ -45,7 +45,7 @@ for (const { id } of ARENAS.filter(m => m.id !== 'plaza')) {
   });
 
   test(`${id}: selected cover stops paint, including a long segment across a thin wall`, () => {
-    const game = new Arena(id), o = arenaLayout(id).cover[0];
+    const game = new Arena(id), o = coverFor(id)[0];
     game.add(1, { name: 'Uno' }); game.add(2, { name: 'Dos' }); game.start();
     Object.assign(game.players[0], { x: o.x - o.w / 2 - 2, z: o.z, shield: 0 });
     Object.assign(game.players[1], { x: o.x + o.w / 2 + 2, z: o.z, shield: 0 });

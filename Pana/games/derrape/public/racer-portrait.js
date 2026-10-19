@@ -1,10 +1,12 @@
 import * as THREE from 'three';
+import { studioEnvironment } from './garage-stage.js';
 
 // Borrow the actual car hierarchy and its saved pana. No extra WebGL context,
 // animation loop or model geometry survives this synchronous snapshot.
 export function racerPortrait(renderer, car) {
   const scene=new THREE.Scene(),root=car.root.clone(true);
   root.position.set(0,0,0);root.rotation.set(0,0,0);scene.add(root);
+  scene.environment=studioEnvironment(renderer);   // the garage's studio reflections
   scene.add(new THREE.HemisphereLight(0xffffff,0x8799ae,2.5));
   const sun=new THREE.DirectionalLight(0xffffff,3);sun.position.set(4,9,8);scene.add(sun);
   const camera=new THREE.PerspectiveCamera(37,4/3,.1,80);

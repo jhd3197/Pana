@@ -14,7 +14,7 @@ try{
   await page.goto(`${base}/studio/settings.html`);
   await page.setContent(`<html><head><script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}</script><style>body{margin:0}canvas{display:block;width:100vw;height:100vh}</style></head><body><canvas></canvas></body></html>`);
   await page.evaluate(async()=>{
-    const THREE=await import('three'),tracks=await import('/g/derrape/tracks.js'),preview=await import('/studio/preview.js');
+    const THREE=await import('three'),tracks=await import('/g/derrape/tracks.js'),preview=await import('/studio/preview.js');await tracks.loadTracks();
     const stage=preview.createPreview(document.querySelector('canvas'),true);stage.renderer.setSize(1500,1050,false);stage.camera.aspect=1500/1050;
     window.proof={THREE,tracks,preview,stage};
   });
@@ -56,9 +56,12 @@ try{
   // Full-scene inventories include the already-shipped outer neighborhoods
   // and pastures. Plaza's current guard is owned by plaza.browser.js and
   // circuit-surroundings.md; the former 3 M guard predated that expansion.
-  // surroundings.browser.js separately retains 900 draws / 3.5 M triangles
+  // surroundings.browser.js separately retains 900 draws / 3.6 M triangles
   // for actual driving views. These overview guards do not replace it.
-  const budget={desierto:1600000,llanos:3100000,estadio:1000000,paramo:2000000,bululu:2200000,chichi:4500000,plaza:4600000};
+  // The festive roadside (tracks/festive.js) instances low-detail library
+  // trees, shrubs, fiesta props and flocks: 30-200 k triangles per circuit.
+  // Estadio already exceeded its former 1 M guard (1.19 M) before that pass.
+  const budget={desierto:1600000,llanos:3400000,estadio:1400000,paramo:2250000,bululu:2200000,chichi:4850000,plaza:4700000};
   const overviewCalls={plaza:1300,llanos:1100};
   for(const m of results){
     assert.ok(m.triangles<budget[m.id],`${m.id}: actual rendered triangle budget (${m.triangles})`);

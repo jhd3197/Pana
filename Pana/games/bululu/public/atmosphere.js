@@ -1,6 +1,7 @@
 import * as THREE from 'three';
-import { createSky } from '/engine/sky.js';
+import { createSky } from '/engine/worlds/sky.js';
 import { rng } from '/engine/models/core/primitives.js';
+import { shadowSize } from '/engine/settings.js';
 
 export const SKY_MODES = ['day', 'night', 'cycle'];
 const TAU = Math.PI * 2;
@@ -55,7 +56,7 @@ export function createAtmosphere(scene, water, initialMode = 'day') {
   const ambient = new THREE.HemisphereLight(0xcbeaff, 0x7b8050, 2);
   const key = new THREE.DirectionalLight(0xffe9bc, 2.4);
   key.castShadow = true;
-  key.shadow.mapSize.set(2048, 2048);
+  key.shadow.mapSize.setScalar(shadowSize(2048));
   Object.assign(key.shadow.camera, { left: -60, right: 60, top: 60, bottom: -60, near: 1, far: 280 });
   key.shadow.bias = -0.00035;
   key.shadow.normalBias = 0.06;

@@ -16,7 +16,7 @@ export function createInspector({ copy }) {
     async change(asset, spec) {
       const batch = Array.isArray(spec);
       await select({ ...asset, category: batch ? 'Mapas' : 'Objetos', async build() {
-        if (batch) { const { createColonialHouseCollection } = await import('/engine/colonial-house-collection.js'); return createColonialHouseCollection({ houses: spec }); }
+        if (batch) { const { createColonialHouseCollection } = await import('/engine/worlds/colonial-house-collection.js'); return createColonialHouseCollection({ houses: spec }); }
         const { colonialHouse } = await import('/engine/models/props/colonial-house.js');
         return { group: colonialHouse({ spec }) };
       } }, true);

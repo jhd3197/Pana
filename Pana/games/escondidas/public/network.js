@@ -1,18 +1,26 @@
-// Round authority stays with the room's host (engine/net.js). All gameplay
-// data rides the kit's relay messages under the 'hunt-v1' protocol.
-import { HuntRound } from './rules.js';
-import { HostRoom } from '/engine/net.js';
+// Round authority stays with the room's host (engine/live-room.js). All gameplay
+// data rides the kit's relay messages under the 'hunt-v2' protocol.
+import { HuntRound, stepPana } from './rules.js';
+import { LiveRoom, axis } from '/engine/live-room.js';
 
-export class HuntRoom extends HostRoom {
-  constructor({ code, name, avatar, onState, onStatus, onNotice }) {
-    super({ game: 'escondidas', protocol: 'hunt-v1', code, name, avatar, onState, onStatus, onNotice, texts: {
+export class HuntRoom extends LiveRoom {
+  constructor(options) {
+    super({ ...options, game: 'escondidas', protocol: 'hunt-v2', texts: {
       full: 'La sala está llena (8 panas). Puedes practicar sin conexión.',
-      offline: 'No pudimos conectar. Puedes practicar sin conexión.' } });
-    this.inputs = new Map(); this.seq = 0; this.lastAction = new Map();
+      offline: 'No pudimos conectar. Puedes practicar sin conexión.',
+      waiting: 'Espera a reconectar o entra a practicar.' } }, {
+      // Your own pana moves the moment you press a key; the host corrects it.
+      predict: {
+        body: (state, id) => ['hide', 'hunt'].includes(state.phase) ? state.players.find(p => p.id === id && !p.bot) : null,
+        step: stepPana,
+      },
+    });
     this.state = new HuntRound('plaza', { layoutSeed: crypto.getRandomValues(new Uint32Array(1))[0] }).snapshot();
   }
+  cleanInput(raw) { return { x: axis(raw?.x), z: axis(raw?.z), sprint: !!raw?.sprint, ...(Number.isFinite(raw?.look) ? { look: raw.look } : {}) }; }
   takeOver(previous) {
-    this.game = new HuntRound(this.state.mapId, this.state); this.inputs.clear();
+    super.takeOver(previous);
+    this.game = new HuntRound(this.state.mapId, this.state);
     for (const p of this.members.values()) this.game.addPlayer(p.id, p.name, p.id === this.id ? this.avatar : p.avatar || {});
     this.state = this.game.snapshot(); this.onState(this.state);
     if (previous != null) this.onNotice('Cambió el anfitrión. Preparen una nueva partida.');
@@ -22,7 +30,7 @@ export class HuntRoom extends HostRoom {
     if (!already) this.onNotice(`${m.name} llegó a la sala.`);
   }
   memberLeft(id) {
-    this.inputs.delete(id); this.lastAction.delete(id);
+    super.memberLeft(id);
     if (this.isHost) this.game.removePlayer(id);
   }
   memberHello(id, member) {
@@ -30,22 +38,8 @@ export class HuntRoom extends HostRoom {
     this.game.addPlayer(id, member.name, member.avatar);
     const p = this.game.players.find(p => p.id === id); if (p) p.avatar = member.avatar;
   }
-  receive(id, data) {
-    if (data.kind === 'snapshot' && id === this.hostId && !this.isHost) {
-      this.state = data.state; this.onState(this.state);
-    } else if (data.kind === 'input' && this.isHost) {
-      this.inputs.set(id, { x: Number.isFinite(data.x) ? Math.max(-1, Math.min(1, data.x)) : 0,
-        z: Number.isFinite(data.z) ? Math.max(-1, Math.min(1, data.z)) : 0, sprint: !!data.sprint, at: performance.now() });
-    } else if (data.kind === 'action' && this.isHost && Number.isSafeInteger(data.seq)) {
-      if (data.seq <= (this.lastAction.get(id) || 0)) return;
-      this.lastAction.set(id, data.seq); this.handleAction(id, data);
-    } else if (data.kind === 'notice' && id === this.hostId && data.to === this.id) this.onNotice(data.text);
-  }
-  notice(id, text) {
-    if (id === this.id) this.onNotice(text);
-    else this.send({ kind: 'notice', to: id, text });
-  }
-  handleAction(id, action) {
+  // The next tick publishes; actions only update the host's own view at once.
+  handle(id, action) {
     if (action.action === 'map' && id === this.hostId) this.game.selectMap(action.mapId);
     else if (action.action === 'configure' && id === this.hostId) this.game.configure(action.options);
     else if (action.action === 'start' && id === this.hostId) this.game.start(id, action.preference);
@@ -54,28 +48,13 @@ export class HuntRoom extends HostRoom {
       this.notice(id, error || (action.prop ? '¡Listo! Quédate quieto y pasa desapercibido.' : 'Volviste a ser pana.'));
     } else if (action.action === 'check') {
       const p = this.game.players.find(p => p.id === id);
-      if (!p || p.cooldown > 0 || this.game.phase !== 'hunt' || id !== this.game.seeker) return;
-      this.notice(id, this.game.check(id) ? '¡Ajá! Aquí había un pana.' : 'Nada por aquí… Prueba con otro objeto.');
+      if (!p || p.cooldown > 0 || this.game.phase !== 'hunt' || !this.game.isSeeker(id)) return;
+      this.notice(id, this.game.check(id, Number.isFinite(action.aim) ? action.aim : undefined) ? '¡Ajá! Aquí había un pana.' : 'Nada por aquí… Prueba con otro objeto.');
     }
     this.state = this.game.snapshot(); this.onState(this.state);
   }
-  action(action, extra = {}) {
-    if (!this.connected && !this.offline) { this.onNotice('Espera a reconectar o entra a practicar.'); return; }
-    const data = { kind: 'action', seq: ++this.seq, action, ...extra };
-    if (this.isHost) this.handleAction(this.id, data); else this.send(data);
-  }
-  tick(dt, input, paused = false) {
-    if (!this.connected && !this.offline) return;
-    if (this.isHost) {
-      this.inputs.set(this.id, input);
-      for (const [id, i] of this.inputs) if (id !== this.id && performance.now() - i.at > 600) this.inputs.delete(id);
-      if (!paused) this.game.update(dt, this.inputs);
-      this.state = this.game.snapshot(); this.onState(this.state);
-      this.send({ kind: 'snapshot', state: this.state });
-    } else this.send({ kind: 'input', ...input });
-  }
   practice() {
-    this.state = new HuntRound(this.state.mapId, this.state).snapshot(); this.inputs.clear(); this.lastAction.clear();
+    this.state = new HuntRound(this.state.mapId, this.state).snapshot();
     super.practice('Práctica con 3 panas de la máquina.');
   }
 }

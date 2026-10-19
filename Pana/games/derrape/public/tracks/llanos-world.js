@@ -1,7 +1,9 @@
+import { festive, meadow } from './festive.js';
 import { THREE,M,mesh,box,tube,terrain,put,foundation,scatter,instances,clear,finish,smooth,placeOnTrack } from './world-kit.js';
 import { llaneroRanchHouse, corralGate, hayBale, waterWindmill, horseStable, feedingTrough, ranchFence, oldTractor, mudPuddle, ranchWaterTower } from '/engine/models/props/ranch.js';
 import { palm } from '/engine/models/vegetation/palm.js';
 import { mangoTree } from '/engine/models/vegetation/mango-tree.js';
+import { saman } from '/engine/models/vegetation/saman.js';
 import { araguaney } from '/engine/models/vegetation/araguaney.js';
 import { reeds } from '/engine/models/vegetation/reeds.js';
 import { waterLily } from '/engine/models/vegetation/water-lily.js';
@@ -26,7 +28,8 @@ export function llanosEnvironment(T){
     color:(x,z,y)=>{
       const wet=Math.min(smooth(wetlandDistance(x,z),1,1.55),smooth(riverDistance(x,z),12,50));
       const c=new THREE.Color(0x368650).lerp(new THREE.Color(0x73a83e),wet);
-      return c.lerp(new THREE.Color(0xb8a947),(.5+.5*Math.sin(x*.018)*Math.cos(z*.025))*wet*.4);
+      c.lerp(new THREE.Color(0xb8a947),(.5+.5*Math.sin(x*.018)*Math.cos(z*.025))*wet*.4);
+      return wet>.5?meadow(x,z,c.getHex(),{warm:0xa9c94a,deep:0x3f9450,bloom:0xffd23f}):c.getHex();
     }});group.add(world.land);world.land.name='llanos-savanna-terrain';
   const add=(parent,id,factory,x,z,{rotation=0,scale=1,radius=5,animate=false}={})=>{
     if(!clear(T,x,z,radius))throw Error(`Llanos landmark ${id} overlaps road at ${x}, ${z}`);
@@ -135,6 +138,8 @@ export function llanosEnvironment(T){
   const dry=(x,z)=>riverDistance(x,z)>34&&wetlandDistance(x,z)>1.35&&!occupied.some(([a,b,r])=>Math.hypot(x-a,z-b)<r);
   instances(group,grassTuft(0x7f9f3c),scatter(T,world.groundAt,{seed:415,count:2200,bounds:[-440,-365,440,290],margin:2,minY:1,scale:1.5,accept:dry}),'savanna-grasses',180);
   instances(group,mangoTree({seed:14,h:7,fruit:false}),scatter(T,world.groundAt,{seed:416,count:18,bounds:[-350,-280,-110,200],margin:9,scale:1.35,accept:dry}),'hato-shade-trees',180);
+  // A few wide samanes, the llano's shade tree, stand apart in the pastures.
+  instances(group,saman({seed:15}),scatter(T,world.groundAt,{seed:419,count:6,bounds:[-350,-280,-110,200],margin:16,accept:dry}),'hato-samanes',180);
   instances(group,araguaney({seed:11}),scatter(T,world.groundAt,{seed:417,count:9,bounds:[-300,-240,290,200],margin:10,scale:1.4,accept:dry}),'savanna-araguaneyes',180);
   instances(group,palm({seed:17,h:9}),scatter(T,world.groundAt,{seed:418,count:20,bounds:[-150,-340,360,280],margin:9,scale:1.1,accept:dry}),'savanna-palms',180);
   const landscape=llanosLandscape(T,world,occupied);group.add(landscape);group.userData.surroundings=landscape.userData.surroundings;
@@ -143,9 +148,16 @@ export function llanosEnvironment(T){
 }
 
 export function llanosScenery(group,kit,T){
+  const onBridgeS=s=>{const p=T.pointAt(s);return riverDistance(p.x,p.y)<30;};
   const onBridge=s=>{const p=T.pointAt(s);return riverDistance(p.x,p.y)<26;};
   group.add(crossing(T,p=>riverDistance(p.x,p.z)<26,{name:'estero-road-bridges',wood:true,color:0x9e9172}));
   group.add(vergePosts(T,{skip:onBridge,step:18}),dirtVerge(T,{shoulder:0xb3a776,rut:0x927c54,skip:onBridge}));
   const boat=kit.rowboat({color:0x9b5140});kit.at(group,boat,{x:-28,z:-66,y:WATER_Y},.4);
   for(let i=0;i<4;i++)group.add(orbitBird(scarletIbis({seed:20+i}),{cx:85,cz:80,cy:17+i*3,r:42+i*10,speed:.18+i*.015,phase:i*1.4}));
+  // Fiesta llanera: araguaneyes in bloom, joropo bunting, ibis and macaw flocks.
+  festive(group,T,{seed:19,minY:WATER_Y+.35,skip:onBridgeS,stands:300,banners:420,bunting:220,balloons:160,flags:220,butterflies:40,
+    trees:[['araguaney',24,[2,24]],['apamate',14,[2,24]],['bucare',8,[4,24]]],
+    plants:[['hibiscus',30],['heliconia',20],['bromeliad',30,[0,6]]],
+    birds:[{kind:'ibis',flocks:3,size:6,height:[12,22]},{kind:'macaw',flocks:2,size:4}],
+    vista:{shape:'peak',hills:30,height:[140,260],colors:[0x8aa7d8,0x9a9ad8,0x7fb0d0],balloons:5}});
 }

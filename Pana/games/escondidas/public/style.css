@@ -1,7 +1,7 @@
 /* Escondidas on the Pana Kit (/engine/kit.css). Market accent: amber. */
 * { box-sizing: border-box; }
 html, body { margin: 0; width: 100%; height: 100%; overflow: hidden; }
-body { --skin: #f6c9a4; --pk-game: #ebaa38; --pk-game-ink: #2a1a00; background: var(--pk-night); color: var(--pk-text); font-family: var(--pk-sans); font-synthesis: none; }
+body { --skin: #f6c9a4; --cross: #fff; --cross-seek: #ffc629; --pk-game: #ebaa38; --pk-game-ink: #2a1a00; background: var(--pk-night); color: var(--pk-text); font-family: var(--pk-sans); font-synthesis: none; }
 button, input { font: inherit; }
 button { color: inherit; cursor: pointer; -webkit-tap-highlight-color: transparent; }
 button:disabled { cursor: default; }
@@ -166,3 +166,20 @@ nav .pk-kbd { min-width: 0; height: 20px; padding: 0 5px; font-size: 10px; }
 @media (prefers-reduced-motion: reduce) {
   * { transition: none !important; }
 }
+
+/* First person: crosshair, click-to-look hint, find callout and the Tab table. */
+.crosshair, .lock-hint, .callout { display: none; }
+body.first-person .crosshair { display: block; position: fixed; left: 50%; top: 50%; width: 26px; height: 26px; transform: translate(-50%, -50%); pointer-events: none; z-index: 4; }
+.crosshair i { position: absolute; background: var(--cross); box-shadow: 0 0 0 1px #0007; border-radius: 2px; transition: background .2s; }
+.crosshair i:nth-child(1), .crosshair i:nth-child(2) { left: 12px; width: 2px; height: 7px; } .crosshair i:nth-child(1) { top: 0; } .crosshair i:nth-child(2) { bottom: 0; }
+.crosshair i:nth-child(3), .crosshair i:nth-child(4) { top: 12px; height: 2px; width: 7px; } .crosshair i:nth-child(3) { left: 0; } .crosshair i:nth-child(4) { right: 0; }
+body.seeking .crosshair i { background: var(--cross-seek); }
+.crosshair.cooling { opacity: .35; }
+body.first-person:not(.mouse-locked) .lock-hint { display: block; position: fixed; left: 50%; top: calc(50% + 42px); transform: translateX(-50%); font-size: 15px; pointer-events: none; }
+body.called .callout { display: grid; position: fixed; left: 50%; top: 24%; transform: translateX(-50%); text-align: center; gap: 4px; pointer-events: none; z-index: 5; animation: callout-pop 1.9s ease-out forwards; }
+.callout b { font-size: clamp(34px, 5vw, 58px); font-weight: 900; color: var(--pk-game); text-shadow: 0 3px 0 #0006; }
+.callout span { font-weight: 900; font-size: clamp(15px, 2vw, 20px); text-shadow: 0 2px 0 #0007; }
+@keyframes callout-pop { 0% { opacity: 0; transform: translateX(-50%) scale(1.6); } 12% { opacity: 1; transform: translateX(-50%) scale(1); } 80% { opacity: 1; } 100% { opacity: 0; transform: translateX(-50%) translateY(-14px); } }
+.scoreboard { position: fixed; z-index: 8; left: 50%; top: 50%; transform: translate(-50%, -50%); width: min(460px, 92vw); max-height: 80dvh; overflow: auto; padding: 18px 20px; display: grid; gap: 8px; }
+.scoreboard[hidden] { display: none; } .scoreboard b { font-size: 20px; }
+@media (pointer: coarse) { body.first-person .lock-hint { display: none; } }

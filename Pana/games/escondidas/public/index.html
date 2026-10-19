@@ -8,6 +8,7 @@
   <title>Escondidas · Pana Hunt</title>
   <link rel="stylesheet" href="/engine/kit.css">
   <link rel="stylesheet" href="/engine/ui.css">
+  <link rel="stylesheet" href="/engine/room-options.css">
   <link rel="stylesheet" href="style.css">
   <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}</script>
 <link rel="stylesheet" href="/engine/game-lobby.css">
@@ -23,12 +24,11 @@
     <div class="pk-lobby-top"><a class="pk-back" href="/">← Todos los juegos</a><a class="pk-logo" href="/" aria-label="Pana">PANA</a></div>
     <span class="pk-ribbon">ESCONDIDAS · ENTRE PANAS</span>
     <h1 id="intro-title" class="pk-title">Por aquí hay un pana escondido.</h1>
-    <p class="pk-copy">Ese barril se acaba de mover… Conviértete en un objeto y que no te pillen.</p>
-    <div class="pk-stats"><div class="pk-stat"><b>3</b><span>cambios por ronda</span></div><div class="pk-stat"><b id="hide-seconds-stat">30s</b><span>para esconderte</span></div><div class="pk-stat"><b>1:40</b><span>para encontrarlos</span></div></div>
-    <div class="pk-field"><span class="pk-eyebrow" id="role-label">Primera ronda: quiero…</span>
+    <p class="pk-copy" data-room-description>Ese barril se acaba de mover… Conviértete en un objeto y que no te pillen.</p>
+    <div class="pk-stats" data-room-description><div class="pk-stat"><b>3</b><span>cambios por ronda</span></div><div class="pk-stat"><b id="hide-seconds-stat">30s</b><span>para esconderte</span></div><div class="pk-stat"><b id="hunt-seconds-stat">3:00</b><span>para encontrarlos</span></div></div>
+    <div class="pk-field" data-room-extra><span class="pk-eyebrow" id="role-label">Primera ronda: quiero…</span>
       <div class="pk-seg role-picker" role="group" aria-labelledby="role-label"><button id="role-hide" type="button" class="selected" aria-pressed="true">Esconderme</button><button id="role-seek" type="button" aria-pressed="false">Ser buscador</button></div></div>
-    <div id="map-picker"></div>
-    <div class="pk-field"><label class="pk-eyebrow" for="hide-seconds">Tiempo para esconderse</label><select id="hide-seconds" class="pk-select" aria-describedby="round-layout-note" disabled></select><small id="round-layout-note" class="pk-copy">Los objetos cambian de lugar en cada ronda.</small></div>
+    <div id="map-picker" data-room-primary></div><div id="room-options"></div>
     <div class="pk-lobby-foot">
       <div class="pk-lobby-room"><div id="roster" class="roster"></div><span class="pk-room-code" id="room-code"></span></div>
       <p class="lobby-status"><span id="connection" role="status">Conectando…</span> <button id="practice" class="text-button hidden">Practicar sin conexión</button></p>
@@ -39,6 +39,9 @@
   <main id="hud" class="hidden">
     <div class="clock-panel pk-panel"><span id="phase" class="phase-chip">ESCÓNDETE</span><b id="timer">00:30</b><small id="round">RONDA 1 / 4</small></div>
     <div class="seeker-panel pk-panel"><div class="portrait"><img id="seeker-face" alt=""></div><div><small id="seeker-caption">BUSCADOR</small><b id="seeker-name">Coco</b><span id="remaining-players">3 panas escondidos</span></div></div>
+    <div id="crosshair" class="crosshair" aria-hidden="true"><i></i><i></i><i></i><i></i></div><p class="lock-hint pk-banner">Haz clic para mirar con el ratón · V para verte desde atrás</p>
+    <div id="callout" class="callout" aria-live="polite"><b id="callout-title"></b><span id="callout-detail"></span></div>
+    <section id="scoreboard" class="scoreboard pk-panel" hidden aria-label="Tabla de la partida"><span class="pk-eyebrow">Tabla</span><b id="board-title"></b><ol id="board-list" class="pk-roster"></ol></section>
     <div id="center-message" class="center-message pk-panel hidden"><b>Prepárate para buscar…</b><span>Los panas se están escondiendo.</span></div>
     <div id="crosshair" aria-hidden="true">+</div>
     <section id="disguise-panel" class="disguise-panel pk-panel" aria-label="Camuflaje">
@@ -49,7 +52,7 @@
     <div id="suspicion" class="suspicion hidden"><span>¡Te están viendo!</span><div><i id="suspicion-fill"></i></div></div>
     <button id="action" class="action pk-btn pk-btn--primary"><kbd class="pk-kbd">E</kbd> <span id="action-label">Copiar objeto cercano</span></button>
     <aside class="map-wrap pk-panel"><span>PLAZA PANA</span><canvas id="minimap" width="300" height="270" aria-label="Mapa: tu posición y la del buscador"></canvas><small id="map-note"><i></i> Tú <i></i> Buscador</small></aside>
-    <div class="controls pk-hints" data-pana-hint><span><b>W A S D</b> Moverte</span><span><b>Arrastrar</b> Mirar</span><span><b>Shift</b> Correr</span><span><b>1–5</b> Cambiar</span></div>
+    <div class="controls pk-hints" data-pana-hint><span><b>W A S D</b> Moverte</span><span><b>Ratón</b> Mirar</span><span><b>Shift</b> Correr</span><span><b>1–5</b> Cambiar</span><span><b>V</b> Verte</span><span><b>Tab</b> Tabla</span></div>
     <div id="touch-controls" class="touch-controls pk-touch-zone pk-dpad" aria-label="Movimiento"><button class="pk-touch" data-icon="up" data-move="up" aria-label="Avanzar"></button><button class="pk-touch" data-icon="left" data-move="left" aria-label="Izquierda"></button><button class="pk-touch" data-icon="down" data-move="down" aria-label="Retroceder"></button><button class="pk-touch" data-icon="right" data-move="right" aria-label="Derecha"></button></div>
   </main>
   <div id="toast" class="toast hidden" role="status" aria-live="polite"></div>

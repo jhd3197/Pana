@@ -1,17 +1,17 @@
 import assert from 'node:assert/strict';
-import { createRequire } from 'node:module';
+import { launch, waitPrepared } from '../../../tests/browser-kit.js';
 import { mkdir } from 'node:fs/promises';
-const { chromium } = createRequire(import.meta.url)(process.argv[2] || 'playwright');
-const browser = await chromium.launch({headless:true});
+const browser = await launch();
 const base = process.env.PANA_QA_URL || 'http://localhost:8461', code = `domino-${Date.now()}`, errors = [];
 await mkdir('art/domino',{recursive:true});
 const check = text => console.log(`ok: ${text}`);
 async function open(name, mobile=false, room=code) {
  const context = await browser.newContext({viewport:mobile?{width:390,height:844}:{width:1440,height:900},deviceScaleFactor:1,isMobile:mobile,hasTouch:mobile});
+ await context.addInitScript(() => localStorage.setItem('pana:settings',JSON.stringify({sound:false,music:false,quality:'baja'})));
  const page = await context.newPage(); page.on('pageerror',e=>{errors.push(e.message);console.log('PAGE ERROR',e.message);});
  await page.goto(`${base}/g/domino/?room=${room}&name=${name}&debug`);
  await page.waitForFunction(()=>window.dominoDebug?.world && dominoDebug.room.connected,null,{timeout:90000});
- await page.locator('#loading').waitFor({state:'hidden'}); return page;
+ await page.locator('#loading').waitFor({state:'hidden'}); await waitPrepared(page); return page;
 }
 async function advance(host, humans) {
  const state = await host.evaluate(()=>dominoDebug.room.state);
@@ -34,7 +34,7 @@ try {
  const a=await open('Juan'), b=await open('María');
  await a.waitForFunction(()=>dominoDebug.room.members.size===2);
  await b.waitForFunction(()=>dominoDebug.room.seat===1);
- await a.waitForFunction(()=>dominoDebug.world.characters.every(c=>!!c));
+ await a.waitForFunction(()=>dominoDebug.room.state.players.every(p=>!!dominoDebug.world.characters[p.seat]));
  assert.equal(await b.locator('#start').isDisabled(),true);
  assert.equal(await a.evaluate(()=>dominoDebug.world.characters[0].group.userData.characterVersion),'studio-v1');
  await a.screenshot({path:'art/domino/desktop-lobby.png'}); check('four actual shared characters, table and chairs load in 3D');

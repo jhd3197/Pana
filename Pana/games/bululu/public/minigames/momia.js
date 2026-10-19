@@ -13,7 +13,6 @@ import { sunnyStage, makeActors, animateActor, rand, pick } from './stage.js';
 
 const TIME = 30;
 const START = -11, GOAL = 7.5;      // x where the panas start and where the relic is touched
-const LANES = [3, 1, -1, -3];
 const SPEED = 1.8;
 const CREEP = 0.4;                 // disguised speed, as a share of SPEED
 const STILL = 0.6;                 // slower than this counts as frozen
@@ -29,6 +28,7 @@ export default {
   title: '¡Un, dos, tres, momia!',
   howto: 'Corre hacia la reliquia mientras la momia cuenta. Cuando se voltee, ¡quieto! Si te ve moviéndote, vuelves al inicio. Disfrazado de barril puedes avanzar despacito (tres veces).',
   keys: [['D / →', 'correr'], ['Espacio', 'disfrazarte']],
+  touch: { pad: 'r', action: 'Disfraz' },
   icon: 'relic',
   time: TIME,
 
@@ -82,10 +82,10 @@ export default {
     camera.position.set(0.5, 11.5, 19.5);
     camera.lookAt(0.5, 1.6, -1);
 
-    const actors = makeActors(scene, ctx.players);
+    const actors = makeActors(scene, ctx.players, ctx);
     actors.forEach((a, i) => {
       a.x = START;
-      a.z = LANES[i];
+      a.z = -3 + i * 6 / (actors.length - 1);
       a.y = 0.2;
       a.disguised = 0;
       a.disguises = DISGUISES;
@@ -256,8 +256,19 @@ export default {
       puffs.update(dt);
     }
 
+    // Run or freeze, and the disguises you have left, for the runner's hint line.
+    const me = actors[ctx.localIndex ?? ctx.players.findIndex((p) => p.human && !ctx.auto)];
+    function hint() {
+      if (!me || winner) return null;
+      const left = `Disfraces: ${me.disguises}`;
+      if (me.stun > 0) return { text: '¡Te pilló! De vuelta al inicio', tone: 'bad' };
+      if (me.disguised > 0) return { text: `Disfrazado: avanza despacito · ${left}`, tone: 'ok' };
+      if (turning() || state === 'fake') return { text: `¡QUIETO! Te está mirando · ${left}`, tone: 'bad' };
+      return { text: `¡CORRE! Está contando · ${left}`, tone: 'go' };
+    }
+
     return {
-      scene, camera, update, outro, actors,
+      scene, camera, update, outro, actors, hint,
       scores: () => actors.map((a) => a.score),
       over: () => !!winner,
       winners: () => (winner ? [winner.i] : []),

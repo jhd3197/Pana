@@ -5,6 +5,7 @@ import * as THREE from 'three';
 import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
 import { M, rng } from '/engine/models/core/primitives.js';
 import { finish } from '/engine/models/core/architecture-kit.js';
+import { lerp } from '../../random.js';
 
 const PAL = {
   tentY: 0xd9b45a, tentYD: 0xb8933e, tentO: 0x7f8a4c, tentOD: 0x646f38, tentB: 0xd8c8a2, tentBD: 0xb9a882,
@@ -37,7 +38,6 @@ function T(x, y, z, rx = 0, ry = 0, rz = 0, sx = 1, sy = 1, sz = 1, order = 'XYZ
 const C = (P, L) => P.clone().multiply(L);
 const I = new THREE.Matrix4();
 const wp = (P, x, y, z) => V(x, y, z).applyMatrix4(P);
-const lerp = (a, b, t) => a + (b - a) * t;
 const lathe = (pts, n) => new THREE.LatheGeometry(pts.map(p => new THREE.Vector2(p[0], p[1])), n);
 
 // Per-build unit geometry, so baking can dispose all of it afterwards.

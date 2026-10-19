@@ -1,3 +1,6 @@
+import { createRaceWeather } from './weather.js';
+import { createRoomOptions } from '/engine/room-options.js';
+import { FIELDS, cleanOptions, raceJumps, distanceAhead, origin } from './options.js';
 import { prepareScene } from '/engine/game-load.js';
 import * as THREE from 'three';
 import {loadAvatar,loadName} from '/engine/avatar.js';
@@ -20,6 +23,7 @@ let coat='bay';try{coat=['bay','palomino','grey'].includes(localStorage.getItem(
 const code=roomFromUrl()||newRoomCode();params.set('room',code);history.replaceState(null,'',`${location.pathname}?${params}`);
 const keys=new Set(),touch=new Set(),riders=new Map();let paused=false,state,world,ready=false,lastPhase='',lastCountdown='',lastRace=0,hoofClock=0,drawClock=0,disposed=false;
 const room=new RaceRoom({code,name,avatar,coat,onState:s=>{state=s;},onStatus:(message,error=false)=>{$('connection').textContent=message;$('practice').classList.toggle('hidden',!error);if(error)showNotice(message);}});state=room.state;
+const roomOptions=createRoomOptions($('room-options'),{title:'Galope',fields:FIELDS,change:patch=>room.configure(patch),reset:()=>{$('bots').checked=true;room.configure(cleanOptions());}});
 const touchButtons=[];
 function clearInput(){keys.clear();for(const b of touchButtons)b.release();touch.clear();}
 const menu=createGameMenu({title:'Galope',sound,orientation:'horizontal',note:()=>room.members.size>1?'La carrera sigue mientras abres el menú.':'La carrera está en pausa.',
@@ -36,7 +40,7 @@ $('jump-key').textContent=coarse?'Toca Salto':'Espacio para saltar';
 function showNotice(text){$('notice').textContent=text;$('notice').classList.remove('hidden');clearTimeout(showNotice.timer);showNotice.timer=setTimeout(()=>$('notice').classList.add('hidden'),3000);}
 function unlock(){try{sound.unlock();}catch{}}
 window.addEventListener('keydown',e=>{
-  if(e.target.matches('input,select,textarea')||paused)return;
+  if(e.target.matches('input,select,textarea')||paused||roomOptions.isOpen)return;
   if(e.code==='KeyM'){toggleMute();return;}
   if(['KeyW','KeyA','KeyS','KeyD','ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Space','ShiftLeft','ShiftRight','KeyR'].includes(e.code)){
     e.preventDefault();keys.add(e.code);unlock();
@@ -59,6 +63,7 @@ $('practice').onclick=()=>{room.practice();$('practice').classList.add('hidden')
 await new Promise(resolve=>requestAnimationFrame(()=>setTimeout(resolve,30)));
 world=createRaceScene($('world'));const {renderer,scene,camera,sun,course}=world;
 renderer.setPixelRatio(pixelRatio(1.5));const unbind=bindRenderer(renderer,1.5);
+const weather=createRaceWeather(scene,sun);
 const waterFX=createHorseWaterFX({waterY:WATER_Y,depthAt:waterDepth});scene.add(waterFX.group);const dummy=new THREE.Object3D();
 const dustGeometry=new THREE.SphereGeometry(.12,5,4),dustMaterial=new THREE.MeshBasicMaterial({color:0xd9c89b,transparent:true,opacity:.22});
 const dust=new THREE.InstancedMesh(dustGeometry,dustMaterial,20);dust.frustumCulled=false;scene.add(dust);
@@ -84,29 +89,34 @@ function drawMap(player){
   const c=mapCtx;c.clearRect(0,0,220,190);const xy=(x,z)=>[110+x*mapScale,97+z*mapScale];
   c.drawImage(wetlandMap,0,0);
   c.strokeStyle='#c6b68c';c.lineWidth=5;c.lineJoin='round';c.beginPath();samples.forEach((p,i)=>i?c.lineTo(...xy(p.x,p.z)):c.moveTo(...xy(p.x,p.z)));c.closePath();c.stroke();
-  for(const j of JUMPS){const p=at(j.s);c.fillStyle='#e3a35d';c.fillRect(...xy(p.x-2,p.z-2),4,4);}
+  for(const j of raceJumps(state.options)){const p=at(j.s);c.fillStyle='#e3a35d';c.fillRect(...xy(p.x-2,p.z-2),4,4);}
   for(const p of state.players){if(p.spectator)continue;c.fillStyle=p.id===player?.id?'#ffc629':'#f3e9d7';c.beginPath();c.arc(...xy(p.x,p.z),p.id===player?.id?4.5:2.6,0,Math.PI*2);c.fill();}
-  const start=at(0);c.fillStyle='#fff';c.fillRect(...xy(start.x-2,start.z-2),4,4);
+  const start=at(origin(state.options));c.fillStyle='#fff';c.fillRect(...xy(start.x-2,start.z-2),4,4);
 }
 function updateUI(){
+  roomOptions.update(state.options||cleanOptions(),room.isHost&&room.connected&&state.phase==='lobby');
+  $('bots').disabled = !room.connected || !room.isHost;
+  course.setOptions(state.options);$('map-length').textContent=`${(LENGTH*state.options.laps/1000).toFixed(1).replace('.',',')} KM`;
+  document.querySelector('.pk-stats .pk-stat b').textContent=state.options.laps;document.querySelectorAll('.pk-stats .pk-stat b')[1].textContent=raceJumps(state.options).length;
+  for(const b of document.querySelectorAll('[data-coat]'))b.disabled=state.options.horse==='random';
   const lobby=state.phase==='lobby',done=state.phase==='finished',playing=!lobby&&!done;
   document.body.classList.toggle('in-lobby',lobby);$('lobby').classList.toggle('hidden',!lobby);$('hud').classList.toggle('hidden',!playing);$('results').classList.toggle('hidden',!done);
   $('start').disabled=!room.connected||!room.isHost||!ready;$('start').firstChild.textContent=!room.connected?'Conectando… ':room.isHost?'¡A la salida! ':'Esperando al anfitrión… ';
   $('again').disabled=!room.connected||!room.isHost;$('again').firstChild.textContent=room.isHost?'Otra carrera ':'Esperando al anfitrión… ';
   const own=state.players.find(p=>p.id===room.id),ordered=standings(state),place=ordered.findIndex(p=>p.id===room.id)+1;
   $('place').textContent=place||'—';$('field-size').textContent=`de ${ordered.length}`;
-  $('lap').textContent=`${Math.min(LAPS,1+Math.max(0,Math.floor((own?.progress||0)/LENGTH)))} / ${LAPS}`;
+  $('lap').textContent=`${Math.min(state.options.laps,1+Math.max(0,Math.floor((own?.progress||0)/LENGTH)))} / ${state.options.laps}`;
   $('timer').textContent=formatTime(own?.finish??state.time);
   $('sector').textContent=own?.spectator?'Corres en la próxima':sector(own?.s||0);
   const stamina=own?.stamina??100,lit=Math.ceil(stamina/100*PIPS-.01);$('speed').textContent=Math.round((own?.speed||0)*3.6);$('stamina-label').textContent=`${Math.round(stamina)}%`;
   [...$('stamina-pips').children].forEach((pip,i)=>pip.className=i>=lit?'':own?.exhausted?'tired':i<RESERVE?'on':'teal');
   $('horse-name').textContent=COAT_NAMES[own?.coat||coat];
   // ¡Tronco! shows while the next log is a few strides ahead.
-  const racing=state.phase==='racing'&&state.time>=.75&&own&&!own.spectator&&own.finish==null,ahead=racing?Math.min(...JUMPS.map(j=>wrap(j.s-own.s,LENGTH))):Infinity;
+  const racing=state.phase==='racing'&&state.time>=.75&&own&&!own.spectator&&own.finish==null,ahead=racing?Math.min(...raceJumps(state.options).map(j=>distanceAhead(own.s,j.s,state.options))):Infinity;
   $('jump-cue').classList.toggle('hidden',!(ahead>2.5&&ahead<18&&!(own.jumpY>.2)));
-  $('gait').textContent=own?.water>.08?'CRUZANDO EL ESTERO':own?.exhausted?'RECUPERANDO':own?.speed>13?'¡AL REMATE!':own?.speed>4?'AL GALOPE':'AL PASO';
+  $('gait').textContent=own?.water>.08?'CRUZANDO EL ESTERO':own?.exhausted?'RECUPERANDO':own?.drafting?'AL REBUFO':own?.speed>13?'¡AL REMATE!':own?.speed>4?'AL GALOPE':'AL PASO';
   $('riding-tip').textContent=own?.finish!==null&&own?.finish!==undefined?'¡En la meta! Esperando a tus panas.':own?.stun>0?'¡El tronco! Salta un poco antes.':own?.water>.08?'El agua frena. Aquí recuperas fuerzas.':own?.exhausted?'Afloja el remate para recuperar fuerzas.':'Guarda fuerzas para el remate.';
-  $('leaderboard').replaceChildren(...ordered.slice(0,6).map((p,i)=>{const li=document.createElement('li');li.className=p.id===room.id?'pk-row is-me me':'pk-row';const b=document.createElement('b');b.className='pk-row-n';b.textContent=i+1;const span=document.createElement('span');span.className='row-name';span.textContent=p.name+(p.id===room.id?' · tú':'');const horse=document.createElement('span');horse.className='pk-row-end';horse.textContent=COAT_NAMES[p.coat]||'';li.append(b,span,horse);return li;}));
+  $('leaderboard').replaceChildren(...ordered.slice(0,8).map((p,i)=>{const li=document.createElement('li');li.className=p.id===room.id?'pk-row is-me me':'pk-row';const b=document.createElement('b');b.className='pk-row-n';b.textContent=i+1;const span=document.createElement('span');span.className='row-name';span.textContent=p.name+(p.id===room.id?' · tú':'');const horse=document.createElement('span');horse.className='pk-row-end';horse.textContent=COAT_NAMES[p.coat]||'';li.append(b,span,horse);return li;}));
   const count=state.phase==='countdown'?String(Math.max(1,Math.ceil(state.countdown))):state.phase==='racing'&&state.time<.75?'¡ARRE!':'';
   $('countdown').classList.toggle('hidden',!count);$('countdown').textContent=count;
   if(count&&count!==lastCountdown){sound.tone(count==='¡ARRE!'?740:370,0,.12,'triangle',.06);lastCountdown=count;}
@@ -124,7 +134,8 @@ const clock=new THREE.Clock();let elapsed=0,wasRemate=false;
 function frame(){
   if(disposed)return;const dt=Math.min(clock.getDelta(),.08),frozen=paused&&room.members.size<=1;if(!frozen)elapsed+=dt;
   const people=ensureRiders();
-  for(const p of people){const r=riders.get(p.id),y=groundAt(p.x,p.z)+(p.jumpY||0),blend=1-Math.exp(-dt*18);
+  // Your own horse where you predict it (RaceRoom's predict), not a round trip behind.
+  for(const shown of people){const p=shown.id===room.id?room.predicted??shown:shown,r=riders.get(p.id),y=groundAt(p.x,p.z)+(p.jumpY||0),blend=1-Math.exp(-dt*18);
     r.group.visible=!p.spectator;r.group.position.lerp(new THREE.Vector3(p.x,y,p.z),blend);r.group.rotation.y+=angle(p.h-r.group.rotation.y)*blend;r.update(frozen?0:dt,p);
   }
   const own=people.find(p=>p.id===room.id),p=own&&!own.spectator?own:standings(state)[0]||people[0],r=riders.get(p.id),q=r.group.position,h=r.group.rotation.y;
@@ -141,7 +152,8 @@ function frame(){
   if(!cameraReady){camera.position.copy(cameraGoal);cameraReady=true;}else camera.position.lerp(cameraGoal,1-Math.exp(-dt*5));camera.lookAt(look);
   // Follow the local rider with a bounded shadow frustum.
   sun.position.set(q.x-45,70,q.z+35);sun.target.position.set(q.x,0,q.z);sun.target.updateMatrixWorld();
-  tickWind(elapsed,.9);
+  weather.update(state.options,elapsed,q);
+  tickWind(elapsed,state.options.weather==='storm'?2:.9);
   course.update(elapsed);world.sky.update(elapsed);
   waterFX.update(elapsed,people,riders,q);
   dust.visible=p.water<.04&&p.speed>4&&p.jumpY<.4;
@@ -161,7 +173,7 @@ if(params.has('debug'))window.galope={room,get state(){return state;},world,ride
   step(seconds,controls={}){for(let t=0;t<seconds;t+=.05)room.tick(.05,controls);updateUI();},
   place(id,s,offset=0){const p=room.game.players.find(p=>p.id===id),q=at(s,offset);Object.assign(p,{x:q.x,z:q.z,h:q.h,s:q.s,progress:s,checkpoint:Math.max(0,Math.floor(s/(LENGTH/8))+1),speed:0,jumpY:0,vy:0,stun:0});room.publish();},
   at,LENGTH,JUMPS,groundAt,waterS:nearest(WETLANDS[0].x,WETLANDS[0].z).s,updateUI};
-window.addEventListener('pagehide',()=>{disposed=true;clearInterval(simulation);room.dispose();for(const r of riders.values())r.dispose();course.dispose();world.sky.dispose();waterFX.dispose();dustGeometry.dispose();dustMaterial.dispose();unbind?.();renderer.dispose();},{once:true});
+window.addEventListener('pagehide',()=>{disposed=true;clearInterval(simulation);roomOptions.dispose();room.dispose();for(const r of riders.values())r.dispose();course.dispose();world.sky.dispose();waterFX.dispose();weather.dispose();dustGeometry.dispose();dustMaterial.dispose();unbind?.();renderer.dispose();},{once:true});
 // Back/forward cache restores a disposed WebGL scene; rebuild and rejoin safely.
 window.addEventListener('pageshow',event=>{if(event.persisted)location.reload();});
 

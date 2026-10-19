@@ -30,13 +30,14 @@ function lumpy(geo, seed, scale, tint) {
 }
 
 // Laja: a smooth, flattened granite slab of the Guayana shield.
-export function lajaRock({ seed = 1, radius = 2, flat = .42 } = {}) {
+// color tints the slab (granite by default; warm sandstone for deserts).
+export function lajaRock({ seed = 1, radius = 2, flat = .42, color = 0x5a524a } = {}) {
   dimension(radius, .3, 12, 'radius');
   const g = new THREE.Group(), random = rng(seed);
-  const main = lumpy(new THREE.IcosahedronGeometry(1, 2), seed, [radius, radius * flat, radius * (.75 + random() * .3)], 0x5a524a);
+  const main = lumpy(new THREE.IcosahedronGeometry(1, 2), seed, [radius, radius * flat, radius * (.75 + random() * .3)], color);
   g.add(mesh(main, M(0xffffff, { vertexColors: true, roughness: .92 }), 0, -main.boundingBox.min.y * .55, 0));
   // A smaller shoulder stone, as lajas break in plates.
-  const side = lumpy(new THREE.IcosahedronGeometry(1, 1), seed + 7, [radius * .45, radius * flat * .7, radius * .4], 0x625a50);
+  const side = lumpy(new THREE.IcosahedronGeometry(1, 1), seed + 7, [radius * .45, radius * flat * .7, radius * .4], color === 0x5a524a ? 0x625a50 : new THREE.Color(color).offsetHSL(0, 0, .03).getHex());
   g.add(mesh(side, M(0xffffff, { vertexColors: true, roughness: .92 }), radius * (.6 + random() * .3), -side.boundingBox.min.y * .5, radius * (random() - .5)));
   return finish(g, 'LajaRock');
 }

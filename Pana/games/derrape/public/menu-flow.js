@@ -7,7 +7,7 @@ const LABELS = ['Panas', 'Copa', 'Taller', 'Parrilla'];
 const MODES = { race: ['Una carrera', 'La pista que tú quieras', 'estadio'], pana: ['Copa Pana', '4 pistas · de la ciudad al mar', 'plaza'], aventura: ['Copa Aventura', '4 pistas · descubre lo salvaje', 'selva'], agua: ['Copa del Agua', '4 pistas · salta, cruza, derrapa', 'salto'], battle: ['Globos', 'Aguanta hasta el final', 'bululu'] };
 
 // The flow only arranges existing controls. Race setup and room authority stay in game.js.
-export function createMenuFlow({ tracks, getState, pickTrack, localPlay, prepared, initial = 'welcome' }) {
+export function createMenuFlow({ tracks, getState, pickTrack, localPlay, prepared, openTaller, initial = 'welcome' }) {
   const $ = id => document.getElementById(id);
   const root = $('garage');
   let step = initial;
@@ -154,7 +154,8 @@ export function createMenuFlow({ tracks, getState, pickTrack, localPlay, prepare
       else button.removeAttribute('aria-current');
     }
     art.show(next === 'welcome');
-    $('shop').hidden = true;
+    // The Taller page is the taller: it opens docked; other pages close it.
+    if (next === 'car') openTaller?.(); else $('shop').hidden = true;
     refresh();
     if (focus) (page(next).querySelector('h1') || $('next')).focus({ preventScroll: true });
   }

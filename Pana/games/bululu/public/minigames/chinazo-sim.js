@@ -8,8 +8,7 @@
 // was when it left the china; whatever is under that spot when it arrives gets
 // hit, so moving iguanas must be led.
 
-const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
-const lerp = (a, b, k) => a + (b - a) * k;
+import { clamp, lerp } from '../../../../engine/random.js';
 const sub = (a, b) => [a[0] - b[0], a[1] - b[1], a[2] - b[2]];
 const add = (a, b, k = 1) => [a[0] + b[0] * k, a[1] + b[1] * k, a[2] + b[2] * k];
 const dot = (a, b) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
@@ -26,9 +25,10 @@ export const CHINAZO = Object.freeze({
   golden: 3, bird: -2,
 });
 
-// The fixed camera: behind the four panas, low, looking up into the tree.
+// The fixed camera: behind the panas, low, looking up into the tree.
 export const CAMERA = Object.freeze({ pos: [0, 2.4, 7.6], look: [0, 5.9, -5], fov: 56 });
-export const SEATS = Object.freeze([-3.3, -1.1, 1.1, 3.3].map((x) => [x, 0, 1.0]));
+export const seatsFor = count => Array.from({ length: count }, (_, i) => [(i - (count - 1) / 2) * Math.min(2.2, 8.8 / (count - 1)), 0, 1.0]);
+export const SEATS = Object.freeze(seatsFor(4));
 
 // The patio, shared with the scene so paths sit on what's drawn.
 export const TRUNK = Object.freeze({ x: 0, z: -4.6, r: 0.55, top: 6.4 });
@@ -147,17 +147,17 @@ export const AI = Object.freeze({
 // Each pana keeps an eye on one half of the screen, two panas per half (like
 // Atrapa's AIs favour their side). Four separate home spots made the outer seats
 // win ~30% and the middle ones ~19%: the middle ones have two rivals each.
-const HOME = [-0.3, -0.3, 0.3, 0.3];
 
-export function chinazoSim({ humans = new Set(), random = Math.random, aspect = 16 / 9, profiles = [] } = {}) {
+export function chinazoSim({ humans = new Set(), random = Math.random, aspect = 16 / 9, profiles = [], count = 4 } = {}) {
   const cam = makeCamera(aspect);
+  const seats = seatsFor(count), home = Array.from({ length: count }, (_, i) => i < count / 2 ? -0.3 : 0.3);
   const rnd = (a, b) => a + random() * (b - a);
   let time = 0, plaga = false, nextWave = 0.6, nextBird = rnd(5, 8), golden = false, uid = 0;
   const goldenAt = rnd(21, 29);
   const iguanas = [], birds = [], stones = [], events = [];
   const mangos = MANGOS.map((pos, i) => ({ i, pos, down: false }));
-  const shooters = [0, 1, 2, 3].map((i) => ({
-    i, aim: { x: HOME[i], y: i % 2 ? 0.25 : -0.05 }, ammo: CHINAZO.ammo, reload: 0, pulling: false, queued: false, holdT: 0,
+  const shooters = Array.from({ length: count }, (_, i) => ({
+    i, aim: { x: home[i], y: i % 2 ? 0.25 : -0.05 }, ammo: CHINAZO.ammo, reload: 0, pulling: false, queued: false, holdT: 0,
     score: 0, shots: 0, hits: 0, birdHits: 0, mangoHits: 0,
     ai: humans.has(i) ? null : { profile: profiles[i] || AI.bot, wait: rnd(0.3, 0.7), target: null, goal: null, pullGoal: 0, err: 0, miss: null, reckless: false, v: { x: 0, y: 0 } },
   }));
@@ -218,7 +218,7 @@ export function chinazoSim({ humans = new Set(), random = Math.random, aspect = 
       if (screenDist(cam, p, sh.aim) < cam.size(t.r, p.depth) * 2) depth = Math.min(depth, p.depth);
     }
     const dur = clamp((0.27 + depth * 0.008) * (1.12 - 0.3 * power), 0.25, 0.42);
-    const from = add(SEATS[sh.i], [0.25, 1.55, -0.45]);
+    const from = add(seats[sh.i], [0.25, 1.55, -0.45]);
     const stone = { seat: sh.i, intended: sh.ai?.shotAt || null, aim: { ...sh.aim }, from, to: cam.unproject(sh.aim.x, sh.aim.y, depth), t: 0, dur, power, born: time };
     stones.push(stone);
     sh.ammo--; sh.shots++; sh.pulling = sh.queued = false; sh.holdT = 0;
@@ -292,7 +292,7 @@ export function chinazoSim({ humans = new Set(), random = Math.random, aspect = 
       if (ai.miss) goal = { x: goal.x + ai.miss.x, y: goal.y + ai.miss.y, depth: goal.depth };
       ai.goal = goal;
     }
-    const want = goal || { x: lerp(sh.aim.x, HOME[sh.i], 0.03), y: lerp(sh.aim.y, 0.1, 0.03) };
+    const want = goal || { x: lerp(sh.aim.x, home[sh.i], 0.03), y: lerp(sh.aim.y, 0.1, 0.03) };
     // follow the goal's own motion (like a hand tracking it), then close the gap
     const prev = ai.prevGoal, drift = goal && prev && dt > 0 ? { x: (goal.x - prev.x) / dt, y: (goal.y - prev.y) / dt } : { x: 0, y: 0 };
     ai.prevGoal = goal;
@@ -345,7 +345,7 @@ export function chinazoSim({ humans = new Set(), random = Math.random, aspect = 
       const dist = screenDist(cam, p, sh.aim);
       // leave it to a pana whose reticle is clearly closer (Atrapa's AIs do the same)
       const beaten = shooters.some((o) => o !== sh && screenDist(cam, p, o.aim) < dist - 0.15);
-      const roam = 1 + Math.abs(p.x - HOME[sh.i]) * P.roam;
+      const roam = 1 + Math.abs(p.x - home[sh.i]) * P.roam;
       const score = (value(ig) / (speed + 0.35)) / (dist + 0.4) / roam * (0.75 + random() * 0.5) * (beaten ? 0.2 : 1);
       if (score > bestScore) { bestScore = score; best = ig; }
     }

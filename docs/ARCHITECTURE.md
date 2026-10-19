@@ -5,7 +5,7 @@ Pana is a monorepo: one Node backend, one static hub frontend, and one folder pe
 ```
 Pana/                    ← repo root
 ├── AGENTS.md            ← rules for AI coding agents
-├── dev.ps1              ← Windows dev launcher (start / server / studio / check / setup)
+├── dev.ps1              ← Windows dev launcher (start / server / studio / check / setup / new-game)
 ├── package.json         ← npm workspace root
 ├── docs/
 │   ├── ARCHITECTURE.md  ← request flow, multiplayer model, WS protocol
@@ -15,12 +15,11 @@ Pana/                    ← repo root
 └── Pana/                ← the app
     ├── server/          ← pana-server: the only backend
     │   └── src/
-    │       ├── index.js     ← entry point: wires HTTP, /ws and /colyseus together
+    │       ├── index.js     ← entry point: wires HTTP and /colyseus together
     │       ├── config.js    ← ports, limits, paths (env: PANA_HOST, PANA_PORT)
     │       ├── app.js       ← HTTP routing
     │       ├── api.js       ← /api/* JSON endpoints + game discovery
     │       ├── static.js    ← safe static file serving
-    │       ├── rooms.js     ← legacy /ws relay (old cached clients only)
     │       ├── colyseus.js  ← Colyseus mount at /colyseus; registers a room per game
     │       ├── room-kit.js  ← PanaRoom: seats, host, lead, reconnection, listings
     │       ├── relay-room.js← default host-relay room for games without their own
@@ -32,8 +31,11 @@ Pana/                    ← repo root
     │       ├── public/      ← everything the browser needs (Three.js via CDN);
     │       │                  optional card.js draws live art on the hub tile
     │       └── server/      ← optional Colyseus room (room.js), never served
-    └── engine/          ← shared code served at /engine/* (avatar.js, character.js,
-                           net.js: the browser half of the multiplayer kit)
+    └── engine/          ← shared code served at /engine/*: the kit every game uses
+        │                  (net.js, live-room.js, ui.js, settings.js, avatar.js, kit.css…)
+        ├── worlds/      ← stages and maps several games build on (plaza, table-world, arenas)
+        ├── play/        ← mechanics two or more games share (shot charge, dice, paddling)
+        └── models/      ← every 3D model, registered in Pana Studio
 ```
 
 ## Request flow
@@ -48,12 +50,12 @@ Pana/                    ← repo root
 | `/g/<game>/*` | `games/<game>/public` | A game's client |
 | `/engine/*` | `engine/` statics | Shared code: player avatar + 3D character |
 | `/api/*` | `api.js` | JSON: health, games, rooms |
-| `/ws` | `rooms.js` | Legacy WebSocket relay (no current game uses it) |
 | `/colyseus/*` | `colyseus.js` | Colyseus matchmaking (HTTP) and room sockets |
 
 ## A game's files
 
-Every game uses the same split, so data, rules and rendering never tangle:
+Every game uses the same split, so data, rules and rendering never tangle.
+`.\dev.ps1 new-game <id> -Kind table|live` creates it (`Pana/scripts/templates/`):
 
 ```
 games/<game>/
@@ -62,10 +64,13 @@ games/<game>/
 │   ├── index.html   links /engine/kit.css, /engine/ui.css, then style.css
 │   ├── card.js      the hub tile's live art
 │   ├── rules.js     pure rules: plain data in, plain data out; no DOM, no Three.js
-│   ├── network.js   thin room: extends HostRoom (engine/net.js) or joins its own
-│   ├── scene.js     the 3D world (Three.js)
+│   ├── network.js   thin room: TableRoom (turn-based) or LiveRoom (real-time),
+│   │                both on HostRoom (engine/net.js), or joins its own room
+│   ├── scene.js     required: the 3D world (Three.js, perspective camera,
+│   │                the players' panas); table games use engine/worlds/table-world.js
 │   ├── ui.js        DOM: HUD, lobby, results (optional while game.js stays small)
-│   └── game.js      wiring only: input → rules → network → scene/ui
+│   └── game.js      wiring only (≤ 600 lines): input → rules → network → scene/ui;
+│                    engine/game-shell.js runs loading, loops and teardown
 ├── server/room.js   optional: the game's own Colyseus room
 └── tests/
     ├── rules.test.js      node --test, runs in npm test and CI
@@ -74,10 +79,12 @@ games/<game>/
 
 Anything a test can check without a browser goes in `rules.js` (or a sibling such
 as Derrape's `item-rules.js` and `online-rules.js`) with a `rules.test.js` beside
-it. A single-player game (`players: 1`) has no `network.js`. Shared pieces live in
+it. Rules use `engine/random.js` for seeded randomness (it has no Three.js). A single-player game (`players: 1`) has no `network.js`. Shared pieces live in
 `engine/`: room codes and invites (`invite.js`), rooms (`net.js`), the end screen
 (`results.js`), menu and settings (`ui.js`, `settings.js`), touch (`touch.js`).
-`Pana/engine/tests/` and `Pana/tests/conventions.test.js` enforce the contract.
+`Pana/engine/tests/`, `Pana/server/tests/` and `Pana/tests/conventions.test.js`
+enforce the contract; `engine/tests/all-games.browser.js` loads every game in a
+real browser. Browser suites share `Pana/tests/browser-kit.js`.
 
 ## Players
 
@@ -86,7 +93,7 @@ A player is a name plus a look (`engine/avatar.js`), both kept in the browser's
 on load. Games build the 3D pana with `engine/models/characters/pana/avatar-model.js`. Nothing about the
 player is stored on the server.
 
-The character sculpt is shared under `engine/soft-character/`. The game adapter
+The character sculpt is shared under `engine/models/characters/pana/`. The game adapter
 in `engine/models/characters/pana/avatar-model.js` preserves game-world scale, seated/carry poses and saved
 avatars while using a lighter geometry profile. Pana Studio registers existing
 asset constructors in `web/studio/catalog.js`; no additional backend is needed.
@@ -119,23 +126,11 @@ room members with never-reused seats, a host the room chooses (the party lead fi
 instant handoff when the host drops, a 20 s reconnection window, server-clock pings,
 listings, and "full" instead of a second room under the same code. Colyseus is embedded on
 the same HTTP server (not through its `Server` class), under `/colyseus` for both
-matchmaking and sockets; `index.js` routes upgrades by path so `/ws` keeps working.
-`/api/rooms` lists both kinds. Only `public/` is ever served, so room code stays
-private. The room owns what must agree (phase, host, roster, start time, results)
+matchmaking and sockets; `index.js` refuses every other upgrade. A room's cap is its
+game's `game.json` `players` (`cappedRoom()` in `colyseus.js`), so a room never sets
+`maxClients` itself. `/api/rooms` lists live rooms for the hub. Only `public/` is ever
+served (and never `engine/tests/`), so room code stays private. Rooms define
+`onUncaughtException`, so a handler that throws skips that message and is logged
+instead of ending the server. The room owns what must agree (phase, host, roster, start time, results)
 while clients may still simulate their own entities; see
 `docs/knowledge/derrape-online.md`.
-
-## Legacy relay protocol (`/ws`, JSON)
-
-Kept only for clients cached from before the kit; no current game uses it.
-
-Client → server:
-- `{t:"join", game, room, name}` — enter a room (creates it if missing)
-- `{t:"state", x, z, h, v}` — entity state, relayed verbatim to the room
-
-Server → client:
-- `{t:"welcome", id, color, players[]}` — your id/color + who's already there
-- `{t:"joined", id, name, color}` — someone arrived
-- `{t:"state", id, x, z, h, v}` — someone moved
-- `{t:"left", id}` — someone disconnected
-- `{t:"full"}` — room is at capacity

@@ -22,14 +22,14 @@ export const CUP_DEFINITIONS = [
     stages: [
       stage('desierto', 2, 145),
       stage('chichi', 1, 175),
-      stage('selva', 2, 90),
+      stage('selva', 2, 185),
       stage('paramo', 2, 155),
     ],
   },
   {
     id: 'agua', name: 'Copa del Agua', edition: CURRENT_CUP_EDITION, available: true,
     stages: [
-      stage('salinas', 2, 130),
+      stage('salinas', 2, 205),
       stage('delta', 3, 165),
       stage('cuevas', 2, 125),
       stage('salto', 2, 180),

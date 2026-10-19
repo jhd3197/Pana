@@ -1,7 +1,7 @@
 // Gold-mine pack: rails, carts, ore, timber works and animated machinery.
 // Static parts are composed from unit primitives placed by matrix, then baked.
 import * as THREE from 'three';
-import { M, rng } from '/engine/models/core/primitives.js';
+import { M, rng, box as boxMesh } from '/engine/models/core/primitives.js';
 import { finish, sign } from '/engine/models/core/architecture-kit.js';
 import { miner } from '/engine/models/props/mine-miner.js';
 
@@ -490,4 +490,19 @@ export function liftTower({ height = 14, seed = 5, light = false } = {}) {
   };
   out.userData.tick(0, 0);
   return out;
+}
+
+// A road-width timber gate for a mine shaft entrance: braced posts, a double
+// lintel, a hanging sign and lanterns. `span` is the clear half-width.
+export function mineGate({ span = 14, height = 11, name = 'MINA DE SAL' } = {}) {
+  const g = new THREE.Group(), wood = mat('woodL'), dark = mat('woodD');
+  for (const x of [-span, span]) {
+    g.add(boxMesh(1.4, height, 1.4, wood, x, height / 2, 0));
+    const brace = boxMesh(.6, 6, .6, dark, x - Math.sign(x) * 2, height - 2.6, 0); brace.rotation.z = Math.sign(x) * .7; g.add(brace);
+  }
+  g.add(boxMesh(span * 2 + 3.5, 1.6, 1.8, wood, 0, height + .4, 0), boxMesh(span * 2 + 1, .7, 1.3, dark, 0, height - .8, .1));
+  const board = sign(name, 12, 2.2, { background: '#7a3f2a', color: '#ffe9c4' }); board.position.set(0, height - 2.4, 1.1); g.add(board);
+  for (const x of [-span + 1.6, span - 1.6]) { const l = mineLantern({ light: false }); l.position.set(x, height - 2, .9); l.scale.setScalar(2.2); g.add(l); }
+  g.name = 'mine-gate'; g.userData.previewBounds = [[-span - 3, 0, -1.5], [span + 3, height + 2, 2]];
+  return g;
 }

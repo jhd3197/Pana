@@ -24,8 +24,10 @@ Fly.io or Railway are the simplest paths:
 ## Requirements
 
 - Node.js 22+ (Colyseus 0.18)
-- `ws`, plus `@colyseus/core`, `@colyseus/ws-transport`, `@colyseus/schema` and `express`
-  (a load-time import of the transport) for Colyseus rooms
+- `@colyseus/core`, `@colyseus/ws-transport` and `@colyseus/schema`. `express` and `ws`
+  arrive as the transport's own dependencies; nothing in Pana imports them.
+- Never set `PANA_DEBUG_ROOMS=1` in production: it enables test-only room options
+  (Embuste's `?quick` nights with teleports). `dev.ps1` and the browser runner set it.
 
 ## What NOT to add (yet)
 

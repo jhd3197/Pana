@@ -1,19 +1,31 @@
 # Bululú notes
 
-The game is in `games/bululu/public/`: `game.js` (turn flow, camera, HUD, minimap,
-minigame runner), `board.js` (tiles, the shortcut, cart, decor, dice, tokens),
+The game is in `games/bululu/public/`: `game.js` (turn flow, minimap wiring,
+minigame runner, online checkpoints), `board-camera.js` (shots, free look,
+scenic spots), `game-time.js` (waits and tweens on game time), `board-hud.js`
+(score icons, plank, sign, timer, toasts), `board.js` (tiles, the shortcut, cart, decor, dice, tokens),
 `island.js` (one smooth heightfield: coast, meadows, plateau, Pico Pana, hill,
 river, waterfalls), `flora.js` (tree types + `bake()`), `scenery.js` (neighbor
 islands, lighthouse, boats, clouds), `landscape.js` (organic islets and layered
 tepuis), `terrain-material.js` (procedural cliff weathering), `beach.js`
 (coastal props), `atmosphere.js` (day/night lighting and sky) and `minigames/*.js`.
 
+`minigames/index.js` lists the minigames by id and title only; each module
+loads when it is dealt (`loadMinigame`) and the rest fetch in idle time after
+the board is up, so the board opens with 91 modules instead of 181. A guest
+that gets a minigame it hasn't downloaded yet draws it once it lands and
+catches up on frames. A new minigame needs its line in `index.js`
+(`tests/minigames.test.js` checks ids and titles). Debug pages preload all of
+them: the suites fast-forward in simulated time and can't wait on a download.
+
 ## Online play
 
-Bululú has four seats (`game.json` and `server/room.js`). A `?room=` link joins
+Bululú has six seats (`game.json`; the shared relay reads the cap). A `?room=` link joins
 immediately; a direct visit offers **Jugar online** and **Jugar con bots**.
 `network.js` extends the shared `HostRoom`; it does not own connections or host
 election. The host chooses rounds and starts. Open seats remain bots.
+The six-seat snapshot/minigame format uses `bululu-v2`; a four-seat v1 page
+cannot replay a six-player seed and must reload before joining the new room.
 
 The host runs the board's async turn flow and publishes typed presentation and
 game snapshots at 10 Hz. A choice carries a prompt ID and is accepted only from
@@ -26,8 +38,10 @@ single input still works for practice. Their game-only randomness comes from
 `online-rules.js`, separate from Three.js UUIDs, effects and sound. The host sends
 the seed, frozen roster and exact simulation steps at 20 Hz. Guests replay those
 steps, including the initial update and outro. Keep gameplay random calls on this
-stream and pass it explicitly into pure sims. Chinazo uses a common 16:9 camera
-aspect online so screen-space hits agree on differently sized displays.
+stream and pass it explicitly into pure sims. Chinazo declares `aspect: 16 / 9`:
+offline and online it draws letterboxed (`minigames/framing.js` `letterbox`),
+and the pointer and reticles map through that box, so screen-space hits agree
+on every display. Other minigames use the local screen's aspect.
 
 Only the current minigame's history is retained. A guest arriving or reloading
 can request missing steps in chunks of 60; no payload approaches the room kit's
@@ -40,12 +54,118 @@ instances have no `finish` continuation. Prompt IDs include the host's seat so a
 answer in flight cannot accidentally answer a new host's first prompt. The host's
 **Otra vez** resets the board and scores in the same room for a rematch.
 
+Before an online minigame every connected human answers its own ¡Listo!
+(`kind: 'ready'` with the host's check id). The host waits for all of them
+or `READY_WAIT` (15 s), whichever comes first; bots and `?auto` never wait.
+The check travels in the snapshot as `ready` so guests draw the chips and
+their own button. Formerly only the host's seat was asked.
+Any other online prompt takes its default after `PROMPT_WAIT` (30 s) if
+its connected owner never answers (a dice prompt throws), so an idle tab
+cannot stall the room. Checkpoints carry the minigame bag as ids
+(`saveBag`/`restoreBag`, `minigameBag(ids, random, saved)`): an elected
+host keeps dealing the same pass instead of reshuffling, so no minigame
+repeats early after a migration. The restarted minigame still gets a new
+seed.
+
 Regression: `npm run test:browser -- bululu` includes real two-client room play.
+
+## Room settings and six-player play
+
+The shared room-options panel exposes the prototype's main and advanced choices.
+Only the host may change options, before starting. The full validated options
+travel in every room snapshot and checkpoint; host migration and rematches keep
+those selections. Empty seats are bots. `options.js` is the pure schema/rule
+module and `harbor-board.js` builds the alternate 32-tile timber pier circuit.
+The original island retains its 80-tile loop and hill shortcut. Switching boards
+also updates the minimap, stand destinations and token positions.
+
+- **Partida:** *Con tablero* or *Solo minijuegos*: `rounds` minigames from the
+  shuffled bag, no board, +10 a win and the usual final bonus (`runMinis`).
+- **Rondas:** 5, 10, 15 or 20 (the short-round query remains for tests).
+- **Tranquilos:** Caída, Embuste and Criollas, with no running, dodging or rhythm
+  races. Each still appears once per shuffled pass.
+- **Monedas al inicio:** 5, 10 or 20, including rematches.
+- **Casillas sorpresa:** Pocas removes alternate original event tiles; Muchas
+  adds an event every third tile. Tile paint and landing rules stay in agreement.
+- **Robar mangos:** adds a surprise event that transfers one mango from the
+  richest mango owner to the active pana. Disabling it removes that event.
+- **Bonus final:** one golden mango to the player with most minigame wins;
+  tied leaders each get one, and zero victories earn no bonus. Award before
+  saving the finished checkpoint so migration cannot repeat the award.
+- **Dados:** one d6 without doubles, or the existing two-d6 sum and +5 doubles.
+  A hidden second die must not paint a zero face: there is no zero-pip material.
+- **Velocidad CPU:** bots' board turns run 1.5× at Normal and 2.5× at Rápida;
+  human turns and every minigame keep their normal simulation speed.
+  Bot opening throws also wait less. Simulated whole parties (bots in every
+  seat, `pacing.browser.mjs`): 10 rounds took 1,128 s with bots at 1× and
+  805 s now (36% of it in minigames, first one at 73 s); 5 rounds 459 s;
+  Solo minijuegos with 5 games 192 s. The lobby summarises the bonus,
+  stealing and short presets (`rulesSummary`) and offers any minigame alone
+  (*Practicar un minijuego*, the `?play=` loop).
+
+All twelve minigames use the roster length. River and Chinazo pure simulations
+accept `count` (default four keeps their existing balance benchmarks stable).
+Actor positions, cards, canoe channels, raft platforms and aiming origins include
+seats five and six. Criollas keeps all six throwing origins inside the court;
+Remada and Raudal widen camera/lanes to include the full roster. Board tokens
+use six distinct positions when they share a tile.
+
+Proof: `options.test.js` covers all settings and six-seat pure simulations;
+`minigames-online.browser.mjs` runs all twelve with six independent human input
+streams, checks deterministic replay and finite scene transforms;
+`six-players.browser.mjs` opens six real clients in separate browser contexts
+(two full games plus four real room connections), synchronizes every
+option, plays all six board turns, shoots from seat six and elects a new host.
+
+## Phones and minigame lifetime
+
+- **Orientation:** the menu asks for landscape (`orientation: 'horizontal'`).
+  Held upright anyway, `fitCamera` keeps each camera's 16:9 horizontal view by
+  widening its vertical field (capped at 110°). A module with `frame: 'own'`
+  (Criollas' bolas world) frames itself; one with a fixed `aspect` letterboxes.
+- **HUD:** at ≤860 px wide or ≤500 px tall a minigame's cards become one top
+  strip, the menu sits top-left and the touch row sits at the bottom edge.
+  Below 520 px wide the strip drops portraits and keeps colour and score.
+  Short landscape boards show the six cards as one bottom row.
+- **Touch buttons:** a module's `touch: { pad, action }` picks the pad
+  (`lr`, `r`, `dpad`, `none`) and the action (`'jump'` icon, a word, or null).
+  Without it, `2d` input gets the d-pad and the rest left/right plus jump.
+- **Lifetime:** `createMini` calls `track(scene)`; when the board takes over,
+  `release(scene, resources(boardScene))` calls each object's
+  `userData.dispose` (a pana's spare face textures are not in its materials
+  when it is torn down), then frees every geometry, material, texture and
+  shadow map, including objects the minigame removed mid-game. Six rounds of
+  Atrapa now stay at 1,100–1,120 geometries and 81–86 textures.
+  `phone.browser.mjs` and `lifetime.browser.mjs` cover both.
+- `sunnyStage` asks for a 1024² sun shadow map at *Rápida* (baja) quality and
+  2048² otherwise; minigames had requested 2048² on every device.
+
+## Runner hooks and fairness rules
+
+- A module may return `progress()` → `[{ color, at: 0..1, me }]` (a race
+  strip at the bottom; Remada) and `hint()` → `{ text, tone }` with tone
+  `go`, `bad`, `ok` or none (a line under the cards: Embuste's secret role
+  and vote, Momia's run/freeze and disguises, Coleo's grab cue, Choque's
+  collapse warning and turbo). Guests compute both from their own replay.
+- Anything that can tie within one simulation step must not fall back on
+  actor order: Caída collects every slam of the step and draws the caída's
+  taker from the game stream; Atrapa's magnet and catch take the nearest
+  basket and draw exact ties. Online a step is 50 ms.
+- Remada's camera follows the pack but stays between 25 m behind and level
+  with your canoe, so a trailing or idle local canoe never leaves the view.
+  `fairness.browser.mjs` covers all four at 20 Hz on seeded streams.
+- More `hint()` users: No te caigas warns 1.3 s before the log reverses and
+  counts who is left; Remolino shows the shove cooldown, whether a canoe is
+  in reach and who is still afloat; Raudal calls out a ledge or a rock in
+  your lane about a second ahead and tints your channel in your colour.
+  Other players' Chinazo reticles are faded so yours stands out.
+- `makeActors(scene, players, ctx)` marks the local pana (ring + chevron in
+  its colour) on every pana-actor minigame; `localIndexOf(ctx)` is the rule.
 
 ## Test switches
 
 **Bolas Criollas** is `?play=criollas` / `?mini=criollas`: two throws per pana,
-four-way closest-to-mingo scoring, arrow-key direction/power and Space to throw.
+up-to-six-way closest-to-mingo scoring, arrow-key direction/power and Space to throw.
 Its deterministic simulation and 3D court are shared with the standalone game;
 see [criollas.md](criollas.md) for controls, timing, physics and proof.
 
@@ -159,6 +279,17 @@ flow bugs and check balance.
   for all six values on both dice. Guests must repaint stopped dice even when
   `value` is unchanged: spinning changes the painted face independently of the
   last result. The same suite checks repeated results with two real clients.
+- **Throwing the dice**: a human's dice prompt is a throw button (`toss: true`
+  option): hold it, Space or Enter to shake the spinning dice, let go to throw;
+  a flick across the canvas throws harder. Prompt keys never answer a throw
+  option, or Space would answer on keydown. `room.choose(prompt, choice, power)`
+  carries the power to the host. `dice-table.js` throws from over the head to
+  the board in front of the pana; the host publishes each die's spec
+  (`serial`, from, to, power, seed, value) and guests replay it with
+  `createToss`, ignoring snapshot positions until it lands.
+- **Who starts**: before round 1 every pana throws one die (`rollOffOrder`);
+  ties throw again among themselves, so the whole turn `order` comes out of the
+  dice. It travels in snapshots and checkpoints; a resumed game keeps it.
 - **Minigame order** comes from `rules.minigameBag`: each minigame once per
   pass, shuffled, never the same twice in a row. `?mini=` still forces one.
 - **¡Caída! tuning** (simulated, 4 AIs, 40 games): a plain shuffled deck gives a
@@ -193,15 +324,19 @@ flow bugs and check balance.
   18 m ahead: about 8 tumbles a game. `stats()` reports grabs, misses, bulls and
   time anyone was in reach.
 - **¡Embuste!** (from the full game, `docs/knowledge/embuste.md`): one of the
-  four panas is secretly a mummy, picked at random and possibly you. 19 s of
-  cranking winches (a real crank lights that pana's lantern; a mummy's crank
-  puffs sand 28% of the time, 63% when cranked within 0.28 s of the last), 8 s
-  to vote with ← → and Space, then the verdict. AI panas vote for whoever they
-  saw puff most, with a little noise; an AI mummy cranks a bit slower and votes
-  for a random pana. Catching the mummy pays every pana 50, plus 50 for voting
-  it; an uncaught mummy takes 100. Live chips stay at 0 until the verdict so
-  the scores can't give the mummy away. `stats()` reports the mummy, its sand
-  and the votes.
+  six panas is secretly a mummy, picked at random and possibly you. 19 s of
+  cranking winches, 8 s to vote with ← → and Space, then the verdict. A real
+  crank lights that pana's lantern; a mummy's crank is dim and may puff sand:
+  63% when mashing (< 0.28 s), 28% at a normal pace, 5% when careful
+  (≥ 0.75 s). Bots see a lit lantern 60% of the time, a sand puff 55% within
+  two stations and 15% farther, and a dim lantern 2%. They vote for the most
+  suspect: sand seen, plus 2 × how far below the usual amount of work they
+  saw that pana do, plus noise up to 2.1. Before that idle term, a human
+  mummy who never cranked won 24 of 30 seeds against bots, while any mummy
+  who cranked was caught almost every time. Now, 60 seeds: careful mummy
+  ~45%, bot mummy ~30%, masher ~2%, idle 0%. Catching the mummy pays every
+  pana 50, plus 50 for voting it; an uncaught mummy takes 100. Live chips
+  stay at 0 until the verdict. `stats()` reports the mummy, its sand and votes.
 - **Aim minigames** export `input: 'aim'`: `minigameInput()` returns
   `{aim: {x, y}, pull, fire}` with `aim` in NDC. The mouse moves the reticle and
   a press pulls; WASD / arrows steer it (0.8 NDC/s, rising to 2.3 over 0.45 s)
@@ -243,10 +378,10 @@ flow bugs and check balance.
   `minigames/river-sims.js` (pure, no THREE) so `tests/river-minigames.test.js`
   plays 200 all-AI rounds each for plan 52's balance rule (every seat wins
   15–35%; nobody-scores runs fail the test). The modules only draw the sims.
-  Paddling is Curiara's model (`/engine/paddle.js`): a stroke is `x` reaching
+  Paddling is Curiara's model (`/engine/play/paddle.js`): a stroke is `x` reaching
   ±1 (`axisStroke`), so A/D taps alternate. Canoes are
   `/engine/models/vehicles/curiara.js`; `river-stage.js` adds water, banks and
-  actors. ¡Remada!: 120 m, AIs finish in ~22–30 s. ¡Raudal!: four parallel
+  actors. ¡Remada!: 120 m, AIs finish in ~22–30 s. ¡Raudal!: six parallel
   rapids share one seeded pattern (rocks, mangos, a ledge every 5th row); a
   jump counts .08–.45 s before the ledge, rocks cost a mango and .9 s of stun.
   ¡Remolino!: canoes point outward on their own; the eye grows 1.6→6.5 m and
@@ -255,3 +390,11 @@ flow bugs and check balance.
   never touched. ¡Toninas! (2v2 fruit) waits for team support in the runner.
 
 Plan 56: createTepui uses the shared waterfall factory with an explicit sloped run; the terrain heightAt and board routes are unchanged. Its update uses absolute time instead of texture-offset/sprite animation.
+
+## Audit findings to preserve when improving the game
+
+- **River balance benchmarks still default to four seats.** Six-seat presence
+  and replay checks are separate from balance. A six-seat audit over 200 seeds
+  per river game at both 60 and 20 Hz found a winner in every run, with fractional
+  seat win shares spanning 11.3–20.7%. Keep count and tick rate explicit in
+  future balance tests; do not reuse four-seat percentage bounds for six seats.

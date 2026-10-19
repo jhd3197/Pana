@@ -14,7 +14,7 @@ try {
       const { default: def } = await import(`/g/bululu/minigames/${id}.js`);
       const { seeded, withRandom } = await import('/g/bululu/online-rules.js');
       const { normalizeAvatar } = await import('/engine/avatar.js');
-      const players = ['#ff4b4b', '#3d7bf2', '#ffc629', '#2ad1b2'].map((color, i) => ({ i, color, name: `Pana ${i}`, human: i < 2, avatar: normalizeAvatar({}) }));
+      const players = ['#ff4b4b', '#3d7bf2', '#ffc629', '#2ad1b2', '#ad70ec', '#ff8e3d'].map((color, i) => ({ i, color, name: `Pana ${i}`, human: true, avatar: normalizeAvatar({}) }));
       const rngs = [seeded(672), seeded(672)];
       const games = rngs.map((r, i) => withRandom(r, () => def.create({ players, auto: false, aspect: 16 / 9, localIndex: i })));
       function signature(g) {
@@ -32,13 +32,22 @@ try {
         if (games[0].over?.()) break;
       }
       const scores = games[0].scores();
+      const invalid = [];
+      games[0].scene.traverse(o => {
+        if (![...o.position.toArray(), ...o.rotation.toArray().slice(0, 3), ...o.scale.toArray()].every(Number.isFinite)) invalid.push(o.name || o.type);
+      });
+      const actors = games[0].actors?.length;
       const geometry = new Set(), materials = new Set();
       for (const game of games) game.scene.traverse(o => { if (o.geometry) geometry.add(o.geometry); for (const m of [o.material].flat().filter(Boolean)) materials.add(m); });
       for (const g of geometry) g.dispose();
       for (const m of materials) m.dispose();
-      return { mismatch, scores };
+      return { mismatch, scores, invalid, actors };
     }, id);
     assert.equal(result.mismatch, null, `${id}: ${JSON.stringify(result.mismatch)}`);
+    assert.equal(result.scores.length, 6, `${id}: every seat gets a score`);
+    assert(result.scores.every(Number.isFinite), `${id}: finite scores`);
+    assert.deepEqual(result.invalid, [], `${id}: six seats have finite scene transforms`);
+    if (result.actors != null) assert.equal(result.actors, 6);
     console.log(`PASS ${id}: separate local players replay identical states (${result.scores})`);
   }
 } finally { await browser.close(); }

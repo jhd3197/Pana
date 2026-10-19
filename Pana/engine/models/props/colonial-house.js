@@ -6,17 +6,21 @@ import { createHouseSpec, readHouseSpec } from './colonial-house-spec.js';
 import { facade, roof, balcony, crest, lantern, timber } from './colonial-house-parts.js';
 import { plantHouse } from './house-garden.js';
 
-// The new recipe path is opt-in; pueblo.js retains its established legacy default.
-export function colonialHouse({ spec, detail = 'game', ...options } = {}) {
+// The one house maker: Studio's Creador de casas, plaza-buildings' house()
+// and pueblo's colonialHouse() all build through it, so a better window or
+// wall finish here reaches every map. `wallColor` repaints the walls with a
+// map's own colour without changing the recipe.
+export function colonialHouse({ spec, detail = 'game', wallColor, ...options } = {}) {
   if (!['game', 'low'].includes(detail)) throw new RangeError('detail: game, low');
   spec = spec ? readHouseSpec(spec) : createHouseSpec(options);
-  const group = new THREE.Group(), colors = HOUSE_PALETTES.find(p => p.id === spec.palette);
+  const group = new THREE.Group(), palette = HOUSE_PALETTES.find(p => p.id === spec.palette);
+  const colors = wallColor == null ? palette : { ...palette, wall: wallColor, upper: palette.upper === palette.wall ? wallColor : palette.upper };
   const { width: w, depth: d, base, floorHeight: h } = spec;
   group.add(box(w, base, d, M(colors.trim), 0, base / 2, 0));
   for (const face of spec.faces) facade(group, face, spec, colors, detail);
   group.add(box(w - 0.3, 0.08, d - 0.3, M(colors.trim), 0, base + spec.floors * h - 0.04, 0));
   roof(group, spec, colors, detail);
-  if (spec.balcony) balcony(group, spec);
+  if (spec.balcony) balcony(group, spec, detail);
   if (spec.crest) crest(group, spec, colors);
   if (spec.porch) {
     for (const x of [-w / 2 + 0.17, w / 2 - 0.17]) {

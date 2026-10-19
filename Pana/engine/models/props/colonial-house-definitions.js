@@ -18,7 +18,11 @@ export const HOUSE_ROOFS = [
   { id: 'tejas', name: 'Tejas a dos aguas' },
   { id: 'cuatro-aguas', name: 'Tejas a cuatro aguas' },
   { id: 'azotea', name: 'Azotea con pretil' },
+  // Chosen on purpose only (Chinazo's patio): seeds and batches never roll it.
+  { id: 'zinc', name: 'Zinc a un agua', pick: false },
 ];
+// The zinc roof's rise per metre of depth, front eave to back.
+export const ZINC_PITCH = 17 / 36;
 export const HOUSE_LAYOUTS = [
   { id: 'clasica', name: 'Fachada clásica' },
   { id: 'lateral', name: 'Entrada lateral' },

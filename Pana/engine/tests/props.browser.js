@@ -63,7 +63,8 @@ try {
     return metrics;
   });
   metrics.forEach((m, i) => {
-    assert.ok(m.triangles < [1800, 1800, 6500, 4000, 7500][i], `${m.name} triangle budget`);
+    // the tree-kit ceiba's map tier is ~8 k; whole-map budgets guard the forests
+    assert.ok(m.triangles < [1800, 1800, 9000, 4000, 7500][i], `${m.name} triangle budget`);
     assert.ok(m.dimensions.every(v => v > 0 && Number.isFinite(v)));
     assert.ok(m.batchedMeshes <= [6, 6, 6, 6, 14][i], `${m.name}: ${m.batchedMeshes} static draw calls`);
     if (i < 2) { assert.ok(m.dimensions[1] < 2.5); assert.ok(m.dimensions[0] < 2); }

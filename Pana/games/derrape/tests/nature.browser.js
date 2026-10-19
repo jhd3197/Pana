@@ -107,7 +107,8 @@ try {
     assert.equal(metrics.unmarkedDifference, 0, 'Plaster sharing a leaf batch stays plain');
     // Extra interpolants can slightly change multisample coverage at silhouettes.
     // Allow only sparse edge pixels, not a systematic color/geometry difference.
-    if (quality === 'baja') assert.ok(metrics.originalDifference.mean < 0.002 && metrics.originalDifference.changed < 200, JSON.stringify(metrics.originalDifference));
+    // Tree-kit crowns are hundreds of thin blades, so they have more edges.
+    if (quality === 'baja') assert.ok(metrics.originalDifference.mean < 0.005 && metrics.originalDifference.changed < 600, JSON.stringify(metrics.originalDifference));
     await page.screenshot({ path: `${output}/trees-${quality}.png` });
   }
   for (const quality of ['media', 'alta']) {
@@ -160,7 +161,7 @@ try {
   proof.maps = [];
   for (const id of ['puerto', 'plaza', 'selva', 'llanos', 'salinas']) {
     const result = await page.evaluate(async id => {
-      const s = natureProof, { makeTrack, getTrack } = await import('/g/derrape/tracks.js');
+      const s = natureProof, { makeTrack, getTrack, loadTrack } = await import('/g/derrape/tracks.js'); await loadTrack(id);
       if (s.world) s.preview.release({ group: s.world });
       const T = makeTrack(getTrack(id)), group = T.build(); s.world = group; s.T = T;
       s.preview.ownMaterials({ group }); s.stage.scene.add(group);
@@ -191,7 +192,8 @@ try {
     assert.deepEqual(result.invalidTufts, [], 'Tufts remain grounded and outside the driving corridor');
     if (id === 'puerto') assert.ok(result.tuftCount > 500, 'Substantial roadside grass');
     if (id === 'salinas') assert.equal(result.tuftCount, 0);
-    if (id === 'puerto') { assert.ok(result.triangles < 3200000); assert.ok(result.draws < 900); }
+    // +200 k for the festive roadside (library trees, props, flocks).
+    if (id === 'puerto') { assert.ok(result.triangles < 3400000); assert.ok(result.draws < 900); }
     proof.maps.push(result);
     await page.screenshot({ path: `${output}/map-${id}.png` });
     if (id === 'puerto') for (const quality of ['baja', 'alta']) {

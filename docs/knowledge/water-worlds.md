@@ -1,6 +1,6 @@
 # Derrape water worlds
 
-Plan: `docs/plans/56_derrape-grand-prix-and-water-worlds.md`. The four routes
+The four routes
 are available in Carrera rápida, Copa del Agua and Studio without a debug flag.
 Each map has separate layout, world and definition
 modules. World geometry is game-local; reusable objects live in `engine/models`.
@@ -109,7 +109,7 @@ and twelve-map Studio tours passed. Bululú's two-client Chinazo suite and
 Galope's two-client riding/touch, landscape, water-FX and Studio suites passed.
 
 Final vegetation uses 190 m cells with the same placements and whole-world
-triangle counts. `art/grand-prix/water-cells-geometry.log` rechecks all lane and
+triangle counts. A geometry recheck covers all lane and
 chase rays plus the nine driver views after that render optimization. Desktop
 GPU timing is recorded in `derrape-performance.md`; the physical-phone run was
 explicitly waived by the user, without replacing it with emulated FPS claims.

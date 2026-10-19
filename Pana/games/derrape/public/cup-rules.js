@@ -49,6 +49,7 @@ const copyEntrant = (entrant, index) => {
       paint: entrant.loadout?.paint ?? 'fabrica',
       horn: entrant.loadout?.horn ?? 'propio',
       flame: entrant.loadout?.flame ?? 'fuego',
+      ...(entrant.loadout?.parts ? { parts: Object.freeze({ ...entrant.loadout.parts }) } : {}),
     }),
     skillSeed: String(entrant.skillSeed ?? `${id}:skill`),
   });

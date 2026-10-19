@@ -12,7 +12,7 @@ try {
   const page = await browser.newPage({ viewport: { width: 1440, height: 1000 }, reducedMotion: 'reduce' });
   page.on('pageerror', e => errors.push(e.message));
   page.on('console', m => { if (m.type() === 'error') errors.push(m.text()); });
-  await page.goto(`${process.env.PANA_QA_URL || 'http://localhost:8461'}/personaje.html`);
+  await page.goto(`${process.env.PANA_QA_URL || 'http://localhost:8461'}/character/reference.html`);
   await page.waitForFunction(() => window.panaStudio?.renderer.info.render.triangles > 0);
   assert.equal(await page.locator('[data-outfit="base"]').count(), 0);
   const identity = await page.evaluate(() => [panaStudio.pana.head.uuid, panaStudio.pana.body.uuid, ...panaStudio.pana.arms.map(a => a.uuid)]);

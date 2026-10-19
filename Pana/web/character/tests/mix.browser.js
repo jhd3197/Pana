@@ -13,7 +13,7 @@ try {
   const page = await browser.newPage({ viewport: { width: 1440, height: 1000 }, reducedMotion: 'reduce' });
   page.on('pageerror', e => errors.push(e.message));
   page.on('console', m => { if (m.type() === 'error') errors.push(m.text()); });
-  await page.goto(`${process.env.PANA_QA_URL || 'http://localhost:8461'}/personaje.html`);
+  await page.goto(`${process.env.PANA_QA_URL || 'http://localhost:8461'}/character/reference.html`);
   await page.waitForFunction(() => window.panaStudio?.renderer.info.render.triangles > 0);
   const settle = () => page.evaluate(() => new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r))));
   const snapshot = async name => {

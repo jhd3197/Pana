@@ -1,0 +1,22 @@
+# {{name}}
+
+{{description}}
+
+Made with `.\dev.ps1 new-game {{id}} -Kind {{kind}}`: a {{kindText}} on the shared
+{{roomText}} (`engine/{{roomFile}}`), drawn on the shared plaza stage
+(`engine/worlds/table-world.js`) with every player's own pana.
+
+## Files
+
+- `public/rules.js`: pure rules (no DOM, no Three.js), tested by `tests/rules.test.js`.
+- `public/network.js`: the room; bots and host handoff come from the base class.
+- `public/options.js`: typed choices for the shared room panel and advanced
+  dialog; actions validate patches before publishing the selected values.
+- `public/scene.js`: the 3D world.
+- `public/game.js`: wiring only (engine/game-shell.js runs loading and loops).
+- `tests/browser.mjs`: two real clients (`npm run test:browser -- {{id}}`).
+
+## Notes for agents
+
+- Every game is 3D (AGENTS.md): keep the perspective scene and the panas in it.
+- Record tuning values, traps and decisions for {{name}} here, not in AGENTS.md.

@@ -1,3 +1,4 @@
+import { trapPositions, trapActive } from './rules.js';
 import * as THREE from 'three';
 import { bake } from '/engine/models/core/static-batch.js';
 import { templeEntrance, ropeBridge, stoneTotem } from '/engine/models/props/jungle.js';
@@ -125,18 +126,30 @@ export function createExpeditionWorld() {
     return { ...s, group: g, lid, glowMat, loot, openT: 0 };
   });
   const relic = sunRelic(); dynamic.add(relic);
-  const torches = [];
+  const torches = [], lanternRoot = new THREE.Group();
   for (const [x, z] of [[-3, 8], [3, -3], [-4, -16], [-10, -31], [10, -39], [32, -22], [48, -43], [35, -53], [53, -66], [27, -76], [44, -85], [27, -96], [53, -106], [35, -116]]) {
     box(staticRoot, darkStone, 0.5, 1.35, 0.5, x, 0.675, z);
-    const lantern = expeditionLantern(); lantern.scale.setScalar(1.5); lantern.position.set(x, 1.35, z); staticRoot.add(lantern);
+    const lantern = expeditionLantern(); lantern.scale.setScalar(1.5); lantern.position.set(x, 1.35, z); lanternRoot.add(lantern);
     const glow = new THREE.Mesh(new THREE.CircleGeometry(2.2, 24), new THREE.MeshBasicMaterial({ color: 0xf8bc69, transparent: true, opacity: 0.12, depthWrite: false })); glow.rotation.x = -Math.PI / 2; glow.position.set(x, 0.025, z); dynamic.add(glow); torches.push(glow);
   }
+  const lanternBatch = bake(lanternRoot); dynamic.add(lanternBatch);
+  lanternRoot.traverse(o => o.geometry?.dispose());
   const campRing = new THREE.Mesh(new THREE.RingGeometry(4.7, 4.86, 64), new THREE.MeshBasicMaterial({ color: 0xe4c17d, transparent: true, opacity: 0.65, depthWrite: false })); campRing.rotation.x = -Math.PI / 2; campRing.position.set(CAMP.x, 0.04, CAMP.z); dynamic.add(campRing);
   const staticBatch = bake(staticRoot, { cellSize: 24 }); group.add(staticBatch);
   const originalGeometries = new Set(); staticRoot.traverse(o => { if (o.geometry) originalGeometries.add(o.geometry); }); originalGeometries.forEach(g => g.dispose());
-  let gateHeight = 0, secretHeight = 0;
+  let gateHeight = 0, secretHeight = 0, trapKey = '', temple = '';
+  const trapMeshes = new THREE.Group(); trapMeshes.name = 'Losas trampa'; dynamic.add(trapMeshes);
+  const trapMaterial = mat('#b69c67', { emissive: '#602010', emissiveIntensity: 0 });
+
   function update(t, state = {}, dt = 0.016) {
     tickWind(t, 0.85);
+    const nextTemple = state.options?.temple || 'selva';
+    if (nextTemple !== temple) { temple = nextTemple; sandstone.color.set(temple === 'tepuy' ? '#9a8c83' : '#7f806b'); earth.color.set(temple === 'tepuy' ? '#68617a' : '#43594a'); darkStone.color.set(temple === 'tepuy' ? '#534958' : '#405b50'); }
+    const positions = trapPositions(state.options), key = JSON.stringify(positions);
+    if (key !== trapKey) { trapKey = key; trapMeshes.children.forEach(o => { o.geometry.dispose(); o.material.dispose(); }); trapMeshes.clear(); for (const trap of positions) { const plate = box(trapMeshes, trapMaterial.clone(), 1.9, .07, 1.9, trap.x, .055, trap.z); plate.userData.trap = trap; } }
+    for (const plate of trapMeshes.children) { const active = trapActive(state.time || 0, plate.userData.trap); plate.material.color.set(active ? '#e6613e' : '#b69c67'); plate.material.emissiveIntensity = active ? .65 : 0; }
+    lanternBatch.visible = state.options?.lanterns !== false;
+
     gateHeight = THREE.MathUtils.damp(gateHeight, state.gateOpen ? -6 : 0, 4, dt); gate.position.y = gateHeight;
     secretHeight = THREE.MathUtils.damp(secretHeight, state.relicTaken ? -4 : 0, 4, dt); secret.position.y = secretHeight;
     wheels.forEach(w => { const s = state.winches?.[w.id]; w.group.userData.wheel.rotation.z = -(s?.progress || 0) * Math.PI * 2; });
@@ -181,12 +194,12 @@ export function createExpeditionWorld() {
     });
     relic.visible = state.carrier == null;
     relic.position.set(state.relic?.x ?? ALTAR.x, state.relicTaken ? 0.15 : 1.2 + Math.sin(t * 2) * 0.1, state.relic?.z ?? ALTAR.z); relic.rotation.y = t * 0.6;
-    torches.forEach((g, i) => { g.material.opacity = 0.11 + Math.sin(t * 3 + i) * 0.025; });
+    torches.forEach((g, i) => { g.visible = state.options?.lanterns !== false; g.material.opacity = 0.11 + Math.sin(t * 3 + i) * 0.025; });
     campRing.material.color.setHex(state.relicTaken ? 0x77e8b5 : 0xe4c17d);
   }
   function dispose() {
     const geometries = new Set(), materials = new Set(); group.traverse(o => { if (o.geometry) geometries.add(o.geometry); for (const m of Array.isArray(o.material) ? o.material : o.material ? [o.material] : []) materials.add(m); });
-    geometries.forEach(g => g.dispose()); materials.forEach(m => { if (m.userData.reliquiaOwned || m.isMeshBasicMaterial) m.dispose(); });
+    trapMaterial.dispose(); geometries.forEach(g => g.dispose()); materials.forEach(m => { if (m.userData.reliquiaOwned || m.isMeshBasicMaterial) m.dispose(); });
   }
   return { group, update, dispose, groundAt, bounds: new THREE.Box3(new THREE.Vector3(-25, -5, -128), new THREE.Vector3(61, 18, 29)) };
 }

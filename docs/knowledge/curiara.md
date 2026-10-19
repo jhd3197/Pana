@@ -8,20 +8,24 @@ river. Two formats: **Todos contra todos** (8 canoes, one pana each) and
 
 ## Files
 
-- `/engine/paddle.js` (pure, shared with Bululú's river minigames): the stroke
+- `/engine/play/paddle.js` (pure, shared with Bululú's river minigames): the stroke
   model. `stroke(state, side, t)` grades the gap to the previous stroke;
   `step(state, dt)` delivers each stroke's impulse over `PADDLE.pull` s.
   State is a plain object so a race snapshot carries it across migration.
-- `public/river.js` (pure): `buildRiver(def)` turns a course definition into
-  splines with distance `s` and signed `offset` (positive = right bank looking
-  downstream), `locate()` (main channel or igapó branch), `levelAt()` (raudal
-  steps per lane), `currentAt()` (chorro, eddies, whirlpool), `groundAt()`,
-  rocks, snags, logs, toninas and gates. `AMAZONAS` is the race; `GREYBOX` is
-  the step-0 straight channel kept for tuning (`new Race(GREYBOX)`).
+- `/engine/river/river.js` (pure, shared with Lancha): `buildRiver(def)`
+  turns a course definition into splines with distance `s` and signed
+  `offset` (positive = right bank looking downstream), `locate()` (main
+  channel or igapó branch), `levelAt()` (raudal steps per lane), `currentAt()`
+  (chorro, eddies, whirlpool), `groundAt()`, rocks, snags, logs, toninas,
+  swimming caimanes, the guide line, buoys and gates.
+- `public/river.js`: Curiara's courses only, re-exporting the shared helpers.
+  `AMAZONAS` is the race; `GREYBOX` is the step-0 straight channel kept for
+  tuning (`new Race(GREYBOX)`).
 - `public/rules.js` (pure): `Race`, boat physics, hazards, bots, snapshots.
-- `public/scene.js` terrain and per-tramo water; `public/landscape.js` the
-  dressing; `public/water-fx.js` pooled ripples/spray and the chorro,
-  whitewater and remolino sheets; `public/network.js` the host room.
+- Shared with Lancha in `/engine/river/`: `scene.js` terrain and per-tramo
+  water, `landscape.js` the dressing, `water-fx.js` pooled ripples/spray and
+  the chorro, whitewater and remolino sheets, `guide.js` the guide on the
+  water, `minimap.js` the HUD map. `public/network.js` is the host room.
 - Models: `/engine/models/vehicles/curiara.js` (`createCanoe`: the shared
   `riverCanoe()` with one or two seated panas and animated paddles),
   `/engine/models/props/amazonas.js` (laja, igapó trunk, churuata, moriche
@@ -42,6 +46,36 @@ newcomer near 2.8, mashing 2.1.
 
 The ¡Ahora! bonus: the popa's tap within .12 s of the proa's stroke (either
 order) adds 15% to that stroke, once.
+
+## Helpers
+
+Curiara is hard for newcomers: they mash A/D believing faster is better,
+which is a chapoteo, and lose the line once the river opens up. So:
+
+- **Remo automático**: W held (or the touch Auto button) strokes for you
+  every .42 s, alternating, at 1.05× a plain stroke, never a ¡Remazo!; A/D
+  become a rudder and send no strokes. Still water: auto 4.6 m/s, a good
+  rhythm 6.1, mashing 2.1. The ring hides and the key reads W.
+- Every chapoteo now calls out (every third one "¡Más calma!") and the tip
+  line says mashing slows the canoe.
+- **Guía en el agua** (room option, on): a ring round your own boat with a
+  pointer toward `river.guideAt(s + 14)`, gold on line, coral when pointing
+  away, pulsing faster the further off you are; and seven chevrons along the
+  line ahead, lit in a wave that runs downstream. Client-side only; it reads
+  the same race clock, so it agrees with the swimming caimanes.
+- `river.guideLine(s)` is the chorro, the fast lane through each raudal, the
+  remolino's edge 1.2 m out, clear of rocks and bank caimanes, sampled each
+  metre and box-smoothed over 13 m so the chevrons never jump.
+  `guideAt(s, time)` also swerves 4.5 m round swimming caimanes, on the side
+  they swim away from.
+- **Buoys** (`def.buoys`): pairs 6 m either side of the guide every 40 m in
+  the Río Negro (coral left, teal right), skipped near raudales, the remolino
+  and rocks. They only nudge the hull; no tip.
+- **Swimming caimanes** (`def.caimanes`): three cross the Río Negro back and
+  forth on the race clock (`river.caimanesAt(time)`, periods 24–30 s, spans
+  8–9 m), so no snapshot field. Same bite as a bank babo (+40 tip, 2.2 m/s
+  jolt, once per 4 s each, ids `n0…`). Bots over skill .72 swerve round them.
+  The guide warns "¡Caimán cruzando adelante!" within 30 m.
 
 ## River and hazards
 
@@ -79,7 +113,7 @@ Check with a script that runs `new Race(); start(true, seed)` and
 
 ## Netcode
 
-`curiara-v1` on the shared relay; the oldest member simulates at 20 Hz.
+`curiara-v2` on the shared relay; the oldest member simulates at 20 Hz.
 Inputs carry the last 8 strokes as `[seq, side, clientSeconds]` plus held
 `back`/`steer` and a `splash` counter. The host maps each guest's clock onto
 race time with the smallest `hostNow − clientNow` seen (creeping up .002 s
@@ -96,3 +130,45 @@ casting shadows doubled the cost). Fog 90–1100 m so the tepui (100×70 m,
 175 m tall, straight downstream at z −1150) stays in view. Canoes and the
 camera snap on jumps over 12/30 m (teleports, migrations), otherwise lerp.
 Headless suites render slowly; give two-client steps long timeouts.
+
+## Room options
+
+The shared primary/advanced room panel publishes host-validated options through
+race snapshots. Active races lock options, and host migration rebuilds the same
+river before continuing. The existing Amazonas remains the default. Caroní has
+narrower bends; Orinoco stretches bends and widens the channel, with sandy banks.
+These are procedural course variants, not geographic surveys. The scene,
+physics, minimap, finish distance and hazards all use the selected definition.
+
+Each `amazonasDefinition()` owns its curvature/length closure. Do not share the
+old mutable module-level curvature or length between river variants: constructing
+one river otherwise silently changes the bank/current functions of another.
+World and pooled effects are disposed/rebuilt only when river, cascades or river
+objects change; current and assistance changes do not rebuild geometry.
+Waterfall scenery must derive its placements from `river.drops`; assuming two
+entries crashes world construction when the host disables cascades.
+
+Solo keeps eight canoes. En pareja · 2×2 uses two two-person canoes;
+2×2×2 uses three and 2×2×2×2 preserves the original four-pair format. A three-pair room with seven/eight humans
+cannot start until the host selects enough seats; nobody is silently omitted.
+Seat choices lock during a race. Eight players remain the connection cap.
+
+Slow/normal/brave current scales flow by .6/1/1.45. Easy rapids reduce whirl
+spin to 45% and landing/remolino tip to 35%. No cascades removes the drop geometry
+and corresponding rock bars. No river objects removes rocks, snags, caimanes,
+tonina boosts and salpicón. Soft collisions reduce canoe impulse and tip damage.
+Steering help gently aligns the hull with the river while the player is neither
+braking nor holding a rudder. Tap paddling gives each accepted tap equal thrust,
+with a .25 s minimum interval; rhythm retains the shared graded stroke model.
+
+`options.test.js` verifies options, eight-seat crews and map isolation. The
+Galope `race-options.browser.js` suite covers both races with real client pairs,
+read-only guest menus, snapshots, changed geometry and host transfer.
+
+The grouped avatar roster shows effective automatic crew assignments as well as explicit choices. Any pana can swap their own role with an occupied role or move to an empty one; the host can arrange other panas. A successful move freezes the effective grid into explicit seats, so unrelated crew members never shift. Repeated hello messages refresh identity but cannot undo these authoritative choices. Running races lock all seat changes.
+
+Opening a local race keeps the current room options and map while creating a fresh lobby and clearing network participants. This also applies to offline fallback after a disconnect.
+
+Restablecer also enables the river-remeros bot fill checkbox again.
+
+Seat interaction suites must wait for the acting client's rendered own card after a swap, not only the host snapshot. The roster updates on the visual tick; clicking a second destination against its old source before that update correctly fails authorization because the old seat now belongs to somebody else.

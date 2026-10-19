@@ -11,17 +11,63 @@ member lists or host election in a game.
 
 `server/src/colyseus.js` registers a room for every game automatically (its own
 `server/room.js` or the relay room), under the game's id with `filterBy(['code'])`.
-The legacy `/ws` relay still runs for old cached clients; no game uses it.
+The legacy `/ws` relay is gone; every game talks to Colyseus under `/colyseus`.
 
-## A host-simulated game (Cocina, Galope, Dominó…)
+## Two ready-made rooms: TableRoom and LiveRoom
 
-Extend `HostRoom`; keep only the game's rules. Reference: `games/galope/public/network.js`.
+Most host-simulated games are one of two shapes, and each shape has a base class
+on top of `HostRoom`. Start there (the `new-game` scaffold does); drop to plain
+`HostRoom` only for a game that fits neither.
+
+- **`engine/table-room.js` `TableRoom`**: turn-based, the whole game is one
+  snapshot (Dominó, Caída, Ludo, Billar, Bolas Criollas). Give it `fresh`,
+  `restore`, `snapshot`, `accept` and `valid`; implement `seatMembers()`,
+  optionally `unseat(id)` and `step(dt)` (bots via `botReady(dt, botTurn)`, or
+  physics). It owns seq numbers from the room's ledger, snapshot routing, a
+  revision guard (the same host never moves backwards), the host-change notice
+  and practice. Unit tests: `engine/tests/table-room.test.js`.
+- **`engine/live-room.js` `LiveRoom`**: real time, the host steps the game at
+  20 Hz with everyone's latest input (Cocina, Escondidas, Reliquia, Galope,
+  Curiara). Implement `cleanInput(raw)`, `takeOver`, `handle(id, action)` and the
+  member hooks (call `super.takeOver`/`super.memberLeft`). It expires stale
+  inputs, drops repeated actions, routes `notice(id, text)`, and steps the game
+  in fixed 50 ms slices from real elapsed time. Drive it with `elapsedClock()`:
+  a host in a background tab gets timers about once a second, and a fixed
+  `tick(0.05)` would slow the game twenty times for everyone.
+  A guest sends its input only to the host, and only when it changed or
+  every 200 ms (a third of `inputTtl` if that is shorter), so an idle stick
+  costs nothing and the host never expires it; a new host gets it at once.
+  An `inputMessage` that stamps a clock (Curiara's `now`) changes every
+  tick and so still goes out every tick.
+  Unit tests: `engine/tests/live-room.test.js`.
+- **Prediction (`engine/predict.js`)**: pass `predict: { body(state, id),
+  step(body, input, dt, state) }` as LiveRoom's second argument and draw your
+  own character from `room.predicted` (null on the host and offline). Every
+  guest tick then sends a numbered input (no send-on-change: the host must see
+  one number per tick), steps the prediction at once, and the host echoes each
+  guest's last applied number in its snapshots (`acks`). A snapshot restarts the
+  prediction from the host's body and replays the inputs it hadn't applied, so
+  the host stays the authority and a guest walks without waiting a round trip.
+  `step` must be the very function the host's `update` uses for that body
+  (Cocina `stepCook`, Reliquia `stepExplorer`, Escondidas `stepPana`, Galope
+  `stepRider`) and touch only the body; `body` returns null outside play.
+  Lancha drives the boat with `Race.drive` inside a private copy of the latest
+  snapshot (one per snapshot, river cached by course options), since driving
+  reads the river, the time and the hazards. Anything that compares bodies
+  must compare ids: the predicted body is a copy, so `o !== p` would find
+  yourself in the snapshot (Galope's drafting did). Bodies pushed by actions
+  (a dodge, a carry) still move when the host says so. Not predicted: a
+  Curiara canoe is shared by two paddlers, and Tambor's input is song hits.
+
+## A host-simulated game on HostRoom directly
+
+Extend `HostRoom`; keep only the game's rules.
 
 ```js
 import { HostRoom } from '/engine/net.js';
 export class KitchenRoom extends HostRoom {
   constructor({ code, name, avatar, onState, onStatus, onNotice }) {
-    super({ game: 'cocina', protocol: 'cocina-v1', code, name, avatar, onState, onStatus, onNotice,
+    super({ game: 'cocina', protocol: 'cocina-v2', code, name, avatar, onState, onStatus, onNotice,
       texts: { connecting: '…', full: '…', lost: '…', offline: '…' } });
     // game-only fields
   }
@@ -37,7 +83,10 @@ export class KitchenRoom extends HostRoom {
 }
 ```
 
-The base provides `connect()`, `send(data)` (wraps `{ game: protocol, ...data }`),
+The base provides `connect()`, `send(data, dest)` (wraps `{ game: protocol, ...data }`;
+`dest` is `'host'` for what only the host reads, a seat for one member, or nothing
+for everyone: the relay room delivers it only there, so guests stop receiving
+each other's inputs),
 `members` (Map seat → member), `id`, `hostId`, `isHost`, `connected`, `offline`,
 `practice(text)` (local play as seat 1 and host; reset game state first, then call
 `super.practice(...)`), `cut()` (lose the connection for good, as after every
@@ -69,6 +118,16 @@ with `roomState({ ...fields }, Member.extend({ ...memberFields }, 'Name'))`, cal
 `left`, `hostChanged` instead of overriding `onJoin`/`onLeave`. Browser side:
 `joinRoom('<game>', options)` and listen on the link. See `derrape-online.md`.
 
+A room that runs the game itself (Póquer, Pintura, ¡Embuste!) uses the kit's
+helpers instead of its own: `seatOf(client)`, `connectedMembers()`,
+`onHostMessage(type, fn)` for host-only commands, `memberAvatar(member)`,
+`fillBots(count, add)` (seats from `BOT_SEAT`) and `InputBuffer(ttl)` for latest
+inputs that expire. Never set `maxClients` (game.json `players` is the cap) and
+never register `ping`/`me`/`lobby-ready` again: Colyseus stacks handlers, so a
+second registration answers every message twice. `server/tests/room-kit.test.js`
+fails on any duplicate, and `server/tests/harness.js` runs a room without
+Colyseus for unit tests.
+
 When players must not see each other's data (¡Embuste!'s roles), run the game
 in the room and `client.send()` each seat its own filtered view instead of
 putting it in the shared state; see `embuste.md`.
@@ -85,9 +144,16 @@ authority. `engine/tests/lobby.browser.js` proves a real two-client ready hold,
 host launch, game preparation failures and each shared lobby's entry.
 
 Each migrated game keeps its own two-client browser suite (`games/<game>/tests/`).
-Run the server, then the suite with the Playwright path. Mobile portrait pages in
-some suites currently stop on the shared "rotate to landscape" dialog; that is not
-a network failure.
+Before the next revision-bearing action, wait for the acting client's view as
+well as the other client's acknowledgement. Private views can reach the guest
+before the host has processed its own update. For consecutive roster clicks,
+also wait for the acting client's rendered own-seat card: its click handler
+captures the seat shown in that snapshot. A stale source is correctly rejected
+by the room's permission check.
+
+Run `npm run test:browser -- <game>`; the runner starts a fresh server and uses
+the repository's Playwright dependency. Mobile portrait pages may show the
+shared "rotate to landscape" dialog; handle that UI before testing gameplay.
 
 ### Full-room errors through the Colyseus HTTP adapter
 

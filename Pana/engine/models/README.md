@@ -10,17 +10,19 @@ previews the same factories. Browser ESM, Three.js 0.160.0, no build step.
 | `fauna/capybara/` | Continuous capybara sculpt and natural animal |
 | `fauna/aquatic/` | Reef fish and animated school assembly |
 | `fauna/beach-crab.js` | Animated crab, independent of coastal furniture |
+| `fauna/jaguar.js` | Prowling and sitting jaguar; the stone carvings in `props/jaguar-stone.js` reuse its form |
 | `vegetation/` | One module per species; canopy and plant construction helpers |
 | `props/` | Cohesive architectural/scenery packs and individual common objects |
+| `props/crystals.js` | Instanced, pulsing cave crystal clusters and the rainbow palette |
 | `characters/pana/` | Pana sculpt, wardrobe, expressions and avatar adapter |
 | `core/` | Materials, primitives, batching, botanical and construction helpers |
 | `animation/` | Reusable motion such as bird orbits, separate from anatomy |
-| `effects/` | Water surfaces, fountain details and thermal steam |
+| `effects/` | Water surfaces (opt-in foam and rain rings), light shafts and skylights, fountain details and thermal steam |
 | `catalog.js` | Aggregates plain model metadata without loading geometry |
 | `fauna/catalog.js`, `vegetation/catalog.js`, `props/catalog/` | Category/pack metadata |
 
 Terrain-aware reef/crab placement lives in `../placement/`. World builders remain
-in `engine/plaza.js`, `engine/island-*.js` and game track modules. Routes,
+in `engine/worlds/plaza.js`, `engine/worlds/island-*.js` and game track modules. Routes,
 collisions, state, lights and cameras belong to those consumers.
 
 ## Dependency rules
@@ -88,10 +90,10 @@ any imported model, texture or code. Code and asset licenses may differ.
 
 ## Compatibility and validation
 
-Old URLs such as `/engine/wildlife.js`, `/engine/flora.js`, `/engine/props.js`
-and `/engine/soft-character/model.js` are re-exports. They contain no second
-implementation and must not receive new geometry. Existing names and function
-identity are preserved; new code imports canonical files directly.
+Every model has one canonical file under `engine/models/`; the old alias URLs
+(`/engine/wildlife.js`, `/engine/flora.js`, `/engine/props.js`,
+`/engine/soft-character/*`, `/character/*.js`) have been removed. Import the
+canonical file directly; never add an alias that re-exports a model.
 
 Run from the repository root with the local server active:
 

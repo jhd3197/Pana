@@ -12,7 +12,7 @@ try {
   const page = await browser.newPage({ viewport: { width: 1440, height: 1000 }, reducedMotion: 'reduce' });
   page.on('pageerror', e => errors.push(e.message));
   page.on('console', m => { if (m.type() === 'error') errors.push(m.text()); });
-  await page.goto(`${base}/personaje.html`);
+  await page.goto(`${base}/character/reference.html`);
   await page.waitForFunction(() => window.panaStudio?.renderer.info.render.triangles > 0);
   const settle = () => page.evaluate(() => new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r))));
   const snapshot = async name => {
@@ -115,7 +115,7 @@ try {
 
   const mobile = await browser.newPage({ viewport: { width: 390, height: 844 }, isMobile: true, reducedMotion: 'reduce' });
   mobile.on('pageerror', e => errors.push(e.message));
-  await mobile.goto(`${base}/personaje.html`); await mobile.waitForFunction(() => !!window.panaStudio);
+  await mobile.goto(`${base}/character/reference.html`); await mobile.waitForFunction(() => !!window.panaStudio);
   await mobile.locator('[data-expression="talk"]').click();
   assert.equal(await mobile.evaluate(() => panaStudio.paused), true);
   assert.equal(await mobile.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);

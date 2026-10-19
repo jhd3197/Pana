@@ -29,7 +29,7 @@ export function puertoTown(T,world,sites) {
     const district=Math.floor((x+230)/110),row=Math.floor((-z-240)/80);
     const palette=(z>-240?['crema','coral-crema','cielo']:['crema','turquesa','coral-crema','amarillo','azul'])[(index+Math.abs(district))%(z>-240?3:5)];
     const house=colonialHouse({seed:710+index,family,palette,width:family==='casa-larga'?11.5:9.4+(index%4)*.6,depth:7.8,
-      floorHeight:3.6+(index%3)*.4,partyWalls:['left','right'],wallFinish:index%5===0?'ladrillo-visto':'cal',
+      floorHeight:3.6+(index%3)*.4,partyWalls:['left','right'],wallFinish:['ladrillo-visto','cal','ladrillo-pintado','ladrillo-visto','cal'][index%5],
       roof:index%3===0?'azotea':index%5===0?'cuatro-aguas':'tejas',planting:index%5===0?'balcon':'ninguna',detail:'low'});
 
     const spec=house.userData.houseSpec;

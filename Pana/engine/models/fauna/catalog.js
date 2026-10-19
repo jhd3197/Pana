@@ -211,4 +211,40 @@ export default [
     tags: ["costa","playa","puerto","Bululú"],
     pack: "coastal"
   },
+  {
+    id: "jaguar",
+    name: "Jaguar",
+    category: "Fauna",
+    source: "/engine/models/fauna/jaguar.js",
+    factory: "jaguar",
+    usedBy: ["Pana Studio"],
+    previewOptions: {"seed":7,"pose":"prowl"},
+    description: "Selva: felino robusto con rosetas, cabeza baja y omóplatos que ruedan al acechar; camina en el sitio a userData.pace.",
+    tags: ["animal","fauna","felino","selva","animado"],
+    pack: "big-cats"
+  },
+  {
+    id: "jaguar-sitting",
+    name: "Jaguar sentado",
+    category: "Fauna",
+    source: "/engine/models/fauna/jaguar.js",
+    factory: "jaguar",
+    usedBy: ["Pana Studio"],
+    previewOptions: {"seed":8,"pose":"sit"},
+    description: "Sentado sobre las ancas con la cola enroscada; respira, mira alrededor y sacude la punta de la cola.",
+    tags: ["animal","fauna","felino","selva","animado"],
+    pack: "big-cats"
+  },
+  {
+    id: "black-jaguar",
+    name: "Jaguar negro",
+    category: "Fauna",
+    source: "/engine/models/fauna/jaguar.js",
+    factory: "jaguar",
+    usedBy: ["Pana Studio"],
+    previewOptions: {"seed":9,"pose":"prowl","melanistic":true},
+    description: "La variante melánica de la selva profunda: las rosetas apenas se adivinan sobre el pelaje oscuro.",
+    tags: ["animal","fauna","felino","selva","animado"],
+    pack: "big-cats"
+  },
 ];

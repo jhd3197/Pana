@@ -1,3 +1,4 @@
+import { meadow } from './festive.js';
 import { THREE, M, box, terrain, stream, put, finish, instances, scatter, clear } from './world-kit.js';
 import { waterGrid, hollowGallery } from './water-world-kit.js';
 import { waterAnimator } from '/engine/models/effects/water-surface.js';
@@ -13,7 +14,7 @@ import { getSettings } from '/engine/settings.js';
 export function saltoWorld(T) {
   const group=new THREE.Group(),world=terrain(T,{bounds:[-540,-520,540,560],base:baseHeight,step:5,
     cut:(x,z,h)=>{const r=riverAt(x,z);return r.distance<18?Math.min(h,r.height-4):h;},
-    color:(x,z,y)=>y>70?0x7e8d6b:y<10?0x768577:0x66835c});
+    color:(x,z,y)=>y>70?meadow(x,z,0x86bf5c):y<10?0x6fae72:meadow(x,z,0x62b35a,{bloom:0xff6a4a})});
   group.add(world.land,waterGrid(T,world,{bounds:[-130,-100,220,560],sample:(x,z)=>({...riverAt(x,z),visible:riverAt(x,z).distance<43}),name:'salto-outlet'}));
   group.add(crossing(T,p=>riverAt(p.x,p.z).distance<42,{name:'salto-outlet-bridge',color:0xa99576}));
   group.add(hollowGallery(T,{...GALLERY,openSide:-1,width:27,height:34,name:'salto-gallery'}));

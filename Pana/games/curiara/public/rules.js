@@ -1,14 +1,20 @@
 // Curiara race simulation. Pure: the host runs it, guests render snapshots.
 // Boats move with paddle thrust relative to the water plus the river's
 // current; the river (river.js) owns banks, levels and currents.
-import { paddleState, stroke, hold, rudder, sync, step as pull, PADDLE } from '/engine/paddle.js';
-import { RIVER, TONINA, clamp, angle } from './river.js';
+import { paddleState, stroke, hold, rudder, sync, step as pull, PADDLE } from '/engine/play/paddle.js';
+import { FIELDS, cleanOptions } from './options.js';
+import { canMoveSeats } from '../../../engine/play/seat-rules.js';
+import { applyRoomOptions } from '../../../engine/room-options-rules.js';
+import { configuredRiver, RIVER, TONINA, clamp, angle } from './river.js';
 
-export const FORMATS = { todos: { boats: 8, seats: 1 }, parejas: { boats: 4, seats: 2 } };
+export const FORMATS = { todos: { boats: 8, seats: 1 }, parejas: { boats: 4, seats: 2 }, duos: { boats: 2, seats: 2 }, triples: { boats: 3, seats: 2 } };
 export const CAPSIZE = 1.8;
 export const PHOTO = Object.freeze({ within: 7, gap: 2.2, real: 1.6, speed: .3 });
 export const SALPICON = Object.freeze({ cooldown: 4, reach: 2.5, shove: 2.6, tip: 12, spray: 1.3 });
 export const CAIMAN = Object.freeze({ reach: 3, tip: 40, jolt: 2.2 });
+// Remo automático: W held strokes steadily for you, a little below a good
+// rhythm, so learning the ring still pays.
+export const AUTO = Object.freeze({ gap: .42, power: 1.05 });
 export const BOAT = Object.freeze({ drag: .6, grip: 5, yawDamp: 2.6, brake: 2.6, reverse: -1.1, half: .62, length: 2.9, rudderSpeed: 3 });
 export const COLORS = ['#e2683c', '#2f9e8f', '#e6b33a', '#7a5bc4', '#d64f7a', '#4d8fd6', '#8fb84a', '#c9824a'];
 const BOT_NAMES = ['Yanomami', 'Tuki', 'Arekuna', 'Wayuu', 'Chamán', 'Kerepakupai', 'Piaroa', 'Maipure', 'Yekuana', 'Sanema', 'Baré', 'Curripaco'];
@@ -17,7 +23,7 @@ const START = { rows: [26, 18.5, 11, 3.5], offsets: [-2.1, 2.1] };
 
 export function cleanInput(input = {}) {
   const strokes = Array.isArray(input.strokes) ? input.strokes.slice(-8).filter(s => Array.isArray(s) && Number.isFinite(s[0]) && Number.isFinite(s[2])).map(([seq, side, t]) => [seq | 0, side < 0 ? -1 : 1, +t]) : [];
-  return { strokes, back: !!input.back, steer: clamp(Math.sign(Number(input.steer) || 0), -1, 1), splash: Number(input.splash) | 0 };
+  return { strokes, back: !!input.back, steer: clamp(Math.sign(Number(input.steer) || 0), -1, 1), splash: Number(input.splash) | 0, auto: !!input.auto };
 }
 
 // Seeded so a race replays the same way on any host.
@@ -25,12 +31,21 @@ export function seeded(seed) { let a = seed >>> 0 || 1; return () => { a = (a + 
 
 export class Race {
   constructor(river = RIVER) {
-    this.river = river;
+    this.river = river; this.options = cleanOptions();
     Object.assign(this, { phase: 'lobby', format: 'todos', time: 0, countdown: 3, players: [], boats: [], finishGrace: null, raceId: 0, seed: 1, snaps: {} });
   }
+  configure(patch = {}) {
+    if (!['lobby','finished'].includes(this.phase)) return false;
+    const next = applyRoomOptions(FIELDS,this.options,patch); if (!next) return false;
+    const changed = next.river !== this.options.river || next.falls !== this.options.falls || next.items !== this.options.items;
+    this.options = next; this.setFormat(next.crew);
+    if (changed) { this.river = configuredRiver(next); }
+    this.boats = []; return true;
+  }
+  canStart() { const f = FORMATS[this.format]; return this.players.filter(p => !p.bot).length <= f.boats * f.seats; }
   addPlayer(id, name, avatar = {}, seat = null) {
     let p = this.players.find(p => p.id === id);
-    if (p) { p.avatar = avatar; if (seat !== undefined) this.chooseSeat(id, seat); return p; }
+    if (p) { p.avatar = avatar; p.name = String(name || p.name).slice(0, 16); return p; }
     // Late arrivals watch until the next start so no one gets a shortened race.
     p = { id, name: String(name || 'pana').slice(0, 16), avatar, bot: false, seat: null, spectator: this.phase !== 'lobby' && this.phase !== 'finished' };
     this.players.push(p);
@@ -46,13 +61,14 @@ export class Race {
     Object.assign(c, { bot: true, id: `bot-${b.id}-${c.seat}`, brain: this.brain(c.seat + Number(b.id.slice(1)) * 2) });
     c.brain.seq = b.seen[c.seat] ?? 0;
   }
-  setFormat(format) { if (FORMATS[format] && (this.phase === 'lobby' || this.phase === 'finished')) { this.format = format; for (const p of this.players) p.seat = null; } }
+  setFormat(format) { if (FORMATS[format] && (this.phase === 'lobby' || this.phase === 'finished')) { const changed = this.format !== format; this.format = format; this.options.crew = format; if(changed) for (const p of this.players) p.seat = null; } }
   // Parejas seat picker: {boat: 0–3, pos: 0 proa | 1 popa}, or null for any seat.
   chooseSeat(id, seat) {
-    const p = this.players.find(p => p.id === id); if (!p) return false;
+    const p = this.players.find(p => p.id === id); if (!p || !['lobby','finished'].includes(this.phase)) return false;
     if (!seat) { p.seat = null; return true; }
-    const boat = seat.boat | 0, pos = seat.pos ? 1 : 0;
-    if (boat < 0 || boat >= FORMATS.parejas.boats) return false;
+    if(!Number.isInteger(seat.boat)||![0,1].includes(seat.pos))return false;
+    const boat = seat.boat, pos = seat.pos;
+    if (boat < 0 || boat >= FORMATS[this.format].boats) return false;
     if (this.players.some(o => o !== p && o.seat && o.seat.boat === boat && o.seat.pos === pos)) return false;
     p.seat = { boat, pos }; return true;
   }
@@ -62,16 +78,17 @@ export class Race {
     return { skill: .66 + .29 * r(), phase: r() * 6.28, next: .2 + r() * .5, igapo: r() < .35, lane: r(), seq: 0, r: Math.floor(r() * 1e9) };
   }
   // Which pana sits where. Chosen seats first, then join order, then bots.
-  crews() {
-    const { boats, seats } = FORMATS[this.format], humans = this.players.filter(p => !p.bot);
-    const grid = Array.from({ length: boats }, () => Array(seats).fill(null));
-    if (seats === 2) for (const p of humans) if (p.seat && !grid[p.seat.boat][p.seat.pos]) grid[p.seat.boat][p.seat.pos] = p;
-    const free = humans.filter(p => !grid.flat().includes(p));
-    // Fill canoe by canoe so two friends without a pick share one.
-    for (let b = 0; b < boats && free.length; b++) for (let s = 0; s < seats && free.length; s++) if (!grid[b][s]) grid[b][s] = free.shift();
-    return grid;
+  crews() { return crewGrid(this.players, this.format); }
+  moveSeat(actorId, from, to, hostId) {
+    if (!['lobby', 'finished'].includes(this.phase) || FORMATS[this.format].seats !== 2) return false;
+    const grid = this.crews(), flat = grid.flat();
+    if (!canMoveSeats(flat, from, to, actorId, hostId) || !this.players.some(p => p.id === actorId)) return false;
+    [flat[from], flat[to]] = [flat[to], flat[from]];
+    flat.forEach((p, index) => { if (p) p.seat = { boat: Math.floor(index / 2), pos: index % 2 }; });
+    return true;
   }
   start(bots = true, seed = Math.floor(Math.random() * 1e9)) {
+    if(!this.canStart())return false;
     this.seed = seed;
     const grid = this.crews(), seats = FORMATS[this.format].seats;
     let botIndex = 0;
@@ -140,6 +157,7 @@ export class Race {
     if (w && s > w.s - 28 && s < w.s + 10) line = Math.min(line, w.offset - w.r - (k.skill > .86 ? .2 : 2.8));
     // And they give the caimanes a wide berth (the clumsy ones forget).
     if (k.skill > .75) for (const log of river.logs) if (log.caiman && log.s > s - 6 && log.s < s + 14 && Math.sign(line) === log.side) line = -log.side * 1.2;
+    if (k.skill > .72 && this.options.items) for (const c of river.caimanesAt(this.time)) if (c.s > s - 6 && c.s < s + 20 && Math.abs(line - c.offset) < 4) line = c.offset - c.dir * 4.5;
     return clamp(line, -half, half);
   }
   update(dt, inputs = new Map()) {
@@ -175,13 +193,21 @@ export class Race {
     const fresh = (c, list) => { const last = b.seen[c.seat] ?? -1, out = list.filter(s => s[0] > last); if (list.length) b.seen[c.seat] = Math.max(last, ...list.map(s => s[0])); return out.sort((x, y) => x[2] - y[2]); };
     const front = b.crew[0], back = two ? b.crew[1] : front, fi = read(front), bi = two ? read(back) : fi;
     if (b.finish !== null || b.capsized > 0) { b.seen[0] = Math.max(b.seen[0] ?? -1, ...fi.strokes.map(s => s[0])); if (two) b.seen[1] = Math.max(b.seen[1] ?? -1, ...bi.strokes.map(s => s[0])); hold(P, false); rudder(P, 0); return; }
-    const pivot = two && back.empty ? fi.steer : bi.steer;
+    const pivot = two && back.empty ? fi.steer : bi.steer, auto = fi.auto && !front.bot && !fi.back;
     hold(P, bi.back || (two && back.empty && fi.back), pivot);
-    rudder(P, two && !back.empty && !bi.back ? bi.steer : 0);
+    // With the remo automático, the front pana's A/D are a rudder.
+    rudder(P, two && !back.empty && !bi.back ? bi.steer : auto ? fi.steer : 0);
     for (const [, side, t] of fresh(front, fi.strokes)) {
-      const q = stroke(P, side, Math.min(t, this.time));
+      const at = Math.min(t, this.time);
+      if(this.options.paddling === 'tap' && P.last != null && at-P.last < .25)continue;
+      const q = stroke(P, side, at);
+      if(this.options.paddling === 'tap' && q !== 'ciar'){P.pulls.at(-1)[0]=PADDLE.impulse;P.quality='bueno';P.power=1;}
       if (q !== 'ciar') b.strokes++;
-      if (q === 'remazo') b.remazos++;
+      if (q === 'remazo' && this.options.paddling === 'rhythm') b.remazos++;
+    }
+    if (auto && !P.back && (P.last == null || this.time - P.last >= AUTO.gap)) {
+      const q = stroke(P, -(P.side || 1), this.time);
+      if (q !== 'ciar') { P.pulls.at(-1)[0] = PADDLE.impulse * AUTO.power; Object.assign(P, { quality: 'bueno', power: AUTO.power, streak: 0 }); b.strokes++; }
     }
     if (two) for (const [, , t] of fresh(back, bi.strokes)) sync(P, Math.min(t, this.time));
     b.splashWant = (two ? bi.splash : fi.splash) > (b.seen.splash ?? 0);
@@ -214,12 +240,15 @@ export class Race {
     b.w *= Math.exp(-BOAT.yawDamp * dt);
     b.lat *= Math.exp(-BOAT.grip * dt);
     const where = river.locate(b.x, b.z, b), flow = river.currentAt(b.x, b.z, where), drift = b.capsized > 0 ? .7 : 1;
+    const currentScale = {normal:1,slow:.6,hard:1.45}[this.options.current];
+    flow.x*=currentScale;flow.z*=currentScale;flow.swirl*=this.options.rapids==='easy'?.45:1;
+    if(this.options.steeringHelp && !b.capsized && !b.paddle.back && !b.paddle.rudder && Math.abs(angle(where.h-b.h))<1.4)b.h=angle(b.h+clamp(angle(where.h-b.h),-dt*.7,dt*.7));
     const turn = b.capsized > 0 ? 0 : out.turn - out.rudder * PADDLE.rudder * clamp(Math.abs(b.v) / BOAT.rudderSpeed, .3, 1.2);
     b.h = angle(b.h + (b.w + turn + flow.swirl) * dt);
     const fx = Math.sin(b.h), fz = Math.cos(b.h);
     // Toninas' wake: a two-second strip of fast water.
     let boost = 0;
-    if (where.channel === 'main') for (const pod of river.toninasAt(this.time)) if (pod.wake && where.s > pod.s - 2 && where.s < pod.s + TONINA.length && Math.abs(where.offset - pod.offset) < TONINA.width) boost = TONINA.push;
+    if (this.options.items && where.channel === 'main') for (const pod of river.toninasAt(this.time)) if (pod.wake && where.s > pod.s - 2 && where.s < pod.s + TONINA.length && Math.abs(where.offset - pod.offset) < TONINA.width) boost = TONINA.push;
     if (boost && !b.boost) b.toninas = (b.toninas || 0) + 1;
     b.boost = boost;
     const ux = Math.sin(where.h), uz = Math.cos(where.h);
@@ -264,6 +293,8 @@ export class Race {
   }
   tip(b, amount, cause) {
     if (b.capsized > 0 || b.grace > 0 || b.finish !== null || !(amount > 0)) return;
+    if(['raudal','remolino'].includes(cause)&&this.options.rapids==='easy')amount*=.35;
+    if(['choque','roca'].includes(cause)&&this.options.collisions==='soft')amount*=.3;
     b.tip = Math.min(100, b.tip + amount); b.tipCause = cause;
     if (b.tip >= 100) {
       Object.assign(b, { capsized: CAPSIZE, capsizes: b.capsizes + 1, v: 0, w: 0, tip: 100 });
@@ -296,7 +327,7 @@ export class Race {
     let contact = false;
     if (b.finish === null) {
       // Rocks and the igapó trunks.
-      for (const list of [river.rocks, river.snags]) for (const r of list) if (Math.abs(r.x - b.x) < 5 && Math.abs(r.z - b.z) < 5) {
+      for (const list of this.options.items ? [river.rocks, river.snags] : []) for (const r of list) if (Math.abs(r.x - b.x) < 5 && Math.abs(r.z - b.z) < 5) {
         const hit = this.bump(b, r.x, r.z, r.r);
         if (hit > 0) contact = true;
         // Only a fresh knock rocks the canoe; leaning on a rock does not.
@@ -307,20 +338,24 @@ export class Race {
       if (b.pinned > .5) { const along = Math.abs(angle(where.h - b.h)) < Math.PI / 2 ? where.h : where.h + Math.PI; b.h = angle(b.h + clamp(angle(along - b.h), -1.6 * dt, 1.6 * dt)); }
       // The remolino's eye spins hard enough to roll you.
       if (b.whirl > .7) this.tip(b, 18 * dt, 'remolino');
-      // Caimanes snap at canoes passing close; the logs just lie there.
-      if (where.channel === 'main') for (const log of river.logs) if (log.caiman && Math.abs(log.s - where.s) < 6) {
-        if (this.time - (this.snaps[log.id] ?? -99) < 4) continue;
-        if (this.hull(b).some(c => Math.hypot(c.x - log.x, c.z - log.z) < CAIMAN.reach)) {
-          this.snaps[log.id] = this.time;
-          const away = -log.side;
-          b.lat += away * CAIMAN.jolt; b.v *= .6; b.jolt = .6; b.lastHitSide = -away; b.bitten = (b.bitten || 0) + 1; b.caimanAt = this.time;
-          this.tip(b, CAIMAN.tip, 'caimán');
-        }
+      // Caimanes snap at canoes passing close, on the banks and swimming
+      // across the open river; the logs just lie there.
+      if (this.options.items && where.channel === 'main') {
+        for (const log of river.logs) if (log.caiman && Math.abs(log.s - where.s) < 6) this.bite(b, log, -log.side);
+        for (const c of river.caimanesAt(this.time)) if (Math.abs(c.s - where.s) < 8) this.bite(b, c, Math.sign(where.offset - c.offset) || 1);
       }
+      // Channel buoys only nudge the hull aside.
+      for (const r of river.buoys) if (Math.abs(r.x - b.x) < 4 && Math.abs(r.z - b.z) < 4) this.bump(b, r.x, r.z, r.r);
     }
     // Straight, steady paddling settles the canoe.
     const steady = b.paddle.last != null && this.time - b.paddle.last < .9 && !['giro', 'chapoteo'].includes(b.paddle.quality) && Math.abs(b.w) < .3;
     if (b.capsized === 0 && b.tip < 100) b.tip = Math.max(0, b.tip - (steady ? 14 : 4) * dt);
+  }
+  bite(b, c, away) {
+    if (this.time - (this.snaps[c.id] ?? -99) < 4 || !this.hull(b).some(p => Math.hypot(p.x - c.x, p.z - c.z) < CAIMAN.reach)) return;
+    this.snaps[c.id] = this.time;
+    b.lat += away * CAIMAN.jolt; b.v *= .6; b.jolt = .6; b.lastHitSide = -away; b.bitten = (b.bitten || 0) + 1; b.caimanAt = this.time;
+    this.tip(b, CAIMAN.tip, 'caimán');
   }
   // Canoe against canoe: circles with mass. Bumping someone is fair play.
   collide() {
@@ -336,7 +371,7 @@ export class Race {
         A.x -= nx * gap * wa; A.z -= nz * gap * wa; B.x += nx * gap * wb; B.z += nz * gap * wb;
         const closing = (A.gx - B.gx) * nx + (A.gz - B.gz) * nz;
         if (closing <= 0) continue;
-        const impulse = closing * 1.3;
+        const impulse = closing * (this.options.collisions==='soft'?.45:1.3);
         for (const [boat, sign, share] of [[A, -1, wa], [B, 1, wb]]) {
           const fx = Math.sin(boat.h), fz = Math.cos(boat.h), dvx = sign * nx * impulse * share, dvz = sign * nz * impulse * share;
           boat.v += dvx * fx + dvz * fz; boat.lat += -dvx * fz + dvz * fx; boat.gx += dvx; boat.gz += dvz;
@@ -351,7 +386,7 @@ export class Race {
   }
   // ¡Salpicón!: a sideways paddle slap at the nearest canoe within reach.
   splash(b) {
-    if (!b.splashWant || b.splashCd > 0 || b.capsized > 0 || b.finish !== null) return;
+    if (!this.options.items || !b.splashWant || b.splashCd > 0 || b.capsized > 0 || b.finish !== null) return;
     b.splashWant = false; b.splashCd = SALPICON.cooldown; b.splashes++; b.splashAt = this.time;
     let target = null, best = Infinity;
     for (const o of this.boats) {
@@ -380,11 +415,13 @@ export class Race {
   }
   boatOf(id) { return this.boats.find(b => b.crew.some(c => c.id === id)); }
   snapshot() {
-    return JSON.parse(JSON.stringify({ phase: this.phase, format: this.format, time: this.time, countdown: this.countdown, players: this.players, boats: this.boats, finishGrace: this.finishGrace, raceId: this.raceId, seed: this.seed, snaps: this.snaps, photo: this.photo ?? null, slowmo: this.slowmo ?? 0 }));
+    return JSON.parse(JSON.stringify({ options: this.options, phase: this.phase, format: this.format, time: this.time, countdown: this.countdown, players: this.players, boats: this.boats, finishGrace: this.finishGrace, raceId: this.raceId, seed: this.seed, snaps: this.snaps, photo: this.photo ?? null, slowmo: this.slowmo ?? 0 }));
   }
   static restore(snapshot, members, river = RIVER) {
     const race = new Race(river);
     Object.assign(race, JSON.parse(JSON.stringify(snapshot)));
+    race.options=cleanOptions({...race.options,crew:race.format});
+    if(river===RIVER)race.river=configuredRiver(race.options);
     race.players = race.players.filter(p => p.bot || members.has(p.id));
     for (const b of race.boats) for (const c of b.crew) if (!c.bot && !members.has(c.id)) race.takeSeat(b, c);
     return race;
@@ -393,4 +430,14 @@ export class Race {
 
 export function standings(state) {
   return state.boats.slice().sort((a, b) => (a.finish ?? Infinity) - (b.finish ?? Infinity) || b.progress - a.progress);
+}
+
+// The lobby and start use exactly the same effective assignments, including automatic seats.
+export function crewGrid(players, format) {
+  const { boats, seats } = FORMATS[format], humans = players.filter(p => !p.bot);
+  const grid = Array.from({ length: boats }, () => Array(seats).fill(null));
+  if (seats === 2) for (const p of humans) if (p.seat && grid[p.seat.boat] && !grid[p.seat.boat][p.seat.pos]) grid[p.seat.boat][p.seat.pos] = p;
+  const free = humans.filter(p => !grid.flat().includes(p));
+  for (let b = 0; b < boats && free.length; b++) for (let pos = 0; pos < seats && free.length; pos++) if (!grid[b][pos]) grid[b][pos] = free.shift();
+  return grid;
 }

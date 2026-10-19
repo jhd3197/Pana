@@ -1,6 +1,6 @@
 # Derrape Grand Prix
 
-Implementation note for `docs/plans/56_derrape-grand-prix-and-water-worlds.md`.
+Implementation notes for the four-race Grand Prix cups and their water worlds.
 
 ## Standalone circuit additions
 
@@ -239,8 +239,7 @@ on all four ledgers and repeated final rendering did not pay twice.
 Manual-render test mode drives the actual steering, car and checkpoint simulation
 at 60 Hz and sends real poses; it is functional proof, not a frame-rate measure.
 The expanded host-loss/stale-message scenario subsequently passed in the final
-two-client suite (`art/grand-prix/online-final.log`, 201 seconds). The quick-race
-suite also passed (`quick-final.log`, 170 seconds). Its two independent browser
+two-client suite (201 seconds). The quick-race suite also passed (170 seconds). Its two independent browser
 contexts now warm assets before testing the shared 15-second party-leader join
 window; cold CDN/model load time must not silently change that test's premise.
 
@@ -292,20 +291,16 @@ all four Agua stages with eight independent browser contexts, no bots, real
 steering/checkpoint simulation and identical accepted ledgers on every client.
 The four ledgers are in `art/grand-prix/8-human-cups.json`; the five-suite release
 batch, including model architecture, water assets, presentation and the existing
-Venezuela worlds, passed in `release-browser.log`.
+Venezuela worlds, passed.
 
 The full Derrape sweep and focused repairs cover all 30 current browser suites.
-`derrape-regression.log` preserves the initial failures instead of erasing them;
-their passing reruns are `cup-failures-fixed.log`, `online-final.log`,
-`quick-final.log`, `items-final4.log` and `release-browser.log`. Added map-control,
-crossing, lifetime, presentation and car-batching proofs have their own logs.
-The repository release check passes 260 tests (`release-final-check.log`).
-After car batching, `render-release-regression.log` rechecks lifetime, the
-two-client championship, results, items and loading. Its shop failure was fixed
-by retaining the primary paint material; `paint-batching-final.log` verifies
-both all eight car appearances and the unchanged shop test. Galope's corrected
-Studio URL is covered by `galope-recheck.log` (the riding rerun is in
-`input-recheck.log`).
+The initial failures (cup failures, online, quick race, items) were fixed and
+rerun, not skipped; map-control, crossing, lifetime, presentation and
+car-batching proofs were added. The repository release check passed 260 tests.
+After car batching, lifetime, the two-client championship, results, items and
+loading were rechecked. Its shop failure was fixed by retaining the primary
+paint material, verified with all eight car appearances and the unchanged shop
+test. Galope's corrected Studio URL and riding input were rechecked too.
 
 Presentation fixtures deliberately exercise duplicate long names, a points tie,
 all four finish classifications, an absent champion's fallback portrait and

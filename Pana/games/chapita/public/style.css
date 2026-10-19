@@ -1,0 +1,93 @@
+/* Chapita: the street fills the window under a barrio scoreboard; the
+   pitcher's, batter's and fielder's controls sit at the bottom. The game's own
+   colours are named custom properties on this rule (--pk-game matches
+   game.json); --chapita-away and --chapita-home are the two franelas. */
+body { --pk-game: #e8453c; --chapita-away: #e8453c; --chapita-home: #2f7fe0; --chapita-chalk: #fffaf0;
+  margin: 0; overflow: hidden; background: var(--pk-night); color: var(--pk-text); font-family: var(--pk-sans); }
+#world { position: fixed; inset: 0; width: 100%; height: 100%; display: block; touch-action: manipulation; }
+.topbar { position: fixed; top: 16px; left: 20px; right: 20px; display: flex; align-items: center; justify-content: space-between; z-index: 4; }
+#game-nav { display: flex; gap: 8px; }
+#lobby { position: fixed; left: 24px; top: 84px; bottom: 32px; width: min(360px, calc(100vw - 48px)); overflow-y: auto; z-index: 3; }
+#hud [hidden], .connection [hidden] { display: none !important; }
+.lobby-me { display: flex; flex-wrap: wrap; gap: 8px; }
+#hand[aria-pressed="true"] { border-color: var(--pk-yellow); color: var(--pk-yellow); }
+.team-tag { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 2px; background: var(--team); flex: none; }
+
+/* The scoreboard: a chalk board with both barrios, the inning, bases and count. */
+.scoreboard { position: fixed; left: 50%; top: 14px; transform: translateX(-50%); z-index: 3; display: grid; grid-template-columns: auto auto; gap: 14px; align-items: center; padding: 8px 14px; }
+.score-teams { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; min-width: 170px; }
+.score-teams li { display: grid; grid-template-columns: 10px 1fr auto; gap: 8px; align-items: center; font-weight: 900; font-size: 14px; }
+.score-teams li i { width: 10px; height: 10px; border-radius: 50%; background: var(--team); }
+.score-teams li.batting { color: var(--pk-yellow); }
+.score-teams b { font: 400 22px/1 var(--pk-display); min-width: 2ch; text-align: right; }
+.score-side { display: grid; grid-template-columns: auto auto; grid-template-rows: auto auto; gap: 4px 12px; align-items: center; }
+.inning { font: 400 18px/1 var(--pk-display); color: var(--pk-yellow); }
+.diamond { grid-row: span 2; position: relative; width: 44px; height: 44px; }
+.diamond i { position: absolute; width: 14px; height: 14px; transform: rotate(45deg); border: 2px solid var(--pk-line-strong); background: var(--pk-deep); }
+.diamond i.on { background: var(--pk-yellow); border-color: var(--pk-yellow-edge); }
+.diamond [data-base="1"] { left: 14px; top: 2px; } .diamond [data-base="0"] { right: 2px; top: 16px; } .diamond [data-base="2"] { left: 2px; top: 16px; }
+.count { display: flex; gap: 5px; align-items: center; font-size: 11px; font-weight: 900; color: var(--pk-muted); }
+.count .pk-pips { gap: 3px; margin-right: 4px; }
+.count .pk-pips > i { flex: none; width: 10px; min-width: 0; height: 10px; border-radius: 50%; }
+.count .pk-pips > i.on { background: var(--pk-coral); }
+#balls > i.on { background: var(--pk-teal); }
+
+.house-rules { position: fixed; left: 16px; top: 74px; z-index: 3; margin: 0; padding: 0; list-style: none; display: grid; gap: 6px; max-width: 240px; }
+.house-rules li { padding: 5px 10px; border-radius: var(--pk-r-sm); background: var(--pk-hud); border: 1px solid var(--pk-line); font-size: 12px; font-weight: 800; }
+.house-rules li b { color: var(--pk-yellow); }
+.matchup { position: fixed; left: 50%; top: 118px; transform: translateX(-50%); z-index: 3; margin: 0; padding: 6px 14px 5px; border: 3px solid var(--pk-bubble-ink); border-radius: 16px;
+  background: var(--pk-bubble-paper); color: var(--pk-bubble-ink); font: 800 14px/1.25 var(--pk-sans); text-align: center; max-width: min(560px, calc(100vw - 32px)); box-shadow: 0 4px 0 rgba(0, 0, 0, .25); }
+.matchup:empty { display: none; }
+
+/* The big shout: ¡Jonrón!, ¡Chapazo!, ¡Ni a la acera llegó! */
+.shout { position: fixed; left: 50%; top: 40%; transform: translate(-50%, -50%); z-index: 5; pointer-events: none; text-align: center; max-width: calc(100vw - 32px);
+  font: 400 clamp(30px, 6vw, 64px)/1.05 var(--pk-display); color: var(--chapita-chalk); -webkit-text-stroke: 3px var(--pk-bubble-ink); text-shadow: 0 6px 0 rgba(0, 0, 0, .3); }
+.shout[data-tone="gold"] { color: var(--pk-yellow); }
+.shout[data-tone="red"] { color: var(--pk-coral); }
+.shout.pop { animation: chapita-pop 1.4s ease-out both; }
+@keyframes chapita-pop { 0% { transform: translate(-50%, -50%) scale(.4); opacity: 0; } 12% { transform: translate(-50%, -50%) scale(1.12); opacity: 1; } 22% { transform: translate(-50%, -50%) scale(1); } 80% { opacity: 1; } 100% { opacity: 0; transform: translate(-50%, -60%) scale(1); } }
+
+/* Bottom panels: pitcher, batter, fielder. */
+.action-panel { position: fixed; left: 50%; bottom: 34px; transform: translateX(-50%); width: min(600px, calc(100vw - 24px)); box-sizing: border-box; display: grid; gap: 10px; padding: 12px 14px; z-index: 3; }
+.panel-head { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
+.panel-head h2 { margin: 0; }
+.panel-head span { white-space: nowrap; }
+.clock { font-size: 20px; color: var(--pk-yellow); }
+.clock.hurry { color: var(--pk-coral); }
+.pitch-grid { display: grid; grid-template-columns: 1fr auto; gap: 12px; align-items: center; }
+.pitch-choices { display: grid; gap: 6px; }
+.pitch-choices .pk-seg > button, #heights > button { padding: 6px 10px; }
+.aim { display: grid; grid-template-columns: repeat(3, 34px); grid-template-rows: repeat(3, 34px); gap: 3px; padding: 5px; border-radius: var(--pk-r); background: var(--pk-deep); border: 2px dashed var(--chapita-chalk); }
+.aim button { border: 0; border-radius: 6px; background: var(--pk-raised); cursor: pointer; padding: 0; }
+.aim button[aria-pressed="true"] { background: var(--pk-yellow); box-shadow: inset 0 -3px 0 var(--pk-yellow-edge); }
+/* The batter must see the plate: the bat controls sit in the corner, thumb-side. */
+#bat-panel { left: auto; right: 16px; transform: none; width: min(300px, calc(100vw - 32px)); }
+#heights { width: 100%; box-sizing: border-box; justify-content: center; }
+.hint { margin: 0; color: var(--pk-muted); font-size: 12px; }
+#swing { font-size: 22px; }
+
+.catch-panel { position: fixed; left: 50%; bottom: 40px; transform: translateX(-50%); z-index: 3; display: grid; justify-items: center; gap: 10px; }
+.catch-ring { position: relative; width: 96px; height: 96px; border-radius: 50%; border: 6px solid var(--pk-yellow); box-sizing: border-box; background: rgba(0, 0, 0, .25); }
+.catch-ring i { position: absolute; left: 50%; top: 50%; width: 96px; height: 96px; margin: -48px 0 0 -48px; border-radius: 50%; border: 4px solid var(--chapita-chalk); box-sizing: border-box; transform: scale(var(--closing, 2)); }
+
+.event { position: fixed; left: 50%; bottom: 8px; transform: translateX(-50%); margin: 0; z-index: 3; font-size: 12px; color: var(--pk-muted); }
+.connection { position: fixed; right: 16px; bottom: 6px; display: flex; gap: 8px; align-items: center; font-size: 12px; z-index: 3; }
+.titles .pk-row { background: var(--pk-deep); }
+
+@media (max-width: 720px), (max-height: 520px) {
+  .scoreboard { top: 62px; padding: 6px 10px; gap: 10px; }
+  .score-teams { min-width: 130px; }
+  .house-rules { display: none; }
+  .matchup { top: 150px; font-size: 12px; }
+  .action-panel { bottom: 12px; padding: 10px; gap: 8px; }
+  .pitch-choices .pk-seg > button { padding: 5px 8px; font-size: 12px; min-height: 30px; }
+  .aim { grid-template-columns: repeat(3, 28px); grid-template-rows: repeat(3, 28px); }
+  .hint { display: none; }
+  #bat-panel { width: 230px; right: 10px; bottom: 10px; padding: 8px; gap: 6px; }
+  #bat-panel .panel-head h2 { font-size: 14px; }
+  #heights > button { padding: 4px 8px; min-height: 30px; font-size: 12px; }
+  #swing { font-size: 18px; min-height: 56px; }
+  #pitch-panel { left: auto; right: 10px; transform: none; width: min(470px, calc(100vw - 20px)); }
+  [data-pana-hint] { display: none; }
+}
+#results .pk-results-card { max-height: calc(100dvh - 32px); overflow-y: auto; box-sizing: border-box; }

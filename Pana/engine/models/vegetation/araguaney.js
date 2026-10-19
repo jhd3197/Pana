@@ -1,25 +1,45 @@
-import * as THREE from 'three';
-import { M, mesh, rng } from '/engine/models/core/primitives.js';
-import { bark, TAU, finish, stem, leaf, cushion } from '/engine/models/vegetation/plant-kit.js';
+import { growTree, ellipsoid, treeDetail } from '/engine/models/vegetation/tree-kit.js';
 
-export function araguaney({seed=1}={}) {
-  const r=rng(seed),g=new THREE.Group(),h=3.6+r()*0.5;
-  stem(g,[[0,0,0],[0.09,1.6,0.04],[-0.12,h,0]],0.36,0.12,bark,12);
-  for(let i=0;i<5;i++) {
-    const a=i*TAU/5+0.3,reach=1.7+r()*0.7,x=Math.cos(a)*reach,z=Math.sin(a)*reach,y=h+0.5+r()*0.6;
-    stem(g,[[0,1.4,0],[x*0.25,h-0.55,z*0.25],[x,y,z]],0.19,0.045,bark);
-    cushion(g,[x,y+0.23,z],[1.3+r()*0.25,0.75,1.12],[0xeec338,0xf7cf42,0xe3b42e][i%3],seed+i);
-    for(let k=0;k<8;k++) {
-      const angle=k*TAU/8+r()*0.2,flower=new THREE.Group();
-      cushion(g,[x+Math.cos(angle)*1.0,y+0.16+r()*0.15,z+Math.sin(angle)*0.91],
-        [0.4,0.32,0.38],k%2?0xf4ce45:0xeec338,seed+k,true);
-      flower.position.set(x+Math.cos(angle)*1.08,y+0.62+r()*0.25,z+Math.sin(angle)*0.97);
-      flower.rotation.set(Math.sin(angle)*0.5,r()*TAU,Math.cos(angle)*0.5);
-      for(let j=0;j<5;j++)leaf(flower,0.27,0.15,[0,0,0],[0,j*TAU/5,0.16],0xffdc4c,0.08,4);
-      const core=mesh(new THREE.ConeGeometry(0.085,0.08,7),M(0xcf8e22,{roughness:1}),0,0.04,0);flower.add(core);g.add(flower);
-    }
-    for(let k=0;k<3;k++)leaf(g,0.5,0.13,[x,y-0.27,z],[0.1,a+k*0.8,0.24],0x5d873f);
-  }
-  cushion(g,[-0.1,h+1,0],[1.65,0.8,1.48],0xf5ce39,seed+16);
-  return finish(g,'araguaney');
+// The Tabebuia family in bloom. Araguaney, the national tree: a twisted trunk
+// opening into a cup-shaped crown, all gold. Apamate: taller and straighter,
+// an oval crown of pink flowers mixed with leaves. Bucare shares the apamate
+// form in coral. `flowers: false` shows the green tree.
+const ARAGUANEY = {
+  name: 'araguaney',
+  height: 7.5,
+  skeleton: s => ({
+    trunk: 2.6 * s, trunkR: 0.25 * s, trunkTaper: 0.55, clear: 0.62, lean: 0.3, trunkWobble: 0.14, depth: 3, kids: [4, 3, 3],
+    angle: [0.62, 0.62, 0.6], lenRatio: [1.5, 0.6, 0.56], radRatio: [0.65, 0.58, 0.55], upturn: [0, 0.05, 0.03, 0.02],
+    wobble: 0.3, taper: 0.35, envelope: ellipsoid(0, 5.3 * s, 0, 3.5 * s, 2.5 * s, 3.5 * s),
+  }),
+  bark: { bark: 0x6f5a46, barkLight: 0x9a8670, ridges: 6, ridgeTwist: 2.4 },
+  foliage: { kind: 'leaf', size: 0.95, tints: [0x5f9a3e, 0x6fa846, 0x4f8a38], blades: 14, bladeLen: 0.6, bladeWidth: 0.26, along: 2, alongFrom: 2 },
+  blossom: { kind: 'flower', size: 0.9, flowers: [0xf7c71f, 0xffd83a, 0xf0b30e], throat: 0xc98410, blooms: 24, petalBlades: 16, mixLeaves: 0.12 },
+  petals: { color: 0xf5c21e, radius: 3.6 },
+};
+const APAMATE = {
+  name: 'apamate',
+  height: 9.5,
+  skeleton: s => ({
+    trunk: 3.4 * s, trunkR: 0.3 * s, trunkTaper: 0.55, clear: 0.6, lean: 0.12, depth: 3, kids: [4, 3, 3],
+    angle: [0.55, 0.66, 0.62], lenRatio: [1.25, 0.6, 0.56], radRatio: [0.62, 0.58, 0.55], upturn: [0, 0.045, 0.03, 0.02],
+    wobble: 0.24, taper: 0.35, envelope: ellipsoid(0, 6.9 * s, 0, 3 * s, 3.1 * s, 3 * s),
+  }),
+  bark: { bark: 0x6a5c4c, barkLight: 0x948572, ridges: 7 },
+  foliage: { kind: 'leaf', size: 1, tints: [0x4f8e3c, 0x5e9c42, 0x3f7d36], blades: 14, bladeLen: 0.62, bladeWidth: 0.24, along: 2, alongFrom: 2 },
+  blossom: { kind: 'flower', size: 0.9, flowers: [0xf09bd0, 0xe47cc0, 0xf9c2e2], throat: 0xa54e8e, blooms: 22, petalBlades: 16, mixLeaves: 0.45 },
+  petals: { color: 0xee8fca, radius: 3.4 },
+};
+const BUCARE = {
+  ...APAMATE, name: 'bucare',
+  blossom: { ...APAMATE.blossom, flowers: [0xf26a3c, 0xf8834a, 0xe5552e], throat: 0xb8401f, mixLeaves: 0.3 },
+  petals: { color: 0xf47a42, radius: 3.4 },
+};
+const BLOOMS = { gold: ARAGUANEY, pink: APAMATE, coral: BUCARE };
+
+// The default scale keeps the old ~5.5 m roadside size; scale 1 is full grown.
+export function araguaney({ seed = 1, detail = 'game', bloom = 'gold', leaves = true, flowers = true, scale = bloom === 'gold' ? 0.75 : 0.65 } = {}) {
+  return growTree(BLOOMS[bloom] || ARAGUANEY, { seed, detail: treeDetail(detail), leaves, flowers, scale });
 }
+
+export const apamate = (options = {}) => araguaney({ ...options, bloom: 'pink' });

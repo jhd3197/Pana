@@ -1,6 +1,9 @@
 import { TRACK_DEFINITIONS } from '../track-definitions.js';
+import { mossRock } from '/engine/models/vegetation/moss-rock.js';
 // Chi Chi: a long coastal mountain journey, with fictional thermal springs.
-import { THREE,M,box,terrain,sea,stream,finish,put,foundation,scatter,instances,edges,boulder,smooth } from './world-kit.js';
+import { THREE,M,box,terrain,sea,stream,finish,put,foundation,scatter,instances,edges,smooth } from './world-kit.js';
+import { festive, meadow } from './festive.js';
+
 import { palm } from '/engine/models/vegetation/palm.js';
 import { mangoTree } from '/engine/models/vegetation/mango-tree.js';
 import { ceiba } from '/engine/models/vegetation/ceiba.js';
@@ -19,7 +22,7 @@ export default {
   sectors:[[0,'Mirador de las nubes'],[.08,'Aguas del Cielo'],[.22,'Las siete curvas'],[.4,'Bosque de la quebrada'],[.53,'Pueblo de buceo'],[.63,'Bahía Chi Chi'],[.73,'Puentes del río'],[.86,'Subida al mirador']],
   items:{boxes:[.1,.23,.36,.49,.62,.75,.9],boxLanes:[-6,-2,2,6],pads:[{u:.035,off:0},{u:.36,off:4},{u:.57,off:4},{u:.7,off:-4},{u:.81,off:0},{u:.96,off:0}]},
   walls:false,chevrons:true,
-  palette:{skySeed:29,cloudCover:0.39,horizon:0xb2e1ec,skyTop:0x2d9bcf,hemiSky:0xe1f4ff,hemiGround:0x428558,hemiInt:1.6,sun:0xfff1d5,sunInt:2.5,ground:0x449551,track:0x94978b,dune:0,fog:[420,1750]},
+  palette:{skySeed:29,cloudCover:0.38,horizon:0xc6f1ea,skyTop:0x1592e8,halo:1,hemiSky:0xd2e6ff,hemiGround:0x55a35a,hemiInt:1.6,sun:0xffd79a,sunInt:2.7,ground:0x52b05a,track:0x8c8180,dune:0,fog:[460,2100]},
   environment(T){
     const group=new THREE.Group(),world=terrain(T,{bounds:[-800,-900,800,950],base:baseHeight,step:6,
       // Preserve the channel under road bridges after the usual road carving.
@@ -28,7 +31,7 @@ export default {
         h=h*(1-flat)+THERMAL.y*flat;
         const d=riverDistance(x,z);return h*smooth(d,8,22)+Math.min(h,roadHeight(x,z)-7)*(1-smooth(d,8,22));
       },
-      color:(x,z,y)=>z>coast(x)-30?0xdcc38b:Math.hypot(x-THERMAL.x,z-THERMAL.z)<66?0xb6b69a:y>235?0x779b87:y>150?0x4d946b:y>80?0x47944e:0x60a648});
+      color:(x,z,y)=>z>coast(x)-30?0xdcc38b:Math.hypot(x-THERMAL.x,z-THERMAL.z)<66?0xb6b69a:y>235?0x74b08e:y>150?0x4fa46e:y>80?meadow(x,z,0x4aa452,{warm:0x7cbf48,deep:0x2f8a4a}):meadow(x,z,0x66b84c,{bloom:0xff8fc8})});
     group.add(sea(world.groundAt,{size:3400}),world.land);
     const river=stream(RIVER,10,(x,z)=>Math.max(.1,roadHeight(x,z)-5.8),0x4c9b99);river.name='chichi-river';group.add(river,riverBridges(T));
     const springs=thermalSanctuary(T,world),village=beachVillage(T,world);group.add(springs.group,village.group);
@@ -41,7 +44,7 @@ export default {
     instances(group,fern({seed:32}),scatter(T,world.groundAt,{seed:824,count:90,bounds:[-360,-280,350,200],margin:9,scale:2.5,accept}),'chichi-undergrowth',220);
     const rocks=scatter(T,world.groundAt,{seed:834,count:105,bounds:[-540,-680,500,240],margin:9,scale:1.7,
       accept:(x,z)=>accept(x,z)&&Math.abs(world.groundAt(x+4,z)-world.groundAt(x-4,z))<4&&Math.abs(world.groundAt(x,z+4)-world.groundAt(x,z-4))<4});
-    instances(group,boulder(0x718778),rocks.map(p=>({...p,y:p.y-p.scale*.9})),'chichi-boulders',220);
+    instances(group,mossRock({seed:29,size:2.6}),rocks.map(p=>({...p,y:p.y-p.scale*.3})),'chichi-boulders',600);
     instances(group,palm({seed:4,h:11}),scatter(T,world.groundAt,{seed:749,count:65,bounds:[-330,210,370,430],margin:9,accept:(x,z,y)=>y<33&&accept(x,z)}),'chichi-coast-palms',220);
     // Stone retaining toes reveal the stacked mountain road in the valley view.
     const retaining=new THREE.Group(),stone=M(0x7e8b7c);
@@ -58,5 +61,11 @@ export default {
   scenery(group,kit,T){
     edges(group,kit,T,{style:'steel',step:6,skip:s=>{const p=T.pointAt(s);return riverDistance(p.x,p.y)<25;}});
     for(const u of [.07,.21,.4,.52,.7,.84,.95]){const p=kit.placeOnTrack(T,u*T.TOTAL,T.HW+5);kit.at(group,mountainSignpost(),p,p.h);}
+    // Mountain-to-sea fiesta: flowering cloud forest, village bunting, macaws.
+    festive(group,T,{seed:29,minY:.6,skip:s=>{const p=T.pointAt(s);return riverDistance(p.x,p.y)<28;},stands:360,banners:480,bunting:260,balloons:180,flags:240,butterflies:50,
+      trees:[['apamate',18,[2,22]],['bucare',14,[2,22]],['araguaney',12,[2,22]]],
+      plants:[['trinitaria',14,[0,10],.9],['heliconia',30],['hibiscus',30],['bromeliad',40,[0,6]],['mossRock',30,[0,10]]],
+      birds:[{kind:'macaw',flocks:3,size:5}],
+      vista:{shape:'peak',hills:24,height:[220,420],colors:[0x5fa585,0x6cb092,0x79a7b8],balloons:4}});
   },
 };

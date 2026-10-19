@@ -10,8 +10,10 @@
     .\dev.ps1 server          Start the Pana server only
     .\dev.ps1 studio          Open Pana Studio; reuse an existing server
     .\dev.ps1 check           Syntax check + unit tests (npm run check, npm test)
-    .\dev.ps1 check -Browser  ...plus every Playwright suite (npm run test:browser)
+    .\dev.ps1 check -Browser [filter...]  ...plus the Playwright suites (npm run test:browser)
     .\dev.ps1 setup           First-run setup: npm install
+    .\dev.ps1 new-game <id> [-Kind table|live] [-Players N] [-Name X] [-Color #rrggbb]
+                              Start a new 3D game from the templates (npm run new-game)
 
     Options: -Port 8461 -NoAutoPort -NoBrowser
     Environment: PANA_PORT, PANA_HOST, PANA_KILL_PORTS=0 to disable port cleanup.
@@ -35,7 +37,7 @@ function Write-Header($text) {
 
 function Get-DevMode {
     foreach ($arg in $args) {
-        if ($arg -in @('start', 'server', 'studio', 'check', 'setup')) {
+        if ($arg -in @('start', 'server', 'studio', 'check', 'setup', 'new-game')) {
             return $arg
         }
     }
@@ -161,6 +163,8 @@ function Start-PanaServer {
 
     Ensure-Packages
     $env:PANA_PORT = "$Port"
+    # Local servers honour test-only room options (Embuste ?quick); production never sets this.
+    $env:PANA_DEBUG_ROOMS = '1'
     $proc = Start-Process -FilePath 'node.exe' -WindowStyle Hidden -PassThru -WorkingDirectory $AppRoot `
         -ArgumentList @('server\src\index.js')
 
@@ -220,8 +224,18 @@ switch ($mode) {
         if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
         if ($args -contains '-Browser' -or $args -contains '--browser') {
             Write-Header 'Browser suites'
-            & node.exe (Join-Path $AppRoot 'scripts	est-browser.js')
+            # Anything after the switches narrows the run: .\dev.ps1 check -Browser domino caida
+            $filters = @($args | Where-Object { $_ -notin @('check', '-Browser', '--browser') })
+            & node.exe (Join-Path (Join-Path $AppRoot 'scripts') 'test-browser.js') @filters
         }
+        exit $LASTEXITCODE
+    }
+    'new-game' {
+        # PowerShell-style switches become the script's --flags.
+        $rest = @($args | Where-Object { $_ -ne 'new-game' } | ForEach-Object {
+            if ($_ -match '^-(Kind|Players|Name|Color|Description)$') { '--' + $Matches[1].ToLower() } else { $_ }
+        })
+        & node.exe (Join-Path (Join-Path $AppRoot 'scripts') 'new-game.js') @rest
         exit $LASTEXITCODE
     }
     'setup' {

@@ -9,6 +9,9 @@ export const config = {
   maxPlayersPerRoom: 8,
   roomCodeMaxLength: 24,
   playerNameMaxLength: 16,
+  // Test-only room options (Embuste's ?quick nights). The browser runner and
+  // dev.ps1 turn this on; a production `npm start` never does.
+  debugRooms: process.env.PANA_DEBUG_ROOMS === '1',
   paths: {
     root: rootDir,
     web: path.join(rootDir, 'web'),

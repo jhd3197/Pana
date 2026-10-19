@@ -4,7 +4,7 @@ body { --pk-game: #ff4b4b; --board-green: #b6c6b1; --ludo-blue: #3d7bf2; margin:
 button, a { -webkit-tap-highlight-color: transparent; }
 button:focus-visible, a:focus-visible { outline: 3px solid var(--pk-yellow); outline-offset: 4px; }
 #stage { position: fixed; inset: 115px 0 162px; }
-#world { display: block; width: 100%; height: 100%; touch-action: manipulation; }
+#world { display: block; width: 100%; height: 100%; touch-action: none; }
 .topbar { position: fixed; top: 18px; left: 24px; right: 24px; display: flex; align-items: center; justify-content: space-between; z-index: 4; }
 .pk-logo { font-size: 34px; text-decoration: none; }
 #game-nav { display: flex; gap: 8px; }
@@ -31,6 +31,10 @@ button:focus-visible, a:focus-visible { outline: 3px solid var(--pk-yellow); out
 .play-controls { display: flex; align-items: center; gap: 14px; margin-top: 12px; }
 #die { flex-shrink: 0; display: grid; place-items: center; width: 48px; height: 48px; border-radius: 10px; background: var(--pk-text); color: var(--pk-night); font-family: var(--pk-display); font-size: 32px; }
 #pieces { display: flex; gap: 6px; margin-left: auto; }
+#roll { touch-action: none; }
+#roll.is-shaking { animation: ludo-shake .09s linear infinite; }
+@keyframes ludo-shake { 0%, 100% { transform: translate(0, 1px) rotate(0); } 25% { transform: translate(-2px, 2px) rotate(-2deg); } 75% { transform: translate(2px, 0) rotate(2deg); } }
+.roll-tip { margin: 8px 0 0; font-size: 11px; color: var(--pk-muted); }
 .piece-button { min-width: 50px; min-height: 48px; padding: 5px 10px; border-bottom: 4px solid var(--seat-color); }
 .piece-button small { display: block; font-size: 9px; }
 .piece-button:disabled { opacity: .42; }
@@ -67,6 +71,7 @@ button:focus-visible, a:focus-visible { outline: 3px solid var(--pk-yellow); out
   #roll kbd { display: none; }
   #pieces { width: 100%; margin: 0; }
   .piece-button { flex: 1; min-height: 42px; }
+  .roll-tip { display: none; }
 }
 @media (max-height: 540px) and (min-width: 701px) {
   #welcome { top: 64px; bottom: 30px; }
@@ -87,5 +92,6 @@ button:focus-visible, a:focus-visible { outline: 3px solid var(--pk-yellow); out
   #roll kbd { display: none; }
   #pieces { width: 100%; margin: 0; }
   .piece-button { flex: 1; min-width: 0; min-height: 40px; padding: 4px; }
+  .roll-tip { display: none; }
   #view { top: auto; bottom: 29px; right: auto; left: 12px; font-size: 11px; }
 }

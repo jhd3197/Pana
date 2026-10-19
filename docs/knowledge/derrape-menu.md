@@ -55,3 +55,56 @@ Proof: `tests/menu-flow.browser.js` covers artwork, local/split play, all maps
 and cups, customization, keyboard, phone layouts, reduced motion, failed image
 requests, loading retry and two actual clients with host/guest restrictions.
 Existing loading, modes, cup and online suites retain their gameplay assertions.
+
+## The 16 cars, the Taller and the car kit
+
+- Sixteen cars: the eight classics in `engine/models/vehicles/cars.js` keep
+  their chunky low-poly bodies; the eight Taller bodies in `taller-cars.js`
+  (escarabajo, sedan, buseta, pickup, jeep, hatch, rustico, malibu, numbers
+  9–16) are data on the filleted kit. Their profiles are kept at 1:1 and
+  stretched to toy proportions on build (length ×1.12, body height ×1.3,
+  cabin height ×1.9 above the belt, wheels ×1.36), because the pana driver
+  needs a tall greenhouse and arches must stay under the belt line.
+- `car-kit.js` v2: `roundedPath` fillets a side profile, arches are cut from
+  `axle`/`archR`/`sill`, `shellBody` builds two tapered side slabs and a tub
+  (a pickup's bed is a lower tub) and returns a fit (`noseZ`, `tailZ`,
+  `topOf`, `halfW`). `profileFit` gives the classics the same fit from their
+  `profile()` points. Extrusion bevels grow the outline, so the fit adds the
+  tub's bevel; a decal on the raw profile ends up buried under the paint.
+- `car-parts.js` dresses any fitted car: spoilers (pato, techo, gt, rally,
+  cisne; on the roof when the cabin reaches the tail), roof cargo (barra,
+  cava, maletas, repuesto, cornetas; a bed or open deck via `fit.cargo`),
+  front bars (defensa, faros, winche), a roll cage, engine dress-up (pipes,
+  scoop, chrome blower), decals and stripes in the accent colour and the
+  paint finish. Builders skip a stock part when its slot asks for another.
+- Wheels are lathe tires with tread blocks and six rim faces sharing one
+  metal look, so `batchRacer` merges a wheel into 2–3 draws. Batched race
+  bodies are 25–40 meshes for all 16 cars against a 133-mesh, 137k-triangle
+  driver. A bigger wheel or a wheel `lift` raises the body through `rig`'s
+  `lift` group, because `chassis.position.y` is the suspension.
+- `parts.js` is shared by garage, race and room. Parts change the tune only
+  through `composeTune(tune, wheelProfile, partsProfile(parts))`, at most 10%
+  per part. Bar points (`statPoints`) are about 1 m/s of punta, 1.5 of
+  arranque, 0.1 of giro, 0.5 of agarre or 0.1 of peso, which is what the
+  "+2 Vel" pills count. Mass comes from the composed tune in contacts.
+- Equipped parts live per car in `wallet.parts`; the cauchos in
+  `wallet.wheel` (migrated once from `derrape:wheels`, still mirrored), and
+  the three Taller wheels cost coins. `cleanCosmetics` adds `parts` only when
+  some are set, so the cup ledger and older rooms see the same cosmetics.
+- The showroom: a PMREM studio room, violet/cyan rims, clearcoat paint on the
+  turntable car only, and bloom (`garage-bloom.js`) unless quality is `baja`,
+  which browser suites force. Each Taller tab stops the turntable and frames
+  its part (`TAB_FRAMES` in game.js).
+- Money: races pay **coins** (the trail pickups, the HUD counter) because
+  mangos are the thrown item; the finish exchanges them 1:1 for **mangos**,
+  the Taller's currency (`exchangeText` in taller.js). The wallet field is
+  still `wallet.coins` so saves, cup receipts and rooms stay compatible;
+  only player-facing Taller text says mangos.
+- Entering the Taller step opens the panel docked (`openTaller` in
+  `createMenuFlow`, `dockTaller` in taller.js). While `body.shop-open` the
+  car strip and `#open-shop` hide and the info card becomes the showroom
+  title (eyebrow, car name, `#car-build`); the stats render twice, into
+  `#stats` and the panel's `#shop-stats`. Suites that click the strip call
+  `hideTaller` from `tests/menu-helpers.js` first.
+- Debug pages opened with `?manual` never re-render the garage, so a
+  screenshot there shows the first frame; use `?debug` alone to see a change.

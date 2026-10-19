@@ -4,7 +4,8 @@
   <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="theme-color" content="#0e0b24"><meta name="description" content="Explora una mina olvidada con tus panas. Activa el templo, derrota a las momias y escapa con la reliquia.">
   <title>Reliquia · Una expedición de Pana</title>
-  <link rel="stylesheet" href="/engine/kit.css"><link rel="stylesheet" href="/engine/ui.css"><link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="/engine/kit.css"><link rel="stylesheet" href="/engine/ui.css">
+  <link rel="stylesheet" href="/engine/room-options.css"><link rel="stylesheet" href="style.css">
   <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}</script>
 <link rel="stylesheet" href="/engine/game-lobby.css">
 </head>
@@ -17,10 +18,10 @@
     <div class="pk-lobby-top"><a class="pk-back" href="/">← Todos los juegos</a><a class="pk-logo" href="/" aria-label="Pana">PANA</a></div>
     <span class="pk-ribbon">Una expedición con tus panas</span>
     <div><h1 id="title" class="pk-title">Reliquia</h1><p class="pk-eyebrow subtitle">La mina del sol</p></div>
-    <p class="pk-copy"><b>La mina estaba abandonada. El templo de abajo, no.</b> Entra con tus panas, despierta sus secretos y vuelve con la reliquia. Que nadie se quede atrás.</p>
-    <div class="pk-stats"><div class="pk-stat"><b>8</b><span>panas, cooperativo</span></div><div class="pk-stat"><b>2</b><span>ruedas del templo</span></div><div class="pk-stat"><b>1</b><span>reliquia que volver</span></div></div>
+    <p class="pk-copy" data-room-description><b>La mina estaba abandonada. El templo de abajo, no.</b> Entra con tus panas, despierta sus secretos y vuelve con la reliquia. Que nadie se quede atrás.</p>
+    <div class="pk-stats" data-room-description><div class="pk-stat"><b>8</b><span>panas, cooperativo</span></div><div class="pk-stat"><b>2</b><span>ruedas del templo</span></div><div class="pk-stat"><b>1</b><span>reliquia que volver</span></div></div>
     <div class="pk-field"><span class="pk-eyebrow">Panas en la expedición</span><div id="lobby-team" class="lobby-team" aria-label="Panas en la sala"></div></div>
-    <div class="pk-lobby-foot">
+    <div id="room-options"></div><div class="pk-lobby-foot">
       <div class="pk-lobby-room"><i class="pk-dot" aria-hidden="true"></i><span id="connection" class="connection" role="status">Preparando la expedición…</span></div>
       <div class="pk-lobby-cta" id="lobby-cta"><button id="start" class="pk-btn pk-btn--primary pk-btn--lg" disabled>Conectando…</button></div>
       <button id="practice" class="pk-btn pk-btn--ghost pk-btn--sm hidden">Jugar en este navegador</button>

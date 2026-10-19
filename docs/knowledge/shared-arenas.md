@@ -1,8 +1,8 @@
 # Shared party maps
 
-`engine/arena-layouts.js` owns the plain registry for Plaza Pana, Puerto Coco,
+`engine/worlds/arena-layouts.js` owns the plain registry for Plaza Pana, Puerto Coco,
 Hato del Sol and Ruinas del Mango. The three new maps use a 36 × 36 m court.
-`engine/arenas.js` builds their scenery from canonical library models. Studio
+`engine/worlds/arenas.js` builds their scenery from canonical library models. Studio
 registers `arena-puerto`, `arena-hato` and `arena-ruinas` through that same factory.
 
 ## Variants and collision
@@ -15,6 +15,9 @@ registers `arena-puerto`, `arena-hato` and `arena-ruinas` through that same fact
   the court. Server movement, swept shots, bots, touch auto-aim and camera
   obstruction all read the selected map. The original `COVER`/`SPAWNS` remain
   the Plaza default; new maps use eight clear perimeter spawns.
+  Pepazo passes `size` (court half-width) and its spread `cover` to
+  `createArenaEnvironment`: the court, curbs, pier and perimeter scenery
+  scale with it. Other games keep the 18 m default.
 - **Table:** removes obstacles whose full footprint reaches the central 10 m
   radius. Billar and Caída keep their own equipment, scale, camera and rules.
   Large scenery stays outside the court, with no tabletop or seated-player
@@ -37,6 +40,22 @@ generated definition so rendering, collision, sight and navigation agree.
 See [escondidas.md](escondidas.md) for clearance and snapshot requirements.
 New arrivals also pass their lobby position through the selected map's
 `safeSpot`: the old fixed position at (-4, 13) is inside Hato's southern hay.
+
+## Court variant
+
+`mode: 'court'` (Bolas Criollas, through `engine/worlds/bolas-world.js`) keeps every
+prop, tree, stall and cover box outside `COURT_CLEAR` (±8.8 m across, ±17 m
+along Z: the 11 × 24 m court, its benches, the calce and the thrower's camera).
+On the plaza it also drops the fountain and opens the paving over the court
+(`openFloor`): the slabs' tops sit 2 cm above the court surface and would
+otherwise paint over the clay. Bululú's criollas minigame uses Puerto Coco.
+
+`COURT_ARENAS` adds Estadio Pana (`engine/worlds/estadio.js`) for court games only:
+the court on the concourse in front of a seven-tier grandstand with an
+instanced cheering crowd, light towers, and the race straight at x ≈ 22 where
+the background karts pass. It has no hunt/paint layout, so it never joins
+`ARENAS`. Its factory props are baked, then their cached materials are cloned
+before disposal, as in the other arenas.
 
 ## Room and lifecycle contract
 
@@ -72,7 +91,7 @@ limit, or a supposedly separate phone/practice room can join the live match.
 Fuerte San Carlos to Caída, Dominó and Póquer. Keep these separate from `ARENAS`:
 these architectural interiors have no hunt/paint collision layout. The picker
 opts into landmarks explicitly; Billar retains its existing settings.
-`engine/puerto-tables.js` and Studio share the original prototype model factories.
+`engine/worlds/puerto-tables.js` and Studio share the original prototype model factories.
 See `puerto-circuit.md` for scale, central clearance and texture ownership.
 
 Dominó includes `mapId` in its host snapshots and sequence/revision-checked lobby

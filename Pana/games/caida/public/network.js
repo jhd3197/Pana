@@ -1,76 +1,39 @@
 import { CaidaGame, chooseMove, canto } from './rules.js';
-import { HostRoom } from '/engine/net.js';
+import { TableRoom } from '/engine/table-room.js';
 
-// Host simulation on the shared host room (engine/net.js), with snapshot migration.
-export class CaidaRoom extends HostRoom {
-  constructor({ code, name, avatar, onState = () => {}, onStatus = () => {}, onNotice = () => {} }) {
-    super({ game: 'caida', protocol: 'caida-v1', code, name, avatar, onState, onStatus, onNotice, texts: {
-      connecting: 'Conectando con la mesa…', full: 'Sala llena. Puedes jugar una partida local.',
-      lost: 'Sin conexión. Reconectando…', offline: 'No pudimos conectar. Puedes jugar en local.' } });
-    this.state = new CaidaGame(Date.now()).snapshot(); this.seq = 0; this.botElapsed = 0;
-  }
-  get seat() { return this.state.players.findIndex(p => p.id === this.id); }
+const freshGame = previous => { const game = new CaidaGame(Date.now()); if (previous?.options) { const { format, cantos, difficulty } = previous.options; game.configure({ format: format || 'individual', cantos, difficulty, mapId: previous.mapId || 'plaza' }); } return game.snapshot(); };
 
-  // A new room never resurrects stale state from an earlier connection.
-  entered(alone) { if (alone) this.state = new CaidaGame(Date.now()).snapshot(); }
-
-  takeOver(previous) {
-    this.game = CaidaGame.restore(this.state, this.members); this.botElapsed = 0;
-    this.publish();
-    if (previous !== null) this.onNotice('Cambió el anfitrión. La partida continúa.');
-  }
-  memberJoined(m) { if (this.isHost) { this.game.addPlayer(m.id, m.name, m.avatar); this.publish(); } }
-  memberLeft(id) { if (this.isHost) { this.game.removePlayer(id); this.fillSeats(); this.publish(); } }
-  memberHello() { if (this.isHost) { this.fillSeats(); this.publish(); } }
-
-  fillSeats() {
-    for (const m of this.members.values()) this.game.addPlayer(m.id, m.name,
-      m.avatar || this.game.players.find(p => p.id === m.id)?.avatar || {});
+// Host simulation on the shared table room (engine/table-room.js), with snapshot migration.
+export class CaidaRoom extends TableRoom {
+  constructor(options) {
+    super({ ...options, game: 'caida', protocol: 'caida-v2', texts: { practice: 'Mesa local · juega con bots', ...options.texts } }, {
+      fresh: freshGame,
+      restore: (state, members) => CaidaGame.restore(state, members),
+      snapshot: (game) => game.snapshot(),
+      accept: (game, id, data, hostId) => game.accept(id, data, hostId),
+      valid: (state) => [2, 3, 4, 6].includes(state?.players?.length),
+    });
   }
 
-  receive(id, data) {
-    if (data.kind === 'snapshot' && id === this.hostId && !this.isHost && [2, 3, 4].includes(data.state?.players?.length)) {
-      this.state = data.state; this.onState(this.state);
-    } else if (data.kind === 'action' && this.isHost) {
-      this.game.accept(id, data, this.hostId); this.fillSeats(); this.botElapsed = 0; this.publish();
-    }
+  seatMembers() {
+    this.game.syncMembers([...this.members.values()]);
   }
+  unseat(id) { this.game.removePlayer(id); }
+  // Changing the table size reseats everyone.
+  accepted() { this.seatMembers(); }
 
-  action(action, values = {}) {
-    if (!this.connected) { this.onNotice('Espera a reconectar o abre una mesa local.'); return false; }
-    const data = { kind: 'action', action, ...values, seq: ++this.seq, revision: this.state.revision };
-    if (this.isHost) {
-      const ok = this.game.accept(this.id, data, this.hostId);
-      this.fillSeats(); this.botElapsed = 0; this.publish(); return ok;
-    }
-    this.send(data); return true;
-  }
-
-  publish() { this.state = this.game.snapshot(); this.onState(this.state); this.send({ kind: 'snapshot', state: this.state }); }
-
-  tick(dt, paused = false) {
-    const preparing = this.game?.phase === 'dealing', seat = preparing ? this.game.dealer : this.game?.turn;
-    if (!this.connected || !this.isHost || !['playing', 'dealing'].includes(this.game.phase) || paused || this.game.players[seat].id !== null) {
-      this.botElapsed = 0; return;
-    }
-    this.botElapsed += dt;
-    if (this.botElapsed < 1.15) return;
-    this.botElapsed = 0;
+  step(dt) {
+    const game = this.game, preparing = game.phase === 'dealing', seat = preparing ? game.dealer : game.turn;
+    if (!this.botReady(dt, ['playing', 'dealing'].includes(game.phase) && game.players[seat].id === null)) return false;
     if (preparing) {
-      if (!this.game.dealCall) this.game.setCall(seat, this.game.random() < .5 ? 'up' : 'down');
-      if (this.game.cutAt === null) {
-        this.game.cutDeck(seat, 1 + Math.floor(this.game.random() * 39));
-      } else this.game.dealOpening(seat);
-      this.publish(); return;
+      if (!game.dealCall) game.setCall(seat, game.random() < .5 ? 'up' : 'down');
+      if (game.cutAt === null) game.cutDeck(seat, 1 + Math.floor(game.random() * 39));
+      else game.dealOpening(seat);
+      return true;
     }
-    const player = this.game.players[this.game.turn];
-    if (this.game.options.cantos && !player.announced && canto(player.hand)) this.game.chant(this.game.turn);
-    else { const move = chooseMove(this.game); if (move) this.game.play(this.game.turn, move.card); }
-    this.publish();
-  }
-
-  practice() {
-    this.seq = 0; this.game = null; this.state = { ...new CaidaGame(Date.now()).snapshot(), mapId: this.state.mapId };
-    super.practice('Mesa local · juega con bots');
+    const player = game.players[game.turn];
+    if (game.options.cantos && !player.announced && canto(player.hand)) game.chant(game.turn);
+    else { const move = chooseMove(game); if (move) game.play(game.turn, move.card); }
+    return true;
   }
 }

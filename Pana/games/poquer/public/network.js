@@ -20,7 +20,7 @@ export class PokerConnection {
   }
   start() { if (this.local) { this.game.start(); this.publish(); } else if (this.connected) this.link.send('start'); }
   reseat(from, to) {
-    if (!this.connected || !this.isHost) return;
+    if (!this.connected) return;
     if (this.local) { if (this.game.reseat(from, to)) this.publish(); }
     else this.link.send('seat', { from, to, revision: this.state.revision });
   }
@@ -28,6 +28,11 @@ export class PokerConnection {
     if (!this.connected || !this.isHost) return;
     if (this.local) { if (this.game.setup()) this.publish(); }
     else this.link.send('setup', { revision: this.state.revision });
+  }
+  configure(options, mapId) {
+    if (!this.connected || !this.isHost) return;
+    if (this.local) { if (this.game.configure(options, mapId)) this.publish(); }
+    else this.link.send('options', { options, mapId, revision: this.state.revision });
   }
   setMap(mapId) {
     if (!this.connected || !this.isHost) return;
@@ -40,8 +45,8 @@ export class PokerConnection {
     else this.link.send('act', { action, amount, revision: this.state.revision });
   }
   practice() {
-    const mapId=this.state.mapId;
-    this.local = true; this.link?.leave(); this.connected = true; this.game = new Poker(); this.game.setMap(mapId);
+    const mapId=this.state.mapId, options=this.state.options;
+    this.local = true; this.link?.leave(); this.connected = true; this.game = new Poker(); this.game.setMap(mapId); this.game.configure(options);
     this.game.add(1, { name: this.name, avatar: this.avatar, bot: false });
     ['Coco', 'Lola', 'Cheo'].forEach((name, i) => this.game.add(1000 + i, { name, avatar: randomAvatar(), bot: true }));
     this.onStatus('Práctica con bots · a tu ritmo'); this.start();
@@ -49,7 +54,9 @@ export class PokerConnection {
   publish() { this.state = this.game.view(1); this.elapsed = 0; this.onState(this.state); }
   tick(dt, paused) {
     if (!this.local || paused) return; this.elapsed += dt;
-    if (this.elapsed > 1.1 && this.game.players.find(p => p.id === this.game.turn)?.bot) { this.game.botAction(); this.publish(); }
+    const player = this.game.players.find(p => p.id === this.game.turn);
+    if (player?.bot && this.elapsed > 1.1) { this.game.botAction(); this.publish(); }
+    else if (player && !player.bot && this.elapsed >= this.game.options.turnSeconds) { this.game.act(player.id, this.game.legal(player.id)?.call ? 'fold' : 'call'); this.publish(); }
   }
   dispose() { this.disposed = true; this.link?.leave(); }
 }

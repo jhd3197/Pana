@@ -14,6 +14,8 @@ async function open(name, query = '', viewport = { width: 1280, height: 800 }, t
   await page.goto(`${base}/g/criollas/?debug&${query}`, { waitUntil: 'domcontentloaded' });
   await wait(page, () => !!window.criollasDebug); console.log(`Loaded ${name}`); return page;
 }
+// Background pages may not run animation frames: draw a couple of seconds by hand.
+const frames = page => page.evaluate(() => { const d = criollasDebug; for (let i = 0; i < 60; i++) d.world.render(d.room.state, { dt: .05, shot: d.shot, active: d.room.state.turn === d.room.seat }); });
 async function screenshot(page, name) {
   await page.evaluate(() => { const d = criollasDebug; d.world.render(d.room.state, { dt: .016, shot: d.shot, active: d.room.state.turn === d.room.seat }); });
   await page.screenshot({ path: `art/criollas/${name}.png` });
@@ -28,14 +30,25 @@ try {
   assert.equal(await guest.evaluate(() => criollasDebug.room.seat), 1);
   assert.equal(await guest.evaluate(() => criollasDebug.room.state.players[0].avatar.outfitColor), '#3d7bf2');
   await screenshot(host, 'lobby');
+  // The host chooses the place and difficulty; the guest sees both and cannot change them.
+  await host.locator('#map-choice').selectOption('hato'); await host.locator('[data-room-option="difficulty"][data-value="dificil"]').click();
+  await wait(guest, () => criollasDebug.room.state.mapId === 'hato' && criollasDebug.room.state.difficulty === 'dificil' && criollasDebug.world.venue === 'hato');
+  assert.equal(await guest.locator('#map-choice').isDisabled(), true);
+  assert.equal(await guest.locator('[data-room-option="difficulty"][data-value="facil"]').isDisabled(), true);
+  console.log('PASS host-chosen court and difficulty reach the guest');
   await host.locator('#start').click(); await wait(guest, () => criollasDebug.room.state.phase === 'aiming');
   await guest.evaluate(() => criollasDebug.room.action('shoot', { angle: 0, power: .5 }));
   await host.waitForTimeout(200); assert.equal(await host.evaluate(() => criollasDebug.room.state.shots), 0);
   await screenshot(host, 'desktop');
   await host.locator('#shoot').click(); await wait(guest, () => criollasDebug.room.state.phase === 'rolling');
   await wait(guest, () => criollasDebug.room.state.phase === 'aiming' && criollasDebug.room.state.turn === 1);
-  await guest.locator('#power').fill('30'); await guest.locator('#power').dispatchEvent('input');
-  await guest.locator('#shoot').click(); await wait(host, () => criollasDebug.room.state.shots === 2);
+  // Hold Space: the meter shows while the force rises, and letting go throws at that force.
+  await guest.locator('#court').focus(); await guest.keyboard.down('Space');
+  // Animation frames are stubbed here: the force is sampled from the hold time at release.
+  await wait(guest, () => criollasDebug.charge && performance.now() - criollasDebug.charge.started > 400 && !document.querySelector('#power-bar').hidden);
+  await guest.keyboard.up('Space'); await wait(host, () => criollasDebug.room.state.shots === 2);
+  assert.equal(await guest.evaluate(() => document.querySelector('#power-bar').hidden), true);
+  assert.ok(await guest.evaluate(() => criollasDebug.shot.power) >= .3, 'the throw used the charged force');
   assert.equal(await host.evaluate(() => criollasDebug.room.state.pitch.balls.at(-1).owner), 1);
   await wait(host, () => criollasDebug.room.state.phase !== 'rolling');
   console.log('PASS real two-client throws, seat ownership and saved avatars');
@@ -44,14 +57,14 @@ try {
   const late = await open('Caro', `room=${code}`); await wait(late, () => criollasDebug.room.state.hand === 1 && criollasDebug.room.seat >= 0);
   assert(await late.evaluate(() => criollasDebug.room.state.pitch.balls.length >= 3));
   await late.context().close();
-  // The actual room adapter must reject the fifth session.
+  // The actual room adapter must reject the seventh session.
   assert.equal(await guest.evaluate(async () => {
     const { joinRoom } = await import('/engine/net.js'), links = [], code = `cap-${Date.now()}`;
-    try { for (let i = 0; i < 4; i++) links.push(await joinRoom('criollas', { code, name: 'Pana', resume: false }));
-      try { links.push(await joinRoom('criollas', { code, name: 'Quinto', resume: false })); return false; } catch (e) { return e.full === true; }
+    try { for (let i = 0; i < 6; i++) links.push(await joinRoom('criollas', { code, name: 'Pana', resume: false }));
+      try { links.push(await joinRoom('criollas', { code, name: 'Séptimo', resume: false })); return false; } catch (e) { return e.full === true; }
     } finally { await Promise.all(links.map(l => l.leave())); }
   }), true);
-  console.log('PASS reload, late join and four-seat room capacity');
+  console.log('PASS reload, late join and six-seat room capacity');
   // Force a fresh host-owned turn, then leave while the real shot is rolling.
   await host.evaluate(() => { const r = criollasDebug.room; r.game.phase = 'aiming'; r.game.turn = r.seat; r.game.remaining[r.seat] = 1; r.game.pitch.balls.forEach(b => { b.vx = b.vz = 0; }); r.game.revision++; r.publish(); });
   await host.locator('#shoot').click(); await wait(guest, () => criollasDebug.room.state.phase === 'rolling');
@@ -62,12 +75,12 @@ try {
   console.log('PASS host handoff preserves an in-flight throw');
   // Known final-ball layout proves synchronized match scoring and a real rematch.
   await guest.evaluate(async () => {
-    const r = criollasDebug.room, { createPitch } = await import('/engine/bolas-criollas.js');
+    const r = criollasDebug.room, { createPitch } = await import('/engine/play/bolas-criollas.js');
     r.game.pitch = createPitch(); r.game.pitch.balls.push({ id: 1, owner: r.seat, x: .6, z: -6, vx: 0, vz: 0, radius: .25, out: false }); r.game.pitch.nextId = 2;
-    r.game.scores = [11, 11]; r.game.remaining = [0, 0, 0, 0]; r.game.remaining[r.seat] = 1; r.game.turn = r.seat; r.game.phase = 'aiming'; r.game.revision++; r.publish();
+    r.game.scores = [11, 11]; r.game.remaining = Array(6).fill(0); r.game.remaining[r.seat] = 1; r.game.turn = r.seat; r.game.phase = 'aiming'; r.game.revision++; r.publish();
   });
   const spectator = await open('Dani', `room=${code}`); await wait(spectator, () => criollasDebug.room.state.scores[0] === 11);
-  await guest.locator('#power').fill('10'); await guest.locator('#power').dispatchEvent('input'); await guest.locator('#shoot').click();
+  await guest.locator('#shoot').click();
   await wait(spectator, () => criollasDebug.room.state.phase === 'finished');
   assert.deepEqual(await spectator.evaluate(() => criollasDebug.room.state.scores), await guest.evaluate(() => criollasDebug.room.state.scores));
   await screenshot(guest, 'results'); await guest.locator('#next').click();
@@ -98,6 +111,21 @@ try {
   assert.equal(await mobile.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
   await mobile.context().close();
   console.log('PASS portrait/landscape layout, shared pause and keyboard launch');
+  const solo = await open('Solo');
+  await solo.locator('#practice').click(); await wait(solo, () => criollasDebug.room.state.phase === 'aiming' && criollasDebug.room.state.turn === 0);
+  // Behind the thrower by default: the camera stands past the calce, above head height.
+  await frames(solo); assert(await solo.evaluate(() => { const c = criollasDebug.world.camera.position; return c.z > 15 && c.y > 3; }));
+  await solo.evaluate(() => criollasDebug.room.action('difficulty', { difficulty: 'facil' }));
+  await frames(solo); assert(await solo.evaluate(() => criollasDebug.room.state.difficulty === 'facil' && criollasDebug.world.guides.preview));
+  await screenshot(solo, 'facil');
+  await solo.locator('#court').focus(); await solo.keyboard.press('c');
+  await frames(solo); assert(await solo.evaluate(() => criollasDebug.world.view === 'arriba' && criollasDebug.world.camera.position.y > 20));
+  await screenshot(solo, 'arriba');
+  await solo.evaluate(() => criollasDebug.room.action('difficulty', { difficulty: 'experto' }));
+  await frames(solo); assert.equal(await solo.evaluate(() => criollasDebug.world.guides.preview), false);
+  await solo.locator('#shoot').click(); await wait(solo, () => criollasDebug.room.state.shots >= 2);
+  await solo.context().close();
+  console.log('PASS thrower and overhead cameras, local difficulty changes and the Fácil preview');
   assert.deepEqual(errors, []);
   const games = await (await fetch(`${base}/api/games`)).json(); assert(JSON.stringify(games).includes('criollas'));
 } finally { await browser.close(); }

@@ -1,35 +1,34 @@
 import { prepareScene } from '/engine/game-load.js';
 import * as THREE from 'three';
-import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { sound, Puffs, Shockwaves, popCounter } from '/engine/fx.js';
 import { loadAvatar, loadName, randomAvatar } from '/engine/avatar.js';
-import { buildCharacter } from '/engine/models/characters/pana/avatar-model.js';
+import { makePortraits, drawReticles, drawProgress, drawHint } from './presentation.js';
 import { makeMango } from '/engine/models/props/mango.js';
-import { createBoard, createToken, createDie, TILE_COUNT, FORK } from './board.js';
-import { RIVER, SEA, MAP_BOUNDS, beachMask } from './island.js';
-import atrapa from './minigames/atrapa.js';
-import caigas from './minigames/caigas.js';
-import caida from './minigames/caida.js';
-import momia from './minigames/momia.js';
-import coleo from './minigames/coleo.js';
-import choque from './minigames/choque.js';
-import embuste from './minigames/embuste.js';
-import remada from './minigames/remada.js';
-import raudal from './minigames/raudal.js';
-import remolino from './minigames/remolino.js';
-import chinazo from './minigames/chinazo.js';
-import criollas from './minigames/criollas.js';
+import { createBoard, createToken, createDie, FORK } from './board.js';
+import { createMinimap } from './minimap.js';
+import { createBoardCamera } from './board-camera.js';
+import { createGameTime, ease } from './game-time.js';
+import { createBoardHud, ICONS } from './board-hud.js';
+import { track, release, resources } from './minigames/lifetime.js';
+import { fitCamera, letterbox } from './minigames/framing.js';
+import { MINIGAMES, loadMinigame, loadedMinigame, prefetchMinigames } from './minigames/index.js';
 import { SKY_MODES } from './atmosphere.js';
 import * as rules from './rules.js';
 import { ICONS as SVG } from '/engine/icons.js';
 import { COLORS, RIVALS, START_COINS, PRICE, DOUBLES_BONUS, TREE_COINS } from './rules.js';
 import { createGameMenu, toggleMute } from '/engine/ui.js';
-import { holdButton } from '/engine/touch.js';
+import { drawIcons } from '/engine/touch.js';
+import { createInput, IDLE_AIM } from './input.js';
+import { bindDiceThrow, cleanPower } from '/engine/play/dice-throw.js';
+import { namesList } from '/engine/play/roll-off.js';
+import { createDiceTable, rollOffOrder } from './dice-table.js';
 import { pixelRatio, bindRenderer } from '/engine/settings.js';
 import { inviteUrl, newRoomCode, roomFromUrl } from '/engine/invite.js';
 import { BululuRoom } from './network.js';
 import { IDLE_INPUT, seeded, withRandom } from './online-rules.js';
 import { readPresentation, writePresentation } from './online-view.js';
+import { createRoomOptions } from '/engine/room-options.js';
+import { OPTION_FIELDS, DEFAULT_OPTIONS, cleanOptions, applyOptions, minigamePool, cpuPace, stealMango, awardFinalBonus, rulesSummary } from './options.js';
 
 // every tile, sign and bubble is drawn on a canvas in the cartoon font, so
 // load it before building anything (but never hang on it)
@@ -47,8 +46,8 @@ const AUTO = QS.has('auto');
 const SPEED = Number(QS.get('speed')) || 1;
 let ROUNDS = Math.max(1, Math.min(20, Number(QS.get('rounds')) || 10));   // the lobby can change it
 const DEBUG = QS.has('debug');
-const MINIGAMES = [atrapa, caigas, caida, momia, coleo, choque, embuste, remada, raudal, remolino, chinazo, criollas];
-const nextMinigame = rules.minigameBag(MINIGAMES);
+let options = { ...DEFAULT_OPTIONS, rounds: ROUNDS };
+let nextMinigame = rules.minigameBag(MINIGAMES);
 const FORCED = MINIGAMES.find((m) => m.id === QS.get('mini'));
 const ONLY = MINIGAMES.find((m) => m.id === QS.get('play'));
 const code = roomFromUrl() || newRoomCode();
@@ -76,12 +75,14 @@ const players = (() => {
     return {
       i, color, avatar, human: i === 0,
       name: i === 0 ? loadName() : names[i - 1],
-      coins: START_COINS, mangos: 0, tile: 0, token: null,
+      coins: START_COINS, mangos: 0, miniWins: 0, tile: 0, token: null,
     };
   });
 })();
 let me = players[0];
 const isHuman = (p) => p.human && !AUTO;
+// Who plays when in each round, decided by the opening roll-off.
+let order = players.map((p) => p.i);
 
 // ---------- renderer ----------
 const renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -106,7 +107,7 @@ function selectSky(mode, save = true) {
 // Esc pauses on game time: turns, timers, tweens and minigames all wait.
 let paused = false;
 const menu = createGameMenu({
-  title: 'Bululú', heading: 'Pausa', sound,
+  title: 'Bululú', heading: 'Pausa', sound, orientation: 'horizontal',
   note: () => online ? 'La partida online sigue mientras abres el menú.' : 'La partida está en pausa.',
   invite: () => inviteUrl(code),
   controls: [['Espacio', 'Tirar los dados / saltar'], ['A D / ← →', 'Moverte en los minijuegos'], ['Tab', 'Ver el tablero'],
@@ -118,7 +119,7 @@ const menu = createGameMenu({
     { id: 'restart', label: 'Empezar de nuevo', kind: 'secondary', visible: () => !online, run: () => location.reload() },
     { id: 'rejoin', label: 'Volver a entrar a la sala', kind: 'secondary', visible: () => online, run: () => location.reload() },
   ],
-  onOpen() { paused = true; for (const k in held) held[k] = false; aim.pull = aim.keyPull = false; },
+  onOpen() { paused = true; input.clear(); },
   onClose() { paused = false; },
 });
 $('top-actions').prepend(menu.createButton({ id: 'menu', className: 'pk-btn menu-button' }));
@@ -127,12 +128,13 @@ for (const b of $('sky').children) b.onclick = () => selectSky(b.dataset.sky);
 selectSky(board.atmosphere.mode, false);
 const puffs = new Puffs(boardScene);
 const shockwaves = new Shockwaves(boardScene);
-// two dice, plus a floating counter for the steps left once they're rolled
+// two dice, thrown onto the board (dice-table.js), plus a floating counter for the steps left
 const dice = [createDie(), createDie()];
 for (const d of dice) {
   d.mesh.visible = false;
   boardScene.add(d.mesh);
 }
+const diceTable = createDiceTable({ dice, board, camera: boardCam, puffs });
 const counter = (() => {
   const c = document.createElement('canvas');
   c.width = c.height = 128;
@@ -190,61 +192,14 @@ function layoutTokens(skip) {
 layoutTokens();
 for (const p of players) p.token.group.position.copy(p.token.rest);
 
-// The camera always looks from the front (+Z) at a 3/4 angle, like the box
-// art, so the board keeps one orientation: the plateau and hill rise at the
-// back and nothing tall stands between the camera and the path.
-const cam = { pos: new THREE.Vector3(), look: new THREE.Vector3(), wantPos: new THREE.Vector3(), wantLook: new THREE.Vector3() };
-const SHOTS = {
-  far: [0, 30, 36],        // a big chunk of the island (the minimap shows all of it)
-  mid: [0, 14, 17],        // a pana and its neighborhood
-  close: [0, 8, 10.5],     // buying, events, the winner
-};
-function focus(at, kind = 'mid') {
-  const o = SHOTS[kind];
-  cam.kind = kind;
-  cam.wantLook.set(at.x, at.y + 1, at.z);
-  cam.wantPos.set(at.x + o[0], at.y + o[1], at.z + o[2]);
-}
+// The board camera and "Ver tablero" (board-camera.js).
+const boardCamera = createBoardCamera({ camera: boardCam, dom: renderer.domElement, canLook: () => view === boardView,
+  lookButton: $('look'), places: $('places') });
+const { cam, focus, setFreeLook } = boardCamera;
 // pull back for the start of a round, around whoever goes first
-function overview(at = players[0].token.rest) {
-  focus(at, 'far');
-}
+const overview = (at = players[order[0]].token.rest) => focus(at, 'far');
 overview();
-cam.pos.copy(cam.wantPos);
-cam.look.copy(cam.wantLook);
-
-// "Ver tablero": drag to orbit, scroll to zoom, Tab or the button to return
-const looker = new OrbitControls(boardCam, renderer.domElement);
-Object.assign(looker, { enabled: false, enableDamping: true, maxPolarAngle: 1.42, minDistance: 6, maxDistance: 360 });
-let freeLook = false;
-function setFreeLook(on) {
-  if (on && view !== boardView) return;
-  freeLook = on;
-  looker.enabled = on;
-  if (on) looker.target.copy(cam.look);
-  else {
-    cam.pos.copy(boardCam.position);
-    cam.look.copy(looker.target);
-  }
-  $('look').classList.toggle('on', on);
-  $('look').innerHTML = `${on ? 'Volver' : 'Ver tablero'} <kbd class="pk-kbd" data-pana-hint>Tab</kbd>`;
-  if (!on) $('places').value = '';
-}
-$('look').onclick = () => setFreeLook(!freeLook);
-const SCENIC_SPOTS = {
-  island: { target: [0, 12, -12], camera: [0, 156, 285] },
-  beach: { target: [12, 2, 90], camera: [34, 24, 137] },
-  waterfall: { target: [130, 64, -310], camera: [245, 115, 15] },
-  harbor: { target: [123, 3, 24], camera: [162, 26, 66] },
-};
-$('places').addEventListener('change', (event) => {
-  const spot = SCENIC_SPOTS[event.target.value];
-  if (!spot || view !== boardView) return;
-  setFreeLook(true);
-  looker.target.set(...spot.target);
-  boardCam.position.set(...spot.camera);
-  looker.update();
-});
+boardCamera.snap();
 
 const boardView = {
   scene: boardScene,
@@ -267,29 +222,15 @@ const boardView = {
       tk.pin.scale.set(0.95 * s, 1.04 * s, 1);
       tk.pin.position.y = 3.1 + s * 0.4 + Math.sin(t * 2.5 + p.i) * 0.1;
     }
-    for (const die of dice) {
-      if (!die.mesh.visible) continue;
-      if (die.rolling) die.spin(dt);
-      else {
-        // lookAt's +Z points back toward the camera: this is the result face.
-        const q = new THREE.Quaternion().setFromRotationMatrix(new THREE.Matrix4().lookAt(boardCam.position, die.mesh.position, new THREE.Vector3(0, 1, 0)));
-        die.mesh.quaternion.slerp(q, Math.min(1, dt * 12));
-      }
-    }
+    diceTable.update(dt, t, thrower?.shaking ? thrower.power : 0);
     puffs.update(dt);
     shockwaves.update(dt);
-    if (freeLook) looker.update();
-    else {
-      cam.pos.lerp(cam.wantPos, Math.min(1, dt * 2.2));
-      cam.look.lerp(cam.wantLook, Math.min(1, dt * 2.8));
-      boardCam.position.copy(cam.pos);
-      boardCam.lookAt(cam.look);
-    }
+    boardCamera.update(dt);
     // in the overview every tile counts; up close just the panas and the target
     const spots = [cam.look, ...players.map((p) => p.token.group.position)];
-    if (cam.kind === 'far' || freeLook) for (const tl of board.tiles) spots.push(tl.mesh.position);
+    if (cam.kind === 'far' || boardCamera.freeLook) for (const tl of board.tiles) spots.push(tl.mesh.position);
     board.seeThrough(boardCam.position, spots, dt);
-    board.follow(freeLook ? looker.target : cam.look);
+    board.follow(boardCamera.target);
     drawMap(dt, t);
   },
 };
@@ -297,163 +238,35 @@ const boardView = {
 // ======================================================================
 // time: waits and tweens run on game time (so ?speed and pauses work)
 // ======================================================================
-let jobs = [];
-const wait = (s) => new Promise((r, reject) => jobs.push({ t: s, r, reject }));
-const tween = (dur, fn) => new Promise((r, reject) => jobs.push({ t: dur, dur, fn, r, reject }));
-function stepJobs(dt) {
-  const done = [];
-  for (const j of jobs) {
-    j.t -= dt;
-    if (j.fn) j.fn(Math.min(1, 1 - j.t / j.dur));
-    if (j.t <= 0) done.push(j);
-  }
-  if (done.length) {
-    jobs = jobs.filter((j) => !done.includes(j));
-    for (const j of done) j.r();
-  }
-}
-const ease = (k) => k * k * (3 - 2 * k);
+const time = createGameTime(), { wait, tween } = time;
 
 // ======================================================================
-// input
+// input (input.js)
 // ======================================================================
-const held = {};
-let jumpPressed = false;
 let actionWaiters = [];
-addEventListener('keydown', (e) => {
-  // Let the atmosphere buttons retain native Space/Enter/Tab behavior.
-  if (e.target.closest?.('.places')) return;
-  const k = e.key.toLowerCase();
-  if (k === ' ' || k.startsWith('arrow')) e.preventDefault();
-  held[k] = true;
-  // in 2D and aim minigames W / ↑ move, so only Space is the action
-  if (!e.repeat && (k === ' ' || (!mini2d() && !miniAim() && (k === 'w' || k === 'arrowup')))) jumpPressed = true;
-  if (!e.repeat && k === ' ' && miniAim()) aim.keyPull = true;
-  if (k === 'm' && !e.repeat) toggleMute();
-  if (k === 'l' && !e.repeat && view === boardView) {
-    selectSky(SKY_MODES[(SKY_MODES.indexOf(board.atmosphere.mode) + 1) % SKY_MODES.length]);
-  }
-  if (k === 'tab') {
-    e.preventDefault();
-    if (!e.repeat) setFreeLook(!freeLook);
-  }
-  if (!e.repeat) for (const w of actionWaiters) w(k);
-});
-addEventListener('keyup', (e) => {
-  const k = e.key.toLowerCase();
-  held[k] = false;
-  // Space pulls the china while held; letting go fires
-  if (k === ' ' && aim.keyPull) {
-    aim.keyPull = false;
-    aim.fire = true;
-  }
-});
-addEventListener('pointerdown', () => sound.unlock(), { once: false });
-addEventListener('blur', () => {
-  for (const key in held) held[key] = false;
-  jumpPressed = false;
-  aim.pull = aim.keyPull = aim.fire = false;
-});
-
-// on-screen buttons for touch screens during minigames
-// (engine/touch.js: a finger sliding off the button still lets go)
-for (const [id, key] of [['t-left', 'a'], ['t-right', 'd'], ['t-jump', ' '], ['t2-up', 'w'], ['t2-down', 's'], ['t2-left', 'a'], ['t2-right', 'd'], ['t2-go', ' ']]) {
-  holdButton($(id), { down: () => { held[key] = true; if (key === ' ') jumpPressed = true; }, up: () => { held[key] = false; } });
-}
-
-// Aim minigames (`input: 'aim'`) get a reticle in NDC (−1..1) instead. The mouse
-// moves it and a press pulls; WASD / arrows steer it and Space pulls; on touch,
-// dragging anywhere aims and lifting the finger fires. The handlers live on the
-// canvas only while such a minigame runs, so the board and minimap never see them.
-const aim = { x: 0, y: 0, pull: false, keyPull: false, fire: false, keyT: 0, pointer: null, touch: null };
-const miniAim = () => mini?.def.input === 'aim';
-const clampAim = (v) => Math.max(-1, Math.min(1, v));
 const canvasEl = renderer.domElement;
-function aimAtPointer(e) {
-  const r = canvasEl.getBoundingClientRect();
-  aim.x = clampAim(((e.clientX - r.left) / r.width) * 2 - 1);
-  aim.y = clampAim(1 - ((e.clientY - r.top) / r.height) * 2);
-}
-const aimHandlers = {
-  pointerdown(e) {
-    if (paused || aim.pointer != null || (e.pointerType === 'mouse' && e.button !== 0)) return;
-    e.preventDefault();
-    sound.unlock();
-    try { canvasEl.setPointerCapture(e.pointerId); } catch { /* synthetic or already gone */ }
-    aim.pointer = e.pointerId;
-    if (e.pointerType === 'mouse') aimAtPointer(e);
-    else aim.touch = { x: e.clientX, y: e.clientY };
-    aim.pull = true;
-  },
-  pointermove(e) {
-    if (e.pointerType === 'mouse') return aimAtPointer(e);
-    if (aim.pointer !== e.pointerId || !aim.touch) return;
-    // a finger would hide the reticle, so touch drags it (a bit faster than the finger)
-    const r = canvasEl.getBoundingClientRect();
-    aim.x = clampAim(aim.x + ((e.clientX - aim.touch.x) / r.width) * 3);
-    aim.y = clampAim(aim.y - ((e.clientY - aim.touch.y) / r.height) * 3);
-    aim.touch = { x: e.clientX, y: e.clientY };
-  },
-  pointerup(e) {
-    if (aim.pointer !== e.pointerId) return;
-    aim.pointer = aim.touch = null;
-    if (aim.pull) aim.fire = true;
-    aim.pull = false;
-  },
-  pointercancel(e) {
-    if (aim.pointer !== e.pointerId) return;
-    aim.pointer = aim.touch = null;
-    aim.pull = false;
-  },
-};
-function bindAim(on) {
-  for (const [type, fn] of Object.entries(aimHandlers)) canvasEl[on ? 'addEventListener' : 'removeEventListener'](type, fn);
-  Object.assign(aim, { x: 0, y: 0, pull: false, keyPull: false, fire: false, keyT: 0, pointer: null, touch: null });
-}
-const IDLE_AIM = { aim: { x: 0, y: 0 }, pull: false, fire: false };
-
-// 1D minigames get { x, jump }; a module with `input: '2d'` also gets z (W/S, ↑/↓)
-const mini2d = () => mini?.def.input === '2d';
-function minigameInput(dt = 0) {
-  const x = (held.d || held.arrowright ? 1 : 0) - (held.a || held.arrowleft ? 1 : 0);
-  const jump = jumpPressed;
-  jumpPressed = false;
-  if (miniAim()) {
-    // keys steer the reticle, quick to start and faster the longer they're held
-    const y = (held.w || held.arrowup ? 1 : 0) - (held.s || held.arrowdown ? 1 : 0);
-    aim.keyT = x || y ? aim.keyT + dt : 0;
-    const speed = 0.8 + Math.min(1, aim.keyT / 0.45) * 1.5;
-    aim.x = clampAim(aim.x + x * speed * dt);
-    aim.y = clampAim(aim.y + y * speed * dt);
-    const fire = aim.fire;
-    aim.fire = false;
-    return { aim: { x: aim.x, y: aim.y }, pull: aim.pull || aim.keyPull, fire };
-  }
-  if (!mini2d()) return { x, jump };
-  const z = (held.w || held.arrowup ? 1 : 0) - (held.s || held.arrowdown ? 1 : 0);
-  return { x, z, jump };
-}
+// The minigame's drawing box: the whole window, or a letterbox for a fixed aspect.
+const miniBox = () => letterbox(mini?.def.aspect);
+const input = createInput({ canvas: canvasEl, mode: () => mini?.def.input, box: miniBox, paused: () => paused,
+  // Let the atmosphere buttons retain native Space/Enter/Tab behavior.
+  ignore: (e) => e.target.closest?.('.places') || (!started && e.target.closest?.('button, input, select, textarea, a')),
+  onKey(k, e) {
+    if (k === 'm' && !e.repeat) toggleMute();
+    if (k === 'l' && !e.repeat && view === boardView) selectSky(SKY_MODES[(SKY_MODES.indexOf(board.atmosphere.mode) + 1) % SKY_MODES.length]);
+    if (k === 'tab') {
+      e.preventDefault();
+      if (!e.repeat) setFreeLook(!boardCamera.freeLook);
+    }
+    if (!e.repeat) for (const w of actionWaiters) w(k);
+  } });
+const { bindAim } = input, minigameInput = input.read;
 
 // ======================================================================
 // UI kit
 // ======================================================================
-const MANGO_SVG = '<svg viewBox="0 0 40 40" class="ico"><path d="M8 24c0-10 9-17 18-15 6 1 8 7 7 13-2 9-11 13-18 11-4-1-7-4-7-9z" fill="#ffc629" stroke="#9a6400" stroke-width="3"/><path d="M27 9c1-3 4-5 7-5-1 3-3 5-7 5z" fill="#3a9d3a"/><path d="M14 17c2-3 5-4 8-4" stroke="#fff3b0" stroke-width="3" fill="none" stroke-linecap="round"/></svg>';
-const ICONS = {
-  coin: '<i class="ico coin"></i>',
-  mango: MANGO_SVG,
-  jump: '<i class="ico jump">⤒</i>',
-  card: SVG.card.replace('pk-ico', 'ico'),
-  relic: SVG.relic.replace('pk-ico', 'ico'),
-  bull: SVG.bull.replace('pk-ico', 'ico'),
-  car: SVG.car.replace('pk-ico', 'ico'),
-  mummy: SVG.mummy.replace('pk-ico', 'ico'),
-  canoe: SVG.canoe.replace('pk-ico', 'ico'),
-  whirl: SVG.whirl.replace('pk-ico', 'ico'),
-  iguana: SVG.iguana.replace('pk-ico', 'ico'),
-};
 
 let cardMode = 'board';
-let miniScores = [0, 0, 0, 0];
+let miniScores = players.map(() => 0);
 let miniIcon = 'mango';
 let turnOf = -1;
 let lastCards = '';
@@ -464,7 +277,7 @@ const ranks = () => rules.ranks(players);
 function renderCards() {
   const r = ranks();
   const best = Math.max(...miniScores);
-  const key = JSON.stringify([cardMode, turnOf, miniScores, players.map((p) => [p.coins, p.mangos])]);
+  const key = JSON.stringify([cardMode, turnOf, me?.i, miniScores, players.map((p) => [p.coins, p.mangos])]);
   if (key === lastCards) return;
   lastCards = key;
   $('cards').innerHTML = players.map((p) => {
@@ -472,7 +285,7 @@ function renderCards() {
     const stats = cardMode === 'board'
       ? `<span class="coins">${ICONS.coin}<b>${p.coins}</b></span><span class="mangos">${ICONS.mango}<b>${p.mangos}</b></span>`
       : `<span class="big">${ICONS[miniIcon]}<b>${miniScores[p.i]}</b></span>`;
-    return `<div class="pcard${turnOf === p.i ? ' turn' : ''}" style="--c:${p.color}">
+    return `<div class="pcard${turnOf === p.i ? ' turn' : ''}${p === me ? ' me' : ''}" style="--c:${p.color}">
       ${cardMode === 'board' ? `<span class="medal m${r[p.i]}">${r[p.i]}</span>` : ''}
       ${crown ? `<span class="crown">${SVG.crown}</span>` : ''}
       ${turnOf === p.i ? `<span class="tag">${p === me ? 'Tu turno' : 'Turno'}</span>` : ''}
@@ -483,25 +296,11 @@ function renderCards() {
 }
 const escapeHtml = (s) => s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
-function setPlank(text) { $('plank').textContent = text; }
-function setSign(text) {
-  $('sign').textContent = text || '';
-  $('sign').classList.toggle('hidden', !text);
-}
-function setTimer(n) {
-  $('timer').classList.toggle('hidden', n == null);
-  if (n != null) $('timer-n').textContent = n;
-}
+const { setPlank, setSign, setTimer, toast } = createBoardHud($, wait);
 
-async function toast(title, sub = '', secs = 1.4, kind = '') {
-  const el = $('toast');
-  el.className = `toast ${kind}`;
-  el.innerHTML = `<b>${title}</b>${sub ? `<span>${sub}</span>` : ''}`;
-  await wait(secs);
-  el.className = 'toast hidden';
-}
-
-// A choice with buttons + keys. The AI (or ?auto) answers on its own.
+// A choice with buttons + keys. The AI (or ?auto) answers on its own; online,
+// an unanswered prompt takes its default after PROMPT_WAIT seconds.
+const PROMPT_WAIT = 30;
 function ask(text, options, { auto = 0, delay = 0.5 } = {}) {
   if (online) {
     const player = players[turnOf] || players.find(p => p.seat === room.hostId);
@@ -512,162 +311,72 @@ function ask(text, options, { auto = 0, delay = 0.5 } = {}) {
     return new Promise((resolve, reject) => {
       resolveChoice = resolve; rejectChoice = reject;
       if (AUTO || !room.members.has(player?.seat)) wait(delay).then(() => finishChoice(auto)).catch(ignoreCancelled);
+      // A pana who stays connected but never answers doesn't stall the room.
+      else { const id = pendingChoice.id; wait(PROMPT_WAIT).then(() => pendingChoice?.id === id && finishChoice(auto)).catch(ignoreCancelled); }
     });
   }
   const el = $('prompt');
+  closeThrower();
   el.innerHTML = `<p>${text}</p><div class="row">${options.map((o, i) =>
     `<button data-i="${i}" class="pk-btn${i === 0 ? ' pk-btn--primary primary' : ''}">${o.label}${o.key ? ` <kbd class="pk-kbd" data-pana-hint>${o.key === ' ' ? 'Espacio' : o.key.toUpperCase()}</kbd>` : ''}</button>`).join('')}</div>`;
   el.classList.toggle('bare', !text);
   el.classList.remove('hidden');
   return new Promise((resolve) => {
-    const done = (i) => {
+    const done = (i, power) => {
       el.classList.add('hidden');
       actionWaiters = actionWaiters.filter((w) => w !== onKey);
-      sound.unlock();
+      closeThrower(); sound.unlock();
+      thrownPower = cleanPower(power, rand(0.4, 0.9));
       resolve(i);
     };
     const onKey = (k) => {
-      const i = options.findIndex((o) => o.key === k || (o.key === ' ' && k === 'enter'));
+      const i = options.findIndex((o) => !o.toss && (o.key === k || (o.key === ' ' && k === 'enter')));
       if (i >= 0) done(i);
     };
-    el.querySelectorAll('button').forEach((b) => (b.onclick = () => done(Number(b.dataset.i))));
+    el.querySelectorAll('button').forEach((b, i) => options[i].toss ? openThrower(b, (power) => done(i, power)) : (b.onclick = () => done(i)));
     if (AUTO) wait(delay).then(() => done(auto));
     else actionWaiters.push(onKey);
   });
 }
 
-// ---------- portraits for the player cards ----------
-function makePortraits() {
-  const pr = new THREE.WebGLRenderer({ antialias: true, alpha: true, preserveDrawingBuffer: true });
-  pr.setSize(128, 128);
-  const scene = new THREE.Scene();
-  scene.add(new THREE.HemisphereLight(0xffffff, 0x8a6a4a, 2.2));
-  const key = new THREE.DirectionalLight(0xffffff, 1.4);
-  key.position.set(2, 3, 4);
-  scene.add(key);
-  const pcam = new THREE.PerspectiveCamera(28, 1, 0.1, 20);
-  pcam.position.set(0.9, 1.55, 2.9);
-  pcam.lookAt(0, 1.38, 0);
-  for (const p of players) {
-    const c = buildCharacter(p.avatar);
-    c.group.rotation.y = 0.35;
-    c.update(0, { look: 0 });
-    scene.add(c.group);
-    pr.render(scene, pcam);
-    p.portrait = pr.domElement.toDataURL();
-    c.dispose();
-  }
-  pr.dispose();
-  pr.forceContextLoss();
+// ---------- dice: shake, throw, and the roll-off for who starts (dice-table.js) ----------
+let thrower = null, thrownPower = 0.5;
+// A prompt button that throws: hold it (or Space / Enter) to shake the dice and
+// let go to throw them; a flick across the island throws harder.
+function openThrower(button, onThrow) {
+  closeThrower();
+  thrower = bindDiceThrow({ button, surface: canvasEl, keys: [' ', 'Enter'],
+    canThrow: () => !paused && !boardCamera.freeLook && !!thrower, onStart: () => sound.unlock(),
+    onThrow: (power) => { closeThrower(); onThrow(power); } });
 }
-
-// ======================================================================
-// minimap: the whole island at a glance; tap it to look there
-// ======================================================================
-const MAP = MAP_BOUNDS;
-const mapEl = $('minimap');
-const mapCtx = mapEl.getContext('2d');
-const mapBase = document.createElement('canvas');
-mapBase.width = mapEl.width;
-mapBase.height = mapEl.height;
-const toMap = (x, z) => [(x - MAP.x0) / (MAP.x1 - MAP.x0) * mapEl.width, (z - MAP.z0) / (MAP.z1 - MAP.z0) * mapEl.height];
-const TILE_COLORS = { blue: '#3d7bf2', red: '#ff4b4b', event: '#ffd23f', start: '#2ad1b2', tree: '#8e4de8' };
-function drawMapBase() {
-  const g = mapBase.getContext('2d');
-  const W = mapBase.width, H = mapBase.height, step = 4;
-  for (let py = 0; py < H; py += step) {
-    for (let px = 0; px < W; px += step) {
-      const x = MAP.x0 + (px / W) * (MAP.x1 - MAP.x0), z = MAP.z0 + (py / H) * (MAP.z1 - MAP.z0);
-      const h = board.groundAt(x, z);
-      let c;
-      if (h < SEA - 2) c = '#1d4f80';
-      else if (h < SEA + 0.2) c = '#3a8fb0';
-      else if (h < 0.4 || beachMask(x, z) > 0.45) c = '#e6c88c';
-      else if (h > 24) c = '#b4adbb';
-      else if (h > 9) c = '#3f7f4a';
-      else c = h > 4 ? '#55a04c' : '#66b356';
-      g.fillStyle = c;
-      g.fillRect(px, py, step, step);
-    }
-  }
-  g.strokeStyle = '#45bde0';
-  g.lineWidth = 5;
-  g.lineJoin = g.lineCap = 'round';
-  g.beginPath();
-  RIVER.forEach(([x, z], i) => (i ? g.lineTo(...toMap(x, z)) : g.moveTo(...toMap(x, z))));
-  g.stroke();
-  // the path, then the tiles on it
-  g.strokeStyle = 'rgba(255, 240, 210, 0.7)';
-  g.lineWidth = 4;
-  for (const t of board.tiles) for (const n of t.next) {
-    const u = board.tiles[n];
-    g.beginPath();
-    g.moveTo(...toMap(t.x, t.z));
-    g.lineTo(...toMap(u.x, u.z));
-    g.stroke();
-  }
-  for (const t of board.tiles) {
-    const [x, y] = toMap(t.x, t.z);
-    g.fillStyle = TILE_COLORS[t.kind];
-    g.fillRect(x - 4, y - 4, 8, 8);
-  }
+function closeThrower() { thrower?.dispose(); thrower = null; }
+// How hard p throws: a human shakes and lets go, a bot just throws.
+async function askThrow(p, text, label) {
+  if (!isHuman(p)) { await wait(0.5); return rand(0.35, 0.95); }
+  await ask(text, [{ label, key: ' ', toss: true }]); return thrownPower;
 }
-drawMapBase();
-let mapT = 0;
-function drawMap(dt, t) {
-  mapT -= dt;
-  if (mapT > 0) return;
-  mapT = 0.1;
-  const g = mapCtx;
-  g.drawImage(mapBase, 0, 0);
-  // where the camera is looking
-  const [cx, cy] = toMap(cam.look.x, cam.look.z);
-  g.strokeStyle = 'rgba(255, 255, 255, 0.6)';
-  g.lineWidth = 3;
-  g.strokeRect(cx - 34, cy - 24, 68, 48);
-  // the cart: a pulsing gold star
-  const sp = board.stand.group.position;
-  const [sx, sy] = toMap(sp.x, sp.z);
-  const pulse = 1 + Math.sin(t * 6) * 0.15;
-  g.fillStyle = '#ffc629';
-  g.strokeStyle = '#6b4200';
-  g.lineWidth = 3;
-  g.beginPath();
-  for (let k = 0; k < 10; k++) {
-    const r = (k % 2 ? 6 : 14) * pulse, a = (k / 10) * Math.PI * 2 - Math.PI / 2;
-    g.lineTo(sx + Math.cos(a) * r, sy + Math.sin(a) * r);
-  }
-  g.closePath();
-  g.fill();
-  g.stroke();
-  // the panas
-  for (const p of players) {
-    const pos = p.token.group.position;
-    const [x, y] = toMap(pos.x, pos.z);
-    const r = turnOf === p.i ? 11 + Math.sin(t * 8) * 2 : 9;
-    g.fillStyle = p.color;
-    g.strokeStyle = '#fff';
-    g.lineWidth = 3;
-    g.beginPath();
-    g.arc(x, y, r, 0, Math.PI * 2);
-    g.fill();
-    g.stroke();
-    g.fillStyle = '#fff';
-    g.font = '14px "Luckiest Guy", system-ui, sans-serif';
-    g.textAlign = 'center';
-    g.textBaseline = 'middle';
-    g.fillText(String(p.i + 1), x, y + 1);
-  }
+async function rollOff() {
+  setPlank('¿QUIÉN EMPIEZA?');
+  overview(players[0].token.rest);
+  await toast('¿Quién empieza?', 'Cada pana tira un dado: el más alto sale primero', 1.8, 'round');
+  order = await rollOffOrder(players.map((p) => p.i), (i) => openingThrow(players[i]),
+    (tie) => toast('¡Empate!', `${namesList(tie.map((i) => escapeHtml(players[i].name)))} tiran otra vez`, 1.4, 'event'));
+  turnOf = -1; renderCards(); overview(); sound.horn('fiesta');
+  await toast(`¡Empieza ${escapeHtml(players[order[0]].name)}!`, order.map((i, k) => `${k + 1}. ${escapeHtml(players[i].name)}`).join(' · '), 2.4, `p${order[0]}`);
 }
-mapEl.addEventListener('click', (e) => {
-  const r = mapEl.getBoundingClientRect();
-  const x = MAP.x0 + ((e.clientX - r.left) / r.width) * (MAP.x1 - MAP.x0);
-  const z = MAP.z0 + ((e.clientY - r.top) / r.height) * (MAP.z1 - MAP.z0);
-  if (!freeLook) setFreeLook(true);
-  const y = board.groundAt(x, z);
-  looker.target.set(x, y, z);
-  boardCam.position.set(x, y + 34, z + 40);
-});
+async function openingThrow(p) {
+  turnOf = p.i; renderCards(); focus(p.token.rest); diceTable.hold(p, 1);
+  const power = await askThrow(p, 'Tira el dado: el más alto empieza', '¡Tira para empezar!');
+  const value = rules.rollDice(Math.random, 1).a;
+  await wait(diceTable.toss(p, [value], power));
+  sound.boing(); p.token.bubble.say(value === 6 ? '¡SEIS!' : `¡${value}!`, 0.8);
+  await wait(isHuman(p) ? 0.7 : 0.35);
+  dice[0].mesh.visible = false; p.token.pin.visible = true;
+  return value;
+}
+// minimap: the whole island at a glance; tap it to look there (minimap.js)
+const minimap = createMinimap($('minimap'), { board, players, focus: () => cam.look, turnOf: () => turnOf, look: (x, z) => boardCamera.lookAt(x, board.groundAt(x, z), z) });
+const drawMap = minimap.draw, drawMapBase = minimap.drawBase;
 
 // ======================================================================
 // board turns
@@ -721,8 +430,9 @@ async function chooseRoute(p, [shore, hill]) {
   focus(p.token.rest.clone().lerp(board.tiles[hill].mesh.position, 0.4), 'mid');
   let take;
   if (isHuman(p)) {
+    const viaShore = stepsTo(shore, board.standTile) + 1, viaHill = stepsTo(hill, board.standTile) + 1;
     take = await ask(`¿Por dónde vas? El <b>Atajo del cerro</b> es más corto, pero cuesta ${FORK.toll} monedas y es más peligroso.`,
-      [{ label: 'Por la orilla', key: '1' }, { label: `Atajo (−${FORK.toll})`, key: '2' }]);
+      [{ label: `Por la orilla (${viaShore} al puesto)`, key: '1' }, { label: `Atajo −${FORK.toll} (${viaHill} al puesto)`, key: '2' }]);
   } else {
     // head for the cart: take the hill if it gets there sooner, sometimes just for fun
     const viaHill = stepsTo(hill, board.standTile), viaShore = stepsTo(shore, board.standTile);
@@ -800,7 +510,7 @@ async function moveStand(p) {
   // somewhere the panas will reach soon: ahead of them on average, but not
   // right under anyone's nose (the board is big; behind them is a whole lap)
   const next = pick(rules.standCandidates({
-    tileCount: TILE_COUNT, standTile: board.standTile, tiles: board.tiles, players,
+    tileCount: board.mainCount, standTile: board.standTile, tiles: board.tiles, players,
     isBad: (i) => board.standSpot(i).bad >= 30,
   }));
   puffs.spawn(st.group.position.clone().setY(2), { color: 0xffffff, count: 14, spread: 4, size: 1.2, rise: 2, life: 1 });
@@ -818,6 +528,11 @@ async function moveStand(p) {
 }
 
 const EVENTS = [
+  { title: '¡Mango prestado!', text: 'Le robas un Mango de oro al pana que más tiene.', run: async p => {
+    const target = stealMango(players, p, options.stealing);
+    renderCards();
+    await toast(target ? `¡Un mango de ${escapeHtml(target.name)}!` : '¡No hay mangos para robar!', '', 1.4, 'gold');
+  } },
   { title: '¡Arepa de la suerte!', text: 'Encontraste una arepa rellena de monedas.', run: (p) => give(p, 6, '¡Qué rica!') },
   { title: '¡Ay, la cartera!', text: 'Se te cayó la cartera en el río.', run: (p) => give(p, -5, '¡Mi plata!') },
   {
@@ -876,7 +591,7 @@ async function landOn(p) {
   if (coins > 0) return give(p, coins);
   if (coins < 0) return give(p, coins, pick(['¡Ay!', '¡Qué pava!', `${coins}`]));
   if (kind === 'tree') return shakeTree(p);
-  const ev = pick(EVENTS);
+  const ev = pick(options.stealing ? EVENTS : EVENTS.slice(1));
   sound.tone(660, 0, 0.12, 'triangle', 0.08);
   sound.tone(880, 0.12, 0.18, 'triangle', 0.08);
   await toast(ev.title, ev.text, 1.9, 'event');
@@ -888,28 +603,17 @@ async function takeTurn(p) {
   renderCards();
   const tk = p.token;
   focus(tk.rest);
-  await toast(online ? `Turno de ${escapeHtml(p.name)}` : p.human ? '¡Tu turno!' : `Turno de ${escapeHtml(p.name)}`, '', 1, `p${p.i}`);
+  const cart = stepsTo(p.tile, board.standTile);
+  await toast(online ? `Turno de ${escapeHtml(p.name)}` : p.human ? '¡Tu turno!' : `Turno de ${escapeHtml(p.name)}`, `Puesto del mango a ${cart} casillas`, 1, `p${p.i}`);
 
-  // two dice spin over the pana's head
-  dice.forEach((d, k) => {
-    d.mesh.visible = true;
-    d.rolling = true;
-    d.mesh.position.set(tk.rest.x + (k ? 0.95 : -0.95), tk.rest.y + 4.8, tk.rest.z);
-  });
-  tk.pin.visible = false;
-  sound.unlock();
-  if (isHuman(p)) await ask('', [{ label: '¡Tira los dados!', key: ' ' }]);
-  else await wait(0.9);
-  const { a, b, n, doubles } = rules.rollDice();
-  dice[0].rolling = false;
-  dice[0].value = a; dice[0].show(a);
-  sound.boing();
-  await wait(0.35);
-  dice[1].rolling = false;
-  dice[1].value = b; dice[1].show(b);
+  // the dice spin over the pana's head until they're thrown onto the board
+  diceTable.hold(p, options.dice);
+  const power = await askThrow(p, `Mantén para agitar y suelta para tirar · el puesto está a ${cart} casillas`, options.dice === 1 ? '¡Tira el dado!' : '¡Tira los dados!');
+  const { a, b, n, doubles } = rules.rollDice(Math.random, options.dice);
+  await wait(diceTable.toss(p, options.dice === 1 ? [a] : [a, b], power));
   sound.boing();
   tk.bubble.say(doubles ? '¡DOBLES!' : n >= 10 ? pick(['¡Epa!', '¡Dale!', `¡${n}!`]) : n <= 3 ? pick(['¿Nada más?', '¡Qué pava!']) : `¡${n}!`, 0.9);
-  await wait(0.9);
+  await wait(0.7);
   if (doubles) {
     sound.horn('fiesta');
     await toast('¡Dobles!', `+${DOUBLES_BONUS} monedas de premio`, 1.2, 'gold');
@@ -931,7 +635,8 @@ async function takeTurn(p) {
 let view = boardView;
 let mini = null;   // { game, state: 'wait'|'run'|'outro', left, winners }
 
-async function playMinigame(def) {
+async function playMinigame(entry) {
+  const def = await loadMinigame(entry.id);
   setFreeLook(false);
   turnOf = -1;
   setPlank('MINIJUEGO');
@@ -940,28 +645,23 @@ async function playMinigame(def) {
   $('mini-howto').textContent = def.howto;
   $('mini-keys').innerHTML = def.keys.map(([k, what]) => `<span><kbd class="pk-kbd">${k}</kbd> ${what}</span>`).join('');
   $('mini-intro').classList.remove('hidden');
-  if (isHuman(me)) await ask('', [{ label: '¡Listo!', key: ' ' }]);
+  if (online) await everyoneReady();
+  else if (isHuman(me)) await ask('', [{ label: '¡Listo!', key: ' ' }]);
   else await wait(2);
   $('mini-intro').classList.add('hidden');
 
   const spec = online ? { serial: `${room.id}-${++miniSerial}-${Date.now()}`, seed: Math.floor(Math.random() * 2 ** 32),
-    id: def.id, players: playerData(), auto: AUTO, aspect: 16 / 9 } : null;
+    id: def.id, players: playerData(), auto: AUTO, aspect: def.aspect || null } : null;
   const game = createMini(def, spec);
-  game.camera.aspect = spec?.aspect || innerWidth / innerHeight;
-  game.camera.updateProjectionMatrix();
-  miniScores = [0, 0, 0, 0];
+  miniScores = players.map(() => 0);
   miniIcon = def.icon;
   cardMode = 'mini';
   renderCards();
   mini = { def, game, spec, authoritative: true, state: 'wait', left: def.time };
   if (online) { room.history = []; room.inputs.clear(); room.publish(captureOnline()); }
   game.update(0.0001, online ? players.map(() => IDLE_INPUT) : def.input === 'aim' ? IDLE_AIM : { x: 0, jump: false });
-  view = { scene: game.scene, camera: game.camera, update: () => {} };
-  document.body.classList.add('in-mini');
-  document.body.classList.toggle('mini-2d', def.input === '2d');
-  document.body.classList.toggle('mini-aim', def.input === 'aim');
   $('reticles').innerHTML = '';
-  if (def.input === 'aim') bindAim(true);
+  enterMini();
   setTimer(def.time);
 
   for (const n of ['3', '2', '1']) {
@@ -972,8 +672,7 @@ async function playMinigame(def) {
   $('count').textContent = '¡YA!';
   sound.tone(880, 0, 0.3, 'square', 0.08);
   wait(0.6).then(() => ($('count').textContent = '')).catch(ignoreCancelled);
-  jumpPressed = false;
-  aim.fire = aim.keyPull = false;
+  input.forgetPresses();
   mini.state = 'run';
   await new Promise((r, reject) => { mini.finish = r; mini.abort = reject; });
 
@@ -989,7 +688,7 @@ async function playMinigame(def) {
   // the pointer is the board's again (and the cursor comes back)
   if (def.input === 'aim') bindAim(false);
   document.body.classList.remove('mini-aim');
-  setTimer(null);
+  setTimer(null); drawHint(null);
   sound.horn('fiesta');
   $('winner').innerHTML = winners.length
     ? `<span class="crown">${SVG.crown}</span><small>${winners.length > 1 ? 'GANADORES' : 'GANADOR'}</small><b>${winners.map((i) => escapeHtml(players[i].name)).join(' · ')}</b><em>+10 MONEDAS</em>`
@@ -997,10 +696,11 @@ async function playMinigame(def) {
   $('winner').classList.remove('hidden');
   await wait(3);
   $('winner').classList.add('hidden');
-  for (const i of winners) players[i].coins += 10;
+  for (const i of winners) { players[i].coins += 10; players[i].miniWins = (players[i].miniWins || 0) + 1; }
 
   mini = null;
   view = boardView;
+  freeMini(game); frameMini(); drawProgress(null); drawHint(null);
   document.body.classList.remove('in-mini');
   cardMode = 'board';
   setSign('');
@@ -1012,35 +712,44 @@ async function playMinigame(def) {
   }
 }
 
-// Aim minigames draw a reticle per pana over the canvas: { x, y } in NDC, its
-// color, how far the china is pulled (0..1), and for you the stones left.
-function drawReticles(list) {
-  const box = $('reticles');
-  while (box.children.length < list.length) {
-    const el = document.createElement('div');
-    el.className = 'reticle';
-    el.innerHTML = '<i></i><span class="ammo"></span>';
-    box.append(el);
+// The view, body classes, touch buttons and camera for the minigame in `mini`.
+// A module's `touch` names its pad ('lr', 'r', 'dpad' or 'none') and action
+// ('jump' draws the icon, a word is printed, null hides the button).
+function enterMini() {
+  const { def, game } = mini, touch = def.touch || {};
+  view = { scene: game.scene, camera: game.camera, update() {} };
+  document.body.classList.add('in-mini');
+  document.body.classList.toggle('mini-2d', def.input === '2d');
+  document.body.classList.toggle('mini-aim', def.input === 'aim' && mini.state !== 'outro');
+  document.body.dataset.pad = touch.pad || (def.input === '2d' ? 'dpad' : 'lr');
+  const action = touch.action === undefined ? 'jump' : touch.action;
+  for (const b of [$('t-jump'), $('t2-go')]) {
+    b.classList.toggle('hidden', !action);
+    b.replaceChildren(); b.dataset.icon = action === 'jump' ? 'jump' : '';
+    if (action === 'jump') drawIcons(b.parentElement); else b.textContent = action || '';
+    b.setAttribute('aria-label', action === 'jump' ? 'Saltar' : action || 'Acción');
   }
-  list.forEach((r, i) => {
-    const el = box.children[i];
-    el.style.setProperty('--c', r.color);
-    el.style.setProperty('--pull', r.pull.toFixed(2));
-    el.style.transform = `translate(${((r.x + 1) / 2) * innerWidth}px, ${((1 - r.y) / 2) * innerHeight}px)`;
-    el.classList.toggle('me', !!r.me);
-    el.classList.toggle('empty', r.ammo === 0);
-    if (r.me) {
-      const pips = r.ammo == null ? '' : '<b></b>'.repeat(r.ammo) + '<b class="used"></b>'.repeat(Math.max(0, (r.max || 3) - r.ammo));
-      if (el.dataset.pips !== pips) el.querySelector('.ammo').innerHTML = el.dataset.pips = pips;
-    }
-  });
+  if (def.input === 'aim') bindAim(true);
+  drawProgress(null); drawHint(null);
+  frameMini();
+}
+// Fits the minigame camera to the screen (framing.js). A module with a fixed
+// `aspect` (Chinazo's screen-space hits) draws letterboxed instead.
+function frameMini() {
+  const box = miniBox();
+  renderer.setViewport(box.x, box.y, box.w, box.h);
+  if (!mini) return;
+  const camera = mini.game.camera, aspect = box.w / box.h;
+  if (mini.def.frame === 'own') { camera.aspect = aspect; camera.updateProjectionMatrix(); } else fitCamera(camera, aspect);
 }
 
 function updateMini(dt) {
   const { game } = mini;
   if (mini.state === 'run') {
     game.update(dt, online ? room.takeInputs(players) : minigameInput(dt));
-    if (game.reticles) drawReticles(game.reticles());
+    if (game.reticles) drawReticles(game.reticles(), miniBox());
+    if (game.progress) drawProgress(game.progress());
+    drawHint(game.hint?.());
     mini.left -= dt;
     setTimer(Math.max(0, Math.ceil(mini.left)));
     miniScores = game.scores();
@@ -1057,26 +766,45 @@ function updateMini(dt) {
 // ======================================================================
 // start and end
 // ======================================================================
+
+// Options remain part of the host checkpoint, including after host migration.
+function syncOptions(next) {
+  const previous = options;
+  options = cleanOptions(next);
+  options.rounds = ROUNDS;
+  if (previous.minigames !== options.minigames) nextMinigame = rules.minigameBag(minigamePool(MINIGAMES, options));
+  if (previous.board !== options.board || previous.surprises !== options.surprises) {
+    board.configure(options); board.setStand(7); layoutTokens(); drawMapBase(); overview();
+  }
+}
+function changeOptions(patch) {
+  if (started || (online && !room?.isHost)) return;
+  const next = applyOptions(options, patch); if (!next) return;
+  if (patch.rounds != null) ROUNDS = patch.rounds;
+  syncOptions(next);
+  for (const p of players) { p.coins = options.startCoins; p.tile = 0; }
+  layoutTokens(); lobbyRoster(); renderCards();
+  if (online) room.publish(captureOnline());
+}
+const roomOptions = createRoomOptions($('room-options'), { title: 'Bululú', fields: OPTION_FIELDS,
+  change: changeOptions, reset: () => changeOptions(DEFAULT_OPTIONS) });
+function boardPace() { return mini || turnOf < 0 ? 1 : cpuPace(options, isHuman(players[turnOf])); }
+
 async function intro() {
   $('intro-players').innerHTML = players.map((p) =>
     `<div class="ip" style="--c:${p.color}"><img src="${p.portrait}" alt=""><b>P${p.i + 1}</b><span>${p === me ? 'Tú' : escapeHtml(p.name)}</span></div>`).join('');
-  const pickRounds = (n) => {
-    if (online && !room?.isHost) return;
-    ROUNDS = n;
-    $('intro-rounds').textContent = $('intro-rounds-n').textContent = n;
-    for (const b of $('intro-pick').children) b.setAttribute('aria-pressed', String(Number(b.dataset.rounds) === n));
-  };
-  for (const b of $('intro-pick').children) b.onclick = () => pickRounds(Number(b.dataset.rounds));
-  pickRounds(ROUNDS);
   if (!online) lobbyRoster();
   $('intro').classList.remove('hidden');
   $('online').onclick = connectOnline;
+  // Any minigame on its own, against bots, from the lobby (the ?play= loop).
+  for (const m of MINIGAMES) $('practice-mini').append(new Option(m.title, m.id));
+  $('practice-mini').onchange = (e) => { if (!e.target.value) return; const url = new URL(location.href); url.searchParams.set('play', e.target.value); url.searchParams.delete('room'); location.href = url.href; };
   $('practice').onclick = () => { const url = new URL(location.href); url.searchParams.delete('room'); url.searchParams.delete('lead'); location.href = url.href; };
   if (online) connectOnline();
   await new Promise((r) => {
     const start = () => { if (online) { if (room?.isHost && !started) beginOnline(null); } else r(); };
     $('start').onclick = start;
-    const onKey = (k) => { if (k === ' ' || k === 'enter') start(); };
+    const onKey = (k) => { if (!roomOptions.isOpen && (k === ' ' || k === 'enter')) start(); };
     actionWaiters.push(onKey);
     if (AUTO && !online) wait(1).then(r);
   });
@@ -1103,6 +831,7 @@ async function results() {
 function drawResults() {
   const order = standings(), r = ranks(), champ = order[0];
   const tied = order.filter((p) => r[p.i] === 1);
+  $('res-sub').textContent = options.mode === 'minis' ? 'Gana quien tenga más mangos de oro; si no, quien juntó más monedas ganando minijuegos.' : 'El pana con más mangos de oro gana. Si hay empate, ganan las monedas.';
   $('res-title').textContent = tied.length > 1 ? `¡Empate entre ${tied.map((p) => p.name).join(' y ')}!`
     : champ === me ? `¡Ganaste, ${champ.name}!` : `¡${champ.name} es el pana más pana!`;
   $('res-rows').innerHTML = order.map((p) => `
@@ -1121,10 +850,12 @@ function drawResults() {
 }
 
 async function main() {
-  makePortraits();
+  makePortraits(players);
   renderCards();
   await intro();
-  started = true;
+  started = true; roomOptions.close();
+  for (const p of players) { p.coins = options.startCoins; p.miniWins = 0; }
+  board.setStand(7);
   await runBoard();
 }
 
@@ -1136,6 +867,26 @@ async function runBoard(resume) {
       await playMinigame(MINIGAMES.find(m => m.id === only));
     }
   }
+  if (options.mode === 'minis') await runMinis(resume);
+  else await runRounds(resume);
+  const bonus = awardFinalBonus(players, options.finalBonus);
+  saveCheckpoint('done', 0);
+  if (bonus.length) await toast('¡Bonus final!', `Un Mango de oro por más victorias: ${bonus.map(i => escapeHtml(players[i].name)).join(' · ')}`, 2.5, 'gold');
+  await results();
+}
+// Solo minijuegos: no board, just `ROUNDS` minigames from the shuffled bag.
+async function runMinis(resume) {
+  for (round = resume?.round || 1; round <= ROUNDS; round++) {
+    setPlank(`MINIJUEGO ${round} / ${ROUNDS}`);
+    const def = MINIGAMES.find(m => m.id === resume?.minigame) || FORCED || nextMinigame();
+    saveCheckpoint('mini', players.length, def);
+    await playMinigame(def);
+    resume = null;
+  }
+}
+async function runRounds(resume) {
+  if (resume) order = resume.order || players.map((p) => p.i);
+  else await rollOff();
   for (round = resume?.round || 1; round <= ROUNDS; round++) {
     setPlank(`RONDA ${round} / ${ROUNDS}`);
     overview();
@@ -1144,15 +895,50 @@ async function runBoard(resume) {
     for (let i = first; i < players.length; i++) {
       if (online) syncRoster();
       saveCheckpoint('turn', i);
-      await takeTurn(players[i]);
+      await takeTurn(players[order[i]]);
     }
     const def = MINIGAMES.find(m => m.id === resume?.minigame) || FORCED || nextMinigame();
     saveCheckpoint('mini', players.length, def);
     await playMinigame(def);
     resume = null;
   }
-  saveCheckpoint('done', 0);
-  await results();
+}
+
+// Online, every pana in the room says ¡Listo! for themselves before a
+// minigame; bots don't wait, and after READY_WAIT seconds it starts anyway.
+const READY_WAIT = 15;
+let readyCheck = null, shownReady = '';
+async function everyoneReady() {
+  const seats = players.filter(p => p.human && room.members.has(p.seat)).map(p => p.seat);
+  readyCheck = { id: `${room.id}:${++promptSerial}`, seats, done: AUTO ? [...seats] : [], left: READY_WAIT };
+  for (let t = 0; t < READY_WAIT && seats.some(s => room.members.has(s) && !readyCheck.done.includes(s)); t += 0.25) {
+    readyCheck.left = Math.ceil(READY_WAIT - t); showReady(readyCheck);
+    await wait(0.25);
+  }
+  readyCheck = null; showReady(null);
+}
+function markReady(seat, id) {
+  if (readyCheck?.id !== id || !readyCheck.seats.includes(seat) || readyCheck.done.includes(seat)) return;
+  readyCheck.done.push(seat); showReady(readyCheck); room.publish(captureOnline());
+}
+function showReady(check) {
+  const key = JSON.stringify([check, room?.id]);
+  if (key === shownReady) return;
+  shownReady = key;
+  const box = $('mini-ready'); box.replaceChildren(); box.hidden = !check;
+  if (!check) return;
+  const row = document.createElement('div'); row.className = 'chips'; box.append(row);
+  for (const seat of check.seats) {
+    const p = players.find(o => o.seat === seat), chip = document.createElement('span');
+    chip.className = `chip${check.done.includes(seat) ? ' on' : ''}`; chip.style.setProperty('--c', p?.color || '#fff');
+    chip.textContent = p?.name || 'Pana'; row.append(chip);
+  }
+  const mine = check.seats.includes(room.id) && !check.done.includes(room.id);
+  const note = document.createElement('small'); note.textContent = mine ? `Empieza en ${check.left} s` : `Esperando a los panas… ${check.left} s`; box.append(note);
+  if (!mine) return;
+  const go = document.createElement('button'); go.className = 'pk-btn pk-btn--primary'; go.textContent = '¡Listo!';
+  go.onclick = () => room.ready(check.id); box.append(go);
+  actionWaiters.push(k => { if (k === ' ' || k === 'enter') room.ready(check.id); });
 }
 
 // Online board authority and presentation. Minigames replay the host's exact
@@ -1160,7 +946,7 @@ async function runBoard(resume) {
 const CANCELLED = new Error('Bululú host changed');
 function ignoreCancelled(error) { if (error !== CANCELLED) { console.error(error); $('room-status').textContent = 'No se pudo continuar la partida. Vuelve a entrar a la sala.'; } }
 function playerData() {
-  return players.map(({ i, color, avatar, human, name, coins, mangos, tile, seat }) => ({ i, color, avatar, human, name, coins, mangos, tile, seat }));
+  return players.map(({ i, color, avatar, human, name, coins, mangos, miniWins, tile, seat }) => ({ i, color, avatar, human, name, coins, mangos, miniWins, tile, seat }));
 }
 function applyPlayers(data) {
   let changed = false;
@@ -1175,16 +961,16 @@ function applyPlayers(data) {
   });
   me = players.find(p => p.seat === room?.id) || null;
   layoutTokens();
-  if (changed) { makePortraits(); lastCards = ''; }
+  if (changed) { makePortraits(players); lastCards = ''; }
 }
 function lobbyRoster() {
   $('intro-players').innerHTML = players.map(p =>
     `<div class="ip" style="--c:${p.color}"><img src="${p.portrait}" alt=""><b>P${p.i + 1}</b><span>${escapeHtml(p.name)}${p === me ? ' · Tú' : p.human ? '' : ' · Bot'}</span></div>`).join('');
   $('intro-rounds').textContent = $('intro-rounds-n').textContent = ROUNDS;
-  for (const b of $('intro-pick').children) {
-    b.disabled = online && (!room?.isHost || started);
-    b.setAttribute('aria-pressed', String(Number(b.dataset.rounds) === ROUNDS));
-  }
+  document.body.classList.toggle('mode-minis', options.mode === 'minis');
+  $('intro-rules').textContent = rulesSummary(options, ROUNDS).join(' ');
+  $('practice-pick').hidden = online;
+  roomOptions.update(options, !started && (!online || room?.isHost));
   $('start').disabled = online && (!room?.isHost || started);
   $('start').textContent = online ? room?.isHost ? '¡A jugar!' : 'Esperando al anfitrión…' : 'Jugar con bots';
 }
@@ -1199,18 +985,19 @@ function syncRoster() {
   }
   applyPlayers(next); lobbyRoster(); renderCards();
 }
-function finishChoice(choice) {
+function finishChoice(choice, power) {
   if (!resolveChoice) return;
   const resolve = resolveChoice;
   resolveChoice = rejectChoice = null; pendingChoice = room.prompt = null;
-  $('prompt').classList.add('hidden'); actionWaiters = [];
+  $('prompt').classList.add('hidden'); actionWaiters = []; closeThrower();
+  thrownPower = cleanPower(power, rand(0.4, 0.9));
   resolve(choice);
 }
 let shownPrompt = '';
 function showOnlinePrompt(prompt) {
   const key = JSON.stringify([prompt, room.id]);
   if (shownPrompt === key) return;
-  shownPrompt = key; actionWaiters = [];
+  shownPrompt = key; actionWaiters = []; closeThrower();
   const el = $('prompt'); el.replaceChildren(); el.classList.toggle('hidden', !prompt);
   if (!prompt) return;
   const mine = prompt.seat === room.id;
@@ -1221,34 +1008,48 @@ function showOnlinePrompt(prompt) {
   const row = document.createElement('div'); row.className = 'row'; el.append(row);
   prompt.options.forEach((option, i) => {
     const b = document.createElement('button'); b.className = 'pk-btn' + (i === 0 ? ' pk-btn--primary' : '');
-    b.textContent = option.label; b.onclick = () => room.choose(prompt.id, i); row.append(b);
+    b.textContent = option.label; row.append(b);
+    if (option.toss) openThrower(b, power => room.choose(prompt.id, i, power));
+    else b.onclick = () => room.choose(prompt.id, i);
   });
   actionWaiters.push(k => {
-    const i = prompt.options.findIndex(o => o.key === k || (o.key === ' ' && k === 'enter'));
+    const i = prompt.options.findIndex(o => !o.toss && (o.key === k || (o.key === ' ' && k === 'enter')));
     if (i >= 0) room.choose(prompt.id, i);
   });
+}
+// The shuffled minigame bag travels in checkpoints as ids, so a new host
+// keeps dealing the same pass instead of starting a fresh one.
+const byId = (id) => MINIGAMES.find(m => m.id === id) || null;
+function saveBag() { const { bag, last } = nextMinigame.save(); return { bag: bag.map(m => m.id), last: last?.id ?? null }; }
+function restoreBag(saved) {
+  const bag = saved.bag.map(byId).filter(Boolean);
+  nextMinigame = rules.minigameBag(minigamePool(MINIGAMES, options), Math.random, { bag, last: byId(saved.last) });
 }
 function saveCheckpoint(stage, next, def, only) {
   if (!online) return;
   if (!mini) syncRoster();
-  checkpoint = { stage, next, round, rounds: ROUNDS, players: playerData(), stand: board.standTile, minigame: def?.id, only };
+  checkpoint = { stage, next, round, rounds: ROUNDS, options: { ...options }, players: playerData(), stand: board.standTile, minigame: def?.id, only, order, bag: saveBag() };
   room.publish(captureOnline());
 }
 function captureOnline() {
-  return { started, rounds: ROUNDS, round, players: playerData(), checkpoint, prompt: pendingChoice,
+  return { started, options: { ...options }, rounds: ROUNDS, round, players: playerData(), checkpoint, prompt: pendingChoice,
     turnOf, cardMode, miniScores, miniIcon, stand: board.standTile, highlight: board.highlight,
     camera: { pos: cam.wantPos.toArray(), look: cam.wantLook.toArray() },
     tokens: players.map(p => ({ pos: p.token.group.position.toArray(), rest: p.token.rest.toArray(),
       rotation: p.token.group.rotation.y, cheer: p.token.cheer, dizzy: p.token.dizzy, pin: p.token.pin.visible })),
-    dice: dice.map(d => ({ pos: d.mesh.position.toArray(), visible: d.mesh.visible, rolling: d.rolling, value: d.value })),
+    dice: dice.map(d => ({ pos: d.mesh.position.toArray(), visible: d.mesh.visible, rolling: d.rolling, value: d.value, toss: d.spec || null })), order,
     counter: { pos: counter.sprite.position.toArray(), visible: counter.sprite.visible, value: counter.value },
+    ready: readyCheck,
     mini: mini?.spec ? { ...mini.spec, state: mini.state, left: mini.left, winners: mini.winners, frames: room.history.length } : null,
     presentation: readPresentation() };
 }
+// Board resources survive a minigame's teardown; everything else it made is freed.
+function freeMini(game) { if (game) release(game.scene, resources(boardScene)); }
 function createMini(def, spec) {
-  if (!spec) return def.create({ players, auto: AUTO });
+  if (!spec) { const game = def.create({ players, auto: AUTO, aspect: def.aspect }); track(game.scene); return game; }
   const rng = seeded(spec.seed);
   const game = withRandom(rng, () => def.create({ players: spec.players, auto: spec.auto, aspect: spec.aspect, localIndex: me?.i ?? -1 }));
+  track(game.scene);
   for (const method of ['update', 'outro']) {
     const run = game[method].bind(game);
     game[method] = (dt, input) => {
@@ -1260,32 +1061,31 @@ function createMini(def, spec) {
 }
 function clearMini() {
   if (mini?.def.input === 'aim') bindAim(false);
+  const game = mini?.game;
   mini = null; view = boardView; miniFrame = 0; requestingFrames = false;
-  document.body.classList.remove('in-mini', 'mini-2d', 'mini-aim');
+  freeMini(game);
+  document.body.classList.remove('in-mini', 'mini-2d', 'mini-aim'); frameMini(); drawProgress(null); drawHint(null);
   $('reticles').replaceChildren(); setTimer(null);
 }
+let lastOnline = null;
 function applyOnline(state) {
+  lastOnline = state;
   if (authority) stopAuthority();
   started = state.started; ROUNDS = state.rounds; round = state.round;
+  syncOptions(state.options);
+  if (started && roomOptions.isOpen) roomOptions.close();
   checkpoint = state.checkpoint;
   applyPlayers(state.players); lobbyRoster();
   $('intro').classList.toggle('hidden', started); $('hud').classList.toggle('hidden', !started);
-  turnOf = state.turnOf; cardMode = state.cardMode; miniScores = state.miniScores; miniIcon = state.miniIcon;
+  turnOf = state.turnOf; cardMode = state.cardMode; if (state.order) order = state.order; miniScores = state.miniScores; miniIcon = state.miniIcon;
   if (board.standTile !== state.stand) board.setStand(state.stand);
   board.highlight = state.highlight || [];
-  if (!freeLook) { cam.wantPos.fromArray(state.camera.pos); cam.wantLook.fromArray(state.camera.look); }
+  if (!boardCamera.freeLook) { cam.wantPos.fromArray(state.camera.pos); cam.wantLook.fromArray(state.camera.look); }
   state.tokens.forEach((v, i) => {
     const tk = players[i].token;
     tk.rest.fromArray(v.pos); tk.group.rotation.y = v.rotation; tk.cheer = v.cheer; tk.dizzy = v.dizzy; tk.pin.visible = v.pin;
   });
-  state.dice.forEach((v, i) => {
-    const d = dice[i]; d.mesh.position.fromArray(v.pos); d.mesh.visible = v.visible; d.rolling = v.rolling;
-    if (v.value) {
-      d.value = v.value;
-      // Spinning changes the painted face even when consecutive results match.
-      if (!v.rolling) d.show(v.value);
-    }
-  });
+  state.dice.forEach((v, i) => diceTable.apply(dice[i], v));
   if (state.counter.value && state.counter.value !== counter.value) counter.set(state.counter.value);
   counter.sprite.position.fromArray(state.counter.pos); counter.sprite.visible = state.counter.visible;
   if (!state.mini) { if (mini) clearMini(); }
@@ -1293,20 +1093,18 @@ function applyOnline(state) {
     const spec = state.mini;
     if (mini?.spec?.serial !== spec.serial) {
       clearMini(); setFreeLook(false);
-      const def = MINIGAMES.find(m => m.id === spec.id);
+      // Not downloaded yet: draw this state once it is (missed frames come by catch-up).
+      const def = loadedMinigame(spec.id);
+      if (!def) { loadMinigame(spec.id).then(() => { if (lastOnline === state) applyOnline(state); }).catch(() => {}); return; }
       mini = { def, spec, game: createMini(def, spec), authoritative: false, state: spec.state, left: spec.left };
-      view = { scene: mini.game.scene, camera: mini.game.camera, update() {} };
-      document.body.classList.add('in-mini');
-      document.body.classList.toggle('mini-2d', def.input === '2d');
-      document.body.classList.toggle('mini-aim', def.input === 'aim' && spec.state !== 'outro');
-      if (def.input === 'aim') bindAim(true);
+      enterMini();
     }
     if (spec.state === 'outro' && mini.state !== 'outro') { bindAim(false); document.body.classList.remove('mini-aim'); }
     mini.state = spec.state; mini.left = spec.left;
     setTimer(spec.state === 'outro' ? null : Math.max(0, Math.ceil(spec.left)));
     if (miniFrame < spec.frames && !requestingFrames) { requestingFrames = true; room.catchup(spec.serial, miniFrame); }
   }
-  renderCards(); writePresentation(state.presentation); showOnlinePrompt(state.prompt);
+  renderCards(); writePresentation(state.presentation); showOnlinePrompt(state.prompt); showReady(state.ready);
   const waiting = started && (!me || (mini && !mini.spec.players.some(p => p.seat === room.id)));
   if (waiting) {
     $('online-status').textContent = 'Estás viendo la partida. Te unes en el próximo turno o minijuego.';
@@ -1330,27 +1128,30 @@ function applyFrames(message) {
       const f = message.frames[i]; mini.game[f.method](f.dt, f.input); miniFrame++;
     }
   } finally { sound.muted = muted; }
-  if (mini.game.reticles && mini.state !== 'outro') drawReticles(mini.game.reticles());
+  if (mini.game.reticles && mini.state !== 'outro') drawReticles(mini.game.reticles(), miniBox());
+  if (mini.game.progress) drawProgress(mini.game.progress());
+  drawHint(mini.state === 'outro' ? null : mini.game.hint?.());
 }
 function stopAuthority() {
   authority = 0;
-  for (const j of jobs) j.reject?.(CANCELLED);
-  jobs = []; rejectChoice?.(CANCELLED); resolveChoice = rejectChoice = null;
-  mini?.abort?.(CANCELLED); clearMini(); pendingChoice = null;
+  time.cancel(CANCELLED); rejectChoice?.(CANCELLED); resolveChoice = rejectChoice = null;
+  mini?.abort?.(CANCELLED); clearMini(); pendingChoice = null; readyCheck = null;
 }
 function beginOnline(resume) {
-  stopAuthority(); authority = 1; started = true;
+  stopAuthority(); authority = 1; started = true; roomOptions.close();
   if (resume) {
+    syncOptions(resume.options);
+    if (resume.bag) restoreBag(resume.bag);
     applyPlayers(resume.players); ROUNDS = resume.rounds; round = resume.round;
     board.setStand(resume.stand);
   } else {
     round = 1;
-    applyPlayers(playerData().map(p => ({ ...p, coins: START_COINS, mangos: 0, tile: 0 })));
+    applyPlayers(playerData().map(p => ({ ...p, coins: options.startCoins, mangos: 0, miniWins: 0, tile: 0 })));
     board.setStand(7);
   }
   syncRoster(); layoutTokens();
   for (const p of players) { p.token.group.position.copy(p.token.rest); p.token.hopping = false; p.token.pin.visible = true; }
-  for (const d of dice) d.mesh.visible = false;
+  for (const d of dice) { d.mesh.visible = false; d.toss = d.spec = null; }
   counter.sprite.visible = false; board.stand.group.scale.setScalar(1);
   for (const id of ['intro', 'prompt', 'winner', 'results', 'toast', 'mini-intro']) $(id).classList.add('hidden');
   $('hud').classList.remove('hidden'); $('count').textContent = ''; cardMode = 'board'; setSign(''); actionWaiters = [];
@@ -1376,7 +1177,7 @@ function connectOnline() {
         else { syncRoster(); room.publish(captureOnline()); }
       },
       members() { if (room.isHost && !mini) syncRoster(); },
-      state: applyOnline, choice: finishChoice, frames: applyFrames,
+      state: applyOnline, choice: finishChoice, frames: applyFrames, ready: markReady,
     },
   });
   lobbyRoster(); room.connect();
@@ -1394,7 +1195,7 @@ setInterval(() => {
     if (checkpoint) beginOnline(checkpoint);
     return;
   }
-  stepJobs(0.05 * SPEED);
+  time.step(0.05 * SPEED * boardPace());
   if (mini) updateMini(0.05 * SPEED);
   if (pendingChoice && !room.members.has(pendingChoice.seat)) finishChoice(pendingChoice.auto);
   if (++onlineTicks % 2 === 0) { if (!started) lobbyRoster(); room.publish(captureOnline()); }
@@ -1407,18 +1208,17 @@ function frame() {
   const dt = paused && !online ? 0 : Math.min(clock.getDelta(), 0.1) * SPEED;
   if (paused && !online) clock.getDelta();
   t += dt;
-  if (!online) { stepJobs(dt); if (mini) updateMini(dt); }
+  if (!online) { time.step(dt * boardPace()); if (mini) updateMini(dt); }
   view.update(dt, t);
   renderer.render(view.scene, view.camera);
   requestAnimationFrame(frame);
 }
 
 addEventListener('resize', () => {
-  for (const c of [boardCam, mini?.game.camera].filter(Boolean)) {
-    c.aspect = online && c === mini?.game.camera ? mini.spec.aspect : innerWidth / innerHeight;
-    c.updateProjectionMatrix();
-  }
+  boardCam.aspect = innerWidth / innerHeight;
+  boardCam.updateProjectionMatrix();
   renderer.setSize(innerWidth, innerHeight);
+  frameMini();
 });
 boardCam.aspect = innerWidth / innerHeight;
 boardCam.updateProjectionMatrix();
@@ -1429,15 +1229,19 @@ async function fastForward(seconds, dt = 1 / 30) {
   if (online) throw new Error('Online play uses the room clock.');
   for (let s = 0; s < seconds; s += dt) {
     t += dt;
-    stepJobs(dt);
+    time.step(dt * boardPace());
     if (mini) updateMini(dt);
     view.update(dt, t);
     await null;   // let the turn logic's awaits run
   }
 }
-if (DEBUG) Object.assign(window, { menu, players, board, dice, MINIGAMES, layoutTokens, fastForward, renderer, boardScene, boardCam, minigame: () => mini, onlineState: () => ({ room, checkpoint, pendingChoice, miniFrame, me: me?.i }) });
+// Suites fast-forward in simulated time and can't wait on a download: give them every minigame up front.
+if (DEBUG) await Promise.all(MINIGAMES.map(m => loadMinigame(m.id)));
+if (DEBUG) Object.assign(window, { menu, players, board, dice, MINIGAMES, layoutTokens, fastForward, renderer, boardScene, boardCam, minigame: () => mini, onlineState: () => ({ room, checkpoint, pendingChoice, ready: readyCheck, miniFrame, me: me?.i, options, order }), changeOptions });
+if (DEBUG) Object.defineProperty(window, 'thrower', { get: () => thrower });
 
 frame();
 main().catch(ignoreCancelled);
 
 await prepareScene({ renderer, scene: boardScene, camera: boardCam });
+prefetchMinigames([...new Set([QS.get('play'), QS.get('mini')].filter(Boolean)), ...MINIGAMES.map(m => m.id)]);

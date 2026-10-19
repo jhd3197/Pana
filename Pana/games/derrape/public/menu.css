@@ -59,7 +59,11 @@ body { --menu-paper: #fff3d8; --menu-ink: #282035; --menu-grass: #2d705d; }
 .menu-flow .tools .hint { width: 100%; text-align: right; }
 .car-picker { position: absolute; bottom: 0; left: 314px; right: 0; display: flex; flex-direction: column; gap: 8px; }
 .car-tabs { align-self: flex-start; }
-.menu-flow .car-lineup, .menu-flow .wheel-lineup { position: static; width: 100%; display: flex; justify-content: center; gap: 8px; padding: 4px 4px 8px; }
+.menu-flow .car-lineup, .menu-flow .wheel-lineup { position: static; width: 100%; display: flex; justify-content: flex-start; gap: 8px; padding: 4px 4px 8px; }
+/* Centered while the cards fit; once 16 cars overflow, every card stays scrollable
+   (justify-content: center would push the first ones out of reach). */
+.menu-flow .car-lineup > :first-child, .menu-flow .wheel-lineup > :first-child { margin-left: auto; }
+.menu-flow .car-lineup > :last-child, .menu-flow .wheel-lineup > :last-child { margin-right: auto; }
 .menu-flow .car-choice, .menu-flow .wheel-choice { min-width: 70px; flex: 1 0 70px; max-width: 128px; border-radius: 12px; background: var(--pk-deep); }
 .menu-flow .car-choice[aria-pressed="true"], .menu-flow .wheel-choice[aria-pressed="true"] { border-color: var(--pk-yellow); background: var(--pk-raised); }
 .menu-flow .car-choice span, .menu-flow .wheel-choice span { font-size: 11px; }
@@ -308,7 +312,7 @@ body { --menu-paper: #fff3d8; --menu-ink: #282035; --menu-grass: #2d705d; }
   .menu-flow .info #car-blurb { max-width: none; font-size: 10px; }
   .menu-flow .info .driver { display: none; }
   .menu-flow .info #stats { display: grid; gap: 4px; margin: 0; }
-  .menu-flow #stats div { grid-template-columns: 72px 1fr; gap: 4px; }
+  .menu-flow #stats div { grid-template-columns: 72px 1fr 16px; gap: 4px; }
   .menu-flow #stats dt { font-size: 10px; }
   .menu-flow #stats dd { height: 5px; }
   .menu-flow .tools { left: 196px; top: 0; gap: 4px; }
@@ -353,3 +357,27 @@ body { --menu-paper: #fff3d8; --menu-ink: #282035; --menu-grass: #2d705d; }
 .track-page.is-cup .format-picker>button:not(.cup-choice){flex-direction:row;align-items:center;min-height:52px}
 .track-page.is-cup .format-picker>button:not(.cup-choice)>img{width:70px;height:52px}
 @media(max-width:700px){.track-page.is-cup .format-picker{grid-template-columns:1fr}.track-page.is-cup .cup-choice{grid-row:auto}.track-page.is-cup .cup-collage img{height:100px}.track-page.is-cup .cup-choice b{font-size:26px}.format-picker .cup-route small{display:block}}
+
+/* The Taller page opens with the panel docked (taller.js). While it is
+   open the left side is just the build's title, as in the showroom, and the
+   panel's Carro tab picks the car, so the strip waits until it is hidden. */
+.menu-flow .car-lineup { scroll-snap-type: x proximity; scroll-padding: 0 8px; }
+.menu-flow .car-choice { scroll-snap-align: start; }
+.menu-flow .info .info-eyebrow, .menu-flow .info .car-build { display: none; }
+body.shop-open .menu-flow .car-picker, body.shop-open .menu-flow #open-shop { display: none; }
+body.shop-open .menu-flow .info { background: none; border-color: transparent; box-shadow: none; padding: 4px 0 0; gap: 4px; width: min(360px, calc(100vw - 540px)); pointer-events: none; }
+body.shop-open .menu-flow .info > * { pointer-events: auto; }
+body.shop-open .menu-flow .info .info-head { order: 5; margin-top: 10px; }
+body.shop-open .menu-flow .info .pick { margin-left: 0; }
+body.shop-open .menu-flow .info .info-eyebrow { display: block; order: -1; margin: 6px 0 0; color: var(--taller-muted); letter-spacing: .16em; }
+body.shop-open .menu-flow .info h1 { font-size: clamp(34px, 4.2vw, 56px); line-height: .95; color: var(--taller-ink); text-shadow: 0 4px 0 rgba(0, 0, 0, .35); }
+body.shop-open .menu-flow .info .car-build { display: block; color: var(--taller-muted); font-size: 13px; font-weight: 700; }
+body.shop-open .menu-flow .info #stats, body.shop-open .menu-flow .info .num, body.shop-open .menu-flow .info-head > .pk-eyebrow, body.shop-open .menu-flow .info #car-blurb { display: none; }
+body.shop-open .menu-flow .tools { top: auto; bottom: 0; left: 0; right: auto; justify-content: flex-start; }
+body.shop-open .menu-flow .tools .hint { display: none; }
+@media (max-width: 899px) {
+  body.shop-open .menu-flow .info { width: 100%; padding: 0; }
+  body.shop-open .menu-flow .info .info-eyebrow, body.shop-open .menu-flow .info .car-build, body.shop-open .menu-flow .info .info-head { display: none; }
+  body.shop-open .menu-flow .info h1 { font-size: 28px; }
+  body.shop-open .menu-flow .tools { top: 64px; bottom: auto; }
+}

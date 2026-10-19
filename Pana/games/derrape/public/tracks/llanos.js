@@ -11,6 +11,6 @@ export default {
   hazards:[{kind:'cow',u:.55},{kind:'cow',u:.7,phase:7}],
   items:{boxes:[.1,.25,.4,.56,.73,.9],boxLanes:[-6,-2,2,6],pads:[{u:.13,off:0},{u:.35,off:-3},{u:.6,off:3},{u:.94,off:0}]},
   walls:false,chevrons:true,
-  palette:{skySeed:19,cloudCover:0.34,horizon:0xb4e0ed,skyTop:0x238bce,hemiSky:0xe4f5ff,hemiGround:0x588343,hemiInt:1.5,sun:0xfff1d5,sunInt:2.3,ground:0x76a444,track:0xbfa06a,dune:0,fog:[450,1500]},
+  palette:{skySeed:19,cloudCover:0.36,horizon:0xcbf1e6,skyTop:0x1689ec,halo:1,hemiSky:0xd3e6ff,hemiGround:0x79ad45,hemiInt:1.5,sun:0xffd593,sunInt:2.5,ground:0x86c24a,track:0xdcab6c,dune:0,fog:[480,1900]},
   environment:llanosEnvironment,scenery:llanosScenery,
 };

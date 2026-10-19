@@ -6,38 +6,46 @@
   <link rel="stylesheet" href="/engine/kit.css"><link rel="stylesheet" href="/engine/ui.css"><link rel="stylesheet" href="./style.css">
   <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}</script>
 <link rel="stylesheet" href="/engine/game-lobby.css">
+<link rel="stylesheet" href="/engine/room-options.css">
 </head>
 <body class="in-lobby">
   <header class="game-header"><a class="pk-logo" href="/" aria-label="Pana, todos los juegos">PANA</a><span>BOLAS CRIOLLAS</span><nav id="menu-slot" aria-label="Menú del juego"></nav></header>
   <main>
-    <div id="court-wrap"><canvas id="court" tabindex="0" aria-label="Cancha de bolas criollas: toca para apuntar. Flechas para dirección y fuerza; espacio para lanzar."></canvas></div>
+    <div id="court-wrap"><canvas id="court" tabindex="0" aria-label="Cancha de bolas criollas: toca para apuntar. Flechas para la dirección; mantén espacio y suelta para lanzar."></canvas></div>
     <section id="welcome" class="pk-lobby" aria-labelledby="title">
       <a class="pk-back" href="/">← Todos los juegos</a>
       <h1 id="title" class="pk-title">Bolas <br>Criollas</h1>
-      <p class="pk-copy">Arrima al mingo. Si una bola rival estorba, ¡sácala con un boche!</p>
-      <div class="pk-stats"><div class="pk-stat"><b>1–4</b><span>panas</span></div><div class="pk-stat"><b>2</b><span>equipos</span></div><div class="pk-stat"><b>8</b><span>bolas por equipo</span></div></div>
-      <fieldset><legend>Meta de la partida</legend><div class="pk-seg" id="target-options"><button data-target="12" aria-pressed="true">12 tantos</button><button data-target="24" aria-pressed="false">24 tantos</button></div></fieldset>
+      <p class="pk-copy" data-room-description>Arrima al mingo. Si una bola rival estorba, ¡sácala con un boche!</p>
+      <div class="pk-stats" data-room-description><div class="pk-stat"><b>1–6</b><span>panas</span></div><div class="pk-stat"><b>2</b><span>equipos</span></div><div class="pk-stat"><b>3</b><span>por equipo</span></div></div>
+      <div id="map-picker" data-room-primary></div>
+      <div id="room-options"></div>
       <div class="pk-lobby-foot"><p id="connection" class="pk-copy" role="status">Los puestos libres los juegan bots.</p><span id="room-code" class="pk-lobby-room"></span>
         <button id="start" class="pk-btn pk-btn--primary pk-btn--lg pk-btn--block">Jugar online</button><div id="invite-slot"></div>
-        <button id="practice" class="pk-btn pk-btn--ghost pk-btn--block">Jugar con bots</button><button id="rules" class="pk-btn pk-btn--ghost pk-btn--block">Cómo se juega</button>
+        <button id="practice" class="pk-btn pk-btn--ghost pk-btn--block">Jugar con bots</button><button id="rules" class="pk-btn pk-btn--ghost pk-btn--block" data-room-help>Cómo se juega</button>
       </div>
-      <ol id="lobby-roster" class="pk-roster"></ol>
+      <div id="lobby-roster" data-pana-roster hidden></div>
     </section>
     <section id="scoreboard" aria-label="Marcador" hidden>
       <div class="team-score pk-panel red"><span>ROJOS</span><b id="score-0">0</b><small id="left-0"></small></div>
       <div class="hand-label"><b id="hand-number"></b><span id="target-label"></span></div>
       <div class="team-score pk-panel green"><span>VERDES</span><b id="score-1">0</b><small id="left-1"></small></div>
     </section>
+    <section id="side-controls" class="side-controls" hidden aria-label="Cámara">
+      <button id="camera" type="button" class="pk-btn camera-btn" aria-label="Cámara"></button>
+      <span class="side-label">Cámara <kbd class="pk-kbd" data-pana-hint>C</kbd></span>
+    </section>
+    <section id="power-bar" class="pk-power" hidden aria-label="Fuerza del lanzamiento">
+      <div class="pk-power-control"><span id="power-label">Fuerza</span><div id="power" class="pk-charge" role="meter" aria-labelledby="power-label" aria-valuemin="10" aria-valuemax="100" aria-valuenow="10"><i class="pk-charge-fill"></i><i class="pk-charge-marker"></i></div><span id="power-value" aria-hidden="true">10%</span><span>Suelta</span></div>
+    </section>
     <section id="controls" class="pk-panel" hidden aria-label="Lanzamiento">
       <div class="turn-info"><b id="turn" aria-live="polite"></b><span id="measure"></span></div>
       <div class="shot-row">
         <div class="pk-seg" id="shot-options"><button data-mode="arrime" aria-pressed="true">Arrime</button><button data-mode="boche" aria-pressed="false">Boche rastrero</button></div>
-        <label class="power-control" for="power">Fuerza <output id="power-value">62%</output><input id="power" type="range" min="10" max="100" value="62"></label>
         <div class="fine-controls pk-touch-zone"><button id="aim-left" class="pk-touch pk-touch--sm" data-icon="left" aria-label="Apuntar a la izquierda"></button><button id="aim-right" class="pk-touch pk-touch--sm" data-icon="right" aria-label="Apuntar a la derecha"></button></div>
-        <button id="shoot" class="pk-btn pk-btn--primary">Lanzar <kbd class="pk-kbd" data-pana-hint>Espacio</kbd></button>
+        <button id="shoot" class="pk-btn pk-btn--primary">Mantén para lanzar <kbd class="pk-kbd" data-pana-hint>Espacio</kbd></button>
       </div>
-      <p class="control-hint" data-pana-hint>Toca la cancha para apuntar · ← → dirección · ↑ ↓ fuerza · Espacio lanzar</p>
-      <p class="guide-note">La guía marca el punto de frenado sin choques.</p>
+      <p class="control-hint" data-pana-hint>Toca la cancha para apuntar · ← → dirección · Mantén Espacio: la fuerza sube y baja, suelta para lanzar</p>
+      <p id="guide-note" class="guide-note"></p>
     </section>
     <div id="recovery" class="pk-panel" hidden><p id="recovery-copy" role="status"></p><button id="fallback" class="pk-btn pk-btn--primary">Jugar con bots</button></div>
   </main>

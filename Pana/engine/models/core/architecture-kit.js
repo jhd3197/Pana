@@ -1,5 +1,6 @@
 // Construction details shared by the Pueblo and Páramo model packs.
 // Factories own geometry; cached untextured materials are safe to batch.
+import { letter, whenFont } from '/engine/models/core/lettering.js';
 import * as THREE from 'three';
 import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
 import { M, mesh, box, tube, canvasMat } from '/engine/models/core/primitives.js';
@@ -53,15 +54,14 @@ export function rounded(w, h, d, material, x = 0, y = 0, z = 0, radius = 0.045) 
 
 export function sign(text, w, h, { background = '#285b58', color = '#f9e7bd', border = true } = {}) {
   const list = Array.isArray(text) ? text : [text], ch = Math.max(96, Math.round(768 * h / w));
-  const material = canvasMat(768, ch, ctx => {
+  const paint = ctx => {
     ctx.fillStyle = background; ctx.fillRect(0, 0, 768, ch);
     if (border) { ctx.strokeStyle = color; ctx.lineWidth = 3; ctx.strokeRect(12, 12, 744, ch - 24); }
-    ctx.fillStyle = color; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    list.forEach((line, i) => {
-      ctx.font = `800 ${Math.round(ch * (list.length === 1 ? 0.49 : i ? 0.22 : 0.36))}px sans-serif`;
-      ctx.fillText(line, 384, ch * (list.length === 1 ? 0.52 : i ? 0.73 : 0.36), 704);
-    });
-  });
+    // Cartoon lettering that shrinks each line to fit (core/lettering.js).
+    letter(ctx, list.map(String), 768, ch, { top: ch * .08, bottom: ch * .92, margin: .06, cream: color, gold: color });
+  };
+  const material = canvasMat(768, ch, paint);
+  whenFont(material, paint);
   // Opaque, front-facing panels avoid unnecessary transparent sorting.
   material.transparent = false;
   return mesh(new THREE.PlaneGeometry(w, h), material);

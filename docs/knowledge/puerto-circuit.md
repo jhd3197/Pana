@@ -117,7 +117,7 @@ Never test airborne clearance against the missing road's interpolated surface.
 
 `TABLE_ARENAS` extends the ordinary arena registry with `guipuzcoana` and
 `san-carlos` for Caída, Dominó and Póquer only. Action games and Billar retain
-their existing choices. `engine/puerto-tables.js` uses the same native factories:
+their existing choices. `engine/worlds/puerto-tables.js` uses the same native factories:
 Casa scale 3.2 with its central planter omitted, or San Carlos scale .72.
 Equipment, actors and camera remain game-owned around y=0. Studio exposes the
 same worlds as `table-guipuzcoana` and `table-san-carlos`.
@@ -144,6 +144,6 @@ with a landing. The general maps suite completes three laps and collects each
 item row. Native table proof uses two clients, host migration, rejected guest
 and mid-game actions, late arrivals, phone practice and independent disposal.
 
-Ignored evidence lives in `art/studio/puerto/`. `PANA_CAPTURE_PUERTO_ART=1`
-refreshes the shipped menu WebPs from the actual map; clear it afterward.
+Ignored evidence lives in `art/studio/puerto/`. The menu WebPs are
+illustrated art (see `images/menu/sources.json`), not captures.
 Local plan 75 stays ignored and untracked.

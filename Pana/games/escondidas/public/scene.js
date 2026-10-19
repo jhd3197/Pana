@@ -1,13 +1,14 @@
 import * as THREE from 'three';
-import { createArenaSlot } from '/engine/arenas.js';
+import { createArenaSlot } from '/engine/worlds/arenas.js';
 import { createPlazaProp } from '/engine/models/props/plaza.js';
 import { bake } from '/engine/models/core/static-batch.js';
 import { disposeModel } from '/engine/models/props/game-table.js';
-import { huntLayout } from './layout.js';
+import { huntLayout, mapData, SPREAD } from './layout.js';
 
 // Landmarks stay mounted between rounds. Only the shuffled props are rebuilt.
 export function createHuntEnvironment(scene) {
-  const arena = createArenaSlot(scene, { mode: 'hunt', props: [] });
+  // Every map plays 1.5× larger: the plaza model scales whole, arenas spread.
+  const arena = createArenaSlot(scene, { mode: 'hunt', props: [], plazaScale: SPREAD, size: 18 * SPREAD, cover: id => mapData(id).cover });
   let key, props;
   return {
     setMap(id = 'plaza', seed = 1) {

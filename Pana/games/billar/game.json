@@ -1,6 +1,6 @@
 {
   "name": "Billar",
-  "description": "La bola ocho entre panas. Apunta, ajusta la fuerza y limpia tu grupo antes de meter la negra. Dos amigos en línea o una mesa para practicar.",
-  "players": 2,
+  "description": "Bola 8 o Bola 9, con hasta seis panas en dos equipos. Apunta, carga el tiro y rota el taco con tus compañeros.",
+  "players": 6,
   "color": "#20856c"
 }

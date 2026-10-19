@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { Race, standings, cleanInput } from '../public/rules.js';
-import { RIVER, GREYBOX } from '../public/river.js';
+import { RIVER, GREYBOX, angle } from '../public/river.js';
 
 // A solo race (no bots) past the countdown. `pana(t)` returns strokes to send.
 export function solo(river = RIVER, seed = 3) {
@@ -53,8 +53,36 @@ test('banks keep the canoe in the river', () => {
   assert.ok(Math.abs(r.river.locate(b.x, b.z).offset) <= r.river.halfWidth(b.s));
 });
 
+test('remo automático: holding W paddles steadily, beats mashing, trails a good rhythm', () => {
+  const auto = row(solo(GREYBOX), 12, { gap: null, extra: { auto: true } }), mash = row(solo(GREYBOX), 12, { gap: () => .1 }), rhythm = row(solo(GREYBOX), 12);
+  assert.ok(auto.progress > mash.progress + 15, `auto ${auto.progress} vs mashing ${mash.progress}`);
+  assert.ok(rhythm.progress > auto.progress + 4, `rhythm ${rhythm.progress} vs auto ${auto.progress}`);
+  assert.equal(auto.remazos, 0); assert.ok(auto.strokes > 20);
+});
+
+test('remo automático: A/D steer as a rudder while W is held', () => {
+  const left = row(solo(GREYBOX), 3, { gap: null, extra: { auto: true, steer: -1 } }), straight = row(solo(GREYBOX), 3, { gap: null, extra: { auto: true } });
+  assert.ok(angle(left.h - straight.h) > .3, `${left.h} vs ${straight.h}`);
+});
+
+test('caimanes swim across the Río Negro and snap at canoes in their way', () => {
+  const r = solo(), b = r.boats[0], c = r.river.caimanesAt(r.time)[0], q = r.river.at(c.s, c.offset);
+  Object.assign(b, { x: q.x, z: q.z, h: q.h, s: c.s, progress: c.s, checkpoint: r.river.gates.filter(g => g <= c.s).length, y: r.river.levelAt(c.s, c.offset), v: 3 });
+  r.update(.05);
+  assert.equal(b.bitten, 1); assert.ok(b.tip > 30); assert.ok(r.snaps[c.id] > 0);
+  const later = r.river.caimanesAt(r.time + 7)[0];
+  assert.ok(Math.abs(later.offset - c.offset) > 3, 'they keep crossing');
+});
+
+test('the guide line follows the fast lane and steers round swimming caimanes', () => {
+  const d = RIVER.drops[0], fast = d.lanes.find(l => l.fast);
+  assert.ok(Math.abs(RIVER.guideLine(d.s) - (fast.from + fast.to) / 2) < .5);
+  for (let t = 0; t < 30; t += .5) for (const c of RIVER.caimanesAt(t)) assert.ok(Math.abs(RIVER.guideAt(c.s, t) - c.offset) >= 4 || Math.abs(RIVER.guideAt(c.s, t)) >= RIVER.halfWidth(c.s) - 1.9);
+  assert.ok(RIVER.buoys.length >= 10 && RIVER.buoys.every(b => b.s > 556));
+});
+
 test('inputs are cleaned', () => {
-  assert.deepEqual(cleanInput({ strokes: [[1, 5, .2], ['x', 1, 2], [2, -3, NaN]], steer: 9, back: 1, splash: '2' }), { strokes: [[1, 1, .2]], back: true, steer: 1, splash: 2 });
+  assert.deepEqual(cleanInput({ strokes: [[1, 5, .2], ['x', 1, 2], [2, -3, NaN]], steer: 9, back: 1, splash: '2' }), { strokes: [[1, 1, .2]], back: true, steer: 1, splash: 2, auto: false });
 });
 
 test('a grey-box race finishes, orders and replays from a snapshot', () => {

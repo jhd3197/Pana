@@ -1,6 +1,6 @@
 // Studio-only camera tour. The route is the same runtime used to build the map.
 import { Vector3, Color, Fog } from 'three';
-import { createSky } from '/engine/sky.js';
+import { createSky } from '/engine/worlds/sky.js';
 
 export const TOUR_SPEED = 24; // metres per second at 1×
 function roadHeight(route, s) {
@@ -36,7 +36,7 @@ export function createTrackTour({ scene, camera, controls, canvas, invalidate, o
     panel.hidden = !route;
     stage.classList.toggle('touring', active);
     canvas.setAttribute('aria-label', active ? 'Recorrido 3D de la pista. Espacio para reproducir o pausar; flechas para avanzar o retroceder. En pausa, arrastra para mirar alrededor.' : canvasLabel);
-    text('tour-play', playing ? 'Pausar' : distance >= length() && route ? 'Repetir recorrido' : active ? 'Continuar' : '▶ Recorrer pista');
+    text('tour-play', playing ? 'Pausar' : distance >= length() && route ? 'Repetir recorrido' : active ? 'Continuar' : 'Recorrer pista');
     $('tour-play').setAttribute('aria-pressed', String(playing));
     $('tour-progress').value = length() ? distance / length() * 1000 : 0;
     const percent = length() ? Math.round(distance / length() * 100) : 0;

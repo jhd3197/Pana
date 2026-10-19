@@ -1,5 +1,20 @@
 # Garage and race loading
 
+## First load and the frame loop
+
+Opening Derrape loads 153 modules, down from 287: maps load on demand
+(`tracks.js` `loadTrack`, see `derrape-tracks.md`). `tests/conventions.test.js`
+caps every game's first load at 160 static modules (`tests/import-graph.js`).
+
+`frame()` runs fixed 1/60 s physics steps with `updateRace(STEP, false)` and
+then `presentRace(dt)` once for the time they covered: poses, camera, scenery
+ticks, HUD and minimap. Catch-up stops after five steps, so a stall makes the
+race lose a little time instead of making the next frames late too. HUD text is
+written only when it changes (`setText`). The minimap strokes its route once
+into an offscreen canvas (`route-map.js`). Car physics live in `drive.js`
+(`createDriver`), sky, sun and weather in `race-world.js`, and other panas'
+pose buffers in `remote-cars.js`.
+
 ## Shared quality now controls race detail
 
 Grass, canopy and bark surfaces also follow these tiers. The seeded shaders
@@ -128,8 +143,7 @@ installed Chrome 155.0.8059.80 in a normal window. Eight simulated racers,
 seed 1453678317, camera fractions 0 / .40 / .62, 30 warmup frames followed by
 120 measured frames per view. The accumulator consumes actual elapsed time,
 including extra physics ticks on slow frames. No other task browser suite ran
-during this measurement. Raw data: `art/grand-prix/hardware-window.json` and
-`hardware-window-final.log`. Earlier headless timings are diagnostic history.
+during this measurement. Raw data (local, untracked): `art/grand-prix/hardware-window.json`. Earlier headless timings are diagnostic history.
 
 Desktop is 1280 × 800, DPR 1, quality Alta. Ranges span the three views:
 

@@ -18,7 +18,7 @@ try {
   const initial = await page.evaluate(() => ({ readyMs: performance.getEntriesByName('derrape:garage-ready')[0].startTime,
     mapBuilt: !!race.trackGroup, buttons: document.querySelectorAll('.car-choice').length }));
   assert.equal(initial.mapBuilt, false, 'startup does not construct an invisible map');
-  assert.equal(initial.buttons, 8, 'all choices are available when the garage finishes preparing');
+  assert.equal(initial.buttons, 16, 'all choices are available when the garage finishes preparing');
   const tracks = await page.evaluate(() => {
     const start = performance.now();
     for (let i = 0; i < TRACKS.length * 2; i++) document.getElementById('t-next').click();
@@ -35,7 +35,7 @@ try {
       reused: [...garage.cars.values()].every((car, i) => car === identities[i]),
       currentAttached: garage.car.root.parent === garage.turn };
   });
-  assert.equal(cars.count, 8); assert.ok(cars.reused && cars.currentAttached);
+  assert.equal(cars.count, 16); assert.ok(cars.reused && cars.currentAttached);
   await page.screenshot({ path: `${output}/garage-after.png` });
   await menuStep(page, 'car');
   const cameraBefore = await page.evaluate(() => garage.camera.position.toArray());

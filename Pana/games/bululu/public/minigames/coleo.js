@@ -1,5 +1,5 @@
 import { random, inputFor } from '../online-rules.js';
-// ¡Coleo! The llanero rodeo: four panas on horseback chase a bull down the
+// ¡Coleo! The llanero rodeo: six panas on horseback chase a bull down the
 // manga. Get right behind it and pull its tail to tumble it. Each tumble is a
 // point, and a new bull bursts out ahead. Grab at air and your horse stumbles.
 
@@ -28,6 +28,7 @@ export default {
   title: '¡Coleo!',
   howto: 'Ponte justo detrás del toro y jálale la cola para tumbarlo. Cada toro tumbado es un punto. Si jalas al aire, tu caballo tropieza.',
   keys: [['A D / ← →', 'moverte'], ['Espacio', 'jalar la cola']],
+  touch: { action: 'Jalar' },
   icon: 'bull',
   time: TIME,
 
@@ -73,14 +74,14 @@ export default {
 
     // the riders
     const actors = ctx.players.map((p, i) => {
-      const rider = createRider(p.avatar, COATS[i], 7 + i);
+      const rider = createRider(p.avatar, COATS[i % COATS.length], 7 + i);
       rider.group.rotation.order = 'YXZ';
       scene.add(rider.group);
       const bubble = makeBubble();
       scene.add(bubble.sprite);
       return {
         i, player: p, rider, bubble, score: 0,
-        x: -3 + i * 2, s: 0, v: BULL_SPEED, vx: 0,
+        x: -3 + i * 6 / (ctx.players.length - 1), s: 0, v: BULL_SPEED, vx: 0,
         stumble: 0, reach: 0, cool: 0,
         ai: { tx: 0, think: 0, inReach: 0, react: rand(0.18, 0.42), lane: rand(-0.3, 0.3) },
       };
@@ -297,6 +298,17 @@ export default {
       puffs.update(dt);
     }
 
-    return { scene, camera, update, outro, actors, scores: () => actors.map((a) => a.score), stats: () => ({ ...stats, reachTime: +stats.reachTime.toFixed(1) }) };
+    // When the tail is yours to grab, for the runner's hint line.
+    const me = actors[ctx.localIndex ?? ctx.players.findIndex((p) => p.human && !ctx.auto)];
+    function hint() {
+      if (!me || !bull) return null;
+      if (me.stumble > 0) return { text: '¡Te revolcaste! Ya te levantas', tone: 'bad' };
+      if (inReach(me)) return { text: '¡JALA LA COLA AHORA!', tone: 'go' };
+      const gap = gapOf(me);
+      if (gap <= REACH.near) return { text: 'Muy encima del toro: frena un poquito', tone: '' };
+      if (gap >= REACH.far) return { text: 'Acércate al toro', tone: '' };
+      return { text: 'Ponte justo detrás de la cola', tone: '' };
+    }
+    return { scene, camera, update, outro, actors, hint, scores: () => actors.map((a) => a.score), stats: () => ({ ...stats, reachTime: +stats.reachTime.toFixed(1) }) };
   },
 };

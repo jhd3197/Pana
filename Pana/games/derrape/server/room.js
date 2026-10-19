@@ -157,7 +157,6 @@ export default class DerrapeRoom extends PanaRoom {
       p.loaded = true;
       this.sendPoses(client);
     });
-    this.onMessage('ping', (client, m) => client.send('pong', { c: m?.c, s: Date.now() }));
 
     // 20 Hz poses, [id, serverTimeEstimate, ...pose]: relayed at once (not
     // through state patches, to save latency).

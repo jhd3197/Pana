@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import {createSky} from '/engine/sky.js';
+import {createSky} from '/engine/worlds/sky.js';
 import {M,box,tube} from '/engine/models/core/primitives.js';
 import {bake,instancePlacements} from '/engine/models/core/static-batch.js';
 import {sign} from '/engine/models/core/architecture-kit.js';
@@ -9,8 +9,10 @@ import {scarletIbis} from '/engine/models/fauna/birds/scarlet-ibis.js';
 import {orbitBird} from '/engine/models/animation/orbit-bird.js';
 import {waterSurface,waterAnimator} from '/engine/models/effects/water-surface.js';
 import {at,nearest,LENGTH,HALF_WIDTH,WATER_Y,groundAt,JUMPS,courseRoute,DAYLIGHT} from './course.js';
+import {raceJumps, origin} from './options.js';
 import {addLandscape} from './landscape.js';
 import {placeIguanas} from '/engine/placement/iguanas.js';
+import { shadowSize } from '/engine/settings.js';
 
 // Static model prototypes are batched into instances; animated fauna/water stay live.
 function plantInstances(parent,source,placements,name,id){
@@ -81,8 +83,10 @@ export function createCourse(){
   const arch=new THREE.Group();arch.position.copy(gate.position);arch.rotation.y=start.h;
   for(const s of [-1,1])arch.add(box(.25,5,.25,M(0x624a32),s*6,2.5,0));
   const title=sign(['GALOPE','HATO PANA · SALIDA / META'],10,1.1,{background:'#355a43'});title.position.set(0,4.65,0);arch.add(title);group.add(arch);
-  for(let i=0;i<16;i++){const q=at(0,-4.5+i*.6),tile=box(.6,.035,.75,M(i%2?0xf5e7c4:0x4f5f43),q.x,groundAt(q.x,q.z)+.055,q.z);tile.rotation.y=q.h;group.add(tile);}
-  for(const jump of JUMPS){const q=at(jump.s),log=new THREE.Group();log.name='Jump log';log.position.set(q.x,groundAt(q.x,q.z),q.z);log.rotation.y=q.h;
+  const startTiles=[];
+  for(let i=0;i<16;i++){const q=at(0,-4.5+i*.6),tile=box(.6,.035,.75,M(i%2?0xf5e7c4:0x4f5f43),q.x,groundAt(q.x,q.z)+.055,q.z);tile.rotation.y=q.h;group.add(tile);startTiles.push(tile);}
+  const jumpModels=[];
+  for(const jump of raceJumps({obstacles:'many'})){const q=at(jump.s),log=new THREE.Group();log.name='Jump log';log.visible=jump.id<3;log.userData.jumpId=jump.id;jumpModels.push(log);log.position.set(q.x,groundAt(q.x,q.z),q.z);log.rotation.y=q.h;
     log.add(tube([-4.6,.27,0],[4.6,.27,0],.27,M(0x735237)));
     for(const s of [-1,1]){log.add(box(.13,1.5,.13,M(0x705940),s*5.4,.75,0));const flag=new THREE.Mesh(new THREE.PlaneGeometry(.65,.43),M(s<0?0xf6e6bb:0xc96f49,{side:THREE.DoubleSide}));flag.position.set(s*5.1,1.35,0);log.add(flag);}group.add(log);
   }
@@ -96,7 +100,7 @@ export function createCourse(){
   for(let i=0;i<3;i++){const bird=orbitBird(scarletIbis({seed:i+21}),{cx:58,cz:42,cy:13+i*3,r:23+i*4,speed:.13,phase:i*2});group.add(bird);moving.push(bird);}
   const animateWater=waterAnimator(group);group.userData.assetCounts=assetCounts;
   let disposed=false;
-  return {group,groundAt,route:courseRoute,update(t){animateWater(t);moving.forEach(o=>o.userData.tick?.(t));},
+  return {group,groundAt,route:courseRoute,setOptions(options){const jumps=raceJumps(options);for(const log of jumpModels){const j=jumps.find(j=>j.id===log.userData.jumpId);log.visible=!!j;log.scale.y=options.jumps==='crazy'?1.9:1;}const q=at(origin(options));arch.position.set(q.x,groundAt(q.x,q.z),q.z);arch.rotation.y=q.h;gate.position.copy(arch.position);gate.rotation.y=q.h;startTiles.forEach((tile,i)=>{const t=at(origin(options),-4.5+i*.6);tile.position.set(t.x,groundAt(t.x,t.z)+.055,t.z);tile.rotation.y=t.h;});},update(t){animateWater(t);moving.forEach(o=>o.userData.tick?.(t));},
     dispose(){if(disposed)return;disposed=true;const ds=[],gs=new Set(),ms=new Set(),ts=new Set();group.traverse(o=>{if(o.userData.dispose)ds.push(o.userData.dispose);if(o.geometry)gs.add(o.geometry);for(const m of Array.isArray(o.material)?o.material:o.material?[o.material]:[]){ms.add(m);for(const v of Object.values(m))if(v?.isTexture)ts.add(v);}});ds.forEach(f=>f());gs.forEach(g=>g.dispose());ms.forEach(m=>m.dispose());ts.forEach(t=>t.dispose());group.removeFromParent();}
   };
 }
@@ -106,7 +110,7 @@ export function createRaceScene(canvas){
   const scene=new THREE.Scene();scene.fog=new THREE.Fog(DAYLIGHT.horizon,...DAYLIGHT.fog);
   const sky=createSky(DAYLIGHT);scene.add(sky.mesh);
   scene.add(new THREE.HemisphereLight(DAYLIGHT.hemiSky,DAYLIGHT.hemiGround,DAYLIGHT.hemiInt));
-  const sun=new THREE.DirectionalLight(DAYLIGHT.sun,DAYLIGHT.sunInt);sun.position.set(-50,70,35);sun.castShadow=true;sun.shadow.mapSize.set(1024,1024);sun.shadow.camera.left=-25;sun.shadow.camera.right=25;sun.shadow.camera.top=25;sun.shadow.camera.bottom=-25;sun.shadow.camera.far=180;sun.shadow.bias=-.0003;sun.shadow.normalBias=.035;scene.add(sun,sun.target);
+  const sun=new THREE.DirectionalLight(DAYLIGHT.sun,DAYLIGHT.sunInt);sun.position.set(-50,70,35);sun.castShadow=true;sun.shadow.mapSize.setScalar(shadowSize(1024));sun.shadow.camera.left=-25;sun.shadow.camera.right=25;sun.shadow.camera.top=25;sun.shadow.camera.bottom=-25;sun.shadow.camera.far=180;sun.shadow.bias=-.0003;sun.shadow.normalBias=.035;scene.add(sun,sun.target);
   const course=createCourse();scene.add(course.group);
   const camera=new THREE.PerspectiveCamera(52,1,.1,450);
   return {renderer,scene,camera,sun,course,sky};

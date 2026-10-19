@@ -2,20 +2,22 @@
 // and a finger, the round's ending, and the board working again afterwards.
 // Usage: PANA_PLAYWRIGHT_PATH=… node Pana/games/bululu/tests/chinazo.browser.mjs
 import assert from 'node:assert/strict';
-import { createRequire } from 'node:module';
+import { launch, waitPrepared } from '../../../tests/browser-kit.js';
 import { mkdir } from 'node:fs/promises';
-const { chromium } = createRequire(import.meta.url)(process.env.PANA_PLAYWRIGHT_PATH || 'playwright');
 const base = process.env.PANA_TEST_URL || 'http://localhost:8461';
-const browser = await chromium.launch({ headless: true });
+const browser = await launch();
 const errors = [];
 const check = (text) => console.log(`PASS ${text}`);
 await mkdir('art/bululu', { recursive: true });
 
 async function open(query, options = {}) {
   const context = await browser.newContext({ viewport: { width: 1280, height: 720 }, deviceScaleFactor: 1, ...options });
+  await context.addInitScript(() => localStorage.setItem('pana:settings', JSON.stringify({ quality: 'baja', sound: false, music: false })));
   const page = await context.newPage();
   page.on('pageerror', (e) => { errors.push(e.message); console.log('PAGE ERROR', e.message); });
-  await page.goto(`${base}/g/bululu/?${query}`);
+  page.on('console', m => { if (m.type() === 'error' && !/Failed to load resource/.test(m.text())) { errors.push(m.text()); console.error(m.text()); } });
+  await page.goto(`${base}/g/bululu/?${query}`, { waitUntil: 'domcontentloaded' });
+  await waitPrepared(page);
   return page;
 }
 const shooter = (page) => page.evaluate(() => { const s = minigame().game.sim.shooters[0]; return { aim: { ...s.aim }, shots: s.shots, ammo: s.ammo, reload: s.reload, pulling: s.pulling }; });
@@ -31,8 +33,8 @@ try {
   await startRound(page);
   assert.equal(await page.evaluate(() => document.body.classList.contains('mini-aim')), true);
   assert.equal(await page.evaluate(() => getComputedStyle(document.querySelector('canvas')).cursor), 'none');
-  assert.equal(await page.locator('.reticle').count(), 4);
-  check('aim minigame: mini-aim body class, hidden cursor, four reticles');
+  assert.equal(await page.locator('.reticle').count(), 6);
+  check('aim minigame: mini-aim body class, hidden cursor, six reticles');
 
   await page.mouse.move(960, 180);
   await page.waitForFunction(() => Math.abs(minigame().game.sim.shooters[0].aim.x - 0.5) < 0.02);
@@ -100,7 +102,12 @@ try {
   const board = await open('debug&auto&mini=chinazo&rounds=2');
   await board.waitForFunction(() => typeof fastForward === 'function', null, { timeout: 90000 });
   await board.waitForFunction(() => document.querySelector('#intro').classList.contains('hidden'), null, { timeout: 30000 });
-  await board.evaluate(async () => { while (!minigame()) await fastForward(5); while (minigame()) await fastForward(5); });
+  await board.evaluate(async () => {
+    for (let i = 0; i < 120 && !minigame(); i++) await fastForward(5);
+    if (!minigame()) throw new Error(`Board stalled before minigame: ${document.querySelector('#room-status').textContent}`);
+    for (let i = 0; i < 120 && minigame(); i++) await fastForward(5);
+    if (minigame()) throw new Error(`Minigame stalled in ${minigame().state}`);
+  });
   assert.equal(await board.evaluate(() => document.body.classList.contains('mini-aim')), false);
   const tiles = await board.evaluate(() => players.map((p) => p.tile).join());
   await board.locator('#minimap').click({ position: { x: 80, y: 60 } });

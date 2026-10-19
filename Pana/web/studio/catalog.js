@@ -8,6 +8,10 @@ import { MAPS } from './catalog/maps.js';
 import { DOMINO } from './catalog/domino.js';
 import { CAIDA } from './catalog/caida.js';
 import { LUDO } from './catalog/ludo.js';
+import { QQSMP } from './catalog/qqsmp.js';
+import { TAMBOR } from './catalog/tambor.js';
+import { STOP } from './catalog/stop.js';
+import { CHAPITA } from './catalog/chapita.js';
 
 const adapted = (assets, source) => assets.map(asset => ({...asset, dependencies: [...(asset.dependencies || []), source]}));
 export const ASSETS = [
@@ -19,6 +23,10 @@ export const ASSETS = [
   ...adapted(DOMINO, '/studio/catalog/domino.js'),
   ...adapted(CAIDA, '/studio/catalog/caida.js'),
   ...adapted(LUDO, '/studio/catalog/ludo.js'),
+  ...adapted(QQSMP, '/studio/catalog/qqsmp.js'),
+  ...adapted(TAMBOR, '/studio/catalog/tambor.js'),
+  ...adapted(STOP, '/studio/catalog/stop.js'),
+  ...adapted(CHAPITA, '/studio/catalog/chapita.js'),
 ];
 export const CATEGORIES = ['Todos', 'Personajes', 'Vestuario', 'Objetos', 'Fauna', 'Emblemas', 'Pueblo', 'Selva', 'Llanos', 'Vida llanera', 'Páramo', 'Desierto', 'Termales', 'Costa', 'Ruinas', 'Mina', 'Cementerio', 'Campamento', 'Atmósfera', 'Vegetación', 'Vehículos', 'Mapas'];
 export function sourcePath(url) {

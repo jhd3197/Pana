@@ -44,7 +44,8 @@ export function resolveContact(a, b) {
   const d = Math.hypot(dx, dz), min = CAR_RADIUS * 2;
   if (d >= min) return null;
   const nx = d > 0.001 ? dx / d : Math.cos(a.h), nz = d > 0.001 ? dz / d : -Math.sin(a.h);
-  const ma = a.def.tune.mass, mb = b.def.tune.mass;
+  // the composed tune carries taller parts (a cava adds weight); bare defs still work
+  const ma = (a.tune ?? a.def.tune).mass, mb = (b.tune ?? b.def.tune).mass;
   const ka = a.remote ? 0 : 1, kb = b.remote ? 0 : 1;
   if (!ka && !kb) return null;
   const push = min - d;

@@ -6,11 +6,13 @@ const browser=await chromium.launch({headless:true}),errors=[];
 await mkdir('art/ludo',{recursive:true});
 async function open(name,mobile=false,roomCode=code){
   const context=await browser.newContext({viewport:mobile?{width:390,height:844}:{width:1440,height:1000},isMobile:mobile,hasTouch:mobile});
-  await context.addInitScript(name=>{localStorage.setItem('pana:name',name);localStorage.setItem('pana:avatar',JSON.stringify({hat:'gorra',outfitColor:'#3d7bf2'}));},name);
+  await context.addInitScript(name=>{localStorage.setItem('pana:name',name);localStorage.setItem('pana:settings',JSON.stringify({quality:'baja',sound:false}));localStorage.setItem('pana:avatar',JSON.stringify({hat:'gorra',outfitColor:'#3d7bf2'}));},name);
   const page=await context.newPage();page.setDefaultTimeout(20000);page.on('pageerror',e=>errors.push(e.message));
   await page.goto(`${base}/g/ludo/?room=${roomCode}&debug`);
   await page.waitForFunction(()=>window.ludoDebug?.world&&ludoDebug.room.connected,null,{timeout:90000});
-  await page.locator('#pana-lobby-ready:not([disabled])').waitFor({timeout:90000});
+  // A pana joining mid-game never sees the lobby, so wait for preparation, then for Ready only in the lobby.
+  await page.waitForFunction(()=>window.PANA_PREPARED===true,null,{timeout:90000});
+  if(await page.locator('#pana-lobby-shell').isVisible())await page.waitForFunction(()=>window.PANA_PREPARED===true&&!document.querySelector('#pana-lobby-ready')?.disabled,null,{timeout:90000});
   await page.locator('#loading').waitFor({state:'hidden'});return page;
 }
 async function sync(a,b){
@@ -21,10 +23,46 @@ try{
   const a=await open('Juan'),b=await open('Ana');
   await a.waitForFunction(()=>ludoDebug.room.members.size===2);await b.waitForFunction(()=>ludoDebug.room.seat===1);
   assert.ok(await b.locator('#start').isDisabled());
+  await a.locator('[data-room-option="entry"][data-value="one-six"]').click();
+  await a.locator('#pana-room-more').click();
+  await a.locator('[data-room-option="captureBonus"][data-value="true"]').click();
+  await a.locator('[data-room-option="threeSixes"][data-value="false"]').click();
+  await b.waitForFunction(()=>ludoDebug.room.state.options.threeSixes===false);
+  assert.deepEqual(await b.evaluate(()=>ludoDebug.room.state.options),{entry:'one-six',captureBonus:true,threeSixes:false});
+  await b.locator('#pana-room-more').click();
+  assert.ok(await b.locator('[data-room-option="captureBonus"][data-value="false"]').isDisabled());
+  await b.locator('#pana-room-done').click();
+  await a.locator('#pana-room-reset').click();await a.locator('#pana-room-done').click();
+  await b.waitForFunction(()=>ludoDebug.room.state.options.entry==='six'&&ludoDebug.room.state.options.threeSixes);
   assert.equal(await a.evaluate(()=>ludoDebug.world.characters[0].group.userData.characterVersion),'studio-v1');
   assert.equal(await a.evaluate(()=>ludoDebug.world.characters[0].avatar.hat),'gorra');
   await a.screenshot({path:'art/ludo/desktop-lobby.png'});
   await a.locator('#start').click();await sync(a,b);
+  assert.equal(await b.evaluate(()=>ludoDebug.room.state.phase),'order');
+  // The opening roll-off: a flick across the table throws hard; nobody moves until it ends.
+  await a.waitForFunction(()=>ludoDebug.thrower&&ludoDebug.room.state.turn===ludoDebug.room.seat);
+  const box=await a.locator('#world').boundingBox(),cx=box.x+box.width/2,cy=box.y+box.height*.7;
+  await a.mouse.move(cx,cy);await a.mouse.down();
+  for(let i=1;i<=6;i++)await a.mouse.move(cx,cy-i*40);
+  await a.mouse.up();
+  await b.waitForFunction(()=>ludoDebug.room.state.order.rolls[0]>0);
+  assert.ok(await b.evaluate(()=>ludoDebug.room.state.toss.power)>.5,'a flick throws hard');
+  await b.waitForFunction(()=>ludoDebug.world.tossing);
+  // A press of the button shakes; letting go throws softly.
+  await b.waitForFunction(()=>ludoDebug.room.state.turn===ludoDebug.room.seat);
+  await b.locator('#roll').dispatchEvent('pointerdown',{pointerId:4,button:0});
+  await b.waitForFunction(()=>ludoDebug.thrower.shaking);
+  await b.locator('#roll').dispatchEvent('pointerup',{pointerId:4,button:0});
+  await a.waitForFunction(()=>ludoDebug.room.state.order.rolls[1]>0||ludoDebug.room.state.order.contenders.length<4||ludoDebug.room.state.phase==='playing');
+  for(let i=0;i<12&&await a.evaluate(()=>ludoDebug.room.state.phase==='order');i++){
+    const s=await a.evaluate(()=>ludoDebug.room.state),p=s.players[s.turn];
+    if(p.id===null){await a.evaluate(()=>ludoDebug.room.tick(2));continue;}
+    const client=p.id===await a.evaluate(()=>ludoDebug.room.id)?a:b;await sync(a,client);
+    await client.locator('#roll').click();await a.waitForFunction(rev=>ludoDebug.room.state.revision>rev,s.revision);
+  }
+  const opened=await a.evaluate(()=>ludoDebug.room.state);
+  assert.equal(opened.phase,'playing');assert.match(opened.event,/Empieza/);
+  console.log('ok: roll-off decides who starts, with flick and hold throws');
   // Deterministic seed gives repeatable real UI turns, including leaving the yard.
   await a.evaluate(()=>{ludoDebug.room.game.rng=123;ludoDebug.room.publish();});await sync(a,b);
   const humans=new Map([[await a.evaluate(()=>ludoDebug.room.id),a],[await b.evaluate(()=>ludoDebug.room.id),b]]);
@@ -39,6 +77,13 @@ try{
   }
   assert.ok(moved);await sync(a,b);
   assert.deepEqual(await a.evaluate(()=>ludoDebug.room.state.players),await b.evaluate(()=>ludoDebug.room.state.players));
+  // Eating a ficha: the hunter hops onto the cell, the victim flies home and both panas hear it.
+  await a.evaluate(()=>{const g=ludoDebug.room.game;g.phase='playing';g.turn=0;g.players[0].pieces=[14,-1,-1,-1];g.players[1].pieces=[5,-1,-1,-1];g.die=4;g.revision++;ludoDebug.room.publish();});await sync(a,b);
+  await a.locator('[data-piece="0"]').click();
+  await b.waitForFunction(()=>ludoDebug.world.pawns.find(p=>p.seat===1&&p.piece===0).flight);
+  await b.waitForFunction(()=>/te comió/.test(document.querySelector('.pk-banner')?.textContent||''));
+  await b.waitForFunction(()=>{const p=ludoDebug.world.pawns.find(p=>p.seat===1&&p.piece===0);return !p.flight&&p.model.position.distanceTo(p.target)<.01;});
+  console.log('ok: a capture hops, launches the victim home and calls it out');
   // A live board click uses the same validated move as keyboard/touch buttons.
   await a.evaluate(()=>{const g=ludoDebug.room.game;g.turn=0;g.players[0].pieces=[5,-1,-1,-1];g.die=2;g.revision++;ludoDebug.room.publish();});await sync(a,b);
   await a.waitForTimeout(500);
@@ -68,14 +113,15 @@ try{
   const m=await open('Móvil',true,`${code}-mobile`);await m.screenshot({path:'art/ludo/mobile-lobby.png'});
   assert.equal(await m.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);
   await m.locator('#start').tap();await m.locator('#roll').tap();
-  await m.evaluate(()=>{const g=ludoDebug.room.game;g.turn=0;g.die=6;g.revision++;ludoDebug.room.publish();});
+  await m.waitForFunction(()=>ludoDebug.room.state.order.rolls[0]>0);
+  await m.evaluate(()=>{const g=ludoDebug.room.game;g.phase='playing';g.turn=0;g.die=6;g.revision++;ludoDebug.room.publish();});
   await m.locator('[data-piece="0"]').tap();assert.equal(await m.evaluate(()=>ludoDebug.room.state.players[0].pieces[0]),0);
   await m.screenshot({path:'art/ludo/mobile-playing.png'});
   await m.setViewportSize({width:844,height:390});await m.screenshot({path:'art/ludo/mobile-landscape.png'});
   assert.equal(await m.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);
   assert.ok(await m.locator('#world').evaluate(el=>el.getBoundingClientRect().height>250));
   await m.evaluate(()=>ludoDebug.room.cut());await m.locator('#practice').waitFor({state:'visible'});await m.locator('#practice').click();
-  assert.ok(await m.locator('#invite').isDisabled());await m.locator('#start').click();assert.equal(await m.evaluate(()=>ludoDebug.room.state.phase),'playing');
+  assert.ok(await m.locator('#invite').isDisabled());await m.locator('#start').click();assert.equal(await m.evaluate(()=>ludoDebug.room.state.phase),'order');
   // Build all three Studio factories through the real catalog.
   assert.equal(await m.evaluate(async()=>{const {ASSETS}=await import('/studio/catalog.js');for(const asset of ASSETS.filter(a=>a.id.startsWith('ludo-'))){const {group}=await asset.build();if(!group.children.length)throw Error('empty model');group.userData.dispose();}return ASSETS.filter(a=>a.id.startsWith('ludo-')).length;}),3);
   const response=await m.request.get(`${base}/api/games`);const listing=await response.json();assert.ok(JSON.stringify(listing).includes('Ludo'));

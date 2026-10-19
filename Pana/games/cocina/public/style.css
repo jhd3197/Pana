@@ -141,7 +141,7 @@ nav .pk-kbd { min-width: 0; height: 20px; padding: 0 5px; font-size: 10px; }
   .welcome-label { display: none; }
 
   .order-bar { top: 56px; left: 10px; right: 10px; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-  #orders { grid-column: 1 / -1; grid-row: 2; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
+  #orders { grid-column: 1 / -1; grid-row: 2; display: grid; grid-template-columns: repeat(var(--order-count, 4), minmax(0, 1fr)); gap: 6px; }
   .order { grid-template-columns: minmax(0, 1fr); grid-template-areas: 'h' 'img' 'm'; justify-items: center; padding: 6px 6px 8px; row-gap: 2px; border-radius: 10px; }
   .order h2 { font-size: 12px; max-width: 100%; padding: 0; }
   .order-n, .order small { display: none; }

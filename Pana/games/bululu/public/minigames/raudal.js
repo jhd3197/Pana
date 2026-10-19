@@ -1,5 +1,5 @@
 import { random, inputFor } from '../online-rules.js';
-// ¡Raudal! The current carries four curiaras down four rapids side by side,
+// ¡Raudal! The current carries six curiaras down six rapids side by side,
 // three lanes each, over the same rocks, mangos and ledges. A/D switch lanes,
 // Space jumps a ledge just before it. Mangos are points; rocks cost one.
 
@@ -13,7 +13,7 @@ import { riverWater, riverBanks, canoeActors, drawCanoe } from './river-stage.js
 import { raudalSim, RAUDAL } from './river-sims.js';
 
 const CHANNEL = 5.4, LANE = 1.55;
-const centre = c => (c - 1.5) * CHANNEL, laneX = (c, x) => centre(c) + (x - 1) * LANE;
+
 
 export default {
   id: 'raudal',
@@ -24,31 +24,37 @@ export default {
   time: RAUDAL.time,
 
   create(ctx) {
+    const count = ctx.players.length;
+    const centre = c => (c - (count - 1) / 2) * CHANNEL, laneX = (c, x) => centre(c) + (x - 1) * LANE;
     const scene = new THREE.Scene();
     const stage = sunnyStage(scene, { ground: null, grass: false, decor: false, horizon: 0xdfe6d2 });
     const puffs = new Puffs(scene);
     const humans = new Set(ctx.players.filter(p => p.human && !ctx.auto).map(p => p.i));
-    const sim = raudalSim({ humans, random }), end = sim.pattern.at(-1).s + 30;
-    const animateWater = riverWater(scene, { w: 4 * CHANNEL + 4, z0: 30, z1: -end, color: 0x86704a, deep: 0x3b2a14 });
-    riverBanks(scene, { half: 2 * CHANNEL + 2, z0: 30, z1: -end, seed: 21 });
-    // Laja walls between the rapids, rocks in the lanes, ledges across all four.
+    const sim = raudalSim({ humans, random, count: ctx.players.length }), end = sim.pattern.at(-1).s + 30;
+    const animateWater = riverWater(scene, { w: count * CHANNEL + 4, z0: 30, z1: -end, color: 0x86704a, deep: 0x3b2a14 });
+    riverBanks(scene, { half: count / 2 * CHANNEL + 2, z0: 30, z1: -end, seed: 21 });
+    // Laja walls between the rapids, rocks in the lanes, ledges across all channels.
     const walls = [], rocks = [];
-    for (let s = -10; s < end; s += 2.4) for (let c = 0; c <= 4; c++) walls.push({ x: centre(c) - CHANNEL / 2, y: -.15, z: -s, rot: s, scale: c % 4 ? .38 : .55 });
-    for (const row of sim.pattern) if (!row.ledge) for (let c = 0; c < 4; c++) for (const l of row.rocks) rocks.push({ x: laneX(c, l), y: -.2, z: -row.s, rot: row.s * 3 + c, scale: .34 });
+    for (let s = -10; s < end; s += 2.4) for (let c = 0; c <= count; c++) walls.push({ x: centre(c) - CHANNEL / 2, y: -.15, z: -s, rot: s, scale: c % count ? .38 : .55 });
+    for (const row of sim.pattern) if (!row.ledge) for (let c = 0; c < count; c++) for (const l of row.rocks) rocks.push({ x: laneX(c, l), y: -.2, z: -row.s, rot: row.s * 3 + c, scale: .34 });
     instancePlacements(scene, lajaRock({ seed: 5, radius: 2 }), walls, { name: 'Muros de laja' });
     instancePlacements(scene, lajaRock({ seed: 9, radius: 2 }), rocks, { name: 'Piedras del raudal' });
     const foam = new THREE.MeshStandardMaterial({ color: 0xf4f8f2, roughness: .4, transparent: true, opacity: .85 });
     for (const row of sim.pattern) if (row.ledge) {
-      const lip = new THREE.Mesh(new THREE.BoxGeometry(4 * CHANNEL, .18, 1.4), foam); lip.position.set(0, .05, -row.s); scene.add(lip);
+      const lip = new THREE.Mesh(new THREE.BoxGeometry(count * CHANNEL, .18, 1.4), foam); lip.position.set(0, .05, -row.s); scene.add(lip);
     }
     // One floating mango per channel and row, picked or not.
     const mangos = [];
-    for (const row of sim.pattern) if (!row.ledge && row.mango >= 0) for (let c = 0; c < 4; c++) {
+    for (const row of sim.pattern) if (!row.ledge && row.mango >= 0) for (let c = 0; c < count; c++) {
       const m = makeMango(); m.scale.setScalar(.75); m.position.set(laneX(c, row.mango), .35, -row.s); scene.add(m); mangos.push({ m, row, c, phase: random() * 6 });
     }
     const camera = new THREE.PerspectiveCamera(54, (ctx.aspect || innerWidth / innerHeight), .1, 500);
     const actors = canoeActors(scene, ctx.players);
     const seen = actors.map(() => ({ hits: 0, jumps: 0, splashes: 0, score: 0 }));
+    // Your own channel, tinted in your colour a stretch ahead of your canoe.
+    const me = actors[ctx.localIndex ?? ctx.players.findIndex(p => p.human && !ctx.auto)];
+    const lane = me && new THREE.Mesh(new THREE.PlaneGeometry(CHANNEL - .5, 60), new THREE.MeshBasicMaterial({ color: me.player.color, transparent: true, opacity: .16, depthWrite: false }));
+    if (lane) { lane.rotation.x = -Math.PI / 2; lane.renderOrder = 1; scene.add(lane); }
     let time = 0;
 
     function draw(dt) {
@@ -59,7 +65,8 @@ export default {
         a.canoe.hull.rotation.x = -jump * .2;
       }
       for (const g of mangos) { g.m.visible = !sim.canoes[g.c].got.has(g.row) && -g.row.s < -sim.s + 6 && g.row.s - sim.s < 90; g.m.position.y = .35 + Math.sin(time * 3 + g.phase) * .06; g.m.rotation.y += dt; }
-      camera.position.set(0, 12, -sim.s + 14.5); camera.lookAt(0, 0, -sim.s - 10);
+      if (lane) lane.position.set(centre(me.i), .08, -sim.s - 26);
+      camera.position.set(0, 12 + (count - 4) * 3, -sim.s + 14.5 + (count - 4) * 4); camera.lookAt(0, 0, -sim.s - 10);
       stage.update(time); animateWater(time); puffs.update(dt);
     }
     function update(dt, input) {
@@ -81,7 +88,16 @@ export default {
       for (const a of actors) a.cheer = winners.includes(a.i) ? 1 : 0;
       draw(dt);
     }
-    return { scene, camera, update, outro, actors, scores: sim.scores, sim,
+    // What's coming down your channel next.
+    function hint() {
+      if (!me) return null;
+      const c = sim.canoes[me.i], soon = sim.pattern.filter(r => r.s > sim.s && r.s - sim.s < RAUDAL.speed * 1.1);
+      if (c.stun > 0) return { text: '¡Pum! Te pegaste con una piedra', tone: 'bad' };
+      if (soon.some(r => r.ledge)) return { text: '¡Raudal! Salta con Espacio justo antes', tone: 'go' };
+      if (soon.some(r => !r.ledge && r.rocks.includes(c.lane))) return { text: '¡Piedra en tu carril! Cámbiate con A o D', tone: 'bad' };
+      return { text: 'Agarra los mangos y esquiva las piedras', tone: '' };
+    }
+    return { scene, camera, update, outro, actors, hint, scores: sim.scores, sim,
       stats: () => ({ hits: sim.canoes.map(c => c.hits), jumps: sim.canoes.map(c => c.jumps), splashes: sim.canoes.map(c => c.splashes) }) };
   },
 };

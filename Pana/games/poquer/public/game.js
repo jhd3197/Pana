@@ -1,6 +1,8 @@
 import { prepareScene } from '/engine/game-load.js';
-import { createTableSeating } from '/engine/table-seating.js';
-import { createMapPicker } from '/engine/map-picker.js';
+import { createRoomOptions } from '/engine/room-options.js';
+import { OPTION_FIELDS, DEFAULT_OPTIONS } from './options.js';
+import { createTableSeating } from '/engine/play/table-seating.js';
+import { createMapPicker } from '/engine/play/map-picker.js';
 import { loadName, loadAvatar } from '/engine/avatar.js';
 import { inviteUrl, newRoomCode, roomFromUrl } from '/engine/invite.js';
 import { createGameMenu, toggleMute } from '/engine/ui.js';
@@ -25,17 +27,18 @@ const seating = createTableSeating($('table-seating'), (from, to) => {
 });
 $('organize-table').onclick = () => room.setup();
 const mapPicker = createMapPicker($('map-picker'), mapId => room.setMap(mapId), { table: true, landmarks: true });
+const roomOptions = createRoomOptions($('room-options'), { title: 'Póquer', fields: OPTION_FIELDS, change: patch => room.configure(patch), reset: () => room.configure(DEFAULT_OPTIONS, 'plaza') });
 const menu = createGameMenu({ title: 'Póquer · Pana', orientation: 'libre', sound,
   options: [{ id: 'view', label: 'Cámara', choices: [['plaza', 'En la plaza'], ['mesa', 'Sobre la mesa']], get: () => cameraView, set: value => { cameraView = value; world.setView(value); } }],
-  note: () => room.local ? 'La práctica está en pausa.' : 'La mesa online sigue. Tienes 30 segundos por turno.',
+  note: () => room.local ? 'La práctica está en pausa.' : `La mesa online sigue. Tienes ${room.state.options.turnSeconds} segundos por turno.`,
   controls: [['Ratón / dedo', 'Elige retirarte, igualar o subir'], ['Apuesta total', 'Escribe el total que quieres apostar en esta calle'], ['M', 'Sonido'], ['Esc', 'Menú']],
-  tips: ['Texas Hold’em sin límite, con fichas gratis. Cada pana recibe dos cartas privadas y combina hasta cinco cartas de su mano y la mesa. Las ciegas son 10 y 20.',
+  tips: ['Texas reparte dos cartas privadas; Omaha reparte cuatro y exige usar exactamente dos de tu mano y tres de la mesa. Las fichas, ciegas y límites los elige el anfitrión.',
     'Hay cuatro rondas de apuestas: antes del flop, flop (tres cartas), turn (cuarta) y river (quinta). Puedes pasar si no debes fichas, igualar, subir o retirarte.',
     'Subir indica tu apuesta total en esta calle, incluyendo lo que ya pusiste. La subida mínima es la última subida completa. Puedes apostar todas tus fichas aunque no alcancen ese mínimo.',
     'Si alguien va con todo, los pozos secundarios se reparten entre quienes aportaron a cada uno. Una subida incompleta no reabre la opción de subir a quien ya actuó.',
     `De menor a mayor: ${HANDS.join(', ')}. El as también sirve para la escalera A-2-3-4-5. Si las mejores cinco cartas empatan, comparten el pozo.`,
-    'Al vencer tus 30 segundos online pasas si puedes, o te retiras. Si pierdes la conexión, te retiras de esa mano salvo que ya hayas ido con todo. Quien llega con una mano en curso espera la siguiente.',
-    'Cada mano nueva repone 1.000 fichas solo a quien se quedó en cero. No hay dinero real. El anfitrión reparte la siguiente mano.'],
+    'Al vencer el tiempo elegido pasas si puedes, o te retiras. Si pierdes la conexión, te retiras de esa mano salvo que ya hayas ido con todo. Quien llega con una mano en curso espera la siguiente.',
+    'Con recompras, la siguiente mano repone la cantidad inicial a quien quedó en cero. Sin recompras, observa hasta que el anfitrión cambie los ajustes. En límite fijo hay hasta cuatro apuestas por calle; en turn y river la apuesta se duplica.'],
   invite: () => inviteUrl(code), onOpen() { render(room.state); }, onClose() { render(room.state); }, canOpen: () => room.state.phase !== 'finished',
 });
 $('game-nav').append(menu.createInviteButton({ id: 'invite', className: 'pk-btn' }), menu.createButton({ id: 'menu', className: 'pk-btn' }));
@@ -46,12 +49,19 @@ $('fold').onclick = () => room.act('fold'); $('call').onclick = () => room.act('
 $('raise').onclick = () => { const value = Number($('amount').value), legal = room.state.legal; if (!legal || !Number.isInteger(value) || value > legal.max || value < Math.min(legal.min, legal.max)) { $('amount').reportValidity(); return; } room.act('raise', value); };
 addEventListener('keydown', event => { if (!menu.isOpen && !event.target.closest?.('input, textarea, select') && event.key.toLowerCase() === 'm') toggleMute(); });
 function render(state) {
-  seating.update(state.players.filter(p => p.connected), { enabled: room.connected && room.isHost && state.phase === 'lobby', ownId: room.id });
+  const options = state.options || DEFAULT_OPTIONS;
+  roomOptions.update(options, room.connected && room.isHost && state.phase === 'lobby');
+  if (state.phase !== 'lobby' && roomOptions.isOpen) roomOptions.close();
+  $('variant-label').textContent = options.variant === 'omaha' ? 'OMAHA' : 'TEXAS HOLD’EM';
+  $('lobby-copy').textContent = options.variant === 'omaha' ? 'Cuatro cartas solo para ti. Usa exactamente dos de tu mano y tres de la mesa.' : 'Dos cartas solo para ti. Cinco en la mesa. Igualas, subes… o te guardas el farol.';
+  $('initial-stack').textContent = options.stack.toLocaleString('es');
+  $('initial-blinds').textContent = `${options.blinds / 2}/${options.blinds}`;
+  seating.update(state.players.filter(p => p.connected), { enabled: room.connected && state.phase === 'lobby', canArrange: room.isHost, members: room.link?.state.players || [], ownId: room.id, hostId: room.local ? room.id : room.link?.state.players.find(p => p.id === room.link.state.host)?.seat });
   $('organize-table').disabled = !room.connected || !room.isHost;
   mapPicker.update(state.mapId, room.connected && room.isHost && state.phase === 'lobby');
   const lobby = state.phase === 'lobby', finished = state.phase === 'finished', legal = state.legal, canAct = !!legal && room.connected && !menu.isOpen;
   document.body.classList.toggle('in-lobby', lobby); $('lobby').hidden = !lobby; $('controls').hidden = lobby || finished;
-  $('start').disabled = !room.connected || !room.isHost; $('start').textContent = !room.connected ? 'Conectando…' : room.isHost ? '¡Repartir!' : 'El anfitrión abre la mesa';
+  $('start').disabled = !room.connected || !room.isHost || (!state.canStart && state.players.filter(p => p.connected && !p.bot).length > 1); $('start').textContent = !room.connected ? 'Conectando…' : room.isHost ? '¡Repartir!' : 'El anfitrión abre la mesa';
   $('invite').disabled = room.local || !room.connected;
   $('roster').textContent = state.players.filter(p => p.connected).map(p => p.name).join(' · ');
   $('street').textContent = { lobby: 'La mesa está lista', preflop: 'Preflop', flop: 'Flop', turn: 'Turn', river: 'River', finished: 'Mano terminada' }[state.phase];
@@ -93,13 +103,14 @@ function render(state) {
       $('showdown').replaceChildren();
       for (const p of state.players.filter(p => p.hole.length && p.hole.every(c => c !== null))) { const row = document.createElement('div'), label = document.createElement('span'), cards = document.createElement('div'); row.className = 'showdown-row'; label.textContent = `${p.name} · ${p.handName || 'Cartas privadas'}`; cards.className = 'cards'; renderCards(cards, p.hole); row.append(label, cards); $('showdown').append(row); }
     }
-    $('again').disabled = !room.isHost || !room.connected; $('again').textContent = room.isHost ? 'Siguiente mano' : 'El anfitrión reparte';
+    $('again').disabled = !room.isHost || !room.connected || !state.canStart; $('again').textContent = room.isHost ? 'Siguiente mano' : 'El anfitrión reparte';
     if (lastPhase !== 'finished') $('again').focus();
   }
   lastRevision = state.revision; lastPhase = state.phase; lastTurn = state.turn;
 }
 let previous = performance.now(), tickTime = previous;
 const timer = setInterval(() => { const now = performance.now(); room.tick((now - tickTime) / 1000, menu.isOpen); tickTime = now;
+  if (room.state.legal && room.local) $('turn').textContent = `¡Tu turno! · ${Math.max(0, Math.ceil(room.state.options.turnSeconds - room.elapsed))} s`;
   if (room.state.legal && room.state.deadline && !room.local) $('turn').textContent = `¡Tu turno! · ${Math.max(0, Math.ceil((room.state.deadline - room.link.now()) / 1000))} s`;
 }, 100);
 function frame(now) { if (stopped) return; const dt = Math.min(.05, (now - previous) / 1000); previous = now; world.draw(room.state, room.id, dt); for (const a of world.anchors()) { const node = seatNodes.get(a.id); if (node) { node.style.left = `${a.x}%`; node.style.top = `${a.y}%`; } } requestAnimationFrame(frame); }

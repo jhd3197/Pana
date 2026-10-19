@@ -1,6 +1,6 @@
 /* Bululú: Pana Kit (/engine/kit.css) dressed for the mango island. */
 :root { color-scheme: dark; }
-body { --wood: #b5753a; --wood-edge: #7a4a20; --coin-text: #ffdf72; --silver: #d6dbe6; --bronze: #e0a463; --coin-shine: #ffe58a; --coin-edge: #9a6400; --sea: #1d4f80; --tile-blue: #3d7bf2; --stat: #c9a2ff; --pk-game: #8e4de8; --pk-game-ink: #fff; --reticle-ink: #16161a; }
+body { --wood: #b5753a; --wood-edge: #7a4a20; --coin-text: #ffdf72; --silver: #d6dbe6; --bronze: #e0a463; --coin-shine: #ffe58a; --coin-edge: #9a6400; --sea: #1d4f80; --tile-blue: #3d7bf2; --stat: #c9a2ff; --pk-game: #8e4de8; --pk-game-ink: #fff; --reticle-ink: #16161a; --hint-ok: #2fbf4a; --hint-ok-edge: #17682a; --hint-bad-edge: #5a1012; }
 
 * { box-sizing: border-box; }
 
@@ -65,7 +65,7 @@ body:has(#results:not(.hidden)) #hud { display: none; }
   left: 250px; right: 250px; top: 18px;
   z-index: 3;
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 10px;
 }
 .pcard {
@@ -82,6 +82,8 @@ body:has(#results:not(.hidden)) #hud { display: none; }
   transition: border-color .2s, transform .2s;
 }
 .pcard.turn { border-color: var(--pk-yellow); transform: translateY(2px); }
+/* six panas in a minigame: one row, so the timer below never covers a card */
+body.in-mini .cards { grid-template-columns: repeat(6, minmax(0, 1fr)); }
 .pcard img {
   width: 40px; height: 40px;
   flex: none;
@@ -202,7 +204,7 @@ body:has(#results:not(.hidden)) #hud { display: none; }
 }
 .look.on { background: var(--pk-yellow); border-color: var(--pk-yellow); color: var(--pk-yellow-ink); }
 .look.on .pk-kbd { background: rgba(42, 26, 0, .12); border-color: rgba(42, 26, 0, .25); color: var(--pk-yellow-ink); }
-body.in-mini .look, body.in-mini .side, body.in-mini .legend { display: none; }
+body.in-mini .look, body.in-mini .side, body.in-mini .legend, body.in-mini .keys { display: none; }
 
 /* ---------- tile legend (bottom-left) ---------- */
 .legend {
@@ -284,6 +286,7 @@ body.in-mini .look, body.in-mini .side, body.in-mini .legend { display: none; }
 .toast span { font: 800 16px var(--pk-sans); opacity: .9; }
 .toast.event, .toast.gold, .toast.p2 { --tc: var(--pk-yellow); --tink: var(--pk-yellow-ink); }
 .toast.p0 { --tc: var(--pk-coral); } .toast.p1 { --tc: #3d7bf2; } .toast.p3 { --tc: #2fbf4a; }
+.toast.p4 { --tc: var(--pk-game); } .toast.p5 { --tc: var(--pk-coral); }
 @keyframes pop { from { transform: translate(-50%, -50%) rotate(-3deg) scale(.6); opacity: 0; } }
 
 .prompt {
@@ -310,6 +313,10 @@ body.in-mini .look, body.in-mini .side, body.in-mini .legend { display: none; }
 .prompt .row { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; }
 .prompt .pk-btn--primary { font-size: 30px; padding: 14px 26px 10px; box-shadow: 0 6px 0 var(--pk-yellow-edge); }
 .prompt .pk-btn--primary .pk-kbd { text-transform: uppercase; font-size: 12px; padding: 0 8px; }
+/* A throw button rattles while it is held (engine/play/dice-throw.js adds .is-shaking). */
+.prompt button { touch-action: none; }
+.prompt .is-shaking { animation: dice-shake .09s linear infinite; }
+@keyframes dice-shake { 0%, 100% { transform: translate(0, 2px) rotate(0); } 25% { transform: translate(-3px, 3px) rotate(-2deg); } 75% { transform: translate(3px, 0) rotate(2deg); } }
 @keyframes rise { from { transform: translate(-50%, 20px); opacity: 0; } }
 
 #count {
@@ -355,12 +362,18 @@ body.in-mini .look, body.in-mini .side, body.in-mini .legend { display: none; }
 .spaces .tile.yellow { font-size: 26px; }
 .spaces .ico { width: 14px; height: 14px; border-width: 2px; }
 .spaces small { font: 700 12px/1.25 var(--pk-sans); color: var(--pk-muted); }
-.iplayers { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+.iplayers { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
 .ip { display: flex; align-items: center; gap: 8px; min-width: 0; }
 .ip img { width: 38px; height: 38px; flex: none; border-radius: 50%; object-fit: cover; background: color-mix(in srgb, var(--c) 45%, #fff); border: 2px solid var(--c); }
 .ip b { display: none; }
 .ip span { font: 800 13px var(--pk-sans); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .intro .pk-lobby-cta { grid-template-columns: 1fr; }
+body.mode-minis .board-only { display: none; }
+.intro-rules:empty { display: none; }
+.intro-rules { color: var(--pk-text); }
+.practice-pick { display: flex; align-items: center; justify-content: center; gap: 8px; color: var(--pk-muted); font: 700 13px var(--pk-sans); }
+.practice-pick[hidden] { display: none; }
+.practice-pick select { min-height: 34px; padding: 4px 10px; border: 1px solid var(--pk-line); border-radius: 10px; background: rgba(14, 11, 36, .92); color: var(--pk-text); font: 700 13px var(--pk-sans); }
 
 /* ---------- dialogs: minigame intro and results ---------- */
 .panel {
@@ -380,6 +393,12 @@ body.in-mini .look, body.in-mini .side, body.in-mini .legend { display: none; }
 .mkeys span { display: flex; align-items: center; gap: 6px; }
 .prize { margin: 0; color: var(--pk-muted); font-size: 15px; }
 .prize b { color: var(--pk-yellow); }
+.mready { display: grid; justify-items: center; gap: 8px; }
+.mready .chips { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; }
+.mready .chip { padding: 4px 10px; border: 2px solid var(--c); border-radius: 999px; color: var(--pk-muted); font: 800 13px var(--pk-sans); }
+.mready .chip.on { background: var(--c); color: #fff; }
+.mready small { color: var(--pk-muted); font: 700 13px var(--pk-sans); }
+.mready .pk-btn--primary { font-size: 26px; padding: 12px 26px 9px; }
 
 .results { display: grid; gap: 12px; }
 .results .sub { font-size: 15px; }
@@ -429,6 +448,8 @@ body.mini-aim canvas { cursor: none; touch-action: none; }
 .reticle.me::before { width: 46px; height: 46px; border-width: 4px; opacity: 1; }
 .reticle.me i { width: calc(40px - var(--pull) * 30px); height: calc(40px - var(--pull) * 30px); border-width: 3px; }
 .reticle.me { z-index: 1; }
+/* everyone else's reticle steps back so yours is the one you track */
+.reticle:not(.me) { opacity: .55; scale: .85; }
 .reticle.empty::before { opacity: 0.4; }
 .reticle .ammo { position: absolute; top: 30px; left: 0; translate: -50% 0; display: flex; gap: 4px; }
 .reticle .ammo b {
@@ -436,6 +457,28 @@ body.mini-aim canvas { cursor: none; touch-action: none; }
   background: var(--c); border: 2px solid var(--reticle-ink);
 }
 .reticle .ammo b.used { background: transparent; border-color: rgba(22, 22, 26, 0.45); }
+
+/* ---------- minigame hint: your role, the phase, a cue ---------- */
+.mini-hint {
+  position: fixed; left: 50%; top: 150px; translate: -50% 0; z-index: 4;
+  max-width: min(560px, calc(100vw - 32px)); margin: 0; padding: 7px 16px;
+  border: 1px solid var(--pk-line); border-radius: 999px; background: rgba(14, 11, 36, .86);
+  font: 800 15px/1.3 var(--pk-sans); text-align: center; pointer-events: none;
+}
+.mini-hint[data-tone="go"] { background: var(--pk-yellow); border-color: var(--pk-yellow-edge); color: var(--pk-yellow-ink); }
+.mini-hint[data-tone="bad"] { background: var(--pk-coral); border-color: var(--hint-bad-edge); color: #fff; }
+.mini-hint[data-tone="ok"] { background: var(--hint-ok); border-color: var(--hint-ok-edge); color: #fff; }
+
+/* ---------- race progress: one track, a dot per pana ---------- */
+.progress {
+  position: fixed; left: 50%; bottom: 22px; translate: -50% 0; z-index: 4;
+  width: min(420px, 46vw); height: 10px; border-radius: 999px;
+  background: rgba(14, 11, 36, .78); box-shadow: inset 0 0 0 2px var(--pk-line);
+  pointer-events: none;
+}
+.progress::after { content: ''; position: absolute; right: -4px; top: -7px; width: 6px; height: 24px; border-radius: 3px; background: repeating-linear-gradient(#fff 0 4px, var(--reticle-ink) 4px 8px); }
+.progress i { position: absolute; top: 50%; width: 14px; height: 14px; translate: -50% -50%; border-radius: 50%; background: var(--c); border: 2px solid var(--reticle-ink); transition: left .1s linear; }
+.progress i.me { width: 20px; height: 20px; border: 3px solid #fff; z-index: 1; }
 
 /* ---------- touch controls (minigames only) ---------- */
 .touch { display: none; }
@@ -448,9 +491,11 @@ body.mini-aim canvas { cursor: none; touch-action: none; }
     padding: 0 16px;
     z-index: 4;
   }
-  /* the buttons themselves are the kit's .pk-touch */
+  /* the buttons themselves are the kit's .pk-touch; each minigame names its pad */
   body.in-mini .touch-2d { align-items: flex-end; }
-  body.in-mini.mini-2d .touch-1d, body.in-mini:not(.mini-2d) .touch-2d { display: none; }
+  body.in-mini[data-pad="dpad"] .touch-1d, body.in-mini:not([data-pad="dpad"]) .touch-2d { display: none; }
+  body.in-mini[data-pad="r"] #t-left, body.in-mini[data-pad="none"] #t-left, body.in-mini[data-pad="none"] #t-right { visibility: hidden; }
+  body.in-mini[data-pad="none"] .touch-1d { justify-content: flex-end; }
   /* aim minigames: the whole screen is the control */
   body.in-mini.mini-aim .touch { display: none; }
 }
@@ -480,12 +525,6 @@ body.mini-aim canvas { cursor: none; touch-action: none; }
   .top-actions .pk-btn { min-height: 40px; padding: 8px 14px; }
   .keys { display: none; }
   .timer { top: 10px; left: auto; right: 12px; transform: none; padding: 6px 16px 6px 12px; }
-  body.in-mini .touch { bottom: 210px; }
-  /* aim minigames need the whole field: the cards become a slim row at the top */
-  body.mini-aim .cards { top: 8px; bottom: auto; left: 132px; right: 124px; grid-template-columns: repeat(4, 1fr); gap: 6px; }
-  body.mini-aim .pcard { padding: 4px 6px; }
-  body.mini-aim .pcard img { width: 24px; height: 24px; }
-  body.mini-aim .pcard small { display: none; }
   .timer b { font-size: 28px; }
   .prompt { top: auto; bottom: 206px; }
   .prompt .pk-btn--primary { font-size: 24px; }
@@ -502,4 +541,65 @@ body.mini-aim canvas { cursor: none; touch-action: none; }
   .rname { font-size: 16px; }
   .rv { min-width: 0; }
   .rv b { font-size: 20px; }
+}
+
+/* Phones in either orientation and short landscape screens. In a minigame the
+   field matters most: the cards become one slim strip at the top, the menu
+   sits in the corner and the touch buttons stand at the bottom edge. */
+@media (max-width: 860px), (max-height: 500px) {
+  body.in-mini .logo { display: none; }
+  body.in-mini .cards {
+    top: 6px; bottom: auto; left: 64px; right: 92px;
+    grid-template-columns: none; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: 4px;
+  }
+  body.in-mini .pcard { gap: 4px; padding: 3px 5px; border-radius: 10px; border-width: 2px; }
+  body.in-mini .pcard img { width: 22px; height: 22px; border-width: 1px; }
+  body.in-mini .pcard small { display: none; }
+  body.in-mini .vals .big b { font-size: 16px; }
+  body.in-mini .vals .big .ico { width: 14px; height: 14px; }
+  body.in-mini .crown { top: -9px; left: 4px; font-size: 11px; }
+  body.in-mini .top-actions { top: 6px; left: 8px; right: auto; bottom: auto; }
+  body.in-mini .top-actions .pk-btn { min-height: 36px; padding: 6px 10px; font-size: 13px; }
+  body.in-mini .top-actions .pk-kbd { display: none; }
+  body.in-mini .timer { top: 6px; right: 8px; left: auto; transform: none; padding: 3px 12px 3px 8px; }
+  body.in-mini .timer b { font-size: 22px; }
+  body.in-mini .timer svg { width: 20px; height: 20px; }
+  body.in-mini .touch { bottom: calc(14px + env(safe-area-inset-bottom)); }
+  body.in-mini .reticles { top: 0; }
+  .mini-hint { top: 44px; font-size: 13px; padding: 5px 12px; }
+  #count { font-size: 110px; }
+}
+/* You, among six cards: your own colour around the card and a small tab. */
+.pcard.me { border-color: var(--c); box-shadow: var(--pk-drop), 0 0 0 2px color-mix(in srgb, var(--c) 45%, transparent); }
+.pcard.me::after {
+  content: 'TÚ'; position: absolute; bottom: -8px; left: 50%; translate: -50% 0;
+  padding: 0 6px; border-radius: 5px; background: var(--c); color: #fff;
+  font: 900 9px/1.5 var(--pk-sans); letter-spacing: .5px;
+}
+/* Short landscape phones on the board: one row of six cards along the bottom. */
+@media (max-height: 500px) {
+  body:not(.in-mini) .logo { top: 6px; }
+  body:not(.in-mini) .logo h1 { font-size: 24px; }
+  .cards { left: 12px; right: 12px; top: auto; bottom: 8px; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 6px; }
+  .pcard { gap: 5px; padding: 4px 6px; }
+  .pcard img { width: 26px; height: 26px; }
+  .pcard small { display: none; }
+  .vals { gap: 6px; }
+  .medal { width: 18px; height: 18px; font-size: 10px; left: -6px; top: -7px; }
+  body:not(.in-mini) .top-actions { top: 76px; left: 12px; right: auto; bottom: auto; }
+  .top-actions .pk-btn { min-height: 36px; padding: 6px 12px; }
+  .side { top: 6px; width: 132px; }
+  .minimap { width: 132px; height: 112px; }
+  .sky { display: none; }
+  .prompt { top: auto; bottom: 66px; }
+  .toast { top: 32%; }
+  .mini-intro { top: 50%; }
+  .mini-intro .pk-title { font-size: 28px; }
+}
+
+/* Upright phones: six strips are too narrow for a face, so the colour says who. */
+@media (max-width: 520px) {
+  body.in-mini .pcard { justify-content: center; border-color: color-mix(in srgb, var(--c) 70%, transparent); }
+  body.in-mini .pcard img { display: none; }
+  body.in-mini .vals .big .ico { display: none; }
 }

@@ -3,7 +3,8 @@ name: Release
 # Every push to main (a merge from dev) is a release:
 #   1. the checks pass (test.yml);
 #   2. the version is worked out: the first release is package.json's version, then a patch,
-#      a minor when a commit since the last tag starts with "feat:", a major for "BREAKING CHANGE";
+#      a minor when a commit since the last tag has a "Release: minor" trailer (or, in older
+#      history, a "feat:" subject), a major for "BREAKING CHANGE";
 #   3. CHANGELOG.md's "## Unreleased" notes are stamped with that version and today's date, the
 #      version goes into package.json, and both are committed back to main;
 #   4. that commit is tagged v<version> and a GitHub release is published whose notes are the

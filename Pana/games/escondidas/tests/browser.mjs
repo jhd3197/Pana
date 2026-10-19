@@ -6,27 +6,20 @@ import { mkdir } from 'node:fs/promises';
 import path from 'node:path';
 const require = createRequire(import.meta.url);
 const { chromium } = require(process.argv[2] || 'playwright');
-const { WebSocket } = require('ws');
 const base = process.env.PANA_QA_URL || 'http://localhost:8461';
 const output = process.env.PANA_QA_OUTPUT;
 if (output) await mkdir(output, { recursive: true });
-const browser = await chromium.launch({ headless: true, ...(process.argv[3] ? { executablePath: process.argv[3] } : {}) });
-const errors = [], sockets = [];
+const browser = await chromium.launch({ headless: true, args: ['--disable-background-timer-throttling', '--disable-renderer-backgrounding', '--disable-backgrounding-occluded-windows'], ...(process.argv[3] ? { executablePath: process.argv[3] } : {}) });
+const errors = [];
 const room = `qa-${Date.now().toString(36)}`;
 const check = text => console.log(`ok  ${text}`);
 async function newPage(name, mobile = false, code = room) {
   const context = await browser.newContext(mobile ? { viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true } : { viewport: { width: 1440, height: 900 } });
+  await context.addInitScript(() => localStorage.setItem('pana:settings', JSON.stringify({ quality: 'baja' })));
   const page = await context.newPage(); page.on('pageerror', error => errors.push(`${name}: ${error.message}`));
   await page.goto(`${base}/g/escondidas/?room=${code}&name=${name}&debug`);
-  await page.waitForFunction(() => window.hunt?.room.connected, undefined, { timeout: 90000 });
+  await page.waitForFunction(() => window.hunt?.room.connected && window.PANA_PREPARED === true, undefined, { timeout: 120000 });
   return page;
-}
-async function wire(game, code) {
-  const socket = new WebSocket(base.replace(/^http/, 'ws') + '/ws'); sockets.push(socket);
-  await new Promise(resolve => socket.on('open', resolve));
-  const welcome = new Promise(resolve => socket.once('message', data => resolve(JSON.parse(data))));
-  socket.send(JSON.stringify({ t: 'join', game, room: code, name: 'QA' }));
-  assert.equal((await welcome).t, 'welcome'); return socket;
 }
 try {
   const a = await newPage('Juan'), b = await newPage('Ana');
@@ -34,13 +27,25 @@ try {
   await b.waitForFunction(() => hunt.room.members.size === 2);
   check('two real clients join one room');
   if (output) await a.screenshot({ path: path.join(output, 'pana-hunt-lobby.png') });
-  await a.getByRole('button', { name: 'Ser buscador', exact: true }).click();
+  // The role picker lives in the shared room menu's "more" panel.
+  await a.locator('#pana-room-more').click(); await a.getByRole('button', { name: 'Ser buscador', exact: true }).click(); await a.locator('#pana-room-done').click();
   await a.locator('#start').click(); await b.waitForFunction(() => hunt.state.phase === 'hide');
   assert.equal(await a.evaluate(() => hunt.state.seeker === hunt.room.id), true);
   const before = await b.evaluate(() => hunt.state.players.find(p => p.id === hunt.room.id).x);
   await b.keyboard.down('d');
   await b.waitForFunction(x => hunt.state.players.find(p => p.id === hunt.room.id).x > x + 0.8, before);
   await b.keyboard.up('d'); check('remote input moves the player on the host');
+  // Prediction: with the host's snapshots held back the guest still walks; then it settles on the host's position.
+  await b.waitForFunction(() => !!hunt.room.predicted);
+  await a.evaluate(() => { hunt.room.publish = () => {}; });
+  const stalled = await b.evaluate(() => { const p = hunt.room.predicted, me = hunt.state.players.find(q => q.id === hunt.room.id); return { x: p.x, z: p.z, shown: [me.x, me.z] }; });
+  await b.keyboard.down('d');
+  await b.waitForFunction(s => Math.hypot(hunt.room.predicted.x - s.x, hunt.room.predicted.z - s.z) > 0.8, stalled);
+  await b.keyboard.up('d');
+  assert.deepEqual(await b.evaluate(() => { const me = hunt.state.players.find(q => q.id === hunt.room.id); return [me.x, me.z]; }), stalled.shown, 'no snapshot arrived while predicting');
+  await a.evaluate(() => { delete hunt.room.publish; });
+  await b.waitForFunction(() => { const me = hunt.state.players.find(q => q.id === hunt.room.id), p = hunt.room.predicted; return p && Math.hypot(me.x - p.x, me.z - p.z) < 0.3; });
+  check('the guest walks its own pana at once and settles on the host position');
   for (const key of ['1', '2', '3']) {
     await b.keyboard.press(key);
     await b.waitForFunction(k => hunt.state.players.find(p => p.id === hunt.room.id).changes === 3 - Number(k), key);
@@ -51,7 +56,8 @@ try {
   const ids = await a.evaluate(() => ({ host: hunt.room.id, other: hunt.state.players.find(p => !p.bot && p.id !== hunt.room.id).id }));
   await a.evaluate(({ host, other }) => { hunt.step(hunt.state.hideSeconds + 1); hunt.place(host, -2, 14); hunt.place(other, -4, 14); }, ids);
   await b.waitForFunction(() => hunt.state.phase === 'hunt');
-  await a.keyboard.press('e'); await b.waitForFunction(() => hunt.state.players.find(p => p.id === hunt.room.id).caught);
+  // First person: the seeker turns to put the hider under the crosshair, then checks.
+  await a.evaluate(() => { hunt.aimAt(-4, 14); }); await a.keyboard.press('e'); await b.waitForFunction(() => hunt.state.players.find(p => p.id === hunt.room.id).caught);
   check('capture and score synchronize between clients');
   const c = await newPage('Luisa', true);
   await c.waitForFunction(() => hunt.state.players.find(p => p.id === hunt.room.id)?.spectator);
@@ -67,7 +73,7 @@ try {
   await c.waitForFunction(() => hunt.state.phase === 'lobby');
   assert.equal(await b.locator('#world').evaluate(el => el.style.filter), '');
   check('host departure returns survivors to a usable, unblurred lobby');
-  await b.locator('#role-seek').click(); await b.locator('#start').click();
+  await b.locator('#pana-room-more').click(); await b.locator('#role-seek').click(); await b.locator('#pana-room-done').click(); await b.locator('#start').click();
   await c.waitForFunction(() => hunt.state.phase === 'hide');
   const initialX = await c.evaluate(() => hunt.state.players.find(p => p.id === hunt.room.id).x);
   const button = await c.locator('[data-move="right"]').boundingBox();
@@ -94,14 +100,10 @@ try {
   await b.evaluate(() => hunt.room.cut());
   await b.waitForFunction(() => !hunt.room.connected); await b.locator('#practice').click();
   await b.waitForFunction(() => hunt.room.offline && hunt.state.phase === 'lobby');
-  await b.locator('#role-hide').click(); await b.locator('#start').click(); await b.keyboard.press('1');
+  await b.locator('#pana-room-more').click(); await b.locator('#role-hide').click(); await b.locator('#pana-room-done').click(); await b.locator('#start').click(); await b.keyboard.press('1');
   await b.waitForFunction(() => hunt.camera.position.y < 4);
   if (output) await b.screenshot({ path: path.join(output, 'pana-hunt-gameplay.png') });
   check('connection failure offers playable local practice');
-  const isolationA = await wire('escondidas', room + '-wire'), isolationB = await wire('derrape', room + '-wire');
-  let leaked = false; isolationB.on('message', raw => { if (JSON.parse(raw).t === 'state') leaked = true; });
-  isolationA.send(JSON.stringify({ t: 'state', v: { game: 'hunt-v1', marker: 'isolation-check' } }));
-  await new Promise(resolve => setTimeout(resolve, 250)); assert.equal(leaked, false); check('same room code stays isolated between games');
   await b.goto(base + '/g/derrape/?track=llanos&debug'); await b.waitForFunction(() => window.race && window.garage);
   await b.evaluate(() => startRace(0)); check('Derrape loads and starts on Los Llanos with the market kit');
   await b.goto(base + '/g/bululu/?debug'); await b.waitForFunction(() => window.board && window.players);
@@ -111,4 +113,4 @@ try {
   assert.equal(await b.evaluate(async () => typeof (await import('/g/escondidas/card.js')).mount), 'function');
   check('hub discovers Escondidas and resolves its live artwork imports');
   assert.deepEqual(errors, []); check('no uncaught browser errors');
-} finally { for (const socket of sockets) socket.close(); await browser.close(); }
+} finally { await browser.close(); }

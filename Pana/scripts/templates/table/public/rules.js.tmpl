@@ -1,0 +1,77 @@
+// {{name}}: pure rules, plain data in and out (no DOM, no Three.js), so the
+// host, the screen and Node tests all share them. The scaffold is a dice race
+// to {{target}} points at a table: replace it with the real game, keeping
+// snapshot(), restore() and accept() (engine/table-room.js relies on them).
+import { draw } from '/engine/random.js';
+import { defaultOptions, roomOptions } from './options.js';
+
+export const SEATS = {{players}};
+export const TARGET = {{target}};
+export const BOT_NAMES = ['Coco', 'Lola', 'Cheo', 'Nena', 'Toño', 'Mari', 'Pepe', 'Cuqui'];
+const bot = (seat) => ({ seat, id: null, name: BOT_NAMES[seat], avatar: {}, score: 0 });
+
+export class TableGame {
+  constructor(seed = Date.now()) {
+    this.seed = (seed >>> 0) || 1;
+    this.options = defaultOptions();
+    this.players = Array.from({ length: SEATS }, (_, seat) => bot(seat));
+    this.phase = 'lobby'; this.turn = 0; this.lastRoll = 0; this.winner = null; this.round = 0;
+    this.revision = 0; this.ledger = {};
+  }
+
+  snapshot() { return JSON.parse(JSON.stringify(this)); }
+
+  // A new host rebuilds the game from the last snapshot; seats whose pana has
+  // gone are bots again (keeping their score).
+  static restore(state, members) {
+    const game = Object.assign(new TableGame(), JSON.parse(JSON.stringify(state)));
+    for (const p of game.players) if (p.id !== null && !members.has(p.id)) Object.assign(p, bot(p.seat), { score: p.score });
+    return game;
+  }
+
+  // A pana sits in their own chair or takes a bot's; a full table watches.
+  addPlayer(id, name, avatar = {}) {
+    const p = this.players.find(p => p.id === id) || this.players.find(p => p.id === null);
+    if (!p || (p.id === id && p.name === name && JSON.stringify(p.avatar) === JSON.stringify(avatar))) return false;
+    Object.assign(p, { id, name, avatar }); this.revision++; return true;
+  }
+  removePlayer(id) {
+    const p = this.players.find(p => p.id === id);
+    if (p) { Object.assign(p, bot(p.seat), { score: p.score }); this.revision++; }
+  }
+
+  start() {
+    for (const p of this.players) p.score = 0;
+    Object.assign(this, { phase: 'playing', turn: 0, lastRoll: 0, winner: null });
+    this.round++; this.revision++;
+  }
+
+  roll() {
+    if (this.phase !== 'playing') return false;
+    const p = this.players[this.turn];
+    this.lastRoll = 1 + Math.floor(draw(this) * 6);
+    p.score += this.lastRoll;
+    if (p.score >= this.options.target) { this.phase = 'finished'; this.winner = p.seat; } else this.turn = (this.turn + 1) % SEATS;
+    this.revision++; return true;
+  }
+
+  // One action from a member: { action, seq, revision }. A repeated seq or a
+  // stale revision is refused, so a resend or a slow guest never acts twice.
+  accept(id, data, hostId) {
+    if (!data || data.revision !== this.revision || !Number.isSafeInteger(data.seq) || data.seq <= (this.ledger[id] || 0)) return false;
+    this.ledger[id] = data.seq;
+    if (data.action === 'options' && id === hostId && this.phase === 'lobby') {
+      const next = roomOptions(this.options, data.options); if (!next) return false;
+      this.options = next; this.revision++; return true;
+    }
+    if (data.action === 'start') {
+      if (id !== hostId || this.phase === 'playing') return false;
+      this.start(); return true;
+    }
+    if (data.action === 'roll') return this.players[this.turn]?.id === id && this.roll();
+    return false;
+  }
+}
+
+// What a bot does on its turn. A real game puts its strategy here.
+export const botMove = () => 'roll';

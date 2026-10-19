@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { readFileSync, readdirSync } from 'node:fs';
 import { createHouseSpec, readHouseSpec, rerollHouse, createHouseBatch, readHouseBatch, saveHouseBatch } from '../models/props/colonial-house-spec.js';
 import { HOUSE_FAMILIES } from '../models/props/colonial-house-definitions.js';
 
@@ -77,4 +77,34 @@ test('wall finishes preserve architecture, locks and saved version-two houses', 
   assert.deepEqual(unlocked.faces, painted.faces); assert.equal(unlocked.finishSeed, 12);
   assert.equal(new Set(createHouseBatch(103).map(s => s.wallFinish)).size, 4);
   for (const options of [{ wallFinish: 'stone' }, { finishSeed: -1 }, { finishSeed: 1.3 }, { finishSeed: 0x100000000 }]) assert.throws(() => createHouseSpec(options), RangeError);
+});
+
+// Every street house in every map comes from the one house maker
+// (colonial-house.js), so its windows, roofs and wall finishes reach them
+// all. A map that hand-builds a house misses every later improvement.
+test('street houses build through the colonial house maker', () => {
+  const root = new URL('../../', import.meta.url);
+  const body = (file, name) => {
+    const source = readFileSync(new URL(file, root), 'utf8'), start = source.indexOf(`export function ${name}(`);
+    assert.ok(start >= 0, `${file} exports ${name}`);
+    const end = source.indexOf('\nexport function', start + 1);
+    return source.slice(start, end < 0 ? undefined : end);
+  };
+  for (const [file, name] of [
+    ['engine/models/props/plaza-buildings.js', 'house'],
+    ['engine/models/props/pueblo.js', 'colonialHouse'],
+    ['games/derrape/public/tracks/world-landmarks.js', 'canalVilla'],
+  ]) {
+    const code = body(file, name);
+    assert.match(code, /\b(colonialHouse|recipeHouse)\(/, `${file} ${name}() uses the house maker`);
+    assert.doesNotMatch(code, /\b(box|shutterWindow|tiledRoof)\(/, `${file} ${name}() builds no walls of its own`);
+  }
+  // Hand-built windows are for buildings that are not street houses.
+  const OTHER_BUILDINGS = new Set(['engine/models/core/architecture-kit.js', 'engine/models/props/mountain.js',
+    'engine/models/props/ranch.js', 'engine/models/props/thermal.js']);
+  const walk = dir => readdirSync(new URL(dir, root), { withFileTypes: true }).flatMap(e => e.isDirectory()
+    ? (e.name === 'tests' || e.name === 'node_modules' ? [] : walk(`${dir}${e.name}/`)) : e.name.endsWith('.js') ? [`${dir}${e.name}`] : []);
+  const strays = [...walk('engine/'), ...walk('games/')].filter(f => !OTHER_BUILDINGS.has(f)
+    && /\bshutterWindow\(/.test(readFileSync(new URL(f, root), 'utf8')));
+  assert.deepEqual(strays, [], 'a street house with hand-built shutters: use colonialHouse() instead');
 });

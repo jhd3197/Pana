@@ -8,6 +8,7 @@
   <title>Pana Cocina · ¡A comer!</title>
   <link rel="stylesheet" href="/engine/kit.css">
   <link rel="stylesheet" href="/engine/ui.css">
+  <link rel="stylesheet" href="/engine/room-options.css">
   <link rel="stylesheet" href="style.css">
   <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}</script>
 <link rel="stylesheet" href="/engine/game-lobby.css">
@@ -22,13 +23,11 @@
     <div class="pk-lobby-top"><a class="pk-back" href="/">← Todos los juegos</a><a class="pk-logo" href="/" aria-label="Pana">PANA</a></div>
     <span class="pk-ribbon">HOY SE COME EN LA PLAZA</span>
     <h1 id="title" class="pk-title">¡Manos a la masa!</h1>
-    <p class="pk-copy">Cuatro platos de aquí. Una cocina llena de panas.</p>
-    <div class="menu-tasting" id="tasting" aria-label="Arepas, cachapas, tequeños y empanadas"></div>
-    <ol class="recipe-steps"><li><b>01</b> Busca ingredientes</li><li><b>02</b> Prepara en la tabla</li><li><b>03</b> Cocina y sirve</li></ol>
-    <div class="pk-stats"><div class="pk-stat"><b>3 min</b><span>por turno</span></div><div class="pk-stat"><b>1–8</b><span>panas</span></div><div class="pk-stat"><b>4</b><span>platos</span></div></div>
-    <div class="pk-field"><span class="pk-eyebrow" id="helpers-label">Cuando falten panas</span>
-      <div class="pk-seg" role="group" aria-labelledby="helpers-label"><label class="helpers"><input id="helpers" type="checkbox" checked> Con ayudantes</label><button id="solo" type="button" aria-pressed="false">Solo panas</button></div></div>
-    <div class="pk-lobby-foot">
+    <p class="pk-copy" data-room-description>Cuatro platos de aquí. Una cocina llena de panas.</p>
+    <div class="menu-tasting" id="tasting" aria-label="Arepas, cachapas, tequeños y empanadas" data-room-description></div>
+    <ol class="recipe-steps" data-room-description><li><b>01</b> Busca ingredientes</li><li><b>02</b> Prepara en la tabla</li><li><b>03</b> Cocina y sirve</li></ol>
+    <div class="pk-stats" data-room-description><div class="pk-stat"><b id="shift-minutes">3 min</b><span>por turno</span></div><div class="pk-stat"><b>1–8</b><span>panas</span></div><div class="pk-stat"><b>4</b><span>platos</span></div></div>
+    <div id="room-options"></div><div class="pk-lobby-foot">
       <div class="pk-lobby-room"><div id="lobby-avatars" class="pk-avatars" aria-hidden="true"></div><span id="lobby-names"></span><span class="pk-room-code" id="room-code"></span></div>
       <p id="lobby-status" class="lobby-status"><span id="connection" role="status">Conectando…</span> <button id="practice" class="text-button hidden">Abrir cocina local</button></p>
       <div class="pk-lobby-cta" id="lobby-cta"><button id="start" class="pk-btn pk-btn--primary pk-btn--lg" disabled>Entrando a la cocina…</button></div>

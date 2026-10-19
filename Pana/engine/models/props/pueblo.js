@@ -6,7 +6,7 @@ import { makeMango } from '/engine/models/props/mango.js';
 import { bush } from '/engine/models/vegetation/bush.js';
 import { colonialHouse as recipeHouse } from './colonial-house.js';
 import { food } from '/engine/models/props/kitchen.js';
-import { finish, rounded, sign, curve, archPanel, archFrame, tiledRoof, shutterWindow, palette as P } from '/engine/models/core/architecture-kit.js';
+import { finish, rounded, sign, curve, archPanel, archFrame, tiledRoof, palette as P } from '/engine/models/core/architecture-kit.js';
 
 const coral = M(0xd87960, { roughness: 0.95 }), teal = M(0x3d8580, { roughness: 0.8 });
 const clay = M(0xb86645, { roughness: 1 });
@@ -42,27 +42,14 @@ function awning(g, w, y, z, colors = [0x3d8580, 0xf0dfb9]) {
   for (const s of [-1, 1]) g.add(tube([s * (w / 2 - 0.08), y - 0.7, z], [s * (w / 2 - 0.08), y - 0.1, z + 1], 0.025, P.iron));
 }
 
-// 011 · A single-storey colonial home with a tiled roof and grilled shutters.
+// 011 · A single-storey colonial home: the house maker (colonial-house.js)
+// with this pueblo's 6.4 × 5.1 footprint, a tiled roof and the map's colour.
+const FINISHES = ['ladrillo-visto', 'cal', 'ladrillo-pintado'];
 export function colonialHouse(options = {}) {
   if (options.spec || options.family) return recipeHouse(options);
-  return legacyColonialHouse(options);
-}
-
-function legacyColonialHouse({ seed = 11, color = 0x529b9d } = {}) {
-  const g = new THREE.Group(), wall = M(color, { roughness: 0.95 });
-  g.add(rounded(6.4, 4.2, 5.1, wall, 0, 2.2, 0, 0.08));
-  g.add(rounded(6.65, 0.28, 5.35, P.cream, 0, 0.14, 0));
-  for (const y of [0.5, 4.17]) g.add(box(6.58, 0.16, 5.25, P.cream, 0, y, 0));
-  tiledRoof(g, { w: 6.4, d: 5.1, y: 4.28, rise: 1.2, wall, seed });
-  door(g, 0, 0.28, 2.61);
-  for (const x of [-2.05, 2.05]) shutterWindow(g, x, 2.23, 2.57, { color: 0x803f36 });
-  const rear = new THREE.Group(); rear.rotation.y = Math.PI;
-  for (const x of [-1.5, 1.5]) shutterWindow(rear, x, 2.3, 2.57, { w: 0.8, color: 0x803f36 }); g.add(rear);
-  for (const s of [-1, 1]) flowerPot(g, s * 1.06, 0.28, 2.94, seed + s);
-  const number = sign('11', 0.32, 0.32, { border: false }); number.position.set(1.0, 2.72, 2.66); g.add(number);
-  g.add(rounded(3.5, 0.14, 1.15, P.cream, 0, 0.07, 2.78));
-  g.add(rounded(3.15, 0.14, 0.85, P.cream, 0, 0.21, 2.78));
-  return finish(g, 'colonialHouse');
+  const { seed = 11, color = 0x529b9d, detail = 'game' } = options, s = Math.abs(Math.floor(seed)) >>> 0;
+  return recipeHouse({ seed: s, family: 'casa-baja', floors: 1, width: 6.4, depth: 5.1, roof: 'tejas',
+    wallFinish: FINISHES[s % FINISHES.length], wallColor: color, detail });
 }
 
 // 012 · A corner shop reads from both street-facing sides.

@@ -60,20 +60,31 @@ try {
   await guest.evaluate(id => onlineState().room.choose(id, 0), first);
   await host.waitForTimeout(300);
   assert.equal(await host.evaluate(() => onlineState().pendingChoice.id), first, 'guest cannot roll host dice');
+  assert.match(await host.locator('#prompt').textContent(), /Tira para empezar/);
   await clickPrompt(host, 'Tira');
-  console.log('Host rolled');
-  // Resolve any purchase on the host's first turn, then wait for the guest.
-  for (let i = 0; i < 100; i++) {
-    const s = await host.evaluate(() => ({ seat: onlineState().pendingChoice?.seat, host: onlineState().room.id, tile: players[1].tile }));
-    if (s.seat && s.seat !== s.host) break;
-    const buttons = host.locator('#prompt:not(.hidden) button');
-    if (await buttons.count()) await buttons.first().click();
-    await host.waitForTimeout(150);
+  console.log('Host threw for the roll-off');
+  // The guest throws for the roll-off with a real hold: their power reaches the host.
+  await wait(guest, () => !!window.thrower);
+  await guest.evaluate(() => document.activeElement?.blur());
+  await guest.keyboard.down(' ');
+  await wait(guest, () => thrower?.shaking && thrower.power > .6);
+  await guest.keyboard.up(' ');
+  await wait(host, () => dice[0].spec?.power > .6);
+  await wait(guest, () => dice[0].spec?.power > .6);
+  console.log('Guest threw hard and both screens fly the same die');
+  // Answer every prompt with its owner's real button until the guest has moved.
+  for (let i = 0; i < 300 && !(await host.evaluate(() => players[1].tile > 0)); i++) {
+    for (const page of [host, guest]) {
+      const buttons = page.locator('#prompt:not(.hidden) button');
+      if (await buttons.count()) await buttons.first().click({ timeout: 2000 }).catch(() => {});
+    }
+    await host.waitForTimeout(100);
   }
-  await clickPrompt(guest, 'Tira');
-  console.log('Guest rolled');
   await wait(host, () => players[1].tile > 0);
-  console.log('PASS two-player lobby and remote dice; wrong-seat choices rejected');
+  const order = await host.evaluate(() => onlineState().order);
+  assert.deepEqual([...order].sort(), [0, 1, 2, 3, 4, 5]);
+  assert.deepEqual(await guest.evaluate(() => onlineState().order), order);
+  console.log('PASS two-player lobby, roll-off order and remote dice; wrong-seat choices rejected');
 
   // Finish the round using the actual prompts; no direct state edits.
   for (let i = 0; i < 250; i++) {
@@ -106,12 +117,12 @@ try {
     const { joinRoom } = await import('/engine/net.js');
     const code = `capacity-${Date.now()}`, links = [];
     try {
-      for (let i = 0; i < 4; i++) links.push(await joinRoom('bululu', { code, name: `Pana ${i}`, resume: false }));
-      try { links.push(await joinRoom('bululu', { code, name: 'Quinto', resume: false })); return false; }
+      for (let i = 0; i < 6; i++) links.push(await joinRoom('bululu', { code, name: `Pana ${i}`, resume: false }));
+      try { links.push(await joinRoom('bululu', { code, name: 'Séptimo', resume: false })); return false; }
       catch (error) { return error.full === true; }
     } finally { await Promise.all(links.map(link => link.leave())); }
   }), true);
-  console.log('PASS fifth player gets a full-room response');
+  console.log('PASS seventh player gets a full-room response');
   await host.context().close();
   await wait(guest, () => onlineState().room.isHost);
   assert.equal(await guest.locator('#results').isVisible(), true);
@@ -125,7 +136,11 @@ try {
   const a = await open('Caro', `room=${nextCode}&play=chinazo`);
   const b = await open('Dani', `room=${nextCode}&play=chinazo`);
   await wait(b, () => players.filter(p => p.human).length === 2);
-  await a.locator('#start').click(); await clickPrompt(a, 'Listo');
+  await a.locator('#start').click();
+  // each pana says ¡Listo! for itself before an online minigame
+  await a.locator('#mini-ready button').click({ timeout: 60000 });
+  await wait(b, () => !document.querySelector('#mini-ready').hidden && document.querySelectorAll('#mini-ready .chip.on').length === 1);
+  await b.locator('#mini-ready button').click({ timeout: 60000 });
   await wait(b, () => minigame()?.state === 'run');
   await b.keyboard.down(' ');
   await wait(a, () => minigame().game.sim.shooters[1].pulling);
@@ -137,7 +152,7 @@ try {
   console.log('PASS reloaded guest catches up the running minigame');
   await a.context().close();
   await wait(b, () => onlineState().room.isHost);
-  await clickPrompt(b, 'Listo');
+  await b.locator('#mini-ready button').click({ timeout: 60000 });
   await wait(b, () => minigame()?.state === 'run');
   console.log('PASS new host resumes from the minigame checkpoint');
   assert.deepEqual(errors, []);

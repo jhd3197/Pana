@@ -3,6 +3,25 @@
 Shared game code, served to browsers at `/engine/*`. Browser ESM, no build step.
 Extract reusable code when a second page needs it; keep gameplay with its game.
 
+Three layers, so it's clear what every game stands on and what only some use:
+
+- **`engine/*.js` (the kit):** what any game or page needs: rooms (`net`,
+  `live-room`, `table-room`, `predict`), lobby and menus (`game-entry`, `ui`,
+  `room-options`, `lobby-roster`), settings, touch, fx, music, results, invites,
+  icons, `hud`, `random`, the player's look (`avatar`, `portrait`, `wardrobe`)
+  and the CSS. pana.sh loads `kit.css`, `ui.js`, `avatar.js`, `portrait.js`,
+  `portrait-cache.js` and `wardrobe-preview.js` by path: keep those where they
+  are (`tests/conventions.test.js` checks).
+- **`worlds/`:** stages and maps several games build on: the plaza, the table
+  stage (`table-world`), arenas and their layouts, the island, the sky and
+  terrain shading, El Estadio, the colonial street, the Puerto tables.
+- **`play/`:** mechanics two or more games share: shot charge and aim guide,
+  dice throws and roll-offs, paddling, bolas criollas physics, seats and seat
+  bubbles, difficulty, first-person look, map picker, frases, El Saber.
+
+Plus `models/` (every 3D model), `river/` (the river races), `placement/`,
+`audio/` and `vendor/`.
+
 The canonical 3D library is [models/](models/README.md). Its factories are shared
 by Studio and games; their catalog entries are plain data. For all current
 resources, map consumers, missing previews and older code, see the
@@ -19,17 +38,18 @@ resources, map consumers, missing previews and older code, see the
 | `models/catalog.js` | Pure category/pack metadata; no eager model construction |
 | `placement/` | Terrain-aware reef school placement and crab grounding |
 | `avatar.js` | Saved appearance/name, brand palette and normalization; no renderer |
-| `plaza.js`, `plaza-layout.js` | Plaza world composition and hunt layout/navigation |
-| `island-environment.js`, `island-terrain.js` | Board island terrain and scenery composition |
-| `island-scenery.js`, `island-landscape.js`, `terrain-material.js` | Offshore worlds, terrain shading and older scene assemblies |
+| `worlds/plaza.js`, `worlds/plaza-layout.js` | Plaza world composition and hunt layout/navigation |
+| `worlds/island-environment.js`, `worlds/island-terrain.js` | Board island terrain and scenery composition |
+| `worlds/island-scenery.js`, `worlds/island-landscape.js`, `worlds/terrain-material.js` | Offshore worlds, terrain shading and older scene assemblies |
 | `fx.js` | Audio, particle bursts, debris and speech bubbles |
 | `ui.js`, `settings.js` | Shared game menu, settings persistence and hints |
+| `play/saber.js`, `play/saber-match.js` | El Saber: shared Venezuelan words (categories, variants, explanations, crude flag) and the pure normalize/fuzzy lookup that ¡Stop! uses; see `docs/knowledge/stop.md` |
 
-Old model URLs (`props.js`, `flora.js`, `wildlife.js`, `farm-animals.js`,
-`character.js`, `soft-character/*`, and the old prop/helper files) remain
-compatibility re-exports. Edit the canonical files under `models/`; do not put
-new geometry into aliases. The source inspector and inventory use actual model
-paths. `plaza.js` still re-exports `house` and `plazaFountain` for compatibility,
+Models have one home: `models/` (the pana itself is
+`models/characters/pana/`). The old alias URLs (`props.js`, `flora.js`,
+`wildlife.js`, `character.js`, `soft-character/*`) are gone; import canonical
+files directly. The source inspector and inventory use actual model
+paths. `worlds/plaza.js` still re-exports `house` and `plazaFountain` for compatibility,
 while their implementations live in `models/props/plaza-buildings.js`.
 
 ## Using models

@@ -1,8 +1,10 @@
-// Syntax check for every .js file in server/, web/, games/, engine/ and scripts/.
+// Syntax check for every .js and .mjs file in server/, web/, games/, engine/,
+// scripts/ and tests/, run in parallel. Prints only failures and a summary.
 // Run: npm run check
 
-import { execFileSync } from 'node:child_process';
+import { execFile } from 'node:child_process';
 import fs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 import { config } from './config.js';
 
@@ -11,7 +13,7 @@ function collectJs(dir, out = []) {
   for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
     const full = path.join(dir, entry.name);
     if (entry.isDirectory() && entry.name !== 'node_modules') collectJs(full, out);
-    else if (entry.isFile() && entry.name.endsWith('.js')) out.push(full);
+    else if (entry.isFile() && /\.m?js$/.test(entry.name)) out.push(full);
   }
   return out;
 }
@@ -22,22 +24,26 @@ const files = [
   ...collectJs(config.paths.games),
   ...collectJs(config.paths.engine),
   ...collectJs(path.join(config.paths.root, 'scripts')),
+  ...collectJs(path.join(config.paths.root, 'tests')),
 ];
 
-let failed = 0;
-for (const file of files) {
-  try {
-    execFileSync(process.execPath, ['--check', file], { stdio: 'pipe' });
-    console.log(`ok      ${path.relative(config.paths.root, file)}`);
-  } catch (err) {
-    failed++;
-    console.log(`FAIL    ${path.relative(config.paths.root, file)}`);
-    console.log(String(err.stderr).trim());
+const check = file => new Promise(done => {
+  execFile(process.execPath, ['--check', file], (err, _out, stderr) => done(err ? { file, error: String(stderr).trim() } : null));
+});
+
+const failures = [];
+let next = 0;
+async function worker() {
+  while (next < files.length) {
+    const failure = await check(files[next++]);
+    if (failure) failures.push(failure);
   }
 }
+await Promise.all(Array.from({ length: Math.max(2, os.availableParallelism()) }, worker));
 
-if (failed) {
-  console.log(`\n${failed} file(s) failed`);
+for (const { file, error } of failures) console.log(`FAIL    ${path.relative(config.paths.root, file)}\n${error}\n`);
+if (failures.length) {
+  console.log(`${failures.length} of ${files.length} file(s) failed`);
   process.exit(1);
 }
-console.log(`\n${files.length} files checked, all good`);
+console.log(`${files.length} files checked, all good`);

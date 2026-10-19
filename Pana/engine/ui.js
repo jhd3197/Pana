@@ -112,6 +112,7 @@ export function createGameMenu({
   // ---------- Ajustes ----------
   const soundSwitch = h('button', { type: 'button', role: 'switch', id: id('set-sound'), class: 'pana-switch', 'aria-labelledby': id('set-sound-label') });
   const volume = h('input', { type: 'range', id: id('set-volume'), min: 0, max: 100, step: 5, 'aria-label': 'Volumen' });
+  const music = h('input', { type: 'range', id: id('set-music'), min: 0, max: 100, step: 5, 'aria-label': 'Música' });
   const hintsSwitch = h('button', { type: 'button', role: 'switch', id: id('set-hints'), class: 'pana-switch', 'aria-labelledby': id('set-hints-label') });
   const qualityGroup = choiceGroup(id('set-quality'), 'Resolución', Object.entries(QUALITY).map(([v, q]) => [v, q.label]),
     () => getSettings().quality, value => setSettings({ quality: value }));
@@ -127,10 +128,12 @@ export function createGameMenu({
   };
   volume.oninput = () => setSettings({ volume: Number(volume.value) / 100 });
   volume.onchange = () => { if (sound) { sound.unlock(); sound.tone?.(880, 0, 0.08, 'sine', 0.1); } };
+  music.oninput = () => setSettings({ music: Number(music.value) / 100 });
   hintsSwitch.onclick = () => setSettings({ hints: !getSettings().hints });
   const settingsPanel = h('section', { class: 'pana-panel', role: 'tabpanel', id: id('panel-settings'), 'aria-labelledby': id('tab-settings') },
     h('div', { class: 'pana-row' }, h('span', { id: id('set-sound-label'), text: 'Sonido' }), soundSwitch),
     h('label', { class: 'pana-row pana-volume', for: id('set-volume') }, h('span', { text: 'Volumen' }), volume),
+    h('label', { class: 'pana-row pana-volume', for: id('set-music') }, h('span', { text: 'Música' }), music),
     qualityGroup.node,
     orientationGroup && orientationGroup.node,
     h('div', { class: 'pana-row' }, h('span', { id: id('set-hints-label'), text: 'Ayudas de teclado en pantalla' }), hintsSwitch),
@@ -199,6 +202,7 @@ export function createGameMenu({
     soundSwitch.setAttribute('aria-checked', String(s.sound)); soundSwitch.dataset.state = s.sound ? 'Sí' : 'No';
     hintsSwitch.setAttribute('aria-checked', String(s.hints)); hintsSwitch.dataset.state = s.hints ? 'Sí' : 'No';
     volume.value = String(Math.round(s.volume * 100)); volume.disabled = !s.sound;
+    music.value = String(Math.round(s.music * 100)); music.disabled = !s.sound;
     qualityGroup.refresh();
     if (orientationGroup) orientationGroup.refresh();
   });
@@ -246,6 +250,7 @@ export function createGameMenu({
       return;
     }
     if (!hotkey || e.key !== 'Escape' || e.repeat || !canOpen()) return;
+    if (document.querySelector('dialog[open]')) return;
     if (e.target.closest?.('input, textarea, select, [contenteditable="true"]')) return;
     e.preventDefault(); e.stopImmediatePropagation(); open('game');
   }, true);

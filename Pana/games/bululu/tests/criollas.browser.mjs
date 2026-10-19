@@ -19,13 +19,18 @@ try {
   const code = `mini-bolas-${Date.now()}`, host = await open('Ana', `room=${code}&play=criollas`), guest = await open('Beto', `room=${code}`);
   await wait(host, () => players.filter(p => p.human).length === 2);
   await host.locator('#start').click();
-  await host.locator('#prompt button').filter({ hasText: 'Listo' }).click({ timeout: 120000 });
+  await host.locator('#mini-ready button').click({ timeout: 120000 });
+  await guest.locator('#mini-ready button').click({ timeout: 120000 });
   await wait(guest, () => minigame()?.state === 'run' && minigame()?.def.id === 'criollas');
   console.log('Both playing Criollas');
   await host.locator('#menu').click();
   await guest.keyboard.down('ArrowRight'); await guest.waitForTimeout(300); await guest.keyboard.up('ArrowRight');
-  await guest.keyboard.press('Space');
+  // Holding Space charges on the host's simulation; letting go throws at that force.
+  await guest.keyboard.down('Space');
+  await wait(host, () => minigame()?.game.sim.players[1].power >= .3);
+  await guest.keyboard.up('Space');
   await wait(host, () => minigame()?.game.sim.players[1].left === 1);
+  assert(await host.evaluate(() => minigame().game.sim.players[1].power) >= .3);
   console.log('Guest first throw');
   assert.equal(await host.evaluate(() => minigame().game.sim.players[0].left), 2);
   assert(await host.evaluate(() => minigame().game.sim.players[1].angle) > 0);

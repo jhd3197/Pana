@@ -1,17 +1,17 @@
 // npm start; node Pana/games/galope/tests/browser.mjs [playwright-package]
 import assert from 'node:assert/strict';
-import {createRequire} from 'node:module';
+import { launch, waitPrepared } from '../../../tests/browser-kit.js';
 import {mkdir} from 'node:fs/promises';
-const {chromium}=createRequire(import.meta.url)(process.argv[2]||'playwright');
-const browser=await chromium.launch({headless:true}),base=process.env.PANA_QA_URL||'http://localhost:8461';
+const browser=await launch(),base=process.env.PANA_QA_URL||'http://localhost:8461';
 const output='art/galope';await mkdir(output,{recursive:true});const errors=[],code=`galope-${Date.now()}`;
 const check=text=>console.log(`ok: ${text}`);
 async function open(name,mobile=false,room=code){
   const ctx=await browser.newContext(mobile?{viewport:{width:390,height:844},deviceScaleFactor:1,isMobile:true,hasTouch:true}:{viewport:{width:1024,height:720},deviceScaleFactor:1});
-  const p=await ctx.newPage();p.on('pageerror',e=>{errors.push(e.message);console.log('page error:',e.message);});
+  await ctx.addInitScript(() => localStorage.setItem('pana:settings',JSON.stringify({sound:false,music:false,quality:'baja'})));
+ const p=await ctx.newPage();p.on('pageerror',e=>{errors.push(e.message);console.log('page error:',e.message);});
   p.on('console',m=>{if(m.type()==='error'&&!m.text().includes('favicon'))console.log('console:',m.text());});
   await p.goto(`${base}/g/galope/?room=${room}&name=${name}&debug`);
-  await p.waitForFunction(()=>window.galope?.room.connected,null,{timeout:90000});return p;
+  await p.waitForFunction(()=>window.galope?.room.connected,null,{timeout:90000});await waitPrepared(p);return p;
 }
 try{
   const a=await open('Juan');await a.locator('#start').waitFor({state:'visible'});
@@ -23,6 +23,15 @@ try{
   const ids=await a.evaluate(()=>({host:galope.room.id,guest:galope.state.players.find(p=>!p.bot&&p.id!==galope.room.id).id}));
   await b.bringToFront();await b.keyboard.down('w');await b.waitForFunction(()=>galope.state.players.find(p=>p.id===galope.room.id).progress>3);await b.keyboard.up('w');
   await a.waitForFunction(id=>galope.state.players.find(p=>p.id===id).progress>0,ids.guest);check('two clients share countdown, bots and guest movement');
+  // Prediction: with the host's snapshots held back the guest's horse still runs; then it settles on the host's.
+  await b.waitForFunction(()=>!!galope.room.predicted);await a.evaluate(()=>{galope.room.publish=()=>{};});
+  // The horse still coasts: let snapshots already on the wire land (30 frames with none) before reading.
+  await b.evaluate(()=>new Promise(done=>{let last=galope.state,quiet=0;const tick=()=>{if(galope.state===last)quiet++;else{last=galope.state;quiet=0;}if(quiet>30)done();else requestAnimationFrame(tick);};tick();}));
+  const stalled=await b.evaluate(()=>({predicted:galope.room.predicted.progress,shown:galope.state.players.find(p=>p.id===galope.room.id).progress}));
+  await b.keyboard.down('w');await b.waitForFunction(p=>galope.room.predicted.progress>p+3,stalled.predicted);await b.keyboard.up('w');
+  assert.equal(await b.evaluate(()=>galope.state.players.find(p=>p.id===galope.room.id).progress),stalled.shown,'no snapshot arrived while predicting');
+  await a.evaluate(()=>{delete galope.room.publish;});
+  await b.waitForFunction(()=>{const me=galope.state.players.find(p=>p.id===galope.room.id),p=galope.room.predicted;return p&&Math.hypot(me.x-p.x,me.z-p.z)<1.5;});check('the guest runs its own horse at once and settles on the host position');
   await a.locator('#menu').click();const time=await a.evaluate(()=>galope.state.time);await a.waitForFunction(t=>galope.state.time>t+.15,time);await a.locator('#pana-resume').click();check('multiplayer menu keeps the race moving');
   await a.evaluate(()=>{galope.manual(true);galope.place(galope.room.id,galope.waterS);});await a.keyboard.down('w');
   await a.evaluate(()=>galope.step(1,galope.input()));

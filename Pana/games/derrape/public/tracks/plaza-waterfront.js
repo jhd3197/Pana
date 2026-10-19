@@ -40,7 +40,7 @@ export function createWaterfront(T){
         const canopy=put(group,fishAuctionCanopy(),x,z,2.4,0,1.15);
         canopy.userData.footprintRadius=8;canopy.userData.support='waterfront-quay';
       } else {
-        const house=canalVilla({seed:f*10+row,color:colors[(f+row)%5]});
+        const house=canalVilla({seed:f*10+row,color:colors[(f+row)%5],detail:'low'});
         put(houses,house,x,z,2.4,side*Math.PI/2,1.4);count++;
       }
       const dockX=cx+side*28;fixed.add(box(13,.3,2.3,M(0x8a7558),dockX,1,z+5));

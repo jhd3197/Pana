@@ -1,15 +1,16 @@
-import { validTableArena } from '../../../engine/arena-layouts.js';
-import { swapSeats } from '../../../engine/seat-rules.js';
+import { DEFAULT_OPTIONS, validOptions } from './options.js';
+import { validTableArena } from '../../../engine/worlds/arena-layouts.js';
+import { swapSeats, canMoveSeats } from '../../../engine/play/seat-rules.js';
 // Pure deterministic rules. Table variants and sources are documented in caida.md.
 export const TARGET = 24;
 export const RANKS = [1, 2, 3, 4, 5, 6, 7, 10, 11, 12];
 export const SUITS = ['oros', 'copas', 'espadas', 'bastos'];
-export const BOT_NAMES = ['Coco', 'Lola', 'Tito', 'Nina'];
-export const MODES = { duel: { count: 2, teams: false, label: 'Dos panas' }, three: { count: 3, teams: false, label: 'Tres panas' }, teams: { count: 4, teams: true, label: 'Dos parejas' }, four: { count: 4, teams: false, label: 'Cuatro individuales' } };
+export const BOT_NAMES = ['Coco', 'Lola', 'Tito', 'Nina', 'Cheo', 'Luz'];
+export const MODES = { duel: { count: 2, teams: false, label: 'Dos panas' }, three: { count: 3, teams: false, label: 'Tres panas' }, teams: { count: 4, teams: true, label: 'Dos parejas' }, four: { count: 4, teams: false, label: 'Cuatro individuales' }, six: { count: 6, teams: false, label: 'Seis individuales' }, sixTeams: { count: 6, teams: true, label: 'Dos equipos de tres' } };
 export const deck = () => SUITS.flatMap(suit => RANKS.map(rank => ({ id: `${suit}-${rank}`, suit, rank })));
 export const cardName = c => `${({ 1: 'As', 10: 'Sota', 11: 'Caballo', 12: 'Rey' })[c.rank] || c.rank} de ${c.suit}`;
 export const fallPoints = rank => rank <= 7 ? 1 : rank - 8;
-export const teamOf = (state, seat) => state.options.mode === 'teams' ? seat % 2 : seat;
+export const teamOf = (state, seat) => MODES[state.options.mode].teams ? seat % 2 : seat;
 export const nextDealer = state => state.phase === 'round-over' ? (state.dealer + 1) % state.players.length : 0;
 export const cantoDescription = name => ({ Ronda: 'Dos cartas iguales', Rondín: 'Tres cartas iguales', Patrulla: 'Tres cartas seguidas', Patria: 'Tres cartas seguidas', Vigía: 'Dos iguales y una vecina', Registro: 'As, caballo y rey' })[name] || name;
 const copy = value => JSON.parse(JSON.stringify(value));
@@ -63,7 +64,7 @@ export function chooseMove(state, seat = state.turn) {
 
 export class CaidaGame {
   constructor(seed = 1) {
-    this.rng = seed >>> 0 || 1; this.options = { mode: 'duel', cantos: true, call: 'down', difficulty: 'normal' };
+    this.rng = seed >>> 0 || 1; this.options = { ...DEFAULT_OPTIONS, mode: 'duel', call: 'down' };
     this.mapId = 'plaza'; this.phase = 'lobby'; this.round = 0; this.handNumber = 0; this.dealer = 1; this.turn = 0;
     this.players = []; this.scores = []; this.stock = []; this.table = []; this.last = null;
     this.lastCapture = null; this.history = []; this.eventId = 0; this.result = null;
@@ -71,18 +72,45 @@ export class CaidaGame {
     this.revision = 0; this.ledger = {}; this.resetSeats();
   }
   resetSeats() {
-    const old = this.players;
+    const old = [...this.players], count = MODES[this.options.mode].count;
+    // Keep every human when a smaller format compacts previously spaced seats.
+    for (const player of old.slice(count).filter(p => p.id !== null)) {
+      const sameTeam = MODES[this.options.mode].teams ? old.findIndex((p, i) => i < count && p.id === null && i % 2 === player.seat % 2) : -1;
+      const free = sameTeam >= 0 ? sameTeam : old.findIndex((p, i) => i < count && p.id === null);
+      if (free >= 0) old[free] = player;
+    }
     this.players = Array.from({ length: MODES[this.options.mode].count }, (_, seat) => ({ id: old[seat]?.id ?? null, name: old[seat]?.name || BOT_NAMES[seat], avatar: old[seat]?.avatar || {}, seat, hand: [], captured: [], announced: null }));
-    this.scores = Array(this.options.mode === 'teams' ? 2 : this.players.length).fill(0);
+    this.scores = Array(MODES[this.options.mode].teams ? 2 : this.players.length).fill(0);
     this.dealer = this.players.length - 1;
   }
   configure(options) {
     if (this.phase !== 'lobby' || !options || typeof options !== 'object' || Array.isArray(options)) return false;
+    const { mapId, mode, ...patch } = options;
+    if (mode !== undefined && !Object.hasOwn(MODES, mode)) return false;
+    if (mode !== undefined && MODES[mode].count < this.players.filter(p => p.id !== null).length) return false;
+    if ((!Object.keys(patch).length && mapId === undefined && mode === undefined) || (Object.keys(patch).length && !validOptions(patch))) return false;
     if ('mapId' in options) { if (!validTableArena(options.mapId)) return false; this.mapId = options.mapId; }
-    if (options.mode in MODES && options.mode !== this.options.mode) { this.options.mode = options.mode; this.resetSeats(); }
+    if (mode !== undefined) {
+      this.options.mode = mode; this.options.format = MODES[mode].teams ? 'teams' : 'individual'; this.resetSeats();
+    }
+    if (options.format !== undefined) { this.options.format = options.format; this.resizeForHumans(this.players.filter(p => p.id !== null).length); }
     if (typeof options.cantos === 'boolean') this.options.cantos = options.cantos;
     if (['easy', 'normal', 'hard'].includes(options.difficulty)) this.options.difficulty = options.difficulty;
     this.revision++; return true;
+  }
+  resizeForHumans(count) {
+    if (this.phase !== 'lobby') return false;
+    const mode = this.options.format === 'teams' ? count > 4 ? 'sixTeams' : 'teams' : count > 4 ? 'six' : count === 4 ? 'four' : count === 3 ? 'three' : 'duel';
+    if (mode === this.options.mode) return false;
+    this.options.mode = mode; this.resetSeats(); this.revision++; return true;
+  }
+  syncMembers(members) {
+    if (this.phase === 'lobby') {
+      const ids = new Set(members.map(m => m.id));
+      for (const p of this.players) if (p.id !== null && !ids.has(p.id)) this.removePlayer(p.id);
+      this.resizeForHumans(members.length);
+    }
+    for (const m of members) this.addPlayer(m.id, m.name, m.avatar || this.players.find(p => p.id === m.id)?.avatar || {});
   }
   random() { let x = this.rng; x ^= x << 13; x ^= x >>> 17; x ^= x << 5; this.rng = x >>> 0; return this.rng / 4294967296; }
   reseat(from, to) {
@@ -108,7 +136,7 @@ export class CaidaGame {
   award(seat, points, reason) {
     if (!points || this.phase === 'finished') return;
     const team = teamOf(this, seat); this.scores[team] += points;
-    this.log('score', seat, `${reason} · +${points}`, { points });
+    this.log('score', seat, `${reason} · +${points}`, { points, reason });
     if (this.scores[team] >= TARGET) {
       this.phase = 'finished'; this.result = { winner: team, reason, counts: this.counts(), bonuses: [], points };
     }
@@ -166,13 +194,14 @@ export class CaidaGame {
     const player = this.players[seat], index = player.hand.findIndex(c => c.id === id);
     if (index < 0) return false;
     const card = player.hand[index], move = previewPlay(this, card, seat);
+    const victim = move.fall ? this.last?.seat ?? null : null;   // who dropped the card that fell
     player.hand.splice(index, 1);
     if (player.announced) { const i = player.announced.ranks.indexOf(card.rank); if (i >= 0) player.announced.ranks.splice(i, 1); }
     if (move.capture.length) {
       player.captured.push(card, ...this.table.filter(c => move.capture.includes(c.id)));
       this.table = this.table.filter(c => !move.capture.includes(c.id)); this.lastCapture = seat; this.last = null;
     } else { this.table.push(card); this.last = { id, seat }; }
-    this.log('play', seat, `${cardName(card)}${move.capture.length ? ` · recoge ${move.capture.length + 1}` : ' · a la mesa'}`, { card, captured: move.capture, fall: move.fall, clean: move.clean });
+    this.log('play', seat, `${cardName(card)}${move.capture.length ? ` · recoge ${move.capture.length + 1}` : ' · a la mesa'}`, { card, captured: move.capture, fall: move.fall, clean: move.clean, victim });
     if (move.points) this.award(seat, move.points, [move.fall ? `Caída de ${card.rank === 10 ? 'sota' : card.rank === 11 ? 'caballo' : card.rank === 12 ? 'rey' : card.rank}` : '', move.clean ? 'Mesa limpia' : ''].filter(Boolean).join(' + '));
     if (this.phase !== 'finished') {
       this.turn = (seat + 1) % this.players.length;
@@ -189,7 +218,7 @@ export class CaidaGame {
     // Award in play order so a tied crossing of 24 has a documented precedence.
     for (let i = 0; i < this.players.length; i++) {
       const seat = (this.dealer + 1 + i) % this.players.length, team = teamOf(this, seat);
-      if (this.options.mode === 'teams' && i >= 2) continue;
+      if (MODES[this.options.mode].teams && i >= 2) continue;
       this.award(seat, bonuses[team], `${counts[team]} cartas · ${baseline} de base`);
     }
     const winner = this.phase === 'finished' ? this.result.winner : null;
@@ -201,7 +230,7 @@ export class CaidaGame {
     const seat = this.players.findIndex(p => p.id === id); let ok = false;
     if (data.action === 'start' && (id === hostId || (this.phase === 'round-over' && seat === nextDealer(this)))) ok = this.start();
     else if (data.action === 'configure' && id === hostId) ok = this.configure(data.options || {});
-    else if (data.action === 'seat' && id === hostId) ok = this.reseat(data.from, data.to);
+    else if (data.action === 'seat' && canMoveSeats(this.players, data.from, data.to, id, hostId)) ok = this.reseat(data.from, data.to);
     else if (data.action === 'setup' && id === hostId) ok = this.setup();
     else if (seat >= 0 && data.action === 'play') ok = this.play(seat, data.card);
     else if (seat >= 0 && data.action === 'chant') ok = this.chant(seat);

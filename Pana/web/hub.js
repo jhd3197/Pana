@@ -25,6 +25,33 @@ gear.setAttribute('aria-label', 'Ajustes');
 gear.title = 'Ajustes';
 document.getElementById('hub-actions').append(gear);
 
+// The shared lobby song plays on the hub too. Its modules and the song itself
+// load once the page has, so the first tap or key (browsers keep audio locked
+// until one) starts it at once; where autoplay is allowed it starts on its own.
+let hubMusic = null, hubPlaying = false, heard = false;
+function hubSong() {
+  if (hubPlaying || !hubMusic) return;
+  const { sound, music } = hubMusic;
+  sound.unlock();
+  if (sound.ctx.state !== 'running' && !heard) return;
+  hubPlaying = true;
+  music.play('lobby', { fallback: false });
+}
+function loadHubSong() {
+  Promise.all([import('/engine/fx.js'), import('/engine/music.js'), import('/engine/settings.js')])
+    .then(([{ sound }, { createMusic }, { bindSound }]) => {
+      bindSound(sound);
+      sound.unlock();
+      hubMusic = { sound, music: createMusic(sound) };
+      hubMusic.music.preload('lobby');
+      hubSong();
+    })
+    .catch(() => { /* music is a nicety: the hub works without it */ });
+}
+if (document.readyState === 'complete') loadHubSong();
+else addEventListener('load', loadHubSong, { once: true });
+for (const type of ['pointerdown', 'keydown']) addEventListener(type, () => { heard = true; hubSong(); }, { capture: true });
+
 // ---------- views: #jugar (default), #mi-pana, #salas ----------
 // The one pana canvas moves between the "Tu pana" card and the creator.
 const stage = document.getElementById('pana-stage');
@@ -52,6 +79,7 @@ function loadCreator() {
   });
 }
 function showView() {
+  if (location.hash === "#mi-pana") { location.replace("/personaje.html"); return; }
   const view = { '#mi-pana': 'mi-pana', '#salas': 'salas' }[location.hash] || 'jugar';
   document.body.dataset.view = view;
   for (const a of document.querySelectorAll('.nav [data-view]')) {
@@ -106,6 +134,9 @@ function el(tag, cls, text) {
 }
 
 const shortName = (game) => game.name.split(' · ')[0];
+// The small card can carry its own short name (game.json tileName, e.g. QQSMP);
+// the banner keeps the full one.
+const tileName = (game) => game.tileName || shortName(game);
 
 // a game can ship card.js to draw live art on its tile
 function mountArt(game, canvas) {
@@ -144,7 +175,7 @@ function gameCard(game) {
   const art = el(url ? 'img' : 'canvas', 'game-art');
   if (url) { art.src = url; art.alt = ''; art.loading = 'lazy'; art.decoding = 'async'; }
   art.setAttribute('aria-hidden', 'true');
-  const name = el('h3', 'game-name', shortName(game));
+  const name = el('h3', 'game-name', tileName(game));
   name.setAttribute('aria-label', game.name);
   const body = el('div', 'game-body');
   body.append(name, el('span', 'game-meta', meta(game)));
@@ -237,7 +268,7 @@ function filterGames(value) {
   for (const button of document.querySelectorAll('button[data-category]')) button.setAttribute('aria-pressed', String(button.dataset.category === value));
   for (const card of gamesEl.children) card.hidden = value !== 'Todos' && card.dataset.category !== value;
   const visible = games.filter(g => value === 'Todos' || category(g) === value);
-  if (!visible.includes(feat)) feature(visible[0]);
+  if (!visible.includes(feat) && visible.length) feature(visible[0]);
   document.getElementById('game-position').textContent = `${visible.indexOf(feat) + 1} / ${visible.length}`;
 }
 for (const direction of [-1, 1]) document.getElementById(direction < 0 ? 'games-prev' : 'games-next').addEventListener('click', () => {
@@ -252,7 +283,9 @@ async function loadGames() {
     ({ games } = await fetch('/api/games').then((r) => r.json()));
     gamesEl.innerHTML = '';
     const order = ['derrape', 'galope', 'curiara', 'domino', 'ludo', 'caida', 'poquer', 'billar', 'criollas', 'bululu', 'cocina', 'escondidas', 'pintura', 'embuste', 'reliquia'];
-    games.sort((a, b) => order.indexOf(a.id) - order.indexOf(b.id));
+    // Unlisted (new) games go after the curated order, not before it.
+    const rank = (g) => { const i = order.indexOf(g.id); return i < 0 ? order.length : i; };
+    games.sort((a, b) => rank(a) - rank(b) || a.name.localeCompare(b.name));
     for (const game of games) { const card = gameCard(game); card.dataset.category = category(game); gamesEl.appendChild(card); }
     for (const label of categories) {
       const button = el('button', 'category', `${label} ${games.filter(g => label === 'Todos' || category(g) === label).length}`);
@@ -302,4 +335,6 @@ async function loadRooms() {
 
 syncName();
 loadGames();
-setInterval(loadRooms, 3000);
+// Live rooms refresh every 3 s while the hub is visible, and at once on return.
+setInterval(() => { if (!document.hidden) loadRooms(); }, 3000);
+document.addEventListener('visibilitychange', () => { if (!document.hidden) loadRooms(); });

@@ -1,0 +1,25 @@
+import { TableRoom } from '/engine/table-room.js';
+import { TableGame, botMove } from './rules.js';
+
+// Host simulation on the shared table room (engine/table-room.js): empty seats
+// are bots, snapshots are event-driven and migrate with the host.
+export class {{Class}}Room extends TableRoom {
+  constructor(options) {
+    super({ ...options, game: '{{id}}', protocol: '{{id}}-v1' }, {
+      fresh: prev => ({ ...new TableGame().snapshot(), ...(prev?.options ? { options: { ...prev.options } } : {}) }),
+      restore: (state, members) => TableGame.restore(state, members),
+      snapshot: (game) => game.snapshot(),
+      accept: (game, id, data, hostId) => game.accept(id, data, hostId),
+      valid: (state) => Array.isArray(state?.players),
+    });
+  }
+  seatMembers() { for (const m of this.members.values()) this.game.addPlayer(m.id, m.name, m.avatar || {}); }
+  unseat(id) { this.game.removePlayer(id); }
+  // Bots play on the host after a short pause, so their turn reads on screen.
+  step(dt) {
+    const game = this.game;
+    if (!this.botReady(dt, game.phase === 'playing' && game.players[game.turn].id === null, game.options.cpuSeconds)) return false;
+    if (botMove(game) === 'roll') game.roll();
+    return true;
+  }
+}

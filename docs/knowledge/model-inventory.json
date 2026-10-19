@@ -2,31 +2,31 @@
   "date": "2026-10-18",
   "scope": "Current production 3D resource/model families; catalog variants and scene assemblies are counted separately. No primitive-mesh count or deleted-history total.",
   "counts": {
-    "catalog": 391,
+    "catalog": 437,
     "categories": {
-      "Fauna": 18,
-      "Vegetación": 42,
+      "Fauna": 21,
+      "Vegetación": 50,
       "Llanos": 10,
       "Vida llanera": 13,
       "Desierto": 10,
       "Termales": 5,
-      "Objetos": 63,
+      "Objetos": 66,
       "Emblemas": 9,
-      "Pueblo": 18,
-      "Páramo": 8,
+      "Pueblo": 25,
+      "Páramo": 10,
       "Selva": 14,
-      "Costa": 27,
-      "Mina": 24,
+      "Costa": 29,
+      "Mina": 27,
       "Cementerio": 30,
-      "Ruinas": 20,
+      "Ruinas": 25,
       "Campamento": 21,
-      "Atmósfera": 10,
+      "Atmósfera": 12,
       "Personajes": 3,
       "Vestuario": 5,
-      "Vehículos": 14,
+      "Vehículos": 25,
       "Mapas": 27
     },
-    "previewOnly": 133,
+    "previewOnly": 142,
     "uncatalogedFamilies": 31,
     "sceneFamilies": 46,
     "dormantFactories": 9
@@ -310,6 +310,52 @@
       "status": "in-use"
     },
     {
+      "id": "jaguar",
+      "name": "Jaguar",
+      "category": "Fauna",
+      "source": "Pana/engine/models/fauna/jaguar.js",
+      "factory": "jaguar",
+      "usedBy": [
+        "Pana Studio"
+      ],
+      "previewOptions": {
+        "seed": 7,
+        "pose": "prowl"
+      },
+      "status": "preview-only"
+    },
+    {
+      "id": "jaguar-sitting",
+      "name": "Jaguar sentado",
+      "category": "Fauna",
+      "source": "Pana/engine/models/fauna/jaguar.js",
+      "factory": "jaguar",
+      "usedBy": [
+        "Pana Studio"
+      ],
+      "previewOptions": {
+        "seed": 8,
+        "pose": "sit"
+      },
+      "status": "preview-only"
+    },
+    {
+      "id": "black-jaguar",
+      "name": "Jaguar negro",
+      "category": "Fauna",
+      "source": "Pana/engine/models/fauna/jaguar.js",
+      "factory": "jaguar",
+      "usedBy": [
+        "Pana Studio"
+      ],
+      "previewOptions": {
+        "seed": 9,
+        "pose": "prowl",
+        "melanistic": true
+      },
+      "status": "preview-only"
+    },
+    {
       "id": "garden-rosette",
       "name": "Mata de hojas anchas",
       "category": "Vegetación",
@@ -385,7 +431,7 @@
     },
     {
       "id": "palm",
-      "name": "Palmera",
+      "name": "Cocotero",
       "category": "Vegetación",
       "source": "Pana/engine/models/vegetation/palm.js",
       "factory": "palm",
@@ -444,7 +490,7 @@
     },
     {
       "id": "pine",
-      "name": "Pino",
+      "name": "Pino caribe",
       "category": "Vegetación",
       "source": "Pana/engine/models/vegetation/pine.js",
       "factory": "pine",
@@ -452,7 +498,8 @@
         "Bululú"
       ],
       "previewOptions": {
-        "seed": 7
+        "seed": 7,
+        "h": 14
       },
       "status": "in-use"
     },
@@ -502,6 +549,36 @@
       ],
       "previewOptions": {
         "seed": 7
+      },
+      "status": "in-use"
+    },
+    {
+      "id": "apamate",
+      "name": "Apamate",
+      "category": "Vegetación",
+      "source": "Pana/engine/models/vegetation/araguaney.js",
+      "factory": "araguaney",
+      "usedBy": [
+        "Derrape"
+      ],
+      "previewOptions": {
+        "seed": 7,
+        "bloom": "pink"
+      },
+      "status": "in-use"
+    },
+    {
+      "id": "bucare",
+      "name": "Bucare en flor",
+      "category": "Vegetación",
+      "source": "Pana/engine/models/vegetation/araguaney.js",
+      "factory": "araguaney",
+      "usedBy": [
+        "Derrape"
+      ],
+      "previewOptions": {
+        "seed": 7,
+        "bloom": "coral"
       },
       "status": "in-use"
     },
@@ -674,7 +751,7 @@
     },
     {
       "id": "jungleGiant",
-      "name": "Árbol gigante de la selva",
+      "name": "Caucho de raíces",
       "category": "Vegetación",
       "source": "Pana/engine/models/vegetation/jungle-giant.js",
       "factory": "jungleGiant",
@@ -744,7 +821,7 @@
     },
     {
       "id": "dead-tree-leafy",
-      "name": "Árbol nudoso con follaje",
+      "name": "Árbol seco con barba de palo",
       "category": "Vegetación",
       "source": "Pana/engine/models/vegetation/dead-tree.js",
       "factory": "deadTree",
@@ -834,7 +911,7 @@
     },
     {
       "id": "emergent-tree",
-      "name": "Árbol emergente",
+      "name": "Gigante de la selva",
       "category": "Vegetación",
       "source": "Pana/engine/models/vegetation/emergent-tree.js",
       "factory": "emergentTree",
@@ -842,7 +919,8 @@
         "Pana Studio"
       ],
       "previewOptions": {
-        "seed": 7
+        "seed": 7,
+        "scale": 0.5
       },
       "status": "preview-only"
     },
@@ -943,6 +1021,90 @@
         "seed": 7
       },
       "status": "preview-only"
+    },
+    {
+      "id": "saman",
+      "name": "Samán",
+      "category": "Vegetación",
+      "source": "Pana/engine/models/vegetation/saman.js",
+      "factory": "saman",
+      "usedBy": [
+        "Derrape"
+      ],
+      "previewOptions": {
+        "seed": 7
+      },
+      "status": "in-use"
+    },
+    {
+      "id": "yagrumo",
+      "name": "Yagrumo",
+      "category": "Vegetación",
+      "source": "Pana/engine/models/vegetation/selva-trees.js",
+      "factory": "yagrumo",
+      "usedBy": [
+        "Derrape"
+      ],
+      "previewOptions": {
+        "seed": 7
+      },
+      "status": "in-use"
+    },
+    {
+      "id": "cacao",
+      "name": "Cacao",
+      "category": "Vegetación",
+      "source": "Pana/engine/models/vegetation/selva-trees.js",
+      "factory": "cacao",
+      "usedBy": [
+        "Derrape"
+      ],
+      "previewOptions": {
+        "seed": 7
+      },
+      "status": "in-use"
+    },
+    {
+      "id": "zancona",
+      "name": "Palma zancona",
+      "category": "Vegetación",
+      "source": "Pana/engine/models/vegetation/selva-palms.js",
+      "factory": "zancona",
+      "usedBy": [
+        "Derrape"
+      ],
+      "previewOptions": {
+        "seed": 7
+      },
+      "status": "in-use"
+    },
+    {
+      "id": "manaca",
+      "name": "Palma manaca",
+      "category": "Vegetación",
+      "source": "Pana/engine/models/vegetation/selva-palms.js",
+      "factory": "manaca",
+      "usedBy": [
+        "Derrape"
+      ],
+      "previewOptions": {
+        "seed": 7
+      },
+      "status": "in-use"
+    },
+    {
+      "id": "tree-fern",
+      "name": "Helecho arborescente",
+      "category": "Vegetación",
+      "source": "Pana/engine/models/vegetation/selva-palms.js",
+      "factory": "treeFern",
+      "usedBy": [
+        "Derrape"
+      ],
+      "previewOptions": {
+        "seed": 7
+      },
+      "status": "in-use"
     },
     {
       "id": "ranch-house",
@@ -1934,6 +2096,36 @@
       "status": "in-use"
     },
     {
+      "id": "rock-arch",
+      "name": "Arco de roca",
+      "category": "Páramo",
+      "source": "Pana/engine/models/props/mountain.js",
+      "factory": "rockArch",
+      "usedBy": [
+        "Derrape"
+      ],
+      "previewOptions": {
+        "span": 8,
+        "height": 9
+      },
+      "status": "in-use"
+    },
+    {
+      "id": "timber-trestle",
+      "name": "Caballete de madera",
+      "category": "Páramo",
+      "source": "Pana/engine/models/props/mountain.js",
+      "factory": "timberTrestle",
+      "usedBy": [
+        "Derrape"
+      ],
+      "previewOptions": {
+        "height": 8,
+        "width": 3
+      },
+      "status": "in-use"
+    },
+    {
       "id": "capybara-statue",
       "name": "Estatua gigante de capibara",
       "category": "Emblemas",
@@ -2555,6 +2747,35 @@
       "previewOptions": {
         "width": 14,
         "height": 28
+      },
+      "status": "in-use"
+    },
+    {
+      "id": "cascade-stream",
+      "name": "Arroyo en cascada",
+      "category": "Costa",
+      "source": "Pana/engine/models/effects/water-surface.js",
+      "factory": "cascadeStream",
+      "usedBy": [
+        "Pana Studio"
+      ],
+      "previewOptions": {
+        "rain": 0.8
+      },
+      "status": "preview-only"
+    },
+    {
+      "id": "salt-pool",
+      "name": "Poza de sal",
+      "category": "Costa",
+      "source": "Pana/engine/models/props/saltworks.js",
+      "factory": "saltPool",
+      "usedBy": [
+        "Derrape"
+      ],
+      "previewOptions": {
+        "rx": 6,
+        "rz": 4
       },
       "status": "in-use"
     },
@@ -3513,6 +3734,21 @@
       "status": "preview-only"
     },
     {
+      "id": "mine-gate",
+      "name": "Portal de la mina de sal",
+      "category": "Mina",
+      "source": "Pana/engine/models/props/mine.js",
+      "factory": "mineGate",
+      "usedBy": [
+        "Pana Studio"
+      ],
+      "previewOptions": {
+        "span": 8,
+        "height": 7
+      },
+      "status": "preview-only"
+    },
+    {
       "id": "grave-headstone",
       "name": "Lápida redondeada",
       "category": "Cementerio",
@@ -4231,6 +4467,76 @@
       "status": "preview-only"
     },
     {
+      "id": "jaguar-statue",
+      "name": "Jaguar de piedra",
+      "category": "Ruinas",
+      "source": "Pana/engine/models/props/jaguar-stone.js",
+      "factory": "jaguarStatue",
+      "usedBy": [
+        "Derrape"
+      ],
+      "previewOptions": {
+        "seed": 11
+      },
+      "status": "in-use"
+    },
+    {
+      "id": "jaguar-relief",
+      "name": "Relieve del jaguar",
+      "category": "Ruinas",
+      "source": "Pana/engine/models/props/jaguar-stone.js",
+      "factory": "jaguarRelief",
+      "usedBy": [
+        "Derrape"
+      ],
+      "previewOptions": {
+        "seed": 13
+      },
+      "status": "in-use"
+    },
+    {
+      "id": "maya-portal",
+      "name": "Portal maya cubierto de selva",
+      "category": "Ruinas",
+      "source": "Pana/engine/models/props/maya-temple.js",
+      "factory": "mayaPortal",
+      "usedBy": [
+        "Derrape"
+      ],
+      "previewOptions": {
+        "span": 10
+      },
+      "status": "in-use"
+    },
+    {
+      "id": "stepped-pyramid",
+      "name": "Pirámide escalonada",
+      "category": "Ruinas",
+      "source": "Pana/engine/models/props/maya-temple.js",
+      "factory": "steppedPyramid",
+      "usedBy": [
+        "Derrape"
+      ],
+      "previewOptions": {
+        "seed": 61
+      },
+      "status": "in-use"
+    },
+    {
+      "id": "cenote",
+      "name": "Cenote",
+      "category": "Ruinas",
+      "source": "Pana/engine/models/props/maya-temple.js",
+      "factory": "cenote",
+      "usedBy": [
+        "Derrape"
+      ],
+      "previewOptions": {
+        "radius": 7
+      },
+      "status": "in-use"
+    },
+    {
       "id": "expedition-campfire",
       "name": "Fogata de expedición",
       "category": "Campamento",
@@ -4530,6 +4836,37 @@
       "status": "preview-only"
     },
     {
+      "id": "skylight-beam",
+      "name": "Tragaluz de cueva",
+      "category": "Atmósfera",
+      "source": "Pana/engine/models/effects/atmosphere.js",
+      "factory": "skylightBeam",
+      "usedBy": [
+        "Pana Studio"
+      ],
+      "previewOptions": {
+        "radius": 2.4,
+        "height": 16,
+        "rain": 120
+      },
+      "status": "preview-only"
+    },
+    {
+      "id": "glow-pool",
+      "name": "Charco de luz",
+      "category": "Atmósfera",
+      "source": "Pana/engine/models/effects/atmosphere.js",
+      "factory": "glowPool",
+      "usedBy": [
+        "Pana Studio"
+      ],
+      "previewOptions": {
+        "radius": 4,
+        "color": 16740288
+      },
+      "status": "preview-only"
+    },
+    {
       "id": "god-rays",
       "name": "Rayos entre el follaje",
       "category": "Atmósfera",
@@ -4658,6 +4995,144 @@
         "count": 90
       },
       "status": "preview-only"
+    },
+    {
+      "id": "crystal-cluster",
+      "name": "Racimo de cristales",
+      "category": "Mina",
+      "source": "Pana/engine/models/props/crystals.js",
+      "factory": "crystalCluster",
+      "usedBy": [
+        "Pana Studio"
+      ],
+      "previewOptions": {
+        "size": 1.6,
+        "color": 0
+      },
+      "status": "preview-only"
+    },
+    {
+      "id": "crystal-garden",
+      "name": "Cristales del arcoíris",
+      "category": "Mina",
+      "source": "Pana/engine/models/props/crystals.js",
+      "factory": "crystalGarden",
+      "usedBy": [
+        "Pana Studio"
+      ],
+      "previewOptions": {
+        "radius": 4,
+        "clusters": 8
+      },
+      "status": "preview-only"
+    },
+    {
+      "id": "balloon-bunch",
+      "name": "Racimo de globos",
+      "category": "Pueblo",
+      "source": "Pana/engine/models/props/fiesta.js",
+      "factory": "balloonBunch",
+      "usedBy": [
+        "Derrape"
+      ],
+      "previewOptions": {
+        "seed": 3
+      },
+      "status": "in-use"
+    },
+    {
+      "id": "fiesta-flags",
+      "name": "Banderas de pluma",
+      "category": "Pueblo",
+      "source": "Pana/engine/models/props/fiesta.js",
+      "factory": "fiestaFlags",
+      "usedBy": [
+        "Derrape"
+      ],
+      "previewOptions": {
+        "seed": 3
+      },
+      "status": "in-use"
+    },
+    {
+      "id": "bunting-line",
+      "name": "Guirnalda de banderines",
+      "category": "Pueblo",
+      "source": "Pana/engine/models/props/fiesta.js",
+      "factory": "buntingLine",
+      "usedBy": [
+        "Derrape"
+      ],
+      "previewOptions": {
+        "seed": 3,
+        "span": 16
+      },
+      "status": "in-use"
+    },
+    {
+      "id": "checkered-banner",
+      "name": "Pancarta a cuadros",
+      "category": "Pueblo",
+      "source": "Pana/engine/models/props/fiesta.js",
+      "factory": "checkeredBanner",
+      "usedBy": [
+        "Derrape"
+      ],
+      "previewOptions": {
+        "width": 7
+      },
+      "status": "in-use"
+    },
+    {
+      "id": "hot-air-balloon",
+      "name": "Globo aerostático",
+      "category": "Pueblo",
+      "source": "Pana/engine/models/props/fiesta.js",
+      "factory": "hotAirBalloon",
+      "usedBy": [
+        "Derrape"
+      ],
+      "previewOptions": {
+        "seed": 3,
+        "size": 3
+      },
+      "status": "in-use"
+    },
+    {
+      "id": "wood-sign",
+      "name": "Letrero de madera",
+      "category": "Pueblo",
+      "source": "Pana/engine/models/props/wood-sign.js",
+      "factory": "woodSign",
+      "usedBy": [
+        "Derrape"
+      ],
+      "previewOptions": {
+        "lines": [
+          "CURVA",
+          "DEL RÍO"
+        ]
+      },
+      "status": "in-use"
+    },
+    {
+      "id": "sign-banner",
+      "name": "Pancarta pintada",
+      "category": "Pueblo",
+      "source": "Pana/engine/models/props/wood-sign.js",
+      "factory": "signBanner",
+      "usedBy": [
+        "Derrape"
+      ],
+      "previewOptions": {
+        "lines": [
+          "¡DALE",
+          "PANA!"
+        ],
+        "w": 8,
+        "h": 2.6
+      },
+      "status": "in-use"
     },
     {
       "id": "pana",
@@ -5038,6 +5513,102 @@
       "status": "in-use"
     },
     {
+      "id": "car-escarabajo",
+      "name": "La Pulga",
+      "category": "Vehículos",
+      "source": "Pana/engine/models/vehicles/cars.js",
+      "factory": "CAR_BUILDERS.escarabajo",
+      "usedBy": [
+        "Derrape",
+        "Bululú"
+      ],
+      "status": "in-use"
+    },
+    {
+      "id": "car-sedan",
+      "name": "El Caprichoso",
+      "category": "Vehículos",
+      "source": "Pana/engine/models/vehicles/cars.js",
+      "factory": "CAR_BUILDERS.sedan",
+      "usedBy": [
+        "Derrape",
+        "Bululú"
+      ],
+      "status": "in-use"
+    },
+    {
+      "id": "car-buseta",
+      "name": "El Por Puesto",
+      "category": "Vehículos",
+      "source": "Pana/engine/models/vehicles/cars.js",
+      "factory": "CAR_BUILDERS.buseta",
+      "usedBy": [
+        "Derrape",
+        "Bululú"
+      ],
+      "status": "in-use"
+    },
+    {
+      "id": "car-pickup",
+      "name": "El Burro",
+      "category": "Vehículos",
+      "source": "Pana/engine/models/vehicles/cars.js",
+      "factory": "CAR_BUILDERS.pickup",
+      "usedBy": [
+        "Derrape",
+        "Bululú"
+      ],
+      "status": "in-use"
+    },
+    {
+      "id": "car-jeep",
+      "name": "El Chigüire",
+      "category": "Vehículos",
+      "source": "Pana/engine/models/vehicles/cars.js",
+      "factory": "CAR_BUILDERS.jeep",
+      "usedBy": [
+        "Derrape",
+        "Bululú"
+      ],
+      "status": "in-use"
+    },
+    {
+      "id": "car-hatch",
+      "name": "La Chispa",
+      "category": "Vehículos",
+      "source": "Pana/engine/models/vehicles/cars.js",
+      "factory": "CAR_BUILDERS.hatch",
+      "usedBy": [
+        "Derrape",
+        "Bululú"
+      ],
+      "status": "in-use"
+    },
+    {
+      "id": "car-rustico",
+      "name": "El Tepuy",
+      "category": "Vehículos",
+      "source": "Pana/engine/models/vehicles/cars.js",
+      "factory": "CAR_BUILDERS.rustico",
+      "usedBy": [
+        "Derrape",
+        "Bululú"
+      ],
+      "status": "in-use"
+    },
+    {
+      "id": "car-malibu",
+      "name": "La Reina",
+      "category": "Vehículos",
+      "source": "Pana/engine/models/vehicles/cars.js",
+      "factory": "CAR_BUILDERS.malibu",
+      "usedBy": [
+        "Derrape",
+        "Bululú"
+      ],
+      "status": "in-use"
+    },
+    {
       "id": "racing-curiara",
       "name": "Curiara de carrera",
       "category": "Vehículos",
@@ -5105,10 +5676,43 @@
       "status": "in-use"
     },
     {
+      "id": "wheel-clasicas",
+      "name": "Clásicas",
+      "category": "Vehículos",
+      "source": "Pana/games/derrape/public/wheel-definitions.js",
+      "factory": "makeWheel",
+      "usedBy": [
+        "Derrape"
+      ],
+      "status": "in-use"
+    },
+    {
+      "id": "wheel-ligeras",
+      "name": "Rines ligeros",
+      "category": "Vehículos",
+      "source": "Pana/games/derrape/public/wheel-definitions.js",
+      "factory": "makeWheel",
+      "usedBy": [
+        "Derrape"
+      ],
+      "status": "in-use"
+    },
+    {
+      "id": "wheel-todoterreno",
+      "name": "Todoterreno",
+      "category": "Vehículos",
+      "source": "Pana/games/derrape/public/wheel-definitions.js",
+      "factory": "makeWheel",
+      "usedBy": [
+        "Derrape"
+      ],
+      "status": "in-use"
+    },
+    {
       "id": "table-guipuzcoana",
       "name": "Casa Guipuzcoana",
       "category": "Mapas",
-      "source": "Pana/engine/puerto-tables.js",
+      "source": "Pana/engine/worlds/puerto-tables.js",
       "factory": "createPuertoTableEnvironment",
       "usedBy": [
         "Caída",
@@ -5121,7 +5725,7 @@
       "id": "table-san-carlos",
       "name": "Fuerte San Carlos",
       "category": "Mapas",
-      "source": "Pana/engine/puerto-tables.js",
+      "source": "Pana/engine/worlds/puerto-tables.js",
       "factory": "createPuertoTableEnvironment",
       "usedBy": [
         "Caída",
@@ -5134,7 +5738,7 @@
       "id": "colonial-collection",
       "name": "Cincuenta casas del pueblo",
       "category": "Mapas",
-      "source": "Pana/engine/colonial-house-collection.js",
+      "source": "Pana/engine/worlds/colonial-house-collection.js",
       "factory": "createColonialHouseCollection",
       "usedBy": [
         "Pana Studio"
@@ -5145,7 +5749,7 @@
       "id": "colonial-street",
       "name": "Calle de las flores",
       "category": "Mapas",
-      "source": "Pana/engine/colonial-street.js",
+      "source": "Pana/engine/worlds/colonial-street.js",
       "factory": "createColonialStreet",
       "usedBy": [
         "Pana Studio"
@@ -5156,7 +5760,7 @@
       "id": "arena-puerto",
       "name": "Puerto Coco",
       "category": "Mapas",
-      "source": "Pana/engine/arenas.js",
+      "source": "Pana/engine/worlds/arenas.js",
       "factory": "createArenaEnvironment",
       "usedBy": [
         "Escondidas",
@@ -5170,7 +5774,7 @@
       "id": "arena-hato",
       "name": "Hato del Sol",
       "category": "Mapas",
-      "source": "Pana/engine/arenas.js",
+      "source": "Pana/engine/worlds/arenas.js",
       "factory": "createArenaEnvironment",
       "usedBy": [
         "Escondidas",
@@ -5184,7 +5788,7 @@
       "id": "arena-ruinas",
       "name": "Ruinas del Mango",
       "category": "Mapas",
-      "source": "Pana/engine/arenas.js",
+      "source": "Pana/engine/worlds/arenas.js",
       "factory": "createArenaEnvironment",
       "usedBy": [
         "Escondidas",
@@ -5242,7 +5846,7 @@
       "id": "plaza",
       "name": "Plaza Pana",
       "category": "Mapas",
-      "source": "Pana/engine/plaza.js",
+      "source": "Pana/engine/worlds/plaza.js",
       "factory": "createPlazaEnvironment",
       "usedBy": [
         "Escondidas",
@@ -5477,6 +6081,39 @@
         "Caída"
       ],
       "status": "in-use"
+    },
+    {
+      "id": "ludo-board",
+      "name": "Tablero de Ludo",
+      "category": "Objetos",
+      "source": "Pana/games/ludo/public/board-model.js",
+      "factory": "createLudoBoard",
+      "usedBy": [
+        "Ludo"
+      ],
+      "status": "in-use"
+    },
+    {
+      "id": "ludo-pawn",
+      "name": "Ficha de Ludo",
+      "category": "Objetos",
+      "source": "Pana/games/ludo/public/board-model.js",
+      "factory": "createLudoPawn",
+      "usedBy": [
+        "Ludo"
+      ],
+      "status": "in-use"
+    },
+    {
+      "id": "ludo-die",
+      "name": "Dado de Ludo",
+      "category": "Objetos",
+      "source": "Pana/games/ludo/public/board-model.js",
+      "factory": "createLudoDie",
+      "usedBy": [
+        "Ludo"
+      ],
+      "status": "in-use"
     }
   ],
   "uncataloged": [
@@ -5486,7 +6123,7 @@
       "anchor": "function woodSign",
       "where": "Bululú board/minigames; Derrape sectors",
       "note": "Active shared factory; many text variants, one model family.",
-      "line": 4
+      "line": 6
     },
     {
       "name": "Watchtower",
@@ -5514,7 +6151,7 @@
     },
     {
       "name": "Offshore lighthouse (older)",
-      "source": "Pana/engine/island-scenery.js",
+      "source": "Pana/engine/worlds/island-scenery.js",
       "anchor": "function lighthouse",
       "where": "Bululú board",
       "note": "One tower with a rotating night beam. Not the Costa lighthouse used on the race island; preserve daylight behavior when replacing.",
@@ -5522,7 +6159,7 @@
     },
     {
       "name": "Offshore sailboat (older)",
-      "source": "Pana/engine/island-scenery.js",
+      "source": "Pana/engine/worlds/island-scenery.js",
       "anchor": "function sailboat",
       "where": "Bululú board",
       "note": "Four box-hull sailboats still bob offshore. Not the new peñero.",
@@ -5530,7 +6167,7 @@
     },
     {
       "name": "Golden mango landmark tree",
-      "source": "Pana/engine/island-environment.js",
+      "source": "Pana/engine/worlds/island-environment.js",
       "anchor": "function mangoTreeBig",
       "where": "Bululú board",
       "note": "Special large fruit tree; separate construction from flora.mangoTree.",
@@ -5614,7 +6251,7 @@
       "anchor": "function rowboat",
       "where": "Selva; Llanos",
       "note": "Two active river boats. Keep shallow-water footprint when upgrading.",
-      "line": 448
+      "line": 447
     },
     {
       "name": "Canal/dive-village boat",
@@ -5622,7 +6259,7 @@
       "anchor": "function boat",
       "where": "Plaza circuit; Chi Chi",
       "note": "Cabin option; different builder from the coast peñero and island sailboats.",
-      "line": 98
+      "line": 105
     },
     {
       "name": "Faceted boulder",
@@ -5630,7 +6267,7 @@
       "anchor": "function boulder",
       "where": "Páramo; Chi Chi; Desierto",
       "note": "Instanced geological scatter, separate from props.rock.",
-      "line": 108
+      "line": 115
     },
     {
       "name": "Catch basket",
@@ -5662,7 +6299,7 @@
       "anchor": "function createDie",
       "where": "Bululú board",
       "note": "Six face textures; game-driven roll animation.",
-      "line": 173
+      "line": 175
     },
     {
       "name": "Golden mango cart",
@@ -5670,7 +6307,7 @@
       "anchor": "function buildStand",
       "where": "Bululú board",
       "note": "Cart, striped umbrella, chalkboard and reward beam.",
-      "line": 201
+      "line": 203
     },
     {
       "name": "Player token pedestal",
@@ -5678,7 +6315,7 @@
       "anchor": "function createToken",
       "where": "Bululú board",
       "note": "Colored base under shared character; not a new character sculpt.",
-      "line": 515
+      "line": 541
     },
     {
       "name": "Breakable supply crate",
@@ -5718,7 +6355,7 @@
       "anchor": "const fridge =",
       "where": "Cocina",
       "note": "Shelves with tomatoes, milk cartons and shared cheese. Assembly includes its food dressing.",
-      "line": 27
+      "line": 30
     },
     {
       "name": "Condiment bottles and flour sacks",
@@ -5726,7 +6363,7 @@
       "anchor": "Small working-kitchen details",
       "where": "Cocina",
       "note": "Counter and floor dressing made inline; two prop types grouped as one set.",
-      "line": 41
+      "line": 44
     }
   ],
   "assemblies": [
@@ -5736,7 +6373,7 @@
       "anchor": "function createExpeditionWorld",
       "where": "Reliquia; Studio map",
       "note": "Authored walkable mine, swept shared bridge, timed winches, crypt, relic chamber and return tunnel. Five expedition models are cataloged independently.",
-      "line": 22
+      "line": 23
     },
     {
       "name": "Mounted horse and riding tack",
@@ -5752,7 +6389,7 @@
       "anchor": "function createCourse",
       "where": "Galope; Studio map",
       "note": "Shared terrain/water grid, clipped riding trail, irregular lagoon with island, winding estero, jump logs, start gantry and trail markers. Shared models counted separately.",
-      "line": 20
+      "line": 21
     },
     {
       "name": "Galope living Llanos landscape",
@@ -5768,7 +6405,7 @@
       "anchor": "function pyramid",
       "where": "Selva",
       "note": "Stepped landmark outside the driving tunnel.",
-      "line": 57
+      "line": 70
     },
     {
       "name": "Road temple tunnel and portals",
@@ -5776,7 +6413,7 @@
       "anchor": "function templeTunnel",
       "where": "Selva",
       "note": "Swept along the actual road; not the unused standalone temple entrance.",
-      "line": 88
+      "line": 38
     },
     {
       "name": "Selva plank crossing",
@@ -5784,7 +6421,7 @@
       "anchor": "const deck =",
       "where": "Selva",
       "note": "Road-warped planks, piers and flankBridge rails. Anchor spacing normalized by the audit.",
-      "line": 151
+      "line": 208
     },
     {
       "name": "Simple waterfall sheet",
@@ -5792,7 +6429,7 @@
       "anchor": "function waterfall",
       "where": "Selva",
       "note": "Active older waterfall; separate from waterfallRocks in Chi Chi.",
-      "line": 294
+      "line": 293
     },
     {
       "name": "Pond and river wrappers",
@@ -5800,7 +6437,7 @@
       "anchor": "function waterPond",
       "where": "Selva",
       "note": "waterPond/waterRibbon wrap the shared water surface.",
-      "line": 284
+      "line": 283
     },
     {
       "name": "Country grass tufts",
@@ -5840,7 +6477,7 @@
       "anchor": "fisherman",
       "where": "Llanos",
       "note": "Dock planks and supports; capybaras now use shared wildlife.",
-      "line": 117
+      "line": 120
     },
     {
       "name": "Generic race edges",
@@ -5848,7 +6485,7 @@
       "anchor": "function edges",
       "where": "Multiple Derrape circuits",
       "note": "Steel, timber and kerb variants, generated along the route.",
-      "line": 77
+      "line": 79
     },
     {
       "name": "Chevrons/start line/sector signs/ramps",
@@ -5864,7 +6501,7 @@
       "anchor": "function terrain",
       "where": "Derrape",
       "note": "Terrain, sea and stream generators; each map supplies shape and palette.",
-      "line": 26
+      "line": 28
     },
     {
       "name": "Water surface system",
@@ -5872,7 +6509,7 @@
       "anchor": "function waterSurface",
       "where": "Derrape",
       "note": "Ocean, river, canal and pool configurations; not separate species/objects.",
-      "line": 33
+      "line": 36
     },
     {
       "name": "Bululú tide wash",
@@ -5884,15 +6521,15 @@
     },
     {
       "name": "Board island terrain",
-      "source": "Pana/engine/island-terrain.js",
+      "source": "Pana/engine/worlds/island-terrain.js",
       "anchor": "function buildIsland",
       "where": "Bululú board",
       "note": "Shoreline, beach, hills, river and path cuts.",
-      "line": 97
+      "line": 79
     },
     {
       "name": "Forested islet/ridge",
-      "source": "Pana/engine/island-landscape.js",
+      "source": "Pana/engine/worlds/island-landscape.js",
       "anchor": "function createIslet",
       "where": "Bululú board",
       "note": "Seeded neighboring islands and distant ridges.",
@@ -5900,7 +6537,7 @@
     },
     {
       "name": "Tepui and waterfall",
-      "source": "Pana/engine/island-landscape.js",
+      "source": "Pana/engine/worlds/island-landscape.js",
       "anchor": "function createTepui",
       "where": "Bululú board",
       "note": "Three mesas; one waterfall/mist landmark. Not the Selva waterfall.",
@@ -5908,7 +6545,7 @@
     },
     {
       "name": "Living sky and cloud layers",
-      "source": "Pana/engine/sky.js",
+      "source": "Pana/engine/worlds/sky.js",
       "anchor": "function createSky",
       "where": "Derrape; Galope; Escondidas; Cocina; Bululú and minigames; Studio tours",
       "note": "One procedural sky draw, seeded cumulus and wisps, absolute-time wind and day/night tint. Scene-owned, outside scenery bounds.",
@@ -5916,7 +6553,7 @@
     },
     {
       "name": "Island dock and village light strings",
-      "source": "Pana/engine/island-environment.js",
+      "source": "Pana/engine/worlds/island-environment.js",
       "anchor": "dockStart",
       "where": "Bululú board",
       "note": "Placement-specific geometry; not separate library factories.",
@@ -5928,7 +6565,7 @@
       "anchor": "Low jetties",
       "where": "Bululú circuit",
       "note": "Inline harbor planks and pilings.",
-      "line": 98
+      "line": 99
     },
     {
       "name": "Plaza streets, gardens and mirador",
@@ -5936,7 +6573,7 @@
       "anchor": "function createTown",
       "where": "Plaza circuit",
       "note": "Street surfaces, block gardens, lookout terrace and stairs; shared houses/trees counted separately.",
-      "line": 44
+      "line": 46
     },
     {
       "name": "Plaza waterfront canals and docks",
@@ -5984,7 +6621,7 @@
       "anchor": "for(let i=0;i<10;i++)fixed.add",
       "where": "Estadio",
       "note": "Pitch stripes, markings and two goal frames.",
-      "line": 25
+      "line": 26
     },
     {
       "name": "Pit garages",
@@ -5992,7 +6629,7 @@
       "anchor": "Pit garages",
       "where": "Estadio",
       "note": "Eight inline garage blocks and numbered signs.",
-      "line": 48
+      "line": 49
     },
     {
       "name": "Floodlights and scoreboard",
@@ -6000,7 +6637,7 @@
       "anchor": "const score=",
       "where": "Estadio",
       "note": "Two inline landmark families.",
-      "line": 66
+      "line": 67
     },
     {
       "name": "Basketball court and banners",
@@ -6008,7 +6645,7 @@
       "anchor": "community half-court",
       "where": "Estadio",
       "note": "Court and sponsor panels; shared hoops already cataloged.",
-      "line": 80
+      "line": 81
     },
     {
       "name": "Chi Chi retaining walls and river bridges",
@@ -6024,7 +6661,7 @@
       "anchor": "function tileTop",
       "where": "Bululú board",
       "note": "Tile-kind texture variants, raised supports, fork paths and waypoint sprites.",
-      "line": 60
+      "line": 62
     },
     {
       "name": "Sunny minigame stage",
@@ -6064,7 +6701,7 @@
       "anchor": "export class Puffs",
       "where": "Bululú; Derrape",
       "note": "Particle/sprite effects, not scenery inventory counts.",
-      "line": 286
+      "line": 303
     },
     {
       "name": "Crate fragment bursts",
@@ -6080,7 +6717,7 @@
       "anchor": "const effects =",
       "where": "Cocina",
       "note": "Cooking state effects; recipes also have raw/prepared/cooked/burned variants.",
-      "line": 65
+      "line": 68
     },
     {
       "name": "Thermal steam and water details",
@@ -6106,7 +6743,7 @@
       "anchor": "function windmill",
       "where": "No current production callsite",
       "note": "Current Llanos uses ranch-props.waterWindmill.",
-      "line": 375
+      "line": 374
     },
     {
       "name": "Old arepa stand",
@@ -6114,7 +6751,7 @@
       "anchor": "function arepaStand",
       "where": "No current production callsite",
       "note": "Current maps use streetFoodKiosk.",
-      "line": 405
+      "line": 404
     },
     {
       "name": "Generic dock",
@@ -6122,7 +6759,7 @@
       "anchor": "function dock",
       "where": "No current production callsite",
       "note": "Maps now build docks against their shore/deck.",
-      "line": 435
+      "line": 434
     },
     {
       "name": "Generic sailboat",
@@ -6130,7 +6767,7 @@
       "anchor": "function sailboat",
       "where": "No current production callsite",
       "note": "No production caller; internally uses rowboat, which remains active.",
-      "line": 460
+      "line": 459
     },
     {
       "name": "Generic plank/rope bridge",
@@ -6138,7 +6775,7 @@
       "anchor": "function bridge",
       "where": "No current production callsite",
       "note": "Active crossings have road-specific decks or newer shared factories.",
-      "line": 319
+      "line": 318
     },
     {
       "name": "Distant mountain ring",
@@ -6146,7 +6783,7 @@
       "anchor": "function distantMountains",
       "where": "No current production callsite",
       "note": "Current maps use their own terrain or island-landscape.",
-      "line": 479
+      "line": 478
     },
     {
       "name": "Old route landscape scatter",
@@ -6154,7 +6791,7 @@
       "anchor": "function routeLandscape",
       "where": "No current production callsite",
       "note": "Current worlds supply habitat-specific planting.",
-      "line": 523
+      "line": 522
     },
     {
       "name": "Tire-wall generator",

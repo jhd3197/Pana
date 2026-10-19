@@ -14,7 +14,7 @@ try {
   await page.setContent('<style>body{margin:0}canvas{display:block}</style><canvas></canvas><script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}</script>');
   const result=await page.evaluate(async()=>{
     const THREE=await import('three'),{makeTrack}=await import('/g/derrape/track-runtime.js'),{default:def}=await import('/g/derrape/tracks/puerto.js');
-    const {createSky}=await import('/engine/sky.js'),{inspect}=await import('/studio/preview.js');
+    const {createSky}=await import('/engine/worlds/sky.js'),{inspect}=await import('/studio/preview.js');
     const T=makeTrack(def),scene=new THREE.Scene(),group=T.build(),pal=def.palette;
     const renderer=new THREE.WebGLRenderer({canvas:document.querySelector('canvas'),antialias:true,preserveDrawingBuffer:true});
     renderer.setSize(1500,1000);renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.outputColorSpace=THREE.SRGBColorSpace;
@@ -87,13 +87,6 @@ try {
     await page.evaluate(([p,t])=>{const {camera,renderer,scene}=proof;camera.position.set(...p);camera.lookAt(...t);renderer.render(scene,camera);},[position,target]);
     await page.screenshot({path:`${out}/${name}.png`});
   }
-  // Menu artwork is captured from the shipped map, never from the reference photo.
-  if(process.env.PANA_CAPTURE_PUERTO_ART==='1') {
-    const data=await page.evaluate(()=>{const {camera,renderer,scene}=proof;renderer.setSize(1200,750);camera.aspect=1.6;camera.updateProjectionMatrix();camera.position.set(1050,1000,1300);camera.lookAt(-30,70,-260);renderer.render(scene,camera);return renderer.domElement.toDataURL('image/webp',.9).split(',')[1];});
-    await writeFile('Pana/games/derrape/public/images/menu/puerto.webp',Buffer.from(data,'base64'));
-    const thumb=await page.evaluate(()=>{const {camera,renderer,scene}=proof;renderer.setSize(480,300);renderer.render(scene,camera);return renderer.domElement.toDataURL('image/webp',.85).split(',')[1];});
-    await writeFile('Pana/games/derrape/public/images/menu/puerto-thumb.webp',Buffer.from(thumb,'base64'));
-  }
   assert.ok(result.length>5300&&result.length<6800,'expanded harbor and mountain circuit');assert.ok(result.radius>15,`radius ${result.radius}`);
   assert.ok(result.grade<.4,`grade ${result.grade}`);assert.ok(result.elevation>170,'real climb to the fort');
   assert.ok(result.protrusion<.1,'no terrain enters the full road width, including both curbs');
@@ -106,7 +99,8 @@ try {
   assert.ok(result.containerWalls>=10&&result.siloClearance>11&&result.siloClearance<14,'full-height tunnel beneath the original silo bank');
   assert.ok(result.tunnelLength>300&&result.tunnelWindows>50,'substantial submerged tunnel with sea windows');
   assert.deepEqual(result.roofGaps,[],'continuous tunnel roof across bends and slopes');
-  assert.ok(result.triangles<3200000&&result.drawCalls<900,'map rendering budget');
+  // +200 k for the festive roadside (library trees, props, flocks).
+  assert.ok(result.triangles<3400000&&result.drawCalls<900,'map rendering budget');
   assert.ok(result.foundations.every(h=>h.embedded&&h.lift<4),'houses sit on grounded terraces below one storey');
   assert.ok(Math.abs(result.shipWaterline)<.001,'scaled ship meets sea level');
   // Use the real driver, vehicle, lighting and follow camera for the street-level proof.

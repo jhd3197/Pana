@@ -15,9 +15,10 @@ for (const file of files) {
   for (const spec of imports) {
     if (spec.startsWith('three')) continue;
     const target = spec.startsWith('.') ? new URL(spec,`https://pana.invalid${url}`).pathname : spec;
-    assert.ok(target.startsWith('/engine/models/') || target.startsWith('/engine/vendor/') || target==='/engine/avatar.js', `${url} imports outside the model layer: ${target}`);
+    assert.ok(target.startsWith('/engine/models/') || target.startsWith('/engine/vendor/') || ['/engine/avatar.js','/engine/random.js'].includes(target), `${url} imports outside the model layer: ${target}`);
     assert.ok((await stat(local(target))).isFile(),`${url}: missing ${target}`);
-    if (url.includes('/core/')) assert.ok(target.startsWith('/engine/models/core/'),`Core imports a concrete model: ${url} -> ${target}`);
+    // engine/random.js is a dependency-free leaf (rng, noise), shared with pure rules.js.
+    if (url.includes('/core/')) assert.ok(target.startsWith('/engine/models/core/') || target === '/engine/random.js',`Core imports a concrete model: ${url} -> ${target}`);
     dependencies.push(target);
   }
   graph.set(url,dependencies);

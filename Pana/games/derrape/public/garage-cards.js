@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { paintNext } from './loading.js';
 import { makeWheel } from '/engine/models/vehicles/car-kit.js';
+import { studioEnvironment, studioRims } from './garage-stage.js';
 
 // Render each actual car once. Eight static thumbnails share one short-lived
 // renderer, so the selector never runs eight extra WebGL scenes every frame.
@@ -28,18 +29,18 @@ export function garageCards(cars, getCar, onSelect, canRender) {
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
     renderer.toneMappingExposure = 1.05;
     const scene = new THREE.Scene();
-    scene.add(new THREE.HemisphereLight(0xfff1de, 0x483265, 1.6));
+    scene.environment = studioEnvironment(renderer);
+    studioRims(scene, 1.4);
+    scene.add(new THREE.HemisphereLight(0xfff1de, 0x483265, 1.1));
     const key = new THREE.DirectionalLight(0xffedce, 2.6);
     key.position.set(3, 7, 5); scene.add(key);
-    const rim = new THREE.DirectionalLight(0x8daaff, 1.6);
-    rim.position.set(-3, 2, -4); scene.add(rim);
     const camera = new THREE.PerspectiveCamera(33, 240 / 184, 0.1, 50);
     camera.position.set(7, 4.7, 9);
     camera.lookAt(0, 1.65, 0);
     const stage = new THREE.Mesh(new THREE.CylinderGeometry(3.25, 3.4, 0.28, 12),
       new THREE.MeshStandardMaterial({ color: 0x382a50, roughness: 0.85, flatShading: true }));
     stage.position.y = -0.2; scene.add(stage);
-    const ring = new THREE.Mesh(new THREE.TorusGeometry(3.26, 0.055, 4, 32), new THREE.MeshBasicMaterial());
+    const ring = new THREE.Mesh(new THREE.TorusGeometry(3.26, 0.055, 4, 32), new THREE.MeshBasicMaterial({ toneMapped: false }));
     ring.rotation.x = -Math.PI / 2; ring.position.y = -0.04; scene.add(ring);
     try {
       for (const [index, def] of cars.entries()) {
@@ -58,7 +59,7 @@ export function garageCards(cars, getCar, onSelect, canRender) {
       }
     } finally {
       stage.geometry.dispose(); stage.material.dispose(); ring.geometry.dispose(); ring.material.dispose();
-      renderer.dispose(); renderer.forceContextLoss();
+      scene.environment.dispose(); renderer.dispose(); renderer.forceContextLoss();
     }
   });
   return { fragment, ready };
@@ -89,11 +90,11 @@ export function wheelCards(wheels, onSelect, canRender) {
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
     renderer.toneMappingExposure = 1.05;
     const scene = new THREE.Scene();
-    scene.add(new THREE.HemisphereLight(0xfff1de, 0x483265, 1.6));
+    scene.environment = studioEnvironment(renderer);
+    studioRims(scene, 1.4);
+    scene.add(new THREE.HemisphereLight(0xfff1de, 0x483265, 1.1));
     const key = new THREE.DirectionalLight(0xffedce, 2.6);
     key.position.set(3, 7, 5); scene.add(key);
-    const rim = new THREE.DirectionalLight(0x8daaff, 1.6);
-    rim.position.set(-3, 2, -4); scene.add(rim);
     const camera = new THREE.PerspectiveCamera(33, 192 / 144, 0.1, 50);
     camera.position.set(2.1, 1.1, 2.6);
     camera.lookAt(0, 0, 0);
@@ -102,7 +103,7 @@ export function wheelCards(wheels, onSelect, canRender) {
         await paintNext();
         while (!canRender() || document.hidden) await new Promise(resolve => setTimeout(resolve, 150));
         // calle has no spec of its own: preview it as the classic street wheel.
-        const wheel = makeWheel(def.wheel ?? { r: 0.69, w: 0.68, style: 'spokes', rim: '#6b707e', cap: '#e0262f' });
+        const wheel = makeWheel(def.wheel ?? { r: 0.69, w: 0.68, style: 'cinco', rim: '#6b707e', cap: '#e0262f' });
         wheel.rotation.y = 0.55;
         scene.add(wheel);
         try {
@@ -114,8 +115,17 @@ export function wheelCards(wheels, onSelect, canRender) {
         }
       }
     } finally {
-      renderer.dispose(); renderer.forceContextLoss();
+      scene.environment.dispose(); renderer.dispose(); renderer.forceContextLoss();
     }
   });
   return { fragment, ready };
+}
+
+// A mouse wheel scrolls the car and caucho strips sideways once they overflow.
+export function sideScroll(...strips) {
+  for (const strip of strips) strip.addEventListener('wheel', (e) => {
+    if (Math.abs(e.deltaY) <= Math.abs(e.deltaX) || strip.scrollWidth <= strip.clientWidth) return;
+    strip.scrollLeft += e.deltaY;
+    e.preventDefault();
+  }, { passive: false });
 }

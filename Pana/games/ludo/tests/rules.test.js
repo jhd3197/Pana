@@ -1,7 +1,34 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { LudoGame, HOME, RING, SAFE, cellFor, rotateCell, ringIndex, legalMoves, chooseMove } from '../public/rules.js';
-const game = () => { const g=new LudoGame(123);g.addPlayer(1,'Juan',{hat:'gorra'});g.addPlayer(2,'Ana',{});g.start();return g; };
+// Skips the opening roll-off: seat 0 starts.
+const game = () => { const g=new LudoGame(123);g.addPlayer(1,'Juan',{hat:'gorra'});g.addPlayer(2,'Ana',{});g.start();g.phase='playing';g.order=null;return g; };
+// A seed whose next throws are exactly these values.
+function seedFor(values){
+  for(let seed=1;;seed++){
+    let rng=seed;const out=values.map(()=>{rng=(Math.imul(rng,1664525)+1013904223)>>>0;return 1+Math.floor(rng/4294967296*6);});
+    if(out.every((v,i)=>v===values[i]))return seed;
+  }
+}
+test('everyone throws once to start; the highest goes first and nobody moves yet',()=>{
+  const g=new LudoGame(1);g.addPlayer(1,'Juan');g.start();g.rng=seedFor([3,6,2,5]);
+  assert.equal(g.phase,'order');assert.equal(g.turn,0);
+  for(let seat=0;seat<4;seat++){assert.equal(g.turn,seat);assert.ok(g.roll(.8));assert.equal(g.die,0);}
+  assert.equal(g.phase,'playing');assert.equal(g.turn,1);assert.deepEqual(g.order.rolls,[3,6,2,5]);
+  assert.match(g.event,/Empieza Lola con 6/);assert.ok(g.players.every(p=>p.pieces.every(v=>v===-1)));
+  assert.deepEqual(g.toss,{seat:3,power:.8});
+});
+test('a tie at the top throws again, only among the tied panas',()=>{
+  const g=new LudoGame(1);g.start();g.rng=seedFor([5,2,5,1,4,6]);
+  for(let i=0;i<4;i++)g.roll();
+  assert.equal(g.phase,'order');assert.deepEqual(g.order.contenders,[0,2]);assert.equal(g.turn,0);assert.match(g.event,/Empate a 5 entre Tito y Nina/);
+  g.roll();assert.equal(g.turn,2);g.roll();
+  assert.equal(g.phase,'playing');assert.equal(g.turn,2);
+});
+test('throw power is clamped and only changes the look of the roll',()=>{
+  const a=game(),b=game();a.roll(9);b.roll('fuerte');
+  assert.equal(a.toss.power,1);assert.ok(b.toss.power>=0&&b.toss.power<=1);assert.equal(a.lastDie,b.lastDie);
+});
 test('52 distinct ring cells, rotated starts and private home lanes match the board',()=>{
   assert.equal(RING.length,52);assert.equal(new Set(RING.map(c=>c.join(','))).size,52);
   for(let s=0;s<4;s++){
@@ -49,8 +76,8 @@ test('only host starts; turns, revisions, sequences and piece indices are valida
   assert.equal(action(2,'start'),false);assert.equal(action(1,'start'),true);
   assert.equal(action(1,'roll'),false);assert.equal(action(2,'roll'),false);
   assert.equal(action(1,'roll',{seq:2,revision:g.revision-1}),false);
-  assert.equal(action(1,'roll',{seq:2}),true);
-  g.turn=0;g.die=6;const before=g.snapshot();
+  assert.equal(action(1,'roll',{seq:2,power:.7}),true);assert.equal(g.order.rolls[0],g.lastDie);assert.equal(g.toss.power,.7);
+  g.phase='playing';g.turn=0;g.die=6;const before=g.snapshot();
   for(const piece of [-1,4,NaN,'0',null])assert.equal(action(1,'move',{seq:3,piece}),false);
   assert.deepEqual(g.snapshot(),before);
 });
@@ -65,7 +92,7 @@ test('late join and migration preserve pieces, pending dice and seeded future ro
 test('200 seeded bot matches finish and preserve all sixteen pieces at every action',()=>{
   for(let seed=1;seed<=200;seed++){
     const g=new LudoGame(seed);g.start();let steps=0;
-    while(g.phase==='playing'&&steps++<15000){
+    while(g.phase!=='finished'&&steps++<15000){
       assert.ok(g.die?g.move(chooseMove(g)):g.roll());
       for(const p of g.players){assert.equal(p.pieces.length,4);assert.ok(p.pieces.every(v=>Number.isInteger(v)&&v>=-1&&v<=HOME));}
       assert.ok(g.turn>=0&&g.turn<4);

@@ -1,7 +1,8 @@
 // A complete pueblo around a temporary street circuit.
+import { festive } from './festive.js';
 import * as THREE from 'three';
 import { natureSurface } from '/engine/models/core/nature-surface.js';
-import { createPlazaEnvironment } from '/engine/plaza.js';
+import { createPlazaEnvironment } from '/engine/worlds/plaza.js';
 import { house } from '/engine/models/props/plaza-buildings.js';
 import { marketStall, streetLamp, bench } from '/engine/models/props/plaza.js';
 import { M, mesh, box, rng } from '/engine/models/core/primitives.js';
@@ -9,6 +10,7 @@ import { bake } from '/engine/models/core/static-batch.js';
 import { palm } from '/engine/models/vegetation/palm.js';
 import { mangoTree } from '/engine/models/vegetation/mango-tree.js';
 import { ceiba } from '/engine/models/vegetation/ceiba.js';
+import { saman } from '/engine/models/vegetation/saman.js';
 import { AVENUES, STREETS, BLOCKS, STREET_HALF, townHeight, streetDistance } from './plaza-layout.js';
 import { waterfrontHeight,overWater,createWaterfront } from './plaza-waterfront.js';
 import { waterAnimator } from '/engine/models/effects/water-surface.js';
@@ -53,7 +55,7 @@ export function createTown(T) {
     return overWater(x,z)?land:THREE.MathUtils.lerp(T.surfaceAt(x,z)-0.3,land,blend);
   }
   const land=surface(-650,-700,850,600,groundAt,0xffffff,5);
-  const p=land.geometry.attributes.position,colors=[],lawn=new THREE.Color(0x6aa746),dry=new THREE.Color(0xb2b76a);
+  const p=land.geometry.attributes.position,colors=[],lawn=new THREE.Color(0x6cbb4a),dry=new THREE.Color(0xbcc65a);
   for(let i=0;i<p.count;i++) {
     const c=lawn.clone().lerp(dry,0.26+0.16*Math.sin(p.getX(i)*0.013)*Math.cos(p.getZ(i)*0.017));colors.push(c.r,c.g,c.b);
   }
@@ -79,7 +81,7 @@ export function createTown(T) {
     ground.add(surface(x+k*2.3-0.65,z+side*15-1.5,x+k*2.3+0.65,z+side*15+1.5,(x,z)=>groundAt(x,z)+0.24,0xe4dfc9,1));
     ground.add(surface(x+side*15-1.5,z+k*2.3-0.65,x+side*15+1.5,z+k*2.3+0.65,(x,z)=>groundAt(x,z)+0.25,0xe4dfc9,1));
   }
-  const prototypes=Array.from({length:12},(_,i)=>i%5===4?colonialHouse({color:COLORS[i%6],seed:11+i}):house({w:7.3+(i%3)*.4,h:i%3===0?5.4:7.1+(i%2)*.8,color:COLORS[(i*5+Math.floor(i/4))%6],seed:i+21,style:['tejas','balcon','tienda','terraza'][i%4]})),occupied=[];
+  const prototypes=Array.from({length:12},(_,i)=>i%5===4?colonialHouse({color:COLORS[i%6],seed:11+i,detail:'low'}):house({w:7.3+(i%3)*.4,h:i%3===0?5.4:7.1+(i%2)*.8,color:COLORS[(i*5+Math.floor(i/4))%6],seed:i+21,style:['tejas','balcon','tienda','terraza'][i%4],detail:'low'})),occupied=[];
   function landmark(model,x,z,turn=0,scale=1,radius=4,lift=0.35) {
     const samples=[[0,0],[-radius,-radius],[radius,-radius],[-radius,radius],[radius,radius]].map(([dx,dz])=>groundAt(x+dx,z+dz));
     const y=Math.max(...samples)+lift,bottom=Math.min(...samples)-0.15;
@@ -120,7 +122,7 @@ export function createTown(T) {
   function tree(x,z,seed,large=false) {
     if(groundAt(x,z)<-0.4||x>270&&z>280)return;
     if(!clear(x,z,6)||streetDistance(x,z)<15||occupied.some(p=>Math.hypot(x-p.x,z-p.z)<9))return;
-    const model=large?ceiba({seed}):seed%3?mangoTree({seed,h:6+seed%3,fruit:false}):palm({seed,h:9+seed%4});
+    const model=large==='saman'?saman({seed}):large?ceiba({seed}):seed%3?mangoTree({seed,h:6+seed%3,fruit:false}):palm({seed,h:9+seed%4});
     const lift=x>-300&&x<405&&z>-310&&z<275?0.47:0.03;
     model.position.set(x,groundAt(x,z)+lift,z);plants.add(model);trees.push({x,z});
   }
@@ -129,7 +131,8 @@ export function createTown(T) {
     if(b.kind==='historic')continue;
     if(b.kind==='homes'){tree(x,z,seed);if(b.x1-b.x0>130)tree(x+22,z,seed+1);}
     if(b.kind==='park') {
-      for(let i=0;i<9;i++)tree(x+(i%3-1)*22,z+(Math.floor(i/3)-1)*22,seed+i,true);
+      // a samán shades the middle of each park, ceibas around it
+      for(let i=0;i<9;i++)tree(x+(i%3-1)*22,z+(Math.floor(i/3)-1)*22,seed+i,i===4?'saman':true);
       ground.add(surface(x-2,b.z0+12,x+2,b.z1-12,(x,z)=>groundAt(x,z)+0.56,0xdfc99e,2,outsideLane));
     }
     if(b.kind==='market') {
@@ -183,6 +186,7 @@ export function createTown(T) {
 }
 
 export function raceEdges(group,kit,T) {
+  const town=T.group?.getObjectByName('track-environment')?.userData.town;
   const edges=new THREE.Group(),cream=M(0xe4d8b9),red=M(0xb9654e);
   // Low urban kerbs replace the enclosing stacks of tyres.
   for(let s=0;s<T.TOTAL;s+=4)for(const side of [-1,1]) {
@@ -198,4 +202,12 @@ export function raceEdges(group,kit,T) {
     kit.at(edges,gate,{x:px,z:pz,y:T.terrainAt(px,pz)+0.15},dx?Math.PI/2:0);
   }
   group.add(bake(edges,{cellSize:200}));edges.traverse(o=>o.geometry?.dispose());
+  // Feria de la plaza: bunting between lamp posts, balloon bunches, juice
+  // stands and trinitarias, kept clear of every house front.
+  festive(group,T,{seed:7,minY:.4,stands:240,banners:380,bunting:120,balloons:90,flags:200,butterflies:24,
+    avoid:(town?.buildings||[]).map(b=>({x:b.x,z:b.z,r:Math.max(b.width||8,b.depth||8)*.6+1.5})),
+    trees:[['apamate',10,[1,12]],['araguaney',8,[1,12]]],
+    plants:[['trinitaria',14,[0,8],.8],['hibiscus',20],['bromeliad',30,[0,5]]],
+    birds:[{kind:'macaw',flocks:2,size:4}],
+    vista:{shape:'hill',radius:820,hills:24,height:[90,200],colors:[0x6fb86a,0x58a878,0x84c46a],balloons:6}});
 }

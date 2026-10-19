@@ -11,7 +11,7 @@ try {
   page.on('pageerror',e=>errors.push(e.message));await page.goto(`${base}/studio/settings.html`);
   await page.setContent(`<html><head><script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}</script><style>body{margin:0}canvas{display:block;width:100vw;height:100vh}</style></head><body><canvas></canvas></body></html>`);
   const metrics=await page.evaluate(async()=>{
-    const THREE=await import('three'),{makeTrack,getTrack}=await import('/g/derrape/tracks.js');
+    const THREE=await import('three'),{makeTrack,getTrack,loadTrack}=await import('/g/derrape/tracks.js');await loadTrack('selva');
     const {createPreview,inspect,fitCamera,ownMaterials}=await import('/studio/preview.js');
     const {placeOnTrack}=await import('/g/derrape/track-kit.js');
     const {JUNGLE_ADDITIONS}=await import('/g/derrape/tracks/selva-flora.js');
@@ -44,14 +44,14 @@ try {
     const plantClearance=jungle.plants.filter(p=>p.zone!=='roof'&&Math.abs(T.offsetOf(p.x,p.z))<T.HW+p.radius+1.5);
     const waterErrors=jungle.plants.filter(p=>p.kind==='waterLily'&&(Math.abs(p.y-0.3)>0.001||riverDistance(p.x,p.z)+p.radius>9));
     const revealedOpponents=[],hiddenViews=[],revealedPortal=[];
-    for(const observer of [0.1,0.12,0.16])for(const target of [0.505,0.52,0.55])for(const off of [-6,0,6]) {
+    for(const observer of [0.5966,0.5976,0.6097])for(const target of [0.7703,0.7773,0.7912])for(const off of [-6,0,6]) {
       const p=placeOnTrack(T,observer*T.TOTAL),q=placeOnTrack(T,target*T.TOTAL,off);
       const eye=new THREE.Vector3(p.x-Math.sin(p.h)*11,p.y+5,p.z-Math.cos(p.h)*11),car=new THREE.Vector3(q.x,q.y+2.8,q.z),direction=car.clone().sub(eye);
       ray.set(eye,direction.clone().normalize());ray.far=direction.length();
       const hidden=ray.intersectObjects([group.getObjectByName('selva-terrain'),tunnel],true).length>0;
       (hidden?hiddenViews:revealedOpponents).push({observer,target,off});
     }
-    for(const observer of [0.1,0.12,0.16]) {
+    for(const observer of [0.5966,0.5976,0.6097]) {
       const p=placeOnTrack(T,observer*T.TOTAL),q=placeOnTrack(T,jungle.tunnel.toS);
       const eye=new THREE.Vector3(p.x-Math.sin(p.h)*11,p.y+5,p.z-Math.cos(p.h)*11),top=new THREE.Vector3(q.x,q.y+27,q.z),direction=top.clone().sub(eye);
       ray.set(eye,direction.clone().normalize());ray.far=direction.length();
@@ -82,14 +82,14 @@ try {
   await page.screenshot({path:`${output}/overview.png`});
   await page.evaluate(()=>{const {stage,bounds,fitCamera}=selvaProof;fitCamera(stage.camera,bounds,true,'top');stage.renderer.render(stage.scene,stage.camera);});
   await page.screenshot({path:`${output}/top.png`});
-  for(const [name,u,back,lift] of [['entrance',0.445,90,33],['interior',0.465,0,5],['exit',0.505,-65,27]]) {
+  for(const [name,u,back,lift] of [['entrance',0.7425,90,33],['interior',0.7518,0,5],['exit',0.7703,-65,27]]) {
     await page.evaluate(({u,back,lift})=>{
       const {stage,T,placeOnTrack}=selvaProof,p=placeOnTrack(T,u*T.TOTAL),ahead=placeOnTrack(T,u*T.TOTAL+20);
       stage.camera.position.set(p.x-Math.sin(p.h)*back,p.y+lift,p.z-Math.cos(p.h)*back);
       stage.camera.lookAt(back<0?p.x:ahead.x,p.y+(back?10:4),back<0?p.z:ahead.z);stage.camera.near=0.1;stage.camera.updateProjectionMatrix();stage.renderer.render(stage.scene,stage.camera);
     },{u,back,lift});await page.screenshot({path:`${output}/${name}.png`});
   }
-  for(const [name,u,side] of [['river-garden',0.95,-1],['bamboo-grove',0.84,-1],['flower-clearing',0.32,1]]) {
+  for(const [name,u,side] of [['river-garden',0.9768,-1],['bamboo-grove',0.9258,-1],['flower-clearing',0.6845,1],['jaguar-cave',0.094,1],['plateau',0.24,-1]]) {
     await page.evaluate(({u,side})=>{
       const {stage,T,placeOnTrack}=selvaProof,p=placeOnTrack(T,u*T.TOTAL,side*18),camera=placeOnTrack(T,u*T.TOTAL-20,side*5);
       stage.camera.position.set(camera.x,T.terrainAt(camera.x,camera.z)+10,camera.z);
@@ -99,7 +99,7 @@ try {
   await page.close();
   const game=await browser.newPage({viewport:{width:1440,height:900}});game.on('pageerror',e=>errors.push(e.message));
   await game.goto(`${base}/g/derrape/?debug&manual&track=selva`);await game.waitForFunction(()=>window.garage?.car);
-  for(const [name,u] of [['approach',0.425],['tunnel',0.474],['exit',0.51],['river',0.945],['forest',0.12],['bamboo',0.85],['flowers',0.33]]) {
+  for(const [name,u] of [['approach',0.7332],['tunnel',0.756],['exit',0.7727],['river',0.9745],['forest',0.5976],['bamboo',0.9304],['flowers',0.6892],['cave-portal',0.012],['cave-hall',0.094],['plateau',0.22],['ledge',0.4],['ford',0.528]]) {
     await game.evaluate(async u=>{
       const THREE=await import('three');if(race.state!=='go'){await startRace(0);race.state='go';race.count=0;}
       const T=getActiveTrack(),s=u*T.TOTAL,p=T.pointAt(s),ahead=T.pointAt(s+0.5),c=race.player;
@@ -111,7 +111,9 @@ try {
   assert.ok(metrics.finite);assert.ok(metrics.tunnel.length>60);assert.ok(metrics.minCeiling>11);
   assert.deepEqual(metrics.collisions,[],'all racing lanes remain clear');assert.deepEqual(metrics.cameraClips,[],'chase camera clears entrance, passage and exit');
   assert.ok(metrics.intrusion<0.025,'terrain stays below the racing ribbon');assert.ok(metrics.maxGrade<0.3);
-  assert.ok(metrics.ceibas>200);assert.ok(metrics.forestBeyondRoad>120);assert.ok(metrics.triangles<4000000);assert.ok(metrics.drawCalls<850);
+  assert.ok(metrics.ceibas>200);assert.ok(metrics.forestBeyondRoad>120);// The 2.5 km loop (jaguar cave, plateau, ledge) carries about twice the
+  // original valley's planting; the whole-map overview budget scales with it.
+  assert.ok(metrics.triangles<6000000);assert.ok(metrics.drawCalls<1200);
   assert.deepEqual(metrics.missingSpecies,[],'all twelve shared additions are actually planted');
   assert.deepEqual(metrics.plantClearance,[],'plant footprints reserve the full road width');
   assert.deepEqual(metrics.waterErrors,[],'lily pads sit on the river surface within its banks');

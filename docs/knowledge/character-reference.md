@@ -1,8 +1,46 @@
 # Shared capybara and character editor
 
-The character editor lives at `/personaje.html`, inside Pana Studio. Its UI
+## Mi pana wardrobe
+
+The player editor at `/personaje.html` uses `web/character/editor.js` and
+`editor.css`. The hub's Mi pana links and legacy `/#mi-pana` address open it.
+The older sculpt inspection tools remain at `/character/reference.html`; the
+geometry/pose browser suites target that contributor page.
+
+`engine/wardrobe.js` defines the data-only item slots and normalization.
+`avatarToWardrobe()` migrates old avatars; `wardrobeToAvatar()` keeps the old
+fields as fallbacks and adds the normalized `wardrobe` object. Both travel in
+`pana:avatar`, which games, portraits, rooms and the hosted profile already read.
+Only colors belonging to the selected items enter the saved avatar: retaining
+every historic swatch can exceed the room's 2048-character avatar envelope and
+truncate JSON. Imported PANA2 codes pass through the same normalization.
+The editor keeps recognized inactive item colors in its session history, so
+switching hats or clothes preserves earlier color choices. Its draft is scoped
+to the account and saved-avatar baseline, survives a trip to the tienda, and
+does not replace a newer saved profile from another device.
+
+`accessories.js` attaches the supplied editor's geometry to the existing sculpt.
+Games build only selected accessories; the editor builds variants for live
+preview. `wardrobe-look.js` applies the same slots and colors in both contexts.
+Print replacements dispose their previous geometry. Accessory disposal removes
+its roots before releasing materials. Register the pack as `pana-guardarropa`
+in the Studio character catalog.
+
+The editor saves to the game avatar only on **Guardar para jugar**. Hovering,
+trying a preset, importing a code and undo/redo do not equip the saved player.
+The optional `window.PanaWardrobe` adapter lets the hosted gateway supply
+ownership, mango prices and account persistence; public Pana has no economy or
+account dependency. Hosted saves validate ownership on the server before updating
+local storage. The store's Usar/Probar links select a slot through `?slot=&item=`.
+
+`web/tests/creator.browser.js` covers migration, save/reload, malformed codes,
+all accessory geometry with the game profile, mobile layout and a real two-client
+Colyseus wardrobe round trip. `engine/tests/wardrobe.test.js` bounds imported
+data and verifies legacy and multiplayer compatibility.
+
+The sculpt inspection page lives at `/character/reference.html`, inside Pana Studio. Its UI
 remains in `Pana/web/character/`, while the shared sculpt lives in
-`Pana/engine/soft-character/`. It uses the existing Three.js **0.160.0** CDN
+`Pana/engine/models/characters/pana/`. It uses the existing Three.js **0.160.0** CDN
 import map and static web server. The explicit “Usar en los juegos” action
 saves the wardrobe to the existing avatar schema; `engine/models/characters/pana/avatar-model.js`
 adapts this same sculpt for every game. See `pana-studio.md` for the catalog.
@@ -16,7 +54,7 @@ interpretation, not a recovered mesh from the image. The fine fur, phoneme-based
 lip sync, fingers and production costume range are still future work.
 
 ```js
-import { buildSoftCharacter } from '/engine/soft-character/model.js';
+import { buildSoftCharacter } from '/engine/models/characters/pana/model.js';
 
 const pana = buildSoftCharacter({ outfit: 'shirt', color: '#ee3024' });
 scene.add(pana.group);

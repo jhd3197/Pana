@@ -48,7 +48,7 @@ the same tokens.
 ## Table seating
 
 Table games use `createTableSeating(container, onSwap)` from
-`engine/table-seating.js` in the lobby. Call `update(players, { teams, enabled,
+`engine/play/table-seating.js` in the lobby. Call `update(players, { teams, enabled,
 ownId })`; pairs are the alternating seats 0+2 and 1+3, and individual games
 show clockwise seat order. The controls send source/destination array indices;
 game rules validate host authority, phase and revision before swapping. Keep
@@ -60,7 +60,7 @@ unchanged snapshots. Its styles are the shared `.pk-seating` classes.
 - **No emoji, no symbol glyphs** (👑 ⚙ ♥ ↗ 🥭) anywhere in the interface, canvas
   signs included: phones draw them as colour emoji in another font. Use the SVGs
   in `/engine/icons.js` (`ICONS.crown`, `gear`, `share`, `mango`, `juice`, `coin`,
-  `crate`, `back`, `heart`, `heartEmpty`) as `innerHTML`, or `icon(name)` for a
+  `crate`, `back`, `heart`, `heartEmpty`, `thumbUp`, `thumbDown`) as `innerHTML`, or `icon(name)` for a
   node; `.pk-ico` sizes them to 1em. Plain arrows in copy (← →) are fine.
 - **No raw colours in a game's style.css.** Name a game's own colours on its
   `body { --pk-game … }` rule (`--wood: #b5753a;`) and use `var(--wood)`; kit
@@ -102,6 +102,27 @@ right, at the bottom edge, in both orientations.
   in the upper middle.
 - **Pause / settings:** the shared menu; do not build one.
 - **Results:** the shared results screen below; do not build one.
+
+## Power bar and difficulty
+
+Aim-and-shoot games (Billar, Bolas Criollas) put their power on the right edge
+in a `.pk-power` panel. Power is charged, never picked with a slider: hold the
+shot button, Space or Enter and `engine/play/shot-charge.js#shotPower` rises for one
+second, falls for the next and repeats; letting go shoots at that value. The
+meter is a `.pk-charge` track (`role="meter"`) with `.pk-charge-fill` and
+`.pk-charge-marker`, painted by `paintCharge(meter, power, label)`, and shown only
+while charging. Only a real `pointerup` may shoot; lost capture, blur, hidden
+tabs, the menu and a changed revision cancel.
+
+Dice are thrown, not clicked: `engine/play/dice-throw.js#bindDiceThrow` turns a held
+button, Space or a flick across the canvas into a 0–1 power (`throwPower`: a
+longer shake or faster flick throws harder; a tap on the canvas is still a
+click). The rules still pick the number. `createToss` is the pure flight (arc,
+shrinking bounces, a tumble that ends exactly on the rolled face: orientation =
+rotate(axis, turn) · final). Ludo and Bululú use both, and `engine/play/roll-off.js`
+for the opening throw that decides who starts.
+`engine/play/difficulty.js#createDifficultyPicker` renders the shared Fácil–Experto
+choice; `engine/play/aim-guide.js` draws ground guides as flat strips, never 1 px lines.
 
 ## Results screen
 

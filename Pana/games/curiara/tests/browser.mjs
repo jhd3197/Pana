@@ -3,20 +3,20 @@
 // migration, late joiners, touch paddling on a 390 px phone and the offline
 // fallback. Screenshots land in art/curiara.
 import assert from 'node:assert/strict';
-import { createRequire } from 'node:module';
+import { launch, waitPrepared } from '../../../tests/browser-kit.js';
 import { mkdir } from 'node:fs/promises';
-const { chromium } = createRequire(import.meta.url)(process.argv[2] || 'playwright');
-const browser = await chromium.launch({ headless: true }), base = process.env.PANA_QA_URL || 'http://localhost:8461';
+const browser = await launch(), base = process.env.PANA_QA_URL || 'http://localhost:8461';
 const output = 'art/curiara'; await mkdir(output, { recursive: true });
 const errors = [], code = `curiara-${Date.now()}`;
 const check = text => console.log(`ok: ${text}`);
 async function open(name, { mobile = false, room = code, query = '' } = {}) {
   const ctx = await browser.newContext(mobile ? { viewport: { width: 390, height: 844 }, deviceScaleFactor: 1, isMobile: true, hasTouch: true } : { viewport: { width: 860, height: 560 }, deviceScaleFactor: 1 });
-  const p = await ctx.newPage(); p.on('pageerror', e => { errors.push(e.message); console.log('page error:', e.message); });
+  await ctx.addInitScript(() => localStorage.setItem('pana:settings',JSON.stringify({sound:false,music:false,quality:'baja'})));
+ const p = await ctx.newPage(); p.on('pageerror', e => { errors.push(e.message); console.log('page error:', e.message); });
   p.on('console', m => { if (m.type() === 'error' && !m.text().includes('favicon')) console.log('console:', m.text()); });
   await p.goto(`${base}/g/curiara/?room=${room}&name=${name}&debug${query}`);
   await p.waitForFunction(() => window.curiara?.room.connected, null, { timeout: 180000 });
-  return p;
+  await waitPrepared(p); return p;
 }
 const shot = (p, name) => p.screenshot({ path: `${output}/${name}.png`, timeout: 120000 });
 const mine = p => p.evaluate(() => { const b = curiara.state.boats.find(b => b.crew.some(c => c.id === curiara.room.id)); return b && { id: b.id, strokes: b.strokes, remazos: b.remazos, progress: b.progress, capsized: b.capsized, capsizes: b.capsizes, tip: b.tip }; });
@@ -77,9 +77,9 @@ try {
   await p2.waitForFunction(() => curiara.state.players.length === 2, null, { timeout: 60000 });
   await p1.locator('[data-format="parejas"]').click();
   await p2.waitForFunction(() => curiara.state.format === 'parejas', null, { timeout: 60000 });
-  await p1.locator('.seat-boat').nth(1).locator('button').nth(0).click();
+  await p1.locator('#seats [data-roster-move="2"]').click();
   await p2.waitForFunction(() => curiara.state.players.some(p => p.seat?.boat === 1 && p.seat.pos === 0), null, { timeout: 60000 });
-  await p2.locator('.seat-boat').nth(1).locator('button').nth(1).click();
+  await p2.locator('#seats [data-roster-move="3"]').click();
   await p1.waitForFunction(() => curiara.state.players.filter(p => p.seat?.boat === 1).length === 2, null, { timeout: 60000 });
   await shot(p1, 'parejas-lobby');
   await p1.locator('#start').click();

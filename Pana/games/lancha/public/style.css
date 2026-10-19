@@ -1,0 +1,134 @@
+/* Lancha: Pana Kit lobby and HUD over the river. */
+:root{color-scheme:dark}
+*{box-sizing:border-box}
+body{margin:0;overflow:hidden;background:var(--pk-night);color:var(--pk-text);font-family:var(--pk-sans);
+  --pk-game:#e2683c;--pk-game-ink:#1a1336;--stat:#ffd2a8;--turbo:#ffc629;--turbo-full:#ff8a3d;--motor-dead:#ff6b5a;--spray:#e8fbff;--title-shadow:#7a3220}
+button,a,input{-webkit-tap-highlight-color:transparent}
+.hidden{display:none!important}
+#world{position:fixed;inset:0;width:100%;height:100%;display:block}
+
+.topbar{position:fixed;z-index:20;top:0;right:0;padding:18px 20px;pointer-events:none}
+#game-nav{display:flex;gap:8px;pointer-events:auto}
+#game-nav .pk-btn{background:var(--pk-hud)}
+#loading{justify-content:center;align-items:center;text-align:center}
+#loading .pk-ribbon{align-self:center}
+
+/* lobby */
+#lobby .pk-title{--pk-title-shadow:var(--title-shadow);font-size:clamp(40px,5vw,58px)}
+#lobby .pk-stat b{color:var(--stat)}
+.lobby-roster{margin:2px 0 0}
+.lobby-roster .pk-row{min-height:30px;padding:4px 12px 4px 8px;font-size:13px}
+.pk-lobby-room #connection{color:var(--pk-text)}
+.pk-room-code{margin-left:auto;color:var(--pk-teal);font-size:13px;white-space:nowrap}
+.pk-room-code b{font-weight:900}
+.practice{align-self:flex-start;text-decoration:underline}
+.lobby-hint{position:fixed;z-index:4;right:24px;bottom:22px}
+body:not(.in-lobby) .lobby-hint{display:none}
+
+/* HUD */
+#hud{position:fixed;inset:0;pointer-events:none}
+#hud button{pointer-events:auto}
+.race-top{position:absolute;left:24px;top:18px;display:flex;align-items:flex-end;gap:16px}
+.position{display:grid;grid-template-columns:auto auto;align-items:start;font-size:110px;-webkit-text-stroke:3px var(--pk-night);text-shadow:0 6px 0 var(--pk-cocoa)}
+.position b{font-weight:400}
+.position sup{font-size:.4em;vertical-align:0;margin-top:.3em}
+.position #field-size{grid-column:1/-1;-webkit-text-stroke:0;text-shadow:0 1px 3px #000a;color:var(--pk-text);margin-top:4px}
+.race-cards{display:grid;gap:6px;padding-bottom:6px}
+.race-pair{display:flex;gap:6px}
+.race-top .pk-readout{padding:6px 14px;border-radius:12px;min-width:0}
+.race-top .pk-num{font-size:24px;white-space:nowrap}
+#leaderboard{position:absolute;left:24px;top:190px;gap:5px;min-width:200px;max-width:250px}
+#leaderboard .pk-row{min-height:30px;padding:5px 12px 5px 8px;font-size:13px}
+#leaderboard .pk-row-n{width:18px;text-align:center}
+.boat-dot{width:10px;height:10px;border-radius:50%;background:var(--boat);flex:none;box-shadow:0 0 0 2px var(--pk-night)}
+.row-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1}
+.pk-row-end{white-space:nowrap}
+.minimap{position:absolute;right:20px;top:76px;padding:10px 12px;border-radius:14px}
+.map-head{display:flex;justify-content:space-between;align-items:baseline;gap:12px;margin-bottom:6px}
+.map-head b{font:400 14px var(--pk-display);color:var(--pk-yellow);letter-spacing:.5px}
+.map-head small{font:800 10px var(--pk-sans);color:var(--pk-muted)}
+.minimap canvas{display:block;width:120px;height:206px;border-radius:8px;background:var(--pk-deep)}
+.call{position:absolute;left:50%;top:30%;transform:translateX(-50%);font:400 44px/1 var(--pk-display);color:var(--pk-yellow);-webkit-text-stroke:2px var(--pk-night);text-shadow:0 5px 0 var(--pk-coral);white-space:nowrap;animation:call-in .35s ease-out}
+.call.is-soft{font-size:28px;color:var(--pk-text);text-shadow:0 3px 0 var(--pk-cocoa)}
+.call.is-teal{color:var(--pk-teal);text-shadow:0 5px 0 var(--pk-cocoa)}
+@keyframes call-in{from{opacity:0;transform:translateX(-50%) scale(.6)}}
+
+.drive-panel{position:absolute;left:24px;bottom:22px;width:min(440px,calc(100vw - 32px));display:grid;grid-template-columns:auto 1fr;gap:16px;align-items:center;padding:12px 18px;border-radius:18px}
+.gauge{display:grid;justify-items:center;min-width:86px}
+.gauge b{font:400 46px/1 var(--pk-display);color:var(--pk-text)}
+.gauge span{font:800 11px var(--pk-sans);color:var(--pk-muted);letter-spacing:.06em}
+.drive-info{display:grid;gap:7px;min-width:0}
+.meter-head,.drive-foot{display:flex;justify-content:space-between;align-items:baseline;gap:12px;font-size:12px;font-weight:800}
+.meter-head .pk-eyebrow{color:var(--turbo)}
+#turbo-label{color:var(--pk-muted)}
+.turbo-bar{position:relative;height:14px}
+.turbo-bar i{display:block;height:100%;width:0;border-radius:inherit;background:var(--turbo);transition:width .12s linear}
+.turbo-bar.is-ready i{background:var(--turbo-full)}
+/* The half mark: one turbo costs half the meter. */
+.turbo-bar em{position:absolute;left:50%;top:-2px;bottom:-2px;width:2px;background:var(--pk-night)}
+#drive-tip{margin:0;color:var(--pk-yellow);font-size:13px;font-weight:800}
+.motor{color:var(--pk-teal)}
+.motor.is-dead{color:var(--motor-dead)}
+.throttle-state{color:var(--pk-muted);white-space:nowrap}
+.keyboard-hints{position:absolute;right:20px;bottom:22px;font-size:12px}
+.countdown{position:fixed;inset:0;display:grid;place-items:center;pointer-events:none;font:400 150px/1 var(--pk-display);color:var(--pk-yellow);text-shadow:0 7px 0 var(--pk-coral),0 0 2px var(--pk-night)}
+.notice{position:fixed;z-index:12;top:150px;left:50%;transform:translateX(-50%);max-width:calc(100vw - 32px);justify-content:center;text-align:center;pointer-events:none}
+.flash{position:fixed;inset:0;pointer-events:none;background:var(--spray);opacity:0}
+.flash.is-on{animation:flash .5s ease-out}
+@keyframes flash{from{opacity:.8}to{opacity:0}}
+.touch-controls{display:none}
+
+#results{--pk-results-top:76px;--pk-results-dim:.6}
+.result-paper .pk-title{font-size:clamp(36px,6vw,52px)}
+#result-board{margin:4px 0 8px}
+#result-board .pk-row-end{font-variant-numeric:tabular-nums}
+
+@media(max-height:780px){#leaderboard .pk-row:nth-child(n+5):not(.is-me){display:none}}
+@media(pointer:coarse){
+  .keyboard-hints,.lobby-hint{display:none}
+  /* Steering under the left thumb, gas under the right. */
+  .touch-controls{position:absolute;bottom:max(16px,env(safe-area-inset-bottom));left:max(14px,env(safe-area-inset-left));right:max(14px,env(safe-area-inset-right));display:flex;justify-content:space-between;align-items:flex-end;gap:16px;pointer-events:none}
+  .touch-controls>div{pointer-events:auto}
+  .touch-side{display:flex;gap:10px;align-items:flex-end;--pk-touch:64px}
+  .touch-side .pk-touch--lg{--pk-touch:80px;font-size:18px}
+  .touch-side .gas{--pk-touch:96px}
+  /* Turbo over Freno, so both thumbs' buttons fit a 360 px phone. */
+  .touch-stack{display:flex;flex-direction:column;gap:8px;--pk-touch:56px}
+  .touch-side .pk-touch{font-size:15px;padding:0 12px}
+  .drive-panel{left:50%;transform:translateX(-50%);bottom:136px;width:min(420px,calc(100vw - 32px))}
+}
+@media(max-width:720px){
+  .topbar{padding:12px 16px}
+  #game-nav{gap:6px}
+  #game-nav .pk-btn{padding:6px 10px;font-size:12px}
+  #lobby{padding-top:72px}
+  #lobby .pk-copy{font-size:14px}
+  #lobby .pk-stat{padding:8px 10px}
+  #lobby .pk-stat b{font-size:22px}
+  .race-top{left:16px;top:58px;gap:10px}
+  .position{font-size:64px;-webkit-text-stroke:2px var(--pk-night);text-shadow:0 4px 0 var(--pk-cocoa)}
+  .race-top .pk-readout{padding:5px 10px}
+  .race-top .pk-num{font-size:16px}
+  .race-top .pk-eyebrow{font-size:9px}
+  #leaderboard{left:16px;top:200px;min-width:0;width:160px}
+  #leaderboard .pk-row{min-height:26px;padding:3px 8px 3px 6px;font-size:11px;gap:6px}
+  #leaderboard .pk-row:nth-child(n+5):not(.is-me){display:none}
+  .minimap{top:200px;right:16px;padding:6px}
+  .map-head{display:none}
+  .minimap canvas{width:70px;height:120px}
+  .call{font-size:34px;top:40%}
+  .drive-panel{padding:10px 12px;gap:10px}
+  .gauge{min-width:64px}
+  .gauge b{font-size:34px}
+  #drive-tip{display:none}
+  .countdown{font-size:96px}
+  .notice{top:340px;font-size:12px}
+}
+@media(max-height:600px) and (pointer:coarse){
+  .race-top{top:12px;left:12px}.position{font-size:52px}
+  #leaderboard,.minimap{display:none}
+  .drive-panel{bottom:auto;top:12px;left:auto;right:12px;transform:none;width:320px}
+  .topbar{top:auto;right:auto;left:50%;bottom:max(16px,env(safe-area-inset-bottom));padding:0;transform:translateX(-50%)}
+  #game-nav>:not(#menu){display:none}
+}
+@media(prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}

@@ -15,6 +15,7 @@ async function open(game, debug, room, mobile = false) {
   const page = await context.newPage(); page.on('pageerror', e => errors.push(`${game}: ${e.message}`));
   await page.goto(`${base}/g/${game}/?room=${room}&debug`, { waitUntil: 'domcontentloaded' });
   await wait(page, debug => window[debug]?.room.connected && (debug !== 'caidaDebug' || window[debug].world), debug);
+  await wait(page, () => window.PANA_LOBBY_LOADING === false);
   return page;
 }
 const state = (page, debug) => page.evaluate(debug => window[debug].room.state, debug);
@@ -39,6 +40,8 @@ try {
     const code = `${game.slice(0, 2)}-${Date.now().toString(36)}`, a = await open(game, debug, code), b = await open(game, debug, code);
     await wait(a, debug => window[debug].room.isHost, debug);
     await wait(b, () => document.querySelector('#map-choice').disabled);
+    const advancedMap = ['billar', 'caida'].includes(game);
+    if (advancedMap) await a.locator('#pana-room-more').click();
     for (const mapId of maps) {
       await a.selectOption('#map-choice', mapId);
       for (const page of [a, b]) await wait(page, ({ debug, mapId }) => {
@@ -49,6 +52,7 @@ try {
     }
     await attemptMap(b, game, debug, 'puerto'); await a.waitForTimeout(350);
     assert.equal((await state(a, debug)).mapId, 'ruinas');
+    if (advancedMap) await a.locator('#pana-room-done').click();
     await a.locator('#start').click(); await wait(b, debug => window[debug].room.state.phase !== 'lobby', debug);
     await attemptMap(a, game, debug, 'hato'); await a.waitForTimeout(350);
     assert.equal((await state(b, debug)).mapId, 'ruinas');
@@ -62,6 +66,7 @@ try {
     await leave(newcomer, debug); await leave(b, debug);
     console.log(`ok: ${game} all maps agree across peers; guest/mid-round rejection; late join and host change`);
     const mobile = await open(game, debug, `${code}-phone`, true);
+    if (advancedMap) await mobile.locator('#pana-room-more').click();
     for (const mapId of maps) {
       await mobile.selectOption('#map-choice', mapId);
       await wait(mobile, ({ debug, mapId }) => window[debug].room.state.mapId === mapId, { debug, mapId });
@@ -69,6 +74,7 @@ try {
     await mobile.locator('#map-choice').scrollIntoViewIfNeeded();
     assert.equal(await mobile.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
     await mobile.screenshot({ path: `${out}/${game}-phone-picker.png` });
+    if (advancedMap) await mobile.locator('#pana-room-done').click();
     await mobile.locator(game === 'billar' ? '#practice' : '#start').click({ timeout: 30000 });
     await wait(mobile, debug => window[debug].room.state.phase !== 'lobby', debug);
     assert.equal((await state(mobile, debug)).mapId, 'ruinas');
@@ -80,7 +86,7 @@ try {
   page.on('pageerror', e => errors.push(e.message)); await page.goto(`${base}/studio/settings.html`);
   await page.setContent('<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}</script><canvas id="view"></canvas>');
   const proof = await page.evaluate(async () => {
-    const THREE = await import('three'), { createArenaEnvironment } = await import('/engine/arenas.js');
+    const THREE = await import('three'), { createArenaEnvironment } = await import('/engine/worlds/arenas.js');
     const { MAPS } = await import('/studio/catalog/maps.js');
     const scene = new THREE.Scene(), camera = new THREE.PerspectiveCamera(45, 1.6, .1, 300);
     const renderer = new THREE.WebGLRenderer({ canvas: document.querySelector('canvas') }); renderer.setSize(1280, 800);
@@ -107,13 +113,13 @@ try {
     renderer.dispose();
     const { createScene } = await import('/g/pintura/scene.js'), { Arena, spawnsFor } = await import('/g/pintura/rules.js');
     const canvas = document.createElement('canvas'); document.body.append(canvas); const paint = createScene(canvas);
-    for (const id of ['puerto', 'hato', 'ruinas']) {
+    for (const id of ['puerto', 'hato', 'ruinas', 'muelle', 'noche']) {
       const game = new Arena(id); game.add(1, { name: 'Camera', avatar: {} }); game.start();
       for (const spawn of spawnsFor(id)) {
         Object.assign(game.players[0], spawn);
         paint.draw({ ...game.view(), phase: 'lobby' }, 1, .016);
         paint.draw(game.view(), 1, .016);
-        if (paint.camera.position.distanceTo(new THREE.Vector3(spawn.x, 1, spawn.z)) < 5) throw new Error(`Spawn camera inside the pana: ${id}/${JSON.stringify(spawn)}`);
+        if (Math.hypot(paint.camera.position.x - spawn.x, paint.camera.position.z - spawn.z) > .5 || paint.avatars.get(1).group.visible) throw new Error(`First-person camera is not at the pana's eyes: ${id}/${JSON.stringify(spawn)}`);
       }
     }
     paint.dispose(); return records;

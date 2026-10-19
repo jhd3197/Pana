@@ -29,7 +29,7 @@ Proof: `feedback.test.js`, `feedback.browser.js`, `wheels.browser.js` and the
 seeded full-cup browser suite. Existing historical tuning below is superseded
 by the current profile table.
 
-Plan: `docs/plans/50_derrape-custom-wheels.md`. Implemented in
+Implemented in
 `games/derrape/public/wheel-definitions.js` + garage step `2 Cauchos`.
 
 ## Lineup (final profile values)

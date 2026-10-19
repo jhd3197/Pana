@@ -43,7 +43,7 @@ try {
   for(const track of tracks) {
     const result=await page.evaluate(async({track,ids})=>{
       const s=proofScene;if(s.model){s.model.group.removeFromParent();s.preview.release(s.model);}
-      const {makeTrack,getTrack}=await import('/g/derrape/tracks.js'),{applyRaceQuality}=await import('/g/derrape/quality.js');
+      const {makeTrack,getTrack,loadTrack}=await import('/g/derrape/tracks.js');await loadTrack(track);const {applyRaceQuality}=await import('/g/derrape/quality.js');
       const T=makeTrack(getTrack(track)),group=T.build(),roots=[];s.model={group};s.T=T;
       s.preview.ownMaterials(s.model);s.stage.scene.add(group);group.updateMatrixWorld(true);
       group.traverse(o=>{if(ids.includes(o.userData.assetId))roots.push(o);});s.roots=roots;

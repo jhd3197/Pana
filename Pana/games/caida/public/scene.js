@@ -1,27 +1,21 @@
 import * as THREE from 'three';
-import { createArenaSlot } from '/engine/arenas.js';
+import { createTableWorld } from '/engine/worlds/table-world.js';
 import { createGameTable, createGameChair } from '/engine/models/props/game-table.js';
 import { buildCharacter } from '/engine/models/characters/pana/avatar-model.js';
 import { normalizeAvatar } from '/engine/avatar.js';
-import { bindRenderer } from '/engine/settings.js';
+import { createSeatBubbles } from '/engine/play/seat-bubbles.js';
 import { createSpanishCard, createScoreToken } from '/engine/models/props/spanish-cards.js';
-import { deck, previewPlay, teamOf } from './rules.js';
+import { deck, previewPlay, teamOf, MODES } from './rules.js';
 
 const UP = new THREE.Vector3(0, 1, 0), Y = 1.48;
 const LOOKS = [{ hat: 'llanero', outfitColor: '#dc7854' }, { hat: 'pesca', hatColor: '#ddad58', outfitColor: '#4c9385', glasses: 'redondos', face: 'feliz' }, { hat: 'gorra', outfitColor: '#b8c279' }, { hat: 'band', outfitColor: '#c96c59' }];
 
 export async function createCaidaScene(canvas, { onCard, onLoading = () => {} } = {}) {
-  const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' });
-  renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-  renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.04;
-  const unbind = bindRenderer(renderer, 1.5), scene = new THREE.Scene();
-  scene.background = new THREE.Color('#d8c69e'); scene.fog = new THREE.Fog('#d8c69e', 24, 60);
-  const camera = new THREE.PerspectiveCamera(36, innerWidth / innerHeight, .1, 100);
-  scene.add(new THREE.HemisphereLight('#e8f2ed', '#997a57', 2.4));
-  const sun = new THREE.DirectionalLight('#ffe3ad', 3.1); sun.position.set(-6, 14, 8); sun.castShadow = true;
-  sun.shadow.mapSize.set(2048, 2048); Object.assign(sun.shadow.camera, { left: -10, right: 10, top: 10, bottom: -10, near: 1, far: 40 }); sun.shadow.normalBias = .025; sun.shadow.bias = -.0001; scene.add(sun);
-  onLoading('Preparando el patio…'); await new Promise(requestAnimationFrame);
-  const plaza = createArenaSlot(scene, { mode: 'table', plazaScale: .72 }); plaza.setMap('plaza');
+  onLoading('Preparando el patio…');
+  const stage = createTableWorld(canvas, { fit: 'window', exposure: 1.04, background: '#d8c69e', fog: [24, 60], sky: false, fov: 36, plazaScale: .72,
+    hemi: ['#e8f2ed', '#997a57', 2.4], sun: { color: '#ffe3ad', intensity: 3.1, position: [-6, 14, 8], box: 10, far: 40 } });
+  const { renderer, scene, camera, plaza } = stage;
+  await new Promise(requestAnimationFrame);
   const table = createGameTable({ feltColor: '#245e50', caption: 'CAÍDA · ENTRE PANAS' }); scene.add(table);
   const cards = new Map(), chairs = [], characters = [], characterKeys = [], labels = [], tokens = [];
   let state, ownSeat = 0, selected = null, cameraMode = 'patio', disposed = false, time = 0, hover = null, geometryVersion = '', animationId = 0;
@@ -31,16 +25,17 @@ export async function createCaidaScene(canvas, { onCard, onLoading = () => {} } 
     const model = createSpanishCard(card); model.userData.cardId = card.id; scene.add(model);
     cards.set(card.id, { model, target: new THREE.Vector3(-2.45, Y, -.6), rotation: new THREE.Quaternion(), visible: true, playable: false, initialized: false, lift: 0 });
   }
-  for (let seat = 0; seat < 4; seat++) {
+  for (let seat = 0; seat < 6; seat++) {
     const chair = createGameChair(); scene.add(chair); chairs.push(chair);
     const label = document.createElement('div'); label.className = 'world-label'; label.hidden = true; document.getElementById('world-labels').append(label); labels.push(label);
     const scoreTokens = Array.from({ length: 12 }, () => { const token = createScoreToken(); scene.add(token); return token; }); tokens.push(scoreTokens);
   }
+  const bubbles = createSeatBubbles(document.getElementById('world-labels'), 6);
   const angleOf = seat => seat * Math.PI * 2 / (state?.players.length || 2);
   function cameraTarget(immediate = false) {
     const mobile = innerWidth < 700, angle = angleOf(ownSeat) + (cameraMode === 'mesa' ? .02 : .17);
     const crowded = (state?.players.length || 2) > 2;
-    const radius = mobile ? cameraMode === 'mesa' ? 7.5 : crowded ? 18 : 15 : cameraMode === 'mesa' ? 6.8 : 10.4;
+    const radius = mobile ? cameraMode === 'mesa' ? 7.5 : crowded ? 18 : 15 : cameraMode === 'mesa' ? 6.8 : (state?.players.length > 4 ? 12.2 : 10.4);
     const height = mobile ? cameraMode === 'mesa' ? 20 : crowded ? 23 : 19 : cameraMode === 'mesa' ? 15.5 : 12.4;
     desiredCamera.set(Math.sin(angle) * radius, height, Math.cos(angle) * radius); target.set(0, mobile ? 1.2 : .45, 0);
     camera.aspect = innerWidth / innerHeight; camera.fov = mobile ? 42 : 36;
@@ -52,23 +47,23 @@ export async function createCaidaScene(canvas, { onCard, onLoading = () => {} } 
   async function syncCharacters(players) {
     for (const p of players) {
       if (disposed) return;
-      const avatar = normalizeAvatar(p.id === null ? LOOKS[p.seat] : p.avatar), key = JSON.stringify(avatar);
+      const avatar = normalizeAvatar(p.id === null ? LOOKS[p.seat % LOOKS.length] : p.avatar), key = JSON.stringify(avatar);
       if (characterKeys[p.seat] !== key) {
         characterKeys[p.seat] = key; characters[p.seat]?.dispose();
         const character = buildCharacter(avatar, { seated: true }); characters[p.seat] = character; scene.add(character.group);
       }
       const character = characters[p.seat], a = angleOf(p.seat);
-      chairs[p.seat].position.set(Math.sin(a) * 4.05, 0, Math.cos(a) * 4.05); chairs[p.seat].rotation.y = a + Math.PI;
+      chairs[p.seat].position.set(Math.sin(a) * (players.length > 4 ? 4.65 : 4.05), 0, Math.cos(a) * (players.length > 4 ? 4.65 : 4.05)); chairs[p.seat].rotation.y = a + Math.PI;
       character.group.position.copy(chairs[p.seat].position); character.group.position.y = .76; character.group.rotation.y = a + Math.PI; character.group.visible = true;
       renderer.render(scene, camera); await new Promise(requestAnimationFrame);
     }
-    for (let i = players.length; i < 4; i++) { if (characters[i]) characters[i].group.visible = false; }
+    for (let i = players.length; i < 6; i++) { if (characters[i]) characters[i].group.visible = false; }
   }
   onLoading('Barajando las cartas…');
   await syncCharacters(LOOKS.slice(0, 2).map((_, seat) => ({ seat, id: null })));
 
   function update(value, seat, chosen = null) {
-    if (disposed) return; state = value; plaza.setMap(state.mapId); ownSeat = Math.max(0, seat); selected = chosen; cameraTarget();
+    if (disposed) return; state = value; const tableScale = state.players.length > 4 ? 1.15 : 1; table.scale.set(tableScale, 1, tableScale); plaza.setMap(state.mapId); ownSeat = Math.max(0, seat); selected = chosen; cameraTarget();
     const version = JSON.stringify(state.players.map(p => [p.id, p.avatar]));
     if (version !== geometryVersion) { geometryVersion = version; syncCharacters(state.players); }
     const preview = selected ? previewPlay(state, state.players[ownSeat].hand.find(c => c.id === selected), ownSeat) : null;
@@ -97,21 +92,22 @@ export async function createCaidaScene(canvas, { onCard, onLoading = () => {} } 
       } else {
         const n = state.stock.findIndex(c => c.id === id); entry.target.set(-2.35, Y + Math.max(0, n) * .024, -.4); entry.rotation.identity();
       }
+      entry.target.x *= tableScale; entry.target.z *= tableScale;
       entry.model.userData.faceUp(face); entry.model.userData.highlight(id === selected || preview?.capture.includes(id));
       if (newlyPlayed && lastPlay && (lastPlay.card.id === id || lastPlay.captured.includes(id))) entry.lift = reduced.matches ? 0 : 1;
       if (!entry.initialized || reduced.matches) { entry.model.position.copy(entry.target); entry.model.quaternion.copy(entry.rotation); entry.initialized = true; }
       entry.zone = zone;
     }
-    for (let i = 0; i < 4; i++) {
+    for (let i = 0; i < 6; i++) {
       const p = state.players[i]; chairs[i].visible = !!p; labels[i].hidden = !p || (i === seat && state.phase === 'playing');
       tokens[i].forEach((token, j) => {
         token.visible = !!p && j < Math.min(12, state.scores[teamOf(state, i)] || 0);
-        const a = angleOf(i); token.position.set(-2.3 + (j % 4) * .22, Y + Math.floor(j / 4) * .04, 2.2).applyAxisAngle(UP, a);
+        const a = angleOf(i); token.position.set((-2.3 + (j % 4) * .22) * tableScale, Y + Math.floor(j / 4) * .04, 2.2 * tableScale).applyAxisAngle(UP, a);
       });
       if (!p) continue;
       const label = labels[i]; label.replaceChildren(); label.classList.toggle('active', state.phase === 'playing' && state.turn === i);
       const title = document.createElement('strong'), note = document.createElement('span'); title.textContent = p.id === null ? `${p.name} · bot` : p.name;
-      note.textContent = state.phase === 'dealing' && state.dealer === i ? 'Reparte' : p.announced ? `${p.announced.name} · +${p.announced.points}` : state.phase === 'playing' && state.turn === i ? 'Su turno' : i === seat ? 'Tu puesto' : state.options.mode === 'teams' && i % 2 === ownSeat % 2 ? 'Tu pareja' : 'En la mesa'; label.append(title, note);
+      note.textContent = state.phase === 'dealing' && state.dealer === i ? 'Reparte' : p.announced ? `${p.announced.name} · +${p.announced.points}` : state.phase === 'playing' && state.turn === i ? 'Su turno' : i === seat ? 'Tu puesto' : MODES[state.options.mode].teams && i % 2 === ownSeat % 2 ? state.players.length > 4 ? 'Tu equipo' : 'Tu pareja' : 'En la mesa'; label.append(title, note);
     }
   }
   const cursor = new THREE.Vector2(), ray = new THREE.Raycaster(); let down;
@@ -125,7 +121,7 @@ export async function createCaidaScene(canvas, { onCard, onLoading = () => {} } 
   const pointerUp = e => { if (down && Math.hypot(down[0] - e.clientX, down[1] - e.clientY) < 12) { const id = pick(e); if (id) onCard?.(id); } down = null; };
   canvas.addEventListener('pointermove', pointerMove); canvas.addEventListener('pointerdown', pointerDown); canvas.addEventListener('pointerup', pointerUp);
   function frame(dt) {
-    if (disposed) return; time += dt; plaza.update(time); camera.position.lerp(desiredCamera, 1 - Math.exp(-dt * 5)); camera.lookAt(target);
+    if (disposed) return; time += dt; bubbles.tick(dt); camera.position.lerp(desiredCamera, 1 - Math.exp(-dt * 5)); camera.lookAt(target);
     for (const [id, card] of cards) {
       card.lift = Math.max(0, card.lift - dt * 1.6); const dest = card.target.clone(); dest.y += Math.sin(card.lift * Math.PI) * .7 + (id === hover ? .08 : 0);
       card.model.position.lerp(dest, reduced.matches ? 1 : 1 - Math.exp(-dt * 9)); card.model.quaternion.slerp(card.rotation, reduced.matches ? 1 : 1 - Math.exp(-dt * 10));
@@ -137,14 +133,16 @@ export async function createCaidaScene(canvas, { onCard, onLoading = () => {} } 
       c.arms.forEach((arm, j) => arm.rotation.set(-.62 - (active ? .08 : 0), 0, (j ? -1 : 1) * .13));
       projected.copy(c.group.position); projected.y = 3.1; projected.project(camera);
       labels[i].style.left = `${THREE.MathUtils.clamp((projected.x * .5 + .5) * innerWidth, 65, innerWidth - 65)}px`; labels[i].style.top = `${(-projected.y * .5 + .5) * innerHeight}px`;
+      bubbles.place(i, (projected.x * .5 + .5) * innerWidth, (-projected.y * .5 + .5) * innerHeight);
     });
-    renderer.render(scene, camera);
+    stage.draw(dt);
   }
   const resize = () => { renderer.setSize(innerWidth, innerHeight); cameraTarget(); }; addEventListener('resize', resize);
   return { scene, camera, renderer, cards, characters, update, frame, setView(value) { cameraMode = value; cameraTarget(); },
+    say: bubbles.say,
     dispose() {
-      disposed = true; unbind(); removeEventListener('resize', resize); canvas.removeEventListener('pointermove', pointerMove); canvas.removeEventListener('pointerdown', pointerDown); canvas.removeEventListener('pointerup', pointerUp);
-      cards.forEach(c => c.model.userData.dispose()); tokens.flat().forEach(t => t.userData.dispose()); characters.forEach(c => c?.dispose()); chairs.forEach(c => c.userData.dispose()); labels.forEach(l => l.remove()); table.userData.dispose(); plaza.dispose(); renderer.dispose();
+      disposed = true; removeEventListener('resize', resize); canvas.removeEventListener('pointermove', pointerMove); canvas.removeEventListener('pointerdown', pointerDown); canvas.removeEventListener('pointerup', pointerUp);
+      cards.forEach(c => c.model.userData.dispose()); tokens.flat().forEach(t => t.userData.dispose()); characters.forEach(c => c?.dispose()); chairs.forEach(c => c.userData.dispose()); labels.forEach(l => l.remove()); bubbles.dispose(); table.userData.dispose(); stage.dispose();
     },
   };
 }

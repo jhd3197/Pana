@@ -1,0 +1,61 @@
+/* ¿Quién quiere ser mi pana?: the night studio fills the window; the question
+   panel sits at the bottom and the pana's own ladder on the right. The game's
+   own colours are named custom properties on this rule (--pk-game matches
+   game.json). */
+body { --pk-game: #d9a21b; --qq-gold: #f2b632; --qq-right: #2fbf6b; --qq-wrong: #e0403c; --qq-stage: #241a52;
+  --qq-picked: #5a4100; --qq-right-fill: #135c34; --qq-wrong-fill: #5c1716;
+  margin: 0; overflow: hidden; background: var(--pk-night); color: var(--pk-text); font-family: var(--pk-sans); }
+#world { position: fixed; inset: 0; width: 100%; height: 100%; display: block; touch-action: manipulation; }
+#world-labels { position: fixed; inset: 0; pointer-events: none; z-index: 2; }
+.world-label { position: fixed; transform: translate(-50%, -100%); padding: 4px 10px 3px; border: 1px solid var(--pk-line); border-radius: var(--pk-r-sm);
+  background: var(--pk-hud); color: var(--pk-text); font-size: 12px; font-weight: 900; white-space: nowrap; box-shadow: var(--pk-drop); }
+body.in-lobby .world-label { display: none; }
+.topbar { position: fixed; top: 16px; left: 20px; right: 20px; display: flex; align-items: center; justify-content: space-between; z-index: 4; }
+#game-nav { display: flex; gap: 8px; }
+#lobby { position: fixed; left: 24px; top: 84px; bottom: 32px; width: min(360px, calc(100vw - 48px)); overflow-y: auto; z-index: 3; }
+
+.quiz-panel { position: fixed; left: 50%; bottom: 30px; transform: translateX(-50%); width: min(760px, calc(100vw - 24px)); display: grid; gap: 8px; z-index: 3; padding: 12px 14px; }
+.quiz-top { display: flex; justify-content: space-between; align-items: center; }
+.quiz-top .pk-eyebrow { color: var(--qq-gold); }
+.clock { font-size: 22px; min-width: 2ch; text-align: right; }
+.clock.hurry { color: var(--qq-wrong); }
+.timer { height: 6px; }
+.timer i { background: var(--qq-gold); }
+.question { margin: 0; font-size: clamp(17px, 2.4vw, 22px); line-height: 1.2; }
+.host-line { margin: 0; color: var(--pk-muted); font-style: normal; min-height: 1.2em; }
+.host-line::before { content: 'Animador: '; color: var(--qq-gold); font-weight: 900; }
+.answers { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.answers[hidden], .copy-list[hidden], .comodines [hidden] { display: none; }
+.answer { display: flex; align-items: center; gap: 10px; min-height: 42px; padding: 6px 12px; border: 2px solid var(--pk-line-strong); border-radius: 999px;
+  background: var(--qq-stage); color: var(--pk-text); font: 700 15px/1.15 var(--pk-sans); text-align: left; cursor: pointer; }
+.answer b { color: var(--qq-gold); font-size: 17px; }
+.answer:hover:not(:disabled) { border-color: var(--qq-gold); }
+.answer:disabled { cursor: default; }
+.answer.picked { border-color: var(--qq-gold); background: var(--qq-picked); }
+.answer.gone { visibility: hidden; }
+.answer.right { border-color: var(--qq-right); background: var(--qq-right-fill); }
+.answer.wrong { border-color: var(--qq-wrong); background: var(--qq-wrong-fill); }
+.answers.locked .answer:not(.picked):not(.right) { opacity: .5; }
+.bets .answer { justify-content: space-between; }
+.copy-list { display: flex; flex-wrap: wrap; gap: 6px; }
+.copy-list::before { content: '¿De quién te copias?'; width: 100%; color: var(--pk-muted); font-size: 13px; }
+.comodines { display: flex; flex-wrap: wrap; gap: 6px; }
+.comodines button.on { background: var(--qq-gold); color: var(--pk-yellow-ink); }
+.event { margin: 0; color: var(--pk-text); font-size: 13px; min-height: 1em; }
+
+.ladder { position: fixed; right: 18px; top: 84px; width: 168px; padding: 10px 12px; z-index: 3; }
+.ladder ol { list-style: none; margin: 6px 0 0; padding: 0; display: flex; flex-direction: column-reverse; gap: 2px; }
+.ladder li { display: flex; justify-content: space-between; padding: 2px 8px; border-radius: 6px; font-size: 13px; font-weight: 700; color: var(--pk-muted); }
+.ladder li.safe { color: var(--pk-text); }
+.ladder li.safe { box-shadow: inset 3px 0 0 var(--qq-gold); }
+.ladder li.here { background: var(--qq-gold); color: var(--pk-yellow-ink); }
+.ladder li.top { color: var(--qq-gold); }
+
+.connection { position: fixed; left: 50%; bottom: 6px; transform: translateX(-50%); display: flex; gap: 8px; align-items: center; font-size: 12px; z-index: 3; }
+
+@media (max-width: 900px) { .ladder { display: none; } }
+@media (max-width: 560px) {
+  .answers { grid-template-columns: 1fr; gap: 6px; }
+  .answer { min-height: 40px; font-size: 14px; }
+  .quiz-panel { bottom: 24px; gap: 6px; padding: 10px; }
+}

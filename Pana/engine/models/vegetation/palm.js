@@ -1,55 +1,31 @@
 import * as THREE from 'three';
-import { M, mesh, rng } from '/engine/models/core/primitives.js';
-import { leafBlade } from '/engine/models/core/botanical-shapes.js';
-import { bake } from '/engine/models/core/static-batch.js';
-import { bark, bladeMat, ribbon, frondMats } from '/engine/models/vegetation/canopy.js';
-import { natureSurface } from '/engine/models/core/nature-surface.js';
+import { palmTrunk, pinnateFrond, newParts, finishTree, paint, TAU, treeDetail } from '/engine/models/vegetation/tree-kit.js';
+import { rng } from '/engine/random.js';
 
-export function palm({ h = 8, seed = 1 } = {}) {
-  const r = rng(seed), g = new THREE.Group();
-  const bend = 0.6 + r() * 1.1, turn = r() * Math.PI * 2;
-  const dx = Math.cos(turn) * bend, dz = Math.sin(turn) * bend;
-  const trunkGeo = new THREE.CylinderGeometry(0.18, 0.36, h, 12, 18);
-  const p = trunkGeo.attributes.position;
-  for (let i = 0; i < p.count; i++) {
-    const t = (p.getY(i) + h / 2) / h;
-    p.setXYZ(i, p.getX(i) + dx * t * t, p.getY(i) + h / 2, p.getZ(i) + dz * t * t);
-  }
-  trunkGeo.computeVertexNormals();
-  g.add(mesh(natureSurface(trunkGeo, 'bark'), bark));
-  const collar = M(0xb69a6a, { roughness: 1, flatShading: false });
-  for (let i = 1; i < 20; i++) {
-    const t = i / 21;
-    const ring = mesh(new THREE.TorusGeometry(0.36 - t * 0.18, 0.017, 3, 9), collar, dx * t * t, h * t, dz * t * t);
-    ring.rotation.x = Math.PI / 2;
-    g.add(ring);
-  }
-  const n = 8 + seed % 3;
-  for (let i = 0; i < n; i++) {
-    const frond = new THREE.Group();
-    frond.position.set(dx, h - 0.1, dz);
-    frond.rotation.y = i / n * Math.PI * 2 + r() * 0.25;
-    const length = 3.2 + r() * 1.2, rise = 0.8 + r() * 0.7, droop = 0.85 + r() * 0.75;
-    frond.add(mesh(ribbon(length, 0.065, rise, droop), frondMats[2]));
-    for (let k = 1; k < 10; k++) {
-      const t = k / 10;
-      const leafletLength = (0.35 + Math.sin(t * Math.PI) * 0.85) * (length / 3.7);
-      for (const side of [-1, 1]) {
-        const leaf = mesh(ribbon(leafletLength * (1 + side * 0.06), 0.16, 0.04, 0.24 + t * 0.2, k, 5), frondMats[(i + k) % 3], t * length, Math.sin(t * Math.PI * 0.85) * rise - t * t * droop, 0);
-        leaf.rotation.y = side * (0.9 + t * 0.35);
-        frond.add(leaf);
-      }
+// Cocotero: a curved ringed trunk, fronds with real leaflets, dry fronds
+// hanging below, an upright new spear and a cluster of coconuts. `h` is the
+// trunk height.
+export function palm({ h = 8, seed = 1, detail = 'game', leaves = true, fruit = true, scale = h / 9.25 } = {}) {
+  const r = rng(seed), s = scale, level = treeDetail(detail), lite = level !== 'full', low = level === 'low' || level === 'far', group = new THREE.Group(), parts = newParts();
+  const trunk = palmTrunk(group, r, { height: (8.5 + r() * 1.5) * s, base: 0.24 * s, top: 0.16 * s, lean: 0.12 + r() * 0.08, bend: 0.12, rings: 2.6 / s, bark: 0x7d6a55, barkLight: 0xa8957a, flare: 0.6 });
+  if (leaves) {
+    const fronds = low ? 8 : lite ? 10 : 16;
+    for (let i = 0; i < fronds; i++) {
+      const a = i * 2.39996 + r() * 0.3, t = i / fronds, dry = i >= fronds - 3 ? 0.7 + r() * 0.3 : 0;
+      pinnateFrond(parts, r, trunk.top, a, { length: (3.6 + r() * 0.8) * s * (dry ? 0.9 : 1), rise: dry ? -0.2 : 0.75 - t * 0.75, droop: dry ? 0.9 : 0.85 + t * 0.5, leaflets: 22, leafLen: 1.15 * s, color: i % 3 ? 0x4f8f2f : 0x5c9a34, dry, lite, low });
     }
-    g.add(frond);
+    pinnateFrond(parts, r, trunk.top, r() * TAU, { length: 1.4 * s, rise: 1.3, droop: 0.5, leaflets: 10, leafLen: 0.55 * s, color: 0x8cbf4a, lite, low });
   }
-  for (let i = 0; i < 3; i++) {
-    const a = i * 2.1;
-    g.add(mesh(new THREE.SphereGeometry(0.24, 8, 6), M(0x73502c, { flatShading: false }), dx + Math.cos(a) * 0.28, h - 0.25, dz + Math.sin(a) * 0.28));
+  if (fruit) {
+    const count = lite ? 5 : 9;
+    for (let i = 0; i < count; i++) {
+      const a = i / count * TAU + r() * 0.4, out = 0.26 * s, y = -0.25 * s - (i % 3) * 0.09 * s, nut = new THREE.SphereGeometry(0.17 * s, 10, 8);
+      nut.scale(1, 1.15, 1);
+      const tint = new THREE.Color(i % 4 ? 0x6f9a2e : 0x8a6a2a), shade = tint.clone().multiplyScalar(0.6);
+      paint(nut, (c, x, yy) => c.copy(shade).lerp(tint, 0.5 + yy * 2));
+      nut.translate(trunk.top.x + Math.cos(a) * out, trunk.top.y + y, trunk.top.z + Math.sin(a) * out);
+      parts.fruit.push(nut);
+    }
   }
-  // Upright new growth breaks the flat umbrella silhouette.
-  for (let i = 0; i < 3; i++) {
-    const spear = mesh(natureSurface(leafBlade(1.45, 0.16, 0.2, 0x92b854, 7), 'foliage'), bladeMat, dx, h - 0.1, dz);
-    spear.rotation.set(0, i * 2.1, 1.0); g.add(spear);
-  }
-  const result = bake(g); result.name = 'palm'; g.traverse(o => o.geometry?.dispose()); return result;
+  return finishTree(group, parts, 'palm', { crownRadius: 3.5 * s, petals: null });
 }

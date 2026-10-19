@@ -71,8 +71,8 @@ remain outside static batches. Ranch models are never copied into game code.
 
 ## Rooms and controls
 
-`network.js` uses the existing `/ws` relay with `game: galope` and payload marker
-`galope-v1`. The oldest member simulates at 20 Hz and broadcasts the whole race.
+`network.js` extends `HostRoom` (the generic relay room) with payload marker
+`galope-v2`. The oldest member simulates at 20 Hz and broadcasts the whole race.
 Delayed render frames catch up in 50 ms physics steps (at most one second per
 network tick), publishing once so a busy GPU does not slow every simulated step.
 Migration restores the latest snapshot and removes departed humans. Guest inputs
@@ -145,7 +145,7 @@ mounted horse from chase/side views and at 390 px. Proof is under ignored
 Rules that used to live in AGENTS.md (paths are relative to `Pana/`). Keep them
 true when you change this area.
 
-Galope uses a host simulation at 20 Hz (`galope-v1`), with ordered route gates,
+Galope uses a host simulation at 20 Hz (`galope-v2`), with ordered route gates,
 bots, snapshots and host migration. `games/galope/public/course.js` owns the
 482 m horse circuit, terrain and water depth; `scene.js` uses the shared ranch,
 plants and fauna. Late arrivals spectate until replay. Keep decorations outside
@@ -168,3 +168,32 @@ real water depth and paused render time; dispose the bed texture and instance
 resources. `course.DAYLIGHT` supplies its live scene and Studio tour palette.
 
 Plan 56: the lagoon dock at (87,45) reuses landingShelter from the Delta model family, with a 2.4 by 3 m footprint. Course and collision rules remain unchanged.
+
+## Room options
+
+The shared room-options panel edits validated lobby options on the host. Options
+are included in race snapshots, restored on migration, and locked while racing.
+Eight humans remain supported; bots fill to six when fewer humans join.
+
+Llanos retains the original clockwise circuit. Morichal is explicitly a reverse
+variant, starting beside the existing palm creek at 69% of the circuit. Its
+ordered progress is independent of world spline distance; use `routeAt()` and
+`distanceAhead()` when working with reverse races. Both share the safe 9 m
+corridor. Enabled shortcuts remove the off-trail speed penalty, allowing inside
+cuts without bypassing ordered checkpoints or entering ranch buildings.
+
+Two/three laps change the finish gates and time limit. Obstacles select one,
+three or six rendered logs; crazy jumps raise clearance from .5 to .95 m and
+jump velocity from 5.9 to 7.4 m/s. Jump help launches before the next log. Rain
+reduces top speed to 92%; storm to 82% and adds wind steering. A bounded 240-point
+rain draw and darker light/fog make weather visible. Rebufo grants 15% top speed
+behind a rider within nine route metres and ten world metres. Random coats use a
+seeded draw at race start, preserved in snapshots.
+
+`options.test.js` covers rule effects; `race-options.browser.js` uses two real
+clients for shared settings, authority, scene changes and host migration in both
+Galope and Curiara.
+
+Opening a local race keeps the current room options and map while creating a fresh lobby and clearing network participants. This also applies to offline fallback after a disconnect.
+
+Random coats are fixed for a running race; late-join hello refreshes update the avatar without replacing the assigned horse. Restablecer also enables bot fill again.

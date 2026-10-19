@@ -17,7 +17,7 @@ const shot = async (page, name) => { if (out) await page.screenshot({ path: `${o
 
 async function player(name, query = '', context = {}) {
   const ctx = await browser.newContext({ viewport: { width: 1100, height: 700 }, ...context });
-  await ctx.addInitScript((n) => localStorage.setItem('pana:name', n), name);
+  await ctx.addInitScript((n) => { localStorage.setItem('pana:name', n); localStorage.setItem('pana:settings', JSON.stringify({ quality: 'baja', sound: false })); }, name);
   const page = await ctx.newPage();
   page.on('pageerror', (e) => errors.push(`${name}: ${e}`));
   page.on('console', (m) => { if (m.type() === 'error' && !/WebGL|GPU stall/.test(m.text())) errors.push(`${name} console: ${m.text()}`); });
@@ -46,8 +46,17 @@ try {
   await all(pages, () => embuste.lobby.players.length === 4);
   assert.equal(await a.evaluate(() => embuste.lobby.isHost), true, 'the lead hosts');
   assert.equal(await b.isDisabled('#start'), true, 'guests cannot start');
-  await a.click('#opt-bots');
-  await until(b, () => document.getElementById('opt-bots').getAttribute('aria-checked') === 'false');
+  await a.click('#pana-room-more');
+  await a.click('[data-room-option="reveal"][data-value="false"]');
+  await a.click('[data-room-option="chat"][data-value="false"]');
+  await until(b, () => embuste.lobby.reveal === false && embuste.lobby.chat === false);
+  await b.click('#pana-room-more');
+  assert.equal(await b.isDisabled('[data-room-option="reveal"][data-value="true"]'), true);
+  await b.click('#pana-room-done');
+  await a.click('#pana-room-reset'); await a.click('#pana-room-done');
+  await until(b, () => embuste.lobby.reveal === true && embuste.lobby.chat === true);
+  await a.click('[data-room-option="bots"][data-value="false"]');
+  await until(b, () => document.querySelector('[data-room-option="bots"][data-value="false"]').getAttribute('aria-pressed') === 'true');
   step('lobby: four panas, the lead hosts, bots off for everyone');
 
   // ---------- secret roles ----------

@@ -90,7 +90,9 @@ function cleanProfile(profile) {
   };
 }
 
-export function migrateProfile({ profile = null, setup = null, trophies = null, wallet = null } = {}) {
+// wheels is the old 'derrape:wheels' value (a bare caucho id): it moves into
+// the wallet the first time, then the profile owns the choice.
+export function migrateProfile({ profile = null, setup = null, trophies = null, wallet = null, wheels = null } = {}) {
   const current = profile?.version === PROFILE_VERSION;
   const result = current ? cleanProfile(profile) : {
     ...newProfile(),
@@ -112,6 +114,7 @@ export function migrateProfile({ profile = null, setup = null, trophies = null, 
   for (const [id, trophy] of Object.entries(trophies && typeof trophies === 'object' && !Array.isArray(trophies) ? trophies : {})) {
     if (LEGACY_CUP_ALIASES[id]) putLegacy(result.legacyTrophies, id, trophy, id);
   }
+  if (typeof wheels === 'string' && !profile?.wallet?.wheel) result.wallet.wheel = wheels;
   return cleanProfile(result);
 }
 
@@ -164,6 +167,7 @@ export function createProfileStore(storage) {
       setup: parse(get('derrape:setup')),
       trophies: parse(get('derrape:trophies')),
       wallet: parse(get('derrape:wallet')),
+      wheels: get('derrape:wheels'),
     });
     memory = migrated;
     if (!rawProfile || JSON.stringify(rawProfile) !== JSON.stringify(migrated)) save(migrated);

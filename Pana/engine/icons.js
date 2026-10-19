@@ -8,6 +8,15 @@ const svg = (body, label = '') =>
 const INK = '#16161a';
 
 export const ICONS = {
+  'wardrobe-pelaje': svg("<path d=\"M12 20c-3 0-5 3-5 6 0 4 3 6 6 5 2-.5 3-1 7-1s5 .5 7 1c3 1 6-1 6-5 0-3-2-6-5-6-4 0-4-4-8-4s-4 4-8 4z\"/><circle cx=\"9\" cy=\"11\" r=\"3\"/><circle cx=\"16\" cy=\"7\" r=\"3\"/><circle cx=\"24\" cy=\"7\" r=\"3\"/><circle cx=\"31\" cy=\"11\" r=\"3\"/>"),
+  'wardrobe-cara': svg("<circle cx=\"20\" cy=\"20\" r=\"14\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"3.4\"/><circle cx=\"14.5\" cy=\"17\" r=\"2.4\"/><circle cx=\"25.5\" cy=\"17\" r=\"2.4\"/><path d=\"M13 23c3 5 11 5 14 0\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"3.4\" stroke-linecap=\"round\"/>"),
+  'wardrobe-cabeza': svg("<path d=\"M7 25c0-9 6-15 13-15s13 6 13 15z\"/><path d=\"M5 26h30a2 2 0 0 1 0 4H5a2 2 0 0 1 0-4z\"/><circle cx=\"20\" cy=\"8\" r=\"2.6\"/>"),
+  'wardrobe-lentes': svg("<circle cx=\"11\" cy=\"22\" r=\"7\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"3.4\"/><circle cx=\"29\" cy=\"22\" r=\"7\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"3.4\"/><path d=\"M18 21c1.5-1.5 2.5-1.5 4 0M4 20l-1-6M36 20l1-6\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"3\" stroke-linecap=\"round\"/>"),
+  'wardrobe-ropa': svg("<path d=\"M14 6l-9 5 3 8 4-2v17h16V17l4 2 3-8-9-5c-1 3-3 5-6 5s-5-2-6-5z\"/>"),
+  'wardrobe-cuello': svg("<path d=\"M8 8c0 11 5 17 12 17S32 19 32 8\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"3.2\" stroke-linecap=\"round\"/><circle cx=\"20\" cy=\"30\" r=\"6\"/>"),
+  'wardrobe-espalda': svg("<rect x=\"9\" y=\"11\" width=\"22\" height=\"24\" rx=\"6\"/><path d=\"M15 11V9a5 5 0 0 1 10 0v2\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"3\"/><rect x=\"13\" y=\"24\" width=\"14\" height=\"7\" rx=\"2\" fill=\"var(--panel)\"/>"),
+  dice: svg('<rect x="5" y="5" width="30" height="30" rx="7" fill="none" stroke="currentColor" stroke-width="3"/><g fill="currentColor"><circle cx="13" cy="13" r="3"/><circle cx="27" cy="27" r="3"/><circle cx="13" cy="27" r="3"/><circle cx="27" cy="13" r="3"/></g>'),
+  close: svg('<path d="m10 10 20 20M30 10 10 30" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round"/>'),
   chevronLeft: svg('<path d="m24 10-8 10 8 10" fill="none" stroke="currentColor" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>'),
   plus: svg('<path d="M20 9v22M9 20h22" fill="none" stroke="currentColor" stroke-width="6" stroke-linecap="round"/>'),
   chevronRight: svg('<path d="m16 10 8 10-8 10" fill="none" stroke="currentColor" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>'),
@@ -28,7 +37,10 @@ export const ICONS = {
   gear: svg(`<path d="M17 3h6l1 5 4 2 4-3 4 4-3 4 2 4 5 1v6l-5 1-2 4 3 4-4 4-4-3-4 2-1 5h-6l-1-5-4-2-4 3-4-4 3-4-2-4-5-1v-6l5-1 2-4-3-4 4-4 4 3 4-2z" fill="currentColor"/><circle cx="20" cy="20" r="6" fill="var(--pk-night, #0e0b24)"/>`),
   share: svg(`<path d="M14 8h18v18" fill="none" stroke="currentColor" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M31 9L9 31" stroke="currentColor" stroke-width="4.5" stroke-linecap="round"/>`),
   heart: svg(`<path d="M20 34S5 25 5 14c0-5 4-8 8-8 3 0 6 2 7 5 1-3 4-5 7-5 4 0 8 3 8 8 0 11-15 20-15 20z" fill="#ff4b4b" stroke="${INK}" stroke-width="2.5" stroke-linejoin="round"/>`),
-  heartEmpty: svg(`<path d="M20 34S5 25 5 14c0-5 4-8 8-8 3 0 6 2 7 5 1-3 4-5 7-5 4 0 8 3 8 8 0 11-15 20-15 20z" fill="none" stroke="currentColor" stroke-width="3" stroke-linejoin="round" opacity=".5"/>`),
+  camera: svg('<circle cx="12" cy="11" r="5.5" fill="currentColor"/><circle cx="24" cy="11" r="5.5" fill="currentColor"/><rect x="5" y="17" width="23" height="15" rx="3.5" fill="currentColor"/><path d="M28 22l8-4.5v14L28 27z" fill="currentColor"/>'),
+  thumbUp: svg('<path d="M5 18h6v16H5z" fill="currentColor"/><path d="M13 18l6-12c3 0 5 2 4.4 5.4L22.6 16h9.4c2.4 0 4 2.1 3.4 4.4l-2.7 10.8c-.5 1.8-2 2.8-3.9 2.8H13z" fill="currentColor"/>', 'A favor'),
+  thumbDown: svg('<g transform="rotate(180 20 20)"><path d="M5 18h6v16H5z" fill="currentColor"/><path d="M13 18l6-12c3 0 5 2 4.4 5.4L22.6 16h9.4c2.4 0 4 2.1 3.4 4.4l-2.7 10.8c-.5 1.8-2 2.8-3.9 2.8H13z" fill="currentColor"/></g>', 'En contra'),
+  heartEmpty:svg(`<path d="M20 34S5 25 5 14c0-5 4-8 8-8 3 0 6 2 7 5 1-3 4-5 7-5 4 0 8 3 8 8 0 11-15 20-15 20z" fill="none" stroke="currentColor" stroke-width="3" stroke-linejoin="round" opacity=".5"/>`),
 };
 
 // An icon as an element, for code that builds DOM nodes.

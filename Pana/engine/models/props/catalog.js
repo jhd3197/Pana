@@ -27,6 +27,10 @@ import cemetery from './catalog/cemetery.js';
 import ruins from './catalog/ruins.js';
 import expeditionCamp from './catalog/expedition-camp.js';
 import atmosphere from './catalog/atmosphere.js';
+import crystals from './catalog/crystals.js';
+import fiesta from './catalog/fiesta.js';
+import signs from './catalog/signs.js';
+import glowPaintball from './catalog/glow-paintball.js';
 
 export default [
   ...ranch,
@@ -58,4 +62,8 @@ export default [
   ...ruins,
   ...expeditionCamp,
   ...atmosphere,
+  ...crystals,
+  ...fiesta,
+  ...signs,
+  ...glowPaintball,
 ];

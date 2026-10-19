@@ -10,6 +10,7 @@
   <link rel="stylesheet" href="/engine/ui.css">
   <link rel="stylesheet" href="style.css">
   <link rel="stylesheet" href="/engine/game-lobby.css">
+  <link rel="stylesheet" href="/engine/room-options.css">
   <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}</script>
 </head>
 <body class="in-lobby">
@@ -18,18 +19,20 @@
   <section id="welcome" class="pk-lobby" aria-labelledby="lobby-title">
     <span class="pk-ribbon">LA MESA ESTÁ LISTA</span>
     <h1 id="lobby-title" class="pk-title">LUDO</h1>
-    <p class="pk-copy">Cuatro fichas. Un dado.<br>¡Todos quieren llegar a casa!</p>
-    <div class="pk-stats"><div class="pk-stat"><b>1–4</b><span>panas</span></div><div class="pk-stat"><b>4</b><span>fichas por pana</span></div></div>
-    <p class="pk-copy rules-summary">Saca un seis para salir. Captura a tus rivales y lleva tus cuatro fichas al centro con el número exacto.</p>
+    <p class="pk-copy" data-room-description>Cuatro fichas. Un dado.<br>¡Todos quieren llegar a casa!</p>
+    <div class="pk-stats" data-room-description><div class="pk-stat"><b>1–4</b><span>panas</span></div><div class="pk-stat"><b>4</b><span>fichas por pana</span></div></div>
+    <p class="pk-copy rules-summary" data-room-description>Saca un seis para salir. Captura a tus rivales y lleva tus cuatro fichas al centro con el número exacto.</p>
     <ol id="lobby-roster" class="pk-roster" aria-label="Puestos de la mesa"></ol>
-    <button id="rules" class="pk-btn pk-btn--ghost">Cómo se juega</button>
+    <button id="rules" class="pk-btn pk-btn--ghost" data-room-help>Cómo se juega</button>
+    <div id="room-options"></div>
     <div class="pk-lobby-foot"><span id="lobby-room" class="pk-lobby-room"></span><button id="start" class="pk-btn pk-btn--primary pk-btn--lg" disabled>Preparando la mesa…</button><span id="lobby-invite-slot"></span></div>
   </section>
   <main id="hud" hidden>
     <ol id="scoreboard" aria-label="Progreso de los jugadores"></ol>
     <section class="action-panel pk-panel" aria-label="Tu turno">
       <div class="turn-copy"><h2 id="turn" class="pk-heading" aria-live="polite"></h2><p id="event" role="status"></p></div>
-      <div class="play-controls"><output id="die" aria-label="Último dado">—</output><button id="roll" class="pk-btn pk-btn--primary">Tirar dado <kbd class="pk-kbd" data-pana-hint>Espacio</kbd></button><div id="pieces" aria-label="Elige una ficha"></div></div>
+      <div class="play-controls"><output id="die" aria-label="Último dado">—</output><button id="roll" class="pk-btn pk-btn--primary" aria-describedby="roll-tip">Agita y suelta <kbd class="pk-kbd" data-pana-hint>Espacio</kbd></button><div id="pieces" aria-label="Elige una ficha"></div></div>
+      <p id="roll-tip" class="roll-tip" data-pana-hint>Mantén el botón o Espacio para agitar el dado y suelta para tirar, o arrástralo y suéltalo sobre la mesa.</p>
     </section>
     <button id="view" class="pk-btn pk-btn--sm" aria-pressed="false">Vista desde arriba</button>
   </main>

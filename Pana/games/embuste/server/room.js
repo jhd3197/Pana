@@ -1,3 +1,4 @@
+import { embusteOptions } from '../public/options.js';
 // ¡Embuste! online: the room runs the whole night (docs/plans/54_embuste.md,
 // option 2). Social deduction lives on secrets, so no client ever gets a
 // snapshot of the Night: each seat gets its own `view` (its role, what its
@@ -5,7 +6,8 @@
 // lobby may know: the roster, the phase and the host's options.
 
 import { t } from '@colyseus/schema';
-import { PanaRoom, Member, roomState } from '../../../server/src/room-kit.js';
+import { PanaRoom, Member, roomState, memberAvatar, InputBuffer } from '../../../server/src/room-kit.js';
+import { config } from '../../../server/src/config.js';
 import { randomAvatar } from '../../../engine/avatar.js';
 import { Night, MIN_PLAYERS, MAX_PLAYERS, cleanInput, debugNight, QUICK } from '../public/rules.js';
 import { Brains, BOT_NAMES } from '../public/bots.js';
@@ -23,33 +25,27 @@ const EmbusteState = roomState({
   chat: t.boolean().default(true),
 }, Member, 'EmbusteState');
 
-const parse = (json) => { try { return JSON.parse(json || '{}'); } catch { return {}; } };
-
 export default class EmbusteRoom extends PanaRoom {
   state = new EmbusteState();
 
   onCreate(options = {}) {
     super.onCreate(options);
-    // ?quick (browser suites only): short timers so a whole night fits a test.
-    this.quick = !!options.quick;
+    // ?quick (browser suites only): short timers and teleports so a whole night
+    // fits a test. Only a server started with PANA_DEBUG_ROOMS=1 honours it.
+    this.quick = !!options.quick && config.debugRooms;
     this.night = new Night(this.quick ? QUICK : {});
     this.brains = new Brains(this.night);
-    this.inputs = new Map();     // seat → { ...input, at }
+    this.inputs = new InputBuffer(INPUT_TTL_MS);
     this.cursor = new Map();     // sessionId → last event id sent
 
-    this.onMessage('options', (client, m) => {
-      if (!this.isHost(client) || this.night.phase !== 'lobby' || !m) return;
-      for (const k of ['bots', 'reveal', 'chat']) if (k in m) this.state[k] = !!m[k];
+    this.onHostMessage('options', (client, m) => {
+      if (this.night.phase !== 'lobby' || !m) return;
+      const next = embusteOptions(this.state, m); if (next) Object.assign(this.state, next);
     });
-    this.onMessage('start', (client) => {
-      if (this.isHost(client) && ['lobby', 'ended'].includes(this.night.phase)) this.startNight();
-    });
-    this.onMessage('lobby', (client) => {
-      if (this.isHost(client) && this.night.phase === 'ended') this.toLobby();
-    });
+    this.onHostMessage('start', () => { if (['lobby', 'ended'].includes(this.night.phase)) this.startNight(); });
+    this.onHostMessage('lobby', () => { if (this.night.phase === 'ended') this.toLobby(); });
     this.onMessage('input', (client, m) => {
-      const seat = this.seatOf(client);
-      if (seat != null) this.inputs.set(seat, { ...cleanInput(m), at: Date.now() });
+      this.inputs.set(this.seatOf(client), cleanInput(m));
     });
     this.onMessage('act', (client, m) => {
       const seat = this.seatOf(client);
@@ -61,10 +57,8 @@ export default class EmbusteRoom extends PanaRoom {
     this.clock.setInterval(() => this.tick(), TICK * 1000);
   }
 
-  seatOf(client) { return this.state.players.get(client.sessionId)?.seat; }
-
   joined(client, member) {
-    this.night.addPlayer(member.seat, { name: member.name, avatar: parse(member.avatar) });
+    this.night.addPlayer(member.seat, { name: member.name, avatar: memberAvatar(member) });
     this.cursor.set(client.sessionId, this.night.eventId);
     this.sendView(client);
   }
@@ -78,9 +72,7 @@ export default class EmbusteRoom extends PanaRoom {
     if (![...this.night.players.values()].some(p => !p.bot)) this.toLobby();
   }
 
-  humans() {
-    return [...this.state.players.values()].filter(p => p.connected).sort((a, b) => a.joinedAt - b.joinedAt);
-  }
+  humans() { return this.connectedMembers().map(([, member]) => member); }
 
   startNight() {
     const night = this.night;
@@ -88,7 +80,7 @@ export default class EmbusteRoom extends PanaRoom {
     const humans = this.humans();
     const total = Math.min(MAX_PLAYERS, this.state.bots ? Math.max(BOT_FILL, humans.length) : humans.length);
     if (total < MIN_PLAYERS && !this.quick) return;
-    for (const m of humans) night.addPlayer(m.seat, { name: m.name, avatar: parse(m.avatar) });
+    for (const m of humans) night.addPlayer(m.seat, { name: m.name, avatar: memberAvatar(m) });
     for (let i = 0; night.players.size < total; i++) {
       night.addPlayer(BOT_SEAT + i, { name: BOT_NAMES[i % BOT_NAMES.length], avatar: randomAvatar(), bot: true });
     }
@@ -124,10 +116,7 @@ export default class EmbusteRoom extends PanaRoom {
     if (night.phase === 'lobby') {
       for (const m of this.state.players.values()) { const p = night.players.get(m.seat); if (p) p.name = m.name; }
     }
-    const inputs = new Map();
-    for (const [seat, input] of this.inputs) {
-      if (now - input.at > INPUT_TTL_MS) this.inputs.delete(seat); else inputs.set(seat, input);
-    }
+    const inputs = this.inputs.fresh(now);
     if (night.inRound()) this.brains.think(TICK, inputs);
     night.update(TICK, inputs);
     if (this.state.phase !== night.phase || this.state.round !== night.round) this.sync();

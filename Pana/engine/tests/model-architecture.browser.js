@@ -4,7 +4,7 @@ import { createRequire } from 'node:module';
 import { readdir, readFile } from 'node:fs/promises';
 const { chromium } = createRequire(import.meta.url)(process.env.PANA_PLAYWRIGHT_PATH || 'playwright');
 const engine=new URL('../',import.meta.url),aliases=[];
-for(const dir of ['', 'soft-character/']) for(const name of await readdir(new URL(dir,engine))) {
+for(const dir of ['']) for(const name of await readdir(new URL(dir,engine))) {
   if(!name.endsWith('.js'))continue;
   const source=await readFile(new URL(dir+name,engine),'utf8');
   if(!source.startsWith('// Compatibility URL.'))continue;
@@ -32,6 +32,7 @@ try {
       for(const name of alias.names){check(old[name]!==undefined&&old[name]===canonical[name],`Broken alias ${alias.old}#${name}`);symbols++;}
     }
     const registry = await import('/g/derrape/tracks.js'), runtime = await import('/g/derrape/track-runtime.js');
+    await registry.loadTracks();
     const { TRACK_DEFINITIONS } = await import('/g/derrape/track-definitions.js');
     const { CARS } = await import('/g/derrape/cars.js'), { CAR_DEFINITIONS } = await import('/g/derrape/car-definitions.js');
     check(registry.makeTrack === runtime.makeTrack, 'Track runtime compatibility export changed identity');

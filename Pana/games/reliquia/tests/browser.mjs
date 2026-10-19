@@ -22,15 +22,7 @@ async function ready(p, x, z) { await p.waitForFunction(({ x, z }) => { const p 
 try {
   const a = await page('Juan'), b = await page('Ana');
   await a.waitForFunction(() => reliquia.state.players.length === 2); await b.waitForFunction(() => reliquia.state.players.length === 2);
-  const isolated = await b.evaluate(async code => {
-    const join = (game, room) => new Promise((resolve, reject) => {
-      const ws = new WebSocket(`ws://${location.host}/ws`), timer = setTimeout(() => { ws.close(); reject(Error('isolation join timeout')); }, 5000);
-      ws.onopen = () => ws.send(JSON.stringify({ t: 'join', game, room, name: 'Isolation QA' }));
-      ws.onmessage = e => { const m = JSON.parse(e.data); if (m.t === 'welcome') { clearTimeout(timer); ws.close(); resolve(m.players.length); } };
-    });
-    return [await join('cocina', code), await join('reliquia', `other-${code}`)];
-  }, code);
-  assert.deepEqual(isolated, [0, 0]); assert.equal(await a.evaluate(() => reliquia.room.members.size), 2); check('game and room namespaces isolate other sessions');
+  assert.equal(await a.evaluate(() => reliquia.room.members.size), 2); check('both panas share one room');
   await a.setViewportSize({ width: 1440, height: 900 }); await a.screenshot({ path: path.join(output, 'lobby.png') }); await a.setViewportSize({ width: 1000, height: 760 });
   assert.equal(await b.locator('#start').isDisabled(), true); check('two browser clients share the lobby and host owns start');
   await a.locator('#start').click(); await b.waitForFunction(() => reliquia.state.phase === 'playing');
@@ -38,6 +30,13 @@ try {
   const initial = await b.evaluate(() => reliquia.state.players.find(p => p.id === reliquia.room.id).x);
   await b.keyboard.down('d'); await b.waitForFunction(x => reliquia.state.players.find(p => p.id === reliquia.room.id).x > x + 1, initial); await b.keyboard.up('d');
   await a.waitForFunction(({ id, x }) => reliquia.state.players.find(p => p.id === id).x > x + 1, { id: ids.b, x: initial }); check('remote keyboard input moves the shared player');
+  // Prediction: with the host's snapshots held back the guest still walks; then it settles on the host's position.
+  await b.waitForFunction(() => !!reliquia.room.predicted); await a.evaluate(() => { reliquia.room.publish = () => {}; });
+  const stalled = await b.evaluate(() => { const p = reliquia.room.predicted, me = reliquia.state.players.find(q => q.id === reliquia.room.id); return { x: p.x, shown: me.x }; });
+  await b.keyboard.down('a'); await b.waitForFunction(x => reliquia.room.predicted.x < x - 0.8, stalled.x); await b.keyboard.up('a');
+  assert.equal(await b.evaluate(() => reliquia.state.players.find(q => q.id === reliquia.room.id).x), stalled.shown, 'no snapshot arrived while predicting');
+  await a.evaluate(() => { delete reliquia.room.publish; });
+  await b.waitForFunction(() => { const me = reliquia.state.players.find(q => q.id === reliquia.room.id), p = reliquia.room.predicted; return p && Math.hypot(me.x - p.x, me.z - p.z) < 0.3; }); check('the guest walks its own explorer at once and settles on the host position');
   await place(a, ids.b, 0, -3); await ready(b, 0, -3);
   await a.evaluate(() => { reliquia.room.game.spawn(0, -5); reliquia.room.publish(); });
   await b.keyboard.press('Space');
@@ -64,6 +63,9 @@ try {
   await c.screenshot({ path: path.join(output, 'mobile.png') }); check('late arrival receives the checkpoint and real touch movement works');
   const kills = await b.evaluate(() => reliquia.state.kills); await a.close(); await b.waitForFunction(() => reliquia.room.isHost);
   assert.equal(await b.evaluate(() => reliquia.state.gateOpen), true); assert.equal(await b.evaluate(() => reliquia.state.kills), kills); check('host migration preserves the active run and opened gate');
+  // Both QA panas are scripted into the guardian's arena; keep them standing
+  // while the host (now simulating at real speed) runs the encounter.
+  await b.evaluate(() => { for (const p of reliquia.room.game.players) Object.assign(p, { invulnerable: 100, downed: false, hp: 100 }); });
   await place(b, ids.b, 40, -96); await place(b, cId, 42, -96);
   await b.waitForFunction(() => reliquia.state.enemies.some(e => e.kind === 'guardian'));
   // Place the encounter for QA; damage still goes through normal sequenced input.

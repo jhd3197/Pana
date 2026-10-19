@@ -1,13 +1,13 @@
 import * as THREE from 'three';
 import { M, mesh } from '../core/primitives.js';
 import { houseRandom } from './colonial-house-spec.js';
+import { clamp } from '../../random.js';
 
 // Vertex-colored paint and shallow brick accents survive the existing static bake.
 // No textures, transparency, shader hooks or per-seed cached materials are needed.
 const paint = M(0xffffff, { vertexColors: true, flatShading: true, roughness: 0.9 });
-const clay = [0xb96e4b, 0xc77d57, 0xa95f43, 0xcd895e].map(c => new THREE.Color(c));
-const mortar = new THREE.Color(0xbcb09a), chalk = new THREE.Color(0xf2e4c9);
-const clamp = (n, lo = 0, hi = 1) => Math.max(lo, Math.min(hi, n));
+const clay = [0xb4573a, 0xc96a45, 0x9e4a31, 0xd27d52, 0xa85a3c].map(c => new THREE.Color(c));
+const mortar = new THREE.Color(0xd9ccb2), chalk = new THREE.Color(0xf2e4c9);
 
 function colored(geometry, color) {
   const position = geometry.attributes.position, values = new Float32Array(position.count * 3);
@@ -51,25 +51,27 @@ function regions(face, floor, spec) {
 }
 
 function plaster(group, region, color, salt, detail) {
-  const { x, y, w, h } = region, spacing = detail === 'low' ? 0.55 : 0.3;
+  const { x, y, w, h } = region, spacing = detail === 'low' ? 1 : 0.3;
   const geometry = new THREE.PlaneGeometry(w, h, Math.max(2, Math.ceil(w / spacing)), Math.max(2, Math.ceil(h / spacing)));
   const p = geometry.attributes.position, colors = new Float32Array(p.count * 3), shade = new THREE.Color();
   for (let i = 0; i < p.count; i++) {
     const px = p.getX(i) + x, py = p.getY(i) + y;
     const fade = clamp(Math.min(w / 2 - Math.abs(p.getX(i)), h / 2 - Math.abs(p.getY(i))) / 0.17);
     const broad = noise(px * 1.4, py * 1.7, salt), brush = noise(px * 3.8, py * 7, salt + 23);
-    const tone = 0.72 + broad * 0.43 + brush * 0.12;
+    const tone = 0.68 + broad * 0.5 + brush * 0.14;
     shade.copy(color).multiplyScalar(1 + (tone - 1) * fade).toArray(colors, i * 3);
   }
   geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
   group.add(mesh(geometry, paint, x, y, 0.006));
 }
 
-function brickPatch(group, region, color, random, exposed) {
-  const w = Math.min(region.w - 0.07, 0.9 + random() * 0.55), h = Math.min(region.h - 0.1, 0.55 + random() * 0.3);
+// Patches are sized to read from a passing car: up to most of a wall
+// panel, in rows of chunky toy bricks.
+function brickPatch(group, region, color, random, exposed, detail) {
+  const w = Math.min(region.w - 0.07, 1.3 + random() * 1.1), h = Math.min(region.h - 0.1, 0.9 + random() * 0.7);
   const cx = region.x + (random() - 0.5) * (region.w - w - 0.04);
   const cy = region.y + (random() - 0.5) * (region.h - h - 0.08);
-  const count = Math.max(2, Math.round(h / 0.19)), rowHeight = h / count;
+  const count = Math.max(2, Math.round(h / 0.23)), rowHeight = h / count;
   const rows = Array.from({ length: count }, (_, i) => {
     const width = w * (i === 0 || i === count - 1 ? 0.64 + random() * 0.19 : 0.9 + random() * 0.1);
     const offset = (random() - 0.5) * (w - width) * 0.5;
@@ -81,28 +83,30 @@ function brickPatch(group, region, color, random, exposed) {
     return [...left, ...right];
   };
   group.add(polygon(outline(0.025), color.clone().lerp(chalk, exposed ? 0.2 : 0.035), 0.009));
-  group.add(polygon(outline(0), exposed ? mortar : color.clone().multiplyScalar(0.79), 0.012));
+  group.add(polygon(outline(0), exposed ? mortar : color.clone().multiplyScalar(0.58), 0.012));
   rows.forEach((row, index) => {
-    const unit = 0.43, offset = index % 2 * unit / 2;
+    const unit = 0.5, offset = index % 2 * unit / 2;
     for (let start = cx - w / 2 - unit + offset; start < row.right; start += unit) {
       const left = Math.max(row.left, start) + 0.018, right = Math.min(row.right, start + unit) - 0.018;
       if (right - left < 0.055) continue;
-      const low = row.bottom + 0.016, high = row.bottom + rowHeight - 0.016, nick = Math.min(0.025, (right - left) * 0.15);
-      const points = [[left + nick, low], [right - nick, low], [right, low + nick], [right, high - nick], [right - nick, high], [left + nick, high], [left, high - nick], [left, low + nick]];
-      const shade = exposed ? clay[Math.floor(random() * clay.length)] : color.clone().multiplyScalar(0.93 + random() * 0.13);
-      group.add(polygon(points, shade, 0.014, 0.018));
+      // Square-cornered bricks: at 0.5 m the chamfer never read and cost 2.3× the triangles.
+      const low = row.bottom + 0.016, high = row.bottom + rowHeight - 0.016;
+      const points = [[left, low], [right, low], [right, high], [left, high]];
+      const shade = exposed ? clay[Math.floor(random() * clay.length)] : color.clone().lerp(chalk, 0.12 + random() * 0.14);
+      group.add(polygon(points, shade, 0.014, detail === 'low' ? 0 : 0.03));
     }
   });
 }
 
 export function finishWall(parent, face, floor, spec, color, detail = 'game') {
-  if (spec.wallFinish === 'lisa') return;
+  // The low street build finishes only the wall that faces the road.
+  if (spec.wallFinish === 'lisa' || detail === 'low' && face.id !== 'front') return;
   const group = new THREE.Group(); group.name = `wall-finish-${face.id}-${floor}`; parent.add(group);
   const base = new THREE.Color(color), areas = regions(face, floor, spec);
   const random = houseRandom(spec.finishSeed, `finish-${face.id}-${floor}`), salt = Math.floor(random() * 0xffffffff);
   for (const area of areas) plaster(group, area, base, salt, detail);
   if (spec.wallFinish === 'cal') return;
-  const candidates = areas.filter(r => r.w >= 0.32 && r.h >= 0.48).map(r => ({ ...r, score: Math.min(r.w, 1.7) * Math.min(r.h, 1.2) * (0.7 + random() * 0.6) })).sort((a, b) => b.score - a.score);
-  const count = face.id === 'front' && floor === 0 ? 2 : 1;
-  for (const region of candidates.slice(0, count)) brickPatch(group, region, base, random, spec.wallFinish === 'ladrillo-visto');
+  const candidates = areas.filter(r => r.w >= 0.34 && r.h >= 0.5).map(r => ({ ...r, score: Math.min(r.w, 1.7) * Math.min(r.h, 1.2) * (0.7 + random() * 0.6) })).sort((a, b) => b.score - a.score);
+  const count = face.id === 'front' ? 2 : 1;
+  for (const region of candidates.slice(0, count)) brickPatch(group, region, base, random, spec.wallFinish === 'ladrillo-visto', detail);
 }

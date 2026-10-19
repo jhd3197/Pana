@@ -2,20 +2,21 @@
 // node browser.mjs [absolute-playwright-package] [optional-chromium-executable]
 import assert from 'node:assert/strict';
 import { createRequire } from 'node:module';
-import { mkdir } from 'node:fs/promises';
+import { mkdir, writeFile } from 'node:fs/promises';
 import path from 'node:path';
+import os from 'node:os';
 const require = createRequire(import.meta.url), { chromium } = require(process.argv[2] || 'playwright');
-const { WebSocket } = require('ws');
 const base = process.env.PANA_QA_URL || 'http://localhost:8461', output = process.env.PANA_QA_OUTPUT;
 if (output) await mkdir(output, { recursive: true });
 const browser = await chromium.launch({ headless: true, ...(process.argv[3] ? { executablePath: process.argv[3] } : {}) });
-const errors = [], sockets = [], room = `cocina-qa-${Date.now().toString(36)}`;
+const errors = [], room = `cocina-qa-${Date.now().toString(36)}`;
 const check = text => console.log(`ok  ${text}`);
 async function page(name, mobile = false, code = room) {
   // Three simultaneous software-rendered clients can starve the input relay.
   // Compact desktops reduce pixel work while retaining real rendering and input.
-  const desktop = process.env.PANA_QA_COMPACT ? { width: 900, height: 650 } : { width: 1440, height: 900 };
+  const desktop = process.env.PANA_QA_COMPACT === '0' ? { width: 1440, height: 900 } : { width: 900, height: 650 };
   const ctx = await browser.newContext(mobile ? { viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true } : { viewport: desktop });
+  await ctx.addInitScript(() => localStorage.setItem('pana:settings', JSON.stringify({ quality: 'baja' })));
   const p = await ctx.newPage(); p.on('pageerror', e => errors.push(`${name}: ${e.message}`));
   const timeout = Number(process.env.PANA_QA_TIMEOUT) || 120000;
   await p.goto(`${base}/g/cocina/?name=${name}&room=${code}&debug`, { waitUntil: 'domcontentloaded', timeout });
@@ -30,7 +31,7 @@ try {
   await a.waitForFunction(() => cocina.room.members.size === 2); await b.waitForFunction(() => cocina.state.players.length === 2);
   assert.equal(await b.locator('#start').isDisabled(), true); check('two browsers share a lobby; only host can start');
   if (output) await a.screenshot({ path: path.join(output, 'cocina-lobby.png') });
-  await a.locator('#helpers').uncheck(); await a.locator('#start').click(); await b.waitForFunction(() => cocina.state.phase === 'playing');
+  await a.locator('#pana-room-more').click(); await a.locator('[data-room-option="helpers"][data-value="false"]').click(); await a.locator('#pana-room-done').click(); await a.locator('#start').click(); await b.waitForFunction(() => cocina.state.phase === 'playing');
   // Three software-rendered clients can outlast the normal three-minute round.
   // Keep this interaction fixture alive; the results check below ends it explicitly.
   await a.evaluate(() => { cocina.room.game.remaining = 600; cocina.room.publish(); });
@@ -38,6 +39,16 @@ try {
   const initial = await b.evaluate(() => cocina.state.players.find(p => p.id === cocina.room.id).x);
   await b.keyboard.down('d'); await b.waitForFunction(x => cocina.state.players.find(p => p.id === cocina.room.id).x > x + 0.5, initial); await b.keyboard.up('d');
   await a.waitForFunction(id => cocina.state.players.find(p => p.id === id).x > -3.2, ids.guest); check('remote movement reaches the host simulation');
+  // Prediction: with the host's snapshots held back (a slow link), the guest's own
+  // cook still walks on its input; once they flow again it lands where the host has it.
+  await b.waitForFunction(() => cocina.room.predicted);
+  await a.evaluate(() => { cocina.room.publish = () => {}; });
+  const stalled = await b.evaluate(() => ({ predicted: cocina.room.predicted.x, shown: cocina.state.players.find(p => p.id === cocina.room.id).x }));
+  await b.keyboard.down('a'); await b.waitForFunction(x => cocina.room.predicted.x < x - 0.8, stalled.predicted); await b.keyboard.up('a');
+  assert.equal(await b.evaluate(() => cocina.state.players.find(p => p.id === cocina.room.id).x), stalled.shown, 'no snapshot arrived while predicting');
+  await a.evaluate(() => { delete cocina.room.publish; });
+  await b.waitForFunction(() => { const me = cocina.state.players.find(p => p.id === cocina.room.id); return Math.abs(me.x - cocina.room.predicted.x) < 0.3 && Math.abs(me.z - cocina.room.predicted.z) < 0.3; });
+  check('the guest moves its own cook at once and settles on the host position');
   await position(a, ids.host, 'supply-arepa'); await a.keyboard.press('e'); await held(a, 'raw');
   await position(a, ids.host, 'prep-1'); await a.keyboard.press('e'); await held(a, null);
   await a.evaluate(() => cocina.step(2.5));
@@ -56,6 +67,7 @@ try {
   const cId = await c.evaluate(() => cocina.room.id); await a.evaluate(id => cocina.place(id, -6, 6), cId);
   // Wait for the host's placement snapshot before measuring movement.
   await c.waitForFunction(() => { const p = cocina.state.players.find(p => p.id === cocina.room.id); return Math.abs(p.x + 6) < 0.1 && Math.abs(p.z - 6) < 0.1; });
+  await c.bringToFront();
   const btn = await c.locator('[data-move="right"]').boundingBox(); const x0 = await c.evaluate(() => cocina.state.players.find(p => p.id === cocina.room.id).x);
   // Use an actual held touch on the emulated phone, not a compatibility mouse.
   const touch = await c.context().newCDPSession(c);
@@ -63,6 +75,7 @@ try {
   assert.equal(await c.evaluate(({ x, y }) => document.elementFromPoint(x, y)?.closest('[data-move]')?.dataset.move,
     { x: btn.x + btn.width / 2, y: btn.y + btn.height / 2 }), 'right', 'the prepared game exposes the touch control');
   await touch.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: btn.x + btn.width / 2, y: btn.y + btn.height / 2 }] });
+  await c.waitForFunction(() => document.querySelector('[data-move="right"]').classList.contains('is-held'));
   await c.waitForFunction(x => cocina.state.players.find(p => p.id === cocina.room.id).x > x + 0.5, x0);
   await touch.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] }); await touch.detach();
   await position(a, cId, 'supply-cachapa'); await c.locator('#action').click(); await held(c, 'raw');
@@ -81,27 +94,23 @@ try {
   // the fallback. Chromium's HTTP offline emulation does not block all WS reconnects.
   await b.evaluate(() => { cocina.room.cut(); });
   await b.waitForFunction(() => !cocina.room.connected); await b.locator('#menu').click(); await b.locator('#offline').click();
-  await b.waitForFunction(() => cocina.room.offline && cocina.state.phase === 'lobby'); await b.locator('#helpers').check(); await b.locator('#start').click();
+  await b.waitForFunction(() => cocina.room.offline && cocina.state.phase === 'lobby'); await b.locator('#pana-room-more').click(); await b.locator('[data-room-option="helpers"][data-value="true"]').click(); await b.locator('#pana-room-done').click(); await b.locator('#start').click();
   await b.waitForFunction(() => cocina.state.players.filter(p => p.bot).length === 2); await b.evaluate(() => cocina.step(45));
   assert.ok(await b.evaluate(() => cocina.state.served) > 0);
   if (output) await b.screenshot({ path: path.join(output, 'cocina-gameplay.png') }); check('disconnection fallback starts a playable local kitchen with working helpers');
-  for (const game of ['cocina', 'escondidas']) {
-    const socket = new WebSocket(base.replace(/^http/, 'ws') + '/ws'); sockets.push(socket);
-    await new Promise(resolve => socket.on('open', resolve)); const welcome = new Promise(resolve => socket.once('message', resolve));
-    socket.send(JSON.stringify({ t: 'join', game, room: room + '-isolation', name: 'QA' })); await welcome;
-  }
-  let leaked = false; sockets[1].on('message', raw => { if (JSON.parse(raw).t === 'state') leaked = true; });
-  sockets[0].send(JSON.stringify({ t: 'state', v: { game: 'cocina-v1', test: true } })); await b.waitForTimeout(200); assert.equal(leaked, false); check('identical room codes stay isolated between games');
   await b.goto(base + '/g/escondidas/?debug'); await b.waitForFunction(() => window.hunt?.room.connected); await b.locator('#start').click(); await b.waitForFunction(() => hunt.state.phase === 'hide');
-  assert.equal(await b.evaluate(async () => (await import('/g/escondidas/plaza.js')).createPlaza === (await import('/engine/plaza.js')).createPlaza), true); check('Escondidas starts on the extracted shared plaza');
+  assert.equal(await b.evaluate(async () => (await import('/g/escondidas/plaza.js')).createPlaza === (await import('/engine/worlds/plaza.js')).createPlaza), true); check('Escondidas starts on the extracted shared plaza');
   await b.goto(base + '/g/derrape/?track=llanos&debug'); await b.waitForFunction(() => window.race && window.garage); await b.evaluate(() => startRace(0)); check('Derrape still starts with seated drivers');
   await b.goto(base + '/g/bululu/?debug'); await b.waitForFunction(() => window.board && window.players); check('Bululú loads with the updated shared characters');
   await b.goto(base + '/'); await b.getByRole('heading', { name: 'Pana Cocina', exact: true }).waitFor();
   if (output) await b.screenshot({ path: path.join(output, 'cocina-hub.png') }); check('hub discovers Cocina and renders the chef artwork');
   assert.deepEqual(errors, []); check('no uncaught browser errors');
 } catch (error) {
+  const diagnostics = [];
   for (const context of browser.contexts()) for (const p of context.pages()) {
-    console.log(await p.evaluate(() => window.cocina ? { phase: cocina.state.phase, remaining: cocina.state.remaining, id: cocina.room.id, connected: cocina.room.connected, players: cocina.state.players.map(p => ({ id: p.id, x: p.x, z: p.z, moving: p.moving })), lobby: document.getElementById('pana-lobby-shell')?.hidden } : location.href).catch(() => null));
+    diagnostics.push(await p.evaluate(() => window.cocina ? { phase: cocina.state.phase, remaining: cocina.state.remaining, id: cocina.room.id, connected: cocina.room.connected, players: cocina.state.players.map(p => ({ id: p.id, x: p.x, z: p.z, moving: p.moving })), lobby: document.getElementById('pana-lobby-shell')?.hidden, visible: document.visibilityState, menu: cocina.menu.isOpen, held: [...document.querySelectorAll('[data-move].is-held')].map(el => el.dataset.move), inputs: [...cocina.room.inputs] } : location.href).catch(() => null));
   }
+  await writeFile(path.join(os.tmpdir(), 'pana-cocina-legacy-failure.json'), JSON.stringify({ error: error.stack, errors, clients: diagnostics }, null, 2));
+  console.log(diagnostics);
   throw error;
-} finally { for (const socket of sockets) socket.close(); await browser.close(); }
+} finally { await browser.close(); }

@@ -1,6 +1,8 @@
 import { TRACK_DEFINITIONS } from '../track-definitions.js';
+import { mossRock } from '/engine/models/vegetation/moss-rock.js';
 // An Andean ascent: lower meadows, glacial lake and the cable-car summit.
-import { THREE,terrain,put,foundation,scatter,instances,edges,clear,smooth,boulder } from './world-kit.js';
+import { THREE,terrain,put,foundation,scatter,instances,edges,clear,smooth } from './world-kit.js';
+import { festive, meadow } from './festive.js';
 import { frailejon } from '/engine/models/vegetation/frailejon.js';
 import { mountainPine } from '/engine/models/vegetation/mountain-pine.js';
 import { mountainCabin, mountainTent, stoneLookout, mountainSignpost, cableCarStation, rockyCliff } from '/engine/models/props/mountain.js';
@@ -16,10 +18,10 @@ export default {
   rain:0.5,
   items:{boxes:[.1,.29,.47,.66,.87],boxLanes:[-6,-2,2,6],pads:[{u:.19,off:0},{u:.42,off:4},{u:.74,off:-4},{u:.94,off:0}]},
   walls:false,chevrons:true,
-  palette:{skySeed:17,cloudCover:0.44,horizon:0xb9ddf3,skyTop:0x347ec8,hemiSky:0xe1efff,hemiGround:0x67875b,hemiInt:1.6,sun:0xfff4e1,sunInt:2.5,ground:0x78a454,track:0x777e7c,dune:0,fog:[280,1100]},
+  palette:{skySeed:17,cloudCover:0.42,horizon:0xc9e8f6,skyTop:0x2a7fe0,halo:.8,hemiSky:0xd8e2ff,hemiGround:0x6fae55,hemiInt:1.7,sun:0xffe0ae,sunInt:2.7,ground:0x82b858,track:0x7a7083,dune:0,fog:[300,1300]},
   environment(T){
     const group=new THREE.Group(),world=terrain(T,{bounds:[-620,-610,560,410],base:baseHeight,
-      color:(x,z,y)=>new THREE.Color(0x6d9d47).lerp(new THREE.Color(0x638f80),smooth(y,70,145)).lerp(new THREE.Color(0xddebf1),smooth(y+Math.sin(x*.05)*7+Math.cos(z*.06)*6,145,175))});
+      color:(x,z,y)=>new THREE.Color(meadow(x,z,0x7aa84a,{warm:0xa8b850,deep:0x4f8f50,bloom:0xc89ae0})).lerp(new THREE.Color(0x638f80),smooth(y,70,145)).lerp(new THREE.Color(0xddebf1),smooth(y+Math.sin(x*.05)*7+Math.cos(z*.06)*6,145,175))});
     group.add(world.land);
     const lake=waterPool(LAKE.rx,LAKE.rz,{color:0x6daab1,depth:8});lake.position.set(LAKE.x,LAKE.y,LAKE.z);lake.name='glacial-lake';group.add(lake);
     const occupied=[[-35,-275,30],[40,130,23],[-100,120,17],[125,-145,18]];
@@ -30,7 +32,7 @@ export default {
     cliffSpots.forEach(p=>occupied.push([p.x,p.z,10]));
     instances(group,frailejon({seed:51,h:2.3}),scatter(T,world.groundAt,{seed:511,count:170,bounds:[-330,-270,270,245],margin:5,scale:1.5,accept}),'paramo-frailejones');
     instances(group,mountainPine({seed:57,h:11}),scatter(T,world.groundAt,{seed:572,count:90,bounds:[-410,-270,340,260],margin:12,scale:1.5,accept:(x,z,y)=>accept(x,z,y)&&y<105}),'paramo-pines');
-    instances(group,boulder(),scatter(T,world.groundAt,{seed:540,count:150,bounds:[-370,-320,345,260],margin:7,scale:1.3,accept}),'paramo-rocks');
+    instances(group,mossRock({seed:17,size:1.8}),scatter(T,world.groundAt,{seed:540,count:150,bounds:[-370,-320,345,260],margin:7,scale:1.3,accept}),'paramo-rocks',500);
     const station=foundation(group,summitTerminal(),-35,-275,world.groundAt,{radius:15});station.name='summit-terminal';
     const lower=foundation(group,summitTerminal('VALLE PANA'),40,130,world.groundAt,{radius:15,rotation:Math.PI,scale:.8});
     const cables=[[40,lower.position.y+11,130],[15,85,40],[-10,125,-125],[-35,station.position.y+11,-275]];
@@ -55,5 +57,13 @@ export default {
   scenery(group,kit,T){
     edges(group,kit,T,{style:'steel',step:6});
     for(const u of [.21,.43,.68,.86]){const p=kit.placeOnTrack(T,u*T.TOTAL,T.HW+5);kit.at(group,mountainSignpost(),p,p.h);}
+    // Andean paramo in flower: yellow frailejón blooms, purple and pink beds,
+    // prayer-flag bunting at the hairpins and snowy peaks all around.
+    festive(group,T,{seed:17,stands:420,banners:520,bunting:240,balloons:260,flags:260,butterflies:24,
+      colors:[0xff4f6d,0xffc93c,0x3ec1ff,0x52d273,0xb36bff],
+      trees:[['apamate',8,[3,22]],['araguaney',6,[3,22]]],
+      plants:[['rosette',60,[0,10]],['bromeliad',50,[0,8]],['hibiscus',16],['mossRock',40,[0,14]]],
+      birds:[{kind:'vulture',flocks:1,size:3,height:[50,70]},{kind:'macaw',flocks:1,size:4}],
+      vista:{shape:'peak',hills:26,height:[260,480],colors:[0x7d9ac8,0x8c8fd0,0x6fa0b8],snow:true,balloons:3}});
   },
 };

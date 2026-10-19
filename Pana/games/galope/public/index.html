@@ -8,6 +8,7 @@
   <title>Galope · Pana</title>
   <link rel="stylesheet" href="/engine/kit.css">
   <link rel="stylesheet" href="/engine/ui.css">
+  <link rel="stylesheet" href="/engine/room-options.css">
   <link rel="stylesheet" href="style.css">
   <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}</script>
 <link rel="stylesheet" href="/engine/game-lobby.css">
@@ -20,10 +21,12 @@
     <div class="pk-lobby-top"><a class="pk-back" href="/">← Todos los juegos</a><a class="pk-logo" href="/" aria-label="Volver a Pana">PANA</a></div>
     <span class="pk-ribbon">Galope · La vuelta del estero</span>
     <h1 id="title" class="pk-title">¡A caballo por los Llanos!</h1>
-    <p class="pk-copy">Hato, sabana y morichal. Patas en el agua y tus panas pisándote los talones.</p>
-    <div class="pk-stats"><div class="pk-stat"><b>2</b><span>vueltas</span></div><div class="pk-stat"><b>3</b><span>saltos por vuelta</span></div><div class="pk-stat"><b>1–8</b><span>panas</span></div></div>
-    <div class="pk-field horse-picker"><span class="pk-eyebrow" id="horse-label">Tu compañero de carrera</span><div class="pk-seg" role="group" aria-labelledby="horse-label"><button type="button" data-coat="bay" aria-pressed="true"><i style="--coat:#955637"></i>Castaño</button><button type="button" data-coat="palomino" aria-pressed="false"><i style="--coat:#c6a568"></i>Dorado</button><button type="button" data-coat="grey" aria-pressed="false"><i style="--coat:#c1c0b4"></i>Tordillo</button></div>
-      <label class="pk-check"><input id="bots" type="checkbox" checked> Completar la carrera con jinetes del hato</label></div>
+    <p class="pk-copy" data-room-description>Hato, sabana y morichal. Patas en el agua y tus panas pisándote los talones.</p>
+    <div class="pk-stats" data-room-description><div class="pk-stat"><b>2</b><span>vueltas</span></div><div class="pk-stat"><b>3</b><span>saltos por vuelta</span></div><div class="pk-stat"><b>1–8</b><span>panas</span></div></div>
+    <div class="pk-field horse-picker" data-room-personal><span class="pk-eyebrow" id="horse-label">Tu compañero de carrera</span><div class="pk-seg" role="group" aria-labelledby="horse-label"><button type="button" data-coat="bay" aria-pressed="true"><i style="--coat:#955637"></i>Castaño</button><button type="button" data-coat="palomino" aria-pressed="false"><i style="--coat:#c6a568"></i>Dorado</button><button type="button" data-coat="grey" aria-pressed="false"><i style="--coat:#c1c0b4"></i>Tordillo</button></div>
+    </div>
+    <label class="pk-check" data-room-extra><input id="bots" type="checkbox" checked> Completar la carrera con jinetes del hato</label>
+    <div id="room-options" aria-label="Ajustes de la sala"></div>
     <div class="pk-lobby-foot">
       <div class="pk-lobby-room"><span class="pk-dot"></span><span id="connection" role="status">Conectando…</span><span class="pk-room-code">Sala <b id="room-code"></b></span></div>
       <button id="practice" class="pk-btn pk-btn--ghost pk-btn--sm practice hidden">Correr en local</button>

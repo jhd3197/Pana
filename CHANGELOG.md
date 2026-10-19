@@ -20,8 +20,255 @@ Maintenance release: no changes you will notice.
 
 ### Added
 
+- **Pepazo has a night map: Cancha de Noche.** Red floodlights, purple
+  UV light and glowing LED rope lines light a field of pallets,
+  inflatable bunkers, plastic tubes and a lookout tower. Paintballs glow
+  as they fly, splats shine in the dark, and a headlamp lights the way in
+  first person. Three layouts rotate by round: Torre, Inflables and Tubos.
+
+- **Bululú parties come in short and minigame-only.** Pick 5 rounds for
+  a quick party, or *Solo minijuegos* to skip the board and play
+  minigames back to back. Any minigame can be practised alone from the
+  lobby, and bots take their board turns faster, so a 10-round party is
+  about a third shorter. The lobby now explains the final bonus and
+  mango stealing before you start.
+
+- **Race lanchas with an outboard motor in the new game Lancha.** Hold W
+  for gas and steer with A and D (no rhythm, nothing to mash) down the
+  Caño del Sipapo, over the Raudales de Atures and across the open Orinoco
+  to Puerto Ayacucho. Straight jumps, the chorro and the toninas fill a
+  turbo; caimanes bite your motor dead. Up to 8 panas, river drivers fill
+  the start, and an automatic throttle makes it playable for anyone.
+- **Both river races help you find the way.** A gold guide drawn on the
+  water around your boat points at the best line and a trail of arrows
+  follows it, steering round caimanes that now swim across the open river.
+  Coral and green buoys mark the channel where the river opens up. In
+  Curiara, holding W paddles for you while A and D steer, and mashing the
+  keys now says plainly that it slows the canoe.
+- **Build your pana with the new visual wardrobe and use the whole look in games.**
+  Mi pana now has accessory previews, outfits, face details, prints, neckwear,
+  backpacks, undo/redo and portable outfit codes. Existing avatars migrate;
+  saving carries every slot and color through multiplayer and portraits.
+
+- **Pepazo is a first-person shooter now, on bigger maps.** You look
+  through your pana's eyes with the marker in hand: the mouse aims (click
+  the court to capture it, Esc lets go and opens the menu), WASD walks
+  where you look, and phones drag to look while Pinta sticks to the rival
+  in front of you. Every court is 1.5× larger with an outer ring of
+  barricades, paint splats on the cover it hits, and a corner map shows
+  your team plus the rivals you can see. New map: **Muelle de La Guaira**,
+  a container yard under the port crane, with the cargo ship at the quay
+  and a colonial street of houses and stalls. "Ver la cancha" keeps the
+  overview camera.
+- **Pepazo hits feel like hits.** It takes three pepazos to knock a pana
+  out (Aguante: 1, 3 or 5 in the room options) and the paint washes off
+  after a few quiet seconds. Stains stick to the pana's body, they flinch
+  on each hit and topple in a paint burst on the knockout. Every knockout
+  calls out the distance ("¡Pepazo! Coco · 23 m"), with ¡Tiro largo!,
+  ¡A quemarropa!, ¡Doble!/¡Triple!, ¡Imparable! and ¡Venganza!, a hit
+  marker, a kill feed and new sounds for shots, hits and knockouts.
+  Every map has three fixed layouts (Clásica, Girada, Cerrada; Muelle:
+  Patio, Laberinto, Torres) that change each round.
+- **Escondidas is first person on bigger maps, and Pepazo can sprint.**
+  Seekers aim at the suspicious object and click: one hit and the hider is
+  found ("¡Te encontré! Lola · 5 m"), a miss waits 1.6 s. Hiders see from
+  their disguise's height and press V to check it from behind. Every
+  Escondidas map is 1.5× larger with twice the props. In Pepazo, Shift
+  sprints for three seconds (no shooting while you run), and Tab shows the
+  table in both games. Mouse sensitivity is one shared setting.
+
+- **New game: Chapita.** Barrio baseball with a bottle cap and a
+  palo de escoba for up to eight panas in two teams, bots in the empty
+  seats. The pitcher picks in secret: Planea (floats, rises at the end),
+  Cae de golpe or Curva, aimed on a 3×3 grid, with a flat or a bent cap
+  that wobbles more. The batter reads it and swings on time at the right
+  height; where the chapita lands is the hit: past the sidewalk is a
+  sencillo, the parked car a doble, the lamp post a triple, over the
+  roofs ¡jonrón!, short of the acera an out. Fielders catch on a closing
+  circle; miss up close and it's a chapazo with a tuyuyo on your head.
+  The señora's window, house rules on a ruleta (carro que pasa = tiempo,
+  azotea = out…), cuarto bate, Willy Mays, zurdos, apodos on every
+  franela, titles at the end, a ¡Jonrón! derby, and two fields: the
+  barrio street and the blue court under the superbloques.
+
+- **New game: ¡Stop!** The notebook word game at a plaza table for up to
+  eight panas, with bots in the empty chairs. The turn pana stops the
+  letter wheel with ¡Para!, everyone fills a secret notebook page (the
+  others only see how many boxes you filled), and the first full sheet
+  yells ¡STOP!: "¡Basta! 3… 2… 1…" and pencils down. Then the review, one
+  category at a time: words the game knows count on their own, wrong
+  letters and blanks don't, and the doubtful ones go to "¿Eso cuenta?" with
+  thumbs up or down (a tie favors the author). 100 for a word nobody else
+  wrote, 50 when shared, +50 Creatividad when the table loves it, and the
+  table remembers what it accepted. Clásicas, Criollas, Mezcla or Al azar
+  categories, Stop rápido, hard letters and a "más criollo" option. It
+  runs on El Saber, a new shared list of 1,600+ Venezuelan words with
+  explanations ("Pichirre = tacaño") that other games can use too.
+
+- **New game: La Rueda de Tambor.** A tambor party on the beach by the
+  pink shack (or the malecón at night) for up to eight panas, with bots on
+  the drums and in the crowd. Drummers keep the beat on four stations
+  (Palo, Mano, Charrasca, Caracol) and fill the Sabor; two dancers follow
+  the MCP's calls (¡Cadera!, ¡Vuelta!, ¡Pañuelo!, ¡Pégate!, ¡Abajo!,
+  ¡Golpe!) and three misses get you "¡Sal de la rueda!"; la gente claps
+  for Bulla and can cut the line once. Roles rotate every song, titles
+  close the game. Also Relevo, Toque libre and ¡Golpe! (repeat the MCP's
+  pattern or you're out). Music plays and is judged on each pana's own
+  computer, so voice-chat lag never ruins anyone's timing.
+
+- **New game: ¿Quién quiere ser mi pana? (QQSMP).** A TV trivia show in
+  the plaza at night for up to six panas, with bots in empty podiums.
+  Everyone answers at once and answers stay secret until the host reveals
+  them by name, so "puse la B" on voice chat may be a bluff. Climb twelve
+  steps of mangos (4 and 8 are safe), use Copiarse, Mitad y mitad, Doble o
+  nada and Plantarse once each, then bet your mangos on the final question
+  for the Mango de oro. The hub card can now show a short name (QQSMP)
+  while the banner keeps the full one.
+
+- **You throw the dice now, con arrechera.** In Ludo and Bululú hold the
+  button or Space to shake the dice and let go, or flick them across the
+  table: the harder you shake or flick, the wilder they fly and bounce
+  before landing on the number. Every pana in the room sees the same throw.
+
+- **The dice decide who starts.** Ludo and Bululú open with everyone
+  throwing one die; the highest goes first and a tie throws again.
+
+- **Eating a ficha in Ludo hits harder.** Fichas hop cell by cell; the one
+  you land on flies home spinning, the panas at the table cheer and rage,
+  and a callout says who ate whom.
+
+- **Bolas Criollas charges its throw like Billar.** Hold Lanzar or Space and
+  the force rises and falls; let go to throw. The slider is gone, and
+  Bululú's Bolas Criollas minigame works the same way.
+
+- **The dominó table talks back too.** Open with the double six and you
+  salí con la cochina; doubles, a last tile, a pass ("Ando limpio", then
+  "Más aburrido que mocho en piñata"), ¡Dominó!, ¡Capicúa! and ¡Tranque!
+  pop over the pana who did it, and quick chat now shows over the speaker.
+  The results wait a moment so you can see the last shout.
+
+- **The panas at the Caída table talk.** A comic bubble pops over whoever
+  just dealt, sang a canto, made a caída or swept the table, and the
+  victim answers back ("¡Me agarró fuera de base!", "Más salado que pescado
+  en Semana Santa"). Everyone at the table sees the same line.
+
+- **Every town's houses come from the Creador de casas.** Derrape's Plaza
+  and canal villas, Puerto, Bululú (Chinazo's patio included), Chichí and
+  the shared plaza now wear the maker's grilles, lanterns, roofs and wall
+  finishes, and the brick finishes are big enough to see from the road.
+
+- **Derrape's Taller is a showroom you shop in with mangos.** The Taller
+  page opens with the garage panel docked beside the car: live stat bars,
+  one row of tabs and two columns of parts with their stat pills and mango
+  prices. Coins you pick up in a race are exchanged one for one for
+  mangos at the finish, plus the podium and trophy prizes.
+
+- **Every map grows the new Árboles Pana trees.** Mangos, ceibas,
+  araguaneyes, apamates, cocoteros, moriches, pinos, mangles and the selva
+  giants are rebuilt with real branching limbs, leafy clumps, fruit and
+  flowers, and they sway in the wind. Samanes shade the Plaza parks and the
+  Llanos pastures, and Selva adds yagrumos, cacao, tree ferns and walking
+  palms. Pana Studio lists all eighteen species.
+
+- **Every sign on Derrape's circuits is a cartoon wooden board.** Track
+  names, the META gantry, shop fronts and warnings use chunky lettering that
+  always fits its board, and feather flags replace the blank pennant panels.
+
+- **Build your room with the same quick settings and Más ajustes menus.**
+  Hosts can choose the prototype's playable rules, maps, timers and team
+  formats, with live updates for guests and a one-click reset. Join or swap
+  teams through the same grouped pana cards. Más ajustes ends the settings
+  panel, and start controls stay visible on small screens. Caída offers
+  Individual or Equipos and adjusts its seats as friends join.
+
+- **Bring six panas to Billar, Bululú, Caída, Dominó and Bolas Criollas.**
+  Billar supports two teams of three with rotating shooters, Bola 9,
+  called pockets and multi-rack matches. Bululú's board and all twelve
+  minigames support six players; the other table games rotate every seat.
+  Games with eight-player rooms retain them; Ludo keeps four colours.
+
+- **Derrape's circuits are dressed for a fiesta.** Eleven tracks have warm
+  golden sunlight, a glowing sun halo and brighter skies, roads and grass.
+  The roadsides have araguaney, apamate and bucare trees in bloom, flower
+  beds, balloons, bunting, checkered banners and ice-cream carts. Flocks of
+  macaws and scarlet ibis and morpho butterflies fly overhead, and rounded
+  far mountains, tepuys and hot-air balloons make each map feel bigger. The
+  fiesta props, apamate and bucare trees are in Pana Studio too.
+
+- **Cuevas del Río opens through rock arches, and cliffs look warm and rounded.**
+  The cave roof is closed, with light falling through two small skylights,
+  and every map's cliff faces lose their dark stripes.
+- **Pana Selva is twice as long, with a jaguar cave and a plateau.** Climb
+  through a cave with a temple pyramid, a cenote and two jaguars, cross the
+  flower plateau, come down a timber ledge and splash through the ford.
+- **Salinas del Viento is twice as long and dives into a hidden salt mine.**
+  North of the flats the road plunges down a salt cut into a closed tunnel:
+  three dim halls of glowing crystals, salt pools, a waterfall and a plank
+  shortcut, then climbs back into the sun.
+
+- **Time your release to control shot strength in Billar.**
+  Hold the shot button or Space/Enter to reveal a rising and falling power
+  meter, then release to shoot. The red zone delivers the strongest shots.
+
+- **Eight new cars and a real Taller in Derrape.** La Pulga, El Caprichoso,
+  El Por Puesto, El Burro, El Chigüire, La Chispa, El Tepuy and La Reina join
+  the grid with rounded toy bodies. In the Taller you can try a body, wheels,
+  motor, alerón, front bar, roof cargo, roll cage, finish, accent, rims, decal
+  or stripes on the turntable before buying; each part shows its "+2 Vel" on
+  the stat bars and changes the car a little in every race, online too.
+
+- **Jaguars, glowing cave crystals and foaming cascades in Pana Studio.**
+  A prowling, sitting or black jaguar, a carved stone jaguar statue and
+  lintel, rainbow crystal clusters that pulse, cave skylights with dust
+  and rain, and streams that whiten down their steps, ready for new maps.
+
+- **Aim from behind the cue ball in Billar, and play Pana Bot on four difficulties.**
+  The new default camera bends over the shot like the player would, with a tall
+  power bar, a spin pad for follow, draw and side english, and a camera button
+  (C). Fácil shows where both balls go, including rebounds; Experto shows only
+  the cue's direction, and Pana Bot aims better as the difficulty rises.
+
+- **Warmer sunlight over every table.** Billar, Póquer, Dominó, Ludo, Caída and
+  Bolas Criollas share one golden late-morning light and sky, and the pool
+  table has bright green cloth and honey wood.
+
+- **Choose how sharp Pintura's bots shoot.** The host picks Fácil to Experto in
+  the lobby: easy bots spray and pause, expert bots rarely miss.
+
+- **Pintura looks like a paint battle.** The plaza court has warm stone
+  paving, crates and ground splattered from earlier games, bunting on wooden
+  posts, and every hit leaves a glossy splat with drips.
+
+- **The plaza feels alive around every table and court.** A pack of karts
+  from Derrape races past in front of the houses, panas stroll along the edges
+  and guacamayas circle overhead while you play Billar, Dominó, Póquer, Ludo,
+  Caída or Bolas Criollas.
+
+- **Throw Bolas Criollas from behind your pana, on a court in the plaza.**
+  The court now sits in Plaza Pana under papel picado, with benches, coolers,
+  planters and a chalk scoreboard; the host can move it to Puerto Coco, Hato del
+  Sol or Ruinas del Mango. Pick Fácil to see where every ball ends up, or
+  Experto for rival bots that knock your ball away. A camera button switches to
+  a straight-down view. Bululú's criollas minigame moved to the beach court.
+  Or play at Estadio Pana, in front of a cheering grandstand while the Derrape
+  race roars down the straight.
+
+- **Race to real recorded songs in Derrape and Curiara, with a separate Música slider.**
+  Every circuit has its own song (joropo in Los Llanos, gaita in the plaza, calipso
+  in Chi Chi…), plus garage, battle and results music and a finish fanfare. The
+  music speeds up on the final lap and dulls while you spin out.
+
 - **See interaction progress while reviving panas and turning Reliquia's wheels.**
   The game now attaches the shared progress ring's mesh correctly.
+
+- **Start a new game already in 3D with `.\dev.ps1 new-game <id> -Kind table|live`.**
+  The scaffold creates a playable plaza table or a real-time plaza game with your
+  pana, shared rooms, rules tests and a two-client browser suite that pass from
+  the first run. Contributors: AGENTS.md now says every game is 3D.
+
+- **Ludo sits at a real table in the plaza instead of looking straight down at a flat board.**
+  It shares Billar's and Póquer's 3D stage (sky, fountain, framed camera); the top
+  view is still a button away.
 
 - **Browse aligned launcher pages and see your pana preparing before the editor opens.**
   Shared page widths keep the header and content edges together. The character
@@ -226,6 +473,76 @@ Maintenance release: no changes you will notice.
 
 ### Changed
 
+- **Lancha and Chapita have their own launcher art.** Lancha's tile shows
+  the race jumping the Raudales de Atures, and Chapita's in-game picture
+  is replaced by a batter launching the flag-painted chapita.
+
+- **Online, your own pana moves the moment you press a key.** In Pana
+  Cocina, Reliquia, Escondidas, Galope and Lancha a guest no longer waits for
+  the host to see the key before their pana, horse or lancha moves; the host
+  still has the last word, so everyone ends up in the same place.
+
+- **Derrape and Bululú start with half the download.** Derrape fetches
+  only the map you pick and Bululú only the minigame being played, and the
+  music is about a third smaller.
+
+- **Games run smoother on phones.** A phone now starts on *Equilibrada*
+  instead of *Nítida*, shadow detail follows the quality you pick, and
+  when a game can't keep up it draws fewer pixels by itself until you
+  choose a quality again.
+
+- **Derrape keeps up on slower phones.** The HUD, minimap and camera
+  update once per frame instead of once per physics step, so a slow frame
+  no longer makes the next one slower.
+
+- **You can always find your own pana in a Bululú minigame.** A ring in
+  your colour at your feet and a chevron over your head mark you, even
+  when friends wear the same outfit.
+
+- **¡Atrapa los mangos! and ¡Embuste! got real places to play.** The mango
+  yard has a proper mango tree, crates of the day's pick and bunting; the
+  Embuste camp is now a dig site with ruins round the relic, braziers,
+  tents, supplies and a lookout tower.
+
+- **Bululú shows how far the mango cart is.** Your turn and the dice
+  prompt say how many tiles away the cart is, and at the fork each route
+  says how many tiles it takes to reach it.
+
+- **Everyone says ¡Listo! before an online Bululú minigame.** Each pana
+  gets their own button and sees who is ready; it starts when all are,
+  or after 15 seconds. Before, only the host was asked.
+
+- **Bululú's minigames tell you what to do right now.** A line under the
+  cards shows your secret role and the vote in ¡Embuste!, run or freeze
+  and your disguises left in ¡Momia!, when to grab the tail in ¡Coleo!,
+  the collapse warning and turbo in ¡Choque!, the log about to reverse in
+  ¡No te caigas!, your splash cooldown in ¡Remolino! and the rock or ledge
+  ahead in ¡Raudal! (where your channel is tinted in your colour). In
+  ¡Embuste! a mummy
+  who never cranks now gets caught: bots notice whose lantern never
+  lights, while a careful, unhurried crank hardly spills any sand.
+
+- **¡Remada! keeps your canoe in the picture.** The camera no longer
+  races off with the leaders and leaves you behind. A ring on the water
+  around your canoe shows your rhythm: it turns green in the ¡Remazo!
+  window and coral when you mash. A strip at the bottom shows how far
+  down the caño everyone is, and in every minigame the six score cards
+  sit in one row so the timer never covers one.
+
+- **Bululú's minigames fit a phone.** In landscape the six score cards
+  shrink to one slim strip at the top and the menu moves to the corner, so
+  the field is clear; your card says TÚ. Touch buttons match each minigame
+  (no jump button where nothing jumps; ¡Dale!, Turbo, Jalar and friends
+  where there is an action). Held upright, Bululú asks for landscape, and
+  if you keep playing that way the camera widens so every pana stays in
+  view; Chinazo plays letterboxed so aiming matches everyone else's.
+
+- **QQSMP has three Tema packs.** Venezuela gains Historia de Venezuela
+  and Naturaleza venezolana; Cultura general brings Ciencia, Geografía,
+  Historia universal, Deportes, Animales and Arte y entretenimiento; De
+  todo mixes them all. The host picks one in the room options.
+
+
 - **Play Billar, Póquer and ¡Pintura! inside Pana's 3D plaza.**
   Pool has a physical table, balls, cue and perspective aiming. Poker deals
   cards onto the felt beside real chip stacks and seated panas. Paintball
@@ -249,6 +566,36 @@ Maintenance release: no changes you will notice.
   points, DNF/DNS/retirement and championship tiebreaks for local and online play.
 
 ### Fixed
+
+- **An idle player can't stall an online Bululú game.** A board choice
+  nobody answers is taken automatically after 30 seconds, and a host
+  change no longer reshuffles the minigames, so none repeats early.
+
+- **Bululú's ¡Caída! no longer favours the first seats.** When several
+  panas slap in the same instant, a fair draw picks who takes the cards
+  instead of the seat order; a wrong slap now says −1.
+- **In ¡Atrapa los mangos! the closest basket gets the mango.** Two
+  overlapping baskets used to hand it to whoever sat first.
+
+- **End-of-round cards fit on phones again.** The shared results card and
+  other kit modals counted their padding outside their width and spilled
+  past the right edge of narrow screens.
+
+- **A host whose tab is in the background no longer slows the game for everyone.**
+  Cocina, Reliquia and Escondidas now step the game by real elapsed time, so a
+  minimised host keeps the round at full speed.
+
+- **The menu and invite buttons stay put while you play.**
+  The shared lobby no longer re-inserts them on every HUD update, which could
+  swallow clicks and drop keyboard focus.
+
+- **Four-seat tables turn a fifth pana away instead of seating them where they can't play.**
+  Every room now takes its size from the game, so Caída, Dominó and Ludo stop at four,
+  and a full Póquer table gives a bot's chair to the arriving pana between hands.
+
+- **One bad message can no longer end every game on the server.**
+  A room that hits an error skips that message and keeps playing; the old `/ws`
+  relay is gone and Derrape no longer answers every clock ping twice.
 
 - **Bululú's dice show the numbers you rolled instead of always showing two fours.**
   The result faces turn toward the camera when the dice stop, and online guests

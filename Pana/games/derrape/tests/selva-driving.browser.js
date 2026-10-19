@@ -14,7 +14,7 @@ try {
     const {placeOnTrack}=await import('/g/derrape/track-kit.js'),{roughnessAt}=await import('/g/derrape/offroad.js');
     const {RIVER_SAMPLES}=await import('/g/derrape/tracks/selva-layout.js');
     await startRace(0);race.state='go';race.count=0;const T=getActiveTrack(),c=race.player;
-    function reset(off,speed=0,boost=0,u=0.19) {
+    function reset(off,speed=0,boost=0,u=0.6242) {
       const p=placeOnTrack(T,u*T.TOTAL,off);
       Object.assign(c,{x:p.x,z:p.z,y:T.groundAt(p.x,p.z),h:p.h,vx:Math.sin(p.h)*speed,vz:Math.cos(p.h)*speed,
         vf:speed,vr:0,vy:0,onGround:true,pitch:0,roll:0,pitchV:0,rollV:0,steer:0,boost,spin:0,coins:0,lap:1});
@@ -34,7 +34,7 @@ try {
       return {speed:Math.hypot(c.vx,c.vz),distance:Math.hypot(c.x-p.x,c.z-p.z),minRough,offset:Math.abs(T.offsetOf(c.x,c.z))};
     };
     const road=drive(0),grass=drive(14),boostedGrass=drive(14,3);
-    const recoveryStart=reset(13,5),center=placeOnTrack(T,0.19*T.TOTAL);c.h=Math.atan2(center.x-c.x,center.z-c.z);
+    const recoveryStart=reset(13,5),center=placeOnTrack(T,0.6242*T.TOTAL);c.h=Math.atan2(center.x-c.x,center.z-c.z);
     c.vx=Math.sin(c.h)*5;c.vz=Math.cos(c.h)*5;
     for(let i=0;i<60;i++)stepCar(c,{throttle:0.4,steer:0},1/60);
     const recovery={start:Math.abs(T.offsetOf(recoveryStart.x,recoveryStart.z)),end:Math.abs(T.offsetOf(c.x,c.z)),groundError:Math.abs(c.y-T.groundAt(c.x,c.z))};
@@ -53,7 +53,7 @@ try {
       if(Math.hypot(car.x-tree.x,car.z-tree.z)<tree.radius+1.6)trunkFailures.push({...tree,phase:'escape'});
     }
     const tunnelFailures=[];
-    for(const u of [0.45,0.47,0.5])for(const side of [-1,1]) {
+    for(const u of [0.7448,0.7541,0.768])for(const side of [-1,1]) {
       const previous=placeOnTrack(T,u*T.TOTAL,side*10.6),next=placeOnTrack(T,u*T.TOTAL,side*11.8);
       const car={...next,y:previous.y,vx:(next.x-previous.x)*10,vz:(next.z-previous.z)*10};T.constrainMotion(car,previous);
       if(Math.abs(T.offsetOf(car.x,car.z))>11.11)tunnelFailures.push({u,side});

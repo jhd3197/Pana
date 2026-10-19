@@ -2,12 +2,13 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { huntLayout, roundProps, nextLayoutSeed, MAP_PROPS } from '../public/layout.js';
 import { HuntRound, RULES, HIDE_TIMES } from '../public/rules.js';
-import { ARENAS, arenaLayout } from '../../../engine/arena-layouts.js';
+import { ARENAS, arenaLayout } from '../../../engine/worlds/arena-layouts.js';
 import { propDefinition } from '../../../engine/models/props/plaza-definitions.js';
 
 for (const { id } of ARENAS) test(`${id}: seeded props vary, stay clear and remain reachable`, () => {
   const original = id === 'plaza' ? MAP_PROPS : arenaLayout(id).props, saved = JSON.stringify(original);
-  const types = original.map(p => p.type).sort(), footprints = new Set();
+  // Escondidas doubles each map's props over its 1.5× larger court.
+  const types = [...original, ...original].map(p => p.type).sort(), footprints = new Set();
   for (let seed = 1; seed <= 100; seed++) {
     const props = roundProps(id, seed), layout = huntLayout(id, seed);
     assert.deepEqual(props, roundProps(id, seed));

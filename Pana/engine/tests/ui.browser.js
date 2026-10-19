@@ -21,7 +21,7 @@ try {
   await page.locator('#pana-set-quality [data-value="baja"]').click();
   await page.locator('#pana-set-hints').click();
   assert.deepEqual(await page.evaluate(() => JSON.parse(localStorage.getItem('pana:settings'))),
-    { sound: false, volume: 0.8, quality: 'baja', hints: false, orientation: 'juego' });
+    { sound: false, volume: 0.8, music: 0.5, quality: 'baja', hints: false, orientation: 'juego' });
   await page.keyboard.press('Escape');
   assert.equal(await page.locator('#pana-menu-dialog').evaluate(d => d.open), false);
   check('hub settings save sound, resolution and hints');
@@ -62,7 +62,7 @@ try {
   // Invite copies a clean room link.
   await page.goto(`${base}/g/cocina/?name=QA&debug`);
   await page.waitForFunction(() => window.cocina?.room.connected);
-  await page.locator('#invite').click();
+  await page.locator('#pana-lobby-invite').click();
   const link = await page.evaluate(() => navigator.clipboard.readText());
   assert.match(link, /\/g\/cocina\/\?room=/); assert.doesNotMatch(link, /debug|name=/);
   check('invite copies the room link without debug or name');
