@@ -68,7 +68,7 @@ for (const [i, def] of PLAZA_PROPS.entries()) {
 
 let state = { mapId: 'plaza', layoutSeed: 1, hideSeconds: RULES.hideSeconds, phase: 'lobby', players: [], round: 0, events: [] }, previousPhase = 'lobby';
 let drag = null, preference = 'hide', paused = false, yaw = 0.28, pitch = 0.22, eventId = 0, uiKey = '', snapRound = -1;
-let motionTime = 0, last = performance.now();
+let motionTime = 0, last = performance.now(), quiet = false;
 // First person by default; V (or the menu) switches to the camera behind your pana.
 let view = 'primera', lookPitch = 0, bob = 0, eye = 1.55, lastCooldown = 0;
 let portraitKey = '', hintId = 0;
@@ -271,11 +271,16 @@ addEventListener('keydown', event => {
   if (/^[1-5]$/.test(key)) transform(PLAZA_PROPS[Number(key) - 1].id);
 });
 addEventListener('keyup', event => { const key = event.key.toLowerCase(); keys.delete(key); if (key === 'tab') showBoard(false); });
-addEventListener('blur', () => { keys.clear(); touch.clear(); });
-document.addEventListener('visibilitychange', () => { keys.clear(); touch.clear(); });
+// Losing focus or hiding lets go of everything: the held buttons too, so a
+// button never looks held while it moves nothing. Becoming visible again
+// (another tab brought to the front first) must not drop a touch just made.
+const holds = [];
+function releaseAll() { keys.clear(); for (const h of holds) h.release(); touch.clear(); }
+addEventListener('blur', releaseAll);
+document.addEventListener('visibilitychange', () => { if (document.hidden) releaseAll(); });
 // Held touch buttons (engine/touch.js).
 for (const button of document.querySelectorAll('[data-move]')) {
-  holdButton(button, { down: () => touch.add(button.dataset.move), up: () => touch.delete(button.dataset.move) });
+  holds.push(holdButton(button, { down: () => touch.add(button.dataset.move), up: () => touch.delete(button.dataset.move) }));
 }
 const looking = createLookControls($('world'), { enabled: () => !paused && firstPerson(),
   look(dyaw, dpitch) { yaw += dyaw; lookPitch = THREE.MathUtils.clamp(lookPitch + dpitch, -.75, .6); },
@@ -372,7 +377,8 @@ function frame(now) {
   }
   drawMap();
   if (state.hint && isSeeker(room.id)) { const { bounds } = huntLayout(state.mapId, state.layoutSeed), k = Math.min(288 / (bounds.x * 2), 258 / (bounds.z * 2)); map.fillStyle = '#ffc629'; map.beginPath(); map.arc(150 + state.hint.x * k, 135 + state.hint.z * k, state.hint.kind === 'whistle' ? 9 : 20, 0, Math.PI * 2); map.strokeStyle = '#ffc629'; map.stroke(); }
-  renderer.render(scene, camera); requestAnimationFrame(frame);
+  if (!quiet) renderer.render(scene, camera);
+  requestAnimationFrame(frame);
 }
 // Real elapsed time (the room catches up in fixed steps): a host in a
 // background tab gets timers about once a second.
@@ -386,6 +392,9 @@ if (DEBUG) window.hunt = { room, menu, environment, get state() { return state; 
   // Turn the first-person view to face a point (QA).
   aimAt(x, z) { const me = getMe(); yaw = Math.atan2(-(x - me.x), -(z - me.z)); lookPitch = 0; },
   step(seconds) { if (!room.isHost) return; for (let t = 0; t < seconds; t += 1 / 60) room.game.update(1 / 60, new Map()); room.tick(0, {}); },
-  place(id, x, z) { if (!room.isHost) return; const p = room.game.players.find(p => p.id === id); if (p) Object.assign(p, { x, z }); room.tick(0, {}); } };
+  place(id, x, z) { if (!room.isHost) return; const p = room.game.players.find(p => p.id === id); if (p) Object.assign(p, { x, z }); room.tick(0, {}); },
+  // Suites stop drawing on clients that only watch: software WebGL frames
+  // otherwise starve the host's ticks past the input timeout.
+  quiet(value) { quiet = !!value; } };
 
 await prepareScene({ renderer, scene, camera });

@@ -106,6 +106,15 @@ body:not(.in-lobby) .lobby-hint{display:none}
   .touch-side .pk-touch{font-size:15px;padding:0 12px}
   .paddle-panel{left:50%;transform:translateX(-50%);bottom:136px;width:min(420px,calc(100vw - 32px))}
 }
+/* A portrait phone has no room for five buttons in a row (Der. ended up off
+   screen at 390 px): Ciar and Auto stack beside Izq., everything a bit smaller. */
+@media(pointer:coarse) and (max-width:480px){
+  .touch-side{gap:8px;--pk-touch:52px}
+  .touch-side .pk-touch{font-size:13px;padding:0 8px}
+  .touch-side .stroke-btn{--pk-touch:88px;font-size:20px;padding:0 12px}
+  .touch-side:first-child{display:grid;grid-template-columns:auto auto;align-items:end;gap:6px 8px}
+  .touch-side:first-child .stroke-btn{grid-row:1/3}
+}
 @media(max-width:720px){
   .topbar{padding:12px 16px}
   #game-nav{gap:6px}

@@ -32,7 +32,7 @@ const world = createKitchenScene(), { scene } = world;
 const camera = new THREE.OrthographicCamera(-20, 20, 15, -15, 0.1, 200);
 const actors = new Map(), keys = new Set(), touch = new Set(), previews = new Map();
 let state = new Kitchen().snapshot(), paused = false, canGoOffline = false, lastEvent = 0, lastPhase = '', renderedOrders = '', teamKey = '', heldKey = '', last = performance.now(), elapsed = 0;
-let aimWidth = innerWidth, aimHeight = innerHeight;
+let aimWidth = innerWidth, aimHeight = innerHeight, quiet = false;
 function resize() {
   renderer.setSize(innerWidth, innerHeight); aimWidth = innerWidth; aimHeight = innerHeight;
   const ratio = innerWidth / innerHeight;
@@ -205,13 +205,18 @@ addEventListener('keydown', e => {
   if (!paused) keys.add(key);
 });
 addEventListener('keyup', e => keys.delete(e.key.toLowerCase()));
-addEventListener('blur', () => { keys.clear(); touch.clear(); });
-document.addEventListener('visibilitychange', () => { keys.clear(); touch.clear(); });
+// Losing focus or hiding lets go of everything: the held buttons too, so a
+// button never looks held while it moves nothing. Becoming visible again
+// (another tab brought to the front first) must not drop a touch just made.
+const holds = [];
+function releaseAll() { keys.clear(); for (const h of holds) h.release(); touch.clear(); }
+addEventListener('blur', releaseAll);
+document.addEventListener('visibilitychange', () => { if (document.hidden) releaseAll(); });
 // Held touch buttons (engine/touch.js).
 for (const button of document.querySelectorAll('[data-move]')) {
-  holdButton(button, { down: () => touch.add(button.dataset.move), up: () => touch.delete(button.dataset.move) });
+  holds.push(holdButton(button, { down: () => touch.add(button.dataset.move), up: () => touch.delete(button.dataset.move) }));
 }
-holdButton($('dash'), { down: () => touch.add('dash'), up: () => touch.delete('dash') });
+holds.push(holdButton($('dash'), { down: () => touch.add('dash'), up: () => touch.delete('dash') }));
 function input() {
   if (paused || state.phase !== 'playing') return { x: 0, z: 0 };
   const x = Number(keys.has('d') || keys.has('arrowright') || touch.has('right')) - Number(keys.has('a') || keys.has('arrowleft') || touch.has('left'));
@@ -239,12 +244,16 @@ function frame(now) {
   world.ring.visible = state.phase === 'playing' && !!player;
   if (player) world.ring.position.set(actors.get(player.id).root.position.x, 0.18, actors.get(player.id).root.position.z);
   world.update(elapsed, state, camera, near, state.phase === 'playing');
-  renderer.render(scene, camera); requestAnimationFrame(frame);
+  if (!quiet) renderer.render(scene, camera);
+  requestAnimationFrame(frame);
 }
 show('loading', false); room.connect(); requestAnimationFrame(frame);
 addEventListener('pagehide', () => { clearInterval(ticker); room.dispose(); });
 if (qs.has('debug')) window.cocina = { room, camera, actors, renderer, menu, get state() { return state; },
   step(seconds) { if (!room.isHost) return; for (let i = 0; i < seconds; i += 0.05) room.game.update(Math.min(0.05, seconds - i)); room.publish(); },
-  place(id, x, z) { const p = room.game?.players.find(p => p.id === id); if (p) { p.x = x; p.z = z; room.publish(); } }, STATIONS };
+  place(id, x, z) { const p = room.game?.players.find(p => p.id === id); if (p) { p.x = x; p.z = z; room.publish(); } }, STATIONS,
+  // Suites stop drawing on clients that only watch: software WebGL frames
+  // otherwise starve the host's ticks past the input timeout.
+  quiet(value) { quiet = !!value; } };
 
 await prepareScene({ renderer, scene, camera });
