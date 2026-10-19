@@ -453,9 +453,11 @@ body.mini-aim canvas { cursor: none; touch-action: none; }
     padding: 0 16px;
     z-index: 4;
   }
-  /* the buttons themselves are the kit's .pk-touch */
+  /* the buttons themselves are the kit's .pk-touch; each minigame names its pad */
   body.in-mini .touch-2d { align-items: flex-end; }
-  body.in-mini.mini-2d .touch-1d, body.in-mini:not(.mini-2d) .touch-2d { display: none; }
+  body.in-mini[data-pad="dpad"] .touch-1d, body.in-mini:not([data-pad="dpad"]) .touch-2d { display: none; }
+  body.in-mini[data-pad="r"] #t-left, body.in-mini[data-pad="none"] #t-left, body.in-mini[data-pad="none"] #t-right { visibility: hidden; }
+  body.in-mini[data-pad="none"] .touch-1d { justify-content: flex-end; }
   /* aim minigames: the whole screen is the control */
   body.in-mini.mini-aim .touch { display: none; }
 }
@@ -485,12 +487,6 @@ body.mini-aim canvas { cursor: none; touch-action: none; }
   .top-actions .pk-btn { min-height: 40px; padding: 8px 14px; }
   .keys { display: none; }
   .timer { top: 10px; left: auto; right: 12px; transform: none; padding: 6px 16px 6px 12px; }
-  body.in-mini .touch { bottom: 210px; }
-  /* aim minigames need the whole field: the cards become a slim row at the top */
-  body.mini-aim .cards { top: 8px; bottom: auto; left: 132px; right: 124px; grid-template-columns: repeat(3, 1fr); gap: 6px; }
-  body.mini-aim .pcard { padding: 4px 6px; }
-  body.mini-aim .pcard img { width: 24px; height: 24px; }
-  body.mini-aim .pcard small { display: none; }
   .timer b { font-size: 28px; }
   .prompt { top: auto; bottom: 206px; }
   .prompt .pk-btn--primary { font-size: 24px; }
@@ -507,4 +503,64 @@ body.mini-aim canvas { cursor: none; touch-action: none; }
   .rname { font-size: 16px; }
   .rv { min-width: 0; }
   .rv b { font-size: 20px; }
+}
+
+/* Phones in either orientation and short landscape screens. In a minigame the
+   field matters most: the cards become one slim strip at the top, the menu
+   sits in the corner and the touch buttons stand at the bottom edge. */
+@media (max-width: 860px), (max-height: 500px) {
+  body.in-mini .logo { display: none; }
+  body.in-mini .cards {
+    top: 6px; bottom: auto; left: 64px; right: 92px;
+    grid-template-columns: none; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: 4px;
+  }
+  body.in-mini .pcard { gap: 4px; padding: 3px 5px; border-radius: 10px; border-width: 2px; }
+  body.in-mini .pcard img { width: 22px; height: 22px; border-width: 1px; }
+  body.in-mini .pcard small { display: none; }
+  body.in-mini .vals .big b { font-size: 16px; }
+  body.in-mini .vals .big .ico { width: 14px; height: 14px; }
+  body.in-mini .crown { top: -9px; left: 4px; font-size: 11px; }
+  body.in-mini .top-actions { top: 6px; left: 8px; right: auto; bottom: auto; }
+  body.in-mini .top-actions .pk-btn { min-height: 36px; padding: 6px 10px; font-size: 13px; }
+  body.in-mini .top-actions .pk-kbd { display: none; }
+  body.in-mini .timer { top: 6px; right: 8px; left: auto; transform: none; padding: 3px 12px 3px 8px; }
+  body.in-mini .timer b { font-size: 22px; }
+  body.in-mini .timer svg { width: 20px; height: 20px; }
+  body.in-mini .touch { bottom: calc(14px + env(safe-area-inset-bottom)); }
+  body.in-mini .reticles { top: 0; }
+  #count { font-size: 110px; }
+}
+/* You, among six cards: your own colour around the card and a small tab. */
+.pcard.me { border-color: var(--c); box-shadow: var(--pk-drop), 0 0 0 2px color-mix(in srgb, var(--c) 45%, transparent); }
+.pcard.me::after {
+  content: 'TÚ'; position: absolute; bottom: -8px; left: 50%; translate: -50% 0;
+  padding: 0 6px; border-radius: 5px; background: var(--c); color: #fff;
+  font: 900 9px/1.5 var(--pk-sans); letter-spacing: .5px;
+}
+/* Short landscape phones on the board: one row of six cards along the bottom. */
+@media (max-height: 500px) {
+  body:not(.in-mini) .logo { top: 6px; }
+  body:not(.in-mini) .logo h1 { font-size: 24px; }
+  .cards { left: 12px; right: 12px; top: auto; bottom: 8px; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 6px; }
+  .pcard { gap: 5px; padding: 4px 6px; }
+  .pcard img { width: 26px; height: 26px; }
+  .pcard small { display: none; }
+  .vals { gap: 6px; }
+  .medal { width: 18px; height: 18px; font-size: 10px; left: -6px; top: -7px; }
+  body:not(.in-mini) .top-actions { top: 76px; left: 12px; right: auto; bottom: auto; }
+  .top-actions .pk-btn { min-height: 36px; padding: 6px 12px; }
+  .side { top: 6px; width: 132px; }
+  .minimap { width: 132px; height: 112px; }
+  .sky { display: none; }
+  .prompt { top: auto; bottom: 66px; }
+  .toast { top: 32%; }
+  .mini-intro { top: 50%; }
+  .mini-intro .pk-title { font-size: 28px; }
+}
+
+/* Upright phones: six strips are too narrow for a face, so the colour says who. */
+@media (max-width: 520px) {
+  body.in-mini .pcard { justify-content: center; border-color: color-mix(in srgb, var(--c) 70%, transparent); }
+  body.in-mini .pcard img { display: none; }
+  body.in-mini .vals .big .ico { display: none; }
 }

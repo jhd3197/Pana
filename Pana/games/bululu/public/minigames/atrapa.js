@@ -59,6 +59,7 @@ export default {
   title: '¡Atrapa los mangos!',
   howto: 'Muévete y atrapa los mangos con tu cesta. Los de oro valen 3. ¡Ojo con los cocos!',
   keys: [['A D / ← →', 'moverte']],
+  touch: { action: null },
   icon: 'mango',
   time: 30,
 

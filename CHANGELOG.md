@@ -450,6 +450,14 @@ becomes the GitHub release's notes.
 
 ### Changed
 
+- **Bululú's minigames fit a phone.** In landscape the six score cards
+  shrink to one slim strip at the top and the menu moves to the corner, so
+  the field is clear; your card says TÚ. Touch buttons match each minigame
+  (no jump button where nothing jumps; ¡Dale!, Turbo, Jalar and friends
+  where there is an action). Held upright, Bululú asks for landscape, and
+  if you keep playing that way the camera widens so every pana stays in
+  view; Chinazo plays letterboxed so aiming matches everyone else's.
+
 - **QQSMP has three Tema packs.** Venezuela gains Historia de Venezuela
   and Naturaleza venezolana; Cultura general brings Ciencia, Geografía,
   Historia universal, Deportes, Animales and Arte y entretenimiento; De

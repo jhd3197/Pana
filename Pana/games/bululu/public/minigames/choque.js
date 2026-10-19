@@ -44,6 +44,7 @@ export default {
   title: '¡Choque de carritos!',
   howto: 'Empuja a los demás carritos al agua. Cada uno que tumbes es un punto. Al final, el borde de la tarima se cae… ¡quédate en el centro!',
   keys: [['WASD / flechas', 'manejar'], ['Espacio', 'turbo']],
+  touch: { action: 'Turbo' },
   icon: 'car',
   time: TIME,
   input: '2d',

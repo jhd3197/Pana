@@ -27,6 +27,7 @@ export default {
   title: '¡No te caigas!',
   howto: 'Salta el tronco cuando pase por debajo. Se pone cada vez más rápido… ¡y a veces cambia de dirección!',
   keys: [['Espacio / W', 'saltar']],
+  touch: { pad: 'none', action: 'jump' },
   icon: 'jump',
   time: 30,
 

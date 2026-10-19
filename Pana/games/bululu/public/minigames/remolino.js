@@ -33,6 +33,7 @@ export default {
   title: '¡Remolino!',
   howto: 'Un remolino crece en la laguna y te jala. Rema alternando A y D para alejarte del centro y empuja a los demás con Espacio. ¡Gana el último que quede fuera!',
   keys: [['A D / ← →', 'remar alternando'], ['Espacio', '¡salpicón! empuja al de al lado']],
+  touch: { action: 'Salpicón' },
   icon: 'whirl',
   time: REMOLINO.time,
 

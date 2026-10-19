@@ -8,6 +8,7 @@ import { makeMango } from '/engine/models/props/mango.js';
 import { createBoard, createToken, createDie, FORK } from './board.js';
 import { createMinimap } from './minimap.js';
 import { track, release, resources } from './minigames/lifetime.js';
+import { fitCamera, letterbox } from './minigames/framing.js';
 import atrapa from './minigames/atrapa.js';
 import caigas from './minigames/caigas.js';
 import caida from './minigames/caida.js';
@@ -25,7 +26,7 @@ import * as rules from './rules.js';
 import { ICONS as SVG } from '/engine/icons.js';
 import { COLORS, RIVALS, START_COINS, PRICE, DOUBLES_BONUS, TREE_COINS } from './rules.js';
 import { createGameMenu, toggleMute } from '/engine/ui.js';
-import { holdButton } from '/engine/touch.js';
+import { holdButton, drawIcons } from '/engine/touch.js';
 import { bindDiceThrow, cleanPower } from '/engine/dice-throw.js';
 import { namesList } from '/engine/roll-off.js';
 import { createDiceTable, rollOffOrder } from './dice-table.js';
@@ -115,7 +116,7 @@ function selectSky(mode, save = true) {
 // Esc pauses on game time: turns, timers, tweens and minigames all wait.
 let paused = false;
 const menu = createGameMenu({
-  title: 'Bululú', heading: 'Pausa', sound,
+  title: 'Bululú', heading: 'Pausa', sound, orientation: 'horizontal',
   note: () => online ? 'La partida online sigue mientras abres el menú.' : 'La partida está en pausa.',
   invite: () => inviteUrl(code),
   controls: [['Espacio', 'Tirar los dados / saltar'], ['A D / ← →', 'Moverte en los minijuegos'], ['Tab', 'Ver el tablero'],
@@ -372,10 +373,12 @@ const aim = { x: 0, y: 0, pull: false, keyPull: false, fire: false, keyT: 0, poi
 const miniAim = () => mini?.def.input === 'aim';
 const clampAim = (v) => Math.max(-1, Math.min(1, v));
 const canvasEl = renderer.domElement;
+// The minigame's drawing box: the whole window, or a letterbox for a fixed aspect.
+const miniBox = () => letterbox(mini?.def.aspect);
 function aimAtPointer(e) {
-  const r = canvasEl.getBoundingClientRect();
-  aim.x = clampAim(((e.clientX - r.left) / r.width) * 2 - 1);
-  aim.y = clampAim(1 - ((e.clientY - r.top) / r.height) * 2);
+  const r = miniBox();
+  aim.x = clampAim(((e.clientX - r.x) / r.w) * 2 - 1);
+  aim.y = clampAim(1 - ((e.clientY - r.y) / r.h) * 2);
 }
 const aimHandlers = {
   pointerdown(e) {
@@ -392,9 +395,9 @@ const aimHandlers = {
     if (e.pointerType === 'mouse') return aimAtPointer(e);
     if (aim.pointer !== e.pointerId || !aim.touch) return;
     // a finger would hide the reticle, so touch drags it (a bit faster than the finger)
-    const r = canvasEl.getBoundingClientRect();
-    aim.x = clampAim(aim.x + ((e.clientX - aim.touch.x) / r.width) * 3);
-    aim.y = clampAim(aim.y - ((e.clientY - aim.touch.y) / r.height) * 3);
+    const r = miniBox();
+    aim.x = clampAim(aim.x + ((e.clientX - aim.touch.x) / r.w) * 3);
+    aim.y = clampAim(aim.y - ((e.clientY - aim.touch.y) / r.h) * 3);
     aim.touch = { x: e.clientX, y: e.clientY };
   },
   pointerup(e) {
@@ -470,7 +473,7 @@ const ranks = () => rules.ranks(players);
 function renderCards() {
   const r = ranks();
   const best = Math.max(...miniScores);
-  const key = JSON.stringify([cardMode, turnOf, miniScores, players.map((p) => [p.coins, p.mangos])]);
+  const key = JSON.stringify([cardMode, turnOf, me?.i, miniScores, players.map((p) => [p.coins, p.mangos])]);
   if (key === lastCards) return;
   lastCards = key;
   $('cards').innerHTML = players.map((p) => {
@@ -478,7 +481,7 @@ function renderCards() {
     const stats = cardMode === 'board'
       ? `<span class="coins">${ICONS.coin}<b>${p.coins}</b></span><span class="mangos">${ICONS.mango}<b>${p.mangos}</b></span>`
       : `<span class="big">${ICONS[miniIcon]}<b>${miniScores[p.i]}</b></span>`;
-    return `<div class="pcard${turnOf === p.i ? ' turn' : ''}" style="--c:${p.color}">
+    return `<div class="pcard${turnOf === p.i ? ' turn' : ''}${p === me ? ' me' : ''}" style="--c:${p.color}">
       ${cardMode === 'board' ? `<span class="medal m${r[p.i]}">${r[p.i]}</span>` : ''}
       ${crown ? `<span class="crown">${SVG.crown}</span>` : ''}
       ${turnOf === p.i ? `<span class="tag">${p === me ? 'Tu turno' : 'Turno'}</span>` : ''}
@@ -857,10 +860,8 @@ async function playMinigame(def) {
   $('mini-intro').classList.add('hidden');
 
   const spec = online ? { serial: `${room.id}-${++miniSerial}-${Date.now()}`, seed: Math.floor(Math.random() * 2 ** 32),
-    id: def.id, players: playerData(), auto: AUTO, aspect: 16 / 9 } : null;
+    id: def.id, players: playerData(), auto: AUTO, aspect: def.aspect || null } : null;
   const game = createMini(def, spec);
-  game.camera.aspect = spec?.aspect || innerWidth / innerHeight;
-  game.camera.updateProjectionMatrix();
   miniScores = players.map(() => 0);
   miniIcon = def.icon;
   cardMode = 'mini';
@@ -868,12 +869,8 @@ async function playMinigame(def) {
   mini = { def, game, spec, authoritative: true, state: 'wait', left: def.time };
   if (online) { room.history = []; room.inputs.clear(); room.publish(captureOnline()); }
   game.update(0.0001, online ? players.map(() => IDLE_INPUT) : def.input === 'aim' ? IDLE_AIM : { x: 0, jump: false });
-  view = { scene: game.scene, camera: game.camera, update: () => {} };
-  document.body.classList.add('in-mini');
-  document.body.classList.toggle('mini-2d', def.input === '2d');
-  document.body.classList.toggle('mini-aim', def.input === 'aim');
   $('reticles').innerHTML = '';
-  if (def.input === 'aim') bindAim(true);
+  enterMini();
   setTimer(def.time);
 
   for (const n of ['3', '2', '1']) {
@@ -913,7 +910,7 @@ async function playMinigame(def) {
 
   mini = null;
   view = boardView;
-  freeMini(game);
+  freeMini(game); frameMini();
   document.body.classList.remove('in-mini');
   cardMode = 'board';
   setSign('');
@@ -925,11 +922,41 @@ async function playMinigame(def) {
   }
 }
 
+// The view, body classes, touch buttons and camera for the minigame in `mini`.
+// A module's `touch` names its pad ('lr', 'r', 'dpad' or 'none') and action
+// ('jump' draws the icon, a word is printed, null hides the button).
+function enterMini() {
+  const { def, game } = mini, touch = def.touch || {};
+  view = { scene: game.scene, camera: game.camera, update() {} };
+  document.body.classList.add('in-mini');
+  document.body.classList.toggle('mini-2d', def.input === '2d');
+  document.body.classList.toggle('mini-aim', def.input === 'aim' && mini.state !== 'outro');
+  document.body.dataset.pad = touch.pad || (def.input === '2d' ? 'dpad' : 'lr');
+  const action = touch.action === undefined ? 'jump' : touch.action;
+  for (const b of [$('t-jump'), $('t2-go')]) {
+    b.classList.toggle('hidden', !action);
+    b.replaceChildren(); b.dataset.icon = action === 'jump' ? 'jump' : '';
+    if (action === 'jump') drawIcons(b.parentElement); else b.textContent = action || '';
+    b.setAttribute('aria-label', action === 'jump' ? 'Saltar' : action || 'Acción');
+  }
+  if (def.input === 'aim') bindAim(true);
+  frameMini();
+}
+// Fits the minigame camera to the screen (framing.js). A module with a fixed
+// `aspect` (Chinazo's screen-space hits) draws letterboxed instead.
+function frameMini() {
+  const box = miniBox();
+  renderer.setViewport(box.x, box.y, box.w, box.h);
+  if (!mini) return;
+  const camera = mini.game.camera, aspect = box.w / box.h;
+  if (mini.def.frame === 'own') { camera.aspect = aspect; camera.updateProjectionMatrix(); } else fitCamera(camera, aspect);
+}
+
 function updateMini(dt) {
   const { game } = mini;
   if (mini.state === 'run') {
     game.update(dt, online ? room.takeInputs(players) : minigameInput(dt));
-    if (game.reticles) drawReticles(game.reticles());
+    if (game.reticles) drawReticles(game.reticles(), miniBox());
     mini.left -= dt;
     setTimer(Math.max(0, Math.ceil(mini.left)));
     miniScores = game.scores();
@@ -1159,7 +1186,7 @@ function captureOnline() {
 // Board resources survive a minigame's teardown; everything else it made is freed.
 function freeMini(game) { if (game) release(game.scene, resources(boardScene)); }
 function createMini(def, spec) {
-  if (!spec) { const game = def.create({ players, auto: AUTO }); track(game.scene); return game; }
+  if (!spec) { const game = def.create({ players, auto: AUTO, aspect: def.aspect }); track(game.scene); return game; }
   const rng = seeded(spec.seed);
   const game = withRandom(rng, () => def.create({ players: spec.players, auto: spec.auto, aspect: spec.aspect, localIndex: me?.i ?? -1 }));
   track(game.scene);
@@ -1177,7 +1204,7 @@ function clearMini() {
   const game = mini?.game;
   mini = null; view = boardView; miniFrame = 0; requestingFrames = false;
   freeMini(game);
-  document.body.classList.remove('in-mini', 'mini-2d', 'mini-aim');
+  document.body.classList.remove('in-mini', 'mini-2d', 'mini-aim'); frameMini();
   $('reticles').replaceChildren(); setTimer(null);
 }
 function applyOnline(state) {
@@ -1206,11 +1233,7 @@ function applyOnline(state) {
       clearMini(); setFreeLook(false);
       const def = MINIGAMES.find(m => m.id === spec.id);
       mini = { def, spec, game: createMini(def, spec), authoritative: false, state: spec.state, left: spec.left };
-      view = { scene: mini.game.scene, camera: mini.game.camera, update() {} };
-      document.body.classList.add('in-mini');
-      document.body.classList.toggle('mini-2d', def.input === '2d');
-      document.body.classList.toggle('mini-aim', def.input === 'aim' && spec.state !== 'outro');
-      if (def.input === 'aim') bindAim(true);
+      enterMini();
     }
     if (spec.state === 'outro' && mini.state !== 'outro') { bindAim(false); document.body.classList.remove('mini-aim'); }
     mini.state = spec.state; mini.left = spec.left;
@@ -1241,7 +1264,7 @@ function applyFrames(message) {
       const f = message.frames[i]; mini.game[f.method](f.dt, f.input); miniFrame++;
     }
   } finally { sound.muted = muted; }
-  if (mini.game.reticles && mini.state !== 'outro') drawReticles(mini.game.reticles());
+  if (mini.game.reticles && mini.state !== 'outro') drawReticles(mini.game.reticles(), miniBox());
 }
 function stopAuthority() {
   authority = 0;
@@ -1326,11 +1349,10 @@ function frame() {
 }
 
 addEventListener('resize', () => {
-  for (const c of [boardCam, mini?.game.camera].filter(Boolean)) {
-    c.aspect = online && c === mini?.game.camera ? mini.spec.aspect : innerWidth / innerHeight;
-    c.updateProjectionMatrix();
-  }
+  boardCam.aspect = innerWidth / innerHeight;
+  boardCam.updateProjectionMatrix();
   renderer.setSize(innerWidth, innerHeight);
+  frameMini();
 });
 boardCam.aspect = innerWidth / innerHeight;
 boardCam.updateProjectionMatrix();

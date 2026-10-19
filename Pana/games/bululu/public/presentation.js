@@ -29,7 +29,8 @@ export function makePortraits(players) {
 
 // Aim minigames draw a reticle per pana over the canvas: { x, y } in NDC, its
 // color, how far the china is pulled (0..1), and for you the stones left.
-export function drawReticles(list) {
+// `area` is the minigame's drawing area in CSS pixels (letterboxed online).
+export function drawReticles(list, area = { x: 0, y: 0, w: innerWidth, h: innerHeight }) {
   const box = $('reticles');
   while (box.children.length < list.length) {
     const el = document.createElement('div');
@@ -41,7 +42,7 @@ export function drawReticles(list) {
     const el = box.children[i];
     el.style.setProperty('--c', r.color);
     el.style.setProperty('--pull', r.pull.toFixed(2));
-    el.style.transform = `translate(${((r.x + 1) / 2) * innerWidth}px, ${((1 - r.y) / 2) * innerHeight}px)`;
+    el.style.transform = `translate(${area.x + ((r.x + 1) / 2) * area.w}px, ${area.y + ((1 - r.y) / 2) * area.h}px)`;
     el.classList.toggle('me', !!r.me);
     el.classList.toggle('empty', r.ammo === 0);
     if (r.me) {

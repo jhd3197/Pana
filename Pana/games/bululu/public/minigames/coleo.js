@@ -28,6 +28,7 @@ export default {
   title: '¡Coleo!',
   howto: 'Ponte justo detrás del toro y jálale la cola para tumbarlo. Cada toro tumbado es un punto. Si jalas al aire, tu caballo tropieza.',
   keys: [['A D / ← →', 'moverte'], ['Espacio', 'jalar la cola']],
+  touch: { action: 'Jalar' },
   icon: 'bull',
   time: TIME,
 

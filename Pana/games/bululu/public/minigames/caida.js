@@ -64,6 +64,7 @@ export default {
   title: '¡Caída!',
   howto: 'Cuando la carta nueva tenga el mismo número que la de antes, ¡dale primero! Si le das sin caída, pierdes un punto.',
   keys: [['Espacio', '¡dale!']],
+  touch: { pad: 'none', action: '¡Dale!' },
   icon: 'card',
   time: TIME,
 

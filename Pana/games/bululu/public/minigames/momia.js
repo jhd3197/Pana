@@ -28,6 +28,7 @@ export default {
   title: '¡Un, dos, tres, momia!',
   howto: 'Corre hacia la reliquia mientras la momia cuenta. Cuando se voltee, ¡quieto! Si te ve moviéndote, vuelves al inicio. Disfrazado de barril puedes avanzar despacito (tres veces).',
   keys: [['D / →', 'correr'], ['Espacio', 'disfrazarte']],
+  touch: { pad: 'r', action: 'Disfraz' },
   icon: 'relic',
   time: TIME,
 

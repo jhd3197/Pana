@@ -170,6 +170,7 @@ export default {
   keys: [['Ratón', 'apuntar'], ['Clic', 'estirar y soltar'], ['WASD + Espacio', 'sin ratón']],
   icon: 'iguana',
   input: 'aim',
+  aspect: 16 / 9,   // the sim tests hits through its own copy of this camera, the same on every screen
   time: CHINAZO.time,
 
   create(ctx) {

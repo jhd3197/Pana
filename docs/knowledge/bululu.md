@@ -28,8 +28,10 @@ single input still works for practice. Their game-only randomness comes from
 `online-rules.js`, separate from Three.js UUIDs, effects and sound. The host sends
 the seed, frozen roster and exact simulation steps at 20 Hz. Guests replay those
 steps, including the initial update and outro. Keep gameplay random calls on this
-stream and pass it explicitly into pure sims. Chinazo uses a common 16:9 camera
-aspect online so screen-space hits agree on differently sized displays.
+stream and pass it explicitly into pure sims. Chinazo declares `aspect: 16 / 9`:
+offline and online it draws letterboxed (`minigames/framing.js` `letterbox`),
+and the pointer and reticles map through that box, so screen-space hits agree
+on every display. Other minigames use the local screen's aspect.
 
 Only the current minigame's history is retained. A guest arriving or reloading
 can request missing steps in chunks of 60; no payload approaches the room kit's
@@ -83,6 +85,27 @@ streams, checks deterministic replay and finite scene transforms;
 `six-players.browser.mjs` opens six real clients in separate browser contexts
 (two full games plus four real room connections), synchronizes every
 option, plays all six board turns, shoots from seat six and elects a new host.
+
+## Phones and minigame lifetime
+
+- **Orientation:** the menu asks for landscape (`orientation: 'horizontal'`).
+  Held upright anyway, `fitCamera` keeps each camera's 16:9 horizontal view by
+  widening its vertical field (capped at 110°). A module with `frame: 'own'`
+  (Criollas' bolas world) frames itself; one with a fixed `aspect` letterboxes.
+- **HUD:** at ≤860 px wide or ≤500 px tall a minigame's cards become one top
+  strip, the menu sits top-left and the touch row sits at the bottom edge.
+  Below 520 px wide the strip drops portraits and keeps colour and score.
+  Short landscape boards show the six cards as one bottom row.
+- **Touch buttons:** a module's `touch: { pad, action }` picks the pad
+  (`lr`, `r`, `dpad`, `none`) and the action (`'jump'` icon, a word, or null).
+  Without it, `2d` input gets the d-pad and the rest left/right plus jump.
+- **Lifetime:** `createMini` calls `track(scene)`; when the board takes over,
+  `release(scene, resources(boardScene))` calls each object's
+  `userData.dispose` (a pana's spare face textures are not in its materials
+  when it is torn down), then frees every geometry, material, texture and
+  shadow map, including objects the minigame removed mid-game. Six rounds of
+  Atrapa now stay at 1,100–1,120 geometries and 81–86 textures.
+  `phone.browser.mjs` and `lifetime.browser.mjs` cover both.
 
 ## Test switches
 
@@ -311,19 +334,6 @@ Plan 56: createTepui uses the shared waterfall factory with an explicit sloped r
 
 ## Audit findings to preserve when improving the game
 
-- **Passing replay tests does not prove mobile usability.** At 844×390 the six
-  minigame score cards occupy about 185 vertical pixels and obscure actors;
-  the menu overlaps the first card. At 390×844, Atrapa's fixed camera loses
-  the outer four actors. Bululú leaves the shared menu's orientation at
-  `libre`; the default player setting therefore does not request landscape.
-  Online cameras use a fixed 16:9 aspect while the canvas fills the viewport;
-  fitting the display must preserve Chinazo's shared aiming coordinates.
-- **Minigame cleanup is missing at runner boundaries.** `playMinigame` and
-  `clearMini` drop the instance without disposing its scene resources. Five
-  rendered Atrapa practice rounds on one low-quality renderer grew registered
-  geometries from 1,122 to 2,925 and textures from 93 to 233. These are resource
-  counts, not memory bytes. Removed falling objects need ownership too, since
-  traversing only the remaining scene at teardown will miss them.
 - **Remada's pack camera can abandon the local player.** With seed 5, six seats,
   seat zero human and idle, and five bots, after 12 seconds at 20 Hz the human
   is still at 0 m while bots reach 40.7–49.4 m. Its projected position has

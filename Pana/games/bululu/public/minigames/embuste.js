@@ -22,6 +22,7 @@ export default {
   title: '¡Embuste!',
   howto: 'Uno de los panas es una momia que finge trabajar. Gira tu malacate con Espacio y mira bien: la momia suelta arena. Al final, elige con ← → y vota con Espacio. Si te toca ser la momia, gira despacito para que no se note.',
   keys: [['Espacio', 'girar · votar'], ['← →', 'elegir a quién']],
+  touch: { action: '¡Dale!' },
   icon: 'mummy',
   time: TIME,
 

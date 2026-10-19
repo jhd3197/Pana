@@ -7,6 +7,7 @@ export default {
   id: 'criollas', title: '¡Bolas Criollas!', icon: 'coin', input: '2d', time: 38,
   howto: 'Tienes dos bolas. Arrima al mingo dorado: gana quien quede más cerca. La línea muestra dónde frenaría tu bola sin choques. Si el mingo sale, nadie gana.',
   keys: [['← →', 'apuntar'], ['Mantén Espacio', 'fuerza'], ['Suelta', 'lanzar']],
+  touch: { pad: 'lr', action: 'Lanzar' }, frame: 'own',   // the bolas world frames its own court
   create(ctx) {
     // Isla Bululú plays its criollas on the beach court at Puerto Coco.
     const world = createBolasWorld({ aspect: ctx.aspect || innerWidth / innerHeight, individual: true, venue: 'puerto' });
