@@ -37,6 +37,8 @@ export function seedOf(text) {
 export const clamp = (v, min = 0, max = 1) => Math.max(min, Math.min(max, v));
 export const lerp = (a, b, t) => a + (b - a) * t;
 export const smoothstep = (t) => { t = clamp(t); return t * t * (3 - 2 * t); };
+// Any item of a list; pass a seeded rng() where the result must replay.
+export const pick = (list, random = Math.random) => list[Math.floor(random() * list.length)];
 
 // 2D value noise: a hash of the lattice point, smoothly blended. 0..1.
 export function hash2(x, z) {

@@ -66,7 +66,7 @@ Then add the game to `README.md`, `docs/knowledge/README.md` and `CHANGELOG.md`.
 | Turn-based online room | `engine/table-room.js` (`TableRoom`) | `docs/knowledge/pana-net.md` |
 | Real-time online room | `engine/live-room.js` (`LiveRoom`, `elapsedClock`, `axis`) | `docs/knowledge/pana-net.md` |
 | Anything else online | `engine/net.js` (`HostRoom`, `joinRoom`), `server/src/room-kit.js` | `docs/knowledge/pana-net.md` |
-| Seeded randomness, noise, clamp/lerp | `engine/random.js` (`rng`, `draw`, `fbm2`) | no Three.js: safe in `rules.js` |
+| Seeded randomness, noise, clamp/lerp/pick | `engine/random.js` (`rng`, `draw`, `fbm2`, `clamp`, `lerp`, `pick`) | no Three.js: safe in `rules.js`; import it by relative path from code a server room loads |
 | End-of-round screen | `.pk-results` + `engine/results.js` (`fillRoster`) | pana-kit.md, "Results screen" |
 | Status toast | `engine/hud.js` (`createToast`) | reads how the element hides from its markup |
 | Icons | `engine/icons.js` (SVG); never emoji or symbol glyphs | pana-kit.md, "Icons and colours" |

@@ -259,8 +259,10 @@ test(`a game's first load is at most ${FIRST_LOAD_MODULES} modules`, () => {
   assert.deepEqual(problems, []);
 });
 
-// game.js is wiring only. These files predate the limit; they may shrink, never grow.
-const GAME_JS_LIMIT = 600, GAME_JS_ALLOWED = { derrape: 2950, bululu: 1450, embuste: 650 };
+// game.js is wiring only. These files predate the limit; they may shrink, never
+// grow. When one shrinks, lower its cap with it (within GAME_JS_SLACK lines), so
+// the room freed by moving code out isn't quietly filled again.
+const GAME_JS_LIMIT = 600, GAME_JS_SLACK = 25, GAME_JS_ALLOWED = { derrape: 2437, bululu: 1350, embuste: 650 };
 test(`game.js stays wiring (at most ${GAME_JS_LIMIT} lines)`, () => {
   const problems = [];
   for (const id of games) {
@@ -268,6 +270,7 @@ test(`game.js stays wiring (at most ${GAME_JS_LIMIT} lines)`, () => {
     if (!fs.existsSync(file)) continue;
     const lines = read(file).split('\n').length, limit = GAME_JS_ALLOWED[id] ?? GAME_JS_LIMIT;
     if (lines > limit) problems.push(`${id}: game.js has ${lines} lines (limit ${limit}); move rules to rules.js, rendering to scene.js, DOM to ui.js`);
+    else if (id in GAME_JS_ALLOWED && limit - lines > GAME_JS_SLACK) problems.push(`${id}: game.js shrank to ${lines} lines; lower GAME_JS_ALLOWED.${id} to ${lines}`);
   }
   assert.deepEqual(problems, []);
 });
