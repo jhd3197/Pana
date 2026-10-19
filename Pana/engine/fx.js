@@ -298,50 +298,106 @@ export const sound = {
 export { dizzyStars } from '/engine/models/effects/dizzy-stars.js';
 
 // ---------- puffs (smoke, dust) ----------
+// Every puff of one Puffs is an instance of a single mesh: one draw call and no
+// allocation per puff, however much smoke the cars kick up. Each instance has
+// its own colour (instanceColor) and fade (the instanceOpacity attribute).
 const puffGeo = new THREE.IcosahedronGeometry(0.35, 0);
+const puffMaterial = new THREE.MeshStandardMaterial({ flatShading: true, roughness: 1, transparent: true, depthWrite: false });
+puffMaterial.onBeforeCompile = (shader) => {
+  shader.vertexShader = shader.vertexShader
+    .replace('#include <common>', '#include <common>\nattribute float instanceOpacity;\nvarying float vInstanceOpacity;')
+    .replace('#include <begin_vertex>', '#include <begin_vertex>\nvInstanceOpacity = instanceOpacity;');
+  shader.fragmentShader = shader.fragmentShader
+    .replace('#include <common>', '#include <common>\nvarying float vInstanceOpacity;')
+    .replace('vec4 diffuseColor = vec4( diffuse, opacity );', 'vec4 diffuseColor = vec4( diffuse, opacity * vInstanceOpacity );');
+};
+puffMaterial.customProgramCacheKey = () => 'pana-puffs';
+const _m = new THREE.Matrix4(), _q = new THREE.Quaternion(), _e = new THREE.Euler(), _p = new THREE.Vector3(), _s = new THREE.Vector3(), _c = new THREE.Color();
 
 export class Puffs {
   constructor(scene) {
     this.scene = scene;
-    this.list = [];
+    this.count = 0;
+    this.grow(64);
+  }
+
+  // Room for `capacity` live puffs; the live ones are copied over.
+  grow(capacity) {
+    const old = this.mesh;
+    const mesh = new THREE.InstancedMesh(puffGeo, puffMaterial, capacity);
+    mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+    mesh.instanceColor = new THREE.InstancedBufferAttribute(new Float32Array(capacity * 3), 3).setUsage(THREE.DynamicDrawUsage);
+    const opacity = new THREE.InstancedBufferAttribute(new Float32Array(capacity), 1).setUsage(THREE.DynamicDrawUsage);
+    mesh.geometry = puffGeo.clone();   // the opacity attribute is per mesh; the shape is shared data
+    mesh.geometry.setAttribute('instanceOpacity', opacity);
+    mesh.frustumCulled = false;   // instances spread over the map; the bounding sphere is the template's
+    mesh.count = this.count;
+    // Per puff: position (3), velocity (3), rotation (2), age, life, size.
+    const data = new Float32Array(capacity * 11);
+    if (old) {
+      data.set(this.data.subarray(0, this.count * 11));
+      mesh.instanceColor.array.set(old.instanceColor.array.subarray(0, this.count * 3));
+      this.scene.remove(old); old.geometry.dispose(); old.dispose();
+    }
+    this.mesh = mesh; this.data = data; this.opacity = opacity; this.capacity = capacity;
+    this.scene.add(mesh);
   }
 
   spawn(pos, { color = 0x8a8a92, count = 6, spread = 0.8, size = 1, rise = 1.5, life = 1.1 } = {}) {
+    _c.set(color);
     for (let i = 0; i < count; i++) {
-      const m = new THREE.Mesh(puffGeo, new THREE.MeshStandardMaterial({
-        color, flatShading: true, roughness: 1, transparent: true, opacity: 0.9,
-      }));
-      m.position.set(pos.x + (Math.random() - 0.5) * spread, pos.y + Math.random() * 0.3, pos.z + (Math.random() - 0.5) * spread);
-      m.rotation.set(Math.random() * 6, Math.random() * 6, 0);
-      const s = size * (0.6 + Math.random() * 0.6);
-      m.scale.setScalar(s);
-      this.scene.add(m);
-      this.list.push({
-        m, t: 0, life: life * (0.7 + Math.random() * 0.6), s,
-        v: new THREE.Vector3((Math.random() - 0.5) * 2, rise * (0.6 + Math.random()), (Math.random() - 0.5) * 2),
-      });
+      if (this.count === this.capacity) this.grow(this.capacity * 2);
+      const n = this.count++, d = this.data, o = n * 11;
+      d[o] = pos.x + (Math.random() - 0.5) * spread; d[o + 1] = pos.y + Math.random() * 0.3; d[o + 2] = pos.z + (Math.random() - 0.5) * spread;
+      d[o + 3] = (Math.random() - 0.5) * 2; d[o + 4] = rise * (0.6 + Math.random()); d[o + 5] = (Math.random() - 0.5) * 2;
+      d[o + 6] = Math.random() * 6; d[o + 7] = Math.random() * 6;
+      d[o + 8] = 0; d[o + 9] = life * (0.7 + Math.random() * 0.6); d[o + 10] = size * (0.6 + Math.random() * 0.6);
+      this.mesh.setColorAt(n, _c);
     }
+    if (this.scene !== this.mesh.parent) this.scene.add(this.mesh);   // a clear()ed scene may have dropped it
+    this.mesh.instanceColor.needsUpdate = true;
+    this.write();
   }
 
   update(dt) {
-    this.list = this.list.filter((p) => {
-      p.t += dt;
-      const k = p.t / p.life;
-      if (k >= 1) {
-        this.scene.remove(p.m);
-        p.m.material.dispose();
-        return false;
-      }
-      p.m.position.addScaledVector(p.v, dt);
-      p.m.scale.setScalar(p.s * (1 + k * 1.6));
-      p.m.material.opacity = 0.9 * (1 - k);
-      return true;
-    });
+    const d = this.data;
+    for (let n = 0; n < this.count;) {
+      const o = n * 11;
+      d[o + 8] += dt;
+      if (d[o + 8] >= d[o + 9]) { this.remove(n); continue; }   // the last puff moved into n: look at it next
+      d[o] += d[o + 3] * dt; d[o + 1] += d[o + 4] * dt; d[o + 2] += d[o + 5] * dt;
+      n++;
+    }
+    this.write();
+  }
+
+  remove(n) {
+    const last = --this.count;
+    if (n === last) return;
+    this.data.copyWithin(n * 11, last * 11, last * 11 + 11);
+    const c = this.mesh.instanceColor.array; c.copyWithin(n * 3, last * 3, last * 3 + 3);
+    this.mesh.instanceColor.needsUpdate = true;
+  }
+
+  // Instance matrices and fades from the puffs' state.
+  write() {
+    const d = this.data, mesh = this.mesh, fade = this.opacity.array;
+    for (let n = 0; n < this.count; n++) {
+      const o = n * 11, k = d[o + 8] / d[o + 9];
+      _p.set(d[o], d[o + 1], d[o + 2]);
+      _q.setFromEuler(_e.set(d[o + 6], d[o + 7], 0));
+      _s.setScalar(d[o + 10] * (1 + k * 1.6));
+      mesh.setMatrixAt(n, _m.compose(_p, _q, _s));
+      fade[n] = 0.9 * (1 - k);
+    }
+    mesh.count = this.count;
+    mesh.instanceMatrix.needsUpdate = true;
+    this.opacity.needsUpdate = true;
   }
 
   clear() {
-    for (const p of this.list) this.scene.remove(p.m);
-    this.list = [];
+    this.count = 0;
+    this.mesh.count = 0;
   }
 }
 
