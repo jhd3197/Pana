@@ -18,3 +18,6 @@ graphify-out/
 
 # Browser-suite screenshots and QA output
 **/qa/
+
+# Browser suites that passed, by fingerprint (Pana/scripts/suite-fingerprint.js)
+Pana/tests/.browser-passes.json

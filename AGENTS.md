@@ -107,6 +107,13 @@ npm run test:browser -- --changed  # only the suites for what changed since dev
 npm run test:browser -- --jobs 4   # the full set, four suites at a time
 ```
 
+A suite only reruns when something it can touch changed: the runner hashes the
+suite, every game it opens, the engine modules and assets those load, the server
+and the lockfile (`Pana/scripts/suite-fingerprint.js`), and skips a suite whose
+hash already passed (`cached` in the output, kept in the ignored
+`Pana/tests/.browser-passes.json`; CI keeps it between runs). `--fresh` runs
+everything anyway; the nightly full run does.
+
 Playwright is a dev dependency: `npm install` is all browser suites need, so
 don't search the disk for one or set `PANA_PLAYWRIGHT_PATH`. The runner starts
 its own fresh server on a free port, so a stale server on :8461 can never answer

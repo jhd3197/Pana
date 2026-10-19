@@ -13,6 +13,10 @@
 //   --retries N  rerun a failed suite up to N times (default 1), at half the
 //                concurrency; a pass on retry is reported as flaky
 //   --record     write this run's suite times to Pana/tests/browser-timings.json
+//   --fresh      run every selected suite, even one whose fingerprint already passed
+// A suite whose fingerprint (a hash of every file it can touch, suite-fingerprint.js)
+// already passed is skipped as cached; passes are kept in Pana/tests/.browser-passes.json
+// (PANA_PASS_CACHE to move it, PANA_TEST_CACHE=0 or --fresh to ignore it).
 // Suites already create unique rooms, so they can share the server. Slowest
 // first (by the timings file), so a long suite never starts last.
 // Env: PANA_TEST_URL (reuse that server instead of starting a fresh one),
@@ -25,6 +29,7 @@ import net from 'node:net';
 import os from 'node:os';
 import path from 'node:path';
 import { suitesFor, withinBudget } from './changed-suites.js';
+import { createFingerprinter } from './suite-fingerprint.js';
 
 const app = path.resolve(import.meta.dirname, '..');
 const repo = path.resolve(app, '..');
@@ -129,7 +134,30 @@ async function healthy(url) {
   try { return (await fetch(`${url}/api/health`)).ok; } catch { return false; }
 }
 
-if (!suites.length) { console.log('No browser suites match.'); process.exit(0); }
+// Skip what already passed with exactly these files.
+const passesFile = process.env.PANA_PASS_CACHE || path.join(app, 'tests', '.browser-passes.json');
+const useCache = !flags.fresh && !flags.record && process.env.PANA_TEST_CACHE !== '0';
+let passes = {};
+try { passes = JSON.parse(fs.readFileSync(passesFile, 'utf8')); } catch { /* no cache yet */ }
+const fingerprint = createFingerprinter(repo), prints = new Map();
+for (const suite of suites) prints.set(suite.label, fingerprint(suite.file, suite.args));
+const cached = useCache ? suites.filter(suite => passes[suite.label]?.some(p => p.fp === prints.get(suite.label))) : [];
+for (const suite of cached) {
+  const last = passes[suite.label].find(p => p.fp === prints.get(suite.label));
+  console.log(`cached  ${suite.label}  (passed ${last.at.slice(0, 16).replace('T', ' ')} with the same files)`);
+}
+suites = suites.filter(suite => !cached.includes(suite));
+const commit = spawnSync('git', ['rev-parse', '--short', 'HEAD'], { cwd: repo, encoding: 'utf8' }).stdout.trim();
+function savePasses() {
+  const at = new Date().toISOString();
+  for (const [label, r] of results) if (r.ok) {
+    const fp = prints.get(label);
+    passes[label] = [{ fp, at, commit }, ...(passes[label] || []).filter(p => p.fp !== fp)].slice(0, 8);
+  }
+  try { fs.writeFileSync(passesFile, `${JSON.stringify(passes, null, 1)}\n`); } catch (error) { console.log(`Could not save ${passesFile}: ${error.message}`); }
+}
+
+if (!suites.length) { console.log(cached.length ? `All ${cached.length} suites already passed with these files.` : 'No browser suites match.'); process.exit(0); }
 
 let base = process.env.PANA_TEST_URL, server = null;
 const serverLog = path.join(os.tmpdir(), `pana-test-server-${process.pid}.log`);
@@ -203,6 +231,7 @@ await Promise.all(Array.from({ length: Math.min(Math.max(1, Math.floor(jobs / 2)
   }
 }));
 cleanup();
+savePasses();
 
 if (flags.record) {
   // A failing suite still holds a slot that long, so its time counts too.
@@ -212,7 +241,7 @@ if (flags.record) {
 }
 
 const failed = [...results.values()].filter(r => !r.ok);
-console.log(`\n${results.size - failed.length}/${results.size} browser suites passed in ${((Date.now() - started) / 60000).toFixed(1)} min`);
+console.log(`\n${results.size - failed.length}/${results.size} browser suites passed in ${((Date.now() - started) / 60000).toFixed(1)} min${cached.length ? `; ${cached.length} more cached` : ''}`);
 if (flaky.length) console.log(`Flaky (passed on retry): ${flaky.join(', ')}`);
 if (failed.length) console.log(`Failed: ${failed.map(r => r.label).join(', ')}`);
 if (failed.length && server) console.log(`Server log: ${serverLog}`);
