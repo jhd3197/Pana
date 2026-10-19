@@ -9,6 +9,9 @@ async function open(name,mobile=false,room=code){
   const ctx=await browser.newContext(mobile?{viewport:{width:390,height:844},deviceScaleFactor:1,isMobile:true,hasTouch:true}:{viewport:{width:1024,height:720},deviceScaleFactor:1});
   await ctx.addInitScript(() => localStorage.setItem('pana:settings',JSON.stringify({sound:false,music:false,quality:'baja'})));
  const p=await ctx.newPage();p.on('pageerror',e=>{errors.push(e.message);console.log('page error:',e.message);});
+  // Three software-WebGL clients share the CPU (two suites per CI runner): state
+  // still has to arrive, only later than Playwright's 30 s default.
+  p.setDefaultTimeout(60000);
   p.on('console',m=>{if(m.type()==='error'&&!m.text().includes('favicon'))console.log('console:',m.text());});
   await p.goto(`${base}/g/galope/?room=${room}&name=${name}&debug`);
   await p.waitForFunction(()=>window.galope?.room.connected,null,{timeout:90000});await waitPrepared(p);return p;

@@ -102,12 +102,21 @@ try {
   assert.equal(await m.evaluate(() => document.documentElement.scrollWidth > innerWidth), false, 'no sideways scroll at 390 px');
   await m.locator('#start').click(); await m.waitForFunction(() => curiara.state.phase === 'racing', null, { timeout: 90000 });
   const cdp = await m.context().newCDPSession(m);
+  // Both stroke buttons fit on the phone's screen (Der. used to sit past 390 px).
+  for (const side of [-1, 1]) {
+    const box = await m.locator(`[data-stroke="${side}"]`).boundingBox();
+    assert.ok(box.x >= 0 && box.x + box.width <= 390, `stroke button ${side} on screen (${box.x}–${box.x + box.width})`);
+  }
+  // Drawing paused while tapping, as for the keys above: a full software-GL
+  // frame per touch held each tap back for seconds.
+  await m.evaluate(() => curiara.quiet(true));
   for (let i = 0; i < 8; i++) {
     const box = await m.locator(`[data-stroke="${i % 2 ? 1 : -1}"]`).boundingBox(), x = box.x + box.width / 2, y = box.y + box.height / 2;
     await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x, y }] }); await m.waitForTimeout(60);
     await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] }); await m.waitForTimeout(380);
   }
   await m.waitForFunction(() => { const b = curiara.state.boats.find(b => b.crew.some(c => c.id === curiara.room.id)); return b.strokes >= 6; });
+  await m.evaluate(() => curiara.quiet(false));
   await shot(m, 'mobile-race'); await cdp.detach(); check('touch stroke buttons paddle on a 390 px phone');
   await m.evaluate(() => curiara.room.cut()); await m.waitForFunction(() => !curiara.room.connected);
   await m.locator('#menu').click(); await m.locator('#local-race').click();

@@ -1,8 +1,8 @@
 import assert from 'node:assert/strict';
-import { chromium } from 'playwright';
+import { launch } from '../../../tests/browser-kit.js';
 import { mkdir } from 'node:fs/promises';
 const base = process.env.PANA_TEST_URL || 'http://localhost:8461';
-const browser = await chromium.launch({ headless: true, args: ['--disable-background-timer-throttling', '--disable-renderer-backgrounding'] });
+const browser = await launch();
 const errors = [], wait = (p, fn, arg) => p.waitForFunction(fn, arg, { timeout: 120000, polling: 50 });
 async function open(name, query) {
   console.log(`Opening ${name}`);
@@ -24,7 +24,11 @@ try {
   await wait(guest, () => minigame()?.state === 'run' && minigame()?.def.id === 'criollas');
   console.log('Both playing Criollas');
   await host.locator('#menu').click();
-  await guest.keyboard.down('ArrowRight'); await guest.waitForTimeout(300); await guest.keyboard.up('ArrowRight');
+  // Aim until the host has turned the guest's throw: a fixed hold can fall between
+  // two host ticks on a loaded machine and never reach the simulation.
+  await guest.keyboard.down('ArrowRight');
+  await wait(host, () => minigame()?.game.sim.players[1].angle > 0);
+  await guest.keyboard.up('ArrowRight');
   // Holding Space charges on the host's simulation; letting go throws at that force.
   await guest.keyboard.down('Space');
   await wait(host, () => minigame()?.game.sim.players[1].power >= .3);
