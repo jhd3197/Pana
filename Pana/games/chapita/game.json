@@ -1,0 +1,7 @@
+{
+  "name": "Chapita",
+  "tileName": "CHAPITA",
+  "description": "Béisbol de barrio con una chapita y un palo de escoba. La chapita flota, cae de golpe o se va en curva; donde cae es el batazo: la acera, el carro, el poste o la azotea. Dos equipos de panas, bots en los puestos vacíos.",
+  "players": 8,
+  "color": "#e8453c"
+}

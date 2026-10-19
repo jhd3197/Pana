@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#e8453c">
+  <meta name="description" content="Béisbol de barrio con una chapita y un palo de escoba. La chapita flota, cae de golpe o se va en curva; donde cae es el batazo: la acera, el carro, el poste o la azotea. Dos equipos de panas, bots en los puestos vacíos.">
+  <title>Chapita · Pana</title>
+  <link rel="stylesheet" href="/engine/kit.css">
+  <link rel="stylesheet" href="/engine/ui.css">
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="/engine/game-lobby.css">
+  <link rel="stylesheet" href="/engine/room-options.css">
+  <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}</script>
+</head>
+<body class="in-lobby">
+  <canvas id="world" aria-label="La calle del barrio en tres dimensiones, con los dos equipos, el pitcher, el bateador y la chapita"></canvas>
+  <header class="topbar"><a class="pk-logo" href="/" aria-label="Volver a Pana">PANA</a><nav id="game-nav" aria-label="Opciones"></nav></header>
+  <section id="lobby" class="pk-lobby" aria-labelledby="lobby-title">
+    <span class="pk-ribbon">PELOTA DE BARRIO</span>
+    <h1 id="lobby-title" class="pk-title">Chapita</h1>
+    <p class="pk-copy" data-room-description>Una chapita y un palo de escoba. Flota, cae de golpe o se va en curva; donde cae es el batazo: la acera, el carro, el poste o la azotea.</p>
+    <ol id="roster" class="pk-roster" aria-label="Los dos equipos" data-room-description></ol>
+    <div class="lobby-me" data-room-description>
+      <button id="switch" class="pk-btn pk-btn--sm">Cambiar de equipo</button>
+      <button id="hand" class="pk-btn pk-btn--sm" aria-pressed="false">Batear de zurdo <kbd class="pk-kbd" data-pana-hint>Z</kbd></button>
+    </div>
+    <button id="rules" class="pk-btn pk-btn--ghost" data-room-help>Cómo se juega</button>
+    <div id="room-options"></div>
+    <div class="pk-lobby-foot"><button id="start" class="pk-btn pk-btn--primary pk-btn--lg" disabled>Conectando…</button></div>
+  </section>
+  <main id="hud" hidden>
+    <section id="scoreboard" class="scoreboard pk-panel" aria-label="Pizarra">
+      <ol id="score-teams" class="score-teams"></ol>
+      <div class="score-side">
+        <b id="inning" class="inning pk-num"></b>
+        <div class="diamond" aria-label="Bases"><i data-base="1"></i><i data-base="2"></i><i data-base="0"></i></div>
+        <div class="count"><span>B</span><span id="balls" class="pk-pips"></span><span>S</span><span id="strikes" class="pk-pips"></span><span>O</span><span id="outs" class="pk-pips"></span></div>
+      </div>
+    </section>
+    <ul id="house-rules" class="house-rules" aria-label="Reglas de la casa"></ul>
+    <p id="matchup" class="matchup" aria-live="polite"></p>
+    <div id="shout" class="shout" aria-live="assertive" hidden></div>
+    <section id="pitch-panel" class="action-panel pk-panel" data-scene-avoid hidden aria-label="Tu lanzamiento">
+      <div class="panel-head"><h2 class="pk-heading">Te toca lanzar</h2><span id="pitch-clock" class="clock pk-num"></span></div>
+      <div class="pitch-grid">
+        <div class="pitch-choices">
+          <div id="kinds" class="pk-seg" role="group" aria-label="Lanzamiento"><button data-kind="planea">Planea <kbd class="pk-kbd" data-pana-hint>1</kbd></button><button data-kind="cae">Cae de golpe <kbd class="pk-kbd" data-pana-hint>2</kbd></button><button data-kind="curva">Curva <kbd class="pk-kbd" data-pana-hint>3</kbd></button></div>
+          <div id="sides" class="pk-seg" role="group" aria-label="Hacia dónde rompe"><button data-side="-1">Rompe a la izquierda <kbd class="pk-kbd" data-pana-hint>Q</kbd></button><button data-side="1">A la derecha <kbd class="pk-kbd" data-pana-hint>E</kbd></button></div>
+          <div id="caps" class="pk-seg" role="group" aria-label="Chapita"><button data-cap="plana">Plana</button><button data-cap="doblada">Doblada <kbd class="pk-kbd" data-pana-hint>C</kbd></button></div>
+        </div>
+        <div id="aim" class="aim" role="group" aria-label="A dónde apuntas"></div>
+      </div>
+      <button id="throw" class="pk-btn pk-btn--primary pk-btn--block">¡Lanza! <kbd class="pk-kbd" data-pana-hint>Espacio</kbd></button>
+    </section>
+    <section id="bat-panel" class="action-panel pk-panel" data-scene-avoid hidden aria-label="Tu turno al bate">
+      <div class="panel-head"><h2 id="bat-title" class="pk-heading">Al bate</h2><span id="bat-count" class="pk-num"></span></div>
+      <div id="heights" class="pk-seg" role="group" aria-label="Altura del palo"><button data-height="alto">Alto <kbd class="pk-kbd" data-pana-hint>W</kbd></button><button data-height="medio">Medio</button><button data-height="bajo">Bajo <kbd class="pk-kbd" data-pana-hint>S</kbd></button></div>
+      <button id="swing" class="pk-btn pk-btn--primary pk-btn--block">¡Batea! <kbd class="pk-kbd" data-pana-hint>Espacio</kbd></button>
+      <p class="hint">Lee la chapita: la planea sube al final, la que cae se hunde de golpe y la curva se abre.</p>
+    </section>
+    <section id="catch-panel" class="catch-panel" data-scene-avoid hidden aria-label="¡Atrápala!">
+      <div class="catch-ring"><i id="catch-closing"></i></div>
+      <button id="catch" class="pk-btn pk-btn--primary pk-btn--lg">¡Atrápala! <kbd class="pk-kbd" data-pana-hint>Espacio</kbd></button>
+    </section>
+    <p id="event" class="event" role="status"></p>
+  </main>
+  <div class="connection"><span id="connection" role="status">Conectando…</span><button id="practice" class="pk-btn pk-btn--sm" hidden>Jugar en local</button></div>
+  <section id="results" class="pk-results" hidden aria-labelledby="result-title"><div class="pk-modal pk-results-card"><span class="pk-ribbon">SE ACABÓ LA CAIMANERA</span><h2 id="result-title" class="pk-title"></h2><p id="result-line" class="pk-copy"></p><ol id="titles" class="pk-roster titles" aria-label="Títulos"></ol><ol id="result-roster" class="pk-roster"></ol><button id="again" class="pk-btn pk-btn--primary pk-btn--block">Otra partida</button><a class="pk-back" href="/">Todos los juegos</a></div></section>
+  <div id="loading" class="pk-loading"><div class="pk-panel"><h2 class="pk-heading">¿Dónde está el palo de escoba?</h2><p>La señora lo busca por toda la casa… y tu pana lo esconde detrás de la espalda.</p></div></div>
+  <script type="module" src="/engine/game-entry.js" data-pana-entry="./game.js"></script>
+</body>
+</html>

@@ -29,6 +29,21 @@ becomes the GitHub release's notes.
   marker, a kill feed and new sounds for shots, hits and knockouts.
   Every map has three fixed layouts (Clásica, Girada, Cerrada; Muelle:
   Patio, Laberinto, Torres) that change each round.
+
+- **New game: Chapita.** Barrio baseball with a bottle cap and a
+  palo de escoba for up to eight panas in two teams, bots in the empty
+  seats. The pitcher picks in secret: Planea (floats, rises at the end),
+  Cae de golpe or Curva, aimed on a 3×3 grid, with a flat or a bent cap
+  that wobbles more. The batter reads it and swings on time at the right
+  height; where the chapita lands is the hit: past the sidewalk is a
+  sencillo, the parked car a doble, the lamp post a triple, over the
+  roofs ¡jonrón!, short of the acera an out. Fielders catch on a closing
+  circle; miss up close and it's a chapazo with a tuyuyo on your head.
+  The señora's window, house rules on a ruleta (carro que pasa = tiempo,
+  azotea = out…), cuarto bate, Willy Mays, zurdos, apodos on every
+  franela, titles at the end, a ¡Jonrón! derby, and two fields: the
+  barrio street and the blue court under the superbloques.
+
 - **New game: ¡Stop!** The notebook word game at a plaza table for up to
   eight panas, with bots in the empty chairs. The turn pana stops the
   letter wheel with ¡Para!, everyone fills a secret notebook page (the
