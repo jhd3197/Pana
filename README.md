@@ -40,6 +40,7 @@ same room.
 | **Billar** | Eight/nine-ball pool with rotating teammates and timed shot charging | 2, 4 or 6 online, or practice |
 | **Bolas Criollas** | Roll close to the mingo or knock the rival's ball away, in teams | 1–6, bots fill seats |
 | **¿Quién quiere ser mi pana?** (QQSMP) | TV-style trivia: everyone answers in secret at once, climbs a ladder of mangos and bets the final | 1–6, bots fill seats |
+| **¡Stop!** | The notebook word game: a letter, a secret sheet, ¡STOP!, then the table votes on what counts | 1–8, bots fill seats |
 | **La Rueda de Tambor** | A tambor party: drum the beat, dance the MCP's calls in the middle or get thrown out of the rueda; plus Relevo, Toque libre and ¡Golpe! | 1–8, bots fill drums and crowd |
 | **Pepazo** | Paintball between barricades: aim, paint your rivals, respawn | 1–8, bots fill in |
 

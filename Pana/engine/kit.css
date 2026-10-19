@@ -132,7 +132,7 @@
 .pk-panel--solid { background: var(--pk-purple); }
 .pk-well { padding: 12px 14px; border: 1px solid var(--pk-line); border-radius: var(--pk-r); background: var(--pk-deep); }
 .pk-modal {
-  width: min(560px, calc(100vw - 32px)); padding: 28px;
+  width: min(560px, calc(100vw - 32px)); padding: 28px; box-sizing: border-box;
   border: 1px solid var(--pk-line); border-radius: 22px;
   background: radial-gradient(600px 300px at 50% -20%, #2a1b5e, transparent 70%), var(--pk-purple);
   color: var(--pk-text); box-shadow: 0 10px 0 rgba(0, 0, 0, .35), 0 30px 60px rgba(0, 0, 0, .45);

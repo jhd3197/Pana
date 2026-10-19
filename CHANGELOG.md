@@ -10,6 +10,20 @@ becomes the GitHub release's notes.
 
 ### Added
 
+- **New game: ¡Stop!** The notebook word game at a plaza table for up to
+  eight panas, with bots in the empty chairs. The turn pana stops the
+  letter wheel with ¡Para!, everyone fills a secret notebook page (the
+  others only see how many boxes you filled), and the first full sheet
+  yells ¡STOP!: "¡Basta! 3… 2… 1…" and pencils down. Then the review, one
+  category at a time: words the game knows count on their own, wrong
+  letters and blanks don't, and the doubtful ones go to "¿Eso cuenta?" with
+  thumbs up or down (a tie favors the author). 100 for a word nobody else
+  wrote, 50 when shared, +50 Creatividad when the table loves it, and the
+  table remembers what it accepted. Clásicas, Criollas, Mezcla or Al azar
+  categories, Stop rápido, hard letters and a "más criollo" option. It
+  runs on El Saber, a new shared list of 1,600+ Venezuelan words with
+  explanations ("Pichirre = tacaño") that other games can use too.
+
 - **New game: La Rueda de Tambor.** A tambor party on the beach by the
   pink shack (or the malecón at night) for up to eight panas, with bots on
   the drums and in the crowd. Drummers keep the beat on four stations
@@ -407,6 +421,10 @@ becomes the GitHub release's notes.
   points, DNF/DNS/retirement and championship tiebreaks for local and online play.
 
 ### Fixed
+
+- **End-of-round cards fit on phones again.** The shared results card and
+  other kit modals counted their padding outside their width and spilled
+  past the right edge of narrow screens.
 
 - **A host whose tab is in the background no longer slows the game for everyone.**
   Cocina, Reliquia and Escondidas now step the game by real elapsed time, so a

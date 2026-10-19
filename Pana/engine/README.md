@@ -24,6 +24,7 @@ resources, map consumers, missing previews and older code, see the
 | `island-scenery.js`, `island-landscape.js`, `terrain-material.js` | Offshore worlds, terrain shading and older scene assemblies |
 | `fx.js` | Audio, particle bursts, debris and speech bubbles |
 | `ui.js`, `settings.js` | Shared game menu, settings persistence and hints |
+| `saber.js`, `saber-match.js` | El Saber: shared Venezuelan words (categories, variants, explanations, crude flag) and the pure normalize/fuzzy lookup that ¡Stop! uses; see `docs/knowledge/stop.md` |
 
 Models have one home: `models/` (the pana itself is
 `models/characters/pana/`). The old alias URLs (`props.js`, `flora.js`,

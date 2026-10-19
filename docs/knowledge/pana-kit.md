@@ -60,7 +60,7 @@ unchanged snapshots. Its styles are the shared `.pk-seating` classes.
 - **No emoji, no symbol glyphs** (👑 ⚙ ♥ ↗ 🥭) anywhere in the interface, canvas
   signs included: phones draw them as colour emoji in another font. Use the SVGs
   in `/engine/icons.js` (`ICONS.crown`, `gear`, `share`, `mango`, `juice`, `coin`,
-  `crate`, `back`, `heart`, `heartEmpty`) as `innerHTML`, or `icon(name)` for a
+  `crate`, `back`, `heart`, `heartEmpty`, `thumbUp`, `thumbDown`) as `innerHTML`, or `icon(name)` for a
   node; `.pk-ico` sizes them to 1em. Plain arrows in copy (← →) are fine.
 - **No raw colours in a game's style.css.** Name a game's own colours on its
   `body { --pk-game … }` rule (`--wood: #b5753a;`) and use `var(--wood)`; kit
