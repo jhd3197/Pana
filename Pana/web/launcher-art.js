@@ -4,7 +4,7 @@ export const artwork = {
   derrape: ['Carreras', 'derrape.jpg'], galope: ['Carreras', 'galope.jpg'], curiara: ['Carreras', 'curiara.jpg'],
   domino: ['Mesa', 'domino.jpg'], caida: ['Mesa', 'caida.jpg'], poquer: ['Mesa', 'poquer.jpg'], billar: ['Mesa', 'billar.jpg'],
   ludo: ['Mesa', 'ludo.jpg', 'ludo-card.jpg'], criollas: ['Mesa', 'criollas.jpg', 'criollas-card.jpg'], qqsmp: ['Mesa', 'qqsmp.jpg', 'qqsmp-card.jpg'], bululu: ['Fiesta', 'bululu.jpg'], cocina: ['Fiesta', 'cocina.jpg'],
-  escondidas: ['Fiesta', 'escondidas.jpg'], pintura: ['Fiesta', 'pintura.jpg'],
+  escondidas: ['Fiesta', 'escondidas.jpg'], pintura: ['Fiesta', 'pintura.jpg'], tambor: ['Fiesta', 'tambor.jpg', 'tambor-card.jpg'],
   embuste: ['Aventura', 'embuste.jpg'], reliquia: ['Aventura', 'reliquia.jpg'],
 };
 export const category = game => artwork[game.id]?.[0] || 'Fiesta';
