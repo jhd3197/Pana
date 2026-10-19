@@ -457,6 +457,10 @@ becomes the GitHub release's notes.
 
 ### Changed
 
+- **You can always find your own pana in a Bululú minigame.** A ring in
+  your colour at your feet and a chevron over your head mark you, even
+  when friends wear the same outfit.
+
 - **¡Atrapa los mangos! and ¡Embuste! got real places to play.** The mango
   yard has a proper mango tree, crates of the day's pick and bunting; the
   Embuste camp is now a dig site with ruins round the relic, braziers,

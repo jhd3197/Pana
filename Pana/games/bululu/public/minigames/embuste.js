@@ -63,7 +63,7 @@ export default {
     const camera = new THREE.PerspectiveCamera(48, (ctx.aspect || innerWidth / innerHeight), 0.1, 400);
     camera.position.set(0, 9.5, 18); camera.lookAt(0, 1.2, -1);
 
-    const actors = makeActors(scene, ctx.players);
+    const actors = makeActors(scene, ctx.players, ctx);
     const XS = actors.map((_, i) => (i - (actors.length - 1) / 2) * 3);
     const mummyAt = Math.floor(random() * actors.length);
     const human = (a) => a.player.human && !ctx.auto;

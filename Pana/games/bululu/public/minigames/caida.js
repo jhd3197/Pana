@@ -93,7 +93,7 @@ export default {
     camera.position.set(0, 7.6, 6.4);
     camera.lookAt(0, 1, -1);
 
-    const actors = makeActors(scene, ctx.players);
+    const actors = makeActors(scene, ctx.players, ctx);
     const spots = actors.map((_, i) => { const a = Math.PI + i * Math.PI / (actors.length - 1); return [Math.cos(a) * 3.8, Math.sin(a) * 3.8]; });
     actors.forEach((a, i) => {
       [a.x, a.z] = spots[i];

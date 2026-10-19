@@ -65,14 +65,36 @@ export function sunnyStage(scene, { ground = 0xd9a46c, grass = true, sky = 0x7cc
   return { sun, update: atmosphere.update };
 }
 
-// The panas as minigame actors (no pedestal).
-export function makeActors(scene, players) {
+// Which seat this screen plays: online the runner says, offline the first human.
+export const localIndexOf = (ctx) => ctx.localIndex ?? ctx.players.findIndex((p) => p.human && !ctx.auto);
+
+// You, among six panas who may wear the same outfit: a ring in your colour
+// at your feet and a chevron over your head. It rides on the pana's group.
+function youMarker(color) {
+  const g = new THREE.Group(), c = new THREE.Color(color);
+  const ring = new THREE.Mesh(new THREE.RingGeometry(0.62, 0.8, 36), new THREE.MeshBasicMaterial({ color: c, transparent: true, opacity: 0.9, depthWrite: false }));
+  ring.rotation.x = -Math.PI / 2; ring.position.y = 0.04; ring.renderOrder = 2;
+  const chevron = new THREE.Mesh(new THREE.ConeGeometry(0.2, 0.34, 3), new THREE.MeshBasicMaterial({ color: c }));
+  chevron.rotation.x = Math.PI; chevron.position.y = 2.75;
+  const edge = new THREE.Mesh(new THREE.ConeGeometry(0.27, 0.44, 3), new THREE.MeshBasicMaterial({ color: 0xffffff, side: THREE.BackSide }));
+  chevron.add(edge);
+  g.add(ring, chevron);
+  g.userData.chevron = chevron;
+  return g;
+}
+
+// The panas as minigame actors (no pedestal). With `ctx`, the local pana
+// gets the you-marker (actor.marker).
+export function makeActors(scene, players, ctx) {
+  const local = ctx ? localIndexOf(ctx) : -1;
   return players.map((p, i) => {
     const pana = buildCharacter(p.avatar);
     scene.add(pana.group);
+    const marker = i === local ? youMarker(p.color) : null;
+    if (marker) pana.group.add(marker);
     const bubble = makeBubble();
     scene.add(bubble.sprite);
-    return { i, player: p, pana, bubble, x: 0, y: 0, z: 0, vx: 0, vy: 0, score: 0, stun: 0, t: random() * 5 };
+    return { i, player: p, pana, bubble, marker, x: 0, y: 0, z: 0, vx: 0, vy: 0, score: 0, stun: 0, t: random() * 5 };
   });
 }
 
@@ -87,4 +109,5 @@ export function animateActor(a, dt, { moving = 0, open = false, dizzy = false, a
   a.pana.armR.rotation.x = -0.55 - armsUp - swing;
   a.bubble.sprite.position.set(a.x, a.y + 3.4, a.z);
   a.bubble.update(dt);
+  if (a.marker) a.marker.userData.chevron.position.y = 2.75 + Math.sin(a.t * 0.7) * 0.08;
 }

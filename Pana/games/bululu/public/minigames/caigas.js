@@ -98,7 +98,7 @@ export default {
     camera.position.set(0, 12.5, 15.5);
     camera.lookAt(0, 0.4, 0.6);
 
-    const actors = makeActors(scene, ctx.players);
+    const actors = makeActors(scene, ctx.players, ctx);
     actors.forEach((a, i) => {
       a.phi = -Math.PI / 4 - i * Math.PI * 2 / actors.length;
       a.x = Math.cos(a.phi) * RING;

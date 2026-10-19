@@ -82,7 +82,7 @@ export default {
     camera.position.set(0.5, 11.5, 19.5);
     camera.lookAt(0.5, 1.6, -1);
 
-    const actors = makeActors(scene, ctx.players);
+    const actors = makeActors(scene, ctx.players, ctx);
     actors.forEach((a, i) => {
       a.x = START;
       a.z = -3 + i * 6 / (actors.length - 1);

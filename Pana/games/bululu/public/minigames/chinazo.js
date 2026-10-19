@@ -195,7 +195,7 @@ export default {
     const seats = seatsFor(ctx.players.length);
 
     // the panas in a row, backs to us, each with a china
-    const actors = makeActors(scene, ctx.players);
+    const actors = makeActors(scene, ctx.players, ctx);
     actors.forEach((a, i) => {
       [a.x, a.y, a.z] = seats[i];
       a.pana.group.rotation.y = Math.PI;

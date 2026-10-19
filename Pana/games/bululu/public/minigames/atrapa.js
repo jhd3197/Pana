@@ -85,7 +85,7 @@ export default {
     camera.position.set(0, 6.2, 19);
     camera.lookAt(0, 4.2, 0);
 
-    const actors = makeActors(scene, ctx.players);
+    const actors = makeActors(scene, ctx.players, ctx);
     actors.forEach((a, i) => {
       a.x = a.home = -7.5 + i * 15 / (actors.length - 1);
       a.z = LANE_Z;
