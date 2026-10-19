@@ -26,7 +26,7 @@ test('carried flags drop on paint hits and captures score for a team, never for 
   Object.assign(p, { x: flag.x, z: flag.z }); g.updateFlags(); assert.equal(flag.carrier, p.id);
   shoot(g, g.players[1], p); assert.equal(flag.carrier, null); assert.equal(flag.x, p.x); assert.equal(g.teamScores[1], 0);
   p.respawn = 0; g.updateFlags(); assert.equal(flag.carrier, p.id);
-  Object.assign(p, { x: -14, z: -14 }); g.updateFlags(); assert.equal(g.teamScores[0], 1); assert.equal(flag.carrier, null); assert.equal(flag.x, 14);
+  Object.assign(p, { x: g.flags[0].homeX, z: g.flags[0].homeZ }); g.updateFlags(); assert.equal(g.teamScores[0], 1); assert.equal(flag.carrier, null); assert.equal(flag.x, flag.homeX);
   g.teamScores[0] = 3; g.step(.05); assert.equal(g.phase, 'finished'); assert.deepEqual(g.winners(), [1, 3]);
 });
 

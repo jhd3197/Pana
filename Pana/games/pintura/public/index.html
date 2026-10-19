@@ -15,7 +15,7 @@
     <h1 id="title" class="pk-title">Pepazo</h1>
     <p class="pk-copy" data-room-description>Corre entre las barricadas y pinta a tus rivales. Elige equipos, vidas o captura la bandera.</p>
     <div class="pk-stats" data-room-description><div class="pk-stat"><b>1–8</b><span>panas</span></div><div class="pk-stat"><b id="round-minutes">3 min</b><span>por ronda</span></div><div class="pk-stat"><b id="win-target">10</b><span id="win-target-label">pintadas para ganar</span></div></div>
-    <p class="pk-copy instructions" data-room-description>WASD para moverte · ratón para apuntar · clic para disparar · R para recargar.</p>
+    <p class="pk-copy instructions" data-room-description>En primera persona: WASD para caminar · ratón para mirar · clic para pintar · R para recargar.</p>
     <p id="roster" class="pk-copy"></p><div id="team-roster" data-pana-roster hidden></div>
     <div id="map-picker" data-room-primary></div>
     <div id="difficulty-picker" data-room-extra></div>
@@ -27,8 +27,9 @@
   </section>
   <section id="hud" hidden aria-label="Marcador"><div class="score-panel pk-panel"><span class="pk-eyebrow">Pintadas</span><b id="score" class="pk-num">0 / 10</b><span id="position"></span></div><div class="timer-panel pk-panel"><b id="timer" class="pk-num">2:00</b><span id="ammo">12 / 12</span></div>
     <p id="feed" class="feed pk-panel" aria-live="polite"></p><p id="respawn" class="respawn pk-banner" hidden></p>
-    <div class="pk-hints" data-pana-hint>WASD mover · Clic pintar · Q / E cámara · R recargar</div>
-    <div class="camera-touch pk-touch-zone"><button id="view-left" class="pk-touch pk-touch--sm" data-icon="left" aria-label="Girar cámara a la izquierda"></button><span>Cámara</span><button id="view-right" class="pk-touch pk-touch--sm" data-icon="right" aria-label="Girar cámara a la derecha"></button></div>
+    <div class="pk-hints" data-pana-hint>WASD caminar · Ratón mirar · Clic pintar · R recargar · Esc menú</div>
+    <div class="crosshair" aria-hidden="true"><i></i><i></i><i></i><i></i></div><p class="lock-hint pk-banner">Haz clic para mirar con el ratón</p>
+    <canvas id="minimap" class="minimap" aria-label="Mapa de la cancha" hidden></canvas><div class="paint-flash" aria-hidden="true"></div>
     <div id="touch" class="pk-touch-zone"><div class="pk-dpad"><button id="up" class="pk-touch" data-icon="up" aria-label="Avanzar"></button><button id="left" class="pk-touch" data-icon="left" aria-label="Izquierda"></button><button id="down" class="pk-touch" data-icon="down" aria-label="Retroceder"></button><button id="right" class="pk-touch" data-icon="right" aria-label="Derecha"></button></div><div class="touch-actions"><button id="reload" class="pk-touch pk-touch--sm">Carga</button><button id="fire" class="pk-touch pk-touch--go pk-touch--lg">Pinta</button></div></div>
   </section>
   <div id="recovery" class="pk-panel" hidden><p id="recovery-copy"></p><button id="fallback" class="pk-btn pk-btn--primary">Practicar con bots</button></div>

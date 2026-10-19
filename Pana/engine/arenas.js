@@ -40,7 +40,10 @@ const outsideCourt = (x, z, r = 0) => Math.abs(x) - r > COURT_CLEAR.x || Math.ab
 // One world, four uses: hide-and-seek props, paintball cover, a clear table
 // courtyard, or an open court. All solid cover is built from the same bounds as the pure rules.
 const infoFor = mode => mode === 'table' ? tableArenaInfo : mode === 'court' ? courtArenaInfo : arenaInfo;
-export function createArenaEnvironment(id = 'plaza', { mode = 'hunt', props } = {}) {
+// `size` is the court's half-width and `cover` replaces the layout's cover: Pepazo
+// plays a larger court with spread cover, and the perimeter scenery spreads with
+// it. Every other game keeps the 18 m default.
+export function createArenaEnvironment(id = 'plaza', { mode = 'hunt', props, cover, size = 18 } = {}) {
   id = infoFor(mode)(id).id;
   if(id==='guipuzcoana'||id==='san-carlos')return createPuertoTableEnvironment(id);
   if (id === 'estadio') return createEstadioEnvironment();
@@ -51,19 +54,20 @@ export function createArenaEnvironment(id = 'plaza', { mode = 'hunt', props } = 
   }
   const layout = arenaLayout(id), palette = palettes[id], group = new THREE.Group(), statics = new THREE.Group(), animated = [], cameraBounds = [];
   group.name = arenaInfo(id).name; group.userData.mapId = id; group.userData.mode = mode;
-  const placements = [], materials = new Map();
+  const placements = [], materials = new Map(), spread = size / 18, edge = size - 18, clear = size + 4;
   const material = color => { if (!materials.has(color)) materials.set(color, new THREE.MeshStandardMaterial({ color, roughness: .88 })); return materials.get(color); };
   function box(w, h, d, color, x = 0, y = 0, z = 0) {
     const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), material(color)); m.position.set(x, y, z); m.castShadow = m.receiveShadow = true; return m;
   }
   function place(object, x, z, { angle = 0, scale = 1, live = false, assetId = '', y = 0, perimeter = true } = {}) {
+    if (perimeter) { x *= spread; z *= spread; }
     object.position.set(x, y, z); object.rotation.y = angle; object.scale.setScalar(scale); object.updateMatrixWorld(true);
     const bounds = new THREE.Box3().setFromObject(object);
     // Model origins are not their footprints (the temple includes deep stairs).
     // Keep the whole perimeter model beyond the court and the follow camera.
-    if (perimeter && bounds.min.x < 22 && bounds.max.x > -22 && bounds.min.z < 22 && bounds.max.z > -22) {
+    if (perimeter && bounds.min.x < clear && bounds.max.x > -clear && bounds.min.z < clear && bounds.max.z > -clear) {
       const axis = Math.abs(x) > Math.abs(z) ? 'x' : 'z', side = axis === 'x' ? x : z;
-      object.position[axis] += side >= 0 ? 22 - bounds.min[axis] : -22 - bounds.max[axis];
+      object.position[axis] += side >= 0 ? clear - bounds.min[axis] : -clear - bounds.max[axis];
       object.updateMatrixWorld(true); bounds.setFromObject(object);
     }
     cameraBounds.push(bounds); placements.push({ assetId, perimeter, min: bounds.min.toArray(), max: bounds.max.toArray() });
@@ -71,19 +75,19 @@ export function createArenaEnvironment(id = 'plaza', { mode = 'hunt', props } = 
     if (live) { group.add(object); animated.push(object); } else statics.add(object);
     return object;
   }
-  statics.add(box(180, .3, 180, palette.ground, 0, -.25, id === 'puerto' ? 66 : 0));
-  statics.add(box(37.2, .12, 37.2, palette.court, 0, -.07));
+  statics.add(box(180, .3, 180, palette.ground, 0, -.25, id === 'puerto' ? 66 - edge : 0));
+  statics.add(box(size * 2 + 1.2, .12, size * 2 + 1.2, palette.court, 0, -.07));
   // A low continuous curb makes the play boundary visible from every camera.
   for (const side of [-1, 1]) {
-    statics.add(box(37.2, .32, .3, palette.trim, 0, .08, side * 18.55));
-    statics.add(box(.3, .32, 37.2, palette.trim, side * 18.55, .08));
+    statics.add(box(size * 2 + 1.2, .32, .3, palette.trim, 0, .08, side * (size + .55)));
+    statics.add(box(.3, .32, size * 2 + 1.2, palette.trim, side * (size + .55), .08));
   }
   if (id === 'puerto') {
     const sea = waterSurface(new THREE.PlaneGeometry(300, 260, 80, 70).rotateX(-Math.PI / 2), { kind: 'sea', amplitude: .08, color: '#419baf' });
-    sea.position.set(0, -.25, -154); group.add(sea); animated.push(sea);
-    statics.add(box(52, .5, 7, '#a07b54', 0, -.2, -23));
-    for (let x = -25; x <= 25; x += 1) statics.add(box(.035, .015, 7, '#73583d', x, .06, -23));
-    for (const x of [-23, -12, 0, 12, 23]) statics.add(box(.35, 2.1, .35, '#846348', x, .55, -26));
+    sea.position.set(0, -.25, -154 - edge); group.add(sea); animated.push(sea);
+    statics.add(box(52 + edge * 2, .5, 7, '#a07b54', 0, -.2, -23 - edge));
+    for (let x = -25 - edge; x <= 25 + edge; x += 1) statics.add(box(.035, .015, 7, '#73583d', x, .06, -23 - edge));
+    for (const x of [-23, -12, 0, 12, 23]) statics.add(box(.35, 2.1, .35, '#846348', x * spread, .55, -26 - edge));
     place(coastalLighthouse(), 21, -31, { scale: 1.2, assetId: 'coastal-lighthouse' });
     for (const [x, z, angle] of [[-13, -30, .2], [5, -31, -.3]]) {
       const boat = place(fishingBoat(), x, z, { angle, live: true, assetId: 'fishing-boat', y: -.25 });
@@ -120,7 +124,7 @@ export function createArenaEnvironment(id = 'plaza', { mode = 'hunt', props } = 
     for (const x of [-20, -11, 11, 20]) place(fern({ seed: x + 23 }), x, 23, { scale: 2, assetId: 'fern' });
   }
 
-  for (const o of layout.cover) {
+  for (const o of cover || layout.cover) {
     if (mode === 'table' && !outsideTable(o)) continue;
     if (mode === 'court' && !outsideCourt(o.x, o.z, Math.max(o.w, o.d) / 2)) continue;
     const solid = new THREE.Group(); solid.name = 'Arena cover';
@@ -164,7 +168,7 @@ export function createArenaEnvironment(id = 'plaza', { mode = 'hunt', props } = 
   } });
   group.userData.placements = placements;
   let disposed = false;
-  return { id, group, palette, cameraBounds, bounds: new THREE.Box3(new THREE.Vector3(-32, 0, -34), new THREE.Vector3(32, 18, 25)),
+  return { id, group, palette, cameraBounds, bounds: new THREE.Box3(new THREE.Vector3(-32 * spread, 0, -34 * spread), new THREE.Vector3(32 * spread, 18, 25 * spread)),
     update(t, dt) { animated.forEach(o => o.userData.tick?.(t, dt)); },
     dispose() { if (disposed) return; disposed = true; group.traverse(o => o.userData.dispose?.()); disposeModel(group); },
   };

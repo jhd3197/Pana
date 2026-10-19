@@ -15,6 +15,9 @@ registers `arena-puerto`, `arena-hato` and `arena-ruinas` through that same fact
   the court. Server movement, swept shots, bots, touch auto-aim and camera
   obstruction all read the selected map. The original `COVER`/`SPAWNS` remain
   the Plaza default; new maps use eight clear perimeter spawns.
+  Pepazo passes `size` (court half-width) and its spread `cover` to
+  `createArenaEnvironment`: the court, curbs, pier and perimeter scenery
+  scale with it. Other games keep the 18 m default.
 - **Table:** removes obstacles whose full footprint reaches the central 10 m
   radius. Billar and Caída keep their own equipment, scale, camera and rules.
   Large scenery stays outside the court, with no tabletop or seated-player

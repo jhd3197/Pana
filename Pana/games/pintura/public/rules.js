@@ -1,16 +1,25 @@
 import { canMoveSeats } from '../../../engine/seat-rules.js';
 import { DEFAULT_OPTIONS, validOptions } from './options.js';
-import { arenaInfo, arenaLayout, ARENA_SPAWNS, validArena } from '../../../engine/arena-layouts.js';
+import { paintArenaInfo, arenaLayout, ARENA_SPAWNS, validPaintArena } from '../../../engine/arena-layouts.js';
+import { MUELLE_COVER, MUELLE_SPAWNS, MUELLE_SIZE } from './muelle-layout.js';
 import { DEFAULT_DIFFICULTY, validDifficulty } from '../../../engine/difficulty.js';
 
-export const SIZE = 18, DURATION = 180, TARGET = 10, SPEED = 7, RADIUS = .55;
+// Pepazo plays a 54 m court: every map's cover spreads 1.5× from the centre and
+// an outer ring of barricades keeps the long perimeter lanes from staying open.
+export const SIZE = 27, SPREAD = 1.5, DURATION = 180, TARGET = 10, SPEED = 7, RADIUS = .55, BALL_SPEED = 34;
 export const COLORS = ['#f28b42', '#29c5cd', '#d363a6', '#a1bd43', '#8d85df', '#f0c34c', '#ed615c', '#64b898'];
-export const COVER = [
+const RING = [[11, 21.5, 3.6, 1.6, 2], [-11, -21.5, 3.6, 1.6, 2], [-11, 21.5, 3.6, 1.6, 1.8], [11, -21.5, 3.6, 1.6, 1.8],
+  [21.5, -11, 1.6, 3.6, 2], [-21.5, 11, 1.6, 3.6, 2], [21.5, 11, 1.6, 3.6, 1.8], [-21.5, -11, 1.6, 3.6, 1.8]].map(([x, z, w, d, h]) => ({ x, z, w, d, h, height: h }));
+const spread = cover => [...cover.map(o => ({ ...o, x: o.x * SPREAD, z: o.z * SPREAD, w: o.w * 1.15, d: o.d * 1.15 })), ...RING];
+// The original plaza court, before spreading.
+const PLAZA_COVER = [
   { x: 0, z: 0, w: 4, d: 2, h: 2.4 },
   ...[-1, 1].flatMap(s => [{ x: s * 8, z: -6, w: 2.4, d: 5, h: 2.8 }, { x: s * 8, z: 6, w: 2.4, d: 5, h: 2.8 },
     { x: s * 3.5, z: -11, w: 4, d: 1.8, h: 1.8 }, { x: s * 3.5, z: 11, w: 4, d: 1.8, h: 1.8 }]),
 ];
-export const SPAWNS = [{ x: -14, z: -14 }, { x: 14, z: 14 }, { x: 14, z: -14 }, { x: -14, z: 14 }, { x: 0, z: -15 }, { x: 0, z: 15 }, { x: -15, z: 0 }, { x: 15, z: 0 }];
+export const COVER = spread(PLAZA_COVER);
+export const SPAWNS = [{ x: -14, z: -14 }, { x: 14, z: 14 }, { x: 14, z: -14 }, { x: -14, z: 14 }, { x: 0, z: -15 }, { x: 0, z: 15 }, { x: -15, z: 0 }, { x: 15, z: 0 }].map(p => ({ x: p.x * SPREAD, z: p.z * SPREAD }));
+const PAINT_SPAWNS = ARENA_SPAWNS.map(p => ({ x: p.x * SPREAD, z: p.z * SPREAD }));
 const clamp = (n, lo, hi) => Math.max(lo, Math.min(hi, n));
 // Bot marksmanship per difficulty: aim wobble (radians) and how much of the
 // time a bot with a clear line keeps the trigger down (sine threshold).
@@ -22,10 +31,18 @@ export function cleanInput(input = {}) {
   let ax = num(input.ax), az = num(input.az); length = Math.hypot(ax, az); if (length > .01) { ax /= length; az /= length; } else { ax = 0; az = -1; }
   return { x, z, ax, az, weapon: ['pistol', 'scatter', 'rapid'].includes(input.weapon) ? input.weapon : 'pistol', fire: input.fire === true, reload: input.reload === true };
 }
-export const coverFor = id => arenaLayout(id)?.cover || COVER;
-export const spawnsFor = id => arenaLayout(id) ? ARENA_SPAWNS : SPAWNS;
+const covers = new Map();
+export function coverFor(id) {
+  if (id === 'muelle') return MUELLE_COVER;
+  const layout = arenaLayout(id); if (!layout) return COVER;
+  if (!covers.has(id)) covers.set(id, spread(layout.cover)); return covers.get(id);
+}
+export const spawnsFor = id => id === 'muelle' ? MUELLE_SPAWNS : arenaLayout(id) ? PAINT_SPAWNS : SPAWNS;
+// Half-width of each map's court: the container yard is larger still.
+export const sizeFor = id => id === 'muelle' ? MUELLE_SIZE : SIZE;
 export function blocked(x, z, radius = RADIUS, mapId = 'plaza') {
-  return Math.abs(x) > SIZE - radius || Math.abs(z) > SIZE - radius || coverFor(mapId).some(o => Math.abs(x - o.x) < o.w / 2 + radius && Math.abs(z - o.z) < o.d / 2 + radius);
+  const size = sizeFor(mapId);
+  return Math.abs(x) > size - radius || Math.abs(z) > size - radius || coverFor(mapId).some(o => Math.abs(x - o.x) < o.w / 2 + radius && Math.abs(z - o.z) < o.d / 2 + radius);
 }
 export function segmentBox(x, z, dx, dz, o, padding = 0) {
   let near = 0, far = 1;
@@ -41,7 +58,7 @@ function segmentCircle(x, z, dx, dz, p) {
   const t = (-b - Math.sqrt(disc)) / (2 * a); return t >= 0 && t <= 1 ? t : null;
 }
 export class Arena {
-  constructor(mapId = 'plaza', difficulty = DEFAULT_DIFFICULTY, options = {}) { this.options = { ...DEFAULT_OPTIONS, ...(validOptions(options) ? options : {}) }; this.flags = []; this.teamScores = [0, 0]; this.mapId = arenaInfo(mapId).id; this.difficulty = validDifficulty(difficulty) ? difficulty : DEFAULT_DIFFICULTY; this.phase = 'lobby'; this.players = []; this.balls = []; this.splats = []; this.time = DURATION; this.round = 0; this.serial = 0; this.message = 'La cancha está lista.'; }
+  constructor(mapId = 'plaza', difficulty = DEFAULT_DIFFICULTY, options = {}) { this.options = { ...DEFAULT_OPTIONS, ...(validOptions(options) ? options : {}) }; this.flags = []; this.teamScores = [0, 0]; this.mapId = paintArenaInfo(mapId).id; this.difficulty = validDifficulty(difficulty) ? difficulty : DEFAULT_DIFFICULTY; this.phase = 'lobby'; this.players = []; this.balls = []; this.splats = []; this.time = DURATION; this.round = 0; this.serial = 0; this.message = 'La cancha está lista.'; }
   configure(options) { if (this.phase === 'playing' || !validOptions(options)) return false; Object.assign(this.options, options); this.players.forEach(p => { p.color = COLORS[(this.options.mode === 'teams' || this.options.flag) ? p.team : p.seat]; }); return true; }
   moveSeat(actorId, from, to, hostId) {
     if (!['lobby', 'finished'].includes(this.phase) || !(this.options.mode === 'teams' || this.options.flag)) return false;
@@ -54,7 +71,7 @@ export class Arena {
   canStart() { const people = this.players.filter(p => p.connected); return !(this.options.mode === 'teams' || this.options.flag) || people.length < 2 || new Set(people.map(p => p.team)).size === 2; }
   sameTeam(a, b) { return (this.options.mode === 'teams' || this.options.flag) && a?.team === b?.team; }
   selectMap(id) {
-    if (this.phase !== 'lobby' || !validArena(id)) return false;
+    if (this.phase !== 'lobby' || !validPaintArena(id)) return false;
     this.mapId = id; this.players.forEach((p, i) => Object.assign(p, spawnsFor(id)[i % 8])); return true;
   }
   selectDifficulty(id) {
@@ -73,7 +90,7 @@ export class Arena {
   }
   start() {
     if (this.phase === 'playing' || !this.canStart()) return false;
-    this.players = this.players.filter(p => p.connected); this.phase = 'playing'; this.survivors = null; this.round++; this.time = this.options.duration; this.teamScores = [0, 0]; this.flags = [{ team: 0, x: -14, z: -14, homeX: -14, homeZ: -14, carrier: null }, { team: 1, x: 14, z: 14, homeX: 14, homeZ: 14, carrier: null }]; this.balls = []; this.splats = [];
+    this.players = this.players.filter(p => p.connected); this.phase = 'playing'; this.survivors = null; this.round++; this.time = this.options.duration; this.teamScores = [0, 0]; this.flags = spawnsFor(this.mapId).slice(0, 2).map(({ x, z }, team) => ({ team, x, z, homeX: x, homeZ: z, carrier: null })); this.balls = []; this.splats = [];
     this.players.forEach((p, i) => Object.assign(p, spawnsFor(this.mapId)[i % 8], { eliminated: false, slow: 0, color: (this.options.mode === 'teams' || this.options.flag) ? COLORS[p.team] : COLORS[i % 8], score: 0, hits: 0, ammo: 12, reload: 0, cooldown: 0, respawn: 0, shield: 1.5 }));
     this.message = '¡A pintar!'; return true;
   }
@@ -101,7 +118,7 @@ export class Arena {
       x = (tx - p.x) / d; z = (tz - p.z) / d;
       if (blocked(p.x + x * 1.4, p.z + z * 1.4, RADIUS, this.mapId)) { const swap = x; x = -z; z = swap; }
     }
-    return cleanInput({ x, z, ax: aimX, az: aimZ, fire: clear && length < 24 && Math.sin(t * 3) > skill.trigger, reload: p.ammo < 3 && !clear });
+    return cleanInput({ x, z, ax: aimX, az: aimZ, fire: clear && length < 34 && Math.sin(t * 3) > skill.trigger, reload: p.ammo < 3 && !clear });
   }
   step(dt, inputs = new Map()) {
     if (this.phase !== 'playing') return; dt = clamp(dt, 0, .05); this.time = Math.max(0, this.time - dt);
@@ -120,7 +137,7 @@ export class Arena {
       if ((input.reload || p.ammo === 0) && !p.reload && p.ammo < 12) p.reload = this.options.fastReload ? .55 : 1.3;
       if (input.fire && !p.cooldown && !p.reload && p.ammo > 0) {
         p.ammo--; p.cooldown = p.weapon === 'rapid' ? .13 : p.weapon === 'scatter' ? .75 : .25; p.shield = 0;
-        for (const angle of p.weapon === 'scatter' ? [-.18, 0, .18] : [0]) this.balls.push({ id: ++this.serial, owner: p.id, color: p.color, x: p.x, z: p.z, vx: (p.ax * Math.cos(angle) - p.az * Math.sin(angle)) * 29, vz: (p.az * Math.cos(angle) + p.ax * Math.sin(angle)) * 29, life: p.weapon === 'scatter' ? .5 : 1.5 });
+        for (const angle of p.weapon === 'scatter' ? [-.18, 0, .18] : [0]) this.balls.push({ id: ++this.serial, owner: p.id, color: p.color, x: p.x, z: p.z, vx: (p.ax * Math.cos(angle) - p.az * Math.sin(angle)) * BALL_SPEED, vz: (p.az * Math.cos(angle) + p.ax * Math.sin(angle)) * BALL_SPEED, life: p.weapon === 'scatter' ? .5 : 1.5 });
       }
     }
     for (const ball of this.balls) {
@@ -130,7 +147,7 @@ export class Arena {
         const t = segmentCircle(ball.x, ball.z, dx, dz, p); if (t !== null && t < earliest) { earliest = t; victim = p; }
       }
       ball.x += dx * Math.min(1, earliest); ball.z += dz * Math.min(1, earliest); ball.life -= dt;
-      if (earliest <= 1 || Math.abs(ball.x) > SIZE || Math.abs(ball.z) > SIZE) {
+      if (earliest <= 1 || Math.abs(ball.x) > sizeFor(this.mapId) || Math.abs(ball.z) > sizeFor(this.mapId)) {
         ball.life = 0; this.splats.push({ id: ball.id, x: ball.x, z: ball.z, color: ball.color, life: 9 });
         if (victim) {
           victim.respawn = 2.5; victim.hits++; victim.slow = this.options.paint === 'sticky' ? 7 : 0; victim.eliminated = this.options.lives > 0 && victim.hits >= this.options.lives;

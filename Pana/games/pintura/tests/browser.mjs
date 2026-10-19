@@ -19,21 +19,25 @@ try {
   assert.equal(await a.evaluate(() => pinturaDebug.world.camera.isPerspectiveCamera), true);
   assert.ok(await b.locator('#start').isDisabled()); await wait(a, () => pinturaDebug.world.avatars.size === 2);
   await a.screenshot({ path: `${out}/lobby.png` }); await a.locator('#start').click(); await wait(b, () => pinturaDebug.room.state.phase === 'playing');
-  // This long cross-court shot uses the player's overview option. The follow
-  // camera and camera-relative touch movement are covered below and in 3d.browser.
-  for (const p of [a, b]) {
-    await p.locator('#menu').click(); await p.locator('#pana-tab-settings').click();
-    await p.locator('#pana-opt-view').getByRole('radio', { name: 'Ver la cancha', exact: true }).click(); await p.keyboard.press('Escape');
-  }
-  await b.keyboard.press('Tab'); await b.locator('#world').click({ position: { x: 640, y: 400 } });
-  await b.keyboard.down('w'); await wait(b, () => pinturaDebug.room.state.players.find(p => p.id === pinturaDebug.room.id).z < -13.5); await b.keyboard.up('w');
-  await wait(b, () => !pinturaDebug.room.state.players.find(p => p.id === pinturaDebug.room.id).walk);
+  assert.equal(await a.evaluate(() => pinturaDebug.world.view), 'primera');
+  // The guest crosses the court with the overview option (world-axis keys); the
+  // host plays the default first-person view: turn, walk, then fire along the crosshair.
+  await b.locator('#menu').click(); await b.locator('#pana-tab-settings').click();
+  await b.locator('#pana-opt-view').getByRole('radio', { name: 'Ver la cancha', exact: true }).click(); await b.keyboard.press('Escape');
+  const mine = 'pinturaDebug.room.state.players.find(p => p.id === pinturaDebug.room.id)';
+  await b.locator('#world').focus();
+  await b.keyboard.down('d'); await wait(b, `${mine}.x > 26`); await b.keyboard.up('d');
+  await b.keyboard.down('w'); await wait(b, `${mine}.z < -25.5`); await b.keyboard.up('w');
+  await wait(b, `!${mine}.walk`);
+  await a.locator('#world').focus(); await a.evaluate(() => pinturaDebug.world.look(-pinturaDebug.world.yaw));
+  await a.keyboard.down('w'); await wait(a, `${mine}.z < -25.5`); await a.keyboard.up('w');
   const guest = await b.evaluate(() => pinturaDebug.room.state.players.find(p => p.id === pinturaDebug.room.id));
-  await wait(a, id => pinturaDebug.room.state.players.find(p => p.id === id)?.z < -13.5, guest.id);
-  const target = await a.evaluate(p => pinturaDebug.world.screen(p.x, p.z), guest); await a.mouse.move(target.x, target.y); await a.mouse.down();
-  await wait(a, () => pinturaDebug.room.state.players.find(p => p.id === pinturaDebug.room.id).score > 0); await a.mouse.up();
-  await wait(b, () => pinturaDebug.room.state.players.find(p => p.id === pinturaDebug.room.id).hits > 0);
-  console.log('ok: real guest movement and host aim/fire produce a server-confirmed hit on both clients');
+  await wait(a, id => { const g = pinturaDebug.room.state.players.find(p => p.id === id); return g.x > 26 && g.z < -25.5; }, guest.id);
+  await a.evaluate(id => { const { room, world } = pinturaDebug, me = room.state.players.find(p => p.id === room.id), g = room.state.players.find(p => p.id === id); world.look(Math.atan2(-(g.x - me.x), -(g.z - me.z)) - world.yaw); }, guest.id);
+  await a.keyboard.down(' ');
+  await wait(a, `${mine}.score > 0`); await a.keyboard.up(' ');
+  await wait(b, `${mine}.hits > 0`);
+  console.log('ok: real guest movement and first-person host aim/fire produce a server-confirmed hit on both clients');
   await a.screenshot({ path: `${out}/playing.png` });
   await wait(b, () => !pinturaDebug.room.state.players.find(p => p.id === pinturaDebug.room.id).respawn);
   await a.close(); await wait(b, () => pinturaDebug.room.isHost); const before = await b.evaluate(() => pinturaDebug.room.state.time); await b.waitForTimeout(700); assert.ok(await b.evaluate(() => pinturaDebug.room.state.time) < before);

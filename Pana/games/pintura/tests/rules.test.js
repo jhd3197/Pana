@@ -56,3 +56,29 @@ test('bot marksmanship follows the difficulty; only the lobby or results change 
   const g = new Arena(); assert.ok(g.selectDifficulty('dificil')); assert.equal(g.view().difficulty, 'dificil');
   assert.equal(g.selectDifficulty('imposible'), false); g.add(1, { name: 'A', avatar: {} }); g.start(); assert.equal(g.selectDifficulty('facil'), false);
 });
+
+test('every Pepazo map has clear spawns, open passages and one connected court', async () => {
+  const { PAINT_ARENAS, ARENAS } = await import('../../../engine/arena-layouts.js');
+  const { coverFor, spawnsFor, sizeFor } = await import('../public/rules.js');
+  assert.ok(!ARENAS.some(m => m.id === 'muelle'), 'the container yard stays out of the shared hunt/table maps');
+  for (const { id } of PAINT_ARENAS) {
+    const cover = coverFor(id), size = sizeFor(id);
+    assert.ok(size >= SIZE && size >= 27, `${id}: the larger court`);
+    cover.forEach((a, i) => cover.slice(i + 1).forEach(b => assert.ok(Math.max(Math.abs(a.x - b.x) - (a.w + b.w) / 2, Math.abs(a.z - b.z) - (a.d + b.d) / 2) >= 2.2, `${id}: passage between ${a.x},${a.z} and ${b.x},${b.z}`)));
+    for (const s of spawnsFor(id)) assert.equal(blocked(s.x, s.z, 2, id), false, `${id}: spawn ${s.x},${s.z} has room`);
+    const key = (x, z) => `${x},${z}`, free = new Set();
+    for (let x = 1 - size; x < size; x += .5) for (let z = 1 - size; z < size; z += .5) if (!blocked(x, z, .55, id)) free.add(key(x, z));
+    const start = spawnsFor(id)[0], queue = [[start.x, start.z]], seen = new Set([key(start.x, start.z)]);
+    while (queue.length) { const [x, z] = queue.pop(); for (const [dx, dz] of [[.5, 0], [-.5, 0], [0, .5], [0, -.5]]) { const k = key(x + dx, z + dz); if (free.has(k) && !seen.has(k)) { seen.add(k); queue.push([x + dx, z + dz]); } } }
+    assert.equal(seen.size, free.size, `${id}: every free cell is reachable`);
+  }
+});
+
+test('the container yard is selectable, keeps bots inside and flags at its spawns', () => {
+  const g = new Arena(); assert.ok(g.selectMap('muelle'));
+  for (let i = 0; i < 8; i++) g.add(i + 1, { name: `Pana ${i}`, avatar: {}, bot: i > 0 });
+  g.start(); assert.equal(g.view().mapId, 'muelle');
+  for (let i = 0; i < 900 && g.phase === 'playing'; i++) { g.step(.05); for (const p of g.players) assert.equal(blocked(p.x, p.z, .55, 'muelle'), false); }
+  const flags = new Arena('muelle', 'normal', { flag: true }); flags.add(1, { name: 'A' }); flags.add(2, { name: 'B' }); flags.start();
+  for (const f of flags.flags) assert.equal(blocked(f.homeX, f.homeZ, 1.4, 'muelle'), false);
+});

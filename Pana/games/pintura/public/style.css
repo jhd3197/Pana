@@ -1,4 +1,4 @@
-body { --pk-game: #f28b42; --sky: #c4dfd0; margin: 0; overflow: hidden; background: var(--sky); color: var(--pk-text); font-family: var(--pk-sans); }
+body { --pk-game: #f28b42; --sky: #c4dfd0; --paint-hurt: #ed615c88; margin: 0; overflow: hidden; background: var(--sky); color: var(--pk-text); font-family: var(--pk-sans); }
 * { box-sizing: border-box; } [hidden] { display: none !important; }
 #world { display: block; width: 100vw; height: 100dvh; touch-action: none; }
 .vignette { position: fixed; inset: 0; pointer-events: none; background: linear-gradient(90deg, #0005, transparent 55%); }
@@ -18,7 +18,16 @@ body { --pk-game: #f28b42; --sky: #c4dfd0; margin: 0; overflow: hidden; backgrou
 @media (max-width: 600px) { #touch .pk-dpad { --pk-touch: 52px; gap: 4px; } .touch-actions { gap: 8px; } #fire { min-width: 82px; padding: 0 12px; font-size: 18px; } #reload { min-width: 64px; padding: 0 10px; font-size: 14px; } }
 @media (max-height: 520px) and (min-width: 600px) { .lobby { top: 62px; bottom: 10px; width: 360px; padding: 16px; } .lobby .pk-title { font-size: 44px; } .lobby .pk-stats, .lobby > .pk-copy, #roster { display: none; } .lobby .pk-lobby-foot { gap: 6px; } .score-panel, .timer-panel { top: 65px; padding: 8px 14px; } .feed { bottom: 10px; } }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
-.camera-touch { display: none; position: fixed; top: 152px; right: 14px; align-items: center; gap: 6px; padding: 5px; border-radius: 10px; background: var(--pk-night); font-size: 10px; font-weight: 900; }
-.camera-touch .pk-touch { position: static; display: grid; width: 34px; height: 34px; }
-@media (pointer: coarse) { .camera-touch { display: flex; } }
-@media (max-height: 520px) { .camera-touch { top: 132px; right: 20px; } }
+.minimap { position: fixed; top: 172px; right: 24px; width: 150px; height: 150px; pointer-events: none; }
+.crosshair, .lock-hint, .paint-flash { display: none; }
+body.first-person .crosshair { display: block; position: fixed; left: 50%; top: 50%; width: 30px; height: 30px; transform: translate(-50%, -50%); pointer-events: none; z-index: 4; }
+.crosshair i { position: absolute; background: #fff; box-shadow: 0 0 0 1px #0007; border-radius: 2px; }
+.crosshair i:nth-child(1), .crosshair i:nth-child(2) { left: 14px; width: 2px; height: 8px; } .crosshair i:nth-child(1) { top: 0; } .crosshair i:nth-child(2) { bottom: 0; }
+.crosshair i:nth-child(3), .crosshair i:nth-child(4) { top: 14px; height: 2px; width: 8px; } .crosshair i:nth-child(3) { left: 0; } .crosshair i:nth-child(4) { right: 0; }
+body.scored .crosshair i { background: var(--pk-game); animation: hit-mark .3s ease-out; }
+@keyframes hit-mark { from { transform: scale(1.8); } to { transform: none; } }
+body.first-person:not(.mouse-locked) .lock-hint { display: block; position: fixed; left: 50%; top: calc(50% + 46px); transform: translateX(-50%); font-size: 16px; pointer-events: none; }
+body.painted .paint-flash { display: block; position: fixed; inset: 0; pointer-events: none; background: radial-gradient(circle, transparent 45%, var(--paint-hurt)); animation: painted .6s ease-out forwards; }
+@keyframes painted { from { opacity: 1; } to { opacity: 0; } }
+@media (pointer: coarse) { body.first-person .lock-hint { display: none; } .minimap { top: 130px; right: 12px; width: 104px; height: 104px; } }
+@media (max-height: 520px) { .minimap { top: 120px; width: 96px; height: 96px; } }

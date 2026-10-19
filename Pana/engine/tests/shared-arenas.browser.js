@@ -113,13 +113,13 @@ try {
     renderer.dispose();
     const { createScene } = await import('/g/pintura/scene.js'), { Arena, spawnsFor } = await import('/g/pintura/rules.js');
     const canvas = document.createElement('canvas'); document.body.append(canvas); const paint = createScene(canvas);
-    for (const id of ['puerto', 'hato', 'ruinas']) {
+    for (const id of ['puerto', 'hato', 'ruinas', 'muelle']) {
       const game = new Arena(id); game.add(1, { name: 'Camera', avatar: {} }); game.start();
       for (const spawn of spawnsFor(id)) {
         Object.assign(game.players[0], spawn);
         paint.draw({ ...game.view(), phase: 'lobby' }, 1, .016);
         paint.draw(game.view(), 1, .016);
-        if (paint.camera.position.distanceTo(new THREE.Vector3(spawn.x, 1, spawn.z)) < 5) throw new Error(`Spawn camera inside the pana: ${id}/${JSON.stringify(spawn)}`);
+        if (Math.hypot(paint.camera.position.x - spawn.x, paint.camera.position.z - spawn.z) > .5 || paint.avatars.get(1).group.visible) throw new Error(`First-person camera is not at the pana's eyes: ${id}/${JSON.stringify(spawn)}`);
       }
     }
     paint.dispose(); return records;

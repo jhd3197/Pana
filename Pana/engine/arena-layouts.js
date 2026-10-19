@@ -15,6 +15,13 @@ export const TABLE_ARENAS = [...ARENAS,
   {id:'san-carlos',name:'Fuerte San Carlos',description:'Una partida en el castillo, con el Caribe al pie de la montaña.'},
 ];
 export const validTableArena = id => TABLE_ARENAS.some(map=>map.id===id);
+// Pepazo's own maps: the shared arenas plus the container yard, which has no
+// hunt or table layout, so it never joins `ARENAS`.
+export const PAINT_ARENAS = [...ARENAS,
+  { id: 'muelle', name: 'Muelle de La Guaira', description: 'Contenedores apilados, la grúa del puerto y la calle colonial frente al mar.' },
+];
+export const validPaintArena = id => PAINT_ARENAS.some(map => map.id === id);
+export const paintArenaInfo = id => PAINT_ARENAS.find(map => map.id === id) || PAINT_ARENAS[0];
 // Court games (Bolas Criollas) also play beside the stadium straight.
 export const COURT_ARENAS = [...ARENAS,
   { id: 'estadio', name: 'Estadio Pana', description: 'Frente a la tribuna, donde pasa la carrera de Derrape.' },

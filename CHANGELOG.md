@@ -10,6 +10,16 @@ becomes the GitHub release's notes.
 
 ### Added
 
+- **Pepazo is a first-person shooter now, on bigger maps.** You look
+  through your pana's eyes with the marker in hand: the mouse aims (click
+  the court to capture it, Esc lets go and opens the menu), WASD walks
+  where you look, and phones drag to look while Pinta sticks to the rival
+  in front of you. Every court is 1.5× larger with an outer ring of
+  barricades, paint splats on the cover it hits, and a corner map shows
+  your team plus the rivals you can see. New map: **Muelle de La Guaira**,
+  a container yard under the port crane, with the cargo ship at the quay
+  and a colonial street of houses and stalls. "Ver la cancha" keeps the
+  overview camera.
 - **New game: ¡Stop!** The notebook word game at a plaza table for up to
   eight panas, with bots in the empty chairs. The turn pana stops the
   letter wheel with ¡Para!, everyone fills a secret notebook page (the
