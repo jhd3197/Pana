@@ -450,6 +450,13 @@ becomes the GitHub release's notes.
 
 ### Changed
 
+- **¡Remada! keeps your canoe in the picture.** The camera no longer
+  races off with the leaders and leaves you behind. A ring on the water
+  around your canoe shows your rhythm: it turns green in the ¡Remazo!
+  window and coral when you mash. A strip at the bottom shows how far
+  down the caño everyone is, and in every minigame the six score cards
+  sit in one row so the timer never covers one.
+
 - **Bululú's minigames fit a phone.** In landscape the six score cards
   shrink to one slim strip at the top and the menu moves to the corner, so
   the field is clear; your card says TÚ. Touch buttons match each minigame

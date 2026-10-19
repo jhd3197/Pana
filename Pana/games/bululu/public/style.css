@@ -82,6 +82,8 @@ body:has(#results:not(.hidden)) #hud { display: none; }
   transition: border-color .2s, transform .2s;
 }
 .pcard.turn { border-color: var(--pk-yellow); transform: translateY(2px); }
+/* six panas in a minigame: one row, so the timer below never covers a card */
+body.in-mini .cards { grid-template-columns: repeat(6, minmax(0, 1fr)); }
 .pcard img {
   width: 40px; height: 40px;
   flex: none;
@@ -202,7 +204,7 @@ body:has(#results:not(.hidden)) #hud { display: none; }
 }
 .look.on { background: var(--pk-yellow); border-color: var(--pk-yellow); color: var(--pk-yellow-ink); }
 .look.on .pk-kbd { background: rgba(42, 26, 0, .12); border-color: rgba(42, 26, 0, .25); color: var(--pk-yellow-ink); }
-body.in-mini .look, body.in-mini .side, body.in-mini .legend { display: none; }
+body.in-mini .look, body.in-mini .side, body.in-mini .legend, body.in-mini .keys { display: none; }
 
 /* ---------- tile legend (bottom-left) ---------- */
 .legend {
@@ -441,6 +443,17 @@ body.mini-aim canvas { cursor: none; touch-action: none; }
   background: var(--c); border: 2px solid var(--reticle-ink);
 }
 .reticle .ammo b.used { background: transparent; border-color: rgba(22, 22, 26, 0.45); }
+
+/* ---------- race progress: one track, a dot per pana ---------- */
+.progress {
+  position: fixed; left: 50%; bottom: 22px; translate: -50% 0; z-index: 4;
+  width: min(420px, 46vw); height: 10px; border-radius: 999px;
+  background: rgba(14, 11, 36, .78); box-shadow: inset 0 0 0 2px var(--pk-line);
+  pointer-events: none;
+}
+.progress::after { content: ''; position: absolute; right: -4px; top: -7px; width: 6px; height: 24px; border-radius: 3px; background: repeating-linear-gradient(#fff 0 4px, var(--reticle-ink) 4px 8px); }
+.progress i { position: absolute; top: 50%; width: 14px; height: 14px; translate: -50% -50%; border-radius: 50%; background: var(--c); border: 2px solid var(--reticle-ink); transition: left .1s linear; }
+.progress i.me { width: 20px; height: 20px; border: 3px solid #fff; z-index: 1; }
 
 /* ---------- touch controls (minigames only) ---------- */
 .touch { display: none; }

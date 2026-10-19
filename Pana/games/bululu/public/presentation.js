@@ -51,3 +51,19 @@ export function drawReticles(list, area = { x: 0, y: 0, w: innerWidth, h: innerH
     }
   });
 }
+
+// Race minigames return progress(): [{ color, at (0..1), me }]. One track,
+// a dot per pana, yours bigger and on top, the finish flag at the right.
+export function drawProgress(list) {
+  const track = $('progress');
+  track.hidden = !list;
+  if (!list) return;
+  while (track.children.length < list.length) track.append(document.createElement('i'));
+  list.forEach((p, i) => {
+    const dot = track.children[i];
+    dot.style.setProperty('--c', p.color);
+    dot.style.left = `${(p.at * 100).toFixed(1)}%`;
+    dot.classList.toggle('me', !!p.me);
+  });
+}
+
