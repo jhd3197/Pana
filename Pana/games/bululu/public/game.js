@@ -9,18 +9,7 @@ import { createBoard, createToken, createDie, FORK } from './board.js';
 import { createMinimap } from './minimap.js';
 import { track, release, resources } from './minigames/lifetime.js';
 import { fitCamera, letterbox } from './minigames/framing.js';
-import atrapa from './minigames/atrapa.js';
-import caigas from './minigames/caigas.js';
-import caida from './minigames/caida.js';
-import momia from './minigames/momia.js';
-import coleo from './minigames/coleo.js';
-import choque from './minigames/choque.js';
-import embuste from './minigames/embuste.js';
-import remada from './minigames/remada.js';
-import raudal from './minigames/raudal.js';
-import remolino from './minigames/remolino.js';
-import chinazo from './minigames/chinazo.js';
-import criollas from './minigames/criollas.js';
+import { MINIGAMES, loadMinigame, loadedMinigame, prefetchMinigames } from './minigames/index.js';
 import { SKY_MODES } from './atmosphere.js';
 import * as rules from './rules.js';
 import { ICONS as SVG } from '/engine/icons.js';
@@ -55,7 +44,6 @@ const AUTO = QS.has('auto');
 const SPEED = Number(QS.get('speed')) || 1;
 let ROUNDS = Math.max(1, Math.min(20, Number(QS.get('rounds')) || 10));   // the lobby can change it
 const DEBUG = QS.has('debug');
-const MINIGAMES = [atrapa, caigas, caida, momia, coleo, choque, embuste, remada, raudal, remolino, chinazo, criollas];
 let options = { ...DEFAULT_OPTIONS, rounds: ROUNDS };
 let nextMinigame = rules.minigameBag(MINIGAMES);
 const FORCED = MINIGAMES.find((m) => m.id === QS.get('mini'));
@@ -748,7 +736,8 @@ async function takeTurn(p) {
 let view = boardView;
 let mini = null;   // { game, state: 'wait'|'run'|'outro', left, winners }
 
-async function playMinigame(def) {
+async function playMinigame(entry) {
+  const def = await loadMinigame(entry.id);
   setFreeLook(false);
   turnOf = -1;
   setPlank('MINIJUEGO');
@@ -1179,7 +1168,9 @@ function clearMini() {
   document.body.classList.remove('in-mini', 'mini-2d', 'mini-aim'); frameMini(); drawProgress(null); drawHint(null);
   $('reticles').replaceChildren(); setTimer(null);
 }
+let lastOnline = null;
 function applyOnline(state) {
+  lastOnline = state;
   if (authority) stopAuthority();
   started = state.started; ROUNDS = state.rounds; round = state.round;
   syncOptions(state.options);
@@ -1203,7 +1194,9 @@ function applyOnline(state) {
     const spec = state.mini;
     if (mini?.spec?.serial !== spec.serial) {
       clearMini(); setFreeLook(false);
-      const def = MINIGAMES.find(m => m.id === spec.id);
+      // Not downloaded yet: draw this state once it is (missed frames come by catch-up).
+      const def = loadedMinigame(spec.id);
+      if (!def) { loadMinigame(spec.id).then(() => { if (lastOnline === state) applyOnline(state); }).catch(() => {}); return; }
       mini = { def, spec, game: createMini(def, spec), authoritative: false, state: spec.state, left: spec.left };
       enterMini();
     }
@@ -1344,6 +1337,8 @@ async function fastForward(seconds, dt = 1 / 30) {
     await null;   // let the turn logic's awaits run
   }
 }
+// Suites fast-forward in simulated time and can't wait on a download: give them every minigame up front.
+if (DEBUG) await Promise.all(MINIGAMES.map(m => loadMinigame(m.id)));
 if (DEBUG) Object.assign(window, { menu, players, board, dice, MINIGAMES, layoutTokens, fastForward, renderer, boardScene, boardCam, minigame: () => mini, onlineState: () => ({ room, checkpoint, pendingChoice, ready: readyCheck, miniFrame, me: me?.i, options, order }), changeOptions });
 if (DEBUG) Object.defineProperty(window, 'thrower', { get: () => thrower });
 
@@ -1351,3 +1346,4 @@ frame();
 main().catch(ignoreCancelled);
 
 await prepareScene({ renderer, scene: boardScene, camera: boardCam });
+prefetchMinigames([...new Set([QS.get('play'), QS.get('mini')].filter(Boolean)), ...MINIGAMES.map(m => m.id)]);
