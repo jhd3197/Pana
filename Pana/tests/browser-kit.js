@@ -39,12 +39,13 @@ export function qaDir(metaUrl) {
 
 // Opens a game as a fresh player (own context, low quality, sound off) and
 // collects its page errors on page.errors.
-export async function openGame(browser, game, { name = 'Pana', room, mobile = false, query = '', wait = true } = {}) {
+export async function openGame(browser, game, { name = 'Pana', avatar, room, mobile = false, query = '', wait = true } = {}) {
   const context = await browser.newContext({ viewport: mobile ? { width: 390, height: 844 } : { width: 1280, height: 800 }, ...(mobile ? { isMobile: true, hasTouch: true } : {}) });
-  await context.addInitScript(name => {
+  await context.addInitScript(({ name, avatar }) => {
     localStorage.setItem('pana:name', name);
+    if (avatar) localStorage.setItem('pana:avatar', JSON.stringify(avatar));
     localStorage.setItem('pana:settings', JSON.stringify({ sound: false, music: false, quality: 'baja' }));
-  }, name);
+  }, { name, avatar });
   const page = await context.newPage();
   page.errors = [];
   page.on('pageerror', e => page.errors.push(`${game}: ${e.message}`));

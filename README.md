@@ -75,7 +75,8 @@ the same Wi-Fi open that, pick a game, and press *Invitar panas* to share the ro
 
 - **Pana Studio** (`.\dev.ps1 studio`): every shared character, prop, vehicle and
   map with a live 3D preview and its source file.
-- **Character editor**: `/personaje.html`.
+- **Character editor**: `/personaje.html` — visual wardrobe, accessory previews,
+  undo/redo and outfit codes; save the complete look for every game.
 
 ## Releases
 

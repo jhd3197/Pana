@@ -79,6 +79,7 @@ function loadCreator() {
   });
 }
 function showView() {
+  if (location.hash === "#mi-pana") { location.replace("/personaje.html"); return; }
   const view = { '#mi-pana': 'mi-pana', '#salas': 'salas' }[location.hash] || 'jugar';
   document.body.dataset.view = view;
   for (const a of document.querySelectorAll('.nav [data-view]')) {

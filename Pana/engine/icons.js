@@ -8,6 +8,14 @@ const svg = (body, label = '') =>
 const INK = '#16161a';
 
 export const ICONS = {
+  'wardrobe-pelaje': svg("<path d=\"M12 20c-3 0-5 3-5 6 0 4 3 6 6 5 2-.5 3-1 7-1s5 .5 7 1c3 1 6-1 6-5 0-3-2-6-5-6-4 0-4-4-8-4s-4 4-8 4z\"/><circle cx=\"9\" cy=\"11\" r=\"3\"/><circle cx=\"16\" cy=\"7\" r=\"3\"/><circle cx=\"24\" cy=\"7\" r=\"3\"/><circle cx=\"31\" cy=\"11\" r=\"3\"/>"),
+  'wardrobe-cara': svg("<circle cx=\"20\" cy=\"20\" r=\"14\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"3.4\"/><circle cx=\"14.5\" cy=\"17\" r=\"2.4\"/><circle cx=\"25.5\" cy=\"17\" r=\"2.4\"/><path d=\"M13 23c3 5 11 5 14 0\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"3.4\" stroke-linecap=\"round\"/>"),
+  'wardrobe-cabeza': svg("<path d=\"M7 25c0-9 6-15 13-15s13 6 13 15z\"/><path d=\"M5 26h30a2 2 0 0 1 0 4H5a2 2 0 0 1 0-4z\"/><circle cx=\"20\" cy=\"8\" r=\"2.6\"/>"),
+  'wardrobe-lentes': svg("<circle cx=\"11\" cy=\"22\" r=\"7\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"3.4\"/><circle cx=\"29\" cy=\"22\" r=\"7\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"3.4\"/><path d=\"M18 21c1.5-1.5 2.5-1.5 4 0M4 20l-1-6M36 20l1-6\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"3\" stroke-linecap=\"round\"/>"),
+  'wardrobe-ropa': svg("<path d=\"M14 6l-9 5 3 8 4-2v17h16V17l4 2 3-8-9-5c-1 3-3 5-6 5s-5-2-6-5z\"/>"),
+  'wardrobe-cuello': svg("<path d=\"M8 8c0 11 5 17 12 17S32 19 32 8\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"3.2\" stroke-linecap=\"round\"/><circle cx=\"20\" cy=\"30\" r=\"6\"/>"),
+  'wardrobe-espalda': svg("<rect x=\"9\" y=\"11\" width=\"22\" height=\"24\" rx=\"6\"/><path d=\"M15 11V9a5 5 0 0 1 10 0v2\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"3\"/><rect x=\"13\" y=\"24\" width=\"14\" height=\"7\" rx=\"2\" fill=\"var(--panel)\"/>"),
+  dice: svg('<rect x="5" y="5" width="30" height="30" rx="7" fill="none" stroke="currentColor" stroke-width="3"/><g fill="currentColor"><circle cx="13" cy="13" r="3"/><circle cx="27" cy="27" r="3"/><circle cx="13" cy="27" r="3"/><circle cx="27" cy="13" r="3"/></g>'),
   close: svg('<path d="m10 10 20 20M30 10 10 30" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round"/>'),
   chevronLeft: svg('<path d="m24 10-8 10 8 10" fill="none" stroke="currentColor" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>'),
   plus: svg('<path d="M20 9v22M9 20h22" fill="none" stroke="currentColor" stroke-width="6" stroke-linecap="round"/>'),

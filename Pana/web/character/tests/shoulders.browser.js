@@ -9,7 +9,7 @@ const browser = await chromium.launch({ headless: true, ...(process.argv[3] ? { 
 try {
   const p = await browser.newPage({ viewport: { width: 1440, height: 1000 }, reducedMotion: 'reduce' });
   const errors = []; p.on('pageerror', e => errors.push(e.message));
-  await p.goto(`${process.env.PANA_QA_URL || 'http://localhost:8461'}/personaje.html`);
+  await p.goto(`${process.env.PANA_QA_URL || 'http://localhost:8461'}/character/reference.html`);
   await p.waitForFunction(() => !!window.panaStudio);
   for (const style of ['shirt', 'hoodie', 'tropical', 'sport']) {
   const topology = await p.evaluate(style => {

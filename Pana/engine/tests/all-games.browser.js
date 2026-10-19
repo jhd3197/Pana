@@ -4,6 +4,12 @@
 // Run: node Pana/engine/tests/all-games.browser.js   (env PANA_TEST_URL)
 import assert from 'node:assert/strict';
 import { games, launch, openGame, waitPrepared } from '../../tests/browser-kit.js';
+import { wardrobeToAvatar } from '../avatar.js';
+
+// Exercise the editor's complete saved schema in every game's actual renderer.
+const avatar = wardrobeToAvatar({ hat: 'casco', glasses: 'visor', top: 'hoodie',
+  print: 'rayo', neck: 'bandana', back: 'capa', extras: { pecas: true }, wrist: true,
+  colors: { 'top:hoodie:main': '#2ad1b2', 'hat:casco:main': '#ff4b4b' } });
 
 // Games that keep their own pre-game menu instead of the shared lobby, and why.
 const OWN_MENU = { derrape: 'four-step garage menu (docs/knowledge/derrape-menu.md)' };
@@ -15,7 +21,7 @@ try {
     const started = Date.now();
     let page;
     try {
-      page = await openGame(browser, game, { room: `smoke-${game}-${Date.now()}`, wait: false });
+      page = await openGame(browser, game, { room: `smoke-${game}-${Date.now()}`, avatar, wait: false });
       await waitPrepared(page);
       const view = await page.evaluate(() => ({
         lobby: !!document.querySelector('#pana-lobby-shell'),

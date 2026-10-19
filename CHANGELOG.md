@@ -10,6 +10,11 @@ becomes the GitHub release's notes.
 
 ### Added
 
+- **Build your pana with the new visual wardrobe and use the whole look in games.**
+  Mi pana now has accessory previews, outfits, face details, prints, neckwear,
+  backpacks, undo/redo and portable outfit codes. Existing avatars migrate;
+  saving carries every slot and color through multiplayer and portraits.
+
 - **Pepazo is a first-person shooter now, on bigger maps.** You look
   through your pana's eyes with the marker in hand: the mouse aims (click
   the court to capture it, Esc lets go and opens the menu), WASD walks

@@ -2,6 +2,8 @@
 // every game. Every pana uses the shared studio sculpt. Plain data only (no
 // Three.js) so any page can import it.
 
+import { normalizeWardrobe, wardrobeColor } from './wardrobe.js';
+
 const KEY = 'pana:avatar';
 const NAME_KEY = 'pana:name';
 
@@ -96,7 +98,34 @@ export function normalizeAvatar(a = {}) {
     if (key === 'fur' && !FURS.includes(v)) continue;   // fur only comes in the brand tones
     if (choices ? choices.some((c) => c.id === v) : /^#[0-9a-f]{6}$/i.test(v)) out[key] = v;
   }
+  if (a.wardrobe && typeof a.wardrobe === 'object') {
+    out.wardrobe = normalizeWardrobe({ ...a.wardrobe, fur: out.fur });
+    delete out.wardrobe.name;
+  }
   return out;
+}
+
+const tops = { franela: 'shirt', deportivo: 'sport', hoodie: 'hoodie', hawaiana: 'tropical', chef: 'chef' };
+const faces = { cool: 'natural', feliz: 'smile', lengua: 'talk', ojazos: 'natural', wow: 'laugh' };
+const reverse = (map, value, fallback) => Object.keys(map).find(key => map[key] === value) || fallback;
+
+export function avatarToWardrobe(input, name = 'pana') {
+  const a = normalizeAvatar(input);
+  if (a.wardrobe) return normalizeWardrobe({ ...a.wardrobe, fur: a.fur, name });
+  const hat = a.hat === 'band' ? 'cinta' : a.hat, top = tops[a.outfit];
+  return normalizeWardrobe({ name, fur: a.fur, hat, top,
+    glasses: { redondos: 'round', sol: 'sun', fiesta: 'round' }[a.glasses] || 'none',
+    face: faces[a.face], wrist: a.extra === 'pulseras', neck: a.extra === 'cadena' ? 'cadena' : 'none',
+    colors: { [`top:${top}:main`]: a.outfitColor, [`hat:${hat}:main`]: a.hatColor } });
+}
+
+export function wardrobeToAvatar(input) {
+  const w = normalizeWardrobe(input);
+  return normalizeAvatar({ fur: w.fur, wardrobe: w,
+    outfit: reverse(tops, w.top, 'franela'), outfitColor: wardrobeColor(w, 'top', w.top, 'main') || '#ee3024',
+    hat: w.hat === 'cinta' ? 'band' : w.hat, hatColor: wardrobeColor(w, 'hat', w.hat, 'main') || '#ff4b4b',
+    glasses: { round: 'redondos', sun: 'sol' }[w.glasses] || 'none', face: reverse(faces, w.face, 'cool'),
+    extra: w.wrist ? 'pulseras' : w.neck === 'cadena' ? 'cadena' : 'none' });
 }
 
 export function loadAvatar() {

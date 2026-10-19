@@ -14,7 +14,7 @@ try {
   const page = await browser.newPage({ viewport: { width: 1440, height: 1000 }, deviceScaleFactor: 1 });
   page.on('pageerror', e => errors.push(e.message));
   page.on('console', msg => { if (msg.type() === 'error') errors.push(msg.text()); });
-  await page.goto(`${base}/personaje.html`);
+  await page.goto(`${base}/character/reference.html`);
   await page.waitForFunction(() => window.panaStudio?.renderer.info.render.triangles > 0);
   await page.locator('#pause').click();
   for (const view of ['three-quarter', 'front', 'side', 'back']) {
@@ -61,7 +61,7 @@ try {
   console.log('Render:', await page.evaluate(() => ({ triangles: panaStudio.renderer.info.render.triangles, calls: panaStudio.renderer.info.render.calls, geometries: panaStudio.renderer.info.memory.geometries })));
   const mobile = await browser.newPage({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 1, isMobile: true, hasTouch: true, reducedMotion: 'reduce' });
   mobile.on('pageerror', e => errors.push(e.message));
-  await mobile.goto(`${base}/personaje.html`); await mobile.waitForFunction(() => !!window.panaStudio);
+  await mobile.goto(`${base}/character/reference.html`); await mobile.waitForFunction(() => !!window.panaStudio);
   assert.equal(await mobile.evaluate(() => panaStudio.paused), true);
   assert.equal(await mobile.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
   await mobile.screenshot({ path: path.join(output, 'mobile.png'), fullPage: true });

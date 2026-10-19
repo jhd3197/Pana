@@ -51,7 +51,7 @@ try {
   await page.setViewportSize({ width: 390, height: 844 }); await page.locator('[data-category="Personajes"]').click(); await page.locator('[data-asset="pana"]').click();
   await page.waitForFunction(() => panaLibrary.selected === 'pana' && document.querySelector('#preview-status').hidden);
   assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false); await page.screenshot({ path: `${output}/mobile-library.png`, fullPage: true });
-  await page.goto(`${base}/personaje.html`); await page.waitForFunction(() => window.panaStudio);
+  await page.goto(`${base}/character/reference.html`); await page.waitForFunction(() => window.panaStudio);
   await page.locator('[data-outfit="hoodie"]').click(); await page.locator('[data-headwear="chef"]').click(); await page.locator('[data-glasses="round"]').click(); await page.locator('#wristbands').check();
   await page.locator('#save-avatar').click(); assert.match(await page.locator('#save-status').innerText(), /guardada/);
   const adapter = await page.evaluate(async () => {

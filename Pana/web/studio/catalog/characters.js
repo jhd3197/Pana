@@ -1,10 +1,13 @@
-import { DEFAULT_AVATAR } from '/engine/avatar.js';
+import { DEFAULT_AVATAR, wardrobeToAvatar } from '/engine/avatar.js';
 const shared = ['Bululú', 'Derrape', 'Escondidas', 'Cocina'];
 const character = (id, name, options = {}) => ({ id, name, category: 'Personajes', source: '/engine/models/characters/pana/avatar-model.js', factory: 'buildCharacter', usedBy: options.seated?['Derrape']:options.chef?['Cocina']:shared, previewOptions: options,
   async build() { const { buildCharacter } = await import('/engine/models/characters/pana/avatar-model.js'); const model = buildCharacter(DEFAULT_AVATAR, { quality: 'studio', ...options }); return { group: model.group, update: (t, dt) => model.update(dt), dispose: () => model.dispose() }; },
 });
 
 export const CHARACTERS = [
+  { id: 'pana-guardarropa', name: 'Mi pana · Accesorios', category: 'Vestuario', source: '/engine/models/characters/pana/accessories.js', factory: 'createAccessories', usedBy: shared, tags: ['wardrobe.js', 'wardrobe-look.js'],
+    async build() { const { buildCharacter } = await import('/engine/models/characters/pana/avatar-model.js'); const model = buildCharacter(wardrobeToAvatar({ hat: 'casco', glasses: 'visor', top: 'sport', back: 'cohete', neck: 'medalla' }), { quality: 'studio' }); return { group: model.group, update: (t, dt) => model.update(dt), dispose: () => model.dispose() }; },
+  },
   character('pana', 'Pana original'),
   character('pana-chef', 'Pana cocinero', { chef: true }),
   character('pana-driver', 'Pana conductor', { seated: true }),
