@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { QuizGame, SEATS, LADDER, TOP, TIMES, safeFloor, resolveAnswer, revealOrder, ranking, score, titles } from '../public/rules.js';
-import { QUESTIONS, CATEGORIES } from '../public/questions.js';
+import { QUESTIONS, CATEGORIES, PACKS } from '../public/questions.js';
 
 let seq = 0;
 const act = (game, id, action, values = {}) => game.accept(id, { action, seq: ++seq, q: game.index, ...values }, 1);
@@ -18,6 +18,16 @@ test('every question has four different answers and a category', () => {
       assert.equal(new Set(answers).size, 4, text);
     }
   }
+});
+
+test('each Tema deals only its own categories', () => {
+  for (const [id, pack] of Object.entries(PACKS)) {
+    for (const cat of pack.cats) assert.ok(QUESTIONS[cat]?.length >= 8, `${id}: ${cat}`);
+    const game = humans(); game.options.pack = id; game.start();
+    assert.ok(game.deck.every(([cat]) => pack.cats.includes(cat)), id);
+    assert.equal(new Set(game.deck.slice(0, 6).map(d => d[0])).size, 6, `${id} rotates categories`);
+  }
+  assert.deepEqual(Object.keys(QUESTIONS).sort(), [...PACKS.todo.cats].sort(), 'De todo covers every category');
 });
 
 test('room options are host-only and validated', () => {

@@ -6,7 +6,7 @@
 import { draw, seedOf, clamp } from '/engine/random.js';
 import { pickLine } from '/engine/frases.js';
 import { defaultOptions, roomOptions } from './options.js';
-import { CATEGORIES, QUESTIONS } from './questions.js';
+import { CATEGORIES, QUESTIONS, PACKS } from './questions.js';
 
 export const SEATS = 6;
 export const LETTERS = ['A', 'B', 'C', 'D'];
@@ -128,9 +128,9 @@ export class QuizGame {
       [cat, clamp(base + ((seedOf(`${this.round}:${seat}:${cat}`) % 1000) / 1000 - .5) * .3, .15, .97)]));
   }
 
-  // Categories take turns, questions never repeat inside a game.
+  // The pack's categories take turns, questions never repeat inside a game.
   buildDeck(count) {
-    const cats = Object.keys(CATEGORIES), pools = Object.fromEntries(cats.map(c => [c, QUESTIONS[c].map((_, i) => i)]));
+    const cats = [...(PACKS[this.options.pack] ?? PACKS.venezuela).cats], pools = Object.fromEntries(cats.map(c => [c, QUESTIONS[c].map((_, i) => i)]));
     for (let i = cats.length - 1; i > 0; i--) { const j = Math.floor(draw(this) * (i + 1)); [cats[i], cats[j]] = [cats[j], cats[i]]; }
     const deck = [];
     for (let i = 0; deck.length < count; i++) {

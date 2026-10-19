@@ -14,8 +14,10 @@ Built on the shared table room (`engine/table-room.js`) and the plaza stage
 - `public/rules.js`: pure rules (`QuizGame`), tested by `tests/rules.test.js`.
 - `public/questions.js`: the question bank, one list per category. The first
   answer is the right one; `ask()` shuffles the four. New questions only go here.
+  `PACKS` groups the categories for the Tema option: Venezuela (eight
+  categories), Cultura general (six) and De todo (all of them).
 - `public/network.js`: the room. `step(dt)` is the host's clock (`game.tick`).
-- `public/options.js`: number of questions, seconds per question, bot level.
+- `public/options.js`: Tema, number of questions, seconds per question, bot level.
 - `public/studio-set.js`: stage, podium, host desk, big screen and spotlight
   factories, registered in Pana Studio (`web/studio/catalog/qqsmp.js`).
 - `public/scene.js`: the studio, the screen and plate painting, the panas.

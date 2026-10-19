@@ -378,6 +378,12 @@ becomes the GitHub release's notes.
 
 ### Changed
 
+- **QQSMP has three Tema packs.** Venezuela gains Historia de Venezuela
+  and Naturaleza venezolana; Cultura general brings Ciencia, Geografía,
+  Historia universal, Deportes, Animales and Arte y entretenimiento; De
+  todo mixes them all. The host picks one in the room options.
+
+
 - **Play Billar, Póquer and ¡Pintura! inside Pana's 3D plaza.**
   Pool has a physical table, balls, cue and perspective aiming. Poker deals
   cards onto the felt beside real chip stacks and seated panas. Paintball
