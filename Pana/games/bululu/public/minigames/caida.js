@@ -196,7 +196,7 @@ export default {
       } else {
         a.score -= 1;
         a.lock = LOCK;
-        a.bubble.say(pick(['¡No era!', '¡Upa!', '¡Ay, no!']), 0.9);
+        a.bubble.say(pick(['−1 ¡No era!', '−1 ¡Upa!', '−1 ¡Ay, no!']), 0.9);
         sound.boing();
         puffs.spawn(NOW.clone().setY(TOP + 0.3), { color: 0xd04a3a, count: 4, spread: 0.7, size: 0.4, rise: 1, life: 0.5 });
       }
@@ -245,16 +245,24 @@ export default {
       plates[0].show(before?.card);
       plates[1].show(now && now.t >= FLIP * 0.6 ? now.card : null);
 
+      // Everyone who slams in the same step slams at the same moment (online,
+      // a step is 50 ms). On a caída one of them, drawn from the game's random
+      // stream, takes the cards and the rest were just late: seat order must
+      // never decide who was first.
+      const slams = [];
       for (const a of actors) {
         a.lock = Math.max(0, a.lock - dt);
         if (human(a)) {
-          if (inputFor(input, a.i).jump) slam(a);
+          if (inputFor(input, a.i).jump) slams.push(a);
         } else if (a.plan && clock >= a.plan.at) {
-          if (a.plan.serial === serial) slam(a);
+          if (a.plan.serial === serial) slams.push(a);
           a.plan = null;
         }
-        pose(a, dt);
       }
+      const ready = slams.filter((a) => a.lock <= 0 && a.slap <= 0);
+      if (ready.length > 1 && isMatch()) slam(ready[Math.floor(random() * ready.length)]);
+      for (const a of slams) slam(a);
+      for (const a of actors) pose(a, dt);
       updateFlying(dt);
       puffs.update(dt);
     }
