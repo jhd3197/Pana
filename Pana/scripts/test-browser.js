@@ -6,9 +6,8 @@
 //   --jobs N     suites run at once (default: an eighth of the CPUs, 1–4; PANA_BROWSER_JOBS).
 //                Software WebGL is CPU-bound: 6 at once on 32 threads made suites
 //                time out and the run slower than serial
-//   --changed    only suites for what changed since `dev` (or =<base>), committed or not:
-//                a game's own suites; engine/server/tests changes add the engine suites
-//                and the every-game smoke
+//   --changed    only suites for what changed since `dev` (or =<base>), committed or not;
+//                see changed-suites.js for how a change maps to suites
 //   --shard k/n  run the k-th of n balanced slices (CI matrix); every shard
 //                reads the same committed timings, so the slices never overlap
 //   --retries N  rerun a failed suite up to N times (default 1), at half the
@@ -25,10 +24,12 @@ import fs from 'node:fs';
 import net from 'node:net';
 import os from 'node:os';
 import path from 'node:path';
+import { suitesFor, withinBudget } from './changed-suites.js';
 
 const app = path.resolve(import.meta.dirname, '..');
 const repo = path.resolve(app, '..');
 const timingsFile = path.join(app, 'tests', 'browser-timings.json');
+const timings = fs.existsSync(timingsFile) ? JSON.parse(fs.readFileSync(timingsFile, 'utf8')) : {};
 const timeout = Number(process.env.PANA_SUITE_TIMEOUT) || 10 * 60_000;
 
 // `--jobs 4` and `--jobs=4` both work; anything that is not a flag is a filter.
@@ -76,21 +77,18 @@ function changedFilters(base) {
     console.log(`--changed could not diff against ${base} (${error.message}); running the smoke suites`);
     return ['all-games.browser', 'lobby.browser'];
   }
-  const out = new Set();
-  for (const file of files) {
-    const game = file.match(/^Pana\/games\/([^/]+)\//);
-    if (game) out.add(`pana/games/${game[1]}/`);
-    else if (/^Pana\/(engine|server|tests|web|scripts)\//.test(file) || file === 'package-lock.json') {
-      out.add('pana/engine/tests/'); out.add('all-games.browser'); out.add('lobby.browser');
-    }
-  }
-  console.log(`--changed since ${base}: ${files.length} files → ${out.size ? [...out].join(', ') : 'no browser suites'}`);
-  return [...out];
+  const all = ['engine', 'games', 'web'].flatMap(dir => collect(path.join(app, dir))).map(file => path.relative(repo, file).split(path.sep).join('/'));
+  // A file's cost is the sum of its runs' recorded times (variants run separately).
+  const cost = file => Object.entries(timings).filter(([label]) => label === file || label.startsWith(file + ' ')).reduce((n, [, t]) => n + t, 0) || 60;
+  const budget = (Number(process.env.PANA_CHANGED_BUDGET) || 20) * 60;
+  const { run, skipped, spent } = withinBudget(suitesFor(repo, files, all), cost, budget);
+  console.log(`--changed since ${base}: ${files.length} files → ${run.length ? `${run.length} suites, ~${Math.round(spent / 60)} min of suite time: ${run.join(', ')}` : 'no browser suites'}`);
+  if (skipped.length) console.log(`Over the ${budget / 60} min budget, left for the nightly full run: ${skipped.join(', ')}`);
+  return run.map(file => file.toLowerCase());
 }
 if (flags.changed) filters.push(...changedFilters(flags.changed === true ? 'dev' : flags.changed));
 if (flags.changed && !filters.length) process.exit(0);
 
-const timings = fs.existsSync(timingsFile) ? JSON.parse(fs.readFileSync(timingsFile, 'utf8')) : {};
 const cost = suite => timings[suite.label] ?? 60;
 
 let suites = ['engine', 'games', 'web']

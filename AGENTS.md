@@ -116,10 +116,13 @@ slowest first by `Pana/tests/browser-timings.json`; a failure reruns once at hal
 the concurrency and is reported as flaky if it then passes. More than about
 one suite per eight CPU threads overloads software WebGL and makes suites time
 out. Refresh the timings with `--record`
-after adding or speeding up suites. CI runs `check`, `test`, the all-games smoke
-and the `--changed` suites on every push to `dev`; PRs into `main` also run every
-suite in four `--shard k/4` jobs. Every merge to `main` releases
-(`.github/workflows/release.yml`).
+after adding or speeding up suites. CI runs `check`, `test` and the all-games
+smoke everywhere, plus the `--changed` suites on every push to `dev`: the suites a
+change touches within a ~20 min budget (`Pana/scripts/changed-suites.js`; docs,
+images and unit tests need none). PRs into `main` run only `check`, `test` and the
+smoke, since each commit already passed on `dev`. Every suite runs nightly on `dev`
+in four `--shard k/4` jobs, or by hand from Actions → Tests; it is never a merge
+gate. Every merge to `main` releases (`.github/workflows/release.yml`).
 
 Browser suites wait on game state (`window.PANA_PREPARED`, a phase, a revision,
 an event), never on wall-clock time: no new `waitForTimeout`, positions and
