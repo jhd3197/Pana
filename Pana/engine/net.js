@@ -296,9 +296,11 @@ export class HostRoom {
     this.onStatus(this.statusText?.() ?? `Sala ${this.code} · ${n} pana${n === 1 ? '' : 's'} conectado${n === 1 ? '' : 's'}`);
   }
 
-  send(data) {
+  // dest: 'host' for what only the host reads (inputs, actions), a seat for one
+  // member, nothing for everyone. The room delivers it only there.
+  send(data, dest) {
     if (this.offline || !this.link) return;
-    this.link.send('relay', { game: this.protocol, ...data });
+    this.link.send('relay', dest == null ? { game: this.protocol, ...data } : { game: this.protocol, ...data, dest });
   }
 
   // Local play: you are seat 1 and the host, nothing touches the network.

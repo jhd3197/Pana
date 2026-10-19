@@ -72,7 +72,7 @@ export class TableRoom extends HostRoom {
     // Continue from the room's ledger, so a reload or a new host never sees a repeated seq.
     this.seq = Math.max(this.seq, this.state.ledger?.[this.id] || 0) + 1;
     const data = { kind: 'action', action, ...values, seq: this.seq, revision: this.state.revision };
-    if (!this.isHost) { this.send(data); return true; }
+    if (!this.isHost) { this.send(data, 'host'); return true; }
     const ok = this.table.accept(this.game, this.id, data, this.hostId);
     if (ok) { this.botElapsed = 0; this.accepted?.(); }
     this.publish(); return ok;

@@ -36,19 +36,19 @@ export class BululuRoom extends HostRoom {
     } else if (v.kind === 'catchup' && this.isHost && v.serial === this.state?.mini?.serial && Number.isInteger(v.from) && v.from >= 0) {
       // One short history, cleared at the next minigame. Stay below 256 KB.
       for (let from = v.from; from < this.history.length; from += 60)
-        this.send({ kind: 'frames', to: id, serial: v.serial, from, frames: this.history.slice(from, from + 60) });
+        this.send({ kind: 'frames', to: id, serial: v.serial, from, frames: this.history.slice(from, from + 60) }, id);
     }
   }
   // power: how hard a thrown die flew (0–1), for prompts that throw dice.
   choose(prompt, choice, power) {
     const message = { kind: 'choice', prompt, choice, power };
     if (this.isHost) { if (acceptsChoice(this.prompt, this.id, message)) this.events.choice(choice, power); }
-    else this.send(message);
+    else this.send(message, 'host');
   }
   // ¡Listo! before a minigame: each pana answers the host's check for itself.
   ready(check) {
     if (this.isHost) this.events.ready(this.id, check);
-    else this.send({ kind: 'ready', id: check });
+    else this.send({ kind: 'ready', id: check }, 'host');
   }
   input(id, value) {
     const next = cleanInput(value), previous = this.inputs.get(id);
@@ -61,7 +61,7 @@ export class BululuRoom extends HostRoom {
   }
   controls(value) {
     if (this.isHost) this.input(this.id, value);
-    else this.send({ kind: 'input', serial: this.state?.mini?.serial, input: cleanInput(value) });
+    else this.send({ kind: 'input', serial: this.state?.mini?.serial, input: cleanInput(value) }, 'host');
   }
   takeInputs(players) {
     return players.map(p => {
@@ -77,5 +77,5 @@ export class BululuRoom extends HostRoom {
     this.history.push(frame);
     this.send({ kind: 'frames', serial, from, frames: [frame] });
   }
-  catchup(serial, from) { this.send({ kind: 'catchup', serial, from }); }
+  catchup(serial, from) { this.send({ kind: 'catchup', serial, from }, 'host'); }
 }

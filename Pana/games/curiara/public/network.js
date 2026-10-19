@@ -52,11 +52,11 @@ export class RiverRoom extends LiveRoom {
   moveSeat(from, to) {
     if (!this.connected) return;
     if (this.isHost) { if (this.game.moveSeat(this.id, from, to, this.hostId)) this.publish(); }
-    else this.send({ kind: 'move-seat', from, to });
+    else this.send({ kind: 'move-seat', from, to }, 'host');
   }
   chooseSeat(seat) {
     this.seat = seat; const m = this.members.get(this.id); if (m) m.seat = seat;
-    if (this.isHost) { this.game.chooseSeat(this.id, seat); this.publish(); } else this.send({ kind: 'seat', seat });
+    if (this.isHost) { this.game.chooseSeat(this.id, seat); this.publish(); } else this.send({ kind: 'seat', seat }, 'host');
   }
   configure(patch) { if(this.isHost && this.game?.configure(patch))this.publish(); }
   setFormat(format) { if (this.isHost && this.game) { this.game.setFormat(format); this.seat = null; this.publish(); } }

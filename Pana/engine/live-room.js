@@ -20,6 +20,9 @@
 import { HostRoom } from './net.js';
 
 export const STEP = .05;
+// A guest resends an unchanged input this often, so the host never expires it
+// (inputTtl) and a new host gets it soon after taking over.
+const INPUT_HEARTBEAT = 200;
 // -1…1, anything else (NaN, strings, absent) is a released stick.
 export const axis = (v) => Number.isFinite(v) ? Math.max(-1, Math.min(1, v)) : 0;
 
@@ -64,23 +67,36 @@ export class LiveRoom extends HostRoom {
   // A message for one member: shown here when it's you, sent when it's a guest.
   notice(id, text) {
     if (id === this.id) this.onNotice(text);
-    else this.send({ kind: 'notice', to: id, text });
+    else this.send({ kind: 'notice', to: id, text }, id);
   }
 
   action(action, extra = {}) {
     if (!this.connected) { if (this.texts.waiting) this.onNotice(this.texts.waiting); return false; }
     const data = { kind: 'action', seq: ++this.seq, action, ...extra };
-    if (this.isHost) { this.lastAction.set(this.id, data.seq); this.handle?.(this.id, data); } else this.send(data);
+    if (this.isHost) { this.lastAction.set(this.id, data.seq); this.handle?.(this.id, data); } else this.send(data, 'host');
     return true;
   }
 
   publish() { this.state = this.game.snapshot(); this.onState(this.state); this.send({ kind: 'snapshot', state: this.state }); }
 
+  // A guest's input goes to the host only when it changed, or as a heartbeat.
+  sendInput(input) {
+    const message = this.inputMessage(input), key = JSON.stringify(message), now = performance.now();
+    if (key === this.sentInput && now - this.sentAt < Math.min(INPUT_HEARTBEAT, this.live.inputTtl / 3)) return;
+    this.sentInput = key; this.sentAt = now;
+    this.send(message, 'host');
+  }
+
+  elect(next) {
+    if (next !== this.hostId) this.sentInput = null;   // the new host has none of our input yet
+    super.elect(next);
+  }
+
   // Host: step the game in fixed STEP slices (catching up at most maxCatchUp
   // seconds after a hitch) and publish once. Guest: send this tick's input.
   tick(dt, input, paused = false) {
     if (!this.connected) return;
-    if (!this.isHost) { this.send(this.inputMessage(input)); return; }
+    if (!this.isHost) { this.sendInput(input); return; }
     this.inputs.set(this.id, { ...this.ownInput(input), at: performance.now() });
     const now = performance.now();
     for (const [id, value] of this.inputs) if (id !== this.id && now - value.at > this.live.inputTtl) this.expire(id, value);

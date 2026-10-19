@@ -94,6 +94,26 @@ test('no room registers a message type twice', async () => {
   assert.deepEqual(problems, []);
 });
 
+test('the relay sends host-bound messages to the host and seat-bound ones to that seat', () => {
+  const t = createTestRoom(RelayRoom, { code: 'relay-dest' });
+  const host = t.join('h'), a = t.join('a'), b = t.join('b');
+  const got = (who) => who.sent.filter(m => m.type === 'relay').map(m => m.payload.v.kind);
+  t.send(a.client, 'relay', { kind: 'input', dest: 'host' });
+  t.send(host.client, 'relay', { kind: 'notice', dest: 3 });
+  t.send(b.client, 'relay', { kind: 'action', dest: 1 });
+  t.send(host.client, 'relay', { kind: 'snapshot' });
+  t.send(a.client, 'relay', { kind: 'lost', dest: 99 });
+  assert.deepEqual(got(host), ['input', 'action']);
+  assert.deepEqual(got(a), []);
+  assert.deepEqual(got(b), ['notice']);
+  assert.deepEqual(t.broadcasts.map(m => [m.msg.id, m.msg.v.kind]), [[1, 'snapshot']]);
+  // The host left: 'host' now means whoever the room picked next.
+  t.leave(host.client);
+  t.send(b.client, 'relay', { kind: 'input', dest: 'host' });
+  assert.deepEqual(got(a), ['input']);
+  t.room.onDispose();
+});
+
 test('static files never leave their folder', async () => {
   const root = fs.mkdtempSync(path.join(fs.realpathSync(process.env.TEMP || '/tmp'), 'pana-static-'));
   const base = path.join(root, 'web');

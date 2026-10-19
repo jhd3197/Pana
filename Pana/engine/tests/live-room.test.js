@@ -13,7 +13,7 @@ class WalkRoom extends LiveRoom {
     this.game = { update: (dt, inputs) => this.steps.push([dt, [...inputs.keys()]]), snapshot: () => ({ players: [] }) };
   }
   handle(id, data) { this.handled.push([id, data.seq]); }
-  send(data) { this.sent.push(data); }
+  send(data, dest) { this.sent.push(dest == null ? data : { ...data, dest }); }
 }
 
 test('axis clamps sticks and treats junk as released', () => {
@@ -49,7 +49,23 @@ test('guests send their cleaned input instead of stepping', () => {
   const room = new WalkRoom();
   room.id = 2; room.hostId = 1; room.connected = true; room.link = {};
   room.tick(.05, { x: -5 });
-  assert.deepEqual(room.sent, [{ kind: 'input', input: { x: -1 } }]);
+  assert.deepEqual(room.sent, [{ kind: 'input', input: { x: -1 }, dest: 'host' }]);
+});
+
+test('a guest sends input when it changes, plus a heartbeat, and again to a new host', () => {
+  const room = new WalkRoom();
+  room.id = 2; room.hostId = 1; room.connected = true; room.link = {};
+  room.tick(.05, { x: 1 }); room.tick(.05, { x: 1 }); room.tick(.05, { x: 1 });
+  assert.equal(room.sent.length, 1, 'an unchanged stick is not resent every tick');
+  room.tick(.05, { x: 0 });
+  assert.equal(room.sent.length, 2, 'a change goes out at once');
+  room.sentAt -= 1000;
+  room.tick(.05, { x: 0 });
+  assert.equal(room.sent.length, 3, 'the heartbeat keeps the host from expiring it');
+  room.elect(3);
+  room.tick(.05, { x: 0 });
+  assert.equal(room.sent.length, 4, 'a new host hears it right away');
+  assert.ok(room.sent.every(m => m.dest === 'host'));
 });
 
 test('elapsedClock measures real time between calls', () => {

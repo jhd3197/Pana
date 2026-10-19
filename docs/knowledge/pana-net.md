@@ -34,6 +34,11 @@ on top of `HostRoom`. Start there (the `new-game` scaffold does); drop to plain
   in fixed 50 ms slices from real elapsed time. Drive it with `elapsedClock()`:
   a host in a background tab gets timers about once a second, and a fixed
   `tick(0.05)` would slow the game twenty times for everyone.
+  A guest sends its input only to the host, and only when it changed or
+  every 200 ms (a third of `inputTtl` if that is shorter), so an idle stick
+  costs nothing and the host never expires it; a new host gets it at once.
+  An `inputMessage` that stamps a clock (Curiara's `now`) changes every
+  tick and so still goes out every tick.
   Unit tests: `engine/tests/live-room.test.js`.
 
 ## A host-simulated game on HostRoom directly
@@ -60,7 +65,10 @@ export class KitchenRoom extends HostRoom {
 }
 ```
 
-The base provides `connect()`, `send(data)` (wraps `{ game: protocol, ...data }`),
+The base provides `connect()`, `send(data, dest)` (wraps `{ game: protocol, ...data }`;
+`dest` is `'host'` for what only the host reads, a seat for one member, or nothing
+for everyone: the relay room delivers it only there, so guests stop receiving
+each other's inputs),
 `members` (Map seat → member), `id`, `hostId`, `isHost`, `connected`, `offline`,
 `practice(text)` (local play as seat 1 and host; reset game state first, then call
 `super.practice(...)`), `cut()` (lose the connection for good, as after every
