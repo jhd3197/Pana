@@ -40,6 +40,21 @@ on top of `HostRoom`. Start there (the `new-game` scaffold does); drop to plain
   An `inputMessage` that stamps a clock (Curiara's `now`) changes every
   tick and so still goes out every tick.
   Unit tests: `engine/tests/live-room.test.js`.
+- **Prediction (`engine/predict.js`)**: pass `predict: { body(state, id),
+  step(body, input, dt, state) }` as LiveRoom's second argument and draw your
+  own character from `room.predicted` (null on the host and offline). Every
+  guest tick then sends a numbered input (no send-on-change: the host must see
+  one number per tick), steps the prediction at once, and the host echoes each
+  guest's last applied number in its snapshots (`acks`). A snapshot restarts the
+  prediction from the host's body and replays the inputs it hadn't applied, so
+  the host stays the authority and a guest walks without waiting a round trip.
+  `step` must be the very function the host's `update` uses for that body
+  (Cocina `stepCook`, Reliquia `stepExplorer`) and touch only the body; `body`
+  returns null outside play. Bodies pushed by actions (a dodge, a carry) still
+  move when the host says so. Not predicted yet: Escondidas, Galope and
+  Lancha each move one body per player in `update()` and are candidates once
+  that movement is split into a pure step; a Curiara canoe is shared by two
+  paddlers, and Tambor's input is song hits, not movement.
 
 ## A host-simulated game on HostRoom directly
 

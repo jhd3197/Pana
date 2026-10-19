@@ -16,8 +16,11 @@
 // other kind, expire(id, input) for an input older than inputTtl (default: drop
 // it), ownInput(input) for the host's own, inputMessage(input) and
 // takeInput(id, data) to change the wire format.
+// Pass `predict: { body(state, id), step(body, input, dt) }` to move a guest's
+// own character at once (engine/predict.js); read it from room.predicted.
 // Call super.takeOver(previous) and super.memberLeft(id) when overriding them.
 import { HostRoom } from './net.js';
+import { createPrediction } from './predict.js';
 
 export const STEP = .05;
 // A guest resends an unchanged input this often, so the host never expires it
@@ -34,20 +37,30 @@ export function elapsedClock(now = () => performance.now()) {
 }
 
 export class LiveRoom extends HostRoom {
-  constructor(options, { valid = (state) => !!state, inputTtl = 600, maxCatchUp = 1 } = {}) {
+  constructor(options, { valid = (state) => !!state, inputTtl = 600, maxCatchUp = 1, predict = null } = {}) {
     super(options);
     this.live = { valid, inputTtl, maxCatchUp };
     this.inputs = new Map(); this.lastAction = new Map(); this.seq = 0;
+    // Prediction numbers every input; the host echoes the last one it applied per guest.
+    this.prediction = predict && createPrediction({ ...predict, slice: STEP });
+    this.inputSeq = 0; this.acks = new Map();
   }
+
+  // Your own body as you predict it (a guest with `predict`), else null.
+  get predicted() { return !this.isHost && this.connected && !this.offline ? this.prediction?.body ?? null : null; }
 
   cleanInput(raw) { return raw ?? {}; }
 
-  takeOver() { this.inputs.clear(); this.lastAction.clear(); }
-  memberLeft(id) { this.inputs.delete(id); this.lastAction.delete(id); }
+  takeOver() { this.inputs.clear(); this.lastAction.clear(); this.acks.clear(); this.prediction?.reset(); }
+  memberLeft(id) { this.inputs.delete(id); this.lastAction.delete(id); this.acks.delete(id); }
 
   receive(id, data) {
     if (data.kind === 'snapshot') {
-      if (id === this.hostId && !this.isHost && this.live.valid(data.state)) { this.state = data.state; this.onState(this.state); }
+      if (id === this.hostId && !this.isHost && this.live.valid(data.state)) {
+        this.state = data.state;
+        this.prediction?.snapshot(this.state, this.id, data.acks?.[this.id]);
+        this.onState(this.state);
+      }
     } else if (data.kind === 'input') {
       if (this.isHost) this.takeInput(id, data);
     } else if (data.kind === 'action') {
@@ -60,7 +73,10 @@ export class LiveRoom extends HostRoom {
   }
 
   ownInput(input) { return this.cleanInput(input); }
-  takeInput(id, data) { this.inputs.set(id, { ...this.cleanInput(data.input), at: performance.now() }); }
+  takeInput(id, data) {
+    this.inputs.set(id, { ...this.cleanInput(data.input), at: performance.now() });
+    if (Number.isSafeInteger(data.seq)) this.acks.set(id, data.seq);
+  }
   inputMessage(input) { return { kind: 'input', input: this.cleanInput(input) }; }
   expire(id) { this.inputs.delete(id); }
 
@@ -77,10 +93,21 @@ export class LiveRoom extends HostRoom {
     return true;
   }
 
-  publish() { this.state = this.game.snapshot(); this.onState(this.state); this.send({ kind: 'snapshot', state: this.state }); }
+  publish() {
+    this.state = this.game.snapshot(); this.onState(this.state);
+    this.send(this.acks.size ? { kind: 'snapshot', state: this.state, acks: Object.fromEntries(this.acks) } : { kind: 'snapshot', state: this.state });
+  }
 
   // A guest's input goes to the host only when it changed, or as a heartbeat.
-  sendInput(input) {
+  // A predicting guest numbers and sends every tick's input: the host's echo
+  // of the last number tells it which of its own steps to replay.
+  sendInput(input, dt) {
+    if (this.prediction) {
+      const seq = ++this.inputSeq, message = this.inputMessage(input);
+      this.send({ ...message, seq }, 'host');
+      this.prediction.input(seq, message.input, Math.min(this.live.maxCatchUp, dt));
+      return;
+    }
     const message = this.inputMessage(input), key = JSON.stringify(message), now = performance.now();
     if (key === this.sentInput && now - this.sentAt < Math.min(INPUT_HEARTBEAT, this.live.inputTtl / 3)) return;
     this.sentInput = key; this.sentAt = now;
@@ -96,7 +123,7 @@ export class LiveRoom extends HostRoom {
   // seconds after a hitch) and publish once. Guest: send this tick's input.
   tick(dt, input, paused = false) {
     if (!this.connected) return;
-    if (!this.isHost) { this.sendInput(input); return; }
+    if (!this.isHost) { this.sendInput(input, dt); return; }
     this.inputs.set(this.id, { ...this.ownInput(input), at: performance.now() });
     const now = performance.now();
     for (const [id, value] of this.inputs) if (id !== this.id && now - value.at > this.live.inputTtl) this.expire(id, value);
@@ -105,7 +132,7 @@ export class LiveRoom extends HostRoom {
   }
 
   practice(text) {
-    this.inputs.clear(); this.lastAction.clear(); this.seq = 0;
+    this.inputs.clear(); this.lastAction.clear(); this.seq = 0; this.acks.clear(); this.prediction?.reset();
     super.practice(text);
   }
 }
