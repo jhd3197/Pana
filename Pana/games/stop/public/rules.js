@@ -6,7 +6,7 @@
 // snapshots before the review: each client keeps its own and sends it at
 // pencils-down.
 import { draw } from '/engine/random.js';
-import { findEntry, wordsFor, letterOf, soundKey, isCrude, categoryLabel } from '/engine/saber-match.js';
+import { findEntry, wordsFor, letterOf, soundKey, isCrude, categoryLabel } from '/engine/play/saber-match.js';
 import { defaultOptions, roomOptions } from './options.js';
 
 export const SEATS = 8;

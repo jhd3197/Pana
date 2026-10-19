@@ -1,6 +1,6 @@
-import { createArenaEnvironment } from '/engine/arenas.js';
+import { createArenaEnvironment } from '/engine/worlds/arenas.js';
 import * as THREE from 'three';
-import { createPlazaEnvironment, createPlaza } from '/engine/plaza.js';
+import { createPlazaEnvironment, createPlaza } from '/engine/worlds/plaza.js';
 import { buildCharacter } from '/engine/models/characters/pana/avatar-model.js';
 import { bake } from '/engine/models/core/static-batch.js';
 import { M, box, mesh, tube } from '/engine/models/core/primitives.js';

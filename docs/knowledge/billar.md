@@ -84,7 +84,7 @@ long/short/no guide overrides the difficulty-driven guide without changing bots.
 Point/drag to aim, then hold the shot button or Space/Enter. The power meter
 appears only while held: it rises from 5% to 100% in one second, falls over the
 next second and repeats. Release shoots at the current strength; the red top
-marks strong shots. `engine/shot-charge.js` (shared with Bolas Criollas) samples elapsed time, including at release,
+marks strong shots. `engine/play/shot-charge.js` (shared with Bolas Criollas) samples elapsed time, including at release,
 so frame rate does not change the timing. Aiming and spin lock while charging.
 Blur, hidden tabs, pointer cancellation, menu opening and changed gameplay
 revisions cancel without firing. Shared `holdButton` also calls `up` on lost
@@ -98,7 +98,7 @@ The shared settings menu offers plaza and overhead table cameras.
 
 ## Difficulty, guide and Pana Bot
 
-`engine/difficulty.js` is the one knob shared with Bolas Criollas: Fácil,
+`engine/play/difficulty.js` is the one knob shared with Bolas Criollas: Fácil,
 Normal, Difícil, Experto. `state.difficulty` travels in snapshots. Online the
 host sets it in the lobby (or between games); a local table (practice or bot)
 accepts it any time from the menu. Each level's `guide` sets how much of the
@@ -148,7 +148,7 @@ The renderer never advances physics. Rolling texture rotation and snapshot
 interpolation are cosmetic. Keep table bases below the cloth; an overlapping
 wood slab can silently hide the entire felt surface.
 
-`engine/table-world.js` shares the plaza, sky and lighting with Póquer. It fits
+`engine/worlds/table-world.js` shares the plaza, sky and lighting with Póquer. It fits
 the actual 3D bounds to the HUD's available screen rectangle using camera view
 offsets, while the canvas fills the viewport. Do not restore inset canvas padding.
 

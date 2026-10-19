@@ -8,7 +8,7 @@
 //
 // State is a plain object so a race snapshot can carry it across host
 // migration. createPaddler() wraps it for callers that prefer methods.
-import { clamp } from './random.js';
+import { clamp } from '../random.js';
 export const PADDLE = Object.freeze({
   impulse: 1.1,          // m/s added by a full stroke
   pull: .3,              // s over which a stroke delivers its impulse

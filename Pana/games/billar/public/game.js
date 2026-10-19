@@ -1,6 +1,6 @@
 import { prepareScene } from '/engine/game-load.js';
-import { createMapPicker } from '/engine/map-picker.js';
-import { createDifficultyPicker, DIFFICULTIES } from '/engine/difficulty.js';
+import { createMapPicker } from '/engine/play/map-picker.js';
+import { createDifficultyPicker, DIFFICULTIES } from '/engine/play/difficulty.js';
 import { loadName, loadAvatar } from '/engine/avatar.js';
 import { inviteUrl, newRoomCode, roomFromUrl } from '/engine/invite.js';
 import { createGameMenu, toggleMute } from '/engine/ui.js';
@@ -10,10 +10,10 @@ import { fillRoster } from '/engine/results.js';
 import { PoolRoom } from './network.js';
 import { groupName, groupOf, canPlace, remaining } from './rules.js';
 import { createPoolScene, VIEWS } from './scene.js';
-import { shotPower, paintCharge } from '/engine/shot-charge.js';
+import { shotPower, paintCharge } from '/engine/play/shot-charge.js';
 import { POOL_OPTIONS, teamOf, playingSeats, poolConnected, canStartPool } from './match-rules.js';
 import { createRoomOptions } from '/engine/room-options.js';
-import { createTableSeating } from '/engine/table-seating.js';
+import { createTableSeating } from '/engine/play/table-seating.js';
 import { createToast } from '/engine/hud.js';
 
 const $ = id => document.getElementById(id), code = roomFromUrl() || newRoomCode();

@@ -9,7 +9,7 @@ the hub. No build step or additional production dependency. Tested on Three.js
 - Three transformations to one of five shared props per round. Reverting to a
   pana is free, but never replenishes changes. Selecting the current or an invalid
   form does not consume a change. A larger disguise must fit its collision radius.
-- First person by default (`engine/first-person.js`: pointer lock, touch drag to
+- First person by default (`engine/play/first-person.js`: pointer lock, touch drag to
   look). WASD/arrows walk where you look, Shift runs as a pana, 1–5 change, Q
   reverts, E copies the closest map object. V (or the menu's Cámara option)
   switches to the old orbit camera behind your pana so a hider can check the

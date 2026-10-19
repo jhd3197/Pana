@@ -3,7 +3,7 @@
 // camera behind the plate that follows the batted cap. Timing comes from the
 // HUD's clocks (game.js), so what a batter sees is what they swing at.
 import * as THREE from 'three';
-import { createTableWorld } from '/engine/table-world.js';
+import { createTableWorld } from '/engine/worlds/table-world.js';
 import { buildCharacter } from '/engine/models/characters/pana/avatar-model.js';
 import { normalizeAvatar, randomAvatar } from '/engine/avatar.js';
 import { rng } from '/engine/random.js';

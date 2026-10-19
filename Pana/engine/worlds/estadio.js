@@ -1,10 +1,10 @@
 import * as THREE from 'three';
-import { palm } from './models/vegetation/palm.js';
-import { parkBench, streetFoodKiosk } from './models/props/pueblo.js';
-import { streetLamp } from './models/props/plaza.js';
-import { bake } from './models/core/static-batch.js';
-import { disposeModel } from './models/props/game-table.js';
-import { rng } from './random.js';
+import { palm } from '../models/vegetation/palm.js';
+import { parkBench, streetFoodKiosk } from '../models/props/pueblo.js';
+import { streetLamp } from '../models/props/plaza.js';
+import { bake } from '../models/core/static-batch.js';
+import { disposeModel } from '../models/props/game-table.js';
+import { rng } from '../random.js';
 import { PALETTE, BUNTING } from './look.js';
 
 // Estadio Pana for a court game: the court sits on the concourse in front of

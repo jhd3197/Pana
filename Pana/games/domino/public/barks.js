@@ -1,7 +1,7 @@
 // What the panas at the dominó table shout. Pure: turns new history events,
 // and the end of a mano, into speech bubbles. Lines are seeded by the event,
 // so every client shows the same bark without sending it over the network.
-import { pickLine } from '../../../engine/frases.js';
+import { pickLine } from '../../../engine/play/frases.js';
 import { groupOf } from './options.js';
 
 const COCHINA = ['¡Salí con la cochina!', '¡Ahí va la cochina!'];

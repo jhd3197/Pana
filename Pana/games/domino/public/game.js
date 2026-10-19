@@ -1,8 +1,8 @@
 import { createRoomOptions } from '/engine/room-options.js';
 import { FIELDS, cleanOptions, maxPip, groupOf, CHAT } from './options.js';
 import { prepareScene } from '/engine/game-load.js';
-import { createTableSeating } from '/engine/table-seating.js';
-import { createMapPicker } from '/engine/map-picker.js';
+import { createTableSeating } from '/engine/play/table-seating.js';
+import { createMapPicker } from '/engine/play/map-picker.js';
 import { loadName, loadAvatar } from '/engine/avatar.js';
 import { createGameMenu, toggleMute } from '/engine/ui.js';
 import { fillRoster } from '/engine/results.js';

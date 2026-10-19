@@ -1,4 +1,4 @@
-// Looking things up in El Saber (engine/saber.js): normalize answers, match
+// Looking things up in El Saber (engine/play/saber.js): normalize answers, match
 // them with forgiving spelling (accents, b/v, s/z/c, ll/y, a silent h, one or
 // two typos) and pick words for bots. Pure: no DOM, shared by rules files and
 // Node tests (engine/tests/saber.test.js).

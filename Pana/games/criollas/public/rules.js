@@ -1,7 +1,7 @@
-import { createPitch, throwBall, stepPitch, moving, measure, botShot, distance, copy, STEP } from '/engine/bolas-criollas.js';
-import { validCourtArena } from '/engine/arena-layouts.js';
-import { DEFAULT_DIFFICULTY, validDifficulty } from '/engine/difficulty.js';
-import { canMoveSeats, swapSeats } from '../../../engine/seat-rules.js';
+import { createPitch, throwBall, stepPitch, moving, measure, botShot, distance, copy, STEP } from '/engine/play/bolas-criollas.js';
+import { validCourtArena } from '/engine/worlds/arena-layouts.js';
+import { DEFAULT_DIFFICULTY, validDifficulty } from '/engine/play/difficulty.js';
+import { canMoveSeats, swapSeats } from '../../../engine/play/seat-rules.js';
 import { criollasOptions } from './options.js';
 export { STEP, copy };
 export const TEAM_NAMES = ['Rojos', 'Verdes'];

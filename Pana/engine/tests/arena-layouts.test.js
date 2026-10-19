@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { ARENAS, ARENA_SPAWNS, arenaLayout, createHuntLayout, outsideTable } from '../arena-layouts.js';
+import { ARENAS, ARENA_SPAWNS, arenaLayout, createHuntLayout, outsideTable } from '../worlds/arena-layouts.js';
 import { propDefinition } from '../models/props/plaza-definitions.js';
 import { HuntRound } from '../../games/escondidas/public/rules.js';
 import { Arena, blocked, RADIUS, coverFor, spawnsFor } from '../../games/pintura/public/rules.js';

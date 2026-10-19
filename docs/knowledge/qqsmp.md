@@ -7,7 +7,7 @@ question decides the Mango de oro. The hub card shows `tileName` ("QQSMP") from
 `game.json`; the banner keeps the full `name`.
 
 Built on the shared table room (`engine/table-room.js`) and the plaza stage
-(`engine/table-world.js`) lit for night, with a TV set on top.
+(`engine/worlds/table-world.js`) lit for night, with a TV set on top.
 
 ## Files
 

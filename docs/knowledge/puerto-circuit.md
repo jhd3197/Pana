@@ -117,7 +117,7 @@ Never test airborne clearance against the missing road's interpolated surface.
 
 `TABLE_ARENAS` extends the ordinary arena registry with `guipuzcoana` and
 `san-carlos` for Caída, Dominó and Póquer only. Action games and Billar retain
-their existing choices. `engine/puerto-tables.js` uses the same native factories:
+their existing choices. `engine/worlds/puerto-tables.js` uses the same native factories:
 Casa scale 3.2 with its central planter omitted, or San Carlos scale .72.
 Equipment, actors and camera remain game-owned around y=0. Studio exposes the
 same worlds as `table-guipuzcoana` and `table-san-carlos`.

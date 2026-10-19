@@ -1,5 +1,5 @@
-import { validTableArena } from '../../../engine/arena-layouts.js';
-import { swapSeats, canMoveSeats } from '../../../engine/seat-rules.js';
+import { validTableArena } from '../../../engine/worlds/arena-layouts.js';
+import { swapSeats, canMoveSeats } from '../../../engine/play/seat-rules.js';
 import { DEFAULT_OPTIONS, changeOptions } from './options.js';
 // Pure Texas Hold'em and Omaha with selectable betting limits. Cards are integers: suit * 13 + rank (deuce = 0).
 export const SMALL = 10, BIG = 20, STACK = 1000;

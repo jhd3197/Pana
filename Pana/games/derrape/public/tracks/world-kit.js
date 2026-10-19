@@ -2,7 +2,7 @@
 import * as THREE from 'three';
 import { M, mesh, box, tube, rng } from '/engine/models/core/primitives.js';
 import { bake, instancePlacements } from '/engine/models/core/static-batch.js';
-import { terrainMaterial } from '/engine/terrain-material.js';
+import { terrainMaterial } from '/engine/worlds/terrain-material.js';
 import { natureSurface } from '/engine/models/core/nature-surface.js';
 import { signBoard } from '/engine/models/props/wood-sign.js';
 import { placeOnTrack } from '../track-kit.js';

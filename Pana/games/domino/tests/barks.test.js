@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { FRASES } from '../../../engine/frases.js';
+import { FRASES } from '../../../engine/play/frases.js';
 import { DominoGame, legalMoves } from '../public/rules.js';
 import { barksFor } from '../public/barks.js';
 

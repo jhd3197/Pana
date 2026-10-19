@@ -1,7 +1,7 @@
-import { validArena } from '../../../engine/arena-layouts.js';
-import { DEFAULT_DIFFICULTY, validDifficulty, difficultyInfo } from '../../../engine/difficulty.js';
+import { validArena } from '../../../engine/worlds/arena-layouts.js';
+import { DEFAULT_DIFFICULTY, validDifficulty, difficultyInfo } from '../../../engine/play/difficulty.js';
 import { rng } from '../../../engine/random.js';
-import { canMoveSeats } from '../../../engine/seat-rules.js';
+import { canMoveSeats } from '../../../engine/play/seat-rules.js';
 import { defaultPoolOptions, poolOptions, teamOf, occupiedSeats, canStartPool, poolConnected, nextShooter, passPoolTurn, winPoolRack } from './match-rules.js';
 
 // Casual eight-ball house rules. All physics uses fixed steps in table units.

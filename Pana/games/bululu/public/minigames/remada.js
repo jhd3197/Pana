@@ -1,7 +1,7 @@
 import { random, inputFor } from '../online-rules.js';
 // ¡Remada! Four curiaras, a straight 120 m sprint down a caño. No steering:
 // alternate A and D in rhythm. Mashing splashes; the sweet spot is a ¡Remazo!.
-// The paddle model is Curiara's (/engine/paddle.js); the race is river-sims.js.
+// The paddle model is Curiara's (/engine/play/paddle.js); the race is river-sims.js.
 
 import * as THREE from 'three';
 import { sound, Puffs } from '/engine/fx.js';
@@ -9,7 +9,7 @@ import { finishArch } from '/engine/models/props/amazonas.js';
 import { sunnyStage, pick } from './stage.js';
 import { riverWater, riverBanks, canoeActors, drawCanoe } from './river-stage.js';
 import { remadaSim, REMADA } from './river-sims.js';
-import { PADDLE } from '/engine/paddle.js';
+import { PADDLE } from '/engine/play/paddle.js';
 
 
 

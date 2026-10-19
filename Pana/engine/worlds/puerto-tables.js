@@ -1,13 +1,13 @@
 import * as THREE from 'three';
-import { casaGuipuzcoana } from './models/props/casa-guipuzcoana.js';
-import { sanCarlosFortress } from './models/props/san-carlos-fortress.js';
-import { portSilos } from './models/props/port-silos.js';
-import { portCrane } from './models/props/port-crane.js';
-import { palm } from './models/vegetation/palm.js';
-import { M,box,mesh } from './models/core/primitives.js';
-import { paintFinish } from './models/core/architecture-kit.js';
-import { waterSurface,waterAnimator } from './models/effects/water-surface.js';
-import { disposeModel } from './models/props/game-table.js';
+import { casaGuipuzcoana } from '../models/props/casa-guipuzcoana.js';
+import { sanCarlosFortress } from '../models/props/san-carlos-fortress.js';
+import { portSilos } from '../models/props/port-silos.js';
+import { portCrane } from '../models/props/port-crane.js';
+import { palm } from '../models/vegetation/palm.js';
+import { M,box,mesh } from '../models/core/primitives.js';
+import { paintFinish } from '../models/core/architecture-kit.js';
+import { waterSurface,waterAnimator } from '../models/effects/water-surface.js';
+import { disposeModel } from '../models/props/game-table.js';
 
 // Table equipment and panas remain game-owned at y=0. Landmarks are the same
 // native factories used by Puerto, with an open central camera / seating area.

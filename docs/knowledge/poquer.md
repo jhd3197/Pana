@@ -56,7 +56,7 @@ creates a back texture, never a concealed face; folded hands leave the table.
 Chip stacks reflect the current bankroll, wagers and pot. Stack geometry is
 batched to two material draws, avoiding hundreds of tiny draws on phones.
 
-`engine/table-world.js` supplies the same sky, plaza, lighting and perspective
+`engine/worlds/table-world.js` supplies the same sky, plaza, lighting and perspective
 framing as Billar. The canvas fills the viewport. Reset inline CSS dimensions
 from `bindRenderer` before measuring, and fit game bounds to the space clear of
 HUD panels. The shared settings menu offers plaza and overhead cameras.

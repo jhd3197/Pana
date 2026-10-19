@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { TABLE_ARENAS,validArena,validTableArena } from '../arena-layouts.js';
+import { TABLE_ARENAS,validArena,validTableArena } from '../worlds/arena-layouts.js';
 import { DominoGame } from '../../games/domino/public/rules.js';
 import { CaidaGame } from '../../games/caida/public/rules.js';
 import { Poker } from '../../games/poquer/public/rules.js';

@@ -14,7 +14,7 @@ try {
   await page.setContent('<style>body{margin:0}canvas{display:block}</style><canvas></canvas><script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}</script>');
   const result=await page.evaluate(async()=>{
     const THREE=await import('three'),{makeTrack}=await import('/g/derrape/track-runtime.js'),{default:def}=await import('/g/derrape/tracks/puerto.js');
-    const {createSky}=await import('/engine/sky.js'),{inspect}=await import('/studio/preview.js');
+    const {createSky}=await import('/engine/worlds/sky.js'),{inspect}=await import('/studio/preview.js');
     const T=makeTrack(def),scene=new THREE.Scene(),group=T.build(),pal=def.palette;
     const renderer=new THREE.WebGLRenderer({canvas:document.querySelector('canvas'),antialias:true,preserveDrawingBuffer:true});
     renderer.setSize(1500,1000);renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.outputColorSpace=THREE.SRGBColorSpace;

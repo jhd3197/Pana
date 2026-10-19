@@ -8,7 +8,7 @@ river. Two formats: **Todos contra todos** (8 canoes, one pana each) and
 
 ## Files
 
-- `/engine/paddle.js` (pure, shared with Bululú's river minigames): the stroke
+- `/engine/play/paddle.js` (pure, shared with Bululú's river minigames): the stroke
   model. `stroke(state, side, t)` grades the gap to the previous stroke;
   `step(state, dt)` delivers each stroke's impulse over `PADDLE.pull` s.
   State is a plain object so a race snapshot carries it across migration.

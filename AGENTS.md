@@ -14,7 +14,7 @@ The app lives in `Pana/` (server, web, games, engine, scripts, tests). Docs are 
   player's own pana in the world. Board, card and table pieces are meshes on a
   table, never DOM elements or a Canvas 2D drawing. A request that doesn't say
   "2D" means 3D, and there is no "flat first, 3D later" version.
-- Table games (cards, dice, boards, pool) stand on `engine/table-world.js`: the
+- Table games (cards, dice, boards, pool) stand on `engine/worlds/table-world.js`: the
   plaza, sky, sun, a framed camera and seated panas. Games where panas move use
   the same stage (`fit: 'window'`) or a world from `engine/models/`.
 - Canvas 2D is only for overlays: a minimap, a texture painted onto a mesh.
@@ -60,7 +60,7 @@ Then add the game to `README.md`, `docs/knowledge/README.md` and `CHANGELOG.md`.
 | Look, fonts, HUD, loading | `engine/kit.css` (`.pk-*`), `--pk-game` | `docs/knowledge/pana-kit.md` |
 | Lobby before the game | `engine/game-entry.js` (`data-pana-entry`) | `docs/knowledge/launcher.md` |
 | Loading, loops, teardown, room code in the URL | `engine/game-shell.js` (`bootGame`, `roomCode`) | |
-| Table stage, camera framing | `engine/table-world.js` (`createTableWorld`) | |
+| Table stage, camera framing | `engine/worlds/table-world.js` (`createTableWorld`) | |
 | Pause menu, settings, invite button | `engine/ui.js`, `engine/settings.js` | `docs/knowledge/pana-ui.md` |
 | Room codes and invite links | `engine/invite.js` (`inviteUrl`, `roomFromUrl`, `newRoomCode`) | |
 | Turn-based online room | `engine/table-room.js` (`TableRoom`) | `docs/knowledge/pana-net.md` |

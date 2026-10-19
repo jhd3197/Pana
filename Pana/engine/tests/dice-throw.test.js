@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { throwPower, cleanPower, createToss, FULL_SHAKE_MS, FULL_FLICK } from '../dice-throw.js';
-import { rollOffGroups, namesList } from '../roll-off.js';
+import { throwPower, cleanPower, createToss, FULL_SHAKE_MS, FULL_FLICK } from '../play/dice-throw.js';
+import { rollOffGroups, namesList } from '../play/roll-off.js';
 
 test('a tap throws softly; a long shake or a hard flick throws at full power', () => {
   assert.equal(throwPower(0, 0), .2);

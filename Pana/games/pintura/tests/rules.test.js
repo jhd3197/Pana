@@ -58,7 +58,7 @@ test('bot marksmanship follows the difficulty; only the lobby or results change 
 });
 
 test('every Pepazo map has clear spawns, open passages and one connected court', async () => {
-  const { PAINT_ARENAS, ARENAS } = await import('../../../engine/arena-layouts.js');
+  const { PAINT_ARENAS, ARENAS } = await import('../../../engine/worlds/arena-layouts.js');
   const { coverFor, spawnsFor, sizeFor } = await import('../public/rules.js');
   assert.ok(!ARENAS.some(m => m.id === 'muelle'), 'the container yard stays out of the shared hunt/table maps');
   for (const { id } of PAINT_ARENAS) for (const variant of [0, 1, 2]) {

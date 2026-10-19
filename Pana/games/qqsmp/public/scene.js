@@ -2,10 +2,10 @@
 // rises with their ladder, the host at his desk, the big screen with the
 // question, and spotlights that sweep during "¿Esa es su respuesta final?".
 import * as THREE from 'three';
-import { createTableWorld } from '/engine/table-world.js';
+import { createTableWorld } from '/engine/worlds/table-world.js';
 import { buildCharacter } from '/engine/models/characters/pana/avatar-model.js';
 import { normalizeAvatar } from '/engine/avatar.js';
-import { createSeatBubbles } from '/engine/seat-bubbles.js';
+import { createSeatBubbles } from '/engine/play/seat-bubbles.js';
 import { makeMango } from '/engine/models/props/mango.js';
 import { disposeModel } from '/engine/models/props/game-table.js';
 import { createQuizStage, createQuizPodium, createHostDesk, createQuizScreen, createStageSpotlight, GOLD, NIGHT } from './studio-set.js';

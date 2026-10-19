@@ -3,8 +3,8 @@
 // pana (toward the camera) with bounces. A throw is a small spec, so online
 // screens replay the host's exact flight. The opening roll-off lives here too.
 import * as THREE from 'three';
-import { createToss } from '/engine/dice-throw.js';
-import { rollOffGroups } from '/engine/roll-off.js';
+import { createToss } from '/engine/play/dice-throw.js';
+import { rollOffGroups } from '/engine/play/roll-off.js';
 import { sound } from '/engine/fx.js';
 
 export function createDiceTable({ dice, board, camera, puffs }) {

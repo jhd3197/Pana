@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { shotPower } from '../shot-charge.js';
+import { shotPower } from '../play/shot-charge.js';
 
 test('holding charges to full strength, falls back and repeats', () => {
   for (const [time, expected] of [[0, .05], [500, .525], [1000, 1], [1500, .525], [2000, .05], [2500, .525], [3000, 1]]) {

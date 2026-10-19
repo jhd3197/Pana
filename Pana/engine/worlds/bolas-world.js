@@ -1,11 +1,11 @@
 import * as THREE from 'three';
-import { criollasCourt, criollaBall } from './models/props/criollas.js';
-import { buildCharacter } from './models/characters/pana/avatar-model.js';
-import { createPlazaProp, streetLamp } from './models/props/plaza.js';
+import { criollasCourt, criollaBall } from '../models/props/criollas.js';
+import { buildCharacter } from '../models/characters/pana/avatar-model.js';
+import { createPlazaProp, streetLamp } from '../models/props/plaza.js';
 import { createArenaSlot } from './arenas.js';
 import { createSky } from './sky.js';
-import { guideRibbon, trimPath, pathLength } from './aim-guide.js';
-import { COURT, TEAM_COLORS, landing, distance } from './bolas-criollas.js';
+import { guideRibbon, trimPath, pathLength } from '../play/aim-guide.js';
+import { COURT, TEAM_COLORS, landing, distance } from '../play/bolas-criollas.js';
 import { WARM_DAY, BUNTING } from './look.js';
 import { shadowSize } from '/engine/settings.js';
 

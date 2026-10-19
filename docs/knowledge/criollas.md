@@ -2,7 +2,7 @@
 
 `/g/criollas/` is a casual 3D team game for 1–6 humans with bots in the other
 seats. `/g/bululu/?play=criollas` practices the six-way minigame. Both use
-`engine/bolas-criollas.js` (pure physics) and `engine/bolas-world.js` (presentation).
+`engine/play/bolas-criollas.js` (pure physics) and `engine/worlds/bolas-world.js` (presentation).
 The clay court and striped balls are owned-resource factories in
 `engine/models/props/criollas.js`, registered as `criollas-court` and `criolla-ball`.
 

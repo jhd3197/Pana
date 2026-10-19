@@ -10,7 +10,7 @@ import { makeMango } from '/engine/models/props/mango.js';
 import { woodSign } from '/engine/models/props/wood-sign.js';
 import { buildIsland, baseHeight, riverDist, landMask, beachMask, HILL } from './island.js';
 import { bake } from '/engine/models/core/static-batch.js';
-import { createIslandEnvironment, ISLAND_LOOP } from '/engine/island-environment.js';
+import { createIslandEnvironment, ISLAND_LOOP } from '/engine/worlds/island-environment.js';
 import { createAtmosphere } from './atmosphere.js';
 import { createHarborBoard } from './harbor-board.js';
 import { configuredTileKind } from './options.js';

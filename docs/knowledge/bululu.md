@@ -376,7 +376,7 @@ flow bugs and check balance.
   `minigames/river-sims.js` (pure, no THREE) so `tests/river-minigames.test.js`
   plays 200 all-AI rounds each for plan 52's balance rule (every seat wins
   15–35%; nobody-scores runs fail the test). The modules only draw the sims.
-  Paddling is Curiara's model (`/engine/paddle.js`): a stroke is `x` reaching
+  Paddling is Curiara's model (`/engine/play/paddle.js`): a stroke is `x` reaching
   ±1 (`axisStroke`), so A/D taps alternate. Canoes are
   `/engine/models/vehicles/curiara.js`; `river-stage.js` adds water, banks and
   actors. ¡Remada!: 120 m, AIs finish in ~22–30 s. ¡Raudal!: six parallel

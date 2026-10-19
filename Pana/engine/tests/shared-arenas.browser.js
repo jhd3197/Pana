@@ -86,7 +86,7 @@ try {
   page.on('pageerror', e => errors.push(e.message)); await page.goto(`${base}/studio/settings.html`);
   await page.setContent('<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}</script><canvas id="view"></canvas>');
   const proof = await page.evaluate(async () => {
-    const THREE = await import('three'), { createArenaEnvironment } = await import('/engine/arenas.js');
+    const THREE = await import('three'), { createArenaEnvironment } = await import('/engine/worlds/arenas.js');
     const { MAPS } = await import('/studio/catalog/maps.js');
     const scene = new THREE.Scene(), camera = new THREE.PerspectiveCamera(45, 1.6, .1, 300);
     const renderer = new THREE.WebGLRenderer({ canvas: document.querySelector('canvas') }); renderer.setSize(1280, 800);

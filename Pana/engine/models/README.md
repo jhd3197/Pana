@@ -22,7 +22,7 @@ previews the same factories. Browser ESM, Three.js 0.160.0, no build step.
 | `fauna/catalog.js`, `vegetation/catalog.js`, `props/catalog/` | Category/pack metadata |
 
 Terrain-aware reef/crab placement lives in `../placement/`. World builders remain
-in `engine/plaza.js`, `engine/island-*.js` and game track modules. Routes,
+in `engine/worlds/plaza.js`, `engine/worlds/island-*.js` and game track modules. Routes,
 collisions, state, lights and cameras belong to those consumers.
 
 ## Dependency rules

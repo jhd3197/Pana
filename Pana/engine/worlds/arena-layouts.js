@@ -1,5 +1,5 @@
 // Shared, renderer-free map definitions. Server and browser read the same cover.
-import { propDefinition } from './models/props/plaza-definitions.js';
+import { propDefinition } from '../models/props/plaza-definitions.js';
 
 export const ARENAS = [
   { id: 'plaza', name: 'Plaza Pana', description: 'La plaza de siempre, entre puestos y panas.' },

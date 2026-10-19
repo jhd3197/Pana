@@ -13,13 +13,13 @@ import { holdButton } from '/engine/touch.js';
 import { pixelRatio, bindRenderer } from '/engine/settings.js';
 import { createPlaza } from './plaza.js';
 import { createHuntEnvironment } from './scene.js';
-import { createMapPicker } from '/engine/map-picker.js';
-import { arenaInfo } from '/engine/arena-layouts.js';
+import { createMapPicker } from '/engine/play/map-picker.js';
+import { arenaInfo } from '/engine/worlds/arena-layouts.js';
 import { huntLayout } from './layout.js';
 import { RULES } from './rules.js';
 import { HuntRoom } from './network.js';
 import { elapsedClock } from '/engine/live-room.js';
-import { createLookControls, SENSITIVITY_CHOICES } from '/engine/first-person.js';
+import { createLookControls, SENSITIVITY_CHOICES } from '/engine/play/first-person.js';
 import { createToast } from '/engine/hud.js';
 
 const $ = id => document.getElementById(id), show = (id, visible) => $(id).classList.toggle('hidden', !visible);

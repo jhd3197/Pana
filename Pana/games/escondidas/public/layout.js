@@ -1,7 +1,7 @@
 // Shared map data; relative path also works in Node rule tests.
-export * from '../../../engine/plaza-layout.js';
-import * as plaza from '../../../engine/plaza-layout.js';
-import { arenaInfo, arenaLayout, createHuntLayout } from '../../../engine/arena-layouts.js';
+export * from '../../../engine/worlds/plaza-layout.js';
+import * as plaza from '../../../engine/worlds/plaza-layout.js';
+import { arenaInfo, arenaLayout, createHuntLayout } from '../../../engine/worlds/arena-layouts.js';
 import { propDefinition } from '../../../engine/models/props/plaza-definitions.js';
 const rounds = new Map();
 const plazaSolids = [...plaza.BLOCKERS.filter(b => !b.prop), ...plaza.LAMPS.map(([x, z]) => ({ x, z, r: .6, height: 4 }))];

@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createPitch, throwBall, stepPitch, moving, landing, aimAt, measure, copy, STEP } from '/engine/bolas-criollas.js';
+import { createPitch, throwBall, stepPitch, moving, landing, aimAt, measure, copy, STEP } from '/engine/play/bolas-criollas.js';
 import { createGame, acceptAction, shoot, step, nextHand } from '../public/rules.js';
 
 function settle(pitch) { for (let n = 0; n < 2000 && moving(pitch); n++) stepPitch(pitch); assert.equal(moving(pitch), false); }
@@ -92,7 +92,7 @@ test('the host picks the place and the difficulty; both survive the next game', 
 });
 test('rival bots arrime closer on harder settings; your own team keeps Normal', async () => {
   const { botThrow, BOT_ERROR } = await import('../public/rules.js');
-  const { throwBall: put } = await import('/engine/bolas-criollas.js');
+  const { throwBall: put } = await import('/engine/play/bolas-criollas.js');
   function mean(difficulty, team) {
     let sum = 0;
     for (let n = 0; n < 40; n++) {
@@ -114,7 +114,7 @@ test('a sharp bot plays a boche at a rival ball kissing the mingo', async () => 
   g.difficulty = 'facil'; assert.equal(botThrow(g).mode, 'arrime');
 });
 test('the Fácil preview matches the real throw, collisions included', async () => {
-  const { previewThrow } = await import('/engine/bolas-criollas.js');
+  const { previewThrow } = await import('/engine/play/bolas-criollas.js');
   const pitch = createPitch(0, -5), shot = { ...aimAt(0, -5), mode: 'boche' };
   const preview = previewThrow(pitch, 0, shot); const b = throwBall(pitch, 0, shot); settle(pitch);
   const end = preview.path.at(-1); assert(Math.hypot(end.x - b.x, end.z - b.z) < 1e-9);

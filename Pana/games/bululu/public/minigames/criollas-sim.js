@@ -1,5 +1,5 @@
-import { createPitch, throwBall, stepPitch, moving, closest, botShot, clamp, STEP } from '/engine/bolas-criollas.js';
-import { shotPower } from '/engine/shot-charge.js';
+import { createPitch, throwBall, stepPitch, moving, closest, botShot, clamp, STEP } from '/engine/play/bolas-criollas.js';
+import { shotPower } from '/engine/play/shot-charge.js';
 
 export function createCriollasMini(humans, random) {
   const pitch = createPitch((random() - .5) * 2, -5.5 - random());

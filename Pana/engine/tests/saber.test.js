@@ -1,8 +1,8 @@
-// El Saber (engine/saber.js) and its lookup API (engine/saber-match.js).
+// El Saber (engine/play/saber.js) and its lookup API (engine/play/saber-match.js).
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { SABER, SABER_CATEGORIES, CRUDE_WORDS } from '../saber.js';
-import { normalize, letterOf, soundKey, distance, findEntry, isCrude, wordsFor, categoryLabel } from '../saber-match.js';
+import { SABER, SABER_CATEGORIES, CRUDE_WORDS } from '../play/saber.js';
+import { normalize, letterOf, soundKey, distance, findEntry, isCrude, wordsFor, categoryLabel } from '../play/saber-match.js';
 
 const SOFT = 'ABCDEFGHIJLMNOPRSTV'.split('');
 

@@ -299,7 +299,7 @@ browser suite when changing its generation or persistence behavior.
 ## Shared party maps
 
 `arena-puerto`, `arena-hato` and `arena-ruinas` preview Puerto Coco, Hato del Sol
-and Ruinas del Mango through the real `engine/arenas.js` hunt variant. They list
+and Ruinas del Mango through the real `engine/worlds/arenas.js` hunt variant. They list
 Escondidas, Pintura, Billar and Caída as consumers. See
 [shared-arenas.md](shared-arenas.md) for collision, table clearance and lifecycle.
 

@@ -5,7 +5,7 @@ import { fillRoster } from '/engine/results.js';
 import { inviteUrl, newRoomCode, roomFromUrl } from '/engine/invite.js';
 import { sound } from '/engine/fx.js';
 import { shout } from '/engine/kit.js';
-import { bindDiceThrow } from '/engine/dice-throw.js';
+import { bindDiceThrow } from '/engine/play/dice-throw.js';
 import { LudoRoom } from './network.js';
 import { HOME, COLORS, COLOR_NAMES, legalMoves, chooseMove } from './rules.js';
 import { createRoomOptions } from '/engine/room-options.js';

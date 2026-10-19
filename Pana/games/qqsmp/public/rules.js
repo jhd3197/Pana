@@ -4,7 +4,7 @@
 // reveal, each pana climbs their own ladder of mangos, and a bet on the final
 // question decides the Mango de oro.
 import { draw, seedOf, clamp } from '/engine/random.js';
-import { pickLine } from '/engine/frases.js';
+import { pickLine } from '/engine/play/frases.js';
 import { defaultOptions, roomOptions } from './options.js';
 import { CATEGORIES, QUESTIONS, PACKS } from './questions.js';
 

@@ -1,4 +1,4 @@
-import { createLobbyRoster } from './lobby-roster.js';
+import { createLobbyRoster } from '../lobby-roster.js';
 
 // Alternating positions remain authoritative; the roster groups teammates.
 export function createTableSeating(container, onSwap) {

@@ -1,5 +1,5 @@
-import { createArenaEnvironment } from '/engine/arenas.js';
-import { paintArenaInfo } from '/engine/arena-layouts.js';
+import { createArenaEnvironment } from '/engine/worlds/arenas.js';
+import { paintArenaInfo } from '/engine/worlds/arena-layouts.js';
 import { createMuelle } from './muelle.js';
 import { createNoche } from './noche.js';
 import { glowTexture } from '/engine/models/props/glow-paintball.js';
@@ -7,7 +7,7 @@ import { disposeModel } from '/engine/models/props/game-table.js';
 import * as THREE from 'three';
 import { buildCharacter } from '/engine/models/characters/pana/avatar-model.js';
 import { bindRenderer, shadowSize } from '/engine/settings.js';
-import { createSky } from '/engine/sky.js';
+import { createSky } from '/engine/worlds/sky.js';
 import { house, church } from '/engine/models/props/plaza-buildings.js';
 import { crate, barrel, marketStall, streetLamp } from '/engine/models/props/plaza.js';
 import { parkBench, basketballHoop } from '/engine/models/props/pueblo.js';
@@ -16,7 +16,7 @@ import { mangoTree } from '/engine/models/vegetation/mango-tree.js';
 import { bake } from '/engine/models/core/static-batch.js';
 import { createPaintMarker, splatTexture, pavingTexture } from '/engine/models/props/paintball.js';
 import { rng } from '/engine/random.js';
-import { WARM_DAY, PALETTE, BUNTING } from '/engine/look.js';
+import { WARM_DAY, PALETTE, BUNTING } from '/engine/worlds/look.js';
 import { Puffs } from '/engine/fx.js';
 import { SIZE, SPREAD, coverFor } from './rules.js';
 

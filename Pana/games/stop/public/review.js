@@ -3,7 +3,7 @@
 // Authors can't vote on their own word. Text only: names and answers never
 // become HTML.
 import { ICONS } from '/engine/icons.js';
-import { categoryLabel } from '/engine/saber-match.js';
+import { categoryLabel } from '/engine/play/saber-match.js';
 import { verdictText } from './rules.js';
 
 const el = (tag, className, text) => { const node = document.createElement(tag); if (className) node.className = className; if (text != null) node.textContent = text; return node; };

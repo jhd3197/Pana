@@ -1,7 +1,7 @@
 import { DEFAULT_OPTIONS, validOptions } from './options.js';
 import { propDefinition } from '/engine/models/props/plaza-definitions.js';
 import { huntLayout, nextLayoutSeed } from './layout.js';
-import { validArena, arenaInfo } from '../../../engine/arena-layouts.js';
+import { validArena, arenaInfo } from '../../../engine/worlds/arena-layouts.js';
 
 export const HIDE_TIMES = Object.freeze([15, 20, 30, 45, 60]);
 export const RULES = Object.freeze({ changes: 3, hideSeconds: 30, huntSeconds: 180, rounds: 4, checkRange: 3.5, aimRange: 7, checkCooldown: 1.6 });

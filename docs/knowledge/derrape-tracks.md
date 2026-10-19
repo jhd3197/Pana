@@ -285,7 +285,7 @@ from `engine/models/vegetation/`.
 landmarks. Island terrain/scenery/beach modules now live in `engine/`;
 old Bululú paths re-export them. Keep gameplay in the games, and pass route
 clearance to the shared environment instead of copying its assets.
-`engine/sky.js` supplies scene-owned skies to outdoor games and Studio tours.
+`engine/worlds/sky.js` supplies scene-owned skies to outdoor games and Studio tours.
 Cloud wind uses absolute time; palettes accept `skySeed` and `cloudCover`.
 Keep the sky outside scenery batches/bounds; the tour disposes it on exit.
 Bululú still owns its day/night lights, stars and moon. Plaza bunting is a

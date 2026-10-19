@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { StopGame, SEATS, TIMES, POINTS, HARD, CLASICAS, CRIOLLAS, MAX_ANSWER, PERSONALITY, cleanAnswer, cleanSheet, judge, lettersFor,
   pickCategories, ranking, titles, verdictText } from '../public/rules.js';
-import { letterOf } from '/engine/saber-match.js';
+import { letterOf } from '/engine/play/saber-match.js';
 
 let seq = 0;
 const act = (game, id, action, values = {}) => game.accept(id, { action, seq: ++seq, round: game.round, ...values }, 1);

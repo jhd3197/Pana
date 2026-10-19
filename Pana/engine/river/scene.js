@@ -3,7 +3,7 @@
 // Scenery dressing lives in landscape.js; this file owns only the ground truth
 // shared with the simulation (banks, bed, levels, raudal faces).
 import * as THREE from 'three';
-import { createSky } from '/engine/sky.js';
+import { createSky } from '/engine/worlds/sky.js';
 import { waterSurface, waterAnimator } from '/engine/models/effects/water-surface.js';
 import { smooth } from './river.js';
 import { shadowSize } from '/engine/settings.js';

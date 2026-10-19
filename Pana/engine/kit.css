@@ -31,7 +31,7 @@
   --pk-teal-edge: #148f78;
   --pk-cocoa: #8b5e3c;
   --pk-hud: rgba(14, 11, 36, .88); /* HUD cards over a 3D scene */
-  --pk-bubble-ink: #16161a;   /* comic speech bubbles (engine/seat-bubbles.js) */
+  --pk-bubble-ink: #16161a;   /* comic speech bubbles (engine/play/seat-bubbles.js) */
   --pk-bubble-paper: #fff;
 
   /* per-game accent: games override on body */
@@ -245,7 +245,7 @@
 .pk-slot > .pk-slot-count { position: absolute; top: 4px; right: 7px; color: var(--pk-yellow); font-weight: 900; }
 .pk-slot.is-active { border-color: var(--pk-yellow); background: rgba(255, 198, 41, .1); }
 
-/* speech bubble over a seated pana: engine/seat-bubbles.js. The same white
+/* speech bubble over a seated pana: engine/play/seat-bubbles.js. The same white
    comic bubble Derrape draws over its cars; short-lived, so it may cover the HUD. */
 .pk-bubble{position:absolute;z-index:5;transform:translate(-50%,-100%);max-width:220px;padding:7px 14px 5px;border:3px solid var(--pk-bubble-ink);border-radius:18px;background:var(--pk-bubble-paper);color:var(--pk-bubble-ink);font:20px/1.05 var(--pk-display);text-align:center;box-shadow:0 4px 0 rgba(0,0,0,.25);pointer-events:none}
 .pk-bubble::after{content:'';position:absolute;left:50%;bottom:-11px;width:16px;height:16px;border:solid var(--pk-bubble-ink);border-width:0 3px 3px 0;background:var(--pk-bubble-paper);transform:translateX(-50%) rotate(45deg)}
@@ -294,7 +294,7 @@
 .pk-power-control input::-moz-range-thumb { width: 34px; height: 34px; border-radius: 50%; background: #fffdf6; border: 3px solid var(--pk-night); }
 .pk-power-control input:disabled { opacity: .45; cursor: default; }
 /* Charge meter: the hold-and-release version of the power bar (Billar, Bolas
-   Criollas). engine/shot-charge.js paintCharge() moves the fill and marker.
+   Criollas). engine/play/shot-charge.js paintCharge() moves the fill and marker.
    <div id="power" class="pk-charge" role="meter" aria-valuemin="5" aria-valuemax="100">
      <i class="pk-charge-fill"></i><i class="pk-charge-marker"></i></div> */
 .pk-charge { position: relative; flex: 1; min-height: 0; width: 28px; border: 2px solid var(--pk-muted); border-radius: 12px; background: linear-gradient(to top, var(--pk-teal) 0% 45%, var(--pk-yellow) 45% 82%, var(--pk-coral) 82% 100%); }

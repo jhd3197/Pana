@@ -313,7 +313,7 @@ body.in-mini .look, body.in-mini .side, body.in-mini .legend, body.in-mini .keys
 .prompt .row { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; }
 .prompt .pk-btn--primary { font-size: 30px; padding: 14px 26px 10px; box-shadow: 0 6px 0 var(--pk-yellow-edge); }
 .prompt .pk-btn--primary .pk-kbd { text-transform: uppercase; font-size: 12px; padding: 0 8px; }
-/* A throw button rattles while it is held (engine/dice-throw.js adds .is-shaking). */
+/* A throw button rattles while it is held (engine/play/dice-throw.js adds .is-shaking). */
 .prompt button { touch-action: none; }
 .prompt .is-shaking { animation: dice-shake .09s linear infinite; }
 @keyframes dice-shake { 0%, 100% { transform: translate(0, 2px) rotate(0); } 25% { transform: translate(-3px, 3px) rotate(-2deg); } 75% { transform: translate(3px, 0) rotate(2deg); } }

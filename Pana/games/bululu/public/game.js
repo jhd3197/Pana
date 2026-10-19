@@ -17,8 +17,8 @@ import { COLORS, RIVALS, START_COINS, PRICE, DOUBLES_BONUS, TREE_COINS } from '.
 import { createGameMenu, toggleMute } from '/engine/ui.js';
 import { drawIcons } from '/engine/touch.js';
 import { createInput, IDLE_AIM } from './input.js';
-import { bindDiceThrow, cleanPower } from '/engine/dice-throw.js';
-import { namesList } from '/engine/roll-off.js';
+import { bindDiceThrow, cleanPower } from '/engine/play/dice-throw.js';
+import { namesList } from '/engine/play/roll-off.js';
 import { createDiceTable, rollOffOrder } from './dice-table.js';
 import { pixelRatio, bindRenderer } from '/engine/settings.js';
 import { inviteUrl, newRoomCode, roomFromUrl } from '/engine/invite.js';

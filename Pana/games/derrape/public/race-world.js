@@ -1,7 +1,7 @@
 // The race's sky, sun, fog and weather: built once, repainted for each map.
 // Angled rain with puddle ripples and lightning on wet maps, snow on Páramo.
 import * as THREE from 'three';
-import { createSky } from '/engine/sky.js';
+import { createSky } from '/engine/worlds/sky.js';
 
 // track(): the active track runtime (or null); racing(): a race is on screen.
 export function createRaceWorld({ scene, cameras, puffs, shockwaves, sound, track, groundAt, racing }) {

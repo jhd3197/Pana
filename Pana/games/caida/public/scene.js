@@ -1,9 +1,9 @@
 import * as THREE from 'three';
-import { createTableWorld } from '/engine/table-world.js';
+import { createTableWorld } from '/engine/worlds/table-world.js';
 import { createGameTable, createGameChair } from '/engine/models/props/game-table.js';
 import { buildCharacter } from '/engine/models/characters/pana/avatar-model.js';
 import { normalizeAvatar } from '/engine/avatar.js';
-import { createSeatBubbles } from '/engine/seat-bubbles.js';
+import { createSeatBubbles } from '/engine/play/seat-bubbles.js';
 import { createSpanishCard, createScoreToken } from '/engine/models/props/spanish-cards.js';
 import { deck, previewPlay, teamOf, MODES } from './rules.js';
 

@@ -54,7 +54,7 @@ streetlights, araguaneyes, mango trees and crate geometry. Crates are fitted to
 the authoritative `COVER` bounds, so artwork never changes movement or shots.
 The paint marker is a canonical Studio asset in `engine/models/props/paintball.js`.
 
-Look input is `engine/first-person.js` (`createLookControls`), shared with Escondidas: it owns pointer lock, drag-to-look and the saved sensitivity (`pana:look-sensitivity`); the scene keeps yaw/pitch. Shift sprints 45% faster while `stamina` lasts (3 s, refills in 5 s) and holds fire; Tab shows the round table.
+Look input is `engine/play/first-person.js` (`createLookControls`), shared with Escondidas: it owns pointer lock, drag-to-look and the saved sensitivity (`pana:look-sensitivity`); the scene keeps yaw/pitch. Shift sprints 45% faster while `stamina` lasts (3 s, refills in 5 s) and holds fire; Tab shows the round table.
 
 The default camera is first person (`primera`): the camera sits at eye height
 (1.55 m) over the smoothed avatar, the own avatar is hidden, and the marker is a
@@ -85,7 +85,7 @@ picking, Q/E turning, touch layouts and the actual Studio model constructors.
 
 ## Muelle de La Guaira
 
-Pepazo-only map (`PAINT_ARENAS` in `engine/arena-layouts.js`; never in `ARENAS`,
+Pepazo-only map (`PAINT_ARENAS` in `engine/worlds/arena-layouts.js`; never in `ARENAS`,
 so hunt and table games don't list it; the picker takes `{ paint: true }`).
 `public/muelle-layout.js` is renderer-free: container `STACKS` (1–3 high,
 12.2 or 6.1 m), the crane's two court-side legs and three street stalls become
@@ -117,7 +117,7 @@ count low, every lit material pays for each one.
 
 ## Look
 
-The plaza court (fence, paving, bunting and pueblo spread with `SIZE`/`SPREAD`) follows the paint-battle brand board: `engine/look.js`
+The plaza court (fence, paving, bunting and pueblo spread with `SIZE`/`SPREAD`) follows the paint-battle brand board: `engine/worlds/look.js`
 (`WARM_DAY`, `PALETTE`, `BUNTING`) for light and colours, stone paving and
 splat textures painted by `engine/models/props/paintball.js`
 (`pavingTexture`, `splatTexture`), decals on crates and paving from earlier

@@ -1,7 +1,7 @@
 // What the panas at the table shout. Pure: turns new history events into
 // speech bubbles. Lines are seeded by the event, so every client shows the
 // same bark without sending it over the network.
-import { pickLine } from '../../../engine/frases.js';
+import { pickLine } from '../../../engine/play/frases.js';
 import { teamOf } from './rules.js';
 
 const CANTOS = ['Ronda', 'Rondín', 'Patrulla', 'Patria', 'Vigía', 'Registro'];

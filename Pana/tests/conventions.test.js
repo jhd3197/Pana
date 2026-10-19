@@ -5,7 +5,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import { isOnline, gameUrl } from '../web/games.js';
-import { staticImports } from './import-graph.js';
+import { staticImports, resolve, specifiers } from './import-graph.js';
 
 const app = path.resolve(import.meta.dirname, '..');
 const rel = (file) => path.relative(app, file).split(path.sep).join('/');
@@ -243,6 +243,26 @@ test('every game has rules tests and a browser suite', () => {
     if (!files.some(f => /\.browser\.m?js$/.test(f) || f.endsWith('.mjs'))) problems.push(`${id}: no browser suite in tests/`);
   }
   assert.deepEqual(problems, []);
+});
+
+// A moved or renamed module must take every importer with it: no served file
+// may import a path that isn't there (it would fail only in the browser).
+test('every import in served code points at a real file', () => {
+  const problems = [];
+  const served = [...walk(path.join(app, 'engine'), n => /\.m?js$/.test(n)), ...walk(path.join(app, 'web'), n => /\.m?js$/.test(n)),
+    ...games.flatMap(id => walk(path.join(gamesDir, id, 'public'), n => /\.m?js$/.test(n)))];
+  for (const file of served) for (const spec of specifiers(read(file))) {
+    const target = resolve(file, spec);
+    if (target && !fs.existsSync(target)) problems.push(`${rel(file)}: ${spec}`);
+  }
+  assert.deepEqual(problems, []);
+});
+
+// Other sites load these engine files by path (pana.sh's pages, profile and
+// shop): moving one breaks them, so they stay where they are.
+const PUBLIC_ENGINE = ['kit.css', 'ui.js', 'avatar.js', 'portrait.js', 'portrait-cache.js', 'wardrobe-preview.js'];
+test('engine files other sites load stay at their paths', () => {
+  assert.deepEqual(PUBLIC_ENGINE.filter(f => !fs.existsSync(path.join(app, 'engine', f))), []);
 });
 
 // Without a bundler every static import is a request, and each level of imports

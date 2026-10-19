@@ -3,19 +3,19 @@ import { arenaInfo, tableArenaInfo, courtArenaInfo, arenaLayout, outsideTable } 
 import { createEstadioEnvironment } from './estadio.js';
 import { createPuertoTableEnvironment } from './puerto-tables.js';
 import { createPlazaEnvironment } from './plaza.js';
-import { createPlazaProp, crate, marketStall } from './models/props/plaza.js';
-import { propDefinition } from './models/props/plaza-definitions.js';
-import { beachHut } from './models/props/beach.js';
-import { fishingBoat, coastalLighthouse, fishingNetRack } from './models/props/coastal.js';
-import { llaneroRanchHouse, horseStable, waterWindmill, ranchFence, hayBale, feedingTrough, oldTractor } from './models/props/ranch.js';
-import { templeEntrance, vineArch, stoneTotem } from './models/props/jungle.js';
-import { palm } from './models/vegetation/palm.js';
-import { mangoTree } from './models/vegetation/mango-tree.js';
-import { bamboo } from './models/vegetation/bamboo.js';
-import { fern } from './models/vegetation/fern.js';
-import { bake } from './models/core/static-batch.js';
-import { disposeModel } from './models/props/game-table.js';
-import { waterSurface, sampleWaterWave } from './models/effects/water-surface.js';
+import { createPlazaProp, crate, marketStall } from '../models/props/plaza.js';
+import { propDefinition } from '../models/props/plaza-definitions.js';
+import { beachHut } from '../models/props/beach.js';
+import { fishingBoat, coastalLighthouse, fishingNetRack } from '../models/props/coastal.js';
+import { llaneroRanchHouse, horseStable, waterWindmill, ranchFence, hayBale, feedingTrough, oldTractor } from '../models/props/ranch.js';
+import { templeEntrance, vineArch, stoneTotem } from '../models/props/jungle.js';
+import { palm } from '../models/vegetation/palm.js';
+import { mangoTree } from '../models/vegetation/mango-tree.js';
+import { bamboo } from '../models/vegetation/bamboo.js';
+import { fern } from '../models/vegetation/fern.js';
+import { bake } from '../models/core/static-batch.js';
+import { disposeModel } from '../models/props/game-table.js';
+import { waterSurface, sampleWaterWave } from '../models/effects/water-surface.js';
 import { createAmbientLife } from './ambient-life.js';
 
 // Where background life may move on each map (see ambient-life.js): a kart

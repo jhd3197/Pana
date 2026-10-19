@@ -1,10 +1,10 @@
 // Pure cores of Bululú's river minigames, shared with Curiara's paddle model
-// (/engine/paddle.js). No THREE here: the minigame modules draw these, and
+// (/engine/play/paddle.js). No THREE here: the minigame modules draw these, and
 // tests/river-minigames.test.js plays thousands of rounds for balance.
 //
 // Every sim takes `humans`: a Set of seat indices the players drive. AIs play
 // the other seats. update(dt, inputs) takes inputs[i] = {x, jump} per human.
-import { paddleState, stroke, step, axisStroke, PADDLE } from '/engine/paddle.js';
+import { paddleState, stroke, step, axisStroke, PADDLE } from '/engine/play/paddle.js';
 import { clamp } from '../../../../engine/random.js';
 
 const TAU = Math.PI * 2;

@@ -75,7 +75,7 @@ try {
   console.log('PASS host handoff preserves an in-flight throw');
   // Known final-ball layout proves synchronized match scoring and a real rematch.
   await guest.evaluate(async () => {
-    const r = criollasDebug.room, { createPitch } = await import('/engine/bolas-criollas.js');
+    const r = criollasDebug.room, { createPitch } = await import('/engine/play/bolas-criollas.js');
     r.game.pitch = createPitch(); r.game.pitch.balls.push({ id: 1, owner: r.seat, x: .6, z: -6, vx: 0, vz: 0, radius: .25, out: false }); r.game.pitch.nextId = 2;
     r.game.scores = [11, 11]; r.game.remaining = Array(6).fill(0); r.game.remaining[r.seat] = 1; r.game.turn = r.seat; r.game.phase = 'aiming'; r.game.revision++; r.publish();
   });

@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { createTableWorld } from '/engine/table-world.js';
+import { createTableWorld } from '/engine/worlds/table-world.js';
 import { createGameChair } from '/engine/models/props/game-table.js';
 import { createPokerTable, createPokerCard, createPokerChips } from '/engine/models/props/poker.js';
 import { buildCharacter } from '/engine/models/characters/pana/avatar-model.js';

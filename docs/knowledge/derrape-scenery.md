@@ -132,7 +132,7 @@ library model:
   ring sits at `max(1.25 × route reach + 150, 0.72 × fog far)`. Nearer hills
   read as blobs, and cones read as pyramids. `meadow(x, z, base)` varies grass
   colour in broad warm and deep patches for the terrain colour functions.
-- Palettes set `halo` (`engine/sky.js`, default 0) for the golden glow around
+- Palettes set `halo` (`engine/worlds/sky.js`, default 0) for the golden glow around
   the sun. Horizons stay pale aqua or cream. A peach horizon under a blue
   zenith blends to lavender-grey.
 - Races keep `NoToneMapping`. ACES at 0.86–1.0 dulled the display-referred

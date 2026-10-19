@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { createArenaSlot } from '/engine/arenas.js';
+import { createArenaSlot } from '/engine/worlds/arenas.js';
 import { createPlazaProp } from '/engine/models/props/plaza.js';
 import { bake } from '/engine/models/core/static-batch.js';
 import { disposeModel } from '/engine/models/props/game-table.js';

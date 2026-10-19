@@ -1,6 +1,6 @@
 import { random, inputFor } from '../online-rules.js';
 import * as THREE from 'three';
-import { createBolasWorld } from '/engine/bolas-world.js';
+import { createBolasWorld } from '/engine/worlds/bolas-world.js';
 import { createCriollasMini } from './criollas-sim.js';
 
 export default {

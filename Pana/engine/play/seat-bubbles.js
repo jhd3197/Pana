@@ -1,5 +1,5 @@
 // Speech bubbles over the seated panas of a table game (barks from
-// engine/frases.js, quick chat). One DOM bubble per seat; the scene calls
+// engine/play/frases.js, quick chat). One DOM bubble per seat; the scene calls
 // tick() once a frame and place() with the screen point of the seat's name
 // chip. Styles are .pk-bubble in kit.css.
 export function createSeatBubbles(container, count) {

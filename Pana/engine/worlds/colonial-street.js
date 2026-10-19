@@ -1,9 +1,9 @@
 // Studio demonstration and reusable scenery assembly; games own placement/collision.
 import * as THREE from 'three';
-import { M, box } from './models/core/primitives.js';
-import { colonialHouse } from './models/props/colonial-house.js';
-import { createHouseSpec } from './models/props/colonial-house-spec.js';
-import { HOUSE_PRESETS } from './models/props/colonial-house-definitions.js';
+import { M, box } from '../models/core/primitives.js';
+import { colonialHouse } from '../models/props/colonial-house.js';
+import { createHouseSpec } from '../models/props/colonial-house-spec.js';
+import { HOUSE_PRESETS } from '../models/props/colonial-house-definitions.js';
 
 export function createColonialStreet({ seed = 70, detail = 'game' } = {}) {
   const group = new THREE.Group(), lots = [], grade = x => 0.8 + x * 0.009;

@@ -3,7 +3,7 @@ import { random } from '../online-rules.js';
 // players, and small helpers. Each minigame builds its own scene with these.
 
 import * as THREE from 'three';
-import {createSky} from '/engine/sky.js';
+import {createSky} from '/engine/worlds/sky.js';
 import { buildCharacter } from '/engine/models/characters/pana/avatar-model.js';
 import { makeBubble } from '/engine/fx.js';
 import { palm } from '/engine/models/vegetation/palm.js';

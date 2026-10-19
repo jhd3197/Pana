@@ -13,7 +13,7 @@ Every street house in every map is built by `colonialHouse()` in
 `colonial-house.js`, so a change to its windows, roofs or wall finishes
 reaches all of them. The other entry points are thin adapters:
 
-- `house()` in `plaza-buildings.js` (the shared plaza in `engine/plaza.js`,
+- `house()` in `plaza-buildings.js` (the shared plaza in `engine/worlds/plaza.js`,
   Derrape's Plaza circuit, Pintura): `style` picks the family and roof
   (`tejas` casa-baja, `balcon` casa-balcon or casa-remate, `tienda`
   casa-portal or casa-esquina, `terraza` casa-remate with azotea), `h` the
@@ -144,7 +144,7 @@ finishes add a few thousand triangles per house without extra material batches.
 The seed-103 50-house overview measures about 814k triangles, 223 meshes and five
 materials; it is an inspection scene, not a mobile game budget. Do not stretch
 the models nonuniformly to fill lots; generate their dimensions directly. The
-street assembly in `engine/colonial-street.js` uses uniform scale and
+street assembly in `engine/worlds/colonial-street.js` uses uniform scale and
 terrain-supported plinths.
 
 ## Stylized wall finishes

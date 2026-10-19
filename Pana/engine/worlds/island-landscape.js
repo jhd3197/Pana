@@ -4,9 +4,9 @@ import * as THREE from 'three';
 import { rng } from '/engine/models/core/primitives.js';
 import { SEA, fbm, smooth } from './island-terrain.js';
 import { terrainMaterial } from './terrain-material.js';
-import { waterfall as waterfallEffect } from './models/effects/waterfall.js';
-import { waterPool } from './models/effects/water-surface.js';
-import { tickWind } from './models/vegetation/plant-kit.js';
+import { waterfall as waterfallEffect } from '../models/effects/waterfall.js';
+import { waterPool } from '../models/effects/water-surface.js';
+import { tickWind } from '../models/vegetation/plant-kit.js';
 
 const sand = new THREE.Color(0xe7d3a0);
 const grass = new THREE.Color(0x679c4c);

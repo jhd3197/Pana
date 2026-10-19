@@ -3,7 +3,7 @@
 // shared model library (engine/models) or the tambor set (rueda-set.js).
 // The rueda itself (center at the origin, radius RING) stays clear.
 import * as THREE from 'three';
-import { WARM_DAY } from '/engine/look.js';
+import { WARM_DAY } from '/engine/worlds/look.js';
 import { smoothstep, rng } from '/engine/random.js';
 import { palm } from '/engine/models/vegetation/palm.js';
 import { beachShade, driftwood } from '/engine/models/props/beach.js';

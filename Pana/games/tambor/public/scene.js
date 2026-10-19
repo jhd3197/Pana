@@ -5,7 +5,7 @@
 // the crowd claps. Snapshots set where everyone stands; the beat drives how
 // they move.
 import * as THREE from 'three';
-import { createSky } from '/engine/sky.js';
+import { createSky } from '/engine/worlds/sky.js';
 import { bindRenderer, shadowSize } from '/engine/settings.js';
 import { buildCharacter } from '/engine/models/characters/pana/avatar-model.js';
 import { normalizeAvatar, randomAvatar } from '/engine/avatar.js';

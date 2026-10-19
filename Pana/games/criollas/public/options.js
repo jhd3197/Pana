@@ -1,4 +1,4 @@
-import { DIFFICULTIES } from '../../../engine/difficulty.js';
+import { DIFFICULTIES } from '../../../engine/play/difficulty.js';
 import { applyRoomOptions } from '../../../engine/room-options-rules.js';
 export const CRIOLLAS_OPTIONS = [
   { id: 'target', label: 'Meta de la partida', default: 12, choices: [[12, '12 tantos'], [24, '24 tantos']] },

@@ -13,7 +13,7 @@ import { bindRenderer, pixelRatio } from '/engine/settings.js';
 import { RiverRoom } from './network.js';
 import { standings, FORMATS, COLORS, crewGrid } from './rules.js';
 import { RIVER as DEFAULT_RIVER, configuredRiver, angle, formatTime } from './river.js';
-import { PADDLE, grade } from '/engine/paddle.js';
+import { PADDLE, grade } from '/engine/play/paddle.js';
 import { createRaceScene, createRiverWorld } from '/engine/river/scene.js';
 import { createCanoe } from '/engine/models/vehicles/curiara.js';
 import { tickWind } from '/engine/models/vegetation/plant-kit.js';

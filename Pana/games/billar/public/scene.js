@@ -1,10 +1,10 @@
 import * as THREE from 'three';
-import { createTableWorld } from '/engine/table-world.js';
+import { createTableWorld } from '/engine/worlds/table-world.js';
 import { createPoolTable, createPoolBall, createPoolCue, POOL_SURFACE } from '/engine/models/props/pool.js';
 import { buildCharacter } from '/engine/models/characters/pana/avatar-model.js';
 import { normalizeAvatar } from '/engine/avatar.js';
-import { difficultyInfo } from '/engine/difficulty.js';
-import { guideRibbon, trimPath, pathLength } from '/engine/aim-guide.js';
+import { difficultyInfo } from '/engine/play/difficulty.js';
+import { guideRibbon, trimPath, pathLength } from '/engine/play/aim-guide.js';
 import { RADIUS, POCKETS, predictShot, legalTarget, canPlace } from './rules.js';
 import { cafeTerrace } from '/engine/models/props/cafe-terrace.js';
 import { disposeModel } from '/engine/models/props/game-table.js';

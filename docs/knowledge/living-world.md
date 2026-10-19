@@ -1,6 +1,6 @@
 # Living skies and pueblo
 
-`Pana/engine/sky.js` owns the outdoor sky used by Derrape's eight circuits,
+`Pana/engine/worlds/sky.js` owns the outdoor sky used by Derrape's eight circuits,
 Galope, Escondidas, Cocina, the Bululú board/minigames and Studio circuit tours.
 It renders a gradient, sun glow, seeded cloud banks and high wisps in one draw.
 The vertex shader ignores camera translation and projects at far depth; camera
@@ -29,7 +29,7 @@ and pauses reproducible without inserting animated geometry into static batches.
 
 ## Background life at tables and courts
 
-`engine/ambient-life.js` adds a pack of Derrape karts crossing a lane every
+`engine/worlds/ambient-life.js` adds a pack of Derrape karts crossing a lane every
 19 s (alternating direction), panas walking there-and-back paths and macaws
 circling overhead. `createArenaSlot` attaches it for `table` and `court` modes
 only, from the per-map `LIFE` routes in arenas.js (plaza: the lane runs in

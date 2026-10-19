@@ -2,7 +2,7 @@
 import { festive } from './festive.js';
 import * as THREE from 'three';
 import { natureSurface } from '/engine/models/core/nature-surface.js';
-import { createPlazaEnvironment } from '/engine/plaza.js';
+import { createPlazaEnvironment } from '/engine/worlds/plaza.js';
 import { house } from '/engine/models/props/plaza-buildings.js';
 import { marketStall, streetLamp, bench } from '/engine/models/props/plaza.js';
 import { M, mesh, box, rng } from '/engine/models/core/primitives.js';

@@ -7,11 +7,22 @@ import path from 'node:path';
 const app = path.resolve(import.meta.dirname, '..');
 const STATIC = /(?:^|[\n;])\s*(?:import|export)\s[^'"`;]*?\sfrom\s*['"]([^'"]+)['"]|(?:^|[\n;])\s*import\s*['"]([^'"]+)['"]/g;
 
-function resolve(from, spec) {
+// The file a served specifier names, or null for a bare one (three and its
+// addons come from the CDN).
+export function resolve(from, spec) {
   if (spec.startsWith('/engine/')) return path.join(app, spec);
   if (spec.startsWith('/g/')) { const [, , game, ...rest] = spec.split('/'); return path.join(app, 'games', game, 'public', ...rest); }
+  if (spec.startsWith('/')) return path.join(app, 'web', spec);   // the hub, /studio/…
   if (spec.startsWith('.')) return path.resolve(path.dirname(from), spec);
-  return null;   // bare specifiers (three, its addons) come from the CDN
+  return null;
+}
+
+// Every import specifier in a module with a literal path: static imports,
+// re-exports and import('…') with a plain string.
+export function specifiers(source) {
+  const code = source.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '');
+  return [...code.matchAll(STATIC)].map(m => m[1] || m[2])
+    .concat([...code.matchAll(/\bimport\(\s*(['"])([^'"`$]+)\1\s*\)/g)].map(m => m[2]));
 }
 
 // { files: Set<absolute path>, bytes, depth } for one entry file.

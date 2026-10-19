@@ -1,9 +1,9 @@
 // Curiara race simulation. Pure: the host runs it, guests render snapshots.
 // Boats move with paddle thrust relative to the water plus the river's
 // current; the river (river.js) owns banks, levels and currents.
-import { paddleState, stroke, hold, rudder, sync, step as pull, PADDLE } from '/engine/paddle.js';
+import { paddleState, stroke, hold, rudder, sync, step as pull, PADDLE } from '/engine/play/paddle.js';
 import { FIELDS, cleanOptions } from './options.js';
-import { canMoveSeats } from '../../../engine/seat-rules.js';
+import { canMoveSeats } from '../../../engine/play/seat-rules.js';
 import { applyRoomOptions } from '../../../engine/room-options-rules.js';
 import { configuredRiver, RIVER, TONINA, clamp, angle } from './river.js';
 

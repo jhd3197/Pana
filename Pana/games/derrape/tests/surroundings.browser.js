@@ -14,7 +14,7 @@ try {
   await page.goto(`${process.env.PANA_TEST_URL||'http://localhost:8461'}/studio/settings.html`);
   await page.setContent('<style>body{margin:0}canvas{display:block}</style><canvas></canvas><script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}</script>');
   await page.evaluate(async()=>{
-    const THREE=await import('three'),{TRACKS,makeTrack,loadTracks}=await import('/g/derrape/tracks.js'),{createSky}=await import('/engine/sky.js');await loadTracks();
+    const THREE=await import('three'),{TRACKS,makeTrack,loadTracks}=await import('/g/derrape/tracks.js'),{createSky}=await import('/engine/worlds/sky.js');await loadTracks();
     const renderer=new THREE.WebGLRenderer({canvas:document.querySelector('canvas'),antialias:true,preserveDrawingBuffer:true});
     renderer.setSize(1280,800);renderer.toneMapping=THREE.ACESFilmicToneMapping;
     Object.assign(window,{THREE,TRACKS,makeTrack,createSky,renderer});

@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import {createSky} from '/engine/sky.js';
+import {createSky} from '/engine/worlds/sky.js';
 import {M,box,tube} from '/engine/models/core/primitives.js';
 import {bake,instancePlacements} from '/engine/models/core/static-batch.js';
 import {sign} from '/engine/models/core/architecture-kit.js';

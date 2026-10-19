@@ -1,7 +1,7 @@
 import { FIELDS, cleanOptions, maxPip, groupOf, CHAT } from './options.js';
 import { applyRoomOptions } from '../../../engine/room-options-rules.js';
-import { validTableArena } from '../../../engine/arena-layouts.js';
-import { swapSeats, canMoveSeats } from '../../../engine/seat-rules.js';
+import { validTableArena } from '../../../engine/worlds/arena-layouts.js';
+import { swapSeats, canMoveSeats } from '../../../engine/play/seat-rules.js';
 // House rules are explicit in the UI: team block dominoes, opponents' pips score.
 // Pure data and deterministic shuffling keep host migration lossless.
 export const TARGET = 100;

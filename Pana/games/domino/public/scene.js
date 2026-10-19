@@ -1,9 +1,9 @@
 import { maxPip, groupOf } from './options.js';
 import * as THREE from 'three';
-import { createTableWorld } from '/engine/table-world.js';
+import { createTableWorld } from '/engine/worlds/table-world.js';
 import { buildCharacter } from '/engine/models/characters/pana/avatar-model.js';
 import { normalizeAvatar } from '/engine/avatar.js';
-import { createSeatBubbles } from '/engine/seat-bubbles.js';
+import { createSeatBubbles } from '/engine/play/seat-bubbles.js';
 import { createDominoTable, createDominoChair, createDominoTile } from './table-model.js';
 import { chainLayout } from './tiles.js';
 import { deck, legalEnds } from './rules.js';

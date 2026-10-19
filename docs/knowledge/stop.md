@@ -9,7 +9,7 @@ on the answers the game doesn't know ("¿Eso cuenta?"). Five rounds by
 default; the highest total wins. The hub card shows `tileName` ("STOP").
 
 Built on the shared table room (`engine/table-room.js`) and the plaza stage
-(`engine/table-world.js`), with a round table, plastic chairs and the reel's
+(`engine/worlds/table-world.js`), with a round table, plastic chairs and the reel's
 purple slang wall. Source: the C4B9Vk6L9kK reel (Hormiga as a color, Oreo for
 200 points, Nemo as an animal, "monte y culebra").
 
@@ -32,7 +32,7 @@ purple slang wall. Source: the C4B9Vk6L9kK reel (Hormiga as a color, Oreo for
 - `public/scene.js`: the table, the panas' moods (write, panic, slam, plead,
   laugh, cross, win, sad), pencils that follow the right hand, the wheel.
 - `tests/browser.mjs`: two real clients (`npm run test:browser -- stop`).
-- Shared: `engine/saber.js` (El Saber, data) and `engine/saber-match.js`
+- Shared: `engine/play/saber.js` (El Saber, data) and `engine/play/saber-match.js`
   (lookup), tested by `engine/tests/saber.test.js`.
 
 ## Secret sheets
@@ -84,7 +84,7 @@ purple slang wall. Source: the C4B9Vk6L9kK reel (Hormiga as a color, Oreo for
 - The spinner rotates through every seat; a bot stops the wheel after
   1.2–2.6 s, a pana who doesn't press is helped after 9 s.
 
-## El Saber (engine/saber.js)
+## El Saber (engine/play/saber.js)
 
 - 1,600+ entries over 17 categories: names and surnames (Venezuelan style),
   countries, Venezuelan and world cities, animals (chigüire, cachicamo,

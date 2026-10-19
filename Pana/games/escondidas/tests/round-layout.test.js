@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { huntLayout, roundProps, nextLayoutSeed, MAP_PROPS } from '../public/layout.js';
 import { HuntRound, RULES, HIDE_TIMES } from '../public/rules.js';
-import { ARENAS, arenaLayout } from '../../../engine/arena-layouts.js';
+import { ARENAS, arenaLayout } from '../../../engine/worlds/arena-layouts.js';
 import { propDefinition } from '../../../engine/models/props/plaza-definitions.js';
 
 for (const { id } of ARENAS) test(`${id}: seeded props vary, stay clear and remain reachable`, () => {

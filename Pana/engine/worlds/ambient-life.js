@@ -1,10 +1,10 @@
 import * as THREE from 'three';
-import { CAR_BUILDERS } from './models/vehicles/cars.js';
-import { buildCharacter } from './models/characters/pana/avatar-model.js';
-import { scarletMacaw } from './models/fauna/birds/scarlet-macaw.js';
-import { randomAvatar } from './avatar.js';
-import { rng } from './random.js';
-import { getSettings } from './settings.js';
+import { CAR_BUILDERS } from '../models/vehicles/cars.js';
+import { buildCharacter } from '../models/characters/pana/avatar-model.js';
+import { scarletMacaw } from '../models/fauna/birds/scarlet-macaw.js';
+import { randomAvatar } from '../avatar.js';
+import { rng } from '../random.js';
+import { getSettings } from '../settings.js';
 
 // Background life around a table or a court: a pack of Derrape karts racing
 // past on a lane, panas strolling along the edge, macaws circling overhead.

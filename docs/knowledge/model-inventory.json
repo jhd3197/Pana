@@ -5712,7 +5712,7 @@
       "id": "table-guipuzcoana",
       "name": "Casa Guipuzcoana",
       "category": "Mapas",
-      "source": "Pana/engine/puerto-tables.js",
+      "source": "Pana/engine/worlds/puerto-tables.js",
       "factory": "createPuertoTableEnvironment",
       "usedBy": [
         "Caída",
@@ -5725,7 +5725,7 @@
       "id": "table-san-carlos",
       "name": "Fuerte San Carlos",
       "category": "Mapas",
-      "source": "Pana/engine/puerto-tables.js",
+      "source": "Pana/engine/worlds/puerto-tables.js",
       "factory": "createPuertoTableEnvironment",
       "usedBy": [
         "Caída",
@@ -5738,7 +5738,7 @@
       "id": "colonial-collection",
       "name": "Cincuenta casas del pueblo",
       "category": "Mapas",
-      "source": "Pana/engine/colonial-house-collection.js",
+      "source": "Pana/engine/worlds/colonial-house-collection.js",
       "factory": "createColonialHouseCollection",
       "usedBy": [
         "Pana Studio"
@@ -5749,7 +5749,7 @@
       "id": "colonial-street",
       "name": "Calle de las flores",
       "category": "Mapas",
-      "source": "Pana/engine/colonial-street.js",
+      "source": "Pana/engine/worlds/colonial-street.js",
       "factory": "createColonialStreet",
       "usedBy": [
         "Pana Studio"
@@ -5760,7 +5760,7 @@
       "id": "arena-puerto",
       "name": "Puerto Coco",
       "category": "Mapas",
-      "source": "Pana/engine/arenas.js",
+      "source": "Pana/engine/worlds/arenas.js",
       "factory": "createArenaEnvironment",
       "usedBy": [
         "Escondidas",
@@ -5774,7 +5774,7 @@
       "id": "arena-hato",
       "name": "Hato del Sol",
       "category": "Mapas",
-      "source": "Pana/engine/arenas.js",
+      "source": "Pana/engine/worlds/arenas.js",
       "factory": "createArenaEnvironment",
       "usedBy": [
         "Escondidas",
@@ -5788,7 +5788,7 @@
       "id": "arena-ruinas",
       "name": "Ruinas del Mango",
       "category": "Mapas",
-      "source": "Pana/engine/arenas.js",
+      "source": "Pana/engine/worlds/arenas.js",
       "factory": "createArenaEnvironment",
       "usedBy": [
         "Escondidas",
@@ -5846,7 +5846,7 @@
       "id": "plaza",
       "name": "Plaza Pana",
       "category": "Mapas",
-      "source": "Pana/engine/plaza.js",
+      "source": "Pana/engine/worlds/plaza.js",
       "factory": "createPlazaEnvironment",
       "usedBy": [
         "Escondidas",
@@ -6151,7 +6151,7 @@
     },
     {
       "name": "Offshore lighthouse (older)",
-      "source": "Pana/engine/island-scenery.js",
+      "source": "Pana/engine/worlds/island-scenery.js",
       "anchor": "function lighthouse",
       "where": "Bululú board",
       "note": "One tower with a rotating night beam. Not the Costa lighthouse used on the race island; preserve daylight behavior when replacing.",
@@ -6159,7 +6159,7 @@
     },
     {
       "name": "Offshore sailboat (older)",
-      "source": "Pana/engine/island-scenery.js",
+      "source": "Pana/engine/worlds/island-scenery.js",
       "anchor": "function sailboat",
       "where": "Bululú board",
       "note": "Four box-hull sailboats still bob offshore. Not the new peñero.",
@@ -6167,7 +6167,7 @@
     },
     {
       "name": "Golden mango landmark tree",
-      "source": "Pana/engine/island-environment.js",
+      "source": "Pana/engine/worlds/island-environment.js",
       "anchor": "function mangoTreeBig",
       "where": "Bululú board",
       "note": "Special large fruit tree; separate construction from flora.mangoTree.",
@@ -6521,7 +6521,7 @@
     },
     {
       "name": "Board island terrain",
-      "source": "Pana/engine/island-terrain.js",
+      "source": "Pana/engine/worlds/island-terrain.js",
       "anchor": "function buildIsland",
       "where": "Bululú board",
       "note": "Shoreline, beach, hills, river and path cuts.",
@@ -6529,7 +6529,7 @@
     },
     {
       "name": "Forested islet/ridge",
-      "source": "Pana/engine/island-landscape.js",
+      "source": "Pana/engine/worlds/island-landscape.js",
       "anchor": "function createIslet",
       "where": "Bululú board",
       "note": "Seeded neighboring islands and distant ridges.",
@@ -6537,7 +6537,7 @@
     },
     {
       "name": "Tepui and waterfall",
-      "source": "Pana/engine/island-landscape.js",
+      "source": "Pana/engine/worlds/island-landscape.js",
       "anchor": "function createTepui",
       "where": "Bululú board",
       "note": "Three mesas; one waterfall/mist landmark. Not the Selva waterfall.",
@@ -6545,7 +6545,7 @@
     },
     {
       "name": "Living sky and cloud layers",
-      "source": "Pana/engine/sky.js",
+      "source": "Pana/engine/worlds/sky.js",
       "anchor": "function createSky",
       "where": "Derrape; Galope; Escondidas; Cocina; Bululú and minigames; Studio tours",
       "note": "One procedural sky draw, seeded cumulus and wisps, absolute-time wind and day/night tint. Scene-owned, outside scenery bounds.",
@@ -6553,7 +6553,7 @@
     },
     {
       "name": "Island dock and village light strings",
-      "source": "Pana/engine/island-environment.js",
+      "source": "Pana/engine/worlds/island-environment.js",
       "anchor": "dockStart",
       "where": "Bululú board",
       "note": "Placement-specific geometry; not separate library factories.",

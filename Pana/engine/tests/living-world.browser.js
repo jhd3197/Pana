@@ -13,7 +13,7 @@ try {
   await page.goto(`${process.env.PANA_TEST_URL||'http://localhost:8461'}/studio/settings.html`);
   await page.setContent('<style>body{margin:0}canvas{display:block}</style><canvas id="world"></canvas><script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}</script>');
   const result=await page.evaluate(async()=>{
-    const THREE=await import('three'),{createPlaza}=await import('/engine/plaza.js'),{house}=await import('/engine/models/props/plaza-buildings.js');
+    const THREE=await import('three'),{createPlaza}=await import('/engine/worlds/plaza.js'),{house}=await import('/engine/models/props/plaza-buildings.js');
     const renderer=new THREE.WebGLRenderer({canvas:document.querySelector('canvas'),antialias:true,preserveDrawingBuffer:true});
     renderer.setSize(1280,760);renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;
     const camera=new THREE.PerspectiveCamera(60,1280/760,.1,1500),plaza=createPlaza();
@@ -41,7 +41,7 @@ try {
   await page.evaluate(()=>{camera.position.set(-1,5,-7);camera.lookAt(0,5.5,-23);renderer.render(plaza.scene,camera);});
   await page.screenshot({path:`${output}/plaza-facades.png`});
   await page.evaluate(async()=>{
-    const {createSky}=await import('/engine/sky.js');
+    const {createSky}=await import('/engine/worlds/sky.js');
     window.skyScene=new THREE.Scene();window.sky=createSky();skyScene.add(sky.mesh);
     camera.position.set(0,0,0);camera.lookAt(0,.35,-1);sky.update(12);renderer.render(skyScene,camera);
     window.skyFirst=renderer.domElement.toDataURL();

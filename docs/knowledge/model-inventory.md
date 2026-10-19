@@ -188,8 +188,8 @@ These already exist. Their absence from a map is a placement gap, not a missing-
 | Chispas de fogata | ember-plume | [drifting-particles.js](../../Pana/engine/models/effects/drifting-particles.js) |
 | Racimo de cristales | crystal-cluster | [crystals.js](../../Pana/engine/models/props/crystals.js) |
 | Cristales del arcoíris | crystal-garden | [crystals.js](../../Pana/engine/models/props/crystals.js) |
-| Cincuenta casas del pueblo | colonial-collection | [colonial-house-collection.js](../../Pana/engine/colonial-house-collection.js) |
-| Calle de las flores | colonial-street | [colonial-street.js](../../Pana/engine/colonial-street.js) |
+| Cincuenta casas del pueblo | colonial-collection | [colonial-house-collection.js](../../Pana/engine/worlds/colonial-house-collection.js) |
+| Calle de las flores | colonial-street | [colonial-street.js](../../Pana/engine/worlds/colonial-street.js) |
 
 ## Active models missing from individual Studio previews
 
@@ -199,9 +199,9 @@ These already exist. Their absence from a map is a placement gap, not a missing-
 | Watchtower | Bululú board; No te caigas | [watchtower.js](../../Pana/engine/models/props/watchtower.js#L4) | Thatch/zinc options; distinct from the new lifeguard tower. |
 | Venezuelan flagpole | Bululú board; No te caigas; Selva | [flags.js](../../Pana/engine/models/props/flags.js#L42) | Active animated flag. Pana branded pedestal is a separate catalog entry. |
 | Displaced rock | Bululú board/minigames; Selva | [rock.js](../../Pana/engine/models/props/rock.js#L4) | Shared seeded rock, also embedded inside other models. |
-| Offshore lighthouse (older) | Bululú board | [island-scenery.js](../../Pana/engine/island-scenery.js#L14) | One tower with a rotating night beam. Not the Costa lighthouse used on the race island; preserve daylight behavior when replacing. |
-| Offshore sailboat (older) | Bululú board | [island-scenery.js](../../Pana/engine/island-scenery.js#L42) | Four box-hull sailboats still bob offshore. Not the new peñero. |
-| Golden mango landmark tree | Bululú board | [island-environment.js](../../Pana/engine/island-environment.js#L39) | Special large fruit tree; separate construction from flora.mangoTree. |
+| Offshore lighthouse (older) | Bululú board | [island-scenery.js](../../Pana/engine/worlds/island-scenery.js#L14) | One tower with a rotating night beam. Not the Costa lighthouse used on the race island; preserve daylight behavior when replacing. |
+| Offshore sailboat (older) | Bululú board | [island-scenery.js](../../Pana/engine/worlds/island-scenery.js#L42) | Four box-hull sailboats still bob offshore. Not the new peñero. |
+| Golden mango landmark tree | Bululú board | [island-environment.js](../../Pana/engine/worlds/island-environment.js#L39) | Special large fruit tree; separate construction from flora.mangoTree. |
 | Original plaza church | Escondidas; Cocina; Plaza circuit | [plaza-buildings.js](../../Pana/engine/models/props/plaza-buildings.js#L158) | Active small bell tower/chapel, distinct from colonialChurch. |
 | Summit terminal | Páramo | [world-landmarks.js](../../Pana/games/derrape/public/tracks/world-landmarks.js#L5) | Upper/lower terminals; separate from the catalog heritage cable-car station. |
 | Aerial cable system and cabins | Páramo | [world-landmarks.js](../../Pana/games/derrape/public/tracks/world-landmarks.js#L19) | Six moving cabins, two cable curves; parameterized scene assembly. |
@@ -250,11 +250,11 @@ These already exist. Their absence from a map is a placement gap, not a missing-
 | Race terrain and waterways | Derrape | [world-kit.js](../../Pana/games/derrape/public/tracks/world-kit.js#L28) | Terrain, sea and stream generators; each map supplies shape and palette. |
 | Water surface system | Derrape | [water-surface.js](../../Pana/engine/models/effects/water-surface.js#L36) | Ocean, river, canal and pool configurations; not separate species/objects. |
 | Bululú tide wash | Bululú circuit | [bululu-tide.js](../../Pana/games/derrape/public/tracks/bululu-tide.js#L20) | Animated surface tied to tire grip and wetness. |
-| Board island terrain | Bululú board | [island-terrain.js](../../Pana/engine/island-terrain.js#L79) | Shoreline, beach, hills, river and path cuts. |
-| Forested islet/ridge | Bululú board | [island-landscape.js](../../Pana/engine/island-landscape.js#L43) | Seeded neighboring islands and distant ridges. |
-| Tepui and waterfall | Bululú board | [island-landscape.js](../../Pana/engine/island-landscape.js#L83) | Three mesas; one waterfall/mist landmark. Not the Selva waterfall. |
-| Living sky and cloud layers | Derrape; Galope; Escondidas; Cocina; Bululú and minigames; Studio tours | [sky.js](../../Pana/engine/sky.js#L5) | One procedural sky draw, seeded cumulus and wisps, absolute-time wind and day/night tint. Scene-owned, outside scenery bounds. |
-| Island dock and village light strings | Bululú board | [island-environment.js](../../Pana/engine/island-environment.js#L194) | Placement-specific geometry; not separate library factories. |
+| Board island terrain | Bululú board | [island-terrain.js](../../Pana/engine/worlds/island-terrain.js#L79) | Shoreline, beach, hills, river and path cuts. |
+| Forested islet/ridge | Bululú board | [island-landscape.js](../../Pana/engine/worlds/island-landscape.js#L43) | Seeded neighboring islands and distant ridges. |
+| Tepui and waterfall | Bululú board | [island-landscape.js](../../Pana/engine/worlds/island-landscape.js#L83) | Three mesas; one waterfall/mist landmark. Not the Selva waterfall. |
+| Living sky and cloud layers | Derrape; Galope; Escondidas; Cocina; Bululú and minigames; Studio tours | [sky.js](../../Pana/engine/worlds/sky.js#L5) | One procedural sky draw, seeded cumulus and wisps, absolute-time wind and day/night tint. Scene-owned, outside scenery bounds. |
+| Island dock and village light strings | Bululú board | [island-environment.js](../../Pana/engine/worlds/island-environment.js#L194) | Placement-specific geometry; not separate library factories. |
 | Race-island piers | Bululú circuit | [bululu.js](../../Pana/games/derrape/public/tracks/bululu.js#L99) | Inline harbor planks and pilings. |
 | Plaza streets, gardens and mirador | Plaza circuit | [plaza-town.js](../../Pana/games/derrape/public/tracks/plaza-town.js#L46) | Street surfaces, block gardens, lookout terrace and stairs; shared houses/trees counted separately. |
 | Plaza waterfront canals and docks | Plaza circuit | [plaza-waterfront.js](../../Pana/games/derrape/public/tracks/plaza-waterfront.js#L23) | Canal network and moorings around canalVilla. |
@@ -492,18 +492,18 @@ The following list is generated, not manually copied. “In use” is the catalo
 
 | Name / ID | Status / games | Source | Constructor |
 | --- | --- | --- | --- |
-| Casa Guipuzcoana · table-guipuzcoana | Caída, Dominó, Póquer | [puerto-tables.js](../../Pana/engine/puerto-tables.js) | createPuertoTableEnvironment |
-| Fuerte San Carlos · table-san-carlos | Caída, Dominó, Póquer | [puerto-tables.js](../../Pana/engine/puerto-tables.js) | createPuertoTableEnvironment |
-| Cincuenta casas del pueblo · colonial-collection | Preview only | [colonial-house-collection.js](../../Pana/engine/colonial-house-collection.js) | createColonialHouseCollection |
-| Calle de las flores · colonial-street | Preview only | [colonial-street.js](../../Pana/engine/colonial-street.js) | createColonialStreet |
-| Puerto Coco · arena-puerto | Escondidas, Pepazo, Billar, Caída | [arenas.js](../../Pana/engine/arenas.js) | createArenaEnvironment |
-| Hato del Sol · arena-hato | Escondidas, Pepazo, Billar, Caída | [arenas.js](../../Pana/engine/arenas.js) | createArenaEnvironment |
-| Ruinas del Mango · arena-ruinas | Escondidas, Pepazo, Billar, Caída | [arenas.js](../../Pana/engine/arenas.js) | createArenaEnvironment |
+| Casa Guipuzcoana · table-guipuzcoana | Caída, Dominó, Póquer | [puerto-tables.js](../../Pana/engine/worlds/puerto-tables.js) | createPuertoTableEnvironment |
+| Fuerte San Carlos · table-san-carlos | Caída, Dominó, Póquer | [puerto-tables.js](../../Pana/engine/worlds/puerto-tables.js) | createPuertoTableEnvironment |
+| Cincuenta casas del pueblo · colonial-collection | Preview only | [colonial-house-collection.js](../../Pana/engine/worlds/colonial-house-collection.js) | createColonialHouseCollection |
+| Calle de las flores · colonial-street | Preview only | [colonial-street.js](../../Pana/engine/worlds/colonial-street.js) | createColonialStreet |
+| Puerto Coco · arena-puerto | Escondidas, Pepazo, Billar, Caída | [arenas.js](../../Pana/engine/worlds/arenas.js) | createArenaEnvironment |
+| Hato del Sol · arena-hato | Escondidas, Pepazo, Billar, Caída | [arenas.js](../../Pana/engine/worlds/arenas.js) | createArenaEnvironment |
+| Ruinas del Mango · arena-ruinas | Escondidas, Pepazo, Billar, Caída | [arenas.js](../../Pana/engine/worlds/arenas.js) | createArenaEnvironment |
 | Reliquia · La mina del sol · reliquia | Reliquia | [scene.js](../../Pana/games/reliquia/public/scene.js) | createExpeditionWorld |
 | ¡Embuste! · El campamento y el templo · embuste | ¡Embuste! | [scene.js](../../Pana/games/embuste/public/scene.js) | createCampWorld |
 | Galope · La vuelta del estero · galope | Galope | [scene.js](../../Pana/games/galope/public/scene.js) | createCourse |
 | Curiara · Río abajo · curiara | Curiara | [scene.js](../../Pana/games/curiara/public/scene.js) | createRiverWorld |
-| Plaza Pana · plaza | Escondidas, Cocina, Derrape | [plaza.js](../../Pana/engine/plaza.js) | createPlazaEnvironment |
+| Plaza Pana · plaza | Escondidas, Cocina, Derrape | [plaza.js](../../Pana/engine/worlds/plaza.js) | createPlazaEnvironment |
 | Cocina de la plaza · cocina | Cocina | [scene.js](../../Pana/games/cocina/public/scene.js) | createKitchenScene |
 | Isla Bululú · isla | Bululú | [board.js](../../Pana/games/bululu/public/board.js) | createBoard |
 | Circuito · El Estadio · track-estadio | Derrape | [estadio.js](../../Pana/games/derrape/public/tracks/estadio.js) | makeTrack(definition).build |

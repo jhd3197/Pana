@@ -1,12 +1,12 @@
 import * as THREE from 'three';
-import { createSky } from '/engine/sky.js';
+import { createSky } from '/engine/worlds/sky.js';
 import { M, mesh, box, rng } from '/engine/models/core/primitives.js';
 import { palm } from '/engine/models/vegetation/palm.js';
 import { mangoTree } from '/engine/models/vegetation/mango-tree.js';
 import { bush } from '/engine/models/vegetation/bush.js';
 import { bake } from '/engine/models/core/static-batch.js';
 import { createPlazaProp, marketStall, streetLamp } from '/engine/models/props/plaza.js';
-import { MAP_PROPS, STALLS, TREES, LAMPS } from '/engine/plaza-layout.js';
+import { MAP_PROPS, STALLS, TREES, LAMPS } from '/engine/worlds/plaza-layout.js';
 import { streetFoodKiosk, plazaClockTower, parkBench, streetlightPole } from '/engine/models/props/pueblo.js';
 import { capybaraTopiary } from '/engine/models/props/monuments.js';
 

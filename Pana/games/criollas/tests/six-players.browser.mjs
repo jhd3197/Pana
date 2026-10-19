@@ -28,7 +28,7 @@ try {
   assert.deepEqual(await pages[5].evaluate(() => client.state.remaining), Array(6).fill(2));
   for (let seat = 0; seat < 6; seat++) {
     // Equal empty-court layouts isolate turn ownership from the scoring team.
-    await host.evaluate(async seat => { const { createPitch } = await import('/engine/bolas-criollas.js'); client.game.pitch = createPitch(); client.game.turn = seat; client.game.phase = 'aiming'; client.game.revision++; client.publish(); }, seat);
+    await host.evaluate(async seat => { const { createPitch } = await import('/engine/play/bolas-criollas.js'); client.game.pitch = createPitch(); client.game.turn = seat; client.game.phase = 'aiming'; client.game.revision++; client.publish(); }, seat);
     const revision = await host.evaluate(() => client.state.revision);
     await waitFor(pages[seat], revision => client.state.revision === revision, revision);
     await pages[seat].evaluate(() => client.action('shoot', { angle: .6, power: .1 }));

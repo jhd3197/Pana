@@ -1,9 +1,9 @@
 import * as THREE from 'three';
 import { buildCharacter } from '/engine/models/characters/pana/avatar-model.js';
 import { normalizeAvatar } from '/engine/avatar.js';
-import { createTableWorld } from '/engine/table-world.js';
+import { createTableWorld } from '/engine/worlds/table-world.js';
 import { createGameTable, createGameChair, disposeModel } from '/engine/models/props/game-table.js';
-import { createToss } from '/engine/dice-throw.js';
+import { createToss } from '/engine/play/dice-throw.js';
 import { sound, Puffs, Shockwaves } from '/engine/fx.js';
 import { createLudoBoard, createLudoPawn, createLudoDie, boardPoint } from './board-model.js';
 import { COLORS, HOME, legalMoves } from './rules.js';

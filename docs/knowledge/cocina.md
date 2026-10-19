@@ -36,8 +36,8 @@ tolerance. Full-turn tests prove helpers actually deliver food.
 
 ## Shared assets
 
-The plaza moved to `/engine/plaza.js` and the original map data to
-`/engine/plaza-layout.js`; Escondidas keeps compatibility modules. Cooking uses
+The plaza moved to `/engine/worlds/plaza.js` and the original map data to
+`/engine/worlds/plaza-layout.js`; Escondidas keeps compatibility modules. Cooking uses
 `createPlaza({cooking:true})` for a cleared courtyard and its own colliders.
 Static kitchen props and cached food models are baked by material to keep draw
 calls low. Cached food geometry and materials must not be disposed with an actor.
@@ -77,7 +77,7 @@ true when you change this area.
 Cocina also uses a host simulation at 20 Hz (`cocina-v2`). Host migration
 restores the last kitchen snapshot, including orders and active food. See
 `docs/knowledge/cocina.md`. Plaza scenery and the original hunt layout now
-live in `engine/plaza.js` and `engine/plaza-layout.js`; cooking has its own
+live in `engine/worlds/plaza.js` and `engine/worlds/plaza-layout.js`; cooking has its own
 station layout and collision rules. Existing Escondidas paths re-export them.
 
 

@@ -1,4 +1,4 @@
-import { ARENAS, TABLE_ARENAS, COURT_ARENAS, PAINT_ARENAS, arenaInfo, tableArenaInfo, courtArenaInfo, paintArenaInfo } from './arena-layouts.js';
+import { ARENAS, TABLE_ARENAS, COURT_ARENAS, PAINT_ARENAS, arenaInfo, tableArenaInfo, courtArenaInfo, paintArenaInfo } from '../worlds/arena-layouts.js';
 
 // The host chooses; everyone sees the same selection and live world preview.
 export function createMapPicker(parent, onChange, { table = false, landmarks = false, courts = false, paint = false } = {}) {

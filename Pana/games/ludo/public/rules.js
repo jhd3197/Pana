@@ -143,5 +143,5 @@ export class LudoGame {
   }
 }
 import { defaultLudoOptions, ludoOptions } from './options.js';
-import { rollOffGroups, namesList } from '../../../engine/roll-off.js';
-import { cleanPower } from '../../../engine/dice-throw.js';
+import { rollOffGroups, namesList } from '../../../engine/play/roll-off.js';
+import { cleanPower } from '../../../engine/play/dice-throw.js';

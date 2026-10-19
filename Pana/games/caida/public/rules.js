@@ -1,6 +1,6 @@
 import { DEFAULT_OPTIONS, validOptions } from './options.js';
-import { validTableArena } from '../../../engine/arena-layouts.js';
-import { swapSeats, canMoveSeats } from '../../../engine/seat-rules.js';
+import { validTableArena } from '../../../engine/worlds/arena-layouts.js';
+import { swapSeats, canMoveSeats } from '../../../engine/play/seat-rules.js';
 // Pure deterministic rules. Table variants and sources are documented in caida.md.
 export const TARGET = 24;
 export const RANKS = [1, 2, 3, 4, 5, 6, 7, 10, 11, 12];

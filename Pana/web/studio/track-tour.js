@@ -1,6 +1,6 @@
 // Studio-only camera tour. The route is the same runtime used to build the map.
 import { Vector3, Color, Fog } from 'three';
-import { createSky } from '/engine/sky.js';
+import { createSky } from '/engine/worlds/sky.js';
 
 export const TOUR_SPEED = 24; // metres per second at 1×
 function roadHeight(route, s) {

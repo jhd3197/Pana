@@ -1,7 +1,7 @@
 import * as THREE from 'three';
-import { createBolasWorld } from '/engine/bolas-world.js';
-import { previewThrow } from '/engine/bolas-criollas.js';
-import { difficultyInfo } from '/engine/difficulty.js';
+import { createBolasWorld } from '/engine/worlds/bolas-world.js';
+import { previewThrow } from '/engine/play/bolas-criollas.js';
+import { difficultyInfo } from '/engine/play/difficulty.js';
 import { bindRenderer, pixelRatio } from '/engine/settings.js';
 
 // 'calce' stands behind the thrower looking down the court; 'arriba' looks

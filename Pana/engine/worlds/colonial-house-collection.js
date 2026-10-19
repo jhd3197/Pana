@@ -1,6 +1,6 @@
 import * as THREE from 'three';
-import { colonialHouse } from './models/props/colonial-house.js';
-import { createHouseBatch, saveHouseBatch } from './models/props/colonial-house-spec.js';
+import { colonialHouse } from '../models/props/colonial-house.js';
+import { createHouseBatch, saveHouseBatch } from '../models/props/colonial-house-spec.js';
 
 // An evenly spaced inspection yard. Game maps provide their own streets and collisions.
 export function createColonialHouseCollection({ seed = 103, houses = createHouseBatch(seed), detail = 'low' } = {}) {

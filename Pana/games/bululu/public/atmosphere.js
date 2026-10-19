@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { createSky } from '/engine/sky.js';
+import { createSky } from '/engine/worlds/sky.js';
 import { rng } from '/engine/models/core/primitives.js';
 import { shadowSize } from '/engine/settings.js';
 

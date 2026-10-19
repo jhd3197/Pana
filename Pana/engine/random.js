@@ -3,7 +3,7 @@
 // imports from here instead of writing its own rng, hash or clamp.
 //
 // The functions match what engine/models/core/primitives.js and
-// engine/island-terrain.js already used, so moving to them changes nothing on
+// engine/worlds/island-terrain.js already used, so moving to them changes nothing on
 // screen. Some older rules.js files keep their own rng: their seeded tests and
 // bot balance depend on its exact sequence.
 

@@ -20,8 +20,8 @@ import { buildCharacter } from '/engine/models/characters/pana/avatar-model.js';
 import { randomAvatar } from '/engine/avatar.js';
 import { driftwood } from '/engine/models/props/beach.js';
 import { channelBuoy } from '/engine/models/props/coastal.js';
-import { createTepui } from '/engine/island-landscape.js';
-import { SEA } from '/engine/island-terrain.js';
+import { createTepui } from '/engine/worlds/island-landscape.js';
+import { SEA } from '/engine/worlds/island-terrain.js';
 import { smooth } from './river.js';
 
 const TAU = Math.PI * 2;

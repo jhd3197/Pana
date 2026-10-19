@@ -6,7 +6,7 @@
 
 import * as THREE from 'three';
 import { terrainMaterial } from './terrain-material.js';
-import { fbm2 } from './random.js';
+import { fbm2 } from '../random.js';
 
 export const SEA = -1.3;
 export const PEAK = { x: 4, z: -76 };

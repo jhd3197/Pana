@@ -31,8 +31,11 @@ Pana/                    ← repo root
     │       ├── public/      ← everything the browser needs (Three.js via CDN);
     │       │                  optional card.js draws live art on the hub tile
     │       └── server/      ← optional Colyseus room (room.js), never served
-    └── engine/          ← shared code served at /engine/* (avatar.js, character.js,
-                           net.js: the browser half of the multiplayer kit)
+    └── engine/          ← shared code served at /engine/*: the kit every game uses
+        │                  (net.js, live-room.js, ui.js, settings.js, avatar.js, kit.css…)
+        ├── worlds/      ← stages and maps several games build on (plaza, table-world, arenas)
+        ├── play/        ← mechanics two or more games share (shot charge, dice, paddling)
+        └── models/      ← every 3D model, registered in Pana Studio
 ```
 
 ## Request flow
@@ -64,7 +67,7 @@ games/<game>/
 │   ├── network.js   thin room: TableRoom (turn-based) or LiveRoom (real-time),
 │   │                both on HostRoom (engine/net.js), or joins its own room
 │   ├── scene.js     required: the 3D world (Three.js, perspective camera,
-│   │                the players' panas); table games use engine/table-world.js
+│   │                the players' panas); table games use engine/worlds/table-world.js
 │   ├── ui.js        DOM: HUD, lobby, results (optional while game.js stays small)
 │   └── game.js      wiring only (≤ 600 lines): input → rules → network → scene/ui;
 │                    engine/game-shell.js runs loading, loops and teardown

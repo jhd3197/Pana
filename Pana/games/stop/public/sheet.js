@@ -1,7 +1,7 @@
 // Your own page of the libreta: one box per category, written in pencil.
 // The answers live only here until pencils-down; game.js sends them with
 // ¡STOP! or when the host asks for the sheets. Enter jumps to the next box.
-import { categoryLabel, categoryShort, letterOf } from '/engine/saber-match.js';
+import { categoryLabel, categoryShort, letterOf } from '/engine/play/saber-match.js';
 import { MAX_ANSWER } from './rules.js';
 
 export function createSheet(root, { onProgress, onStop }) {

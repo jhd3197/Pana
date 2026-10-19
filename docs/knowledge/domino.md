@@ -39,7 +39,7 @@ creates a fresh solo table and disables the network invite button.
 
 ## Choosing partners
 
-The shared `engine/table-seating.js` lobby picker swaps table positions, not
+The shared `engine/play/table-seating.js` lobby picker swaps table positions, not
 room member IDs. Team seats alternate: 0+2 against 1+3 in classic play, or 0+2+4 against
 1+3+5 with six. Individual mode uses one score per seat. Guests may submit `seat` actions involving themselves; only the host may
 rearrange two other players. These actions are accepted only in the lobby
@@ -67,7 +67,7 @@ The DOM rack remains available for keyboard, screen readers and small screens.
 ## Barks
 
 `public/barks.js` turns new history events into speech bubbles over the
-seats (`engine/seat-bubbles.js`, lines from `engine/frases.js`, seeded by the
+seats (`engine/play/seat-bubbles.js`, lines from `engine/play/frases.js`, seeded by the
 event so every client agrees). Opening with the 6-6 is la cochina; a double
 and the last tile in hand get a line; a pass says ¡Paso! the first time,
 then aburrido and salado for the same pana that mano. When a mano ends

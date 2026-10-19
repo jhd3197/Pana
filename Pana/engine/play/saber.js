@@ -1,7 +1,7 @@
 // El Saber: shared Venezuelan knowledge that several games read (¡Stop!
 // validates answers and gives bots theirs; QQSMP can build questions from it).
 // Pure data, no DOM: rules files and Node tests import it. The lookup,
-// normalize and fuzzy-match API lives in engine/saber-match.js.
+// normalize and fuzzy-match API lives in engine/play/saber-match.js.
 //
 // Each entry is { category, word, variants, explain, source, crude, doubtful, joke }:
 // - variants: other accepted spellings or short forms (accents never matter).

@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { FRASES, pickLine } from '../../../engine/frases.js';
+import { FRASES, pickLine } from '../../../engine/play/frases.js';
 import { CaidaGame } from '../public/rules.js';
 import { barksFor } from '../public/barks.js';
 const c = (rank, suit = 'oros') => ({ id: `${suit}-${rank}`, rank, suit });

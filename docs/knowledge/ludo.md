@@ -16,7 +16,7 @@ is Spanish. The hub discovers `game.json` and categorizes it as Mesa.
   pieces must finish to win. No legal move automatically consumes the roll.
 - Who starts: the match opens in phase `order`. Each seat throws once (bots
   too); the highest starts and play goes on from that seat. A tie at the top
-  throws again among the tied only (`engine/roll-off.js`). Order throws never
+  throws again among the tied only (`engine/play/roll-off.js`). Order throws never
   move pieces and never count as sixes.
 
 These variants are stated in the shared menu's Controles tab.
@@ -54,7 +54,7 @@ shared cache and the supplied Ludo illustration; readiness uses shared rooms.
 registered in Studio. The playing scene and hub preview share those factories.
 The scene uses the shared game table/chairs and actual saved Pana avatars.
 Desktop, touch and the 1–4 keys all dispatch the same validated piece action.
-The die is shaken and thrown (`engine/dice-throw.js`): hold the button or Space
+The die is shaken and thrown (`engine/play/dice-throw.js`): hold the button or Space
 and let go, or flick across the table. The roll action carries that power;
 `state.toss` (seat, power) lets every client fly the same throw from the
 thrower's chair, landing nearer the middle the harder it went. Bots get a

@@ -1,13 +1,13 @@
-// ¡Stop!'s plaza table on the shared stage (engine/table-world.js): eight
+// ¡Stop!'s plaza table on the shared stage (engine/worlds/table-world.js): eight
 // panas on plastic chairs around a round table, each with a notebook and a
 // pencil, the letter wheel in the middle and the reel's slang wall behind.
 // Panas write (faster when someone yells ¡STOP!), slam the pencil when they
 // stop the round, and react to the votes: arms crossed, laughing, pleading.
 import * as THREE from 'three';
-import { createTableWorld } from '/engine/table-world.js';
+import { createTableWorld } from '/engine/worlds/table-world.js';
 import { buildCharacter } from '/engine/models/characters/pana/avatar-model.js';
 import { normalizeAvatar } from '/engine/avatar.js';
-import { createSeatBubbles } from '/engine/seat-bubbles.js';
+import { createSeatBubbles } from '/engine/play/seat-bubbles.js';
 import { disposeModel } from '/engine/models/props/game-table.js';
 import { createStopTable, createLetterWheel, createNotebook, createPencil, createPlasticChair, createSlangWall } from './studio-set.js';
 import { SEATS, lettersFor } from './rules.js';

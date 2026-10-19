@@ -1,13 +1,13 @@
 import * as THREE from 'three';
-import { createArenaSlot } from '/engine/arenas.js';
-import { createSky } from '/engine/sky.js';
+import { createArenaSlot } from '/engine/worlds/arenas.js';
+import { createSky } from '/engine/worlds/sky.js';
 import { bindRenderer, shadowSize } from '/engine/settings.js';
-import { WARM_DAY } from '/engine/look.js';
+import { WARM_DAY } from '/engine/worlds/look.js';
 
 // Shared outdoor stage for every table game (Billar, Póquer, Ludo, Dominó,
 // Caída): renderer, sky, light, sun shadows and the plaza arena around the
 // table. Gameplay owns its meshes. Options tune the light for each table;
-// the defaults are the shared warm day (engine/look.js).
+// the defaults are the shared warm day (engine/worlds/look.js).
 const STAGE = {
   exposure: WARM_DAY.exposure, background: WARM_DAY.background, fog: [40, 115], sky: true, fov: 42,
   hemi: [...WARM_DAY.hemi.slice(0, 2), 2.2],

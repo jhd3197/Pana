@@ -85,7 +85,7 @@ model would be a separate backend change.
 
 ## Choosing partners and returning to setup
 
-The lobby uses `engine/table-seating.js` to swap players between seats, with
+The lobby uses `engine/play/table-seating.js` to swap players between seats, with
 alternating seats visibly grouped into avatar-card teams. Guests can move or
 swap themselves; the host can select a card and arrange any seat. `seat` actions use
 the same revision/sequence checks as moves and are rejected outside the lobby.
@@ -122,11 +122,11 @@ on `dealer` and `opening` (mal echada complains), the singer on a canto
 pana has been fallen on twice that reparto), the capturer and the next seat
 on a mesa limpia, the `leftovers` recipient (ñapa), and a winner and a loser
 when the match ends. Plain drops stay quiet. Lines come from the shared
-`engine/frases.js` dictionary, picked with a seed built from the event, so
+`engine/play/frases.js` dictionary, picked with a seed built from the event, so
 every client shows the same line and nothing extra is sent. Play events carry
 `victim` and score events carry `reason` for this. `game.js` skips the first
 render so a mid-game arrival does not replay old barks. The scene draws them with
-the shared `engine/seat-bubbles.js` (`.pk-bubble` in kit.css): one bubble per
+the shared `engine/play/seat-bubbles.js` (`.pk-bubble` in kit.css): one bubble per
 seat above its name chip, flipped below when the chip is near the top edge,
 and above the HUD because it only lasts a few seconds.
 
