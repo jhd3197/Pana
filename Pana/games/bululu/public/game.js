@@ -26,7 +26,8 @@ import * as rules from './rules.js';
 import { ICONS as SVG } from '/engine/icons.js';
 import { COLORS, RIVALS, START_COINS, PRICE, DOUBLES_BONUS, TREE_COINS } from './rules.js';
 import { createGameMenu, toggleMute } from '/engine/ui.js';
-import { holdButton, drawIcons } from '/engine/touch.js';
+import { drawIcons } from '/engine/touch.js';
+import { createInput, IDLE_AIM } from './input.js';
 import { bindDiceThrow, cleanPower } from '/engine/dice-throw.js';
 import { namesList } from '/engine/roll-off.js';
 import { createDiceTable, rollOffOrder } from './dice-table.js';
@@ -128,7 +129,7 @@ const menu = createGameMenu({
     { id: 'restart', label: 'Empezar de nuevo', kind: 'secondary', visible: () => !online, run: () => location.reload() },
     { id: 'rejoin', label: 'Volver a entrar a la sala', kind: 'secondary', visible: () => online, run: () => location.reload() },
   ],
-  onOpen() { paused = true; for (const k in held) held[k] = false; aim.pull = aim.keyPull = false; },
+  onOpen() { paused = true; input.clear(); },
   onClose() { paused = false; },
 });
 $('top-actions').prepend(menu.createButton({ id: 'menu', className: 'pk-btn menu-button' }));
@@ -318,130 +319,25 @@ function stepJobs(dt) {
 const ease = (k) => k * k * (3 - 2 * k);
 
 // ======================================================================
-// input
+// input (input.js)
 // ======================================================================
-const held = {};
-let jumpPressed = false, pullPressed = false;
 let actionWaiters = [];
-addEventListener('keydown', (e) => {
-  // Let the atmosphere buttons retain native Space/Enter/Tab behavior.
-  if (e.target.closest?.('.places') || (!started && e.target.closest?.('button, input, select, textarea, a'))) return;
-  const k = e.key.toLowerCase();
-  if (k === ' ' || k.startsWith('arrow')) e.preventDefault();
-  held[k] = true;
-  // in 2D and aim minigames W / ↑ move, so only Space is the action
-  if (!e.repeat && (k === ' ' || (!mini2d() && !miniAim() && (k === 'w' || k === 'arrowup')))) jumpPressed = true;
-  if (!e.repeat && k === ' ' && miniAim()) aim.keyPull = true;
-  if (!e.repeat && k === ' ') pullPressed = true;
-  if (k === 'm' && !e.repeat) toggleMute();
-  if (k === 'l' && !e.repeat && view === boardView) {
-    selectSky(SKY_MODES[(SKY_MODES.indexOf(board.atmosphere.mode) + 1) % SKY_MODES.length]);
-  }
-  if (k === 'tab') {
-    e.preventDefault();
-    if (!e.repeat) setFreeLook(!freeLook);
-  }
-  if (!e.repeat) for (const w of actionWaiters) w(k);
-});
-addEventListener('keyup', (e) => {
-  const k = e.key.toLowerCase();
-  held[k] = false;
-  // Space pulls the china while held; letting go fires
-  if (k === ' ' && aim.keyPull) {
-    aim.keyPull = false;
-    aim.fire = true;
-  }
-});
-addEventListener('pointerdown', () => sound.unlock(), { once: false });
-addEventListener('blur', () => {
-  for (const key in held) held[key] = false;
-  jumpPressed = false;
-  aim.pull = aim.keyPull = aim.fire = false;
-});
-
-// on-screen buttons for touch screens during minigames
-// (engine/touch.js: a finger sliding off the button still lets go)
-for (const [id, key] of [['t-left', 'a'], ['t-right', 'd'], ['t-jump', ' '], ['t2-up', 'w'], ['t2-down', 's'], ['t2-left', 'a'], ['t2-right', 'd'], ['t2-go', ' ']]) {
-  holdButton($(id), { down: () => { held[key] = true; if (key === ' ') jumpPressed = pullPressed = true; }, up: () => { held[key] = false; } });
-}
-
-// Aim minigames (`input: 'aim'`) get a reticle in NDC (−1..1) instead. The mouse
-// moves it and a press pulls; WASD / arrows steer it and Space pulls; on touch,
-// dragging anywhere aims and lifting the finger fires. The handlers live on the
-// canvas only while such a minigame runs, so the board and minimap never see them.
-const aim = { x: 0, y: 0, pull: false, keyPull: false, fire: false, keyT: 0, pointer: null, touch: null };
-const miniAim = () => mini?.def.input === 'aim';
-const clampAim = (v) => Math.max(-1, Math.min(1, v));
 const canvasEl = renderer.domElement;
 // The minigame's drawing box: the whole window, or a letterbox for a fixed aspect.
 const miniBox = () => letterbox(mini?.def.aspect);
-function aimAtPointer(e) {
-  const r = miniBox();
-  aim.x = clampAim(((e.clientX - r.x) / r.w) * 2 - 1);
-  aim.y = clampAim(1 - ((e.clientY - r.y) / r.h) * 2);
-}
-const aimHandlers = {
-  pointerdown(e) {
-    if (paused || aim.pointer != null || (e.pointerType === 'mouse' && e.button !== 0)) return;
-    e.preventDefault();
-    sound.unlock();
-    try { canvasEl.setPointerCapture(e.pointerId); } catch { /* synthetic or already gone */ }
-    aim.pointer = e.pointerId;
-    if (e.pointerType === 'mouse') aimAtPointer(e);
-    else aim.touch = { x: e.clientX, y: e.clientY };
-    aim.pull = true;
-  },
-  pointermove(e) {
-    if (e.pointerType === 'mouse') return aimAtPointer(e);
-    if (aim.pointer !== e.pointerId || !aim.touch) return;
-    // a finger would hide the reticle, so touch drags it (a bit faster than the finger)
-    const r = miniBox();
-    aim.x = clampAim(aim.x + ((e.clientX - aim.touch.x) / r.w) * 3);
-    aim.y = clampAim(aim.y - ((e.clientY - aim.touch.y) / r.h) * 3);
-    aim.touch = { x: e.clientX, y: e.clientY };
-  },
-  pointerup(e) {
-    if (aim.pointer !== e.pointerId) return;
-    aim.pointer = aim.touch = null;
-    if (aim.pull) aim.fire = true;
-    aim.pull = false;
-  },
-  pointercancel(e) {
-    if (aim.pointer !== e.pointerId) return;
-    aim.pointer = aim.touch = null;
-    aim.pull = false;
-  },
-};
-function bindAim(on) {
-  for (const [type, fn] of Object.entries(aimHandlers)) canvasEl[on ? 'addEventListener' : 'removeEventListener'](type, fn);
-  Object.assign(aim, { x: 0, y: 0, pull: false, keyPull: false, fire: false, keyT: 0, pointer: null, touch: null });
-}
-const IDLE_AIM = { aim: { x: 0, y: 0 }, pull: false, fire: false };
-
-// 1D minigames get { x, jump }; a module with `input: '2d'` also gets z (W/S, ↑/↓)
-const mini2d = () => mini?.def.input === '2d';
-function minigameInput(dt = 0) {
-  const x = (held.d || held.arrowright ? 1 : 0) - (held.a || held.arrowleft ? 1 : 0);
-  const jump = jumpPressed;
-  jumpPressed = false;
-  if (miniAim()) {
-    // keys steer the reticle, quick to start and faster the longer they're held
-    const y = (held.w || held.arrowup ? 1 : 0) - (held.s || held.arrowdown ? 1 : 0);
-    aim.keyT = x || y ? aim.keyT + dt : 0;
-    const speed = 0.8 + Math.min(1, aim.keyT / 0.45) * 1.5;
-    aim.x = clampAim(aim.x + x * speed * dt);
-    aim.y = clampAim(aim.y + y * speed * dt);
-    const fire = aim.fire;
-    aim.fire = false;
-    return { aim: { x: aim.x, y: aim.y }, pull: aim.pull || aim.keyPull, fire };
-  }
-  if (!mini2d()) return { x, jump };
-  const z = (held.w || held.arrowup ? 1 : 0) - (held.s || held.arrowdown ? 1 : 0);
-  // Holding the action (Bolas Criollas charges with it); a quick tap still counts once.
-  const pull = !!held[' '] || pullPressed;
-  pullPressed = false;
-  return { x, z, jump, pull };
-}
+const input = createInput({ canvas: canvasEl, mode: () => mini?.def.input, box: miniBox, paused: () => paused,
+  // Let the atmosphere buttons retain native Space/Enter/Tab behavior.
+  ignore: (e) => e.target.closest?.('.places') || (!started && e.target.closest?.('button, input, select, textarea, a')),
+  onKey(k, e) {
+    if (k === 'm' && !e.repeat) toggleMute();
+    if (k === 'l' && !e.repeat && view === boardView) selectSky(SKY_MODES[(SKY_MODES.indexOf(board.atmosphere.mode) + 1) % SKY_MODES.length]);
+    if (k === 'tab') {
+      e.preventDefault();
+      if (!e.repeat) setFreeLook(!freeLook);
+    }
+    if (!e.repeat) for (const w of actionWaiters) w(k);
+  } });
+const { bindAim } = input, minigameInput = input.read;
 
 // ======================================================================
 // UI kit
@@ -881,8 +777,7 @@ async function playMinigame(def) {
   $('count').textContent = '¡YA!';
   sound.tone(880, 0, 0.3, 'square', 0.08);
   wait(0.6).then(() => ($('count').textContent = '')).catch(ignoreCancelled);
-  jumpPressed = false;
-  aim.fire = aim.keyPull = false;
+  input.forgetPresses();
   mini.state = 'run';
   await new Promise((r, reject) => { mini.finish = r; mini.abort = reject; });
 
