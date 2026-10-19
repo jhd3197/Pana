@@ -457,6 +457,10 @@ becomes the GitHub release's notes.
 
 ### Changed
 
+- **Derrape and Bululú start with half the download.** Derrape fetches
+  only the map you pick and Bululú only the minigame being played, and the
+  music is about a third smaller.
+
 - **Games run smoother on phones.** A phone now starts on *Equilibrada*
   instead of *Nítida*, shadow detail follows the quality you pick, and
   when a game can't keep up it draws fewer pixels by itself until you
