@@ -8,7 +8,7 @@ import { M, mesh, box } from '/engine/models/core/primitives.js';
 import { flagPole } from '/engine/models/props/flags.js';
 import { watchtower } from '/engine/models/props/watchtower.js';
 import { woodSign } from '/engine/models/props/wood-sign.js';
-import { sunnyStage, makeActors, animateActor, rand, pick } from './stage.js';
+import { localIndexOf, sunnyStage, makeActors, animateActor, rand, pick } from './stage.js';
 
 const DECK = 0.25;          // plank top height
 const RING = 3.7;           // where the panas stand
@@ -225,6 +225,15 @@ export default {
     const over = () => dry().length <= 1;
     // whoever is still on the raft wins; if everyone fell, the most jumps does
     const winners = () => dry().map((a) => a.i);
-    return { scene, camera, update, outro, over, winners, scores: () => actors.map((a) => a.score), actors };
+    // The reversal before it comes, and who is still on the log.
+    const me = actors[localIndexOf(ctx)];
+    function hint() {
+      if (!me) return null;
+      const left = `Quedan ${dry().length}`;
+      if (me.out || me.falling) return { text: `¡Te caíste! Mira quién aguanta · ${left}`, tone: 'bad' };
+      if (flipT < 1.3) return { text: `¡Ojo! El tronco va a cambiar de lado · ${left}`, tone: 'bad' };
+      return { text: `Salta justo antes de que pase el tronco · ${left}`, tone: '' };
+    }
+    return { scene, camera, update, outro, over, winners, hint, scores: () => actors.map((a) => a.score), actors };
   },
 };

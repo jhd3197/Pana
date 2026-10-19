@@ -88,7 +88,18 @@ export default {
       for (const a of actors) a.cheer = winners.includes(a.i) ? 1 : 0;
       draw(dt);
     }
-    return { scene, camera, update, outro, actors, over: sim.over, scores: sim.scores, winners: sim.winners, sim,
+    // Your shove and who is still afloat, for the runner's hint line.
+    const me = actors[ctx.localIndex ?? ctx.players.findIndex(p => p.human && !ctx.auto)];
+    function hint() {
+      if (!me) return null;
+      const c = sim.canoes[me.i], left = `Quedan ${sim.canoes.filter(o => o.out == null).length}`;
+      if (c.out != null) return { text: `Te tragó el remolino · ${left}`, tone: 'bad' };
+      if (c.cd > 0) return { text: `Rema A D alternando para alejarte · salpicón en ${Math.ceil(c.cd)} s · ${left}`, tone: '' };
+      const [x, z] = [Math.cos(c.a) * c.r, Math.sin(c.a) * c.r];
+      const near = sim.canoes.some(o => o !== c && o.out == null && Math.hypot(Math.cos(o.a) * o.r - x, Math.sin(o.a) * o.r - z) < REMOLINO.reach + 2 * REMOLINO.radius);
+      return near ? { text: `¡Salpicón listo! Espacio empuja al de al lado · ${left}`, tone: 'go' } : { text: `Salpicón listo: acércate a otra curiara · ${left}`, tone: 'ok' };
+    }
+    return { scene, camera, update, outro, actors, hint, over: sim.over, scores: sim.scores, winners: sim.winners, sim,
       stats: () => ({ out: sim.canoes.map(c => c.out == null ? null : +c.out.toFixed(1)), shoves: sim.canoes.map(c => c.shoves) }) };
   },
 };

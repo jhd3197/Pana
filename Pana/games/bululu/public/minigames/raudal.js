@@ -51,6 +51,10 @@ export default {
     const camera = new THREE.PerspectiveCamera(54, (ctx.aspect || innerWidth / innerHeight), .1, 500);
     const actors = canoeActors(scene, ctx.players);
     const seen = actors.map(() => ({ hits: 0, jumps: 0, splashes: 0, score: 0 }));
+    // Your own channel, tinted in your colour a stretch ahead of your canoe.
+    const me = actors[ctx.localIndex ?? ctx.players.findIndex(p => p.human && !ctx.auto)];
+    const lane = me && new THREE.Mesh(new THREE.PlaneGeometry(CHANNEL - .5, 60), new THREE.MeshBasicMaterial({ color: me.player.color, transparent: true, opacity: .16, depthWrite: false }));
+    if (lane) { lane.rotation.x = -Math.PI / 2; lane.renderOrder = 1; scene.add(lane); }
     let time = 0;
 
     function draw(dt) {
@@ -61,6 +65,7 @@ export default {
         a.canoe.hull.rotation.x = -jump * .2;
       }
       for (const g of mangos) { g.m.visible = !sim.canoes[g.c].got.has(g.row) && -g.row.s < -sim.s + 6 && g.row.s - sim.s < 90; g.m.position.y = .35 + Math.sin(time * 3 + g.phase) * .06; g.m.rotation.y += dt; }
+      if (lane) lane.position.set(centre(me.i), .08, -sim.s - 26);
       camera.position.set(0, 12 + (count - 4) * 3, -sim.s + 14.5 + (count - 4) * 4); camera.lookAt(0, 0, -sim.s - 10);
       stage.update(time); animateWater(time); puffs.update(dt);
     }
@@ -83,7 +88,16 @@ export default {
       for (const a of actors) a.cheer = winners.includes(a.i) ? 1 : 0;
       draw(dt);
     }
-    return { scene, camera, update, outro, actors, scores: sim.scores, sim,
+    // What's coming down your channel next.
+    function hint() {
+      if (!me) return null;
+      const c = sim.canoes[me.i], soon = sim.pattern.filter(r => r.s > sim.s && r.s - sim.s < RAUDAL.speed * 1.1);
+      if (c.stun > 0) return { text: '¡Pum! Te pegaste con una piedra', tone: 'bad' };
+      if (soon.some(r => r.ledge)) return { text: '¡Raudal! Salta con Espacio justo antes', tone: 'go' };
+      if (soon.some(r => !r.ledge && r.rocks.includes(c.lane))) return { text: '¡Piedra en tu carril! Cámbiate con A o D', tone: 'bad' };
+      return { text: 'Agarra los mangos y esquiva las piedras', tone: '' };
+    }
+    return { scene, camera, update, outro, actors, hint, scores: sim.scores, sim,
       stats: () => ({ hits: sim.canoes.map(c => c.hits), jumps: sim.canoes.map(c => c.jumps), splashes: sim.canoes.map(c => c.splashes) }) };
   },
 };

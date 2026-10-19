@@ -142,6 +142,13 @@ option, plays all six board turns, shoots from seat six and elects a new host.
 - Remada's camera follows the pack but stays between 25 m behind and level
   with your canoe, so a trailing or idle local canoe never leaves the view.
   `fairness.browser.mjs` covers all four at 20 Hz on seeded streams.
+- More `hint()` users: No te caigas warns 1.3 s before the log reverses and
+  counts who is left; Remolino shows the shove cooldown, whether a canoe is
+  in reach and who is still afloat; Raudal calls out a ledge or a rock in
+  your lane about a second ahead and tints your channel in your colour.
+  Other players' Chinazo reticles are faded so yours stands out.
+- `makeActors(scene, players, ctx)` marks the local pana (ring + chevron in
+  its colour) on every pana-actor minigame; `localIndexOf(ctx)` is the rule.
 
 ## Test switches
 

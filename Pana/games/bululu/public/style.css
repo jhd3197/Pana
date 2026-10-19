@@ -448,6 +448,8 @@ body.mini-aim canvas { cursor: none; touch-action: none; }
 .reticle.me::before { width: 46px; height: 46px; border-width: 4px; opacity: 1; }
 .reticle.me i { width: calc(40px - var(--pull) * 30px); height: calc(40px - var(--pull) * 30px); border-width: 3px; }
 .reticle.me { z-index: 1; }
+/* everyone else's reticle steps back so yours is the one you track */
+.reticle:not(.me) { opacity: .55; scale: .85; }
 .reticle.empty::before { opacity: 0.4; }
 .reticle .ammo { position: absolute; top: 30px; left: 0; translate: -50% 0; display: flex; gap: 4px; }
 .reticle .ammo b {

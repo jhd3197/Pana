@@ -477,7 +477,10 @@ becomes the GitHub release's notes.
 - **Bululú's minigames tell you what to do right now.** A line under the
   cards shows your secret role and the vote in ¡Embuste!, run or freeze
   and your disguises left in ¡Momia!, when to grab the tail in ¡Coleo!,
-  and the collapse warning and turbo in ¡Choque!. In ¡Embuste! a mummy
+  the collapse warning and turbo in ¡Choque!, the log about to reverse in
+  ¡No te caigas!, your splash cooldown in ¡Remolino! and the rock or ledge
+  ahead in ¡Raudal! (where your channel is tinted in your colour). In
+  ¡Embuste! a mummy
   who never cranks now gets caught: bots notice whose lantern never
   lights, while a careful, unhurried crank hardly spills any sand.
 
