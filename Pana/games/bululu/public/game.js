@@ -1,12 +1,14 @@
 import { prepareScene } from '/engine/game-load.js';
 import * as THREE from 'three';
-import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { sound, Puffs, Shockwaves, popCounter } from '/engine/fx.js';
 import { loadAvatar, loadName, randomAvatar } from '/engine/avatar.js';
 import { makePortraits, drawReticles, drawProgress, drawHint } from './presentation.js';
 import { makeMango } from '/engine/models/props/mango.js';
 import { createBoard, createToken, createDie, FORK } from './board.js';
 import { createMinimap } from './minimap.js';
+import { createBoardCamera } from './board-camera.js';
+import { createGameTime, ease } from './game-time.js';
+import { createBoardHud, ICONS } from './board-hud.js';
 import { track, release, resources } from './minigames/lifetime.js';
 import { fitCamera, letterbox } from './minigames/framing.js';
 import { MINIGAMES, loadMinigame, loadedMinigame, prefetchMinigames } from './minigames/index.js';
@@ -190,61 +192,14 @@ function layoutTokens(skip) {
 layoutTokens();
 for (const p of players) p.token.group.position.copy(p.token.rest);
 
-// The camera always looks from the front (+Z) at a 3/4 angle, like the box
-// art, so the board keeps one orientation: the plateau and hill rise at the
-// back and nothing tall stands between the camera and the path.
-const cam = { pos: new THREE.Vector3(), look: new THREE.Vector3(), wantPos: new THREE.Vector3(), wantLook: new THREE.Vector3() };
-const SHOTS = {
-  far: [0, 30, 36],        // a big chunk of the island (the minimap shows all of it)
-  mid: [0, 14, 17],        // a pana and its neighborhood
-  close: [0, 8, 10.5],     // buying, events, the winner
-};
-function focus(at, kind = 'mid') {
-  const o = SHOTS[kind];
-  cam.kind = kind;
-  cam.wantLook.set(at.x, at.y + 1, at.z);
-  cam.wantPos.set(at.x + o[0], at.y + o[1], at.z + o[2]);
-}
+// The board camera and "Ver tablero" (board-camera.js).
+const boardCamera = createBoardCamera({ camera: boardCam, dom: renderer.domElement, canLook: () => view === boardView,
+  lookButton: $('look'), places: $('places') });
+const { cam, focus, setFreeLook } = boardCamera;
 // pull back for the start of a round, around whoever goes first
-function overview(at = players[order[0]].token.rest) {
-  focus(at, 'far');
-}
+const overview = (at = players[order[0]].token.rest) => focus(at, 'far');
 overview();
-cam.pos.copy(cam.wantPos);
-cam.look.copy(cam.wantLook);
-
-// "Ver tablero": drag to orbit, scroll to zoom, Tab or the button to return
-const looker = new OrbitControls(boardCam, renderer.domElement);
-Object.assign(looker, { enabled: false, enableDamping: true, maxPolarAngle: 1.42, minDistance: 6, maxDistance: 360 });
-let freeLook = false;
-function setFreeLook(on) {
-  if (on && view !== boardView) return;
-  freeLook = on;
-  looker.enabled = on;
-  if (on) looker.target.copy(cam.look);
-  else {
-    cam.pos.copy(boardCam.position);
-    cam.look.copy(looker.target);
-  }
-  $('look').classList.toggle('on', on);
-  $('look').innerHTML = `${on ? 'Volver' : 'Ver tablero'} <kbd class="pk-kbd" data-pana-hint>Tab</kbd>`;
-  if (!on) $('places').value = '';
-}
-$('look').onclick = () => setFreeLook(!freeLook);
-const SCENIC_SPOTS = {
-  island: { target: [0, 12, -12], camera: [0, 156, 285] },
-  beach: { target: [12, 2, 90], camera: [34, 24, 137] },
-  waterfall: { target: [130, 64, -310], camera: [245, 115, 15] },
-  harbor: { target: [123, 3, 24], camera: [162, 26, 66] },
-};
-$('places').addEventListener('change', (event) => {
-  const spot = SCENIC_SPOTS[event.target.value];
-  if (!spot || view !== boardView) return;
-  setFreeLook(true);
-  looker.target.set(...spot.target);
-  boardCam.position.set(...spot.camera);
-  looker.update();
-});
+boardCamera.snap();
 
 const boardView = {
   scene: boardScene,
@@ -270,18 +225,12 @@ const boardView = {
     diceTable.update(dt, t, thrower?.shaking ? thrower.power : 0);
     puffs.update(dt);
     shockwaves.update(dt);
-    if (freeLook) looker.update();
-    else {
-      cam.pos.lerp(cam.wantPos, Math.min(1, dt * 2.2));
-      cam.look.lerp(cam.wantLook, Math.min(1, dt * 2.8));
-      boardCam.position.copy(cam.pos);
-      boardCam.lookAt(cam.look);
-    }
+    boardCamera.update(dt);
     // in the overview every tile counts; up close just the panas and the target
     const spots = [cam.look, ...players.map((p) => p.token.group.position)];
-    if (cam.kind === 'far' || freeLook) for (const tl of board.tiles) spots.push(tl.mesh.position);
+    if (cam.kind === 'far' || boardCamera.freeLook) for (const tl of board.tiles) spots.push(tl.mesh.position);
     board.seeThrough(boardCam.position, spots, dt);
-    board.follow(freeLook ? looker.target : cam.look);
+    board.follow(boardCamera.target);
     drawMap(dt, t);
   },
 };
@@ -289,22 +238,7 @@ const boardView = {
 // ======================================================================
 // time: waits and tweens run on game time (so ?speed and pauses work)
 // ======================================================================
-let jobs = [];
-const wait = (s) => new Promise((r, reject) => jobs.push({ t: s, r, reject }));
-const tween = (dur, fn) => new Promise((r, reject) => jobs.push({ t: dur, dur, fn, r, reject }));
-function stepJobs(dt) {
-  const done = [];
-  for (const j of jobs) {
-    j.t -= dt;
-    if (j.fn) j.fn(Math.min(1, 1 - j.t / j.dur));
-    if (j.t <= 0) done.push(j);
-  }
-  if (done.length) {
-    jobs = jobs.filter((j) => !done.includes(j));
-    for (const j of done) j.r();
-  }
-}
-const ease = (k) => k * k * (3 - 2 * k);
+const time = createGameTime(), { wait, tween } = time;
 
 // ======================================================================
 // input (input.js)
@@ -321,7 +255,7 @@ const input = createInput({ canvas: canvasEl, mode: () => mini?.def.input, box: 
     if (k === 'l' && !e.repeat && view === boardView) selectSky(SKY_MODES[(SKY_MODES.indexOf(board.atmosphere.mode) + 1) % SKY_MODES.length]);
     if (k === 'tab') {
       e.preventDefault();
-      if (!e.repeat) setFreeLook(!freeLook);
+      if (!e.repeat) setFreeLook(!boardCamera.freeLook);
     }
     if (!e.repeat) for (const w of actionWaiters) w(k);
   } });
@@ -330,20 +264,6 @@ const { bindAim } = input, minigameInput = input.read;
 // ======================================================================
 // UI kit
 // ======================================================================
-const MANGO_SVG = '<svg viewBox="0 0 40 40" class="ico"><path d="M8 24c0-10 9-17 18-15 6 1 8 7 7 13-2 9-11 13-18 11-4-1-7-4-7-9z" fill="#ffc629" stroke="#9a6400" stroke-width="3"/><path d="M27 9c1-3 4-5 7-5-1 3-3 5-7 5z" fill="#3a9d3a"/><path d="M14 17c2-3 5-4 8-4" stroke="#fff3b0" stroke-width="3" fill="none" stroke-linecap="round"/></svg>';
-const ICONS = {
-  coin: '<i class="ico coin"></i>',
-  mango: MANGO_SVG,
-  jump: '<i class="ico jump">⤒</i>',
-  card: SVG.card.replace('pk-ico', 'ico'),
-  relic: SVG.relic.replace('pk-ico', 'ico'),
-  bull: SVG.bull.replace('pk-ico', 'ico'),
-  car: SVG.car.replace('pk-ico', 'ico'),
-  mummy: SVG.mummy.replace('pk-ico', 'ico'),
-  canoe: SVG.canoe.replace('pk-ico', 'ico'),
-  whirl: SVG.whirl.replace('pk-ico', 'ico'),
-  iguana: SVG.iguana.replace('pk-ico', 'ico'),
-};
 
 let cardMode = 'board';
 let miniScores = players.map(() => 0);
@@ -376,23 +296,7 @@ function renderCards() {
 }
 const escapeHtml = (s) => s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
-function setPlank(text) { $('plank').textContent = text; }
-function setSign(text) {
-  $('sign').textContent = text || '';
-  $('sign').classList.toggle('hidden', !text);
-}
-function setTimer(n) {
-  $('timer').classList.toggle('hidden', n == null);
-  if (n != null) $('timer-n').textContent = n;
-}
-
-async function toast(title, sub = '', secs = 1.4, kind = '') {
-  const el = $('toast');
-  el.className = `toast ${kind}`;
-  el.innerHTML = `<b>${title}</b>${sub ? `<span>${sub}</span>` : ''}`;
-  await wait(secs);
-  el.className = 'toast hidden';
-}
+const { setPlank, setSign, setTimer, toast } = createBoardHud($, wait);
 
 // A choice with buttons + keys. The AI (or ?auto) answers on its own; online,
 // an unanswered prompt takes its default after PROMPT_WAIT seconds.
@@ -442,7 +346,7 @@ let thrower = null, thrownPower = 0.5;
 function openThrower(button, onThrow) {
   closeThrower();
   thrower = bindDiceThrow({ button, surface: canvasEl, keys: [' ', 'Enter'],
-    canThrow: () => !paused && !freeLook && !!thrower, onStart: () => sound.unlock(),
+    canThrow: () => !paused && !boardCamera.freeLook && !!thrower, onStart: () => sound.unlock(),
     onThrow: (power) => { closeThrower(); onThrow(power); } });
 }
 function closeThrower() { thrower?.dispose(); thrower = null; }
@@ -471,12 +375,7 @@ async function openingThrow(p) {
   return value;
 }
 // minimap: the whole island at a glance; tap it to look there (minimap.js)
-const minimap = createMinimap($('minimap'), { board, players, focus: () => cam.look, turnOf: () => turnOf, look(x, z) {
-  if (!freeLook) setFreeLook(true);
-  const y = board.groundAt(x, z);
-  looker.target.set(x, y, z);
-  boardCam.position.set(x, y + 34, z + 40);
-} });
+const minimap = createMinimap($('minimap'), { board, players, focus: () => cam.look, turnOf: () => turnOf, look: (x, z) => boardCamera.lookAt(x, board.groundAt(x, z), z) });
 const drawMap = minimap.draw, drawMapBase = minimap.drawBase;
 
 // ======================================================================
@@ -1181,7 +1080,7 @@ function applyOnline(state) {
   turnOf = state.turnOf; cardMode = state.cardMode; if (state.order) order = state.order; miniScores = state.miniScores; miniIcon = state.miniIcon;
   if (board.standTile !== state.stand) board.setStand(state.stand);
   board.highlight = state.highlight || [];
-  if (!freeLook) { cam.wantPos.fromArray(state.camera.pos); cam.wantLook.fromArray(state.camera.look); }
+  if (!boardCamera.freeLook) { cam.wantPos.fromArray(state.camera.pos); cam.wantLook.fromArray(state.camera.look); }
   state.tokens.forEach((v, i) => {
     const tk = players[i].token;
     tk.rest.fromArray(v.pos); tk.group.rotation.y = v.rotation; tk.cheer = v.cheer; tk.dizzy = v.dizzy; tk.pin.visible = v.pin;
@@ -1235,8 +1134,7 @@ function applyFrames(message) {
 }
 function stopAuthority() {
   authority = 0;
-  for (const j of jobs) j.reject?.(CANCELLED);
-  jobs = []; rejectChoice?.(CANCELLED); resolveChoice = rejectChoice = null;
+  time.cancel(CANCELLED); rejectChoice?.(CANCELLED); resolveChoice = rejectChoice = null;
   mini?.abort?.(CANCELLED); clearMini(); pendingChoice = null; readyCheck = null;
 }
 function beginOnline(resume) {
@@ -1297,7 +1195,7 @@ setInterval(() => {
     if (checkpoint) beginOnline(checkpoint);
     return;
   }
-  stepJobs(0.05 * SPEED * boardPace());
+  time.step(0.05 * SPEED * boardPace());
   if (mini) updateMini(0.05 * SPEED);
   if (pendingChoice && !room.members.has(pendingChoice.seat)) finishChoice(pendingChoice.auto);
   if (++onlineTicks % 2 === 0) { if (!started) lobbyRoster(); room.publish(captureOnline()); }
@@ -1310,7 +1208,7 @@ function frame() {
   const dt = paused && !online ? 0 : Math.min(clock.getDelta(), 0.1) * SPEED;
   if (paused && !online) clock.getDelta();
   t += dt;
-  if (!online) { stepJobs(dt * boardPace()); if (mini) updateMini(dt); }
+  if (!online) { time.step(dt * boardPace()); if (mini) updateMini(dt); }
   view.update(dt, t);
   renderer.render(view.scene, view.camera);
   requestAnimationFrame(frame);
@@ -1331,7 +1229,7 @@ async function fastForward(seconds, dt = 1 / 30) {
   if (online) throw new Error('Online play uses the room clock.');
   for (let s = 0; s < seconds; s += dt) {
     t += dt;
-    stepJobs(dt * boardPace());
+    time.step(dt * boardPace());
     if (mini) updateMini(dt);
     view.update(dt, t);
     await null;   // let the turn logic's awaits run

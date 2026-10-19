@@ -282,7 +282,7 @@ test(`a game's first load is at most ${FIRST_LOAD_MODULES} modules`, () => {
 // game.js is wiring only. These files predate the limit; they may shrink, never
 // grow. When one shrinks, lower its cap with it (within GAME_JS_SLACK lines), so
 // the room freed by moving code out isn't quietly filled again.
-const GAME_JS_LIMIT = 600, GAME_JS_SLACK = 25, GAME_JS_ALLOWED = { derrape: 2437, bululu: 1350, embuste: 650 };
+const GAME_JS_LIMIT = 600, GAME_JS_SLACK = 25, GAME_JS_ALLOWED = { derrape: 2437, bululu: 1248, embuste: 650 };
 test(`game.js stays wiring (at most ${GAME_JS_LIMIT} lines)`, () => {
   const problems = [];
   for (const id of games) {

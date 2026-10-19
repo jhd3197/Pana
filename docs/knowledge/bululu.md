@@ -1,7 +1,9 @@
 # Bululú notes
 
-The game is in `games/bululu/public/`: `game.js` (turn flow, camera, HUD, minimap,
-minigame runner), `board.js` (tiles, the shortcut, cart, decor, dice, tokens),
+The game is in `games/bululu/public/`: `game.js` (turn flow, minimap wiring,
+minigame runner, online checkpoints), `board-camera.js` (shots, free look,
+scenic spots), `game-time.js` (waits and tweens on game time), `board-hud.js`
+(score icons, plank, sign, timer, toasts), `board.js` (tiles, the shortcut, cart, decor, dice, tokens),
 `island.js` (one smooth heightfield: coast, meadows, plateau, Pico Pana, hill,
 river, waterfalls), `flora.js` (tree types + `bake()`), `scenery.js` (neighbor
 islands, lighthouse, boats, clouds), `landscape.js` (organic islets and layered
