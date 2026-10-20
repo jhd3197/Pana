@@ -53,7 +53,7 @@ export function createView(canvas, { seed = 1, floors = 3 } = {}) {
   let world = createExpeditionWorld({ seed, floors }); scene.add(world.group);
   const puffs = new Puffs(scene), waves = new Shockwaves(scene);
   // Your paws: fur-coloured, holding the two hand items in view.
-  const hands = [new THREE.Group(), new THREE.Group()]; hands[0].position.set(.3, -.36, -.7); hands[1].position.set(-.3, -.36, -.7);
+  const hands = [new THREE.Group(), new THREE.Group()]; hands[0].position.set(.32, -.36, -.7); hands[1].position.set(-.32, -.36, -.7);
   const pawMaterial = new THREE.MeshStandardMaterial({ color: 0xb07a4a, roughness: .8 }), pawGeometry = new THREE.SphereGeometry(.042, 14, 10);
   for (const h of hands) { const paw = new THREE.Mesh(pawGeometry, pawMaterial); paw.scale.set(1, .8, 1.2); h.add(paw); h.userData.slot = new THREE.Group(); h.userData.slot.position.set(0, .04, -.06); h.add(h.userData.slot); camera.add(h); }
   const heldKeys = ['', ''];
@@ -63,7 +63,7 @@ export function createView(canvas, { seed = 1, floors = 3 } = {}) {
   const splats = new Map(), shots = new Map(), darts = new Map();
   const ballGeometry = new THREE.SphereGeometry(.09, 8, 6), dartGeometry = new THREE.CylinderGeometry(.02, .02, .5, 5).rotateZ(Math.PI / 2), dartMaterial = new THREE.MeshStandardMaterial({ color: 0x7a5a2a });
   const avatars = new Map(), enemies = new Map();
-  let h = Math.PI, pitch = 0, bob = 0, sway = 0, shake = 0, lift = 0, fov = 74, lookName = 'camp', poolAt = 0, swingT = [0, 0];
+  let dustAt = 0, h = Math.PI, pitch = 0, bob = 0, sway = 0, shake = 0, lift = 0, fov = 74, lookName = 'camp', poolAt = 0, swingT = [0, 0];
   const ringGeometry = new THREE.RingGeometry(.85, 1, 40), dangerMaterial = new THREE.MeshBasicMaterial({ color: 0xff5a3a, transparent: true, opacity: .7, depthWrite: false, side: THREE.DoubleSide });
 
   function setLook(name) {
@@ -79,11 +79,11 @@ export function createView(canvas, { seed = 1, floors = 3 } = {}) {
     slot.clear();
     if (!held) return;
     const model = itemModel(held.kind), info = ITEMS[held.kind];
-    const scale = held.kind === 'farol' ? .55 : held.kind === 'machete' ? .7 : held.kind === 'honda' ? .7 : info.artifact ? 1 : .8;
+    const scale = held.kind === 'farol' ? .24 : held.kind === 'machete' ? .5 : held.kind === 'honda' ? .42 : info.artifact ? .55 : .42;
     model.scale.multiplyScalar(scale);
     if (held.kind === 'machete') { model.rotation.set(0, Math.PI / 2, .6); model.position.set(0, .02, 0); }
     else if (held.kind === 'honda') model.rotation.set(-.3, Math.PI, 0);
-    else model.position.y = -.08;
+    else model.position.y = -.05;
     slot.add(model);
   }
   function avatarFor(p, i) {
@@ -196,7 +196,7 @@ export function createView(canvas, { seed = 1, floors = 3 } = {}) {
         swingT[i] = me.swing > 0 && me.swingHand === i ? me.swing / .3 : Math.max(0, swingT[i] - dt * 4);
         const s = Math.sin(swingT[i] * Math.PI);
         hands[i].visible = !me.downed && me.grip == null;
-        hands[i].position.set((i ? -.3 : .3) + Math.sin(bob + i * Math.PI) * .012 * sway - s * (i ? -.12 : .12), -.36 + Math.abs(Math.cos(bob)) * .015 * sway + s * .1, -.7 - s * .18);
+        hands[i].position.set((i ? -1 : 1) * (camera.aspect < 1 ? .16 : .32) + Math.sin(bob + i * Math.PI) * .012 * sway - s * (i ? -.12 : .12), -.36 + Math.abs(Math.cos(bob)) * .015 * sway + s * .1, -.7 - s * .18);
         hands[i].rotation.set(-s * 1.2, 0, s * (i ? -.4 : .4));
       }
       pawMaterial.color.set(normalizeAvatar(me.avatar).fur);
@@ -215,7 +215,15 @@ export function createView(canvas, { seed = 1, floors = 3 } = {}) {
       sources.sort((a, b) => a.d - b.d);
       pool.forEach((light, i) => { const s = sources[i]; light.userData.power = s && s.d < 30 ? s.power : 0; if (s) { light.position.set(s.x, s.y, s.z); light.color.set(s.color); } });
     }
-    pool.forEach((light, i) => { light.intensity = vf === 0 ? 0 : (light.userData.power || 0) * (.85 + Math.sin(t * 9 + i * 2) * .1); });
+    // La codicia shows in the world: torches gutter and dust sifts from the ceiling.
+    const greed = Math.min(4, Math.floor((state.codicia || 0) / 25));
+    pool.forEach((light, i) => { light.intensity = vf === 0 ? 0 : (light.userData.power || 0) * (1 - greed * .1) * (.85 + Math.sin(t * (9 + greed * 4) + i * 2) * (.1 + greed * .06)); });
+    dustAt -= dt;
+    if (me && vf > 0 && greed > 0 && dustAt <= 0) {
+      dustAt = 1.6 / greed;
+      const a = Math.random() * Math.PI * 2, r = 2 + Math.random() * 5;
+      puffs.spawn({ x: me.x + Math.cos(a) * r, y: 4.3, z: me.z + Math.sin(a) * r }, { color: 0xc9b48a, count: 3 + greed, spread: .5, size: .35, rise: -2.6, life: 1.4 });
+    }
     puffs.update(dt); waves.update(dt);
     camera.updateProjectionMatrix();
     renderer.render(scene, camera);

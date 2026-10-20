@@ -1,101 +1,118 @@
+// Reliquia with real relay sessions: two desktop panas and a late phone.
+// Encounters are placed with ?debug; every action (E, Q, G, barks, carrying,
+// reviving, extraction) goes through the normal keyboard and room paths.
 import assert from 'node:assert/strict';
-import { createRequire } from 'node:module';
-import { mkdir, writeFile } from 'node:fs/promises';
 import path from 'node:path';
-const require = createRequire(import.meta.url), { chromium } = require(process.argv[2] || 'playwright');
-const base = process.env.PANA_QA_URL || 'http://localhost:8461';
-const output = process.env.PANA_QA_OUTPUT || path.resolve('Pana/games/reliquia/qa'); await mkdir(output, { recursive: true });
-const browser = await chromium.launch({ headless: true, ...(process.argv[3] ? { executablePath: process.argv[3] } : {}) });
-const errors = [], code = `reliquia-qa-${Date.now().toString(36)}`;
+import { writeFile } from 'node:fs/promises';
+import { launch, openGame, waitFor, qaDir, base } from '../../../tests/browser-kit.js';
+
+const output = qaDir(import.meta.url), room = `reliquia-qa-${Date.now().toString(36)}`;
 const check = text => console.log(`ok  ${text}`);
-async function page(name, mobile = false) {
-  const ctx = await browser.newContext(mobile ? { viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true } : { viewport: { width: 1000, height: 760 } });
-  // Keep multiple real software-rendered clients responsive during held input.
-  await ctx.addInitScript(() => localStorage.setItem('pana:settings', JSON.stringify({ quality: 'baja', sound: false })));
-  const p = await ctx.newPage(); p.setDefaultTimeout(90000); p.on('pageerror', e => { errors.push(`${name}: ${e.message}`); console.log('ERROR', name, e.message); });
-  p.on('console', m => { if (m.type() === 'error' && !m.text().includes('favicon')) { errors.push(`${name}: ${m.text()}`); console.log('ERROR', name, m.text()); } });
-  await p.goto(`${base}/g/reliquia/?room=${code}&name=${name}&debug`);
-  await p.waitForFunction(() => window.reliquia?.room.connected && window.PANA_LOBBY_LOADING === false, null, { timeout: 120000 }); return p;
-}
-async function place(host, id, x, z) { await host.evaluate(({ id, x, z }) => reliquia.place(id, x, z), { id, x, z }); }
-async function ready(p, x, z) { await p.waitForFunction(({ x, z }) => { const p = reliquia.state.players.find(p => p.id === reliquia.room.id); return Math.hypot(p.x - x, p.z - z) < 0.3; }, { x, z }); }
+const browser = await launch();
+const open = async (name, mobile = false) => { const p = await openGame(browser, 'reliquia', { name, room, mobile, query: 'debug' }); p.setDefaultTimeout(90_000); await waitFor(p, () => window.reliquia?.room.connected); return p; };
+const mine = page => page.evaluate(() => reliquia.state.players.find(p => p.id === reliquia.room.id));
+const place = (host, id, x, z, h) => host.evaluate(({ id, x, z, h }) => reliquia.place(id, x, z, h), { id, x, z, h });
+const settled = (page, x, z) => waitFor(page, ({ x, z }) => { const p = reliquia.state.players.find(p => p.id === reliquia.room.id); return Math.hypot(p.x - x, p.z - z) < .4; }, { x, z });
+const face = (page, h) => page.evaluate(h => reliquia.face(h), h);
 try {
-  const a = await page('Juan'), b = await page('Ana');
-  await a.waitForFunction(() => reliquia.state.players.length === 2); await b.waitForFunction(() => reliquia.state.players.length === 2);
-  assert.equal(await a.evaluate(() => reliquia.room.members.size), 2); check('both panas share one room');
-  await a.setViewportSize({ width: 1440, height: 900 }); await a.screenshot({ path: path.join(output, 'lobby.png') }); await a.setViewportSize({ width: 1000, height: 760 });
-  assert.equal(await b.locator('#start').isDisabled(), true); check('two browser clients share the lobby and host owns start');
-  await a.locator('#start').click(); await b.waitForFunction(() => reliquia.state.phase === 'playing');
+  const a = await open('Juan'), b = await open('Ana');
+  await waitFor(a, () => reliquia.state.players.length === 2); await waitFor(b, () => reliquia.state.players.length === 2);
+  assert.equal(await b.locator('#start').isDisabled(), true); check('two panas share the lobby and the host owns the start');
+  await a.screenshot({ path: path.join(output, 'lobby.png') });
+  await a.locator('#start').click(); await waitFor(b, () => reliquia.state.phase === 'playing');
   const ids = await a.evaluate(() => ({ a: reliquia.room.id, b: reliquia.state.players.find(p => p.id !== reliquia.room.id).id }));
-  const initial = await b.evaluate(() => reliquia.state.players.find(p => p.id === reliquia.room.id).x);
-  await b.keyboard.down('d'); await b.waitForFunction(x => reliquia.state.players.find(p => p.id === reliquia.room.id).x > x + 1, initial); await b.keyboard.up('d');
-  await a.waitForFunction(({ id, x }) => reliquia.state.players.find(p => p.id === id).x > x + 1, { id: ids.b, x: initial }); check('remote keyboard input moves the shared player');
-  // Prediction: with the host's snapshots held back the guest still walks; then it settles on the host's position.
-  await b.waitForFunction(() => !!reliquia.room.predicted); await a.evaluate(() => { reliquia.room.publish = () => {}; });
-  const stalled = await b.evaluate(() => { const p = reliquia.room.predicted, me = reliquia.state.players.find(q => q.id === reliquia.room.id); return { x: p.x, shown: me.x }; });
-  await b.keyboard.down('a'); await b.waitForFunction(x => reliquia.room.predicted.x < x - 0.8, stalled.x); await b.keyboard.up('a');
-  assert.equal(await b.evaluate(() => reliquia.state.players.find(q => q.id === reliquia.room.id).x), stalled.shown, 'no snapshot arrived while predicting');
-  await a.evaluate(() => { delete reliquia.room.publish; });
-  await b.waitForFunction(() => { const me = reliquia.state.players.find(q => q.id === reliquia.room.id), p = reliquia.room.predicted; return p && Math.hypot(me.x - p.x, me.z - p.z) < 0.3; }); check('the guest walks its own explorer at once and settles on the host position');
-  await place(a, ids.b, 0, -3); await ready(b, 0, -3);
-  await a.evaluate(() => { reliquia.room.game.spawn(0, -5); reliquia.room.publish(); });
-  await b.keyboard.press('Space');
-  await a.waitForFunction(() => reliquia.state.enemies.some(e => e.hp === 30));
-  await b.waitForFunction(() => reliquia.state.players.find(p => p.id === reliquia.room.id).cooldown <= 0); await b.keyboard.press('Space'); await a.waitForFunction(() => reliquia.state.kills === 1); await b.waitForFunction(() => reliquia.state.kills === 1); check('guest attacks resolve once and enemy death agrees');
-  await place(a, ids.a, 0, 12); await place(a, ids.b, 1.5, 12); await ready(b, 1.5, 12);
-  await a.evaluate(() => { reliquia.room.game.damage(reliquia.room.game.players.find(p => p.id === reliquia.room.id), 100); reliquia.room.publish(); });
-  await b.keyboard.down('e'); await a.waitForFunction(() => !reliquia.state.players.find(p => p.id === reliquia.room.id).downed); await b.keyboard.up('e');
-  await b.waitForFunction(() => reliquia.state.players.find(p => p.id === reliquia.room.id).revives === 1); check('guest revives a downed host with a held interaction');
-  await place(a, ids.a, 33, -36); await place(a, ids.b, 47, -36); await ready(b, 47, -36);
-  await a.keyboard.down('e'); await b.keyboard.down('e'); await a.waitForFunction(() => reliquia.state.gateOpen); await b.waitForFunction(() => reliquia.state.gateOpen); await a.keyboard.up('e'); await b.keyboard.up('e');
-  await a.screenshot({ path: path.join(output, 'winches.png') }); check('two held winches open the same gate for both players');
-  await a.locator('#menu').click(); const before = await a.evaluate(() => reliquia.state.time);
-  await a.waitForFunction(t => reliquia.state.time > t + 0.2, before); await a.locator('#pana-resume').click(); check('multiplayer menu does not pause the expedition');
-  const c = await page('Luisa', true); await c.waitForFunction(() => reliquia.state.phase === 'playing' && reliquia.state.gateOpen);
-  const cId = await c.evaluate(() => reliquia.room.id);
-  await place(a, cId, 40, -56); await ready(c, 40, -56);
-  const box = await c.locator('[data-move="right"]').boundingBox(), x0 = await c.evaluate(() => reliquia.state.players.find(p => p.id === reliquia.room.id).x);
-  const touch = await c.context().newCDPSession(c);
-  await touch.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: box.x + box.width / 2, y: box.y + box.height / 2 }] });
-  await c.waitForFunction(x => reliquia.state.players.find(p => p.id === reliquia.room.id).x > x + 0.5, x0);
+
+  // Walking: the guest predicts its own steps and the host agrees.
+  const z0 = (await mine(b)).z;
+  await b.keyboard.down('w'); await waitFor(b, z => reliquia.me.z < z - 1, z0); await b.keyboard.up('w');
+  await waitFor(a, ({ id, z }) => reliquia.state.players.find(p => p.id === id).z < z - 1, { id: ids.b, z: z0 }); check('first-person W walks where the guest looks, on both screens');
+
+  // The starting kit: a farol from the table with a real E press.
+  const table = await a.evaluate(() => reliquia.view.world.run.loot.find(l => l.kind === 'farol'));
+  await place(a, ids.b, table.x, table.z + 1.9, Math.PI); await settled(b, table.x, table.z + 1.9); await face(b, Math.PI);
+  await waitFor(b, () => reliquia.interaction(reliquia.state, reliquia.me)?.kind === 'pick');
+  await b.keyboard.press('e'); await waitFor(a, id => reliquia.state.players.find(p => p.id === id).hands.some(h => h?.kind === 'farol'), ids.b);
+  await b.screenshot({ path: path.join(output, 'farol.png') }); check('a guest picks a farol off the camp table');
+
+  // Throw it: it flies, lands, and stays pickable.
+  await face(b, 0); await b.keyboard.press('g');
+  await waitFor(a, () => reliquia.state.items.some(i => i.kind === 'farol' && i.state === 'air'));
+  await waitFor(a, () => reliquia.state.items.some(i => i.kind === 'farol' && i.state === 'ground')); check('thrown loot flies and lands for everyone');
+
+  // A big treasure needs both: each grabs a side and they walk it to the truck.
+  const disk = await a.evaluate(() => { const g = reliquia.room.game, d = g.spawnItem('sunDisk', -1, 20, { y: 0, h: Math.PI / 2 }); reliquia.room.publish(); return { x: d.x, z: d.z, id: d.id }; });
+  await place(a, ids.a, disk.x - 1.6, disk.z, Math.PI / 2); await place(a, ids.b, disk.x + 1.6, disk.z, -Math.PI / 2);
+  await settled(a, disk.x - 1.6, disk.z); await settled(b, disk.x + 1.6, disk.z); await face(a, Math.PI / 2); await face(b, -Math.PI / 2);
+  await waitFor(a, () => reliquia.interaction(reliquia.state, reliquia.me)?.kind === 'pick'); await a.keyboard.press('e');
+  await waitFor(b, () => reliquia.interaction(reliquia.state, reliquia.me)?.kind === 'pick'); await b.keyboard.press('e');
+  await waitFor(a, id => reliquia.state.items.find(i => i.id === id)?.carriers.length === 2, disk.id);
+  await face(a, Math.PI / 2); await face(b, Math.PI / 2);
+  await a.keyboard.down('w'); await b.keyboard.down('w');
+  await waitFor(b, () => reliquia.state.haul >= 600, null, 90_000);
+  await a.keyboard.up('w'); await b.keyboard.up('w');
+  assert.equal(await a.evaluate(() => reliquia.state.truck.includes('sunDisk')), true);
+  await a.screenshot({ path: path.join(output, 'truck.png') }); check('two panas carry the sun disk to the truck and it banks for both');
+
+  // Barks travel: the guest votes for one more room.
+  await b.keyboard.press('2');
+  await waitFor(a, id => reliquia.state.events.some(e => e.kind === 'bark' && e.player === id && e.line === 1), ids.b); check('a shouted vote reaches the other pana');
+
+  // Down the mine: the portal carries the host to floor 1.
+  await place(a, ids.a, 0, -3, Math.PI); await face(a, Math.PI);
+  await a.keyboard.down('w'); await waitFor(b, id => reliquia.state.players.find(p => p.id === id).x > 100, ids.a); await a.keyboard.up('w');
+  assert.equal(await a.evaluate(() => reliquia.state.deepest), 1);
+  await a.screenshot({ path: path.join(output, 'floor1.png') }); check('the mine mouth takes a pana down to floor 1');
+
+  // A fallen pana, a held revive.
+  const p = await mine(a); await place(a, ids.b, p.x + 1.4, p.z); await settled(b, p.x + 1.4, p.z);
+  await a.evaluate(() => { const g = reliquia.room.game, me = g.players.find(q => q.id === reliquia.room.id); me.invulnerable = 0; g.damage(me, 100); reliquia.room.publish(); });
+  await waitFor(b, () => reliquia.interaction(reliquia.state, reliquia.me)?.kind === 'revive');
+  await b.keyboard.down('e'); await waitFor(a, id => !reliquia.state.players.find(q => q.id === id).downed, ids.a); await b.keyboard.up('e');
+  await waitFor(b, () => reliquia.me.stats.revives === 1); check('a guest holds E to get the host back up');
+  // Back to the camp, where nothing hunts them, before the rest of the checks.
+  await place(a, ids.a, -2, 14); await place(a, ids.b, 2, 14); await settled(b, 2, 14);
+
+  // The menu does not pause a shared run.
+  await a.locator('#menu').click(); const t = await a.evaluate(() => reliquia.state.time);
+  await waitFor(a, t => reliquia.state.time > t + .2, t); await a.locator('#pana-resume').click(); check('a multiplayer menu does not pause the expedition');
+
+  // A late phone joins at the camp and walks with the touch pad.
+  const c = await open('Luisa', true); await waitFor(c, () => reliquia.state.phase === 'playing');
+  const cid = await c.evaluate(() => reliquia.room.id); const start = await mine(c);
+  assert.equal(Math.round(start.x / 220), 0, 'late arrivals start at the camp');
+  const pad = await c.locator('[data-move="w"]').boundingBox(), touch = await c.context().newCDPSession(c);
+  await touch.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: pad.x + pad.width / 2, y: pad.y + pad.height / 2 }] });
+  await waitFor(c, z => reliquia.me.z < z - .5, start.z);
   await touch.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] }); await touch.detach();
   assert.equal(await c.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
-  await c.screenshot({ path: path.join(output, 'mobile.png') }); check('late arrival receives the checkpoint and real touch movement works');
-  const kills = await b.evaluate(() => reliquia.state.kills); await a.close(); await b.waitForFunction(() => reliquia.room.isHost);
-  assert.equal(await b.evaluate(() => reliquia.state.gateOpen), true); assert.equal(await b.evaluate(() => reliquia.state.kills), kills); check('host migration preserves the active run and opened gate');
-  // Both QA panas are scripted into the guardian's arena; keep them standing
-  // while the host (now simulating at real speed) runs the encounter.
-  await b.evaluate(() => { for (const p of reliquia.room.game.players) Object.assign(p, { invulnerable: 100, downed: false, hp: 100 }); });
-  await place(b, ids.b, 40, -96); await place(b, cId, 42, -96);
-  await b.waitForFunction(() => reliquia.state.enemies.some(e => e.kind === 'guardian'));
-  // Place the encounter for QA; damage still goes through normal sequenced input.
-  await b.evaluate(() => { const p = reliquia.room.game.players.find(p => p.id === reliquia.room.id); p.invulnerable = 100; const boss = reliquia.room.game.enemies.find(e => e.kind === 'guardian'); reliquia.place(p.id, boss.x, boss.z + 2); });
-  await b.screenshot({ path: path.join(output, 'guardian.png') });
-  for (let i = 0; i < 20; i++) {
-    if (await b.evaluate(() => reliquia.state.guardianDefeated)) break;
-    await b.waitForFunction(() => reliquia.state.players.find(p => p.id === reliquia.room.id).cooldown <= 0); await b.keyboard.press('Space');
-  }
-  await b.waitForFunction(() => reliquia.state.guardianDefeated); await c.waitForFunction(() => reliquia.state.guardianDefeated); check('guardian combat produces the shared objective unlock');
-  await place(b, ids.b, 40, -108); await b.keyboard.press('e'); await b.waitForFunction(() => reliquia.state.carrier === reliquia.room.id); await c.waitForFunction(() => reliquia.state.relicTaken);
-  await place(b, ids.b, 0, 17); await place(b, cId, 2, 17);
-  await b.keyboard.down('e'); await b.waitForFunction(() => reliquia.state.phase === 'results'); await b.keyboard.up('e'); await c.waitForFunction(() => reliquia.state.outcome === 'win');
-  await b.screenshot({ path: path.join(output, 'results.png') }); check('relic pickup, team extraction and results agree across clients');
-  await b.locator('#again').click(); await c.waitForFunction(() => reliquia.state.phase === 'playing' && !reliquia.state.gateOpen && !reliquia.state.relicTaken); check('replay resets the expedition');
-  await c.close(); await b.waitForFunction(() => reliquia.room.members.size === 1);
-  await b.locator('#menu').click(); const frozen = await b.evaluate(() => reliquia.state.time); await b.waitForTimeout(350); assert.equal(await b.evaluate(() => reliquia.state.time), frozen); await b.locator('#pana-resume').click(); check('solo pause freezes the simulation');
-  await b.evaluate(() => { reliquia.room.cut(); }); await b.waitForFunction(() => !reliquia.room.connected);
-  await b.locator('#offline-inline').click(); await b.waitForFunction(() => reliquia.room.offline && reliquia.state.phase === 'lobby'); await b.locator('#start').click();
-  await b.waitForFunction(() => reliquia.state.phase === 'playing'); check('failed connection has an explicit playable local fallback');
-  await b.setViewportSize({ width: 1440, height: 900 }); await b.evaluate(() => reliquia.place(reliquia.room.id, 40, -96));
-  await b.screenshot({ path: path.join(output, 'gameplay.png') });
-  console.log('render', await b.evaluate(() => ({ calls: reliquia.renderer.info.render.calls, triangles: reliquia.renderer.info.render.triangles })));
-  await b.goto(base + '/'); await b.getByRole('heading', { name: 'Reliquia', exact: true }).waitFor(); check('hub discovers Reliquia');
+  await c.screenshot({ path: path.join(output, 'mobile.png') }); check('a late phone starts at the camp and moves with the touch pad');
+
+  // The host leaves: the run carries on with its haul.
+  const haul = await b.evaluate(() => reliquia.state.haul); await a.close();
+  await waitFor(b, () => reliquia.room.isHost);
+  assert.equal(await b.evaluate(() => reliquia.state.haul), haul); assert.equal(await b.evaluate(() => reliquia.state.phase), 'playing'); check('host migration keeps the run and the truck');
+
+  // Everyone standing at the truck holds E: ¡Nos vamos!
+  await place(b, ids.b, 12, 21); await place(b, cid, 12.5, 18); await settled(b, 12, 21);
+  await b.keyboard.down('e'); await waitFor(b, () => reliquia.state.phase === 'results'); await b.keyboard.up('e');
+  await waitFor(c, () => reliquia.state.outcome === 'extracted');
+  assert.match(await c.locator('#result-payout').textContent(), /600/);
+  await b.screenshot({ path: path.join(output, 'results.png') }); check('extraction pays the truck to everyone');
+  await b.locator('#again').click(); await waitFor(c, () => reliquia.state.phase === 'playing' && reliquia.state.haul === 0); check('another expedition starts clean');
+
+  await c.close(); await waitFor(b, () => reliquia.room.members.size === 1);
+  await b.locator('#menu').click(); const frozen = await b.evaluate(() => reliquia.state.time); await b.waitForTimeout(350);
+  assert.equal(await b.evaluate(() => reliquia.state.time), frozen); await b.locator('#pana-resume').click(); check('alone, the menu pauses the run');
+  await b.evaluate(() => reliquia.room.cut()); await waitFor(b, () => !reliquia.room.connected);
+  await b.locator('#offline-inline').click(); await waitFor(b, () => reliquia.room.offline && reliquia.state.phase === 'lobby'); await b.locator('#start').click();
+  await waitFor(b, () => reliquia.state.phase === 'playing'); check('a lost connection offers a local expedition');
+  console.log('render', await b.evaluate(() => ({ calls: reliquia.view.renderer.info.render.calls, triangles: reliquia.view.renderer.info.render.triangles })));
+  await b.goto(base + '/'); await b.getByRole('heading', { name: 'Reliquia', exact: true }).waitFor(); check('the hub lists Reliquia');
+  const errors = [a, b, c].flatMap(p => p.errors);
   assert.deepEqual(errors, []); check('no uncaught browser errors');
 } catch (error) {
   const clients = [];
-  for (const context of browser.contexts()) for (const p of context.pages()) {
-    clients.push(await p.evaluate(() => window.reliquia ? { state: reliquia.state, id: reliquia.room.id, input: reliquia.input(), received: [...reliquia.room.inputs], focus: document.activeElement?.tagName, menu: reliquia.menu.isOpen, lobby: document.getElementById('pana-lobby-shell')?.hidden } : location.href).catch(() => null));
-  }
+  for (const context of browser.contexts()) for (const p of context.pages()) clients.push(await p.evaluate(() => window.reliquia ? { id: reliquia.room.id, phase: reliquia.state.phase, me: reliquia.me, items: reliquia.state.items, events: reliquia.state.events.slice(-6) } : location.href).catch(() => null));
   await writeFile(path.join(output, 'failure.json'), JSON.stringify(clients, null, 2));
   throw error;
 } finally { await browser.close(); }

@@ -43,6 +43,12 @@ export function ruinShell({ inside, ground = () => 0, solid = () => true, open =
     m.position.set(x, y - .15 - r() * .03, z); m.rotation.set(Math.atan(dz), 0, -Math.atan(dx)); m.scale.set(1, 1, 1);
     c.copy(floorColor).multiplyScalar(.82 + r() * .3);
   }));
+  // Dark grout under the slabs, so a seam seen end-on is mortar, not a hole.
+  const grout = new THREE.PlaneGeometry(1, 1).rotateX(-Math.PI / 2), groutColor = new THREE.Color(palette.floor).multiplyScalar(.28);
+  group.add(instanced(grout, mat({ roughness: 1 }), cells.filter(([i, j]) => solid(i + .5, j + .5)), (m, c, [i, j]) => {
+    const x = i + .5, z = j + .5, dx = ground(x + .5, z) - ground(x - .5, z), dz = ground(x, z + .5) - ground(x, z - .5);
+    m.position.set(x, ground(x, z) - .1, z); m.rotation.set(Math.atan(dz), 0, -Math.atan(dx)); c.copy(groutColor);
+  }));
   // Walls: brick courses on every edge between a walkable cell and the outside.
   const edges = [];
   for (const [i, j] of cells) for (const [di, dj] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) if (!cell(i + di, j + dj) && !open(i + di + .5, j + dj + .5)) edges.push({ i, j, di, dj, y: ground(i + .5, j + .5) });
@@ -73,7 +79,7 @@ export function ruinShell({ inside, ground = () => 0, solid = () => true, open =
     m.position.set(i + 1, ground(i + 1, j + 1) + height + .3 - r() * .25, j + 1); m.rotation.set((r() - .5) * .1, r() * 3, (r() - .5) * .1);
     c.copy(ceiling).multiplyScalar(.8 + r() * .35);
   }));
-  group.userData = { cells: cells.length, edges: edges.length, dispose() { [slab, brick, glyph, slabRoof].forEach(g => g.dispose()); owned.forEach(m => m.dispose()); } };
+  group.userData = { cells: cells.length, edges: edges.length, dispose() { [slab, grout, brick, glyph, slabRoof].forEach(g => g.dispose()); owned.forEach(m => m.dispose()); } };
   return group;
 }
 

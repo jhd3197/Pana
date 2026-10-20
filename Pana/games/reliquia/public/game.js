@@ -4,7 +4,7 @@ import { loadAvatar, loadName } from '/engine/avatar.js';
 import { sound, popCounter } from '/engine/fx.js';
 import { createGameMenu, toggleMute } from '/engine/ui.js';
 import { inviteUrl, newRoomCode, roomFromUrl } from '/engine/invite.js';
-import { holdButton, drawIcons } from '/engine/touch.js';
+import { holdButton, drawIcons, isTouch } from '/engine/touch.js';
 import { shout } from '/engine/kit.js';
 import { createToast } from '/engine/hud.js';
 import { elapsedClock } from '/engine/live-room.js';
@@ -136,6 +136,7 @@ $('start').onclick = () => { sound.unlock(); room.action('start'); }; $('again')
 $('practice').onclick = $('offline-inline').onclick = () => room.practice();
 // Touch: hold buttons for moving and grabbing, taps for the rest.
 drawIcons();
+if (isTouch()) { $('hand-0').querySelector('.pk-slot-n').textContent = 'Usar'; $('hand-1').querySelector('.pk-slot-n').textContent = 'Izq.'; }
 const pads = [];
 for (const button of document.querySelectorAll('[data-move]')) pads.push(holdButton(button, { paused: () => !playing(), down: () => touch.add(button.dataset.move), up: () => touch.delete(button.dataset.move) }));
 pads.push(holdButton($('t-grab'), { paused: () => !playing(), down: () => { touch.add('e'); act('interact'); }, up: () => touch.delete('e') }));

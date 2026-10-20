@@ -43,7 +43,8 @@ export function generateRun(seed = 1, { floors = 3 } = {}) {
   const campStub = { id: 'stub-camp', floor: 0, rect: [-2.2, -2 - STUB, 2.2, -1.9], axis: 'z', a: -2, b: -2 - STUB, from: 0, to: -DROP };
   run.stubs.push(campStub);
   run.decor.push({ kind: 'table', floor: 0, x: TABLE.x, z: TABLE.z, h: 0 });
-  run.obstacles.push({ x: TABLE.x, z: TABLE.z, r: 1.2, floor: 0 }, { x: TRUCK.x, z: TRUCK.z, r: 2.2, floor: 0 }, { x: -9, z: 22, r: 2.2, floor: 0 }, { x: 3, z: 26, r: 1.2, floor: 0 });
+  // The truck is long: three circles along it (it faces -x).
+  run.obstacles.push({ x: TABLE.x, z: TABLE.z, r: 1.2, floor: 0 }, ...[-1.8, 0, 1.8].map(dx => ({ x: TRUCK.x + dx, z: TRUCK.z, r: 1.6, floor: 0 })), { x: -9, z: 22, r: 2.2, floor: 0 }, { x: 3, z: 26, r: 1.2, floor: 0 });
   // The starting kit waits on the expedition table.
   for (const [kind, x] of [['farol', -.8], ['farol', 0], ['honda', .8]]) run.loot.push({ id: id.loot++, kind, floor: 0, room: 'camp', x: TABLE.x + x, z: TABLE.z, y: 1.02, h: 0 });
   let previousExit = null;

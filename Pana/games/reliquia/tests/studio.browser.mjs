@@ -13,7 +13,7 @@ try {
   await page.goto(`${base}/studio.html`);
   await page.locator('#startup').waitFor({ state: 'hidden', timeout: 300000 });
   console.log('ok  Studio startup and thumbnails');
-  for (const id of ['temple-mummy', 'sun-guardian', 'sun-relic', 'expedition-winch', 'expedition-lantern', 'reliquia']) {
+  for (const id of ['temple-mummy', 'coin-pile', 'sun-disk', 'echo-mask', 'treasure-chest', 'stair-seal', 'ruin-gallery', 'gold-jaguar-statue', 'gold-jaguar', 'reliquia']) {
     await page.locator('#nav-library').click();
     await page.locator(`[data-asset="${id}"]`).click({ timeout: 90000 });
     await page.waitForFunction(id => panaLibrary.selected === id && document.querySelector('#preview-status').hidden, id, { timeout: 90000 });

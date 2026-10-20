@@ -101,9 +101,22 @@ body.greed-3 .greed-bar,body.greed-4 .greed-bar{animation:greed-pulse .8s ease-i
 #touch button{pointer-events:auto}
 .touch-actions{display:grid;grid-template-columns:repeat(3,auto);gap:8px;align-items:end;justify-items:end}
 .touch-actions .pk-touch{min-width:64px;padding:0 10px;font-size:14px}
-#t-use{grid-column:3;grid-row:2/4}
+#t-use{grid-column:3;grid-row:2/4;min-height:100px}
 @media (pointer:coarse){#touch{display:flex}.pk-hints{display:none}.carry{bottom:auto;top:16px;left:auto;right:16px;width:200px}.team{display:none}.map-wrap{display:none}.compass{top:64px}.place{width:200px}.hands .pk-slot{min-height:44px}}
-@media (max-width:640px){.place{top:12px;left:12px;width:170px;padding:9px}.place #room-name{font-size:17px}.compass{width:min(220px,58vw);top:70px}.carry{width:170px;right:12px;top:12px;padding:9px}.carry .pk-eyebrow{font-size:9px}.choice b{font-size:17px}}
+@media (max-width:640px){
+  .topbar{top:8px;right:8px}#game-nav #invite,#game-nav #sound{display:none}
+  .compass{top:8px;left:8px;right:96px;width:auto;transform:none;height:38px}
+  .place,.carry{top:54px!important;width:calc(50vw - 12px)!important}
+  .place{left:8px}.carry{right:8px;left:auto;bottom:auto}
+  .haul .pk-num{font-size:15px}.vital .pk-num{font-size:16px}
+  .hands .pk-slot{min-height:38px;padding:16px 6px 4px;font-size:10px}.hands .pk-slot-n{font-size:9px}
+  .effects{display:none}.choice{top:auto;bottom:250px}.boss{top:auto;bottom:240px}
+  .touch-actions{gap:6px}.touch-actions .pk-touch{min-width:54px;height:46px;padding:0 6px;font-size:11px}#t-use{min-width:60px;height:98px}
+  #touch .pk-dpad{--pk-touch:50px;gap:3px}#touch{inset:auto 8px 12px}
+  #toast{top:auto;bottom:220px;font-size:13px}
+  .prompt{font-size:12px;top:calc(50% + 34px)}
+  .place,.carry{padding:9px;gap:5px}.place #room-name{font-size:15px}.carry .pk-eyebrow,.place .pk-eyebrow{font-size:9px}.choice b{font-size:17px}
+}
 
 .downed{position:fixed;left:50%;top:30%;transform:translateX(-50%);display:grid;gap:4px;text-align:center;padding:14px 20px}
 .downed b{font:400 26px var(--pk-display);color:var(--pk-coral)}
