@@ -31,6 +31,7 @@ same room.
 | **Pana Cocina** | Cooperative cooking shifts with configurable orders and kitchen rules | 1–8, bot helpers |
 | **Galope** | Horse racing around a Llanos ranch, through esteros and over logs | 1–8, bots fill in |
 | **Reliquia** | First-person co-op treasure extraction: carry cursed loot to the truck, then decide whether to go one floor deeper | 1–8 |
+| **Trifulca** | Cartoon barrio boxing: winner stays, everyone else is the ring, bets dolitas and shoves fighters back in | 1–8 |
 | **¡Embuste!** | Social deduction at the night camp: who is the mummy? | 4–8 online, bots for practice |
 | **Curiara** | Dugout-canoe races with solo paddlers or two-person crews | 1–8, bots fill in |
 | **Lancha** | Outboard-motor boat races down the Sipapo and the Orinoco: hold the gas, jump the raudales, dodge caimanes | 1–8, bots fill in |

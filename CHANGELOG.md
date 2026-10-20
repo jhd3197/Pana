@@ -8,6 +8,15 @@ becomes the GitHub release's notes.
 
 ## Unreleased
 
+- **New game: Trifulca, barrio boxing where the winner stays and everyone
+  else is the ring.** Two panas fight with jab, trompón, block, dodge and
+  grab; hits fill your mareo instead of a health bar, three caídas is a
+  K.O. and the judges read the card at the bell. Panas waiting their turn
+  shove fighters back in, bet dolitas, give water in the corner and can
+  shout ¡cálmate!. Four arenas: la calle, el toldo, el mercado and the
+  plaza de las motos at night, with a TV narrator, intro cards and a
+  slow-motion replay.
+
 - **Derrape keeps detailed roadside trees while distant forest costs less to render.**
   Three vegetation zones preserve planting density: native trees near the route,
   simplified trees farther out and lightweight crowns on distant hills. Isolated
