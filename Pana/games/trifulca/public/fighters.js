@@ -38,7 +38,7 @@ export function createPana(avatar, { seed = 1, name = '', me = false } = {}) {
     glove.position.set(0, -.86, .04); glove.visible = false; arm.add(glove); return glove;
   });
   const helmet = motoHelmet({ color: HELMET_COLORS[seed % HELMET_COLORS.length] });
-  helmet.scale.setScalar(1 / SCULPT * 1.04); helmet.position.set(0, .06, 0); helmet.visible = false; character.head.add(helmet);
+  helmet.scale.setScalar(1 / SCULPT); helmet.visible = false; character.head.add(helmet);
   // A ¡! over a pana winding up a trompón: the cue to dodge.
   const warn = nameTag('¡OJO!', { me: true }); warn.scale.set(.7, .175, 1); warn.position.y = 2.95; warn.visible = false; root.add(warn);
   const tag = name ? nameTag(me ? `${name} · tú` : name, { me }) : null;
@@ -114,7 +114,8 @@ export function createPana(avatar, { seed = 1, name = '', me = false } = {}) {
   }
 
   function armTargets(act, at, view) {
-    const guard = (i) => ({ rx: -2.15, rz: (i ? 1 : -1) * .38, s: 1 });
+    // The head is huge: guards sit in front of the chin, arms stretched forward.
+    const guard = (i) => ({ rx: -1.85, rz: (i ? 1 : -1) * .3, s: 1.15, z: .15 });
     const out = [guard(0), guard(1)];
     const sign = (i) => (i ? -1 : 1);
     if (act === 'crowd' || act === 'idle-crowd') {
@@ -125,14 +126,15 @@ export function createPana(avatar, { seed = 1, name = '', me = false } = {}) {
     }
     if (act === 'jab') {
       const p = at < .1 ? at / .1 : at < .2 ? 1 : Math.max(0, 1 - (at - .2) / .16);
-      out[0] = { rx: ease(-2.15, -1.62, p), rz: ease(-.38, -.08, p), s: 1 + .6 * p, z: .3 * p };
+      out[0] = { rx: ease(-1.85, -1.6, p), rz: ease(-.3, -.06, p), s: 1.15 + .55 * p, z: .15 + .2 * p };
     }
     if (act === 'wind') out[1] = { rx: .75 + Math.sin(time * 46) * .14, rz: -.95, s: 1 };
     if (act === 'trompon') {
       const p = at < .12 ? at / .12 : Math.max(0, 1 - (at - .12) / .3);
       out[1] = { rx: ease(.6, -1.58, p), rz: ease(-.9, .3, p), s: 1 + .85 * p, z: .35 * p };
     }
-    if (act === 'block') for (const i of [0, 1]) out[i] = { rx: -2.6, rz: -sign(i) * .62, s: .9 };
+    // Cubrirse: both gloves together in front of the muzzle.
+    if (act === 'block') for (const i of [0, 1]) out[i] = { rx: -2.02, rz: -sign(i) * .6, s: 1.28, z: .3 };
     if (act === 'grab') {
       const p = Math.min(1, at / .14);
       for (const i of [0, 1]) out[i] = { rx: -1.55, rz: -sign(i) * ease(.1, -.15, p), s: 1 + .45 * p, z: .25 * p };
@@ -140,7 +142,7 @@ export function createPana(avatar, { seed = 1, name = '', me = false } = {}) {
     if (act === 'stun' || act === 'open') for (const i of [0, 1]) out[i] = { rx: -.7 + Math.sin(time * 18 + i) * .3, rz: sign(i) * 1.1, s: 1 };
     if (act === 'dizzy') for (const i of [0, 1]) out[i] = { rx: -.25 + Math.sin(time * 4 + i * 2) * .25, rz: sign(i) * .55, s: 1 };
     if (act === 'down' || act === 'rise') for (const i of [0, 1]) out[i] = { rx: -.4, rz: sign(i) * 1.5, s: 1 };
-    if (act === 'taunt') for (const i of [0, 1]) out[i] = { rx: -1.95, rz: -sign(i) * (.25 + Math.max(0, Math.sin(time * 14)) * .35), s: 1.05, z: .15 };
+    if (act === 'taunt') for (const i of [0, 1]) out[i] = { rx: -1.8, rz: -sign(i) * (.25 + Math.max(0, Math.sin(time * 14)) * .35), s: 1.05, z: .15 };
     if (act === 'win') for (const i of [0, 1]) out[i] = { rx: -3.05, rz: sign(i) * .25, s: 1.05 };
     if (view.holding && ['idle', 'block', 'bench'].includes(act)) for (const i of [0, 1]) out[i] = { rx: -1.75, rz: -sign(i) * .35, s: 1.05, z: .15 };
     if (act === 'throw') { const p = Math.min(1, at / .15); for (const i of [0, 1]) out[i] = { rx: ease(-2.9, -1.3, p), rz: -sign(i) * .2, s: 1.2, z: .2 }; }

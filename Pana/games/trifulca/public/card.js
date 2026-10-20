@@ -17,7 +17,7 @@ export function mount(canvas) {
   const gloves = [pana.armL, pana.armR].map((arm, i) => {
     const glove = boxingGlove({ side: i ? -1 : 1 }); glove.scale.setScalar(1 / .6); glove.position.set(0, -.86, .04); arm.add(glove); return glove;
   });
-  const helmet = motoHelmet({ color: '#ffc629' }); helmet.scale.setScalar(1 / .6 * 1.04); helmet.position.y = .06; pana.head.add(helmet);
+  const helmet = motoHelmet({ color: '#ffc629' }); helmet.scale.setScalar(1 / .6); pana.head.add(helmet);
   let stopped = false, last = performance.now();
   function frame(now) {
     if (stopped) return;
@@ -27,9 +27,9 @@ export function mount(canvas) {
       const t = now / 1000, jab = Math.max(0, Math.sin(t * 2.2) - .85) / .15;
       pana.group.rotation.y = Math.sin(t * .7) * .45; pana.group.position.y = Math.abs(Math.sin(t * 6)) * .05;
       pana.update(dt, {});
-      pana.armL.rotation.set(-2.15 + .55 * jab, 0, -.38 + .3 * jab); pana.armL.scale.y = 1 + .5 * jab;
-      pana.armR.rotation.set(-2.15, 0, .38); pana.armR.scale.y = 1;
-      gloves[0].scale.set(1 / .6, 1 / .6 / pana.armL.scale.y, 1 / .6);
+      pana.armL.rotation.set(-1.85 + .25 * jab, 0, -.3 + .24 * jab); pana.armL.scale.y = 1.15 + .5 * jab;
+      pana.armR.rotation.set(-1.85, 0, .3); pana.armR.scale.y = 1.15;
+      gloves.forEach((g, i) => g.scale.set(1 / .6, 1 / .6 / [pana.armL, pana.armR][i].scale.y, 1 / .6));
       renderer.render(scene, camera);
     }
     requestAnimationFrame(frame);

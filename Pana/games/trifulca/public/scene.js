@@ -282,7 +282,11 @@ export function createTrifulcaScene(canvas, { me = () => null } = {}) {
     const kc = 1 - Math.exp(-dt * (state?.phase === 'intro' ? 3 : 6));
     camPos.lerp(pos, kc); camLook.lerp(look, kc);
     const { w, h } = stage.resize();
-    camera.aspect = w / h; camera.fov = w < h ? 58 : 40; camera.position.copy(camPos); camera.lookAt(camLook); camera.updateProjectionMatrix();
+    camera.aspect = w / h; camera.fov = w < h ? 58 : 40; camera.position.copy(camPos); camera.lookAt(camLook);
+    // ?debug close-ups: a fixed camera offset from your own pana.
+    const close = api.debugCamera && panas.get(me())?.pos;
+    if (close) { camera.position.copy(close).add(v(...api.debugCamera)); camera.lookAt(close.clone().add(v(0, 1.2, 0))); }
+    camera.updateProjectionMatrix();
   }
 
   // Screen right and screen up as world directions on the ground, for the stick.
@@ -298,5 +302,6 @@ export function createTrifulcaScene(canvas, { me = () => null } = {}) {
     npcs.forEach(n => n.dispose()); ref?.dispose(); arena?.dispose(); lampLights.forEach(l => l.removeFromParent());
     puffs.clear(); rings.clear(); stage.dispose();
   }
-  return { renderer, scene, camera, update, react, frame, stickBasis, dispose, get replaying() { return replay.on; }, get arenaId() { return arenaId; } };
+  const api = { renderer, scene, camera, update, react, frame, stickBasis, dispose, debugCamera: null, get replaying() { return replay.on; }, get arenaId() { return arenaId; } };
+  return api;
 }

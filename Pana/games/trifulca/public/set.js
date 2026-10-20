@@ -51,16 +51,19 @@ export function boxingGlove({ color = CORNER_COLORS.red, cuff = '#ffffff', side 
 export function motoHelmet({ color = '#ffc629', stripe = '#1f1f24', scale = 1 } = {}) {
   const group = new THREE.Group(); group.name = 'Casco de moto';
   const shell = mat(color, { roughness: .22, metalness: .1 }), dark = mat(stripe, { roughness: .3 });
-  // A rounded shell over the crown and the back of the head; the face and
-  // ears stay free, with a racing stripe front to back and a short visor.
-  const r = .62 * scale;
-  const dome = part(group, new THREE.SphereGeometry(r, 32, 16, 0, Math.PI * 2, 0, Math.PI * .46), shell, 0, .02 * scale, -.06 * scale);
-  dome.scale.set(1.04, 1, 1.08);
-  const racing = part(group, new THREE.SphereGeometry(r * 1.01, 6, 16, Math.PI / 2 - .12, .24, 0, Math.PI * .42), dark, 0, .02 * scale, -.06 * scale);
-  racing.scale.copy(dome.scale);
-  const peak = part(group, new RoundedBoxGeometry(.56 * scale, .04 * scale, .2 * scale, 2, .015 * scale), dark, 0, .27 * scale, .55 * scale);
-  peak.rotation.x = .22;
-  group.userData.previewBounds = [[-.7 * scale, -.6 * scale, -.7 * scale], [.7 * scale, .75 * scale, .75 * scale]];
+  // A shell fitted to the pana's skull (0.56 × 0.48 × 0.47 m half-sizes):
+  // it covers the crown down to the brow, the ears poke out, a racing stripe
+  // runs front to back and a short visor shades the eyes.
+  const r = .6 * scale, fit = [.83, .8, .8], y = .072 * scale, cut = Math.PI * .4;
+  const dome = part(group, new THREE.SphereGeometry(r, 32, 14, 0, Math.PI * 2, 0, cut), shell, 0, y, -.01 * scale);
+  dome.scale.set(...fit);
+  const racing = part(group, new THREE.SphereGeometry(r * 1.012, 6, 14, Math.PI / 2 - .14, .28, 0, cut), dark, 0, y, -.01 * scale);
+  racing.scale.set(...fit);
+  const rim = part(group, new THREE.TorusGeometry(r * Math.sin(cut), .022 * scale, 6, 40), dark, 0, y + r * fit[1] * Math.cos(cut), -.01 * scale);
+  rim.rotation.x = Math.PI / 2; rim.scale.set(fit[0], fit[2], 1);
+  const peak = part(group, new RoundedBoxGeometry(.4 * scale, .03 * scale, .16 * scale, 2, .012 * scale), dark, 0, y + r * fit[1] * Math.cos(cut) + .01 * scale, r * fit[2] * Math.sin(cut) + .02 * scale);
+  peak.rotation.x = .3;
+  group.userData.previewBounds = [[-.55 * scale, 0, -.55 * scale], [.55 * scale, .6 * scale, .6 * scale]];
   return owned(group);
 }
 
