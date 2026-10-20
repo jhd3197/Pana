@@ -34,14 +34,14 @@ export const LINES = {
 // The narrator's line for an event, given names: (id) → name.
 export function lineFor(e, name, names = (ids) => ids.map(name).join(' y ')) {
   switch (e.type) {
+    case 'dodged': return { text: '¡Lo esquivó! ¡Contragolpe!', say: Math.random() < .4 };
     case 'intro': return { text: e.stage === 'final' ? '¡La gran final!' : e.stage === 'semifinal' ? 'Semifinal' : e.stage === 'cuartos' ? 'Cuartos de final' : e.mode === 'libre' ? '¡Trifulca libre!' : `Pelea ${e.fight}`, big: true };
     case 'bell': return { text: pick(LINES.bell), big: true, say: true };
     case 'trompon': return { text: pick(LINES.trompon), say: Math.random() < .6 };
-    case 'hit': return e.counter ? { text: pick(LINES.counter) } : null;
+    case 'hit': return e.contra ? { text: '¡Contragolpe!', say: true } : e.counter ? { text: pick(LINES.counter) } : null;
     case 'dizzy': return { text: pick(LINES.dizzy), say: true };
-    case 'caida': return { text: pick(LINES.caida), big: true, say: true };
+    case 'caida': return { text: pick(LINES.caida), say: true };
     case 'rise': return { text: pick(LINES.rise), say: true };
-    case 'dodged': return { text: pick(LINES.dodged) };
     case 'shove': return { text: e.broke ? '¡Le agarró la guardia y pa\' fuera!' : pick(LINES.shove) };
     case 'guardbreak': return { text: pick(LINES.guardbreak) };
     case 'empujon': return e.back ? { text: `${name(e.by)} lo mete pa' dentro` } : null;

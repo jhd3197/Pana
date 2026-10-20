@@ -18,7 +18,10 @@ becomes the GitHub release's notes.
   crossing under the lake bridge and a colonial street, with a TV narrator, intro cards and a
   slow-motion replay. Also Trifulca libre (four at once, with chairs and
   chancletas to throw), Parejas (tag your partner) and a Torneo whose final
-  is fought under the tent.
+  is fought under the tent. A first-time tutorial teaches every move with
+  the profe, and alone you climb a ladder of five rivals instead of watching
+  bots fight; a side camera, a lit key bar and ¡ESQUIVA! prompts make it
+  easy to read.
 
 - **Derrape keeps detailed roadside trees while distant forest costs less to render.**
   Three vegetation zones preserve planting density: native trees near the route,

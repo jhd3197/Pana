@@ -58,7 +58,7 @@ export function createTrifulcaScene(canvas, { me = () => null } = {}) {
     }
     // Neighbours who came to watch: seated ones on the chairs.
     // At most 18 neighbours: each one is a full character to build.
-    arena.npcSpots.filter((_, i, all) => all.length <= 18 || i % Math.ceil(all.length / 18) === 0).forEach((spot, i) => {
+    arena.npcSpots.filter((_, i, all) => all.length <= 30 || i % Math.ceil(all.length / 30) === 0).forEach((spot, i) => {
       const look = spot.senora ? { outfit: 'hawaiana', outfitColor: '#ff6fae', hat: 'none', glasses: 'redondos', face: 'feliz' } : randomAvatar(rng(i * 31 + 7));
       if (arena.hats && !spot.senora && i % 4 !== 3) Object.assign(look, { hat: 'llanero', hatColor: ['#7a5230', '#e9dcc0', '#3b2a1a'][i % 3] });
       const npc = buildCharacter(look, { seated: !!spot.seated });
@@ -103,12 +103,12 @@ export function createTrifulcaScene(canvas, { me = () => null } = {}) {
     const who = panas.get(e.id)?.pana, at = panas.get(e.id)?.pos;
     if (e.type === 'hit' && who) { who.hit(e.counter ? 1 : .6); puffs.spawn(at.clone().add(v(0, 1.4 + floor(), 0)), { color: 0xfff1d0, count: 4, spread: .4, size: .5, rise: .6, life: .4 }); }
     if (e.type === 'trompon' && who) {
-      who.hit(1.6, true); shake = .35; zoomT = .9;
+      who.hit(1.3, true); shake = .2; zoomT = .45;
       rings.ring(at.clone().add(v(0, 1.4 + floor(), 0)), { color: 0xffd23f, maxRadius: 2.2, life: .35 });
       rings.sparkle(at.clone().add(v(0, 1.6 + floor(), 0)), { count: 8 });
     }
     if (e.type === 'block' && who) rings.sparkle(at.clone().add(v(0, 1.5 + floor(), 0)), { color: 0xffffff, count: 4, spread: .3 });
-    if (e.type === 'caida') { shake = .5; zoomT = 1.4; lastCaida = time; if (at) puffs.spawn(at.clone().add(v(0, .2 + floor(), 0)), { color: 0xcab79a, count: 10, spread: 1.2, rise: .8 }); }
+    if (e.type === 'caida') { shake = .18; zoomT = .5; lastCaida = time; if (at) puffs.spawn(at.clone().add(v(0, .2 + floor(), 0)), { color: 0xcab79a, count: 3, spread: .5, size: .45, rise: .4, life: .6 }); }
     if (e.type === 'shove' && who) who.hit(.8);
     if ((e.type === 'empujon' || e.type === 'empuja-aire' || e.type === 'agua') && panas.get(e.by)) panas.get(e.by).pana.shove();
     if (e.type === 'cheer' && panas.get(e.by)) panas.get(e.by).pana.cheer();
@@ -218,18 +218,17 @@ export function createTrifulcaScene(canvas, { me = () => null } = {}) {
   function updateRef(dt) {
     if (!ref || !current) return;
     const bodies = ringOf(current.bodies), fighting = current.phase === 'fight' || current.phase === 'after' || current.phase === 'intro';
-    let goal = v(0, floor(), -3.4), face = 0, pose = {};
+    // The ref watches from outside the ring, on the far side, and walks the
+    // edge to whoever is down to count over them.
+    const shape = arenaOf(current.arenaNow || current.options?.arena), outside = shape.shape === 'square' ? shape.half * 1.12 + .9 : shape.r + .7;
+    let angle = Math.atan2(-camPerp.x, -camPerp.z) + 1.05, face = 0, pose = {};
     if (fighting && bodies.length >= 2) {
-      const mx = bodies.reduce((n, b) => n + b.x, 0) / bodies.length, mz = bodies.reduce((n, b) => n + b.z, 0) / bodies.length;
-      goal = v(mx - camPerp.x * 2.2, floor(), mz - camPerp.z * 2.2);
       const down = bodies.find(x => x.act === 'down');
-      if (down) { goal = v(down.x - camPerp.x * 1.3 + .6, floor(), down.z - camPerp.z * 1.3); pose = { pose: 'wave' }; }
-      if (current.phase === 'after') { const w = bodies.find(x => x.id === current.result?.winner); if (w) { goal = v(w.x - camPerp.x * .2 + .7, floor(), w.z - camPerp.z * .2); pose = { pose: 'wave' }; } }
-      face = Math.atan2(camPerp.x, camPerp.z);
+      if (down) { angle = Math.atan2(down.x, down.z); pose = { pose: 'wave' }; }
+      if (current.phase === 'after') { const w = bodies.find(x => x.id === current.result?.winner); if (w) { angle = Math.atan2(w.x, w.z) + .3; pose = { pose: 'wave' }; } }
     }
-    const shape = arenaOf(current.arenaNow || current.options?.arena);
-    if (shape.shape === 'circle') { const d = Math.hypot(goal.x, goal.z); if (d > shape.r - .4) goal.multiplyScalar((shape.r - .4) / d).setY(floor()); }
-    else { goal.x = Math.max(-2.6, Math.min(2.6, goal.x)); goal.z = Math.max(-2.6, Math.min(2.6, goal.z)); }
+    const goal = v(Math.sin(angle) * outside, 0, Math.cos(angle) * outside);
+    face = Math.atan2(-goal.x, -goal.z);
     ref.pos.lerp(goal, 1 - Math.exp(-dt * 3));
     ref.group.position.copy(ref.pos); ref.group.rotation.y = face;
     ref.update(dt, { walk: ref.pos.distanceTo(goal) > .3 ? 1 : 0, ...pose });
@@ -247,13 +246,18 @@ export function createTrifulcaScene(canvas, { me = () => null } = {}) {
       const axis = b.clone().sub(a); axis.y = 0;
       const sep = fighters.length === 2 ? axis.length() : Math.max(...fighters.map(p => p.distanceTo(mid))) * 2;
       axis.normalize();
-      const perp = fighters.length === 2 ? v(-axis.z, 0, axis.x) : v(Math.sin(time * .05), 0, Math.cos(time * .05));
-      if (perp.dot(camPerp) < 0) perp.negate();
-      camPerp.lerp(perp, 1 - Math.exp(-dt * (fighters.length === 2 ? 5 : .6))).normalize();
-      zoom += ((zoomT > 0 ? .68 : 1) - zoom) * (1 - Math.exp(-dt * (zoomT > 0 ? 9 : 2.5)));
-      const dist = Math.min(13.5, Math.max(8.4, 6.2 + sep * 1.3)) * zoom;
-      pos = mid.clone().addScaledVector(camPerp, dist).add(v(0, (arena?.camHeight ?? 3.7) + f0 - (1 - zoom) * 1.6, 0));
-      look = mid.clone().add(v(0, 1.05 + f0, 0));
+      // Like a fighting game: one fixed side view (the fight runs along X, the
+      // red corner on the left), so right on the stick is right on screen.
+      const perp = v(0, 0, 1);
+      // Turn around the fight by the shortest way instead of cutting through it.
+      const from = Math.atan2(camPerp.x, camPerp.z), to = Math.atan2(perp.x, perp.z);
+      let turn = to - from; turn = Math.atan2(Math.sin(turn), Math.cos(turn));
+      const angle = from + turn * (1 - Math.exp(-dt * (fighters.length === 2 ? 4 : .6)));
+      camPerp.set(Math.sin(angle), 0, Math.cos(angle));
+      zoom += ((zoomT > 0 ? .82 : 1) - zoom) * (1 - Math.exp(-dt * (zoomT > 0 ? 7 : 2.5)));
+      const dist = Math.min(12, Math.max(7.2, 5.4 + sep * 1.35)) * zoom;
+      pos = mid.clone().addScaledVector(camPerp, dist).add(v(0, (arena?.camHeight ?? 2.7) + f0, 0));
+      look = mid.clone().add(v(0, 1.15 + f0, 0));
       if (state.phase === 'intro') {
         // Walk-out: each fighter in close-up, then the wide shot.
         const t = 6.5 - state.time, slot = Math.min(fighters.length - 1, Math.floor(t / (5.2 / fighters.length)));

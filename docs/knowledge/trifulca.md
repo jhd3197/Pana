@@ -7,6 +7,26 @@ own panas, shove fighters back in, bet dolitas, give water in the corner and
 can shout ¡cálmate!. The night ends after `peleas` fights; the richest pana
 wins and the titles are handed out.
 
+## Learning it
+
+- **Tutorial** (`startTutorial`, room action `tutorial`): you and Profe Cheo,
+  no bell, eight steps in `TUTORIAL` (walk up, 3 jabs, a trompón, block 2,
+  dodge 2, a counter, a grab, get up). Each step ends on the player's own
+  events (`tutorialEvent`); the profe's bot does what the step needs; mareo is
+  capped at 60 and the count never reaches ten. Start opens it the first time
+  a pana is alone (`localStorage trifulca:tutorial`); the lobby button always
+  does. `tests/tutorial.browser.mjs` plays it with real keys, so it is the
+  end-to-end proof that every control reaches the fight.
+- **Alone = the ladder** (`ladder`): ganador se queda with one pana adds five
+  rivals at bot levels `LADDER` [0, 0, 1, 1, 2] (shifted by `nivel`). You fight
+  every fight; a win climbs, a loss costs one of three lives. Bots never fight
+  each other when you play alone.
+- **Counter window**: dodging a trompón sets `contra` (0.8 s) on the dodger;
+  their next jab or trompón ignores blocking and adds 14 mareo.
+- HUD: a key bar that lights each button while held, a big prompt for the
+  moment (¡ESQUIVA! when the foe winds up within 2.6 m, ¡CONTRA!, ¡machaca J!)
+  and ¡OJO! over a pana winding up. Mouse: left button golpe, right cubrirse.
+
 ## Modes (`options.modo`)
 
 - `queda`, ganador se queda: two fight, the winner stays.
@@ -84,11 +104,15 @@ wins and the titles are handed out.
 
 ## Scene notes
 
-- The camera sits on the fighters' perpendicular, keeping the side it had
-  (it never flips across), and clamps inside the street on la calle and el
-  mercado (`camBox`). El toldo keeps it low (`camHeight`) so the tent's
-  banners stay above the frame. NPC neighbours on the camera's side of the
-  fight are hidden while a fight is on.
+- One fixed side camera looking down −Z, like a fighting game: the red corner
+  starts on the left and right on the stick is right on screen. A one-on-one
+  stays on a line (rules pull each body's z back to 0 at 2.2/s except while
+  dodging), so the camera never ends up behind a fighter; chasing the fight
+  axis did. The crowd never stands within `CROWD_GAP` (1.15 rad) of the camera
+  side, and NPC neighbours on that side hide during a fight. The ref waits
+  outside the ring, 1.05 rad off the far side, and walks the edge to count.
+- A caída sits the pana down dazed (tilt 0.62 of the full flop) with a small
+  dust puff and a short zoom; the count is drawn at the side, not over it.
 - The replay records every render frame for 6 s and, on a K.O. or a count,
   plays from 1.5 s before the last caída to 0.5 s after it at 0.4× during
   the verdict.

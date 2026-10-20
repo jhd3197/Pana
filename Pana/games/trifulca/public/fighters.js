@@ -39,6 +39,8 @@ export function createPana(avatar, { seed = 1, name = '', me = false } = {}) {
   });
   const helmet = motoHelmet({ color: HELMET_COLORS[seed % HELMET_COLORS.length] });
   helmet.scale.setScalar(1 / SCULPT * 1.04); helmet.position.set(0, .06, 0); helmet.visible = false; character.head.add(helmet);
+  // A ¡! over a pana winding up a trompón: the cue to dodge.
+  const warn = nameTag('¡OJO!', { me: true }); warn.scale.set(.7, .175, 1); warn.position.y = 2.95; warn.visible = false; root.add(warn);
   const tag = name ? nameTag(me ? `${name} · tú` : name, { me }) : null;
   if (tag) { tag.position.y = 2.6; root.add(tag); }
   let tagShown = true;
@@ -67,7 +69,7 @@ export function createPana(avatar, { seed = 1, name = '', me = false } = {}) {
   function update(dt, view = {}) {
     time += dt;
     const act = view.act || 'crowd', at = view.at || 0;
-    character.update(dt, { walk: (view.moving || 0) > .4 ? 1 : 0, dizzy: act === 'dizzy', open: ['taunt', 'win', 'trompon', 'stun'].includes(act) || cheer > 0 });
+    character.update(dt, { walk: (view.moving || 0) > .4 ? 1 : 0, dizzy: act === 'dizzy' || act === 'down', open: ['taunt', 'win', 'trompon', 'stun'].includes(act) || cheer > 0 });
     // Springs: head rock and body sway.
     wobbleV += (-wobble * 90 - wobbleV * 9) * dt; wobble += wobbleV * dt;
     swayV += (-sway * 60 - swayV * 7) * dt; sway += swayV * dt;
@@ -96,8 +98,8 @@ export function createPana(avatar, { seed = 1, name = '', me = false } = {}) {
     if (act === 'dizzy') { leanZ = Math.sin(time * 5) * .25; leanX = Math.sin(time * 3.3) * .12; }
     if (act === 'taunt') crouch = -Math.abs(Math.sin(time * 9)) * .08;
     if (act === 'win') crouch = Math.abs(Math.sin(time * 6)) * .2;
-    if (act === 'down') { fall = 1; lift = .42; }
-    if (act === 'rise') { fall = Math.max(0, 1 - at / (T.rise * .8)); lift = .42 * fall; }
+    if (act === 'down') { fall = .62; lift = .12; }
+    if (act === 'rise') { fall = .62 * Math.max(0, 1 - at / (T.rise * .8)); lift = .12 * fall / .62; }
     if (act === 'crowd' && cheer > 0) crouch = Math.abs(Math.sin(time * 10)) * .12;
     twist = ease(twist, twistTo, kb);
     b.rotation.y = twist; b.rotation.x = ease(b.rotation.x, leanX, kb) + sway * .05;
@@ -108,6 +110,7 @@ export function createPana(avatar, { seed = 1, name = '', me = false } = {}) {
     character.neck.rotation.x = wobble * .5; character.neck.rotation.z = sway * .3;
     character.group.rotation.y = spin;
     if (tag) tag.visible = tagShown && act !== 'down';
+    warn.visible = act === 'wind'; if (warn.visible) warn.scale.set(.7 + Math.sin(time * 30) * .06, .175, 1);
   }
 
   function armTargets(act, at, view) {
@@ -146,7 +149,7 @@ export function createPana(avatar, { seed = 1, name = '', me = false } = {}) {
   }
 
   function dispose() {
-    gloves.forEach(g => g.userData.dispose()); helmet.userData.dispose(); tag?.userData.dispose();
+    gloves.forEach(g => g.userData.dispose()); helmet.userData.dispose(); tag?.userData.dispose(); warn.userData.dispose();
     character.dispose(); root.removeFromParent();
   }
   return { root, character, update, setCorner, showTag: (on) => { tagShown = on; }, hit, shove: doShove, cheer: doCheer, dispose, get corner() { return corner; } };

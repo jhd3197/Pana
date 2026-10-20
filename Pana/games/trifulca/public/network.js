@@ -23,8 +23,12 @@ export class TrifulcaRoom extends LiveRoom {
   memberLeft(id) { super.memberLeft(id); if (this.isHost) { this.game.removePlayer(id); this.publish(); } }
   handle(id, data) {
     if (data.action === 'options' && id === this.hostId && this.game.configure(data.options)) this.publish();
-    if (data.action === 'start' && id === this.hostId && ['lobby', 'finished'].includes(this.game.phase)) { this.game.start(data.bots !== false); this.publish(); }
-    if (data.action === 'lobby' && id === this.hostId && this.game.phase === 'finished') { this.game.phase = 'lobby'; this.publish(); }
+    const free = ['lobby', 'finished'].includes(this.game.phase) || !!this.game.tutorial;
+    if (data.action === 'start' && id === this.hostId && free) { this.game.tutorial = null; this.game.start(data.bots !== false); this.publish(); }
+    if (data.action === 'tutorial' && id === this.hostId && free && this.game.startTutorial(id)) this.publish();
+    if (data.action === 'lobby' && id === this.hostId && (this.game.phase === 'finished' || this.game.tutorial)) {
+      Object.assign(this.game, { phase: 'lobby', tutorial: null, bodies: [] }); this.game.players = this.game.players.filter(p => !p.bot); this.publish();
+    }
     if (data.action === 'bet' && this.game.bet(id, data.corner)) this.publish();
   }
   practice() { this.state = { ...new Trifulca().snapshot(), options: { ...this.state.options } }; super.practice('Noche local · tú y los bots'); }

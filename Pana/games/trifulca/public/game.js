@@ -26,8 +26,8 @@ const roomOptions = createRoomOptions($('room-options'), { title: 'Trifulca', fi
   change: options => room.action('options', { options }), reset: () => room.action('options', { options: defaultOptions() }) });
 const menu = createGameMenu({ title: 'Trifulca · Pana', sound, orientation: 'libre',
   note: () => room.members.size > 1 ? 'La trifulca sigue mientras estás en el menú.' : 'La noche está en pausa.',
-  controls: [['W A S D / flechas', 'Moverse (izquierda y derecha: hacia y desde tu rival)'], ['J', 'Golpe: toque = jab, mantener = trompón'],
-    ['K', 'Cubrirse'], ['Espacio', 'Esquivar (con dirección: paso al lado)'], ['L', 'Agarrar y empujar · en el público: ¡cálmate! · al final: mano de caballero'],
+  controls: [['W A S D / flechas', 'Moverse: tú siempre a la izquierda, derecha es hacia tu rival'], ['J o clic izquierdo', 'Golpe: toque = jab, mantener = trompón'],
+    ['K o clic derecho', 'Cubrirse'], ['Espacio', 'Esquivar (con dirección: paso al lado)'], ['L', 'Agarrar y empujar · en el público: ¡cálmate! · al final: mano de caballero'],
     ['T', '¡Dale! (el público se prende, quedas abierto)'], ['1 / 2', 'Apostar al rojo o al azul antes de la campana'], ['Control', 'A golpe · B esquivar · X agarrar · Y ¡dale! · gatillos cubrirse'], ['M', 'Activar o silenciar el sonido']],
   tips: ['Jab le gana al trompón que todavía carga; cubrirse le gana al jab; esquivar le gana al trompón; agarrar le gana a cubrirse.',
     'Sin barra de vida: los golpes llenan tu mareo. Mareado, un golpe limpio te tumba. Tres caídas es K.O.',
@@ -35,8 +35,15 @@ const menu = createGameMenu({ title: 'Trifulca · Pana', sound, orientation: 'li
   invite: () => room.offline ? null : inviteUrl(code),
 });
 $('game-nav').append(menu.createInviteButton({ id: 'invite', className: 'pk-btn' }), menu.createButton({ id: 'menu', className: 'pk-btn' }));
-$('rules').onclick = () => menu.open('controls');
-$('start').onclick = $('again').onclick = () => { sound.unlock(); room.action('start'); };
+// First time alone, Start opens the tutorial; the lobby button always does.
+const TUTORIAL_KEY = 'trifulca:tutorial';
+const tutorialDone = () => { try { return localStorage.getItem(TUTORIAL_KEY) === 'done'; } catch { return true; } };
+const markTutorial = () => { try { localStorage.setItem(TUTORIAL_KEY, 'done'); } catch { /* per-viewer nicety */ } };
+const humans = () => room.state.players.filter(p => !p.bot).length;
+$('rules').onclick = () => { if (room.isHost && room.connected) { sound.unlock(); room.action('tutorial'); } else menu.open('controls'); };
+$('start').onclick = () => { sound.unlock(); room.action(!tutorialDone() && humans() <= 1 ? 'tutorial' : 'start'); };
+$('again').onclick = () => { sound.unlock(); room.action('start'); };
+$('tutorial-go').onclick = $('tutorial-skip').onclick = () => { markTutorial(); sound.unlock(); room.action('start'); };
 $('practice').onclick = () => room.practice();
 // Bets by corner (the buttons) or by number (keys 1 to 4, in the corners' order).
 const bet = (pick) => {
@@ -82,6 +89,7 @@ function render(state) {
     seen = e.n;
     if (world) { const extra = world.react(e); if (extra) hud.react({ type: extra }); }
     hud.react(e); sfx(e);
+    if (e.type === 'tutorial-fin') markTutorial();
   }
   world?.update(state);
   hud.update(state, { replaying: world?.replaying });
@@ -93,7 +101,7 @@ export const { sceneReady } = bootGame({
   ready: (created) => { world = created; render(room.state); },
   tickMs: 50,
   tick: (dt) => room.tick(dt, input(), menu.isOpen && room.members.size <= 1),
-  frame: (dt, scene) => { scene.frame(dt); hud.tick(dt); },
+  frame: (dt, scene) => { scene.frame(dt); hud.tick(dt); hud.keys(controls.read()); },
   dispose: () => { hush(); room.dispose(); },
 });
 if (params.has('debug')) window.trifulcaDebug = { room, menu, input, controls, get world() { return world; } };

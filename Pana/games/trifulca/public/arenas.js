@@ -155,10 +155,11 @@ export function createArena(id, arena) {
 }
 
 // The NPC neighbours around a ring: a second row behind the panas.
+// Two rows of them, the back row in the gaps of the front one.
 function ringNeighbours(ctx, arena, count, skip = () => false) {
-  const r = arena.shape === 'square' ? arena.half * 1.12 + 2.3 : arena.r + 2;
-  for (let i = 0; i < count; i++) {
-    const a = (i + .5) / count * Math.PI * 2 + (ctx.random() - .5) * .2;
+  const r0 = arena.shape === 'square' ? arena.half * 1.12 + 2.3 : arena.r + 1.9;
+  for (const [row, r, n] of [[0, r0, count], [1, r0 + 1.25, Math.round(count * 1.3)]]) for (let i = 0; i < n; i++) {
+    const a = (i + .5 + row * .5) / n * Math.PI * 2 + (ctx.random() - .5) * .15;
     const x = Math.sin(a) * r, z = Math.cos(a) * r;
     if (skip(x, z)) continue;
     ctx.npcSpots.push({ x, z, face: a + Math.PI, seated: false });

@@ -4,7 +4,7 @@
 // ring is doing.
 import { fillRoster } from '/engine/results.js';
 import { lineFor, say } from './narrator.js';
-import { PAY, STAKE, INTRO } from './rules.js';
+import { PAY, STAKE, INTRO, TUTORIAL } from './rules.js';
 import { MAREO_CALMA, KO_CAIDAS } from './fight-rules.js';
 
 const $ = (id) => document.getElementById(id);
@@ -13,6 +13,17 @@ export const CORNER_NAMES = { red: 'rojo', blue: 'azul', yellow: 'amarillo', gre
 const LEFT = ['red', 'yellow'];
 const STAGES = { cuartos: 'Cuartos de final', semifinal: 'Semifinal', final: '¡La final!' };
 const MODES = { queda: 'Ganador se queda', libre: 'Trifulca libre', parejas: 'Parejas', torneo: 'Torneo' };
+// The tutorial, one card per step: what to do and which key does it.
+export const LESSONS = {
+  mover: ['Acércate al Profe', 'Camina hacia él con D o la flecha derecha. Tú siempre estás a la izquierda de la pantalla: derecha es hacia tu rival.', ['D', '→']],
+  jab: ['El jab', 'Toca J (o clic izquierdo) para un jab rápido. Pégale tres.', ['J']],
+  trompon: ['El trompón', 'Mantén J un momento: el guante se va pa\' atrás temblando y sale el trompón. Lento pero pega duro.', ['J mantener']],
+  cubrir: ['Cubrirse', 'El Profe te va a tirar jabs. Mantén K (o clic derecho) para cubrirte.', ['K']],
+  esquivar: ['Esquivar', 'Cuando el Profe cargue el trompón verás ¡ESQUIVA! Pulsa Espacio justo ahí.', ['Espacio']],
+  contra: ['El contragolpe', 'Esquiva el trompón y pega J enseguida: el contragolpe atraviesa la guardia y pega más.', ['Espacio', 'J']],
+  agarrar: ['Agarrar', 'El Profe se cubre. Pégate y pulsa L: el agarre rompe la guardia y lo manda pa\'l público.', ['L']],
+  pararse: ['¡Párate!', 'Te tumbaron. Machaca J (o cualquier botón) para pararte antes del diez.', ['J', 'J', 'J']],
+};
 const el = (tag, className = '', text = '') => Object.assign(document.createElement(tag), { className, textContent: text });
 
 export function createHud({ me, voice = () => true }) {
@@ -68,6 +79,9 @@ export function createHud({ me, voice = () => true }) {
     if (e.type === 'agua') feed(`${name(e.by)} dio agua en la esquina`);
     if (e.type === 'cheer') feed(`${name(e.by)}: ¡Dale, dale!`);
     if (e.type === 'intro') introCard(e);
+    if (e.type === 'tutorial-bien') feed(['¡Eso!', '¡Bien!', '¡Así mismo!'][e.count % 3]);
+    if (e.type === 'tutorial') call(e.step ? '¡Bien hecho!' : '¡Bienvenido al tutorial!', { big: true });
+    if (e.type === 'tutorial-fin') call('¡Listo, ya sabes pelear!', { big: true, speak: true });
     if (e.type === 'fin' && e.belt) setTimeout(() => call(e.final ? `¡${name(e.winner)} gana el torneo y el cinturón!` : `¡${name(e.winner)} es el campeón del barrio!`, { big: true, speak: true }), 2600);
     if (e.type === 'fin' && e.streak >= 2 && !e.belt) feed(`${name(e.winner)} lleva ${e.streak} seguidas`);
   }
@@ -132,6 +146,52 @@ export function createHud({ me, voice = () => true }) {
     $('bet-note').textContent = mine.bet ? `Apostaste ${mine.bet.amount} dolitas al ${CORNER_NAMES[mine.bet.on]}` : `Apuesta ${STAKE} dolitas (teclas 1 a ${corners.length})`;
   }
 
+  function tutorialCard(t) {
+    $('tutorial').hidden = !t;
+    if (!t) return;
+    const lesson = t.done ? ['¡Listo, pana!', 'Ya sabes pelear: jab, trompón, cubrirse, esquivar, contragolpe y agarre. Ahora sube la escalera: cinco rivales del barrio, cada uno más bravo.', []] : LESSONS[TUTORIAL[t.step].id];
+    const key = `${t.step}:${t.done}`;
+    $('tutorial-step').textContent = t.done ? 'TUTORIAL COMPLETO' : `PASO ${t.step + 1} DE ${TUTORIAL.length}`;
+    $('tutorial-go').hidden = !t.done; $('tutorial-skip').hidden = t.done;
+    if ($('tutorial').dataset.key === key) {
+      $('tutorial-text').dataset.count = t.count; return;
+    }
+    $('tutorial').dataset.key = key;
+    $('tutorial-title').textContent = lesson[0]; $('tutorial-text').textContent = lesson[1];
+    const touch = matchMedia('(pointer: coarse)').matches, words = { J: 'Golpe', 'J mantener': 'Golpe mantener', K: 'Cubrir', Espacio: 'Esquivar', L: 'Agarrar', D: 'Derecha', '→': 'hacia él' };
+    $('tutorial-keys').replaceChildren(...lesson[2].map(k => el('kbd', 'pk-kbd', touch ? words[k] || k : k)));
+    $('tutorial-dots').replaceChildren(...TUTORIAL.map((_, i) => el('li', i < t.step || t.done ? 'is-done' : i === t.step ? 'is-now' : '')));
+    $('tutorial').classList.remove('is-new'); void $('tutorial').offsetWidth; $('tutorial').classList.add('is-new');
+  }
+
+  // A big call to action when the rival winds up or a counter is open.
+  function prompt(myBody) {
+    const node = $('prompt'), bodies = state?.bodies || [];
+    let text = '';
+    if (myBody && state.phase === 'fight' && !myBody.bench && !myBody.out) {
+      const foe = bodies.find(b => b.id === myBody.foe);
+      if (myBody.act === 'down') text = '¡Machaca J pa\' pararte!';
+      else if (myBody.contra > 0) text = '¡CONTRA! J';
+      else if (foe?.act === 'wind' && Math.hypot(foe.x - myBody.x, foe.z - myBody.z) < 2.6) text = '¡ESQUIVA! Espacio';
+      else if (foe?.act === 'dizzy') text = '¡Está mareado! ¡Dale!';
+      else if (foe?.act === 'open') text = '¡Quedó abierto! J';
+    }
+    node.hidden = !text;
+    if (text && node.textContent !== text) { node.textContent = text; node.classList.remove('is-on'); void node.offsetWidth; node.classList.add('is-on'); }
+  }
+
+  // The key bar lights each button while it is pressed.
+  function keys(c) {
+    const bar = $('keys'); if (bar.hidden) return;
+    const on = { golpe: c.g || c.gp !== lastKeys.gp, cubrir: c.b, esquivar: c.e !== lastKeys.e, agarrar: c.a !== lastKeys.a, mover: !!(c.sx || c.sy) };
+    for (const span of bar.children) {
+      const k = span.dataset.key;
+      if (on[k]) { span.classList.add('is-on'); clearTimeout(span._t); span._t = setTimeout(() => span.classList.remove('is-on'), c.g || c.b || k === 'mover' ? 90 : 220); }
+    }
+    lastKeys = { gp: c.gp, e: c.e, a: c.a };
+  }
+  let lastKeys = {};
+
   function roleText(phase, mode, myBody, mine) {
     if (phase === 'intro') return myBody ? (myBody.bench ? 'Esperas en la esquina: tu pareja te da el relevo con L' : '¡Prepárate! Golpe J · Cubrirse K · Esquivar Espacio · Agarrar L') : 'Apuesta y dale agua a tu esquina: acércate y pulsa J';
     if (phase === 'fight') {
@@ -153,7 +213,10 @@ export function createHud({ me, voice = () => true }) {
     if (key !== barsKey) { barsKey = key; buildBars(bodies); }
     bodies.forEach(bar);
     $('clock').textContent = phase === 'fight' ? Math.max(0, Math.ceil(state.time)) : phase === 'intro' ? 'VS' : '';
-    $('fight-no').textContent = !fighting ? '' : state.fight?.stage ? STAGES[state.fight.stage] : `Pelea ${state.fightNo} de ${state.options.peleas}`;
+    const ladder = state.ladder;
+    $('fight-no').textContent = !fighting ? '' : state.tutorial ? 'Tutorial' : state.fight?.stage ? STAGES[state.fight.stage]
+      : ladder ? `Rival ${Math.min(ladder.step + 1, ladder.rivals.length)} de ${ladder.rivals.length} · vidas ${ladder.lives}` : `Pelea ${state.fightNo} de ${state.options.peleas}`;
+    if (state.tutorial) $('clock').textContent = '';
     $('intro-card').hidden = phase !== 'intro' || INTRO - state.time > 5.2;
     $('replay').hidden = !replaying;
     const mine = player(id), myBody = bodies.find(b => b.id === id), inFight = fighting && !!myBody;
@@ -163,7 +226,11 @@ export function createHud({ me, voice = () => true }) {
     const betting = phase === 'intro' && mine && !inFight;
     $('bets').hidden = !betting;
     if (betting) bets(mine, state.fight?.odds || {});
-    $('role').textContent = roleText(phase, state.options.modo, fighting ? myBody : null, mine);
+    $('role').textContent = state.tutorial ? '' : roleText(phase, state.options.modo, fighting ? myBody : null, mine);
+    tutorialCard(state.tutorial);
+    prompt(myBody);
+    $('keys').hidden = !(phase === 'fight' && myBody && !myBody.bench && !myBody.out);
+    $('role').hidden = !$('keys').hidden && phase === 'fight';
     // The verdict after a fight.
     const verdict = phase === 'after' && state.result && !replaying;
     $('verdict').hidden = !verdict;
@@ -182,7 +249,7 @@ export function createHud({ me, voice = () => true }) {
     $('results').hidden = !ended;
     if (ended) {
       const ranked = [...state.players].sort((a, b) => b.dolitas - a.dolitas);
-      $('result-title').textContent = `¡${ranked[0]?.name ?? 'Nadie'} se lleva la noche!`;
+      $('result-title').textContent = ladder ? (ladder.won ? '¡Eres el campeón del barrio!' : `Te sacaron en el rival ${ladder.step + 1} de ${ladder.rivals.length}`) : `¡${ranked[0]?.name ?? 'Nadie'} se lleva la noche!`;
       fillRoster($('result-roster'), ranked.map((p, i) => ({ rank: i + 1, name: p.id === id ? `${p.name} · tú` : p.name, detail: `${p.stats.wins} ganadas · ${p.stats.kos} K.O.`, end: `${p.dolitas}`, score: true, me: p.id === id })));
       $('titles').replaceChildren(...state.titles.map(t => { const li = el('li'); li.append(el('b', '', t.title), el('span', '', name(t.id))); return li; }));
     }
@@ -195,5 +262,5 @@ export function createHud({ me, voice = () => true }) {
       if (feedItems[0].t <= 0) { feedItems = feedItems.filter(f => f.t > 0); drawFeed(); }
     }
   }
-  return { react, update, tick, call };
+  return { react, update, tick, call, keys };
 }

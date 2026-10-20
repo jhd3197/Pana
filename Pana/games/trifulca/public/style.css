@@ -121,3 +121,34 @@ body[data-phase="intro"] .role { bottom: 150px; }
   .intro-side { padding: 8px 12px; }
   .intro-side span:first-child { font-size: 18px; }
 }
+
+/* Toned-down count: the ref's number beside the fight, not over it. */
+.count { top: 30%; left: auto; right: 9%; transform: none; font-size: 72px; }
+@keyframes thump { from { transform: scale(1.5); opacity: .2; } }
+
+/* What to press right now, big and in the middle. */
+.prompt { position: fixed; left: 50%; top: 58%; transform: translateX(-50%); font-size: 40px; color: var(--gold); text-shadow: 0 4px 0 var(--red-deep), 0 0 20px rgba(0, 0, 0, .6); pointer-events: none; white-space: nowrap; }
+.prompt.is-on { animation: prompt-pop .25s ease-out; }
+@keyframes prompt-pop { from { transform: translateX(-50%) scale(1.5); opacity: 0; } }
+
+/* The key bar: each button lights while it is pressed. */
+.keys { position: fixed; left: 50%; bottom: 14px; transform: translateX(-50%); display: flex; gap: 8px; pointer-events: none; }
+.keys span { display: grid; justify-items: center; gap: 2px; padding: 6px 10px; border-radius: 12px; background: var(--pk-hud); border: 2px solid var(--pk-line); font-weight: 800; font-size: 12px; transition: transform .08s, border-color .08s; }
+.keys span small { font-size: 10px; color: var(--pk-muted); font-weight: 700; }
+.keys span .pk-kbd { margin: 0 1px; }
+.keys span.is-on { border-color: var(--gold); transform: translateY(-3px) scale(1.06); color: var(--gold); }
+
+/* The tutorial card. */
+.tutorial { position: fixed; right: 20px; top: 150px; width: min(330px, calc(100vw - 40px)); display: grid; gap: 8px; padding: 14px 16px; }
+.tutorial.is-new { animation: slide-in-right .35s ease-out; }
+.tutorial h2 { margin: 0; font-size: 24px; }
+.tutorial p { margin: 0; font-weight: 700; line-height: 1.35; }
+.tutorial-keys { display: flex; gap: 6px; flex-wrap: wrap; }
+.tutorial-keys .pk-kbd { font-size: 18px; padding: 4px 10px; }
+.tutorial-dots { list-style: none; margin: 0; padding: 0; display: flex; gap: 5px; }
+.tutorial-dots li { width: 22px; height: 6px; border-radius: 3px; background: var(--pk-deep); }
+.tutorial-dots li.is-done { background: var(--aguante); }
+.tutorial-dots li.is-now { background: var(--gold); }
+.tutorial-foot { display: flex; gap: 8px; justify-content: space-between; align-items: center; }
+@media (pointer: coarse) { .keys { display: none; } .tutorial { top: auto; bottom: 200px; right: 12px; } .prompt { font-size: 26px; top: 48%; } }
+@media (max-width: 700px) { .tutorial { top: auto; bottom: 200px; } }

@@ -51,21 +51,15 @@ export function boxingGlove({ color = CORNER_COLORS.red, cuff = '#ffffff', side 
 export function motoHelmet({ color = '#ffc629', stripe = '#1f1f24', scale = 1 } = {}) {
   const group = new THREE.Group(); group.name = 'Casco de moto';
   const shell = mat(color, { roughness: .22, metalness: .1 }), dark = mat(stripe, { roughness: .3 });
-  const r = .6 * scale, open = 1.05;
-  const geo = new THREE.SphereGeometry(r, 32, 20, Math.PI / 2 + open, Math.PI * 2 - open * 2, 0, Math.PI * .66);
-  const dome = part(group, geo, shell, 0, .1 * scale, -.04 * scale); dome.material.side = THREE.DoubleSide;
-  const cap = part(group, new THREE.SphereGeometry(r * 1.002, 32, 10, 0, Math.PI * 2, 0, Math.PI * .26), shell, 0, .1 * scale, -.04 * scale);
-  void cap;
-  // The rim around the face opening and the stripe over the crown.
-  const rim = part(group, new THREE.TorusGeometry(r * .78, .035 * scale, 8, 28, Math.PI * 1.2), dark, 0, -.02 * scale, .22 * scale);
-  rim.rotation.set(0, 0, -Math.PI * .1);
-  const band = part(group, new THREE.TorusGeometry(r * 1.01, .05 * scale, 6, 32, Math.PI * .9), dark, 0, .1 * scale, -.04 * scale);
-  band.rotation.set(0, Math.PI / 2, Math.PI * .05);
-  // Little visor peak and the strap under the chin.
-  const peak = part(group, new RoundedBoxGeometry(.5 * scale, .04 * scale, .16 * scale, 2, .015 * scale), dark, 0, .36 * scale, .5 * scale);
-  peak.rotation.x = .3;
-  const strap = part(group, new THREE.TorusGeometry(.42 * scale, .018 * scale, 6, 20, Math.PI), mat('#2a2a2a'), 0, -.12 * scale, .12 * scale);
-  strap.rotation.set(0, 0, Math.PI);
+  // A rounded shell over the crown and the back of the head; the face and
+  // ears stay free, with a racing stripe front to back and a short visor.
+  const r = .62 * scale;
+  const dome = part(group, new THREE.SphereGeometry(r, 32, 16, 0, Math.PI * 2, 0, Math.PI * .46), shell, 0, .02 * scale, -.06 * scale);
+  dome.scale.set(1.04, 1, 1.08);
+  const racing = part(group, new THREE.SphereGeometry(r * 1.01, 6, 16, Math.PI / 2 - .12, .24, 0, Math.PI * .42), dark, 0, .02 * scale, -.06 * scale);
+  racing.scale.copy(dome.scale);
+  const peak = part(group, new RoundedBoxGeometry(.56 * scale, .04 * scale, .2 * scale, 2, .015 * scale), dark, 0, .27 * scale, .55 * scale);
+  peak.rotation.x = .22;
   group.userData.previewBounds = [[-.7 * scale, -.6 * scale, -.7 * scale], [.7 * scale, .75 * scale, .75 * scale]];
   return owned(group);
 }

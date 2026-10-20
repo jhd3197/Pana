@@ -3,7 +3,7 @@
 // game's seeded randomness so a restored host plays on identically. Pure.
 import { draw, clamp } from '/engine/random.js';
 import { edge, crowdSpot, inRing } from './fight-rules.js';
-import { INTRO, AFTER } from './rules.js';
+import { INTRO, AFTER, TUTORIAL } from './rules.js';
 
 const AFTER_MANO = { min: .8, spread: 2 };
 const bump = (ai, key) => (ai[key] = (ai[key] + 1) % 256);
@@ -12,7 +12,8 @@ export function botInput(game, p, dt) {
   const ai = p.ai ||= { think: 0, hold: 0, block: 0, plan: 0, side: 1, mash: 0, gp: 0, e: 0, a: 0, t: 0,
     betAt: 1 + draw(game) * 3, manoAt: AFTER_MANO.min + draw(game) * AFTER_MANO.spread };
   const out = { x: 0, z: 0, g: false, b: false, gp: ai.gp, e: ai.e, a: ai.a, t: ai.t };
-  const level = game.options.nivel, body = game.body(p.id);
+  const level = p.level ?? game.options.nivel, body = game.body(p.id);
+  if (game.tutorial && body) return profe(game, body, ai, out, dt);
   if (game.phase === 'after') {
     if (body && AFTER - game.time > ai.manoAt && !p.mano && draw(game) < .9) out.a = bump(ai, 'a');
     return out;
@@ -71,6 +72,22 @@ export function botInput(game, p, dt) {
   const e = edge(game.arena, body.x, body.z);
   if (e.out > -.9 && !wantsTag) { out.x += e.nx * 1.2; out.z += e.nz * 1.2; }
   if (ai.plan === 'dodge') { out.x += rx * ai.side; out.z += rz * ai.side; }
+  return out;
+}
+
+// The tutorial's profe: does exactly what the current step needs.
+function profe(game, body, ai, out, dt) {
+  const step = TUTORIAL[game.tutorial.step]?.id, me = game.body(game.tutorial.me);
+  ai.think -= dt; ai.hold -= dt;
+  if (!me || game.tutorial.done) return out;
+  const d = Math.hypot(me.x - body.x, me.z - body.z);
+  if (body.act === 'down') { out.gp = bump(ai, 'gp'); return out; }
+  if (step === 'cubrir' && ai.think <= 0 && d < 1.6) { ai.think = 1.3; out.gp = bump(ai, 'gp'); }
+  if ((step === 'esquivar' || step === 'contra') && ai.think <= 0 && d < 1.8) { ai.think = 2.4; out.gp = bump(ai, 'gp'); ai.hold = .4; }
+  out.g = ai.hold > 0;
+  out.b = step === 'agarrar';
+  // Stay close and in the middle of the ring.
+  if (d > 1.3 && step !== 'mover') { out.x = (me.x - body.x) / d * .7; out.z = (me.z - body.z) / d * .7; }
   return out;
 }
 

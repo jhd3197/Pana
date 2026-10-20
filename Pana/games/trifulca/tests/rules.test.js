@@ -31,7 +31,8 @@ test('room choices are validated and a solo night gets a bot ladder', () => {
   assert.equal(game.configure({ peleas: 7 }), false);
   assert(game.configure({ peleas: 5, arena: 'mercado' }));
   game.addPlayer(1, 'Ana'); game.start();
-  assert.equal(game.players.length, 4);
+  assert.equal(game.players.length, 6, 'you and five rivals');
+  assert.ok(game.ladder);
   assert.equal(game.phase, 'intro');
   assert.equal(game.bodies.length, 2);
   assert.equal(game.configure({ peleas: 8 }), false, 'options lock once the night starts');
@@ -188,8 +189,8 @@ test('mano de caballero pays both; skipping it is noticed', () => {
 });
 
 test('the night ends after its fights with the richest pana and titles', () => {
-  const game = new Trifulca(4); game.configure({ peleas: 5, seconds: 45 });
-  game.addPlayer(1, 'Ana'); game.start();
+  const game = new Trifulca(4); game.configure({ peleas: 5, seconds: 45, rivales: 2 });
+  game.addPlayer(1, 'Ana'); game.addPlayer(2, 'Bruno'); game.start();
   for (let i = 0; i < 5 * (INTRO + 45 + AFTER) / .05 + 100 && game.phase !== 'finished'; i++) game.update(.05, new Map());
   assert.equal(game.phase, 'finished');
   assert.equal(game.fightNo, 5);
@@ -300,4 +301,48 @@ test('arena twists: the bull charges through la manga, the bucket wakes a fighte
     run(game, 1.2, {});
     assert.ok(game.events.some(e => e.type === type), `${arena} has its ${type}`);
   }
+});
+
+test('alone, you fight every fight: a ladder of five rivals, three lives', () => {
+  const game = night('queda');
+  assert.equal(game.ladder.rivals.length, 5);
+  const levels = game.ladder.rivals.map(id => game.player(id).level);
+  assert.deepEqual(levels, [0, 0, 1, 1, 2]);
+  let fights = 0;
+  for (let i = 0; i < 20000 && game.phase !== 'finished'; i++) {
+    if (game.phase === 'intro' && game.time === INTRO) { fights++; assert.ok(game.bodies.some(b => b.id === 1), 'you are always in the ring'); }
+    // Win the even fights by knocking the rival out, lose the odd ones idle.
+    if (game.phase === 'fight' && game.fightNo % 2 === 0) { const r = game.bodies[1]; r.caidas = 3; }
+    game.update(.05);
+  }
+  assert.equal(game.phase, 'finished');
+  assert.equal(game.ladder.lives, 0);
+  assert.ok(game.ladder.step >= 1);
+});
+
+test('a dodged trompón opens a counter that goes through the guard', () => {
+  const game = fight(), [a, b] = face(game);
+  const ana = pad(), bruno = pad();
+  ana.state.g = true; ana.tap('gp'); run(game, .2 + T.wind - .1, { 1: ana, 2: bruno });
+  bruno.tap('e'); run(game, .45, { 1: ana, 2: bruno });
+  assert.ok(b.contra > 0);
+  face(game); a.act = 'block'; a.at = 0; ana.state.b = true; ana.state.g = false;
+  bruno.tap('gp'); run(game, .3, { 1: ana, 2: bruno });
+  assert.ok(game.events.some(e => e.type === 'hit' && e.contra), 'the counter lands through the block');
+});
+
+test('the tutorial walks through every move and nobody loses', () => {
+  const game = new Trifulca(2); game.addPlayer(1, 'Ana');
+  assert(game.startTutorial(1));
+  assert.equal(game.phase, 'fight');
+  const me = game.body(1), profe = game.bodies[1];
+  // Each step is finished by what the player does.
+  game.update(.05); Object.assign(me, { x: profe.x - 1.2 }); game.update(.05);
+  assert.equal(game.tutorial.step, 1, 'walking up finishes mover');
+  const steps = [];
+  for (let i = 0; i < 40 && !game.tutorial.done; i++) { steps.push(game.tutorial.step); game.tutorialCount(); }
+  assert.equal(game.tutorial.done, true);
+  assert.ok(game.events.some(e => e.type === 'tutorial-fin'));
+  run(game, 30, {});
+  assert.equal(game.phase, 'fight', 'no bell in the tutorial');
 });

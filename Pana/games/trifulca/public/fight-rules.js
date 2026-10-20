@@ -11,7 +11,7 @@ export const T = {
   trompon: { active: [0, .12], total: .5, reach: 1.6, mareo: 28, push: 7.5, stun: .7, open: .4 },
   grab: { active: [.14, .24], total: .55, reach: 1.3, mareo: 5, push: 7, stun: .55 },
   dodge: { total: .42, safe: [.03, .34], speed: 4.6 },
-  taunt: 1, rise: 1, dizzy: 2.1, counter: 6,
+  taunt: 1, rise: 1, dizzy: 2.1, counter: 6, contra: .8, contraMareo: 14,
   chip: { jab: 1.5, trompon: 6 }, guard: { jab: 12, trompon: 40 },
 };
 export const SPEED = { forward: 2.7, back: 2.2, side: 2.4 };
@@ -144,9 +144,12 @@ function strike(a, foes, emit) {
   a.landed = true;
   const { fx, fz } = facing(a);
   if (b.act === 'dodge' && invulnerable(b)) {
-    if (kind === 'trompon') { setAct(a, 'open'); emit({ type: 'dodged', id: b.id, by: a.id }); }
+    // Dodging a trompón opens a counter window: the next punch can't be blocked.
+    if (kind === 'trompon') { setAct(a, 'open'); b.contra = T.contra; emit({ type: 'dodged', id: b.id, by: a.id }); }
     return;
   }
+  const contra = a.contra > 0 && kind !== 'grab';
+  if (contra) a.contra = 0;
   if (invulnerable(b)) return;
   if (kind === 'grab') {
     // A grab beats blocking: the other pana goes flying toward the crowd.
@@ -156,7 +159,7 @@ function strike(a, foes, emit) {
     emit({ type: 'shove', id: b.id, by: a.id, broke: wasBlocking });
     return;
   }
-  if (blocksFrom(b, a) && !armed) {
+  if (blocksFrom(b, a) && !armed && !contra) {
     addMareo(b, T.chip[kind], emit); b.aguante = Math.max(0, b.aguante - T.guard[kind]); b.score.blocks++;
     shake(b, fx * (kind === 'trompon' ? 4 : 1.2), fz * (kind === 'trompon' ? 4 : 1.2));
     b.blockHit = .25;
@@ -172,9 +175,9 @@ function strike(a, foes, emit) {
   b.lastHit = 0;
   const push = spec.push * (armed ? 1.3 : 1);
   shake(b, fx * push, fz * push);
-  emit({ type: kind === 'jab' ? 'hit' : 'trompon', id: b.id, by: a.id, counter, armed, x: b.x, z: b.z });
+  emit({ type: kind === 'jab' ? 'hit' : 'trompon', id: b.id, by: a.id, counter, contra, armed, x: b.x, z: b.z });
   if (wasDizzy) { knockDown(b, a, emit); return; }
-  addMareo(b, (spec.mareo + (counter ? T.counter : 0)) * (armed ? 1.4 : 1), emit);
+  addMareo(b, (spec.mareo + (counter ? T.counter : 0) + (contra ? T.contraMareo : 0)) * (armed ? 1.4 : 1), emit);
   if (b.act !== 'dizzy') { setAct(b, 'stun'); b.stun = spec.stun + (counter ? .15 : 0); }
 }
 
@@ -200,7 +203,7 @@ export function stepBodies(bodies, arena, dt, moves, emit) {
   const dist = (a, b) => Math.hypot(a.x - b.x, a.z - b.z);
   for (const self of ring) {
     self.at += dt; self.inv = Math.max(0, self.inv - dt); self.buffer = Math.max(0, self.buffer - dt);
-    self.blockHit = Math.max(0, self.blockHit - dt); self.lastHit += dt;
+    self.blockHit = Math.max(0, self.blockHit - dt); self.lastHit += dt; self.contra = Math.max(0, (self.contra || 0) - dt);
     if (self.act !== 'block') self.aguante = Math.min(100, self.aguante + 22 * dt);
     else self.aguante = Math.max(0, self.aguante - 11 * dt);
     if (self.act === 'block' && self.aguante <= 0) { setAct(self, 'stun'); self.stun = .6; emit({ type: 'guardbreak', id: self.id }); }

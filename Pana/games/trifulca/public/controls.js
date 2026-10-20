@@ -28,6 +28,18 @@ export function createControls({ paused = () => false, onBet = () => {} } = {}) 
   addEventListener('keyup', (event) => { const name = named(event.key.toLowerCase()); if (name) keys.delete(name); });
   addEventListener('blur', () => { keys.clear(); touch.clear(); });
 
+  // Mouse on the 3D view: left button punches (hold for a trompón), right button blocks.
+  const canvas = document.getElementById('world'), mouse = new Set();
+  canvas?.addEventListener('pointerdown', (event) => {
+    if (paused() || event.pointerType !== 'mouse') return;
+    const name = event.button === 0 ? 'golpe' : event.button === 2 ? 'cubrir' : null;
+    if (!name) return;
+    if (!mouse.has(name)) press(name);
+    mouse.add(name);
+  });
+  addEventListener('pointerup', (event) => { if (event.pointerType === 'mouse') mouse.delete(event.button === 0 ? 'golpe' : 'cubrir'); });
+  canvas?.addEventListener('contextmenu', (event) => event.preventDefault());
+  addEventListener('blur', () => mouse.clear());
   drawIcons();
   for (const id of ['up', 'down', 'left', 'right', 'golpe', 'cubrir', 'esquivar', 'agarrar', 'dale']) {
     const button = document.getElementById(`touch-${id}`); if (!button) continue;
@@ -49,7 +61,7 @@ export function createControls({ paused = () => false, onBet = () => {} } = {}) 
 
   // { sx, sy } is the screen stick (right, up); g and b are held; counters count presses.
   function read() {
-    const p = pad(), on = (name) => keys.has(name) || touch.has(name) || p.held.has(name);
+    const p = pad(), on = (name) => keys.has(name) || touch.has(name) || p.held.has(name) || mouse.has(name);
     if (paused()) return { sx: 0, sy: 0, g: false, b: false, ...counts };
     const sx = Number(on('right')) - Number(on('left')) + p.x, sy = Number(on('up')) - Number(on('down')) + p.y;
     return { sx: Math.max(-1, Math.min(1, sx)), sy: Math.max(-1, Math.min(1, sy)), g: on('golpe'), b: on('cubrir'), ...counts };

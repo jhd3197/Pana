@@ -13,6 +13,17 @@ import { defaultOptions, roomOptions } from './options.js';
 import { arenaOf, newBody, control, presses, stepBodies, edge, crowdSpot, scorecard, setAct, addMareo, knockDown, inRing, facing, CORNERS, MAREO_CALMA } from './fight-rules.js';
 import { botInput } from './bot-rules.js';
 
+// Alone, ganador se queda is a ladder: you against five rivals, each one
+// tougher (bot level), and three losses end the night.
+export const LADDER = [0, 0, 1, 1, 2], LADDER_LIVES = 3;
+// The tutorial: one step per move, each finished by what you do in the ring.
+export const TUTORIAL = [
+  { id: 'mover', need: 1 }, { id: 'jab', need: 3 }, { id: 'trompon', need: 1 }, { id: 'cubrir', need: 2 },
+  { id: 'esquivar', need: 2 }, { id: 'contra', need: 1 }, { id: 'agarrar', need: 1 }, { id: 'pararse', need: 1 },
+];
+// Nobody in the crowd stands between the camera and the fight.
+export const CROWD_GAP = 1.15;
+const clampCrowd = (a) => Math.abs(a) < CROWD_GAP ? Math.sign(a || 1) * CROWD_GAP : a;
 export const INTRO = 6.5, AFTER = 7, START_DOLITAS = 50, STAKE = 10, BOT_SEAT = 1000, MAX_EVENTS = 40;
 export const PAY = { win: 10, ko: 6, streak: 3, mano: 3, shove: 2, calma: 4, agua: 1, title: 15 };
 export const BOT_NAMES = ['Cheo', 'Lola', 'Toño', 'Nena', 'Pepe', 'Mari', 'Coco', 'Cuqui'];
@@ -98,6 +109,7 @@ export class Trifulca {
   // Parejas needs four and a torneo four or eight.
   botCount(humans) {
     const wanted = this.options.rivales, mode = this.mode;
+    if (mode === 'queda' && humans === 1 && wanted < 0) return LADDER.length;
     if (mode === 'parejas') return Math.max(wanted < 0 ? 0 : wanted, 4 - humans, humans % 2);
     if (mode === 'torneo') return Math.max(wanted < 0 ? 0 : wanted, (humans <= 4 ? 4 : 8) - humans);
     if (mode === 'libre' && wanted < 0) return Math.max(0, 4 - humans);
@@ -115,7 +127,11 @@ export class Trifulca {
     // Panas first in a random order, then the bots.
     const order = this.players.map(p => ({ id: p.id, k: (p.bot ? 1 : 0) + draw(this) * .9 }));
     this.queue = order.sort((a, b) => a.k - b.k).map(o => o.id);
-    Object.assign(this, { champion: null, champions: [], fightNo: 0, result: null, titles: [], events: [], round: this.round + 1, bracket: null, winner: null });
+    Object.assign(this, { champion: null, champions: [], fightNo: 0, result: null, titles: [], events: [], round: this.round + 1, bracket: null, winner: null, tutorial: null });
+    // Alone: a ladder of rivals, and the bots never fight each other.
+    const humanIds = this.players.filter(p => !p.bot).map(p => p.id), bots = this.players.filter(p => p.bot);
+    this.ladder = this.mode === 'queda' && humanIds.length === 1 && bots.length ? { me: humanIds[0], rivals: bots.map(b => b.id), step: 0, lives: LADDER_LIVES } : null;
+    if (this.ladder) bots.forEach((b, i) => { b.level = Math.max(0, Math.min(2, (LADDER[i] ?? 2) + this.options.nivel - 1)); });
     if (this.mode === 'torneo') this.bracket = { rounds: [this.queue.slice(0, this.queue.length >= 8 ? 8 : 4)], round: 0, match: 0, next: [] };
     this.beginIntro();
   }
@@ -135,6 +151,10 @@ export class Trifulca {
       while (stay.length < 2 && this.queue.length) stay.push(take());
       const challengers = [take(), take()].filter(id => id != null);
       return [...stay.map((id, i) => ({ id, corner: 'red', team: 'red', bench: i > 0 })), ...challengers.map((id, i) => ({ id, corner: 'blue', team: 'blue', bench: i > 0 }))];
+    }
+    if (this.ladder) {
+      const rival = this.ladder.rivals[this.ladder.step];
+      return [{ id: this.ladder.me, corner: 'red', team: 'red' }, { id: rival, corner: 'blue', team: 'blue' }];
     }
     const champ = this.champion != null && ids.includes(this.champion) ? this.champion : null;
     const count = this.mode === 'libre' ? Math.min(4, ids.length) : 2;
@@ -170,6 +190,61 @@ export class Trifulca {
       fight: this.fightNo, streak, mode: this.mode, stage: this.fight.stage });
   }
 
+  // The tutorial: you and the profe alone in the ring, no bell, one move at a
+  // time. The profe does what each step needs (stands still, jabs, winds up,
+  // blocks) and nobody can lose.
+  startTutorial(id) {
+    const me = this.player(id); if (!me) return false;
+    this.players = this.players.filter(p => !p.bot);
+    const profe = this.addPlayer(BOT_SEAT, 'Profe Cheo', {}, true);
+    profe.nick = 'El Profe'; profe.level = 0;
+    for (const p of this.players) Object.assign(p, { dolitas: START_DOLITAS, stats: stats(), bet: null, carry: 0, last: {} });
+    const arena = this.arena;
+    this.bodies = [newBody(id, 'red', arena), newBody(profe.id, 'blue', arena)];
+    Object.assign(this.bodies[0], { x: -2.6 }); Object.assign(this.bodies[1], { x: 1.6 });
+    Object.assign(this, { ladder: null, bracket: null, champion: null, champions: [], props: [], fightNo: 1, result: null, titles: [], events: [], winner: null });
+    this.fight = { time: 999, hype: { red: 0, blue: 0 }, calma: true, close: 0, moto: -1, motoDone: true, odds: { red: 2, blue: 2 }, streak: 0, champion: null, stage: null, out: [] };
+    this.tutorial = { me: id, profe: profe.id, step: 0, count: 0, clock: 0, done: false };
+    this.placeCrowd();
+    this.phase = 'fight'; this.time = 999;
+    this.emit({ type: 'tutorial', step: 0 });
+    return true;
+  }
+
+  // Counts what you did toward the current tutorial step.
+  tutorialEvent(e) {
+    const t = this.tutorial; if (!t || t.done) return;
+    const step = TUTORIAL[t.step], me = t.me;
+    const hit = (kind) => e.type === kind && e.by === me;
+    const counts = { mover: false, jab: hit('hit') && !e.counter, trompon: hit('trompon'), cubrir: e.type === 'block' && e.id === me,
+      esquivar: e.type === 'dodged' && e.id === me, contra: (e.type === 'hit' || e.type === 'trompon') && e.by === me && e.contra,
+      agarrar: e.type === 'shove' && e.by === me, pararse: e.type === 'rise' && e.id === me }[step.id];
+    if (counts) this.tutorialCount();
+  }
+  tutorialCount() {
+    const t = this.tutorial; t.count++;
+    if (t.count < TUTORIAL[t.step].need) { this.emit({ type: 'tutorial-bien', step: t.step, count: t.count }); return; }
+    t.step++; t.count = 0; t.clock = 0;
+    if (t.step >= TUTORIAL.length) { t.done = true; this.emit({ type: 'tutorial-fin' }); return; }
+    this.emit({ type: 'tutorial', step: t.step });
+    // Reset the ring for the next move.
+    const [me, profe] = this.bodies;
+    for (const b of this.bodies) Object.assign(b, { mareo: 0, caidas: 0, act: 'idle', at: 0, vx: 0, vz: 0, down: null, aguante: 100 });
+    Object.assign(me, { x: -.7, z: 0 }); Object.assign(profe, { x: .7, z: 0 });
+    if (TUTORIAL[t.step].id === 'pararse') { me.mareo = 100; knockDown(me, profe, (e) => this.fightEvent(e)); me.down.need = 6; }
+  }
+  tutorialTick(dt) {
+    const t = this.tutorial; if (!t || t.done) return;
+    t.clock += dt;
+    const [me, profe] = this.bodies;
+    // Nobody gets hurt for real while learning.
+    for (const b of this.bodies) if (b.act !== 'down') b.mareo = Math.min(b.mareo, 60);
+    if (me.act === 'dizzy') { me.act = 'idle'; me.at = 0; }
+    if (me.down && me.down.count >= 8) me.down.count = 4;   // all the time you need to get up
+    profe.caidas = 0; me.caidas = Math.min(me.caidas, 1);
+    if (TUTORIAL[t.step].id === 'mover' && Math.hypot(me.x - profe.x, me.z - profe.z) < 1.6) this.tutorialCount();
+  }
+
   // Torneo: which round this match is.
   stage() {
     if (this.mode !== 'torneo' || !this.bracket) return null;
@@ -190,10 +265,10 @@ export class Trifulca {
   // The crowd spreads around the ring, away from the corners.
   placeCrowd() {
     const crowd = this.players.filter(p => !this.bodies.some(b => b.id === p.id));
+    // The camera looks from +Z, so the ring stands at the two ends and across the back.
     crowd.forEach((p, i) => {
       const t = (i + .5) / Math.max(1, crowd.length);
-      const side = i % 2 ? 0 : Math.PI, spread = (t - .5) * 1.5;
-      p.angle = side + spread;
+      p.angle = clampCrowd(Math.PI + (t - .5) * 2 * (Math.PI - CROWD_GAP));
     });
   }
 
@@ -255,32 +330,39 @@ export class Trifulca {
     }
     // The fight.
     const f = this.fight;
-    this.time -= dt; f.time = this.time;
+    if (!this.tutorial) { this.time -= dt; f.time = this.time; }
+    this.tutorialTick(dt);
     for (const b of this.bodies) {
       if (!inRing(b)) { this.benchStep(b, dt); continue; }
       const press = { ...(pressed.get(b.id) || NO_PRESS) }, move = moves.get(b.id) || {};
       if (press.a && this.useProp(b) !== false) press.a = 0;
       if (press.a && this.tag(b)) press.a = 0;
-      control(b, move, press, (e) => this.emit(e));
+      control(b, move, press, (e) => this.emitFight(e));
     }
     const kos = stepBodies(this.bodies, arena, dt, moves, (e) => this.fightEvent(e));
+    // One on one the fight stays on a line across the camera, like a fighting
+    // game: a sidestep (W/S, a dodge) moves off it and the line pulls you back.
+    const duel = this.bodies.filter(inRing);
+    if (duel.length === 2) for (const b of duel) if (b.act !== 'dodge') b.z -= b.z * Math.min(1, dt * 2.2);
     this.stepProps(dt, arena);
     for (const p of crowd()) this.crowdStep(p, moves.get(p.id), pressed.get(p.id), dt, arena);
     if (this.phase !== 'fight') return;   // a ¡cálmate! ended it
     this.ringEdge(arena, dt);
     this.twists(dt);
     for (const k of kos) {
-      if (this.phase !== 'fight') break;
+      if (this.phase !== 'fight' || this.tutorial) break;
       this.knockOut(this.body(k.ko), k.by, k.how);
     }
-    if (this.phase === 'fight' && this.time <= 0) this.bell();
+    if (this.phase === 'fight' && this.time <= 0 && !this.tutorial) this.bell();
   }
 
   fightEvent(e) {
+    this.tutorialEvent(e);
     if (['hit', 'trompon', 'caida', 'shove'].includes(e.type) && this.fight) this.fight.close = 0;
     if (e.type === 'caida') { const p = this.player(e.id); if (p) p.stats.caidas++; }
     this.emit(e);
   }
+  emitFight(e) { this.tutorialEvent(e); this.emit(e); }
 
   // Parejas: the partner on the apron gets their breath back; tag them in by
   // pressing agarrar next to them.
@@ -432,7 +514,7 @@ export class Trifulca {
     if (!input) return;
     const tx = Math.cos(p.angle), tz = -Math.sin(p.angle), r = arena.shape === 'square' ? arena.half + 1.5 : arena.r + .95;
     p.angle += (input.x * tx + input.z * tz) * 3.4 / r * dt;
-    p.angle = Math.atan2(Math.sin(p.angle), Math.cos(p.angle));
+    p.angle = clampCrowd(Math.atan2(Math.sin(p.angle), Math.cos(p.angle)));
     const spot = crowdSpot(arena, p.angle), ring = this.bodies.filter(inRing);
     const nearest = ring.map(b => ({ b, d: Math.hypot(b.x - spot.x, b.z - spot.z) })).sort((x, y) => x.d - y.d)[0];
     if (press?.gp && this.phase === 'intro' && !p.water) {
@@ -521,6 +603,10 @@ export class Trifulca {
       } else payouts.push({ id: p.id, amount: -p.bet.amount, why: 'apuesta' });
       p.bet = null;
     }
+    // Alone: a win climbs the ladder, a loss costs a life.
+    if (this.ladder) {
+      if (winners.includes(this.ladder.me)) this.ladder.step++; else this.ladder.lives--;
+    }
     // Who fights next.
     const alive = winners.filter(id => this.player(id));
     if (this.mode === 'parejas') { this.champions = alive; this.champion = alive[0] ?? null; }
@@ -559,6 +645,10 @@ export class Trifulca {
       if (b.rounds[b.round].length < 2) return this.finish();
       return this.beginIntro();
     }
+    if (this.ladder) {
+      if (this.ladder.step >= this.ladder.rivals.length || this.ladder.lives <= 0) return this.finish();
+      return this.beginIntro();
+    }
     if (this.fightNo >= this.options.peleas) return this.finish();
     this.beginIntro();
   }
@@ -568,7 +658,8 @@ export class Trifulca {
     this.titles = titlesFor(this.players);
     const richest = [...this.players].sort((a, b) => b.dolitas - a.dolitas)[0];
     this.winner = richest?.id ?? null;
-    this.emit({ type: 'noche', winner: this.winner });
+    if (this.ladder) { this.ladder.won = this.ladder.step >= this.ladder.rivals.length; if (this.ladder.won) this.winner = this.ladder.me; }
+    this.emit({ type: 'noche', winner: this.winner, ladder: this.ladder });
   }
 }
 
