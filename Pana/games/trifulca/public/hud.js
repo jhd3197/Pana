@@ -32,7 +32,29 @@ export function createHud({ me, voice = () => true }) {
   function drawFeed() { $('feed').replaceChildren(...feedItems.map(f => el('li', '', f.text))); }
   function feed(text) { feedItems.push({ text, t: 4 }); if (feedItems.length > 4) feedItems.shift(); drawFeed(); }
 
+  // Práctica: alone with the bots, the narrator coaches the rock-paper-scissors.
+  const TIPS = {
+    wind: 'Tip: ¡pégale un jab mientras carga el trompón, o esquiva con Espacio!',
+    block: 'Tip: si se cubre, agárralo con L: el agarre le gana a la guardia.',
+    dizzy: 'Tip: está mareado: un golpe limpio ahora lo tumba.',
+    caidaMe: 'Tip: ¡machaca J para pararte antes del diez!',
+    out: 'Tip: el público te devuelve al ring; no te quedes en la orilla.',
+    dodged: 'Tip: después de un trompón fallado quedas abierto. ¡Cuidado!',
+  };
+  const tipped = new Set();
+  function coach(e) {
+    const id = me(), mine = state?.bodies?.find(b => b.id === id);
+    if (!mine || state.players.filter(p => !p.bot).length > 1) return;
+    const foe = (x) => x != null && x !== id;
+    const key = e.type === 'wind' && foe(e.id) ? 'wind' : e.type === 'block' && foe(e.id) && e.by === id ? 'block'
+      : e.type === 'dizzy' && foe(e.id) ? 'dizzy' : e.type === 'caida' && e.id === id ? 'caidaMe'
+        : e.type === 'out' && e.id === id ? 'out' : e.type === 'dodged' && e.by === id ? 'dodged' : null;
+    if (!key || tipped.has(key)) return;
+    tipped.add(key); setTimeout(() => feed(TIPS[key]), 900);
+  }
+
   function react(e) {
+    coach(e);
     const line = lineFor(e, name, names);
     if (line) call(line.text, { big: line.big, ref: line.ref, speak: line.say });
     if (e.type === 'count') {

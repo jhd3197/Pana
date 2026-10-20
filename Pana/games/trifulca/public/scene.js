@@ -57,7 +57,8 @@ export function createTrifulcaScene(canvas, { me = () => null } = {}) {
       light.position.copy(p); scene.add(light); lampLights.push(light);
     }
     // Neighbours who came to watch: seated ones on the chairs.
-    arena.npcSpots.forEach((spot, i) => {
+    // At most 18 neighbours: each one is a full character to build.
+    arena.npcSpots.filter((_, i, all) => all.length <= 18 || i % Math.ceil(all.length / 18) === 0).forEach((spot, i) => {
       const look = spot.senora ? { outfit: 'hawaiana', outfitColor: '#ff6fae', hat: 'none', glasses: 'redondos', face: 'feliz' } : randomAvatar(rng(i * 31 + 7));
       if (arena.hats && !spot.senora && i % 4 !== 3) Object.assign(look, { hat: 'llanero', hatColor: ['#7a5230', '#e9dcc0', '#3b2a1a'][i % 3] });
       const npc = buildCharacter(look, { seated: !!spot.seated });

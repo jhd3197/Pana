@@ -98,11 +98,15 @@ body[data-phase="intro"] .role { bottom: 150px; }
 #touch { display: none; }
 @media (pointer: coarse) {
   #touch { display: block; }
-  .pk-dpad { position: fixed; left: 16px; bottom: 30px; }
-  .touch-buttons { position: fixed; right: 16px; bottom: 26px; display: grid; grid-template-columns: repeat(2, auto); gap: 8px; align-items: center; }
-  .touch-buttons #touch-golpe { grid-row: span 2; }
+  .pk-dpad { position: fixed; left: 12px; bottom: 28px; --pk-touch: 50px; }
+  .touch-buttons { position: fixed; right: 12px; bottom: 26px; display: grid; grid-template-columns: repeat(2, 78px); grid-template-areas: "dale cubrir" "agarrar golpe" "esquivar golpe"; gap: 8px; align-items: stretch; }
+  .touch-buttons .pk-touch { --pk-touch: 50px; min-width: 0; width: 100%; padding: 0 6px; font-size: 14px; }
+  #touch-golpe { grid-area: golpe; height: auto; font-size: 18px; }
+  #touch-cubrir { grid-area: cubrir; } #touch-esquivar { grid-area: esquivar; } #touch-agarrar { grid-area: agarrar; } #touch-dale { grid-area: dale; }
   .role, .feed { display: none; }
-  .bets { bottom: 200px; }
+  .bets { bottom: 210px; }
+  body:has(#bars:not([hidden])) .me { display: none; }
+  .connection { bottom: 2px; }
 }
 @media (max-width: 700px) {
   #bars { top: 62px; gap: 8px; }

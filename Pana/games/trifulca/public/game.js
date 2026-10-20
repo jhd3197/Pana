@@ -46,7 +46,7 @@ const bet = (pick) => {
 };
 document.addEventListener('trifulca:bet', (event) => bet(event.detail));
 const voiceButton = $('voice');
-const showVoice = () => { voiceButton.textContent = voiceOn ? 'Narrador: sí' : 'Narrador: no'; voiceButton.setAttribute('aria-pressed', String(voiceOn)); };
+const showVoice = () => { voiceButton.textContent = voiceOn ? 'Voz: sí' : 'Voz: no'; voiceButton.setAttribute('aria-pressed', String(voiceOn)); };
 voiceButton.onclick = () => { voiceOn = !voiceOn; if (!voiceOn) hush(); try { localStorage.setItem(VOICE_KEY, voiceOn ? 'on' : 'off'); } catch { /* per-viewer nicety */ } showVoice(); };
 showVoice();
 
