@@ -7,6 +7,7 @@ import * as THREE from 'three';
 import { buildCharacter } from '/engine/models/characters/pana/avatar-model.js';
 import { normalizeAvatar } from '/engine/avatar.js';
 import { mummy } from '/engine/models/props/reliquia.js';
+import { mineCart } from '/engine/models/props/mine.js';
 import { jaguar } from '/engine/models/fauna/jaguar.js';
 import { splatTexture } from '/engine/models/props/paintball.js';
 import { createSky } from '/engine/worlds/sky.js';
@@ -16,7 +17,7 @@ import { pixelRatio, bindRenderer, shadowSize } from '/engine/settings.js';
 import { createExpeditionWorld, itemModel } from './scene.js';
 import { floorOf } from './deck.js';
 import { ITEMS } from './items.js';
-import { holds, alive } from './rules.js';
+import { holds, alive, cartValue } from './rules.js';
 
 export const COLORS = ['#ffc83d', '#3fd6e0', '#ff7a6b', '#7bdc5a', '#b98bff', '#ff8fc8', '#4a9dff', '#ffa94d'];
 const EYE = 1.45, POOL = 5;
@@ -62,7 +63,7 @@ export function createView(canvas, { seed = 1, floors = 3 } = {}) {
   const splatMaterial = (seat, n) => { const key = `${seat}:${n}`; if (!splatMaterials.has(key)) splatMaterials.set(key, new THREE.MeshBasicMaterial({ color: COLORS[seat % 8], map: splatTextures[n % 4], transparent: true, alphaTest: .4, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -4, side: THREE.DoubleSide })); return splatMaterials.get(key); };
   const splats = new Map(), shots = new Map(), darts = new Map();
   const ballGeometry = new THREE.SphereGeometry(.09, 8, 6), dartGeometry = new THREE.CylinderGeometry(.02, .02, .5, 5).rotateZ(Math.PI / 2), dartMaterial = new THREE.MeshStandardMaterial({ color: 0x7a5a2a });
-  const avatars = new Map(), enemies = new Map();
+  const avatars = new Map(), enemies = new Map(), carts = new Map();
   let dustAt = 0, h = Math.PI, pitch = 0, bob = 0, sway = 0, shake = 0, lift = 0, fov = 74, lookName = 'camp', poolAt = 0, swingT = [0, 0];
   const ringGeometry = new THREE.RingGeometry(.85, 1, 40), dangerMaterial = new THREE.MeshBasicMaterial({ color: 0xff5a3a, transparent: true, opacity: .7, depthWrite: false, side: THREE.DoubleSide });
 
@@ -108,7 +109,7 @@ export function createView(canvas, { seed = 1, floors = 3 } = {}) {
     a.bubble && disposeSprite(a.bubble); a.bubble = label(text, '#fff', { bubble: true }); a.bubble.position.y = 2.75; a.bubble.scale.set(3.6, .68, 1); a.root.add(a.bubble); a.bubbleT = 3;
   }
 
-  function draw(state, me, dt, { downedLook = false } = {}) {
+  function draw(state, me, dt, { downedLook = false, self = me?.id } = {}) {
     const t = performance.now() / 1000, vf = me ? floorOf(me.x) : 0;
     setLook(vf === 0 ? 'camp' : 'deep');
     world.update(t, state, dt, me);
@@ -118,7 +119,7 @@ export function createView(canvas, { seed = 1, floors = 3 } = {}) {
     for (const [i, p] of state.players.entries()) {
       seen.add(p.id);
       const a = avatarFor(p, i), body = me?.id === p.id ? me : p;
-      a.root.visible = !p.spectator && me?.id !== p.id && floorOf(p.x) === vf;
+      a.root.visible = !p.spectator && p.id !== self && floorOf(p.x) === vf;
       if (!a.root.visible) continue;
       const target = new THREE.Vector3(body.x, (body.y || 0), body.z);
       if (a.root.position.distanceTo(target) > 5) a.root.position.copy(target); else a.root.position.lerp(target, Math.min(1, dt * 14));
@@ -169,6 +170,24 @@ export function createView(canvas, { seed = 1, floors = 3 } = {}) {
       if (a.model.userData.dispose) a.model.userData.dispose(); else a.root.traverse(o => { o.geometry?.dispose(); o.material?.dispose?.(); });
       a.root.removeFromParent(); a.ring.removeFromParent(); enemies.delete(id);
     }
+    // Carritos: their load sits in the hopper and the balance floats above.
+    for (const c of state.carts || []) {
+      let a = carts.get(c.id);
+      if (!a) { const root = new THREE.Group(), model = mineCart({ seed: 41, load: 'empty' }), bed = new THREE.Group(); bed.position.y = 1.02; root.add(model, bed); scene.add(root); root.position.set(c.x, 0, c.z); a = { root, bed, key: null, tag: null }; carts.set(c.id, a); }
+      a.root.visible = floorOf(c.x) === vf;
+      const target = new THREE.Vector3(c.x, 0, c.z); if (a.root.position.distanceTo(target) > 4) a.root.position.copy(target); else a.root.position.lerp(target, Math.min(1, dt * 14));
+      a.root.rotation.y = c.h;
+      const key = `${c.contents.map(x => x.kind).join()}|${c.big?.kind || ''}`;
+      if (key !== a.key) {
+        a.key = key; a.bed.clear();
+        c.contents.slice(-9).forEach((x, i) => { const m = itemModel(x.kind); m.scale.multiplyScalar(ITEMS[x.kind].size === 'bag' ? 1.4 : .6); m.position.set((i % 3 - 1) * .3, Math.floor(i / 3) * .12, (Math.floor(i / 3) % 3 - 1) * .4); m.rotation.y = i; a.bed.add(m); });
+        if (c.big) { const m = itemModel(c.big.kind); m.scale.multiplyScalar(.42); m.position.y = .2; a.bed.add(m); }
+        a.tag && disposeSprite(a.tag); a.tag = null;
+        const value = cartValue(c);
+        if (value) { a.tag = label(`Bs. ${Math.round(value).toLocaleString('es-VE')}`, '#ffd36a'); a.tag.position.y = 2.6; a.tag.scale.set(2.4, .45, 1); a.root.add(a.tag); }
+      }
+    }
+    for (const [id, a] of carts) if (!state.carts?.some(c => c.id === id)) { a.tag && disposeSprite(a.tag); a.root.removeFromParent(); carts.delete(id); }
     // Honda shots, darts and paint.
     syncSimple(shots, state.shots, s => { const m = new THREE.Mesh(ballGeometry, new THREE.MeshBasicMaterial({ color: COLORS[s.seat % 8] })); return m; }, (m, s) => m.position.set(s.x, s.y, s.z), m => m.material.dispose());
     syncSimple(darts, state.darts, () => new THREE.Mesh(dartGeometry, dartMaterial), (m, d) => m.position.set(d.x, 1.1, d.z));
@@ -195,7 +214,7 @@ export function createView(canvas, { seed = 1, floors = 3 } = {}) {
       for (let i = 0; i < 2; i++) {
         swingT[i] = me.swing > 0 && me.swingHand === i ? me.swing / .3 : Math.max(0, swingT[i] - dt * 4);
         const s = Math.sin(swingT[i] * Math.PI);
-        hands[i].visible = !me.downed && me.grip == null;
+        hands[i].visible = !me.downed && me.grip == null && me.push == null;
         hands[i].position.set((i ? -1 : 1) * (camera.aspect < 1 ? .16 : .32) + Math.sin(bob + i * Math.PI) * .012 * sway - s * (i ? -.12 : .12), -.36 + Math.abs(Math.cos(bob)) * .015 * sway + s * .1, -.7 - s * .18);
         hands[i].rotation.set(-s * 1.2, 0, s * (i ? -.4 : .4));
       }
@@ -249,6 +268,7 @@ export function createView(canvas, { seed = 1, floors = 3 } = {}) {
     dispose() {
       removeEventListener('resize', resize); unbind?.(); puffs.clear(); waves.clear();
       for (const [id, a] of avatars) removeAvatar(a, id);
+      for (const a of carts.values()) { a.tag && disposeSprite(a.tag); a.root.removeFromParent(); }
       world.dispose(); sky.dispose(); splatTextures.forEach(t => t.dispose()); splatMaterials.forEach(m => m.dispose());
       [ballGeometry, dartGeometry, splatGeometry, ringGeometry, pawGeometry].forEach(g => g.dispose()); [dartMaterial, dangerMaterial, pawMaterial].forEach(m => m.dispose());
       renderer.dispose();

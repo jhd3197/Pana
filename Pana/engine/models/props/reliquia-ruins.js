@@ -8,7 +8,8 @@
 //
 // `inside` says whether a point is walkable; `ground` gives its floor height
 // (stair ramps slope); `solid` leaves out the slabs over a pit, and `open`
-// leaves a wall out where the gallery meets the open air (a mine mouth). Walls stand just outside every walkable 1 m cell, so
+// leaves a wall out where the gallery meets the open air (a mine mouth);
+// `sky` opens the ceiling (a shaft a rope hangs down). Walls stand just outside every walkable 1 m cell, so
 // collision code can use the same outline. Glyph inlays glow softly.
 import * as THREE from 'three';
 import { rng } from '/engine/models/core/primitives.js';
@@ -28,7 +29,7 @@ function instanced(geometry, material, items, place) {
   return mesh;
 }
 
-export function ruinShell({ inside, ground = () => 0, solid = () => true, open = () => false, bounds, palette = RUIN_PALETTES.sol, height = 4.6, seed = 7, roof = true } = {}) {
+export function ruinShell({ inside, ground = () => 0, solid = () => true, open = () => false, sky = () => false, tile = .95, bounds, palette = RUIN_PALETTES.sol, height = 4.6, seed = 7, roof = true } = {}) {
   const r = rng(seed), [x0, z0, x1, z1] = bounds.map(Math.floor);
   const cell = (i, j) => inside(i + .5, j + .5);
   const cells = [];
@@ -37,7 +38,7 @@ export function ruinShell({ inside, ground = () => 0, solid = () => true, open =
   const owned = [];
   const mat = (extra) => { const m = new THREE.MeshStandardMaterial({ roughness: .9, ...extra }); owned.push(m); return m; };
   // Floor: 1 m slabs, slightly bevelled, tilted along ramps.
-  const slab = new THREE.BoxGeometry(.95, .3, .95), floorColor = new THREE.Color(palette.floor);
+  const slab = new THREE.BoxGeometry(tile, .3, tile), floorColor = new THREE.Color(palette.floor);
   group.add(instanced(slab, mat({ roughness: .85 }), cells.filter(([i, j]) => solid(i + .5, j + .5)), (m, c, [i, j]) => {
     const x = i + .5, z = j + .5, y = ground(x, z), dx = ground(x + .5, z) - ground(x - .5, z), dz = ground(x, z + .5) - ground(x, z - .5);
     m.position.set(x, y - .15 - r() * .03, z); m.rotation.set(Math.atan(dz), 0, -Math.atan(dx)); m.scale.set(1, 1, 1);
@@ -75,7 +76,7 @@ export function ruinShell({ inside, ground = () => 0, solid = () => true, open =
   const roofCells = new Map();
   if (roof) for (const [i, j] of cells) { const key = `${Math.floor(i / 2)},${Math.floor(j / 2)}`; if (!roofCells.has(key)) roofCells.set(key, [Math.floor(i / 2) * 2, Math.floor(j / 2) * 2]); }
   const slabRoof = new THREE.BoxGeometry(2.2, .6, 2.2), ceiling = new THREE.Color(palette.ceiling);
-  group.add(instanced(slabRoof, mat({ roughness: 1 }), [...roofCells.values()], (m, c, [i, j]) => {
+  group.add(instanced(slabRoof, mat({ roughness: 1 }), [...roofCells.values()].filter(([i, j]) => !sky(i + 1, j + 1)), (m, c, [i, j]) => {
     m.position.set(i + 1, ground(i + 1, j + 1) + height + .3 - r() * .25, j + 1); m.rotation.set((r() - .5) * .1, r() * 3, (r() - .5) * .1);
     c.copy(ceiling).multiplyScalar(.8 + r() * .35);
   }));

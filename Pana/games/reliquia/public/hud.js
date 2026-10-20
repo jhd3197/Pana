@@ -21,12 +21,12 @@ export function createHud() {
   function vote(player, line, time) { if (line === 0 || line === 1) votes.set(player, { line, time }); }
 
   function slot(i, held, p, state) {
-    const node = $(`hand-${i}`), label = node.querySelector('b'), gripping = p.grip != null;
+    const node = $(`hand-${i}`), label = node.querySelector('b'), gripping = p.grip != null || p.push != null;
     const big = gripping && state.items.find(x => x.id === p.grip);
     node.classList.toggle('is-empty', !held && !gripping); node.classList.toggle('is-gripping', gripping);
     node.classList.toggle('is-artifact', !!held && !!ITEMS[held.kind].artifact);
     if (held && ITEMS[held.kind].artifact) node.style.setProperty('--aura', `#${ARTIFACT_AURA[held.kind].toString(16).padStart(6, '0')}`);
-    const text = gripping && big ? `${ITEMS[big.kind].name} · ${big.carriers.length}/${ITEMS[big.kind].need}` : held ? `${ITEMS[held.kind].name}${held.kind === 'miche' ? ` ×${held.uses}` : ''}` : i ? 'Mano izquierda' : 'Mano derecha';
+    const text = p.push != null ? 'Empujando el carrito' : gripping && big ? `${ITEMS[big.kind].name} · ${big.carriers.length}/${ITEMS[big.kind].need}` : held ? `${ITEMS[held.kind].name}${held.kind === 'miche' ? ` ×${held.uses}` : ''}` : i ? 'Mano izquierda' : 'Mano derecha';
     if (label.textContent !== text) label.textContent = text;
     node.title = held && ITEMS[held.kind].artifact ? `${ITEMS[held.kind].good} · ${ITEMS[held.kind].bad}` : '';
   }

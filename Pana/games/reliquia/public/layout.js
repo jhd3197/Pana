@@ -66,6 +66,8 @@ export function layoutFor(seed = 1, floors = 3) {
     return moved;
   }
   function groundAt(x, z) {
+    // Stepping into the rappel hole you sink before the rope takes you down.
+    for (const p of run.portals) if (p.dir === 'down' && p.floor > 0 && p.floor === floorOf(x) && inRect(x, z, p.rect)) return -Math.min(1.6, (p.rect[3] - z) * .7);
     for (const s of run.stubs) if (s.floor === floorOf(x) && inRect(x, z, s.rect)) {
       const t = Math.max(0, Math.min(1, (z - s.a) / (s.b - s.a)));
       return s.from + (s.to - s.from) * t;

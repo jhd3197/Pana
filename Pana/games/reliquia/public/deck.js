@@ -13,7 +13,9 @@ import { SMALL, BIG_POOL, ARTIFACTS } from './items.js';
 export const CELL = 26, SPACING = 220, ROWS = 4, COLS = [-1, 0, 1], HEIGHT = 4.6;
 export const CAMP = { x: 0, z: 12 }, TRUCK = { x: 9, z: 20, h: -Math.PI / 2 }, TRUCK_RADIUS = 4.6;
 export const TABLE = { x: -7, z: 9 };
-const CAMP_RECT = [-18, -2, 18, 30], STUB = 7, DROP = 2.4;
+const CAMP_RECT = [-18, -2, 18, 30], STUB = 7;
+// The portal zone at the far end of a stub (2.6 m deep).
+const zone = s => s.b < s.a ? [s.rect[0], s.b, s.rect[2], s.b + 2.6] : [s.rect[0], s.b - 2.6, s.rect[2], s.b];
 
 export const ROOM_NAMES = {
   entrada: 'La bajada', tesoro: 'Cámara del tesoro', columnas: 'Sala de columnas', trampas: 'Pasillo de las losas',
@@ -21,7 +23,7 @@ export const ROOM_NAMES = {
   ruedas: 'Las dos ruedas', guardian: 'El trono del guardián', boveda: 'La bóveda de oro', oculta: 'La sala escondida',
 };
 export const FLOOR_NAMES = ['El campamento', 'Las afueras de la mina', 'Las cámaras trampa', 'Las ruinas malditas', 'La bóveda del jaguar', 'El oro profundo'];
-const SIZES = { entrada: [14, 12], tesoro: [16, 14], columnas: [18, 16], trampas: [16, 16], idolo: [14, 14], veta: [16, 14], cripta: [16, 16],
+const SIZES = { entrada: [16, 14], tesoro: [16, 14], columnas: [18, 16], trampas: [16, 16], idolo: [14, 14], veta: [16, 14], cripta: [16, 16],
   santuario: [12, 12], puente: [18, 18], ruedas: [18, 16], guardian: [20, 18], boveda: [22, 22], oculta: [12, 12] };
 const DECK = ['tesoro', 'columnas', 'trampas', 'idolo', 'veta', 'cripta', 'santuario', 'puente'];
 
@@ -35,12 +37,17 @@ const cache = new Map();
 export function generateRun(seed = 1, { floors = 3 } = {}) {
   const key = `${seed}:${floors}`;
   if (cache.has(key)) return cache.get(key);
-  const run = { seed, floors, rooms: [], corridors: [], stubs: [], portals: [], seals: [], hidden: [], loot: [], chests: [], plates: [],
+  const run = { seed, floors, rooms: [], corridors: [], stubs: [], portals: [], lifts: [], carts: [], seals: [], hidden: [], loot: [], chests: [], plates: [],
     sleepers: [], obstacles: [], lights: [], decor: [], pits: [], bridges: [] };
   const id = { loot: 0, chest: 0, plate: 0, sleeper: 0 };
   // ---- Camp: outdoors, the truck and the mine mouth at its north edge.
   run.rooms.push({ id: 'camp', floor: 0, kind: 'camp', x: 0, z: 14, w: 36, d: 32, name: FLOOR_NAMES[0], rect: CAMP_RECT });
-  const campStub = { id: 'stub-camp', floor: 0, rect: [-2.2, -2 - STUB, 2.2, -1.9], axis: 'z', a: -2, b: -2 - STUB, from: 0, to: -DROP };
+  // The mine is a level gallery into the mountain; its far end leads inside.
+  const campStub = { id: 'stub-camp', kind: 'tunnel', floor: 0, rect: [-2.2, -14, 2.2, -1.9], axis: 'z', a: -2, b: -14, from: 0, to: 0 };
+  // The headframe beside the mine mouth: the montacargas lands here.
+  run.lifts.push({ id: 'lift-0', floor: 0, x: 7, z: 3 });
+  // A carrito waits by the truck; vein rooms keep more down below.
+  run.carts.push({ id: 'cart-0', floor: 0, x: 2, z: 18, h: Math.PI });
   run.stubs.push(campStub);
   run.decor.push({ kind: 'table', floor: 0, x: TABLE.x, z: TABLE.z, h: 0 });
   // The truck is long: three circles along it (it faces -x).
@@ -105,14 +112,16 @@ export function generateRun(seed = 1, { floors = 3 } = {}) {
     }
     // Stairs: up from the entrance's south wall, down from the exit's north wall.
     const entry = rooms[0], exit = rooms.at(-1), down = exit.kind !== 'boveda';
-    const up = { id: `stub-up-${f}`, floor: f, rect: [entry.x - 2.2, entry.z + entry.d / 2 - .1, entry.x + 2.2, entry.z + entry.d / 2 + STUB], axis: 'z', a: entry.z + entry.d / 2, b: entry.z + entry.d / 2 + STUB, from: 0, to: DROP };
+    // Floor 1's way back is the gallery to the daylight; deeper floors climb a rope.
+    const up = { id: `stub-up-${f}`, kind: f === 1 ? 'tunnel' : 'rope', floor: f, rect: [entry.x - 2.2, entry.z + entry.d / 2 - .1, entry.x + 2.2, entry.z + entry.d / 2 + STUB], axis: 'z', a: entry.z + entry.d / 2, b: entry.z + entry.d / 2 + STUB, from: 0, to: 0 };
     run.stubs.push(up);
     const arrival = { floor: f, x: entry.x, z: entry.z + entry.d / 2 - 1.6, h: Math.PI };
     const above = previousExit || { floor: 0, x: 0, z: .8, h: 0 }, aboveStub = previousExit ? previousExit.stub : campStub;
-    run.portals.push({ id: `down-${f - 1}`, floor: above.floor, rect: aboveStub.axis === 'z' && aboveStub.to < 0 ? [aboveStub.rect[0], aboveStub.rect[1], aboveStub.rect[2], aboveStub.rect[1] + 2.6] : aboveStub.rect, to: arrival, dir: 'down' });
-    run.portals.push({ id: `up-${f}`, floor: f, rect: [up.rect[0], up.b - 2.6, up.rect[2], up.b], to: above, dir: 'up' });
+    run.portals.push({ id: `down-${f - 1}`, floor: above.floor, rect: zone(aboveStub), to: arrival, dir: 'down' });
+    run.portals.push({ id: `up-${f}`, floor: f, rect: zone(up), to: above, dir: 'up' });
     if (down) {
-      const stub = { id: `stub-down-${f}`, floor: f, rect: [exit.x - 2.2, exit.z - exit.d / 2 - STUB, exit.x + 2.2, exit.z - exit.d / 2 + .1], axis: 'z', a: exit.z - exit.d / 2, b: exit.z - exit.d / 2 - STUB, from: 0, to: -DROP };
+      // The way down is a hole with a rope: you rappel into the next floor.
+      const stub = { id: `stub-down-${f}`, kind: 'rappel', floor: f, rect: [exit.x - 2.2, exit.z - exit.d / 2 - STUB, exit.x + 2.2, exit.z - exit.d / 2 + .1], axis: 'z', a: exit.z - exit.d / 2, b: exit.z - exit.d / 2 - STUB, from: 0, to: 0 };
       run.stubs.push(stub);
       previousExit = { floor: f, x: exit.x, z: exit.z - exit.d / 2 + 1.6, h: 0, stub };
       const seal = { id: `seal-${f}`, floor: f, kind: exit.kind, room: exit.id, x: exit.x, z: exit.z - exit.d / 2 - .4, rect: [exit.x - 2.3, exit.z - exit.d / 2 - .9, exit.x + 2.3, exit.z - exit.d / 2 + .1] };
@@ -167,8 +176,14 @@ function furnish(run, room, f, floors, R, id) {
   if (f > 1 || R() < .5) decor('stalactites', cx + (R() - .5) * room.w * .5, cz + (R() - .5) * room.d * .5, R() * 6);
   switch (room.kind) {
     case 'entrada':
+      // From floor 2 down, a montacargas in a free corner rides back to the camp.
+      if (f >= 2) for (const [sx, sz] of [[-1, -1], [1, -1], [-1, 1], [1, 1], [-1, 0], [1, 0], [0, -1]]) {
+        const x = cx + sx * (room.w / 2 - 2.2), z = cz + sz * (room.d / 2 - 2.2);
+        if (!free(x, z, 1.9)) continue;
+        run.lifts.push({ id: `lift-${f}`, floor: f, x, z }); taken.push({ x, z, r: 2.2 }); break;
+      }
+      if (f >= 2 && !run.lifts.some(l => l.floor === f)) { const x = cx - room.w / 2 + 2.2, z = cz - room.d / 2 + 2.2; run.lifts.push({ id: `lift-${f}`, floor: f, x, z }); taken.push({ x, z, r: 2.2 }); }
       loot(f === 1 ? 'machete' : 'botiquin'); small(2);
-      decor(f === 1 ? 'support' : 'rubble', cx, cz + room.d / 2 - 2.5, 0);
       break;
     case 'tesoro':
       chest(); if (R() < .6) chest(); small(4 + f);
@@ -202,6 +217,7 @@ function furnish(run, room, f, floors, R, id) {
       for (const s of [-1, 1]) decor('vein', cx + s * (room.w / 2 - .4), cz + (R() - .5) * 6, s < 0 ? Math.PI / 2 : -Math.PI / 2);
       decor('ore', cx - room.w * .25, cz + room.d * .25, 0); run.obstacles.push({ x: cx - room.w * .25, z: cz + room.d * .25, r: 1.4, floor: f }); taken.push({ x: cx - room.w * .25, z: cz + room.d * .25, r: 2 });
       if (R() < .7) big('cart'); small(5); loot('emerald');
+      { const p = spot(1.2); if (p) run.carts.push({ id: `cart-${run.carts.length}`, floor: f, x: p.x, z: p.z, h: R() * 6.28 }); }
       break;
     case 'cripta':
       for (let i = 0; i < 3; i++) { const p = spot(1.1); if (p) { decor('coffin', p.x, p.z, Math.round(R()) * Math.PI / 2); run.obstacles.push({ x: p.x, z: p.z, r: 1, floor: f }); } }

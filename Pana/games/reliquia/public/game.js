@@ -102,6 +102,9 @@ function handle(e) {
     case 'greed': sfx.greed(); view.shake(.4); shout(e.text, { tone: 'coral' }); break;
     case 'collapse': sfx.collapse(); view.shake(.9); break;
     case 'laugh': sfx.laugh(); break;
+    case 'cart-load': case 'cart-catch': case 'cart-big': sfx.coin(); if (e.kind !== 'cart-load') sfx.bank(false); break;
+    case 'cart-grab': sfx.grab(); break;
+    case 'lift': sound.clickUp(); sfx.stairs(); if (e.players?.includes(room.id)) fade(); break;
     case 'winch': sound.clickUp(); break;
     case 'extracted': sfx.win(); break;
     case 'wipe': sfx.wipe(); break;
@@ -172,7 +175,8 @@ function frame(now) {
   const p = me();
   // Without a mouse the left and right arrows turn.
   if (playing() && (keys.has('arrowleft') || keys.has('arrowright'))) view.look((+keys.has('arrowleft') - +keys.has('arrowright')) * dt * 2.2);
-  view.draw(state, state.phase === 'playing' ? p : null, dt);
+  // Keep the eyes on your pana after the run ends; never draw your own body.
+  view.draw(state, state.phase === 'lobby' ? null : p, dt, { self: room.id });
   uiAt -= dt; if (uiAt <= 0 && state.phase === 'playing') { uiAt = .066; hud.update(state, p, room, { heading: view.heading, paused: menu.isOpen }); }
   requestAnimationFrame(frame);
 }

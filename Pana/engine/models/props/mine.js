@@ -310,11 +310,12 @@ export function mineTrack({
   return out;
 }
 
-export function minePortal({ seed = 51, name = 'MINA 1', light = false } = {}) {
+export function minePortal({ seed = 51, name = 'MINA 1', light = false, niche = true } = {}) {
   // Tunnel mouth facing +Z: rock face, three timber sets and a lagged roof.
+  // niche: false leaves the mouth open for a walkable tunnel behind it.
   const g = new THREE.Group(), R = rng(seed);
-  box(g, 'niche', I, 0, 2, -5.2, 3.8, 4.2, 10.5);
-  box(g, 'rock', I, 0, 2.5, -1.2, 7, 5.6, 1.6);
+  if (niche) { box(g, 'niche', I, 0, 2, -5.2, 3.8, 4.2, 10.5); box(g, 'rock', I, 0, 2.5, -1.2, 7, 5.6, 1.6); }
+  else { for (const s of [-1, 1]) box(g, 'rock', I, s * 2.6, 2.5, -1.2, 1.8, 5.6, 1.6); box(g, 'rock', I, 0, 4.75, -1.2, 3.4, 1.1, 1.6); }
   for (let i = 0; i < 10; i++) rock(g, R() < 0.5 ? 'rock' : 'rockD', I, (R() - 0.5) * 8, 4.6 + R() * 1.6, -1 - R() * 1.2, 1 + R() * 0.8, R);
   for (const s of [-1, 1]) for (let i = 0; i < 3; i++) rock(g, 'rockL', I, s * (3.4 + R() * 0.6), 0.8 + i * 1.5, -0.8 - R(), 0.9 + R() * 0.5, R);
   for (let k = 0; k < 3; k++) {

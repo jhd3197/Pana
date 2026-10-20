@@ -222,3 +222,26 @@ test('the jaguar crouches before it pounces, and a farol dazes it once in a whil
   place(g, 1, cat.x, cat.z + 4); a.h = facing(a, cat); step(g, .1);
   assert.ok(cat.stun > 0 && cat.immune > 0, 'dazed by the beam');
 });
+
+test('the carrito takes the bag, a big treasure, and banks it all at the truck', () => {
+  const g = setup(1), [a] = g.players, cart = g.carts.find(c => c.id === 'cart-0');
+  a.bag = ['coins', 'emerald']; place(g, 1, cart.x, cart.z + 1.6); a.h = facing(a, cart);
+  assert.equal(interaction(g, a).kind, 'cart-dump'); g.action(1, 'interact'); assert.equal(cart.contents.length, 2); assert.equal(a.bag.length, 0);
+  const disk = g.spawnItem('sunDisk', cart.x - 3.2, cart.z, { y: 0 });
+  place(g, 1, disk.x - 1.6, disk.z); a.h = facing(a, disk); a.interactCooldown = 0; g.action(1, 'interact');
+  for (let i = 0; i < 80 && !cart.big; i++) g.update(.05, new Map([[1, { x: 1, z: 0 }]]));
+  assert.equal(cart.big?.kind, 'sunDisk'); assert.equal(a.grip, null);
+  place(g, 1, cart.x, cart.z + 1.6); a.h = facing(a, cart); a.interactCooldown = 0;
+  assert.equal(interaction(g, a).kind, 'cart-push'); g.action(1, 'interact'); assert.equal(a.push, cart.id);
+  for (let i = 0; i < 200 && g.haul === 0; i++) g.update(.05, new Map([[1, { x: (TRUCK.x - cart.x) / 8, z: (TRUCK.z - cart.z) / 8 }]]));
+  assert.equal(g.haul, ITEMS.coins.value + ITEMS.emerald.value + ITEMS.sunDisk.value); assert.equal(cart.contents.length, 0);
+});
+
+test('the montacargas rides from a deep floor to the camp and back down', () => {
+  const g = setup(1), [a] = g.players, run2 = run(g), lift = run2.lifts.find(l => l.floor === 2), camp = run2.lifts.find(l => l.floor === 0);
+  place(g, 1, camp.x, camp.z); assert.equal(interaction(g, a).kind, 'info', 'nowhere to go before floor 2');
+  g.deepest = 2; assert.equal(interaction(g, a).kind, 'lift');
+  step(g, 3.2, new Map([[1, { hold: true }]])); assert.equal(floorOf(a.x), 2);
+  a.bag = ['coins']; place(g, 1, lift.x, lift.z); step(g, 8.2);
+  step(g, 3.2, new Map([[1, { hold: true }]])); assert.equal(floorOf(a.x), 0, 'back at the camp');
+});

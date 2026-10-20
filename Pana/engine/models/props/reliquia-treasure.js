@@ -299,3 +299,53 @@ export function stairSeal({ width = 3.4, height = 3.6 } = {}) {
   for (const s of [-1, 1]) part(g, new THREE.BoxGeometry(.18, height, .5), DARK_GOLD(), s * (width / 2 - .09), height / 2, .02);
   return finish(g, 'Sello de la escalera', [[-width / 2, 0, -.3], [width / 2, height, .35]]);
 }
+
+// ---------- Ways in and out ----------
+// A timber A-frame over a hole with a pulley and a rope that drops `depth`
+// metres into the dark: the way down to the next floor. Origin at the hole's
+// centre on the floor; the frame spans x.
+export function rappelRig({ depth = 6, width = 3.6 } = {}) {
+  const g = new THREE.Group(), wood = WOOD(), rope = paint(0xd9b47a, { roughness: .9 }), iron = paint(0x4a4a52, { metalness: .5, roughness: .45 });
+  for (const s of [-1, 1]) {
+    part(g, cyl(.11, .13, 3.4, 8), wood, s * width / 2, 1.6, -.5, -.18, 0, 0);
+    part(g, cyl(.11, .13, 3.4, 8), wood, s * width / 2, 1.6, .5, .18, 0, 0);
+  }
+  part(g, cyl(.1, .1, width + .3, 8), wood, 0, 3.2, 0, 0, 0, Math.PI / 2);
+  part(g, new THREE.TorusGeometry(.2, .06, 8, 16), iron, 0, 2.95, 0, 0, Math.PI / 2, 0);
+  part(g, cyl(.035, .035, depth + 3, 6), rope, .2, 3 - (depth + 3) / 2, 0);
+  for (let i = 0; i < 6; i++) part(g, sphere(.06, 6, 4), rope, .2, 2.4 - i * 1.1, 0);
+  part(g, new THREE.TorusGeometry(.4, .07, 6, 14), rope, -.9, .08, .9, Math.PI / 2);
+  return finish(g, 'Rapel de la bajada', [[-width / 2 - .3, -depth, -1], [width / 2 + .3, 3.4, 1]]);
+}
+// A knotted rope hanging from a hole in the ceiling, daylight spilling down:
+// the climb back up. Origin on the floor under the hole.
+export function climbRope({ height = 6 } = {}) {
+  const g = new THREE.Group(), rope = paint(0xd9b47a, { roughness: .9 });
+  part(g, cyl(.04, .04, height, 6), rope, 0, height / 2, 0);
+  for (let y = .6; y < height; y += .55) part(g, sphere(.075, 6, 4), rope, 0, y, 0);
+  part(g, new THREE.TorusGeometry(.32, .06, 6, 14), rope, .35, .07, .2, Math.PI / 2);
+  const beam = new THREE.Mesh(cyl(.6, .9, height, 18, 1, true), new THREE.MeshBasicMaterial({ color: 0xfff1c8, transparent: true, opacity: .14, depthWrite: false, side: THREE.DoubleSide, blending: THREE.AdditiveBlending }));
+  beam.position.y = height / 2;
+  const out = finish(g, 'Cuerda de subida', [[-1, 0, -1], [1, height, 1]]);
+  out.add(beam); return out;
+}
+// The montacargas: a timber cage on a plank deck with a bell and a lever.
+// `headframe` adds the tall tower used on the surface. Origin: deck centre.
+export function liftCage({ headframe = false } = {}) {
+  const g = new THREE.Group(), wood = WOOD(), plank = paint(0xb07a48, { roughness: .85 }), iron = paint(0x3a3a42, { metalness: .5, roughness: .4 }), bell = paint(0xffc23d, { metalness: .6, roughness: .3 });
+  part(g, new THREE.BoxGeometry(3.2, .18, 3.2), plank, 0, .09, 0);
+  const top = headframe ? 9 : 4.4;
+  for (const sx of [-1.5, 1.5]) for (const sz of [-1.5, 1.5]) part(g, new THREE.BoxGeometry(.24, top, .24), wood, sx, top / 2, sz);
+  for (const y of [1.1, top - .3]) for (const s of [-1.5, 1.5]) { part(g, new THREE.BoxGeometry(3.2, .14, .14), wood, 0, y, s); part(g, new THREE.BoxGeometry(.14, .14, 3.2), wood, s, y, 0); }
+  for (let i = -1; i <= 1; i++) part(g, cyl(.03, .03, 1, 6), iron, i * .5, .6, 1.5);
+  part(g, new THREE.BoxGeometry(.12, 1.1, .12), wood, 1.3, .6, 1.25);
+  part(g, cyl(.04, .04, .7, 6), iron, 1.3, 1.3, 1.25, .5);
+  part(g, sphere(.09, 8, 6), RUBY(), 1.3, 1.62, 1.42);
+  part(g, new THREE.ConeGeometry(.22, .32, 12, 1, true), bell, -1.3, 2.2, 1.35);
+  if (headframe) {
+    for (const s of [-1, 1]) part(g, new THREE.BoxGeometry(.3, .3, 3.6), wood, s * 1.6, top + .2, 0);
+    part(g, new THREE.TorusGeometry(.7, .12, 8, 20), iron, 0, top + .9, 0, 0, Math.PI / 2, 0);
+    part(g, cyl(.04, .04, top, 6), paint(0xd9b47a), 0, top / 2 + .5, 0);
+  }
+  return finish(g, 'Montacargas', [[-1.8, 0, -1.8], [1.8, top + 1.7, 1.8]]);
+}
