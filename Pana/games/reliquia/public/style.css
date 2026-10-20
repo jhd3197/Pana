@@ -7,7 +7,7 @@ body{--pk-game:#ffc23d;--pk-game-ink:#2a1a06;--rel-gold:#ffd36a;--rel-jade:#4fe3
 body.playing .vignette{background:radial-gradient(circle at 50% 50%,transparent 50%,rgba(7,4,12,.55) 100%)}
 body.hurt .vignette{box-shadow:inset 0 0 110px rgba(255,75,75,.5)}
 body.reversed #world{filter:hue-rotate(40deg) saturate(1.3)}
-body.downed #world{filter:grayscale(.75) brightness(.7)}
+body.is-down #world{filter:grayscale(.75) brightness(.7)}
 .fade{position:fixed;inset:0;background:var(--rel-fade);opacity:0;pointer-events:none;transition:opacity .25s;z-index:6}
 .fade.on{opacity:1;transition:none}
 
@@ -118,7 +118,7 @@ body.greed-3 .greed-bar,body.greed-4 .greed-bar{animation:greed-pulse .8s ease-i
   .place,.carry{padding:9px;gap:5px}.place #room-name{font-size:15px}.carry .pk-eyebrow,.place .pk-eyebrow{font-size:9px}.choice b{font-size:17px}
 }
 
-.downed{position:fixed;left:50%;top:30%;transform:translateX(-50%);display:grid;gap:4px;text-align:center;padding:14px 20px}
+.downed{position:fixed;left:50%;top:62%;transform:translateX(-50%);display:grid;gap:4px;text-align:center;padding:14px 20px}
 .downed b{font:400 26px var(--pk-display);color:var(--pk-coral)}
 .board{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);width:min(440px,90vw);display:grid;gap:10px;padding:16px}
 .board[hidden]{display:none}

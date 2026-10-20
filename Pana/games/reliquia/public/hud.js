@@ -88,7 +88,7 @@ export function createHud() {
     if (p.reversed > 0) effects.push(`Miche: controles al revés ${Math.ceil(p.reversed)} s`);
     for (const h of p.hands) if (h && ITEMS[h.kind].artifact) effects.push(`${ITEMS[h.kind].name}: ${ITEMS[h.kind].good.toLowerCase()}, ${ITEMS[h.kind].bad.toLowerCase()}`);
     const text = effects.join(' · '); if ($('effects').textContent !== text) $('effects').textContent = text;
-    document.body.classList.toggle('reversed', p.reversed > 0); document.body.classList.toggle('downed', !!p.downed);
+    document.body.classList.toggle('reversed', p.reversed > 0); document.body.classList.toggle('is-down', !!p.downed);
     document.body.classList.toggle('hurt', p.hit > 0);
     // E prompt.
     const target = playing && !paused ? interaction(state, p) : null;

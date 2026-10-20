@@ -456,7 +456,7 @@ export class Expedition {
     this.phase = 'results'; this.outcome = outcome;
     this.payout = outcome === 'extracted' ? this.haul : Math.round(this.haul * (this.options.wipeShare ?? 20) / 100);
     const crude = this.options.crude;
-    this.event(outcome, outcome === 'extracted' ? `¡Nos vamos! Bs. ${this.payout.toLocaleString('es-VE')} en el camión.` : `${crude ? 'Por pajúos.' : pickLine(['Por confiados.', 'Por gafos.', 'Te quedaste sin el chivo y sin el mecate'], this.seed)} La ruina se quedó con todo.`);
+    this.event(outcome, outcome === 'extracted' ? `¡Nos vamos! Bs. ${this.payout.toLocaleString('es-VE')} en el camión.` : `${crude ? 'Por pajúos.' : pickLine(['Por confiados.', 'Por gafos.', 'Te quedaste sin el chivo y sin el mecate.'], this.seed)} La ruina se quedó con todo.`);
   }
   // Big treasures move with the average push of whoever carries them.
   carry(dt) {
