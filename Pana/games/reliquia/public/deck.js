@@ -1,6 +1,7 @@
-// The expedition's map, renderer-free: the camp with the truck, then one
-// floor after another dealt from a shuffled room deck, so two runs never
-// match. Everyone builds the same run from the same seed, so snapshots carry
+// The expedition's map, renderer-free: the camp with the truck, and the
+// jornada's floor dealt from a shuffled room deck, so two never match. Each
+// jornada is one floor; `depth` (the jornada's number) makes it harder,
+// richer and darker. Everyone builds the same run from the same seed, so snapshots carry
 // only what changed (opened seals, lifted loot), never the map itself.
 //
 // Floors sit side by side (SPACING apart in x) at the same height; the one
@@ -32,13 +33,15 @@ export const rectOf = r => [r.x - r.w / 2, r.z - r.d / 2, r.x + r.w / 2, r.z + r
 export const inRect = (x, z, [x0, z0, x1, z1], pad = 0) => x > x0 - pad && x < x1 + pad && z > z0 - pad && z < z1 + pad;
 export const floorOf = x => Math.max(0, Math.round(x / SPACING));
 // Which seal opens each floor's way down; the last floor holds the vault.
-export const sealKind = (floor, floors) => floor >= floors ? 'boveda' : floor % 2 ? 'ruedas' : 'guardian';
+// Every third jornada ends in the jaguar's vault; the others in a sealed
+// treasure chamber behind the two wheels or the sun guardian.
+export const sealKind = depth => depth % 3 === 0 ? 'boveda' : depth % 2 ? 'ruedas' : 'guardian';
 
 const cache = new Map();
-export function generateRun(seed = 1, { floors = 3 } = {}) {
-  const key = `${seed}:${floors}`;
+export function generateRun(seed = 1, { depth = 1 } = {}) {
+  const floors = 1, key = `${seed}:${depth}`;
   if (cache.has(key)) return cache.get(key);
-  const run = { seed, floors, rooms: [], corridors: [], stubs: [], lifts: [], carts: [], seals: [], hidden: [], loot: [], chests: [], plates: [],
+  const run = { seed, floors, depth, rooms: [], corridors: [], stubs: [], lifts: [], carts: [], cargo: [], seals: [], hidden: [], loot: [], chests: [], plates: [],
     sleepers: [], obstacles: [], lights: [], decor: [], pits: [], bridges: [] };
   const id = { loot: 0, chest: 0, plate: 0, sleeper: 0 };
   // ---- Camp: outdoors, the truck and the mine mouth at its north edge.
@@ -46,8 +49,8 @@ export function generateRun(seed = 1, { floors = 3 } = {}) {
   // The mine mouth is a short gallery with the montacargas at its end.
   const campStub = { id: 'stub-camp', kind: 'shaft', floor: 0, rect: [-2.2, -9.2, 2.2, -1.9], axis: 'z', a: -2, b: -9.2, from: 0, to: 0 };
   run.lifts.push({ id: 'stop-0', floor: 0, x: 0, z: -6.6, h: 0 });
-  // The team's one carrito waits on the montacargas deck.
-  run.carts.push({ id: 'cart-0', floor: 0, x: 0, z: -7.3, h: 0 });
+  // The cargo lift's top end, beside the truck: the carrito's load lands here.
+  run.cargo.push({ id: 'cargo-0', floor: 0, x: TRUCK.x - 6, z: TRUCK.z + 5 });
   // The shop stall on the camp's west side (rules.js SHOP_AT).
   run.obstacles.push({ x: -12.5, z: 5, r: 1.3, floor: 0 }, { x: -12.5, z: 7, r: 1.3, floor: 0 });
   run.stubs.push(campStub);
@@ -57,7 +60,7 @@ export function generateRun(seed = 1, { floors = 3 } = {}) {
   // The starting kit waits on the expedition table.
   for (const [kind, x] of [['farol', -.8], ['farol', 0], ['honda', .8]]) run.loot.push({ id: id.loot++, kind, floor: 0, room: 'camp', x: TABLE.x + x, z: TABLE.z, y: 1.02, h: 0 });
   for (let f = 1; f <= floors; f++) {
-    const R = rng((seed * 2654435761 + f * 40503) >>> 0), pick = list => list[Math.floor(R() * list.length)];
+    const R = rng((seed * 2654435761 + depth * 40503) >>> 0), pick = list => list[Math.floor(R() * list.length)];
     const OX = f * SPACING, at = (c, r) => ({ x: OX + c * CELL, z: -18 - r * CELL });
     // Main path: a random walk north that never revisits a cell.
     const path = [[pick(COLS), 0]], seen = new Set([path[0].join()]);
@@ -72,7 +75,7 @@ export function generateRun(seed = 1, { floors = 3 } = {}) {
     }
     const deck = [...DECK]; for (let i = deck.length - 1; i > 0; i--) { const j = Math.floor(R() * (i + 1)); [deck[i], deck[j]] = [deck[j], deck[i]]; }
     if (!deck.slice(0, path.length - 2).includes('idolo')) deck[Math.floor(R() * Math.max(1, path.length - 2))] = 'idolo';
-    const kinds = path.map((_, i) => i === 0 ? 'entrada' : i === path.length - 1 ? sealKind(f, floors) : deck[(i - 1) % deck.length]);
+    const kinds = path.map((_, i) => i === 0 ? 'entrada' : i === path.length - 1 ? sealKind(depth) : deck[(i - 1) % deck.length]);
     const rooms = path.map(([c, r], i) => {
       const [w, d] = SIZES[kinds[i]], p = at(c, r);
       return { id: `f${f}-r${i}`, floor: f, kind: kinds[i], cell: [c, r], x: p.x, z: p.z, w, d, name: ROOM_NAMES[kinds[i]], index: i };
@@ -112,20 +115,26 @@ export function generateRun(seed = 1, { floors = 3 } = {}) {
       s.room.hidden = hidden;
     }
     // The montacargas stops in an alcove off the entrance's south wall. The
-    // exit room's seal (wheels or the guardian) lets it go one floor deeper.
+    // exit room's seal (wheels or the guardian) keeps a treasure chamber shut.
     const entry = rooms[0], exit = rooms.at(-1), down = exit.kind !== 'boveda';
     const alcove = { id: `stub-${f}`, kind: 'shaft', floor: f, rect: [entry.x - 2.2, entry.z + entry.d / 2 - .1, entry.x + 2.2, entry.z + entry.d / 2 + STUB], axis: 'z', a: entry.z + entry.d / 2, b: entry.z + entry.d / 2 + STUB, from: 0, to: 0 };
     run.stubs.push(alcove);
     run.lifts.push({ id: `stop-${f}`, floor: f, x: entry.x, z: entry.z + entry.d / 2 + STUB / 2 + .3, h: Math.PI });
     if (down) {
-      const seal = { id: `seal-${f}`, floor: f, kind: exit.kind, room: exit.id, x: exit.x, z: exit.z - exit.d / 2 + .3 };
+      const vault = { id: `vault-${f}`, kind: 'vault', floor: f, rect: [exit.x - 2.6, exit.z - exit.d / 2 - STUB, exit.x + 2.6, exit.z - exit.d / 2 + .1], axis: 'z', a: exit.z - exit.d / 2, b: exit.z - exit.d / 2 - STUB, from: 0, to: 0 };
+      run.stubs.push(vault);
+      const seal = { id: `seal-${f}`, floor: f, kind: exit.kind, room: exit.id, x: exit.x, z: exit.z - exit.d / 2 - .4, rect: [exit.x - 2.7, exit.z - exit.d / 2 - .9, exit.x + 2.7, exit.z - exit.d / 2 + .1], vault: vault.id };
+      // Behind the seal: a big treasure and a scatter of gold.
+      const mid = (vault.rect[1] + vault.rect[3]) / 2 - .6;
+      run.loot.push({ id: id.loot++, kind: BIG_POOL[Math.min(2, depth - 1)][Math.floor(R() * 3)], floor: f, room: vault.id, x: exit.x, z: mid - .8, h: 0 });
+      for (const [dx, dz] of [[-1.6, 1.4], [1.6, 1.4], [-1.6, -2.2], [1.6, -2.2]]) run.loot.push({ id: id.loot++, kind: SMALL[Math.min(3, Math.floor(R() * (2 + depth)))], floor: f, room: vault.id, x: exit.x + dx, z: mid + dz, h: R() * 6 });
       if (exit.kind === 'ruedas') {
         seal.winches = [-1, 1].map(s => ({ id: `${seal.id}-${s < 0 ? 'w' : 'e'}`, x: exit.x + s * (exit.w / 2 - 2.6), z: exit.z - exit.d / 2 + 3 }));
         for (const w of seal.winches) run.obstacles.push({ x: w.x, z: w.z, r: .65, floor: f });
       }
       run.seals.push(seal);
     }
-    for (const r of [...rooms, ...sides.map(s => s.room)]) furnish(run, r, f, floors, R, id);
+    for (const r of [...rooms, ...sides.map(s => s.room)]) furnish(run, r, f, depth, R, id);
   }
   // Nothing rests inside a pillar, a brazier or a coffin placed after it.
   for (const item of run.loot) for (const o of run.obstacles) {
@@ -138,8 +147,9 @@ export function generateRun(seed = 1, { floors = 3 } = {}) {
 }
 
 // Contents of one room: obstacles, loot, chests, traps, sleepers and decor.
-function furnish(run, room, f, floors, R, id) {
-  const [x0, z0, x1, z1] = room.rect, cx = room.x, cz = room.z, deep = f / floors;
+function furnish(run, room, f, depth, R, id) {
+  // `f` places things on the floor; `d` (the jornada's depth) decides how much.
+  const [x0, z0, x1, z1] = room.rect, cx = room.x, cz = room.z, d = depth, deep = Math.min(1, d / 4);
   const taken = [];
   // Keep every doorway and stair mouth clear for three metres into the room.
   const mouths = [...run.corridors.filter(c => c.a === room.id || c.b === room.id), ...run.stubs.filter(s => inRect(s.rect[0] + 2.2, s.a, room.rect, .2))]
@@ -156,7 +166,7 @@ function furnish(run, room, f, floors, R, id) {
     return null;
   };
   const loot = (kind, p = spot(.5)) => { if (p) run.loot.push({ id: id.loot++, kind, floor: f, room: room.id, x: p.x, z: p.z, h: R() * 6.28 }); };
-  const small = n => { for (let i = 0; i < n; i++) loot(SMALL[Math.min(SMALL.length - 1, Math.floor(R() * (2 + f)))]); };
+  const small = n => { for (let i = 0; i < n; i++) loot(SMALL[Math.min(SMALL.length - 1, Math.floor(R() * (2 + d)))]); };
   const chest = () => { const p = spot(.8); if (p) run.chests.push({ id: id.chest++, floor: f, room: room.id, x: p.x, z: p.z, h: Math.round(R() * 4) * Math.PI / 2 }); if (p) run.obstacles.push({ x: p.x, z: p.z, r: .6, floor: f, chest: true }); };
   const sleeper = (kind = 'mummy', p = spot(.6)) => { if (p) run.sleepers.push({ id: id.sleeper++, kind, floor: f, room: room.id, x: p.x, z: p.z }); };
   // A cuaima coils up beside a piece of this room's loot; spiders wait above.
@@ -169,30 +179,38 @@ function furnish(run, room, f, floors, R, id) {
   // Torches in two opposite corners light every room a little.
   const corner = (sx, sz) => ({ x: cx + sx * (room.w / 2 - 1.2), z: cz + sz * (room.d / 2 - 1.2) });
   const lit = R() < .5 ? [[-1, -1], [1, 1]] : [[1, -1], [-1, 1]];
-  for (const [sx, sz] of lit) { const p = corner(sx, sz); light(p.x, p.z, f === 1 ? 'mineLamp' : 'brazier'); }
-  if (f > 1 || R() < .5) decor('stalactites', cx + (R() - .5) * room.w * .5, cz + (R() - .5) * room.d * .5, R() * 6);
+  for (const [sx, sz] of lit) { const p = corner(sx, sz); light(p.x, p.z, d === 1 ? 'mineLamp' : 'brazier'); }
+  if (d > 1 || R() < .5) decor('stalactites', cx + (R() - .5) * room.w * .5, cz + (R() - .5) * room.d * .5, R() * 6);
   switch (room.kind) {
     case 'entrada':
-      loot(f === 1 ? 'machete' : 'botiquin'); small(2);
+      // The cargo lift's pad and the jornada's carrito, beside the montacargas.
+      for (const s of [1, -1]) {
+        const x = cx + s * (room.w / 2 - 2.3), z = cz + room.d / 2 - 2.3;
+        if (!free(x, z, 1.7) && s === -1 && !run.cargo.some(c => c.floor === f)) { run.cargo.push({ id: `cargo-${f}`, floor: f, x, z, bx: x - s * 1.7, bz: z }); taken.push({ x, z, r: 2 }); break; }
+        if (!free(x, z, 1.7)) continue;
+        run.cargo.push({ id: `cargo-${f}`, floor: f, x, z, bx: x - s * 1.7, bz: z }); taken.push({ x, z, r: 2 }); break;
+      }
+      { const pad = run.cargo.find(c => c.floor === f); run.carts.push({ id: 'cart-0', floor: f, x: pad.x + (pad.x > cx ? -3.2 : 3.2), z: pad.z - 2.4, h: Math.PI }); }
+      loot(d === 1 ? 'machete' : 'botiquin'); small(2);
       break;
     case 'tesoro':
-      chest(); if (R() < .6) chest(); small(4 + f);
-      if (R() < .55 + deep * .3) big(BIG_POOL[Math.min(2, f - 1)][Math.floor(R() * 3)]);
+      chest(); if (R() < .6) chest(); small(4 + d);
+      if (R() < .55 + deep * .3) big(BIG_POOL[Math.min(2, d - 1)][Math.floor(R() * 3)]);
       decor('statue', cx + (R() < .5 ? -1 : 1) * (room.w / 2 - 1.5), cz, 0);
       if (R() < .6) guard();
       break;
     case 'columnas':
       for (const [sx, sz] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) pillar(cx + sx * room.w * .28, cz + sz * room.d * .28);
       if (room.w > 16) { pillar(cx, cz - room.d * .28, .75); pillar(cx, cz + room.d * .28, .75); }
-      for (let i = 0; i < 1 + f; i++) sleeper(); small(3); loot('idol');
+      for (let i = 0; i < 1 + d; i++) sleeper(); small(3); loot('idol');
       decor('fallenColumn', cx + (R() - .5) * 6, cz + (R() - .5) * 6, R() * 6);
-      if (f > 1 || R() < .4) ceiling(1 + Math.floor(R() * 2));
+      if (d > 1 || R() < .4) ceiling(1 + Math.floor(R() * 2));
       break;
     case 'trampas': {
       // Dart heads hang on the west and east walls, never in a doorway.
       const doors = run.corridors.filter(c => c.horizontal && (c.a === room.id || c.b === room.id)).map(c => [c.rect[1] - .8, c.rect[3] + .8]);
       const lanes = [-.36, -.2, .2, .36].map(t => cz + t * room.d).filter(z => !doors.some(([a, b]) => z > a && z < b));
-      for (const z of lanes.slice(0, 2 + Math.min(2, f))) {
+      for (const z of lanes.slice(0, 2 + Math.min(2, d))) {
         const x = cx + (R() - .5) * (room.w - 6);
         run.plates.push({ id: id.plate++, floor: f, room: room.id, x, z, darts: [{ x: x0 + .3, z, dx: 1 }, { x: x1 - .3, z, dx: -1 }], len: room.w });
         taken.push({ x, z, r: 1.1 });
@@ -213,12 +231,12 @@ function furnish(run, room, f, floors, R, id) {
       break;
     case 'cripta':
       for (let i = 0; i < 3; i++) { const p = spot(1.1); if (p) { decor('coffin', p.x, p.z, Math.round(R()) * Math.PI / 2); run.obstacles.push({ x: p.x, z: p.z, r: 1, floor: f }); } }
-      for (let i = 0; i < 2 + f; i++) sleeper(); small(3); loot(R() < .5 ? 'cup' : 'idol');
+      for (let i = 0; i < 2 + d; i++) sleeper(); small(3); loot(R() < .5 ? 'cup' : 'idol');
       decor('candles', cx, cz, 0);
-      ceiling(f > 1 ? 2 : 1);
+      ceiling(d > 1 ? 2 : 1);
       break;
     case 'santuario':
-      light(cx, cz, 'brazier'); loot('botiquin'); loot(R() < .5 ? 'machete' : 'honda'); if (f > 1) loot('farol'); small(1);
+      light(cx, cz, 'brazier'); loot('botiquin'); loot(R() < .5 ? 'machete' : 'honda'); if (d > 1) loot('farol'); small(1);
       break;
     case 'puente': {
       // A pit fills the middle; a rope bridge reaches the island with the treasure.
@@ -226,12 +244,12 @@ function furnish(run, room, f, floors, R, id) {
       const north = R() < .5, bridge = north ? [cx - 1.2, pit[1] - .2, cx + 1.2, island[1] + .2] : [cx - 1.2, island[3] - .2, cx + 1.2, pit[3] + .2];
       run.pits.push({ floor: f, room: room.id, rect: pit, island });
       run.bridges.push({ floor: f, room: room.id, rect: bridge, axis: 'z' });
-      run.loot.push({ id: id.loot++, kind: BIG_POOL[Math.min(2, f - 1)][Math.floor(R() * 3)], floor: f, room: room.id, x: cx, z: cz, h: 0 });
+      run.loot.push({ id: id.loot++, kind: BIG_POOL[Math.min(2, d - 1)][Math.floor(R() * 3)], floor: f, room: room.id, x: cx, z: cz, h: 0 });
       small(3);
       break;
     }
     case 'ruedas':
-      small(2); for (let i = 0; i < f; i++) sleeper();
+      small(2); for (let i = 0; i < d; i++) sleeper();
       break;
     case 'guardian':
       for (const [sx, sz] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) pillar(cx + sx * room.w * .3, cz + sz * room.d * .3, .8);

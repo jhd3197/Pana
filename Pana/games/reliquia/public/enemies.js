@@ -45,8 +45,8 @@ export function spawnEnemy(g, kind, x, z, extra = {}) {
   if (!KINDS[kind]) return null;
   if (['mummy', 'phantom', 'bat', 'spider'].includes(kind) && live.length >= 18) return null;
   if (!g.layout.walkable(x, z, g, .5)) return null;
-  const k = KINDS[kind], s = scaleFor(g), floor = floorOf(x), roster = g.players.filter(p => !p.spectator).length;
-  const hp = (k.hp + (k.scale || 0) * Math.max(0, roster - 1)) * s.hp * (1 + .22 * Math.max(0, floor - 1));
+  const k = KINDS[kind], s = scaleFor(g), roster = g.players.filter(p => !p.spectator).length;
+  const hp = (k.hp + (k.scale || 0) * Math.max(0, roster - 1)) * s.hp * (1 + .22 * Math.max(0, (g.level || 1) - 1));
   const e = { id: ++g.enemyId, kind, x, z, h: 0, hp, maxHp: hp, cooldown: .8, windup: 0, stun: 0, hit: 0, awake: !['guardian', 'jaguar'].includes(kind),
     born: g.time, mode: 'prowl', modeT: 0, immune: 0, attackX: x, attackZ: z, lit: 'dark', homeX: x, homeZ: z, ...(k.flying ? { y: 2.2 } : {}), ...extra };
   g.enemies.push(e); return e;
@@ -95,7 +95,7 @@ export function updateEnemies(g, dt) {
       e.stun = 1.6; e.immune = 6; e.mode = 'prowl'; g.event('daze', '¡El farol encandiló al jaguar!', { enemy: e.id }); continue;
     }
     const speed = k.speed * s.speed * (1 + .08 * tier) * (e.lit === 'dark' && k.light === 'freeze' ? 1.35 : 1) * (k.light === 'slow' && e.lit === 'beam' ? .5 : 1);
-    const damage = k.damage * s.damage * (1 + .1 * tier) * (.75 + .15 * floorOf(e.x));
+    const damage = k.damage * s.damage * (1 + .1 * tier) * (.75 + .15 * (g.level || 1));
     if (k.cat) { cat(g, e, target, speed, damage, dt); continue; }
     if (k.flying) { bat(g, e, target, speed, damage, dt); continue; }
     // Cuaimas defend their spot: past their reach from home they slide back.

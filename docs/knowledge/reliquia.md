@@ -6,19 +6,28 @@ un piso más?* Only loot that reaches the truck at the camp counts.
 
 ## The run
 
-The camp is the hub; the game is a chain of **jornadas**. Each jornada deals
-a new deck of floors (`levelSeed(origin, level)`) and asks a quota
-(`quotaFor(level, roster, floors)`): the team's one carrito, which waits on
-the montacargas deck, has to carry it up. From floor 1 the red lever only
-goes to the camp with that carrito on the deck and the quota in it; the
-cage arriving at the camp with it completes the jornada (`completeLevel`):
-the load banks, everyone still below is brought up (the fallen at 50 HP),
-the next, deeper deck is dealt with a bigger quota, and la codicia, seals,
-chests and enemies reset. Banked bolívares also become mangos (one per
+The camp is the hub; the game is a chain of **jornadas**, each one floor
+dealt from the deck with `depth` = the jornada's number (`levelSeed(origin,
+level)`, `layoutFor(seed, depth)`): deeper means more sleepers, richer loot,
+darker palettes, and every third jornada ends in the jaguar's vault. The
+others end in a room whose seal (two wheels or the sun guardian) keeps a
+treasure chamber (`kind: 'vault'` stub) with a big treasure behind it.
+
+People ride the **montacargas**: one cage, one green lever. At the camp it
+goes down into the jornada; below, up to the camp, but only once the
+**cargo lift** has delivered the jornada's quota (`quotaFor(level,
+roster)`). When the cage is elsewhere the shaft is a hole and the button
+calls it; while it travels nobody else can have it. The team's one carrito
+lives in the jornada: push it onto the cargo pad by the entrance and press
+the yellow button (`sendCargo`); it rises through the ceiling (3 s), its
+load banks (`delivered`, haul, mangos) and it comes back down empty (3 s).
+Riding up with the quota met completes the jornada (`completeLevel`):
+everyone still below is hauled to the camp with **1 HP**, and the next,
+deeper jornada is dealt. Banked bolívares also become mangos (one per
 Bs. 10), spent at the camp's shop (`SHOP`, a market stall west of the camp):
-farol, botiquín, machete, honda and the marcadora de pintura (fast paint,
-less stun), each straight into a hand. Holding E at the truck ends the
-expedition with everything banked; a wipe ends it with `wipeShare` %.
+farol, botiquín, machete, honda and the marcadora de pintura, each straight
+into a hand. Holding E at the truck ends the expedition; a wipe ends it with
+`wipeShare` %.
 
 **Aiming.** E uses whatever the crosshair points at: every target in
 `interaction()` is a point and a radius, scored by its angle from the line
@@ -28,21 +37,7 @@ the shop's goods, items, chests, winches, rubble and fallen panas all work
 this way.
 
 Camp (floor 0, outdoors, sunlit) → floor 1 … floor N (option `floors`, 2–4,
-default 3) → the vault on the last floor. Everything is level and there are
-no teleports: the **montacargas** is the one way between floors. One cage
-rides one shaft; its stops (`run.lifts`) are the end of the mine gallery at
-the camp and an alcove off each floor's entrance room. On the deck, hold E
-by the green lever (right, seen from the room) to go down, or the red one
-to go up to the camp; at an empty shaft, hold E to call the cage, which
-comes back empty. A trip takes `3 + 2.2 · floors` seconds and carries every
-pana, carrito and item on the deck; halfway it changes stops. While it
-travels nobody can have it, and an empty shaft is a hole (`layout.blocked`).
-The camp's green lever goes straight to the deepest floor already reached.
-The client draws the cage sinking out of one stop and rising into the next
-(`liftView`), with riders, through a cribbed shaft (`liftShaft`).
-
-Each floor's seal stands in its exit room, and opening it lets the green
-lever go one floor deeper (`deepestStop`):
+default 3) → the vault on the last floor. Seals:
 `ruedas` (two winches, hold E 1.6 s each, latch 12 s, one pana can do both),
 `guardian` (the sun guardian falls) and, on the last floor, the `boveda`
 with the gold jaguar instead of a seal. `sealKind(floor, floors)` decides.

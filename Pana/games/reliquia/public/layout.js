@@ -8,10 +8,10 @@ import { ITEMS } from './items.js';
 const RES = 4, layouts = new Map();
 export const distance = (a, b) => Math.hypot(a.x - b.x, a.z - b.z);
 
-export function layoutFor(seed = 1, floors = 3) {
-  const key = `${seed}:${floors}`;
+export function layoutFor(seed = 1, depth = 1) {
+  const key = `${seed}:${depth}`;
   if (layouts.has(key)) return layouts.get(key);
-  const run = generateRun(seed, { floors });
+  const run = generateRun(seed, { depth }), floors = run.floors;
   const grids = [];
   for (let f = 0; f <= floors; f++) {
     const rects = [...run.rooms, ...run.corridors, ...run.stubs].filter(r => r.floor === f).map(r => r.rect);

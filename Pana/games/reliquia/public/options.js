@@ -1,7 +1,6 @@
 import { optionDefaults, applyRoomOptions } from '../../../engine/room-options-rules.js';
 // The same descriptors drive the menu and the authoritative allowlist.
 export const FIELDS = [
-  { id: 'floors', label: 'Pisos', default: 3, choices: [[2, '2'], [3, '3'], [4, '4']], advanced: false },
   { id: 'difficulty', label: 'Dificultad', default: 'normal', choices: [['easy', 'Tranquila'], ['normal', 'Normal'], ['hard', 'Momia brava']], advanced: false },
   { id: 'greed', label: 'La codicia', default: 'normal', choices: [['soft', 'Paciente'], ['normal', 'Normal'], ['fierce', 'Celosa']], advanced: false },
   { id: 'revive', label: 'Revivir pana', default: true, choices: [[true, 'Sí'], [false, 'No']], advanced: true },

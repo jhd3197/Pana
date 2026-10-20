@@ -8,6 +8,12 @@ becomes the GitHub release's notes.
 
 ## Unreleased
 
+- **Race through Cata, Choroní and Chuao, including the downhill quebrada.**
+  Three coastal circuits join quick races, online rooms and Studio with native
+  Pana trees, dense mountain forest and previews of the actual maps. Existing
+  circuits gain continuous road wear and sloping verges; natural landscapes
+  gain simplified background trees without filling towns, caves or salt pans.
+
 ### Added
 
 - **Reliquia is now a first-person treasure run: ¿nos vamos ya, o bajamos
@@ -29,9 +35,10 @@ becomes the GitHub release's notes.
   cuaimas guard the ruins, and eight enchanted artifacts help and ruin
   you in equal measure. Only what reaches the truck counts; if everyone
   falls, most of it stays in the ruin. Each jornada asks a quota: fill the
-  team's one carrito and ride it up to finish it, turn the loot into
-  mangos at the camp's shop (a paintball marker among the gear) and go
-  down again, deeper. Point the crosshair at what you want to use.
+  carrito, send it up the cargo lift, then ride the montacargas up to
+  finish it (whoever stays below comes back with 1 HP). Loot turns into
+  mangos at the camp's shop (a paintball marker among the gear), and the
+  next jornada is deeper. Point the crosshair at what you want to use.
 
 - **Pepazo has a night map: Cancha de Noche.** Red floodlights, purple
   UV light and glowing LED rope lines light a field of pallets,

@@ -38,7 +38,8 @@ const menu = createGameMenu({
     ['E', 'Agarrar, abrir; mantén para girar ruedas, levantar panas o atrapar lo que te lanzan'], ['Q', 'Soltar'], ['G', 'Lanzar lo que tienes en la mano'], ['R', 'Arrastrar a un pana caído'],
     ['Shift', 'Correr'], ['1 – 7', '¿Nos vamos ya? · ¡Una sala más! · y otros gritos'], ['Tab', 'Ver al equipo'], ['M', 'Sonido'], ['Esc', 'Soltar el ratón y abrir el menú']],
   tips: ['Apunta con el punto del centro a lo que quieres usar: palancas, carrito, tesoros, la tienda.',
-    'Cada jornada pide un monto en el carrito: con él en el montacargas, la palanca roja del piso 1 sube al campamento y la jornada termina. Lo que traen se vuelve mangos para la tienda.',
+    'Cada jornada pide una cuota: llenen el carrito, empújenlo a la plataforma de carga y apriétenle el botón amarillo. Cuando la carga subida alcance la cuota, el montacargas los sube y la jornada termina.',
+    'El que se quede abajo cuando el montacargas suba vuelve al campamento con un hilito de vida.',
     'Cada mano lleva un tesoro, una herramienta o un puñado de cuatro piezas: échalas al carrito (E) o lánzalas adentro (G).',
     'Solo puedes llevar un arma a la vez: al agarrar otra, sueltas la que tenías.',
     'Los tesoros grandes piden dos, tres o cuatro panas: cada uno agarra un lado (E) y caminan juntos. Solo se arrastran despacito.',
@@ -65,7 +66,6 @@ function lobby() {
   optionsUI.update(state.options || DEFAULT_OPTIONS, room.connected && room.isHost && state.phase !== 'playing');
   if (state.phase === 'playing' && optionsUI.isOpen) optionsUI.close();
   show('lobby', state.phase === 'lobby'); show('hud', state.phase === 'playing'); show('results', state.phase === 'results');
-  $('lobby-floors').textContent = state.options?.floors || 3;
   $('start').disabled = !room.connected || !room.isHost;
   $('start').textContent = !room.connected ? 'Conectando…' : room.isHost ? '¡A la mina!' : 'El anfitrión prepara la salida';
   if (state.phase === 'results') hud.results(state, room);
@@ -107,6 +107,8 @@ function handle(e) {
     case 'laugh': sfx.laugh(); break;
     case 'level': sfx.win(); shout(`¡Jornada ${e.level} lista!`, { tone: 'yellow' }); break;
     case 'buy': sfx.bank(false); break;
+    case 'cargo': sfx.lift(); break;
+    case 'delivered': sfx.bank(true); popCounter($('mangos')); if (e.met) shout('¡Cuota lista! Al montacargas', { tone: 'teal' }); break;
     case 'spider': sfx.awaken(); view.shake(.2); break;
     case 'scatter': if (near) sfx.flap(); break;
     case 'cart-load': case 'cart-catch': case 'cart-big': sfx.coin(); if (e.kind !== 'cart-load') sfx.bank(false); break;
@@ -125,7 +127,7 @@ function handle(e) {
 }
 function receive(next) {
   state = next;
-  view.reseed(state.seed, state.options?.floors || 3);
+  view.reseed(state.seed, state.level || 1);
   if (phase !== state.phase) {
     phase = state.phase; menu.close(); clearInput(); document.body.classList.toggle('playing', phase === 'playing');
     if (phase === 'playing') { const p = state.players.find(p => p.id === room.id); if (p) view.heading = p.h; lastEvent = Math.max(lastEvent, ...state.events.filter(e => e.kind !== 'start').map(e => e.id), 0); }

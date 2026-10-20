@@ -8,20 +8,21 @@ import { validOptions, DEFAULT_OPTIONS } from '../public/options.js';
 function setup(options = {}, n = 2) { const g = new Expedition(31, options); for (let i = 1; i <= n; i++) g.addPlayer(i, `Pana ${i}`); g.start(31); return g; }
 
 test('only valid options apply, and only outside a run', () => {
-  assert.equal(validOptions({ floors: 4 }), true); assert.equal(validOptions({ floors: 9 }), false); assert.equal(validOptions({ difficulty: 'impossible' }), false);
-  const g = new Expedition(1); assert.equal(g.configure({ floors: 2 }), true); assert.equal(g.options.floors, 2);
-  g.addPlayer(1, 'Ana'); g.start(); assert.equal(g.configure({ floors: 4 }), false);
+  assert.equal(validOptions({ difficulty: 'hard' }), true); assert.equal(validOptions({ difficulty: 'impossible' }), false);
+  const g = new Expedition(1); assert.equal(g.configure({ greed: 'fierce' }), true); assert.equal(g.options.greed, 'fierce');
+  g.addPlayer(1, 'Ana'); g.start(); assert.equal(g.configure({ greed: 'soft' }), false);
   const restored = new Expedition(); restored.restore(g.snapshot(), new Map([[1, { id: 1, name: 'Ana' }]])); assert.deepEqual(restored.options, g.options);
-  assert.equal(DEFAULT_OPTIONS.floors, 3);
+  assert.equal(DEFAULT_OPTIONS.difficulty, 'normal');
 });
 
-test('floors deal that many floors with the vault at the bottom', () => {
-  for (const floors of [2, 3, 4]) {
-    const run = layoutFor(8, floors).run;
-    assert.equal(Math.max(...run.rooms.map(r => r.floor)), floors);
-    assert.equal(run.rooms.find(r => r.kind === 'boveda').floor, floors);
-    assert.equal(run.seals.length, floors - 1);
+test('each jornada is one floor, deeper and richer; the vault every third', () => {
+  for (const depth of [1, 2, 3, 4]) {
+    const run = layoutFor(8, depth).run;
+    assert.equal(Math.max(...run.rooms.map(r => r.floor)), 1);
+    assert.equal(run.rooms.some(r => r.kind === 'boveda'), depth % 3 === 0);
+    assert.equal(run.seals.length, depth % 3 === 0 ? 0 : 1);
   }
+  assert.ok(layoutFor(8, 4).run.sleepers.length > layoutFor(8, 1).run.sleepers.length, 'more sleepers deeper');
 });
 
 test('difficulty scales enemy health and damage; greed scales la codicia', () => {

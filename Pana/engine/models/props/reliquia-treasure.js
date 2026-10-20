@@ -330,18 +330,17 @@ export function climbRope({ height = 6 } = {}) {
   out.add(beam); return out;
 }
 // The montacargas: a timber cage on a plank deck, open at the front (+Z),
-// a red lever on its left (+X, up) and a green one on its right (-X, down),
-// and a bell. `headframe` adds the tall tower used on the surface.
+// one green lever on its right (-X) that sends it up or down, and a bell. `headframe` adds the tall tower used on the surface.
 export function liftCage({ headframe = false } = {}) {
   const g = new THREE.Group(), wood = WOOD(), plank = paint(0xb07a48, { roughness: .85 }), iron = paint(0x3a3a42, { metalness: .5, roughness: .4 }), bell = paint(0xffc23d, { metalness: .6, roughness: .3 });
-  const green = paint(0x3fe07a, { emissive: 0x1a9a48, emissiveIntensity: .9 }), red = RUBY();
+  const green = paint(0x3fe07a, { emissive: 0x1a9a48, emissiveIntensity: .9 });
   part(g, new THREE.BoxGeometry(3.2, .18, 3.2), plank, 0, .09, 0);
   const top = headframe ? 9 : 4.2;
   for (const sx of [-1.5, 1.5]) for (const sz of [-1.5, 1.5]) part(g, new THREE.BoxGeometry(.24, top, .24), wood, sx, top / 2, sz);
   for (const y of [1.1, top - .3]) { part(g, new THREE.BoxGeometry(3.2, .14, .14), wood, 0, y, -1.5); for (const s of [-1.5, 1.5]) part(g, new THREE.BoxGeometry(.14, .14, 3.2), wood, s, y, 0); }
   part(g, new THREE.BoxGeometry(3.2, .14, .14), wood, 0, top - .3, 1.5);
   for (let i = -2; i <= 2; i++) part(g, cyl(.03, .03, 1, 6), iron, i * .55, .6, -1.5);
-  for (const [x, knob] of [[1.32, red], [-1.32, green]]) {
+  for (const [x, knob] of [[-1.32, green]]) {
     part(g, new THREE.BoxGeometry(.14, .7, .14), wood, x, .4, 0);
     part(g, cyl(.03, .03, .45, 6), iron, x, .9, .1, .45);
     part(g, sphere(.09, 10, 8), knob, x, 1.1, .2);
@@ -372,4 +371,22 @@ export function liftShaft({ below = 16, above = 16 } = {}) {
     if (Math.round(y) % 2 === 0) part(g, sphere(.12, 8, 6), lamp, 1.7, y + .4, 1.7);
   }
   return finish(g, 'Pozo del montacargas', [[-2.2, -below, -2.2], [2.2, above, 2.2]]);
+}
+
+// The cargo lift: a low iron-edged pad under a timber gantry with a pulley
+// and cables, and a big yellow button on a post `button` (±1) metres·1.7 to
+// one side. The carrito alone rides it up to the camp.
+export function cargoLift({ button = 1, height = 4.3 } = {}) {
+  const g = new THREE.Group(), wood = WOOD(), iron = paint(0x3a3a42, { metalness: .5, roughness: .4 }), plank = paint(0xc98f55, { roughness: .85 }), yellow = paint(0xffc23d, { emissive: 0xa06a00, emissiveIntensity: .7 }), stripe = paint(0x1e1a14);
+  part(g, new THREE.BoxGeometry(2.6, .14, 2.6), plank, 0, .07, 0);
+  for (const [w, d, x, z] of [[2.7, .12, 0, 1.3], [2.7, .12, 0, -1.3], [.12, 2.7, 1.3, 0], [.12, 2.7, -1.3, 0]]) part(g, new THREE.BoxGeometry(w, .16, d), iron, x, .1, z);
+  for (let i = -2; i <= 2; i++) part(g, new THREE.BoxGeometry(.24, .02, 2.5), i % 2 ? yellow : stripe, i * .5, .15, 0);
+  for (const sx of [-1.3, 1.3]) part(g, new THREE.BoxGeometry(.22, height, .22), wood, sx, height / 2, -1.3);
+  part(g, new THREE.BoxGeometry(2.9, .24, .24), wood, 0, height, -1.3);
+  part(g, new THREE.TorusGeometry(.35, .08, 8, 18), iron, 0, height - .1, -1.15);
+  for (const sx of [-.9, .9]) part(g, cyl(.025, .025, height + 6, 5), iron, sx, (height + 6) / 2, 0);
+  part(g, new THREE.BoxGeometry(.18, 1, .18), wood, button * 1.7, .5, 0);
+  part(g, cyl(.16, .16, .12, 16), yellow, button * 1.7, 1.06, 0);
+  part(g, cyl(.2, .2, .06, 16), iron, button * 1.7, .99, 0);
+  return finish(g, 'Montacargas de carga', [[-1.9, 0, -1.5], [1.9, height + .4, 1.5]]);
 }

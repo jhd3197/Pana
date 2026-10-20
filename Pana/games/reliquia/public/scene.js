@@ -51,8 +51,8 @@ export function itemModel(kind) {
 }
 export const glowColor = kind => ITEMS[kind].artifact ? treasure.ARTIFACT_AURA[kind] : ITEMS[kind].tool ? GLOW.tool : ITEMS[kind].size === 'big' ? GLOW.big : GLOW.treasure;
 
-export function createExpeditionWorld({ seed = 1, floors = 3, roof = true } = {}) {
-  const L = layoutFor(seed, floors), run = L.run;
+export function createExpeditionWorld({ seed = 1, depth = 1, roof = true } = {}) {
+  const L = layoutFor(seed, depth), run = L.run, floors = run.floors;
   const group = new THREE.Group(); group.name = 'Reliquia · La mina del sol';
   const owned = new Set(), animated = [], floorsBuilt = new Map();
   const halo = glowTexture(), haloMaterials = new Map();
@@ -84,6 +84,7 @@ export function createExpeditionWorld({ seed = 1, floors = 3, roof = true } = {}
   for (const [x, z, r] of [[-4, -2.2, 1.6], [4.2, -2.4, 1.4]]) place(campStatic, lajaRock({ seed: x * 13 + 5, radius: r, flat: .8 }), x, 0, z);
   place(campStatic, lajaRock({ seed: 77, radius: 3.4, flat: .5 }), 0, 4.9, -8);
   place(camp, treasure.liftShaft({ below: 18, above: 5 }), run.lifts[0].x, 0, run.lifts[0].z, run.lifts[0].h);
+  for (const pad of run.cargo.filter(c => c.floor === 0)) place(camp, treasure.cargoLift({ height: 6 }), pad.x, 0, pad.z, Math.PI / 2);
   // The tepuy wall rises behind the mine; the selva closes the camp in.
   for (let i = -3; i <= 3; i++) place(campStatic, rockyCliff({ seed: 54 + i, width: 20, height: 12, depth: 6 }), i * 17, 0, -24 - Math.abs(i) * 2, 0, 2.2);
   for (let i = 0; i < 26; i++) {
@@ -124,8 +125,8 @@ export function createExpeditionWorld({ seed = 1, floors = 3, roof = true } = {}
   function buildFloor(f) {
     if (floorsBuilt.has(f) || f < 1 || f > floors) return floorsBuilt.get(f);
     const root = new THREE.Group(); root.name = `Piso ${f}`; group.add(root);
-    const statics = new THREE.Group(), palette = paletteFor(f), x0 = f * L.SPACING - 60;
-    const shell = () => ruinShell({ inside: (x, z) => insideFloor(f, x, z), ground: L.groundAt, solid: (x, z) => !L.overPit(x, z) && !inShaft(f, x, z), sky: (x, z) => inShaft(f, x, z, .4), bounds: [x0, -140, x0 + 120, 20], palette, seed: f * 13, roof });
+    const statics = new THREE.Group(), palette = paletteFor(depth), x0 = f * L.SPACING - 60;
+    const shell = () => ruinShell({ inside: (x, z) => insideFloor(f, x, z), ground: L.groundAt, solid: (x, z) => !L.overPit(x, z) && !inShaft(f, x, z), sky: (x, z) => inShaft(f, x, z, .4) || run.cargo.some(c => c.floor === f && Math.abs(x - c.x) < 1.6 && Math.abs(z - c.z) < 1.6), bounds: [x0, -140, x0 + 120, 20], palette, seed: f * 13, roof });
     const floor = { root, shell: shell(), revealed: '', braziers: [], seals: new Map(), winches: new Map(), chests: new Map(), plates: [], rubble: new Map(), rebuild: shell };
     root.add(floor.shell);
     for (const d of run.decor.filter(d => d.floor === f)) {
@@ -167,6 +168,7 @@ export function createExpeditionWorld({ seed = 1, floors = 3, roof = true } = {}
     // The montacargas shaft: a hole in the floor and the ceiling, rock and
     // timber all the way up and down.
     for (const stop of run.lifts.filter(l => l.floor === f)) place(root, treasure.liftShaft(), stop.x, 0, stop.z, stop.h);
+    for (const pad of run.cargo.filter(c => c.floor === f)) place(root, treasure.cargoLift({ button: Math.sign(pad.bx - pad.x) || 1 }), pad.x, 0, pad.z);
     const batch = bake(statics, { cellSize: 26 }); statics.traverse(o => o.geometry?.dispose()); root.add(batch);
     floorsBuilt.set(f, floor);
     return floor;

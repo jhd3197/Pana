@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { Expedition, interaction, visibleItems, titles, compassTarget, stepExplorer, tier, levers, cartValue } from '../public/rules.js';
+import { Expedition, interaction, visibleItems, titles, compassTarget, stepExplorer, tier, liftPanel, cartValue } from '../public/rules.js';
 import { layoutFor, distance } from '../public/layout.js';
 import { TRUCK, TABLE, floorOf } from '../public/deck.js';
 import { ITEMS, HANDFUL } from '../public/items.js';
@@ -16,26 +16,29 @@ const facing = (from, to) => Math.atan2(to.x - from.x, to.z - from.z);
 // Just inside a floor's entrance room, in front of its montacargas stop.
 const arrival = (g, f) => { const s = run(g).lifts.find(l => l.floor === f); return { x: s.x, z: s.z - 5, h: Math.PI }; };
 const firstFloor = g => arrival(g, 1);
-// Stand by a lever and hold E until the cage leaves, then let it arrive.
-// Stand on the deck, look at a lever (aiming down at it) and hold E.
-function aimLever(g, id, lever) { const p = g.players.find(p => p.id === id), stop = run(g).lifts.find(l => l.floor === floorOf(p.x)), at = levers(stop)[lever]; place(g, id, stop.x, stop.z); p.h = facing(p, at); p.pitch = Math.atan2(-.35, Math.hypot(at.x - p.x, at.z - p.z)); return p; }
-function ride(g, id, lever) { aimLever(g, id, lever); step(g, 1.6, new Map([[id, { hold: true }]])); step(g, 14); }
+// Stand on the deck, look down at the cage's one button.
+function aimButton(g, id) { const p = g.players.find(p => p.id === id), stop = run(g).lifts.find(l => l.floor === floorOf(p.x)), at = liftPanel(stop); place(g, id, stop.x, stop.z); p.h = facing(p, at); p.pitch = Math.atan2(-.35, Math.hypot(at.x - p.x, at.z - p.z)); return p; }
+// Hold E on it until the cage leaves, then let it arrive.
+function ride(g, id) { aimButton(g, id); step(g, 1.6, new Map([[id, { hold: true }]])); step(g, 14); }
+// Look at the cargo lift's yellow button from a step away.
+function aimCargo(g, id) { const pad = run(g).cargo.find(c => c.floor === 1), at = { x: pad.bx, z: pad.bz }, p = g.players.find(p => p.id === id); place(g, id, at.x + Math.sign(at.x - pad.x) * 1.2, at.z); p.h = facing(p, at); p.pitch = Math.atan2(1.1 - 1.45, 1.2); return pad; }
 // A deck loot item of this size on floor 1, placed where a pana can stand next to it.
 function lootOn(g, size, floor = 1) { return run(g).loot.find(l => l.floor === floor && ITEMS[l.kind].size === size && g.layout.walkable(l.x, l.z + 1.2, g)); }
 function stand(g, id, item) { place(g, id, item.x, item.z + 1.2); const p = g.players.find(p => p.id === id); p.h = facing(p, item); return p; }
 
-test('every room of many dealt runs is reachable once the seals open', () => {
-  for (let seed = 1; seed <= 25; seed++) {
-    const L = layoutFor(seed, 3), state = { open: Object.fromEntries(L.run.seals.map(s => [s.id, 1])), revealed: Object.fromEntries(L.run.hidden.map(h => [h.id, 1])) };
-    assert.equal(L.run.rooms.filter(r => r.kind === 'boveda').length, 1, 'one vault, on the last floor');
-    assert.equal(L.run.rooms.find(r => r.kind === 'boveda').floor, 3);
-    for (const r of L.run.rooms) {
-      const stop = L.run.lifts.find(l => l.floor === r.floor), landing = r.floor === 0 ? { x: 0, z: 10 } : { x: stop.x, z: stop.z - 5 };
-      assert.ok(L.findPath(landing, { x: r.x + (r.kind === 'idolo' ? 2 : 0), z: r.z + (['puente', 'santuario', 'idolo'].includes(r.kind) ? 0 : 0) }, state).length || L.run.pits.some(p => p.room === r.id) || r.kind === 'santuario' || r.kind === 'idolo', `seed ${seed}: ${r.id} ${r.kind}`);
+test('every room of many dealt jornadas is reachable once the seals open', () => {
+  for (let seed = 1; seed <= 20; seed++) for (const depth of [1, 2, 3]) {
+    const L = layoutFor(seed, depth), state = { open: Object.fromEntries(L.run.seals.map(s => [s.id, 1])), revealed: Object.fromEntries(L.run.hidden.map(h => [h.id, 1])), lift: { floor: 1, moving: false } };
+    assert.equal(L.run.rooms.some(r => r.kind === 'boveda'), depth === 3, 'the vault every third jornada');
+    assert.ok(L.run.cargo.some(c => c.floor === 1) && L.run.carts.length === 1, 'one carrito and its cargo lift');
+    const stop = L.run.lifts.find(l => l.floor === 1), landing = { x: stop.x, z: stop.z - 5 };
+    for (const r of L.run.rooms.filter(r => r.floor === 1)) {
+      assert.ok(L.findPath(landing, { x: r.x + (r.kind === 'idolo' ? 2 : 0), z: r.z }, state).length || L.run.pits.some(p => p.room === r.id) || r.kind === 'santuario' || r.kind === 'idolo', `seed ${seed}/${depth}: ${r.id} ${r.kind}`);
     }
+    for (const v of L.run.stubs.filter(s => s.kind === 'vault')) assert.ok(L.findPath(landing, { x: (v.rect[0] + v.rect[2]) / 2, z: (v.rect[1] + v.rect[3]) / 2 }, state).length, `seed ${seed}/${depth}: the sealed chamber`);
   }
-  const a = layoutFor(5, 3).run, b = layoutFor(6, 3).run;
-  assert.notDeepEqual(a.rooms.map(r => r.kind), b.rooms.map(r => r.kind), 'two runs never match');
+  const a = layoutFor(5, 1).run, b = layoutFor(6, 1).run;
+  assert.notDeepEqual(a.rooms.map(r => r.kind), b.rooms.map(r => r.kind), 'two jornadas never match');
 });
 
 test('the camp table has faroles; small loot makes a handful; one weapon at a time', () => {
@@ -110,45 +113,52 @@ test('the truck banks what your hands carry, more while you hold the laughing id
   assert.equal(a.hands[0]?.kind, 'laughingIdol', 'artifacts stay in hand until dropped at the truck');
 });
 
-test('the montacargas carries whoever stands on it; a seal opens the next floor', () => {
-  const g = setup(1), [a] = g.players, L = g.layout, cart = g.carts[0];
-  ride(g, 1, 'down');
+test('one button: down into the jornada; up only once the cargo has carried the quota', () => {
+  const g = setup(2), [a, b] = g.players, cart = g.carts[0], first = g.seed;
+  place(g, 2, 0, 6);
+  ride(g, 1);
   assert.equal(floorOf(a.x), 1); assert.equal(g.deepest, 1); assert.equal(a.stats.unaMas, 1); assert.equal(a.riding, false);
-  assert.equal(floorOf(cart.x), 1, 'the carrito on the deck rode along');
-  const seal = L.run.seals.find(s => s.floor === 1);
-  aimLever(g, 1, 'down'); assert.equal(interaction(g, a).kind, 'info', 'the seal still holds the way down');
-  // Both wheels: one pana can latch the first and run to the second.
-  for (const w of seal.winches) { place(g, 1, w.x, w.z + 1.6); a.h = Math.PI; a.pitch = 0; step(g, 1.7, new Map([[1, { hold: true }]])); }
-  assert.equal(g.open[seal.id], 1);
-  ride(g, 1, 'down'); assert.equal(floorOf(a.x), 2); assert.equal(g.deepest, 2);
-  ride(g, 1, 'up'); assert.equal(floorOf(a.x), 1, 'up one floor at a time');
+  aimButton(g, 1); assert.equal(interaction(g, a).kind, 'info', 'no quota, no way up');
+  // The carrito never rides the montacargas: it waits in the jornada.
+  assert.equal(floorOf(cart.x), 1);
+  const pad = aimCargo(g, 1);
+  assert.equal(interaction(g, a).kind, 'info', 'push the carrito onto the pad first');
+  Object.assign(cart, { x: pad.x, z: pad.z });
+  while (cartValue(cart) < g.quota) cart.contents.push({ kind: 'cup', worth: 1 });
+  assert.equal(interaction(g, a).kind, 'cargo'); a.interactCooldown = 0; g.action(1, 'interact');
+  assert.equal(cart.away, true); step(g, 3.2);
+  assert.ok(g.delivered >= g.quota); assert.equal(cart.contents.length, 0); assert.ok(g.mangos > 0);
+  step(g, 3.2); assert.equal(cart.away, false, 'it comes back down empty');
+  // Pana 2 rides down too, then wanders off and is left behind.
+  const quota = g.quota; place(g, 2, a.x + 6, a.z - 6);
+  ride(g, 1);
+  assert.equal(floorOf(a.x), 0); assert.equal(g.level, 2); assert.notEqual(g.seed, first); assert.ok(g.quota > quota);
+  assert.equal(floorOf(b.x), 0); assert.equal(b.hp, 1, 'left below, hauled up with 1 HP');
+  assert.equal(g.carts.length, 1); assert.equal(floorOf(g.carts[0].x), 1, 'a fresh carrito waits in the next jornada');
 });
 
-test('a jornada ends when the carrito rides up with the quota; the next one is deeper', () => {
-  const g = setup(1), [a] = g.players, cart = g.carts[0], first = g.seed;
-  ride(g, 1, 'down'); assert.equal(floorOf(cart.x), 1);
-  aimLever(g, 1, 'up'); assert.equal(interaction(g, a).kind, 'info', 'no quota, no way up');
-  assert.match(interaction(g, a).text, /falta botín/);
-  while (cartValue(cart) < g.quota) cart.contents.push({ kind: 'cup', worth: 1 });
-  assert.equal(interaction(g, a).kind, 'ride');
-  const quota = g.quota; step(g, 1.6, new Map([[1, { hold: true }]])); step(g, 14);
-  assert.equal(floorOf(a.x), 0); assert.equal(g.level, 2); assert.ok(g.haul >= quota); assert.ok(g.mangos >= quota / 10);
-  assert.equal(cart.contents.length, 0); assert.notEqual(g.seed, first, 'a new deck'); assert.ok(g.quota > quota, 'and a bigger quota');
-  // Mangos buy gear at the camp's shop, straight into a hand.
-  const spot = { x: -12.5 + .9, z: 6 - 1.5 + 4 * .75 }; place(g, 1, spot.x + 1.4, spot.z); a.hands = [null, null];
-  a.h = facing(a, spot); a.pitch = Math.atan2(1.05 - 1.45, 1.4); a.interactCooldown = 0;
-  g.mangos = 100; assert.equal(interaction(g, a).kind, 'buy'); const before = g.mangos; g.action(1, 'interact');
-  assert.equal(a.hands[0].kind, 'marcadora'); assert.equal(g.mangos, before - 45);
+test('whoever stays below when the cage goes up is hauled to the camp with 1 HP', () => {
+  const g = setup(2), [a, b] = g.players;
+  ride(g, 1); place(g, 2, a.x, a.z - 4); g.delivered = g.quota;
+  ride(g, 1);
+  assert.equal(g.level, 2); assert.equal(floorOf(b.x), 0); assert.equal(b.hp, 1);
+});
+
+test('mangos buy gear at the camp shop, straight into a hand', () => {
+  const g = setup(1), [a] = g.players; g.mangos = 100;
+  const spot = { x: -12.5 + .9, z: 6 - 1.5 + 4 * .75 }; place(g, 1, spot.x + 1.4, spot.z);
+  a.h = facing(a, spot); a.pitch = Math.atan2(1.05 - 1.45, 1.4);
+  assert.equal(interaction(g, a).kind, 'buy'); g.action(1, 'interact');
+  assert.equal(a.hands[0].kind, 'marcadora'); assert.equal(g.mangos, 55);
 });
 
 test('one cage: away it is a hole, busy it waits, empty it comes when called', () => {
   const g = setup(2), [a, b] = g.players, L = g.layout, camp = L.run.lifts.find(l => l.floor === 0), stop = L.run.lifts.find(l => l.floor === 1);
   place(g, 2, 0, 6);
-  ride(g, 1, 'down'); assert.equal(floorOf(a.x), 1); assert.equal(floorOf(b.x), 0, 'Pana 2 stayed behind');
+  ride(g, 1); assert.equal(floorOf(a.x), 1); assert.equal(floorOf(b.x), 0, 'Pana 2 stayed behind');
   assert.equal(L.walkable(camp.x, camp.z, g), false, 'the empty shaft is a hole');
   place(g, 2, camp.x, camp.z + 2.4); b.h = Math.PI; b.pitch = 0;
   assert.equal(interaction(g, b).kind, 'call');
-  // Pana 2 calls it up; while it travels, Pana 1 below finds it busy.
   step(g, 1.6, new Map([[2, { hold: true }]])); assert.equal(g.lift.moving, true);
   place(g, 1, stop.x, stop.z - 2.3); a.h = 0; a.pitch = 0;
   assert.equal(interaction(g, a).kind, 'info', 'busy');
@@ -232,9 +242,10 @@ test('snapshots carry the run: restore continues the same simulation', () => {
   assert.equal(restored.layout.run.rooms.length, a.layout.run.rooms.length);
 });
 
-test('the guardian wakes, slams, falls to machetes and opens the way down', () => {
+test('the guardian wakes, slams, falls to machetes and opens its treasure chamber', () => {
   for (let seed = 1; seed < 30; seed++) {
-    const g = setup(2, seed), seal = run(g).seals.find(s => s.kind === 'guardian'); if (!seal) continue;
+    const g = setup(2, seed); g.completeLevel();
+    const seal = run(g).seals.find(s => s.kind === 'guardian'); if (!seal) continue;
     const room = run(g).rooms.find(r => r.id === seal.room), [a, b] = g.players;
     place(g, 1, room.x, room.z + 4); place(g, 2, room.x + 1.5, room.z + 4); step(g, .1);
     const boss = g.enemies.find(e => e.kind === 'guardian'); assert.ok(boss, 'the guardian is in its room');
@@ -250,7 +261,8 @@ test('the guardian wakes, slams, falls to machetes and opens the way down', () =
 });
 
 test('the jaguar crouches before it pounces, and a farol dazes it once in a while', () => {
-  const g = setup(1, 77), vault = run(g).rooms.find(r => r.kind === 'boveda'), [a] = g.players;
+  const g = setup(1, 77); g.completeLevel(); g.completeLevel();
+  const vault = run(g).rooms.find(r => r.kind === 'boveda'), [a] = g.players;
   place(g, 1, vault.x, vault.z + 6); step(g, .1);
   const cat = g.enemies.find(e => e.kind === 'jaguar'); assert.ok(cat); cat.awake = true; cat.born = -9;
   a.h = facing(a, cat);
@@ -262,8 +274,8 @@ test('the jaguar crouches before it pounces, and a farol dazes it once in a whil
   assert.ok(cat.stun > 0 && cat.immune > 0, 'dazed by the beam');
 });
 
-test('the carrito takes a handful, a big treasure, and banks it all at the truck', () => {
-  const g = setup(1), [a] = g.players, cart = g.carts[0]; Object.assign(cart, { x: -2, z: 15 });
+test('the carrito takes a handful and a big treasure; the cargo lift banks them', () => {
+  const g = setup(1), [a] = g.players, cart = g.carts[0];
   a.hands[0] = { id: 70, kind: 'coins', pile: ['coins', 'emerald'] }; place(g, 1, cart.x, cart.z + 1.6); a.h = facing(a, cart);
   assert.equal(interaction(g, a).kind, 'cart-load'); g.action(1, 'interact'); assert.equal(cart.contents.length, 2); assert.equal(a.hands[0], null);
   const disk = g.spawnItem('sunDisk', cart.x - 3.2, cart.z, { y: 0 });
@@ -272,8 +284,11 @@ test('the carrito takes a handful, a big treasure, and banks it all at the truck
   assert.equal(cart.big?.kind, 'sunDisk'); assert.equal(a.grip, null);
   place(g, 1, cart.x, cart.z + 1.6); a.h = facing(a, cart); a.interactCooldown = 0;
   assert.equal(interaction(g, a).kind, 'cart-push'); g.action(1, 'interact'); assert.equal(a.push, cart.id);
-  for (let i = 0; i < 200 && g.haul === 0; i++) g.update(.05, new Map([[1, { x: (TRUCK.x - cart.x) / 8, z: (TRUCK.z - cart.z) / 8 }]]));
-  assert.equal(g.haul, ITEMS.coins.value + ITEMS.emerald.value + ITEMS.sunDisk.value); assert.equal(cart.contents.length, 0);
+  const pad = run(g).cargo.find(c => c.floor === 1);
+  for (let i = 0; i < 300 && Math.hypot(cart.x - pad.x, cart.z - pad.z) > .8; i++) { const d = Math.hypot(pad.x - cart.x, pad.z - cart.z) || 1; g.update(.05, new Map([[1, { x: (pad.x - cart.x) / d, z: (pad.z - cart.z) / d }]])); }
+  a.interactCooldown = 0; g.action(1, 'interact'); assert.equal(a.push, null);
+  aimCargo(g, 1); a.interactCooldown = 0; g.action(1, 'interact'); step(g, 3.2);
+  assert.equal(g.haul, ITEMS.coins.value + ITEMS.emerald.value + ITEMS.sunDisk.value); assert.equal(g.delivered, g.haul);
 });
 
 test('guácharos scatter from a beam, spiders drop and slow, cuaimas poison but stay home', () => {

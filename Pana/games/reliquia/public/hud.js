@@ -3,7 +3,7 @@ import { ICONS as SVG } from '/engine/icons.js';
 import { fillRoster } from '/engine/results.js';
 import { setBar } from '/engine/kit.js';
 import { ARTIFACT_AURA } from '/engine/models/props/reliquia-treasure.js';
-import { interaction, compassTarget, titles, tier, holds, alive, deepestStop, cartValue } from './rules.js';
+import { interaction, compassTarget, titles, tier, holds, alive, cartValue } from './rules.js';
 import { layoutFor, distance } from './layout.js';
 import { FLOOR_NAMES, TRUCK, floorOf, inRect } from './deck.js';
 import { ITEMS, heldValue } from './items.js';
@@ -33,10 +33,11 @@ export function createHud() {
   }
 
   function compass(state, p, heading) {
-    const L = layoutFor(state.seed, state.options?.floors), f = floorOf(p.x), tags = [];
+    const L = layoutFor(state.seed, state.level), f = floorOf(p.x), tags = [];
     const stop = L.run.lifts.find(l => l.floor === f);
     if (f === 0) tags.push(['truck', 'CAMIÓN', TRUCK]);
     if (stop) tags.push(['down', 'MONTACARGAS', stop]);
+    const pad = L.run.cargo.find(c => c.floor === f && f > 0); if (pad) tags.push(['boss', 'CARGA', pad]);
     const seal = L.run.seals.find(s => s.floor === f);
     if (seal && !state.open[seal.id]) tags.push(['goal', 'SELLO', seal]);
     if (holds(p, 'compass')) { const t = compassTarget(state, p); if (t) tags.push([t.boss ? 'boss' : 'goal', t.boss ? '¿TESORO?' : 'TESORO', t]); }
@@ -56,7 +57,7 @@ export function createHud() {
   }
 
   function minimap(state, p) {
-    const L = layoutFor(state.seed, state.options?.floors), f = floorOf(p.x), c = map;
+    const L = layoutFor(state.seed, state.level), f = floorOf(p.x), c = map;
     c.clearRect(0, 0, 180, 180);
     const scale = f === 0 ? 3 : 1.5, sx = x => 90 + (x - p.x) * scale, sz = z => 90 + (z - p.z) * scale;
     const known = r => f === 0 || state.woke[r.id] || r.index === 0;
@@ -73,9 +74,9 @@ export function createHud() {
 
   function update(state, p, room, { heading = 0, paused = false } = {}) {
     if (!p) return;
-    const L = layoutFor(state.seed, state.options?.floors), f = floorOf(p.x), playing = state.phase === 'playing';
-    $('floor-name').textContent = `Jornada ${state.level} · ${f === 0 ? 'Superficie' : `Piso ${f} · ${FLOOR_NAMES[f] || 'El oro profundo'}`}`;
-    const cart = state.carts[0], load = cart ? cartValue(cart) : 0;
+    const L = layoutFor(state.seed, state.level), f = floorOf(p.x), playing = state.phase === 'playing';
+    $('floor-name').textContent = `Jornada ${state.level} · ${f === 0 ? 'Superficie' : FLOOR_NAMES[Math.min(FLOOR_NAMES.length - 1, state.level)]}`;
+    const load = state.delivered || 0;
     $('quota-label').textContent = `${money(load)} / ${money(state.quota)}`; setBar($('quota-fill'), state.quota ? load / state.quota : 0);
     document.body.classList.toggle('quota-met', load >= state.quota); $('mangos').textContent = Math.floor(state.mangos);
     $('room-name').textContent = f === 0 ? 'El campamento' : L.regionAt(p)?.name || 'Los pasillos';
@@ -103,7 +104,7 @@ export function createHud() {
     // The choice: an open way down within sight.
     // The choice: standing at the montacargas with the way down open.
     const stop = L.run.lifts.find(l => l.floor === f);
-    const choosing = playing && f > 0 && !!stop && distance(p, stop) < 5 && deepestStop(state) > f;
+    const choosing = playing && f > 0 && !!stop && distance(p, stop) < 5 && state.delivered >= state.quota;
     $('choice').classList.toggle('hidden', !choosing);
     if (choosing) {
       const recent = [...votes.entries()].filter(([, v]) => state.time - v.time < 30);
@@ -153,7 +154,7 @@ export function createHud() {
     const win = state.outcome === 'extracted';
     $('result-eyebrow').textContent = win ? 'Expedición completada' : 'La ruina se quedó con todo';
     $('result-title').textContent = win ? '¡Nos vamos!' : 'Una vuelta más.';
-    $('result-copy').textContent = win ? `Subieron ${money(state.haul)} al camión. ${state.deepest >= (state.options?.floors || 3) ? 'Llegaron hasta la bóveda.' : '¿Y si la próxima bajan un piso más?'}`
+    $('result-copy').textContent = win ? `Subieron ${money(state.haul)} al camión. ${state.level > 1 ? `Completaron ${state.level - 1} jornada${state.level > 2 ? 's' : ''}.` : '¿Y si la próxima completan una jornada?'}`
       : `Cayeron todos. Del camión solo se salvó ${state.options?.wipeShare ?? 20} %. ${state.events.at(-1)?.text || ''}`;
     $('result-payout').textContent = Math.round(state.payout).toLocaleString('es-VE'); $('result-depth').textContent = state.level - 1; $('result-time').textContent = clock(state.time);
     const list = titles(state);

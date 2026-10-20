@@ -38,7 +38,7 @@ function label(text, color, { bubble = false } = {}) {
 }
 const disposeSprite = s => { s.material.map.dispose(); s.material.dispose(); s.removeFromParent(); };
 
-export function createView(canvas, { seed = 1, floors = 3 } = {}) {
+export function createView(canvas, { seed = 1, depth = 1 } = {}) {
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
   renderer.setPixelRatio(pixelRatio(1.5)); const unbind = bindRenderer(renderer, 1.5);
   renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap; renderer.toneMapping = THREE.ACESFilmicToneMapping;
@@ -52,7 +52,7 @@ export function createView(canvas, { seed = 1, floors = 3 } = {}) {
   const headlamp = new THREE.SpotLight(0xfff0d8, 0, 26, .5, .55, 1.4); headlamp.position.set(0, .05, 0); headlamp.target.position.set(0, -.25, -5); camera.add(headlamp, headlamp.target);
   const handLight = new THREE.PointLight(0xffa850, 0, 12, 1.6); handLight.position.set(.3, -.2, -.4); camera.add(handLight);
   const pool = Array.from({ length: POOL }, () => { const l = new THREE.PointLight(0xffa04a, 0, 11, 1.7); scene.add(l); return l; });
-  let world = createExpeditionWorld({ seed, floors }); scene.add(world.group);
+  let world = createExpeditionWorld({ seed, depth }); scene.add(world.group);
   const shopSign = label('TIENDA · se paga en mangos', '#ffd36a'); shopSign.position.set(-12.5, 3.4, 6); shopSign.scale.set(4.4, .82, 1); scene.add(shopSign);
   const puffs = new Puffs(scene), waves = new Shockwaves(scene);
   // Your paws: fur-coloured, holding the two hand items in view.
@@ -191,7 +191,9 @@ export function createView(canvas, { seed = 1, floors = 3 } = {}) {
       if (!a) { const root = new THREE.Group(), model = mineCart({ seed: 41, load: 'empty' }), bed = new THREE.Group(); model.scale.setScalar(.7); bed.position.y = .88; bed.scale.setScalar(.7); root.add(model, bed); scene.add(root); root.position.set(c.x, 0, c.z); a = { root, bed, key: null, tag: null }; carts.set(c.id, a); }
       a.root.visible = floorOf(c.x) === vf;
       // A carrito on the montacargas rides it down the shaft with everyone.
-      const target = new THREE.Vector3(c.x, state.lift?.moving && state.lift.carts.includes(c.id) ? shaft.y : 0, c.z); if (a.root.position.distanceTo(target) > 4) a.root.position.copy(target); else a.root.position.lerp(target, Math.min(1, dt * 14));
+      // The cargo lift hauls it up through the ceiling and lowers it back empty.
+      const cargo = state.cargo?.cart === c.id ? state.cargo : null, up = cargo ? Math.min(1, cargo.t / 3) : 0;
+      const target = new THREE.Vector3(c.x, cargo ? (cargo.phase === 'up' ? up : 1 - up) * 7 : 0, c.z); if (a.root.position.distanceTo(target) > 4) a.root.position.copy(target); else a.root.position.lerp(target, Math.min(1, dt * 14));
       a.root.rotation.y = c.h;
       // Your own cart's balance is on the HUD, not floating in your face.
       if (a.tag) a.tag.visible = !c.pushers.includes(me?.id) && (!me || Math.hypot(c.x - me.x, c.z - me.z) > 2.2);
@@ -282,7 +284,7 @@ export function createView(canvas, { seed = 1, floors = 3 } = {}) {
     movement(x, z) { return { x: -x * Math.cos(h) - z * Math.sin(h), z: x * Math.sin(h) - z * Math.cos(h) }; },
     shake(amount) { shake = Math.min(1.3, shake + amount); },
     // A new run has a new deck: rebuild the world from its seed.
-    reseed(next, count) { if (world.run.seed === next && world.run.floors === count) return; scene.remove(world.group); world.dispose(); world = createExpeditionWorld({ seed: next, floors: count }); scene.add(world.group); },
+    reseed(next, depth) { if (world.run.seed === next && world.run.depth === depth) return; scene.remove(world.group); world.dispose(); world = createExpeditionWorld({ seed: next, depth }); scene.add(world.group); },
     dispose() {
       removeEventListener('resize', resize); unbind?.(); puffs.clear(); waves.clear();
       for (const [id, a] of avatars) removeAvatar(a, id);

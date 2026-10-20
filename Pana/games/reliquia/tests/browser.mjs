@@ -61,7 +61,7 @@ try {
 
   // The montacargas: the host rides the cage down; the guest, left at the
   // camp, finds an empty shaft and can only call it back.
-  const lever = await a.evaluate(async () => { const { levers } = await import('/g/reliquia/rules.js'); return levers(reliquia.view.world.run.lifts[0]).down; });
+  const lever = await a.evaluate(async () => { const { liftPanel } = await import('/g/reliquia/rules.js'); return liftPanel(reliquia.view.world.run.lifts[0]); });
   const deck = await a.evaluate(() => reliquia.view.world.run.lifts[0]);
   await place(a, ids.a, deck.x, deck.z + .6, 0); await settled(a, deck.x, deck.z + .6); await lookAt(a, lever, 1.1);
   await waitFor(a, () => reliquia.interaction(reliquia.state, reliquia.me)?.kind === 'ride');
