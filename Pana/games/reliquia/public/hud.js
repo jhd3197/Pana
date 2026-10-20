@@ -74,11 +74,14 @@ export function createHud() {
   function update(state, p, room, { heading = 0, paused = false } = {}) {
     if (!p) return;
     const L = layoutFor(state.seed, state.options?.floors), f = floorOf(p.x), playing = state.phase === 'playing';
-    $('floor-name').textContent = f === 0 ? 'Superficie' : `Piso ${f} · ${FLOOR_NAMES[f] || 'El oro profundo'}`;
+    $('floor-name').textContent = `Jornada ${state.level} · ${f === 0 ? 'Superficie' : `Piso ${f} · ${FLOOR_NAMES[f] || 'El oro profundo'}`}`;
+    const cart = state.carts[0], load = cart ? cartValue(cart) : 0;
+    $('quota-label').textContent = `${money(load)} / ${money(state.quota)}`; setBar($('quota-fill'), state.quota ? load / state.quota : 0);
+    document.body.classList.toggle('quota-met', load >= state.quota); $('mangos').textContent = Math.floor(state.mangos);
     $('room-name').textContent = f === 0 ? 'El campamento' : L.regionAt(p)?.name || 'Los pasillos';
     const t = tier(state); setBar($('greed-fill'), state.codicia / 100); $('greed-label').textContent = GREED[t];
     for (let i = 0; i <= 4; i++) document.body.classList.toggle(`greed-${i}`, t === i);
-    $('haul').textContent = money(state.haul);
+    $('haul').textContent = `${money(state.haul)} en el camión`;
     const lift = state.lift, where = n => n ? `piso ${n}` : 'campamento';
     const status = lift.moving ? `${lift.to > lift.from ? 'bajando' : 'subiendo'} al ${where(lift.to)}${lift.riders.length ? '' : ' (vacío)'}` : `en el ${where(lift.floor)}`;
     if ($('lift-status').textContent !== status) $('lift-status').textContent = status;
@@ -152,7 +155,7 @@ export function createHud() {
     $('result-title').textContent = win ? '¡Nos vamos!' : 'Una vuelta más.';
     $('result-copy').textContent = win ? `Subieron ${money(state.haul)} al camión. ${state.deepest >= (state.options?.floors || 3) ? 'Llegaron hasta la bóveda.' : '¿Y si la próxima bajan un piso más?'}`
       : `Cayeron todos. Del camión solo se salvó ${state.options?.wipeShare ?? 20} %. ${state.events.at(-1)?.text || ''}`;
-    $('result-payout').textContent = Math.round(state.payout).toLocaleString('es-VE'); $('result-depth').textContent = state.deepest; $('result-time').textContent = clock(state.time);
+    $('result-payout').textContent = Math.round(state.payout).toLocaleString('es-VE'); $('result-depth').textContent = state.level - 1; $('result-time').textContent = clock(state.time);
     const list = titles(state);
     $('titles').replaceChildren(...list.map(t => {
       const li = document.createElement('li'); li.className = 'pk-row';

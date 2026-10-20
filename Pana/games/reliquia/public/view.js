@@ -53,6 +53,7 @@ export function createView(canvas, { seed = 1, floors = 3 } = {}) {
   const handLight = new THREE.PointLight(0xffa850, 0, 12, 1.6); handLight.position.set(.3, -.2, -.4); camera.add(handLight);
   const pool = Array.from({ length: POOL }, () => { const l = new THREE.PointLight(0xffa04a, 0, 11, 1.7); scene.add(l); return l; });
   let world = createExpeditionWorld({ seed, floors }); scene.add(world.group);
+  const shopSign = label('TIENDA · se paga en mangos', '#ffd36a'); shopSign.position.set(-12.5, 3.4, 6); shopSign.scale.set(4.4, .82, 1); scene.add(shopSign);
   const puffs = new Puffs(scene), waves = new Shockwaves(scene);
   // Your paws: fur-coloured, holding the two hand items in view.
   const hands = [new THREE.Group(), new THREE.Group()]; hands[0].position.set(.32, -.36, -.7); hands[1].position.set(-.32, -.36, -.7);
@@ -82,10 +83,11 @@ export function createView(canvas, { seed = 1, floors = 3 } = {}) {
     if (!held) return;
     const model = itemModel(held.kind), info = ITEMS[held.kind];
     if (held.pile) { model.scale.multiplyScalar(.28 + held.pile.length * .05); slot.add(model); model.position.y = -.04; return; }
-    const scale = held.kind === 'farol' ? .24 : held.kind === 'machete' ? .5 : held.kind === 'honda' ? .42 : info.artifact ? .55 : .42;
+    const scale = held.kind === 'farol' ? .24 : held.kind === 'machete' ? .5 : held.kind === 'honda' ? .42 : held.kind === 'marcadora' ? 1.1 : info.artifact ? .55 : .42;
     model.scale.multiplyScalar(scale);
     if (held.kind === 'machete') { model.rotation.set(0, Math.PI / 2, .6); model.position.set(0, .02, 0); }
     else if (held.kind === 'honda') model.rotation.set(-.3, Math.PI, 0);
+    else if (held.kind === 'marcadora') { model.rotation.set(0, Math.PI, 0); model.position.set(0, -.02, -.05); }
     else model.position.y = -.05;
     slot.add(model);
   }
@@ -120,7 +122,7 @@ export function createView(canvas, { seed = 1, floors = 3 } = {}) {
     const shaft = liftView(state.lift), rideY = p => state.lift?.moving && state.lift.riders.includes(p.id) ? shaft.y : 0;
     setLook(vf === 0 && rideY(me || {}) > -2.5 ? 'camp' : 'deep');
     world.update(t, state, dt, me);
-    sky.update(t);
+    sky.update(t); shopSign.visible = vf === 0;
     // Other panas.
     const seen = new Set();
     for (const [i, p] of state.players.entries()) {
@@ -188,7 +190,8 @@ export function createView(canvas, { seed = 1, floors = 3 } = {}) {
       let a = carts.get(c.id);
       if (!a) { const root = new THREE.Group(), model = mineCart({ seed: 41, load: 'empty' }), bed = new THREE.Group(); model.scale.setScalar(.7); bed.position.y = .88; bed.scale.setScalar(.7); root.add(model, bed); scene.add(root); root.position.set(c.x, 0, c.z); a = { root, bed, key: null, tag: null }; carts.set(c.id, a); }
       a.root.visible = floorOf(c.x) === vf;
-      const target = new THREE.Vector3(c.x, 0, c.z); if (a.root.position.distanceTo(target) > 4) a.root.position.copy(target); else a.root.position.lerp(target, Math.min(1, dt * 14));
+      // A carrito on the montacargas rides it down the shaft with everyone.
+      const target = new THREE.Vector3(c.x, state.lift?.moving && state.lift.carts.includes(c.id) ? shaft.y : 0, c.z); if (a.root.position.distanceTo(target) > 4) a.root.position.copy(target); else a.root.position.lerp(target, Math.min(1, dt * 14));
       a.root.rotation.y = c.h;
       // Your own cart's balance is on the HUD, not floating in your face.
       if (a.tag) a.tag.visible = !c.pushers.includes(me?.id) && (!me || Math.hypot(c.x - me.x, c.z - me.z) > 2.2);
@@ -273,7 +276,7 @@ export function createView(canvas, { seed = 1, floors = 3 } = {}) {
     renderer, scene, camera, puffs, waves, avatars, enemies, draw, bark,
     get world() { return world; },
     get heading() { return h; }, set heading(v) { h = v; },
-    get pitch() { return pitch; },
+    get pitch() { return pitch; }, set pitch(v) { pitch = v; },
     look(yawDelta, pitchDelta = 0) { h += yawDelta; pitch = THREE.MathUtils.clamp(pitch + pitchDelta, -1.2, 1.1); },
     // WASD relative to where you look: x right, z back.
     movement(x, z) { return { x: -x * Math.cos(h) - z * Math.sin(h), z: x * Math.sin(h) - z * Math.cos(h) }; },
@@ -284,6 +287,7 @@ export function createView(canvas, { seed = 1, floors = 3 } = {}) {
       removeEventListener('resize', resize); unbind?.(); puffs.clear(); waves.clear();
       for (const [id, a] of avatars) removeAvatar(a, id);
       for (const a of carts.values()) { a.tag && disposeSprite(a.tag); a.root.removeFromParent(); }
+      disposeSprite(shopSign);
       world.dispose(); sky.dispose(); splatTextures.forEach(t => t.dispose()); splatMaterials.forEach(m => m.dispose());
       [ballGeometry, dartGeometry, splatGeometry, ringGeometry, pawGeometry].forEach(g => g.dispose()); [dartMaterial, dangerMaterial, pawMaterial].forEach(m => m.dispose());
       renderer.dispose();

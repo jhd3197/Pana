@@ -13,7 +13,9 @@ const open = async (name, mobile = false) => { const p = await openGame(browser,
 const mine = page => page.evaluate(() => reliquia.state.players.find(p => p.id === reliquia.room.id));
 const place = (host, id, x, z, h) => host.evaluate(({ id, x, z, h }) => reliquia.place(id, x, z, h), { id, x, z, h });
 const settled = (page, x, z) => waitFor(page, ({ x, z }) => { const p = reliquia.state.players.find(p => p.id === reliquia.room.id); return Math.hypot(p.x - x, p.z - z) < .4; }, { x, z });
-const face = (page, h) => page.evaluate(h => reliquia.face(h), h);
+const face = (page, h, pitch = 0) => page.evaluate(([h, pitch]) => reliquia.face(h, pitch), [h, pitch]);
+// Turn to look at a point (the crosshair picks what E uses).
+const lookAt = (page, at, y = 1) => page.evaluate(({ at, y }) => { const me = reliquia.me; reliquia.face(Math.atan2(at.x - me.x, at.z - me.z), Math.atan2(y - 1.45, Math.hypot(at.x - me.x, at.z - me.z))); }, { at, y });
 try {
   const a = await open('Juan'), b = await open('Ana');
   await waitFor(a, () => reliquia.state.players.length === 2); await waitFor(b, () => reliquia.state.players.length === 2);
@@ -60,20 +62,21 @@ try {
   // The montacargas: the host rides the cage down; the guest, left at the
   // camp, finds an empty shaft and can only call it back.
   const lever = await a.evaluate(async () => { const { levers } = await import('/g/reliquia/rules.js'); return levers(reliquia.view.world.run.lifts[0]).down; });
-  await place(a, ids.a, lever.x, lever.z, 0); await settled(a, lever.x, lever.z); await face(a, 0);
+  const deck = await a.evaluate(() => reliquia.view.world.run.lifts[0]);
+  await place(a, ids.a, deck.x, deck.z + .6, 0); await settled(a, deck.x, deck.z + .6); await lookAt(a, lever, 1.1);
   await waitFor(a, () => reliquia.interaction(reliquia.state, reliquia.me)?.kind === 'ride');
   await a.keyboard.down('e'); await waitFor(a, () => reliquia.state.lift.moving); await a.keyboard.up('e');
   await waitFor(b, id => !reliquia.state.lift.moving && reliquia.state.players.find(p => p.id === id).x > 100, ids.a);
   assert.equal(await a.evaluate(() => reliquia.state.deepest), 1);
   const shaft = await b.evaluate(() => reliquia.view.world.run.lifts[0]);
-  await place(a, ids.b, shaft.x, shaft.z + 2.4, Math.PI); await settled(b, shaft.x, shaft.z + 2.4);
+  await place(a, ids.b, shaft.x, shaft.z + 2.4, Math.PI); await settled(b, shaft.x, shaft.z + 2.4); await face(b, Math.PI);
   await waitFor(b, () => reliquia.interaction(reliquia.state, reliquia.me)?.kind === 'call');
   await a.screenshot({ path: path.join(output, 'floor1.png') }); check('the montacargas carries the host down while the guest has to call it');
 
   // A fallen pana, a held revive.
   const p = await mine(a); await place(a, ids.b, p.x + 1.4, p.z); await settled(b, p.x + 1.4, p.z);
   await a.evaluate(() => { const g = reliquia.room.game, me = g.players.find(q => q.id === reliquia.room.id); me.invulnerable = 0; g.damage(me, 100); reliquia.room.publish(); });
-  await waitFor(b, () => reliquia.interaction(reliquia.state, reliquia.me)?.kind === 'revive');
+  await lookAt(b, p, .35); await waitFor(b, () => reliquia.interaction(reliquia.state, reliquia.me)?.kind === 'revive');
   await b.keyboard.down('e'); await waitFor(a, id => !reliquia.state.players.find(q => q.id === id).downed, ids.a); await b.keyboard.up('e');
   await waitFor(b, () => reliquia.me.stats.revives === 1); check('a guest holds E to get the host back up');
   // Back to the camp, where nothing hunts them, before the rest of the checks.
@@ -100,7 +103,7 @@ try {
   assert.equal(await b.evaluate(() => reliquia.state.haul), haul); assert.equal(await b.evaluate(() => reliquia.state.phase), 'playing'); check('host migration keeps the run and the truck');
 
   // Everyone standing at the truck holds E: ¡Nos vamos!
-  await place(b, ids.b, 12, 21); await place(b, cid, 12.5, 18); await settled(b, 12, 21);
+  await place(b, ids.b, 12, 21); await place(b, cid, 12.5, 18); await settled(b, 12, 21); await lookAt(b, { x: 9, z: 20 }, 1.2);
   await b.keyboard.down('e'); await waitFor(b, () => reliquia.state.phase === 'results'); await b.keyboard.up('e');
   await waitFor(c, () => reliquia.state.outcome === 'extracted');
   assert.match(await c.locator('#result-payout').textContent(), /600/);

@@ -6,6 +6,27 @@ un piso más?* Only loot that reaches the truck at the camp counts.
 
 ## The run
 
+The camp is the hub; the game is a chain of **jornadas**. Each jornada deals
+a new deck of floors (`levelSeed(origin, level)`) and asks a quota
+(`quotaFor(level, roster, floors)`): the team's one carrito, which waits on
+the montacargas deck, has to carry it up. From floor 1 the red lever only
+goes to the camp with that carrito on the deck and the quota in it; the
+cage arriving at the camp with it completes the jornada (`completeLevel`):
+the load banks, everyone still below is brought up (the fallen at 50 HP),
+the next, deeper deck is dealt with a bigger quota, and la codicia, seals,
+chests and enemies reset. Banked bolívares also become mangos (one per
+Bs. 10), spent at the camp's shop (`SHOP`, a market stall west of the camp):
+farol, botiquín, machete, honda and the marcadora de pintura (fast paint,
+less stun), each straight into a hand. Holding E at the truck ends the
+expedition with everything banked; a wipe ends it with `wipeShare` %.
+
+**Aiming.** E uses whatever the crosshair points at: every target in
+`interaction()` is a point and a radius, scored by its angle from the line
+of sight (`p.h`, `p.pitch`) and distance; something within 1.4 m in front
+of your feet counts too. Levers, the carrito, the call at the empty shaft,
+the shop's goods, items, chests, winches, rubble and fallen panas all work
+this way.
+
 Camp (floor 0, outdoors, sunlit) → floor 1 … floor N (option `floors`, 2–4,
 default 3) → the vault on the last floor. Everything is level and there are
 no teleports: the **montacargas** is the one way between floors. One cage

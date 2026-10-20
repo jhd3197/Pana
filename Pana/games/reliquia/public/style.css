@@ -39,7 +39,8 @@ body.can-act .crosshair i{background:var(--rel-gold);transform:scale(1.5)}
 body.greed-3 .greed-bar,body.greed-4 .greed-bar{animation:greed-pulse .8s ease-in-out infinite alternate}
 @keyframes greed-pulse{to{box-shadow:0 0 14px var(--rel-greed-hot)}}
 .haul{display:flex;align-items:baseline;justify-content:space-between}
-.haul .pk-eyebrow{font-size:10px}
+.haul .pk-eyebrow{font-size:10px}.haul em,.quota em{font-style:normal;color:var(--pk-text);margin-left:6px}
+.quota{display:grid;gap:4px}.quota .pk-eyebrow{font-size:10px}.quota-bar{--pk-bar-color:var(--rel-jade);height:8px}body.quota-met .quota-bar{--pk-bar-color:var(--rel-gold)}
 .lift-line{display:flex;align-items:baseline;justify-content:space-between;gap:8px}.lift-line .pk-eyebrow{font-size:10px}.lift-line em{font:800 12px var(--pk-sans);font-style:normal;color:var(--rel-jade)}.haul .pk-num{font-size:20px;color:var(--rel-gold)}
 .map-wrap{position:fixed;top:212px;left:18px;padding:6px}
 .map-wrap[hidden]{display:none}

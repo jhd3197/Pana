@@ -26,6 +26,7 @@ export const ITEMS = {
   honda: { name: 'Honda de pintura', size: 'hand', value: 0, tool: true, model: 'china' },
   farol: { name: 'Farol', size: 'hand', value: 0, tool: true, model: 'expeditionLantern' },
   botiquin: { name: 'Botiquín', size: 'hand', value: 0, tool: true, model: 'botiquin' },
+  marcadora: { name: 'Marcadora de pintura', size: 'hand', value: 0, tool: true, model: 'createPaintMarker' },
   // Enchanted artifacts: a power with a catch, worth money if they reach the truck.
   echoMask: { name: 'Máscara de los ecos', size: 'hand', value: 220, artifact: true, model: 'echoMask', good: 'Revela salas escondidas', bad: 'Llama fantasmas' },
   sandals: { name: 'Alpargatas del mensajero', size: 'hand', value: 200, artifact: true, model: 'messengerSandals', good: 'Corres mucho más', bad: 'No frenas a tiempo' },
@@ -41,7 +42,7 @@ export const SMALL = ['coins', 'emerald', 'pearl', 'cup'];
 export const BIG_POOL = [['sunDisk', 'drum', 'cart'], ['emeraldChest', 'mirror', 'sunDisk', 'stoneHead'], ['stoneHead', 'goldJaguar', 'emeraldChest', 'mirror']];
 export const HANDFUL = 4;
 // One weapon at a time: picking up another swaps it.
-export const WEAPONS = ['machete', 'honda'];
+export const WEAPONS = ['machete', 'honda', 'marcadora'];
 // What a hand is worth: a handful counts every piece.
 export const heldValue = h => !h ? 0 : h.pile ? h.pile.reduce((n, k) => n + (ITEMS[k]?.value || 0), 0) : (ITEMS[h.kind]?.value || 0) * (h.worth ?? 1);
 export const valueOf = kind => ITEMS[kind]?.value || 0;

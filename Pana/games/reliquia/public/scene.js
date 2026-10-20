@@ -19,6 +19,8 @@ import { lajaRock } from '/engine/models/props/amazonas.js';
 import { rockyCliff } from '/engine/models/props/mountain.js';
 import { china } from '/engine/models/props/china.js';
 import { glowTexture } from '/engine/models/props/glow-paintball.js';
+import { createPaintMarker } from '/engine/models/props/paintball.js';
+import { marketStall } from '/engine/models/props/plaza.js';
 import { palm } from '/engine/models/vegetation/palm.js';
 import { fern } from '/engine/models/vegetation/fern.js';
 import { ceiba } from '/engine/models/vegetation/ceiba.js';
@@ -26,13 +28,13 @@ import { monstera } from '/engine/models/vegetation/monstera.js';
 import { heliconia } from '/engine/models/vegetation/heliconia.js';
 import { tickWind } from '/engine/models/vegetation/plant-kit.js';
 import { layoutFor } from './layout.js';
-import { visibleItems, liftView } from './rules.js';
+import { visibleItems, liftView, SHOP, SHOP_AT, shopSpot } from './rules.js';
 import { ITEMS, ARTIFACTS } from './items.js';
 import { TRUCK, TABLE, HEIGHT, CAGE, floorOf, inRect } from './deck.js';
 
 const PALETTES = ['sol', 'jade', 'maldita'];
 export const paletteFor = floor => RUIN_PALETTES[PALETTES[(floor - 1) % PALETTES.length]];
-const FACTORIES = { ...treasure, mineCart: () => mineCart({ load: 'gold' }), olmecHead: () => olmecHead({ size: 1.3 }), jaguarStatue: () => jaguarStatue({ gold: true, scale: .7 }), china, expeditionLantern };
+const FACTORIES = { ...treasure, mineCart: () => mineCart({ load: 'gold' }), olmecHead: () => olmecHead({ size: 1.3 }), jaguarStatue: () => jaguarStatue({ gold: true, scale: .7 }), china, expeditionLantern, createPaintMarker: () => createPaintMarker({ color: '#ff5ab4' }) };
 const GLOW = { tool: 0xfff1d6, treasure: 0xffc23d, big: 0xffd36a };
 
 // One prototype per item kind; every copy on the map is a cheap clone.
@@ -42,6 +44,7 @@ export function itemModel(kind) {
     const model = FACTORIES[ITEMS[kind].model]();
     if (kind === 'farol') model.scale.setScalar(1.3);
     if (kind === 'honda') model.scale.setScalar(1.1);
+    if (kind === 'marcadora') model.scale.setScalar(.55);
     prototypes.set(kind, model);
   }
   return prototypes.get(kind).clone();
@@ -90,11 +93,14 @@ export function createExpeditionWorld({ seed = 1, floors = 3, roof = true } = {}
     place(campStatic, plant, x, 0, z, i, i % 4 === 0 ? 1.1 : 1.3);
   }
   for (let i = 0; i < 16; i++) { const a = i * 2.4, r = 16 + (i % 4); place(campStatic, fern({ seed: i + 9 }), Math.sin(a) * r, 0, 13 + Math.cos(a) * r, i, 1.4); }
-  for (const [x, z, r] of [[-15, 4, 2.4], [16, 4, 2], [18, 22, 2.8], [-18, 26, 2.2]]) place(campStatic, lajaRock({ seed: x * 7, radius: r }), x, 0, z);
+  for (const [x, z, r] of [[-17, -1, 2.4], [16, 4, 2], [18, 22, 2.8], [-18, 26, 2.2]]) place(campStatic, lajaRock({ seed: x * 7, radius: r }), x, 0, z);
   const mouth = ruinShell({ inside: (x, z) => floorOf(x) === 0 && run.stubs.some(s => s.floor === 0 && inRect(x, z, s.rect)), ground: L.groundAt, open: (x, z) => z > -2, solid: (x, z) => !inShaft(0, x, z), sky: (x, z) => inShaft(0, x, z, .4), bounds: [-4, -16, 4, 0], palette: RUIN_PALETTES.sol, seed: 3, tile: 1 });
   camp.add(mouth); owned.add(mouth);
   const campBatch = bake(campStatic, { cellSize: 30 }); campStatic.traverse(o => o.geometry?.dispose()); camp.add(campBatch);
 
+  // The shop: a market stall with what mangos can buy laid on its counter.
+  place(camp, marketStall({ seed: 4, colors: [0x2fb5a8, 0xffc23d] }), SHOP_AT.x, 0, SHOP_AT.z, SHOP_AT.h);
+  SHOP.forEach(([kind], i) => { const at = shopSpot(i), m = itemModel(kind); if (kind === 'farol') m.scale.multiplyScalar(.6); m.position.set(at.x, 1.27, at.z); m.rotation.y = SHOP_AT.h; camp.add(m); });
   // The one cage: it sinks out of a stop and rises into the next.
   const cage = treasure.liftCage(); cage.name = 'Montacargas'; group.add(cage);
   // ---------- Floors, built on demand ----------
