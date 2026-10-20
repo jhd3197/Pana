@@ -44,7 +44,7 @@ export function ruinShell({ inside, ground = () => 0, solid = () => true, open =
     c.copy(floorColor).multiplyScalar(.82 + r() * .3);
   }));
   // Dark grout under the slabs, so a seam seen end-on is mortar, not a hole.
-  const grout = new THREE.PlaneGeometry(1, 1).rotateX(-Math.PI / 2), groutColor = new THREE.Color(palette.floor).multiplyScalar(.28);
+  const grout = new THREE.PlaneGeometry(1, 1).rotateX(-Math.PI / 2), groutColor = new THREE.Color(palette.floor).multiplyScalar(.5);
   group.add(instanced(grout, mat({ roughness: 1 }), cells.filter(([i, j]) => solid(i + .5, j + .5)), (m, c, [i, j]) => {
     const x = i + .5, z = j + .5, dx = ground(x + .5, z) - ground(x - .5, z), dz = ground(x, z + .5) - ground(x, z - .5);
     m.position.set(x, ground(x, z) - .1, z); m.rotation.set(Math.atan(dz), 0, -Math.atan(dx)); c.copy(groutColor);

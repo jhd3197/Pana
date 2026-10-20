@@ -177,7 +177,7 @@ export function createView(canvas, { seed = 1, floors = 3 } = {}) {
       m.position.set(s.x + (s.nx || 0) * .02, wall ? s.y : .03, s.z + (s.nz || 0) * .02);
       if (wall) m.lookAt(m.position.x - s.nx, m.position.y, m.position.z - s.nz); else m.rotation.x = -Math.PI / 2;
       m.rotation.z += s.id; scene.add(m); splats.set(s.id, m);
-      puffs.spawn({ x: s.x, y: wall ? s.y : .2, z: s.z }, { color: COLORS[s.seat % 8], count: 3, spread: .3, size: .3, rise: .6, life: .35 });
+      puffs.spawn({ x: s.x, y: wall ? s.y : .2, z: s.z }, { color: COLORS[s.seat % 8], count: 3, spread: .25, size: .12, rise: .5, life: .3 });
     }
     for (const [id, m] of splats) if (!state.splats.some(s => s.id === id)) { m.removeFromParent(); splats.delete(id); }
     for (const m of splats.values()) m.visible = floorOf(m.position.x) === vf;

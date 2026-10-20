@@ -149,7 +149,7 @@ export function createHud() {
     $('result-title').textContent = win ? '¡Nos vamos!' : 'Una vuelta más.';
     $('result-copy').textContent = win ? `Subieron ${money(state.haul)} al camión. ${state.deepest >= (state.options?.floors || 3) ? 'Llegaron hasta la bóveda.' : '¿Y si la próxima bajan un piso más?'}`
       : `Cayeron todos. Del camión solo se salvó ${state.options?.wipeShare ?? 20} %. ${state.events.at(-1)?.text || ''}`;
-    $('result-payout').textContent = money(state.payout); $('result-depth').textContent = state.deepest; $('result-time').textContent = clock(state.time);
+    $('result-payout').textContent = Math.round(state.payout).toLocaleString('es-VE'); $('result-depth').textContent = state.deepest; $('result-time').textContent = clock(state.time);
     const list = titles(state);
     $('titles').replaceChildren(...list.map(t => {
       const li = document.createElement('li'); li.className = 'pk-row';
