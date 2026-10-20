@@ -107,7 +107,7 @@ export function createTrifulcaScene(canvas, { me = () => null } = {}) {
       rings.ring(at.clone().add(v(0, 1.4 + floor(), 0)), { color: 0xffd23f, maxRadius: 2.2, life: .35 });
       rings.sparkle(at.clone().add(v(0, 1.6 + floor(), 0)), { count: 8 });
     }
-    if (e.type === 'block' && who) rings.sparkle(at.clone().add(v(0, 1.5 + floor(), 0)), { color: 0xffffff, count: 4, spread: .3 });
+    if (e.type === 'block' && who) { who.blocked(); rings.sparkle(at.clone().add(v(0, 1.5 + floor(), 0)), { color: 0xffffff, count: 4, spread: .3 }); }
     if (e.type === 'caida') { shake = .18; zoomT = .5; lastCaida = time; if (at) puffs.spawn(at.clone().add(v(0, .2 + floor(), 0)), { color: 0xcab79a, count: 3, spread: .5, size: .45, rise: .4, life: .6 }); }
     if (e.type === 'shove' && who) who.hit(.8);
     if ((e.type === 'empujon' || e.type === 'empuja-aire' || e.type === 'agua') && panas.get(e.by)) panas.get(e.by).pana.shove();

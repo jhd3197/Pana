@@ -55,8 +55,10 @@ wins and the titles are handed out.
   `tests/rules.test.js`.
 - `public/network.js`: the live room; the host runs the night at 20 Hz.
 - `public/scene.js`: stage, panas, NPC neighbours, the ref, the TV camera and
-  the replay. `fighters.js` poses a pana; `arenas.js` dresses the four maps;
-  `set.js` holds the gloves, the moto helmet, the tent ring and the Ávila.
+  the replay. `fighters.js` poses a pana (fighters wear the wardrobe's kart
+  helmet, and every jab, trompón, block, taunt and win picks one of a few
+  styles when it starts); `arenas.js` dresses the maps; `set.js` holds the
+  gloves, the thrown moto helmet, the tent ring and the Ávila.
 - `public/hud.js`, `narrator.js`, `controls.js`: HUD, narrator lines/voice and
   ringside sounds, keyboard/touch/gamepad.
 

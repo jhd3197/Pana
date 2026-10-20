@@ -1,10 +1,11 @@
 // The hub tile's live art, shown while the game has no launcher illustration
-// in web/launcher-art.js: the player's own pana in gloves and a moto helmet,
+// in web/launcher-art.js: the player's own pana in gloves and the kart helmet,
 // bouncing in guard and throwing the odd jab. mount(canvas) → dispose.
 import * as THREE from 'three';
 import { buildCharacter } from '/engine/models/characters/pana/avatar-model.js';
 import { loadAvatar } from '/engine/avatar.js';
-import { boxingGlove, motoHelmet } from './set.js';
+import { createAccessories } from '/engine/models/characters/pana/accessories.js';
+import { boxingGlove } from './set.js';
 
 export function mount(canvas) {
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
@@ -17,7 +18,9 @@ export function mount(canvas) {
   const gloves = [pana.armL, pana.armR].map((arm, i) => {
     const glove = boxingGlove({ side: i ? -1 : 1 }); glove.scale.setScalar(1 / .6); glove.position.set(0, -.86, .04); arm.add(glove); return glove;
   });
-  const helmet = motoHelmet({ color: '#ffc629' }); helmet.scale.setScalar(1 / .6); pana.head.add(helmet);
+  pana.wardrobe.setHeadwear('none'); pana.head.children.forEach(o => { if (o.name.startsWith('hat:')) o.visible = false; });
+  const helmet = createAccessories(pana, { hat: 'casco', glasses: null, neck: null, back: null, extras: {} });
+  helmet.show('hat', 'casco'); helmet.color('hat', 'casco', 'main', '#ffc629');
   let stopped = false, last = performance.now();
   function frame(now) {
     if (stopped) return;
@@ -35,7 +38,7 @@ export function mount(canvas) {
     requestAnimationFrame(frame);
   }
   requestAnimationFrame(frame);
-  const dispose = () => { stopped = true; gloves.forEach(g => g.userData.dispose()); helmet.userData.dispose(); pana.dispose(); renderer.dispose(); };
+  const dispose = () => { stopped = true; gloves.forEach(g => g.userData.dispose()); helmet.dispose(); pana.dispose(); renderer.dispose(); };
   addEventListener('pagehide', dispose, { once: true });
   return dispose;
 }
