@@ -162,7 +162,7 @@ export class Trifulca {
     this.props = this.mode === 'libre' ? this.spawnProps(arena) : [];
     const streak = champBody && champ ? champ.stats.streak : 0;
     this.fight = { time: this.options.seconds, hype: Object.fromEntries(this.corners().map(c => [c, 0])), calma: false, close: 0,
-      moto: arena.twist === 'moto' && this.mode !== 'libre' ? 14 + draw(this) * Math.max(4, this.options.seconds - 24) : -1, motoDone: false,
+      moto: ['moto', 'toro', 'balde', 'pito'].includes(arena.twist) ? 14 + draw(this) * Math.max(4, this.options.seconds - 24) : -1, motoDone: false,
       odds: this.odds(streak), streak, champion: champBody ? this.champion : null, stage: this.stage(), out: [] };
     this.placeCrowd();
     this.phase = 'intro'; this.time = INTRO; this.result = null;
@@ -385,17 +385,35 @@ export class Trifulca {
   }
 
   twists(dt) {
-    const f = this.fight, ring = this.bodies.filter(inRing);
-    // La calle: a moto passes through the fight and splits it for a second.
-    if (f.moto > 0 && !f.motoDone && this.options.seconds - this.time >= f.moto && ring.length === 2) {
+    const f = this.fight, ring = this.bodies.filter(inRing), arena = this.arena;
+    // Each arena's twist, once per fight.
+    if (f.moto > 0 && !f.motoDone && this.options.seconds - this.time >= f.moto && ring.length >= 2) {
       f.motoDone = true;
-      const [a, b] = ring, mx = (a.x + b.x) / 2, side = b.x >= a.x ? 1 : -1;
-      for (const body of ring) {
-        if (body.act === 'down') continue;
-        body.vx += (body === b ? side : -side) * 5.5;
-        if (body.act !== 'rise') { setAct(body, 'stun'); body.stun = .4; }
+      const twist = arena.twist, mx = ring.reduce((n, b) => n + b.x, 0) / ring.length, mz = ring.reduce((n, b) => n + b.z, 0) / ring.length;
+      const knock = (body, vx, vz, stun, mareo = 0) => {
+        if (body.act === 'down') return;
+        body.vx += vx; body.vz += vz; if (mareo) addMareo(body, mareo, (e) => this.fightEvent(e));
+        if (body.act !== 'rise' && body.act !== 'dizzy') { setAct(body, 'stun'); body.stun = stun; }
+      };
+      if (twist === 'moto' && ring.length === 2) {
+        // La calle: a moto passes through the fight and splits it.
+        const [a, b] = ring, side = b.x >= a.x ? 1 : -1;
+        knock(a, -side * 5.5, 0, .4); knock(b, side * 5.5, 0, .4);
+        this.emit({ type: 'moto', x: mx, dir: draw(this) < .5 ? 1 : -1 });
+      } else if (twist === 'toro') {
+        // La manga: the bull gate swings open and a bull charges across.
+        const dir = draw(this) < .5 ? 1 : -1;
+        for (const b of ring) if (Math.abs(b.z - mz) < 1.5) knock(b, dir * 3, Math.sign(b.z - mz || 1) * 6.5, .55, 10);
+        this.emit({ type: 'toro', z: mz, dir });
+      } else if (twist === 'balde') {
+        // La colonial: a señora on a balcony empties a bucket on the fighter nearest her.
+        const side = draw(this) < .5 ? 1 : -1, target = [...ring].sort((a, b) => side * (b.z - a.z))[0];
+        if (target) { target.mareo = Math.max(0, target.mareo - 12); knock(target, 0, -side * 2, .35); this.emit({ type: 'balde', id: target.id, side }); }
+      } else if (twist === 'pito') {
+        // El paso de cebra: a bus honks; the crowd jumps and everybody stops a beat.
+        for (const b of ring) knock(b, 0, 0, .25);
+        this.emit({ type: 'pito', dir: draw(this) < .5 ? 1 : -1 });
       }
-      this.emit({ type: 'moto', x: mx, dir: draw(this) < .5 ? 1 : -1 });
     }
     // Clinch: too long hugging without a clean hit and the ref splits them.
     if (ring.length !== 2) return;

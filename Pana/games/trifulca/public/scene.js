@@ -59,6 +59,7 @@ export function createTrifulcaScene(canvas, { me = () => null } = {}) {
     // Neighbours who came to watch: seated ones on the chairs.
     arena.npcSpots.forEach((spot, i) => {
       const look = spot.senora ? { outfit: 'hawaiana', outfitColor: '#ff6fae', hat: 'none', glasses: 'redondos', face: 'feliz' } : randomAvatar(rng(i * 31 + 7));
+      if (arena.hats && !spot.senora && i % 4 !== 3) Object.assign(look, { hat: 'llanero', hatColor: ['#7a5230', '#e9dcc0', '#3b2a1a'][i % 3] });
       const npc = buildCharacter(look, { seated: !!spot.seated });
       npc.group.position.set(spot.x, spot.y ?? 0, spot.z); npc.group.rotation.y = spot.face;
       npc.phase = i * 1.7; npc.cheer = 0; own.add(npc.group); npcs.push(npc);
@@ -157,6 +158,8 @@ export function createTrifulcaScene(canvas, { me = () => null } = {}) {
     if (replay.on && current?.phase === 'after') { replay.clock += dt * .4; if (replay.clock > replay.frames.at(-1).t - replay.frames[0].t) replay.on = false; }
     else if (current?.phase !== 'after') replay.on = false;
     const want = targets(), k = 1 - Math.exp(-dt * 14);
+    const inRingNow = current && ['intro', 'fight', 'after'].includes(current.phase) ? ringOf(current.bodies) : [];
+    const fightMid = inRingNow.length ? { x: inRingNow.reduce((n, b) => n + b.x, 0) / inRingNow.length, z: inRingNow.reduce((n, b) => n + b.z, 0) / inRingNow.length } : null;
     for (const [id, entry] of panas) {
       const t = want.get(id); if (!t) continue;
       const goal = v(t.x, t.y, t.z);
@@ -170,6 +173,11 @@ export function createTrifulcaScene(canvas, { me = () => null } = {}) {
       const view = { ...t.view };
       if (view.act === 'crowd') view.moving = moved / Math.max(dt, 1e-3) > .8 ? 1 : 0;
       entry.pana.update(dt, view);
+      // TV framing: a pana of the crowd right between the camera and the fight ducks out of shot.
+      if (!t.corner && fightMid) {
+        const dx = entry.pos.x - fightMid.x, dz = entry.pos.z - fightMid.z, toward = dx * camPerp.x + dz * camPerp.z, side = Math.abs(dx * camPerp.z - dz * camPerp.x);
+        entry.pana.root.visible = !(toward > 2.2 && side < 2.6);
+      } else entry.pana.root.visible = true;
     }
     // Record the fight for the replay.
     if (current?.phase === 'fight') {
@@ -240,7 +248,7 @@ export function createTrifulcaScene(canvas, { me = () => null } = {}) {
       axis.normalize();
       const perp = fighters.length === 2 ? v(-axis.z, 0, axis.x) : v(Math.sin(time * .05), 0, Math.cos(time * .05));
       if (perp.dot(camPerp) < 0) perp.negate();
-      camPerp.lerp(perp, 1 - Math.exp(-dt * (fighters.length === 2 ? 3 : .6))).normalize();
+      camPerp.lerp(perp, 1 - Math.exp(-dt * (fighters.length === 2 ? 5 : .6))).normalize();
       zoom += ((zoomT > 0 ? .68 : 1) - zoom) * (1 - Math.exp(-dt * (zoomT > 0 ? 9 : 2.5)));
       const dist = Math.min(13.5, Math.max(8.4, 6.2 + sep * 1.3)) * zoom;
       pos = mid.clone().addScaledVector(camPerp, dist).add(v(0, (arena?.camHeight ?? 3.7) + f0 - (1 - zoom) * 1.6, 0));

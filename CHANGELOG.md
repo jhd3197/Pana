@@ -13,8 +13,9 @@ becomes the GitHub release's notes.
   grab; hits fill your mareo instead of a health bar, three caídas is a
   K.O. and the judges read the card at the bell. Panas waiting their turn
   shove fighters back in, bet dolitas, give water in the corner and can
-  shout ¡cálmate!. Four arenas: la calle, el toldo, el mercado and the
-  plaza de las motos at night, with a TV narrator, intro cards and a
+  shout ¡cálmate!. Seven arenas: la calle, el toldo, el mercado, the
+  plaza de las motos at night, a manga de coleo with a loose bull, a zebra
+  crossing under the lake bridge and a colonial street, with a TV narrator, intro cards and a
   slow-motion replay. Also Trifulca libre (four at once, with chairs and
   chancletas to throw), Parejas (tag your partner) and a Torneo whose final
   is fought under the tent.

@@ -92,6 +92,16 @@ wins and the titles are handed out.
 - The replay records every render frame for 6 s and, on a K.O. or a count,
   plays from 1.5 s before the last caída to 0.5 s after it at 0.4× during
   the verdict.
+- Seven arenas (`ARENAS` in fight-rules.js, dressed in arenas.js): la calle,
+  el toldo, el mercado, las motos (night), la manga de coleo (llanero hats on
+  the neighbours, wooden stands with seated crowd), el paso de cebra (dusk,
+  under the lake bridge whose rail lamps light the crossing) and la colonial
+  (`createColonialStreet` lowered 0.8 m so its graded street meets y = 0).
+- Each arena's twist fires once per fight between 14 s and the bell minus
+  10 s (`fight.moto`): `moto` splits two fighters, `toro` knocks anyone
+  within 1.5 m of the bull's lane (+10 mareo), `balde` takes 12 mareo off the
+  fighter nearest a balcony and slips them, `pito` (a bus honk) freezes
+  everyone 0.25 s.
 - Arena reactions: `moto` (la calle) drives a moto through the fight;
   `out`/`vecino` near a row of parked motos topples it like dominoes (las
   motos) or tumbles the crate stacks (el mercado); `ropes` wobbles the ropes.

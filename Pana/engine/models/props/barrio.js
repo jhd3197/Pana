@@ -204,3 +204,59 @@ export function plasticChair({ color = '#ff4b4b' } = {}) {
   group.userData.seat = .74;
   return done();
 }
+
+// ---------- Gradas de madera ----------
+// Stepped wooden stands for a manga de coleo or a barrio court, `length` m
+// along X with `rows` steps rising toward −Z under a zinc roof on posts.
+// userData.seats lists [x, y, z] spots on the steps (facing +Z).
+export function woodenStands({ length = 10, rows = 4, roof = true, seed = 6 } = {}) {
+  const { group, mat, part, done } = kit('Gradas de madera');
+  const random = rng(seed), plank = mat('#b0783f', { roughness: .85 }), dark = mat('#6e4a2a', { roughness: .9 });
+  const paint = [mat('#e8443a', { roughness: .7 }), mat('#2f6fe0', { roughness: .7 }), mat('#f2b631', { roughness: .7 })];
+  const seats = [];
+  for (let r = 0; r < rows; r++) {
+    const y = .45 + r * .45, z = -r * .7;
+    part(group, new THREE.BoxGeometry(length, .08, .5), plank, 0, y, z);
+    part(group, new THREE.BoxGeometry(length, .4, .06), paint[r % paint.length], 0, y - .22, z + .22);
+    for (let x = -length / 2 + .7; x < length / 2; x += 1.1 + random() * .2) seats.push([x, y + .04, z]);
+  }
+  for (let x = -length / 2; x <= length / 2 + .01; x += length / Math.max(1, Math.round(length / 3))) {
+    for (let r = 0; r < rows; r++) part(group, new THREE.BoxGeometry(.12, .45 + r * .45, .12), dark, x, (.45 + r * .45) / 2, -r * .7);
+  }
+  if (roof) {
+    const h = .45 + rows * .45 + 2.2, back = -(rows - 1) * .7 - .3;
+    for (const x of [-length / 2, length / 2]) for (const z of [back, .35]) part(group, new THREE.CylinderGeometry(.07, .07, h - (z > 0 ? .4 : 0), 8), dark, x, (h - (z > 0 ? .4 : 0)) / 2, z);
+    const zinc = part(group, new THREE.BoxGeometry(length + .6, .06, -back + 1.2), mat('#a8b2b5', { metalness: .5, roughness: .45 }), 0, h - .2, (back + .35) / 2);
+    zinc.rotation.x = -.12;
+  }
+  group.userData.seats = seats;
+  group.userData.previewBounds = [[-length / 2 - .4, 0, -(rows - 1) * .7 - 1], [length / 2 + .4, .45 + rows * .45 + 2.4, 1]];
+  return done();
+}
+
+// ---------- Puente sobre el lago ----------
+// A long concrete bridge seen from below: deck `height` m up running along X,
+// tall pylons with stay cables every `span` m and warm lamps along the rail
+// (userData.lamps, positions for point lights). Origin on the ground.
+export function lakeBridge({ length = 120, height = 14, span = 40 } = {}) {
+  const { group, mat, part, tube, done } = kit('Puente sobre el lago');
+  const concrete = mat('#d6d1c4', { roughness: .9 }), shade = mat('#a9a497', { roughness: .95 }), cable = mat('#e9ecef', { roughness: .4 });
+  const lamp = mat('#fff1c2', { emissive: '#ffd27a', emissiveIntensity: 1.2 });
+  part(group, new THREE.BoxGeometry(length, 1.4, 12), concrete, 0, height, 0);
+  part(group, new THREE.BoxGeometry(length, .5, 9), shade, 0, height - .95, 0);
+  const lamps = [];
+  for (let x = -length / 2 + span / 2; x < length / 2; x += span) {
+    // An A-shaped pylon from the ground through the deck, cables fanning out.
+    for (const z of [-4.2, 4.2]) tube(group, [x, 0, z * 1.3], [x, height + 16, z * .25], .7, concrete, 10);
+    part(group, new THREE.BoxGeometry(1.6, 1.6, 9), concrete, x, height - 2.4, 0);
+    for (let k = 1; k <= 5; k++) for (const s of [-1, 1]) for (const z of [-5.6, 5.6]) tube(group, [x, height + 15 - k * 1.6, z * .18], [x + s * k * span / 11, height + .7, z], .05, cable, 4);
+  }
+  for (let x = -length / 2 + 4; x < length / 2; x += 8) for (const z of [-5.8, 5.8]) {
+    tube(group, [x, height + .7, z], [x, height + 3.4, z], .06, shade, 6);
+    part(group, new THREE.SphereGeometry(.22, 10, 8), lamp, x, height + 3.5, z);
+    lamps.push([x, height + 3.3, z]);
+  }
+  group.userData.lamps = lamps;
+  group.userData.previewBounds = [[-length / 2, 0, -8], [length / 2, height + 17, 8]];
+  return done();
+}

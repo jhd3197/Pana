@@ -25,6 +25,9 @@ export const ARENAS = {
   toldo: { shape: 'square', half: 2.9, twist: 'ropes' },
   mercado: { shape: 'circle', r: 4.1, twist: 'cajas' },
   motos: { shape: 'circle', r: 4.5, twist: 'domino' },
+  manga: { shape: 'circle', r: 4.6, twist: 'toro' },
+  cebra: { shape: 'circle', r: 4.2, twist: 'pito' },
+  colonial: { shape: 'circle', r: 4.3, twist: 'balde' },
 };
 export const arenaOf = (id) => ARENAS[id] || ARENAS.calle;
 

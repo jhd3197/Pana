@@ -292,3 +292,12 @@ test('a torneo plays its bracket and the final moves under the tent', () => {
   assert.equal(finalArena, 'toldo');
   assert.ok(game.events.some(e => e.type === 'noche'));
 });
+
+test('arena twists: the bull charges through la manga, the bucket wakes a fighter in la colonial', () => {
+  for (const [arena, type] of [['manga', 'toro'], ['colonial', 'balde'], ['cebra', 'pito'], ['calle', 'moto']]) {
+    const game = fight({ arena });
+    game.fight.moto = 1;
+    run(game, 1.2, {});
+    assert.ok(game.events.some(e => e.type === type), `${arena} has its ${type}`);
+  }
+});

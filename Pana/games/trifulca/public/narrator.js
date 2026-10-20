@@ -22,6 +22,9 @@ export const LINES = {
   domino: ['¡Se cayeron todas las motos!', '¡Dominó de motos!'],
   cajas: ['¡Se vinieron abajo las cajas!', '¡Tomates por todos lados!'],
   campana: ['¡Campana! Los jueces leen la tarjeta…', '¡Se acabó el tiempo!'],
+  toro: ['¡Se soltó el toro!', '¡Toro, toro, toro!', '¡Abrieron la manga!'],
+  balde: ['¡Le echaron un balde de agua!', '¡La señora del balcón!', "¡Agua fría pa'l mareo!"],
+  pito: ['¡Pííí! ¡Pasó la buseta!', '¡Cuidado, que viene la camionetica!'],
   throw: ['¡Ahí va la silla!', '¡Lo lanzó!', '¡Vuela, vuela!'],
   impacto: ['¡Se la estrelló!', '¡En toda la cara!', '¡Silletazo!'],
   relevo: ['¡Relevo!', '¡Entra la pareja!', '¡Cambio de esquina!'],
@@ -44,6 +47,9 @@ export function lineFor(e, name, names = (ids) => ids.map(name).join(' y ')) {
     case 'empujon': return e.back ? { text: `${name(e.by)} lo mete pa' dentro` } : null;
     case 'vecino': return { text: pick(LINES.vecino) };
     case 'moto': return { text: pick(LINES.moto), big: true, say: true };
+    case 'toro': return { text: pick(LINES.toro), big: true, say: true };
+    case 'balde': return { text: pick(LINES.balde), say: true };
+    case 'pito': return { text: pick(LINES.pito), big: true };
     case 'clinch': return { text: pick(LINES.clinch), ref: true, say: true };
     case 'taunt': return { text: pick(LINES.taunt) };
     case 'ropes': return Math.random() < .5 ? { text: pick(LINES.ropes) } : null;
@@ -122,6 +128,9 @@ export function sfx(e) {
     case 'fin': bell(3); crowd(2); break;
     case 'moto': sound.sweep(300, 900, 1.2, 'sawtooth', .04); sound.sweep(900, 200, 1.4, 'sawtooth', .03); break;
     case 'mano': sound.pickup(3); break;
+    case 'toro': noise(1.4, { freq: 180, q: .8, vol: .25 }); crowd(2); break;
+    case 'balde': sound.splat(); break;
+    case 'pito': sound.horn('grave'); break;
     case 'throw': sound.whoosh(); break;
     case 'impacto': sound.bonk(3); sound.splat(); crowd(1.2); break;
     case 'relevo': sound.tone(660, 0, .1, 'square', .07); sound.tone(880, .1, .12, 'square', .07); break;

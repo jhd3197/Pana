@@ -1,5 +1,5 @@
 import { optionDefaults, applyRoomOptions } from '/engine/room-options-rules.js';
-export const ARENA_CHOICES = [['calle', 'La calle'], ['toldo', 'El toldo'], ['mercado', 'El mercado'], ['motos', 'Las motos']];
+export const ARENA_CHOICES = [['calle', 'La calle'], ['toldo', 'El toldo'], ['mercado', 'El mercado'], ['motos', 'Las motos'], ['manga', 'La manga'], ['cebra', 'El paso de cebra'], ['colonial', 'La colonial']];
 export const MODE_CHOICES = [['queda', 'Ganador se queda'], ['libre', 'Trifulca libre'], ['parejas', 'Parejas'], ['torneo', 'Torneo']];
 export const ROOM_OPTIONS = [
   { id: 'modo', label: 'Modo', default: 'queda', choices: MODE_CHOICES },
