@@ -2,7 +2,7 @@
 // footprint (rooms, corridors, stairs, pits) is rasterised once per seed into
 // a 0.25 m bitmap per floor; what changes during a run (closed seals, fake
 // walls, collapsed tunnels) comes from the state at query time.
-import { generateRun, floorOf, inRect, SPACING } from './deck.js';
+import { generateRun, floorOf, inRect, SPACING, CAGE } from './deck.js';
 import { ITEMS } from './items.js';
 
 const RES = 4, layouts = new Map();
@@ -36,7 +36,8 @@ export function layoutFor(seed = 1, floors = 3) {
   };
   // Blockers that open or close during the run.
   function blocked(x, z, state, radius) {
-    for (const seal of run.seals) if (!state.open?.[seal.id] && inRect(x, z, seal.rect, radius)) return true;
+    // The empty shaft is a hole: a stop is solid only while the cage waits there.
+    for (const stop of run.lifts) if (stop.floor === floorOf(x) && !(state.lift && !state.lift.moving && state.lift.floor === stop.floor) && Math.abs(x - stop.x) < CAGE + radius && Math.abs(z - stop.z) < CAGE + radius) return true;
     for (const wall of run.hidden) if (!state.revealed?.[wall.id] && inRect(x, z, wall.rect, radius)) return true;
     for (const id of Object.keys(state.rubble || {})) { const c = run.corridors.find(c => c.id === id); if (c && inRect(x, z, c.rect, radius)) return true; }
     return false;
@@ -66,8 +67,6 @@ export function layoutFor(seed = 1, floors = 3) {
     return moved;
   }
   function groundAt(x, z) {
-    // Stepping into the rappel hole you sink before the rope takes you down.
-    for (const p of run.portals) if (p.dir === 'down' && p.floor > 0 && p.floor === floorOf(x) && inRect(x, z, p.rect)) return -Math.min(1.6, (p.rect[3] - z) * .7);
     for (const s of run.stubs) if (s.floor === floorOf(x) && inRect(x, z, s.rect)) {
       const t = Math.max(0, Math.min(1, (z - s.a) / (s.b - s.a)));
       return s.from + (s.to - s.from) * t;

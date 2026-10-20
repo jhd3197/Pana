@@ -26,9 +26,9 @@ import { monstera } from '/engine/models/vegetation/monstera.js';
 import { heliconia } from '/engine/models/vegetation/heliconia.js';
 import { tickWind } from '/engine/models/vegetation/plant-kit.js';
 import { layoutFor } from './layout.js';
-import { visibleItems } from './rules.js';
+import { visibleItems, liftView } from './rules.js';
 import { ITEMS, ARTIFACTS } from './items.js';
-import { TRUCK, TABLE, HEIGHT, floorOf, inRect } from './deck.js';
+import { TRUCK, TABLE, HEIGHT, CAGE, floorOf, inRect } from './deck.js';
 
 const PALETTES = ['sol', 'jade', 'maldita'];
 export const paletteFor = floor => RUIN_PALETTES[PALETTES[(floor - 1) % PALETTES.length]];
@@ -76,11 +76,11 @@ export function createExpeditionWorld({ seed = 1, floors = 3, roof = true } = {}
   // The mine is a level gallery into the hill: an open mouth, timber sets
   // inside and rock on both flanks, with the tepuy wall further back.
   place(campStatic, minePortal({ name: 'LA MINA DEL SOL', niche: false }), 0, 0, -1.6, 0);
-  for (const z of [-4.5, -8, -11.5]) place(campStatic, mineSupport({ width: 3.9, height: 3.8, lantern: z === -8 }), 0, 0, z);
+  place(campStatic, mineSupport({ width: 3.9, height: 3.8, lantern: true }), 0, 0, -3.8);
   for (const s of [-1, 1]) place(campStatic, rockyCliff({ seed: 60 + s, width: 20, height: 10, depth: 8 }), s * 14.9, 0, -7.2, 0, 1.2);
   for (const [x, z, r] of [[-4, -2.2, 1.6], [4.2, -2.4, 1.4]]) place(campStatic, lajaRock({ seed: x * 13 + 5, radius: r, flat: .8 }), x, 0, z);
   place(campStatic, lajaRock({ seed: 77, radius: 3.4, flat: .5 }), 0, 4.9, -8);
-  place(camp, treasure.liftCage({ headframe: true }), run.lifts[0].x, 0, run.lifts[0].z, 0);
+  place(camp, treasure.liftShaft({ below: 18, above: 5 }), run.lifts[0].x, 0, run.lifts[0].z, run.lifts[0].h);
   // The tepuy wall rises behind the mine; the selva closes the camp in.
   for (let i = -3; i <= 3; i++) place(campStatic, rockyCliff({ seed: 54 + i, width: 20, height: 12, depth: 6 }), i * 17, 0, -24 - Math.abs(i) * 2, 0, 2.2);
   for (let i = 0; i < 26; i++) {
@@ -91,10 +91,12 @@ export function createExpeditionWorld({ seed = 1, floors = 3, roof = true } = {}
   }
   for (let i = 0; i < 16; i++) { const a = i * 2.4, r = 16 + (i % 4); place(campStatic, fern({ seed: i + 9 }), Math.sin(a) * r, 0, 13 + Math.cos(a) * r, i, 1.4); }
   for (const [x, z, r] of [[-15, 4, 2.4], [16, 4, 2], [18, 22, 2.8], [-18, 26, 2.2]]) place(campStatic, lajaRock({ seed: x * 7, radius: r }), x, 0, z);
-  const mouth = ruinShell({ inside: (x, z) => floorOf(x) === 0 && run.stubs.some(s => s.floor === 0 && inRect(x, z, s.rect)), ground: L.groundAt, open: (x, z) => z > -2, bounds: [-4, -16, 4, 0], palette: RUIN_PALETTES.sol, seed: 3, tile: 1 });
+  const mouth = ruinShell({ inside: (x, z) => floorOf(x) === 0 && run.stubs.some(s => s.floor === 0 && inRect(x, z, s.rect)), ground: L.groundAt, open: (x, z) => z > -2, solid: (x, z) => !inShaft(0, x, z), sky: (x, z) => inShaft(0, x, z, .4), bounds: [-4, -16, 4, 0], palette: RUIN_PALETTES.sol, seed: 3, tile: 1 });
   camp.add(mouth); owned.add(mouth);
   const campBatch = bake(campStatic, { cellSize: 30 }); campStatic.traverse(o => o.geometry?.dispose()); camp.add(campBatch);
 
+  // The one cage: it sinks out of a stop and rises into the next.
+  const cage = treasure.liftCage(); cage.name = 'Montacargas'; group.add(cage);
   // ---------- Floors, built on demand ----------
   function decorModel(d) {
     switch (d.kind) {
@@ -117,9 +119,7 @@ export function createExpeditionWorld({ seed = 1, floors = 3, roof = true } = {}
     if (floorsBuilt.has(f) || f < 1 || f > floors) return floorsBuilt.get(f);
     const root = new THREE.Group(); root.name = `Piso ${f}`; group.add(root);
     const statics = new THREE.Group(), palette = paletteFor(f), x0 = f * L.SPACING - 60;
-    const hole = s => run.portals.find(p => p.floor === f && p.dir === s && run.stubs.some(st => st.floor === f && inRect((p.rect[0] + p.rect[2]) / 2, (p.rect[1] + p.rect[3]) / 2, st.rect) && st.kind === (s === 'down' ? 'rappel' : 'rope')))?.rect;
-    const pit = hole('down'), shaft = hole('up');
-    const shell = () => ruinShell({ inside: (x, z) => insideFloor(f, x, z), ground: L.groundAt, solid: (x, z) => !L.overPit(x, z) && !(pit && inRect(x, z, pit)), sky: (x, z) => !!shaft && inRect(x, z, shaft, .2), bounds: [x0, -140, x0 + 120, 20], palette, seed: f * 13, roof });
+    const shell = () => ruinShell({ inside: (x, z) => insideFloor(f, x, z), ground: L.groundAt, solid: (x, z) => !L.overPit(x, z) && !inShaft(f, x, z), sky: (x, z) => inShaft(f, x, z, .4), bounds: [x0, -140, x0 + 120, 20], palette, seed: f * 13, roof });
     const floor = { root, shell: shell(), revealed: '', braziers: [], seals: new Map(), winches: new Map(), chests: new Map(), plates: [], rubble: new Map(), rebuild: shell };
     root.add(floor.shell);
     for (const d of run.decor.filter(d => d.floor === f)) {
@@ -158,24 +158,9 @@ export function createExpeditionWorld({ seed = 1, floors = 3, roof = true } = {}
       floor.plates.push({ id: p.id, plate });
       for (const d of p.darts) place(statics, treasure.dartHead(), d.x + d.dx * .05, 1.1, d.z, d.dx > 0 ? Math.PI / 2 : -Math.PI / 2);
     }
-    // Ways out: floor 1's gallery to daylight, a rope under a shaft of light
-    // deeper down, and a rappel rig over the hole to the next floor.
-    for (const s of run.stubs.filter(s => s.floor === f)) {
-      const cx = (s.rect[0] + s.rect[2]) / 2;
-      if (s.kind === 'tunnel') {
-        for (let k = 1.5; k < 7; k += 3) place(statics, mineSupport({ width: 3.9, height: 3.8, lantern: k > 2 }), cx, 0, s.a + Math.sign(s.b - s.a) * k);
-        const glow = new THREE.Sprite(haloMaterial(0xfff0c8)); glow.scale.setScalar(8); glow.position.set(cx, 2.4, s.b); root.add(glow);
-      }
-      if (s.kind === 'rope' && shaft) {
-        const z = (shaft[1] + shaft[3]) / 2; place(root, treasure.climbRope({ height: 9 }), cx, 0, z);
-        const glow = new THREE.Sprite(haloMaterial(0xfff0c8)); glow.scale.setScalar(6); glow.position.set(cx, 6.5, z); root.add(glow);
-      }
-      if (s.kind === 'rappel' && pit) {
-        const z = (pit[1] + pit[3]) / 2; place(root, treasure.rappelRig({ depth: 7 }), cx, 0, z);
-        const throat = new THREE.Mesh(new THREE.BoxGeometry(pit[2] - pit[0], 1, pit[3] - pit[1]), mat(0x05030a)); throat.position.set(cx, -2.2, z); root.add(throat);
-      }
-    }
-    for (const lift of run.lifts.filter(l => l.floor === f)) place(root, treasure.liftCage(), lift.x, 0, lift.z);
+    // The montacargas shaft: a hole in the floor and the ceiling, rock and
+    // timber all the way up and down.
+    for (const stop of run.lifts.filter(l => l.floor === f)) place(root, treasure.liftShaft(), stop.x, 0, stop.z, stop.h);
     const batch = bake(statics, { cellSize: 26 }); statics.traverse(o => o.geometry?.dispose()); root.add(batch);
     floorsBuilt.set(f, floor);
     return floor;
@@ -209,6 +194,8 @@ export function createExpeditionWorld({ seed = 1, floors = 3, roof = true } = {}
       }
     }
   }
+  // The cage's square at a stop: no floor slabs, no ceiling.
+  function inShaft(f, x, z, pad = 0) { const stop = run.lifts.find(l => l.floor === f); return !!stop && Math.abs(x - stop.x) < CAGE + pad && Math.abs(z - stop.z) < CAGE + pad; }
   // A hidden room only joins the floor once its fake wall has fallen.
   let revealedNow = {};
   const insideFloor = (f, x, z) => {
@@ -269,7 +256,7 @@ export function createExpeditionWorld({ seed = 1, floors = 3, roof = true } = {}
     if (viewer) want.add(floorOf(viewer.x));
     for (const f of want) buildFloor(f);
     const vf = viewer ? floorOf(viewer.x) : 0;
-    camp.visible = !viewer || vf === 0 || (vf === 1 && viewer.z > -30);
+    camp.visible = !viewer || vf === 0;
     for (const [f, floor] of floorsBuilt) {
       floor.root.visible = !viewer || f === vf;
       const key = run.hidden.filter(h => h.floor === f && revealedNow[h.id]).map(h => h.id).join();
@@ -279,6 +266,9 @@ export function createExpeditionWorld({ seed = 1, floors = 3, roof = true } = {}
       for (const [id, chest] of floor.chests) { const open = !!state.chests?.[id]; chest.open = THREE.MathUtils.damp(chest.open, open ? 1 : 0, 6, dt); chest.model.userData.lid.rotation.x = -chest.open * 1.9; }
       for (const { id, plate } of floor.plates) plate.userData.glyph.material.emissiveIntensity = (state.plates?.[id] || 0) > (state.time || 0) ? 1.4 : .15 + Math.sin(t * 3 + id) * .1;
     }
+    const ride = liftView(state.lift), at = run.lifts.find(l => l.floor === ride.floor);
+    if (at) { cage.position.set(at.x, ride.y, at.z); cage.rotation.y = at.h; }
+    cage.visible = !viewer || floorOf(viewer.x) === ride.floor;
     // Rubble from collapses.
     const rubbleRoot = group.getObjectByName('Derrumbes') || Object.assign(new THREE.Group(), { name: 'Derrumbes' });
     if (!rubbleRoot.parent) group.add(rubbleRoot);

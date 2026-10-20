@@ -26,7 +26,7 @@ test('floors deal that many floors with the vault at the bottom', () => {
 
 test('difficulty scales enemy health and damage; greed scales la codicia', () => {
   const easy = setup({ difficulty: 'easy' }), hard = setup({ difficulty: 'hard' });
-  const at = g => g.layout.run.portals.find(p => p.id === 'down-0').to;
+  const at = g => { const s = g.layout.run.lifts.find(l => l.floor === 1); return { x: s.x, z: s.z - 5 }; };
   const a = spawnEnemy(easy, 'mummy', at(easy).x, at(easy).z - 6), b = spawnEnemy(hard, 'mummy', at(hard).x, at(hard).z - 6);
   assert.ok(b.hp > a.hp);
   const soft = setup({ greed: 'soft' }), fierce = setup({ greed: 'fierce' });

@@ -17,7 +17,9 @@ export const sfx = {
   lost() { sound.sweep(600, 60, .9, 'sine', .1); },
   curse() { sound.sweep(220, 70, 1.1, 'sawtooth', .07); sound.tone(98, .2, .8, 'triangle', .08); },
   seal() { sound.explode(.5); sound.tone(330, .2, .5, 'sine', .07); sound.tone(494, .45, .6, 'sine', .07); },
-  stairs() { sound.sweep(300, 140, .4, 'triangle', .07); },
+  // The montacargas: a clank, the cable groaning, a bell when it lands.
+  lift() { sound.clickDown(); sound.sweep(90, 60, 1.6, 'sawtooth', .05); },
+  bell() { sound.tone(1318, 0, .5, 'sine', .08); sound.tone(1975, .02, .4, 'sine', .04); },
   trap() { sound.clickDown(); sound.sweep(1800, 900, .2, 'square', .03); },
   hurt() { sound.tone(160, 0, .12, 'sawtooth', .06); },
   down() { sound.sweep(400, 90, .7, 'triangle', .1); },

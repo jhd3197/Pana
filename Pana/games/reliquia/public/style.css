@@ -1,5 +1,5 @@
 /* Reliquia: Pana Kit lobby + a first-person HUD over the ruins. */
-body{--pk-game:#ffc23d;--pk-game-ink:#2a1a06;--rel-gold:#ffd36a;--rel-jade:#4fe3c1;--rel-greed:#ff6a3d;--rel-greed-hot:#ff3d7a;--rel-dark:#0d0814e6;--rel-fade:#07040c;
+body{--pk-game:#ffc23d;--pk-game-ink:#2a1a06;--rel-gold:#ffd36a;--rel-jade:#4fe3c1;--rel-greed:#ff6a3d;--rel-greed-hot:#ff3d7a;--rel-dark:#0d0814e6;
   margin:0;overflow:hidden;background:var(--pk-night);color:var(--pk-text);font-family:var(--pk-sans);color-scheme:dark}
 *{box-sizing:border-box}button,a{-webkit-tap-highlight-color:transparent}button{cursor:pointer}button:disabled{cursor:default}
 .hidden{display:none!important}#world{display:block;position:fixed;inset:0;width:100vw;height:100dvh;touch-action:none;outline:none}
@@ -8,8 +8,6 @@ body.playing .vignette{background:radial-gradient(circle at 50% 50%,transparent 
 body.hurt .vignette{box-shadow:inset 0 0 110px rgba(255,75,75,.5)}
 body.reversed #world{filter:hue-rotate(40deg) saturate(1.3)}
 body.is-down #world{filter:grayscale(.75) brightness(.7)}
-.fade{position:fixed;inset:0;background:var(--rel-fade);opacity:0;pointer-events:none;transition:opacity .25s;z-index:6}
-.fade.on{opacity:1;transition:none}
 
 .topbar{position:fixed;top:16px;right:18px;z-index:10;display:flex;justify-content:flex-end}
 #game-nav{display:flex;gap:8px}#game-nav .pk-btn{background:var(--pk-hud)}
@@ -41,7 +39,8 @@ body.can-act .crosshair i{background:var(--rel-gold);transform:scale(1.5)}
 body.greed-3 .greed-bar,body.greed-4 .greed-bar{animation:greed-pulse .8s ease-in-out infinite alternate}
 @keyframes greed-pulse{to{box-shadow:0 0 14px var(--rel-greed-hot)}}
 .haul{display:flex;align-items:baseline;justify-content:space-between}
-.haul .pk-eyebrow{font-size:10px}.haul .pk-num{font-size:20px;color:var(--rel-gold)}
+.haul .pk-eyebrow{font-size:10px}
+.lift-line{display:flex;align-items:baseline;justify-content:space-between;gap:8px}.lift-line .pk-eyebrow{font-size:10px}.lift-line em{font:800 12px var(--pk-sans);font-style:normal;color:var(--rel-jade)}.haul .pk-num{font-size:20px;color:var(--rel-gold)}
 .map-wrap{position:fixed;top:212px;left:18px;padding:6px}
 .map-wrap[hidden]{display:none}
 .map-wrap canvas{display:block;width:130px;height:130px}

@@ -3,7 +3,7 @@
 // loot back to the truck to bank it, and la codicia rises with every
 // treasure lifted from its resting place. See docs/knowledge/reliquia.md.
 import { DEFAULT_OPTIONS, validOptions } from './options.js';
-import { TRUCK, TRUCK_RADIUS, CAMP, floorOf, inRect, FLOOR_NAMES } from './deck.js';
+import { TRUCK, TRUCK_RADIUS, CAMP, floorOf, inRect, FLOOR_NAMES, CAGE } from './deck.js';
 import { layoutFor, distance } from './layout.js';
 import { ITEMS, BAG_SIZE, SMALL, ARTIFACTS, valueOf } from './items.js';
 import { spawnEnemy, updateEnemies, holds } from './enemies.js';
@@ -15,7 +15,7 @@ const clone = value => JSON.parse(JSON.stringify(value));
 export const alive = p => !p.downed && !p.spectator;
 export { holds };
 export const BARKS = ['¿Nos vamos ya?', '¡Una sala más!', '¡Agárrala por el otro lado!', '¡No toques eso!', '¡Suelta, suelta, suelta!', '¡Pásame el farol!', 'Ábrela.'];
-const REACH = 2.5, GRAVITY = 14, REVIVE = 2.4, CART_SIZE = 14, LIFT = 3;
+const REACH = 2.5, GRAVITY = 14, REVIVE = 2.4, CART_SIZE = 14, BOARD = 1.5, SHAFT = 14;
 const GREED = { soft: .65, normal: 1, fierce: 1.5 };
 
 // One explorer's own movement for dt: the host's simulation and a guest's
@@ -24,7 +24,7 @@ export function stepExplorer(p, input, dt, world) {
   const L = layoutFor(world.seed, world.options?.floors);
   if (Number.isFinite(input.h)) p.h = input.h;
   if (Number.isFinite(input.pitch)) p.pitch = clamp(input.pitch, -1.2, 1.2);
-  if (p.grip != null || p.push != null || p.draggedBy != null || p.downed || p.spectator) { p.moving = false; return; }
+  if (p.grip != null || p.push != null || p.draggedBy != null || p.riding || p.downed || p.spectator) { p.moving = false; return; }
   let ix = Number.isFinite(input.x) ? clamp(input.x, -1, 1) : 0, iz = Number.isFinite(input.z) ? clamp(input.z, -1, 1) : 0;
   if (p.reversed > 0) { ix = -ix; iz = -iz; }
   const length = Math.hypot(ix, iz), ux = length > 1 ? ix / length : ix, uz = length > 1 ? iz / length : iz;
@@ -55,12 +55,17 @@ export function interaction(s, p) {
   for (const seal of L.run.seals) for (const w of seal.winches || []) if (!s.open[seal.id] && floorOf(w.x) === f && distance(p, w) < 2.6)
     return { kind: 'winch', id: w.id, text: s.winches[w.id]?.latched > 0 ? 'Rueda activa · ¡la otra!' : 'Mantén E para girar la rueda', progress: (s.winches[w.id]?.progress || 0) / 1.6, hold: true };
   for (const [id, progress] of Object.entries(s.rubble)) { const c = L.run.corridors.find(c => c.id === id); if (c && c.floor === f && inRect(p.x, p.z, c.rect, 1.6)) return { kind: 'rubble', id, text: 'Mantén E para quitar las piedras', progress: progress / 5, hold: true }; }
-  const lift = L.run.lifts.find(l => l.floor === f && distance(p, l) < 1.9);
-  if (lift) {
-    const to = liftTarget(s, lift), state = s.lifts?.[lift.id];
-    if (!to) return { kind: 'info', text: 'El montacargas baja hasta el piso más hondo que ya pisaron (desde el 2)' };
-    if ((state?.ready || 0) > s.time) return { kind: 'info', text: 'El montacargas está volviendo…' };
-    return { kind: 'lift', id: lift.id, text: f === 0 ? `Mantén E: el montacargas baja al piso ${to.floor}` : 'Mantén E: subir en el montacargas al campamento', progress: (state?.progress || 0) / LIFT, hold: true };
+  const stop = L.run.lifts.find(l => l.floor === f && Math.abs(p.x - l.x) < 2.6 && Math.abs(p.z - l.z) < 2.6);
+  if (stop && s.lift) {
+    const lift = s.lift, here = !lift.moving && lift.floor === f, progress = (lift.hold?.progress || 0) / BOARD;
+    if (lift.moving) return { kind: 'info', text: lift.riders.length ? `El montacargas está ocupado · va ${lift.to > lift.from ? 'bajando' : 'subiendo'}` : 'El montacargas viene en camino…' };
+    if (!here) return { kind: 'call', text: `Mantén E: llamar el montacargas (está en ${lift.floor ? `el piso ${lift.floor}` : 'el campamento'})`, progress, hold: true };
+    const on = Math.abs(p.x - stop.x) < CAGE && Math.abs(p.z - stop.z) < CAGE;
+    if (!on) return { kind: 'info', text: 'Súbanse al montacargas: palanca verde baja, roja sube' };
+    const lever = leverAt(s, stop, p);
+    if (!lever) return { kind: 'info', text: 'Párate junto a una palanca: verde baja, roja sube' };
+    if (lever.to == null) return { kind: 'info', text: lever.why };
+    return { kind: 'ride', to: lever.to, text: `Mantén E: ${lever.to === 0 ? 'subir al campamento' : `${lever.to > f ? 'bajar' : 'subir'} al piso ${lever.to}`}`, progress, hold: true };
   }
   if (f === 0 && distance(p, TRUCK) < TRUCK_RADIUS + 1.5) return { kind: 'leave', text: s.extraction > 0 ? '¡Nos vamos!' : 'Mantén E para irse con el botín', progress: s.extraction / 3, hold: true };
   const options = [];
@@ -86,11 +91,25 @@ export function interaction(s, p) {
   options.sort((a, b) => a.score - b.score);
   return options[0] || null;
 }
-// Where a lift goes: the camp's goes down to the deepest floor reached that has one.
-export function liftTarget(s, lift) {
-  const lifts = layoutFor(s.seed, s.options?.floors).run.lifts;
-  if (lift.floor > 0) return lifts.find(l => l.floor === 0);
-  return lifts.filter(l => l.floor > 0 && l.floor <= s.deepest).sort((a, b) => b.floor - a.floor)[0] || null;
+// The montacargas: one cage in one shaft. Its deck has a green lever (down)
+// on the right and a red one (up) on the left, seen from the room.
+export const levers = stop => { const rx = -Math.cos(stop.h), rz = Math.sin(stop.h); return { down: { x: stop.x + rx * 1.15, z: stop.z + rz * 1.15 }, up: { x: stop.x - rx * 1.15, z: stop.z - rz * 1.15 } }; };
+// How deep the cage may go: each open seal lets it one floor further.
+export function deepestStop(s) { let f = 1; while (s.open?.[`seal-${f}`] && f < (s.options?.floors || 3)) f++; return f; }
+function leverAt(s, stop, p) {
+  const l = levers(stop), near = q => Math.hypot(p.x - q.x, p.z - q.z) < 1.1, f = stop.floor;
+  if (near(l.down)) {
+    if (f === 0) return { to: Math.max(1, Math.min(s.deepest, deepestStop(s))) };
+    return f < deepestStop(s) ? { to: f + 1 } : { why: f >= (s.options?.floors || 3) ? 'Este es el piso más hondo' : 'Abran el sello de este piso para bajar más' };
+  }
+  if (near(l.up)) return f === 0 ? { why: 'Ya están arriba' } : { to: 0 };
+  return null;
+}
+// Where the cage is drawn: during a trip it sinks out of one stop and rises into the next.
+export function liftView(lift) {
+  if (!lift?.moving) return { floor: lift?.floor ?? 0, y: 0 };
+  const t = Math.min(1, lift.t / lift.duration), dir = Math.sign(lift.to - lift.from);
+  return t < .5 ? { floor: lift.from, y: -dir * t * 2 * SHAFT } : { floor: lift.to, y: dir * (1 - (t - .5) * 2) * SHAFT };
 }
 export const cartValue = cart => cart.contents.reduce((n, c) => n + valueOf(c.kind) * (c.worth ?? 1), 0) + (cart.big ? valueOf(cart.big.kind) * (cart.big.worth ?? 1) : 0);
 const money = n => `Bs. ${Math.round(n).toLocaleString('es-VE')}`;
@@ -124,7 +143,8 @@ export class Expedition {
   constructor(seed = 1, options = {}) {
     this.options = { ...DEFAULT_OPTIONS, ...(validOptions(options) ? options : {}) };
     Object.assign(this, { phase: 'lobby', outcome: '', payout: 0, time: 0, seed: seed >>> 0 || 1, rng: seed >>> 0 || 1, players: [], enemies: [], items: [], darts: [], shots: [], splats: [],
-      touched: {}, chests: {}, open: {}, revealed: {}, rubble: {}, winches: {}, woke: {}, plates: {}, lifts: {}, carts: [], haul: 0, truck: [], codicia: 0, deepest: 0, extraction: 0, wipe: 0,
+      touched: {}, chests: {}, open: {}, revealed: {}, rubble: {}, winches: {}, woke: {}, plates: {}, carts: [], haul: 0,
+      lift: { floor: 0, from: 0, to: 0, t: 0, duration: 0, moving: false, switched: false, riders: [], carts: [], items: [], hold: null }, truck: [], codicia: 0, deepest: 0, extraction: 0, wipe: 0,
       director: createDirector(), kills: 0, enemyId: 0, itemId: 10000, shotId: 0, eventId: 0, events: [], ledger: {}, collapseIn: 30, seats: 0 });
     this.paths = new Map();
   }
@@ -410,7 +430,7 @@ export class Expedition {
         }
         if (target?.kind === 'rubble') { this.rubble[target.id] += dt; if (this.rubble[target.id] >= 5) { delete this.rubble[target.id]; this.event('cleared', '¡Despejaron el túnel!'); } }
         if (target?.kind === 'leave') leaving = true;
-        if (target?.kind === 'lift' && !used.has(target.id)) { used.add(target.id); const l = this.lifts[target.id] ||= { progress: 0, ready: 0 }; l.progress += dt; }
+        if ((target?.kind === 'ride' || target?.kind === 'call') && !used.has('lift')) { used.add('lift'); const key = `${target.kind}:${target.to ?? floorOf(p.x)}`; if (this.lift.hold?.key !== key) this.lift.hold = { key, progress: 0 }; this.lift.hold.progress += dt; }
         // Hold E as something flies at you to catch it.
         if (p.hands.some(h => !h)) for (const item of this.items) if (item.state === 'air' && item.thrower !== p.id && ITEMS[item.kind].size === 'hand' && Math.hypot(item.x - p.x, item.z - p.z) < 1.1 && item.y > .4 && item.y < 2.4) {
           const hand = p.hands[0] ? 1 : 0; p.hands[hand] = { id: item.id, kind: item.kind, uses: item.uses, worth: item.worth }; item.caught = true;
@@ -437,7 +457,7 @@ export class Expedition {
       s.latched = Math.max(0, s.latched - dt); if (!used.has(w.id) && s.latched <= 0) s.progress = Math.max(0, s.progress - dt * .5);
       if (seal.winches.every(q => this.winches[q.id]?.latched > 0)) this.openSeal(seal);
     }
-    this.lifting(dt, used); this.carry(dt); this.pushing(dt); this.dragging(dt); this.flying(dt); this.traps(dt); this.paint(dt); this.portals(); this.truckZone(dt); this.artifacts(dt); this.collapses(dt);
+    this.lifting(dt, used.has('lift')); this.carry(dt); this.pushing(dt); this.dragging(dt); this.flying(dt); this.traps(dt); this.paint(dt); this.truckZone(dt); this.artifacts(dt); this.collapses(dt);
     updateEnemies(this, dt); this.stalk(dt);
     // Who trails the expedition the most: "el cobarde".
     const standing = this.players.filter(alive);
@@ -512,23 +532,48 @@ export class Expedition {
       });
     }
   }
-  // Hold E on a lift platform: everything standing on it rides together.
+  // The montacargas: hold a lever and everything on the deck rides; hold E
+  // at an empty shaft to call the cage. It takes time, and while it travels
+  // nobody else can have it.
   lifting(dt, held) {
-    const run = this.layout.run;
-    for (const lift of run.lifts) {
-      const l = this.lifts[lift.id] ||= { progress: 0, ready: 0 };
-      if (l.progress >= LIFT) {
-        l.progress = 0; const to = liftTarget(this, lift); if (!to) continue;
-        l.ready = this.time + 8; (this.lifts[to.id] ||= { progress: 0, ready: 0 }).ready = this.time + 8;
-        const dx = to.x - lift.x, dz = to.z - lift.z, on = b => floorOf(b.x) === lift.floor && distance(b, lift) < 2.1;
-        const riders = this.players.filter(p => !p.spectator && on(p));
-        for (const cart of this.carts) if (on(cart)) { cart.x += dx; cart.z += dz; }
-        for (const item of this.items) if (on(item)) { item.x += dx; item.z += dz; }
-        for (const p of riders) { p.x += dx; p.z += dz; p.vx = p.vz = 0; }
-        if (to.floor > this.deepest) this.deepest = to.floor;
-        this.event('lift', to.floor === 0 ? '¡El montacargas subió al campamento!' : `El montacargas bajó al piso ${to.floor}.`, { players: riders.map(p => p.id), floor: to.floor });
-      } else if (!held.has(lift.id)) l.progress = Math.max(0, l.progress - dt * 2);
+    const lift = this.lift, run = this.layout.run, stopOf = f => run.lifts.find(l => l.floor === f);
+    if (!held && lift.hold) { lift.hold.progress -= dt * 2; if (lift.hold.progress <= 0) lift.hold = null; }
+    if (!lift.moving && lift.hold?.progress >= BOARD) {
+      const [kind, value] = lift.hold.key.split(':'), to = Number(value); lift.hold = null;
+      if (kind === 'call' && to !== lift.floor) this.depart(to, false);
+      if (kind === 'ride' && to !== lift.floor) this.depart(to, true);
     }
+    if (!lift.moving) return;
+    lift.t += dt;
+    if (!lift.switched && lift.t >= lift.duration / 2) {
+      // Halfway down the shaft the cage changes stops: so does its load.
+      lift.switched = true;
+      const a = stopOf(lift.from), b = stopOf(lift.to), turn = b.h - a.h;
+      const move = body => { const ox = body.x - a.x, oz = body.z - a.z, c = Math.cos(turn), sn = Math.sin(turn); body.x = b.x + ox * c + oz * sn; body.z = b.z - ox * sn + oz * c; };
+      for (const id of lift.riders) { const p = this.players.find(p => p.id === id); if (p) { move(p); p.h += turn; } }
+      for (const id of lift.carts) { const c = this.carts.find(c => c.id === id); if (c) { move(c); c.h += turn; } }
+      for (const id of lift.items) { const i = this.items.find(i => i.id === id); if (i) move(i); }
+    }
+    if (lift.t >= lift.duration) {
+      lift.moving = false; lift.floor = lift.to; lift.t = 0;
+      const riders = lift.riders.map(id => this.players.find(p => p.id === id)).filter(Boolean);
+      riders.forEach(p => { p.riding = false; });
+      if (lift.to > this.deepest) {
+        this.deepest = lift.to; riders.forEach(p => { p.stats.unaMas++; });
+        this.event('descend', `¡Bajaron al piso ${lift.to}: ${FLOOR_NAMES[lift.to] || 'el oro profundo'}!`, { floor: lift.to, players: lift.riders });
+      }
+      this.event('lift-arrive', riders.length ? '' : `El montacargas llegó ${lift.to ? `al piso ${lift.to}` : 'al campamento'}.`, { floor: lift.to, players: lift.riders });
+      lift.riders = []; lift.carts = []; lift.items = [];
+    }
+  }
+  depart(to, load) {
+    const lift = this.lift, stop = this.layout.run.lifts.find(l => l.floor === lift.floor);
+    const on = b => floorOf(b.x) === lift.floor && Math.abs(b.x - stop.x) < CAGE + .3 && Math.abs(b.z - stop.z) < CAGE + .3;
+    const riders = load ? this.players.filter(p => !p.spectator && on(p)) : [];
+    for (const p of riders) { p.riding = true; p.vx = p.vz = 0; p.moving = false; }
+    Object.assign(lift, { from: lift.floor, to, t: 0, duration: 3 + 2.2 * Math.abs(to - lift.floor), moving: true, switched: false,
+      riders: riders.map(p => p.id), carts: load ? this.carts.filter(on).map(c => c.id) : [], items: load ? this.items.filter(on).map(i => i.id) : [] });
+    this.event('lift', riders.length ? `El montacargas ${to > lift.from ? 'baja' : 'sube'} ${to ? `al piso ${to}` : 'al campamento'}…` : `El montacargas va ${to ? `al piso ${to}` : 'al campamento'}…`, { from: lift.from, to, players: lift.riders });
   }
   inputFor(p) { return this.lastInputs?.get(p.id) || {}; }
   dragging(dt) {
@@ -616,44 +661,6 @@ export class Expedition {
     this.splats.push({ id: s.id, x, z, y: s.y, nx, nz, seat: s.seat });
     if (this.splats.length > 90) this.splats.shift();
   }
-  portals() {
-    const run = this.layout.run;
-    const through = body => run.portals.find(p => p.floor === floorOf(body.x) && inRect(body.x, body.z, p.rect));
-    for (const p of this.players) {
-      if (p.grip != null || p.push != null || p.draggedBy != null || p.spectator) continue;
-      const portal = through(p); if (!portal) continue;
-      const slot = this.players.filter(q => q !== p && floorOf(q.x) === portal.to.floor && distance(q, portal.to) < 1.2).length;
-      p.x = portal.to.x + (slot % 3 - 1) * 1.1; p.z = portal.to.z + Math.sign(Math.cos(portal.to.h)) * Math.floor(slot / 3) * 1.1; p.h = portal.to.h; p.vx = p.vz = 0;
-      if (p.drag != null) { const q = this.players.find(q => q.id === p.drag); if (q) { q.x = p.x - Math.sin(p.h) * 1.1; q.z = p.z - Math.cos(p.h) * 1.1; } }
-      this.event('stairs', '', { player: p.id, floor: portal.to.floor, dir: portal.dir });
-      if (portal.dir === 'down' && portal.to.floor > this.deepest) {
-        this.deepest = portal.to.floor; p.stats.unaMas++;
-        this.event('descend', `¡${p.name} bajó al piso ${portal.to.floor}: ${FLOOR_NAMES[portal.to.floor] || 'el oro profundo'}!`, { player: p.id, floor: portal.to.floor });
-      }
-    }
-    for (const item of this.items) {
-      if (item.state === 'big') continue;
-      const portal = through(item); if (!portal) continue;
-      item.x = portal.to.x + (random(this) - .5) * 1.5; item.z = portal.to.z; item.y = .3; item.state = 'ground'; item.vx = item.vz = 0;
-    }
-    for (const item of this.items) {
-      if (item.state !== 'big') continue;
-      const portal = through(item); if (!portal) continue;
-      const dx = portal.to.x - item.x, dz = portal.to.z - Math.sign(Math.cos(portal.to.h)) * 1.8 - item.z;
-      item.x += dx; item.z += dz; item.h = portal.to.h;
-      for (const id of item.carriers) { const p = this.players.find(p => p.id === id); if (p) { p.x += dx; p.z += dz; p.h = portal.to.h; } }
-      if (portal.dir === 'down' && portal.to.floor > this.deepest) this.deepest = portal.to.floor;
-      this.event('stairs', '', { item: item.id, floor: portal.to.floor, dir: portal.dir, players: item.carriers });
-    }
-    for (const cart of this.carts) {
-      const portal = through(cart); if (!portal) continue;
-      const dx = portal.to.x - cart.x, dz = portal.to.z - Math.sign(Math.cos(portal.to.h)) * 1.6 - cart.z;
-      cart.x += dx; cart.z += dz; cart.h = portal.to.h;
-      for (const id of cart.pushers) { const p = this.players.find(p => p.id === id); if (p) { p.x += dx; p.z += dz; p.h = portal.to.h; } }
-      if (portal.dir === 'down' && portal.to.floor > this.deepest) this.deepest = portal.to.floor;
-      this.event('stairs', '', { cart: cart.id, floor: portal.to.floor, dir: portal.dir, players: cart.pushers });
-    }
-  }
   // The truck banks whatever reaches it, and its botiquín gets panas up.
   truckZone(dt) {
     for (const p of this.players) {
@@ -733,10 +740,12 @@ export class Expedition {
     const hunted = live.filter(p => floorOf(p.x) === floorOf(stalker.x));
     stalker.lonely = hunted.length ? 0 : (stalker.lonely || 0) + dt;
     if (stalker.lonely > 8 && live.length) {
-      const prey = live[0], portal = this.layout.run.portals.find(q => q.to.floor === floorOf(prey.x));
-      if (portal && this.layout.walkable(portal.to.x, portal.to.z, this, .7)) {
-        stalker.x = portal.to.x; stalker.z = portal.to.z; stalker.lonely = 0; stalker.awake = true; this.paths.delete(stalker.id);
-        this.event('stalker-move', `El jaguar negro ${portal.dir === 'down' ? 'bajó' : 'subió'} las escaleras…`, { floor: portal.to.floor });
+      // It climbs the shaft on its own and comes out by the entrance.
+      const prey = live[0], stop = this.layout.run.lifts.find(q => q.floor === floorOf(prey.x)), out = stop && { x: stop.x - Math.sin(stop.h + Math.PI) * 4, z: stop.z - Math.cos(stop.h + Math.PI) * 4 };
+      if (out && this.layout.walkable(out.x, out.z, this, .7)) {
+        const up = floorOf(prey.x) < floorOf(stalker.x);
+        stalker.x = out.x; stalker.z = out.z; stalker.lonely = 0; stalker.awake = true; this.paths.delete(stalker.id);
+        this.event('stalker-move', `El jaguar negro ${up ? 'subió' : 'bajó'} por el pozo del montacargas…`, { floor: stop.floor });
       }
     }
   }

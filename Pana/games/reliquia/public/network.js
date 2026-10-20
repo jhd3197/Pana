@@ -15,7 +15,7 @@ export class ExpeditionRoom extends LiveRoom {
       // Your own explorer moves the moment you press a key; the host corrects it.
       // Carrying a big treasure or being dragged is the host's call alone.
       predict: {
-        body: (state, id) => state.phase === 'playing' ? state.players.find(p => p.id === id && alive(p) && p.grip == null && p.push == null && p.draggedBy == null) : null,
+        body: (state, id) => state.phase === 'playing' ? state.players.find(p => p.id === id && alive(p) && p.grip == null && p.push == null && !p.riding && p.draggedBy == null) : null,
         step: stepExplorer,
       },
     });

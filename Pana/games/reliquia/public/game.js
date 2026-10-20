@@ -71,7 +71,7 @@ function lobby() {
 // Big tilted callouts for the beats of a run; the toast keeps the full sentence.
 const SHOUTS = { seal: ['¡Se abrió la bajada!', 'teal'], boss: ['¡Despertó algo grande!', 'coral'], guardian: ['¡Guardián vencido!', 'yellow'], jaguar: ['¡Jaguar vencido!', 'yellow'],
   curse: ['¡Maldición!', 'coral'], collapse: ['¡Derrumbe!', 'coral'], stalker: ['¡Los están cazando!', 'coral'], down: ['¡Pana caído!', 'coral'], reveal: ['¡Sala escondida!', 'teal'] };
-const QUIET = new Set(['pick', 'hit', 'swing', 'shot', 'hurt', 'stairs', 'throw', 'drop', 'trap', 'pounce', 'bark', 'chest', 'winch']);
+const QUIET = new Set(['pick', 'hit', 'swing', 'shot', 'hurt', 'throw', 'drop', 'trap', 'pounce', 'bark', 'chest', 'winch']);
 function handle(e) {
   const mine = e.player === room.id, p = me(), seat = state.players.find(q => q.id === e.player)?.seat ?? 0;
   const near = p && e.player != null ? (() => { const q = state.players.find(q => q.id === e.player); return q && floorOf(q.x) === floorOf(p.x) ? Math.max(.25, 1 - Math.hypot(q.x - p.x, q.z - p.z) / 30) : 0; })() : 1;
@@ -91,7 +91,7 @@ function handle(e) {
     case 'lost': sfx.lost(); break;
     case 'curse': sfx.curse(); view.shake(.3); break;
     case 'seal': sfx.seal(); view.shake(.5); break;
-    case 'descend': shout(`Piso ${e.floor}: ${FLOOR_NAMES[e.floor] || 'el oro profundo'}`, { tone: 'yellow' }); break;
+    case 'descend': if (e.players?.includes(room.id)) shout(`Piso ${e.floor}: ${FLOOR_NAMES[e.floor] || 'el oro profundo'}`, { tone: 'yellow' }); break;
     case 'trap': if (near) sfx.trap(); break;
     case 'hurt': if (mine) { sfx.hurt(); view.shake(.35); } break;
     case 'down': sfx.down(); break;
@@ -106,7 +106,8 @@ function handle(e) {
     case 'scatter': if (near) sfx.flap(); break;
     case 'cart-load': case 'cart-catch': case 'cart-big': sfx.coin(); if (e.kind !== 'cart-load') sfx.bank(false); break;
     case 'cart-grab': sfx.grab(); break;
-    case 'lift': sound.clickUp(); sfx.stairs(); if (e.players?.includes(room.id)) fade(); break;
+    case 'lift': sfx.lift(); if (e.players?.includes(room.id)) view.shake(.25); break;
+    case 'lift-arrive': sfx.bell(); if (e.players?.includes(room.id)) view.shake(.2); break;
     case 'winch': sound.clickUp(); break;
     case 'extracted': sfx.win(); break;
     case 'wipe': sfx.wipe(); break;
@@ -116,10 +117,7 @@ function handle(e) {
       break;
     }
   }
-  // Your own trip up or down the stairs fades to black and back.
-  if (e.kind === 'stairs' && (mine || e.players?.includes(room.id))) { sfx.stairs(); fade(); }
 }
-function fade() { $('fade').classList.add('on'); requestAnimationFrame(() => requestAnimationFrame(() => $('fade').classList.remove('on'))); }
 function receive(next) {
   state = next;
   view.reseed(state.seed, state.options?.floors || 3);
@@ -131,7 +129,7 @@ function receive(next) {
   // Local practice and a fresh host start a new count.
   const top = Math.max(0, ...state.events.map(e => e.id)); if (top < lastEvent) lastEvent = top;
   for (const e of state.events) if (e.id > lastEvent) { lastEvent = e.id; if (state.phase !== 'lobby') handle(e); }
-  // Arriving on a new floor turns you the way the stairs face.
+  // Off the montacargas on a new floor, you face out of the cage.
   const p = state.players.find(p => p.id === room.id);
   if (p && floorOf(p.x) !== myFloor) { myFloor = floorOf(p.x); view.heading = p.h; }
   lobby();

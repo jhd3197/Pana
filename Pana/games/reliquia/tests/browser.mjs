@@ -57,11 +57,18 @@ try {
   await b.keyboard.press('2');
   await waitFor(a, id => reliquia.state.events.some(e => e.kind === 'bark' && e.player === id && e.line === 1), ids.b); check('a shouted vote reaches the other pana');
 
-  // Down the mine: the portal carries the host to floor 1.
-  await place(a, ids.a, 0, -3, Math.PI); await face(a, Math.PI);
-  await a.keyboard.down('w'); await waitFor(b, id => reliquia.state.players.find(p => p.id === id).x > 100, ids.a); await a.keyboard.up('w');
+  // The montacargas: the host rides the cage down; the guest, left at the
+  // camp, finds an empty shaft and can only call it back.
+  const lever = await a.evaluate(async () => { const { levers } = await import('/g/reliquia/rules.js'); return levers(reliquia.view.world.run.lifts[0]).down; });
+  await place(a, ids.a, lever.x, lever.z, 0); await settled(a, lever.x, lever.z); await face(a, 0);
+  await waitFor(a, () => reliquia.interaction(reliquia.state, reliquia.me)?.kind === 'ride');
+  await a.keyboard.down('e'); await waitFor(a, () => reliquia.state.lift.moving); await a.keyboard.up('e');
+  await waitFor(b, id => !reliquia.state.lift.moving && reliquia.state.players.find(p => p.id === id).x > 100, ids.a);
   assert.equal(await a.evaluate(() => reliquia.state.deepest), 1);
-  await a.screenshot({ path: path.join(output, 'floor1.png') }); check('the mine mouth takes a pana down to floor 1');
+  const shaft = await b.evaluate(() => reliquia.view.world.run.lifts[0]);
+  await place(a, ids.b, shaft.x, shaft.z + 2.4, Math.PI); await settled(b, shaft.x, shaft.z + 2.4);
+  await waitFor(b, () => reliquia.interaction(reliquia.state, reliquia.me)?.kind === 'call');
+  await a.screenshot({ path: path.join(output, 'floor1.png') }); check('the montacargas carries the host down while the guest has to call it');
 
   // A fallen pana, a held revive.
   const p = await mine(a); await place(a, ids.b, p.x + 1.4, p.z); await settled(b, p.x + 1.4, p.z);

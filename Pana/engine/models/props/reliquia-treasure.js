@@ -329,23 +329,47 @@ export function climbRope({ height = 6 } = {}) {
   const out = finish(g, 'Cuerda de subida', [[-1, 0, -1], [1, height, 1]]);
   out.add(beam); return out;
 }
-// The montacargas: a timber cage on a plank deck with a bell and a lever.
-// `headframe` adds the tall tower used on the surface. Origin: deck centre.
+// The montacargas: a timber cage on a plank deck, open at the front (+Z),
+// a red lever on its left (+X, up) and a green one on its right (-X, down),
+// and a bell. `headframe` adds the tall tower used on the surface.
 export function liftCage({ headframe = false } = {}) {
   const g = new THREE.Group(), wood = WOOD(), plank = paint(0xb07a48, { roughness: .85 }), iron = paint(0x3a3a42, { metalness: .5, roughness: .4 }), bell = paint(0xffc23d, { metalness: .6, roughness: .3 });
+  const green = paint(0x3fe07a, { emissive: 0x1a9a48, emissiveIntensity: .9 }), red = RUBY();
   part(g, new THREE.BoxGeometry(3.2, .18, 3.2), plank, 0, .09, 0);
-  const top = headframe ? 9 : 4.4;
+  const top = headframe ? 9 : 4.2;
   for (const sx of [-1.5, 1.5]) for (const sz of [-1.5, 1.5]) part(g, new THREE.BoxGeometry(.24, top, .24), wood, sx, top / 2, sz);
-  for (const y of [1.1, top - .3]) for (const s of [-1.5, 1.5]) { part(g, new THREE.BoxGeometry(3.2, .14, .14), wood, 0, y, s); part(g, new THREE.BoxGeometry(.14, .14, 3.2), wood, s, y, 0); }
-  for (let i = -1; i <= 1; i++) part(g, cyl(.03, .03, 1, 6), iron, i * .5, .6, 1.5);
-  part(g, new THREE.BoxGeometry(.12, 1.1, .12), wood, 1.3, .6, 1.25);
-  part(g, cyl(.04, .04, .7, 6), iron, 1.3, 1.3, 1.25, .5);
-  part(g, sphere(.09, 8, 6), RUBY(), 1.3, 1.62, 1.42);
-  part(g, new THREE.ConeGeometry(.22, .32, 12, 1, true), bell, -1.3, 2.2, 1.35);
+  for (const y of [1.1, top - .3]) { part(g, new THREE.BoxGeometry(3.2, .14, .14), wood, 0, y, -1.5); for (const s of [-1.5, 1.5]) part(g, new THREE.BoxGeometry(.14, .14, 3.2), wood, s, y, 0); }
+  part(g, new THREE.BoxGeometry(3.2, .14, .14), wood, 0, top - .3, 1.5);
+  for (let i = -2; i <= 2; i++) part(g, cyl(.03, .03, 1, 6), iron, i * .55, .6, -1.5);
+  for (const [x, knob] of [[1.32, red], [-1.32, green]]) {
+    part(g, new THREE.BoxGeometry(.14, .7, .14), wood, x, .4, 0);
+    part(g, cyl(.03, .03, .45, 6), iron, x, .9, .1, .45);
+    part(g, sphere(.09, 10, 8), knob, x, 1.1, .2);
+  }
+  part(g, new THREE.ConeGeometry(.22, .32, 12, 1, true), bell, 0, top - .65, -1.35);
+  part(g, cyl(.05, .05, top + 20, 6), paint(0xd9b47a), 1.2, top / 2 + 10, -1.2);
   if (headframe) {
     for (const s of [-1, 1]) part(g, new THREE.BoxGeometry(.3, .3, 3.6), wood, s * 1.6, top + .2, 0);
     part(g, new THREE.TorusGeometry(.7, .12, 8, 20), iron, 0, top + .9, 0, 0, Math.PI / 2, 0);
-    part(g, cyl(.04, .04, top, 6), paint(0xd9b47a), 0, top / 2 + .5, 0);
   }
   return finish(g, 'Montacargas', [[-1.8, 0, -1.8], [1.8, top + 1.7, 1.8]]);
+}
+
+// The shaft the montacargas rides: four walls of rock held by timber cribbing
+// with a warm lamp every few metres, `below` metres down and `above` up.
+// Origin at the stop's floor; faces inward, open at the front (+Z) between
+// the floor and the ceiling.
+export function liftShaft({ below = 16, above = 16 } = {}) {
+  const g = new THREE.Group(), rock = paint(0x5a4636, { roughness: 1, flatShading: true }), wood = WOOD(), lamp = paint(0xffd08a, { emissive: 0xffa040, emissiveIntensity: 1.6 });
+  const h = below + above, mid = (above - below) / 2;
+  for (const [x, z, w, d] of [[2, 0, .3, 4.3], [-2, 0, .3, 4.3], [0, -2, 4.3, .3]]) part(g, new THREE.BoxGeometry(w, h, d), rock, x, mid, z);
+  // The front (+Z) stays open from the floor to the ceiling: the way in.
+  part(g, new THREE.BoxGeometry(4.3, below - .3, .3), rock, 0, -(below + .3) / 2, 2);
+  part(g, new THREE.BoxGeometry(4.3, above - 4.7, .3), rock, 0, 4.7 + (above - 4.7) / 2, 2);
+  for (let y = -below + 1; y < above; y += 2.4) {
+    if (y > -.6 && y < 5) continue;
+    for (const s of [-1, 1]) { part(g, new THREE.BoxGeometry(.22, .22, 3.9), wood, s * 1.78, y, 0); part(g, new THREE.BoxGeometry(3.9, .22, .22), wood, 0, y, s * 1.78); }
+    if (Math.round(y) % 2 === 0) part(g, sphere(.12, 8, 6), lamp, 1.7, y + .4, 1.7);
+  }
+  return finish(g, 'Pozo del montacargas', [[-2.2, -below, -2.2], [2.2, above, 2.2]]);
 }

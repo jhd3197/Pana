@@ -3,7 +3,7 @@ import { ICONS as SVG } from '/engine/icons.js';
 import { fillRoster } from '/engine/results.js';
 import { setBar } from '/engine/kit.js';
 import { ARTIFACT_AURA } from '/engine/models/props/reliquia-treasure.js';
-import { interaction, compassTarget, titles, tier, holds, alive } from './rules.js';
+import { interaction, compassTarget, titles, tier, holds, alive, deepestStop } from './rules.js';
 import { layoutFor, distance } from './layout.js';
 import { FLOOR_NAMES, TRUCK, floorOf, inRect } from './deck.js';
 import { ITEMS, BAG_SIZE, valueOf } from './items.js';
@@ -33,13 +33,11 @@ export function createHud() {
 
   function compass(state, p, heading) {
     const L = layoutFor(state.seed, state.options?.floors), f = floorOf(p.x), tags = [];
-    if (f === 0) tags.push(['truck', 'CAMIÓN', TRUCK], ['down', 'LA MINA', { x: 0, z: -6 }]);
-    else {
-      const up = L.run.portals.find(q => q.floor === f && q.dir === 'up'), down = L.run.portals.find(q => q.floor === f && q.dir === 'down');
-      if (up) tags.push(['truck', 'SALIDA', { x: (up.rect[0] + up.rect[2]) / 2, z: (up.rect[1] + up.rect[3]) / 2 }]);
-      const seal = L.run.seals.find(s => s.floor === f);
-      if (down && seal && state.open[seal.id]) tags.push(['down', 'BAJADA', { x: (down.rect[0] + down.rect[2]) / 2, z: down.rect[3] }]);
-    }
+    const stop = L.run.lifts.find(l => l.floor === f);
+    if (f === 0) tags.push(['truck', 'CAMIÓN', TRUCK]);
+    if (stop) tags.push(['down', 'MONTACARGAS', stop]);
+    const seal = L.run.seals.find(s => s.floor === f);
+    if (seal && !state.open[seal.id]) tags.push(['goal', 'SELLO', seal]);
     if (holds(p, 'compass')) { const t = compassTarget(state, p); if (t) tags.push([t.boss ? 'boss' : 'goal', t.boss ? '¿TESORO?' : 'TESORO', t]); }
     const place = (node, bearing, pin) => {
       const rel = Math.atan2(Math.sin(bearing - heading), Math.cos(bearing - heading)), x = 50 - rel / Math.PI * 100;
@@ -80,6 +78,9 @@ export function createHud() {
     const t = tier(state); setBar($('greed-fill'), state.codicia / 100); $('greed-label').textContent = GREED[t];
     for (let i = 0; i <= 4; i++) document.body.classList.toggle(`greed-${i}`, t === i);
     $('haul').textContent = money(state.haul);
+    const lift = state.lift, where = n => n ? `piso ${n}` : 'campamento';
+    const status = lift.moving ? `${lift.to > lift.from ? 'bajando' : 'subiendo'} al ${where(lift.to)}${lift.riders.length ? '' : ' (vacío)'}` : `en el ${where(lift.floor)}`;
+    if ($('lift-status').textContent !== status) $('lift-status').textContent = status;
     $('health').textContent = Math.ceil(p.hp); setBar($('health-fill'), p.hp / 100);
     $('stamina-fill').parentElement.style.setProperty('--left', String(p.stamina ?? 1));
     p.hands.forEach((held, i) => slot(i, held, p, state));
@@ -96,8 +97,9 @@ export function createHud() {
     document.body.classList.toggle('can-act', !!target);
     if (target) { $('prompt-label').textContent = target.text; $('prompt-fill').style.width = `${Math.min(1, target.progress || 0) * 100}%`; }
     // The choice: an open way down within sight.
-    const seal = L.run.seals.find(s => s.floor === f && state.open[s.id]);
-    const choosing = playing && !!seal && distance(p, seal) < 16 && state.deepest <= f;
+    // The choice: standing at the montacargas with the way down open.
+    const stop = L.run.lifts.find(l => l.floor === f);
+    const choosing = playing && f > 0 && !!stop && distance(p, stop) < 5 && deepestStop(state) > f;
     $('choice').classList.toggle('hidden', !choosing);
     if (choosing) {
       const recent = [...votes.entries()].filter(([, v]) => state.time - v.time < 30);

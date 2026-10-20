@@ -18,7 +18,7 @@ import { pixelRatio, bindRenderer, shadowSize } from '/engine/settings.js';
 import { createExpeditionWorld, itemModel } from './scene.js';
 import { floorOf, HEIGHT } from './deck.js';
 import { ITEMS } from './items.js';
-import { holds, alive, cartValue } from './rules.js';
+import { holds, alive, cartValue, liftView } from './rules.js';
 
 export const COLORS = ['#ffc83d', '#3fd6e0', '#ff7a6b', '#7bdc5a', '#b98bff', '#ff8fc8', '#4a9dff', '#ffa94d'];
 const EYE = 1.45, POOL = 5;
@@ -115,7 +115,9 @@ export function createView(canvas, { seed = 1, floors = 3 } = {}) {
 
   function draw(state, me, dt, { downedLook = false, self = me?.id } = {}) {
     const t = performance.now() / 1000, vf = me ? floorOf(me.x) : 0;
-    setLook(vf === 0 ? 'camp' : 'deep');
+    // Riders sink and rise with the cage through the shaft.
+    const shaft = liftView(state.lift), rideY = p => state.lift?.moving && state.lift.riders.includes(p.id) ? shaft.y : 0;
+    setLook(vf === 0 && rideY(me || {}) > -2.5 ? 'camp' : 'deep');
     world.update(t, state, dt, me);
     sky.update(t);
     // Other panas.
@@ -125,7 +127,7 @@ export function createView(canvas, { seed = 1, floors = 3 } = {}) {
       const a = avatarFor(p, i), body = me?.id === p.id ? me : p;
       a.root.visible = !p.spectator && p.id !== self && floorOf(p.x) === vf;
       if (!a.root.visible) continue;
-      const target = new THREE.Vector3(body.x, (body.y || 0), body.z);
+      const target = new THREE.Vector3(body.x, (body.y || 0) + rideY(p), body.z);
       if (a.root.position.distanceTo(target) > 5) a.root.position.copy(target); else a.root.position.lerp(target, Math.min(1, dt * 14));
       const turn = Math.atan2(Math.sin(body.h - a.character.group.rotation.y), Math.cos(body.h - a.character.group.rotation.y));
       a.character.group.rotation.y += turn * Math.min(1, dt * 12);
@@ -217,7 +219,7 @@ export function createView(canvas, { seed = 1, floors = 3 } = {}) {
       lift += ((me.downed || downedLook ? -1 : 0) - lift) * (1 - Math.exp(-dt * 5));
       fov += ((me.vx ** 2 + me.vz ** 2 > 40 ? 82 : innerWidth < innerHeight ? 80 : 74) - fov) * (1 - Math.exp(-dt * 5)); camera.fov = fov;
       shake = Math.max(0, shake - dt * 2.5); const jolt = shake * shake * .06;
-      camera.position.set(me.x, (me.y || 0) + EYE + lift * 1 + Math.abs(Math.sin(bob)) * .05 * sway, me.z);
+      camera.position.set(me.x, (me.y || 0) + rideY(me) + EYE + lift * 1 + Math.abs(Math.sin(bob)) * .05 * sway, me.z);
       camera.rotation.set(pitch + (Math.random() - .5) * jolt, h + Math.PI + (Math.random() - .5) * jolt, Math.sin(bob) * .01 * sway + lift * -.35 + (me.reversed > 0 ? Math.sin(t * 2) * .06 : 0));
       // Paws: bob with the stride, swing on use, hide when both hands grip a treasure.
       me.hands.forEach((held, i) => heldModel(hands[i].userData.slot, held, i));
@@ -229,7 +231,7 @@ export function createView(canvas, { seed = 1, floors = 3 } = {}) {
         hands[i].rotation.set(-s * 1.2, 0, s * (i ? -.4 : .4));
       }
       pawMaterial.color.set(normalizeAvatar(me.avatar).fur);
-      headlamp.intensity = vf === 0 ? 0 : 55;
+      headlamp.intensity = lookName === 'camp' ? 0 : 55;
       handLight.intensity = holds(me, 'farol') ? 9 : holds(me, 'sunCrown') ? 12 : 0;
       handLight.color.set(holds(me, 'sunCrown') ? 0xffd36a : 0xffa850);
       sun.position.set(me.x - 20, 40, me.z + 25); sun.target.position.set(me.x, 0, me.z);
