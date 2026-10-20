@@ -38,8 +38,9 @@ four real stage IDs from `cup-definitions.js`, not duplicated route data.
   the initial `renderSetup` has already restored from the player's profile.
 - `refresh` is read-only: calling `renderSetup` from it would recurse through
   `selectTrack`. Refresh after car, route, setup and room changes.
-- Cup stage buttons preview individual tracks. Ready shows the cup's first
-  stage because a new cup always starts there, regardless of the preview.
+- Each cup card lists its four stops; the stage buttons stay hidden on the cup
+  page. Ready shows the cup's first stage because a new cup always starts
+  there.
 - Track browsing uses route metadata and never constructs 3D scenery. The
   garage's WebGL render is skipped while illustrated menu pages cover it.
 - Keep Play in the fixed footer. Ready options and the roster scroll separately
