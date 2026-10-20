@@ -46,8 +46,8 @@ export function generateRun(seed = 1, { floors = 3 } = {}) {
   // The mine mouth is a short gallery with the montacargas at its end.
   const campStub = { id: 'stub-camp', kind: 'shaft', floor: 0, rect: [-2.2, -9.2, 2.2, -1.9], axis: 'z', a: -2, b: -9.2, from: 0, to: 0 };
   run.lifts.push({ id: 'stop-0', floor: 0, x: 0, z: -6.6, h: 0 });
-  // A carrito waits by the truck; vein rooms keep more down below.
-  run.carts.push({ id: 'cart-0', floor: 0, x: 2, z: 18, h: Math.PI });
+  // Carritos wait at the mine mouth and by the truck; more below.
+  run.carts.push({ id: 'cart-0', floor: 0, x: 3.4, z: 1.2, h: Math.PI }, { id: 'cart-camp', floor: 0, x: -2, z: 15, h: -Math.PI / 2 });
   run.stubs.push(campStub);
   run.decor.push({ kind: 'table', floor: 0, x: TABLE.x, z: TABLE.z, h: 0 });
   // The truck is long: three circles along it (it faces -x).
@@ -171,6 +171,8 @@ function furnish(run, room, f, floors, R, id) {
   if (f > 1 || R() < .5) decor('stalactites', cx + (R() - .5) * room.w * .5, cz + (R() - .5) * room.d * .5, R() * 6);
   switch (room.kind) {
     case 'entrada':
+      // A carrito waits by the montacargas on every floor.
+      for (const s of [1, -1]) { const x = cx + s * 4.3, z = cz + room.d / 2 - 1.8; if (free(x, z, 1)) { run.carts.push({ id: `cart-${run.carts.length}`, floor: f, x, z, h: Math.PI }); taken.push({ x, z, r: 1.4 }); break; } }
       loot(f === 1 ? 'machete' : 'botiquin'); small(2);
       break;
     case 'tesoro':

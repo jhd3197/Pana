@@ -11,22 +11,24 @@ becomes the GitHub release's notes.
 ### Added
 
 - **Reliquia is now a first-person treasure run: ¿nos vamos ya, o bajamos
-  un piso más?** Grab a farol at the camp, go down La mina del sol and
-  carry gold back to the expedition truck: coins and emeralds fill your
-  bag, masks and idols take a hand, and the big treasures (the sun disk,
-  the emerald chest, the gold jaguar, the cacao altar) need two to four
-  panas walking together. Throw loot to a friend (hold E to catch it),
-  drag a fallen pana to the truck, and shout votes with 1–7. Every run
-  deals new floors from a shuffled room deck: trap halls, crypts, a rope
-  bridge over a pit, a hidden room only the echo mask can hear, the sun
-  guardian and a golden jaguar in the vault. La codicia rises with every
-  treasure you lift: traps quicken, tunnels cave in behind you and a
-  black jaguar starts hunting the team. Eight enchanted artifacts help
-  and ruin you in equal measure. Only what reaches the truck counts; if
-  everyone falls, most of it stays in the ruin. Push a carrito to haul a
-  pile of loot (and its balance floats above it), rappel down to the next
-  floor, climb the rope back up, or ride the montacargas from floor 2 to
-  the camp. Guácharos, ceiling spiders and coiled cuaimas join the mummies.
+  un piso más?** Grab a farol at the camp and ride the montacargas down
+  La mina del sol. It is one cage for everyone: it takes time, carries
+  whoever stands on it, and has to be called back when someone else has
+  it, so the team rides together or takes turns. Carry gold back to the
+  truck in your hands (a handful of coins or emeralds, a mask, an idol)
+  or load it into a carrito and push it there, its balance floating
+  above it. The big treasures (the sun disk, the emerald chest, the gold
+  jaguar, the cacao altar) need two to four panas walking together.
+  Throw loot to a friend (hold E to catch it), drag a fallen pana to the
+  truck, and shout votes with 1–7. Every run deals new floors from a
+  shuffled room deck: trap halls, crypts, a rope bridge over a pit, a
+  hidden room only the echo mask can hear, the sun guardian and a golden
+  jaguar in the vault. La codicia rises with every treasure you lift:
+  traps quicken, tunnels cave in behind you and a black jaguar starts
+  hunting the team. Mummies, guácharos, ceiling spiders and coiled
+  cuaimas guard the ruins, and eight enchanted artifacts help and ruin
+  you in equal measure. Only what reaches the truck counts; if everyone
+  falls, most of it stays in the ruin.
 
 - **Pepazo has a night map: Cancha de Noche.** Red floodlights, purple
   UV light and glowing LED rope lines light a field of pallets,

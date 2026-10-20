@@ -37,7 +37,8 @@ const menu = createGameMenu({
   controls: [['W A S D', 'Caminar hacia donde miras'], ['Ratón', 'Mirar (haz clic en la pantalla para capturarlo)'], ['Clic / Espacio', 'Usar lo de la mano derecha'], ['Clic derecho / F', 'Usar lo de la mano izquierda'],
     ['E', 'Agarrar, abrir; mantén para girar ruedas, levantar panas o atrapar lo que te lanzan'], ['Q', 'Soltar'], ['G', 'Lanzar lo que tienes en la mano'], ['R', 'Arrastrar a un pana caído'],
     ['Shift', 'Correr'], ['1 – 7', '¿Nos vamos ya? · ¡Una sala más! · y otros gritos'], ['Tab', 'Ver al equipo'], ['M', 'Sonido'], ['Esc', 'Soltar el ratón y abrir el menú']],
-  tips: ['El botín solo cuenta cuando llega al camión del campamento. El morral se vacía solo al acercarte.',
+  tips: ['El botín solo cuenta cuando llega al camión. Cada mano lleva un tesoro, una herramienta o un puñado de cuatro piezas: échalas al carrito (E) o lánzalas adentro (G).',
+    'Solo puedes llevar un arma a la vez: al agarrar otra, sueltas la que tenías.',
     'Los tesoros grandes piden dos, tres o cuatro panas: cada uno agarra un lado (E) y caminan juntos. Solo se arrastran despacito.',
     'El farol congela a las momias que alumbra. En la oscuridad corren más.',
     'Cada tesoro que levantan sube la codicia: más trampas, momias bravas, túneles que se derrumban y un jaguar negro que los caza.',
@@ -78,7 +79,7 @@ function handle(e) {
   if (e.text && !QUIET.has(e.kind)) notify(e.text);
   const big = SHOUTS[e.kind]; if (big) shout(e.kind === 'greed' ? e.text : big[0], { tone: big[1] });
   switch (e.kind) {
-    case 'pick': if (near) (ITEMS[e.item].size === 'bag' ? ['emerald', 'pearl'].includes(e.item) ? sfx.gem : sfx.coin : sfx.grab)(); break;
+    case 'pick': if (near) (ITEMS[e.item].size === 'small' ? ['emerald', 'pearl'].includes(e.item) ? sfx.gem : sfx.coin : sfx.grab)(); break;
     case 'grab': sfx.grab(); break;
     case 'swing': if (near) sfx.swing(); break;
     case 'hit': if (near) sfx.hit(); break;

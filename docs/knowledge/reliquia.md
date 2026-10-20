@@ -7,47 +7,54 @@ un piso más?* Only loot that reaches the truck at the camp counts.
 ## The run
 
 Camp (floor 0, outdoors, sunlit) → floor 1 … floor N (option `floors`, 2–4,
-default 3) → the vault on the last floor. Everything is level: the mine is a
-gallery into the hill (`minePortal({ niche: false })` leaves its mouth open),
-floor 1's way back is that gallery to daylight, deeper floors climb a rope
-under a shaft of light, and the way down is a rappel hole (the ground dips
-1.6 m as you step in). Each of these stub ends is a **portal**: a body that
-walks into the zone is moved to the matching landing (a client fades to
-black for its own trip). Big treasures, carritos and their pushers, dragged
-panas and loose items all travel through them.
+default 3) → the vault on the last floor. Everything is level and there are
+no teleports: the **montacargas** is the one way between floors. One cage
+rides one shaft; its stops (`run.lifts`) are the end of the mine gallery at
+the camp and an alcove off each floor's entrance room. On the deck, hold E
+by the green lever (right, seen from the room) to go down, or the red one
+to go up to the camp; at an empty shaft, hold E to call the cage, which
+comes back empty. A trip takes `3 + 2.2 · floors` seconds and carries every
+pana, carrito and item on the deck; halfway it changes stops. While it
+travels nobody can have it, and an empty shaft is a hole (`layout.blocked`).
+The camp's green lever goes straight to the deepest floor already reached.
+The client draws the cage sinking out of one stop and rising into the next
+(`liftView`), with riders, through a cribbed shaft (`liftShaft`).
 
-From floor 2 down, the entrance room has a **montacargas** (`run.lifts`):
-hold E on its deck for 3 s and everything within 2.1 m (panas, items,
-carritos) rides to the camp's headframe; from the camp it goes down to the
-deepest floor already reached. Then both ends rest 8 s.
-
-Each floor's way down is closed by a seal in its exit room:
+Each floor's seal stands in its exit room, and opening it lets the green
+lever go one floor deeper (`deepestStop`):
 `ruedas` (two winches, hold E 1.6 s each, latch 12 s, one pana can do both),
 `guardian` (the sun guardian falls) and, on the last floor, the `boveda`
 with the gold jaguar instead of a seal. `sealKind(floor, floors)` decides.
-An open seal shows the choice banner to panas near it; barks 1 and 2 are
-the votes ("¿Nos vamos ya?", "¡Una sala más!") and count for the titles.
+At the montacargas with the way down open the choice banner shows; barks 1
+and 2 are the votes ("¿Nos vamos ya?", "¡Una sala más!") and count for the
+titles.
 
 Extraction: hold E at the truck while every standing pana is within 9 m of
 it. A pana down elsewhere is left behind. A wipe (everyone down for 3 s)
 pays `wipeShare` % of the truck (option: 20, 0 or 50). Downed panas inside
 the truck zone get up after 3 s (the truck's botiquín).
 
-## Hands, bag and treasure (`items.js`)
+## Hands and treasure (`items.js`)
 
-- `bag` loot (coins, emerald, pearl, cup) goes in the morral, 8 slots; a full
-  bag slows you by up to 16 %. It banks by itself near the truck.
-- `hand` items take one of two hands: one-hand treasures (mask, idol, bank
-  at the truck), tools (machete, honda, farol, botiquín: never banked) and
-  the eight enchanted artifacts (bank only when dropped at the truck).
+There is no bag: everything travels in the two hands, in a carrito or
+between panas carrying a big treasure.
+
+- `small` loot (coins, emerald, pearl, cup) goes into a hand as a handful of
+  up to four pieces; a new piece joins a handful with room before taking an
+  empty hand.
+- `hand` items take a whole hand: one-hand treasures (mask, idol), tools
+  (machete, honda, farol, botiquín) and the eight enchanted artifacts. Only
+  one weapon (machete or honda): picking up another drops the old one.
+- Near the truck, handfuls and hand treasures bank by themselves; artifacts
+  bank when dropped there; tools never do.
 - `big` treasures need both hands free and `need` panas (2–4). Speed is
   `3.4 · min(1, carriers/need)^1.6`: alone you crawl. Carriers are pulled to
   slots around it; one stuck more than 2.4 m from its slot lets go.
   Letting go while it moves tips it (−5 % worth, counted as dropped).
-- G throws a hand item (pitch adds lift); a flying item bonks a pana
-  (stun .6 s), bounces off walls, and is lost if it falls into a pit.
+- G throws a hand (a handful fans out as separate pieces); a flying item
+  bonks a pana (stun .6 s), bounces off walls, and is lost in a pit.
   Holding E with a free hand catches a thrown hand item.
-- Going down drops both hands and spills half the bag.
+- Going down drops both hands.
 
 Click / Space uses the right hand, right click / F the left: machete
 30 damage, fists 12, any treasure 15 (a melee bonk), honda fires glowing
@@ -56,10 +63,13 @@ botiquín heals 50 or instantly revives a pana in front, miche drinks.
 
 ## El carrito
 
-Carritos (`state.carts`, one by the truck and one in many vein rooms) hold
-14 items and one big treasure. E with a hand treasure loads it, with a bag
-empties it, with empty hands takes the handle (two panas can push, 4.4 m/s
-less up to 40 % for the load). A big treasure walked up to an empty cart
+Carritos (`state.carts`: at the mine mouth, in the camp, by the montacargas
+on every floor, and in many vein rooms) hold 14 items and one big treasure.
+E with a hand treasure or a handful loads it, with empty hands takes the
+handle (two panas can push from 1.9 m behind, 4.4 m/s less up to 40 % for
+the load). The model is drawn at 70 % so it stays below eye level; its
+balance floats above it except for the pana pushing it, whose hand slot
+shows it instead. A big treasure walked up to an empty cart
 climbs in; a thrown item that drops into the hopper stays (¡encestó!). A
 cart inside the truck zone banks everything. Its balance floats above it.
 
@@ -98,8 +108,8 @@ Models: `engine/models/fauna/cave-creatures.js`.
 
 Echo mask: reveals a hidden room within 9 m / a phantom every 20–28 s.
 Sandals: ×1.55 speed / momentum (velocity eases toward the input).
-Sun crown: light around you / enemies prefer you. Laughing idol: the bag
-banks ×1.5 while you hold it / laughs every 14–22 s, waking enemies and a
+Sun crown: light around you / enemies prefer you. Laughing idol: what
+your hands bank is worth ×1.5 while you hold it / laughs every 14–22 s, waking enemies and a
 wave. Miche: +60 HP per sip, three sips / controls reversed 9 s. Crooked
 compass: the HUD tag points to the best treasure, or every third 15 s
 window to the biggest enemy on the floor (`compassTarget`). Lucky coin:
@@ -119,7 +129,7 @@ to two side rooms (one may be hidden behind a fake wall). Room furnishing
 keeps a 3 m mouth clear in front of every corridor, stair and seal, and a
 final pass pushes loot out of obstacles. `layout.js` rasterises rooms,
 corridors and stairs into a 0.25 m bitmap per floor (pits are value 2;
-islands and rope bridges stay walkable), checks closed seals, fake walls
+islands and rope bridges stay walkable), checks the montacargas shafts, fake walls
 and rubble at query time, and paths on a 1 m grid with string pulling.
 `groundAt` follows the stair ramps and the bridge sag (−0.75 m mid-span).
 A run builds in about 5 ms. A test walks 25 seeds and reaches every room.
@@ -155,7 +165,7 @@ plus host-only `configure` and `start`; the expedition's own `ledger` in
 snapshots stops a new host replaying them. Guests predict their own
 walking with `stepExplorer` unless they grip a treasure or are dragged.
 Late arrivals start at the camp; joiners during results wait as
-spectators. A departing pana drops both hands and the bag.
+spectators. A departing pana drops both hands.
 
 ## Verification
 
@@ -164,14 +174,15 @@ node --test Pana/games/reliquia/tests/rules.test.js Pana/games/reliquia/tests/op
 npm run test:browser -- reliquia
 ```
 
-The rules tests cover reachability across seeds, bag/hands, throwing,
+The rules tests cover reachability across seeds, handfuls and one weapon, throwing,
 bonks and catches, two-pana carrying to the truck, tipping, the idol
-bonus, portals and seals, farol freezing, collapses and digging, drag to
+bonus, the montacargas (riding, calling, busy, seals), farol freezing, collapses and digging, drag to
 the truck, wipe share, extraction, titles, the echo mask, prediction
 parity, snapshots, the guardian fight and the jaguar's pounce and daze.
 `tests/browser.mjs` uses real relay sessions: two desktop panas and a late
 390 × 844 phone pick up a farol, throw it, carry the sun disk to the truck
-together, shout a vote, go down the mine, revive, migrate the host,
+together, shout a vote, ride the montacargas (the guest left behind can
+only call it), revive, migrate the host,
 extract and replay, plus solo pause, the offline fallback and the hub.
 `tests/studio.browser.mjs` opens the new models and the map in Studio.
 With `?debug`, `window.reliquia` exposes `room`, `view`, `state`, `me`,

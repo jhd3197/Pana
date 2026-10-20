@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { Expedition, interaction, visibleItems, titles, compassTarget, stepExplorer, tier, levers } from '../public/rules.js';
 import { layoutFor, distance } from '../public/layout.js';
 import { TRUCK, TABLE, floorOf } from '../public/deck.js';
-import { ITEMS, BAG_SIZE } from '../public/items.js';
+import { ITEMS, HANDFUL } from '../public/items.js';
 import { spawnEnemy, lightOn } from '../public/enemies.js';
 
 function setup(n = 2, seed = 4242, options = {}) {
@@ -36,19 +36,24 @@ test('every room of many dealt runs is reachable once the seals open', () => {
   assert.notDeepEqual(a.rooms.map(r => r.kind), b.rooms.map(r => r.kind), 'two runs never match');
 });
 
-test('the camp table has faroles; small loot fills the bag, hand loot takes a hand', () => {
+test('the camp table has faroles; small loot makes a handful; one weapon at a time', () => {
   const g = setup(1), p = g.players[0];
   place(g, 1, TABLE.x - .6, TABLE.z + 1.9, Math.PI);
   assert.equal(interaction(g, p).kind, 'pick');
   assert.equal(g.action(1, 'interact'), true); assert.equal(p.hands[0].kind, 'farol');
-  const bagItem = lootOn(g, 'bag'); place(g, 1, bagItem.x, bagItem.z + 1.2); p.h = facing(p, bagItem); p.interactCooldown = 0;
-  assert.equal(g.action(1, 'interact'), true); assert.equal(p.bag.length, 1);
+  const small = lootOn(g, 'small'); place(g, 1, small.x, small.z + 1.2); p.h = facing(p, small); p.interactCooldown = 0;
+  assert.equal(g.action(1, 'interact'), true); assert.deepEqual(p.hands[1].pile, [small.kind]);
   assert.ok(g.codicia > 0, 'lifting treasure wakes la codicia');
-  assert.ok(!visibleItems(g).some(i => i.id === bagItem.id));
-  // A full bag and full hands refuse more.
-  p.bag = Array(BAG_SIZE).fill('coins'); p.hands = [{ id: 1, kind: 'farol' }, { id: 2, kind: 'machete' }];
-  const another = run(g).loot.find(l => l.floor === 1 && l.id !== bagItem.id && ITEMS[l.kind].size === 'bag'); place(g, 1, another.x, another.z + 1.2); p.h = facing(p, another); p.interactCooldown = 0;
+  assert.ok(!visibleItems(g).some(i => i.id === small.id));
+  // The handful fills up to four, then both hands are full.
+  p.hands[1].pile = Array(HANDFUL).fill('coins');
+  const another = run(g).loot.find(l => l.floor === 1 && l.id !== small.id && ITEMS[l.kind].size === 'small'); place(g, 1, another.x, another.z + 1.2); p.h = facing(p, another); p.interactCooldown = 0;
   assert.equal(g.action(1, 'interact'), false);
+  // A second weapon swaps for the first instead of filling the other hand.
+  p.hands = [{ id: 1, kind: 'machete' }, null];
+  g.spawnItem('honda', p.x, p.z - 1, { y: 0 }); p.h = Math.PI; p.interactCooldown = 0;
+  assert.match(interaction(g, p).text, /Cambiar/); g.action(1, 'interact');
+  assert.equal(p.hands[0].kind, 'honda'); assert.equal(p.hands[1], null); assert.ok(g.items.some(i => i.kind === 'machete'));
 });
 
 test('dropping and throwing: loot flies, lands, bonks a pana and can be caught', () => {
@@ -94,11 +99,11 @@ test('letting go of a moving treasure tips it over and chips its worth', () => {
   assert.ok(drum.worth < 1); assert.ok(a.stats.dropped > 0); assert.ok(g.events.some(e => e.kind === 'tip'));
 });
 
-test('the truck banks the bag, multiplied while you hold the laughing idol', () => {
+test('the truck banks what your hands carry, more while you hold the laughing idol', () => {
   const g = setup(1), [a] = g.players;
-  a.bag = ['coins', 'emerald']; place(g, 1, TRUCK.x + 2, TRUCK.z + 2); step(g, .1);
-  assert.equal(g.haul, ITEMS.coins.value + ITEMS.emerald.value); assert.equal(a.bag.length, 0);
-  a.bag = ['coins']; a.hands[0] = { id: 77, kind: 'laughingIdol' }; step(g, .1);
+  a.hands[0] = { id: 70, kind: 'coins', pile: ['coins', 'emerald'] }; place(g, 1, TRUCK.x + 2, TRUCK.z + 2); step(g, .1);
+  assert.equal(g.haul, ITEMS.coins.value + ITEMS.emerald.value); assert.equal(a.hands[0], null);
+  a.hands = [{ id: 77, kind: 'laughingIdol' }, { id: 71, kind: 'coins', pile: ['coins'] }]; step(g, .1);
   assert.equal(g.haul, ITEMS.coins.value * 2.5 + ITEMS.emerald.value);
   assert.equal(a.hands[0]?.kind, 'laughingIdol', 'artifacts stay in hand until dropped at the truck');
 });
@@ -161,8 +166,8 @@ test('codicia tiers collapse a corridor that panas must dig through', () => {
 test('down, dragged to the truck, back on your feet; a wipe keeps only a share', () => {
   const g = setup(2), [a, b] = g.players;
   place(g, 1, 0, 14); place(g, 2, 1.2, 14);
-  a.bag = ['coins', 'coins']; g.damage(a, 100);
-  assert.equal(a.downed, true); assert.equal(a.bag.length, 1, 'half the bag spills');
+  a.hands[0] = { id: 70, kind: 'coins', pile: ['coins', 'coins'] }; g.damage(a, 100);
+  assert.equal(a.downed, true); assert.equal(a.hands[0], null, 'a falling pana drops what it holds'); assert.equal(g.items.filter(i => i.kind === 'coins').length, 2);
   b.h = facing(b, a); assert.equal(g.action(2, 'drag'), true);
   for (let i = 0; i < 160 && a.downed; i++) g.update(.05, new Map([[2, { x: (TRUCK.x - b.x) / 10, z: (TRUCK.z - b.z) / 10 }]]));
   assert.equal(a.downed, false, 'the truck botiquín got them up');
@@ -242,10 +247,10 @@ test('the jaguar crouches before it pounces, and a farol dazes it once in a whil
   assert.ok(cat.stun > 0 && cat.immune > 0, 'dazed by the beam');
 });
 
-test('the carrito takes the bag, a big treasure, and banks it all at the truck', () => {
-  const g = setup(1), [a] = g.players, cart = g.carts.find(c => c.id === 'cart-0');
-  a.bag = ['coins', 'emerald']; place(g, 1, cart.x, cart.z + 1.6); a.h = facing(a, cart);
-  assert.equal(interaction(g, a).kind, 'cart-dump'); g.action(1, 'interact'); assert.equal(cart.contents.length, 2); assert.equal(a.bag.length, 0);
+test('the carrito takes a handful, a big treasure, and banks it all at the truck', () => {
+  const g = setup(1), [a] = g.players, cart = g.carts.find(c => c.id === 'cart-camp');
+  a.hands[0] = { id: 70, kind: 'coins', pile: ['coins', 'emerald'] }; place(g, 1, cart.x, cart.z + 1.6); a.h = facing(a, cart);
+  assert.equal(interaction(g, a).kind, 'cart-load'); g.action(1, 'interact'); assert.equal(cart.contents.length, 2); assert.equal(a.hands[0], null);
   const disk = g.spawnItem('sunDisk', cart.x - 3.2, cart.z, { y: 0 });
   place(g, 1, disk.x - 1.6, disk.z); a.h = facing(a, disk); a.interactCooldown = 0; g.action(1, 'interact');
   for (let i = 0; i < 80 && !cart.big; i++) g.update(.05, new Map([[1, { x: 1, z: 0 }]]));

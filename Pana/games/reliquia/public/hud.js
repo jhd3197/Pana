@@ -3,10 +3,10 @@ import { ICONS as SVG } from '/engine/icons.js';
 import { fillRoster } from '/engine/results.js';
 import { setBar } from '/engine/kit.js';
 import { ARTIFACT_AURA } from '/engine/models/props/reliquia-treasure.js';
-import { interaction, compassTarget, titles, tier, holds, alive, deepestStop } from './rules.js';
+import { interaction, compassTarget, titles, tier, holds, alive, deepestStop, cartValue } from './rules.js';
 import { layoutFor, distance } from './layout.js';
 import { FLOOR_NAMES, TRUCK, floorOf, inRect } from './deck.js';
-import { ITEMS, BAG_SIZE, valueOf } from './items.js';
+import { ITEMS, heldValue } from './items.js';
 import { COLORS } from './view.js';
 
 const $ = id => document.getElementById(id);
@@ -26,7 +26,8 @@ export function createHud() {
     node.classList.toggle('is-empty', !held && !gripping); node.classList.toggle('is-gripping', gripping);
     node.classList.toggle('is-artifact', !!held && !!ITEMS[held.kind].artifact);
     if (held && ITEMS[held.kind].artifact) node.style.setProperty('--aura', `#${ARTIFACT_AURA[held.kind].toString(16).padStart(6, '0')}`);
-    const text = p.push != null ? 'Empujando el carrito' : gripping && big ? `${ITEMS[big.kind].name} · ${big.carriers.length}/${ITEMS[big.kind].need}` : held ? `${ITEMS[held.kind].name}${held.kind === 'miche' ? ` ×${held.uses}` : ''}` : i ? 'Mano izquierda' : 'Mano derecha';
+    const pushing = p.push != null && state.carts.find(c => c.id === p.push);
+    const text = pushing ? (i ? money(cartValue(pushing)) : 'Empujando el carrito') : gripping && big ? `${ITEMS[big.kind].name} · ${big.carriers.length}/${ITEMS[big.kind].need}` : held?.pile ? `Un puñado · ${held.pile.length}/4` : held ? `${ITEMS[held.kind].name}${held.kind === 'miche' ? ` ×${held.uses}` : ''}` : i ? 'Mano izquierda' : 'Mano derecha';
     if (label.textContent !== text) label.textContent = text;
     node.title = held && ITEMS[held.kind].artifact ? `${ITEMS[held.kind].good} · ${ITEMS[held.kind].bad}` : '';
   }
@@ -84,7 +85,7 @@ export function createHud() {
     $('health').textContent = Math.ceil(p.hp); setBar($('health-fill'), p.hp / 100);
     $('stamina-fill').parentElement.style.setProperty('--left', String(p.stamina ?? 1));
     p.hands.forEach((held, i) => slot(i, held, p, state));
-    $('bag-count').textContent = `${p.bag.length}/${BAG_SIZE}`; $('bag-value').textContent = money(p.bag.reduce((n, k) => n + valueOf(k), 0));
+    $('carry-value').textContent = money(p.hands.reduce((n, h) => n + (h && !ITEMS[h.kind].tool ? heldValue(h) : 0), 0));
     const effects = [];
     if (p.reversed > 0) effects.push(`Miche: controles al revés ${Math.ceil(p.reversed)} s`);
     for (const h of p.hands) if (h && ITEMS[h.kind].artifact) effects.push(`${ITEMS[h.kind].name}: ${ITEMS[h.kind].good.toLowerCase()}, ${ITEMS[h.kind].bad.toLowerCase()}`);
@@ -142,7 +143,7 @@ export function createHud() {
   function board(open, state, room) {
     $('board').hidden = !open; if (!open) return;
     fillRoster($('board-list'), state.players.filter(q => !q.spectator).map((q, i) => ({ rank: i + 1, name: q.name, me: q.id === room.id,
-      detail: `${floorOf(q.x) === 0 ? 'En el campamento' : `Piso ${floorOf(q.x)}`} · morral ${money(q.bag.reduce((n, k) => n + valueOf(k), 0))}`, end: money(q.stats.banked), score: true })));
+      detail: `${floorOf(q.x) === 0 ? 'En el campamento' : `Piso ${floorOf(q.x)}`} · en las manos ${money(q.hands.reduce((n, h) => n + (h && !ITEMS[h.kind].tool ? heldValue(h) : 0), 0))}`, end: money(q.stats.banked), score: true })));
   }
 
   function results(state, room) {

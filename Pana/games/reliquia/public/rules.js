@@ -5,7 +5,7 @@
 import { DEFAULT_OPTIONS, validOptions } from './options.js';
 import { TRUCK, TRUCK_RADIUS, CAMP, floorOf, inRect, FLOOR_NAMES, CAGE } from './deck.js';
 import { layoutFor, distance } from './layout.js';
-import { ITEMS, BAG_SIZE, SMALL, ARTIFACTS, valueOf } from './items.js';
+import { ITEMS, HANDFUL, WEAPONS, SMALL, ARTIFACTS, valueOf, heldValue } from './items.js';
 import { spawnEnemy, updateEnemies, holds } from './enemies.js';
 import { createDirector, updateDirector, random } from './director.js';
 import { clamp } from '../../../engine/random.js';
@@ -33,7 +33,6 @@ export function stepExplorer(p, input, dt, world) {
   let speed = sprint ? 6.6 : 4.6;
   if (holds(p, 'sandals')) speed *= 1.55;
   if (p.drag != null) speed *= .55;
-  speed *= 1 - Math.min(.16, (p.bag?.length || 0) * .02);
   if (p.slow > 0) speed *= .6;
   if (p.stun > 0) speed = 0;
   if (holds(p, 'sandals')) { const k = Math.min(1, dt * 2.2); p.vx += (ux * speed - p.vx) * k; p.vz += (uz * speed - p.vz) * k; }
@@ -72,8 +71,7 @@ export function interaction(s, p) {
   for (const cart of s.carts || []) {
     if (floorOf(cart.x) !== f || distance(p, cart) > 2.4 || cart.pushers.length >= 2) continue;
     const held = p.hands.find(h => h && !ITEMS[h.kind].tool), full = cart.contents.length >= CART_SIZE, score = distance(p, cart) - facing(cart) * 2 - .5;
-    if (held && !full) options.push({ kind: 'cart-load', id: cart.id, text: `Echar ${ITEMS[held.kind].name.toLowerCase()} al carrito`, score, press: true });
-    else if (p.bag.length && !full) options.push({ kind: 'cart-dump', id: cart.id, text: 'Vaciar el morral en el carrito', score, press: true });
+    if (held && !full) options.push({ kind: 'cart-load', id: cart.id, text: `Echar ${held.pile ? `${held.pile.length} ${held.pile.length > 1 ? 'piezas' : 'pieza'}` : ITEMS[held.kind].name.toLowerCase()} al carrito`, score, press: true });
     else if (!p.hands.some(Boolean)) options.push({ kind: 'cart-push', id: cart.id, text: `Empujar el carrito · ${money(cartValue(cart))}`, score: score + .4, press: true });
   }
   for (const c of L.run.chests) if (!s.chests[c.id] && floorOf(c.x) === f && distance(p, c) < REACH) options.push({ kind: 'chest', id: c.id, text: 'Abrir el cofre', score: distance(p, c) - facing(c) * 2, press: true });
@@ -81,9 +79,11 @@ export function interaction(s, p) {
     if (item.state === 'air' || floorOf(item.x) !== f) continue;
     const d = distance(p, item), info = ITEMS[item.kind]; if (d > REACH + (info.size === 'big' ? (info.radius || 1) : 0)) continue;
     const look = facing(item); if (look < .2 && d > 1.2) continue;
-    let text = info.size === 'bag' ? `Guardar ${info.name.toLowerCase()} en el morral` : info.size === 'big' ? `Agarrar ${info.name.toLowerCase()}` : `Agarrar ${info.name.toLowerCase()}`;
-    if (info.size === 'bag' && p.bag.length >= BAG_SIZE) text = 'El morral está lleno';
-    if (info.size === 'hand' && p.hands.every(Boolean)) text = 'Manos llenas · suelta algo con Q';
+    let text = `Agarrar ${info.name.toLowerCase()}`;
+    const weapon = WEAPONS.includes(item.kind) && p.hands.find(h => h && WEAPONS.includes(h.kind));
+    if (weapon) text = `Cambiar ${ITEMS[weapon.kind].name.toLowerCase()} por ${info.name.toLowerCase()}`;
+    else if (info.size === 'small' && !p.hands.some(h => !h || (h.pile && h.pile.length < HANDFUL))) text = 'Manos llenas · échalo al carrito';
+    else if (info.size === 'hand' && p.hands.every(Boolean)) text = 'Manos llenas · suelta algo con Q';
     if (info.size === 'big' && p.hands.some(Boolean)) text = 'Necesitas las dos manos libres';
     if (info.size === 'big' && (item.carriers?.length || 0) >= info.need + 1) continue;
     options.push({ kind: 'pick', id: item.id, text, score: d - look * 2.5, press: true });
@@ -154,7 +154,7 @@ export class Expedition {
     let p = this.players.find(p => p.id === id); if (p) { p.avatar = avatar; return p; }
     const index = this.players.length;
     p = { id, name: String(name).slice(0, 16), avatar, seat: this.seats++, x: CAMP.x + (index % 4 - 1.5) * 1.6, z: CAMP.z + 4 + Math.floor(index / 4) * 1.6, y: 0, h: Math.PI, pitch: 0,
-      vx: 0, vz: 0, hp: 100, downed: false, spectator: this.phase === 'results', revive: 0, hands: [null, null], bag: [], grip: null, drag: null, draggedBy: null,
+      vx: 0, vz: 0, hp: 100, downed: false, spectator: this.phase === 'results', revive: 0, hands: [null, null], grip: null, drag: null, draggedBy: null,
       cooldown: 0, swing: 0, swingHand: 0, stamina: 1, stun: 0, reversed: 0, invulnerable: 0, hit: 0, interactCooldown: 0, barkAt: -9, moving: false, drain: 0,
       stats: { unaMas: 0, nosVamos: 0, dropped: 0, banked: 0, curses: 0, last: 0, revives: 0, kills: 0 } };
     this.players.push(p); return p;
@@ -163,7 +163,7 @@ export class Expedition {
     const p = this.players.find(p => p.id === id); if (!p) return;
     this.release(p); this.unpush(p); this.stopDrag(p);
     for (const q of this.players) if (q.drag === id) this.stopDrag(q);
-    if (this.phase === 'playing') { p.hands.forEach((h, i) => h && this.drop(p, i)); this.spill(p, p.bag.length); }
+    if (this.phase === 'playing') p.hands.forEach((h, i) => h && this.drop(p, i));
     this.players = this.players.filter(q => q.id !== id); delete this.ledger[id];
   }
   event(kind, text = '', extra = {}) { this.events.push({ id: ++this.eventId, kind, text, ...extra }); this.events = this.events.slice(-16); }
@@ -173,7 +173,7 @@ export class Expedition {
     Object.assign(this, new Expedition(seed, this.options)); this.ledger = ledger; this.eventId = eventId;
     roster.forEach(p => this.addPlayer(p.id, p.name, p.avatar)); this.phase = 'playing';
     this.carts = this.layout.run.carts.map(c => ({ ...c, contents: [], big: null, pushers: [], vx: 0, vz: 0 }));
-    this.event('start', 'Agarren un farol en la mesa y bajen a la mina. El botín cuenta en el camión.');
+    this.event('start', 'Agarren un farol en la mesa y un carrito para el botín. Solo cuenta lo que llegue al camión.');
   }
   accept(id, seq, action, data = {}) {
     if (!Number.isSafeInteger(seq) || seq <= (this.ledger[id] || 0) || !this.players.some(p => p.id === id)) return false;
@@ -218,28 +218,35 @@ export class Expedition {
     const held = p.hands[hand]; if (!held) return null;
     p.hands[hand] = null;
     const forward = { x: Math.sin(p.h), z: Math.cos(p.h) }, power = throwIt ? 10 : 0;
+    // A handful leaves as separate pieces, fanned out a little.
+    if (held.pile) {
+      const pieces = held.pile.map((kind, i) => {
+        const a = p.h + (i - (held.pile.length - 1) / 2) * .18, speed = throwIt ? 9 + i * .4 : 1.2;
+        return this.spawnItem(kind, p.x + forward.x * .5, p.z + forward.z * .5, { state: 'air', y: 1.2, vx: Math.sin(a) * speed, vz: Math.cos(a) * speed, vy: throwIt ? 3 + Math.sin(p.pitch || 0) * 6 : 1.5, thrower: p.id, thrownAt: this.time });
+      });
+      return pieces[0];
+    }
     const item = { id: held.id, kind: held.kind, uses: held.uses, x: p.x + forward.x * .5, z: p.z + forward.z * .5, y: 1.2, h: p.h, vx: forward.x * power + p.vx * .5, vz: forward.z * power + p.vz * .5,
       vy: throwIt ? 3 + Math.sin(p.pitch || 0) * 6 : 0, state: 'air', carriers: [], thrower: p.id, thrownAt: this.time, worth: held.worth ?? 1 };
     if (!this.layout.walkable(item.x, item.z, this, .1)) { item.x = p.x; item.z = p.z; }
     this.items.push(item);
     return item;
   }
-  spill(p, count) {
-    for (let i = 0; i < count && p.bag.length; i++) {
-      const kind = p.bag.pop(), a = random(this) * Math.PI * 2;
-      this.spawnItem(kind, p.x, p.z, { state: 'air', y: 1, vx: Math.cos(a) * 2.5, vz: Math.sin(a) * 2.5, vy: 3 });
-      p.stats.dropped += valueOf(kind);
-    }
-  }
   pick(p, item) {
     const info = ITEMS[item.kind];
-    if (info.size === 'bag') {
-      if (p.bag.length >= BAG_SIZE) return false;
-      this.take(item.id); this.items = this.items.filter(i => i.id !== item.id); p.bag.push(item.kind);
-      this.event('pick', '', { player: p.id, item: item.kind }); return true;
+    if (info.size === 'small') {
+      // Into a handful that has room, else an empty hand.
+      let hand = p.hands.findIndex(h => h?.pile && h.pile.length < HANDFUL);
+      if (hand < 0) hand = p.hands.findIndex(h => !h); if (hand < 0) return false;
+      this.take(item.id); this.items = this.items.filter(i => i.id !== item.id);
+      if (p.hands[hand]) p.hands[hand].pile.push(item.kind); else p.hands[hand] = { id: item.id, kind: item.kind, pile: [item.kind] };
+      this.event('pick', '', { player: p.id, item: item.kind, hand }); return true;
     }
     if (info.size === 'hand') {
-      const hand = p.hands[0] ? p.hands[1] ? -1 : 1 : 0; if (hand < 0) return false;
+      // One weapon at a time: a new one takes the old one's hand.
+      const weapon = WEAPONS.includes(item.kind) ? p.hands.findIndex(h => h && WEAPONS.includes(h.kind)) : -1;
+      if (weapon >= 0) this.drop(p, weapon);
+      const hand = weapon >= 0 ? weapon : p.hands[0] ? p.hands[1] ? -1 : 1 : 0; if (hand < 0) return false;
       const taken = this.take(item.id); this.items = this.items.filter(i => i.id !== item.id);
       p.hands[hand] = { id: item.id, kind: item.kind, uses: taken.uses ?? (item.kind === 'miche' ? 3 : undefined), worth: taken.worth ?? 1 };
       this.event('pick', '', { player: p.id, item: item.kind, hand }); return true;
@@ -267,14 +274,16 @@ export class Expedition {
     const cart = this.carts.find(c => c.id === p.push); p.push = null;
     if (cart) cart.pushers = cart.pushers.filter(id => id !== p.id);
   }
-  // Load a hand item or the whole bag, or take the handle.
+  // Load a hand (a handful goes in piece by piece), or take the handle.
   cartAction(p, target) {
     const cart = this.carts.find(c => c.id === target.id); if (!cart) return false;
     if (target.kind === 'cart-push') { cart.pushers.push(p.id); p.push = cart.id; this.event('cart-grab', '', { player: p.id }); return true; }
     if (target.kind === 'cart-load') {
       const hand = p.hands.findIndex(h => h && !ITEMS[h.kind].tool); if (hand < 0) return false;
-      cart.contents.push({ kind: p.hands[hand].kind, worth: p.hands[hand].worth ?? 1 }); p.hands[hand] = null;
-    } else { while (p.bag.length && cart.contents.length < CART_SIZE) cart.contents.push({ kind: p.bag.pop(), worth: 1 }); }
+      const held = p.hands[hand];
+      if (held.pile) { while (held.pile.length && cart.contents.length < CART_SIZE) cart.contents.push({ kind: held.pile.pop(), worth: 1 }); if (!held.pile.length) p.hands[hand] = null; }
+      else { cart.contents.push({ kind: held.kind, worth: held.worth ?? 1 }); p.hands[hand] = null; }
+    }
     this.event('cart-load', '', { player: p.id, cart: cart.id, value: cartValue(cart) });
     return true;
   }
@@ -400,8 +409,7 @@ export class Expedition {
   }
   down(p) {
     p.downed = true; this.release(p); this.unpush(p); this.stopDrag(p);
-    p.hands.forEach((h, i) => { if (h) { const item = this.drop(p, i); p.stats.dropped += valueOf(item.kind); } });
-    this.spill(p, Math.ceil(p.bag.length / 2));
+    p.hands.forEach((h, i) => { if (h) { p.stats.dropped += heldValue(h); this.drop(p, i); } });
     this.event('down', this.options.revive ? `${p.name} cayó. Levántenlo (E) o arrástrenlo al camión (R).` : `${p.name} cayó. Esta expedición no permite revivir.`, { player: p.id });
   }
   // ---------- The tick ----------
@@ -522,13 +530,13 @@ export class Expedition {
       const length = Math.hypot(mx, mz), load = Math.min(.4, cart.contents.length * .02 + (cart.big ? .22 : 0));
       const speed = 4.4 * (1 + .12 * (pushers.length - 1)) * (1 - load), ux = length > 1 ? mx / length : mx, uz = length > 1 ? mz / length : mz;
       cart.vx = ux * speed; cart.vz = uz * speed;
-      this.layout.moveBody(cart, cart.vx * dt, cart.vz * dt, this, .8);
+      this.layout.moveBody(cart, cart.vx * dt, cart.vz * dt, this, .6);
       if (length > .2) { const want = Math.atan2(ux, uz), turn = Math.atan2(Math.sin(want - cart.h), Math.cos(want - cart.h)); cart.h += clamp(turn, -dt * 3, dt * 3); }
       pushers.forEach((p, i) => {
         const side = pushers.length > 1 ? (i ? .55 : -.55) : 0, back = cart.h + Math.PI;
-        const sx = cart.x + Math.sin(back) * 1.4 + Math.cos(cart.h) * side, sz = cart.z + Math.cos(back) * 1.4 - Math.sin(cart.h) * side;
+        const sx = cart.x + Math.sin(back) * 1.9 + Math.cos(cart.h) * side, sz = cart.z + Math.cos(back) * 1.9 - Math.sin(cart.h) * side;
         this.layout.moveBody(p, sx - p.x, sz - p.z, this, .42);
-        if (Math.hypot(sx - p.x, sz - p.z) > 2.6) { this.unpush(p); this.event('slip', `¡A ${p.name} se le fue el carrito!`, { player: p.id }); }
+        if (Math.hypot(sx - p.x, sz - p.z) > 3) { this.unpush(p); this.event('slip', `¡A ${p.name} se le fue el carrito!`, { player: p.id }); }
       });
     }
   }
@@ -668,8 +676,10 @@ export class Expedition {
       if (p.downed) { p.truckRest = (p.truckRest || 0) + dt; if (p.truckRest > 3) this.getUp(p, null, 60); continue; }
       const bonus = holds(p, 'laughingIdol') ? 1.5 : 1;
       let total = 0;
-      while (p.bag.length) total += this.bank(p.bag.pop(), 1, p, bonus);
-      p.hands.forEach((h, i) => { if (h && !ITEMS[h.kind].tool && !ITEMS[h.kind].artifact) { total += this.bank(h.kind, h.worth ?? 1, p, bonus); p.hands[i] = null; } });
+      p.hands.forEach((h, i) => {
+        if (h?.pile) { for (const kind of h.pile) total += this.bank(kind, 1, p, bonus); p.hands[i] = null; }
+        else if (h && !ITEMS[h.kind].tool && !ITEMS[h.kind].artifact) { total += this.bank(h.kind, h.worth ?? 1, p, bonus); p.hands[i] = null; }
+      });
       if (total) this.event('bank', `${p.name} subió Bs. ${total.toLocaleString('es-VE')} al camión${bonus > 1 ? ' · ¡el ídolo se ríe!' : ''}.`, { player: p.id, value: total });
     }
     for (const cart of this.carts) {

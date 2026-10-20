@@ -1,13 +1,14 @@
 // Everything a pana can pick up, renderer-free. `size` decides how it is
-// carried: 'bag' goes in the morral, 'hand' takes one of the two hands, 'big'
-// needs both hands of `need` panas (fewer drag it very slowly). `model` names
+// carried: 'small' loot goes into a hand as a handful (up to HANDFUL pieces),
+// 'hand' takes a whole hand, 'big' needs both hands of `need` panas (fewer
+// drag it very slowly). Carritos carry the rest. `model` names
 // the Studio factory the scene builds it with.
 export const ITEMS = {
-  // Small loot: quick money that fills the bag.
-  coins: { name: 'Monedas de oro', size: 'bag', value: 40, model: 'coinPile' },
-  emerald: { name: 'Esmeralda', size: 'bag', value: 70, model: 'emerald' },
-  pearl: { name: 'Perla de Cubagua', size: 'bag', value: 60, model: 'pearl' },
-  cup: { name: 'Copa de oro', size: 'bag', value: 90, model: 'goldCup' },
+  // Small loot: quick money, a handful at a time.
+  coins: { name: 'Monedas de oro', size: 'small', value: 40, model: 'coinPile' },
+  emerald: { name: 'Esmeralda', size: 'small', value: 70, model: 'emerald' },
+  pearl: { name: 'Perla de Cubagua', size: 'small', value: 60, model: 'pearl' },
+  cup: { name: 'Copa de oro', size: 'small', value: 90, model: 'goldCup' },
   // One-hand treasures: worth more, and they can be thrown across a room.
   mask: { name: 'Máscara de oro', size: 'hand', value: 160, model: 'goldMask' },
   idol: { name: 'Ídolo tallado', size: 'hand', value: 130, model: 'carvedIdol' },
@@ -38,5 +39,9 @@ export const ITEMS = {
 export const ARTIFACTS = Object.keys(ITEMS).filter(k => ITEMS[k].artifact);
 export const SMALL = ['coins', 'emerald', 'pearl', 'cup'];
 export const BIG_POOL = [['sunDisk', 'drum', 'cart'], ['emeraldChest', 'mirror', 'sunDisk', 'stoneHead'], ['stoneHead', 'goldJaguar', 'emeraldChest', 'mirror']];
-export const BAG_SIZE = 8;
+export const HANDFUL = 4;
+// One weapon at a time: picking up another swaps it.
+export const WEAPONS = ['machete', 'honda'];
+// What a hand is worth: a handful counts every piece.
+export const heldValue = h => !h ? 0 : h.pile ? h.pile.reduce((n, k) => n + (ITEMS[k]?.value || 0), 0) : (ITEMS[h.kind]?.value || 0) * (h.worth ?? 1);
 export const valueOf = kind => ITEMS[kind]?.value || 0;

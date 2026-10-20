@@ -76,11 +76,12 @@ export function createView(canvas, { seed = 1, floors = 3 } = {}) {
     sun.intensity = look.sun; sky.mesh.visible = name === 'camp'; renderer.toneMappingExposure = look.exposure;
   }
   function heldModel(slot, held, i) {
-    const key = held ? `${held.id}:${held.kind}` : '';
+    const key = held ? `${held.id}:${held.kind}:${held.pile?.length || 0}` : '';
     if (heldKeys[i] === key) return; heldKeys[i] = key;
     slot.clear();
     if (!held) return;
     const model = itemModel(held.kind), info = ITEMS[held.kind];
+    if (held.pile) { model.scale.multiplyScalar(.28 + held.pile.length * .05); slot.add(model); model.position.y = -.04; return; }
     const scale = held.kind === 'farol' ? .24 : held.kind === 'machete' ? .5 : held.kind === 'honda' ? .42 : info.artifact ? .55 : .42;
     model.scale.multiplyScalar(scale);
     if (held.kind === 'machete') { model.rotation.set(0, Math.PI / 2, .6); model.position.set(0, .02, 0); }
@@ -185,18 +186,20 @@ export function createView(canvas, { seed = 1, floors = 3 } = {}) {
     // Carritos: their load sits in the hopper and the balance floats above.
     for (const c of state.carts || []) {
       let a = carts.get(c.id);
-      if (!a) { const root = new THREE.Group(), model = mineCart({ seed: 41, load: 'empty' }), bed = new THREE.Group(); bed.position.y = 1.02; root.add(model, bed); scene.add(root); root.position.set(c.x, 0, c.z); a = { root, bed, key: null, tag: null }; carts.set(c.id, a); }
+      if (!a) { const root = new THREE.Group(), model = mineCart({ seed: 41, load: 'empty' }), bed = new THREE.Group(); model.scale.setScalar(.7); bed.position.y = .88; bed.scale.setScalar(.7); root.add(model, bed); scene.add(root); root.position.set(c.x, 0, c.z); a = { root, bed, key: null, tag: null }; carts.set(c.id, a); }
       a.root.visible = floorOf(c.x) === vf;
       const target = new THREE.Vector3(c.x, 0, c.z); if (a.root.position.distanceTo(target) > 4) a.root.position.copy(target); else a.root.position.lerp(target, Math.min(1, dt * 14));
       a.root.rotation.y = c.h;
+      // Your own cart's balance is on the HUD, not floating in your face.
+      if (a.tag) a.tag.visible = !c.pushers.includes(me?.id) && (!me || Math.hypot(c.x - me.x, c.z - me.z) > 2.2);
       const key = `${c.contents.map(x => x.kind).join()}|${c.big?.kind || ''}`;
       if (key !== a.key) {
         a.key = key; a.bed.clear();
-        c.contents.slice(-9).forEach((x, i) => { const m = itemModel(x.kind); m.scale.multiplyScalar(ITEMS[x.kind].size === 'bag' ? 1.4 : .6); m.position.set((i % 3 - 1) * .3, Math.floor(i / 3) * .12, (Math.floor(i / 3) % 3 - 1) * .4); m.rotation.y = i; a.bed.add(m); });
+        c.contents.slice(-9).forEach((x, i) => { const m = itemModel(x.kind); m.scale.multiplyScalar(ITEMS[x.kind].size === 'small' ? 1 : .45); m.position.set((i % 3 - 1) * .3, Math.floor(i / 3) * .12, (Math.floor(i / 3) % 3 - 1) * .4); m.rotation.y = i; a.bed.add(m); });
         if (c.big) { const m = itemModel(c.big.kind); m.scale.multiplyScalar(.42); m.position.y = .2; a.bed.add(m); }
         a.tag && disposeSprite(a.tag); a.tag = null;
         const value = cartValue(c);
-        if (value) { a.tag = label(`Bs. ${Math.round(value).toLocaleString('es-VE')}`, '#ffd36a'); a.tag.position.y = 2.6; a.tag.scale.set(2.4, .45, 1); a.root.add(a.tag); }
+        if (value) { a.tag = label(`Bs. ${Math.round(value).toLocaleString('es-VE')}`, '#ffd36a'); a.tag.position.y = 1.7; a.tag.scale.set(2, .38, 1); a.root.add(a.tag); }
       }
     }
     for (const [id, a] of carts) if (!state.carts?.some(c => c.id === id)) { a.tag && disposeSprite(a.tag); a.root.removeFromParent(); carts.delete(id); }
