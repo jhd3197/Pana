@@ -72,6 +72,8 @@ export function createArenaEnvironment(id = 'plaza', { mode = 'hunt', props, cov
     }
     cameraBounds.push(bounds); placements.push({ assetId, perimeter, min: bounds.min.toArray(), max: bounds.max.toArray() });
     object.userData.assetId = assetId;
+    // Placement checks read a local-unit footprint radius (scaled by the world scale), like plaza.js sets.
+    object.userData.footprintRadius ??= Math.max(bounds.max.x - bounds.min.x, bounds.max.z - bounds.min.z) / 2 / scale;
     if (live) { group.add(object); animated.push(object); } else statics.add(object);
     return object;
   }

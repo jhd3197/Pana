@@ -84,7 +84,8 @@ export function floodlightMast({ height = 7, color = '#ff3344' } = {}) {
 export function ledRope({ points = [[-3, 0], [-1, .8], [1, -.8], [3, 0]], color = '#ff2a3a', radius = .045, closed = false } = {}) {
   const curve = new THREE.CatmullRomCurve3(points.map(([x, z]) => new THREE.Vector3(x, radius, z)), closed, 'centripetal');
   const length = curve.getLength(), mesh = new THREE.Mesh(new THREE.TubeGeometry(curve, Math.max(8, Math.round(length * 3)), radius, 6, closed), new THREE.MeshBasicMaterial({ color }));
-  mesh.name = 'Manguera LED'; return mesh;
+  // Library factories return a Group (engine/models/README.md).
+  const group = new THREE.Group(); group.name = 'Manguera LED'; group.add(mesh); return group;
 }
 
 // Soft round glow for additive halos around lamps, balls and splats.

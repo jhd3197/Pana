@@ -35,7 +35,7 @@ export function caiman({ seed = 7 } = {}) {
   // Splayed legs.
   for (const [x, z] of [[1, .38], [-1, .38], [1, -.38], [-1, -.38]]) {
     const leg = new THREE.Mesh(new THREE.CylinderGeometry(.045, .06, .28, 6), skin);
-    leg.position.set(x * .3, .08, z); leg.rotation.z = x * 1.1; body.add(leg);
+    leg.position.set(x * .3, .1, z); leg.rotation.z = x * 1.1; body.add(leg);
     const foot = new THREE.Mesh(new THREE.BoxGeometry(.13, .03, .1), skin); foot.position.set(x * .42, .02, z + .04); body.add(foot);
   }
   // Head with eyes on top and a hinged lower jaw.

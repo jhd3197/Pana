@@ -3,6 +3,7 @@ import { Vector3, Color, Fog } from 'three';
 import { createSky } from '/engine/worlds/sky.js';
 
 export const TOUR_SPEED = 24; // metres per second at 1×
+// Road surface height at `s`, ramps included (the copied review point).
 function roadHeight(route, s) {
   let height = route.heightAtS(s);
   for (const ramp of route.ramps || []) {
@@ -11,14 +12,30 @@ function roadHeight(route, s) {
   }
   return height;
 }
+const LOOK = 12, DECAY = .35; // metres of anticipation; metres of drop per metre travelled
+// Height the camera keeps above the road line for a ramp at `along` metres past its foot
+// (negative before it). It climbs with the ramp, starting up to LOOK metres early when the
+// ramp is steeper than DECAY, then glides down after the lip at DECAY per metre, so a big
+// jump (Puerto's 35 m ramp over its gap) never drops the camera in one step.
+function rampLift(ramp, along) {
+  const slope = ramp.h / ramp.len;
+  if (along > ramp.len) return Math.max(0, ramp.h - DECAY * (along - ramp.len));
+  const reach = slope > DECAY ? Math.min(along + LOOK, ramp.len) : along;
+  return reach < 0 ? 0 : Math.max(0, slope * reach - DECAY * (reach - along));
+}
 export function tourPose(route, distance) {
   const s = (route.LINE || 0) + Math.max(0, Math.min(route.TOTAL, distance));
-  const p = route.pointAt(s), ahead = route.pointAt(s + 14);
-  // Anticipate raised ramps and descend gently after them, without camera shake.
-  const height = Math.max(...[-12,-8,-4,0,4,8,12].map(offset => roadHeight(route, s + offset) - Math.abs(offset) * .35));
+  const p = route.pointAt(s), ahead = route.pointAt(s + 14), total = route.TOTAL;
+  const lift = at => Math.max(0, ...(route.ramps || []).map(ramp => {
+    const along = ((at - ramp.s0) % total + total) % total;
+    return rampLift(ramp, along > total / 2 ? along - total : along);
+  }));
+  // Follow the road's own rises a little early, without camera shake.
+  const road = Math.max(...[-12,-8,-4,0,4,8,12].map(offset => route.heightAtS(s + offset) - Math.abs(offset) * DECAY));
+  const height = Math.max(road, route.heightAtS(s) + lift(s));
   return {
     position: new Vector3(p.x, height + 3.2, p.y),
-    target: new Vector3(ahead.x, roadHeight(route, s + 14) + 2.6, ahead.y),
+    target: new Vector3(ahead.x, route.heightAtS(s + 14) + lift(s + 14) + 2.6, ahead.y),
   };
 }
 
