@@ -33,7 +33,7 @@ const optionsUI = createRoomOptions($('room-options'), { title: 'Pepazo', fields
 const mapPicker = createMapPicker($('map-picker'), mapId => room.selectMap(mapId), { paint: true });
 const difficultyPicker = createDifficultyPicker($('difficulty-picker'), difficulty => room.selectDifficulty(difficulty), { label: 'Puntería de los bots',
   notes: { facil: 'Los bots fallan seguido y disparan menos.', normal: 'Bots con buena mano, pero se les va alguna.', dificil: 'Los bots apuntan fino y no sueltan el gatillo.', experto: 'Casi no fallan: muévete y cúbrete.' } });
-const menu = createGameMenu({ title: 'Pepazo · Pana', orientation: 'libre', sound,
+const menu = createGameMenu({ pad: { move: 'wasd', look: 'Mirar y apuntar', keys: { rt: ['Space', 'Disparar'], a: ['Space', 'Disparar'], x: ['KeyR', 'Recargar'], lb: ['ShiftLeft', 'Correr'], ls: ['ShiftLeft', 'Correr'], view: ['Tab', 'Ver la tabla'] } }, title: 'Pepazo · Pana', orientation: 'libre', sound,
   options: [{ id: 'weapon', label: 'Marcadora (si la sala permite todas)', choices: [['pistol', 'Pistola'], ['scatter', 'Escopeta'], ['rapid', 'Automática']], get: () => weapon, set: value => { weapon = value; } },
     { id: 'view', label: 'Cámara', choices: [['primera', 'Primera persona'], ['cancha', 'Ver la cancha']], get: () => cameraView, set: value => { cameraView = value; world.setView(value); } },
     { id: 'mouse', label: 'Sensibilidad al mirar', choices: SENSITIVITY_CHOICES, get: () => looking.sensitivity, set: value => { looking.sensitivity = value; } }],

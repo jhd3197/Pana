@@ -29,7 +29,7 @@ const room = new TamborRoom({ code, name: loadName(), avatar: loadAvatar(), onSt
 });
 const roomOptions = createRoomOptions($('room-options'), { title: 'La Rueda de Tambor', fields: ROOM_OPTIONS,
   change: options => room.action('options', { options }), reset: () => room.action('options', { options: defaultOptions() }) });
-const menu = createGameMenu({ title: 'La Rueda de Tambor · Pana', sound, orientation: 'libre',
+const menu = createGameMenu({ pad: { keys: { left: ['ArrowLeft', 'Mano izquierda'], x: ['ArrowLeft', 'Mano izquierda'], right: ['ArrowRight', 'Mano derecha'], b: ['ArrowRight', 'Mano derecha'], up: ['ArrowUp', 'Bailar ↑'], y: ['ArrowUp', 'Bailar ↑'], down: ['ArrowDown', 'Bailar ↓'], a: ['Space', 'Palo, charrasca y caracol; aplaudir'], rb: ['Space', 'Palo, charrasca y caracol; aplaudir'], lb: ['KeyQ', '¡Quiero entrar!'], rt: ['KeyE', 'Relevo'] } }, title: 'La Rueda de Tambor · Pana', sound, orientation: 'libre',
   note: () => room.members.size > 1 ? 'La rueda sigue sonando mientras estás en el menú.' : 'La rueda está en pausa.',
   controls: [['← → (o F J)', 'Mano: un cuero con cada mano'], ['Espacio', 'Palo, charrasca y caracol (mantén en las notas largas)'],
     ['← → ↑ ↓ y Espacio', 'Bailar lo que canta el MCP'], ['Espacio', 'En la gente: aplaudir en el golpe'], ['1 – 4', 'Echar un dicho'],

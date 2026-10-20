@@ -20,6 +20,7 @@ const room = new {{Class}}Room({ code, name: loadName(), avatar: loadAvatar(), o
 const roomOptions = createRoomOptions($('room-options'), { title: '{{name}}', fields: ROOM_OPTIONS,
   change: options => room.action('options', { options }), reset: () => room.action('options', { options: defaultOptions() }) });
 const menu = createGameMenu({ title: '{{name}} · Pana', sound, orientation: 'libre',
+  pad: { move: 'wasd' },
   note: () => room.members.size > 1 ? 'La ronda sigue mientras estás en el menú.' : 'La ronda está en pausa.',
   controls: [['W A S D / flechas', 'Correr'], ['Toque', 'Flechas en pantalla'], ['M', 'Activar o silenciar el sonido']],
   tips: ['Recoge todos los mangos que puedas antes de que termine la ronda.', 'Si estás solo, unos bots corren contigo.'],

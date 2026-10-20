@@ -49,6 +49,7 @@ const seating = createTableSeating($('table-seating'), (from, to) => room.action
 $('organize-table').onclick = () => room.action('setup');
 const mapPicker = createMapPicker($('map-picker'), mapId => room.action('map', { mapId }), { table: true, landmarks: true });
 const menu = createGameMenu({
+  pad: { buttons: true, keys: { lb: ['KeyA', 'Jugar en la punta A'], rb: ['KeyB', 'Jugar en la punta B'], x: ['KeyP', 'Pasar'], y: ['KeyH', 'Pista'] } },
   title: 'Dominó · Pana', sound: audio,
   note: () => room.members.size > 1 ? 'La mesa sigue jugando mientras estás en el menú.' : 'La partida está en pausa. Los bots te esperan.',
   controls: [['1 2 3 4 5 6 7 8 9 0', 'Elegir una ficha de tu mano'], ['A B', 'Elegir una punta si la ficha cabe en ambas'], ['P', 'Pasar, solo si no tienes jugada'], ['H', 'Pedir una pista'], ['M', 'Activar o silenciar el sonido'], ['Esc', 'Abrir o cerrar el menú']],

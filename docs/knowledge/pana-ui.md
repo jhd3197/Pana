@@ -82,6 +82,42 @@ landscape layout still has to work: test both with a touch emulator.
 Mark keyboard reminders with `data-pana-hint` so the "Ayudas de teclado"
 setting can hide them.
 
+## Game controllers
+
+`engine/gamepad.js` makes an Xbox or PlayStation pad work in every game that
+loads through `game-entry.js`, with no game code at all for menus. The stick or
+d-pad moves a yellow highlight between the visible buttons, A presses, B backs
+out of a dialog, LB/RB change the menu's tabs and Start is Esc. The pad treats
+these as menus: an open `dialog`, a visible `.pk-results`, any visible panel
+marked `[data-pad-menu]`, and the lobby. A new menu puts the highlight on its
+`.pk-btn--primary` (or `.pana-primary`) button. The highlight follows that
+button if it gets enabled late, until the player moves.
+
+During play a game names the keys its buttons stand for, through the menu:
+
+```js
+createGameMenu({ …, pad: {
+  move: 'wasd',                                  // or 'arrows': left stick and d-pad
+  keys: { rt: ['KeyW', 'Avanzar'], a: ['Space', 'Saltar'] },
+  cursor: 'Apuntar',                             // right stick moves a pointer, RT clicks
+  buttons: true,                                 // d-pad + A work the HUD's buttons
+} });
+```
+
+The pad sends untrusted `keydown`/`keyup` events to `document.body`, with both
+`code` and `key`, so the game's keyboard handlers do the rest. `buttons` suits
+turn games whose moves are DOM buttons (Dominó, Póquer, ¿Quién quiere…?). It
+starts from the big control nearest the bottom middle of the screen, and A
+stays with the buttons. `createLookControls` turns the camera with the right
+stick, so first-person games need no `cursor`. `{ native: true, help }` is for
+a game that reads the pad itself (Trifulca): the menus still work, and `help`
+fills the "Con mando" list. The Controles tab lists each labelled key under
+"Con mando". Derrape loads its menu without `pad`, so it keeps its own
+controller code.
+
+Trap: the menu imports `gamepad.js` only when `pad` is set, so a game's first
+load stays under the module budget (`tests/conventions.test.js`).
+
 ## Rules and traps
 
 - **Do not handle Escape in the game.** The menu listens in the capture phase.

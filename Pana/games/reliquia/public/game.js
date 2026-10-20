@@ -32,6 +32,7 @@ const solo = () => room.offline || room.members.size === 1;
 const playing = () => state.phase === 'playing' && !menu.isOpen;
 
 const menu = createGameMenu({
+  pad: { move: 'wasd', look: 'Mirar', keys: { rt: ['Space', 'Usar lo de la mano derecha'], a: ['Space', 'Usar lo de la mano derecha'], lt: ['KeyF', 'Usar lo de la mano izquierda'], x: ['KeyE', 'Agarrar o abrir; mantén para girar'], b: ['KeyQ', 'Soltar'], y: ['KeyG', 'Lanzar'], rb: ['KeyR', 'Arrastrar a un pana'], lb: ['ShiftLeft', 'Correr'], ls: ['ShiftLeft', 'Correr'], view: ['Tab', 'Ver al equipo'] } },
   title: 'Reliquia', heading: 'Un respiro', resumeLabel: 'Volver a la mina', sound, notify,
   note: () => solo() ? 'La expedición está en pausa.' : 'Tus panas siguen en la mina.',
   options: [{ id: 'mouse', label: 'Sensibilidad al mirar', choices: SENSITIVITY_CHOICES, get: () => looking.sensitivity, set: value => { looking.sensitivity = value; } }],

@@ -106,7 +106,7 @@ function selectSky(mode, save = true) {
 
 // Esc pauses on game time: turns, timers, tweens and minigames all wait.
 let paused = false;
-const menu = createGameMenu({
+const menu = createGameMenu({ pad: { move: 'wasd', moveLabel: 'Moverte en los minijuegos', cursor: 'Apuntar la china', keys: { a: ['Space', 'Dados, saltar y estirar la china'], b: ['Enter', 'Confirmar'], view: ['Tab', 'Ver el tablero'] } },
   title: 'Bululú', heading: 'Pausa', sound, orientation: 'horizontal',
   note: () => online ? 'La partida online sigue mientras abres el menú.' : 'La partida está en pausa.',
   invite: () => inviteUrl(code),

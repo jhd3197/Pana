@@ -26,7 +26,7 @@ const room=new RaceRoom({code,name,avatar,coat,onState:s=>{state=s;},onStatus:(m
 const roomOptions=createRoomOptions($('room-options'),{title:'Galope',fields:FIELDS,change:patch=>room.configure(patch),reset:()=>{$('bots').checked=true;room.configure(cleanOptions());}});
 const touchButtons=[];
 function clearInput(){keys.clear();for(const b of touchButtons)b.release();touch.clear();}
-const menu=createGameMenu({title:'Galope',sound,orientation:'horizontal',note:()=>room.members.size>1?'La carrera sigue mientras abres el menú.':'La carrera está en pausa.',
+const menu=createGameMenu({ pad: { move: 'wasd', keys: { rt: ['KeyW', 'Avanzar'], lt: ['KeyS', 'Frenar'], a: ['Space', 'Saltar troncos'], rb: ['ShiftLeft', 'Remate'], ls: ['ShiftLeft', 'Remate'], y: ['KeyR', 'Volver al camino'] } },title:'Galope',sound,orientation:'horizontal',note:()=>room.members.size>1?'La carrera sigue mientras abres el menú.':'La carrera está en pausa.',
   controls:[['W / ↑','Avanzar'],['A D / ← →','Girar'],['S / ↓','Frenar'],['Shift','Remate: gasta resistencia'],['Espacio','Saltar troncos'],['R','Volver al camino'],['M','Sonido'],['Esc','Menú']],
   invite:()=>inviteUrl(code),actions:[{id:'local-race',label:'Abrir carrera local',run:()=>room.practice()}],onOpen(){paused=true;clearInput();},onClose(){paused=false;}});
 const navButton='pk-btn pk-btn--sm game-menu-button';

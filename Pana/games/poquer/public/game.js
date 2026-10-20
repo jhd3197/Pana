@@ -28,7 +28,7 @@ const seating = createTableSeating($('table-seating'), (from, to) => {
 $('organize-table').onclick = () => room.setup();
 const mapPicker = createMapPicker($('map-picker'), mapId => room.setMap(mapId), { table: true, landmarks: true });
 const roomOptions = createRoomOptions($('room-options'), { title: 'Póquer', fields: OPTION_FIELDS, change: patch => room.configure(patch), reset: () => room.configure(DEFAULT_OPTIONS, 'plaza') });
-const menu = createGameMenu({ title: 'Póquer · Pana', orientation: 'libre', sound,
+const menu = createGameMenu({ pad: { buttons: true }, title: 'Póquer · Pana', orientation: 'libre', sound,
   options: [{ id: 'view', label: 'Cámara', choices: [['plaza', 'En la plaza'], ['mesa', 'Sobre la mesa']], get: () => cameraView, set: value => { cameraView = value; world.setView(value); } }],
   note: () => room.local ? 'La práctica está en pausa.' : `La mesa online sigue. Tienes ${room.state.options.turnSeconds} segundos por turno.`,
   controls: [['Ratón / dedo', 'Elige retirarte, igualar o subir'], ['Apuesta total', 'Escribe el total que quieres apostar en esta calle'], ['M', 'Sonido'], ['Esc', 'Menú']],

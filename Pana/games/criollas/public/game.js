@@ -40,7 +40,7 @@ const room = new CriollasRoom({ code, name: loadName(), avatar: loadAvatar(), on
 });
 const teamRoster = createLobbyRoster($('lobby-roster'), { onMove: (from, to) => room.action('swap', { from, to }) });
 room.state.players[0] = { id: null, name: loadName(), avatar: loadAvatar() };
-const menu = createGameMenu({ title: 'Bolas Criollas', orientation: 'libre', sound,
+const menu = createGameMenu({ pad: { move: 'arrows', moveLabel: 'Afinar la dirección', cursor: 'Dirigir la bola', keys: { a: ['Space', 'Fuerza: mantén y suelta para lanzar'], y: ['KeyC', 'Cámara'] } }, title: 'Bolas Criollas', orientation: 'libre', sound,
   note: () => room.offline ? 'La partida está en pausa.' : 'La sala sigue jugando mientras estás en el menú.',
   controls: [['Ratón / dedo', 'Toca la cancha para dirigir la bola'], ['← →', 'Afina la dirección'], ['Mantén Espacio / Enter', 'La fuerza sube y baja; suelta para lanzar'], ['C', 'Cambia la cámara'], ['M', 'Sonido'], ['Esc', 'Menú']],
   tips: [

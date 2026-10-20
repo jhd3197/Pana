@@ -20,7 +20,7 @@ const room=new LudoRoom({code,name:loadName(),avatar:loadAvatar(),onState:render
 });
 const roomOptions=createRoomOptions($('room-options'),{title:'Ludo',fields:LUDO_OPTIONS,
   change:options=>room.action('options',{options}),reset:()=>room.action('options',{options:defaultLudoOptions()})});
-const menu=createGameMenu({title:'Ludo · Pana',sound,orientation:'libre',
+const menu=createGameMenu({ pad: { buttons: true, keys: { x: ['Space', 'Agitar el dado; suelta para tirar'], rt: ['Space', 'Agitar el dado; suelta para tirar'] } },title:'Ludo · Pana',sound,orientation:'libre',
   note:()=>room.members.size>1?'La partida continúa mientras estás en el menú.':'La partida está en pausa. Los bots te esperan.',
   controls:[['Mantén Espacio','Agitar el dado; suelta para tirar'],['Arrastra y suelta en la mesa','Lanzar el dado con más fuerza'],['1 2 3 4','Mover una ficha disponible'],['Ratón / toque','Tocar una ficha marcada o su botón'],['M','Activar o silenciar el sonido']],
   tips:[

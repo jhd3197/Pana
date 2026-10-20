@@ -22,7 +22,7 @@ const room = new QqsmpRoom({ code, name: loadName(), avatar: loadAvatar(), onSta
 });
 const roomOptions = createRoomOptions($('room-options'), { title: '¿Quién quiere ser mi pana?', fields: ROOM_OPTIONS,
   change: options => room.action('options', { options }), reset: () => room.action('options', { options: defaultOptions() }) });
-const menu = createGameMenu({ title: '¿Quién quiere ser mi pana? · Pana', sound, orientation: 'libre',
+const menu = createGameMenu({ pad: { buttons: true }, title: '¿Quién quiere ser mi pana? · Pana', sound, orientation: 'libre',
   note: () => room.members.size > 1 ? 'El concurso sigue mientras estás en el menú.' : 'El concurso está en pausa. Los bots te esperan.',
   controls: [['1 – 4 o A – D', 'Marcar una respuesta'], ['Ratón / toque', 'Respuestas y comodines'], ['M', 'Activar o silenciar el sonido']],
   tips: [

@@ -82,6 +82,7 @@ const optionsUI = createRoomOptions($('room-options'), { title: 'Escondidas', fi
 const isSeeker = id => state.seekers?.includes(id) ?? id === state.seeker;
 const mapPicker = createMapPicker($('map-picker'), mapId => room.action('map', { mapId }));
 const menu = createGameMenu({
+  pad: { move: 'wasd', look: 'Mirar', keys: { a: ['KeyE', 'Revisar o copiar un objeto'], rt: ['KeyE', 'Revisar o copiar un objeto'], b: ['KeyQ', 'Volver a pana'], y: ['KeyV', 'Ver tu disfraz'], lb: ['ShiftLeft', 'Correr'], ls: ['ShiftLeft', 'Correr'], view: ['Tab', 'Ver la tabla'] } },
   orientation: 'vertical',
   title: 'Escondidas', heading: 'Un momentico.', resumeLabel: 'Volver al juego', sound, notify,
   note: () => room.members.size === 1 ? 'La práctica queda en pausa mientras descansas.' : 'La ronda continúa para los demás panas.',

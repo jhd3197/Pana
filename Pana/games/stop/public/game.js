@@ -22,7 +22,7 @@ const room = new StopRoom({ code, name: loadName(), avatar: loadAvatar(), onStat
 });
 const roomOptions = createRoomOptions($('room-options'), { title: '¡Stop!', fields: ROOM_OPTIONS,
   change: options => room.action('options', { options }), reset: () => room.action('options', { options: defaultOptions() }) });
-const menu = createGameMenu({ title: '¡Stop! · Pana', sound, orientation: 'libre',
+const menu = createGameMenu({ pad: { buttons: true, keys: { x: ['Space', '¡Para! la rueda'] } }, title: '¡Stop! · Pana', sound, orientation: 'libre',
   note: () => room.members.size > 1 ? 'La ronda sigue mientras estás en el menú.' : 'La partida está en pausa. Los bots te esperan.',
   controls: [['Tab / Enter', 'Pasar a la siguiente casilla'], ['Espacio', '¡Para! cuando te toca la rueda'], ['Ratón / toque', '¡STOP! y los votos'], ['M', 'Activar o silenciar el sonido']],
   tips: [

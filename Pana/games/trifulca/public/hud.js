@@ -153,6 +153,8 @@ export function createHud({ me, voice = () => true }) {
     const key = `${t.step}:${t.done}`;
     $('tutorial-step').textContent = t.done ? 'TUTORIAL COMPLETO' : `PASO ${t.step + 1} DE ${TUTORIAL.length}`;
     $('tutorial-go').hidden = !t.done; $('tutorial-skip').hidden = t.done;
+    // Once it is done, the card is a menu for a controller: A on ¡A pelear!
+    $('tutorial').toggleAttribute('data-pad-menu', !!t.done);
     if ($('tutorial').dataset.key === key) {
       $('tutorial-text').dataset.count = t.count; return;
     }

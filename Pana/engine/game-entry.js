@@ -5,6 +5,8 @@ import { cachedPortrait } from './portrait-cache.js';
 import { icon } from './icons.js';
 import { inviteUrl, roomFromUrl } from './invite.js';
 import { finalizeRoomOptions } from './room-options.js';
+// Controllers work the lobby from the first paint; play keys come with the game.
+import './gamepad.js';
 
 const tag = document.querySelector('script[data-pana-entry]');
 const game = location.pathname.match(/\/g\/([^/]+)/)?.[1];

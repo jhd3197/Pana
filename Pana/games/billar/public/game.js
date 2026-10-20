@@ -51,6 +51,7 @@ const roomOptions = createRoomOptions($('room-options'), { title: 'Billar', fiel
   change: options => room.action('options', { options }), reset: () => room.action('reset-options') });
 const seating = createTableSeating($('seating'), (from, to) => room.action('swap', { from, to }));
 const menu = createGameMenu({
+  pad: { move: 'arrows', moveLabel: 'Afinar el taco; con bola en mano, mover la blanca', cursor: 'Apuntar en la mesa', keys: { a: ['Space', 'Fuerza: mantén y suelta para tirar'], x: ['Enter', 'Confirmar la bola en mano'], lb: ['ShiftLeft', 'Afinar más fino'], y: ['KeyC', 'Cámara'] } },
   title: 'Billar · Pana', orientation: 'libre', sound: audio,
   note: () => room.members.size > 1 ? 'La mesa sigue jugando mientras estás en el menú.' : 'La mesa está en pausa.',
   controls: [['Ratón / dedo', 'Toca la mesa para apuntar; detrás de la bola, arrastra a los lados para girar'], ['← →', 'Afina la dirección del taco'], ['Mantener Tirar / Espacio / Enter', 'La fuerza sube y baja: suelta para tirar. Rojo es más fuerte'], ['Enter con bola en mano', 'Confirma la posición'], ['Flechas con bola en mano', 'Mueve la blanca antes de colocarla'], ['Efecto', 'Toca la bola blanca del panel para darle efecto'], ['C', 'Cambia la cámara'], ['M', 'Sonido'], ['Esc', 'Menú']],

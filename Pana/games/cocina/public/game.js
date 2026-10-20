@@ -58,6 +58,7 @@ for (const r of RECIPES) for (const stage of ['raw', 'prepared', 'cooked']) {
 artRenderer.dispose();
 for (const r of RECIPES) { const img = document.createElement('img'); img.src = previews.get(`${r.id}:cooked`); img.alt = r.name; $('tasting').append(img); }
 const menu = createGameMenu({
+  pad: { move: 'wasd', keys: { a: ['KeyE', 'Recoger, dejar o apagar'], x: ['KeyE', 'Recoger, dejar o apagar'], b: ['ShiftLeft', 'Un empujoncito'], rb: ['ShiftLeft', 'Un empujoncito'] } },
   orientation: 'vertical',
   title: 'Pana Cocina', heading: '¿Y la sazón?', resumeLabel: 'Volver a cocinar', sound, notify,
   note: () => room.offline || room.members.size === 1 ? 'Tu turno está pausado.' : 'La cocina sigue para los demás panas.',

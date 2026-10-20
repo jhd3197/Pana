@@ -32,7 +32,7 @@ const seating = createTableSeating($('table-seating'), (from, to) => room.action
 $('organize-table').onclick = () => room.action('setup');
 const mapPicker = createMapPicker($('map-picker'), mapId => room.action('configure', { options: { mapId } }), { table: true, landmarks: true });
 const dealerUI = createDealerUI(room, () => audio.unlock());
-const menu = createGameMenu({ title: 'Caída · Pana', sound: audio,
+const menu = createGameMenu({ pad: { buttons: true, keys: { rb: ['Enter', 'Jugar la carta'], x: ['KeyC', 'Cantar'], y: ['KeyH', 'Pista'] } }, title: 'Caída · Pana', sound: audio,
   note: () => room.members.size > 1 ? 'La mesa sigue jugando mientras estás en el menú.' : 'La partida está en pausa. Los bots te esperan.',
   controls: [['1 2 3', 'Seleccionar una carta'], ['Enter', 'Jugar la carta seleccionada'], ['C', 'Cantar antes de jugar la primera carta'], ['H', 'Pedir una pista'], ['M', 'Activar o silenciar sonido'], ['Esc', 'Abrir o cerrar el menú']],
   tips: [
