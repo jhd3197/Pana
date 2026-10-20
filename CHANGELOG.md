@@ -39,6 +39,9 @@ becomes the GitHub release's notes.
   finish it (whoever stays below comes back with 1 HP). Loot turns into
   mangos at the camp's shop (a paintball marker among the gear), and the
   next jornada is deeper. Point the crosshair at what you want to use.
+  Below, everything echoes: footsteps, drips, creaks, distant moans,
+  groaning mummies, hissing cuaimas and your own heartbeat when la
+  codicia runs high.
 
 - **Pepazo has a night map: Cancha de Noche.** Red floodlights, purple
   UV light and glowing LED rope lines light a field of pallets,

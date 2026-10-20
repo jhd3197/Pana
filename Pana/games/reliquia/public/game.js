@@ -15,6 +15,7 @@ import { ExpeditionRoom } from './network.js';
 import { createView } from './view.js';
 import { createHud, money } from './hud.js';
 import { sfx } from './sounds.js';
+import { createAmbience } from './ambience.js';
 import { floorOf, FLOOR_NAMES } from './deck.js';
 import { ITEMS } from './items.js';
 
@@ -23,7 +24,7 @@ const notify = createToast($('toast'), { ms: 3400 });
 const qs = new URLSearchParams(location.search), code = roomFromUrl() || newRoomCode();
 const url = new URL(location.href); url.searchParams.set('room', code); history.replaceState(null, '', url);
 const avatar = loadAvatar(), name = qs.get('name')?.slice(0, 16) || loadName();
-const canvas = $('world'), view = createView(canvas), hud = createHud();
+const canvas = $('world'), view = createView(canvas), hud = createHud(), ambience = createAmbience();
 let state = new Expedition().snapshot(), phase = '', lastEvent = 0, failed = false, dead = false, myFloor = 0, uiAt = 0, last = performance.now();
 const keys = new Set(), touch = new Set();
 function clearInput() { keys.clear(); touch.clear(); }
@@ -184,6 +185,7 @@ function frame(now) {
   if (playing() && (keys.has('arrowleft') || keys.has('arrowright'))) view.look((+keys.has('arrowleft') - +keys.has('arrowright')) * dt * 2.2);
   // Keep the eyes on your pana after the run ends; never draw your own body.
   view.draw(state, state.phase === 'lobby' ? null : p, dt, { self: room.id });
+  ambience.update(state, p, view.heading, dt);
   uiAt -= dt; if (uiAt <= 0 && state.phase === 'playing') { uiAt = .066; hud.update(state, p, room, { heading: view.heading, paused: menu.isOpen }); }
   requestAnimationFrame(frame);
 }

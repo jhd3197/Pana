@@ -172,6 +172,19 @@ instanced with their own shader and must not go through `bake`. A revealed
 hidden room rebuilds that floor's shell once. Every item kind has one
 prototype that the map clones. Floors other than yours are hidden.
 
+## Sound
+
+`ambience.js` builds once audio is unlocked and replaces `sound.out` for the
+page with a split into a dry path and a cave (generated-impulse convolver
+plus a 0.34 s feedback echo) whose wet level rises underground, so every
+sound in Reliquia echoes below. A brown-noise rumble and a detuned drone
+thicken with la codicia; drips, pebbles, creaks, moans and whispers come
+every 2–7 s; the camp has birds and cicadas instead. Footsteps follow every
+moving pana (0.42 s walking, 0.3 s running), others' panned and faded by
+distance. Creatures each have their own clock: mummy groans, spider
+skitter, cuaima hiss, guácharo screeches, jaguar growls and a roar on the
+pounce. From tier 3 your heartbeat joins in. Everything is synthesized.
+
 ## Networking
 
 Host simulation at 20 Hz on `LiveRoom` (`reliquia-v3`). Input:
