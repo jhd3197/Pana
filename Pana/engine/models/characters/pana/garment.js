@@ -43,6 +43,17 @@ function subdivide(vertices, faces) {
   return { vertices: result, faces: quads };
 }
 
+// Merges coincident vertices so neighbouring quads subdivide as one surface.
+function weld({ vertices, faces }) {
+  const ids = new Map(), out = [];
+  const remap = vertices.map(v => {
+    const key = v.slice(0, 3).map(n => n.toFixed(5)).join();
+    if (!ids.has(key)) { ids.set(key, out.length); out.push(v); }
+    return ids.get(key);
+  });
+  return { vertices: out, faces: faces.map(f => f.map(id => remap[id])) };
+}
+
 const templates = new Map();
 const copyTemplate = value => ({ geometry: value.geometry.clone(), collar: value.collar.map(p => p.clone()), cuffs: value.cuffs.map(ring => ring.map(p => p.clone())) });
 export function shirtGeometry(arms, { style = 'shirt' } = {}) {
@@ -103,8 +114,33 @@ function buildShirtGeometry(arms, style) {
     }
     cuffs.push(previous);
   });
+  // A torso-only panel under each sleeve closes the armhole: with the arms
+  // down it sits inside the sleeve, raised forward it keeps the belly from
+  // showing through. A tank has no sleeve to hide it in.
+  const panels = { vertices: [], faces: [] };
+  if (style !== 'sport') for (const start of [3, 15]) for (let i = start; i < start + 6; i++) {
+    const corner = panels.vertices.length;
+    for (const [r, j] of [[2, i], [2, i + 1], [3, i + 1], [3, i]]) {
+      const [x, y, z] = vertices[ring(r, j)];
+      panels.vertices.push([x, y, z, 0, 0]);
+    }
+    panels.faces.push([corner, corner + 1, corner + 2, corner + 3]);
+  }
   let cage = { vertices, faces };
   for (let i = 0; i < (gameDetail() ? 2 : 3); i++) cage = subdivide(cage.vertices, cage.faces);
+  // Subdivision bleeds the sleeves' arm weight into the flanks under them;
+  // the side of the shirt then follows a raised arm and the belly shows
+  // through. Below the armhole the shirt belongs to the torso only.
+  for (const v of cage.vertices) {
+    const keep = Math.max(THREE.MathUtils.smoothstep(v[1], 1.3, 1.5), THREE.MathUtils.smoothstep(Math.abs(v[0]), 0.8, 0.9));
+    v[3] *= keep; v[4] *= keep;
+  }
+  if (panels.faces.length) {
+    let panel = weld(panels);
+    for (let i = 0; i < (gameDetail() ? 2 : 3); i++) panel = subdivide(panel.vertices, panel.faces);
+    const offset = cage.vertices.length;
+    cage = { vertices: [...cage.vertices, ...panel.vertices], faces: [...cage.faces, ...panel.faces.map(f => f.map(id => id + offset))] };
+  }
   const g = new THREE.BufferGeometry(), positions = [], uvs = [], weights = [], boneIndices = [], indices = [];
   for (const [x, y, z, left, right] of cage.vertices) {
     positions.push(x, y, z); uvs.push(x * 0.5 + 0.5, y);

@@ -400,7 +400,7 @@ export function createAccessories(e, selection = null) {
       i = w("#ffffff", { vertexColors: !0, roughness: 0.22 }),
       a = s("rubber", "#1d1b26", { roughness: 0.6, sheen: 0 }),
       M = H("#2b3a4a"),
-      d = ce(0, 0.16, -0.05),
+      d = ce(0, 0.08, -0.05),
       p = ce(1.12, 1.08, 1.03),
       h = (te, Z) => (Math.abs(Z) < 0.92 && te > 0.86 && te < 2.3) || te > 2.5,
       u = [],
@@ -509,7 +509,7 @@ export function createAccessories(e, selection = null) {
     );
     U(o, "Visor", ne, M);
     for (let te of [-1, 1])
-      ie(o, "Visor pivot", a, [te * 0.98, 0.5, 0.28], [0.03, 0.08, 0.08]);
+      ie(o, "Visor pivot", a, [te * 0.98, 0.42, 0.28], [0.03, 0.08, 0.08]);
     l.casco = {
       root: o,
       hideEars: !0,
