@@ -20,4 +20,7 @@ export const TRACK_DEFINITIONS = [
   ...WATER_TRACKS,
   { id:'puerto',name:'Puerto',defaultLaps:1,
   blurb:'Una vuelta de aventura: tres grúas, calles del puerto, subida de barro, baluartes de San Carlos, salto y túnel bajo el agua.' },
+  {id:'cata', name:'Bahía de Cata', blurb:'Baja entre montañas, cruza el cocotal y corre por el banco de arena hasta la isla.'},
+  {id:'choroni', name:'Choroní', blurb:'Curvas de montaña, bosque nublado, Puerto Colombia y Playa Grande.'},
+  {id:'chuao', name:'Chuao · La quebrada', blurb:'Del cacaotal al pueblo: sube al salto y baja con tu carro por la quebrada.'},
 ];

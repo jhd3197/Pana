@@ -1,7 +1,7 @@
 export const CURRENT_CUP_EDITION = 2;
 export const GP_STAGE_CAP_SECONDS = 240;
 // New standalone circuits do not silently change a saved cup edition's route.
-export const STANDALONE_TRACKS = ['puerto'];
+export const STANDALONE_TRACKS = ['puerto', 'cata', 'choroni', 'chuao'];
 
 const stage = (track, laps = 2, estimatedSeconds = 150) => ({
   track, laps, capSeconds: GP_STAGE_CAP_SECONDS, estimatedSeconds,

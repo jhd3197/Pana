@@ -4,7 +4,7 @@ import * as THREE from 'three';
 // the existing road draw: no image download, texture allocation or extra mesh.
 export function roadMaterial(color, earth = false, mixed = false) {
   const detail = { value: 1 };
-  const material = new THREE.MeshStandardMaterial({color,vertexColors:mixed,roughness:1,flatShading:true,side:THREE.DoubleSide});
+  const material = new THREE.MeshStandardMaterial({color,vertexColors:mixed,roughness:.92,side:THREE.DoubleSide});
   material.userData.roadDetail = detail;
   material.customProgramCacheKey = () => `derrape-road-${mixed?'mixed':earth ? 'earth' : 'asphalt'}`;
   material.onBeforeCompile = shader => {
@@ -13,9 +13,10 @@ export function roadMaterial(color, earth = false, mixed = false) {
       shader.fragmentShader=`varying float vRoadSurface;\n${shader.fragmentShader}`;
     }
     shader.uniforms.roadDetail = detail;
-    shader.vertexShader = `varying vec2 vRoadPoint;\n${shader.vertexShader}`
-      .replace('#include <begin_vertex>', '#include <begin_vertex>\nvRoadPoint = position.xz;');
+    shader.vertexShader = `attribute vec2 roadCoords; varying vec2 vRoadCoords; varying vec2 vRoadPoint;\n${shader.vertexShader}`
+      .replace('#include <begin_vertex>', '#include <begin_vertex>\nvRoadPoint = position.xz; vRoadCoords = roadCoords;');
     shader.fragmentShader = `varying vec2 vRoadPoint;
+varying vec2 vRoadCoords;
 uniform float roadDetail;
 float roadHash(vec2 p) { return fract(sin(dot(p, vec2(127.1,311.7))) * 43758.5453); }
 float roadNoise(vec2 p) {
@@ -30,6 +31,13 @@ if (roadDetail > 0.0) {
   float wear = mix(${earth ? '0.84,1.08' : '0.91,1.04'},patches);
   wear *= mix(1.0,0.88 + 0.24*grain,nearDetail);
   diffuseColor.rgb *= mix(1.0,wear,roadDetail);
+  // The references read as roads because wear runs along the route and the
+  // edge carries dust. Keep both continuous through every banked bend.
+  float edgeDust = smoothstep(.75,1.,abs(vRoadCoords.x));
+  float wheelWear = exp(-pow((abs(vRoadCoords.x)-.43)*12.,2.));
+  float brokenWear = .6 + .4*roadNoise(vec2(vRoadCoords.y*.055,0.));
+  diffuseColor.rgb *= 1. - .10*wheelWear*brokenWear*roadDetail;
+  diffuseColor.rgb = mix(diffuseColor.rgb, diffuseColor.rgb*vec3(1.13,1.07,.94),edgeDust*.75*roadDetail);
   ${mixed?`if(vRoadSurface>.5&&vRoadSurface<1.5){
     float mud=roadNoise(vRoadPoint*.7);diffuseColor.rgb*=mix(.72,1.13,mud);
   }else if(vRoadSurface>=1.5){

@@ -25,7 +25,7 @@ same room.
 
 | Game | What it is | Players |
 |---|---|---|
-| **Derrape** | Toy-car racing on twelve circuits and three four-race Grand Prix cups, with items, coins and swappable wheels | 1–8 online; local split screen |
+| **Derrape** | Toy-car racing on sixteen circuits, including Cata, Choroní and Chuao’s downhill quebrada, and three four-race Grand Prix cups, with items, coins and swappable wheels | 1–8 online; local split screen |
 | **Bululú** | Island or harbor party board, with a minigame every round | 1–6, bots fill seats |
 | **Escondidas** | Prop hunt in a market plaza: hide as a barrel, crate or bench | 1–8, bots fill in |
 | **Pana Cocina** | Cooperative cooking shifts with configurable orders and kitchen rules | 1–8, bot helpers |

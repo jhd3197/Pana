@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { createRequire } from 'node:module';
 import { mkdir } from 'node:fs/promises';
 import { hideTaller, menuStep } from './menu-helpers.js';
+import { TRACK_DEFINITIONS } from '../public/track-definitions.js';
 const { chromium } = createRequire(import.meta.url)(process.env.PANA_PLAYWRIGHT_PATH || 'playwright');
 const browser = await chromium.launch({ headless: true,
   ...(process.env.PANA_BROWSER_PATH ? { executablePath: process.env.PANA_BROWSER_PATH } : {}) });
@@ -59,7 +60,7 @@ try {
   await page.locator('#shop-close').click();
   await menuStep(page, 'track');
   await step(page, 'track');
-  assert.equal(await page.locator('.circuit-choice').count(), 13);
+  assert.equal(await page.locator('.circuit-choice').count(), TRACK_DEFINITIONS.length);
   for (const button of await page.locator('.circuit-choice').all()) {
     const id = await button.getAttribute('data-circuit');
     await button.click();
@@ -181,5 +182,5 @@ try {
   assert.equal(await guest.evaluate(() => race.player.def.name), 'El Machito');
   await host.close(); await guest.close();
   assert.deepEqual(errors, []);
-  console.log('Illustrated menu: solo, split, thirteen maps, three cups, tires, shop, keyboard, loading, mobile, reduced motion, missing artwork and two-client room passed.');
+  console.log('Illustrated menu: solo, split, all registered maps, three cups, tires, shop, keyboard, loading, mobile, reduced motion, missing artwork and two-client room passed.');
 } finally { await browser.close(); }

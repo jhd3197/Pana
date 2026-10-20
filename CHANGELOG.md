@@ -8,6 +8,11 @@ becomes the GitHub release's notes.
 
 ## Unreleased
 
+- **Derrape keeps detailed roadside trees while distant forest costs less to render.**
+  Three vegetation zones preserve planting density: native trees near the route,
+  simplified trees farther out and lightweight crowns on distant hills. Isolated
+  trees and palms retain their visible trunks.
+
 - **Race through Cata, Choroní and Chuao, including the downhill quebrada.**
   Three coastal circuits join quick races, online rooms and Studio with native
   Pana trees, dense mountain forest and previews of the actual maps. Existing

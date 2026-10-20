@@ -26,7 +26,7 @@ try{
       return {forward:c.vf,slide:Math.abs(c.vr),groundError:Math.abs(c.y-T.groundAt(c.x,c.z))};
     }
     let dry,moist;try{dry=simulate(true);moist=simulate(false);}finally{T.def.gripAt=original;}
-    const defaults=TRACKS.filter(t=>!['chichi','puerto'].includes(t.id)).map(def=>roadGripAt({def},wet.x,wet.z));
+    const defaults=TRACKS.filter(t=>!t.gripAt).map(def=>roadGripAt({def},wet.x,wet.z));
     const steam=[];T.animated.forEach(o=>o.userData.tick?.(19,.016));
     T.group.traverse(o=>{if(o.material?.uniforms?.rise)steam.push({time:o.material.uniforms.time.value,opacity:o.material.uniforms.opacity.value,count:o.count});});
     let riverAboveRoad=0;const river=T.group.getObjectByName('chichi-river'),p=river.geometry.attributes.position;

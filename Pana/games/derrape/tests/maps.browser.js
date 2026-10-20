@@ -15,7 +15,7 @@ try {
   await page.goto(`${origin}/g/derrape/?debug&auto&track=estadio`);
   await page.waitForFunction(() => window.getActiveTrack && garage.car);
   const ids = await page.evaluate(() => TRACKS.map(t => t.id));
-  assert.deepEqual(ids, ['estadio', 'desierto', 'llanos', 'chichi', 'selva', 'paramo', 'plaza', 'bululu', 'salto', 'delta', 'cuevas', 'salinas', 'puerto']);
+  assert.deepEqual(ids, ['estadio', 'desierto', 'llanos', 'chichi', 'selva', 'paramo', 'plaza', 'bululu', 'salto', 'delta', 'cuevas', 'salinas', 'puerto', 'cata', 'choroni', 'chuao']);
   const accessoryError = await page.evaluate(async () => {
     const THREE = await import('three');
     const { detachable } = await import('/engine/models/vehicles/car-kit.js');
@@ -155,7 +155,7 @@ try {
     return map.x >= panel.x && map.right <= panel.right && map.y >= panel.y && map.bottom <= panel.bottom;
   });
   assert.equal(minimap, true, 'minimap stays inside its map panel');
-  console.log(requested ? `Requested maps passed: ${requested.join(', ')}` : 'All thirteen maps and repeated switches passed.');
+  console.log(requested ? `Requested maps passed: ${requested.join(', ')}` : 'All registered maps and repeated switches passed.');
 } finally {
   await browser.close();
 }

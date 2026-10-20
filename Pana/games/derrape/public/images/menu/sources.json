@@ -1,5 +1,5 @@
 {
-  "note": "User-provided artwork. Original PNGs are preserved in the sibling pana-photos/generated folder. Map art is illustrative; track-map draws the actual route.",
+  "note": "User-provided artwork. Original PNGs are preserved in the sibling pana-photos/generated folder. Map art is illustrative; track-map draws the actual route. Aragua previews are native renders of the playable circuit scenes, adapted from user-provided HTML maps.",
   "images": [
     {
       "file": "salinas.webp",
@@ -186,6 +186,42 @@
       "source": "Tropical Fortress Port Diorama.png",
       "width": 320,
       "bytes": 31024
+    },
+    {
+      "file": "cata.webp",
+      "source": "Native render: cata circuit",
+      "width": 1200,
+      "bytes": 87500
+    },
+    {
+      "file": "cata-thumb.webp",
+      "source": "Native render: cata circuit",
+      "width": 480,
+      "bytes": 21892
+    },
+    {
+      "file": "choroni.webp",
+      "source": "Native render: choroni circuit",
+      "width": 1200,
+      "bytes": 89224
+    },
+    {
+      "file": "choroni-thumb.webp",
+      "source": "Native render: choroni circuit",
+      "width": 480,
+      "bytes": 22592
+    },
+    {
+      "file": "chuao.webp",
+      "source": "Native render: chuao circuit",
+      "width": 1200,
+      "bytes": 104234
+    },
+    {
+      "file": "chuao-thumb.webp",
+      "source": "Native render: chuao circuit",
+      "width": 480,
+      "bytes": 25502
     }
   ]
 }
