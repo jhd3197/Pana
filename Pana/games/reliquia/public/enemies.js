@@ -87,7 +87,7 @@ export function updateEnemies(g, dt) {
       e.stun = 1.6; e.immune = 6; e.mode = 'prowl'; g.event('daze', '¡El farol encandiló al jaguar!', { enemy: e.id }); continue;
     }
     const speed = k.speed * s.speed * (1 + .08 * tier) * (e.lit === 'dark' && k.light === 'freeze' ? 1.35 : 1) * (k.light === 'slow' && e.lit === 'beam' ? .5 : 1);
-    const damage = k.damage * s.damage * (1 + .1 * tier);
+    const damage = k.damage * s.damage * (1 + .1 * tier) * (.75 + .15 * floorOf(e.x));
     if (k.cat) { cat(g, e, target, speed, damage, dt); continue; }
     if (e.windup > 0) {
       e.windup -= dt;

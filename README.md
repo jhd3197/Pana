@@ -30,7 +30,7 @@ same room.
 | **Escondidas** | Prop hunt in a market plaza: hide as a barrel, crate or bench | 1–8, bots fill in |
 | **Pana Cocina** | Cooperative cooking shifts with configurable orders and kitchen rules | 1–8, bot helpers |
 | **Galope** | Horse racing around a Llanos ranch, through esteros and over logs | 1–8, bots fill in |
-| **Reliquia** | Cooperative expedition into a mine and the temple beneath it | 1–8 |
+| **Reliquia** | First-person co-op treasure extraction: carry cursed loot to the truck, then decide whether to go one floor deeper | 1–8 |
 | **¡Embuste!** | Social deduction at the night camp: who is the mummy? | 4–8 online, bots for practice |
 | **Curiara** | Dugout-canoe races with solo paddlers or two-person crews | 1–8, bots fill in |
 | **Lancha** | Outboard-motor boat races down the Sipapo and the Orinoco: hold the gas, jump the raudales, dodge caimanes | 1–8, bots fill in |

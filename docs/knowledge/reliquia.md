@@ -1,164 +1,155 @@
 # Reliquia · La mina del sol
 
-Browser expedition at `/g/reliquia/`. The hub discovers its metadata and live
-card automatically. No production dependency or build step was added.
+First-person co-op treasure extraction at `/g/reliquia/`, 1–8 panas, tuned
+for 5. The run's one decision: *¿nos vamos ya con lo que tenemos, o bajamos
+un piso más?* Only loot that reaches the truck at the camp counts.
 
-## Expedition
+## The run
 
-The authored route connects camp, mine, gallery, a shared rope bridge, two-wheel
-chamber, crypt and relic sanctuary. The wheels require a 1.6-second hold and
-latch for twelve seconds: simultaneous friends are convenient, but one player
-can reach both. Opening the gate establishes a late-join checkpoint. A guardian
-blocks relic pickup; collecting it opens the return tunnel. Every connected,
-non-spectating player must be revived and near camp, with the carrier inside the
-exit circle, while a player holds interaction for three seconds. A team wipe
-ends the run. Replay resets the map, enemies and objectives with a fresh seed.
+Camp (floor 0, outdoors, sunlit) → floor 1 … floor N (option `floors`, 2–4,
+default 3) → the vault on the last floor. The mine mouth at the north edge
+of the camp and a stair stub at each end of every floor are **portals**: a
+body that walks into a portal zone is moved to the matching landing on the
+next floor (a client fades to black for its own trip). Big treasures, their
+carriers, dragged panas and loose items all travel through them.
 
-WASD/arrows move relative to the camera; drag rotates it; wheel changes distance;
-Q recenters. Space/click attacks with nearby facing assistance. Shift dodges,
-R uses a finite healing kit, E interacts or holds a winch/revive/extraction.
-Touch has movement, attack, dodge, heal and a contextual hold button. The shared
-menu owns Escape, sound, settings and invitations. Solo menus pause simulation;
-multiplayer menus clear only the local player's input.
+Each floor's way down is closed by a seal in its exit room:
+`ruedas` (two winches, hold E 1.6 s each, latch 12 s, one pana can do both),
+`guardian` (the sun guardian falls) and, on the last floor, the `boveda`
+with the gold jaguar instead of a seal. `sealKind(floor, floors)` decides.
+An open seal shows the choice banner to panas near it; barks 1 and 2 are
+the votes ("¿Nos vamos ya?", "¡Una sala más!") and count for the titles.
 
-## Simulation and networking
+Extraction: hold E at the truck while every standing pana is within 9 m of
+it. A pana down elsewhere is left behind. A wipe (everyone down for 3 s)
+pays `wipeShare` % of the truck (option: 20, 0 or 50). Downed panas inside
+the truck zone get up after 3 s (the truck's botiquín).
 
-`layout.js` is renderer-free: room unions, obstacles, gate collision, segment
-visibility and grid navigation. `rules.js` owns all movement, attacks, damage,
-cooldowns, revives, puzzle and objective decisions. `director.js` tracks
-build/peak/fade/rest phases. Ambient spawns are occluded from the whole team;
-authored room awakenings are visible and have a one-second activation delay.
-The guardian encounter suppresses ambient waves. Fourteen living enemies is
-the simulation cap. Enemy damage/health do not change with temporary intensity;
-guardian health scales with the roster when it spawns.
+## Hands, bag and treasure (`items.js`)
 
-The oldest peer owns the expedition. Peers send inputs and sequenced actions
-through `{t:'state',v:{game:'reliquia-v2',kind,...}}`; only host snapshots render
-as authoritative state. Remote inputs expire after 600 ms. Snapshots include
-RNG state, Director timers, enemies, winches, supplies, relic ownership, events
-and the action sequence ledger. Navigation paths are a derived cache and are
-rebuilt after migration. A departing carrier drops the relic before removal.
-Replay preserves the action ledger so delayed packets cannot repeat actions.
+- `bag` loot (coins, emerald, pearl, cup) goes in the morral, 8 slots; a full
+  bag slows you by up to 16 %. It banks by itself near the truck.
+- `hand` items take one of two hands: one-hand treasures (mask, idol, bank
+  at the truck), tools (machete, honda, farol, botiquín: never banked) and
+  the eight enchanted artifacts (bank only when dropped at the truck).
+- `big` treasures need both hands free and `need` panas (2–4). Speed is
+  `3.4 · min(1, carriers/need)^1.6`: alone you crawl. Carriers are pulled to
+  slots around it; one stuck more than 2.4 m from its slot lets go.
+  Letting go while it moves tips it (−5 % worth, counted as dropped).
+- G throws a hand item (pitch adds lift); a flying item bonks a pana
+  (stun .6 s), bounces off walls, and is lost if it falls into a pit.
+  Holding E with a free hand catches a thrown hand item.
+- Going down drops both hands and spills half the bag.
 
-Late joiners appear at camp, or just beyond the gate after it opens. Once the
-relic is taken they appear at camp to avoid stranding a newcomer far behind an
-extracting team. Reconnect uses the relay's new identity. Failed connection
-offers an explicit local expedition; it never silently separates the friends.
-The server retains its global eight-player cap and temporary room lifecycle.
-Persistent worlds, accounts and saved inventories are outside this version.
+Click / Space uses the right hand, right click / F the left: machete
+30 damage, fists 12, any treasure 15 (a melee bonk), honda fires glowing
+paint (6 damage, stuns mummies 1.2 s, splats stay on walls and floors), the
+botiquín heals 50 or instantly revives a pana in front, miche drinks.
 
-## World and model ownership
+## La codicia and the Director
 
-`scene.js` builds the world from the same layout and existing jungle/vegetation
-factories. Static geometry is spatially batched; floors are instanced. Low walls
-and a raised follow camera expose the cavern as a cutaway. Rope bridge geometry
-uses the shared constructor; `groundAt` follows its swept deck and ramp ends.
-Characters use the canonical saved Pana adapter and dispose their own models;
-carried relics are detached first. The five new shared constructors live in
-`engine/models/props/reliquia.js`, are previewed in Studio, and are used by the
-game/card. Mummy bands are batched by rigid limb before animation, avoiding one
-draw call per band. Studio's Reliquia map builds the actual game scene.
+`codicia` (0–100) rises when deck loot is first lifted (`value / 45`, damped
+for big rosters), +5 per curse, +2 per chest and slowly with depth. Option
+`greed` multiplies it. Tiers every 25: torches gutter and dust falls
+(client), enemies +8 % speed and +10 % damage per tier, plates rearm
+faster, Director rests shorter and waves larger; tier 3 caves in a
+corridor every 26–40 s (hold E 5 s in total to dig, several panas add up)
+and sends the **stalker**, a black jaguar that follows the team across
+floors and waits while everyone is at the camp. `director.js` keeps the
+build/peak/fade/rest cycle; floor 1 rests 1.4× longer and its waves are
+small; enemy damage scales `0.75 + 0.15 · floor`.
+
+## Enemies (`enemies.js`)
+
+Mummies freeze in a farol's beam (7.5 m, ~37°, clear line) and run 35 %
+faster in the dark (no farol, crown or brazier within 5 m). Phantoms come
+with the echo mask. The guardian slams (3.8 m ring) and is only slowed by
+light. Jaguars prowl, **crouch** (the telegraph: a ring at the landing spot),
+leap .45 s and recover; a beam dazes one for 1.6 s, then it is immune 6 s.
+The vault jaguar sleeps until someone comes within 7 m or lifts vault loot.
+Rooms wake their sleepers the first time a pana enters (1.5 m inside).
+
+## Artifacts (all in hand)
+
+Echo mask: reveals a hidden room within 9 m / a phantom every 20–28 s.
+Sandals: ×1.55 speed / momentum (velocity eases toward the input).
+Sun crown: light around you / enemies prefer you. Laughing idol: the bag
+banks ×1.5 while you hold it / laughs every 14–22 s, waking enemies and a
+wave. Miche: +60 HP per sip, three sips / controls reversed 9 s. Crooked
+compass: the HUD tag points to the best treasure, or every third 15 s
+window to the biggest enemy on the floor (`compassTarget`). Lucky coin:
+chests give two more items and artifacts half the time / plates in your
+room fire on their own. Jaguar heart: melee ×3 / −2 HP per second.
+
+## The deck (`deck.js`, `layout.js`)
+
+`generateRun(seed, { floors })` is pure and cached; host and guests build
+the same run from `state.seed`, so snapshots carry only what changed
+(`touched` loot ids, `items` that moved, `chests`, `open`, `revealed`,
+`rubble`, `winches`, `plates`). Floors sit `SPACING` (220 m) apart in x;
+`floorOf(x)` is the floor. Rooms are on a 3 × 4 grid of 26 m cells: a
+random walk north from the entrance (row 0) to the exit (row 3, at least
+five rooms), a shuffled deck for the middle (always one idol room), and up
+to two side rooms (one may be hidden behind a fake wall). Room furnishing
+keeps a 3 m mouth clear in front of every corridor, stair and seal, and a
+final pass pushes loot out of obstacles. `layout.js` rasterises rooms,
+corridors and stairs into a 0.25 m bitmap per floor (pits are value 2;
+islands and rope bridges stay walkable), checks closed seals, fake walls
+and rubble at query time, and paths on a 1 m grid with string pulling.
+`groundAt` follows the stair ramps and the bridge sag (−0.75 m mid-span).
+A run builds in about 5 ms. A test walks 25 seeds and reaches every room.
+
+## Rendering
+
+`view.js` is the first-person camera (eye 1.45 m, pitch −1.2…1.1) and owns
+the light: camp = sky, sun and shadows; underground = dark fog (5–30 m),
+the headlamp spot on the camera, a hand light when you hold a farol or the
+crown, and a fixed pool of five point lights moved to the nearest braziers
+and other panas' faroles every 0.25 s. The light count never changes, so
+shaders never recompile on the way down. Your paws (fur colour) hold the
+hand items; the own avatar is hidden. Look input is
+`engine/play/first-person.js`; the left/right arrows also turn.
+
+`scene.js` builds the camp at once and each floor when it becomes
+reachable (floor 1 at start, floor f+1 when seal f opens), only from
+Studio models: `ruinShell` (brick walls, slabs, grout, ceiling; one
+InstancedMesh each, plain boxes: about 110–140 k triangles and ~100 draw
+calls in play) plus ruins, mine, cave, cemetery, camp and crystal props.
+Static decor is baked per floor; braziers animate; crystal clusters are
+instanced with their own shader and must not go through `bake`. A revealed
+hidden room rebuilds that floor's shell once. Every item kind has one
+prototype that the map clones. Floors other than yours are hidden.
+
+## Networking
+
+Host simulation at 20 Hz on `LiveRoom` (`reliquia-v3`). Input:
+`{ x, z (world move), h (heading), pitch, sprint, hold }`. Actions:
+`use {hand}`, `throw {hand}`, `drop`, `drag`, `bark {line}`, `interact`,
+plus host-only `configure` and `start`; the expedition's own `ledger` in
+snapshots stops a new host replaying them. Guests predict their own
+walking with `stepExplorer` unless they grip a treasure or are dragged.
+Late arrivals start at the camp; joiners during results wait as
+spectators. A departing pana drops both hands and the bag.
 
 ## Verification
 
 ```powershell
-node --test Pana/games/reliquia/tests/rules.test.js
-node Pana/games/reliquia/tests/browser.mjs <playwright-package> [chromium-executable]
-node Pana/games/reliquia/tests/studio.browser.mjs <playwright-package>
-node Pana/engine/tests/model-architecture.test.js
-node Pana/engine/tests/model-architecture.browser.js
-npm run check
+node --test Pana/games/reliquia/tests/rules.test.js Pana/games/reliquia/tests/options.test.js
+npm run test:browser -- reliquia
 ```
 
-`PANA_QA_URL` overrides port 8461 for browser QA. `PANA_QA_OUTPUT` chooses a
-screenshot directory. `?debug` exposes `window.reliquia` with room, state,
-renderer, actors, layout points, `place()` and deterministic `step()` helpers.
-Debug placement deliberately bypasses collision. `?debug&manual` disables the
-automatic simulation ticker for deterministic browser diagnostics.
+The rules tests cover reachability across seeds, bag/hands, throwing,
+bonks and catches, two-pana carrying to the truck, tipping, the idol
+bonus, portals and seals, farol freezing, collapses and digging, drag to
+the truck, wipe share, extraction, titles, the echo mask, prediction
+parity, snapshots, the guardian fight and the jaguar's pounce and daze.
+`tests/browser.mjs` uses real relay sessions: two desktop panas and a late
+390 × 844 phone pick up a farol, throw it, carry the sun disk to the truck
+together, shout a vote, go down the mine, revive, migrate the host,
+extract and replay, plus solo pause, the offline fallback and the hub.
+`tests/studio.browser.mjs` opens the new models and the map in Studio.
+With `?debug`, `window.reliquia` exposes `room`, `view`, `state`, `me`,
+`place(id, x, z, h)`, `face(h)`, `step(seconds)` and `interaction`.
 
-Browser QA must await the simulation's cooldown/state rather than fixed wall
-delays: compiling the first animated enemy in a software renderer can delay
-ticks. Likewise, the host's successful revive must arrive in the guest snapshot
-before asserting the guest's statistics.
-
-Nine deterministic tests cover combat/cooldowns, duplicate actions, reviving,
-solo and cooperative wheels, closed-gate navigation, guardian/relic handoff,
-extraction, wipe/replay, Director cycles and migration. A movement-driven route
-test traverses camp, both wheels, sanctuary and the return tunnel without
-teleporting; invulnerability isolates navigation from combat in that test.
-
-The browser suite uses real relay connections for two desktop clients and a
-390 × 844 touch client. Encounter setup uses debug placement; attacks, held
-interactions, snapshots, host migration and replay use the normal game paths.
-It also checks game/room isolation, local fallback, solo versus multiplayer
-pause and hub discovery. This is functional coverage, not a full balance or
-eight-player performance study.
-
-The Studio suite opens the actual five model previews and full map, checks
-finite nonempty bounds and saves screenshots. The shared architecture checks
-passed for 104 modules, 138 model definitions and 177 Studio resources.
-QA screenshots are stored outside the checkout in
-`C:\Users\Juan\Downloads\pana-reliquia-qa`.
-
-Validation completed 2026-10-15: the gameplay, relay browser, native Studio and
-shared architecture suites passed; the repository syntax check covered 320
-files. A sampled gameplay frame reported 124 draw calls and 163,226 triangles.
-Those counts describe that view, not a worst-case performance guarantee.
-
-The final visual pass corrected bridge landing height, added solid banks below
-entrance foliage, gave health text a dark backing and kept the compass clear of
-the guardian bar. Ambient wave offsets are individually checked for visibility
-and navigation so an anchor hidden behind a corner cannot expose its companions.
-
-## Notes for agents
-
-The shared `createChargeRing` exposes `mesh`, `set` and `hide`, not `group`.
-Attach `chargeRing.mesh` to the scene so held-interaction progress is visible.
-Headless two/three-client checks use the player's low-quality setting and await
-actual scene preparation: heavy software rendering can stretch a 2.4-second
-revive beyond 25 wall-clock seconds. Studio checks must return to the library
-between model previews, since asset detail views hide the library tiles.
-
-Rules that used to live in AGENTS.md (paths are relative to `Pana/`). Keep them
-true when you change this area.
-
-Reliquia uses a host simulation at 20 Hz (`reliquia-v2`). Its game-local
-`layout.js` owns walkability/navigation, `rules.js` owns combat, winches,
-revives and extraction, and `director.js` owns the seeded encounter schedule.
-Snapshots preserve RNG state and the action sequence ledger across host migration.
-Late arrivals join the camp or opened-gate checkpoint. Both wheels latch for
-twelve seconds; all non-spectating players must be revived and back at camp to
-extract. The mummy, guardian, sun relic, winch and lantern factories live in
-`engine/models/props/reliquia.js` and are registered in Studio. Keep rigid mummy
-parts batched independently of their animation pivots. The shared rope bridge's
-sag is mirrored by `groundAt()` in the game scene. See `docs/knowledge/reliquia.md`.
-
-
-## Expedition options
-
-The shared lobby configures Selva/Tepuy temple variants, difficulty, shared or
-individual carried lanterns, one/two/three simultaneous ordinary mummies,
-pressure-plate density, revives, the minimap, objective hints and lanterns.
-Both temple variants preserve the authored route; Tepuy has cooler stone and
-a shifted plate pattern rather than a renamed unrelated map. Pressure plates
-are real mesh hazards: they are safe for three seconds and active for two,
-with staggered phases. Three/six/nine plates implement density. Their positions
-and timing come from the same pure rules used for damage. A hit has a
-1.2-second per-player trap cooldown. Dodging also protects against plate hits.
-
-Difficulty changes enemy health, damage and movement speed. The mummy choice
-caps ordinary mummies independently of the guardian. With revives disabled,
-fallen teammates remain out and surviving panas can extract without them.
-Turning hints off removes the mission steps and objective compass, but nearby
-interaction prompts remain usable. A shared carried lantern follows the first
-standing pana; individual lanterns follow each pana. Disabling lanterns hides
-both carried lanterns and the temple lamps/light pools.
-
-Only the host changes these options before a run. Snapshots, practice, replays
-and lobby or live host migration preserve the choices. Rooms retain eight
-human seats. The action ledger also covers configure messages so stale room
-choices cannot be replayed after migration.
-
-The mission steps and minimap container have explicit `[hidden]` display rules.
-The steps grid would otherwise override the browser hidden style and reveal
-hints when that option is off.
+Idle panas (no tool, no light) last about 50 s on floor 1 and 45 s deeper;
+a group of five on floor 1 often holds two minutes.

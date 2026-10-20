@@ -192,3 +192,33 @@ test('snapshots carry the run: restore continues the same simulation', () => {
   assert.equal(restored.accept(1, (restored.ledger[1] || 0), 'bark', { line: 0 }), false, 'old seq refused');
   assert.equal(restored.layout.run.rooms.length, a.layout.run.rooms.length);
 });
+
+test('the guardian wakes, slams, falls to machetes and opens the way down', () => {
+  for (let seed = 1; seed < 30; seed++) {
+    const g = setup(2, seed), seal = run(g).seals.find(s => s.kind === 'guardian'); if (!seal) continue;
+    const room = run(g).rooms.find(r => r.id === seal.room), [a, b] = g.players;
+    place(g, 1, room.x, room.z + 4); place(g, 2, room.x + 1.5, room.z + 4); step(g, .1);
+    const boss = g.enemies.find(e => e.kind === 'guardian'); assert.ok(boss, 'the guardian is in its room');
+    a.hands[0] = { id: 1, kind: 'machete' }; b.hands[0] = { id: 2, kind: 'machete' }; a.invulnerable = b.invulnerable = 1e9;
+    for (let i = 0; i < 400 && boss.hp > 0; i++) {
+      for (const p of [a, b]) { p.x = boss.x + (p === a ? -1.6 : 1.6); p.z = boss.z + 1.4; p.h = facing(p, boss); p.cooldown = 0; g.action(p.id, 'use', { hand: 0 }); }
+      g.update(.05);
+    }
+    assert.ok(boss.hp <= 0); assert.equal(g.open[seal.id], 1); assert.ok(g.events.some(e => e.kind === 'guardian'));
+    return;
+  }
+  assert.fail('no guardian floor');
+});
+
+test('the jaguar crouches before it pounces, and a farol dazes it once in a while', () => {
+  const g = setup(1, 77), vault = run(g).rooms.find(r => r.kind === 'boveda'), [a] = g.players;
+  place(g, 1, vault.x, vault.z + 6); step(g, .1);
+  const cat = g.enemies.find(e => e.kind === 'jaguar'); assert.ok(cat); cat.awake = true; cat.born = -9;
+  a.h = facing(a, cat);
+  let crouched = false;
+  for (let i = 0; i < 120 && !g.events.some(e => e.kind === 'pounce'); i++) { g.update(.05); crouched ||= cat.mode === 'crouch'; }
+  assert.ok(crouched, 'telegraphed'); assert.ok(g.events.some(e => e.kind === 'pounce'));
+  cat.mode = 'prowl'; cat.immune = 0; cat.stun = 0; a.hp = 100; a.downed = false; a.hands[0] = { id: 3, kind: 'farol' };
+  place(g, 1, cat.x, cat.z + 4); a.h = facing(a, cat); step(g, .1);
+  assert.ok(cat.stun > 0 && cat.immune > 0, 'dazed by the beam');
+});
