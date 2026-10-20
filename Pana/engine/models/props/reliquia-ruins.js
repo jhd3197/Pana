@@ -21,6 +21,30 @@ export const RUIN_PALETTES = {
   maldita: { floor: 0xc9a0b8, bricks: [0xa7769a, 0x936486, 0xb98bab], band: 0xffc23d, ceiling: 0x3c2840, glyph: 0xff7adf },
 };
 
+// Stone surfaces, painted once and shared: light grey grain, chips, cracks
+// and a bevelled rim, so the per-block instance colour still sets the hue.
+const textures = new Map();
+export function stoneTexture(kind = 'brick') {
+  if (textures.has(kind)) return textures.get(kind);
+  const r = rng({ brick: 11, slab: 12, roof: 13 }[kind] || 14), w = 128, h = kind === 'brick' ? 64 : 128;
+  const canvas = document.createElement('canvas'); canvas.width = w; canvas.height = h;
+  const g = canvas.getContext('2d');
+  g.fillStyle = '#f2f0ea'; g.fillRect(0, 0, w, h);
+  for (let i = 0; i < 900; i++) { const v = 170 + Math.floor(r() * 80); g.fillStyle = `rgba(${v},${v - 6},${v - 14},${.25 + r() * .35})`; g.fillRect(r() * w, r() * h, 1 + r() * 3, 1 + r() * 3); }
+  for (let i = 0; i < 6; i++) { g.fillStyle = `rgba(120,110,95,${.12 + r() * .12})`; g.beginPath(); g.ellipse(r() * w, r() * h, 4 + r() * 12, 3 + r() * 8, r() * 3, 0, Math.PI * 2); g.fill(); }
+  g.strokeStyle = 'rgba(70,60,50,.55)'; g.lineWidth = 1.4;
+  for (let i = 0; i < (kind === 'roof' ? 5 : 2); i++) { let x = r() * w, y = r() * h; g.beginPath(); g.moveTo(x, y); for (let k = 0; k < 5; k++) { x += (r() - .5) * 26; y += (r() - .3) * 18; g.lineTo(x, y); } g.stroke(); }
+  // Bevelled rim: light top-left, dark bottom-right, chipped corners.
+  const rim = kind === 'roof' ? 0 : 6;
+  if (rim) {
+    g.fillStyle = 'rgba(255,255,255,.35)'; g.fillRect(0, 0, w, rim * .6); g.fillRect(0, 0, rim * .6, h);
+    g.fillStyle = 'rgba(60,50,40,.4)'; g.fillRect(0, h - rim, w, rim); g.fillRect(w - rim, 0, rim, h);
+    g.fillStyle = 'rgba(60,50,40,.55)'; for (const [x, y] of [[0, 0], [w, 0], [0, h], [w, h]]) { g.beginPath(); g.arc(x, y, 5 + r() * 7, 0, Math.PI * 2); g.fill(); }
+  }
+  const texture = new THREE.CanvasTexture(canvas); texture.colorSpace = THREE.SRGBColorSpace; texture.anisotropy = 4;
+  textures.set(kind, texture); return texture;
+}
+
 function instanced(geometry, material, items, place) {
   const mesh = new THREE.InstancedMesh(geometry, material, Math.max(1, items.length)), m = new THREE.Object3D(), c = new THREE.Color();
   items.forEach((item, i) => { place(m, c, item); m.updateMatrix(); mesh.setMatrixAt(i, m.matrix); mesh.setColorAt(i, c); });
@@ -39,7 +63,7 @@ export function ruinShell({ inside, ground = () => 0, solid = () => true, open =
   const mat = (extra) => { const m = new THREE.MeshStandardMaterial({ roughness: .9, ...extra }); owned.push(m); return m; };
   // Floor: 1 m slabs, slightly bevelled, tilted along ramps.
   const slab = new THREE.BoxGeometry(tile, .3, tile), floorColor = new THREE.Color(palette.floor);
-  group.add(instanced(slab, mat({ roughness: .85 }), cells.filter(([i, j]) => solid(i + .5, j + .5)), (m, c, [i, j]) => {
+  group.add(instanced(slab, mat({ roughness: .85, map: stoneTexture('slab') }), cells.filter(([i, j]) => solid(i + .5, j + .5)), (m, c, [i, j]) => {
     const x = i + .5, z = j + .5, y = ground(x, z), dx = ground(x + .5, z) - ground(x - .5, z), dz = ground(x, z + .5) - ground(x, z - .5);
     m.position.set(x, y - .15 - r() * .03, z); m.rotation.set(Math.atan(dz), 0, -Math.atan(dx)); m.scale.set(1, 1, 1);
     c.copy(floorColor).multiplyScalar(.82 + r() * .3);
@@ -63,7 +87,7 @@ export function ruinShell({ inside, ground = () => 0, solid = () => true, open =
     const cx = e.i + .5 + e.di * (.5 + depth) + (e.dj ? along : 0), cz = e.j + .5 + e.dj * (.5 + depth) + (e.di ? along : 0);
     m.position.set(cx, 0, cz); m.rotation.set(0, e.di ? Math.PI / 2 : 0, 0);
   };
-  group.add(instanced(brick, mat({ roughness: .92 }), bricks, (m, c, { e, k, band: isBand }) => {
+  group.add(instanced(brick, mat({ roughness: .92, map: stoneTexture('brick') }), bricks, (m, c, { e, k, band: isBand }) => {
     at(m, e, (k % 2 ? .25 : -.25) + (r() - .5) * .04, .35 + (r() - .5) * .06);
     m.position.y = e.y + course * (k + .5); m.scale.set(1, 1, 1 + (r() - .5) * .1);
     c.copy(isBand ? band : colors[Math.floor(r() * colors.length)]).multiplyScalar(isBand ? 1 : .85 + r() * .25);
@@ -76,7 +100,7 @@ export function ruinShell({ inside, ground = () => 0, solid = () => true, open =
   const roofCells = new Map();
   if (roof) for (const [i, j] of cells) { const key = `${Math.floor(i / 2)},${Math.floor(j / 2)}`; if (!roofCells.has(key)) roofCells.set(key, [Math.floor(i / 2) * 2, Math.floor(j / 2) * 2]); }
   const slabRoof = new THREE.BoxGeometry(2.2, .6, 2.2), ceiling = new THREE.Color(palette.ceiling);
-  group.add(instanced(slabRoof, mat({ roughness: 1 }), [...roofCells.values()].filter(([i, j]) => !sky(i + 1, j + 1)), (m, c, [i, j]) => {
+  group.add(instanced(slabRoof, mat({ roughness: 1, map: stoneTexture('roof') }), [...roofCells.values()].filter(([i, j]) => !sky(i + 1, j + 1)), (m, c, [i, j]) => {
     m.position.set(i + 1, ground(i + 1, j + 1) + height + .3 - r() * .25, j + 1); m.rotation.set((r() - .5) * .1, r() * 3, (r() - .5) * .1);
     c.copy(ceiling).multiplyScalar(.8 + r() * .35);
   }));

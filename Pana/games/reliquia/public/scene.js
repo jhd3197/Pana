@@ -8,10 +8,10 @@ import { ruinShell, RUIN_PALETTES } from '/engine/models/props/reliquia-ruins.js
 import * as treasure from '/engine/models/props/reliquia-treasure.js';
 import { expeditionWinch, expeditionLantern } from '/engine/models/props/reliquia.js';
 import { ruinColumn, fallenColumn, ruinRubble, stela, brazier, sunSeal, olmecHead } from '/engine/models/props/ruins.js';
-import { goldVein, orePile, mineSupport, mineLanternPost, minePortal, mineCart, mineCrate } from '/engine/models/props/mine.js';
-import { stalactiteCluster } from '/engine/models/props/caves.js';
+import { goldVein, orePile, mineSupport, mineLanternPost, mineLantern, minePortal, mineCart, mineCrate } from '/engine/models/props/mine.js';
+import { stalactiteCluster, rootCurtain } from '/engine/models/props/caves.js';
 import { coffin, graveCandles, skull } from '/engine/models/props/cemetery.js';
-import { jaguarStatue } from '/engine/models/props/jaguar-stone.js';
+import { jaguarStatue, jaguarRelief } from '/engine/models/props/jaguar-stone.js';
 import { ropeBridge } from '/engine/models/props/jungle.js';
 import { crystalCluster } from '/engine/models/props/crystals.js';
 import { expeditionJeep, expeditionTent, expeditionCampfire, supplyPile, campBench, investigationTable } from '/engine/models/props/expedition-camp.js';
@@ -135,6 +135,7 @@ export function createExpeditionWorld({ seed = 1, floors = 3, roof = true } = {}
       if (f > 1 && k % 3 === 0) place(statics, skull({ size: .35 }), r.rect[0] + 1, 0, r.rect[3] - 1.1, k);
       if (k % 2 === 0) place(root, crystalCluster({ size: .9, color: (k >> 1) % 8, seed: k }), r.rect[2] - .8, 0, r.rect[1] + .8, k);
     }
+    dress(f, statics, root);
     for (const pit of run.pits.filter(p => p.floor === f)) {
       const [a, b, c, d] = pit.rect, hole = new THREE.Mesh(new THREE.BoxGeometry(c - a, .5, d - b), mat(0x07040c));
       hole.position.set((a + c) / 2, -7, (b + d) / 2); root.add(hole);
@@ -178,6 +179,35 @@ export function createExpeditionWorld({ seed = 1, floors = 3, roof = true } = {}
     const batch = bake(statics, { cellSize: 26 }); statics.traverse(o => o.geometry?.dispose()); root.add(batch);
     floorsBuilt.set(f, floor);
     return floor;
+  }
+  // Walls and corridors get dressed so no stretch of brick is bare: lanterns
+  // and timber sets in the mine, jaguar reliefs, hanging roots and doorway
+  // pillars deeper down. Nothing here collides; it all hugs the walls.
+  function dress(f, statics, root) {
+    const openings = [...run.corridors, ...run.stubs].filter(c => c.floor === f).map(c => c.rect);
+    for (const room of run.rooms.filter(r => r.floor === f)) {
+      const [x0, z0, x1, z1] = room.rect, k = (room.x * 3 + room.z * 7) | 0, spots = [];
+      for (const t of [-.32, 0, .32]) {
+        spots.push({ x: room.x + t * room.w, z: z0 + .2, h: 0 }, { x: room.x + t * room.w, z: z1 - .2, h: Math.PI });
+        spots.push({ x: x0 + .2, z: room.z + t * room.d, h: Math.PI / 2 }, { x: x1 - .2, z: room.z + t * room.d, h: -Math.PI / 2 });
+      }
+      const free = spots.filter(p => !openings.some(o => inRect(p.x, p.z, o, 1.6)) && !run.seals.some(q => Math.hypot(q.x - p.x, q.z - p.z) < 3) && !run.plates.some(q => q.room === room.id && Math.abs(q.z - p.z) < 1.2));
+      free.forEach((p, i) => {
+        if ((i + k) % 3 === 2) return;
+        if (f === 1) { const lamp = place(statics, mineLantern({}), p.x + Math.sin(p.h) * .1, 2.3, p.z + Math.cos(p.h) * .1, p.h); lamp.scale.setScalar(1.2); }
+        else if ((i + k) % 3 === 0) place(statics, jaguarRelief({ width: 2.2, height: 1, seed: k + i, moss: f === 2 }), p.x, 1.1, p.z, p.h);
+        else { const roots = rootCurtain({ seed: k + i, length: 2.6 + (i % 3) * .6, width: 2.4 }); roots.position.set(p.x + Math.sin(p.h) * .5, HEIGHT, p.z + Math.cos(p.h) * .5); statics.add(roots); }
+      });
+      if (k % 2 === 0) place(statics, ruinRubble({ seed: k, count: 4, spread: .9 }), x0 + 1.2, 0, z1 - 1.2, k);
+    }
+    for (const c of run.corridors.filter(c => c.floor === f)) {
+      const [x0, z0, x1, z1] = c.rect, along = c.horizontal ? x1 - x0 : z1 - z0, mid = c.horizontal ? (z0 + z1) / 2 : (x0 + x1) / 2;
+      if (f === 1) for (let t = 2.5; t < along - 1.5; t += 4.5) place(statics, mineSupport({ width: 3.6, height: 3.8, lantern: t < 3 }), c.horizontal ? x0 + t : mid, 0, c.horizontal ? mid : z0 + t, c.horizontal ? Math.PI / 2 : 0);
+      else for (const end of [0, along]) for (const s of [-1, 1]) {
+        const a = c.horizontal ? x0 + end : mid + s * 2.15, b = c.horizontal ? mid + s * 2.15 : z0 + end;
+        place(statics, ruinColumn({ seed: (a * 5 + b) | 0, radius: .32, height: HEIGHT }), a, 0, b);
+      }
+    }
   }
   // A hidden room only joins the floor once its fake wall has fallen.
   let revealedNow = {};
