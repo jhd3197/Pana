@@ -8,7 +8,9 @@ const { chromium } = createRequire(import.meta.url)(process.env.PANA_PLAYWRIGHT_
 const browser = await chromium.launch({ headless: true, ...(process.env.PANA_BROWSER_PATH ? { executablePath: process.env.PANA_BROWSER_PATH } : {}) });
 const SETS = {
   emblemas: { title: 'Emblemas', count: 10, output: 'art/studio/landmarks', categories: ['Emblemas'], ids: ['mangoTree'] },
-  selva: { title: 'Selva y trópico', count: 10, output: 'art/studio/jungle', categories: ['Selva'], ids: ['jungleGiant', 'tropicalBush', 'palm'] },
+  // Category Selva also holds Curiara's Amazonas river props and the cave pieces of the
+  // water worlds; this proof owns the jungle pack, not every asset sharing the category.
+  selva: { title: 'Selva y trópico', count: 10, output: 'art/studio/jungle', packs: ['jungle'], ids: ['jungleGiant', 'tropicalBush', 'palm'] },
 };
 const set = SETS[process.argv[2] || 'emblemas'];
 const base = process.env.PANA_TEST_URL || 'http://localhost:8461', output = set.output;
@@ -29,7 +31,7 @@ try {
         if (o.instanceMatrix) for (const v of o.instanceMatrix.array) { if (!Number.isFinite(v)) throw Error('Non-finite instance'); h = Math.imul(h ^ Math.round(v * 10000), 16777619); }
       }); return h >>> 0;
     };
-    const assets = ASSETS.filter(a => set.categories.includes(a.category) || set.ids.includes(a.id)), models = [], details = [];
+    const assets = ASSETS.filter(a => (set.packs ? set.packs.includes(a.pack) : set.categories.includes(a.category)) || set.ids.includes(a.id)), models = [], details = [];
     for (const asset of assets) {
       const model = await asset.build(), twin = await asset.build();
       const own = new Set(); model.group.traverse(o => o.geometry && own.add(o.geometry));
@@ -109,7 +111,8 @@ try {
     // The existing plaza fountain keeps its separate water streams and textured character parts.
     assert.ok(m.meshes <= (m.id === 'plaza-fountain' ? 40 : 24), `${m.id} draw calls: ${m.meshes}`);
     assert.ok(m.minY > -0.05, `${m.id} grounded: ${m.minY}`);
-    assert.ok(m.dimensions.every(v => v > 0.5 && v < 22), `${m.id} size ${m.dimensions}`);
+    // The caucho is a grove by design (its limbs drop roots that become new trunks), about 25 m across.
+    assert.ok(m.dimensions.every(v => v > 0.5 && v < (m.id === 'jungleGiant' ? 28 : 22)), `${m.id} size ${m.dimensions}`);
   }
   await page.setViewportSize({ width: 900, height: 760 });
   for (let i = 0; i < metrics.length; i++) {

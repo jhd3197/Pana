@@ -28,8 +28,12 @@ try {
     const houses=[];
     for(const style of ['tejas','balcon','tienda','terraza']) {
       const model=house({style,w:7,h:7.8,seed:9}),bounds=new THREE.Box3().setFromObject(model);
-      check(Math.abs(bounds.min.y)<.02,'house origin');check(bounds.max.z<3.4&&bounds.min.z>-3.35,'house depth clearance');
-      check(bounds.max.x<4&&bounds.min.x>-4,'house width clearance');
+      // Street houses come from the colonial house maker (Oct 2026): its eaves, porch steps and
+      // lanterns pass the 7 x 5.4 shell, so clearance is the maker's documented placement envelope.
+      const spec=model.userData.houseSpec,env=spec&&new THREE.Box3(new THREE.Vector3(...spec.envelope.min),new THREE.Vector3(...spec.envelope.max));
+      check(Math.abs(bounds.min.y)<.02,'house origin');check(spec?.footprint.width===7&&spec.footprint.depth===5.4,'house footprint');
+      check(bounds.max.z<=env.max.z&&bounds.min.z>=env.min.z,'house depth clearance');
+      check(bounds.max.x<=env.max.x&&bounds.min.x>=env.min.x,'house width clearance');
       houses.push({style,size:bounds.getSize(new THREE.Vector3()).toArray()});
       const geometry=new Set();model.traverse(o=>{if(o.geometry)geometry.add(o.geometry);});geometry.forEach(g=>g.dispose());
     }

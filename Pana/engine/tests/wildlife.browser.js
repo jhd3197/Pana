@@ -11,9 +11,14 @@ try{
   await page.goto(`${process.env.PANA_TEST_URL||'http://localhost:8461'}/studio/settings.html`);
   await page.setContent('<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}</script><style>body{margin:0;background:#eef0ee;font:18px system-ui;color:#334642}canvas{display:block}.label{position:absolute;top:600px;width:350px;text-align:center}</style><canvas></canvas><div id="labels"></div>');
   const metrics=await page.evaluate(async()=>{
-    const THREE=await import('three'),preview=await import('/studio/preview.js'),{ASSETS}=await import('/studio/catalog.js');
-    const assets=ASSETS.filter(a=>a.pack==='wildlife'),models=[],metrics=[];
     const check=(ok,msg)=>{if(!ok)throw Error(msg);};
+    const THREE=await import('three'),preview=await import('/studio/preview.js'),{ASSETS}=await import('/studio/catalog.js');
+    // The four map animals the tracks place; the rest of the wildlife pack (river, coast, iguanas)
+    // gets the same factory checks below, its timeline checked only when it animates. No origin or mesh
+    // cap there: a tonina swims, a perched iguana's tail hangs, and 20 meshes is the flocks' budget.
+    const MAP_WILDLIFE=['scarlet-macaw','scarlet-ibis','soaring-vulture','wild-capybara'];
+    const pack=ASSETS.filter(a=>a.pack==='wildlife'),assets=MAP_WILDLIFE.map(id=>pack.find(a=>a.id===id)),models=[],metrics=[];
+    check(assets.every(Boolean),'Map wildlife missing from the wildlife pack');
     const hash=root=>{
       root.updateMatrixWorld(true);let h=2166136261;
       root.traverse(o=>{
@@ -31,6 +36,16 @@ try{
       model.update(0,0);check(hash(model.group)===zero,'Failed rewind');
       const info=preview.inspect(model);check(info.stats.triangles<40000&&info.stats.meshes<20,'Budget exceeded');
       check(info.bounds.min.y>=-.025,'Below origin');models.push(model);metrics.push({id:asset.id,...info.stats});
+    }
+    for(const asset of pack.filter(a=>!MAP_WILDLIFE.includes(a.id))){
+      const model=await asset.build(),twin=await asset.build(),geometry=new Set();
+      model.group.traverse(o=>o.geometry&&geometry.add(o.geometry));
+      twin.group.traverse(o=>check(!geometry.has(o.geometry),`${asset.id} shared geometry`));
+      check(hash(model.group)===hash(twin.group),`${asset.id} nondeterministic`);
+      preview.ownMaterials(twin);preview.release(twin);preview.ownMaterials(model);
+      if(model.update){model.update(0,0);const zero=hash(model.group);model.update(5.1,0);check(hash(model.group)!==zero,`${asset.id} no motion`);model.update(0,0);check(hash(model.group)===zero,`${asset.id} failed rewind`);}
+      const info=preview.inspect(model);check(info.stats.triangles<40000,`${asset.id} budget exceeded`);
+      preview.release(model);
     }
     const { orbitBird } = await import('/engine/models/animation/orbit-bird.js');
     const { scarletMacaw } = await import('/engine/models/fauna/birds/scarlet-macaw.js');
