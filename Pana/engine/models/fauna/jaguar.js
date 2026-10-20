@@ -7,7 +7,8 @@
 //                 each), so the consumer moves it at stride · pace m/s
 //   pose 'sit'    upright on its haunches, tail curled round the paws; tick(t)
 //                 breathes, looks about and flicks the tail tip
-// melanistic: true gives the black jaguar of the deep selva.
+// melanistic: true gives the black jaguar of the deep selva; gold: true a
+// cursed jaguar of living gold with glowing eyes (Reliquia's vault boss).
 // jaguarForm and sitPose are shared with the stone carvings in
 // props/jaguar-stone.js.
 import * as THREE from 'three';
@@ -154,19 +155,19 @@ export function sitPose(cat, t = 0) {
   });
 }
 
-export function jaguar({ pose = 'prowl', seed = 7, melanistic = false, pace = .9 } = {}) {
+export function jaguar({ pose = 'prowl', seed = 7, melanistic = false, gold: golden = false, pace = .9 } = {}) {
   const map = rosetteTexture(seed), limbMap = map.clone(), headMap = map.clone();
   map.repeat.set(2.2, 1.4); limbMap.repeat.set(.8, 1.2); headMap.repeat.set(1.2, .9);
-  const gold = new THREE.Color(melanistic ? 0x2e2924 : 0xd99a45), cream = new THREE.Color(melanistic ? 0x3a332c : 0xf3e4c4);
+  const gold = new THREE.Color(golden ? 0xffbf3a : melanistic ? 0x2e2924 : 0xd99a45), cream = new THREE.Color(golden ? 0xfff0b8 : melanistic ? 0x3a332c : 0xf3e4c4);
   const colour = (c, nx, ny) => c.copy(gold).lerp(cream, THREE.MathUtils.smoothstep(-ny, .2, .8));
-  const coat = m => new THREE.MeshStandardMaterial({ map: m, vertexColors: true, roughness: .86 });
+  const coat = m => new THREE.MeshStandardMaterial(golden ? { map: m, vertexColors: true, roughness: .32, metalness: .6, emissive: 0x3a2200, emissiveIntensity: .5 } : { map: m, vertexColors: true, roughness: .86 });
   const skin = {
     coat: coat(map), limbs: coat(limbMap), head: coat(headMap), colour,
     dark: new THREE.MeshStandardMaterial({ color: 0x1f1813, roughness: .8 }),
-    eye: new THREE.MeshStandardMaterial({ color: 0xd7a630, roughness: .3, emissive: 0x2a1c04 }),
+    eye: new THREE.MeshStandardMaterial({ color: golden ? 0x7dffd8 : 0xd7a630, roughness: .3, emissive: golden ? 0x3dffc0 : 0x2a1c04, emissiveIntensity: golden ? 2 : 1 }),
   };
   const cat = jaguarForm(skin, seed), group = cat.group;
-  group.name = melanistic ? 'Jaguar negro' : 'Jaguar';
+  group.name = golden ? 'Jaguar de oro' : melanistic ? 'Jaguar negro' : 'Jaguar';
   const stride = 1.15;
   group.userData = { ...group.userData, assetId: 'jaguar', species: 'jaguar', pose, stride, pace, footprintRadius: 1.4,
     tick(t) { if (pose === 'sit') sitPose(cat, t); else poseProwl(cat, t, group.userData.pace); },

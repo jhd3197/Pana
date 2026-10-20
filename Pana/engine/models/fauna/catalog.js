@@ -247,4 +247,16 @@ export default [
     tags: ["animal","fauna","felino","selva","animado"],
     pack: "big-cats"
   },
+  {
+    id: "gold-jaguar",
+    name: "Jaguar de oro maldito",
+    category: "Fauna",
+    source: "/engine/models/fauna/jaguar.js",
+    factory: "jaguar",
+    usedBy: ["Reliquia"],
+    previewOptions: {"seed":13,"pose":"prowl","gold":true},
+    description: "El guardián de la bóveda de Reliquia: un jaguar de oro vivo con ojos de jade encendidos.",
+    tags: ["animal","fauna","felino","reliquia","jefe","animado"],
+    pack: "big-cats"
+  },
 ];
