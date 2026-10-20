@@ -1,205 +1,252 @@
-import { trapPositions, trapActive } from './rules.js';
+// Reliquia's world from a generated run: the sunlit camp with the truck, and
+// each floor's galleries built the first time anyone can reach them. Every
+// prop comes from the shared model library (Pana Studio). Collision never
+// reads this file: it all comes from layout.js, built from the same deck.
 import * as THREE from 'three';
 import { bake } from '/engine/models/core/static-batch.js';
-import { templeEntrance, ropeBridge, stoneTotem } from '/engine/models/props/jungle.js';
-import { fern } from '/engine/models/vegetation/fern.js';
+import { ruinShell, RUIN_PALETTES } from '/engine/models/props/reliquia-ruins.js';
+import * as treasure from '/engine/models/props/reliquia-treasure.js';
+import { expeditionWinch, expeditionLantern } from '/engine/models/props/reliquia.js';
+import { ruinColumn, fallenColumn, ruinRubble, stela, brazier, sunSeal, olmecHead } from '/engine/models/props/ruins.js';
+import { goldVein, orePile, mineSupport, mineLanternPost, minePortal, mineCart, mineCrate } from '/engine/models/props/mine.js';
+import { stalactiteCluster } from '/engine/models/props/caves.js';
+import { coffin, graveCandles, skull } from '/engine/models/props/cemetery.js';
+import { jaguarStatue } from '/engine/models/props/jaguar-stone.js';
+import { ropeBridge } from '/engine/models/props/jungle.js';
+import { crystalCluster } from '/engine/models/props/crystals.js';
+import { expeditionJeep, expeditionTent, expeditionCampfire, supplyPile, campBench, investigationTable } from '/engine/models/props/expedition-camp.js';
+import { lajaRock } from '/engine/models/props/amazonas.js';
+import { rockyCliff } from '/engine/models/props/mountain.js';
+import { china } from '/engine/models/props/china.js';
+import { glowTexture } from '/engine/models/props/glow-paintball.js';
 import { palm } from '/engine/models/vegetation/palm.js';
+import { fern } from '/engine/models/vegetation/fern.js';
+import { ceiba } from '/engine/models/vegetation/ceiba.js';
+import { monstera } from '/engine/models/vegetation/monstera.js';
+import { heliconia } from '/engine/models/vegetation/heliconia.js';
 import { tickWind } from '/engine/models/vegetation/plant-kit.js';
-import { expeditionWinch, expeditionLantern, sunRelic } from '/engine/models/props/reliquia.js';
-import { ROOMS, GATE, SHORTCUT, CAMP, WINCHES, ALTAR, SUPPLIES, OBSTACLES, floorAt } from './layout.js';
+import { layoutFor } from './layout.js';
+import { visibleItems } from './rules.js';
+import { ITEMS, ARTIFACTS } from './items.js';
+import { TRUCK, TABLE, HEIGHT, floorOf, inRect } from './deck.js';
 
-const mat = (color, extra = {}) => { const m = new THREE.MeshStandardMaterial({ color, roughness: 0.93, ...extra }); m.userData.reliquiaOwned = true; return m; };
-function box(root, material, w, h, d, x, y, z) { const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), material); m.position.set(x, y, z); m.castShadow = true; m.receiveShadow = true; root.add(m); return m; }
-export function groundAt(x, z) {
-  // Shared bridge ledges are wider than its planks and stand 0.75 m high.
-  if (Math.abs(z + 32) < 6.6 && ((x >= 11.4 && x <= 14) || (x >= 32 && x <= 34.6))) return 0.75;
-  if (z > -36 && z < -28 && x > 12 && x < 34) {
-    if (x < 14) return (x - 12) * 0.4;
-    if (x > 32) return (34 - x) * 0.4;
-    return 0.055 + 0.75 * ((x - 23) / 9) ** 2;
+const PALETTES = ['sol', 'jade', 'maldita'];
+export const paletteFor = floor => RUIN_PALETTES[PALETTES[(floor - 1) % PALETTES.length]];
+const FACTORIES = { ...treasure, mineCart: () => mineCart({ load: 'gold' }), olmecHead: () => olmecHead({ size: 1.3 }), jaguarStatue: () => jaguarStatue({ gold: true, scale: .7 }), china, expeditionLantern };
+const GLOW = { tool: 0xfff1d6, treasure: 0xffc23d, big: 0xffd36a };
+
+// One prototype per item kind; every copy on the map is a cheap clone.
+const prototypes = new Map();
+export function itemModel(kind) {
+  if (!prototypes.has(kind)) {
+    const model = FACTORIES[ITEMS[kind].model]();
+    if (kind === 'farol') model.scale.setScalar(1.3);
+    if (kind === 'honda') model.scale.setScalar(1.1);
+    prototypes.set(kind, model);
   }
-  return 0;
+  return prototypes.get(kind).clone();
 }
-export function createExpeditionWorld() {
-  const group = new THREE.Group(); group.name = 'Reliquia · Mina del sol';
-  const staticRoot = new THREE.Group(), dynamic = new THREE.Group(); group.add(dynamic);
-  const sandstone = mat(0x7f806b), darkStone = mat(0x405b50), trim = mat(0xbdab7d), wood = mat(0x60452f), iron = mat(0x3a4c46), gold = mat(0xd3ad62, { metalness: 0.4 }), jade = mat(0x4cba94, { emissive: 0x1b7858, emissiveIntensity: 0.35 });
-  let seed = 72831; const rand = () => { seed = (1664525 * seed + 1013904223) >>> 0; return seed / 4294967296; };
-  const earth = mat(0x43594a);
-  // Solid banks support the entrance foliage outside the narrow mine floor.
-  box(staticRoot, earth, 40, 3.6, 48, 0, -2.05, 2);
-  for (const r of ROOMS) if (r.id !== 'bridge') box(staticRoot, earth, r.w + (r.x < 10 ? 16 : 5), 3.6, r.d + 5, r.x, -2.05, r.z);
-  box(staticRoot, earth, 14, 3.5, 11, -19, -2.05, -30);
-  const tiles = [];
-  for (let x = -12; x < 58; x += 2) for (let z = -120; z < 28; z += 2) if (floorAt(x + 1, z + 1)) tiles.push({ x: x + 1, z: z + 1 });
-  const matrix = new THREE.Object3D(), color = new THREE.Color();
-  const floors = new THREE.InstancedMesh(new THREE.BoxGeometry(1.97, 0.4, 1.97), mat(0xffffff), tiles.length);
-  floors.receiveShadow = true;
-  tiles.forEach((p, i) => {
-    const bridge = p.x >= 12 && p.x <= 34 && p.z > -36 && p.z < -28;
-    matrix.position.set(p.x, bridge ? -3 : -0.21, p.z); matrix.updateMatrix(); floors.setMatrixAt(i, matrix.matrix);
-    const room = ROOMS.find(r => Math.abs(p.x - r.x) < r.w / 2 + 0.1 && Math.abs(p.z - r.z) < r.d / 2 + 0.1);
-    color.setHex(room?.color || 0x7b7761).multiplyScalar(0.87 + rand() * 0.22); floors.setColorAt(i, color);
-  });
-  group.add(floors);
-  // Low cutaway walls keep the follow camera readable. Tall rock masses sit outside.
-  for (const p of tiles) for (const [dx, dz] of [[2, 0], [-2, 0], [0, 2], [0, -2]]) if (!floorAt(p.x + dx, p.z + dz)) {
-    if (p.x > 12 && p.x < 34 && p.z > -38 && p.z < -26) continue;
-    const x = p.x + dx / 2, z = p.z + dz / 2, high = p.z < -15 ? 1.6 : 0.8;
-    box(staticRoot, darkStone, dx ? 0.65 : 2.02, high, dz ? 0.65 : 2.02, x, high / 2, z);
-    box(staticRoot, trim, dx ? 0.76 : 2.06, 0.14, dz ? 0.76 : 2.06, x, high, z);
-    if (rand() < 0.18) {
-      const boulder = new THREE.Mesh(new THREE.IcosahedronGeometry(1, 1), darkStone);
-      boulder.position.set(x + dx * 1.1, 0.7, z + dz * 1.1); boulder.scale.set(2 + rand() * 2, 2 + rand() * 3, 2 + rand() * 2); boulder.rotation.set(rand(), rand(), rand()); staticRoot.add(boulder);
+export const glowColor = kind => ITEMS[kind].artifact ? treasure.ARTIFACT_AURA[kind] : ITEMS[kind].tool ? GLOW.tool : ITEMS[kind].size === 'big' ? GLOW.big : GLOW.treasure;
+
+export function createExpeditionWorld({ seed = 1, floors = 3, roof = true } = {}) {
+  const L = layoutFor(seed, floors), run = L.run;
+  const group = new THREE.Group(); group.name = 'Reliquia · La mina del sol';
+  const owned = new Set(), animated = [], floorsBuilt = new Map();
+  const halo = glowTexture(), haloMaterials = new Map();
+  const haloMaterial = color => { if (!haloMaterials.has(color)) haloMaterials.set(color, new THREE.SpriteMaterial({ map: halo, color, transparent: true, opacity: .55, depthWrite: false, blending: THREE.AdditiveBlending })); return haloMaterials.get(color); };
+  const mat = (color, extra = {}) => { const m = new THREE.MeshStandardMaterial({ color, roughness: .9, ...extra }); owned.add(m); return m; };
+  const place = (parent, model, x, y, z, h = 0, s = 1) => { model.position.set(x, y, z); model.rotation.y = h; if (s !== 1) model.scale.multiplyScalar(s); parent.add(model); return model; };
+
+  // ---------- Camp ----------
+  const camp = new THREE.Group(); camp.name = 'Campamento'; group.add(camp);
+  const campStatic = new THREE.Group();
+  const ground = new THREE.Mesh(new THREE.CircleGeometry(70, 48), mat(0x7fb257, { roughness: 1 })); ground.rotation.x = -Math.PI / 2; ground.receiveShadow = true; camp.add(ground);
+  const clearing = new THREE.Mesh(new THREE.CircleGeometry(15, 40), mat(0xd9b77c, { roughness: 1 })); clearing.rotation.x = -Math.PI / 2; clearing.position.set(0, .02, 13); clearing.receiveShadow = true; camp.add(clearing);
+  const truck = place(camp, expeditionJeep(), TRUCK.x, 0, TRUCK.z, TRUCK.h, 1.25);
+  const truckRing = new THREE.Mesh(new THREE.RingGeometry(4.3, 4.6, 64), new THREE.MeshBasicMaterial({ color: 0xffd36a, transparent: true, opacity: .6, depthWrite: false })); owned.add(truckRing.material);
+  truckRing.rotation.x = -Math.PI / 2; truckRing.position.set(TRUCK.x, .04, TRUCK.z); camp.add(truckRing);
+  const bed = new THREE.Group(); bed.position.set(TRUCK.x, 1.4, TRUCK.z); bed.rotation.y = TRUCK.h; camp.add(bed);
+  place(campStatic, investigationTable(), TABLE.x, 0, TABLE.z, 0);
+  place(campStatic, expeditionTent({ color: 'mustard' }), -9, 0, 22, .4);
+  place(campStatic, expeditionTent({ color: 'olive', seed: 4 }), -14, 0, 14, 1.2);
+  const fire = place(camp, expeditionCampfire({ light: true }), 3, 0, 26); animated.push(fire);
+  place(campStatic, campBench({ length: 2 }), 0, 0, 25, .3); place(campStatic, campBench({ length: 2 }), 6, 0, 26.5, -.4);
+  place(campStatic, supplyPile({ seed: 5 }), 14, 0, 11, -.6);
+  place(campStatic, mineCrate({ seed: 3 }), -3, 0, 4, .4); place(campStatic, mineCrate({ seed: 5, tnt: true }), -4, 0, 2.6, -.2);
+  place(campStatic, minePortal({ name: 'LA MINA DEL SOL' }), 0, 0, -1.6, 0);
+  // The tepuy wall rises behind the mine; the selva closes the camp in.
+  for (let i = -3; i <= 3; i++) place(campStatic, rockyCliff({ seed: 54 + i, width: 20, height: 12, depth: 6 }), i * 17, 0, -12 - Math.abs(i) * 2, 0, 2.2);
+  for (let i = 0; i < 26; i++) {
+    const a = Math.PI * .1 + (i / 26) * Math.PI * 1.8, r = 24 + (i % 3) * 4, x = Math.sin(a) * r, z = 12 - Math.cos(a) * r;
+    if (z < -4) continue;
+    const plant = i % 4 === 0 ? ceiba({ seed: i + 3 }) : i % 4 === 1 ? palm({ seed: i, h: 8 + i % 3 }) : i % 4 === 2 ? monstera({ seed: i }) : heliconia({ seed: i });
+    place(campStatic, plant, x, 0, z, i, i % 4 === 0 ? 1.1 : 1.3);
+  }
+  for (let i = 0; i < 16; i++) { const a = i * 2.4, r = 16 + (i % 4); place(campStatic, fern({ seed: i + 9 }), Math.sin(a) * r, 0, 13 + Math.cos(a) * r, i, 1.4); }
+  for (const [x, z, r] of [[-15, 4, 2.4], [16, 4, 2], [18, 22, 2.8], [-18, 26, 2.2]]) place(campStatic, lajaRock({ seed: x * 7, radius: r }), x, 0, z);
+  const mouth = ruinShell({ inside: (x, z) => floorOf(x) === 0 && run.stubs.some(s => s.floor === 0 && inRect(x, z, s.rect)), ground: L.groundAt, open: (x, z) => z > -2, bounds: [-4, -12, 4, 0], palette: RUIN_PALETTES.sol, seed: 3 });
+  camp.add(mouth); owned.add(mouth);
+  const campBatch = bake(campStatic, { cellSize: 30 }); campStatic.traverse(o => o.geometry?.dispose()); camp.add(campBatch);
+
+  // ---------- Floors, built on demand ----------
+  function decorModel(d) {
+    switch (d.kind) {
+      case 'column': return ruinColumn({ seed: d.x | 0, radius: .7, height: HEIGHT + .2 });
+      case 'fallenColumn': return fallenColumn({ seed: d.z | 0 });
+      case 'rubble': return ruinRubble({ seed: d.x | 0, count: 7, spread: 2 });
+      case 'stalactites': { const s = stalactiteCluster({ seed: d.x | 0, length: 1.6 }); s.position.y = HEIGHT; return s; }
+      case 'statue': return jaguarStatue({ seed: d.z | 0, scale: .75 });
+      case 'vein': return goldVein({ seed: d.z | 0, count: 7 });
+      case 'ore': return orePile({ seed: d.x | 0, radius: 1.6 });
+      case 'support': return mineSupport({ width: 4.6, height: HEIGHT - .1, lantern: true });
+      case 'coffin': return coffin({ open: (d.x | 0) % 2 === 0 });
+      case 'candles': return graveCandles({ count: 6, seed: d.z | 0 });
+      case 'altar': return sunSeal({ size: 2.2 });
+      case 'mineLamp': return mineLanternPost({});
+      default: return null;
     }
   }
-  for (const p of OBSTACLES) {
-    if (p.furniture) continue;
-    if (p.z > 0) {
-      const crate = box(staticRoot, wood, p.r * 1.4, 1.4, p.r * 1.4, p.x, 0.7, p.z);
-      for (const y of [0.2, 1.1]) box(staticRoot, trim, p.r * 1.45, 0.12, p.r * 1.45, p.x, y, p.z);
-      crate.rotation.y = 0.05;
-    } else {
-      box(staticRoot, darkStone, p.r * 1.7, 0.35, p.r * 1.7, p.x, 0.175, p.z);
-      const h = p.z < -90 ? 4.9 : 3.2;
-      const column = new THREE.Mesh(new THREE.CylinderGeometry(p.r * 0.65, p.r * 0.8, h, 8), sandstone); column.position.set(p.x, h / 2, p.z); column.castShadow = true; staticRoot.add(column);
-      for (const y of [0.55, h - 0.2]) box(staticRoot, trim, p.r * 1.65, 0.25, p.r * 1.65, p.x, y, p.z);
-      for (let i = 0; i < 3; i++) { const glyph = box(staticRoot, jade, 0.2, 0.2, 0.05, p.x, 1.2 + i * 0.45, p.z + p.r * 0.8); glyph.rotation.z = Math.PI / 4; }
+  function buildFloor(f) {
+    if (floorsBuilt.has(f) || f < 1 || f > floors) return floorsBuilt.get(f);
+    const root = new THREE.Group(); root.name = `Piso ${f}`; group.add(root);
+    const statics = new THREE.Group(), palette = paletteFor(f), x0 = f * L.SPACING - 60;
+    const shell = () => ruinShell({ inside: (x, z) => insideFloor(f, x, z), ground: L.groundAt, solid: (x, z) => !L.overPit(x, z), bounds: [x0, -140, x0 + 120, 20], palette, seed: f * 13, roof });
+    const floor = { root, shell: shell(), revealed: '', braziers: [], seals: new Map(), winches: new Map(), chests: new Map(), plates: [], rubble: new Map(), rebuild: shell };
+    root.add(floor.shell);
+    for (const d of run.decor.filter(d => d.floor === f)) {
+      if (d.kind === 'brazier') { const b = place(root, brazier({ seed: d.x | 0, lit: true }), d.x, 0, d.z); floor.braziers.push(b); animated.push(b); continue; }
+      const model = decorModel(d); if (!model) continue;
+      if (d.kind === 'vein') { model.rotation.z = Math.PI / 2; model.position.y = 1.6; }
+      place(statics, model, d.x, model.position.y, d.z, d.h);
     }
+    // Skulls and crystals give the dark corners a little colour (crystals are
+    // instanced with their own shader, so they stay out of the static batch).
+    for (const r of run.rooms.filter(r => r.floor === f)) {
+      const k = (r.x * 7 + r.z * 3) | 0;
+      if (f > 1 && k % 3 === 0) place(statics, skull({ size: .35 }), r.rect[0] + 1, 0, r.rect[3] - 1.1, k);
+      if (k % 2 === 0) place(root, crystalCluster({ size: .9, color: (k >> 1) % 8, seed: k }), r.rect[2] - .8, 0, r.rect[1] + .8, k);
+    }
+    for (const pit of run.pits.filter(p => p.floor === f)) {
+      const [a, b, c, d] = pit.rect, hole = new THREE.Mesh(new THREE.BoxGeometry(c - a, .5, d - b), mat(0x07040c));
+      hole.position.set((a + c) / 2, -7, (b + d) / 2); root.add(hole);
+      for (let i = 0; i < 6; i++) place(root, crystalCluster({ size: 1.4, color: i % 8, seed: i + f }), a + (i % 3 + .5) * (c - a) / 3, -6.6, i < 3 ? b + 1.2 : d - 1.2, i);
+      const [ia, ib, ic, id] = pit.island, island = new THREE.Mesh(new THREE.BoxGeometry(ic - ia, 6.8, id - ib), mat(0x8a7356, { flatShading: true }));
+      island.position.set((ia + ic) / 2, -3.55, (ib + id) / 2); root.add(island);
+    }
+    for (const b of run.bridges.filter(b => b.floor === f)) {
+      const span = b.rect[3] - b.rect[1], bridge = ropeBridge({ span: Math.max(4, span), seed: f * 9 });
+      place(root, bridge, (b.rect[0] + b.rect[2]) / 2, -1.7, (b.rect[1] + b.rect[3]) / 2, Math.PI / 2);
+    }
+    for (const seal of run.seals.filter(s => s.floor === f)) {
+      const slab = place(root, treasure.stairSeal({ width: 4.6, height: HEIGHT }), seal.x, 0, seal.z + .2, 0); floor.seals.set(seal.id, { slab, height: 0 });
+      for (const w of seal.winches || []) { const model = place(root, expeditionWinch(), w.x, 0, w.z, Math.PI); floor.winches.set(w.id, model); }
+    }
+    for (const c of run.chests.filter(c => c.floor === f)) { const model = place(root, treasure.treasureChest({ seed: c.id }), c.x, 0, c.z, c.h); floor.chests.set(c.id, { model, open: 0 }); }
+    for (const p of run.plates.filter(p => p.floor === f)) {
+      const plate = place(root, treasure.trapPlate(), p.x, .01, p.z);
+      plate.userData.glyph.material = mat(0x6a5a3a, { emissive: 0xff4a2a, emissiveIntensity: 0 });
+      floor.plates.push({ id: p.id, plate });
+      for (const d of p.darts) place(statics, treasure.dartHead(), d.x + d.dx * .05, 1.1, d.z, d.dx > 0 ? Math.PI / 2 : -Math.PI / 2);
+    }
+    // Daylight spills down the stairs up; the way down is a black throat.
+    for (const s of run.stubs.filter(s => s.floor === f)) {
+      const glow = new THREE.Sprite(haloMaterial(s.to > 0 ? 0xfff0c8 : 0x3a1840)); glow.scale.setScalar(s.to > 0 ? 7 : 5);
+      glow.position.set((s.rect[0] + s.rect[2]) / 2, (s.to > 0 ? 3.2 : 1) + s.to, s.b); root.add(glow);
+    }
+    const batch = bake(statics, { cellSize: 26 }); statics.traverse(o => o.geometry?.dispose()); root.add(batch);
+    floorsBuilt.set(f, floor);
+    return floor;
   }
-  // Timber braces, rails and cross ties make the entrance read as an abandoned mine.
-  for (let z = 2; z > -21; z -= 7) {
-    for (const x of [-4.7, 4.7]) { box(staticRoot, wood, 0.5, 4.7, 0.55, x, 2.35, z); const brace = box(staticRoot, wood, 0.35, 2.4, 0.4, x * 0.85, 3.6, z); brace.rotation.z = Math.sign(x) * 0.5; }
-    box(staticRoot, wood, 10, 0.55, 0.7, 0, 4.6, z);
-  }
-  for (const x of [-0.85, 0.85]) box(staticRoot, iron, 0.1, 0.09, 32, x, 0.06, -8);
-  for (let z = 7; z >= -23; z -= 1.5) box(staticRoot, wood, 2.5, 0.08, 0.26, 0, 0.015, z);
-  // The shared bridge has a swept deck; groundAt follows that exact sag.
-  const bridge = ropeBridge({ span: 18, seed: 71 }); bridge.position.set(23, -0.95, -32); bridge.scale.z = 4.4; staticRoot.add(bridge);
-  const chasm = box(staticRoot, mat(0x112b28), 26, 0.3, 24, 23, -5, -32); chasm.receiveShadow = false;
-  for (const [x, z, scale] of [[-19, -30, 0.8], [40, -122, 1.3]]) { const temple = templeEntrance({ seed: 39 }); temple.position.set(x, -0.15, z); temple.scale.setScalar(scale); staticRoot.add(temple); }
-  for (const x of [28, 52]) { const totem = stoneTotem({ seed: 38 }); totem.position.set(x, 0, -116); totem.scale.setScalar(0.9); staticRoot.add(totem); }
-  for (let i = 0; i < 20; i++) {
-    const x = (i % 2 ? -1 : 1) * (12 + rand() * 6), z = 25 - rand() * 55;
-    const plant = i < 4 ? palm({ seed: i + 5, h: 7 }) : fern({ seed: i + 3 }); plant.position.set(x, 0, z); staticRoot.add(plant);
-  }
-  for (let i = 0; i < 18; i++) {
-    const plant = fern({ seed: i + 33 }); plant.position.set(i % 2 ? 55.5 : 24, 0, -57 - rand() * 60); plant.scale.setScalar(0.8 + rand()); staticRoot.add(plant);
-  }
-  // Camp canvas tent and table stay outside the playable collision envelope.
-  const canvas = mat(0xc5ac77, { side: THREE.DoubleSide });
-  const tent = new THREE.Mesh(new THREE.ConeGeometry(3.5, 3.8, 4, 1, true), canvas); tent.position.set(-8, 2.7, 17); tent.rotation.y = Math.PI / 4; staticRoot.add(tent);
-  box(staticRoot, wood, 3, 0.15, 1.4, 7, 1.65, 10);
-  box(staticRoot, mat(0xe3d4aa), 1.8, 0.03, 0.9, 7, 1.75, 10);
-  // Altar remains walkable at the front. Decorative plinth is below the relic.
-  for (let i = 0; i < 3; i++) box(staticRoot, i === 2 ? gold : sandstone, 4 - i * 0.8, 0.3, 3 - i * 0.6, ALTAR.x, i * 0.3 + 0.15, ALTAR.z);
-  const gate = new THREE.Group(); dynamic.add(gate);
-  box(gate, darkStone, GATE.w, 5.5, GATE.d, GATE.x, 2.75, GATE.z);
-  for (const x of [-3.5, -1.75, 0, 1.75, 3.5]) {
-    box(gate, trim, 0.15, 5.3, 1.5, GATE.x + x, 2.7, GATE.z);
-    const glyph = box(gate, jade, 0.5, 0.5, 1.55, GATE.x + x, 2.8, GATE.z); glyph.rotation.z = Math.PI / 4;
-  }
-  for (const x of [34.4, 45.6]) box(staticRoot, sandstone, 1.3, 6.5, 2, x, 3.25, GATE.z);
-  box(staticRoot, trim, 12.5, 0.6, 2.1, 40, 6.1, GATE.z);
-  const secret = new THREE.Group(); dynamic.add(secret); box(secret, darkStone, SHORTCUT.w, 3.8, SHORTCUT.d, SHORTCUT.x, 1.9, SHORTCUT.z);
-  const wheels = WINCHES.map(w => { const g = expeditionWinch(); g.position.set(w.x, groundAt(w.x, w.z), w.z); dynamic.add(g); return { ...w, group: g }; });
-  const lidMat = mat(0xe0d8b5), crossMat = mat(0xa84e37);
-  const supplies = SUPPLIES.map(s => {
-    const g = new THREE.Group(); g.position.set(s.x, 0, s.z);
-    box(g, wood, 1.2, 0.7, 0.9, 0, 0.35, 0);
-    // Hinged lid at back edge (z = -0.45) for bouncy chest opening
-    const lid = new THREE.Group(); lid.position.set(0, 0.7, -0.45);
-    box(lid, lidMat, 1.26, 0.12, 0.95, 0, 0.05, 0.45);
-    box(lid, crossMat, 0.15, 0.03, 0.55, 0, 0.13, 0.45);
-    box(lid, crossMat, 0.5, 0.03, 0.15, 0, 0.13, 0.45);
-    g.add(lid);
-    // Inner rarity glow + floating medkit loot pop
-    const glowMat = new THREE.MeshBasicMaterial({ color: 0x62f5c8, transparent: true, opacity: 0, depthWrite: false });
-    const glow = new THREE.Mesh(new THREE.CircleGeometry(0.65, 16), glowMat);
-    glow.rotation.x = -Math.PI / 2; glow.position.y = 0.72; g.add(glow);
-    const loot = new THREE.Group(); loot.position.set(0, 0.5, 0); loot.visible = false;
-    box(loot, lidMat, 0.44, 0.3, 0.3, 0, 0, 0);
-    box(loot, crossMat, 0.08, 0.18, 0.32, 0, 0, 0);
-    box(loot, crossMat, 0.18, 0.08, 0.32, 0, 0, 0);
-    g.add(loot);
-    dynamic.add(g);
-    return { ...s, group: g, lid, glowMat, loot, openT: 0 };
-  });
-  const relic = sunRelic(); dynamic.add(relic);
-  const torches = [], lanternRoot = new THREE.Group();
-  for (const [x, z] of [[-3, 8], [3, -3], [-4, -16], [-10, -31], [10, -39], [32, -22], [48, -43], [35, -53], [53, -66], [27, -76], [44, -85], [27, -96], [53, -106], [35, -116]]) {
-    box(staticRoot, darkStone, 0.5, 1.35, 0.5, x, 0.675, z);
-    const lantern = expeditionLantern(); lantern.scale.setScalar(1.5); lantern.position.set(x, 1.35, z); lanternRoot.add(lantern);
-    const glow = new THREE.Mesh(new THREE.CircleGeometry(2.2, 24), new THREE.MeshBasicMaterial({ color: 0xf8bc69, transparent: true, opacity: 0.12, depthWrite: false })); glow.rotation.x = -Math.PI / 2; glow.position.set(x, 0.025, z); dynamic.add(glow); torches.push(glow);
-  }
-  const lanternBatch = bake(lanternRoot); dynamic.add(lanternBatch);
-  lanternRoot.traverse(o => o.geometry?.dispose());
-  const campRing = new THREE.Mesh(new THREE.RingGeometry(4.7, 4.86, 64), new THREE.MeshBasicMaterial({ color: 0xe4c17d, transparent: true, opacity: 0.65, depthWrite: false })); campRing.rotation.x = -Math.PI / 2; campRing.position.set(CAMP.x, 0.04, CAMP.z); dynamic.add(campRing);
-  const staticBatch = bake(staticRoot, { cellSize: 24 }); group.add(staticBatch);
-  const originalGeometries = new Set(); staticRoot.traverse(o => { if (o.geometry) originalGeometries.add(o.geometry); }); originalGeometries.forEach(g => g.dispose());
-  let gateHeight = 0, secretHeight = 0, trapKey = '', temple = '';
-  const trapMeshes = new THREE.Group(); trapMeshes.name = 'Losas trampa'; dynamic.add(trapMeshes);
-  const trapMaterial = mat('#b69c67', { emissive: '#602010', emissiveIntensity: 0 });
+  // A hidden room only joins the floor once its fake wall has fallen.
+  let revealedNow = {};
+  const insideFloor = (f, x, z) => {
+    if (floorOf(x) !== f) return false;
+    for (const r of run.rooms) if (r.floor === f && inRect(x, z, r.rect)) return !r.hidden || !!revealedNow[r.hidden];
+    for (const c of run.corridors) if (c.floor === f && inRect(x, z, c.rect)) return !c.hidden || !!revealedNow[c.hidden];
+    return run.stubs.some(s => s.floor === f && inRect(x, z, s.rect));
+  };
 
-  function update(t, state = {}, dt = 0.016) {
-    tickWind(t, 0.85);
-    const nextTemple = state.options?.temple || 'selva';
-    if (nextTemple !== temple) { temple = nextTemple; sandstone.color.set(temple === 'tepuy' ? '#9a8c83' : '#7f806b'); earth.color.set(temple === 'tepuy' ? '#68617a' : '#43594a'); darkStone.color.set(temple === 'tepuy' ? '#534958' : '#405b50'); }
-    const positions = trapPositions(state.options), key = JSON.stringify(positions);
-    if (key !== trapKey) { trapKey = key; trapMeshes.children.forEach(o => { o.geometry.dispose(); o.material.dispose(); }); trapMeshes.clear(); for (const trap of positions) { const plate = box(trapMeshes, trapMaterial.clone(), 1.9, .07, 1.9, trap.x, .055, trap.z); plate.userData.trap = trap; } }
-    for (const plate of trapMeshes.children) { const active = trapActive(state.time || 0, plate.userData.trap); plate.material.color.set(active ? '#e6613e' : '#b69c67'); plate.material.emissiveIntensity = active ? .65 : 0; }
-    lanternBatch.visible = state.options?.lanterns !== false;
-
-    gateHeight = THREE.MathUtils.damp(gateHeight, state.gateOpen ? -6 : 0, 4, dt); gate.position.y = gateHeight;
-    secretHeight = THREE.MathUtils.damp(secretHeight, state.relicTaken ? -4 : 0, 4, dt); secret.position.y = secretHeight;
-    wheels.forEach(w => { const s = state.winches?.[w.id]; w.group.userData.wheel.rotation.z = -(s?.progress || 0) * Math.PI * 2; });
-    supplies.forEach(s => {
-      const opened = !!state.supplies?.includes(s.id);
-      if (!opened) {
-        s.openT = 0;
-        s.group.visible = true;
-        s.group.scale.set(1, 1, 1);
-        s.group.rotation.z = 0;
-        s.lid.rotation.x = 0;
-        s.glowMat.opacity = 0;
-        s.loot.visible = false;
-      } else {
-        s.openT += dt;
-        const p = s.openT;
-        if (p < 0.14) {
-          // Anticipation shake + squash
-          s.group.rotation.z = Math.sin(p * 95) * 0.12;
-          s.group.scale.set(1.14, 0.84, 1.14);
-        } else {
-          s.group.rotation.z = 0;
-          const u = Math.min(1, (p - 0.14) / 0.35);
-          const bounce = 1 + Math.sin(u * Math.PI) * 0.18 * (1 - u);
-          s.group.scale.set(2 - bounce, bounce, 2 - bounce);
-          // Bouncy lid snap open
-          const lidSnap = Math.min(1, (p - 0.14) / 0.22);
-          s.lid.rotation.x = -lidSnap * 1.95 - Math.sin(lidSnap * Math.PI) * 0.28;
-          s.glowMat.opacity = Math.max(0, 0.72 * (1 - (p - 0.14) / 1.4));
-          // Floating spinning loot pop
-          if (p < 1.35) {
-            s.loot.visible = true;
-            const lt = Math.min(1, (p - 0.14) / 0.85);
-            s.loot.position.y = 0.65 + Math.sin(lt * Math.PI) * 1.05;
-            s.loot.rotation.y = p * 6.5;
-            s.loot.scale.setScalar(lt < 0.8 ? 1 : Math.max(0.01, (1 - lt) * 5));
-          } else {
-            s.loot.visible = false;
-          }
-        }
+  // ---------- Items ----------
+  const itemRoot = new THREE.Group(); itemRoot.name = 'Botín'; group.add(itemRoot);
+  const items = new Map();
+  function syncItems(state, viewer) {
+    const seen = new Set(), vf = viewer ? floorOf(viewer.x) : 0;
+    for (const item of visibleItems(state)) {
+      if (item.state === 'big' && false) continue;
+      seen.add(item.id);
+      let shown = items.get(item.id);
+      if (!shown) {
+        const model = itemModel(item.kind), aura = new THREE.Sprite(haloMaterial(glowColor(item.kind)));
+        const size = ITEMS[item.kind].size; aura.scale.setScalar(size === 'big' ? 3.2 : 1.1); aura.position.y = size === 'big' ? 1 : .35;
+        const root = new THREE.Group(); root.add(model, aura); itemRoot.add(root);
+        shown = { root, model, aura, kind: item.kind, spin: Math.random() * 6 }; items.set(item.id, shown);
+        root.position.set(item.x, item.y || 0, item.z);
       }
+      const near = !viewer || (floorOf(item.x) === vf && Math.hypot(item.x - viewer.x, item.z - viewer.z) < 45);
+      shown.root.visible = near;
+      if (!near) continue;
+      const target = new THREE.Vector3(item.x, (item.y || 0) + L.groundAt(item.x, item.z) * (item.state === 'air' ? 0 : 1), item.z);
+      if (shown.root.position.distanceTo(target) > 4) shown.root.position.copy(target); else shown.root.position.lerp(target, .5);
+      shown.root.rotation.y = item.h || 0;
+      shown.model.rotation.z = item.tip > 0 ? Math.sin(item.tip * 12) * .3 : 0;
+      shown.state = item.state;
+    }
+    for (const [id, shown] of items) if (!seen.has(id)) { shown.root.removeFromParent(); items.delete(id); }
+  }
+
+  let truckKey = '';
+  function syncTruck(state) {
+    const key = state.truck.slice(-12).join();
+    if (key === truckKey) return; truckKey = key;
+    bed.clear();
+    state.truck.slice(-12).forEach((kind, i) => {
+      const model = itemModel(kind), big = ITEMS[kind].size === 'big';
+      model.scale.multiplyScalar(big ? .45 : 1.4);
+      model.position.set((i % 3 - 1) * .55, Math.floor(i / 6) * .35, -1.2 - Math.floor(i / 3) % 2 * .7); bed.add(model);
     });
-    relic.visible = state.carrier == null;
-    relic.position.set(state.relic?.x ?? ALTAR.x, state.relicTaken ? 0.15 : 1.2 + Math.sin(t * 2) * 0.1, state.relic?.z ?? ALTAR.z); relic.rotation.y = t * 0.6;
-    torches.forEach((g, i) => { g.visible = state.options?.lanterns !== false; g.material.opacity = 0.11 + Math.sin(t * 3 + i) * 0.025; });
-    campRing.material.color.setHex(state.relicTaken ? 0x77e8b5 : 0xe4c17d);
+  }
+
+  let previous = {};
+  function update(t, state = {}, dt = .016, viewer = null) {
+    tickWind(t, .8);
+    for (const a of animated) a.userData.tick?.(t, dt);
+    revealedNow = state.revealed || {};
+    // Floors: the camp always; floor 1 at once; the next when its seal opens.
+    const want = new Set([1]);
+    for (const seal of run.seals) if (state.open?.[seal.id]) want.add(seal.floor + 1);
+    if (viewer) want.add(floorOf(viewer.x));
+    for (const f of want) buildFloor(f);
+    const vf = viewer ? floorOf(viewer.x) : 0;
+    camp.visible = !viewer || vf === 0 || (vf === 1 && viewer.z > -30);
+    for (const [f, floor] of floorsBuilt) {
+      floor.root.visible = !viewer || f === vf;
+      const key = run.hidden.filter(h => h.floor === f && revealedNow[h.id]).map(h => h.id).join();
+      if (key !== floor.revealed) { floor.revealed = key; floor.shell.removeFromParent(); floor.shell.userData.dispose(); floor.shell = floor.rebuild(); floor.root.add(floor.shell); }
+      for (const [id, seal] of floor.seals) { seal.height = THREE.MathUtils.damp(seal.height, state.open?.[id] ? -HEIGHT - .4 : 0, 2.2, dt); seal.slab.position.y = seal.height; }
+      for (const [id, model] of floor.winches) { const w = state.winches?.[id]; model.userData.wheel.rotation.z = -(w?.progress || 0) * Math.PI * 2 - (w?.latched > 0 ? t * 2 : 0); }
+      for (const [id, chest] of floor.chests) { const open = !!state.chests?.[id]; chest.open = THREE.MathUtils.damp(chest.open, open ? 1 : 0, 6, dt); chest.model.userData.lid.rotation.x = -chest.open * 1.9; }
+      for (const { id, plate } of floor.plates) plate.userData.glyph.material.emissiveIntensity = (state.plates?.[id] || 0) > (state.time || 0) ? 1.4 : .15 + Math.sin(t * 3 + id) * .1;
+    }
+    // Rubble from collapses.
+    const rubbleRoot = group.getObjectByName('Derrumbes') || Object.assign(new THREE.Group(), { name: 'Derrumbes' });
+    if (!rubbleRoot.parent) group.add(rubbleRoot);
+    const rubbleKey = Object.keys(state.rubble || {}).join();
+    if (rubbleKey !== previous.rubble) {
+      previous.rubble = rubbleKey;
+      rubbleRoot.children.forEach(o => o.userData.dispose?.()); rubbleRoot.clear();
+      for (const id of Object.keys(state.rubble || {})) { const c = run.corridors.find(c => c.id === id); if (c) { const pile = ruinRubble({ seed: c.rect[0] | 0, count: 14, spread: 2.2 }); pile.position.set((c.rect[0] + c.rect[2]) / 2, 0, (c.rect[1] + c.rect[3]) / 2); pile.scale.set(1.4, 2.2, 1.4); rubbleRoot.add(pile); } }
+    }
+    syncItems(state, viewer);
+    for (const shown of items.values()) if (shown.root.visible && shown.state === 'ground' && ITEMS[shown.kind].size !== 'big') { shown.spin += dt; shown.aura.material.opacity = .4 + Math.sin(shown.spin * 3) * .15; }
+    syncTruck(state);
+    truckRing.material.opacity = .45 + Math.sin(t * 3) * .15;
   }
   function dispose() {
-    const geometries = new Set(), materials = new Set(); group.traverse(o => { if (o.geometry) geometries.add(o.geometry); for (const m of Array.isArray(o.material) ? o.material : o.material ? [o.material] : []) materials.add(m); });
-    trapMaterial.dispose(); geometries.forEach(g => g.dispose()); materials.forEach(m => { if (m.userData.reliquiaOwned || m.isMeshBasicMaterial) m.dispose(); });
+    const geometries = new Set(), materials = new Set();
+    group.traverse(o => { if (o.geometry) geometries.add(o.geometry); for (const m of Array.isArray(o.material) ? o.material : o.material ? [o.material] : []) materials.add(m); o.userData.dispose?.(); });
+    geometries.forEach(g => g.dispose());
+    owned.forEach(m => m.dispose?.()); haloMaterials.forEach(m => m.dispose()); halo.dispose();
+    materials.forEach(m => { if (m.map && m.map !== halo) m.map.dispose?.(); });
   }
-  return { group, update, dispose, groundAt, bounds: new THREE.Box3(new THREE.Vector3(-25, -5, -128), new THREE.Vector3(61, 18, 29)) };
+  return { group, update, dispose, buildFloor, floors: floorsBuilt, items, layout: L, run, bounds: new THREE.Box3(new THREE.Vector3(-40, -8, -140), new THREE.Vector3(floors * L.SPACING + 60, 20, 40)) };
 }

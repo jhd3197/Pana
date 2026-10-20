@@ -1,380 +1,187 @@
 import { createRoomOptions } from '/engine/room-options.js';
-import { FIELDS, DEFAULT_OPTIONS } from './options.js';
 import { prepareScene } from '/engine/game-load.js';
-import * as THREE from 'three';
-import { buildCharacter } from '/engine/models/characters/pana/avatar-model.js';
 import { loadAvatar, loadName } from '/engine/avatar.js';
-import { sound, Puffs, Shockwaves, createChargeRing, pulseSpeedLines, popCounter } from '/engine/fx.js';
+import { sound, popCounter } from '/engine/fx.js';
 import { createGameMenu, toggleMute } from '/engine/ui.js';
-import { ICONS as SVG } from '/engine/icons.js';
 import { inviteUrl, newRoomCode, roomFromUrl } from '/engine/invite.js';
-import { holdButton as hold } from '/engine/touch.js';
+import { holdButton, drawIcons } from '/engine/touch.js';
 import { shout } from '/engine/kit.js';
-import { pixelRatio, bindRenderer, shadowSize } from '/engine/settings.js';
-import { mummy, sunRelic, expeditionLantern } from '/engine/models/props/reliquia.js';
-import { Expedition, interaction, objective } from './rules.js';
-import { ExpeditionRoom } from './network.js';
-import { createExpeditionWorld, groundAt } from './scene.js';
-import { elapsedClock } from '/engine/live-room.js';
-import { CAMP, ALTAR, WINCHES, ROOMS, regionAt, distance } from './layout.js';
 import { createToast } from '/engine/hud.js';
+import { elapsedClock } from '/engine/live-room.js';
+import { createLookControls, SENSITIVITY_CHOICES } from '/engine/play/first-person.js';
+import { FIELDS, DEFAULT_OPTIONS } from './options.js';
+import { Expedition, BARKS, interaction } from './rules.js';
+import { ExpeditionRoom } from './network.js';
+import { createView } from './view.js';
+import { createHud, money } from './hud.js';
+import { sfx } from './sounds.js';
+import { floorOf, FLOOR_NAMES } from './deck.js';
+import { ITEMS } from './items.js';
 
 const $ = id => document.getElementById(id), show = (id, on) => $(id).classList.toggle('hidden', !on);
-const notify = createToast($('toast'), { ms: 3600 });
+const notify = createToast($('toast'), { ms: 3400 });
 const qs = new URLSearchParams(location.search), code = roomFromUrl() || newRoomCode();
 const url = new URL(location.href); url.searchParams.set('room', code); history.replaceState(null, '', url);
 const avatar = loadAvatar(), name = qs.get('name')?.slice(0, 16) || loadName();
-const renderer = new THREE.WebGLRenderer({ canvas: $('world'), antialias: true });
-renderer.setPixelRatio(pixelRatio(1.5)); const unbind = bindRenderer(renderer, 1.5);
-renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.25;
-const scene = new THREE.Scene(); scene.background = new THREE.Color(0x183b34); scene.fog = new THREE.FogExp2(0x183b34, 0.012);
-scene.add(new THREE.HemisphereLight(0xe4f2d3, 0x425c4a, 2.25));
-const sun = new THREE.DirectionalLight(0xffd49a, 3.3); sun.position.set(-16, 35, 23); sun.castShadow = true;
-sun.shadow.mapSize.setScalar(shadowSize(1024)); Object.assign(sun.shadow.camera, { left: -24, right: 24, top: 24, bottom: -24, near: 1, far: 100 }); sun.shadow.bias = -0.001; sun.shadow.normalBias = 0.06; scene.add(sun, sun.target);
-const fill = new THREE.DirectionalLight(0x77bca9, 1.3); fill.position.set(20, 15, -25); scene.add(fill);
-const lanternLight = new THREE.PointLight(0xffc267, 20, 15, 1.8); scene.add(lanternLight);
-const world = createExpeditionWorld(); scene.add(world.group);
-const puffs = new Puffs(scene);
-const shockwaves = new Shockwaves(scene);
-const chargeRing = createChargeRing({ radius: 1.55, color: 0x62f5c8 });
-scene.add(chargeRing.mesh);
-const camera = new THREE.PerspectiveCamera(48, innerWidth / innerHeight, 0.1, 250);
-let state = new Expedition().snapshot(), paused = false, failed = false, phase = '', lastEvent = 0, last = performance.now(), elapsed = 0, dead = false;
-let yaw = 0.25, pitch = 0.76, zoom = 15, rosterKey = '', uiElapsed = 0, shake = 0, chargeTickT = 0;
-const prevLatched = { west: false, east: false };
-const cameraTarget = new THREE.Vector3(0, 1.1, 15), temp = new THREE.Vector3(), desired = new THREE.Vector3();
-const actors = new Map(), enemyActors = new Map(), keys = new Set(), touch = new Set();
-const colors = ['#dfb86d', '#81c8c4', '#d2a0a0', '#a3bc74', '#d9966e', '#b7a8ce', '#6ea6d0', '#c1c5a6'];
+const canvas = $('world'), view = createView(canvas), hud = createHud();
+let state = new Expedition().snapshot(), phase = '', lastEvent = 0, failed = false, dead = false, myFloor = 0, uiAt = 0, last = performance.now();
+const keys = new Set(), touch = new Set();
 function clearInput() { keys.clear(); touch.clear(); }
+const solo = () => room.offline || room.members.size === 1;
+const playing = () => state.phase === 'playing' && !menu.isOpen;
+
 const menu = createGameMenu({
-  orientation: 'vertical',
-  title: 'Reliquia', heading: 'Un respiro', resumeLabel: 'Volver a la expedición', sound, notify,
-  note: () => room.offline || room.members.size === 1 ? 'La expedición está pausada.' : 'Tus panas siguen explorando.',
-  controls: [['W A S D / ↑ ← ↓ →', 'Moverte'], ['Espacio', 'Golpear; también puedes hacer clic'], ['Shift', 'Esquivar un golpe'], ['E', 'Interactuar; mantén para girar o revivir'], ['R', 'Usar un botiquín'], ['Q', 'Centrar la cámara'], ['M', 'Sonido']],
-  tips: ['Arrastra el escenario para girar la cámara. Las marcas rojas en el suelo anuncian un ataque: sal de ellas o esquiva.', 'Mantén E en cada rueda. Al soltarla queda activa doce segundos: puedes llegar a la otra incluso jugando solo.', 'Al recoger la reliquia se abre el túnel de regreso. Levanten a los panas caídos, reúnanse en el círculo del campamento y mantengan E.'],
+  title: 'Reliquia', heading: 'Un respiro', resumeLabel: 'Volver a la mina', sound, notify,
+  note: () => solo() ? 'La expedición está en pausa.' : 'Tus panas siguen en la mina.',
+  options: [{ id: 'mouse', label: 'Sensibilidad al mirar', choices: SENSITIVITY_CHOICES, get: () => looking.sensitivity, set: value => { looking.sensitivity = value; } }],
+  controls: [['W A S D', 'Caminar hacia donde miras'], ['Ratón', 'Mirar (haz clic en la pantalla para capturarlo)'], ['Clic / Espacio', 'Usar lo de la mano derecha'], ['Clic derecho / F', 'Usar lo de la mano izquierda'],
+    ['E', 'Agarrar, abrir; mantén para girar ruedas, levantar panas o atrapar lo que te lanzan'], ['Q', 'Soltar'], ['G', 'Lanzar lo que tienes en la mano'], ['R', 'Arrastrar a un pana caído'],
+    ['Shift', 'Correr'], ['1 – 7', '¿Nos vamos ya? · ¡Una sala más! · y otros gritos'], ['Tab', 'Ver al equipo'], ['M', 'Sonido'], ['Esc', 'Soltar el ratón y abrir el menú']],
+  tips: ['El botín solo cuenta cuando llega al camión del campamento. El morral se vacía solo al acercarte.',
+    'Los tesoros grandes piden dos, tres o cuatro panas: cada uno agarra un lado (E) y caminan juntos. Solo se arrastran despacito.',
+    'El farol congela a las momias que alumbra. En la oscuridad corren más.',
+    'Cada tesoro que levantan sube la codicia: más trampas, momias bravas, túneles que se derrumban y un jaguar negro que los caza.',
+    'Al final de cada piso se abre la bajada. ¿Se van con lo que tienen o bajan un piso más?', 'Si caen todos, del camión solo se salva una parte.'],
   actions: [{ id: 'offline', label: 'Abrir expedición local', kind: 'link', visible: () => failed, run: () => room.practice() }],
   invite: () => inviteUrl(code),
-  onOpen() { paused = true; clearInput(); }, onClose() { paused = false; },
+  onOpen() { clearInput(); looking.release(); }, onClose() {},
 });
-const navButton = 'pk-btn pk-btn--sm';
-$('game-nav').append(menu.createInviteButton({ id: 'invite', className: navButton }), menu.createSoundButton({ id: 'sound', className: navButton }), menu.createButton({ id: 'menu', className: navButton }));
+$('game-nav').append(menu.createInviteButton({ id: 'invite', className: 'pk-btn pk-btn--sm' }), menu.createSoundButton({ id: 'sound', className: 'pk-btn pk-btn--sm' }), menu.createButton({ id: 'menu', className: 'pk-btn pk-btn--sm' }));
 $('lobby-cta').append(menu.createInviteButton({ id: 'lobby-invite', className: 'pk-btn' }));
 const room = new ExpeditionRoom({ code, name, avatar, onState: receive, onNotice: notify,
-  onStatus(text, error = false) { failed = error; $('connection').textContent = text; show('practice', error); show('disconnect', error && state.phase === 'playing'); menu.update(); updateUI(); },
+  onStatus(text, error = false) { failed = error; $('connection').textContent = text; show('practice', error); show('disconnect', error && state.phase === 'playing'); menu.update(); lobby(); },
 });
 const optionsUI = createRoomOptions($('room-options'), { title: 'Reliquia', fields: FIELDS, change: options => room.action('configure', { options }), reset: () => room.action('configure', { options: DEFAULT_OPTIONS }) });
-// A guest draws its own explorer where it predicts it (ExpeditionRoom's predict), not a round trip behind.
-const me = () => room.predicted ?? state.players.find(p => p.id === room.id);
+// A guest draws its own explorer where it predicts it, not a round trip behind.
+const me = () => { const p = state.players.find(p => p.id === room.id); const predicted = room.predicted; return predicted && p ? { ...p, x: predicted.x, z: predicted.z, y: predicted.y, vx: predicted.vx, vz: predicted.vz, moving: predicted.moving, stamina: predicted.stamina } : p; };
+const looking = createLookControls(canvas, { enabled: () => playing(), look: (yaw, pitch) => view.look(yaw, pitch),
+  press(event) { sound.unlock(); if (event.button === 0) act('use', { hand: 0 }); if (event.button === 2) act('use', { hand: 1 }); },
+  unlocked: () => { if (state.phase === 'playing') menu.open('game'); } });
 
-function label(text, color) {
-  const canvas = document.createElement('canvas'); canvas.width = 256; canvas.height = 64;
-  const ctx = canvas.getContext('2d'); ctx.fillStyle = '#0e0b24e0'; ctx.beginPath(); ctx.roundRect(8, 7, 240, 48, 8); ctx.fill();
-  ctx.fillStyle = color; ctx.font = '800 25px Nunito, sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(text, 128, 32, 224);
-  const texture = new THREE.CanvasTexture(canvas); texture.colorSpace = THREE.SRGBColorSpace;
-  const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: texture, depthTest: false })); sprite.scale.set(2.7, 0.675, 1); sprite.position.y = 3.25; return sprite;
-}
-function disposeObject(root) {
-  const geometries = new Set(), materials = new Set(); root.traverse(o => { if (o.geometry) geometries.add(o.geometry); for (const m of Array.isArray(o.material) ? o.material : o.material ? [o.material] : []) materials.add(m); });
-  geometries.forEach(g => g.dispose()); materials.forEach(m => { m.map?.dispose(); m.dispose(); }); root.removeFromParent();
-}
-function removeActor(a) { a.character.carry.remove(a.carried); a.root.remove(a.lantern); a.character.dispose(); disposeObject(a.root); disposeObject(a.carried); disposeObject(a.lantern); }
-function syncActors() {
-  for (const [id, actor] of actors) if (!state.players.some(p => p.id === id)) { removeActor(actor); actors.delete(id); }
-  for (const [i, p] of state.players.entries()) {
-    const skin = JSON.stringify(p.avatar); let actor = actors.get(p.id);
-    if (!actor || actor.skin !== skin) {
-      if (actor) removeActor(actor);
-      const root = new THREE.Group(), character = buildCharacter(p.avatar), tag = label(p.id === room.id ? `${p.name} · tú` : p.name, colors[i % 8]);
-      root.add(character.group, tag); root.position.set(p.x, groundAt(p.x, p.z), p.z); scene.add(root);
-      const carried = sunRelic(); carried.scale.setScalar(0.55); character.carry.add(carried);
-      const lantern = expeditionLantern(); lantern.position.set(-0.6, 1.25, 0.1); root.add(lantern);
-      const blade = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.8, 0.25), new THREE.MeshStandardMaterial({ color: 0xd8d3b4, metalness: 0.55, roughness: 0.35 }));
-      blade.position.set(0.8, 1.2, 0.7); blade.rotation.z = -0.4; root.add(blade);
-      actor = { root, character, tag, carried, lantern, blade, skin, wasDodging: false, afterimageT: 0 }; actors.set(p.id, actor);
-    }
-    actor.carried.visible = state.carrier === p.id; actor.tag.visible = state.phase === 'playing'; actor.root.visible = !p.spectator;
-  }
-  for (const [id, actor] of enemyActors) if (!state.enemies.some(e => e.id === id)) { disposeObject(actor.root); enemyActors.delete(id); }
-  for (const e of state.enemies) if (!enemyActors.has(e.id)) {
-    const root = new THREE.Group(), model = mummy({ guardian: e.kind === 'guardian' }); root.add(model); root.position.set(e.x, groundAt(e.x, e.z), e.z); scene.add(root);
-    const danger = new THREE.Mesh(new THREE.RingGeometry(e.kind === 'guardian' ? 3.55 : 1.9, e.kind === 'guardian' ? 3.8 : 2.2, 48), new THREE.MeshBasicMaterial({ color: 0xff7047, transparent: true, opacity: 0.8, depthWrite: false, side: THREE.DoubleSide }));
-    danger.rotation.x = -Math.PI / 2; danger.position.y = 0.06; root.add(danger);
-    const hp = new THREE.Mesh(new THREE.PlaneGeometry(1.2, 0.09), new THREE.MeshBasicMaterial({ color: 0xd6b871, side: THREE.DoubleSide })); hp.position.y = e.kind === 'guardian' ? 5.2 : 3; root.add(hp);
-    enemyActors.set(e.id, { root, model, danger, hp, prevWindup: 0 });
-  }
-}
-function receive(next) {
-  state = next; syncActors();
-  if (phase !== state.phase) { phase = state.phase; menu.close(); clearInput(); document.body.classList.toggle('playing', phase === 'playing'); if (phase === 'playing') { const p = me(); if (p) cameraTarget.set(p.x, 1.1, p.z); } }
-  const events = state.events.filter(e => e.id > lastEvent); lastEvent = Math.max(lastEvent, ...state.events.map(e => e.id), 0);
-  for (const e of events) {
-    if (e.text) notify(e.text);
-    if (e.kind === 'hit') sound.bonk(0.2);
-    if (e.kind === 'swing') sound.tone(130, 0, 0.08, 'triangle', 0.025);
-    if (e.kind === 'supply') {
-      sound.chestOpen('purple');
-      popCounter($('meds'));
-      const p = me();
-      if (p) {
-        shockwaves.ring(new THREE.Vector3(p.x, groundAt(p.x, p.z), p.z), { color: 0x62f5c8, maxRadius: 3.2, duration: 0.55 });
-        shockwaves.sparkle(new THREE.Vector3(p.x, groundAt(p.x, p.z) + 1.1, p.z), { color: 0x62f5c8 });
-      }
-    }
-    if (e.kind === 'relic') {
-      sound.chestOpen('gold');
-      shockwaves.ring(new THREE.Vector3(ALTAR.x, 0, ALTAR.z), { color: 0xffe066, maxRadius: 4.8, duration: 0.65 });
-      shockwaves.sparkle(new THREE.Vector3(ALTAR.x, 1.2, ALTAR.z), { color: 0xffe066 });
-    }
-    if (['gate', 'win', 'revive'].includes(e.kind)) { sound.tone(440, 0, 0.16, 'sine', 0.08); sound.tone(660, 0.12, 0.2, 'sine', 0.06); }
-    if (e.kind === 'boss') sound.tone(90, 0, 0.8, 'triangle', 0.1);
-    const big = SHOUTS[e.kind]; if (big) shout(big[0], { tone: big[1] });
-  }
-  updateUI();
-}
-// Big tilted callouts for the beats of a run; the toast keeps the full sentence.
-const SHOUTS = { awaken: ['¡Una momia despertó!', 'coral'], gate: ['¡Templo abierto!', 'teal'], boss: ['¡El guardián despertó!', 'coral'],
-  guardian: ['¡Guardián vencido!', 'yellow'], relic: ['¡La reliquia es nuestra!', 'yellow'], down: ['¡Pana caído!', 'coral'] };
-const hearts = hp => { const n = Math.ceil(Math.max(0, hp) / 34); return SVG.heart.repeat(n) + SVG.heartEmpty.repeat(3 - n); };
-function missionSteps() {
-  const wheels = Object.values(state.winches).filter(w => w.latched > 0).length;
-  const steps = [[state.gateOpen ? 'Girar las dos ruedas' : `Girar las dos ruedas (${wheels}/2)`, state.gateOpen], ['Vencer al guardián', state.guardianDefeated], ['Recoger la reliquia', state.relicTaken], ['Volver al campamento', state.phase === 'results' && state.outcome === 'win']];
-  const current = steps.findIndex(s => !s[1]);
-  return steps.map(([text, done], i) => ({ text, state: done ? 'done' : i === current ? 'now' : 'todo' }));
-}
-let stepsKey = '';
-function updateUI() {
+function lobby() {
   optionsUI.update(state.options || DEFAULT_OPTIONS, room.connected && room.isHost && state.phase !== 'playing');
-  if (['playing', 'hide', 'hunt'].includes(state.phase) && optionsUI.isOpen) optionsUI.close();
-  $('minimap').parentElement.hidden = state.options?.map === false;
-  $('mission-steps').hidden = state.options?.hints === false;
-  const playing = state.phase === 'playing', p = me();
-  show('lobby', state.phase === 'lobby'); show('location-card', state.phase === 'lobby'); show('hud', playing); show('results', state.phase === 'results');
+  if (state.phase === 'playing' && optionsUI.isOpen) optionsUI.close();
+  show('lobby', state.phase === 'lobby'); show('hud', state.phase === 'playing'); show('results', state.phase === 'results');
+  $('lobby-floors').textContent = state.options?.floors || 3;
   $('start').disabled = !room.connected || !room.isHost;
   $('start').textContent = !room.connected ? 'Conectando…' : room.isHost ? '¡A la mina!' : 'El anfitrión prepara la salida';
-  $('again').disabled = !room.connected || !room.isHost; $('again').textContent = room.isHost ? '¡Otra expedición!' : 'Esperando al anfitrión…';
-  const roster = state.players.map(p => `${p.id}:${p.name}`).join('|');
-  if (roster !== rosterKey) {
-    rosterKey = roster; $('lobby-team').replaceChildren(); $('team').replaceChildren();
-    state.players.forEach((p, i) => {
-      const chip = document.createElement('span'), dot = document.createElement('i'); chip.className = 'pk-chip'; dot.className = 'pk-dot'; dot.style.background = colors[i % 8]; chip.append(dot, document.createTextNode(p.id === room.id ? `${p.name} · tú` : p.name)); $('lobby-team').append(chip);
-      const row = document.createElement('li'); row.className = `pk-row teammate${p.id === room.id ? ' is-me' : ''}`; row.dataset.player = p.id;
-      const face = document.createElement('span'); face.className = 'pk-avatar'; face.style.background = colors[i % 8]; face.textContent = p.name.slice(0, 1).toUpperCase();
-      const name = document.createElement('span'); name.className = 'teammate-name'; name.textContent = p.name;
-      const value = document.createElement('b'); value.className = 'pk-row-end'; row.append(face, name, value); $('team').append(row);
-    });
-  }
-  state.players.forEach(p => { const row = $('team').querySelector(`[data-player="${p.id}"]`); if (!row) return; const value = row.querySelector('b'); if (p.downed || p.spectator) value.textContent = p.downed ? state.options?.revive === false ? 'FUERA' : 'AYUDA' : 'EN ESPERA'; else value.innerHTML = hearts(p.hp); value.title = `${Math.ceil(p.hp)} de vitalidad`; row.classList.toggle('fallen', p.downed); row.classList.toggle('waiting', p.spectator); });
-  $('objective').textContent = state.relicTaken ? 'Vuelvan al campamento' : !state.gateOpen ? 'Abre el templo' : !state.guardianDefeated ? 'Vence al guardián' : 'Toma la reliquia';
-  if (state.options?.hints === false) $('objective').textContent = 'Explora el templo';
-  $('objective').title = state.options?.hints === false ? '' : objective(state);
-  const steps = missionSteps(), key = steps.map(s => s.text + s.state).join('|');
-  if (key !== stepsKey) { stepsKey = key; $('mission-steps').replaceChildren(...steps.map(s => { const li = document.createElement('li'); li.className = `is-${s.state}`; li.textContent = s.text; return li; })); }
-  $('region').textContent = p ? regionAt(p).name : 'Campamento';
-  $('health-number').textContent = Math.ceil(p?.hp || 0); $('health-fill').parentElement.style.setProperty('--pk-value', String((p?.hp || 0) / 100));
-  $('meds').textContent = `×${p?.heals || 0}`; $('slot-meds').classList.toggle('is-empty', !p?.heals); $('slot-relic').classList.toggle('is-active', state.carrier === p?.id); $('slot-relic').classList.toggle('is-empty', state.carrier !== p?.id);
-  $('player-note').textContent = state.carrier === p?.id ? 'Llevas la reliquia. Tus panas te cubren.' : p?.downed ? state.options?.revive === false ? 'Esta expedición no permite revivir.' : 'Un pana puede levantarte.' : state.relicTaken ? 'El túnel de regreso está abierto.' : 'Juntos hasta la salida.';
-  const target = interaction(state, p); show('interact', playing && !!target && !paused);
-  if (target) { $('interaction-label').textContent = target.text; $('interaction-fill').style.width = `${Math.min(1, target.progress) * 100}%`; }
-  for (const id of ['attack', 'dodge', 'heal']) $(id).disabled = !room.connected || !p || p.downed || p.spectator || (id === 'dodge' && p.dodgeCooldown > 0) || (id === 'heal' && (p.hp >= 100 || !p.heals));
-  $('downed').querySelector('span').textContent = state.options?.revive === false ? 'Te quedas fuera de esta expedición. Tus panas todavía pueden regresar.' : 'Un amigo puede levantarte manteniendo E a tu lado.';
-  show('downed', playing && !!p?.downed); document.body.classList.toggle('hurt', !!p && p.hit > 0);
-  const guardian = state.enemies.find(e => e.kind === 'guardian');
-  const bossVisible = playing && !!guardian && !!p && distance(p, guardian) < 32;
-  show('boss', bossVisible); show('compass', !bossVisible && state.options?.hints !== false);
-  if (guardian) $('boss-fill').parentElement.style.setProperty('--pk-value', String(guardian.hp / guardian.maxHp));
-  $('destination').textContent = state.relicTaken ? 'CAMPAMENTO' : !state.gateOpen ? 'LAS RUEDAS' : 'LA RELIQUIA';
-  if (state.phase === 'results') {
-    $('result-eyebrow').textContent = state.outcome === 'win' ? 'Expedición completada' : 'El templo sigue en pie';
-    $('result-title').textContent = state.outcome === 'win' ? 'Volvimos juntos.' : 'Una vuelta más.';
-    $('result-copy').textContent = state.outcome === 'win' ? 'Una reliquia recuperada. Una historia más para contar con tus panas.' : state.options?.revive === false ? 'Las momias ganaron esta vez. Esquiven las marcas rojas y cúbranse: aquí cada caída es definitiva.' : 'Las momias ganaron esta vez. Esquiven las marcas rojas y levanten a sus panas antes de seguir.';
-    $('result-time').textContent = `${Math.floor(state.time / 60)}:${String(Math.floor(state.time % 60)).padStart(2, '0')}`;
-    $('result-kills').textContent = state.kills; $('result-revives').textContent = state.players.reduce((n, p) => n + p.revives, 0);
-  }
+  if (state.phase === 'results') hud.results(state, room);
 }
-function act(action) { if (!paused && state.phase === 'playing') room.action(action); }
-$('start').onclick = () => room.action('start'); $('again').onclick = () => room.action('start');
+
+// Big tilted callouts for the beats of a run; the toast keeps the full sentence.
+const SHOUTS = { seal: ['¡Se abrió la bajada!', 'teal'], boss: ['¡Despertó algo grande!', 'coral'], guardian: ['¡Guardián vencido!', 'yellow'], jaguar: ['¡Jaguar vencido!', 'yellow'],
+  curse: ['¡Maldición!', 'coral'], collapse: ['¡Derrumbe!', 'coral'], stalker: ['¡Los están cazando!', 'coral'], down: ['¡Pana caído!', 'coral'], reveal: ['¡Sala escondida!', 'teal'] };
+const QUIET = new Set(['pick', 'hit', 'swing', 'shot', 'hurt', 'stairs', 'throw', 'drop', 'trap', 'pounce', 'bark', 'chest', 'winch']);
+function handle(e) {
+  const mine = e.player === room.id, p = me(), seat = state.players.find(q => q.id === e.player)?.seat ?? 0;
+  const near = p && e.player != null ? (() => { const q = state.players.find(q => q.id === e.player); return q && floorOf(q.x) === floorOf(p.x) ? Math.max(.25, 1 - Math.hypot(q.x - p.x, q.z - p.z) / 30) : 0; })() : 1;
+  if (e.text && !QUIET.has(e.kind)) notify(e.text);
+  const big = SHOUTS[e.kind]; if (big) shout(e.kind === 'greed' ? e.text : big[0], { tone: big[1] });
+  switch (e.kind) {
+    case 'pick': if (near) (ITEMS[e.item].size === 'bag' ? ['emerald', 'pearl'].includes(e.item) ? sfx.gem : sfx.coin : sfx.grab)(); break;
+    case 'grab': sfx.grab(); break;
+    case 'swing': if (near) sfx.swing(); break;
+    case 'hit': if (near) sfx.hit(); break;
+    case 'shot': if (near) sfx.shot(); break;
+    case 'chest': sfx.chest(); { const c = view.world.run.chests.find(c => c.id === e.chest); if (c) view.waves.sparkle({ x: c.x, y: 1, z: c.z }, { color: 0xffd36a, count: 10 }); } break;
+    case 'bank': sfx.bank(e.big); popCounter($('haul')); break;
+    case 'throw': if (near) sfx.throw(); break;
+    case 'bonk': sfx.bonk(); if (mine || e.player === room.id) view.shake(.5); break;
+    case 'tip': sfx.tip(); break;
+    case 'lost': sfx.lost(); break;
+    case 'curse': sfx.curse(); view.shake(.3); break;
+    case 'seal': sfx.seal(); view.shake(.5); break;
+    case 'descend': shout(`Piso ${e.floor}: ${FLOOR_NAMES[e.floor] || 'el oro profundo'}`, { tone: 'yellow' }); break;
+    case 'trap': if (near) sfx.trap(); break;
+    case 'hurt': if (mine) { sfx.hurt(); view.shake(.35); } break;
+    case 'down': sfx.down(); break;
+    case 'revive': sfx.revive(); break;
+    case 'awaken': sfx.awaken(); break;
+    case 'boss': sfx.boss(); view.shake(.4); break;
+    case 'pounce': { sfx.pounce(); if (p) view.shake(Math.max(0, 1 - Math.hypot(e.x - p.x, e.z - p.z) / 18)); view.waves.ring({ x: e.x, y: .1, z: e.z }, { color: 0xffc23d, maxRadius: 3 }); break; }
+    case 'greed': sfx.greed(); view.shake(.4); shout(e.text, { tone: 'coral' }); break;
+    case 'collapse': sfx.collapse(); view.shake(.9); break;
+    case 'laugh': sfx.laugh(); break;
+    case 'winch': sound.clickUp(); break;
+    case 'extracted': sfx.win(); break;
+    case 'wipe': sfx.wipe(); break;
+    case 'bark': {
+      const text = e.text || BARKS[e.line]; view.bark(e.player, text); sfx.bark(seat, near || .3); hud.vote(e.player, e.line, state.time);
+      if (!mine && !near) notify(`${state.players.find(q => q.id === e.player)?.name}: ${text}`);
+      break;
+    }
+  }
+  // Your own trip up or down the stairs fades to black and back.
+  if (e.kind === 'stairs' && (mine || e.players?.includes(room.id))) { sfx.stairs(); fade(); }
+}
+function fade() { $('fade').classList.add('on'); requestAnimationFrame(() => requestAnimationFrame(() => $('fade').classList.remove('on'))); }
+function receive(next) {
+  state = next;
+  view.reseed(state.seed, state.options?.floors || 3);
+  if (phase !== state.phase) {
+    phase = state.phase; menu.close(); clearInput(); document.body.classList.toggle('playing', phase === 'playing');
+    if (phase === 'playing') { const p = state.players.find(p => p.id === room.id); if (p) view.heading = p.h; lastEvent = Math.max(lastEvent, ...state.events.filter(e => e.kind !== 'start').map(e => e.id), 0); }
+    if (phase !== 'playing') looking.release();
+  }
+  // Local practice and a fresh host start a new count.
+  const top = Math.max(0, ...state.events.map(e => e.id)); if (top < lastEvent) lastEvent = top;
+  for (const e of state.events) if (e.id > lastEvent) { lastEvent = e.id; if (state.phase !== 'lobby') handle(e); }
+  // Arriving on a new floor turns you the way the stairs face.
+  const p = state.players.find(p => p.id === room.id);
+  if (p && floorOf(p.x) !== myFloor) { myFloor = floorOf(p.x); view.heading = p.h; }
+  lobby();
+}
+function act(action, extra = {}) { if (playing()) room.action(action, extra); }
+$('start').onclick = () => { sound.unlock(); room.action('start'); }; $('again').onclick = () => room.action('start');
 $('practice').onclick = $('offline-inline').onclick = () => room.practice();
-$('attack').onclick = () => act('attack'); $('dodge').onclick = () => act('dodge'); $('heal').onclick = () => act('heal');
-function holdButton(button, key, begin) {  // engine/touch.js, one key per button
-  hold(button, { paused: () => paused, down: () => { touch.add(key); begin?.(); }, up: () => touch.delete(key) });
-}
-holdButton($('interact'), 'hold', () => act('interact'));
-for (const button of document.querySelectorAll('[data-move]')) holdButton(button, button.dataset.move);
+// Touch: hold buttons for moving and grabbing, taps for the rest.
+drawIcons();
+const pads = [];
+for (const button of document.querySelectorAll('[data-move]')) pads.push(holdButton(button, { paused: () => !playing(), down: () => touch.add(button.dataset.move), up: () => touch.delete(button.dataset.move) }));
+pads.push(holdButton($('t-grab'), { paused: () => !playing(), down: () => { touch.add('e'); act('interact'); }, up: () => touch.delete('e') }));
+let touchBark = 0;
+for (const [id, run] of [['t-use', () => act('use', { hand: 0 })], ['t-left', () => act('use', { hand: 1 })], ['t-throw', () => act('throw')], ['t-drop', () => act('drop')], ['t-bark', () => { act('bark', { line: touchBark }); touchBark = (touchBark + 1) % BARKS.length; }]])
+  pads.push(holdButton($(id), { paused: () => !playing(), down: run }));
 addEventListener('keydown', e => {
-  if (e.target instanceof HTMLInputElement || paused) return;
-  const key = e.key.toLowerCase(); if ([' ', 'arrowup', 'arrowdown', 'arrowleft', 'arrowright'].includes(key)) e.preventDefault();
+  if (e.target instanceof HTMLInputElement || menu.isOpen) return;
+  const key = e.key.toLowerCase();
+  if (key === 'tab') { e.preventDefault(); if (state.phase === 'playing') hud.board(true, state, room); return; }
+  if ([' ', 'arrowup', 'arrowdown', 'arrowleft', 'arrowright', 'shift'].includes(key)) e.preventDefault();
+  if (!playing()) return;
   keys.add(key); if (e.repeat) return;
-  if (key === ' ') act('attack'); if (key === 'shift') act('dodge'); if (key === 'e') act('interact'); if (key === 'r') act('heal'); if (key === 'q') yaw = 0; if (key === 'm') toggleMute();
+  if (key === ' ') act('use', { hand: 0 }); if (key === 'f') act('use', { hand: 1 });
+  if (key === 'e') act('interact'); if (key === 'q') act('drop'); if (key === 'g') act('throw'); if (key === 'r') act('drag');
+  if (/^[1-7]$/.test(key)) act('bark', { line: Number(key) - 1 });
+  if (key === 'm') toggleMute();
 });
-addEventListener('keyup', e => keys.delete(e.key.toLowerCase())); addEventListener('blur', clearInput); document.addEventListener('visibilitychange', clearInput);
-let drag = null;
-$('world').addEventListener('pointerdown', e => { if (paused || state.phase !== 'playing') return; drag = { x: e.clientX, y: e.clientY, distance: 0, id: e.pointerId }; $('world').setPointerCapture(e.pointerId); });
-$('world').addEventListener('pointermove', e => { if (!drag || drag.id !== e.pointerId) return; const dx = e.clientX - drag.x, dy = e.clientY - drag.y; yaw -= dx * 0.006; pitch = THREE.MathUtils.clamp(pitch + dy * 0.003, 0.65, 1.12); drag.distance += Math.abs(dx) + Math.abs(dy); drag.x = e.clientX; drag.y = e.clientY; });
-$('world').addEventListener('pointerup', e => { if (drag && drag.distance < 5 && e.pointerType === 'mouse') act('attack'); drag = null; });
-$('world').addEventListener('pointercancel', () => { drag = null; });
-$('world').addEventListener('wheel', e => { e.preventDefault(); zoom = THREE.MathUtils.clamp(zoom + e.deltaY * 0.01, 12, 23); }, { passive: false });
+addEventListener('keyup', e => { const key = e.key.toLowerCase(); keys.delete(key); if (key === 'tab') hud.board(false, state, room); });
+addEventListener('blur', clearInput); document.addEventListener('visibilitychange', () => { if (document.hidden) clearInput(); });
 function input() {
-  if (paused || state.phase !== 'playing') return { x: 0, z: 0, hold: false };
-  const x = +(keys.has('d') || keys.has('arrowright') || touch.has('right')) - +(keys.has('a') || keys.has('arrowleft') || touch.has('left'));
-  const z = +(keys.has('s') || keys.has('arrowdown') || touch.has('down')) - +(keys.has('w') || keys.has('arrowup') || touch.has('up'));
-  return { x: x * Math.cos(yaw) + z * Math.sin(yaw), z: -x * Math.sin(yaw) + z * Math.cos(yaw), hold: keys.has('e') || touch.has('hold') };
+  if (!playing()) return { x: 0, z: 0, hold: false, h: view.heading, pitch: view.pitch };
+  const k = name => keys.has(name) || touch.has(name);
+  const x = +k('d') - +k('a'), z = +(k('s') || k('arrowdown')) - +(k('w') || k('arrowup'));
+  return { ...view.movement(x, z), h: view.heading, pitch: view.pitch, sprint: keys.has('shift'), hold: k('e') };
 }
-const mapCtx = $('minimap').getContext('2d');
-function minimap() {
-  const c = mapCtx, sx = x => 18 + (x + 14) * 1.75, sz = z => 10 + (z + 127) * 1.25;
-  c.clearRect(0, 0, 170, 220);
-  for (const r of ROOMS) { c.fillStyle = r.id === 'shortcut' || r.id === 'return' ? (state.relicTaken ? '#148f78' : '#231a47') : '#4a3f80'; c.fillRect(sx(r.x - r.w / 2), sz(r.z - r.d / 2), r.w * 1.75, r.d * 1.25); }
-  const target = state.relicTaken ? CAMP : !state.gateOpen ? { x: 40, z: -38 } : ALTAR;
-  c.fillStyle = '#ffc629'; c.beginPath(); c.arc(sx(target.x), sz(target.z), 4, 0, Math.PI * 2); c.fill();
-  for (const [i, p] of state.players.entries()) { c.fillStyle = p.downed ? '#ff4b4b' : colors[i % 8]; c.beginPath(); c.arc(sx(p.x), sz(p.z), p.id === room.id ? 3.5 : 2.5, 0, Math.PI * 2); c.fill(); c.strokeStyle = '#0e0b24'; c.lineWidth = 1; c.stroke(); }
-}
-// Compass strip: +-90 degrees around the camera heading. North is -z.
-const CARDINALS = ['N', 'NE', 'E', 'SE', 'S', 'SO', 'O', 'NO'].map((text, i) => ({ text, angle: i * Math.PI / 4 }));
-const compassNodes = new Map();
-function compassNode(key, text, className) {
-  let node = compassNodes.get(key);
-  if (!node) { node = Object.assign(document.createElement('span'), { className }); $('compass-strip').append(node); compassNodes.set(key, node); }
-  if (node.textContent !== text) node.textContent = text; return node;
-}
-function compass(p, destination) {
-  // Cardinals scroll off the strip; place tags pin to its edge so the way back is never lost.
-  const place = (node, bearing, pin = false) => {
-    const rel = Math.atan2(Math.sin(bearing + yaw), Math.cos(bearing + yaw)), x = 50 + rel / Math.PI * 100;
-    node.hidden = !pin && Math.abs(rel) > Math.PI / 2; node.style.left = `${pin ? Math.max(12, Math.min(88, x)) : x}%`;
-  };
-  for (const c of CARDINALS) place(compassNode(c.text, c.text, `compass-mark${c.text === 'N' ? ' is-north' : ''}`), c.angle);
-  place(compassNode('camp', 'CAMPAMENTO', 'compass-tag is-camp'), Math.atan2(CAMP.x - p.x, -(CAMP.z - p.z)), true);
-  const goal = compassNode('goal', $('destination').textContent.replace(/^(LAS?|EL) /, ''), 'compass-tag is-goal');
-  place(goal, Math.atan2(destination.x - p.x, -(destination.z - p.z)), true); if (destination === CAMP) goal.hidden = true;
-}
-function resize() { renderer.setSize(innerWidth, innerHeight); camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix(); }
-addEventListener('resize', resize); resize();
 // Real elapsed time: a host in a background tab gets timers once a second.
 const simClock = elapsedClock();
-const ticker = setInterval(() => { const dt = simClock(); if (!qs.has('manual')) room.tick(dt, input(), paused && (room.offline || room.members.size === 1)); }, 50);
+const ticker = setInterval(() => { const dt = simClock(); if (!qs.has('manual')) room.tick(dt, input(), menu.isOpen && solo()); }, 50);
 function frame(now) {
   if (dead) return;
-  const dt = Math.min(0.06, (now - last) / 1000); last = now; elapsed += dt; uiElapsed += dt;
-  for (const shown of state.players) {
-    const a = actors.get(shown.id); if (!a) continue;
-    const p = shown.id === room.id ? me() : shown;
-    temp.set(p.x, groundAt(p.x, p.z), p.z); if (a.root.position.distanceTo(temp) > 8) a.root.position.copy(temp); else a.root.position.lerp(temp, Math.min(1, dt * 16));
-    const diff = Math.atan2(Math.sin(p.h - a.character.group.rotation.y), Math.cos(p.h - a.character.group.rotation.y)); a.character.group.rotation.y += diff * Math.min(1, dt * 14);
-    a.character.group.rotation.z = p.downed ? 1.3 : p.dodge > 0 ? -0.25 : 0;
-    const dodging = p.dodge > 0;
-    if (dodging && !a.wasDodging) {
-      if (p.id === room.id) { sound.whoosh(); pulseSpeedLines(260, 0.72); }
-      puffs.spawn(new THREE.Vector3(a.root.position.x, a.root.position.y + 0.15, a.root.position.z), {
-        color: 0xd9cdb0, count: 5, size: 0.48, rise: 0.9, life: 0.38, spread: 1.1,
-      });
-      shockwaves.ring(a.root.position, { color: 0x62f5c8, maxRadius: 1.9, duration: 0.34, opacity: 0.65 });
-    }
-    a.wasDodging = dodging;
-    if (dodging) {
-      a.character.group.scale.set(0.84, 0.86, 1.24);
-      a.afterimageT -= dt;
-      if (a.afterimageT <= 0) {
-        a.afterimageT = 0.065;
-        shockwaves.afterimage(a.character.group, { color: 0x62f5c8, duration: 0.22 });
-      }
-    } else {
-      a.character.group.scale.lerp(new THREE.Vector3(1, 1, 1), Math.min(1, dt * 14));
-    }
-    a.character.update(dt, { walk: p.moving && !p.downed ? 1 : 0, carry: state.carrier === p.id, run: dodging, dizzy: p.downed });
-    a.blade.visible = !p.downed && state.carrier !== p.id;
-    const angle = p.h + (p.attack > 0 ? (1 - p.attack / 0.3) * 3 - 1.5 : 0.5);
-    a.blade.position.set(Math.sin(angle) * (p.attack > 0 ? 1.7 : 0.8), 1.35, Math.cos(angle) * (p.attack > 0 ? 1.7 : 0.8)); a.blade.rotation.y = angle; a.blade.rotation.z = p.attack > 0 ? 1.2 : -0.4;
-  }
-  const localP = me();
-  for (const e of state.enemies) {
-    const a = enemyActors.get(e.id); temp.set(e.x, groundAt(e.x, e.z), e.z); a.root.position.lerp(temp, Math.min(1, dt * 15));
-    a.model.rotation.y = e.h; a.model.userData.animate(elapsed + e.id, e.windup <= 0, e.windup > 0);
-    a.model.position.y = e.hit > 0 ? 0.12 : 0; a.danger.visible = e.windup > 0; a.danger.material.opacity = 0.55 + Math.sin(elapsed * 18) * 0.2;
-    if (a.prevWindup > 0 && (e.windup || 0) <= 0) {
-      if (e.kind === 'guardian') {
-        shockwaves.explode(a.root.position, { radius: 4.2, scorch: true });
-        puffs.spawn(new THREE.Vector3(a.root.position.x, a.root.position.y + 0.35, a.root.position.z), {
-          color: 0xbdab7d, count: 10, size: 0.65, rise: 1.9, life: 0.65, spread: 2.8,
-        });
-        sound.explode(1.1);
-        if (localP) {
-          const d = distance(localP, e);
-          if (d < 28) shake = Math.min(0.9, shake + (1 - d / 28) * 0.72);
-        }
-      } else {
-        shockwaves.ring(a.root.position, { color: 0xff7047, maxRadius: 2.2, duration: 0.35, opacity: 0.65 });
-      }
-    }
-    a.prevWindup = e.windup || 0;
-    a.hp.scale.x = Math.max(0.01, e.hp / e.maxHp); a.hp.quaternion.copy(camera.quaternion); a.hp.visible = e.hp < e.maxHp;
-  }
-  for (const w of WINCHES) {
-    const latched = (state.winches?.[w.id]?.latched || 0) > 0;
-    if (latched && !prevLatched[w.id]) {
-      shockwaves.ring(new THREE.Vector3(w.x, groundAt(w.x, w.z), w.z), { color: 0x62f5c8, maxRadius: 3.6, duration: 0.5 });
-      sound.clickUp();
-    }
-    prevLatched[w.id] = latched;
-  }
-  const p = localP, a = p && actors.get(p.id);
-  const holdTarget = state.phase === 'playing' && p ? interaction(state, p) : null;
-  if (holdTarget && holdTarget.progress > 0 && holdTarget.progress < 1) {
-    const anchor = holdTarget.kind === 'winch' ? WINCHES.find(w => w.id === holdTarget.id)
-      : holdTarget.kind === 'revive' ? state.players.find(q => q.id === holdTarget.id)
-      : CAMP;
-    if (anchor) {
-      chargeRing.set(anchor.x, groundAt(anchor.x, anchor.z), anchor.z, holdTarget.progress);
-      chargeTickT -= dt;
-      if (chargeTickT <= 0) {
-        chargeTickT = 0.14;
-        sound.tick(Math.floor(holdTarget.progress * 10));
-      }
-    } else chargeRing.hide();
-  } else {
-    chargeRing.hide();
-    chargeTickT = 0;
-  }
-  puffs.update(dt);
-  shockwaves.update(dt);
-  shake = Math.max(0, shake - dt * 2.4);
-  if (state.phase === 'lobby') {
-    const mobile = innerWidth < 761;
-    camera.position.set(mobile ? 25 : 29, mobile ? 33 : 26, mobile ? 34 : 33);
-    camera.lookAt(mobile ? 0 : -17, 0, mobile ? -4 : -6);
-  } else if (a) {
-    temp.copy(a.root.position); temp.y += 1.1; cameraTarget.lerp(temp, Math.min(1, dt * 8));
-    desired.set(Math.sin(yaw) * Math.cos(pitch) * zoom, Math.sin(pitch) * zoom, Math.cos(yaw) * Math.cos(pitch) * zoom).add(cameraTarget);
-    camera.position.lerp(desired, Math.min(1, dt * 10));
-    if (shake > 0) {
-      camera.position.x += (Math.random() - 0.5) * shake * 0.7;
-      camera.position.y += (Math.random() - 0.5) * shake * 0.7;
-      camera.position.z += (Math.random() - 0.5) * shake * 0.7;
-    }
-    camera.lookAt(cameraTarget);
-    sun.position.set(p.x - 16, 35, p.z + 23); sun.target.position.set(p.x, 0, p.z);
-    const destination = state.relicTaken ? CAMP : !state.gateOpen ? { x: 40, z: -38 } : ALTAR;
-    $('compass-arrow').style.transform = `rotate(${Math.atan2(destination.x - p.x, -(destination.z - p.z)) + yaw}rad)`;
-    compass(p, destination);
-  }
-  const lightBearer = state.options?.lightAllocation === 'shared' ? state.players.find(p => !p.downed && !p.spectator) : p;
-  lanternLight.visible = state.options?.lanterns !== false;
-  lanternLight.position.set(lightBearer?.x ?? 0, 2.8, lightBearer?.z ?? 15);
-  for (const [id, a] of actors) a.lantern.visible = state.options?.lanterns !== false && (state.options?.lightAllocation === 'each' || id === lightBearer?.id);
-  world.update(elapsed, state, dt); renderer.render(scene, camera);
-  if (uiElapsed > 0.1) { minimap(); uiElapsed = 0; }
+  const dt = Math.min(.06, (now - last) / 1000); last = now;
+  const p = me();
+  // Without a mouse the left and right arrows turn.
+  if (playing() && (keys.has('arrowleft') || keys.has('arrowright'))) view.look((+keys.has('arrowleft') - +keys.has('arrowright')) * dt * 2.2);
+  view.draw(state, state.phase === 'playing' ? p : null, dt);
+  uiAt -= dt; if (uiAt <= 0 && state.phase === 'playing') { uiAt = .066; hud.update(state, p, room, { heading: view.heading, paused: menu.isOpen }); }
   requestAnimationFrame(frame);
 }
 show('loading', false); room.connect(); requestAnimationFrame(frame);
-addEventListener('pagehide', () => {
-  dead = true; clearInterval(ticker); notify.dispose(); room.dispose(); menu.dispose?.(); unbind?.();
-  puffs.clear(); shockwaves.clear(); chargeRing.dispose();
-  actors.forEach(removeActor); enemyActors.forEach(a => disposeObject(a.root)); world.dispose(); renderer.dispose();
-});
-if (qs.has('debug')) window.reliquia = { room, scene, camera, renderer, actors, enemyActors, world, menu, input, WINCHES, CAMP, ALTAR,
-  get state() { return state; },
-  step(seconds) { if (!room.isHost) return; for (let t = 0; t < seconds; t += 0.05) room.game.update(Math.min(0.05, seconds - t), room.inputs); room.publish(); },
-  place(id, x, z) { const p = room.game?.players.find(p => p.id === id); if (p) { p.x = x; p.z = z; room.publish(); } },
+addEventListener('pagehide', () => { dead = true; clearInterval(ticker); notify.dispose(); room.dispose(); menu.dispose?.(); looking.dispose(); view.dispose(); });
+if (qs.has('debug')) window.reliquia = { room, view, menu, input, interaction, money,
+  get state() { return state; }, get me() { return me(); },
+  step(seconds) { if (!room.isHost) return; for (let t = 0; t < seconds; t += .05) room.game.update(Math.min(.05, seconds - t), room.inputs); room.publish(); },
+  place(id, x, z, h) { const p = room.game?.players.find(p => p.id === id); if (p) { p.x = x; p.z = z; if (h !== undefined) p.h = h; room.publish(); } },
+  face(h) { view.heading = h; },
 };
 
-await prepareScene({ renderer, scene, camera });
+await prepareScene({ renderer: view.renderer, scene: view.scene, camera: view.camera });

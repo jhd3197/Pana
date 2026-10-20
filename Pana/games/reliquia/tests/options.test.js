@@ -1,32 +1,46 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { Expedition, interaction, trapPositions, trapActive } from '../public/rules.js';
-import { CAMP } from '../public/layout.js';
-test('mummy count, difficulty and revive rules govern the host simulation and survive migration', () => {
-  const g = new Expedition(1, { mummies: 1, difficulty: 'hard', revive: false }); g.addPlayer(1, 'Ana'); g.addPlayer(2, 'Luis'); g.start();
-  const mummy = g.spawn(0, -12); assert.equal(mummy.hp, 81); assert.equal(g.spawn(2, -12), null);
-  const [a, b] = g.players; g.damage(a, 20); assert.equal(a.hp, 70); b.downed = true; assert.equal(interaction(g, a), null);
-  const restored = new Expedition(); restored.restore(g.snapshot(), new Map(g.players.map(p => [p.id, p]))); assert.deepEqual(restored.options, g.options);
-  assert.equal(g.configure({ mummies: 3 }), false); assert.equal(new Expedition().configure({ difficulty: 'impossible' }), false);
-});
-test('trap density and temple select actual plates; red plates damage but idle plates do not', () => {
-  assert.equal(trapPositions({ traps: 'few' }).length, 3); assert.equal(trapPositions({ traps: 'many' }).length, 9);
-  assert.notEqual(trapPositions({ temple: 'tepuy' })[0].x, trapPositions({ temple: 'selva' })[0].x);
-  const g = new Expedition(1, { traps: 'few' }); g.addPlayer(1, 'Ana'); g.start(); const p = g.players[0], trap = g.traps[0];
-  Object.assign(p, { x: trap.x, z: trap.z }); g.update(.05); assert.equal(p.hp, 100);
-  g.time = 3; assert.equal(trapActive(g.time, trap), true); g.update(.05); assert.equal(p.hp, 82);
+import { Expedition, interaction } from '../public/rules.js';
+import { spawnEnemy } from '../public/enemies.js';
+import { layoutFor } from '../public/layout.js';
+import { validOptions, DEFAULT_OPTIONS } from '../public/options.js';
+
+function setup(options = {}, n = 2) { const g = new Expedition(31, options); for (let i = 1; i <= n; i++) g.addPlayer(i, `Pana ${i}`); g.start(31); return g; }
+
+test('only valid options apply, and only outside a run', () => {
+  assert.equal(validOptions({ floors: 4 }), true); assert.equal(validOptions({ floors: 9 }), false); assert.equal(validOptions({ difficulty: 'impossible' }), false);
+  const g = new Expedition(1); assert.equal(g.configure({ floors: 2 }), true); assert.equal(g.options.floors, 2);
+  g.addPlayer(1, 'Ana'); g.start(); assert.equal(g.configure({ floors: 4 }), false);
+  const restored = new Expedition(); restored.restore(g.snapshot(), new Map([[1, { id: 1, name: 'Ana' }]])); assert.deepEqual(restored.options, g.options);
+  assert.equal(DEFAULT_OPTIONS.floors, 3);
 });
 
-test('no-revive expeditions can extract survivors but never abandon living teammates', () => {
-  for (const revive of [true, false]) {
-    const g = new Expedition(1, { revive }); g.addPlayer(1, 'Ana'); g.addPlayer(2, 'Luis'); g.start();
-    Object.assign(g, { gateOpen: true, guardianDefeated: true, relicTaken: true, carrier: 1 });
-    const [a, b] = g.players; Object.assign(a, CAMP); Object.assign(b, { x: 20, z: -50 });
-    for (let i = 0; i < 65; i++) g.update(.05, new Map([[1, { hold: true }]]));
-    assert.equal(g.phase, 'playing', 'living teammates must return even without revives');
-    b.downed = true;
-    for (let i = 0; i < 65; i++) g.update(.05, new Map([[1, { hold: true }]]));
-    assert.equal(g.phase, revive ? 'playing' : 'results');
-    if (!revive) assert.equal(g.outcome, 'win');
+test('floors deal that many floors with the vault at the bottom', () => {
+  for (const floors of [2, 3, 4]) {
+    const run = layoutFor(8, floors).run;
+    assert.equal(Math.max(...run.rooms.map(r => r.floor)), floors);
+    assert.equal(run.rooms.find(r => r.kind === 'boveda').floor, floors);
+    assert.equal(run.seals.length, floors - 1);
   }
+});
+
+test('difficulty scales enemy health and damage; greed scales la codicia', () => {
+  const easy = setup({ difficulty: 'easy' }), hard = setup({ difficulty: 'hard' });
+  const at = g => g.layout.run.portals.find(p => p.id === 'down-0').to;
+  const a = spawnEnemy(easy, 'mummy', at(easy).x, at(easy).z - 6), b = spawnEnemy(hard, 'mummy', at(hard).x, at(hard).z - 6);
+  assert.ok(b.hp > a.hp);
+  const soft = setup({ greed: 'soft' }), fierce = setup({ greed: 'fierce' });
+  soft.greed(10); fierce.greed(10); assert.ok(fierce.codicia > soft.codicia * 2);
+});
+
+test('without revives a fallen pana stays out; the wipe share and crude barks follow the room', () => {
+  const g = setup({ revive: false, wipeShare: 50, crude: true });
+  const [a, b] = g.players; Object.assign(b, { x: a.x + 1, z: a.z });
+  g.damage(a, 100); assert.equal(interaction(g, b)?.kind === 'revive', false);
+  g.haul = 1000; Object.assign(a, { x: 0, z: 4 }); Object.assign(b, { x: 1, z: 4 }); b.invulnerable = 0; g.damage(b, 100);
+  for (let i = 0; i < 70; i++) g.update(.05);
+  assert.equal(g.outcome, 'wipe'); assert.equal(g.payout, 500); assert.match(g.events.at(-1).text, /pajúos/);
+  const clean = setup({ wipeShare: 0 }); clean.players.forEach(p => { Object.assign(p, { x: 0, z: 4 }); clean.damage(p, 100); });
+  for (let i = 0; i < 70; i++) clean.update(.05);
+  assert.equal(clean.payout, 0); assert.doesNotMatch(clean.events.at(-1).text, /pajúo/);
 });

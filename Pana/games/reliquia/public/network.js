@@ -1,29 +1,33 @@
 import { Expedition, stepExplorer, alive } from './rules.js';
 import { LiveRoom, axis } from '/engine/live-room.js';
 
+const ACTIONS = new Set(['use', 'throw', 'drop', 'drag', 'bark', 'interact']);
+const angle = v => Number.isFinite(v) ? Math.atan2(Math.sin(v), Math.cos(v)) : undefined;
+
 // Host-simulated expedition on the shared live room (engine/live-room.js), with snapshot migration.
 export class ExpeditionRoom extends LiveRoom {
   constructor(options) {
-    super({ ...options, game: 'reliquia', protocol: 'reliquia-v2', texts: {
+    super({ ...options, game: 'reliquia', protocol: 'reliquia-v3', texts: {
       connecting: 'Conectando con la expedición…', full: 'Sala llena. Abre otra expedición desde Pana.',
       lost: 'Se cortó la conexión. Reconectando…', offline: 'Sin conexión. Puedes abrir una expedición local.',
       waiting: 'Espera a reconectar o abre una expedición local.' } }, {
       valid: (state) => !!state?.players,
       // Your own explorer moves the moment you press a key; the host corrects it.
+      // Carrying a big treasure or being dragged is the host's call alone.
       predict: {
-        body: (state, id) => state.phase === 'playing' ? state.players.find(p => p.id === id && alive(p)) : null,
+        body: (state, id) => state.phase === 'playing' ? state.players.find(p => p.id === id && alive(p) && p.grip == null && p.draggedBy == null) : null,
         step: stepExplorer,
       },
     });
     this.state = new Expedition().snapshot();
   }
   statusText() { return `Sala ${this.code} · ${this.members.size} pana${this.members.size === 1 ? '' : 's'}`; }
-  cleanInput(raw) { return { x: axis(raw?.x), z: axis(raw?.z), hold: !!raw?.hold, sprint: !!raw?.sprint }; }
+  cleanInput(raw) { return { x: axis(raw?.x), z: axis(raw?.z), h: angle(raw?.h), pitch: Number.isFinite(raw?.pitch) ? Math.max(-1.2, Math.min(1.2, raw.pitch)) : 0, hold: !!raw?.hold, sprint: !!raw?.sprint }; }
   // A new identity does not resurrect a stale expedition from a deleted room.
   entered(alone) { if (alone) this.state = new Expedition().snapshot(); }
   takeOver(previous) {
     super.takeOver(previous);
-    this.game = new Expedition(1, this.state.options);
+    this.game = new Expedition(this.state.seed || 1, this.state.options);
     if (this.state.phase !== 'lobby') this.game.restore(this.state, this.members);
     for (const p of this.members.values()) this.game.addPlayer(p.id, p.name, p.id === this.id ? this.avatar : p.avatar || this.state.players.find(q => q.id === p.id)?.avatar || {});
     this.publish(); if (previous != null) this.onNotice('Cambió el anfitrión. La expedición continúa.');
@@ -40,11 +44,11 @@ export class ExpeditionRoom extends LiveRoom {
       if (id !== this.hostId || this.game.phase === 'playing') return;
       this.game.ledger[id] = data.seq;
       this.game.start((Date.now() ^ Math.floor(Math.random() * 0xffffffff)) >>> 0 || 1);
-    } else this.game.accept(id, data.seq, data.action);
+    } else if (ACTIONS.has(data.action)) this.game.accept(id, data.seq, data.action, { hand: data.hand, line: data.line });
     this.publish();
   }
   practice() {
     this.state = new Expedition(1, this.state.options).snapshot(); this.game = null;
-    super.practice('Expedición local · puedes activar las dos ruedas a tiempo');
+    super.practice('Expedición local · el botín cuenta cuando llega al camión');
   }
 }
