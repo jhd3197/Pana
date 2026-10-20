@@ -132,9 +132,10 @@ try {
   assert.equal(result.opacity,1);assert.equal(result.transparent,false);
   await page.screenshot({path:resolve(output,'feedback-race.png')});
   // Real permanent rain, not a mocked surface: slicks must give up speed.
+  // Páramo is the map with all-lap rain (Selva's rain now stays in its cave).
   const wet=await page.evaluate(async()=>{
     const {composeTune,wheelById}=await import('./wheel-definitions.js');
-    toGarage();buildTrack('selva');await startRace(3,'slick');race.state='go';
+    toGarage();buildTrack('paramo');if(!getActiveTrack().def.rain)throw new Error('paramo lost its rain');await startRace(3,'slick');race.state='go';
     const T=getActiveTrack(),c=race.player,s=T.LINE+45,p=T.pointAt(s),q=T.pointAt(s+.5),h=Math.atan2(q.x-p.x,q.y-p.y);
     const run=id=>{
       c.tune=composeTune(c.def.tune,wheelById(id).profile);
