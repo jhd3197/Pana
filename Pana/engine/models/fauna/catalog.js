@@ -259,4 +259,10 @@ export default [
     tags: ["animal","fauna","felino","reliquia","jefe","animado"],
     pack: "big-cats"
   },
+  { id: 'guacharo', name: 'Guácharo', category: 'Fauna', source: '/engine/models/fauna/cave-creatures.js', factory: 'guacharo', usedBy: ['Reliquia'], previewOptions: null, pack: 'wildlife',
+    description: 'El ave de las cuevas venezolanas: pico ganchudo, ojos encendidos y alas moteadas que aletean; vuela en bandadas.', tags: ['animal', 'fauna', 'ave', 'cueva', 'animado'] },
+  { id: 'cave-spider', name: 'Araña de la cueva', category: 'Fauna', source: '/engine/models/fauna/cave-creatures.js', factory: 'caveSpider', usedBy: ['Reliquia'], previewOptions: null, pack: 'wildlife',
+    description: 'Araña gorda naranja y negra con ocho patas articuladas que corren; cae del techo.', tags: ['animal', 'fauna', 'araña', 'cueva', 'animado'] },
+  { id: 'cuaima', name: 'Cuaima', category: 'Fauna', source: '/engine/models/fauna/cave-creatures.js', factory: 'cuaima', usedBy: ['Reliquia'], previewOptions: null, pack: 'wildlife',
+    description: 'Serpiente enroscada con la cabeza en alto; tick(t, strike) la lanza al ataque.', tags: ['animal', 'fauna', 'serpiente', 'cueva', 'animado'] },
 ];

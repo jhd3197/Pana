@@ -7,11 +7,19 @@ un piso más?* Only loot that reaches the truck at the camp counts.
 ## The run
 
 Camp (floor 0, outdoors, sunlit) → floor 1 … floor N (option `floors`, 2–4,
-default 3) → the vault on the last floor. The mine mouth at the north edge
-of the camp and a stair stub at each end of every floor are **portals**: a
-body that walks into a portal zone is moved to the matching landing on the
-next floor (a client fades to black for its own trip). Big treasures, their
-carriers, dragged panas and loose items all travel through them.
+default 3) → the vault on the last floor. Everything is level: the mine is a
+gallery into the hill (`minePortal({ niche: false })` leaves its mouth open),
+floor 1's way back is that gallery to daylight, deeper floors climb a rope
+under a shaft of light, and the way down is a rappel hole (the ground dips
+1.6 m as you step in). Each of these stub ends is a **portal**: a body that
+walks into the zone is moved to the matching landing (a client fades to
+black for its own trip). Big treasures, carritos and their pushers, dragged
+panas and loose items all travel through them.
+
+From floor 2 down, the entrance room has a **montacargas** (`run.lifts`):
+hold E on its deck for 3 s and everything within 2.1 m (panas, items,
+carritos) rides to the camp's headframe; from the camp it goes down to the
+deepest floor already reached. Then both ends rest 8 s.
 
 Each floor's way down is closed by a seal in its exit room:
 `ruedas` (two winches, hold E 1.6 s each, latch 12 s, one pana can do both),
@@ -46,6 +54,15 @@ Click / Space uses the right hand, right click / F the left: machete
 paint (6 damage, stuns mummies 1.2 s, splats stay on walls and floors), the
 botiquín heals 50 or instantly revives a pana in front, miche drinks.
 
+## El carrito
+
+Carritos (`state.carts`, one by the truck and one in many vein rooms) hold
+14 items and one big treasure. E with a hand treasure loads it, with a bag
+empties it, with empty hands takes the handle (two panas can push, 4.4 m/s
+less up to 40 % for the load). A big treasure walked up to an empty cart
+climbs in; a thrown item that drops into the hopper stays (¡encestó!). A
+cart inside the truck zone banks everything. Its balance floats above it.
+
 ## La codicia and the Director
 
 `codicia` (0–100) rises when deck loot is first lifted (`value / 45`, damped
@@ -68,6 +85,14 @@ light. Jaguars prowl, **crouch** (the telegraph: a ring at the landing spot),
 leap .45 s and recover; a beam dazes one for 1.6 s, then it is immune 6 s.
 The vault jaguar sleeps until someone comes within 7 m or lifts vault loot.
 Rooms wake their sleepers the first time a pana enters (1.5 m inside).
+
+Guácharos (`bat`) fly at 2 m in flocks (waves double their count), orbit,
+dive to peck, and scatter 1.6 s from a beam. Spiders hang on the ceiling
+(`hanging`) until a pana is within 4.5 m; their bite slows (×0.6, 2.5 s).
+Cuaimas (`snake`) are dealt beside a room's loot; they strike within 2.4 m,
+poison (2 HP/s for 5 s) and slide home when the pana leaves their reach.
+Director waves on floor 1 are 30 % guácharos; deeper, spiders join.
+Models: `engine/models/fauna/cave-creatures.js`.
 
 ## Artifacts (all in hand)
 
@@ -112,7 +137,8 @@ hand items; the own avatar is hidden. Look input is
 
 `scene.js` builds the camp at once and each floor when it becomes
 reachable (floor 1 at start, floor f+1 when seal f opens), only from
-Studio models: `ruinShell` (brick walls, slabs, grout, ceiling; one
+Studio models: `ruinShell` (brick walls, slabs, grout, ceiling, painted
+`stoneTexture`s tinted per block; one
 InstancedMesh each, plain boxes: about 110–140 k triangles and ~100 draw
 calls in play) plus ruins, mine, cave, cemetery, camp and crystal props.
 Static decor is baked per floor; braziers animate; crystal clusters are

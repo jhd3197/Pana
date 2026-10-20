@@ -9,13 +9,14 @@ import { normalizeAvatar } from '/engine/avatar.js';
 import { mummy } from '/engine/models/props/reliquia.js';
 import { mineCart } from '/engine/models/props/mine.js';
 import { jaguar } from '/engine/models/fauna/jaguar.js';
+import { guacharo, caveSpider, cuaima } from '/engine/models/fauna/cave-creatures.js';
 import { splatTexture } from '/engine/models/props/paintball.js';
 import { createSky } from '/engine/worlds/sky.js';
 import { WARM_DAY } from '/engine/worlds/look.js';
 import { Puffs, Shockwaves } from '/engine/fx.js';
 import { pixelRatio, bindRenderer, shadowSize } from '/engine/settings.js';
 import { createExpeditionWorld, itemModel } from './scene.js';
-import { floorOf } from './deck.js';
+import { floorOf, HEIGHT } from './deck.js';
 import { ITEMS } from './items.js';
 import { holds, alive, cartValue } from './rules.js';
 
@@ -99,6 +100,9 @@ export function createView(canvas, { seed = 1, floors = 3 } = {}) {
   }
   function removeAvatar(a, id) { a.bubble && disposeSprite(a.bubble); disposeSprite(a.tag); a.character.dispose(); a.root.removeFromParent(); avatars.delete(id); }
   function enemyModel(e) {
+    if (e.kind === 'bat') { const b = guacharo({ seed: e.id }); b.scale.setScalar(1.3); return b; }
+    if (e.kind === 'spider') { const sp = caveSpider({ seed: e.id }); sp.scale.setScalar(1.15); return sp; }
+    if (e.kind === 'snake') { const sn = cuaima({ seed: e.id }); sn.scale.setScalar(1.6); return sn; }
     if (e.kind === 'jaguar' || e.kind === 'stalker') { const cat = jaguar({ gold: e.kind === 'jaguar', melanistic: e.kind === 'stalker', seed: e.id, pace: 1.4 }); cat.scale.setScalar(e.kind === 'jaguar' ? 1.55 : 1.25); return cat; }
     const m = mummy({ guardian: e.kind === 'guardian' });
     if (e.kind === 'phantom') m.traverse(o => { if (o.material) { o.material = o.material.clone(); Object.assign(o.material, { transparent: true, opacity: .45, depthWrite: false }); o.material.emissive?.set(0x4a9dff); o.material.emissiveIntensity = .8; } });
@@ -144,14 +148,20 @@ export function createView(canvas, { seed = 1, floors = 3 } = {}) {
       if (!a) {
         const root = new THREE.Group(), model = enemyModel(e), ring = new THREE.Mesh(ringGeometry, dangerMaterial);
         ring.rotation.x = -Math.PI / 2; ring.position.y = .05; ring.visible = false; root.add(model); scene.add(root, ring);
-        root.position.set(e.x, 0, e.z); a = { root, model, ring, cat: e.kind === 'jaguar' || e.kind === 'stalker' }; enemies.set(e.id, a);
+        root.position.set(e.x, 0, e.z); a = { root, model, ring, cat: e.kind === 'jaguar' || e.kind === 'stalker', critter: ['bat', 'spider', 'snake'].includes(e.kind) }; enemies.set(e.id, a);
         puffs.spawn({ x: e.x, y: .6, z: e.z }, { color: e.kind === 'phantom' ? 0x9fd8ff : 0xd8c49a, count: 6, spread: .8, size: .7, rise: 1.2, life: .7 });
       }
       a.root.visible = floorOf(e.x) === vf;
       const target = new THREE.Vector3(e.x, 0, e.z);
       a.root.position.lerp(target, Math.min(1, dt * (e.mode === 'leap' ? 30 : 12)));
       const turn = Math.atan2(Math.sin(e.h - a.root.rotation.y), Math.cos(e.h - a.root.rotation.y)); a.root.rotation.y += turn * Math.min(1, dt * 10);
-      if (a.cat) {
+      if (a.critter) {
+        a.root.position.y = e.kind === 'bat' ? (e.y ?? 2) : e.kind === 'spider' && e.hanging ? HEIGHT - .4 : 0;
+        a.model.rotation.z = e.kind === 'spider' && e.hanging ? Math.PI : 0;
+        if (e.kind === 'spider') a.model.userData.pace = e.hanging || e.stun > 0 ? .1 : 1;
+        a.model.userData.tick(t + e.id, e.kind === 'snake' ? (e.windup > 0 ? 1 - e.windup / .35 : 0) : undefined);
+        a.ring.visible = e.kind === 'snake' && e.windup > 0; a.ring.position.set(e.attackX, .05, e.attackZ); a.ring.scale.setScalar(2.5);
+      } else if (a.cat) {
         a.model.userData.pace = e.stun > 0 || e.mode === 'crouch' ? .05 : e.mode === 'recover' ? .4 : 1.3;
         a.model.userData.tick(t);
         a.model.scale.y = (e.kind === 'jaguar' ? 1.55 : 1.25) * (e.mode === 'crouch' ? .78 : 1);

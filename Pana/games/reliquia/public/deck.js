@@ -165,6 +165,9 @@ function furnish(run, room, f, floors, R, id) {
   const small = n => { for (let i = 0; i < n; i++) loot(SMALL[Math.min(SMALL.length - 1, Math.floor(R() * (2 + f)))]); };
   const chest = () => { const p = spot(.8); if (p) run.chests.push({ id: id.chest++, floor: f, room: room.id, x: p.x, z: p.z, h: Math.round(R() * 4) * Math.PI / 2 }); if (p) run.obstacles.push({ x: p.x, z: p.z, r: .6, floor: f, chest: true }); };
   const sleeper = (kind = 'mummy', p = spot(.6)) => { if (p) run.sleepers.push({ id: id.sleeper++, kind, floor: f, room: room.id, x: p.x, z: p.z }); };
+  // A cuaima coils up beside a piece of this room's loot; spiders wait above.
+  const guard = () => { const l = run.loot.filter(l => l.room === room.id && !l.y); const near = l[Math.floor(R() * l.length)]; if (near) sleeper('snake', { x: near.x + (R() < .5 ? -1 : 1), z: near.z + .4 }); };
+  const ceiling = n => { for (let i = 0; i < n; i++) sleeper('spider'); };
   const decor = (kind, x, z, h = 0, extra = {}) => run.decor.push({ kind, floor: f, room: room.id, x, z, h, ...extra });
   const pillar = (x, z, r = .75, kind = 'column') => { if (mouths.some(m => inRect(x, z, m, r))) return; run.obstacles.push({ x, z, r, floor: f }); decor(kind, x, z, R() * 6.28); taken.push({ x, z, r }); };
   const big = kind => { const p = { x: cx + (R() - .5) * 2, z: cz + (R() - .5) * 2 }; if (free(p.x, p.z, 1.3)) { taken.push({ ...p, r: 1.6 }); run.loot.push({ id: id.loot++, kind, floor: f, room: room.id, x: p.x, z: p.z, h: Math.round(R() * 4) * Math.PI / 2 }); } };
@@ -189,12 +192,14 @@ function furnish(run, room, f, floors, R, id) {
       chest(); if (R() < .6) chest(); small(4 + f);
       if (R() < .55 + deep * .3) big(BIG_POOL[Math.min(2, f - 1)][Math.floor(R() * 3)]);
       decor('statue', cx + (R() < .5 ? -1 : 1) * (room.w / 2 - 1.5), cz, 0);
+      if (R() < .6) guard();
       break;
     case 'columnas':
       for (const [sx, sz] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) pillar(cx + sx * room.w * .28, cz + sz * room.d * .28);
       if (room.w > 16) { pillar(cx, cz - room.d * .28, .75); pillar(cx, cz + room.d * .28, .75); }
       for (let i = 0; i < 1 + f; i++) sleeper(); small(3); loot('idol');
       decor('fallenColumn', cx + (R() - .5) * 6, cz + (R() - .5) * 6, R() * 6);
+      if (f > 1 || R() < .4) ceiling(1 + Math.floor(R() * 2));
       break;
     case 'trampas': {
       // Dart heads hang on the west and east walls, never in a doorway.
@@ -218,11 +223,13 @@ function furnish(run, room, f, floors, R, id) {
       decor('ore', cx - room.w * .25, cz + room.d * .25, 0); run.obstacles.push({ x: cx - room.w * .25, z: cz + room.d * .25, r: 1.4, floor: f }); taken.push({ x: cx - room.w * .25, z: cz + room.d * .25, r: 2 });
       if (R() < .7) big('cart'); small(5); loot('emerald');
       { const p = spot(1.2); if (p) run.carts.push({ id: `cart-${run.carts.length}`, floor: f, x: p.x, z: p.z, h: R() * 6.28 }); }
+      if (R() < .5) guard();
       break;
     case 'cripta':
       for (let i = 0; i < 3; i++) { const p = spot(1.1); if (p) { decor('coffin', p.x, p.z, Math.round(R()) * Math.PI / 2); run.obstacles.push({ x: p.x, z: p.z, r: 1, floor: f }); } }
       for (let i = 0; i < 2 + f; i++) sleeper(); small(3); loot(R() < .5 ? 'cup' : 'idol');
       decor('candles', cx, cz, 0);
+      ceiling(f > 1 ? 2 : 1);
       break;
     case 'santuario':
       light(cx, cz, 'brazier'); loot('botiquin'); loot(R() < .5 ? 'machete' : 'honda'); if (f > 1) loot('farol'); small(1);
@@ -257,6 +264,7 @@ function furnish(run, room, f, floors, R, id) {
     case 'oculta':
       chest(); chest(); small(5); big('emeraldChest');
       loot(ARTIFACTS[Math.floor(R() * ARTIFACTS.length)]);
+      guard(); ceiling(1);
       break;
   }
 }

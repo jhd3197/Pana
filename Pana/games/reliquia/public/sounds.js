@@ -27,6 +27,8 @@ export const sfx = {
   pounce() { sound.explode(.8); },
   collapse() { sound.thunder(.9); sound.explode(1); },
   greed() { sound.tone(110, 0, .9, 'sawtooth', .06); sound.tone(104, .05, .9, 'sawtooth', .05); },
+  // Guácharos scattering: a quick rising chatter.
+  flap() { for (let i = 0; i < 4; i++) sound.tone(1600 + i * 180, i * .05, .05, 'square', .03); },
   // The idol's laugh: a falling run of yelps.
   laugh() { for (let i = 0; i < 6; i++) sound.tone(620 - i * 40 + (i % 2) * 120, i * .11, .09, 'square', .06); },
   // A pana's shout: a two-note chirp, pitched by seat, louder up close.

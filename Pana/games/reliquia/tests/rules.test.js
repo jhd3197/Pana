@@ -245,3 +245,21 @@ test('the montacargas rides from a deep floor to the camp and back down', () => 
   a.bag = ['coins']; place(g, 1, lift.x, lift.z); step(g, 8.2);
   step(g, 3.2, new Map([[1, { hold: true }]])); assert.equal(floorOf(a.x), 0, 'back at the camp');
 });
+
+test('guácharos scatter from a beam, spiders drop and slow, cuaimas poison but stay home', () => {
+  const g = setup(1), [a] = g.players, at = firstFloor(g);
+  place(g, 1, at.x, at.z - 2, Math.PI); a.invulnerable = 0; g.woke[g.layout.regionAt(a).id] = 1;
+  const bat = spawnEnemy(g, 'bat', at.x, at.z - 6); bat.born = -9; a.hands[0] = { id: 1, kind: 'farol' }; a.h = facing(a, bat);
+  const d0 = distance(a, bat); step(g, .6); assert.ok(distance(a, bat) > d0, 'the flock backs off the beam');
+  g.enemies = []; a.hands = [null, null]; a.hp = 100;
+  const spider = spawnEnemy(g, 'spider', at.x, at.z - 3.5, { hanging: true }); spider.born = -9;
+  step(g, .1); assert.equal(spider.hanging, false, 'drops when a pana walks under');
+  for (let i = 0; i < 60 && !(a.slow > 0); i++) g.update(.05);
+  assert.ok(a.slow > 0 && a.hp < 100, 'its bite slows');
+  g.enemies = []; a.hp = 100; a.slow = 0;
+  const snake = spawnEnemy(g, 'snake', at.x, at.z - 3); snake.born = -9;
+  for (let i = 0; i < 60 && !(a.poison > 0); i++) g.update(.05);
+  assert.ok(a.poison > 0, 'the strike poisons'); const hp = a.hp; step(g, 1.5); assert.ok(a.hp < hp, 'poison keeps biting');
+  place(g, 1, at.x, at.z - 14); step(g, 3);
+  assert.ok(Math.hypot(snake.x - snake.homeX, snake.z - snake.homeZ) < 4, 'it never wanders far from its loot');
+});

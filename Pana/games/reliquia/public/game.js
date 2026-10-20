@@ -102,6 +102,8 @@ function handle(e) {
     case 'greed': sfx.greed(); view.shake(.4); shout(e.text, { tone: 'coral' }); break;
     case 'collapse': sfx.collapse(); view.shake(.9); break;
     case 'laugh': sfx.laugh(); break;
+    case 'spider': sfx.awaken(); view.shake(.2); break;
+    case 'scatter': if (near) sfx.flap(); break;
     case 'cart-load': case 'cart-catch': case 'cart-big': sfx.coin(); if (e.kind !== 'cart-load') sfx.bank(false); break;
     case 'cart-grab': sfx.grab(); break;
     case 'lift': sound.clickUp(); sfx.stairs(); if (e.players?.includes(room.id)) fade(); break;

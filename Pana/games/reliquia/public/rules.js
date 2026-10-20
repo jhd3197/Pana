@@ -34,6 +34,7 @@ export function stepExplorer(p, input, dt, world) {
   if (holds(p, 'sandals')) speed *= 1.55;
   if (p.drag != null) speed *= .55;
   speed *= 1 - Math.min(.16, (p.bag?.length || 0) * .02);
+  if (p.slow > 0) speed *= .6;
   if (p.stun > 0) speed = 0;
   if (holds(p, 'sandals')) { const k = Math.min(1, dt * 2.2); p.vx += (ux * speed - p.vx) * k; p.vz += (uz * speed - p.vz) * k; }
   else { p.vx = ux * speed; p.vz = uz * speed; }
@@ -391,6 +392,8 @@ export class Expedition {
     let leaving = false;
     for (const p of this.players) {
       for (const key of ['cooldown', 'swing', 'invulnerable', 'hit', 'interactCooldown', 'stun', 'reversed']) p[key] = Math.max(0, p[key] - dt);
+      p.slow = Math.max(0, (p.slow || 0) - dt);
+      if (p.poison > 0 && alive(p)) { p.poison = Math.max(0, p.poison - dt); p.venom = (p.venom || 0) + dt; if (p.venom >= 1) { p.venom = 0; this.damage(p, 2); } }
       if (!alive(p)) { p.moving = false; if (p.downed && !reviving.has(p.id)) p.revive = Math.max(0, p.revive - dt * .5); continue; }
       const input = inputs.get(p.id) || {};
       stepExplorer(p, input, dt, this);
@@ -422,7 +425,7 @@ export class Expedition {
       if (room && room.floor > 0 && !this.woke[room.id] && inRect(p.x, p.z, room.rect, -1.5)) {
         this.woke[room.id] = 1;
         let woke = 0;
-        for (const s of run.sleepers) if (s.room === room.id && spawnEnemy(this, s.kind, s.x, s.z, { room: room.id, born: this.time - (s.kind === 'mummy' ? 0 : 1) })) woke++;
+        for (const s of run.sleepers) if (s.room === room.id && spawnEnemy(this, s.kind, s.x, s.z, { room: room.id, born: this.time - (s.kind === 'mummy' ? 0 : 1), hanging: s.kind === 'spider' }) && s.kind === 'mummy') woke++;
         if (woke && room.kind !== 'guardian' && room.kind !== 'boveda') this.event('awaken', 'Las vendas se mueven. Prepárense.', { room: room.id });
         if (room.kind === 'boveda') this.event('vault', 'La bóveda de oro. Algo grande respira en la oscuridad…', { room: room.id });
       }
@@ -738,8 +741,10 @@ export class Expedition {
     }
   }
   // Ambient waves arrive out of sight, somewhere they can reach a pana.
-  wave(floor, count, near = null, kind = 'mummy') {
+  wave(floor, count, near = null, kind = null) {
     if (floor <= 0) return false;
+    // The Director's waves mix creatures by depth: guácharos come in flocks.
+    if (!kind) { const roll = random(this); kind = roll < .3 ? 'bat' : floor > 1 && roll < .3 + .1 * Math.min(3, floor) ? 'spider' : 'mummy'; if (kind === 'bat') count = Math.min(6, count * 2 + 1); }
     const L = this.layout, live = this.players.filter(p => alive(p) && floorOf(p.x) === floor); if (!live.length) return false;
     const rooms = L.run.rooms.filter(r => r.floor === floor && (!r.hidden || this.revealed[r.hidden]));
     let spawned = 0;
@@ -752,6 +757,8 @@ export class Expedition {
       if (spawnEnemy(this, kind, x, z)) spawned++;
     }
     if (spawned && kind === 'mummy') this.event('wave', 'Se oyen pasos entre las piedras…', { floor });
+    if (spawned && kind === 'bat') this.event('wave', '¡Guácharos! Alumbren con el farol.', { floor });
+    if (spawned && kind === 'spider') this.event('wave', 'Algo corre por el techo…', { floor });
     return spawned > 0;
   }
   snapshot() { const { paths, lastInputs, ...state } = this; return clone(state); }

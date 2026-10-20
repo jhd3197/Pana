@@ -23,7 +23,10 @@ becomes the GitHub release's notes.
   treasure you lift: traps quicken, tunnels cave in behind you and a
   black jaguar starts hunting the team. Eight enchanted artifacts help
   and ruin you in equal measure. Only what reaches the truck counts; if
-  everyone falls, most of it stays in the ruin.
+  everyone falls, most of it stays in the ruin. Push a carrito to haul a
+  pile of loot (and its balance floats above it), rappel down to the next
+  floor, climb the rope back up, or ride the montacargas from floor 2 to
+  the camp. Guácharos, ceiling spiders and coiled cuaimas join the mummies.
 
 - **Pepazo has a night map: Cancha de Noche.** Red floodlights, purple
   UV light and glowing LED rope lines light a field of pallets,
