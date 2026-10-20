@@ -2278,7 +2278,8 @@ function inviteLink() {
   return inviteUrl(net?.code || ROOM || newRoomCode());
 }
 
-let joining = null;
+let joining = null, markBooted;
+const booted = new Promise(resolve => { markBooted = resolve; });   // room state waits for the garage and menu
 async function goOnline(code, lead) {
   if (net || joining) return joining;
   $('lobby').hidden = false;
@@ -2294,7 +2295,7 @@ async function goOnline(code, lead) {
   joining = (async () => {
     try {
       const { joinRace } = await (onlineModulePromise || import('./online.js'));
-      net = await joinRace({ code, lead, name: ME.name, avatar: ME.avatar, car: garage.index, wheel: garage.wheel, cosmetics: raceStyle(garage.index) });
+      net = await joinRace({ code, lead, name: ME.name, avatar: ME.avatar, car: garage.index, wheel: garage.wheel, cosmetics: raceStyle(garage.index) }).then(link => booted.then(() => link));
     } catch (error) {
       console.warn('Derrape online unavailable', error);
       $('lobby-status').textContent = error?.full ? 'La sala está llena.' : 'No pudimos entrar a la sala. Puedes correr en local.';
@@ -2349,8 +2350,8 @@ function frame() {
       updateRace(STEP, false);
       acc -= STEP; stepped += STEP;
       // After a stall, run a few steps and let the race lose the rest: catching
-      // up fully would make this frame late too, and the next, and so on.
-      if (stepped >= MAX_CATCHUP) { acc = 0; break; }
+      // up fully would make this frame late too. ?speed scales it, or it would be lost.
+      if (stepped >= MAX_CATCHUP * SPEED) { acc = 0; break; }
     }
     if (stepped && mode === 'race') presentRace(stepped);
     sendPoses();
@@ -2388,16 +2389,15 @@ addEventListener('resize', resize);
 resize();
 
 if (DEBUG) Object.assign(window, { loadTrack, disposeRacer, makeRacer, placeRacer, aiInput, stepRescue, collidePair, sendPoses, pollPads, music, getWallet: () => wallet, taller, menu, race, garage, renderer, crash, stepCar, startRace, updateRace, finish, renderResults, renderCup, toGarage, showWheel, ITEMS, TRACKS, buildTrack, setup, popBalloon, rescue, getActiveTrack: () => T, getNet: () => net });
-// Suites call buildTrack() and read TRACKS synchronously: every map loads before
-// PANA_PREPARED (showCar below). startRace() loads its own map either way.
-if (DEBUG) await loadTracks();
-
 // ?track=desierto wins; otherwise the last pick, otherwise the estadio
 let savedTrack = 'estadio';
 try { savedTrack = localStorage.getItem('derrape:track') || savedTrack; } catch { /* private mode */ }
 // The cauchos from the last visit (fallback calle) dress the turntable car.
 garage.wheel = wheelById(wallet.wheel).id;   // the profile migrated any old 'derrape:wheels' pick
-if (ROOM) goOnline(ROOM, QS.has('lead'));
+if (ROOM) goOnline(ROOM, QS.has('lead'));   // first: a reload reclaims its seat inside the reconnection window
+// Suites call buildTrack() and read TRACKS synchronously: every map loads before
+// PANA_PREPARED (showCar below). startRace() loads its own map either way.
+if (DEBUG) await loadTracks();
 selectTrack(QS.get('track') || savedTrack);
 showCar(0);
 frame();
@@ -2432,5 +2432,5 @@ menuFlow = createMenuFlow({
       canConfigure: !net || (net.isHost && ['lobby', 'results', 'complete'].includes(net.state?.phase)) };
   },
 });
-
+markBooted();
 onSettings((s, changed) => { if (changed.includes('quality')) applyRaceQuality(renderer, race, s.quality); });

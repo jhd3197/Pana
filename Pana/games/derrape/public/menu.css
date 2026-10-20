@@ -2,6 +2,9 @@
 body { --menu-paper: #fff3d8; --menu-ink: #282035; --menu-grass: #2d705d; }
 #garage.menu-pending { visibility: hidden; }
 .menu-boot { z-index: 5; background: var(--pk-night); }
+/* The boot screen gates only the menu. Thumbnails draw only in the garage, so
+   a race that starts first (a mid-race rejoin) must not sit under it. */
+body:has(> #garage.hidden) > .menu-boot { display: none; }
 .menu-boot > img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: .65; }
 .menu-boot > div { position: relative; margin-top: auto; text-shadow: 0 2px 5px #000; }
 .menu-boot h1 { margin: 0; color: var(--pk-yellow); font: 400 clamp(52px, 8vw, 100px)/1 var(--pk-display); }

@@ -70,6 +70,11 @@ class RaceLink {
       this.lastCtxKey = ctxKey;
       this.poseMemo.clear();
     }
+    // Pongs read while a map loads arrive late and skew the server-clock
+    // estimate by hundreds of ms. Every client has loaded once the countdown
+    // starts: measure again then, so start times and item stamps agree.
+    if (s.phase === 'count' && this.lastPhase !== 'count') this.link.sync();
+    this.lastPhase = s.phase;
   }
 
   get state() {
