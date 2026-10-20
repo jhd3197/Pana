@@ -187,23 +187,8 @@ export function createPencil({ color = '#ffc629' } = {}) {
   return owned(group);
 }
 
-// The classic plastic plaza chair, bright and a bit toy-like. Seat top at
-// 0,74 m, the back on −Z, sitter faces +Z.
-export function createPlasticChair({ color = '#ff4b4b' } = {}) {
-  const group = new THREE.Group(); group.name = 'Silla plástica';
-  const plastic = mat(color, { roughness: .35 });
-  part(group, new RoundedBoxGeometry(1.25, .1, 1.15, 3, .05), plastic, 0, .69, .02);
-  for (const x of [-.52, .52]) for (const z of [-.45, .5]) {
-    const leg = part(group, new THREE.CylinderGeometry(.05, .065, .7, 10), plastic, x * 1.04, .34, z * 1.04);
-    leg.rotation.set(z > 0 ? .06 : -.06, 0, x > 0 ? -.06 : .06);
-  }
-  const back = new THREE.Group(); back.position.set(0, .74, -.55); back.rotation.x = -.18; group.add(back);
-  for (const x of [-.56, .56]) part(back, new RoundedBoxGeometry(.1, 1.05, .1, 2, .04), plastic, x, .52, 0);
-  for (const y of [.42, .72, 1.0]) part(back, new RoundedBoxGeometry(1.2, .16, .08, 2, .035), plastic, 0, y, 0);
-  part(group, new RoundedBoxGeometry(1.1, .05, .08, 2, .02), plastic, 0, .25, .5);
-  group.userData.seat = .74;
-  return owned(group);
-}
+// The classic plastic plaza chair now lives in the shared library.
+export { plasticChair as createPlasticChair } from '/engine/models/props/barrio.js';
 
 // The reel's purple wall covered in painted slang words, 14 × 4 m, painted
 // face toward +Z.
