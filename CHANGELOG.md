@@ -15,7 +15,9 @@ becomes the GitHub release's notes.
   shove fighters back in, bet dolitas, give water in the corner and can
   shout ¡cálmate!. Four arenas: la calle, el toldo, el mercado and the
   plaza de las motos at night, with a TV narrator, intro cards and a
-  slow-motion replay.
+  slow-motion replay. Also Trifulca libre (four at once, with chairs and
+  chancletas to throw), Parejas (tag your partner) and a Torneo whose final
+  is fought under the tent.
 
 - **Derrape keeps detailed roadside trees while distant forest costs less to render.**
   Three vegetation zones preserve planting density: native trees near the route,

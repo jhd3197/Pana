@@ -221,3 +221,74 @@ test('junk input is a released stick and no presses', () => {
   assert.deepEqual(cleanInput({ x: 9, z: 'up', g: 1, gp: 300, e: -1 }), { x: 1, z: 0, g: false, b: false, gp: 44, e: 255, a: 0, t: 0 });
   assert.equal(titlesFor([]).length, 0);
 });
+
+// ---------- modes ----------
+function night(modo, humans = 1, extra = {}) {
+  const game = new Trifulca(21); game.configure({ modo, ...extra });
+  for (let i = 1; i <= humans; i++) game.addPlayer(i, `P${i}`);
+  game.start();
+  return game;
+}
+
+test('trifulca libre puts four in the ring with things to grab and throw', () => {
+  const game = night('libre');
+  assert.equal(game.bodies.length, 4);
+  assert.equal(new Set(game.bodies.map(b => b.corner)).size, 4);
+  assert.equal(game.props.length, 4);
+  assert.deepEqual(Object.keys(game.fight.odds).length, 4);
+  game.update(INTRO + .05);
+  const me = game.body(1), prop = game.props[0], foe = game.bodies.find(b => b.id !== 1);
+  for (const b of game.bodies) if (b.id !== 1) Object.assign(b, { x: 3.5, z: 3.5 });
+  Object.assign(me, { x: prop.x, z: prop.z + .3 });
+  const ana = pad(); ana.tap('a'); run(game, .05, { 1: ana });
+  assert.equal(me.prop, prop.id, 'agarrar picks it up');
+  Object.assign(foe, { x: me.x + Math.sin(me.h) * 3, z: me.z + Math.cos(me.h) * 3, act: 'idle', vx: 0, vz: 0 });
+  for (const b of game.bodies) if (b !== me && b !== foe) Object.assign(b, { x: -3.5, z: -3.5 });
+  ana.tap('a'); run(game, .6, { 1: ana });
+  assert.ok(game.events.some(e => e.type === 'throw'));
+  assert.ok(game.events.some(e => e.type === 'impacto' && e.id === foe.id), 'the chair hits the foe');
+});
+
+test('in a free-for-all the knocked out leave and the last one standing wins', () => {
+  const game = night('libre');
+  game.update(INTRO + .05);
+  const [a, ...rest] = game.bodies;
+  for (const b of rest) { b.caidas = 3; }
+  game.update(.05);
+  assert.equal(game.phase, 'after');
+  assert.deepEqual(game.result.winners, [a.id]);
+  assert.equal(game.result.losers.length, 3);
+});
+
+test('parejas: one per team in the ring, tag your partner, the team loses together', () => {
+  const game = night('parejas');
+  assert.equal(game.players.length, 4);
+  assert.equal(game.bodies.filter(b => !b.bench).length, 2);
+  game.update(INTRO + .05);
+  const me = game.body(1), partner = game.bodies.find(b => b.team === me.team && b !== me);
+  const active = me.bench ? partner : me, bench = me.bench ? me : partner;
+  Object.assign(active, { x: bench.x * .8, z: bench.z * .8 });
+  // Bots press their own buttons; tag a bot-held team through the rules directly.
+  assert.equal(game.tag(active), true);
+  assert.equal(active.bench, true); assert.equal(bench.bench, false);
+  assert.ok(game.events.some(e => e.type === 'relevo'));
+  bench.caidas = 3; game.update(.05);
+  assert.equal(game.phase, 'after');
+  assert.deepEqual([...game.result.losers].sort(), [active.id, bench.id].sort());
+  assert.equal(game.champions.length, 2, 'the winning pair stays');
+});
+
+test('a torneo plays its bracket and the final moves under the tent', () => {
+  const game = night('torneo', 1, { seconds: 45 });
+  assert.equal(game.bracket.rounds[0].length, 4);
+  assert.equal(game.fight.stage, 'semifinal');
+  let finalArena = null;
+  for (let i = 0; i < 6000 && game.phase !== 'finished'; i++) {
+    game.update(.05);
+    if (game.fight?.stage === 'final') finalArena = game.arenaNow;
+  }
+  assert.equal(game.phase, 'finished');
+  assert.equal(game.fightNo, 3);
+  assert.equal(finalArena, 'toldo');
+  assert.ok(game.events.some(e => e.type === 'noche'));
+});

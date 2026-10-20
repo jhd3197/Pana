@@ -22,12 +22,16 @@ export const LINES = {
   domino: ['¡Se cayeron todas las motos!', '¡Dominó de motos!'],
   cajas: ['¡Se vinieron abajo las cajas!', '¡Tomates por todos lados!'],
   campana: ['¡Campana! Los jueces leen la tarjeta…', '¡Se acabó el tiempo!'],
+  throw: ['¡Ahí va la silla!', '¡Lo lanzó!', '¡Vuela, vuela!'],
+  impacto: ['¡Se la estrelló!', '¡En toda la cara!', '¡Silletazo!'],
+  relevo: ['¡Relevo!', '¡Entra la pareja!', '¡Cambio de esquina!'],
+  fuera: ['¡Fuera de la trifulca!', "¡Se acabó pa' ese!"],
 };
 
 // The narrator's line for an event, given names: (id) → name.
-export function lineFor(e, name) {
+export function lineFor(e, name, names = (ids) => ids.map(name).join(' y ')) {
   switch (e.type) {
-    case 'intro': return { text: `Pelea ${e.fight}`, big: true };
+    case 'intro': return { text: e.stage === 'final' ? '¡La gran final!' : e.stage === 'semifinal' ? 'Semifinal' : e.stage === 'cuartos' ? 'Cuartos de final' : e.mode === 'libre' ? '¡Trifulca libre!' : `Pelea ${e.fight}`, big: true };
     case 'bell': return { text: pick(LINES.bell), big: true, say: true };
     case 'trompon': return { text: pick(LINES.trompon), say: Math.random() < .6 };
     case 'hit': return e.counter ? { text: pick(LINES.counter) } : null;
@@ -45,11 +49,16 @@ export function lineFor(e, name) {
     case 'ropes': return Math.random() < .5 ? { text: pick(LINES.ropes) } : null;
     case 'campana': return { text: pick(LINES.campana), big: true, say: true };
     case 'fin': {
-      const w = name(e.winner), l = name(e.loser);
+      const w = names(e.winners || [e.winner]), l = name(e.loser);
       const text = { ko: `¡K.O.! ¡Gana ${w}!`, cuenta: `¡Diez! ¡Se acabó! Gana ${w}`, puntos: `10 puntos para ${w}`, publico: `¡Empate en la tarjeta! El público dice: ${w}`,
         calma: `¡Cálmate, cálmate! ${name(e.by)} saca a ${l}`, abandono: `${l} se fue. Gana ${w}` }[e.how] || `Gana ${w}`;
       return { text, big: true, say: true };
     }
+    case 'throw': return { text: pick(LINES.throw) };
+    case 'impacto': return { text: pick(LINES.impacto), say: Math.random() < .5 };
+    case 'pickup': return { text: `${name(e.id)} agarró ${{ silla: 'una silla', caja: 'una caja', casco: 'un casco', chancleta: 'una chancleta' }[e.kind] || 'algo'}` };
+    case 'relevo': return { text: `${pick(LINES.relevo)} Entra ${name(e.id)}`, say: true };
+    case 'fuera': return { text: `${name(e.id)}: ${pick(LINES.fuera)}`, big: true, say: true };
     case 'mano': return { text: 'Mano de caballero.', ref: true, say: true };
     case 'sinmano': return { text: `${name(e.id)} se fue sin dar la mano…` };
     case 'agua': return { text: `${name(e.by)} le da agua a ${name(e.id)}` };
@@ -113,6 +122,10 @@ export function sfx(e) {
     case 'fin': bell(3); crowd(2); break;
     case 'moto': sound.sweep(300, 900, 1.2, 'sawtooth', .04); sound.sweep(900, 200, 1.4, 'sawtooth', .03); break;
     case 'mano': sound.pickup(3); break;
+    case 'throw': sound.whoosh(); break;
+    case 'impacto': sound.bonk(3); sound.splat(); crowd(1.2); break;
+    case 'relevo': sound.tone(660, 0, .1, 'square', .07); sound.tone(880, .1, .12, 'square', .07); break;
+    case 'fuera': sound.boing(); crowd(1.4); break;
     case 'bet': sound.tick(2); break;
     case 'cheer': case 'taunt': crowd(.6); break;
     case 'noche': sound.horn('fiesta'); break;

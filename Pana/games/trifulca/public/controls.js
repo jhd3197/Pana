@@ -19,7 +19,7 @@ export function createControls({ paused = () => false, onBet = () => {} } = {}) 
   addEventListener('keydown', (event) => {
     if (paused() || event.target.closest?.('input, textarea, select, [contenteditable]')) return;
     const key = event.key.toLowerCase(), name = named(key);
-    if (key === '1' || key === '2') { onBet(key === '1' ? 'red' : 'blue'); return; }
+    if (/^[1-4]$/.test(key)) { onBet(Number(key) - 1); return; }
     if (!name) return;
     event.preventDefault();
     if (!event.repeat && !keys.has(name)) press(name);

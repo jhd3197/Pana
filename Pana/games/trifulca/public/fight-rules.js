@@ -43,16 +43,24 @@ export function crowdSpot(arena, angle) {
   return { x: Math.sin(angle) * r, z: Math.cos(angle) * r };
 }
 
-export function newBody(id, corner, arena) {
-  const side = corner === 'red' ? -1 : 1, start = arena.shape === 'square' ? 1.7 : 1.9;
-  return { id, corner, x: side * start, z: 0, h: side < 0 ? Math.PI / 2 : -Math.PI / 2, vx: 0, vz: 0,
+// Corners in the order fighters step in: two face off across X; Trifulca
+// libre adds two more across Z.
+export const CORNERS = ['red', 'blue', 'yellow', 'green'];
+const CORNER_ANGLE = { red: -Math.PI / 2, blue: Math.PI / 2, yellow: Math.PI, green: 0 };
+export function newBody(id, corner, arena, team = corner) {
+  const a = CORNER_ANGLE[corner] ?? 0, start = arena.shape === 'square' ? 1.7 : 1.9;
+  const x = Math.round(Math.sin(a) * start * 1000) / 1000, z = Math.round(Math.cos(a) * start * 1000) / 1000;
+  return { id, corner, team, x, z, h: Math.atan2(-x, -z), vx: 0, vz: 0,
     act: 'idle', at: 0, landed: false, charge: -1, buffer: 0, dodgeDir: 0,
-    mareo: 0, calm: 0, aguante: 100, stun: 0, caidas: 0, inv: 0, outside: 0,
-    down: null, moving: 0, blockHit: 0, lastHit: 9,
+    mareo: 0, aguante: 100, stun: 0, caidas: 0, inv: 0, outside: 0,
+    down: null, moving: 0, blockHit: 0, lastHit: 9, foe: null, prop: null, out: false, bench: false, downBy: null,
     score: { jabs: 0, trompones: 0, caidas: 0, forward: 0, blocks: 0 }, thrown: 0 };
 }
+// Who is actually fighting now: not knocked out of a free-for-all, not
+// waiting on the apron for a tag.
+export const inRing = (b) => !b.out && !b.bench;
 
-const BUSY = new Set(['jab', 'wind', 'trompon', 'grab', 'dodge', 'stun', 'dizzy', 'down', 'rise', 'taunt', 'open']);
+const BUSY = new Set(['jab', 'wind', 'trompon', 'grab', 'dodge', 'stun', 'dizzy', 'down', 'rise', 'taunt', 'open', 'throw']);
 const canAct = (b) => !BUSY.has(b.act);
 const setAct = (b, act) => { b.act = act; b.at = 0; b.landed = false; };
 const facing = (b) => ({ fx: Math.sin(b.h), fz: Math.cos(b.h) });
@@ -121,13 +129,15 @@ const blocksFrom = (b, a) => {
   return (dx * fx + dz * fz) / d > .3;
 };
 
-// One body's attack lands (or not) on the other.
-function strike(a, b, emit) {
+// One body's attack lands (or not) on the nearest foe it reaches.
+function strike(a, foes, emit) {
   if (a.landed) return;
   const kind = a.act === 'jab' ? 'jab' : a.act === 'trompon' ? 'trompon' : a.act === 'grab' ? 'grab' : null;
   if (!kind) return;
-  const spec = T[kind];
-  if (!inWindow(a, spec.active) || !reaches(a, b, spec.reach)) return;
+  const spec = T[kind], armed = !!a.prop && kind !== 'grab', reach = spec.reach + (armed ? .35 : 0);
+  if (!inWindow(a, spec.active)) return;
+  const b = foes.filter(f => reaches(a, f, reach)).sort((x, y) => Math.hypot(x.x - a.x, x.z - a.z) - Math.hypot(y.x - a.x, y.z - a.z))[0];
+  if (!b) return;
   a.landed = true;
   const { fx, fz } = facing(a);
   if (b.act === 'dodge' && invulnerable(b)) {
@@ -143,7 +153,7 @@ function strike(a, b, emit) {
     emit({ type: 'shove', id: b.id, by: a.id, broke: wasBlocking });
     return;
   }
-  if (blocksFrom(b, a)) {
+  if (blocksFrom(b, a) && !armed) {
     addMareo(b, T.chip[kind], emit); b.aguante = Math.max(0, b.aguante - T.guard[kind]); b.score.blocks++;
     shake(b, fx * (kind === 'trompon' ? 4 : 1.2), fz * (kind === 'trompon' ? 4 : 1.2));
     b.blockHit = .25;
@@ -151,15 +161,17 @@ function strike(a, b, emit) {
     else emit({ type: 'block', id: b.id, by: a.id, kind });
     return;
   }
-  // A clean hit. A jab into a trompón still winding up is a counter.
+  // A clean hit. A jab into a trompón still winding up is a counter; a chair
+  // or a crate in the hand goes through the guard and hits harder.
   const counter = kind === 'jab' && b.act === 'wind';
   if (kind === 'jab') a.score.jabs++; else a.score.trompones++;
   const wasDizzy = b.act === 'dizzy';
   b.lastHit = 0;
-  shake(b, fx * spec.push, fz * spec.push);
-  emit({ type: kind === 'jab' ? 'hit' : 'trompon', id: b.id, by: a.id, counter, x: b.x, z: b.z });
+  const push = spec.push * (armed ? 1.3 : 1);
+  shake(b, fx * push, fz * push);
+  emit({ type: kind === 'jab' ? 'hit' : 'trompon', id: b.id, by: a.id, counter, armed, x: b.x, z: b.z });
   if (wasDizzy) { knockDown(b, a, emit); return; }
-  addMareo(b, spec.mareo + (counter ? T.counter : 0), emit);
+  addMareo(b, (spec.mareo + (counter ? T.counter : 0)) * (armed ? 1.4 : 1), emit);
   if (b.act !== 'dizzy') { setAct(b, 'stun'); b.stun = spec.stun + (counter ? .15 : 0); }
 }
 
@@ -171,35 +183,41 @@ function addMareo(b, amount, emit) {
 }
 
 function knockDown(b, by, emit) {
-  b.caidas++; by.score.caidas++;
+  b.caidas++; by.score.caidas++; b.downBy = by.id;
   setAct(b, 'down'); b.charge = -1;
   b.down = { count: 0, clock: 0, mash: 0, need: 7 + 6 * (b.caidas - 1) };
   emit({ type: 'caida', id: b.id, by: by.id, caidas: b.caidas });
 }
 
-// Step both bodies: buttons were already applied by control().
-// Returns 'ko' with the loser's id when a fight is over.
+// Step every body in the ring: buttons were already applied by control().
+// Returns the knockouts this tick: [{ ko, by, how }].
 export function stepBodies(bodies, arena, dt, moves, emit) {
-  const [a, b] = bodies;
-  for (const [self, other] of [[a, b], [b, a]]) {
+  const ring = bodies.filter(inRing), kos = [];
+  const foesOf = (self) => ring.filter(o => o !== self && o.team !== self.team);
+  const dist = (a, b) => Math.hypot(a.x - b.x, a.z - b.z);
+  for (const self of ring) {
     self.at += dt; self.inv = Math.max(0, self.inv - dt); self.buffer = Math.max(0, self.buffer - dt);
     self.blockHit = Math.max(0, self.blockHit - dt); self.lastHit += dt;
     if (self.act !== 'block') self.aguante = Math.min(100, self.aguante + 22 * dt);
     else self.aguante = Math.max(0, self.aguante - 11 * dt);
     if (self.act === 'block' && self.aguante <= 0) { setAct(self, 'stun'); self.stun = .6; emit({ type: 'guardbreak', id: self.id }); }
     if (self.lastHit > 1.5 && self.act !== 'dizzy' && self.act !== 'down') self.mareo = Math.max(0, self.mareo - 7 * dt);
-    // Face the other pana unless spinning from a trompón.
-    if (self.act !== 'down') {
-      const want = Math.atan2(other.x - self.x, other.z - self.z);
+    // Face the nearest foe still standing, unless spinning from a trompón.
+    const foes = foesOf(self), standing = foes.filter(o => o.act !== 'down');
+    const foe = (standing.length ? standing : foes).sort((x, y) => dist(x, self) - dist(y, self))[0];
+    self.foe = foe?.id ?? null;
+    if (foe && self.act !== 'down') {
+      const want = Math.atan2(foe.x - self.x, foe.z - self.z);
       let diff = want - self.h; diff = Math.atan2(Math.sin(diff), Math.cos(diff));
       self.h += diff * Math.min(1, dt * (self.act === 'stun' ? 3 : 14));
     }
     // Timed acts end on their own.
-    const ends = { jab: T.jab.total, trompon: T.trompon.total, grab: T.grab.total, dodge: T.dodge.total, taunt: T.taunt, open: T.trompon.open, rise: T.rise };
+    const ends = { throw: .4, jab: T.jab.total, trompon: T.trompon.total, grab: T.grab.total, dodge: T.dodge.total, taunt: T.taunt, open: T.trompon.open, rise: T.rise };
     if (self.act === 'wind' && self.at >= T.wind) { setAct(self, 'trompon'); emit({ type: 'swing', id: self.id }); }
     else if (self.act === 'stun' && self.at >= self.stun) setAct(self, 'idle');
     else if (self.act === 'dizzy' && self.at >= T.dizzy) { setAct(self, 'idle'); self.mareo = 55; emit({ type: 'clear', id: self.id }); }
     else if (ends[self.act] && self.at >= ends[self.act]) setAct(self, 'idle');
+    const by = self.downBy ?? foe?.id ?? null;
     if (self.act === 'down') {
       const d = self.down; d.clock += dt;
       if (d.mash >= d.need) {
@@ -207,18 +225,18 @@ export function stepBodies(bodies, arena, dt, moves, emit) {
         emit({ type: 'rise', id: self.id });
       } else if (d.clock >= COUNT_STEP) {
         d.clock -= COUNT_STEP; d.count++; emit({ type: 'count', id: self.id, n: d.count });
-        if (d.count >= 10) return { ko: self.id, by: other.id, how: 'cuenta' };
+        if (d.count >= 10) kos.push({ ko: self.id, by, how: 'cuenta' });
       }
     }
-    if (self.caidas >= KO_CAIDAS) return { ko: self.id, by: other.id, how: 'ko' };
+    if (self.caidas >= KO_CAIDAS && !kos.some(k => k.ko === self.id)) kos.push({ ko: self.id, by, how: 'ko' });
   }
-  // Movement: the stick is a world direction, read against the opponent.
-  for (const [self, other] of [[a, b], [b, a]]) {
+  // Movement: the stick is a world direction, read against the foe.
+  for (const self of ring) {
     const move = moves.get(self.id) || { x: 0, z: 0 };
     const { fx, fz } = facing(self), rx = Math.cos(self.h), rz = -Math.sin(self.h);
     let f = move.x * fx + move.z * fz, s = move.x * rx + move.z * rz;
     const len = Math.hypot(f, s); if (len > 1) { f /= len; s /= len; }
-    const scale = { idle: 1, block: .4, wind: .3, taunt: 0, dizzy: .45, jab: .35, grab: .3, rise: .6 }[self.act] ?? 0;
+    const scale = { idle: 1, block: .4, wind: .3, taunt: 0, dizzy: .45, jab: .35, grab: .3, rise: .6, throw: .3 }[self.act] ?? 0;
     let mx = (fx * f * (f > 0 ? SPEED.forward : SPEED.back) + rx * s * SPEED.side) * scale;
     let mz = (fz * f * (f > 0 ? SPEED.forward : SPEED.back) + rz * s * SPEED.side) * scale;
     if (self.act === 'dizzy') { mx += Math.sin(self.at * 7 + self.x) * .9; mz += Math.cos(self.at * 6) * .9; }
@@ -230,18 +248,18 @@ export function stepBodies(bodies, arena, dt, moves, emit) {
     self.x += (mx + self.vx) * dt; self.z += (mz + self.vz) * dt;
     const drag = Math.exp(-dt * 5); self.vx *= drag; self.vz *= drag;
     if (Math.hypot(self.vx, self.vz) < .05) self.vx = self.vz = 0;
-    void other;
   }
   // Hits.
-  strike(a, b, emit); strike(b, a, emit);
+  for (const self of ring) strike(self, foesOf(self), emit);
   // Bodies never overlap.
-  const dx = b.x - a.x, dz = b.z - a.z, d = Math.hypot(dx, dz);
-  if (d < BODY_GAP) {
+  for (let i = 0; i < ring.length; i++) for (let j = i + 1; j < ring.length; j++) {
+    const a = ring[i], b = ring[j], dx = b.x - a.x, dz = b.z - a.z, d = Math.hypot(dx, dz);
+    if (d >= BODY_GAP) continue;
     const push = (BODY_GAP - d) / 2, nx = d > 1e-4 ? dx / d : 1, nz = d > 1e-4 ? dz / d : 0;
     a.x -= nx * push; a.z -= nz * push; b.x += nx * push; b.z += nz * push;
   }
   // Ropes bounce in the tent; elsewhere the crowd handles the edge (rules.js).
-  for (const self of bodies) {
+  for (const self of ring) {
     const e = edge(arena, self.x, self.z);
     if (arena.shape === 'square' && e.out > 0) {
       self.x += e.nx * e.out; self.z += e.nz * e.out;
@@ -249,7 +267,7 @@ export function stepBodies(bodies, arena, dt, moves, emit) {
       if (into > .5) { self.vx += e.nx * into * 1.8; self.vz += e.nz * into * 1.8; emit({ type: 'ropes', id: self.id }); }
     } else if (e.out > 1.4) { self.x += e.nx * (e.out - 1.4); self.z += e.nz * (e.out - 1.4); }
   }
-  return null;
+  return kos;
 }
 
 // The judges' card when the bell rings: clean hits, caídas and pressure.
@@ -258,4 +276,4 @@ export function scorecard(body) {
   return Math.round((s.jabs + s.trompones * 3 + s.caidas * 6 + s.forward * .35 + s.blocks * .25) * 10) / 10;
 }
 
-export { setAct, knockDown, addMareo, canAct };
+export { setAct, knockDown, addMareo, canAct, facing };

@@ -12,6 +12,17 @@ import { Puffs, Shockwaves } from '/engine/fx.js';
 import { arenaOf, crowdSpot } from './fight-rules.js';
 import { createArena } from './arenas.js';
 import { createPana } from './fighters.js';
+import { motoHelmet, chancleta } from './set.js';
+import { plasticChair, produceCrates } from '/engine/models/props/barrio.js';
+
+// The things lying around a trifulca libre, at the size a pana can swing.
+const PROP_MODELS = {
+  silla: () => { const m = plasticChair({ color: '#ff4b4b' }); m.scale.setScalar(.55); return m; },
+  caja: () => produceCrates({ w: .6, d: .45, h: .34, seed: 4, detail: 'light' }),
+  casco: () => { const m = motoHelmet({ color: '#2ad1b2' }); m.scale.setScalar(.5); m.position.y = .3; const g = new THREE.Group(); g.add(m); return g; },
+  chancleta: () => { const m = chancleta({ color: '#ff6fae' }); m.scale.setScalar(1.8); return m; },
+};
+const ringOf = (bodies = []) => bodies.filter(b => !b.bench && !b.out);
 
 const BOT_LOOKS = ['#2ad1b2', '#ffc629', '#3d7bf2', '#ff8a3d', '#9b5de5', '#6bbf59', '#ff6fae', '#ee3024'];
 const REF_LOOK = { outfit: 'franela', outfitColor: '#f3e9d7', hat: 'llanero', hatColor: '#7a5230', face: 'cool' };
@@ -23,7 +34,7 @@ export function createTrifulcaScene(canvas, { me = () => null } = {}) {
   const sky = scene.children.find(o => o.material?.uniforms?.daylight);
   const own = new THREE.Group(); scene.add(own);
   const puffs = new Puffs(scene), rings = new Shockwaves(scene);
-  const panas = new Map();
+  const panas = new Map(), props = new Map();
   let arena = null, arenaId = null, npcs = [], lampLights = [], ref = null, current = null, time = 0;
   let camPerp = v(0, 0, 1), camPos = v(0, 4, 12), camLook = v(0, 1, 0), shake = 0, zoom = 1, zoomT = 0;
   const frames = [], replay = { on: false, frames: [], clock: 0 };
@@ -63,7 +74,11 @@ export function createTrifulcaScene(canvas, { me = () => null } = {}) {
 
   function update(state) {
     current = state;
-    setArena(state.options?.arena || 'calle');
+    setArena(state.arenaNow || state.options?.arena || 'calle');
+    // Chairs, crates, helmets and chancletas of a trifulca libre.
+    const liveProps = new Set((state.props || []).map(p => p.id));
+    for (const p of state.props || []) if (!props.has(p.id)) { const model = PROP_MODELS[p.kind]?.() || PROP_MODELS.caja(); own.add(model); props.set(p.id, { model, pos: v(p.x, 0, p.z), spin: 0 }); }
+    for (const [id, entry] of props) if (!liveProps.has(id)) { entry.model.userData.dispose?.(); entry.model.removeFromParent(); props.delete(id); }
     const live = new Set();
     state.players.forEach((p, i) => {
       live.add(p.id);
@@ -103,7 +118,7 @@ export function createTrifulcaScene(canvas, { me = () => null } = {}) {
     if (e.type === 'fin' && (e.how === 'ko' || e.how === 'cuenta') && lastCaida >= 0) {
       // The replay: from just before the last caída until the flop.
       const from = frames.findIndex(f => f.t >= lastCaida - 1.5), to = frames.findIndex(f => f.t >= lastCaida + .5);
-      if (from >= 0) { replay.frames = frames.slice(from, to < 0 ? undefined : to); replay.on = replay.frames.length > 4; replay.clock = -.5; }
+      if (from >= 0) { replay.frames = frames.slice(from, to < 0 ? undefined : to); replay.on = replay.frames.length > 4; replay.clock = -.25; }
     }
     return arena?.react(e) || null;
   }
@@ -114,13 +129,13 @@ export function createTrifulcaScene(canvas, { me = () => null } = {}) {
   function targets() {
     const state = current, out = new Map();
     if (!state) return out;
-    const shape = arenaOf(state.options?.arena);
+    const shape = arenaOf(state.arenaNow || state.options?.arena);
     const t0 = replay.frames[0]?.t ?? 0;
     const replayFrame = replay.on && replay.clock >= 0 ? replay.frames.find(f => f.t - t0 >= replay.clock) || replay.frames.at(-1) : null;
     const bodies = replayFrame ? replayFrame.bodies : state.phase === 'lobby' || state.phase === 'finished' ? [] : state.bodies;
-    for (const b of bodies) out.set(b.id, { x: b.x, z: b.z, y: floor(), h: b.h, view: { act: b.act, at: b.at, moving: b.moving, dodgeDir: b.dodgeDir }, corner: b.corner });
+    for (const b of bodies) out.set(b.id, { x: b.x, z: b.z, y: b.bench ? 0 : floor(), h: b.h, view: { act: b.bench ? 'bench' : b.act, at: b.at, moving: b.moving, dodgeDir: b.dodgeDir, holding: !!b.prop }, corner: b.corner });
     // Mano de caballero: both fighters walk in for the glove bump and the hug.
-    if (state.phase === 'after' && state.result?.mano && !replayFrame) {
+    if (state.phase === 'after' && state.result?.mano && !replayFrame && state.bodies.length === 2) {
       const [a, b] = state.bodies, mx = (a.x + b.x) / 2, mz = (a.z + b.z) / 2;
       for (const body of state.bodies) {
         const t = out.get(body.id), dx = body.x - mx, dz = body.z - mz, d = Math.hypot(dx, dz) || 1;
@@ -158,7 +173,7 @@ export function createTrifulcaScene(canvas, { me = () => null } = {}) {
     }
     // Record the fight for the replay.
     if (current?.phase === 'fight') {
-      frames.push({ t: time, bodies: current.bodies.map(b => ({ id: b.id, x: b.x, z: b.z, h: b.h, act: b.act, at: b.at, moving: b.moving, dodgeDir: b.dodgeDir, corner: b.corner })) });
+      frames.push({ t: time, bodies: current.bodies.map(b => ({ id: b.id, x: b.x, z: b.z, h: b.h, act: b.act, at: b.at, moving: b.moving, dodgeDir: b.dodgeDir, corner: b.corner, bench: b.bench, out: b.out })) });
       while (frames.length && frames[0].t < time - 6) frames.shift();
     }
     for (const n of npcs) {
@@ -169,26 +184,41 @@ export function createTrifulcaScene(canvas, { me = () => null } = {}) {
       if (n.cheer > 0 && !n.seated) n.group.position.y = Math.abs(Math.sin(time * 9 + n.phase)) * .12;
     }
     updateRef(dt);
+    placeProps(dt, want);
     arena?.update(time, dt);
     puffs.update(dt); rings.update(dt);
     direct(dt, want);
     stage.draw(dt);
   }
 
+  function placeProps(dt, want) {
+    for (const p of current?.props || []) {
+      const entry = props.get(p.id); if (!entry) continue;
+      const holder = p.held != null ? panas.get(p.held) : null;
+      let goal, tilt = 0;
+      if (holder) { const h = holder.h; goal = holder.pos.clone().add(v(Math.sin(h) * .55, 1.2, Math.cos(h) * .55)); tilt = .3; }
+      else if (p.fly) { goal = v(p.x, floor() + 1.25, p.z); entry.spin += dt * 14; }
+      else { goal = v(p.x, floor(), p.z); entry.spin = 0; }
+      entry.pos.lerp(goal, p.fly ? 1 : 1 - Math.exp(-dt * 18));
+      entry.model.position.copy(entry.pos); entry.model.rotation.set(tilt + entry.spin, p.h || 0, 0);
+    }
+    void want;
+  }
+
   // The ref stays out of the way, counts over a pana who's down and raises the winner's arm.
   function updateRef(dt) {
     if (!ref || !current) return;
-    const bodies = current.bodies || [], fighting = current.phase === 'fight' || current.phase === 'after' || current.phase === 'intro';
+    const bodies = ringOf(current.bodies), fighting = current.phase === 'fight' || current.phase === 'after' || current.phase === 'intro';
     let goal = v(0, floor(), -3.4), face = 0, pose = {};
-    if (fighting && bodies.length === 2) {
-      const [a, b] = bodies, mx = (a.x + b.x) / 2, mz = (a.z + b.z) / 2;
+    if (fighting && bodies.length >= 2) {
+      const mx = bodies.reduce((n, b) => n + b.x, 0) / bodies.length, mz = bodies.reduce((n, b) => n + b.z, 0) / bodies.length;
       goal = v(mx - camPerp.x * 2.2, floor(), mz - camPerp.z * 2.2);
       const down = bodies.find(x => x.act === 'down');
       if (down) { goal = v(down.x - camPerp.x * 1.3 + .6, floor(), down.z - camPerp.z * 1.3); pose = { pose: 'wave' }; }
       if (current.phase === 'after') { const w = bodies.find(x => x.id === current.result?.winner); if (w) { goal = v(w.x - camPerp.x * .2 + .7, floor(), w.z - camPerp.z * .2); pose = { pose: 'wave' }; } }
       face = Math.atan2(camPerp.x, camPerp.z);
     }
-    const shape = arenaOf(current.options?.arena);
+    const shape = arenaOf(current.arenaNow || current.options?.arena);
     if (shape.shape === 'circle') { const d = Math.hypot(goal.x, goal.z); if (d > shape.r - .4) goal.multiplyScalar((shape.r - .4) / d).setY(floor()); }
     else { goal.x = Math.max(-2.6, Math.min(2.6, goal.x)); goal.z = Math.max(-2.6, Math.min(2.6, goal.z)); }
     ref.pos.lerp(goal, 1 - Math.exp(-dt * 3));
@@ -200,22 +230,28 @@ export function createTrifulcaScene(canvas, { me = () => null } = {}) {
   function direct(dt, want) {
     const state = current, f0 = floor();
     let pos, look;
-    const fighters = state && state.phase !== 'lobby' && state.phase !== 'finished' ? state.bodies.map(b => panas.get(b.id)?.pos).filter(Boolean) : [];
-    if (fighters.length === 2) {
-      const [a, b] = fighters, mid = a.clone().add(b).multiplyScalar(.5), axis = b.clone().sub(a); axis.y = 0;
-      const sep = axis.length(); axis.normalize();
-      const perp = v(-axis.z, 0, axis.x); if (perp.dot(camPerp) < 0) perp.negate();
-      camPerp.lerp(perp, 1 - Math.exp(-dt * 3)).normalize();
+    const ring = state && state.phase !== 'lobby' && state.phase !== 'finished' ? ringOf(state.bodies) : [];
+    const fighters = ring.map(b => panas.get(b.id)?.pos).filter(Boolean);
+    if (fighters.length >= 2) {
+      // Two: side-on to their line. More: frame them all, drifting slowly around.
+      const [a, b] = fighters, mid = fighters.reduce((m, p) => m.add(p), v()).multiplyScalar(1 / fighters.length);
+      const axis = b.clone().sub(a); axis.y = 0;
+      const sep = fighters.length === 2 ? axis.length() : Math.max(...fighters.map(p => p.distanceTo(mid))) * 2;
+      axis.normalize();
+      const perp = fighters.length === 2 ? v(-axis.z, 0, axis.x) : v(Math.sin(time * .05), 0, Math.cos(time * .05));
+      if (perp.dot(camPerp) < 0) perp.negate();
+      camPerp.lerp(perp, 1 - Math.exp(-dt * (fighters.length === 2 ? 3 : .6))).normalize();
       zoom += ((zoomT > 0 ? .68 : 1) - zoom) * (1 - Math.exp(-dt * (zoomT > 0 ? 9 : 2.5)));
-      const dist = Math.min(12.5, Math.max(8.4, 6.2 + sep * 1.3)) * zoom;
+      const dist = Math.min(13.5, Math.max(8.4, 6.2 + sep * 1.3)) * zoom;
       pos = mid.clone().addScaledVector(camPerp, dist).add(v(0, (arena?.camHeight ?? 3.7) + f0 - (1 - zoom) * 1.6, 0));
       look = mid.clone().add(v(0, 1.05 + f0, 0));
       if (state.phase === 'intro') {
         // Walk-out: each fighter in close-up, then the wide shot.
-        const t = 6.5 - state.time, b0 = state.bodies[t < 2.6 ? 0 : 1], who = t < 2.6 ? a : b;
-        if (t < 5.2) {
-          const fx = Math.sin(b0.h), fz = Math.cos(b0.h), side = t < 2.6 ? -.35 : .35;
-          pos = who.clone().add(v(fx * 4.6 + camPerp.x * side * 4, 2.1, fz * 4.6 + camPerp.z * side * 4));
+        const t = 6.5 - state.time, slot = Math.min(fighters.length - 1, Math.floor(t / (5.2 / fighters.length)));
+        const b0 = ring[slot], who = fighters[slot];
+        if (t < 5.2 && fighters.length === 2) {
+          const fx = Math.sin(b0.h), fz = Math.cos(b0.h), side = slot % 2 ? .35 : -.35;
+          pos = who.clone().add(v(fx * 5.4 + camPerp.x * side * 4.4, 2.3, fz * 5.4 + camPerp.z * side * 4.4));
           look = who.clone().add(v(0, 1.35, 0));
         }
       }
@@ -245,8 +281,9 @@ export function createTrifulcaScene(canvas, { me = () => null } = {}) {
 
   function dispose() {
     for (const entry of panas.values()) entry.pana.dispose();
+    for (const entry of props.values()) entry.model.userData.dispose?.();
     npcs.forEach(n => n.dispose()); ref?.dispose(); arena?.dispose(); lampLights.forEach(l => l.removeFromParent());
     puffs.clear(); rings.clear(); stage.dispose();
   }
-  return { renderer, scene, camera, update, react, frame, stickBasis, dispose, get replaying() { return replay.on && replay.clock >= 0; }, get arenaId() { return arenaId; } };
+  return { renderer, scene, camera, update, react, frame, stickBasis, dispose, get replaying() { return replay.on; }, get arenaId() { return arenaId; } };
 }

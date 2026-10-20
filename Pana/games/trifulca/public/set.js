@@ -8,7 +8,7 @@ import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.j
 import { disposeModel } from '/engine/models/props/game-table.js';
 import { fbm2, rng } from '/engine/random.js';
 
-export const CORNER_COLORS = { red: '#e8443a', blue: '#2f6fe0' };
+export const CORNER_COLORS = { red: '#e8443a', blue: '#2f6fe0', yellow: '#f2b631', green: '#2aa876' };
 export const HELMET_COLORS = ['#ffffff', '#ffc629', '#2ad1b2', '#ff6fae', '#1f1f24', '#ff8a3d', '#9b5de5', '#6bbf59'];
 
 const mat = (color, extra = {}) => new THREE.MeshStandardMaterial({ color, roughness: .5, ...extra });
@@ -67,6 +67,25 @@ export function motoHelmet({ color = '#ffc629', stripe = '#1f1f24', scale = 1 } 
   const strap = part(group, new THREE.TorusGeometry(.42 * scale, .018 * scale, 6, 20, Math.PI), mat('#2a2a2a'), 0, -.12 * scale, .12 * scale);
   strap.rotation.set(0, 0, Math.PI);
   group.userData.previewBounds = [[-.7 * scale, -.6 * scale, -.7 * scale], [.7 * scale, .75 * scale, .75 * scale]];
+  return owned(group);
+}
+
+// ---------- Chancleta ----------
+// A rubber flip-flop, 0.3 m long, sole on y = 0 and the toe toward +Z: the
+// lightest thing to throw in a trifulca libre.
+export function chancleta({ color = '#2ad1b2', strap = '#ffffff' } = {}) {
+  const group = new THREE.Group(); group.name = 'Chancleta';
+  const shape = new THREE.Shape();
+  shape.moveTo(0, -.15); shape.bezierCurveTo(.07, -.15, .065, -.02, .055, .03); shape.bezierCurveTo(.05, .12, .06, .16, 0, .16);
+  shape.bezierCurveTo(-.06, .16, -.05, .12, -.055, .03); shape.bezierCurveTo(-.065, -.02, -.07, -.15, 0, -.15);
+  const sole = part(group, new THREE.ExtrudeGeometry(shape, { depth: .025, bevelEnabled: true, bevelSize: .006, bevelThickness: .006, bevelSegments: 2 }), mat(color, { roughness: .7 }));
+  sole.rotation.x = -Math.PI / 2; sole.position.y = .006;
+  const band = mat(strap, { roughness: .5 });
+  for (const side of [-1, 1]) {
+    const curve = new THREE.CatmullRomCurve3([new THREE.Vector3(0, .03, .11), new THREE.Vector3(side * .035, .06, .05), new THREE.Vector3(side * .055, .035, -.01)]);
+    part(group, new THREE.TubeGeometry(curve, 10, .009, 6), band);
+  }
+  group.userData.previewBounds = [[-.1, 0, -.18], [.1, .1, .2]];
   return owned(group);
 }
 

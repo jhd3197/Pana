@@ -7,13 +7,32 @@ own panas, shove fighters back in, bet dolitas, give water in the corner and
 can shout ¡cálmate!. The night ends after `peleas` fights; the richest pana
 wins and the titles are handed out.
 
+## Modes (`options.modo`)
+
+- `queda`, ganador se queda: two fight, the winner stays.
+- `libre`, trifulca libre: up to four in the ring (corners red, blue, yellow,
+  green), each facing the nearest foe still standing. Four props spawn at
+  62 % of the ring radius (silla, caja, casco, chancleta). Agarrar picks one
+  up within 1.2 m when no foe is within 1.3 m; with one in hand golpe swings
+  it (+0.35 m reach, ×1.4 mareo, ignores blocking) and agarrar throws it
+  (9.5 m/s, 7 m, 22 mareo, 0.55 m hit radius). A knocked-out pana leaves
+  (`out`); the last one standing wins; odds are the number of fighters.
+- `parejas`: two teams of two, one per team in the ring (`bench` on the
+  apron, 0.55 m outside the ring at the team's side, recovering 12 mareo/s).
+  Agarrar within 2.2 m of the partner tags them in. The team loses together;
+  the winning pair stays (`champions`). Bots fill to four.
+- `torneo`: a bracket of 4 (up to 4 panas) or 8, bots filling it. `bracket`
+  holds the rounds; the final is fought in el toldo (`arenaNow`) and ends the
+  night with the belt and 15 dolitas.
+
 ## Files
 
 - `public/fight-rules.js`: the punches. Two bodies, the four buttons, mareo,
   caídas, the count, the ring edge and the scorecard. Pure.
-- `public/rules.js`: the night (`Trifulca`): queue, phases (`lobby → intro →
-  fight → after → … → finished`), the crowd, bets, dolitas, mano de caballero,
-  titles and the bots. Pure; tested by `tests/rules.test.js`.
+- `public/rules.js`: the night (`Trifulca`): modes, queue, phases (`lobby →
+  intro → fight → after → … → finished`), the crowd, props, bets, dolitas, mano
+  de caballero and titles. `bot-rules.js` holds the bots. Pure; tested by
+  `tests/rules.test.js`.
 - `public/network.js`: the live room; the host runs the night at 20 Hz.
 - `public/scene.js`: stage, panas, NPC neighbours, the ref, the TV camera and
   the replay. `fighters.js` poses a pana; `arenas.js` dresses the four maps;

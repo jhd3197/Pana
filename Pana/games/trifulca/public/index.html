@@ -26,30 +26,22 @@
     <div class="pk-lobby-foot"><button id="start" class="pk-btn pk-btn--primary pk-btn--lg" disabled>Conectando…</button></div>
   </section>
   <main id="hud" hidden>
-    <section id="bars" aria-label="Los dos peleadores" hidden>
-      <div class="fighter fighter--red">
-        <div class="fighter-name"><b id="red-name"></b><span id="red-nick"></span></div>
-        <div id="red-mareo" class="meter meter--mareo" role="meter" aria-label="Mareo del rojo"><i></i></div>
-        <div class="fighter-low"><div id="red-aguante" class="meter meter--aguante" aria-label="Aguante del rojo"><i></i></div><span id="red-caidas" class="caidas" aria-label="Caídas"></span></div>
-      </div>
+    <section id="bars" aria-label="Los peleadores" hidden>
+      <div id="bars-left" class="side side--left"></div>
       <div class="clock"><b id="clock" class="pk-num"></b><span id="fight-no"></span></div>
-      <div class="fighter fighter--blue">
-        <div class="fighter-name"><b id="blue-name"></b><span id="blue-nick"></span></div>
-        <div id="blue-mareo" class="meter meter--mareo" role="meter" aria-label="Mareo del azul"><i></i></div>
-        <div class="fighter-low"><div id="blue-aguante" class="meter meter--aguante" aria-label="Aguante del azul"><i></i></div><span id="blue-caidas" class="caidas" aria-label="Caídas"></span></div>
-      </div>
+      <div id="bars-right" class="side side--right"></div>
     </section>
     <div id="call" class="call" role="status" aria-live="polite"></div>
     <div id="count" class="count pk-display" hidden></div>
     <div id="replay" class="replay pk-display" hidden>REPETICIÓN</div>
     <section id="intro-card" class="intro" hidden aria-label="Presentación">
-      <div class="intro-side intro-side--red"><span id="intro-red-nick" class="pk-display"></span><b id="intro-red-name"></b><span id="intro-red-from"></span><small id="intro-red-record"></small></div>
+      <div id="intro-left" class="intro-team intro-team--left"></div>
       <div class="intro-vs pk-display">VS<small id="intro-streak"></small></div>
-      <div class="intro-side intro-side--blue"><span id="intro-blue-nick" class="pk-display"></span><b id="intro-blue-name"></b><span id="intro-blue-from"></span><small id="intro-blue-record"></small></div>
+      <div id="intro-right" class="intro-team intro-team--right"></div>
     </section>
     <section id="bets" class="bets pk-panel" hidden aria-label="Apuestas">
       <span id="bet-note"></span>
-      <div class="bets-row"><button id="bet-red" class="pk-btn pk-btn--coral"></button><button id="bet-blue" class="pk-btn pk-btn--teal"></button></div>
+      <div id="bet-row" class="bets-row"></div>
     </section>
     <section id="verdict" class="verdict pk-panel" hidden aria-label="Resultado de la pelea">
       <span id="verdict-how" class="pk-ribbon"></span><h2 id="verdict-title" class="pk-heading"></h2>

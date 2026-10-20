@@ -139,6 +139,8 @@ export function createPana(avatar, { seed = 1, name = '', me = false } = {}) {
     if (act === 'down' || act === 'rise') for (const i of [0, 1]) out[i] = { rx: -.4, rz: sign(i) * 1.5, s: 1 };
     if (act === 'taunt') for (const i of [0, 1]) out[i] = { rx: -1.95, rz: -sign(i) * (.25 + Math.max(0, Math.sin(time * 14)) * .35), s: 1.05, z: .15 };
     if (act === 'win') for (const i of [0, 1]) out[i] = { rx: -3.05, rz: sign(i) * .25, s: 1.05 };
+    if (view.holding && ['idle', 'block', 'bench'].includes(act)) for (const i of [0, 1]) out[i] = { rx: -1.75, rz: -sign(i) * .35, s: 1.05, z: .15 };
+    if (act === 'throw') { const p = Math.min(1, at / .15); for (const i of [0, 1]) out[i] = { rx: ease(-2.9, -1.3, p), rz: -sign(i) * .2, s: 1.2, z: .2 }; }
     if (act === 'hug') for (const i of [0, 1]) out[i] = { rx: -1.6, rz: -sign(i) * .6, s: 1.1, z: .2 };
     return out;
   }

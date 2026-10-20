@@ -38,8 +38,13 @@ $('game-nav').append(menu.createInviteButton({ id: 'invite', className: 'pk-btn'
 $('rules').onclick = () => menu.open('controls');
 $('start').onclick = $('again').onclick = () => { sound.unlock(); room.action('start'); };
 $('practice').onclick = () => room.practice();
-const bet = (corner) => room.state.phase === 'intro' && room.action('bet', { corner });
-$('bet-red').onclick = () => bet('red'); $('bet-blue').onclick = () => bet('blue');
+// Bets by corner (the buttons) or by number (keys 1 to 4, in the corners' order).
+const bet = (pick) => {
+  if (room.state.phase !== 'intro') return;
+  const corners = Object.keys(room.state.fight?.odds || {}), corner = typeof pick === 'number' ? corners[pick] : pick;
+  if (corner) room.action('bet', { corner });
+};
+document.addEventListener('trifulca:bet', (event) => bet(event.detail));
 const voiceButton = $('voice');
 const showVoice = () => { voiceButton.textContent = voiceOn ? 'Narrador: sí' : 'Narrador: no'; voiceButton.setAttribute('aria-pressed', String(voiceOn)); };
 voiceButton.onclick = () => { voiceOn = !voiceOn; if (!voiceOn) hush(); try { localStorage.setItem(VOICE_KEY, voiceOn ? 'on' : 'off'); } catch { /* per-viewer nicety */ } showVoice(); };
@@ -68,6 +73,7 @@ function render(state) {
   $('start').textContent = !room.connected ? 'Conectando…' : room.isHost ? '¡A la trifulca!' : 'Espera al anfitrión';
   $('again').disabled = !room.connected || !room.isHost;
   fillRoster($('roster'), state.players.map((p, i) => ({ rank: i + 1, name: p.id === room.id ? `${p.name} · tú` : p.name, detail: p.bot ? 'Bot' : p.nick || 'Pana', me: p.id === room.id })));
+  hud.update(state, { replaying: world?.replaying });
   // New events once each: the first snapshot only marks where we are.
   const events = state.events || [];
   if (seen < 0 || events.at(-1)?.n < seen) seen = events.at(-1)?.n ?? 0;
