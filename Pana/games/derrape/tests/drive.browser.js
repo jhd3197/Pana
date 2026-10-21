@@ -64,13 +64,14 @@ try {
     renderer.render(race.scene, race.camera);
     race.keys = { w: true };
     updateRace(1 / 60);
-    return { started, level, before, after: p.boost, dir: p.drift, maxOff, limit:T.HW-1.6 };
+    return { started, level, before, after: p.boost, dir: p.drift, maxOff, limit:T.HW-1.6, marks: race.skidMarks.count };
   });
   await page.screenshot({ path: join(output, 'drive-drift.png') });
   assert.ok(drift.started, 'a held drift button with steering starts a drift');
   assert.ok(drift.level>=1, `real cornering earns sparks ${JSON.stringify(drift)}`);
   assert.ok(drift.maxOff<drift.limit, `drift stays off the walls ${JSON.stringify(drift)}`);
   assert.ok(drift.after > 0.4 && drift.dir === 0, `release pays the earned turbo ${JSON.stringify(drift)}`);
+  assert.ok(drift.marks >= 10, `drifting lays skid marks on the road ${JSON.stringify(drift)}`);
 
   // Feats: hold one drift past 100 m — re-entering the same bend keeps the run
   // on the road without touching drift state — and the toast celebrates; the

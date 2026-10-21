@@ -367,6 +367,12 @@ const world = createRaceWorld({ scene: race.scene, cameras: [race.camera, race.c
 Object.assign(race, { rain: world.rain, sky: world.sky, hemi: world.hemi, sun: world.sun });
 const applyPalette = world.applyPalette;
 race.debris = new Debris(race.scene);
+// Drift presentation loads with the first race, keeping the garage's first
+// load small (the feats.js pattern); stubs no-op until the modules land.
+race.skidMarks = { lay() {}, update() {}, clear() {} };
+let driftFx = null;
+import('./skid-marks.js').then(m => { race.skidMarks = new m.SkidMarks(race.scene, { focus: () => race.player }); });
+import('./drift-fx.js').then(m => { driftFx = m; });
 
 // ---------- race setup: mode, difficulty, laps, mirror (local races) ----------
 let profileStorage = null;
@@ -849,6 +855,7 @@ function clearRace() {
   race.puffs.clear();
   race.debris.clear();
   race.shockwaves.clear();
+  race.skidMarks.clear();
   setSpeedLines(0);
   race.items?.clear();
   race.player = null;
@@ -1529,27 +1536,7 @@ function collidePair(a, b) {
   }
 }
 
-// Sparks under the rear wheels show the drift charge: dust, then blue,
-// orange and purple. A stalled engine coughs black smoke instead.
-const SPARKS = [0xd8c6a8, 0x4fb6ff, 0xff9a1f, 0xc45bff];
-function driftSparks(c, dt) {
-  c.sparkT = (c.sparkT || 0) - dt;
-  if (c.sparkT > 0) return;
-  c.sparkT = 0.05;
-  const fx = Math.sin(c.h), fz = Math.cos(c.h), rx = -Math.cos(c.h), rz = Math.sin(c.h);
-  if (c.drift && c.onGround) {
-    const level = c.remote ? c.driftLvl || 0 : driftLevel(c.driftT);
-    for (const side of [-1, 1]) {
-      race.puffs.spawn(new THREE.Vector3(c.x - fx * 1.7 + rx * side * 1.1, c.y + 0.25, c.z - fz * 1.7 + rz * side * 1.1),
-        { color: SPARKS[level], count: 1, size: level ? 0.42 : 0.6, rise: level ? 0.9 : 0.5, life: level ? 0.28 : 0.5, spread: 0.3 });
-    }
-  }
-  if (c.stall > 0) race.puffs.spawn(new THREE.Vector3(c.x - fx * 2.2, c.y + 0.7, c.z - fz * 2.2), { color: 0x3a3a40, count: 1, size: 0.8, rise: 1.6, life: 0.8 });
-  if (c.draft > 0.2 && c.isPlayer) {
-    race.puffs.spawn(new THREE.Vector3(c.x + fx * 2 + rx * (Math.random() * 4 - 2), c.y + 1 + Math.random(), c.z + fz * 2 + rz * (Math.random() * 4 - 2)),
-      { color: 0xf4f8ff, count: 1, size: 0.25, rise: 0, life: 0.25, spread: 0.2 });
-  }
-}
+// Sparks, stall smoke and draft streaks live in drift-fx.js.
 
 function syncCar(c, dt) {
   const car = c.car;
@@ -1561,7 +1548,8 @@ function syncCar(c, dt) {
   if (c.trick) c.trickT += dt;
   const trickSpin = c.trick ? Math.min(1, c.trickT / 0.45) * Math.PI * 2 : 0;
   car.root.rotation.y = c.h + c.driftYaw + trickSpin + (c.spin > 0 ? (1 - (1 - k) ** 3) * Math.PI * 4 : 0);
-  driftSparks(c, dt);
+  driftFx?.driftSparks(race.puffs, c, dt);
+  race.skidMarks.lay(c, dt);
   syncVulture(c, dt);
   car.tumble.rotation.set(c.pitch, 0, c.roll);
 
@@ -1678,6 +1666,7 @@ function updateRace(dt, presentation = true) {
   for (const c of race.cars) syncGhostAppearance(c);
   race.hazards?.update(race.clock, dt, race.state === 'go' || race.state === 'end' ? race.cars : [], hitHazard);
   race.puffs.update(dt);
+  race.skidMarks.update(dt);
   race.debris.update(dt);
   race.shockwaves.update(dt);
   // The deterministic browser harness can run the same gameplay tick without
