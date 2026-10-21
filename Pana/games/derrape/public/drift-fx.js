@@ -15,7 +15,7 @@ export function driftSparks(puffs, c, dt) {
   if (c.sparkT > 0) return;
   c.sparkT = 0.05;
   const fx = Math.sin(c.h), fz = Math.cos(c.h), rx = -Math.cos(c.h), rz = Math.sin(c.h);
-  if (c.drift && c.onGround) {
+  if (c.drift && c.onGround && !c.boat) {   // on a river stretch transform-gates.js throws spray instead
     const level = c.remote ? c.driftLvl || 0 : driftLevel(c.driftT);
     for (const side of [-1, 1]) {
       puffs.spawn(new THREE.Vector3(c.x - fx * 1.7 + rx * side * 1.1, c.y + 0.25, c.z - fz * 1.7 + rz * side * 1.1),

@@ -47,7 +47,6 @@ import { CLASSIFICATION_TEXT, approximateCupText, cupStandingsView, nextStageTex
 import { soaringVulture } from '/engine/models/fauna/birds/soaring-vulture.js';
 import { tickWind } from '/engine/models/vegetation/plant-kit.js';
 import { DRAFT_TIME, DRAFT_BOOST, driftLevel, startBoost, startCue, inSlipstream, loseCoins } from './drive-rules.js';
-import { statRecord } from '/engine/stats.js';
 
 const $ = (id) => document.getElementById(id), esc = (text) => String(text).replace(/[&<>"]/g, (ch) => `&#${ch.charCodeAt(0)};`);
 const rand = (a, b) => a + Math.random() * (b - a), pick = (list) => list[Math.floor(Math.random() * list.length)];
@@ -615,6 +614,7 @@ function beginTrack(id) {
 function finishTrack() {
   race.trackGroup = T.group;
   race.scene.add(race.trackGroup);
+  gatesApi?.setTrack(T);
   applyPalette(T.def.palette);
   race.items = createItems({
     scene: race.trackGroup, puffs: race.puffs, sound, G, track: T,
@@ -1351,6 +1351,8 @@ const driftCombo = {
   update: (c) => comboApi?.update(c), totalOf: (c) => comboApi?.totalOf(c) ?? 0, bestChainOf: (c) => comboApi?.bestChainOf(c) ?? 1,
   live: (c) => comboApi?.live(c),
 };
+// River stretches that turn cars into lanchas (transform-gates.js), same lazy load.
+let gatesApi = null; const gatesReady = import('./transform-gates.js').then(m => { gatesApi = m.createTransformGates({ race, sound, track: () => T }); if (T?.group) gatesApi.setTrack(T); });
 if (DEBUG) window.PANA_DRIFT_SCORE = () => race.player ? driftCombo.live(race.player) : null;
 if (DEBUG) window.PANA_GHOST = () => race.ghost ? { lap: race.ghost.lap, clock: race.clock, x: race.ghost.car.x, y: race.ghost.car.y, z: race.ghost.car.z } : null;
 
@@ -1614,6 +1616,7 @@ function updateRace(dt, presentation = true) {
       stepCar(c, c.isPlayer && !AUTO ? playerInput(1) : c.human === 2 && !AUTO ? playerInput(2) : aiInput(c), dt);
       if (c.isPlayer) driftFeats.step(c, dt);   // milestone toasts read the drift the step left
       driftCombo.step(c, dt);   // style scoring reads every local car, bots included
+      gatesApi?.step(c, dt);    // on a river stretch a drift charges the wake turbo
       if (c.outT > OUT_TIME || c.stuckT > STUCK_TIME) rescue(c);
       if (!c.isPlayer) {
         c.aiHonk -= dt;
@@ -1623,6 +1626,8 @@ function updateRace(dt, presentation = true) {
           c.aiHonk = rand(5, 10);
         }
       }
+      // The recorder sees the crossing step before finish() closes the take.
+      if (c.isPlayer) race.recorder.step(race.clock, c);   // the ghost recorder samples at its own rate
       if (race.mode !== 'battle' && c.lap > race.laps) {
         c.done = true;
         c.time = race.clock;
@@ -1630,7 +1635,6 @@ function updateRace(dt, presentation = true) {
         if ((c.isPlayer || c.human) && race.cup) race.firstHumanFinish ??= race.clock;
         if (c.isPlayer || c.human) maybeFinish();
       }
-      if (c.isPlayer) race.recorder.step(race.clock, c);   // the ghost recorder samples at its own rate
     }
     if (race.cup && race.state === 'go' && (race.clock >= race.stageCap
       || (race.firstHumanFinish != null && race.clock - race.firstHumanFinish >= FINISH_GRACE_MS / 1000))) finish();
@@ -1660,7 +1664,7 @@ function updateRace(dt, presentation = true) {
 // HUD text is written only when it changes: a write invalidates layout even when equal.
 function setText(id, text) { const el = $(id); if (el.textContent !== text) el.textContent = text; }
 function presentRace(dt) {
-  for (const c of race.cars) syncCar(c, dt);
+  for (const c of race.cars) { syncCar(c, dt); gatesApi?.sync(c, dt); }
   if (race.ghost) syncCar(race.ghost.car, dt);
   race.sky.update(race.clock, T.def.palette?.daylight ?? 1);
   tickWind(race.clock, T?.def.rain ? 1.45 : 1);
@@ -1956,7 +1960,8 @@ function finish() {
   const ghost = race.recorder.finish();
   if (ghost?.saved) {
     shout('¡Nuevo fantasma! Tu mejor vuelta corre contigo');
-    statRecord(`derrape.best-lap:${T.id}`, Math.round(ghost.best * 1000), { better: 'min' });
+    const lapMs = Math.round(ghost.best * 1000), trackId = T.id;   // stats load lazily: the garage's first load is capped
+    import('/engine/stats.js').then(m => m.statRecord(`derrape.best-lap:${trackId}`, lapMs, { better: 'min' }));
   }
   if (race.netRace && net?.cup) {
     race.cup = { definition: cupById(net.cup.cupId), session: net.cup, mirror: false };
@@ -2378,7 +2383,7 @@ function resize() {
 addEventListener('resize', resize);
 resize();
 
-if (DEBUG) Object.assign(window, { loadTrack, disposeRacer, makeRacer, placeRacer, aiInput, stepRescue, collidePair, sendPoses, pollPads, music, getWallet: () => wallet, taller, menu, race, garage, renderer, crash, stepCar, startRace, updateRace, finish, renderResults, renderCup, toGarage, showWheel, ITEMS, TRACKS, buildTrack, setup, popBalloon, rescue, getDriftFeats: () => driftApi, getActiveTrack: () => T, getNet: () => net });
+if (DEBUG) Object.assign(window, { loadTrack, disposeRacer, makeRacer, placeRacer, aiInput, stepRescue, collidePair, sendPoses, pollPads, music, getWallet: () => wallet, taller, menu, race, garage, renderer, crash, stepCar, startRace, updateRace, presentRace, finish, renderResults, renderCup, toGarage, showWheel, ITEMS, TRACKS, buildTrack, setup, popBalloon, rescue, getDriftFeats: () => driftApi, getActiveTrack: () => T, getGates: () => gatesApi, getNet: () => net });
 // ?track=desierto wins; otherwise the last pick, otherwise the estadio
 let savedTrack = 'estadio';
 try { savedTrack = localStorage.getItem('derrape:track') || savedTrack; } catch { /* private mode */ }
@@ -2387,7 +2392,7 @@ garage.wheel = wheelById(wallet.wheel).id;   // the profile migrated any old 'de
 if (ROOM) goOnline(ROOM, QS.has('lead'));   // first: a reload reclaims its seat inside the reconnection window
 // Suites call buildTrack() and read TRACKS synchronously: every map loads before
 // PANA_PREPARED (showCar below). startRace() loads its own map either way.
-await Promise.all([featsReady, comboReady, ghostReady]);   // milestone toasts, the style score and the ghost are ready before any race can start
+await Promise.all([featsReady, comboReady, ghostReady, gatesReady]);   // milestone toasts, the style score and the ghost are ready before any race can start
 if (DEBUG) await loadTracks();
 selectTrack(QS.get('track') || savedTrack);
 showCar(0);

@@ -45,10 +45,14 @@ function outboard(tint) {
   return g;
 }
 
-export function createLancha(avatar = {}, color = '#e2683c') {
-  const group = new THREE.Group(), hull = new THREE.Group(), tint = new THREE.Color(color).getHex();
-  group.name = 'Lancha'; group.add(hull);
-  const paint = M(tint, { side: THREE.DoubleSide, roughness: .5 }), inside = M(0xe8d3a6, { side: THREE.DoubleSide, roughness: .8 });
+// The bare peñero: hull, rims, thwarts, bow deck, pennant, cava and the
+// outboard, with no pana aboard. createLancha seats the pana in it; `open`
+// leaves out the thwarts and the cava so Derrape can fold it around a car;
+// `body` paints the hull itself apart from the team colour (pennant, motor).
+export function createLanchaHull(color = '#e2683c', { open = false, body = color } = {}) {
+  const hull = new THREE.Group(), tint = new THREE.Color(color).getHex();
+  hull.name = 'Casco de lancha';
+  const paint = M(new THREE.Color(body).getHex(), { side: THREE.DoubleSide, roughness: .5 }), inside = M(0xe8d3a6, { side: THREE.DoubleSide, roughness: .8 });
   const cream = M(0xf3e5c3), wood = M(0xac8354, { roughness: 1 }), dark = M(0x2d3a3e);
   for (const side of [-1, 1]) {
     hull.add(skin(side, false, paint), skin(side, true, inside));
@@ -60,14 +64,23 @@ export function createLancha(avatar = {}, color = '#e2683c') {
   SECTIONS.forEach(([z, w], i) => { const y = .05 + lift(i); bottom.push(-w * .24, y, z, w * .24, y, z); if (i < SECTIONS.length - 1) { const k = i * 2; bix.push(k, k + 1, k + 2, k + 1, k + 3, k + 2); } });
   const bgeo = new THREE.BufferGeometry(); bgeo.setAttribute('position', new THREE.Float32BufferAttribute(bottom, 3)); bgeo.setIndex(bix); bgeo.computeVertexNormals(); hull.add(mesh(bgeo, paint));
   hull.add(box(1.46, .72, .1, paint, 0, .44, -2.2), box(1.5, .07, .14, cream, 0, .82, -2.2));
-  for (const z of [-1.45, .2]) hull.add(rounded(1.55, .1, .36, wood, 0, .55, z));
+  if (!open) for (const z of [-1.45, .2]) hull.add(rounded(1.55, .1, .36, wood, 0, .55, z));
   const deck = new THREE.Mesh(new THREE.ConeGeometry(.74, 1.3, 3, 1).rotateX(Math.PI / 2).scale(1, .12, 1), cream); deck.position.set(0, .86, 1.95); deck.rotation.z = Math.PI; hull.add(deck);
   hull.add(tube([0, .95, 2.35], [0, 1.85, 2.45], .02, M(0x5b4330)));
   const flag = mesh(new THREE.PlaneGeometry(.4, .24), M(tint, { side: THREE.DoubleSide, roughness: .7 }), 0, 1.72, 2.45);
+  // A team-colour stripe under the rim on both sides.
+  for (const side of [-1, 1]) hull.add(curve(SECTIONS.slice(0, 5).map(([z, w], i) => [side * (w + .012), .6 + lift(i), z]), .07, M(tint, { roughness: .5 }), 24));
   flag.rotation.y = Math.PI / 2; flag.geometry.translate(-.2, 0, 0); hull.add(flag);
   // A blue cava (cooler) up front: the lancha's cargo.
-  hull.add(rounded(.6, .36, .42, M(0x2f7fc4), 0, .72, .85, .05), box(.62, .05, .44, M(0xf4f4ee), 0, .92, .85));
+  if (!open) hull.add(rounded(.6, .36, .42, M(0x2f7fc4), 0, .72, .85, .05), box(.62, .05, .44, M(0xf4f4ee), 0, .92, .85));
   const motor = outboard(tint); motor.position.set(0, .62, -2.32); hull.add(motor);
+  hull.userData.motor = motor;
+  return hull;
+}
+
+export function createLancha(avatar = {}, color = '#e2683c') {
+  const group = new THREE.Group(), hull = createLanchaHull(color), motor = hull.userData.motor;
+  group.name = 'Lancha'; group.add(hull);
   // The pana sits aft, by the motor, one hand on the tiller.
   const pana = buildCharacter(avatar, { seated: true }); pana.group.scale.setScalar(.62); pana.group.position.set(-.12, .62, LANCHA.seat); hull.add(pana.group);
   let bob = 0, spin = 0, lean = 0, pitch = 0, yaw = 0, disposed = false;

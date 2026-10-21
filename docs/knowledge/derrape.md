@@ -42,5 +42,16 @@ lobby (`derrape-menu.md`), and its own Colyseus room (`derrape-online.md`).
   so collisions, items, hazards and placements never see it; drift flags are
   stripped on replay so it sheds no sparks or skid marks. Records in every
   race mode except battle; `?noghost` turns the feature off.
+- River stretches: a track definition can list `transformGates: [{ from, to }]`
+  (route fractions; Choroní has one on the east-bank road). `public/
+  transform-gates.js` (lazy, like feats.js) lays a water sheet over that
+  stretch with a tricolour arch at each end, and every frame decides from
+  position alone whether each car — remote ones too — is a lancha: the hull
+  (`createLanchaHull` from `engine/models/vehicles/lancha.js`, `open`, white
+  body) unfolds on the car's tumble group and the wheels tuck. The road stays
+  the driving surface, so AI, checkpoints and placements never notice. On the
+  water a drift charges faster (wake turbo); skid marks and sparks give way to
+  spray. The local player's splash triggers the slow-mo and counts
+  `derrape.metamorfosis`. Proof: `tests/transform-gates.browser.js`.
 - Derrape signals readiness with `window.PANA_PREPARED` once the garage car is
   built, like every other game (tests/browser-kit.js `waitPrepared`).
