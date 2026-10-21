@@ -5,7 +5,7 @@ import { poolConnected, defaultPoolOptions, poolOptions } from '../public/match-
 
 function table(count = 6, options = {}) {
   const s = createGame(); for (let i = 0; i < count; i++) s.players[i].id = i + 10;
-  assert.ok(act(s, 'options', { options: { ...defaultPoolOptions(), ...options } }, 10));
+  assert.ok(act(s, 'options', { options: { ...defaultPoolOptions(), starter: 'anfitrion', ...options } }, 10));
   assert.ok(act(s, 'start', {}, 10)); return s;
 }
 const act = (s, action, values = {}, id = s.players[s.turn].id) => acceptAction(s, id, { action, revision: s.revision, ...values }, 10);

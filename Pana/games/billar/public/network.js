@@ -1,12 +1,12 @@
 import { TableRoom } from '/engine/table-room.js';
-import { createGame, acceptAction, step, STEP, snapshot, botShot, botPlacement, BOT_ID, advanceShotClock } from './rules.js';
+import { createGame, acceptAction, step, STEP, snapshot, botShot, botPlacement, BOT_ID, advanceShotClock, stepPoolStarter } from './rules.js';
 
 // The table setting (map, difficulty) survives new rooms and practice.
 const keepMap = (prev) => ({ ...(prev?.mapId ? { mapId: prev.mapId } : {}), ...(prev?.difficulty ? { difficulty: prev.difficulty } : {}), ...(prev?.options ? { options: { ...prev.options } } : {}) });
 
 export class PoolRoom extends TableRoom {
   constructor(options) {
-    super({ ...options, game: 'billar', protocol: 'billar-v2', texts: {
+    super({ ...options, game: 'billar', protocol: 'billar-v3', texts: {
       handoff: 'Cambió el anfitrión. La mesa continúa.', practice: 'Mesa de práctica · juega a tu ritmo', ...options.texts } }, {
       fresh: (prev) => ({ ...createGame(), ...keepMap(prev) }),
       // Solo practice clears the rack alone; versusBot() puts Pana Bot across the table.
@@ -30,6 +30,7 @@ export class PoolRoom extends TableRoom {
   // Fixed physics steps while the balls roll; ~20 snapshots a second.
   step(dt) {
     const g = this.game;
+    if (g.phase === 'starter') return stepPoolStarter(g, dt);
     if (advanceShotClock(g, dt)) return true;
     if (this.botReady(dt, g.phase === 'aiming' && !!g.players[g.turn].bot, g.ballInHand ? .7 : 1.4)) {
       // Ball in hand is its own visible step; the shot follows after another pause.
