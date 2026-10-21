@@ -31,6 +31,10 @@ test('faster, more charged and more sideways drifts score more per second', () =
   assert.ok(rate({ driftLvl: 3 }) > rate({ driftLvl: 2 }), 'purple > orange');
   assert.equal(rate({ vr: 0 }), 0, 'a held button on a straight scores nothing');
   assert.ok(rate({ vr: 30 }) > base, 'more sideways scores more');
+  // The drive model bleeds vr fast and swings the tail visually: a drifted
+  // bend shows up as turning (latAcc = turn × vf), and that scores too.
+  assert.ok(rate({ vr: 0, latAcc: 30 * SCORE.TURN_FULL }) > 0, 'a drifted bend with no slip still scores');
+  assert.equal(rate({ vr: 0, latAcc: 0 }), 0, 'no slip and no turn scores nothing');
 });
 
 test('the exact rate is base × speed × level × angle while drifting', () => {

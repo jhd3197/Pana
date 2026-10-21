@@ -9,8 +9,11 @@
 //   BASE_RATE × speed factor × level factor × angle factor × chain
 // speed  vf / SPEED_REF, capped at SPEED_CAP (a turbo run scores, not explodes)
 // level  LEVEL_FACTOR[c.driftLvl]: blue/orange/purple charge worth more
-// angle  |vr| / max(|vf|, 1), full sideways at ANGLE_FULL; a held button on a
-//        straight (vr ≈ 0) scores nothing, like the charge rule
+// angle  the larger of the slip |vr| / max(|vf|, 1) (full at ANGLE_FULL) and
+//        the drift's turn rate |latAcc / vf| (full at TURN_FULL rad/s): the
+//        drive model swings the tail visually and bleeds vr fast, so a real
+//        drifted bend shows up as turning. A held button on a straight
+//        (no slip, no turn) scores nothing, like the charge rule
 // chain  ×1 for a lone drift; a drift starting within CHAIN_WINDOW seconds of
 //        the last one's end raises it, up to CHAIN_MAX
 //
@@ -28,12 +31,13 @@ export const SCORE = {
   SPEED_CAP: 2,                  // boost speeds still count, just bounded
   LEVEL_FACTOR: [0.5, 1, 1.6, 2.4],   // by driftLvl 0..3: every real drift scores
   ANGLE_FULL: 0.6,               // |vr|/|vf| ratio that counts as fully sideways
+  TURN_FULL: 0.8,                // rad/s of drifted turning that counts as full angle
   CHAIN_WINDOW: 3,               // s after a drift ends to link the next one
   CHAIN_MAX: 5,                  // multiplier cap
 };
 
 export function createDriftScoring({ count = statCount } = {}) {
-  const { BASE_RATE, SPEED_REF, SPEED_CAP, LEVEL_FACTOR, ANGLE_FULL, CHAIN_WINDOW, CHAIN_MAX } = SCORE;
+  const { BASE_RATE, SPEED_REF, SPEED_CAP, LEVEL_FACTOR, ANGLE_FULL, TURN_FULL, CHAIN_WINDOW, CHAIN_MAX } = SCORE;
   const cars = new Map();
   const state = (c) => {
     let s = cars.get(c);
@@ -66,7 +70,10 @@ export function createDriftScoring({ count = statCount } = {}) {
         }
         const speed = Math.min(SPEED_CAP, Math.max(0, c.vf) / SPEED_REF);
         const level = LEVEL_FACTOR[Math.min(c.driftLvl || 0, LEVEL_FACTOR.length - 1)];
-        const angle = Math.min(1, Math.abs(c.vr || 0) / Math.max(Math.abs(c.vf), 1) / ANGLE_FULL);
+        const speedAbs = Math.max(Math.abs(c.vf), 1);
+        const slip = Math.abs(c.vr || 0) / speedAbs / ANGLE_FULL;
+        const turning = Math.abs(c.latAcc || 0) / speedAbs / TURN_FULL;
+        const angle = Math.min(1, Math.max(slip, turning));
         s.pending += BASE_RATE * speed * level * angle * s.chain * dt;
       } else if (s.drifting) {
         // The drift just ended. A clean release (button let go) opens the
