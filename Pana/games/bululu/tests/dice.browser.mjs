@@ -59,12 +59,26 @@ try {
   console.log('PASS both dice face the camera with the correct pips for all six values');
   await local.context().close();
 
-  // A real local game opens with the roll-off: hold Space to shake, let go to throw.
+  // A real local game opens with ¿Quién empieza?: hold Space to shake the cacho, let go to slam it.
   const thrown = await open();
   await thrown.locator('#start').click();
-  await thrown.evaluate(async () => { for (let i = 0; i < 80 && !window.thrower; i++) await fastForward(0.25); });
-  assert.match(await thrown.locator('#prompt').textContent(), /Tira para empezar/);
+  await thrown.evaluate(async () => { for (let i = 0; i < 80 && !starter.state; i++) await fastForward(0.25); });
   await thrown.evaluate(() => document.activeElement?.blur());
+  await thrown.keyboard.down(' ');
+  await thrown.evaluate(() => fastForward(0.3));
+  assert.ok(await thrown.evaluate(() => starter.state.shaking.includes(0) && starter.stage.thrower.shaking), 'Space shakes the cacho');
+  await wait(thrown, () => starter.stage.thrower.power > 0.6);
+  await thrown.keyboard.up(' ');
+  assert.ok(await thrown.evaluate(() => starter.state.slammed[0] > 0.6), 'a long shake slams hard');
+  const opening = await thrown.evaluate(async () => {
+    for (let i = 0; i < 200 && starter.state; i++) await fastForward(0.25);
+    return { order: onlineState().order, shown: !document.querySelector('.pk-qe').hidden };
+  });
+  assert.deepEqual([...opening.order].sort(), [0, 1, 2, 3, 4, 5]); assert.equal(opening.shown, false);
+  console.log(`PASS the cachos give the whole turn order: ${opening.order.join(' ')}`);
+  // Then the board's own dice, on Juan's first turn: hold Space to shake, let go to throw.
+  await thrown.evaluate(async () => { for (let i = 0; i < 400 && !window.thrower; i++) await fastForward(0.25); });
+  assert.match(await thrown.locator('#prompt').textContent(), /Mantén para agitar/);
   await thrown.keyboard.down(' ');
   await wait(thrown, () => thrower?.shaking && thrower.power > 0.6);
   await thrown.keyboard.up(' ');
