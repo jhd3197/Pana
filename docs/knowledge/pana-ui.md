@@ -87,7 +87,9 @@ setting can hide them.
 `engine/gamepad.js` makes an Xbox or PlayStation pad work in every game that
 loads through `game-entry.js`, with no game code at all for menus. The stick or
 d-pad moves a yellow highlight between the visible buttons, A presses, B backs
-out of a dialog, LB/RB change the menu's tabs and Start is Esc. The pad treats
+out of a dialog or clicks the page's `[data-pad-back]` link (the lobby's Juegos,
+the editor's Volver a los juegos), LB/RB change the menu's tabs and Start
+(the ☰ menu button) is Esc, or the page's `menu` (the hub opens Ajustes). The pad treats
 these as menus: an open `dialog`, a visible `.pk-results`, any visible panel
 marked `[data-pad-menu]`, and the lobby. A new menu puts the highlight on its
 `.pk-btn--primary` (or `.pana-primary`) button. The highlight follows that

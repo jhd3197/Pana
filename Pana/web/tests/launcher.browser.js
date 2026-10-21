@@ -72,6 +72,10 @@ try {
   await page.evaluate(() => document.addEventListener('pana:launch', e => { e.preventDefault(); window.padIntent = e.detail; }, { once: true }));
   await press(0);
   assert.equal(await page.evaluate(() => window.padIntent.game), padGame);
+  await press(9);   // the menu button (☰) opens Ajustes, B closes it
+  await page.locator('#pana-menu-dialog[open]').waitFor();
+  await press(1);
+  await page.waitForFunction(() => !document.querySelector('#pana-menu-dialog[open]'));
   await page.evaluate(() => { navigator.getGamepads = () => []; });
   await page.locator('[data-id="pintura"] button').click();
   await page.locator('#open-settings').click();

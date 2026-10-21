@@ -13,6 +13,8 @@
 //     playing: () => state.phase === 'play',       // false: the whole page is a menu
 //   } });
 //   pad: { native: true, help: [['A', 'Golpe'], …] } // the game reads the pad itself in play
+//   padControls({ playing: () => false, menu: () => settings.open() })  // a page that is all menu;
+//                                                  // Start (☰) runs `menu`, B clicks [data-pad-back]
 //
 // Buttons by their Xbox names: a b x y lb rb lt rt view start ls rs; the d-pad
 // is up down left right. First-person games get right-stick look through
@@ -154,7 +156,9 @@ function menuPress(scope) {
 }
 function menuBack(scope) {
   if (scope.matches('dialog')) { sendKey('keydown', 'Escape', scope); if (scope.open && !scope.classList.contains('pana-menu')) scope.close?.(); return; }
-  targets(scope).find(n => n.matches('.pana-close, [data-pad-back]'))?.click();
+  // Outside a dialog B is "back": the page's [data-pad-back] link (the lobby's
+  // Juegos, the editor's Volver a los juegos).
+  (targets(scope).find(n => n.matches('.pana-close')) || [...document.querySelectorAll('[data-pad-back]')].find(shown))?.click();
 }
 function menuTab(scope, step) {
   const tabs = [...scope.querySelectorAll('[role=tab]')].filter(shown);
@@ -232,12 +236,12 @@ function frame(now) {
   if (!pad) { release(); before = null; running = false; return; }
   const was = before?.held || {}, edge = name => pad.held[name] && !was[name];
   const scope = menuScope();
-  const lobby = document.getElementById('pana-lobby-shell');
 
-  if (edge('start') && (!lobby || lobby.hidden)) {
+  if (edge('start')) {
     const open = [...document.querySelectorAll('dialog[open]')].at(-1);
     release();
     if (open && !open.classList.contains('pana-menu')) menuBack(open);
+    else if (!open && setup.menu) setup.menu();
     else sendKey('keydown', 'Escape', open || document.body);   // createGameMenu's Esc
   } else if (scope) {
     release();

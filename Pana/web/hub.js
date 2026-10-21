@@ -25,8 +25,9 @@ gear.setAttribute('aria-label', 'Ajustes');
 gear.title = 'Ajustes';
 document.getElementById('hub-actions').append(gear);
 // A controller works the whole hub like a menu: the stick or d-pad moves
-// between games and buttons, A presses (engine/gamepad.js).
-padControls({ playing: () => false });
+// between games and buttons, A presses, the menu button (☰) opens Ajustes
+// (engine/gamepad.js).
+padControls({ playing: () => false, menu: () => settings.open() });
 
 // The shared lobby song plays on the hub too. Its modules and the song itself
 // load once the page has, so the first tap or key (browsers keep audio locked

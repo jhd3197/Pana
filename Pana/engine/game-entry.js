@@ -17,7 +17,7 @@ let maxPlayers = 8;
 const docked = [];
 const root = el('section', 'pk-game-lobby'); root.id = 'pana-lobby-shell'; root.setAttribute('aria-label', 'Sala del juego');
 root.style.setProperty('--lobby-image', `url("/images/launcher/${game}.jpg")`);
-const head = el('header', 'pk-game-lobby-head'), back = el('a', 'pk-btn', ' Juegos'); back.prepend(icon('chevronLeft')); back.href = '/';
+const head = el('header', 'pk-game-lobby-head'), back = el('a', 'pk-btn', ' Juegos'); back.prepend(icon('chevronLeft')); back.href = '/'; back.dataset.padBack = '';
 const title = el('h1', 'pk-title', document.title.split(/[·—]/)[0].trim());
 const invite = el('button', 'pk-btn pk-btn--teal', 'Copiar link'); invite.type = 'button'; invite.id = 'pana-lobby-invite';
 const roomCode = el('b', 'pk-game-lobby-code');
