@@ -8,6 +8,13 @@ becomes the GitHub release's notes.
 
 ## Unreleased
 
+- **¿Quién empieza? Every table game now opens with the cachos.** All panas
+  shake a leather cacho at once, slam it and lift together; the highest die
+  starts, ties shake again, and a strip shows the order. Ludo, Bululú, Caída,
+  Póquer and Billar use it, Dominó offers it next to its own rule and Bolas
+  criollas flips a coin. Hosts can pick Al azar, El anfitrión or Revancha (the
+  last place starts) in Más ajustes.
+
 - **New game: Trifulca, barrio boxing where the winner stays and everyone
   else is the ring.** Two panas fight with jab, trompón, block, dodge and
   grab; hits fill your mareo instead of a health bar, three caídas is a

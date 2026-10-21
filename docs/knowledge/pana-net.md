@@ -25,7 +25,9 @@ on top of `HostRoom`. Start there (the `new-game` scaffold does); drop to plain
   optionally `unseat(id)` and `step(dt)` (bots via `botReady(dt, botTurn)`, or
   physics). It owns seq numbers from the room's ledger, snapshot routing, a
   revision guard (the same host never moves backwards), the host-change notice
-  and practice. Unit tests: `engine/tests/table-room.test.js`.
+  and practice. Unit tests: `engine/tests/table-room.test.js`. Action values
+  never carry a `kind` field: it overwrites the message's own `kind: 'action'`
+  and the host drops guests' actions (`quien-empieza.md`).
 - **`engine/live-room.js` `LiveRoom`**: real time, the host steps the game at
   20 Hz with everyone's latest input (Cocina, Escondidas, Reliquia, Galope,
   Curiara). Implement `cleanInput(raw)`, `takeOver`, `handle(id, action)` and the

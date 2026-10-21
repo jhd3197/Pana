@@ -14,6 +14,7 @@ Written by whoever learned the lesson, human or AI, for whoever comes next.
 | Hub and launcher | `launcher.md` |
 | Shared UI and look | `pana-kit.md` (kit, results, icons, colours, touch), `pana-ui.md` (menu, settings, invites); NPC barks come from `Pana/engine/play/frases.js` (dichos by mood, seeded `pickLine`, `crude` lines opt-in) and show in `engine/play/seat-bubbles.js` |
 | Online rooms | `pana-net.md` (room kit, `TableRoom`, `LiveRoom`), `derrape-online.md` |
+| Who starts a table game | `quien-empieza.md` (the shared cacho mini game, its room option and flavours) |
 | Characters | `character-reference.md` |
 | Pana Studio and models | `pana-studio.md`, `model-inventory.md`, `shared-props.md`, `shared-arenas.md`, `living-world.md`, `nature-surfaces.md`, `venezuelan-trees.md`, `colonial-houses.md`, `folio-grab-list.md` |
 | Prop packs | `pueblo-paramo-props.md`, `llanos-desert-props.md`, `coastal-props.md`, `procedural-farm-animals.md`, `wildlife.md`, `map-asset-rollout.md` |
