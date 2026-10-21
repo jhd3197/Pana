@@ -19,6 +19,9 @@ becomes the GitHub release's notes.
   y los nombres sobre los carros son banderines con el puesto, que se
   achican con la distancia. Vuelta final, vuelta rápida, derrapes y
   contramano tienen avisos nuevos, y las teclas solo se ven al arrancar.
+
+## 0.5.0 - 2026-10-21
+
 - **Contributors get one-command scaffolds and safer checks.** `npm run
   new-track` registers a Derrape circuit everywhere with a placeholder that
   already races, `npm run launcher-art` adds a game's hub art, `npm run
