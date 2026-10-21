@@ -58,8 +58,15 @@ export function createStarterStage({ root, camera, canvas, spot, scale = .5, onI
   function mayThrow() {
     return !!state && state.phase === 'shake' && state.contenders.includes(ownSeat) && !(ownSeat in state.slammed) && slammedLocal !== roundKey();
   }
+  // Every update re-reads spot(): a table whose seats move (a pana joins,
+  // the table grows) carries its cups along.
+  function respot(e) {
+    const s = spot(e.seat), out = new THREE.Vector3(s.out[0], 0, s.out[1]).normalize();
+    if (e.base.distanceToSquared(new THREE.Vector3(...s.position)) < 1e-8 && e.out.distanceToSquared(out) < 1e-8) return;
+    e.base.set(...s.position); e.out.copy(out); e.side.crossVectors(UP, out).normalize(); e.pose = '';
+  }
   function seatOf(seat) {
-    if (seats.has(seat)) return seats.get(seat);
+    if (seats.has(seat)) { const e = seats.get(seat); respot(e); return e; }
     const s = spot(seat), cup = createCacho(), die = createCachoDie();
     cup.scale.setScalar(scale); die.scale.setScalar(scale); group.add(cup, die);
     const base = new THREE.Vector3(...s.position), out = new THREE.Vector3(s.out[0], 0, s.out[1]).normalize();

@@ -83,3 +83,4 @@ main { position: static; min-height: 0; }
   .lobby .pk-lobby-foot{gap:6px;}
   .lobby .pk-btn--lg{padding:12px 16px;}
 }
+body.pana-starter .board-area { visibility: hidden; }
