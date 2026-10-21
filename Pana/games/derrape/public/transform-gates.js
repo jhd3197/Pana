@@ -20,6 +20,8 @@ import { createLancha } from '/engine/models/vehicles/lancha.js';
 import { statCount } from '/engine/stats.js';
 import { shout } from '/engine/kit.js';
 import { createParticleField } from './particles.js';
+import { syncGhostAppearance } from './racer-render.js';
+import { isGhost } from './recovery-rules.js';
 
 const MORPH_S = 0.7;           // seconds for the car → lancha swap (or back)
 const BOAT_SCALE = 1.3;        // the peñero beside car-sized racers
@@ -106,6 +108,7 @@ export function createTransformGates({ race, sound, track }) {
     lancha.group.visible = false;
     lancha.group.scale.setScalar(0.001);
     c.car.tumble.add(lancha.group);
+    if (isGhost(c)) { c.ghostVisible = false; syncGhostAppearance(c); }   // the replay's lancha is translucent too
     const driver = c.car.driver, dispose = driver?.dispose;
     if (driver) driver.dispose = (...args) => { lancha.dispose(); return dispose?.apply(driver, args); };
     c.car.lancha = lancha;

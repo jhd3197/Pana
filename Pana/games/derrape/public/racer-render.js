@@ -5,6 +5,7 @@ import * as THREE from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { repaintHex } from './shop.js';
 import { BALLOONS } from './modes.js';
+import { isGhost } from './recovery-rules.js';
 
 // Battle balloons ride on sticks above the trunk, in the car's colour.
 const balloonGeo = new THREE.SphereGeometry(0.55, 10, 8);
@@ -117,4 +118,40 @@ export function batchRacer(car, paint = null) {
   car.root.traverse(o => removed.delete(o.geometry));
   removed.forEach(g => g.dispose());
   return car;
+}
+
+// A ghost (the personal-best replay, a respawning or disconnected racer)
+// renders translucent: materials are cloned once, flagged ghostClone, and
+// restored in place. Re-running it after new parts join the car (a lancha)
+// is safe: clones are reused.
+export function setGhost(c, ghost) {
+  c.ghost = !!ghost;
+  syncGhostAppearance(c);
+}
+
+export function syncGhostAppearance(c) {
+  const ghost = isGhost(c);
+  if (!!c.ghostVisible === ghost) return;
+  c.ghostVisible = ghost;
+  c.car.root.traverse(o => {
+    if (!o.material) return;
+    const apply = (m) => {
+      if (ghost) {
+        const clone = m.userData?.ghostClone ? m : m.clone();
+        (c.car.ghostMaterials ??= new Set()).add(clone);
+        if (!m.userData?.ghostClone) clone.userData = { ...clone.userData, ghostClone: true, baseTransparent: m.transparent, baseOpacity: m.opacity ?? 1 };
+        clone.transparent = true;
+        clone.opacity = Math.min(0.42, clone.userData.baseOpacity);
+        clone.needsUpdate = true;
+        return clone;
+      }
+      if (m.userData?.ghostClone) {
+        m.transparent = !!m.userData.baseTransparent;
+        m.opacity = m.userData.baseOpacity ?? 1;
+        m.needsUpdate = true;
+      }
+      return m;
+    };
+    o.material = Array.isArray(o.material) ? o.material.map(apply) : apply(o.material);
+  });
 }

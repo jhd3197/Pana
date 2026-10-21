@@ -82,3 +82,42 @@ export function createGhostRecorder({ storage = safeStorage(), hz = POSE_HZ } = 
     discard,
   };
 }
+
+// Shipped ghosts: public/ghosts/<trackId>.json, the same shape plus who drove
+// it ({ by, car, avatar }). The first ask starts a quiet fetch and returns
+// null; later asks get the cached ghost (or null when the track has none).
+const shipped = new Map();
+export function devGhost(trackId, load = (url) => fetch(url).then(r => r.ok ? r.json() : null)) {
+  if (!shipped.has(trackId)) {
+    shipped.set(trackId, null);
+    Promise.resolve().then(() => load(new URL(`./ghosts/${trackId}.json`, import.meta.url).href)).then(ghost => {
+      const ok = loadGhost(trackId, { getItem: () => JSON.stringify(ghost) });
+      if (ok) shipped.set(trackId, { ...ok, by: String(ghost.by || 'dev').slice(0, 32), car: ghost.car, avatar: ghost.avatar });
+    }).catch(() => {});
+  }
+  return shipped.get(trackId);
+}
+
+// Which ghost to race: the shipped one while it beats yours (or you have
+// none), your own once you are faster.
+export function pickGhost(own, dev) {
+  if (!dev) return own;
+  return !own || dev.lap < own.lap ? dev : own;
+}
+
+// The stored best lap as a shippable file, signed: what goes into
+// public/ghosts/<trackId>.json.
+export function ghostFile(trackId, { by, car, avatar } = {}, storage = safeStorage()) {
+  const ghost = loadGhost(trackId, storage);
+  return ghost ? JSON.stringify({ by, car, avatar, ...ghost }) : null;
+}
+
+// Save that file from the browser (debug: exportGhost() on a track page).
+export function downloadGhost(trackId, meta, storage = safeStorage()) {
+  const file = ghostFile(trackId, meta, storage);
+  if (!file) return null;
+  const a = Object.assign(document.createElement('a'), { href: URL.createObjectURL(new Blob([file], { type: 'application/json' })), download: `${trackId}.json` });
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  return `${trackId}.json`;
+}

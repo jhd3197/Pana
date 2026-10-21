@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createGhostRecorder, loadGhost, ghostKey } from '../public/ghost-recorder.js';
+import { createGhostRecorder, loadGhost, ghostKey, pickGhost, devGhost, ghostFile } from '../public/ghost-recorder.js';
 import { poseAt, createGhostPlayback, spawnGhost } from '../public/ghost-car.js';
 import { POSE_HZ, FLAG, DRIFT_SHIFT } from '../public/online-rules.js';
 
@@ -201,4 +201,40 @@ test('spawnGhost places the replica on the lap-start pose from the countdown', (
   assert.equal(ghost.car.z, 7);
   ghost.update(500, 1 / 60);
   assert.equal(ghost.car.x, 6.5);
+});
+
+const lapOf = (lap) => ({ lap, poses: [[0, ...Array(15).fill(0)], [500, ...Array(15).fill(1)]] });
+
+test('the shipped dev ghost races you while it is faster, your own once you beat it', () => {
+  const own = lapOf(60), dev = { ...lapOf(55), by: 'jhd3197 (dev)' };
+  assert.equal(pickGhost(null, dev), dev, 'no ghost of your own: race the dev');
+  assert.equal(pickGhost(own, dev), dev, 'the dev is faster');
+  assert.equal(pickGhost(lapOf(50), dev).lap, 50, 'beat the dev: your own ghost');
+  assert.equal(pickGhost(own, null), own);
+  assert.equal(pickGhost(null, null), null);
+});
+
+test('a shipped ghost loads once, signed, and a missing one stays null', async () => {
+  let asked = 0;
+  const file = { by: 'jhd3197 (dev)', car: 'bala', avatar: { skin: 1 }, ...lapOf(70) };
+  assert.equal(devGhost('qa-track', async () => { asked++; return file; }), null, 'the first ask only starts the fetch');
+  await new Promise(r => setTimeout(r, 0));
+  const ghost = devGhost('qa-track', async () => { asked++; return file; });
+  assert.equal(asked, 1);
+  assert.equal(ghost.by, 'jhd3197 (dev)');
+  assert.equal(ghost.car, 'bala');
+  assert.equal(ghost.lap, 70);
+  devGhost('qa-none', async () => null);
+  await new Promise(r => setTimeout(r, 0));
+  assert.equal(devGhost('qa-none'), null);
+});
+
+test('the stored best lap exports as a signed ghost file', () => {
+  const storage = memStorage();
+  storage.setItem(ghostKey('chuao'), JSON.stringify(lapOf(64)));
+  const file = JSON.parse(ghostFile('chuao', { by: 'jhd3197 (dev)', car: 'chamo' }, storage));
+  assert.equal(file.by, 'jhd3197 (dev)');
+  assert.equal(file.lap, 64);
+  assert.equal(file.poses.length, 2);
+  assert.equal(ghostFile('nada', {}, storage), null);
 });
