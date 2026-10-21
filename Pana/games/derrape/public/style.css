@@ -363,8 +363,13 @@ body:has(#loading:not(.hidden)) #garage { visibility: hidden; }
   position: absolute; inset: 0; display: grid; place-items: center;
   font-size: 150px; color: var(--pk-yellow);
   -webkit-text-stroke: 6px var(--pk-night); text-shadow: 0 8px 0 var(--pk-coral);
-  pointer-events: none;
+  pointer-events: none; transition: color 120ms;
 }
+/* A held gas during the countdown: coral is too early (the engine floods),
+   white is a plain start, teal is the turbo window. */
+#count[data-rev="early"] { color: var(--pk-coral); text-shadow: 0 8px 0 var(--pk-night); }
+#count[data-rev="ok"] { color: #fff; }
+#count[data-rev="good"] { color: var(--pk-teal); text-shadow: 0 8px 0 var(--pk-night); }
 
 .touch-drive { display: none; }
 

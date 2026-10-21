@@ -6,7 +6,7 @@ import { sound } from '/engine/fx.js';
 import { pick } from '/engine/random.js';
 import { roughnessAt, roadGripAt, roadWaterAt } from './offroad.js';
 import { coinMultiplier } from './item-rules.js';
-import { DRIFT_MIN_SPEED, DRIFT_BOOST, HOP_SPEED, DRIFT_EXIT_TIME, driftLevel, driftSteer, assistDrift, driftCharge, trickBoost } from './drive-rules.js';
+import { DRIFT_MIN_SPEED, DRIFT_BOOST, HOP_SPEED, DRIFT_EXIT_TIME, driftLevel, driftSteer, assistDrift, driftCharge, trickBoost, STALL_THROTTLE } from './drive-rules.js';
 import { wrapAngle } from './rules.js';
 import { advanceLap, isOpenEdge, offCourse, stuckStep, OPEN_MARGIN } from './course-rules.js';
 import { isGhost, recordImpact } from './recovery-rules.js';
@@ -42,7 +42,7 @@ export function createDriver({ race, track, say, popPart, progressOf, flameFor, 
     const acceleration=t.accel*(1-rough*(1-(terrain?.accel??1)))*(1-water*.28*waterDrag);
     const previous={x:c.x,z:c.z};
     if (c.spin > 0) input = { throttle: 0, steer: 0 };   // skidding on a peel: no control
-    if (c.stall > 0) { c.stall -= dt; input = { ...input, throttle: 0 }; }   // flooded engine after a jumped start
+    if (c.stall > 0) { c.stall -= dt; input = { ...input, throttle: Math.min(input.throttle, STALL_THROTTLE) }; }   // flooded engine after a jumped start
     // A short entry hop; keep holding and turn whenever ready after landing.
     // In the air after a ramp the same button is still a trick.
     const held = !!input.drift;

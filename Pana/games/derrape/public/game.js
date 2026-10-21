@@ -47,7 +47,7 @@ import { rewardCupCompletion, rewardCupStage } from './cup-rewards.js';
 import { CLASSIFICATION_TEXT, approximateCupText, cupStandingsView, nextStageText, rankChangeText, tiebreakText } from './cup-ui.js';
 import { soaringVulture } from '/engine/models/fauna/birds/soaring-vulture.js';
 import { tickWind } from '/engine/models/vegetation/plant-kit.js';
-import { DRAFT_TIME, DRAFT_BOOST, driftLevel, startBoost, inSlipstream, loseCoins } from './drive-rules.js';
+import { DRAFT_TIME, DRAFT_BOOST, driftLevel, startBoost, startCue, inSlipstream, loseCoins } from './drive-rules.js';
 
 const $ = (id) => document.getElementById(id);
 const esc = (text) => String(text).replace(/[&<>"]/g, (ch) => `&#${ch.charCodeAt(0)};`);
@@ -1155,7 +1155,7 @@ const menu = createGameMenu({ pad: { native: true, playing: () => mode === 'race
     ['X', 'Lanzar objeto atrás'], ['1 2', 'Elegir objeto'], ['Q', 'Cambiar objeto'], ['R', 'Pedir rescate al zamuro'], ['C', 'Mirar atrás'], ['H', 'Claxon'], ['M', 'Sonido'], ['Esc', 'Pausa']],
   tips: ['Mantén Shift y gira para derrapar. La ayuda corrige si te acercas al borde; gira al otro lado para abrir la curva.',
     'Suelta Shift al salir de la curva: el carro se estabiliza y las chispas dan turbo. No hace falta esperar a las moradas.',
-    'Acelera justo al final del "1" para un arranque cohete. Si aceleras en el "3" se te ahoga el motor.',
+    'Puedes acelerar antes del ¡YA!. Desde el final del "1" sales con arranque cohete; desde el "3" el motor se ahoga y sale flojito un momento.',
     'Rompe cajas de madera para conseguir objetos. Cada moneda da un poquito más de velocidad.',
     'Sales y vuelves del rescate como fantasma durante 3 segundos. Los roces entre carros ya no te lanzan al aire.',
     'Cada carro tiene su talento: lee su ficha y combina cauchos con derrapes, rebufo o piruetas.',
@@ -1619,9 +1619,9 @@ function updateRace(dt, presentation = true) {
     else race.count -= dt;
     const n = Math.ceil(race.count) - 1;
     $('count').textContent = n > 0 ? n : '¡YA!';
-    // Rocket start: remember when the gas went down (and stayed down).
-    if (playerInput().throttle > 0) race.throttleAt ??= race.count;
-    else race.throttleAt = null;
+    // Rocket start: remember when the gas went down (and stayed down); the number's colour shows how the start will go.
+    race.throttleAt = playerInput().throttle > 0 ? race.throttleAt ?? race.count : null;
+    $('count').dataset.rev = race.throttleAt == null ? '' : startCue(race.throttleAt);
     if (race.count <= 1) {
       race.state = 'go';
       if (race.netRace) race.clock = Math.max(0, (net.now() - net.state.startAt) / 1000);
@@ -1630,7 +1630,7 @@ function updateRace(dt, presentation = true) {
   } else if (race.state === 'go' || race.state === 'end') {
     race.clock += dt;
     if (race.count > 0) {
-      race.count -= dt;
+      race.count -= dt; $('count').dataset.rev = '';
       if (race.count <= 0) $('count').textContent = '';
     }
     for (const c of race.cars) {

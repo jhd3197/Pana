@@ -37,13 +37,21 @@ export const driftCharge = (dir, steer) => 0.75 + Math.max(0, steer * dir) * 0.5
 
 // Rocket start. `pressedAt` is the countdown value (3.999 → 1) when the
 // throttle went down and stayed down, or null when it is not held at "¡YA!".
-// Press during the second half of "1" for a turbo; mash it on "3" and stall.
+// Holding the gas early always gets you going at "¡YA!"; the timing only
+// grades it: late in "1" a full turbo, early in "1" a small one, from "2" a
+// plain start, and from "3" a flooded engine that pulls weakly for a moment.
+export const START_WINDOWS = { rocket: 1.6, good: 2, early: 2.85 };
 export function startBoost(pressedAt) {
   if (pressedAt == null) return { boost: 0, stall: 0 };
-  if (pressedAt <= 1.6) return { boost: 1.3, stall: 0 };
-  if (pressedAt > 2.85) return { boost: 0, stall: 0.9 };
+  if (pressedAt <= START_WINDOWS.rocket) return { boost: 1.3, stall: 0 };
+  if (pressedAt <= START_WINDOWS.good) return { boost: 0.6, stall: 0 };
+  if (pressedAt > START_WINDOWS.early) return { boost: 0, stall: 0.6 };
   return { boost: 0, stall: 0 };
 }
+// How a held throttle reads during the countdown, for the HUD.
+export const startCue = (count) => count > START_WINDOWS.early ? 'early' : count > START_WINDOWS.good ? 'ok' : 'good';
+// A flooded engine still pulls, only weakly: the car moves, just slower.
+export const STALL_THROTTLE = 0.35;
 
 // A trick in the air pays out a short turbo on a clean landing.
 export const TRICK_MIN_AIR = 0.35;          // seconds airborne before a trick counts

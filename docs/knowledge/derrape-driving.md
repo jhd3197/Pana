@@ -45,6 +45,17 @@ could not expose wall collisions. Never use that fixture as driving proof.
 No pose fields or extra network messages are added. Remote clients continue
 to display the owner's position and existing drift/spark flags.
 
+## Start line
+
+Holding the gas before "¡YA!" always gets the car going; `startBoost`
+(drive-rules.js) only grades when it went down. Late in "1" (≤1.6) gives the
+full turbo, earlier in "1" (≤2) a small one, and from "2" a plain start. From
+"3" (>2.85) the engine floods for 0.6 s at `STALL_THROTTLE` (35 %) power. It
+used to give zero throttle for 0.9 s, so pre-accelerating felt like the gas
+had not registered and players let go and pressed again. While the gas is held
+during the countdown, the number shows how the start will go: coral is
+flooded, white is plain, teal is a turbo.
+
 ## Proof
 
 `drift-assist.browser.js` drives complete corner entries and exits without

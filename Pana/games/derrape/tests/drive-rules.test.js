@@ -40,6 +40,8 @@ test('rocket start: late press boosts, early press stalls, no press does nothing
   assert.ok(startBoost(1.3).boost > 0);
   assert.ok(startBoost(3.5).stall > 0);
   assert.deepEqual(startBoost(2.2), { boost: 0, stall: 0 });
+  assert.ok(startBoost(1.8).boost > 0 && startBoost(1.8).boost < startBoost(1.3).boost, 'early in "1" is a smaller turbo');
+  assert.ok(startBoost(3.5).stall < 0.9, 'holding from "3" costs a moment, not the start');
 });
 
 test('tricks pay only after real air and a clean landing', () => {
