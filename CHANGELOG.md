@@ -8,6 +8,13 @@ becomes the GitHub release's notes.
 
 ## Unreleased
 
+- **Derrape estrena tres circuitos: Colonia Tovar, Galipán de noche y
+  Maracaibo · El puente.** Sube entre pinos, hortensias y neblina hasta el
+  pueblo alemán; cruza de noche el pueblito iluminado de Galipán con Caracas
+  brillando abajo; y pasa el puente sobre el lago, los palafitos y La Chinita
+  bajo los relámpagos del Catatumbo. Los árboles son los del catálogo de Pana
+  y los tres circuitos funcionan en carreras rápidas, salas en línea y Studio.
+
 - **Derrape se ve como se siente derrapar: el caucho queda marcado en la
   pista, el humo crece con la carga del derrape y soltar en púrpura frena el
   mundo un instante.** Las marcas de los cauchos se desvanecen solas en unos

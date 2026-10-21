@@ -4,13 +4,16 @@ import { ceiba } from '/engine/models/vegetation/ceiba.js';
 import { cacao } from '/engine/models/vegetation/selva-trees.js';
 import { palm } from '/engine/models/vegetation/palm.js';
 import { treeFern } from '/engine/models/vegetation/selva-palms.js';
+import { pine } from '/engine/models/vegetation/pine.js';
+import { mountainPine } from '/engine/models/vegetation/mountain-pine.js';
 import { forestZone, prepareForestModel, denseForest } from './forest-detail.js';
 
 // Preserve the reference planting zones, but use Pana's native silhouettes.
 // Mountain canopy has neither fruit nor individual leaves; road trees do.
 export function coastalVegetation(group, worldScale = 1, roadDistance) {
   const batches = new Map();
-  const factories = { tree: ceiba, mango: mangoTree, cacao, palm, fern: treeFern };
+  const factories = { tree: ceiba, mango: mangoTree, cacao, palm, fern: treeFern,
+    pine: o => pine({ ...o, h: 9 }), fir: o => mountainPine({ seed: o.seed, h: 8 }) };
   let count = 0;
   const zones = { near: 0, middle: 0, far: 0 };
   return {
@@ -29,12 +32,12 @@ export function coastalVegetation(group, worldScale = 1, roadDistance) {
       const dense=denseForest([...batches.values()].flat(),20/worldScale);
       for (const [key, positions] of batches) {
         const [species, zone] = key.split(':');
-        const fronds=species==='palm'||species==='fern';
-        for(const crowded of zone==='far'&&!fronds?[true,false]:[false]) {
-          const points=zone==='far'&&!fronds?positions.filter(p=>dense.has(p)===crowded):positions;
+        const fronds=species==='palm'||species==='fern', conifer=species==='pine'||species==='fir';
+        for(const crowded of zone==='far'&&!fronds&&!conifer?[true,false]:[false]) {
+          const points=zone==='far'&&!fronds&&!conifer?positions.filter(p=>dense.has(p)===crowded):positions;
           if(!points.length)continue;
           const model = factories[species]({ seed: 37, detail: zone === 'near' ? 'game' : 'far', fruit: zone === 'near' });
-          prepareForestModel(model, zone, { fronds,dense:crowded });
+          prepareForestModel(model, zone, { fronds,pine:conifer,dense:crowded });
           instancePlacements(group, model, points, { name: `coastal-${key}`, cellSize: 120, castShadow: zone === 'near' });
         }
       }

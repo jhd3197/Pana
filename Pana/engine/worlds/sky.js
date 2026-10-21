@@ -2,6 +2,8 @@ import * as THREE from 'three';
 
 // One sky draw for every outdoor world. Clouds live at two optical heights,
 // independent of map bounds; no world-sized mesh enters scenery batches.
+const DEFAULT_SUN = new THREE.Vector3(-.48, .72, .5).normalize();
+
 export function createSky(palette = {}) {
   const uniforms = {
     time: { value: 0 }, daylight: { value: 1 }, cover: { value: .52 }, seed: { value: 7 },
@@ -98,7 +100,8 @@ export function createSky(palette = {}) {
     u.rainbow.value = p.rainbow ?? 0;
     u.flash.value = p.flash ?? 0;
     u.halo.value = p.halo ?? 0;
-    if(p.sunDirection)u.sunDirection.value.copy(p.sunDirection).normalize();
+    // A night map's moon must not carry over to the next map's sun.
+    u.sunDirection.value.copy(p.sunDirection ?? DEFAULT_SUN).normalize();
   }
   function setRainbow(v = 0) { live().rainbow.value = THREE.MathUtils.clamp(v, 0, 1); }
   function setFlash(v = 0) { live().flash.value = THREE.MathUtils.clamp(v, 0, 1); }

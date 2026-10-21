@@ -1695,7 +1695,7 @@ function updateRace(dt, presentation = true) {
 function setText(id, text) { const el = $(id); if (el.textContent !== text) el.textContent = text; }
 function presentRace(dt) {
   for (const c of race.cars) syncCar(c, dt);
-  race.sky.update(race.clock);
+  race.sky.update(race.clock, T.def.palette?.daylight ?? 1);
   tickWind(race.clock, T?.def.rain ? 1.45 : 1);
   for (const o of T.animated) o.userData.tick(race.clock, dt);   // scenery: flags, windmills, birds…
   sound.setEngine(race.player.vf);

@@ -23,4 +23,7 @@ export const TRACK_DEFINITIONS = [
   {id:'cata', name:'Bahía de Cata', blurb:'Baja entre montañas, cruza el cocotal y corre por el banco de arena hasta la isla.'},
   {id:'choroni', name:'Choroní', blurb:'Curvas de montaña, bosque nublado, Puerto Colombia y Playa Grande.'},
   {id:'chuao', name:'Chuao · La quebrada', blurb:'Del cacaotal al pueblo: sube al salto y baja con tu carro por la quebrada.'},
+  {id:'tovar', name:'Colonia Tovar', blurb:'Sube entre hortensias y pinos, métete en la neblina y cruza el pueblo alemán y el mercado de fresas.'},
+  {id:'galipan', name:'Galipán de noche', blurb:'Sube de noche por la montaña entre chalets iluminados y asómate al mirador con Caracas brillando abajo.'},
+  {id:'maracaibo', name:'Maracaibo · El puente', blurb:'Cruza el puente sobre el lago, pasa los palafitos, el casco de colores y La Chinita bajo los relámpagos del Catatumbo.'},
 ];

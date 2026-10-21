@@ -1,5 +1,5 @@
 {
-  "note": "User-provided artwork. Original PNGs are preserved in the sibling pana-photos/generated folder. Map art is illustrative; track-map draws the actual route. Aragua previews are native renders of the playable circuit scenes, adapted from user-provided HTML maps.",
+  "note": "User-provided artwork. Original PNGs are preserved in the sibling pana-photos/generated folder. Map art is illustrative; track-map draws the actual route. Aragua, Colonia Tovar, Galipán and Maracaibo previews are native renders of the playable circuit scenes, adapted from user-provided HTML maps.",
   "images": [
     {
       "file": "salinas.webp",
@@ -222,6 +222,42 @@
       "source": "Native render: chuao circuit",
       "width": 480,
       "bytes": 25502
+    },
+    {
+      "file": "tovar.webp",
+      "source": "Native render: tovar circuit",
+      "width": 1200,
+      "bytes": 143810
+    },
+    {
+      "file": "tovar-thumb.webp",
+      "source": "Native render: tovar circuit",
+      "width": 480,
+      "bytes": 33096
+    },
+    {
+      "file": "galipan.webp",
+      "source": "Native render: galipan circuit",
+      "width": 1200,
+      "bytes": 56590
+    },
+    {
+      "file": "galipan-thumb.webp",
+      "source": "Native render: galipan circuit",
+      "width": 480,
+      "bytes": 18054
+    },
+    {
+      "file": "maracaibo.webp",
+      "source": "Native render: maracaibo circuit",
+      "width": 1200,
+      "bytes": 58562
+    },
+    {
+      "file": "maracaibo-thumb.webp",
+      "source": "Native render: maracaibo circuit",
+      "width": 480,
+      "bytes": 14528
     }
   ]
 }
