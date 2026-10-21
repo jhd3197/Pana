@@ -47,6 +47,7 @@ import { CLASSIFICATION_TEXT, approximateCupText, cupStandingsView, nextStageTex
 import { soaringVulture } from '/engine/models/fauna/birds/soaring-vulture.js';
 import { tickWind } from '/engine/models/vegetation/plant-kit.js';
 import { DRAFT_TIME, DRAFT_BOOST, driftLevel, startBoost, startCue, inSlipstream, loseCoins } from './drive-rules.js';
+import { statRecord } from '/engine/stats.js';
 
 const $ = (id) => document.getElementById(id), esc = (text) => String(text).replace(/[&<>"]/g, (ch) => `&#${ch.charCodeAt(0)};`);
 const rand = (a, b) => a + Math.random() * (b - a), pick = (list) => list[Math.floor(Math.random() * list.length)];
@@ -1952,7 +1953,11 @@ function renderCup() {
 function finish() {
   race.state = 'end';
   driftCombo.finish(race.player);   // bank a live chain so the results count it
-  if (race.recorder.finish()?.saved) shout('¡Nuevo fantasma! Tu mejor vuelta corre contigo');
+  const ghost = race.recorder.finish();
+  if (ghost?.saved) {
+    shout('¡Nuevo fantasma! Tu mejor vuelta corre contigo');
+    statRecord(`derrape.best-lap:${T.id}`, Math.round(ghost.best * 1000), { better: 'min' });
+  }
   if (race.netRace && net?.cup) {
     race.cup = { definition: cupById(net.cup.cupId), session: net.cup, mirror: false };
   }
