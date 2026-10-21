@@ -1623,6 +1623,8 @@ function updateRace(dt, presentation = true) {
           c.aiHonk = rand(5, 10);
         }
       }
+      // The recorder sees the crossing step before finish() closes the take.
+      if (c.isPlayer) race.recorder.step(race.clock, c);   // the ghost recorder samples at its own rate
       if (race.mode !== 'battle' && c.lap > race.laps) {
         c.done = true;
         c.time = race.clock;
@@ -1630,7 +1632,6 @@ function updateRace(dt, presentation = true) {
         if ((c.isPlayer || c.human) && race.cup) race.firstHumanFinish ??= race.clock;
         if (c.isPlayer || c.human) maybeFinish();
       }
-      if (c.isPlayer) race.recorder.step(race.clock, c);   // the ghost recorder samples at its own rate
     }
     if (race.cup && race.state === 'go' && (race.clock >= race.stageCap
       || (race.firstHumanFinish != null && race.clock - race.firstHumanFinish >= FINISH_GRACE_MS / 1000))) finish();
