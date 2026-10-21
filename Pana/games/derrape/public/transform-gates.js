@@ -30,10 +30,12 @@ const WATER_LIFT = 0.32;       // the sheet sits this far over the road
 const SPRAY = [0xffffff, 0xd8f4ff, 0x9fe3ef];
 const DROPS = [0xffffff, 0xe6f8ff, 0xbfeaf5, 0x8fd6e8];   // droplet tints, foam to river
 
-// Route gates in arc length, from the definition's fractions.
+// Route gates in arc length, from the definition's fractions. A gate may
+// name a world point instead (`fromAt: [x, z]`, e.g. a waterfall): it starts
+// where the route passes closest to it, `lead` metres early.
 export function gateRuns(T) {
   return (T.def.transformGates || []).map(g => {
-    const s0 = g.from * T.TOTAL, s1 = g.to * T.TOTAL;
+    const s0 = g.fromAt ? T.nearest(g.fromAt[0], g.fromAt[1]).s - (g.lead ?? 0) : g.from * T.TOTAL, s1 = g.to * T.TOTAL;
     return { ...g, s0, len: ((s1 - s0) % T.TOTAL + T.TOTAL) % T.TOTAL };
   }).filter(g => g.len > 10);
 }
