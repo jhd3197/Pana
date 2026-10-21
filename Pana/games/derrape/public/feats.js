@@ -17,6 +17,7 @@ export function createDriftFeats(el, opts) {
   let level = 0;      // spark level of that drift, as of its last step
   let boost = 0;      // c.boost on that last step: a paid turbo marks a clean release
   let nextLong = LONG_DRIFT_M;
+  let winCounted = false;   // one races-won count per race; reset() starts the next
   return {
     // One physics step of the local player's car; game.js calls it after stepCar.
     step(c, dt) {
@@ -37,7 +38,15 @@ export function createDriftFeats(el, opts) {
         current = 0; level = 0; nextLong = LONG_DRIFT_M;
       }
     },
-    reset() { distance.reset(); current = 0; level = 0; nextLong = LONG_DRIFT_M; },
+    // The local player won the race: count it once, however often the
+    // results screen re-renders. Returns whether this call counted.
+    win() {
+      if (winCounted) return false;
+      winCounted = true;
+      statCount('derrape.races-won');
+      return true;
+    },
+    reset() { distance.reset(); current = 0; level = 0; nextLong = LONG_DRIFT_M; winCounted = false; },
     get current() { return current; },
     get total() { return distance.total; },
   };

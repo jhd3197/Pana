@@ -1379,7 +1379,7 @@ const { stepCar } = createDriver({ race, track: () => T, say, popPart, progressO
 // Milestone toasts for the local player's drifting; the module loads with the
 // first race (awaited in startRace), keeping the garage's first load small.
 let driftApi = null; const featsReady = import('./feats.js').then(m => { driftApi = m.createDriftFeats($('toast')); });
-const driftFeats = { step: (c, dt) => driftApi?.step(c, dt), reset: () => driftApi?.reset() };
+const driftFeats = { step: (c, dt) => driftApi?.step(c, dt), reset: () => driftApi?.reset(), win: () => driftApi?.win() };
 
 // ---------- the zamuro rescue ----------
 // Off the course, stuck, or asked for (R): a vulture lifts the car, flies it
@@ -1993,6 +1993,7 @@ function finish() {
       + (p.balloons === 0 ? ` · aguantaste ${clockText(p.outAt ?? race.clock)}` : '');
   }
   const won = race.mode === 'battle' ? p.balloons > 0 && standings()[0] === p : p.done && !p.dns && place === 1;
+  if (won) driftFeats.win();
   music.play(RESULTS_SONG, { fallback: 'calipso' });
   music.sting(finishSting(won));
   if (race.cup) {

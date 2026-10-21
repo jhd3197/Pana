@@ -50,6 +50,14 @@ test('a long single drift fires once per 100 m without releasing', () => {
   assert.equal(feats.current > 100, true);
 });
 
+test('a race win counts once until the next race resets', () => {
+  const { feats } = rig();
+  assert.equal(feats.win(), true);
+  assert.equal(feats.win(), false);   // a results re-render must not recount
+  feats.reset();
+  assert.equal(feats.win(), true);
+});
+
 test('releasing a purple drift celebrates; a crashed drift does not', () => {
   const { el, step } = rig(), c = car();
   c.driftLvl = 3;
