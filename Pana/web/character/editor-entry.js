@@ -1,3 +1,6 @@
+// A controller works the editor like a menu (engine/gamepad.js).
+import { padControls } from '/engine/gamepad.js';
+padControls({ playing: () => false });
 try {
   await import('./editor.js');
   document.querySelector('.panel').inert = false;

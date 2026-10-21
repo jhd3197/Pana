@@ -7,6 +7,20 @@ names from a visual prototype. Caída is still Caída, Póquer is still Póquer 
 Billar is still Billar. Pepazo keeps the `pintura` folder and room type so shared
 links and saved game IDs continue to work.
 
+## Rows and controllers
+
+Below the banner the games sit in one row per category (`data-row`), plus
+"Seguir jugando" on top once `launch()` has saved recent ids in
+`pana:recent`. On a desktop the banner keeps the top of the screen and the
+rows scroll under it in a strip (`.games-wrap`): the row a controller or the
+keyboard moves into scrolls to the top of that strip. Stepping onto a card
+with the pad or the keyboard (`.pana-pad-focus` or `:focus-visible`) features
+it, and pressing it then launches. A tap or a click still only features it.
+The hub and the Mi pana editor call `padControls({ playing: () => false })`,
+so the whole page is a menu for `engine/gamepad.js`. The rail arrows are for
+the mouse and carry `data-pad-skip`. Tiles below the strip load their art
+lazily, so a test scrolls a tile into view before decoding it.
+
 ## Art and rendering
 
 Header, content and card rail use `--pk-page-width` / `--pk-page-gutter` from

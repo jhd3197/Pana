@@ -87,7 +87,7 @@ export function menuScope() {
 }
 export function targets(scope) {
   return [...scope.querySelectorAll(FOCUSABLE)].filter(node => !node.disabled && node.getAttribute('aria-disabled') !== 'true'
-    && !node.closest('[inert], [hidden], .hidden, .pk-touch, .pk-dpad, [aria-hidden="true"]') && shown(node));
+    && !node.closest('[inert], [hidden], .hidden, .pk-touch, .pk-dpad, [aria-hidden="true"], [data-pad-skip]') && shown(node));
 }
 // The nearest control in a direction, preferring ones straight ahead.
 export function nextTarget(from, all, dx, dy) {
@@ -113,8 +113,8 @@ const clearMark = () => document.querySelectorAll('.pana-pad-focus').forEach(n =
 function focusTarget(node) {
   if (!node) return;
   clearMark();
+  node.classList.add('pana-pad-focus');   // before focus, so focus handlers can tell the pad moved there
   node.focus({ preventScroll: true, focusVisible: true });
-  node.classList.add('pana-pad-focus');
   node.scrollIntoView?.({ block: 'nearest', inline: 'nearest' });
 }
 

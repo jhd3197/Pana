@@ -61,15 +61,11 @@
         <div class="tu-pana-stage" id="tu-pana-slot"></div>
       </section>
 
+      <!-- One row per category, like a TV app: the stick or arrows move
+           through them and the banner above follows the game in focus. -->
       <section class="games-wrap" aria-labelledby="games-title">
-        <div class="games-toolbar">
-          <h2 class="sr-only" id="games-title">Juegos</h2>
-          <div id="categories" class="categories" aria-label="Filtrar juegos"></div>
-          <span id="game-position" class="game-position"></span>
-          <button id="games-prev" class="rail-arrow" aria-label="Juego anterior" type="button">←</button>
-          <button id="games-next" class="rail-arrow" aria-label="Siguiente juego" type="button">→</button>
-        </div>
-        <div id="games" class="games"></div>
+        <h2 class="sr-only" id="games-title">Juegos</h2>
+        <div id="games" class="game-rows"></div>
       </section>
 
       <section class="pk-panel pk-panel--solid rooms-panel" id="salas" aria-labelledby="rooms-title">
