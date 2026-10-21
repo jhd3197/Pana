@@ -23,5 +23,11 @@ lobby (`derrape-menu.md`), and its own Colyseus room (`derrape-online.md`).
   allowance). New work goes into its own module (`garage-*.js`, `race-*.js`,
   `*-rules.js`), never into game.js; moving a section out is always welcome.
   Drift milestone toasts live in `public/feats.js`, on `engine/feats.js`.
+- Drift presentation lives in its own modules: sparks and the charge smoke
+  plume in `public/drift-fx.js`, skid marks in `public/skid-marks.js` (one
+  InstancedMesh ring buffer), purple-release slow-mo in `public/slow-mo.js`.
+  All three load lazily with the first race (the feats.js pattern): the
+  garage's first load is capped at 160 modules. The slow-mo scales only the
+  local frame accumulator — never the fixed step, never an online race clock.
 - Derrape signals readiness with `window.PANA_PREPARED` once the garage car is
   built, like every other game (tests/browser-kit.js `waitPrepared`).

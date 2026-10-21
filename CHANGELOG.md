@@ -8,6 +8,12 @@ becomes the GitHub release's notes.
 
 ## Unreleased
 
+- **Derrape se ve como se siente derrapar: el caucho queda marcado en la
+  pista, el humo crece con la carga del derrape y soltar en púrpura frena el
+  mundo un instante.** Las marcas de los cauchos se desvanecen solas en unos
+  segundos; el humo sigue los colores de las chispas (polvo, azul, naranja,
+  púrpura); la cámara lenta es solo local y nunca toca el reloj de las carreras
+  en línea.
 - **Tests can be narrowed and explain themselves: `npm test -- derrape` runs
   only the matching unit tests in seconds, and `.\dev.ps1 check -Help` prints
   the cheat sheet for picking the fastest check.** The full unit run still

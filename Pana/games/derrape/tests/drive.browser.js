@@ -99,7 +99,8 @@ try {
     const level = p.driftLvl, distance = getDriftFeats()?.current ?? 0;
     race.keys = { w: true };
     updateRace(1 / 60);
-    return { longText, level, distance, maxOff, limit: T.HW - 1.6, purpleText: toast.textContent, boost: p.boost };
+    return { longText, level, distance, maxOff, limit: T.HW - 1.6, purpleText: toast.textContent, boost: p.boost,
+      slow: race.slowMo.active, shake: race.shake };
   });
   assert.ok(feats.longText.includes('100 m'), `one 100 m drift fires its feat ${JSON.stringify(feats)}`);
   assert.ok(feats.distance >= 100, `the drift really ran 100 m ${JSON.stringify(feats)}`);
@@ -107,6 +108,8 @@ try {
   assert.equal(feats.level, 3, `the held drift charged to purple ${JSON.stringify(feats)}`);
   assert.ok(feats.purpleText.includes('púrpura'), `releasing purple fires its feat ${JSON.stringify(feats)}`);
   assert.ok(feats.boost > 1, `the purple release pays its turbo ${JSON.stringify(feats)}`);
+  assert.ok(feats.slow, `the purple release dilates time ${JSON.stringify(feats)}`);
+  assert.ok(feats.shake > 0.2, `the purple release pulses the camera ${JSON.stringify(feats)}`);
 
   // A trick pressed in the air lands with a short turbo.
   const trick = await page.evaluate(() => {

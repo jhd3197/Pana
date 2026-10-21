@@ -6,7 +6,7 @@ import { sound } from '/engine/fx.js';
 import { pick } from '/engine/random.js';
 import { roughnessAt, roadGripAt, roadWaterAt } from './offroad.js';
 import { coinMultiplier } from './item-rules.js';
-import { DRIFT_MIN_SPEED, DRIFT_BOOST, HOP_SPEED, DRIFT_EXIT_TIME, driftLevel, driftSteer, assistDrift, driftCharge, trickBoost, STALL_THROTTLE } from './drive-rules.js';
+import { DRIFT_MIN_SPEED, DRIFT_BOOST, DRIFT_LEVELS, HOP_SPEED, DRIFT_EXIT_TIME, driftLevel, driftSteer, assistDrift, driftCharge, trickBoost, STALL_THROTTLE } from './drive-rules.js';
 import { wrapAngle } from './rules.js';
 import { advanceLap, isOpenEdge, offCourse, stuckStep, OPEN_MARGIN } from './course-rules.js';
 import { isGhost, recordImpact } from './recovery-rules.js';
@@ -69,6 +69,7 @@ export function createDriver({ race, track, say, popPart, progressOf, flameFor, 
       if (!held && level && c.spin <= 0) {
         c.boost = Math.max(c.boost, DRIFT_BOOST[level] * t.driftBoost);
         if (c.isPlayer) sound.turbo();
+        if (c.isPlayer && level === DRIFT_LEVELS.length) race.purpleRelease?.(c);   // max charge: slow-mo punch
       }
       if (!held && c.spin <= 0) c.driftExitT = DRIFT_EXIT_TIME;
       c.drift = 0; c.driftT = 0;

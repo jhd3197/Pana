@@ -373,6 +373,10 @@ race.skidMarks = { lay() {}, update() {}, clear() {} };
 let driftFx = null;
 import('./skid-marks.js').then(m => { race.skidMarks = new m.SkidMarks(race.scene, { focus: () => race.player }); });
 import('./drift-fx.js').then(m => { driftFx = m; });
+race.slowMo = { update() {}, trigger() {}, scale: 1, punch: 0 };
+import('./slow-mo.js').then(m => { race.slowMo = m.createSlowMo(); });
+// A max-charge release dilates time (local races) and punches the camera.
+race.purpleRelease = () => { race.slowMo.trigger(); race.shake = Math.min(1.2, race.shake + 0.45); };
 
 // ---------- race setup: mode, difficulty, laps, mirror (local races) ----------
 let profileStorage = null;
@@ -1792,7 +1796,7 @@ function followCam(cam, key, p, look, dt) {
   const lead = p.boost > 0 ? 5.2 : 4;
   cam.position.set(mx * at.x + rand(-sh, sh), at.y + rand(-sh, sh), at.z + rand(-sh, sh));
   cam.lookAt(mx * (p.x + fx * lead * back), p.y + 1.4, p.z + fz * lead * back);
-  const fov = p.boost > 0 ? 74 : 60;   // turbo stretches the view
+  const fov = (p.boost > 0 ? 74 : 60) - (p.isPlayer ? race.slowMo.punch : 0);   // turbo stretches the view; a purple release pulls it in
   if (Math.abs(cam.fov - fov) > 0.05) {
     cam.fov += (fov - cam.fov) * Math.min(1, dt * 5);
     cam.updateProjectionMatrix();
@@ -2334,7 +2338,8 @@ function frame() {
     renderer.toneMapping = THREE.NoToneMapping;
     pollPads();
     // fixed physics steps: same race speed at any frame rate
-    if (!paused) acc += dt * SPEED;
+    race.slowMo.update(dt);
+    if (!paused) acc += dt * SPEED * (race.netRace ? 1 : race.slowMo.scale);   // online races never dilate: the room's clock is the room's
     let stepped = 0;
     while (acc >= STEP && mode === 'race') {
       updateRace(STEP, false);
