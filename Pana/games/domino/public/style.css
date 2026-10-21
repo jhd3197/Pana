@@ -1,5 +1,5 @@
 /* Dominó on the Pana Kit: dark HUD cards over the 3D plaza. */
-body{--tile-edge: #b8ab92; --tile-line: #d6c8ad; --pk-game:#24634f;--pk-game-ink:#fff;margin:0;overflow:hidden;background:var(--pk-night);color:var(--pk-text);font-family:var(--pk-sans);font-synthesis:none}
+body{--tile-edge: #b8ab92; --tile-line: #d6c8ad; --pk-game:#24634f;--pk-game-ink:#fff;--pk-qe-top:84px;--pk-qe-top-phone:140px;margin:0;overflow:hidden;background:var(--pk-night);color:var(--pk-text);font-family:var(--pk-sans);font-synthesis:none}
 *{box-sizing:border-box}
 button,a{-webkit-tap-highlight-color:transparent;touch-action:manipulation}button{font:inherit;cursor:pointer}button:disabled{cursor:default}
 button:focus-visible,a:focus-visible{outline:3px solid var(--pk-yellow);outline-offset:3px}
@@ -187,3 +187,5 @@ body:not(.in-lobby) .world-label.partner{visibility:hidden}
 #quick-chat{padding:8px;font:700 12px var(--pk-sans)}#quick-chat summary{cursor:pointer}#chat-buttons{display:grid;gap:6px;margin-top:6px}
 .hand.large-hand{gap:5px}.large-hand .domino{width:40px;height:80px;flex-shrink:0}
 @media(max-width:720px){.extended-roster{top:82px;left:12px;max-width:180px;font-size:10px;padding:7px}.hand.large-hand{gap:3px;width:100%;overflow-x:auto;justify-content:flex-start}.large-hand .domino{width:30px;height:64px}#quick-chat{position:absolute;bottom:4px;right:8px}#quick-chat[open]{bottom:44px}}
+/* ¿Quién empieza?: the cachos take the table; the rack and seat cards step aside. */
+body.pana-starter .rack-panel,body.pana-starter .seat-chip,body.pana-starter .seat-card{visibility:hidden}

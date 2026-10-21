@@ -7,7 +7,7 @@ const keepMap = (prev) => prev?.mapId ? { mapId: prev.mapId } : {};
 // are bots, snapshots are event-driven and migrate with the host.
 export class DominoRoom extends TableRoom {
   constructor(options) {
-    super({ ...options, game: 'domino', protocol: 'domino-v2' }, {
+    super({ ...options, game: 'domino', protocol: 'domino-v3' }, {
       fresh: (prev) => ({ ...new DominoGame(Date.now()).snapshot(), ...keepMap(prev) }),
       restore: (state, members) => DominoGame.restore(state, members),
       snapshot: (game) => game.snapshot(),
@@ -24,6 +24,7 @@ export class DominoRoom extends TableRoom {
 
   step(dt) {
     const game = this.game;
+    if (game.phase === 'starter') return game.stepCachos(dt);
     const clockChanged=game.clock(dt);
     if (!this.botReady(dt, game.phase === 'playing' && game.players[game.turn].id === null)) return clockChanged;
     const move = chooseMove(game);

@@ -4,6 +4,7 @@ import { createTableWorld } from '/engine/worlds/table-world.js';
 import { buildCharacter } from '/engine/models/characters/pana/avatar-model.js';
 import { normalizeAvatar } from '/engine/avatar.js';
 import { createSeatBubbles } from '/engine/play/seat-bubbles.js';
+import { createStarterStage } from '/engine/play/quien-empieza.js';
 import { createDominoTable, createDominoChair, createDominoTile } from './table-model.js';
 import { chainLayout } from './tiles.js';
 import { deck, legalEnds } from './rules.js';
@@ -16,7 +17,7 @@ const BOT_LOOKS = [
   { hat: 'band', hatColor: '#ee886a', outfitColor: '#cf7959', face: 'wow' },
 ];
 const nextFrame = () => new Promise(requestAnimationFrame);
-export async function createDominoScene(canvas, { onTile, onEnd, onLoading = () => {} } = {}) {
+export async function createDominoScene(canvas, { onTile, onEnd, onStarter, onLoading = () => {} } = {}) {
   onLoading('Abriendo la plaza…');
   const stage = createTableWorld(canvas, { fit: 'window', exposure: 1.12, background: '#e5cd9f', fog: [28, 65], sky: false, fov: 38, plazaScale: .72,
     hemi: ['#e4f1ff', '#a4815a', 2.2], sun: { color: '#ffe4b1', intensity: 3.5, position: [-8, 16, 9], box: 12, far: 50, bias: -.00015 } });
@@ -56,6 +57,12 @@ export async function createDominoScene(canvas, { onTile, onEnd, onLoading = () 
   const pointerUp = event => { if (down && Math.hypot(event.clientX - down.x, event.clientY - down.y) < 12) { const id = pick(event); if (id) onTile?.(id); } down = null; };
   canvas.addEventListener('pointermove', move); canvas.addEventListener('pointerdown', pointerDown); canvas.addEventListener('pointerup', pointerUp);
   let seatCount=4;
+  // ¿Quién empieza?: a cacho between each pana's hand and the middle of the table.
+  // Rebuilt when the table changes size, since each seat's spot depends on it.
+  let starter=null,starterSeats=0;
+  const makeStarter=count=>{starter?.dispose();starterSeats=count;starter=createStarterStage({root:scene,camera,canvas,scale:.55,onInput:onStarter,
+    spot:seat=>{const a=seat*Math.PI*2/count,r=count===6?2.25:1.85;return{position:[Math.sin(a)*r,Y,Math.cos(a)*r],out:[Math.sin(a),Math.cos(a)]};}});};
+  makeStarter(4);
   let state = null, ownSeat = 0, selected = null, cameraMode = 'plaza', disposed = false, time = 0, lastEvent = '', actingSeat = -1, actTime = 0;
   const desiredCamera = new THREE.Vector3(), target = new THREE.Vector3(), projected = new THREE.Vector3();
   function cameraTarget(immediate = false) {
@@ -96,6 +103,8 @@ export async function createDominoScene(canvas, { onTile, onEnd, onLoading = () 
     for(const tile of pack)if(!tiles.has(tile.id)){const model=createDominoTile(tile);model.userData.tileId=tile.id;scene.add(model);tiles.set(tile.id,{model,target:new THREE.Vector3(),rotation:new THREE.Quaternion(),lift:0,initialized:false});}
     plaza.setMap(state.mapId); ownSeat = Math.max(0, seat); selected = chosen; cameraTarget();
     syncCharacters(state.players);
+    if(starterSeats!==seatCount)makeStarter(seatCount);
+    starter.update(state.phase==='starter'?state.cachos:null,{ownSeat:seat,names:state.players.map(p=>p.name)});
     const event = state.history.at(-1), key = `${state.round}:${state.history.length}`;
     if (lastEvent && key !== lastEvent && event) { actingSeat = event.seat; actTime = .9; }
     lastEvent = key;
@@ -178,16 +187,17 @@ export async function createDominoScene(canvas, { onTile, onEnd, onLoading = () 
       projected.copy(tip.position).project(camera);
       tip.element.style.left = `${(projected.x * .5 + .5) * innerWidth}px`; tip.element.style.top = `${(-projected.y * .5 + .5) * innerHeight}px`;
     }
+    starter.frame(dt);
     stage.draw(dt);
   }
   const resize = () => { renderer.setSize(innerWidth, innerHeight); cameraTarget(); }; addEventListener('resize', resize);
-  return { scene, camera, renderer, characters, tiles, update, frame,
+  return { scene, camera, renderer, characters, tiles, update, frame, get starter() { return starter; },
     setView(value) { cameraMode = value; cameraTarget(); },
     say: bubbles.say,
     dispose() {
       disposed = true; removeEventListener('resize', resize);
       canvas.removeEventListener('pointermove', move); canvas.removeEventListener('pointerdown', pointerDown); canvas.removeEventListener('pointerup', pointerUp);
-      characters.forEach(c => c?.dispose()); labels.forEach(l => l.remove()); bubbles.dispose(); tips.forEach(t => t.element.remove()); tiles.forEach(t => t.model.userData.dispose()); chairs.forEach(c => c.userData.dispose()); table.userData.dispose(); stage.dispose();
+      starter.dispose(); characters.forEach(c => c?.dispose()); labels.forEach(l => l.remove()); bubbles.dispose(); tips.forEach(t => t.element.remove()); tiles.forEach(t => t.model.userData.dispose()); chairs.forEach(c => c.userData.dispose()); table.userData.dispose(); stage.dispose();
     },
   };
 }

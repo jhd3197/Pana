@@ -56,7 +56,7 @@ const menu = createGameMenu({
   tips: [
     'Mesa clásica de cuatro o ampliada de seis. Los puestos alternos forman dos equipos; Individual reparte puntos a cada pana.',
     'Siete o diez fichas por pana. La mesa amplía el juego a doble nueve o doble doce cuando hace falta; las sobrantes se apartan, no hay robo.',
-    'La salida puede ser doble seis, ganador anterior (primera mano: doble seis), o un pana al azar.',
+    'La salida puede ser doble seis, ganador anterior (primera mano: doble seis), o un pana al azar. En Más ajustes, ¿Quién empieza? decide la primera mano con el cacho: todos sacuden, tapan y sale el dado más alto.',
     'Juega una ficha que coincida con una punta. Si sirve en ambas, elige A o B. No puedes pasar si tienes jugada.',
     'Gana quien se queda sin fichas y suma los puntos que quedaron a sus rivales. Una capicúa es la última ficha que podía jugarse en ambas puntas.',
     'Con Pase anotado, cada paso da diez puntos al equipo o pana anterior. El anfitrión elige si una tranca puntúa o se reparte sin puntuar.',
@@ -148,6 +148,7 @@ function render(state) {
     // A mano that just ended waits a beat so its barks are seen before the results cover the table.
     if (shownResult !== resultId) { shownResult = resultId; clearTimeout(resultTimer); resultTimer = setTimeout(showResult, previousPhase === 'playing' ? 1600 : 0); }
   } else { clearTimeout(resultTimer); if ($('result').open) closeResult(); if (state.phase === 'playing' && previousPhase !== 'playing') shownResult = ''; }
+  if (state.phase === 'playing' && previousPhase === 'starter') notify(`${state.cachos?.note ? `${state.cachos.note}: s` : 'S'}ale ${state.players[state.turn].name}.`);
   // Arriving mid-game replays the whole history: only bark at what happens live.
   const fresh = state.round === barkRound ? state.history.filter(e => e.id > barkId) : state.history;
   if (barksPrimed) for (const bark of barksFor(state, fresh, { ended: ended && previousPhase === 'playing' })) world.say(bark.seat, bark.text, bark.time);
@@ -174,7 +175,7 @@ function renderHand(state) {
   const moves = myTurn ? legalMoves(state, seat) : [];
   const tips = state.chain.length ? [...new Set([state.chain[0].a, state.chain.at(-1).b])].join(' o al ') : '';
   $('turn-status').classList.toggle('your-turn', myTurn);
-  $('turn-status').textContent = !room.connected ? 'Esperando conexión…' : ended ? 'Mano terminada' : state.phase === 'lobby' ? 'La mesa te espera.'
+  $('turn-status').textContent = !room.connected ? 'Esperando conexión…' : ended ? 'Mano terminada' : state.phase === 'lobby' ? 'La mesa te espera.' : state.phase === 'starter' ? '¿Quién empieza?'
     : myTurn ? `¡Tu turno! · ${selected ? 'elige la punta' : !state.chain.length ? 'abre la mano' : moves.length ? `juega al ${tips}` : 'canta paso'}` : `Turno de ${state.players[state.turn].name}`;
   if(state.phase==='playing'&&state.options.turnSeconds)$('turn-status').textContent+=` · ${Math.ceil(state.turnRemaining)} s`;
   $('hint').disabled = !myTurn;
@@ -273,7 +274,7 @@ function frame(now) { if (stopped) return; const dt = Math.min(.05, (now - frame
 requestAnimationFrame(frame);
 addEventListener('pagehide', () => { stopped = true; clearInterval(timer); notify.dispose(); clearTimeout(resultTimer); roomOptions.dispose();room.dispose(); world?.dispose(); }, { once: true });
 render(room.state); room.connect();
-export const sceneReady = import('./scene.js').then(module => module.createDominoScene($('world'), { onTile: selectTile, onEnd: playSelected, onLoading: message => { $('loading-copy').textContent = message; } })).then(async scene => {
+export const sceneReady = import('./scene.js').then(module => module.createDominoScene($('world'), { onTile: selectTile, onEnd: playSelected, onStarter: (cacho, power) => { if (!menu.isOpen) { audio.unlock(); room.action('starter', { cacho, power }); } }, onLoading: message => { $('loading-copy').textContent = message; } })).then(async scene => {
   if (stopped) { scene.dispose(); return; }
   world = scene; await prepareScene(world); worldReady = true; world.update(room.state, room.seat); if (view !== 'plaza') world.setView(view); render(room.state); $('loading').hidden = true;
 }).catch(error => {
