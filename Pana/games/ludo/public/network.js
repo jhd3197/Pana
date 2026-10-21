@@ -3,7 +3,7 @@ import { LudoGame, chooseMove } from './rules.js';
 
 export class LudoRoom extends TableRoom {
   constructor(options) {
-    super({ ...options, game: 'ludo', protocol: 'ludo-v3' }, {
+    super({ ...options, game: 'ludo', protocol: 'ludo-v4' }, {
       fresh: prev => ({ ...new LudoGame().snapshot(), ...(prev?.options ? { options: { ...prev.options } } : {}) }),
       restore: (state, members) => LudoGame.restore(state, members),
       snapshot: (game) => game.snapshot(),
@@ -15,7 +15,8 @@ export class LudoRoom extends TableRoom {
   unseat(id) { this.game.removePlayer(id); }
   step(dt) {
     const game = this.game;
-    if (!this.botReady(dt, ['playing', 'order'].includes(game.phase) && game.players[game.turn].id === null, .85)) return false;
+    if (game.phase === 'starter') return game.stepStarter(dt);
+    if (!this.botReady(dt, game.phase === 'playing' && game.players[game.turn].id === null, .85)) return false;
     game.die ? game.move(chooseMove(game)) : game.roll();
     return true;
   }

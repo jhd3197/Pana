@@ -17,7 +17,7 @@ test('capture bonus gives a new roll and disabling triple-six penalty allows the
   g.players[0].pieces[0] = 14; g.players[1].pieces[0] = 5; g.die = 4;
   g.move(0); assert.equal(g.turn, 0); assert.equal(g.die, 0); assert.equal(g.players[1].pieces[0], -1);
   let seed = 1;
-  while (true) { const probe = new LudoGame(seed); probe.start(); probe.roll(); if (probe.lastDie === 6) break; seed++; }
+  while (true) { const probe = new LudoGame(seed); probe.start(); probe.phase = 'playing'; probe.roll(); if (probe.lastDie === 6) break; seed++; }
   g.options.threeSixes = false; g.rng = seed; g.sixes = 2; g.roll();
   assert.equal(g.turn, 0); assert.equal(g.die, 6); assert(legalMoves(g).length);
 });

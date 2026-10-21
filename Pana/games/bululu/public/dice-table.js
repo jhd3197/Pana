@@ -1,10 +1,9 @@
 // Bululú's dice on the board: they wait, spinning, over the pana's head, get
 // shaken while a human holds the throw, then fly onto the board in front of the
 // pana (toward the camera) with bounces. A throw is a small spec, so online
-// screens replay the host's exact flight. The opening roll-off lives here too.
+// screens replay the host's exact flight.
 import * as THREE from 'three';
 import { createToss } from '/engine/play/dice-throw.js';
-import { rollOffGroups } from '/engine/play/roll-off.js';
 import { sound } from '/engine/fx.js';
 
 export function createDiceTable({ dice, board, camera, puffs }) {
@@ -75,22 +74,4 @@ export function createDiceTable({ dice, board, camera, puffs }) {
     if (v.value && !d.toss) { d.value = v.value; if (!v.rolling) d.show(v.value); }
   }
   return { hold, toss, update, apply };
-}
-
-// One die per pana; the highest starts. A tie throws again among the tied, so
-// the whole turn order comes out of the dice. throwOne(i) → that pana's value;
-// tied(ids) announces a tie before it is thrown again.
-export async function rollOffOrder(ids, throwOne, tied) {
-  const result = [];
-  let groups = [ids];
-  while (groups.length) {
-    const group = groups.shift();
-    if (group.length === 1) { result.push(group[0]); continue; }
-    const rolls = [];
-    for (const id of group) rolls.push({ id, value: await throwOne(id) });
-    const split = rollOffGroups(rolls), tie = split.find((g) => g.length > 1);
-    if (tie) await tied(tie);
-    groups = [...split, ...groups];
-  }
-  return result;
 }

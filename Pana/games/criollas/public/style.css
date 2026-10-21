@@ -1,5 +1,5 @@
 * { box-sizing: border-box; }
-body { --pk-game: #d88b4b; --court-green: #299e72; --court-red: #ed5949; --clay-light: #e5cda8; margin: 0; color: var(--pk-text); background: var(--pk-night); font-family: var(--pk-sans); overflow: hidden; }
+body { --pk-game: #d88b4b; --pk-qe-top: 112px; --pk-qe-top-phone: 150px; --court-green: #299e72; --court-red: #ed5949; --clay-light: #e5cda8; margin: 0; color: var(--pk-text); background: var(--pk-night); font-family: var(--pk-sans); overflow: hidden; }
 [hidden] { display: none !important; }
 button, input { font: inherit; }
 button { cursor: pointer; }

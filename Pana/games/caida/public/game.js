@@ -37,6 +37,7 @@ const menu = createGameMenu({ pad: { buttons: true, keys: { rb: ['Enter', 'Jugar
   controls: [['1 2 3', 'Seleccionar una carta'], ['Enter', 'Jugar la carta seleccionada'], ['C', 'Cantar antes de jugar la primera carta'], ['H', 'Pedir una pista'], ['M', 'Activar o silenciar sonido'], ['Esc', 'Abrir o cerrar el menú']],
   tips: [
     'Gana quien llegue primero a 24 puntos. Son 40 cartas: as, 2, 3, 4, 5, 6, 7, sota (10), caballo (11) y rey (12), en cuatro palos. Los palos no cambian las capturas.',
+    '¿Quién reparte primero? Al abrir la mesa todos sacuden el cacho a la vez y lo tapan: el dado más alto reparte el primer reparto. Si hay empate arriba, solo los empatados sacuden otra vez. El anfitrión puede cambiarlo en Más ajustes.',
     'Se dan tres cartas por persona y cuatro cartas distintas a la mesa. El siguiente al repartidor empieza. Cuando todos juegan sus tres cartas, se reparten tres más. El repartidor cambia después de agotar la baraja.',
     'Juega una carta del mismo número que una de la mesa para recoger ambas y todas las consecutivas que le sigan, sin saltos: después del 7 viene la sota. Si no hay coincidencia, tu carta se queda en la mesa.',
     '¡Caída! Solo si recoges la carta que el jugador anterior acaba de dejar: as a 7, un punto; sota, dos; caballo, tres; rey, cuatro. Recoger una carta vieja no es caída. En equipos no se puntúa una caída al compañero.',
@@ -81,8 +82,8 @@ function render(state) {
   $('start').disabled = !ready || !room.connected || !room.isHost;
   $('start').textContent = !ready ? 'Preparando la mesa…' : !room.connected ? 'Conectando…' : room.isHost ? 'Abrir la mesa' : 'El anfitrión abre la mesa';
   $('lobby-roster').textContent = state.players.map(p => p.id === room.id ? 'Tú' : p.name).join(' · ');
-  $('round-label').textContent = state.phase === 'lobby' ? 'Mesa abierta' : state.phase === 'dealing' ? `Reparto ${state.round} · preparando` : `Reparto ${state.round} · mano ${state.handNumber}`;
-  $('deck-info').textContent = state.phase === 'lobby' ? MODES[state.options.mode].label : `${state.stock.length} por repartir · ${state.table.length} en la mesa`;
+  $('round-label').textContent = state.phase === 'lobby' ? 'Mesa abierta' : state.phase === 'starter' ? '¿Quién reparte primero?' : state.phase === 'dealing' ? `Reparto ${state.round} · preparando` : `Reparto ${state.round} · mano ${state.handNumber}`;
+  $('deck-info').textContent = state.phase === 'lobby' ? MODES[state.options.mode].label : state.phase === 'starter' ? 'El cacho más alto reparte' : `${state.stock.length} por repartir · ${state.table.length} en la mesa`;
   $('last-hand').hidden = state.phase !== 'playing' || state.stock.length > 0;
   $('scores').replaceChildren();
   const ownTeam = room.seat >= 0 ? teamOf(state, room.seat) : -1;
@@ -127,7 +128,7 @@ function renderHand(state) {
   if (focus) $('hand').querySelector(`[data-card="${focus}"]:not(:disabled)`)?.focus({ preventScroll: true });
   $('your-name').textContent = player ? `${player.name} · ${hand.length} cartas` : 'Estás mirando';
   $('capture-count').textContent = `${player?.captured.length || 0} RECOGIDAS`;
-  $('turn-status').textContent = !room.connected ? 'Reconectando…' : ended ? 'Reparto terminado' : state.phase === 'lobby' ? 'La mesa te espera.' : state.phase === 'dealing' ? `${state.players[state.dealer].name} prepara el reparto` : turn ? `¡Tu turno! · ${selected ? 'juégala o cambia' : 'elige una carta'}` : `Juega ${state.players[state.turn].name}`;
+  $('turn-status').textContent = !room.connected ? 'Reconectando…' : ended ? 'Reparto terminado' : state.phase === 'lobby' ? 'La mesa te espera.' : state.phase === 'starter' ? '¿Quién reparte primero?' : state.phase === 'dealing' ? `${state.players[state.dealer].name} prepara el reparto` : turn ? `¡Tu turno! · ${selected ? 'juégala o cambia' : 'elige una carta'}` : `Juega ${state.players[state.turn].name}`;
   $('turn-status').classList.toggle('active', turn); $('hint').disabled = !turn; $('play').disabled = !turn || !selected; $('play').hidden = ended; $('round-result').hidden = !ended;
   const chant = state.phase === 'playing' && state.options.cantos && player && !player.announced ? canto(hand) : null;
   $('chant').hidden = !chant; $('chant').disabled = !turn; $('chant').textContent = chant ? `Cantar ${chant.name.toLowerCase()} +${chant.points}` : '';
@@ -171,7 +172,7 @@ let lastTick = performance.now(); const timer = setInterval(() => { const now = 
 let frameTime = performance.now(); function frame(now) { if (stopped) return; const dt = Math.min(.05, (now - frameTime) / 1000); frameTime = now; world?.frame(dt); requestAnimationFrame(frame); } requestAnimationFrame(frame);
 addEventListener('pagehide', () => { stopped = true; clearInterval(timer); clearTimeout(resultTimer); notify.dispose(); clearTimeout(announcementTimer); room.dispose(); world?.dispose(); }, { once: true });
 render(room.state); room.connect();
-export const sceneReady = import('./scene.js').then(m => m.createCaidaScene($('world'), { onCard: selectCard, onLoading: text => { $('loading-copy').textContent = text; } })).then(async scene => {
+export const sceneReady = import('./scene.js').then(m => m.createCaidaScene($('world'), { onCard: selectCard, onStarter: (cacho, power) => { if (!menu.isOpen) { audio.unlock(); room.action('starter', { cacho, power }); } }, onLoading: text => { $('loading-copy').textContent = text; } })).then(async scene => {
   if (stopped) { scene.dispose(); return; }
   // Room snapshots can arrive during compilation. Keep them from replacing
   // avatar materials until the initial scene has finished preparing.

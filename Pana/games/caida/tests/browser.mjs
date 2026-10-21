@@ -41,7 +41,7 @@ try {
   await a.screenshot({ path: 'art/caida/desktop-lobby.png' });
   assert.equal(await a.evaluate(() => caidaDebug.world.characters[0].group.userData.characterVersion), 'studio-v1');
   assert.equal(await b.locator('#start').isDisabled(), true); check('3D scene, Spanish cards, shared Pana characters and two connected seats');
-  await a.locator('#pana-room-more').click(); await a.locator('[data-room-option="cantos"][data-value="false"]').click(); await a.locator('#pana-room-done').click(); await b.waitForFunction(() => !caidaDebug.room.state.options.cantos);
+  await a.locator('#pana-room-more').click(); await a.locator('[data-room-option="cantos"][data-value="false"]').click(); await a.locator('[data-room-option="starter"][data-value="anfitrion"]').click(); await a.locator('#pana-room-done').click(); await b.waitForFunction(() => !caidaDebug.room.state.options.cantos);
   await a.locator('#start').click(); await prepare(a); await b.waitForFunction(() => caidaDebug.room.state.phase === 'playing');
   const humans = new Map([[await a.evaluate(() => caidaDebug.room.id), a], [await b.evaluate(() => caidaDebug.room.id), b]]);
   for (let i = 0; i < 8; i++) if (!await advance(a, humans)) break;
@@ -59,7 +59,7 @@ try {
   await b.locator('#next-round').click(); await prepare(b); check('full deal, card counting and next round');
   await b.close();
   const m = await open('Móvil', true, `${code}-mobile`); await m.screenshot({ path: 'art/caida/mobile-lobby.png' }); assert.equal(await m.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
-  await m.locator('#pana-room-more').click(); await m.locator('[data-room-option="cantos"][data-value="false"]').click(); await m.locator('#pana-room-done').click(); await m.locator('#start').tap(); await prepare(m);
+  await m.locator('#pana-room-more').click(); await m.locator('[data-room-option="cantos"][data-value="false"]').click(); await m.locator('[data-room-option="starter"][data-value="anfitrion"]').click(); await m.locator('#pana-room-done').click(); await m.locator('#start').tap(); await prepare(m);
   await m.waitForFunction(() => caidaDebug.room.state.turn === caidaDebug.room.seat);
   await m.locator('.hand-card').first().tap(); assert.equal(await m.locator('#play').isDisabled(), false); await m.locator('#play').tap();
   await m.waitForTimeout(1500); await m.screenshot({ path: 'art/caida/mobile-playing.png' }); check('390px touch layout, selection and confirmation');

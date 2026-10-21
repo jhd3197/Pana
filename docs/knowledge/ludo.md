@@ -14,10 +14,10 @@ is Spanish. The hub discovers `game.json` and categorizes it as Mesa.
   to their yards. Stacks do not block movement.
 - Home lanes are private, finishing requires the exact number, and all four
   pieces must finish to win. No legal move automatically consumes the roll.
-- Who starts: the match opens in phase `order`. Each seat throws once (bots
-  too); the highest starts and play goes on from that seat. A tie at the top
-  throws again among the tied only (`engine/play/roll-off.js`). Order throws never
-  move pieces and never count as sixes.
+- Who starts: the match opens in phase `starter`, the shared ¿Quién empieza?
+  cachos (`quien-empieza.md`, `need: 'first'`); the highest starts and play goes
+  on from that seat. The cachos never move pieces, never count as sixes and do
+  not draw from the match's dice stream. Revancha starts whoever came last.
 
 These variants are stated in the shared menu's Controles tab.
 

@@ -5,5 +5,8 @@ export default [
   ['poker-table', 'Mesa de póquer', 'poker', 'createPokerTable', 'Póquer', {}],
   ['poker-card', 'Carta de póquer', 'poker', 'createPokerCard', 'Póquer', { card: 38 }],
   ['poker-chips', 'Fichas de póquer', 'poker', 'createPokerChips', 'Póquer', {}],
+  ['cacho', 'Cacho de cuero', 'cacho', 'createCacho', '¿Quién empieza?', {}],
+  ['cacho-die', 'Dado del cacho', 'cacho', 'createCachoDie', '¿Quién empieza?', {}],
+  ['moneda', 'Moneda cara o sello', 'cacho', 'createMoneda', '¿Quién empieza?', {}],
   ['paint-marker', 'Marcadora de pintura', 'paintball', 'createPaintMarker', '¡Pintura!', {}],
 ].map(([id, name, module, factory, game, previewOptions]) => ({ id, name, category: 'Objetos', source: `/engine/models/props/${module}.js`, factory, usedBy: [game], pack: 'table-games', previewOptions }));

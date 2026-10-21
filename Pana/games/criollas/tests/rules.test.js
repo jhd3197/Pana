@@ -2,10 +2,13 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createPitch, throwBall, stepPitch, moving, landing, aimAt, measure, copy, STEP } from '/engine/play/bolas-criollas.js';
 import { createGame, acceptAction, shoot, step, nextHand } from '../public/rules.js';
+import { FLIP, ORDER_HOLD } from '../../../engine/play/quien-empieza-rules.js';
 
 function settle(pitch) { for (let n = 0; n < 2000 && moving(pitch); n++) stepPitch(pitch); assert.equal(moving(pitch), false); }
 function ball(pitch, owner, x, z) { pitch.balls.push({ id: pitch.nextId++, owner, x, z, vx: 0, vz: 0, radius: .25, out: false }); }
-function start() { const g = createGame(); g.players[0].id = 10; g.players[1].id = 20; assert(acceptAction(g, 10, { action: 'start', revision: g.revision }, 10)); return g; }
+// Skips the coin: with the table's order the Rojos throw the mingo.
+function start() { const g = createGame(); g.opener = 'anfitrion'; g.players[0].id = 10; g.players[1].id = 20; assert(acceptAction(g, 10, { action: 'start', revision: g.revision }, 10)); return g; }
+const flip = g => { for (let i = 0; i < 120 * 10 && g.phase === 'opening'; i++) step(g); };
 test('six seats rotate across both teams and short hands allocate two balls each', () => {
   const g = createGame(); g.players.forEach((p, i) => p.id = i + 1);
   const action = (id, options) => acceptAction(g, id, { action: 'options', options, revision: g.revision }, 1);
@@ -66,6 +69,7 @@ test('a complete bot match terminates, honors per-player ammunition and can rema
   }
   assert.equal(g.phase, 'finished'); assert(g.scores.some(s => s >= 12));
   const revision = g.revision; assert(acceptAction(g, 9, { action: 'start', revision }, 9));
+  assert.equal(g.phase, 'opening'); flip(g);
   assert.deepEqual(g.scores, [0, 0]); assert.equal(g.hand, 1); assert(g.revision > revision);
 });
 test('mingo out closes a hand without awarding points', () => {
@@ -136,4 +140,36 @@ test('host reset restores the primary map and rule defaults atomically',()=>{
  const action={action:'options',options:{target:12,difficulty:'normal',ballsPerPlayer:4},resetMap:true,revision:0};
  assert.equal(acceptAction(g,2,action,1),false);assert.equal(g.mapId,'hato');
  assert(acceptAction(g,1,action,1));assert.equal(g.mapId,'plaza');assert.equal(g.target,12);assert.equal(g.difficulty,'normal');assert.deepEqual(g.remaining,Array(6).fill(4));assert.equal(g.revision,1);
+});
+
+test('a coin decides which team throws the mingo; everyone watches, nobody acts', () => {
+  const seen = new Set();
+  for (let seed = 1; seed <= 20; seed++) {
+    const g = createGame(); g.players[0].id = 10;
+    assert(acceptAction(g, 10, { action: 'start', revision: g.revision, seed }, 10));
+    assert.equal(g.phase, 'opening'); assert.equal(g.opening.flavour, 'moneda');
+    assert.equal(acceptAction(g, 10, { action: 'shoot', revision: g.revision, angle: 0, power: .5 }, 10), false, 'no throws while it spins');
+    let steps = 0; flip(g); steps = g.opening.t;
+    const team = g.opening.coin === 'cara' ? 0 : 1; seen.add(team);
+    assert.equal(g.phase, 'aiming'); assert.equal(g.hand, 1);
+    assert.equal(g.starter, team); assert.equal(g.turn % 2, team, 'the winning team throws first');
+    assert.ok(steps <= FLIP + ORDER_HOLD);
+  }
+  assert.deepEqual([...seen].sort(), [0, 1]);
+});
+test('room option: al azar and the table skip the coin; revancha opens with the losing team', () => {
+  const g = createGame(); g.players[0].id = 10;
+  const set = options => acceptAction(g, 10, { action: 'options', options, revision: g.revision }, 10);
+  assert.equal(set({ opener: 'trampa' }), false);
+  assert(set({ opener: 'azar' })); assert.equal(g.starter, 0, 'the option never overwrites the starting team');
+  assert(acceptAction(g, 10, { action: 'start', revision: g.revision }, 10));
+  assert.equal(g.phase, 'aiming', 'no coin'); assert.equal(g.opener, 'azar');
+  g.phase = 'lobby'; assert(set({ opener: 'revancha' }));
+  g.scores = [12, 3]; g.remaining.fill(0); g.remaining[0] = 1; g.turn = 0; g.phase = 'aiming';
+  g.pitch.balls.push({ id: 1, owner: 0, x: g.pitch.balls[0].x + .3, z: g.pitch.balls[0].z, vx: 0, vz: 0, radius: .25, out: false });
+  g.remaining[0] = 0; g.phase = 'rolling'; step(g);
+  assert.equal(g.phase, 'finished'); assert.equal(g.lastLoser, 1);
+  assert(acceptAction(g, 10, { action: 'start', revision: g.revision }, 10));
+  assert.equal(g.phase, 'aiming'); assert.equal(g.starter, 1, 'the Verdes lost and throw the mingo');
+  const restored = JSON.parse(JSON.stringify(g)); assert.equal(restored.opener, 'revancha');
 });

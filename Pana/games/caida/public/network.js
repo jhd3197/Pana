@@ -1,12 +1,12 @@
 import { CaidaGame, chooseMove, canto } from './rules.js';
 import { TableRoom } from '/engine/table-room.js';
 
-const freshGame = previous => { const game = new CaidaGame(Date.now()); if (previous?.options) { const { format, cantos, difficulty } = previous.options; game.configure({ format: format || 'individual', cantos, difficulty, mapId: previous.mapId || 'plaza' }); } return game.snapshot(); };
+const freshGame = previous => { const game = new CaidaGame(Date.now()); if (previous?.options) { const { format, cantos, difficulty, starter } = previous.options; game.configure({ format: format || 'individual', cantos, difficulty, ...(starter ? { starter } : {}), mapId: previous.mapId || 'plaza' }); } return game.snapshot(); };
 
 // Host simulation on the shared table room (engine/table-room.js), with snapshot migration.
 export class CaidaRoom extends TableRoom {
   constructor(options) {
-    super({ ...options, game: 'caida', protocol: 'caida-v2', texts: { practice: 'Mesa local · juega con bots', ...options.texts } }, {
+    super({ ...options, game: 'caida', protocol: 'caida-v3', texts: { practice: 'Mesa local · juega con bots', ...options.texts } }, {
       fresh: freshGame,
       restore: (state, members) => CaidaGame.restore(state, members),
       snapshot: (game) => game.snapshot(),
@@ -23,6 +23,7 @@ export class CaidaRoom extends TableRoom {
   accepted() { this.seatMembers(); }
 
   step(dt) {
+    if (this.game.phase === 'starter') return this.game.stepStarter(dt);
     const game = this.game, preparing = game.phase === 'dealing', seat = preparing ? game.dealer : game.turn;
     if (!this.botReady(dt, ['playing', 'dealing'].includes(game.phase) && game.players[seat].id === null)) return false;
     if (preparing) {

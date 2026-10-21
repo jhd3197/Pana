@@ -1,6 +1,7 @@
 import { validTableArena } from '../../../engine/worlds/arena-layouts.js';
 import { swapSeats, canMoveSeats } from '../../../engine/play/seat-rules.js';
 import { DEFAULT_OPTIONS, changeOptions } from './options.js';
+import { createStarter, starterInput, stepStarter, starterDone, starterResult, joinStarter } from '../../../engine/play/quien-empieza-rules.js';
 // Pure Texas Hold'em and Omaha with selectable betting limits. Cards are integers: suit * 13 + rank (deuce = 0).
 export const SMALL = 10, BIG = 20, STACK = 1000;
 export const HANDS = ['Carta alta', 'Pareja', 'Doble pareja', 'Trío', 'Escalera', 'Color', 'Full', 'Póquer', 'Escalera de color'];
@@ -11,7 +12,7 @@ export const suitName = card => ['Tréboles', 'Diamantes', 'Corazones', 'Picas']
 // A mid-hand arrival watches until the next deal. Disconnected all-ins keep
 // their chair, but a departed folded player cannot occupy a replacement seat.
 export function tablePlayers(state) {
-  const playing = !['lobby', 'finished'].includes(state.phase);
+  const playing = !['lobby', 'finished', 'starter'].includes(state.phase);
   return state.players.filter(p => playing ? p.hole.length > 0 && (p.connected || !p.folded) : p.connected).slice(0, 6);
 }
 export function compare(a, b) { for (let i = 0; i < Math.max(a.length, b.length); i++) { const d = (a[i] || 0) - (b[i] || 0); if (d) return Math.sign(d); } return 0; }
@@ -76,7 +77,7 @@ export function settle(players, board, dealer, variant = 'texas') {
 }
 
 export class Poker {
-  constructor() { this.options = { ...DEFAULT_OPTIONS }; this.blindStartedAt = null; this.smallBlind = SMALL; this.bigBlind = BIG; this.streetBets = 0; this.mapId = 'plaza'; this.players = []; this.phase = 'lobby'; this.hand = 0; this.revision = 0; this.dealer = -1; this.board = []; this.turn = null; this.message = 'Invita a tus panas o juega con bots.'; this.result = null; }
+  constructor() { this.options = { ...DEFAULT_OPTIONS }; this.blindStartedAt = null; this.smallBlind = SMALL; this.bigBlind = BIG; this.streetBets = 0; this.mapId = 'plaza'; this.players = []; this.phase = 'lobby'; this.hand = 0; this.revision = 0; this.dealer = -1; this.board = []; this.turn = null; this.message = 'Invita a tus panas o juega con bots.'; this.result = null; this.starter = null; this.busted = []; this.lastPlace = null; }
   configure(patch, mapId) {
     if (this.phase !== 'lobby' || (mapId !== undefined && !validTableArena(mapId))) return false;
     const next = changeOptions(this.options, patch); if (!next) return false;
@@ -99,6 +100,8 @@ export class Poker {
   }
   setup() {
     if (this.phase !== 'finished') return false;
+    // Revancha: whoever busted first, else the shortest stack, opens the next match.
+    this.lastPlace = this.busted[0] ?? [...this.players].filter(p => p.connected).sort((a, b) => a.chips - b.chips)[0]?.id ?? null;
     this.phase = 'lobby'; this.board = []; this.deck = []; this.result = null; this.turn = null;
     this.pending = new Set(); this.currentBet = 0; this.message = 'Organiza los puestos antes de repartir. Cada pana conserva sus fichas.';
     for (const p of this.players) Object.assign(p, { hole: [], bet: 0, total: 0, folded: true, allin: false, actedAt: null, action: '' });
@@ -109,15 +112,47 @@ export class Poker {
     let p = this.players.find(p => p.id === id);
     if (p) { Object.assign(p, info, { connected: true }); return p; }
     p = { id, ...info, connected: true, chips: this.options.stack, hole: [], bet: 0, total: 0, folded: true, allin: false, actedAt: null };
-    this.players.push(p); return p;
+    this.players.push(p); if (this.phase === 'starter') joinStarter(this.starter, this.players.length - 1);
+    return p;
   }
   get live() { return this.players.filter(p => !p.folded); }
   get active() { return this.live.filter(p => !p.allin); }
   next(index, predicate) { for (let n = 1; n <= this.players.length; n++) { const i = (index + n) % this.players.length; if (predicate(this.players[i])) return i; } return -1; }
   pay(p, amount) { const paid = Math.min(p.chips, amount); p.chips -= paid; p.bet += paid; p.total += paid; p.allin = p.chips === 0; }
+  // A match's first hand opens with ¿Quién empieza? (engine/play/quien-empieza-rules.js):
+  // the highest cacho takes the dealer button. Later hands deal at once.
   start(random = Math.random, now = Date.now()) {
     if (!['lobby', 'finished'].includes(this.phase) || this.funded.length < 2) return false;
-    const nextDealer = this.players[this.next(this.dealer, p => p.connected && (p.chips > 0 || this.options.rebuy))]?.id;
+    if (this.phase === 'finished') return this.deal(random, now);
+    this.players = this.players.filter(p => p.connected); this.busted = [];
+    const last = this.players.findIndex(p => p.id === this.lastPlace);
+    this.starter = createStarter({ seats: this.players.map((p, i) => i), need: 'first', seed: Math.floor(random() * 2 ** 32), option: this.options.starter, last: last < 0 ? null : last });
+    this.phase = 'starter'; this.revision++; this.message = '¿Quién empieza? El dado más alto reparte primero.';
+    if (starterDone(this.starter)) this.openHand(random, now);
+    return true;
+  }
+  // Host only, on its timer: bots and departed panas slam on their own.
+  stepStarter(dt, random = Math.random, now = Date.now()) {
+    if (this.phase !== 'starter') return false;
+    const changed = stepStarter(this.starter, dt, { bots: this.players.flatMap((p, i) => p.bot || !p.connected ? [i] : []) });
+    if (starterDone(this.starter)) { this.openHand(random, now); return true; }
+    if (changed) this.revision++;
+    return changed;
+  }
+  // A pana shaking ('shake') or slamming ('slam') the cacho; no revision check, everyone throws at once.
+  cacho(id, input, power) {
+    const seat = this.players.findIndex(p => p.id === id);
+    if (this.phase !== 'starter' || seat < 0 || !starterInput(this.starter, seat, input, power)) return false;
+    this.revision++; return true;
+  }
+  openHand(random, now) {
+    const { order, rolls } = starterResult(this.starter), first = this.players[order[0]], how = this.starter.note;
+    this.deal(random, now, first?.id);
+    this.message = `${how ? `${how}: ` : ''}${first?.name || 'La mesa'} reparte${rolls[order[0]] ? ` con un ${rolls[order[0]]}` : ''}. ${this.message}`;
+  }
+  deal(random = Math.random, now = Date.now(), dealerId = null) {
+    const firstDealer = this.players.find(p => p.id === dealerId && p.connected && (p.chips > 0 || this.options.rebuy));
+    const nextDealer = firstDealer?.id ?? this.players[this.next(this.dealer, p => p.connected && (p.chips > 0 || this.options.rebuy))]?.id;
     this.players = this.players.filter(p => p.connected);
     this.dealer = this.players.findIndex(p => p.id === nextDealer);
     this.blindStartedAt ??= now;
@@ -184,7 +219,7 @@ export class Poker {
   finish(showdown) {
     const total = this.players.reduce((sum, p) => sum + p.total, 0);
     const result = showdown ? settle(this.players, this.board, this.dealer, this.options.variant) : { payouts: Object.fromEntries(this.players.map(p => [p.id, p.id === this.live[0]?.id ? total : 0])), pots: [{ amount: total, winners: this.live.map(p => p.id) }] };
-    for (const p of this.players) p.chips += result.payouts[p.id] || 0;
+    for (const p of this.players) { p.chips += result.payouts[p.id] || 0; if (!p.chips && !this.busted.includes(p.id)) this.busted.push(p.id); }
     this.result = { ...result, showdown, total }; this.phase = 'finished'; this.turn = null;
     this.message = showdown ? 'Cartas sobre la mesa.' : `${this.live[0]?.name || 'La mesa'} se lleva el pozo.`;
   }
@@ -196,7 +231,7 @@ export class Poker {
     return this.act(p.id, 'call');
   }
   view(id) {
-    return { mapId: this.mapId, options: { ...this.options }, smallBlind: this.smallBlind, bigBlind: this.bigBlind, canStart: this.funded.length >= 2, phase: this.phase, hand: this.hand, revision: this.revision, dealer: this.players[this.dealer]?.id, board: [...this.board], turn: this.turn,
+    return { mapId: this.mapId, options: { ...this.options }, starter: this.phase === 'starter' ? JSON.parse(JSON.stringify(this.starter)) : null, smallBlind: this.smallBlind, bigBlind: this.bigBlind, canStart: this.funded.length >= 2, phase: this.phase, hand: this.hand, revision: this.revision, dealer: this.players[this.dealer]?.id, board: [...this.board], turn: this.turn,
       currentBet: this.currentBet || 0, pot: this.players.reduce((sum, p) => sum + p.total, 0), message: this.message, result: this.result, legal: this.legal(id),
       players: this.players.map(({ hole, actedAt, ...p }) => ({ ...p, hole: p.id === id || (this.options.showCards && this.result?.showdown && !p.folded) ? [...hole] : hole.map(() => null),
         handName: this.result?.showdown && !p.folded && (p.id === id || this.options.showCards) ? HANDS[evaluateHand(hole, this.board, this.options.variant)[0]] : '' })) };

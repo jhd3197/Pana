@@ -1,7 +1,56 @@
 // Reduce full-grid draw calls without changing the shared car constructors.
 // Only opaque sibling meshes are combined: every moving pivot stays intact.
+// Also here: paint swaps and the battle balloons dressed onto a car.
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
+import { repaintHex } from './shop.js';
+import { BALLOONS } from './modes.js';
+
+// Battle balloons ride on sticks above the trunk, in the car's colour.
+const balloonGeo = new THREE.SphereGeometry(0.55, 10, 8);
+const stringGeo = new THREE.CylinderGeometry(0.025, 0.025, 1.6, 4);
+const stringMat = new THREE.MeshBasicMaterial({ color: 0xf3e9d7 });
+
+export function addBalloons(c) {
+  c.balloons = BALLOONS;
+  c.balloonMeshes = [];
+  const mat = new THREE.MeshStandardMaterial({ color: c.def.color, roughness: 0.35, emissive: c.def.color, emissiveIntensity: 0.15 });
+  for (let i = 0; i < BALLOONS; i++) {
+    const g = new THREE.Group();
+    const ball = new THREE.Mesh(balloonGeo, mat);
+    ball.scale.set(1, 1.2, 1);
+    ball.position.y = 1.6;
+    const string = new THREE.Mesh(stringGeo, stringMat);
+    string.position.y = 0.8;
+    g.add(ball, string);
+    g.position.set((i - 1) * 0.75, 2.1, -1.5);
+    g.rotation.z = (i - 1) * -0.25;
+    c.car.root.add(g);
+    c.balloonMeshes.push(g);
+  }
+}
+
+// Shifts every body panel in the car's paint family to a new paint (the
+// driver keeps their own colours). Materials are shared, so swap in copies.
+const paintCache = new Map();
+export function repaintCar(car, from, to) {
+  if (!to) return car;
+  const skip = new Set();
+  car.driver?.group?.traverse(o => skip.add(o));
+  car.root.traverse(o => {
+    if (!o.material || skip.has(o)) return;
+    const swap = (m) => {
+      if (!m.color) return m;
+      const hex = repaintHex('#' + m.color.getHexString(), from, to);
+      if (!hex) return m;
+      const key = m.uuid + hex;
+      if (!paintCache.has(key)) { const n = m.clone(); n.color.set(hex); paintCache.set(key, n); }
+      return paintCache.get(key);
+    };
+    o.material = Array.isArray(o.material) ? o.material.map(swap) : swap(o.material);
+  });
+  return car;
+}
 
 export function batchRacer(car, paint = null) {
   const paintColor = paint == null ? null : new THREE.Color(paint);

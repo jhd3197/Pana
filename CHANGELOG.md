@@ -14,7 +14,17 @@ becomes the GitHub release's notes.
   brillando abajo; y pasa el puente sobre el lago, los palafitos y La Chinita
   bajo los relámpagos del Catatumbo. Los árboles son los del catálogo de Pana
   y los tres circuitos funcionan en carreras rápidas, salas en línea y Studio.
-
+- **Derrape: tu mejor vuelta corre contra ti.** Al terminar una carrera se
+  guarda tu vuelta más rápida en cada pista, y la próxima vez un fantasma
+  translúcido de tu propio carro la repite contigo — no choca ni cuenta en las
+  posiciones. El HUD muestra «Fantasma» con el tiempo a batir; con `?noghost`
+  se apaga.
+- **¿Quién empieza? Every table game now opens with the cachos.** All panas
+  shake a leather cacho at once, slam it and lift together; the highest die
+  starts, ties shake again, and a strip shows the order. Ludo, Bululú, Caída,
+  Póquer and Billar use it, Dominó offers it next to its own rule and Bolas
+  criollas flips a coin. Hosts can pick Al azar, El anfitrión or Revancha (the
+  last place starts) in Más ajustes.
 - **Derrape se ve como se siente derrapar: el caucho queda marcado en la
   pista, el humo crece con la carga del derrape y soltar en púrpura frena el
   mundo un instante.** Las marcas de los cauchos se desvanecen solas en unos

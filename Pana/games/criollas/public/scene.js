@@ -3,6 +3,8 @@ import { createBolasWorld } from '/engine/worlds/bolas-world.js';
 import { previewThrow } from '/engine/play/bolas-criollas.js';
 import { difficultyInfo } from '/engine/play/difficulty.js';
 import { bindRenderer, pixelRatio } from '/engine/settings.js';
+import { createStarterStage } from '/engine/play/quien-empieza.js';
+import { TEAM_NAMES } from './rules.js';
 
 // 'calce' stands behind the thrower looking down the court; 'arriba' looks
 // straight down; 'cancha' is the wide side view.
@@ -20,6 +22,10 @@ export function createScene(canvas) {
   }
   const unbind = bindRenderer(renderer, 1.5, { fit: 'canvas' });
   const observer = new ResizeObserver(resize); observer.observe(canvas); resize();
+  // ¿Quién empieza?: a coin flipped between the two benches decides who throws the mingo.
+  const opening = createStarterStage({ root: world.scene, camera: world.camera, canvas, scale: 1.1, names: TEAM_NAMES,
+    spot: team => ({ position: [team ? 3.2 : -3.2, 0, 5.5], out: [team ? 1 : -1, 0] }) });
+  let openingRevision = -1;
   return { ...world, renderer,
     render(state, { dt, shot, active }) {
       if (state.mapId && world.venue !== state.mapId) world.setVenue(state.mapId);
@@ -38,11 +44,13 @@ export function createScene(canvas) {
       const lobby = state.phase === 'lobby', mode = lobby ? 'cancha' : view;
       world.view(mode, { aspect: size.w / size.h, dt, focus: rolling && !rolling.out ? rolling : null,
         lift: lobby || mode === 'arriba' ? 0 : Math.min(70, size.h * .09), width: size.w, height: size.h });
+      if (state.revision !== openingRevision) { openingRevision = state.revision; opening.update(state.phase === 'opening' ? state.opening : null, { names: TEAM_NAMES }); }
+      opening.frame(dt);
       renderer.render(world.scene, world.camera);
     },
     pick: (x, y) => world.point(x, y, canvas.getBoundingClientRect()),
     setView(value) { view = value; }, get view() { return view; }, get venue() { return world.venue; },
-    get guides() { return { preview: !!preview }; },
-    dispose() { observer.disconnect(); unbind(); world.dispose(); renderer.dispose(); },
+    get guides() { return { preview: !!preview }; }, opening,
+    dispose() { observer.disconnect(); unbind(); opening.dispose(); world.dispose(); renderer.dispose(); },
   };
 }

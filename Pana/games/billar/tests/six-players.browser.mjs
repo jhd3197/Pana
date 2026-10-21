@@ -80,6 +80,9 @@ try {
   const start = await host.locator('#start').boundingBox(); assert(start.y + start.height <= 800, 'start remains visible on laptop');
   console.log('PASS six seats, synchronized host options, guest protection, reset, Escape/focus and mobile dialog');
 
+  // Seat order breaks here, so the rotation below starts at seat 0.
+  await host.evaluate(() => billarDebug.room.action('options', { options: { starter: 'anfitrion' } }));
+  await waitFor(last, () => billarDebug.room.state.options.starter === 'anfitrion');
   await host.locator('#start').click();
   await waitFor(last, () => billarDebug.room.state.phase === 'aiming');
   assert.deepEqual(await last.evaluate(() => billarDebug.room.state.activeSeats), [0, 1, 2, 3, 4, 5]);

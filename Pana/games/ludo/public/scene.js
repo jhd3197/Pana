@@ -4,6 +4,7 @@ import { normalizeAvatar } from '/engine/avatar.js';
 import { createTableWorld } from '/engine/worlds/table-world.js';
 import { createGameTable, createGameChair, disposeModel } from '/engine/models/props/game-table.js';
 import { createToss } from '/engine/play/dice-throw.js';
+import { createStarterStage } from '/engine/play/quien-empieza.js';
 import { sound, Puffs, Shockwaves } from '/engine/fx.js';
 import { createLudoBoard, createLudoPawn, createLudoDie, boardPoint } from './board-model.js';
 import { COLORS, HOME, legalMoves } from './rules.js';
@@ -13,7 +14,7 @@ const PAWN_Y = 1.67, DIE_Y = 1.835, HOP = .15, FLIGHT = .95;
 const FACE_UP = { 1: [0, 0, 0], 2: [-Math.PI / 2, 0, 0], 3: [0, 0, Math.PI / 2], 4: [0, 0, -Math.PI / 2], 5: [Math.PI / 2, 0, 0], 6: [Math.PI, 0, 0] };
 const seatAngle = seat => -Math.PI / 4 + seat * Math.PI / 2;
 
-export function createLudoScene(canvas, { onPiece, onCapture } = {}) {
+export function createLudoScene(canvas, { onPiece, onCapture, onStarter } = {}) {
   // The shared plaza stage (perspective camera, sky, sun) like Billar and Póquer.
   const stage=createTableWorld(canvas),{renderer,scene,camera}=stage,own=new THREE.Group();scene.add(own);
   // Reuse the shared table and chairs; the board sits above the felt.
@@ -31,6 +32,9 @@ export function createLudoScene(canvas, { onPiece, onCapture } = {}) {
     pawns.push({model,seat,piece,target:new THREE.Vector3(),initialized:false,playable:false,progress:-1,path:null,flight:null,squash:0});
   }
   const diePivot=new THREE.Group(),die=createLudoDie();die.position.y=-.215;diePivot.add(die);diePivot.position.set(3.08,1.675,0);own.add(diePivot);
+  // ¿Quién empieza?: a cacho on the board's edge in front of each pana.
+  const starter=createStarterStage({root:own,camera,canvas,scale:.62,onInput:onStarter,
+    spot:seat=>{const a=seatAngle(seat);return{position:[Math.sin(a)*2.95,1.665,Math.cos(a)*2.95],out:[Math.sin(a),Math.cos(a)]};}});
   const ray=new THREE.Raycaster(),cursor=new THREE.Vector2();
   let current=null,time=0,lastRoll='',lastRound=-1,disposed=false,toss=null,shake=0;
   const rest=diePivot.position.clone();
@@ -89,6 +93,7 @@ export function createLudoScene(canvas, { onPiece, onCapture } = {}) {
       for(const p of eaten)p.flight={from:p.model.position.clone(),t:-delay,spin:(p.piece%2?1:-1)*(3+p.piece)};
     }
     lastRound=state.round;
+    starter.update(state.phase==='starter'?state.starter:null,{ownSeat,names:state.players.map(p=>p.name)});
     const key=`${state.round}:${state.rng}`;
     if(key!==lastRoll&&state.lastDie&&lastRoll)throwDie(state);
     else if(key!==lastRoll&&state.lastDie){final.setFromEuler(new THREE.Euler(...FACE_UP[state.lastDie]));diePivot.quaternion.copy(final);}
@@ -153,7 +158,7 @@ export function createLudoScene(canvas, { onPiece, onCapture } = {}) {
       diePivot.position.set(hand.x+Math.sin(time*47)*j,hand.y+Math.abs(Math.sin(time*31))*j*1.5,hand.z+Math.cos(time*53)*j);
       diePivot.rotation.set(time*(6+shake*14),time*(4+shake*9),time*5);
     }
-    puffs.update(dt);waves.update(dt);
+    puffs.update(dt);waves.update(dt);starter.frame(dt);
     stage.draw(dt);
   }
   // The local thrower shaking the die (0 = not shaking; up to 1 = as hard as it gets).
@@ -166,6 +171,6 @@ export function createLudoScene(canvas, { onPiece, onCapture } = {}) {
   }
   function setView(value){top=!!value;}
   function projectPiece(seat,piece){const p=pawns.find(p=>p.seat===seat&&p.piece===piece),v=p.model.position.clone();v.y+=.2;v.project(camera);const r=canvas.getBoundingClientRect();return{x:r.left+(v.x+1)*r.width/2,y:r.top+(1-v.y)*r.height/2};}
-  function dispose(){disposed=true;canvas.removeEventListener('click',click);canvas.removeEventListener('pointermove',hover);characters.forEach(c=>c.dispose());puffs.clear();waves.clear();disposeModel(own);stage.dispose();}
-  return {update,frame,setView,shakeDie,dispose,characters,pawns,projectPiece,renderer,scene,camera,get die(){return diePivot;},get tossing(){return !!toss;}};
+  function dispose(){disposed=true;canvas.removeEventListener('click',click);canvas.removeEventListener('pointermove',hover);starter.dispose();characters.forEach(c=>c.dispose());puffs.clear();waves.clear();disposeModel(own);stage.dispose();}
+  return {update,frame,setView,shakeDie,dispose,characters,pawns,starter,projectPiece,renderer,scene,camera,get die(){return diePivot;},get tossing(){return !!toss;}};
 }

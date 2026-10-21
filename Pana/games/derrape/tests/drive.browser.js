@@ -129,6 +129,47 @@ try {
     return { tricked, landed: p.onGround, boost: p.boost };
   });
   assert.ok(trick.tricked && trick.landed && trick.boost > 0.3, `trick ${JSON.stringify(trick)}`);
+
+  // Ghost recording: crossing the last line ends the race and saves the
+  // fastest lap; a fresh race on the same track fields the ghost on it.
+  const stored = await page.evaluate(() => {
+    const p = race.player;
+    race.keys = { w: true };
+    for (let i = 0; i < 180; i++) updateRace(1 / 60);   // a few seconds of tape
+    p.lap = race.laps + 1;                              // the last crossing…
+    updateRace(1 / 60);                                 // …ends the race, saving the ghost
+    const ghost = JSON.parse(localStorage.getItem('derrape:ghost:estadio') || 'null');
+    return { state: race.state, done: p.done, lap: ghost?.lap, poses: ghost?.poses?.length ?? 0,
+      rounded: ghost ? ghost.poses.every(q => q.every(v => Math.abs(v * 100 - Math.round(v * 100)) < 1e-6)) : false };
+  });
+  assert.equal(stored.state, 'end', `the last crossing finishes the race ${JSON.stringify(stored)}`);
+  assert.ok(stored.done, 'the player is done');
+  assert.ok(stored.lap > 3 && stored.poses > 30, `a lap of poses was stored ${JSON.stringify(stored)}`);
+  assert.ok(stored.rounded, 'stored poses keep the 2-decimal packPose rounding');
+
+  await page.evaluate(() => startRace(race.playerIndex, race.playerWheel));
+  await page.waitForFunction(() => race.state === 'count');
+  const replay = await page.evaluate(() => {
+    const g0 = window.PANA_GHOST();
+    const ghost = JSON.parse(localStorage.getItem('derrape:ghost:estadio'));
+    race.state = 'go'; race.count = 0;
+    for (let i = 0; i < 90; i++) updateRace(1 / 60);    // 1.5 s of racing
+    const g1 = window.PANA_GHOST();
+    const poses = ghost.poses, at = Math.round(1.5 * 20);
+    const a = poses[at - 1] || poses[0], b = poses[at] || poses.at(-1);
+    const k = b[0] === a[0] ? 0 : Math.max(0, Math.min(1, (1500 - a[0]) / (b[0] - a[0])));
+    return { g0, g1, expectX: a[1] + (b[1] - a[1]) * k, expectZ: a[3] + (b[3] - a[3]) * k,
+      startX: poses[0][1], startZ: poses[0][3],
+      pill: !document.getElementById('ghost-pill').hidden,
+      pillText: document.getElementById('ghost-time').textContent };
+  });
+  assert.ok(replay.g0, 'a fresh race on the track fields the ghost');
+  assert.ok(Math.abs(replay.g0.x - replay.startX) < 0.5 && Math.abs(replay.g0.z - replay.startZ) < 0.5,
+    `the ghost waits on the recording's grid pose ${JSON.stringify(replay)}`);
+  assert.ok(Math.abs(replay.g1.x - replay.expectX) < 0.5 && Math.abs(replay.g1.z - replay.expectZ) < 0.5,
+    `the ghost follows the recording at t=1.5s ${JSON.stringify(replay)}`);
+  assert.ok(replay.pill && /\d/.test(replay.pillText), `the Fantasma pill shows the lap ${JSON.stringify(replay)}`);
+  await page.screenshot({ path: join(output, 'drive-ghost.png') });
   assert.deepEqual(errors, []);
   console.log('derrape drive: rocket start, stall, drift levels and tricks OK');
 } finally {

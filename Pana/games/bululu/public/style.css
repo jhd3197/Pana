@@ -1,6 +1,6 @@
 /* Bululú: Pana Kit (/engine/kit.css) dressed for the mango island. */
 :root { color-scheme: dark; }
-body { --wood: #b5753a; --wood-edge: #7a4a20; --coin-text: #ffdf72; --silver: #d6dbe6; --bronze: #e0a463; --coin-shine: #ffe58a; --coin-edge: #9a6400; --sea: #1d4f80; --tile-blue: #3d7bf2; --stat: #c9a2ff; --pk-game: #8e4de8; --pk-game-ink: #fff; --reticle-ink: #16161a; --hint-ok: #2fbf4a; --hint-ok-edge: #17682a; --hint-bad-edge: #5a1012; }
+body { --wood: #b5753a; --wood-edge: #7a4a20; --coin-text: #ffdf72; --silver: #d6dbe6; --bronze: #e0a463; --coin-shine: #ffe58a; --coin-edge: #9a6400; --sea: #1d4f80; --tile-blue: #3d7bf2; --stat: #c9a2ff; --pk-game: #8e4de8; --pk-qe-top: 168px; --pk-game-ink: #fff; --reticle-ink: #16161a; --hint-ok: #2fbf4a; --hint-ok-edge: #17682a; --hint-bad-edge: #5a1012; }
 
 * { box-sizing: border-box; }
 
@@ -602,4 +602,16 @@ body.mini-aim canvas { cursor: none; touch-action: none; }
   body.in-mini .pcard { justify-content: center; border-color: color-mix(in srgb, var(--c) 70%, transparent); }
   body.in-mini .pcard img { display: none; }
   body.in-mini .vals .big .ico { display: none; }
+}
+
+/* ¿Quién empieza?: its heading sits under the cards; where the cards drop to
+   the bottom of the screen, they step aside for the cachos' button and strip. */
+@media (max-width: 860px), (max-height: 500px) {
+  body { --pk-qe-top: 64px; --pk-qe-top-phone: 64px; }
+  body.pana-starter .cards { display: none; }
+}
+@media (max-height: 500px) {
+  body { --pk-qe-top: 8px; }
+  body .pk-qe-head { width: min(400px, calc(100vw - 340px)); padding: 6px 12px 8px; gap: 4px; }
+  body .pk-qe-say { font-size: 18px; }
 }

@@ -28,7 +28,8 @@ try {
   await host.locator('#pana-room-done').click();
   await choose('stack', 5000); await choose('blinds', 100); await choose('turnSeconds', 40);
   await host.locator('#pana-room-more').click();
-  for (const [id, value] of [['variant', 'omaha'], ['blindMinutes', 5], ['rebuy', false], ['showCards', false], ['limit', 'fixed']]) await choose(id, value);
+  // The host's seat order skips the cachos, so the deadline counts from the start send.
+  for (const [id, value] of [['variant', 'omaha'], ['blindMinutes', 5], ['rebuy', false], ['showCards', false], ['limit', 'fixed'], ['starter', 'anfitrion']]) await choose(id, value);
   await host.locator('#pana-room-done').click();
   await guest.locator('#pana-room-more').click();
   assert.equal(await guest.locator('[data-room-option="variant"][data-value="texas"]').isDisabled(), true);

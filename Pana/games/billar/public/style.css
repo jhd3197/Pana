@@ -1,5 +1,5 @@
 * { box-sizing: border-box; }
-body { --pk-game: #20856c; --sky: #c7e1e8; --cue-white: #fffdf6; --cue-ivory: #f1ead8; --cue-shade: #cfc4ad; --spin-red: #ff4b4b; margin: 0; overflow: hidden; background: var(--sky); color: var(--pk-text); font-family: var(--pk-sans); }
+body { --pk-game: #20856c; --pk-qe-top-phone: 136px; --sky: #c7e1e8; --cue-white: #fffdf6; --cue-ivory: #f1ead8; --cue-shade: #cfc4ad; --spin-red: #ff4b4b; margin: 0; overflow: hidden; background: var(--sky); color: var(--pk-text); font-family: var(--pk-sans); }
 [hidden] { display: none !important; }
 button, input { font: inherit; } button { cursor: pointer; } button:disabled { cursor: default; }
 .game-header { position: fixed; z-index: 5; inset: 16px 24px auto; display: flex; align-items: center; gap: 18px; pointer-events: none; }
@@ -70,3 +70,4 @@ button, input { font: inherit; } button { cursor: pointer; } button:disabled { c
   .side-controls { left: 12px; top: auto; bottom: 12px; transform: none; padding: 8px; } .spin-pad { width: 54px; height: 54px; } .camera-btn { width: 44px; height: 38px; font-size: 20px; margin-top: 2px; }
   .turn-copy { display: block; margin-bottom: 12px; } #message { margin-top: 8px; } .shot-controls { flex-wrap: wrap; gap: 12px; } .power-control { flex-basis: 100%; } #shoot { min-width: 85px; flex: 1; padding: 12px; font-size: 22px; } #shoot kbd, .input-tip { display: none; }
 }
+body.pana-starter #play-controls, body.pana-starter #side-controls, body.pana-starter .pk-power { visibility: hidden; }
