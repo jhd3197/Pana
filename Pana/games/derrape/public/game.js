@@ -891,7 +891,7 @@ let loadGeneration = 0;
 // from the room. Without one the race is the local player plus three bots.
 async function startRace(playerIndex, wheelId = garage.wheel, roster = null) {
   if (mode === 'loading' && (!roster || net?.state.raceId === race.loadingRaceId)) return;
-  await featsReady; driftFeats.reset();   // a new race starts the milestone counts over
+  driftFeats.reset();   // a new race starts the milestone counts over; no await before the generation guard below
   driftCombo.reset();                     // …and the style score
   const generation = ++loadGeneration;
   race.loadingRaceId = roster ? net.state.raceId : 0;
@@ -1377,8 +1377,8 @@ function crash(c, power, side) {
 }
 
 const { stepCar } = createDriver({ race, track: () => T, say, popPart, progressOf, flameFor, lines: LINES, auto: AUTO });
-// Milestone toasts for the local player's drifting; the module loads with the
-// first race (awaited in startRace), keeping the garage's first load small.
+// Milestone toasts for the local player's drifting; the module loads during
+// boot (awaited below, before PANA_PREPARED), keeping the garage's first load small.
 let driftApi = null; const featsReady = import('./feats.js').then(m => { driftApi = m.createDriftFeats($('toast')); });
 const driftFeats = { step: (c, dt) => driftApi?.step(c, dt), reset: () => driftApi?.reset(), win: () => driftApi?.win() };
 // Style scoring and its combo meter: same lazy pattern, same first-race load.
@@ -2415,6 +2415,7 @@ garage.wheel = wheelById(wallet.wheel).id;   // the profile migrated any old 'de
 if (ROOM) goOnline(ROOM, QS.has('lead'));   // first: a reload reclaims its seat inside the reconnection window
 // Suites call buildTrack() and read TRACKS synchronously: every map loads before
 // PANA_PREPARED (showCar below). startRace() loads its own map either way.
+await Promise.all([featsReady, comboReady]);   // milestone toasts and the style score are ready before any race can start
 if (DEBUG) await loadTracks();
 selectTrack(QS.get('track') || savedTrack);
 showCar(0);
