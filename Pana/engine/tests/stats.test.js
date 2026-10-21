@@ -78,5 +78,50 @@ test('malformed stored data starts fresh', () => {
   const storage = memStorage();
   storage.setItem('pana:stats', 'not json');
   const stats = createStats({ storage, send: () => {} });
-  assert.deepEqual(stats.snapshot(), { counters: {}, events: [] });
+  assert.deepEqual(stats.snapshot(), { counters: {}, events: [], records: {} });
+});
+
+test('records keep the best value per id, min and max', () => {
+  const stats = createStats({ storage: memStorage(), now: () => 1, send: () => {} });
+  assert.equal(stats.statRecord('derrape.best-lap:choroni', 83400, { better: 'min' }), 83400);
+  assert.equal(stats.statRecord('derrape.best-lap:choroni', 90000, { better: 'min' }), 83400);  // worse: standing best
+  assert.equal(stats.statRecord('derrape.best-lap:choroni', 80000, { better: 'min' }), 80000);
+  assert.equal(stats.statRecord('derrape.longest-drift', 120), 120);   // max is the default
+  assert.equal(stats.statRecord('derrape.longest-drift', 90), 120);
+  assert.equal(stats.statRecord('derrape.longest-drift', 150), 150);
+});
+
+test('records persist under pana:stats with their timestamp', () => {
+  const storage = memStorage();
+  let t = 5000;
+  const stats = createStats({ storage, now: () => t, send: () => {} });
+  stats.statRecord('derrape.best-lap:choroni', 83400, { better: 'min' });
+  t = 9000;
+  stats.statRecord('derrape.best-lap:choroni', 81000, { better: 'min' });
+  const saved = JSON.parse(storage.dump()['pana:stats']);
+  assert.deepEqual(saved.records['derrape.best-lap:choroni'], { value: 81000, t: 9000 });
+  assert.equal(createStats({ storage, send: () => {} }).snapshot().records['derrape.best-lap:choroni'].value, 81000);
+});
+
+test('only an improved record is handed to the bridge', () => {
+  const sent = [];
+  const stats = createStats({ storage: memStorage(), now: () => 42, send: (e) => sent.push(e) });
+  stats.statRecord('derrape.best-lap:choroni', 83400, { better: 'min' });
+  stats.statRecord('derrape.best-lap:choroni', 83400, { better: 'min' });  // a tie is not an improvement
+  stats.statRecord('derrape.best-lap:choroni', 99999, { better: 'min' });
+  stats.statRecord('derrape.best-lap:choroni', 82000, { better: 'min' });
+  assert.deepEqual(sent, [
+    { type: 'record', id: 'derrape.best-lap:choroni', value: 83400, t: 42 },
+    { type: 'record', id: 'derrape.best-lap:choroni', value: 82000, t: 42 },
+  ]);
+});
+
+test('a record report with no id or no number keeps the standing best', () => {
+  const sent = [];
+  const stats = createStats({ storage: memStorage(), send: (e) => sent.push(e) });
+  assert.equal(stats.statRecord('derrape.best-lap:choroni', NaN), undefined);
+  stats.statRecord('derrape.best-lap:choroni', 83400, { better: 'min' });
+  assert.equal(stats.statRecord('derrape.best-lap:choroni', 'rapido', { better: 'min' }), 83400);
+  assert.equal(stats.statRecord('', 100), undefined);
+  assert.equal(sent.length, 1);
 });
