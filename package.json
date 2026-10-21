@@ -14,7 +14,8 @@
     "test:browser": "node Pana/scripts/test-browser.js",
     "shots": "node Pana/scripts/shots.js",
     "new-game": "node Pana/scripts/new-game.js",
-    "dev": "powershell -ExecutionPolicy Bypass -File dev.ps1"
+    "dev": "powershell -ExecutionPolicy Bypass -File dev.ps1",
+    "prepare": "git config core.hooksPath .githooks || true"
   },
   "engines": {
     "node": ">=22"
