@@ -892,6 +892,7 @@ let loadGeneration = 0;
 async function startRace(playerIndex, wheelId = garage.wheel, roster = null) {
   if (mode === 'loading' && (!roster || net?.state.raceId === race.loadingRaceId)) return;
   await featsReady; driftFeats.reset();   // a new race starts the milestone counts over
+  driftCombo.reset();                     // …and the style score
   const generation = ++loadGeneration;
   race.loadingRaceId = roster ? net.state.raceId : 0;
   if (roster) {
@@ -1380,6 +1381,14 @@ const { stepCar } = createDriver({ race, track: () => T, say, popPart, progressO
 // first race (awaited in startRace), keeping the garage's first load small.
 let driftApi = null; const featsReady = import('./feats.js').then(m => { driftApi = m.createDriftFeats($('toast')); });
 const driftFeats = { step: (c, dt) => driftApi?.step(c, dt), reset: () => driftApi?.reset(), win: () => driftApi?.win() };
+// Style scoring and its combo meter: same lazy pattern, same first-race load.
+let comboApi = null; const comboReady = import('./drift-combo.js').then(m => { comboApi = m.createDriftCombo($('combo')); });
+const driftCombo = {
+  step: (c, dt) => comboApi?.step(c, dt), finish: (c) => comboApi?.finish(c), reset: () => comboApi?.reset(),
+  update: (c) => comboApi?.update(c), totalOf: (c) => comboApi?.totalOf(c) ?? 0, bestChainOf: (c) => comboApi?.bestChainOf(c) ?? 1,
+  live: (c) => comboApi?.live(c),
+};
+if (DEBUG) window.PANA_DRIFT_SCORE = () => driftCombo.live(race.player);
 
 // ---------- the zamuro rescue ----------
 // Off the course, stuck, or asked for (R): a vulture lifts the car, flies it
@@ -1635,10 +1644,12 @@ function updateRace(dt, presentation = true) {
       if (c.rescueT > 0) { stepRescue(c, dt); continue; }
       if (c.done) {
         stepCar(c, { throttle: 0, steer: 0 }, dt);
+        driftCombo.step(c, dt);   // a finished car still banks its last chain
         continue;
       }
       stepCar(c, c.isPlayer && !AUTO ? playerInput(1) : c.human === 2 && !AUTO ? playerInput(2) : aiInput(c), dt);
       if (c.isPlayer) driftFeats.step(c, dt);   // milestone toasts read the drift the step left
+      driftCombo.step(c, dt);   // style scoring reads every local car, bots included
       if (c.outT > OUT_TIME || c.stuckT > STUCK_TIME) rescue(c);
       if (!c.isPlayer) {
         c.aiHonk -= dt;
@@ -1739,6 +1750,7 @@ function presentRace(dt) {
   }
   const segs = boost.children;
   for (let i = 0; i < segs.length; i++) segs[i].classList.toggle('on', i < lit);
+  driftCombo.update(p);   // the combo meter mirrors the live style chain
 
   // standings board + minimap, throttled
   if (race.state === 'end' && race.cup && race.cup.session.status === 'intermission') {
@@ -1973,6 +1985,7 @@ function renderCup() {
 
 function finish() {
   race.state = 'end';
+  driftCombo.finish(race.player);   // bank a live chain so the results count it
   if (race.netRace && net?.cup) {
     race.cup = { definition: cupById(net.cup.cupId), session: net.cup, mirror: false };
   }
