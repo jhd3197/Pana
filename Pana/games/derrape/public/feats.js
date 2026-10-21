@@ -3,6 +3,7 @@
 // engine/feats.js owns the toast and the anti-spam cooldown. game.js loads
 // this module with the first race, so the garage's first load stays small.
 import { createFeats } from '/engine/feats.js';
+import { statCount } from '/engine/stats.js';
 
 export const LONG_DRIFT_M = 100;   // one drift this long, without releasing
 
@@ -22,6 +23,7 @@ export function createDriftFeats(el, opts) {
       if (c.drift) {
         const d = Math.max(0, c.vf) * dt;
         distance.add(d);
+        statCount('derrape.drift-meters', d);
         current += d;
         level = c.driftLvl || 0;
         boost = c.boost;
