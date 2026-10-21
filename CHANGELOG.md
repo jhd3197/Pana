@@ -83,7 +83,6 @@ becomes the GitHub release's notes.
   más de 100 m sin soltar es un ¡Derrapón! y soltar un derrape púrpura tiene su
   celebración. En Pepazo pintar a un rival lo anuncia por nombre, y dos o tres
   pintadas en menos de cinco segundos cantan ¡Doble pintada! y ¡Triple pintada!.
-
 - **New game: Trifulca, barrio boxing where the winner stays and everyone
   else is the ring.** Two panas fight with jab, trompón, block, dodge and
   grab; hits fill your mareo instead of a health bar, three caídas is a
@@ -98,34 +97,15 @@ becomes the GitHub release's notes.
   the profe, and alone you climb a ladder of five rivals instead of watching
   bots fight; a side camera, a lit key bar and ¡ESQUIVA! prompts make it
   easy to read.
-
 - **Derrape keeps detailed roadside trees while distant forest costs less to render.**
   Three vegetation zones preserve planting density: native trees near the route,
   simplified trees farther out and lightweight crowns on distant hills. Isolated
   trees and palms retain their visible trunks.
-
 - **Race through Cata, Choroní and Chuao, including the downhill quebrada.**
   Three coastal circuits join quick races, online rooms and Studio with native
   Pana trees, dense mountain forest and previews of the actual maps. Existing
   circuits gain continuous road wear and sloping verges; natural landscapes
   gain simplified background trees without filling towns, caves or salt pans.
-
-## 0.4.0 - 2026-10-19
-
-Maintenance release: no changes you will notice.
-
-## 0.3.1 - 2026-10-18
-
-Maintenance release: no changes you will notice.
-
-## 0.3.0 - 2026-10-18
-
-Maintenance release: no changes you will notice.
-
-## 0.2.0 - 2026-10-17
-
-### Added
-
 - **Reliquia is now a first-person treasure run: ¿nos vamos ya, o bajamos
   un piso más?** Grab a farol at the camp and ride the montacargas down
   La mina del sol. It is one cage for everyone: it takes time, carries
@@ -152,6 +132,22 @@ Maintenance release: no changes you will notice.
   Below, everything echoes: footsteps, drips, creaks, distant moans,
   groaning mummies, hissing cuaimas and your own heartbeat when la
   codicia runs high.
+
+## 0.4.0 - 2026-10-19
+
+Maintenance release: no changes you will notice.
+
+## 0.3.1 - 2026-10-18
+
+Maintenance release: no changes you will notice.
+
+## 0.3.0 - 2026-10-18
+
+Maintenance release: no changes you will notice.
+
+## 0.2.0 - 2026-10-17
+
+### Added
 
 - **Pepazo has a night map: Cancha de Noche.** Red floodlights, purple
   UV light and glowing LED rope lines light a field of pallets,
