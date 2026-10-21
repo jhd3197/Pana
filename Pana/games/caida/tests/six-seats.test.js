@@ -1,11 +1,13 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { CaidaGame, teamOf, deck } from '../public/rules.js';
+// Skips ¿Quién empieza? (the host's seat order): seat 0 deals first.
+const start = g => { g.options.starter = 'anfitrion'; return g.start(); };
 for (const mode of ['six', 'sixTeams']) test(`${mode} deals exactly two hands and preserves every card through migration`, () => {
   const g = new CaidaGame(32); assert.ok(g.configure({ mode, cantos: false }));
   const members = new Map(); for (let id = 1; id <= 6; id++) { members.set(id, { id, name: `Pana ${id}` }); g.addPlayer(id, `Pana ${id}`); }
   assert.equal(g.players.length, 6); assert.equal(g.scores.length, mode === 'six' ? 6 : 2);
-  g.start(); g.setCall(g.dealer, 'up'); g.dealOpening(g.dealer); assert.equal(g.stock.length, 18); assert.ok(g.players.every(p => p.hand.length === 3));
+  start(g); g.setCall(g.dealer, 'up'); g.dealOpening(g.dealer); assert.equal(g.stock.length, 18); assert.ok(g.players.every(p => p.hand.length === 3));
   let turns = 0;
   while (g.phase === 'playing') { g.play(g.turn, g.players[g.turn].hand[0].id); turns++; }
   assert.equal(turns, 36); assert.equal(g.handNumber, 2); assert.equal(g.result.baseline, mode === 'six' ? 6 : 20);

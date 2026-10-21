@@ -1,5 +1,6 @@
 // Room options are validated against the same values shown in the lobby.
 import { optionDefaults, normalizeRoomOptions, applyRoomOptions } from '../../../engine/room-options-rules.js';
+import { STARTER_FIELD } from '../../../engine/play/quien-empieza-rules.js';
 export const OPTION_FIELDS = [
   // Solo minijuegos skips the board: `rounds` minigames back to back, +10 a win.
   { id: 'mode', label: 'Partida', default: 'board', choices: [['board', 'Con tablero'], ['minis', 'Solo minijuegos']] },
@@ -12,6 +13,7 @@ export const OPTION_FIELDS = [
   { id: 'finalBonus', label: 'Bonus final', default: true, choices: [[true, 'Sí'], [false, 'No']], advanced: true },
   { id: 'dice', label: 'Dados', default: 2, choices: [[1, '1'], [2, '2']], advanced: true },
   { id: 'cpu', label: 'Velocidad CPU', default: 'normal', choices: [['normal', 'Normal'], ['fast', 'Rápida']], advanced: true },
+  STARTER_FIELD,
 ];
 export const DEFAULT_OPTIONS = Object.freeze(optionDefaults(OPTION_FIELDS));
 export const cleanOptions = (value = {}) => normalizeRoomOptions(OPTION_FIELDS, value);

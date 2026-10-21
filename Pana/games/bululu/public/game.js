@@ -20,8 +20,8 @@ import { createGameMenu, toggleMute } from '/engine/ui.js';
 import { drawIcons } from '/engine/touch.js';
 import { createInput, IDLE_AIM } from './input.js';
 import { bindDiceThrow, cleanPower } from '/engine/play/dice-throw.js';
-import { namesList } from '/engine/play/roll-off.js';
-import { createDiceTable, rollOffOrder } from './dice-table.js';
+import { createDiceTable } from './dice-table.js';
+import { createBululuStarter } from './starter.js';
 import { pixelRatio, bindRenderer } from '/engine/settings.js';
 import { inviteUrl, newRoomCode, roomFromUrl } from '/engine/invite.js';
 import { BululuRoom } from './network.js';
@@ -81,8 +81,9 @@ const players = (() => {
 })();
 let me = players[0];
 const isHuman = (p) => p.human && !AUTO;
-// Who plays when in each round, decided by the opening roll-off.
-let order = players.map((p) => p.i);
+// Who plays when in each round, decided by ¿Quién empieza? (starter.js);
+// lastPlace starts a rematch when the room picks "Revancha".
+let order = players.map((p) => p.i), lastPlace = null;
 
 // ---------- renderer ----------
 const renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -191,6 +192,8 @@ function layoutTokens(skip) {
 }
 layoutTokens();
 for (const p of players) p.token.group.position.copy(p.token.rest);
+const starter = createBululuStarter({ scene: boardScene, camera: boardCam, canvas: renderer.domElement, board, players,
+  onInput: (cacho, power) => { sound.unlock(); if (online && !room.isHost) room.starter(cacho, power); else if (me) starter.input(me.i, cacho, power); } });
 
 // The board camera and "Ver tablero" (board-camera.js).
 const boardCamera = createBoardCamera({ camera: boardCam, dom: renderer.domElement, canLook: () => view === boardView,
@@ -223,6 +226,7 @@ const boardView = {
       tk.pin.position.y = 3.1 + s * 0.4 + Math.sin(t * 2.5 + p.i) * 0.1;
     }
     diceTable.update(dt, t, thrower?.shaking ? thrower.power : 0);
+    starter.frame(dt);
     puffs.update(dt);
     shockwaves.update(dt);
     boardCamera.update(dt);
@@ -339,7 +343,7 @@ function ask(text, options, { auto = 0, delay = 0.5 } = {}) {
   });
 }
 
-// ---------- dice: shake, throw, and the roll-off for who starts (dice-table.js) ----------
+// ---------- dice: shake and throw (dice-table.js) ----------
 let thrower = null, thrownPower = 0.5;
 // A prompt button that throws: hold it (or Space / Enter) to shake the dice and
 // let go to throw them; a flick across the island throws harder.
@@ -355,24 +359,16 @@ async function askThrow(p, text, label) {
   if (!isHuman(p)) { await wait(0.5); return rand(0.35, 0.95); }
   await ask(text, [{ label, key: ' ', toss: true }]); return thrownPower;
 }
-async function rollOff() {
+// Every pana shakes a cacho at once; the dice give the whole turn order.
+async function chooseOrder(resume) {
   setPlank('¿QUIÉN EMPIEZA?');
-  overview(players[0].token.rest);
-  await toast('¿Quién empieza?', 'Cada pana tira un dado: el más alto sale primero', 1.8, 'round');
-  order = await rollOffOrder(players.map((p) => p.i), (i) => openingThrow(players[i]),
-    (tie) => toast('¡Empate!', `${namesList(tie.map((i) => escapeHtml(players[i].name)))} tiran otra vez`, 1.4, 'event'));
-  turnOf = -1; renderCards(); overview(); sound.horn('fiesta');
-  await toast(`¡Empieza ${escapeHtml(players[order[0]].name)}!`, order.map((i, k) => `${k + 1}. ${escapeHtml(players[i].name)}`).join(' · '), 2.4, `p${order[0]}`);
-}
-async function openingThrow(p) {
-  turnOf = p.i; renderCards(); focus(p.token.rest); diceTable.hold(p, 1);
-  const power = await askThrow(p, 'Tira el dado: el más alto empieza', '¡Tira para empezar!');
-  const value = rules.rollDice(Math.random, 1).a;
-  await wait(diceTable.toss(p, [value], power));
-  sound.boing(); p.token.bubble.say(value === 6 ? '¡SEIS!' : `¡${value}!`, 0.8);
-  await wait(isHuman(p) ? 0.7 : 0.35);
-  dice[0].mesh.visible = false; p.token.pin.visible = true;
-  return value;
+  turnOf = -1; renderCards(); focus(starter.centre(), 'mid');
+  const result = await starter.run({ resume, option: options.starter, last: lastPlace, wait,
+    bots: () => players.filter((p) => !isHuman(p) || (online && !room.members.has(p.seat))).map((p) => p.i),
+    ownSeat: () => (me && isHuman(me) ? me.i : -1),
+    changed: (state) => { if (online && state) saveCheckpoint('starter', 0); } });
+  overview(players[result[0]].token.rest); sound.horn('fiesta');
+  return result;
 }
 // minimap: the whole island at a glance; tap it to look there (minimap.js)
 const minimap = createMinimap($('minimap'), { board, players, focus: () => cam.look, turnOf: () => turnOf, look: (x, z) => boardCamera.lookAt(x, board.groundAt(x, z), z) });
@@ -821,6 +817,7 @@ async function results() {
   const order = standings();
   const r = ranks();
   const champ = order[0];
+  lastPlace = order.at(-1).i;
   focus(champ.token.rest, 'close');
   champ.token.cheer = 99;
   sound.horn('fiesta');
@@ -885,8 +882,8 @@ async function runMinis(resume) {
   }
 }
 async function runRounds(resume) {
-  if (resume) order = resume.order || players.map((p) => p.i);
-  else await rollOff();
+  if (resume && resume.stage !== 'starter') order = resume.order || players.map((p) => p.i);
+  else order = await chooseOrder(resume?.starter);
   for (round = resume?.round || 1; round <= ROUNDS; round++) {
     setPlank(`RONDA ${round} / ${ROUNDS}`);
     overview();
@@ -1028,7 +1025,7 @@ function restoreBag(saved) {
 function saveCheckpoint(stage, next, def, only) {
   if (!online) return;
   if (!mini) syncRoster();
-  checkpoint = { stage, next, round, rounds: ROUNDS, options: { ...options }, players: playerData(), stand: board.standTile, minigame: def?.id, only, order, bag: saveBag() };
+  checkpoint = { stage, next, round, rounds: ROUNDS, options: { ...options }, players: playerData(), stand: board.standTile, minigame: def?.id, only, order, starter: starter.state, bag: saveBag() };
   room.publish(captureOnline());
 }
 function captureOnline() {
@@ -1037,7 +1034,7 @@ function captureOnline() {
     camera: { pos: cam.wantPos.toArray(), look: cam.wantLook.toArray() },
     tokens: players.map(p => ({ pos: p.token.group.position.toArray(), rest: p.token.rest.toArray(),
       rotation: p.token.group.rotation.y, cheer: p.token.cheer, dizzy: p.token.dizzy, pin: p.token.pin.visible })),
-    dice: dice.map(d => ({ pos: d.mesh.position.toArray(), visible: d.mesh.visible, rolling: d.rolling, value: d.value, toss: d.spec || null })), order,
+    dice: dice.map(d => ({ pos: d.mesh.position.toArray(), visible: d.mesh.visible, rolling: d.rolling, value: d.value, toss: d.spec || null })), order, starter: starter.state,
     counter: { pos: counter.sprite.position.toArray(), visible: counter.sprite.visible, value: counter.value },
     ready: readyCheck,
     mini: mini?.spec ? { ...mini.spec, state: mini.state, left: mini.left, winners: mini.winners, frames: room.history.length } : null,
@@ -1086,6 +1083,7 @@ function applyOnline(state) {
     tk.rest.fromArray(v.pos); tk.group.rotation.y = v.rotation; tk.cheer = v.cheer; tk.dizzy = v.dizzy; tk.pin.visible = v.pin;
   });
   state.dice.forEach((v, i) => diceTable.apply(dice[i], v));
+  starter.show(state.starter, me?.i ?? -1);
   if (state.counter.value && state.counter.value !== counter.value) counter.set(state.counter.value);
   counter.sprite.position.fromArray(state.counter.pos); counter.sprite.visible = state.counter.visible;
   if (!state.mini) { if (mini) clearMini(); }
@@ -1178,6 +1176,7 @@ function connectOnline() {
       },
       members() { if (room.isHost && !mini) syncRoster(); },
       state: applyOnline, choice: finishChoice, frames: applyFrames, ready: markReady,
+      starter(id, cacho, power) { const p = players.find(o => o.seat === id && o.human); if (p) starter.input(p.i, cacho, power); },
     },
   });
   lobbyRoster(); room.connect();
@@ -1237,7 +1236,7 @@ async function fastForward(seconds, dt = 1 / 30) {
 }
 // Suites fast-forward in simulated time and can't wait on a download: give them every minigame up front.
 if (DEBUG) await Promise.all(MINIGAMES.map(m => loadMinigame(m.id)));
-if (DEBUG) Object.assign(window, { menu, players, board, dice, MINIGAMES, layoutTokens, fastForward, renderer, boardScene, boardCam, minigame: () => mini, onlineState: () => ({ room, checkpoint, pendingChoice, ready: readyCheck, miniFrame, me: me?.i, options, order }), changeOptions });
+if (DEBUG) Object.assign(window, { menu, players, board, dice, starter, MINIGAMES, layoutTokens, fastForward, renderer, boardScene, boardCam, minigame: () => mini, onlineState: () => ({ room, checkpoint, pendingChoice, ready: readyCheck, miniFrame, me: me?.i, options, order }), changeOptions });
 if (DEBUG) Object.defineProperty(window, 'thrower', { get: () => thrower });
 
 frame();

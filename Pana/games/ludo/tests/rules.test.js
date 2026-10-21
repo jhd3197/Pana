@@ -1,8 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { LudoGame, HOME, RING, SAFE, cellFor, rotateCell, ringIndex, legalMoves, chooseMove } from '../public/rules.js';
-// Skips the opening roll-off: seat 0 starts.
-const game = () => { const g=new LudoGame(123);g.addPlayer(1,'Juan',{hat:'gorra'});g.addPlayer(2,'Ana',{});g.start();g.phase='playing';g.order=null;return g; };
+import { starterResult } from '../../../engine/play/quien-empieza-rules.js';
+// Skips ¿Quién empieza?: seat 0 starts.
+const game = () => { const g=new LudoGame(123);g.addPlayer(1,'Juan',{hat:'gorra'});g.addPlayer(2,'Ana',{});g.start();g.phase='playing';g.starter=null;return g; };
+const cachos = (g, bots) => { for (let i = 0; i < 400 && g.phase === 'starter'; i++) g.stepStarter(.1, bots); };
 // A seed whose next throws are exactly these values.
 function seedFor(values){
   for(let seed=1;;seed++){
@@ -10,20 +12,24 @@ function seedFor(values){
     if(out.every((v,i)=>v===values[i]))return seed;
   }
 }
-test('everyone throws once to start; the highest goes first and nobody moves yet',()=>{
-  const g=new LudoGame(1);g.addPlayer(1,'Juan');g.start();g.rng=seedFor([3,6,2,5]);
-  assert.equal(g.phase,'order');assert.equal(g.turn,0);
-  for(let seat=0;seat<4;seat++){assert.equal(g.turn,seat);assert.ok(g.roll(.8));assert.equal(g.die,0);}
-  assert.equal(g.phase,'playing');assert.equal(g.turn,1);assert.deepEqual(g.order.rolls,[3,6,2,5]);
-  assert.match(g.event,/Empieza Lola con 6/);assert.ok(g.players.every(p=>p.pieces.every(v=>v===-1)));
-  assert.deepEqual(g.toss,{seat:3,power:.8});
+test('a match opens with the cachos; the highest starts and nobody moves yet',()=>{
+  const g=new LudoGame(1);g.addPlayer(1,'Juan');g.start();
+  assert.equal(g.phase,'starter');assert.deepEqual(g.starter.contenders,[0,1,2,3]);assert.equal(g.roll(),false);
+  assert.ok(g.accept(1,{action:'starter',cacho:'shake',seq:1,revision:-1},1),'a cacho never waits for the latest revision');
+  assert.ok(g.accept(1,{action:'starter',cacho:'slam',power:.8,seq:2,revision:-1},1));
+  assert.equal(g.accept(1,{action:'starter',cacho:'slam',power:.8,seq:3,revision:g.revision},1),false,'one slam a round');
+  cachos(g);
+  const { order, rolls }=starterResult(g.starter);
+  assert.equal(g.phase,'playing');assert.equal(g.turn,order[0]);assert.equal(g.starter.slammed[0]??.8,.8);
+  assert.match(g.event,new RegExp(`Empieza ${g.players[order[0]].name} con ${rolls[order[0]]}`));
+  assert.ok(g.players.every(p=>p.pieces.every(v=>v===-1)));
 });
-test('a tie at the top throws again, only among the tied panas',()=>{
-  const g=new LudoGame(1);g.start();g.rng=seedFor([5,2,5,1,4,6]);
-  for(let i=0;i<4;i++)g.roll();
-  assert.equal(g.phase,'order');assert.deepEqual(g.order.contenders,[0,2]);assert.equal(g.turn,0);assert.match(g.event,/Empate a 5 entre Tito y Nina/);
-  g.roll();assert.equal(g.turn,2);g.roll();
-  assert.equal(g.phase,'playing');assert.equal(g.turn,2);
+test('room option: al azar starts at once, revancha puts the last place first',()=>{
+  const g=new LudoGame(4);g.options.starter='azar';g.start();
+  assert.equal(g.phase,'playing');assert.match(g.event,/^Orden al azar: ¡Empieza/);
+  g.options.starter='revancha';g.players[0].pieces=[56,56,56,55];g.players[2].pieces=[40,-1,-1,-1];g.die=1;g.turn=0;g.move(3);
+  assert.equal(g.phase,'finished');assert.equal(g.lastPlace,3,'Beto never left the yard');
+  g.start();cachos(g);assert.equal(g.turn,3);
 });
 test('throw power is clamped and only changes the look of the roll',()=>{
   const a=game(),b=game();a.roll(9);b.roll('fuerte');
@@ -60,7 +66,7 @@ test('private home lane cannot be captured; home needs an exact roll',()=>{
 });
 test('no move advances automatically and a third six forfeits only its roll',()=>{
   const g=game();g.rng=1;g.roll();assert.equal(g.lastDie,2);assert.equal(g.turn,1);assert.equal(g.die,0);
-  let seed=1;while(true){const probe=new LudoGame(seed);probe.start();probe.roll();if(probe.lastDie===6)break;seed++;}
+  let seed=1;while(true){const probe=new LudoGame(seed);probe.start();probe.phase='playing';probe.roll();if(probe.lastDie===6)break;seed++;}
   g.turn=0;g.rng=seed;g.sixes=2;g.players[0].pieces[0]=10;g.roll();
   assert.equal(g.lastDie,6);assert.equal(g.turn,1);assert.equal(g.sixes,0);assert.equal(g.players[0].pieces[0],10);
 });
@@ -74,11 +80,14 @@ test('only host starts; turns, revisions, sequences and piece indices are valida
   const g=new LudoGame(1);g.addPlayer(1,'Juan');g.addPlayer(2,'Ana');
   const action=(id,action,extra={})=>g.accept(id,{action,seq:1,revision:g.revision,...extra},1);
   assert.equal(action(2,'start'),false);assert.equal(action(1,'start'),true);
-  assert.equal(action(1,'roll'),false);assert.equal(action(2,'roll'),false);
-  assert.equal(action(1,'roll',{seq:2,revision:g.revision-1}),false);
-  assert.equal(action(1,'roll',{seq:2,power:.7}),true);assert.equal(g.order.rolls[0],g.lastDie);assert.equal(g.toss.power,.7);
-  g.phase='playing';g.turn=0;g.die=6;const before=g.snapshot();
-  for(const piece of [-1,4,NaN,'0',null])assert.equal(action(1,'move',{seq:3,piece}),false);
+  assert.equal(action(1,'roll'),false,'no dice during the cachos');
+  assert.equal(action(1,'starter',{seq:2,cacho:'slam',power:.7}),true);assert.equal(g.starter.slammed[0],.7);
+  assert.equal(action(1,'starter',{seq:2,cacho:'shake'}),false,'a repeated seq');
+  g.phase='playing';g.turn=0;g.die=0;
+  assert.equal(action(1,'roll',{seq:3,revision:g.revision-1}),false);
+  assert.equal(action(1,'roll',{seq:3,power:.7}),true);assert.equal(g.toss.power,.7);
+  g.turn=0;g.die=6;const before=g.snapshot();
+  for(const piece of [-1,4,NaN,'0',null])assert.equal(action(1,'move',{seq:4,piece}),false);
   assert.deepEqual(g.snapshot(),before);
 });
 test('late join and migration preserve pieces, pending dice and seeded future rolls',()=>{
@@ -91,7 +100,7 @@ test('late join and migration preserve pieces, pending dice and seeded future ro
 });
 test('200 seeded bot matches finish and preserve all sixteen pieces at every action',()=>{
   for(let seed=1;seed<=200;seed++){
-    const g=new LudoGame(seed);g.start();let steps=0;
+    const g=new LudoGame(seed);g.start();cachos(g);let steps=0;
     while(g.phase!=='finished'&&steps++<15000){
       assert.ok(g.die?g.move(chooseMove(g)):g.roll());
       for(const p of g.players){assert.equal(p.pieces.length,4);assert.ok(p.pieces.every(v=>Number.isInteger(v)&&v>=-1&&v<=HOME));}

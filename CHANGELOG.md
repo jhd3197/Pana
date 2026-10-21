@@ -8,6 +8,12 @@ becomes the GitHub release's notes.
 
 ## Unreleased
 
+- **¿Quién empieza? Every table game now opens with the cachos.** All panas
+  shake a leather cacho at once, slam it and lift together; the highest die
+  starts, ties shake again, and a strip shows the order. Ludo, Bululú, Caída,
+  Póquer and Billar use it, Dominó offers it next to its own rule and Bolas
+  criollas flips a coin. Hosts can pick Al azar, El anfitrión or Revancha (the
+  last place starts) in Más ajustes.
 - **Derrape se ve como se siente derrapar: el caucho queda marcado en la
   pista, el humo crece con la carga del derrape y soltar en púrpura frena el
   mundo un instante.** Las marcas de los cauchos se desvanecen solas en unos

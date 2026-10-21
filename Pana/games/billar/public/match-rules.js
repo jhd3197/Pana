@@ -1,4 +1,5 @@
 import { optionDefaults, applyRoomOptions } from '../../../engine/room-options-rules.js';
+import { STARTER_FIELD } from '../../../engine/play/quien-empieza-rules.js';
 
 export const POOL_OPTIONS = [
   { id: 'variant', label: 'Modo', default: 'eight', choices: [['eight', 'Bola 8'], ['nine', 'Bola 9']] },
@@ -9,6 +10,7 @@ export const POOL_OPTIONS = [
   { id: 'calledPocket', label: 'Cantar tronera', default: false, advanced: true, choices: [[true, 'Sí'], [false, 'No']] },
   { id: 'bestOf', label: 'Mejor de', default: 1, advanced: true, choices: [[1, '1'], [3, '3'], [5, '5']] },
   { id: 'shotSeconds', label: 'Tiempo por tiro', default: 0, advanced: true, choices: [[30, '30 s'], [60, '60 s'], [0, 'Sin límite']] },
+  STARTER_FIELD,
 ];
 export const defaultPoolOptions = () => optionDefaults(POOL_OPTIONS);
 export const poolOptions = (current, patch) => applyRoomOptions(POOL_OPTIONS, current, patch);

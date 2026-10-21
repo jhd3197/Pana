@@ -7,7 +7,7 @@ import { sound } from '/engine/fx.js';
 import { shout } from '/engine/kit.js';
 import { bindDiceThrow } from '/engine/play/dice-throw.js';
 import { LudoRoom } from './network.js';
-import { HOME, COLORS, COLOR_NAMES, legalMoves, chooseMove } from './rules.js';
+import { HOME, COLORS, COLOR_NAMES, legalMoves, chooseMove, ranking } from './rules.js';
 import { createRoomOptions } from '/engine/room-options.js';
 import { LUDO_OPTIONS, defaultLudoOptions } from './options.js';
 
@@ -25,7 +25,7 @@ const menu=createGameMenu({ pad: { buttons: true, keys: { x: ['Space', 'Agitar e
   controls:[['Mantén Espacio','Agitar el dado; suelta para tirar'],['Arrastra y suelta en la mesa','Lanzar el dado con más fuerza'],['1 2 3 4','Mover una ficha disponible'],['Ratón / toque','Tocar una ficha marcada o su botón'],['M','Activar o silenciar el sonido']],
   tips:[
     'Cada pana tiene cuatro fichas. Gana quien lleva las cuatro hasta el centro.',
-    'Para empezar, cada pana tira el dado: sale primero el número más alto. Si hay empate arriba, solo los empatados tiran otra vez.',
+    '¿Quién empieza? Todos sacuden el cacho a la vez y lo tapan: sale primero el dado más alto. Si hay empate arriba, solo los empatados sacuden otra vez. El anfitrión puede cambiarlo en Más ajustes.',
     'Agita el dado manteniendo el botón o Espacio y suéltalo, o lánzalo arrastrando sobre la mesa. Cuanto más lo agitas, más fuerte vuela; el número sigue siendo suerte.',
     'El anfitrión elige si sales con seis o con uno y seis. Al salir, la ficha queda en la casilla de salida.',
     'Un seis permite volver a tirar. Si la sala activa la regla, el tercer seis seguido pierde ese lanzamiento y termina el turno; los movimientos anteriores se conservan.',
@@ -52,7 +52,7 @@ const scores=Array.from({length:4},(_,seat)=>{
   const li=document.createElement('li');li.className='score';li.style.setProperty('--seat-color',COLORS[seat]);
   li.append(document.createElement('i'),document.createElement('b'),document.createElement('small'));$('scoreboard').append(li);return li;
 });
-function ownTurn(){return !!world&&room.connected&&['playing','order'].includes(room.state.phase)&&room.seat===room.state.turn;}
+function ownTurn(){return !!world&&room.connected&&room.state.phase==='playing'&&room.seat===room.state.turn;}
 function canRoll(){return ownTurn()&&!menu.isOpen&&!room.state.die;}
 // Eating a ficha: a callout for the panas involved, the plaza for everyone else.
 function capture({by,victims}){
@@ -73,13 +73,13 @@ function render(state){
   $('invite').disabled=$('lobby-invite').disabled=!room.connected||room.offline;
   fillRoster($('lobby-roster'),state.players.map(p=>({rank:p.seat+1,name:p.id===room.id?`${p.name} · tú`:p.name,detail:COLOR_NAMES[p.seat],end:p.id===null?'Bot':'Listo',me:p.id===room.id})));
   state.players.forEach((p,i)=>{
-    scores[i].classList.toggle('active',['playing','order'].includes(state.phase)&&state.turn===i);
+    scores[i].classList.toggle('active',state.phase==='playing'&&state.turn===i);
     scores[i].children[1].textContent=p.id===room.id?`${p.name} · tú`:p.name;
-    const rolled=state.order?.rolls[i],waiting=state.order?.contenders.includes(i);
-    scores[i].children[2].textContent=state.phase==='order'?`${COLOR_NAMES[i]} · ${rolled?`sacó ${rolled}`:waiting?'por tirar':'ya tiró'}`:`${COLOR_NAMES[i]} · ${p.pieces.filter(v=>v===HOME).length}/4 en casa`;
+    const rolled=state.starter?.rolls[i],starter=state.phase==='starter';
+    scores[i].children[2].textContent=starter?`${COLOR_NAMES[i]} · ${rolled?`sacó ${rolled}`:'sacudiendo'}`:`${COLOR_NAMES[i]} · ${p.pieces.filter(v=>v===HOME).length}/4 en casa`;
   });
-  const mine=ownTurn(),moves=legalMoves(state,seat),order=state.phase==='order';
-  $('turn').textContent=!room.connected?'Reconectando…':ended?'¡Partida terminada!':order?mine?'¡Tira para ver quién empieza!':`${state.players[state.turn].name} tira para empezar`:mine?state.die?'Elige una ficha':'¡Te toca tirar!':`Turno de ${state.players[state.turn].name}`;
+  const mine=ownTurn(),moves=legalMoves(state,seat);
+  $('turn').textContent=!room.connected?'Reconectando…':ended?'¡Partida terminada!':state.phase==='starter'?'¿Quién empieza?':mine?state.die?'Elige una ficha':'¡Te toca tirar!':`Turno de ${state.players[state.turn].name}`;
   $('event').textContent=state.event;
   $('die').textContent=state.lastDie||'—';$('die').setAttribute('aria-label',state.lastDie?`Último dado: ${state.lastDie}`:'Todavía no se ha tirado');
   $('roll').disabled=!mine||!!state.die;
@@ -94,7 +94,7 @@ function render(state){
   $('results').hidden=!ended;$('again').disabled=!room.connected||!room.isHost;
   if(ended){
     $('result-title').textContent=`¡Ganó ${state.players[state.winner].name}!`;
-    const ranked=[...state.players].sort((a,b)=>b.pieces.filter(v=>v===HOME).length-a.pieces.filter(v=>v===HOME).length||b.pieces.reduce((s,v)=>s+v,0)-a.pieces.reduce((s,v)=>s+v,0));
+    const ranked=ranking(state.players);
     fillRoster($('result-roster'),ranked.map((p,i)=>({rank:i+1,name:p.name,detail:COLOR_NAMES[p.seat],end:`${p.pieces.filter(v=>v===HOME).length}/4`,me:p.id===room.id})));
   }
   if(lastRevision>=0&&state.revision!==lastRevision&&state.round===lastRound&&state.phase==='playing'&&!state.die)sound.tone(380,0,.07,'triangle',.06);
@@ -113,7 +113,7 @@ function frame(now){if(stopped)return;if(thrower.shaking)world?.shakeDie(thrower
 requestAnimationFrame(frame);
 render(room.state);room.connect();
 export const sceneReady=import('./scene.js').then(async({createLudoScene})=>{
-  if(stopped)return;world=createLudoScene($('world'),{onPiece:piece=>act('move',{piece}),onCapture:capture});await prepareScene(world);render(room.state);$('loading').hidden=true;
+  if(stopped)return;world=createLudoScene($('world'),{onPiece:piece=>act('move',{piece}),onCapture:capture,onStarter:(kind,power)=>{if(!menu.isOpen){sound.unlock();room.action('starter',{cacho:kind,power});}}});await prepareScene(world);render(room.state);$('loading').hidden=true;
 }).catch(error=>{console.error(error);$('loading-copy').textContent='No pudimos abrir la mesa. Comprueba tu conexión y WebGL.';const button=document.createElement('button');button.className='pk-btn';button.textContent='Reintentar';button.onclick=()=>location.reload();$('loading').append(button);throw error;});
 addEventListener('pagehide',()=>{stopped=true;clearInterval(timer);thrower.dispose();room.dispose();world?.dispose();},{once:true});
 if(params.has('debug'))window.ludoDebug={room,menu,chooseMove,legalMoves,thrower,get world(){return world;}};

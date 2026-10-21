@@ -15,7 +15,7 @@ import { HANDS, tablePlayers } from './rules.js';
 
 const $ = id => document.getElementById(id), code = roomFromUrl() || newRoomCode();
 const params = new URLSearchParams(location.search); params.set('room', code); history.replaceState(null, '', `${location.pathname}?${params}`);
-const world = createScene($('world')); let stopped = false, lastRevision = -1, lastPhase = 'lobby', lastTurn = null;
+const world = createScene($('world'), { onStarter: (input, power) => { if (!menu.isOpen) { sound.unlock(); room.cacho(input, power); } } }); let stopped = false, lastRevision = -1, lastPhase = 'lobby', lastTurn = null;
 let cameraView = 'plaza';
 const seatNodes = new Map();
 const room = new PokerConnection({ code, name: loadName(), avatar: loadAvatar(), onState: render, onStatus(text, failed = false) {
@@ -32,7 +32,8 @@ const menu = createGameMenu({ pad: { buttons: true }, title: 'Póquer · Pana', 
   options: [{ id: 'view', label: 'Cámara', choices: [['plaza', 'En la plaza'], ['mesa', 'Sobre la mesa']], get: () => cameraView, set: value => { cameraView = value; world.setView(value); } }],
   note: () => room.local ? 'La práctica está en pausa.' : `La mesa online sigue. Tienes ${room.state.options.turnSeconds} segundos por turno.`,
   controls: [['Ratón / dedo', 'Elige retirarte, igualar o subir'], ['Apuesta total', 'Escribe el total que quieres apostar en esta calle'], ['M', 'Sonido'], ['Esc', 'Menú']],
-  tips: ['Texas reparte dos cartas privadas; Omaha reparte cuatro y exige usar exactamente dos de tu mano y tres de la mesa. Las fichas, ciegas y límites los elige el anfitrión.',
+  tips: ['¿Quién reparte primero? Al empezar la partida todos sacuden el cacho a la vez: el dado más alto se lleva el botón del repartidor. Si hay empate arriba, solo los empatados sacuden otra vez. El anfitrión puede cambiarlo en Más ajustes.',
+    'Texas reparte dos cartas privadas; Omaha reparte cuatro y exige usar exactamente dos de tu mano y tres de la mesa. Las fichas, ciegas y límites los elige el anfitrión.',
     'Hay cuatro rondas de apuestas: antes del flop, flop (tres cartas), turn (cuarta) y river (quinta). Puedes pasar si no debes fichas, igualar, subir o retirarte.',
     'Subir indica tu apuesta total en esta calle, incluyendo lo que ya pusiste. La subida mínima es la última subida completa. Puedes apostar todas tus fichas aunque no alcancen ese mínimo.',
     'Si alguien va con todo, los pozos secundarios se reparten entre quienes aportaron a cada uno. Una subida incompleta no reabre la opción de subir a quien ya actuó.',
@@ -59,13 +60,13 @@ function render(state) {
   seating.update(state.players.filter(p => p.connected), { enabled: room.connected && state.phase === 'lobby', canArrange: room.isHost, members: room.link?.state.players || [], ownId: room.id, hostId: room.local ? room.id : room.link?.state.players.find(p => p.id === room.link.state.host)?.seat });
   $('organize-table').disabled = !room.connected || !room.isHost;
   mapPicker.update(state.mapId, room.connected && room.isHost && state.phase === 'lobby');
-  const lobby = state.phase === 'lobby', finished = state.phase === 'finished', legal = state.legal, canAct = !!legal && room.connected && !menu.isOpen;
-  document.body.classList.toggle('in-lobby', lobby); $('lobby').hidden = !lobby; $('controls').hidden = lobby || finished;
+  const lobby = state.phase === 'lobby', finished = state.phase === 'finished', starter = state.phase === 'starter', legal = state.legal, canAct = !!legal && room.connected && !menu.isOpen;
+  document.body.classList.toggle('in-lobby', lobby); $('lobby').hidden = !lobby; $('controls').hidden = lobby || finished || starter;
   $('start').disabled = !room.connected || !room.isHost || (!state.canStart && state.players.filter(p => p.connected && !p.bot).length > 1); $('start').textContent = !room.connected ? 'Conectando…' : room.isHost ? '¡Repartir!' : 'El anfitrión abre la mesa';
   $('invite').disabled = room.local || !room.connected;
   $('roster').textContent = state.players.filter(p => p.connected).map(p => p.name).join(' · ');
-  $('street').textContent = { lobby: 'La mesa está lista', preflop: 'Preflop', flop: 'Flop', turn: 'Turn', river: 'River', finished: 'Mano terminada' }[state.phase];
-  $('pot').textContent = lobby ? 'PANA' : `Pozo ${state.pot}`;
+  $('street').textContent = { lobby: 'La mesa está lista', starter: '¿Quién reparte?', preflop: 'Preflop', flop: 'Flop', turn: 'Turn', river: 'River', finished: 'Mano terminada' }[state.phase];
+  $('pot').textContent = lobby || starter ? 'PANA' : `Pozo ${state.pot}`;
   const me = state.players.find(p => p.id === room.id), current = state.players.find(p => p.id === state.turn);
   $('turn').textContent = !room.connected ? 'Reconectando…' : legal ? '¡Tu turno!' : me?.folded ? me.hole.length ? 'Te retiraste. La mano continúa.' : 'Te sientas en la siguiente mano.' : `Turno de ${current?.name || 'tu pana'}`;
   $('message').textContent = state.message;
@@ -85,10 +86,10 @@ function render(state) {
   for (const p of seated) {
     let node = seatNodes.get(p.id);
     if (!node) { node = document.createElement('div'); node.className = 'seat'; node.innerHTML = '<b></b><strong></strong><span></span>'; $('seats').append(node); seatNodes.set(p.id, node); }
-    node.classList.toggle('is-turn', p.id === state.turn); node.classList.toggle('is-folded', p.folded && !lobby);
+    node.classList.toggle('is-turn', p.id === state.turn); node.classList.toggle('is-folded', p.folded && !lobby && !starter);
     node.children[0].textContent = `${p.name}${p.id === room.id ? ' · tú' : ''}${p.bot ? ' · Bot' : ''}`;
     node.children[1].textContent = `${p.chips} fichas`;
-    node.children[2].textContent = p.action || (p.id === state.dealer ? 'Reparte' : lobby ? 'En la mesa' : p.bet ? `Apuesta ${p.bet}` : 'En juego');
+    node.children[2].textContent = starter ? 'Con su cacho' : p.action || (p.id === state.dealer ? 'Reparte' : lobby ? 'En la mesa' : p.bet ? `Apuesta ${p.bet}` : 'En juego');
   }
   for (const [id, node] of seatNodes) if (!seated.some(p => p.id === id)) { node.remove(); seatNodes.delete(id); }
   $('results').hidden = !finished;

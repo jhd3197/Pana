@@ -1,4 +1,5 @@
 import { optionDefaults, applyRoomOptions } from '../../../engine/room-options-rules.js';
+import { STARTER_FIELD } from '../../../engine/play/quien-empieza-rules.js';
 
 export const OPTION_FIELDS = [
   { id: 'stack', label: 'Fichas', default: 1000, choices: [[1000, '1.000'], [5000, '5.000']] },
@@ -9,6 +10,7 @@ export const OPTION_FIELDS = [
   { id: 'rebuy', label: 'Recompras', default: true, choices: [[true, 'Sí'], [false, 'No']], advanced: true },
   { id: 'showCards', label: 'Mostrar cartas al final', default: true, choices: [[true, 'Sí'], [false, 'No']], advanced: true },
   { id: 'limit', label: 'Límite', default: 'none', choices: [['none', 'Sin límite'], ['pot', 'Bote'], ['fixed', 'Fijo']], advanced: true },
+  STARTER_FIELD,
 ];
 export const DEFAULT_OPTIONS = Object.freeze(optionDefaults(OPTION_FIELDS));
 export const changeOptions = (current, patch) => applyRoomOptions(OPTION_FIELDS, current, patch);

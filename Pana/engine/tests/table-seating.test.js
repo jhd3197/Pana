@@ -32,7 +32,7 @@ for (const Game of [CaidaGame, DominoGame]) {
 
   test(`${Game.name}: changing partners after results resets scores without resetting action ledger or options`, () => {
     const g = new Game(43);
-    if (g.configure) assert(g.configure(Game.name === 'CaidaGame' ? { mode: 'teams', cantos: false } : { mode: 'teams', capicua: 'double' }));
+    if (g.configure) assert(g.configure(Game.name === 'CaidaGame' ? { mode: 'teams', cantos: false, starter: 'anfitrion' } : { mode: 'teams', capicua: 'double' }));
     const options = g.options ? structuredClone(g.options) : null;
     g.addPlayer(1, 'Ana'); g.addPlayer(2, 'Luis'); g.reseat(1, 2); g.start();
     g.phase = 'round-over'; g.scores = [12, 8]; g.ledger = { 1: 9 }; g.mapId = 'plaza';
@@ -74,7 +74,7 @@ test('Poker: guests swap only their own connected lobby seat', () => {
 });
 
 test('Poker: seating preserves bankrolls and dealer identity; setup removes old private hands', () => {
-  const g = new Poker();
+  const g = new Poker(); g.configure({ starter: 'anfitrion' });   // seat order: no cachos
   for (let id = 1; id <= 3; id++) g.add(id, { name: `Pana ${id}`, bot: false });
   assert.equal(g.reseat(0, 2), true);
   assert.equal(g.start(() => .5), true);

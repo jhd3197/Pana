@@ -36,7 +36,30 @@ try {
   assert.equal(await guest.locator('#map-choice').isDisabled(), true);
   assert.equal(await guest.locator('[data-room-option="difficulty"][data-value="facil"]').isDisabled(), true);
   console.log('PASS host-chosen court and difficulty reach the guest');
-  await host.locator('#start').click(); await wait(guest, () => criollasDebug.room.state.phase === 'aiming');
+  // ¿Quién empieza?: a coin both screens watch spin decides which team throws the mingo.
+  // The host's clock waits while the guest draws the flip frame by frame (frames are stubbed here).
+  await host.locator('#start').click(); await host.evaluate(() => { const r = criollasDebug.room; r.held = r.step; r.step = () => false; });
+  await wait(guest, () => criollasDebug.room.state.phase === 'opening');
+  assert.equal(await guest.evaluate(() => criollasDebug.room.state.opening.flavour), 'moneda');
+  const spin = n => guest.evaluate(n => { const d = criollasDebug; for (let i = 0; i < n; i++) d.world.render(d.room.state, { dt: .05, shot: d.shot, active: false }); }, n);
+  await spin(22); assert.equal(await guest.evaluate(() => criollasDebug.world.opening.active), true);
+  assert.match(await guest.locator('.pk-qe-say').textContent(), /Cara: Rojos · Sello: Verdes/);
+  await guest.screenshot({ path: 'art/criollas/coin-flip.png' });
+  await spin(30); assert.equal(await guest.evaluate(() => criollasDebug.world.opening.revealed), true, 'the coin landed');
+  const face = await guest.evaluate(() => criollasDebug.room.state.opening.coin);
+  assert.equal(await guest.locator('.pk-qe-say').textContent(), face === 'cara' ? '¡Cara! Empieza Rojos' : '¡Sello! Empieza Verdes');
+  await guest.screenshot({ path: 'art/criollas/coin-landed.png' });
+  await host.evaluate(() => { const r = criollasDebug.room; r.step = r.held; });
+  await wait(guest, () => criollasDebug.room.state.opening?.phase === 'order'); await spin(2);
+  assert.match(await guest.locator('.pk-qe-order li').first().textContent(), face === 'cara' ? /Rojos/ : /Verdes/);
+  await wait(guest, () => criollasDebug.room.state.phase === 'aiming');
+  const opened = await guest.evaluate(() => criollasDebug.room.state);
+  assert.equal(opened.turn % 2, opened.opening.order[0], 'the team the coin chose throws first');
+  assert.equal(opened.starter, opened.opening.order[0]);
+  console.log('PASS the coin decides which team throws the mingo');
+  // From here the Rojos open, whatever the coin said.
+  await host.evaluate(() => { const r = criollasDebug.room; r.game.turn = r.game.starter = 0; r.game.revision++; r.publish(); });
+  await wait(guest, () => criollasDebug.room.state.turn === 0);
   await guest.evaluate(() => criollasDebug.room.action('shoot', { angle: 0, power: .5 }));
   await host.waitForTimeout(200); assert.equal(await host.evaluate(() => criollasDebug.room.state.shots), 0);
   await screenshot(host, 'desktop');
@@ -89,7 +112,9 @@ try {
   await spectator.context().close(); await guest.context().close();
   console.log('PASS shared final score and rematch');
   const mobile = await open('Móvil', '', { width: 390, height: 844 }, true);
-  await screenshot(mobile, 'mobile-lobby'); await mobile.locator('#practice').click();
+  await screenshot(mobile, 'mobile-lobby');
+  await mobile.locator('#pana-room-more').click(); await mobile.locator('[data-room-option="opener"][data-value="anfitrion"]').click(); await mobile.locator('#pana-room-done').click();
+  await mobile.locator('#practice').click();
   await wait(mobile, () => criollasDebug.room.state.phase === 'aiming');
   await screenshot(mobile, 'mobile');
   assert.equal(await mobile.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
@@ -112,6 +137,7 @@ try {
   await mobile.context().close();
   console.log('PASS portrait/landscape layout, shared pause and keyboard launch');
   const solo = await open('Solo');
+  await solo.locator('#pana-room-more').click(); await solo.locator('[data-room-option="opener"][data-value="anfitrion"]').click(); await solo.locator('#pana-room-done').click();
   await solo.locator('#practice').click(); await wait(solo, () => criollasDebug.room.state.phase === 'aiming' && criollasDebug.room.state.turn === 0);
   // Behind the thrower by default: the camera stands past the calce, above head height.
   await frames(solo); assert(await solo.evaluate(() => { const c = criollasDebug.world.camera.position; return c.z > 15 && c.y > 3; }));

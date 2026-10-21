@@ -287,9 +287,11 @@ flow bugs and check balance.
   the board in front of the pana; the host publishes each die's spec
   (`serial`, from, to, power, seed, value) and guests replay it with
   `createToss`, ignoring snapshot positions until it lands.
-- **Who starts**: before round 1 every pana throws one die (`rollOffOrder`);
-  ties throw again among themselves, so the whole turn `order` comes out of the
-  dice. It travels in snapshots and checkpoints; a resumed game keeps it.
+- **Who starts**: before round 1 every pana shakes a cacho at once
+  (`public/starter.js` on the shared `quien-empieza.md` stage, `need: 'order'`);
+  ties shake again, so the whole turn `order` comes out of the cachos. The round
+  travels in snapshots and checkpoints, and the host never publishes the
+  finished round before the new `order`. Solo minijuegos skips it.
 - **Minigame order** comes from `rules.minigameBag`: each minigame once per
   pass, shuffled, never the same twice in a row. `?mini=` still forces one.
 - **¡Caída! tuning** (simulated, 4 AIs, 40 games): a plain shuffled deck gives a

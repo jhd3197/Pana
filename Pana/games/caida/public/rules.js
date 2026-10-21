@@ -1,7 +1,10 @@
 import { DEFAULT_OPTIONS, validOptions } from './options.js';
 import { validTableArena } from '../../../engine/worlds/arena-layouts.js';
 import { swapSeats, canMoveSeats } from '../../../engine/play/seat-rules.js';
+import { createStarter, starterInput, stepStarter, starterDone, starterResult } from '../../../engine/play/quien-empieza-rules.js';
 // Pure deterministic rules. Table variants and sources are documented in caida.md.
+// A match opens with ¿Quién empieza? (engine/play/quien-empieza-rules.js): the
+// highest cacho deals the first reparto; later repartos pass the deal along.
 export const TARGET = 24;
 export const RANKS = [1, 2, 3, 4, 5, 6, 7, 10, 11, 12];
 export const SUITS = ['oros', 'copas', 'espadas', 'bastos'];
@@ -68,7 +71,7 @@ export class CaidaGame {
     this.mapId = 'plaza'; this.phase = 'lobby'; this.round = 0; this.handNumber = 0; this.dealer = 1; this.turn = 0;
     this.players = []; this.scores = []; this.stock = []; this.table = []; this.last = null;
     this.lastCapture = null; this.history = []; this.eventId = 0; this.result = null;
-    this.cutAt = null; this.dealCall = null; this.previousRound = null;
+    this.cutAt = null; this.dealCall = null; this.previousRound = null; this.starter = null; this.lastPlace = null;
     this.revision = 0; this.ledger = {}; this.resetSeats();
   }
   resetSeats() {
@@ -96,6 +99,7 @@ export class CaidaGame {
     if (options.format !== undefined) { this.options.format = options.format; this.resizeForHumans(this.players.filter(p => p.id !== null).length); }
     if (typeof options.cantos === 'boolean') this.options.cantos = options.cantos;
     if (['easy', 'normal', 'hard'].includes(options.difficulty)) this.options.difficulty = options.difficulty;
+    if (options.starter !== undefined) this.options.starter = options.starter;
     this.revision++; return true;
   }
   resizeForHumans(count) {
@@ -121,7 +125,7 @@ export class CaidaGame {
     if (!['round-over', 'finished'].includes(this.phase)) return false;
     const fresh = new CaidaGame(this.rng);
     fresh.options = { ...this.options }; fresh.players = this.players; fresh.resetSeats();
-    Object.assign(this, fresh, { mapId: this.mapId, revision: this.revision + 1, ledger: this.ledger });
+    Object.assign(this, fresh, { mapId: this.mapId, revision: this.revision + 1, ledger: this.ledger, lastPlace: this.lastPlace });
     return true;
   }
   addPlayer(id, name, avatar = {}) {
@@ -139,14 +143,38 @@ export class CaidaGame {
     this.log('score', seat, `${reason} · +${points}`, { points, reason });
     if (this.scores[team] >= TARGET) {
       this.phase = 'finished'; this.result = { winner: team, reason, counts: this.counts(), bonuses: [], points };
+      // For a rematch with the "Revancha" option: the lowest score deals first.
+      const low = Math.min(...this.scores); this.lastPlace = this.players.find(p => this.scores[teamOf(this, p.seat)] === low)?.seat ?? null;
     }
   }
   start() {
     if (!['lobby', 'round-over', 'finished'].includes(this.phase)) return false;
     this.previousRound = this.result ? copy({ round: this.round, result: this.result, scores: this.scores,
       names: this.scores.map((_, team) => this.players.filter(p => teamOf(this, p.seat) === team).map(p => p.name).join(' + ')) }) : null;
-    this.dealer = nextDealer(this);
+    if (this.phase !== 'round-over') return this.openMatch();
+    return this.beginRound(nextDealer(this));
+  }
+  // A new match: the cachos pick the first dealer before any card moves.
+  openMatch() {
     if (this.phase === 'finished') { this.round = 0; this.scores.fill(0); }
+    this.table = []; this.stock = []; this.history = []; this.result = null; this.last = null; this.lastCapture = null; this.cutAt = null; this.dealCall = null;
+    this.players.forEach(p => { p.hand = []; p.captured = []; p.announced = null; });
+    this.phase = 'starter'; this.revision++;
+    // Its own seed, so the deck's shuffle is the same with or without the cachos.
+    this.starter = createStarter({ seats: this.players.map(p => p.seat), need: 'first', seed: (this.rng ^ Math.imul(this.round + 1, 0x9e3779b1)) >>> 0, option: this.options.starter, last: this.lastPlace });
+    if (starterDone(this.starter)) this.beginRound(starterResult(this.starter).order[0]);
+    return true;
+  }
+  // Host only: the cachos on a timer; seats without a pana shake on their own.
+  stepStarter(dt) {
+    if (this.phase !== 'starter') return false;
+    const changed = stepStarter(this.starter, dt, { bots: this.players.filter(p => p.id === null).map(p => p.seat) });
+    if (starterDone(this.starter)) { this.beginRound(starterResult(this.starter).order[0]); return true; }
+    if (changed) this.revision++;
+    return changed;
+  }
+  beginRound(dealer) {
+    this.dealer = dealer;
     this.round++; this.handNumber = 0; this.table = []; this.history = []; this.result = null; this.last = null; this.lastCapture = null;
     this.cutAt = null; this.dealCall = null; this.turn = (this.dealer + 1) % this.players.length;
     this.stock = deck();
@@ -226,8 +254,15 @@ export class CaidaGame {
     this.result = { winner, reason: 'Conteo de cartas', counts, bonuses, baseline };
   }
   accept(id, data, hostId) {
-    if (!Number.isSafeInteger(data.seq) || data.seq <= (this.ledger[id] || 0) || data.revision !== this.revision) return false;
+    if (!Number.isSafeInteger(data.seq) || data.seq <= (this.ledger[id] || 0)) return false;
     const seat = this.players.findIndex(p => p.id === id); let ok = false;
+    // Every pana shakes at once, so a cacho never waits for the latest revision.
+    if (data.action === 'starter') {
+      ok = seat >= 0 && this.phase === 'starter' && starterInput(this.starter, seat, data.cacho, data.power);
+      if (ok) { this.ledger[id] = data.seq; this.revision++; }
+      return ok;
+    }
+    if (data.revision !== this.revision) return false;
     if (data.action === 'start' && (id === hostId || (this.phase === 'round-over' && seat === nextDealer(this)))) ok = this.start();
     else if (data.action === 'configure' && id === hostId) ok = this.configure(data.options || {});
     else if (data.action === 'seat' && canMoveSeats(this.players, data.from, data.to, id, hostId)) ok = this.reseat(data.from, data.to);

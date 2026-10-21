@@ -3,6 +3,7 @@ import { validCourtArena } from '/engine/worlds/arena-layouts.js';
 import { DEFAULT_DIFFICULTY, validDifficulty } from '/engine/play/difficulty.js';
 import { canMoveSeats, swapSeats } from '../../../engine/play/seat-rules.js';
 import { criollasOptions } from './options.js';
+import { createStarter, stepStarter, starterDone, starterResult } from '../../../engine/play/quien-empieza-rules.js';
 export { STEP, copy };
 export const TEAM_NAMES = ['Rojos', 'Verdes'];
 const BOT_NAMES = ['Cheo', 'Yuli', 'Nico', 'Lola', 'Tito', 'Nina'];
@@ -12,7 +13,9 @@ export function botPlayer(slot) {
 export function createGame() {
   return { phase: 'lobby', mapId: 'plaza', difficulty: DEFAULT_DIFFICULTY, local: false, players: Array.from({ length: 6 }, (_, i) => botPlayer(i)), pitch: createPitch(),
     target: 12, ballsPerPlayer: 4, scores: [0, 0], remaining: Array(6).fill(4), turn: 0, lastSlots: [4, 5],
-    hand: 0, starter: 0, revision: 0, shots: 0, elapsed: 0, botTime: 0, result: null };
+    hand: 0, starter: 0, revision: 0, shots: 0, elapsed: 0, botTime: 0, result: null,
+    // ¿Quién empieza? before the first hand: a coin, cara for the Rojos.
+    opener: 'cacho', opening: null, lastLoser: null };
 }
 export function nextHand(g) {
   g.hand++; g.pitch = createPitch(Math.sin(g.hand * 2.4) * 1.4, -5.5 - g.hand % 3 * .6);
@@ -45,8 +48,9 @@ export function acceptAction(g, id, data, hostId) {
     g.difficulty = data.difficulty; g.revision++; return true;
   }
   if (data.action === 'start' && id === hostId && ['lobby', 'finished'].includes(g.phase)) {
-    const { players, target, revision, mapId, difficulty, local, ballsPerPlayer } = g;
-    Object.assign(g, createGame(), { players, target, revision, mapId, difficulty, local, ballsPerPlayer }); nextHand(g); return true;
+    const { players, target, revision, mapId, difficulty, local, ballsPerPlayer, opener, lastLoser } = g;
+    Object.assign(g, createGame(), { players, target, revision, mapId, difficulty, local, ballsPerPlayer, opener, lastLoser });
+    openMatch(g, Number.isSafeInteger(data.seed) ? data.seed : Date.now()); return true;
   }
   if (data.action === 'next' && id === hostId && g.phase === 'hand') { nextHand(g); return true; }
   if (data.action === 'shoot' && id !== null && g.players[g.turn].id === id) return shoot(g, data);
@@ -59,6 +63,7 @@ function finishThrow(g) {
     if (!mingoOut && result.team !== null) { g.scores[result.team] += result.points; g.starter = result.team; }
     else g.starter = 1 - g.starter;
     g.phase = g.scores.some(n => n >= g.target) ? 'finished' : 'hand';
+    if (g.phase === 'finished') g.lastLoser = g.scores[0] >= g.target ? 1 : 0;
   } else {
     let team = result.team === null ? 1 - g.turn % 2 : 1 - result.team;
     if (!g.remaining.some((n, i) => n && i % 2 === team)) team = 1 - team;
@@ -80,7 +85,21 @@ export function botThrow(g) {
     && (!ours || distance(g.pitch, ours) > .8) ? { x: lead.x, z: lead.z } : null;
   return botShot(g.pitch, serial, 0, { error: BOT_ERROR[level], boche });
 }
+// The coin decides which team throws the mingo; the room option may skip it
+// (al azar, el anfitrión) or hand it to the team that lost the last match.
+export function openMatch(g, seed) {
+  g.opening = createStarter({ seats: [0, 1], flavour: 'moneda', need: 'first', seed, option: g.opener, last: g.lastLoser });
+  g.phase = 'opening'; g.revision++;
+  if (starterDone(g.opening)) firstHand(g);
+}
+function firstHand(g) { g.starter = starterResult(g.opening).order[0]; nextHand(g); }
 export function step(g) {
+  if (g.phase === 'opening') {
+    const changed = stepStarter(g.opening, STEP);
+    if (starterDone(g.opening)) { firstHand(g); return true; }
+    if (changed) g.revision++;
+    return changed;
+  }
   if (g.phase === 'aiming' && g.players[g.turn].id === null) {
     g.botTime += STEP;
     if (g.botTime >= 1.1) return shoot(g, botThrow(g));

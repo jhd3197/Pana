@@ -9,12 +9,13 @@ import { RADIUS, POCKETS, predictShot, legalTarget, canPlace } from './rules.js'
 import { cafeTerrace } from '/engine/models/props/cafe-terrace.js';
 import { disposeModel } from '/engine/models/props/game-table.js';
 import { pocketMarker } from './pocket-markers.js';
+import { createStarterStage } from '/engine/play/quien-empieza.js';
 
 // Camera views: 'taco' rides behind the cue ball like a player bending over
 // the shot; 'plaza' frames the table in its setting; 'mesa' looks straight down.
 export const VIEWS = [['taco', 'Detrás de la bola'], ['mesa', 'Desde arriba'], ['plaza', 'Vista del lugar']];
 
-export function createPoolScene(canvas) {
+export function createPoolScene(canvas, { onStarter } = {}) {
   const stage = createTableWorld(canvas), { scene, camera, renderer } = stage;
   const table = createPoolTable(), cue = createPoolCue(); scene.add(table, cue);
   const cafe = cafeTerrace(); cafe.position.set(0, 0, -7.5); cafe.visible = false; scene.add(cafe);
@@ -32,6 +33,11 @@ export function createPoolScene(canvas) {
   const ring = new THREE.Mesh(new THREE.RingGeometry(RADIUS * .0085, RADIUS * .01 + .006, 40), new THREE.MeshBasicMaterial({ color: '#ffffff', side: THREE.DoubleSide, transparent: true, depthWrite: false }));
   ring.rotation.x = -Math.PI / 2; ring.renderOrder = 3; scene.add(ring);
   const ghost = createPoolBall({ number: 0 }); ghost.traverse(o => { if (o.material) { o.material.transparent = true; o.material.opacity = .45; o.material.depthWrite = false; } }); scene.add(ghost);
+  // ¿Quién empieza?: a cacho on the cloth by the cushion nearest each pana's corner.
+  const seatSpot = seat => { const side = seat % 2 ? 1 : -1, z = (seat % 2 ? -1 : 1) * (3.7 - Math.floor(seat / 2) * 2.8);
+    return { position: [side * 4.25, POOL_SURFACE, Math.max(-1.85, Math.min(1.85, z * .6))], out: [side, 0] }; };
+  const starter = createStarterStage({ root: scene, camera, canvas, spot: seatSpot, scale: .5, onInput: onStarter });
+  let starterKey = '';
   const ray = new THREE.Raycaster(), pointer = new THREE.Vector2(), hit = new THREE.Vector3();
   const plane = new THREE.Plane(new THREE.Vector3(0, 1, 0), -(POOL_SURFACE + .11));
   let rotation = 0, view = 'taco', lastAngle = 0;
@@ -51,7 +57,7 @@ export function createPoolScene(canvas) {
   }
   function frame(state, { angle, active, aiming, dt, lobby, portrait, w, h, safe }) {
     const placing = state.ballInHand && active;
-    if (view === 'taco' && !lobby && !placing) {
+    if (view === 'taco' && !lobby && !placing && state.phase !== 'starter') {
       // Behind the ball while you aim; between shots, a high look down the same line.
       const own = aiming && active; if (own) lastAngle = angle;
       const dx = Math.cos(lastAngle), dz = Math.sin(lastAngle), b = state.balls[0], c = vec(b.x, b.y, POOL_SURFACE);
@@ -90,7 +96,7 @@ export function createPoolScene(canvas) {
     const cuePath = shot.target ? [shot.contact, ...shot.cuePath.slice(1)] : shot.cuePath;
     cueLine.userData.set(reaches && info.after ? after(cuePath) : [], POOL_SURFACE + .006);
   }
-  function draw(state, { angle = 0, power = .65, spin = { x: 0, y: 0 }, active = false, placement = null, calledPocket = -1, dt = .016 } = {}) {
+  function draw(state, { angle = 0, power = .65, spin = { x: 0, y: 0 }, active = false, placement = null, calledPocket = -1, dt = .016, seat = -1 } = {}) {
     stage.setMap(state.mapId);
     cafe.visible = state.options.venue === 'cafe';
     const { w, h } = stage.resize(), lobby = state.phase === 'lobby', portrait = w < 650 && h > w;
@@ -140,6 +146,10 @@ export function createPoolScene(canvas) {
       ghost.position.copy(vec(p.x, p.y, POOL_SURFACE)); ring.position.copy(vec(p.x, p.y, POOL_SURFACE + .006));
       ring.material.color.set(canPlace(state, p.x, p.y) ? '#ffc83d' : '#ff4b4b');
     }
+    // Snapshots only: every starter change bumps the revision.
+    const key = `${state.revision}:${state.phase}:${seat}`;
+    if (key !== starterKey) { starterKey = key; starter.update(state.phase === 'starter' ? state.starter : null, { ownSeat: seat, names: state.players.map(p => p.name) }); }
+    starter.frame(dt);
     stage.draw(dt);
   }
   function point(clientX, clientY) {
@@ -148,10 +158,10 @@ export function createPoolScene(canvas) {
     return { x: hit.x * 100 + 500, y: hit.z * 100 + 250 };
   }
   function screen(x, y) { const p = vec(x, y).project(camera), r = canvas.getBoundingClientRect(); return { x: r.left + (p.x + 1) / 2 * r.width, y: r.top + (1 - p.y) / 2 * r.height }; }
-  return { scene, camera, renderer, balls, avatars, draw, point, screen,
+  return { scene, camera, renderer, balls, avatars, starter, draw, point, screen,
     setView(value) { view = value; chasing = false; lastMode = ''; }, get view() { return view; }, get rotation() { return rotation; },
     get guides() { return { aim: aimLine.visible, ghost: ghost.visible, object: objectLine.visible }; },
-    dispose() { balls.forEach(b => b.userData.dispose()); avatars.forEach(a => a.dispose()); table.userData.dispose(); cue.userData.dispose(); ghost.userData.dispose(); disposeModel(cafe);
+    dispose() { starter.dispose(); balls.forEach(b => b.userData.dispose()); avatars.forEach(a => a.dispose()); table.userData.dispose(); cue.userData.dispose(); ghost.userData.dispose(); disposeModel(cafe);
       pocketLabels.forEach(s => { s.material.map.dispose(); s.material.dispose(); }); kitchen.geometry.dispose(); kitchen.material.dispose();
       for (const m of [aimLine, objectLine, cueLine]) m.userData.dispose(); ring.geometry.dispose(); ring.material.dispose(); stage.dispose(); },
   };

@@ -24,7 +24,22 @@ try {
   const a = await open('Juan'), b = await open('María');
   await wait(a, () => poquerDebug.room.state.players.length === 2); assert.ok(await b.locator('#start').isDisabled());
   await wait(a, () => poquerDebug.world.avatars.size === 2); await a.screenshot({ path: `${out}/lobby.png` });
-  await a.locator('#start').click(); await wait(b, () => poquerDebug.room.state.phase === 'preflop'); await same(a, b);
+  // ¿Quién empieza?: both panas shake their cacho at once; the highest takes the button.
+  await a.locator('#start').click(); await wait(b, () => poquerDebug.room.state.phase === 'starter');
+  assert.ok(await b.evaluate(() => poquerDebug.world.starter.active), 'the cachos are on the table');
+  const seatOf = p => p.evaluate(() => poquerDebug.room.state.players.findIndex(q => q.id === poquerDebug.room.id));
+  const [seatA, seatB] = [await seatOf(a), await seatOf(b)];
+  await b.locator('#pana-starter-shake').dispatchEvent('pointerdown', { pointerId: 4, button: 0 });
+  await a.evaluate(() => document.activeElement?.blur()); await a.keyboard.down(' ');
+  // A slow screen may already have been slammed for it after eight seconds.
+  await wait(a, seats => { const s = poquerDebug.room.state.starter; return !s || seats.every(seat => s.shaking.includes(seat) || seat in s.slammed || s.phase !== 'shake'); }, [seatA, seatB]);
+  await a.screenshot({ path: `${out}/starter.png` });
+  await a.keyboard.up(' '); await b.locator('#pana-starter-shake').dispatchEvent('pointerup', { pointerId: 4, button: 0 });
+  await wait(b, () => poquerDebug.room.state.phase === 'preflop'); await same(a, b);
+  assert.match(await a.evaluate(() => poquerDebug.room.state.message), /reparte/);
+  assert.equal(await a.evaluate(() => poquerDebug.world.starter.active), false, 'the cachos leave the table');
+  // Heads-up the dealer acts first preflop: whoever won the cacho.
+  const [first, second] = await a.evaluate(() => poquerDebug.room.state.turn === poquerDebug.room.id) ? [a, b] : [b, a];
   const av = await a.evaluate(() => ({ state: poquerDebug.room.state, id: poquerDebug.room.id })), bv = await b.evaluate(() => ({ state: poquerDebug.room.state, id: poquerDebug.room.id }));
   assert.ok(av.state.players.find(p => p.id === av.id).hole.every(Number.isInteger));
   assert.deepEqual(av.state.players.find(p => p.id === bv.id).hole, [null, null]); assert.deepEqual(bv.state.players.find(p => p.id === av.id).hole, [null, null]);
@@ -32,10 +47,10 @@ try {
   await wait(a, () => poquerDebug.world.cards.size === 4);
   assert.deepEqual(await a.evaluate(other => [...poquerDebug.world.cards].filter(([key]) => key.startsWith(`hand-${other}-`)).map(([, entry]) => entry.model.userData.card), bv.id), [null, null], 'opponent meshes contain only card backs');
   assert.equal(await a.evaluate(() => poquerDebug.world.camera.isPerspectiveCamera), true);
-  await b.evaluate(() => poquerDebug.room.act('raise', 1000)); await b.waitForTimeout(300); await same(a, b); assert.equal(await a.evaluate(() => poquerDebug.room.state.pot), 30);
+  await second.evaluate(() => poquerDebug.room.act('raise', 1000)); await second.waitForTimeout(300); await same(a, b); assert.equal(await a.evaluate(() => poquerDebug.room.state.pot), 30);
   console.log('ok: two real clients receive distinct private cards; wrong-turn action rejected');
-  await a.locator('#amount').fill('60'); await act(a, '#raise'); await same(a, b); assert.equal(await b.locator('#call').textContent(), 'Igualar 40');
-  await act(b, '#call'); await same(a, b); assert.equal(await a.evaluate(() => poquerDebug.room.state.phase), 'flop');
+  await first.locator('#amount').fill('60'); await act(first, '#raise'); await same(first, second); assert.equal(await second.locator('#call').textContent(), 'Igualar 40');
+  await act(second, '#call'); await same(second, first); assert.equal(await a.evaluate(() => poquerDebug.room.state.phase), 'flop');
   await wait(a, () => poquerDebug.room.state.board.every((value, i) => poquerDebug.world.cards.get(`board-${i}`)?.model.userData.card === value));
   await a.screenshot({ path: `${out}/playing.png` });
   for (let n = 0; n < 12 && await a.evaluate(() => poquerDebug.room.state.phase !== 'finished'); n++) {
@@ -61,7 +76,11 @@ try {
   console.log('ok: online all-in and call run out the board and conserve both stacks');
   await b.close(); await c.close();
   const m = await open('Móvil', `${code}-mobile`, true); await m.screenshot({ path: `${out}/mobile-lobby.png` });
-  await m.locator('#practice').tap(); await wait(m, () => poquerDebug.room.local && poquerDebug.room.state.hand === 1);
+  // Practice opens with the cachos too: a finger on the table shakes, lifting it slams.
+  await m.locator('#practice').tap(); await m.locator('#pana-starter-shake').waitFor();
+  assert.equal(await m.evaluate(() => document.documentElement.scrollWidth > innerWidth), false); await m.screenshot({ path: `${out}/mobile-starter.png` });
+  await m.locator('#world').tap(); await wait(m, () => 0 in (poquerDebug.room.state.starter?.slammed || { 0: 1 }));
+  await wait(m, () => poquerDebug.room.local && poquerDebug.room.state.hand === 1);
   await m.locator('#menu').tap(); const revision = await m.evaluate(() => poquerDebug.room.state.revision); await m.waitForTimeout(1400); assert.equal(await m.evaluate(() => poquerDebug.room.state.revision), revision);
   await m.locator('#pana-resume').tap(); await wait(m, () => !!poquerDebug.room.state.legal);
   await m.screenshot({ path: `${out}/mobile-playing.png` }); assert.equal(await m.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
