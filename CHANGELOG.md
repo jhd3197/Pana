@@ -110,6 +110,20 @@ becomes the GitHub release's notes.
   circuits gain continuous road wear and sloping verges; natural landscapes
   gain simplified background trees without filling towns, caves or salt pans.
 
+## 0.4.0 - 2026-10-19
+
+Maintenance release: no changes you will notice.
+
+## 0.3.1 - 2026-10-18
+
+Maintenance release: no changes you will notice.
+
+## 0.3.0 - 2026-10-18
+
+Maintenance release: no changes you will notice.
+
+## 0.2.0 - 2026-10-17
+
 ### Added
 
 - **Reliquia is now a first-person treasure run: ¿nos vamos ya, o bajamos
