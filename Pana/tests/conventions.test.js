@@ -6,6 +6,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { isOnline, gameUrl } from '../web/games.js';
 import { staticImports, resolve, specifiers } from './import-graph.js';
+import { FIRST_LOAD_MODULES, GAME_JS_LIMIT, GAME_JS_SLACK, GAME_JS_ALLOWED } from './budgets.js';
 
 const app = path.resolve(import.meta.dirname, '..');
 const rel = (file) => path.relative(app, file).split(path.sep).join('/');
@@ -269,7 +270,6 @@ test('engine files other sites load stay at their paths', () => {
 // waits for the one above it. A game's first load stays small; worlds, maps and
 // minigames that aren't on screen yet load with import() (Derrape's tracks.js,
 // Bululú's minigames/index.js).
-const FIRST_LOAD_MODULES = 160;
 test(`a game's first load is at most ${FIRST_LOAD_MODULES} modules`, () => {
   const problems = [];
   for (const id of games) {
@@ -282,7 +282,6 @@ test(`a game's first load is at most ${FIRST_LOAD_MODULES} modules`, () => {
 // game.js is wiring only. These files predate the limit; they may shrink, never
 // grow. When one shrinks, lower its cap with it (within GAME_JS_SLACK lines), so
 // the room freed by moving code out isn't quietly filled again.
-const GAME_JS_LIMIT = 600, GAME_JS_SLACK = 25, GAME_JS_ALLOWED = { derrape: 2437, bululu: 1248, embuste: 650 };
 test(`game.js stays wiring (at most ${GAME_JS_LIMIT} lines)`, () => {
   const problems = [];
   for (const id of games) {
