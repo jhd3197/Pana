@@ -31,7 +31,12 @@ try {
   assert.ok(accessoryError < 1e-6, 'pre-positioned car accessories stay in place');
   const requested = process.env.PANA_MAP_TEST_TRACKS?.split(',');
   if (requested) requested.forEach(id => assert.ok(ids.includes(id), `known requested track: ${id}`));
-  for (const id of requested || [...ids, 'plaza', 'bululu', 'estadio']) {
+  // Every map in one suite outgrew the runner's 10-minute slot: this file
+  // races the first half, maps-2.browser.js (PANA_MAP_TEST_PART=2) the rest
+  // plus the return trips that rebuild maps after others were loaded.
+  const all = [...ids, 'plaza', 'bululu', 'estadio'], half = Math.ceil(all.length / 2);
+  const part = process.env.PANA_MAP_TEST_PART === '2' ? all.slice(half) : all.slice(0, half);
+  for (const id of requested || part) {
     const result = await page.evaluate(async id => {
       const THREE = await import('three');
       toGarage(); buildTrack(id); setup.laps=3; await startRace(0);
