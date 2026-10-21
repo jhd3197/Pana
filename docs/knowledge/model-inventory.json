@@ -1,33 +1,33 @@
 {
-  "date": "2026-10-18",
+  "date": "2026-10-21",
   "scope": "Current production 3D resource/model families; catalog variants and scene assemblies are counted separately. No primitive-mesh count or deleted-history total.",
   "counts": {
-    "catalog": 437,
+    "catalog": 548,
     "categories": {
-      "Fauna": 21,
+      "Fauna": 25,
       "Vegetación": 50,
       "Llanos": 10,
       "Vida llanera": 13,
       "Desierto": 10,
       "Termales": 5,
-      "Objetos": 66,
+      "Objetos": 148,
       "Emblemas": 9,
-      "Pueblo": 25,
+      "Pueblo": 34,
       "Páramo": 10,
       "Selva": 14,
       "Costa": 29,
-      "Mina": 27,
+      "Ruinas": 26,
+      "Mina": 30,
       "Cementerio": 30,
-      "Ruinas": 25,
       "Campamento": 21,
       "Atmósfera": 12,
+      "Vestuario": 6,
       "Personajes": 3,
-      "Vestuario": 5,
-      "Vehículos": 25,
-      "Mapas": 27
+      "Vehículos": 26,
+      "Mapas": 37
     },
     "previewOnly": 142,
-    "uncatalogedFamilies": 31,
+    "uncatalogedFamilies": 30,
     "sceneFamilies": 46,
     "dormantFactories": 9
   },
@@ -354,6 +354,58 @@
         "melanistic": true
       },
       "status": "preview-only"
+    },
+    {
+      "id": "gold-jaguar",
+      "name": "Jaguar de oro maldito",
+      "category": "Fauna",
+      "source": "Pana/engine/models/fauna/jaguar.js",
+      "factory": "jaguar",
+      "usedBy": [
+        "Reliquia"
+      ],
+      "previewOptions": {
+        "seed": 13,
+        "pose": "prowl",
+        "gold": true
+      },
+      "status": "in-use"
+    },
+    {
+      "id": "guacharo",
+      "name": "Guácharo",
+      "category": "Fauna",
+      "source": "Pana/engine/models/fauna/cave-creatures.js",
+      "factory": "guacharo",
+      "usedBy": [
+        "Reliquia"
+      ],
+      "previewOptions": null,
+      "status": "in-use"
+    },
+    {
+      "id": "cave-spider",
+      "name": "Araña de la cueva",
+      "category": "Fauna",
+      "source": "Pana/engine/models/fauna/cave-creatures.js",
+      "factory": "caveSpider",
+      "usedBy": [
+        "Reliquia"
+      ],
+      "previewOptions": null,
+      "status": "in-use"
+    },
+    {
+      "id": "cuaima",
+      "name": "Cuaima",
+      "category": "Fauna",
+      "source": "Pana/engine/models/fauna/cave-creatures.js",
+      "factory": "cuaima",
+      "usedBy": [
+        "Reliquia"
+      ],
+      "previewOptions": null,
+      "status": "in-use"
     },
     {
       "id": "garden-rosette",
@@ -2597,6 +2649,371 @@
       "status": "in-use"
     },
     {
+      "id": "coin-pile",
+      "name": "Monedas de oro",
+      "category": "Objetos",
+      "source": "Pana/engine/models/props/reliquia-treasure.js",
+      "factory": "coinPile",
+      "usedBy": [
+        "Reliquia"
+      ],
+      "status": "in-use"
+    },
+    {
+      "id": "emerald",
+      "name": "Esmeralda",
+      "category": "Objetos",
+      "source": "Pana/engine/models/props/reliquia-treasure.js",
+      "factory": "emerald",
+      "usedBy": [
+        "Reliquia"
+      ],
+      "status": "in-use"
+    },
+    {
+      "id": "cubagua-pearl",
+      "name": "Perla de Cubagua",
+      "category": "Objetos",
+      "source": "Pana/engine/models/props/reliquia-treasure.js",
+      "factory": "pearl",
+      "usedBy": [
+        "Reliquia"
+      ],
+      "status": "in-use"
+    },
+    {
+      "id": "gold-cup",
+      "name": "Copa de oro",
+      "category": "Objetos",
+      "source": "Pana/engine/models/props/reliquia-treasure.js",
+      "factory": "goldCup",
+      "usedBy": [
+        "Reliquia"
+      ],
+      "status": "in-use"
+    },
+    {
+      "id": "gold-mask",
+      "name": "Máscara de oro",
+      "category": "Objetos",
+      "source": "Pana/engine/models/props/reliquia-treasure.js",
+      "factory": "goldMask",
+      "usedBy": [
+        "Reliquia"
+      ],
+      "status": "in-use"
+    },
+    {
+      "id": "carved-idol",
+      "name": "Ídolo tallado",
+      "category": "Objetos",
+      "source": "Pana/engine/models/props/reliquia-treasure.js",
+      "factory": "carvedIdol",
+      "usedBy": [
+        "Reliquia"
+      ],
+      "status": "in-use"
+    },
+    {
+      "id": "sun-disk",
+      "name": "Disco del sol",
+      "category": "Objetos",
+      "source": "Pana/engine/models/props/reliquia-treasure.js",
+      "factory": "sunDisk",
+      "usedBy": [
+        "Reliquia"
+      ],
+      "status": "in-use"
+    },
+    {
+      "id": "emerald-chest",
+      "name": "Cofre de esmeraldas",
+      "category": "Objetos",
+      "source": "Pana/engine/models/props/reliquia-treasure.js",
+      "factory": "emeraldChest",
+      "usedBy": [
+        "Reliquia"
+      ],
+      "status": "in-use"
+    },
+    {
+      "id": "ceremonial-drum",
+      "name": "Tambor ceremonial",
+      "category": "Objetos",
+      "source": "Pana/engine/models/props/reliquia-treasure.js",
+      "factory": "ceremonialDrum",
+      "usedBy": [
+        "Reliquia"
+      ],
+      "status": "in-use"
+    },
+    {
+      "id": "cursed-mirror",
+      "name": "Espejo maldito",
+      "category": "Objetos",
+      "source": "Pana/engine/models/props/reliquia-treasure.js",
+      "factory": "cursedMirror",
+      "usedBy": [
+        "Reliquia"
+      ],
+      "status": "in-use"
+    },
+    {
+      "id": "cacao-altar",
+      "name": "Altar de cacao y oro",
+      "category": "Objetos",
+      "source": "Pana/engine/models/props/reliquia-treasure.js",
+      "factory": "cacaoAltar",
+      "usedBy": [
+        "Reliquia"
+      ],
+      "status": "in-use"
+    },
+    {
+      "id": "echo-mask",
+      "name": "Máscara de los ecos",
+      "category": "Objetos",
+      "source": "Pana/engine/models/props/reliquia-treasure.js",
+      "factory": "echoMask",
+      "usedBy": [
+        "Reliquia"
+      ],
+      "status": "in-use"
+    },
+    {
+      "id": "messenger-sandals",
+      "name": "Alpargatas del mensajero",
+      "category": "Objetos",
+      "source": "Pana/engine/models/props/reliquia-treasure.js",
+      "factory": "messengerSandals",
+      "usedBy": [
+        "Reliquia"
+      ],
+      "status": "in-use"
+    },
+    {
+      "id": "sun-crown",
+      "name": "Corona del sol",
+      "category": "Objetos",
+      "source": "Pana/engine/models/props/reliquia-treasure.js",
+      "factory": "sunCrown",
+      "usedBy": [
+        "Reliquia"
+      ],
+      "status": "in-use"
+    },
+    {
+      "id": "laughing-idol",
+      "name": "Ídolo que se ríe",
+      "category": "Objetos",
+      "source": "Pana/engine/models/props/reliquia-treasure.js",
+      "factory": "laughingIdol",
+      "usedBy": [
+        "Reliquia"
+      ],
+      "status": "in-use"
+    },
+    {
+      "id": "miche-bottle",
+      "name": "Botella de miche",
+      "category": "Objetos",
+      "source": "Pana/engine/models/props/reliquia-treasure.js",
+      "factory": "micheBottle",
+      "usedBy": [
+        "Reliquia"
+      ],
+      "status": "in-use"
+    },
+    {
+      "id": "crooked-compass",
+      "name": "Brújula torcida",
+      "category": "Objetos",
+      "source": "Pana/engine/models/props/reliquia-treasure.js",
+      "factory": "crookedCompass",
+      "usedBy": [
+        "Reliquia"
+      ],
+      "status": "in-use"
+    },
+    {
+      "id": "lucky-coin",
+      "name": "Moneda de la suerte",
+      "category": "Objetos",
+      "source": "Pana/engine/models/props/reliquia-treasure.js",
+      "factory": "luckyCoin",
+      "usedBy": [
+        "Reliquia"
+      ],
+      "status": "in-use"
+    },
+    {
+      "id": "jaguar-heart",
+      "name": "Corazón de jaguar",
+      "category": "Objetos",
+      "source": "Pana/engine/models/props/reliquia-treasure.js",
+      "factory": "jaguarHeart",
+      "usedBy": [
+        "Reliquia"
+      ],
+      "status": "in-use"
+    },
+    {
+      "id": "expedition-machete",
+      "name": "Machete",
+      "category": "Objetos",
+      "source": "Pana/engine/models/props/reliquia-treasure.js",
+      "factory": "machete",
+      "usedBy": [
+        "Reliquia"
+      ],
+      "status": "in-use"
+    },
+    {
+      "id": "botiquin",
+      "name": "Botiquín",
+      "category": "Objetos",
+      "source": "Pana/engine/models/props/reliquia-treasure.js",
+      "factory": "botiquin",
+      "usedBy": [
+        "Reliquia"
+      ],
+      "status": "in-use"
+    },
+    {
+      "id": "treasure-chest",
+      "name": "Cofre del templo",
+      "category": "Objetos",
+      "source": "Pana/engine/models/props/reliquia-treasure.js",
+      "factory": "treasureChest",
+      "usedBy": [
+        "Reliquia"
+      ],
+      "previewOptions": {
+        "seed": 5
+      },
+      "status": "in-use"
+    },
+    {
+      "id": "trap-plate",
+      "name": "Losa trampa",
+      "category": "Objetos",
+      "source": "Pana/engine/models/props/reliquia-treasure.js",
+      "factory": "trapPlate",
+      "usedBy": [
+        "Reliquia"
+      ],
+      "status": "in-use"
+    },
+    {
+      "id": "dart-head",
+      "name": "Boca de dardos",
+      "category": "Objetos",
+      "source": "Pana/engine/models/props/reliquia-treasure.js",
+      "factory": "dartHead",
+      "usedBy": [
+        "Reliquia"
+      ],
+      "status": "in-use"
+    },
+    {
+      "id": "stair-seal",
+      "name": "Sello de la escalera",
+      "category": "Objetos",
+      "source": "Pana/engine/models/props/reliquia-treasure.js",
+      "factory": "stairSeal",
+      "usedBy": [
+        "Reliquia"
+      ],
+      "status": "in-use"
+    },
+    {
+      "id": "ruin-gallery",
+      "name": "Galería en ruinas",
+      "category": "Ruinas",
+      "source": "Pana/engine/models/props/reliquia-ruins.js",
+      "factory": "ruinGallery",
+      "usedBy": [
+        "Reliquia"
+      ],
+      "status": "in-use"
+    },
+    {
+      "id": "gold-jaguar-statue",
+      "name": "Jaguar de oro",
+      "category": "Objetos",
+      "source": "Pana/engine/models/props/jaguar-stone.js",
+      "factory": "jaguarStatue",
+      "usedBy": [
+        "Reliquia"
+      ],
+      "previewOptions": {
+        "gold": true
+      },
+      "status": "in-use"
+    },
+    {
+      "id": "rappel-rig",
+      "name": "Rapel de la bajada",
+      "category": "Objetos",
+      "source": "Pana/engine/models/props/reliquia-treasure.js",
+      "factory": "rappelRig",
+      "usedBy": [
+        "Reliquia"
+      ],
+      "status": "in-use"
+    },
+    {
+      "id": "climb-rope",
+      "name": "Cuerda de subida",
+      "category": "Objetos",
+      "source": "Pana/engine/models/props/reliquia-treasure.js",
+      "factory": "climbRope",
+      "usedBy": [
+        "Reliquia"
+      ],
+      "status": "in-use"
+    },
+    {
+      "id": "lift-cage",
+      "name": "Montacargas",
+      "category": "Mina",
+      "source": "Pana/engine/models/props/reliquia-treasure.js",
+      "factory": "liftCage",
+      "usedBy": [
+        "Reliquia"
+      ],
+      "previewOptions": {
+        "headframe": true
+      },
+      "status": "in-use"
+    },
+    {
+      "id": "lift-shaft",
+      "name": "Pozo del montacargas",
+      "category": "Mina",
+      "source": "Pana/engine/models/props/reliquia-treasure.js",
+      "factory": "liftShaft",
+      "usedBy": [
+        "Reliquia"
+      ],
+      "previewOptions": {
+        "below": 8,
+        "above": 8
+      },
+      "status": "in-use"
+    },
+    {
+      "id": "cargo-lift",
+      "name": "Montacargas de carga",
+      "category": "Mina",
+      "source": "Pana/engine/models/props/reliquia-treasure.js",
+      "factory": "cargoLift",
+      "usedBy": [
+        "Reliquia"
+      ],
+      "status": "in-use"
+    },
+    {
       "id": "camp-bell",
       "name": "Campana del campamento",
       "category": "Objetos",
@@ -2933,6 +3350,42 @@
       "factory": "createPokerChips",
       "usedBy": [
         "Póquer"
+      ],
+      "previewOptions": {},
+      "status": "in-use"
+    },
+    {
+      "id": "cacho",
+      "name": "Cacho de cuero",
+      "category": "Objetos",
+      "source": "Pana/engine/models/props/cacho.js",
+      "factory": "createCacho",
+      "usedBy": [
+        "¿Quién empieza?"
+      ],
+      "previewOptions": {},
+      "status": "in-use"
+    },
+    {
+      "id": "cacho-die",
+      "name": "Dado del cacho",
+      "category": "Objetos",
+      "source": "Pana/engine/models/props/cacho.js",
+      "factory": "createCachoDie",
+      "usedBy": [
+        "¿Quién empieza?"
+      ],
+      "previewOptions": {},
+      "status": "in-use"
+    },
+    {
+      "id": "moneda",
+      "name": "Moneda cara o sello",
+      "category": "Objetos",
+      "source": "Pana/engine/models/props/cacho.js",
+      "factory": "createMoneda",
+      "usedBy": [
+        "¿Quién empieza?"
       ],
       "previewOptions": {},
       "status": "in-use"
@@ -5135,6 +5588,273 @@
       "status": "in-use"
     },
     {
+      "id": "reflector-post",
+      "name": "Delineador de carretera",
+      "category": "Pueblo",
+      "source": "Pana/engine/models/props/wood-sign.js",
+      "factory": "reflectorPost",
+      "usedBy": [
+        "Derrape"
+      ],
+      "previewOptions": null,
+      "status": "in-use"
+    },
+    {
+      "id": "pallet-bunker",
+      "name": "Bunker de paletas",
+      "category": "Objetos",
+      "source": "Pana/engine/models/props/glow-paintball.js",
+      "factory": "palletBunker",
+      "usedBy": [
+        "¡Pintura!"
+      ],
+      "previewOptions": {},
+      "status": "in-use"
+    },
+    {
+      "id": "inflatable-can",
+      "name": "Inflable lata",
+      "category": "Objetos",
+      "source": "Pana/engine/models/props/glow-paintball.js",
+      "factory": "inflatableBunker",
+      "usedBy": [
+        "¡Pintura!"
+      ],
+      "previewOptions": {
+        "shape": "can"
+      },
+      "status": "in-use"
+    },
+    {
+      "id": "inflatable-dorito",
+      "name": "Inflable dorito",
+      "category": "Objetos",
+      "source": "Pana/engine/models/props/glow-paintball.js",
+      "factory": "inflatableBunker",
+      "usedBy": [
+        "¡Pintura!"
+      ],
+      "previewOptions": {
+        "shape": "dorito",
+        "w": 2.2,
+        "h": 1.9,
+        "d": 2.2
+      },
+      "status": "in-use"
+    },
+    {
+      "id": "inflatable-snake",
+      "name": "Inflable culebra",
+      "category": "Objetos",
+      "source": "Pana/engine/models/props/glow-paintball.js",
+      "factory": "inflatableBunker",
+      "usedBy": [
+        "¡Pintura!"
+      ],
+      "previewOptions": {
+        "shape": "snake",
+        "w": 5,
+        "h": 1,
+        "d": 1.2
+      },
+      "status": "in-use"
+    },
+    {
+      "id": "inflatable-brick",
+      "name": "Inflable ladrillo",
+      "category": "Objetos",
+      "source": "Pana/engine/models/props/glow-paintball.js",
+      "factory": "inflatableBunker",
+      "usedBy": [
+        "¡Pintura!"
+      ],
+      "previewOptions": {
+        "shape": "brick",
+        "w": 2.4,
+        "h": 1.4,
+        "d": 1.4
+      },
+      "status": "in-use"
+    },
+    {
+      "id": "tube-bunker",
+      "name": "Tubo de plástico",
+      "category": "Objetos",
+      "source": "Pana/engine/models/props/glow-paintball.js",
+      "factory": "tubeBunker",
+      "usedBy": [
+        "¡Pintura!"
+      ],
+      "previewOptions": {},
+      "status": "in-use"
+    },
+    {
+      "id": "floodlight-mast",
+      "name": "Torre de reflectores",
+      "category": "Objetos",
+      "source": "Pana/engine/models/props/glow-paintball.js",
+      "factory": "floodlightMast",
+      "usedBy": [
+        "¡Pintura!"
+      ],
+      "previewOptions": {},
+      "status": "in-use"
+    },
+    {
+      "id": "led-rope",
+      "name": "Manguera LED",
+      "category": "Objetos",
+      "source": "Pana/engine/models/props/glow-paintball.js",
+      "factory": "ledRope",
+      "usedBy": [
+        "¡Pintura!"
+      ],
+      "previewOptions": {},
+      "status": "in-use"
+    },
+    {
+      "id": "parked-moto",
+      "name": "Moto estacionada",
+      "category": "Pueblo",
+      "source": "Pana/engine/models/props/barrio.js",
+      "factory": "parkedMoto",
+      "usedBy": [
+        "Trifulca"
+      ],
+      "previewOptions": {
+        "color": "#e8443a",
+        "seed": 2
+      },
+      "status": "in-use"
+    },
+    {
+      "id": "cable-pole",
+      "name": "Esquina de los cables",
+      "category": "Pueblo",
+      "source": "Pana/engine/models/props/barrio.js",
+      "factory": "cablePole",
+      "usedBy": [
+        "Trifulca"
+      ],
+      "previewOptions": {
+        "height": 8
+      },
+      "status": "in-use"
+    },
+    {
+      "id": "cable-span",
+      "name": "Cables entre postes",
+      "category": "Pueblo",
+      "source": "Pana/engine/models/props/barrio.js",
+      "factory": "cableSpan",
+      "usedBy": [
+        "Trifulca"
+      ],
+      "previewOptions": {
+        "from": [
+          -5,
+          7.5,
+          0
+        ],
+        "to": [
+          5,
+          7.5,
+          0
+        ]
+      },
+      "status": "in-use"
+    },
+    {
+      "id": "produce-crates",
+      "name": "Pila de cajas de verdura",
+      "category": "Pueblo",
+      "source": "Pana/engine/models/props/barrio.js",
+      "factory": "produceCrates",
+      "usedBy": [
+        "Trifulca"
+      ],
+      "previewOptions": {
+        "w": 1.6,
+        "d": 1,
+        "h": 1.2,
+        "seed": 3
+      },
+      "status": "in-use"
+    },
+    {
+      "id": "market-hand-truck",
+      "name": "Carretilla de mercado",
+      "category": "Pueblo",
+      "source": "Pana/engine/models/props/barrio.js",
+      "factory": "marketHandTruck",
+      "usedBy": [
+        "Trifulca"
+      ],
+      "previewOptions": {
+        "load": true
+      },
+      "status": "in-use"
+    },
+    {
+      "id": "plastic-chair",
+      "name": "Silla plástica",
+      "category": "Pueblo",
+      "source": "Pana/engine/models/props/barrio.js",
+      "factory": "plasticChair",
+      "usedBy": [
+        "¡Stop!",
+        "Trifulca"
+      ],
+      "previewOptions": {
+        "color": "#2ad1b2"
+      },
+      "status": "in-use"
+    },
+    {
+      "id": "wooden-stands",
+      "name": "Gradas de madera",
+      "category": "Pueblo",
+      "source": "Pana/engine/models/props/barrio.js",
+      "factory": "woodenStands",
+      "usedBy": [
+        "Trifulca"
+      ],
+      "previewOptions": {
+        "length": 10,
+        "rows": 4
+      },
+      "status": "in-use"
+    },
+    {
+      "id": "lake-bridge",
+      "name": "Puente sobre el lago",
+      "category": "Pueblo",
+      "source": "Pana/engine/models/props/barrio.js",
+      "factory": "lakeBridge",
+      "usedBy": [
+        "Trifulca"
+      ],
+      "previewOptions": {
+        "length": 80,
+        "span": 40
+      },
+      "status": "in-use"
+    },
+    {
+      "id": "pana-guardarropa",
+      "name": "Mi pana · Accesorios",
+      "category": "Vestuario",
+      "source": "Pana/engine/models/characters/pana/accessories.js",
+      "factory": "createAccessories",
+      "usedBy": [
+        "Bululú",
+        "Derrape",
+        "Escondidas",
+        "Cocina"
+      ],
+      "status": "in-use"
+    },
+    {
       "id": "pana",
       "name": "Pana original",
       "category": "Personajes",
@@ -5621,6 +6341,17 @@
       "status": "in-use"
     },
     {
+      "id": "racing-lancha",
+      "name": "Lancha de carrera",
+      "category": "Vehículos",
+      "source": "Pana/engine/models/vehicles/lancha.js",
+      "factory": "createLancha",
+      "usedBy": [
+        "Lancha"
+      ],
+      "status": "in-use"
+    },
+    {
       "id": "wheel-calle",
       "name": "Cauchos de calle",
       "category": "Vehículos",
@@ -5835,10 +6566,21 @@
       "id": "curiara",
       "name": "Curiara · Río abajo",
       "category": "Mapas",
-      "source": "Pana/games/curiara/public/scene.js",
+      "source": "Pana/engine/river/scene.js",
       "factory": "createRiverWorld",
       "usedBy": [
         "Curiara"
+      ],
+      "status": "in-use"
+    },
+    {
+      "id": "lancha",
+      "name": "Lancha · Sipapo y Orinoco",
+      "category": "Mapas",
+      "source": "Pana/engine/river/scene.js",
+      "factory": "createRiverWorld",
+      "usedBy": [
+        "Lancha"
       ],
       "status": "in-use"
     },
@@ -6021,6 +6763,105 @@
       "status": "in-use"
     },
     {
+      "id": "track-cata",
+      "name": "Circuito · Bahía de Cata",
+      "category": "Mapas",
+      "source": "Pana/games/derrape/public/tracks/cata.js",
+      "factory": "makeTrack(definition).build",
+      "usedBy": [
+        "Derrape"
+      ],
+      "status": "in-use"
+    },
+    {
+      "id": "track-choroni",
+      "name": "Circuito · Choroní",
+      "category": "Mapas",
+      "source": "Pana/games/derrape/public/tracks/choroni.js",
+      "factory": "makeTrack(definition).build",
+      "usedBy": [
+        "Derrape"
+      ],
+      "status": "in-use"
+    },
+    {
+      "id": "track-chuao",
+      "name": "Circuito · Chuao · La quebrada",
+      "category": "Mapas",
+      "source": "Pana/games/derrape/public/tracks/chuao.js",
+      "factory": "makeTrack(definition).build",
+      "usedBy": [
+        "Derrape"
+      ],
+      "status": "in-use"
+    },
+    {
+      "id": "track-tovar",
+      "name": "Circuito · Colonia Tovar",
+      "category": "Mapas",
+      "source": "Pana/games/derrape/public/tracks/tovar.js",
+      "factory": "makeTrack(definition).build",
+      "usedBy": [
+        "Derrape"
+      ],
+      "status": "in-use"
+    },
+    {
+      "id": "track-galipan",
+      "name": "Circuito · Galipán de noche",
+      "category": "Mapas",
+      "source": "Pana/games/derrape/public/tracks/galipan.js",
+      "factory": "makeTrack(definition).build",
+      "usedBy": [
+        "Derrape"
+      ],
+      "status": "in-use"
+    },
+    {
+      "id": "track-maracaibo",
+      "name": "Circuito · Maracaibo · El puente",
+      "category": "Mapas",
+      "source": "Pana/games/derrape/public/tracks/maracaibo.js",
+      "factory": "makeTrack(definition).build",
+      "usedBy": [
+        "Derrape"
+      ],
+      "status": "in-use"
+    },
+    {
+      "id": "track-margarita",
+      "name": "Circuito · Isla Margarita",
+      "category": "Mapas",
+      "source": "Pana/games/derrape/public/tracks/margarita.js",
+      "factory": "makeTrack(definition).build",
+      "usedBy": [
+        "Derrape"
+      ],
+      "status": "in-use"
+    },
+    {
+      "id": "track-sarisarinama",
+      "name": "Circuito · Sarisariñama",
+      "category": "Mapas",
+      "source": "Pana/games/derrape/public/tracks/sarisarinama.js",
+      "factory": "makeTrack(definition).build",
+      "usedBy": [
+        "Derrape"
+      ],
+      "status": "in-use"
+    },
+    {
+      "id": "track-sabana",
+      "name": "Circuito · Gran Sabana",
+      "category": "Mapas",
+      "source": "Pana/games/derrape/public/tracks/sabana.js",
+      "factory": "makeTrack(definition).build",
+      "usedBy": [
+        "Derrape"
+      ],
+      "status": "in-use"
+    },
+    {
       "id": "domino-table",
       "name": "Mesa de dominó",
       "category": "Objetos",
@@ -6114,6 +6955,536 @@
         "Ludo"
       ],
       "status": "in-use"
+    },
+    {
+      "id": "qqsmp-stage",
+      "name": "Tarima del concurso",
+      "category": "Objetos",
+      "source": "Pana/games/qqsmp/public/studio-set.js",
+      "factory": "createQuizStage",
+      "usedBy": [
+        "¿Quién quiere ser mi pana?"
+      ],
+      "status": "in-use"
+    },
+    {
+      "id": "qqsmp-podium",
+      "name": "Podio del concurso",
+      "category": "Objetos",
+      "source": "Pana/games/qqsmp/public/studio-set.js",
+      "factory": "createQuizPodium",
+      "usedBy": [
+        "¿Quién quiere ser mi pana?"
+      ],
+      "previewOptions": {
+        "color": "#2ad1b2"
+      },
+      "status": "in-use"
+    },
+    {
+      "id": "qqsmp-host-desk",
+      "name": "Atril del animador",
+      "category": "Objetos",
+      "source": "Pana/games/qqsmp/public/studio-set.js",
+      "factory": "createHostDesk",
+      "usedBy": [
+        "¿Quién quiere ser mi pana?"
+      ],
+      "status": "in-use"
+    },
+    {
+      "id": "qqsmp-screen",
+      "name": "Pantalla del concurso",
+      "category": "Objetos",
+      "source": "Pana/games/qqsmp/public/studio-set.js",
+      "factory": "createQuizScreen",
+      "usedBy": [
+        "¿Quién quiere ser mi pana?"
+      ],
+      "status": "in-use"
+    },
+    {
+      "id": "qqsmp-spotlight",
+      "name": "Reflector",
+      "category": "Objetos",
+      "source": "Pana/games/qqsmp/public/studio-set.js",
+      "factory": "createStageSpotlight",
+      "usedBy": [
+        "¿Quién quiere ser mi pana?"
+      ],
+      "previewOptions": {
+        "light": false
+      },
+      "status": "in-use"
+    },
+    {
+      "id": "tambor-culo-e-puya",
+      "name": "Culo e' puya",
+      "category": "Objetos",
+      "source": "Pana/games/tambor/public/rueda-set.js",
+      "factory": "createCuloEPuya",
+      "usedBy": [
+        "La Rueda de Tambor"
+      ],
+      "previewOptions": {
+        "size": "pujao"
+      },
+      "status": "in-use"
+    },
+    {
+      "id": "tambor-culo-e-puya-set",
+      "name": "Juego de culo e' puya",
+      "category": "Objetos",
+      "source": "Pana/games/tambor/public/rueda-set.js",
+      "factory": "createCuloEPuyaSet",
+      "usedBy": [
+        "La Rueda de Tambor"
+      ],
+      "status": "in-use"
+    },
+    {
+      "id": "tambor-mina",
+      "name": "Tambor largo con horqueta",
+      "category": "Objetos",
+      "source": "Pana/games/tambor/public/rueda-set.js",
+      "factory": "createMina",
+      "usedBy": [
+        "La Rueda de Tambor"
+      ],
+      "status": "in-use"
+    },
+    {
+      "id": "tambor-charrasca",
+      "name": "Charrasca",
+      "category": "Objetos",
+      "source": "Pana/games/tambor/public/rueda-set.js",
+      "factory": "createCharrasca",
+      "usedBy": [
+        "La Rueda de Tambor"
+      ],
+      "status": "in-use"
+    },
+    {
+      "id": "tambor-maraca",
+      "name": "Maraca",
+      "category": "Objetos",
+      "source": "Pana/games/tambor/public/rueda-set.js",
+      "factory": "createMaraca",
+      "usedBy": [
+        "La Rueda de Tambor"
+      ],
+      "status": "in-use"
+    },
+    {
+      "id": "tambor-maracas",
+      "name": "Maracas",
+      "category": "Objetos",
+      "source": "Pana/games/tambor/public/rueda-set.js",
+      "factory": "createMaracas",
+      "usedBy": [
+        "La Rueda de Tambor"
+      ],
+      "status": "in-use"
+    },
+    {
+      "id": "tambor-caracol",
+      "name": "Caracol",
+      "category": "Objetos",
+      "source": "Pana/games/tambor/public/rueda-set.js",
+      "factory": "createCaracol",
+      "usedBy": [
+        "La Rueda de Tambor"
+      ],
+      "status": "in-use"
+    },
+    {
+      "id": "tambor-panuelo",
+      "name": "Pañuelo",
+      "category": "Objetos",
+      "source": "Pana/games/tambor/public/rueda-set.js",
+      "factory": "createPanuelo",
+      "usedBy": [
+        "La Rueda de Tambor"
+      ],
+      "status": "in-use"
+    },
+    {
+      "id": "tambor-violin",
+      "name": "Nube de violín",
+      "category": "Objetos",
+      "source": "Pana/games/tambor/public/rueda-set.js",
+      "factory": "createViolinCloud",
+      "usedBy": [
+        "La Rueda de Tambor"
+      ],
+      "status": "in-use"
+    },
+    {
+      "id": "tambor-casita-rosada",
+      "name": "La casita rosada",
+      "category": "Objetos",
+      "source": "Pana/games/tambor/public/rueda-set.js",
+      "factory": "createPinkShack",
+      "usedBy": [
+        "La Rueda de Tambor"
+      ],
+      "status": "in-use"
+    },
+    {
+      "id": "tambor-bombillos",
+      "name": "Bombillos",
+      "category": "Objetos",
+      "source": "Pana/games/tambor/public/rueda-set.js",
+      "factory": "createStringLights",
+      "usedBy": [
+        "La Rueda de Tambor"
+      ],
+      "status": "in-use"
+    },
+    {
+      "id": "tambor-mural",
+      "name": "Mural del malecón",
+      "category": "Objetos",
+      "source": "Pana/games/tambor/public/rueda-set.js",
+      "factory": "createMural",
+      "usedBy": [
+        "La Rueda de Tambor"
+      ],
+      "status": "in-use"
+    },
+    {
+      "id": "tambor-rueda",
+      "name": "Rueda de conchas",
+      "category": "Objetos",
+      "source": "Pana/games/tambor/public/rueda-set.js",
+      "factory": "createRuedaRing",
+      "usedBy": [
+        "La Rueda de Tambor"
+      ],
+      "status": "in-use"
+    },
+    {
+      "id": "stop-table",
+      "name": "Mesa redonda de ¡Stop!",
+      "category": "Objetos",
+      "source": "Pana/games/stop/public/studio-set.js",
+      "factory": "createStopTable",
+      "usedBy": [
+        "¡Stop!"
+      ],
+      "status": "in-use"
+    },
+    {
+      "id": "stop-letter-wheel",
+      "name": "Rueda de letras",
+      "category": "Objetos",
+      "source": "Pana/games/stop/public/studio-set.js",
+      "factory": "createLetterWheel",
+      "usedBy": [
+        "¡Stop!"
+      ],
+      "status": "in-use"
+    },
+    {
+      "id": "stop-notebook",
+      "name": "Libreta de rayas",
+      "category": "Objetos",
+      "source": "Pana/games/stop/public/studio-set.js",
+      "factory": "createNotebook",
+      "usedBy": [
+        "¡Stop!"
+      ],
+      "previewOptions": {
+        "cover": "#2ad1b2"
+      },
+      "status": "in-use"
+    },
+    {
+      "id": "stop-pencil",
+      "name": "Lápiz",
+      "category": "Objetos",
+      "source": "Pana/games/stop/public/studio-set.js",
+      "factory": "createPencil",
+      "usedBy": [
+        "¡Stop!"
+      ],
+      "status": "in-use"
+    },
+    {
+      "id": "stop-slang-wall",
+      "name": "Muro de palabras",
+      "category": "Objetos",
+      "source": "Pana/games/stop/public/studio-set.js",
+      "factory": "createSlangWall",
+      "usedBy": [
+        "¡Stop!"
+      ],
+      "status": "in-use"
+    },
+    {
+      "id": "chapita-cap",
+      "name": "Chapita",
+      "category": "Objetos",
+      "source": "Pana/games/chapita/public/studio-set.js",
+      "factory": "createChapita",
+      "usedBy": [
+        "Chapita"
+      ],
+      "previewOptions": {
+        "brand": "kolita"
+      },
+      "status": "in-use"
+    },
+    {
+      "id": "chapita-cap-doblada",
+      "name": "Chapita doblada",
+      "category": "Objetos",
+      "source": "Pana/games/chapita/public/studio-set.js",
+      "factory": "createChapita",
+      "usedBy": [
+        "Chapita"
+      ],
+      "previewOptions": {
+        "brand": "malta",
+        "bent": 0.8
+      },
+      "status": "in-use"
+    },
+    {
+      "id": "chapita-cap-oro",
+      "name": "Chapita de oro",
+      "category": "Objetos",
+      "source": "Pana/games/chapita/public/studio-set.js",
+      "factory": "createChapita",
+      "usedBy": [
+        "Chapita"
+      ],
+      "previewOptions": {
+        "brand": "oro"
+      },
+      "status": "in-use"
+    },
+    {
+      "id": "chapita-palo",
+      "name": "Palo de escoba",
+      "category": "Objetos",
+      "source": "Pana/games/chapita/public/studio-set.js",
+      "factory": "createPalo",
+      "usedBy": [
+        "Chapita"
+      ],
+      "previewOptions": {
+        "kind": "escoba"
+      },
+      "status": "in-use"
+    },
+    {
+      "id": "chapita-palo-teipe",
+      "name": "Palo con teipe",
+      "category": "Objetos",
+      "source": "Pana/games/chapita/public/studio-set.js",
+      "factory": "createPalo",
+      "usedBy": [
+        "Chapita"
+      ],
+      "previewOptions": {
+        "kind": "teipe"
+      },
+      "status": "in-use"
+    },
+    {
+      "id": "chapita-palo-tricolor",
+      "name": "Palo tricolor",
+      "category": "Objetos",
+      "source": "Pana/games/chapita/public/studio-set.js",
+      "factory": "createPalo",
+      "usedBy": [
+        "Chapita"
+      ],
+      "previewOptions": {
+        "kind": "tricolor"
+      },
+      "status": "in-use"
+    },
+    {
+      "id": "chapita-palo-dorado",
+      "name": "Palo dorado",
+      "category": "Objetos",
+      "source": "Pana/games/chapita/public/studio-set.js",
+      "factory": "createPalo",
+      "usedBy": [
+        "Chapita"
+      ],
+      "previewOptions": {
+        "kind": "dorado"
+      },
+      "status": "in-use"
+    },
+    {
+      "id": "chapita-ventana",
+      "name": "La ventana de la señora",
+      "category": "Objetos",
+      "source": "Pana/games/chapita/public/studio-set.js",
+      "factory": "createSenoraWindow",
+      "usedBy": [
+        "Chapita"
+      ],
+      "status": "in-use"
+    },
+    {
+      "id": "chapita-calle",
+      "name": "Calle del barrio (piso)",
+      "category": "Objetos",
+      "source": "Pana/games/chapita/public/studio-set.js",
+      "factory": "createStreetGround",
+      "usedBy": [
+        "Chapita"
+      ],
+      "status": "in-use"
+    },
+    {
+      "id": "chapita-cancha",
+      "name": "Cancha del bloque (piso)",
+      "category": "Objetos",
+      "source": "Pana/games/chapita/public/studio-set.js",
+      "factory": "createBlockCourt",
+      "usedBy": [
+        "Chapita"
+      ],
+      "status": "in-use"
+    },
+    {
+      "id": "chapita-cerca",
+      "name": "Cerca de ciclón",
+      "category": "Objetos",
+      "source": "Pana/games/chapita/public/studio-set.js",
+      "factory": "createChainFence",
+      "usedBy": [
+        "Chapita"
+      ],
+      "previewOptions": {
+        "length": 9,
+        "banners": 3
+      },
+      "status": "in-use"
+    },
+    {
+      "id": "chapita-gradas",
+      "name": "Gradas",
+      "category": "Objetos",
+      "source": "Pana/games/chapita/public/studio-set.js",
+      "factory": "createBleachers",
+      "usedBy": [
+        "Chapita"
+      ],
+      "status": "in-use"
+    },
+    {
+      "id": "chapita-superbloque",
+      "name": "Superbloque",
+      "category": "Objetos",
+      "source": "Pana/games/chapita/public/studio-set.js",
+      "factory": "createSuperbloque",
+      "usedBy": [
+        "Chapita"
+      ],
+      "previewOptions": {
+        "floors": 8,
+        "width": 16
+      },
+      "status": "in-use"
+    },
+    {
+      "id": "chapita-tuyuyo",
+      "name": "Tuyuyo",
+      "category": "Objetos",
+      "source": "Pana/games/chapita/public/studio-set.js",
+      "factory": "createTuyuyo",
+      "usedBy": [
+        "Chapita"
+      ],
+      "status": "in-use"
+    },
+    {
+      "id": "trifulca-guante",
+      "name": "Guante de boxeo",
+      "category": "Objetos",
+      "source": "Pana/games/trifulca/public/set.js",
+      "factory": "boxingGlove",
+      "usedBy": [
+        "Trifulca"
+      ],
+      "previewOptions": {
+        "color": "#e8443a"
+      },
+      "status": "in-use"
+    },
+    {
+      "id": "trifulca-guante-azul",
+      "name": "Guante de boxeo azul",
+      "category": "Objetos",
+      "source": "Pana/games/trifulca/public/set.js",
+      "factory": "boxingGlove",
+      "usedBy": [
+        "Trifulca"
+      ],
+      "previewOptions": {
+        "color": "#2f6fe0",
+        "cuff": "#ffc629"
+      },
+      "status": "in-use"
+    },
+    {
+      "id": "trifulca-casco",
+      "name": "Casco de moto abierto",
+      "category": "Objetos",
+      "source": "Pana/games/trifulca/public/set.js",
+      "factory": "motoHelmet",
+      "usedBy": [
+        "Trifulca"
+      ],
+      "previewOptions": {
+        "color": "#ffc629"
+      },
+      "status": "in-use"
+    },
+    {
+      "id": "trifulca-chancleta",
+      "name": "Chancleta",
+      "category": "Objetos",
+      "source": "Pana/games/trifulca/public/set.js",
+      "factory": "chancleta",
+      "usedBy": [
+        "Trifulca"
+      ],
+      "status": "in-use"
+    },
+    {
+      "id": "trifulca-ring",
+      "name": "Ring bajo toldo",
+      "category": "Objetos",
+      "source": "Pana/games/trifulca/public/set.js",
+      "factory": "tentRing",
+      "usedBy": [
+        "Trifulca"
+      ],
+      "status": "in-use"
+    },
+    {
+      "id": "trifulca-avila",
+      "name": "El Ávila",
+      "category": "Objetos",
+      "source": "Pana/games/trifulca/public/set.js",
+      "factory": "avilaRidge",
+      "usedBy": [
+        "Trifulca"
+      ],
+      "previewOptions": {
+        "width": 120,
+        "height": 30,
+        "depth": 40
+      },
+      "status": "in-use"
     }
   ],
   "uncataloged": [
@@ -6179,7 +7550,7 @@
       "anchor": "function church",
       "where": "Escondidas; Cocina; Plaza circuit",
       "note": "Active small bell tower/chapel, distinct from colonialChurch.",
-      "line": 158
+      "line": 45
     },
     {
       "name": "Summit terminal",
@@ -6243,7 +7614,7 @@
       "anchor": "function canalVilla",
       "where": "Plaza circuit",
       "note": "Waterfront houses and balconies.",
-      "line": 107
+      "line": 109
     },
     {
       "name": "Small rowboat (older)",
@@ -6259,7 +7630,7 @@
       "anchor": "function boat",
       "where": "Plaza circuit; Chi Chi",
       "note": "Cabin option; different builder from the coast peñero and island sailboats.",
-      "line": 105
+      "line": 108
     },
     {
       "name": "Faceted boulder",
@@ -6267,7 +7638,7 @@
       "anchor": "function boulder",
       "where": "Páramo; Chi Chi; Desierto",
       "note": "Instanced geological scatter, separate from props.rock.",
-      "line": 115
+      "line": 118
     },
     {
       "name": "Catch basket",
@@ -6275,7 +7646,7 @@
       "anchor": "function basket",
       "where": "Atrapa los mangos",
       "note": "Held by players; needs a standalone preview adapter.",
-      "line": 19
+      "line": 22
     },
     {
       "name": "Coconut",
@@ -6283,15 +7654,7 @@
       "anchor": "function coconut",
       "where": "Atrapa los mangos",
       "note": "Falling hazard with three dark eyes.",
-      "line": 31
-    },
-    {
-      "name": "Mango minigame tree (older)",
-      "source": "Pana/games/bululu/public/minigames/atrapa.js",
-      "anchor": "function mangoTree",
-      "where": "Atrapa los mangos",
-      "note": "Old polygon canopy and random fruit placement. Modernize with shared flora while preserving catch lanes.",
-      "line": 40
+      "line": 34
     },
     {
       "name": "Board die",
@@ -6339,7 +7702,7 @@
       "anchor": "function makePeel",
       "where": "Derrape item use",
       "note": "Three peel strips and seed; not the whole mango.",
-      "line": 76
+      "line": 78
     },
     {
       "name": "Kitchen sign",
@@ -6372,8 +7735,8 @@
       "source": "Pana/games/reliquia/public/scene.js",
       "anchor": "function createExpeditionWorld",
       "where": "Reliquia; Studio map",
-      "note": "Authored walkable mine, swept shared bridge, timed winches, crypt, relic chamber and return tunnel. Five expedition models are cataloged independently.",
-      "line": 23
+      "note": "Camp with the truck plus floors dealt from a seeded room deck; enclosed ruin galleries from the shared ruinShell, library props only. Treasure, artifact and tool models are cataloged in reliquia-treasure.js.",
+      "line": 54
     },
     {
       "name": "Mounted horse and riding tack",
@@ -6389,7 +7752,7 @@
       "anchor": "function createCourse",
       "where": "Galope; Studio map",
       "note": "Shared terrain/water grid, clipped riding trail, irregular lagoon with island, winding estero, jump logs, start gantry and trail markers. Shared models counted separately.",
-      "line": 21
+      "line": 22
     },
     {
       "name": "Galope living Llanos landscape",
@@ -6445,7 +7808,7 @@
       "anchor": "function grassTuft",
       "where": "Llanos; Desierto",
       "note": "Instanced grass, absent from the 22 plant catalog entries.",
-      "line": 4
+      "line": 6
     },
     {
       "name": "Country entrance gantry",
@@ -6453,7 +7816,7 @@
       "anchor": "function entrance",
       "where": "Llanos; Desierto",
       "note": "Map-specific entrance text and width.",
-      "line": 15
+      "line": 17
     },
     {
       "name": "Country bridge crossings",
@@ -6461,7 +7824,7 @@
       "anchor": "function crossing",
       "where": "Llanos; Desierto",
       "note": "Road-conforming decks/rails; not standalone rope bridges.",
-      "line": 24
+      "line": 26
     },
     {
       "name": "Verge posts and dirt shoulders",
@@ -6469,7 +7832,7 @@
       "anchor": "function vergePosts",
       "where": "Llanos; Desierto",
       "note": "Route-generated posts, shoulders and tire ruts.",
-      "line": 39
+      "line": 42
     },
     {
       "name": "Llanos wetland landing",
@@ -6477,7 +7840,7 @@
       "anchor": "fisherman",
       "where": "Llanos",
       "note": "Dock planks and supports; capybaras now use shared wildlife.",
-      "line": 120
+      "line": 122
     },
     {
       "name": "Generic race edges",
@@ -6485,7 +7848,7 @@
       "anchor": "function edges",
       "where": "Multiple Derrape circuits",
       "note": "Steel, timber and kerb variants, generated along the route.",
-      "line": 79
+      "line": 82
     },
     {
       "name": "Chevrons/start line/sector signs/ramps",
@@ -6501,7 +7864,7 @@
       "anchor": "function terrain",
       "where": "Derrape",
       "note": "Terrain, sea and stream generators; each map supplies shape and palette.",
-      "line": 28
+      "line": 30
     },
     {
       "name": "Water surface system",
@@ -6549,7 +7912,7 @@
       "anchor": "function createSky",
       "where": "Derrape; Galope; Escondidas; Cocina; Bululú and minigames; Studio tours",
       "note": "One procedural sky draw, seeded cumulus and wisps, absolute-time wind and day/night tint. Scene-owned, outside scenery bounds.",
-      "line": 5
+      "line": 7
     },
     {
       "name": "Island dock and village light strings",
@@ -6565,7 +7928,7 @@
       "anchor": "Low jetties",
       "where": "Bululú circuit",
       "note": "Inline harbor planks and pilings.",
-      "line": 99
+      "line": 106
     },
     {
       "name": "Plaza streets, gardens and mirador",
@@ -6573,7 +7936,7 @@
       "anchor": "function createTown",
       "where": "Plaza circuit",
       "note": "Street surfaces, block gardens, lookout terrace and stairs; shared houses/trees counted separately.",
-      "line": 46
+      "line": 47
     },
     {
       "name": "Plaza waterfront canals and docks",
@@ -6621,7 +7984,7 @@
       "anchor": "for(let i=0;i<10;i++)fixed.add",
       "where": "Estadio",
       "note": "Pitch stripes, markings and two goal frames.",
-      "line": 26
+      "line": 32
     },
     {
       "name": "Pit garages",
@@ -6629,7 +7992,7 @@
       "anchor": "Pit garages",
       "where": "Estadio",
       "note": "Eight inline garage blocks and numbered signs.",
-      "line": 49
+      "line": 55
     },
     {
       "name": "Floodlights and scoreboard",
@@ -6637,7 +8000,7 @@
       "anchor": "const score=",
       "where": "Estadio",
       "note": "Two inline landmark families.",
-      "line": 67
+      "line": 73
     },
     {
       "name": "Basketball court and banners",
@@ -6645,7 +8008,7 @@
       "anchor": "community half-court",
       "where": "Estadio",
       "note": "Court and sponsor panels; shared hoops already cataloged.",
-      "line": 81
+      "line": 87
     },
     {
       "name": "Chi Chi retaining walls and river bridges",
@@ -6669,7 +8032,7 @@
       "anchor": "function sunnyStage",
       "where": "Both Bululú minigames",
       "note": "Sky, ground, clouds and shared landscape props.",
-      "line": 18
+      "line": 19
     },
     {
       "name": "Raft and spinning striped log",
@@ -6677,7 +8040,7 @@
       "anchor": "// raft:",
       "where": "No te caigas",
       "note": "Player platforms, floats, central post, rotating obstacle and sandbars.",
-      "line": 46
+      "line": 47
     },
     {
       "name": "Minigame wave surface",
@@ -6685,7 +8048,7 @@
       "anchor": "const seaGeo",
       "where": "No te caigas",
       "note": "Older deformed plane, separate from the shared water shader.",
-      "line": 39
+      "line": 40
     },
     {
       "name": "Boost pad",
@@ -6693,7 +8056,7 @@
       "anchor": "function padTexture",
       "where": "Derrape",
       "note": "Animated ground marker, separate from collectible item models.",
-      "line": 100
+      "line": 102
     },
     {
       "name": "Puffs, debris and speech bubbles",
@@ -6701,7 +8064,7 @@
       "anchor": "export class Puffs",
       "where": "Bululú; Derrape",
       "note": "Particle/sprite effects, not scenery inventory counts.",
-      "line": 303
+      "line": 317
     },
     {
       "name": "Crate fragment bursts",
@@ -6733,7 +8096,7 @@
       "anchor": "export const OPTIONS",
       "where": "All games; character editor",
       "note": "Eight non-empty hat options, three glasses options, five expression options and two non-empty extras. Some options share geometry/poses. Outfits are already cataloged; accessories and dizzy stars are embedded parts.",
-      "line": 23
+      "line": 25
     }
   ],
   "dormant": [
@@ -6834,6 +8197,12 @@
       "source": "Pana/games/derrape/public/tracks.js",
       "where": "Derrape URL alias",
       "note": "Resolves to bululu, not a ninth racing map."
+    },
+    {
+      "name": "Mango minigame tree (older)",
+      "source": "Pana/games/bululu/public/minigames/atrapa.js",
+      "where": "Atrapa los mangos",
+      "note": "Its polygon canopy was replaced by the shared mangoTree factory."
     },
     {
       "name": "Old game-local shared module paths",

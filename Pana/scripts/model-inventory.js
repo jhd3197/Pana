@@ -1,25 +1,32 @@
-// Run against the local server. Reads the real Studio registry and checks every
-// manually reviewed source anchor. Does not import game code into Node.
+// Regenerates docs/knowledge/model-inventory.{md,json} from the real Studio
+// registry and checks every manually reviewed source anchor. A doc generator,
+// not a test suite: `npm run inventory` (or `node Pana/scripts/model-inventory.js`).
+// Starts its own server on a free port; set PANA_TEST_URL to reuse a running one.
 import {createRequire} from 'node:module';
 import {readFile,writeFile} from 'node:fs/promises';
+import path from 'node:path';
+import {startServer} from './pana-server.js';
 import {uncataloged,assemblies,dormant,replaced,priorities} from './inventory-notes.js';
+const repo=path.resolve(import.meta.dirname,'../..');
+process.chdir(repo);
 const {chromium}=createRequire(import.meta.url)(process.env.PANA_PLAYWRIGHT_PATH||'playwright');
+const server=await startServer();
 const browser=await chromium.launch({headless:true});
 let assets;
 try{
   const page=await browser.newPage();
-  await page.goto(`${process.env.PANA_TEST_URL||'http://localhost:8461'}/studio/settings.html`);
+  await page.goto(`${server.base}/studio/settings.html`);
   await page.setContent('<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}</script>');
   assets=await page.evaluate(async()=>{
     const {ASSETS,sourcePath}=await import('/studio/catalog.js');
     return ASSETS.map(({id,name,category,source,factory,usedBy,previewOptions})=>({id,name,category,source:sourcePath(source),factory,usedBy,previewOptions,
       status:usedBy.every(g=>g==='Pana Studio')?'preview-only':'in-use'}));
   });
-}finally{await browser.close();}
+}finally{await browser.close();server.stop();}
 const counts={};for(const asset of assets)counts[asset.category]=(counts[asset.category]||0)+1;
 if(new Set(assets.map(a=>a.id)).size!==assets.length)throw Error('Duplicate catalog IDs');
 const sources=new Map();
-async function source(path){if(!sources.has(path))sources.set(path,await readFile(path,'utf8'));return sources.get(path);}
+async function source(file){if(!sources.has(file))sources.set(file,await readFile(file,'utf8'));return sources.get(file);}
 for(const record of [...uncataloged,...assemblies,...dormant]){
   const text=await source(record.source),lines=text.split(/\r?\n/);
   const line=lines.findIndex(line=>line.replace(/\s/g,'').includes(record.anchor.replace(/\s/g,'')));
@@ -30,8 +37,8 @@ for(const asset of assets)await source(asset.source);
 const previewOnly=assets.filter(a=>a.status==='preview-only');
 const inventory={date:new Date().toISOString().slice(0,10),scope:'Current production 3D resource/model families; catalog variants and scene assemblies are counted separately. No primitive-mesh count or deleted-history total.',
   counts:{catalog:assets.length,categories:counts,previewOnly:previewOnly.length,uncatalogedFamilies:uncataloged.length,sceneFamilies:assemblies.length,dormantFactories:dormant.length},assets,uncataloged,assemblies,dormant,replaced,priorities};
-const path='docs/knowledge/model-inventory';
-await writeFile(`${path}.json`,JSON.stringify(inventory,null,2)+'\n');
+const out='docs/knowledge/model-inventory';
+await writeFile(`${out}.json`,JSON.stringify(inventory,null,2)+'\n');
 const cell=value=>String(value??'').replaceAll('|',' / ').replaceAll('\n',' ');
 const table=(head,rows)=>[head,head.map(()=>'---'),...rows].map(row=>`| ${row.map(cell).join(' | ')} |`).join('\n');
 const codeLink=(source,line)=>`[${source.split('/').at(-1)}](../../${source}${line?`#L${line}`:''})`;
@@ -60,7 +67,7 @@ for(const category of Object.keys(counts).sort()){
   md+=`### ${category} (${counts[category]})\n\n`;
   md+=table(['Name / ID','Status / games','Source','Constructor'],assets.filter(a=>a.category===category).map(a=>[`${a.name} · ${a.id}`,a.status==='preview-only'?'Preview only':a.usedBy.filter(g=>g!=='Pana Studio').join(', '),codeLink(a.source),a.factory]))+'\n\n';
 }
-md+='## Keep this inventory current\n\nRun `node Pana/scripts/audit-inventory.browser.js` with `PANA_PLAYWRIGHT_PATH` pointing to an available Playwright package and the local server running. The script exports this Markdown report and `model-inventory.json`, verifies every source anchor, and reads all catalog entries. Review `Pana/scripts/inventory-notes.js` when moving/removing geometry: anchor checks catch stale locations but do not automatically discover new inline models or prove call-graph reachability.\n\n';
-md+='Run `node Pana/engine/tests/wildlife.browser.js` for geometry ownership, finite bounds, timeline rewind, flight heading, all seven birds/four capybaras, terrain/road clearance and native-map screenshots. `art/studio/wildlife/` holds the local proof. The audit does not delete dormant factories or silently replace older map assemblies.\n';
-await writeFile(`${path}.md`,md);
+md+='## Keep this inventory current\n\nRun `npm run inventory` (`node Pana/scripts/model-inventory.js`); it starts its own server. The script exports this Markdown report and `model-inventory.json`, verifies every source anchor, and reads all catalog entries. Review `Pana/scripts/inventory-notes.js` when moving/removing geometry: anchor checks catch stale locations but do not automatically discover new inline models or prove call-graph reachability.\n\n';
+md+='Run `npm run test:browser -- wildlife` for geometry ownership, finite bounds, timeline rewind, flight heading, all seven birds/four capybaras, terrain/road clearance and native-map screenshots. `art/studio/wildlife/` holds the local proof. The audit does not delete dormant factories or silently replace older map assemblies.\n';
+await writeFile(`${out}.md`,md);
 console.log(JSON.stringify(inventory.counts,null,2));
