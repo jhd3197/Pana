@@ -49,6 +49,10 @@ try {
   await a.evaluate(() => { delete hunt.room.publish; });
   await b.waitForFunction(() => { const me = hunt.state.players.find(q => q.id === hunt.room.id), p = hunt.room.predicted; return p && Math.hypot(me.x - p.x, me.z - p.z) < 0.3; });
   check('the guest walks its own pana at once and settles on the host position');
+  // The prop rules need room around the pana: how far the held key walked
+  // varies with load, so set the guest on open ground first.
+  await a.evaluate(() => { const guest = hunt.state.players.find(p => !p.bot && p.id !== hunt.room.id); hunt.place(guest.id, -4, 14); });
+  await b.waitForFunction(() => { const me = hunt.state.players.find(q => q.id === hunt.room.id); return Math.hypot(me.x + 4, me.z - 14) < 0.5; });
   for (const key of ['1', '2', '3']) {
     await b.keyboard.press(key);
     await b.waitForFunction(k => hunt.state.players.find(p => p.id === hunt.room.id).changes === 3 - Number(k), key);
@@ -113,7 +117,7 @@ try {
   await b.waitForFunction(() => hunt.camera.position.y < 4);
   if (output) await b.screenshot({ path: path.join(output, 'pana-hunt-gameplay.png') });
   check('connection failure offers playable local practice');
-  await b.goto(base + '/g/derrape/?track=llanos&debug'); await b.waitForFunction(() => window.race && window.garage);
+  await b.goto(base + '/g/derrape/?track=llanos&debug'); await b.waitForFunction(() => window.race && window.garage && window.startRace);
   await b.evaluate(() => startRace(0)); check('Derrape loads and starts on Los Llanos with the market kit');
   await b.goto(base + '/g/bululu/?debug'); await b.waitForFunction(() => window.board && window.players);
   assert.equal(await b.evaluate(async () => { const shared = await import('/engine/models/vegetation/index.js'), original = await import('/g/bululu/flora.js'); return shared.palm === original.palm && shared.mangoTree === original.mangoTree; }), true);
