@@ -384,3 +384,14 @@ body.shop-open .menu-flow .tools .hint { display: none; }
   body.shop-open .menu-flow .info h1 { font-size: 28px; }
   body.shop-open .menu-flow .tools { top: 64px; bottom: auto; }
 }
+
+/* The shared lobby already lists the room, its code and invite: from
+   Derrape's room panel only the rivals switch and the status stay. Split
+   screen is for one computer: it shows while you are alone in the room. */
+.lobby-settings .lobby-head, .lobby-settings #lobby-roster { display: none; }
+/* The taller is the Taller page itself, so it has nothing to close. */
+#shop-close { display: none; }
+.lobby-settings .is-proxied, .lobby-settings .setup-row[hidden] { display: none; }
+.lobby-settings .setup-row { display: grid; grid-template-columns: 9.5em minmax(0, 1fr); align-items: center; gap: 12px; margin-bottom: 10px; }
+.lobby-settings .setup-row > .pk-seg { justify-self: start; }
+.lobby-settings .launch-note { margin: 0 0 12px; }

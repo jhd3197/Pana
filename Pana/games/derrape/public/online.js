@@ -114,6 +114,7 @@ class RaceLink {
   mode(mode) { this.send('mode', { mode }); }
   difficulty(id) { this.send('difficulty', { id }); }
   start() { this.send('start'); }
+  garage(open) { this.send('garage', { open }); }
   next() { this.send('next', this.context()); }
   lobby() { this.send('lobby'); }
   loaded() { this.send('loaded', this.context()); }

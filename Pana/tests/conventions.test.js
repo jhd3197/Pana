@@ -297,7 +297,7 @@ test(`game.js stays wiring (at most ${GAME_JS_LIMIT} lines)`, () => {
 
 // ---------- Shared pieces ----------
 // Games that keep their own pre-game menu instead of the shared lobby, and why.
-const OWN_MENU = { derrape: 'four-step garage menu (docs/knowledge/derrape-menu.md)' };
+const OWN_MENU = {};
 test('every game page loads the shared UI, lobby and pinned Three.js', () => {
   const problems = [];
   for (const id of games) {

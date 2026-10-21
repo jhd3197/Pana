@@ -316,7 +316,7 @@ $('honk').onclick = garageHonk;
 $('cam').onclick = () => setFocus(!garage.focus);
 $('play').onclick = () => {
   sound.unlock();
-  if (net) {
+  if (net && !(setup.split && net.state.players.length < 2)) {   // alone in the room, split screen races here
     if (['loading', 'count', 'race'].includes(net.state.phase)) {
       const myRacer = net.state.racers?.find(r => r.id === net.id);
       if (myRacer && !myRacer.retired && !myRacer.dns) {
@@ -1192,7 +1192,7 @@ $('again').onclick = () => {
   }
 };
 $('back').onclick = () => {
-  if (race.netRace && net.isHost && ['results', 'complete'].includes(net.state.phase)) net.lobby();
+  if (race.netRace && net.isHost && ['results', 'complete'].includes(net.state.phase)) { net.lobby(); net.garage(false); }
   else toGarage();
 };
 $('loading-back').onclick = toGarage;
@@ -2250,7 +2250,8 @@ function renderLobby(s) {
       : (cup ? `${hostName} preparó la ${cup.name}.` : `${hostName} elige la pista y da la salida.`);
   }
   const canRejoinStage = live && myRacer && !myRacer.retired && !myRacer.dns && mode === 'garage';
-  $('play').textContent = canRejoinStage ? 'Entrar a la pista' : host ? (live ? 'Carrera en curso' : '¡ARRANCAR!') : live ? 'Carrera en curso' : `Esperando a ${hostName}`;
+  $('play').textContent = canRejoinStage ? 'Entrar a la pista' : host ? (live ? 'Carrera en curso' : '¡Vámonos!') : live ? 'Carrera en curso' : `Esperando a ${hostName}`;
+  $('split').closest('label').hidden = s.players.length > 1; $('start').disabled = !host; $('start').textContent = host ? '¡Arrancar!' : `Esperando a ${hostName}`; menuFlow?.enter(s.garage || live ? 'garage' : 'lobby');
   $('play').disabled = (!canRejoinStage && (live || !host)) || mode !== 'garage';
   menuFlow?.refresh();
 }
@@ -2300,7 +2301,7 @@ async function goOnline(code, lead) {
       console.warn('Derrape online unavailable', error);
       $('lobby-status').textContent = error?.full ? 'La sala está llena.' : 'No pudimos entrar a la sala. Puedes correr en local.';
       $('play').disabled = false;
-      $('play').textContent = '¡JUGAR!';
+      $('play').textContent = '¡Vámonos!';
       $('lobby-solo').hidden = false;
       return null;
     } finally { joining = null; menuFlow?.refresh(); }
@@ -2316,7 +2317,6 @@ async function goOnline(code, lead) {
       $('lobby-status').textContent = 'Saliste de la sala. Recarga para volver a entrar.';
       $('lobby-solo').hidden = false;
     });
-    $('lobby-solo').hidden = false;
     onNetState(net.state);
     return net;
   })();
@@ -2331,7 +2331,7 @@ let acc = 0;
 
 const FINE_POINTER = matchMedia('(pointer: fine)').matches;
 function frame() {
-  const dt = Math.min(clock.getDelta(), 0.25);
+  const dt = Math.min(clock.getDelta(), 0.25); menuFlow?.sync(mode);
   if (mode === 'garage' && (!menuFlow || menuFlow.step === 'car')) {
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
     renderer.toneMappingExposure = 1.05;
@@ -2421,9 +2421,8 @@ showWheel(garage.wheel);
 renderSetup();
 saveWallet();
 menuFlow = createMenuFlow({
-  tracks: TRACKS, openTaller: openShop, initial: ROOM ? 'track' : 'welcome', pickTrack: switchTrack,
+  tracks: TRACKS, openTaller: openShop, pickTrack: switchTrack, start: () => net ? net.garage(true) : menuFlow.enter('garage'), back: () => net ? net.garage(false) : menuFlow.enter('lobby'),
   prepared: Promise.all([cards.ready, wheelStrip.ready, renderer.compileAsync(garage.scene, garage.camera)]).then(() => renderer.render(garage.scene, garage.camera)),
-  localPlay(split) { setup.split = split; saveSetup(); renderSetup(); },
   getState: () => {
     const activeMode = net?.state?.mode || setup.mode;
     return { track: TRACKS[trackIndex], trackSummary: $('track-blurb').textContent, car: CARS[garage.index], wheel: wheelById(garage.wheel),
@@ -2432,5 +2431,5 @@ menuFlow = createMenuFlow({
       canConfigure: !net || (net.isHost && ['lobby', 'results', 'complete'].includes(net.state?.phase)) };
   },
 });
-markBooted();
+markBooted(); export const sceneReady = Promise.race([menuFlow.ready, new Promise(go => { const t = setInterval(() => { if (mode !== 'garage') { clearInterval(t); go(); } }, 200); })]);   // the shared lobby waits for the garage, or a race rejoined after a reload
 onSettings((s, changed) => { if (changed.includes('quality')) applyRaceQuality(renderer, race, s.quality); });
