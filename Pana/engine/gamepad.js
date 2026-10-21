@@ -109,8 +109,11 @@ export function nextTarget(from, all, dx, dy) {
   }
   return best;
 }
-// The main button, else any button: a link first in line is usually "leave".
-const firstTarget = all => all.find(n => n.matches('.pk-btn--primary, .pana-primary, [autofocus]')) || all.find(n => n.matches('button')) || all[0];
+// The main button, else the biggest one (a menu's big choices beat its tabs
+// and step bars), else anything: a link first in line is usually "leave".
+const area = n => { const r = n.getBoundingClientRect(); return r.width * r.height; };
+const firstTarget = all => all.find(n => n.matches('.pk-btn--primary, .pana-primary, [autofocus]'))
+  || all.filter(n => n.matches('button')).reduce((best, n) => (!best || area(n) > area(best) ? n : best), null) || all[0];
 const clearMark = () => document.querySelectorAll('.pana-pad-focus').forEach(n => n.classList.remove('pana-pad-focus'));
 function focusTarget(node) {
   if (!node) return;

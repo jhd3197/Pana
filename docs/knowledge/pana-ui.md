@@ -114,8 +114,10 @@ stays with the buttons. `createLookControls` turns the camera with the right
 stick, so first-person games need no `cursor`. `{ native: true, help }` is for
 a game that reads the pad itself (Trifulca): the menus still work, and `help`
 fills the "Con mando" list. The Controles tab lists each labelled key under
-"Con mando". Derrape loads its menu without `pad`, so it keeps its own
-controller code.
+"Con mando". Derrape is native too: controls.js drives the car, and the
+engine owns the garage menus and Start, so its own pad code no longer
+toggles the pause. Without a main button, a menu starts the pad on its
+biggest button, such as Derrape's "Un jugador" card rather than the step bar.
 
 Trap: the menu imports `gamepad.js` only when `pad` is set, so a game's first
 load stays under the module budget (`tests/conventions.test.js`).

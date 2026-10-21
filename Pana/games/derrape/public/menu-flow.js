@@ -96,7 +96,7 @@ export function createMenuFlow({ tracks, getState, pickTrack, localPlay, prepare
   root.querySelector('.launch').remove();
   const footer = document.createElement('footer');
   footer.className = 'menu-footer';
-  footer.innerHTML = `<button id="menu-back" class="pk-btn" type="button">Atrás</button><p id="menu-summary"></p><button id="menu-next" class="pk-btn pk-btn--primary" type="button">Elegir circuito</button>`;
+  footer.innerHTML = `<button id="menu-back" class="pk-btn" type="button" data-pad-back>Atrás</button><p id="menu-summary"></p><button id="menu-next" class="pk-btn pk-btn--primary" type="button">Elegir circuito</button>`;
   root.append(footer);
   move($('play'), footer);
   const gridButtons = tracks.map((track, index) => {

@@ -1147,11 +1147,12 @@ function toGarage() {
 // Esc pauses the race (or opens the settings in the garage). Paused races
 // keep their clock, items and AI frozen until the menu closes.
 let paused = false;
-const menu = createGameMenu({
+// The pad drives the car through controls.js; the engine works the garage and menus with it.
+const menu = createGameMenu({ pad: { native: true, playing: () => mode === 'race' && race.state !== 'end', help: [['RT / A', 'Acelerar'], ['LT / B', 'Frenar'], ['Stick izq. / Cruceta', 'Girar'], ['RB', 'Derrapar'], ['LB / X', 'Objeto'], ['Y', 'Rescate']] },
   title: 'Derrape', heading: 'Pausa', sound, orientation: 'horizontal',
   note: () => mode === 'race' ? (race.state === 'end' ? 'La carrera terminó.' : race.netRace ? 'Carrera online: no se detiene.' : 'La carrera está en pausa.') : 'Estás en el garaje.',
   controls: [['W / ↑', 'Acelerar'], ['S / ↓', 'Frenar'], ['A D / ← →', 'Girar'], ['Shift / K', 'Saltar y derrapar · truco en el aire'], ['Espacio / E', 'Lanzar objeto adelante'],
-    ['X', 'Lanzar objeto atrás'], ['1 2', 'Elegir objeto'], ['Q', 'Cambiar objeto'], ['R', 'Pedir rescate al zamuro'], ['C', 'Mirar atrás'], ['Mando', 'RT gas · LT freno · RB derrape · LB/X objeto · Y rescate'], ['H', 'Claxon'], ['M', 'Sonido'], ['Esc', 'Pausa']],
+    ['X', 'Lanzar objeto atrás'], ['1 2', 'Elegir objeto'], ['Q', 'Cambiar objeto'], ['R', 'Pedir rescate al zamuro'], ['C', 'Mirar atrás'], ['H', 'Claxon'], ['M', 'Sonido'], ['Esc', 'Pausa']],
   tips: ['Mantén Shift y gira para derrapar. La ayuda corrige si te acercas al borde; gira al otro lado para abrir la curva.',
     'Suelta Shift al salir de la curva: el carro se estabiliza y las chispas dan turbo. No hace falta esperar a las moradas.',
     'Acelera justo al final del "1" para un arranque cohete. Si aceleras en el "3" se te ahoga el motor.',
@@ -1283,7 +1284,6 @@ function pollPads() {
   race.pads.forEach((pad, i) => {
     const hit = pressed(pad, padsBefore[i]);
     const who = i === 0 ? race.player : race.p2;
-    if (pad && hit.pause) menu.toggle();
     if (mode === 'race' && race.state === 'go' && who) {
       if (hit.item) race.items.use(who, 1);
       if (hit.itemBack) race.items.use(who, -1);
