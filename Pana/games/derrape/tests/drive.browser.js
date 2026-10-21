@@ -60,11 +60,12 @@ try {
       if (p.drift) { started = true; level = Math.max(level, p.driftLvl); }
       maxOff=Math.max(maxOff,Math.abs(T.offsetOf(p.x,p.z)));
     }
-    const before = p.boost, puffs = race.puffs.count;
+    const before = p.boost, field = n => race.scene.getObjectByName(n)?.geometry.drawRange.count ?? 0;
+    const puffs = field('drift-smoke'), sparks = field('drift-sparks');
     renderer.render(race.scene, race.camera);
     race.keys = { w: true };
     updateRace(1 / 60);
-    return { started, level, before, after: p.boost, dir: p.drift, maxOff, limit:T.HW-1.6, marks: race.skidMarks.count, puffs,
+    return { started, level, before, after: p.boost, dir: p.drift, maxOff, limit:T.HW-1.6, marks: race.skidMarks.count, puffs, sparks,
       score: window.PANA_DRIFT_SCORE?.() };
   });
   await page.screenshot({ path: join(output, 'drive-drift.png') });
@@ -74,6 +75,7 @@ try {
   assert.ok(drift.after > 0.4 && drift.dir === 0, `release pays the earned turbo ${JSON.stringify(drift)}`);
   assert.ok(drift.marks >= 10, `drifting lays skid marks on the road ${JSON.stringify(drift)}`);
   assert.ok(drift.puffs >= 30, `drifting billows a smoke plume ${JSON.stringify(drift)}`);
+  assert.ok(drift.sparks >= 20, `a charged drift throws glowing sparks ${JSON.stringify(drift)}`);
   assert.ok(drift.score?.points > 0 && drift.score.active, `the drift earns live style points ${JSON.stringify(drift)}`);
 
   // Feats: hold one drift past 100 m — re-entering the same bend keeps the run
@@ -113,6 +115,26 @@ try {
   assert.ok(feats.slow, `the purple release dilates time ${JSON.stringify(feats)}`);
   assert.ok(feats.shake > 0.2, `the purple release pulses the camera ${JSON.stringify(feats)}`);
   assert.ok(feats.chain >= 2, `a drift inside the window chains the multiplier ${JSON.stringify(feats)}`);
+
+  // Purple is a window: held past it, the tyres burn — charge gone, speed
+  // scrubbed, and no new drift until the button comes up again.
+  const burn = await page.evaluate(() => {
+    const p = race.player, T = getActiveTrack(), s = 1254;
+    const a=T.pointAt(s), b=T.pointAt(s+.5), h=Math.atan2(b.x-a.x,b.y-a.y);
+    Object.assign(p,{x:a.x,z:a.y,y:T.groundAt(a.x,a.y),h,onGround:true,vy:0,pitch:0,roll:0,spin:0,stall:0,boost:0,tireHeat:0,burnLock:false,
+      drift:1,driftT:3.2+1.4-0.01,driftHeld:true,driftExitT:0,vf:32,vx:Math.sin(h)*32,vz:Math.cos(h)*32});
+    race.keys = { w: true, shift: true, d: true };
+    let speed = Math.hypot(p.vx, p.vz);
+    let burnt = false, after = 0;
+    for (let i = 0; i < 90 && !burnt; i++) { const was = Math.hypot(p.vx, p.vz); updateRace(1 / 60); burnt = p.burnT > 0; if (burnt) { after = Math.hypot(p.vx, p.vz); speed = was; } }
+    for (let i = 0; i < 10; i++) updateRace(1 / 60);
+    const relocked = p.drift === 0 && p.burnLock;
+    race.keys = { w: true };
+    updateRace(1 / 60);
+    return { burnt, speed, after, relocked, boost: p.boost, unlocked: !p.burnLock };
+  });
+  assert.ok(burn.burnt && burn.after < burn.speed * 0.9 && burn.boost === 0, `held too long, the tyres burn ${JSON.stringify(burn)}`);
+  assert.ok(burn.relocked && burn.unlocked, `a burnt drift waits for the button to come up ${JSON.stringify(burn)}`);
 
   // A trick pressed in the air lands with a short turbo.
   const trick = await page.evaluate(() => {

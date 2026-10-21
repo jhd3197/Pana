@@ -86,6 +86,15 @@ was touched for the style-scoring pass.
   `public/car-definitions.js` (first block at line 7). Tops sit at 35–39 m/s.
 - Turbo speed cap: ×1.5 of top while boosting, `public/drive.js:100` (the
   `boosting ? top * 1.5` branch; rough ground has its own bleed next to it).
+- Drift difficulty (2026-10): orange and purple take longer (`DRIFT_LEVELS`
+  0.75 / 2.1 / 3.2 s; blue stays 0.75 so every real corner still pays — the
+  drift-assist suite proves it per car), payouts are 0.45 / 0.8 / 1.2 s.
+  Purple is a window: `OVERHEAT_WARN` (0.7 s in) flickers the sparks red and
+  `OVERHEAT_TIME` (1.4 s) burns the tyres — charge lost, speed × `BURN_SCRUB`,
+  no new drift until the button comes up. Each paid release heats the tyres
+  (`HEAT_PER_LEVEL` per level, cooling `HEAT_COOL`/s); hot tyres charge at
+  `heatedCharge(heat)`, down to 45 %, so a turbo out of every bend stops paying.
+  Bots let go just into purple (`aiInput`). All in `public/drive-rules.js`.
 - Drift turbo payout: `DRIFT_BOOST` seconds per charge level,
   `public/drive-rules.js:8`, paid on release at `public/drive.js:70`; charge
   thresholds are `DRIFT_LEVELS` one line above.

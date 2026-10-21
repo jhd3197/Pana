@@ -1,8 +1,9 @@
 // Transform gates: a stretch of road the river has taken over. A car that
-// splashes through the entry gate turns into a lancha mid-air — the car
+// hits the water turns into a lancha mid-air — the car
 // shrinks away inside a burst of spray and the Lancha game's peñero, with the
 // racer's own pana at the tiller, pops up in its place, momentum untouched —
-// and the exit gate turns it back. Tracks opt in with
+// and leaving the water turns it back. Nothing marks the ends: the water is
+// the cue. Tracks opt in with
 // `transformGates: [{ from, to, sheet }]` (route fractions; `sheet: false`
 // when the track already draws water there, like Chuao's quebrada); the road
 // under the water stays the driving surface, so AI lines, checkpoints,
@@ -16,9 +17,9 @@
 import * as THREE from 'three';
 import { riverSurface } from '/engine/models/effects/water-surface.js';
 import { createLancha } from '/engine/models/vehicles/lancha.js';
-import { M, box, mesh } from '/engine/models/core/primitives.js';
 import { statCount } from '/engine/stats.js';
 import { shout } from '/engine/kit.js';
+import { createParticleField } from './particles.js';
 
 const MORPH_S = 0.7;           // seconds for the car → lancha swap (or back)
 const BOAT_SCALE = 1.3;        // the peñero beside car-sized racers
@@ -27,8 +28,7 @@ const HOP = 6.5;               // m/s up as a car crosses a gate: it changes mid
 const WAKE_CHARGE = 0.55;      // extra drift charge per second on the water
 const WATER_LIFT = 0.32;       // the sheet sits this far over the road
 const SPRAY = [0xffffff, 0xd8f4ff, 0x9fe3ef];
-// Venezuelan tricolour bands on the gate posts.
-const BANDS = [0xffcc1a, 0x1f5fbf, 0xd8262f];
+const DROPS = [0xffffff, 0xe6f8ff, 0xbfeaf5, 0x8fd6e8];   // droplet tints, foam to river
 
 // Route gates in arc length, from the definition's fractions.
 export function gateRuns(T) {
@@ -45,37 +45,14 @@ export function gateAt(T, runs, x, z, y) {
   return runs.find(g => (s - g.s0 + T.TOTAL) % T.TOTAL < g.len) ?? null;
 }
 
-function postWith(height, x, z) {
-  const g = new THREE.Group();
-  const band = height / BANDS.length;
-  BANDS.forEach((color, i) => g.add(box(0.7, band, 0.7, M(color, { roughness: 0.5 }), 0, band * (i + 0.5), 0)));
-  g.position.set(x, 0, z);
-  return g;
-}
-
-// A splash arch across the road at arc length s: two tricolour posts, a
-// beam, and a row of buoys hanging from it.
-function archAt(T, s) {
-  const p = T.pointAt(s), q = T.pointAt(s + 1), h = Math.atan2(q.x - p.x, q.y - p.y);
-  const arch = new THREE.Group(), span = T.HW + 1.2, height = 6.2;
-  arch.add(postWith(height, -span, 0), postWith(height, span, 0));
-  arch.add(box(span * 2 + 0.7, 0.55, 0.55, M(0xf3e5c3, { roughness: 0.6 }), 0, height + 0.2, 0));
-  const buoy = new THREE.SphereGeometry(0.32, 10, 8);
-  for (let i = 0; i < 7; i++) arch.add(mesh(buoy, M(i % 2 ? 0xffffff : 0xff6a2b, { roughness: 0.4 }), (i / 6 - 0.5) * span * 1.7, height - 0.45, 0));
-  arch.position.set(p.x, T.heightAtS(s), p.y);
-  arch.rotation.y = h;
-  arch.name = 'transform-gate';
-  return arch;
-}
-
-// Scenery for every gate: the water sheet over the road and both arches.
+// Scenery for every gate: the water sheet over the road, unless the track
+// already draws water there.
 // Returns the group and a tick for the track's animated list.
 export function buildGates(T) {
   const runs = gateRuns(T), group = new THREE.Group();
   group.name = 'transform-gates';
   const ticks = [];
   for (const g of runs) {
-    group.add(archAt(T, g.s0), archAt(T, g.s0 + g.len));
     if (g.sheet === false) continue;   // the track draws its own water here
     const points = [];
     for (let d = 0; d <= g.len; d += 4) { const p = T.pointAt(g.s0 + d); points.push([p.x, p.y]); }
@@ -91,6 +68,21 @@ export function buildGates(T) {
 
 export function createTransformGates({ race, sound, track }) {
   let runs = [];
+  // Water droplets: soft points with normal blending (they read as water,
+  // not glow), one draw for every splash and rooster tail on the map.
+  let drops = null;
+  const dropField = () => drops ??= createParticleField(race.scene, { capacity: 1600, additive: false, core: 0.35, name: 'lancha-spray' });
+  // A crown of droplets thrown out and up around (x, y, z), carried forward
+  // with the car; `power` scales count, height and reach.
+  function crown(c, power) {
+    const field = dropField(), n = Math.round(90 * power), fx = Math.sin(c.h), fz = Math.cos(c.h), carry = 0.45 * (c.vf || 0);
+    for (let i = 0; i < n; i++) {
+      const a = Math.random() * Math.PI * 2, out = (3 + Math.random() * 6) * power, up = (4 + Math.random() * 7) * power;
+      field.emit(c.x + Math.cos(a) * 1.4, c.y + 0.3, c.z + Math.sin(a) * 1.4,
+        Math.cos(a) * out + fx * carry, up, Math.sin(a) * out + fz * carry,
+        { color: DROPS[i % DROPS.length], size: 0.55, life: 0.9, gravity: 16, drag: 0.8 });
+    }
+  }
   const inGate = c => !!(runs.length && !c.retired && gateAt(track(), runs, c.x, c.z, c.y));
   // Within PREBUILD metres before a gate (or in it): time to have a lancha ready.
   const nearGate = c => {
@@ -118,19 +110,22 @@ export function createTransformGates({ race, sound, track }) {
     return lancha;
   }
 
-  // The gate crossing: water rings, spray walls up both flanks and a flash.
-  // The spray is thick enough to hide the moment the car becomes a boat.
+  // Hitting the water: a crown of droplets, two side curtains of spray and
+  // rings on the surface. Thick enough to hide the moment the car becomes a
+  // boat; a little mist puff sits in the middle of it.
   function splash(c, entering) {
     const at = new THREE.Vector3(c.x, c.y, c.z);
-    race.shockwaves.ring(at, { color: 0xbff3ff, maxRadius: entering ? 9 : 6, life: 0.6, opacity: 0.95 });
-    race.shockwaves.ring(at, { color: 0xffffff, startRadius: 1.2, maxRadius: 5, life: 0.4 });
-    race.shockwaves.sparkle(new THREE.Vector3(c.x, c.y + 1.4, c.z), { color: entering ? 0x7fe8ff : 0xffe28a, count: 10, spread: 1.6, life: 0.5 });
-    const fx = Math.sin(c.h), fz = Math.cos(c.h), rx = -Math.cos(c.h), rz = Math.sin(c.h);
-    for (const side of [-1, 1]) for (let i = 0; i < 4; i++) {
-      race.puffs.spawn(new THREE.Vector3(c.x + rx * side * 1.8 + fx * (1 - i), c.y + 0.5, c.z + rz * side * 1.8 + fz * (1 - i)),
-        { color: SPRAY[i % 3], count: entering ? 7 : 4, size: 1.1, rise: entering ? 5.5 : 3.5, life: 0.9, spread: 1.2 });
+    race.shockwaves.ring(at, { color: 0xbff3ff, maxRadius: entering ? 9 : 6, life: 0.6, opacity: 0.8 });
+    race.shockwaves.ring(at, { color: 0xffffff, startRadius: 1.2, maxRadius: 5, life: 0.4, opacity: 0.6 });
+    crown(c, entering ? 1.3 : 0.8);
+    const field = dropField(), fx = Math.sin(c.h), fz = Math.cos(c.h), rx = -Math.cos(c.h), rz = Math.sin(c.h), carry = 0.6 * (c.vf || 0);
+    for (const side of [-1, 1]) for (let i = 0; i < (entering ? 60 : 30); i++) {
+      const along = (Math.random() - 0.3) * 3;
+      field.emit(c.x + rx * side * 1.6 + fx * along, c.y + 0.3, c.z + rz * side * 1.6 + fz * along,
+        rx * side * (5 + Math.random() * 5) + fx * carry, 6 + Math.random() * 8, rz * side * (5 + Math.random() * 5) + fz * carry,
+        { color: DROPS[i % DROPS.length], size: 0.7, life: 1, gravity: 15, drag: 1 });
     }
-    race.puffs.spawn(new THREE.Vector3(c.x, c.y + 1.2, c.z), { color: SPRAY[0], count: entering ? 12 : 8, size: 1.4, rise: 2.5, life: 0.6, spread: 1.4 });
+    race.puffs.spawn(new THREE.Vector3(c.x, c.y + 1.2, c.z), { color: SPRAY[0], count: entering ? 6 : 3, size: 1.6, rise: 2, life: 0.55, spread: 1.6 });
     if (c.isPlayer) {
       sound.plop(); sound.whoosh();
       race.shake = Math.min(1.2, (race.shake || 0) + (entering ? 0.6 : 0.35));
@@ -142,23 +137,29 @@ export function createTransformGates({ race, sound, track }) {
     }
   }
 
-  // The lancha settling onto the water: a second, flatter splash.
+  // The lancha settling onto the water: a second, flatter crown.
   function splashdown(c) {
-    const at = new THREE.Vector3(c.x, c.y, c.z);
-    race.shockwaves.ring(at, { color: 0xffffff, startRadius: 2, maxRadius: 7, life: 0.5, opacity: 0.8 });
-    race.puffs.spawn(new THREE.Vector3(c.x, c.y + 0.4, c.z), { color: SPRAY[1], count: 10, size: 1, rise: 2.2, life: 0.7, spread: 2.4 });
+    race.shockwaves.ring(new THREE.Vector3(c.x, c.y, c.z), { color: 0xffffff, startRadius: 2, maxRadius: 7, life: 0.5, opacity: 0.7 });
+    crown(c, 0.7);
     if (c.isPlayer) sound.plop();
   }
 
-  // Rooster tail behind a boat that is moving.
+  // Rooster tail behind a moving boat: droplets thrown up and back off the
+  // outboard; a drift fans them out to the side of the slide.
   function wake(c, dt) {
-    c.wakeT = (c.wakeT || 0) - dt;
-    if (c.wakeT > 0 || Math.abs(c.vf || 0) < 6) return;
-    c.wakeT = c.drift ? 0.04 : 0.07;
-    const fx = Math.sin(c.h), fz = Math.cos(c.h), rx = -Math.cos(c.h), rz = Math.sin(c.h);
-    const side = c.drift ? -Math.sign(c.drift) : 0;
-    race.puffs.spawn(new THREE.Vector3(c.x - fx * 2.6 + rx * side * 1.2, c.y + 0.35, c.z - fz * 2.6 + rz * side * 1.2),
-      { color: c.drift ? SPRAY[2] : SPRAY[0], count: c.drift ? 2 : 1, size: 0.55, rise: 1.8, life: 0.45, spread: 0.5 });
+    const speed = Math.abs(c.vf || 0);
+    if (speed < 6) return;
+    c.wakeCarry = (c.wakeCarry || 0) + dt * (c.drift ? 170 : 110) * Math.min(1, speed / 25);
+    const n = Math.floor(c.wakeCarry);
+    c.wakeCarry -= n;
+    const field = dropField(), fx = Math.sin(c.h), fz = Math.cos(c.h), rx = -Math.cos(c.h), rz = Math.sin(c.h);
+    const side = c.drift ? -Math.sign(c.drift) * 4 : 0, carry = 0.7 * speed;
+    for (let i = 0; i < n; i++) {
+      const spread = (Math.random() - 0.5) * 2.5, back = 2 + Math.random() * 4;
+      field.emit(c.x - fx * 3.2, c.y + 0.4, c.z - fz * 3.2,
+        fx * (carry - back) + rx * (spread + side), 3.5 + Math.random() * 4, fz * (carry - back) + rz * (spread + side),
+        { color: DROPS[i % DROPS.length], size: 0.65, life: 0.8, gravity: 13, drag: 1.2 });
+    }
   }
 
   return {

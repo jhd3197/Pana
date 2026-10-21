@@ -11,10 +11,13 @@
 //   --every MS       milliseconds between shots (default 300)
 //   --wait MS        wait after the game is ready, before the first shot
 //   --size WxH       viewport (default 960x600)
+//   --eval JS        run this in the page once it is ready (after --at)
+//   --keys a,b       hold these keys (KeyboardEvent.key names) while shooting
 //   --out DIR        where the PNGs go (default: a new temp folder)
 //   PANA_TEST_URL    reuse a running server instead of starting one
 // Derrape:
-//   --track ID       circuit (default estadio); the race starts on autopilot
+//   --track ID       circuit (default estadio); the race starts on autopilot,
+//                    unless --keys drives it (then the keys are the input)
 //   --at WHERE       drop the player there first: a route fraction (0.9),
 //                    "gate" (first transform gate) or "gate-80" (80 m before)
 import fs from 'node:fs';
@@ -45,7 +48,8 @@ try {
   const page = await browser.newPage({ viewport: { width, height } });
   page.on('pageerror', e => errors.push(String(e)));
   const derrape = game === 'derrape';
-  const query = ['debug', derrape && 'auto', derrape && `track=${opt('track', 'estadio')}`, opt('query', '')].filter(Boolean).join('&');
+  const keys = opt('keys', '').split(',').filter(Boolean);
+  const query = ['debug', derrape && !keys.length && 'auto', derrape && `track=${opt('track', 'estadio')}`, opt('query', '')].filter(Boolean).join('&');
   await page.goto(`${base}/g/${game}/?${query}`);
   await page.waitForFunction(() => window.PANA_PREPARED === true, null, { timeout: 180000 });
   let state = () => null;
@@ -65,9 +69,13 @@ try {
     state = () => page.evaluate(() => {
       const p = race.player, T = getActiveTrack();
       return { clock: +race.clock.toFixed(2), s: Math.round(T.paramOf(p.x, p.z, p.y)), u: +(T.paramOf(p.x, p.z, p.y) / T.TOTAL).toFixed(3),
-        kmh: Math.round(p.vf * 4), boat: !!p.boat, morph: +(p.morph || 0).toFixed(2), air: !p.onGround };
+        kmh: Math.round(p.vf * 4), drift: p.drift, level: p.driftLvl || 0, charge: +(p.driftT || 0).toFixed(2),
+        heat: +(p.tireHeat || 0).toFixed(2), boost: +(p.boost || 0).toFixed(2), boat: !!p.boat, morph: +(p.morph || 0).toFixed(2), air: !p.onGround };
     });
   }
+  const code = opt('eval', null);
+  if (code) console.log('eval →', JSON.stringify(await page.evaluate(code)));
+  for (const key of keys) await page.keyboard.down(key === 'shift' ? 'Shift' : key);
   if (wait) await page.waitForTimeout(wait);
   for (let i = 0; i < shots; i++) {
     const file = path.join(out, `${String(i).padStart(2, '0')}.png`);
