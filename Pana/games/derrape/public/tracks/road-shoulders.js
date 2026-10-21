@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { roadStyle } from './road-material.js';
 
 // A narrow, sloping verge seats the ribbon in the terrain instead of ending
 // abruptly above the grass. Never fill the air below a bridge or cave deck.
@@ -16,7 +17,9 @@ export function roadShoulders(T) {
     const mesh=new THREE.Mesh(geometry,material);mesh.receiveShadow=true;group.add(mesh);
     positions=[];colors=[];
   }
-  const dust = new THREE.Color(T.def.palette.track).lerp(new THREE.Color(0xb3a080), .48);
+  // Asphalt sits on pale gravel; earth roads fade into a lighter, dustier verge.
+  const style = roadStyle(T), paved = style.surface === 'asphalt';
+  const dust = new THREE.Color(paved ? 0xb9ae96 : style.base ?? T.def.palette.track).lerp(new THREE.Color(0xc9b48c), paved ? .25 : .4);
   function edge(s, side, outside) {
     const p = T.pointAt(s), q = T.pointAt(s+.3), heading = Math.atan2(q.x-p.x,q.y-p.y);
     const off = side * (T.HW + (outside ? 2.4 : 0));

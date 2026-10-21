@@ -2,6 +2,7 @@ import { TRACK_DEFINITIONS } from '../track-definitions.js';
 // Pana Selva: a river valley with a ruined temple passage under the jungle.
 import { jungleHeight, ROUTE, legacyU as L, JAGUAR_CAVE, TUNNEL } from './selva-layout.js';
 import { createJungle, jungleScenery } from './selva-world.js';
+import { libraryForest } from './library-forest.js';
 
 export default {
   ...TRACK_DEFINITIONS.find(track => track.id === 'selva'),
@@ -16,5 +17,8 @@ export default {
   offroad:{fullAt:4.5,speed:0.36,accel:0.48,drag:0.75},
   palette:{skySeed:61,cloudCover:0.43,horizon:0xa8dcd5,skyTop:0x2b9fbe,hemiSky:0xe1f4ff,hemiGround:0x2c6545,hemiInt:1.55,
     sun:0xfff0ce,sunInt:2.3,ground:0x3b8843,track:0xc09d62,dune:0,fog:[150,550]},
+  // Distant canopy on the valley walls; the authored jungle owns the roadside.
+  forest:{plant:libraryForest,bounds:[-520,-560,760,830],count:1600,spacing:7,edge:80,minY:1,clump:.6,seed:661,
+    species:[{name:'tree',weight:3,scale:[1,1.4]},{name:'mango',weight:2.5},{name:'palm',weight:.6}]},
   environment:createJungle,scenery:jungleScenery,
 };

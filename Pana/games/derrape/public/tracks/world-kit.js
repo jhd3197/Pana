@@ -25,7 +25,9 @@ export function finish(root,cellSize=110) {
 // Shared with Galope and Curiara: engine/models/core/static-batch.js.
 export function instances(parent,source,placements,name,cellSize=110) {instancePlacements(parent,source,placements,{name,cellSize});}
 
-export function terrain(T,{bounds,base,color,name='world-terrain',step=5,carve=true,cut=(x,z,h)=>h}) {
+// `paint` is ground-paint.js's groundPaint(recipe), passed in by the map's own
+// lazily loaded module so the shared kit stays out of the first load.
+export function terrain(T,{bounds,base,color,name='world-terrain',step=5,carve=true,cut=(x,z,h)=>h,paint}) {
   const [x0,z0,x1,z1]=bounds,nx=Math.ceil((x1-x0)/step),nz=Math.ceil((z1-z0)/step),dx=(x1-x0)/nx,dz=(z1-z0)/nz;
   const height=(x,z)=>{
     const land=base(x,z);if(!carve)return cut(x,z,land);
@@ -37,9 +39,10 @@ export function terrain(T,{bounds,base,color,name='world-terrain',step=5,carve=t
     if(i<nx&&j<nz){const a=j*(nx+1)+i;indices.push(a,a+nx+1,a+1,a+1,a+nx+1,a+nx+2);}
   }
   const geo=new THREE.BufferGeometry();geo.setAttribute('position',new THREE.Float32BufferAttribute(positions,3));geo.setAttribute('color',new THREE.Float32BufferAttribute(colors,3));geo.setIndex(indices);geo.computeVertexNormals();
+  if(paint)paint.apply(geo,T);
   const land=mesh(natureSurface(geo,'grass'),terrainMaterial());land.name=name;
   land.userData.grassGrid={bounds,nx,nz};
-  const horizon=extendTerrain(land,{bounds,nx,nz,height:(x,z)=>cut(x,z,base(x,z)),color,biome:T.def.id});
+  const horizon=extendTerrain(land,{bounds,nx,nz,height:(x,z)=>cut(x,z,base(x,z)),color:paint?paint.color(color):color,biome:T.def.id});
   // The actual triangular mesh is the placement surface, including steep banks.
   const groundAt=(x,z)=>{
     const gx=(x-x0)/dx,gz=(z-z0)/dz,ix=Math.floor(gx),iz=Math.floor(gz);if(ix<0||iz<0||ix>=nx||iz>=nz)return horizon.heightAt(x,z)??height(x,z);

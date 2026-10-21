@@ -1,5 +1,7 @@
 // Small game-local pieces shared by the ranch and canyon journeys.
 import {THREE,M,mesh,box,tube,sign,finish,put,placeOnTrack} from './world-kit.js';
+import { instancePlacements } from '/engine/models/core/static-batch.js';
+import { reflectorPost } from '/engine/models/props/wood-sign.js';
 
 export function grassTuft(color=0xb2ad61){
   const vertices=[],colors=[],c=new THREE.Color(color),dark=c.clone().multiplyScalar(.72);
@@ -36,18 +38,22 @@ export function crossing(T,accept,{name='country-bridge',color=0xa49c82,wood=fal
   const out=finish(root);out.name=name;return out;
 }
 
+// Library delineators (reflector-post), instanced along both verges.
 export function vergePosts(T,{skip=()=>false,color=0xe5d7a5,step=16}={}){
-  const root=new THREE.Group(),cream=M(color),red=M(0xb26442);
+  const root=new THREE.Group(),points=[];root.name='verge-posts';
   for(let s=0;s<T.TOTAL;s+=step){if(skip(s))continue;for(const side of [-1,1]){
-    const p=placeOnTrack(T,s,side*(T.HW+1.6));root.add(box(.15,.85,.15,cream,p.x,p.y+.42,p.z),box(.18,.16,.18,red,p.x,p.y+.78,p.z));
-  }}return finish(root);
+    const p=placeOnTrack(T,s,side*(T.HW+1.6));points.push({x:p.x,y:p.y,z:p.z,rot:p.h});
+  }}
+  instancePlacements(root,reflectorPost({body:color,band:0xb26442}),points,{name:'verge-posts',cellSize:Infinity});
+  return root;
 }
 
-// The same authored road receives sand/gravel shoulders and two subtle wheel ruts.
+// The same authored road receives sand/gravel shoulders. Its wheel ruts are
+// painted into the road texture (road-material.js).
 // All detail stays below the tested car clearance and follows elevation exactly.
-export function dirtVerge(T,{shoulder=0xbd995d,rut=0x8f7650,skip=()=>false}={}){
+export function dirtVerge(T,{shoulder=0xbd995d,skip=()=>false}={}){
   const root=new THREE.Group();
-  for(const [lo,hi,color]of [[-T.HW-2,-T.HW,shoulder],[T.HW,T.HW+2,shoulder],[-3.4,-2.8,rut],[2.8,3.4,rut]]){
+  for(const [lo,hi,color]of [[-T.HW-2,-T.HW,shoulder],[T.HW,T.HW+2,shoulder]]){
     const vertices=[],indices=[],n=Math.ceil(T.TOTAL/3);
     for(let i=0;i<=n;i++){const s=i/n*T.TOTAL,wiggle=Math.sin(s*.13)*.08;
       for(const off of [lo+wiggle,hi+wiggle]){const q=placeOnTrack(T,s,off);vertices.push(q.x,q.y+.135,q.z);}

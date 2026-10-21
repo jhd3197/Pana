@@ -1,4 +1,6 @@
 import { TRACK_DEFINITIONS } from '../track-definitions.js';
+import { libraryForest } from './library-forest.js';
+import { groundPaint } from './ground-paint.js';
 // Los Roques-inspired racing island. The Bululú board-game world stays independent.
 import { THREE,M,box,sign,smooth,hill,terrain,sea,put,foundation,scatter,instances,clear,finish,edges } from './world-kit.js';
 import { palm } from '/engine/models/vegetation/palm.js';
@@ -41,6 +43,10 @@ export default {
   items:{boxes:[.1,.29,.48,.67,.87],boxLanes:[-6,-2,2,6],pads:[{u:.18,off:0},{u:.37,off:-4},{u:.59,off:4},{u:.79,off:0},{u:.95,off:-4}]},
   walls:false,chevrons:true,
   palette:{skySeed:31,cloudCover:0.28,horizon:0xbff4ee,skyTop:0x0f95f2,halo:1.1,hemiSky:0xd0e8ff,hemiGround:0xe0c27e,hemiInt:1.6,sun:0xffd99c,sunInt:2.7,ground:0xfbe2a0,track:0xf0c88e,dune:0,fog:[600,2200]},
+  // Coconut palms on the far cays, mangroves at the waterline, shade trees inland.
+  forest:{plant:libraryForest,bounds:[-640,-540,740,490],count:1100,spacing:10,edge:62,minY:.4,clump:.55,seed:353,
+    accept:(x,z)=>tideZone(x,z)<.2,
+    species:[{name:'palm',weight:4,scale:[.85,1.3],where:(x,z,y)=>y<14?1.4:.3},{name:'mangrove',weight:2,where:(x,z,y)=>y<2.2?3:0},{name:'mango',weight:1,where:(x,z,y)=>y>9?2:0}]},
   environment(T){
     const group=new THREE.Group(),world=terrain(T,{bounds:[-650,-550,750,500],base:baseHeight,step:5,
       cut:(x,z,h)=>{
@@ -48,7 +54,8 @@ export default {
         const sand=zone*(1-smooth(off,T.HW+1,T.HW+5));h=h*(1-sand)+(T.surfaceAt(x,z)-.14)*sand;
         const channel=zone*smooth(off,T.HW+2,T.HW+19);return h*(1-channel)-3*channel;
       },
-      color:(x,z,y)=>y<.8?0xf2e2b4:y<5?0xfbe9c4:y<15?meadow(x,z,0x93c45e):meadow(x,z,0x6fb065)});
+      color:(x,z,y)=>y<.8?0xf2e2b4:y<5?0xfbe9c4:y<15?meadow(x,z,0x93c45e):meadow(x,z,0x6fb065),
+      paint:groundPaint({tone:.09,moss:.2,keep:(x,z,y)=>y<5.5})});
     group.add(sea(world.groundAt,{opacity:.68}),world.land);
     const village=new THREE.Group(),occupied=[];
     const colors=[0x55a7a5,0xd88b75,0xe2bc60,0x82a9c3,0xd5d1aa];

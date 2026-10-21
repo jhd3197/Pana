@@ -98,3 +98,17 @@ export function signBanner({ lines = ['¡DALE', 'PANA!'], w = 8, h = 2.6, accent
   g.userData.dispose = () => g.children.forEach(o => o.userData.dispose?.());
   return g;
 }
+
+// Delineador: a roadside post with a coloured band and an amber reflector on
+// each face. Ground origin at y=0; the road lies along X.
+export function reflectorPost({ body = 0xf6f2e6, band = 0xd9453a, reflector = 0xffb43a } = {}) {
+  const g = new THREE.Group();
+  g.add(mesh(new THREE.CylinderGeometry(0.1, 0.11, 1.05, 8), M(body, { roughness: 0.7 }), 0, 0.525, 0));
+  g.add(mesh(new THREE.CylinderGeometry(0.108, 0.108, 0.17, 8), M(band, { roughness: 0.6 }), 0, 0.84, 0));
+  g.add(mesh(new THREE.SphereGeometry(0.1, 8, 4, 0, Math.PI * 2, 0, Math.PI / 2), M(body, { roughness: 0.7 }), 0, 1.05, 0));
+  const glow = M(reflector, { emissive: reflector, emissiveIntensity: 0.35, roughness: 0.3 });
+  for (const x of [-1, 1]) g.add(box(0.03, 0.12, 0.09, glow, x * 0.105, 0.62, 0));
+  g.add(box(0.26, 0.05, 0.26, M(0x8d8676, { roughness: 1 }), 0, 0.025, 0));
+  g.name = 'reflectorPost';
+  return g;
+}

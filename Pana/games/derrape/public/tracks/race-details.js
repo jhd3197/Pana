@@ -3,6 +3,8 @@
 import { THREE, clear } from './world-kit.js';
 import { instancePlacements } from '/engine/models/core/static-batch.js';
 import { fiestaFlags } from '/engine/models/props/fiesta.js';
+import { roadStyle } from './road-material.js';
+import { reflectorPost } from '/engine/models/props/wood-sign.js';
 
 const EARTH = new Set(['selva', 'llanos', 'desierto', 'bululu', 'delta', 'salto']);
 const COLORS = {
@@ -19,8 +21,10 @@ const COLORS = {
 export function raceDetails(T) {
   const root = new THREE.Group(); root.name = 'race-details';
   const [light, accent] = COLORS[T.id] || COLORS.estadio;
+  // Edge lines and centre lines are painted into the road texture (road-material.js).
   const positions = [], colors = [];
-  const ink = new THREE.Color(EARTH.has(T.id) ? 0x715a39 : 0x323a3b);
+  // Marks are a darker shade of the painted surface, never a grey band on earth.
+  const style = roadStyle(T), ink = style.surface === 'asphalt' || !style.base ? new THREE.Color(0x323a3b) : new THREE.Color(style.base).multiplyScalar(.45);
   function point(s, off) {
     const p = T.pointAt(s), q = T.pointAt(s + 0.5), h = Math.atan2(q.x - p.x, q.y - p.y);
     const x = p.x - Math.cos(h) * off, z = p.y + Math.sin(h) * off;
@@ -40,8 +44,6 @@ export function raceDetails(T) {
       const line = -Math.sign(turn) * T.HW * 0.18;
       for (const off of [-1.0, 1.0]) stripe(s, line+off, 3.5+3*Math.abs(Math.sin(s)), EARTH.has(T.id) ? 0.2 : 0.13, ink);
     }
-    // Short painted edge blocks add speed cues without covering the driving line.
-    if (!EARTH.has(T.id)) for (const side of [-1, 1]) stripe(s, side*(T.HW-0.55), 3, 0.3, new THREE.Color(light));
   }
   const geo = new THREE.BufferGeometry();
   geo.setAttribute('position', new THREE.Float32BufferAttribute(positions,3));
@@ -70,5 +72,22 @@ export function raceDetails(T) {
   const flags = new THREE.Group(); flags.name = 'sector-pennants'; flags.userData.detailLevel = 2;
   if (sites.length) instancePlacements(flags, fiestaFlags({ seed: T.TOTAL | 0, colors: [light, accent, 0xfffaf0] }), sites, { name: 'sector-pennants', cellSize: Infinity });
   root.add(flags); root.userData.pennants = sites.length * 3;
+
+  // Mountain asphalt gets delineators outside its rails, where the verge is
+  // level with the road and nothing else stands.
+  if (style.posts) {
+    const posts = [];
+    for (let s = 9; s < T.TOTAL; s += 18) for (const side of [-1, 1]) {
+      if (indoors(s) || T.gapAt?.(s)) continue;
+      const p = point(s, side * (T.HW + 2.2)), y = T.terrainAt(p[0], p[2]);
+      if (Math.abs(y - (p[1] - .145)) > .9 || !clear(T, p[0], p[2], -3) || (T.def.waterAt?.(p[0], p[2], 0, T) || 0) > .05) continue;
+      if (signs.some(([sx, sz, r]) => Math.hypot(sx - p[0], sz - p[2]) < r - 3)) continue;
+      const a = T.pointAt(s), q = T.pointAt(s + 1);
+      posts.push({ x: p[0], y, z: p[2], rot: Math.atan2(q.x - a.x, q.y - a.y) });
+    }
+    const group = new THREE.Group(); group.name = 'reflector-posts'; group.userData.detailLevel = 2;
+    if (posts.length) instancePlacements(group, reflectorPost(), posts, { name: 'reflector-posts', cellSize: Infinity });
+    root.add(group); root.userData.posts = posts.length;
+  }
   return root;
 }

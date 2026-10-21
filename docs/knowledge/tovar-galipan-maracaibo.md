@@ -4,7 +4,8 @@ Six more user-supplied standalone HTML scenes adapted the same way as the
 Aragua circuits (`aragua-circuits.md`): a `<id>-layout.js` with the authored
 `MAP` and the sampled road and terrain, a `<id>-world.js` that builds the
 scene, and `<id>.js` that hands both to `coastalTrack`. They are standalone
-races, not Grand Prix stages.
+races, not Grand Prix stages. The recipe, checklist and pitfalls are the
+`derrape-map-port` skill (`.claude/skills/derrape-map-port/SKILL.md`).
 
 `coastalTrack(id, layout, createWorld, options)` now takes `scale`, `palette`,
 `gripAt`, `previewBounds`, `items` and `def` (extra definition fields such as

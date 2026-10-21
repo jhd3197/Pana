@@ -1,4 +1,5 @@
 import { festive, meadow } from './festive.js';
+import { groundPaint } from './ground-paint.js';
 import { THREE,M,mesh,box,tube,terrain,put,foundation,scatter,instances,clear,finish,smooth,placeOnTrack } from './world-kit.js';
 import { llaneroRanchHouse, corralGate, hayBale, waterWindmill, horseStable, feedingTrough, ranchFence, oldTractor, mudPuddle, ranchWaterTower } from '/engine/models/props/ranch.js';
 import { palm } from '/engine/models/vegetation/palm.js';
@@ -24,6 +25,7 @@ import { waterPumpStation } from '/engine/models/props/water-pump-station.js';
 export function llanosEnvironment(T){
   const group=new THREE.Group(),counts={},occupied=[],moving=[];
   const world=terrain(T,{bounds:[-650,-530,650,510],base:baseHeight,step:5,
+    paint:groundPaint({tone:.11,dry:.3,dryColor:0xc4b55a,verge:.3,keep:(x,z,y)=>y<.8}),
     cut:(x,z,h)=>Math.min(h,-1.8+8*smooth(riverDistance(x,z),9,22)),
     color:(x,z,y)=>{
       const wet=Math.min(smooth(wetlandDistance(x,z),1,1.55),smooth(riverDistance(x,z),12,50));
@@ -151,7 +153,7 @@ export function llanosScenery(group,kit,T){
   const onBridgeS=s=>{const p=T.pointAt(s);return riverDistance(p.x,p.y)<30;};
   const onBridge=s=>{const p=T.pointAt(s);return riverDistance(p.x,p.y)<26;};
   group.add(crossing(T,p=>riverDistance(p.x,p.z)<26,{name:'estero-road-bridges',wood:true,color:0x9e9172}));
-  group.add(vergePosts(T,{skip:onBridge,step:18}),dirtVerge(T,{shoulder:0xb3a776,rut:0x927c54,skip:onBridge}));
+  group.add(vergePosts(T,{skip:onBridge,step:18}),dirtVerge(T,{shoulder:0xb3a776,skip:onBridge}));
   const boat=kit.rowboat({color:0x9b5140});kit.at(group,boat,{x:-28,z:-66,y:WATER_Y},.4);
   for(let i=0;i<4;i++)group.add(orbitBird(scarletIbis({seed:20+i}),{cx:85,cz:80,cy:17+i*3,r:42+i*10,speed:.18+i*.015,phase:i*1.4}));
   // Fiesta llanera: araguaneyes in bloom, joropo bunting, ibis and macaw flocks.

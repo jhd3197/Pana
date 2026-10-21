@@ -9,14 +9,22 @@ import { mountainPine } from '/engine/models/vegetation/mountain-pine.js';
 import { moriche } from '/engine/models/vegetation/moriche.js';
 import { cactus } from '/engine/models/vegetation/cactus.js';
 import { mangrove } from '/engine/models/vegetation/mangrove.js';
+import { saman } from '/engine/models/vegetation/saman.js';
+import { araguaney } from '/engine/models/vegetation/araguaney.js';
+import { frailejon } from '/engine/models/vegetation/frailejon.js';
 import { forestZone, prepareForestModel, denseForest } from './forest-detail.js';
 
 // Preserve the reference planting zones, but use Pana's native silhouettes.
 // Mountain canopy has neither fruit nor individual leaves; road trees do.
-export function coastalVegetation(group, worldScale = 1, roadDistance) {
+// `whole` lists species whose own far model is used unsimplified (thin cardones
+// otherwise cluster away to nothing).
+export function coastalVegetation(group, worldScale = 1, roadDistance, { cellSize = 120, whole = [] } = {}) {
   const batches = new Map();
   const factories = { tree: ceiba, mango: mangoTree, cacao, palm, fern: treeFern,
-    pine: o => pine({ ...o, h: 9 }), fir: o => mountainPine({ seed: o.seed, h: 8 }), moriche, mangrove, cactus: o => cactus({ seed: o.seed }) };
+    pine: o => pine({ ...o, h: 9 }), fir: o => mountainPine({ seed: o.seed, h: 8 }), moriche, mangrove, cactus: o => cactus({ seed: o.seed }),
+    saman: o => saman({ seed: o.seed, detail: o.detail, flowers: o.fruit }),
+    araguaney: o => araguaney({ seed: o.seed, detail: o.detail, flowers: true }),
+    frailejon: o => frailejon({ seed: o.seed, h: 2.3 }) };
   let count = 0;
   const zones = { near: 0, middle: 0, far: 0 };
   return {
@@ -35,14 +43,14 @@ export function coastalVegetation(group, worldScale = 1, roadDistance) {
       const dense=denseForest([...batches.values()].flat(),20/worldScale);
       for (const [key, positions] of batches) {
         const [species, zone] = key.split(':');
-        const fronds=species==='palm'||species==='fern'||species==='moriche'||species==='cactus', conifer=species==='pine'||species==='fir';
+        const fronds=species==='palm'||species==='fern'||species==='moriche'||species==='cactus'||species==='frailejon', conifer=species==='pine'||species==='fir';
         for(const crowded of zone==='far'&&!fronds&&!conifer?[true,false]:[false]) {
           const points=zone==='far'&&!fronds&&!conifer?positions.filter(p=>dense.has(p)===crowded):positions;
           if(!points.length)continue;
           const model = factories[species]({ seed: 37, detail: zone === 'near' ? 'game' : 'far', fruit: zone === 'near' });
           // A moriche is a bare pole once its few long fronds are clustered away.
-          prepareForestModel(model, species==='moriche'?'near':zone, { fronds,pine:conifer,dense:crowded });
-          instancePlacements(group, model, points, { name: `coastal-${key}`, cellSize: 120, castShadow: zone === 'near' });
+          prepareForestModel(model, species==='moriche'||whole.includes(species)?'near':zone, { fronds,pine:conifer,dense:crowded });
+          instancePlacements(group, model, points, { name: `coastal-${key}`, cellSize, castShadow: zone === 'near' });
         }
       }
       group.userData.libraryTrees = count;

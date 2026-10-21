@@ -10,6 +10,9 @@ import { forestZone, prepareForestModel, denseForest } from './forest-detail.js'
 // salt pans or the desert. Near-road vegetation remains authored per map.
 const HABITATS = { chichi: 800, selva: 650, paramo: 240, llanos: 260, bululu: 260, delta: 500, salto: 450 };
 export function backgroundForest(T) {
+  // A map with its own recipe plants dense zoned library forest instead
+  // (library-forest.js, imported by the map's lazily loaded module).
+  if (T.def.forest) return T.def.forest.plant(T, T.def.forest);
   const group = new THREE.Group(); group.name = 'background-forest';
   const count = HABITATS[T.id];
   if (!count) return group;

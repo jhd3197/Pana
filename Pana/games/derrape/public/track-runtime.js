@@ -3,7 +3,7 @@ import * as THREE from 'three';
 import * as kit from './track-kit.js';
 import { plankHeight, isOpenEdge, OPEN_MARGIN } from './course-rules.js';
 import { raceDetails } from './tracks/race-details.js';
-import { roadMaterial } from './tracks/road-material.js';
+import { roadMaterial, roadStyle, roadTile, roadTexture } from './tracks/road-material.js';
 import { applyNatureMaterials } from './tracks/nature-material.js';
 import { raceGrass } from './tracks/grass-field.js';
 import { natureSurface } from '/engine/models/core/nature-surface.js';
@@ -377,16 +377,22 @@ function buildRibbon(T, pal) {
     geo.setAttribute('color',new THREE.Float32BufferAttribute(colors,3));
     geo.setAttribute('roadSurface',new THREE.Float32BufferAttribute(surfaces,1));
   }
-  // Route-space coordinates keep wheel wear following bends and climbs.
-  const roadCoords = [], position = geo.attributes.position;
+  // Route-space coordinates keep wheel wear following bends and climbs. The
+  // strip's own distance runs on past the lap seam, so paint never smears there.
+  const roadCoords = [], uvs = [], position = geo.attributes.position, style = roadStyle(T), tile = roadTile(style);
+  const columns = T.def.crossfall ? 3 : 2, strip = !(T.def.oval && !T.def.elevation);
   for (let i = 0; i < position.count; i++) {
-    const x = position.getX(i), z = position.getZ(i);
-    roadCoords.push(T.offsetOf(x, z) / T.HW, T.paramOf(x, z));
+    const x = position.getX(i), z = position.getZ(i), across = T.offsetOf(x, z) / T.HW;
+    const along = strip ? Math.floor(i / columns) / (position.count / columns - 1) * T.TOTAL : T.paramOf(x, z);
+    roadCoords.push(across, T.paramOf(x, z));
+    uvs.push(strip ? i % columns / (columns - 1) : (1 - across) / 2, along / tile);
   }
   geo.setAttribute('roadCoords', new THREE.Float32BufferAttribute(roadCoords, 2));
-  const material = roadMaterial(T.def.roadStyle?0xffffff:pal.track, ['selva','llanos','desierto','bululu','delta','salto'].includes(T.id),!!T.def.roadStyle);
+  geo.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2));
+  const map = roadTexture(style, T.TOTAL | 0);
+  const material = roadMaterial(0xffffff, ['selva','llanos','desierto','bululu','delta','salto'].includes(T.id),!!T.def.roadStyle, map);
   const m = new THREE.Mesh(geo, material);
-  m.userData.dispose = () => material.dispose();
+  m.userData.dispose = () => { material.dispose(); map.dispose(); };
   m.name='track-road';
   m.position.y = T.def.environment ? 0.12 : 0.03;
   m.receiveShadow = true;

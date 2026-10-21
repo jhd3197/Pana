@@ -8,6 +8,13 @@ becomes the GitHub release's notes.
 
 ## Unreleased
 
+- **Los primeros circuitos de Derrape estrenan carreteras.** El asfalto ya no
+  es morado y liso: tiene grietas, parches y rayas de borde, con doble raya
+  amarilla en la montaña de Chi Chi y el Páramo y postes reflectivos en las
+  curvas. Los caminos de tierra de Desierto, Selva y Llanos tienen huellas,
+  piedritas y matas en el medio, y la arena de Bululú y Salinas lleva marcas de
+  cauchos. El suelo cambia de tono, con orillas gastadas junto a la vía, y
+  los cerros lejanos tienen más bosque.
 - **Derrape suma Isla Margarita, Sarisariñama y Gran Sabana.** Sal del castillo
   de Pampatar hasta Playa El Agua y los manglares de La Restinga; baja en
   espiral por la sima del tepuy, cruza las cuevas por debajo y sube a la luz;
