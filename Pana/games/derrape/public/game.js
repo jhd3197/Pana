@@ -1388,7 +1388,7 @@ const driftCombo = {
   update: (c) => comboApi?.update(c), totalOf: (c) => comboApi?.totalOf(c) ?? 0, bestChainOf: (c) => comboApi?.bestChainOf(c) ?? 1,
   live: (c) => comboApi?.live(c),
 };
-if (DEBUG) window.PANA_DRIFT_SCORE = () => driftCombo.live(race.player);
+if (DEBUG) window.PANA_DRIFT_SCORE = () => race.player ? driftCombo.live(race.player) : null;
 
 // ---------- the zamuro rescue ----------
 // Off the course, stuck, or asked for (R): a vulture lifts the car, flies it

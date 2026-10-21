@@ -64,7 +64,8 @@ try {
     renderer.render(race.scene, race.camera);
     race.keys = { w: true };
     updateRace(1 / 60);
-    return { started, level, before, after: p.boost, dir: p.drift, maxOff, limit:T.HW-1.6, marks: race.skidMarks.count, puffs };
+    return { started, level, before, after: p.boost, dir: p.drift, maxOff, limit:T.HW-1.6, marks: race.skidMarks.count, puffs,
+      score: window.PANA_DRIFT_SCORE?.() };
   });
   await page.screenshot({ path: join(output, 'drive-drift.png') });
   assert.ok(drift.started, 'a held drift button with steering starts a drift');
@@ -73,6 +74,7 @@ try {
   assert.ok(drift.after > 0.4 && drift.dir === 0, `release pays the earned turbo ${JSON.stringify(drift)}`);
   assert.ok(drift.marks >= 10, `drifting lays skid marks on the road ${JSON.stringify(drift)}`);
   assert.ok(drift.puffs >= 30, `drifting billows a smoke plume ${JSON.stringify(drift)}`);
+  assert.ok(drift.score?.points > 0 && drift.score.active, `the drift earns live style points ${JSON.stringify(drift)}`);
 
   // Feats: hold one drift past 100 m — re-entering the same bend keeps the run
   // on the road without touching drift state — and the toast celebrates; the
@@ -100,7 +102,7 @@ try {
     race.keys = { w: true };
     updateRace(1 / 60);
     return { longText, level, distance, maxOff, limit: T.HW - 1.6, purpleText: toast.textContent, boost: p.boost,
-      slow: race.slowMo.active, shake: race.shake };
+      slow: race.slowMo.active, shake: race.shake, chain: window.PANA_DRIFT_SCORE?.().chain ?? 0 };
   });
   assert.ok(feats.longText.includes('100 m'), `one 100 m drift fires its feat ${JSON.stringify(feats)}`);
   assert.ok(feats.distance >= 100, `the drift really ran 100 m ${JSON.stringify(feats)}`);
@@ -110,6 +112,7 @@ try {
   assert.ok(feats.boost > 1, `the purple release pays its turbo ${JSON.stringify(feats)}`);
   assert.ok(feats.slow, `the purple release dilates time ${JSON.stringify(feats)}`);
   assert.ok(feats.shake > 0.2, `the purple release pulses the camera ${JSON.stringify(feats)}`);
+  assert.ok(feats.chain >= 2, `a drift inside the window chains the multiplier ${JSON.stringify(feats)}`);
 
   // A trick pressed in the air lands with a short turbo.
   const trick = await page.evaluate(() => {
