@@ -377,3 +377,17 @@ test('knowledge notes state results inline, never a local plan or log', () => {
   }
   assert.deepEqual(problems, []);
 });
+
+// Merges with main conflict on every release; a marker that slips through ships
+// in the release notes or breaks a module. git grep keeps this to tracked files.
+test('no merge conflict markers in tracked files; the changelog lints clean', async () => {
+  const { execFileSync } = await import('node:child_process');
+  const repo = path.resolve(app, '..');
+  let hits = '';
+  try {
+    hits = execFileSync('git', ['grep', '-nE', '^(<{7}|>{7}) ', '--', '.', ':!*.png', ':!*.jpg', ':!*.webp', ':!*.mp3'], { cwd: repo, encoding: 'utf8' });
+  } catch (e) { if (e.status !== 1) throw e; }   // exit 1: no matches
+  assert.equal(hits.trim(), '', 'conflict markers left by a merge');
+  const { lint } = await import('../scripts/changelog.js');
+  assert.deepEqual(lint(fs.readFileSync(path.join(repo, 'CHANGELOG.md'), 'utf8')), []);
+});
