@@ -82,6 +82,19 @@ landscape layout still has to work: test both with a touch emulator.
 Mark keyboard reminders with `data-pana-hint` so the "Ayudas de teclado"
 setting can hide them.
 
+## Loading cover
+
+`engine/loading-cover.js` (`showCover`) is the one loading screen: the page's
+art, its name, what is loading now and an indeterminate bar, over everything.
+`done()` fades it once the next frame has painted. `game-entry.js` shows it
+from the first paint until the game module and its `sceneReady` have loaded,
+the room link has arrived (up to 5 s) and the lobby is docked in its final
+layout, so nothing is seen moving into place. `pana:load-stage` events
+update its line. A failure leaves the message on the cover with a retry. Each
+switch between the lobby and the game gets a short cover too ("¡A jugar!",
+"De vuelta a la sala…"). The Mi pana editor covers itself with the player's
+portrait until `editor.js` is ready.
+
 ## Game controllers
 
 `engine/gamepad.js` makes an Xbox or PlayStation pad work in every game that

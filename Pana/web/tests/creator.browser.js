@@ -9,7 +9,7 @@ try {
   await context.addInitScript(() => { localStorage.setItem('pana:name', 'Ana'); if (!localStorage.getItem('pana:avatar')) localStorage.setItem('pana:avatar', JSON.stringify({ outfit: 'hawaiana', outfitColor: '#123456', hat: 'band', extra: 'cadena' })); });
   const page = await context.newPage(); page.on('pageerror', e => errors.push(e.message));
   await page.goto(base + '/#mi-pana');
-  await page.waitForURL('**/personaje.html');
+  await page.waitForURL('**/personaje');
   await page.waitForFunction(() => window.PANA_PREPARED, null, { timeout: 120000 });
   assert.equal(await page.evaluate(() => panaEditor.state.top), 'tropical');
   await page.locator('[data-slot="hat"][data-item="casco"]').click();
@@ -64,7 +64,7 @@ try {
   await guest.close();
   const failed = await browser.newPage();
   await failed.route('**/character/editor.js', route => route.abort());
-  await failed.goto(base + '/personaje.html');
+  await failed.goto(base + '/personaje');
   await failed.getByRole('button', { name: 'Volver a intentar' }).waitFor();
   assert.equal(await failed.locator('.panel').evaluate(n => n.inert), true);
   assert.deepEqual(errors, []);

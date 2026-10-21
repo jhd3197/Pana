@@ -5,6 +5,7 @@ import { cachedPortrait } from './portrait-cache.js';
 import { icon } from './icons.js';
 import { inviteUrl, roomFromUrl } from './invite.js';
 import { finalizeRoomOptions } from './room-options.js';
+import { showCover } from './loading-cover.js';
 // Controllers work the lobby from the first paint; play keys come with the game.
 import './gamepad.js';
 
@@ -17,6 +18,11 @@ let maxPlayers = 8;
 const docked = [];
 const root = el('section', 'pk-game-lobby'); root.id = 'pana-lobby-shell'; root.setAttribute('aria-label', 'Sala del juego');
 root.style.setProperty('--lobby-image', `url("/images/launcher/${game}.jpg")`);
+// The game's art covers the page until the game has loaded, the room has
+// answered and the lobby sits in its final layout: then it fades out whole.
+const gameName = document.title.split(/[·—]/)[0].trim();
+const cover = showCover({ title: gameName, image: `/images/launcher/${game}.jpg`, text: 'Preparando la sala…' });
+let revealed = false, shellHidden = false;
 const head = el('header', 'pk-game-lobby-head'), back = el('a', 'pk-btn', ' Juegos'); back.prepend(icon('chevronLeft')); back.href = '/'; back.dataset.padBack = '';
 const title = el('h1', 'pk-title', document.title.split(/[·—]/)[0].trim());
 const invite = el('button', 'pk-btn pk-btn--teal', 'Copiar link'); invite.type = 'button'; invite.id = 'pana-lobby-invite';
@@ -48,7 +54,7 @@ const change = el('a', 'pk-btn', 'Cambiar pana'); change.href = '/#mi-pana';
 footer.append(status, change, readyButton); root.append(head, layout, footer); document.body.append(root); document.body.classList.add('pana-in-lobby');
 const actionTray = el('div', 'pk-game-lobby-actions'); footer.append(actionTray, readyButton);
 window.PANA_LOBBY_LOADING = true;
-document.addEventListener('pana:load-stage', e => { if (!failed) status.textContent = e.detail; });
+document.addEventListener('pana:load-stage', e => { if (!failed) { status.textContent = e.detail; cover.say(e.detail); } });
 
 function portraitFor(person) {
   let avatar = person.avatar || loadAvatar();
@@ -149,6 +155,9 @@ for (const type of ['pointerdown', 'keydown']) addEventListener(type, () => { he
 function visibility() {
   if (!loaded || !original) return;
   const hidden = original.hidden || original.classList.contains('hidden') || original.style.display === 'none';
+  // Lobby to game and back: a short cover instead of the page swapping under the player.
+  if (revealed && hidden !== shellHidden) showCover({ title: gameName, image: `/images/launcher/${game}.jpg`, text: hidden ? '¡A jugar!' : 'De vuelta a la sala…' }).done();
+  shellHidden = hidden;
   root.hidden = hidden;
   lobbySong();
   document.body.classList.toggle('pana-in-lobby', !root.hidden);
@@ -189,8 +198,17 @@ try {
   link?.send('lobby-ready', { ready, loaded: true });
   document.dispatchEvent(new Event('pana:game-prepared'));
   updateReady(); renderRoster(); visibility();
+  // A room link (with everyone in it) lands soon after; wait a moment for it
+  // so the roster does not fill in after the lobby shows.
+  if (roomFromUrl() && !link) {
+    cover.say('Entrando a la sala…');
+    await new Promise(resolve => { document.addEventListener('pana:room-link', resolve, { once: true }); setTimeout(resolve, 5000); });
+    await new Promise(resolve => setTimeout(resolve, 150));
+  }
+  revealed = true; shellHidden = root.hidden;
+  cover.done();
 } catch (error) {
   failed = true; console.error('Game preparation failed', error);
   status.textContent = 'No pudimos preparar el juego. Comprueba la conexión e inténtalo otra vez.';
-  const retry = el('button', 'pk-btn', 'Volver a intentar'); retry.onclick = () => location.reload(); footer.append(retry);
+  cover.fail(status.textContent, () => location.reload());
 }
