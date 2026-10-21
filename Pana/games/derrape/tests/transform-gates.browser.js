@@ -27,9 +27,9 @@ try {
   const scenery = await page.evaluate(() => {
     const T = getActiveTrack(), names = [];
     T.group.traverse(o => { if (o.name === 'transform-water' || o.name === 'transform-gate') names.push(o.name); });
-    return { runs: getGates().runs.length, water: names.filter(n => n === 'transform-water').length, arches: names.filter(n => n === 'transform-gate').length };
+    return { runs: getGates().runs.length, water: names.filter(n => n === 'transform-water').length, markers: names.filter(n => n === 'transform-gate').length };
   });
-  assert.deepEqual(scenery, { runs: 1, water: 1, arches: 2 }, `Choroní has one river stretch with its two arches ${JSON.stringify(scenery)}`);
+  assert.deepEqual(scenery, { runs: 1, water: 1, markers: 0 }, `Choroní has one river stretch, the water its only cue ${JSON.stringify(scenery)}`);
 
   // The player drives itself (?auto) at speed through the entry gate.
   const entry = await page.evaluate(() => {
@@ -79,16 +79,16 @@ try {
   assert.ok(exit.morph < 0.05 && !exit.lanchaVisible && exit.carVisible && exit.wheel > 0.95, `the lancha goes and the car comes back ${JSON.stringify(exit)}`);
   assert.ok(exit.speed > 15, `the car leaves the water at speed ${JSON.stringify(exit)}`);
 
-  // Chuao's quebrada is already water: its gate follows the wet stretch, with
-  // the arches but no second water sheet.
+  // Chuao's quebrada is already water: its gate follows the wet stretch with
+  // no second water sheet.
   await page.evaluate(() => { toGarage(); buildTrack('chuao'); });
   const chuao = await page.evaluate(() => {
     const T = getActiveTrack(), names = [];
     T.group.traverse(o => { if (o.name === 'transform-water' || o.name === 'transform-gate') names.push(o.name); });
     const run = getGates().runs[0];
-    return { runs: getGates().runs.length, len: run.len, sheets: names.filter(n => n === 'transform-water').length, arches: names.filter(n => n === 'transform-gate').length };
+    return { runs: getGates().runs.length, len: run.len, sheets: names.filter(n => n === 'transform-water').length };
   });
-  assert.ok(chuao.runs === 1 && chuao.len > 100 && chuao.sheets === 0 && chuao.arches === 2, `Chuao's quebrada is a lancha stretch ${JSON.stringify(chuao)}`);
+  assert.ok(chuao.runs === 1 && chuao.len > 100 && chuao.sheets === 0, `Chuao's quebrada is a lancha stretch ${JSON.stringify(chuao)}`);
   assert.deepEqual(errors, []);
   console.log('derrape transform gates: car → lancha → car on Choroní; Chuao quebrada armed OK', JSON.stringify({ entry, exit }));
 } finally {

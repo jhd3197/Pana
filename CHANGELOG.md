@@ -8,6 +8,12 @@ becomes the GitHub release's notes.
 
 ## Unreleased
 
+- **Derrape: el turbo del derrape cuesta más y se castiga el abuso.** El
+  naranja y el púrpura tardan más en cargar y pagan menos; si te quedas en
+  púrpura demasiado tiempo las chispas parpadean en rojo y luego se queman
+  los cauchos: pierdes la carga y frenas. Cada turbo calienta los cauchos y
+  el siguiente derrape carga más lento. Las chispas y el humo ahora brillan
+  como de verdad, sin los bloques de antes.
 - **Derrape suma Isla Margarita, Sarisariñama y Gran Sabana.** Sal del castillo
   de Pampatar hasta Playa El Agua y los manglares de La Restinga; baja en
   espiral por la sima del tepuy, cruza las cuevas por debajo y sube a la luz;
@@ -15,9 +21,9 @@ becomes the GitHub release's notes.
   Salto Kama, mientras el aguacero de la tarde llega desde el este. El aguacero
   es paisaje: no cambia el agarre.
 - **Derrape: en Choroní y en la quebrada de Chuao tu carro se vuelve
-  lancha de verdad, con tu pana al timón.** Pasa el arco tricolor, el carro
-  salta, desaparece entre salpicones y cae al agua convertido en peñero; el
-  arco de salida lo devuelve a carro. Derrapar sobre el agua carga el turbo más
+  lancha de verdad, con tu pana al timón.** Al tocar el agua el carro salta,
+  desaparece en una corona de gotas y cae convertido en peñero, levantando
+  su cola de agua; al salir del agua vuelve a ser carro. Derrapar sobre el agua carga el turbo más
   rápido. Los estilos de derrape ahora sí suman puntos en las curvas, y el
   fantasma guarda bien tu vuelta final.
 - **Derrape estrena tres circuitos: Colonia Tovar, Galipán de noche y

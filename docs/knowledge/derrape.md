@@ -24,7 +24,9 @@ lobby (`derrape-menu.md`), and its own Colyseus room (`derrape-online.md`).
   `*-rules.js`), never into game.js; moving a section out is always welcome.
   Drift milestone toasts live in `public/feats.js`, on `engine/feats.js`.
 - Drift presentation lives in its own modules: sparks and the charge smoke
-  plume in `public/drift-fx.js`, skid marks in `public/skid-marks.js` (one
+  plume in `public/drift-fx.js` (glowing point sprites from
+  `public/particles.js`: one draw per field, no polyhedra; sparks flicker red
+  in the overheat warning), skid marks in `public/skid-marks.js` (one
   InstancedMesh ring buffer), purple-release slow-mo in `public/slow-mo.js`.
   All three load lazily with the first race (the feats.js pattern): the
   garage's first load is capped at 160 modules. The slow-mo scales only the
@@ -45,13 +47,15 @@ lobby (`derrape-menu.md`), and its own Colyseus room (`derrape-online.md`).
 - River stretches: a track definition can list `transformGates: [{ from, to,
   sheet }]` (route fractions). Choroní floods its east-bank road; Chuao derives
   its gate from the quebrada's wet segments (`sheet: false`: the track already
-  draws that water). `public/transform-gates.js` (lazy, like feats.js) adds a
-  tricolour arch at each end (and the water sheet when asked), and every frame
+  draws that water). `public/transform-gates.js` (lazy, like feats.js) adds
+  the water sheet when asked — nothing marks the ends, the water is the cue —
+  and every frame
   decides from position alone whether each car — remote ones too — is a
   lancha. The swap uses the Lancha game's own model (`createLancha` from
   `engine/models/vehicles/lancha.js`, the car's paint, the racer's avatar at
   the tiller), built hidden 150 m before the gate and freed with the car's
-  driver: the car squashes away inside the spray and the peñero pops up.
+  driver: the car squashes away inside a crown of droplets (a `particles.js`
+  field) and the peñero pops up; moving boats throw a droplet rooster tail.
   Crossing a gate kicks a hop so the change happens mid-air, with a
   "¡Modo lancha!" shout, slow-mo and a splashdown. The road stays the driving
   surface, so AI, checkpoints and placements never notice. On the water a
