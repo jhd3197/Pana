@@ -11,16 +11,16 @@ export function fitRoute(route, canvas, margin) {
   return raw.map(p=>[canvas.width/2+(p.x-(minX+maxX)/2)*scale,canvas.height/2+(p.y-(minZ+maxZ)/2)*scale]);
 }
 
-export function strokeRoute(ctx, pts, width) {
+export function strokeRoute(ctx, pts, width, ink = '#0e0b24', paint = '#f3e9d7') {
   ctx.lineJoin = 'round';
   ctx.lineCap = 'round';
   ctx.beginPath();
   pts.forEach(([x, y], i) => (i ? ctx.lineTo(x, y) : ctx.moveTo(x, y)));
   ctx.closePath();
-  ctx.strokeStyle = '#0e0b24';
+  ctx.strokeStyle = ink;
   ctx.lineWidth = width * 2;
   ctx.stroke();
-  ctx.strokeStyle = '#f3e9d7';
+  ctx.strokeStyle = paint;
   ctx.lineWidth = width;
   ctx.stroke();
 }
@@ -51,7 +51,7 @@ export function createMinimap(canvas) {
       pts = fitRoute(route, canvas, 16);
       const b = base.getContext('2d');
       b.clearRect(0, 0, base.width, base.height);
-      strokeRoute(b, pts, 4);
+      strokeRoute(b, pts, 6, '#16161a', '#ffc629');
     },
     // progress(car) is 0–1 along the lap; cars carry def.color and isPlayer.
     draw(cars, progress, mirror) {
@@ -63,14 +63,12 @@ export function createMinimap(canvas) {
       for (const c of cars) {
         const [x, y] = pts[Math.floor(progress(c) * pts.length) % pts.length];
         ctx.beginPath();
-        ctx.arc(x, y, c.isPlayer ? 5.5 : 4, 0, Math.PI * 2);
-        ctx.fillStyle = c.def.color;
+        ctx.arc(x, y, c.isPlayer ? 8 : 6, 0, Math.PI * 2);
+        ctx.fillStyle = c.isPlayer ? '#fff' : c.def.color;
         ctx.fill();
-        if (c.isPlayer) {
-          ctx.lineWidth = 2;
-          ctx.strokeStyle = '#fff';
-          ctx.stroke();
-        }
+        ctx.lineWidth = 3;
+        ctx.strokeStyle = '#16161a';
+        ctx.stroke();
       }
     },
   };

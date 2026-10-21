@@ -376,6 +376,7 @@ lazyRace('skidMarks', { lay() {}, update() {}, clear() {} }, import('./skid-mark
 lazyRace('slowMo', { update() {}, trigger() {}, scale: 1, punch: 0 }, import('./slow-mo.js'), m => m.createSlowMo());
 lazyRace('glow', { boost() {}, impact() {}, coins() {} }, import('./race-fx.js'), m => m.createRaceFx(race.scene));   // turbo, hit and coin glow
 lazyRace('tags', { update() {}, clear() {} }, import('./name-tags.js'), m => m.createNameTags());   // names over nearby racers
+lazyRace('hud', { update() {}, reset() {} }, import('./race-hud.js'), m => m.createRaceHud());   // standings pop-in, speed gauge
 lazyRace('audio', { update() {} }, import('./drift-audio.js'), m => m.createDriftAudio(sound));   // drift screech, chimes, outboard
 lazyRace('props', { setTrack() {}, sync() {}, update() {} }, import('./breakables.js'), m => m.createBreakables({ race, sound, track: () => T }))
   .then(() => { if (T?.group) race.props.setTrack(T); });   // barrels and crates to smash
@@ -669,13 +670,7 @@ function switchTrack(i) {
   net?.track(id);
 }
 
-// ---------- race HUD: standings board + minimap ----------
-function renderBoard(order, player) {
-  $('board').innerHTML = order.map((c, i) =>
-    `<li class="pk-row${c === player ? ' me is-me' : ''}"><span class="pk-row-n">${i + 1}</span><span class="chip" style="--c:${c.def.color}"></span>${esc(c.name)}</li>`
-  ).join('');
-}
-
+// ---------- race HUD: minimap (standings and gauge live in race-hud.js) ----------
 const minimap = createMinimap($('mm'));
 const lapProgress = (c) => paramOf(c.x, c.z, c.y) / T.TOTAL;
 
@@ -996,7 +991,7 @@ async function startRace(playerIndex, wheelId = garage.wheel, roster = null) {
     race.player = race.cars.find(c => c.isPlayer) ?? race.cars[0] ?? null;
     race.p2 = race.cars.find(c => c.human === 2) ?? null;
     race.splits = []; race.lapSeen = 1; race.bestLap = null;
-    $('best-pill').hidden = true;
+    $('best-pill').hidden = true; race.hud.reset();
     $('ghost-pill').hidden = true;
     $('stage-pill').hidden = !race.cup;
     if (race.cup) $('stage-readout').textContent = `${race.cup.session.stageIndex + 1}/4`;
@@ -1646,7 +1641,6 @@ function presentRace(dt) {
   for (const c of race.cars) { syncCar(c, dt); gatesApi?.sync(c, dt); race.props.sync(c); }
   race.props.update(dt);
   if (race.ghost) { syncCar(race.ghost.car, dt); gatesApi?.sync(race.ghost.car, dt); }   // the replay turns lancha on river runs too
-  race.tags.update(race.ghost ? [...race.cars, race.ghost.car] : race.cars, race.camera, race.player, { show: !race.split && race.state !== 'end' });
   race.sky.update(race.clock, T.def.palette?.daylight ?? 1);
   tickWind(race.clock, T?.def.rain ? 1.45 : 1);
   for (const o of T.animated) o.userData.tick(race.clock, dt);   // scenery: flags, windmills, birds…
@@ -1658,6 +1652,7 @@ function presentRace(dt) {
   const p = race.player;
   const order = standings();
   const place = order.indexOf(p);
+  race.tags.update(race.ghost ? [...race.cars, race.ghost.car] : race.cars, race.camera, p, { show: !race.split && race.state !== 'end', order });
   if (race.mode === 'battle') {
     setText('lap-label', 'Globos');
     setText('lap', `${p.balloons}/${BALLOONS}`);
@@ -1683,7 +1678,7 @@ function presentRace(dt) {
   if (race.p2) showP2(order);
 
   // speedometer + boost bar
-  setText('speed', String(Math.round(Math.abs(p.vf) * 4)));
+  race.hud.update(race, order, dt);
   setSpeedLines(p.boost > 0 ? Math.min(0.85, p.boost) : 0);
   const boost = $('boost');
   const ratio = Math.min(1, Math.abs(p.vf) / (p.tune.top * 1.5));
@@ -1727,7 +1722,6 @@ function presentRace(dt) {
   race.boardT -= dt;
   if (race.boardT <= 0) {
     race.boardT = 0.2;
-    renderBoard(order, p);
     if (race.state === 'end') renderResults(order, p);
     const u = paramOf(p.x, p.z, p.y) / T.TOTAL;
     const sector = T.def.sectors?.filter(([start]) => u >= start).at(-1);
@@ -1796,7 +1790,7 @@ function readRoad(p, dt) {
   if (race.mode !== 'battle' && p.lap > race.lapSeen && p.lap <= race.laps + 1) {
     race.lapSeen = p.lap;
     const { lap, best } = lapSplit(race.splits, race.clock);
-    if (best && race.splits.length > 1) shout(`¡Vuelta rápida! ${clockText(lap)}`);
+    if (best && race.splits.length > 1) shout(`¡Vuelta rápida! ${clockText(lap)}`, { tone: 'teal' });
     race.bestLap = Math.min(race.bestLap ?? Infinity, lap);
     $('lap-best').textContent = clockText(race.bestLap);
     $('best-pill').hidden = false;
@@ -1833,8 +1827,7 @@ function showItem(p) {
     slot.disabled = !item || p.done;
   });
   const item = activeItem(p), ready = item && item.rolling <= 0 && !p.done && p.spin <= 0;
-  const status = p.itemMessageT > 0 ? p.itemMessage : canBlock(p) ? 'Mango equipado · bloquea un mangazo' :
-    item ? 'Elige hacia dónde usarlo' : 'Rompe cajas de madera · guarda 2 objetos';
+  const status = p.itemMessageT > 0 ? p.itemMessage : canBlock(p) ? 'Mango equipado · bloquea un mangazo' : '';
   if ($('item-status').textContent !== status) $('item-status').textContent = status;
   $('item').classList.toggle('protected', canBlock(p));
   $('throw-front').disabled = $('throw-back').disabled = !ready;

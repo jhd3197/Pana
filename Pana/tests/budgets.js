@@ -6,5 +6,5 @@
 // shrinks by more than GAME_JS_SLACK its cap comes down with it.
 export const FIRST_LOAD_MODULES = 160;
 export const GAME_JS_LIMIT = 600, GAME_JS_SLACK = 25;
-export const GAME_JS_ALLOWED = { derrape: 2437, bululu: 1248, embuste: 650 };
+export const GAME_JS_ALLOWED = { derrape: 2409, bululu: 1248, embuste: 650 };
 export const gameJsCap = (id) => GAME_JS_ALLOWED[id] ?? GAME_JS_LIMIT;

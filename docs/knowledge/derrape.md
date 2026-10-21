@@ -27,8 +27,13 @@ lobby (`derrape-menu.md`), and its own Colyseus room (`derrape-online.md`).
   `public/breakables.js` (`race.props`: seeded clusters of the market kit's
   barrels and crates on the road edges, merged once per material; smashed
   from position by any car, local cars lose 10 % speed, back after 25 s),
-  `public/name-tags.js` (`race.tags`: DOM labels over racers within 45 m,
-  no textures, hidden in split screen), `public/drift-audio.js`
+  `public/name-tags.js` (`race.tags`: DOM pennants over racers, place on
+  ink and name on the car colour; up to 30 m the full tag, 30-45 m only the
+  place number, none beyond; no textures, hidden in split screen),
+  `public/race-hud.js` (`race.hud`: the standings slide in for 3 s only
+  when the player's place changes during `go`, three rows around the player
+  past 5 racers; the speed gauge needle and its peak mark; key hints only
+  in the first 6 s), `public/drift-audio.js`
   (`race.audio`: screech, level chimes, overheat ticks, burn, release thump,
   water rush and outboard; silenced on pause and clearRace). Hits — walls,
   cars and props — count in `c.hits`; the results tag El Chocón on the most
@@ -53,7 +58,10 @@ lobby (`derrape-menu.md`), and its own Colyseus room (`derrape-online.md`).
   local frame accumulator — never the fixed step, never an online race clock.
 - Drift style scoring is pure math in `public/drift-score.js` (points rate,
   chain window, banking; unit-tested like rules.js) and its HUD combo meter in
-  `public/drift-combo.js`. It is additive flavour: it never changes placement,
+  `public/drift-combo.js`. The HUD plates are a skewed `::before` behind
+  each element, grouped under `:where()` in style.css: an `:is()` list there
+  takes the specificity of `#board li b` and repaints every plate dark,
+  including the yellow place plate. It is additive flavour: it never changes placement,
   and a crash banks points instead of taking them. Only the local player's
   banked points reach `statCount('derrape.drift-points', …)`.
 - Personal-best ghost: `public/ghost-recorder.js` samples the local car's

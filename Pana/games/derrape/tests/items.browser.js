@@ -128,7 +128,8 @@ try {
   assert.equal(await page.evaluate(() => race.player.inventory[race.player.selected].kind), 'jugo');
   await page.evaluate(() => updateRace(1 / 60));
   assert.equal(await page.locator('#throw-back').isDisabled(), true);
-  await page.locator('#throw-front').click();
+  // The throw buttons are touch-only; a desktop drinks the jugo with Space.
+  await page.keyboard.press('Space');
   assert.equal(await page.evaluate(() => race.player.boost), 2.2);
 
   // Render the actual supply row and its fragments with readable UI.

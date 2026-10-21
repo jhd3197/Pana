@@ -1,7 +1,7 @@
 /* Derrape on the Pana Kit (/engine/kit.css): tokens, fonts and HUD pieces
    come from the kit; this file places them over the 3D scene. */
 :root { color-scheme: dark; }
-body { --gain: #5fe08a; --loss: #ff5a5a; --bar-top: #ffd65c; --me-rank: #b5121b; --slot-bg: #2c263e; --slot-line: #514b65; --slot-on: #3b3040; --slot-key: #bab2ca; --swap: #e0d8ec; --shield: #ffe58b; --coin-line: #63552f; --coin-rim: #f8bd37; --coin-face: #d88a20; --coin-shine: #ffed9a; --mango: #ffb52e; --mango-ink: #2a1702; --taller-panel: rgba(21, 13, 37, .92); --taller-card: rgba(255, 255, 255, .045); --taller-card-on: rgba(255, 255, 255, .1); --taller-line: rgba(186, 160, 255, .16); --taller-accent: #ffb02e; --taller-ink: #f6f1ff; --taller-muted: #a99dc8; --taller-good: #55e08a; --taller-bad: #ff5a6e; --coin-label: #d7cba8; --coin-text: #ffdf72; --coin-cap: #aaa08c; --coin-full: #e3ae39; --boost: #4fb6ff; --hud-ink: #16161a; --trophy-oro: #ffc629; --trophy-plata: #c9ccd4; --trophy-bronce: #c47a3a; --drift-1: #4fb6ff; --drift-2: #ff9a1f; --drift-3: #c45bff; --rarity-blue: #4fb6ff; --rarity-purple: #c45bff; --rarity-gold: #ffc629; --pk-game: #ff4b4b; --pk-game-ink: #fff; --hud-edge: 2px solid rgba(255, 255, 255, .08); }
+body { --gain: #5fe08a; --loss: #ff5a5a; --bar-top: #ffd65c; --me-rank: #b5121b; --slot-bg: #2c263e; --slot-line: #514b65; --slot-on: #3b3040; --slot-key: #bab2ca; --swap: #e0d8ec; --shield: #ffe58b; --coin-line: #63552f; --coin-rim: #f8bd37; --coin-face: #d88a20; --coin-shine: #ffed9a; --mango: #ffb52e; --mango-ink: #2a1702; --taller-panel: rgba(21, 13, 37, .92); --taller-card: rgba(255, 255, 255, .045); --taller-card-on: rgba(255, 255, 255, .1); --taller-line: rgba(186, 160, 255, .16); --taller-accent: #ffb02e; --taller-ink: #f6f1ff; --taller-muted: #a99dc8; --taller-good: #55e08a; --taller-bad: #ff5a6e; --coin-label: #d7cba8; --coin-text: #ffdf72; --coin-cap: #aaa08c; --coin-full: #e3ae39; --boost: #4fb6ff; --hud-ink: #16161a; --rank-up: #0f7a66; --banner-teal-ink: #062a23; --trophy-oro: #ffc629; --trophy-plata: #c9ccd4; --trophy-bronce: #c47a3a; --drift-1: #4fb6ff; --drift-2: #ff9a1f; --drift-3: #c45bff; --rarity-blue: #4fb6ff; --rarity-purple: #c45bff; --rarity-gold: #ffc629; --pk-game: #ff4b4b; --pk-game-ink: #fff; --hud-edge: 2px solid rgba(255, 255, 255, .08); }
 
 * { box-sizing: border-box; }
 
@@ -156,19 +156,6 @@ dd i { display: block; height: 100%; background: var(--car, var(--pk-coral)); bo
 .res-table .pk-row.rank-up { transform: translateY(-2px); }
 .res-table .pk-row.rank-down { transform: translateY(2px); }
 #cup-stages[hidden], #stage-pill[hidden], #cup-table[hidden], #setup[hidden], #shop[hidden], #wrong-way[hidden], #incoming[hidden], #p2-hud[hidden], #best-pill[hidden] { display: none; }
-.wrong-way { position: absolute; top: 34%; left: 50%; transform: translateX(-50%); display: flex; align-items: center; gap: 12px; padding: 10px 22px; border-radius: 14px; background: var(--pk-coral); color: var(--pk-text); font: 400 34px var(--pk-display); letter-spacing: 2px; pointer-events: none; animation: ww-blink .6s steps(2) infinite; }
-.ww-icon { width: 30px; height: 30px; border-radius: 50%; background: var(--pk-yellow); box-shadow: inset 0 0 0 4px var(--hud-ink); }
-@keyframes ww-blink { 50% { opacity: .55; } }
-.incoming { position: absolute; top: 140px; left: 50%; transform: translateX(-50%); display: flex; align-items: center; gap: 10px; padding: 8px 14px; border: 2px solid var(--pk-coral); border-radius: 12px; pointer-events: none; }
-.incoming-arrow { width: 0; height: 0; border-left: 10px solid transparent; border-right: 10px solid transparent; border-bottom: 18px solid var(--pk-coral); transition: transform .1s; }
-.p2-hud { position: absolute; top: 18px; right: 22px; display: grid; grid-template-columns: auto auto; gap: 2px 12px; align-items: center; padding: 10px 14px; pointer-events: none; }
-.p2-hud .pk-eyebrow, .p2-keys { grid-column: 1 / -1; }
-.p2-keys { max-width: 260px; color: var(--pk-muted); font-size: 10px; }
-#race.split .hud-corner { display: none; }
-#race.split::after { content: ''; position: absolute; top: 0; bottom: 0; left: 50%; width: 4px; margin-left: -2px; background: var(--hud-ink); pointer-events: none; }
-#race.split #board, #race.split .keys { display: none; }
-#race.split #speedo { left: auto; right: calc(50% + 16px); bottom: 110px; transform: none; }
-#race.split .coins { right: calc(50% + 16px); }
 .shop-open b { color: var(--coin-text); }
 .shop-open .mango-symbol { width: 18px; height: 18px; font-size: 18px; margin: 0 3px 0 4px; }
 /* The Taller de Panas: a glass column docked right on a wide screen (a
@@ -270,111 +257,186 @@ body:has(#loading:not(.hidden)) #garage { visibility: hidden; }
 #loading-status { margin: 0; color: var(--pk-muted); font-size: 14px; }
 
 /* ---------- race HUD ---------- */
-.pk-panel.pill, #speedo, .minimap { border: var(--hud-edge); background: rgba(14, 11, 36, .9); }
-.hud-top { position: absolute; top: 18px; left: 24px; display: flex; align-items: flex-end; gap: 16px; pointer-events: none; }
-#pos { font-size: 110px; -webkit-text-stroke: 3px var(--pk-night); text-shadow: 0 6px 0 var(--pk-coral); font-variant-numeric: tabular-nums; }
-#pos sup { font-size: 44px; vertical-align: 1.05em; -webkit-text-stroke: 2px var(--pk-night); }
-.readouts { display: flex; flex-direction: column; gap: 6px; padding-bottom: 6px; }
-.pill { padding: 6px 14px; border-radius: 12px; min-width: 96px; gap: 2px; }
-.pill .pk-eyebrow { font-size: 10px; letter-spacing: 1.2px; }
-.pill .pk-num { font-size: 24px; }
-.pill .pk-num.small { font-size: 16px; }
-.pill.leader { display: none; }
+/* Slanted plates with a hard ink shadow, like hand-painted signs. The plate is
+   a skewed ::before behind each element, so the text inside stays upright. */
+#race { --plate: rgba(14, 11, 36, .9); --plate-edge: 5px 5px 0 var(--hud-ink); --skew: skewX(-10deg); }
+:where(#pos, .readouts .pill, .coins, #speedo, #combo, #item-status, .incoming, .p2-hud, #board li, #board li b, #toast) { isolation: isolate; }
+:where(#pos, .readouts .pill, .coins, #speedo, #combo, #item-status, .incoming, .p2-hud, #board li, #toast)::before {
+  content: ''; position: absolute; inset: 0; z-index: -1;
+  background: var(--plate); box-shadow: var(--plate-edge); transform: var(--skew);
+}
 
-.hud-corner { position: absolute; top: 18px; right: 20px; display: flex; flex-direction: column; align-items: flex-end; gap: 8px; pointer-events: none; }
+/* place, lap and time, top left */
+.hud-top { position: absolute; top: 24px; left: 30px; display: flex; align-items: flex-start; gap: 12px; pointer-events: none; }
+#pos { position: relative; padding: 8px 22px 0 18px; font-size: 96px; line-height: 1; color: var(--hud-ink); text-shadow: none; font-variant-numeric: tabular-nums; }
+#pos::before { background: var(--pk-yellow); }
+#pos sup { font-size: 40px; vertical-align: .95em; }
+#pos.pop { animation: pos-pop 450ms ease-out; }
+@keyframes pos-pop { 40% { transform: scale(1.15); } }
+.readouts { display: flex; flex-direction: column; align-items: flex-start; gap: 7px; }
+.readouts .pill { position: relative; display: flex; align-items: baseline; gap: 8px; padding: 7px 16px 5px; }
+.readouts .pill[hidden] { display: none; }
+.readouts .pill .pk-eyebrow { font-size: 11px; letter-spacing: .08em; color: var(--pk-muted); }
+.readouts .pill .pk-num { font-size: 28px; color: #fff; }
+.readouts .pill .pk-num.small { font-size: 18px; color: var(--pk-text); }
+#time { font: 900 24px/1 var(--pk-sans); font-variant-numeric: tabular-nums; }
+/* Lap and time read without labels; battle keeps "Globos", since 2/3 alone says nothing there. */
+.readouts .pill.main .pk-eyebrow { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+#race[data-mode="battle"] #lap-label { position: static; width: auto; height: auto; clip-path: none; }
+.readouts .pill.leader { display: none; }
+
+/* minimap, top right: the track itself, no frame */
+.hud-corner { position: absolute; top: 24px; right: 30px; display: flex; flex-direction: column; align-items: flex-end; gap: 8px; pointer-events: none; }
 .hud-corner > .pk-btn { pointer-events: auto; }
 .pause-button { background: var(--pk-hud); }
 .pause-button kbd { margin-left: 2px; }
-.minimap { padding: 10px 12px; border-radius: 14px; pointer-events: none; }
-.mm-head { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; max-width: 200px; margin-bottom: 6px; }
-.mm-head b { font-size: 14px; color: var(--pk-yellow); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.mm-head small { flex: none; max-width: 50%; color: var(--pk-muted); font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: .5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-#mm { display: block; position: static; width: 200px; height: 130px; border-radius: 8px; background: rgba(35, 26, 71, .55); }
+.minimap { pointer-events: none; }
+.mm-head { display: none; }
+#mm { display: block; position: static; width: 230px; height: 150px; }
 
-/* standings, left side */
-#board { position: absolute; left: 24px; top: 170px; gap: 5px; pointer-events: none; }
-#board .pk-row { min-width: 170px; min-height: 0; padding: 5px 12px 5px 8px; gap: 8px; border: var(--hud-edge); font-size: 13px; box-shadow: 0 3px 0 rgba(0, 0, 0, .3); }
-#board .pk-row.is-me { border-color: var(--pk-yellow-edge); }
-#board .pk-row-n { width: 20px; text-align: center; }
-#board .pk-row.is-me .pk-row-n { color: var(--me-rank); }
+/* standings: race-hud.js shows them for a few seconds when your place changes */
+#board { position: absolute; left: 36px; top: 168px; width: 210px; height: calc(var(--rows, 4) * 34px); margin: 0; padding: 0; list-style: none; pointer-events: none;
+  opacity: 0; transform: translateX(-260px); transition: transform 260ms cubic-bezier(.2, .8, .2, 1), opacity 200ms; }
+#board.show { opacity: 1; transform: none; }
+#board li { position: absolute; left: 0; top: calc(var(--r, 0) * 34px); width: 100%; height: 28px; display: flex; align-items: center; gap: 10px; padding-right: 12px;
+  font: 900 15px/1 var(--pk-sans); color: var(--pk-text); transition: top 420ms cubic-bezier(.3, .7, .2, 1); }
+#board li[hidden] { display: none; }
+#board li::before { box-shadow: 4px 4px 0 rgba(0, 0, 0, .35); }
+#board li b { position: relative; align-self: stretch; display: grid; place-items: center; width: 30px; font: 400 16px/1 var(--pk-display); color: var(--pk-text); }
+#board li b::before { content: ''; position: absolute; inset: 0; z-index: -1; background: var(--hud-ink); transform: var(--skew); }
+#board li i { align-self: stretch; width: 6px; margin-left: -8px; background: var(--c); transform: var(--skew); }
+#board li span { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#board li.me { color: var(--hud-ink); }
+#board li.me::before { background: var(--pk-yellow); }
+#board li.me i { background: var(--hud-ink); }
+#board .delta { flex: none; width: 14px; height: 12px; opacity: 0; }
+#board .delta.up { opacity: 1; background: var(--rank-up); clip-path: polygon(50% 0, 100% 100%, 0 100%); }
+#board .delta.down { opacity: 1; background: var(--pk-coral-edge); clip-path: polygon(0 0, 100% 0, 50% 100%); }
 .chip { flex: none; width: 12px; height: 12px; border-radius: 4px; background: var(--c, #888); box-shadow: inset 0 -3px 0 rgba(0, 0, 0, .3); }
 
-/* two item slots, bottom left */
-.item { position: absolute; bottom: 20px; left: 20px; width: 290px; padding: 12px; background: rgba(14, 11, 36, .94); }
-.inventory { align-items: center; }
-.slot { position: relative; flex: 1; min-width: 0; width: auto; height: 84px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; padding: 8px 4px; color: var(--pk-muted); background: var(--slot-bg); border-color: var(--slot-line); transition: transform 180ms cubic-bezier(.34, 1.8, .64, 1), box-shadow 180ms, border-color 140ms; }
-.slot.selected { border: 3px solid var(--pk-yellow); background: var(--slot-on); color: var(--pk-text); }
-.slot[data-rarity="blue"] { box-shadow: inset 0 0 18px rgba(79, 182, 255, .28), 0 0 10px rgba(79, 182, 255, .25); }
-.slot[data-rarity="purple"] { box-shadow: inset 0 0 20px rgba(196, 91, 255, .34), 0 0 12px rgba(196, 91, 255, .32); }
-.slot[data-rarity="gold"] { box-shadow: inset 0 0 24px rgba(255, 198, 41, .42), 0 0 16px rgba(255, 198, 41, .45); border-color: var(--rarity-gold); }
-.slot.rolling .item-icon { transform: scale(.92); opacity: .85; }
+/* items, bottom left: the equipped slot is the big one */
+.item { position: absolute; bottom: 30px; left: 36px; }
+.inventory { align-items: flex-end; gap: 12px; }
+.slot { position: relative; flex: none; width: 70px; height: 64px; display: grid; place-items: center; padding: 4px; color: var(--pk-text);
+  border: 3px solid rgba(255, 255, 255, .3); border-radius: 0; background: var(--plate); box-shadow: var(--plate-edge); transform: var(--skew);
+  transition: width 160ms ease-out, height 160ms ease-out, border-color 140ms; }
+.slot > * { transform: skewX(10deg); }
+.slot.selected { width: 92px; height: 84px; border-color: var(--pk-yellow); }
+.slot[data-rarity="blue"] { border-color: var(--rarity-blue); }
+.slot[data-rarity="purple"] { border-color: var(--rarity-purple); }
+.slot[data-rarity="gold"] { border-color: var(--rarity-gold); }
 .slot:disabled { opacity: 1; cursor: default; }
-.slot .item-icon { font-size: 36px; line-height: 1; transition: transform 160ms cubic-bezier(.34, 1.8, .64, 1); }
-.slot .slot-key { position: absolute; top: 4px; left: 8px; font: 900 11px var(--pk-sans); color: var(--slot-key); }
-.slot small { max-width: 100%; font-size: 10px; font-weight: 800; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.slot i { position: absolute; right: 8px; top: 4px; font: 900 13px var(--pk-sans); font-style: normal; color: var(--pk-yellow); }
-.swap { flex: none; display: grid; justify-items: center; gap: 4px; width: 38px; border: 0; background: none; padding: 8px 0; color: var(--swap); }
+.slot .item-icon { font-size: 40px; line-height: 1; transition: transform 160ms ease-out; }
+.slot.selected .item-icon { font-size: 54px; }
+.slot.rolling .item-icon { transform: skewX(10deg) scale(.92); opacity: .85; }
+.slot .slot-key { position: absolute; top: 3px; left: 8px; font: 900 11px var(--pk-sans); color: var(--slot-key); }
+.slot small { display: none; }
+.slot i { position: absolute; right: 8px; top: 3px; font: 900 13px var(--pk-sans); font-style: normal; color: var(--pk-yellow); }
+.swap { flex: none; align-self: center; display: grid; justify-items: center; gap: 4px; width: 34px; border: 0; background: none; padding: 0; color: var(--swap); }
 .swap span { font-size: 22px; line-height: 1; }
-#item-status { min-height: 30px; margin: 8px 0 6px; font-size: 12px; font-weight: 700; line-height: 1.3; color: var(--pk-muted); }
+/* Only real messages ("¡Rebufo!", a mango ready to block) show, on a plate over the slots. */
+#item-status { position: absolute; left: 0; bottom: calc(100% + 12px); margin: 0; padding: 7px 16px 5px; white-space: nowrap; font: 800 14px/1.2 var(--pk-sans); color: var(--pk-text); }
+#item-status:empty { display: none; }
 .protected #item-status { color: var(--shield); }
-.item-actions { display: flex; gap: 8px; }
+.item-actions { display: none; gap: 8px; margin-top: 12px; }
 .item-actions .pk-btn { flex: 1; min-height: 40px; padding: 6px 10px; justify-content: space-between; gap: 6px; font: 800 13px var(--pk-sans); letter-spacing: 0; box-shadow: none; }
 .item-actions .pk-btn--primary { box-shadow: 0 3px 0 var(--pk-yellow-edge); }
 .item-actions .pk-kbd { min-width: 0; height: 20px; font-size: 10px; padding: 0 5px; }
 .item-actions .pk-btn:disabled, .swap:disabled { opacity: .4; cursor: default; }
 .item button:active:not(:disabled) { transform: scale(.97); }
+.item .slot:active:not(:disabled) { transform: var(--skew) scale(.97); }
 
-/* coins, bottom right */
-.coins {
-  position: absolute; right: 20px; bottom: 20px;
-  display: flex; align-items: center; gap: 12px; min-width: 170px;
-  padding: 12px 18px; border-color: var(--coin-line); background: rgba(14, 11, 36, .94); pointer-events: none;
-}
+/* coins, next to the items. The bonus they give is in the title. */
+.coins { position: absolute; left: 286px; bottom: 30px; display: flex; align-items: center; gap: 8px; padding: 8px 16px 6px; pointer-events: none; }
+.coins .pk-eyebrow, .coin-cap, #coin-bonus { display: none; }
+.coins.full::before { box-shadow: inset 0 0 0 3px var(--coin-full), var(--plate-edge); }
 /* Coins are what a race pays; the taller exchanges them for mangos. */
-.coin-symbol { flex: none; display: grid; place-items: center; width: 36px; height: 40px; border: 4px solid var(--coin-rim); border-radius: 50%; background: var(--coin-face); color: var(--coin-shine); font: 400 22px/1 var(--pk-display); padding-top: 3px; transition: transform 120ms; }
+.coin-symbol { flex: none; display: grid; place-items: center; width: 24px; height: 27px; border: 3px solid var(--coin-rim); border-radius: 50%; background: var(--coin-face); color: var(--coin-shine); font: 400 14px/1 var(--pk-display); padding-top: 2px; transition: transform 120ms; }
 /* The taller's money is the mango: engine/icons.js's mango, filled in by game.js. */
 .mango-symbol { flex: none; display: inline-grid; place-items: center; width: 40px; height: 40px; font-size: 40px; line-height: 0; transition: transform 120ms; }
 .mango-symbol svg { display: block; filter: drop-shadow(0 2px 0 rgba(0, 0, 0, .35)); }
-.coins .pk-eyebrow { color: var(--coin-label); font-size: 10px; letter-spacing: 1px; }
-.coins b { font-size: 28px; line-height: 1.1; color: var(--coin-text); font-variant-numeric: tabular-nums; }
-.coin-cap { color: var(--coin-cap); font-size: 12px; }
-#coin-bonus { display: block; font-size: 11px; font-weight: 700; color: var(--coin-label); }
-.coins.picked .coin-symbol { transform: scale(1.13); }
-.coins.full { border-color: var(--coin-full); }
+.coins b { font: 400 28px/1 var(--pk-display); color: var(--coin-text); font-variant-numeric: tabular-nums; }
+.coins.picked .coin-symbol { transform: scale(1.2); }
 
-/* speedometer, bottom center */
-#speedo { position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); padding: 10px 28px 12px; border-radius: 18px; text-align: center; pointer-events: none; }
-#speedo .kmh { display: flex; align-items: baseline; justify-content: center; gap: 6px; }
-#speedo b { font-size: 48px; line-height: 1; color: var(--pk-text); font-variant-numeric: tabular-nums; }
-#speedo .kmh small { color: var(--pk-muted); font-size: 13px; font-weight: 900; letter-spacing: 2px; }
-#boost { display: flex; gap: 4px; margin-top: 6px; }
-#boost i { width: 22px; height: 10px; background: var(--pk-raised); border-radius: 3px; transform: skewX(-14deg); transition: background .1s; }
+/* speed gauge, bottom right: needle and arc, the coral mark is the recent peak */
+#speedo { position: absolute; right: 36px; bottom: 30px; padding: 12px 26px 10px; text-align: center; pointer-events: none; }
+#speedo .gauge { display: block; width: 150px; height: 120px; margin: 0 auto; overflow: visible; }
+#gauge-fill { stroke: var(--pk-yellow); transition: stroke .15s; }
+#gauge-needle, #gauge-peak { transform-origin: 60px 56px; transform: rotate(-120deg); }
+#gauge-needle { transition: transform 80ms linear; }
+#gauge-peak { transition: transform 200ms ease-out; }
+#speedo:has(#boost[data-drift="1"]) #gauge-fill { stroke: var(--drift-1); }
+#speedo:has(#boost[data-drift="2"]) #gauge-fill { stroke: var(--drift-2); }
+#speedo:has(#boost[data-drift="3"]) #gauge-fill { stroke: var(--drift-3); }
+#boost { display: flex; justify-content: center; gap: 4px; margin-top: 4px; }
+#boost i { width: 14px; height: 8px; background: var(--pk-raised); transform: skewX(-14deg); transition: background .1s; }
 #boost i.on { background: var(--boost); }
-#boost.turbo i.on { background: var(--pk-yellow); box-shadow: 0 0 8px rgba(255, 198, 41, .7); }
+#boost.turbo i.on { background: var(--pk-yellow); }
 #boost[data-drift="1"] i.on { background: var(--drift-1); }
 #boost[data-drift="2"] i.on { background: var(--drift-2); }
-#boost[data-drift="3"] i.on { background: var(--drift-3); box-shadow: 0 0 8px var(--drift-3); }
-#drift-hint:not([hidden]) { display: block; margin-top: 5px; color: var(--pk-text); font-size: 10px; font-weight: 800; line-height: 1.3; white-space: nowrap; }
+#boost[data-drift="3"] i.on { background: var(--drift-3); }
+#drift-hint:not([hidden]) { display: block; margin-top: 5px; color: var(--pk-text); font-size: 11px; font-weight: 800; line-height: 1.3; white-space: nowrap; }
 
-/* combo meter: the live drift-style pot and its chain, over the speedometer */
-#combo { position: absolute; bottom: 118px; left: 50%; transform: translateX(-50%); display: flex; align-items: baseline; gap: 8px; padding: 6px 16px 7px; border-radius: 12px; pointer-events: none; }
+/* combo meter: the live drift-style pot and its chain, bottom centre */
+#combo { position: absolute; bottom: 34px; left: 50%; transform: translateX(-50%); display: flex; align-items: baseline; gap: 10px; padding: 9px 24px 3px; pointer-events: none; }
 #combo[hidden] { display: none; }
-#combo .pk-eyebrow { font-size: 9px; letter-spacing: 1.5px; }
-#combo .combo-pts { font-size: 24px; line-height: 1; color: var(--pk-text); font-variant-numeric: tabular-nums; }
-#combo .combo-mult { font: 800 15px var(--pk-sans); color: var(--pk-muted); }
+#combo .pk-eyebrow { display: none; }
+#combo .combo-pts { font: 400 40px/1 var(--pk-display); color: #fff; font-variant-numeric: tabular-nums; }
+#combo .combo-mult { font: 400 32px/1 var(--pk-display); color: var(--pk-muted); }
 @keyframes combo-pulse { 50% { transform: scale(1.22); } }
 #combo[data-chain="2"] .combo-mult, #combo[data-chain="3"] .combo-mult,
 #combo[data-chain="4"] .combo-mult, #combo[data-chain="5"] .combo-mult { animation: combo-pulse .6s ease-in-out infinite; }
 #combo[data-chain="2"] .combo-mult { color: var(--drift-1); }
 #combo[data-chain="3"] .combo-mult { color: var(--drift-2); }
-#combo[data-chain="4"] .combo-mult, #combo[data-chain="5"] .combo-mult { color: var(--drift-3); text-shadow: 0 0 8px var(--drift-3); }
+#combo[data-chain="4"] .combo-mult, #combo[data-chain="5"] .combo-mult { color: var(--drift-3); }
 @keyframes combo-bank { 30% { transform: translateX(-50%) scale(1.25); } }
 #combo.banked { animation: combo-bank .9s ease-out; }
-#combo.banked .combo-pts { color: var(--pk-yellow); }
+#combo.banked::before { background: var(--pk-yellow); }
+#combo.banked .combo-pts { color: var(--hud-ink); }
 #race.split #combo { left: 25%; }
 
-.keys { position: absolute; bottom: 116px; right: 22px; grid-template-columns: repeat(2, auto); gap: 7px 14px; pointer-events: none; }
+/* key reminders: only during the countdown and the first seconds (race-hud.js) */
+.keys { position: absolute; bottom: 104px; left: 50%; transform: translateX(-50%); grid-template-columns: repeat(3, auto); gap: 7px 16px; pointer-events: none; opacity: 0; transition: opacity .5s; }
+#race.hints .keys { opacity: 1; }
 .keys span { display: flex; align-items: center; gap: 6px; }
+
+/* alerts: lap shouts (engine/kit.js shout) become a band with a plate, milestone
+   toasts a badge over the gauge, danger is coral and nothing else is */
+.pk-banner-layer { top: 20%; }
+.pk-banner { position: relative; isolation: isolate; padding: 14px 36px 8px; border-radius: 0; background: none; box-shadow: none; color: var(--hud-ink); font: 400 60px/1 var(--pk-display); transform: none; }
+.pk-banner::after { content: ''; position: absolute; inset: 0; z-index: -1; background: var(--pk-yellow); box-shadow: 6px 6px 0 var(--hud-ink); transform: skewX(-10deg); }
+.pk-banner::before { content: ''; position: absolute; z-index: -2; top: -22px; bottom: -22px; left: 50%; width: 120vw; margin-left: -60vw; background: rgba(14, 11, 36, .8); transform: skewY(-2deg); }
+.pk-banner--yellow { color: var(--hud-ink); }
+.pk-banner--teal { color: var(--banner-teal-ink); }
+.pk-banner--teal::after { background: var(--pk-teal); }
+.pk-banner.pk-pop { animation: hud-banner 1.8s ease-out both; }
+.pk-banner.pk-pop::before { animation: hud-band 1.8s ease-out both; }
+@keyframes hud-banner { 0% { opacity: 0; transform: translateX(90px) scale(1.25); } 12%, 85% { opacity: 1; transform: none; } 100% { opacity: 0; transform: translateX(-60px); } }
+@keyframes hud-fade { 0%, 85% { opacity: 1; } 100% { opacity: 0; } }
+@keyframes hud-band { 0% { clip-path: inset(0 100% 0 0); } 12%, 100% { clip-path: inset(0 0 0 0); } }
+#toast { top: auto; left: auto; right: 36px; bottom: 236px; max-width: 46vw; padding: 12px 22px 9px 32px; border: 0; border-radius: 0; background: none; color: #fff;
+  font: 400 24px/1.1 var(--pk-display); letter-spacing: .02em; text-align: left; transform: translateX(40px); }
+#toast.show { transform: none; }
+#toast::before { box-shadow: inset 12px 0 0 var(--drift-3), var(--plate-edge); }
+.wrong-way { position: absolute; top: 28%; left: 50%; transform: translateX(-50%); display: flex; align-items: center; gap: 14px; padding: 12px 34px 6px; isolation: isolate;
+  color: #fff; font: 400 64px/1 var(--pk-display); letter-spacing: 1px; paint-order: stroke fill; -webkit-text-stroke: 7px var(--hud-ink); pointer-events: none; }
+.wrong-way::before { content: ''; position: absolute; inset: 0; z-index: -1; background: var(--pk-coral); box-shadow: 6px 6px 0 var(--hud-ink); transform: var(--skew); animation: ww-blink .9s steps(1) infinite; }
+@keyframes ww-blink { 50% { background: var(--hud-ink); } }
+.ww-icon { flex: none; width: 52px; height: 52px; margin-bottom: 6px; }
+.incoming { position: absolute; bottom: 150px; left: 50%; transform: translateX(-50%); display: flex; align-items: stretch; pointer-events: none; }
+.incoming-cell { position: relative; isolation: isolate; display: grid; place-items: center; width: 58px; }
+.incoming-cell::before { content: ''; position: absolute; inset: 0; z-index: -1; background: var(--pk-coral); transform: var(--skew); animation: ww-blink .5s steps(1) infinite; }
+.incoming-cell:has(> [hidden]) { display: none; }
+.incoming-arrow { width: 0; height: 0; border-left: 10px solid transparent; border-right: 10px solid transparent; border-bottom: 18px solid #fff; transition: transform .1s; }
+#incoming-text { padding: 10px 24px 6px 16px; font: 400 32px/1 var(--pk-display); color: #fff; }
+.p2-hud { position: absolute; top: 24px; right: 30px; display: grid; grid-template-columns: auto auto; gap: 2px 12px; align-items: center; padding: 10px 18px; pointer-events: none; }
+.p2-hud .pk-eyebrow, .p2-keys { grid-column: 1 / -1; }
+.p2-keys { max-width: 260px; color: var(--pk-muted); font-size: 10px; }
+#race.split .hud-corner { display: none; }
+#race.split::after { content: ''; position: absolute; top: 0; bottom: 0; left: 50%; width: 4px; margin-left: -2px; background: var(--hud-ink); pointer-events: none; }
+#race.split #board, #race.split .keys { display: none; }
+#race.split #speedo { right: calc(50% + 16px); bottom: 110px; }
+#race.split .coins { left: auto; right: calc(50% + 16px); }
 
 #count {
   position: absolute; inset: 0; display: grid; place-items: center;
@@ -466,35 +528,45 @@ body:has(#loading:not(.hidden)) #garage { visibility: hidden; }
   .loading-foot { flex-wrap: wrap; }
 
   .hud-top { top: 12px; left: 12px; gap: 8px; }
-  #pos { font-size: 64px; -webkit-text-stroke: 2px var(--pk-night); text-shadow: 0 4px 0 var(--pk-coral); }
-  #pos sup { font-size: 26px; }
-  .readouts { padding-bottom: 2px; gap: 4px; }
-  .pill { min-width: 0; padding: 4px 10px; border-radius: 10px; }
-  .pill .pk-num { font-size: 17px; }
+  #pos { padding: 5px 14px 0 12px; font-size: 56px; }
+  #pos sup { font-size: 22px; }
+  .readouts { gap: 5px; }
+  .readouts .pill { padding: 5px 11px 3px; }
+  .readouts .pill .pk-num { font-size: 19px; }
+  .readouts .pill .pk-num.small { font-size: 14px; }
+  #time { font-size: 16px; }
   .hud-corner { top: 12px; right: 12px; }
-  .minimap { padding: 6px 8px; border-radius: 12px; }
-  .mm-head { max-width: 120px; margin-bottom: 4px; }
-  .mm-head small { display: none; }
-  .mm-head b { font-size: 12px; }
   #mm { width: 120px; height: 78px; }
   .pause-button { min-height: 40px; }
-  #board { display: none; }
-  .coins { top: 128px; bottom: auto; left: 12px; right: auto; min-width: 0; padding: 8px 12px; gap: 8px; }
-  .coin-symbol { width: 26px; height: 30px; font-size: 16px; border-width: 3px; }
+  #board { left: 12px; top: 176px; width: 170px; }
+  .coins { top: 128px; bottom: auto; left: 12px; padding: 6px 12px 4px; }
+  .coin-symbol { width: 20px; height: 22px; font-size: 12px; }
   .mango-symbol { width: 28px; height: 28px; font-size: 28px; }
   .coins b { font-size: 22px; }
-  .item { bottom: 14px; left: 12px; width: 252px; padding: 10px; }
-  .slot { height: 70px; }
+  .item { bottom: 14px; left: 12px; }
+  .inventory { gap: 10px; }
+  .slot { width: 60px; height: 56px; }
+  .slot.selected { width: 76px; height: 70px; }
   .slot .item-icon { font-size: 30px; }
-  #item-status { font-size: 11px; }
-  #speedo { left: auto; right: 12px; bottom: 14px; transform: none; width: 96px; padding: 8px; border-radius: 14px; }
-  #speedo b { font-size: 26px; }
-  #speedo .kmh { gap: 3px; }
-  #speedo .kmh small { font-size: 9px; letter-spacing: 0; }
+  .slot.selected .item-icon { font-size: 40px; }
+  .swap { width: 30px; }
+  #item-status { font-size: 12px; }
+  #speedo { right: 12px; bottom: 14px; width: 104px; padding: 8px 10px 6px; }
+  #speedo .gauge { width: 72px; height: 58px; }
   #drift-hint:not([hidden]) { font-size: 9px; }
   #boost { gap: 2px; }
-  #boost i { width: 7px; }
+  #boost i { width: 8px; height: 6px; }
   .item-actions .pk-btn { min-height: 44px; padding: 6px 8px; }
+  #combo { bottom: 120px; padding: 7px 18px 2px; }
+  #combo .combo-pts { font-size: 28px; }
+  #combo .combo-mult { font-size: 22px; }
+  #toast { right: 12px; bottom: auto; top: 30%; max-width: 72vw; padding: 9px 16px 6px 24px; font-size: 18px; }
+  .wrong-way { font-size: 34px; gap: 10px; padding: 9px 22px 4px; -webkit-text-stroke-width: 5px; }
+  .ww-icon { width: 30px; height: 30px; }
+  .incoming { bottom: auto; top: 22%; }
+  .incoming-cell { width: 44px; }
+  #incoming-text { padding: 8px 16px 4px 12px; font-size: 22px; }
+  .pk-banner { padding: 10px 22px 6px; font-size: 32px; }
 
   .result { grid-template-columns: 1fr; grid-auto-rows: max-content; align-content: start; gap: 20px; padding: 24px 16px 0; }
   .res-main { min-height: auto; }
@@ -517,8 +589,11 @@ body:has(#loading:not(.hidden)) #garage { visibility: hidden; }
   .item, #speedo { bottom: calc(max(14px, env(safe-area-inset-bottom)) + 94px); }
   #combo { bottom: calc(max(14px, env(safe-area-inset-bottom)) + 212px); }
   #item-status, .slot small { display: none; }
-  .slot { height: 58px; }
+  .item-actions { display: flex; }
+  .slot { width: 60px; height: 54px; }
+  .slot.selected { width: 70px; height: 62px; }
   .slot .item-icon { font-size: 26px; }
+  .slot.selected .item-icon { font-size: 34px; }
   .item-actions .pk-btn { min-height: 40px; }
   .item-actions kbd, .swap kbd { display: none; }
   .keys { display: none; }
@@ -533,18 +608,20 @@ body:has(#loading:not(.hidden)) #garage { visibility: hidden; }
   .tools { top: 72px; }
   .wheel-info { display: none; }
   .wheel-lineup { bottom: 132px; }
-  .item { bottom: 12px; }
-  #pos { font-size: 80px; }
+  .item, .coins, #speedo { bottom: 12px; }
+  #pos { font-size: 72px; }
+  #speedo .gauge { width: 120px; height: 96px; }
 }
 @media (max-width: 380px) {
-  .item { width: calc(100vw - 132px); }
-  .slot small { font-size: 9px; }
-  #speedo { padding: 8px; }
-  #speedo b { font-size: 26px; }
-  #speedo .kmh small { font-size: 9px; letter-spacing: 0; }
-  #boost i { width: 6px; }
+  .inventory { gap: 8px; }
+  .slot { width: 50px; height: 48px; }
+  .slot.selected { width: 64px; height: 60px; }
+  .slot .item-icon { font-size: 24px; }
+  .slot.selected .item-icon { font-size: 32px; }
+  .swap { width: 28px; }
+  #speedo { width: 96px; padding: 8px 8px 6px; }
+  #boost i { width: 7px; }
   #mm { width: 104px; height: 68px; }
-  .mm-head { max-width: 104px; }
 }
 @media (max-width: 760px) and (pointer: coarse) {
   .touch-drive { gap: 10px; }
@@ -556,18 +633,23 @@ body:has(#loading:not(.hidden)) #garage { visibility: hidden; }
 }
 @media (max-height: 540px) and (pointer: coarse) {
   .touch-drive { bottom: max(12px, env(safe-area-inset-bottom)); }
-  .item { left: max(12px, env(safe-area-inset-left)); bottom: calc(max(12px, env(safe-area-inset-bottom)) + 94px); width: 236px; padding: 8px; transform: none; }
-  .slot { height: 50px; }
+  .item { left: max(12px, env(safe-area-inset-left)); bottom: calc(max(12px, env(safe-area-inset-bottom)) + 94px); transform: none; }
+  .slot { width: 54px; height: 46px; }
+  .slot.selected { width: 62px; height: 52px; }
   .slot .item-icon { font-size: 22px; }
+  .slot.selected .item-icon { font-size: 28px; }
   .item-actions .pk-btn { min-height: 34px; }
   #speedo, .keys, #board, .wheel-lineup, #combo { display: none; }
   .tools { bottom: 284px; }
-  .coins { top: 12px; bottom: auto; left: 50%; right: auto; transform: translateX(-50%); min-width: 0; padding: 8px 12px; }
+  .coins { top: 12px; bottom: auto; left: 50%; right: auto; transform: translateX(-50%); padding: 6px 12px 4px; }
 }
 @media (prefers-reduced-motion: reduce) {
   .coins.picked .coin-symbol, .res-table .pk-row.rank-up, .res-table .pk-row.rank-down { transform: none; }
   dd i, button, .coin-symbol, .mango-symbol, .res-table .pk-row { transition: none; }
-  #combo.banked, #combo .combo-mult { animation: none; }
+  #combo.banked, #combo .combo-mult, #pos.pop, .wrong-way::before, .incoming-cell::before { animation: none; }
+  #board, #board li, .slot, #gauge-needle, #gauge-peak { transition: none; }
+  .pk-banner.pk-pop { animation: hud-fade 1.8s both; }
+  .pk-banner.pk-pop::before { animation: none; }
 }
 
 /* ---------- online lobby ---------- */

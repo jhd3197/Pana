@@ -8,6 +8,12 @@ becomes the GitHub release's notes.
 
 ## Unreleased
 
+- **Derrape estrena pantalla de carrera: letreros pintados en vez de cajas.**
+  Tu puesto va en una placa amarilla, la clasificación aparece solo cuando
+  pasas a alguien o te pasan, el velocímetro es una aguja con marca de pico
+  y los nombres sobre los carros son banderines con el puesto, que se
+  achican con la distancia. Vuelta final, vuelta rápida, derrapes y
+  contramano tienen avisos nuevos, y las teclas solo se ven al arrancar.
 - **Contributors get one-command scaffolds and safer checks.** `npm run
   new-track` registers a Derrape circuit everywhere with a placeholder that
   already races, `npm run launcher-art` adds a game's hub art, `npm run
