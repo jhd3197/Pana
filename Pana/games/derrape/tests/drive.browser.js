@@ -42,7 +42,8 @@ try {
     for (let i = 0; i < 20; i++) updateRace(1 / 60);
     return { stalled, speed: Math.abs(p.vf) };
   });
-  assert.ok(stall.stalled && stall.speed < 1, `stall ${JSON.stringify(stall)}`);
+  // A jumped start floods the engine: the car still moves, only weakly.
+  assert.ok(stall.stalled && stall.speed > 0 && stall.speed < 4.5, `stall ${JSON.stringify(stall)}`);
 
   // Drive a real bend with simple held input, then release for a turbo.
   // Never pin the car in place: that used to hide the forced-turn wall crashes.
