@@ -8,6 +8,11 @@ becomes the GitHub release's notes.
 
 ## Unreleased
 
+- **Tests can be narrowed and explain themselves: `npm test -- derrape` runs
+  only the matching unit tests in seconds, and `.\dev.ps1 check -Help` prints
+  the cheat sheet for picking the fastest check.** The full unit run still
+  works as `npm test`; browser suites stay filtered or `--changed`, never the
+  whole set locally.
 - **Derrape y Pepazo celebran tus jugadas con avisos de hitos.** En Derrape el
   derrape suma metros por carrera (¡500 metros!, ¡1 kilómetro!), un derrape de
   más de 100 m sin soltar es un ¡Derrapón! y soltar un derrape púrpura tiene su

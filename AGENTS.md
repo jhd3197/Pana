@@ -99,13 +99,22 @@ pause overlay, sound toggle or invite flow, or handle Escape in a game. Never se
 
 ```powershell
 .\dev.ps1                 # start the server (installs deps, resolves busy ports)
-.\dev.ps1 check           # syntax check + unit and convention tests (~2 min)
+.\dev.ps1 check           # syntax check + unit and convention tests
+.\dev.ps1 check -Help     # the cheat sheet: which check to run for a change
 .\dev.ps1 check -Browser domino   # ...plus the Playwright suites matching "domino"
 .\dev.ps1 studio          # open Pana Studio on the running server
+npm test -- derrape            # only unit tests whose path contains "derrape" (seconds)
+npm test -- feats rules        # union of several filters
 npm run test:browser -- all-games  # every game prepares a 3D scene without errors
 npm run test:browser -- --changed  # only the suites for what changed since dev
 npm run test:browser -- --jobs 4   # the full set, four suites at a time
 ```
+
+Run the narrowest check that covers the change: `npm test -- <word>` takes
+seconds, the full `npm test` several minutes, and browser suites minutes EACH —
+always filter them (`-- derrape`, `--changed`). Never run the whole browser set
+locally; CI does that nightly. `.\dev.ps1 check -Help` prints the same cheat
+sheet from the CLI.
 
 A suite only reruns when something it can touch changed: the runner hashes the
 suite, every game it opens, the engine modules and assets those load, the server
