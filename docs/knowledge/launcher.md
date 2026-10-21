@@ -46,6 +46,14 @@ used by the private social pages. These are resized exports of the supplied PNGs
 not generated replacements. `artUrl(game, true)` selects a card variant when one
 exists; the default selects the large hero/lobby illustration.
 
+New art goes in with `npm run launcher-art -- <id> <image> --row <row>`
+(`Pana/scripts/launcher-art.js`): it center-crops to 3:2, writes `<id>.jpg`
+at 1536 × 1024 and `<id>-card.jpg` at 640 × 427 (under 600 KB) through
+Chromium's canvas, never upscaling a small source, registers the entry (and a
+new row in `categories`) in `launcher-art.js`, and adds the game to the card
+checks and row counts in `web/tests/launcher.browser.js`. `--dry-run` reports
+sizes without writing. Only real supplied art goes through it.
+
 Cards load images lazily. Only a game without an illustration loads `card.js`;
 switching a live hero loses the old WebGL context. The player's 3D editor imports
 `pana.js` on opening Mi pana and stops rendering while hidden. Real game scenes

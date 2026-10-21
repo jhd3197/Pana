@@ -94,7 +94,8 @@ Next:
   2. Replace the scaffold rules in public/rules.js and its tests; keep the 3D scene.
   3. npm test, then npm run test:browser -- ${game.id}
   4. Add the game to README.md, docs/knowledge/README.md and CHANGELOG.md (Unreleased).
-  5. Launcher art: add images to web/images/launcher/ and web/launcher-art.js.`);
+  5. Launcher art: npm run launcher-art -- ${game.id} <image> --row <Carreras|Mesa|Fiesta|Aventura>
+     (until then the hub tile is its color, or public/card.js if the game has one).`);
   } catch (error) {
     console.error(error.message);
     process.exit(1);
