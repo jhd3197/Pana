@@ -106,6 +106,7 @@ pause overlay, sound toggle or invite flow, or handle Escape in a game. Never se
 npm test -- derrape            # only unit tests whose path contains "derrape" (seconds)
 npm test -- feats rules        # union of several filters
 npm run test:browser -- all-games  # every game prepares a 3D scene without errors
+npm run shots -- derrape --track chuao --at gate-60  # screenshots from the real loop, seconds
 npm run test:browser -- --changed  # only the suites for what changed since dev
 npm run test:browser -- --jobs 4   # the full set, four suites at a time
 ```

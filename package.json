@@ -12,6 +12,7 @@
     "check": "node Pana/server/src/check.js",
     "test": "node Pana/scripts/test-unit.js",
     "test:browser": "node Pana/scripts/test-browser.js",
+    "shots": "node Pana/scripts/shots.js",
     "new-game": "node Pana/scripts/new-game.js",
     "dev": "powershell -ExecutionPolicy Bypass -File dev.ps1"
   },

@@ -24,6 +24,12 @@ BROWSER (minutes PER SUITE — never run the whole set locally):
   A suite that already passed for the same files is skipped (cached).
   The full set runs nightly in CI; local full runs just burn hours.
 
+LOOK (seconds — screenshots from the real frame loop, no assertions):
+  npm run shots -- derrape --track chuao --at gate-60   drive into Chuao's lancha gate
+  npm run shots -- derrape --track choroni --at 0.5 --shots 10 --every 200
+  npm run shots -- pintura --query room=demo            any game: a burst of PNGs
+  npm run shots -- --help                               every option
+
 Same through the Windows entry point:
   .\\dev.ps1 check                     syntax + unit tests
   .\\dev.ps1 check -Browser derrape    ...plus only the derrape suites
