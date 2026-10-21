@@ -72,6 +72,40 @@ try {
   assert.ok(drift.maxOff<drift.limit, `drift stays off the walls ${JSON.stringify(drift)}`);
   assert.ok(drift.after > 0.4 && drift.dir === 0, `release pays the earned turbo ${JSON.stringify(drift)}`);
 
+  // Feats: hold one drift past 100 m — re-entering the same bend keeps the run
+  // on the road without touching drift state — and the toast celebrates; the
+  // drift charges to purple on the way, so releasing it celebrates too.
+  const feats = await page.evaluate(() => {
+    const p = race.player, T = getActiveTrack(), s = 1254;
+    const toast = document.getElementById('toast');
+    const place = () => {
+      const a = T.pointAt(s), b = T.pointAt(s + .5), h = Math.atan2(b.x - a.x, b.y - a.y);
+      Object.assign(p, { x: a.x, z: a.y, y: T.groundAt(a.x, a.y), h, onGround: true, vy: 0, pitch: 0, roll: 0, spin: 0, stall: 0 });
+      p.vx = Math.sin(h) * p.vf; p.vz = Math.cos(p.h) * p.vf;
+    };
+    p.vf = 32; p.boost = 0; place();
+    race.keys = { w: true, shift: true, d: true };
+    let longText = '', maxOff = 0;
+    for (let leg = 0; leg < 14 && !(longText && p.driftLvl === 3); leg++) {
+      for (let i = 0; i < 55 && !(longText && p.driftLvl === 3); i++) {
+        updateRace(1 / 60);
+        maxOff = Math.max(maxOff, Math.abs(T.offsetOf(p.x, p.z)));
+        if (toast.textContent.includes('Derrapón')) longText = toast.textContent;
+      }
+      p.vf = Math.max(p.vf, 28); place();   // same bend again, drift untouched
+    }
+    const level = p.driftLvl, distance = getDriftFeats()?.current ?? 0;
+    race.keys = { w: true };
+    updateRace(1 / 60);
+    return { longText, level, distance, maxOff, limit: T.HW - 1.6, purpleText: toast.textContent, boost: p.boost };
+  });
+  assert.ok(feats.longText.includes('100 m'), `one 100 m drift fires its feat ${JSON.stringify(feats)}`);
+  assert.ok(feats.distance >= 100, `the drift really ran 100 m ${JSON.stringify(feats)}`);
+  assert.ok(feats.maxOff < feats.limit, `the feat drift stays off the walls ${JSON.stringify(feats)}`);
+  assert.equal(feats.level, 3, `the held drift charged to purple ${JSON.stringify(feats)}`);
+  assert.ok(feats.purpleText.includes('púrpura'), `releasing purple fires its feat ${JSON.stringify(feats)}`);
+  assert.ok(feats.boost > 1, `the purple release pays its turbo ${JSON.stringify(feats)}`);
+
   // A trick pressed in the air lands with a short turbo.
   const trick = await page.evaluate(() => {
     const p = race.player;

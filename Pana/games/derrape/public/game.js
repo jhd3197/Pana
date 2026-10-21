@@ -49,16 +49,11 @@ import { soaringVulture } from '/engine/models/fauna/birds/soaring-vulture.js';
 import { tickWind } from '/engine/models/vegetation/plant-kit.js';
 import { DRAFT_TIME, DRAFT_BOOST, driftLevel, startBoost, startCue, inSlipstream, loseCoins } from './drive-rules.js';
 
-const $ = (id) => document.getElementById(id);
-const esc = (text) => String(text).replace(/[&<>"]/g, (ch) => `&#${ch.charCodeAt(0)};`);
-const rand = (a, b) => a + Math.random() * (b - a);
-const pick = (list) => list[Math.floor(Math.random() * list.length)];
+const $ = (id) => document.getElementById(id), esc = (text) => String(text).replace(/[&<>"]/g, (ch) => `&#${ch.charCodeAt(0)};`);
+const rand = (a, b) => a + Math.random() * (b - a), pick = (list) => list[Math.floor(Math.random() * list.length)];
 
 // test switches: ?auto lets the AI drive your car, ?speed=4 fast-forwards
-const QS = new URLSearchParams(location.search);
-const AUTO = QS.has('auto');
-const SPEED = Number(QS.get('speed')) || 1;
-const DEBUG = QS.has('debug');
+const QS = new URLSearchParams(location.search), AUTO = QS.has('auto'), SPEED = Number(QS.get('speed')) || 1, DEBUG = QS.has('debug');
 
 // You drive as the pana you made in the hub; the rivals are random ones.
 const ME = { name: loadName(), avatar: loadAvatar() };
@@ -885,6 +880,7 @@ let loadGeneration = 0;
 // from the room. Without one the race is the local player plus three bots.
 async function startRace(playerIndex, wheelId = garage.wheel, roster = null) {
   if (mode === 'loading' && (!roster || net?.state.raceId === race.loadingRaceId)) return;
+  await featsReady; driftFeats.reset();   // a new race starts the milestone counts over
   const generation = ++loadGeneration;
   race.loadingRaceId = roster ? net.state.raceId : 0;
   if (roster) {
@@ -1369,6 +1365,10 @@ function crash(c, power, side) {
 }
 
 const { stepCar } = createDriver({ race, track: () => T, say, popPart, progressOf, flameFor, lines: LINES, auto: AUTO });
+// Milestone toasts for the local player's drifting; the module loads with the
+// first race (awaited in startRace), keeping the garage's first load small.
+let driftApi = null; const featsReady = import('./feats.js').then(m => { driftApi = m.createDriftFeats($('toast')); });
+const driftFeats = { step: (c, dt) => driftApi?.step(c, dt), reset: () => driftApi?.reset() };
 
 // ---------- the zamuro rescue ----------
 // Off the course, stuck, or asked for (R): a vulture lifts the car, flies it
@@ -1646,6 +1646,7 @@ function updateRace(dt, presentation = true) {
         continue;
       }
       stepCar(c, c.isPlayer && !AUTO ? playerInput(1) : c.human === 2 && !AUTO ? playerInput(2) : aiInput(c), dt);
+      if (c.isPlayer) driftFeats.step(c, dt);   // milestone toasts read the drift the step left
       if (c.outT > OUT_TIME || c.stuckT > STUCK_TIME) rescue(c);
       if (!c.isPlayer) {
         c.aiHonk -= dt;
@@ -2388,7 +2389,7 @@ function resize() {
 addEventListener('resize', resize);
 resize();
 
-if (DEBUG) Object.assign(window, { loadTrack, disposeRacer, makeRacer, placeRacer, aiInput, stepRescue, collidePair, sendPoses, pollPads, music, getWallet: () => wallet, taller, menu, race, garage, renderer, crash, stepCar, startRace, updateRace, finish, renderResults, renderCup, toGarage, showWheel, ITEMS, TRACKS, buildTrack, setup, popBalloon, rescue, getActiveTrack: () => T, getNet: () => net });
+if (DEBUG) Object.assign(window, { loadTrack, disposeRacer, makeRacer, placeRacer, aiInput, stepRescue, collidePair, sendPoses, pollPads, music, getWallet: () => wallet, taller, menu, race, garage, renderer, crash, stepCar, startRace, updateRace, finish, renderResults, renderCup, toGarage, showWheel, ITEMS, TRACKS, buildTrack, setup, popBalloon, rescue, getDriftFeats: () => driftApi, getActiveTrack: () => T, getNet: () => net });
 // ?track=desierto wins; otherwise the last pick, otherwise the estadio
 let savedTrack = 'estadio';
 try { savedTrack = localStorage.getItem('derrape:track') || savedTrack; } catch { /* private mode */ }
