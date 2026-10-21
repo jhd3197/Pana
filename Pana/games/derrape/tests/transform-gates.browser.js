@@ -47,15 +47,15 @@ try {
     let frames = 0;
     for (; frames < 240 && !p.boat; frames++) { updateRace(1 / 60); presentRace(1 / 60); }
     for (let i = 0; i < 40; i++) { updateRace(1 / 60); presentRace(1 / 60); }
-    const hull = p.car.lanchaHull;
-    return { boat: !!p.boat, frames, morph: p.morph, hullVisible: !!hull?.visible, hullScale: hull?.scale.x ?? 0,
-      wheel: p.car.wheels[0].steer.scale.x, speed: p.vf, statsBefore: before, statsAfter: metamorfosis() };
+    const lancha = p.car.lancha;
+    return { boat: !!p.boat, frames, morph: p.morph, lanchaVisible: !!lancha?.group.visible, lanchaScale: lancha?.group.scale.z ?? 0,
+      pana: !!lancha?.pana, carVisible: p.car.chassis.visible, wheel: p.car.wheels[0].steer.scale.x, speed: p.vf, statsBefore: before, statsAfter: metamorfosis() };
   });
   await page.evaluate(() => renderer.render(race.scene, race.camera));
   await page.screenshot({ path: join(output, 'transform-lancha.png') });
   assert.ok(entry.boat, `driving through the entry gate makes a lancha ${JSON.stringify(entry)}`);
-  assert.ok(entry.morph > 0.95 && entry.hullVisible && entry.hullScale > 1.2, `the hull unfolds ${JSON.stringify(entry)}`);
-  assert.ok(entry.wheel < 0.05, `the wheels tuck away ${JSON.stringify(entry)}`);
+  assert.ok(entry.morph > 0.95 && entry.lanchaVisible && entry.lanchaScale > 1 && entry.pana, `the Lancha peñero with its pana takes over ${JSON.stringify(entry)}`);
+  assert.ok(!entry.carVisible && entry.wheel < 0.05, `the car shrinks away ${JSON.stringify(entry)}`);
   assert.ok(entry.speed > 18, `momentum survives the splash ${JSON.stringify(entry)}`);
   assert.equal(entry.statsAfter, (entry.statsBefore ?? 0) + 1, `the splash counts one metamorfosis ${JSON.stringify(entry)}`);
 
@@ -73,13 +73,24 @@ try {
     let frames = 0;
     for (; frames < 900 && p.boat; frames++) { updateRace(1 / 60); presentRace(1 / 60); }
     for (let i = 0; i < 40; i++) { updateRace(1 / 60); presentRace(1 / 60); }
-    return { boat: !!p.boat, frames, morph: p.morph, hullVisible: !!p.car.lanchaHull?.visible, wheel: p.car.wheels[0].steer.scale.x, speed: p.vf };
+    return { boat: !!p.boat, frames, morph: p.morph, lanchaVisible: !!p.car.lancha?.group.visible, carVisible: p.car.chassis.visible, wheel: p.car.wheels[0].steer.scale.x, speed: p.vf };
   });
   assert.ok(!exit.boat && exit.frames < 900, `the exit gate makes a car again ${JSON.stringify(exit)}`);
-  assert.ok(exit.morph < 0.05 && !exit.hullVisible && exit.wheel > 0.95, `the hull folds away and the wheels come back ${JSON.stringify(exit)}`);
+  assert.ok(exit.morph < 0.05 && !exit.lanchaVisible && exit.carVisible && exit.wheel > 0.95, `the lancha goes and the car comes back ${JSON.stringify(exit)}`);
   assert.ok(exit.speed > 15, `the car leaves the water at speed ${JSON.stringify(exit)}`);
+
+  // Chuao's quebrada is already water: its gate follows the wet stretch, with
+  // the arches but no second water sheet.
+  await page.evaluate(() => { toGarage(); buildTrack('chuao'); });
+  const chuao = await page.evaluate(() => {
+    const T = getActiveTrack(), names = [];
+    T.group.traverse(o => { if (o.name === 'transform-water' || o.name === 'transform-gate') names.push(o.name); });
+    const run = getGates().runs[0];
+    return { runs: getGates().runs.length, len: run.len, sheets: names.filter(n => n === 'transform-water').length, arches: names.filter(n => n === 'transform-gate').length };
+  });
+  assert.ok(chuao.runs === 1 && chuao.len > 100 && chuao.sheets === 0 && chuao.arches === 2, `Chuao's quebrada is a lancha stretch ${JSON.stringify(chuao)}`);
   assert.deepEqual(errors, []);
-  console.log('derrape transform gates: car → lancha → car on Choroní OK', JSON.stringify({ entry, exit }));
+  console.log('derrape transform gates: car → lancha → car on Choroní; Chuao quebrada armed OK', JSON.stringify({ entry, exit }));
 } finally {
   await browser.close();
 }

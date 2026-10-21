@@ -1,9 +1,12 @@
 // Transform gates: a stretch of road the river has taken over. A car that
-// splashes through the entry gate mutates into a lancha mid-stride — wheels
-// tuck in, a peñero hull unfolds around it, momentum untouched — and the exit
-// gate turns it back. Tracks opt in with `transformGates: [{ from, to }]`
-// (route fractions); the road under the water stays the driving surface, so
-// AI lines, checkpoints, rescues and placements never notice.
+// splashes through the entry gate turns into a lancha mid-air — the car
+// shrinks away inside a burst of spray and the Lancha game's peñero, with the
+// racer's own pana at the tiller, pops up in its place, momentum untouched —
+// and the exit gate turns it back. Tracks opt in with
+// `transformGates: [{ from, to, sheet }]` (route fractions; `sheet: false`
+// when the track already draws water there, like Chuao's quebrada); the road
+// under the water stays the driving surface, so AI lines, checkpoints,
+// rescues and placements never notice.
 //
 // Who is a boat is decided from position alone, every frame and for every
 // car, remote ones included: online clients agree without a new message.
@@ -12,16 +15,17 @@
 // charges a "wake turbo" faster, and skid marks / sparks give way to spray.
 import * as THREE from 'three';
 import { riverSurface } from '/engine/models/effects/water-surface.js';
-import { createLanchaHull } from '/engine/models/vehicles/lancha.js';
+import { createLancha } from '/engine/models/vehicles/lancha.js';
 import { M, box, mesh } from '/engine/models/core/primitives.js';
 import { statCount } from '/engine/stats.js';
 import { shout } from '/engine/kit.js';
 
-const MORPH_S = 0.6;           // seconds for the hull to unfold (or fold away)
+const MORPH_S = 0.7;           // seconds for the car → lancha swap (or back)
+const BOAT_SCALE = 1.3;        // the peñero beside car-sized racers
+const PREBUILD = 150;          // metres before a gate a car's lancha is built, hidden
 const HOP = 6.5;               // m/s up as a car crosses a gate: it changes mid-air
 const WAKE_CHARGE = 0.55;      // extra drift charge per second on the water
 const WATER_LIFT = 0.32;       // the sheet sits this far over the road
-const HULL = '#f4f1e6';     // a white peñero; the team colour rides the stripe, pennant and motor
 const SPRAY = [0xffffff, 0xd8f4ff, 0x9fe3ef];
 // Venezuelan tricolour bands on the gate posts.
 const BANDS = [0xffcc1a, 0x1f5fbf, 0xd8262f];
@@ -71,13 +75,15 @@ export function buildGates(T) {
   group.name = 'transform-gates';
   const ticks = [];
   for (const g of runs) {
+    group.add(archAt(T, g.s0), archAt(T, g.s0 + g.len));
+    if (g.sheet === false) continue;   // the track draws its own water here
     const points = [];
     for (let d = 0; d <= g.len; d += 4) { const p = T.pointAt(g.s0 + d); points.push([p.x, p.y]); }
     const height = (x, z) => T.heightAtS(T.paramOf(x, z)) + WATER_LIFT;
     const water = riverSurface(points, T.HW * 2 + 3, height, { color: 0x2f9fae, foam: () => 0.12 });
     water.name = 'transform-water';
     water.renderOrder = 2;
-    group.add(water, archAt(T, g.s0), archAt(T, g.s0 + g.len));
+    group.add(water);
     if (water.userData.tick) ticks.push(water.userData.tick);
   }
   return { group, runs, tick: (t) => ticks.forEach(f => f(t)) };
@@ -85,36 +91,35 @@ export function buildGates(T) {
 
 export function createTransformGates({ race, sound, track }) {
   let runs = [];
-  const hulls = new Set();
-  const own = (c, geometry) => {
-    const list = c.car.geometries;
-    if (list?.add) list.add(geometry); else list?.push?.(geometry);
-  };
   const inGate = c => !!(runs.length && !c.retired && gateAt(track(), runs, c.x, c.z, c.y));
-  // The hull is built the first time a car hits the water and lives on its
-  // tumble group, so flips and tricks carry it; its geometry joins the car's
-  // own list, so disposeRacer frees it with the car. It is measured against
-  // the car's own body (heading zeroed for the measure) so the gunwales wrap
-  // the lower bodywork whatever the car's shape, the cabin still showing.
-  function hullFor(c) {
-    if (c.car.lanchaHull) return c.car.lanchaHull;
-    const { tumble } = c.car, { size, bottom } = bodyOf(c.car);
-    const hull = createLanchaHull(c.def.color, { open: true, body: HULL });
-    hull.traverse(o => { if (o.geometry) own(c, o.geometry); });
-    hull.userData.fit = {
-      x: clamp((size.x / 2 + 0.3) / 0.85, 1.2, 2.6),          // half-beam 0.85 m
-      y: clamp((size.y * 0.3 + 0.1) / 0.8, 0.7, 1.8),         // rim 0.8 m up: a third of the body
-      z: clamp((size.z + 1.1) / 4.8, 0.9, 1.6),               // hull length 4.8 m
-    };
-    hull.position.y = bottom - 0.12;   // tumble space: the car's own floor
-    hull.visible = false;
-    tumble.add(hull);
-    c.car.lanchaHull = hull;
-    hulls.add(hull);
-    return hull;
+  // Within PREBUILD metres before a gate (or in it): time to have a lancha ready.
+  const nearGate = c => {
+    const t = track();
+    if (!runs.length || Math.abs(t.offsetOf(c.x, c.z, c.y)) > t.HW + 4) return false;
+    const s = t.paramOf(c.x, c.z, c.y);
+    return runs.some(g => (s - g.s0 + PREBUILD + t.TOTAL) % t.TOTAL < g.len + PREBUILD);
+  };
+  // Each car's lancha is the Lancha game's own model, painted in the car's
+  // colour with the racer's pana aboard. It is built hidden on the approach
+  // (so the crossing never hitches) and rides the car's tumble group, so
+  // flips and tricks carry it. disposeRacer frees the car's driver; the
+  // lancha piggybacks on that so it goes with the car.
+  function lanchaFor(c) {
+    if (c.car.lancha) return c.car.lancha;
+    const paint = typeof c.cosmetics?.paint === 'string' && c.cosmetics.paint.startsWith('#') ? c.cosmetics.paint : c.def.color;
+    const lancha = createLancha(c.avatar || {}, paint);
+    lancha.group.position.y = -1 + 0.22;   // tumble space: the waterline just under the car's floor
+    lancha.group.visible = false;
+    lancha.group.scale.setScalar(0.001);
+    c.car.tumble.add(lancha.group);
+    const driver = c.car.driver, dispose = driver?.dispose;
+    if (driver) driver.dispose = (...args) => { lancha.dispose(); return dispose?.apply(driver, args); };
+    c.car.lancha = lancha;
+    return lancha;
   }
 
   // The gate crossing: water rings, spray walls up both flanks and a flash.
+  // The spray is thick enough to hide the moment the car becomes a boat.
   function splash(c, entering) {
     const at = new THREE.Vector3(c.x, c.y, c.z);
     race.shockwaves.ring(at, { color: 0xbff3ff, maxRadius: entering ? 9 : 6, life: 0.6, opacity: 0.95 });
@@ -125,10 +130,11 @@ export function createTransformGates({ race, sound, track }) {
       race.puffs.spawn(new THREE.Vector3(c.x + rx * side * 1.8 + fx * (1 - i), c.y + 0.5, c.z + rz * side * 1.8 + fz * (1 - i)),
         { color: SPRAY[i % 3], count: entering ? 7 : 4, size: 1.1, rise: entering ? 5.5 : 3.5, life: 0.9, spread: 1.2 });
     }
+    race.puffs.spawn(new THREE.Vector3(c.x, c.y + 1.2, c.z), { color: SPRAY[0], count: entering ? 12 : 8, size: 1.4, rise: 2.5, life: 0.6, spread: 1.4 });
     if (c.isPlayer) {
       sound.plop(); sound.whoosh();
       race.shake = Math.min(1.2, (race.shake || 0) + (entering ? 0.6 : 0.35));
-      shout(entering ? '¡Modo lancha!' : '¡Pa\' tierra!');
+      shout(entering ? '¡Modo lancha!' : "¡Pa' tierra!");
       if (entering) {
         race.slowMo.trigger();
         statCount('derrape.metamorfosis', 1);
@@ -136,7 +142,7 @@ export function createTransformGates({ race, sound, track }) {
     }
   }
 
-  // The hull settling onto the water: a second, flatter splash.
+  // The lancha settling onto the water: a second, flatter splash.
   function splashdown(c) {
     const at = new THREE.Vector3(c.x, c.y, c.z);
     race.shockwaves.ring(at, { color: 0xffffff, startRadius: 2, maxRadius: 7, life: 0.5, opacity: 0.8 });
@@ -158,13 +164,12 @@ export function createTransformGates({ race, sound, track }) {
   return {
     // A new track: the scenery goes into its group and its tick into the
     // animated list. Cars of the previous race are already gone.
-    setTrack(T) {
-      hulls.clear();
-      if (!T.def.transformGates?.length) { runs = []; return; }
-      const built = buildGates(T);
+    setTrack(t) {
+      if (!t.def.transformGates?.length) { runs = []; return; }
+      const built = buildGates(t);
       runs = built.runs;
-      T.group?.add(built.group);
-      T.animated.push({ userData: { tick: built.tick } });
+      t.group?.add(built.group);
+      t.animated.push({ userData: { tick: built.tick } });
     },
     get runs() { return runs; },
     // One physics step of a local car, after stepCar. Crossing a gate kicks
@@ -179,8 +184,9 @@ export function createTransformGates({ race, sound, track }) {
       if (c.boat && c.drift) c.driftT += dt * WAKE_CHARGE;
     },
     // Every drawn frame, every car (remote ones too): decide boat or car from
-    // where it is, splash on the change, and play the morph.
+    // where it is, splash on the change, and play the swap.
     sync(c, dt) {
+      if (!c.car.lancha && nearGate(c)) lanchaFor(c);
       const boat = inGate(c);
       if (boat !== !!c.boat) {
         c.boat = boat;
@@ -192,57 +198,28 @@ export function createTransformGates({ race, sound, track }) {
       const was = c.morph;
       c.morph += Math.sign(want - c.morph) * Math.min(Math.abs(want - c.morph), dt / MORPH_S);
       if (was < 1 && c.morph === 1) splashdown(c);
-      const k = c.morph, hull = k > 0 ? hullFor(c) : c.car.lanchaHull;
-      // The wheels tuck in first; the hull unfolds behind them with an
-      // elastic overshoot, stretching tall before it squashes onto the water.
-      const wheels = Math.max(0.001, 1 - Math.min(1, k * 2.2));
-      for (const w of c.car.wheels) w.steer.scale.setScalar(wheels);
-      if (hull) {
-        const fit = hull.userData.fit, grow = c.boat ? backOut(k) : k, stretch = Math.sin(Math.min(1, k) * Math.PI) * 0.25;
-        hull.visible = k > 0.01;
-        hull.scale.set(fit.x * grow * (1 - stretch * 0.4) + 0.001, fit.y * grow * (1 + stretch) + 0.001, fit.z * grow + 0.001);
+      const k = c.morph, lancha = k > 0 ? lanchaFor(c) : c.car.lancha;
+      // The car squashes away first; the lancha pops up behind it with an
+      // elastic overshoot, stretching tall before it settles on the water.
+      const carScale = Math.max(0.001, 1 - smooth(Math.min(1, k * 1.6)));
+      c.car.chassis.scale.multiplyScalar(carScale);
+      c.car.chassis.visible = carScale > 0.01;
+      for (const w of c.car.wheels) w.steer.scale.setScalar(carScale);
+      if (lancha) {
+        const t = Math.max(0, (k - 0.3) / 0.7), grow = c.boat ? backOut(t) : smooth(t), stretch = Math.sin(t * Math.PI) * 0.3;
+        lancha.group.visible = t > 0.01;
+        lancha.group.scale.set(grow * (1 - stretch * 0.3) * BOAT_SCALE + 0.001, grow * (1 + stretch) * BOAT_SCALE + 0.001, grow * BOAT_SCALE + 0.001);
+        if (lancha.group.visible) lancha.update(dt, { x: c.x, z: c.z, steer: c.steer || 0, throttle: 1, v: c.vf || 0,
+          vy: c.vy || 0, air: c.onGround === false ? 1 : 0, turbo: c.boost || 0 }, race.clock);
       }
-      if (c.boat) {
-        // Riding the water: a gentle bob and roll on top of the suspension.
-        const t = race.clock + (c.def.num || 0);
-        c.car.chassis.position.y += 0.08 * k + Math.sin(t * 3.1) * 0.05;
-        c.car.chassis.rotation.z += Math.sin(t * 2.3) * 0.04;
-        if (hull) hull.userData.motor.userData.prop.rotation.z += dt * 40;
-        wake(c, dt);
-      }
+      if (c.boat && k > 0.5) wake(c, dt);
     },
-    // A finished race leaves every car a car again.
-    reset() { for (const hull of hulls) hull.visible = false; },
   };
 }
 
-const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
-const FALLBACK = { size: new THREE.Vector3(2.2, 1.6, 4), bottom: -0.9 };
-const body = new THREE.Box3(), part = new THREE.Box3(), toCar = new THREE.Matrix4();
+const smooth = t => t * t * (3 - 2 * t);
 
-// The car's solid body in its tumble group's frame: plain visible meshes
-// only, each from its own geometry bounds. Flames, sparks and pooled
-// particles ride the chassis too and park unused instances far away, which
-// would put the hull out of sight; anything still absurd falls back to a
-// typical car.
-function bodyOf(car) {
-  car.tumble.updateMatrixWorld(true);
-  toCar.copy(car.tumble.matrixWorld).invert();
-  body.makeEmpty();
-  car.chassis.traverse(o => {
-    if (!o.isMesh || o.isInstancedMesh || o.isPoints || o.isSprite || !o.visible || !o.geometry) return;
-    if (!o.geometry.boundingBox) o.geometry.computeBoundingBox();
-    part.copy(o.geometry.boundingBox).applyMatrix4(o.matrixWorld).applyMatrix4(toCar);
-    const sz = part.getSize(new THREE.Vector3());
-    if (part.isEmpty() || !Number.isFinite(sz.x + sz.y + sz.z) || Math.max(sz.x, sz.y, sz.z) > 8) return;
-    body.union(part);
-  });
-  const size = body.getSize(new THREE.Vector3());
-  if (body.isEmpty() || Math.max(size.x, size.y, size.z) > 8 || Math.min(size.x, size.y, size.z) < 0.3) return FALLBACK;
-  return { size, bottom: clamp(body.min.y, -1.6, 0) };
-}
-
-// Overshoots past 1 and settles back: the hull "pops" open.
+// Overshoots past 1 and settles back: the lancha "pops" up.
 function backOut(k) {
   const a = 2.2, t = k - 1;
   return 1 + (a + 1) * t * t * t + a * t * t;

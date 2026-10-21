@@ -42,19 +42,22 @@ lobby (`derrape-menu.md`), and its own Colyseus room (`derrape-online.md`).
   so collisions, items, hazards and placements never see it; drift flags are
   stripped on replay so it sheds no sparks or skid marks. Records in every
   race mode except battle; `?noghost` turns the feature off.
-- River stretches: a track definition can list `transformGates: [{ from, to }]`
-  (route fractions; Choroní has one on the east-bank road). `public/
-  transform-gates.js` (lazy, like feats.js) lays a water sheet over that
-  stretch with a tricolour arch at each end, and every frame decides from
-  position alone whether each car — remote ones too — is a lancha: the hull
-  (`createLanchaHull` from `engine/models/vehicles/lancha.js`, `open`, white
-  body, fitted to the car's measured body) unfolds on the car's tumble group
-  and the wheels tuck. Crossing a gate kicks a hop so the change happens
-  mid-air, with spray walls, a flash, a "¡Modo lancha!" shout and a
-  splashdown when the hull settles. The road stays
-  the driving surface, so AI, checkpoints and placements never notice. On the
-  water a drift charges faster (wake turbo); skid marks and sparks give way to
-  spray. The local player's splash triggers the slow-mo and counts
-  `derrape.metamorfosis`. Proof: `tests/transform-gates.browser.js`.
+- River stretches: a track definition can list `transformGates: [{ from, to,
+  sheet }]` (route fractions). Choroní floods its east-bank road; Chuao derives
+  its gate from the quebrada's wet segments (`sheet: false`: the track already
+  draws that water). `public/transform-gates.js` (lazy, like feats.js) adds a
+  tricolour arch at each end (and the water sheet when asked), and every frame
+  decides from position alone whether each car — remote ones too — is a
+  lancha. The swap uses the Lancha game's own model (`createLancha` from
+  `engine/models/vehicles/lancha.js`, the car's paint, the racer's avatar at
+  the tiller), built hidden 150 m before the gate and freed with the car's
+  driver: the car squashes away inside the spray and the peñero pops up.
+  Crossing a gate kicks a hop so the change happens mid-air, with a
+  "¡Modo lancha!" shout, slow-mo and a splashdown. The road stays the driving
+  surface, so AI, checkpoints and placements never notice. On the water a
+  drift charges faster (wake turbo); skid marks and sparks give way to spray.
+  The local player's splash counts `derrape.metamorfosis`. Proof:
+  `tests/transform-gates.browser.js`; to look at it,
+  `npm run shots -- derrape --track chuao --at gate-60`.
 - Derrape signals readiness with `window.PANA_PREPARED` once the garage car is
   built, like every other game (tests/browser-kit.js `waitPrepared`).
