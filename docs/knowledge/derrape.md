@@ -23,6 +23,10 @@ lobby (`derrape-menu.md`), and its own Colyseus room (`derrape-online.md`).
   allowance). New work goes into its own module (`garage-*.js`, `race-*.js`,
   `*-rules.js`), never into game.js; moving a section out is always welcome.
   Drift milestone toasts live in `public/feats.js`, on `engine/feats.js`.
+- Race glow: `public/race-fx.js` (lazy; `race.glow` stub until it loads)
+  draws the turbo exhaust (`drive.js`, every boosting step), impact sparks
+  (wall hits in `drive.js`, `crash()` in game.js) and coin sparkles (pickup
+  and spill) on one additive `particles.js` field.
 - Drift presentation lives in its own modules: sparks and the charge smoke
   plume in `public/drift-fx.js` (glowing point sprites from
   `public/particles.js`: one draw per field, no polyhedra; sparks flicker red
@@ -45,9 +49,11 @@ lobby (`derrape-menu.md`), and its own Colyseus room (`derrape-online.md`).
   stripped on replay so it sheds no sparks or skid marks. Records in every
   race mode except battle; `?noghost` turns the feature off.
 - River stretches: a track definition can list `transformGates: [{ from, to,
-  sheet }]` (route fractions). Choroní floods its east-bank road; Chuao derives
-  its gate from the quebrada's wet segments (`sheet: false`: the track already
-  draws that water). `public/transform-gates.js` (lazy, like feats.js) adds
+  sheet }]` (route fractions; or `fromAt: [x, z]` + `lead`: start where the
+  route passes closest to a world point). Choroní floods its east-bank road;
+  Chuao starts under its waterfall (`MAP.fall`) and runs to the end of the
+  quebrada's wet segments (`sheet: false`: the track already draws that
+  water). `public/transform-gates.js` (lazy, like feats.js) adds
   the water sheet when asked — nothing marks the ends, the water is the cue —
   and every frame
   decides from position alone whether each car — remote ones too — is a
