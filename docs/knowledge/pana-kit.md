@@ -40,6 +40,7 @@ the same tokens.
 | `pk-results` > `pk-modal pk-results-card` | End-of-round screen (see "Results screen" below) |
 | `pk-slots` > `pk-slot` (`.is-active`, `pk-slot-n`, `pk-slot-count`) | Inventory |
 | `pk-banner(--yellow/--teal)`, `pk-pop` | Tilted shout; `shout(text)` in kit.js |
+| `pk-toast` | Milestone toast; `createFeats(el)` in engine/feats.js (opt-in per game) |
 | `pk-hints` | Bottom-right key reminders (also mark `data-pana-hint`) |
 | `pk-lobby`, `pk-lobby-top`, `pk-field`, `pk-lobby-foot`, `pk-lobby-room`, `pk-lobby-cta`, `pk-avatars`, `pk-check` | Game launcher column over the live scene |
 | `pk-loading` | Full-screen loading card |
