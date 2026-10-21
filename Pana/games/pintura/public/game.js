@@ -15,12 +15,15 @@ import { createScene } from './scene.js';
 import { createMinimap } from './minimap.js';
 import { sfx } from './sounds.js';
 import { createLookControls, SENSITIVITY_CHOICES } from '/engine/play/first-person.js';
+import { createFeats } from '/engine/feats.js';
+import { createHitFeats } from './feats.js';
 import { coverFor, TARGET, segmentBox, paintSeats, variantName } from './rules.js';
 
 const $ = id => document.getElementById(id), code = roomFromUrl() || newRoomCode();
 const params = new URLSearchParams(location.search); params.set('room', code); history.replaceState(null, '', `${location.pathname}?${params}`);
 const held = new Set(), pads = []; let aim = null, firing = false, touchFire = false, queuedFire = false, queuedReload = false, stopped = false, lastPhase = 'lobby', lastEvent = null, lastRound = 0, lastLocal = false, lastBall = 0, lastKiller = '';
 const canvas = $('world'), world = createScene(canvas), minimap = createMinimap($('minimap'));
+const hitFeats = createHitFeats(createFeats($('toast')));
 let weapon = 'pistol';
 let cameraView = 'primera', pointerPosition = null;
 const room = new PaintConnection({ code, name: loadName(), avatar: loadAvatar(), onState: render, onStatus(text, failed = false) {
@@ -122,7 +125,7 @@ function feedLine(e, state) {
 function announce(e, state) {
   const mine = e.owner === room.id, me = e.victim === room.id;
   if (e.type === 'out') feedLine(e, state);
-  if (mine && e.type === 'hit') { sfx.hitTick(); flash('hitmark'); }
+  if (mine && e.type === 'hit') { sfx.hitTick(); flash('hitmark'); hitFeats.hit(state.players.find(p => p.id === e.victim)?.name || 'un pana'); }
   if (mine && e.type === 'out') { sfx.knockout(e.distance >= 25, e.streak || 1); flash('scored'); callout(e, state); }
   if (me) {
     document.body.style.setProperty('--paint-hurt', `${e.color}aa`); flash('painted');
@@ -177,10 +180,11 @@ function render(state) {
   aguante(state, me);
   $('stamina').style.setProperty('--left', String(me?.stamina ?? 1)); $('stamina').classList.toggle('stamina--full', (me?.stamina ?? 1) >= 1);
   if (!$('scoreboard').hidden) showBoard(true);
-  if (state.phase === 'playing' && state.round !== lastRound) { lastRound = state.round; $('variant').textContent = `Cancha ${variantName(state.mapId, state.variant || 0)}`; flash('round-start'); }
+  if (state.phase === 'playing' && state.round !== lastRound) { lastRound = state.round; $('variant').textContent = `Cancha ${variantName(state.mapId, state.variant || 0)}`; flash('round-start'); hitFeats.reset(); }
   $('results').hidden = !finished;
   if (finished) {
     menu.close(); looking.release(); showBoard(false); const winners = order.filter(p => state.winners?.includes(p.id));
+    if (state.winners?.includes(room.id)) hitFeats.win();
     $('result-title').textContent = winners.length > 1 ? '¡Empate de pintura!' : `¡Ganó ${winners[0]?.name}!`;
     if (state.options?.mode === 'teams' || state.options?.flag) $('result-title').textContent = new Set(winners.map(p => p.team)).size !== 1 ? '¡Empate de equipos!' : `¡Ganó el equipo ${winners[0]?.team === 0 ? 'naranja' : 'turquesa'}!`;
     $('result-copy').textContent = `${order[0]?.score || 0} pintadas en la mejor marca. ¿Otra ronda?`;

@@ -14,6 +14,29 @@ becomes the GitHub release's notes.
   Póquer and Billar use it, Dominó offers it next to its own rule and Bolas
   criollas flips a coin. Hosts can pick Al azar, El anfitrión or Revancha (the
   last place starts) in Más ajustes.
+- **Derrape se ve como se siente derrapar: el caucho queda marcado en la
+  pista, el humo crece con la carga del derrape y soltar en púrpura frena el
+  mundo un instante.** Las marcas de los cauchos se desvanecen solas en unos
+  segundos; el humo sigue los colores de las chispas (polvo, azul, naranja,
+  púrpura); la cámara lenta es solo local y nunca toca el reloj de las carreras
+  en línea.
+- **Derrape suma puntos de Estilo por derrapar: velocidad, carga y lo cruzado
+  que vayas dan más, y encadenar derrapes sin pasar tres segundos en recta
+  sube el combo (×2, ×3…).** Un medidor sobre el velocímetro muestra el combo
+  en vivo y celebra cuando los puntos se guardan; chocar nunca quita puntos,
+  solo corta la cadena. Al final de la carrera cada carro muestra su línea de
+  Estilo y el que más sumó se lleva el ¡Rey del Derrape! — el podio no cambia:
+  el estilo es sabor, no ventaja.
+- **Tests can be narrowed and explain themselves: `npm test -- derrape` runs
+  only the matching unit tests in seconds, and `.\dev.ps1 check -Help` prints
+  the cheat sheet for picking the fastest check.** The full unit run still
+  works as `npm test`; browser suites stay filtered or `--changed`, never the
+  whole set locally.
+- **Derrape y Pepazo celebran tus jugadas con avisos de hitos.** En Derrape el
+  derrape suma metros por carrera (¡500 metros!, ¡1 kilómetro!), un derrape de
+  más de 100 m sin soltar es un ¡Derrapón! y soltar un derrape púrpura tiene su
+  celebración. En Pepazo pintar a un rival lo anuncia por nombre, y dos o tres
+  pintadas en menos de cinco segundos cantan ¡Doble pintada! y ¡Triple pintada!.
 
 - **New game: Trifulca, barrio boxing where the winner stays and everyone
   else is the ring.** Two panas fight with jab, trompón, block, dodge and

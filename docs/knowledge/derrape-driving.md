@@ -76,3 +76,21 @@ run. Its maximum sampled offset is 2.95 m in Estadio (wall at 6.4 m) and 2.99 m
 in Selva (nominal road limit 7.4 m). Countersteering changes the sampled exit by
 1.68 m and 3.16 m respectively. These are fixed 1.5-second holds plus a half-second
 exit, not automated full-lap steering or human success-rate estimates.
+
+## Speed levers
+
+If racing ever needs slowing or spacing out, each of these is one edit; none
+was touched for the style-scoring pass.
+
+- Per-car pace: `tune.top` / `tune.accel` in each car's entry in
+  `public/car-definitions.js` (first block at line 7). Tops sit at 35–39 m/s.
+- Turbo speed cap: ×1.5 of top while boosting, `public/drive.js:100` (the
+  `boosting ? top * 1.5` branch; rough ground has its own bleed next to it).
+- Drift turbo payout: `DRIFT_BOOST` seconds per charge level,
+  `public/drive-rules.js:8`, paid on release at `public/drive.js:70`; charge
+  thresholds are `DRIFT_LEVELS` one line above.
+- Coins: +0.8% speed each, up to 10 — `COIN_SPEED` / `MAX_COINS`,
+  `public/item-rules.js:2-3`, applied through `coinMultiplier`.
+- Bot catch-up: `rubberBand`, `public/modes.js:28` — up to +12% behind / −8%
+  ahead, scaled by the difficulty's `catchUp` / `ease` (`modes.js:19-23`) and
+  applied at `game.js:1320` (`c.band`).

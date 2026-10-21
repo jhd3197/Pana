@@ -49,16 +49,11 @@ import { soaringVulture } from '/engine/models/fauna/birds/soaring-vulture.js';
 import { tickWind } from '/engine/models/vegetation/plant-kit.js';
 import { DRAFT_TIME, DRAFT_BOOST, driftLevel, startBoost, startCue, inSlipstream, loseCoins } from './drive-rules.js';
 
-const $ = (id) => document.getElementById(id);
-const esc = (text) => String(text).replace(/[&<>"]/g, (ch) => `&#${ch.charCodeAt(0)};`);
-const rand = (a, b) => a + Math.random() * (b - a);
-const pick = (list) => list[Math.floor(Math.random() * list.length)];
+const $ = (id) => document.getElementById(id), esc = (text) => String(text).replace(/[&<>"]/g, (ch) => `&#${ch.charCodeAt(0)};`);
+const rand = (a, b) => a + Math.random() * (b - a), pick = (list) => list[Math.floor(Math.random() * list.length)];
 
 // test switches: ?auto lets the AI drive your car, ?speed=4 fast-forwards
-const QS = new URLSearchParams(location.search);
-const AUTO = QS.has('auto');
-const SPEED = Number(QS.get('speed')) || 1;
-const DEBUG = QS.has('debug');
+const QS = new URLSearchParams(location.search), AUTO = QS.has('auto'), SPEED = Number(QS.get('speed')) || 1, DEBUG = QS.has('debug');
 
 // You drive as the pana you made in the hub; the rivals are random ones.
 const ME = { name: loadName(), avatar: loadAvatar() };
@@ -372,6 +367,16 @@ const world = createRaceWorld({ scene: race.scene, cameras: [race.camera, race.c
 Object.assign(race, { rain: world.rain, sky: world.sky, hemi: world.hemi, sun: world.sun });
 const applyPalette = world.applyPalette;
 race.debris = new Debris(race.scene);
+// Drift presentation loads with the first race, keeping the garage's first
+// load small (the feats.js pattern); stubs no-op until the modules land.
+race.skidMarks = { lay() {}, update() {}, clear() {} };
+let driftFx = null;
+import('./skid-marks.js').then(m => { race.skidMarks = new m.SkidMarks(race.scene, { focus: () => race.player }); });
+import('./drift-fx.js').then(m => { driftFx = m; });
+race.slowMo = { update() {}, trigger() {}, scale: 1, punch: 0 };
+import('./slow-mo.js').then(m => { race.slowMo = m.createSlowMo(); });
+// A max-charge release dilates time (local races) and punches the camera.
+race.purpleRelease = () => { race.slowMo.trigger(); race.shake = Math.min(1.2, race.shake + 0.45); };
 
 // ---------- race setup: mode, difficulty, laps, mirror (local races) ----------
 let profileStorage = null;
@@ -854,6 +859,7 @@ function clearRace() {
   race.puffs.clear();
   race.debris.clear();
   race.shockwaves.clear();
+  race.skidMarks.clear();
   setSpeedLines(0);
   race.items?.clear();
   race.player = null;
@@ -885,6 +891,8 @@ let loadGeneration = 0;
 // from the room. Without one the race is the local player plus three bots.
 async function startRace(playerIndex, wheelId = garage.wheel, roster = null) {
   if (mode === 'loading' && (!roster || net?.state.raceId === race.loadingRaceId)) return;
+  driftFeats.reset();   // a new race starts the milestone counts over; no await before the generation guard below
+  driftCombo.reset();                     // …and the style score
   const generation = ++loadGeneration;
   race.loadingRaceId = roster ? net.state.raceId : 0;
   if (roster) {
@@ -1369,6 +1377,18 @@ function crash(c, power, side) {
 }
 
 const { stepCar } = createDriver({ race, track: () => T, say, popPart, progressOf, flameFor, lines: LINES, auto: AUTO });
+// Milestone toasts for the local player's drifting; the module loads during
+// boot (awaited below, before PANA_PREPARED), keeping the garage's first load small.
+let driftApi = null; const featsReady = import('./feats.js').then(m => { driftApi = m.createDriftFeats($('toast')); });
+const driftFeats = { step: (c, dt) => driftApi?.step(c, dt), reset: () => driftApi?.reset(), win: () => driftApi?.win() };
+// Style scoring and its combo meter: same lazy pattern, same first-race load.
+let comboApi = null; const comboReady = import('./drift-combo.js').then(m => { comboApi = m.createDriftCombo($('combo')); });
+const driftCombo = {
+  step: (c, dt) => comboApi?.step(c, dt), finish: (c) => comboApi?.finish(c), reset: () => comboApi?.reset(),
+  update: (c) => comboApi?.update(c), totalOf: (c) => comboApi?.totalOf(c) ?? 0, bestChainOf: (c) => comboApi?.bestChainOf(c) ?? 1,
+  live: (c) => comboApi?.live(c),
+};
+if (DEBUG) window.PANA_DRIFT_SCORE = () => race.player ? driftCombo.live(race.player) : null;
 
 // ---------- the zamuro rescue ----------
 // Off the course, stuck, or asked for (R): a vulture lifts the car, flies it
@@ -1529,27 +1549,7 @@ function collidePair(a, b) {
   }
 }
 
-// Sparks under the rear wheels show the drift charge: dust, then blue,
-// orange and purple. A stalled engine coughs black smoke instead.
-const SPARKS = [0xd8c6a8, 0x4fb6ff, 0xff9a1f, 0xc45bff];
-function driftSparks(c, dt) {
-  c.sparkT = (c.sparkT || 0) - dt;
-  if (c.sparkT > 0) return;
-  c.sparkT = 0.05;
-  const fx = Math.sin(c.h), fz = Math.cos(c.h), rx = -Math.cos(c.h), rz = Math.sin(c.h);
-  if (c.drift && c.onGround) {
-    const level = c.remote ? c.driftLvl || 0 : driftLevel(c.driftT);
-    for (const side of [-1, 1]) {
-      race.puffs.spawn(new THREE.Vector3(c.x - fx * 1.7 + rx * side * 1.1, c.y + 0.25, c.z - fz * 1.7 + rz * side * 1.1),
-        { color: SPARKS[level], count: 1, size: level ? 0.42 : 0.6, rise: level ? 0.9 : 0.5, life: level ? 0.28 : 0.5, spread: 0.3 });
-    }
-  }
-  if (c.stall > 0) race.puffs.spawn(new THREE.Vector3(c.x - fx * 2.2, c.y + 0.7, c.z - fz * 2.2), { color: 0x3a3a40, count: 1, size: 0.8, rise: 1.6, life: 0.8 });
-  if (c.draft > 0.2 && c.isPlayer) {
-    race.puffs.spawn(new THREE.Vector3(c.x + fx * 2 + rx * (Math.random() * 4 - 2), c.y + 1 + Math.random(), c.z + fz * 2 + rz * (Math.random() * 4 - 2)),
-      { color: 0xf4f8ff, count: 1, size: 0.25, rise: 0, life: 0.25, spread: 0.2 });
-  }
-}
+// Sparks, stall smoke and draft streaks live in drift-fx.js.
 
 function syncCar(c, dt) {
   const car = c.car;
@@ -1561,7 +1561,8 @@ function syncCar(c, dt) {
   if (c.trick) c.trickT += dt;
   const trickSpin = c.trick ? Math.min(1, c.trickT / 0.45) * Math.PI * 2 : 0;
   car.root.rotation.y = c.h + c.driftYaw + trickSpin + (c.spin > 0 ? (1 - (1 - k) ** 3) * Math.PI * 4 : 0);
-  driftSparks(c, dt);
+  driftFx?.driftSparks(race.puffs, c, dt);
+  race.skidMarks.lay(c, dt);
   syncVulture(c, dt);
   car.tumble.rotation.set(c.pitch, 0, c.roll);
 
@@ -1643,9 +1644,12 @@ function updateRace(dt, presentation = true) {
       if (c.rescueT > 0) { stepRescue(c, dt); continue; }
       if (c.done) {
         stepCar(c, { throttle: 0, steer: 0 }, dt);
+        driftCombo.step(c, dt);   // a finished car still banks its last chain
         continue;
       }
       stepCar(c, c.isPlayer && !AUTO ? playerInput(1) : c.human === 2 && !AUTO ? playerInput(2) : aiInput(c), dt);
+      if (c.isPlayer) driftFeats.step(c, dt);   // milestone toasts read the drift the step left
+      driftCombo.step(c, dt);   // style scoring reads every local car, bots included
       if (c.outT > OUT_TIME || c.stuckT > STUCK_TIME) rescue(c);
       if (!c.isPlayer) {
         c.aiHonk -= dt;
@@ -1677,6 +1681,7 @@ function updateRace(dt, presentation = true) {
   for (const c of race.cars) syncGhostAppearance(c);
   race.hazards?.update(race.clock, dt, race.state === 'go' || race.state === 'end' ? race.cars : [], hitHazard);
   race.puffs.update(dt);
+  race.skidMarks.update(dt);
   race.debris.update(dt);
   race.shockwaves.update(dt);
   // The deterministic browser harness can run the same gameplay tick without
@@ -1745,6 +1750,7 @@ function presentRace(dt) {
   }
   const segs = boost.children;
   for (let i = 0; i < segs.length; i++) segs[i].classList.toggle('on', i < lit);
+  driftCombo.update(p);   // the combo meter mirrors the live style chain
 
   // standings board + minimap, throttled
   if (race.state === 'end' && race.cup && race.cup.session.status === 'intermission') {
@@ -1802,7 +1808,7 @@ function followCam(cam, key, p, look, dt) {
   const lead = p.boost > 0 ? 5.2 : 4;
   cam.position.set(mx * at.x + rand(-sh, sh), at.y + rand(-sh, sh), at.z + rand(-sh, sh));
   cam.lookAt(mx * (p.x + fx * lead * back), p.y + 1.4, p.z + fz * lead * back);
-  const fov = p.boost > 0 ? 74 : 60;   // turbo stretches the view
+  const fov = (p.boost > 0 ? 74 : 60) - (p.isPlayer ? race.slowMo.punch : 0);   // turbo stretches the view; a purple release pulls it in
   if (Math.abs(cam.fov - fov) > 0.05) {
     cam.fov += (fov - cam.fov) * Math.min(1, dt * 5);
     cam.updateProjectionMatrix();
@@ -1979,6 +1985,7 @@ function renderCup() {
 
 function finish() {
   race.state = 'end';
+  driftCombo.finish(race.player);   // bank a live chain so the results count it
   if (race.netRace && net?.cup) {
     race.cup = { definition: cupById(net.cup.cupId), session: net.cup, mirror: false };
   }
@@ -1999,6 +2006,7 @@ function finish() {
       + (p.balloons === 0 ? ` · aguantaste ${clockText(p.outAt ?? race.clock)}` : '');
   }
   const won = race.mode === 'battle' ? p.balloons > 0 && standings()[0] === p : p.done && !p.dns && place === 1;
+  if (won) driftFeats.win();
   music.play(RESULTS_SONG, { fallback: 'calipso' });
   music.sting(finishSting(won));
   if (race.cup) {
@@ -2093,7 +2101,7 @@ function renderResults(order, player) {
         };
       }).sort((a, b) => (stageMap.get(a.entrantId || a.netId)?.place ?? 99) - (stageMap.get(b.entrantId || b.netId)?.place ?? 99))
     : order;
-  const key = `${cupFinal}:${stageMap?.size || 0}:${displayOrder.map(c => `${c.entrantId || c.netId || c.name}:${c.done}:${c.balloons}`).join()}`;
+  const key = `${cupFinal}:${stageMap?.size || 0}:${displayOrder.map(c => `${c.entrantId || c.netId || c.name}:${c.done}:${c.balloons}:${driftCombo.totalOf(c)}`).join()}`;
   if (key === race.resultKey) return;
   race.resultKey = key;
   const who = (c) => {
@@ -2126,6 +2134,9 @@ function renderResults(order, player) {
       + `<span class="name">${esc(c.name)}</span><b class="place">${i + 1}</b></li>`;
   }).join('');
   const myId = player?.entrantId || player?.netId || net?.id || LOCAL_PLAYER;
+  // Style is additive flavour: the podium and the order never change, only a
+  // detail line per scorer and the Rey del Derrape tag for the best one.
+  const styleBest = displayOrder.reduce((best, c) => Math.max(best, driftCombo.totalOf(c)), 0);
   fillRoster($('result-board'), displayOrder.map((c, i) => {
     const chip = document.createElement('span');
     chip.className = 'chip';
@@ -2137,7 +2148,13 @@ function renderResults(order, player) {
       : rec
         ? `${rec.classification === 'finished' ? clockText(rec.time ?? c.time) : CLASSIFICATION_TEXT[rec.classification] ?? 'Sin terminar'} · +${rec.points} pts`
         : c.done ? clockText(c.time) : `vuelta ${Math.min(race.laps, Math.max(1, c.lap))}/${race.laps}`;
-    return { rank: i + 1, lead: chip, name: c.name, me: c === player || (id && id === myId), end: endText };
+    const style = driftCombo.totalOf(c);
+    const king = style > 0 && style === styleBest;
+    return {
+      rank: i + 1, lead: chip, name: c.name, me: c === player || (id && id === myId), end: endText,
+      detail: style > 0 ? `Estilo: ${style} pts${king ? ' · ¡Rey del Derrape!' : ''}` : null,
+      className: king ? 'style-king' : '',
+    };
   }));
 }
 
@@ -2344,7 +2361,8 @@ function frame() {
     renderer.toneMapping = THREE.NoToneMapping;
     pollPads();
     // fixed physics steps: same race speed at any frame rate
-    if (!paused) acc += dt * SPEED;
+    race.slowMo.update(dt);
+    if (!paused) acc += dt * SPEED * (race.netRace ? 1 : race.slowMo.scale);   // online races never dilate: the room's clock is the room's
     let stepped = 0;
     while (acc >= STEP && mode === 'race') {
       updateRace(STEP, false);
@@ -2388,7 +2406,7 @@ function resize() {
 addEventListener('resize', resize);
 resize();
 
-if (DEBUG) Object.assign(window, { loadTrack, disposeRacer, makeRacer, placeRacer, aiInput, stepRescue, collidePair, sendPoses, pollPads, music, getWallet: () => wallet, taller, menu, race, garage, renderer, crash, stepCar, startRace, updateRace, finish, renderResults, renderCup, toGarage, showWheel, ITEMS, TRACKS, buildTrack, setup, popBalloon, rescue, getActiveTrack: () => T, getNet: () => net });
+if (DEBUG) Object.assign(window, { loadTrack, disposeRacer, makeRacer, placeRacer, aiInput, stepRescue, collidePair, sendPoses, pollPads, music, getWallet: () => wallet, taller, menu, race, garage, renderer, crash, stepCar, startRace, updateRace, finish, renderResults, renderCup, toGarage, showWheel, ITEMS, TRACKS, buildTrack, setup, popBalloon, rescue, getDriftFeats: () => driftApi, getActiveTrack: () => T, getNet: () => net });
 // ?track=desierto wins; otherwise the last pick, otherwise the estadio
 let savedTrack = 'estadio';
 try { savedTrack = localStorage.getItem('derrape:track') || savedTrack; } catch { /* private mode */ }
@@ -2397,6 +2415,7 @@ garage.wheel = wheelById(wallet.wheel).id;   // the profile migrated any old 'de
 if (ROOM) goOnline(ROOM, QS.has('lead'));   // first: a reload reclaims its seat inside the reconnection window
 // Suites call buildTrack() and read TRACKS synchronously: every map loads before
 // PANA_PREPARED (showCar below). startRace() loads its own map either way.
+await Promise.all([featsReady, comboReady]);   // milestone toasts and the style score are ready before any race can start
 if (DEBUG) await loadTracks();
 selectTrack(QS.get('track') || savedTrack);
 showCar(0);

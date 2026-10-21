@@ -10,6 +10,7 @@
     .\dev.ps1 server          Start the Pana server only
     .\dev.ps1 studio          Open Pana Studio; reuse an existing server
     .\dev.ps1 check           Syntax check + unit tests (npm run check, npm test)
+    .\dev.ps1 check -Help     Which check to run for a change (fast paths, timings)
     .\dev.ps1 check -Browser [filter...]  ...plus the Playwright suites (npm run test:browser)
     .\dev.ps1 setup           First-run setup: npm install
     .\dev.ps1 new-game <id> [-Kind table|live] [-Players N] [-Name X] [-Color #rrggbb]
@@ -216,6 +217,10 @@ switch ($mode) {
         Start-PanaServer -Port $resolved.Port -OpenStudio $true -NoBrowser $noBrowser
     }
     'check' {
+        if ($args -contains '-Help' -or $args -contains '--help' -or $args -contains '-h') {
+            & node.exe (Join-Path (Join-Path $AppRoot 'scripts') 'test-unit.js') --help
+            exit 0
+        }
         Write-Header 'Pana checks'
         & node.exe (Join-Path $AppRoot 'server\src\check.js')
         if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
