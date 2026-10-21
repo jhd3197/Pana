@@ -184,6 +184,7 @@ function render(state) {
   $('results').hidden = !finished;
   if (finished) {
     menu.close(); looking.release(); showBoard(false); const winners = order.filter(p => state.winners?.includes(p.id));
+    if (state.winners?.includes(room.id)) hitFeats.win();
     $('result-title').textContent = winners.length > 1 ? '¡Empate de pintura!' : `¡Ganó ${winners[0]?.name}!`;
     if (state.options?.mode === 'teams' || state.options?.flag) $('result-title').textContent = new Set(winners.map(p => p.team)).size !== 1 ? '¡Empate de equipos!' : `¡Ganó el equipo ${winners[0]?.team === 0 ? 'naranja' : 'turquesa'}!`;
     $('result-copy').textContent = `${order[0]?.score || 0} pintadas en la mejor marca. ¿Otra ronda?`;

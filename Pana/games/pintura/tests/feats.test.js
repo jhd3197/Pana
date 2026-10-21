@@ -49,3 +49,11 @@ test('reset starts a new round clean', () => {
   feats.hit('Juan');
   assert.ok(!calls.some(([id]) => id === 'doble'));
 });
+
+test('a round win counts once until the next round resets', () => {
+  const { feats } = rig();
+  assert.equal(feats.win(), true);
+  assert.equal(feats.win(), false);   // a results re-render must not recount
+  feats.reset();
+  assert.equal(feats.win(), true);
+});
