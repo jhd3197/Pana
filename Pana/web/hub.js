@@ -244,14 +244,25 @@ function gameRow(label, list) {
   const rail = el('div', 'games');
   for (const game of list) { const card = gameCard(game); card.dataset.category = category(game); rail.append(card); }
   head.append(title);
-  // Arrows for the mouse; the keyboard and a controller step card by card.
-  for (const step of [-1, 1]) {
+  // Arrows instead of a scrollbar, only on a row with more games than fit;
+  // the keyboard and a controller step card by card instead.
+  const arrows = [-1, 1].map(step => {
     const arrow = el('button', 'rail-arrow', step < 0 ? '←' : '→');
     arrow.type = 'button'; arrow.tabIndex = -1; arrow.dataset.padSkip = '';
     arrow.setAttribute('aria-label', `${step < 0 ? 'Anteriores' : 'Más juegos'}: ${label}`);
     arrow.addEventListener('click', () => rail.scrollBy({ left: step * rail.clientWidth * .8, behavior: 'smooth' }));
     head.append(arrow);
-  }
+    return arrow;
+  });
+  const fit = () => {
+    const room = rail.scrollWidth - rail.clientWidth;
+    row.toggleAttribute('data-overflow', room > 2);
+    arrows[0].disabled = rail.scrollLeft <= 2;
+    arrows[1].disabled = rail.scrollLeft >= room - 2;
+  };
+  rail.addEventListener('scroll', fit, { passive: true });
+  if ('ResizeObserver' in window) new ResizeObserver(fit).observe(rail);
+  requestAnimationFrame(fit);
   row.append(head, rail);
   return row;
 }
