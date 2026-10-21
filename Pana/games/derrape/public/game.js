@@ -2101,7 +2101,7 @@ function renderResults(order, player) {
         };
       }).sort((a, b) => (stageMap.get(a.entrantId || a.netId)?.place ?? 99) - (stageMap.get(b.entrantId || b.netId)?.place ?? 99))
     : order;
-  const key = `${cupFinal}:${stageMap?.size || 0}:${displayOrder.map(c => `${c.entrantId || c.netId || c.name}:${c.done}:${c.balloons}`).join()}`;
+  const key = `${cupFinal}:${stageMap?.size || 0}:${displayOrder.map(c => `${c.entrantId || c.netId || c.name}:${c.done}:${c.balloons}:${driftCombo.totalOf(c)}`).join()}`;
   if (key === race.resultKey) return;
   race.resultKey = key;
   const who = (c) => {
@@ -2134,6 +2134,9 @@ function renderResults(order, player) {
       + `<span class="name">${esc(c.name)}</span><b class="place">${i + 1}</b></li>`;
   }).join('');
   const myId = player?.entrantId || player?.netId || net?.id || LOCAL_PLAYER;
+  // Style is additive flavour: the podium and the order never change, only a
+  // detail line per scorer and the Rey del Derrape tag for the best one.
+  const styleBest = displayOrder.reduce((best, c) => Math.max(best, driftCombo.totalOf(c)), 0);
   fillRoster($('result-board'), displayOrder.map((c, i) => {
     const chip = document.createElement('span');
     chip.className = 'chip';
@@ -2145,7 +2148,13 @@ function renderResults(order, player) {
       : rec
         ? `${rec.classification === 'finished' ? clockText(rec.time ?? c.time) : CLASSIFICATION_TEXT[rec.classification] ?? 'Sin terminar'} · +${rec.points} pts`
         : c.done ? clockText(c.time) : `vuelta ${Math.min(race.laps, Math.max(1, c.lap))}/${race.laps}`;
-    return { rank: i + 1, lead: chip, name: c.name, me: c === player || (id && id === myId), end: endText };
+    const style = driftCombo.totalOf(c);
+    const king = style > 0 && style === styleBest;
+    return {
+      rank: i + 1, lead: chip, name: c.name, me: c === player || (id && id === myId), end: endText,
+      detail: style > 0 ? `Estilo: ${style} pts${king ? ' · ¡Rey del Derrape!' : ''}` : null,
+      className: king ? 'style-king' : '',
+    };
   }));
 }
 

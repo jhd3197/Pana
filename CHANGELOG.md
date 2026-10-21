@@ -14,6 +14,13 @@ becomes the GitHub release's notes.
   segundos; el humo sigue los colores de las chispas (polvo, azul, naranja,
   púrpura); la cámara lenta es solo local y nunca toca el reloj de las carreras
   en línea.
+- **Derrape suma puntos de Estilo por derrapar: velocidad, carga y lo cruzado
+  que vayas dan más, y encadenar derrapes sin pasar tres segundos en recta
+  sube el combo (×2, ×3…).** Un medidor sobre el velocímetro muestra el combo
+  en vivo y celebra cuando los puntos se guardan; chocar nunca quita puntos,
+  solo corta la cadena. Al final de la carrera cada carro muestra su línea de
+  Estilo y el que más sumó se lleva el ¡Rey del Derrape! — el podio no cambia:
+  el estilo es sabor, no ventaja.
 - **Tests can be narrowed and explain themselves: `npm test -- derrape` runs
   only the matching unit tests in seconds, and `.\dev.ps1 check -Help` prints
   the cheat sheet for picking the fastest check.** The full unit run still

@@ -414,6 +414,8 @@ body:has(#loading:not(.hidden)) #garage { visibility: hidden; }
 .res-table .pk-row.is-me { background: var(--pk-yellow); }
 .res-table .pk-row-n { width: 22px; font-size: 16px; color: inherit; }
 .res-table .pk-row-end { font-size: 14px; color: inherit; font-variant-numeric: tabular-nums; }
+.res-table .pk-row.style-king { box-shadow: inset 0 0 0 2px var(--trophy-oro); }
+.res-table .pk-row.style-king .pk-row-name small { color: var(--trophy-oro); font-weight: 800; }
 .res-coins { display: flex; align-items: center; gap: 12px; padding: 14px 18px; border-color: var(--coin-line); }
 .res-coins .mango-symbol { width: 34px; height: 34px; font-size: 34px; }
 .result p.result-coins { margin: 0; color: var(--coin-text); font-size: 14px; font-weight: 800; }
