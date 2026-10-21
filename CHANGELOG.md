@@ -8,6 +8,8 @@ becomes the GitHub release's notes.
 
 ## Unreleased
 
+## 0.5.0 - 2026-10-21
+
 - **Contributors get one-command scaffolds and safer checks.** `npm run
   new-track` registers a Derrape circuit everywhere with a placeholder that
   already races, `npm run launcher-art` adds a game's hub art, `npm run
