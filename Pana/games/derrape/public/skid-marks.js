@@ -50,7 +50,7 @@ export class SkidMarks {
   // wheel, aligned with the direction the tyre is actually travelling.
   lay(c, dt) {
     c.markT = (c.markT || 0) - dt;
-    if (!c.drift || !c.onGround || Math.abs(c.vf) < DRIFT_MIN_SPEED * 0.75) return;
+    if (!c.drift || !c.onGround || c.boat || Math.abs(c.vf) < DRIFT_MIN_SPEED * 0.75) return;   // a lancha leaves wake, not rubber
     const low = getSettings().quality === 'baja';
     if (c.markT > 0) return;
     c.markT = low ? MARK_GAP * 2 : MARK_GAP;

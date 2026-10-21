@@ -8,6 +8,12 @@ becomes the GitHub release's notes.
 
 ## Unreleased
 
+- **Derrape: en Choroní el río se come la carretera y tu carro se vuelve
+  lancha.** Pasa el arco tricolor y el carro recoge los cauchos, se le abre un
+  peñero alrededor y sigue a toda velocidad entre salpicones; el arco de
+  salida lo devuelve a carro. Derrapar sobre el agua carga el turbo más
+  rápido. Los estilos de derrape ahora sí suman puntos en las curvas, y el
+  fantasma guarda bien tu vuelta final.
 - **Derrape estrena tres circuitos: Colonia Tovar, Galipán de noche y
   Maracaibo · El puente.** Sube entre pinos, hortensias y neblina hasta el
   pueblo alemán; cruza de noche el pueblito iluminado de Galipán con Caracas
