@@ -113,6 +113,8 @@ try{
   await b.locator('[data-piece="3"]').click();await b.locator('#results').waitFor({state:'visible'});
   assert.match(await b.locator('#result-title').textContent(),/Ana/);await b.screenshot({path:'art/ludo/results.png'});
   await b.locator('#again').click();assert.equal(await b.evaluate(()=>ludoDebug.room.state.round),2);
+  // A rematch shakes the cachos again; the last match's slam doesn't carry over.
+  await b.locator('#pana-starter-shake').waitFor();assert.equal(await b.evaluate(()=>ludoDebug.room.state.phase),'starter');
   await b.close();
   const m=await open('Móvil',true,`${code}-mobile`);await m.screenshot({path:'art/ludo/mobile-lobby.png'});
   assert.equal(await m.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);
