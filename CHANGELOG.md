@@ -8,6 +8,12 @@ becomes the GitHub release's notes.
 
 ## Unreleased
 
+- **Derrape y Pepazo celebran tus jugadas con avisos de hitos.** En Derrape el
+  derrape suma metros por carrera (¡500 metros!, ¡1 kilómetro!), un derrape de
+  más de 100 m sin soltar es un ¡Derrapón! y soltar un derrape púrpura tiene su
+  celebración. En Pepazo pintar a un rival lo anuncia por nombre, y dos o tres
+  pintadas en menos de cinco segundos cantan ¡Doble pintada! y ¡Triple pintada!.
+
 - **New game: Trifulca, barrio boxing where the winner stays and everyone
   else is the ring.** Two panas fight with jab, trompón, block, dodge and
   grab; hits fill your mareo instead of a health bar, three caídas is a

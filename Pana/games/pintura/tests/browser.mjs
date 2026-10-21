@@ -35,9 +35,11 @@ try {
   await wait(a, id => { const g = pinturaDebug.room.state.players.find(p => p.id === id); return g.x > 26 && g.z < -25.5; }, guest.id);
   await a.evaluate(id => { const { room, world } = pinturaDebug, me = room.state.players.find(p => p.id === room.id), g = room.state.players.find(p => p.id === id); world.look(Math.atan2(-(g.x - me.x), -(g.z - me.z)) - world.yaw); }, guest.id);
   await a.keyboard.down(' ');
+  // The first confirmed hit raises the feat toast (¡Pintaste a…!, then ¡Doble!/¡Triple pintada!).
+  await wait(a, () => /Pintaste|pintada/.test(document.getElementById('toast').textContent));
   await wait(a, `${mine}.score > 0`); await a.keyboard.up(' ');
   await wait(b, `${mine}.hits > 0`);
-  console.log('ok: real guest movement and first-person host aim/fire produce a server-confirmed hit on both clients');
+  console.log('ok: real guest movement and first-person host aim/fire produce a server-confirmed hit on both clients, with the feat toast');
   await a.screenshot({ path: `${out}/playing.png` });
   await wait(b, () => !pinturaDebug.room.state.players.find(p => p.id === pinturaDebug.room.id).respawn);
   await a.close(); await wait(b, () => pinturaDebug.room.isHost); const before = await b.evaluate(() => pinturaDebug.room.state.time); await b.waitForTimeout(700); assert.ok(await b.evaluate(() => pinturaDebug.room.state.time) < before);

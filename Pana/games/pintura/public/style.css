@@ -47,6 +47,7 @@ body.called .callout { display: grid; position: fixed; left: 50%; top: 24%; tran
 .callout b { font-family: var(--pk-display, var(--pk-sans)); font-size: clamp(34px, 5vw, 58px); color: var(--pk-game); text-shadow: 0 3px 0 #0006, 0 0 18px #0004; letter-spacing: .02em; }
 .callout span { font-weight: 900; font-size: clamp(15px, 2vw, 20px); color: #fff; text-shadow: 0 2px 0 #0007; }
 .callout--long b { color: var(--callout-long); }
+#toast { top: 14%; }   /* the knockout callout owns 24% */
 @keyframes callout-pop { 0% { opacity: 0; transform: translateX(-50%) scale(1.6); } 12% { opacity: 1; transform: translateX(-50%) scale(1); } 80% { opacity: 1; } 100% { opacity: 0; transform: translateX(-50%) translateY(-14px); } }
 .variant { display: none; }
 body.round-start .variant { display: block; position: fixed; left: 50%; top: 30%; transform: translateX(-50%); pointer-events: none; animation: hit-fade 2.4s ease-in forwards; }
