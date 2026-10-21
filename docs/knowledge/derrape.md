@@ -34,5 +34,13 @@ lobby (`derrape-menu.md`), and its own Colyseus room (`derrape-online.md`).
   `public/drift-combo.js`. It is additive flavour: it never changes placement,
   and a crash banks points instead of taking them. Only the local player's
   banked points reach `statCount('derrape.drift-points', …)`.
+- Personal-best ghost: `public/ghost-recorder.js` samples the local car's
+  `packPose` stream at POSE_HZ and keeps only the fastest lap per track in
+  localStorage (`derrape:ghost:<trackId>`, `{ lap, poses: [[tMs, …15]] }`,
+  writes wrapped in try/catch). `public/ghost-car.js` replays it on a
+  translucent replica (`setGhost`, opacity 0.42) that never joins `race.cars`,
+  so collisions, items, hazards and placements never see it; drift flags are
+  stripped on replay so it sheds no sparks or skid marks. Records in every
+  race mode except battle; `?noghost` turns the feature off.
 - Derrape signals readiness with `window.PANA_PREPARED` once the garage car is
   built, like every other game (tests/browser-kit.js `waitPrepared`).

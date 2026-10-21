@@ -1,7 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createGhostRecorder, loadGhost, ghostKey } from '../public/ghost-recorder.js';
-import { POSE_HZ } from '../public/online-rules.js';
+import { poseAt, createGhostPlayback, spawnGhost } from '../public/ghost-car.js';
+import { POSE_HZ, FLAG, DRIFT_SHIFT } from '../public/online-rules.js';
 
 // A car record with everything packPose reads; tests move x and lap.
 const car = (over = {}) => ({ x: 0, y: 0, z: 0, h: 0, pitch: 0, roll: 0, vf: 20, steer: 0, spin: 0, boost: 0,
@@ -149,4 +150,55 @@ test('loadGhost reads malformed entries as absent', () => {
   assert.equal(loadGhost('estadio', storage), null);
   storage.setItem(ghostKey('estadio'), JSON.stringify({ lap: 62.5, poses: [[0, 1, 2]] }));
   assert.equal(loadGhost('estadio', storage), null);
+});
+
+// A stored pose entry: [tMs, x, y, z, h, pitch, roll, vf, steer, spin, boost, flags, lap, prog, lost, coins].
+const entry = (t, over = {}) => [t,
+  over.x ?? 0, over.y ?? 0, over.z ?? 0, over.h ?? 0, over.pitch ?? 0, over.roll ?? 0,
+  over.vf ?? 10, over.steer ?? 0, over.spin ?? 0, over.boost ?? 0,
+  over.flags ?? FLAG.ground, over.lap ?? 1, over.prog ?? 0, over.lost ?? 0, over.coins ?? 0];
+
+test('poseAt interpolates position and speed, newer sample owns discrete fields', () => {
+  const poses = [entry(0, { x: 0, vf: 10, lap: 1, coins: 2 }), entry(1000, { x: 10, vf: 20, lap: 2, coins: 5 })];
+  const mid = poseAt(poses, 500);
+  assert.equal(mid[0], 5);            // x lerps
+  assert.equal(mid[6], 15);           // vf lerps
+  assert.equal(mid[11], 2);           // lap from the newer sample
+  assert.equal(mid[14], 5);           // coins from the newer sample
+  assert.deepEqual(poseAt(poses, -50), poses[0].slice(1));   // before the first stamp
+  assert.deepEqual(poseAt(poses, 1500), poses[1].slice(1));  // past the last
+});
+
+test('poseAt turns headings along the shortest arc', () => {
+  const a = -Math.PI + 0.1, b = Math.PI - 0.1;
+  const mid = poseAt([entry(0, { h: a }), entry(1000, { h: b })], 500);
+  assert.ok(Math.abs(Math.abs(mid[3]) - Math.PI) < 0.01, `heading ${mid[3]} wraps over ±π, not through 0`);
+});
+
+test('playback loops the lap and drive() strips drift and shield', () => {
+  const poses = [entry(0, { x: 0 }), entry(1000, { x: 10 }), entry(2000, { x: 20 })];
+  const play = createGhostPlayback({ lap: 2, poses });
+  assert.equal(play.duration, 2000);
+  assert.equal(play.pose(2500)[0], play.pose(500)[0]);     // loops
+  assert.equal(play.pose(-500)[0], play.pose(1500)[0]);    // negative times wrap too
+  const drifting = [entry(0, { x: 0, flags: FLAG.ground | FLAG.drift | FLAG.shield | (2 << DRIFT_SHIFT) }), entry(1000, { x: 5 })];
+  const c = {};
+  createGhostPlayback({ lap: 1, poses: drifting }).drive(c, 500, 1 / 60);
+  assert.equal(c.x, 2.5);
+  assert.equal(c.drift, 0);
+  assert.equal(c.driftLvl, 0);
+  assert.equal(c.shield, 0);
+  assert.equal(c.onGround, true);
+  assert.ok(Math.abs(c.vx - Math.sin(c.h) * c.vf) < 1e-9 && Math.abs(c.vz - Math.cos(c.h) * c.vf) < 1e-9);
+  assert.ok(Number.isFinite(c.latAcc) && Number.isFinite(c.longAcc));
+});
+
+test('spawnGhost places the replica on the lap-start pose from the countdown', () => {
+  const poses = [entry(0, { x: 3, z: 7 }), entry(1000, { x: 10 })];
+  const ghost = spawnGhost({ recording: { lap: 1, poses }, buildCar: () => ({}) });
+  assert.equal(ghost.lap, 1);
+  assert.equal(ghost.car.x, 3);
+  assert.equal(ghost.car.z, 7);
+  ghost.update(500, 1 / 60);
+  assert.equal(ghost.car.x, 6.5);
 });

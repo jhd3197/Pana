@@ -8,13 +8,12 @@ import { partsProfile, renderConfig } from './parts.js';
 import { studioEnvironment, studioRims, showroomPaint } from './garage-stage.js';
 import { garageBloom } from './garage-bloom.js';
 import { owns } from './shop.js';
-import { paintNext } from './loading.js';
+import { paintNext, TIPS } from './loading.js';
 import { createMenuFlow } from './menu-flow.js';
 import { setMenuImage, trackArt } from './menu-art.js';
 import { sound, Puffs, Debris, Shockwaves, makeBubble, setSpeedLines, flyToCounter } from '/engine/fx.js';
 import { createItems, ITEMS, SPIN } from './items.js';
 import { activeItem, canBlock, COIN_SPEED, MAX_COINS, AIMED, isJuiced } from './item-rules.js';
-import { ITEM_ICONS } from './item-art.js';
 import { TRACKS, getTrack, makeTrack, loadTrack, loadTracks, trackLoaded } from './tracks.js';
 import { createMinimap, drawTrackPreview } from './route-map.js';
 import { createRaceWorld } from './race-world.js';
@@ -38,7 +37,7 @@ import { advanceLap, ALL_SECTORS, RESCUE_TIME, OUT_TIME, STUCK_TIME } from './co
 import { createHazards } from './hazards.js';
 import { createMusic, TRACK_STYLE, GARAGE_SONG, RESULTS_SONG, songFor, finishSting } from './music.js';
 import { racerPortrait } from './racer-portrait.js';
-import { batchRacer } from './racer-render.js';
+import { batchRacer, repaintCar, addBalloons } from './racer-render.js';
 import { createWaterAmbience } from './water-ambience.js';
 import { padInput, pressed, keyInput, SPLIT_KEYS, wrongWayStep, WRONG_WAY_TIME, lapSplit } from './controls.js';
 import { PAINTS, FLAMES, earnings, mirrorUnlocked, repaintHex } from './shop.js';
@@ -386,6 +385,17 @@ const profile = profileStore.load();
 const setup = profile.setup;
 const isCupMode = (mode) => CUPS.some(c => c.id === mode);
 
+// Personal-best ghost: the recorder samples the local car and the replay
+// drives a translucent replica (ghost-recorder.js / ghost-car.js). The stub
+// no-ops until the modules land; ghostReady is awaited before any race.
+race.ghost = null;
+race.recorder = { begin() {}, step() {}, finish() { return null; }, discard() {} };
+let ghostIO = null, ghostPlay = null;
+const ghostReady = Promise.all([import('./ghost-recorder.js'), import('./ghost-car.js')]).then(([io, play]) => {
+  ghostIO = io; ghostPlay = play;
+  race.recorder = io.createGhostRecorder({ storage: profileStorage });
+});
+
 // ---------- the taller: wallet, paints, horns, turbo flames ----------
 let wallet = profile.wallet;
 function saveWallet() {
@@ -396,28 +406,6 @@ function saveWallet() {
 const raceStyle = index => cleanCosmetics({paint:wallet.paint[CARS[index].id],horn:wallet.horn,flame:wallet.flame,parts:wallet.parts[CARS[index].id]});
 const hornFor = c => c.cosmetics.horn !== 'propio' ? c.cosmetics.horn : c.def.horn;
 const flameFor = c => FLAMES.find(f => f.id === c.cosmetics.flame)?.colors ?? FLAMES[0].colors;
-
-// Shifts every body panel in the car's paint family to a new paint (the
-// driver keeps their own colours). Materials are shared, so swap in copies.
-const paintCache = new Map();
-function repaintCar(car, from, to) {
-  if (!to) return car;
-  const skip = new Set();
-  car.driver?.group?.traverse(o => skip.add(o));
-  car.root.traverse(o => {
-    if (!o.material || skip.has(o)) return;
-    const swap = (m) => {
-      if (!m.color) return m;
-      const hex = repaintHex('#' + m.color.getHexString(), from, to);
-      if (!hex) return m;
-      const key = m.uuid + hex;
-      if (!paintCache.has(key)) { const n = m.clone(); n.color.set(hex); paintCache.set(key, n); }
-      return paintCache.get(key);
-    };
-    o.material = Array.isArray(o.material) ? o.material.map(swap) : swap(o.material);
-  });
-  return car;
-}
 
 // The taller UI (taller.js): tabs of parts, hover stat previews and
 // try-before-buy on the turntable car. Closing it takes off what was only tried.
@@ -758,29 +746,6 @@ function makeRacer(index, isPlayer, name, wheelId = 'calle', avatar = null, cosm
   };
 }
 
-// Battle balloons ride on sticks above the trunk, in the car's colour.
-const balloonGeo = new THREE.SphereGeometry(0.55, 10, 8);
-const stringGeo = new THREE.CylinderGeometry(0.025, 0.025, 1.6, 4);
-const stringMat = new THREE.MeshBasicMaterial({ color: 0xf3e9d7 });
-function addBalloons(c) {
-  c.balloons = BALLOONS;
-  c.balloonMeshes = [];
-  const mat = new THREE.MeshStandardMaterial({ color: c.def.color, roughness: 0.35, emissive: c.def.color, emissiveIntensity: 0.15 });
-  for (let i = 0; i < BALLOONS; i++) {
-    const g = new THREE.Group();
-    const ball = new THREE.Mesh(balloonGeo, mat);
-    ball.scale.set(1, 1.2, 1);
-    ball.position.y = 1.6;
-    const string = new THREE.Mesh(stringGeo, stringMat);
-    string.position.y = 0.8;
-    g.add(ball, string);
-    g.position.set((i - 1) * 0.75, 2.1, -1.5);
-    g.rotation.z = (i - 1) * -0.25;
-    c.car.root.add(g);
-    c.balloonMeshes.push(g);
-  }
-}
-
 // A hard hit in battle pops one balloon; the last one knocks the car out.
 function popBalloon(c) {
   if (race.mode !== 'battle' || c.remote || c.balloons <= 0 || c.popT > 0 || race.state !== 'go') return;
@@ -856,6 +821,8 @@ function clearRace() {
   vultures.clear();
   race.cars.forEach(disposeRacer);
   race.cars = [];
+  if (race.ghost) { disposeRacer(race.ghost.car); race.ghost = null; }
+  race.recorder.discard();
   race.puffs.clear();
   race.debris.clear();
   race.shockwaves.clear();
@@ -865,27 +832,6 @@ function clearRace() {
   race.player = null;
 }
 
-// Loading-screen tips: real rules only.
-const TIPS = [
-  [SVG.mango, 'Lleva un mango equipado: bloquea el mango que te lancen.'],
-  [SVG.coin, 'Cada moneda te da un poquito más de velocidad, hasta 10.'],
-  [SVG.crate, 'Rompe cajas de madera para conseguir objetos. Guardas hasta 2.'],
-  [SVG.juice, 'El jugo de mango te da un turbo: tómatelo en una recta.'],
-  [SVG.back, 'Lanza hacia atrás con X para frenar al que te persigue.'],
-  [ITEM_ICONS.drift, 'Mantén Shift y gira: la ayuda suaviza el derrape. Suelta Shift para salir con turbo.'],
-  [ITEM_ICONS.drift, 'En una rampa, pulsa Shift en el aire para hacer un truco y caer con turbo.'],
-  [ITEM_ICONS.cohete, 'El cohete persigue al carro que va justo delante de ti.'],
-  [ITEM_ICONS.chancleta, 'La chancleta vuela por encima de la pista y cae sobre el líder.'],
-  [ITEM_ICONS.totuma, 'La totuma protectora aguanta un golpe de lo que sea.'],
-  [ITEM_ICONS.aguacero, 'El aguacero avanza hacia el líder cada 1,8 segundos. Cuanto más adelante, más dura.'],
-  [ITEM_ICONS.trampa, 'Ojo con las cajas con banda roja: son trampas y explotan.'],
-  [SVG.coin, 'Con 10 monedas tu próximo objeto sale potenciado.'],
-  [SVG.back, '¿Atascado o te caíste? Pulsa R y el zamuro te devuelve a la pista.'],
-  [ITEM_ICONS.aguacero, 'En Pana Selva y Pana Páramo llueve: con cauchos de lluvia no resbalas.'],
-  [SVG.crate, 'Busca los puentes de tablas: son atajos, pero sin turbo frenan y sin baranda te puedes caer.'],
-  [SVG.coin, 'Pégate detrás de otro carro en la recta: el rebufo te lanza hacia adelante.'],
-  [SVG.coin, 'Si te pegan pierdes monedas. Cuídalas: cada una es velocidad.'],
-];
 let loadGeneration = 0;
 // roster (online only): [{ id, kind, owner, name, avatar, car, wheel, slot }]
 // from the room. Without one the race is the local player plus three bots.
@@ -1042,6 +988,7 @@ async function startRace(playerIndex, wheelId = garage.wheel, roster = null) {
     race.p2 = race.cars.find(c => c.human === 2) ?? null;
     race.splits = []; race.lapSeen = 1; race.bestLap = null;
     $('best-pill').hidden = true;
+    $('ghost-pill').hidden = true;
     $('stage-pill').hidden = !race.cup;
     if (race.cup) $('stage-readout').textContent = `${race.cup.session.stageIndex + 1}/4`;
     $('race').classList.toggle('split', !!race.p2);
@@ -1049,6 +996,21 @@ async function startRace(playerIndex, wheelId = garage.wheel, roster = null) {
     resize();
     race.playerIndex = playerIndex;
     race.playerWheel = wheelId;
+    // The ghost races every mode but battle; ?noghost turns the feature off.
+    if (race.mode !== 'battle' && !QS.has('noghost')) {
+      race.recorder.begin(T.id);
+      const recorded = ghostIO?.loadGhost(T.id, profileStorage);
+      if (recorded && ghostPlay) {
+        race.ghost = ghostPlay.spawnGhost({ recording: recorded, buildCar: () => {
+          const c = makeRacer(playerIndex, false, ME.name, wheelId, ME.avatar, raceStyle(playerIndex));
+          c.name = 'Fantasma';
+          setGhost(c, true);
+          return c;
+        } });
+        $('ghost-time').textContent = clockText(recorded.lap);
+        $('ghost-pill').hidden = false;
+      }
+    }
     race.clock = 0;
     race.intermission = null;
     race.firstHumanFinish = null;
@@ -1389,6 +1351,7 @@ const driftCombo = {
   live: (c) => comboApi?.live(c),
 };
 if (DEBUG) window.PANA_DRIFT_SCORE = () => race.player ? driftCombo.live(race.player) : null;
+if (DEBUG) window.PANA_GHOST = () => race.ghost ? { lap: race.ghost.lap, clock: race.clock, x: race.ghost.car.x, y: race.ghost.car.y, z: race.ghost.car.z } : null;
 
 // ---------- the zamuro rescue ----------
 // Off the course, stuck, or asked for (R): a vulture lifts the car, flies it
@@ -1666,6 +1629,7 @@ function updateRace(dt, presentation = true) {
         if ((c.isPlayer || c.human) && race.cup) race.firstHumanFinish ??= race.clock;
         if (c.isPlayer || c.human) maybeFinish();
       }
+      if (c.isPlayer) race.recorder.step(race.clock, c);   // the ghost recorder samples at its own rate
     }
     if (race.cup && race.state === 'go' && (race.clock >= race.stageCap
       || (race.firstHumanFinish != null && race.clock - race.firstHumanFinish >= FINISH_GRACE_MS / 1000))) finish();
@@ -1678,6 +1642,7 @@ function updateRace(dt, presentation = true) {
     for (const c of race.cars) if (c.remote) applyRemote(c, dt);
   }
   race.items.update(dt, race.cars, race.state === 'go' || race.state === 'end');
+  race.ghost?.update(race.clock * 1000, dt);   // the replica follows the recording, countdown included
   for (const c of race.cars) syncGhostAppearance(c);
   race.hazards?.update(race.clock, dt, race.state === 'go' || race.state === 'end' ? race.cars : [], hitHazard);
   race.puffs.update(dt);
@@ -1695,6 +1660,7 @@ function updateRace(dt, presentation = true) {
 function setText(id, text) { const el = $(id); if (el.textContent !== text) el.textContent = text; }
 function presentRace(dt) {
   for (const c of race.cars) syncCar(c, dt);
+  if (race.ghost) syncCar(race.ghost.car, dt);
   race.sky.update(race.clock);
   tickWind(race.clock, T?.def.rain ? 1.45 : 1);
   for (const o of T.animated) o.userData.tick(race.clock, dt);   // scenery: flags, windmills, birds…
@@ -1986,6 +1952,7 @@ function renderCup() {
 function finish() {
   race.state = 'end';
   driftCombo.finish(race.player);   // bank a live chain so the results count it
+  if (race.recorder.finish()?.saved) shout('¡Nuevo fantasma! Tu mejor vuelta corre contigo');
   if (race.netRace && net?.cup) {
     race.cup = { definition: cupById(net.cup.cupId), session: net.cup, mirror: false };
   }
@@ -2415,7 +2382,7 @@ garage.wheel = wheelById(wallet.wheel).id;   // the profile migrated any old 'de
 if (ROOM) goOnline(ROOM, QS.has('lead'));   // first: a reload reclaims its seat inside the reconnection window
 // Suites call buildTrack() and read TRACKS synchronously: every map loads before
 // PANA_PREPARED (showCar below). startRace() loads its own map either way.
-await Promise.all([featsReady, comboReady]);   // milestone toasts and the style score are ready before any race can start
+await Promise.all([featsReady, comboReady, ghostReady]);   // milestone toasts, the style score and the ghost are ready before any race can start
 if (DEBUG) await loadTracks();
 selectTrack(QS.get('track') || savedTrack);
 showCar(0);
