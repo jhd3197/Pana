@@ -46,6 +46,7 @@ const menu = createGameMenu({ pad: { move: 'arrows', moveLabel: 'Afinar la direc
   tips: [
     'Reglas de la casa: dos equipos de tres, rojos y verdes. Cada pana lanza dos o cuatro bolas; los bots cubren los puestos libres. Los compañeros rotan sus lanzamientos.',
     'El mingo se coloca automáticamente al comenzar la mano. Arrima tu bola lo más cerca posible o usa un boche rastrero para desplazar las otras bolas. El mingo también se mueve con los golpes.',
+    'Antes de la primera mano, una moneda decide qué equipo lanza el mingo: cara para los rojos, sello para los verdes. El anfitrión puede cambiarlo en Más ajustes: al azar, el orden de la mesa o que empiece el equipo que perdió la última partida.',
     'Juega el equipo que está más lejos del mingo. Si ya no le quedan bolas, juega el otro. Un empate de distancia alterna el equipo que lanza.',
     'Al gastar todas las bolas, el equipo más cercano suma un tanto por cada bola más cerca del mingo que la mejor del rival. A igual distancia, la mano no da tantos.',
     'Las bolas que cruzan la línea quedan fuera. Si sale el mingo, la mano es nula: nadie suma. El anfitrión abre la siguiente mano o la revancha.',
@@ -145,8 +146,8 @@ addEventListener('keydown', event => {
 addEventListener('keyup', event => { if (charge?.source === event.key) { event.preventDefault(); releaseCharge(event.key); } });
 function render(g) {
   if (room.connected) connecting = false;
-  const lobby = g.phase === 'lobby', result = ['hand', 'finished'].includes(g.phase), active = ownTurn();
-  document.body.classList.toggle('in-lobby', lobby); $('welcome').hidden = !lobby; $('scoreboard').hidden = lobby; $('controls').hidden = lobby || result;
+  const lobby = g.phase === 'lobby', result = ['hand', 'finished'].includes(g.phase), active = ownTurn(), opening = g.phase === 'opening';
+  document.body.classList.toggle('in-lobby', lobby); $('welcome').hidden = !lobby; $('scoreboard').hidden = lobby; $('controls').hidden = lobby || result || opening;
   $('room-code').textContent = room.connected && !room.offline ? `Sala ${code}` : '';
   $('invite-slot').hidden = !room.connected || room.offline;
   $('start').textContent = connecting ? 'Conectando…' : !room.connected ? 'Jugar online' : room.isHost ? '¡A jugar!' : 'El anfitrión empieza';
@@ -163,7 +164,7 @@ function render(g) {
   for (let t = 0; t < 2; t++) { $(`score-${t}`).textContent = g.scores[t]; $(`left-${t}`).textContent = `${g.remaining.reduce((sum, n, i) => sum + (i % 2 === t ? n : 0), 0)} bolas por tirar`; }
   $('hand-number').textContent = `MANO ${g.hand}`; $('target-label').textContent = `A ${g.target} tantos`;
   const player = g.players[g.turn];
-  $('turn').textContent = g.phase === 'rolling' ? 'La bola está rodando…' : active ? `¡Tu turno! · ${TEAM_NAMES[g.turn % 2]}` : `Turno de ${player.name} · ${TEAM_NAMES[g.turn % 2]}`;
+  $('turn').textContent = opening ? '¿Cara o sello? La moneda decide quién lanza el mingo' : g.phase === 'rolling' ? 'La bola está rodando…' : active ? `¡Tu turno! · ${TEAM_NAMES[g.turn % 2]}` : `Turno de ${player.name} · ${TEAM_NAMES[g.turn % 2]}`;
   const lead = measure(g.pitch), best = g.pitch.balls.find(b => b.id === lead.ids[0]);
   $('measure').textContent = best ? `${TEAM_NAMES[lead.team]} ganan · ${distance(g.pitch, best).toFixed(2)} m del mingo` : 'El mingo está en juego';
   $('shoot').disabled = !active;

@@ -51,10 +51,12 @@ export function createStarterStage({ root, camera, canvas, spot, scale = .5, onI
   const seats = new Map();
   let state = null, ownSeat = -1, names = initialNames, phaseKey = '', lt = 0, revealed = false, slammedLocal = '', shakeTick = 0;
   const thrower = bindDiceThrow({ button, surface: canvas, holdSurface: true,
-    canThrow: () => mayThrow(), onStart: () => { sound.unlock(); onInput?.('shake'); }, onThrow: power => { slammedLocal = `${state.round}`; onInput?.('slam', power); } });
+    canThrow: () => mayThrow(), onStart: () => { sound.unlock(); onInput?.('shake'); }, onThrow: power => { slammedLocal = roundKey(); onInput?.('slam', power); } });
+  // A rematch starts at round 1 again, so keys carry the match's seed too.
+  const roundKey = () => `${state.seed}:${state.round}`;
 
   function mayThrow() {
-    return !!state && state.phase === 'shake' && state.contenders.includes(ownSeat) && !(ownSeat in state.slammed) && slammedLocal !== `${state.round}`;
+    return !!state && state.phase === 'shake' && state.contenders.includes(ownSeat) && !(ownSeat in state.slammed) && slammedLocal !== roundKey();
   }
   function seatOf(seat) {
     if (seats.has(seat)) return seats.get(seat);
@@ -92,10 +94,11 @@ export function createStarterStage({ root, camera, canvas, spot, scale = .5, onI
   const top = s => { const r = s.history.at(-1)?.rolls || {}, v = Math.max(...Object.values(r)); return Object.keys(r).map(Number).filter(k => r[k] === v); };
 
   function spotlight(seat) {
-    const e = seat === undefined ? null : seats.get(seat);
-    beam.visible = halo.visible = !!e;
-    if (!e) return;
-    beam.position.copy(e.base).addScaledVector(UP, scale * 3); halo.position.copy(e.base).addScaledVector(UP, .01);
+    // The coin flavour draws no cups, so its spots come straight from spot().
+    const base = seat === undefined ? null : seats.get(seat)?.base ?? new THREE.Vector3(...spot(seat).position);
+    beam.visible = halo.visible = !!base;
+    if (!base) return;
+    beam.position.copy(base).addScaledVector(UP, scale * 3); halo.position.copy(base).addScaledVector(UP, .01);
   }
 
   function update(next, { ownSeat: own = ownSeat, names: n = names } = {}) {
@@ -103,13 +106,14 @@ export function createStarterStage({ root, camera, canvas, spot, scale = .5, onI
     const was = state; state = next && next.phase !== 'done' ? next : null;
     group.visible = !!state; layer.hidden = !state;
     document.body.classList.toggle('pana-starter', !!state);
-    if (!state) { thrower.cancel(); spotlight(); return; }
+    if (!state) { thrower.cancel(); spotlight(); phaseKey = ''; return; }
     if (!bubbles || bubbleCount < Math.max(...state.seats, ...state.late) + 1) {
       bubbles?.dispose(); bubbleCount = Math.max(...state.seats, ...state.late) + 1; bubbles = createSeatBubbles(layer, bubbleCount);
     }
-    const key = `${state.round}:${state.phase}`;
+    const key = `${roundKey()}:${state.phase}`;
     if (key !== phaseKey) {
-      lt = state.t || 0; revealed = false; phaseKey = key;
+      // The coin has landed by the time the order shows.
+      lt = state.t || 0; revealed = state.flavour === 'moneda' && state.phase === 'order'; phaseKey = key;
       if (state.phase === 'shake') spotlight();
       if (state.phase === 'shake' && was && state.round > 1) sound.tone(330, 0, .12, 'triangle', .08);
     }
@@ -117,7 +121,7 @@ export function createStarterStage({ root, camera, canvas, spot, scale = .5, onI
     for (const seat of state.seats) {
       const e = seatOf(seat), contender = state.contenders.includes(seat);
       if (state.phase === 'shake' && contender) {
-        const slammed = seat in state.slammed || (seat === ownSeat && slammedLocal === `${state.round}`);
+        const slammed = seat in state.slammed || (seat === ownSeat && slammedLocal === roundKey());
         const shaking = state.shaking.includes(seat) || (seat === ownSeat && thrower.shaking);
         go(e, slammed ? 'down' : shaking ? 'hand' : 'rest', slammed ? SLAM : .22);
         e.die.visible = !slammed && !shaking; e.chip.hidden = true;
@@ -134,7 +138,8 @@ export function createStarterStage({ root, camera, canvas, spot, scale = .5, onI
     const s = state, mine = s.contenders.includes(ownSeat);
     let line = '';
     if (s.phase === 'shake') line = s.round === 1 ? '¡A sacudir!' : `¡Empate! Otra vez: ${list(s.contenders)}`;
-    else if (s.phase === 'lift') line = s.flavour === 'moneda' ? `Cara: ${name(s.contenders[0])} · Sello: ${name(s.contenders[1])}` : revealed ? '¡Arriba!' : 'Redoble…';
+    else if (s.phase === 'lift' && s.flavour === 'moneda') line = revealed ? coinLine() : `Cara: ${name(s.contenders[0])} · Sello: ${name(s.contenders[1])}`;
+    else if (s.phase === 'lift') line = revealed ? '¡Arriba!' : 'Redoble…';
     else if (s.phase === 'order') line = `¡Empieza ${name(s.order[0])}!`;
     if (say.textContent !== line) say.textContent = line;
     ribbon.textContent = s.flavour === 'moneda' ? '¿Cara o sello?' : '¿Quién empieza?';
@@ -157,13 +162,15 @@ export function createStarterStage({ root, camera, canvas, spot, scale = .5, onI
     revealed = true;
     sound.boing();
     for (const seat of state.contenders) { const e = seatOf(seat); go(e, 'aside', RAISE); showDie(e, state.rolls[seat]); e.squash = 1; }
-    const best = top(state);
-    spotlight(best.length === 1 ? best[0] : undefined);
-    if (best.length === 1) { const e = seats.get(best[0]); waves.sparkle(e.base, { color: 0xffd65c, count: 10, spread: scale * .6, life: .6 }); }
+    // The spotlight only for a clear starter, not for the best of a lower tie.
+    const best = top(state), clear = best.length === 1 && !state.lead.length && state.groups[0]?.includes(best[0]);
+    spotlight(clear ? best[0] : undefined);
+    if (clear) { const e = seats.get(best[0]); waves.sparkle(e.base, { color: 0xffd65c, count: 10, spread: scale * .6, life: .6 }); }
     for (const { seat, text } of starterBarks(state)) bubbles.say(seat, text, 1.9);
     texts();
   }
 
+  const coinLine = () => state.coin === 'cara' ? `¡Cara! Empieza ${name(state.contenders[0])}` : `¡Sello! Empieza ${name(state.contenders[1])}`;
   // The coin: thrown up from the middle of the table, spinning, lands on its face.
   function updateCoin() {
     if (!coin) {
@@ -178,7 +185,7 @@ export function createStarterStage({ root, camera, canvas, spot, scale = .5, onI
     coin.position.copy(c).addScaledVector(UP, scale * .05 + Math.sin(k * Math.PI) * scale * 4);
     const face = state.coin === 'sello' ? Math.PI : 0, turns = Math.PI * 2 * 7;
     coin.rotation.set(state.phase === 'lift' && k < 1 ? face + turns * (1 - (1 - k) ** 2) : face, 0, 0);
-    if (state.phase === 'lift' && k >= 1 && !revealed) { revealed = true; sound.bonk(.8); puffs.spawn(c, { color: 0xf3e9d7, count: 5, spread: scale * .5, size: scale * .4, rise: .6, life: .5 }); say.textContent = state.coin === 'cara' ? `¡Cara! Empieza ${name(state.contenders[0])}` : `¡Sello! Empieza ${name(state.contenders[1])}`; spotlight(state.coin === 'cara' ? state.contenders[0] : state.contenders[1]); }
+    if (state.phase === 'lift' && k >= 1 && !revealed) { revealed = true; sound.bonk(.8); puffs.spawn(c, { color: 0xf3e9d7, count: 5, spread: scale * .5, size: scale * .4, rise: .6, life: .5 }); say.textContent = coinLine(); spotlight(state.coin === 'cara' ? state.contenders[0] : state.contenders[1]); }
   }
 
   const v = new THREE.Vector3();
