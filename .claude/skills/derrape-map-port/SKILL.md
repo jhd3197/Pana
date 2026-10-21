@@ -13,36 +13,42 @@ lake, `sarisarinama-*.js` a layered cave) and
 
 ## 0. Setup
 
-- Work in a worktree off `dev` (the user often has another agent on `dev`):
-  `git worktree add -b <branch> ../Pana-<name> dev`, then the node_modules
-  junction. In Git Bash keep backslashes in single quotes or the target is
-  mangled: `cmd //c 'mklink /J C:\...\Pana-<name>\node_modules C:\...\Pana\node_modules'`.
-  Unlink it (`cmd //c 'rmdir ...\node_modules'`) before `git worktree remove`.
+- Work on the current branch (usually `dev`). Never create a branch or a
+  worktree. Other agents may share the tree: commit only your own paths
+  (`git add <paths> && git commit`); if `.git/index.lock` exists, wait a few
+  seconds and retry.
 - Downloads are untrusted: copy each HTML to its own scratch dir and extract the
   last `<script>` with `python -I`. Never run the HTML.
 - Pick a short track id (`sabana`, not `gran-sabana`).
 
-## 1. Shared files first (the coordinator owns these)
+## 1. Register the circuit (the coordinator, once per map)
 
-Register before any port runs: **debug mode loads every registered track, so a
-registered id without its module breaks every debug page.** Register, let the
-ports write their files, and expect browser tests to fail until every
-registered trio exists.
+```powershell
+npm run new-track -- <id> --name "Nombre" --blurb "..." --style calipso --dry-run
+npm run new-track -- <id> --name "Nombre" --blurb "..." --style calipso
+```
 
-- `public/track-definitions.js`: `{id, name, blurb}` appended at the end.
-  The blurb must only promise what survived the port.
-- `public/cup-definitions.js` `STANDALONE_TRACKS` and the same list in
-  `tests/cup-profile.test.js`.
-- `tests/maps.browser.js` ids array.
-- `public/music.js`: `TRACK_STYLE` (andina, calipso, gaita, tambor, joropo,
-  estadio) and the `songFor` alias map to an existing recorded song
-  (`paramo`, `selva`, `plaza`, `bululu`, `salto`, `chichi`...).
+It appends `{id, name, blurb}` to `track-definitions.js`, adds the id to
+`STANDALONE_TRACKS` in `cup-definitions.js` (`tests/cup-profile.test.js`
+reads that list) and to the `tests/maps.browser.js` ids, sets `TRACK_STYLE`
+and the `songFor` alias in `music.js`, bumps the README circuit count, and
+writes a placeholder trio (`tracks/<id>.js`, `-layout.js`, `-world.js`): a
+kidney loop that already loads, races and passes `maps.browser`. It refuses an
+id that already exists.
+
+- `--style`: andina, calipso, gaita, tambor, joropo, estadio. `--song` borrows
+  an existing recording (`paramo`, `selva`, `plaza`, `bululu`, `salto`,
+  `chichi`...); the default follows the style.
+- The blurb must only promise what survives the port; revisit it at the end.
+- Register every map of a batch before the ports start. Debug mode loads every
+  registered track, and the placeholders keep every debug page working while
+  the forks write the real files.
 - New tree species go in `tracks/coastal-vegetation.js` factories, never as
   meshes inside a world file (Studio library rule).
 
 ## 2. One fork per map, in parallel
 
-Each fork writes only its trio and reports shared changes it needs:
+Each fork replaces only its trio and reports shared changes it needs:
 
 - `tracks/<id>-layout.js`: `export const MAP` (authored data) and
   `createLayout()` returning at least `{RP, roadY, bank, NR, RR, sampleR, wet}`
@@ -91,34 +97,36 @@ skipped. Small ferns, flowers and bushes may stay instanced, as in Chuao.
 ### Road limits (checked by maps.browser)
 
 Half-width at least 8 m before scale (16 m road); minimum radius over 15 m;
-grade under 0.4; nothing inside the lanes (decals, posts, rocks, light pools);
-terrain never pokes through the road; bridge decks equal `roadY`. Raise
-`scale` (1.2-1.6) before reshaping a beloved corner.
+grade under 0.4; bends both ways; nothing inside the lanes (decals, posts,
+rocks, light pools); terrain never pokes through the road; bridge decks equal
+`roadY`. Raise `scale` (1.2-1.6) before reshaping a beloved corner.
 
 ## 3. Proof
 
 - `npm run check`, `npm test -- derrape conventions`.
+- `npm run budget -- derrape`: first-load modules and `game.js` lines against
+  their caps. A port should not move them (tracks load with `import()`).
 - `PANA_MAP_TEST_TRACKS=<id>[,<id>] npm run test:browser -- derrape/tests/maps.browser --fresh`
   (projection, radii, grades, lane clearance, item rows, three AI laps).
 - A two-client suite per batch (copy `tests/tovar-galipan-maracaibo.browser.js`).
-- Look at it: start `PANA_PORT=84xx PANA_HOST=127.0.0.1 node server/src/index.js`
-  in `Pana/`, then
-  `node Pana/scripts/derrape-drive-shots.mjs <out> <prefix> <id> 0.1,0.4,0.7`
-  and judge against the art direction (bright, playful, cartoon tropical).
-- Menu pictures: `node Pana/scripts/derrape-menu-render.mjs <out> <id>[:yaw:pitch:dist]`
-  or a HUD-free hero shot from the port; save `images/menu/<id>.webp`
-  (1200x800) and `<id>-thumb.webp` (480x320) with Pillow (`quality=80`)
-  and add both to `images/menu/sources.json` ("Native render: <id> circuit").
+- Look at it (each command starts its own server):
+  `npm run shots -- derrape --track <id> --at 0.4` for a burst from the real
+  loop, and `npm run shots -- derrape --track <id>[,<id>] --lap 0.1,0.4,0.7`
+  for driver views around the lap. Judge against the art direction (bright,
+  playful, cartoon tropical).
+- Menu pictures: `npm run shots -- derrape --track <id> --menu [--view yaw:pitch:dist]`
+  writes `images/menu/<id>.webp` (1200x800) and `<id>-thumb.webp` (480x320)
+  with their `sources.json` entries ("Native render: <id> circuit"). Add the
+  place to the `note` line of `sources.json` by hand.
 
-## 4. Docs and merge
+## 4. Docs and commit
 
 - `CHANGELOG.md` under Unreleased, in Spanish, in the players' voice.
-- `README.md` circuit count; a `docs/knowledge` doc (or extend the existing one)
-  and its line in `docs/knowledge/README.md`.
-- Commit on the worktree branch, `git merge dev` (CHANGELOG conflicts: keep
-  both entries; `game.js` conflicts: keep both edits), rerun tests, then from
-  the main checkout `git merge --ff-only <branch>` and `git push origin dev`.
-  Uncommitted files of another agent are fine if they don't overlap.
+- A `docs/knowledge` doc (or extend the existing one) and its line in
+  `docs/knowledge/README.md`. `new-track` already bumped the README count;
+  update the README highlights if the map deserves a mention.
+- Commit on the current branch with only your paths. Uncommitted files of
+  another agent are fine if they don't overlap.
 - Never name the reference HTML, its creator or other games in code, docs or
   commits.
 
@@ -135,10 +143,8 @@ terrain never pokes through the road; bridge decks equal `roadY`. Raise
 - The moriche keeps its own far model unsimplified; clustering removes its fronds.
 - `coastalTrack`'s `crossfall` projects without height; layered maps pass
   `def: { crossfall: undefined }`.
-- Known failures unrelated to ports: `drive.browser.js` drift-points check
-  (on dev since 2026-10-21); the derrape first-load module cap (160) has
-  been at the edge, so check it on dev before blaming a port.
+- Failures that are not yours: `Pana/tests/known-failures.json` lists each
+  known one (suite, matching message, since when). Check it before blaming a
+  port, and add an entry when you prove a failure on unchanged code.
 - Under `--jobs 3` a heavy two-client suite can time out once and pass on
   retry; rerun it alone before treating it as a regression.
-- Kill the test servers the forks started before removing the worktree, or
-  Windows refuses to delete the folder.
