@@ -46,7 +46,7 @@ import { rewardCupCompletion, rewardCupStage } from './cup-rewards.js';
 import { CLASSIFICATION_TEXT, approximateCupText, cupStandingsView, nextStageText, rankChangeText, tiebreakText } from './cup-ui.js';
 import { soaringVulture } from '/engine/models/fauna/birds/soaring-vulture.js';
 import { tickWind } from '/engine/models/vegetation/plant-kit.js';
-import { DRAFT_TIME, DRAFT_BOOST, driftLevel, startBoost, startCue, inSlipstream, loseCoins } from './drive-rules.js';
+import { DRAFT_TIME, DRAFT_BOOST, DRIFT_LEVELS, driftLevel, startBoost, startCue, inSlipstream, loseCoins } from './drive-rules.js';
 
 const $ = (id) => document.getElementById(id), esc = (text) => String(text).replace(/[&<>"]/g, (ch) => `&#${ch.charCodeAt(0)};`);
 const rand = (a, b) => a + Math.random() * (b - a), pick = (list) => list[Math.floor(Math.random() * list.length)];
@@ -1284,7 +1284,7 @@ function aiInput(c) {
   c.band = race.mode === 'battle' ? 1 : rubberBand(gap, race.diff);
   // Rivals drift through long bends and let go once the nose lines up.
   if (!c.aiDrift && Math.abs(diff) > 0.3 && c.vf > 20 && c.onGround) c.aiDrift = true;
-  else if (c.aiDrift && (Math.abs(diff) < 0.08 || (c.drift && Math.sign(diff) !== c.drift) || c.driftT > 2.8)) c.aiDrift = false;
+  else if (c.aiDrift && (Math.abs(diff) < 0.08 || (c.drift && Math.sign(diff) !== c.drift) || c.driftT > DRIFT_LEVELS[2] + 0.3)) c.aiDrift = false;   // rivals let go just into purple, never into a burn
   return { ...aiPedals(diff, race.mode === 'battle' ? 0 : gap), drift: c.aiDrift && race.diff?.drift !== false };
 }
 

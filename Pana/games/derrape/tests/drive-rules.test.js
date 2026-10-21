@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { driftLevel, driftSteer, assistDrift, driftCharge, startBoost, trickBoost, inSlipstream, loseCoins, DRIFT_LEVELS, DRIFT_BOOST } from '../public/drive-rules.js';
+import { driftLevel, driftSteer, assistDrift, driftCharge, startBoost, trickBoost, inSlipstream, loseCoins, DRIFT_LEVELS, DRIFT_BOOST,
+  overheatWarn, overheated, OVERHEAT_WARN, OVERHEAT_TIME, heatedCharge, HEAT_MAX_SLOW } from '../public/drive-rules.js';
 
 test('drift charge climbs through three spark levels', () => {
   assert.equal(driftLevel(0), 0);
@@ -64,4 +65,19 @@ test('hits spill coins but never below zero', () => {
   assert.equal(loseCoins(c, 2), 1);
   assert.equal(c.coins, 0);
   assert.equal(loseCoins({}, 2), 0);
+});
+
+test('purple is a window: the sparks warn, then the tyres burn', () => {
+  const purple = DRIFT_LEVELS[2];
+  assert.ok(OVERHEAT_WARN < OVERHEAT_TIME);
+  assert.ok(!overheatWarn(purple) && !overheated(purple), 'reaching purple is safe');
+  assert.ok(overheatWarn(purple + OVERHEAT_WARN) && !overheated(purple + OVERHEAT_WARN), 'the warning comes first');
+  assert.ok(overheated(purple + OVERHEAT_TIME), 'held too long, the tyres burn');
+});
+
+test('hot tyres charge the next drift slower, never to a standstill', () => {
+  assert.equal(heatedCharge(0), 1);
+  assert.equal(heatedCharge(undefined), 1);
+  assert.ok(heatedCharge(0.3) < 1 && heatedCharge(0.3) > heatedCharge(0.5));
+  assert.equal(heatedCharge(10), 1 - HEAT_MAX_SLOW, 'capped');
 });
