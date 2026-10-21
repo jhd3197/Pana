@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { CUP_DEFINITIONS, CUPS, cupById, cupDuration, validateCups } from '../public/cup-definitions.js';
+import { CUP_DEFINITIONS, CUPS, STANDALONE_TRACKS, cupById, cupDuration, validateCups } from '../public/cup-definitions.js';
 import {
   PROFILE_KEY, PROFILE_VERSION, claimReceipt, cleanSetup, createProfileStore,
   migrateProfile, receiptKey, recordCupTrophy, trophyCredits,
@@ -14,7 +14,7 @@ test('available cups have four unique stages; every other circuit is explicitly 
   assert.equal(CUPS.length, 3);
   const { errors, covered, standalone } = validateCups(TRACK_IDS);
   assert.deepEqual(errors, []);
-  assert.deepEqual(standalone, ['puerto', 'cata', 'choroni', 'chuao', 'tovar', 'galipan', 'maracaibo', 'margarita', 'sarisarinama', 'sabana']);
+  assert.deepEqual(standalone, STANDALONE_TRACKS);
   assert.deepEqual([...covered, ...standalone].sort(), [...TRACK_IDS].sort());
   assert.ok(validateCups([...TRACK_IDS, 'unregistered']).errors.some(e=>e.includes('unregistered')));
   assert.ok(validateCups(TRACK_IDS.filter(id=>id!=='puerto')).errors.some(e=>e.includes('unknown standalone')));
