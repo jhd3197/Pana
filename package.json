@@ -16,6 +16,7 @@
     "budget": "node Pana/scripts/budget.js",
     "launcher-art": "node Pana/scripts/launcher-art.js",
     "inventory": "node Pana/scripts/model-inventory.js",
+    "tidy": "node Pana/scripts/tidy.js",
     "new-game": "node Pana/scripts/new-game.js",
     "dev": "powershell -ExecutionPolicy Bypass -File dev.ps1",
     "prepare": "git config core.hooksPath .githooks || true"

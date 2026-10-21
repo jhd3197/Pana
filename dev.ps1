@@ -11,13 +11,16 @@
     .\dev.ps1 studio          Open Pana Studio; reuse an existing server
     .\dev.ps1 check           Syntax check + unit tests (npm run check, npm test)
     .\dev.ps1 check -Help     Which check to run for a change (fast paths, timings)
-    .\dev.ps1 check -Browser [filter...]  ...plus the Playwright suites (npm run test:browser)
+    .\dev.ps1 check -Browser [filter...]  ...plus the Playwright suites (npm run test:browser);
+                              no filter runs only the suites for what changed (--changed)
+    .\dev.ps1 tidy [-Apply]   List (or remove) worktrees and branches already merged into dev
     .\dev.ps1 setup           First-run setup: npm install
     .\dev.ps1 new-game <id> [-Kind table|live] [-Players N] [-Name X] [-Color #rrggbb]
                               Start a new 3D game from the templates (npm run new-game)
 
     Options: -Port 8461 -NoAutoPort -NoBrowser
-    Environment: PANA_PORT, PANA_HOST, PANA_KILL_PORTS=0 to disable port cleanup.
+    Environment: PANA_PORT, PANA_HOST, PANA_KILL_PORTS=1 to stop whatever listens on the
+    port first (off by default: it may be another session's server; the next free port is used).
 .EXAMPLE
     .\dev.ps1
     Start the server on http://localhost:8461
@@ -38,7 +41,7 @@ function Write-Header($text) {
 
 function Get-DevMode {
     foreach ($arg in $args) {
-        if ($arg -in @('start', 'server', 'studio', 'check', 'setup', 'new-game')) {
+        if ($arg -in @('start', 'server', 'studio', 'check', 'setup', 'new-game', 'tidy')) {
             return $arg
         }
     }
@@ -87,7 +90,7 @@ function Test-PortFree([int]$Port) {
 function Stop-ListenersOnPort {
     param([int]$Port, [string]$Label)
 
-    if ($env:PANA_KILL_PORTS -eq '0') { return }
+    if ($env:PANA_KILL_PORTS -ne '1') { return }   # opt-in: the listener may be another session's server
 
     $listeners = @(Get-NetTCPConnection -LocalPort $Port -State Listen -ErrorAction SilentlyContinue |
         Select-Object -ExpandProperty OwningProcess -Unique |
@@ -231,8 +234,18 @@ switch ($mode) {
             Write-Header 'Browser suites'
             # Anything after the switches narrows the run: .\dev.ps1 check -Browser domino caida
             $filters = @($args | Where-Object { $_ -notin @('check', '-Browser', '--browser') })
+            if (-not $filters.Count) {
+                # The whole set takes hours locally; it runs nightly in CI.
+                Write-Host '  No filter: running the suites for what changed since dev (--changed).' -ForegroundColor Yellow
+                $filters = @('--changed')
+            }
             & node.exe (Join-Path (Join-Path $AppRoot 'scripts') 'test-browser.js') @filters
         }
+        exit $LASTEXITCODE
+    }
+    'tidy' {
+        $rest = @($args | Where-Object { $_ -ne 'tidy' } | ForEach-Object { if ($_ -eq '-Apply') { '--apply' } else { $_ } })
+        & node.exe (Join-Path (Join-Path $AppRoot 'scripts') 'tidy.js') @rest
         exit $LASTEXITCODE
     }
     'new-game' {
