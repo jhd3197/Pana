@@ -23,6 +23,8 @@ BROWSER (minutes PER SUITE — never run the whole set locally):
   npm run test:browser -- derrape          only suites matching "derrape"
   npm run test:browser -- --changed        only suites for what changed since dev
   npm run test:browser -- derrape --fresh  ignore the pass cache for those suites
+  npm run test:browser -- derrape --baseline  failures rerun on the merge-base with dev
+  Known failures (Pana/tests/known-failures.json) report as KNOWN, not FAIL.
   A suite that already passed for the same files is skipped (cached).
   The full set runs nightly in CI; local full runs just burn hours.
 
@@ -30,10 +32,13 @@ LOOK (seconds — screenshots from the real frame loop, no assertions):
   npm run shots -- derrape --track chuao --at gate-60   drive into Chuao's lancha gate
   npm run shots -- derrape --track choroni --at 0.5 --shots 10 --every 200
   npm run shots -- pintura --query room=demo            any game: a burst of PNGs
+  npm run shots -- derrape --track tovar,sabana --lap 0.1,0.4,0.7   driver views around the lap
+  npm run shots -- derrape --track sabana --menu                    menu art (.webp + thumb + sources.json)
   npm run shots -- --help                               every option
 
 MAKE (scaffolds that do every registration step):
   npm run new-game -- <id>                          a new game from the templates
+  npm run new-track -- morrocoy --name "Morrocoy"   a Derrape circuit, registered everywhere (--dry-run)
   npm run launcher-art -- <id> <image> --row Mesa   hub art: both JPEGs + registration (--dry-run)
   npm run inventory                                  regenerate docs/knowledge/model-inventory.md
 

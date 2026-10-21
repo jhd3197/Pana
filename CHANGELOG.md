@@ -8,6 +8,13 @@ becomes the GitHub release's notes.
 
 ## Unreleased
 
+- **Contributors get one-command scaffolds and safer checks.** `npm run
+  new-track` registers a Derrape circuit everywhere with a placeholder that
+  already races, `npm run launcher-art` adds a game's hub art, `npm run
+  budget` shows each game against its size caps, and a two-second pre-commit
+  hook catches the conventions that most often turned `dev` red. Browser runs
+  tell known failures from regressions (`--baseline`), and releases merge
+  back into `dev` on their own.
 - **Derrape: barriles y cajas para reventar, nombres sobre los carros y El
   Chocón.** Por las orillas hay barriles y cajas del mercado; atraviésalos y
   salen volando, aunque te frenan un poco. El que más choque en la carrera se
