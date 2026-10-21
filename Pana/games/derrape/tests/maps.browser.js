@@ -15,7 +15,7 @@ try {
   await page.goto(`${origin}/g/derrape/?debug&auto&track=estadio`);
   await page.waitForFunction(() => window.getActiveTrack && garage.car);
   const ids = await page.evaluate(() => TRACKS.map(t => t.id));
-  assert.deepEqual(ids, ['estadio', 'desierto', 'llanos', 'chichi', 'selva', 'paramo', 'plaza', 'bululu', 'salto', 'delta', 'cuevas', 'salinas', 'puerto', 'cata', 'choroni', 'chuao', 'tovar', 'galipan', 'maracaibo']);
+  assert.deepEqual(ids, ['estadio', 'desierto', 'llanos', 'chichi', 'selva', 'paramo', 'plaza', 'bululu', 'salto', 'delta', 'cuevas', 'salinas', 'puerto', 'cata', 'choroni', 'chuao', 'tovar', 'galipan', 'maracaibo', 'margarita', 'sarisarinama', 'sabana']);
   const accessoryError = await page.evaluate(async () => {
     const THREE = await import('three');
     const { detachable } = await import('/engine/models/vehicles/car-kit.js');

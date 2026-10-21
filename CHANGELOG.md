@@ -8,6 +8,12 @@ becomes the GitHub release's notes.
 
 ## Unreleased
 
+- **Derrape suma Isla Margarita, Sarisariñama y Gran Sabana.** Sal del castillo
+  de Pampatar hasta Playa El Agua y los manglares de La Restinga; baja en
+  espiral por la sima del tepuy, cruza las cuevas por debajo y sube a la luz;
+  y corre por la sabana entre moriches y tepuyes, por la Quebrada de Jaspe y el
+  Salto Kama, mientras el aguacero de la tarde llega desde el este. El aguacero
+  es paisaje: no cambia el agarre.
 - **Derrape estrena tres circuitos: Colonia Tovar, Galipán de noche y
   Maracaibo · El puente.** Sube entre pinos, hortensias y neblina hasta el
   pueblo alemán; cruza de noche el pueblito iluminado de Galipán con Caracas

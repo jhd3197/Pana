@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { TRACK_DEFINITIONS } from '../track-definitions.js';
 
 // Mountain and lake circuits adapted from the same reference scenes pass
-// their own scale, light and grip; the Aragua coast keeps these defaults.
+// their own scale, light, grip and extra definition fields (layered, rain); the Aragua coast keeps these defaults.
 export function coastalTrack(id, layout, createWorld, options = {}) {
   const { RP, roadY, bank, NR } = layout;
   const scale = options.scale ?? (id === 'cata' ? 1.6 : id === 'choroni' ? 1.3 : 1);
@@ -31,6 +31,7 @@ export function coastalTrack(id, layout, createWorld, options = {}) {
       sunInt: 2.4, ground: 0x549631, track: 0x827d72, dune: 0, fog: [460, 2600] },
     ...(options.previewBounds && { previewBounds: options.previewBounds }),
     items: options.items ?? { boxes: [.1,.27,.43,.6,.77,.91], boxLanes: [-3,0,3], pads: [{u:.2,off:0},{u:.5,off:0},{u:.85,off:0}] },
+    ...options.def,
     environment(T) {
       const world = createWorld(new THREE.Group(), layout, (x,z)=>T.roadDistance(x*scale,z*scale));
       world.group.scale.set(scale,1,scale);

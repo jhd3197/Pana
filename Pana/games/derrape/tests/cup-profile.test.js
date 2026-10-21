@@ -14,7 +14,7 @@ test('available cups have four unique stages; every other circuit is explicitly 
   assert.equal(CUPS.length, 3);
   const { errors, covered, standalone } = validateCups(TRACK_IDS);
   assert.deepEqual(errors, []);
-  assert.deepEqual(standalone, ['puerto', 'cata', 'choroni', 'chuao', 'tovar', 'galipan', 'maracaibo']);
+  assert.deepEqual(standalone, ['puerto', 'cata', 'choroni', 'chuao', 'tovar', 'galipan', 'maracaibo', 'margarita', 'sarisarinama', 'sabana']);
   assert.deepEqual([...covered, ...standalone].sort(), [...TRACK_IDS].sort());
   assert.ok(validateCups([...TRACK_IDS, 'unregistered']).errors.some(e=>e.includes('unregistered')));
   assert.ok(validateCups(TRACK_IDS.filter(id=>id!=='puerto')).errors.some(e=>e.includes('unknown standalone')));

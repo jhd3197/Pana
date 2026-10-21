@@ -26,4 +26,7 @@ export const TRACK_DEFINITIONS = [
   {id:'tovar', name:'Colonia Tovar', blurb:'Sube entre hortensias y pinos, métete en la neblina y cruza el pueblo alemán y el mercado de fresas.'},
   {id:'galipan', name:'Galipán de noche', blurb:'Sube de noche por la montaña entre chalets iluminados y asómate al mirador con Caracas brillando abajo.'},
   {id:'maracaibo', name:'Maracaibo · El puente', blurb:'Cruza el puente sobre el lago, pasa los palafitos, el casco de colores y La Chinita bajo los relámpagos del Catatumbo.'},
+  {id:'margarita', name:'Isla Margarita', blurb:'Del castillo de Pampatar a Playa El Agua, entre los manglares de La Restinga y el atardecer de Juan Griego.'},
+  {id:'sarisarinama', name:'Sarisariñama', blurb:'Baja en espiral por la sima del tepuy, cruza las cuevas por debajo y sube a la luz por la otra.'},
+  {id:'sabana', name:'Gran Sabana', blurb:'Corre por la sabana con los tepuyes al fondo, pasa la Quebrada de Jaspe y el Salto Kama antes del aguacero.'},
 ];
