@@ -123,6 +123,11 @@ wins and the titles are handed out.
   the neighbours, wooden stands with seated crowd), el paso de cebra (dusk,
   under the lake bridge whose rail lamps light the crossing) and la colonial
   (`createColonialStreet` lowered 0.8 m so its graded street meets y = 0).
+- Mercado's 26 stalls use the batched `marketStall()` factory. An isolated
+  1200×600 Three 0.160 render on an RTX 4090/D3D11 kept the same 104,520
+  triangles while reducing submissions from 2,080 to 208 and mean CPU time
+  around `renderer.render()` from 7.37 ms to 0.91 ms. This is a controlled
+  rendering measurement, not a claim that whole-game FPS rises by the same ratio.
 - Each arena's twist fires once per fight between 14 s and the bell minus
   10 s (`fight.moto`): `moto` splits two fighters, `toro` knocks anyone
   within 1.5 m of the bull's lane (+10 mareo), `balde` takes 12 mareo off the

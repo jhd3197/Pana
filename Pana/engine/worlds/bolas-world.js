@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { criollasCourt, criollaBall } from '../models/props/criollas.js';
 import { buildCharacter } from '../models/characters/pana/avatar-model.js';
 import { createPlazaProp, streetLamp } from '../models/props/plaza.js';
+import { instancePlacements } from '../models/core/static-batch.js';
 import { createArenaSlot } from './arenas.js';
 import { createSky } from './sky.js';
 import { guideRibbon, trimPath, pathLength } from '../play/aim-guide.js';
@@ -45,8 +46,8 @@ function bunting(z, colors) {
 function dressing() {
   const group = new THREE.Group(); group.name = 'Court dressing';
   const place = (object, x, z, angle = 0) => { object.position.set(x, 0, z); object.rotation.y = angle; group.add(object); return object; };
-  for (const [x, z] of [[-7.6, -13.6], [7.6, -13.6], [-7.6, 13.9], [7.6, 13.9]]) place(createPlazaProp('planter'), x, z);
-  for (const [x, z] of [[-7.9, -9.2], [7.9, 6.2], [-7.9, 7.4]]) place(streetLamp(), x, z);
+  instancePlacements(group, createPlazaProp('planter'), [[-7.6, -13.6], [7.6, -13.6], [-7.6, 13.9], [7.6, 13.9]].map(([x, z]) => ({ x, y: 0, z })), { name: 'Court planter', cellSize: Infinity });
+  instancePlacements(group, streetLamp(), [[-7.9, -9.2], [7.9, 6.2], [-7.9, 7.4]].map(([x, z]) => ({ x, y: 0, z })), { name: 'Court lamp', cellSize: Infinity });
   place(createPlazaProp('cooler'), -8.1, -1.1, .4);
   place(createPlazaProp('cooler', { color: 0x2ba972 }), 8.1, -.6, -.3);
   const crate = place(createPlazaProp('crate'), 2.2, 12.9, .15); crate.scale.setScalar(.7);

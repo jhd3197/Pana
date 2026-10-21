@@ -24,6 +24,32 @@ dispose geometry when removing a prop, but retain shared materials. Mango body
 templates are cloned rather than mounted directly in scenes. Studio copies
 materials before changing wireframe or releasing previews.
 
+## Plaza market kit
+
+`static-batch.js` also owns `finish()`: it bakes a static factory and disposes the
+source geometry, while each returned model still owns independent geometry.
+`architecture-kit.js` re-export keeps the older import path working. The seven
+Plaza factories use this path without changing their materials, triangles or
+root-level behavior:
+
+| Factory | Meshes before | Meshes now |
+|---|---:|---:|
+| `barrel` | 34 | 4 |
+| `crate` | 32 | 3 |
+| `cooler` | 6 | 2 |
+| `planter` | 10 | 7 |
+| `bench` | 12 | 3 |
+| `marketStall` | 80 | 8 |
+| `streetLamp` | 9 | 2 |
+
+Batching converts indexed geometry to non-indexed geometry, so vertex memory can
+rise even while draw calls fall. Compare that tradeoff instead of assuming every
+merge is faster. Transformed positions and triangle counts stay unchanged.
+Rotated foliage can produce a tighter world AABB after merging: the old box came
+from transforming a local bounding box, while the new one encloses the actual
+merged vertices. The Plaza test compares unique transformed positions as well as
+bounds so this does not hide lost geometry.
+
 ## Budgets and verification
 
 For the Studio seed (7), the current triangle/material-batch counts are:
@@ -37,9 +63,10 @@ For the Studio seed (7), the current triangle/material-batch counts are:
 
 Run `node Pana/engine/tests/props.browser.js [absolute-playwright-package]
 [browser-executable]` against the local server. It checks finite geometry,
-determinism, independent disposable geometry, unchanged bounds after batching,
-several seeds, flower variants, dimension/triangle/draw-call budgets and actual
-Bululú, Escondidas and Cocina renders. Screenshots and metrics go into ignored
+determinism, independent disposable geometry, expected bounds and preserved
+transformed positions after batching, the seven Plaza factories, several seeds,
+flower variants, dimension/triangle/draw-call budgets and actual Bululú,
+Escondidas and Cocina renders. Screenshots and metrics go into ignored
 `art/studio/props/`. This is a geometry/render smoke test, not a replacement for
 multiplayer interaction suites.
 

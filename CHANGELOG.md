@@ -8,6 +8,11 @@ becomes the GitHub release's notes.
 
 ## Unreleased
 
+- **Las plazas y el Mercado se ven igual y cuestan menos trabajo de dibujado.**
+  Los puestos, bancos, barriles, cajas, cavas, matas y faroles comparten sus
+  superficies por material: los 26 puestos del Mercado bajan de 2.080 a 208
+  llamadas de dibujado. Bolas Criollas también instancia las matas y los
+  faroles repetidos de la cancha, sin moverlos ni cambiar la partida.
 - **Derrape estrena pantalla de carrera: letreros pintados en vez de cajas.**
   Tu puesto va en una placa amarilla, la clasificación aparece solo cuando
   pasas a alguien o te pasan, el velocímetro es una aguja con marca de pico
