@@ -16,6 +16,8 @@ FAST (seconds to ~2 min total):
   npm test                      every unit + conventions test (~2 min)
   npm test -- derrape           only test files whose path contains "derrape"
   npm test -- feats rules       union of several filters (seconds)
+  npm test -- catalog-registry  Studio catalog ids, sources, factory exports (seconds)
+  npm run budget [-- derrape]   first-load modules and game.js lines vs their caps
 
 BROWSER (minutes PER SUITE — never run the whole set locally):
   npm run test:browser -- derrape          only suites matching "derrape"
@@ -29,6 +31,11 @@ LOOK (seconds — screenshots from the real frame loop, no assertions):
   npm run shots -- derrape --track choroni --at 0.5 --shots 10 --every 200
   npm run shots -- pintura --query room=demo            any game: a burst of PNGs
   npm run shots -- --help                               every option
+
+MAKE (scaffolds that do every registration step):
+  npm run new-game -- <id>                          a new game from the templates
+  npm run launcher-art -- <id> <image> --row Mesa   hub art: both JPEGs + registration (--dry-run)
+  npm run inventory                                  regenerate docs/knowledge/model-inventory.md
 
 Same through the Windows entry point:
   .\\dev.ps1 check                     syntax + unit tests

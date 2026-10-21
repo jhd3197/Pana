@@ -98,13 +98,12 @@ canonical file directly; never add an alias that re-exports a model.
 Run from the repository root with the local server active:
 
 ```powershell
-node Pana/engine/tests/model-architecture.test.js
-node Pana/engine/tests/model-architecture.browser.js
-node Pana/engine/tests/model-library.browser.js
-node Pana/scripts/audit-inventory.browser.js
+npm test -- model-architecture catalog-registry
+npm run test:browser -- model-architecture model-library
+npm run inventory          # regenerates docs/knowledge/model-inventory.md
 ```
 
-Browser scripts accept `PANA_PLAYWRIGHT_PATH` for an installed Playwright package.
+The browser runner and `npm run inventory` start their own server.
 The architecture checks validate import resolution, acyclic dependencies, layer
 boundaries, pure metadata, real factory exports, compatibility identity and
 selective thumbnail invalidation. Snapshot capture writes to ignored
