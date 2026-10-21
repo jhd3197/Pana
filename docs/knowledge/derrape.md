@@ -48,7 +48,10 @@ lobby (`derrape-menu.md`), and its own Colyseus room (`derrape-online.md`).
   stretch with a tricolour arch at each end, and every frame decides from
   position alone whether each car — remote ones too — is a lancha: the hull
   (`createLanchaHull` from `engine/models/vehicles/lancha.js`, `open`, white
-  body) unfolds on the car's tumble group and the wheels tuck. The road stays
+  body, fitted to the car's measured body) unfolds on the car's tumble group
+  and the wheels tuck. Crossing a gate kicks a hop so the change happens
+  mid-air, with spray walls, a flash, a "¡Modo lancha!" shout and a
+  splashdown when the hull settles. The road stays
   the driving surface, so AI, checkpoints and placements never notice. On the
   water a drift charges faster (wake turbo); skid marks and sparks give way to
   spray. The local player's splash triggers the slow-mo and counts

@@ -62,7 +62,7 @@ try {
   // On the water a drift charges faster than the same drift on asphalt.
   const wake = await page.evaluate(() => {
     const p = race.player, gates = getGates();
-    const charge = boat => { const c = { boat, drift: 1, driftT: 0 }; for (let i = 0; i < 60; i++) gates.step(c, 1 / 60); return c.driftT; };
+    const charge = boat => { const c = { boat, drift: 1, driftT: 0, x: 1e4, z: 1e4, y: 0 }; for (let i = 0; i < 60; i++) gates.step(c, 1 / 60); return c.driftT; };
     return { water: charge(true), road: charge(false), boat: p.boat };
   });
   assert.ok(wake.water > wake.road, `a drift on the water charges the wake turbo ${JSON.stringify(wake)}`);

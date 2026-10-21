@@ -15,8 +15,10 @@ import { riverSurface } from '/engine/models/effects/water-surface.js';
 import { createLanchaHull } from '/engine/models/vehicles/lancha.js';
 import { M, box, mesh } from '/engine/models/core/primitives.js';
 import { statCount } from '/engine/stats.js';
+import { shout } from '/engine/kit.js';
 
-const MORPH_S = 0.38;          // seconds for the hull to unfold (or fold away)
+const MORPH_S = 0.6;           // seconds for the hull to unfold (or fold away)
+const HOP = 6.5;               // m/s up as a car crosses a gate: it changes mid-air
 const WAKE_CHARGE = 0.55;      // extra drift charge per second on the water
 const WATER_LIFT = 0.32;       // the sheet sits this far over the road
 const HULL = '#f4f1e6';     // a white peñero; the team colour rides the stripe, pennant and motor
@@ -88,39 +90,62 @@ export function createTransformGates({ race, sound, track }) {
     const list = c.car.geometries;
     if (list?.add) list.add(geometry); else list?.push?.(geometry);
   };
+  const inGate = c => !!(runs.length && !c.retired && gateAt(track(), runs, c.x, c.z, c.y));
   // The hull is built the first time a car hits the water and lives on its
   // tumble group, so flips and tricks carry it; its geometry joins the car's
-  // own list, so disposeRacer frees it with the car.
+  // own list, so disposeRacer frees it with the car. It is measured against
+  // the car's own body (heading zeroed for the measure) so the gunwales wrap
+  // the lower bodywork whatever the car's shape, the cabin still showing.
   function hullFor(c) {
     if (c.car.lanchaHull) return c.car.lanchaHull;
+    const { root, tumble, chassis } = c.car, heading = root.rotation.y;
+    root.rotation.y = 0; root.updateMatrixWorld(true);
+    const box = new THREE.Box3().setFromObject(chassis), size = box.getSize(new THREE.Vector3());
+    root.rotation.y = heading; root.updateMatrixWorld(true);
+    const bottom = box.min.y - root.position.y - tumble.position.y;
     const hull = createLanchaHull(c.def.color, { open: true, body: HULL });
     hull.traverse(o => { if (o.geometry) own(c, o.geometry); });
-    hull.scale.setScalar(0.001);
-    hull.position.y = -0.85;
+    hull.userData.fit = {
+      x: (size.x / 2 + 0.3) / 0.85,                     // half-beam 0.85 m
+      y: Math.max(0.7, (size.y * 0.3 + 0.1) / 0.8),     // rim 0.8 m up: a third of the body
+      z: (size.z + 1.1) / 4.8,                          // hull length 4.8 m
+    };
+    hull.position.y = bottom - 0.12;
     hull.visible = false;
-    c.car.tumble.add(hull);
+    tumble.add(hull);
     c.car.lanchaHull = hull;
     hulls.add(hull);
     return hull;
   }
 
+  // The gate crossing: water rings, spray walls up both flanks and a flash.
   function splash(c, entering) {
     const at = new THREE.Vector3(c.x, c.y, c.z);
-    race.shockwaves.ring(at, { color: 0xbff3ff, maxRadius: entering ? 7.5 : 5, life: 0.55, opacity: 0.9 });
-    race.shockwaves.ring(at, { color: 0xffffff, startRadius: 1.2, maxRadius: 4.5, life: 0.35 });
-    const fx = Math.sin(c.h), fz = Math.cos(c.h);
-    for (let i = 0; i < 3; i++) {
-      race.puffs.spawn(new THREE.Vector3(c.x - fx * (1 + i), c.y + 0.6, c.z - fz * (1 + i)),
-        { color: SPRAY[i], count: entering ? 6 : 4, size: 0.9, rise: 3.4, life: 0.7, spread: 1.6 });
+    race.shockwaves.ring(at, { color: 0xbff3ff, maxRadius: entering ? 9 : 6, life: 0.6, opacity: 0.95 });
+    race.shockwaves.ring(at, { color: 0xffffff, startRadius: 1.2, maxRadius: 5, life: 0.4 });
+    race.shockwaves.sparkle(new THREE.Vector3(c.x, c.y + 1.4, c.z), { color: entering ? 0x7fe8ff : 0xffe28a, count: 10, spread: 1.6, life: 0.5 });
+    const fx = Math.sin(c.h), fz = Math.cos(c.h), rx = -Math.cos(c.h), rz = Math.sin(c.h);
+    for (const side of [-1, 1]) for (let i = 0; i < 4; i++) {
+      race.puffs.spawn(new THREE.Vector3(c.x + rx * side * 1.8 + fx * (1 - i), c.y + 0.5, c.z + rz * side * 1.8 + fz * (1 - i)),
+        { color: SPRAY[i % 3], count: entering ? 7 : 4, size: 1.1, rise: entering ? 5.5 : 3.5, life: 0.9, spread: 1.2 });
     }
     if (c.isPlayer) {
       sound.plop(); sound.whoosh();
-      race.shake = Math.min(1.2, (race.shake || 0) + (entering ? 0.5 : 0.3));
+      race.shake = Math.min(1.2, (race.shake || 0) + (entering ? 0.6 : 0.35));
+      shout(entering ? '¡Modo lancha!' : '¡Pa\' tierra!');
       if (entering) {
         race.slowMo.trigger();
         statCount('derrape.metamorfosis', 1);
       }
     }
+  }
+
+  // The hull settling onto the water: a second, flatter splash.
+  function splashdown(c) {
+    const at = new THREE.Vector3(c.x, c.y, c.z);
+    race.shockwaves.ring(at, { color: 0xffffff, startRadius: 2, maxRadius: 7, life: 0.5, opacity: 0.8 });
+    race.puffs.spawn(new THREE.Vector3(c.x, c.y + 0.4, c.z), { color: SPRAY[1], count: 10, size: 1, rise: 2.2, life: 0.7, spread: 2.4 });
+    if (c.isPlayer) sound.plop();
   }
 
   // Rooster tail behind a boat that is moving.
@@ -146,16 +171,21 @@ export function createTransformGates({ race, sound, track }) {
       T.animated.push({ userData: { tick: built.tick } });
     },
     get runs() { return runs; },
-    // One physics step of a local car, after stepCar: on the water a drift
-    // charges a wake turbo faster than on asphalt.
+    // One physics step of a local car, after stepCar. Crossing a gate kicks
+    // the car into a hop so the change happens mid-air (a trick still pays
+    // there); on the water a drift charges a wake turbo faster than on asphalt.
     step(c, dt) {
+      const inside = inGate(c);
+      if (inside !== !!c.inGate) {
+        c.inGate = inside;
+        if (c.onGround && !c.done) { c.vy = inside ? HOP : HOP * 0.7; c.onGround = false; c.airTime = 0; c.hopping = false; }
+      }
       if (c.boat && c.drift) c.driftT += dt * WAKE_CHARGE;
     },
     // Every drawn frame, every car (remote ones too): decide boat or car from
     // where it is, splash on the change, and play the morph.
     sync(c, dt) {
-      const T = track();
-      const boat = !!(runs.length && !c.retired && gateAt(T, runs, c.x, c.z, c.y));
+      const boat = inGate(c);
       if (boat !== !!c.boat) {
         c.boat = boat;
         splash(c, boat);
@@ -163,19 +193,23 @@ export function createTransformGates({ race, sound, track }) {
       const want = c.boat ? 1 : 0;
       if (c.morph == null) c.morph = 0;
       if (c.morph === want && !c.boat) return;
+      const was = c.morph;
       c.morph += Math.sign(want - c.morph) * Math.min(Math.abs(want - c.morph), dt / MORPH_S);
+      if (was < 1 && c.morph === 1) splashdown(c);
       const k = c.morph, hull = k > 0 ? hullFor(c) : c.car.lanchaHull;
-      // Squash-stretch overshoot while unfolding; wheels tuck away under it.
-      const pop = Math.sin(Math.min(1, k) * Math.PI) * 0.22;
+      // The wheels tuck in first; the hull unfolds behind them with an
+      // elastic overshoot, stretching tall before it squashes onto the water.
+      const wheels = Math.max(0.001, 1 - Math.min(1, k * 2.2));
+      for (const w of c.car.wheels) w.steer.scale.setScalar(wheels);
       if (hull) {
+        const fit = hull.userData.fit, grow = c.boat ? backOut(k) : k, stretch = Math.sin(Math.min(1, k) * Math.PI) * 0.25;
         hull.visible = k > 0.01;
-        hull.scale.set(1.55 * k + pop * 0.5, 1.15 * k * (1 - pop * 0.6) + 0.001, 1.08 * k + pop * 0.3);
+        hull.scale.set(fit.x * grow * (1 - stretch * 0.4) + 0.001, fit.y * grow * (1 + stretch) + 0.001, fit.z * grow + 0.001);
       }
-      for (const w of c.car.wheels) w.steer.scale.setScalar(Math.max(0.001, 1 - k));
       if (c.boat) {
         // Riding the water: a gentle bob and roll on top of the suspension.
         const t = race.clock + (c.def.num || 0);
-        c.car.chassis.position.y += 0.18 * k + Math.sin(t * 3.1) * 0.05;
+        c.car.chassis.position.y += 0.08 * k + Math.sin(t * 3.1) * 0.05;
         c.car.chassis.rotation.z += Math.sin(t * 2.3) * 0.04;
         if (hull) hull.userData.motor.userData.prop.rotation.z += dt * 40;
         wake(c, dt);
@@ -184,4 +218,10 @@ export function createTransformGates({ race, sound, track }) {
     // A finished race leaves every car a car again.
     reset() { for (const hull of hulls) hull.visible = false; },
   };
+}
+
+// Overshoots past 1 and settles back: the hull "pops" open.
+function backOut(k) {
+  const a = 2.2, t = k - 1;
+  return 1 + (a + 1) * t * t * t + a * t * t;
 }
