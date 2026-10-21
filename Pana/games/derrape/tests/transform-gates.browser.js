@@ -89,8 +89,20 @@ try {
     return { runs: getGates().runs.length, len: run.len, sheets: names.filter(n => n === 'transform-water').length };
   });
   assert.ok(chuao.runs === 1 && chuao.len > 100 && chuao.sheets === 0, `Chuao's quebrada is a lancha stretch ${JSON.stringify(chuao)}`);
+
+  // Margarita floods La Restinga's causeway; Delta's causeways ford two caños.
+  // Each stretch draws its own water sheet.
+  for (const [id, runs, minLen] of [['margarita', 1, 300], ['delta', 2, 80]]) {
+    await page.evaluate(id => { toGarage(); buildTrack(id); }, id);
+    const armed = await page.evaluate(() => {
+      const T = getActiveTrack(), names = [];
+      T.group.traverse(o => { if (o.name === 'transform-water') names.push(o.name); });
+      return { runs: getGates().runs.length, len: Math.min(...getGates().runs.map(r => r.len)), sheets: names.length };
+    });
+    assert.ok(armed.runs === runs && armed.len > minLen && armed.sheets === runs, `${id} has its lancha stretches ${JSON.stringify(armed)}`);
+  }
   assert.deepEqual(errors, []);
-  console.log('derrape transform gates: car → lancha → car on Choroní; Chuao quebrada armed OK', JSON.stringify({ entry, exit }));
+  console.log('derrape transform gates: car → lancha → car on Choroní; Chuao, Margarita and Delta armed OK', JSON.stringify({ entry, exit }));
 } finally {
   await browser.close();
 }

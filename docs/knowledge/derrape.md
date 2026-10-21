@@ -77,7 +77,10 @@ lobby (`derrape-menu.md`), and its own Colyseus room (`derrape-online.md`).
   route passes closest to a world point). Choroní floods its east-bank road;
   Chuao starts under its waterfall (`MAP.fall`) and runs to the end of the
   quebrada's wet segments (`sheet: false`: the track already draws that
-  water). `public/transform-gates.js` (lazy, like feats.js) adds
+  water). Margarita floods La Restinga's whole `r` segment (~480 m). Delta's
+  route never runs along a caño, only crosses them on causeways, so its two
+  gates are short fords (.51–.575, .745–.805) centred on the crossings at
+  .54 and .77, where the sheet meets the caño on both sides. `public/transform-gates.js` (lazy, like feats.js) adds
   the water sheet when asked — nothing marks the ends, the water is the cue —
   and every frame
   decides from position alone whether each car — remote ones too — is a

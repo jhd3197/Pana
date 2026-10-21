@@ -7,6 +7,8 @@ export default {
   ...WATER_TRACKS.find(t=>t.id==='delta'),points:ROUTE,rounded:true,hw:10,lineU:.025,elevation:roadHeight,walls:false,chevrons:true,
   previewBounds:[[-470,-5,-400],[470,60,410]],
   sectors:[[0,'Embarcadero'],[.16,'Calzada de madera'],[.3,'Puente del caño'],[.48,'Isla de mangles'],[.65,'Mercado del agua'],[.83,'Vuelta de la ribera']],
+  // The causeways ford two caños: cars cross them as lanchas (transform-gates.js).
+  transformGates:[{from:.51,to:.575},{from:.745,to:.805}],
   items:{boxes:[.1,.26,.42,.58,.74,.9],boxLanes:[-6,-2,2,6],pads:[{u:.14,off:0},{u:.5,off:4},{u:.8,off:-4}]},
   palette:{skySeed:57,cloudCover:.26,horizon:0xffe7c4,skyTop:0x2a98e6,halo:1.3,hemiSky:0xd8e4ff,hemiGround:0x6fa650,hemiInt:1.55,sun:0xffc781,sunInt:2.5,ground:0x74b450,track:0xd6a873,dune:0,fog:[500,1900]},
   environment:deltaWorld,
