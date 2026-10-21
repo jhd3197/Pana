@@ -50,8 +50,20 @@ jobs:
           path: ~/.cache/ms-playwright
           key: playwright-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
       - run: npx playwright install --with-deps chromium
+      - name: Suites that already passed with these files
+        uses: actions/cache/restore@v4
+        with:
+          path: Pana/tests/.browser-passes.json
+          key: browser-passes-${{ github.job }}-${{ github.run_id }}
+          restore-keys: browser-passes-
       - name: All games smoke
         run: node Pana/scripts/test-browser.js all-games.browser lobby.browser
+      - name: Remember what passed
+        if: always() && hashFiles('Pana/tests/.browser-passes.json') != ''
+        uses: actions/cache/save@v4
+        with:
+          path: Pana/tests/.browser-passes.json
+          key: browser-passes-${{ github.job }}-${{ github.run_id }}-${{ github.run_attempt }}
 
   # The suites for what this push or PR into dev touched, within a ~20 min
   # budget (Pana/scripts/changed-suites.js); two at a time on the 4-core runner.
@@ -74,8 +86,20 @@ jobs:
           path: ~/.cache/ms-playwright
           key: playwright-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
       - run: npx playwright install --with-deps chromium
+      - name: Suites that already passed with these files
+        uses: actions/cache/restore@v4
+        with:
+          path: Pana/tests/.browser-passes.json
+          key: browser-passes-${{ github.job }}-${{ github.run_id }}
+          restore-keys: browser-passes-
       - name: Suites for what changed
         run: node Pana/scripts/test-browser.js --jobs 2 --changed=${{ github.event_name == 'pull_request' && format('origin/{0}', github.base_ref) || github.event.before }}
+      - name: Remember what passed
+        if: always() && hashFiles('Pana/tests/.browser-passes.json') != ''
+        uses: actions/cache/save@v4
+        with:
+          path: Pana/tests/.browser-passes.json
+          key: browser-passes-${{ github.job }}-${{ github.run_id }}-${{ github.run_attempt }}
 
   # Every suite, split across four runners by Pana/tests/browser-timings.json
   # (refresh it with `npm run test:browser -- --record`). Nightly on dev and by
@@ -105,4 +129,4 @@ jobs:
           key: playwright-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
       - run: npx playwright install --with-deps chromium
       - name: Shard ${{ matrix.shard }} of 4
-        run: node Pana/scripts/test-browser.js --jobs 2 --shard ${{ matrix.shard }}/4
+        run: node Pana/scripts/test-browser.js --jobs 2 --fresh --shard ${{ matrix.shard }}/4

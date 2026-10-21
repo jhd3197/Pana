@@ -16,7 +16,7 @@ try {
   await guest.waitForFunction(()=>getNet().state.track==='puerto'&&document.getElementById('track-name').textContent==='Puerto');
   assert.equal(await host.evaluate(()=>getNet().state.track),'puerto');
   for(const page of [host,guest])assert.equal(await page.evaluate(()=>getNet().state.laps),1,'one adventure lap agreed by both clients');
-  await menuStep(host,'ready');await host.locator('#play').click();
+  await menuStep(host,'car');await host.locator('#play').click();
   for(const page of [host,guest])await page.waitForFunction(()=>race.state==='go'&&getActiveTrack().id==='puerto',null,{timeout:120000});
   const hostId=await host.evaluate(()=>getNet().id);
   await guest.waitForFunction(id=>race.cars.find(c=>c.netId===id&&c.remote)?.buf?.length>=2,hostId,{timeout:30000});

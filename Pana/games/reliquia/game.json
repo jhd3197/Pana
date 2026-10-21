@@ -1,6 +1,6 @@
 {
   "name": "Reliquia",
-  "description": "Una mina olvidada, un templo despierto. Explora con tus panas, enfréntate a las momias y vuelve al campamento con la reliquia.",
+  "description": "Baja a la mina en primera persona, carga tesoros malditos con tus panas y súbelos al camión. ¿Nos vamos ya o bajamos un piso más?",
   "players": 8,
-  "color": "#c9a465"
+  "color": "#ffc23d"
 }

@@ -7,6 +7,23 @@ names from a visual prototype. Caída is still Caída, Póquer is still Póquer 
 Billar is still Billar. Pepazo keeps the `pintura` folder and room type so shared
 links and saved game IDs continue to work.
 
+## Rows and controllers
+
+Below the banner the games sit in one row per category (`data-row`), plus
+"Seguir jugando" on top once `launch()` has saved recent ids in
+`pana:recent`. On a desktop the banner keeps the top of the screen and the
+rows scroll under it in a strip (`.games-wrap`): the row a controller or the
+keyboard moves into scrolls to the top of that strip. Stepping onto a card
+with the pad or the keyboard (`.pana-pad-focus` or `:focus-visible`) features
+it, and pressing it then launches. A tap or a click still only features it.
+The hub and the Mi pana editor call `padControls({ playing: () => false })`,
+so the whole page is a menu for `engine/gamepad.js`. The rail arrows replace
+the scrollbar for the mouse: they show only on a row with more games than fit
+(`data-overflow`, kept by a ResizeObserver), dim at either end, hide on touch
+screens and carry `data-pad-skip`. The rail pads its inside so the focused
+card's outline and lift are not clipped by the scrolling box. Tiles below the strip load their art
+lazily, so a test scrolls a tile into view before decoding it.
+
 ## Art and rendering
 
 Header, content and card rail use `--pk-page-width` / `--pk-page-gutter` from
@@ -28,6 +45,14 @@ Capybara Ludo Fiesta in the Plaza provide separate 640-pixel card images, also
 used by the private social pages. These are resized exports of the supplied PNGs,
 not generated replacements. `artUrl(game, true)` selects a card variant when one
 exists; the default selects the large hero/lobby illustration.
+
+New art goes in with `npm run launcher-art -- <id> <image> --row <row>`
+(`Pana/scripts/launcher-art.js`): it center-crops to 3:2, writes `<id>.jpg`
+at 1536 × 1024 and `<id>-card.jpg` at 640 × 427 (under 600 KB) through
+Chromium's canvas, never upscaling a small source, registers the entry (and a
+new row in `categories`) in `launcher-art.js`, and adds the game to the card
+checks and row counts in `web/tests/launcher.browser.js`. `--dry-run` reports
+sizes without writing. Only real supplied art goes through it.
 
 Cards load images lazily. Only a game without an illustration loads `card.js`;
 switching a live hero loses the old WebGL context. The player's 3D editor imports

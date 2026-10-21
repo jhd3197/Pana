@@ -21,7 +21,7 @@ try {
       placeRacer(c,0,0);c.def=CAR_DEFINITIONS[car];c.tune=composeTune(c.def.tune,WHEEL_DEFINITIONS[wheel].profile);
       const p=T.pointAt(bend.s),h=heading(bend.s);
       Object.assign(c,{x:p.x,z:p.y,y:T.groundAt(p.x,p.y),h,vx:Math.sin(h)*32,vz:Math.cos(h)*32,vf:32,vr:0,vy:0,
-        onGround:true,pitch:0,roll:0,pitchV:0,rollV:0,steer:0,boost:0,spin:0,stall:0,drift:0,driftT:0,driftHeld:false,
+        onGround:true,pitch:0,roll:0,pitchV:0,rollV:0,steer:0,boost:0,spin:0,stall:0,drift:0,driftT:0,driftHeld:false,tireHeat:0,burnLock:false,
         driftExitT:0,phaseT:0,phaseRemote:false,impacts:[],coins:0,skill:1,band:1,cloud:0,safeT:1,hopping:false});
     }
     function drive(bend,counter=false) {
@@ -98,7 +98,7 @@ try {
       for(const o of race.cars)if(o!==c){o.done=true;o.x+=500;}
       for(const b of [...race.items.boxes,...race.items.coins])b.down=9999;
       Object.assign(c,{x:a.x,z:a.y,y:T.groundAt(a.x,a.y),h,onGround:true,vx:Math.sin(h)*32,vz:Math.cos(h)*32,vf:32,
-        vy:0,pitch:0,roll:0,steer:0,boost:0,spin:0,stall:0,drift:0,driftT:0,driftHeld:false,driftExitT:0,phaseT:0});
+        vy:0,pitch:0,roll:0,steer:0,boost:0,spin:0,stall:0,drift:0,driftT:0,driftHeld:false,tireHeat:0,burnLock:false,driftExitT:0,phaseT:0});
       race.camPos=null;
     });
   }

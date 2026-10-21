@@ -25,18 +25,20 @@ export function specifiers(source) {
     .concat([...code.matchAll(/\bimport\(\s*(['"])([^'"`$]+)\1\s*\)/g)].map(m => m[2]));
 }
 
-// { files: Set<absolute path>, bytes, depth } for one entry file.
-export function staticImports(entry) {
+// { files: Set<absolute path>, bytes, depth } for one entry file. `read` and
+// `exists` default to the working tree; npm run budget passes git readers to
+// measure another commit.
+export function staticImports(entry, { read = (f) => fs.readFileSync(f, 'utf8'), exists = fs.existsSync } = {}) {
   const files = new Set(), depth = new Map();
   let bytes = 0;
   const visit = (file, d) => {
     if (depth.has(file) && depth.get(file) <= d) return;
     depth.set(file, d);
-    const source = fs.readFileSync(file, 'utf8');
+    const source = read(file);
     if (!files.has(file)) { files.add(file); bytes += source.length; }
     for (const m of source.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '').matchAll(STATIC)) {
       const target = resolve(file, m[1] || m[2]);
-      if (target && fs.existsSync(target)) visit(target, d + 1);
+      if (target && exists(target)) visit(target, d + 1);
     }
   };
   visit(path.resolve(entry), 0);

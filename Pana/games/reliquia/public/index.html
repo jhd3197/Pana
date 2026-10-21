@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
   <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-  <meta name="theme-color" content="#0e0b24"><meta name="description" content="Explora una mina olvidada con tus panas. Activa el templo, derrota a las momias y escapa con la reliquia.">
+  <meta name="theme-color" content="#0e0b24"><meta name="description" content="Baja a la mina del sol en primera persona con tus panas, carga tesoros malditos hasta el camión y decide cuándo irse antes de que la codicia los entierre.">
   <title>Reliquia · Una expedición de Pana</title>
   <link rel="stylesheet" href="/engine/kit.css"><link rel="stylesheet" href="/engine/ui.css">
   <link rel="stylesheet" href="/engine/room-options.css"><link rel="stylesheet" href="style.css">
@@ -10,52 +10,59 @@
 <link rel="stylesheet" href="/engine/game-lobby.css">
 </head>
 <body>
-  <canvas id="world" aria-label="Expedición cooperativa por la mina y el templo"></canvas>
+  <canvas id="world" tabindex="-1" aria-label="Expedición en primera persona por la mina y las ruinas"></canvas>
   <div class="vignette" aria-hidden="true"></div>
   <header class="topbar"><nav id="game-nav" aria-label="Opciones del juego"></nav></header>
-  <div id="loading" class="pk-loading" role="status"><span class="pk-ribbon">Una expedición de Pana</span><b class="pk-title">Reliquia</b><p class="pk-copy">Abriendo el paso al templo…</p></div>
+  <div id="loading" class="pk-loading" role="status"><span class="pk-ribbon">Una expedición de Pana</span><b class="pk-title">Reliquia</b><p class="pk-copy">Cargando el camión…</p></div>
   <section id="lobby" class="pk-lobby lobby hidden" aria-labelledby="title">
     <div class="pk-lobby-top"><a class="pk-back" href="/">← Todos los juegos</a><a class="pk-logo" href="/" aria-label="Pana">PANA</a></div>
-    <span class="pk-ribbon">Una expedición con tus panas</span>
+    <span class="pk-ribbon">Saqueo cooperativo en primera persona</span>
     <div><h1 id="title" class="pk-title">Reliquia</h1><p class="pk-eyebrow subtitle">La mina del sol</p></div>
-    <p class="pk-copy" data-room-description><b>La mina estaba abandonada. El templo de abajo, no.</b> Entra con tus panas, despierta sus secretos y vuelve con la reliquia. Que nadie se quede atrás.</p>
-    <div class="pk-stats" data-room-description><div class="pk-stat"><b>8</b><span>panas, cooperativo</span></div><div class="pk-stat"><b>2</b><span>ruedas del templo</span></div><div class="pk-stat"><b>1</b><span>reliquia que volver</span></div></div>
+    <p class="pk-copy" data-room-description><b>¿Nos vamos ya con lo que tenemos, o bajamos un piso más?</b> Bajen en el montacargas, llenen el carrito con lo que pide la jornada y súbanlo. Lo que traen se vuelve mangos para la tienda del campamento, y la siguiente jornada es más honda. Cada tesoro despierta la codicia de la ruina.</p>
+    <div class="pk-stats" data-room-description><div class="pk-stat"><b>1–8</b><span>panas, hecho para 5</span></div><div class="pk-stat"><b>1, 2, 3…</b><span>jornadas, cada una más honda</span></div><div class="pk-stat"><b>8</b><span>artefactos encantados</span></div></div>
     <div class="pk-field"><span class="pk-eyebrow">Panas en la expedición</span><div id="lobby-team" class="lobby-team" aria-label="Panas en la sala"></div></div>
     <div id="room-options"></div><div class="pk-lobby-foot">
       <div class="pk-lobby-room"><i class="pk-dot" aria-hidden="true"></i><span id="connection" class="connection" role="status">Preparando la expedición…</span></div>
       <div class="pk-lobby-cta" id="lobby-cta"><button id="start" class="pk-btn pk-btn--primary pk-btn--lg" disabled>Conectando…</button></div>
       <button id="practice" class="pk-btn pk-btn--ghost pk-btn--sm hidden">Jugar en este navegador</button>
-      <p class="solo-note">Puedes explorar solo o invitar a tus panas con el enlace de la sala.</p>
+      <p class="solo-note">Se puede solo, pero los tesoros grandes piden panas. Invítalos con el enlace de la sala.</p>
     </div>
   </section>
-  <div id="location-card" class="location-card"><span class="pk-eyebrow">Cuaderno de expedición</span><b class="pk-heading">El último mapa<br>termina aquí.</b><i>La mina del sol · Pana</i></div>
   <main id="hud" class="hidden">
-    <div class="hud-top">
-      <div class="hud-left">
-        <div class="mission pk-panel"><span class="pk-eyebrow">Objetivo · <em id="region">Campamento</em></span><h2 id="objective">Abre el templo</h2><ul id="mission-steps" class="steps"></ul></div>
-        <aside class="map-wrap pk-panel"><canvas id="minimap" width="170" height="220" aria-label="Mapa de la expedición"></canvas><span id="map-caption" class="pk-eyebrow">Mina del sol</span></aside>
-      </div>
-      <div class="hud-center">
-        <div id="compass" class="compass" aria-label="Brújula"><div id="compass-strip" class="compass-strip"></div><span class="compass-dest"><b id="compass-arrow">↑</b><small id="destination">EL TEMPLO</small></span></div>
-        <div id="boss" class="boss pk-panel hidden"><span class="pk-eyebrow">Guardián del sol</span><div class="pk-bar"><i id="boss-fill"></i></div></div>
-      </div>
-      <ol id="team" class="pk-roster team" aria-label="Salud del equipo"></ol>
+    <div class="crosshair" aria-hidden="true"><i></i></div>
+    <section class="place pk-panel" aria-label="Dónde están">
+      <span id="floor-name" class="pk-eyebrow">El campamento</span><b id="room-name">El campamento</b>
+      <div class="greed" title="La codicia: sube con cada tesoro que levantan"><span class="pk-eyebrow">La codicia <em id="greed-label">tranquila</em></span><div class="pk-bar greed-bar"><i id="greed-fill"></i></div></div>
+      <div class="quota"><span class="pk-eyebrow">Carga subida <em id="quota-label">Bs. 0 / 0</em></span><div class="pk-bar quota-bar"><i id="quota-fill"></i></div></div>
+      <div class="haul"><span class="pk-eyebrow">Mangos <em id="haul">Bs. 0 en el camión</em></span><strong id="mangos" class="pk-num">0</strong></div>
+      <div class="lift-line"><span class="pk-eyebrow">Montacargas</span><em id="lift-status">en el campamento</em></div>
+    </section>
+    <aside class="map-wrap pk-panel"><canvas id="minimap" width="180" height="180" aria-label="Mapa del piso"></canvas></aside>
+    <div id="compass" class="compass" aria-label="Brújula"><div id="compass-strip" class="compass-strip"></div></div>
+    <div id="boss" class="boss pk-panel hidden"><span id="boss-name" class="pk-eyebrow">Guardián</span><div class="pk-bar"><i id="boss-fill"></i></div></div>
+    <ol id="team" class="pk-roster team" aria-label="El equipo"></ol>
+    <div id="choice" class="choice pk-panel hidden"><b>¿Nos vamos ya o buscamos más?</b><span id="choice-votes">1 · Nos vamos &nbsp; 2 · Una sala más</span></div>
+    <button id="prompt" class="prompt hidden" type="button"><kbd class="pk-kbd">E</kbd><span id="prompt-label">Agarrar</span><i id="prompt-fill"></i></button>
+    <div class="carry pk-panel">
+      <div class="vital"><span class="pk-eyebrow">Vitalidad</span><strong id="health" class="pk-num">100</strong></div>
+      <div class="pk-bar health-bar"><i id="health-fill"></i></div><div class="stamina"><i id="stamina-fill"></i></div>
+      <div class="pk-slots hands"><div id="hand-0" class="pk-slot is-empty"><span class="pk-slot-n">Clic</span><b>Mano derecha</b></div><div id="hand-1" class="pk-slot is-empty"><span class="pk-slot-n">Clic der.</span><b>Mano izquierda</b></div></div>
+      <div class="bag"><span class="pk-eyebrow">En las manos</span><strong id="carry-value">Bs. 0</strong></div>
+      <p id="effects" class="effects"></p>
     </div>
-    <div class="player-status pk-panel">
-      <div class="health-line"><span class="pk-eyebrow">Vitalidad</span><strong id="health-number" class="pk-num">100</strong></div>
-      <div class="pk-bar health-meter"><i id="health-fill"></i></div>
-      <div class="pk-slots"><div id="slot-meds" class="pk-slot"><span class="pk-slot-n">R</span><span id="meds" class="pk-slot-count">×2</span>Botiquín</div><div id="slot-relic" class="pk-slot"><span class="pk-slot-n">E</span>Reliquia</div></div>
-      <p id="player-note">Juntos hasta la salida.</p>
-    </div>
-    <div class="actions pk-touch-zone"><button id="heal" class="pk-btn action-button"><kbd class="pk-kbd">R</kbd><span>Curar</span></button><button id="dodge" class="pk-btn action-button"><kbd class="pk-kbd">Shift</kbd><span>Esquivar</span></button><button id="attack" class="pk-btn pk-btn--coral action-button attack"><kbd class="pk-kbd">Espacio</kbd><span>Golpear</span></button></div>
-    <button id="interact" class="pk-btn pk-btn--primary interaction hidden"><kbd class="pk-kbd interaction-key">E</kbd><span id="interaction-label">Interactuar</span><i id="interaction-fill"></i></button>
-    <div class="controls pk-hints" data-pana-hint><span><b>W A S D</b> Moverte</span><span>Arrastra para mirar</span><span><b>Q</b> Centrar cámara</span></div>
-    <div class="touch-controls pk-touch-zone pk-dpad" aria-label="Movimiento"><button class="pk-touch" data-icon="up" data-move="up" aria-label="Avanzar"></button><button class="pk-touch" data-icon="left" data-move="left" aria-label="Izquierda"></button><button class="pk-touch" data-icon="down" data-move="down" aria-label="Retroceder"></button><button class="pk-touch" data-icon="right" data-move="right" aria-label="Derecha"></button></div>
-    <div id="downed" class="downed pk-panel hidden"><b>¡Pana, una mano!</b><span>Un amigo puede levantarte manteniendo E a tu lado.</span></div>
+    <div class="controls pk-hints" data-pana-hint><span><b>E</b> Agarrar</span><span><b>Q</b> Soltar</span><span><b>G</b> Lanzar</span><span><b>R</b> Arrastrar</span><span><b>1–7</b> Gritar</span><span><b>Tab</b> Equipo</span></div>
+    <div id="touch" class="pk-touch-zone"><div class="pk-dpad"><button class="pk-touch" data-icon="up" data-move="w" aria-label="Avanzar"></button><button class="pk-touch" data-icon="left" data-move="a" aria-label="Izquierda"></button><button class="pk-touch" data-icon="down" data-move="s" aria-label="Retroceder"></button><button class="pk-touch" data-icon="right" data-move="d" aria-label="Derecha"></button></div>
+      <div class="touch-actions"><button id="t-bark" class="pk-touch pk-touch--sm">Grito</button><button id="t-drop" class="pk-touch pk-touch--sm">Soltar</button><button id="t-throw" class="pk-touch pk-touch--sm">Lanzar</button><button id="t-left" class="pk-touch">Izq.</button><button id="t-grab" class="pk-touch">Agarrar</button><button id="t-use" class="pk-touch pk-touch--go pk-touch--lg">Usar</button></div></div>
+    <div id="downed" class="downed pk-panel hidden"><b>¡Pana, una mano!</b><span id="downed-copy">Un amigo puede levantarte (E) o arrastrarte al camión (R).</span></div>
+    <div id="board" class="board pk-panel" hidden><span class="pk-eyebrow">La expedición</span><ol id="board-list" class="pk-roster"></ol></div>
     <div id="disconnect" class="disconnect pk-panel hidden">Conexión interrumpida. <button id="offline-inline" class="pk-btn pk-btn--sm">Abrir expedición local</button></div>
   </main>
   <div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
-  <section id="results" class="pk-results hidden" aria-labelledby="result-title"><div class="pk-modal pk-results-card result-paper"><span id="result-eyebrow" class="pk-ribbon">Expedición completada</span><h2 id="result-title" class="pk-title">Volvimos juntos.</h2><p id="result-copy" class="pk-copy"></p><div class="pk-stats"><div class="pk-stat"><b id="result-time">0:00</b><span>de aventura</span></div><div class="pk-stat"><b id="result-kills">0</b><span>guardianes vencidos</span></div><div class="pk-stat"><b id="result-revives">0</b><span>manos a un pana</span></div></div><button id="again" class="pk-btn pk-btn--primary pk-btn--lg pk-btn--block">¡Otra expedición!</button><a class="pk-btn pk-btn--ghost pk-btn--block" href="/">Volver a Pana</a></div></section>
+  <section id="results" class="pk-results hidden" aria-labelledby="result-title"><div class="pk-modal pk-results-card result-paper">
+    <span id="result-eyebrow" class="pk-ribbon">Expedición completada</span><h2 id="result-title" class="pk-title">¡Nos vamos!</h2><p id="result-copy" class="pk-copy"></p>
+    <div class="pk-stats"><div class="pk-stat"><b id="result-payout">0</b><span>bolívares se llevaron</span></div><div class="pk-stat"><b id="result-depth">0</b><span>jornadas completas</span></div><div class="pk-stat"><b id="result-time">0:00</b><span>de expedición</span></div></div>
+    <ol id="titles" class="pk-roster titles" aria-label="Títulos"></ol>
+    <button id="again" class="pk-btn pk-btn--primary pk-btn--lg pk-btn--block">¡Otra expedición!</button><a class="pk-btn pk-btn--ghost pk-btn--block" href="/">Volver a Pana</a></div></section>
   <script type="module" src="/engine/game-entry.js" data-pana-entry="./game.js"></script>
 </body>
 </html>

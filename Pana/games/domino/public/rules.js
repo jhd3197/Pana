@@ -2,6 +2,7 @@ import { FIELDS, cleanOptions, maxPip, groupOf, CHAT } from './options.js';
 import { applyRoomOptions } from '../../../engine/room-options-rules.js';
 import { validTableArena } from '../../../engine/worlds/arena-layouts.js';
 import { swapSeats, canMoveSeats } from '../../../engine/play/seat-rules.js';
+import { createStarter, starterInput, stepStarter, starterDone, starterResult } from '../../../engine/play/quien-empieza-rules.js';
 // House rules are explicit in the UI: team block dominoes, opponents' pips score.
 // Pure data and deterministic shuffling keep host migration lossless.
 export const TARGET = 100;
@@ -13,7 +14,7 @@ const copy = value => JSON.parse(JSON.stringify(value));
 
 export function legalEnds(state, tile) {
   if (!tile || state.phase !== 'playing') return [];
-  if (!state.chain.length) return !(state.openingTile || (state.round===1&&state.options?.opener!=='random'?'6-6':null)) || tile.id === (state.openingTile || '6-6') ? ['right'] : [];
+  if (!state.chain.length) return !(state.openingTile || (state.round===1&&state.options?.opener!=='random'&&!state.cachos?'6-6':null)) || tile.id === (state.openingTile || '6-6') ? ['right'] : [];
   const left = state.chain[0].a, right = state.chain.at(-1).b;
   return [tile.a === left || tile.b === left ? 'left' : null,
     tile.a === right || tile.b === right ? 'right' : null].filter(Boolean);
@@ -44,7 +45,8 @@ export class DominoGame {
     this.rng = seed >>> 0 || 1;
     this.mapId = 'plaza'; this.phase = 'lobby'; this.round = 0; this.scores = [0, 0];
     this.players = BOT_NAMES.slice(0,4).map((name, seat) => ({ id: null, name, avatar: {}, seat, hand: [] }));
-    this.chain = []; this.turn = 0; this.starter = 0; this.passes = 0;
+    // starter: the seat that opens this mano. cachos: ¿Quién empieza? for a match's first mano.
+    this.chain = []; this.turn = 0; this.starter = 0; this.passes = 0; this.cachos = null; this.lastPlace = null;
     this.revision = 0; this.ledger = {}; this.history = []; this.result = null;
   }
 
@@ -91,7 +93,7 @@ export class DominoGame {
   }
 
   start() {
-    if (this.phase === 'playing') return false;
+    if (['playing', 'starter'].includes(this.phase)) return false;
     if (this.phase === 'finished') { this.round = 0; this.scores = Array(this.options.mode==='teams'?2:this.players.length).fill(0); this.starter = 0; }
     this.round++; this.chain = []; this.passes = 0; this.result = null; this.history = [];
     const tiles = deck(maxPip(this.options));
@@ -99,14 +101,35 @@ export class DominoGame {
       const j = Math.floor(this.random() * (i + 1)); [tiles[i], tiles[j]] = [tiles[j], tiles[i]];
     }
     const count=this.options.handSize,total=count*this.players.length;
-    this.openingTile=this.options.opener==='double6'||(this.options.opener==='winner'&&this.round===1)?'6-6':null;
+    // The room's ¿Quién empieza? choice replaces Salida for the first mano only; any tile opens it.
+    const cachos=this.round===1&&this.options.starter!=='regla';
+    this.openingTile=!cachos&&(this.options.opener==='double6'||(this.options.opener==='winner'&&this.round===1))?'6-6':null;
     if(this.openingTile){const index=tiles.findIndex(t=>t.id==='6-6');if(index>=total)[tiles[0],tiles[index]]=[tiles[index],tiles[0]];}
     this.reserve=tiles.slice(total);
     this.players.forEach((p, i) => { p.hand = tiles.slice(i * count, i * count + count).sort((a, b) => a.a - b.a || a.b - b.b); });
     if (this.openingTile) this.starter = this.players.findIndex(p => p.hand.some(t => t.id === '6-6'));
     if(this.options.opener==='random')this.starter=Math.floor(this.random()*this.players.length);
     this.turnRemaining=this.options.turnSeconds;this.turn = this.starter; this.phase = 'playing'; this.revision++;
+    this.cachos=null;
+    if(cachos){
+      // Its own seed, so the deal and the bots are the same with or without the cachos.
+      this.cachos=createStarter({seats:this.players.map(p=>p.seat),need:'first',seed:(this.rng^Math.imul(this.round+7,0x9e3779b1))>>>0,option:this.options.starter,last:this.lastPlace});
+      this.phase='starter';
+      if(starterDone(this.cachos))this.begin();
+    }
     return true;
+  }
+  // Host only: the cachos on a timer; seats without a pana shake on their own.
+  stepCachos(dt){
+    if(this.phase!=='starter')return false;
+    const changed=stepStarter(this.cachos,dt,{bots:this.players.filter(p=>p.id===null).map(p=>p.seat)});
+    if(starterDone(this.cachos))this.begin();
+    if(changed)this.revision++;
+    return changed;
+  }
+  begin(){
+    this.starter=this.turn=starterResult(this.cachos).order[0];
+    this.phase='playing';this.turnRemaining=this.options.turnSeconds;
   }
 
   reseat(from, to) {
@@ -117,7 +140,7 @@ export class DominoGame {
   setup() {
     if (!['round-over', 'finished'].includes(this.phase)) return false;
     const players = this.players.map(p => ({ ...p, hand: [] }));
-    Object.assign(this, new DominoGame(this.rng), { players, options:this.options,scores:Array(this.options.mode==='teams'?2:players.length).fill(0),mapId: this.mapId, revision: this.revision + 1, ledger: this.ledger });
+    Object.assign(this, new DominoGame(this.rng), { players, options:this.options,scores:Array(this.options.mode==='teams'?2:players.length).fill(0),mapId: this.mapId, revision: this.revision + 1, ledger: this.ledger, lastPlace: this.lastPlace });
     return true;
   }
 
@@ -164,15 +187,25 @@ export class DominoGame {
     if (winner !== null) this.scores[winner] += points;
     this.result = { winner, reason, points, remaining, seat: starter,capicua };
     this.starter = starter; this.phase = this.scores.some(s => s >= this.options.target) ? 'finished' : 'round-over';
-    if(this.phase==='finished'){const best=Math.max(...this.scores),leaders=this.scores.map((score,i)=>score===best?i:-1).filter(i=>i>=0);this.result.matchWinner=leaders.length===1?leaders[0]:null;}
+    if(this.phase==='finished'){const best=Math.max(...this.scores),leaders=this.scores.map((score,i)=>score===best?i:-1).filter(i=>i>=0);this.result.matchWinner=leaders.length===1?leaders[0]:null;
+      // For a revancha: the lowest score's pana (with teams, its member with most points left in hand).
+      const worst=this.scores.indexOf(Math.min(...this.scores));
+      this.lastPlace=this.players.filter(p=>groupOf(this,p.seat)===worst).sort((a,b)=>pips(b.hand)-pips(a.hand)||a.seat-b.seat)[0].seat;}
   }
 
   // Ids count up within a round (history resets on start), so clients can tell new events apart.
   record(event) { event.id = (this.history.at(-1)?.id || 0) + 1; this.history.push(event); if (this.history.length > 32) this.history.shift(); }
 
   accept(id, data, hostId) {
-    if (!Number.isSafeInteger(data.seq) || data.seq <= (this.ledger[id] || 0) || data.revision !== this.revision) return false;
+    if (!Number.isSafeInteger(data.seq) || data.seq <= (this.ledger[id] || 0)) return false;
     const seat = this.players.findIndex(p => p.id === id);
+    // Every pana shakes at once, so a cacho never waits for the latest revision.
+    if (data.action === 'starter') {
+      const ok = this.phase === 'starter' && seat >= 0 && starterInput(this.cachos, seat, data.cacho, data.power);
+      if (ok) { this.ledger[id] = data.seq; this.revision++; }
+      return ok;
+    }
+    if (data.revision !== this.revision) return false;
     let accepted = false;
     if (data.action === 'start' && id === hostId) accepted = this.start();
     else if(data.action==='options'&&id===hostId){accepted=this.configure(data.patch);if(accepted&&data.resetMap===true)this.mapId='plaza';}

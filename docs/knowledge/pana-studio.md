@@ -107,7 +107,7 @@ placing anything in a map. Exports contain only the current filtered results,
 with canonical item URLs and any measured metrics; they never contain images.
 The item page copies a direct link or an agent brief with source, consumers,
 preview options and declared dependencies. Editing geometry remains a code task;
-the character editor is still available at `/personaje.html`.
+the character editor is still available at `/personaje`.
 
 Racing metadata is shared from `car-definitions.js` and `track-definitions.js`.
 The existing `CARS` and `TRACKS` exports retain the same builders and game data.
@@ -213,7 +213,7 @@ so model edits refresh dependent thumbnails on reload without manual cache clear
 ## One character source
 
 `engine/models/characters/pana/` owns the approved capybara sculpt, smooth connected
-garments, exposed-body topology, expressions and eyewear. `/personaje.html`
+garments, exposed-body topology, expressions and eyewear. `/personaje`
 retains the full editor; its UI files in `web/character/` import the sculpt
 from there, and there is no second implementation. The editor and games use the same
 surfaces and rig. `engine/models/characters/pana/avatar-model.js` adapts that model to saved avatar data

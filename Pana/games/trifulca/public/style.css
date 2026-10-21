@@ -1,0 +1,154 @@
+/* Trifulca: a full-window 3D barrio under a boxing-TV HUD. The game's own
+   colours are named custom properties on this rule (--pk-game matches game.json). */
+body {
+  --pk-game: #e8443a; --red: #e8443a; --red-deep: #8f1d18; --blue: #2f6fe0; --blue-deep: #16367a;
+  --yellow: #f2b631; --yellow-deep: #8a5a07; --green: #2aa876; --green-deep: #135a3d;
+  --mareo: #ffc629; --mareo-hot: #ff4b4b; --aguante: #2ad1b2; --gold: #ffc629;
+  margin: 0; overflow: hidden; background: var(--pk-night); color: var(--pk-text); font-family: var(--pk-sans);
+}
+[hidden] { display: none !important; }
+#world { position: fixed; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; }
+.topbar { position: fixed; top: 16px; left: 20px; right: 20px; display: flex; align-items: center; justify-content: space-between; z-index: 4; }
+#game-nav { display: flex; gap: 8px; align-items: center; }
+#lobby { position: fixed; left: 24px; top: 84px; bottom: 32px; width: min(340px, calc(100vw - 48px)); overflow-y: auto; }
+.connection { position: fixed; left: 50%; bottom: 6px; transform: translateX(-50%); display: flex; gap: 8px; align-items: center; font-size: 12px; z-index: 3; }
+
+/* The fighters' bars across the top, like a TV fight. */
+#bars { position: fixed; top: 70px; left: 50%; transform: translateX(-50%); width: min(980px, calc(100vw - 32px)); display: grid; grid-template-columns: 1fr auto 1fr; gap: 14px; align-items: start; pointer-events: none; }
+.side { display: grid; gap: 8px; }
+.fighter { display: grid; gap: 5px; --corner: var(--red); --corner-deep: var(--red-deep); transition: opacity .2s; }
+.fighter--blue { --corner: var(--blue); --corner-deep: var(--blue-deep); }
+.fighter--yellow { --corner: var(--yellow); --corner-deep: var(--yellow-deep); }
+.fighter--green { --corner: var(--green); --corner-deep: var(--green-deep); }
+.fighter.is-bench { opacity: .55; }
+.fighter.is-out { opacity: .3; filter: grayscale(1); }
+.side--right .fighter { direction: rtl; }
+.side--right .fighter > * { direction: ltr; }
+.fighter-name { display: flex; gap: 8px; align-items: baseline; text-shadow: 0 2px 3px rgba(0, 0, 0, .7); }
+.side--right .fighter-name { justify-content: flex-end; }
+.fighter-name b { font: 400 22px var(--pk-display); letter-spacing: .02em; color: var(--corner); }
+.fighter-name span { font-weight: 800; font-size: 13px; color: var(--pk-muted); }
+.side .fighter + .fighter .fighter-name b { font-size: 16px; }
+.side .fighter + .fighter .meter--mareo { height: 12px; }
+.meter { position: relative; height: 18px; border-radius: 10px; background: var(--pk-hud); border: 2px solid rgba(255, 255, 255, .85); overflow: hidden; box-shadow: var(--pk-drop); }
+.meter i { position: absolute; inset: 0 auto 0 0; width: var(--fill, 0%); background: var(--mareo); transition: width .12s linear; }
+.side--right .meter i { inset: 0 0 0 auto; }
+.meter--mareo.is-danger i { background: var(--mareo-hot); animation: pulse .4s infinite alternate; }
+.meter--aguante { height: 8px; border-width: 1px; flex: 1; }
+.meter--aguante i { background: var(--aguante); }
+.fighter-low { display: flex; gap: 8px; align-items: center; }
+.caidas { display: flex; gap: 4px; }
+.caidas i { width: 14px; height: 14px; border-radius: 50%; border: 2px solid rgba(255, 255, 255, .85); background: var(--pk-hud); }
+.caidas i.is-down { background: var(--mareo-hot); }
+.clock { display: grid; justify-items: center; background: var(--pk-hud); border: 2px solid var(--pk-game); border-radius: 14px; padding: 4px 14px; min-width: 70px; box-shadow: var(--pk-drop); }
+.clock b { font: 400 34px var(--pk-display); line-height: 1; color: var(--gold); }
+.clock span { font-size: 11px; font-weight: 800; color: var(--pk-muted); white-space: nowrap; }
+@keyframes pulse { to { opacity: .55; } }
+
+/* The narrator's call and the ref's count. */
+.call { position: fixed; top: 150px; left: 50%; transform: translate(-50%, -10px) scale(.9); max-width: calc(100vw - 32px); text-align: center; font: 400 28px var(--pk-display); color: var(--pk-text); text-shadow: 0 3px 0 var(--red-deep), 0 0 18px rgba(0, 0, 0, .55); opacity: 0; pointer-events: none; transition: opacity .2s, transform .2s; }
+.call.is-on { opacity: 1; transform: translate(-50%, 0) scale(1); }
+.call.is-big { font-size: 46px; color: var(--gold); }
+.call.is-ref { color: var(--pk-text); font-size: 30px; text-shadow: 0 3px 0 var(--blue-deep), 0 0 18px rgba(0, 0, 0, .55); }
+.count { position: fixed; top: 38%; left: 50%; transform: translate(-50%, -50%); font-size: 140px; color: var(--pk-text); text-shadow: 0 6px 0 var(--red-deep), 0 0 30px rgba(0, 0, 0, .5); pointer-events: none; }
+.count.is-on { animation: thump .5s ease-out; }
+@keyframes thump { from { transform: translate(-50%, -50%) scale(1.6); opacity: .2; } }
+.replay { position: fixed; top: 120px; right: 24px; font-size: 22px; color: var(--pk-text); background: var(--red); padding: 4px 12px; border-radius: 8px; animation: pulse .6s infinite alternate; }
+
+/* The intro card. */
+.intro { position: fixed; left: 50%; bottom: 120px; transform: translateX(-50%); width: min(900px, calc(100vw - 32px)); display: grid; grid-template-columns: 1fr auto 1fr; gap: 10px; align-items: center; pointer-events: none; }
+.intro-team { display: grid; gap: 8px; }
+.intro-side { --corner: var(--red); --corner-deep: var(--red-deep); display: grid; gap: 2px; padding: 12px 18px; border-radius: 16px; color: var(--pk-text); box-shadow: var(--pk-drop); background: linear-gradient(90deg, var(--corner-deep), var(--corner)); animation: slide-in .5s ease-out both; }
+.intro-side--blue { --corner: var(--blue); --corner-deep: var(--blue-deep); }
+.intro-side--yellow { --corner: var(--yellow); --corner-deep: var(--yellow-deep); }
+.intro-side--green { --corner: var(--green); --corner-deep: var(--green-deep); }
+.intro-side.is-bench { opacity: .8; padding: 8px 14px; }
+.intro-team--right .intro-side { text-align: right; background: linear-gradient(270deg, var(--corner-deep), var(--corner)); animation-name: slide-in-right; }
+.intro-side span:first-child { font-size: 26px; color: var(--gold); }
+.intro-side--yellow span:first-child { color: var(--pk-text); }
+.intro-side b { font-size: 20px; }
+.intro-side small { color: rgba(255, 255, 255, .8); font-weight: 700; }
+.intro-vs { display: grid; justify-items: center; font-size: 48px; color: var(--gold); text-shadow: 0 4px 0 var(--red-deep); }
+.intro-vs small { font: 800 12px var(--pk-sans); color: var(--pk-text); text-shadow: none; white-space: nowrap; }
+@keyframes slide-in { from { transform: translateX(-60px); opacity: 0; } }
+@keyframes slide-in-right { from { transform: translateX(60px); opacity: 0; } }
+
+/* Bets, the verdict, your dolitas and the ring's feed. */
+.bets { position: fixed; left: 50%; bottom: 40px; transform: translateX(-50%); display: grid; gap: 8px; justify-items: center; padding: 10px 14px; }
+.bets-row { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
+.bets .is-picked { outline: 3px solid var(--gold); outline-offset: 2px; }
+.bet { color: var(--pk-text); border-color: var(--pk-line); }
+.bet--red { background: var(--red); } .bet--blue { background: var(--blue); } .bet--yellow { background: var(--yellow-deep); } .bet--green { background: var(--green-deep); }
+.verdict { position: fixed; left: 50%; top: 46%; transform: translate(-50%, -50%); text-align: center; display: grid; gap: 4px; justify-items: center; padding: 16px 24px; min-width: 260px; }
+.verdict h2 { margin: 6px 0 0; font-size: 30px; }
+.verdict p { margin: 0; font-weight: 800; }
+.verdict p:empty { display: none; }
+#verdict-pay { color: var(--gold); }
+.me { position: fixed; right: 20px; top: 70px; display: grid; justify-items: end; gap: 2px; padding: 6px 12px; font-size: 13px; }
+.me b { color: var(--gold); font-size: 16px; }
+body:has(#bars:not([hidden])) .me { top: auto; bottom: 40px; }
+.feed { position: fixed; left: 20px; bottom: 60px; margin: 0; padding: 0; list-style: none; display: grid; gap: 4px; font-weight: 800; font-size: 13px; text-shadow: 0 1px 3px rgba(0, 0, 0, .8); pointer-events: none; }
+.role { position: fixed; left: 50%; bottom: 18px; transform: translateX(-50%); margin: 0; font-weight: 800; font-size: 13px; text-align: center; max-width: calc(100vw - 32px); text-shadow: 0 1px 3px rgba(0, 0, 0, .9); pointer-events: none; }
+body[data-phase="intro"] .role { bottom: 150px; }
+.titles { list-style: none; margin: 10px 0; padding: 0; display: grid; gap: 6px; }
+.titles li { display: flex; justify-content: space-between; gap: 12px; padding: 6px 10px; border-radius: 10px; background: var(--pk-deep); }
+.titles b { color: var(--gold); }
+
+/* Touch: a stick on the left, four buttons on the right. */
+#touch { display: none; }
+@media (pointer: coarse) {
+  #touch { display: block; }
+  .pk-dpad { position: fixed; left: 12px; bottom: 28px; --pk-touch: 50px; }
+  .touch-buttons { position: fixed; right: 12px; bottom: 26px; display: grid; grid-template-columns: repeat(2, 78px); grid-template-areas: "dale cubrir" "agarrar golpe" "esquivar golpe"; gap: 8px; align-items: stretch; }
+  .touch-buttons .pk-touch { --pk-touch: 50px; min-width: 0; width: 100%; padding: 0 6px; font-size: 14px; }
+  #touch-golpe { grid-area: golpe; height: auto; font-size: 18px; }
+  #touch-cubrir { grid-area: cubrir; } #touch-esquivar { grid-area: esquivar; } #touch-agarrar { grid-area: agarrar; } #touch-dale { grid-area: dale; }
+  .role, .feed { display: none; }
+  .bets { bottom: 210px; }
+  body:has(#bars:not([hidden])) .me { display: none; }
+  .connection { bottom: 2px; }
+}
+@media (max-width: 700px) {
+  #bars { top: 62px; gap: 8px; }
+  .fighter-name b { font-size: 16px; }
+  .fighter-name span { display: none; }
+  .clock b { font-size: 26px; }
+  .call { font-size: 20px; top: 128px; }
+  .call.is-big { font-size: 30px; }
+  .count { font-size: 96px; }
+  .intro { grid-template-columns: 1fr; bottom: 210px; }
+  .intro-vs { font-size: 28px; }
+  .intro-side { padding: 8px 12px; }
+  .intro-side span:first-child { font-size: 18px; }
+}
+
+/* Toned-down count: the ref's number beside the fight, not over it. */
+.count { top: 30%; left: auto; right: 9%; transform: none; font-size: 72px; }
+@keyframes thump { from { transform: scale(1.5); opacity: .2; } }
+
+/* What to press right now, big and in the middle. */
+.prompt { position: fixed; left: 50%; top: 58%; transform: translateX(-50%); font-size: 40px; color: var(--gold); text-shadow: 0 4px 0 var(--red-deep), 0 0 20px rgba(0, 0, 0, .6); pointer-events: none; white-space: nowrap; }
+.prompt.is-on { animation: prompt-pop .25s ease-out; }
+@keyframes prompt-pop { from { transform: translateX(-50%) scale(1.5); opacity: 0; } }
+
+/* The key bar: each button lights while it is pressed. */
+.keys { position: fixed; left: 50%; bottom: 14px; transform: translateX(-50%); display: flex; gap: 8px; pointer-events: none; }
+.keys span { display: grid; justify-items: center; gap: 2px; padding: 6px 10px; border-radius: 12px; background: var(--pk-hud); border: 2px solid var(--pk-line); font-weight: 800; font-size: 12px; transition: transform .08s, border-color .08s; }
+.keys span small { font-size: 10px; color: var(--pk-muted); font-weight: 700; }
+.keys span .pk-kbd { margin: 0 1px; }
+.keys span.is-on { border-color: var(--gold); transform: translateY(-3px) scale(1.06); color: var(--gold); }
+
+/* The tutorial card. */
+.tutorial { position: fixed; right: 20px; top: 150px; width: min(330px, calc(100vw - 40px)); display: grid; gap: 8px; padding: 14px 16px; }
+.tutorial.is-new { animation: slide-in-right .35s ease-out; }
+.tutorial h2 { margin: 0; font-size: 24px; }
+.tutorial p { margin: 0; font-weight: 700; line-height: 1.35; }
+.tutorial-keys { display: flex; gap: 6px; flex-wrap: wrap; }
+.tutorial-keys .pk-kbd { font-size: 18px; padding: 4px 10px; }
+.tutorial-dots { list-style: none; margin: 0; padding: 0; display: flex; gap: 5px; }
+.tutorial-dots li { width: 22px; height: 6px; border-radius: 3px; background: var(--pk-deep); }
+.tutorial-dots li.is-done { background: var(--aguante); }
+.tutorial-dots li.is-now { background: var(--gold); }
+.tutorial-foot { display: flex; gap: 8px; justify-content: space-between; align-items: center; }
+@media (pointer: coarse) { .keys { display: none; } .tutorial { top: auto; bottom: 200px; right: 12px; } .prompt { font-size: 26px; top: 48%; } }
+@media (max-width: 700px) { .tutorial { top: auto; bottom: 200px; } }

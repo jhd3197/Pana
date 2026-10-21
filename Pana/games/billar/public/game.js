@@ -23,7 +23,7 @@ history.replaceState(null, '', `${location.pathname}?${params}`);
 let angle = 0, placement = null, held = 0, stopped = false, lastRevision = -1, previousPhase = 'lobby', drag = null;
 const spin = { x: 0, y: 0 };
 let charge = null, power = .65;
-const world = createPoolScene($('table')), portraitKeys = [], portraitCache = new Map();
+const world = createPoolScene($('table'), { onStarter: (cacho, power) => { if (!menu.isOpen) { audio.unlock(); room.action('starter', { cacho, power }); } } }), portraitKeys = [], portraitCache = new Map();
 // The chosen camera is a personal preference, remembered on this device.
 let cameraView = 'taco';
 try { const saved = localStorage.getItem('pana:billar:view'); if (VIEWS.some(([v]) => v === saved)) cameraView = saved; } catch { /* storage may be blocked */ }
@@ -51,10 +51,12 @@ const roomOptions = createRoomOptions($('room-options'), { title: 'Billar', fiel
   change: options => room.action('options', { options }), reset: () => room.action('reset-options') });
 const seating = createTableSeating($('seating'), (from, to) => room.action('swap', { from, to }));
 const menu = createGameMenu({
+  pad: { move: 'arrows', moveLabel: 'Afinar el taco; con bola en mano, mover la blanca', cursor: 'Apuntar en la mesa', keys: { a: ['Space', 'Fuerza: mantén y suelta para tirar'], x: ['Enter', 'Confirmar la bola en mano'], lb: ['ShiftLeft', 'Afinar más fino'], y: ['KeyC', 'Cámara'] } },
   title: 'Billar · Pana', orientation: 'libre', sound: audio,
   note: () => room.members.size > 1 ? 'La mesa sigue jugando mientras estás en el menú.' : 'La mesa está en pausa.',
   controls: [['Ratón / dedo', 'Toca la mesa para apuntar; detrás de la bola, arrastra a los lados para girar'], ['← →', 'Afina la dirección del taco'], ['Mantener Tirar / Espacio / Enter', 'La fuerza sube y baja: suelta para tirar. Rojo es más fuerte'], ['Enter con bola en mano', 'Confirma la posición'], ['Flechas con bola en mano', 'Mueve la blanca antes de colocarla'], ['Efecto', 'Toca la bola blanca del panel para darle efecto'], ['C', 'Cambia la cámara'], ['M', 'Sonido'], ['Esc', 'Menú']],
   tips: [
+    '¿Quién rompe? Al empezar la partida todos sacuden el cacho a la vez y lo tapan: rompe el dado más alto; si empatan arriba, solo ellos sacuden otra vez. El anfitrión puede cambiarlo en Más ajustes.',
     'Dos equipos de uno, dos o tres panas. Los compañeros rotan después de cada tiro, incluso cuando el equipo sigue jugando. El anfitrión organiza los puestos antes de empezar.',
     'Toca primero una bola de tu grupo. Después del contacto, mete una bola o haz que cualquiera llegue a una banda. Si metes una de las tuyas sin falta, sigues tirando.',
     'Bola 8: la primera bola legal asigna lisas o rayadas. Vacía tu grupo antes de la ocho; meterla antes de tiempo o con falta pierde la mesa. En el saque, la ocho se repone.',
@@ -224,7 +226,7 @@ function render(state) {
   }
   const active = ownTurn();
   if (charge && !chargeValid()) clearInput();
-  $('turn-status').textContent = !room.connected ? 'Reconectando…' : !ready ? 'Esperando a tu pana' : !lobby && !playingSeats(state).includes(room.seat) ? 'Entras en la próxima mesa' : state.phase === 'rolling' ? 'Rodando…'
+  $('turn-status').textContent = !room.connected ? 'Reconectando…' : !ready ? 'Esperando a tu pana' : !lobby && !playingSeats(state).includes(room.seat) ? 'Entras en la próxima mesa' : state.phase === 'starter' ? '¿Quién rompe?' : state.phase === 'rolling' ? 'Rodando…'
     : active ? state.ballInHand ? 'Coloca la blanca' : '¡Tu turno!' : `Turno de ${state.players[state.turn].name}`;
   $('message').textContent = state.ballInHand && active ? state.options.foulPlacement === 'kitchen' ? 'Coloca en la zona amarilla. La blanca debe salir de cocina antes de tocar otra bola.' : 'Toca un lugar libre de la mesa. Después apunta y tira.' : state.message;
   document.querySelector('.versus').textContent = state.options.variant === 'nine' ? '9' : '8';
@@ -280,7 +282,7 @@ function frame(now) {
   const dt = Math.min(.05, (now - frameTime) / 1000); frameTime = now;
   if (charge) { if (chargeValid()) updateCharge(now); else clearInput(); }
   if (ownTurn() && !charge) angle += held * dt * .45;
-  world.draw(room.state, { angle, power, spin, active: ownTurn(), placement, calledPocket: $('pocket').value === '' ? -1 : Number($('pocket').value), dt }); requestAnimationFrame(frame);
+  world.draw(room.state, { angle, power, spin, active: ownTurn(), placement, calledPocket: $('pocket').value === '' ? -1 : Number($('pocket').value), dt, seat: room.connected ? room.seat : -1 }); requestAnimationFrame(frame);
 }
 render(room.state); room.connect(); requestAnimationFrame(frame);
 addEventListener('pagehide', () => { stopped = true; clearInterval(timer); notify.dispose(); room.dispose(); world.dispose(); }, { once: true });

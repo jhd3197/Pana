@@ -98,13 +98,15 @@ try {
   assert.equal(await host.evaluate(()=>race.cars.find(c=>!c.bot&&c.remote).dizzy),0);
 
   // Recovery is carried in the unchanged pose array, and clears remotely.
-  await host.evaluate(()=>{rescue(race.player);sendPoses();});
+  // sendPoses() rate-limits by wall clock; manual steps can outrun that, so
+  // each explicit send below clears the limiter (as the bot send does).
+  await host.evaluate(()=>{rescue(race.player);race.poseAt=-Infinity;sendPoses();});
   await until(guest,()=>race.cars.find(c=>!c.bot&&c.remote).buf.at(-1)?.p[10]&1024);
   assert.equal(await guest.evaluate(()=>{updateRace(1/60);return race.cars.find(c=>!c.bot&&c.remote).ghostVisible;}),true);
   await host.evaluate(()=>{
     for(const c of race.cars)if(c!==race.player){c.done=true;c.x+=500;}
     for(let i=0;i<360;i++)updateRace(1/60,false);
-    sendPoses();
+    race.poseAt=-Infinity;sendPoses();
   });
   await until(guest,()=>!(race.cars.find(c=>!c.bot&&c.remote).buf.at(-1)?.p[10]&1024));
   await guest.evaluate(()=>{for(let i=0;i<200;i++)updateRace(1/60,false);});

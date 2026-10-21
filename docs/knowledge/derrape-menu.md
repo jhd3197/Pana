@@ -1,11 +1,25 @@
 # Derrape illustrated menu
 
-`public/menu-flow.js` arranges the existing garage controls into four pages:
-Panas, Copa, Taller and Parrilla (internal IDs welcome, track, car, ready).
-`game.js` still owns setup, car tuning, saved
-profile, race loading and Colyseus authority. The menu never creates a room,
-simulates a race or writes setup independently. Back/next changes only the
-visible page; returning from a race or cancelling loading opens Ready.
+Derrape starts in the shared lobby (`engine/game-entry.js`, `#room-lobby`),
+like every game. `public/menu-flow.js` moves the race options and Derrape's
+room panel into it, then arranges the garage into two pages, Copa and Taller
+(internal IDs track and car). The Taller footer's `#play` reads ¡Vámonos!
+and races. `game.js` still owns setup, car tuning, saved profile, race loading
+and Colyseus authority. The menu never creates a room, simulates a race or
+writes setup independently.
+
+- The host's ¡Arrancar! (`#start`) sends `garage` to the room. The room's
+  `garage` flag takes everyone to Copa: the host picks there, and guests see
+  the choice read-only. Atrás on Copa (host only) and "Sala" after a race
+  send it back. Alone, without a room, the flag is local.
+- Lobby settings are choice rows of one kind: Dificultad, Vueltas (hidden
+  online, where the map sets the laps), Parrilla (online), En esta pantalla
+  and Pista. The old `#split`, `#mirror` and `#lobby-bots` controls stay for
+  game.js but are hidden, and the rows press them.
+- "En esta pantalla: 1 pana / 2 panas" is split screen, up to two panas on one
+  screen. It shows only while you are alone in the room; then ¡Vámonos! runs a
+  local split race even inside a room, because room races have one pana per
+  screen. There is no "Un jugador" choice: alone in the room is playing solo.
 
 ## Artwork
 
@@ -38,8 +52,9 @@ four real stage IDs from `cup-definitions.js`, not duplicated route data.
   the initial `renderSetup` has already restored from the player's profile.
 - `refresh` is read-only: calling `renderSetup` from it would recurse through
   `selectTrack`. Refresh after car, route, setup and room changes.
-- Cup stage buttons preview individual tracks. Ready shows the cup's first
-  stage because a new cup always starts there, regardless of the preview.
+- Each cup card lists its four stops; the stage buttons stay hidden on the cup
+  page. Ready shows the cup's first stage because a new cup always starts
+  there.
 - Track browsing uses route metadata and never constructs 3D scenery. The
   garage's WebGL render is skipped while illustrated menu pages cover it.
 - Keep Play in the fixed footer. Ready options and the roster scroll separately

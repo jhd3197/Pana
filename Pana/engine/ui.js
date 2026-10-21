@@ -35,8 +35,9 @@ function h(tag, props = {}, ...children) {
 }
 
 // "W A S D / ↑ ↓" → one <kbd> per key, with " / " between alternatives.
-function keycaps(keys) {
-  return keys.split(' / ').flatMap((group, i) => [i ? ' / ' : null, ...group.split(' ').map(k => h('kbd', { text: k }))]).filter(Boolean);
+// Pad buttons have spaces in their names ("Stick izq."): one <kbd> per group.
+function keycaps(keys, whole = false) {
+  return keys.split(' / ').flatMap((group, i) => [i ? ' / ' : null, ...(whole ? [group] : group.split(' ')).map(k => h('kbd', { text: k }))]).filter(Boolean);
 }
 
 let toastNode, toastTimer;
@@ -67,7 +68,16 @@ export function createGameMenu({
   onOpen, onClose,
   pause = true,               // false: a plain settings dialog (used by the hub)
   orientation = 'libre',      // phones: 'horizontal', 'vertical' or 'libre' (either works)
+  pad,                        // game controller setup, see engine/gamepad.js
 } = {}) {
+  // Loaded only for a game that sets up a pad, to keep the others' first load small.
+  const padRows = h('div', { hidden: true });
+  if (pad && pause) import('./gamepad.js').then(({ padControls, padHelp }) => {
+    padControls(pad);
+    const rows = padHelp(pad);
+    padRows.replaceChildren(h('h3', { class: 'pana-keys-title', text: 'Con mando' }), keyList(rows, true));
+    padRows.hidden = !rows.length;
+  });
   const uid = menuCount++ ? `-${menuCount}` : '';
   const id = name => `pana-${name}${uid}`;
   if (sound) {
@@ -160,9 +170,13 @@ export function createGameMenu({
   }
 
   // ---------- Controles ----------
+  function keyList(rows, whole) {
+    return h('div', { class: 'pana-keys', role: 'list' }, rows.map(([keys, text]) => h('div', { class: 'pana-key', role: 'listitem' },
+      h('span', { class: 'pana-key-caps' }, keycaps(keys, whole)), h('span', { class: 'pana-key-text', text }))));
+  }
   const controlsPanel = (controls.length || tips.length) && h('section', { class: 'pana-panel', role: 'tabpanel', id: id('panel-controls'), 'aria-labelledby': id('tab-controls') },
-    h('div', { class: 'pana-keys', role: 'list' }, controls.map(([keys, text]) => h('div', { class: 'pana-key', role: 'listitem' },
-      h('span', { class: 'pana-key-caps' }, keycaps(keys)), h('span', { class: 'pana-key-text', text })))),
+    keyList(controls),
+    padRows,
     tips.map(t => h('p', { class: 'pana-tip', text: t })));
 
   // ---------- dialog ----------

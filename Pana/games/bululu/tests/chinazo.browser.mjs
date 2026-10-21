@@ -23,8 +23,10 @@ async function open(query, options = {}) {
 const shooter = (page) => page.evaluate(() => { const s = minigame().game.sim.shooters[0]; return { aim: { ...s.aim }, shots: s.shots, ammo: s.ammo, reload: s.reload, pulling: s.pulling }; });
 async function startRound(page) {
   await page.locator('#start').click({ timeout: 90000 });
-  await page.locator('#prompt button').click({ timeout: 30000 });   // ¡Listo!
-  await page.waitForFunction(() => minigame()?.state === 'run', null, { timeout: 30000 });
+  // ¡Listo! appears once the minigame's module has loaded; the click then
+  // builds its scene before it returns. Both are slow on a loaded software-GL runner.
+  await page.locator('#prompt button').click({ timeout: 90000 });
+  await page.waitForFunction(() => minigame()?.state === 'run', null, { timeout: 60000 });
 }
 
 try {
@@ -54,12 +56,18 @@ try {
   assert.equal((await shooter(page)).shots, 2);
   check('a click shorter than the minimum pull still fires once');
 
-  // keyboard alone: D moves right (accelerating), Space pulls and releases
+  // keyboard alone: D moves right (accelerating), Space pulls and releases.
+  // Keys are held until the reticle has moved: a slow frame clamps its step
+  // (frame dt ≤ 0.1 s), so a fixed hold covers less game time under load.
   s = await shooter(page);
-  await page.keyboard.down('a'); await page.waitForTimeout(400); await page.keyboard.up('a');
+  await page.keyboard.down('a');
+  await page.waitForFunction((x) => minigame().game.sim.shooters[0].aim.x < x - 0.2, s.aim.x, { timeout: 30000 });
+  await page.keyboard.up('a');
   const moved = await shooter(page);
   assert.ok(moved.aim.x < s.aim.x - 0.2, `A moves the reticle left (${s.aim.x} → ${moved.aim.x})`);
-  await page.keyboard.down('w'); await page.waitForTimeout(150); await page.keyboard.up('w');
+  await page.keyboard.down('w');
+  await page.waitForFunction((y) => minigame().game.sim.shooters[0].aim.y > y, moved.aim.y, { timeout: 30000 });
+  await page.keyboard.up('w');
   assert.ok((await shooter(page)).aim.y > moved.aim.y, 'W moves it up');
   await page.waitForFunction(() => minigame().game.sim.shooters[0].reload === 0 && minigame().game.sim.shooters[0].ammo > 0);
   const before = (await shooter(page)).shots;

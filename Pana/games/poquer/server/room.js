@@ -21,6 +21,8 @@ export default class PokerRoom extends PanaRoom {
       if (humans === 1) fillBots(3, (seat, info) => this.game.add(seat, info));
       this.game.start(); this.publish();
     });
+    // ¿Quién empieza?: shakes and slams never wait for the latest revision.
+    this.onMessage('starter', (client, data) => { if (this.game.cacho(this.seatOf(client), data?.cacho, data?.power)) this.publish(); });
     this.onMessage('act', (client, data) => {
       if (data && Number.isInteger(data.revision) && this.game.act(this.seatOf(client), data.action, data.amount, data.revision)) this.publish();
     });
@@ -40,6 +42,7 @@ export default class PokerRoom extends PanaRoom {
   // Views carry the deadline, so clients count down on their own; the tick only
   // publishes when the deadline actually plays a turn.
   tick() {
+    if (this.game.phase === 'starter') { if (this.game.stepStarter(.2)) this.publish(); return; }
     const p = this.game.players.find(p => p.id === this.game.turn);
     if (!p || Date.now() < this.deadline) return;
     if (p.bot) this.game.botAction(); else this.game.act(p.id, this.game.legal(p.id)?.call ? 'fold' : 'call');

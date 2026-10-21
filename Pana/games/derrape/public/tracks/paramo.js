@@ -1,4 +1,6 @@
 import { TRACK_DEFINITIONS } from '../track-definitions.js';
+import { libraryForest } from './library-forest.js';
+import { groundPaint } from './ground-paint.js';
 import { mossRock } from '/engine/models/vegetation/moss-rock.js';
 // An Andean ascent: lower meadows, glacial lake and the cable-car summit.
 import { THREE,terrain,put,foundation,scatter,instances,edges,clear,smooth } from './world-kit.js';
@@ -19,8 +21,13 @@ export default {
   items:{boxes:[.1,.29,.47,.66,.87],boxLanes:[-6,-2,2,6],pads:[{u:.19,off:0},{u:.42,off:4},{u:.74,off:-4},{u:.94,off:0}]},
   walls:false,chevrons:true,
   palette:{skySeed:17,cloudCover:0.42,horizon:0xc9e8f6,skyTop:0x2a7fe0,halo:.8,hemiSky:0xd8e2ff,hemiGround:0x6fae55,hemiInt:1.7,sun:0xffe0ae,sunInt:2.7,ground:0x82b858,track:0x7a7083,dune:0,fog:[300,1300]},
+  // Frailejones across the far moor, a fir forest below the tree line.
+  forest:{plant:libraryForest,bounds:[-600,-590,540,390],count:260,spacing:6,edge:62,minY:.5,maxSlope:.7,clump:.92,seed:419,
+    accept:(x,z,y)=>y<150&&Math.hypot((x-LAKE.x)/LAKE.rx,(z-LAKE.z)/LAKE.rz)>1.35,
+    species:[{name:'frailejon',weight:3,scale:[.9,1.4],where:(x,z,y)=>y>55?1:.25},{name:'fir',weight:2,scale:[.8,1.2],where:(x,z,y)=>y<95?1.4:.1}]},
   environment(T){
     const group=new THREE.Group(),world=terrain(T,{bounds:[-620,-610,560,410],base:baseHeight,
+      paint:groundPaint({tone:.1,moss:.3,dry:.12,dryColor:0xb8b26a,keep:(x,z,y)=>y>150}),
       color:(x,z,y)=>new THREE.Color(meadow(x,z,0x7aa84a,{warm:0xa8b850,deep:0x4f8f50,bloom:0xc89ae0})).lerp(new THREE.Color(0x638f80),smooth(y,70,145)).lerp(new THREE.Color(0xddebf1),smooth(y+Math.sin(x*.05)*7+Math.cos(z*.06)*6,145,175))});
     group.add(world.land);
     const lake=waterPool(LAKE.rx,LAKE.rz,{color:0x6daab1,depth:8});lake.position.set(LAKE.x,LAKE.y,LAKE.z);lake.name='glacial-lake';group.add(lake);

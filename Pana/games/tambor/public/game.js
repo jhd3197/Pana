@@ -21,7 +21,7 @@ const $ = (id) => document.getElementById(id), params = new URLSearchParams(loca
 const code = roomCode();
 const SHOUTED = new Set(['kick', 'enter', 'relevo', 'duelo', 'song', 'golpe', 'end', 'final', 'mcp', 'entrar']);
 const SPOKEN_EVENTS = new Set(['kick', 'enter', 'relevo', 'duelo', 'golpe', 'final']);
-let world = null, latency = loadLatency(), seenEvent = null, seenCall = null, lastView = '';
+let world = null, latency = loadLatency(), seenEvent = null, seenCall = null, lastView = '', quiet = false;
 const judge = new Judge(), tambor = createTambor(sound), holds = new Map();
 const room = new TamborRoom({ code, name: loadName(), avatar: loadAvatar(), onState: render,
   onNotice: (text) => { $('event').textContent = text; },
@@ -29,7 +29,7 @@ const room = new TamborRoom({ code, name: loadName(), avatar: loadAvatar(), onSt
 });
 const roomOptions = createRoomOptions($('room-options'), { title: 'La Rueda de Tambor', fields: ROOM_OPTIONS,
   change: options => room.action('options', { options }), reset: () => room.action('options', { options: defaultOptions() }) });
-const menu = createGameMenu({ title: 'La Rueda de Tambor · Pana', sound, orientation: 'libre',
+const menu = createGameMenu({ pad: { keys: { left: ['ArrowLeft', 'Mano izquierda'], x: ['ArrowLeft', 'Mano izquierda'], right: ['ArrowRight', 'Mano derecha'], b: ['ArrowRight', 'Mano derecha'], up: ['ArrowUp', 'Bailar ↑'], y: ['ArrowUp', 'Bailar ↑'], down: ['ArrowDown', 'Bailar ↓'], a: ['Space', 'Palo, charrasca y caracol; aplaudir'], rb: ['Space', 'Palo, charrasca y caracol; aplaudir'], lb: ['KeyQ', '¡Quiero entrar!'], rt: ['KeyE', 'Relevo'] } }, title: 'La Rueda de Tambor · Pana', sound, orientation: 'libre',
   note: () => room.members.size > 1 ? 'La rueda sigue sonando mientras estás en el menú.' : 'La rueda está en pausa.',
   controls: [['← → (o F J)', 'Mano: un cuero con cada mano'], ['Espacio', 'Palo, charrasca y caracol (mantén en las notas largas)'],
     ['← → ↑ ↓ y Espacio', 'Bailar lo que canta el MCP'], ['Espacio', 'En la gente: aplaudir en el golpe'], ['1 – 4', 'Echar un dicho'],
@@ -184,9 +184,12 @@ export const { sceneReady } = bootGame({
     if (t != null && state.phase === 'song' && !menu.isOpen) judge.update(t);
     hud.render(state, { me: room.id, judge, t });
     const raw = songTime(true);
-    scene.frame(dt, playing && raw != null ? raw / secondsPerBeat(songFor(state.song.track)) : null);
+    if (!quiet) scene.frame(dt, playing && raw != null ? raw / secondsPerBeat(songFor(state.song.track)) : null);
   },
   dispose: () => { tambor.stop(); room.dispose(); },
 });
 addEventListener('resize', fitCamera);
-if (params.has('debug')) window.tamborDebug = { room, menu, judge, tambor, songTime, press, release, get world() { return world; } };
+if (params.has('debug')) window.tamborDebug = { room, menu, judge, tambor, songTime, press, release, get world() { return world; },
+  // Suites skip drawing while timing calls: software WebGL draws the eight
+  // dressed panas at a few frames a second, which starves snapshots and ticks.
+  quiet(value) { quiet = !!value; } };

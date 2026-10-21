@@ -1,9 +1,11 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createGame, rack, acceptAction, step, finishShot, canPlace, remaining, legalTarget, aimGuide, predictShot, botShot, botPlacement, BOT_ID, RADIUS } from '../public/rules.js';
+import { createGame, rack, acceptAction, step, finishShot, canPlace, remaining, legalTarget, aimGuide, predictShot, botShot, botPlacement, stepPoolStarter, BOT_ID, RADIUS } from '../public/rules.js';
+import { starterResult } from '../../../engine/play/quien-empieza-rules.js';
 
+// The table's seat order breaks (no cachos), so seat 0 breaks.
 function game(practice = false) {
-  const s = createGame(practice); s.players[0].id = 11; if (!practice) s.players[1].id = 22;
+  const s = createGame(practice); s.players[0].id = 11; if (!practice) s.players[1].id = 22; s.options.starter = 'anfitrion';
   assert.ok(acceptAction(s, 11, { action: 'start', revision: 0 }, 11)); return s;
 }
 function action(s, action, values = {}, id = s.players[s.turn].id) { return acceptAction(s, id, { action, revision: s.revision, ...values }, 11); }
@@ -23,6 +25,32 @@ test('only the host starts with two players; solo practice can start alone', () 
   assert.equal(action(s, 'start'), false); s.players[1].id = 22;
   assert.equal(action(s, 'start', {}, 22), false); assert.ok(action(s, 'start')); assert.equal(action(s, 'start'), false);
   assert.equal(game(true).phase, 'aiming');
+});
+test('a match opens with the cachos: the highest die breaks; later racks keep the break policy', () => {
+  const s = createGame(); s.players[0].id = 11; s.players[1].id = 22; s.players[2].id = 33; s.players[3].id = 44;
+  assert.ok(action(s, 'start', {}, 11)); assert.equal(s.phase, 'starter'); assert.deepEqual(s.starter.contenders, [0, 1, 2, 3]);
+  assert.equal(acceptAction(s, 11, { action: 'shoot', revision: s.revision, angle: 0, power: .5 }, 11), false, 'no shots during the cachos');
+  assert.ok(acceptAction(s, 22, { action: 'starter', cacho: 'shake', revision: -1 }, 11), 'a cacho never waits for the latest revision');
+  assert.ok(acceptAction(s, 22, { action: 'starter', cacho: 'slam', power: .9, revision: -1 }, 11));
+  assert.equal(acceptAction(s, 22, { action: 'starter', cacho: 'slam', power: .9, revision: s.revision }, 11), false, 'one slam a round');
+  s.players[3].id = null; // a pana who left slams on their own
+  for (let i = 0; i < 400 && s.phase === 'starter'; i++) stepPoolStarter(s, .1);
+  const { order, rolls } = starterResult(s.starter);
+  assert.equal(s.phase, 'aiming'); assert.equal(s.turn, order[0]); assert.equal(s.breaker, order[0] % 2);
+  assert.match(s.message, new RegExp(`Rompe ${s.players[order[0]].name} con ${rolls[order[0]]}`));
+  s.players[3].id = 44; s.options.bestOf = 3; outcome(s, { first: 8, eligible: true, pocketed: [8] }); assert.equal(s.result.matchFinished, false);
+  assert.ok(acceptAction(s, 11, { action: 'start', revision: s.revision }, 11)); assert.equal(s.phase, 'aiming', 'the next rack needs no cachos');
+});
+test('room option: revancha lets the losing team break, al azar starts at once', () => {
+  const s = game(); s.options.starter = 'revancha'; outcome(s, { pocketed: [8] }); assert.equal(s.result.team, 1);
+  assert.ok(action(s, 'start', {}, 11)); assert.equal(s.phase, 'aiming'); assert.equal(s.turn, 0, 'two seats: the loser leads and nobody throws');
+  const r = createGame(); r.players[0].id = 11; r.players[1].id = 22; r.options.starter = 'azar';
+  assert.ok(acceptAction(r, 11, { action: 'start', revision: 0 }, 11)); assert.equal(r.phase, 'aiming'); assert.match(r.message, /^Orden al azar: ¡Rompe/);
+  const bot = createGame(false, { bot: true }); bot.players[0].id = 11;
+  assert.ok(acceptAction(bot, 11, { action: 'start', revision: 0 }, 11)); assert.equal(bot.phase, 'starter');
+  acceptAction(bot, 11, { action: 'starter', cacho: 'slam', power: .5 }, 11);
+  for (let i = 0; i < 400 && bot.phase === 'starter'; i++) stepPoolStarter(bot, .1);
+  assert.equal(bot.phase, 'aiming', 'Pana Bot slams on its own');
 });
 test('rejects wrong seat, stale, duplicate, malformed and out-of-range shots', () => {
   const s = game(), shot = { action: 'shoot', revision: 1, angle: 0, power: .7 };
@@ -133,7 +161,7 @@ test('the predicted object-ball path matches the simulated one', () => {
 });
 test('Pana Bot plays a whole match and stronger bots pot more', () => {
   function match(difficulty, seed) {
-    const s = createGame(false, { bot: true }); s.players[0] = { ...s.players[1], id: 'bot0' }; s.difficulty = difficulty;
+    const s = createGame(false, { bot: true }); s.players[0] = { ...s.players[1], id: 'bot0' }; s.difficulty = difficulty; s.options.starter = 'anfitrion';
     s.round = seed; assert.ok(acceptAction(s, 'bot0', { action: 'start', revision: 0 }, 'bot0'));
     let pots = 0, shots = 0;
     while (s.phase === 'aiming' && shots < 400) {

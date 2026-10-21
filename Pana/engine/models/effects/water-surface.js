@@ -206,10 +206,12 @@ export function riverSurface(points,width,height,{color=0x438e93,closed=false,fo
 export function cascadeStream({length=36,width=5,drop=6,drops=2,rain=0,color=0x3f9a96}={}){
   const points=Array.from({length:7},(_,i)=>[Math.sin(i*.9)*2,(i/6-.5)*length]);
   const step=z=>{const k=(z/length+.5)*(drops+1),f=k-Math.floor(k);return -(Math.floor(k)+THREE.MathUtils.smoothstep(f,.78,.98))*drop/(drops+1);};
-  const water=riverSurface(points,width,(x,z)=>drop/2+step(z),{color,foam:true,rain});
-  water.name='cascade-stream';
-  water.userData.previewBounds=[[-width-2,-drop/2-1,-length/2],[width+2,drop/2+1,length/2]];
-  return water;
+  const water=riverSurface(points,width,(x,z)=>drop/2+step(z),{color,foam:true,rain}),group=new THREE.Group();
+  // Library factories return a Group (engine/models/README.md); the water mesh keeps its own tick.
+  water.name='cascade-stream-water';group.name='cascade-stream';group.add(water);
+  group.userData.previewBounds=[[-width-2,-drop/2-1,-length/2],[width+2,drop/2+1,length/2]];
+  group.userData.tick=water.userData.tick;
+  return group;
 }
 
 // Environment owners call this once at construction, then compose with their

@@ -48,3 +48,24 @@ test('the real CHANGELOG.md has an Unreleased section to stamp', () => {
   const text = fs.readFileSync(path.resolve(import.meta.dirname, '../../CHANGELOG.md'), 'utf8');
   assert.doesNotThrow(() => stamp(text, '99.0.0', '2099-01-01'));
 });
+
+test('lint finds conflict markers, a missing Unreleased and plain entries', async () => {
+  const { lint } = await import('../scripts/changelog.js');
+  assert.deepEqual(lint(sample), []);
+  const marked = sample.replace('### Added', '<<<<<<< HEAD\n### Added\n=======\n>>>>>>> origin/main');
+  assert.equal(lint(marked).filter(p => p.includes('conflict marker')).length, 3);
+  assert.ok(lint('# Changelog\n\n## 0.1.0 - x\n').some(p => p.includes('Unreleased')));
+  assert.ok(lint(sample.replace('- **Something new.**', '- Something new.')).some(p => p.includes('bold')));
+});
+
+test('merge keeps what main has not stamped and drops what it has', async () => {
+  const { merge, lint, entries } = await import('../scripts/changelog.js');
+  const dev = '# Changelog\n\n## Unreleased\n\n- **New on dev.**\n  More.\n- **Shipped already.**\n\n## 0.1.0 - 2026-10-16\n\n- **Old.**\n';
+  const main = '# Changelog\n\n## Unreleased\n\n## 0.2.0 - 2026-10-20\n\n- **Shipped already.**\n\n## 0.1.0 - 2026-10-16\n\n- **Old.**\n';
+  const out = merge(dev, main);
+  assert.deepEqual(lint(out), []);
+  const unreleased = out.slice(out.indexOf('## Unreleased'), out.indexOf('## 0.2.0'));
+  assert.deepEqual(entries(unreleased), ['- **New on dev.**\n  More.']);
+  assert.match(out, /## 0\.2\.0 - 2026-10-20\n\n- \*\*Shipped already\.\*\*/);
+  assert.equal(merge(main, main), main.replace('## Unreleased\n\n', '## Unreleased\n\n'), 'nothing new: main unchanged');
+});

@@ -1,7 +1,8 @@
 import { validArena } from '../../../engine/worlds/arena-layouts.js';
 import { DEFAULT_DIFFICULTY, validDifficulty, difficultyInfo } from '../../../engine/play/difficulty.js';
-import { rng } from '../../../engine/random.js';
+import { rng, seedOf } from '../../../engine/random.js';
 import { canMoveSeats } from '../../../engine/play/seat-rules.js';
+import { createStarter, starterInput, stepStarter, starterDone, starterResult } from '../../../engine/play/quien-empieza-rules.js';
 import { defaultPoolOptions, poolOptions, teamOf, occupiedSeats, canStartPool, poolConnected, nextShooter, passPoolTurn, winPoolRack } from './match-rules.js';
 
 // Casual eight-ball house rules. All physics uses fixed steps in table units.
@@ -39,7 +40,7 @@ export function createGame(practice = false, { bot = false } = {}) {
   if (bot) players[1] = botPlayer();
   return { phase: 'lobby', mapId: 'plaza', difficulty: DEFAULT_DIFFICULTY, practice: practice && !bot, bot, players,
     balls: rack(), groups: [null, null], turn: 0, revision: 0, round: 0, shots: 0, ballInHand: false,
-    options: defaultPoolOptions(), activeSeats: [], teamTurns: [-1, -1], scores: [0, 0], breaker: 0, turnElapsed: 0,
+    options: defaultPoolOptions(), activeSeats: [], teamTurns: [-1, -1], scores: [0, 0], breaker: 0, turnElapsed: 0, starter: null, breakMessage: '',
     shot: null, result: null, message: 'La mesa está lista.' };
 }
 
@@ -71,7 +72,30 @@ function respot(state, id, preferredX = 690) {
   }
 }
 
+// A match's first break: ¿Quién empieza? (engine/play/quien-empieza-rules.js)
+// on the table, the highest die breaks. Later racks follow the break policy.
+function beginBreak(state) {
+  const { order, rolls } = starterResult(state.starter), seat = order[0], how = state.starter.note ? `${state.starter.note}: ` : '';
+  state.turn = seat; state.breaker = teamOf(seat); state.phase = 'aiming'; state.turnElapsed = 0;
+  state.message = state.starter.seats.length < 2 ? state.breakMessage : `${how}¡Rompe ${state.players[seat].name}${rolls[seat] ? ` con ${rolls[seat]}` : ''}! ${state.breakMessage}`;
+}
+// Host only, on its timer: empty seats and Pana Bot shake on their own.
+export function stepPoolStarter(state, dt) {
+  if (state.phase !== 'starter') return false;
+  const bots = state.activeSeats.filter(i => state.players[i].id === null || state.players[i].bot);
+  const changed = stepStarter(state.starter, dt, { bots });
+  if (starterDone(state.starter)) beginBreak(state);
+  if (changed) state.revision++;
+  return changed;
+}
+
 export function acceptAction(state, id, action, hostId) {
+  // Every pana shakes at once, so a cacho never waits for the latest revision.
+  if (action?.action === 'starter') {
+    const seat = state.players.findIndex(p => p.id === id);
+    if (state.phase !== 'starter' || seat < 0 || !starterInput(state.starter, seat, action.cacho, action.power)) return false;
+    state.revision++; return true;
+  }
   if (!action || action.revision !== state.revision) return false;
   if (action.action === 'reset-options') {
     if (id !== hostId || state.phase !== 'lobby') return false;
@@ -111,12 +135,20 @@ export function acceptAction(state, id, action, hostId) {
     if (id !== hostId || !['lobby', 'finished'].includes(state.phase) || !canStartPool(state)) return false;
     const fresh = createGame(state.practice, { bot: state.bot });
     const continuing = state.phase === 'finished' && state.result?.matchFinished === false;
+    // Revancha: a pana of the team that lost the last rack breaks.
+    const last = state.result?.team != null ? state.activeSeats.find(i => teamOf(i) !== state.result.team) ?? null : null;
     const breaker = continuing ? state.options.breakPolicy === 'alternate' ? 1 - state.breaker : state.options.breakPolicy === 'winner' ? state.result.team : 1 - state.result.team : 0;
     Object.assign(state, fresh, { players: state.players, mapId: state.mapId, difficulty: state.difficulty, revision: state.revision + 1, round: state.round + 1,
       options: state.options, balls: rack(state.options.variant), activeSeats: occupiedSeats(state), scores: continuing ? state.scores : [0, 0], breaker,
       phase: 'aiming', message: state.options.variant === 'nine' ? '¡A romper! Toca primero la bola de menor número y busca la nueve.' : state.practice ? 'Practica: mete las 15 bolas. Deja la ocho para el final.' : '¡A romper! La primera bola legal elige tu grupo.' });
     state.turn = nextShooter(state, breaker);
     if (state.options.variant === 'nine') state.message = 'Bola 9: toca primero la bola de menor número. La nueve gana la mesa.';
+    if (continuing) return true;
+    // Seeded by the panas' connection ids, so a replayed snapshot rolls the same dice.
+    state.breakMessage = state.message;
+    state.starter = createStarter({ seats: state.activeSeats, need: 'first', seed: seedOf(`${state.round}:${state.revision}:${state.activeSeats.map(i => state.players[i].id).join()}`), option: state.options.starter, last });
+    if (starterDone(state.starter)) beginBreak(state);
+    else { state.phase = 'starter'; state.message = '¿Quién rompe? Sacude el cacho: el dado más alto rompe.'; }
     return true;
   }
   if (state.phase !== 'aiming' || state.players[state.turn].id !== id || !poolConnected(state)) return false;

@@ -36,7 +36,7 @@ const room = new LanchaRoom({ code, name, avatar, onState: s => { state = s; sna
 state = room.state;
 const roomOptions = createRoomOptions($('room-options'), { title: 'Lancha', fields: FIELDS, change: patch => room.action('options', { options: patch }), reset: () => room.action('options', { options: cleanOptions() }) });
 function clearInput() { keys.clear(); for (const b of touchButtons) b.release(); touch.clear(); }
-const menu = createGameMenu({ title: 'Lancha', sound, orientation: 'libre', note: () => room.members.size > 1 ? 'La carrera sigue mientras abres el menú.' : 'La carrera está en pausa.',
+const menu = createGameMenu({ pad: { move: 'wasd', keys: { rt: ['KeyW', 'Acelerar'], a: ['KeyW', 'Acelerar'], lt: ['KeyS', 'Frenar o retroceder'], b: ['KeyS', 'Frenar o retroceder'], x: ['Space', 'Turbo'], rb: ['Space', 'Turbo'] } }, title: 'Lancha', sound, orientation: 'libre', note: () => room.members.size > 1 ? 'La carrera sigue mientras abres el menú.' : 'La carrera está en pausa.',
   controls: [['W / ↑ sostenido', 'Acelerar'], ['A D / ← →', 'Girar el motor'], ['S / ↓', 'Frenar; sostenido, retroceder'], ['Espacio', 'Turbo (gasta media barra)'], ['M', 'Sonido'], ['Esc', 'Menú']],
   tips: ['Sostén W todo el tiempo: machacarlo hace que la lancha vaya más lenta.', 'Sigue las flechas doradas en el agua: marcan el chorro, el carril rápido del raudal y esquivan los caimanes.', 'En el Orinoco las boyas marcan el canal: coral a la izquierda, verde a la derecha.', 'El chorro, los saltos derechos y la estela de las toninas llenan el turbo.', 'Cae derecho de los raudales o se te ahoga el motor.'],
   invite: () => inviteUrl(code), actions: [{ id: 'local-race', label: 'Abrir carrera local', run: () => goLocal() }],

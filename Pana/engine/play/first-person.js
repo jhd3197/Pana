@@ -7,6 +7,8 @@
 //
 // Esc releases pointer lock before the page sees the key, so `unlocked` is how a
 // game opens its menu. Call `release()` when a menu or results screen opens.
+import { padLook } from '../gamepad.js';
+
 export const SENSITIVITY = { baja: .0014, media: .0024, alta: .0038 };
 export const SENSITIVITY_CHOICES = [['baja', 'Baja'], ['media', 'Media'], ['alta', 'Alta']];
 const KEY = 'pana:look-sensitivity';
@@ -46,6 +48,12 @@ export function createLookControls(canvas, { enabled = () => true, look, press, 
     if (drag?.id === event.pointerId) drag = null;
     release?.(event);
   }
+  // A controller's right stick turns at a steady speed, scaled by the same setting.
+  const stopPad = padLook((x, y, dt) => {
+    if (!enabled()) return;
+    const k = turn() / SENSITIVITY.media * dt;
+    look(-x * Math.abs(x) * 2.8 * k, -y * Math.abs(y) * 1.9 * k);
+  });
   const prevent = event => event.preventDefault();
   document.addEventListener('pointerlockchange', onLockChange);
   canvas.addEventListener('pointermove', onMove);
@@ -59,7 +67,7 @@ export function createLookControls(canvas, { enabled = () => true, look, press, 
     set sensitivity(value) { if (SENSITIVITY[value]) { sensitivity = value; saveSensitivity(value); } },
     release() { drag = null; if (locked()) document.exitPointerLock(); },
     dispose() {
-      this.release();
+      this.release(); stopPad();
       document.removeEventListener('pointerlockchange', onLockChange);
       canvas.removeEventListener('pointermove', onMove); canvas.removeEventListener('pointerdown', onDown);
       canvas.removeEventListener('pointerup', onUp); canvas.removeEventListener('pointercancel', onUp);

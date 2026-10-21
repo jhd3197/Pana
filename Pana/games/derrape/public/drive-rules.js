@@ -4,13 +4,30 @@
 
 import { clamp } from '../../../engine/random.js';
 export const DRIFT_MIN_SPEED = 12;          // m/s needed to start (and keep) a drift
-export const DRIFT_LEVELS = [0.75, 1.6, 2.5]; // charge (s) for blue, orange, purple sparks
-export const DRIFT_BOOST = [0, 0.55, 0.95, 1.45];   // turbo seconds per level on release
+export const DRIFT_LEVELS = [0.75, 2.1, 3.2]; // charge (s) for blue, orange, purple sparks
+export const DRIFT_BOOST = [0, 0.45, 0.8, 1.2];   // turbo seconds per level on release
 export const HOP_SPEED = 2.8;               // short entry hop: steering returns sooner
 export const DRIFT_EXIT_TIME = 0.45;        // settle the car before the release turbo
 
 // Charge level 0..3 for a drift charge in seconds.
 export const driftLevel = (charge) => DRIFT_LEVELS.filter(t => charge >= t).length;
+
+// Purple is a window, not a parking spot: hold it past OVERHEAT_TIME and the
+// tyres burn — the whole charge is lost and the car scrubs speed. The sparks
+// flicker red from OVERHEAT_WARN on, so a good driver lets go in time.
+export const OVERHEAT_WARN = 0.7;           // purple seconds before the warning flicker
+export const OVERHEAT_TIME = 1.4;           // purple seconds before the tyres burn
+export const BURN_SCRUB = 0.8;              // share of speed kept after a burn
+export const overheatWarn = (charge) => charge >= DRIFT_LEVELS[2] + OVERHEAT_WARN;
+export const overheated = (charge) => charge >= DRIFT_LEVELS[2] + OVERHEAT_TIME;
+
+// Hot tyres: every paid release heats them by HEAT_PER_LEVEL per charge
+// level, they cool at HEAT_COOL per second, and while hot the next drift
+// charges slower — chaining a turbo out of every bend stops paying.
+export const HEAT_PER_LEVEL = 0.2;
+export const HEAT_COOL = 0.25;
+export const HEAT_MAX_SLOW = 0.55;          // hottest tyres charge at 45%
+export const heatedCharge = (heat) => 1 - Math.min(HEAT_MAX_SLOW, Math.max(0, heat || 0));
 
 // A small natural turn leaves room to adjust the line. Countersteering can
 // actually straighten the car instead of forcing it deeper into the corner.
@@ -37,13 +54,21 @@ export const driftCharge = (dir, steer) => 0.75 + Math.max(0, steer * dir) * 0.5
 
 // Rocket start. `pressedAt` is the countdown value (3.999 → 1) when the
 // throttle went down and stayed down, or null when it is not held at "¡YA!".
-// Press during the second half of "1" for a turbo; mash it on "3" and stall.
+// Holding the gas early always gets you going at "¡YA!"; the timing only
+// grades it: late in "1" a full turbo, early in "1" a small one, from "2" a
+// plain start, and from "3" a flooded engine that pulls weakly for a moment.
+export const START_WINDOWS = { rocket: 1.6, good: 2, early: 2.85 };
 export function startBoost(pressedAt) {
   if (pressedAt == null) return { boost: 0, stall: 0 };
-  if (pressedAt <= 1.6) return { boost: 1.3, stall: 0 };
-  if (pressedAt > 2.85) return { boost: 0, stall: 0.9 };
+  if (pressedAt <= START_WINDOWS.rocket) return { boost: 1.3, stall: 0 };
+  if (pressedAt <= START_WINDOWS.good) return { boost: 0.6, stall: 0 };
+  if (pressedAt > START_WINDOWS.early) return { boost: 0, stall: 0.6 };
   return { boost: 0, stall: 0 };
 }
+// How a held throttle reads during the countdown, for the HUD.
+export const startCue = (count) => count > START_WINDOWS.early ? 'early' : count > START_WINDOWS.good ? 'ok' : 'good';
+// A flooded engine still pulls, only weakly: the car moves, just slower.
+export const STALL_THROTTLE = 0.35;
 
 // A trick in the air pays out a short turbo on a clean landing.
 export const TRICK_MIN_AIR = 0.35;          // seconds airborne before a trick counts

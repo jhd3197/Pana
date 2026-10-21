@@ -12,7 +12,7 @@
 </p>
 
 <p align="center">
-  <img src="docs/screenshots/hub.jpg" alt="Pana's hub: a featured game, eight game tiles with live 3D art, and your own capybara pana" width="860">
+  <img src="docs/screenshots/hub.jpg" alt="Pana's hub: Derrape featured with its illustrated art, category tabs and a row of all 20 games" width="860">
 </p>
 
 Pana is a hub of 3D party games that run in the browser. You make your pana (a
@@ -25,12 +25,13 @@ same room.
 
 | Game | What it is | Players |
 |---|---|---|
-| **Derrape** | Toy-car racing on twelve circuits and three four-race Grand Prix cups, with items, coins and swappable wheels | 1–8 online; local split screen |
+| **Derrape** | Toy-car racing on twenty-two circuits, including Chuao’s downhill quebrada, Galipán at night, the Maracaibo bridge and Sarisariñama’s sinkhole caves, and three four-race Grand Prix cups, with items, coins and swappable wheels | 1–8 online; local split screen |
 | **Bululú** | Island or harbor party board, with a minigame every round | 1–6, bots fill seats |
 | **Escondidas** | Prop hunt in a market plaza: hide as a barrel, crate or bench | 1–8, bots fill in |
 | **Pana Cocina** | Cooperative cooking shifts with configurable orders and kitchen rules | 1–8, bot helpers |
 | **Galope** | Horse racing around a Llanos ranch, through esteros and over logs | 1–8, bots fill in |
-| **Reliquia** | Cooperative expedition into a mine and the temple beneath it | 1–8 |
+| **Reliquia** | First-person co-op treasure extraction: carry cursed loot to the truck, then decide whether to go one floor deeper | 1–8 |
+| **Trifulca** | Cartoon barrio boxing: winner stays, everyone else is the ring, bets dolitas and shoves fighters back in | 1–8 |
 | **¡Embuste!** | Social deduction at the night camp: who is the mummy? | 4–8 online, bots for practice |
 | **Curiara** | Dugout-canoe races with solo paddlers or two-person crews | 1–8, bots fill in |
 | **Lancha** | Outboard-motor boat races down the Sipapo and the Orinoco: hold the gas, jump the raudales, dodge caimanes | 1–8, bots fill in |

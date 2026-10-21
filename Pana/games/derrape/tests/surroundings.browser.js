@@ -71,7 +71,10 @@ try {
       },{u,side});
       await page.screenshot({path:`${out}/${id}-${name}.png`});result[name]=stats;
       // Plaza's start view was 3.49 M before the festive roadside (+45 k).
-      if(!baseline){assert.ok(stats.calls<900,id+' bounded draw submissions');assert.ok(stats.triangles<3600000,id+' bounded driving-view geometry');}
+      // Selva doubled in length on purpose (jaguar cave, plateau): its middle and outward
+      // views measure 3.86-3.90 M, so it gets its own cap with similar headroom.
+      const triangleCap=id==='selva'?4000000:3600000;
+      if(!baseline){assert.ok(stats.calls<900,id+' bounded draw submissions');assert.ok(stats.triangles<triangleCap,id+' bounded driving-view geometry');}
     }
     results.push(result);console.log(JSON.stringify(result));
     await page.evaluate(()=>{

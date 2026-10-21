@@ -39,6 +39,12 @@ export class PokerConnection {
     if (this.local) { if(this.game.setMap(mapId))this.publish(); }
     else this.link.send('map', { mapId, revision: this.state.revision });
   }
+  // The local pana's cacho: 'shake' or 'slam' with the throw's power.
+  cacho(input, power) {
+    if (!this.connected) return;
+    if (this.local) { if (this.game.cacho(1, input, power)) this.publish(); }
+    else this.link.send('starter', { cacho: input, power });
+  }
   act(action, amount) {
     if (!this.connected) return;
     if (this.local) { if (this.game.act(1, action, amount)) this.publish(); }
@@ -54,6 +60,7 @@ export class PokerConnection {
   publish() { this.state = this.game.view(1); this.elapsed = 0; this.onState(this.state); }
   tick(dt, paused) {
     if (!this.local || paused) return; this.elapsed += dt;
+    if (this.game.phase === 'starter') { if (this.game.stepStarter(dt)) this.publish(); return; }
     const player = this.game.players.find(p => p.id === this.game.turn);
     if (player?.bot && this.elapsed > 1.1) { this.game.botAction(); this.publish(); }
     else if (player && !player.bot && this.elapsed >= this.game.options.turnSeconds) { this.game.act(player.id, this.game.legal(player.id)?.call ? 'fold' : 'call'); this.publish(); }

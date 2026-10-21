@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#e8443a">
+  <meta name="description" content="Boxeo de barrio entre panas: ganador se queda, los demás son el ring, apuestan dolitas y te empujan pa' dentro.">
+  <title>Trifulca · Pana</title>
+  <link rel="stylesheet" href="/engine/kit.css">
+  <link rel="stylesheet" href="/engine/ui.css">
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="/engine/game-lobby.css">
+  <link rel="stylesheet" href="/engine/room-options.css">
+  <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}</script>
+</head>
+<body class="in-lobby">
+  <canvas id="world" aria-label="La trifulca del barrio en tres dimensiones"></canvas>
+  <header class="topbar"><a class="pk-logo" href="/" aria-label="Volver a Pana">PANA</a><nav id="game-nav" aria-label="Opciones"><button id="voice" class="pk-btn pk-btn--ghost pk-btn--sm" aria-pressed="true" aria-label="Voz del narrador">Voz: sí</button></nav></header>
+  <section id="lobby" class="pk-lobby" aria-labelledby="lobby-title">
+    <span class="pk-ribbon">GANADOR SE QUEDA</span>
+    <h1 id="lobby-title" class="pk-title">Trifulca</h1>
+    <p class="pk-copy" data-room-description>Boxeo de barrio entre panas: ganador se queda, los demás son el ring, apuestan dolitas y te empujan pa' dentro.</p>
+    <ol id="roster" class="pk-roster" aria-label="Panas en la calle" data-room-description></ol>
+    <button id="rules" class="pk-btn pk-btn--ghost" data-room-help>Tutorial: cómo se pelea</button>
+    <div id="room-options"></div>
+    <div class="pk-lobby-foot"><button id="start" class="pk-btn pk-btn--primary pk-btn--lg" disabled>Conectando…</button></div>
+  </section>
+  <main id="hud" hidden>
+    <section id="bars" aria-label="Los peleadores" hidden>
+      <div id="bars-left" class="side side--left"></div>
+      <div class="clock"><b id="clock" class="pk-num"></b><span id="fight-no"></span></div>
+      <div id="bars-right" class="side side--right"></div>
+    </section>
+    <div id="call" class="call" role="status" aria-live="polite"></div>
+    <div id="count" class="count pk-display" hidden></div>
+    <div id="replay" class="replay pk-display" hidden>REPETICIÓN</div>
+    <section id="intro-card" class="intro" hidden aria-label="Presentación">
+      <div id="intro-left" class="intro-team intro-team--left"></div>
+      <div class="intro-vs pk-display">VS<small id="intro-streak"></small></div>
+      <div id="intro-right" class="intro-team intro-team--right"></div>
+    </section>
+    <section id="bets" class="bets pk-panel" hidden aria-label="Apuestas" data-pad-menu>
+      <span id="bet-note"></span>
+      <div id="bet-row" class="bets-row"></div>
+    </section>
+    <section id="verdict" class="verdict pk-panel" hidden aria-label="Resultado de la pelea">
+      <span id="verdict-how" class="pk-ribbon"></span><h2 id="verdict-title" class="pk-heading"></h2>
+      <p id="verdict-cards"></p><p id="verdict-pay"></p><p id="verdict-mano"></p>
+    </section>
+    <div class="me pk-panel"><b id="me-dolitas"></b><span id="me-queue"></span></div>
+    <ul id="feed" class="feed" aria-label="Lo que pasa en el ring"></ul>
+    <p id="role" class="role"></p>
+    <div id="prompt" class="prompt pk-display" hidden></div>
+    <div id="keys" class="keys" aria-hidden="true" hidden>
+      <span data-key="golpe"><kbd class="pk-kbd">J</kbd>Golpe<small>mantén: trompón</small></span>
+      <span data-key="cubrir"><kbd class="pk-kbd">K</kbd>Cubrirse</span>
+      <span data-key="esquivar"><kbd class="pk-kbd">Espacio</kbd>Esquivar</span>
+      <span data-key="agarrar"><kbd class="pk-kbd">L</kbd>Agarrar</span>
+      <span data-key="mover"><kbd class="pk-kbd">A</kbd><kbd class="pk-kbd">D</kbd>Moverte</span>
+    </div>
+    <section id="tutorial" class="tutorial pk-panel" hidden aria-live="polite">
+      <span id="tutorial-step" class="pk-ribbon"></span>
+      <h2 id="tutorial-title" class="pk-heading"></h2>
+      <p id="tutorial-text"></p>
+      <div id="tutorial-keys" class="tutorial-keys"></div>
+      <ol id="tutorial-dots" class="tutorial-dots" aria-hidden="true"></ol>
+      <div class="tutorial-foot"><button id="tutorial-go" class="pk-btn pk-btn--primary" hidden>¡A pelear!</button><button id="tutorial-skip" class="pk-btn pk-btn--ghost pk-btn--sm">Saltar tutorial</button></div>
+    </section>
+    <div id="touch" class="pk-touch-zone">
+      <div class="pk-dpad"><button id="touch-up" class="pk-touch" data-icon="up" aria-label="Arriba"></button><button id="touch-left" class="pk-touch" data-icon="left" aria-label="Izquierda"></button><button id="touch-down" class="pk-touch" data-icon="down" aria-label="Abajo"></button><button id="touch-right" class="pk-touch" data-icon="right" aria-label="Derecha"></button></div>
+      <div class="touch-buttons">
+        <button id="touch-golpe" class="pk-touch pk-touch--coral pk-touch--lg">Golpe</button>
+        <button id="touch-cubrir" class="pk-touch">Cubrir</button>
+        <button id="touch-esquivar" class="pk-touch">Esquivar</button>
+        <button id="touch-agarrar" class="pk-touch">Agarrar</button>
+        <button id="touch-dale" class="pk-touch pk-touch--sm">¡Dale!</button>
+      </div>
+    </div>
+  </main>
+  <div class="connection"><span id="connection" role="status">Conectando…</span><button id="practice" class="pk-btn pk-btn--sm" hidden>Jugar en local</button></div>
+  <section id="results" class="pk-results" hidden aria-labelledby="result-title"><div class="pk-modal pk-results-card"><span class="pk-ribbon">SE ACABÓ LA NOCHE</span><h2 id="result-title" class="pk-title"></h2><ol id="result-roster" class="pk-roster"></ol><ul id="titles" class="titles" aria-label="Títulos de la noche"></ul><button id="again" class="pk-btn pk-btn--primary pk-btn--block">Otra noche</button><a class="pk-back" href="/">Todos los juegos</a></div></section>
+  <div id="loading" class="pk-loading"><div class="pk-panel"><h2 class="pk-heading">Preparando la trifulca</h2><p>Sacando los guantes y llamando a los vecinos…</p></div></div>
+  <script type="module" src="/engine/game-entry.js" data-pana-entry="./game.js"></script>
+</body>
+</html>

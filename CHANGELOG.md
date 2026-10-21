@@ -8,6 +8,138 @@ becomes the GitHub release's notes.
 
 ## Unreleased
 
+- **Contributors get one-command scaffolds and safer checks.** `npm run
+  new-track` registers a Derrape circuit everywhere with a placeholder that
+  already races, `npm run launcher-art` adds a game's hub art, `npm run
+  budget` shows each game against its size caps, and a two-second pre-commit
+  hook catches the conventions that most often turned `dev` red. Browser runs
+  tell known failures from regressions (`--baseline`), and releases merge
+  back into `dev` on their own.
+- **Derrape: barriles y cajas para reventar, nombres sobre los carros y El
+  Chocón.** Por las orillas hay barriles y cajas del mercado; atraviésalos y
+  salen volando, aunque te frenan un poco. El que más choque en la carrera se
+  lleva el título de El Chocón en los resultados. Al acercarte a otro carro
+  ves su nombre encima, y el fantasma también se vuelve lancha en el río. El
+  derrape ahora suena: chirrido que sube con la carga, campanita en cada
+  nivel, avisos antes de quemar los cauchos y el motor fuera de borda en el
+  agua.
+- **Los primeros circuitos de Derrape estrenan carreteras.** El asfalto ya no
+  es morado y liso: tiene grietas, parches y rayas de borde, con doble raya
+  amarilla en la montaña de Chi Chi y el Páramo y postes reflectivos en las
+  curvas. Los caminos de tierra de Desierto, Selva y Llanos tienen huellas,
+  piedritas y matas en el medio, y la arena de Bululú y Salinas lleva marcas de
+  cauchos. El suelo cambia de tono, con orillas gastadas junto a la vía, y
+  los cerros lejanos tienen más bosque.
+- **Derrape: el turbo del derrape cuesta más y se castiga el abuso.** El
+  naranja y el púrpura tardan más en cargar y pagan menos; si te quedas en
+  púrpura demasiado tiempo las chispas parpadean en rojo y luego se queman
+  los cauchos: pierdes la carga y frenas. Cada turbo calienta los cauchos y
+  el siguiente derrape carga más lento. Las chispas y el humo ahora brillan
+  como de verdad, sin los bloques de antes, y lo mismo el fuego del turbo,
+  las chispas de los choques y el brillo de las monedas.
+- **Derrape suma Isla Margarita, Sarisariñama y Gran Sabana.** Sal del castillo
+  de Pampatar hasta Playa El Agua y los manglares de La Restinga; baja en
+  espiral por la sima del tepuy, cruza las cuevas por debajo y sube a la luz;
+  y corre por la sabana entre moriches y tepuyes, por la Quebrada de Jaspe y el
+  Salto Kama, mientras el aguacero de la tarde llega desde el este. El aguacero
+  es paisaje: no cambia el agarre.
+- **Derrape: en Choroní y en la quebrada de Chuao tu carro se vuelve
+  lancha de verdad, con tu pana al timón.** En Chuao el cambio llega justo
+  bajo el salto de agua. Al tocar el agua el carro salta,
+  desaparece en una corona de gotas y cae convertido en peñero, levantando
+  su cola de agua; al salir del agua vuelve a ser carro. Derrapar sobre el agua carga el turbo más
+  rápido. Los estilos de derrape ahora sí suman puntos en las curvas, y el
+  fantasma guarda bien tu vuelta final.
+- **Derrape estrena tres circuitos: Colonia Tovar, Galipán de noche y
+  Maracaibo · El puente.** Sube entre pinos, hortensias y neblina hasta el
+  pueblo alemán; cruza de noche el pueblito iluminado de Galipán con Caracas
+  brillando abajo; y pasa el puente sobre el lago, los palafitos y La Chinita
+  bajo los relámpagos del Catatumbo. Los árboles son los del catálogo de Pana
+  y los tres circuitos funcionan en carreras rápidas, salas en línea y Studio.
+- **Derrape: tu mejor vuelta corre contra ti.** Al terminar una carrera se
+  guarda tu vuelta más rápida en cada pista, y la próxima vez un fantasma
+  translúcido de tu propio carro la repite contigo — no choca ni cuenta en las
+  posiciones. El HUD muestra «Fantasma» con el tiempo a batir; con `?noghost`
+  se apaga.
+- **¿Quién empieza? Every table game now opens with the cachos.** All panas
+  shake a leather cacho at once, slam it and lift together; the highest die
+  starts, ties shake again, and a strip shows the order. Ludo, Bululú, Caída,
+  Póquer and Billar use it, Dominó offers it next to its own rule and Bolas
+  criollas flips a coin. Hosts can pick Al azar, El anfitrión or Revancha (the
+  last place starts) in Más ajustes.
+- **Derrape se ve como se siente derrapar: el caucho queda marcado en la
+  pista, el humo crece con la carga del derrape y soltar en púrpura frena el
+  mundo un instante.** Las marcas de los cauchos se desvanecen solas en unos
+  segundos; el humo sigue los colores de las chispas (polvo, azul, naranja,
+  púrpura); la cámara lenta es solo local y nunca toca el reloj de las carreras
+  en línea.
+- **Derrape suma puntos de Estilo por derrapar: velocidad, carga y lo cruzado
+  que vayas dan más, y encadenar derrapes sin pasar tres segundos en recta
+  sube el combo (×2, ×3…).** Un medidor sobre el velocímetro muestra el combo
+  en vivo y celebra cuando los puntos se guardan; chocar nunca quita puntos,
+  solo corta la cadena. Al final de la carrera cada carro muestra su línea de
+  Estilo y el que más sumó se lleva el ¡Rey del Derrape! — el podio no cambia:
+  el estilo es sabor, no ventaja.
+- **Tests can be narrowed and explain themselves: `npm test -- derrape` runs
+  only the matching unit tests in seconds, and `.\dev.ps1 check -Help` prints
+  the cheat sheet for picking the fastest check.** The full unit run still
+  works as `npm test`; browser suites stay filtered or `--changed`, never the
+  whole set locally.
+- **Derrape y Pepazo celebran tus jugadas con avisos de hitos.** En Derrape el
+  derrape suma metros por carrera (¡500 metros!, ¡1 kilómetro!), un derrape de
+  más de 100 m sin soltar es un ¡Derrapón! y soltar un derrape púrpura tiene su
+  celebración. En Pepazo pintar a un rival lo anuncia por nombre, y dos o tres
+  pintadas en menos de cinco segundos cantan ¡Doble pintada! y ¡Triple pintada!.
+- **New game: Trifulca, barrio boxing where the winner stays and everyone
+  else is the ring.** Two panas fight with jab, trompón, block, dodge and
+  grab; hits fill your mareo instead of a health bar, three caídas is a
+  K.O. and the judges read the card at the bell. Panas waiting their turn
+  shove fighters back in, bet dolitas, give water in the corner and can
+  shout ¡cálmate!. Seven arenas: la calle, el toldo, el mercado, the
+  plaza de las motos at night, a manga de coleo with a loose bull, a zebra
+  crossing under the lake bridge and a colonial street, with a TV narrator, intro cards and a
+  slow-motion replay. Also Trifulca libre (four at once, with chairs and
+  chancletas to throw), Parejas (tag your partner) and a Torneo whose final
+  is fought under the tent. A first-time tutorial teaches every move with
+  the profe, and alone you climb a ladder of five rivals instead of watching
+  bots fight; a side camera, a lit key bar and ¡ESQUIVA! prompts make it
+  easy to read.
+- **Derrape keeps detailed roadside trees while distant forest costs less to render.**
+  Three vegetation zones preserve planting density: native trees near the route,
+  simplified trees farther out and lightweight crowns on distant hills. Isolated
+  trees and palms retain their visible trunks.
+- **Race through Cata, Choroní and Chuao, including the downhill quebrada.**
+  Three coastal circuits join quick races, online rooms and Studio with native
+  Pana trees, dense mountain forest and previews of the actual maps. Existing
+  circuits gain continuous road wear and sloping verges; natural landscapes
+  gain simplified background trees without filling towns, caves or salt pans.
+- **Reliquia is now a first-person treasure run: ¿nos vamos ya, o bajamos
+  un piso más?** Grab a farol at the camp and ride the montacargas down
+  La mina del sol. It is one cage for everyone: it takes time, carries
+  whoever stands on it, and has to be called back when someone else has
+  it, so the team rides together or takes turns. Carry gold back to the
+  truck in your hands (a handful of coins or emeralds, a mask, an idol)
+  or load it into a carrito and push it there, its balance floating
+  above it. The big treasures (the sun disk, the emerald chest, the gold
+  jaguar, the cacao altar) need two to four panas walking together.
+  Throw loot to a friend (hold E to catch it), drag a fallen pana to the
+  truck, and shout votes with 1–7. Every run deals new floors from a
+  shuffled room deck: trap halls, crypts, a rope bridge over a pit, a
+  hidden room only the echo mask can hear, the sun guardian and a golden
+  jaguar in the vault. La codicia rises with every treasure you lift:
+  traps quicken, tunnels cave in behind you and a black jaguar starts
+  hunting the team. Mummies, guácharos, ceiling spiders and coiled
+  cuaimas guard the ruins, and eight enchanted artifacts help and ruin
+  you in equal measure. Only what reaches the truck counts; if everyone
+  falls, most of it stays in the ruin. Each jornada asks a quota: fill the
+  carrito, send it up the cargo lift, then ride the montacargas up to
+  finish it (whoever stays below comes back with 1 HP). Loot turns into
+  mangos at the camp's shop (a paintball marker among the gear), and the
+  next jornada is deeper. Point the crosshair at what you want to use.
+  Below, everything echoes: footsteps, drips, creaks, distant moans,
+  groaning mummies, hissing cuaimas and your own heartbeat when la
+  codicia runs high.
+
 ## 0.4.0 - 2026-10-19
 
 Maintenance release: no changes you will notice.

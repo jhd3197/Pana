@@ -12,6 +12,7 @@ import { QQSMP } from './catalog/qqsmp.js';
 import { TAMBOR } from './catalog/tambor.js';
 import { STOP } from './catalog/stop.js';
 import { CHAPITA } from './catalog/chapita.js';
+import { TRIFULCA } from './catalog/trifulca.js';
 
 const adapted = (assets, source) => assets.map(asset => ({...asset, dependencies: [...(asset.dependencies || []), source]}));
 export const ASSETS = [
@@ -27,6 +28,7 @@ export const ASSETS = [
   ...adapted(TAMBOR, '/studio/catalog/tambor.js'),
   ...adapted(STOP, '/studio/catalog/stop.js'),
   ...adapted(CHAPITA, '/studio/catalog/chapita.js'),
+  ...adapted(TRIFULCA, '/studio/catalog/trifulca.js'),
 ];
 export const CATEGORIES = ['Todos', 'Personajes', 'Vestuario', 'Objetos', 'Fauna', 'Emblemas', 'Pueblo', 'Selva', 'Llanos', 'Vida llanera', 'Páramo', 'Desierto', 'Termales', 'Costa', 'Ruinas', 'Mina', 'Cementerio', 'Campamento', 'Atmósfera', 'Vegetación', 'Vehículos', 'Mapas'];
 export function sourcePath(url) {

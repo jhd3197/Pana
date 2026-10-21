@@ -26,15 +26,16 @@ function stonePainter(stone, moss, random) {
 }
 
 // A seated jaguar carved in stone on a stepped plinth, about 1.7 m tall in all.
-// Jade inlay eyes, no glow. Static: no tick.
-export function jaguarStatue({ seed = 11, stone = 0x948b74, moss = true, scale = .8, plinth = true } = {}) {
-  const random = rng(seed), colour = stonePainter(stone, moss, random);
-  const rock = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 1, flatShading: true });
+// Jade inlay eyes, no glow. Static: no tick. `gold` casts it in polished gold
+// instead (Reliquia's treasure statue): no moss, a metal sheen.
+export function jaguarStatue({ seed = 11, stone = 0x948b74, moss = true, scale = .8, plinth = true, gold = false } = {}) {
+  const random = rng(seed), colour = stonePainter(gold ? 0xffc23d : stone, moss && !gold, random);
+  const rock = new THREE.MeshStandardMaterial(gold ? { vertexColors: true, roughness: .3, metalness: .55, emissive: 0x4a2c00, emissiveIntensity: .4 } : { vertexColors: true, roughness: 1, flatShading: true });
   const jade = new THREE.MeshStandardMaterial({ color: 0x3f9b78, roughness: .35 });
   const skin = { coat: rock, limbs: rock, head: rock, dark: rock, eye: jade, colour };
   const cat = jaguarForm(skin, seed);
   sitPose(cat, 0); cat.head.rotation.y = 0; cat.head.rotation.x = .3;
-  const group = new THREE.Group(); group.name = 'Jaguar de piedra';
+  const group = new THREE.Group(); group.name = gold ? 'Jaguar de oro' : 'Jaguar de piedra';
   const geometries = [...cat.geometries], base = plinth ? .62 : 0;
   cat.group.scale.setScalar(scale); cat.group.position.y = base; group.add(cat.group);
   if (plinth) {

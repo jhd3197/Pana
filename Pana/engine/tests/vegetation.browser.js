@@ -2,9 +2,12 @@
 import assert from 'node:assert/strict';
 import { createRequire } from 'node:module';
 import { mkdir, writeFile } from 'node:fs/promises';
+import { MODEL_DEFINITIONS } from '../models/catalog.js';
 const {chromium}=createRequire(import.meta.url)(process.env.PANA_PLAYWRIGHT_PATH||'playwright');
 const browser=await chromium.launch({headless:true,...(process.env.PANA_BROWSER_PATH?{executablePath:process.env.PANA_BROWSER_PATH}:{})});
 const base=process.env.PANA_TEST_URL||'http://localhost:8461',output='art/studio/vegetation';
+// Expected plants come from the shared catalog, so a new species needs no edit here.
+const expected=MODEL_DEFINITIONS.filter(m=>m.category==='Vegetación').map(m=>m.id);
 await mkdir(output,{recursive:true});
 try {
   const page=await browser.newPage({viewport:{width:1500,height:1030},deviceScaleFactor:1}),errors=[];
@@ -40,7 +43,14 @@ try {
     });
     document.querySelector('#labels').innerHTML=details.slice(start,start+6).map((m,i)=>`<div class="label" style="left:${i%3*500}px;top:${Math.floor(i/3)*480+505}px">${m.name}<span>${m.triangles.toLocaleString('es')} tri · ${m.meshes} mallas</span></div>`).join('');
     };
-    renderSheet(0);window.vegetationProof={models,stage,inspect,fitCamera,THREE,renderSheet};return {vegetation:vegetation.map(a=>a.id),details};
+    // Every registered plant must build, not just the twelve proofs above.
+    const built=[];
+    for(const asset of vegetation){
+      const model=await asset.build().catch(e=>{throw Error(`${asset.id} failed to build: ${e.message}`);});let meshes=0;
+      model.group.traverse(o=>{if(o.geometry){meshes++;o.geometry.dispose();}});
+      if(!meshes)throw Error(`${asset.id}: built an empty group`);built.push(asset.id);
+    }
+    renderSheet(0);window.vegetationProof={models,stage,inspect,fitCamera,THREE,renderSheet};return {vegetation:vegetation.map(a=>a.id),built,details};
   });
   await page.screenshot({path:`${output}/new-plants.png`});
   await page.evaluate(()=>vegetationProof.renderSheet(6));
@@ -56,12 +66,13 @@ try {
     await page.evaluate(i=>{const {models,stage,inspect,fitCamera}=vegetationProof;fitCamera(stage.camera,inspect(models[i]).bounds,false,'side');stage.renderer.render(stage.scene,stage.camera);},i);
     await page.screenshot({path:`${output}/${metrics.details[i].id}-side.png`});
   }
-  assert.equal(metrics.vegetation.length,50);assert.equal(new Set(metrics.vegetation).size,50);
+  assert.deepEqual([...metrics.vegetation].sort(),[...expected].sort(),'Studio vegetation matches the shared catalog');
+  assert.deepEqual(metrics.built,metrics.vegetation,'every catalog plant builds');assert.equal(new Set(metrics.vegetation).size,expected.length);
   for (const id of ['garden-rosette', 'trailing-vine', 'trinitaria', 'apamate', 'bucare', 'saman', 'yagrumo', 'cacao', 'zancona', 'manaca', 'tree-fern']) assert.ok(metrics.vegetation.includes(id));
   for(const m of metrics.details) {
     assert.ok(m.triangles<12000,`${m.id} triangle budget`);assert.ok(m.meshes<=6,`${m.id} draw-call budget`);
     assert.ok(m.minY>=-0.08,`${m.id} grounded origin`);assert.ok(m.dimensions.every(d=>d>0.1&&d<12));
   }
   assert.deepEqual(errors,[]);await writeFile(`${output}/metrics.json`,JSON.stringify(metrics,null,2));console.log(JSON.stringify(metrics,null,2));
-  console.log('PASS: fifty catalog plants; deterministic/varied seeds, geometry ownership, ground origins, batching and twelve render proofs');
+  console.log(`PASS: ${expected.length} catalog plants build; deterministic/varied seeds, geometry ownership, ground origins, batching and twelve render proofs`);
 }finally{await browser.close();}

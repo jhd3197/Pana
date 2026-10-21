@@ -12,7 +12,17 @@
 //                reads the same committed timings, so the slices never overlap
 //   --retries N  rerun a failed suite up to N times (default 1), at half the
 //                concurrency; a pass on retry is reported as flaky
-//   --record     write this run's suite times to Pana/tests/browser-timings.json
+//   --record     write this run's suite times to Pana/tests/browser-timings.json (suites
+//                with no time yet are always written, from any passing run)
+//   --fresh      run every selected suite, even one whose fingerprint already passed
+//   --baseline[=ref]  rerun each remaining failure on the merge-base with `dev` (or <ref>)
+//                in a scratch worktree, and label it "pre-existing" or "regression"
+// A failure listed in Pana/tests/known-failures.json ({ suite, match, since, note }) whose
+// log contains its `match` text is reported as KNOWN and does not fail the run; any other
+// failure of that suite still does.
+// A suite whose fingerprint (a hash of every file it can touch, suite-fingerprint.js)
+// already passed is skipped as cached; passes are kept in Pana/tests/.browser-passes.json
+// (PANA_PASS_CACHE to move it, PANA_TEST_CACHE=0 or --fresh to ignore it).
 // Suites already create unique rooms, so they can share the server. Slowest
 // first (by the timings file), so a long suite never starts last.
 // Env: PANA_TEST_URL (reuse that server instead of starting a fresh one),
@@ -25,6 +35,7 @@ import net from 'node:net';
 import os from 'node:os';
 import path from 'node:path';
 import { suitesFor, withinBudget } from './changed-suites.js';
+import { createFingerprinter } from './suite-fingerprint.js';
 
 const app = path.resolve(import.meta.dirname, '..');
 const repo = path.resolve(app, '..');
@@ -129,7 +140,30 @@ async function healthy(url) {
   try { return (await fetch(`${url}/api/health`)).ok; } catch { return false; }
 }
 
-if (!suites.length) { console.log('No browser suites match.'); process.exit(0); }
+// Skip what already passed with exactly these files.
+const passesFile = process.env.PANA_PASS_CACHE || path.join(app, 'tests', '.browser-passes.json');
+const useCache = !flags.fresh && !flags.record && process.env.PANA_TEST_CACHE !== '0';
+let passes = {};
+try { passes = JSON.parse(fs.readFileSync(passesFile, 'utf8')); } catch { /* no cache yet */ }
+const fingerprint = createFingerprinter(repo), prints = new Map();
+for (const suite of suites) prints.set(suite.label, fingerprint(suite.file, suite.args));
+const cached = useCache ? suites.filter(suite => passes[suite.label]?.some(p => p.fp === prints.get(suite.label))) : [];
+for (const suite of cached) {
+  const last = passes[suite.label].find(p => p.fp === prints.get(suite.label));
+  console.log(`cached  ${suite.label}  (passed ${last.at.slice(0, 16).replace('T', ' ')} with the same files)`);
+}
+suites = suites.filter(suite => !cached.includes(suite));
+const commit = spawnSync('git', ['rev-parse', '--short', 'HEAD'], { cwd: repo, encoding: 'utf8' }).stdout.trim();
+function savePasses() {
+  const at = new Date().toISOString();
+  for (const [label, r] of results) if (r.ok) {
+    const fp = prints.get(label);
+    passes[label] = [{ fp, at, commit }, ...(passes[label] || []).filter(p => p.fp !== fp)].slice(0, 8);
+  }
+  try { fs.writeFileSync(passesFile, `${JSON.stringify(passes, null, 1)}\n`); } catch (error) { console.log(`Could not save ${passesFile}: ${error.message}`); }
+}
+
+if (!suites.length) { console.log(cached.length ? `All ${cached.length} suites already passed with these files.` : 'No browser suites match.'); process.exit(0); }
 
 let base = process.env.PANA_TEST_URL, server = null;
 const serverLog = path.join(os.tmpdir(), `pana-test-server-${process.pid}.log`);
@@ -203,6 +237,17 @@ await Promise.all(Array.from({ length: Math.min(Math.max(1, Math.floor(jobs / 2)
   }
 }));
 cleanup();
+savePasses();
+
+// A suite with no recorded time is scheduled on a 60 s guess (slowest-first,
+// shards, the --changed budget); any run that sees one pass fills the gap.
+const learned = [...results].filter(([label, r]) => r.ok && !(label in timings));
+if (!flags.record && learned.length) {
+  for (const [label, r] of learned) timings[label] = Math.round(r.seconds);
+  fs.writeFileSync(timingsFile, `${JSON.stringify(Object.fromEntries(Object.entries(timings).sort()), null, 2)}
+`);
+  console.log(`Learned the time of ${learned.length} new suite(s) in ${path.relative(repo, timingsFile)}`);
+}
 
 if (flags.record) {
   // A failing suite still holds a slot that long, so its time counts too.
@@ -211,9 +256,55 @@ if (flags.record) {
   console.log(`Recorded suite times in ${path.relative(repo, timingsFile)}`);
 }
 
+// Known failures: the suite failed the documented way (its log has the match text).
+const knownFile = path.join(app, 'tests', 'known-failures.json');
+const knownList = fs.existsSync(knownFile) ? JSON.parse(fs.readFileSync(knownFile, 'utf8')) : [];
+const known = [];
+for (const [label, r] of results) {
+  const entry = !r.ok && knownList.find(k => k.suite === label && r.log.includes(k.match));
+  if (entry) { known.push(`${label} (${entry.note})`); r.ok = true; r.known = true; }
+}
+
 const failed = [...results.values()].filter(r => !r.ok);
-console.log(`\n${results.size - failed.length}/${results.size} browser suites passed in ${((Date.now() - started) / 60000).toFixed(1)} min`);
+
+// --baseline: does each remaining failure also fail on the base commit?
+const verdicts = new Map();
+if (flags.baseline && failed.length) {
+  const ref = flags.baseline === true ? 'dev' : flags.baseline;
+  const sha = spawnSync('git', ['merge-base', 'HEAD', ref], { cwd: repo, encoding: 'utf8' }).stdout.trim();
+  if (!sha) console.log(`--baseline: no merge-base with ${ref}; skipped`);
+  else {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'pana-baseline-'));
+    const tree = path.join(dir, 'tree'), modules = path.join(tree, 'node_modules');
+    console.log(`
+Baseline: rerunning ${failed.length} failure(s) on ${sha.slice(0, 7)} (merge-base with ${ref})`);
+    spawnSync('git', ['worktree', 'add', '--detach', tree, sha], { cwd: repo, stdio: 'ignore' });
+    try {
+      fs.symlinkSync(path.join(repo, 'node_modules'), modules, 'junction');   // a junction: never copied, never recursed
+      for (const r of failed) {
+        const out = spawnSync(process.execPath, [path.join(tree, 'Pana', 'scripts', 'test-browser.js'), r.label, '--fresh', '--retries', '0', '--jobs', '1'],
+          { cwd: tree, encoding: 'utf8', env: { ...process.env, PANA_TEST_URL: '', PANA_PASS_CACHE: path.join(dir, 'passes.json') } });
+        const verdict = !fs.existsSync(path.join(tree, r.label)) ? 'new suite' : out.status ? 'pre-existing' : 'REGRESSION';
+        verdicts.set(r.label, verdict);
+        console.log(`  ${verdict.padEnd(12)}  ${r.label}`);
+      }
+    } finally {
+      // Unlink the junction first: removing the worktree must never reach the real node_modules.
+      try { fs.unlinkSync(modules); } catch { try { fs.rmdirSync(modules); } catch { /* not created */ } }
+      if (fs.existsSync(modules)) console.log(`--baseline: could not unlink ${modules}; left ${tree} in place, remove the junction by hand first`);
+      else {
+        spawnSync('git', ['worktree', 'remove', '--force', tree], { cwd: repo, stdio: 'ignore' });
+        spawnSync('git', ['worktree', 'prune'], { cwd: repo, stdio: 'ignore' });
+        fs.rmSync(dir, { recursive: true, force: true });
+      }
+    }
+  }
+}
+
+console.log(`
+${results.size - failed.length}/${results.size} browser suites passed in ${((Date.now() - started) / 60000).toFixed(1)} min${cached.length ? `; ${cached.length} more cached` : ''}`);
+if (known.length) console.log(`Known failures (Pana/tests/known-failures.json): ${known.join(', ')}`);
 if (flaky.length) console.log(`Flaky (passed on retry): ${flaky.join(', ')}`);
-if (failed.length) console.log(`Failed: ${failed.map(r => r.label).join(', ')}`);
+if (failed.length) console.log(`Failed: ${failed.map(r => r.label + (verdicts.has(r.label) ? ` [${verdicts.get(r.label)}]` : '')).join(', ')}`);
 if (failed.length && server) console.log(`Server log: ${serverLog}`);
 process.exit(failed.length ? 1 : 0);

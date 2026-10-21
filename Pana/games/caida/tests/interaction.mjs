@@ -11,7 +11,7 @@ try {
   page.on('pageerror', e => errors.push(e.message));
   await page.goto(`${base}/g/caida/?room=interaction-${Date.now()}&debug`);
   await page.waitForFunction(() => window.caidaDebug?.world && caidaDebug.room.connected, null, { timeout: 90000 });
-  await page.locator('#pana-room-more').click(); await page.locator('[data-room-option="cantos"][data-value="false"]').click(); await page.locator('#pana-room-done').click(); await page.locator('#start').click();
+  await page.locator('#pana-room-more').click(); await page.locator('[data-room-option="cantos"][data-value="false"]').click(); await page.locator('[data-room-option="starter"][data-value="anfitrion"]').click(); await page.locator('#pana-room-done').click(); await page.locator('#start').click();
   await page.locator('#call-one').click(); await page.locator('#deal-cards').click();
   await page.waitForFunction(() => caidaDebug.room.state.turn === caidaDebug.room.seat);
   assert.equal(await page.locator('.table-rank').count(), await page.evaluate(() => caidaDebug.room.state.table.length));

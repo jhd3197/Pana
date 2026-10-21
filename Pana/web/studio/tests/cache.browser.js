@@ -94,7 +94,8 @@ try {
   const fallback = await browser.newPage();
   await fallback.addInitScript(() => { Object.defineProperty(window, 'indexedDB', { value: { open() { throw new Error('storage disabled'); } } }); Object.defineProperty(window, 'localStorage', { get() { throw new Error('storage disabled'); } }); });
   await fallback.goto(base + '/studio/library?q=barrel'); await fallback.locator('#startup').waitFor({ state: 'hidden' });
-  await fallback.locator('.asset-pin').click(); await fallback.locator('#prepare-results').click();
+  // ?q=barrel also matches the other barrels in the catalog; pin the plain one only.
+  await fallback.locator('.asset-card:has([data-asset="barrel"]) .asset-pin').click(); await fallback.locator('#prepare-results').click();
   await fallback.waitForFunction(() => panaLibrary.thumbnails.state.ready === 1);
   assert.equal(await fallback.evaluate(() => panaLibrary.thumbnails.state.persistent), false);
   assert.match(await fallback.locator('#workspace-status').textContent(), /sesión/);

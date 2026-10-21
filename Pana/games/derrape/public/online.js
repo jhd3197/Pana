@@ -70,6 +70,11 @@ class RaceLink {
       this.lastCtxKey = ctxKey;
       this.poseMemo.clear();
     }
+    // Pongs read while a map loads arrive late and skew the server-clock
+    // estimate by hundreds of ms. Every client has loaded once the countdown
+    // starts: measure again then, so start times and item stamps agree.
+    if (s.phase === 'count' && this.lastPhase !== 'count') this.link.sync();
+    this.lastPhase = s.phase;
   }
 
   get state() {
@@ -109,6 +114,7 @@ class RaceLink {
   mode(mode) { this.send('mode', { mode }); }
   difficulty(id) { this.send('difficulty', { id }); }
   start() { this.send('start'); }
+  garage(open) { this.send('garage', { open }); }
   next() { this.send('next', this.context()); }
   lobby() { this.send('lobby'); }
   loaded() { this.send('loaded', this.context()); }

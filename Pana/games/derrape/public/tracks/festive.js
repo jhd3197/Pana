@@ -149,6 +149,11 @@ export function festive(group, T, theme = {}) {
   }
   if (ticks.length) root.userData.tick = (t, dt) => ticks.forEach(f => f(t, dt));
   root.userData.counts = counts;
+  // Painted boards (the ice-cream cart's signs) are new canvases every build;
+  // track disposal frees only geometry, so free these textures with the map.
+  root.userData.dispose = () => root.traverse(o => {
+    for (const m of [].concat(o.material || [])) if (m?.map?.isCanvasTexture) m.map.dispose();
+  });
   group.add(root);
   return root;
 }

@@ -82,12 +82,15 @@ export class RoomLink {
     room.onReconnect?.(() => { this.saveToken(); this.emit('status', '', false); this.sync(); });
     room.onLeave((code) => {
       this.left = true;
-      clearInterval(this.syncTimer);
+      clearInterval(this.syncTimer); clearTimeout(this.resync);
       try { sessionStorage.removeItem(this.key); } catch { /* storage off */ }
       for (const w of this.waiters) w();
       this.emit('left', code);
     });
+    // A page often joins while it is still loading, and pongs read then arrive
+    // late: measure again a few seconds in, before anything is timed on it.
     this.sync();
+    this.resync = setTimeout(() => this.sync(), 3000);
     this.syncTimer = setInterval(() => this.sync(), 15000);
     this.refresh();
   }
@@ -152,7 +155,7 @@ export class RoomLink {
 
   send(type, data) { if (!this.left) this.room.send(type, data); }
   leave() {
-    clearInterval(this.syncTimer);
+    clearInterval(this.syncTimer); clearTimeout(this.resync);
     try { sessionStorage.removeItem(this.key); } catch { /* storage off */ }
     return this.left ? Promise.resolve() : this.room.leave(true);
   }

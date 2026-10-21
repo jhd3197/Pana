@@ -1,9 +1,11 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { Poker, evaluate, compare, settle, shuffle, tablePlayers } from '../public/rules.js';
+import { starterResult } from '../../../engine/play/quien-empieza-rules.js';
 const c = (rank, suit = 0) => suit * 13 + rank - 2;
 const cards = (ranks, suits) => ranks.map((r, i) => c(r, suits?.[i] ?? i % 4));
-function table(n = 2) { const g = new Poker(); for (let i = 1; i <= n; i++) g.add(i, { name: `Pana ${i}`, avatar: {}, bot: false }); g.start(); return g; }
+// 'anfitrion' skips the cachos: seat order, so the first seat deals.
+function table(n = 2) { const g = new Poker(); g.configure({ starter: 'anfitrion' }); for (let i = 1; i <= n; i++) g.add(i, { name: `Pana ${i}`, avatar: {}, bot: false }); g.start(); return g; }
 test('all nine hand categories and best five of seven', () => {
   const hands = [
     cards([14, 11, 9, 7, 3]), cards([14, 14, 9, 7, 3]), cards([14, 14, 9, 9, 3]), cards([14, 14, 14, 7, 3]),
@@ -75,7 +77,7 @@ test('200 randomized legal hands always finish and conserve chips', () => {
 test('dealer advances past a departing dealer, and a short blind cannot force an uncontested bet', () => {
   const g = table(4); while (g.phase !== 'finished') g.act(g.turn, 'fold');
   g.dealer = 1; g.drop(2); g.start(); assert.equal(g.players[g.dealer].id, 3);
-  const h = new Poker(); h.add(1, { name: 'A' }); h.add(2, { name: 'B' }); h.players[1].chips = 5;
+  const h = new Poker(); h.configure({ starter: 'anfitrion' }); h.add(1, { name: 'A' }); h.add(2, { name: 'B' }); h.players[1].chips = 5;
   h.start(); assert.equal(h.phase, 'finished'); assert.equal(h.board.length, 5); assert.equal(h.players.reduce((n, p) => n + p.chips, 0), 1005);
 });
 test('late arrivals wait off-table and disconnected seats cannot overflow the six chairs', () => {
@@ -83,4 +85,31 @@ test('late arrivals wait off-table and disconnected seats cannot overflow the si
   g.add(7, { name: 'Waiting' }); assert.equal(tablePlayers(g).length, 6); assert.ok(tablePlayers(g).some(p => p.id === 2)); assert.ok(!tablePlayers(g).some(p => p.id === 7));
   g.drop(4); assert.equal(tablePlayers(g).length, 5);
   g.phase = 'finished'; assert.equal(tablePlayers(g).length, 5); assert.ok(tablePlayers(g).some(p => p.id === 7));
+});
+
+test('a match opens with the cachos: the highest takes the dealer button, later hands deal at once', () => {
+  const g = new Poker(); g.add(1, { name: 'Ana', avatar: {} }); g.add(2, { name: 'Beto', avatar: {}, bot: true }); g.add(3, { name: 'Cheo', avatar: {} });
+  assert.ok(g.start(() => .42)); assert.equal(g.phase, 'starter'); assert.equal(g.turn, null);
+  assert.deepEqual(tablePlayers(g).map(p => p.id), [1, 2, 3], 'everyone sits at the table while the cachos roll');
+  assert.equal(g.view(1).starter.phase, 'shake'); assert.equal(g.act(1, 'call'), false);
+  const revision = g.revision;
+  assert.ok(g.cacho(1, 'shake')); assert.ok(g.cacho(1, 'slam', .7)); assert.equal(g.cacho(1, 'slam', .7), false, 'one slam a round');
+  assert.equal(g.cacho(9, 'slam', .7), false, 'not at the table'); assert.ok(g.revision > revision);
+  g.drop(3); // a pana who leaves mid-roll is slammed for them
+  for (let i = 0; i < 400 && g.phase === 'starter'; i++) g.stepStarter(.1);
+  assert.equal(g.phase, 'preflop'); assert.equal(g.view(1).starter, null);
+  const { order } = starterResult(g.starter), first = [1, 2, 3][order[0]];
+  if (first !== 3) assert.equal(g.players[g.dealer].id, first, 'the cacho winner deals');
+  assert.match(g.message, /reparte con un [1-6]/);
+  while (g.phase !== 'finished') g.act(g.turn, 'fold');
+  assert.ok(g.start()); assert.equal(g.phase, 'preflop', 'the next hand deals straight away');
+});
+test('room options: al azar deals at once; revancha gives the button to whoever busted first', () => {
+  const g = new Poker(); g.configure({ starter: 'azar' }); g.add(1, { name: 'A' }); g.add(2, { name: 'B' });
+  g.start(); assert.equal(g.phase, 'preflop'); assert.match(g.message, /^Orden al azar: /);
+  g.act(g.turn, 'raise', 1000); g.act(g.turn, 'call');
+  assert.equal(g.phase, 'finished'); const loser = g.players.find(p => p.chips === 0)?.id;
+  if (loser === undefined) return; // a split pot busts nobody
+  g.setup(); assert.equal(g.lastPlace, loser);
+  g.options.starter = 'revancha'; g.start(); assert.equal(g.phase, 'preflop'); assert.equal(g.players[g.dealer].id, loser);
 });

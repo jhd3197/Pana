@@ -27,7 +27,7 @@ const room = new ChapitaRoom({ code, name: loadName(), avatar: loadAvatar(), onS
 });
 const roomOptions = createRoomOptions($('room-options'), { title: 'Chapita', fields: ROOM_OPTIONS,
   change: options => room.action('options', { options }), reset: () => room.action('options', { options: defaultOptions() }) });
-const menu = createGameMenu({ title: 'Chapita · Pana', sound, orientation: 'libre',
+const menu = createGameMenu({ pad: { buttons: true, keys: { x: ['Space', 'Lanzar, batear o atrapar'], rt: ['Space', 'Lanzar, batear o atrapar'], lb: ['KeyQ', 'Curva a la izquierda'], rb: ['KeyE', 'Curva a la derecha'], y: ['KeyC', 'Chapita plana o doblada'] } }, title: 'Chapita · Pana', sound, orientation: 'libre',
   note: () => room.members.size > 1 ? 'La caimanera sigue mientras estás en el menú.' : 'La caimanera está en pausa. Los bots te esperan.',
   controls: [['1 · 2 · 3', 'Planea, cae de golpe o curva (pitcher)'], ['Flechas', 'Apuntar: alto, medio, bajo; izquierda o derecha'], ['Q · E', 'Hacia dónde rompe la curva'], ['C', 'Chapita plana o doblada'],
     ['W · S', 'Altura del palo (bateador)'], ['Espacio', 'Lanzar, batear o atrapar'], ['Z', 'Batear de zurdo'], ['M', 'Activar o silenciar el sonido']],

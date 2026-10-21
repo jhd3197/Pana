@@ -8,7 +8,8 @@ import os from 'node:os';
 const require = createRequire(import.meta.url), { chromium } = require(process.argv[2] || 'playwright');
 const base = process.env.PANA_QA_URL || 'http://localhost:8461', output = process.env.PANA_QA_OUTPUT;
 if (output) await mkdir(output, { recursive: true });
-const browser = await chromium.launch({ headless: true, ...(process.argv[3] ? { executablePath: process.argv[3] } : {}) });
+// Hidden pages keep their timers (the host simulates in one), like every suite.
+const browser = await chromium.launch({ headless: true, args: ['--disable-background-timer-throttling', '--disable-renderer-backgrounding', '--disable-backgrounding-occluded-windows'], ...(process.argv[3] ? { executablePath: process.argv[3] } : {}) });
 const errors = [], room = `cocina-qa-${Date.now().toString(36)}`;
 const check = text => console.log(`ok  ${text}`);
 async function page(name, mobile = false, code = room) {
@@ -18,6 +19,9 @@ async function page(name, mobile = false, code = room) {
   const ctx = await browser.newContext(mobile ? { viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true } : { viewport: desktop });
   await ctx.addInitScript(() => localStorage.setItem('pana:settings', JSON.stringify({ quality: 'baja' })));
   const p = await ctx.newPage(); p.on('pageerror', e => errors.push(`${name}: ${e.message}`));
+  // Three software-WebGL clients share the CPU (two suites per CI runner): state
+  // still has to arrive, only later than Playwright's 30 s default.
+  p.setDefaultTimeout(60000);
   const timeout = Number(process.env.PANA_QA_TIMEOUT) || 120000;
   await p.goto(`${base}/g/cocina/?name=${name}&room=${code}&debug`, { waitUntil: 'domcontentloaded', timeout });
   await p.waitForFunction(() => window.cocina?.room.connected && window.PANA_LOBBY_LOADING === false, null, { timeout }); return p;
@@ -62,12 +66,16 @@ try {
   await a.locator('#sound').click(); assert.equal(await a.locator('#sound').getAttribute('aria-pressed'), 'true');
   await a.locator('#menu').click(); const before = await a.evaluate(() => cocina.state.remaining);
   await a.waitForFunction(t => cocina.state.remaining < t - 0.2, before); await a.locator('#pana-resume').click(); check('multiplayer menu does not pause the other player');
-  const c = await page('Luisa', true); await c.waitForFunction(() => cocina.state.phase === 'playing' && cocina.state.players.length === 3);
+  const c = await page('Luisa', true); await c.waitForFunction(() => cocina.state.phase === 'playing' && cocina.state.players.length === 3, null, { timeout: 60000 });
   assert.equal(await c.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
   const cId = await c.evaluate(() => cocina.room.id); await a.evaluate(id => cocina.place(id, -6, 6), cId);
   // Wait for the host's placement snapshot before measuring movement.
   await c.waitForFunction(() => { const p = cocina.state.players.find(p => p.id === cocina.room.id); return Math.abs(p.x + 6) < 0.1 && Math.abs(p.z - 6) < 0.1; });
   await c.bringToFront();
+  // The two desktops only watch while the phone moves: they stop drawing so the
+  // host keeps ticking faster than LiveRoom's input timeout under software WebGL.
+  const watchers = value => Promise.all([a, b].map(p => p.evaluate(v => cocina.quiet(v), value)));
+  await watchers(true);
   const btn = await c.locator('[data-move="right"]').boundingBox(); const x0 = await c.evaluate(() => cocina.state.players.find(p => p.id === cocina.room.id).x);
   // Use an actual held touch on the emulated phone, not a compatibility mouse.
   const touch = await c.context().newCDPSession(c);
@@ -79,6 +87,7 @@ try {
   await c.waitForFunction(x => cocina.state.players.find(p => p.id === cocina.room.id).x > x + 0.5, x0);
   await touch.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] }); await touch.detach();
   await position(a, cId, 'supply-cachapa'); await c.locator('#action').click(); await held(c, 'raw');
+  await watchers(false);
   if (output) await c.screenshot({ path: path.join(output, 'cocina-mobile.png') }); check('late join, mobile movement and touch interaction work at 390px');
   const remaining = await b.evaluate(() => cocina.state.remaining); await a.close();
   await b.waitForFunction(() => cocina.room.isHost); assert.equal(await b.evaluate(() => cocina.state.score), 80);

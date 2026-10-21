@@ -3,10 +3,11 @@
 // how a car moves through it.
 import * as THREE from 'three';
 import { sound } from '/engine/fx.js';
-import { pick } from '/engine/random.js';
+import { shout } from '/engine/kit.js';
 import { roughnessAt, roadGripAt, roadWaterAt } from './offroad.js';
 import { coinMultiplier } from './item-rules.js';
-import { DRIFT_MIN_SPEED, DRIFT_BOOST, HOP_SPEED, DRIFT_EXIT_TIME, driftLevel, driftSteer, assistDrift, driftCharge, trickBoost } from './drive-rules.js';
+import { DRIFT_MIN_SPEED, DRIFT_BOOST, DRIFT_LEVELS, HOP_SPEED, DRIFT_EXIT_TIME, driftLevel, driftSteer, assistDrift, driftCharge, trickBoost, STALL_THROTTLE,
+  overheated, BURN_SCRUB, HEAT_PER_LEVEL, HEAT_COOL, heatedCharge } from './drive-rules.js';
 import { wrapAngle } from './rules.js';
 import { advanceLap, isOpenEdge, offCourse, stuckStep, OPEN_MARGIN } from './course-rules.js';
 import { isGhost, recordImpact } from './recovery-rules.js';
@@ -42,11 +43,14 @@ export function createDriver({ race, track, say, popPart, progressOf, flameFor, 
     const acceleration=t.accel*(1-rough*(1-(terrain?.accel??1)))*(1-water*.28*waterDrag);
     const previous={x:c.x,z:c.z};
     if (c.spin > 0) input = { throttle: 0, steer: 0 };   // skidding on a peel: no control
-    if (c.stall > 0) { c.stall -= dt; input = { ...input, throttle: 0 }; }   // flooded engine after a jumped start
+    if (c.stall > 0) { c.stall -= dt; input = { ...input, throttle: Math.min(input.throttle, STALL_THROTTLE) }; }   // flooded engine after a jumped start
     // A short entry hop; keep holding and turn whenever ready after landing.
     // In the air after a ramp the same button is still a trick.
     const held = !!input.drift;
     c.driftExitT = Math.max(0, (c.driftExitT || 0) - dt);
+    c.burnT = Math.max(0, (c.burnT || 0) - dt);
+    if (!c.drift) c.tireHeat = Math.max(0, (c.tireHeat || 0) - HEAT_COOL * dt);
+    if (!held) c.burnLock = false;   // after a burn the button must come up before the next drift
     c.driftAssist = 0;
     if (held && !c.driftHeld && c.spin <= 0) {
       if (c.onGround && c.vf > 4) {
@@ -57,7 +61,7 @@ export function createDriver({ race, track, say, popPart, progressOf, flameFor, 
       }
     }
     c.driftHeld = held;
-    if (!c.drift && held && c.onGround && Math.abs(input.steer) > 0.2 && c.vf > DRIFT_MIN_SPEED && c.spin <= 0 && c.stall <= 0) {
+    if (!c.drift && held && !c.burnLock && c.onGround && Math.abs(input.steer) > 0.2 && c.vf > DRIFT_MIN_SPEED && c.spin <= 0 && c.stall <= 0) {
       c.drift = Math.sign(input.steer); c.driftT = 0;
       c.driftExitT = 0;
       c.driftLane = Math.max(-T.HW * 0.3, Math.min(T.HW * 0.3, offsetOf(c.x, c.z, c.y)));
@@ -68,7 +72,9 @@ export function createDriver({ race, track, say, popPart, progressOf, flameFor, 
       const level = driftLevel(c.driftT);
       if (!held && level && c.spin <= 0) {
         c.boost = Math.max(c.boost, DRIFT_BOOST[level] * t.driftBoost);
+        c.tireHeat = (c.tireHeat || 0) + HEAT_PER_LEVEL * level;   // hot tyres charge the next drift slower
         if (c.isPlayer) sound.turbo();
+        if (c.isPlayer && level === DRIFT_LEVELS.length) race.purpleRelease?.(c);   // max charge: slow-mo punch
       }
       if (!held && c.spin <= 0) c.driftExitT = DRIFT_EXIT_TIME;
       c.drift = 0; c.driftT = 0;
@@ -127,8 +133,14 @@ export function createDriver({ race, track, say, popPart, progressOf, flameFor, 
       const turn = c.steer * turnScale;
       if (c.drift) {
         // Charge real cornering, not a held button on an assisted straight.
-        if (cornering || turn * c.drift > 0.18) c.driftT += dt * driftCharge(c.drift, input.steer) * t.driftCharge;
+        if (cornering || turn * c.drift > 0.18) c.driftT += dt * driftCharge(c.drift, input.steer) * t.driftCharge * heatedCharge(c.tireHeat);
         c.driftLvl = driftLevel(c.driftT);
+        if (overheated(c.driftT)) {
+          // Held purple too long: the tyres burn, the charge is gone and the car scrubs speed.
+          vf *= BURN_SCRUB; vr *= BURN_SCRUB;
+          c.drift = 0; c.driftT = 0; c.driftLvl = 0; c.burnT = 0.9; c.burnLock = true;
+          if (c.isPlayer) { sound.skid(1); shout('¡Se quemaron los cauchos!'); }
+        }
       }
       c.h += turn * dt;
       c.latAcc = turn * vf;
@@ -241,6 +253,7 @@ export function createDriver({ race, track, say, popPart, progressOf, flameFor, 
         if (vn > 9 && !isGhost(c)) {
           c.drift = 0; c.driftT = 0;   // a hard wall hit throws the drift away
           sound.bonk(vn / 10);
+          race.glow.impact(c, vn, Math.sign((-nx * Math.cos(c.h) + nz * Math.sin(c.h)) * side));   // sparks on the side that hit
           say(c, LINES.wall, 0.8);
           c.vy = Math.max(c.vy, 4);
           c.onGround = false;
@@ -278,6 +291,7 @@ export function createDriver({ race, track, say, popPart, progressOf, flameFor, 
     c.scream = Math.max(0, c.scream - dt);
     c.honkT = Math.max(0, c.honkT - dt);
 
+    if (boosting) race.glow.boost(c, flameFor(c), dt);   // glowing exhaust (race-fx.js), every step
     // Tire spray, dust and damage smoke share the bounded particle pool.
     c.puffT -= dt;
     if (c.puffT <= 0) {
@@ -290,9 +304,6 @@ export function createDriver({ race, track, say, popPart, progressOf, flameFor, 
         });
       } else if (kicking) {
         race.puffs.spawn(new THREE.Vector3(c.x - fx * 1.6, c.y+0.25, c.z - fz * 1.6), { color: rough>0.1?0x889263:0xe7bd8a, count: 1, size: 0.7, rise: 0.6, life: 0.7 });
-      }
-      if (boosting) {
-        race.puffs.spawn(new THREE.Vector3(c.x - fx * 2.2, c.y + 0.5, c.z - fz * 2.2), { color: pick(flameFor(c)), count: 2, size: 0.6, rise: 0.4, life: 0.35, spread: 0.4 });
       }
       if (c.lost >= 2) {
         race.puffs.spawn(new THREE.Vector3(c.x + fx * 1.4, c.y + 1.6, c.z + fz * 1.4), { color: 0x4a4a52, count: 1, size: 0.6, rise: 2, life: 1 });

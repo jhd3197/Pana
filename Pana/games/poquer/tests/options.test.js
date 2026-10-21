@@ -5,8 +5,9 @@ import { OPTION_FIELDS, DEFAULT_OPTIONS } from '../public/options.js';
 import { rng } from '../../../engine/random.js';
 
 const card = (rank, suit = 0) => suit * 13 + rank - 2;
+// 'anfitrion' skips the cachos, so start() deals the first hand at once.
 function table(options = {}, count = 2) {
-  const game = new Poker(); game.configure(options);
+  const game = new Poker(); game.configure({ starter: 'anfitrion', ...options });
   for (let i = 1; i <= count; i++) game.add(i, { name: `Pana ${i}`, avatar: {}, bot: false });
   return game;
 }

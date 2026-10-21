@@ -54,7 +54,7 @@ against every tree canopy or certify future changes to terrain/placement.
 
 `model-inventory.md` and `.json` include the generated registry and a reviewed
 ledger of models outside Studio, embedded assemblies and dormant factories.
-Regenerate with `Pana/scripts/audit-inventory.browser.js`; edit the explicit
+Regenerate with `npm run inventory`; edit the explicit
 ledger in `Pana/scripts/inventory-notes.js` when adding/removing inline scenery.
 Counts represent catalog entries or grouped families, not unique meshes.
 
@@ -72,7 +72,7 @@ preserve +Z tangent heading and absolute-time ticks, and reuse `capybaraForm`.
 Fauna now has ten entries (nine animals plus a fish school). The current source
 inventory, uncataloged/legacy ledger and priorities live in
 `docs/knowledge/model-inventory.md`; regenerate it with
-`scripts/audit-inventory.browser.js` after updating `scripts/inventory-notes.js`.
+`npm run inventory` after updating `scripts/inventory-notes.js`.
 `engine/models/fauna/aquatic/` supplies Pana-authored fish and schools to both islands.
 Keep their whole swimming envelope below waves and above the seabed, and pass
 path clearance to `placeReefSchools` in `engine/placement/reef-schools.js`. Do not bake animated fish. The Studio

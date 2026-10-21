@@ -55,36 +55,57 @@ try {
   assert.equal(await guest.evaluate(() => onlineState().me), 1);
   await host.locator('#start').click();
   console.log('Host started');
-  await wait(host, () => onlineState().pendingChoice?.seat === onlineState().room.id);
-  const first = await host.evaluate(() => onlineState().pendingChoice.id);
-  await guest.evaluate(id => onlineState().room.choose(id, 0), first);
-  await host.waitForTimeout(300);
-  assert.equal(await host.evaluate(() => onlineState().pendingChoice.id), first, 'guest cannot roll host dice');
-  assert.match(await host.locator('#prompt').textContent(), /Tira para empezar/);
-  await clickPrompt(host, 'Tira');
-  console.log('Host threw for the roll-off');
-  // The guest throws for the roll-off with a real hold: their power reaches the host.
-  await wait(guest, () => !!window.thrower);
+  // ¿Quién empieza?: both shake at once. The guest holds Space; its shake and
+  // slam reach the host, which picks every number.
+  await wait(guest, () => starter.stage.active && !document.querySelector('#pana-starter-shake').hidden);
   await guest.evaluate(() => document.activeElement?.blur());
   await guest.keyboard.down(' ');
-  await wait(guest, () => thrower?.shaking && thrower.power > .6);
+  await wait(host, () => starter.state?.shaking.includes(1));
+  await wait(guest, () => starter.stage.thrower.power > .6);
   await guest.keyboard.up(' ');
-  await wait(host, () => dice[0].spec?.power > .6);
-  await wait(guest, () => dice[0].spec?.power > .6);
-  console.log('Guest threw hard and both screens fly the same die');
-  // Answer every prompt with its owner's real button until the guest has moved.
-  for (let i = 0; i < 300 && !(await host.evaluate(() => players[1].tile > 0)); i++) {
-    for (const page of [host, guest]) {
-      const buttons = page.locator('#prompt:not(.hidden) button');
+  await wait(host, () => starter.state?.slammed[1] > .6);
+  await host.locator('#pana-starter-shake').dispatchEvent('pointerdown', { pointerId: 3, button: 0 });
+  await host.locator('#pana-starter-shake').dispatchEvent('pointerup', { pointerId: 3, button: 0 });
+  await wait(host, () => starter.state?.slammed[0] >= 0 || !starter.state);
+  await wait(host, () => !starter.state);
+  const order = await host.evaluate(() => onlineState().order);
+  assert.deepEqual([...order].sort(), [0, 1, 2, 3, 4, 5]);
+  await wait(guest, () => !starter.stage.active);
+  assert.deepEqual(await guest.evaluate(() => onlineState().order), order);
+  console.log(`Both screens agree on the order from the cachos: ${order.join(' ')}`);
+  // Board turns: the guest cannot answer the host's dice; the guest's own
+  // held throw reaches the host and both screens fly the same die.
+  const ids = { host: await host.evaluate(() => onlineState().room.id), guest: await guest.evaluate(() => onlineState().room.id) };
+  let hostChecked = false, guestThrew = false;
+  for (let i = 0; i < 600 && !(hostChecked && guestThrew && await host.evaluate(() => players[1].tile > 0)); i++) {
+    const prompt = await host.evaluate(() => onlineState().pendingChoice && { id: onlineState().pendingChoice.id, seat: onlineState().pendingChoice.seat, toss: onlineState().pendingChoice.options.some(o => o.toss) });
+    if (prompt?.seat === ids.host && prompt.toss && !hostChecked) {
+      await guest.evaluate(id => onlineState().room.choose(id, 0), prompt.id);
+      await host.waitForTimeout(300);
+      assert.equal(await host.evaluate(() => onlineState().pendingChoice?.id), prompt.id, 'guest cannot roll host dice');
+      assert.match(await host.locator('#prompt').textContent(), /Mantén para agitar/);
+      await clickPrompt(host, 'Tira'); hostChecked = true;
+      console.log('Host threw on its board turn');
+    } else if (prompt?.seat === ids.guest && prompt.toss && !guestThrew) {
+      await wait(guest, () => !!window.thrower);
+      await guest.evaluate(() => document.activeElement?.blur());
+      await guest.keyboard.down(' ');
+      await wait(guest, () => thrower?.shaking && thrower.power > .6);
+      await guest.keyboard.up(' ');
+      await wait(host, () => dice[0].spec?.power > .6);
+      await wait(guest, () => dice[0].spec?.power > .6);
+      guestThrew = true;
+      console.log('Guest threw hard and both screens fly the same die');
+    } else if (prompt?.seat === ids.host || prompt?.seat === ids.guest) {
+      // Only the owner of the host's current prompt answers it.
+      const buttons = (prompt.seat === ids.host ? host : guest).locator('#prompt:not(.hidden) button');
       if (await buttons.count()) await buttons.first().click({ timeout: 2000 }).catch(() => {});
     }
     await host.waitForTimeout(100);
   }
+  assert.ok(hostChecked && guestThrew);
   await wait(host, () => players[1].tile > 0);
-  const order = await host.evaluate(() => onlineState().order);
-  assert.deepEqual([...order].sort(), [0, 1, 2, 3, 4, 5]);
-  assert.deepEqual(await guest.evaluate(() => onlineState().order), order);
-  console.log('PASS two-player lobby, roll-off order and remote dice; wrong-seat choices rejected');
+  console.log('PASS two-player lobby, cacho order and remote dice; wrong-seat choices rejected');
 
   // Finish the round using the actual prompts; no direct state edits.
   for (let i = 0; i < 250; i++) {

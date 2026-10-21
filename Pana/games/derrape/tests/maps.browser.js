@@ -15,7 +15,7 @@ try {
   await page.goto(`${origin}/g/derrape/?debug&auto&track=estadio`);
   await page.waitForFunction(() => window.getActiveTrack && garage.car);
   const ids = await page.evaluate(() => TRACKS.map(t => t.id));
-  assert.deepEqual(ids, ['estadio', 'desierto', 'llanos', 'chichi', 'selva', 'paramo', 'plaza', 'bululu', 'salto', 'delta', 'cuevas', 'salinas', 'puerto']);
+  assert.deepEqual(ids, ['estadio', 'desierto', 'llanos', 'chichi', 'selva', 'paramo', 'plaza', 'bululu', 'salto', 'delta', 'cuevas', 'salinas', 'puerto', 'cata', 'choroni', 'chuao', 'tovar', 'galipan', 'maracaibo', 'margarita', 'sarisarinama', 'sabana']);
   const accessoryError = await page.evaluate(async () => {
     const THREE = await import('three');
     const { detachable } = await import('/engine/models/vehicles/car-kit.js');
@@ -31,7 +31,12 @@ try {
   assert.ok(accessoryError < 1e-6, 'pre-positioned car accessories stay in place');
   const requested = process.env.PANA_MAP_TEST_TRACKS?.split(',');
   if (requested) requested.forEach(id => assert.ok(ids.includes(id), `known requested track: ${id}`));
-  for (const id of requested || [...ids, 'plaza', 'bululu', 'estadio']) {
+  // Every map in one suite outgrew the runner's 10-minute slot: this file
+  // races the first half, maps-2.browser.js (PANA_MAP_TEST_PART=2) the rest
+  // plus the return trips that rebuild maps after others were loaded.
+  const all = [...ids, 'plaza', 'bululu', 'estadio'], half = Math.ceil(all.length / 2);
+  const part = process.env.PANA_MAP_TEST_PART === '2' ? all.slice(half) : all.slice(0, half);
+  for (const id of requested || part) {
     const result = await page.evaluate(async id => {
       const THREE = await import('three');
       toGarage(); buildTrack(id); setup.laps=3; await startRace(0);
@@ -155,7 +160,7 @@ try {
     return map.x >= panel.x && map.right <= panel.right && map.y >= panel.y && map.bottom <= panel.bottom;
   });
   assert.equal(minimap, true, 'minimap stays inside its map panel');
-  console.log(requested ? `Requested maps passed: ${requested.join(', ')}` : 'All thirteen maps and repeated switches passed.');
+  console.log(requested ? `Requested maps passed: ${requested.join(', ')}` : 'All registered maps and repeated switches passed.');
 } finally {
   await browser.close();
 }

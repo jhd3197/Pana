@@ -10,7 +10,7 @@ name: Release
 #   4. that commit is tagged v<version> and a GitHub release is published whose notes are the
 #      version's changelog section.
 # Each step is safe to rerun: an already-tagged commit is skipped, and stamping is idempotent.
-# After a release, merge main back into dev so the stamped changelog comes along.
+#   5. main is merged back into dev (changelog.js sync-main), so the stamped changelog comes along.
 
 on:
   push:
@@ -76,3 +76,18 @@ jobs:
         run: |
           node Pana/scripts/changelog.js notes "$VERSION" > "$RUNNER_TEMP/notes.md"
           gh release create "v$VERSION" --title "Pana v$VERSION" --notes-file "$RUNNER_TEMP/notes.md" --verify-tag
+
+      # Every release conflicts with dev on CHANGELOG.md (stamped here, still growing
+      # there). sync-main merges main into dev and resolves the changelog mechanically;
+      # any other conflict is left for a human with a warning.
+      - name: Merge main back into dev
+        if: steps.version.outputs.version
+        run: |
+          git fetch origin dev
+          git checkout -B dev origin/dev
+          if node Pana/scripts/changelog.js sync-main; then
+            git push origin dev
+          else
+            git merge --abort 2>/dev/null || true
+            echo "::warning::main could not be merged into dev automatically; run 'node Pana/scripts/changelog.js sync-main' on dev"
+          fi

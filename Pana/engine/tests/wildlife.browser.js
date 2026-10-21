@@ -2,6 +2,9 @@
 import assert from 'node:assert/strict';
 import {createRequire} from 'node:module';
 import {mkdir,writeFile} from 'node:fs/promises';
+import {MODEL_DEFINITIONS} from '../models/catalog.js';
+// The pack comes from the shared catalog: a new wildlife model needs no edit here.
+const expected=MODEL_DEFINITIONS.filter(m=>m.pack==='wildlife').map(m=>m.id);
 const {chromium}=createRequire(import.meta.url)(process.env.PANA_PLAYWRIGHT_PATH||'playwright');
 const browser=await chromium.launch({headless:true}),output='art/studio/wildlife';
 await mkdir(output,{recursive:true});
@@ -10,10 +13,15 @@ try{
   page.on('pageerror',e=>errors.push(e.message));
   await page.goto(`${process.env.PANA_TEST_URL||'http://localhost:8461'}/studio/settings.html`);
   await page.setContent('<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}</script><style>body{margin:0;background:#eef0ee;font:18px system-ui;color:#334642}canvas{display:block}.label{position:absolute;top:600px;width:350px;text-align:center}</style><canvas></canvas><div id="labels"></div>');
-  const metrics=await page.evaluate(async()=>{
-    const THREE=await import('three'),preview=await import('/studio/preview.js'),{ASSETS}=await import('/studio/catalog.js');
-    const assets=ASSETS.filter(a=>a.pack==='wildlife'),models=[],metrics=[];
+  const {metrics,pack,built}=await page.evaluate(async()=>{
     const check=(ok,msg)=>{if(!ok)throw Error(msg);};
+    const THREE=await import('three'),preview=await import('/studio/preview.js'),{ASSETS}=await import('/studio/catalog.js');
+    // The four map animals the tracks place; the rest of the wildlife pack (river, coast, iguanas)
+    // gets the same factory checks below, its timeline checked only when it animates. No origin or mesh
+    // cap there: a tonina swims, a perched iguana's tail hangs, and 20 meshes is the flocks' budget.
+    const MAP_WILDLIFE=['scarlet-macaw','scarlet-ibis','soaring-vulture','wild-capybara'];
+    const pack=ASSETS.filter(a=>a.pack==='wildlife'),assets=MAP_WILDLIFE.map(id=>pack.find(a=>a.id===id)),models=[],metrics=[];
+    check(assets.every(Boolean),'Map wildlife missing from the wildlife pack');
     const hash=root=>{
       root.updateMatrixWorld(true);let h=2166136261;
       root.traverse(o=>{
@@ -31,6 +39,18 @@ try{
       model.update(0,0);check(hash(model.group)===zero,'Failed rewind');
       const info=preview.inspect(model);check(info.stats.triangles<40000&&info.stats.meshes<20,'Budget exceeded');
       check(info.bounds.min.y>=-.025,'Below origin');models.push(model);metrics.push({id:asset.id,...info.stats});
+    }
+    const built=[...MAP_WILDLIFE];
+    for(const asset of pack.filter(a=>!MAP_WILDLIFE.includes(a.id))){
+      const fail=e=>{throw Error(`${asset.id} failed to build: ${e.message}`);};
+      const model=await asset.build().catch(fail),twin=await asset.build().catch(fail),geometry=new Set();
+      model.group.traverse(o=>o.geometry&&geometry.add(o.geometry));
+      twin.group.traverse(o=>check(!geometry.has(o.geometry),`${asset.id} shared geometry`));
+      check(hash(model.group)===hash(twin.group),`${asset.id} nondeterministic`);
+      preview.ownMaterials(twin);preview.release(twin);preview.ownMaterials(model);
+      if(model.update){model.update(0,0);const zero=hash(model.group);model.update(5.1,0);check(hash(model.group)!==zero,`${asset.id} no motion`);model.update(0,0);check(hash(model.group)===zero,`${asset.id} failed rewind`);}
+      const info=preview.inspect(model);check(info.stats.triangles<40000,`${asset.id} budget exceeded`);
+      preview.release(model);built.push(asset.id);
     }
     const { orbitBird } = await import('/engine/models/animation/orbit-bird.js');
     const { scarletMacaw } = await import('/engine/models/fauna/birds/scarlet-macaw.js');
@@ -50,9 +70,12 @@ try{
       stage.renderer.setViewport(x,y,700,500);stage.renderer.setScissor(x,y,700,500);stage.renderer.render(stage.scene,stage.camera);stage.scene.remove(model.group);
       const label=document.createElement('div');label.className='label';label.style.cssText=`left:${x}px;top:${1000-y-38}px;width:700px`;label.textContent=assets[i].name;document.getElementById('labels').append(label);
     });
-    window.proof={THREE,preview,ASSETS,stage,models,check,hash};return metrics;
+    window.proof={THREE,preview,ASSETS,stage,models,check,hash};return {metrics,pack:pack.map(a=>a.id),built};
   });
-  assert.equal(metrics.length,4);await page.screenshot({path:`${output}/collection.png`});console.log(metrics);
+  assert.equal(metrics.length,4,'the four map animals');
+  assert.deepEqual([...pack].sort(),[...expected].sort(),'Studio wildlife pack matches the shared catalog');
+  assert.deepEqual([...built].sort(),[...expected].sort(),'every wildlife model builds');
+  await page.screenshot({path:`${output}/collection.png`});console.log(metrics);
   await page.setViewportSize({width:1400,height:900});
   const placements=[];
   for(const [id,birds,capys]of [['selva',1,1],['llanos',4,3],['desierto',2,0]]){

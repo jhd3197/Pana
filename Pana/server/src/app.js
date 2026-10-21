@@ -51,6 +51,9 @@ export function createRequestHandler(startedAt, colyseus) {
       return serveStatic(res, config.paths.web, `studio/${pathname.split('/')[2]}.html`);
     }
 
+    // Mi pana, the character editor, at a plain address (the .html one still works).
+    if (/^\/personaje\/?$/.test(pathname)) return serveStatic(res, config.paths.web, 'personaje.html');
+
     // Hub frontend
     return serveStatic(res, config.paths.web, pathname.slice(1) || 'index.html');
   };

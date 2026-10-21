@@ -60,7 +60,7 @@ const colorOf = seat => { const i = view?.roster.findIndex(r => r.seat === seat)
 
 function clearInput() { keys.clear(); touch.clear(); }
 
-const menu = createGameMenu({
+const menu = createGameMenu({ pad: { move: 'wasd', cursor: 'Tareas: apuntar y tocar', keys: { a: ['KeyE', 'Usar; mantén para reparar'], b: ['Space', 'Pulsar en las tareas'], x: ['KeyR', 'Reportar'], lb: ['KeyQ', 'Envolver (momia)'], y: ['KeyF', 'Sabotaje (momia)'], rb: ['KeyC', 'Disfraz (momia)'] } },
   title: '¡Embuste!', heading: 'Un respiro', resumeLabel: 'Volver a la noche', sound, notify,
   note: () => net && !net.online ? 'La práctica está en pausa.' : 'La noche sigue: no te quedes solo.',
   controls: [['W A S D / ↑ ← ↓ →', 'Moverte'], ['E', 'Usar: tareas, escondites, la campana; mantén para reparar'], ['R', 'Reportar una estatua de vendas'], ['Q', 'Envolver (momia)'], ['F', 'Sabotaje (momia)'], ['C', 'Disfraz (momia)'], ['M', 'Sonido']],

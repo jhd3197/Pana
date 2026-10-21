@@ -53,6 +53,7 @@ const Racer = schema({
 
 const DerrapeState = roomState({
   phase: t.string().default('lobby'),   // lobby | loading | count | race | results | complete
+  garage: t.boolean().default(false),   // the host left the shared lobby for the Copa and Taller menus
   mode: t.string().default('race'),     // 'race' | canonical cup id
   difficulty: t.string().default('normal'),
   track: t.string().default('estadio'),
@@ -113,6 +114,11 @@ export default class DerrapeRoom extends PanaRoom {
         this.state.track = cleanTrack(m?.id);
         this.state.laps = lapsForTrack(this.state.track);
       }
+    });
+    // The host's start in the shared lobby takes the room to the Copa and
+    // Taller menus; going back from Copa (or "Sala" after a race) returns it.
+    this.onMessage('garage', (client, m) => {
+      if (this.isHost(client) && ['lobby', 'results', 'complete'].includes(this.state.phase)) this.state.garage = !!m?.open;
     });
     this.onMessage('bots', (client, m) => {
       if (this.isHost(client) && this.canConfigure()) this.state.bots = !!m?.on;

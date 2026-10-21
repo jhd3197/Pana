@@ -1,4 +1,4 @@
-import { menuClick } from './menu-helpers.js';
+import { hideTaller, menuClick } from './menu-helpers.js';
 // npm start, then node this file. The taller: a race pays into the wallet,
 // paint repaints the player's car on the turntable and in the race, horns
 // and flames equip, and trophies unlock mirror mode.
@@ -56,7 +56,7 @@ try {
   assert.equal(shop.coins, 0);
   assert.ok(shop.blue && !shop.red, `repainted ${JSON.stringify(shop)}`);
   assert.equal(shop.horn, 'cucaracha', '40 - 25 for the paint leaves exactly 15 for the horn');
-  await page.locator('#shop-close').click();
+  await hideTaller(page);
 
   // The race car wears the paint too.
   await menuClick(page, '#play');
@@ -85,7 +85,7 @@ try {
   await page.locator('#shop-buy').click();
   const parts = await page.evaluate(() => ({ coins: getWallet().coins, parts: getWallet().parts.chamo, trying: !document.getElementById('shop-try').hidden }));
   assert.deepEqual(parts, { coins: 25, parts: { motor: 'turbo' }, trying: false });
-  await page.locator('#shop-close').click();
+  await hideTaller(page);
   await menuClick(page, '#play');
   await page.waitForFunction(() => race.state === 'count');
   const tuned = await page.evaluate(async () => {

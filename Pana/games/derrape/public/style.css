@@ -356,6 +356,23 @@ body:has(#loading:not(.hidden)) #garage { visibility: hidden; }
 #boost[data-drift="3"] i.on { background: var(--drift-3); box-shadow: 0 0 8px var(--drift-3); }
 #drift-hint:not([hidden]) { display: block; margin-top: 5px; color: var(--pk-text); font-size: 10px; font-weight: 800; line-height: 1.3; white-space: nowrap; }
 
+/* combo meter: the live drift-style pot and its chain, over the speedometer */
+#combo { position: absolute; bottom: 118px; left: 50%; transform: translateX(-50%); display: flex; align-items: baseline; gap: 8px; padding: 6px 16px 7px; border-radius: 12px; pointer-events: none; }
+#combo[hidden] { display: none; }
+#combo .pk-eyebrow { font-size: 9px; letter-spacing: 1.5px; }
+#combo .combo-pts { font-size: 24px; line-height: 1; color: var(--pk-text); font-variant-numeric: tabular-nums; }
+#combo .combo-mult { font: 800 15px var(--pk-sans); color: var(--pk-muted); }
+@keyframes combo-pulse { 50% { transform: scale(1.22); } }
+#combo[data-chain="2"] .combo-mult, #combo[data-chain="3"] .combo-mult,
+#combo[data-chain="4"] .combo-mult, #combo[data-chain="5"] .combo-mult { animation: combo-pulse .6s ease-in-out infinite; }
+#combo[data-chain="2"] .combo-mult { color: var(--drift-1); }
+#combo[data-chain="3"] .combo-mult { color: var(--drift-2); }
+#combo[data-chain="4"] .combo-mult, #combo[data-chain="5"] .combo-mult { color: var(--drift-3); text-shadow: 0 0 8px var(--drift-3); }
+@keyframes combo-bank { 30% { transform: translateX(-50%) scale(1.25); } }
+#combo.banked { animation: combo-bank .9s ease-out; }
+#combo.banked .combo-pts { color: var(--pk-yellow); }
+#race.split #combo { left: 25%; }
+
 .keys { position: absolute; bottom: 116px; right: 22px; grid-template-columns: repeat(2, auto); gap: 7px 14px; pointer-events: none; }
 .keys span { display: flex; align-items: center; gap: 6px; }
 
@@ -363,8 +380,13 @@ body:has(#loading:not(.hidden)) #garage { visibility: hidden; }
   position: absolute; inset: 0; display: grid; place-items: center;
   font-size: 150px; color: var(--pk-yellow);
   -webkit-text-stroke: 6px var(--pk-night); text-shadow: 0 8px 0 var(--pk-coral);
-  pointer-events: none;
+  pointer-events: none; transition: color 120ms;
 }
+/* A held gas during the countdown: coral is too early (the engine floods),
+   white is a plain start, teal is the turbo window. */
+#count[data-rev="early"] { color: var(--pk-coral); text-shadow: 0 8px 0 var(--pk-night); }
+#count[data-rev="ok"] { color: #fff; }
+#count[data-rev="good"] { color: var(--pk-teal); text-shadow: 0 8px 0 var(--pk-night); }
 
 .touch-drive { display: none; }
 
@@ -392,6 +414,8 @@ body:has(#loading:not(.hidden)) #garage { visibility: hidden; }
 .res-table .pk-row.is-me { background: var(--pk-yellow); }
 .res-table .pk-row-n { width: 22px; font-size: 16px; color: inherit; }
 .res-table .pk-row-end { font-size: 14px; color: inherit; font-variant-numeric: tabular-nums; }
+.res-table .pk-row.style-king { box-shadow: inset 0 0 0 2px var(--trophy-oro); }
+.res-table .pk-row.style-king .pk-row-name small { color: var(--trophy-oro); font-weight: 800; }
 .res-coins { display: flex; align-items: center; gap: 12px; padding: 14px 18px; border-color: var(--coin-line); }
 .res-coins .mango-symbol { width: 34px; height: 34px; font-size: 34px; }
 .result p.result-coins { margin: 0; color: var(--coin-text); font-size: 14px; font-weight: 800; }
@@ -491,6 +515,7 @@ body:has(#loading:not(.hidden)) #garage { visibility: hidden; }
   }
   .touch-drive > div { display: flex; gap: 10px; pointer-events: auto; }
   .item, #speedo { bottom: calc(max(14px, env(safe-area-inset-bottom)) + 94px); }
+  #combo { bottom: calc(max(14px, env(safe-area-inset-bottom)) + 212px); }
   #item-status, .slot small { display: none; }
   .slot { height: 58px; }
   .slot .item-icon { font-size: 26px; }
@@ -535,13 +560,14 @@ body:has(#loading:not(.hidden)) #garage { visibility: hidden; }
   .slot { height: 50px; }
   .slot .item-icon { font-size: 22px; }
   .item-actions .pk-btn { min-height: 34px; }
-  #speedo, .keys, #board, .wheel-lineup { display: none; }
+  #speedo, .keys, #board, .wheel-lineup, #combo { display: none; }
   .tools { bottom: 284px; }
   .coins { top: 12px; bottom: auto; left: 50%; right: auto; transform: translateX(-50%); min-width: 0; padding: 8px 12px; }
 }
 @media (prefers-reduced-motion: reduce) {
   .coins.picked .coin-symbol, .res-table .pk-row.rank-up, .res-table .pk-row.rank-down { transform: none; }
   dd i, button, .coin-symbol, .mango-symbol, .res-table .pk-row { transition: none; }
+  #combo.banked, #combo .combo-mult { animation: none; }
 }
 
 /* ---------- online lobby ---------- */

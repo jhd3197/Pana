@@ -2,11 +2,11 @@ import { TableRoom } from '/engine/table-room.js';
 import { createGame, acceptAction, step, STEP, copy, botPlayer } from './rules.js';
 
 // The table setting (goal, place, difficulty) survives new rooms and practice.
-const keepTarget = (prev) => prev ? { ...createGame(), target: prev.target, ballsPerPlayer: prev.ballsPerPlayer || 4, remaining: Array(6).fill(prev.ballsPerPlayer || 4), mapId: prev.mapId || 'plaza', difficulty: prev.difficulty || 'normal' } : createGame();
+const keepTarget = (prev) => prev ? { ...createGame(), target: prev.target, ballsPerPlayer: prev.ballsPerPlayer || 4, remaining: Array(6).fill(prev.ballsPerPlayer || 4), mapId: prev.mapId || 'plaza', difficulty: prev.difficulty || 'normal', opener: prev.opener || 'cacho' } : createGame();
 
 export class CriollasRoom extends TableRoom {
   constructor(options) {
-    super({ ...options, game: 'criollas', protocol: 'criollas-v2', texts: {
+    super({ ...options, game: 'criollas', protocol: 'criollas-v3', texts: {
       handoff: 'Cambió el anfitrión. La mano continúa.',
       practice: 'Jugando con bots · tus panas pueden entrar por invitación en una sala online.', ...options.texts } }, {
       fresh: keepTarget,

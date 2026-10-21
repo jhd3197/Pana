@@ -2,7 +2,7 @@
 
 ## Mi pana wardrobe
 
-The player editor at `/personaje.html` uses `web/character/editor.js` and
+The player editor at `/personaje` uses `web/character/editor.js` and
 `editor.css`. The hub's Mi pana links and legacy `/#mi-pana` address open it.
 The older sculpt inspection tools remain at `/character/reference.html`; the
 geometry/pose browser suites target that contributor page.
@@ -283,7 +283,7 @@ true when you change this area.
 The character sculpt lives in `engine/models/characters/pana/`;
 `models/characters/pana/avatar-model.js` adapts it to saved
 avatars and gameplay. The full editor stays at
-`/personaje.html`; its old model module URLs only re-export shared sources.
+`/personaje`; its old model module URLs only re-export shared sources.
 Games use the lighter sampling profile and must call `character.dispose()`
 when removing a character (detach shared carried props first).
 

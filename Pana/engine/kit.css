@@ -276,6 +276,13 @@
 }
 .pk-banner-layer { position: fixed; left: 0; right: 0; top: 18%; z-index: 40; display: grid; justify-items: center; pointer-events: none; }
 
+/* feat toast: a small pill under the shout zone for milestone celebrations
+   (engine/feats.js). It wears .show while visible.
+   <div id="toast" class="pk-toast" role="status" aria-live="polite"></div> */
+.pk-toast { position: fixed; z-index: 41; top: 27%; left: 50%; max-width: 90vw; padding: 8px 18px; border: 1px solid var(--pk-line); border-radius: 999px; background: var(--pk-night); color: var(--pk-text); font: 800 15px var(--pk-sans); text-align: center; opacity: 0; transform: translate(-50%, -8px); pointer-events: none; transition: opacity .18s, transform .18s; }
+.pk-toast.show { opacity: 1; transform: translate(-50%, 0); }
+@media (prefers-reduced-motion: reduce) { .pk-toast { transition: opacity .18s; transform: translate(-50%, 0); } }
+
 /* keyboard reminders, bottom-right */
 .pk-hints { display: grid; gap: 4px; justify-items: end; font: 800 13px var(--pk-sans); color: var(--pk-text); text-shadow: 0 1px 2px rgba(0, 0, 0, .6); }
 .pk-hints b { color: var(--pk-yellow); font-weight: 900; }
@@ -356,6 +363,21 @@
 }
 .pk-loading[hidden] { display: none; }
 .pk-loading .pk-title { font-size: clamp(44px, 8vw, 88px); }
+/* The shared loading cover (engine/loading-cover.js): the page's art, its name
+   and what is loading, over everything until the page is ready, then a fade. */
+.pk-cover {
+  position: fixed; inset: 0; z-index: 1000; display: grid; align-items: end; padding: clamp(24px, 6vw, 72px);
+  background: linear-gradient(0deg, rgba(14, 11, 36, .95), rgba(14, 11, 36, .35) 55%, rgba(14, 11, 36, .15)), var(--cover-image, none) center / cover, var(--pk-night);
+  color: var(--pk-text); transition: opacity 400ms ease;
+}
+.pk-cover.is-done { opacity: 0; pointer-events: none; }
+.pk-cover-card { display: flex; flex-direction: column; align-items: flex-start; gap: 12px; max-width: 560px; }
+.pk-cover-portrait { width: 132px; height: 132px; object-fit: contain; }
+.pk-cover-title { font: 400 clamp(48px, 8vw, 96px)/1 var(--pk-display); letter-spacing: 1px; color: #fff; text-shadow: 0 6px 0 rgba(0, 0, 0, .35); }
+.pk-cover-text { margin: 0; font: 800 17px/1.4 var(--pk-sans); color: rgba(255, 255, 255, .88); }
+.pk-cover-bar { width: min(300px, 70vw); height: 6px; overflow: hidden; border-radius: 99px; background: rgba(255, 255, 255, .18); }
+.pk-cover-bar i { display: block; width: 40%; height: 100%; border-radius: inherit; background: var(--pk-yellow); animation: pk-cover-run 1.1s ease-in-out infinite; }
+@keyframes pk-cover-run { from { transform: translateX(-100%); } to { transform: translateX(260%); } }
 
 /* ---------- touch controls (engine/touch.js) ----------
    Held buttons over the 3D scene. Direction/jump buttons are square with a drawn icon
@@ -450,5 +472,7 @@
   .pk-btn, .pk-bar > i, .pk-switch::before, .pk-touch, .pk-combo-badge { transition: none; }
   .pk-speed-lines { display: none; }
   .pana-rotate-phone { animation: none; }
+  .pk-cover { transition: none; }
+  .pk-cover-bar i { width: 100%; opacity: .6; animation: none; }
 }
 .pk-nav-chevron { display:inline-block; width:1em; height:1em; vertical-align:-.12em; flex:none; }

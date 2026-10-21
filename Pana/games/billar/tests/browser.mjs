@@ -74,7 +74,23 @@ try {
   const c = await open('Tercero', code, false, true);
   await wait(c, () => billarDebug.room.connected && billarDebug.room.seat === 2);
   await c.close(); await wait(a, () => billarDebug.room.members.size === 2); check('third client joins the same room and can leave before a duel');
-  await a.locator('#start').click(); await wait(b, () => billarDebug.room.state.phase === 'aiming');
+  // ¿Quién rompe?: both panas shake at once, Juan on the button and María on Space.
+  await a.locator('#start').click(); await wait(b, () => billarDebug.room.state.phase === 'starter');
+  await a.locator('#pana-starter-shake').waitFor(); await b.locator('#pana-starter-shake').waitFor();
+  await a.locator('#pana-starter-shake').dispatchEvent('pointerdown', { pointerId: 3, button: 0 });
+  await b.evaluate(() => document.activeElement?.blur()); await b.keyboard.down(' ');
+  await wait(a, () => billarDebug.room.state.starter.shaking.includes(1) || 1 in billarDebug.room.state.starter.slammed);
+  assert.ok(await b.evaluate(() => billarDebug.world.starter.group.visible), 'the cachos are on the cloth');
+  await a.screenshot({ path: 'art/billar/starter.png' });
+  await a.locator('#pana-starter-shake').dispatchEvent('pointerup', { pointerId: 3, button: 0 }); await b.keyboard.up(' ');
+  await wait(b, () => billarDebug.world.starter.revealed || billarDebug.room.state.phase === 'aiming');
+  await wait(b, () => billarDebug.room.state.phase === 'aiming');
+  const opened = await a.evaluate(() => billarDebug.room.state);
+  assert.equal(opened.turn, opened.starter.order[0]); assert.match(opened.message, /Rompe/);
+  assert.equal(await b.evaluate(() => billarDebug.world.starter.active), false, 'the cachos leave the table');
+  check('¿Quién rompe? decides the break with both panas shaking at once');
+  // The rest of the suite breaks from Juan's seat.
+  await a.evaluate(() => { const r = billarDebug.room, s = r.game; s.turn = 0; s.breaker = 0; s.revision++; r.publish(); });
   await wait(a, () => billarDebug.world.camera.isPerspectiveCamera && billarDebug.world.balls.size === 16);
   assert.ok(await a.evaluate(() => {
     const world = billarDebug.world, rect = document.getElementById('table').getBoundingClientRect();
@@ -112,6 +128,8 @@ try {
   await fixture(a, 'eight'); await same(a, b); await target(b, 70, 70); await shoot(b, 22);
   await a.locator('#results').waitFor({ state: 'visible' }); await b.locator('#results').waitFor({ state: 'visible' });
   assert.equal(await a.evaluate(() => billarDebug.room.state.result.winner), 1); assert.ok(await b.locator('#again').isDisabled());
+  // The rematch opens in seat order (El anfitrión), so Juan breaks again.
+  await a.evaluate(() => billarDebug.room.action('options', { options: { starter: 'anfitrion' } }));
   await b.screenshot({ path: 'art/billar/results.png' }); await a.locator('#again').click(); await wait(b, () => billarDebug.room.state.round === 2); await same(a, b);
   check('legal eight produces shared results and the host can start a clean rematch');
 
@@ -159,6 +177,8 @@ try {
   await m.close();
 
   const bot = await open('Taco', `${code}-bot`, false, false, 'taco');
+  await bot.evaluate(() => billarDebug.room.action('options', { options: { starter: 'anfitrion' } }));
+  await wait(bot, () => billarDebug.room.state.options.starter === 'anfitrion');
   await bot.locator('#versus').click();
   await wait(bot, () => billarDebug.room.offline && billarDebug.room.state.phase === 'aiming' && billarDebug.room.state.players[1].bot);
   await wait(bot, () => { const c = billarDebug.world.camera.position, b = billarDebug.world.balls.get(0).position; return Math.hypot(c.x - b.x, c.z - b.z) < 3.5 && c.y > b.y + 1; });

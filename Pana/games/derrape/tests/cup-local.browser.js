@@ -120,9 +120,15 @@ try {
   const stageButtons = await page.locator('#cup-stages .cup-stage').count();
   assert.equal(stageButtons, 4, 'cup selection lists all four tracks');
   assert.match(await page.locator('#setup-note').textContent(), /Duración aproximada:/);
-  await page.locator('#cup-stages .cup-stage').nth(2).click();
-  assert.equal(await page.locator('#track-name').textContent(), 'Los Llanos');
-  assert.equal(await page.evaluate(() => window.getActiveTrack()?.id ?? null), 'estadio', 'browsing cup stages does not rebuild the 3D world');
+  // The cup page shows each cup's four stops on its card (the stage list is no
+  // longer a visible picker there); choosing a cup previews only route data.
+  assert.deepEqual(await page.locator('[data-mode="pana"] .cup-route small').allTextContents(),
+    ['1 El Estadio', '2 Plaza Pana', '3 Los Llanos', '4 Isla Bululú'], 'the cup card lists its four stops in order');
+  assert.ok(await page.locator('[data-mode="pana"] .cup-route').isVisible());
+  await menuClick(page, '[data-mode="aventura"]');
+  assert.equal(await page.locator('#track-name').textContent(), 'Pana Desierto', 'a cup previews its first stop');
+  assert.equal(await page.evaluate(() => window.getActiveTrack()?.id ?? null), 'estadio', 'browsing cups does not rebuild the 3D world');
+  await menuClick(page, '[data-mode="pana"]');
 
   await page.setViewportSize({ width: 390, height: 844 });
   await page.screenshot({ path: join(output, 'setup-390x844.png') });

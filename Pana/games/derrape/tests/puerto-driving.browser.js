@@ -2,17 +2,17 @@
 import assert from 'node:assert/strict';
 import {chromium} from 'playwright';
 import {mkdir,writeFile} from 'node:fs/promises';
-import {menuStep} from './menu-helpers.js';
+import {menuClick,menuStep} from './menu-helpers.js';
 const base=process.env.PANA_TEST_URL||'http://localhost:8461',out='art/studio/puerto';await mkdir(out,{recursive:true});
 const browser=await chromium.launch({headless:true}),errors=[];
 try{
  const page=await browser.newPage();page.on('pageerror',e=>errors.push(e.message));
  await page.goto(`${base}/g/derrape/?debug&manual&track=puerto`);await page.waitForFunction(()=>window.garage?.car,null,{timeout:90000});
- await menuStep(page,'ready');
+ await menuStep(page,'track');
  assert.equal(await page.evaluate(()=>setup.laps),1,'Puerto starts as one adventure lap');
- assert.match(await page.locator('#ready-route').textContent(),/3:00.*4:00.*1 vuelta/,'full-race estimate is visible before playing');
- await page.locator('[data-laps="3"]').click();assert.equal(await page.evaluate(()=>setup.laps),3,'explicit lap choice remains available');
- assert.match(await page.locator('#ready-route').textContent(),/3 vueltas/);
+ assert.match(await page.locator('#track-blurb').textContent(),/3:00.*4:00.*1 vuelta/,'full-race estimate is visible before playing');
+ await menuClick(page,'[data-laps="3"]');assert.equal(await page.evaluate(()=>setup.laps),3,'explicit lap choice remains available');
+ assert.match(await page.locator('#track-blurb').textContent(),/3 vueltas/);
  await menuStep(page,'track');await page.locator('[data-circuit="estadio"]').click();
  assert.equal(await page.evaluate(()=>setup.laps),3,'ordinary tracks retain three laps');
  await page.locator('[data-circuit="puerto"]').click();assert.equal(await page.evaluate(()=>setup.laps),1);

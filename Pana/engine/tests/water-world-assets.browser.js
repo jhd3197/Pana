@@ -1,6 +1,9 @@
 import assert from 'node:assert/strict';
 import {createRequire} from 'node:module';
 import {mkdir,writeFile} from 'node:fs/promises';
+import {MODEL_DEFINITIONS} from '../models/catalog.js';
+// The pack's members come from the shared catalog: a new water-world model needs no edit here.
+const expected=MODEL_DEFINITIONS.filter(m=>m.pack==='water-worlds').map(m=>m.id);
 const {chromium}=createRequire(import.meta.url)(process.env.PANA_PLAYWRIGHT_PATH||'playwright');
 const browser=await chromium.launch({headless:true}),page=await browser.newPage({viewport:{width:720,height:560}}),errors=[];
 page.on('pageerror',e=>errors.push(String(e)));
@@ -12,10 +15,10 @@ try{
     const THREE=await import('three');window.__T=THREE;window.__renderer=new THREE.WebGLRenderer({antialias:true,preserveDrawingBuffer:true});__renderer.setSize(720,560);document.body.appendChild(__renderer.domElement);
     window.__assets=(await import('/studio/catalog.js')).ASSETS.filter(a=>a.pack==='water-worlds');return __assets.map(a=>a.id);
   });
-  assert.equal(ids.length,9);const proof=[];
+  assert.ok(expected.length>0,'water-worlds pack is empty');assert.deepEqual([...ids].sort(),[...expected].sort(),'Studio water-worlds pack matches the shared catalog');const proof=[];
   for(const id of ids){
     const result=await page.evaluate(async id=>{
-      const THREE=__T,asset=__assets.find(a=>a.id===id),model=await asset.build(),scene=new THREE.Scene();scene.background=new THREE.Color(0x22333c);scene.add(model.group);
+      const THREE=__T,asset=__assets.find(a=>a.id===id),model=await asset.build().catch(e=>{throw Error(`${id} failed to build: ${e.message}`);}),scene=new THREE.Scene();scene.background=new THREE.Color(0x22333c);scene.add(model.group);
       scene.add(new THREE.HemisphereLight(0xf5f7ef,0x92947f,2));const sun=new THREE.DirectionalLight(0xffeed3,3);sun.position.set(10,30,20);scene.add(sun);
       const bounds=model.bounds||new THREE.Box3().setFromObject(model.group),center=bounds.getCenter(new THREE.Vector3()),radius=bounds.getSize(new THREE.Vector3()).length()*.65;
       const camera=new THREE.PerspectiveCamera(40,720/560,.1,2000);camera.position.copy(center).add(new THREE.Vector3(radius*.65,radius*.35,radius*1.6));camera.lookAt(center);
@@ -39,5 +42,5 @@ try{
     await page.screenshot({path:`art/water-worlds/models/${id}.png`});proof.push(result);
     await page.evaluate(()=>{const callbacks=[],geometries=new Set();__preview.model.group.traverse(o=>{if(o.userData.dispose)callbacks.push(o.userData.dispose);if(o.geometry)geometries.add(o.geometry);});callbacks.forEach(f=>f());geometries.forEach(g=>g.dispose());__preview.scene.clear();__preview=null;});
   }
-  assert.deepEqual(errors,[]);await writeFile('art/water-worlds/models/proof.json',JSON.stringify(proof,null,2));console.log('Seven real Studio model adapters: rendering, absolute time, reduced effects and disposal passed');
+  assert.deepEqual(errors,[]);await writeFile('art/water-worlds/models/proof.json',JSON.stringify(proof,null,2));console.log(`${proof.length} water-world Studio models: rendering, absolute time, reduced effects and disposal passed`);
 }finally{await browser.close();}

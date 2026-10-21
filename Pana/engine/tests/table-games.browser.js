@@ -41,6 +41,8 @@ try {
     const practice = await p.locator('#practice').boundingBox(); assert.ok(practice.y + practice.height <= 800, `${game}: laptop start visible`);
     await p.locator('#practice').click();
     await p.waitForFunction(game => window[`${game}Debug`].room.state.phase !== 'lobby', game);
+    // ¿Quién empieza? opens Póker and Billar; a pana who never slams is slammed at 8 s.
+    await p.waitForFunction(game => !['lobby', 'starter'].includes(window[`${game}Debug`].room.state.phase), game, { timeout: 60000 });
     for (const [width, height] of [[1280, 800], [390, 844], [844, 390]]) {
       await p.setViewportSize({ width, height }); await p.waitForTimeout(350);
       if (game === 'poquer') await p.waitForFunction(() => [...document.querySelectorAll('.seat')].every(n => n.style.left && n.style.top));

@@ -17,6 +17,9 @@ async function newPage(name, mobile = false, code = room) {
   const context = await browser.newContext(mobile ? { viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true } : { viewport: { width: 1440, height: 900 } });
   await context.addInitScript(() => localStorage.setItem('pana:settings', JSON.stringify({ quality: 'baja' })));
   const page = await context.newPage(); page.on('pageerror', error => errors.push(`${name}: ${error.message}`));
+  // Three software-WebGL clients share the CPU (two suites per CI runner): state
+  // still has to arrive, only later than Playwright's 30 s default.
+  page.setDefaultTimeout(60000);
   await page.goto(`${base}/g/escondidas/?room=${code}&name=${name}&debug`);
   await page.waitForFunction(() => window.hunt?.room.connected && window.PANA_PREPARED === true, undefined, { timeout: 120000 });
   return page;
@@ -46,6 +49,10 @@ try {
   await a.evaluate(() => { delete hunt.room.publish; });
   await b.waitForFunction(() => { const me = hunt.state.players.find(q => q.id === hunt.room.id), p = hunt.room.predicted; return p && Math.hypot(me.x - p.x, me.z - p.z) < 0.3; });
   check('the guest walks its own pana at once and settles on the host position');
+  // The prop rules need room around the pana: how far the held key walked
+  // varies with load, so set the guest on open ground first.
+  await a.evaluate(() => { const guest = hunt.state.players.find(p => !p.bot && p.id !== hunt.room.id); hunt.place(guest.id, -4, 14); });
+  await b.waitForFunction(() => { const me = hunt.state.players.find(q => q.id === hunt.room.id); return Math.hypot(me.x + 4, me.z - 14) < 0.5; });
   for (const key of ['1', '2', '3']) {
     await b.keyboard.press(key);
     await b.waitForFunction(k => hunt.state.players.find(p => p.id === hunt.room.id).changes === 3 - Number(k), key);
@@ -59,6 +66,11 @@ try {
   // First person: the seeker turns to put the hider under the crosshair, then checks.
   await a.evaluate(() => { hunt.aimAt(-4, 14); }); await a.keyboard.press('e'); await b.waitForFunction(() => hunt.state.players.find(p => p.id === hunt.room.id).caught);
   check('capture and score synchronize between clients');
+  // From here the two desktops only watch while the phone joins, spectates and
+  // walks: they stop drawing, so a third software-WebGL client can prepare and
+  // the host keeps ticking faster than LiveRoom's input timeout.
+  const watchers = value => Promise.all([a, b].filter(p => !p.isClosed()).map(p => p.evaluate(v => hunt.quiet(v), value)));
+  await watchers(true);
   const c = await newPage('Luisa', true);
   await c.waitForFunction(() => hunt.state.players.find(p => p.id === hunt.room.id)?.spectator);
   check('late arrival spectates the active round');
@@ -81,6 +93,7 @@ try {
   await c.waitForFunction(x => hunt.state.players.find(p => p.id === hunt.room.id).x > x + 0.5, initialX);
   await c.mouse.up(); await c.locator('[data-prop="barrel"]').click();
   await c.waitForFunction(() => hunt.state.players.find(p => p.id === hunt.room.id).prop === 'barrel');
+  await watchers(false);
   assert.equal(await c.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
   if (output) await c.screenshot({ path: path.join(output, 'pana-hunt-mobile.png') });
   check('mobile movement controls, prop buttons and 390px layout work');
@@ -104,7 +117,7 @@ try {
   await b.waitForFunction(() => hunt.camera.position.y < 4);
   if (output) await b.screenshot({ path: path.join(output, 'pana-hunt-gameplay.png') });
   check('connection failure offers playable local practice');
-  await b.goto(base + '/g/derrape/?track=llanos&debug'); await b.waitForFunction(() => window.race && window.garage);
+  await b.goto(base + '/g/derrape/?track=llanos&debug'); await b.waitForFunction(() => window.race && window.garage && window.startRace);
   await b.evaluate(() => startRace(0)); check('Derrape loads and starts on Los Llanos with the market kit');
   await b.goto(base + '/g/bululu/?debug'); await b.waitForFunction(() => window.board && window.players);
   assert.equal(await b.evaluate(async () => { const shared = await import('/engine/models/vegetation/index.js'), original = await import('/g/bululu/flora.js'); return shared.palm === original.palm && shared.mangoTree === original.mangoTree; }), true);

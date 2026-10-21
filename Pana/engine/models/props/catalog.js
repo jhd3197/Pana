@@ -31,6 +31,7 @@ import crystals from './catalog/crystals.js';
 import fiesta from './catalog/fiesta.js';
 import signs from './catalog/signs.js';
 import glowPaintball from './catalog/glow-paintball.js';
+import barrio from './catalog/barrio.js';
 
 export default [
   ...ranch,
@@ -66,4 +67,5 @@ export default [
   ...fiesta,
   ...signs,
   ...glowPaintball,
+  ...barrio,
 ];

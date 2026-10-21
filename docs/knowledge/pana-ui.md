@@ -82,6 +82,59 @@ landscape layout still has to work: test both with a touch emulator.
 Mark keyboard reminders with `data-pana-hint` so the "Ayudas de teclado"
 setting can hide them.
 
+## Loading cover
+
+`engine/loading-cover.js` (`showCover`) is the one loading screen: the page's
+art, its name, what is loading now and an indeterminate bar, over everything.
+`done()` fades it once the next frame has painted. `game-entry.js` shows it
+from the first paint until the game module and its `sceneReady` have loaded,
+the room link has arrived (up to 5 s) and the lobby is docked in its final
+layout, so nothing is seen moving into place. `pana:load-stage` events
+update its line. A failure leaves the message on the cover with a retry. Each
+switch between the lobby and the game gets a short cover too ("¡A jugar!",
+"De vuelta a la sala…"). The Mi pana editor covers itself with the player's
+portrait until `editor.js` is ready.
+
+## Game controllers
+
+`engine/gamepad.js` makes an Xbox or PlayStation pad work in every game that
+loads through `game-entry.js`, with no game code at all for menus. The stick or
+d-pad moves a yellow highlight between the visible buttons, A presses, B backs
+out of a dialog or clicks the page's `[data-pad-back]` link (the lobby's Juegos,
+the editor's Volver a los juegos), LB/RB change the menu's tabs and Start
+(the ☰ menu button) is Esc, or the page's `menu` (the hub opens Ajustes). The pad treats
+these as menus: an open `dialog`, a visible `.pk-results`, any visible panel
+marked `[data-pad-menu]`, and the lobby. A new menu puts the highlight on its
+`.pk-btn--primary` (or `.pana-primary`) button. The highlight follows that
+button if it gets enabled late, until the player moves.
+
+During play a game names the keys its buttons stand for, through the menu:
+
+```js
+createGameMenu({ …, pad: {
+  move: 'wasd',                                  // or 'arrows': left stick and d-pad
+  keys: { rt: ['KeyW', 'Avanzar'], a: ['Space', 'Saltar'] },
+  cursor: 'Apuntar',                             // right stick moves a pointer, RT clicks
+  buttons: true,                                 // d-pad + A work the HUD's buttons
+} });
+```
+
+The pad sends untrusted `keydown`/`keyup` events to `document.body`, with both
+`code` and `key`, so the game's keyboard handlers do the rest. `buttons` suits
+turn games whose moves are DOM buttons (Dominó, Póquer, ¿Quién quiere…?). It
+starts from the big control nearest the bottom middle of the screen, and A
+stays with the buttons. `createLookControls` turns the camera with the right
+stick, so first-person games need no `cursor`. `{ native: true, help }` is for
+a game that reads the pad itself (Trifulca): the menus still work, and `help`
+fills the "Con mando" list. The Controles tab lists each labelled key under
+"Con mando". Derrape is native too: controls.js drives the car, and the
+engine owns the garage menus and Start, so its own pad code no longer
+toggles the pause. Without a main button, a menu starts the pad on its
+biggest button, such as Derrape's "Un jugador" card rather than the step bar.
+
+Trap: the menu imports `gamepad.js` only when `pad` is set, so a game's first
+load stays under the module budget (`tests/conventions.test.js`).
+
 ## Rules and traps
 
 - **Do not handle Escape in the game.** The menu listens in the capture phase.

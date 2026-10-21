@@ -20,14 +20,23 @@ try {
   const roles = await guest.evaluate(() => Object.fromEntries(tamborDebug.room.state.players.filter(p => !p.bot).map(p => [p.name, p.role])));
   assert.deepEqual(roles, { Ana: 'dancer', Bruno: 'dancer' }, 'the two panas dance first, bots drum');
   assert.equal(await guest.evaluate(() => tamborDebug.room.state.players.length), 8, 'bots fill the rueda');
+  const quiet = value => Promise.all([host, guest].map(p => p.evaluate(v => tamborDebug.quiet(v), value)));
+  await quiet(true);
 
-  // The host holds the song clock as soon as the guest gets a call, so the
-  // guest's judge grades it at the exact beat however slow this machine is.
+  // The host holds the song clock and this check jumps it to the moment the
+  // MCP announces the next call, then waits: the call comes `lead` beats ahead
+  // of its hit, so the guest's judge grades it at the exact beat however slow
+  // this machine is. (Holding only once the call showed up lost that race when
+  // software WebGL drew the rueda at a few frames a second: the guest's clock
+  // ran past the call's window first.)
+  await host.evaluate(async () => { window.callPace = (await import('/g/tambor/rules.js')).callPace; });
   const nextCall = () => host.waitForFunction(() => {
-    const { room } = tamborDebug, bruno = room.game.players.find(p => p.name === 'Bruno');
+    const { room, judge } = tamborDebug, game = room.game, bruno = game.players.find(p => p.name === 'Bruno');
     if (bruno.role !== 'dancer') return 'out';
-    const call = room.game.calls.find(c => c.to === bruno.id && !c.res);
-    if (call) room.held = true;
+    room.held = true;
+    const call = game.calls.find(c => c.to === bruno.id && !c.res);
+    const announce = game.nextCall - callPace(game.sabor).lead, beat = game.beatNow();
+    if (!call && game.phase === 'song' && beat < announce) game.song.startAt -= (announce - beat + .02) * judge.spb * 1000;
     return call ?? false;
   }, null, { timeout: 60_000, polling: 50 }).then(h => h.jsonValue());
   const call = await nextCall();
@@ -54,6 +63,7 @@ try {
     await host.evaluate(() => { tamborDebug.room.held = false; });
   }
   await host.evaluate(() => { tamborDebug.room.held = false; });
+  await quiet(false);
   await waitFor(guest, () => tamborDebug.room.state.events.some(e => e.kind === 'kick' && e.text.includes('Bruno')));
   await waitFor(host, () => tamborDebug.room.state.players.find(p => p.name === 'Bruno').role === 'crowd');
   await waitFor(host, () => tamborDebug.room.state.events.some(e => e.kind === 'enter'), undefined, 30_000);

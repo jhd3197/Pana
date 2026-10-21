@@ -3,10 +3,12 @@ import * as THREE from 'three';
 import * as kit from './track-kit.js';
 import { plankHeight, isOpenEdge, OPEN_MARGIN } from './course-rules.js';
 import { raceDetails } from './tracks/race-details.js';
-import { roadMaterial } from './tracks/road-material.js';
+import { roadMaterial, roadStyle, roadTile, roadTexture } from './tracks/road-material.js';
 import { applyNatureMaterials } from './tracks/nature-material.js';
 import { raceGrass } from './tracks/grass-field.js';
 import { natureSurface } from '/engine/models/core/nature-surface.js';
+import { backgroundForest } from './tracks/background-forest.js';
+import { roadShoulders } from './tracks/road-shoulders.js';
 
 // ---------- geometry backends ----------
 // The original stadium oval, kept verbatim so lap logic never regresses.
@@ -375,9 +377,22 @@ function buildRibbon(T, pal) {
     geo.setAttribute('color',new THREE.Float32BufferAttribute(colors,3));
     geo.setAttribute('roadSurface',new THREE.Float32BufferAttribute(surfaces,1));
   }
-  const material = roadMaterial(T.def.roadStyle?0xffffff:pal.track, ['selva','llanos','desierto','bululu','delta','salto'].includes(T.id),!!T.def.roadStyle);
+  // Route-space coordinates keep wheel wear following bends and climbs. The
+  // strip's own distance runs on past the lap seam, so paint never smears there.
+  const roadCoords = [], uvs = [], position = geo.attributes.position, style = roadStyle(T), tile = roadTile(style);
+  const columns = T.def.crossfall ? 3 : 2, strip = !(T.def.oval && !T.def.elevation);
+  for (let i = 0; i < position.count; i++) {
+    const x = position.getX(i), z = position.getZ(i), across = T.offsetOf(x, z) / T.HW;
+    const along = strip ? Math.floor(i / columns) / (position.count / columns - 1) * T.TOTAL : T.paramOf(x, z);
+    roadCoords.push(across, T.paramOf(x, z));
+    uvs.push(strip ? i % columns / (columns - 1) : (1 - across) / 2, along / tile);
+  }
+  geo.setAttribute('roadCoords', new THREE.Float32BufferAttribute(roadCoords, 2));
+  geo.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2));
+  const map = roadTexture(style, T.TOTAL | 0);
+  const material = roadMaterial(0xffffff, ['selva','llanos','desierto','bululu','delta','salto'].includes(T.id),!!T.def.roadStyle, map);
   const m = new THREE.Mesh(geo, material);
-  m.userData.dispose = () => material.dispose();
+  m.userData.dispose = () => { material.dispose(); map.dispose(); };
   m.name='track-road';
   m.position.y = T.def.environment ? 0.12 : 0.03;
   m.receiveShadow = true;
@@ -490,7 +505,7 @@ export function makeTrack(def) {
     yield 'Preparando la carretera…';
     group.userData.groundAt = T.terrainAt;
     if (def.island) group.add(buildIsland(T, def.island));
-    group.add(buildRibbon(T, def.palette));
+    if (!def.authoredRoad) group.add(roadShoulders(T), buildRibbon(T, def.palette));
     kit.startLine(group, T);
     yield 'Colocando las defensas…';
     if (def.walls !== false) kit.tireWall(group, T);
@@ -507,7 +522,8 @@ export function makeTrack(def) {
     kit.sectorSigns(scenery, T);
     scenery.traverse((o) => { if (o.userData.tick) T.animated.push(o); });
     group.add(scenery);
-    group.add(raceDetails(T));
+    group.add(backgroundForest(T));
+    if (!def.authoredRoad) group.add(raceDetails(T));
     const grass = raceGrass(group, T); group.add(grass); if (grass.userData.tick) T.animated.push(grass);
     applyNatureMaterials(group, T.id);
     T.group = group;

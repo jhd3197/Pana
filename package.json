@@ -10,10 +10,17 @@
   "scripts": {
     "start": "node Pana/server/src/index.js",
     "check": "node Pana/server/src/check.js",
-    "test": "node --import ./Pana/scripts/register-paths.js --test \"Pana/**/*.test.js\"",
+    "test": "node Pana/scripts/test-unit.js",
     "test:browser": "node Pana/scripts/test-browser.js",
+    "shots": "node Pana/scripts/shots.js",
+    "budget": "node Pana/scripts/budget.js",
+    "launcher-art": "node Pana/scripts/launcher-art.js",
+    "inventory": "node Pana/scripts/model-inventory.js",
+    "tidy": "node Pana/scripts/tidy.js",
     "new-game": "node Pana/scripts/new-game.js",
-    "dev": "powershell -ExecutionPolicy Bypass -File dev.ps1"
+    "new-track": "node Pana/scripts/new-track.js",
+    "dev": "powershell -ExecutionPolicy Bypass -File dev.ps1",
+    "prepare": "git config core.hooksPath .githooks || true"
   },
   "engines": {
     "node": ">=22"

@@ -34,8 +34,16 @@ try {
       for (let s = 0; s < T.TOTAL; s += 2) {
         const view = tourPose(T, s), p = view.position;
         if (![...p, ...view.target].every(Number.isFinite)) fail('non-finite camera');
-        const height = p.y - T.groundAt(p.x, p.z); maxHeight = Math.max(maxHeight, height);
-        if (height < 2.9 || height > 12) fail(`camera road clearance ${height}`);
+        // Over a jump gap (Puerto's ramp) there is no road under the camera, only the chasm:
+        // measure from the road line the jump crosses, allowing the ramp lip it leaves from.
+        const at = (T.LINE || 0) + s, lip = Math.max(0, ...(T.ramps || []).map(r => r.h));
+        if (T.gapAt?.(at)) {
+          const over = p.y - T.heightAtS(at);
+          if (over < 2.9 || over > 12 + lip) fail(`camera gap clearance ${over}`);
+        } else {
+          const height = p.y - T.groundAt(p.x, p.z); maxHeight = Math.max(maxHeight, height);
+          if (height < 2.9 || height > 12) fail(`camera road clearance ${height}`);
+        }
         if (Math.abs(T.offsetOf(p.x, p.z)) > .05) fail('camera left centreline');
         if (previous) maxStep = Math.max(maxStep, p.distanceTo(previous));
         previous = p;

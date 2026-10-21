@@ -1,4 +1,5 @@
 // Wiring only: input → rules (through the room) → scene and HUD.
+// Milestone toasts are opt-in: createFeats from /engine/feats.js on a .pk-toast element.
 import { loadName, loadAvatar } from '/engine/avatar.js';
 import { createGameMenu, toggleMute } from '/engine/ui.js';
 import { fillRoster } from '/engine/results.js';
@@ -19,6 +20,7 @@ const room = new {{Class}}Room({ code, name: loadName(), avatar: loadAvatar(), o
 const roomOptions = createRoomOptions($('room-options'), { title: '{{name}}', fields: ROOM_OPTIONS,
   change: options => room.action('options', { options }), reset: () => room.action('options', { options: defaultOptions() }) });
 const menu = createGameMenu({ title: '{{name}} · Pana', sound, orientation: 'libre',
+  pad: { buttons: true, keys: { x: ['Space', 'Tirar el dado'] } },
   note: () => room.members.size > 1 ? 'La partida sigue mientras estás en el menú.' : 'La partida está en pausa. Los bots te esperan.',
   controls: [['Espacio', 'Tirar el dado'], ['Ratón / toque', 'Botón Tirar dado'], ['M', 'Activar o silenciar el sonido']],
   tips: ['Tira el dado en tu turno. El primero en llegar a la meta de la sala gana.', 'Los puestos vacíos juegan con bots; un pana que llega toma su silla.'],

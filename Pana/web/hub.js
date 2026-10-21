@@ -5,6 +5,7 @@ import { icon } from '/engine/icons.js';
 import { loadAvatar } from '/engine/avatar.js';
 import { cachedPortrait } from '/engine/portrait-cache.js';
 import { categories, category, artUrl } from './launcher-art.js';
+import { padControls } from '/engine/gamepad.js';
 
 const gamesEl = document.getElementById('games');
 const roomsEl = document.getElementById('rooms');
@@ -13,7 +14,6 @@ const nameInput = document.getElementById('name');
 const featured = document.getElementById('play-featured');
 const featureEl = document.getElementById('feature');
 const featureArt = document.getElementById('feature-art');
-let filter = 'Todos';
 const savedFace = cachedPortrait(loadAvatar());
 if (savedFace) document.getElementById('pana-face').src = savedFace;
 
@@ -24,6 +24,10 @@ gear.prepend(icon('gear'));
 gear.setAttribute('aria-label', 'Ajustes');
 gear.title = 'Ajustes';
 document.getElementById('hub-actions').append(gear);
+// A controller works the whole hub like a menu: the stick or d-pad moves
+// between games and buttons, A presses, the menu button (☰) opens Ajustes
+// (engine/gamepad.js).
+padControls({ playing: () => false, menu: () => settings.open() });
 
 // The shared lobby song plays on the hub too. Its modules and the song itself
 // load once the page has, so the first tap or key (browsers keep audio locked
@@ -79,7 +83,7 @@ function loadCreator() {
   });
 }
 function showView() {
-  if (location.hash === "#mi-pana") { location.replace("/personaje.html"); return; }
+  if (location.hash === "#mi-pana") { location.replace("/personaje"); return; }
   const view = { '#mi-pana': 'mi-pana', '#salas': 'salas' }[location.hash] || 'jugar';
   document.body.dataset.view = view;
   for (const a of document.querySelectorAll('.nav [data-view]')) {
@@ -112,13 +116,6 @@ function gameUrl(game, room) {
 
 let games = [];
 let feat = null;
-function revealSelection() {
-  const card = feat && gamesEl.querySelector(`[data-id="${feat.id}"]`);
-  if (!card || card.hidden) return;
-  const left = card.getBoundingClientRect().left - gamesEl.getBoundingClientRect().left + gamesEl.scrollLeft;
-  gamesEl.scrollLeft = left - (gamesEl.clientWidth - card.clientWidth) / 2;
-}
-addEventListener('resize', () => requestAnimationFrame(revealSelection));
 function updateLinks() {
   for (const a of document.querySelectorAll('a[data-game]')) {
     const game = games.find((g) => g.id === a.dataset.game);
@@ -183,7 +180,12 @@ function gameCard(game) {
   pick.type = 'button';
   pick.setAttribute('aria-pressed', 'false');
   pick.setAttribute('aria-label', `${game.name}: ${meta(game)}`);
+  // A controller or the keyboard moving onto a card shows it in the banner,
+  // so pressing it then plays; a tap or click only shows it.
+  const stepped = () => pick.classList.contains('pana-pad-focus') || pick.matches(':focus-visible');
+  pick.addEventListener('focus', () => { if (stepped()) { feature(game); showRow(card); } });
   pick.addEventListener('click', () => {
+    if (feat === game && stepped()) { launch(game, gameUrl(game, newRoomCode())); return; }
     feature(game);
     if (matchMedia('(max-width: 760px)').matches) featureEl.scrollIntoView({ behavior: 'smooth' });
   });
@@ -210,7 +212,7 @@ function feature(game) {
   document.getElementById('create-room').hidden = !isOnline(game);
   document.getElementById('join-code').hidden = !isOnline(game);
   document.dispatchEvent(new CustomEvent('pana:featured', { detail: { game: game.id } }));
-  for (const c of gamesEl.children) c.querySelector('.game-pick').setAttribute('aria-pressed', String(c.dataset.id === game.id));
+  for (const c of gamesEl.querySelectorAll('.game')) c.querySelector('.game-pick').setAttribute('aria-pressed', String(c.dataset.id === game.id));
 
   for (const old of featureArt.querySelectorAll('canvas')) {
     if ('live' in old.dataset) old.getContext('webgl2')?.getExtension('WEBGL_lose_context')?.loseContext();
@@ -223,15 +225,59 @@ function feature(game) {
   if (url) { art.src = url; art.alt = ''; art.fetchPriority = 'high'; }
   featureArt.append(art);
   if (!url) mountArt(game, art);
-  document.getElementById('game-position').textContent = `${games.filter(g => filter === 'Todos' || category(g) === filter).indexOf(game) + 1} / ${gamesEl.querySelectorAll('.game:not([hidden])').length}`;
-  revealSelection();
+}
+
+// On a desktop the rows scroll under the banner: the row in focus moves to
+// the top of that strip, like a TV app.
+function showRow(card) {
+  const wrap = gamesEl.parentElement, row = card.closest('.game-row');
+  if (!row || getComputedStyle(wrap).overflowY !== 'auto') return;
+  requestAnimationFrame(() => wrap.scrollTo({ top: wrap.scrollTop + row.getBoundingClientRect().top - wrap.getBoundingClientRect().top, behavior: 'smooth' }));
+}
+
+// One row per category, plus the games played last on top.
+function gameRow(label, list) {
+  const row = el('section', 'game-row');
+  row.dataset.row = label;
+  const title = el('h3', 'game-row-title', label);
+  title.append(el('span', 'game-row-count', String(list.length)));
+  const head = el('div', 'game-row-head');
+  const rail = el('div', 'games');
+  for (const game of list) { const card = gameCard(game); card.dataset.category = category(game); rail.append(card); }
+  head.append(title);
+  // Arrows instead of a scrollbar, only on a row with more games than fit;
+  // the keyboard and a controller step card by card instead.
+  const arrows = [-1, 1].map(step => {
+    const arrow = el('button', 'rail-arrow', step < 0 ? '←' : '→');
+    arrow.type = 'button'; arrow.tabIndex = -1; arrow.dataset.padSkip = '';
+    arrow.setAttribute('aria-label', `${step < 0 ? 'Anteriores' : 'Más juegos'}: ${label}`);
+    arrow.addEventListener('click', () => rail.scrollBy({ left: step * rail.clientWidth * .8, behavior: 'smooth' }));
+    head.append(arrow);
+    return arrow;
+  });
+  const fit = () => {
+    const room = rail.scrollWidth - rail.clientWidth;
+    row.toggleAttribute('data-overflow', room > 2);
+    arrows[0].disabled = rail.scrollLeft <= 2;
+    arrows[1].disabled = rail.scrollLeft >= room - 2;
+  };
+  rail.addEventListener('scroll', fit, { passive: true });
+  if ('ResizeObserver' in window) new ResizeObserver(fit).observe(rail);
+  requestAnimationFrame(fit);
+  row.append(head, rail);
+  return row;
+}
+function recentGames() {
+  try { return JSON.parse(localStorage.getItem('pana:recent')) || []; } catch { return []; }
 }
 
 // Hosting sites can cancel this event to apply their party/account rules.
 // The account-free launcher works unchanged without an integration.
 function launch(game, url, source = 'play') {
   const event = new CustomEvent('pana:launch', { cancelable: true, detail: { game: game.id, url, source } });
-  if (document.dispatchEvent(event)) location.href = url;
+  if (!document.dispatchEvent(event)) return;
+  try { localStorage.setItem('pana:recent', JSON.stringify([game.id, ...recentGames().filter(id => id !== game.id)].slice(0, 8))); } catch { /* storage off */ }
+  location.href = url;
 }
 featured.addEventListener('click', e => {
   e.preventDefault();
@@ -263,21 +309,6 @@ document.getElementById('code-form').addEventListener('submit', e => {
 });
 for (const button of document.querySelectorAll('[data-close-dialog]')) button.addEventListener('click', () => button.closest('dialog').close());
 
-function filterGames(value) {
-  filter = value;
-  for (const button of document.querySelectorAll('button[data-category]')) button.setAttribute('aria-pressed', String(button.dataset.category === value));
-  for (const card of gamesEl.children) card.hidden = value !== 'Todos' && card.dataset.category !== value;
-  const visible = games.filter(g => value === 'Todos' || category(g) === value);
-  if (!visible.includes(feat) && visible.length) feature(visible[0]);
-  document.getElementById('game-position').textContent = `${visible.indexOf(feat) + 1} / ${visible.length}`;
-}
-for (const direction of [-1, 1]) document.getElementById(direction < 0 ? 'games-prev' : 'games-next').addEventListener('click', () => {
-  const visible = games.filter(g => filter === 'Todos' || category(g) === filter);
-  if (!visible.length) return;
-  feature(visible[(visible.indexOf(feat) + direction + visible.length) % visible.length]);
-  gamesEl.querySelector(`[data-id="${feat.id}"]`).scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
-});
-
 async function loadGames() {
   try {
     ({ games } = await fetch('/api/games').then((r) => r.json()));
@@ -286,12 +317,11 @@ async function loadGames() {
     // Unlisted (new) games go after the curated order, not before it.
     const rank = (g) => { const i = order.indexOf(g.id); return i < 0 ? order.length : i; };
     games.sort((a, b) => rank(a) - rank(b) || a.name.localeCompare(b.name));
-    for (const game of games) { const card = gameCard(game); card.dataset.category = category(game); gamesEl.appendChild(card); }
-    for (const label of categories) {
-      const button = el('button', 'category', `${label} ${games.filter(g => label === 'Todos' || category(g) === label).length}`);
-      button.type = 'button'; button.dataset.category = label; button.setAttribute('aria-pressed', String(label === filter));
-      button.addEventListener('click', () => filterGames(label));
-      document.getElementById('categories').append(button);
+    const recent = recentGames().map(id => games.find(g => g.id === id)).filter(Boolean);
+    if (recent.length) gamesEl.append(gameRow('Seguir jugando', recent));
+    for (const label of categories.filter(c => c !== 'Todos')) {
+      const list = games.filter(g => category(g) === label);
+      if (list.length) gamesEl.append(gameRow(label, list));
     }
     let saved = null;
     try { saved = localStorage.getItem('pana:featured'); } catch { /* storage off */ }

@@ -67,8 +67,12 @@ try {
   //    slow-loader readiness gate, item relay, stage reload, and final podium.
   // ---------------------------------------------------------------------------
   const cupCode = 'gp' + Math.random().toString(36).slice(2, 8);
-  const guest = await openClient(cupCode, 'Mismo Pana', '');
-  const host = await openClient(cupCode, 'Mismo Pana', '&lead=1');
+  // Both pages load together: the server only hands the lead the host during the
+  // room's first 15 s, and two sequential software-WebGL loads can exceed that.
+  const [guest, host] = await Promise.all([
+    openClient(cupCode, 'Mismo Pana', ''),
+    openClient(cupCode, 'Mismo Pana', '&lead=1'),
+  ]);
   await until(host, () => getNet().state.players.length === 2);
   await until(guest, () => getNet().state.players.length === 2);
 

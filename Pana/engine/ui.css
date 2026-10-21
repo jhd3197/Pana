@@ -146,7 +146,8 @@
 /* controls: two columns of key + action */
 .pana-keys { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px 20px; }
 .pana-key { display: flex; align-items: center; gap: 12px; }
-.pana-key-caps { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; flex: none; color: var(--pm-muted); }
+.pana-keys-title { margin: 20px 0 10px; color: var(--pm-muted); font: 900 12px/1 Nunito, system-ui, sans-serif; letter-spacing: .08em; text-transform: uppercase; }
+.pana-key-caps { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; flex: 0 1 auto; max-width: 62%; color: var(--pm-muted); }
 .pana-key-text { font-weight: 800; }
 .pana-menu kbd {
   display: inline-flex; align-items: center; justify-content: center;
@@ -167,6 +168,16 @@
   transition: opacity 160ms, transform 160ms;
 }
 .pana-toast.show { opacity: 1; transform: translate(-50%, 0); }
+
+/* game controllers (engine/gamepad.js): the button the pad is on, and the
+   pointer the right stick moves in games that aim with the mouse */
+.pana-pad-focus { outline: 4px solid #ffc629 !important; outline-offset: 3px !important; box-shadow: 0 0 0 9px rgba(255, 198, 41, .28) !important; }
+.pana-pad-cursor {
+  position: fixed; left: -14px; top: -14px; z-index: 60; width: 28px; height: 28px; border-radius: 50%;
+  border: 3px solid #fff; background: rgba(255, 198, 41, .45); box-shadow: 0 0 0 2px #1a1336, 0 3px 8px rgba(0, 0, 0, .4);
+  pointer-events: none;
+}
+.pana-pad-cursor[hidden] { display: none; }
 
 /* player setting: hide keyboard reminders */
 .pana-no-hints [data-pana-hint] { display: none !important; }

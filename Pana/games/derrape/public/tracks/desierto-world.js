@@ -1,4 +1,5 @@
 import { THREE,terrain,put,foundation,scatter,instances,clear,finish,smooth,placeOnTrack } from './world-kit.js';
+import { groundPaint } from './ground-paint.js';
 import { lajaRock } from '/engine/models/props/amazonas.js';
 import { giantCactus, sandDune, desertRockArch, abandonedGasStation, rustedPickup, roadsideTirePile, canyonSpire, brokenWagon, desertWarningSign, desertWell } from '/engine/models/props/desert.js';
 import { palm } from '/engine/models/vegetation/palm.js';
@@ -16,6 +17,7 @@ import { festive } from './festive.js';
 export function desertEnvironment(T){
   const group=new THREE.Group(),fixed=new THREE.Group(),counts={},occupied=[];
   const world=terrain(T,{bounds:[-630,-570,620,500],base:baseHeight,step:5,
+    paint:groundPaint({tone:.05,dry:.08,dryColor:0xe9c486,verge:.25,vergeColor:0xc99a62}),
     color:(x,z,y)=>{
       const oasis=Math.hypot((x-OASIS.x)/OASIS.rx,(z-OASIS.z)/OASIS.rz);
       const canyon=smooth(-z+Math.sin(x*.018)*32,-100,150),rise=y-roadHeight(x,z);
@@ -124,7 +126,7 @@ export function desertScenery(group,kit,T){
   const high=s=>{const p=T.pointAt(s);return p.x>220&&p.y<0&&p.y>-210;};
   // Guard the exposed eastern ledge while keeping dune views open.
   group.add(crossing(T,(p,s)=>high(s),{name:'canyon-ledge-viaduct',color:0xb3987e}));
-  group.add(vergePosts(T,{skip:high,color:0xe9d0a0,step:18}),dirtVerge(T,{shoulder:0xc9aa77,rut:0xa58d69,skip:high}));
+  group.add(vergePosts(T,{skip:high,color:0xe9d0a0,step:18}),dirtVerge(T,{shoulder:0xc9aa77,skip:high}));
   for(let i=0;i<2;i++)group.add(orbitBird(soaringVulture({seed:30+i}),{cx:70,cz:-110,cy:90+i*8,r:58+i*14,speed:.16,phase:i*3}));
   // Desert fiesta: cactus-flower beds, bunting at the gas stop, red mesas far off.
   festive(group,T,{seed:43,skip:high,stands:320,banners:420,bunting:260,balloons:150,flags:200,butterflies:20,

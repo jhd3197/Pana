@@ -99,13 +99,45 @@ pause overlay, sound toggle or invite flow, or handle Escape in a game. Never se
 
 ```powershell
 .\dev.ps1                 # start the server (installs deps, resolves busy ports)
-.\dev.ps1 check           # syntax check + unit and convention tests (~2 min)
+.\dev.ps1 check           # syntax check + unit and convention tests
+.\dev.ps1 check -Help     # the cheat sheet: which check to run for a change
 .\dev.ps1 check -Browser domino   # ...plus the Playwright suites matching "domino"
 .\dev.ps1 studio          # open Pana Studio on the running server
+npm test -- derrape            # only unit tests whose path contains "derrape" (seconds)
+npm test -- feats rules        # union of several filters
 npm run test:browser -- all-games  # every game prepares a 3D scene without errors
+npm run shots -- derrape --track chuao --at gate-60  # screenshots from the real loop, seconds
+npm run shots -- derrape --track sabana --menu      # menu art: <id>.webp + thumb + sources.json
+npm run budget -- derrape          # first-load modules and game.js lines vs their caps
 npm run test:browser -- --changed  # only the suites for what changed since dev
-npm run test:browser -- --jobs 4   # the full set, four suites at a time
+npm run test:browser -- derrape --baseline  # failures rerun on the merge-base: regression or pre-existing
+npm run new-track -- morrocoy --name "Morrocoy"     # new Derrape circuit, registered everywhere (--dry-run first)
+npm run new-game -- <id>           # a new game from the templates
+npm run launcher-art -- <id> <image> --row Mesa  # hub art, both JPEGs, registered
+npm run tidy                       # worktrees and branches already in dev (--apply removes)
 ```
+
+A pre-commit hook (`.githooks/`, installed by `npm install`) runs the fast gate
+in about two seconds: syntax of the staged scripts, the conventions test (the
+game.js and first-load caps, conflict markers, the changelog lint) and the
+changelog test. Check `npm run budget` before adding to a game near its caps.
+
+Browser failures that already happen on unchanged code are listed in
+`Pana/tests/known-failures.json` with the text they fail on; the runner reports
+those as KNOWN. Add one only after `--baseline` shows it pre-existing.
+
+Run the narrowest check that covers the change: `npm test -- <word>` takes
+seconds, the full `npm test` several minutes, and browser suites minutes EACH —
+always filter them (`-- derrape`, `--changed`). Never run the whole browser set
+locally; CI does that nightly. `.\dev.ps1 check -Help` prints the same cheat
+sheet from the CLI.
+
+A suite only reruns when something it can touch changed: the runner hashes the
+suite, every game it opens, the engine modules and assets those load, the server
+and the lockfile (`Pana/scripts/suite-fingerprint.js`), and skips a suite whose
+hash already passed (`cached` in the output, kept in the ignored
+`Pana/tests/.browser-passes.json`; CI keeps it between runs). `--fresh` runs
+everything anyway; the nightly full run does.
 
 Playwright is a dev dependency: `npm install` is all browser suites need, so
 don't search the disk for one or set `PANA_PLAYWRIGHT_PATH`. The runner starts
@@ -122,7 +154,9 @@ change touches within a ~20 min budget (`Pana/scripts/changed-suites.js`; docs,
 images and unit tests need none). PRs into `main` run only `check`, `test` and the
 smoke, since each commit already passed on `dev`. Every suite runs nightly on `dev`
 in four `--shard k/4` jobs, or by hand from Actions → Tests; it is never a merge
-gate. Every merge to `main` releases (`.github/workflows/release.yml`).
+gate. Every merge to `main` releases (`.github/workflows/release.yml`), then the
+workflow merges main back into dev with `node Pana/scripts/changelog.js
+sync-main`, which resolves the changelog itself; run it by hand if it warns.
 
 Browser suites wait on game state (`window.PANA_PREPARED`, a phase, a revision,
 an event), never on wall-clock time: no new `waitForTimeout`, positions and

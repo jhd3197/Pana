@@ -45,6 +45,17 @@ could not expose wall collisions. Never use that fixture as driving proof.
 No pose fields or extra network messages are added. Remote clients continue
 to display the owner's position and existing drift/spark flags.
 
+## Start line
+
+Holding the gas before "¡YA!" always gets the car going; `startBoost`
+(drive-rules.js) only grades when it went down. Late in "1" (≤1.6) gives the
+full turbo, earlier in "1" (≤2) a small one, and from "2" a plain start. From
+"3" (>2.85) the engine floods for 0.6 s at `STALL_THROTTLE` (35 %) power. It
+used to give zero throttle for 0.9 s, so pre-accelerating felt like the gas
+had not registered and players let go and pressed again. While the gas is held
+during the countdown, the number shows how the start will go: coral is
+flooded, white is plain, teal is a turbo.
+
 ## Proof
 
 `drift-assist.browser.js` drives complete corner entries and exits without
@@ -65,3 +76,30 @@ run. Its maximum sampled offset is 2.95 m in Estadio (wall at 6.4 m) and 2.99 m
 in Selva (nominal road limit 7.4 m). Countersteering changes the sampled exit by
 1.68 m and 3.16 m respectively. These are fixed 1.5-second holds plus a half-second
 exit, not automated full-lap steering or human success-rate estimates.
+
+## Speed levers
+
+If racing ever needs slowing or spacing out, each of these is one edit; none
+was touched for the style-scoring pass.
+
+- Per-car pace: `tune.top` / `tune.accel` in each car's entry in
+  `public/car-definitions.js` (first block at line 7). Tops sit at 35–39 m/s.
+- Turbo speed cap: ×1.5 of top while boosting, `public/drive.js:100` (the
+  `boosting ? top * 1.5` branch; rough ground has its own bleed next to it).
+- Drift difficulty (2026-10): orange and purple take longer (`DRIFT_LEVELS`
+  0.75 / 2.1 / 3.2 s; blue stays 0.75 so every real corner still pays — the
+  drift-assist suite proves it per car), payouts are 0.45 / 0.8 / 1.2 s.
+  Purple is a window: `OVERHEAT_WARN` (0.7 s in) flickers the sparks red and
+  `OVERHEAT_TIME` (1.4 s) burns the tyres — charge lost, speed × `BURN_SCRUB`,
+  no new drift until the button comes up. Each paid release heats the tyres
+  (`HEAT_PER_LEVEL` per level, cooling `HEAT_COOL`/s); hot tyres charge at
+  `heatedCharge(heat)`, down to 45 %, so a turbo out of every bend stops paying.
+  Bots let go just into purple (`aiInput`). All in `public/drive-rules.js`.
+- Drift turbo payout: `DRIFT_BOOST` seconds per charge level,
+  `public/drive-rules.js:8`, paid on release at `public/drive.js:70`; charge
+  thresholds are `DRIFT_LEVELS` one line above.
+- Coins: +0.8% speed each, up to 10 — `COIN_SPEED` / `MAX_COINS`,
+  `public/item-rules.js:2-3`, applied through `coinMultiplier`.
+- Bot catch-up: `rubberBand`, `public/modes.js:28` — up to +12% behind / −8%
+  ahead, scaled by the difficulty's `catchUp` / `ease` (`modes.js:19-23`) and
+  applied at `game.js:1320` (`c.band`).
