@@ -70,7 +70,7 @@ try {
       const p = race.player, T = getActiveTrack();
       return { clock: +race.clock.toFixed(2), s: Math.round(T.paramOf(p.x, p.z, p.y)), u: +(T.paramOf(p.x, p.z, p.y) / T.TOTAL).toFixed(3),
         kmh: Math.round(p.vf * 4), drift: p.drift, level: p.driftLvl || 0, charge: +(p.driftT || 0).toFixed(2),
-        heat: +(p.tireHeat || 0).toFixed(2), boost: +(p.boost || 0).toFixed(2), boat: !!p.boat, morph: +(p.morph || 0).toFixed(2), air: !p.onGround };
+        heat: +(p.tireHeat || 0).toFixed(2), hits: p.hits || 0, smashed: race.props?.props?.filter(q => q.down > 0).length ?? 0, boost: +(p.boost || 0).toFixed(2), boat: !!p.boat, morph: +(p.morph || 0).toFixed(2), air: !p.onGround };
     });
   }
   const code = opt('eval', null);

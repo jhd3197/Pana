@@ -4,6 +4,10 @@
 // slow-mo pattern); until then race.glow is a no-op stub.
 import { getSettings } from '/engine/settings.js';
 import { createParticleField } from './particles.js';
+import { statCount } from '/engine/stats.js';
+
+// A hit counts toward El Chocón on the results (c.hits); the local player's
+// hits also reach the stats pipe as derrape.crashes.
 
 const GOLD = [0xffe066, 0xffc629, 0xffffff, 0xffb000];
 const HOT = [0xffffff, 0xfff1b8, 0xffb347, 0xff7a1a];
@@ -34,6 +38,8 @@ export function createRaceFx(scene) {
     // A hit: hot sparks sprayed from the contact side, more for harder hits.
     // side: -1 left, 1 right, 0 head-on.
     impact(c, power, side = 0) {
+      c.hits = (c.hits || 0) + 1;
+      if (c.isPlayer) statCount('derrape.crashes', 1);
       const fx = Math.sin(c.h), fz = Math.cos(c.h), rx = -Math.cos(c.h), rz = Math.sin(c.h);
       const n = Math.min(80, Math.round(power * (low() ? 1.5 : 3)));
       const x = c.x + rx * side * 1.1 + (side ? 0 : fx * 1.8), z = c.z + rz * side * 1.1 + (side ? 0 : fz * 1.8);

@@ -23,6 +23,22 @@ lobby (`derrape-menu.md`), and its own Colyseus room (`derrape-online.md`).
   allowance). New work goes into its own module (`garage-*.js`, `race-*.js`,
   `*-rules.js`), never into game.js; moving a section out is always welcome.
   Drift milestone toasts live in `public/feats.js`, on `engine/feats.js`.
+- Race extras, each a lazy module with a `race.*` stub in game.js:
+  `public/breakables.js` (`race.props`: seeded clusters of the market kit's
+  barrels and crates on the road edges, merged once per material; smashed
+  from position by any car, local cars lose 10 % speed, back after 25 s),
+  `public/name-tags.js` (`race.tags`: DOM labels over racers within 45 m,
+  no textures, hidden in split screen), `public/drift-audio.js`
+  (`race.audio`: screech, level chimes, overheat ticks, burn, release thump,
+  water rush and outboard; silenced on pause and clearRace). Hits — walls,
+  cars and props — count in `c.hits`; the results tag El Chocón on the most
+  hits (5 or more); the player's reach the stats pipe as `derrape.crashes`
+  and `derrape.smashes`. Proof: `tests/race-extras.browser.js`.
+- Dev ghost: `public/ghosts/<trackId>.json` ships a signed lap
+  (`{ by, car, avatar, lap, poses }`); `pickGhost` races it while it beats
+  your own best (ghost-recorder.js). To ship one: race the track with
+  `?debug`, then run `exportGhost()` in the console and drop the file in
+  `public/ghosts/`. The ghost also turns lancha on river runs.
 - Race glow: `public/race-fx.js` (lazy; `race.glow` stub until it loads)
   draws the turbo exhaust (`drive.js`, every boosting step), impact sparks
   (wall hits in `drive.js`, `crash()` in game.js) and coin sparkles (pickup

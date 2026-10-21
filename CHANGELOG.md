@@ -8,6 +8,14 @@ becomes the GitHub release's notes.
 
 ## Unreleased
 
+- **Derrape: barriles y cajas para reventar, nombres sobre los carros y El
+  Chocón.** Por las orillas hay barriles y cajas del mercado; atraviésalos y
+  salen volando, aunque te frenan un poco. El que más choque en la carrera se
+  lleva el título de El Chocón en los resultados. Al acercarte a otro carro
+  ves su nombre encima, y el fantasma también se vuelve lancha en el río. El
+  derrape ahora suena: chirrido que sube con la carga, campanita en cada
+  nivel, avisos antes de quemar los cauchos y el motor fuera de borda en el
+  agua.
 - **Los primeros circuitos de Derrape estrenan carreteras.** El asfalto ya no
   es morado y liso: tiene grietas, parches y rayas de borde, con doble raya
   amarilla en la montaña de Chi Chi y el Páramo y postes reflectivos en las

@@ -37,7 +37,7 @@ import { advanceLap, ALL_SECTORS, RESCUE_TIME, OUT_TIME, STUCK_TIME } from './co
 import { createHazards } from './hazards.js';
 import { createMusic, TRACK_STYLE, GARAGE_SONG, RESULTS_SONG, songFor, finishSting } from './music.js';
 import { racerPortrait } from './racer-portrait.js';
-import { batchRacer, repaintCar, addBalloons } from './racer-render.js';
+import { batchRacer, repaintCar, addBalloons, setGhost, syncGhostAppearance } from './racer-render.js';
 import { createWaterAmbience } from './water-ambience.js';
 import { padInput, pressed, keyInput, SPLIT_KEYS, wrongWayStep, WRONG_WAY_TIME, lapSplit } from './controls.js';
 import { PAINTS, FLAMES, earnings, mirrorUnlocked, repaintHex } from './shop.js';
@@ -376,6 +376,12 @@ race.slowMo = { update() {}, trigger() {}, scale: 1, punch: 0 };
 import('./slow-mo.js').then(m => { race.slowMo = m.createSlowMo(); });
 race.glow = { boost() {}, impact() {}, coins() {} };   // turbo, hit and coin glow (race-fx.js), same lazy load
 import('./race-fx.js').then(m => { race.glow = m.createRaceFx(race.scene); });
+race.tags = { update() {}, clear() {} };   // names over nearby racers (name-tags.js), same lazy load
+import('./name-tags.js').then(m => { race.tags = m.createNameTags(); });
+race.props = { setTrack() {}, sync() {}, update() {} };   // barrels and crates to smash (breakables.js), same lazy load
+race.audio = { update() {} };   // drift screech, level chimes and the outboard (drift-audio.js), same lazy load
+import('./drift-audio.js').then(m => { race.audio = m.createDriftAudio(sound); });
+import('./breakables.js').then(m => { race.props = m.createBreakables({ race, sound, track: () => T }); if (T?.group) race.props.setTrack(T); });
 // A max-charge release dilates time (local races) and punches the camera.
 race.purpleRelease = () => { race.slowMo.trigger(); race.shake = Math.min(1.2, race.shake + 0.45); };
 
@@ -617,6 +623,8 @@ function finishTrack() {
   race.trackGroup = T.group;
   race.scene.add(race.trackGroup);
   gatesApi?.setTrack(T);
+  race.props.setTrack(T);
+  ghostIO?.devGhost(T.id);   // start fetching the track's shipped ghost, if any
   applyPalette(T.def.palette);
   race.items = createItems({
     scene: race.trackGroup, puffs: race.puffs, sound, G, track: T,
@@ -825,6 +833,7 @@ function clearRace() {
   race.cars.forEach(disposeRacer);
   race.cars = [];
   if (race.ghost) { disposeRacer(race.ghost.car); race.ghost = null; }
+  race.tags.clear(); race.audio.update(null, 0, false);
   race.recorder.discard();
   race.puffs.clear();
   race.debris.clear();
@@ -1002,11 +1011,13 @@ async function startRace(playerIndex, wheelId = garage.wheel, roster = null) {
     // The ghost races every mode but battle; ?noghost turns the feature off.
     if (race.mode !== 'battle' && !QS.has('noghost')) {
       race.recorder.begin(T.id);
-      const recorded = ghostIO?.loadGhost(T.id, profileStorage);
+      // Your best lap, or the shipped dev ghost while it is faster (ghost-recorder.js).
+      const recorded = ghostIO?.pickGhost(ghostIO.loadGhost(T.id, profileStorage), ghostIO.devGhost(T.id));
       if (recorded && ghostPlay) {
         race.ghost = ghostPlay.spawnGhost({ recording: recorded, buildCar: () => {
-          const c = makeRacer(playerIndex, false, ME.name, wheelId, ME.avatar, raceStyle(playerIndex));
-          c.name = 'Fantasma';
+          const by = recorded.by, car = by ? Math.max(0, CARS.findIndex(d => d.id === recorded.car)) : playerIndex;
+          const c = makeRacer(car, false, by || ME.name, wheelId, by ? recorded.avatar : ME.avatar, by ? null : raceStyle(playerIndex));
+          c.name = by || 'Fantasma';
           setGhost(c, true);
           return c;
         } });
@@ -1144,7 +1155,7 @@ const menu = createGameMenu({ pad: { native: true, playing: () => mode === 'race
     if (mode !== 'race' || race.netRace) return;
     paused = true;
     music.pause();
-    waterAmbience.stop();
+    waterAmbience.stop(); race.audio.update(null, 0, false);   // no screech under the pause menu
     if (sound.engine) sound.engine.g.gain.setTargetAtTime(0, sound.ctx.currentTime, 0.05);
   },
   onClose() { if (paused) music.resume(); paused = false; acc = 0; clock.getDelta(); },
@@ -1464,38 +1475,6 @@ function slipstreams(dt) {
   }
 }
 
-function setGhost(c, ghost) {
-  c.ghost = !!ghost;
-  syncGhostAppearance(c);
-}
-
-function syncGhostAppearance(c) {
-  const ghost = isGhost(c);
-  if (!!c.ghostVisible === ghost) return;
-  c.ghostVisible = ghost;
-  c.car.root.traverse(o => {
-    if (!o.material) return;
-    const apply = (m) => {
-      if (ghost) {
-        const clone = m.userData?.ghostClone ? m : m.clone();
-        (c.car.ghostMaterials ??= new Set()).add(clone);
-        if (!m.userData?.ghostClone) clone.userData = { ...clone.userData, ghostClone: true, baseTransparent: m.transparent, baseOpacity: m.opacity ?? 1 };
-        clone.transparent = true;
-        clone.opacity = Math.min(0.42, clone.userData.baseOpacity);
-        clone.needsUpdate = true;
-        return clone;
-      }
-      if (m.userData?.ghostClone) {
-        m.transparent = !!m.userData.baseTransparent;
-        m.opacity = m.userData.baseOpacity ?? 1;
-        m.needsUpdate = true;
-      }
-      return m;
-    };
-    o.material = Array.isArray(o.material) ? o.material.map(apply) : apply(o.material);
-  });
-}
-
 function collideCars() {
   for (let i = 0; i < race.cars.length; i++) {
     for (let j = i + 1; j < race.cars.length; j++) collidePair(race.cars[i], race.cars[j]);
@@ -1667,12 +1646,15 @@ function updateRace(dt, presentation = true) {
 // HUD text is written only when it changes: a write invalidates layout even when equal.
 function setText(id, text) { const el = $(id); if (el.textContent !== text) el.textContent = text; }
 function presentRace(dt) {
-  for (const c of race.cars) { syncCar(c, dt); gatesApi?.sync(c, dt); }
-  if (race.ghost) syncCar(race.ghost.car, dt);
+  for (const c of race.cars) { syncCar(c, dt); gatesApi?.sync(c, dt); race.props.sync(c); }
+  race.props.update(dt);
+  if (race.ghost) { syncCar(race.ghost.car, dt); gatesApi?.sync(race.ghost.car, dt); }   // the replay turns lancha on river runs too
+  race.tags.update(race.ghost ? [...race.cars, race.ghost.car] : race.cars, race.camera, race.player, { show: !race.split && race.state !== 'end' });
   race.sky.update(race.clock, T.def.palette?.daylight ?? 1);
   tickWind(race.clock, T?.def.rain ? 1.45 : 1);
   for (const o of T.animated) o.userData.tick(race.clock, dt);   // scenery: flags, windmills, birds…
   sound.setEngine(race.player.vf);
+  race.audio.update(race.player, dt, race.state === 'go' && !paused);
   waterAmbience.update(T,race.player.x,race.player.z);
 
   // HUD
@@ -2117,6 +2099,7 @@ function renderResults(order, player) {
   // Style is additive flavour: the podium and the order never change, only a
   // detail line per scorer and the Rey del Derrape tag for the best one.
   const styleBest = displayOrder.reduce((best, c) => Math.max(best, driftCombo.totalOf(c)), 0);
+  const hitsBest = displayOrder.reduce((best, c) => Math.max(best, c.hits || 0), 0);   // El Chocón: most hits (walls, cars, props), 5 or more
   fillRoster($('result-board'), displayOrder.map((c, i) => {
     const chip = document.createElement('span');
     chip.className = 'chip';
@@ -2129,11 +2112,12 @@ function renderResults(order, player) {
         ? `${rec.classification === 'finished' ? clockText(rec.time ?? c.time) : CLASSIFICATION_TEXT[rec.classification] ?? 'Sin terminar'} · +${rec.points} pts`
         : c.done ? clockText(c.time) : `vuelta ${Math.min(race.laps, Math.max(1, c.lap))}/${race.laps}`;
     const style = driftCombo.totalOf(c);
-    const king = style > 0 && style === styleBest;
+    const king = style > 0 && style === styleBest, chocon = hitsBest >= 5 && c.hits === hitsBest;
+    const detail = [style > 0 && `Estilo: ${style} pts${king ? ' · ¡Rey del Derrape!' : ''}`, chocon && `El Chocón: ${c.hits} choques`].filter(Boolean).join(' · ');
     return {
       rank: i + 1, lead: chip, name: c.name, me: c === player || (id && id === myId), end: endText,
-      detail: style > 0 ? `Estilo: ${style} pts${king ? ' · ¡Rey del Derrape!' : ''}` : null,
-      className: king ? 'style-king' : '',
+      detail: detail || null,
+      className: [king && 'style-king', chocon && 'chocon'].filter(Boolean).join(' '),
     };
   }));
 }
@@ -2386,7 +2370,7 @@ function resize() {
 addEventListener('resize', resize);
 resize();
 
-if (DEBUG) Object.assign(window, { loadTrack, disposeRacer, makeRacer, placeRacer, aiInput, stepRescue, collidePair, sendPoses, pollPads, music, getWallet: () => wallet, taller, menu, race, garage, renderer, crash, stepCar, startRace, updateRace, presentRace, finish, renderResults, renderCup, toGarage, showWheel, ITEMS, TRACKS, buildTrack, setup, popBalloon, rescue, getDriftFeats: () => driftApi, getActiveTrack: () => T, getGates: () => gatesApi, getNet: () => net });
+if (DEBUG) Object.assign(window, { sound, loadTrack, disposeRacer, makeRacer, placeRacer, aiInput, stepRescue, collidePair, sendPoses, pollPads, music, getWallet: () => wallet, taller, menu, race, garage, renderer, crash, stepCar, startRace, updateRace, presentRace, finish, renderResults, renderCup, toGarage, showWheel, ITEMS, TRACKS, buildTrack, setup, popBalloon, rescue, getDriftFeats: () => driftApi, getActiveTrack: () => T, getGates: () => gatesApi, exportGhost: (id = T.id) => ghostIO?.downloadGhost(id, { by: 'jhd3197 (dev)', car: CARS[garage.index].id, avatar: ME.avatar }, profileStorage), getNet: () => net });
 // ?track=desierto wins; otherwise the last pick, otherwise the estadio
 let savedTrack = 'estadio';
 try { savedTrack = localStorage.getItem('derrape:track') || savedTrack; } catch { /* private mode */ }
