@@ -98,19 +98,15 @@ export function createTransformGates({ race, sound, track }) {
   // the lower bodywork whatever the car's shape, the cabin still showing.
   function hullFor(c) {
     if (c.car.lanchaHull) return c.car.lanchaHull;
-    const { root, tumble, chassis } = c.car, heading = root.rotation.y;
-    root.rotation.y = 0; root.updateMatrixWorld(true);
-    const box = new THREE.Box3().setFromObject(chassis), size = box.getSize(new THREE.Vector3());
-    root.rotation.y = heading; root.updateMatrixWorld(true);
-    const bottom = box.min.y - root.position.y - tumble.position.y;
+    const { tumble } = c.car, { size, bottom } = bodyOf(c.car);
     const hull = createLanchaHull(c.def.color, { open: true, body: HULL });
     hull.traverse(o => { if (o.geometry) own(c, o.geometry); });
     hull.userData.fit = {
-      x: (size.x / 2 + 0.3) / 0.85,                     // half-beam 0.85 m
-      y: Math.max(0.7, (size.y * 0.3 + 0.1) / 0.8),     // rim 0.8 m up: a third of the body
-      z: (size.z + 1.1) / 4.8,                          // hull length 4.8 m
+      x: clamp((size.x / 2 + 0.3) / 0.85, 1.2, 2.6),          // half-beam 0.85 m
+      y: clamp((size.y * 0.3 + 0.1) / 0.8, 0.7, 1.8),         // rim 0.8 m up: a third of the body
+      z: clamp((size.z + 1.1) / 4.8, 0.9, 1.6),               // hull length 4.8 m
     };
-    hull.position.y = bottom - 0.12;
+    hull.position.y = bottom - 0.12;   // tumble space: the car's own floor
     hull.visible = false;
     tumble.add(hull);
     c.car.lanchaHull = hull;
@@ -218,6 +214,32 @@ export function createTransformGates({ race, sound, track }) {
     // A finished race leaves every car a car again.
     reset() { for (const hull of hulls) hull.visible = false; },
   };
+}
+
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+const FALLBACK = { size: new THREE.Vector3(2.2, 1.6, 4), bottom: -0.9 };
+const body = new THREE.Box3(), part = new THREE.Box3(), toCar = new THREE.Matrix4();
+
+// The car's solid body in its tumble group's frame: plain visible meshes
+// only, each from its own geometry bounds. Flames, sparks and pooled
+// particles ride the chassis too and park unused instances far away, which
+// would put the hull out of sight; anything still absurd falls back to a
+// typical car.
+function bodyOf(car) {
+  car.tumble.updateMatrixWorld(true);
+  toCar.copy(car.tumble.matrixWorld).invert();
+  body.makeEmpty();
+  car.chassis.traverse(o => {
+    if (!o.isMesh || o.isInstancedMesh || o.isPoints || o.isSprite || !o.visible || !o.geometry) return;
+    if (!o.geometry.boundingBox) o.geometry.computeBoundingBox();
+    part.copy(o.geometry.boundingBox).applyMatrix4(o.matrixWorld).applyMatrix4(toCar);
+    const sz = part.getSize(new THREE.Vector3());
+    if (part.isEmpty() || !Number.isFinite(sz.x + sz.y + sz.z) || Math.max(sz.x, sz.y, sz.z) > 8) return;
+    body.union(part);
+  });
+  const size = body.getSize(new THREE.Vector3());
+  if (body.isEmpty() || Math.max(size.x, size.y, size.z) > 8 || Math.min(size.x, size.y, size.z) < 0.3) return FALLBACK;
+  return { size, bottom: clamp(body.min.y, -1.6, 0) };
 }
 
 // Overshoots past 1 and settles back: the hull "pops" open.
