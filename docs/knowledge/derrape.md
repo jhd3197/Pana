@@ -29,5 +29,10 @@ lobby (`derrape-menu.md`), and its own Colyseus room (`derrape-online.md`).
   All three load lazily with the first race (the feats.js pattern): the
   garage's first load is capped at 160 modules. The slow-mo scales only the
   local frame accumulator — never the fixed step, never an online race clock.
+- Drift style scoring is pure math in `public/drift-score.js` (points rate,
+  chain window, banking; unit-tested like rules.js) and its HUD combo meter in
+  `public/drift-combo.js`. It is additive flavour: it never changes placement,
+  and a crash banks points instead of taking them. Only the local player's
+  banked points reach `statCount('derrape.drift-points', …)`.
 - Derrape signals readiness with `window.PANA_PREPARED` once the garage car is
   built, like every other game (tests/browser-kit.js `waitPrepared`).
