@@ -1,6 +1,7 @@
 // Pepazo's milestone toasts: painting a rival, and quick doubles and triples.
 // game.js feeds every confirmed hit; the window and the strings live here.
 // Pure logic — tests drive it with a fake feat() and their own clock.
+import { statEvent } from '/engine/stats.js';
 
 export const MULTI_WINDOW_MS = 5000;
 
@@ -9,6 +10,7 @@ export function createHitFeats(feat, { now = () => performance.now() } = {}) {
   return {
     hit(victimName) {
       const t = now();
+      statEvent('pintura.paint-hits');
       hits = hits.filter(h => t - h < MULTI_WINDOW_MS);
       hits.push(t);
       feat(`pintada:${victimName}`, `¡Pintaste a ${victimName}!`);
