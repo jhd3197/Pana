@@ -366,22 +366,19 @@ const world = createRaceWorld({ scene: race.scene, cameras: [race.camera, race.c
 Object.assign(race, { rain: world.rain, sky: world.sky, hemi: world.hemi, sun: world.sun });
 const applyPalette = world.applyPalette;
 race.debris = new Debris(race.scene);
-// Drift presentation loads with the first race, keeping the garage's first
-// load small (the feats.js pattern); stubs no-op until the modules land.
-race.skidMarks = { lay() {}, update() {}, clear() {} };
+// Race presentation loads with the first race, keeping the garage's first load
+// small: lazyRace puts a no-op stub on race[key] now and swaps in make(module)
+// when the import() lands. New race modules follow the same one line.
+const lazyRace = (key, stub, load, make) => { race[key] = stub; return load.then(m => { race[key] = make(m); return m; }); };
 let driftFx = null;
-import('./skid-marks.js').then(m => { race.skidMarks = new m.SkidMarks(race.scene, { focus: () => race.player }); });
 import('./drift-fx.js').then(m => { driftFx = m; });
-race.slowMo = { update() {}, trigger() {}, scale: 1, punch: 0 };
-import('./slow-mo.js').then(m => { race.slowMo = m.createSlowMo(); });
-race.glow = { boost() {}, impact() {}, coins() {} };   // turbo, hit and coin glow (race-fx.js), same lazy load
-import('./race-fx.js').then(m => { race.glow = m.createRaceFx(race.scene); });
-race.tags = { update() {}, clear() {} };   // names over nearby racers (name-tags.js), same lazy load
-import('./name-tags.js').then(m => { race.tags = m.createNameTags(); });
-race.props = { setTrack() {}, sync() {}, update() {} };   // barrels and crates to smash (breakables.js), same lazy load
-race.audio = { update() {} };   // drift screech, level chimes and the outboard (drift-audio.js), same lazy load
-import('./drift-audio.js').then(m => { race.audio = m.createDriftAudio(sound); });
-import('./breakables.js').then(m => { race.props = m.createBreakables({ race, sound, track: () => T }); if (T?.group) race.props.setTrack(T); });
+lazyRace('skidMarks', { lay() {}, update() {}, clear() {} }, import('./skid-marks.js'), m => new m.SkidMarks(race.scene, { focus: () => race.player }));
+lazyRace('slowMo', { update() {}, trigger() {}, scale: 1, punch: 0 }, import('./slow-mo.js'), m => m.createSlowMo());
+lazyRace('glow', { boost() {}, impact() {}, coins() {} }, import('./race-fx.js'), m => m.createRaceFx(race.scene));   // turbo, hit and coin glow
+lazyRace('tags', { update() {}, clear() {} }, import('./name-tags.js'), m => m.createNameTags());   // names over nearby racers
+lazyRace('audio', { update() {} }, import('./drift-audio.js'), m => m.createDriftAudio(sound));   // drift screech, chimes, outboard
+lazyRace('props', { setTrack() {}, sync() {}, update() {} }, import('./breakables.js'), m => m.createBreakables({ race, sound, track: () => T }))
+  .then(() => { if (T?.group) race.props.setTrack(T); });   // barrels and crates to smash
 // A max-charge release dilates time (local races) and punches the camera.
 race.purpleRelease = () => { race.slowMo.trigger(); race.shake = Math.min(1.2, race.shake + 0.45); };
 
