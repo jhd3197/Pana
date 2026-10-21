@@ -81,8 +81,9 @@ export function createToss({ from, to, power = .5, height = 1, gravity = 9.8, se
 
 // The gesture. button: a hold-to-shake button. surface: an element where a
 // flick throws (a tap there does nothing, so clicks keep their meaning).
-// keys: KeyboardEvent.key values that shake while held.
-export function bindDiceThrow({ button, surface, keys = [' '], canThrow = () => true, onStart, onThrow, onCancel }) {
+// keys: KeyboardEvent.key values that shake while held. holdSurface: a finger
+// held on the surface shakes too, and lifting it throws even without a flick.
+export function bindDiceThrow({ button, surface, keys = [' '], holdSurface = false, canThrow = () => true, onStart, onThrow, onCancel }) {
   let shake = null;
   const now = () => performance.now();
   function begin(source, event) {
@@ -104,7 +105,7 @@ export function bindDiceThrow({ button, surface, keys = [' '], canThrow = () => 
   function release(source) {
     if (shake?.source !== source) return;
     // On the table only a real flick throws; a tap there is a click.
-    if (source === 'surface' && shake.moved < 24) { cancel(); return; }
+    if (source === 'surface' && !holdSurface && shake.moved < 24) { cancel(); return; }
     const value = power(), ok = canThrow(); end();
     if (ok) onThrow?.(value); else onCancel?.();
   }

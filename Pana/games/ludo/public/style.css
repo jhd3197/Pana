@@ -1,5 +1,5 @@
 * { box-sizing: border-box; }
-body { --pk-game: #ff4b4b; --board-green: #b6c6b1; --ludo-blue: #3d7bf2; margin: 0; overflow: hidden; background: var(--board-green); color: var(--pk-text); font-family: var(--pk-sans); }
+body { --pk-game: #ff4b4b; --pk-qe-top: 150px; --pk-qe-top-phone: 122px; --board-green: #b6c6b1; --ludo-blue: #3d7bf2; margin: 0; overflow: hidden; background: var(--board-green); color: var(--pk-text); font-family: var(--pk-sans); }
 [hidden] { display: none !important; }
 button, a { -webkit-tap-highlight-color: transparent; }
 button:focus-visible, a:focus-visible { outline: 3px solid var(--pk-yellow); outline-offset: 4px; }
@@ -95,3 +95,4 @@ button:focus-visible, a:focus-visible { outline: 3px solid var(--pk-yellow); out
   .roll-tip { display: none; }
   #view { top: auto; bottom: 29px; right: auto; left: 12px; font-size: 11px; }
 }
+body.pana-starter .action-panel { visibility: hidden; }
