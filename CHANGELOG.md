@@ -8,6 +8,11 @@ becomes the GitHub release's notes.
 
 ## Unreleased
 
+- **Derrape: tu mejor vuelta corre contra ti.** Al terminar una carrera se
+  guarda tu vuelta más rápida en cada pista, y la próxima vez un fantasma
+  translúcido de tu propio carro la repite contigo — no choca ni cuenta en las
+  posiciones. El HUD muestra «Fantasma» con el tiempo a batir; con `?noghost`
+  se apaga.
 - **¿Quién empieza? Every table game now opens with the cachos.** All panas
   shake a leather cacho at once, slam it and lift together; the highest die
   starts, ties shake again, and a strip shows the order. Ludo, Bululú, Caída,
