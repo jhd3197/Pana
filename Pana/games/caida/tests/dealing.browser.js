@@ -19,7 +19,8 @@ async function sync(page, revision) { await page.waitForFunction(r => caidaDebug
 try {
   const a = await open('Ana'), b = await open('Beto');
   await a.waitForFunction(() => caidaDebug.room.members.size === 2);
-  await a.locator('#pana-room-more').click(); await a.locator('[data-room-option="cantos"][data-value="false"]').click(); await a.locator('#pana-room-done').click();
+  // The host's seat order deals first here; starter.browser.js covers the cachos.
+  await a.locator('#pana-room-more').click(); await a.locator('[data-room-option="cantos"][data-value="false"]').click(); await a.locator('[data-room-option="starter"][data-value="anfitrion"]').click(); await a.locator('#pana-room-done').click();
   await a.evaluate(() => { caidaDebug.room.game.rng = 1; });
   await a.locator('#start').click(); await b.waitForFunction(() => caidaDebug.room.state.phase === 'dealing');
   console.log('Both clients reached the dealer screen');
@@ -96,6 +97,7 @@ try {
   // A dealer who leaves hands the pending ritual to a bot, including its cut.
   const d = await open('Dani', `${code}-leave`), e = await open('Eva', `${code}-leave`);
   await d.waitForFunction(() => caidaDebug.room.members.size === 2);
+  await d.evaluate(() => caidaDebug.room.action('configure', { options: { starter: 'anfitrion' } })); await d.waitForFunction(() => caidaDebug.room.state.options.starter === 'anfitrion');
   await d.locator('#start').click(); await d.locator('#cut-deck').click();
   await e.waitForFunction(() => caidaDebug.room.state.cutAt === 20);
   await d.close(); await e.waitForFunction(() => caidaDebug.room.isHost && caidaDebug.room.state.phase === 'playing');

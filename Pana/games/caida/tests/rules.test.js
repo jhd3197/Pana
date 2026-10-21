@@ -1,10 +1,13 @@
 import assert from 'node:assert/strict';
-import { CaidaGame, deck, canto, previewPlay, chooseMove, MODES } from '../public/rules.js';
+import { CaidaGame, deck, canto, previewPlay, chooseMove, MODES, teamOf } from '../public/rules.js';
+import { starterResult } from '../../../engine/play/quien-empieza-rules.js';
+// Skips ¿Quién empieza? (the host's seat order): seat 0 deals first.
+const start = g => { g.options.starter = 'anfitrion'; return g.start(); };
 const c = (rank, suit = 'oros') => ({ id: `${suit}-${rank}`, rank, suit });
 const check = (name, run) => { run(); console.log(`PASS ${name}`); };
 function openDeal(g, call = 'down') { assert.ok(g.setCall(g.dealer, call)); assert.ok(g.dealOpening(g.dealer)); }
 function fixture() {
-  const g = new CaidaGame(10); g.start(); g.players.forEach(p => { p.hand = []; p.captured = []; });
+  const g = new CaidaGame(10); start(g); g.players.forEach(p => { p.hand = []; p.captured = []; });
   g.stock = [c(12, 'bastos')]; g.table = []; g.scores = [0, 0]; g.turn = 0; g.last = null; g.history = []; g.phase = 'playing'; return g;
 }
 check('40 unique cards; no 8 or 9', () => { assert.equal(deck().length, 40); assert.equal(new Set(deck().map(c => c.id)).size, 40); assert.ok(deck().every(c => ![8, 9].includes(c.rank))); });
@@ -46,27 +49,35 @@ check('sequence ledger rejects duplicate, out-of-turn, stale and foreign actions
   const g = new CaidaGame(6); g.addPlayer(1, 'A'); g.addPlayer(2, 'B');
   assert.equal(g.accept(2, { action: 'start', seq: 1, revision: g.revision }, 1), false);
   assert.ok(g.accept(1, { action: 'start', seq: 1, revision: g.revision }, 1));
+  assert.equal(g.phase, 'starter');
+  // Cacho slams never wait for the latest revision; a repeated seq still counts once.
+  assert.ok(g.accept(1, { action: 'starter', cacho: 'slam', power: .5, seq: 2, revision: -1 }, 1));
+  assert.equal(g.accept(2, { action: 'starter', cacho: 'slam', power: .5, seq: 0, revision: -1 }, 1), false);
+  assert.ok(g.accept(2, { action: 'starter', cacho: 'slam', power: .5, seq: 1, revision: -1 }, 1));
+  assert.equal(g.accept(99, { action: 'starter', cacho: 'slam', power: .5, seq: 1, revision: -1 }, 1), false);
+  while (g.phase === 'starter') g.stepStarter(.1);
   openDeal(g);
+  assert.equal(g.accept(1, { action: 'starter', cacho: 'slam', power: .5, seq: 9, revision: -1 }, 1), false, 'no cachos once dealing');
   const card = g.players[g.turn].hand[0].id;
   assert.equal(g.accept(99, { action: 'play', card, seq: 1, revision: g.revision }, 1), false);
-  const message = { action: 'play', card, seq: 2, revision: g.revision };
+  const message = { action: 'play', card, seq: 3, revision: g.revision };
   assert.ok(g.accept(g.players[g.turn].id, message, 1)); assert.equal(g.accept(1, message, 1), false);
 });
 check('bot decisions do not depend on other private hands or stock identities', () => {
-  const g = new CaidaGame(23); g.start(); openDeal(g); const before = chooseMove(g); g.players[0].hand = [c(12), c(12, 'copas'), c(12, 'bastos')]; g.stock.reverse(); assert.deepEqual(chooseMove(g), before);
+  const g = new CaidaGame(23); start(g); openDeal(g); const before = chooseMove(g); g.players[0].hand = [c(12), c(12, 'copas'), c(12, 'bastos')]; g.stock.reverse(); assert.deepEqual(chooseMove(g), before);
 });
 check('snapshot restore preserves RNG, cards, scores and late join seats', () => {
-  const g = new CaidaGame(12); g.addPlayer(1, 'A'); g.addPlayer(2, 'B'); g.start(); openDeal(g); g.play(g.turn, chooseMove(g).card);
+  const g = new CaidaGame(12); g.addPlayer(1, 'A'); g.addPlayer(2, 'B'); start(g); openDeal(g); g.play(g.turn, chooseMove(g).card);
   const restored = CaidaGame.restore(g.snapshot(), new Map([[2, { id: 2, name: 'B' }], [3, { id: 3, name: 'C' }]]));
   assert.deepEqual(restored.players.map(p => p.hand), g.players.map(p => p.hand)); assert.deepEqual(restored.scores, g.scores); assert.equal(restored.rng, g.rng); assert.equal(restored.players[0].id, 3);
 });
 check('600 seeded complete matches across all modes conserve every card', () => {
   for (const mode of Object.keys(MODES)) for (let seed = 1; seed <= 100; seed++) {
-    const g = new CaidaGame(seed); g.configure({ mode, cantos: seed % 2 === 0 }); g.start(); let actions = 0;
+    const g = new CaidaGame(seed); g.configure({ mode, cantos: seed % 2 === 0 }); start(g); let actions = 0;
     while (g.phase !== 'finished' && actions++ < 3000) {
       const cards = [...g.stock, ...g.table, ...g.players.flatMap(p => [...p.hand, ...p.captured])]; assert.equal(cards.length, 40); assert.equal(new Set(cards.map(c => c.id)).size, 40);
       assert.equal(new Set(g.table.map(c => c.rank)).size, g.table.length);
-      if (g.phase === 'round-over') { g.start(); continue; }
+      if (g.phase === 'round-over') { start(g); continue; }
       if (g.phase === 'dealing') { if (seed % 3) assert.ok(g.cutDeck(g.dealer, 1 + seed % 39)); openDeal(g, seed % 2 ? 'up' : 'down'); continue; }
       const p = g.players[g.turn]; if (g.options.cantos && !p.announced && canto(p.hand)) g.chant(g.turn); else { const move = chooseMove(g); assert.ok(move); assert.ok(g.play(g.turn, move.card)); }
     }
@@ -74,10 +85,10 @@ check('600 seeded complete matches across all modes conserve every card', () => 
   }
 });
 check('dealer alone chooses and cuts once; start cannot reroll a pending deal', () => {
-  const g = new CaidaGame(6); g.addPlayer(10, 'A'); g.addPlayer(20, 'B'); g.start();
+  const g = new CaidaGame(6); g.addPlayer(10, 'A'); g.addPlayer(20, 'B'); start(g);
   assert.equal(g.phase, 'dealing'); assert.equal(g.dealer, 0); assert.equal(g.stock.length, 40);
   assert.ok(g.players.every(p => p.hand.length === 0)); assert.equal(g.table.length, 0);
-  const before = g.snapshot(); assert.equal(g.start(), false); assert.deepEqual(g.snapshot(), before);
+  const before = g.snapshot(); assert.equal(start(g), false); assert.deepEqual(g.snapshot(), before);
   const action = (id, action, values = {}) => g.accept(id, { action, seq: (g.ledger[id] || 0) + 1, revision: g.revision, ...values }, 10);
   assert.equal(action(20, 'cut', { at: 20 }), false); assert.equal(action(20, 'call', { call: 'up' }), false);
   assert.equal(action(20, 'deal'), false); assert.equal(action(10, 'deal'), false);
@@ -93,7 +104,7 @@ check('dealer alone chooses and cuts once; start cannot reroll a pending deal', 
 });
 check('opening count uses the chosen direction and replacement cards keep the call position', () => {
   for (const call of ['up', 'down']) {
-    const g = new CaidaGame(10); g.start();
+    const g = new CaidaGame(10); start(g);
     const ranks = call === 'up' ? [1, 2, 3, 4] : [4, 3, 2, 1];
     const opening = ranks.map(rank => c(rank));
     const duplicate = c(ranks[0], 'copas');
@@ -104,7 +115,7 @@ check('opening count uses the chosen direction and replacement cards keep the ca
   }
 });
 check('each reparto resets the choice and cut; the next human dealer can start', () => {
-  const g = new CaidaGame(10); g.addPlayer(1, 'A'); g.addPlayer(2, 'B'); g.start(); openDeal(g);
+  const g = new CaidaGame(10); g.addPlayer(1, 'A'); g.addPlayer(2, 'B'); start(g); openDeal(g);
   g.players[0].captured = deck().slice(0, 20); g.players[1].captured = deck().slice(20); g.players.forEach(p => { p.hand = []; });
   g.stock = []; g.table = []; g.finishRound(); const scores = [...g.scores];
   assert.ok(g.accept(2, { action: 'start', seq: 1, revision: g.revision }, 1));
@@ -113,10 +124,36 @@ check('each reparto resets the choice and cut; the next human dealer can start',
   assert.ok(g.setCall(1, 'down')); assert.ok(g.dealOpening(1)); assert.equal(g.turn, 0);
 });
 check('migration preserves the actual cut, pending choice, and all 40 hidden cards', () => {
-  const g = new CaidaGame(43); g.addPlayer(1, 'A'); g.addPlayer(2, 'B'); g.start(); g.cutDeck(0, 39); g.setCall(0, 'up');
+  const g = new CaidaGame(43); g.addPlayer(1, 'A'); g.addPlayer(2, 'B'); start(g); g.cutDeck(0, 39); g.setCall(0, 'up');
   const restored = CaidaGame.restore(g.snapshot(), new Map([[2, { id: 2, name: 'B' }]]));
   assert.equal(restored.players[0].id, null); assert.equal(restored.phase, 'dealing');
   assert.equal(restored.cutAt, 39); assert.equal(restored.dealCall, 'up'); assert.deepEqual(restored.stock, g.stock);
   assert.ok(restored.dealOpening(0)); assert.ok(g.dealOpening(0));
   assert.deepEqual(restored.players.map(p => p.hand), g.players.map(p => p.hand)); assert.deepEqual(restored.table, g.table);
+});
+
+check('a match opens with the cachos: the highest deals the first reparto, then the deal passes on', () => {
+  for (const mode of ['duel', 'four', 'sixTeams']) for (let seed = 1; seed <= 12; seed++) {
+    const g = new CaidaGame(seed); g.configure({ mode }); g.addPlayer(1, 'A'); assert.ok(g.start());
+    assert.equal(g.phase, 'starter'); assert.equal(g.stock.length, 0); assert.deepEqual(g.starter.contenders, g.players.map(p => p.seat));
+    assert.equal(g.setCall(g.dealer, 'up'), false, 'no deal before the cachos');
+    assert.ok(g.accept(1, { action: 'starter', cacho: 'slam', power: .9, seq: 1, revision: -1 }, 1));
+    let steps = 0; while (g.phase === 'starter' && steps++ < 400) g.stepStarter(.1);
+    const { order } = starterResult(g.starter);
+    assert.equal(g.phase, 'dealing'); assert.equal(g.dealer, order[0]); assert.equal(g.round, 1); assert.equal(g.stock.length, 40);
+    assert.equal(g.turn, (g.dealer + 1) % g.players.length, 'the next pana is mano');
+    g.phase = 'round-over'; assert.ok(g.start()); assert.equal(g.phase, 'dealing', 'later repartos skip the cachos');
+    assert.equal(g.dealer, (order[0] + 1) % g.players.length);
+  }
+});
+check('host options: al azar deals at once, revancha gives the first deal to the last place', () => {
+  const g = new CaidaGame(5); assert.ok(g.configure({ starter: 'azar' })); assert.equal(g.options.starter, 'azar');
+  assert.equal(g.configure({ starter: 'trampa' }), false);
+  assert.ok(g.start()); assert.equal(g.phase, 'dealing'); assert.equal(g.dealer, starterResult(g.starter).order[0]);
+  openDeal(g); g.options.starter = 'revancha'; g.scores = [23, 4];
+  g.players[g.turn].hand = [c(1), c(2), c(3)]; g.options.cantos = true; g.scores[teamOf(g, g.turn)] = 23; g.scores[teamOf(g, (g.turn + 1) % 2)] = 4;
+  const loser = (g.turn + 1) % 2; assert.ok(g.chant(g.turn)); assert.equal(g.phase, 'finished'); assert.equal(g.lastPlace, loser);
+  assert.ok(g.setup()); assert.equal(g.lastPlace, loser, 'reorganising the table keeps the revancha');
+  assert.equal(g.phase, 'lobby'); assert.ok(g.start()); while (g.phase === 'starter') g.stepStarter(.1);
+  assert.equal(g.dealer, loser); assert.deepEqual(g.scores, [0, 0]);
 });

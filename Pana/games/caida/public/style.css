@@ -192,3 +192,7 @@ button:focus-visible,a:focus-visible,select:focus-visible,input:focus-visible,su
 }
 @media(max-width:720px) and (max-height:700px){.hand{height:100px}.hand-card{width:62px;height:93px}}
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{transition:none!important;animation:none!important}}
+/* ¿Quién empieza? (engine/play/quien-empieza.js): the heading below the
+   scoreboard; the hand and its tools wait until the cachos are done. */
+body { --pk-qe-top: 132px; --pk-qe-top-phone: 112px; }
+body.pana-starter .rack, body.pana-starter .table-tools { visibility: hidden; }

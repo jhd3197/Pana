@@ -13,6 +13,7 @@ try {
   await host.locator('[data-room-option="format"][data-value="teams"]').click();
   await host.locator('#pana-room-more').click();
   await host.locator('[data-room-option="cantos"][data-value="false"]').click();
+  await host.locator('[data-room-option="starter"][data-value="anfitrion"]').click();
   await host.locator('#pana-room-done').click();
   const guest = await openGame(browser, 'caida', { room: code, name: 'Luis', mobile: true, query: 'debug' }); clients.push(guest);
   for (let seat = 2; seat < 6; seat++) {

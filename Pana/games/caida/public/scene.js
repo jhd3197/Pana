@@ -4,13 +4,14 @@ import { createGameTable, createGameChair } from '/engine/models/props/game-tabl
 import { buildCharacter } from '/engine/models/characters/pana/avatar-model.js';
 import { normalizeAvatar } from '/engine/avatar.js';
 import { createSeatBubbles } from '/engine/play/seat-bubbles.js';
+import { createStarterStage } from '/engine/play/quien-empieza.js';
 import { createSpanishCard, createScoreToken } from '/engine/models/props/spanish-cards.js';
 import { deck, previewPlay, teamOf, MODES } from './rules.js';
 
 const UP = new THREE.Vector3(0, 1, 0), Y = 1.48;
 const LOOKS = [{ hat: 'llanero', outfitColor: '#dc7854' }, { hat: 'pesca', hatColor: '#ddad58', outfitColor: '#4c9385', glasses: 'redondos', face: 'feliz' }, { hat: 'gorra', outfitColor: '#b8c279' }, { hat: 'band', outfitColor: '#c96c59' }];
 
-export async function createCaidaScene(canvas, { onCard, onLoading = () => {} } = {}) {
+export async function createCaidaScene(canvas, { onCard, onStarter, onLoading = () => {} } = {}) {
   onLoading('Preparando el patio…');
   const stage = createTableWorld(canvas, { fit: 'window', exposure: 1.04, background: '#d8c69e', fog: [24, 60], sky: false, fov: 36, plazaScale: .72,
     hemi: ['#e8f2ed', '#997a57', 2.4], sun: { color: '#ffe3ad', intensity: 3.1, position: [-6, 14, 8], box: 10, far: 40 } });
@@ -43,6 +44,18 @@ export async function createCaidaScene(canvas, { onCard, onLoading = () => {} } 
     camera.updateProjectionMatrix(); if (immediate || reduced.matches) camera.position.copy(desiredCamera);
   }
   cameraTarget(true); camera.lookAt(target);
+  // ¿Quién empieza?: a cacho on the felt in front of each seat. The seats move
+  // with the table size, so the stage is rebuilt when that changes.
+  let starter = null, starterSize = 0;
+  function starterFor(state) {
+    const size = state.players.length;
+    if (starter && starterSize === size) return starter;
+    starter?.dispose(); starterSize = size;
+    const reach = 1.75 * (size > 4 ? 1.15 : 1);
+    starter = createStarterStage({ root: scene, camera, canvas, scale: .55, onInput: onStarter,
+      spot: seat => { const a = seat * Math.PI * 2 / size; return { position: [Math.sin(a) * reach, Y, Math.cos(a) * reach], out: [Math.sin(a), Math.cos(a)] }; } });
+    return starter;
+  }
 
   async function syncCharacters(players) {
     for (const p of players) {
@@ -64,6 +77,7 @@ export async function createCaidaScene(canvas, { onCard, onLoading = () => {} } 
 
   function update(value, seat, chosen = null) {
     if (disposed) return; state = value; const tableScale = state.players.length > 4 ? 1.15 : 1; table.scale.set(tableScale, 1, tableScale); plaza.setMap(state.mapId); ownSeat = Math.max(0, seat); selected = chosen; cameraTarget();
+    if (state.phase === 'starter' || starter) starterFor(state).update(state.phase === 'starter' ? state.starter : null, { ownSeat: seat, names: state.players.map(p => p.name) });
     const version = JSON.stringify(state.players.map(p => [p.id, p.avatar]));
     if (version !== geometryVersion) { geometryVersion = version; syncCharacters(state.players); }
     const preview = selected ? previewPlay(state, state.players[ownSeat].hand.find(c => c.id === selected), ownSeat) : null;
@@ -135,13 +149,14 @@ export async function createCaidaScene(canvas, { onCard, onLoading = () => {} } 
       labels[i].style.left = `${THREE.MathUtils.clamp((projected.x * .5 + .5) * innerWidth, 65, innerWidth - 65)}px`; labels[i].style.top = `${(-projected.y * .5 + .5) * innerHeight}px`;
       bubbles.place(i, (projected.x * .5 + .5) * innerWidth, (-projected.y * .5 + .5) * innerHeight);
     });
+    starter?.frame(dt);
     stage.draw(dt);
   }
   const resize = () => { renderer.setSize(innerWidth, innerHeight); cameraTarget(); }; addEventListener('resize', resize);
   return { scene, camera, renderer, cards, characters, update, frame, setView(value) { cameraMode = value; cameraTarget(); },
-    say: bubbles.say,
+    say: bubbles.say, get starter() { return starter; },
     dispose() {
-      disposed = true; removeEventListener('resize', resize); canvas.removeEventListener('pointermove', pointerMove); canvas.removeEventListener('pointerdown', pointerDown); canvas.removeEventListener('pointerup', pointerUp);
+      disposed = true; starter?.dispose(); removeEventListener('resize', resize); canvas.removeEventListener('pointermove', pointerMove); canvas.removeEventListener('pointerdown', pointerDown); canvas.removeEventListener('pointerup', pointerUp);
       cards.forEach(c => c.model.userData.dispose()); tokens.flat().forEach(t => t.userData.dispose()); characters.forEach(c => c?.dispose()); chairs.forEach(c => c.userData.dispose()); labels.forEach(l => l.remove()); bubbles.dispose(); table.userData.dispose(); stage.dispose();
     },
   };
