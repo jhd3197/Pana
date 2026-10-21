@@ -12,7 +12,8 @@
 //                reads the same committed timings, so the slices never overlap
 //   --retries N  rerun a failed suite up to N times (default 1), at half the
 //                concurrency; a pass on retry is reported as flaky
-//   --record     write this run's suite times to Pana/tests/browser-timings.json
+//   --record     write this run's suite times to Pana/tests/browser-timings.json (suites
+//                with no time yet are always written, from any passing run)
 //   --fresh      run every selected suite, even one whose fingerprint already passed
 //   --baseline[=ref]  rerun each remaining failure on the merge-base with `dev` (or <ref>)
 //                in a scratch worktree, and label it "pre-existing" or "regression"
@@ -237,6 +238,16 @@ await Promise.all(Array.from({ length: Math.min(Math.max(1, Math.floor(jobs / 2)
 }));
 cleanup();
 savePasses();
+
+// A suite with no recorded time is scheduled on a 60 s guess (slowest-first,
+// shards, the --changed budget); any run that sees one pass fills the gap.
+const learned = [...results].filter(([label, r]) => r.ok && !(label in timings));
+if (!flags.record && learned.length) {
+  for (const [label, r] of learned) timings[label] = Math.round(r.seconds);
+  fs.writeFileSync(timingsFile, `${JSON.stringify(Object.fromEntries(Object.entries(timings).sort()), null, 2)}
+`);
+  console.log(`Learned the time of ${learned.length} new suite(s) in ${path.relative(repo, timingsFile)}`);
+}
 
 if (flags.record) {
   // A failing suite still holds a slot that long, so its time counts too.
