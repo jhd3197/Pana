@@ -374,6 +374,8 @@ import('./skid-marks.js').then(m => { race.skidMarks = new m.SkidMarks(race.scen
 import('./drift-fx.js').then(m => { driftFx = m; });
 race.slowMo = { update() {}, trigger() {}, scale: 1, punch: 0 };
 import('./slow-mo.js').then(m => { race.slowMo = m.createSlowMo(); });
+race.glow = { boost() {}, impact() {}, coins() {} };   // turbo, hit and coin glow (race-fx.js), same lazy load
+import('./race-fx.js').then(m => { race.glow = m.createRaceFx(race.scene); });
 // A max-charge release dilates time (local races) and punches the camera.
 race.purpleRelease = () => { race.slowMo.trigger(); race.shake = Math.min(1.2, race.shake + 0.45); };
 
@@ -627,7 +629,7 @@ function finishTrack() {
       }
     },
     coinPicked: (c, worldPos, streak) => {
-      race.shockwaves.sparkle(worldPos, { color: 0xffe066 });
+      race.glow.coins(worldPos, 14);
       if (c.isPlayer) flyToCounter(worldPos, race.camera, $('coin-count'), { streak });
     },
     say: (c, lines, time) => say(c, lines, time),
@@ -1315,7 +1317,7 @@ function popPart(c, power) {
 // A hit knocks coins off the car: they burst out as golden puffs.
 function spillCoins(c, n) {
   const lost = loseCoins(c, n);
-  if (lost) race.puffs.spawn(new THREE.Vector3(c.x, c.y + 1.6, c.z), { color: 0xffc629, count: lost * 4, spread: 2.4, size: 0.5, rise: 3, life: 0.7 });
+  if (lost) race.glow.coins(new THREE.Vector3(c.x, c.y + 1.6, c.z), lost * 10);
   return lost;
 }
 
@@ -1330,6 +1332,7 @@ function crash(c, power, side) {
   c.dizzy = 1.4;
   c.scream = 1.2;
   c.drift = 0; c.driftT = 0; c.driftExitT = 0;
+  race.glow.impact(c, power, side);
   spillCoins(c, power >= 14 ? 2 : 1);
   say(c, LINES.crash);
   popPart(c, power);

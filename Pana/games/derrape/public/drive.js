@@ -4,7 +4,6 @@
 import * as THREE from 'three';
 import { sound } from '/engine/fx.js';
 import { shout } from '/engine/kit.js';
-import { pick } from '/engine/random.js';
 import { roughnessAt, roadGripAt, roadWaterAt } from './offroad.js';
 import { coinMultiplier } from './item-rules.js';
 import { DRIFT_MIN_SPEED, DRIFT_BOOST, DRIFT_LEVELS, HOP_SPEED, DRIFT_EXIT_TIME, driftLevel, driftSteer, assistDrift, driftCharge, trickBoost, STALL_THROTTLE,
@@ -254,6 +253,7 @@ export function createDriver({ race, track, say, popPart, progressOf, flameFor, 
         if (vn > 9 && !isGhost(c)) {
           c.drift = 0; c.driftT = 0;   // a hard wall hit throws the drift away
           sound.bonk(vn / 10);
+          race.glow.impact(c, vn, Math.sign((-nx * Math.cos(c.h) + nz * Math.sin(c.h)) * side));   // sparks on the side that hit
           say(c, LINES.wall, 0.8);
           c.vy = Math.max(c.vy, 4);
           c.onGround = false;
@@ -291,6 +291,7 @@ export function createDriver({ race, track, say, popPart, progressOf, flameFor, 
     c.scream = Math.max(0, c.scream - dt);
     c.honkT = Math.max(0, c.honkT - dt);
 
+    if (boosting) race.glow.boost(c, flameFor(c), dt);   // glowing exhaust (race-fx.js), every step
     // Tire spray, dust and damage smoke share the bounded particle pool.
     c.puffT -= dt;
     if (c.puffT <= 0) {
@@ -303,9 +304,6 @@ export function createDriver({ race, track, say, popPart, progressOf, flameFor, 
         });
       } else if (kicking) {
         race.puffs.spawn(new THREE.Vector3(c.x - fx * 1.6, c.y+0.25, c.z - fz * 1.6), { color: rough>0.1?0x889263:0xe7bd8a, count: 1, size: 0.7, rise: 0.6, life: 0.7 });
-      }
-      if (boosting) {
-        race.puffs.spawn(new THREE.Vector3(c.x - fx * 2.2, c.y + 0.5, c.z - fz * 2.2), { color: pick(flameFor(c)), count: 2, size: 0.6, rise: 0.4, life: 0.35, spread: 0.4 });
       }
       if (c.lost >= 2) {
         race.puffs.spawn(new THREE.Vector3(c.x + fx * 1.4, c.y + 1.6, c.z + fz * 1.4), { color: 0x4a4a52, count: 1, size: 0.6, rise: 2, life: 1 });
