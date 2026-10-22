@@ -1,5 +1,24 @@
 # Carreritas track system
 
+## Repeatable map audit
+
+`node Pana/scripts/map-audit.js --out art/map-audit/baseline` audits the
+registry, or a `--tracks plaza,selva` subset. It starts a fresh server and
+isolated browser context per map, seeds randomness, uses a 1280×720 driver
+view, and writes ten fixed poses plus route/camera/render metadata. The
+`--quality alta|media|baja` option controls scenery quality; render resolution
+is explicitly one pixel per CSS pixel for comparisons. Race tone mapping is
+used even though the normal animation loop is disabled.
+
+Each map then restarts and runs a one-lap automated race through the actual
+physics and presentation updates. Its telemetry and completion are separate
+from the posed pictures; a successful pose capture does not prove a lap.
+The output identifies the source revision, working diff, CPU and WebGL
+renderer. Synchronous render timings are diagnostic submissions, not live FPS
+or representative mobile performance. Keep all evidence ignored and compare
+the same device/settings. Existing browser suites still own correctness and
+budget assertions.
+
 ## Twenty authored roadside compositions
 
 Plaza, Selva, Páramo, Bululú and Sabana explicitly opt into

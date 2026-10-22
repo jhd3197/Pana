@@ -8,6 +8,10 @@ becomes the GitHub release's notes.
 
 ## Unreleased
 
+- **La revisión de pistas guarda vistas de conducción y comprueba una vuelta automática.**
+  La herramienta de auditoría registra geometría, cámara y costes de dibujo
+  por circuito para comparar mejoras con las mismas condiciones.
+
 - **Veinte rincones de Derrape tienen nuevos jardines, árboles y referencias de camino.**
   Plaza, Selva, Páramo, Bululú y Gran Sabana enmarcan curvas y vistas con
   vegetación y rocas propias de cada paisaje, sin cambiar el trazado ni la cámara.
