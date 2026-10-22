@@ -27,7 +27,7 @@ const tint = new THREE.Color(), white = new THREE.Color(0xffffff);
 
 export function driftSparks(puffs, c, dt) {
   const fx = Math.sin(c.h), fz = Math.cos(c.h), rx = -Math.cos(c.h), rz = Math.sin(c.h);
-  if (c.drift && c.onGround && !c.boat) {   // on a river stretch transform-gates.js throws spray instead
+  if (c.drift && c.onGround && !c.boat && !c.plane) {   // on a river stretch transform-gates.js throws spray instead
     const level = c.remote ? c.driftLvl || 0 : driftLevel(c.driftT);
     if (level) emitSparks(sparkField(puffs.scene), c, level, dt, fx, fz, rx, rz);
   }
@@ -42,7 +42,7 @@ export function driftSparks(puffs, c, dt) {
   c.sparkT = (c.sparkT || 0) - dt;
   if (c.sparkT > 0) return;
   c.sparkT = 0.05;
-  if (c.drift && c.onGround && !c.boat) driftSmoke(smokeField(puffs.scene), c, c.remote ? c.driftLvl || 0 : driftLevel(c.driftT), fx, fz, rx, rz);
+  if (c.drift && c.onGround && !c.boat && !c.plane) driftSmoke(smokeField(puffs.scene), c, c.remote ? c.driftLvl || 0 : driftLevel(c.driftT), fx, fz, rx, rz);
   if (c.stall > 0) puffs.spawn(new THREE.Vector3(c.x - fx * 2.2, c.y + 0.7, c.z - fz * 2.2), { color: 0x3a3a40, count: 1, size: 0.8, rise: 1.6, life: 0.8 });
   if (c.draft > 0.2 && c.isPlayer) {
     puffs.spawn(new THREE.Vector3(c.x + fx * 2 + rx * (Math.random() * 4 - 2), c.y + 1 + Math.random(), c.z + fz * 2 + rz * (Math.random() * 4 - 2)),

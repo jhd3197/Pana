@@ -8,6 +8,10 @@ becomes the GitHub release's notes.
 
 ## Unreleased
 
+- **En Derrape, Galipán ahora también se corre por el aire.** En el borde
+  del mirador tu carro se vuelve avioneta y vuela sobre las primeras curvas
+  de la bajada con los mismos controles; al aterrizar te da un turbo. Tierra,
+  agua y aire en la misma carrera.
 - **Nuevo juego: Parapente. Salta del Ávila con tus panas y vuela sobre Galipán.**
   Pasa las cinco balizas (la Cresta, el Pueblito, el Mirador, el Bosque y
   los Girasoles), sube en las térmicas donde dan vueltas los zamuros,

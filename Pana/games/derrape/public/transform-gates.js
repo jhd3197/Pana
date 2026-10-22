@@ -11,6 +11,12 @@
 // instead (course-rules.js, openWater): no road and no walls, boats steer anywhere afloat,
 // bounce off the banks, the boats on the water and their wakes.
 //
+// A `fly: true` gate is the air: at a cliff the car pops into a little plane
+// (an avioneta in the racer's paint, own pana in the cockpit) and flies
+// up to FLY_LIFT over the road for the stretch, then lands back as a car
+// with a short turbo. Only the drawing rises; the road under it stays the
+// driving surface, so the controls are the same.
+//
 // Who is a boat is decided from position alone, every frame and for every
 // car, remote ones included: online clients agree without a new message.
 // Local presentation (slow-mo, stats) only fires for the local player, and
@@ -19,6 +25,7 @@
 import * as THREE from 'three';
 import { riverSurface } from '/engine/models/effects/water-surface.js';
 import { createLancha } from '/engine/models/vehicles/lancha.js';
+import { createAvioneta } from '/engine/models/vehicles/avioneta.js';
 import { statCount } from '/engine/stats.js';
 import { shout } from '/engine/kit.js';
 import { createParticleField } from './particles.js';
@@ -36,7 +43,12 @@ const WAKE_CHARGE = 0.55;      // extra drift charge per second on the water
 const WATER_LIFT = 0.32;       // the sheet sits this far over the road
 const WAKE_HOP = 5.5;          // m/s up when a boat crosses another boat's wake
 const BUMP_HARD = 6;           // m/s into a boat or a bank that counts as a crash
+const FLY_LIFT = 16;           // metres the plane flies over the road
+const FLY_RAMP = 50;           // metres to climb at a flight gate's start and settle at its end
+const FLY_TURBO = 1.2;         // seconds of turbo for touching down
+const PLANE_SCALE = 1.5;       // the avioneta beside car-sized racers
 const SPRAY = [0xffffff, 0xd8f4ff, 0x9fe3ef];
+const DUST = [0xfff2d0, 0xffe0a8, 0xffffff];
 const DROPS = [0xffffff, 0xe6f8ff, 0xbfeaf5, 0x8fd6e8];   // droplet tints, foam to river
 
 // The gate a point sits in, or null. Off the road's edge never counts.
@@ -56,7 +68,7 @@ export function buildGates(T) {
   group.name = 'transform-gates';
   const ticks = [];
   for (const g of runs) {
-    if (g.sheet === false || g.open) continue;   // the track draws its own water here
+    if (g.sheet === false || g.open || g.fly) continue;   // the track draws its own water here, or it is a cliff
     const points = [];
     for (let d = 0; d <= g.len; d += 4) { const p = T.pointAt(g.s0 + d); points.push([p.x, p.y]); }
     const height = (x, z) => T.heightAtS(T.paramOf(x, z)) + WATER_LIFT;
@@ -86,15 +98,18 @@ export function createTransformGates({ race, sound, track }) {
         { color: DROPS[i % DROPS.length], size: 0.55, life: 0.9, gravity: 16, drag: 0.8 });
     }
   }
-  const inGate = c => !!(runs.length && !c.retired && gateAt(track(), runs, c.x, c.z, c.y));
-  // Within PREBUILD metres before a gate (or in it): time to have a lancha ready.
+  const gateOf = c => (runs.length && !c.retired && gateAt(track(), runs, c.x, c.z, c.y)) || null;
+  const inGate = c => !!gateOf(c);
+  // Within PREBUILD metres before a gate (or in it): time to have its vessel ready.
   const nearGate = c => {
     const t = track();
-    if (runs.length && t.openWater?.surfaceAt(c.x, c.z, c.y) != null) return true;
-    if (!runs.length || Math.abs(t.offsetOf(c.x, c.z, c.y)) > t.HW + 4) return false;
+    if (runs.length && t.openWater?.surfaceAt(c.x, c.z, c.y) != null) return runs.find(g => g.open) ?? null;
+    if (!runs.length || Math.abs(t.offsetOf(c.x, c.z, c.y)) > t.HW + 4) return null;
     const s = t.paramOf(c.x, c.z, c.y);
-    return runs.some(g => (s - g.s0 + PREBUILD + t.TOTAL) % t.TOTAL < g.len + PREBUILD);
+    return runs.find(g => (s - g.s0 + PREBUILD + t.TOTAL) % t.TOTAL < g.len + PREBUILD) ?? null;
   };
+  // Metres into a flight gate, wrapped round the lap.
+  const alongGate = (c, g) => { const t = track(); return ((t.paramOf(c.x, c.z, c.y) - g.s0) % t.TOTAL + t.TOTAL) % t.TOTAL; };
   // Each car's lancha is the Lancha game's own model, painted in the car's
   // colour with the racer's pana aboard. It is built hidden on the approach
   // (so the crossing never hitches) and rides the car's tumble group, so
@@ -113,6 +128,34 @@ export function createTransformGates({ race, sound, track }) {
     if (driver) driver.dispose = (...args) => { lancha.dispose(); return dispose?.apply(driver, args); };
     c.car.lancha = lancha;
     return lancha;
+  }
+  // The same for a flight gate: an avioneta, origin under its wheels,
+  // riding the tumble group like the lancha.
+  function planeFor(c) {
+    if (c.car.plane) return c.car.plane;
+    const paint = typeof c.cosmetics?.paint === 'string' && c.cosmetics.paint.startsWith('#') ? c.cosmetics.paint : c.def.color;
+    const plane = createAvioneta(c.avatar || {}, paint);
+    plane.group.position.y = -1;   // tumble space: the wheels where the car's were
+    plane.group.visible = false;
+    plane.group.scale.setScalar(0.001);
+    c.car.tumble.add(plane.group);
+    if (isGhost(c)) { c.ghostVisible = false; syncGhostAppearance(c); }
+    const driver = c.car.driver, dispose = driver?.dispose;
+    if (driver) driver.dispose = (...args) => { plane.dispose(); return dispose?.apply(driver, args); };
+    c.car.plane = plane;
+    return plane;
+  }
+
+  // Leaving the cliff: a puff of dust and a gust of wind instead of spray.
+  function takeoff(c, entering) {
+    const at = new THREE.Vector3(c.x, c.y + (c.flyLift || 0), c.z);
+    race.shockwaves.ring(at, { color: 0xfff2d0, maxRadius: entering ? 8 : 5, life: 0.5, opacity: 0.7 });
+    race.puffs.spawn(at.clone().setY(c.y + 0.6), { color: DUST[0], count: entering ? 8 : 6, size: 1.4, rise: 1.5, life: 0.6, spread: 1.8 });
+    if (!c.isPlayer) return;
+    sound.whoosh();
+    race.shake = Math.min(1.2, (race.shake || 0) + (entering ? 0.4 : 0.3));
+    shout(entering ? '¡Modo avioneta!' : '¡Aterrizaje!');
+    if (entering) { race.slowMo.trigger(); statCount('derrape.metamorfosis', 1); } else sound.turbo();
   }
 
   // Hitting the water: a crown of droplets, two side curtains of spray and
@@ -176,6 +219,21 @@ export function createTransformGates({ race, sound, track }) {
     recordImpact(c, race.clock);
   }
 
+  // The car squashes away as for a lancha; the plane pops up wide first,
+  // then settles, and banks with the steering.
+  function morphPlane(c, k, dt) {
+    const carScale = Math.max(0.001, 1 - smooth(Math.min(1, k * 1.6)));
+    c.car.chassis.scale.multiplyScalar(carScale);
+    c.car.chassis.visible = carScale > 0.01;
+    for (const w of c.car.wheels) w.steer.scale.setScalar(carScale);
+    const plane = k > 0 ? planeFor(c) : c.car.plane;
+    if (!plane) return;
+    const t = Math.max(0, (k - 0.3) / 0.7), grow = c.plane ? backOut(t) : smooth(t);
+    plane.group.visible = t > 0.01;
+    plane.group.scale.set(grow * PLANE_SCALE + 0.001, smooth(t) * PLANE_SCALE + 0.001, grow * PLANE_SCALE + 0.001);
+    if (plane.group.visible) plane.update(dt, { steer: c.steer || 0, v: c.vf || 0, vy: 0, boost: c.boost || 0 }, race.clock);
+  }
+
   return {
     // A new track: the scenery goes into its group and its tick into the
     // animated list. Cars of the previous race are already gone. Open water
@@ -196,9 +254,11 @@ export function createTransformGates({ race, sound, track }) {
     // the car into a hop so the change happens mid-air (a trick still pays
     // there); on the water a drift charges a wake turbo faster than on asphalt.
     step(c, dt) {
-      const inside = inGate(c);
+      const gate = gateOf(c), inside = !!gate;
       if (inside !== !!c.inGate) {
-        c.inGate = inside;
+        // Touching down off a flight pays a short turbo.
+        if (!inside && c.gateFly && !c.done) c.boost = Math.max(c.boost || 0, FLY_TURBO);
+        c.inGate = inside; c.gateFly = !!gate?.fly;
         if (c.onGround && !c.done) { c.vy = inside ? HOP : HOP * 0.7; c.onGround = false; c.airTime = 0; c.hopping = false; }
       }
       if (c.boat && c.drift) c.driftT += dt * WAKE_CHARGE;
@@ -222,19 +282,31 @@ export function createTransformGates({ race, sound, track }) {
     // Every drawn frame, every car (remote ones too): decide boat or car from
     // where it is, splash on the change, and play the swap.
     sync(c, dt) {
-      if (!c.car.lancha && nearGate(c)) lanchaFor(c);
-      const boat = inGate(c);
+      const near = nearGate(c);
+      if (near?.fly ? !c.car.plane : near && !c.car.lancha) near.fly ? planeFor(c) : lanchaFor(c);
+      const gate = gateOf(c), boat = !!gate && !gate.fly, flying = !!gate?.fly;
       if (boat !== !!c.boat) {
         c.boat = boat;
         splash(c, boat);
       }
-      const want = c.boat ? 1 : 0;
+      if (flying !== !!c.plane) {
+        c.plane = flying;
+        takeoff(c, flying);
+      }
+      if (c.boat || c.plane) c.vessel = c.plane ? 'plane' : 'boat';
+      // The plane climbs off the lip, flies over the road and settles at the end.
+      const lift = flying ? FLY_LIFT * smooth(Math.min(1, alongGate(c, gate) / FLY_RAMP)) * smooth(Math.min(1, (gate.len - alongGate(c, gate)) / FLY_RAMP)) : 0;
+      c.flyLift = (c.flyLift || 0) + (lift - (c.flyLift || 0)) * Math.min(1, dt * 6);
+      if (c.flyLift > 0.01) c.car.root.position.y += c.flyLift; else c.flyLift = 0;
+      const want = c.boat || c.plane ? 1 : 0;
       if (c.morph == null) c.morph = 0;
-      if (c.morph === want && !c.boat) return;
+      if (c.morph === want && !c.boat && !c.plane) return;
       const was = c.morph;
       c.morph += Math.sign(want - c.morph) * Math.min(Math.abs(want - c.morph), dt / MORPH_S);
-      if (was < 1 && c.morph === 1) splashdown(c);
-      const k = c.morph, lancha = k > 0 ? lanchaFor(c) : c.car.lancha;
+      if (was < 1 && c.morph === 1 && c.boat) splashdown(c);
+      const k = c.morph;
+      if (c.vessel === 'plane') return morphPlane(c, k, dt);
+      const lancha = k > 0 ? lanchaFor(c) : c.car.lancha;
       // The car squashes away first; the lancha pops up behind it with an
       // elastic overshoot, stretching tall before it settles on the water.
       const carScale = Math.max(0.001, 1 - smooth(Math.min(1, k * 1.6)));

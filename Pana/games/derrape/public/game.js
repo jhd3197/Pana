@@ -1742,10 +1742,10 @@ function presentRace(dt) {
 const camWant = new THREE.Vector3();
 function followCam(cam, key, p, look, dt) {
   const fx = Math.sin(p.h), fz = Math.cos(p.h), back = look ? -1 : 1;
-  const dist = p.boost > 0 ? 12.1 : 11;
+  const dist = p.boost > 0 ? 12.1 : 11, py = p.y + (p.flyLift || 0);   // a flight (transform-gates.js) lifts the drawing, not the car
   // Layered courses can descend below sea level. Follow the driving deck;
   // clamping this camera to world y=5 puts it above an underwater tunnel.
-  const want = camWant.set(p.x - fx * dist * back, T.def.layered ? p.y + 5 : Math.max(5, p.y + 5), p.z - fz * dist * back);
+  const want = camWant.set(p.x - fx * dist * back, T.def.layered ? py + 5 : Math.max(5, py + 5), p.z - fz * dist * back);
   if (!race[key] || look !== race[key + 'Look']) race[key] = want.clone();
   race[key + 'Look'] = look;
   race[key].lerp(want, Math.min(1, dt * (p.boost > 0 ? 5.5 : 4)));
@@ -1754,7 +1754,7 @@ function followCam(cam, key, p, look, dt) {
   const mx = race.mirror ? -1 : 1, at = race[key];
   const lead = p.boost > 0 ? 5.2 : 4;
   cam.position.set(mx * at.x + rand(-sh, sh), at.y + rand(-sh, sh), at.z + rand(-sh, sh));
-  cam.lookAt(mx * (p.x + fx * lead * back), p.y + 1.4, p.z + fz * lead * back);
+  cam.lookAt(mx * (p.x + fx * lead * back), py + 1.4, p.z + fz * lead * back);
   const fov = (p.boost > 0 ? 74 : 60) - (p.isPlayer ? race.slowMo.punch : 0);   // turbo stretches the view; a purple release pulls it in
   if (Math.abs(cam.fov - fov) > 0.05) {
     cam.fov += (fov - cam.fov) * Math.min(1, dt * 5);

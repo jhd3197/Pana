@@ -114,5 +114,18 @@ lobby (`derrape-menu.md`), and its own Colyseus room (`derrape-online.md`).
   The local player's splash counts `derrape.metamorfosis`. Proof:
   `tests/transform-gates.browser.js`; to look at it,
   `npm run shots -- derrape --track chuao --at gate-60`.
+- Flight gates (`transformGates: [{ fly: true, fromAt, toAt }]`) are the
+  third terrain: the car pops into an avioneta (`createAvioneta` from
+  `engine/models/vehicles/avioneta.js`, car's paint, racer's pana in the
+  cockpit, scaled 1.5) and is drawn up to 16 m over the road, climbing and
+  settling over 50 m at each end. Only the drawing rises (`c.flyLift`, added
+  to `car.root` in `sync` and to the chase camera's height in `followCam`);
+  the road stays the driving surface, so controls, AI and online play are
+  unchanged. No water sheet, no skid marks or drift smoke under the plane;
+  touching down pays a 1.2 s turbo (`step`, local cars only). Galipán flies
+  off the mirador down the first switchbacks of the bajada (about 225 m).
+  Proof: `tests/flight-gates.browser.js`. A car in its spawn or rescue phase
+  draws translucent (`isGhost`), the plane too: drop a `shots` run well
+  before the gate (`--at gate-160 --shots 14`) to see it solid.
 - Derrape signals readiness with `window.PANA_PREPARED` once the garage car is
   built, like every other game (tests/browser-kit.js `waitPrepared`).
