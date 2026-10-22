@@ -1,5 +1,50 @@
 # Carreritas track system
 
+## Twenty authored roadside compositions
+
+Plaza, Selva, Páramo, Bululú and Sabana explicitly opt into
+`tracks/authored-sightlines.js` through `withSightlines`. Four sites per map
+are named in `sightline-sites.js`; their `u` values are reproducible driver-view
+positions. The wrapper adds scenery after each map's own scenery builder. It
+does not change road elevation, camera settings or other games' shared worlds.
+
+Placement samples the actual terrain, checks full model bounds against the
+road and shortcuts, rejects water, and reserves building/landmark footprints.
+Plaza's dry level terrain can be at -0.3 m: do not use the coastal positive-Y
+cutoff there. Small deterministic along-road shifts find planting pockets.
+Selva's added trunks and rocks chain its off-road collision constraint, with
+height checks and escape from overlaps. Static geometry is batched per map;
+the source buffers are released. `authored-sightlines.userData.sites` records
+the actual accepted placements, not just candidates.
+
+Páramo's existing 2.25 M overview triangle limit remains unchanged. Its new
+roadside pine variants retain the shared library's opaque crown tiers but use
+a simple trunk instead of hidden internal branch tubes. Frailejón variants
+retain the rosettes and flower centres without individual petals. These are
+private instances; the shared library factories and other maps are unchanged.
+The pass adds about 26.6 k geometry triangles to Páramo, rather than the initial
+221.6 k from dense full-detail flower rows.
+
+`sightlines.browser.js` checks all twenty sites exist, raycasts the added
+geometry through driving lanes and chase-camera sightlines, verifies Selva's
+off-road entry collision, and caps incremental geometry and batch counts.
+The existing Plaza, Selva and Venezuela map suites own whole-map budgets and
+terrain checks. For matched visual comparisons, freeze a driver pose, render
+with the named scenery group visible, then hide only that group and render
+again without advancing the simulation. This preserves lighting and particles.
+
+## Plaza: Casas Botes return bank
+
+`plaza-town.js` adds a compact planted bank around `(478, 196)` beside the
+return bend, visible around 53–55% of the lap. Its height is part of the town's
+`groundAt`, so visible terrain, prop foundations and terrain queries agree.
+The mound fades outside an oriented ellipse and before road and side-street
+setbacks; it does not alter `townHeight`, route elevation or the chase camera.
+Five candidate mango placements use shared low-detail models, reject occupied
+sites and road clearance conflicts, and join the existing vegetation batches.
+Keep this a short enclosure followed by a town reveal, not a tree wall around
+the lap. Use driver-camera captures on approach and exit to judge changes.
+
 ## Puerto
 
 The thirteenth circuit joins a container terminal, colonial waterfront and

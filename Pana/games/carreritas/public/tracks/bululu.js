@@ -1,3 +1,4 @@
+import { withSightlines } from './authored-sightlines.js';
 import { TRACK_DEFINITIONS } from '../track-definitions.js';
 import { libraryForest } from './library-forest.js';
 import { groundPaint } from './ground-paint.js';
@@ -34,7 +35,7 @@ function baseHeight(x,z){
   for(const [cx,cz,rx,rz] of [[250,235,90,18],[420,-50,60,25],[30,-300,120,15]])h=Math.max(h,1.4-15*smooth(Math.hypot((x-cx)/rx,(z-cz)/rz),.65,1.3));
   return h;
 }
-export default {
+export default withSightlines({
   ...TRACK_DEFINITIONS.find(track => track.id === 'bululu'),
   points:ROUTE,rounded:true,hw:9,lineU:.025,elevation:roadHeight,
   waterAt:(x,z,t,T)=>tideWetness(T,x,z,t),
@@ -132,4 +133,4 @@ export default {
       birds:[{kind:'macaw',flocks:1,size:4},{kind:'ibis',flocks:1,size:5,height:[14,24]}],
       vista:{shape:'hill',hills:16,height:[40,110],colors:[0x58b86a,0x6fc46a,0x4fae7a],y:-6,balloons:4}});
   },
-};
+});

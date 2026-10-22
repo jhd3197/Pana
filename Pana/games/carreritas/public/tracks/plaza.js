@@ -1,9 +1,10 @@
+import { withSightlines } from './authored-sightlines.js';
 import { TRACK_DEFINITIONS } from '../track-definitions.js';
 // A street race through a complete town, from the historic plaza to the hill.
 import { ROUTE, townHeight } from './plaza-layout.js';
 import { createTown, raceEdges } from './plaza-town.js';
 
-export default {
+export default withSightlines({
   ...TRACK_DEFINITIONS.find(track => track.id === 'plaza'),
   points: ROUTE, rounded: true, hw: 9, lineU: 0.075,
   elevation: townHeight,
@@ -18,4 +19,4 @@ export default {
     sun: 0xffd89c, sunInt: 2.7, ground: 0x8cc25a, track: 0x857a80, dune: 0, fog: [210, 980] },
   environment: createTown,
   scenery: raceEdges,
-};
+});

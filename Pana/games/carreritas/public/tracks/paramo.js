@@ -1,3 +1,4 @@
+import { withSightlines } from './authored-sightlines.js';
 import { TRACK_DEFINITIONS } from '../track-definitions.js';
 import { libraryForest } from './library-forest.js';
 import { groundPaint } from './ground-paint.js';
@@ -12,7 +13,7 @@ import { summitTerminal,aerialLift,cableTower } from './world-landmarks.js';
 import { ROUTE,roadHeight,baseHeight,LAKE } from './paramo-layout.js';
 import { waterPool } from '/engine/models/effects/water-surface.js';
 
-export default {
+export default withSightlines({
   ...TRACK_DEFINITIONS.find(track => track.id === 'paramo'),
   points:ROUTE,rounded:true,hw:8.5,lineU:.04,elevation:roadHeight,
   previewBounds:[[-440,0,-425],[400,240,285]],
@@ -73,4 +74,4 @@ export default {
       birds:[{kind:'vulture',flocks:1,size:3,height:[50,70]},{kind:'macaw',flocks:1,size:4}],
       vista:{shape:'peak',hills:26,height:[260,480],colors:[0x7d9ac8,0x8c8fd0,0x6fa0b8],snow:true,balloons:3}});
   },
-};
+});

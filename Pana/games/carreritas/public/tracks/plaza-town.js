@@ -52,7 +52,13 @@ export function createTown(T) {
   function groundAt(x,z) {
     if(horizon&&(x<-650||x>850||z<-700||z>600))return horizon.heightAt(x,z)??waterfrontHeight(x,z,townHeight(x,z)-.3);
     const d=Math.abs(T.offsetOf(x,z)),blend=THREE.MathUtils.smoothstep(d,T.HW+8,T.HW+25);
-    const land=waterfrontHeight(x,z,townHeight(x,z)-0.3);
+    // A planted bank inside the Casas Botes return bend screens the distant
+    // town. Compact support and road/street setbacks keep the racing deck flat.
+    const dx=x-478,dz=z-196,along=dx*.866+dz*.5,across=-dx*.5+dz*.866;
+    const dome=Math.max(0,1-(along/58)**2-(across/34)**2);
+    const bank=11*dome*dome*THREE.MathUtils.smoothstep(d,T.HW+6,T.HW+19)
+      *THREE.MathUtils.smoothstep(streetDistance(x,z),STREET_HALF+4,STREET_HALF+13);
+    const land=waterfrontHeight(x,z,townHeight(x,z)-0.3)+bank;
     return overWater(x,z)?land:THREE.MathUtils.lerp(T.surfaceAt(x,z)-0.3,land,blend);
   }
   const land=surface(-650,-700,850,600,groundAt,0xffffff,5);
@@ -168,6 +174,14 @@ export function createTown(T) {
     const x=-480+random()*1120,z=-520+random()*1010;
     if(x>-345&&x<450&&z>-355&&z<325)continue;
     tree(x,z,700+i,i%4===0);
+  }
+  // A short grove follows the bank, not the whole lap: the town reappears
+  // after the bend. Use shared compact crowns and merge into existing cells.
+  for(const [i,[x,z,h]] of [[505,216,7],[493,208,8],[480,199,9],[467,192,8],[454,185,7]].entries()) {
+    if(!clear(x,z,9)||streetDistance(x,z)<23||occupied.some(p=>Math.hypot(x-p.x,z-p.z)<12))continue;
+    const model=mangoTree({seed:940+i,h,fruit:false,detail:'low'});
+    model.position.set(x,groundAt(x,z),z);model.rotation.y=i*1.37;
+    plants.add(model);trees.push({x,z});
   }
   const plaza=createPlazaEnvironment({town:true,clearance:(x,z,r)=>clear(x*2,z*2,r*2)});
   const stop=busStopShelter(),sx=-171,sz=146;

@@ -1,10 +1,11 @@
+import { withSightlines } from './authored-sightlines.js';
 import { TRACK_DEFINITIONS } from '../track-definitions.js';
 // Pana Selva: a river valley with a ruined temple passage under the jungle.
 import { jungleHeight, ROUTE, legacyU as L, JAGUAR_CAVE, TUNNEL } from './selva-layout.js';
 import { createJungle, jungleScenery } from './selva-world.js';
 import { libraryForest } from './library-forest.js';
 
-export default {
+export default withSightlines({
   ...TRACK_DEFINITIONS.find(track => track.id === 'selva'),
   points:ROUTE,
   rounded:true,hw:9,lineU:0.02,elevation:jungleHeight,
@@ -21,4 +22,4 @@ export default {
   forest:{plant:libraryForest,bounds:[-520,-560,760,830],count:1600,spacing:7,edge:80,minY:1,clump:.6,seed:661,
     species:[{name:'tree',weight:3,scale:[1,1.4]},{name:'mango',weight:2.5},{name:'palm',weight:.6}]},
   environment:createJungle,scenery:jungleScenery,
-};
+});

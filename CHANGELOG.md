@@ -8,6 +8,14 @@ becomes the GitHub release's notes.
 
 ## Unreleased
 
+- **Veinte rincones de Derrape tienen nuevos jardines, árboles y referencias de camino.**
+  Plaza, Selva, Páramo, Bululú y Gran Sabana enmarcan curvas y vistas con
+  vegetación y rocas propias de cada paisaje, sin cambiar el trazado ni la cámara.
+
+- **La vuelta de Casas Botes en Plaza Pana revela el pueblo entre árboles.**
+  Una loma plantada con mangos enmarca la curva sin cambiar el trazado,
+  la cámara ni la visibilidad de los bordes de la pista.
+
 - **Carreritas y Pepazo comparten una sala con tus panas, kits y conexión a la vista.**
   Tu tarjeta cambia Listo; los ajustes usan las mismas placas y puedes abrir
   tu taller o kit antes de arrancar. Sin conexión puedes jugar en local o
