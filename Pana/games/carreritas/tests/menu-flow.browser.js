@@ -182,6 +182,10 @@ try {
   await guest.screenshot({ path: `${output}/guest-room-320.png` });
   await host.locator('#play').click();
   await host.locator('#parrilla.preparing').waitFor({timeout:120000});
+  assert.equal(await host.locator('#loading').isVisible(),false,'the actual 3D race replaces the loading backdrop');
+  assert.equal(await host.locator('#garage').isVisible(),false,'garage navigation and car choices stay out of the starting grid');
+  assert.equal(await host.locator('#parrilla #grid-count').count(),1,'one presentation countdown');
+  assert.equal(await host.locator('#parrilla').getAttribute('data-pad-menu'),'','controller focus stays inside the starting grid');
   await host.locator('#parrilla details summary').nth(1).click();
   await host.locator('#parrilla [data-copy=kit]').click();
   assert.ok(await host.evaluate(()=>JSON.parse(localStorage.getItem('carreritas:wishlist')).entries.length>=6),'the inspected kit is marked for the next workshop');

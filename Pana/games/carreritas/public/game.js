@@ -1043,6 +1043,7 @@ async function startRace(playerIndex, wheelId = garage.wheel, roster = null) {
     // starts only after this first frame, never while compilation is running.
     renderer.render(race.scene, race.camera);
     await screensReady; if (generation !== loadGeneration) return;
+    $('loading').classList.add('hidden'); $('garage').classList.add('hidden');
     await race.screens.prepare(race.cars, race.player, T, AUTO || (roster && net.state.startAt > 0)); if (generation !== loadGeneration) return;
     if (roster) {
       // Everyone counts down together once every pana has loaded.
@@ -1077,6 +1078,7 @@ async function startRace(playerIndex, wheelId = garage.wheel, roster = null) {
     console.error('Carreritas loading failed', error);
     if (generation === loadGeneration) {
       if (!race.trackReady && T?.group) race.trackGroup = T.group;
+      race.screens.tick('off', 0); $('loading').classList.remove('hidden');
       $('loading-status').textContent = 'No pudimos preparar la carrera. Vuelve al garaje e inténtalo otra vez.';
       race.state = 'off';
       race.loadingRaceId = 0;
@@ -1130,13 +1132,13 @@ function toGarage() {
 // keep their clock, items and AI frozen until the menu closes.
 let paused = false;
 // The pad drives the car through controls.js; the engine works the garage and menus with it.
-const menu = createGameMenu({ pad: { native: true, playing: () => mode === 'race' && race.state !== 'end', help: [['RT / A', 'Acelerar'], ['LT / B', 'Frenar'], ['Stick izq. / Cruceta', 'Girar'], ['RB', 'Derrapar'], ['LB / X', 'Objeto'], ['Y', 'Rescate']] },
+const menu = createGameMenu({ pad: { native: true, playing: () => mode === 'race' && race.state !== 'end', help: [['RT / A', 'Acelerar'], ['LT / B', 'Frenar'], ['Stick izq. / Cruceta', 'Girar'], ['RB', 'Derrapar'], ['LB', 'Objeto adelante'], ['X', 'Objeto atrás'], ['Cruceta ↑', 'Cambiar objeto'], ['View / L3', 'Mirar atrás'], ['Y', 'Rescate']] },
   title: 'Carreritas', heading: 'Pausa', sound, orientation: 'horizontal',
   note: () => mode === 'race' ? (race.state === 'end' ? 'La carrera terminó.' : race.netRace ? 'Carrera online: no se detiene.' : 'La carrera está en pausa.') : 'Estás en el garaje.',
   controls: [['W / ↑', 'Acelerar'], ['S / ↓', 'Frenar'], ['A D / ← →', 'Girar'], ['Shift / K', 'Saltar y derrapar · truco en el aire'], ['Espacio / E', 'Lanzar objeto adelante'],
     ['X', 'Lanzar objeto atrás'], ['1 2', 'Elegir objeto'], ['Q', 'Cambiar objeto'], ['R', 'Pedir rescate al zamuro'], ['C', 'Mirar atrás'], ['H', 'Claxon'], ['M', 'Sonido'], ['Esc', 'Pausa']],
-  tips: ['Mantén Shift y gira para derrapar. La ayuda corrige si te acercas al borde; gira al otro lado para abrir la curva.',
-    'Suelta Shift al salir de la curva: el carro se estabiliza y las chispas dan turbo. No hace falta esperar a las moradas.',
+  tips: ['Mantén el botón de derrape y gira. La ayuda corrige si te acercas al borde; gira al otro lado para abrir la curva.',
+    'Suelta el botón de derrape al salir de la curva: el carro se estabiliza y las chispas dan turbo. No hace falta esperar a las moradas.',
     'Puedes acelerar antes del ¡YA!. Desde el final del "1" sales con arranque cohete; desde el "3" el motor se ahoga y sale flojito un momento.',
     'Rompe cajas de madera para conseguir objetos. Cada moneda da un poquito más de velocidad.',
     'Sales y vuelves del rescate como fantasma durante 3 segundos. Los roces entre carros ya no te lanzan al aire.',

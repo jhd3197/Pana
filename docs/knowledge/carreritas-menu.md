@@ -137,3 +137,16 @@ two style), five on boats and four on planes. Hovering previews the real model
 and composed stats without spending. Clicking buys/equips immediately; a short
 wallet leaves the equipped part untouched. Car body changes transfer the
 current parts and paint. Copied rival builds mark matching cards in the taller.
+
+## Starting grid
+
+After the race scene compiles and renders its first frame, hide both `#loading`
+and `#garage` before showing La Parrilla. Otherwise the old Copa/Taller bar,
+settings and car strip leak through its translucent backdrop. The actual 3D
+starting grid remains behind the roster. La Parrilla owns controller focus
+through `data-pad-menu`, with ¡Listo! initially selected.
+
+The kit review timer is distinct from the race countdown. Choosing ¡Listo!
+keeps the grid visible with a waiting status while the multiplayer load barrier
+settles; only the synchronized race countdown replaces it. A loading error
+closes the grid and restores the loading screen's retry/back controls.

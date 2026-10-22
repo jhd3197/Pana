@@ -5,7 +5,7 @@ const esc = value => String(value ?? '').replace(/[&<>"']/g, c => `&#${c.charCod
 const pi = (c, use) => kitNivel({ car: nivelOf(c.tunes?.car ?? c.tune ?? c.def.tune), boat: nivelOf(c.tunes?.boat ?? c.def.tune), air: nivelOf(c.tunes?.plane ?? c.def.tune) }, use);
 export function createRaceScreens({sound,taller}={}) {
   const grid = document.createElement('section'); grid.id = 'parrilla'; grid.className = 'race-grid'; grid.hidden = true;
-  grid.setAttribute('aria-label', 'La parrilla'); document.body.append(grid);
+  grid.setAttribute('aria-label', 'La parrilla'); grid.setAttribute('data-pad-menu',''); document.body.append(grid);
   const banner = document.createElement('div'); banner.className = 'finish-banner'; banner.hidden = true; document.body.append(banner);
   const result = document.getElementById('result'); result.classList.add('finish-screen', 'pk-results');
   const personal = document.createElement('section'); personal.className = 'race-personal fin-me'; result.querySelector('.res-side').prepend(personal);
@@ -41,10 +41,10 @@ export function createRaceScreens({sound,taller}={}) {
       this.grid(cars,player,track);
       if(auto)return Promise.resolve();
       grid.classList.add('preparing');
-      const footer=grid.querySelector('footer'),button=document.createElement('button');button.type='button';button.className='grid-ready';button.textContent='¡Listo!';footer.append(button);
+      const footer=grid.querySelector('footer'),button=document.createElement('button');button.type='button';button.className='grid-ready pk-btn--primary';button.textContent='¡Listo!';button.autofocus=true;footer.querySelector('.grid-status').innerHTML='Revisa tu kit · <b id="grid-count">10</b> s';footer.append(button);
       return new Promise(resolve=>{
         const end=performance.now()+10000;
-        readyDone=()=>{cancelAnimationFrame(readyFrame);readyDone=null;grid.classList.remove('preparing');grid.hidden=true;resolve();};
+        readyDone=()=>{cancelAnimationFrame(readyFrame);readyDone=null;footer.querySelector('.grid-status').textContent='Esperando a los panas…';button.disabled=true;button.textContent='Listo';resolve();};
         button.onclick=()=>readyDone?.();button.focus();
         const tick=now=>{if(!readyDone)return;grid.querySelector('#grid-count').textContent=Math.max(0,Math.ceil((end-now)/1000));if(now>=end)readyDone();else readyFrame=requestAnimationFrame(tick);};readyFrame=requestAnimationFrame(tick);
       });
@@ -57,8 +57,9 @@ export function createRaceScreens({sound,taller}={}) {
       }
     },
     grid(cars, player, track) {
+      grid.classList.remove('preparing');
       cash.hidden = true; banner.hidden = true; stats=new WeakMap(); currentTrack=track; const use = trackPieces(track);for(const c of cars)c.kitLevel=pi(c,use);
-      grid.innerHTML = `<header><h1>La parrilla</h1><p>${esc(track.name)} · ${use.map(k => ({car:'carro',boat:'lancha',air:'avioneta'})[k]).join(' + ')}</p></header><ol>${cars.map((c,i) => `<li class="${c === player ? 'is-me' : ''}"><b>${i+1}</b><details><summary>${esc(c.name)} ${c === player ? '· Tú' : ''}</summary><p>${esc(c.def.name)} · ${esc(vesselById('boat',c.cosmetics?.boat).name)} · ${esc(vesselById('air',c.cosmetics?.air).name)}</p></details><span class="grid-pieces">${use.map(k=>esc(k==='car'?c.def.name:vesselById(k,c.cosmetics?.[k]).name)).join(' · ')}</span>${badge(pi(c,use))}</li>`).join('')}</ol><footer>Tu kit ${badge(pi(player,use))}<span>Salimos en <b id="grid-count">3</b></span></footer>`;
+      grid.innerHTML = `<header><h1>La parrilla</h1><p>${esc(track.name)} · ${use.map(k => ({car:'carro',boat:'lancha',air:'avioneta'})[k]).join(' + ')}</p></header><ol>${cars.map((c,i) => `<li class="${c === player ? 'is-me' : ''}"><b>${i+1}</b><details><summary>${esc(c.name)} ${c === player ? '· Tú' : ''}</summary><p>${esc(c.def.name)} · ${esc(vesselById('boat',c.cosmetics?.boat).name)} · ${esc(vesselById('air',c.cosmetics?.air).name)}</p></details><span class="grid-pieces">${use.map(k=>esc(k==='car'?c.def.name:vesselById(k,c.cosmetics?.[k]).name)).join(' · ')}</span>${badge(pi(c,use))}</li>`).join('')}</ol><footer>Tu kit ${badge(pi(player,use))}<span class="grid-status">Salimos en <b id="grid-count">3</b></span></footer>`;
       const ranking=[...cars].sort((a,b)=>pi(a,use)-pi(b,use));for(const [i,row] of [...grid.querySelectorAll('li')].entries()){row.style.setProperty('--reveal',`${ranking.indexOf(cars[i])*.16}s`);if(pi(cars[i],use)===pi(ranking.at(-1),use)){row.classList.add('strongest');row.querySelector('summary').insertAdjacentHTML('beforeend',' <em>¡OJO!</em>');}}
       const inspect=document.createElement('aside');inspect.className='grid-inspect fin-me';grid.append(inspect);
       const show=c=>{

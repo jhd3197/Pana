@@ -13,6 +13,10 @@ becomes the GitHub release's notes.
   ratón cambie las ayudas. Cada dispositivo reúne instrucciones y sensibilidad;
   las opciones adicionales se despliegan cuando las necesitas.
 
+- **La Parrilla muestra la salida en 3D sin menús del garaje encima.**
+  Copa, Taller, Ajustes y la fila de carros se ocultan durante la preparación.
+  ¡Listo! espera a los panas sin dejar la pantalla vacía.
+
 - **Ajusta tus controles en una pantalla completa para todos los juegos.**
   Pana sigue el ratón, teclado, mando o pantalla táctil que estés usando y
   cambia las ayudas. Guarda sensibilidad por dispositivo, ejes verticales,
