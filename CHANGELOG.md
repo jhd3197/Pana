@@ -8,6 +8,12 @@ becomes the GitHub release's notes.
 
 ## Unreleased
 
+- **Nuevo juego: Parapente. Salta del Ávila con tus panas y vuela sobre Galipán.**
+  Pasa las cinco balizas (la Cresta, el Pueblito, el Mirador, el Bosque y
+  los Girasoles), sube en las térmicas donde dan vueltas los zamuros,
+  atraviesa los aros dorados y aterriza en la diana de Boca de Tigre.
+  Acelerador, frenos y orejas en el teclado, el control o la pantalla;
+  hasta 8 pilotos y los del cerro completan la rampa.
 - **Las plazas y el Mercado se ven igual y cuestan menos trabajo de dibujado.**
   Los puestos, bancos, barriles, cajas, cavas, matas y faroles comparten sus
   superficies por material: los 26 puestos del Mercado bajan de 2.080 a 208
