@@ -63,11 +63,11 @@ try {
     race.items.update(1 / 60, [owner, victim], true);
     out.trap = victim.dizzy > 0 && race.items.peels.length === 0;
 
-    reset(40); addItem(owner, 'aguacero', 0);
+    reset(40); addItem(owner, 'aguacero', 0); victim.inventory = [null, null]; addItem(victim, 'cohete', 0); victim.useT = 99;
     race.items.use(owner, 1);
-    out.rainWarning = victim.cloud === 0 && race.items.rainQueue.length === 1;
+    out.rainWarning = victim.cloud === 0 && race.items.rainQueue.some(w => w.target === victim);
     for (let i = 0; i < 60; i++) race.items.update(1 / 60, [owner, victim], true);
-    out.rain = victim.cloud > 0 && !(owner.cloud > 0);
+    out.rain = victim.cloud > 0 && !(owner.cloud > 0) && !victim.inventory.some(Boolean);   // soaked, and the held cohete slipped away
 
     reset(40); owner.coins = 10; addItem(owner, 'jugo', 0);
     race.items.use(owner, 1);

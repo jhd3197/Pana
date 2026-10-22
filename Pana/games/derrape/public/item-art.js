@@ -69,20 +69,6 @@ export function makeTrap(crateVisual) {
   return shadows(g);
 }
 
-// A small grey rain cloud that follows a car around.
-const puff = new THREE.IcosahedronGeometry(1, 0);
-const cloudMat = mat(0x6b7280, { roughness: 1 });
-export function makeCloud() {
-  const g = new THREE.Group();
-  for (const [x, y, z, s] of [[0, 0, 0, 1.3], [1.2, -0.1, 0.2, 1], [-1.2, -0.1, -0.1, 1.05], [0.3, 0.5, -0.5, 0.9], [-0.4, 0.3, 0.7, 0.85]]) {
-    const m = new THREE.Mesh(puff, cloudMat);
-    m.position.set(x, y, z); m.scale.setScalar(s);
-    g.add(m);
-  }
-  g.name = 'rain-cloud';
-  return g;
-}
-
 // HUD icons (SVG, never emoji), drawn like engine/icons.js.
 const svg = (body) => `<svg viewBox="0 0 40 40" width="1em" height="1em">${body}</svg>`;
 const ink = 'stroke="#16161a" stroke-width="2.5" stroke-linejoin="round"';

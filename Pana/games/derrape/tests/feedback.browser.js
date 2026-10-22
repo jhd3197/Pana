@@ -115,9 +115,11 @@ try {
   });
   assert.deepEqual(result.rain.arrivals.map(a=>a.id),result.rain.expected);
   assert.equal(result.rain.caller,0);
+  // The whole field is soaked a beat apart, each for the same 5 s.
   for(let i=1;i<3;i++) {
-    assert.ok(result.rain.arrivals[i].time-result.rain.arrivals[i-1].time>1.7);
-    assert.ok(result.rain.arrivals[i].duration>result.rain.arrivals[i-1].duration);
+    const gap=result.rain.arrivals[i].time-result.rain.arrivals[i-1].time;
+    assert.ok(gap>.1&&gap<.3,JSON.stringify(result.rain.arrivals));
+    assert.ok(Math.abs(result.rain.arrivals[i].duration-result.rain.arrivals[0].duration)<.35);
   }
   assert.ok(result.chancleta.hit&&result.chancleta.flight<10,JSON.stringify(result.chancleta));
   assert.ok(result.earlyWarning,'the leader sees the warning before the faster chancleta is close');

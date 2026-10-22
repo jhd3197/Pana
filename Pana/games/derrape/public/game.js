@@ -625,7 +625,7 @@ function finishTrack() {
   ghostIO?.devGhost(T.id);   // start fetching the track's shipped ghost, if any
   applyPalette(T.def.palette);
   race.items = createItems({
-    scene: race.trackGroup, puffs: race.puffs, sound, G, track: T,
+    scene: race.trackGroup, puffs: race.puffs, sound, G, track: T, rain: race.rain,
     crash: (c, power, side) => crash(c, power, side),
     explode: (pos) => {
       race.shockwaves.explode(pos, { radius: 4.8, scorch: true });

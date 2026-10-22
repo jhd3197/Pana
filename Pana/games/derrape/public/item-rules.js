@@ -14,17 +14,28 @@ export const CHARGES = { mango3: 3, jugo3: 3 };
 // Items fired at someone (front/back) versus used on yourself or the field.
 export const AIMED = new Set(['mango', 'mango3', 'concha', 'trampa', 'cohete']);
 
-// The caller freezes the order at release: nearest rival first, leader last.
-// One schedule is relayed, so changing places cannot duplicate or dodge a wave.
+// The downpour falls on every rival at once, rippling out from the caller's
+// place (nearest first) a beat apart. The caller freezes the order at
+// release and one schedule is relayed, so changing places cannot duplicate
+// or dodge it.
 export const RAIN_LEAD_IN = 0.75;
-export const RAIN_INTERVAL = 1.8;
-export function rainWave(order, caller, time = 3.5, battle = false) {
+export const RAIN_STAGGER = 0.15;
+export function rainWave(order, caller, time = 5) {
   const at = order.indexOf(caller);
   if (at < 0) return [];
-  const ahead = (battle ? order.filter(c => c !== caller) : order.slice(0, at))
-    .filter(c => !c.done && !c.dns && !c.retired).reverse();
-  return ahead.map((target, i) => ({ target, delay: RAIN_LEAD_IN + i * RAIN_INTERVAL,
-    time: Math.min(8, time + i * 0.4) }));
+  const rivals = order.filter(c => c !== caller && !c.done && !c.dns && !c.retired)
+    .sort((a, b) => Math.abs(order.indexOf(a) - at) - Math.abs(order.indexOf(b) - at));
+  return rivals.map((target, i) => ({ target, delay: RAIN_LEAD_IN + i * RAIN_STAGGER, time: Math.min(8, time) }));
+}
+
+// Soaked: the held item slips away, every charge of it.
+export function dropItem(c) {
+  const item = activeItem(c);
+  if (!item) return null;
+  c.inventory[c.selected] = null;
+  const next = c.inventory.findIndex(Boolean);
+  if (next >= 0) c.selected = next;
+  return item.kind;
 }
 
 // Gain on even a boosted leader; a full lap of separation closes in < 9 s.

@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { rainWave, chancletaSpeed } from '../public/item-rules.js';
+import { rainWave, dropItem, chancletaSpeed, RAIN_LEAD_IN, RAIN_STAGGER } from '../public/item-rules.js';
 import { isGhost, recordImpact, stepProtection } from '../public/recovery-rules.js';
 import { resolveContact } from '../public/rules.js';
 import { packPose, FLAG, POSE_LENGTH } from '../public/online-rules.js';
@@ -8,19 +8,23 @@ import { CAR_DEFINITIONS as cars } from '../public/car-definitions.js';
 import { composeTune, wheelById } from '../public/wheel-definitions.js';
 import { applyRaceQuality } from '../public/quality.js';
 
-test('rain ripples from the caller toward first place, with longer leader exposure', () => {
+test('rain falls on every rival, rippling out from the caller, and soaks the held item', () => {
   const racers = Array.from({length:8},(_,i)=>({id:i}));
   const wave = rainWave(racers,racers[6]);
-  assert.deepEqual(wave.map(w=>w.target.id),[5,4,3,2,1,0]);
-  assert.equal(wave[0].delay,0.75);
-  for(let i=1;i<wave.length;i++) {
-    assert.ok(Math.abs(wave[i].delay-wave[i-1].delay-1.8)<1e-8);
-    assert.ok(wave[i].time>wave[i-1].time);
-  }
-  assert.deepEqual(rainWave(racers,racers[0]),[]);
+  assert.deepEqual(wave.map(w=>w.target.id).sort(),[0,1,2,3,4,5,7]);
+  assert.deepEqual(wave.slice(0,3).map(w=>w.target.id).sort(),[5,7,4].sort(),'nearest places first');
+  assert.equal(wave[0].delay,RAIN_LEAD_IN);
+  for(let i=1;i<wave.length;i++) assert.ok(Math.abs(wave[i].delay-wave[i-1].delay-RAIN_STAGGER)<1e-8);
+  assert.ok(wave.every(w=>w.time===5));
+  assert.equal(wave.at(-1).delay<2,true,'the whole field is wet within two seconds');
+  assert.equal(rainWave(racers,racers[0]).length,7,'the leader rains on everyone behind');
   assert.deepEqual(rainWave(racers,{}),[]);
   racers[2].done=true;
   assert.ok(!rainWave(racers,racers[6]).some(w=>w.target.id===2));
+  const car={inventory:[{kind:'cohete',n:1},{kind:'mango3',n:3}],selected:1};
+  assert.equal(dropItem(car),'mango3');
+  assert.deepEqual(car.inventory,[{kind:'cohete',n:1},null]); assert.equal(car.selected,0);
+  assert.equal(dropItem({inventory:[null,null],selected:0}),null);
 });
 
 test('chancleta can close a full circuit on a turboing leader', () => {

@@ -2,10 +2,15 @@
 
 ## Friends playtest: waves, pursuit and recovery
 
-- Aguacero freezes the active order at release. The nearest rival ahead is hit
-  after .75 s; each next position follows 1.8 s later, with .4 s extra exposure.
-  The leader is last. The caller and anyone behind are excluded. A pending
-  wave appears in the incoming-item HUD; ghosted/finished racers skip the hit.
+- Aguacero rains on every rival, not only those ahead: the order frozen at
+  release, nearest places first, .75 s lead-in then .15 s apart, 5 s each
+  (7.5 juiced): top speed ×.74 and grip ×.55 unless on rain cauchos. Each
+  soaked car drops its held item (all charges, `dropItem`); every client soaks
+  only its own cars, so inventories stay owner-authoritative. There is no
+  cloud over each car any more: a soaked car drips, and the local player's
+  screen gets the track's own rain lines (`race.rain`, handed to items.js as
+  `hooks.rain`). Bots use it even while leading. A pending wave appears in the
+  incoming-item HUD; ghosted/finished racers skip the hit.
 - The caller relays one bounded schedule with an ID and server-clock timestamp.
   Recipients subtract delivery latency, ignore duplicates and use the same
   target order even if racers overtake. `items.clear()` discards pending waves.

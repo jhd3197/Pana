@@ -8,6 +8,10 @@ becomes the GitHub release's notes.
 
 ## Unreleased
 
+- **El Aguacero de Derrape ahora moja a todos tus rivales.** Les cae a todos
+  casi a la vez, 5 segundos de pista mojada y resbalosa, y a cada uno se le
+  cae el ítem que tenía en la mano. Ves la lluvia en tu pantalla cuando te
+  toca a ti, en vez de una nube sobre cada carro.
 - **En Derrape, Galipán ahora también se corre por el aire.** En el borde
   del mirador tu carro se vuelve avioneta y vuela sobre las primeras curvas
   de la bajada con los mismos controles; al aterrizar te da un turbo. Tierra,

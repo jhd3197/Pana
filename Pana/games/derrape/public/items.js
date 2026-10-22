@@ -5,9 +5,9 @@ import { makeMango } from '/engine/models/props/mango.js';
 import { FragmentBurst } from './fragments.js';
 import { ICONS as SVG } from '/engine/icons.js';
 import { crateArt, coinArt } from './pickup-art.js';
-import { activeItem, addItem, consumeItem, selectItem, canBlock, isMango, isJuiced, MAX_COINS, segmentDistanceSq, rainWave, chancletaSpeed } from './item-rules.js';
+import { activeItem, addItem, consumeItem, selectItem, canBlock, isMango, isJuiced, MAX_COINS, segmentDistanceSq, rainWave, dropItem, chancletaSpeed } from './item-rules.js';
 import { isGhost } from './recovery-rules.js';
-import { makeRocket, makeChancleta, makeShield, makeTrap, makeCloud, ITEM_ICONS } from './item-art.js';
+import { makeRocket, makeChancleta, makeShield, makeTrap, ITEM_ICONS } from './item-art.js';
 import { loseCoins } from './drive-rules.js';
 
 const sparkTarget = new THREE.Vector3();   // scratch: sparks fly to their car every step
@@ -51,7 +51,7 @@ const PAD_W = 4, PAD_L = 6;
 export const SPIN = 1.1;             // seconds a mango peel spins you around
 
 export const SHIELD_TIME = 10;
-export const CLOUD_TIME = 3.5;
+export const CLOUD_TIME = 5;
 
 const LINES = {
   throw: ['¡Toma tu mango!', '¡Mangazo!', '¡Ahí va!'],
@@ -124,7 +124,7 @@ function padTexture() {
 // pick up and what hits them. `emit(kind, car, data)` reports what this
 // client's cars do, and the remote* functions replay what others did.
 export function createItems(hooks) {
-  const { scene, puffs, sound, track: T } = hooks;
+  const { scene, puffs, sound, track: T, rain } = hooks;
   const { pointAt, paramOf, offsetOf, groundAt } = T;
   const itemDef = T.def.items || {};
   const boxRows = (itemDef.boxes || [0.125, 0.521]).map(u => u * T.TOTAL);
@@ -183,7 +183,7 @@ export function createItems(hooks) {
   });
 
   let flying = [], peels = [], sparks = [];
-  const held = new Map(), shields = new Map(), clouds = new Map();
+  const held = new Map(), shields = new Map();
   let rainQueue = [];
   const rainSeen = new Set();
   const byId = (id) => hooks.byId?.(id);
@@ -197,8 +197,8 @@ export function createItems(hooks) {
   function clear() {
     rainQueue = []; rainSeen.clear();
     for (const entry of [...flying, ...peels, ...sparks]) entry.m.removeFromParent();
-    for (const m of [...held.values(), ...shields.values(), ...clouds.values()]) m.removeFromParent();
-    held.clear(); shields.clear(); clouds.clear(); previous.clear(); gone.clear(); fragments.clear();
+    for (const m of [...held.values(), ...shields.values()]) m.removeFromParent();
+    held.clear(); shields.clear(); previous.clear(); gone.clear(); fragments.clear();
     flying = []; peels = []; sparks = [];
     for (const pickup of [...boxes, ...coins]) {
       pickup.down = 0; pickup.m.visible = true; pickup.m.scale.setScalar(1);
@@ -299,14 +299,15 @@ export function createItems(hooks) {
       sound.tone(520, 0, 0.12, 'triangle', 0.1); sound.tone(780, 0.1, 0.18, 'triangle', 0.09);
       hooks.say(c, LINES.shield, 1);
     } else if (kind === 'aguacero') {
-      // A downpour on everyone ahead: slower and slippery, unless on rain cauchos.
+      // A downpour on every rival: slower and slippery unless on rain cauchos,
+      // and the item each one holds slips away.
       const time = juiced ? CLOUD_TIME * 1.5 : CLOUD_TIME;
-      const wave = rainWave(hooks.standings(), c, time, battling());
+      const wave = rainWave(hooks.standings(), c, time);
       const victims = wave.map(w => w.target), id = nextId(c);
       rainQueue.push(...wave);
       emit('cloud', c, { id, at: hooks.now?.(), wave: wave.map(w => ({ id: w.target.netId, delay: w.delay, time: w.time })) });
       sound.sweep(220, 90, 0.9, 'sawtooth', 0.06);
-      feedback(c, victims.length ? `¡Aguacero sobre ${victims.length} ${victims.length === 1 ? 'rival' : 'rivales'}!` : 'Nadie adelante: llovió en vano');
+      feedback(c, victims.length ? `¡Aguacero sobre ${victims.length} ${victims.length === 1 ? 'rival' : 'rivales'}!` : 'Nadie más en la pista: llovió en vano');
     } else if (kind === 'jugo' || kind === 'jugo3') {
       c.boost = Math.max(c.boost, juiced ? 3.2 : 2.2);
       sound.turbo();
@@ -350,10 +351,15 @@ export function createItems(hooks) {
     return best;
   }
 
+  // Each client soaks its own cars: the owner drops the held item, so remote
+  // inventories never diverge.
   function rainOn(v, time) {
     if (v.done || v.dns || v.retired || isGhost(v)) return;
     v.cloud = Math.max(v.cloud || 0, time);
-    if (!v.remote) hooks.say(v, LINES.rain, 1);
+    if (v.remote) return;
+    hooks.say(v, LINES.rain, 1);
+    const lost = dropItem(v);
+    if (lost) feedback(v, `¡Se mojó y se cayó: ${ITEMS[lost]?.name ?? 'tu ítem'}!`, 1.8);
   }
 
   // A totuma soaks up one hit of any kind.
@@ -415,7 +421,7 @@ export function createItems(hooks) {
     if (kind === 'totuma') { if (danger || c.useT <= 0) use(c); return; }
     if (kind === 'chancleta' || kind === 'aguacero') {
       const order = hooks.standings();
-      if (c.useT <= 0 && (battling() || order.indexOf(c) > 0)) use(c);
+      if (c.useT <= 0 && (kind === 'aguacero' || battling() || order.indexOf(c) > 0)) use(c);   // the downpour hits every rival, so the leader rains too
       else if (c.useT < -10) use(c);
       return;
     }
@@ -437,7 +443,7 @@ export function createItems(hooks) {
     } else if ((rear && c.useT <= 0) || c.useT < -6) use(c, -1);   // concha, trampa
   }
 
-  // Bubbles and rain clouds follow their cars on every screen.
+  // Bubbles follow their cars on every screen; a soaked car drips.
   function syncAuras(c) {
     let bubble = shields.get(c);
     if (c.shield > 0) {
@@ -446,15 +452,10 @@ export function createItems(hooks) {
       bubble.position.set(c.x, c.y + 1.3, c.z);
       bubble.scale.setScalar(1 + Math.sin(t * 6) * 0.03);
     } else if (bubble) bubble.visible = false;
-    let cloud = clouds.get(c);
-    if (c.cloud > 0) {
-      if (!cloud) { cloud = makeCloud(); scene.add(cloud); clouds.set(c, cloud); }
-      cloud.visible = true;
-      cloud.position.set(c.x, c.y + 6.2, c.z);
-      cloud.rotation.y = t * 0.4;
-      if (Math.random() < 0.5) puffs.spawn(new THREE.Vector3(c.x + rand(-1.6, 1.6), c.y + 5, c.z + rand(-1.6, 1.6)),
-        { color: 0x7cc4ff, count: 1, size: 0.18, rise: -9, life: 0.5, spread: 0.2 });
-    } else if (cloud) cloud.visible = false;
+    // A soaked rival drips; your own soaking is the rain on the screen.
+    if (c.cloud > 0 && Math.random() < 0.35) puffs.spawn(new THREE.Vector3(c.x + rand(-1.4, 1.4), c.y + 2.2, c.z + rand(-1.4, 1.4)),
+      { color: 0x7cc4ff, count: 1, size: 0.18, rise: -9, life: 0.4, spread: 0.2 });
+    if (c.isPlayer && !c.remote && rain) rain.lines.visible = c.cloud > 0 || !!T.def.rain;
   }
 
   function syncHeld(c) {
