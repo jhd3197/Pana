@@ -126,6 +126,17 @@ Existing loading, modes, cup and online suites retain their gameplay assertions.
 
 ## Full-screen Taller
 
+Cabin fitting preserves the shared character's neutral head/neck scale. Use
+one nominal uniform driver scale (0.82), reducing the entire character only
+for actual roof/width clearance, and position the muzzle above the dashboard.
+Measure visible head meshes before parenting to the chassis: `Box3` over the
+whole head includes unequipped hidden hats, while world-space fitting after
+parenting also includes wheel lift. Both used to shrink just the head and
+leave the sculpt's separate visible neck/body unchanged. Roof clearance is
+sampled at the driver's seat, not the lowest point anywhere on the roof.
+`driver-fit.browser.js` checks every car with three headwear choices and
+stock/lifted wheels, plus garage animation and rigid race batching.
+
 The Taller hides the old bar and settings controls. The circuit summary beside
 ¡Vámonos! returns to Copa; gameplay settings remain in the shared lobby/menu.
 The nameplate, Garaje and G open the body drawer. Q/E select car, boat or plane.

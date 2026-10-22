@@ -8,6 +8,11 @@ becomes the GitHub release's notes.
 
 ## Unreleased
 
+- **Tu pana conserva sus proporciones al cambiar de carro.**
+  El asiento ajusta al personaje completo sin encogerle la cabeza ni alargarle
+  el cuello. Solo cuentan los accesorios que lleva puestos; cambiar de
+  cauchos ya no cambia el tamaño del piloto.
+
 - **El mando mantiene sus ayudas al conducir y los controles comparten Ajustes.**
   Los sticks lentos y los botones sostenidos se detectan sin que mover el
   ratón cambie las ayudas. Cada dispositivo reúne instrucciones y sensibilidad;

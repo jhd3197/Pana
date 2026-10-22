@@ -726,24 +726,23 @@ function cabin(car, o) {
   }
 
   // the driver
-  const pana = buildCharacter(o.avatar, { head: o.head, seated: true });
-  pana.group.position.set(0.45, o.seatY, o.driverZ);
+  const pana = buildCharacter(o.avatar, { seated: true });
+  // Measure the equipped look before parenting to the suspension. Hidden hats
+  // and world-space wheel lift must not affect the cabin's local clearance.
+  pana.group.updateMatrixWorld(true);
+  const head = new THREE.Box3();
+  pana.head.traverseVisible(node => { if (node.isMesh) head.expandByObject(node, true); });
+  const mouth = new THREE.Box3().setFromObject(pana.head.getObjectByName('Broad cocoa muzzle'), true).min.y;
+  const sightline = Math.max(o.sill, dashTop) + 0.06;
+  const roofBottom = o.open ? Infinity : Math.min(...crossings(o.roof.map(([z, y]) => new THREE.Vector2(z, y)), false, o.driverZ)) - 0.08;
+  // One normal driver size across the garage. Tight cabins/tall headwear may
+  // reduce the WHOLE character uniformly; never resize the head or neck alone.
+  const size = Math.min(0.82, (roofBottom - sightline) / (head.max.y - mouth),
+    (half - 0.45 - 0.04) / head.max.x);
+  pana.group.scale.setScalar(size);
+  pana.group.position.set(0.45, Math.min(Math.max(o.seatY, sightline - mouth * size), roofBottom - head.max.y * size), o.driverZ);
   c.add(pana.group);
-  // Seat the driver so the whole face clears the window sill; if a tall hat
-  // or an afro would then hit the roof, shrink the head instead of sinking it.
-  // Scaling happens at the neck so the head stays on the shoulders.
-  const roofBottom = o.open ? Infinity : o.roof.reduce((m, [, y]) => Math.min(m, y), 9) - 0.1;
-  const v = new THREE.Vector3();
-  for (let i = 0; i < 4; i++) {
-    car.root.updateMatrixWorld(true);
-    const mouth = pana.head.getWorldPosition(v).y - 0.45 * o.head * pana.neck.scale.y;
-    pana.group.position.y += Math.max(0, Math.max(o.sill, dashTop) + 0.12 - mouth);
-    car.root.updateMatrixWorld(true);
-    const neckY = pana.neck.getWorldPosition(v).y;
-    const top = new THREE.Box3().setFromObject(pana.head).max.y;
-    if (top <= roofBottom) break;
-    pana.neck.scale.multiplyScalar((roofBottom - neckY) / (top - neckY));
-  }
+  car.fit.driver = { size, sightline, roofBottom };
   pana.armL.rotation.set(0.2, 0, 1.3);     // elbow out the open window
   pana.armR.rotation.set(-1.15, 0, 0.25);  // hand on the wheel
   const sy = pana.group.position.y;
