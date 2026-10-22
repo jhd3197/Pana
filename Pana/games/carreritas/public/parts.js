@@ -151,13 +151,8 @@ export function statPills(before, after) {
 import { composeTune, wheelById } from './wheel-definitions.js';
 
 // D under 450, C 450–549, B 550–649, A 650–749, S 750 and up.
-export const NIVEL_BANDS = [
-  { min: 750, letter: 'S', color: '#c45bff' },
-  { min: 650, letter: 'A', color: '#ff9a1f' },
-  { min: 550, letter: 'B', color: '#2bb37a' },
-  { min: 450, letter: 'C', color: '#3d7bf2' },
-  { min: 0, letter: 'D', color: '#8b84b0' },
-];
+import { NIVEL_BANDS, bandOf } from '../../../engine/kit-rating.js';
+export { NIVEL_BANDS, bandOf };
 
 // Mangos paid per higher-nivel rival you beat in a race (¡Matagigantes!).
 export const MATAGIGANTES_BONUS = 5;
@@ -172,7 +167,6 @@ export const nivelOf = (tune) => nivelFromPoints(statPoints(tune));
 export const carNivel = (car, wheelId, parts = {}) =>
   nivelOf(composeTune(car.tune, wheelById(wheelId).profile, partsProfile(parts)));
 
-export const bandOf = (pi) => NIVEL_BANDS.find((band) => pi >= band.min) ?? NIVEL_BANDS.at(-1);
 
 // The skewed two-tone chip: the letter on its colour, the number on dark ink.
 export const badge = (pi, cls = '') => {

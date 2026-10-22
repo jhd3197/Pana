@@ -1,7 +1,7 @@
 // The fullscreen Taller follows the prototype's slots and Garaje drawer.
 // Hover previews the model and stats without spending; click buys/equips.
 // game.js owns the 3D car and camera.
-import { CATALOG, PAINTS, owns, unlocked, unlockText, buy } from './shop.js';
+import { CATALOG, PAINTS, kitEntries, quoteBuild, paintOf, owns, unlocked, unlockText, buy } from './shop.js';
 import { PART_SLOTS, STATS, partsProfile, renderConfig, statPoints, statPills, badge, nivelOf, bandOf, VESSEL_STAT_LABELS, VESSEL_DEFS, VESSEL_SLOTS, vesselTune, vesselById, trackPieces, kitNivel, carNivel, vesselNivel } from './parts.js';
 import { composeTune, wheelById } from './wheel-definitions.js';
 import { ICONS } from '/engine/icons.js';
@@ -76,10 +76,10 @@ export function createTaller({ $, wallet, cars, getIndex, selectCar, getWheel, s
   function look(car) {
     if (car.id !== def().id) {   // a thumbnail of another car: only what it wears
       const parts = equippedParts();
-      return { paint: PAINTS.find(p => p.id === equipped('paint'))?.color ?? null, parts, cfg: renderConfig(parts), wheel: getWheel() };
+      return { paint: paintOf({paint:equipped('paint'),paintColor:wallet.copiedPaint}), parts, cfg: renderConfig(parts), wheel: getWheel() };
     }
     const parts = partsWith(hover && PART_KINDS.has(hover[0]) ? { [hover[0]]:hover[1] } : {});
-    return { paint: PAINTS.find(p => p.id === (hover?.[0]==='paint'?hover[1]:current('paint')))?.color ?? null, parts, cfg: renderConfig(parts), wheel: hover?.[0]==='wheel'?hover[1]:current('wheel') };
+    return { paint: paintOf({paint:hover?.[0]==='paint'?hover[1]:current('paint'),paintColor:hover?.[0]==='paint'?null:wallet.copiedPaint}), parts, cfg: renderConfig(parts), wheel: hover?.[0]==='wheel'?hover[1]:current('wheel') };
   }
 
   function renderStats() {
@@ -97,7 +97,7 @@ export function createTaller({ $, wallet, cars, getIndex, selectCar, getWheel, s
     if (vesselSlot(kind)) {
       const key = vehicle + 'Parts'; wallet[key] ??= {};
       wallet[key][current(vehicle)] = { ...(wallet[key][current(vehicle)] ?? {}), [kind]: id };
-    } else if (kind === 'paint') wallet.paint[car.id] = id;
+    } else if (kind === 'paint') { wallet.paint[car.id] = id; wallet.copiedPaint = null; }
     else if (kind === 'wheel') setWheel(id);
     else if (PART_KINDS.has(kind)) {
       const parts = wallet.parts[car.id] ?? {};
@@ -172,7 +172,7 @@ export function createTaller({ $, wallet, cars, getIndex, selectCar, getWheel, s
     body.scrollTop = scroll;
   }
 
-  function showVessel() { previewVessel(vehicle, hover?.[0]===vehicle?hover[1]:current(vehicle), PAINTS.find(p => p.id === (hover?.[0]==='paint'?hover[1]:current('paint')))?.color ?? def().color); }
+  function showVessel() { previewVessel(vehicle, hover?.[0]===vehicle?hover[1]:current(vehicle), paintOf({paint:hover?.[0]==='paint'?hover[1]:current('paint'),paintColor:hover?.[0]==='paint'?null:wallet.copiedPaint},def().color)); }
   function setTab(id) { tab=id;drawer=true;hover=null;render();if(!$('loadout-drawer').open)$('loadout-drawer').showModal();$('shop-body').scrollTop=0;onTab(vehicle==='car'?tab:'carro');showVessel(); }
   function renderSlots() {
     const iconFor={motor:'kitMotor',ruedas:'kitWheel',aleron:'kitSpoiler',extras:'plus',pintura:'kitPaint',sonido:'kitHorn',casco:'kitHull',fueraborda:'kitMotor',helice:'kitProp',alas:'kitWing',aspas:'kitProp'};
@@ -211,12 +211,11 @@ export function createTaller({ $, wallet, cars, getIndex, selectCar, getWheel, s
     for (const other of $('loadout-vehicles').querySelectorAll('button')) other.setAttribute('aria-pressed', String(other === b));
     render(); refreshCar(); showVessel(); onTab('carro');
   };
-  const kitEntries=c=>[['car',c.def.id],['wheel',c.wheel??'calle'],['boat',c.cosmetics?.boat??'penero'],['air',c.cosmetics?.air??'zamuro'],...Object.entries(c.cosmetics?.parts??{}),...Object.entries(c.cosmetics?.boatParts??{}),...Object.entries(c.cosmetics?.airParts??{}),['paint',c.cosmetics?.paint??'fabrica'],['horn',c.cosmetics?.horn??'propio']];
-  const quoteKit=c=>kitEntries(c).reduce((sum,[kind,id])=>sum+(kind==='car'||owns(wallet,kind,id)?0:CATALOG[kind]?.find(p=>p.id===id)?.cost??0),0);
+  const quoteKit = (c, kind = null) => quoteBuild(wallet, c, kind);
   return {
-    look, render, renderStats, quoteKit,
-    recommend(c){wishlist={name:c.name,entries:kitEntries(c)};try{localStorage.setItem('carreritas:wishlist',JSON.stringify(wishlist));}catch{}return quoteKit(c);},
-    copyColors(c){const id=c.cosmetics?.paint??'fabrica';if(!buy(wallet,'paint',id,trophies()))return false;for(const car of cars)wallet.paint[car.id]=id;save();return true;},
+    look, render, renderStats, quoteKit, get balance() { return wallet.coins; },
+    recommend(c,kind=null){wishlist={name:c.name,scope:kind,entries:kitEntries(c,kind)};try{localStorage.setItem('carreritas:wishlist',JSON.stringify(wishlist));}catch{}return quoteKit(c,kind);},
+    copyColors(c){const id=c.cosmetics?.paint??'fabrica';if(!buy(wallet,'paint',id,trophies()))return false;wallet.copiedPaint=paintOf(c.cosmetics,c.def.color);for(const car of cars)wallet.paint[car.id]=id;save();return true;},
     get tab() { return tab; },
     open(kind) { if (kind) setTab(tabs().find(t => t.kinds.includes(kind))?.id ?? tab); else { drawer = false; render(); showVessel(); } },
     close() { if($('loadout-drawer').open)$('loadout-drawer').close(); hover = null; vehicle = 'car'; tab = 'carro'; drawer = false; for(const b of $('loadout-vehicles').querySelectorAll('button')) b.setAttribute('aria-pressed',String(b.dataset.vehicle==='car')); previewVessel('car'); },

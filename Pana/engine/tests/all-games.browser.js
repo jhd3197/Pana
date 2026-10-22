@@ -46,7 +46,7 @@ try {
             if (!more || more.hidden) return ['missing Más ajustes'];
             const bottom = more.getBoundingClientRect().bottom;
             return [...settings.querySelectorAll('*')].filter(el =>
-              el !== more && !el.contains(more) && !more.contains(el) &&
+              !el.closest('.sala-connection') && el !== more && !el.contains(more) && !more.contains(el) &&
               el.checkVisibility({ checkOpacity: true, checkVisibilityCSS: true }) &&
               el.getClientRects().length && el.getBoundingClientRect().bottom > bottom + 1
             ).map(el => el.id || el.className || el.tagName);

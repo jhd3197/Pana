@@ -1,5 +1,5 @@
 import { createArmory } from './armory.js';
-import { kitStats, MARKERS } from './armory-data.js';
+import { kitStats, kitRating, MARKERS } from './armory-data.js';
 import { createLobbyRoster } from '/engine/lobby-roster.js';
 import { createRoomOptions } from '/engine/room-options.js';
 import { FIELDS, DEFAULT_OPTIONS } from './options.js';
@@ -29,9 +29,13 @@ const hitFeats = createHitFeats(createFeats($('toast')));
 let weapon = 'pistol', queuedGrenade = false;
 let cameraView = 'primera', pointerPosition = null;
 const room = new PaintConnection({ code, name: loadName(), avatar: loadAvatar(), onState: render, onStatus(text, failed = false) {
-  $('connection').textContent = text; $('recovery-copy').textContent = text; $('recovery').hidden = !failed || room.state.phase === 'lobby';
+  $('connection').dataset.failed = String(failed); $('connection').textContent = text; document.dispatchEvent(new Event('pana:sala-update')); $('recovery-copy').textContent = text; $('recovery').hidden = !failed || room.state.phase === 'lobby';
 } });
 const armory = createArmory({room,onPick:value=>{weapon=value;}});
+$('lobby').panaSala = { kitLabel: 'Armar mi kit', openKit: () => $('open-armory').click(), read: () => {
+  const describe = p => { const stats = kitStats(p.kit || room.kit, room.state.options); return { id: room.link?.state.players.find(m => m.seat === p.id)?.id, kit: stats.name, level: kitRating(p.kit || room.kit, room.state.options), color: p.color || '#ffc629', team: (room.state.options?.mode === 'teams' || room.state.options?.flag) ? (p.team ? 'Turquesa' : 'Naranja') : '' }; };
+  return { connection: room.local ? 'local' : room.connected ? 'online' : $('connection').dataset.failed === 'true' ? 'offline' : 'connecting', players: room.state.players.map(describe), local: describe({ kit: room.kit }), summary: `${room.state.players.filter(p => p.connected && !p.bot).length || 1} pana${room.state.players.filter(p => p.connected && !p.bot).length > 1 ? 's' : ''} · ${room.state.options?.mode === 'teams' ? 'Equipos' : 'Todos vs todos'} · ${(room.state.options?.duration || 180) / 60} min` };
+} };
 const teamRoster = createLobbyRoster($('team-roster'), { onMove: (from, to) => room.moveSeat(from, to) });
 const optionsUI = createRoomOptions($('room-options'), { title: 'Pepazo', fields: FIELDS, change: options => room.configure(options), reset() {
   room.configure(DEFAULT_OPTIONS); room.selectMap('plaza'); room.selectDifficulty(DEFAULT_DIFFICULTY);
@@ -55,7 +59,7 @@ const menu = createGameMenu({ pad: { move: 'wasd', look: 'Mirar y apuntar', keys
 $('game-nav').append(menu.createInviteButton({ id: 'invite', className: 'pk-btn' }), menu.createButton({ id: 'menu', className: 'pk-btn' }));
 $('room-code').textContent = `Sala ${code}`; $('rules').onclick = () => menu.open('controls');
 $('grenade').onclick=()=>{if(active())queuedGrenade=true;};
-$('start').onclick = () => { sound.unlock(); room.start(); }; $('again').onclick = () => room.start();
+$('start').onclick = () => { sound.unlock(); if (!room.connected && $('connection').dataset.failed === 'true') room.practice(); else room.start(); }; $('again').onclick = () => room.start();
 for (const id of ['practice', 'fallback']) $(id).onclick = () => { menu.close(); $('recovery').hidden = true; room.practice(); };
 function clearInput() { held.clear(); firing = touchFire = queuedFire = queuedReload = queuedGrenade = false; pads.forEach(p => p.release()); room.input({}); }
 function active() { return !$('armory').open && room.connected && room.state.phase === 'playing' && !menu.isOpen; }
@@ -168,7 +172,7 @@ function render(state) {
   $('team-roster').hidden = !teams;
   $('roster').hidden = teams;
   if (teams) teamRoster.update(['Naranja', 'Turquesa'].map((title, team) => ({ id: team, title, color: team ? '#29c5cd' : '#f28b42', seats: paintSeats(state.players).map((player, key) => ({ key, player })).filter(s => s.key % 2 === team) })), { ownId: room.id, hostId: room.local ? room.id : room.link?.state.players.find(p => p.id === room.link.state.host)?.seat, enabled: room.connected && lobby, canArrange: room.isHost, members: room.link?.state.players || [] });
-  $('start').disabled = !room.connected || !room.isHost || missingTeam; $('start').textContent = !room.connected ? 'Conectando…' : missingTeam ? 'Falta un pana en el otro equipo' : room.isHost ? '¡A la cancha!' : 'El anfitrión inicia la ronda';
+  $('start').disabled = (!room.connected ? $('connection').dataset.failed !== 'true' : !room.isHost || missingTeam); $('start').textContent = !room.connected ? 'Conectando…' : missingTeam ? 'Falta un pana en el otro equipo' : room.isHost ? '¡A pepear!' : 'El anfitrión inicia la ronda';
   $('invite').disabled = room.local || !room.connected; $('roster').textContent = state.players.filter(p => p.connected).map(p => p.name).join(' · ');
   const me = state.players.find(p => p.id === room.id), order = [...state.players].sort((a, b) => b.score - a.score || a.hits - b.hits);
   $('score').textContent = `${me?.score || 0} / ${TARGET}`; $('position').textContent = `${Math.max(1, order.findIndex(p => p.id === room.id) + 1)} de ${state.players.length} panas`;
@@ -197,7 +201,7 @@ function render(state) {
     $('again').disabled = !room.isHost || !room.connected; $('again').textContent = room.isHost ? 'Otra ronda' : 'El anfitrión prepara la revancha';
     if (lastPhase !== 'finished') { clearInput(); $('again').focus(); }
   }
-  lastPhase = state.phase;
+  lastPhase = state.phase; document.dispatchEvent(new Event('pana:sala-update'));
 }
 let previous = performance.now(), stoppedAt = previous;
 const timer = setInterval(() => { const now = performance.now(), dt = (now - stoppedAt) / 1000; stoppedAt = now; room.input(input()); queuedFire = queuedReload = queuedGrenade = false; room.tick(dt, menu.isOpen); }, 50);

@@ -22,6 +22,11 @@ async function load(page, query = '') {
   await page.waitForFunction(() => document.getElementById('pana-lobby-ready')?.disabled === false, null, { timeout: 120000 });
 }
 async function fits(page, selector) {
+  // Drawer close animates the footer back in; assert its settled position.
+  await page.waitForFunction(selector => {
+    const box=document.querySelector(selector)?.getBoundingClientRect();
+    return box && box.x>=-1 && box.y>=-1 && box.right<=innerWidth+1 && box.bottom<=innerHeight+1;
+  }, selector, {timeout:5000});
   const box = await page.locator(selector).boundingBox(), view = page.viewportSize();
   assert.ok(box && box.x >= -1 && box.y >= -1 && box.x + box.width <= view.width + 1 && box.y + box.height <= view.height + 1, `${selector} stays on screen`);
 }
@@ -56,7 +61,7 @@ try {
     assert.equal(await button.getAttribute('aria-pressed'), 'true');
     await page.waitForFunction(id => {
       const img = document.getElementById('circuit-art');
-      return img.src.endsWith(`${id}.webp`) && img.complete && img.naturalWidth > 0;
+      return img.src.endsWith(id === 'sabana' ? 'sabana-preview.jpg' : `${id}.webp`) && img.complete && img.naturalWidth > 0;
     }, id);
     if(id==='galipan'){
       await menuStep(page,'car');
@@ -66,6 +71,7 @@ try {
     }
   }
   assert.equal(await page.evaluate(() => !!race.trackGroup), false, 'browsing artwork never constructs scenery');
+  await page.locator('[data-format=cups]').click();
   for (const id of ['pana', 'aventura', 'agua']) {
     await page.locator(`[data-mode="${id}"]`).click();
     assert.equal(await page.locator('.cup-stage').count(), 4);
@@ -74,8 +80,8 @@ try {
     // Each championship starts at its actual first circuit.
     assert.match(await page.locator('#menu-summary').textContent(), /^Copa/);
   }
-  await page.locator('[data-mode="battle"]').click();
-  await page.locator('[data-mode="race"]').click();
+  await page.locator('[data-format="battle"]').click();
+  await page.locator('[data-format="race"]').click();
   await page.locator('[data-circuit="estadio"]').click();
   await page.waitForFunction(() => [...document.querySelectorAll('#circuit-grid img, #mode-pick img')].every(i => i.naturalWidth > 0));
   await page.screenshot({ path: `${output}/circuits.png` });
@@ -113,7 +119,7 @@ try {
     if (await mobile.locator('.pana-rotate').isVisible()) await mobile.locator('[data-act="stay"]').click();
     for (const name of ['car', 'track']) {
       await menuStep(mobile, name);
-      await fits(mobile, name === 'car' ? '#menu-summary' : '[data-step="track"]');
+      await fits(mobile, name === 'car' ? '#taller-pistas' : '[data-step="track"]');
       if (name === 'car') {
         await fits(mobile, '#play');
         const panels=await mobile.evaluate(()=>{
@@ -184,12 +190,21 @@ try {
   assert.equal(await host.locator('#garage').isVisible(),false,'garage navigation and car choices stay out of the starting grid');
   assert.equal(await host.locator('#parrilla #grid-count').count(),1,'one presentation countdown');
   assert.equal(await host.locator('#parrilla').getAttribute('data-pad-menu'),'','controller focus stays inside the starting grid');
-  await host.locator('#parrilla details summary').nth(1).click();
-  await host.locator('#parrilla [data-copy=kit]').click();
-  assert.ok(await host.evaluate(()=>JSON.parse(localStorage.getItem('carreritas:wishlist')).entries.length>=6),'the inspected kit is marked for the next workshop');
   if(await host.locator('.grid-ready').isVisible())await host.locator('.grid-ready').click();
   if(await guest.locator('.grid-ready').isVisible())await guest.locator('.grid-ready').click();
   await Promise.all([host, guest].map(p => p.waitForFunction(() => race.cars.length === 4 && ['count', 'go'].includes(race.state), null, { timeout: 120000 })));
+  await host.locator('#parrilla details summary').nth(1).click();
+  await host.locator('#parrilla [data-copy=kit]').click();
+  assert.ok(await host.evaluate(()=>JSON.parse(localStorage.getItem('carreritas:wishlist')).entries.length>=6),'the inspected kit is marked for the next workshop');
+  await host.locator('.grid-kit [data-vehicle=boat]').click();
+  await host.locator('.vehicle-popup[data-scene-ready=true]').waitFor();
+  assert.match(await host.locator('.vehicle-unused').textContent(),/No se usa/);
+  assert.ok(await host.locator('.vehicle-popup canvas').evaluate(c=>c.getContext('2d')===null),'vehicle inspection renders a real WebGL model');
+  await host.locator('.vehicle-popup [data-look]').click();assert.ok(await host.locator('.vehicle-popup.close-up').isVisible());
+  await host.locator('.vehicle-popup [data-copy]').click();
+  assert.equal(await host.evaluate(()=>JSON.parse(localStorage.getItem('carreritas:wishlist')).scope),'boat');
+  await host.keyboard.press('Escape');assert.ok(await host.locator('.grid-inspect[open]').isVisible(),'first Escape returns to the kit');
+  await host.keyboard.press('Escape');assert.equal(await host.locator('.grid-inspect[open]').count(),0,'second Escape closes the kit');
   assert.equal(await guest.evaluate(() => race.player.def.name), 'El Machito');
   const guestId=await guest.evaluate(()=>getNet().id);
   assert.equal(await host.evaluate(id=>race.cars.find(c=>c.netId===id).cosmetics.boat,guestId),'rayo','guest kit is carried to the host race');

@@ -41,7 +41,7 @@ export function cleanCosmetics(value) {
   // Taller parts ride along only when set; unknown slots or ids are dropped.
   const parts=cleanParts(value?.parts);
   const boatParts=cleanVesselParts('boat',value?.boatParts), airParts=cleanVesselParts('air',value?.airParts);
-  return {paint:PAINTS.some(p=>p.id===value?.paint)?value.paint:'fabrica',
+  return {...(/^#[0-9a-f]{6}$/i.test(value?.paintColor) ? {paintColor:value.paintColor} : {}),paint:PAINTS.some(p=>p.id===value?.paint)?value.paint:'fabrica',
     horn:HORNS.some(h=>h.id===value?.horn)?value.horn:'propio',
     flame:FLAMES.some(f=>f.id===value?.flame)?value.flame:'fuego',
     ...(BOAT_DEFINITIONS.some(v=>v.id===value?.boat)&&value.boat!=='penero'?{boat:value.boat}:{}),

@@ -1,8 +1,9 @@
+import { ratingBadge } from '/engine/kit-rating.js';
 import * as THREE from 'three';
 import { loadAvatar } from '/engine/avatar.js';
 import { buildCharacter } from '/engine/models/characters/pana/avatar-model.js';
 import { createPaintKit, createPaintVest } from '/engine/models/props/paintball-kit.js';
-import { MARKERS, ATTACHMENTS, ARMOR, GRENADES, FINISHES, CHARMS, PATTERNS, cleanKit, kitStats } from './armory-data.js';
+import { MARKERS, ATTACHMENTS, ARMOR, GRENADES, FINISHES, CHARMS, PATTERNS, cleanKit, kitStats, kitRating } from './armory-data.js';
 import { Arena } from './rules.js';
 import { ICONS } from '/engine/icons.js';
 const esc=s=>String(s).replace(/[&<>"']/g,c=>`&#${c.charCodeAt(0)};`);
@@ -10,12 +11,15 @@ export function createArmory({room,onPick}) {
  let kit=cleanKit();try{kit=cleanKit(JSON.parse(localStorage.getItem('pintura:kit')));}catch{}
  room.kit=kit;onPick(kit.weapon);
  const dialog=document.getElementById('armory'),choices=document.getElementById('armory-choices');
+ const rating=document.createElement('span');rating.id='armory-rating';document.getElementById('armory-name').after(rating);
  const back=document.createElement('button');back.id='armory-parts-back';back.type='button';back.className='pk-btn';back.textContent='‹ Atrás';choices.before(back);back.onclick=()=>dialog.classList.remove('choosing');
  const icons={weapon:'kitBarrel',attachments:'plus',armor:'kitVest',grenade:'kitGrenade',finish:'kitPaint',charm:'wardrobe-cuello',pattern:'kitPaint'};
  for(const b of document.querySelectorAll('#armory-slots button')){const icon=document.createElement('i');icon.innerHTML=ICONS[icons[b.dataset.slot]];b.insertBefore(icon,b.querySelector('b'));}
- let category='weapon',renderer=null,scene,camera,model,avatar,vest,target,range=null,acc=0; const balls=new Map();
+ let ratedOptions='',category='weapon',renderer=null,scene,camera,model,avatar,vest,target,range=null,acc=0; const balls=new Map();
  const catalog={weapon:MARKERS,attachments:ATTACHMENTS,armor:ARMOR,grenade:GRENADES,finish:FINISHES,charm:CHARMS,pattern:PATTERNS};
  function paintStats(value=kit){
+  ratedOptions=JSON.stringify(room.state.options);
+  rating.innerHTML=ratingBadge(kitRating(value,room.state.options));
   const current=kitStats(kit,room.state.options),next=kitStats(value,room.state.options);
   const rows=[['Alcance',s=>s.speed*s.life,s=>`${Math.round(s.speed*s.life)} m`,60,false],['Precisión',s=>Math.max(0,1-s.spread/.3),s=>`${(s.spread*180/Math.PI).toFixed(1)}°`,1,false],['Cadencia',s=>1/s.cadence,s=>`${(1/s.cadence).toFixed(1)}/s`,8,false],['Capacidad',s=>s.magazine,s=>`${s.magazine}${s.reserve!=null?' + '+s.reserve:''}`,26,false],['Recarga',s=>s.reload,s=>`${s.reload.toFixed(1)} s`,4,true],['Movilidad',s=>s.mobility,s=>`${Math.round(s.mobility*100)}%`,1.15,false],['Aguante',s=>s.toughness,s=>`${s.toughness} pepazos`,6,false]];
   document.getElementById('armory-stats').innerHTML=rows.map(([name,get,text,max,inverse])=>{const a=Math.round(Math.min(1,get(current)/max)*10),b=Math.round(Math.min(1,get(next)/max)*10),gain=inverse?b<a:b>a;return `<div><dt>${name}</dt><dd><span class="armory-bars">${Array.from({length:10},(_,i)=>`<i class="${i<Math.min(a,b)?'on':i<Math.max(a,b)?gain?'gain':'loss':''}"></i>`).join('')}</span><b>${text(next)}</b></dd></div>`;}).join('');
@@ -64,7 +68,7 @@ export function createArmory({room,onPick}) {
  document.getElementById('range-fire').onclick=()=>{fire=true;};document.getElementById('range-grenade').onclick=()=>{grenade=true;};
  dialog.addEventListener('close',()=>{range=null;if(target)target.group.visible=false;document.getElementById('range-controls').hidden=true;document.getElementById('open-armory').focus();});
  return {get kit(){return kit;}, open, update(dt){
-  if(!dialog.open||!renderer)return;const c=renderer.domElement,w=c.clientWidth,h=c.clientHeight;if(!w||!h)return;renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix();
+  if(!dialog.open||!renderer)return;if(ratedOptions!==JSON.stringify(room.state.options))paintStats();const c=renderer.domElement,w=c.clientWidth,h=c.clientHeight;if(!w||!h)return;renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix();
   model.rotation.y+=dt*.18;avatar.update(dt,{walk:false});
   if(range){acc+=dt;while(acc>=.05){range.step(.05,new Map([[1,{ax:0,az:1,fire,grenade}]]));fire=grenade=false;acc-=.05;}const p=range.players[0],dummy=range.players[1];document.getElementById('range-status').textContent=`Blanco: ${dummy.paint} pepazos · ${dummy.hits} fuera · Carga: ${p.ammo} · ${p.reload>0?'Recargando':p.grenadeReady?'Granada lista':'Sin granada'}`;target.group.rotation.z=dummy.paint*.08;target.update(dt,{walk:false});if(dummy.respawn){dummy.respawn=0;Object.assign(dummy,{x:-22,z:-15,paint:0,shield:0});} }
   if(range) {

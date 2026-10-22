@@ -270,6 +270,12 @@
       "source": "Native render: sabana circuit",
       "width": 480,
       "bytes": 22226
+    },
+    {
+      "file": "sabana-preview.jpg",
+      "source": "Derrape Race HUD (2) / Gran Sabana hero",
+      "width": 1100,
+      "bytes": 114334
     }
   ]
 }

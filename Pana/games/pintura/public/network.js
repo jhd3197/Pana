@@ -18,7 +18,7 @@ export class PaintConnection {
       link.on('status', (text, failed) => { if (!this.local) { this.connected = !failed; this.onStatus(text || 'En línea con tus panas', !!failed); this.onState(this.state); } });
       link.on('left', () => { if (!this.local) { this.connected = false; this.onStatus('Se cortó la conexión. Recarga para volver o practica con bots.', true); this.onState(this.state); } });
       this.onStatus('En línea con tus panas'); if(this.kit) this.selectKit(this.kit); this.onState(this.state);
-    } catch (error) { if (!this.local && !this.disposed) this.onStatus(error.full ? 'Sala llena. Abre otra cancha desde Pana.' : 'Sin conexión. Puedes practicar con bots.', true); }
+    } catch (error) { if (!this.local && !this.disposed) { this.connected = false; this.onStatus(error.full ? 'Sala llena. Abre otra cancha desde Pana.' : 'Sin conexión. Puedes practicar con bots.', true); this.onState(this.state); } }
   }
   moveSeat(from, to) {
     if (!this.connected) return;

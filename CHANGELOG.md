@@ -8,6 +8,17 @@ becomes the GitHub release's notes.
 
 ## Unreleased
 
+- **Carreritas y Pepazo comparten una sala con tus panas, kits y conexión a la vista.**
+  Tu tarjeta cambia Listo; los ajustes usan las mismas placas y puedes abrir
+  tu taller o kit antes de arrancar. Sin conexión puedes jugar en local o
+  reintentar. Pepazo calcula el nivel del kit con sus estadísticas reales.
+
+- **Elige entre 22 pistas, copas y globos, y revisa cada vehículo de la parrilla en 3D.**
+  El taller vuelve a Pistas; las copas muestran sus cuatro etapas y trofeos.
+  Abre un carro, lancha o avioneta para girarlo, verlo de cerca, guardar sus
+  piezas como recomendación o copiar sus colores. Los precios individuales
+  cuentan solo piezas que faltan, sin cobrar otra vez las que ya tienes.
+
 - **Carreritas carga el taller sin construir los menús que ya no se usan.**
   El garaje conserva el diseño del nuevo taller, con sus vistas 3D y guardados.
   Quitamos controles y dibujos ocultos, actualizamos los consejos de carga y

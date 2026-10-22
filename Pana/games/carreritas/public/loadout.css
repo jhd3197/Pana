@@ -230,13 +230,13 @@ body.loadout-focus .menu-footer {transform:translateY(260px);opacity:0;pointer-e
 #loadout-kit{display:none}body.shop-open #loadout-kit{display:flex}
 #loadout-garage{gap:6px}
 /* The workshop is the screen: no duplicated page header or settings bar. */
-body.shop-open #garage>.bar{display:none}body.shop-open #shop{inset:0;--u:min(calc(100vw / 1600),calc(100dvh / 900))}body.shop-open #shop .tl-head{top:calc(36 * var(--u))}body.shop-open .menu-footer #menu-summary{display:block;border:0;background:none;color:var(--pk-muted);font:800 14px var(--pk-sans);text-align:right;padding:0;cursor:pointer;box-shadow:none}body.shop-open .menu-footer #menu-summary:hover{color:var(--pk-yellow)}
+body.shop-open #garage>.bar{display:none}body.shop-open #shop{inset:0;--u:min(calc(100vw / 1600),calc(100dvh / 900))}body.shop-open #shop .tl-head{top:calc(92 * var(--u))}body.shop-open .menu-footer #menu-summary{display:block;border:0;background:none;color:var(--pk-muted);font:800 14px var(--pk-sans);text-align:right;padding:0;cursor:pointer;box-shadow:none}body.shop-open .menu-footer #menu-summary:hover{color:var(--pk-yellow)}
 #shop .shop-stats dd i.neutral.up{background:var(--pk-muted)}#shop .shop-stats dd i.neutral.down{box-shadow:inset 0 0 0 2px var(--pk-muted)}
 #loadout-drawer .shop-item.recommended{outline:3px solid var(--pk-teal);outline-offset:-3px}#loadout-drawer .shop-item.recommended:after{content:'KIT COPIADO';position:absolute;right:8px;top:8px;font:900 10px var(--pk-sans);color:var(--pk-teal)}
 body.shop-open #shop{height:auto}
 @media(max-width:700px) and (orientation:portrait){
  body.shop-open #shop{--u:.7px}
- body.shop-open #shop .tl-head{top:18px}
+ body.shop-open #shop .tl-head{top:65px}
  #shop .tl-coins{top:70px;font-size:24px}
  #shop .tl-slots{bottom:140px}
  #shop .shop-tabs button b{font-size:13px}
@@ -249,3 +249,5 @@ body.shop-open #shop{height:auto}
  #shop .shop-stats dd{gap:2px}
  body.shop-open .menu-footer #menu-summary{font-size:11px}
 }
+
+body.shop-open .menu-footer #play:disabled{white-space:normal;overflow-wrap:anywhere;font-size:clamp(14px,2vw,24px);line-height:1.15;min-width:0;box-sizing:border-box}

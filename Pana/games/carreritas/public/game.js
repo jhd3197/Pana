@@ -38,7 +38,7 @@ import { createMusic, TRACK_STYLE, GARAGE_SONG, RESULTS_SONG, songFor, finishSti
 import { batchRacer, repaintCar, addBalloons, setGhost, syncGhostAppearance } from './racer-render.js';
 import { createWaterAmbience } from './water-ambience.js';
 import { padInput, pressed, keyInput, SPLIT_KEYS, wrongWayStep, WRONG_WAY_TIME, lapSplit } from './controls.js';
-import { PAINTS, FLAMES, earnings, mirrorUnlocked, repaintHex } from './shop.js';
+import { PAINTS, paintOf, FLAMES, earnings, mirrorUnlocked, repaintHex } from './shop.js';
 import { createProfileStore, recordCupTrophy, trophyCredits } from './cup-profile.js';
 import { settleRace } from './cup-rewards.js';
 import { CLASSIFICATION_TEXT, approximateCupText, cupStandingsView, nextStageText, rankChangeText, tiebreakText } from './cup-ui.js';
@@ -275,7 +275,7 @@ $('play').onclick = () => {
   }
   if (!joining) startRace(garage.index, garage.wheel);
 };
-$('go-online').onclick = () => { sound.unlock(); goOnline(newRoomCode(), true); };
+$('go-online').onclick = () => { sound.unlock(); return goOnline(newRoomCode(), true); };
 $('lobby-invite').onclick = () => menu.share();
 $('lobby-bots').onchange = (e) => net?.bots(e.target.checked);
 $('lobby-solo').onclick = () => { location.href = location.pathname; };
@@ -360,7 +360,7 @@ function saveWallet() {
   profileStore.save(profile);
   $('shop-coins').textContent = wallet.coins;
 }
-const raceStyle = index => cleanCosmetics({paint:wallet.paint[CARS[index].id],horn:wallet.horn,flame:wallet.flame,parts:wallet.parts[CARS[index].id],boat:wallet.boat,boatParts:wallet.boatParts?.[wallet.boat],air:wallet.air,airParts:wallet.airParts?.[wallet.air]});
+const raceStyle = index => cleanCosmetics({paintColor:wallet.copiedPaint,paint:wallet.paint[CARS[index].id],horn:wallet.horn,flame:wallet.flame,parts:wallet.parts[CARS[index].id],boat:wallet.boat,boatParts:wallet.boatParts?.[wallet.boat],air:wallet.air,airParts:wallet.airParts?.[wallet.air]});
 const hornFor = c => c.cosmetics.horn !== 'propio' ? c.cosmetics.horn : c.def.horn;
 const flameFor = c => FLAMES.find(f => f.id === c.cosmetics.flame)?.colors ?? FLAMES[0].colors;
 
@@ -661,8 +661,8 @@ function makeRacer(index, isPlayer, name, wheelId = 'calle', avatar = null, cosm
   const who = { name: name ?? (isPlayer ? ME.name : 'Pana'), avatar: avatar || (isPlayer ? ME.avatar : randomAvatar()) };
   cosmetics=cleanCosmetics(cosmetics ?? (isPlayer ? raceStyle(index) : aiVessels(CARS[index].id)));
   const car = def.build(who.avatar, wheel.wheel ?? undefined, renderConfig(cosmetics.parts));
-  repaintCar(car, def.color, PAINTS.find(p=>p.id===cosmetics.paint)?.color ?? null);
-  batchRacer(car,PAINTS.find(p=>p.id===cosmetics.paint)?.color ?? def.color);
+  repaintCar(car, def.color, paintOf(cosmetics));
+  batchRacer(car,paintOf(cosmetics,def.color));
   // Retain ownership even after a bumper detaches and expires from the scene.
   car.geometries = new Set();
   car.ownedMaterials = new Set();
@@ -2054,7 +2054,7 @@ function syncRacers(s) {
 }
 
 function onNetState(s) {
-  if (!s.racers) return;   // the room's first state has not arrived yet
+  if (!s.racers || !net) return;   // the room's first state has not arrived yet
   if (net.cup) {
     race.cup = { definition: cupById(net.cup.cupId), session: net.cup, mirror: false };
   } else if (s.mode === 'race') {
@@ -2152,7 +2152,7 @@ async function goOnline(code, lead) {
   $('go-online').hidden = true;
   $('setup').hidden = false;
   $('lobby-code').textContent = code;
-  $('lobby-status').textContent = 'Conectando con la sala…';
+  $('lobby').dataset.failed = 'false'; $('lobby-status').textContent = 'Conectando con la sala…';
   $('play').disabled = true;
   const url = new URL(location.href);
   url.searchParams.set('room', code);
@@ -2163,7 +2163,7 @@ async function goOnline(code, lead) {
       const { joinRace } = await (onlineModulePromise || import('./online.js'));
       net = await joinRace({ code, lead, name: ME.name, avatar: ME.avatar, car: garage.index, wheel: garage.wheel, cosmetics: raceStyle(garage.index) }).then(link => booted.then(() => link));
     } catch (error) {
-      console.warn('Carreritas online unavailable', error);
+      $('lobby').dataset.failed = 'true'; console.warn('Carreritas online unavailable', error);
       $('lobby-status').textContent = error?.full ? 'La sala está llena.' : 'No pudimos entrar a la sala. Puedes correr en local.';
       $('play').disabled = false;
       $('play').textContent = '¡Vámonos!';
@@ -2176,9 +2176,9 @@ async function goOnline(code, lead) {
     net.on('status', (text, bad) => {
       $('net-status').textContent = text;
       $('net-status').hidden = !text;
-      $('net-status').classList.toggle('bad', !!bad);
+      $('net-status').classList.toggle('bad', !!bad); document.dispatchEvent(new Event('pana:sala-update'));
     });
-    net.on('left', () => {
+    net.on('left', () => { document.dispatchEvent(new Event('pana:sala-update'));
       $('lobby-status').textContent = 'Saliste de la sala. Recarga para volver a entrar.';
       $('lobby-solo').hidden = false;
     });
@@ -2282,13 +2282,13 @@ showWheel(garage.wheel);
 renderSetup();
 saveWallet();
 menuFlow = createMenuFlow({
-  tracks: TRACKS, openTaller: openShop, pickTrack: switchTrack, start: () => net ? net.garage(true) : menuFlow.enter('garage'), back: () => net ? net.garage(false) : menuFlow.enter('lobby'),
+  tracks: TRACKS, openTaller: openShop, pickTrack: switchTrack, start: () => { if(net?.link.left){net=null;history.replaceState(null,'',location.pathname);} return net ? net.garage(true) : menuFlow.enter('garage'); }, back: () => net ? net.garage(false) : menuFlow.enter('lobby'),
   prepared: Promise.all([cards.ready, renderer.compileAsync(garage.scene, garage.camera)]).then(() => renderer.render(garage.scene, garage.camera)),
   getState: () => {
     const activeMode = net?.state?.mode || setup.mode;
     return { track: TRACKS[trackIndex], trackSummary: $('track-blurb').textContent, car: CARS[garage.index], wheel: wheelById(garage.wheel),
       mode: activeMode, cup: isCupMode(activeMode) ? cupById(activeMode) : null,
-      online: !!net || !!joining, split: setup.split,
+      online: !!net || !!joining, split: setup.split, boat: wallet.boat, air: wallet.air, sala: { connection: joining ? 'connecting' : net?.link.left ? 'offline' : net && $('net-status').classList.contains('bad') ? 'connecting' : net ? 'online' : $('lobby').dataset.failed === 'true' ? 'offline' : 'local', players: net?.state.players || [], local: { def: CARS[garage.index], wheel: garage.wheel, cosmetics: raceStyle(garage.index) }, cars: CARS },
       canConfigure: !net || (net.isHost && ['lobby', 'results', 'complete'].includes(net.state?.phase)) };
   },
 });

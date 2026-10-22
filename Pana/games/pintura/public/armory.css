@@ -34,3 +34,5 @@
  #armory-view{left:0;top:340px;width:100%;height:calc(100dvh - 605px);min-height:160px}
  #armory-slots button{height:110px}
 }
+
+#armory-rating{display:inline-block;margin-left:18px;vertical-align:middle}#armory-rating .pk-kit-level{font-size:24px}

@@ -1,4 +1,4 @@
-import { PAINTS } from './shop.js';
+import { paintOf } from './shop.js';
 // Transform gates: a stretch of road the river has taken over. A car that
 // hits the water turns into a lancha mid-air — the car
 // shrinks away inside a burst of spray and the Lancha game's peñero, with the
@@ -121,7 +121,7 @@ export function createTransformGates({ race, sound, track }) {
   // lancha piggybacks on that so it goes with the car.
   function lanchaFor(c) {
     if (c.car.lancha) return c.car.lancha;
-    const paint = PAINTS.find(p=>p.id===c.cosmetics?.paint)?.color ?? c.def.color;
+    const paint = paintOf(c.cosmetics,c.def.color);
     const lancha = (BOATS[c.cosmetics?.boat] ?? createLancha)(c.avatar || {}, paint);
     lancha.group.position.y = -1 + 0.22;   // tumble space: the waterline just under the car's floor
     lancha.group.visible = false;
@@ -137,7 +137,7 @@ export function createTransformGates({ race, sound, track }) {
   // riding the tumble group like the lancha.
   function planeFor(c) {
     if (c.car.plane) return c.car.plane;
-    const paint = PAINTS.find(p=>p.id===c.cosmetics?.paint)?.color ?? c.def.color;
+    const paint = paintOf(c.cosmetics,c.def.color);
     const plane = (PLANES[c.cosmetics?.air] ?? createAvioneta)(c.avatar || {}, paint);
     plane.group.position.y = -1;   // tumble space: the wheels where the car's were
     plane.group.visible = false;

@@ -1,11 +1,13 @@
+import { paintOf } from './shop.js';
 import { ICONS } from '/engine/icons.js';
 import { setMenuImage, trackArt } from './menu-art.js';
+import { trackPieces, vesselById, carNivel } from './parts.js';
 import { cupById } from './cup-definitions.js';
 
 // The room gathers in the shared lobby (engine/game-entry.js); the host's
 // start takes everyone to Copa and Taller, and ¡Vámonos! on Taller races.
 const STEPS = ['track', 'car'];
-const LABELS = ['Copa', 'Taller'];
+const LABELS = ['Pista', 'Taller'];
 const MODES = { race: ['Una carrera', 'La pista que tú quieras', 'estadio'], pana: ['Copa Pana', '4 pistas · de la ciudad al mar', 'plaza'], aventura: ['Copa Aventura', '4 pistas · descubre lo salvaje', 'selva'], agua: ['Copa del Agua', '4 pistas · salta, cruza, derrapa', 'salto'], battle: ['Globos', 'Aguanta hasta el final', 'bululu'] };
 
 // The flow only arranges existing controls. Race setup and room authority stay in game.js.
@@ -13,22 +15,24 @@ const MODES = { race: ['Una carrera', 'La pista que tú quieras', 'estadio'], pa
 export function createMenuFlow({ tracks, getState, pickTrack, prepared, openTaller, start, back }) {
   const $ = id => document.getElementById(id);
   const root = $('garage');
-  let step = 'track', stage = 'lobby';
+  let step = 'track', stage = 'lobby', personalKit = false;
+  const returnSala = () => { personalKit = false; stage = 'lobby'; $('shop').hidden = true; sync(); back(); };
   root.classList.add('menu-flow');
   const sections = document.createElement('main');
   sections.className = 'menu-pages';
   sections.innerHTML = `
     <section class="menu-page track-page" data-page="track" aria-labelledby="track-heading">
       <div class="page-heading"><div><p class="pk-eyebrow">Elige tu aventura</p><h1 id="track-heading" tabindex="-1">¿Dónde corremos?</h1></div><p id="track-authority" role="status"></p></div>
-      <div class="track-layout"><div class="track-feature"><img id="circuit-art" alt="" decoding="async"><div class="circuit-caption"></div></div>
-        <div class="track-options"><div id="format-options"></div><div class="circuit-list"><p id="circuit-list-title" class="pk-eyebrow">Los ${tracks.length} circuitos</p><div id="circuit-grid" aria-label="Circuitos"></div></div></div>
+      <div class="track-layout"><div class="track-feature"><img id="circuit-blur" alt=""><img id="circuit-art" alt="" decoding="async"><div class="cup-preview"></div><div class="circuit-caption"><div class="cup-preview-caption"></div></div></div>
+        <div class="track-options"><div class="track-tabs" role="tablist" aria-label="Tipo de carrera"><button type="button" role="tab" data-format="race">Una carrera <small>${tracks.length}</small></button><button type="button" role="tab" data-format="cups">Copas <small>3</small></button><button type="button" role="tab" data-format="battle">Globos</button></div><div id="format-options"></div><div class="circuit-list"><p id="circuit-list-title" class="pk-eyebrow">Los ${tracks.length} circuitos</p><div id="circuit-grid" aria-label="Circuitos"></div></div></div>
       </div>
     </section>`;
   root.append(sections);
   const move = (node, target) => target.append(node);
   const page = name => sections.querySelector(`[data-page="${name}"]`);
   const bar = root.querySelector('.bar');
-  bar.querySelector('.brand span').textContent = 'Gran Premio';
+  bar.querySelector('.brand').hidden = true;
+  const salaBack = bar.querySelector('.hub-link'); salaBack.textContent = '‹ Sala'; salaBack.removeAttribute('href'); salaBack.onclick = returnSala; salaBack.setAttribute('role', 'button'); salaBack.tabIndex = 0;
   bar.querySelector('.steps').innerHTML = STEPS.map((id, i) => `<button type="button" class="step" data-step="${id}"><span>${i + 1}</span>${LABELS[i]}</button>`).join('');
   move($('settings'), bar);
   // Playing alone (no ?room=), the lobby can open an online room to invite panas.
@@ -38,8 +42,17 @@ export function createMenuFlow({ tracks, getState, pickTrack, prepared, openTall
   $('room-lobby').querySelector('.pk-lobby-foot').prepend(online, $('lobby-solo'));
   for (const node of [root.querySelector('.track-pick'), root.querySelector('.track-map')]) move(node, sections.querySelector('.circuit-caption'));
   move($('mode-pick'), $('format-options'));
+  let formatTab = 'race';
+  for (const button of sections.querySelectorAll('[data-format]')) button.onclick = () => {
+    const mode = button.dataset.format;
+    const target = $('mode-pick').querySelector(`[data-mode="${mode === 'cups' ? (getState().cup?.id || 'pana') : mode}"]`);
+    if (target.disabled || target.hidden) return;
+    formatTab = mode; target.click(); refresh();
+  };
   move($('cup-stages'), sections.querySelector('.circuit-list'));
+  const legend = document.createElement('p'); legend.className = 'track-key'; legend.innerHTML = '<span><i class="boat"></i> usa lancha</span><span><i class="air"></i> usa avioneta</span><span>Sin punto: solo carro</span>'; sections.querySelector('.track-options').append(legend);
   move($('setup-note'), sections.querySelector('.track-options'));
+  const vehicleChips = document.createElement('div'); vehicleChips.className = 'track-vehicles'; sections.querySelector('.circuit-caption').append(vehicleChips);
   $('mode-pick').className = 'format-picker';
   for (const button of $('mode-pick').querySelectorAll('button')) {
     const [title, subtitle, id] = MODES[button.dataset.mode];
@@ -99,7 +112,7 @@ export function createMenuFlow({ tracks, getState, pickTrack, prepared, openTall
   root.querySelector('.launch').remove();
   const footer = document.createElement('footer');
   footer.className = 'menu-footer';
-  footer.innerHTML = `<button id="menu-back" class="pk-btn" type="button" data-pad-back>Atrás</button><button id="menu-summary" type="button" aria-label="Cambiar circuito"></button><button id="menu-next" class="pk-btn pk-btn--primary" type="button">Elegir circuito</button>`;
+  footer.innerHTML = `<button id="menu-back" class="pk-btn" type="button" data-pad-back>Atrás</button><button id="menu-summary" type="button" aria-label="Cambiar circuito"></button><span id="picker-mirror"></span><button id="menu-next" class="pk-btn pk-btn--primary" type="button">Elegir circuito</button>`;
   root.append(footer);
   move(play, footer);
   const gridButtons = tracks.map((track, index) => {
@@ -108,19 +121,36 @@ export function createMenuFlow({ tracks, getState, pickTrack, prepared, openTall
     button.setAttribute('aria-pressed', 'false');
     const img = new Image(); img.alt = ''; img.loading = 'lazy'; img.decoding = 'async'; setMenuImage(img, trackArt(track.id, true));
     const label = document.createElement('span'); label.textContent = track.name;
+    for (const kind of trackPieces(track).filter(k => k !== 'car')) { const dot = document.createElement('i'); dot.className = kind; dot.title = kind === 'boat' ? 'Usa lancha' : 'Usa avioneta'; label.append(dot); }
     button.append(img, label); button.onclick = () => { if (!button.disabled) pickTrack(index); };
     $('circuit-grid').append(button);
     return button;
   });
   function refresh() {
     const state = getState(), cup = state.cup;
+    document.dispatchEvent(new Event('pana:sala-update'));
+    formatTab = cup ? 'cups' : state.mode === 'battle' ? 'battle' : 'race';
+    root.dataset.format = formatTab;
+    for (const b of sections.querySelectorAll('[data-format]')) { b.setAttribute('aria-selected', String(b.dataset.format === formatTab)); b.disabled = !state.canConfigure || (b.dataset.format === 'battle' && state.online); }
     page('track').classList.toggle('is-cup', !!cup);
     const format = MODES[state.mode]?.[0] || 'Carrera';
     const launchTrack = cup ? tracks.find(t => t.id === cup.stages[0].track) : state.track;
-    setMenuImage($('circuit-art'), trackArt(state.track.id));
+    const cupPreview = sections.querySelector('.cup-preview'), cupCaption = sections.querySelector('.cup-preview-caption');
+    if (cup && cupPreview.dataset.cup !== cup.id) {
+      cupPreview.dataset.cup = cup.id;
+      cupPreview.replaceChildren(...cup.stages.map(stage => { const img = new Image(); img.alt = tracks.find(t => t.id === stage.track)?.name || stage.track; setMenuImage(img,trackArt(stage.track,true)); return img; }));
+      const title = document.createElement('h2'), route = document.createElement('p'); title.textContent = cup.name; route.textContent = cup.stages.map(s => tracks.find(t => t.id === s.track)?.name || s.track).join(' → '); cupCaption.replaceChildren(title,route);
+    }
+    setMenuImage($('circuit-art'), state.track.id === 'sabana' ? './images/menu/sabana-preview.jpg' : trackArt(state.track.id));
+    $('circuit-art').classList.toggle('full-preview', state.track.id === 'sabana');
+    setMenuImage($('circuit-blur'), trackArt(state.track.id));
+    const use = trackPieces(state.track);
+    vehicleChips.replaceChildren(...['car', 'boat', 'air'].map(kind => { const n = document.createElement('span'); n.className = use.includes(kind) ? 'in-use' : ''; n.textContent = kind === 'car' ? state.car.name : vesselById(kind, state[kind]).name; n.title = `${({car:'Carro',boat:'Lancha',air:'Avioneta'})[kind]} · ${use.includes(kind) ? 'Se usa en esta pista' : 'No se usa en esta pista'}`; return n; }));
+    $('picker-mirror').textContent = $('mirror').disabled ? 'Espejo: gana un trofeo para desbloquearlo' : $('mirror').getAttribute('aria-checked') === 'true' ? 'Pista en espejo' : 'Pista normal';
+    for (const b of $('mode-pick').querySelectorAll('.cup-choice')) { let trophy = b.querySelector('.cup-earned'); if (!trophy) { trophy = document.createElement('small'); trophy.className = 'cup-earned'; b.append(trophy); } trophy.textContent = b.title || 'Sin trofeo'; }
     $('menu-summary').textContent = `${format}: ${cup?.name || launchTrack.name} · ${state.car.name}${state.split && !state.online ? ' · dos panas' : ''}`;
     $('circuit-list-title').textContent = cup ? 'Las 4 paradas · en este orden' : `Los ${tracks.length} circuitos`;
-    $('circuit-grid').hidden = !!cup;
+    $('circuit-grid').hidden = !!cup; $('cup-stages').hidden = true;
     $('track-authority').textContent = state.online ? state.canConfigure ? 'Tú eliges la aventura para la sala.' : 'El anfitrión elige la aventura.' : '';
     for (const button of gridButtons) {
       button.disabled = !state.canConfigure;
@@ -135,6 +165,14 @@ export function createMenuFlow({ tracks, getState, pickTrack, prepared, openTall
   }
   // The lobby shows while the room gathers, never over the race.
   const lobby = $('room-lobby');
+  lobby.panaSala = {
+    kitLabel: 'Mi taller', ensureRoom: () => $('go-online').onclick(), openKit: () => { personalKit = true; stage = 'garage'; show('car'); sync(); },
+    read: () => { const state = getState(), info = state.sala;
+      const describe = (p, mine) => { const data = mine ? info.local : { def: info.cars[p.car] || info.cars[0], wheel: p.wheel, cosmetics: typeof p.cosmetics === 'string' ? JSON.parse(p.cosmetics || '{}') : p.cosmetics || {} };
+        const level = carNivel(data.def, data.wheel, data.cosmetics.parts); return { id: p.id, kit: data.def.name, level, color: paintOf(data.cosmetics,data.def.color) }; };
+      return { connection: info.connection, players: info.players.map(p => describe(p, false)), local: describe({}, true), summary: `${$('launch-note').textContent} · ${$('difficulty-pick').querySelector('[aria-pressed=true]')?.textContent || 'Normal'} · ${$('laps-pick').querySelector('[aria-pressed=true]')?.textContent || '3'} vueltas` };
+    },
+  };
   let lastMode = 'garage';
   function sync(mode = 'garage') {
     // The taller belongs to the Taller page: it closes when the race loads
@@ -151,6 +189,8 @@ export function createMenuFlow({ tracks, getState, pickTrack, prepared, openTall
   // stops the frame loop that calls sync).
   new MutationObserver(() => sync(root.classList.contains('hidden') ? 'race' : 'garage')).observe(root, { attributes: true, attributeFilter: ['class'] });
   function enter(next) {
+    if (personalKit && next === 'lobby') return;
+    personalKit = false;
     if (next === stage) return;
     stage = next;
     if (stage === 'garage') show('track');
@@ -171,7 +211,10 @@ export function createMenuFlow({ tracks, getState, pickTrack, prepared, openTall
   }
   for (const button of bar.querySelectorAll('[data-step]')) button.onclick = () => show(button.dataset.step);
   $('menu-summary').onclick = () => show('track');
-  $('menu-back').onclick = () => step === 'track' ? back() : show(STEPS[STEPS.indexOf(step) - 1]);
+  const tallerNav = document.createElement('nav'); tallerNav.className = 'tl-nav'; tallerNav.setAttribute('aria-label', 'Preparar carrera');
+  tallerNav.innerHTML = '<button type="button" id="taller-pistas" data-pad-back>‹ Pistas</button><span>✓ Pista</span><b>2 Taller</b>';
+  $('shop').prepend(tallerNav); $('taller-pistas').onclick = () => show('track');
+  $('menu-back').onclick = () => step === 'track' ? returnSala() : show(STEPS[STEPS.indexOf(step) - 1]);
   $('menu-next').onclick = () => show(STEPS[STEPS.indexOf(step) + 1]);
   $('start').onclick = () => start();
   show('track', false); sync();

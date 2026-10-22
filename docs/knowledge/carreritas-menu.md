@@ -2,15 +2,15 @@
 
 Carreritas starts in the shared lobby (`engine/game-entry.js`, `#room-lobby`),
 like every game. `public/menu-flow.js` moves the race options and Carreritas's
-room panel into it, then arranges the garage into two pages, Copa and Taller
+room panel into it, then arranges the garage into two pages, Pistas and Taller
 (internal IDs track and car). The Taller footer's `#play` reads ¡Vámonos!
 and races. `game.js` still owns setup, car tuning, saved profile, race loading
 and Colyseus authority. The menu never creates a room, simulates a race or
 writes setup independently.
 
 - The host's ¡Arrancar! (`#start`) sends `garage` to the room. The room's
-  `garage` flag takes everyone to Copa: the host picks there, and guests see
-  the choice read-only. Atrás on Copa (host only) and "Sala" after a race
+  `garage` flag takes everyone to Pistas: the host picks there, and guests see
+  the choice read-only. Atrás on Pistas (host only) and "Sala" after a race
   send it back. Alone, without a room, the flag is local.
 - Lobby settings are choice rows of one kind: Dificultad, Vueltas (hidden
   online, where the map sets the laps), Parrilla (online), En esta pantalla
@@ -128,8 +128,9 @@ sampled at the driver's seat, not the lowest point anywhere on the roof.
 `driver-fit.browser.js` checks every car with three headwear choices and
 stock/lifted wheels, plus garage animation and rigid race batching.
 
-Copa retains its navigation; Taller has only the prototype loadout controls. The circuit summary beside
-¡Vámonos! returns to Copa; gameplay settings remain in the shared lobby/menu.
+Pistas retains its navigation. Taller has the prototype loadout controls plus
+‹ Pistas and the Pista/Taller steps; the navigation hides inside a slot or Garaje.
+The circuit summary beside ¡Vámonos! also returns to Pistas; gameplay settings remain in the shared lobby/menu.
 The nameplate, Garaje and G open the body drawer. Q/E select car, boat or plane.
 A native dialog supplies Escape and focus containment for part choices.
 `menu-helpers.js` follows this same visible navigation in browser suites.
@@ -166,3 +167,32 @@ Keep `derrape`/old Carreritas profile and ghost migrations, the Playa track alia
 and old network payload readers. Those preserve saves and reconnects rather than
 present an obsolete interface. Art loaded dynamically by track ID and the hub's
 lazy game card are not unused assets.
+
+## Shared sala and picker tabs
+
+Carreritas opts into `engine/sala.js` through `#room-lobby.panaSala`. The adapter
+reads actual room members, car builds, difficulty and laps. Mi taller opens a
+personal workshop without setting the room's garage flag; ordinary room
+updates must not dismiss it. The host's start still advances the whole room.
+
+Pistas uses Una carrera, Copas and Globos tabs backed by the existing setup
+handlers. All 22 circuits fit the desktop grid without an inner scroll. Cup
+cards and previews use the four authoritative stages and earned trophy state.
+Vehicle dots and preview chips come from `trackPieces`, not guessed prototype
+metadata. Guests can inspect the choice but cannot change room configuration.
+The Gran Sabana hero and shared sala backgrounds come from the supplied second
+HTML prototype; other tracks keep their map postcard over a blurred copy.
+
+The Parrilla side card uses native dialogs for nested close/focus behavior.
+On phones the card opens from a roster row instead of covering the ready action.
+Its vehicle tiles lazily load `vehicle-inspect.js`: a clone of the actual race
+car, or the same boat/plane builders used by transform gates, in a perspective
+Three.js scene. Borrowed car geometry belongs to the race and is never disposed
+by the popup. Owned vessel geometry and the popup renderer are disposed on close.
+
+Individual copy saves a scoped taller recommendation; its quote excludes the
+vehicle body and already-owned parts. Complete-kit recommendations retain all
+three vehicles. Neither action silently buys or unlocks equipment. Copy colors
+checks ownership/unlocks, saves the source's exact factory color when needed,
+and updates the player's row immediately. `copiedPaint` is a validated optional
+hex color; old wallets without it retain their existing paint behavior.

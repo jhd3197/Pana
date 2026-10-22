@@ -324,3 +324,24 @@ checks its grouped roster before all six players take real shots.
 `node Pana/engine/tests/ui.browser.js [playwright-package] [browser]` against
 `npm start`. It covers hub → game persistence, live resolution changes, Esc,
 focus containment and return, input blocking, invite links and `M`.
+
+## Shared reference sala
+
+Carreritas and Pepazo opt into `engine/sala.js`/`sala.css` after scene preparation.
+Their original lobby exposes `panaSala.read()` with connection state, summary,
+real members and kit ratings; `openKit` opens the existing workshop/armory.
+The shared shell still owns membership, readiness, invite links and the start
+barrier. Clicking your own card uses that same readiness action; empty cards
+copy the room link. Carreritas opens its existing room connection before copying
+an invite when currently local. No prototype sample players are fabricated.
+
+Connection status and Reintentar occupy one place at the settings card's foot.
+Offline keeps a yellow local-play action; retry reloads the existing connection
+flow. Pepazo's actual team arrangement remains under Más ajustes so the eight
+sala cards stay in place. Other games retain their existing lobby presentation.
+
+Await the sala stylesheet before clearing `PANA_LOBBY_LOADING`; a game's own
+`PANA_PREPARED` can be true before the shell has docked its final controls.
+Browser readiness checks require both. `sala.browser.js` proves two-client
+readiness, host permissions, personal workshop persistence, kit ratings, team
+settings and offline retry; `lobby.browser.js` covers the generic shell.

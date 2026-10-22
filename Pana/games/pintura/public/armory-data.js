@@ -40,3 +40,17 @@ export function kitStats(value={}, options={}) {
  if(options.fastReload) s.reload*=.55/1.3;
  s.sprint=weapon!=='rocket'; return s;
 }
+
+// A bounded build summary, not a player rank or a damage multiplier. All inputs
+// come from the same effective stats used by Arena, including room overrides.
+export function kitRating(value={}, options={}) {
+ const s=kitStats(value,options), grenade=GRENADES.find(g=>g.id===cleanKit(value).grenade);
+ const unit=n=>Math.max(0,Math.min(1,n));
+ const sustained=s.magazine*s.pellets/(s.magazine*s.cadence+s.reload);
+ const score=.15*unit(s.speed*s.life/60)+.10*unit(1-s.spread/.3)
+  +.20*unit(sustained/6)+.10*unit((s.magazine+(s.reserve||0))/26)
+  +.10*unit(1-s.reload/4)+.15*unit(s.mobility/1.15)
+  +.15*unit(s.toughness/6)+.025*unit(((s.splash||0)+s.pellets-1)/5)
+  +.025*unit(grenade.radius/(grenade.fuse*4));
+ return Math.round(100+700*score);
+}

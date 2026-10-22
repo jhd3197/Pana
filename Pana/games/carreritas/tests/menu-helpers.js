@@ -27,7 +27,7 @@ export async function menuStep(page, step) {
   await page.locator('.menu-flow').waitFor();
   await leaveLobby(page);
   if (await page.locator('#garage').getAttribute('data-menu-step') !== step) {
-    await page.locator(step === 'car' ? '#menu-next' : '#menu-summary').click();
+    await page.locator(step === 'car' ? '#menu-next' : '#taller-pistas').click();
   }
 }
 
@@ -44,6 +44,11 @@ export async function menuClick(page, selector) {
   }
   const step = /data-mode|#mode-pick|#t-next|#t-prev|data-circuit/.test(selector) ? 'track' : 'car';
   await menuStep(page, step);
+  const mode = selector.match(/data-mode=["']?(race|battle|pana|aventura|agua)/)?.[1];
+  if (mode) {
+    await page.locator(`button[data-format="${['race','battle'].includes(mode) ? mode : 'cups'}"]`).click();
+    if (['race','battle'].includes(mode)) return;
+  }
   await page.locator(selector).click();
 }
 

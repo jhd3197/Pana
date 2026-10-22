@@ -203,3 +203,20 @@ The two-client browser proof picks a guest kit, verifies the host receives it,
 checks the attachment cap and grenade consumption, rejects a mid-round armor
 change, then proves real shooting, respawn, host departure and rematch. Mobile
 controls put reload and grenade beside a tall fire button without overflowing.
+
+## Calculated kit nivel
+
+`kitRating` in `armory-data.js` reads `kitStats` with current room options.
+It returns 100 + 700 times a weighted sum of bounded 0–1 components: range
+15%, precision 10%, sustained pellet rate including reload 20%, magazine plus
+reserve 10%, reload speed 10%, mobility 15%, toughness 15%, weapon spread-area
+coverage 2.5% and grenade radius per fuse second 2.5%. It is a build summary,
+not a player rank or combat modifier; special utility such as sticky pools is
+still explained on the grenade card rather than presented as extra damage.
+
+The sala and armory show the same integer with shared D/C/B/A/S display bands
+from `engine/kit-rating.js`. Hover previews the candidate rating; changed room
+rules refresh an open armory. Finishes, charms and patterns do not affect it.
+Unit tests cover bounds, cosmetics, attachments, armor, grenades and rule
+overrides; the two-client sala test checks that a guest's changed rating reaches
+the host and matches the armory.

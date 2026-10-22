@@ -61,7 +61,7 @@ export async function openGame(browser, game, { name = 'Pana', avatar, room, mob
 // Every game sets window.PANA_PREPARED once its module graph and scene are
 // ready: the shared lobby (engine/game-entry.js) does it for games that use it.
 export async function waitPrepared(page, timeout = 120_000) {
-  await page.waitForFunction(() => window.PANA_PREPARED === true, null, { timeout });
+  await page.waitForFunction(() => window.PANA_PREPARED === true && window.PANA_LOBBY_LOADING !== true, null, { timeout });
 }
 
 // Waits until fn(state) is true for a value read in the page, e.g.

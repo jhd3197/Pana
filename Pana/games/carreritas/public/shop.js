@@ -43,7 +43,7 @@ export const CATALOG = { paint: PAINTS, horn: HORNS, flame: FLAMES, wheel: WHEEL
 
 // paint and parts are per car ({ carId: ... }); horn, flame and the cauchos
 // are the driver's. Owned keys are 'kind:id' and free items count as owned.
-export const newWallet = () => ({ coins: 0, owned: ['paint:fabrica', 'horn:propio', 'flame:fuego'], paint: {}, parts: {}, horn: 'propio', flame: 'fuego', wheel: 'calle', boat: 'penero', air: 'zamuro', boatParts: {}, airParts: {} });
+export const newWallet = () => ({ coins: 0, owned: ['paint:fabrica', 'horn:propio', 'flame:fuego'], paint: {}, copiedPaint: null, parts: {}, horn: 'propio', flame: 'fuego', wheel: 'calle', boat: 'penero', air: 'zamuro', boatParts: {}, airParts: {} });
 export const owns = (wallet, kind, id) => wallet.owned.includes(`${kind}:${id}`) || CATALOG[kind]?.find(i => i.id === id)?.cost === 0;
 const ownsWheel = (owned, id) => owned.includes(`wheel:${id}`) || !(WHEEL_DEFINITIONS.find(w => w.id === id)?.cost);
 
@@ -59,6 +59,7 @@ export function cleanWallet(w) {
   return {
     coins: Number.isFinite(w.coins) && w.coins > 0 ? Math.floor(w.coins) : 0,
     owned: [...new Set([...base.owned, ...owned])],
+    copiedPaint: /^#[0-9a-f]{6}$/i.test(w.copiedPaint) ? w.copiedPaint : null,
     paint: w.paint && typeof w.paint === 'object' ? { ...w.paint } : {},
     parts: w.parts && typeof w.parts === 'object' && !Array.isArray(w.parts)
       ? Object.fromEntries(Object.entries(w.parts).map(([car, parts]) => [car, cleanParts(parts)]).filter(([, parts]) => Object.keys(parts).length))
@@ -137,3 +138,16 @@ export function repaintHex(hex, from, to) {
   const ns = Math.max(0, Math.min(1, ts * (fs ? s / fs : 1)));
   return hslToHex(th, ns, nl);
 }
+
+// Vehicle copying is a saved build recommendation. Its quote excludes the body
+// and charges only missing parts; complete-kit quotes include missing vessels.
+export function kitEntries(racer, kind = null) {
+  const c = racer.cosmetics || {};
+  const vehicle = k => k === 'car' ? [['car', racer.def.id], ['wheel', racer.wheel || 'calle'], ...Object.entries(c.parts || {})]
+    : [[k, c[k] || (k === 'boat' ? 'penero' : 'zamuro')], ...Object.entries(c[k + 'Parts'] || {})];
+  return kind ? vehicle(kind) : [...vehicle('car'), ...vehicle('boat'), ...vehicle('air'), ['paint', c.paint || 'fabrica'], ['horn', c.horn || 'propio']];
+}
+export function quoteBuild(wallet, racer, kind = null) {
+  return kitEntries(racer, kind).reduce((sum, [slot, id]) => sum + (slot === 'car' || slot === kind || owns(wallet, slot, id) ? 0 : CATALOG[slot]?.find(p => p.id === id)?.cost || 0), 0);
+}
+export const paintOf = (cosmetics, fallback = null) => PAINTS.find(p => p.id === cosmetics?.paint)?.color ?? (/^#[0-9a-f]{6}$/i.test(cosmetics?.paintColor) ? cosmetics.paintColor : fallback);
