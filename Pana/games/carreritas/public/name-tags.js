@@ -5,6 +5,7 @@
 // metres, only the place number up to NEAR, nothing beyond. The player's own
 // car never gets one, and split screen hides them all.
 import * as THREE from 'three';
+import { bandOf, nivelOf } from './parts.js';
 
 const NEAR = 45, FULL = 30, FADE = 15, LIFT = 2.9;
 const STYLE = `
@@ -44,8 +45,8 @@ export function createNameTags(parent = document.body) {
     if (!tag) {
       const color = c.def?.color || '#fff';
       tag = Object.assign(document.createElement('div'), { className: `pk-tag${c.ghost ? ' ghost' : ''}${isLight(color) ? ' light' : ''}` });
-      tag.append(document.createElement('b'), Object.assign(document.createElement('span'), { textContent: c.name || 'Pana' }));
-      tag.style.setProperty('--c', color);
+      tag.append(document.createElement('b'), Object.assign(document.createElement('span'), { textContent: `${c.name || 'Pana'} · ${bandOf(c.kitLevel ?? nivelOf(c.tunes?.car ?? c.tune ?? c.def.tune)).letter}` }));
+      tag.dataset.name=c.name||'Pana';tag.style.setProperty('--c', color);
       layer.append(tag);
       tags.set(c, tag);
     }

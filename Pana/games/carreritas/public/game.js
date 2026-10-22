@@ -4,8 +4,8 @@ import { CARS } from './cars.js';
 import { WHEEL_DEFINITIONS, wheelById, composeTune } from './wheel-definitions.js';
 import { garageCards, wheelCards, sideScroll } from './garage-cards.js';
 import { createTaller, dockTaller, exchangeText } from './taller.js';
-import { partsProfile, renderConfig } from './parts.js';
-import { studioEnvironment, studioRims, showroomPaint } from './garage-stage.js';
+import { partsProfile, renderConfig, nivelOf, bandOf } from './parts.js';
+import { studioEnvironment, studioRims, showroomPaint, releaseShowroom } from './garage-stage.js';
 import { garageBloom } from './garage-bloom.js';
 import { owns } from './shop.js';
 import { paintNext, TIPS } from './loading.js';
@@ -29,7 +29,7 @@ import { holdButton } from '/engine/touch.js';
 import { pixelRatio, bindRenderer, getSettings, onSettings } from '/engine/settings.js';
 import { applyRaceQuality } from './quality.js';
 import { shout } from '/engine/kit.js';
-import { LAPS, lapsForTrack, RIVALS, AI_WHEELS, POSE_HZ, FINISH_GRACE_MS, GP_GRID, GP_INTERMISSION_MS, GP_MIN_READ_MS, gridSlot, cleanCosmetics } from './online-rules.js';
+import { LAPS, lapsForTrack, RIVALS, AI_WHEELS, POSE_HZ, FINISH_GRACE_MS, GP_GRID, GP_INTERMISSION_MS, GP_MIN_READ_MS, gridSlot, cleanCosmetics, aiVessels, kitTunes } from './online-rules.js';
 import { clockText, wrapAngle, raceOrder, aiPedals, resolveContact } from './rules.js';
 import { CUPS, cupById, cupTracks, difficultyById, rubberBand, cleanLaps, BALLOONS, BATTLE_TIME, battleOrder, battleOver } from './modes.js';
 import { abandonCup, advanceStage, beginStage, createCupSession, cupTrophy, finalizeStage, markRacing, markStarted, retryStage, seededOrder, seededUnit, standings as championshipStandings } from './cup-rules.js';
@@ -42,7 +42,7 @@ import { createWaterAmbience } from './water-ambience.js';
 import { padInput, pressed, keyInput, SPLIT_KEYS, wrongWayStep, WRONG_WAY_TIME, lapSplit } from './controls.js';
 import { PAINTS, FLAMES, earnings, mirrorUnlocked, repaintHex } from './shop.js';
 import { createProfileStore, recordCupTrophy, trophyCredits } from './cup-profile.js';
-import { rewardCupCompletion, rewardCupStage } from './cup-rewards.js';
+import { settleRace } from './cup-rewards.js';
 import { CLASSIFICATION_TEXT, approximateCupText, cupStandingsView, nextStageText, rankChangeText, tiebreakText } from './cup-ui.js';
 import { soaringVulture } from '/engine/models/fauna/birds/soaring-vulture.js';
 import { tickWind } from '/engine/models/vegetation/plant-kit.js';
@@ -169,7 +169,7 @@ function garageCar(index) {
   const { paint, cfg, wheel } = taller.look(CARS[index]);
   const key = `${index}:${wheel}:${paint}:${JSON.stringify(cfg)}`;
   if (!garage.cars.has(key)) {
-    if (garage.cars.size >= 20) garage.cars.delete(garage.cars.keys().next().value);
+    if (garage.cars.size >= 20) { const oldest=garage.cars.keys().next().value;releaseShowroom(garage.cars.get(oldest));garage.cars.delete(oldest); }
     const car = showroomPaint(CARS[index].build(ME.avatar, wheelById(wheel).wheel ?? undefined, cfg));
     garage.cars.set(key, repaintCar(car, CARS[index].color, paint));
   }
@@ -380,6 +380,7 @@ lazyRace('hud', { update() {}, reset() {} }, import('./race-hud.js'), m => m.cre
 lazyRace('audio', { update() {} }, import('./drift-audio.js'), m => m.createDriftAudio(sound));   // drift screech, chimes, outboard
 lazyRace('props', { setTrack() {}, sync() {}, update() {} }, import('./breakables.js'), m => m.createBreakables({ race, sound, track: () => T }))
   .then(() => { if (T?.group) race.props.setTrack(T); });   // barrels and crates to smash
+const screensReady = lazyRace('screens', { grid() {}, finish() {}, tick() {} }, import('./race-screens.js'), m => m.createRaceScreens({sound,taller}));
 // A max-charge release dilates time (local races) and punches the camera.
 race.purpleRelease = () => { race.slowMo.trigger(); race.shake = Math.min(1.2, race.shake + 0.45); };
 
@@ -409,14 +410,14 @@ function saveWallet() {
   $('wallet-coins').textContent = wallet.coins;
   $('shop-coins').textContent = wallet.coins;
 }
-const raceStyle = index => cleanCosmetics({paint:wallet.paint[CARS[index].id],horn:wallet.horn,flame:wallet.flame,parts:wallet.parts[CARS[index].id]});
+const raceStyle = index => cleanCosmetics({paint:wallet.paint[CARS[index].id],horn:wallet.horn,flame:wallet.flame,parts:wallet.parts[CARS[index].id],boat:wallet.boat,boatParts:wallet.boatParts?.[wallet.boat],air:wallet.air,airParts:wallet.airParts?.[wallet.air]});
 const hornFor = c => c.cosmetics.horn !== 'propio' ? c.cosmetics.horn : c.def.horn;
 const flameFor = c => FLAMES.find(f => f.id === c.cosmetics.flame)?.colors ?? FLAMES[0].colors;
 
 // The taller UI (taller.js): tabs of parts, hover stat previews and
 // try-before-buy on the turntable car. Closing it takes off what was only tried.
 const taller = createTaller({
-  $, wallet, sound, cars: CARS, getIndex: () => garage.index, selectCar: i => showCar(i),
+  $, wallet, sound, getTrack: () => TRACKS[trackIndex], previewCar: i => { garage.turn.clear(); garage.car = garageCar(i); garage.turn.add(garage.car.root); }, previewVessel: (kind, id, color) => import('./garage-vessels.js').then(m => m.previewVessel(garage, ME.avatar, kind, id, color)), cars: CARS, getIndex: () => garage.index, selectCar: i => showCar(i),
   getWheel: () => garage.wheel, setWheel: id => showWheel(id), onTab: frameTab,
   trophies: () => loadTrophies(), save: saveWallet, refreshCar: () => showCar(garage.index), onHorn: garageHonk,
 });
@@ -701,7 +702,7 @@ function createLocalCup(cupId, playerIndex, wheelId, split, difficulty) {
     const car = cars[i];
     entrants.push({
       id: `local-bot-${i + 1}`, name: names[i], kind: 'bot', owner: 'local', avatar: randomAvatar(),
-      loadout: { car, wheel: AI_WHEELS[CARS[car].id] || 'calle' }, skillSeed: `${sessionId}:bot-${i + 1}`,
+      loadout: { car, wheel: AI_WHEELS[CARS[car].id] || 'calle', ...aiVessels(CARS[car].id) }, skillSeed: `${sessionId}:bot-${i + 1}`,
     });
   }
   return createCupSession({ cupId, sessionId, seed, difficulty, bots: true, entrants });
@@ -715,7 +716,7 @@ function makeRacer(index, isPlayer, name, wheelId = 'calle', avatar = null, cosm
   const def = CARS[index];
   const wheel = wheelById(wheelId);
   const who = { name: name ?? (isPlayer ? ME.name : 'Pana'), avatar: avatar || (isPlayer ? ME.avatar : randomAvatar()) };
-  cosmetics=cleanCosmetics(cosmetics ?? (isPlayer ? raceStyle(index) : null));
+  cosmetics=cleanCosmetics(cosmetics ?? (isPlayer ? raceStyle(index) : aiVessels(CARS[index].id)));
   const car = def.build(who.avatar, wheel.wheel ?? undefined, renderConfig(cosmetics.parts));
   repaintCar(car, def.color, PAINTS.find(p=>p.id===cosmetics.paint)?.color ?? null);
   batchRacer(car,PAINTS.find(p=>p.id===cosmetics.paint)?.color ?? def.color);
@@ -731,7 +732,7 @@ function makeRacer(index, isPlayer, name, wheelId = 'calle', avatar = null, cosm
   race.scene.add(bubble.sprite);
   return {
     def, car, bubble, isPlayer, cosmetics, name: who.name,
-    wheel: wheel.id, tune: composeTune(def.tune, wheel.profile, partsProfile(cosmetics.parts)),   // stepCar drives with the composed tune
+    wheel: wheel.id, tunes: kitTunes(cosmetics, def, wheel), tune: composeTune(def.tune, wheel.profile, partsProfile(cosmetics.parts)),   // stepCar drives with the active piece's tune (transform-gates swaps it)
     skill: isPlayer ? 1 : rand(...(race.diff ?? difficultyById('normal')).skill),   // rivals top out a bit below their car's max
     x: 0, z: 0, y: 0, h: Math.PI / 2, vx: 0, vz: 0, vy: 0, vf: 0, vr: 0, steer: 0, latAcc: 0, longAcc: 0,
     onGround: true, pitch: 0, roll: 0, pitchV: 0, rollV: 0,
@@ -1030,7 +1031,7 @@ async function startRace(playerIndex, wheelId = garage.wheel, roster = null) {
     race.scene.scale.x = race.mirror ? -1 : 1;
     race.ended = false;
     race.paid = false;
-    race.earned = 0;
+    race.earned = 0; race.rewardDetail = null; race.lapRecord = false;
     if (!await step('Todo listo. ¡A correr!', 0.9)) return;
     renderer.toneMapping = THREE.NoToneMapping;
     updateRace(0);
@@ -1039,6 +1040,8 @@ async function startRace(playerIndex, wheelId = garage.wheel, roster = null) {
     // Upload geometry and draw once behind the loading panel. The countdown
     // starts only after this first frame, never while compilation is running.
     renderer.render(race.scene, race.camera);
+    await screensReady; if (generation !== loadGeneration) return;
+    await race.screens.prepare(race.cars, race.player, T, AUTO || (roster && net.state.startAt > 0)); if (generation !== loadGeneration) return;
     if (roster) {
       // Everyone counts down together once every pana has loaded.
       net.loaded();
@@ -1052,7 +1055,7 @@ async function startRace(playerIndex, wheelId = garage.wheel, roster = null) {
     } else if (!await step('¡Listo!', 1)) return;
     if (race.cup && !roster) markRacing(race.cup.session);
     race.loadingRaceId = 0;
-    race.state = 'count';
+    race.state = 'count'; race.screens.grid(race.cars, race.player, T);
     music.play(songFor(T.id, race.mode), { fallback: TRACK_STYLE[T.id] });
     $('count').textContent = '3';
     $('garage').classList.add('hidden');
@@ -1086,6 +1089,7 @@ async function startRace(playerIndex, wheelId = garage.wheel, roster = null) {
 }
 
 function toGarage() {
+  race.screens.tick('off', 0);
   if (net && (race.netRace || race.loadingRaceId) && ['loading', 'count', 'race'].includes(net.state.phase)) net.retire();
   race.netRace = 0;
   race.loadingRaceId = 0;
@@ -1554,6 +1558,7 @@ function syncCar(c, dt) {
 }
 
 function updateRace(dt, presentation = true) {
+  race.screens.tick(race.state, race.count, race.cars, dt, standings(), race.clock);
   if (race.state === 'count') {
     // Online, the room's start time drives every countdown at once.
     if (race.netRace) race.count = Math.min(3.999, 1 + (net.state.startAt - net.now()) / 1000);
@@ -1932,7 +1937,7 @@ function renderCup() {
 function finish() {
   race.state = 'end';
   driftCombo.finish(race.player);   // bank a live chain so the results count it
-  const ghost = race.recorder.finish();
+  const ghost = race.recorder.finish(); race.lapRecord ||= !!ghost?.saved;
   if (ghost?.saved) {
     shout('¡Nuevo fantasma! Tu mejor vuelta corre contigo');
     const lapMs = Math.round(ghost.best * 1000), trackId = T.id;   // stats load lazily: the garage's first load is capped
@@ -1987,38 +1992,9 @@ function finish() {
     }
   }
   renderCup();
-  // The taller wallet keeps what you earned. For online cups, wait until the
-  // server has finalized the current stage in cupJson before claiming receipts.
-  const canPay = !race.paid && (!race.netRace || !race.cup || !!race.cup.session.finalized?.[race.cup.session.stageIndex]);
-  if (canPay) {
-    race.paid = true;
-    const rank = standings().indexOf(p);
-    let earned = race.earned || 0;
-    if (race.cup) {
-      const session = race.cup.session;
-      const myId = p.entrantId || p.netId || net?.id || LOCAL_PLAYER;
-      const stageRec = session.ledger.find(r => r.stage === session.stageIndex && r.id === myId);
-      const stagePlace = stageRec && stageRec.classification === 'finished' ? stageRec.place - 1 : 99;
-      earned += rewardCupStage(profile, {
-        sessionId: session.sessionId,
-        stage: session.stageIndex,
-        collected: p.coinsCollected || 0,
-        place: stagePlace,
-      });
-      if (session.status === 'complete') {
-        earned += rewardCupCompletion(profile, {
-          sessionId: session.sessionId,
-          trophy: cupTrophy(session, myId),
-        });
-      }
-      saveWallet();
-    } else {
-      earned = earnings({ collected: p.coinsCollected || 0, place: p.done || race.mode === 'battle' ? rank : 99 });
-      wallet.coins += earned;
-      saveWallet();
-    }
-    race.earned = earned;
-  }
+  const myId = p.entrantId || p.netId || net?.id || LOCAL_PLAYER;
+  if (settleRace({ race, profile, player: p, order: standings(), track: T, myId,
+    trophy: race.cup ? cupTrophy(race.cup.session, myId) : null, record: race.lapRecord })) saveWallet();
   if (race.netRace) updateResultActions(net.state);
   else {
     $('again').textContent = race.cup ? (race.cup.session.status === 'complete' ? 'Otra copa' : 'Siguiente pista') : 'Otra vez';
@@ -2028,6 +2004,7 @@ function finish() {
   renderResults(standings(), p);
   $('result').classList.remove('hidden');
   $('result-coins').textContent = exchangeText(p.coinsCollected || 0, race.earned || 0, wallet.coins);
+  race.screens.finish({ player: p, track: T, earned: race.earned || 0, balance: wallet.coins, best: race.bestLap, place, detail: race.rewardDetail });
   $('again').focus({ preventScroll: true });
 }
 
@@ -2103,13 +2080,15 @@ function renderResults(order, player) {
         : c.done ? clockText(c.time) : `vuelta ${Math.min(race.laps, Math.max(1, c.lap))}/${race.laps}`;
     const style = driftCombo.totalOf(c);
     const king = style > 0 && style === styleBest, chocon = hitsBest >= 5 && c.hits === hitsBest;
-    const detail = [style > 0 && `Estilo: ${style} pts${king ? ' · ¡Rey del Derrape!' : ''}`, chocon && `El Chocón: ${c.hits} choques`].filter(Boolean).join(' · ');
+    const level = nivelOf(c.tunes?.car ?? c.tune ?? c.def.tune);
+    const detail = [`Nivel ${bandOf(level).letter} ${level}`, style > 0 && `Estilo: ${style} pts${king ? ' · ¡Rey del Derrape!' : ''}`, chocon && `El Chocón: ${c.hits} choques`].filter(Boolean).join(' · ');
     return {
       rank: i + 1, lead: chip, name: c.name, me: c === player || (id && id === myId), end: endText,
       detail: detail || null,
       className: [king && 'style-king', chocon && 'chocon'].filter(Boolean).join(' '),
     };
   }));
+  race.screens.rows?.(displayOrder,player);
 }
 
 

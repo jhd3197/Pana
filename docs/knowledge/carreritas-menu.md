@@ -123,3 +123,17 @@ Existing loading, modes, cup and online suites retain their gameplay assertions.
   `hideTaller` from `tests/menu-helpers.js` first.
 - Debug pages opened with `?manual` never re-render the garage, so a
   screenshot there shows the first frame; use `?debug` alone to see a change.
+
+## Full-screen Taller
+
+The Taller hides the old bar and settings controls. The circuit summary beside
+¡Vámonos! returns to Copa; gameplay settings remain in the shared lobby/menu.
+The nameplate, Garaje and G open the body drawer. Q/E select car, boat or plane.
+A native dialog supplies Escape and focus containment for part choices.
+`menu-helpers.js` follows this same visible navigation in browser suites.
+
+The full build remains visible across six slots on cars (four performance,
+two style), five on boats and four on planes. Hovering previews the real model
+and composed stats without spending. Clicking buys/equips immediately; a short
+wallet leaves the equipped part untouched. Car body changes transfer the
+current parts and paint. Copied rival builds mark matching cards in the taller.

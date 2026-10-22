@@ -27,7 +27,7 @@ export async function menuStep(page, step) {
   await page.locator('.menu-flow').waitFor();
   await leaveLobby(page);
   if (await page.locator('#garage').getAttribute('data-menu-step') !== step) {
-    await page.locator(`[data-step="${step}"]`).click();
+    await page.locator(step === 'car' ? '#menu-next' : '#menu-summary').click();
   }
 }
 
@@ -54,4 +54,13 @@ export async function menuClick(page, selector) {
 // need the strip underneath tuck it away the way the race start does.
 export async function hideTaller(page) {
   if (await page.locator('#shop').isVisible()) await page.evaluate(() => document.getElementById('shop-close').click());
+}
+
+// Results lead through the receipt ceremony before the chosen destination.
+export async function resultClick(page, selector) {
+  await page.locator(selector).click();
+  if(await page.locator('#cash-in').isVisible()) {
+    await page.locator('#cash-done').click();
+    if(await page.locator('#cash-in').isVisible())await page.locator('#cash-done').click();
+  }
 }

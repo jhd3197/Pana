@@ -6,6 +6,7 @@
 import { canonicalCupId } from './cup-definitions.js';
 import { PARTS, cleanParts } from './parts.js';
 import { WHEEL_DEFINITIONS } from './wheel-definitions.js';
+import { BOAT_DEFINITIONS, AIR_DEFINITIONS, BOAT_PARTS, AIR_PARTS, cleanVesselParts } from './parts.js';
 
 export const PAINTS = [
   { id: 'fabrica', name: 'De fábrica', color: null, cost: 0 },
@@ -37,11 +38,12 @@ export const FLAMES = [
   { id: 'arcoiris', name: 'Arcoíris', colors: [0xff4b4b, 0xff9a1f, 0xffe14d, 0x4caf50, 0x4fb6ff, 0xc45bff], cost: 0, unlock: 'two-cups' },
 ];
 
-export const CATALOG = { paint: PAINTS, horn: HORNS, flame: FLAMES, wheel: WHEEL_DEFINITIONS.map(w => ({ ...w, cost: w.cost ?? 0 })), ...PARTS };
+export const CATALOG = { paint: PAINTS, horn: HORNS, flame: FLAMES, wheel: WHEEL_DEFINITIONS.map(w => ({ ...w, cost: w.cost ?? 0 })), ...PARTS,
+  boat: BOAT_DEFINITIONS, air: AIR_DEFINITIONS, ...BOAT_PARTS, ...AIR_PARTS };
 
 // paint and parts are per car ({ carId: ... }); horn, flame and the cauchos
 // are the driver's. Owned keys are 'kind:id' and free items count as owned.
-export const newWallet = () => ({ coins: 0, owned: ['paint:fabrica', 'horn:propio', 'flame:fuego'], paint: {}, parts: {}, horn: 'propio', flame: 'fuego', wheel: 'calle' });
+export const newWallet = () => ({ coins: 0, owned: ['paint:fabrica', 'horn:propio', 'flame:fuego'], paint: {}, parts: {}, horn: 'propio', flame: 'fuego', wheel: 'calle', boat: 'penero', air: 'zamuro', boatParts: {}, airParts: {} });
 export const owns = (wallet, kind, id) => wallet.owned.includes(`${kind}:${id}`) || CATALOG[kind]?.find(i => i.id === id)?.cost === 0;
 const ownsWheel = (owned, id) => owned.includes(`wheel:${id}`) || !(WHEEL_DEFINITIONS.find(w => w.id === id)?.cost);
 
@@ -50,6 +52,10 @@ export function cleanWallet(w) {
   const base = newWallet();
   if (!w || typeof w !== 'object') return base;
   const owned = Array.isArray(w.owned) ? w.owned.filter(k => typeof k === 'string') : [];
+  const ownsVessel = (kind, defs, id) => owned.includes(`${kind}:${id}`) || !defs.find(v => v.id === id)?.cost;
+  const vesselParts = (kind, value) => value && typeof value === 'object' && !Array.isArray(value)
+    ? Object.fromEntries(Object.entries(value).map(([id, parts]) => [id, cleanVesselParts(kind, parts)]).filter(([id, parts]) => Object.keys(parts).length && (kind === 'boat' ? BOAT_DEFINITIONS : AIR_DEFINITIONS).some(v => v.id === id)))
+    : {};
   return {
     coins: Number.isFinite(w.coins) && w.coins > 0 ? Math.floor(w.coins) : 0,
     owned: [...new Set([...base.owned, ...owned])],
@@ -60,6 +66,10 @@ export function cleanWallet(w) {
     horn: HORNS.some(h => h.id === w.horn) ? w.horn : 'propio',
     flame: FLAMES.some(f => f.id === w.flame) ? w.flame : 'fuego',
     wheel: WHEEL_DEFINITIONS.some(d => d.id === w.wheel) && ownsWheel(owned, w.wheel) ? w.wheel : 'calle',
+    boat: BOAT_DEFINITIONS.some(v => v.id === w.boat) && ownsVessel('boat', BOAT_DEFINITIONS, w.boat) ? w.boat : 'penero',
+    air: AIR_DEFINITIONS.some(v => v.id === w.air) && ownsVessel('air', AIR_DEFINITIONS, w.air) ? w.air : 'zamuro',
+    boatParts: vesselParts('boat', w.boatParts),
+    airParts: vesselParts('air', w.airParts),
   };
 }
 

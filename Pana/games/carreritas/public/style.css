@@ -23,7 +23,7 @@ kbd.pk-kbd { min-width: 22px; height: 22px; padding: 0 6px; font-size: 11px; }
 .screen > * { pointer-events: auto; }
 .hidden { display: none !important; }
 
-/* Nivel badge (nivel.js): the letter on its band colour, the number on dark
+/* Nivel badge (parts.js): the letter on its band colour, the number on dark
    ink, slanted like the race plates. */
 .nivel-badge { display: inline-flex; align-items: stretch; vertical-align: middle; transform: skewX(-10deg); box-shadow: 3px 3px 0 var(--hud-ink); font-size: 16px; white-space: nowrap; }
 .nivel-badge > b, .nivel-badge > span { padding: .2em .42em .06em; font: 400 1em/1 var(--pk-display); font-variant-numeric: tabular-nums; }

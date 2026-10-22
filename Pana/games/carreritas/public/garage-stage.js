@@ -64,3 +64,12 @@ export function showroomPaint(car) {
   });
   return car;
 }
+
+// Cached paints are shared, but each showroom model owns its meshes and decals.
+export function releaseShowroom(car) {
+  car.root.removeFromParent();
+  const geometry=new Set(),materials=new Set();
+  car.root.traverse(o=>{if(o.geometry)geometry.add(o.geometry);for(const m of [].concat(o.material||[]))if(m.userData.ownedMap)materials.add(m);});
+  car.driver?.dispose();geometry.forEach(g=>g.dispose());
+  materials.forEach(m=>{m.map?.dispose();m.dispose();});
+}

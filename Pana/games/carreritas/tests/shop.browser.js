@@ -1,3 +1,4 @@
+import { resultClick } from './menu-helpers.js';
 import { hideTaller, menuClick } from './menu-helpers.js';
 // npm start, then node this file. The taller: a race pays into the wallet,
 // paint repaints the player's car on the turntable and in the race, horns
@@ -34,19 +35,28 @@ try {
     for (let i = 0; i < 3 && race.state !== 'end'; i++) updateRace(1 / 60);
     return { wallet: getWallet().coins, text: document.getElementById('result-coins').textContent };
   });
-  assert.equal(paid.wallet, 40, `first place pays 30 picked up + 10 ${JSON.stringify(paid)}`);
-  await page.locator('#back').click();
+  assert.ok(paid.wallet >= 40, `first place pays 30 picked up + 10 ${JSON.stringify(paid)}`);
+  await page.locator('#collect-rewards').click();
+  await page.waitForFunction(()=>document.getElementById('cash-in').dataset.sceneReady==='true');
+  assert.ok(await page.locator('#cash-world').evaluate(c=>!!c.getContext('webgl2')),'the ceremony renders actual 3D pickups');
+  await page.locator('#cash-done').click();
+  if(await page.locator('#cash-in').isVisible())await page.locator('#cash-done').click();
+  await page.locator('#collect-rewards').click();
+  assert.equal(await page.evaluate(()=>getWallet().coins),paid.wallet,'replaying the receipt never pays twice');
+  await page.locator('#cash-done').click();
+  if(await page.locator('#cash-in').isVisible())await page.locator('#cash-done').click();
+  await page.evaluate(() => { getWallet().coins = 40; }); // isolate the shopping budget from performance bonuses
+  await resultClick(page, '#back');
 
   // Try Azul Caribe on the turntable, then buy it: the wallet pays 25.
   await menuClick(page, '#open-shop');
   await page.locator('[data-tab="pintura"]').click();
   await page.locator('#shop-paint [data-id="caribe"]').click();
-  assert.match(await page.locator('#shop-try').textContent(), /Probando\s+Azul Caribe/);
-  assert.equal(await page.evaluate(() => getWallet().coins), 40, 'trying is free');
-  await page.locator('#shop-buy').click();
+  assert.equal(await page.evaluate(() => getWallet().coins), 15, 'click buys and equips the paint');
+  await page.locator('#loadout-back').click();
   await page.locator('[data-tab="sonido"]').click();
   await page.locator('#shop-horn [data-id="cucaracha"]').click();
-  await page.locator('#shop-buy').click();
+  await page.locator('#loadout-back').click();
   const shop = await page.evaluate(() => {
     const colours = new Set();
     garage.car.root.traverse(o => { if (o.material?.color) colours.add('#' + o.material.color.getHexString()); });
@@ -78,11 +88,11 @@ try {
   assert.equal(await page.locator('#shop-stats dd i.up').count() > 0, true, 'hover shows the gain on the bars');
   assert.match(await page.locator('#shop-motor [data-id="turbo"] .pills').textContent(), /\+1 Vel/);
   await page.locator('#shop-motor [data-id="turbo"]').click();
+  await page.locator('#loadout-back').click();
   await page.locator('[data-tab="aleron"]').click();
   await page.locator('#shop-aleron [data-id="rally"]').click();
-  assert.match(await page.locator('#shop-buy').textContent(), /Te faltan 30 mangos/, 'turbo + rally cost 130');
-  await page.locator('#shop-aleron [data-id="rally"]').click();   // take the wing off again
-  await page.locator('#shop-buy').click();
+  assert.match(await page.locator('#loadout-message').textContent(), /Te faltan 30 mangos/, 'turbo + rally cost 130');
+  await page.locator('#loadout-back').click();
   const parts = await page.evaluate(() => ({ coins: getWallet().coins, parts: getWallet().parts.chamo, trying: !document.getElementById('shop-try').hidden }));
   assert.deepEqual(parts, { coins: 25, parts: { motor: 'turbo' }, trying: false });
   await hideTaller(page);
@@ -110,7 +120,7 @@ try {
   assert.equal(await page.locator('#mirror').isDisabled(), false);
   assert.equal(await page.locator('#mode-pick .mode-trophy').count(), 1, 'the cup button shows its trophy');
   assert.deepEqual(errors, []);
-  console.log('carreritas taller: wallet, try-before-buy, paint, horn, parts, wheel migration, unlocks OK');
+  console.log('carreritas taller: wallet, hover-preview and direct purchase, paint, horn, parts, wheel migration, unlocks OK');
 } finally {
   await browser.close();
 }

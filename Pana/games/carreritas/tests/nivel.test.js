@@ -1,7 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { NIVEL_BANDS, MATAGIGANTES_BONUS, nivelFromPoints, bandOf, badge, kitNivel, matagigantes, carNivel } from '../public/nivel.js';
+import { NIVEL_BANDS, MATAGIGANTES_BONUS, nivelFromPoints, bandOf, badge, kitNivel, matagigantes, carNivel, trackPieces } from '../public/parts.js';
 import { CAR_DEFINITIONS } from '../public/car-definitions.js';
+import { TRACK_DEFINITIONS } from '../public/track-definitions.js';
 
 test('nivel is 100 + 16×(1.5·Vel + Acel + Man + 0.8·Agarre), peso never counts', () => {
   assert.equal(nivelFromPoints([0, 0, 0, 0, 10]), 100);
@@ -51,6 +52,15 @@ test('matagigantes pays for every higher-nivel rival beaten', () => {
   assert.equal(matagigantes(700, [{ name: 'Yoli', pi: 480 }]).bonus, 0);
 });
 
+test('trackPieces reads the transform gates of a track definition', () => {
+  assert.deepEqual(trackPieces(null), ['car']);
+  assert.deepEqual(trackPieces({}), ['car']);
+  assert.deepEqual(trackPieces({ transformGates: [{ from: 0.1, to: 0.2 }] }), ['car', 'boat']);
+  assert.deepEqual(trackPieces({ transformGates: [{ from: 0.1, to: 0.2, fly: true }] }), ['car', 'air']);
+  assert.deepEqual(trackPieces({ transformGates: [{ below: 0.3, open: true }, { from: 0.5, to: 0.6, fly: true }] }), ['car', 'boat', 'air']);
+  for (const def of TRACK_DEFINITIONS) assert.ok(trackPieces(def).includes('car'));
+});
+
 test('every stock car with street cauchos lands inside the bands', () => {
   for (const car of CAR_DEFINITIONS) {
     const pi = carNivel(car, 'calle', {});
@@ -58,4 +68,13 @@ test('every stock car with street cauchos lands inside the bands', () => {
     assert.ok(pi >= 100 && pi <= 788, `${car.id} nivel ${pi} in range`);
     assert.ok(['D', 'C', 'B', 'A', 'S'].includes(band.letter));
   }
+});
+
+test('the unloaded workshop and built race use the same kit pieces',()=>{
+ for(const [id,expected] of [['chuao',['car','boat']],['margarita',['car','boat']],['delta',['car','boat']],['galipan',['car','air']]]){
+  const metadata=TRACK_DEFINITIONS.find(t=>t.id===id);
+  assert.deepEqual(trackPieces(metadata),expected,id+' before scenery loads');
+  assert.deepEqual(trackPieces({def:metadata}),expected,id+' in the live world');
+ }
+ assert.deepEqual(trackPieces({def:{transformGates:[{fly:true}]}}),['car','air']);
 });

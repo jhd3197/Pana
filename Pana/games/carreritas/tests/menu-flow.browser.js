@@ -59,6 +59,12 @@ try {
       const img = document.getElementById('circuit-art');
       return img.src.endsWith(`${id}.webp`) && img.complete && img.naturalWidth > 0;
     }, id);
+    if(id==='galipan'){
+      await menuStep(page,'car');
+      assert.equal(await page.locator('[data-vehicle="air"]').evaluate(b=>b.classList.contains('unused')),false,'flight kit is known before loading scenery');
+      assert.equal(await page.locator('[data-vehicle="boat"]').evaluate(b=>b.classList.contains('unused')),true);
+      await menuStep(page,'track');
+    }
   }
   assert.equal(await page.evaluate(() => !!race.trackGroup), false, 'browsing artwork never constructs scenery');
   for (const id of ['pana', 'aventura', 'agua']) {
@@ -108,8 +114,16 @@ try {
     if (await mobile.locator('.pana-rotate').isVisible()) await mobile.locator('[data-act="stay"]').click();
     for (const name of ['car', 'track']) {
       await menuStep(mobile, name);
-      await fits(mobile, `[data-step="${name}"]`);
-      if (name === 'car') await fits(mobile, '#play');
+      await fits(mobile, name === 'car' ? '#menu-summary' : '[data-step="track"]');
+      if (name === 'car') {
+        await fits(mobile, '#play');
+        const panels=await mobile.evaluate(()=>{
+          const stats=document.querySelector('.tl-stats').getBoundingClientRect(),slots=document.getElementById('shop-tabs').getBoundingClientRect();
+          return {statsBottom:stats.bottom,slotsTop:slots.top,height:document.getElementById('shop').getBoundingClientRect().height};
+        });
+        assert.ok(panels.height>=size.height-2,'the workshop fills the phone screen');
+        assert.ok(panels.statsBottom<=panels.slotsTop,'stats never cover the part slots');
+      }
       assert.equal(await mobile.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
       await mobile.screenshot({ path: `${output}/${size.width}-${name}.png` });
     }
@@ -154,6 +168,12 @@ try {
   await guest.waitForFunction(() => document.getElementById('track-name').textContent === 'Plaza Pana');
   await host.locator('#menu-next').click();
   await guest.locator('#menu-next').click();
+  await guest.evaluate(()=>{getWallet().coins=500;});
+  await guest.locator('[data-vehicle="boat"]').click();
+  await guest.locator('[data-tab="carro"]').click();
+  await guest.locator('#shop-boat [data-id="rayo"]').click();
+  await guest.locator('#loadout-back').click();
+  await guest.locator('[data-vehicle="car"]').click();
   await hideTaller(guest);
   await guest.locator('.car-choice').nth(2).click();
   assert.ok(await guest.locator('#play').isDisabled());
@@ -161,8 +181,19 @@ try {
   await fits(guest, '#play');
   await guest.screenshot({ path: `${output}/guest-room-320.png` });
   await host.locator('#play').click();
+  await host.locator('#parrilla.preparing').waitFor({timeout:120000});
+  await host.locator('#parrilla details summary').nth(1).click();
+  await host.locator('#parrilla [data-copy=kit]').click();
+  assert.ok(await host.evaluate(()=>JSON.parse(localStorage.getItem('carreritas:wishlist')).entries.length>=6),'the inspected kit is marked for the next workshop');
+  if(await host.locator('.grid-ready').isVisible())await host.locator('.grid-ready').click();
+  if(await guest.locator('.grid-ready').isVisible())await guest.locator('.grid-ready').click();
   await Promise.all([host, guest].map(p => p.waitForFunction(() => race.cars.length === 4 && ['count', 'go'].includes(race.state), null, { timeout: 120000 })));
   assert.equal(await guest.evaluate(() => race.player.def.name), 'El Machito');
+  const guestId=await guest.evaluate(()=>getNet().id);
+  assert.equal(await host.evaluate(id=>race.cars.find(c=>c.netId===id).cosmetics.boat,guestId),'rayo','guest kit is carried to the host race');
+  assert.equal(await guest.locator('#parrilla').isVisible(),true,'manual countdown displays the starting grid');
+  assert.ok(await guest.locator('#parrilla .nivel-badge').count()>=4);
+
   await host.close(); await guest.close();
   assert.deepEqual(errors, []);
   console.log('Lobby menu: lobby options, Copa, Taller and ¡Vámonos!, all registered maps, three cups, tires, shop, split, loading, mobile, missing artwork and two-client room passed.');

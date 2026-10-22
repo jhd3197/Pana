@@ -1,3 +1,4 @@
+import { resultClick } from './menu-helpers.js';
 import { menuClick } from './menu-helpers.js';
 import assert from 'node:assert/strict';
 import { createRequire } from 'node:module';
@@ -78,11 +79,11 @@ try {
   assert.equal(restarted.ledger, 0);
 
   assert.equal(await finishFixture(page), 'end');
-  await page.locator('#again').click();
+  await resultClick(page, '#again');
   await page.waitForFunction(() => race.state === 'count', null, { timeout: 180000 });
   assert.equal(await page.evaluate(() => race.cup.session.stageIndex), 1);
   assert.equal(await finishFixture(page), 'end');
-  await page.locator('#back').click();
+  await resultClick(page, '#back');
   const abandoned = await page.evaluate(() => ({ cup: race.cup, trophy: JSON.parse(localStorage.getItem('carreritas:profile')).trophies.pana ?? null }));
   assert.equal(abandoned.cup, null);
   assert.equal(abandoned.trophy, null, 'leaving after race two pays no cup trophy');
@@ -91,13 +92,13 @@ try {
   for (let stage = 0; stage < 4; stage++) {
     assert.equal(await finishFixture(page), 'end');
     if (stage < 3) {
-      await page.locator('#again').click();
+      await resultClick(page, '#again');
       await page.waitForFunction(() => race.state === 'count', null, { timeout: 180000 });
     }
   }
   const completed = await page.evaluate(() => ({ status: race.cup.session.status, oldId: race.cup.session.sessionId }));
   assert.equal(completed.status, 'complete');
-  await page.locator('#again').click();
+  await resultClick(page, '#again');
   await page.waitForFunction(() => race.state === 'count', null, { timeout: 180000 });
   const replay = await page.evaluate(() => ({ id: race.cup.session.sessionId, stage: race.cup.session.stageIndex, ledger: race.cup.session.ledger.length }));
   assert.notEqual(replay.id, completed.oldId);
@@ -205,7 +206,7 @@ try {
       assert.equal(result.ledger, (n + 1) * 8);
       stages.push({ track: cup.tracks[n], ...timing, status: result.status });
       if (n < 3) {
-        await actual.locator('#again').click();
+        await resultClick(actual, '#again');
         await actual.waitForFunction(() => race.state === 'count', null, { timeout: 180000 });
       } else assert.equal(result.status, 'complete');
     }

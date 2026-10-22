@@ -143,3 +143,206 @@ export function statPills(before, after) {
   const a = statPoints(before), b = statPoints(after);
   return STATS.map(([, label], i) => ({ label, delta: b[i] - a[i] })).filter(p => p.delta);
 }
+
+/* ---------- nivel: one number (and a D–S letter) for how built a ride is ----
+   Shared by the taller, the parrilla, the results table and the matagigantes
+   payout. Plain math on the 0–10 stat points above: peso never counts because
+   it is a trade-off, not an upgrade. */
+import { composeTune, wheelById } from './wheel-definitions.js';
+
+// D under 450, C 450–549, B 550–649, A 650–749, S 750 and up.
+export const NIVEL_BANDS = [
+  { min: 750, letter: 'S', color: '#c45bff' },
+  { min: 650, letter: 'A', color: '#ff9a1f' },
+  { min: 550, letter: 'B', color: '#2bb37a' },
+  { min: 450, letter: 'C', color: '#3d7bf2' },
+  { min: 0, letter: 'D', color: '#8b84b0' },
+];
+
+// Mangos paid per higher-nivel rival you beat in a race (¡Matagigantes!).
+export const MATAGIGANTES_BONUS = 5;
+
+// points: [Velocidad, Aceleración, Manejo, Agarre, Peso] as 0–10 (Peso ignored).
+export const nivelFromPoints = ([vel, acel, man, agarre]) =>
+  Math.round(100 + 16 * (1.5 * vel + acel + man + 0.8 * agarre));
+
+export const nivelOf = (tune) => nivelFromPoints(statPoints(tune));
+
+// The nivel of one car build: body tune + cauchos + taller parts.
+export const carNivel = (car, wheelId, parts = {}) =>
+  nivelOf(composeTune(car.tune, wheelById(wheelId).profile, partsProfile(parts)));
+
+export const bandOf = (pi) => NIVEL_BANDS.find((band) => pi >= band.min) ?? NIVEL_BANDS.at(-1);
+
+// The skewed two-tone chip: the letter on its colour, the number on dark ink.
+export const badge = (pi, cls = '') => {
+  const band = bandOf(pi);
+  return `<span class="nivel-badge ${cls}" style="--nivel:${band.color}"><b>${band.letter}</b><span>${pi}</span></span>`;
+};
+
+// A kit's nivel for a race: the average of the pieces the track uses
+// (use is a subset of ['car', 'boat', 'air']; missing pieces are skipped).
+export function kitNivel(pieces, use) {
+  const values = use.map((kind) => pieces[kind]).filter((pi) => Number.isFinite(pi));
+  if (!values.length) return NaN;
+  return Math.round(values.reduce((sum, pi) => sum + pi, 0) / values.length);
+}
+
+// Which kit pieces a track uses: the car always; the lancha where water takes
+// the road, the avioneta where the route flies (transform-gates.js).
+export const trackPieces = (track) => {
+  const def=track?.def??track;
+  if(def?.kitPieces)return ['car',...['boat','air'].filter(k=>def.kitPieces.includes(k))];
+  return ['car',...(def?.transformGates?.some(g=>!g.fly)?['boat']:[]),...(def?.transformGates?.some(g=>g.fly)?['air']:[])];
+};
+
+// Who you beat with a bigger kit: rivals is [{ name, pi }] of everyone you
+// finished ahead of. Returns the beaten giants and the mango bonus.
+export function matagigantes(myPi, rivals) {
+  const giants = rivals.filter((r) => Number.isFinite(r?.pi) && r.pi > myPi);
+  return { giants, bonus: giants.length * MATAGIGANTES_BONUS };
+}
+
+/* ---------- the kit vessels: your lancha and your avioneta ------------------
+// water or a cliff morphs (transform-gates.js); while it rides as a vessel,
+// the vessel's own tune drives — so the lancha you built really decides how
+// you take the river, and the avioneta the canyon. Plain data and math shared
+// by the taller, the race and the room (no Three.js, no DOM), same pattern as
+// car-definitions.js + parts.js: bodies with a tune, part slots with
+// multiplier profiles (composeTune folds them in), and every part a trade-off.
+
+   Same pattern as the car parts above: bodies with a tune, part slots with
+   multiplier profiles, and every part a trade-off. */
+
+export const BOAT_DEFINITIONS = [
+  {
+    id: 'penero', name: 'Peñero', cost: 0,
+    blurb: 'La lancha del pescador. Firme cuando hay olas y responde parejito.',
+    tune: { top: 33, accel: 20, turn: 2.2, mass: 1.2, grip: 6, driftCharge: 1.1, driftBoost: 1.1 },
+  },
+  {
+    id: 'curiara', name: 'Curiara', cost: 90,
+    blurb: 'Canoa de río: dobla en un centavo y arranca ligero, pero le falta punta y las olas la mecen.',
+    tune: { top: 31, accel: 23, turn: 2.7, mass: 0.8, grip: 6.5, driftCharge: 1.15, driftBoost: 1 },
+  },
+  {
+    id: 'rayo', name: 'El Rayo', cost: 140,
+    blurb: 'Lancha de carreras. Vuela en recta; en las curvas y las olas pide mano suave.',
+    tune: { top: 37, accel: 19, turn: 2.0, mass: 1.0, grip: 5, driftCharge: 0.95, driftBoost: 1.05 },
+  },
+];
+
+export const AIR_DEFINITIONS = [
+  {
+    id: 'zamuro', name: 'Zamuro', cost: 0,
+    blurb: 'Ala ancha y noble. Planea lejos, baja despacio y perdona los aterrizajes.',
+    tune: { top: 34, accel: 21, turn: 2.2, mass: 1.0, grip: 6 },
+  },
+  {
+    id: 'guacamaya', name: 'Guacamaya', cost: 160,
+    blurb: 'Rápida y colorida como ella sola. En la bajada vuela; doblar le cuesta un poquito.',
+    tune: { top: 38, accel: 23, turn: 2.0, mass: 0.9, grip: 5.5 },
+  },
+  {
+    id: 'turpial', name: 'Turpial', cost: 110,
+    blurb: 'Ala chica y nerviosa: cambia de rumbo en el aire como si nada, con menos punta.',
+    tune: { top: 32, accel: 25, turn: 2.8, mass: 0.75, grip: 6.5 },
+  },
+];
+
+
+export const BOAT_PART_SLOTS = [
+  { id: 'casco', name: 'Casco' },
+  { id: 'fueraborda', name: 'Motor' },
+  { id: 'helice', name: 'Hélice' },
+];
+export const BOAT_PARTS = {
+  casco: [
+    stockPart('Madera de siempre, bien calafateada.'),
+    { id: 'fibra', name: 'Fibra liviana', blurb: 'Más punta y arranque; se mueve más con las olas.', cost: 50, profile: { top: 1.02, accel: 1.04, mass: 0.96, grip: 0.97 } },
+    { id: 'doble', name: 'Casco doble', blurb: 'Ni las olas de Choroní la tumban. Pesa un poquito más.', cost: 60, profile: { grip: 1.06, turn: 1.02, mass: 1.04, accel: 0.98 } },
+  ],
+  fueraborda: [
+    stockPart('El fuera de borda de don Pancho.'),
+    { id: 'cuarenta', name: '40 caballos', blurb: 'Ruge como un camión y empuja igual. Pesa.', cost: 70, profile: { top: 1.03, accel: 1.05, mass: 1.04 } },
+    { id: 'electrico', name: 'Eléctrico', blurb: 'Silencioso y arranca rapidísimo; cede un pelín de punta.', cost: 85, profile: { accel: 1.09, mass: 0.96, top: 0.99 } },
+  ],
+  helice: [
+    stockPart('Tres palas de fábrica.'),
+    { id: 'corta', name: 'Hélice corta', blurb: 'Gira más cerrado: sale de las curvas pegado a la orilla.', cost: 40, profile: { turn: 1.04, accel: 1.03, top: 0.99 } },
+    { id: 'cuatro', name: 'Cuatro palas', blurb: 'Agarra más agua en recta y se planta en las olas.', cost: 55, profile: { top: 1.02, grip: 1.04, accel: 0.98 } },
+  ],
+};
+
+export const AIR_PART_SLOTS = [
+  { id: 'alas', name: 'Alas' },
+  { id: 'aspas', name: 'Hélice' },
+];
+export const AIR_PARTS = {
+  alas: [
+    stockPart('Alas de lona, como siempre.'),
+    { id: 'largas', name: 'Alas largas', blurb: 'Planea muchísimo y sube parejo; gira más lento.', cost: 60, profile: { accel: 1.06, grip: 1.03, turn: 0.96 } },
+    { id: 'acrobaticas', name: 'Acrobáticas', blurb: 'Pa’ hacer loqueras en el aire: punta y giro, menos ascenso.', cost: 80, profile: { top: 1.02, turn: 1.05, accel: 0.95 } },
+  ],
+  aspas: [
+    stockPart('Dos palas de madera.'),
+    { id: 'liviana', name: 'Liviana', blurb: 'Sube más rápido; con viento se siente más.', cost: 35, profile: { accel: 1.05, mass: 0.95, grip: 0.97 } },
+    { id: 'triple', name: 'Tres palas', blurb: 'Firme aunque sople el viento. Pesa un poco.', cost: 40, profile: { grip: 1.05, turn: 1.02, mass: 1.04 } },
+  ],
+};
+
+export const VESSEL_DEFS = { boat: BOAT_DEFINITIONS, air: AIR_DEFINITIONS };
+export const VESSEL_SLOTS = { boat: BOAT_PART_SLOTS, air: AIR_PART_SLOTS };
+export const VESSEL_PARTS = { boat: BOAT_PARTS, air: AIR_PARTS };
+
+// The stat bars for a vessel read the same composed tune as the car's; the
+// labels change (a boat cares about stability, a plane about climb).
+export const VESSEL_STAT_LABELS = {
+  boat: ['Velocidad', 'Aceleración', 'Manejo', 'Estabilidad', 'Peso'],
+  air: ['Velocidad', 'Ascenso', 'Manejo', 'Estabilidad', 'Peso'],
+};
+
+export const vesselById = (kind, id) =>
+  VESSEL_DEFS[kind].find((v) => v.id === id) ?? VESSEL_DEFS[kind][0];
+
+export const vesselPartById = (kind, slot, id) =>
+  VESSEL_PARTS[kind]?.[slot]?.find((p) => p.id === id) ?? null;
+
+// Keep only known slots with known, non-stock parts (stock is the default).
+export function cleanVesselParts(kind, value) {
+  if (typeof value === 'string') { try { value = JSON.parse(value); } catch { value = null; } }
+  const out = {};
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return out;
+  for (const { id: slot } of VESSEL_SLOTS[kind] ?? []) {
+    const id = value[slot];
+    if (typeof id === 'string' && id !== 'fabrica' && vesselPartById(kind, slot, id)) out[slot] = id;
+  }
+  return out;
+}
+
+// Multiply every equipped part's physics profile.
+export function vesselPartsProfile(kind, parts = {}) {
+  const out = {};
+  for (const { id: slot } of VESSEL_SLOTS[kind] ?? []) {
+    const part = vesselPartById(kind, slot, parts[slot] ?? 'fabrica');
+    for (const field of FIELDS) if (part?.profile[field] != null) out[field] = (out[field] ?? 1) * part.profile[field];
+  }
+  return out;
+}
+
+// The tune a vessel drives with: its body tune plus its equipped parts.
+export const vesselTune = (kind, id, parts = {}) =>
+  composeTune(vesselById(kind, id).tune, {}, vesselPartsProfile(kind, parts));
+
+// The three tunes a racer carries; while a transform gate morphs the car,
+// c.tune swaps to the active piece (transform-gates.js).
+export function kitTunes(cosmetics, carDef, wheel) {
+  return {
+    car: composeTune(carDef.tune, wheel.profile, partsProfile(cosmetics.parts)),
+    boat: vesselTune('boat', cosmetics.boat, cosmetics.boatParts),
+    plane: vesselTune('air', cosmetics.air, cosmetics.airParts),
+  };
+}
+
+// Nivel of one vessel build (parts.js), for the taller, the parrilla and results.
+export const vesselNivel = (kind, id, parts = {}) => nivelOf(vesselTune(kind, id, parts));

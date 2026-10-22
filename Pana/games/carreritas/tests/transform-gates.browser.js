@@ -42,7 +42,7 @@ try {
         drift: 0, driftT: 0, driftHeld: false, stall: 0, boost: 0, vf: 26, vx: Math.sin(h) * 26, vz: Math.cos(h) * 26 });
     };
     place(run.s0 - 25);
-    const metamorfosis = () => JSON.parse(localStorage.getItem('pana:stats') || '{}')?.counters?.['derrape.metamorfosis'] ?? null;
+    const metamorfosis = () => JSON.parse(localStorage.getItem('pana:stats') || '{}')?.counters?.['carreritas.metamorfosis'] ?? null;
     const before = metamorfosis();
     let frames = 0;
     for (; frames < 240 && !p.boat; frames++) { updateRace(1 / 60); presentRace(1 / 60); }

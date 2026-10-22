@@ -110,7 +110,7 @@ export function createMenuFlow({ tracks, getState, pickTrack, prepared, openTall
   root.querySelector('.launch').remove();
   const footer = document.createElement('footer');
   footer.className = 'menu-footer';
-  footer.innerHTML = `<button id="menu-back" class="pk-btn" type="button" data-pad-back>Atrás</button><p id="menu-summary"></p><button id="menu-next" class="pk-btn pk-btn--primary" type="button">Elegir circuito</button>`;
+  footer.innerHTML = `<button id="menu-back" class="pk-btn" type="button" data-pad-back>Atrás</button><button id="menu-summary" type="button" aria-label="Cambiar circuito"></button><button id="menu-next" class="pk-btn pk-btn--primary" type="button">Elegir circuito</button>`;
   root.append(footer);
   move(play, footer);
   const gridButtons = tracks.map((track, index) => {
@@ -189,6 +189,7 @@ export function createMenuFlow({ tracks, getState, pickTrack, prepared, openTall
   }
   for (const button of bar.querySelectorAll('[data-step]')) button.onclick = () => show(button.dataset.step);
   for (const button of root.querySelectorAll('[data-car-tab]')) button.onclick = () => carTab(button.dataset.carTab);
+  $('menu-summary').onclick = () => show('track');
   $('menu-back').onclick = () => step === 'track' ? back() : show(STEPS[STEPS.indexOf(step) - 1]);
   $('menu-next').onclick = () => show(STEPS[STEPS.indexOf(step) + 1]);
   $('start').onclick = () => start();

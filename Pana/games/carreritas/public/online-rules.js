@@ -6,6 +6,9 @@ import { TRACK_DEFINITIONS } from './track-definitions.js';
 import { WHEEL_DEFINITIONS } from './wheel-definitions.js';
 import { PAINTS, HORNS, FLAMES } from './shop.js';
 import { cleanParts } from './parts.js';
+import { BOAT_DEFINITIONS, AIR_DEFINITIONS, cleanVesselParts, kitTunes } from './parts.js';
+
+export { kitTunes };
 
 export const LAPS = 3;
 export const lapsForTrack = id => TRACK_DEFINITIONS.find(t=>t.id===id)?.defaultLaps ?? LAPS;
@@ -37,11 +40,24 @@ export function cleanCosmetics(value) {
   if(typeof value==='string'){try{value=JSON.parse(value);}catch{value=null;}}
   // Taller parts ride along only when set; unknown slots or ids are dropped.
   const parts=cleanParts(value?.parts);
+  const boatParts=cleanVesselParts('boat',value?.boatParts), airParts=cleanVesselParts('air',value?.airParts);
   return {paint:PAINTS.some(p=>p.id===value?.paint)?value.paint:'fabrica',
     horn:HORNS.some(h=>h.id===value?.horn)?value.horn:'propio',
     flame:FLAMES.some(f=>f.id===value?.flame)?value.flame:'fuego',
-    ...(Object.keys(parts).length?{parts}:{})};
+    ...(BOAT_DEFINITIONS.some(v=>v.id===value?.boat)&&value.boat!=='penero'?{boat:value.boat}:{}),
+    ...(AIR_DEFINITIONS.some(v=>v.id===value?.air)&&value.air!=='zamuro'?{air:value.air}:{}),
+    ...(Object.keys(parts).length?{parts}:{}),
+    ...(Object.keys(boatParts).length?{boatParts}:{}),
+    ...(Object.keys(airParts).length?{airParts}:{})};
 }
+
+// Bots race their own little kits: each car id picks a lancha and an avioneta
+// deterministically, so rival loadouts (and their nivels) show up everywhere.
+const hash = (s) => { let h = 0; for (const ch of String(s)) h = (h * 31 + ch.charCodeAt(0)) >>> 0; return h; };
+export const aiVessels = (carId) => ({
+  boat: BOAT_DEFINITIONS[hash(`${carId}:lancha`) % BOAT_DEFINITIONS.length].id,
+  air: AIR_DEFINITIONS[hash(`${carId}:avioneta`) % AIR_DEFINITIONS.length].id,
+});
 
 // A pose is a flat array so 20 Hz updates stay small:
 // [x, y, z, h, pitch, roll, vf, steer, spin, boost, flags, lap, prog, lost, coins]

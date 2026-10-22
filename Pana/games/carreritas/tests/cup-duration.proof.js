@@ -1,3 +1,4 @@
+import { resultClick } from './menu-helpers.js';
 // Deliberately unaccelerated, ~30 minutes. Run explicitly, outside the normal
 // ten-minute suite timeout. This measures real-time play plus loading/results;
 // low-frequency render samples are NOT a reference-device FPS benchmark.
@@ -31,7 +32,7 @@ try{
       await page.waitForFunction(()=>race.state==='end',null,{timeout:360000,polling:200});
       const result=await page.evaluate(()=>({track:getActiveTrack().id,clock:race.clock,lap:race.player.lap,done:race.player.done}));
       assert.ok(result.done);stages.push({...result,loadingSeconds});console.log(`${cup.id} ${stage+1}/4: ${result.clock.toFixed(1)} real-time race seconds`);
-      if(stage<3){await page.waitForTimeout(12000);await page.locator('#again').click();}
+      if(stage<3){await page.waitForTimeout(12000);await resultClick(page, '#again');}
     }
     const wallSeconds=(Date.now()-start)/1000;assert.ok(wallSeconds>=stages.reduce((sum,s)=>sum+s.clock,0)-1,'unaccelerated wall clock');
     proof.push({cup:cup.id,wallSeconds,stages,profile:'Normal; generated steering; 1280x800 headless Chromium; 1 Hz render samples. Timing proof, not device FPS.'});

@@ -2,14 +2,13 @@
 
 Toy-car racing on the Venezuelan circuits: quick races, three four-race Grand
 Prix cups, battle mode, local split screen and online rooms. Carreritas is the
-largest game and keeps its own four-step garage menu instead of the shared
-lobby (`carreritas-menu.md`), and its own Colyseus room (`carreritas-online.md`).
+largest game and uses the shared lobby followed by Copa and the full-screen Taller (`carreritas-menu.md`), and its own Colyseus room (`carreritas-online.md`).
 
 ## Which note for which part
 
 | Part | Note |
 |---|---|
-| Garage and menus | `carreritas-menu.md`, `carreritas-wheels.md` |
+| Garage and menus | `carreritas-menu.md`, `carreritas-loadout.md`, `carreritas-wheels.md` |
 | Driving feel and tuning | `carreritas-driving.md` |
 | Items (mango, jugo…) | `carreritas-items.md` |
 | Tracks and scenery | `carreritas-tracks.md`, `carreritas-scenery.md`, `venezuela-circuits.md`, `puerto-circuit.md`, `circuit-surroundings.md`, `water-worlds.md` |
@@ -37,8 +36,8 @@ lobby (`carreritas-menu.md`), and its own Colyseus room (`carreritas-online.md`)
   (`race.audio`: screech, level chimes, overheat ticks, burn, release thump,
   water rush and outboard; silenced on pause and clearRace). Hits — walls,
   cars and props — count in `c.hits`; the results tag El Chocón on the most
-  hits (5 or more); the player's reach the stats pipe as `derrape.crashes`
-  and `derrape.smashes`. Proof: `tests/race-extras.browser.js`.
+  hits (5 or more); the player's reach the stats pipe as `carreritas.crashes`
+  and `carreritas.smashes`. Proof: `tests/race-extras.browser.js`.
 - Dev ghost: `public/ghosts/<trackId>.json` ships a signed lap
   (`{ by, car, avatar, lap, poses }`); `pickGhost` races it while it beats
   your own best (ghost-recorder.js). To ship one: race the track with
@@ -63,7 +62,7 @@ lobby (`carreritas-menu.md`), and its own Colyseus room (`carreritas-online.md`)
   takes the specificity of `#board li b` and repaints every plate dark,
   including the yellow place plate. It is additive flavour: it never changes placement,
   and a crash banks points instead of taking them. Only the local player's
-  banked points reach `statCount('derrape.drift-points', …)`.
+  banked points reach `statCount('carreritas.drift-points', …)`.
 - Personal-best ghost: `public/ghost-recorder.js` samples the local car's
   `packPose` stream at POSE_HZ and keeps only the fastest lap per track in
   localStorage (`carreritas:ghost:<trackId>`, `{ lap, poses: [[tMs, …15]] }`,
@@ -111,7 +110,7 @@ lobby (`carreritas-menu.md`), and its own Colyseus room (`carreritas-online.md`)
   "¡Modo lancha!" shout, slow-mo and a splashdown. The road stays the driving
   surface, so AI, checkpoints and placements never notice. On the water a
   drift charges faster (wake turbo); skid marks and sparks give way to spray.
-  The local player's splash counts `derrape.metamorfosis`. Proof:
+  The local player's splash counts `carreritas.metamorfosis`. Proof:
   `tests/transform-gates.browser.js`; to look at it,
   `npm run shots -- carreritas --track chuao --at gate-60`.
 - Flight gates (`transformGates: [{ fly: true, fromAt, toAt }]`) are the

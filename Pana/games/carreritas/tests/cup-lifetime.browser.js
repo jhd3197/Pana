@@ -1,3 +1,4 @@
+import { resultClick } from './menu-helpers.js';
 // Three real consecutive cups, with mirror/split play, plus cancellation and
 // warmed GPU-resource accounting. These are lifetime checks, not device FPS.
 import assert from 'node:assert/strict';
@@ -32,7 +33,7 @@ try{
       assert.equal(result.state,'end');assert.equal(result.ledger.length,8);
       if(cycle>0){assert.equal(result.mirror,-1);assert.equal(result.p2,true);}
       records.push({cycle,stage,...result});
-      if(stage<3){await page.locator('#again').click();}
+      if(stage<3){await resultClick(page, '#again');}
     }
     // Dispose the last race world and compare the same warmed garage each time.
     // Different finish cameras upload different subsets of a retained world.

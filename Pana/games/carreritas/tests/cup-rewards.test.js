@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createProfileStore, migrateProfile } from '../public/cup-profile.js';
-import { rewardCupCompletion, rewardCupStage } from '../public/cup-rewards.js';
+import { rewardCupCompletion, rewardCupStage, settleRace } from '../public/cup-rewards.js';
 
 test('race and cup receipts pay once into the same profile', () => {
   const profile = migrateProfile({});
@@ -37,4 +37,16 @@ test('persisted receipts survive a reload without a second cup bonus', () => {
   assert.equal(rewardCupStage(reloaded, { sessionId: 'persistent-cup', stage: 3, collected: 5, place: 0 }), 0);
   assert.equal(rewardCupCompletion(reloaded, { sessionId: 'persistent-cup', trophy: 'plata' }), 0);
   assert.equal(reloaded.wallet.coins, coins);
+});
+
+test('race settlement includes real bonuses and cannot pay twice',()=>{
+ const profile=migrateProfile({}),def={tune:{top:30,accel:20,turn:2,mass:1,grip:5}},player={def,done:true,coinsCollected:7};
+ const rival={def:{tune:{top:38,accel:28,turn:2.8,mass:1,grip:7}}},race={};
+ const args={race,profile,player,order:[player,rival],track:{},myId:'local',record:true};
+ assert(settleRace(args));assert.equal(profile.wallet.coins,27);assert.equal(race.rewardDetail.giant,5);assert.equal(race.rewardDetail.record,5);
+ assert.equal(settleRace(args),false);assert.equal(profile.wallet.coins,27);
+});
+test('v2 migration retains paid receipts and the wallet with new kit defaults',()=>{
+ const profile=migrateProfile({profile:{version:2,wallet:{coins:42},receipts:{paid:true},trophies:{}}});
+ assert.equal(profile.wallet.coins,42);assert.equal(profile.wallet.boat,'penero');assert.equal(profile.receipts.paid,true);assert.equal(profile.version,3);
 });

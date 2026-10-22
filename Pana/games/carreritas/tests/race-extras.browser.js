@@ -51,8 +51,8 @@ try {
     const s = T.paramOf(p.x, p.z) + 9, q = T.pointAt(s);
     Object.assign(rival, { x: q.x, z: q.y, y: T.groundAt(q.x, q.y), done: false, h: p.h });
     presentRace(1 / 60);
-    const tag = [...document.querySelectorAll('.pk-tag')].find(t => t.textContent === rival.name);
-    return { name: rival.name, shown: !!tag && tag.style.display !== 'none' && Number(tag.style.opacity) > 0.5, mine: [...document.querySelectorAll('.pk-tag')].some(t => t.textContent === p.name && t.style.display !== 'none') };
+    const tag = [...document.querySelectorAll('.pk-tag')].find(t => t.dataset.name === rival.name);
+    return { name: rival.name, shown: !!tag && tag.style.display !== 'none' && Number(tag.style.opacity) > 0.5, mine: [...document.querySelectorAll('.pk-tag')].some(t => t.dataset.name === p.name && t.style.display !== 'none') };
   });
   assert.ok(tags.shown, `a nearby rival shows its name tag ${JSON.stringify(tags)}`);
   assert.ok(!tags.mine, `the player's own car has no tag ${JSON.stringify(tags)}`);

@@ -8,6 +8,7 @@
   <link rel="stylesheet" href="/engine/ui.css">
   <link rel="stylesheet" href="style.css">
   <link rel="stylesheet" href="menu.css">
+  <link rel="stylesheet" href="loadout.css">
   <link rel="stylesheet" href="/engine/game-lobby.css">
   <script type="importmap">
     { "imports": {
@@ -15,11 +16,12 @@
       "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
     } }
   </script>
+  <link rel="stylesheet" href="race-screens.css">
 </head>
 <body>
   <section id="menu-boot" class="menu-boot pk-loading" aria-busy="true" aria-label="Preparando Carreritas">
     <img src="./images/menu/raceMaster.webp" alt="" fetchpriority="high">
-    <div><h1>DERRAPE</h1><p role="status">Preparando el garaje…</p><a href="/" class="pk-btn pk-btn--sm">Volver al Hub</a></div>
+    <div><h1>CARRERITAS</h1><p role="status">Preparando el garaje…</p><a href="/" class="pk-btn pk-btn--sm">Volver al Hub</a></div>
   </section>
   <!-- ---------- the shared room lobby (engine/game-entry.js shows it) ----------
        The host's start takes the room on to Copa and Taller (menu-flow.js);
@@ -35,7 +37,7 @@
   <div id="garage" class="screen menu-pending">
     <header class="bar">
       <a class="pk-btn pk-btn--sm hub-link" href="/">‹ Hub</a>
-      <div class="brand">DERRAPE <span>garaje</span></div>
+      <div class="brand">CARRERITAS <span>garaje</span></div>
       <nav class="steps" aria-label="Pasos">
         <button type="button" class="step step-car" data-step="car">1 Carro</button>
         <button type="button" class="step step-wheels" data-step="wheels">2 Cauchos</button>
@@ -139,20 +141,14 @@
     </section>
   </div>
 
-  <section id="shop" class="shop" role="region" aria-labelledby="shop-title" hidden>
-    <header class="shop-head">
-      <h2 id="shop-title">Tu carro</h2>
-      <p class="shop-wallet" aria-label="Mangos disponibles"><span class="mango-symbol" aria-hidden="true"></span><b id="shop-coins">0</b></p>
-      <button id="shop-close" type="button" class="shop-close" aria-label="Ocultar el taller" title="Ocultar el taller"></button>
-    </header>
-    <dl id="shop-stats" class="shop-stats"></dl>
-    <div id="shop-tabs" class="shop-tabs" role="tablist" aria-label="Secciones del taller"></div>
-    <div id="shop-body" class="shop-body"></div>
-    <div id="shop-try" class="shop-try" role="status" hidden>
-      <p id="shop-try-text"></p>
-      <button id="shop-untry" type="button" class="shop-btn shop-btn--ghost">Quitar</button>
-      <button id="shop-buy" type="button" class="shop-btn"></button>
-    </div>
+  <section id="shop" class="shop tl-stage" role="region" aria-label="Taller de Panas" hidden>
+    <div class="tl-head"><small>TALLER DE PANAS</small><div class="tl-name"><button type="button" id="loadout-prev" class="tl-arr sk" aria-label="Vehículo anterior"></button><button type="button" id="loadout-name" class="tl-plate sk" aria-label="Abrir el garaje"></button><button type="button" id="loadout-next" class="tl-arr sk" aria-label="Vehículo siguiente"></button></div><button type="button" id="loadout-garage" class="tl-gbtn sk" data-tab="carro">Garaje <em id="loadout-count"></em><kbd>G</kbd></button></div>
+    <nav id="loadout-vehicles" class="tl-tabs" aria-label="Tu kit"><kbd>Q</kbd><button type="button" class="tl-tab sk" data-vehicle="car" aria-pressed="true">Carro</button><button type="button" class="tl-tab sk" data-vehicle="boat" aria-pressed="false">Lancha</button><button type="button" class="tl-tab sk" data-vehicle="air" aria-pressed="false">Avioneta</button><kbd>E</kbd></nav>
+    <p class="shop-wallet tl-coins sk" aria-label="Mangos disponibles"><span class="mango-symbol" aria-hidden="true"></span><b id="shop-coins">0</b></p>
+    <div class="tl-stats sk"><header class="shop-head hd"><h2 id="shop-title">Tu carro</h2><span id="shop-level"></span></header><dl id="shop-stats" class="shop-stats"></dl></div>
+    <div id="shop-tabs" class="shop-tabs tl-slots" role="tablist" aria-label="Piezas del kit"></div>
+    <dialog id="loadout-drawer" class="tl-drawer sk" aria-labelledby="loadout-drawer-title"><div class="hd"><button id="loadout-back" type="button" class="tl-back">‹ Atrás <kbd>Esc</kbd></button><b id="loadout-drawer-title"></b><small>Pasa por encima para comparar · clic para equipar</small></div><div id="shop-body" class="shop-body tl-opts"></div><div id="shop-try" class="shop-try" role="status" hidden><p id="shop-try-text"></p><button id="shop-untry" type="button" class="shop-btn shop-btn--ghost">Quitar</button><button id="shop-buy" type="button" class="shop-btn"></button></div><p id="loadout-message" role="status"></p></dialog>
+    <button id="shop-close" type="button" hidden aria-label="Ocultar el taller"></button>
   </section>
 
   <!-- ---------- race ---------- -->

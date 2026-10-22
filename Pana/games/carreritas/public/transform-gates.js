@@ -1,3 +1,4 @@
+import { PAINTS } from './shop.js';
 // Transform gates: a stretch of road the river has taken over. A car that
 // hits the water turns into a lancha mid-air — the car
 // shrinks away inside a burst of spray and the Lancha game's peñero, with the
@@ -24,8 +25,8 @@
 // charges a "wake turbo" faster, and skid marks / sparks give way to spray.
 import * as THREE from 'three';
 import { riverSurface } from '/engine/models/effects/water-surface.js';
-import { createLancha } from '/engine/models/vehicles/lancha.js';
-import { createAvioneta } from '/engine/models/vehicles/avioneta.js';
+import { createLancha, createCuriaraRacer, createRayo } from '/engine/models/vehicles/lancha.js';
+import { createAvioneta, createGuacamaya, createTurpial } from '/engine/models/vehicles/avioneta.js';
 import { statCount } from '/engine/stats.js';
 import { shout } from '/engine/kit.js';
 import { createParticleField } from './particles.js';
@@ -37,6 +38,9 @@ export { gateRuns };
 
 const MORPH_S = 0.7;           // seconds for the car → lancha swap (or back)
 const BOAT_SCALE = 1.3;        // the peñero beside car-sized racers
+// The vessel each kit piece wears (parts.js vessel ids), stock first.
+const BOATS = { penero: createLancha, curiara: createCuriaraRacer, rayo: createRayo };
+const PLANES = { zamuro: createAvioneta, guacamaya: createGuacamaya, turpial: createTurpial };
 const PREBUILD = 150;          // metres before a gate a car's lancha is built, hidden
 const HOP = 6.5;               // m/s up as a car crosses a gate: it changes mid-air
 const WAKE_CHARGE = 0.55;      // extra drift charge per second on the water
@@ -117,8 +121,8 @@ export function createTransformGates({ race, sound, track }) {
   // lancha piggybacks on that so it goes with the car.
   function lanchaFor(c) {
     if (c.car.lancha) return c.car.lancha;
-    const paint = typeof c.cosmetics?.paint === 'string' && c.cosmetics.paint.startsWith('#') ? c.cosmetics.paint : c.def.color;
-    const lancha = createLancha(c.avatar || {}, paint);
+    const paint = PAINTS.find(p=>p.id===c.cosmetics?.paint)?.color ?? c.def.color;
+    const lancha = (BOATS[c.cosmetics?.boat] ?? createLancha)(c.avatar || {}, paint);
     lancha.group.position.y = -1 + 0.22;   // tumble space: the waterline just under the car's floor
     lancha.group.visible = false;
     lancha.group.scale.setScalar(0.001);
@@ -133,8 +137,8 @@ export function createTransformGates({ race, sound, track }) {
   // riding the tumble group like the lancha.
   function planeFor(c) {
     if (c.car.plane) return c.car.plane;
-    const paint = typeof c.cosmetics?.paint === 'string' && c.cosmetics.paint.startsWith('#') ? c.cosmetics.paint : c.def.color;
-    const plane = createAvioneta(c.avatar || {}, paint);
+    const paint = PAINTS.find(p=>p.id===c.cosmetics?.paint)?.color ?? c.def.color;
+    const plane = (PLANES[c.cosmetics?.air] ?? createAvioneta)(c.avatar || {}, paint);
     plane.group.position.y = -1;   // tumble space: the wheels where the car's were
     plane.group.visible = false;
     plane.group.scale.setScalar(0.001);
@@ -246,7 +250,7 @@ export function createTransformGates({ race, sound, track }) {
       t.animated.push({ userData: { tick: built.tick } });
       if (t.openWater) {
         const own = t.constrainMotion;
-        t.constrainMotion = (c, previous) => { own?.(c, previous); knock(c, keepAfloat(t.openWater, t, c, previous)); };
+        t.constrainMotion = (c, previous) => { own?.(c, previous); const impact=keepAfloat(t.openWater,t,c,previous);if(impact>0){c.vx*=.8;c.vz*=.8;}knock(c,impact); };
       }
     },
     get runs() { return runs; },
@@ -297,6 +301,9 @@ export function createTransformGates({ race, sound, track }) {
         takeoff(c, flying);
       }
       if (c.boat || c.plane) c.vessel = c.plane ? 'plane' : 'boat';
+      // While morphed, the active kit piece's own tune drives (kitTunes, parts.js).
+      const pieceTune = c.tunes?.[c.plane ? 'plane' : c.boat ? 'boat' : 'car'];
+      if (pieceTune && c.tune !== pieceTune) c.tune = pieceTune;
       // The plane climbs off the lip, flies over the road and settles at the end.
       const lift = flying ? (gate.lift ?? FLY_LIFT) * smooth(Math.min(1, alongGate(c, gate) / FLY_RAMP)) * smooth(Math.min(1, (gate.len - alongGate(c, gate)) / FLY_RAMP)) : 0;
       c.flyLift = (c.flyLift || 0) + (lift - (c.flyLift || 0)) * Math.min(1, dt * 6);

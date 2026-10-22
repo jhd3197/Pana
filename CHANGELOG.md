@@ -8,15 +8,23 @@ becomes the GitHub release's notes.
 
 ## Unreleased
 
+- **Los cables entre postes vuelven a verse en Pana Studio.**
+  La vista previa respeta los dos extremos del cable al llamar su modelo.
+
+- **Arma tu kit de Carreritas con el carro, la lancha y la avioneta a la vista.**
+  El taller estrena ranuras, compras directas y comparaciones de nivel. La
+  parrilla revela los kits y deja copiarlos al taller; los resultados muestran
+  tu carrera y las monedas se convierten en mangos en una caja de verdad, en 3D.
 - **Pepazo estrena armería completa y un campo para probar tu kit.**
   Elige Chispa, Trueno, Gemelas o Cohetón; combina dos accesorios, protección,
   granada y estilo. Cada mejora tiene su costo en movilidad, recarga o control,
   y los kits funcionan tanto con amigos como contra bots.
 
-
-- **Los cables entre postes vuelven a verse en Pana Studio.**
-  La vista previa respeta los dos extremos del cable al llamar su modelo.
-
+- **Las lanchas y las avionetas ahora se manejan con sus propias estadísticas.**
+  Cuando tu carro se convierte en el agua o en el aire, la pieza del kit que
+  llevas manda: cada una tiene su punta, arranque, manejo, agarre y peso. Y
+  ya no todos cruzan en el mismo peñero: tus rivales estrenan curiaras,
+  lanchas de carreras, guacamayas y turpiales.
 - **Derrape ahora se llama Carreritas.** Mismo juego, nuevo nombre en el hub y
   en la pantalla de carga: tus trofeos, mangos, carros, cauchos y fantasmas
   vienen con el cambio. La dirección nueva es /g/carreritas/.

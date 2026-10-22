@@ -1,7 +1,7 @@
 import { CUP_DEFINITIONS, LEGACY_CUP_ALIASES, canonicalCupId } from './cup-definitions.js';
 import { cleanWallet, newWallet } from './shop.js';
 
-export const PROFILE_VERSION = 2;
+export const PROFILE_VERSION = 3;
 export const PROFILE_KEY = 'carreritas:profile';
 // Saves from the Derrape era: read once as a fallback, kept on disk as a backup.
 const LEGACY_PROFILE_KEY = 'derrape:profile';
@@ -95,7 +95,7 @@ function cleanProfile(profile) {
 // wheels is the old 'carreritas:wheels' value (a bare caucho id): it moves into
 // the wallet the first time, then the profile owns the choice.
 export function migrateProfile({ profile = null, setup = null, trophies = null, wallet = null, wheels = null } = {}) {
-  const current = profile?.version === PROFILE_VERSION;
+  const current = profile?.version === 2 || profile?.version === PROFILE_VERSION;
   const result = current ? cleanProfile(profile) : {
     ...newProfile(),
     setup: cleanSetup(setup ?? profile?.setup),

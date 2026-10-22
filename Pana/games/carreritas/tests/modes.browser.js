@@ -1,3 +1,4 @@
+import { resultClick } from './menu-helpers.js';
 import { menuClick } from './menu-helpers.js';
 // npm start, then node this file. The garage setup drives real races: a full
 // four-track cup with points and a trophy, a balloon battle to the last car,
@@ -46,7 +47,7 @@ try {
   await page.evaluate(() => { race.state = 'go'; race.count = 0; for (let i = 0; i < 30; i++) updateRace(1 / 60); renderer.render(race.scene, race.camera); });
   await page.screenshot({ path: join(output, 'modes-mirror.png') });
   assert.equal(await finishRace(page), 'end');
-  await page.locator('#back').click();
+  await resultClick(page, '#back');
   await menuClick(page, '#mirror');
 
   // A full Copa Pana: four tracks, same rivals, points, a trophy.
@@ -54,7 +55,7 @@ try {
   const tracks = [], rivals = [];
   for (let n = 0; n < 4; n++) {
     if (n === 0) await menuClick(page, '#play');
-    else await page.locator('#again').click();
+    else await resultClick(page, '#again');
     await page.waitForFunction(() => race.state === 'count', null, { timeout: 120000 });
     const info = await page.evaluate(() => ({ track: getActiveTrack().id, rivals: race.cars.filter(c => !c.isPlayer).map(c => c.entrantId).sort().join() }));
     tracks.push(info.track); rivals.push(info.rivals);
@@ -69,7 +70,7 @@ try {
   assert.equal(new Set(rivals).size, 1, 'the same rivals race the whole cup');
   const trophy = await page.evaluate(() => JSON.parse(localStorage.getItem('carreritas:profile') || '{}').trophies.pana);
   assert.equal(trophy, 'oro', 'winning every race wins gold');
-  await page.locator('#back').click();
+  await resultClick(page, '#back');
 
   // Balloon battle: hits pop balloons, the last car standing wins.
   await menuClick(page, '[data-mode="battle"]');
