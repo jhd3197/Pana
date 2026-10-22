@@ -1,7 +1,7 @@
 [
   {
     "suite": "Pana/games/carreritas/tests/cup-lifetime.browser.js",
-    "match": "cup-lifetime.browser.js:44",
+    "match": "memory.textures<=last[1].memory.textures+2",
     "since": "2026-10-21",
     "note": "Texture growth between cups 2 and 3 sits at the +2 allowance; fails about 1 run in 2 on clean 411009f too."
   },
@@ -16,5 +16,11 @@
     "match": "is not visible",
     "since": "2026-10-18",
     "note": "Clicking #cup-stages .cup-stage nth(2) times out; fails on unchanged code."
+  },
+  {
+    "suite": "Pana/games/carreritas/tests/reference-scenery.browser.js",
+    "match": "llanos/water-pump-station: visible from the ordinary race camera",
+    "since": "2026-10-22",
+    "note": "Reproduced on unchanged 29ebaab with --baseline; the ordinary camera does not frame the Llanos water-pump station."
   }
 ]
