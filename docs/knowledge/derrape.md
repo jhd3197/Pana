@@ -77,10 +77,28 @@ lobby (`derrape-menu.md`), and its own Colyseus room (`derrape-online.md`).
   route passes closest to a world point). Choroní floods its east-bank road;
   Chuao starts under its waterfall (`MAP.fall`) and runs to the end of the
   quebrada's wet segments (`sheet: false`: the track already draws that
-  water). Margarita floods La Restinga's whole `r` segment (~480 m). Delta's
-  route never runs along a caño, only crosses them on causeways, so its two
-  gates are short fords (.51–.575, .745–.805) centred on the crossings at
-  .54 and .77, where the sheet meets the caño on both sides. `public/transform-gates.js` (lazy, like feats.js) adds
+  water).
+- Open water: a gate with `open: true` is a lagoon, not a flooded road.
+  The route itself dips under the surface between two slipways and `below:
+  .3` makes the gate exactly that stretch (no fractions to drift). The track
+  gives `lagoonAt(x, z)` (surface height or null); `openWater` in
+  course-rules.js floats a boat wherever it is deeper than .15 m and its
+  nearest route point is within 40 m of the run. There `T.groundAt` returns
+  the surface, drive.js drops the tire walls and the zamuro, and
+  `keepAfloat` (a constrainMotion) holds the boat off banks, islets and the
+  region edge. Keep `lagoonAt` apart from `waterAt`, which is road
+  *wetness* (0–1) read by offroad.js, festive and the grass. Boats on the
+  water register in `T.waterObstacles` (reset per build): solid circles,
+  and a moving one (`v`, `h`) kicks a 5.5 m/s hop to a lancha in its wake.
+  Margarita sinks the `r` causeway through La Restinga (asphalt, riprap
+  and carving stop where `roadY < -0.3`; skip the riprap push, not the
+  random draws, or every later scatter moves); its tourist peñeros are the
+  movers. The Delta's laguna (`LAGOON` in delta-layout.js) widens the main
+  caño under the .5–.6 stretch, with `T.gaps` hiding the road and a
+  `tracks/lagoon-life.js` curiara loop. Both have two `fishermen` boats
+  (two chigüires each). A head-on shore hit ends in a stop, like a tire
+  wall: the bounce becomes reverse and the hull brakes it. Proof:
+  `tests/lagoons.browser.js`. `public/transform-gates.js` (lazy, like feats.js) adds
   the water sheet when asked — nothing marks the ends, the water is the cue —
   and every frame
   decides from position alone whether each car — remote ones too — is a

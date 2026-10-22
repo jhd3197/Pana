@@ -57,12 +57,13 @@ export function raceDetails(T) {
   const sites = [], signs = [], seen = new THREE.Vector3();
   T.group?.traverse(o => { if (o.name === 'sign-board') { o.getWorldPosition(seen); signs.push([seen.x, seen.z, (o.geometry.parameters?.width || 6) / 2 + 5]); } });
   for (const [u] of T.def.sectors || []) for (const ds of [0, 22, -22]) { const a = T.pointAt(T.TOTAL * u + ds); signs.push([a.x, a.y, T.HW + 16]); }
-  // No fiesta pennants underground: def.indoors lists [from, to] cave stretches in u.
+  // No fiesta pennants underground (def.indoors lists [from, to] cave
+  // stretches in u) or out on a lagoon (T.openWater).
   const indoors = s => (T.def.indoors || []).some(([a, b]) => s / T.TOTAL > a - .01 && s / T.TOTAL < b + .01);
   for (let s = 35; s < T.TOTAL; s += 105) for (const side of [-1, 1]) {
     if (indoors(s)) continue;
     const p=point(s, side*(T.HW+10)), y=T.terrainAt(p[0],p[2]);
-    if (!clear(T,p[0],p[2],1) || Math.abs(y-p[1])>3 || (T.def.waterAt?.(p[0],p[2],0,T)||0)>0.1) continue;
+    if (!clear(T,p[0],p[2],1) || Math.abs(y-p[1])>3 || (T.def.waterAt?.(p[0],p[2],0,T)||0)>0.1 || T.openWater?.surfaceAt(p[0],p[2]) != null) continue;
     const q=T.pointAt(s+1), a=T.pointAt(s), h=Math.atan2(q.x-a.x,q.y-a.y);
     const x=p[0]+Math.sin(h)*4.4, z=p[2]+Math.cos(h)*4.4;
     if (!clear(T,x,z,1) || Math.abs(T.terrainAt(x,z)-y)>1.5) continue;

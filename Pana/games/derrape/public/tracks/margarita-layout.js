@@ -143,6 +143,19 @@ export function createLayout() {
     for (let i = 0; i < NR; i++) { let a = 0; for (let j = -16; j <= 16; j++) a += raw[(i + j + NR) % NR]; bank[i] = a / 33; }
   }
   fairHeights(RP, roadY);
+  // La Restinga has no causeway: through the lagoon the route runs under the
+  // water (boats float over it, course-rules.js) and climbs out on a slipway at
+  // each end. OPEN.dry(i) is false where the asphalt is under the water.
+  const OPEN = (() => {
+    const wet = i => SEG[i] === 'r' && lagoonD(RP[i].x, RP[i].z) > 8;
+    let a = SEG.indexOf('r');
+    while (a < NR && !wet(a)) a++;
+    let b = a;
+    while (b + 1 < NR && wet(b + 1)) b++;
+    const ramp = Math.round(18 / STEP);
+    for (let i = a - ramp; i <= b + ramp; i++) roadY[i] = lerp(roadY[i], -0.6, sstep(a - ramp, a + ramp * 0.3, i) * (1 - sstep(b - ramp * 0.3, b + ramp, i)));
+    return { dry: i => roadY[i] > -0.3 };
+  })();
   const roadAt = (i, lat, dy = 0) => { const k = (i % NR + NR) % NR, f = roadFrame(k); return f.p.clone().addScaledVector(f.n, lat).setY(roadY[k] + bank[k] * lat + dy); };
   const lateralHW = (i, side) => (side > 0 ? hwR[i] : hwL[i]);
   const idxNear = (x, z) => { let b = 0, bd = 1e9; for (let i = 0; i < NR; i++) { const dd = (RP[i].x - x) ** 2 + (RP[i].z - z) ** 2; if (dd < bd) { bd = dd; b = i; } } return b; };
@@ -172,14 +185,15 @@ export function createLayout() {
   function terrainH(x, z) {
     let h = natural(x, z);
     const r = sampleR(RR, x, z);
-    if (r.i >= 0) {
+    // Under the lagoon (OPEN) the route leaves the mangrove bed as it is.
+    if (r.i >= 0 && OPEN.dry(r.i)) {
       const f = roadFrame(r.i), lat = (x - f.p.x) * f.n.x + (z - f.p.z) * f.n.z, hw = lat >= 0 ? hwR[r.i] : hwL[r.i], cl = clamp(lat, -hwL[r.i], hwR[r.i]);
       const w = 1 - sstep(hw + 0.5, hw + (SEG[r.i] === 'r' ? 7 : 12), r.dist);
       if (w > 0) h = lerp(h, roadY[r.i] + bank[r.i] * cl - 0.15, w);
     }
     for (const P of PADS) { const dd = Math.max(Math.abs(x - P.x) - P.r, Math.abs(z - P.z) - P.r); if (dd < 6) h = lerp(P.y, h, sstep(0, 6, dd)); }
     // Nothing natural rises through the asphalt.
-    if (r.i >= 0 && r.dist < hwR[r.i] + 1.5) h = Math.min(h, roadY[r.i] - 0.2 - Math.abs(bank[r.i]) * hwR[r.i]);
+    if (r.i >= 0 && OPEN.dry(r.i) && r.dist < hwR[r.i] + 1.5) h = Math.min(h, roadY[r.i] - 0.2 - Math.abs(bank[r.i]) * hwR[r.i]);
     return h;
   }
   // Beyond the island grid the sea floor continues; the far land is the sea bed.
@@ -188,5 +202,5 @@ export function createLayout() {
   { const F = MAP.forts.sanCarlos; PADS.push({ x: F.at[0], z: F.at[1], r: 26, y: 2.2 }); }
 
   return { SIZE, CELL, GR, X0, Z0, CTRL, ROAD_LEN, NR, STEP, RP, SEG, RR, hwL, hwR, roadY, bank, roadFrame, roadAt, lateralHW, idxNear,
-    raster, sampleR, inArea, shoreD, lagoonD, channels, CHR, LG, base, natural, PADS, terrainH, farH, groundH, wet: () => false };
+    raster, sampleR, inArea, shoreD, lagoonD, channels, CHR, LG, base, natural, PADS, terrainH, farH, groundH, OPEN, wet: () => false };
 }

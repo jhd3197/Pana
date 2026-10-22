@@ -233,11 +233,13 @@ export function createDriver({ race, track, say, popPart, progressOf, flameFor, 
     // Works on any track shape: the wall normal is the gradient of offsetOf.
     // Shortcut planks and open edges have no wall: drive off them and you fall.
     const off = offsetOf(c.x, c.z, c.y);
+    // On open water (course-rules.js) the banks hold the boat, not tire walls.
+    const afloat = T.openWater?.surfaceAt(c.x, c.z, c.y) != null;
     const limit = T.HW - 1.6;
     const plank = T.shortcuts.length > 0 && T.plankAt(c.x, c.z) != null;
     const edgeOpen = T.drops.length > 0 && isOpenEdge(T.drops, paramOf(c.x, c.z, c.y) / T.TOTAL, Math.sign(off));
     const far = Math.abs(off) > T.HW + OPEN_MARGIN;
-    if (!terrain && Math.abs(off) > limit && !plank && !edgeOpen && !far) {
+    if (!terrain && !afloat && Math.abs(off) > limit && !plank && !edgeOpen && !far) {
       const e = 0.6;
       let nx = offsetOf(c.x + e, c.z,c.y) - offsetOf(c.x - e, c.z,c.y);
       let nz = offsetOf(c.x, c.z + e,c.y) - offsetOf(c.x, c.z - e,c.y);
@@ -272,7 +274,7 @@ export function createDriver({ race, track, say, popPart, progressOf, flameFor, 
     c.prog = prog;
 
     // Off the course (past an open edge, off a plank) the zamuro comes soon.
-    c.outT = !terrain && offCourse(Math.abs(off), T.HW, edgeOpen, plank) ? c.outT + dt : 0;
+    c.outT = !terrain && !afloat && offCourse(Math.abs(off), T.HW, edgeOpen, plank) ? c.outT + dt : 0;
     // Humans only count as stuck while pressing the gas; bots always try.
     const trying = !c.done && c.spin <= 0 && c.stall <= 0 && ((c.isPlayer && !AUTO) || c.human ? input.throttle !== 0 : true);
     c.stuckT = stuckStep(c.stuckT, c.vf, trying && race.state === 'go', dt);
@@ -302,7 +304,7 @@ export function createDriver({ race, track, say, popPart, progressOf, flameFor, 
         race.shockwaves.ring(new THREE.Vector3(c.x - fx * 1.2, c.y, c.z - fz * 1.2), {
           color: 0xd8f4ef, maxRadius: 2.2, duration: 0.48, opacity: 0.55,
         });
-      } else if (kicking) {
+      } else if (kicking && !c.boat) {   // a lancha throws its own spray (transform-gates.js)
         race.puffs.spawn(new THREE.Vector3(c.x - fx * 1.6, c.y+0.25, c.z - fz * 1.6), { color: rough>0.1?0x889263:0xe7bd8a, count: 1, size: 0.7, rise: 0.6, life: 0.7 });
       }
       if (c.lost >= 2) {

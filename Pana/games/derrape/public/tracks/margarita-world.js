@@ -21,7 +21,7 @@ export function createWorld(scene, layout, roadDistance, scale = 1) {
   const V3 = (x, y, z) => new THREE.Vector3(x, y, z);
 
   const { SIZE, X0, Z0, NR, STEP, SEG, RR, hwL, hwR, roadY, bank, roadFrame, roadAt, lateralHW, idxNear, sampleR, inArea,
-    shoreD, lagoonD, channels, CHR, LG, natural, terrainH, farH: originalFarH, groundH: originalGroundH } = layout;
+    shoreD, lagoonD, channels, CHR, LG, natural, terrainH, farH: originalFarH, groundH: originalGroundH, OPEN } = layout;
   const groundH = (x, z) => horizon?.heightAt(x, z) ?? originalGroundH(x, z);
   const SUN_DIR = new THREE.Vector3(0.3, 0.82, 0.38).normalize();
 
@@ -108,7 +108,7 @@ export function createWorld(scene, layout, roadDistance, scale = 1) {
     const nrm = geo.attributes.normal, colors = new Float32Array(pos.count * 3), tmp = new THREE.Color();
     for (let i = 0; i < pos.count; i++) {
       const x = pos.getX(i), z = pos.getZ(i); paintGround(x, z, pos.getY(i), 1 - nrm.getY(i), tmp);
-      const r = sampleR(RR, x, z); if (r.i >= 0) tmp.lerp(SEG[r.i] === 'r' ? cRock : cVerge, (1 - sstep(hwR[r.i], hwR[r.i] + 3.5, r.dist)) * 0.8);
+      const r = sampleR(RR, x, z); if (r.i >= 0 && OPEN.dry(r.i)) tmp.lerp(SEG[r.i] === 'r' ? cRock : cVerge, (1 - sstep(hwR[r.i], hwR[r.i] + 3.5, r.dist)) * 0.8);
       colors.set([tmp.r, tmp.g, tmp.b], i * 3);
     }
     geo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
@@ -186,9 +186,14 @@ export function createWorld(scene, layout, roadDistance, scale = 1) {
   {
     // sand blown onto the asphalt along the beach
     const tone = { p: col('#ffffff'), c: col('#f2efe8'), a: col('#f8e8c4'), r: col('#ffffff'), j: col('#ffffff') };
-    const rows = [], colors = [];
-    for (let i = 0; i <= NR; i++) { const k = i % NR; rows.push({ a: roadAt(k, -hwL[k], 0.12), b: roadAt(k, hwR[k], 0.12) }); const c = new THREE.Color(0, 0, 0); for (let j = -10; j <= 10; j++) c.add(tone[SEG[(k + j + NR) % NR]]); colors.push(c.multiplyScalar(1 / 21)); }
-    stripMesh(rows, ROAD, 20, colors);
+    // The asphalt stops where the slipways go under the lagoon (OPEN).
+    let rows = [], colors = [];
+    for (let i = 0; i <= NR; i++) {
+      const k = i % NR;
+      if (!OPEN.dry(k)) { if (rows.length > 1) stripMesh(rows, ROAD, 20, colors); rows = []; colors = []; continue; }
+      rows.push({ a: roadAt(k, -hwL[k], 0.12), b: roadAt(k, hwR[k], 0.12) }); const c = new THREE.Color(0, 0, 0); for (let j = -10; j <= 10; j++) c.add(tone[SEG[(k + j + NR) % NR]]); colors.push(c.multiplyScalar(1 / 21));
+    }
+    if (rows.length > 1) stripMesh(rows, ROAD, 20, colors);
     const sandTex = canvasTex(128, 128, (c, w, h) => { c.clearRect(0, 0, w, h); for (let i = 0; i < 40; i++) { c.fillStyle = `rgba(245,232,200,${rr(0.4, 0.9).toFixed(2)})`; c.beginPath(); c.ellipse(rand() * w, rand() * h, rr(6, 30), rr(4, 12), rand() * PI, 0, TAU); c.fill(); } });
     const SAND = new THREE.MeshStandardMaterial({ map: sandTex, transparent: true, opacity: 0.5, depthWrite: false, roughness: 1, polygonOffset: true, polygonOffsetFactor: -3 });
     const srows = []; for (let i = 0; i < NR; i++) if (SEG[i] === 'a') srows.push({ a: roadAt(i, -hwL[i], 0.14), b: roadAt(i, hwR[i], 0.14) });
@@ -227,7 +232,7 @@ export function createWorld(scene, layout, roadDistance, scale = 1) {
       for (let i = 0; i < NR; i += step) {
         const s = SEG[i];
         // steel rails on the castle road, yellow rails along the bay at Juan Griego and on the causeway
-        const kind = s === 'c' ? 'steel' : (s === 'j' && side > 0) || s === 'r' ? 'yellow' : null;
+        const kind = s === 'c' ? 'steel' : (s === 'j' && side > 0) || (s === 'r' && roadY[i] > 0.8) ? 'yellow' : null;
         if (!kind) { prev = null; continue; }
         const b0 = roadAt(i, side * (lateralHW(i, side) + 1.0), 0); b0.y = Math.min(b0.y, terrainH(b0.x, b0.z) + 0.1);
         const top = b0.clone().setY(b0.y + 0.85);
@@ -403,8 +408,9 @@ export function createWorld(scene, layout, roadDistance, scale = 1) {
       mangroveTree(x, z, rr(0.8, 1.15)); return true;
     });
     tries(Z.grass, () => { const x = rr(X0 + 4, X0 + SIZE - 4), z = rr(Z0 + 4, Z0 + SIZE - 4), s = shoreD(x, z); if (s < 20 || lagoonD(x, z) > -6 || !freeOf(x, z, 1.2)) return false; const y = terrainH(x, z), sc = rr(0.6, 1.2); push(inst.grass, V3(x, y - 0.05, z), qYaw(rand() * TAU), S.set(sc * 1.4, sc, sc * 1.4), col(pick(['#a8a050', '#8a9a40', '#c0b060'])).offsetHSL(0, rr(-0.1, 0.05), rr(-0.06, 0.06))); return true; });
-    // riprap along the causeway
-    for (let i = 0; i < NR; i += 3) { if (SEG[i] !== 'r') continue; for (const side of [-1, 1]) { const p = roadAt(i, side * (lateralHW(i, side) + rr(2, 4.5)), 0); push(inst.rock, V3(p.x, Math.min(p.y - 0.4, rr(-0.2, 0.6)), p.z), qEuler(rand(), rand() * TAU, rand()), S.set(rr(0.6, 1.4), rr(0.4, 0.9), rr(0.6, 1.2)), col('#8a8478').offsetHSL(0, 0, rr(-0.06, 0.05))); } }
+    // riprap along the causeway, down to the slipways (the draws still run
+    // under the lagoon so everything scattered after keeps its place)
+    for (let i = 0; i < NR; i += 3) { if (SEG[i] !== 'r') continue; for (const side of [-1, 1]) { const p = roadAt(i, side * (lateralHW(i, side) + rr(2, 4.5)), 0); push(roadY[i] > 0.8 ? inst.rock : [], V3(p.x, Math.min(p.y - 0.4, rr(-0.2, 0.6)), p.z), qEuler(rand(), rand() * TAU, rand()), S.set(rr(0.6, 1.4), rr(0.4, 0.9), rr(0.6, 1.2)), col('#8a8478').offsetHSL(0, 0, rr(-0.06, 0.05))); } }
   }
 
   /* ---------------- Playa El Agua: umbrellas, loungers, beach huts with tile roofs, vendors with coolers ---------------- */
@@ -544,5 +550,8 @@ export function createWorld(scene, layout, roadDistance, scale = 1) {
   });
   vegetation.flush();
   scene.userData.dispose = () => { ownedTextures.forEach(t => t.dispose()); ownedMaterials.forEach(m => m.dispose()); };
-  return { group: scene, groundAt: groundH, update };
+  // The tourist peñeros are solid on the open lagoon, and their wakes kick
+  // (transform-gates.js); positions in layout metres, coastal-track scales them.
+  const obstacles = () => racers.map(R => ({ x: R.g.position.x, z: R.g.position.z, r: 2.4, h: R.g.rotation.y, v: R.speed }));
+  return { group: scene, groundAt: groundH, update, obstacles };
 }

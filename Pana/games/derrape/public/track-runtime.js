@@ -1,7 +1,7 @@
 // Geometry/runtime shared by the race and Studio's individual map previews.
 import * as THREE from 'three';
 import * as kit from './track-kit.js';
-import { plankHeight, isOpenEdge, OPEN_MARGIN } from './course-rules.js';
+import { plankHeight, isOpenEdge, OPEN_MARGIN, openWater } from './course-rules.js';
 import { raceDetails } from './tracks/race-details.js';
 import { roadMaterial, roadStyle, roadTile, roadTexture } from './tracks/road-material.js';
 import { applyNatureMaterials } from './tracks/nature-material.js';
@@ -467,7 +467,11 @@ export function makeTrack(def) {
     if (a <= T.HW + 0.4) return false;
     return a > T.HW + OPEN_MARGIN || isOpenEdge(T.drops, geo.paramOf(x, z) / geo.TOTAL, Math.sign(off));
   };
+  // Open-water gates (course-rules.js): boats float on the lagoon, not the road.
+  T.openWater = openWater(T);
   T.groundAt = (x, z, height) => {
+    const afloat = T.openWater?.surfaceAt(x, z, height);
+    if (afloat != null) return afloat;
     const plank = T.shortcuts.length ? T.plankAt(x, z) : null;
     if (plank != null) return plank;
     const s = geo.paramOf(x,z,height);
@@ -493,6 +497,7 @@ export function makeTrack(def) {
     T.group = group;
     T.animated = [];
     T.constrainMotion = null;
+    T.waterObstacles = [];   // () => [{ x, z, r, h, v, vx, vz }]: boats on open water
     if (def.environment) {
       const environment = def.environment(T);
       environment.group.name = 'track-environment';

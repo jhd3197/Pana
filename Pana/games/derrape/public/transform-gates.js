@@ -7,7 +7,9 @@
 // `transformGates: [{ from, to, sheet }]` (route fractions; `sheet: false`
 // when the track already draws water there, like Chuao's quebrada); the road
 // under the water stays the driving surface, so AI lines, checkpoints,
-// rescues and placements never notice.
+// rescues and placements never notice. An `open: true` gate is a lagoon
+// instead (course-rules.js, openWater): no road and no walls, boats steer anywhere afloat,
+// bounce off the banks, the boats on the water and their wakes.
 //
 // Who is a boat is decided from position alone, every frame and for every
 // car, remote ones included: online clients agree without a new message.
@@ -21,7 +23,10 @@ import { statCount } from '/engine/stats.js';
 import { shout } from '/engine/kit.js';
 import { createParticleField } from './particles.js';
 import { syncGhostAppearance } from './racer-render.js';
-import { isGhost } from './recovery-rules.js';
+import { isGhost, recordImpact } from './recovery-rules.js';
+import { gateRuns, keepAfloat, bumpObstacle, inWake } from './course-rules.js';
+
+export { gateRuns };
 
 const MORPH_S = 0.7;           // seconds for the car → lancha swap (or back)
 const BOAT_SCALE = 1.3;        // the peñero beside car-sized racers
@@ -29,22 +34,16 @@ const PREBUILD = 150;          // metres before a gate a car's lancha is built, 
 const HOP = 6.5;               // m/s up as a car crosses a gate: it changes mid-air
 const WAKE_CHARGE = 0.55;      // extra drift charge per second on the water
 const WATER_LIFT = 0.32;       // the sheet sits this far over the road
+const WAKE_HOP = 5.5;          // m/s up when a boat crosses another boat's wake
+const BUMP_HARD = 6;           // m/s into a boat or a bank that counts as a crash
 const SPRAY = [0xffffff, 0xd8f4ff, 0x9fe3ef];
 const DROPS = [0xffffff, 0xe6f8ff, 0xbfeaf5, 0x8fd6e8];   // droplet tints, foam to river
 
-// Route gates in arc length, from the definition's fractions. A gate may
-// name a world point instead (`fromAt: [x, z]`, e.g. a waterfall): it starts
-// where the route passes closest to it, `lead` metres early.
-export function gateRuns(T) {
-  return (T.def.transformGates || []).map(g => {
-    const s0 = g.fromAt ? T.nearest(g.fromAt[0], g.fromAt[1]).s - (g.lead ?? 0) : g.from * T.TOTAL, s1 = g.to * T.TOTAL;
-    return { ...g, s0, len: ((s1 - s0) % T.TOTAL + T.TOTAL) % T.TOTAL };
-  }).filter(g => g.len > 10);
-}
-
 // The gate a point sits in, or null. Off the road's edge never counts.
 export function gateAt(T, runs, x, z, y) {
-  if (!runs.length || Math.abs(T.offsetOf(x, z, y)) > T.HW + 1.5) return null;
+  if (!runs.length) return null;
+  if (T.openWater?.surfaceAt(x, z, y) != null) return runs.find(g => g.open) ?? null;
+  if (Math.abs(T.offsetOf(x, z, y)) > T.HW + 1.5) return null;
   const s = T.paramOf(x, z, y);
   return runs.find(g => (s - g.s0 + T.TOTAL) % T.TOTAL < g.len) ?? null;
 }
@@ -57,7 +56,7 @@ export function buildGates(T) {
   group.name = 'transform-gates';
   const ticks = [];
   for (const g of runs) {
-    if (g.sheet === false) continue;   // the track draws its own water here
+    if (g.sheet === false || g.open) continue;   // the track draws its own water here
     const points = [];
     for (let d = 0; d <= g.len; d += 4) { const p = T.pointAt(g.s0 + d); points.push([p.x, p.y]); }
     const height = (x, z) => T.heightAtS(T.paramOf(x, z)) + WATER_LIFT;
@@ -91,6 +90,7 @@ export function createTransformGates({ race, sound, track }) {
   // Within PREBUILD metres before a gate (or in it): time to have a lancha ready.
   const nearGate = c => {
     const t = track();
+    if (runs.length && t.openWater?.surfaceAt(c.x, c.z, c.y) != null) return true;
     if (!runs.length || Math.abs(t.offsetOf(c.x, c.z, c.y)) > t.HW + 4) return false;
     const s = t.paramOf(c.x, c.z, c.y);
     return runs.some(g => (s - g.s0 + PREBUILD + t.TOTAL) % t.TOTAL < g.len + PREBUILD);
@@ -167,15 +167,29 @@ export function createTransformGates({ race, sound, track }) {
     }
   }
 
+  // A boat hitting a bank or another boat: spray, a bonk, a shake.
+  function knock(c, speed) {
+    if (speed < BUMP_HARD || isGhost(c)) return;
+    crown(c, 0.5);
+    c.drift = 0; c.driftT = 0;
+    if (c.isPlayer) { sound.bonk(speed / 10); race.shake = Math.min(1, (race.shake || 0) + 0.25); }
+    recordImpact(c, race.clock);
+  }
+
   return {
     // A new track: the scenery goes into its group and its tick into the
-    // animated list. Cars of the previous race are already gone.
+    // animated list. Cars of the previous race are already gone. Open water
+    // holds boats inside its banks (after the track's own constraint).
     setTrack(t) {
       if (!t.def.transformGates?.length) { runs = []; return; }
       const built = buildGates(t);
       runs = built.runs;
       t.group?.add(built.group);
       t.animated.push({ userData: { tick: built.tick } });
+      if (t.openWater) {
+        const own = t.constrainMotion;
+        t.constrainMotion = (c, previous) => { own?.(c, previous); knock(c, keepAfloat(t.openWater, t, c, previous)); };
+      }
     },
     get runs() { return runs; },
     // One physics step of a local car, after stepCar. Crossing a gate kicks
@@ -188,6 +202,22 @@ export function createTransformGates({ race, sound, track }) {
         if (c.onGround && !c.done) { c.vy = inside ? HOP : HOP * 0.7; c.onGround = false; c.airTime = 0; c.hopping = false; }
       }
       if (c.boat && c.drift) c.driftT += dt * WAKE_CHARGE;
+      // Boats on open water: solid hulls, and wakes that throw you up.
+      const t = track();
+      if (!c.boat || !t.openWater || !t.waterObstacles?.length) return;
+      c.wakeT = Math.max(0, (c.wakeT || 0) - dt);
+      for (const list of t.waterObstacles) for (const o of list()) {
+        const hit = bumpObstacle(c, o);
+        if (hit) {   // stepCar drives from vf/vr: carry the bounce into them
+          const fx = Math.sin(c.h), fz = Math.cos(c.h);
+          c.vf = c.vx * fx + c.vz * fz; c.vr = -c.vx * fz + c.vz * fx;
+          knock(c, hit);
+        }
+        if (c.onGround && !c.wakeT && inWake(c, o)) {
+          c.vy = WAKE_HOP; c.onGround = false; c.airTime = 0; c.wakeT = 0.8;
+          if (c.isPlayer) sound.plop();
+        }
+      }
     },
     // Every drawn frame, every car (remote ones too): decide boat or car from
     // where it is, splash on the change, and play the swap.

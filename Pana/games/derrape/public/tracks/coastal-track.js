@@ -37,6 +37,9 @@ export function coastalTrack(id, layout, createWorld, options = {}) {
       world.group.scale.set(scale,1,scale);
       // Sea depth is sampled in world coordinates, unlike the road textures.
       world.group.traverse(o=>{if(o.material?.uniforms?.uBox)o.material.uniforms.uBox.value.multiplyScalar(scale);});
+      // Boats on open water, in race metres (transform-gates.js bumps them).
+      if (world.obstacles) T.waterObstacles.push(() => world.obstacles().map(o => ({ ...o, x: o.x * scale, z: o.z * scale, r: o.r * scale,
+        v: o.v * scale, vx: Math.sin(o.h) * o.v * scale, vz: Math.cos(o.h) * o.v * scale })));
       return {...world, groundAt: (x,z) => world.groundAt(x/scale,z/scale)};
     },
   };

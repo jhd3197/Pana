@@ -19,10 +19,10 @@ becomes the GitHub release's notes.
   y los nombres sobre los carros son banderines con el puesto, que se
   achican con la distancia. Vuelta final, vuelta rápida, derrapes y
   contramano tienen avisos nuevos, y las teclas solo se ven al arrancar.
-- **En Derrape, Isla Margarita y el Delta también se corren en lancha.**
-  La calzada de La Restinga se inunda y la cruzas en peñero entre los
-  manglares; en el Delta de los Caños, los dos vados sobre los caños te
-  vuelven lancha hasta la otra orilla.
+- **En Derrape, la laguna de La Restinga y la del Delta se cruzan en lancha, por donde quieras.**
+  La carretera baja por una rampa al agua y desaparece: navegas libre entre
+  manglares e islotes, esquivas los peñeros de turistas (sus olas te hacen
+  saltar) y dos botes de chigüires pescando, y subes por la otra rampa.
 
 ## 0.5.0 - 2026-10-21
 
