@@ -16,7 +16,7 @@ import { AVENUES, STREETS, BLOCKS, STREET_HALF, townHeight, streetDistance } fro
 import { waterfrontHeight,overWater,createWaterfront } from './plaza-waterfront.js';
 import { waterAnimator } from '/engine/models/effects/water-surface.js';
 import { colonialHouse, busStopShelter } from '/engine/models/props/pueblo.js';
-import { extendTerrain } from './world-horizon.js';
+import { extendTerrain } from '/engine/worlds/coastal/world-horizon.js';
 import { plazaOutskirts } from './plaza-outskirts.js';
 import { plazaBandstand } from '/engine/models/props/plaza-bandstand.js';
 import { cafeTerrace } from '/engine/models/props/cafe-terrace.js';

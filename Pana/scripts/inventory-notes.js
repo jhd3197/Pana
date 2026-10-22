@@ -67,7 +67,7 @@ export const assemblies=[
   record('Race-island piers',race('tracks/bululu'),'Low jetties','Bululú circuit','Inline harbor planks and pilings.'),
   record('Plaza streets, gardens and mirador',race('tracks/plaza-town'),'function createTown','Plaza circuit','Street surfaces, block gardens, lookout terrace and stairs; shared houses/trees counted separately.'),
   record('Plaza waterfront canals and docks',race('tracks/plaza-waterfront'),'function createWaterfront','Plaza circuit','Canal network and moorings around canalVilla.'),
-  record('Continuous circuit surroundings',race('tracks/world-horizon'),'function extendTerrain','All eight Derrape races','Exact grid-edge joins to coarser outer terrain; coastal water keeps its detailed near grid and gains a far apron.'),
+  record('Continuous circuit surroundings','Pana/engine/worlds/coastal/world-horizon.js','function extendTerrain','All eight Derrape races','Exact grid-edge joins to coarser outer terrain; coastal water keeps its detailed near grid and gains a far apron.'),
   record('Plaza outer neighborhoods',race('tracks/plaza-outskirts'),'function plazaOutskirts','Plaza circuit','Connected outer lanes, 51 additional houses, 26 planted courtyards and road-safe groves. Reuses existing house and plant factories.'),
   record('Llanos pastures and gallery woodland',race('tracks/llanos-landscape'),'function llanosLandscape','Llanos','Four pastures, repeated ranch fences, harvest bales, morichal palms and distant ceiba groves. Existing animals retain their space.'),
   record('Stadium venue grounds',race('tracks/stadium-grounds'),'function stadiumGrounds','Estadio','Entrance, perimeter, concourse, planted parking and infields. Parked copies reuse real garage vehicles with no driver.'),

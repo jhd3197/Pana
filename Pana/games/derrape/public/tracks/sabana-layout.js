@@ -1,5 +1,5 @@
 import { clamp, lerp } from '/engine/random.js';
-import { fairRoute, fairHeights } from './coastal-road.js';
+import { fairRoute, fairHeights } from '/engine/worlds/coastal/coastal-road.js';
 import * as THREE from 'three';
 // Pana Gran Sabana. Metres, +x east, +z south, y up. The tepuyes stand to the
 // north (-z), dead ahead on the long straight.

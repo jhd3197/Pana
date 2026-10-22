@@ -1,5 +1,5 @@
-import { createLayout } from './galipan-layout.js';
-import { createWorld, GALIPAN_SCALE } from './galipan-world.js';
+import { createLayout } from '/engine/worlds/coastal/galipan-layout.js';
+import { createWorld, GALIPAN_SCALE } from '/engine/worlds/coastal/galipan-world.js';
 import { coastalTrack } from './coastal-track.js';
 
 const scale = GALIPAN_SCALE;

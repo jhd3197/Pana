@@ -2,7 +2,7 @@ import { THREE,M,box,smooth,mix,sign,put,finish,boat,clear } from './world-kit.j
 import { maracaiboBridge,canalVilla } from './world-landmarks.js';
 import { palm } from '/engine/models/vegetation/palm.js';
 import { waterSurface } from '/engine/models/effects/water-surface.js';
-import { extendWaterPlane } from './world-horizon.js';
+import { extendWaterPlane } from '/engine/worlds/coastal/world-horizon.js';
 import { boatRepairYard } from '/engine/models/props/boat-yard.js';
 import { fishAuctionCanopy } from '/engine/models/props/fish-auction-canopy.js';
 import { cargoHandcart } from '/engine/models/props/cargo-handcart.js';

@@ -7,7 +7,7 @@ try {
   await waitFor(page,()=>window.garage?.car);
   const proof=await page.evaluate(async()=>{
     const THREE=await import('three');
-    const {forestZone,prepareForestModel,simplifyCanopy,denseForest}=await import('/g/derrape/tracks/forest-detail.js');
+    const {forestZone,prepareForestModel,simplifyCanopy,denseForest}=await import('/engine/worlds/coastal/forest-detail.js');
     const {ceiba}=await import('/engine/models/vegetation/ceiba.js');
     const {mangoTree}=await import('/engine/models/vegetation/mango-tree.js');
     const {cacao}=await import('/engine/models/vegetation/selva-trees.js');

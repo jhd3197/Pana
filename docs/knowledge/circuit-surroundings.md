@@ -6,7 +6,7 @@ It builds on the earlier living-sky and varied-house work.
 
 ## Continuous land and water
 
-`Pana/games/derrape/public/tracks/world-horizon.js` attaches one coarse landscape
+`Pana/engine/worlds/coastal/world-horizon.js` attaches one coarse landscape
 mesh to each original terrain mesh. The first ring copies the exact grid boundary
 positions, colors and normals. Eight further rings reach 3,800 m beyond that
 boundary, past the racing fog distance. Llanos has low rolling savanna; Estadio

@@ -301,7 +301,7 @@ the racing line. Keep streets and buildings clear as well as the race lanes.
 The race island has its own light coastal terrain; the original Bululú
 board world stays independent. `world-kit.js` batches static landmarks and
 spatially instances shared flora. Do not pass instances through `bake()`.
-`tracks/world-horizon.js` joins the exact playable terrain-grid boundary to
+`engine/worlds/coastal/world-horizon.js` joins the exact playable terrain-grid boundary to
 coarser surrounding land; keep that mesh as a child of the original terrain.
 It also extends coastal water without changing its near grid/depth-map domain.
 Preserve explicit Studio framing bounds rather than fitting the whole backdrop.

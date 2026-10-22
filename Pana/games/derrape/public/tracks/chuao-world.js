@@ -1,7 +1,7 @@
 import { rng, clamp, lerp, pick as pickRandom } from '/engine/random.js';
-import { extendTerrain } from './world-horizon.js';
+import { extendTerrain } from '/engine/worlds/coastal/world-horizon.js';
 import * as THREE from 'three';
-import { coastalVegetation } from './coastal-vegetation.js';
+import { coastalVegetation } from '/engine/worlds/coastal/coastal-vegetation.js';
 import { MAP } from './chuao-layout.js';
 export function createWorld(scene, layout, roadDistance) {
   const vegetation = coastalVegetation(scene, 1, roadDistance);

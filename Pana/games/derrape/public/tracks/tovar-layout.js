@@ -1,5 +1,5 @@
 import { clamp, lerp } from '/engine/random.js';
-import { fairRoute, fairHeights } from './coastal-road.js';
+import { fairRoute, fairHeights } from '/engine/worlds/coastal/coastal-road.js';
 import * as THREE from 'three';
 // Pana Colonia Tovar. Metres, +x east, +z south (toward the valley), y up.
 export const MAP = {

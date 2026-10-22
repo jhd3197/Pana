@@ -17,7 +17,7 @@ import { templeTunnel } from './selva-temple.js';
 import { jungleFlora } from './selva-flora.js';
 import { jungleDriving } from './selva-driving.js';
 import { stoneTotem, hollowLog, vineArch } from '/engine/models/props/jungle.js';
-import { extendTerrain } from './world-horizon.js';
+import { extendTerrain } from '/engine/worlds/coastal/world-horizon.js';
 
 const smooth=THREE.MathUtils.smoothstep;
 const mix=THREE.MathUtils.lerp;

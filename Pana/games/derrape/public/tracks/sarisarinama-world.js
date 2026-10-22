@@ -1,6 +1,6 @@
 import { rng, clamp, lerp, pick as pickRandom } from '/engine/random.js';
 import * as THREE from 'three';
-import { coastalVegetation } from './coastal-vegetation.js';
+import { coastalVegetation } from '/engine/worlds/coastal/coastal-vegetation.js';
 import { MAP } from './sarisarinama-layout.js';
 
 // Sarisariñama: a spiral road down the wall of a tepuy sinkhole, the lost
