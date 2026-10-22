@@ -15,6 +15,11 @@ export const VEHICLES = [
     async build() { const { createLancha } = await import('/engine/models/vehicles/lancha.js'); const model = createLancha(DEFAULT_AVATAR, '#e2683c');
       return { group: model.group, update: (t, dt) => model.update(dt, { v: 9, throttle: 1, steer: Math.sin(t * .8) }, t), dispose: () => model.dispose() }; },
   },
+  // Derrape's flight gates turn cars into this little plane.
+  { id: 'racing-avioneta', name: 'Avioneta', category: 'Vehículos', source: '/engine/models/vehicles/avioneta.js', factory: 'createAvioneta', usedBy: ['Derrape'], description: 'Avioneta de ala alta en el color del carro, con banda blanca, hélice que gira, ruedas gorditas y el pana en la cabina abierta.',
+    async build() { const { createAvioneta } = await import('/engine/models/vehicles/avioneta.js'); const model = createAvioneta(DEFAULT_AVATAR, '#e8443a');
+      return { group: model.group, update: (t, dt) => model.update(dt, { v: 30, steer: Math.sin(t * .6) }, t), dispose: () => model.dispose() }; },
+  },
   // Parapente's wing with the pana in the harness, paws on the brakes.
   { id: 'racing-parapente', name: 'Parapente', category: 'Vehículos', source: '/engine/models/vehicles/parapente.js', factory: 'createParapente', usedBy: ['Parapente'], description: 'Vela en arco en el color del equipo con celdas blancas, cascada de líneas, silla y el pana con las patas en los frenos; las orejas pliegan las puntas.',
     async build() { const { createParapente } = await import('/engine/models/vehicles/parapente.js'); const model = createParapente(DEFAULT_AVATAR, '#2fa3e0');
