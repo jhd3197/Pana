@@ -79,8 +79,55 @@ shows **Orientación** (Según el juego / Horizontal / Vertical, saved as
 screen with "Jugar así" (and, where the browser can lock it, "Pantalla completa").
 `<html data-pana-orientation>` carries the wanted orientation for CSS. The game's
 landscape layout still has to work: test both with a touch emulator.
-Mark keyboard reminders with `data-pana-hint` so the "Ayudas de teclado"
+Mark keyboard reminders with `data-pana-hint` so the "Ayudas de controles"
 setting can hide them.
+
+## Shared input settings
+
+The menu occupies the viewport, keeping native dialog focus containment and
+each game's `onOpen` / `onClose` behavior. `settings-workspace.js` loads only
+when Ajustes opens. It moves the existing audio, image and game option nodes
+into categories, preserving IDs and handlers. `/ajustes.html` exposes the same
+workspace outside a game. Personal settings never change room rules.
+
+`pana:settings` stores independent `mouseSensitivity`, `mouseVertical`,
+`mouseInvertY`, `touchSensitivity`, `touchInvertY`, `padDeadzone`,
+`padMoveSensitivity`, `padLookSensitivity`, `padVertical`, `padInvertY`,
+`padCurve` (lineal/suave/rapida), `padCursorSpeed` and `padVibration`.
+`normalizeSettings` clamps persisted ranges; `resetInputSettings` preserves
+audio, image and hint visibility. First-person controls consume live values,
+including separate touch drag tuning. Legacy first-person mouse presets
+migrate when no numeric preference exists. Settings still work in memory when
+storage is unavailable, and storage events synchronize open tabs.
+
+`gamepad.js` exports `inputState()` and `onInputDevice(fn)`: `detected` is the
+last active physical device, while `device` follows the `inputHints` display
+override (auto/keyboard/gamepad/touch). Synthetic controller key/pointer events
+must never count as physical keyboard or mouse input. An idle controller must
+not take focus back after a real key press; stick changes and button edges
+reactivate it. Disconnect releases translated keys. Window blur suspends the
+controller translator until focus returns.
+
+The root carries `data-pana-input` and `data-pana-pad-family`. Keyboard hint
+groups and legacy keycaps hide for controller/touch input; controller keycaps
+use `data-pad-key`. Gameplay controller prompts come from each game's real
+`pad` mapping. The Controles tab follows the active device. `padFamily` can
+override ID-based Xbox/PlayStation/Nintendo/generic labels without changing
+the browser's standard button indices. Controller navigation targets the
+lobby's start action before other primary buttons such as an armory button.
+
+Native controller readers must call `inputAxis(value, getSettings())`, as
+Carreritas and Trifulca do. `readPad` uses that same function; `kind: 'look'`
+scales full-travel camera speed, while movement stays bounded to one. Menu
+navigation deliberately uses normal movement sensitivity and a linear curve
+so a player's low gameplay setting cannot disable navigation. The live tester
+shows raw and shaped values; its explicit test mode consumes navigation until
+B/Start (or the finish button) ends the test. Vibration is optional browser
+support: failed probes show an unavailable message, not a successful effect.
+
+`settings.browser.js` measures actual mouse/touch look deltas, controller
+arbitration, tester behavior, persistence and responsive layout. The all-games
+smoke opens the real settings menu under each game's CSS, including phone width.
 
 ## Loading cover
 
@@ -132,8 +179,8 @@ engine owns the garage menus and Start, so its own pad code no longer
 toggles the pause. Without a main button, a menu starts the pad on its
 biggest button, such as Carreritas's "Un jugador" card rather than the step bar.
 
-Trap: the menu imports `gamepad.js` only when `pad` is set, so a game's first
-load stays under the module budget (`tests/conventions.test.js`).
+The menu imports `gamepad.js` dynamically for device-aware help. The settings
+workspace is lazy too; neither adds to a game's static module budget.
 
 ## Rules and traps
 

@@ -1262,7 +1262,7 @@ function playerInput(n = 1) {
 let padsBefore = [null, null];
 function pollPads() {
   const list = navigator.getGamepads?.() || [];
-  race.pads = [padInput(list[0]), padInput(list[1])];
+  race.pads = [padInput(list[0],getSettings()), padInput(list[1],getSettings())];
   race.pads.forEach((pad, i) => {
     const hit = pressed(pad, padsBefore[i]);
     const who = i === 0 ? race.player : race.p2;

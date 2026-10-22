@@ -37,7 +37,7 @@ function h(tag, props = {}, ...children) {
 // "W A S D / ↑ ↓" → one <kbd> per key, with " / " between alternatives.
 // Pad buttons have spaces in their names ("Stick izq."): one <kbd> per group.
 function keycaps(keys, whole = false) {
-  return keys.split(' / ').flatMap((group, i) => [i ? ' / ' : null, ...(whole ? [group] : group.split(' ')).map(k => h('kbd', { text: k }))]).filter(Boolean);
+  return keys.split(' / ').flatMap((group, i) => [i ? ' / ' : null, ...(whole ? [group] : group.split(' ')).map(k => h('kbd', { text: k, 'data-pad-key': whole }))]).filter(Boolean);
 }
 
 let toastNode, toastTimer;
@@ -72,11 +72,18 @@ export function createGameMenu({
 } = {}) {
   // Loaded only for a game that sets up a pad, to keep the others' first load small.
   const padRows = h('div', { hidden: true });
-  if (pad && pause) import('./gamepad.js').then(({ padControls, padHelp }) => {
-    padControls(pad);
-    const rows = padHelp(pad);
-    padRows.replaceChildren(h('h3', { class: 'pana-keys-title', text: 'Con mando' }), keyList(rows, true));
-    padRows.hidden = !rows.length;
+  const padHint = h('p', { class: 'pana-menu-pad-hint', hidden: true });
+  import('./gamepad.js').then(({ padControls, padHelp, onInputDevice, formatPadLabel }) => {
+    if (pad && pause) padControls(pad);
+    onInputDevice(state => {
+      const rows = padHelp(pad).map(([key, label]) => [formatPadLabel(key, state.family), label]);
+      padRows.replaceChildren(h('h3', { class: 'pana-keys-title', text: 'Con mando' }), keyList(rows, true));
+      padRows.hidden = state.device !== 'gamepad';
+      keyboardRows.hidden = state.device !== 'keyboard';
+      touchHelp.hidden = state.device !== 'touch';
+      padHint.hidden = state.device !== 'gamepad';
+      padHint.textContent = `${formatPadLabel('A', state.family)} · Elegir    ${formatPadLabel('B', state.family)} · Volver${pause ? `    ${formatPadLabel('LB / RB', state.family)} · Secciones` : ''}`;
+    });
   });
   const uid = menuCount++ ? `-${menuCount}` : '';
   const id = name => `pana-${name}${uid}`;
@@ -146,7 +153,7 @@ export function createGameMenu({
     h('label', { class: 'pana-row pana-volume', for: id('set-music') }, h('span', { text: 'Música' }), music),
     qualityGroup.node,
     orientationGroup && orientationGroup.node,
-    h('div', { class: 'pana-row' }, h('span', { id: id('set-hints-label'), text: 'Ayudas de teclado en pantalla' }), hintsSwitch),
+    h('div', { class: 'pana-row' }, h('span', { id: id('set-hints-label'), text: 'Ayudas de controles en pantalla' }), hintsSwitch),
     gameOptions.map(o => o.node),
     h('p', { class: 'pana-fine', text: 'Los ajustes se guardan en este navegador y valen para todos los juegos de Pana.' }),
     !pause && h('button', { type: 'button', id: id('done'), class: 'pana-primary', text: 'Listo', onclick: () => close() }));
@@ -174,8 +181,10 @@ export function createGameMenu({
     return h('div', { class: 'pana-keys', role: 'list' }, rows.map(([keys, text]) => h('div', { class: 'pana-key', role: 'listitem' },
       h('span', { class: 'pana-key-caps' }, keycaps(keys, whole)), h('span', { class: 'pana-key-text', text }))));
   }
-  const controlsPanel = (controls.length || tips.length) && h('section', { class: 'pana-panel', role: 'tabpanel', id: id('panel-controls'), 'aria-labelledby': id('tab-controls') },
-    keyList(controls),
+  const keyboardRows = keyList(controls);
+  const touchHelp = h('p', { class: 'pana-tip', hidden: true, text: 'Usa los controles táctiles del juego. Puedes ajustar la cámara y la orientación en Ajustes.' });
+  const controlsPanel = (controls.length || tips.length || pad) && h('section', { class: 'pana-panel', role: 'tabpanel', id: id('panel-controls'), 'aria-labelledby': id('tab-controls') },
+    keyboardRows, touchHelp,
     padRows,
     tips.map(t => h('p', { class: 'pana-tip', text: t })));
 
@@ -185,18 +194,32 @@ export function createGameMenu({
   const noteNode = h('p', { class: 'pana-menu-note', id: id('menu-note') });
   const dialog = h('dialog', { class: 'pana-menu', id: id('menu-dialog'), 'aria-labelledby': id('menu-title') },
     h('div', { class: 'pana-menu-head' },
-      h('small', { text: title }), h('h2', { id: id('menu-title'), text: pause ? heading : 'Ajustes' }), noteNode,
-      !pause && h('button', { type: 'button', class: 'pana-close', 'aria-label': 'Cerrar ajustes', text: '×', onclick: () => close() })),
+      h('small', { text: title }), h('h2', { id: id('menu-title'), text: pause ? heading : 'Ajustes' }), noteNode, padHint,
+      h('button', { type: 'button', class: 'pana-close', 'aria-label': 'Cerrar menú', text: 'Volver', onclick: () => close() })),
     tabs.length > 1 && h('div', { class: 'pana-tabs', role: 'tablist', 'aria-label': 'Secciones del menú' }, tabButtons,
       h('span', { class: 'pana-tabs-hint', 'data-pana-hint': true }, keycaps('Esc'), ' cerrar')),
     tabs.map(([, , panel]) => panel));
   document.body.append(dialog);
   let tab = tabs[0][0];
+  let workspace, workspaceLoading;
+  function prepareSettings() {
+    if (workspace) { workspace.refresh(); return; }
+    workspaceLoading ??= import('./settings-workspace.js').then(({ createSettingsWorkspace }) => {
+      workspace = createSettingsWorkspace(settingsPanel, {
+        audio: [soundSwitch, volume, music].map(n => n.closest('.pana-row')),
+        image: [qualityGroup.node], touch: orientationGroup ? [orientationGroup.node] : [],
+        hints: hintsSwitch.closest('.pana-row'), game: gameOptions.map(o => o.node), title,
+      });
+      workspace.refresh();
+    }).catch(() => { workspaceLoading = null; defaultNotify('No se pudieron cargar los controles. Vuelve a abrir Ajustes.'); });
+  }
 
   function showTab(key) {
     tab = key;
     for (const [k, , panel] of tabs) panel.hidden = k !== key;
     for (const b of tabButtons) { const on = b.dataset.tab === key; b.setAttribute('aria-selected', String(on)); b.tabIndex = on ? 0 : -1; }
+    dialog.querySelector('h2').textContent = key === 'settings' ? 'A tu manera' : key === 'controls' ? 'Cómo se juega' : heading;
+    if (key === 'settings') prepareSettings();
   }
   dialog.querySelector('.pana-tabs')?.addEventListener('keydown', e => {
     const step = { ArrowRight: 1, ArrowLeft: -1 }[e.key]; if (!step) return;

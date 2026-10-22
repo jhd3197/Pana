@@ -8,6 +8,12 @@ becomes the GitHub release's notes.
 
 ## Unreleased
 
+- **Ajusta tus controles en una pantalla completa para todos los juegos.**
+  Pana sigue el ratón, teclado, mando o pantalla táctil que estés usando y
+  cambia las ayudas. Guarda sensibilidad por dispositivo, ejes verticales,
+  zona muerta, curva y vibración del mando; prueba sus sticks y botones en vivo.
+  Audio, imagen y opciones del juego comparten el mismo centro de ajustes.
+
 - **Los zamuros de rescate liberan su geometría al terminar la carrera.**
   Encadenar copas ya no conserva las mallas de los rescates anteriores.
 

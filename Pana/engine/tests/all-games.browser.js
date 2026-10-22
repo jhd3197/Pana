@@ -54,6 +54,17 @@ try {
           if (leftovers.length) failures.push(`${game}: controls after Más ajustes: ${leftovers.join(', ')}`);
         }
       }
+      // The same settings room must remain usable under every game's CSS.
+      await page.setViewportSize({ width: 1280, height: 800 });
+      await page.keyboard.press('Escape');
+      await page.locator('.pana-menu[open]').waitFor();
+      await page.locator('#pana-tab-settings').click();
+      await page.locator('.pana-settings-workspace').waitFor();
+      await page.locator('.pana-settings-nav button', { hasText: 'Ratón y teclado' }).click();
+      assert.equal(await page.locator('#pana-input-mouseSensitivity').isVisible(), true, `${game}: shared input controls visible`);
+      await page.setViewportSize({ width: 390, height: 844 });
+      assert.equal(await page.locator('.pana-menu').evaluate(n => n.scrollWidth > n.clientWidth + 1), false, `${game}: settings fit a phone`);
+      await page.keyboard.press('Escape');
       failures.push(...page.errors);
       await page.context().close();
       console.log(`${failures.some(f => f.startsWith(game)) ? 'FAIL' : 'ok  '}  ${game}  (${((Date.now() - started) / 1000).toFixed(1)}s)`);

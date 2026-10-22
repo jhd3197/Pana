@@ -16,7 +16,7 @@ import { PaintConnection } from './network.js';
 import { createScene } from './scene.js';
 import { createMinimap } from './minimap.js';
 import { sfx } from './sounds.js';
-import { createLookControls, SENSITIVITY_CHOICES } from '/engine/play/first-person.js';
+import { createLookControls } from '/engine/play/first-person.js';
 import { createFeats } from '/engine/feats.js';
 import { createHitFeats } from './feats.js';
 import { coverFor, TARGET, segmentBox, paintSeats, variantName } from './rules.js';
@@ -39,10 +39,9 @@ const optionsUI = createRoomOptions($('room-options'), { title: 'Pepazo', fields
 const mapPicker = createMapPicker($('map-picker'), mapId => room.selectMap(mapId), { paint: true });
 const difficultyPicker = createDifficultyPicker($('difficulty-picker'), difficulty => room.selectDifficulty(difficulty), { label: 'Puntería de los bots',
   notes: { facil: 'Los bots fallan seguido y disparan menos.', normal: 'Bots con buena mano, pero se les va alguna.', dificil: 'Los bots apuntan fino y no sueltan el gatillo.', experto: 'Casi no fallan: muévete y cúbrete.' } });
-const menu = createGameMenu({ pad: { move: 'wasd', look: 'Mirar y apuntar', keys: { rt: ['Space', 'Disparar'], a: ['Space', 'Disparar'], x: ['KeyR', 'Recargar'], lb: ['ShiftLeft', 'Correr'], ls: ['ShiftLeft', 'Correr'], view: ['Tab', 'Ver la tabla'] } }, title: 'Pepazo · Pana', orientation: 'libre', sound,
+const menu = createGameMenu({ pad: { move: 'wasd', look: 'Mirar y apuntar', keys: { rt: ['Space', 'Disparar'], a: ['Space', 'Disparar'], x: ['KeyR', 'Recargar'], rb: ['KeyG', 'Lanzar granada'], lb: ['ShiftLeft', 'Correr'], ls: ['ShiftLeft', 'Correr'], view: ['Tab', 'Ver la tabla'] } }, title: 'Pepazo · Pana', orientation: 'libre', sound,
   options: [{ id: 'weapon', label: 'Marcadora (si la sala permite todas)', choices: MARKERS.map(m=>[m.id,m.name]), get: () => weapon, set: value => { weapon = value; } },
-    { id: 'view', label: 'Cámara', choices: [['primera', 'Primera persona'], ['cancha', 'Ver la cancha']], get: () => cameraView, set: value => { cameraView = value; world.setView(value); } },
-    { id: 'mouse', label: 'Sensibilidad al mirar', choices: SENSITIVITY_CHOICES, get: () => looking.sensitivity, set: value => { looking.sensitivity = value; } }],
+    { id: 'view', label: 'Cámara', choices: [['primera', 'Primera persona'], ['cancha', 'Ver la cancha']], get: () => cameraView, set: value => { cameraView = value; world.setView(value); } }],
   note: () => room.local ? 'La práctica está en pausa.' : 'La ronda online sigue mientras estás en el menú.',
   controls: [['WASD / Flechas', 'Caminar hacia donde miras'], ['Ratón', 'Mirar y apuntar (haz clic en la cancha para capturarlo)'], ['Clic / Espacio', 'Disparar pintura'], ['Shift', 'Correr (no puedes disparar corriendo)'], ['Tab', 'Ver la tabla'], ['Q / E', 'Girar sin ratón'], ['R', 'Recargar'], ['1 / 2 / 3 / 4', 'Chispa / Trueno / Gemelas / Cohetón'], ['G', 'Lanzar granada'], ['M', 'Sonido'], ['Esc', 'Soltar el ratón y abrir el menú']],
   tips: ['Una pintada suma un punto. Gana quien llegue a diez o lidere al terminar el tiempo. Con vidas limitadas también gana el último pana o equipo en pie. En bandera gana el equipo con tres capturas.',

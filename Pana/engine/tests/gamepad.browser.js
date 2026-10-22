@@ -39,6 +39,18 @@ try {
   assert.equal(await page.evaluate(() => galope.input().throttle), 0, 'letting go lifts the key');
   console.log('PASS A starts the race; RT and the stick press the game keys');
 
+  assert.equal(await page.locator('html').getAttribute('data-pana-input'), 'gamepad');
+  assert.equal(await page.locator('.pana-pad-prompts').isVisible(), true);
+  assert.equal(await page.locator('kbd:not([data-pad-key]):visible').count(), 0, 'PC keycaps disappear while playing with a pad');
+  await page.keyboard.press('h'); await frames();
+  assert.equal(await page.locator('html').getAttribute('data-pana-input'), 'keyboard', 'real keyboard takes over from an idle pad');
+  await set('rt', true);
+  await page.evaluate(() => { window.__connectedPad=window.__pad; window.__pad=null; dispatchEvent(new Event('gamepaddisconnected')); });
+  await frames();
+  assert.equal(await page.evaluate(() => galope.input().throttle), 0, 'disconnect releases the held accelerator');
+  await page.evaluate(() => { window.__pad=window.__connectedPad; window.__pad.buttons[7]={pressed:false,value:0}; dispatchEvent(new Event('gamepadconnected')); });
+  await frames();
+
   await press('start');
   await page.locator('dialog.pana-menu[open]').waitFor();
   await press('rb'); await press('rb');

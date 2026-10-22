@@ -2,17 +2,16 @@
 // split screen, plus the wrong-way and lap-split checks. Plain functions only;
 // tests/controls.test.js checks them.
 
-const DEAD = 0.18;
-const axis = (v) => Math.abs(v) < DEAD ? 0 : (v - Math.sign(v) * DEAD) / (1 - DEAD);
+import { inputAxis, DEFAULTS } from '../../../engine/settings.js';
 const held = (b) => !!b && (b.pressed || b.value > 0.4);
 const amount = (b) => b ? Math.max(b.value || 0, b.pressed ? 1 : 0) : 0;
 
 // A "standard" Gamepad (Xbox / PlayStation layout) into Carreritas's controls.
 // RT / A gas, LT / B brake, stick or d-pad steer, RB drift, LB / X items,
 // Y rescue, Select look back, Start pause, d-pad up swaps the item.
-export function padInput(pad) {
+export function padInput(pad, settings=DEFAULTS) {
   if (!pad) return null;
-  const b = pad.buttons || [], stick = axis(pad.axes?.[0] || 0);
+  const b = pad.buttons || [], stick = inputAxis(pad.axes?.[0] || 0,settings);
   const dpad = (held(b[14]) ? 1 : 0) - (held(b[15]) ? 1 : 0);
   return {
     throttle: Math.max(amount(b[7]), held(b[0]) ? 1 : 0) - Math.max(amount(b[6]), held(b[1]) ? 1 : 0),

@@ -22,29 +22,46 @@ export const DEFAULTS = Object.freeze({
   quality: TOUCH_ONLY ? 'media' : 'alta', // render resolution, see QUALITY
   hints: true,     // on-screen keyboard reminders ([data-pana-hint])
   orientation: 'juego', // phones: 'juego' (each game's own default), 'horizontal' or 'vertical'
+  inputHints: 'auto', padFamily: 'auto',
+  mouseSensitivity: 1, mouseVertical: 1, mouseInvertY: false,
+  touchSensitivity: 1, touchInvertY: false,
+  padDeadzone: .18, padMoveSensitivity: 1, padLookSensitivity: 1,
+  padVertical: 1, padInvertY: false, padCurve: 'lineal',
+  padCursorSpeed: 1, padVibration: true,
 });
 const ORIENTATION_CHOICES = ['juego', 'horizontal', 'vertical'];
+export const INPUT_RANGES = Object.freeze({mouseSensitivity:[.25,3],mouseVertical:[.25,2],touchSensitivity:[.25,3],padDeadzone:[0,.4],padMoveSensitivity:[.5,2],padLookSensitivity:[.25,3],padVertical:[.25,2],padCursorSpeed:[.25,3]});
+const INPUT_CHOICES={inputHints:['auto','keyboard','gamepad','touch'],padFamily:['auto','xbox','playstation','nintendo','generic'],padCurve:['lineal','suave','rapida']};
+export const INPUT_KEYS = [...Object.keys(INPUT_RANGES),...Object.keys(INPUT_CHOICES),'mouseInvertY','touchInvertY','padInvertY','padVibration'];
 
-function normalize(raw = {}) {
+export function normalizeSettings(raw = {}) {
+  if(!raw || typeof raw!=='object')raw={};
   const out = { ...DEFAULTS };
   if (typeof raw.sound === 'boolean') out.sound = raw.sound;
   if (Number.isFinite(raw.volume)) out.volume = Math.min(1, Math.max(0, raw.volume));
   if (Number.isFinite(raw.music)) out.music = Math.min(1, Math.max(0, raw.music));
-  if (raw.quality in QUALITY) out.quality = raw.quality;
+  if (Object.hasOwn(QUALITY, raw.quality)) out.quality = raw.quality;
   if (typeof raw.hints === 'boolean') out.hints = raw.hints;
   if (ORIENTATION_CHOICES.includes(raw.orientation)) out.orientation = raw.orientation;
+  for(const [key,[min,max]] of Object.entries(INPUT_RANGES))if(Number.isFinite(raw[key]))out[key]=Math.max(min,Math.min(max,raw[key]));
+  for(const [key,choices] of Object.entries(INPUT_CHOICES))if(choices.includes(raw[key]))out[key]=raw[key];
+  for(const key of ['mouseInvertY','touchInvertY','padInvertY','padVibration'])if(typeof raw[key]==='boolean')out[key]=raw[key];
   return out;
 }
 
 let current = (() => {
-  try { return normalize(JSON.parse(localStorage.getItem(KEY) || '{}')); } catch { return normalize(); }
+  try {
+    const raw=JSON.parse(localStorage.getItem(KEY)||'{}')||{};
+    if(raw.mouseSensitivity==null){const legacy=localStorage.getItem('pana:look-sensitivity')??localStorage.getItem('pana:pepazo-mouse');raw.mouseSensitivity={baja:.0014/.0024,media:1,alta:.0038/.0024}[legacy]??1;}
+    return normalizeSettings(raw);
+  } catch { return normalizeSettings(); }
 })();
 const listeners = new Set();
 
 export function getSettings() { return { ...current }; }
 
 export function setSettings(patch) {
-  const next = normalize({ ...current, ...patch });
+  const next = normalizeSettings({ ...current, ...patch });
   const changed = Object.keys(next).filter(k => next[k] !== current[k]);
   if (!changed.length) return current;
   current = next;
@@ -61,10 +78,22 @@ export function onSettings(fn) {
 }
 
 // Another tab changed the settings: follow it.
-addEventListener('storage', event => {
+globalThis.addEventListener?.('storage', event => {
   if (event.key !== KEY) return;
-  try { setSettings(JSON.parse(event.newValue || '{}')); } catch { /* Ignore malformed values. */ }
+  try { setSettings(normalizeSettings(JSON.parse(event.newValue || '{}'))); } catch { /* Ignore malformed values. */ }
 });
+
+// Pure shaping shared by translated and native controller input. Movement is
+// bounded to one; look sensitivity also scales the full-travel camera speed.
+export function inputAxis(value, settings = DEFAULTS, kind = 'move') {
+  const v=Math.max(-1,Math.min(1,Number.isFinite(value)?value:0)),dead=settings.padDeadzone??DEFAULTS.padDeadzone;
+  if(Math.abs(v)<=dead)return 0;
+  const exponent={lineal:1,suave:1.7,rapida:.65}[settings.padCurve]??1;
+  const sensitivity=kind==='look'?(settings.padLookSensitivity??1):(settings.padMoveSensitivity??1);
+  const magnitude=Math.pow((Math.abs(v)-dead)/(1-dead),exponent)*sensitivity;
+  return Math.sign(v)*(kind==='look'?magnitude:Math.min(1,magnitude));
+}
+export function resetInputSettings(){return setSettings(Object.fromEntries(INPUT_KEYS.map(k=>[k,DEFAULTS[k]])));}
 
 // Device pixel ratio capped by the game's own limit and the quality setting,
 // lowered by the frame-rate guard below (never under 1 CSS pixel per pixel).

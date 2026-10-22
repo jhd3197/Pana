@@ -45,6 +45,7 @@ try {
   // The guest crosses the court with the overview option (world-axis keys); the
   // host plays the default first-person view: turn, walk, then fire along the crosshair.
   await b.locator('#menu').click(); await b.locator('#pana-tab-settings').click();
+  await b.locator('.pana-settings-nav button', { hasText: 'Pepazo' }).click();
   await b.locator('#pana-opt-view').getByRole('radio', { name: 'Ver la cancha', exact: true }).click(); await b.keyboard.press('Escape');
   const mine = 'pinturaDebug.room.state.players.find(p => p.id === pinturaDebug.room.id)';
   await b.locator('#world').focus();

@@ -20,7 +20,8 @@
 // is up down left right. First-person games get right-stick look through
 // padLook (engine/play/first-person.js uses it).
 
-const NAMES = ['a', 'b', 'x', 'y', 'lb', 'rb', 'lt', 'rt', 'view', 'start', 'ls', 'rs', 'up', 'down', 'left', 'right'];
+import { getSettings, onSettings, inputAxis } from './settings.js';
+export const NAMES = ['a', 'b', 'x', 'y', 'lb', 'rb', 'lt', 'rt', 'view', 'start', 'ls', 'rs', 'up', 'down', 'left', 'right'];
 const DIRS = ['up', 'down', 'left', 'right'];
 export const MOVES = {
   arrows: { up: 'ArrowUp', down: 'ArrowDown', left: 'ArrowLeft', right: 'ArrowRight' },
@@ -41,29 +42,54 @@ let setup = { native: false, keys: {} };
 export function padControls(options = {}) {
   release();
   setup = { native: false, keys: {}, ...options };
+  publishInput(true);
 }
 export const padSetup = () => setup;
+
+let detected=typeof matchMedia==='function'&&matchMedia('(pointer: coarse)').matches?'touch':'keyboard',lastPointer=detected,padId='',connected=false;
+const inputListeners=new Set();
+export function controllerFamily(id='') {return /playstation|dualshock|dualsense|054c|sony/i.test(id)?'playstation':/nintendo|057e|switch/i.test(id)?'nintendo':/xbox|xinput|045e/i.test(id)?'xbox':'generic';}
+export function inputState(){const s=getSettings();return {device:s.inputHints==='auto'?detected:s.inputHints,detected,connected,id:padId,family:s.padFamily==='auto'?controllerFamily(padId):s.padFamily};}
+export function onInputDevice(fn){inputListeners.add(fn);fn(inputState());return()=>inputListeners.delete(fn);}
+function publishInput(force=false){
+  if(!globalThis.document)return;const state=inputState(),root=document.documentElement;
+  const changed=root.dataset.panaInput!==state.device||root.dataset.panaPadFamily!==state.family;
+  root.dataset.panaInput=state.device;root.dataset.panaPadFamily=state.family;
+  if(changed||force){
+    for(const fn of inputListeners)fn(state);
+    // Explicit hint preferences also work without a connected controller.
+    queueMicrotask(()=>showPrompts(menuScope()));
+  }
+}
+function activate(device){if(detected!==device){detected=device;publishInput();}}
+const FAMILIES={playstation:{A:'Cruz',B:'Círculo',X:'Cuadrado',Y:'Triángulo',LB:'L1',RB:'R1',LT:'L2',RT:'R2',Start:'Options',View:'Share'},nintendo:{A:'B',B:'A',X:'Y',Y:'X',LB:'L',RB:'R',LT:'ZL',RT:'ZR',Start:'Más',View:'Menos'}};
+export function formatPadLabel(text,family=inputState().family){return text.replace(/\b(LB|RB|LT|RT|Start|View|A|B|X|Y)\b/g,key=>FAMILIES[family]?.[key]??key);}
+export async function testVibration(){
+  const pad=firstPad(),actuator=pad?.vibrationActuator??pad?.hapticActuators?.[0];
+  if(!actuator)return false;
+  try{if(actuator.playEffect)await actuator.playEffect('dual-rumble',{duration:140,strongMagnitude:.25,weakMagnitude:.4});else if(actuator.pulse)await actuator.pulse(.4,140);else return false;return true;}catch{return false;}
+}
 
 // ---------- reading the pad ----------
 
 const pressedOf = b => !!b && (b.pressed || b.value > .4);
 // One frame of a pad: held buttons by name and the two sticks (y down).
-export function readPad(pad) {
+export function readPad(pad, settings=getSettings()) {
   if (!pad) return null;
   const held = {}, b = pad.buttons || [], ax = pad.axes || [];
   NAMES.forEach((name, i) => { held[name] = pressedOf(b[i]); });
-  const stick = (x, y) => Math.hypot(x, y) > .18 ? { x, y } : { x: 0, y: 0 };
-  return { held, left: stick(ax[0] || 0, ax[1] || 0), right: stick(ax[2] || 0, ax[3] || 0) };
+  const stick = (x, y, kind) => ({x:inputAxis(x,settings,kind),y:inputAxis(y,settings,kind)});
+  return { held, left: stick(ax[0] || 0, ax[1] || 0,'move'), right: stick(ax[2] || 0, ax[3] || 0,'look') };
 }
-const firstPad = () => [...(navigator.getGamepads?.() || [])].find(p => p && p.connected !== false && p.buttons?.length);
+export const firstPad = () => [...(globalThis.navigator?.getGamepads?.() || [])].find(p => p && p.connected !== false && p.buttons?.length);
 
 // The keys a pad frame holds down during play, as a set of codes.
 export function playKeys(pad, { move, keys = {}, buttons } = {}) {
   const codes = new Set(), dirs = MOVES[move];
   if (dirs) {
     const { x, y } = pad.left, h = pad.held;
-    if (h.up || y < -DEAD) codes.add(dirs.up); if (h.down || y > DEAD) codes.add(dirs.down);
-    if (h.left || x < -DEAD) codes.add(dirs.left); if (h.right || x > DEAD) codes.add(dirs.right);
+    if (h.up || y <= -DEAD) codes.add(dirs.up); if (h.down || y >= DEAD) codes.add(dirs.down);
+    if (h.left || x <= -DEAD) codes.add(dirs.left); if (h.right || x >= DEAD) codes.add(dirs.right);
   }
   for (const [name, entry] of Object.entries(keys)) {
     if (buttons && (name === 'a' || DIRS.includes(name))) continue;   // those work the HUD
@@ -112,7 +138,8 @@ export function nextTarget(from, all, dx, dy) {
 // The main button, else the biggest one (a menu's big choices beat its tabs
 // and step bars), else anything: a link first in line is usually "leave".
 const area = n => { const r = n.getBoundingClientRect(); return r.width * r.height; };
-const firstTarget = all => all.find(n => n.matches('.pk-btn--primary, .pana-primary, [autofocus]'))
+const firstTarget = all => all.find(n => n.matches('[data-room-start], #start, #play'))
+  || all.find(n => n.matches('.pk-btn--primary, .pana-primary, [autofocus]'))
   || all.filter(n => n.matches('button')).reduce((best, n) => (!best || area(n) > area(best) ? n : best), null) || all[0];
 const clearMark = () => document.querySelectorAll('.pana-pad-focus').forEach(n => n.classList.remove('pana-pad-focus'));
 function focusTarget(node) {
@@ -155,7 +182,7 @@ function menuStep(scope, dx, dy) {
 function menuPress(scope) {
   const all = targets(scope), now = document.activeElement;
   if (!all.includes(now)) { focusTarget(startTarget(scope, all)); return; }
-  if (!now.matches('input[type=range], input[type=text], input:not([type]), textarea, select')) now.click();
+  if (!now.matches('input[type=range], input[type=text], input:not([type]), textarea, select')) {now.click();if(getSettings().padVibration)testVibration();}
 }
 function menuBack(scope) {
   if (scope.matches('dialog')) { sendKey('keydown', 'Escape', scope); if (scope.open && !scope.classList.contains('pana-menu')) scope.close?.(); return; }
@@ -196,7 +223,13 @@ export function padLook(fn) { lookers.add(fn); return () => lookers.delete(fn); 
 
 // ---------- the loop ----------
 
-let before = null, keysDown = new Set(), repeatAt = 0, lastDir = '', lastScope = null, untouched = false, last = 0, running = false;
+let before = null, beforeAxes = null, keysDown = new Set(), repeatAt = 0, lastDir = '', lastScope = null, untouched = false, last = 0, running = false,suspended=false,promptNode=null;
+function showPrompts(scope){
+  if(!promptNode){promptNode=document.createElement('div');promptNode.className='pana-pad-prompts';promptNode.setAttribute('aria-label','Controles del mando');document.body.append(promptNode);}
+  const state=inputState();promptNode.hidden=!!scope||state.device!=='gamepad'||!getSettings().hints;
+  const signature=JSON.stringify([padHelp(),state.family]);if(promptNode.dataset.signature===signature)return;promptNode.dataset.signature=signature;
+  promptNode.replaceChildren(...padHelp().map(([key,label])=>{const row=document.createElement('span'),cap=document.createElement('kbd');cap.dataset.padKey='';cap.textContent=formatPadLabel(key);row.append(cap,document.createTextNode(label));return row;}));
+}
 function holdKeys(codes) {
   for (const code of keysDown) if (!codes.has(code)) sendKey('keyup', code);
   for (const code of codes) if (!keysDown.has(code)) sendKey('keydown', code);
@@ -214,7 +247,8 @@ function toast(text) {
 }
 
 function menu(scope, pad, now, edge, hud) {
-  const held = pad.held, x = pad.left.x || (held.right - held.left), y = pad.left.y || (held.down - held.up);
+  const held = pad.held, raw=firstPad(), nav=readPad(raw,{...getSettings(),padMoveSensitivity:1,padCurve:'lineal'});
+  const x = nav.left.x || (held.right - held.left), y = nav.left.y || (held.down - held.up);
   // A new menu on screen gets the focus on its main button, and keeps
   // following it (a start button enabled late) until the player moves.
   if (!hud && scope !== lastScope) untouched = !targets(scope).includes(document.activeElement);
@@ -235,10 +269,24 @@ function menu(scope, pad, now, edge, hud) {
 
 function frame(now) {
   const dt = Math.min(.1, (now - last) / 1000); last = now;
-  const pad = readPad(firstPad());
-  if (!pad) { release(); before = null; running = false; return; }
+  const raw=firstPad(),pad = readPad(raw);
+  if (!pad) { release(); before = null; beforeAxes=null; running = false;connected=false;padId='';activate(lastPointer);publishInput(true);if(promptNode)promptNode.hidden=true;return; }
+  if(!connected||padId!==(raw.id||'')){connected=true;padId=raw.id||'';publishInput(true);}
+  if(suspended||document.hidden){release();before=null;requestAnimationFrame(frame);return;}
   const was = before?.held || {}, edge = name => pad.held[name] && !was[name];
+  // Measure physical changes, not reshaped values: changing a slider must not
+  // make a stationary controller steal the active device from the mouse.
+  const moved=(raw.axes||[]).some((v,i)=>Math.abs(v)>Math.max(.12,getSettings().padDeadzone+.04)&&Math.abs(v-(beforeAxes?.[i]||0))>.04);
+  beforeAxes=Array.from(raw.axes||[]);
+  if(moved||NAMES.some(edge))activate('gamepad');
   const scope = menuScope();
+  showPrompts(scope);
+
+  const testing=scope?.querySelector('[data-pad-test-active]');
+  if(testing){
+    release(); if(edge('b')||edge('start'))testing.click();
+    before=pad;lastScope=scope;requestAnimationFrame(frame);return;
+  }
 
   if (edge('start')) {
     const open = [...document.querySelectorAll('dialog[open]')].at(-1);
@@ -248,7 +296,7 @@ function frame(now) {
     else sendKey('keydown', 'Escape', open || document.body);   // createGameMenu's Esc
   } else if (scope) {
     release();
-    menu(scope, pad, now, edge, false);
+    if(detected==='gamepad')menu(scope, pad, now, edge, false);
   } else {
     if (setup.buttons) menu(document.body, pad, now, edge, true);
     else { lastDir = ''; clearMark(); }
@@ -260,8 +308,8 @@ function frame(now) {
       if ((x || y) && lookers.size) for (const fn of lookers) fn(x, y, dt);
       if (setup.cursor) {
         if (x || y) {
-          cursorX = Math.max(0, Math.min(innerWidth - 1, cursorX + x * Math.abs(x) * CURSOR_SPEED * dt));
-          cursorY = Math.max(0, Math.min(innerHeight - 1, cursorY + y * Math.abs(y) * CURSOR_SPEED * dt));
+          cursorX = Math.max(0, Math.min(innerWidth - 1, cursorX + x * CURSOR_SPEED * getSettings().padCursorSpeed * dt));
+          cursorY = Math.max(0, Math.min(innerHeight - 1, cursorY + y * CURSOR_SPEED * getSettings().padCursorSpeed * dt));
           showCursor(now); pointer('pointermove', clicking ? 1 : 0);
         }
         if (pad.held.rt !== clicking) { clicking = pad.held.rt; showCursor(now); pointer(clicking ? 'pointerdown' : 'pointerup', clicking ? 1 : 0); }
@@ -277,11 +325,18 @@ function start() {
   running = true; last = performance.now(); requestAnimationFrame(frame);
 }
 if (globalThis.document) {
-  addEventListener('gamepadconnected', () => { toast('Mando conectado'); start(); });
+  onSettings(()=>publishInput(true));
+  addEventListener('gamepadconnected', () => {
+    const pad=firstPad(); connected=!!pad;padId=pad?.id||'';
+    toast('Mando conectado');activate('gamepad');publishInput(true);start();
+  });
   addEventListener('gamepaddisconnected', () => { if (!firstPad()) toast('Mando desconectado'); });
-  addEventListener('blur', release);
+  addEventListener('blur', ()=>{suspended=true;release();});
+  addEventListener('focus', ()=>{suspended=false;if(firstPad())start();});
   // The mouse takes over from the pad's highlight.
-  addEventListener('pointerdown', e => { if (e.isTrusted) clearMark(); }, true);
+  addEventListener('pointerdown', e => { if (e.isTrusted) {clearMark();lastPointer=e.pointerType==='touch'?'touch':'keyboard';activate(lastPointer);} }, true);
+  addEventListener('pointermove', e=>{if(e.isTrusted&&e.pointerType==='mouse'&&Math.hypot(e.movementX,e.movementY)>3){lastPointer='keyboard';activate('keyboard');}},true);
+  addEventListener('keydown', e=>{if(e.isTrusted&&!e.repeat){clearMark();lastPointer='keyboard';activate('keyboard');}},true);
   // A pad connected before the page loaded is listed once the page sees a press.
   if (firstPad()) start();
 }
