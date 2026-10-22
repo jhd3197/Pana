@@ -254,6 +254,8 @@ export function createTransformGates({ race, sound, track }) {
     // the car into a hop so the change happens mid-air (a trick still pays
     // there); on the water a drift charges a wake turbo faster than on asphalt.
     step(c, dt) {
+      // A plane in a corridor is held first, so even a hard shove cannot throw it out of the gate.
+      if (c.inCorridor) holdCorridor(c, track());
       const gate = gateOf(c), inside = !!gate;
       if (inside !== !!c.inGate) {
         // Touching down off a flight pays a short turbo.
@@ -262,6 +264,7 @@ export function createTransformGates({ race, sound, track }) {
         if (c.onGround && !c.done) { c.vy = inside ? HOP : HOP * 0.7; c.onGround = false; c.airTime = 0; c.hopping = false; }
       }
       if (c.boat && c.drift) c.driftT += dt * WAKE_CHARGE;
+      c.inCorridor = !!(gate?.fly && gate.corridor);
       // Boats on open water: solid hulls, and wakes that throw you up.
       const t = track();
       if (!c.boat || !t.openWater || !t.waterObstacles?.length) return;
@@ -295,7 +298,7 @@ export function createTransformGates({ race, sound, track }) {
       }
       if (c.boat || c.plane) c.vessel = c.plane ? 'plane' : 'boat';
       // The plane climbs off the lip, flies over the road and settles at the end.
-      const lift = flying ? FLY_LIFT * smooth(Math.min(1, alongGate(c, gate) / FLY_RAMP)) * smooth(Math.min(1, (gate.len - alongGate(c, gate)) / FLY_RAMP)) : 0;
+      const lift = flying ? (gate.lift ?? FLY_LIFT) * smooth(Math.min(1, alongGate(c, gate) / FLY_RAMP)) * smooth(Math.min(1, (gate.len - alongGate(c, gate)) / FLY_RAMP)) : 0;
       c.flyLift = (c.flyLift || 0) + (lift - (c.flyLift || 0)) * Math.min(1, dt * 6);
       if (c.flyLift > 0.01) c.car.root.position.y += c.flyLift; else c.flyLift = 0;
       const want = c.boat || c.plane ? 1 : 0;
@@ -326,6 +329,20 @@ export function createTransformGates({ race, sound, track }) {
 }
 
 const smooth = t => t * t * (3 - 2 * t);
+
+// A `corridor` flight gate runs over nothing (Galipán's loop over Caracas):
+// an invisible wall keeps the plane over its route instead of dropping it,
+// taking away the outward speed and a little of the rest.
+const CORRIDOR_EDGE = 1.2, CORRIDOR_SCRUB = 0.985;
+function holdCorridor(c, T) {
+  const off = Math.abs(T.offsetOf(c.x, c.z, c.y)), max = T.HW - CORRIDOR_EDGE;
+  if (off <= max) return;
+  const p = T.pointAt(T.paramOf(c.x, c.z, c.y)), dx = c.x - p.x, dz = c.z - p.y, d = Math.hypot(dx, dz) || 1;
+  c.x = p.x + dx / d * max; c.z = p.y + dz / d * max;
+  const out = (c.vx * dx + c.vz * dz) / d;
+  if (out > 0) { c.vx -= out * dx / d; c.vz -= out * dz / d; }
+  c.vx *= CORRIDOR_SCRUB; c.vz *= CORRIDOR_SCRUB;
+}
 
 // Overshoots past 1 and settles back: the lancha "pops" up.
 function backOut(k) {

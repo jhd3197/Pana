@@ -1,9 +1,10 @@
 import { menuClick } from './menu-helpers.js';
-// npm start, then node this file. Proves Galipán's flight gate off the
-// mirador: a car that drives into it becomes an avioneta (car shrunk, plane
-// with its pana shown, no water sheet), flies well over the road while the
-// road stays the driving surface, the chase camera rises with it, and past
-// the end it lands as a car again with a touchdown turbo.
+// npm start, then node this file. Proves Galipán's flight over Caracas: out
+// of el cañón (rock walls, no water sheet) a car becomes an avioneta (car
+// shrunk, plane with its pana shown), flies its route far above the city
+// with the chase camera on it, an invisible wall holds it in the corridor,
+// gold rings mark the line, and past the end it lands as a car again on the
+// girasoles terrace with a touchdown turbo.
 import assert from 'node:assert/strict';
 import { createRequire } from 'node:module';
 import { mkdir } from 'node:fs/promises';
@@ -27,10 +28,10 @@ try {
   await page.waitForFunction(() => getGates()?.runs.length === 1, null, { timeout: 60000 });
 
   const scenery = await page.evaluate(() => {
-    let water = 0; getActiveTrack().group.traverse(o => { if (o.name === 'transform-water') water++; });
-    return { runs: getGates().runs.length, fly: !!getGates().runs[0].fly, water };
+    let water = 0, rings = 0; getActiveTrack().group.traverse(o => { if (o.name === 'transform-water') water++; if (o.name === 'flight-ring') rings++; });
+    return { runs: getGates().runs.length, fly: !!getGates().runs[0].fly, corridor: !!getGates().runs[0].corridor, water, rings };
   });
-  assert.deepEqual(scenery, { runs: 1, fly: true, water: 0 }, `Galipán has one flight gate and no water sheet ${JSON.stringify(scenery)}`);
+  assert.deepEqual(scenery, { runs: 1, fly: true, corridor: true, water: 0, rings: 5 }, `Galipán has one flight gate over Caracas, five rings and no water sheet ${JSON.stringify(scenery)}`);
 
   // The player drives itself (?auto) into the gate, then halfway along it.
   const flight = await page.evaluate(() => {
@@ -44,17 +45,23 @@ try {
     for (; frames < 240 && !p.plane; frames++) { updateRace(1 / 60); presentRace(1 / 60); }
     const mid = run.s0 + run.len / 2;
     for (let i = 0; i < 600 && (T.paramOf(p.x, p.z, p.y) - mid + T.TOTAL) % T.TOTAL > run.len; i++) { updateRace(1 / 60); presentRace(1 / 60); }
-    const plane = p.car.plane, road = T.groundAt(p.x, p.z);
+    const plane = p.car.plane, s = T.paramOf(p.x, p.z, p.y), road = T.heightAtS(s), below = T.terrainAt(p.x, p.z);
+    // Shove it sideways: the corridor wall holds it over the route.
+    const n = { x: -Math.cos(p.h), z: Math.sin(p.h) };
+    const here = T.pointAt(s); p.x = here.x + n.x * (T.HW + 0.5); p.z = here.y + n.z * (T.HW + 0.5); p.vx += n.x * 30; p.vz += n.z * 30;
+    for (let i = 0; i < 3; i++) { updateRace(1 / 60); presentRace(1 / 60); }
+    const held = Math.abs(T.offsetOf(p.x, p.z, p.y)) <= T.HW, still = !!p.plane;
     return { plane: !!p.plane, frames, morph: p.morph, planeVisible: !!plane?.group.visible, pana: !!plane?.pana, carVisible: p.car.chassis.visible,
-      lift: p.flyLift, drawnOver: p.car.root.position.y - road, carOver: p.y - road, cameraOver: race.camera.position.y - road, speed: p.vf, run: { s0: run.s0, len: run.len } };
+      lift: p.flyLift, overCity: road - below, carOver: p.y - road, cameraOver: race.camera.position.y - road, held, still, speed: p.vf, run: { s0: run.s0, len: run.len } };
   });
   await page.evaluate(() => renderer.render(race.scene, race.camera));
   await page.screenshot({ path: join(output, 'flight-avioneta.png') });
-  assert.ok(flight.plane && flight.frames < 240, `driving off the mirador makes an avioneta ${JSON.stringify(flight)}`);
+  assert.ok(flight.plane && flight.frames < 240, `driving off the lip makes an avioneta ${JSON.stringify(flight)}`);
   assert.ok(flight.morph > 0.95 && flight.planeVisible && flight.pana && !flight.carVisible, `the plane with its pana takes over from the car ${JSON.stringify(flight)}`);
-  assert.ok(flight.lift > 10 && flight.drawnOver > 10, `halfway along it flies well over the road ${JSON.stringify(flight)}`);
-  assert.ok(flight.carOver < 3, `the road stays the driving surface ${JSON.stringify(flight)}`);
-  assert.ok(flight.cameraOver > flight.drawnOver, `the chase camera rises with the plane ${JSON.stringify(flight)}`);
+  assert.ok(flight.overCity > 150, `halfway along it flies far above the city ${JSON.stringify(flight)}`);
+  assert.ok(Math.abs(flight.carOver) < 3, `the route stays the flying surface ${JSON.stringify(flight)}`);
+  assert.ok(flight.cameraOver > flight.lift, `the chase camera rides with the plane ${JSON.stringify(flight)}`);
+  assert.ok(flight.held && flight.still, `the corridor wall holds a plane shoved sideways ${JSON.stringify(flight)}`);
 
   // Keep flying: past the end it lands as a car with a touchdown turbo.
   const landing = await page.evaluate(() => {
@@ -68,5 +75,5 @@ try {
   assert.ok(landing.morph < 0.05 && !landing.planeVisible && landing.carVisible && landing.lift < 0.5, `the car comes back on the road ${JSON.stringify(landing)}`);
   assert.ok(landing.turbo > 0.5, `touching down pays a turbo ${JSON.stringify(landing)}`);
   assert.deepEqual(errors, []);
-  console.log('PASS derrape flight gate: avioneta off the mirador, flies over the road, camera follows, lands with a turbo.');
+  console.log('PASS derrape flight gate: cañón, avioneta over Caracas through the rings, corridor wall, lands with a turbo.');
 } finally { await browser.close(); }

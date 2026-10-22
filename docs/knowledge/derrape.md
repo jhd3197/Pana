@@ -122,8 +122,15 @@ lobby (`derrape-menu.md`), and its own Colyseus room (`derrape-online.md`).
   to `car.root` in `sync` and to the chase camera's height in `followCam`);
   the road stays the driving surface, so controls, AI and online play are
   unchanged. No water sheet, no skid marks or drift smoke under the plane;
-  touching down pays a 1.2 s turbo (`step`, local cars only). Galipán flies
-  off the mirador down the first switchbacks of the bajada (about 225 m).
+  touching down pays a 1.2 s turbo (`step`, local cars only). A gate's
+  `lift` overrides the 16 m. A `corridor` gate runs over nothing: its route
+  is an invisible road in the air (the layout draws no surface and shapes no
+  ground under segment 'a'), and `holdCorridor` keeps the plane within
+  HW − 1.2 m, applied before the gate test so a shove cannot throw it out.
+  Galipán's: out of the Boca de Tigre hairpin el cañón (segment 'c', rock
+  walls of flat-shaded blobs) cuts down to the cliff's lip, then the planes
+  fly a ~600 m loop out over Caracas (lift 3, five gold `flight-ring`s)
+  back onto the girasoles terrace; the old girasoles stretch is gone.
   Proof: `tests/flight-gates.browser.js`. A car in its spawn or rescue phase
   draws translucent (`isGhost`), the plane too: drop a `shots` run well
   before the gate (`--at gate-160 --shots 14`) to see it solid.

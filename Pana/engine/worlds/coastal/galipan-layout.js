@@ -5,14 +5,19 @@ export const MAP = {
   seed: 1567,
   area: { x0: -440, z0: -440, size: 880 },
   // Road control points: [x, y, z, segment, half-width]. Heights are smoothed along the lap.
-  // p pueblito (cobbles), m mirador, b bajada del bosque, q Boca de Tigre, g girasoles, s subida
+  // p pueblito (cobbles), m mirador, b bajada del bosque, q Boca de Tigre, c el cañón, a the flight over
+  // Caracas (no road drawn, no ground shaped: Derrape flies it as an avioneta), g girasoles, s subida
   road: [
     [-150, 134, -204, 'p', 6.0], [-60, 136, -204, 'p', 6.0], [30, 138, -200, 'p', 6.0], [110, 140, -196, 'p', 6.0], [176, 141, -204, 'm', 6.0],
     [236, 141, -214, 'm', 6.0], [284, 140, -192, 'm', 6.0], [296, 139, -152, 'm', 6.0], [276, 137, -118, 'm', 6.0], [232, 132, -106, 'b', 5.5], [184, 127, -118, 'b', 5.5],
     [148, 122, -98, 'b', 5.5], [160, 117, -62, 'b', 5.5], [210, 112, -44, 'b', 5.5], [246, 108, -14, 'b', 5.5], [234, 104, 20, 'b', 5.5], [190, 100, 30, 'b', 5.5],
     [140, 96, 26, 'b', 5.5], [110, 93, 44, 'b', 5.5], [96, 91, 70, 'q', 6.0], [80, 90.5, 98, 'q', 6.0], [50, 90, 108, 'q', 6.0], [24, 90, 92, 'q', 6.0],
-    [18, 90, 64, 'q', 6.0], [0, 90, 48, 'q', 6.0], [-30, 90, 70, 'g', 5.5], [-46, 90, 120, 'g', 5.5], [-60, 89.5, 176, 'g', 5.5], [-96, 89.5, 222, 'g', 5.5],
-    [-150, 89.5, 246, 'g', 5.5], [-206, 90, 238, 'g', 5.5], [-256, 92.0, 210, 's', 6.0], [-300, 95.6, 172, 's', 6.0], [-290, 99.3, 128, 's', 6.0], [-236, 102.9, 110, 's', 6.0],
+    [18, 90, 64, 'q', 6.0], [0, 90, 48, 'q', 6.0],
+    // El cañón: out of the Boca de Tigre hairpin the road dives into a cut down to the cliff's lip.
+    [-30, 89, 72, 'c', 6.0], [-28, 86, 120, 'c', 6.0], [-6, 83, 172, 'c', 6.0], [22, 80, 222, 'c', 6.0], [40, 78, 262, 'c', 6.0],
+    // Off the lip and out over Caracas, a loop to the west and back onto the girasoles terrace.
+    [52, 84, 300, 'a', 6.0], [50, 95, 345, 'a', 6.0], [20, 104, 390, 'a', 6.0], [-50, 108, 416, 'a', 6.0], [-130, 106, 404, 'a', 6.0],
+    [-190, 100, 364, 'a', 6.0], [-218, 95, 316, 'a', 6.0], [-216, 92, 276, 'a', 6.0], [-206, 90, 238, 'g', 5.5], [-256, 92.0, 210, 's', 6.0], [-300, 95.6, 172, 's', 6.0], [-290, 99.3, 128, 's', 6.0], [-236, 102.9, 110, 's', 6.0],
     [-212, 106.5, 72, 's', 6.0], [-246, 110.2, 38, 's', 6.0], [-300, 113.8, 20, 's', 6.0], [-330, 117.5, -24, 's', 6.0], [-318, 121.1, -80, 's', 6.0], [-276, 124.7, -112, 's', 6.0],
     [-246, 128.4, -150, 's', 6.0], [-266, 132.0, -184, 's', 6.0], [-230, 132, -200, 'p', 6.0],
   ],
@@ -107,7 +112,8 @@ export function createLayout() {
   const farH = (x, z) => Math.max(CITY.y - 4, 120 + 30 * noise(x * 0.6, z * 0.6) + crest(x, z) + drop(x, z) + 60 * sstep(0, 1, -edgeOf(x, z) / 400) * Math.max(0, noise(x * 0.3, z * 0.3)));
   const CG = 8, NG = Math.round(SIZE / CG) + 1, HG = new Float32Array(NG * NG);
   {
-    const S = []; for (let i = 0; i < NR; i += 6) S.push([RP[i].x, RP[i].z, roadY[i]]);
+    // The flight over Caracas ('a') floats over the drop: it never pulls the ground up.
+    const S = []; for (let i = 0; i < NR; i += 6) if (SEG[i] !== 'a') S.push([RP[i].x, RP[i].z, roadY[i]]);
     for (let gz = 0; gz < NG; gz++) for (let gx = 0; gx < NG; gx++) {
       const x = X0 + gx * CG, z = Z0 + gz * CG; let w = 0, a = 0;
       for (const [sx, sz, sy] of S) { const q = (x - sx) ** 2 + (z - sz) ** 2 + 40; const ww = 1 / (q * q); w += ww; a += ww * sy; }
@@ -126,14 +132,15 @@ export function createLayout() {
   function terrainH(x, z) {
     let h = gridH(x, z);
     const r = sampleR(RR, x, z);
-    if (r.i >= 0) {
+    const shaped = r.i >= 0 && SEG[r.i] !== 'a';
+    if (shaped) {
       const f = roadFrame(r.i), lat = (x - f.p.x) * f.n.x + (z - f.p.z) * f.n.z, hw = lat >= 0 ? hwR[r.i] : hwL[r.i], cl = clamp(lat, -hwL[r.i], hwR[r.i]);
       const w = 1 - sstep(hw + 1, hw + 12, r.dist);
       if (w > 0) h = lerp(h, roadY[r.i] + bank[r.i] * cl - 0.15, w);
     }
     for (const P of PADS) { const dd = Math.hypot(x - P.x, z - P.z) - P.r; if (dd < 8) h = lerp(P.y, h, sstep(0, 8, dd)); }
     // Nothing natural rises through the driving surface.
-    if (r.i >= 0 && r.dist < 10) h = Math.min(h, roadY[r.i] - 0.2);
+    if (shaped && r.dist < 10) h = Math.min(h, roadY[r.i] - 0.2);
     return h;
   }
   const groundH = (x, z) => (inArea(x, z, 4) ? terrainH(x, z) : farH(x, z));

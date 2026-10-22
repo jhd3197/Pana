@@ -12,10 +12,11 @@ becomes the GitHub release's notes.
   casi a la vez, 5 segundos de pista mojada y resbalosa, y a cada uno se le
   cae el ítem que tenía en la mano. Ves la lluvia en tu pantalla cuando te
   toca a ti, en vez de una nube sobre cada carro.
-- **En Derrape, Galipán ahora también se corre por el aire.** En el borde
-  del mirador tu carro se vuelve avioneta y vuela sobre las primeras curvas
-  de la bajada con los mismos controles; al aterrizar te da un turbo. Tierra,
-  agua y aire en la misma carrera.
+- **En Derrape, Galipán ahora también se corre por el aire.** Saliendo de
+  Boca de Tigre bajas por un cañón de roca hasta el borde del cerro, tu
+  carro se vuelve avioneta y das una vuelta sobre Caracas pasando por aros
+  dorados, con los mismos controles, hasta aterrizar en la terraza de los
+  girasoles con un turbo. Tierra, agua y aire en la misma carrera.
 - **Nuevo juego: Parapente. Salta del Ávila con tus panas y vuela sobre Galipán.**
   Pasa las cinco balizas (la Cresta, el Pueblito, el Mirador, el Bosque y
   los Girasoles), sube en las térmicas donde dan vueltas los zamuros,

@@ -168,7 +168,8 @@ export function createWorld(scene, layout, roadDistance) {
   }
   const COBBLE = new THREE.MeshStandardMaterial({ map: cobbles(false), emissiveMap: cobbles(true), emissive: col('#ffffff'), emissiveIntensity: 0.7, roughness: 0.85, side: THREE.DoubleSide, polygonOffset: true, polygonOffsetFactor: -2 });
   const BLOCKS = new THREE.MeshStandardMaterial({ map: blocks(false), emissiveMap: blocks(true), emissive: col('#ffffff'), emissiveIntensity: 0.7, roughness: 0.9, side: THREE.DoubleSide, polygonOffset: true, polygonOffsetFactor: -2 });
-  runs(i => (SEG[i] === 'p' || SEG[i] === 'q' ? 'c' : 'b'), (k, list) => stripMesh(list.map(i => ({ a: roadAt(i, -hwL[i], 0.12), b: roadAt(i, hwR[i], 0.12) })), k === 'c' ? COBBLE : BLOCKS, k === 'c' ? 5 : 8));
+  // No surface over Caracas ('a'): that stretch is flown.
+  runs(i => (SEG[i] === 'a' ? 'a' : SEG[i] === 'p' || SEG[i] === 'q' ? 'c' : 'b'), (k, list) => k !== 'a' && stripMesh(list.map(i => ({ a: roadAt(i, -hwL[i], 0.12), b: roadAt(i, hwR[i], 0.12) })), k === 'c' ? COBBLE : BLOCKS, k === 'c' ? 5 : 8));
 
   /* ---------------- instance buffers ---------------- */
   const _bx = new THREE.Vector3(), _bz = new THREE.Vector3(), _bm = new THREE.Matrix4();
@@ -458,9 +459,22 @@ export function createWorld(scene, layout, roadDistance) {
     }
   }
 
+  /* ---------------- el cañón: jagged rock walls either side of the cut down to the lip ---------------- */
+  {
+    const ROCK = ['#6e5a48', '#7d6652', '#5b4a3c', '#86705a'], e = new THREE.Euler();
+    for (let i = 0; i < NR; i += 2) {
+      if (SEG[i] !== 'c') continue;
+      for (const side of [-1, 1]) {
+        const p = roadAt(i, side * (lateralHW(i, side) + rr(2.2, 4)), 0), tall = rr(9, 16);
+        p.y = roadY[i] - 1 + tall * 0.45;
+        push(inst.blob, p, new THREE.Quaternion().setFromEuler(e.set(rr(-0.2, 0.2), rand() * TAU, rr(-0.15, 0.15))), S.set(rr(2.6, 4.2), tall * 0.55, rr(2.6, 4.2)), col(pick(ROCK)));
+      }
+    }
+  }
+
   /* ---------------- the mountain road: reflector posts and street lamps keep the line readable ---------------- */
   {
-    const MTN = { b: 1, s: 1, g: 1, m: 1, q: 1 };
+    const MTN = { b: 1, s: 1, g: 1, m: 1, q: 1, c: 1 };
     for (const side of [-1, 1]) for (let i = 0; i < NR; i += 6) {
       if (!MTN[SEG[i]]) continue;
       const f = roadFrame(i), p = roadAt(i, side * (lateralHW(i, side) + 0.8), 0); p.y = Math.min(p.y, groundH(p.x, p.z));
