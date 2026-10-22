@@ -1,11 +1,8 @@
-// The taller (garage shop) UI, laid out like the Taller de Panas showroom:
-// tabs of cards for the body, wheels, engine, spoiler, extras, paint and
-// horn, priced in mangos (the wallet's coins). Hovering a card previews it on the five
-// garage stat bars and its "+2 Vel" pills; clicking something you don't own
-// puts it on the turntable car to try ("Probando …") until you buy it or
-// take it off. Plain DOM: game.js owns the 3D car and the camera.
-import { CATALOG, PAINTS, owns, unlocked, unlockText, trialCost, buyTrial, buy } from './shop.js';
-import { PART_SLOTS, STATS, partById, partsProfile, renderConfig, statPoints, statPills, badge, nivelOf, bandOf, VESSEL_STAT_LABELS, VESSEL_DEFS, VESSEL_SLOTS, vesselTune, vesselById, trackPieces, kitNivel, carNivel, vesselNivel } from './parts.js';
+// The fullscreen Taller follows the prototype's slots and Garaje drawer.
+// Hover previews the model and stats without spending; click buys/equips.
+// game.js owns the 3D car and camera.
+import { CATALOG, PAINTS, owns, unlocked, unlockText, buy } from './shop.js';
+import { PART_SLOTS, STATS, partsProfile, renderConfig, statPoints, statPills, badge, nivelOf, bandOf, VESSEL_STAT_LABELS, VESSEL_DEFS, VESSEL_SLOTS, vesselTune, vesselById, trackPieces, kitNivel, carNivel, vesselNivel } from './parts.js';
 import { composeTune, wheelById } from './wheel-definitions.js';
 import { ICONS } from '/engine/icons.js';
 
@@ -26,24 +23,13 @@ const esc = (text) => String(text).replace(/[&<>"]/g, (ch) => `&#${ch.charCodeAt
 const MANGO = `<span class="mango-symbol" aria-hidden="true">${ICONS.mango}</span>`;
 export const mangos = (n) => `${n} ${n === 1 ? 'mango' : 'mangos'}`;
 
-// A race pays in coins; the taller takes mangos, one for one, plus the
-// podium (and trophy) prize in mangos.
-export function exchangeText(collected, earned, total) {
-  const prize = Math.max(0, earned - collected);
-  return `${collected} ${collected === 1 ? 'moneda' : 'monedas'} → ${mangos(collected)}${prize ? ` · +${mangos(prize)} de premio` : ''} · tienes ${mangos(total)} pa'l taller`;
-}
-
-// The Taller page opens with the panel docked; its close button tucks it
-// away to show the car strip, and "Taller" brings it back. Returns open().
+// The full-screen Taller follows the menu page, without hidden open/close buttons.
 export function dockTaller({ $, taller, sound, resize, onClosed }) {
   const open = () => {
     sound.unlock(); taller.open(); $('shop').hidden = false;
     document.body.classList.add('shop-open'); resize();
   };
-  $('open-shop').onclick = () => { open(); $('shop-close').focus(); };
-  $('shop-close').onclick = () => { $('shop').hidden = true; document.body.classList.remove('shop-open'); $('open-shop').focus(); };
   for (const el of document.querySelectorAll('.mango-symbol')) el.innerHTML = ICONS.mango;
-  $('shop-close').innerHTML = ICONS.close;
   new MutationObserver(() => {
     if (!$('shop').hidden) return;
     taller.close(); document.body.classList.remove('shop-open'); onClosed(); resize();
@@ -62,21 +48,21 @@ export function renderStatBars(root, tune, preview = null, labels = STATS.map(s=
   }).join('');
 }
 
-export function createTaller({ $, wallet, cars, getIndex, selectCar, getWheel, setWheel, trophies, save, refreshCar, onHorn, onTab, sound, previewVessel = () => {}, getTrack = () => null, previewCar = () => {} }) {
+export function createTaller({ $, wallet, cars, getIndex, selectCar, getWheel, setWheel, trophies, save, refreshCar, onHorn, onTab, sound, carThumbnail, previewVessel = () => {}, getTrack = () => null, previewCar = () => {} }) {
   let vehicle = 'car', drawer = false, lastBand=null, wishlist=null;try{wishlist=JSON.parse(localStorage.getItem('carreritas:wishlist'));}catch{}
-  let tab = 'carro', trial = {}, hover = null, trialCar = null;
+  let tab = 'carro', hover = null;
   const vesselSlot = kind => (VESSEL_SLOTS[vehicle] ?? []).some(s => s.id === kind);
-  const vesselParts = () => ({ ...(wallet[vehicle + 'Parts']?.[current(vehicle)] ?? {}), ...Object.fromEntries(Object.entries(trial).filter(([k]) => vesselSlot(k))) });
+  const vesselParts = () => ({ ...(wallet[vehicle + 'Parts']?.[current(vehicle)] ?? {}) });
   const tabs = () => vehicle === 'car' ? TABS : [{ id: 'carro', label: 'Garaje', kinds: [vehicle] }, ...VESSEL_SLOTS[vehicle].map(s => ({ id: s.id, label: s.name, kinds: [s.id] })), ...TABS.slice(-2)];
   const def = () => cars[getIndex()];
   const equippedParts = (car = def()) => ({ ...(wallet.parts[car.id] ?? {}) });
   const equipped = (kind, car = def()) => vesselSlot(kind) ? wallet[vehicle + 'Parts']?.[wallet[vehicle]]?.[kind] ?? 'fabrica' : kind === 'paint' ? wallet.paint[car.id] ?? 'fabrica'
     : kind === 'wheel' ? getWheel() : kind === 'car' ? car.id
       : PART_KINDS.has(kind) ? equippedParts(car)[kind] ?? 'fabrica' : wallet[kind];
-  const current = (kind) => trial[kind] ?? equipped(kind);
+  const current = (kind) => equipped(kind);
   const partsWith = (extra = {}) => {
     const parts = equippedParts();
-    for (const [kind, id] of Object.entries({ ...trial, ...extra })) if (PART_KINDS.has(kind)) parts[kind] = id;
+    for (const [kind, id] of Object.entries(extra)) if (PART_KINDS.has(kind)) parts[kind] = id;
     return parts;
   };
   const tuneFor = (car, wheel, parts) => composeTune(car.tune, wheelById(wheel).profile, partsProfile(parts));
@@ -86,11 +72,8 @@ export function createTaller({ $, wallet, cars, getIndex, selectCar, getWheel, s
     : kind === 'wheel' ? tuneFor(def(), id, partsWith())
       : PART_KINDS.has(kind) ? tuneFor(def(), current('wheel'), partsWith({ [kind]: id })) : null;
 
-  // Trials belong to the selected car; picking another car drops them.
-  const sync = () => { if (trialCar !== def().id) { trial = {}; hover = null; trialCar = def().id; } };
-  // What the turntable shows for a car: equipped plus anything being tried.
+  // The turntable previews hovered parts without changing the equipped kit.
   function look(car) {
-    sync();
     if (car.id !== def().id) {   // a thumbnail of another car: only what it wears
       const parts = equippedParts();
       return { paint: PAINTS.find(p => p.id === equipped('paint'))?.color ?? null, parts, cfg: renderConfig(parts), wheel: getWheel() };
@@ -100,27 +83,13 @@ export function createTaller({ $, wallet, cars, getIndex, selectCar, getWheel, s
   }
 
   function renderStats() {
-    sync();
     const preview = hover ? tuneWith(...hover) : null;
-    renderStatBars($('stats'), baseTune(), preview, VESSEL_STAT_LABELS[vehicle]);
     renderStatBars($('shop-stats'), baseTune(), preview, VESSEL_STAT_LABELS[vehicle]);
     $('shop-title').textContent = {car:'Tu carro',boat:'Tu lancha',air:'Tu avioneta'}[vehicle];
     $('loadout-name').textContent = vehicle === 'car' ? def().name : vesselById(vehicle,current(vehicle)).name;
     $('loadout-count').textContent = vehicle === 'car' ? cars.length : VESSEL_DEFS[vehicle].length;
     $('shop-level').innerHTML = badge(nivelOf(baseTune())) + (preview ? ' → ' + badge(nivelOf(preview)) : '');
     const nextBand=bandOf(nivelOf(baseTune())).letter;if(lastBand&&nextBand!==lastBand)$('shop-level').animate([{transform:'scale(1)'},{transform:'scale(1.2)'},{transform:'scale(1)'}],{duration:350});lastBand=nextBand;
-    renderBuild();
-  }
-
-  // The line under the car's name: what it wears (or tries) beyond stock.
-  function renderBuild() {
-    const build = $('car-build');
-    if (!build) return;
-    const wheel = current('wheel'), parts = partsWith();
-    if(vehicle !== 'car') { $('car-name').textContent = vesselById(vehicle,current(vehicle)).name; build.textContent = VESSEL_SLOTS[vehicle].map(s => CATALOG[s.id].find(p=>p.id===current(s.id))?.name).filter(n=>n && n!=='De fábrica').join(' · ') || 'De fábrica'; return; }
-    const names = [wheel !== 'calle' ? wheelById(wheel).name : null,
-      ...PART_SLOTS.map(({ id }) => parts[id] && parts[id] !== 'fabrica' ? partById(id, parts[id])?.name : null)].filter(Boolean);
-    build.textContent = names.length ? names.join(' · ') : 'De fábrica';
   }
 
   function equip(kind, id) {
@@ -142,7 +111,7 @@ export function createTaller({ $, wallet, cars, getIndex, selectCar, getWheel, s
     hover = null;
     if (kind === 'car') { selectBody(cars.indexOf(item)); render(); return; }
     if (!buy(wallet,kind,item.id,trophies())) { $('loadout-message').textContent = `Te faltan ${mangos(Math.max(0,item.cost-wallet.coins))}`; return; }
-    delete trial[kind]; equip(kind,item.id); save(); sound.pickup(); $('loadout-message').textContent='';
+    equip(kind,item.id); save(); sound.pickup(); $('loadout-message').textContent='';
     render();
     if (VISUAL.has(kind) || vehicle !== 'car') { refreshCar(); showVessel(); }
     if (kind === 'horn') onHorn(current('horn'));
@@ -157,7 +126,6 @@ export function createTaller({ $, wallet, cars, getIndex, selectCar, getWheel, s
     const isCar = kind === 'car', have = isCar || owns(wallet, kind, item.id), open = isCar || unlocked(item, trophies());
     const on = current(kind) === item.id, isEquipped = equipped(kind) === item.id;
     b.setAttribute('aria-pressed', String(on));
-    b.classList.toggle('trying', on && !have);
     b.disabled = !open;
     const tag = !open ? `<small>${esc(unlockText(item))}</small>`
       : isEquipped ? `<em class="tag">${isCar ? 'Tu carro' : 'Equipado'}</em>` : have ? (isCar ? '' : '<em class="tag">Tuyo</em>')
@@ -169,7 +137,7 @@ export function createTaller({ $, wallet, cars, getIndex, selectCar, getWheel, s
     const pills = after && !isEquipped ? statPills(tuneWith(kind, equipped(kind)), after).map(p => `<span class="pill ${p.label === 'Peso' ? 'peso' : p.delta > 0 ? 'up' : 'down'}">${p.delta > 0 ? '+' : ''}${p.delta} ${p.label}</span>`).join('') : '';
     const blurb = SWATCHES.has(kind) ? '' : item.blurb;
     b.innerHTML = `${color ? `<span class="swatch" style="--swatch:${color}"></span>` : ''}<span class="shop-text"><b>${isCar ? `${item.num} · ` : ''}${esc(item.name)}</b>${blurb ? `<small>${esc(blurb)}</small>` : ''}${pills ? `<span class="pills">${pills}</span>` : ''}${tag}</span>`;
-    if(isCar) { const thumb=$('car-lineup').children[cars.indexOf(item)]?.querySelector('img'); if(thumb) b.prepend(thumb.cloneNode()); const chip=document.createElement('span');chip.innerHTML=badge(carNivel(item,current('wheel'),equippedParts())); b.append(chip); }
+    if(isCar) { const thumb=carThumbnail(cars.indexOf(item)); if(thumb) b.prepend(thumb); const chip=document.createElement('span');chip.innerHTML=badge(carNivel(item,current('wheel'),equippedParts())); b.append(chip); }
     if (SWATCHES.has(kind)) b.title = item.name;
     const enter = () => { hover = [kind,item.id]; renderStats(); if(kind==='car') previewCar(cars.indexOf(item)); else if(vehicle!=='car') showVessel(); else if(VISUAL.has(kind)) refreshCar(); };
     const leave = () => { if (hover?.[0] === kind && hover[1] === item.id) { hover = null; renderStats(); refreshCar(); showVessel(); } };
@@ -177,19 +145,6 @@ export function createTaller({ $, wallet, cars, getIndex, selectCar, getWheel, s
     b.addEventListener('pointerleave', leave); b.addEventListener('blur', leave);
     b.onclick = () => pick(kind, item);
     return b;
-  }
-
-  function renderTry() {
-    const bar = $('shop-try'), list = Object.entries(trial);
-    const { missing, cost, short } = trialCost(wallet, list, trophies());
-    bar.hidden = !missing.length;
-    if (!missing.length) return;
-    const names = missing.map(([kind, id]) => (PART_KINDS.has(kind) ? partById(kind, id) : CATALOG[kind].find(i => i.id === id))?.name).join(', ');
-    $('shop-try-text').innerHTML = `Probando <b>${esc(names)}</b>`;
-    const buy = $('shop-buy');
-    buy.disabled = short > 0;
-    buy.innerHTML = short > 0 ? `Te faltan ${mangos(short)}` : `Comprar ${MANGO}${cost}`;
-    buy.setAttribute('aria-label', short > 0 ? `Te faltan ${mangos(short)}` : `Comprar por ${mangos(cost)}`);
   }
 
   function render() {
@@ -213,7 +168,6 @@ export function createTaller({ $, wallet, cars, getIndex, selectCar, getWheel, s
       group.append(h, grid);
       return group;
     }));
-    renderTry();
     renderStats();
     body.scrollTop = scroll;
   }
@@ -253,22 +207,10 @@ export function createTaller({ $, wallet, cars, getIndex, selectCar, getWheel, s
     if(e.key.toLowerCase()==='q')keys[(index+2)%3].click();else if(e.key.toLowerCase()==='e')keys[(index+1)%3].click();else if(e.key.toLowerCase()==='g')setTab('carro');else return;e.preventDefault();
   });
   for (const b of $('loadout-vehicles').querySelectorAll('button')) b.onclick = () => {
-    trial = {}; vehicle = b.dataset.vehicle; tab = 'carro'; drawer = false;
+    vehicle = b.dataset.vehicle; tab = 'carro'; drawer = false;
     for (const other of $('loadout-vehicles').querySelectorAll('button')) other.setAttribute('aria-pressed', String(other === b));
     render(); refreshCar(); showVessel(); onTab('carro');
   };
-  $('shop-buy').onclick = () => {
-    const list = Object.entries(trial);
-    if (!buyTrial(wallet, list, trophies())) return;
-    trial = {};
-    for (const [kind, id] of list) equip(kind, id);
-    save();
-    sound.pickup();
-    render();
-    refreshCar(); showVessel();
-  };
-  $('shop-untry').onclick = () => { trial = {}; render(); refreshCar(); showVessel(); };
-
   const kitEntries=c=>[['car',c.def.id],['wheel',c.wheel??'calle'],['boat',c.cosmetics?.boat??'penero'],['air',c.cosmetics?.air??'zamuro'],...Object.entries(c.cosmetics?.parts??{}),...Object.entries(c.cosmetics?.boatParts??{}),...Object.entries(c.cosmetics?.airParts??{}),['paint',c.cosmetics?.paint??'fabrica'],['horn',c.cosmetics?.horn??'propio']];
   const quoteKit=c=>kitEntries(c).reduce((sum,[kind,id])=>sum+(kind==='car'||owns(wallet,kind,id)?0:CATALOG[kind]?.find(p=>p.id===id)?.cost??0),0);
   return {
@@ -277,9 +219,6 @@ export function createTaller({ $, wallet, cars, getIndex, selectCar, getWheel, s
     copyColors(c){const id=c.cosmetics?.paint??'fabrica';if(!buy(wallet,'paint',id,trophies()))return false;for(const car of cars)wallet.paint[car.id]=id;save();return true;},
     get tab() { return tab; },
     open(kind) { if (kind) setTab(tabs().find(t => t.kinds.includes(kind))?.id ?? tab); else { drawer = false; render(); showVessel(); } },
-    // try an item from outside the taller (an unowned caucho in the strip)
-    tryItem(kind, id) { sync(); trial[kind] = id; render(); refreshCar(); },
-    // Leaving the taller takes off whatever was only being tried.
-    close() { if($('loadout-drawer').open)$('loadout-drawer').close(); const had = Object.keys(trial).length; trial = {}; hover = null; vehicle = 'car'; tab = 'carro'; drawer = false; for(const b of $('loadout-vehicles').querySelectorAll('button')) b.setAttribute('aria-pressed',String(b.dataset.vehicle==='car')); previewVessel('car'); if (had) refreshCar(); },
+    close() { if($('loadout-drawer').open)$('loadout-drawer').close(); hover = null; vehicle = 'car'; tab = 'carro'; drawer = false; for(const b of $('loadout-vehicles').querySelectorAll('button')) b.setAttribute('aria-pressed',String(b.dataset.vehicle==='car')); previewVessel('car'); },
   };
 }

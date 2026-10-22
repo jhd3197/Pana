@@ -27,21 +27,17 @@ writes setup independently.
 WebP files. Original PNGs are local in the sibling `pana-photos/generated`
 folder; they are not needed to serve the game. These are prepared assets,
 not a build step or a new runtime dependency. Circuit thumbnails are 320px;
-the selected/loading illustration is 960px. All 29 files total about 3.2 MB,
-but thumbnail requests are lazy and touch/reduced-motion devices skip the
-four 1600px parallax layers.
+the selected/loading illustration is 960px. Circuit thumbnails load lazily.
+The complete street-race image remains the startup fallback. The unused
+parallax renderer and its four layer images have been removed; `sources.json`
+only lists served artwork. Missing optional map illustrations never gates Play.
+The small route canvas still draws actual track geometry.
 
-The complete street-race image is the initial and failure fallback. The four
-layers have the same canvas and cover transform, and replace it only after
-all decode successfully. Movement follows mouse position without an animation
-loop. Reduced motion immediately restores the complete image. Missing artwork
-never gates Play or loading progress. Map illustrations are thematic previews;
-the small route canvas still draws actual track geometry.
-The initial HTML also shows the complete festival illustration while game
-modules load; `createMenuFlow` removes that shared-kit loading screen when the
-controls, car/wheel thumbnails and compiled garage shaders are ready. The
-`prepared` promise rejects into a visible retry action rather than removing the
-loading screen early. It does not invent a startup percentage. Cup cards use
+The initial HTML shows the festival illustration while modules load.
+`createMenuFlow` removes it after the car thumbnail source and compiled garage
+shaders are ready. The `prepared` promise rejects into a visible retry action
+rather than removing the loading screen early; there is no invented percentage.
+Cup cards use
 four real stage IDs from `cup-definitions.js`, not duplicated route data.
 
 ## Integration traps
@@ -59,10 +55,6 @@ four real stage IDs from `cup-definitions.js`, not duplicated route data.
   garage's WebGL render is skipped while illustrated menu pages cover it.
 - Keep Play in the fixed footer. Ready options and the roster scroll separately
   on short phones, while the primary action remains reachable.
-  The online welcome page also reserves footer space when revisiting Panas.
-- Earlier garage CSS hides `.steps` and positions tools with `bottom` on
-  phones. `menu.css` explicitly restores the step navigation and resets that
-  bottom offset. Scope menu rules so the race HUD is unaffected.
 - Browser suites use `tests/menu-helpers.js` to navigate visible step buttons.
   Do not force clicks on hidden controls or add a debug-only alternate menu.
 
@@ -115,12 +107,11 @@ Existing loading, modes, cup and online suites retain their gameplay assertions.
   the Taller's currency (`exchangeText` in taller.js). The wallet field is
   still `wallet.coins` so saves, cup receipts and rooms stay compatible;
   only player-facing Taller text says mangos.
-- Entering the Taller step opens the panel docked (`openTaller` in
-  `createMenuFlow`, `dockTaller` in taller.js). While `body.shop-open` the
-  car strip and `#open-shop` hide and the info card becomes the showroom
-  title (eyebrow, car name, `#car-build`); the stats render twice, into
-  `#stats` and the panel's `#shop-stats`. Suites that click the strip call
-  `hideTaller` from `tests/menu-helpers.js` first.
+- Entering the Taller page opens the fullscreen loadout. The only build stats
+  are `#shop-stats`. `garageCards` owns an image source for the visible Garaje
+  drawer; no hidden car/wheel strips, duplicate stats, or wheel renderer are
+  constructed. Hovering parts previews without spending; selecting buys/equips.
+  Tests select through Garaje or the visible slot and return with Atrás.
 - Debug pages opened with `?manual` never re-render the garage, so a
   screenshot there shows the first frame; use `?debug` alone to see a change.
 
@@ -137,7 +128,7 @@ sampled at the driver's seat, not the lowest point anywhere on the roof.
 `driver-fit.browser.js` checks every car with three headwear choices and
 stock/lifted wheels, plus garage animation and rigid race batching.
 
-The Taller hides the old bar and settings controls. The circuit summary beside
+Copa retains its navigation; Taller has only the prototype loadout controls. The circuit summary beside
 ¡Vámonos! returns to Copa; gameplay settings remain in the shared lobby/menu.
 The nameplate, Garaje and G open the body drawer. Q/E select car, boat or plane.
 A native dialog supplies Escape and focus containment for part choices.
@@ -161,3 +152,17 @@ The kit review timer is distinct from the race countdown. Choosing ¡Listo!
 keeps the grid visible with a waiting status while the multiplayer load barrier
 settles; only the synchronized race countdown replaces it. A loading error
 closes the grid and restores the loading screen's retry/back controls.
+
+## Retired UI and compatibility
+
+The visible result classification owns finish presentation; the hidden portrait
+podium and its renderer are removed. Cash-in remains a real `cash-scene.js`
+WebGL scene, without CSS coin stacks, mango flights or a painted wooden box.
+Live Taller card/stat styling lives in `loadout.css`; old side-panel positioning,
+welcome-page styling and hidden garage widgets are removed. Loading tips use
+device-neutral actions, and the circuit count comes from the track registry.
+
+Keep `derrape`/old Carreritas profile and ghost migrations, the Playa track alias,
+and old network payload readers. Those preserve saves and reconnects rather than
+present an obsolete interface. Art loaded dynamically by track ID and the hub's
+lazy game card are not unused assets.

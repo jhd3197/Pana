@@ -20,7 +20,7 @@ try{
   });
   await page.goto(`${process.env.PANA_TEST_URL||'http://localhost:8461'}/g/carreritas/?debug&auto&manual`);
   await page.waitForFunction(()=>window.garage?.car,null,{timeout:90000});
-  await page.waitForFunction(()=>[...document.querySelectorAll('.car-choice img')].every(img=>img.naturalWidth>0),null,{timeout:90000});
+  await page.waitForFunction(()=>performance.getEntriesByName('carreritas:garage-ready').length>0,null,{timeout:90000});
   for(let cycle=0;cycle<3;cycle++){
     await page.evaluate(async cycle=>{toGarage();setup.mode='agua';setup.split=cycle>0;setup.mirror=cycle>0;await startRace(0);},cycle);
     for(let stage=0;stage<4;stage++){

@@ -1,13 +1,12 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { CARS } from './cars.js';
-import { WHEEL_DEFINITIONS, wheelById, composeTune } from './wheel-definitions.js';
-import { garageCards, wheelCards, sideScroll } from './garage-cards.js';
-import { createTaller, dockTaller, exchangeText } from './taller.js';
+import { wheelById, composeTune } from './wheel-definitions.js';
+import { garageCards } from './garage-cards.js';
+import { createTaller, dockTaller } from './taller.js';
 import { partsProfile, renderConfig, nivelOf, bandOf } from './parts.js';
 import { studioEnvironment, studioRims, showroomPaint, releaseShowroom } from './garage-stage.js';
 import { garageBloom } from './garage-bloom.js';
-import { owns } from './shop.js';
 import { paintNext, TIPS } from './loading.js';
 import { createMenuFlow } from './menu-flow.js';
 import { setMenuImage, trackArt } from './menu-art.js';
@@ -36,7 +35,6 @@ import { abandonCup, advanceStage, beginStage, createCupSession, cupTrophy, fina
 import { advanceLap, ALL_SECTORS, RESCUE_TIME, OUT_TIME, STUCK_TIME } from './course-rules.js';
 import { createHazards } from './hazards.js';
 import { createMusic, TRACK_STYLE, GARAGE_SONG, RESULTS_SONG, songFor, finishSting } from './music.js';
-import { racerPortrait } from './racer-portrait.js';
 import { batchRacer, repaintCar, addBalloons, setGhost, syncGhostAppearance } from './racer-render.js';
 import { createWaterAmbience } from './water-ambience.js';
 import { padInput, pressed, keyInput, SPLIT_KEYS, wrongWayStep, WRONG_WAY_TIME, lapSplit } from './controls.js';
@@ -108,7 +106,6 @@ const garage = {
   hop: new Spring(),
   honkT: 0,
   t: 0,
-  focus: false,
   glide: 0,
   cars: new Map(),
 };
@@ -188,35 +185,19 @@ function showCar(i) {
   garage.ring.material.color.set(def.color);
 
   document.documentElement.style.setProperty('--car', def.color);
-  $('car-num').textContent = def.num;
-  $('car-of').textContent = `Carro ${garage.index + 1} de ${CARS.length}`;
-  $('car-name').textContent = def.name;
-  $('car-blurb').textContent = def.blurb;
   // Stats bars reflect the car + cauchos + taller parts, from the composed tune.
   taller.renderStats();
-  $('driver-name').textContent = ME.name;
-  $('dots').innerHTML = CARS.map((_, j) => `<span class="${j === garage.index ? 'on' : ''}"></span>`).join('');
-  for (const [j, button] of [...$('car-lineup').children].entries()) {
-    button.setAttribute('aria-pressed', String(j === garage.index));
-    // keep the chosen car in view once 16 cards overflow the strip
-    if (j === garage.index && button.offsetParent) button.scrollIntoView({ block: 'nearest', inline: 'nearest' });
-  }
   net?.pick(garage.index, garage.wheel, raceStyle(garage.index));
   menuFlow?.refresh();
 }
 
-// Step 2: pick the cauchos. Rebuilds the turntable car and the stats bars,
+// Equipping wheels rebuilds the turntable car and stats bars,
 // and persists the choice for the next visit.
 function showWheel(id) {
   const def = wheelById(id);
   garage.wheel = def.id;
   try { localStorage.setItem('carreritas:wheels', def.id); } catch { /* private mode */ }
   if (wallet.wheel !== def.id) { wallet.wheel = def.id; saveWallet(); }
-  $('wheel-name').textContent = def.name;
-  $('wheel-blurb').textContent = def.blurb;
-  for (const [j, button] of [...$('wheel-lineup').children].entries()) {
-    button.setAttribute('aria-pressed', String(WHEEL_DEFINITIONS[j].id === def.id));
-  }
   showCar(garage.index);
 }
 
@@ -238,9 +219,7 @@ function updateGarage(dt) {
   car.chassis.position.y = hop * 0.12 + Math.sin(garage.t * 2) * 0.02;
   car.chassis.rotation.x = -hop * 0.03;
   const d = car.driver;
-  // in close-up the driver turns to look at you through the open window
-  const look = garage.focus ? 0 : Math.sin(garage.t * 0.9);
-  const turnTo = garage.focus ? 1.1 : look * 0.6;
+  const look = Math.sin(garage.t * 0.9), turnTo = look * 0.6;
   d.neck.rotation.y += (turnTo - d.neck.rotation.y) * Math.min(1, dt * 4);
   d.neck.rotation.z = Math.sin(garage.t * 1.7) * 0.08;
   garage.honkT = Math.max(0, garage.honkT - dt);
@@ -253,22 +232,15 @@ function updateGarage(dt) {
   garage.controls.update();
 }
 
-// "Ver piloto": glide up to the driver's open window, then orbit around them.
+// Restore the showroom framing after visiting a part slot.
 const GARAGE_TARGET = new THREE.Vector3(0, 1.5, 0);
 const GARAGE_CAM = new THREE.Vector3(8, 4.5, 9.5);
 function updateGarageCamera(dt) {
   if (garage.glide <= 0) return;
   garage.glide = Math.max(0, garage.glide - dt);
   const k = Math.min(1, dt * 5);
-  if (garage.focus) {
-    const head = garage.car.driver.head.getWorldPosition(new THREE.Vector3());
-    const out = new THREE.Vector3(2.5, -0.12, 0.45).applyAxisAngle(new THREE.Vector3(0, 1, 0), garage.turn.rotation.y);
-    garage.controls.target.lerp(head, k);
-    garage.camera.position.lerp(head.clone().add(out), k);
-  } else {
-    garage.controls.target.lerp(garage.frame?.[1] ?? GARAGE_TARGET, k);
-    garage.camera.position.lerp(garage.frame?.[0] ?? GARAGE_CAM, k);
-  }
+  garage.controls.target.lerp(garage.frame?.[1] ?? GARAGE_TARGET, k);
+  garage.camera.position.lerp(garage.frame?.[0] ?? GARAGE_CAM, k);
 }
 
 // Each taller tab frames the part it sells, with the turntable stopped.
@@ -281,33 +253,12 @@ const TAB_FRAMES = {
   pintura: [V3(11, 3.8, 3.4), V3(0, 1.6, 0)],
 };
 function frameTab(tab) {
-  if (garage.focus) setFocus(false);
   garage.frame = TAB_FRAMES[tab] ?? null;
   garage.glide = 1.4;
 }
 
-function setFocus(on) {
-  garage.focus = on;
-  garage.glide = 1.2;
-  $('cam').classList.toggle('on', on);
-  $('cam').textContent = on ? 'Ver carro' : 'Ver piloto';
-  garage.controls.minDistance = on ? 1.4 : 5;
-  if (on) {
-    garage.spin = false;
-    $('spin').classList.remove('on');
-  }
-}
-
-$('prev').onclick = () => showCar(garage.index - 1);
-$('next').onclick = () => showCar(garage.index + 1);
 $('t-prev').onclick = () => switchTrack(trackIndex - 1);
 $('t-next').onclick = () => switchTrack(trackIndex + 1);
-$('spin').onclick = (e) => {
-  garage.spin = !garage.spin;
-  e.target.classList.toggle('on', garage.spin);
-};
-$('honk').onclick = garageHonk;
-$('cam').onclick = () => setFocus(!garage.focus);
 $('play').onclick = () => {
   sound.unlock();
   if (net && !(setup.split && net.state.players.length < 2)) {   // alone in the room, split screen races here
@@ -407,27 +358,19 @@ const ghostReady = Promise.all([import('./ghost-recorder.js'), import('./ghost-c
 let wallet = profile.wallet;
 function saveWallet() {
   profileStore.save(profile);
-  $('wallet-coins').textContent = wallet.coins;
   $('shop-coins').textContent = wallet.coins;
 }
 const raceStyle = index => cleanCosmetics({paint:wallet.paint[CARS[index].id],horn:wallet.horn,flame:wallet.flame,parts:wallet.parts[CARS[index].id],boat:wallet.boat,boatParts:wallet.boatParts?.[wallet.boat],air:wallet.air,airParts:wallet.airParts?.[wallet.air]});
 const hornFor = c => c.cosmetics.horn !== 'propio' ? c.cosmetics.horn : c.def.horn;
 const flameFor = c => FLAMES.find(f => f.id === c.cosmetics.flame)?.colors ?? FLAMES[0].colors;
 
-// The taller UI (taller.js): tabs of parts, hover stat previews and
-// try-before-buy on the turntable car. Closing it takes off what was only tried.
+// The Taller owns visible part slots, hover previews and direct purchases.
+let cards;
 const taller = createTaller({
-  $, wallet, sound, getTrack: () => TRACKS[trackIndex], previewCar: i => { garage.turn.clear(); garage.car = garageCar(i); garage.turn.add(garage.car.root); }, previewVessel: (kind, id, color) => import('./garage-vessels.js').then(m => m.previewVessel(garage, ME.avatar, kind, id, color)), cars: CARS, getIndex: () => garage.index, selectCar: i => showCar(i),
+  $, wallet, sound, carThumbnail: index => cards?.image(index), getTrack: () => TRACKS[trackIndex], previewCar: i => { garage.turn.clear(); garage.car = garageCar(i); garage.turn.add(garage.car.root); }, previewVessel: (kind, id, color) => import('./garage-vessels.js').then(m => m.previewVessel(garage, ME.avatar, kind, id, color)), cars: CARS, getIndex: () => garage.index, selectCar: i => showCar(i),
   getWheel: () => garage.wheel, setWheel: id => showWheel(id), onTab: frameTab,
   trophies: () => loadTrophies(), save: saveWallet, refreshCar: () => showCar(garage.index), onHorn: garageHonk,
 });
-// The cauchos strip: owned wheels go on at once, others open the taller to try.
-function pickWheel(id) {
-  if (owns(wallet, 'wheel', id)) return showWheel(id);
-  if ($('shop').hidden) $('open-shop').click();
-  taller.open('wheel');
-  taller.tryItem('wheel', id);
-}
 const openShop = dockTaller({ $, taller, sound, resize: () => resize(), onClosed: () => { garage.frame = null; garage.glide = 1.2; } });
 
 function saveSetup() {
@@ -1161,7 +1104,7 @@ const menu = createGameMenu({ pad: { native: true, playing: () => mode === 'race
   onClose() { if (paused) music.resume(); paused = false; acc = 0; clock.getDelta(); },
 });
 $('race').querySelector('.hud-corner').append(menu.createButton({ id: 'pause', label: 'Pausa', className: 'pause-button pk-btn pk-btn--sm' }));
-$('garage').querySelector('.tools').prepend(menu.createButton({ id: 'settings', label: 'Ajustes', className: 'toggle pk-btn pk-btn--sm' }));
+$('garage').querySelector('.bar').append(menu.createButton({ id: 'settings', label: 'Ajustes', className: 'toggle pk-btn pk-btn--sm' }));
 for (const kbd of document.querySelectorAll('#pause kbd, #settings kbd')) kbd.classList.add('pk-kbd');
 
 $('again').onclick = () => {
@@ -2007,14 +1950,11 @@ function finish() {
   race.resultKey = '';
   renderResults(standings(), p);
   $('result').classList.remove('hidden');
-  $('result-coins').textContent = exchangeText(p.coinsCollected || 0, race.earned || 0, wallet.coins);
   race.screens.finish({ player: p, track: T, earned: race.earned || 0, balance: wallet.coins, best: race.bestLap, place, detail: race.rewardDetail });
   $('again').focus({ preventScroll: true });
 }
 
-// Podium (top three, with their car pictures) and the full classification.
-// Rivals keep racing behind the results, so this refreshes as they finish.
-const PODIUM = [['var(--pk-yellow)', 260, 124], ['var(--pk-teal)', 190, 96], ['var(--pk-coral)', 140, 86]];
+// Refresh the visible classification as rivals finish.
 function renderResults(order, player) {
   const session = race.cup?.session;
   const cupFinal = session?.status === 'complete';
@@ -2037,37 +1977,8 @@ function renderResults(order, player) {
   const key = `${cupFinal}:${stageMap?.size || 0}:${displayOrder.map(c => `${c.entrantId || c.netId || c.name}:${c.done}:${c.balloons}:${driftCombo.totalOf(c)}`).join()}`;
   if (key === race.resultKey) return;
   race.resultKey = key;
-  const who = (c) => {
-    if(!c.portrait){
-      const entrant=session?.entrants.find(e=>e.id===(c.entrantId||c.netId));
-      let avatar=entrant?.avatar ?? c.avatar;
-      if(typeof avatar==='string'){try{avatar=JSON.parse(avatar);}catch{avatar=null;}}
-      const model=c.car ?? c.def.build(avatar || ME.avatar,wheelById(entrant?.loadout.wheel||'calle').wheel,renderConfig(entrant?.loadout.parts));
-      if(!c.car)repaintCar(model,c.def.color,PAINTS.find(p=>p.id===entrant?.loadout.paint)?.color??null);
-      c.portrait=racerPortrait(renderer,model);
-      if(!c.car){
-        const geometries=new Set(),materials=new Set();
-        model.root.traverse(o=>{if(o.geometry)geometries.add(o.geometry);for(const m of [].concat(o.material||[]))if(m.userData.ownedMap)materials.add(m);});
-        model.driver.dispose();geometries.forEach(g=>g.dispose());materials.forEach(m=>{m.map.dispose();m.dispose();});
-      }
-    }
-    return `<img src="${c.portrait}" alt="">`;
-  };
-  const podiumOrder = cupFinal
-    ? championshipStandings(session).map(row => race.cars.find(c => (c.entrantId || c.netId) === row.id) || {
-        entrantId: row.id,
-        name: row.name,
-        def: CARS[row.entrant.loadout.car] ?? CARS[0],
-      })
-    : displayOrder;
-  // Second, first, third, like a real podium.
-  $('podium').innerHTML = [1, 0, 2].filter(i => podiumOrder[i]).map(i => {
-    const c = podiumOrder[i], [color, h, w] = PODIUM[i];
-    return `<li style="--c:${color};--h:${h}px;--w:${w}px"><span class="who">${who(c)}</span>`
-      + `<span class="name">${esc(c.name)}</span><b class="place">${i + 1}</b></li>`;
-  }).join('');
   const myId = player?.entrantId || player?.netId || net?.id || LOCAL_PLAYER;
-  // Style is additive flavour: the podium and the order never change, only a
+  // Style is additive flavour: the classification order never changes, only a
   // detail line per scorer and the Rey del Derrape tag for the best one.
   const styleBest = displayOrder.reduce((best, c) => Math.max(best, driftCombo.totalOf(c)), 0);
   const hitsBest = displayOrder.reduce((best, c) => Math.max(best, c.hits || 0), 0);   // El Chocón: most hits (walls, cars, props), 5 or more
@@ -2364,21 +2275,15 @@ for (const event of ['pointerdown', 'wheel', 'keydown']) {
 renderer.domElement.addEventListener('pointermove', event => {
   if (event.buttons) lastGarageInput = performance.now();
 });
-const cards = garageCards(CARS, garageCar, showCar,
+cards = garageCards(CARS, garageCar,
   () => mode === 'garage' && performance.now() - lastGarageInput > 350);
-$('car-lineup').append(cards.fragment);
 cards.ready.catch(error => console.warn('Garage previews unavailable', error));
-const wheelStrip = wheelCards(WHEEL_DEFINITIONS, pickWheel,
-  () => mode === 'garage' && performance.now() - lastGarageInput > 350);
-$('wheel-lineup').append(wheelStrip.fragment);
-sideScroll($('car-lineup'), $('wheel-lineup'));
-wheelStrip.ready.catch(error => console.warn('Wheel previews unavailable', error));
 showWheel(garage.wheel);
 renderSetup();
 saveWallet();
 menuFlow = createMenuFlow({
   tracks: TRACKS, openTaller: openShop, pickTrack: switchTrack, start: () => net ? net.garage(true) : menuFlow.enter('garage'), back: () => net ? net.garage(false) : menuFlow.enter('lobby'),
-  prepared: Promise.all([cards.ready, wheelStrip.ready, renderer.compileAsync(garage.scene, garage.camera)]).then(() => renderer.render(garage.scene, garage.camera)),
+  prepared: Promise.all([cards.ready, renderer.compileAsync(garage.scene, garage.camera)]).then(() => renderer.render(garage.scene, garage.camera)),
   getState: () => {
     const activeMode = net?.state?.mode || setup.mode;
     return { track: TRACKS[trackIndex], trackSummary: $('track-blurb').textContent, car: CARS[garage.index], wheel: wheelById(garage.wheel),

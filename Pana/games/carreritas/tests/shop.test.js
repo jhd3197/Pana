@@ -67,20 +67,15 @@ test('taller parts: modest profiles, cfg patches and clean picks', async () => {
   assert.deepEqual(statPills(chamo, composeTune(chamo, {}, partsProfile({ motor: 'carreras' }))).map(p => `${p.delta} ${p.label}`), ['2 Vel', '2 Acel'], 'the racing engine reads as +2 Vel on the bars');
 });
 
-test('try before you buy: a trial costs nothing until it is bought, all or nothing', async () => {
-  const { trialCost, buyTrial } = await import('../public/shop.js');
-  const w = newWallet();
-  w.coins = 100;
-  const trial = [['motor', 'turbo'], ['rin', 'dorado'], ['aleron', 'ninguno'], ['wheel', 'todoterreno']];
-  assert.deepEqual(trialCost(w, trial, {}).cost, 130, 'free parts cost nothing');
-  assert.equal(trialCost(w, trial, {}).short, 30);
-  assert.equal(buyTrial(w, trial, {}), false);
-  assert.equal(w.coins, 100, 'nothing spent');
-  w.coins = 135;
-  assert.equal(buyTrial(w, trial, {}), true);
-  assert.equal(w.coins, 5);
-  assert.ok(w.owned.includes('motor:turbo') && w.owned.includes('rin:dorado') && w.owned.includes('wheel:todoterreno'));
-  assert.equal(trialCost(w, trial, {}).cost, 0, 'owned now');
+test('direct part purchases keep the first purchase when the next is unaffordable', () => {
+  const w = newWallet(); w.coins = 100;
+  assert.equal(buy(w, 'motor', 'turbo', {}), true);
+  assert.equal(w.coins, 25);
+  const saved = structuredClone(w);
+  assert.equal(buy(w, 'aleron', 'rally', {}), false);
+  assert.deepEqual(w, saved, 'an unaffordable part neither spends nor changes ownership');
+  assert.equal(buy(w, 'motor', 'turbo', {}), true);
+  assert.deepEqual(w, saved, 'equipping an owned part again never charges twice');
 });
 
 test('wallets keep per-car parts and the cauchos; old saves migrate', async () => {

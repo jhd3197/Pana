@@ -137,21 +137,3 @@ export function repaintHex(hex, from, to) {
   const ns = Math.max(0, Math.min(1, ts * (fs ? s / fs : 1)));
   return hslToHex(th, ns, nl);
 }
-
-// Try before you buy: what the trial would cost and what it still needs.
-// trial is [[kind, id], ...]; owned or free items cost nothing.
-export function trialCost(wallet, trial, trophies) {
-  const missing = trial.filter(([kind, id]) => !owns(wallet, kind, id));
-  const cost = missing.reduce((sum, [kind, id]) => sum + (CATALOG[kind]?.find(i => i.id === id)?.cost ?? 0), 0);
-  const locked = missing.some(([kind, id]) => { const item = CATALOG[kind]?.find(i => i.id === id); return !item || !unlocked(item, trophies); });
-  return { missing, cost, short: Math.max(0, cost - wallet.coins), locked };
-}
-
-// Buy everything in a trial at once, or nothing.
-export function buyTrial(wallet, trial, trophies) {
-  const { missing, cost, locked } = trialCost(wallet, trial, trophies);
-  if (locked || cost > wallet.coins) return false;
-  wallet.coins -= cost;
-  for (const [kind, id] of missing) wallet.owned.push(`${kind}:${id}`);
-  return true;
-}

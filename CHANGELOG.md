@@ -8,6 +8,11 @@ becomes the GitHub release's notes.
 
 ## Unreleased
 
+- **Carreritas carga el taller sin construir los menús que ya no se usan.**
+  El garaje conserva el diseño del nuevo taller, con sus vistas 3D y guardados.
+  Quitamos controles y dibujos ocultos, actualizamos los consejos de carga y
+  probamos las compras, los cauchos y los carros desde los controles visibles.
+
 - **Tu pana conserva sus proporciones al cambiar de carro.**
   El asiento ajusta al personaje completo sin encogerle la cabeza ni alargarle
   el cuello. Solo cuentan los accesorios que lleva puestos; cambiar de

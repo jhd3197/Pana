@@ -1,5 +1,60 @@
+/* Shared live Taller cards and stats. */
+.shop-head { display: flex; align-items: center; gap: 10px; padding: 14px 14px 4px 16px; }
+.shop-head h2 { flex: 1; margin: 0; font: 400 24px/1 var(--pk-display); letter-spacing: .5px; color: var(--taller-ink); }
+.shop-wallet { display: flex; align-items: center; gap: 6px; margin: 0; padding: 3px 12px 3px 6px; border-radius: 999px; background: rgba(255, 181, 46, .12); border: 1px solid rgba(255, 181, 46, .35); color: var(--taller-ink); font: 400 19px/1 var(--pk-display); letter-spacing: .5px; font-variant-numeric: tabular-nums; }
+.shop-wallet .mango-symbol { width: 22px; height: 22px; font-size: 22px; }
+.shop-stats { margin: 0; padding: 8px 16px 12px; gap: 6px; }
+.shop-stats div { grid-template-columns: 92px 1fr 22px; gap: 10px; }
+.shop-stats dt { color: var(--taller-muted); font-size: 12px; font-weight: 700; white-space: nowrap; }
+.shop-stats dd { display: grid; grid-template-columns: repeat(10, 1fr); gap: 3px; height: 9px; background: none; overflow: visible; }
+.shop-stats dd i { height: 9px; border-radius: 3px; background: rgba(255, 255, 255, .08); transition: background .2s; }
+.shop-stats dd i.on { background: var(--taller-ink); }
+.shop-stats dd i.up { background: var(--taller-good); }
+.shop-stats dd i.down { background: transparent; box-shadow: inset 0 0 0 1.5px var(--taller-bad); }
+.shop-stats .n { font: 400 14px/1 var(--pk-display); text-align: right; font-variant-numeric: tabular-nums; }
+.shop-stats .n.up { color: var(--taller-good); }
+.shop-stats .n.down { color: var(--taller-bad); }
+.shop-tabs { display: flex; gap: 2px; padding: 0 10px 10px; overflow-x: auto; scrollbar-width: none; border-bottom: 1px solid var(--taller-line); }
+.shop-tabs::-webkit-scrollbar { display: none; }
+.shop-tabs button { flex: 1 0 auto; padding: 8px 6px; border: 0; background: transparent; color: var(--taller-muted); font: 800 12.5px var(--pk-sans); white-space: nowrap; cursor: pointer; }
+.shop-tabs button:hover { color: var(--taller-ink); }
+.shop-tabs button[aria-selected="true"] { background: var(--taller-card-on); color: var(--taller-ink); }
+.shop-body { display: grid; gap: 14px; align-content: start; min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding: 12px; scrollbar-width: thin; }
+.shop h3 { margin: 0 4px; font: 700 11px var(--pk-sans); letter-spacing: .14em; text-transform: uppercase; color: var(--taller-muted); }
+.shop-group { display: grid; gap: 8px; }
+.shop-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.shop-item { display: flex; align-items: flex-start; gap: 8px; min-width: 0; padding: 10px 10px 9px; border: 1.5px solid transparent; border-radius: 14px; background: var(--taller-card); color: var(--taller-ink); font: 700 12px var(--pk-sans); text-align: left; cursor: pointer; transition: background .15s, border-color .15s; }
+.shop-item:hover { background: var(--taller-card-on); }
+.shop-item[aria-pressed="true"] { border-color: var(--taller-accent); }
+
+.shop-item:disabled { opacity: .45; cursor: default; }
+.shop-text { display: grid; gap: 5px; align-content: start; min-width: 0; }
+.shop-item b { font: 400 16px/1.05 var(--pk-display); letter-spacing: .3px; }
+.shop-item small { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; color: var(--taller-muted); font-size: 11.5px; font-weight: 600; line-height: 1.35; }
+.shop-item .tag, .shop-item .price { font-style: normal; font-size: 11.5px; font-weight: 800; }
+.shop-item .tag { color: var(--taller-muted); }
+.shop-item[aria-pressed="true"] .tag { color: var(--taller-accent); }
+.shop-item .price { display: flex; align-items: center; gap: 4px; color: var(--mango); font: 400 14px/1 var(--pk-display); letter-spacing: .3px; }
+.shop-item .price .mango-symbol { width: 15px; height: 15px; font-size: 15px; }
+.shop-item .pills { display: flex; flex-wrap: wrap; gap: 3px; }
+.shop-item .pill { min-width: 0; gap: 0; padding: 2px 6px; border-radius: 99px; font-size: 10.5px; font-weight: 800; background: rgba(255, 255, 255, .07); color: var(--taller-muted); }
+.pill.up { color: var(--taller-good); background: rgba(85, 224, 138, .12); }
+.pill.down { color: var(--taller-bad); background: rgba(255, 90, 110, .12); }
+.pill.peso { color: var(--taller-muted); }
+.shop-item .swatch { flex: none; width: 22px; height: 22px; border-radius: 50%; border: 2px solid rgba(255, 255, 255, .18); background: var(--swatch); }
+.shop-grid.shop-swatches { grid-template-columns: repeat(auto-fill, minmax(84px, 1fr)); gap: 6px; }
+.shop-swatch { align-items: center; padding: 7px; }
+.shop-swatch .shop-text { gap: 2px; }
+.shop-swatch .shop-text b { font: 800 11px var(--pk-sans); letter-spacing: 0; }
+.shop-swatch .price { font-size: 12px; }
+.shop-swatch .swatch { width: 26px; height: 26px; }
+.shop-swatch[aria-pressed="true"] .swatch { border-color: #fff; box-shadow: 0 0 0 2px var(--taller-accent); }
+.shop-btn--ghost { background: transparent; color: var(--taller-ink); border: 1px solid var(--taller-line); font: 800 13px var(--pk-sans); }
+@media (max-width: 899px) { .shop-stats { padding: 4px 14px 8px; gap: 3px; } .shop-stats dd, .shop-stats dd i { height: 7px; } }
+@media (max-width: 760px) and (orientation: landscape) { .shop-stats { display: none; } }
+
 /* Adapted from the user's D · Taller reference. The stage remains live 3D. */
-#shop { --u: min(calc(100vw / 1600),calc((100dvh - 80px) / 900)); --night:var(--pk-night); --ink:var(--hud-ink); --yellow:var(--pk-yellow); --text:var(--pk-text); --muted:var(--pk-muted); --teal:var(--pk-teal); --coral:var(--pk-coral); --display:var(--pk-display); --sans:var(--pk-sans); --liv:var(--pk-game); position:fixed; inset:80px 0 0; width:auto; display:block; background:none; border:0; border-radius:0; box-shadow:none; backdrop-filter:none; pointer-events:none; overflow:hidden; }
+#shop { --u: min(calc(100vw / 1600),calc((100dvh - 80px) / 900)); --night:var(--pk-night); --ink:var(--hud-ink); --yellow:var(--pk-yellow); --text:var(--pk-text); --muted:var(--pk-muted); --teal:var(--pk-teal); --coral:var(--pk-coral); --display:var(--pk-display); --sans:var(--pk-sans); --liv:var(--pk-game); z-index:30; color:var(--taller-ink); position:fixed; inset:80px 0 0; width:auto; display:block; background:none; border:0; border-radius:0; box-shadow:none; backdrop-filter:none; pointer-events:none; overflow:hidden; }
 #shop > * { pointer-events:auto; position:absolute; }
 #shop[hidden] {display:none;}
 #shop .sk { transform:skewX(-10deg); }
@@ -154,7 +209,6 @@
 #loadout-drawer .shop-item[data-kind=car] {flex-direction:column;}
 #loadout-drawer .shop-text {width:100%;}
 #loadout-message:empty {display:none;}
-body.shop-open .menu-flow .info,body.shop-open .menu-flow .tools {visibility:hidden;}
 body.shop-open .menu-footer {position:fixed;left:auto;right:calc(40 * var(--loadout-u));bottom:calc(40 * var(--loadout-u));height:auto;width:calc(410 * var(--loadout-u));display:flex;flex-direction:column;align-items:flex-end;padding:0;border:0;background:none;gap:10px;z-index:31;transition:transform .28s,opacity .2s;}
 body {--loadout-u:min(calc(100vw / 1600),calc((100dvh - 80px) / 900));}
 body.shop-open .menu-footer #menu-summary {display:block;font-size:calc(16 * var(--loadout-u));text-align:right;}

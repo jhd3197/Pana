@@ -44,16 +44,15 @@ export async function menuClick(page, selector) {
   }
   const step = /data-mode|#mode-pick|#t-next|#t-prev|data-circuit/.test(selector) ? 'track' : 'car';
   await menuStep(page, step);
-  // The Taller page opens with its panel docked: nothing to open then.
-  if (selector === '#open-shop' && await page.locator('#shop').isVisible()) return;
   await page.locator(selector).click();
 }
 
-// The car strip and its Carros/Cauchos tabs show once the docked taller is tucked away.
-// The taller has no close button any more (it is the Taller page); suites that
-// need the strip underneath tuck it away the way the race start does.
-export async function hideTaller(page) {
-  if (await page.locator('#shop').isVisible()) await page.evaluate(() => document.getElementById('shop-close').click());
+// Select through the visible Garaje drawer, then return to the complete build.
+export async function chooseCar(page, index) {
+  await menuStep(page, 'car');
+  await page.locator('#loadout-garage').click();
+  await page.locator('#shop-car .shop-item').nth(index).click();
+  await page.locator('#loadout-back').click();
 }
 
 // Results lead through the receipt ceremony before the chosen destination.

@@ -20,58 +20,15 @@ body:has(> #garage.hidden) > .menu-boot { display: none; }
 .menu-flow .step[aria-current="step"] { background: var(--pk-yellow); color: var(--pk-yellow-ink); }
 .menu-flow #settings { flex: none; }
 .menu-pages { position: absolute; inset: 102px var(--menu-gutter) 92px; pointer-events: none !important; }
-.menu-page { height: 100%; min-height: 0; }
-.menu-page:not(.car-page) { pointer-events: auto; }
+.menu-page { height: 100%; min-height: 0; pointer-events: auto; }
 .menu-page h1 { font: 400 clamp(26px, 3vw, 44px)/1.06 var(--pk-display); letter-spacing: .4px; margin: 4px 0 12px; }
 .menu-page h1:focus { outline: none; }
 .menu-page .pk-eyebrow { margin: 0; }
 .menu-footer { position: absolute; z-index: 2; bottom: 0; left: 0; right: 0; height: 80px; padding: 14px var(--menu-gutter); display: flex; align-items: center; gap: 20px; background: var(--pk-deep); border-top: 1px solid var(--pk-line); }
 .menu-footer p { color: var(--pk-muted); font-size: 13px; margin: 0; flex: 1; }
 .menu-footer #menu-next { min-width: 200px; margin-left: auto; }
-.festival-art { position: absolute; inset: 0; overflow: hidden; background: var(--menu-grass); pointer-events: none !important; --mx: 0; --my: 0; }
-.festival-art img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: 55% 50%; }
-.festival-layer { visibility: hidden; transform: translate(calc(var(--mx) * var(--depth) * -1px), calc(var(--my) * var(--depth) * -1px)) scale(1.045); }
-.festival-art.is-layered .festival-layer { visibility: visible; }
-.festival-art.is-layered .festival-master { visibility: hidden !important; }
-.festival-art::after { content: ''; position: absolute; inset: 0; background: linear-gradient(90deg, rgba(0,0,0,.8), rgba(0,0,0,.38) 36%, transparent 67%), linear-gradient(0deg, rgba(0,0,0,.5), transparent 35%); }
-.menu-flow[data-menu-step="welcome"] .menu-pages { bottom: 30px; }
-.menu-flow[data-menu-step="welcome"]:has(#welcome-room:not([hidden])) .menu-pages { bottom: 92px; }
-.welcome-page { display: flex; align-items: center; position: relative; }
-.welcome-copy { width: min(450px, 44%); padding: 20px 0; }
-.welcome-copy > .pk-eyebrow { color: var(--pk-yellow); letter-spacing: 2px; }
-.welcome-copy h1 { font-size: clamp(52px, 6.7vw, 100px); line-height: .98; margin: 18px 0; color: var(--menu-paper); text-shadow: 0 4px 0 rgba(0,0,0,.2); }
-.welcome-copy h1 em { font-style: normal; color: var(--pk-yellow); }
-.welcome-copy > p:not(.pk-eyebrow) { font-size: 16px; line-height: 1.6; margin: 0 0 22px; color: var(--menu-paper); }
-.welcome-copy > .welcome-room:not([hidden]) { display: block; }
-.play-choices { display: grid; gap: 9px; max-width: 360px; }
-.play-choice.pk-btn { width: 100%; justify-content: flex-start; gap: 16px; padding: 12px 20px; min-height: 68px; background: var(--menu-paper); color: var(--menu-ink); border-color: transparent; text-align: left; border-radius: 12px; }
-.play-choice:first-child { background: var(--pk-yellow); }
-.play-choice svg { width: 32px; height: 32px; flex: none; }
-.play-choice span { display: grid; gap: 2px; }
-.play-choice b { font: 400 22px var(--pk-display); letter-spacing: .3px; }
-.play-choice small { font: 700 11px var(--pk-sans); opacity: .85; }
-.festival-caption { position: absolute; bottom: 0; right: 0; color: var(--menu-paper); font-size: 13px; text-shadow: 0 2px 4px rgba(0,0,0,.7); }
 .menu-flow[data-menu-step="track"], .menu-flow[data-menu-step="ready"] { background: var(--pk-night); }
 
-/* The middle of this page stays transparent and interactive for OrbitControls. */
-.menu-flow .car-page { pointer-events: none; }
-.car-page > * { pointer-events: auto; }
-.menu-flow .info { left: 0; top: 0; width: 288px; padding: 20px; gap: 12px; background: rgba(0,0,0,.35); border: 1px solid var(--pk-line); }
-.menu-flow .info h1 { font-size: 40px; }
-.menu-flow .tools { top: 0; bottom: auto; left: 314px; right: 0; justify-content: flex-end; }
-.menu-flow .tools .hint { width: 100%; text-align: right; }
-.car-picker { position: absolute; bottom: 0; left: 314px; right: 0; display: flex; flex-direction: column; gap: 8px; }
-.car-tabs { align-self: flex-start; }
-.menu-flow .car-lineup, .menu-flow .wheel-lineup { position: static; width: 100%; display: flex; justify-content: flex-start; gap: 8px; padding: 4px 4px 8px; }
-/* Centered while the cards fit; once 16 cars overflow, every card stays scrollable
-   (justify-content: center would push the first ones out of reach). */
-.menu-flow .car-lineup > :first-child, .menu-flow .wheel-lineup > :first-child { margin-left: auto; }
-.menu-flow .car-lineup > :last-child, .menu-flow .wheel-lineup > :last-child { margin-right: auto; }
-.menu-flow .car-choice, .menu-flow .wheel-choice { min-width: 70px; flex: 1 0 70px; max-width: 128px; border-radius: 12px; background: var(--pk-deep); }
-.menu-flow .car-choice[aria-pressed="true"], .menu-flow .wheel-choice[aria-pressed="true"] { border-color: var(--pk-yellow); background: var(--pk-raised); }
-.menu-flow .car-choice span, .menu-flow .wheel-choice span { font-size: 11px; }
-.menu-flow .wheel-info { position: static; padding: 6px 12px; border: 0; background: transparent; justify-content: center; }
-.menu-flow .wheel-info span { white-space: normal; }
 
 .track-page { display: flex; flex-direction: column; gap: 16px; }
 .page-heading { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; flex: none; }
@@ -147,7 +104,6 @@ body:has(> #garage.hidden) > .menu-boot { display: none; }
 #loading-title { text-shadow: 0 3px 0 rgba(0,0,0,.25); }
 
 @media (hover: hover) and (pointer: fine) {
-  .play-choice:hover { transform: translateX(5px); }
   .circuit-choice:hover, .format-picker > button:hover, .menu-flow .cup-stage:hover { border-color: var(--pk-yellow); }
   .menu-flow .step:not([aria-current]):hover { color: var(--pk-text); background: var(--pk-raised); }
 }
@@ -158,20 +114,11 @@ body:has(> #garage.hidden) > .menu-boot { display: none; }
   .menu-flow .brand span { font-size: 8px; }
   .track-layout { gap: 16px; grid-template-columns: minmax(0, .9fr) minmax(380px, 1fr); }
   .menu-flow .track-map { display: none; }
-  .menu-flow .info { width: 250px; padding: 16px; }
-  .menu-flow .info h1 { font-size: 34px; }
-  .menu-flow .tools { left: 270px; }
-  .car-picker { left: 270px; }
-  .menu-flow .car-lineup, .menu-flow .wheel-lineup { justify-content: flex-start; }
 }
 @media (max-height: 720px) and (min-width: 761px) {
   .menu-pages { top: 86px; bottom: 78px; }
   .menu-flow .bar { height: 76px; }
   .menu-footer { height: 66px; padding-top: 8px; padding-bottom: 8px; }
-  .welcome-copy h1 { font-size: clamp(46px, 6vw, 76px); margin: 10px 0; }
-  .welcome-copy > p:not(.pk-eyebrow) { margin-bottom: 14px; font-size: 14px; }
-  .play-choice.pk-btn { min-height: 56px; padding: 8px 16px; }
-  .play-choice b { font-size: 20px; }
   .track-page { gap: 10px; }
   .page-heading h1 { font-size: 32px; }
   .format-picker { grid-template-columns: repeat(5, minmax(0, 1fr)); }
@@ -182,8 +129,6 @@ body:has(> #garage.hidden) > .menu-boot { display: none; }
   .circuit-choice img { height: 56px; }
   .ready-options { gap: 12px; }
   .menu-flow .setup { gap: 12px; }
-  .menu-flow .info { gap: 8px; }
-  .menu-flow .info p { font-size: 12px; }
 }
 @media (max-width: 760px) {
   .menu-flow .bar { height: 100px; align-items: flex-start; padding-top: 12px; gap: 10px; }
@@ -197,37 +142,7 @@ body:has(> #garage.hidden) > .menu-boot { display: none; }
   .menu-footer { height: 66px; gap: 12px; }
   .menu-footer p { display: none; }
   .menu-footer #menu-next { min-width: 0; }
-  .menu-flow[data-menu-step="welcome"] .menu-pages { bottom: 16px; }
-  .welcome-page { align-items: flex-end; overflow-y: auto; }
-  .welcome-copy { width: 100%; padding: 0 0 6px; }
-  .welcome-copy h1 { font-size: 52px; margin: 12px 0; }
-  .welcome-copy > p:not(.pk-eyebrow) { font-size: 13px; margin-bottom: 16px; }
-  .welcome-copy > .pk-eyebrow { font-size: 10px; }
-  .play-choices { max-width: 100%; gap: 8px; }
-  .play-choice.pk-btn { min-height: 60px; padding: 9px 16px; }
-  .play-choice b { font-size: 20px; }
-  .festival-art img { object-position: 65% 40%; }
-  .festival-art::after { background: linear-gradient(0deg, rgba(0,0,0,.85), rgba(0,0,0,.1)); }
-  .festival-caption { display: none; }
-  .menu-flow .info { top: 0; width: 100%; padding: 10px 12px; gap: 5px; background: rgba(0,0,0,.45); }
-  .menu-flow .info h1 { font-size: 26px; margin: 0; }
-  .menu-flow .info-head { position: absolute; right: 10px; top: 10px; }
-  .menu-flow .info-head .num, .menu-flow .info-head .pk-eyebrow, .menu-flow .info #stats { display: none; }
-  .menu-flow .info #car-blurb { max-width: calc(100% - 80px); font-size: 11px; }
-  .menu-flow .info p { display: block; }
-  .menu-flow .info .driver { font-size: 10px; }
-  .menu-flow .tools { left: 0; top: 110px; right: 0; justify-content: flex-start; gap: 5px; }
-  .menu-flow .tools .pk-btn { font-size: 11px; min-height: 34px; padding: 5px 9px; }
-  .menu-flow .tools .hint { display: none; }
-  .car-picker { left: 0; right: 0; gap: 4px; }
-  .car-tabs button { font-size: 12px; min-height: 36px; }
-  .car-tabs { align-self: center; }
   .menu-footer #play { width: auto; flex: 1; min-height: 44px; font-size: 20px; }
-  .menu-flow .car-choice, .menu-flow .wheel-choice { min-width: 70px; flex-basis: 70px; max-width: 90px; }
-  .menu-flow .car-lineup, .menu-flow .wheel-lineup { gap: 6px; }
-  .menu-flow .wheel-info { padding: 3px 0; align-items: center; }
-  .menu-flow .wheel-info b { font-size: 13px; }
-  .menu-flow .wheel-info span { font-size: 10px; }
   .track-page { overflow-y: auto; gap: 12px; }
   .page-heading { display: block; }
   .page-heading h1 { font-size: 30px; }
@@ -257,37 +172,13 @@ body:has(> #garage.hidden) > .menu-boot { display: none; }
   .menu-flow .bar { height: 62px; }
   .menu-pages { top: 68px; bottom: 64px; }
   .menu-footer { height: 56px; }
-  .welcome-copy { padding: 0; }
-  .welcome-copy h1 { font-size: 42px; margin: 8px 0; }
-  .welcome-copy h1 br { display: none; }
-  .welcome-copy > p:not(.pk-eyebrow) { display: none; }
-  .welcome-copy > .pk-eyebrow { font-size: 9px; }
-  .play-choices { gap: 6px; }
-  .play-choice.pk-btn { min-height: 48px; padding: 6px 12px; }
-  .play-choice b { font-size: 18px; }
-  .play-choice small { font-size: 9px; }
   .page-heading h1 { font-size: 26px; }
   .page-heading .pk-eyebrow { display: none; }
-  .menu-flow .info { width: 220px; padding: 10px; }
-  .menu-flow .info-head .pk-eyebrow { display: none; }
-  .menu-flow .info-head .num { width: 32px; height: 32px; font-size: 18px; }
-  .menu-flow .info h1 { font-size: 28px; }
-  .menu-flow .info #stats { gap: 4px; }
-  .menu-flow .info p { font-size: 11px; }
   .menu-footer #play { min-height: 40px; font-size: 22px; }
-  .menu-flow .info .driver { display: none; }
-  .menu-flow .tools { left: 240px; }
-  .menu-flow .tools .hint { display: none; }
-  .menu-flow .tools .pk-btn { font-size: 11px; min-height: 32px; }
-  .car-picker { left: 240px; }
-  .menu-flow .car-choice, .menu-flow .wheel-choice { max-width: 74px; }
-  .menu-flow .wheel-info { padding: 0; }
   .ready-art h1 { font-size: 34px; }
 }
 @media (prefers-reduced-motion: reduce) {
   .menu-flow *, .menu-flow *::before { transition: none !important; animation: none !important; }
-  .festival-layer { transform: none; }
-  .play-choice:hover { transform: none; }
 }
 @media (min-width: 560px) and (max-width: 760px) and (max-height: 500px) {
   .menu-flow .bar { height: 56px; align-items: center; padding-top: 0; gap: 8px; }
@@ -299,31 +190,6 @@ body:has(> #garage.hidden) > .menu-boot { display: none; }
   .menu-pages { top: 64px; bottom: 64px; }
   .menu-footer { height: 56px; padding-top: 6px; padding-bottom: 6px; }
   .menu-footer #play { flex: none; width: 50%; min-height: 40px; }
-  .welcome-copy { width: 50%; min-width: 290px; }
-  .welcome-copy h1 { font-size: 34px; margin: 8px 0; }
-  .welcome-copy h1 br { display: none; }
-  .welcome-copy > p:not(.pk-eyebrow) { display: none; }
-  .play-choice.pk-btn { min-height: 44px; padding: 5px 12px; gap: 10px; }
-  .play-choice b { font-size: 16px; }
-  .play-choice small { font-size: 9px; }
-  .play-choice svg { width: 24px; height: 24px; }
-  .play-choices { gap: 6px; }
-  .menu-flow .info { width: 180px; padding: 8px; gap: 5px; }
-  .menu-flow .info-head { position: static; }
-  .menu-flow .info .pick { margin-left: 0; }
-  .menu-flow .info h1 { font-size: 24px; }
-  .menu-flow .info #car-blurb { max-width: none; font-size: 10px; }
-  .menu-flow .info .driver { display: none; }
-  .menu-flow .info #stats { display: grid; gap: 4px; margin: 0; }
-  .menu-flow #stats div { grid-template-columns: 72px 1fr 16px; gap: 4px; }
-  .menu-flow #stats dt { font-size: 10px; }
-  .menu-flow #stats dd { height: 5px; }
-  .menu-flow .tools { left: 196px; top: 0; gap: 4px; }
-  .menu-flow .tools .pk-btn { font-size: 10px; padding: 5px 7px; min-height: 30px; }
-  .car-picker { left: 196px; }
-  .car-tabs { align-self: flex-start; }
-  .car-tabs button { min-height: 30px; font-size: 11px; padding: 6px 12px; }
-  .menu-flow .car-choice, .menu-flow .wheel-choice { min-width: 64px; max-width: 70px; flex-basis: 64px; }
   .track-page { overflow: hidden; }
   .page-heading .pk-eyebrow { display: none; }
   .page-heading h1 { font-size: 26px; }
@@ -361,36 +227,10 @@ body:has(> #garage.hidden) > .menu-boot { display: none; }
 .track-page.is-cup .format-picker>button:not(.cup-choice)>img{width:70px;height:52px}
 @media(max-width:700px){.track-page.is-cup .format-picker{grid-template-columns:1fr}.track-page.is-cup .cup-choice{grid-row:auto}.track-page.is-cup .cup-collage img{height:100px}.track-page.is-cup .cup-choice b{font-size:26px}.format-picker .cup-route small{display:block}}
 
-/* The Taller page opens with the panel docked (taller.js). While it is
-   open the left side is just the build's title, as in the showroom, and the
-   panel's Carro tab picks the car, so the strip waits until it is hidden. */
-.menu-flow .car-lineup { scroll-snap-type: x proximity; scroll-padding: 0 8px; }
-.menu-flow .car-choice { scroll-snap-align: start; }
-.menu-flow .info .info-eyebrow, .menu-flow .info .car-build { display: none; }
-body.shop-open .menu-flow .car-picker, body.shop-open .menu-flow #open-shop { display: none; }
-body.shop-open .menu-flow .info { background: none; border-color: transparent; box-shadow: none; padding: 4px 0 0; gap: 4px; width: min(360px, calc(100vw - 540px)); pointer-events: none; }
-body.shop-open .menu-flow .info > * { pointer-events: auto; }
-body.shop-open .menu-flow .info .info-head { order: 5; margin-top: 10px; }
-body.shop-open .menu-flow .info .pick { margin-left: 0; }
-body.shop-open .menu-flow .info .info-eyebrow { display: block; order: -1; margin: 6px 0 0; color: var(--taller-muted); letter-spacing: .16em; }
-body.shop-open .menu-flow .info h1 { font-size: clamp(34px, 4.2vw, 56px); line-height: .95; color: var(--taller-ink); text-shadow: 0 4px 0 rgba(0, 0, 0, .35); }
-body.shop-open .menu-flow .info .car-build { display: block; color: var(--taller-muted); font-size: 13px; font-weight: 700; }
-body.shop-open .menu-flow .info #stats, body.shop-open .menu-flow .info .num, body.shop-open .menu-flow .info-head > .pk-eyebrow, body.shop-open .menu-flow .info #car-blurb { display: none; }
-body.shop-open .menu-flow .tools { top: auto; bottom: 0; left: 0; right: auto; justify-content: flex-start; }
-body.shop-open .menu-flow .tools .hint { display: none; }
-@media (max-width: 899px) {
-  body.shop-open .menu-flow .info { width: 100%; padding: 0; }
-  body.shop-open .menu-flow .info .info-eyebrow, body.shop-open .menu-flow .info .car-build, body.shop-open .menu-flow .info .info-head { display: none; }
-  body.shop-open .menu-flow .info h1 { font-size: 28px; }
-  body.shop-open .menu-flow .tools { top: 64px; bottom: auto; }
-}
-
 /* The shared lobby already lists the room, its code and invite: from
    Carreritas's room panel only the rivals switch and the status stay. Split
    screen is for one computer: it shows while you are alone in the room. */
 .lobby-settings .lobby-head, .lobby-settings #lobby-roster { display: none; }
-/* The taller is the Taller page itself, so it has nothing to close. */
-#shop-close { display: none; }
 .lobby-settings .is-proxied, .lobby-settings .setup-row[hidden] { display: none; }
 .lobby-settings .setup-row { display: grid; grid-template-columns: 9.5em minmax(0, 1fr); align-items: center; gap: 12px; margin-bottom: 10px; }
 .lobby-settings .setup-row > .pk-seg { justify-self: start; }

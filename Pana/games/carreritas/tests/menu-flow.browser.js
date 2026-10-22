@@ -3,7 +3,7 @@
 import assert from 'node:assert/strict';
 import { createRequire } from 'node:module';
 import { mkdir } from 'node:fs/promises';
-import { backToLobby, hideTaller, leaveLobby, menuStep } from './menu-helpers.js';
+import { backToLobby, chooseCar, leaveLobby, menuStep } from './menu-helpers.js';
 import { TRACK_DEFINITIONS } from '../public/track-definitions.js';
 const { chromium } = createRequire(import.meta.url)(process.env.PANA_PLAYWRIGHT_PATH || 'playwright');
 const browser = await chromium.launch({ headless: true,
@@ -38,19 +38,18 @@ try {
   await menuStep(page, 'car');
   await step(page, 'car');
   assert.ok(await page.locator('#shop').isVisible(), 'the Taller page opens with the taller docked');
-  assert.ok(await page.locator('#shop-close').isHidden(), 'the taller is the page: nothing to close');
+  assert.equal(await page.locator('#shop-close, #car-lineup, #wheel-lineup, #stats, .car-picker').count(), 0, 'obsolete garage controls are absent');
   assert.equal((await page.locator('#play').textContent()).trim(), '¡Vámonos!');
   await page.screenshot({ path: `${output}/taller.png` });
-  await hideTaller(page);
-  await page.locator('.car-choice').nth(6).click();
-  await page.locator('[data-car-tab="wheels"]').click();
-  await page.locator('.wheel-choice').nth(3).click();
-  await page.locator('#open-shop').click();
+  await chooseCar(page, 6);
+  await page.locator('[data-tab="ruedas"]').click();
+  await page.locator('#shop-wheel [data-id="palo"]').click();
+  await page.locator('#loadout-back').click();
   assert.ok(await page.locator('#shop').isVisible());
-  await hideTaller(page);
   await menuStep(page, 'track');
   await step(page, 'track');
   assert.equal(await page.locator('.circuit-choice').count(), TRACK_DEFINITIONS.length);
+  assert.equal(await page.locator('#circuit-list-title').textContent(), `Los ${TRACK_DEFINITIONS.length} circuitos`);
   for (const button of await page.locator('.circuit-choice').all()) {
     const id = await button.getAttribute('data-circuit');
     await button.click();
@@ -174,8 +173,7 @@ try {
   await guest.locator('#shop-boat [data-id="rayo"]').click();
   await guest.locator('#loadout-back').click();
   await guest.locator('[data-vehicle="car"]').click();
-  await hideTaller(guest);
-  await guest.locator('.car-choice').nth(2).click();
+  await chooseCar(guest, 2);
   assert.ok(await guest.locator('#play').isDisabled());
   await guest.setViewportSize({ width: 320, height: 740 });
   await fits(guest, '#play');

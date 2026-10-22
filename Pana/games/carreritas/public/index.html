@@ -38,45 +38,8 @@
     <header class="bar">
       <a class="pk-btn pk-btn--sm hub-link" href="/">‹ Hub</a>
       <div class="brand">CARRERITAS <span>garaje</span></div>
-      <nav class="steps" aria-label="Pasos">
-        <button type="button" class="step step-car" data-step="car">1 Carro</button>
-        <button type="button" class="step step-wheels" data-step="wheels">2 Cauchos</button>
-        <button type="button" class="step step-track" data-step="track">3 Pista</button>
-      </nav>
+      <nav class="steps" aria-label="Pasos"></nav>
     </header>
-
-    <aside class="info pk-panel">
-      <div class="info-head">
-        <div class="num" id="car-num"></div>
-        <span class="pk-eyebrow" id="car-of"></span>
-        <div class="pick">
-          <button id="prev" class="pk-btn pk-btn--sm" aria-label="Carro anterior">‹</button>
-          <div id="dots" hidden></div>
-          <button id="next" class="pk-btn pk-btn--sm" aria-label="Carro siguiente">›</button>
-        </div>
-      </div>
-      <p class="info-eyebrow pk-eyebrow">Taller de Panas</p>
-      <h1 id="car-name"></h1>
-      <p id="car-build" class="car-build"></p>
-      <p id="car-blurb"></p>
-      <dl id="stats"></dl>
-      <p class="driver">Maneja: <b id="driver-name"></b> · <a href="/">cambiar mi pana</a></p>
-    </aside>
-
-    <div class="tools">
-      <button id="cam" class="toggle pk-btn pk-btn--sm">Ver piloto</button>
-      <button id="honk" class="toggle pk-btn pk-btn--sm">¡Pita! <kbd class="pk-kbd">H</kbd></button>
-      <button id="spin" class="toggle pk-btn pk-btn--sm on">Girar</button>
-      <button id="open-shop" type="button" class="toggle pk-btn pk-btn--sm shop-open">Taller · <span class="mango-symbol" aria-hidden="true"></span><b id="wallet-coins">0</b> mangos</button>
-      <span class="hint" data-pana-hint>Arrastra para girar · rueda para acercar</span>
-    </div>
-    <nav id="car-lineup" class="car-lineup" aria-label="Elige tu carro"></nav>
-
-    <div class="wheel-info pk-panel">
-      <b id="wheel-name"></b>
-      <span id="wheel-blurb"></span>
-    </div>
-    <nav id="wheel-lineup" class="wheel-lineup" aria-label="Elige tus cauchos"></nav>
 
     <section class="launch pk-panel pk-panel--solid" aria-label="Pista">
       <div class="track-map">
@@ -147,8 +110,7 @@
     <p class="shop-wallet tl-coins sk" aria-label="Mangos disponibles"><span class="mango-symbol" aria-hidden="true"></span><b id="shop-coins">0</b></p>
     <div class="tl-stats sk"><header class="shop-head hd"><h2 id="shop-title">Tu carro</h2><span id="shop-level"></span></header><dl id="shop-stats" class="shop-stats"></dl></div>
     <div id="shop-tabs" class="shop-tabs tl-slots" role="tablist" aria-label="Piezas del kit"></div>
-    <dialog id="loadout-drawer" class="tl-drawer sk" aria-labelledby="loadout-drawer-title"><div class="hd"><button id="loadout-back" type="button" class="tl-back">‹ Atrás <kbd>Esc</kbd></button><b id="loadout-drawer-title"></b><small>Pasa por encima para comparar · clic para equipar</small></div><div id="shop-body" class="shop-body tl-opts"></div><div id="shop-try" class="shop-try" role="status" hidden><p id="shop-try-text"></p><button id="shop-untry" type="button" class="shop-btn shop-btn--ghost">Quitar</button><button id="shop-buy" type="button" class="shop-btn"></button></div><p id="loadout-message" role="status"></p></dialog>
-    <button id="shop-close" type="button" hidden aria-label="Ocultar el taller"></button>
+    <dialog id="loadout-drawer" class="tl-drawer sk" aria-labelledby="loadout-drawer-title"><div class="hd"><button id="loadout-back" type="button" class="tl-back">‹ Atrás <kbd>Esc</kbd></button><b id="loadout-drawer-title"></b><small>Pasa por encima para comparar · clic para equipar</small></div><div id="shop-body" class="shop-body tl-opts"></div><p id="loadout-message" role="status"></p></dialog>
   </section>
 
   <!-- ---------- race ---------- -->
@@ -251,7 +213,6 @@
       <div class="res-main">
         <h1 id="result-title" class="pk-title pk-title--yellow"></h1>
         <p id="result-time"></p>
-        <ol id="podium" class="podium" aria-label="Podio"></ol>
       </div>
       <div class="res-side">
         <div class="res-table pk-panel pk-panel--solid">
@@ -263,7 +224,7 @@
           <ol id="cup-board" class="pk-roster"></ol>
           <p id="cup-next" class="cup-next"></p>
         </div>
-        <div class="res-coins pk-panel"><span class="mango-symbol" aria-hidden="true"></span><p id="result-coins" class="result-coins"></p></div>
+        <div class="res-coins pk-panel"></div>
         <div class="res-actions">
           <button id="again" class="play pk-btn pk-btn--primary pk-btn--lg pk-btn--block">Otra vez</button>
           <div class="row">

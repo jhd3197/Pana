@@ -146,30 +146,6 @@
       "bytes": 28966
     },
     {
-      "file": "raceAtmosphere.webp",
-      "source": "pana_festival_floating_atmosphere.png",
-      "width": 1600,
-      "bytes": 146394
-    },
-    {
-      "file": "raceForeground.webp",
-      "source": "pana_festival_foreground_extracted.png",
-      "width": 1600,
-      "bytes": 40730
-    },
-    {
-      "file": "raceActors.webp",
-      "source": "Capybara Rally Cars Racing.png",
-      "width": 1600,
-      "bytes": 183122
-    },
-    {
-      "file": "raceBackground.webp",
-      "source": "Sunlit Festive Hillside Village Street.png",
-      "width": 1600,
-      "bytes": 225898
-    },
-    {
       "file": "raceMaster.webp",
       "source": "Mediterranean Capybara Street Race.png",
       "width": 1600,

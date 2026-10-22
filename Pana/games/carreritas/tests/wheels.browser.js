@@ -1,4 +1,4 @@
-import { hideTaller, menuStep } from './menu-helpers.js';
+import { menuStep } from './menu-helpers.js';
 // Cauchos (custom wheels): composed-tune math, garage flow with persistence,
 // and real stepCar simulations for drift (palo vs calle) and mud (barro vs
 // calle). npm start, then node this file. Same idiom as items.browser.js.
@@ -38,16 +38,16 @@ try {
   assert.equal(math.fallback, 'calle');
 
   // 2. Garage flow: eight cauchos, selection recomputes stats and persists.
-  assert.equal(await page.locator('.wheel-choice').count(), 8);
-  const calleStats = await page.evaluate(() => [...document.querySelectorAll('#stats .n')].map(n => n.textContent));
   await menuStep(page, 'car');
-  await hideTaller(page);
-  await page.locator('[data-car-tab="wheels"]').click();
-  await page.locator('.wheel-choice').nth(3).click();   // Llantas de palo
+  const calleStats = await page.locator('#shop-stats .n').allTextContents();
+  await page.locator('[data-tab="ruedas"]').click();
+  assert.equal(await page.locator('#shop-wheel .shop-item').count(), 8);
+  await page.locator('#shop-wheel [data-id="palo"]').click();
+  await page.locator('#loadout-back').click();
   const picked = await page.evaluate(() => ({
     stored: localStorage.getItem('carreritas:wheels'),
-    name: document.getElementById('wheel-name').textContent,
-    stats: [...document.querySelectorAll('#stats .n')].map(n => n.textContent),
+    name: document.querySelector('[data-tab=ruedas] b').textContent,
+    stats: [...document.querySelectorAll('#shop-stats .n')].map(n => n.textContent),
     radius: garage.car.radius,
   }));
   assert.equal(picked.stored, 'palo');
@@ -55,13 +55,11 @@ try {
   assert.notDeepEqual(picked.stats, calleStats, 'stats bars recompute for the car + wheel combo');
   assert.equal(picked.radius, 0.66, 'the turntable car wears the wooden wheels');
   await page.reload();
-  await page.waitForFunction(() => window.garage?.car && document.getElementById('wheel-name').textContent.length > 0);
-  const restored = await page.evaluate(() => ({
-    name: document.getElementById('wheel-name').textContent,
-    pressed: document.querySelector('.wheel-choice[aria-pressed="true"] span')?.textContent,
-  }));
-  assert.equal(restored.name, 'Llantas de palo', 'wheel choice survives reload');
-  assert.equal(restored.pressed, 'Llantas de palo');
+  await menuStep(page, 'car');
+  assert.equal(await page.locator('[data-tab="ruedas"] b').textContent(), 'Llantas de palo', 'wheel choice survives reload');
+  await page.locator('[data-tab="ruedas"]').click();
+  assert.equal(await page.locator('#shop-wheel [data-id="palo"]').getAttribute('aria-pressed'), 'true');
+  await page.locator('#loadout-back').click();
 
   // 3. Drift on dry asphalt: identical input, palo keeps more lateral slip.
   const drift = await page.evaluate(async () => {

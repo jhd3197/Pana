@@ -1,5 +1,5 @@
 import { resultClick } from './menu-helpers.js';
-import { hideTaller, menuClick } from './menu-helpers.js';
+import { menuStep, menuClick } from './menu-helpers.js';
 // npm start, then node this file. The taller: a race pays into the wallet,
 // paint repaints the player's car on the turntable and in the race, horns
 // and flames equip, and trophies unlock mirror mode.
@@ -33,7 +33,7 @@ try {
     race.player.coinsCollected = 30;
     race.player.lap = race.laps + 1;
     for (let i = 0; i < 3 && race.state !== 'end'; i++) updateRace(1 / 60);
-    return { wallet: getWallet().coins, text: document.getElementById('result-coins').textContent };
+    return { wallet: getWallet().coins };
   });
   assert.ok(paid.wallet >= 40, `first place pays 30 picked up + 10 ${JSON.stringify(paid)}`);
   await page.locator('#collect-rewards').click();
@@ -48,8 +48,8 @@ try {
   await page.evaluate(() => { getWallet().coins = 40; }); // isolate the shopping budget from performance bonuses
   await resultClick(page, '#back');
 
-  // Try Azul Caribe on the turntable, then buy it: the wallet pays 25.
-  await menuClick(page, '#open-shop');
+  // Buy Azul Caribe directly from the paint slot: the wallet pays 25.
+  await menuStep(page, 'car');
   await page.locator('[data-tab="pintura"]').click();
   await page.locator('#shop-paint [data-id="caribe"]').click();
   assert.equal(await page.evaluate(() => getWallet().coins), 15, 'click buys and equips the paint');
@@ -66,7 +66,6 @@ try {
   assert.equal(shop.coins, 0);
   assert.ok(shop.blue && !shop.red, `repainted ${JSON.stringify(shop)}`);
   assert.equal(shop.horn, 'cucaracha', '40 - 25 for the paint leaves exactly 15 for the horn');
-  await hideTaller(page);
 
   // The race car wears the paint too.
   await menuClick(page, '#play');
@@ -79,10 +78,10 @@ try {
   assert.ok(raced, 'the race car is blue');
   await page.evaluate(() => toGarage());
 
-  // Parts: hovering previews the bars, a tried part costs nothing until
-  // bought, and a bought turbo really changes the race car's tune and looks.
+  // Parts: hover previews the bars without spending; buying the turbo
+  // changes the race car tune and looks. An unaffordable part stays unequipped.
   await page.evaluate(() => { getWallet().coins = 100; });
-  await menuClick(page, '#open-shop');
+  await menuStep(page, 'car');
   await page.locator('[data-tab="motor"]').click();
   await page.locator('#shop-motor [data-id="turbo"]').hover();
   assert.equal(await page.locator('#shop-stats dd i.up').count() > 0, true, 'hover shows the gain on the bars');
@@ -93,9 +92,8 @@ try {
   await page.locator('#shop-aleron [data-id="rally"]').click();
   assert.match(await page.locator('#loadout-message').textContent(), /Te faltan 30 mangos/, 'turbo + rally cost 130');
   await page.locator('#loadout-back').click();
-  const parts = await page.evaluate(() => ({ coins: getWallet().coins, parts: getWallet().parts.chamo, trying: !document.getElementById('shop-try').hidden }));
-  assert.deepEqual(parts, { coins: 25, parts: { motor: 'turbo' }, trying: false });
-  await hideTaller(page);
+  const parts = await page.evaluate(() => ({ coins: getWallet().coins, parts: getWallet().parts.chamo }));
+  assert.deepEqual(parts, { coins: 25, parts: { motor: 'turbo' } });
   await menuClick(page, '#play');
   await page.waitForFunction(() => race.state === 'count');
   const tuned = await page.evaluate(async () => {

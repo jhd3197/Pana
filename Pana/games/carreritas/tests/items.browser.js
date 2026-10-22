@@ -1,4 +1,4 @@
-import { hideTaller, menuClick, menuStep } from './menu-helpers.js';
+import { chooseCar, menuClick, menuStep } from './menu-helpers.js';
 // npm start, then node this file. Uses the same optional runtime paths as maps.browser.js.
 import assert from 'node:assert/strict';
 import { createRequire } from 'node:module';
@@ -19,11 +19,9 @@ try {
   // Keep the real input handlers and renderer, but step simulation explicitly.
   await page.goto(`${origin}/g/carreritas/?debug&manual&track=estadio`);
   await page.waitForFunction(() => window.garage?.car);
-  assert.equal(await page.locator('.car-choice').count(), 16);
   await menuStep(page, 'car');
-  await hideTaller(page);
   for (let i = 0; i < 16; i++) {
-    await page.locator('.car-choice').nth(i).click();
+    await chooseCar(page, i);
     const car = await page.evaluate(() => {
       garage.spin = false; garage.turn.rotation.y = 0;
       renderer.render(garage.scene, garage.camera);
@@ -37,7 +35,7 @@ try {
     assert.ok(car.finite && car.driver && car.wheels === 4 && car.parts >= 4);
     await page.screenshot({ path: join(output, `garage-${i}.png`) });
   }
-  await page.locator('.car-choice').first().click();
+  await chooseCar(page, 0);
   await menuClick(page, '#play');
   await page.waitForFunction(() => race.state === 'count');
 

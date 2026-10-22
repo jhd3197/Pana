@@ -16,9 +16,9 @@ try {
   await page.goto(`${origin}/g/carreritas/?debug&track=estadio`);
   await page.waitForFunction(() => window.garage?.car && performance.getEntriesByName('carreritas:garage-ready').length, null, { timeout: 120000 });
   const initial = await page.evaluate(() => ({ readyMs: performance.getEntriesByName('carreritas:garage-ready')[0].startTime,
-    mapBuilt: !!race.trackGroup, buttons: document.querySelectorAll('.car-choice').length }));
+    mapBuilt: !!race.trackGroup }));
   assert.equal(initial.mapBuilt, false, 'startup does not construct an invisible map');
-  assert.equal(initial.buttons, 16, 'all choices are available when the garage finishes preparing');
+
   const tracks = await page.evaluate(() => {
     const start = performance.now();
     for (let i = 0; i < TRACKS.length * 2; i++) document.getElementById('t-next').click();
@@ -26,11 +26,15 @@ try {
   });
   assert.equal(tracks.built, false, 'rapid track selection never builds scenery');
   assert.equal(tracks.name, 'El Estadio');
-  await page.waitForFunction(() => [...document.querySelectorAll('.car-choice img')].every(img => img.naturalWidth > 0), null, { timeout: 60000 });
+  await menuStep(page, 'car');
+  await page.locator('#loadout-garage').click();
+  assert.equal(await page.locator('#shop-car .shop-item').count(), 16);
+  await page.waitForFunction(() => [...document.querySelectorAll('#shop-car img')].length === 16 && [...document.querySelectorAll('#shop-car img')].every(img => img.naturalWidth > 0));
+  await page.locator('#loadout-back').click();
   const cars = await page.evaluate(() => {
     const identities = [...garage.cars.values()];
     const start = performance.now();
-    for (let i = 0; i < 32; i++) document.getElementById('next').click();
+    for (let i = 0; i < 32; i++) document.getElementById('loadout-next').click();
     return { ms: performance.now() - start, count: garage.cars.size,
       reused: [...garage.cars.values()].every((car, i) => car === identities[i]),
       currentAttached: garage.car.root.parent === garage.turn };
