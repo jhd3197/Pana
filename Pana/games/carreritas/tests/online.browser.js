@@ -1,4 +1,4 @@
-import { menuClick } from './menu-helpers.js';
+import { menuClick, resultClick } from './menu-helpers.js';
 // Carreritas online: two real browser clients in one Colyseus room. Lobby sync,
 // host controls, shared countdown, live remote cars, relayed mango throws,
 // one finish order, reload-and-resume, and host handoff with the bots.
@@ -145,7 +145,7 @@ try {
   step(`results agree: ${order(h).join(' > ')}`);
 
   // Next race, then the host leaves: the guest hosts and drives the bots.
-  await host.click('#again');
+  await resultClick(host, '#again');
   await until(guest, () => race.state === 'go', null, 90000);
   await host.context().close();
   await until(guest, () => getNet().isHost && race.cars.filter(c => c.bot).every(c => !c.remote), null, 15000);

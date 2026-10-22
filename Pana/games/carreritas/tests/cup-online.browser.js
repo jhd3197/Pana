@@ -1,4 +1,4 @@
-import { menuClick } from './menu-helpers.js';
+import { menuClick, resultClick } from './menu-helpers.js';
 // Carreritas online Grand Prix: two real browser clients complete a four-race
 // championship in one Colyseus room, plus fault and recovery scenarios.
 // npm start, then: node games/carreritas/tests/cup-online.browser.js [playwright path]
@@ -216,7 +216,7 @@ try {
       // Wait for minimum read window so host can advance immediately.
       const leader = await host.evaluate(() => getNet().isHost) ? host : guest;
       await until(leader, () => !document.getElementById('again').disabled, null, 15000);
-      await leader.click('#again');
+      await resultClick(leader, '#again');
     }
   }
 
