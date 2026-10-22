@@ -1,7 +1,7 @@
 // Loaded only when Ajustes opens. Existing audio/video/game controls are moved
 // here, retaining their handlers, IDs and each game's pause lifecycle.
 import { getSettings, setSettings, onSettings, INPUT_RANGES, resetInputSettings } from './settings.js';
-import { onInputDevice, firstPad, readPad, formatPadLabel, testVibration, NAMES } from './gamepad.js';
+import { onInputDevice, inputState, firstPad, readPad, formatPadLabel, testVibration, NAMES } from './gamepad.js';
 
 function el(tag, className, text) {
   const node = document.createElement(tag);
@@ -12,7 +12,6 @@ function el(tag, className, text) {
 const button = (label, action, className = '') => {
   const node = el('button', className, label); node.type = 'button'; node.onclick = action; return node;
 };
-const deviceNames = { keyboard: 'Ratón y teclado', gamepad: 'Mando', touch: 'Pantalla táctil' };
 
 export function createSettingsWorkspace(root, legacy) {
   const workspace = el('div', 'pana-settings-workspace');
@@ -29,7 +28,7 @@ export function createSettingsWorkspace(root, legacy) {
   }, 'pana-reset');
   foot.append(saved, reset);
   const pages = new Map(), refreshers = [];
-  let category = 'input', ticking = false;
+  let category = { keyboard: 'mouse', gamepad: 'pad', touch: 'touch' }[inputState().detected], ticking = false;
 
   function page(key, label, description) {
     const section = el('section', 'pana-settings-section');
@@ -45,6 +44,8 @@ export function createSettingsWorkspace(root, legacy) {
     category = key;
     for (const [id, p] of pages) { p.section.hidden = id !== key; p.link.setAttribute('aria-current', String(id === key)); }
     main.scrollTop = 0;
+    aside.hidden = key !== 'pad';
+    workspace.classList.toggle('without-monitor', key !== 'pad');
     if (key !== 'pad') setTesting(false);
   }
   function row(parent, label, detail, control) {
@@ -80,10 +81,10 @@ export function createSettingsWorkspace(root, legacy) {
     row(parent, label, detail, group);
   }
 
-  const input = page('input', 'Tus controles', 'Cambia de dispositivo cuando quieras. Pana sigue el último que usaste y muestra sus controles.');
+  const input = el('details', 'pana-input-advanced');
+  input.append(el('summary', '', 'Opciones de las ayudas'));
   choices(input, 'inputHints', 'Ayudas en pantalla', 'Automático sigue tu actividad. Elegir uno solo cambia las ayudas; puedes seguir usando los demás.', [['auto', 'Automático'], ['keyboard', 'Teclado'], ['gamepad', 'Mando'], ['touch', 'Táctil']]);
   input.append(legacy.hints);
-  input.append(el('p', 'pana-settings-note', 'Un mando conectado no desactiva el ratón. Si vuelves al teclado, las ayudas cambian contigo. Las teclas de cada juego están en Controles.'));
   const mouse = page('mouse', 'Ratón y teclado', 'Ajusta cómo miras y apuntas en los juegos con cámara libre. El movimiento con teclas conserva la velocidad del juego.');
   range(mouse, 'mouseSensitivity', 'Sensibilidad del ratón', 'Velocidad horizontal de la cámara.');
   range(mouse, 'mouseVertical', 'Velocidad vertical', 'Multiplica la sensibilidad al mirar arriba y abajo.');
@@ -107,6 +108,29 @@ export function createSettingsWorkspace(root, legacy) {
   const image = page('image', 'Imagen', 'Elige nitidez o rendimiento. La resolución se adapta al instante; las sombras se actualizan al cargar la siguiente escena.'); image.append(...legacy.image);
   const audio = page('audio', 'Audio', 'El volumen general controla todo el sonido. La música se mezcla por debajo de ese nivel.'); audio.append(...legacy.audio);
   if (legacy.game.length) page('game', legacy.title, 'Opciones propias de este juego.').append(...legacy.game);
+  for (const [key, section] of [['keyboard', mouse], ['gamepad', pad], ['touch', touch]]) {
+    const help = legacy.help?.[key];
+    if (help) {
+      // Each device has its own page: its instructions remain visible when a
+      // mouse is used to tune a controller, without a second Controls screen.
+      help.dataset.settingsHelp = key;
+      const copy = el('div', 'pana-device-help');
+      copy.append(el('h4', '', 'Cómo se juega'), help);
+      section.insertBefore(copy, section.children[2] || null);
+      const tips = (legacy.tips || []).filter(tip => key === 'keyboard' || !/\b(?:Shift|Esc|WASD)\b|pulsa [A-Z]\b|clic|ratón/i.test(tip));
+      if (tips.length) {
+        const advice = el('details', 'pana-input-advanced');
+        advice.append(el('summary', '', 'Consejos de juego'), ...tips.map(tip => el('p', 'pana-tip', tip)));
+        section.append(advice);
+      }
+    }
+  }
+  const advancedPad = el('details', 'pana-input-advanced');
+  advancedPad.append(el('summary', '', 'Más ajustes del mando'));
+  for (const row of [...pad.children]) if (row.matches('.pana-setting-line,.pana-vibration-test') && !row.querySelector('#pana-input-padDeadzone,#pana-input-padMoveSensitivity,#pana-input-padLookSensitivity')) advancedPad.append(row);
+  pad.append(advancedPad);
+  // One shared disclosure follows whichever device page is selected.
+  const movePreferences = () => pages.get(category)?.section.append(input);
 
   // The tester uses the same shaping as gameplay, with raw input underneath.
   aside.append(el('small', 'pana-monitor-eyebrow', 'ENTRADA EN VIVO'), device, status, connected);
@@ -129,7 +153,7 @@ export function createSettingsWorkspace(root, legacy) {
   }
   aside.append(sticks, buttons, test, testNote);
   onInputDevice(state => {
-    device.textContent = deviceNames[state.detected];
+    device.textContent = state.connected ? ({xbox:'Mando Xbox',playstation:'Mando PlayStation',nintendo:'Mando Nintendo'}[state.family] || 'Tu mando') : 'Tu mando';
     status.textContent = state.connected ? 'Mando conectado' : 'Sin mando conectado';
     connected.textContent = state.id || 'Conecta tu mando y pulsa un botón para que el navegador lo reconozca.';
     caps.forEach((cap, index) => { cap.textContent = formatPadLabel(names[index], state.family); });
@@ -140,6 +164,8 @@ export function createSettingsWorkspace(root, legacy) {
   onSettings(s => { refreshers.forEach(fn => fn(s)); stickNodes.forEach(n => { n.dead.style.width = n.dead.style.height = `${s.padDeadzone * 96}px`; }); });
   workspace.append(nav, main, aside, foot); root.replaceChildren(workspace); root.classList.add('pana-settings-panel');
   choose(category);
+  movePreferences();
+  nav.addEventListener('click', movePreferences);
   function tick() {
     ticking = false;
     if (!root.getClientRects().length || document.hidden) { setTesting(false); return; }

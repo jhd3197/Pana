@@ -36,7 +36,7 @@ Every game and the hub use one pause menu and one settings store:
   `bindRenderer(renderer, max)` keep the fx.js sound and a renderer in step.
 - `engine/ui.js` — `createGameMenu(options)` builds a native modal `<dialog>`
   with the tabs Juego (resume, game actions, invite, exit), Ajustes (shared
-  settings plus game options) and Controles. It owns Esc, focus and input
+  settings, device instructions and game options). It owns Esc, focus and input
   blocking; the game only decides what pausing means.
 - `engine/ui.css` — scoped `.pana-*` styles. Pages link it before their own
   stylesheet; ui.js injects it if a page forgot.
@@ -90,6 +90,13 @@ when Ajustes opens. It moves the existing audio, image and game option nodes
 into categories, preserving IDs and handlers. `/ajustes.html` exposes the same
 workspace outside a game. Personal settings never change room rules.
 
+Device instructions and tuning share one category per device, initially the
+active device. There is no separate Controls tab or input landing page.
+Controller deadzone, movement and look sensitivity remain visible; other tuning and
+manual hint overrides live in disclosures. The live monitor appears only in
+Mando and names the connected hardware, even while a mouse adjusts it.
+Legacy `open('controls')` calls route to Ajustes.
+
 `pana:settings` stores independent `mouseSensitivity`, `mouseVertical`,
 `mouseInvertY`, `touchSensitivity`, `touchInvertY`, `padDeadzone`,
 `padMoveSensitivity`, `padLookSensitivity`, `padVertical`, `padInvertY`,
@@ -104,14 +111,17 @@ storage is unavailable, and storage events synchronize open tabs.
 last active physical device, while `device` follows the `inputHints` display
 override (auto/keyboard/gamepad/touch). Synthetic controller key/pointer events
 must never count as physical keyboard or mouse input. An idle controller must
-not take focus back after a real key press; stick changes and button edges
-reactivate it. Disconnect releases translated keys. Window blur suspends the
+not take focus back after a real key press; held buttons or raw stick travel
+beyond the configured deadzone reactivate it, including slow or steady input.
+Mouse hover never changes the device; trusted clicks and key presses do.
+Disconnect releases translated keys. Window blur suspends the
 controller translator until focus returns.
 
 The root carries `data-pana-input` and `data-pana-pad-family`. Keyboard hint
 groups and legacy keycaps hide for controller/touch input; controller keycaps
 use `data-pad-key`. Gameplay controller prompts come from each game's real
-`pad` mapping. The Controles tab follows the active device. `padFamily` can
+`pad` mapping. Device instructions remain visible in their own settings page
+even when another device navigates there. `padFamily` can
 override ID-based Xbox/PlayStation/Nintendo/generic labels without changing
 the browser's standard button indices. Controller navigation targets the
 lobby's start action before other primary buttons such as an armory button.
@@ -173,8 +183,8 @@ starts from the big control nearest the bottom middle of the screen, and A
 stays with the buttons. `createLookControls` turns the camera with the right
 stick, so first-person games need no `cursor`. `{ native: true, help }` is for
 a game that reads the pad itself (Trifulca): the menus still work, and `help`
-fills the "Con mando" list. The Controles tab lists each labelled key under
-"Con mando". Carreritas is native too: controls.js drives the car, and the
+fills the instructions in Ajustes → Mando. Carreritas is native too:
+controls.js drives the car, and the
 engine owns the garage menus and Start, so its own pad code no longer
 toggles the pause. Without a main button, a menu starts the pad on its
 biggest button, such as Carreritas's "Un jugador" card rather than the step bar.

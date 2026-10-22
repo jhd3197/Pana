@@ -53,7 +53,7 @@ export function createGameMenu({
   title = 'Pana',             // game name, shown above the heading
   heading = 'Un momentico',   // headline while paused
   note,                       // () => string: what pausing means right now
-  controls = [],              // [['W A S D', 'Moverte'], …] for the Controles tab
+  controls = [],              // [['W A S D', 'Moverte'], …] for keyboard instructions
   tips = [],                  // extra lines under the controls
   actions = [],               // [{ id, label, run, kind, visible, keepOpen }]
   options = [],               // game settings: [{ id, label, choices: [[value, label]], get, set }]
@@ -183,13 +183,8 @@ export function createGameMenu({
   }
   const keyboardRows = keyList(controls);
   const touchHelp = h('p', { class: 'pana-tip', hidden: true, text: 'Usa los controles táctiles del juego. Puedes ajustar la cámara y la orientación en Ajustes.' });
-  const controlsPanel = (controls.length || tips.length || pad) && h('section', { class: 'pana-panel', role: 'tabpanel', id: id('panel-controls'), 'aria-labelledby': id('tab-controls') },
-    keyboardRows, touchHelp,
-    padRows,
-    tips.map(t => h('p', { class: 'pana-tip', text: t })));
-
   // ---------- dialog ----------
-  const tabs = [pause && ['game', 'Juego', gamePanel], ['settings', 'Ajustes', settingsPanel], controlsPanel && ['controls', 'Controles', controlsPanel]].filter(Boolean);
+  const tabs = [pause && ['game', 'Juego', gamePanel], ['settings', 'Ajustes', settingsPanel]].filter(Boolean);
   const tabButtons = tabs.map(([key, label]) => h('button', { type: 'button', role: 'tab', id: id(`tab-${key}`), 'aria-controls': id(`panel-${key}`), 'data-tab': key, text: label, onclick: () => showTab(key) }));
   const noteNode = h('p', { class: 'pana-menu-note', id: id('menu-note') });
   const dialog = h('dialog', { class: 'pana-menu', id: id('menu-dialog'), 'aria-labelledby': id('menu-title') },
@@ -209,16 +204,18 @@ export function createGameMenu({
         audio: [soundSwitch, volume, music].map(n => n.closest('.pana-row')),
         image: [qualityGroup.node], touch: orientationGroup ? [orientationGroup.node] : [],
         hints: hintsSwitch.closest('.pana-row'), game: gameOptions.map(o => o.node), title,
+        help: { keyboard: keyboardRows, gamepad: padRows, touch: touchHelp }, tips,
       });
       workspace.refresh();
     }).catch(() => { workspaceLoading = null; defaultNotify('No se pudieron cargar los controles. Vuelve a abrir Ajustes.'); });
   }
 
   function showTab(key) {
+    if (key === 'controls') key = 'settings';
     tab = key;
     for (const [k, , panel] of tabs) panel.hidden = k !== key;
     for (const b of tabButtons) { const on = b.dataset.tab === key; b.setAttribute('aria-selected', String(on)); b.tabIndex = on ? 0 : -1; }
-    dialog.querySelector('h2').textContent = key === 'settings' ? 'A tu manera' : key === 'controls' ? 'Cómo se juega' : heading;
+    dialog.querySelector('h2').textContent = key === 'settings' ? 'A tu manera' : heading;
     if (key === 'settings') prepareSettings();
   }
   dialog.querySelector('.pana-tabs')?.addEventListener('keydown', e => {
@@ -245,6 +242,7 @@ export function createGameMenu({
   });
 
   function open(which = tab) {
+    if (which === 'controls') which = 'settings';
     if (isOpen) { showTab(which); return; }
     if (!canOpen()) return;
     isOpen = true; returnFocus = document.activeElement;
@@ -276,7 +274,7 @@ export function createGameMenu({
     if (isOpen) {
       if (e.key === 'Escape') { e.preventDefault(); if (!e.repeat) close(); }
       if (e.key === 'Tab') {
-        const focusable = [...dialog.querySelectorAll('button, a[href], input, select, textarea, [tabindex]')]
+        const focusable = [...dialog.querySelectorAll('button, summary, a[href], input, select, textarea, [tabindex]')]
           .filter(node => !node.disabled && node.tabIndex >= 0 && node.getClientRects().length);
         const first = focusable[0], last = focusable.at(-1);
         if (first && ((!e.shiftKey && document.activeElement === last) || (e.shiftKey && document.activeElement === first))) {

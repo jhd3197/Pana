@@ -22,7 +22,8 @@ try {
   await page.locator('#pana-set-sound').click();
   await page.locator('.pana-settings-nav button', { hasText: 'Imagen' }).click();
   await page.locator('#pana-set-quality [data-value="baja"]').click();
-  await page.locator('.pana-settings-nav button', { hasText: 'Tus controles' }).click();
+  await page.locator('.pana-settings-nav button', { hasText: 'Ratón y teclado' }).click();
+  await page.getByText('Opciones de las ayudas', { exact: true }).click();
   await page.locator('#pana-set-hints').click();
   assert.deepEqual(await page.evaluate(() => {
     const s=JSON.parse(localStorage.getItem('pana:settings'));

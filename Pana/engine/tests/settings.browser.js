@@ -50,6 +50,12 @@ try {
   await page.keyboard.press('ArrowDown');
   await frames();
   assert.equal(await page.locator('html').getAttribute('data-pana-input'), 'keyboard', 'idle pad does not reclaim keyboard focus');
+  await page.evaluate(() => new Promise(resolve => { let value=0; function ramp(){ window.__pad.axes[0]=value+=.01; if(value>=.5)resolve();else requestAnimationFrame(ramp); } ramp(); }));
+  await frames();
+  assert.equal(await page.locator('html').getAttribute('data-pana-input'), 'gamepad', 'slow stick travel detects the controller');
+  await page.mouse.move(100,100); await page.mouse.move(700,400); await frames();
+  assert.equal(await page.locator('html').getAttribute('data-pana-input'), 'gamepad', 'mouse hover does not steal sustained controller input');
+  await page.evaluate(() => { __pad.axes[0]=0; }); await frames();
   await category('Mando'); await setting('padDeadzone', .3); await setting('padLookSensitivity', 2);
   await page.getByRole('button', { name: 'Probar sticks y botones', exact: true }).click();
   await page.evaluate(() => { __pad.axes = [.2, 0, 1, 0]; __pad.buttons[7] = { pressed: true, value: .7 }; });
@@ -69,7 +75,7 @@ try {
 
   for (const viewport of [{ width: 1280, height: 720 }, { width: 390, height: 844 }, { width: 667, height: 375 }]) {
     await page.setViewportSize(viewport);
-    for (const name of ['Tus controles', 'Ratón y teclado', 'Mando', 'Pantalla táctil', 'Imagen', 'Audio']) {
+    for (const name of ['Ratón y teclado', 'Mando', 'Pantalla táctil', 'Imagen', 'Audio']) {
       await category(name);
       assert.equal(await page.locator('.pana-menu').evaluate(n => n.scrollWidth > n.clientWidth + 1), false, `${name} fits ${viewport.width}`);
     }
@@ -90,6 +96,7 @@ try {
   const mobile = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
   const touch = await mobile.newPage(); await touch.goto(`${base}/ajustes.html`);
   await touch.locator('.pana-settings-workspace').waitFor();
+  await touch.getByText('Opciones de las ayudas', { exact: true }).tap();
   await touch.getByRole('radio', { name: 'Teclado', exact: true }).tap();
   assert.equal(await touch.locator('html').getAttribute('data-pana-input'), 'keyboard');
   await touch.getByRole('radio', { name: 'Automático', exact: true }).first().tap();

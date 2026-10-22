@@ -8,6 +8,11 @@ becomes the GitHub release's notes.
 
 ## Unreleased
 
+- **El mando mantiene sus ayudas al conducir y los controles comparten Ajustes.**
+  Los sticks lentos y los botones sostenidos se detectan sin que mover el
+  ratón cambie las ayudas. Cada dispositivo reúne instrucciones y sensibilidad;
+  las opciones adicionales se despliegan cuando las necesitas.
+
 - **Ajusta tus controles en una pantalla completa para todos los juegos.**
   Pana sigue el ratón, teclado, mando o pantalla táctil que estés usando y
   cambia las ayudas. Guarda sensibilidad por dispositivo, ejes verticales,

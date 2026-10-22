@@ -101,7 +101,7 @@ export function playKeys(pad, { move, keys = {}, buttons } = {}) {
 // ---------- menus ----------
 
 const shown = node => !!node && node.getClientRects().length > 0 && getComputedStyle(node).visibility !== 'hidden';
-const FOCUSABLE = 'button, a[href], input:not([type=hidden]), select, textarea, [tabindex]:not([tabindex="-1"]), [role=radio], [role=tab]';
+const FOCUSABLE = 'button, summary, a[href], input:not([type=hidden]), select, textarea, [tabindex]:not([tabindex="-1"]), [role=radio], [role=tab]';
 // The menu showing, if any: an open dialog, a results card, a panel marked
 // [data-pad-menu], the lobby, or the whole page when the game is not playing.
 export function menuScope() {
@@ -223,7 +223,7 @@ export function padLook(fn) { lookers.add(fn); return () => lookers.delete(fn); 
 
 // ---------- the loop ----------
 
-let before = null, beforeAxes = null, keysDown = new Set(), repeatAt = 0, lastDir = '', lastScope = null, untouched = false, last = 0, running = false,suspended=false,promptNode=null;
+let before = null, keysDown = new Set(), repeatAt = 0, lastDir = '', lastScope = null, untouched = false, last = 0, running = false,suspended=false,promptNode=null;
 function showPrompts(scope){
   if(!promptNode){promptNode=document.createElement('div');promptNode.className='pana-pad-prompts';promptNode.setAttribute('aria-label','Controles del mando');document.body.append(promptNode);}
   const state=inputState();promptNode.hidden=!!scope||state.device!=='gamepad'||!getSettings().hints;
@@ -270,15 +270,15 @@ function menu(scope, pad, now, edge, hud) {
 function frame(now) {
   const dt = Math.min(.1, (now - last) / 1000); last = now;
   const raw=firstPad(),pad = readPad(raw);
-  if (!pad) { release(); before = null; beforeAxes=null; running = false;connected=false;padId='';activate(lastPointer);publishInput(true);if(promptNode)promptNode.hidden=true;return; }
+  if (!pad) { release(); before = null; running = false;connected=false;padId='';activate(lastPointer);publishInput(true);if(promptNode)promptNode.hidden=true;return; }
   if(!connected||padId!==(raw.id||'')){connected=true;padId=raw.id||'';publishInput(true);}
   if(suspended||document.hidden){release();before=null;requestAnimationFrame(frame);return;}
   const was = before?.held || {}, edge = name => pad.held[name] && !was[name];
-  // Measure physical changes, not reshaped values: changing a slider must not
-  // make a stationary controller steal the active device from the mouse.
-  const moved=(raw.axes||[]).some((v,i)=>Math.abs(v)>Math.max(.12,getSettings().padDeadzone+.04)&&Math.abs(v-(beforeAxes?.[i]||0))>.04);
-  beforeAxes=Array.from(raw.axes||[]);
-  if(moved||NAMES.some(edge))activate('gamepad');
+  // Sustained driving and slow stick travel are activity too. A controller
+  // must not need a fresh edge. Use raw travel, independent of sensitivity.
+  const held=(raw.buttons||[]).some(button=>button.pressed||button.value>.05);
+  const steering=(raw.axes||[]).some(v=>Math.abs(v)>getSettings().padDeadzone+.01);
+  if(held||steering)activate('gamepad');
   const scope = menuScope();
   showPrompts(scope);
 
@@ -335,7 +335,8 @@ if (globalThis.document) {
   addEventListener('focus', ()=>{suspended=false;if(firstPad())start();});
   // The mouse takes over from the pad's highlight.
   addEventListener('pointerdown', e => { if (e.isTrusted) {clearMark();lastPointer=e.pointerType==='touch'?'touch':'keyboard';activate(lastPointer);} }, true);
-  addEventListener('pointermove', e=>{if(e.isTrusted&&e.pointerType==='mouse'&&Math.hypot(e.movementX,e.movementY)>3){lastPointer='keyboard';activate('keyboard');}},true);
+  // Hovering is not a device choice: controllers and desktop overlays can
+  // generate mouse motion. A real click or key press switches back explicitly.
   addEventListener('keydown', e=>{if(e.isTrusted&&!e.repeat){clearMark();lastPointer='keyboard';activate('keyboard');}},true);
   // A pad connected before the page loaded is listed once the page sees a press.
   if (firstPad()) start();

@@ -53,9 +53,10 @@ try {
 
   await press('start');
   await page.locator('dialog.pana-menu[open]').waitFor();
-  await press('rb'); await press('rb');
+  await press('rb');
+  await page.locator('[data-settings-category=pad]').waitFor();
   const panel = await page.locator('dialog.pana-menu [role=tabpanel]:not([hidden])').innerText();
-  assert.match(panel, /con mando/i); assert.match(panel, /Avanzar/);
+  assert.match(panel, /Cómo se juega/i); assert.match(panel, /Avanzar/);
   await press('b');
   await page.waitForFunction(() => !document.querySelector('dialog.pana-menu[open]'));
   console.log('PASS Start opens the menu, RB changes tab, B closes it');

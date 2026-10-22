@@ -212,6 +212,14 @@
 .pana-keys { gap: 20px 28px; }
 .pana-settings-panel { padding: 20px 4vw 0; overflow: hidden; }
 .pana-settings-workspace { height: 100%; display: grid; grid-template-columns: 190px minmax(0,1fr) 280px; grid-template-rows: minmax(0,1fr) auto; gap: 0 36px; }
+.pana-settings-workspace.without-monitor { grid-template-columns: 190px minmax(0,1fr); }
+.pana-input-advanced { margin-top: 26px; border-top: 1px solid var(--pm-line); padding-top: 18px; }
+.pana-input-advanced summary { cursor: pointer; color: var(--pm-muted); }
+.pana-device-help { margin: 16px 0 24px; padding-top: 20px; border-top: 1px solid var(--pm-line); }
+.pana-device-help h4 { margin: 0 0 18px; font: 24px var(--pm-display); color: var(--pm-yellow); }
+.pana-device-help .pana-keys-title { display: none; }
+.pana-menu [data-settings-help][hidden] { display: block !important; }
+[data-pana-input] .pana-menu [data-settings-help=keyboard] kbd { display: inline-flex !important; }
 .pana-settings-nav { display: flex; flex-direction: column; align-items: stretch; gap: 6px; padding: 12px 0; overflow: auto; }
 .pana-settings-nav button { flex: none; min-height: 48px; padding: 12px 14px; border: 0; border-radius: 0; background: transparent; color: var(--pm-muted); font: 900 16px Nunito,sans-serif; text-align: left; cursor: pointer; }
 .pana-settings-nav button[aria-current=true] { background: var(--pm-yellow); color: #141021; transform: skew(-6deg); }
@@ -235,7 +243,7 @@
 .pana-settings-note { margin: 28px 0 0; color: var(--pm-muted); font-size: 14px; line-height: 1.7; }
 .pana-settings-foot { grid-column: 1 / -1; display: flex; justify-content: space-between; align-items: center; gap: 16px; padding: 16px 0; border-top: 1px solid var(--pm-line); font-size: 13px; color: var(--pm-muted); }
 .pana-reset { background: transparent; border: 1px solid var(--pm-line); padding: 10px 16px; color: var(--pm-text); cursor: pointer; }
-.pana-input-monitor { align-self: start; margin: 8px 0; padding: 22px 18px; background: #15112d; border-top: 3px solid var(--pm-yellow); overflow: hidden; }
+.pana-input-monitor { align-self: start; min-height: 0; max-height: 100%; margin: 8px 0; padding: 22px 18px; background: #15112d; border-top: 3px solid var(--pm-yellow); overflow: auto; }
 .pana-monitor-eyebrow { color: var(--pm-muted); font-size: 11px; font-weight: 900; letter-spacing: .12em; }
 .pana-device-name { margin: 8px 0; font: 25px var(--pm-display); }
 .pana-device-status { margin: 0; color: var(--pm-yellow); font-size: 13px; }
@@ -271,6 +279,7 @@
 @media (max-width: 900px) {
   .pana-settings-panel { overflow: auto; }
   .pana-settings-workspace { height: auto; min-height: 100%; grid-template-columns: minmax(0,1fr) 250px; grid-template-rows: auto 1fr auto; }
+  .pana-settings-workspace.without-monitor { grid-template-columns: minmax(0,1fr); }
   .pana-settings-nav { grid-column: 1/-1; flex-direction: row; gap: 6px; padding: 4px 3px 16px; }
   .pana-settings-nav button { min-height: 42px; padding: 10px 14px; font-size: 14px; }
   .pana-settings-main { overflow: visible; }
