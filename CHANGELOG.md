@@ -8,6 +8,12 @@ becomes the GitHub release's notes.
 
 ## Unreleased
 
+- **Pepazo estrena armería completa y un campo para probar tu kit.**
+  Elige Chispa, Trueno, Gemelas o Cohetón; combina dos accesorios, protección,
+  granada y estilo. Cada mejora tiene su costo en movilidad, recarga o control,
+  y los kits funcionan tanto con amigos como contra bots.
+
+
 - **Los cables entre postes vuelven a verse en Pana Studio.**
   La vista previa respeta los dos extremos del cable al llamar su modelo.
 

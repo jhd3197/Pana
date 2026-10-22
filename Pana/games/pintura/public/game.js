@@ -1,3 +1,5 @@
+import { createArmory } from './armory.js';
+import { kitStats, MARKERS } from './armory-data.js';
 import { createLobbyRoster } from '/engine/lobby-roster.js';
 import { createRoomOptions } from '/engine/room-options.js';
 import { FIELDS, DEFAULT_OPTIONS } from './options.js';
@@ -24,11 +26,12 @@ const params = new URLSearchParams(location.search); params.set('room', code); h
 const held = new Set(), pads = []; let aim = null, firing = false, touchFire = false, queuedFire = false, queuedReload = false, stopped = false, lastPhase = 'lobby', lastEvent = null, lastRound = 0, lastLocal = false, lastBall = 0, lastKiller = '';
 const canvas = $('world'), world = createScene(canvas), minimap = createMinimap($('minimap'));
 const hitFeats = createHitFeats(createFeats($('toast')));
-let weapon = 'pistol';
+let weapon = 'pistol', queuedGrenade = false;
 let cameraView = 'primera', pointerPosition = null;
 const room = new PaintConnection({ code, name: loadName(), avatar: loadAvatar(), onState: render, onStatus(text, failed = false) {
   $('connection').textContent = text; $('recovery-copy').textContent = text; $('recovery').hidden = !failed || room.state.phase === 'lobby';
 } });
+const armory = createArmory({room,onPick:value=>{weapon=value;}});
 const teamRoster = createLobbyRoster($('team-roster'), { onMove: (from, to) => room.moveSeat(from, to) });
 const optionsUI = createRoomOptions($('room-options'), { title: 'Pepazo', fields: FIELDS, change: options => room.configure(options), reset() {
   room.configure(DEFAULT_OPTIONS); room.selectMap('plaza'); room.selectDifficulty(DEFAULT_DIFFICULTY);
@@ -37,11 +40,11 @@ const mapPicker = createMapPicker($('map-picker'), mapId => room.selectMap(mapId
 const difficultyPicker = createDifficultyPicker($('difficulty-picker'), difficulty => room.selectDifficulty(difficulty), { label: 'Puntería de los bots',
   notes: { facil: 'Los bots fallan seguido y disparan menos.', normal: 'Bots con buena mano, pero se les va alguna.', dificil: 'Los bots apuntan fino y no sueltan el gatillo.', experto: 'Casi no fallan: muévete y cúbrete.' } });
 const menu = createGameMenu({ pad: { move: 'wasd', look: 'Mirar y apuntar', keys: { rt: ['Space', 'Disparar'], a: ['Space', 'Disparar'], x: ['KeyR', 'Recargar'], lb: ['ShiftLeft', 'Correr'], ls: ['ShiftLeft', 'Correr'], view: ['Tab', 'Ver la tabla'] } }, title: 'Pepazo · Pana', orientation: 'libre', sound,
-  options: [{ id: 'weapon', label: 'Marcadora (si la sala permite todas)', choices: [['pistol', 'Pistola'], ['scatter', 'Escopeta'], ['rapid', 'Automática']], get: () => weapon, set: value => { weapon = value; } },
+  options: [{ id: 'weapon', label: 'Marcadora (si la sala permite todas)', choices: MARKERS.map(m=>[m.id,m.name]), get: () => weapon, set: value => { weapon = value; } },
     { id: 'view', label: 'Cámara', choices: [['primera', 'Primera persona'], ['cancha', 'Ver la cancha']], get: () => cameraView, set: value => { cameraView = value; world.setView(value); } },
     { id: 'mouse', label: 'Sensibilidad al mirar', choices: SENSITIVITY_CHOICES, get: () => looking.sensitivity, set: value => { looking.sensitivity = value; } }],
   note: () => room.local ? 'La práctica está en pausa.' : 'La ronda online sigue mientras estás en el menú.',
-  controls: [['WASD / Flechas', 'Caminar hacia donde miras'], ['Ratón', 'Mirar y apuntar (haz clic en la cancha para capturarlo)'], ['Clic / Espacio', 'Disparar pintura'], ['Shift', 'Correr (no puedes disparar corriendo)'], ['Tab', 'Ver la tabla'], ['Q / E', 'Girar sin ratón'], ['R', 'Recargar'], ['1 / 2 / 3', 'Pistola / escopeta / automática'], ['M', 'Sonido'], ['Esc', 'Soltar el ratón y abrir el menú']],
+  controls: [['WASD / Flechas', 'Caminar hacia donde miras'], ['Ratón', 'Mirar y apuntar (haz clic en la cancha para capturarlo)'], ['Clic / Espacio', 'Disparar pintura'], ['Shift', 'Correr (no puedes disparar corriendo)'], ['Tab', 'Ver la tabla'], ['Q / E', 'Girar sin ratón'], ['R', 'Recargar'], ['1 / 2 / 3 / 4', 'Chispa / Trueno / Gemelas / Cohetón'], ['G', 'Lanzar granada'], ['M', 'Sonido'], ['Esc', 'Soltar el ratón y abrir el menú']],
   tips: ['Una pintada suma un punto. Gana quien llegue a diez o lidere al terminar el tiempo. Con vidas limitadas también gana el último pana o equipo en pie. En bandera gana el equipo con tres capturas.',
     'Las barricadas frenan las bolas. Tienes doce por carga; recargas con R o automáticamente al vaciarla.',
     'Vuelves a la cancha 2,5 segundos después de una pintada. Al reaparecer tienes 1,5 segundos de protección; disparar la cancela.',
@@ -52,10 +55,11 @@ const menu = createGameMenu({ pad: { move: 'wasd', look: 'Mirar y apuntar', keys
 });
 $('game-nav').append(menu.createInviteButton({ id: 'invite', className: 'pk-btn' }), menu.createButton({ id: 'menu', className: 'pk-btn' }));
 $('room-code').textContent = `Sala ${code}`; $('rules').onclick = () => menu.open('controls');
+$('grenade').onclick=()=>{if(active())queuedGrenade=true;};
 $('start').onclick = () => { sound.unlock(); room.start(); }; $('again').onclick = () => room.start();
 for (const id of ['practice', 'fallback']) $(id).onclick = () => { menu.close(); $('recovery').hidden = true; room.practice(); };
-function clearInput() { held.clear(); firing = touchFire = queuedFire = queuedReload = false; pads.forEach(p => p.release()); room.input({}); }
-function active() { return room.connected && room.state.phase === 'playing' && !menu.isOpen; }
+function clearInput() { held.clear(); firing = touchFire = queuedFire = queuedReload = queuedGrenade = false; pads.forEach(p => p.release()); room.input({}); }
+function active() { return !$('armory').open && room.connected && room.state.phase === 'playing' && !menu.isOpen; }
 for (const [id, key] of [['up', 'w'], ['left', 'a'], ['down', 's'], ['right', 'd'], ['reload', 'r']]) pads.push(holdButton($(id), { down: () => { held.add(key); if (key === 'r') queuedReload = true; }, up: () => held.delete(key), paused: () => !active() }));
 pads.push(holdButton($('fire'), { down: () => { touchFire = queuedFire = true; sound.unlock(); }, up: () => { touchFire = false; }, paused: () => !active() }));
 const looking = createLookControls(canvas, { enabled: () => active() && cameraView === 'primera', look: (yaw, pitch) => world.look(yaw, pitch),
@@ -72,7 +76,8 @@ for (const type of ['pointerup', 'pointercancel']) canvas.addEventListener(type,
 addEventListener('blur', clearInput); document.addEventListener('visibilitychange', () => { if (document.hidden) clearInput(); });
 addEventListener('keydown', event => {
   if (menu.isOpen || event.target.closest?.('input, button, textarea, select, a')) return;
-  const key = event.key.toLowerCase(); if (['1', '2', '3'].includes(key)) weapon = ['pistol', 'scatter', 'rapid'][Number(key) - 1]; if (key === 'm') toggleMute();
+  const key = event.key.toLowerCase(); if (['1', '2', '3', '4'].includes(key)) weapon = ['pistol', 'scatter', 'rapid', 'rocket'][Number(key) - 1]; if (key === 'm') toggleMute();
+  if (key === 'g' && active() && !event.repeat) queuedGrenade = true;
   if (key === 'tab') { event.preventDefault(); if (room.state.phase === 'playing') showBoard(true); }
   if (['w', 'a', 's', 'd', 'q', 'e', 'r', ' ', 'shift', 'arrowup', 'arrowleft', 'arrowdown', 'arrowright'].includes(key)) { event.preventDefault(); if (active()) { held.add(key); if (key === ' ') queuedFire = true; if (key === 'r') queuedReload = true; } }
 });
@@ -100,7 +105,7 @@ function input() {
     if (target) { ax = target.x - me.x; az = target.z - me.z; }
   }
   const length = Math.hypot(ax, az) || 1;
-  return { weapon, ...world.movement(Number(held.has('d') || held.has('arrowright')) - Number(held.has('a') || held.has('arrowleft')),
+  return { weapon, grenade:queuedGrenade, ...world.movement(Number(held.has('d') || held.has('arrowright')) - Number(held.has('a') || held.has('arrowleft')),
     Number(held.has('s') || held.has('arrowdown')) - Number(held.has('w') || held.has('arrowup'))), sprint: held.has('shift'),
     ax: ax / length, az: az / length, fire: queuedFire || firing || touchFire || held.has(' '), reload: queuedReload || held.has('r') };
 }
@@ -144,7 +149,7 @@ function shots(state, me) {
   lastBall = Math.max(lastBall, ...state.balls.map(b => b.id));
 }
 function aguante(state, me) {
-  const total = state.options?.toughness || 3, left = me ? Math.max(0, total - (me.paint || 0)) : total, key = `${total}:${left}`;
+  const total = kitStats(me?.kit,state.options).toughness, left = me ? Math.max(0, total - (me.paint || 0)) : total, key = `${total}:${left}`;
   if ($('aguante').dataset.key === key) return; $('aguante').dataset.key = key;
   $('aguante').replaceChildren(...Array.from({ length: total }, (_, i) => { const pip = document.createElement('i'); pip.className = i < left ? 'pip' : 'pip pip--painted'; return pip; }));
   $('aguante').setAttribute('aria-label', `Aguante ${left} de ${total}`);
@@ -169,7 +174,7 @@ function render(state) {
   const me = state.players.find(p => p.id === room.id), order = [...state.players].sort((a, b) => b.score - a.score || a.hits - b.hits);
   $('score').textContent = `${me?.score || 0} / ${TARGET}`; $('position').textContent = `${Math.max(1, order.findIndex(p => p.id === room.id) + 1)} de ${state.players.length} panas`;
   const seconds = Math.ceil(state.time); $('timer').textContent = `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`;
-  $('ammo').textContent = me?.reload > 0 ? `Recargando ${me.reload.toFixed(1)} s` : `${me?.ammo ?? 12} / 12 · ${{ pistol: 'Pistola', scatter: 'Escopeta', rapid: 'Automática' }[me?.weapon || 'pistol']}${state.options?.lives ? ` · ${Math.max(0, state.options.lives - (me?.hits || 0))} vidas` : ''}`;
+  $('ammo').textContent = me?.reload > 0 ? `Recargando ${me.reload.toFixed(1)} s` : `${me?.ammo ?? 12} / ${kitStats(me?.kit,state.options).magazine} · ${MARKERS.find(m=>m.id===me?.weapon)?.name || 'La Chispa'}${state.options?.lives ? ` · ${Math.max(0, state.options.lives - (me?.hits || 0))} vidas` : ''}`;
   $('feed').textContent = `${state.message}${state.options?.mode === 'teams' || state.options?.flag ? ` · Naranja ${state.teamScores?.[0] || 0} — Turquesa ${state.teamScores?.[1] || 0}` : ''}`; $('respawn').hidden = !me?.respawn && !me?.eliminated; $('respawn').textContent = me?.eliminated ? `${lastKiller || '¡Te pintaron!'} · sin vidas, observando la ronda` : `${lastKiller || '¡Te pintaron!'} · vuelves en ${Math.ceil(me?.respawn || 0)}`;
   // Events and balls are numbered per simulation: starting practice begins a new count.
   if (room.local !== lastLocal) { lastLocal = room.local; lastEvent = null; lastBall = 0; lastRound = 0; }
@@ -177,7 +182,8 @@ function render(state) {
   if (lastEvent === null) lastEvent = Math.max(0, ...events.map(e => e.n));
   for (const e of events) if (e.n > lastEvent) { lastEvent = e.n; if (state.phase === 'playing') announce(e, state); }
   if (state.phase === 'playing') shots(state, me); else lastBall = 0;
-  aguante(state, me);
+  aguante(state, me); $('grenade').disabled=!me?.grenadeReady; $('grenade').textContent=me?.grenadeReady?'Granada':'Sin granada';
+  if(state.phase==='playing' && $('armory').open) $('armory').close();
   $('stamina').style.setProperty('--left', String(me?.stamina ?? 1)); $('stamina').classList.toggle('stamina--full', (me?.stamina ?? 1) >= 1);
   if (!$('scoreboard').hidden) showBoard(true);
   if (state.phase === 'playing' && state.round !== lastRound) { lastRound = state.round; $('variant').textContent = `Cancha ${variantName(state.mapId, state.variant || 0)}`; flash('round-start'); hitFeats.reset(); }
@@ -195,15 +201,15 @@ function render(state) {
   lastPhase = state.phase;
 }
 let previous = performance.now(), stoppedAt = previous;
-const timer = setInterval(() => { const now = performance.now(), dt = (now - stoppedAt) / 1000; stoppedAt = now; room.input(input()); queuedFire = queuedReload = false; room.tick(dt, menu.isOpen); }, 50);
+const timer = setInterval(() => { const now = performance.now(), dt = (now - stoppedAt) / 1000; stoppedAt = now; room.input(input()); queuedFire = queuedReload = queuedGrenade = false; room.tick(dt, menu.isOpen); }, 50);
 function frame(now) {
   if (stopped) return; const dt = Math.min(.05, (now - previous) / 1000); previous = now;
   if (active()) world.look((Number(held.has('q')) - Number(held.has('e'))) * dt * 2.2);
   document.body.classList.toggle('first-person', cameraView === 'primera' && room.state.phase === 'playing');
-  world.draw(room.state, room.id, dt, aim); minimap.draw(room.state, room.id, world.forward()); requestAnimationFrame(frame);
+  armory.update(dt); world.draw(room.state, room.id, dt, aim); minimap.draw(room.state, room.id, world.forward()); requestAnimationFrame(frame);
 }
 render(room.state); room.connect(); requestAnimationFrame(frame);
-addEventListener('pagehide', () => { stopped = true; clearInterval(timer); teamRoster.dispose(); looking.dispose(); room.dispose(); world.dispose(); }, { once: true });
+addEventListener('pagehide', () => { stopped = true; clearInterval(timer); armory.dispose(); teamRoster.dispose(); looking.dispose(); room.dispose(); world.dispose(); }, { once: true });
 if (params.has('debug')) window.pinturaDebug = { room, world, menu, input };
 
 await prepareScene(world);

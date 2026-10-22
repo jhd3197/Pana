@@ -1,3 +1,4 @@
+import { cleanKit, kitStats, GRENADES } from './armory-data.js';
 import { canMoveSeats } from '../../../engine/play/seat-rules.js';
 import { DEFAULT_OPTIONS, validOptions } from './options.js';
 import { paintArenaInfo, arenaLayout, ARENA_SPAWNS, validPaintArena } from '../../../engine/worlds/arena-layouts.js';
@@ -30,7 +31,7 @@ export function cleanInput(input = {}) {
   const num = n => Number.isFinite(n) ? clamp(n, -1, 1) : 0;
   let x = num(input.x), z = num(input.z), length = Math.hypot(x, z); if (length > 1) { x /= length; z /= length; }
   let ax = num(input.ax), az = num(input.az); length = Math.hypot(ax, az); if (length > .01) { ax /= length; az /= length; } else { ax = 0; az = -1; }
-  return { x, z, ax, az, weapon: ['pistol', 'scatter', 'rapid'].includes(input.weapon) ? input.weapon : 'pistol', fire: input.fire === true, reload: input.reload === true, sprint: input.sprint === true };
+  return { x, z, ax, az, weapon: ['pistol', 'scatter', 'rapid', 'rocket'].includes(input.weapon) ? input.weapon : null, fire: input.fire === true, reload: input.reload === true, sprint: input.sprint === true, grenade: input.grenade === true };
 }
 export const spawnsFor = id => id === 'muelle' ? MUELLE_SPAWNS : id === 'noche' ? NOCHE_SPAWNS : arenaLayout(id) ? PAINT_SPAWNS : SPAWNS;
 // Half-width of each map's court: the container yard is larger still.
@@ -86,7 +87,8 @@ function segmentCircle(x, z, dx, dz, p) {
   const t = (-b - Math.sqrt(disc)) / (2 * a); return t >= 0 && t <= 1 ? t : null;
 }
 export class Arena {
-  constructor(mapId = 'plaza', difficulty = DEFAULT_DIFFICULTY, options = {}) { this.options = { ...DEFAULT_OPTIONS, ...(validOptions(options) ? options : {}) }; this.flags = []; this.teamScores = [0, 0]; this.mapId = paintArenaInfo(mapId).id; this.variant = 0; this.events = []; this.eventSerial = 0; this.difficulty = validDifficulty(difficulty) ? difficulty : DEFAULT_DIFFICULTY; this.phase = 'lobby'; this.players = []; this.balls = []; this.splats = []; this.time = DURATION; this.round = 0; this.serial = 0; this.message = 'La cancha está lista.'; }
+  constructor(mapId = 'plaza', difficulty = DEFAULT_DIFFICULTY, options = {}) { this.options = { ...DEFAULT_OPTIONS, ...(validOptions(options) ? options : {}) }; this.flags = []; this.teamScores = [0, 0]; this.mapId = paintArenaInfo(mapId).id; this.variant = 0; this.events = []; this.eventSerial = 0; this.difficulty = validDifficulty(difficulty) ? difficulty : DEFAULT_DIFFICULTY; this.phase = 'lobby'; this.players = []; this.balls = []; this.splats = []; this.grenades = []; this.puddles = []; this.time = DURATION; this.round = 0; this.serial = 0; this.message = 'La cancha está lista.'; }
+  selectKit(id, value) { const p=this.players.find(p=>p.id===id && p.connected); if(!p || this.phase==='playing') return false; p.kit=cleanKit(value); p.weapon=p.kit.weapon; return true; }
   configure(options) { if (this.phase === 'playing' || !validOptions(options)) return false; Object.assign(this.options, options); this.players.forEach(p => { p.color = COLORS[(this.options.mode === 'teams' || this.options.flag) ? p.team : p.seat]; }); return true; }
   moveSeat(actorId, from, to, hostId) {
     if (!['lobby', 'finished'].includes(this.phase) || !(this.options.mode === 'teams' || this.options.flag)) return false;
@@ -114,21 +116,23 @@ export class Arena {
     if (seat === undefined) return null;
     const team = seat % 2, color = COLORS[(this.options.mode === 'teams' || this.options.flag) ? team : seat];
     if (p) { Object.assign(p, info, { connected: true, seat, team, color }); return p; }
-    p = { id, ...info, connected: true, seat, team, eliminated: false, slow: 0, weapon: 'pistol', ...spawnsFor(this.mapId)[this.players.length % 8], ax: 0, az: -1, score: 0, hits: 0, paint: 0, stains: [], calm: 0, streak: 0, nemesis: null, stamina: 1, sprint: false, ammo: 12, reload: 0, cooldown: 0, respawn: 0, shield: 1.5, color };
+    p = { id, ...info, connected: true, seat, team, eliminated: false, slow: 0, weapon: 'pistol', kit: cleanKit(), grenadeReady: true, grenadeHeld: false, shots: 0, reserve: 0, ...spawnsFor(this.mapId)[this.players.length % 8], ax: 0, az: -1, score: 0, hits: 0, paint: 0, stains: [], calm: 0, streak: 0, nemesis: null, stamina: 1, sprint: false, ammo: 12, reload: 0, cooldown: 0, respawn: 0, shield: 1.5, color };
     this.players.push(p); return p;
   }
   start() {
     if (this.phase === 'playing' || !this.canStart()) return false;
-    this.players = this.players.filter(p => p.connected); this.phase = 'playing'; this.survivors = null; this.round++; this.variant = (this.round - 1) % VARIANTS; this.time = this.options.duration; this.teamScores = [0, 0]; this.flags = spawnsFor(this.mapId).slice(0, 2).map(({ x, z }, team) => ({ team, x, z, homeX: x, homeZ: z, carrier: null })); this.balls = []; this.splats = [];
+    this.players = this.players.filter(p => p.connected); this.phase = 'playing'; this.survivors = null; this.round++; this.variant = (this.round - 1) % VARIANTS; this.time = this.options.duration; this.teamScores = [0, 0]; this.flags = spawnsFor(this.mapId).slice(0, 2).map(({ x, z }, team) => ({ team, x, z, homeX: x, homeZ: z, carrier: null })); this.balls = []; this.splats = []; this.grenades = []; this.puddles = [];
     this.players.forEach((p, i) => Object.assign(p, spawnsFor(this.mapId)[i % 8], { eliminated: false, slow: 0, color: (this.options.mode === 'teams' || this.options.flag) ? COLORS[p.team] : COLORS[i % 8], score: 0, hits: 0, paint: 0, stains: [], calm: 0, streak: 0, nemesis: null, stamina: 1, sprint: false, ammo: 12, reload: 0, cooldown: 0, respawn: 0, shield: 1.5 }));
+    this.players.forEach(p => this.refill(p));
     this.message = `¡A pintar! Cancha ${variantName(this.mapId, this.variant).toLowerCase()}.`; return true;
   }
+  refill(p) { const stats=kitStats(p.kit,this.options); p.ammo=stats.magazine; p.reserve=stats.reserve ?? 0; p.weapon=stats.id; p.grenadeReady=true; p.grenadeHeld=false; p.shots=0; }
   respawn(p) {
     const spawn = [...spawnsFor(this.mapId)].sort((a, b) => {
       const nearest = s => Math.min(...this.players.filter(q => q.id !== p.id && q.connected && !q.respawn && !q.eliminated && !this.sameTeam(p, q)).map(q => Math.hypot(q.x - s.x, q.z - s.z)), 100);
       return nearest(b) - nearest(a);
     })[0];
-    Object.assign(p, spawn, { ammo: 12, reload: 0, cooldown: 0, shield: 1.5, paint: 0, stains: [], calm: 0, stamina: 1 });
+    Object.assign(p, spawn, { ammo: 12, reload: 0, cooldown: 0, shield: 1.5, paint: 0, stains: [], calm: 0, stamina: 1 }); this.refill(p);
   }
   bot(p) {
     const enemies = this.players.filter(q => q.id !== p.id && q.connected && !q.respawn && !q.eliminated && !this.sameTeam(p, q)).sort((a, b) => Math.hypot(a.x - p.x, a.z - p.z) - Math.hypot(b.x - p.x, b.z - p.z));
@@ -158,20 +162,32 @@ export class Arena {
       p.shield = Math.max(0, p.shield - dt); p.cooldown = Math.max(0, p.cooldown - dt);
       // Paint wears off after four quiet seconds, one pepazo every 1.5 s.
       if (p.paint > 0 && (p.calm += dt) >= 4) { p.paint--; p.stains = p.stains.slice(1); p.calm = 2.5; }
-      if (p.reload > 0) { p.reload = Math.max(0, p.reload - dt); if (!p.reload) p.ammo = 12; }
+      let stats=kitStats(p.kit,this.options);
+      if (p.reload > 0) { p.reload = Math.max(0, p.reload - dt); if (!p.reload) { p.ammo = stats.id === 'rocket' ? Math.min(1,p.reserve) : stats.magazine; if(stats.id==='rocket') p.reserve-=p.ammo; } }
       const input = p.bot ? this.bot(p) : cleanInput(inputs.get(p.id));
-      p.weapon = this.options.weapons === 'pistol' ? 'pistol' : input.weapon;
+      if(input.weapon && input.weapon !== p.kit.weapon && this.options.weapons !== 'pistol') {
+        p.kit={...p.kit,weapon:input.weapon}; stats=kitStats(p.kit,this.options);
+        p.ammo=Math.min(p.ammo,stats.magazine); p.reserve=0;
+        if(p.shots>0) { p.ammo=0; p.reload=stats.reload; }
+      }
+      p.weapon=stats.id;
+      if(input.grenade && !p.grenadeHeld && p.grenadeReady) this.throwGrenade(p,input);
+      p.grenadeHeld=input.grenade;
       p.ax = input.ax; p.az = input.az;
       // Shift sprints 45% faster for up to three seconds; sprinting holds fire.
-      const sprinting = input.sprint && !input.fire && p.stamina > 0 && !!(input.x || input.z);
+      const sprinting = stats.sprint && input.sprint && !input.fire && p.stamina > 0 && !!(input.x || input.z);
       p.stamina = clamp(p.stamina + (sprinting ? -dt / 3 : dt / 5), 0, 1); p.sprint = sprinting;
-      const speed = SPEED * (p.slow > 0 ? .45 : 1) * (sprinting ? 1.45 : 1), x = p.x + input.x * speed * dt, z = p.z + input.z * speed * dt;
+      const speed = SPEED * stats.mobility * (p.slow > 0 ? .45 : 1) * (sprinting ? 1.45 : 1), x = p.x + input.x * speed * dt, z = p.z + input.z * speed * dt;
       if (!blocked(x, p.z, RADIUS, this.mapId, this.variant)) p.x = x; if (!blocked(p.x, z, RADIUS, this.mapId, this.variant)) p.z = z;
       p.walk = !!(input.x || input.z);
-      if ((input.reload || p.ammo === 0) && !p.reload && p.ammo < 12) p.reload = this.options.fastReload ? .55 : 1.3;
+      if ((input.reload || p.ammo === 0) && !p.reload && p.ammo < stats.magazine && (stats.id !== 'rocket' || p.reserve > 0)) p.reload = stats.reload;
       if (input.fire && !sprinting && !p.cooldown && !p.reload && p.ammo > 0) {
-        p.ammo--; p.cooldown = p.weapon === 'rapid' ? .13 : p.weapon === 'scatter' ? .75 : .25; p.shield = 0;
-        for (const angle of p.weapon === 'scatter' ? [-.18, 0, .18] : [0]) this.balls.push({ id: ++this.serial, owner: p.id, color: p.color, x: p.x, z: p.z, vx: (p.ax * Math.cos(angle) - p.az * Math.sin(angle)) * BALL_SPEED, vz: (p.az * Math.cos(angle) + p.ax * Math.sin(angle)) * BALL_SPEED, life: p.weapon === 'scatter' ? .5 : 1.5 });
+        p.ammo--; p.shots++; p.cooldown=stats.cadence; p.shield=0;
+        const jitter=stats.pellets===1 ? Math.sin(p.shots*2.4)*stats.spread : 0;
+        const angles=stats.pellets===3 ? [-stats.spread,0,stats.spread] : [jitter];
+        for(const angle of angles) this.balls.push({ id:++this.serial, owner:p.id, color:p.color, x:p.x, z:p.z,
+          vx:(p.ax*Math.cos(angle)-p.az*Math.sin(angle))*stats.speed, vz:(p.az*Math.cos(angle)+p.ax*Math.sin(angle))*stats.speed,
+          life:stats.life, rocket:stats.id==='rocket', splash:stats.splash || 0, pattern:p.kit.pattern, hand:p.weapon==='rapid'?p.shots%2:0 });
       }
     }
     for (const ball of this.balls) {
@@ -182,10 +198,13 @@ export class Arena {
       }
       ball.x += dx * Math.min(1, earliest); ball.z += dz * Math.min(1, earliest); ball.life -= dt;
       if (earliest <= 1 || Math.abs(ball.x) > sizeFor(this.mapId) || Math.abs(ball.z) > sizeFor(this.mapId)) {
-        ball.life = 0; this.splats.push({ id: ball.id, x: ball.x, z: ball.z, color: ball.color, life: 9 });
-        if (victim) this.hit(victim, this.players.find(p => p.id === ball.owner), ball.color);
+        ball.life = 0; this.splats.push({ id: ball.id, x: ball.x, z: ball.z, color: ball.color, life: 9, pattern: ball.pattern });
+        if (ball.rocket) this.blast(ball,ball.splash);
+        else if (victim) this.hit(victim, this.players.find(p => p.id === ball.owner), ball.color);
       }
     }
+    for(const ball of this.balls) if(ball.rocket && ball.life<=0 && !ball.exploded) this.blast(ball,ball.splash);
+    this.stepGrenades(dt);
     this.balls = this.balls.filter(b => b.life > 0); this.splats = this.splats.filter(s => (s.life -= dt) > 0).slice(-64);
     if (this.options.flag) this.updateFlags();
     const alive = this.players.filter(p => p.connected && !p.eliminated), teams = this.options.mode === 'teams' || this.options.flag;
@@ -193,11 +212,40 @@ export class Arena {
     if (eliminatedEnd) this.survivors = alive.map(p => p.id);
     if (this.time <= 0 || eliminatedEnd || (this.options.flag ? this.teamScores.some(s => s >= 3) : teams ? this.teamScores.some(s => s >= TARGET) : this.players.some(p => p.score >= TARGET))) { this.phase = 'finished'; this.balls = []; }
   }
+  throwGrenade(p,input) {
+    p.grenadeReady=false; p.shield=0;
+    const def=GRENADES.find(g=>g.id===p.kit.grenade);
+    this.grenades.push({id:++this.serial,owner:p.id,color:p.color,kind:def.id,x:p.x,z:p.z,vx:input.ax*12,vz:input.az*12,life:def.fuse,total:def.fuse,radius:def.radius,bounced:false});
+  }
+  blast(b,radius) {
+    if(b.exploded) return; b.exploded=true;
+    const owner=this.players.find(p=>p.id===b.owner);
+    for(const p of this.players) if(p.id!==b.owner && p.connected && !p.respawn && !p.eliminated && !p.shield
+      && (this.options.friendlyFire || !this.sameTeam(p,owner)) && Math.hypot(p.x-b.x,p.z-b.z)<=radius
+      && !this.cover.some(o=>segmentBox(b.x,b.z,p.x-b.x,p.z-b.z,o,.01)!==null)) this.hit(p,owner,b.color);
+    this.splats.push({id:++this.serial,x:b.x,z:b.z,color:b.color,life:9,radius,pattern:'splat'});
+  }
+  stepGrenades(dt) {
+    for(const g of this.grenades) {
+      const dx=g.vx*dt,dz=g.vz*dt,wall=this.cover.some(o=>segmentBox(g.x,g.z,dx,dz,o,.15)!==null) || Math.abs(g.x+dx)>sizeFor(this.mapId)-.2 || Math.abs(g.z+dz)>sizeFor(this.mapId)-.2;
+      if(wall) { if(g.kind==='chispita' && !g.bounced) { g.vx*=-.65;g.vz*=-.65;g.bounced=true; } else { g.vx=g.vz=0; } }
+      else { g.x+=dx;g.z+=dz; }
+      if(g.kind==='chispita' && !g.bounced && g.life<g.total/2) {g.bounced=true;g.vx*=.75;g.vz*=.75;}
+      g.life-=dt;
+      if(g.life<=0) { this.blast(g,g.radius); if(g.kind==='pegajosa') this.puddles.push({id:++this.serial,owner:g.owner,x:g.x,z:g.z,color:g.color,radius:3.3,life:5}); }
+    }
+    this.grenades=this.grenades.filter(g=>g.life>0);
+    for(const pool of this.puddles) {
+      pool.life-=dt; const owner=this.players.find(p=>p.id===pool.owner);
+      for(const p of this.players) if(p.id!==pool.owner && !this.sameTeam(p,owner) && !p.shield && Math.hypot(p.x-pool.x,p.z-pool.z)<pool.radius) p.slow=Math.max(p.slow,.2);
+    }
+    this.puddles=this.puddles.filter(p=>p.life>0);
+  }
   // A pepazo stains the victim; the last one their aguante allows takes them out.
   hit(victim, owner, color) {
     const distance = owner ? Math.round(Math.hypot(owner.x - victim.x, owner.z - victim.z)) : 0;
     victim.paint++; victim.stains = [...victim.stains, color].slice(-5); victim.calm = 0;
-    if (victim.paint < this.options.toughness) { this.event('hit', owner, victim, distance); return; }
+    if (victim.paint < kitStats(victim.kit,this.options).toughness) { this.event('hit', owner, victim, distance); return; }
     victim.respawn = 2.5; victim.hits++; victim.slow = this.options.paint === 'sticky' ? 7 : 0; victim.eliminated = this.options.lives > 0 && victim.hits >= this.options.lives;
     const rival = !!owner && !this.sameTeam(owner, victim), revenge = rival && owner.nemesis === victim.id;
     if (rival) { owner.score++; owner.streak++; if (revenge) owner.nemesis = null; victim.nemesis = owner.id; if (!this.options.flag) this.teamScores[owner.team]++; }
@@ -234,7 +282,7 @@ export class Arena {
     const best = teams ? Math.max(...this.teamScores) : Math.max(...this.players.map(p => p.score));
     return this.players.filter(p => (teams ? this.teamScores[p.team] : p.score) === best).map(p => p.id);
   }
-  view() { return { winners: this.winners(), options: { ...this.options }, flags: this.flags.map(f => ({ ...f })), teamScores: [...this.teamScores], mapId: this.mapId, variant: this.variant, events: this.events.map(e => ({ ...e })), difficulty: this.difficulty, phase: this.phase, round: this.round, time: this.time, players: this.players.map(p => ({ ...p, stains: [...p.stains] })), balls: this.balls.map(b => ({ ...b })), splats: this.splats.map(s => ({ ...s })), message: this.message }; }
+  view() { return { winners: this.winners(), options: { ...this.options }, flags: this.flags.map(f => ({ ...f })), teamScores: [...this.teamScores], mapId: this.mapId, variant: this.variant, events: this.events.map(e => ({ ...e })), difficulty: this.difficulty, phase: this.phase, round: this.round, time: this.time, players: this.players.map(p => ({ ...p, stains: [...p.stains] })), grenades:this.grenades.map(g=>({...g})), puddles:this.puddles.map(p=>({...p})), balls: this.balls.map(b => ({ ...b })), splats: this.splats.map(s => ({ ...s })), message: this.message }; }
 }
 
 // Stable lobby positions are independent of member IDs and survive roster changes.

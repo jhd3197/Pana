@@ -8,6 +8,18 @@ const svg = (body, label = '') =>
 const INK = '#16161a';
 
 export const ICONS = {
+  kitBarrel: svg('<path d="M4 16h26v8H4z M30 14h6v12h-6z" fill="currentColor"/>'),
+  kitHopper: svg('<path d="M7 27C7 9 33 9 33 27z M16 27h8v7h-8z" fill="currentColor"/>'),
+  kitVest: svg('<path d="M12 6l4 4h8l4-4 6 6-3 6v16H9V18l-3-6z" fill="currentColor"/>'),
+  kitGrenade: svg('<circle cx="20" cy="23" r="12" fill="currentColor"/><path d="M16 8h8v5h-8z" fill="currentColor"/>'),
+  kitMotor: svg('<rect x="8" y="14" width="22" height="16" rx="2" fill="currentColor"/><rect x="12" y="8" width="9" height="6" fill="currentColor"/><path d="M30 18h4v8h-4M8 19H4v6h4" fill="none" stroke="currentColor" stroke-width="2.5"/>'),
+  kitWheel: svg('<circle cx="20" cy="20" r="15" fill="#2b2b33" stroke="#16161a" stroke-width="2.5"/><circle cx="20" cy="20" r="6" fill="#d9d4c7" stroke="#16161a" stroke-width="2.5"/>'),
+  kitSpoiler: svg('<path d="M4 12h32l-3 6H7z" fill="currentColor"/><path d="M12 18v12M28 18v12" fill="none" stroke="currentColor" stroke-width="3"/>'),
+  kitPaint: svg('<path d="M20 5C14 15 10 20 10 25a10 10 0 0 0 20 0c0-5-4-10-10-20z" fill="currentColor" stroke="#16161a" stroke-width="2.5"/>'),
+  kitHorn: svg('<path d="M6 16h8l16-8v24l-16-8H6z" fill="currentColor" stroke="#16161a" stroke-width="2.5"/>'),
+  kitHull: svg('<path d="M4 16h32l-6 14H10z" fill="currentColor" stroke="#16161a" stroke-width="2.5"/>'),
+  kitProp: svg('<path d="M20 20L14 6a6 6 0 0 1 12 0zM20 20l14 6a6 6 0 0 1-6 10zM20 20L6 30a6 6 0 0 1-2-12z" fill="currentColor" stroke="#16161a" stroke-width="2.5"/><circle cx="20" cy="20" r="3" fill="#16161a"/>'),
+  kitWing: svg('<path d="M4 18h26l6 6H8z" fill="currentColor" stroke="#16161a" stroke-width="2.5"/>'),
   'wardrobe-pelaje': svg("<path d=\"M12 20c-3 0-5 3-5 6 0 4 3 6 6 5 2-.5 3-1 7-1s5 .5 7 1c3 1 6-1 6-5 0-3-2-6-5-6-4 0-4-4-8-4s-4 4-8 4z\"/><circle cx=\"9\" cy=\"11\" r=\"3\"/><circle cx=\"16\" cy=\"7\" r=\"3\"/><circle cx=\"24\" cy=\"7\" r=\"3\"/><circle cx=\"31\" cy=\"11\" r=\"3\"/>"),
   'wardrobe-cara': svg("<circle cx=\"20\" cy=\"20\" r=\"14\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"3.4\"/><circle cx=\"14.5\" cy=\"17\" r=\"2.4\"/><circle cx=\"25.5\" cy=\"17\" r=\"2.4\"/><path d=\"M13 23c3 5 11 5 14 0\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"3.4\" stroke-linecap=\"round\"/>"),
   'wardrobe-cabeza': svg("<path d=\"M7 25c0-9 6-15 13-15s13 6 13 15z\"/><path d=\"M5 26h30a2 2 0 0 1 0 4H5a2 2 0 0 1 0-4z\"/><circle cx=\"20\" cy=\"8\" r=\"2.6\"/>"),

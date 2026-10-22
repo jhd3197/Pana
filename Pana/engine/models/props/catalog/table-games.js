@@ -8,5 +8,10 @@ export default [
   ['cacho', 'Cacho de cuero', 'cacho', 'createCacho', '¿Quién empieza?', {}],
   ['cacho-die', 'Dado del cacho', 'cacho', 'createCachoDie', '¿Quién empieza?', {}],
   ['moneda', 'Moneda cara o sello', 'cacho', 'createMoneda', '¿Quién empieza?', {}],
+  ['paint-chispa', 'La Chispa', 'paintball-kit', 'createPaintKit', 'Pepazo', { weapon: 'pistol' }],
+  ['paint-trueno', 'El Trueno', 'paintball-kit', 'createPaintKit', 'Pepazo', { weapon: 'scatter' }],
+  ['paint-gemelas', 'Las Gemelas', 'paintball-kit', 'createPaintKit', 'Pepazo', { weapon: 'rapid' }],
+  ['paint-coheton', 'El Cohetón', 'paintball-kit', 'createPaintKit', 'Pepazo', { weapon: 'rocket' }],
+  ['paint-acolchado', 'El Acolchado', 'paintball-kit', 'createPaintVest', 'Pepazo', {}],
   ['paint-marker', 'Marcadora de pintura', 'paintball', 'createPaintMarker', '¡Pintura!', {}],
 ].map(([id, name, module, factory, game, previewOptions]) => ({ id, name, category: 'Objetos', source: `/engine/models/props/${module}.js`, factory, usedBy: [game], pack: 'table-games', previewOptions }));
