@@ -1,7 +1,7 @@
 // Geometry-free metadata for the barrio street props (props/barrio.js).
 const entry = (id, name, factory, description, previewOptions = null, tags = [], usedBy = ['Trifulca']) => ({
   id, name, category: 'Pueblo', source: '/engine/models/props/barrio.js', factory, usedBy,
-  previewOptions, description, tags: ['barrio', 'calle', ...tags], pack: 'barrio',
+  previewOptions, ...(factory === 'cableSpan' ? { previewArgs: [previewOptions.from, previewOptions.to] } : {}), description, tags: ['barrio', 'calle', ...tags], pack: 'barrio',
 });
 export default [
   entry('parked-moto', 'Moto estacionada', 'parkedMoto', 'Moto de calle en su pata de cabra, 2 × 0,7 × 1,1 m. El hijo tipper gira sobre su lado izquierdo para caer como dominó.', { color: '#e8443a', seed: 2 }, ['moto', 'vehículo']),

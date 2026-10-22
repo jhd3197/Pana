@@ -8,6 +8,9 @@ becomes the GitHub release's notes.
 
 ## Unreleased
 
+- **Los cables entre postes vuelven a verse en Pana Studio.**
+  La vista previa respeta los dos extremos del cable al llamar su modelo.
+
 - **Derrape ahora se llama Carreritas.** Mismo juego, nuevo nombre en el hub y
   en la pantalla de carga: tus trofeos, mangos, carros, cauchos y fantasmas
   vienen con el cambio. La dirección nueva es /g/carreritas/.

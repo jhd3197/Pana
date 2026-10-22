@@ -306,3 +306,8 @@ Escondidas, Pintura, Billar and Caída as consumers. See
 Browser checks must return through `#back-library` before using `#search` to
 select another resource. Legacy hash links open the dedicated asset page,
 where the library's search controls are hidden.
+
+Factories with positional arguments declare `previewArgs` in their catalog
+metadata. The object adapter spreads those arguments; ordinary factories keep
+using one `previewOptions` object. The cable-span preview uses this to pass its
+two endpoints. The model-library browser proof builds all 522 model snapshots.
