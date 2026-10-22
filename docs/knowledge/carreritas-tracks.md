@@ -19,6 +19,13 @@ or representative mobile performance. Keep all evidence ignored and compare
 the same device/settings. Existing browser suites still own correctness and
 budget assertions.
 
+Add `--motion 12 --start .5` for a driver sequence starting halfway round the
+lap. It advances actual physics at 60 Hz and records every third step, with
+camera/vehicle states and a local `motion.html` player. Playback is 20 frames
+per simulated second, independent of capture speed. Use identical options for
+comparisons; enabling motion consumes random state before the separate lap.
+It does not establish realtime performance or replace a full-lap check.
+
 ## Twenty authored roadside compositions
 
 Plaza, Selva, Páramo, Bululú and Sabana explicitly opt into

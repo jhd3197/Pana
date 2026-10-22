@@ -1,5 +1,6 @@
 // Capture comparable driver views, runtime inventory and a real automated lap.
 // node Pana/scripts/map-audit.js --tracks plaza,selva --out art/map-audit/baseline
+// Add --motion 12 --start .5 for a scrub-able 20 fps simulation sequence.
 // Output is local evidence, never committed. Render timings are synchronous
 // submissions with GPU completion, not a claim about interactive browser FPS.
 import fs from 'node:fs';
@@ -14,6 +15,8 @@ const args=process.argv.slice(2);
 const opt=(key,fallback)=>{const i=args.indexOf(`--${key}`);return i<0?fallback:args[i+1];};
 const out=path.resolve(opt('out','art/map-audit/baseline'));
 const quality=opt('quality','alta');
+const motionSeconds=Number(opt('motion','0')),startFraction=Number(opt('start','0.5'));
+if(!Number.isFinite(motionSeconds)||motionSeconds<0||motionSeconds>120||!Number.isFinite(startFraction)||startFraction<0||startFraction>=1)throw new Error('Use --motion 0..120 seconds and --start 0..<1 lap fraction');
 if(!['alta','media','baja'].includes(quality))throw new Error('Unknown quality');
 const root=path.resolve(import.meta.dirname,'../..');
 fs.mkdirSync(out,{recursive:true});
@@ -21,7 +24,7 @@ const revision=execFileSync('git',['rev-parse','HEAD'],{cwd:root,encoding:'utf8'
 const diff=execFileSync('git',['diff','--binary'],{cwd:root,encoding:'utf8'});
 fs.writeFileSync(path.join(out,'source.diff'),diff);
 const manifest={revision,started:new Date().toISOString(),platform:process.platform,cpu:os.cpus()[0]?.model,
-  viewport:{width:1280,height:720},quality,seed:107,method:'fixed driver poses plus automated 1-lap simulation; no realtime FPS claim',maps:[]};
+  viewport:{width:1280,height:720},quality,seed:107,motionSeconds,startFraction,method:'fixed driver poses plus automated 1-lap simulation; no realtime FPS claim',maps:[]};
 const server=await startServer();
 const browser=await chromium.launch({headless:true,...(process.env.PANA_BROWSER_PATH?{executablePath:process.env.PANA_BROWSER_PATH}:{})});
 try {
@@ -85,6 +88,29 @@ try {
       }
       // Restart after posed captures. These are actual AI/physics updates,
       // separate from the fixed poses; never infer race completion from a tour.
+      if(motionSeconds>0){
+        console.log(`${id}: recording ${motionSeconds}s driver sequence from ${startFraction}`);
+        await page.evaluate(async u=>{
+          await startRace(0);race.state='go';race.count=0;
+          const T=getActiveTrack();placeRacer(race.player,0,(T.LINE-9-u*T.TOTAL)/8);race.camPos=null;
+        },startFraction);
+        const frames=[];
+        for(let frame=0;frame<Math.ceil(motionSeconds*20);frame++){
+          const sample=await page.evaluate(()=>{
+            for(let i=0;i<3;i++)updateRace(1/60,true);
+            renderer.render(race.scene,race.camera);
+            const p=race.player;
+            return {image:renderer.domElement.toDataURL('image/jpeg',.82),clock:race.clock,
+              pose:{x:p.x,y:p.y,z:p.z,h:p.h,speed:p.vf},
+              camera:{position:race.camera.position.toArray(),quaternion:race.camera.quaternion.toArray(),fov:race.camera.fov}};
+          });
+          const file=`motion-${String(frame).padStart(4,'0')}.jpg`;
+          fs.writeFileSync(path.join(dir,file),Buffer.from(sample.image.split(',')[1],'base64'));
+          delete sample.image;frames.push({file,...sample});
+        }
+        info.motion={fps:20,startFraction,seconds:motionSeconds,method:'60 Hz physics; render every third step; playback is simulation time, not measured FPS',frames};
+        fs.writeFileSync(path.join(dir,'motion.html'),`<!doctype html><meta charset="utf-8"><title>Driver sequence</title><style>body{background:#171c20;color:white;font:16px system-ui;margin:24px}img{display:block;width:min(100%,1280px)}input{width:min(100%,1280px)}button{padding:10px;margin:12px 12px 12px 0}</style><h1>Driver sequence</h1><p>20 frames per simulated second. This is a deterministic review sequence, not a performance recording.</p><img id="view"><button id="play">Play / pause</button><output id="time"></output><br><input id="seek" type="range" min="0" max="${frames.length-1}" value="0"><script>const files=${JSON.stringify(frames.map(f=>f.file))};let n=0,playing=false;const view=document.querySelector('#view'),seek=document.querySelector('#seek'),time=document.querySelector('#time');function show(){view.src=files[n];seek.value=n;time.textContent=(n/20).toFixed(2)+' s'}document.querySelector('#play').onclick=()=>playing=!playing;seek.oninput=()=>{n=Number(seek.value);show()};setInterval(()=>{if(playing){n=(n+1)%files.length;show()}},50);show();</script>`);
+      }
       console.log(`${id}: 10 driver poses captured; running automated lap`);
       await page.evaluate(async()=>{await startRace(0);race.state='go';race.count=0;});
       let drive={finished:false},step=0;info.drive=[];

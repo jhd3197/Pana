@@ -10,7 +10,8 @@ becomes the GitHub release's notes.
 
 - **La revisión de pistas guarda vistas de conducción y comprueba una vuelta automática.**
   La herramienta de auditoría registra geometría, cámara y costes de dibujo
-  por circuito para comparar mejoras con las mismas condiciones.
+  por circuito para comparar mejoras con las mismas condiciones; también guarda
+  secuencias de conducción con reproducción y avance por fotogramas.
 
 - **Veinte rincones de Derrape tienen nuevos jardines, árboles y referencias de camino.**
   Plaza, Selva, Páramo, Bululú y Gran Sabana enmarcan curvas y vistas con
