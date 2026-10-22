@@ -1,8 +1,8 @@
 import { rng, clamp, lerp, pick as pickRandom } from '/engine/random.js';
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
-import { extendTerrain } from './world-horizon.js';
-import { coastalVegetation } from './coastal-vegetation.js';
+import { extendTerrain } from '/engine/worlds/coastal/world-horizon.js';
+import { coastalVegetation } from '/engine/worlds/coastal/coastal-vegetation.js';
 import { MAP, noise } from './tovar-layout.js';
 
 // Colonia Tovar: the German town in the clouds. Hydrangea climbs, the

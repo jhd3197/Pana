@@ -4,7 +4,7 @@
 // grandstand, lake and authored tree already standing is left clear.
 import * as THREE from 'three';
 import { rng } from '/engine/random.js';
-import { coastalVegetation } from './coastal-vegetation.js';
+import { coastalVegetation } from '/engine/worlds/coastal/coastal-vegetation.js';
 
 const CELL = 4, HIDDEN = /terrain|horizon|grass|sky|cloud|mist|rain|fog/i;
 const sstep = THREE.MathUtils.smoothstep;

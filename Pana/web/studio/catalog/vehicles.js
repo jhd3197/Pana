@@ -15,6 +15,11 @@ export const VEHICLES = [
     async build() { const { createLancha } = await import('/engine/models/vehicles/lancha.js'); const model = createLancha(DEFAULT_AVATAR, '#e2683c');
       return { group: model.group, update: (t, dt) => model.update(dt, { v: 9, throttle: 1, steer: Math.sin(t * .8) }, t), dispose: () => model.dispose() }; },
   },
+  // Parapente's wing with the pana in the harness, paws on the brakes.
+  { id: 'racing-parapente', name: 'Parapente', category: 'Vehículos', source: '/engine/models/vehicles/parapente.js', factory: 'createParapente', usedBy: ['Parapente'], description: 'Vela en arco en el color del equipo con celdas blancas, cascada de líneas, silla y el pana con las patas en los frenos; las orejas pliegan las puntas.',
+    async build() { const { createParapente } = await import('/engine/models/vehicles/parapente.js'); const model = createParapente(DEFAULT_AVATAR, '#2fa3e0');
+      return { group: model.group, update: (t, dt) => model.update(dt, { v: 16, steer: Math.sin(t * .6), ears: Math.sin(t * .3) > .7 ? 1 : 0 }, t), dispose: () => model.dispose() }; },
+  },
   // Derrape's swappable cauchos, one entry per wheel definition. The street
   // wheel has no spec of its own (cars keep theirs), so it previews generic.
   ...WHEEL_DEFINITIONS.map(wheel => ({ id: `wheel-${wheel.id}`, name: wheel.name, category: 'Vehículos', source: '/g/derrape/wheel-definitions.js', factory: 'makeWheel', usedBy: ['Derrape'], description: wheel.blurb, dependencies: ['/engine/models/vehicles/car-kit.js'],

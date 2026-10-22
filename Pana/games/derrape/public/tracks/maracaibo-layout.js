@@ -1,5 +1,5 @@
 import { clamp, lerp } from '/engine/random.js';
-import { fairRoute, fairHeights } from './coastal-road.js';
+import { fairRoute, fairHeights } from '/engine/worlds/coastal/coastal-road.js';
 import * as THREE from 'three';
 // Metres, +x east, +z south (out over the lake), y up. Land lies north of the shore.
 export const MAP = {

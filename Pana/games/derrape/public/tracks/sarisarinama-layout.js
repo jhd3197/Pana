@@ -1,5 +1,5 @@
 import { clamp, lerp } from '/engine/random.js';
-import { fairHeights } from './coastal-road.js';
+import { fairHeights } from '/engine/worlds/coastal/coastal-road.js';
 import * as THREE from 'three';
 // Pana Sarisariñama. Metres, x east, z south, y up. Angles in radians.
 export const MAP = {

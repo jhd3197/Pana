@@ -7,7 +7,7 @@ import { natureSurface } from '/engine/models/core/nature-surface.js';
 import { signBoard } from '/engine/models/props/wood-sign.js';
 import { placeOnTrack } from '../track-kit.js';
 import { waterSurface, waterDepthMap, riverSurface } from '/engine/models/effects/water-surface.js';
-import { extendTerrain, extendWaterPlane } from './world-horizon.js';
+import { extendTerrain, extendWaterPlane } from '/engine/worlds/coastal/world-horizon.js';
 export { THREE, M, mesh, box, tube, rng, placeOnTrack };
 // Every circuit board is the library's cartoon signBoard; the old flat colour
 // becomes a brighter trim around the wooden panel.

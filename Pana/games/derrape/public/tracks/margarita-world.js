@@ -1,8 +1,8 @@
 import { rng, clamp, lerp, pick as pickRandom } from '/engine/random.js';
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
-import { extendTerrain } from './world-horizon.js';
-import { coastalVegetation } from './coastal-vegetation.js';
+import { extendTerrain } from '/engine/worlds/coastal/world-horizon.js';
+import { coastalVegetation } from '/engine/worlds/coastal/coastal-vegetation.js';
 import { MAP, noise } from './margarita-layout.js';
 
 // Isla Margarita: from the castle of Pampatar over the Santa Rosa hill to

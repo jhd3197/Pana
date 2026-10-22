@@ -179,7 +179,7 @@ export default coastalTrack('${id}', createLayout(), (group, layout, roadDistanc
 function layoutTemplate(name, seed) {
   return `import * as THREE from 'three';
 import { clamp, lerp } from '/engine/random.js';
-import { fairRoute, fairHeights } from './coastal-road.js';
+import { fairRoute, fairHeights } from '/engine/worlds/coastal/coastal-road.js';
 
 // ${name}. Metres, +x east, +z south, y up. A placeholder loop from
 // npm run new-track: replace MAP.road with the ported route.
@@ -261,8 +261,8 @@ export function createLayout() {
 function worldTemplate(id, name) {
   return `import * as THREE from 'three';
 import { rng } from '/engine/random.js';
-import { extendTerrain } from './world-horizon.js';
-import { coastalVegetation } from './coastal-vegetation.js';
+import { extendTerrain } from '/engine/worlds/coastal/world-horizon.js';
+import { coastalVegetation } from '/engine/worlds/coastal/coastal-vegetation.js';
 import { MAP, noise } from './${id}-layout.js';
 
 // ${name}: placeholder ground, road and trees from npm run new-track.

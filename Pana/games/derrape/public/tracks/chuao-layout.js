@@ -1,5 +1,5 @@
 import { rng, clamp, lerp, pick as pickRandom } from '/engine/random.js';
-import { fairRoute, fairHeights } from './coastal-road.js';
+import { fairRoute, fairHeights } from '/engine/worlds/coastal/coastal-road.js';
 import * as THREE from 'three';
 export const MAP = {
   seed: 5150,

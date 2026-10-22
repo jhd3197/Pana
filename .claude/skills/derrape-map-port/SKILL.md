@@ -43,7 +43,7 @@ id that already exists.
 - Register every map of a batch before the ports start. Debug mode loads every
   registered track, and the placeholders keep every debug page working while
   the forks write the real files.
-- New tree species go in `tracks/coastal-vegetation.js` factories, never as
+- New tree species go in `engine/worlds/coastal/coastal-vegetation.js` factories, never as
   meshes inside a world file (Studio library rule).
 
 ## 2. One fork per map, in parallel

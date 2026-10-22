@@ -1,6 +1,6 @@
 import { rng, clamp, lerp, pick as pickRandom } from '/engine/random.js';
 import * as THREE from 'three';
-import { coastalVegetation } from './coastal-vegetation.js';
+import { coastalVegetation } from '/engine/worlds/coastal/coastal-vegetation.js';
 import { MAP } from './maracaibo-layout.js';
 export function createWorld(scene, layout, roadDistance) {
   const vegetation = coastalVegetation(scene, 1, roadDistance);

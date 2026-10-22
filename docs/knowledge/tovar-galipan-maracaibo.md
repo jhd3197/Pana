@@ -7,6 +7,10 @@ scene, and `<id>.js` that hands both to `coastalTrack`. They are standalone
 races, not Grand Prix stages. The recipe, checklist and pitfalls are the
 `derrape-map-port` skill (`.claude/skills/derrape-map-port/SKILL.md`).
 
+The shared helpers (`coastal-road`, `coastal-vegetation`, `forest-detail`,
+`world-horizon`) and Galipán's layout and world live in
+`engine/worlds/coastal/`, since Parapente flies over the same Galipán.
+
 `coastalTrack(id, layout, createWorld, options)` now takes `scale`, `palette`,
 `gripAt`, `previewBounds`, `items` and `def` (extra definition fields such as
 `layered`); the Aragua circuits keep the defaults.

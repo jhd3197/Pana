@@ -4,7 +4,7 @@ import { instancePlacements } from '/engine/models/core/static-batch.js';
 import { mangoTree } from '/engine/models/vegetation/mango-tree.js';
 import { palm } from '/engine/models/vegetation/palm.js';
 import { mountainPine } from '/engine/models/vegetation/mountain-pine.js';
-import { forestZone, prepareForestModel, denseForest } from './forest-detail.js';
+import { forestZone, prepareForestModel, denseForest } from '/engine/worlds/coastal/forest-detail.js';
 
 // Dense silhouettes belong in natural surroundings, not inside towns, caves,
 // salt pans or the desert. Near-road vegetation remains authored per map.
