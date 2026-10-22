@@ -239,7 +239,7 @@ flow bugs and check balance.
   the color attribute and distinguish vertex-colored, flat/smooth and shadow
   settings in its material key. Bululú's curved palms now live in shared
   `/engine/models/vegetation/` (the game's `flora.js` re-exports it for compatibility); the
-  old shared-props palm has been removed. Derrape and minigame stages
+  old shared-props palm has been removed. Carreritas and minigame stages
   also use the same improved foliage.
 - **Sky controls:** Día / Noche / Ciclo in the pause menu's Ajustes tab (Esc), or `L`, saved under
   `pana.bululu.sky`. `?sky=day|night|cycle` overrides the saved preference for
@@ -372,7 +372,7 @@ flow bugs and check balance.
 - **¡Choque de carritos!** steers screen-relative (the d-pad points where the
   kart should go, and it turns toward that), not like a car: with a fixed top-down
   camera, relative steering fights the d-pad. The karts are
-  `/engine/models/vehicles/cars.js` `CAR_BUILDERS` at 0.72 scale; Derrape's
+  `/engine/models/vehicles/cars.js` `CAR_BUILDERS` at 0.72 scale; Carreritas's
   `cars.js` joins them to its stats. A kart that drops credits whoever drove
   into it in the last 3 s. Simulated: ~17 knockouts per 45 s game.
 

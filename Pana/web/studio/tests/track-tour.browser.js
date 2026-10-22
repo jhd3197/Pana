@@ -68,7 +68,7 @@ try {
     assert.ok(await page.evaluate(() => Math.abs(panaLibrary.scene.getObjectByName('Living sky').material.uniforms.time.value-panaLibrary.tour.distance/24)<1e-8),'sky pauses with tour');
     // OrbitControls converts through spherical coordinates, with floating-point roundoff.
     assert.ok(settled.camera.every((v,i) => Math.abs(v-paused.camera[i]) < 1e-8), 'paused camera stays still');
-    await seek(id === 'track-selva' ? await page.evaluate(async () => { const {TUNNEL}=await import('/g/derrape/tracks/selva-layout.js'),T=panaLibrary.current.route;return (((TUNNEL.from+.02)*T.TOTAL-T.LINE+T.TOTAL)%T.TOTAL)/T.TOTAL*1000; }) : 230);
+    await seek(id === 'track-selva' ? await page.evaluate(async () => { const {TUNNEL}=await import('/g/carreritas/tracks/selva-layout.js'),T=panaLibrary.current.route;return (((TUNNEL.from+.02)*T.TOTAL-T.LINE+T.TOTAL)%T.TOTAL)/T.TOTAL*1000; }) : 230);
     await page.locator('#tour-expand').click();
     await page.waitForFunction(() => document.querySelector('#preview').clientWidth > 1400);
     await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));

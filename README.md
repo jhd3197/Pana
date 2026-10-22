@@ -12,7 +12,7 @@
 </p>
 
 <p align="center">
-  <img src="docs/screenshots/hub.jpg" alt="Pana's hub: Derrape featured with its illustrated art, category tabs and a row of all 20 games" width="860">
+  <img src="docs/screenshots/hub.jpg" alt="Pana's hub: Carreritas featured with its illustrated art, category tabs and a row of all 20 games" width="860">
 </p>
 
 Pana is a hub of 3D party games that run in the browser. You make your pana (a
@@ -25,7 +25,7 @@ same room.
 
 | Game | What it is | Players |
 |---|---|---|
-| **Derrape** | Toy-car racing on twenty-two circuits, including Chuao’s downhill quebrada, Galipán at night, the Maracaibo bridge and Sarisariñama’s sinkhole caves, and three four-race Grand Prix cups, with items, coins and swappable wheels | 1–8 online; local split screen |
+| **Carreritas** | Toy-car racing on twenty-two circuits, including Chuao’s downhill quebrada, Galipán at night, the Maracaibo bridge and Sarisariñama’s sinkhole caves, and three four-race Grand Prix cups, with items, coins and swappable wheels | 1–8 online; local split screen |
 | **Bululú** | Island or harbor party board, with a minigame every round | 1–6, bots fill seats |
 | **Escondidas** | Prop hunt in a market plaza: hide as a barrel, crate or bench | 1–8, bots fill in |
 | **Pana Cocina** | Cooperative cooking shifts with configurable orders and kitchen rules | 1–8, bot helpers |
@@ -50,9 +50,9 @@ same room.
 
 ## Screenshots
 
-**Derrape:** race your pana with a mango and a jugo in your two item slots.
+**Carreritas:** race your pana with a mango and a jugo in your two item slots.
 
-![Derrape race HUD with the mango and jugo items, standings and the coin counter](docs/screenshots/derrape-item-icons.jpg)
+![Carreritas race HUD with the mango and jugo items, standings and the coin counter](docs/screenshots/carreritas-item-icons.jpg)
 
 **Every game ends on the same card:** standings, your row highlighted, one button to play again.
 

@@ -1,4 +1,4 @@
-// Shared building blocks for Derrape's toy cars: materials, wheels, glass,
+// Shared building blocks for Carreritas's toy cars: materials, wheels, glass,
 // cabins with a pana driver, decals and bolt-on parts.
 // Every car faces +Z, its left is +X, wheels touch y = 0.
 

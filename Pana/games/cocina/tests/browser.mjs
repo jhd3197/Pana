@@ -109,7 +109,7 @@ try {
   if (output) await b.screenshot({ path: path.join(output, 'cocina-gameplay.png') }); check('disconnection fallback starts a playable local kitchen with working helpers');
   await b.goto(base + '/g/escondidas/?debug'); await b.waitForFunction(() => window.hunt?.room.connected); await b.locator('#start').click(); await b.waitForFunction(() => hunt.state.phase === 'hide');
   assert.equal(await b.evaluate(async () => (await import('/g/escondidas/plaza.js')).createPlaza === (await import('/engine/worlds/plaza.js')).createPlaza), true); check('Escondidas starts on the extracted shared plaza');
-  await b.goto(base + '/g/derrape/?track=llanos&debug'); await b.waitForFunction(() => window.race && window.garage); await b.evaluate(() => startRace(0)); check('Derrape still starts with seated drivers');
+  await b.goto(base + '/g/carreritas/?track=llanos&debug'); await b.waitForFunction(() => window.race && window.garage); await b.evaluate(() => startRace(0)); check('Carreritas still starts with seated drivers');
   await b.goto(base + '/g/bululu/?debug'); await b.waitForFunction(() => window.board && window.players); check('Bululú loads with the updated shared characters');
   await b.goto(base + '/'); await b.getByRole('heading', { name: 'Pana Cocina', exact: true }).waitFor();
   if (output) await b.screenshot({ path: path.join(output, 'cocina-hub.png') }); check('hub discovers Cocina and renders the chef artwork');

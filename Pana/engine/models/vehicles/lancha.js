@@ -47,7 +47,7 @@ function outboard(tint) {
 
 // The bare peñero: hull, rims, thwarts, bow deck, pennant, cava and the
 // outboard, with no pana aboard. createLancha seats the pana in it; `open`
-// leaves out the thwarts and the cava so Derrape can fold it around a car;
+// leaves out the thwarts and the cava so Carreritas can fold it around a car;
 // `body` paints the hull itself apart from the team colour (pennant, motor).
 export function createLanchaHull(color = '#e2683c', { open = false, body = color } = {}) {
   const hull = new THREE.Group(), tint = new THREE.Color(color).getHex();

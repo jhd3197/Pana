@@ -12,7 +12,7 @@ const avatar = wardrobeToAvatar({ hat: 'casco', glasses: 'visor', top: 'hoodie',
   colors: { 'top:hoodie:main': '#2ad1b2', 'hat:casco:main': '#ff4b4b' } });
 
 // Games that keep their own pre-game menu instead of the shared lobby, and why.
-const OWN_MENU = { derrape: 'four-step garage menu (docs/knowledge/derrape-menu.md)' };
+const OWN_MENU = { carreritas: 'four-step garage menu (docs/knowledge/carreritas-menu.md)' };
 const only = process.env.PANA_SMOKE_GAMES?.split(',').filter(Boolean) || games;
 const browser = await launch();
 const failures = [];

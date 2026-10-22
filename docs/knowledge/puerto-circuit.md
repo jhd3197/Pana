@@ -131,7 +131,7 @@ server; Caída and Dominó use their existing host action/revision contracts.
 Use a fresh `PANA_TEST_URL` and `PANA_SUITE_TIMEOUT=1800000` for the long real
 multiplayer suites. Run `npm run test:browser -- puerto` for native models,
 landmark table rooms, geometry, moving cars and online race proof. Run all
-Derrape, Caída, Dominó and Póquer browser suites for gameplay regressions, plus
+Carreritas, Caída, Dominó and Póquer browser suites for gameplay regressions, plus
 `table-games` and `shared-arenas` for the shared integrations. Finish with
 `.\dev.ps1 check`.
 

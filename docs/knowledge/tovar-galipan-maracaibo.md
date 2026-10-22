@@ -5,7 +5,7 @@ Aragua circuits (`aragua-circuits.md`): a `<id>-layout.js` with the authored
 `MAP` and the sampled road and terrain, a `<id>-world.js` that builds the
 scene, and `<id>.js` that hands both to `coastalTrack`. They are standalone
 races, not Grand Prix stages. The recipe, checklist and pitfalls are the
-`derrape-map-port` skill (`.claude/skills/derrape-map-port/SKILL.md`).
+`carreritas-map-port` skill (`.claude/skills/carreritas-map-port/SKILL.md`).
 
 The shared helpers (`coastal-road`, `coastal-vegetation`, `forest-detail`,
 `world-horizon`) and Galipán's layout and world live in
@@ -39,7 +39,7 @@ The shared helpers (`coastal-road`, `coastal-vegetation`, `forest-detail`,
 - Colonia Tovar's fog banks roll on the race clock and its reflector posts
   glow as they pass.
 - Galipán keeps the lit pueblito, Boca de Tigre, the sunflower house, the
-  cable car and the Caracas light carpet. In Derrape the lap leaves Boca de
+  cable car and the Caracas light carpet. In Carreritas the lap leaves Boca de
   Tigre down el cañón and flies over Caracas as an avioneta (derrape.md,
   flight gates) instead of the old girasoles road. Light-pool decals stay off graded
   road so they never sit above the driving surface.

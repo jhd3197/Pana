@@ -39,7 +39,7 @@
       "source": "Pana/engine/models/fauna/birds/flamingo.js",
       "factory": "flamingo",
       "usedBy": [
-        "Derrape"
+        "Carreritas"
       ],
       "previewOptions": {
         "pose": "stand",
@@ -98,7 +98,7 @@
       "source": "Pana/engine/models/fauna/birds/scarlet-macaw.js",
       "factory": "scarletMacaw",
       "usedBy": [
-        "Derrape"
+        "Carreritas"
       ],
       "previewOptions": {
         "seed": 7
@@ -112,7 +112,7 @@
       "source": "Pana/engine/models/fauna/birds/scarlet-ibis.js",
       "factory": "scarletIbis",
       "usedBy": [
-        "Derrape",
+        "Carreritas",
         "Galope"
       ],
       "previewOptions": {
@@ -127,7 +127,7 @@
       "source": "Pana/engine/models/fauna/birds/soaring-vulture.js",
       "factory": "soaringVulture",
       "usedBy": [
-        "Derrape"
+        "Carreritas"
       ],
       "previewOptions": {
         "seed": 7
@@ -141,7 +141,7 @@
       "source": "Pana/engine/models/fauna/capybara/wild-capybara.js",
       "factory": "wildCapybara",
       "usedBy": [
-        "Derrape",
+        "Carreritas",
         "Galope"
       ],
       "previewOptions": {
@@ -156,7 +156,7 @@
       "source": "Pana/engine/models/fauna/farm/llanero-horse.js",
       "factory": "llaneroHorse",
       "usedBy": [
-        "Derrape",
+        "Carreritas",
         "Galope"
       ],
       "previewOptions": {
@@ -172,7 +172,7 @@
       "source": "Pana/engine/models/fauna/farm/yard-chicken.js",
       "factory": "yardChicken",
       "usedBy": [
-        "Derrape"
+        "Carreritas"
       ],
       "previewOptions": {
         "seed": 7,
@@ -187,7 +187,7 @@
       "source": "Pana/engine/models/fauna/farm/hato-cow.js",
       "factory": "hatoCow",
       "usedBy": [
-        "Derrape",
+        "Carreritas",
         "Galope"
       ],
       "previewOptions": {
@@ -204,7 +204,7 @@
       "factory": "reefFish",
       "usedBy": [
         "Bululú",
-        "Derrape"
+        "Carreritas"
       ],
       "previewOptions": {
         "seed": 7
@@ -219,7 +219,7 @@
       "factory": "reefFishSchool",
       "usedBy": [
         "Bululú",
-        "Derrape"
+        "Carreritas"
       ],
       "previewOptions": {
         "seed": 7
@@ -234,7 +234,7 @@
       "factory": "iguana",
       "usedBy": [
         "Bululú",
-        "Derrape",
+        "Carreritas",
         "Curiara",
         "Galope",
         "Escondidas",
@@ -304,7 +304,7 @@
       "factory": "beachCrab",
       "usedBy": [
         "Bululú",
-        "Derrape"
+        "Carreritas"
       ],
       "previewOptions": null,
       "status": "in-use"
@@ -472,7 +472,7 @@
       "factory": "savannaGrass",
       "usedBy": [
         "Galope",
-        "Derrape"
+        "Carreritas"
       ],
       "previewOptions": {
         "seed": 7,
@@ -489,7 +489,7 @@
       "factory": "palm",
       "usedBy": [
         "Bululú",
-        "Derrape",
+        "Carreritas",
         "Escondidas",
         "Cocina",
         "Reliquia",
@@ -511,7 +511,7 @@
       "factory": "mangoTree",
       "usedBy": [
         "Bululú",
-        "Derrape",
+        "Carreritas",
         "Escondidas",
         "Cocina",
         "Galope",
@@ -533,7 +533,7 @@
       "factory": "ceiba",
       "usedBy": [
         "Bululú",
-        "Derrape"
+        "Carreritas"
       ],
       "previewOptions": {
         "seed": 7
@@ -563,7 +563,7 @@
       "factory": "banana",
       "usedBy": [
         "Bululú",
-        "Derrape"
+        "Carreritas"
       ],
       "previewOptions": {
         "seed": 7
@@ -578,7 +578,7 @@
       "factory": "bush",
       "usedBy": [
         "Bululú",
-        "Derrape",
+        "Carreritas",
         "Escondidas",
         "Cocina",
         "Billar",
@@ -596,7 +596,7 @@
       "source": "Pana/engine/models/vegetation/araguaney.js",
       "factory": "araguaney",
       "usedBy": [
-        "Derrape",
+        "Carreritas",
         "¡Pintura!"
       ],
       "previewOptions": {
@@ -611,7 +611,7 @@
       "source": "Pana/engine/models/vegetation/araguaney.js",
       "factory": "araguaney",
       "usedBy": [
-        "Derrape"
+        "Carreritas"
       ],
       "previewOptions": {
         "seed": 7,
@@ -626,7 +626,7 @@
       "source": "Pana/engine/models/vegetation/araguaney.js",
       "factory": "araguaney",
       "usedBy": [
-        "Derrape"
+        "Carreritas"
       ],
       "previewOptions": {
         "seed": 7,
@@ -641,7 +641,7 @@
       "source": "Pana/engine/models/vegetation/bamboo.js",
       "factory": "bamboo",
       "usedBy": [
-        "Derrape",
+        "Carreritas",
         "Escondidas",
         "¡Pintura!",
         "Billar",
@@ -659,7 +659,7 @@
       "source": "Pana/engine/models/vegetation/fern.js",
       "factory": "fern",
       "usedBy": [
-        "Derrape",
+        "Carreritas",
         "Reliquia",
         "Escondidas",
         "¡Pintura!",
@@ -678,7 +678,7 @@
       "source": "Pana/engine/models/vegetation/monstera.js",
       "factory": "monstera",
       "usedBy": [
-        "Derrape"
+        "Carreritas"
       ],
       "previewOptions": {
         "seed": 7
@@ -692,7 +692,7 @@
       "source": "Pana/engine/models/vegetation/heliconia.js",
       "factory": "heliconia",
       "usedBy": [
-        "Derrape"
+        "Carreritas"
       ],
       "previewOptions": {
         "seed": 7
@@ -706,7 +706,7 @@
       "source": "Pana/engine/models/vegetation/cactus.js",
       "factory": "cactus",
       "usedBy": [
-        "Derrape"
+        "Carreritas"
       ],
       "previewOptions": {
         "seed": 7
@@ -720,7 +720,7 @@
       "source": "Pana/engine/models/vegetation/mangrove.js",
       "factory": "mangrove",
       "usedBy": [
-        "Derrape"
+        "Carreritas"
       ],
       "previewOptions": {
         "seed": 7
@@ -735,7 +735,7 @@
       "factory": "papaya",
       "usedBy": [
         "Bululú",
-        "Derrape"
+        "Carreritas"
       ],
       "previewOptions": {
         "seed": 7
@@ -749,7 +749,7 @@
       "source": "Pana/engine/models/vegetation/agave.js",
       "factory": "agave",
       "usedBy": [
-        "Derrape"
+        "Carreritas"
       ],
       "previewOptions": {
         "seed": 7
@@ -763,7 +763,7 @@
       "source": "Pana/engine/models/vegetation/water-lily.js",
       "factory": "waterLily",
       "usedBy": [
-        "Derrape",
+        "Carreritas",
         "Galope"
       ],
       "previewOptions": {
@@ -779,7 +779,7 @@
       "factory": "hibiscus",
       "usedBy": [
         "Bululú",
-        "Derrape"
+        "Carreritas"
       ],
       "previewOptions": {
         "seed": 7
@@ -793,7 +793,7 @@
       "source": "Pana/engine/models/vegetation/reeds.js",
       "factory": "reeds",
       "usedBy": [
-        "Derrape",
+        "Carreritas",
         "Galope"
       ],
       "previewOptions": {
@@ -808,7 +808,7 @@
       "source": "Pana/engine/models/vegetation/jungle-giant.js",
       "factory": "jungleGiant",
       "usedBy": [
-        "Derrape"
+        "Carreritas"
       ],
       "previewOptions": {
         "seed": 7
@@ -822,7 +822,7 @@
       "source": "Pana/engine/models/vegetation/tropical-bush.js",
       "factory": "tropicalBush",
       "usedBy": [
-        "Derrape"
+        "Carreritas"
       ],
       "previewOptions": {
         "seed": 7
@@ -836,7 +836,7 @@
       "source": "Pana/engine/models/vegetation/frailejon.js",
       "factory": "frailejon",
       "usedBy": [
-        "Derrape"
+        "Carreritas"
       ],
       "previewOptions": {
         "seed": 7
@@ -850,7 +850,7 @@
       "source": "Pana/engine/models/vegetation/mountain-pine.js",
       "factory": "mountainPine",
       "usedBy": [
-        "Derrape"
+        "Carreritas"
       ],
       "previewOptions": {
         "seed": 7
@@ -1081,7 +1081,7 @@
       "source": "Pana/engine/models/vegetation/saman.js",
       "factory": "saman",
       "usedBy": [
-        "Derrape"
+        "Carreritas"
       ],
       "previewOptions": {
         "seed": 7
@@ -1095,7 +1095,7 @@
       "source": "Pana/engine/models/vegetation/selva-trees.js",
       "factory": "yagrumo",
       "usedBy": [
-        "Derrape"
+        "Carreritas"
       ],
       "previewOptions": {
         "seed": 7
@@ -1109,7 +1109,7 @@
       "source": "Pana/engine/models/vegetation/selva-trees.js",
       "factory": "cacao",
       "usedBy": [
-        "Derrape"
+        "Carreritas"
       ],
       "previewOptions": {
         "seed": 7
@@ -1123,7 +1123,7 @@
       "source": "Pana/engine/models/vegetation/selva-palms.js",
       "factory": "zancona",
       "usedBy": [
-        "Derrape"
+        "Carreritas"
       ],
       "previewOptions": {
         "seed": 7
@@ -1137,7 +1137,7 @@
       "source": "Pana/engine/models/vegetation/selva-palms.js",
       "factory": "manaca",
       "usedBy": [
-        "Derrape"
+        "Carreritas"
       ],
       "previewOptions": {
         "seed": 7
@@ -1151,7 +1151,7 @@
       "source": "Pana/engine/models/vegetation/selva-palms.js",
       "factory": "treeFern",
       "usedBy": [
-        "Derrape"
+        "Carreritas"
       ],
       "previewOptions": {
         "seed": 7
@@ -1165,7 +1165,7 @@
       "source": "Pana/engine/models/props/ranch.js",
       "factory": "llaneroRanchHouse",
       "usedBy": [
-        "Derrape",
+        "Carreritas",
         "Galope",
         "Escondidas",
         "¡Pintura!",
@@ -1182,7 +1182,7 @@
       "source": "Pana/engine/models/props/ranch.js",
       "factory": "corralGate",
       "usedBy": [
-        "Derrape",
+        "Carreritas",
         "Galope"
       ],
       "previewOptions": null,
@@ -1195,7 +1195,7 @@
       "source": "Pana/engine/models/props/ranch.js",
       "factory": "hayBale",
       "usedBy": [
-        "Derrape",
+        "Carreritas",
         "Galope",
         "Escondidas",
         "¡Pintura!",
@@ -1212,7 +1212,7 @@
       "source": "Pana/engine/models/props/ranch.js",
       "factory": "waterWindmill",
       "usedBy": [
-        "Derrape",
+        "Carreritas",
         "Galope",
         "Escondidas",
         "¡Pintura!",
@@ -1229,7 +1229,7 @@
       "source": "Pana/engine/models/props/ranch.js",
       "factory": "horseStable",
       "usedBy": [
-        "Derrape",
+        "Carreritas",
         "Galope",
         "Escondidas",
         "¡Pintura!",
@@ -1246,7 +1246,7 @@
       "source": "Pana/engine/models/props/ranch.js",
       "factory": "feedingTrough",
       "usedBy": [
-        "Derrape",
+        "Carreritas",
         "Galope",
         "Escondidas",
         "¡Pintura!",
@@ -1263,7 +1263,7 @@
       "source": "Pana/engine/models/props/ranch.js",
       "factory": "ranchFence",
       "usedBy": [
-        "Derrape",
+        "Carreritas",
         "Galope",
         "Escondidas",
         "¡Pintura!",
@@ -1280,7 +1280,7 @@
       "source": "Pana/engine/models/props/ranch.js",
       "factory": "oldTractor",
       "usedBy": [
-        "Derrape",
+        "Carreritas",
         "Galope",
         "Escondidas",
         "¡Pintura!",
@@ -1297,7 +1297,7 @@
       "source": "Pana/engine/models/props/ranch.js",
       "factory": "mudPuddle",
       "usedBy": [
-        "Derrape"
+        "Carreritas"
       ],
       "previewOptions": null,
       "status": "in-use"
@@ -1309,7 +1309,7 @@
       "source": "Pana/engine/models/props/ranch.js",
       "factory": "ranchWaterTower",
       "usedBy": [
-        "Derrape",
+        "Carreritas",
         "Galope"
       ],
       "previewOptions": null,
@@ -1467,7 +1467,7 @@
       "source": "Pana/engine/models/props/desert.js",
       "factory": "giantCactus",
       "usedBy": [
-        "Derrape"
+        "Carreritas"
       ],
       "previewOptions": null,
       "status": "in-use"
@@ -1479,7 +1479,7 @@
       "source": "Pana/engine/models/props/desert.js",
       "factory": "sandDune",
       "usedBy": [
-        "Derrape"
+        "Carreritas"
       ],
       "previewOptions": null,
       "status": "in-use"
@@ -1491,7 +1491,7 @@
       "source": "Pana/engine/models/props/desert.js",
       "factory": "desertRockArch",
       "usedBy": [
-        "Derrape"
+        "Carreritas"
       ],
       "previewOptions": null,
       "status": "in-use"
@@ -1503,7 +1503,7 @@
       "source": "Pana/engine/models/props/desert.js",
       "factory": "abandonedGasStation",
       "usedBy": [
-        "Derrape"
+        "Carreritas"
       ],
       "previewOptions": null,
       "status": "in-use"
@@ -1515,7 +1515,7 @@
       "source": "Pana/engine/models/props/desert.js",
       "factory": "rustedPickup",
       "usedBy": [
-        "Derrape"
+        "Carreritas"
       ],
       "previewOptions": null,
       "status": "in-use"
@@ -1527,7 +1527,7 @@
       "source": "Pana/engine/models/props/desert.js",
       "factory": "roadsideTirePile",
       "usedBy": [
-        "Derrape"
+        "Carreritas"
       ],
       "previewOptions": null,
       "status": "in-use"
@@ -1539,7 +1539,7 @@
       "source": "Pana/engine/models/props/desert.js",
       "factory": "canyonSpire",
       "usedBy": [
-        "Derrape"
+        "Carreritas"
       ],
       "previewOptions": null,
       "status": "in-use"
@@ -1551,7 +1551,7 @@
       "source": "Pana/engine/models/props/desert.js",
       "factory": "brokenWagon",
       "usedBy": [
-        "Derrape"
+        "Carreritas"
       ],
       "previewOptions": null,
       "status": "in-use"
@@ -1563,7 +1563,7 @@
       "source": "Pana/engine/models/props/desert.js",
       "factory": "desertWarningSign",
       "usedBy": [
-        "Derrape"
+        "Carreritas"
       ],
       "previewOptions": null,
       "status": "in-use"
@@ -1575,7 +1575,7 @@
       "source": "Pana/engine/models/props/desert.js",
       "factory": "desertWell",
       "usedBy": [
-        "Derrape"
+        "Carreritas"
       ],
       "previewOptions": null,
       "status": "in-use"
@@ -1587,7 +1587,7 @@
       "source": "Pana/engine/models/props/thermal.js",
       "factory": "hotSpringPool",
       "usedBy": [
-        "Derrape"
+        "Carreritas"
       ],
       "previewOptions": null,
       "status": "in-use"
@@ -1599,7 +1599,7 @@
       "source": "Pana/engine/models/props/thermal.js",
       "factory": "steamVent",
       "usedBy": [
-        "Derrape"
+        "Carreritas"
       ],
       "previewOptions": null,
       "status": "in-use"
@@ -1611,7 +1611,7 @@
       "source": "Pana/engine/models/props/thermal.js",
       "factory": "mineralTerraces",
       "usedBy": [
-        "Derrape"
+        "Carreritas"
       ],
       "previewOptions": null,
       "status": "in-use"
@@ -1623,7 +1623,7 @@
       "source": "Pana/engine/models/props/thermal.js",
       "factory": "thermalBathhouse",
       "usedBy": [
-        "Derrape"
+        "Carreritas"
       ],
       "previewOptions": null,
       "status": "in-use"
@@ -1635,7 +1635,7 @@
       "source": "Pana/engine/models/props/thermal.js",
       "factory": "thermalLookout",
       "usedBy": [
-        "Derrape"
+        "Carreritas"
       ],
       "previewOptions": null,
       "status": "in-use"
@@ -1649,7 +1649,7 @@
       "usedBy": [
         "Escondidas",
         "Cocina",
-        "Derrape",
+        "Carreritas",
         "Billar",
         "Caída",
         "¡Embuste!",
@@ -1667,7 +1667,7 @@
       "usedBy": [
         "Escondidas",
         "Cocina",
-        "Derrape",
+        "Carreritas",
         "Billar",
         "Caída",
         "¡Embuste!",
@@ -1685,7 +1685,7 @@
       "usedBy": [
         "Escondidas",
         "Cocina",
-        "Derrape",
+        "Carreritas",
         "Billar",
         "Caída",
         "¡Embuste!"
@@ -1702,7 +1702,7 @@
       "usedBy": [
         "Escondidas",
         "Cocina",
-        "Derrape",
+        "Carreritas",
         "Billar",
         "Caída"
       ],
@@ -1718,7 +1718,7 @@
       "usedBy": [
         "Escondidas",
         "Cocina",
-        "Derrape",
+        "Carreritas",
         "Billar",
         "Caída"
       ],
@@ -1733,7 +1733,7 @@
       "factory": "marketStall",
       "usedBy": [
         "Escondidas",
-        "Derrape",
+        "Carreritas",
         "¡Pintura!",
         "Billar",
         "Caída"
@@ -1750,7 +1750,7 @@
       "usedBy": [
         "Escondidas",
         "Cocina",
-        "Derrape",
+        "Carreritas",
         "Billar",
         "Póquer",
         "¡Pintura!"
@@ -1767,7 +1767,7 @@
       "usedBy": [
         "Escondidas",
         "Cocina",
-        "Derrape",
+        "Carreritas",
         "Billar",
         "Póquer",
         "¡Pintura!"
@@ -1787,7 +1787,7 @@
       "usedBy": [
         "Escondidas",
         "Cocina",
-        "Derrape",
+        "Carreritas",
         "Billar",
         "Póquer",
         "¡Pintura!"
@@ -1809,7 +1809,7 @@
       "usedBy": [
         "Escondidas",
         "Cocina",
-        "Derrape",
+        "Carreritas",
         "Billar",
         "Póquer",
         "¡Pintura!"
@@ -1831,7 +1831,7 @@
       "usedBy": [
         "Escondidas",
         "Cocina",
-        "Derrape",
+        "Carreritas",
         "Billar",
         "Póquer",
         "¡Pintura!"
@@ -1853,7 +1853,7 @@
       "usedBy": [
         "Escondidas",
         "Cocina",
-        "Derrape",
+        "Carreritas",
         "Billar",
         "Póquer"
       ],
@@ -1868,7 +1868,7 @@
       "factory": "makeMango",
       "usedBy": [
         "Bululú",
-        "Derrape"
+        "Carreritas"
       ],
       "previewOptions": null,
       "status": "in-use"
@@ -1881,7 +1881,7 @@
       "factory": "makeMango",
       "usedBy": [
         "Bululú",
-        "Derrape"
+        "Carreritas"
       ],
       "previewOptions": {
         "gold": true
@@ -1921,7 +1921,7 @@
       "source": "Pana/engine/models/props/pueblo.js",
       "factory": "colonialHouse",
       "usedBy": [
-        "Derrape"
+        "Carreritas"
       ],
       "previewOptions": null,
       "status": "in-use"
@@ -1933,7 +1933,7 @@
       "source": "Pana/engine/models/props/pueblo.js",
       "factory": "cornerBodega",
       "usedBy": [
-        "Derrape"
+        "Carreritas"
       ],
       "previewOptions": null,
       "status": "in-use"
@@ -1945,7 +1945,7 @@
       "source": "Pana/engine/models/props/pueblo.js",
       "factory": "colonialChurch",
       "usedBy": [
-        "Derrape"
+        "Carreritas"
       ],
       "previewOptions": null,
       "status": "in-use"
@@ -1957,7 +1957,7 @@
       "source": "Pana/engine/models/props/pueblo.js",
       "factory": "busStopShelter",
       "usedBy": [
-        "Derrape"
+        "Carreritas"
       ],
       "previewOptions": null,
       "status": "in-use"
@@ -1970,7 +1970,7 @@
       "factory": "streetFoodKiosk",
       "usedBy": [
         "Cocina",
-        "Derrape",
+        "Carreritas",
         "Billar",
         "Póquer"
       ],
@@ -1986,7 +1986,7 @@
       "usedBy": [
         "Escondidas",
         "Cocina",
-        "Derrape",
+        "Carreritas",
         "Billar",
         "Póquer"
       ],
@@ -2000,7 +2000,7 @@
       "source": "Pana/engine/models/props/pueblo.js",
       "factory": "basketballHoop",
       "usedBy": [
-        "Derrape",
+        "Carreritas",
         "¡Pintura!"
       ],
       "previewOptions": null,
@@ -2013,7 +2013,7 @@
       "source": "Pana/engine/models/props/pueblo.js",
       "factory": "rooftopWaterTank",
       "usedBy": [
-        "Derrape"
+        "Carreritas"
       ],
       "previewOptions": null,
       "status": "in-use"
@@ -2027,7 +2027,7 @@
       "usedBy": [
         "Escondidas",
         "Cocina",
-        "Derrape",
+        "Carreritas",
         "Billar",
         "Póquer"
       ],
@@ -2043,7 +2043,7 @@
       "usedBy": [
         "Escondidas",
         "Cocina",
-        "Derrape",
+        "Carreritas",
         "Billar",
         "Póquer",
         "¡Pintura!"
@@ -2058,7 +2058,7 @@
       "source": "Pana/engine/models/props/mountain.js",
       "factory": "mountainCabin",
       "usedBy": [
-        "Derrape"
+        "Carreritas"
       ],
       "previewOptions": null,
       "status": "in-use"
@@ -2070,7 +2070,7 @@
       "source": "Pana/engine/models/props/mountain.js",
       "factory": "cableCarStation",
       "usedBy": [
-        "Derrape"
+        "Carreritas"
       ],
       "previewOptions": null,
       "status": "in-use"
@@ -2082,7 +2082,7 @@
       "source": "Pana/engine/models/props/mountain.js",
       "factory": "rockyCliff",
       "usedBy": [
-        "Derrape"
+        "Carreritas"
       ],
       "previewOptions": null,
       "status": "in-use"
@@ -2106,7 +2106,7 @@
       "source": "Pana/engine/models/props/mountain.js",
       "factory": "stoneLookout",
       "usedBy": [
-        "Derrape"
+        "Carreritas"
       ],
       "previewOptions": null,
       "status": "in-use"
@@ -2118,7 +2118,7 @@
       "source": "Pana/engine/models/props/mountain.js",
       "factory": "mountainTent",
       "usedBy": [
-        "Derrape"
+        "Carreritas"
       ],
       "previewOptions": null,
       "status": "in-use"
@@ -2142,7 +2142,7 @@
       "source": "Pana/engine/models/props/mountain.js",
       "factory": "mountainSignpost",
       "usedBy": [
-        "Derrape"
+        "Carreritas"
       ],
       "previewOptions": null,
       "status": "in-use"
@@ -2154,7 +2154,7 @@
       "source": "Pana/engine/models/props/mountain.js",
       "factory": "rockArch",
       "usedBy": [
-        "Derrape"
+        "Carreritas"
       ],
       "previewOptions": {
         "span": 8,
@@ -2169,7 +2169,7 @@
       "source": "Pana/engine/models/props/mountain.js",
       "factory": "timberTrestle",
       "usedBy": [
-        "Derrape"
+        "Carreritas"
       ],
       "previewOptions": {
         "height": 8,
@@ -2222,7 +2222,7 @@
       "usedBy": [
         "Escondidas",
         "Cocina",
-        "Derrape"
+        "Carreritas"
       ],
       "previewOptions": null,
       "status": "in-use"
@@ -2246,7 +2246,7 @@
       "source": "Pana/engine/models/props/monuments.js",
       "factory": "trophyMonument",
       "usedBy": [
-        "Derrape"
+        "Carreritas"
       ],
       "previewOptions": null,
       "status": "in-use"
@@ -2270,7 +2270,7 @@
       "source": "Pana/engine/models/props/monuments.js",
       "factory": "souvenirKiosk",
       "usedBy": [
-        "Derrape"
+        "Carreritas"
       ],
       "previewOptions": null,
       "status": "in-use"
@@ -2312,7 +2312,7 @@
       "source": "Pana/engine/models/props/jungle.js",
       "factory": "waterfallRocks",
       "usedBy": [
-        "Derrape",
+        "Carreritas",
         "¡Embuste!"
       ],
       "previewOptions": null,
@@ -2325,7 +2325,7 @@
       "source": "Pana/engine/models/props/jungle.js",
       "factory": "vineArch",
       "usedBy": [
-        "Derrape",
+        "Carreritas",
         "¡Embuste!",
         "Escondidas",
         "¡Pintura!",
@@ -2354,7 +2354,7 @@
       "source": "Pana/engine/models/props/jungle.js",
       "factory": "stoneTotem",
       "usedBy": [
-        "Derrape",
+        "Carreritas",
         "Reliquia",
         "¡Embuste!",
         "Escondidas",
@@ -2372,7 +2372,7 @@
       "source": "Pana/engine/models/props/jungle.js",
       "factory": "hollowLog",
       "usedBy": [
-        "Derrape",
+        "Carreritas",
         "¡Embuste!"
       ],
       "previewOptions": null,
@@ -2386,7 +2386,7 @@
       "factory": "beachShade",
       "usedBy": [
         "Bululú",
-        "Derrape"
+        "Carreritas"
       ],
       "previewOptions": null,
       "status": "in-use"
@@ -2399,7 +2399,7 @@
       "factory": "beachHut",
       "usedBy": [
         "Bululú",
-        "Derrape",
+        "Carreritas",
         "Escondidas",
         "¡Pintura!",
         "Billar",
@@ -2416,7 +2416,7 @@
       "factory": "driftwood",
       "usedBy": [
         "Bululú",
-        "Derrape",
+        "Carreritas",
         "Galope"
       ],
       "previewOptions": null,
@@ -2430,7 +2430,7 @@
       "factory": "fishingBoat",
       "usedBy": [
         "Bululú",
-        "Derrape",
+        "Carreritas",
         "Escondidas",
         "¡Pintura!",
         "Billar",
@@ -2446,7 +2446,7 @@
       "source": "Pana/engine/models/props/coastal.js",
       "factory": "coastalLighthouse",
       "usedBy": [
-        "Derrape",
+        "Carreritas",
         "Escondidas",
         "¡Pintura!",
         "Billar",
@@ -2463,7 +2463,7 @@
       "factory": "lifeguardTower",
       "usedBy": [
         "Bululú",
-        "Derrape"
+        "Carreritas"
       ],
       "previewOptions": null,
       "status": "in-use"
@@ -2475,7 +2475,7 @@
       "source": "Pana/engine/models/props/coastal.js",
       "factory": "beachVolleyball",
       "usedBy": [
-        "Derrape"
+        "Carreritas"
       ],
       "previewOptions": null,
       "status": "in-use"
@@ -2488,7 +2488,7 @@
       "factory": "beachShower",
       "usedBy": [
         "Bululú",
-        "Derrape"
+        "Carreritas"
       ],
       "previewOptions": null,
       "status": "in-use"
@@ -2501,7 +2501,7 @@
       "factory": "rescueRingStand",
       "usedBy": [
         "Bululú",
-        "Derrape"
+        "Carreritas"
       ],
       "previewOptions": null,
       "status": "in-use"
@@ -2514,7 +2514,7 @@
       "factory": "fishingNetRack",
       "usedBy": [
         "Bululú",
-        "Derrape",
+        "Carreritas",
         "Escondidas",
         "¡Pintura!",
         "Billar",
@@ -2531,7 +2531,7 @@
       "factory": "fishCrates",
       "usedBy": [
         "Bululú",
-        "Derrape"
+        "Carreritas"
       ],
       "previewOptions": null,
       "status": "in-use"
@@ -2544,7 +2544,7 @@
       "factory": "channelBuoy",
       "usedBy": [
         "Bululú",
-        "Derrape"
+        "Carreritas"
       ],
       "previewOptions": null,
       "status": "in-use"
@@ -3158,7 +3158,7 @@
       "source": "Pana/engine/models/effects/waterfall.js",
       "factory": "waterfall",
       "usedBy": [
-        "Derrape",
+        "Carreritas",
         "Bululú"
       ],
       "previewOptions": {
@@ -3188,7 +3188,7 @@
       "source": "Pana/engine/models/props/saltworks.js",
       "factory": "saltPool",
       "usedBy": [
-        "Derrape"
+        "Carreritas"
       ],
       "previewOptions": {
         "rx": 6,
@@ -3203,7 +3203,7 @@
       "source": "Pana/engine/models/props/delta.js",
       "factory": "palafitoHouse",
       "usedBy": [
-        "Derrape"
+        "Carreritas"
       ],
       "previewOptions": {
         "variant": 1,
@@ -3218,7 +3218,7 @@
       "source": "Pana/engine/models/props/delta.js",
       "factory": "landingShelter",
       "usedBy": [
-        "Derrape",
+        "Carreritas",
         "Galope"
       ],
       "previewOptions": null,
@@ -3231,7 +3231,7 @@
       "source": "Pana/engine/models/props/caves.js",
       "factory": "stalactiteCluster",
       "usedBy": [
-        "Derrape"
+        "Carreritas"
       ],
       "previewOptions": {
         "seed": 56
@@ -3245,7 +3245,7 @@
       "source": "Pana/engine/models/props/caves.js",
       "factory": "rootCurtain",
       "usedBy": [
-        "Derrape"
+        "Carreritas"
       ],
       "previewOptions": {
         "length": 6
@@ -3259,7 +3259,7 @@
       "source": "Pana/engine/models/props/saltworks.js",
       "factory": "saltPile",
       "usedBy": [
-        "Derrape"
+        "Carreritas"
       ],
       "previewOptions": {
         "seed": 56
@@ -3273,7 +3273,7 @@
       "source": "Pana/engine/models/props/saltworks.js",
       "factory": "sluiceGate",
       "usedBy": [
-        "Derrape"
+        "Carreritas"
       ],
       "previewOptions": null,
       "status": "in-use"
@@ -3409,7 +3409,7 @@
       "source": "Pana/engine/models/props/plaza-bandstand.js",
       "factory": "plazaBandstand",
       "usedBy": [
-        "Derrape"
+        "Carreritas"
       ],
       "status": "in-use"
     },
@@ -3420,7 +3420,7 @@
       "source": "Pana/engine/models/props/salt-harvester.js",
       "factory": "saltHarvester",
       "usedBy": [
-        "Derrape"
+        "Carreritas"
       ],
       "status": "in-use"
     },
@@ -3431,7 +3431,7 @@
       "source": "Pana/engine/models/props/boat-yard.js",
       "factory": "boatRepairYard",
       "usedBy": [
-        "Derrape"
+        "Carreritas"
       ],
       "status": "in-use"
     },
@@ -3442,7 +3442,7 @@
       "source": "Pana/engine/models/props/tire-workshop.js",
       "factory": "tireWorkshop",
       "usedBy": [
-        "Derrape"
+        "Carreritas"
       ],
       "status": "in-use"
     },
@@ -3453,7 +3453,7 @@
       "source": "Pana/engine/models/props/ice-cream-cart.js",
       "factory": "iceCreamCart",
       "usedBy": [
-        "Derrape"
+        "Carreritas"
       ],
       "status": "in-use"
     },
@@ -3464,7 +3464,7 @@
       "source": "Pana/engine/models/props/fish-auction-canopy.js",
       "factory": "fishAuctionCanopy",
       "usedBy": [
-        "Derrape"
+        "Carreritas"
       ],
       "status": "in-use"
     },
@@ -3475,7 +3475,7 @@
       "source": "Pana/engine/models/props/salt-boardwalk.js",
       "factory": "saltBoardwalk",
       "usedBy": [
-        "Derrape"
+        "Carreritas"
       ],
       "status": "in-use"
     },
@@ -3486,7 +3486,7 @@
       "source": "Pana/engine/models/props/ceramic-fountain.js",
       "factory": "ceramicFountain",
       "usedBy": [
-        "Derrape"
+        "Carreritas"
       ],
       "status": "in-use"
     },
@@ -3497,7 +3497,7 @@
       "source": "Pana/engine/models/props/cafe-terrace.js",
       "factory": "cafeTerrace",
       "usedBy": [
-        "Derrape"
+        "Carreritas"
       ],
       "status": "in-use"
     },
@@ -3508,7 +3508,7 @@
       "source": "Pana/engine/models/props/laundry-courtyard.js",
       "factory": "laundryCourtyard",
       "usedBy": [
-        "Derrape"
+        "Carreritas"
       ],
       "status": "in-use"
     },
@@ -3519,7 +3519,7 @@
       "source": "Pana/engine/models/props/navigation-beacon.js",
       "factory": "navigationBeacon",
       "usedBy": [
-        "Derrape"
+        "Carreritas"
       ],
       "status": "in-use"
     },
@@ -3530,7 +3530,7 @@
       "source": "Pana/engine/models/props/cargo-handcart.js",
       "factory": "cargoHandcart",
       "usedBy": [
-        "Derrape"
+        "Carreritas"
       ],
       "status": "in-use"
     },
@@ -3541,7 +3541,7 @@
       "source": "Pana/engine/models/props/fruit-delivery-truck.js",
       "factory": "fruitDeliveryTruck",
       "usedBy": [
-        "Derrape"
+        "Carreritas"
       ],
       "status": "in-use"
     },
@@ -3552,7 +3552,7 @@
       "source": "Pana/engine/models/props/water-pump-station.js",
       "factory": "waterPumpStation",
       "usedBy": [
-        "Derrape"
+        "Carreritas"
       ],
       "status": "in-use"
     },
@@ -3563,7 +3563,7 @@
       "source": "Pana/engine/models/props/street-mural.js",
       "factory": "streetMural",
       "usedBy": [
-        "Derrape"
+        "Carreritas"
       ],
       "status": "in-use"
     },
@@ -3575,7 +3575,7 @@
       "factory": "colonialHouse",
       "usedBy": [
         "Pana Studio",
-        "Derrape"
+        "Carreritas"
       ],
       "previewOptions": {
         "family": "casa-baja",
@@ -3600,7 +3600,7 @@
       "factory": "colonialHouse",
       "usedBy": [
         "Pana Studio",
-        "Derrape"
+        "Carreritas"
       ],
       "previewOptions": {
         "family": "casa-balcon",
@@ -3625,7 +3625,7 @@
       "factory": "colonialHouse",
       "usedBy": [
         "Pana Studio",
-        "Derrape"
+        "Carreritas"
       ],
       "previewOptions": {
         "family": "casa-remate",
@@ -3650,7 +3650,7 @@
       "factory": "colonialHouse",
       "usedBy": [
         "Pana Studio",
-        "Derrape"
+        "Carreritas"
       ],
       "previewOptions": {
         "family": "casa-larga",
@@ -3674,7 +3674,7 @@
       "factory": "colonialHouse",
       "usedBy": [
         "Pana Studio",
-        "Derrape"
+        "Carreritas"
       ],
       "previewOptions": {
         "family": "casa-esquina",
@@ -3698,7 +3698,7 @@
       "factory": "colonialHouse",
       "usedBy": [
         "Pana Studio",
-        "Derrape"
+        "Carreritas"
       ],
       "previewOptions": {
         "family": "casa-portal",
@@ -3721,7 +3721,7 @@
       "source": "Pana/engine/models/props/casa-guipuzcoana.js",
       "factory": "casaGuipuzcoana",
       "usedBy": [
-        "Derrape",
+        "Carreritas",
         "Caída",
         "Dominó",
         "Póquer"
@@ -3735,7 +3735,7 @@
       "source": "Pana/engine/models/props/san-carlos-fortress.js",
       "factory": "sanCarlosFortress",
       "usedBy": [
-        "Derrape",
+        "Carreritas",
         "Caída",
         "Dominó",
         "Póquer"
@@ -3749,7 +3749,7 @@
       "source": "Pana/engine/models/props/port-silos.js",
       "factory": "portSilos",
       "usedBy": [
-        "Derrape",
+        "Carreritas",
         "Caída",
         "Dominó",
         "Póquer"
@@ -3763,7 +3763,7 @@
       "source": "Pana/engine/models/props/port-cargo.js",
       "factory": "shippingContainer",
       "usedBy": [
-        "Derrape"
+        "Carreritas"
       ],
       "status": "in-use"
     },
@@ -3774,7 +3774,7 @@
       "source": "Pana/engine/models/props/port-cargo.js",
       "factory": "transitWarehouse",
       "usedBy": [
-        "Derrape"
+        "Carreritas"
       ],
       "status": "in-use"
     },
@@ -3785,7 +3785,7 @@
       "source": "Pana/engine/models/props/port-cargo.js",
       "factory": "portBollard",
       "usedBy": [
-        "Derrape"
+        "Carreritas"
       ],
       "status": "in-use"
     },
@@ -3796,7 +3796,7 @@
       "source": "Pana/engine/models/props/port-crane.js",
       "factory": "portCrane",
       "usedBy": [
-        "Derrape"
+        "Carreritas"
       ],
       "status": "in-use"
     },
@@ -3807,7 +3807,7 @@
       "source": "Pana/engine/models/props/cargo-ship.js",
       "factory": "cargoShip",
       "usedBy": [
-        "Derrape"
+        "Carreritas"
       ],
       "status": "in-use"
     },
@@ -3818,7 +3818,7 @@
       "source": "Pana/engine/models/props/coastal-fort.js",
       "factory": "coastalFortress",
       "usedBy": [
-        "Derrape"
+        "Carreritas"
       ],
       "status": "in-use"
     },
@@ -4926,7 +4926,7 @@
       "source": "Pana/engine/models/props/jaguar-stone.js",
       "factory": "jaguarStatue",
       "usedBy": [
-        "Derrape"
+        "Carreritas"
       ],
       "previewOptions": {
         "seed": 11
@@ -4940,7 +4940,7 @@
       "source": "Pana/engine/models/props/jaguar-stone.js",
       "factory": "jaguarRelief",
       "usedBy": [
-        "Derrape"
+        "Carreritas"
       ],
       "previewOptions": {
         "seed": 13
@@ -4954,7 +4954,7 @@
       "source": "Pana/engine/models/props/maya-temple.js",
       "factory": "mayaPortal",
       "usedBy": [
-        "Derrape"
+        "Carreritas"
       ],
       "previewOptions": {
         "span": 10
@@ -4968,7 +4968,7 @@
       "source": "Pana/engine/models/props/maya-temple.js",
       "factory": "steppedPyramid",
       "usedBy": [
-        "Derrape"
+        "Carreritas"
       ],
       "previewOptions": {
         "seed": 61
@@ -4982,7 +4982,7 @@
       "source": "Pana/engine/models/props/maya-temple.js",
       "factory": "cenote",
       "usedBy": [
-        "Derrape"
+        "Carreritas"
       ],
       "previewOptions": {
         "radius": 7
@@ -5486,7 +5486,7 @@
       "source": "Pana/engine/models/props/fiesta.js",
       "factory": "balloonBunch",
       "usedBy": [
-        "Derrape"
+        "Carreritas"
       ],
       "previewOptions": {
         "seed": 3
@@ -5500,7 +5500,7 @@
       "source": "Pana/engine/models/props/fiesta.js",
       "factory": "fiestaFlags",
       "usedBy": [
-        "Derrape"
+        "Carreritas"
       ],
       "previewOptions": {
         "seed": 3
@@ -5514,7 +5514,7 @@
       "source": "Pana/engine/models/props/fiesta.js",
       "factory": "buntingLine",
       "usedBy": [
-        "Derrape"
+        "Carreritas"
       ],
       "previewOptions": {
         "seed": 3,
@@ -5529,7 +5529,7 @@
       "source": "Pana/engine/models/props/fiesta.js",
       "factory": "checkeredBanner",
       "usedBy": [
-        "Derrape"
+        "Carreritas"
       ],
       "previewOptions": {
         "width": 7
@@ -5543,7 +5543,7 @@
       "source": "Pana/engine/models/props/fiesta.js",
       "factory": "hotAirBalloon",
       "usedBy": [
-        "Derrape"
+        "Carreritas"
       ],
       "previewOptions": {
         "seed": 3,
@@ -5558,7 +5558,7 @@
       "source": "Pana/engine/models/props/wood-sign.js",
       "factory": "woodSign",
       "usedBy": [
-        "Derrape"
+        "Carreritas"
       ],
       "previewOptions": {
         "lines": [
@@ -5575,7 +5575,7 @@
       "source": "Pana/engine/models/props/wood-sign.js",
       "factory": "signBanner",
       "usedBy": [
-        "Derrape"
+        "Carreritas"
       ],
       "previewOptions": {
         "lines": [
@@ -5594,7 +5594,7 @@
       "source": "Pana/engine/models/props/wood-sign.js",
       "factory": "reflectorPost",
       "usedBy": [
-        "Derrape"
+        "Carreritas"
       ],
       "previewOptions": null,
       "status": "in-use"
@@ -5848,7 +5848,7 @@
       "factory": "createAccessories",
       "usedBy": [
         "Bululú",
-        "Derrape",
+        "Carreritas",
         "Escondidas",
         "Cocina"
       ],
@@ -5862,7 +5862,7 @@
       "factory": "buildCharacter",
       "usedBy": [
         "Bululú",
-        "Derrape",
+        "Carreritas",
         "Escondidas",
         "Cocina"
       ],
@@ -5890,7 +5890,7 @@
       "source": "Pana/engine/models/characters/pana/avatar-model.js",
       "factory": "buildCharacter",
       "usedBy": [
-        "Derrape"
+        "Carreritas"
       ],
       "previewOptions": {
         "seated": true
@@ -5905,7 +5905,7 @@
       "factory": "buildSoftCharacter",
       "usedBy": [
         "Bululú",
-        "Derrape",
+        "Carreritas",
         "Escondidas",
         "Cocina"
       ],
@@ -5919,7 +5919,7 @@
       "factory": "buildSoftCharacter",
       "usedBy": [
         "Bululú",
-        "Derrape",
+        "Carreritas",
         "Escondidas",
         "Cocina"
       ],
@@ -5933,7 +5933,7 @@
       "factory": "buildSoftCharacter",
       "usedBy": [
         "Bululú",
-        "Derrape",
+        "Carreritas",
         "Escondidas",
         "Cocina"
       ],
@@ -5947,7 +5947,7 @@
       "factory": "buildSoftCharacter",
       "usedBy": [
         "Bululú",
-        "Derrape",
+        "Carreritas",
         "Escondidas",
         "Cocina"
       ],
@@ -5961,7 +5961,7 @@
       "factory": "buildSoftCharacter",
       "usedBy": [
         "Bululú",
-        "Derrape",
+        "Carreritas",
         "Escondidas",
         "Cocina"
       ],
@@ -6143,7 +6143,7 @@
       "source": "Pana/engine/models/vehicles/cars.js",
       "factory": "CAR_BUILDERS.chamo",
       "usedBy": [
-        "Derrape",
+        "Carreritas",
         "Bululú"
       ],
       "status": "in-use"
@@ -6155,7 +6155,7 @@
       "source": "Pana/engine/models/vehicles/cars.js",
       "factory": "CAR_BUILDERS.lancha",
       "usedBy": [
-        "Derrape",
+        "Carreritas",
         "Bululú"
       ],
       "status": "in-use"
@@ -6167,7 +6167,7 @@
       "source": "Pana/engine/models/vehicles/cars.js",
       "factory": "CAR_BUILDERS.machito",
       "usedBy": [
-        "Derrape",
+        "Carreritas",
         "Bululú"
       ],
       "status": "in-use"
@@ -6179,7 +6179,7 @@
       "source": "Pana/engine/models/vehicles/cars.js",
       "factory": "CAR_BUILDERS.bala",
       "usedBy": [
-        "Derrape",
+        "Carreritas",
         "Bululú"
       ],
       "status": "in-use"
@@ -6191,7 +6191,7 @@
       "source": "Pana/engine/models/vehicles/cars.js",
       "factory": "CAR_BUILDERS.toro",
       "usedBy": [
-        "Derrape",
+        "Carreritas",
         "Bululú"
       ],
       "status": "in-use"
@@ -6203,7 +6203,7 @@
       "source": "Pana/engine/models/vehicles/cars.js",
       "factory": "CAR_BUILDERS.familiar",
       "usedBy": [
-        "Derrape",
+        "Carreritas",
         "Bululú"
       ],
       "status": "in-use"
@@ -6215,7 +6215,7 @@
       "source": "Pana/engine/models/vehicles/cars.js",
       "factory": "CAR_BUILDERS.rumbera",
       "usedBy": [
-        "Derrape",
+        "Carreritas",
         "Bululú"
       ],
       "status": "in-use"
@@ -6227,7 +6227,7 @@
       "source": "Pana/engine/models/vehicles/cars.js",
       "factory": "CAR_BUILDERS.montanero",
       "usedBy": [
-        "Derrape",
+        "Carreritas",
         "Bululú"
       ],
       "status": "in-use"
@@ -6239,7 +6239,7 @@
       "source": "Pana/engine/models/vehicles/cars.js",
       "factory": "CAR_BUILDERS.escarabajo",
       "usedBy": [
-        "Derrape",
+        "Carreritas",
         "Bululú"
       ],
       "status": "in-use"
@@ -6251,7 +6251,7 @@
       "source": "Pana/engine/models/vehicles/cars.js",
       "factory": "CAR_BUILDERS.sedan",
       "usedBy": [
-        "Derrape",
+        "Carreritas",
         "Bululú"
       ],
       "status": "in-use"
@@ -6263,7 +6263,7 @@
       "source": "Pana/engine/models/vehicles/cars.js",
       "factory": "CAR_BUILDERS.buseta",
       "usedBy": [
-        "Derrape",
+        "Carreritas",
         "Bululú"
       ],
       "status": "in-use"
@@ -6275,7 +6275,7 @@
       "source": "Pana/engine/models/vehicles/cars.js",
       "factory": "CAR_BUILDERS.pickup",
       "usedBy": [
-        "Derrape",
+        "Carreritas",
         "Bululú"
       ],
       "status": "in-use"
@@ -6287,7 +6287,7 @@
       "source": "Pana/engine/models/vehicles/cars.js",
       "factory": "CAR_BUILDERS.jeep",
       "usedBy": [
-        "Derrape",
+        "Carreritas",
         "Bululú"
       ],
       "status": "in-use"
@@ -6299,7 +6299,7 @@
       "source": "Pana/engine/models/vehicles/cars.js",
       "factory": "CAR_BUILDERS.hatch",
       "usedBy": [
-        "Derrape",
+        "Carreritas",
         "Bululú"
       ],
       "status": "in-use"
@@ -6311,7 +6311,7 @@
       "source": "Pana/engine/models/vehicles/cars.js",
       "factory": "CAR_BUILDERS.rustico",
       "usedBy": [
-        "Derrape",
+        "Carreritas",
         "Bululú"
       ],
       "status": "in-use"
@@ -6323,7 +6323,7 @@
       "source": "Pana/engine/models/vehicles/cars.js",
       "factory": "CAR_BUILDERS.malibu",
       "usedBy": [
-        "Derrape",
+        "Carreritas",
         "Bululú"
       ],
       "status": "in-use"
@@ -6355,10 +6355,10 @@
       "id": "wheel-calle",
       "name": "Cauchos de calle",
       "category": "Vehículos",
-      "source": "Pana/games/derrape/public/wheel-definitions.js",
+      "source": "Pana/games/carreritas/public/wheel-definitions.js",
       "factory": "makeWheel",
       "usedBy": [
-        "Derrape"
+        "Carreritas"
       ],
       "status": "in-use"
     },
@@ -6366,10 +6366,10 @@
       "id": "wheel-slick",
       "name": "Slicks de pista",
       "category": "Vehículos",
-      "source": "Pana/games/derrape/public/wheel-definitions.js",
+      "source": "Pana/games/carreritas/public/wheel-definitions.js",
       "factory": "makeWheel",
       "usedBy": [
-        "Derrape"
+        "Carreritas"
       ],
       "status": "in-use"
     },
@@ -6377,10 +6377,10 @@
       "id": "wheel-barro",
       "name": "Cauchos de barro",
       "category": "Vehículos",
-      "source": "Pana/games/derrape/public/wheel-definitions.js",
+      "source": "Pana/games/carreritas/public/wheel-definitions.js",
       "factory": "makeWheel",
       "usedBy": [
-        "Derrape"
+        "Carreritas"
       ],
       "status": "in-use"
     },
@@ -6388,10 +6388,10 @@
       "id": "wheel-palo",
       "name": "Llantas de palo",
       "category": "Vehículos",
-      "source": "Pana/games/derrape/public/wheel-definitions.js",
+      "source": "Pana/games/carreritas/public/wheel-definitions.js",
       "factory": "makeWheel",
       "usedBy": [
-        "Derrape"
+        "Carreritas"
       ],
       "status": "in-use"
     },
@@ -6399,10 +6399,10 @@
       "id": "wheel-lluvia",
       "name": "Cauchos de lluvia",
       "category": "Vehículos",
-      "source": "Pana/games/derrape/public/wheel-definitions.js",
+      "source": "Pana/games/carreritas/public/wheel-definitions.js",
       "factory": "makeWheel",
       "usedBy": [
-        "Derrape"
+        "Carreritas"
       ],
       "status": "in-use"
     },
@@ -6410,10 +6410,10 @@
       "id": "wheel-clasicas",
       "name": "Clásicas",
       "category": "Vehículos",
-      "source": "Pana/games/derrape/public/wheel-definitions.js",
+      "source": "Pana/games/carreritas/public/wheel-definitions.js",
       "factory": "makeWheel",
       "usedBy": [
-        "Derrape"
+        "Carreritas"
       ],
       "status": "in-use"
     },
@@ -6421,10 +6421,10 @@
       "id": "wheel-ligeras",
       "name": "Rines ligeros",
       "category": "Vehículos",
-      "source": "Pana/games/derrape/public/wheel-definitions.js",
+      "source": "Pana/games/carreritas/public/wheel-definitions.js",
       "factory": "makeWheel",
       "usedBy": [
-        "Derrape"
+        "Carreritas"
       ],
       "status": "in-use"
     },
@@ -6432,10 +6432,10 @@
       "id": "wheel-todoterreno",
       "name": "Todoterreno",
       "category": "Vehículos",
-      "source": "Pana/games/derrape/public/wheel-definitions.js",
+      "source": "Pana/games/carreritas/public/wheel-definitions.js",
       "factory": "makeWheel",
       "usedBy": [
-        "Derrape"
+        "Carreritas"
       ],
       "status": "in-use"
     },
@@ -6593,7 +6593,7 @@
       "usedBy": [
         "Escondidas",
         "Cocina",
-        "Derrape"
+        "Carreritas"
       ],
       "status": "in-use"
     },
@@ -6623,10 +6623,10 @@
       "id": "track-estadio",
       "name": "Circuito · El Estadio",
       "category": "Mapas",
-      "source": "Pana/games/derrape/public/tracks/estadio.js",
+      "source": "Pana/games/carreritas/public/tracks/estadio.js",
       "factory": "makeTrack(definition).build",
       "usedBy": [
-        "Derrape"
+        "Carreritas"
       ],
       "status": "in-use"
     },
@@ -6634,10 +6634,10 @@
       "id": "track-desierto",
       "name": "Circuito · Pana Desierto",
       "category": "Mapas",
-      "source": "Pana/games/derrape/public/tracks/desierto.js",
+      "source": "Pana/games/carreritas/public/tracks/desierto.js",
       "factory": "makeTrack(definition).build",
       "usedBy": [
-        "Derrape"
+        "Carreritas"
       ],
       "status": "in-use"
     },
@@ -6645,10 +6645,10 @@
       "id": "track-llanos",
       "name": "Circuito · Los Llanos",
       "category": "Mapas",
-      "source": "Pana/games/derrape/public/tracks/llanos.js",
+      "source": "Pana/games/carreritas/public/tracks/llanos.js",
       "factory": "makeTrack(definition).build",
       "usedBy": [
-        "Derrape"
+        "Carreritas"
       ],
       "status": "in-use"
     },
@@ -6656,10 +6656,10 @@
       "id": "track-chichi",
       "name": "Circuito · Chi Chi",
       "category": "Mapas",
-      "source": "Pana/games/derrape/public/tracks/chichi.js",
+      "source": "Pana/games/carreritas/public/tracks/chichi.js",
       "factory": "makeTrack(definition).build",
       "usedBy": [
-        "Derrape"
+        "Carreritas"
       ],
       "status": "in-use"
     },
@@ -6667,10 +6667,10 @@
       "id": "track-selva",
       "name": "Circuito · Pana Selva",
       "category": "Mapas",
-      "source": "Pana/games/derrape/public/tracks/selva.js",
+      "source": "Pana/games/carreritas/public/tracks/selva.js",
       "factory": "makeTrack(definition).build",
       "usedBy": [
-        "Derrape"
+        "Carreritas"
       ],
       "status": "in-use"
     },
@@ -6678,10 +6678,10 @@
       "id": "track-paramo",
       "name": "Circuito · Pana Páramo",
       "category": "Mapas",
-      "source": "Pana/games/derrape/public/tracks/paramo.js",
+      "source": "Pana/games/carreritas/public/tracks/paramo.js",
       "factory": "makeTrack(definition).build",
       "usedBy": [
-        "Derrape"
+        "Carreritas"
       ],
       "status": "in-use"
     },
@@ -6689,10 +6689,10 @@
       "id": "track-plaza",
       "name": "Circuito · Plaza Pana",
       "category": "Mapas",
-      "source": "Pana/games/derrape/public/tracks/plaza.js",
+      "source": "Pana/games/carreritas/public/tracks/plaza.js",
       "factory": "makeTrack(definition).build",
       "usedBy": [
-        "Derrape"
+        "Carreritas"
       ],
       "status": "in-use"
     },
@@ -6700,10 +6700,10 @@
       "id": "track-bululu",
       "name": "Circuito · Isla Bululú",
       "category": "Mapas",
-      "source": "Pana/games/derrape/public/tracks/bululu.js",
+      "source": "Pana/games/carreritas/public/tracks/bululu.js",
       "factory": "makeTrack(definition).build",
       "usedBy": [
-        "Derrape"
+        "Carreritas"
       ],
       "status": "in-use"
     },
@@ -6711,10 +6711,10 @@
       "id": "track-salto",
       "name": "Circuito · Salto del Tepuy",
       "category": "Mapas",
-      "source": "Pana/games/derrape/public/tracks/salto.js",
+      "source": "Pana/games/carreritas/public/tracks/salto.js",
       "factory": "makeTrack(definition).build",
       "usedBy": [
-        "Derrape"
+        "Carreritas"
       ],
       "status": "in-use"
     },
@@ -6722,10 +6722,10 @@
       "id": "track-delta",
       "name": "Circuito · Delta de los Caños",
       "category": "Mapas",
-      "source": "Pana/games/derrape/public/tracks/delta.js",
+      "source": "Pana/games/carreritas/public/tracks/delta.js",
       "factory": "makeTrack(definition).build",
       "usedBy": [
-        "Derrape"
+        "Carreritas"
       ],
       "status": "in-use"
     },
@@ -6733,10 +6733,10 @@
       "id": "track-cuevas",
       "name": "Circuito · Cuevas del Río",
       "category": "Mapas",
-      "source": "Pana/games/derrape/public/tracks/cuevas.js",
+      "source": "Pana/games/carreritas/public/tracks/cuevas.js",
       "factory": "makeTrack(definition).build",
       "usedBy": [
-        "Derrape"
+        "Carreritas"
       ],
       "status": "in-use"
     },
@@ -6744,10 +6744,10 @@
       "id": "track-salinas",
       "name": "Circuito · Salinas del Viento",
       "category": "Mapas",
-      "source": "Pana/games/derrape/public/tracks/salinas.js",
+      "source": "Pana/games/carreritas/public/tracks/salinas.js",
       "factory": "makeTrack(definition).build",
       "usedBy": [
-        "Derrape"
+        "Carreritas"
       ],
       "status": "in-use"
     },
@@ -6755,10 +6755,10 @@
       "id": "track-puerto",
       "name": "Circuito · Puerto",
       "category": "Mapas",
-      "source": "Pana/games/derrape/public/tracks/puerto.js",
+      "source": "Pana/games/carreritas/public/tracks/puerto.js",
       "factory": "makeTrack(definition).build",
       "usedBy": [
-        "Derrape"
+        "Carreritas"
       ],
       "status": "in-use"
     },
@@ -6766,10 +6766,10 @@
       "id": "track-cata",
       "name": "Circuito · Bahía de Cata",
       "category": "Mapas",
-      "source": "Pana/games/derrape/public/tracks/cata.js",
+      "source": "Pana/games/carreritas/public/tracks/cata.js",
       "factory": "makeTrack(definition).build",
       "usedBy": [
-        "Derrape"
+        "Carreritas"
       ],
       "status": "in-use"
     },
@@ -6777,10 +6777,10 @@
       "id": "track-choroni",
       "name": "Circuito · Choroní",
       "category": "Mapas",
-      "source": "Pana/games/derrape/public/tracks/choroni.js",
+      "source": "Pana/games/carreritas/public/tracks/choroni.js",
       "factory": "makeTrack(definition).build",
       "usedBy": [
-        "Derrape"
+        "Carreritas"
       ],
       "status": "in-use"
     },
@@ -6788,10 +6788,10 @@
       "id": "track-chuao",
       "name": "Circuito · Chuao · La quebrada",
       "category": "Mapas",
-      "source": "Pana/games/derrape/public/tracks/chuao.js",
+      "source": "Pana/games/carreritas/public/tracks/chuao.js",
       "factory": "makeTrack(definition).build",
       "usedBy": [
-        "Derrape"
+        "Carreritas"
       ],
       "status": "in-use"
     },
@@ -6799,10 +6799,10 @@
       "id": "track-tovar",
       "name": "Circuito · Colonia Tovar",
       "category": "Mapas",
-      "source": "Pana/games/derrape/public/tracks/tovar.js",
+      "source": "Pana/games/carreritas/public/tracks/tovar.js",
       "factory": "makeTrack(definition).build",
       "usedBy": [
-        "Derrape"
+        "Carreritas"
       ],
       "status": "in-use"
     },
@@ -6810,10 +6810,10 @@
       "id": "track-galipan",
       "name": "Circuito · Galipán de noche",
       "category": "Mapas",
-      "source": "Pana/games/derrape/public/tracks/galipan.js",
+      "source": "Pana/games/carreritas/public/tracks/galipan.js",
       "factory": "makeTrack(definition).build",
       "usedBy": [
-        "Derrape"
+        "Carreritas"
       ],
       "status": "in-use"
     },
@@ -6821,10 +6821,10 @@
       "id": "track-maracaibo",
       "name": "Circuito · Maracaibo · El puente",
       "category": "Mapas",
-      "source": "Pana/games/derrape/public/tracks/maracaibo.js",
+      "source": "Pana/games/carreritas/public/tracks/maracaibo.js",
       "factory": "makeTrack(definition).build",
       "usedBy": [
-        "Derrape"
+        "Carreritas"
       ],
       "status": "in-use"
     },
@@ -6832,10 +6832,10 @@
       "id": "track-margarita",
       "name": "Circuito · Isla Margarita",
       "category": "Mapas",
-      "source": "Pana/games/derrape/public/tracks/margarita.js",
+      "source": "Pana/games/carreritas/public/tracks/margarita.js",
       "factory": "makeTrack(definition).build",
       "usedBy": [
-        "Derrape"
+        "Carreritas"
       ],
       "status": "in-use"
     },
@@ -6843,10 +6843,10 @@
       "id": "track-sarisarinama",
       "name": "Circuito · Sarisariñama",
       "category": "Mapas",
-      "source": "Pana/games/derrape/public/tracks/sarisarinama.js",
+      "source": "Pana/games/carreritas/public/tracks/sarisarinama.js",
       "factory": "makeTrack(definition).build",
       "usedBy": [
-        "Derrape"
+        "Carreritas"
       ],
       "status": "in-use"
     },
@@ -6854,10 +6854,10 @@
       "id": "track-sabana",
       "name": "Circuito · Gran Sabana",
       "category": "Mapas",
-      "source": "Pana/games/derrape/public/tracks/sabana.js",
+      "source": "Pana/games/carreritas/public/tracks/sabana.js",
       "factory": "makeTrack(definition).build",
       "usedBy": [
-        "Derrape"
+        "Carreritas"
       ],
       "status": "in-use"
     },
@@ -7492,7 +7492,7 @@
       "name": "Wooden sign",
       "source": "Pana/engine/models/props/wood-sign.js",
       "anchor": "function woodSign",
-      "where": "Bululú board/minigames; Derrape sectors",
+      "where": "Bululú board/minigames; Carreritas sectors",
       "note": "Active shared factory; many text variants, one model family.",
       "line": 6
     },
@@ -7554,7 +7554,7 @@
     },
     {
       "name": "Summit terminal",
-      "source": "Pana/games/derrape/public/tracks/world-landmarks.js",
+      "source": "Pana/games/carreritas/public/tracks/world-landmarks.js",
       "anchor": "function summitTerminal",
       "where": "Páramo",
       "note": "Upper/lower terminals; separate from the catalog heritage cable-car station.",
@@ -7562,7 +7562,7 @@
     },
     {
       "name": "Aerial cable system and cabins",
-      "source": "Pana/games/derrape/public/tracks/world-landmarks.js",
+      "source": "Pana/games/carreritas/public/tracks/world-landmarks.js",
       "anchor": "function aerialLift",
       "where": "Páramo",
       "note": "Six moving cabins, two cable curves; parameterized scene assembly.",
@@ -7570,7 +7570,7 @@
     },
     {
       "name": "Cable support tower",
-      "source": "Pana/games/derrape/public/tracks/world-landmarks.js",
+      "source": "Pana/games/carreritas/public/tracks/world-landmarks.js",
       "anchor": "function cableTower",
       "where": "Páramo",
       "note": "Terrain-dependent support height.",
@@ -7578,7 +7578,7 @@
     },
     {
       "name": "Diving school",
-      "source": "Pana/games/derrape/public/tracks/world-landmarks.js",
+      "source": "Pana/games/carreritas/public/tracks/world-landmarks.js",
       "anchor": "function divingSchool",
       "where": "Chi Chi",
       "note": "Facade, dive tanks and diver flag.",
@@ -7586,7 +7586,7 @@
     },
     {
       "name": "Coastal fort",
-      "source": "Pana/games/derrape/public/tracks/world-landmarks.js",
+      "source": "Pana/games/carreritas/public/tracks/world-landmarks.js",
       "anchor": "function coastalFort",
       "where": "Chi Chi",
       "note": "Lookout landmark on the mountain coast.",
@@ -7594,7 +7594,7 @@
     },
     {
       "name": "Maracaibo-inspired bridge",
-      "source": "Pana/games/derrape/public/tracks/world-landmarks.js",
+      "source": "Pana/games/carreritas/public/tracks/world-landmarks.js",
       "anchor": "function maracaiboBridge",
       "where": "Plaza circuit",
       "note": "Full driving bridge; use its actual road deck when previewing.",
@@ -7602,7 +7602,7 @@
     },
     {
       "name": "Grandstand",
-      "source": "Pana/games/derrape/public/tracks/world-landmarks.js",
+      "source": "Pana/games/carreritas/public/tracks/world-landmarks.js",
       "anchor": "function grandstand",
       "where": "Estadio",
       "note": "Eight stands with different dimensions/colors, covering the infield and outer sectors.",
@@ -7610,7 +7610,7 @@
     },
     {
       "name": "Canal villa",
-      "source": "Pana/games/derrape/public/tracks/world-landmarks.js",
+      "source": "Pana/games/carreritas/public/tracks/world-landmarks.js",
       "anchor": "function canalVilla",
       "where": "Plaza circuit",
       "note": "Waterfront houses and balconies.",
@@ -7618,7 +7618,7 @@
     },
     {
       "name": "Small rowboat (older)",
-      "source": "Pana/games/derrape/public/track-kit.js",
+      "source": "Pana/games/carreritas/public/track-kit.js",
       "anchor": "function rowboat",
       "where": "Selva; Llanos",
       "note": "Two active river boats. Keep shallow-water footprint when upgrading.",
@@ -7626,7 +7626,7 @@
     },
     {
       "name": "Canal/dive-village boat",
-      "source": "Pana/games/derrape/public/tracks/world-kit.js",
+      "source": "Pana/games/carreritas/public/tracks/world-kit.js",
       "anchor": "function boat",
       "where": "Plaza circuit; Chi Chi",
       "note": "Cabin option; different builder from the coast peñero and island sailboats.",
@@ -7634,7 +7634,7 @@
     },
     {
       "name": "Faceted boulder",
-      "source": "Pana/games/derrape/public/tracks/world-kit.js",
+      "source": "Pana/games/carreritas/public/tracks/world-kit.js",
       "anchor": "function boulder",
       "where": "Páramo; Chi Chi; Desierto",
       "note": "Instanced geological scatter, separate from props.rock.",
@@ -7682,25 +7682,25 @@
     },
     {
       "name": "Breakable supply crate",
-      "source": "Pana/games/derrape/public/pickup-art.js",
+      "source": "Pana/games/carreritas/public/pickup-art.js",
       "anchor": "function crateArt",
-      "where": "All eight Derrape races",
+      "where": "All eight Carreritas races",
       "note": "Gameplay crate is distinct from the Plaza disguise crate.",
       "line": 11
     },
     {
       "name": "Collectible coin",
-      "source": "Pana/games/derrape/public/pickup-art.js",
+      "source": "Pana/games/carreritas/public/pickup-art.js",
       "anchor": "function coinArt",
-      "where": "All eight Derrape races",
+      "where": "All eight Carreritas races",
       "note": "Coin trails and pickups.",
       "line": 51
     },
     {
       "name": "Mango peel",
-      "source": "Pana/games/derrape/public/items.js",
+      "source": "Pana/games/carreritas/public/items.js",
       "anchor": "function makePeel",
-      "where": "Derrape item use",
+      "where": "Carreritas item use",
       "note": "Three peel strips and seed; not the whole mango.",
       "line": 78
     },
@@ -7764,7 +7764,7 @@
     },
     {
       "name": "Selva pyramid",
-      "source": "Pana/games/derrape/public/tracks/selva-world.js",
+      "source": "Pana/games/carreritas/public/tracks/selva-world.js",
       "anchor": "function pyramid",
       "where": "Selva",
       "note": "Stepped landmark outside the driving tunnel.",
@@ -7772,7 +7772,7 @@
     },
     {
       "name": "Road temple tunnel and portals",
-      "source": "Pana/games/derrape/public/tracks/selva-temple.js",
+      "source": "Pana/games/carreritas/public/tracks/selva-temple.js",
       "anchor": "function templeTunnel",
       "where": "Selva",
       "note": "Swept along the actual road; not the unused standalone temple entrance.",
@@ -7780,7 +7780,7 @@
     },
     {
       "name": "Selva plank crossing",
-      "source": "Pana/games/derrape/public/tracks/selva-world.js",
+      "source": "Pana/games/carreritas/public/tracks/selva-world.js",
       "anchor": "const deck =",
       "where": "Selva",
       "note": "Road-warped planks, piers and flankBridge rails. Anchor spacing normalized by the audit.",
@@ -7788,7 +7788,7 @@
     },
     {
       "name": "Simple waterfall sheet",
-      "source": "Pana/games/derrape/public/track-kit.js",
+      "source": "Pana/games/carreritas/public/track-kit.js",
       "anchor": "function waterfall",
       "where": "Selva",
       "note": "Active older waterfall; separate from waterfallRocks in Chi Chi.",
@@ -7796,7 +7796,7 @@
     },
     {
       "name": "Pond and river wrappers",
-      "source": "Pana/games/derrape/public/track-kit.js",
+      "source": "Pana/games/carreritas/public/track-kit.js",
       "anchor": "function waterPond",
       "where": "Selva",
       "note": "waterPond/waterRibbon wrap the shared water surface.",
@@ -7804,7 +7804,7 @@
     },
     {
       "name": "Country grass tufts",
-      "source": "Pana/games/derrape/public/tracks/country-details.js",
+      "source": "Pana/games/carreritas/public/tracks/country-details.js",
       "anchor": "function grassTuft",
       "where": "Llanos; Desierto",
       "note": "Instanced grass, absent from the 22 plant catalog entries.",
@@ -7812,7 +7812,7 @@
     },
     {
       "name": "Country entrance gantry",
-      "source": "Pana/games/derrape/public/tracks/country-details.js",
+      "source": "Pana/games/carreritas/public/tracks/country-details.js",
       "anchor": "function entrance",
       "where": "Llanos; Desierto",
       "note": "Map-specific entrance text and width.",
@@ -7820,7 +7820,7 @@
     },
     {
       "name": "Country bridge crossings",
-      "source": "Pana/games/derrape/public/tracks/country-details.js",
+      "source": "Pana/games/carreritas/public/tracks/country-details.js",
       "anchor": "function crossing",
       "where": "Llanos; Desierto",
       "note": "Road-conforming decks/rails; not standalone rope bridges.",
@@ -7828,7 +7828,7 @@
     },
     {
       "name": "Verge posts and dirt shoulders",
-      "source": "Pana/games/derrape/public/tracks/country-details.js",
+      "source": "Pana/games/carreritas/public/tracks/country-details.js",
       "anchor": "function vergePosts",
       "where": "Llanos; Desierto",
       "note": "Route-generated posts, shoulders and tire ruts.",
@@ -7836,7 +7836,7 @@
     },
     {
       "name": "Llanos wetland landing",
-      "source": "Pana/games/derrape/public/tracks/llanos-world.js",
+      "source": "Pana/games/carreritas/public/tracks/llanos-world.js",
       "anchor": "fisherman",
       "where": "Llanos",
       "note": "Dock planks and supports; capybaras now use shared wildlife.",
@@ -7844,25 +7844,25 @@
     },
     {
       "name": "Generic race edges",
-      "source": "Pana/games/derrape/public/tracks/world-kit.js",
+      "source": "Pana/games/carreritas/public/tracks/world-kit.js",
       "anchor": "function edges",
-      "where": "Multiple Derrape circuits",
+      "where": "Multiple Carreritas circuits",
       "note": "Steel, timber and kerb variants, generated along the route.",
       "line": 82
     },
     {
       "name": "Chevrons/start line/sector signs/ramps",
-      "source": "Pana/games/derrape/public/track-kit.js",
+      "source": "Pana/games/carreritas/public/track-kit.js",
       "anchor": "function chevrons",
-      "where": "Derrape",
+      "where": "Carreritas",
       "note": "Four route-generated furniture families; ramps depend on each track definition.",
       "line": 144
     },
     {
       "name": "Race terrain and waterways",
-      "source": "Pana/games/derrape/public/tracks/world-kit.js",
+      "source": "Pana/games/carreritas/public/tracks/world-kit.js",
       "anchor": "function terrain",
-      "where": "Derrape",
+      "where": "Carreritas",
       "note": "Terrain, sea and stream generators; each map supplies shape and palette.",
       "line": 30
     },
@@ -7870,13 +7870,13 @@
       "name": "Water surface system",
       "source": "Pana/engine/models/effects/water-surface.js",
       "anchor": "function waterSurface",
-      "where": "Derrape",
+      "where": "Carreritas",
       "note": "Ocean, river, canal and pool configurations; not separate species/objects.",
       "line": 36
     },
     {
       "name": "Bululú tide wash",
-      "source": "Pana/games/derrape/public/tracks/bululu-tide.js",
+      "source": "Pana/games/carreritas/public/tracks/bululu-tide.js",
       "anchor": "function tidalCrossing",
       "where": "Bululú circuit",
       "note": "Animated surface tied to tire grip and wetness.",
@@ -7910,7 +7910,7 @@
       "name": "Living sky and cloud layers",
       "source": "Pana/engine/worlds/sky.js",
       "anchor": "function createSky",
-      "where": "Derrape; Galope; Escondidas; Cocina; Bululú and minigames; Studio tours",
+      "where": "Carreritas; Galope; Escondidas; Cocina; Bululú and minigames; Studio tours",
       "note": "One procedural sky draw, seeded cumulus and wisps, absolute-time wind and day/night tint. Scene-owned, outside scenery bounds.",
       "line": 7
     },
@@ -7924,7 +7924,7 @@
     },
     {
       "name": "Race-island piers",
-      "source": "Pana/games/derrape/public/tracks/bululu.js",
+      "source": "Pana/games/carreritas/public/tracks/bululu.js",
       "anchor": "Low jetties",
       "where": "Bululú circuit",
       "note": "Inline harbor planks and pilings.",
@@ -7932,7 +7932,7 @@
     },
     {
       "name": "Plaza streets, gardens and mirador",
-      "source": "Pana/games/derrape/public/tracks/plaza-town.js",
+      "source": "Pana/games/carreritas/public/tracks/plaza-town.js",
       "anchor": "function createTown",
       "where": "Plaza circuit",
       "note": "Street surfaces, block gardens, lookout terrace and stairs; shared houses/trees counted separately.",
@@ -7940,7 +7940,7 @@
     },
     {
       "name": "Plaza waterfront canals and docks",
-      "source": "Pana/games/derrape/public/tracks/plaza-waterfront.js",
+      "source": "Pana/games/carreritas/public/tracks/plaza-waterfront.js",
       "anchor": "function createWaterfront",
       "where": "Plaza circuit",
       "note": "Canal network and moorings around canalVilla.",
@@ -7948,15 +7948,15 @@
     },
     {
       "name": "Continuous circuit surroundings",
-      "source": "Pana/games/derrape/public/tracks/world-horizon.js",
+      "source": "Pana/games/carreritas/public/tracks/world-horizon.js",
       "anchor": "function extendTerrain",
-      "where": "All eight Derrape races",
+      "where": "All eight Carreritas races",
       "note": "Exact grid-edge joins to coarser outer terrain; coastal water keeps its detailed near grid and gains a far apron.",
       "line": 15
     },
     {
       "name": "Plaza outer neighborhoods",
-      "source": "Pana/games/derrape/public/tracks/plaza-outskirts.js",
+      "source": "Pana/games/carreritas/public/tracks/plaza-outskirts.js",
       "anchor": "function plazaOutskirts",
       "where": "Plaza circuit",
       "note": "Connected outer lanes, 51 additional houses, 26 planted courtyards and road-safe groves. Reuses existing house and plant factories.",
@@ -7964,7 +7964,7 @@
     },
     {
       "name": "Llanos pastures and gallery woodland",
-      "source": "Pana/games/derrape/public/tracks/llanos-landscape.js",
+      "source": "Pana/games/carreritas/public/tracks/llanos-landscape.js",
       "anchor": "function llanosLandscape",
       "where": "Llanos",
       "note": "Four pastures, repeated ranch fences, harvest bales, morichal palms and distant ceiba groves. Existing animals retain their space.",
@@ -7972,7 +7972,7 @@
     },
     {
       "name": "Stadium venue grounds",
-      "source": "Pana/games/derrape/public/tracks/stadium-grounds.js",
+      "source": "Pana/games/carreritas/public/tracks/stadium-grounds.js",
       "anchor": "function stadiumGrounds",
       "where": "Estadio",
       "note": "Entrance, perimeter, concourse, planted parking and infields. Parked copies reuse real garage vehicles with no driver.",
@@ -7980,7 +7980,7 @@
     },
     {
       "name": "Football pitch and goals",
-      "source": "Pana/games/derrape/public/tracks/estadio.js",
+      "source": "Pana/games/carreritas/public/tracks/estadio.js",
       "anchor": "for(let i=0;i<10;i++)fixed.add",
       "where": "Estadio",
       "note": "Pitch stripes, markings and two goal frames.",
@@ -7988,7 +7988,7 @@
     },
     {
       "name": "Pit garages",
-      "source": "Pana/games/derrape/public/tracks/estadio.js",
+      "source": "Pana/games/carreritas/public/tracks/estadio.js",
       "anchor": "Pit garages",
       "where": "Estadio",
       "note": "Eight inline garage blocks and numbered signs.",
@@ -7996,7 +7996,7 @@
     },
     {
       "name": "Floodlights and scoreboard",
-      "source": "Pana/games/derrape/public/tracks/estadio.js",
+      "source": "Pana/games/carreritas/public/tracks/estadio.js",
       "anchor": "const score=",
       "where": "Estadio",
       "note": "Two inline landmark families.",
@@ -8004,7 +8004,7 @@
     },
     {
       "name": "Basketball court and banners",
-      "source": "Pana/games/derrape/public/tracks/estadio.js",
+      "source": "Pana/games/carreritas/public/tracks/estadio.js",
       "anchor": "community half-court",
       "where": "Estadio",
       "note": "Court and sponsor panels; shared hoops already cataloged.",
@@ -8012,7 +8012,7 @@
     },
     {
       "name": "Chi Chi retaining walls and river bridges",
-      "source": "Pana/games/derrape/public/tracks/chichi-village.js",
+      "source": "Pana/games/carreritas/public/tracks/chichi-village.js",
       "anchor": "function riverBridges",
       "where": "Chi Chi",
       "note": "Bridge geometry follows road/river. Retaining walls in chichi.js.",
@@ -8052,9 +8052,9 @@
     },
     {
       "name": "Boost pad",
-      "source": "Pana/games/derrape/public/items.js",
+      "source": "Pana/games/carreritas/public/items.js",
       "anchor": "function padTexture",
-      "where": "Derrape",
+      "where": "Carreritas",
       "note": "Animated ground marker, separate from collectible item models.",
       "line": 102
     },
@@ -8062,15 +8062,15 @@
       "name": "Puffs, debris and speech bubbles",
       "source": "Pana/engine/fx.js",
       "anchor": "export class Puffs",
-      "where": "Bululú; Derrape",
+      "where": "Bululú; Carreritas",
       "note": "Particle/sprite effects, not scenery inventory counts.",
       "line": 317
     },
     {
       "name": "Crate fragment bursts",
-      "source": "Pana/games/derrape/public/fragments.js",
+      "source": "Pana/games/carreritas/public/fragments.js",
       "anchor": "export class FragmentBurst",
-      "where": "Derrape",
+      "where": "Carreritas",
       "note": "Gameplay fragments reused from crate art.",
       "line": 6
     },
@@ -8102,7 +8102,7 @@
   "dormant": [
     {
       "name": "Old windmill",
-      "source": "Pana/games/derrape/public/track-kit.js",
+      "source": "Pana/games/carreritas/public/track-kit.js",
       "anchor": "function windmill",
       "where": "No current production callsite",
       "note": "Current Llanos uses ranch-props.waterWindmill.",
@@ -8110,7 +8110,7 @@
     },
     {
       "name": "Old arepa stand",
-      "source": "Pana/games/derrape/public/track-kit.js",
+      "source": "Pana/games/carreritas/public/track-kit.js",
       "anchor": "function arepaStand",
       "where": "No current production callsite",
       "note": "Current maps use streetFoodKiosk.",
@@ -8118,7 +8118,7 @@
     },
     {
       "name": "Generic dock",
-      "source": "Pana/games/derrape/public/track-kit.js",
+      "source": "Pana/games/carreritas/public/track-kit.js",
       "anchor": "function dock",
       "where": "No current production callsite",
       "note": "Maps now build docks against their shore/deck.",
@@ -8126,7 +8126,7 @@
     },
     {
       "name": "Generic sailboat",
-      "source": "Pana/games/derrape/public/track-kit.js",
+      "source": "Pana/games/carreritas/public/track-kit.js",
       "anchor": "function sailboat",
       "where": "No current production callsite",
       "note": "No production caller; internally uses rowboat, which remains active.",
@@ -8134,7 +8134,7 @@
     },
     {
       "name": "Generic plank/rope bridge",
-      "source": "Pana/games/derrape/public/track-kit.js",
+      "source": "Pana/games/carreritas/public/track-kit.js",
       "anchor": "function bridge",
       "where": "No current production callsite",
       "note": "Active crossings have road-specific decks or newer shared factories.",
@@ -8142,7 +8142,7 @@
     },
     {
       "name": "Distant mountain ring",
-      "source": "Pana/games/derrape/public/track-kit.js",
+      "source": "Pana/games/carreritas/public/track-kit.js",
       "anchor": "function distantMountains",
       "where": "No current production callsite",
       "note": "Current maps use their own terrain or island-landscape.",
@@ -8150,7 +8150,7 @@
     },
     {
       "name": "Old route landscape scatter",
-      "source": "Pana/games/derrape/public/track-kit.js",
+      "source": "Pana/games/carreritas/public/track-kit.js",
       "anchor": "function routeLandscape",
       "where": "No current production callsite",
       "note": "Current worlds supply habitat-specific planting.",
@@ -8158,7 +8158,7 @@
     },
     {
       "name": "Tire-wall generator",
-      "source": "Pana/games/derrape/public/track-kit.js",
+      "source": "Pana/games/carreritas/public/track-kit.js",
       "anchor": "function tireWall",
       "where": "Runtime hook only; current tracks disable walls",
       "note": "Code is still wired conditionally; distinguish dormant configuration from dead code.",
@@ -8166,7 +8166,7 @@
     },
     {
       "name": "Fence-ring generator",
-      "source": "Pana/games/derrape/public/track-kit.js",
+      "source": "Pana/games/carreritas/public/track-kit.js",
       "anchor": "function fenceRing",
       "where": "Runtime hook only; no current track enables fence",
       "note": "Do not remove without checking future track configuration.",
@@ -8176,26 +8176,26 @@
   "replaced": [
     {
       "name": "Generic box-wing bird",
-      "source": "Pana/games/derrape/public/track-kit.js",
+      "source": "Pana/games/carreritas/public/track-kit.js",
       "where": "Previously Selva/Llanos/Desierto",
       "note": "Removed in this audit; replaced by three wildlife factories. Old comments listed toucan/seagull, but those were not distinct current species."
     },
     {
       "name": "Random dressed scenery capybara",
-      "source": "Pana/games/derrape/public/track-kit.js",
+      "source": "Pana/games/carreritas/public/track-kit.js",
       "where": "Previously Selva",
       "note": "Removed in this audit; wildCapybara reuses canonical capybaraForm. Three Llanos animals now use the same factory."
     },
     {
       "name": "Old box cow",
-      "source": "Pana/games/derrape/public/tracks/llanos-world.js",
+      "source": "Pana/games/carreritas/public/tracks/llanos-world.js",
       "where": "Previously Llanos",
       "note": "Already replaced by hatoCow in 64bf025 before this audit; not a second current cow model."
     },
     {
       "name": "Legacy playa track ID",
-      "source": "Pana/games/derrape/public/tracks.js",
-      "where": "Derrape URL alias",
+      "source": "Pana/games/carreritas/public/tracks.js",
+      "where": "Carreritas URL alias",
       "note": "Resolves to bululu, not a ninth racing map."
     },
     {

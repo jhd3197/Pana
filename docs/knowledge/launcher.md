@@ -129,6 +129,6 @@ authenticated browser contexts, live party sockets and real Pana game rooms.
 It covers cancel/confirmed/failed exits, modified clicks, guest authorization,
 leader launches, portrait bubbles, hidden room buttons and leadership transfer.
 
-Derrape removes `lead` from its address immediately after passing it into
+Carreritas removes `lead` from its address immediately after passing it into
 `joinRace`. Verify the original navigation request and actual game host controls,
 not the final address bar, when testing party handoffs into that game.

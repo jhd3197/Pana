@@ -302,7 +302,7 @@ export function createWorld(scene, layout, roadDistance) {
     pointLight(base.clone().setY(base.y + 5), '#ffcf90', 1.5, 30);
     pointLight(roadAt(idxNear(-60, -204), 0, 7), '#ffbf78', 1.4, 40);
     pointLight(roadAt(idxNear(40, -200), 0, 7), '#ffbf78', 1.4, 40);
-    // Derrape's shared startLine owns the finish stripe and gantry. The
+    // Carreritas's shared startLine owns the finish stripe and gantry. The
     // reference's light banner hangs over the strip a little further on.
     const ib = Math.round(36 / STEP), fb = roadFrame(ib), qb = new THREE.Quaternion().setFromRotationMatrix(new THREE.Matrix4().makeBasis(fb.n, UP, fb.t.clone().negate()));
     const bA = roadAt(ib, -hwL[ib] - 1.5, 0), bB = roadAt(ib, hwR[ib] + 1.5, 0);

@@ -40,7 +40,7 @@ The low tier skips the clumps along the limbs but makes the tip clumps 1.3×
 bigger with a smooth (detail 1) icosahedron core, so the crown stays a soft
 cushion. Faceted detail-0 cores read as boulders; only far trees use them.
 Low also drops twig tubes under 2 cm and uses 3–6 sides per limb: bark was
-over half of a low mango before that. With these tiers every Derrape map's
+over half of a low mango before that. With these tiers every Carreritas map's
 whole-scene triangle count is at or below its pre-swap value (Chichi 4.73 M,
 Plaza 4.54 M, Llanos 3.01 M, Estadio 1.24 M).
 

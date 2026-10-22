@@ -21,7 +21,7 @@ test('a suite that loops over every game depends on every game', () => {
 });
 
 test('a link to another game is not a dependency; why() shows the chain to one', () => {
-  assert.equal(fp.why('Pana/games/domino/tests/browser.mjs', 'Pana/games/derrape/public/game.js'), null);
+  assert.equal(fp.why('Pana/games/domino/tests/browser.mjs', 'Pana/games/carreritas/public/game.js'), null);
   const chain = fp.why('Pana/games/domino/tests/browser.mjs', 'Pana/engine/net.js');
   assert.equal(chain[0], 'Pana/games/domino/tests/browser.mjs');
   assert.equal(chain.at(-1), 'Pana/engine/net.js');
@@ -30,6 +30,6 @@ test('a link to another game is not a dependency; why() shows the chain to one',
 test('fingerprints are stable, and differ by suite and by variant', () => {
   const a = fp('Pana/games/domino/tests/browser.mjs');
   assert.equal(createFingerprinter(repo)('Pana/games/domino/tests/browser.mjs'), a);
-  assert.notEqual(fp('Pana/games/derrape/tests/loading.browser.js'), a);
+  assert.notEqual(fp('Pana/games/carreritas/tests/loading.browser.js'), a);
   assert.notEqual(fp('Pana/engine/tests/rural.browser.js', ['llanos']), fp('Pana/engine/tests/rural.browser.js', ['desierto']));
 });

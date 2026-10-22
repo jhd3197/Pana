@@ -1,12 +1,12 @@
 // Manually reviewed production-source inventory. These are model families or
 // scene assemblies, not mesh counts. Keep evidence anchors current when editing.
 const engine=name=>`Pana/engine/${name}.js`;
-const race=name=>`Pana/games/derrape/public/${name}.js`;
+const race=name=>`Pana/games/carreritas/public/${name}.js`;
 const board=name=>`Pana/games/bululu/public/${name}.js`;
 const kitchen='Pana/games/cocina/public/scene.js';
 const record=(name,source,anchor,where,note)=>({name,source,anchor,where,note});
 export const uncataloged=[
-  record('Wooden sign',engine('models/props/wood-sign'),'function woodSign','Bululú board/minigames; Derrape sectors','Active shared factory; many text variants, one model family.'),
+  record('Wooden sign',engine('models/props/wood-sign'),'function woodSign','Bululú board/minigames; Carreritas sectors','Active shared factory; many text variants, one model family.'),
   record('Watchtower',engine('models/props/watchtower'),'function watchtower','Bululú board; No te caigas','Thatch/zinc options; distinct from the new lifeguard tower.'),
   record('Venezuelan flagpole',engine('models/props/flags'),'function flagPole','Bululú board; No te caigas; Selva','Active animated flag. Pana branded pedestal is a separate catalog entry.'),
   record('Displaced rock',engine('models/props/rock'),'function rock','Bululú board/minigames; Selva','Shared seeded rock, also embedded inside other models.'),
@@ -32,9 +32,9 @@ export const uncataloged=[
   record('Board die',board('board'),'function createDie','Bululú board','Six face textures; game-driven roll animation.'),
   record('Golden mango cart',board('board'),'function buildStand','Bululú board','Cart, striped umbrella, chalkboard and reward beam.'),
   record('Player token pedestal',board('board'),'function createToken','Bululú board','Colored base under shared character; not a new character sculpt.'),
-  record('Breakable supply crate',race('pickup-art'),'function crateArt','All eight Derrape races','Gameplay crate is distinct from the Plaza disguise crate.'),
-  record('Collectible coin',race('pickup-art'),'function coinArt','All eight Derrape races','Coin trails and pickups.'),
-  record('Mango peel',race('items'),'function makePeel','Derrape item use','Three peel strips and seed; not the whole mango.'),
+  record('Breakable supply crate',race('pickup-art'),'function crateArt','All eight Carreritas races','Gameplay crate is distinct from the Plaza disguise crate.'),
+  record('Collectible coin',race('pickup-art'),'function coinArt','All eight Carreritas races','Coin trails and pickups.'),
+  record('Mango peel',race('items'),'function makePeel','Carreritas item use','Three peel strips and seed; not the whole mango.'),
   record('Kitchen sign',engine('models/props/kitchen'),'function kitchenSign','Cocina','Signs and flour-sack labels; text variants grouped.'),
   record('Open pantry/fridge',kitchen,'const fridge =','Cocina','Shelves with tomatoes, milk cartons and shared cheese. Assembly includes its food dressing.'),
   record('Condiment bottles and flour sacks',kitchen,'Small working-kitchen details','Cocina','Counter and floor dressing made inline; two prop types grouped as one set.'),
@@ -54,20 +54,20 @@ export const assemblies=[
   record('Country bridge crossings',race('tracks/country-details'),'function crossing','Llanos; Desierto','Road-conforming decks/rails; not standalone rope bridges.'),
   record('Verge posts and dirt shoulders',race('tracks/country-details'),'function vergePosts','Llanos; Desierto','Route-generated posts, shoulders and tire ruts.'),
   record('Llanos wetland landing',race('tracks/llanos-world'),'fisherman','Llanos','Dock planks and supports; capybaras now use shared wildlife.'),
-  record('Generic race edges',race('tracks/world-kit'),'function edges','Multiple Derrape circuits','Steel, timber and kerb variants, generated along the route.'),
-  record('Chevrons/start line/sector signs/ramps',race('track-kit'),'function chevrons','Derrape','Four route-generated furniture families; ramps depend on each track definition.'),
-  record('Race terrain and waterways',race('tracks/world-kit'),'function terrain','Derrape','Terrain, sea and stream generators; each map supplies shape and palette.'),
-  record('Water surface system',engine('models/effects/water-surface'),'function waterSurface','Derrape','Ocean, river, canal and pool configurations; not separate species/objects.'),
+  record('Generic race edges',race('tracks/world-kit'),'function edges','Multiple Carreritas circuits','Steel, timber and kerb variants, generated along the route.'),
+  record('Chevrons/start line/sector signs/ramps',race('track-kit'),'function chevrons','Carreritas','Four route-generated furniture families; ramps depend on each track definition.'),
+  record('Race terrain and waterways',race('tracks/world-kit'),'function terrain','Carreritas','Terrain, sea and stream generators; each map supplies shape and palette.'),
+  record('Water surface system',engine('models/effects/water-surface'),'function waterSurface','Carreritas','Ocean, river, canal and pool configurations; not separate species/objects.'),
   record('Bululú tide wash',race('tracks/bululu-tide'),'function tidalCrossing','Bululú circuit','Animated surface tied to tire grip and wetness.'),
   record('Board island terrain',engine('worlds/island-terrain'),'function buildIsland','Bululú board','Shoreline, beach, hills, river and path cuts.'),
   record('Forested islet/ridge',engine('worlds/island-landscape'),'function createIslet','Bululú board','Seeded neighboring islands and distant ridges.'),
   record('Tepui and waterfall',engine('worlds/island-landscape'),'function createTepui','Bululú board','Three mesas; one waterfall/mist landmark. Not the Selva waterfall.'),
-  record('Living sky and cloud layers',engine('worlds/sky'),'function createSky','Derrape; Galope; Escondidas; Cocina; Bululú and minigames; Studio tours','One procedural sky draw, seeded cumulus and wisps, absolute-time wind and day/night tint. Scene-owned, outside scenery bounds.'),
+  record('Living sky and cloud layers',engine('worlds/sky'),'function createSky','Carreritas; Galope; Escondidas; Cocina; Bululú and minigames; Studio tours','One procedural sky draw, seeded cumulus and wisps, absolute-time wind and day/night tint. Scene-owned, outside scenery bounds.'),
   record('Island dock and village light strings',engine('worlds/island-environment'),'dockStart','Bululú board','Placement-specific geometry; not separate library factories.'),
   record('Race-island piers',race('tracks/bululu'),'Low jetties','Bululú circuit','Inline harbor planks and pilings.'),
   record('Plaza streets, gardens and mirador',race('tracks/plaza-town'),'function createTown','Plaza circuit','Street surfaces, block gardens, lookout terrace and stairs; shared houses/trees counted separately.'),
   record('Plaza waterfront canals and docks',race('tracks/plaza-waterfront'),'function createWaterfront','Plaza circuit','Canal network and moorings around canalVilla.'),
-  record('Continuous circuit surroundings','Pana/engine/worlds/coastal/world-horizon.js','function extendTerrain','All eight Derrape races','Exact grid-edge joins to coarser outer terrain; coastal water keeps its detailed near grid and gains a far apron.'),
+  record('Continuous circuit surroundings','Pana/engine/worlds/coastal/world-horizon.js','function extendTerrain','All eight Carreritas races','Exact grid-edge joins to coarser outer terrain; coastal water keeps its detailed near grid and gains a far apron.'),
   record('Plaza outer neighborhoods',race('tracks/plaza-outskirts'),'function plazaOutskirts','Plaza circuit','Connected outer lanes, 51 additional houses, 26 planted courtyards and road-safe groves. Reuses existing house and plant factories.'),
   record('Llanos pastures and gallery woodland',race('tracks/llanos-landscape'),'function llanosLandscape','Llanos','Four pastures, repeated ranch fences, harvest bales, morichal palms and distant ceiba groves. Existing animals retain their space.'),
   record('Stadium venue grounds',race('tracks/stadium-grounds'),'function stadiumGrounds','Estadio','Entrance, perimeter, concourse, planted parking and infields. Parked copies reuse real garage vehicles with no driver.'),
@@ -80,9 +80,9 @@ export const assemblies=[
   record('Sunny minigame stage',board('minigames/stage'),'function sunnyStage','Both Bululú minigames','Sky, ground, clouds and shared landscape props.'),
   record('Raft and spinning striped log',board('minigames/caigas'),'// raft:','No te caigas','Player platforms, floats, central post, rotating obstacle and sandbars.'),
   record('Minigame wave surface',board('minigames/caigas'),'const seaGeo','No te caigas','Older deformed plane, separate from the shared water shader.'),
-  record('Boost pad',race('items'),'function padTexture','Derrape','Animated ground marker, separate from collectible item models.'),
-  record('Puffs, debris and speech bubbles',engine('fx'),'export class Puffs','Bululú; Derrape','Particle/sprite effects, not scenery inventory counts.'),
-  record('Crate fragment bursts',race('fragments'),'export class FragmentBurst','Derrape','Gameplay fragments reused from crate art.'),
+  record('Boost pad',race('items'),'function padTexture','Carreritas','Animated ground marker, separate from collectible item models.'),
+  record('Puffs, debris and speech bubbles',engine('fx'),'export class Puffs','Bululú; Carreritas','Particle/sprite effects, not scenery inventory counts.'),
+  record('Crate fragment bursts',race('fragments'),'export class FragmentBurst','Carreritas','Gameplay fragments reused from crate art.'),
   record('Steam, fire and order dressing',kitchen,'const effects =','Cocina','Cooking state effects; recipes also have raw/prepared/cooked/burned variants.'),
   record('Thermal steam and water details',engine('models/effects/thermal-steam'),'export function','Chi Chi; shared fountains/waterfalls','Reusable steam, droplets and ripple systems; water details also in water-details.js.'),
   record('Character accessories and expressions',engine('avatar'),'export const OPTIONS','All games; character editor','Eight non-empty hat options, three glasses options, five expression options and two non-empty extras. Some options share geometry/poses. Outfits are already cataloged; accessories and dizzy stars are embedded parts.'),
@@ -104,7 +104,7 @@ export const replaced=[
   {name:'Generic box-wing bird',source:race('track-kit'),where:'Previously Selva/Llanos/Desierto',note:'Removed in this audit; replaced by three wildlife factories. Old comments listed toucan/seagull, but those were not distinct current species.'},
   {name:'Random dressed scenery capybara',source:race('track-kit'),where:'Previously Selva',note:'Removed in this audit; wildCapybara reuses canonical capybaraForm. Three Llanos animals now use the same factory.'},
   {name:'Old box cow',source:race('tracks/llanos-world'),where:'Previously Llanos',note:'Already replaced by hatoCow in 64bf025 before this audit; not a second current cow model.'},
-  {name:'Legacy playa track ID',source:race('tracks'),where:'Derrape URL alias',note:'Resolves to bululu, not a ninth racing map.'},
+  {name:'Legacy playa track ID',source:race('tracks'),where:'Carreritas URL alias',note:'Resolves to bululu, not a ninth racing map.'},
   {name:'Mango minigame tree (older)',source:board('minigames/atrapa'),where:'Atrapa los mangos',note:'Its polygon canopy was replaced by the shared mangoTree factory.'},
   {name:'Old game-local shared module paths',source:board('scenery'),where:'Bululú and Escondidas compatibility re-exports',note:'Forward to engine modules; do not count aliases as duplicate assets.'},
 ];

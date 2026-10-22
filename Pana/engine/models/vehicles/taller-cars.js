@@ -6,7 +6,7 @@
 // into a toy car with the player's pana at the wheel, then fits the stock
 // parts the body comes with (car-parts.js) unless the garage asks for others.
 // Profiles are authored at the original 1:1 scale and stretched here into
-// Derrape's chunky toy proportions: taller bodies, big wheels, a tall cabin.
+// Carreritas's chunky toy proportions: taller bodies, big wheels, a tall cabin.
 
 import * as THREE from 'three';
 import {

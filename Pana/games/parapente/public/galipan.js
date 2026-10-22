@@ -1,6 +1,6 @@
 // Galipán in the browser: one layout per page, shared by the course every
 // client builds (host, guests' prediction) and the scene. Same map and scale
-// as Derrape's Galipán circuit.
+// as Carreritas's Galipán circuit.
 import { createLayout } from '/engine/worlds/coastal/galipan-layout.js';
 import { createWorld } from '/engine/worlds/coastal/galipan-world.js';
 import { buildCourse, SCALE } from './course.js';

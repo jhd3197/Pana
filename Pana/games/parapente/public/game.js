@@ -138,7 +138,7 @@ function render() {
     fillRoster($('result-roster'), order.map((p, i) => ({ rank: i + 1, name: p.name + (p.bot ? ' · del cerro' : ''), detail: `${p.beacon}/${course.beacons.length} balizas · ${p.rings.length} aros${p.downs ? ` · ${p.downs} en tierra` : ''}`, end: p.finish === null ? 'Sin aterrizar' : clock(p.finish), me: p === shown })));
     sound.tone(660, 0, .25, 'triangle', .08);
   }
-  if (s.phase === 'racing' && !music.playing && !paused) music.play('derrape-salto', { fallback: 'andina' });
+  if (s.phase === 'racing' && !music.playing && !paused) music.play('carreritas-salto', { fallback: 'andina' });
   if (!playing && music.playing) music.stop();
   lastPhase = s.phase;
 }

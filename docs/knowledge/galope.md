@@ -151,7 +151,7 @@ bots, snapshots and host migration. `games/galope/public/course.js` owns the
 plants and fauna. Late arrivals spectate until replay. Keep decorations outside
 the 9 m recovery corridor and water geometry aligned with the terrain bed.
 Horses opt into `{locomotion:true}` and `userData.gallop(phase,speed,jump)`;
-ordinary Studio/Derrape horses retain their grazing rig. The rider uses the
+ordinary Studio/Carreritas horses retain their grazing rig. The rider uses the
 saved Pana character. See `docs/knowledge/galope.md` for proof and controls.
 Galope's `landscape.js` extends the scenery into Laguna del Hato (bays/island)
 and Caño del Morichal (winding channel), using the signed field in `course.js`.

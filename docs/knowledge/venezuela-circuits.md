@@ -151,11 +151,11 @@ Run with the local server and an external Playwright installation if needed:
 ```powershell
 $env:PANA_PLAYWRIGHT_PATH='C:\path\to\playwright'
 $env:PANA_MAP_TEST_TRACKS='estadio,paramo,bululu,chichi,plaza,desierto,llanos'
-node Pana/games/derrape/tests/maps.browser.js
-node Pana/games/derrape/tests/venezuela.browser.js
-node Pana/games/derrape/tests/chichi.browser.js
-node Pana/games/derrape/tests/water.browser.js
-node Pana/games/derrape/tests/loading.browser.js
+node Pana/games/carreritas/tests/maps.browser.js
+node Pana/games/carreritas/tests/venezuela.browser.js
+node Pana/games/carreritas/tests/chichi.browser.js
+node Pana/games/carreritas/tests/water.browser.js
+node Pana/games/carreritas/tests/loading.browser.js
 ```
 
 The map suite completes three laps, exercises every item row, casts 480 scenery
@@ -191,7 +191,7 @@ and lighting direction rather than a screen saturation filter. Studio tours
 read each track's sky palette. Galope independently uses its shared course
 DAYLIGHT values with exposure 1 instead of its earlier yellow exposure 1.2 wash.
 
-`PANA_PLAYWRIGHT_PATH=... node Pana/games/derrape/tests/colour.browser.mjs` builds
+`PANA_PLAYWRIGHT_PATH=... node Pana/games/carreritas/tests/colour.browser.mjs` builds
 and renders each real circuit through the game at fixed positions, checks browser
 and shader errors and records palette/draw counts. Optional `PANA_COLOUR_TRACKS`
 selects a comma-separated subset. Before/after captures are in ignored

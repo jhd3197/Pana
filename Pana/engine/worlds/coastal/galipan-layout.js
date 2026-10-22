@@ -6,7 +6,7 @@ export const MAP = {
   area: { x0: -440, z0: -440, size: 880 },
   // Road control points: [x, y, z, segment, half-width]. Heights are smoothed along the lap.
   // p pueblito (cobbles), m mirador, b bajada del bosque, q Boca de Tigre, c el cañón, a the flight over
-  // Caracas (no road drawn, no ground shaped: Derrape flies it as an avioneta), g girasoles, s subida
+  // Caracas (no road drawn, no ground shaped: Carreritas flies it as an avioneta), g girasoles, s subida
   road: [
     [-150, 134, -204, 'p', 6.0], [-60, 136, -204, 'p', 6.0], [30, 138, -200, 'p', 6.0], [110, 140, -196, 'p', 6.0], [176, 141, -204, 'm', 6.0],
     [236, 141, -214, 'm', 6.0], [284, 140, -192, 'm', 6.0], [296, 139, -152, 'm', 6.0], [276, 137, -118, 'm', 6.0], [232, 132, -106, 'b', 5.5], [184, 127, -118, 'b', 5.5],

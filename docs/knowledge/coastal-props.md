@@ -37,7 +37,7 @@ The two larger models omitted from the board preserve its scale and camera sight
   `groundBeachCrab` aligns planted feet with the local beach slope.
   Board foliage/rock scattering respects new reserved furniture footprints.
 - `usedBy` reflects the actual placements above. Lighthouse and court list only
-  Derrape. Source dependency fingerprinting invalidates both islands' previews.
+  Carreritas. Source dependency fingerprinting invalidates both islands' previews.
 
 ## Verification
 

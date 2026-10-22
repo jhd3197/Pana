@@ -71,7 +71,7 @@ not guarantees of frame rate on all devices.
 $env:PANA_PLAYWRIGHT_PATH = '<absolute Playwright package path>'
 node Pana/engine/tests/farm-animals.browser.js
 $env:PANA_MAP_TEST_TRACKS = 'llanos'
-node Pana/games/derrape/tests/maps.browser.js
+node Pana/games/carreritas/tests/maps.browser.js
 node Pana/web/studio/tests/studio.browser.js $env:PANA_PLAYWRIGHT_PATH
 npm run check
 ```

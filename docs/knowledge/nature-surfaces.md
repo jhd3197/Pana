@@ -1,6 +1,6 @@
 # Procedural grass and tree surfaces
 
-Derrape's thirteen circuits opt into seeded surface detail at the end of
+Carreritas's thirteen circuits opt into seeded surface detail at the end of
 `track-runtime.js` construction. Studio's circuit previews use the same build.
 Other games and standalone model previews keep their existing materials.
 Ground and trees use procedural surface shading, with nearby 3D grass tufts
@@ -89,7 +89,7 @@ compiled programs. Preserve that contract when adding another surface pattern.
 
 ## Proof
 
-`npm run test:browser -- derrape/tests/nature.browser` checks rendered tier
+`npm run test:browser -- carreritas/tests/nature.browser` checks rendered tier
 differences, return to low pixels, fixed surface-shader geometry/draw/texture/program
 counts across tiers, reduced/hidden tuft counts, mixed tagged/untagged batches, instanced trees, Studio
 cloning, original wind hooks, idempotent disposal, 50 distinct recipes, five real
@@ -97,5 +97,5 @@ environments, grounded roadside placements and live race quality through map
 replacement. Salt flats explicitly have zero grass coverage or tufts. Ignored screenshots and metrics are in
 `art/nature-surfaces/`. Rendering counts are not an FPS measurement.
 
-Also run all Derrape suites, model architecture/library, Studio cache and
+Also run all Carreritas suites, model architecture/library, Studio cache and
 `.\dev.ps1 check` after changes to shared tags or batching.

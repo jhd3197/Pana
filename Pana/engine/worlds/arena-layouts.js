@@ -25,7 +25,7 @@ export const validPaintArena = id => PAINT_ARENAS.some(map => map.id === id);
 export const paintArenaInfo = id => PAINT_ARENAS.find(map => map.id === id) || PAINT_ARENAS[0];
 // Court games (Bolas Criollas) also play beside the stadium straight.
 export const COURT_ARENAS = [...ARENAS,
-  { id: 'estadio', name: 'Estadio Pana', description: 'Frente a la tribuna, donde pasa la carrera de Derrape.' },
+  { id: 'estadio', name: 'Estadio Pana', description: 'Frente a la tribuna, donde pasa la carrera de Carreritas.' },
 ];
 export const validCourtArena = id => COURT_ARENAS.some(map => map.id === id);
 export const courtArenaInfo = id => COURT_ARENAS.find(map => map.id === id) || COURT_ARENAS[0];

@@ -8,6 +8,9 @@ becomes the GitHub release's notes.
 
 ## Unreleased
 
+- **Derrape ahora se llama Carreritas.** Mismo juego, nuevo nombre en el hub y
+  en la pantalla de carga: tus trofeos, mangos, carros, cauchos y fantasmas
+  vienen con el cambio. La dirección nueva es /g/carreritas/.
 - **El Aguacero de Derrape ahora moja a todos tus rivales.** Les cae a todos
   casi a la vez, 5 segundos de pista mojada y resbalosa, y a cada uno se le
   cae el ítem que tenía en la mano. Ves la lluvia en tu pantalla cuando te

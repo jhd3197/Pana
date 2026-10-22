@@ -1,7 +1,7 @@
 // A little bush plane: a round-nosed fuselage in the team colour with a
 // white band, a high wing on struts, a spinning two-blade propeller, fat
 // landing wheels and the pana in an open cockpit with one paw on the stick.
-// Used by Derrape's flight gates. +Z is the nose, metres; the origin is the
+// Used by Carreritas's flight gates. +Z is the nose, metres; the origin is the
 // ground under the main wheels.
 //
 // update(dt, p, time) reads p.steer (-1 left … 1 right), p.v (m/s), p.vy

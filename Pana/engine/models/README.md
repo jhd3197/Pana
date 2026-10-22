@@ -70,7 +70,7 @@ For example, the existing macaw definition has this shape:
   category: 'Fauna',
   source: '/engine/models/fauna/birds/scarlet-macaw.js',
   factory: 'scarletMacaw',
-  usedBy: ['Derrape'],
+  usedBy: ['Carreritas'],
   previewOptions: { seed: 7 },
   pack: 'wildlife',
 }

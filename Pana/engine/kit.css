@@ -246,7 +246,7 @@
 .pk-slot.is-active { border-color: var(--pk-yellow); background: rgba(255, 198, 41, .1); }
 
 /* speech bubble over a seated pana: engine/play/seat-bubbles.js. The same white
-   comic bubble Derrape draws over its cars; short-lived, so it may cover the HUD. */
+   comic bubble Carreritas draws over its cars; short-lived, so it may cover the HUD. */
 .pk-bubble{position:absolute;z-index:5;transform:translate(-50%,-100%);max-width:220px;padding:7px 14px 5px;border:3px solid var(--pk-bubble-ink);border-radius:18px;background:var(--pk-bubble-paper);color:var(--pk-bubble-ink);font:20px/1.05 var(--pk-display);text-align:center;box-shadow:0 4px 0 rgba(0,0,0,.25);pointer-events:none}
 .pk-bubble::after{content:'';position:absolute;left:50%;bottom:-11px;width:16px;height:16px;border:solid var(--pk-bubble-ink);border-width:0 3px 3px 0;background:var(--pk-bubble-paper);transform:translateX(-50%) rotate(45deg)}
 .pk-bubble.below{transform:translate(-50%,0)}

@@ -1,7 +1,7 @@
 // Supplied launcher illustrations. IDs and rules still come from game.json.
 export const categories = ['Todos', 'Carreras', 'Mesa', 'Fiesta', 'Aventura'];
 export const artwork = {
-  derrape: ['Carreras', 'derrape.jpg'], galope: ['Carreras', 'galope.jpg'], curiara: ['Carreras', 'curiara.jpg'],
+  carreritas: ['Carreras', 'carreritas.jpg'], galope: ['Carreras', 'galope.jpg'], curiara: ['Carreras', 'curiara.jpg'],
   lancha: ['Carreras', 'lancha.jpg', 'lancha-card.jpg'], parapente: ['Carreras', 'parapente.jpg', 'parapente-card.jpg'],
   domino: ['Mesa', 'domino.jpg'], caida: ['Mesa', 'caida.jpg'], poquer: ['Mesa', 'poquer.jpg'], billar: ['Mesa', 'billar.jpg'],
   ludo: ['Mesa', 'ludo.jpg', 'ludo-card.jpg'], criollas: ['Mesa', 'criollas.jpg', 'criollas-card.jpg'],

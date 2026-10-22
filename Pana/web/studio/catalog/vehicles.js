@@ -1,8 +1,8 @@
-import { CAR_DEFINITIONS } from '/g/derrape/car-definitions.js';
-import { WHEEL_DEFINITIONS } from '/g/derrape/wheel-definitions.js';
+import { CAR_DEFINITIONS } from '/g/carreritas/car-definitions.js';
+import { WHEEL_DEFINITIONS } from '/g/carreritas/wheel-definitions.js';
 import { DEFAULT_AVATAR } from '/engine/avatar.js';
 export const VEHICLES = [
-  ...CAR_DEFINITIONS.map(car => ({ id: `car-${car.id}`, name: car.name, category: 'Vehículos', source: '/engine/models/vehicles/cars.js', factory: `CAR_BUILDERS.${car.id}`, usedBy: ['Derrape', 'Bululú'], description: car.blurb,
+  ...CAR_DEFINITIONS.map(car => ({ id: `car-${car.id}`, name: car.name, category: 'Vehículos', source: '/engine/models/vehicles/cars.js', factory: `CAR_BUILDERS.${car.id}`, usedBy: ['Carreritas', 'Bululú'], description: car.blurb,
     async build() { const { CAR_BUILDERS } = await import('/engine/models/vehicles/cars.js'); const model = CAR_BUILDERS[car.id](DEFAULT_AVATAR); return { group: model.root, update: (t, dt) => model.driver.update(dt), dispose: () => model.driver.dispose() }; },
   })),
   // Curiara's canoe with the pana paddling; Bululú's river minigames reuse it.
@@ -15,8 +15,8 @@ export const VEHICLES = [
     async build() { const { createLancha } = await import('/engine/models/vehicles/lancha.js'); const model = createLancha(DEFAULT_AVATAR, '#e2683c');
       return { group: model.group, update: (t, dt) => model.update(dt, { v: 9, throttle: 1, steer: Math.sin(t * .8) }, t), dispose: () => model.dispose() }; },
   },
-  // Derrape's flight gates turn cars into this little plane.
-  { id: 'racing-avioneta', name: 'Avioneta', category: 'Vehículos', source: '/engine/models/vehicles/avioneta.js', factory: 'createAvioneta', usedBy: ['Derrape'], description: 'Avioneta de ala alta en el color del carro, con banda blanca, hélice que gira, ruedas gorditas y el pana en la cabina abierta.',
+  // Carreritas's flight gates turn cars into this little plane.
+  { id: 'racing-avioneta', name: 'Avioneta', category: 'Vehículos', source: '/engine/models/vehicles/avioneta.js', factory: 'createAvioneta', usedBy: ['Carreritas'], description: 'Avioneta de ala alta en el color del carro, con banda blanca, hélice que gira, ruedas gorditas y el pana en la cabina abierta.',
     async build() { const { createAvioneta } = await import('/engine/models/vehicles/avioneta.js'); const model = createAvioneta(DEFAULT_AVATAR, '#e8443a');
       return { group: model.group, update: (t, dt) => model.update(dt, { v: 30, steer: Math.sin(t * .6) }, t), dispose: () => model.dispose() }; },
   },
@@ -25,9 +25,9 @@ export const VEHICLES = [
     async build() { const { createParapente } = await import('/engine/models/vehicles/parapente.js'); const model = createParapente(DEFAULT_AVATAR, '#2fa3e0');
       return { group: model.group, update: (t, dt) => model.update(dt, { v: 16, steer: Math.sin(t * .6), ears: Math.sin(t * .3) > .7 ? 1 : 0 }, t), dispose: () => model.dispose() }; },
   },
-  // Derrape's swappable cauchos, one entry per wheel definition. The street
+  // Carreritas's swappable cauchos, one entry per wheel definition. The street
   // wheel has no spec of its own (cars keep theirs), so it previews generic.
-  ...WHEEL_DEFINITIONS.map(wheel => ({ id: `wheel-${wheel.id}`, name: wheel.name, category: 'Vehículos', source: '/g/derrape/wheel-definitions.js', factory: 'makeWheel', usedBy: ['Derrape'], description: wheel.blurb, dependencies: ['/engine/models/vehicles/car-kit.js'],
+  ...WHEEL_DEFINITIONS.map(wheel => ({ id: `wheel-${wheel.id}`, name: wheel.name, category: 'Vehículos', source: '/g/carreritas/wheel-definitions.js', factory: 'makeWheel', usedBy: ['Carreritas'], description: wheel.blurb, dependencies: ['/engine/models/vehicles/car-kit.js'],
     async build() {
       const { makeWheel } = await import('/engine/models/vehicles/car-kit.js');
       const { Box3, Vector3 } = await import('three');

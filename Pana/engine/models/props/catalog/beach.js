@@ -6,7 +6,7 @@ export default [
     category: "Objetos",
     source: "/engine/models/props/beach.js",
     factory: "beachShade",
-    usedBy: ["Bululú","Derrape"],
+    usedBy: ["Bululú","Carreritas"],
     previewOptions: null,
     pack: "beach"
   },
@@ -16,7 +16,7 @@ export default [
     category: "Objetos",
     source: "/engine/models/props/beach.js",
     factory: "beachHut",
-    usedBy: ["Bululú", "Derrape", "Escondidas", "¡Pintura!", "Billar", "Caída"],
+    usedBy: ["Bululú", "Carreritas", "Escondidas", "¡Pintura!", "Billar", "Caída"],
     previewOptions: null,
     pack: "beach"
   },
@@ -26,7 +26,7 @@ export default [
     category: "Objetos",
     source: "/engine/models/props/beach.js",
     factory: "driftwood",
-    usedBy: ["Bululú","Derrape","Galope"],
+    usedBy: ["Bululú","Carreritas","Galope"],
     previewOptions: null,
     pack: "beach"
   },

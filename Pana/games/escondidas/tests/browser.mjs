@@ -117,8 +117,8 @@ try {
   await b.waitForFunction(() => hunt.camera.position.y < 4);
   if (output) await b.screenshot({ path: path.join(output, 'pana-hunt-gameplay.png') });
   check('connection failure offers playable local practice');
-  await b.goto(base + '/g/derrape/?track=llanos&debug'); await b.waitForFunction(() => window.race && window.garage && window.startRace);
-  await b.evaluate(() => startRace(0)); check('Derrape loads and starts on Los Llanos with the market kit');
+  await b.goto(base + '/g/carreritas/?track=llanos&debug'); await b.waitForFunction(() => window.race && window.garage && window.startRace);
+  await b.evaluate(() => startRace(0)); check('Carreritas loads and starts on Los Llanos with the market kit');
   await b.goto(base + '/g/bululu/?debug'); await b.waitForFunction(() => window.board && window.players);
   assert.equal(await b.evaluate(async () => { const shared = await import('/engine/models/vegetation/index.js'), original = await import('/g/bululu/flora.js'); return shared.palm === original.palm && shared.mangoTree === original.mangoTree; }), true);
   check('Bululú renders and retains exactly the same shared foliage factories');

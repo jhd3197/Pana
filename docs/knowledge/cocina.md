@@ -43,7 +43,7 @@ Static kitchen props and cached food models are baked by material to keep draw
 calls low. Cached food geometry and materials must not be disposed with an actor.
 
 Characters have a raised body and two independent legs by default. Cocina uses
-`chef:true`; saved fur, outfit colors, glasses and face remain intact. Derrape's
+`chef:true`; saved fur, outfit colors, glasses and face remain intact. Carreritas's
 driver opts into `seated:true` to keep its original seat height. Arms are only
 automatically animated when `walk` or `carry` is supplied, preserving existing
 manual waving/cheering behavior.

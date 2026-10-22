@@ -103,15 +103,15 @@ pause overlay, sound toggle or invite flow, or handle Escape in a game. Never se
 .\dev.ps1 check -Help     # the cheat sheet: which check to run for a change
 .\dev.ps1 check -Browser domino   # ...plus the Playwright suites matching "domino"
 .\dev.ps1 studio          # open Pana Studio on the running server
-npm test -- derrape            # only unit tests whose path contains "derrape" (seconds)
+npm test -- carreritas         # only unit tests whose path contains "carreritas" (seconds)
 npm test -- feats rules        # union of several filters
 npm run test:browser -- all-games  # every game prepares a 3D scene without errors
-npm run shots -- derrape --track chuao --at gate-60  # screenshots from the real loop, seconds
-npm run shots -- derrape --track sabana --menu      # menu art: <id>.webp + thumb + sources.json
-npm run budget -- derrape          # first-load modules and game.js lines vs their caps
+npm run shots -- carreritas --track chuao --at gate-60  # screenshots from the real loop, seconds
+npm run shots -- carreritas --track sabana --menu      # menu art: <id>.webp + thumb + sources.json
+npm run budget -- carreritas       # first-load modules and game.js lines vs their caps
 npm run test:browser -- --changed  # only the suites for what changed since dev
-npm run test:browser -- derrape --baseline  # failures rerun on the merge-base: regression or pre-existing
-npm run new-track -- morrocoy --name "Morrocoy"     # new Derrape circuit, registered everywhere (--dry-run first)
+npm run test:browser -- carreritas --baseline  # failures rerun on the merge-base: regression or pre-existing
+npm run new-track -- morrocoy --name "Morrocoy"     # new Carreritas circuit, registered everywhere (--dry-run first)
 npm run new-game -- <id>           # a new game from the templates
 npm run launcher-art -- <id> <image> --row Mesa  # hub art, both JPEGs, registered
 npm run tidy                       # worktrees and branches already in dev (--apply removes)
@@ -128,7 +128,7 @@ those as KNOWN. Add one only after `--baseline` shows it pre-existing.
 
 Run the narrowest check that covers the change: `npm test -- <word>` takes
 seconds, the full `npm test` several minutes, and browser suites minutes EACH —
-always filter them (`-- derrape`, `--changed`). Never run the whole browser set
+always filter them (`-- carreritas`, `--changed`). Never run the whole browser set
 locally; CI does that nightly. `.\dev.ps1 check -Help` prints the same cheat
 sheet from the CLI.
 

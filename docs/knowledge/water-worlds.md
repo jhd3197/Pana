@@ -1,4 +1,4 @@
-# Derrape water worlds
+# Carreritas water worlds
 
 The four routes
 are available in Carrera rápida, Copa del Agua and Studio without a debug flag.
@@ -80,7 +80,7 @@ the effect owns three draws, 36 mist instances (12 at low quality), no targets,
 and absolute-time animation. Galope places the canonical landing shelter on
 its existing dock without changing course/collision data.
 
-The focused Derrape unit suite passes 73 tests after twelve-track registration.
+The focused Carreritas unit suite passes 73 tests after twelve-track registration.
 The final proof and remaining device-validation limits are recorded below and
 in the plan's completion audit.
 
@@ -111,5 +111,5 @@ Galope's two-client riding/touch, landscape, water-FX and Studio suites passed.
 Final vegetation uses 190 m cells with the same placements and whole-world
 triangle counts. A geometry recheck covers all lane and
 chase rays plus the nine driver views after that render optimization. Desktop
-GPU timing is recorded in `derrape-performance.md`; the physical-phone run was
+GPU timing is recorded in `carreritas-performance.md`; the physical-phone run was
 explicitly waived by the user, without replacing it with emulated FPS claims.

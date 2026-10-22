@@ -313,7 +313,7 @@ async function loadGames() {
   try {
     ({ games } = await fetch('/api/games').then((r) => r.json()));
     gamesEl.innerHTML = '';
-    const order = ['derrape', 'galope', 'curiara', 'domino', 'ludo', 'caida', 'poquer', 'billar', 'criollas', 'bululu', 'cocina', 'escondidas', 'pintura', 'embuste', 'reliquia'];
+    const order = ['carreritas', 'galope', 'curiara', 'domino', 'ludo', 'caida', 'poquer', 'billar', 'criollas', 'bululu', 'cocina', 'escondidas', 'pintura', 'embuste', 'reliquia'];
     // Unlisted (new) games go after the curated order, not before it.
     const rank = (g) => { const i = order.indexOf(g.id); return i < 0 ? order.length : i; };
     games.sort((a, b) => rank(a) - rank(b) || a.name.localeCompare(b.name));
@@ -325,7 +325,7 @@ async function loadGames() {
     }
     let saved = null;
     try { saved = localStorage.getItem('pana:featured'); } catch { /* storage off */ }
-    const first = games.find((g) => g.id === saved) || games.find((g) => g.id === 'derrape') || games[0];
+    const first = games.find((g) => g.id === saved) || games.find((g) => g.id === 'carreritas') || games[0];
     if (first) feature(first);
     statusEl.textContent = `${games.length} juegos disponibles`;
     loadRooms();

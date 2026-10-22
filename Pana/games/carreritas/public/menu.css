@@ -1,0 +1,397 @@
+/* Illustrated menus surround the existing garage, kit controls and race HUD. */
+body { --menu-paper: #fff3d8; --menu-ink: #282035; --menu-grass: #2d705d; }
+#garage.menu-pending { visibility: hidden; }
+.menu-boot { z-index: 5; background: var(--pk-night); }
+/* The boot screen gates only the menu. Thumbnails draw only in the garage, so
+   a race that starts first (a mid-race rejoin) must not sit under it. */
+body:has(> #garage.hidden) > .menu-boot { display: none; }
+.menu-boot > img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: .65; }
+.menu-boot > div { position: relative; margin-top: auto; text-shadow: 0 2px 5px #000; }
+.menu-boot h1 { margin: 0; color: var(--pk-yellow); font: 400 clamp(52px, 8vw, 100px)/1 var(--pk-display); }
+.menu-boot p { font-size: 18px; }
+.menu-flow [hidden] { display: none !important; }
+#garage.menu-flow { --menu-gutter: clamp(16px, 3vw, 48px); }
+.menu-flow .bar { z-index: 3; height: 86px; padding: 0 var(--menu-gutter); gap: 18px; background: linear-gradient(rgba(0,0,0,.6), transparent); }
+.menu-flow .brand { font-size: 30px; white-space: nowrap; }
+.menu-flow .brand span { display: block; margin: 5px 0 0; font: 800 10px var(--pk-sans); letter-spacing: 4px; text-transform: uppercase; }
+.menu-flow .steps { display: flex; gap: 0; border-radius: 12px; padding: 4px; background: var(--pk-deep); border: 1px solid var(--pk-line); }
+.menu-flow .step { display: flex; align-items: center; gap: 8px; border: 0; border-radius: 8px; padding: 10px 15px; background: transparent; color: var(--pk-muted); min-height: 44px; }
+.menu-flow .step span { font-size: 11px; opacity: .7; }
+.menu-flow .step[aria-current="step"] { background: var(--pk-yellow); color: var(--pk-yellow-ink); }
+.menu-flow #settings { flex: none; }
+.menu-pages { position: absolute; inset: 102px var(--menu-gutter) 92px; pointer-events: none !important; }
+.menu-page { height: 100%; min-height: 0; }
+.menu-page:not(.car-page) { pointer-events: auto; }
+.menu-page h1 { font: 400 clamp(26px, 3vw, 44px)/1.06 var(--pk-display); letter-spacing: .4px; margin: 4px 0 12px; }
+.menu-page h1:focus { outline: none; }
+.menu-page .pk-eyebrow { margin: 0; }
+.menu-footer { position: absolute; z-index: 2; bottom: 0; left: 0; right: 0; height: 80px; padding: 14px var(--menu-gutter); display: flex; align-items: center; gap: 20px; background: var(--pk-deep); border-top: 1px solid var(--pk-line); }
+.menu-footer p { color: var(--pk-muted); font-size: 13px; margin: 0; flex: 1; }
+.menu-footer #menu-next { min-width: 200px; margin-left: auto; }
+.festival-art { position: absolute; inset: 0; overflow: hidden; background: var(--menu-grass); pointer-events: none !important; --mx: 0; --my: 0; }
+.festival-art img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: 55% 50%; }
+.festival-layer { visibility: hidden; transform: translate(calc(var(--mx) * var(--depth) * -1px), calc(var(--my) * var(--depth) * -1px)) scale(1.045); }
+.festival-art.is-layered .festival-layer { visibility: visible; }
+.festival-art.is-layered .festival-master { visibility: hidden !important; }
+.festival-art::after { content: ''; position: absolute; inset: 0; background: linear-gradient(90deg, rgba(0,0,0,.8), rgba(0,0,0,.38) 36%, transparent 67%), linear-gradient(0deg, rgba(0,0,0,.5), transparent 35%); }
+.menu-flow[data-menu-step="welcome"] .menu-pages { bottom: 30px; }
+.menu-flow[data-menu-step="welcome"]:has(#welcome-room:not([hidden])) .menu-pages { bottom: 92px; }
+.welcome-page { display: flex; align-items: center; position: relative; }
+.welcome-copy { width: min(450px, 44%); padding: 20px 0; }
+.welcome-copy > .pk-eyebrow { color: var(--pk-yellow); letter-spacing: 2px; }
+.welcome-copy h1 { font-size: clamp(52px, 6.7vw, 100px); line-height: .98; margin: 18px 0; color: var(--menu-paper); text-shadow: 0 4px 0 rgba(0,0,0,.2); }
+.welcome-copy h1 em { font-style: normal; color: var(--pk-yellow); }
+.welcome-copy > p:not(.pk-eyebrow) { font-size: 16px; line-height: 1.6; margin: 0 0 22px; color: var(--menu-paper); }
+.welcome-copy > .welcome-room:not([hidden]) { display: block; }
+.play-choices { display: grid; gap: 9px; max-width: 360px; }
+.play-choice.pk-btn { width: 100%; justify-content: flex-start; gap: 16px; padding: 12px 20px; min-height: 68px; background: var(--menu-paper); color: var(--menu-ink); border-color: transparent; text-align: left; border-radius: 12px; }
+.play-choice:first-child { background: var(--pk-yellow); }
+.play-choice svg { width: 32px; height: 32px; flex: none; }
+.play-choice span { display: grid; gap: 2px; }
+.play-choice b { font: 400 22px var(--pk-display); letter-spacing: .3px; }
+.play-choice small { font: 700 11px var(--pk-sans); opacity: .85; }
+.festival-caption { position: absolute; bottom: 0; right: 0; color: var(--menu-paper); font-size: 13px; text-shadow: 0 2px 4px rgba(0,0,0,.7); }
+.menu-flow[data-menu-step="track"], .menu-flow[data-menu-step="ready"] { background: var(--pk-night); }
+
+/* The middle of this page stays transparent and interactive for OrbitControls. */
+.menu-flow .car-page { pointer-events: none; }
+.car-page > * { pointer-events: auto; }
+.menu-flow .info { left: 0; top: 0; width: 288px; padding: 20px; gap: 12px; background: rgba(0,0,0,.35); border: 1px solid var(--pk-line); }
+.menu-flow .info h1 { font-size: 40px; }
+.menu-flow .tools { top: 0; bottom: auto; left: 314px; right: 0; justify-content: flex-end; }
+.menu-flow .tools .hint { width: 100%; text-align: right; }
+.car-picker { position: absolute; bottom: 0; left: 314px; right: 0; display: flex; flex-direction: column; gap: 8px; }
+.car-tabs { align-self: flex-start; }
+.menu-flow .car-lineup, .menu-flow .wheel-lineup { position: static; width: 100%; display: flex; justify-content: flex-start; gap: 8px; padding: 4px 4px 8px; }
+/* Centered while the cards fit; once 16 cars overflow, every card stays scrollable
+   (justify-content: center would push the first ones out of reach). */
+.menu-flow .car-lineup > :first-child, .menu-flow .wheel-lineup > :first-child { margin-left: auto; }
+.menu-flow .car-lineup > :last-child, .menu-flow .wheel-lineup > :last-child { margin-right: auto; }
+.menu-flow .car-choice, .menu-flow .wheel-choice { min-width: 70px; flex: 1 0 70px; max-width: 128px; border-radius: 12px; background: var(--pk-deep); }
+.menu-flow .car-choice[aria-pressed="true"], .menu-flow .wheel-choice[aria-pressed="true"] { border-color: var(--pk-yellow); background: var(--pk-raised); }
+.menu-flow .car-choice span, .menu-flow .wheel-choice span { font-size: 11px; }
+.menu-flow .wheel-info { position: static; padding: 6px 12px; border: 0; background: transparent; justify-content: center; }
+.menu-flow .wheel-info span { white-space: normal; }
+
+.track-page { display: flex; flex-direction: column; gap: 16px; }
+.page-heading { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; flex: none; }
+.page-heading h1 { margin-bottom: 0; }
+#track-authority { font-size: 13px; color: var(--pk-muted); margin: 0; }
+.track-layout { flex: 1; min-height: 0; display: grid; grid-template-columns: minmax(0, 1fr) minmax(420px, 1fr); gap: 24px; }
+.track-feature { position: relative; overflow: hidden; border-radius: 18px; background: var(--pk-deep); }
+#circuit-art { width: 100%; height: 100%; object-fit: cover; }
+.circuit-caption { position: absolute; bottom: 0; left: 0; right: 0; padding: 54px 22px 20px; background: linear-gradient(transparent, rgba(0,0,0,.85) 35%); display: flex; align-items: center; gap: 12px; }
+.menu-flow .track-pick { flex: 1; gap: 10px; }
+.menu-flow .t-info { text-align: left; }
+.menu-flow .t-info b { font-size: clamp(24px, 2.5vw, 36px); color: var(--menu-paper); }
+.menu-flow .t-info span { font-size: 12px; line-height: 1.45; -webkit-line-clamp: 3; color: var(--menu-paper); }
+.menu-flow .track-pick .pk-btn { width: 36px; height: 44px; }
+.menu-flow .track-map { width: 112px; height: 90px; background: rgba(0,0,0,.3); border-radius: 8px; }
+.menu-flow .track-of { position: absolute; inset: auto 0 0; text-align: center; font-size: 9px; padding: 2px; }
+.track-options { min-height: 0; overflow-y: auto; padding: 0 4px 6px 0; scrollbar-width: thin; display: flex; flex-direction: column; gap: 14px; }
+.format-picker { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.format-picker > button { position: relative; display: flex; flex-direction: column; text-align: left; border: 2px solid var(--pk-line); padding: 0; overflow: hidden; border-radius: 10px; background: var(--pk-deep); }
+.format-picker > button img { width: 100%; height: 56px; object-fit: cover; }
+.format-picker > button > span:not(.mode-trophy) { padding: 7px 9px; }
+.format-picker b { font: 400 17px var(--pk-display); letter-spacing: .3px; }
+.format-picker small { display: block; font: 700 10px/1.4 var(--pk-sans); color: var(--pk-muted); margin-top: 2px; }
+.format-picker > button[aria-pressed="true"], .circuit-choice[aria-pressed="true"], .menu-flow .cup-stage[aria-pressed="true"] { border-color: var(--pk-yellow); box-shadow: inset 0 -3px var(--pk-yellow); }
+.format-picker > button:disabled { cursor: default; }
+.format-picker .mode-trophy { position: absolute; top: 8px; right: 8px; }
+.format-picker .mode-legacy { position: absolute; top: 0; left: 4px; background: var(--pk-night); }
+.circuit-list > .pk-eyebrow { margin-bottom: 8px; }
+#circuit-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+.circuit-choice { padding: 0; overflow: hidden; background: var(--pk-deep); border: 2px solid var(--pk-line); border-radius: 8px; text-align: left; }
+.circuit-choice img { display: block; width: 100%; height: 68px; object-fit: cover; }
+.circuit-choice span { display: block; font-size: 11px; padding: 5px 7px 7px; line-height: 1.25; }
+.circuit-choice:disabled { cursor: default; }
+.menu-flow .cup-stages { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.menu-flow .cup-stage { display: flex; flex-direction: column; width: 100%; height: 100%; align-items: flex-start; padding: 0 0 10px; overflow: hidden; border: 2px solid var(--pk-line); border-radius: 10px; font-size: 13px; gap: 5px; }
+.cup-stage img { width: 100%; height: 100px; object-fit: cover; }
+.menu-flow .cup-stage > span, .menu-flow .cup-stage > small { padding: 0 10px; }
+.menu-flow .setup-note { font-size: 12px; padding-bottom: 6px; }
+
+.ready-page { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(340px, 1fr); gap: 32px; }
+.ready-art { position: relative; min-height: 0; border-radius: 18px; overflow: hidden; background: var(--pk-deep); }
+.ready-art > img { width: 100%; height: 100%; object-fit: cover; }
+.ready-art > div { position: absolute; bottom: 0; padding: 80px 28px 28px; width: 100%; background: linear-gradient(transparent, rgba(0,0,0,.85)); }
+.ready-art h1 { font-size: clamp(32px, 4vw, 58px); }
+.ready-art p { margin: 0; max-width: 460px; color: var(--menu-paper); }
+.ready-options { overflow-y: auto; min-height: 0; padding: 10px 6px 8px 0; scrollbar-width: thin; display: flex; flex-direction: column; gap: 18px; }
+.ready-driver { display: flex; align-items: center; gap: 14px; padding-bottom: 18px; border-bottom: 1px solid var(--pk-line); }
+.ready-driver > svg { width: 48px; height: 48px; }
+.ready-driver > div { flex: 1; }
+.ready-driver b { display: block; font: 400 28px var(--pk-display); }
+.ready-driver span { display: block; font-size: 12px; color: var(--pk-muted); }
+.menu-flow .setup { gap: 22px; }
+.menu-flow .setup-row { gap: 10px; }
+.menu-flow .setup-row > .pk-eyebrow { width: 100%; }
+.menu-flow .setup .pk-seg > button { min-height: 44px; padding: 8px 16px; font-size: 14px; }
+.menu-flow .mirror-pick { margin: 0; gap: 10px; min-height: 44px; font-size: 13px; }
+.menu-flow .split-pick { width: 100%; }
+#ready-controls { font-size: 12px; color: var(--pk-muted); margin: 0; max-width: 430px; }
+#ready-launch { margin-top: auto; display: grid; gap: 12px; }
+.menu-flow .launch-note { border: 0; padding: 0; background: none; }
+.menu-flow #play { min-height: 60px; font: 400 28px var(--pk-display); letter-spacing: 1px; }
+.menu-footer #play { display: block; width: min(45%, 440px); min-width: 0; min-height: 48px; margin-left: auto; font-size: 24px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.menu-flow .lobby { background: none; padding: 0; border: 0; }
+.menu-flow .lobby .pk-roster { max-height: 180px; overflow-y: auto; }
+.menu-flow .lobby-status { color: var(--pk-muted); }
+.menu-flow .lobby-solo { justify-self: start; }
+
+/* Real loading progress remains visible over the selected circuit. */
+#loading { overflow: hidden; isolation: isolate; background: var(--pk-night); }
+#loading-art { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; z-index: -2; opacity: .75; }
+#loading::after { content: ''; position: absolute; inset: 0; z-index: -1; background: linear-gradient(0deg, rgba(0,0,0,.95), rgba(0,0,0,.1) 90%); }
+#loading .loading-main { margin-top: auto; }
+#loading-title { text-shadow: 0 3px 0 rgba(0,0,0,.25); }
+
+@media (hover: hover) and (pointer: fine) {
+  .play-choice:hover { transform: translateX(5px); }
+  .circuit-choice:hover, .format-picker > button:hover, .menu-flow .cup-stage:hover { border-color: var(--pk-yellow); }
+  .menu-flow .step:not([aria-current]):hover { color: var(--pk-text); background: var(--pk-raised); }
+}
+@media (max-width: 1100px) {
+  .menu-flow .bar { gap: 12px; }
+  .menu-flow .step { padding: 10px; font-size: 12px; }
+  .menu-flow .brand { font-size: 24px; }
+  .menu-flow .brand span { font-size: 8px; }
+  .track-layout { gap: 16px; grid-template-columns: minmax(0, .9fr) minmax(380px, 1fr); }
+  .menu-flow .track-map { display: none; }
+  .menu-flow .info { width: 250px; padding: 16px; }
+  .menu-flow .info h1 { font-size: 34px; }
+  .menu-flow .tools { left: 270px; }
+  .car-picker { left: 270px; }
+  .menu-flow .car-lineup, .menu-flow .wheel-lineup { justify-content: flex-start; }
+}
+@media (max-height: 720px) and (min-width: 761px) {
+  .menu-pages { top: 86px; bottom: 78px; }
+  .menu-flow .bar { height: 76px; }
+  .menu-footer { height: 66px; padding-top: 8px; padding-bottom: 8px; }
+  .welcome-copy h1 { font-size: clamp(46px, 6vw, 76px); margin: 10px 0; }
+  .welcome-copy > p:not(.pk-eyebrow) { margin-bottom: 14px; font-size: 14px; }
+  .play-choice.pk-btn { min-height: 56px; padding: 8px 16px; }
+  .play-choice b { font-size: 20px; }
+  .track-page { gap: 10px; }
+  .page-heading h1 { font-size: 32px; }
+  .format-picker { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+  .format-picker > button img { height: 42px; }
+  .format-picker > button > span:not(.mode-trophy) { padding: 6px; }
+  .format-picker b { font-size: 14px; }
+  .format-picker small { display: none; }
+  .circuit-choice img { height: 56px; }
+  .ready-options { gap: 12px; }
+  .menu-flow .setup { gap: 12px; }
+  .menu-flow .info { gap: 8px; }
+  .menu-flow .info p { font-size: 12px; }
+}
+@media (max-width: 760px) {
+  .menu-flow .bar { height: 100px; align-items: flex-start; padding-top: 12px; gap: 10px; }
+  .menu-flow .brand { font-size: 22px; }
+  .menu-flow .brand span { display: none; }
+  .menu-flow #settings { margin-left: auto; }
+  .menu-flow .hub-link { font-size: 12px; min-height: 32px; }
+  .menu-flow .steps { position: absolute; top: 56px; left: var(--menu-gutter); right: var(--menu-gutter); justify-content: space-between; }
+  .menu-flow .step { flex: 1; justify-content: center; padding: 8px 4px; min-height: 36px; font-size: 11px; gap: 5px; }
+  .menu-pages { top: 114px; bottom: 78px; }
+  .menu-footer { height: 66px; gap: 12px; }
+  .menu-footer p { display: none; }
+  .menu-footer #menu-next { min-width: 0; }
+  .menu-flow[data-menu-step="welcome"] .menu-pages { bottom: 16px; }
+  .welcome-page { align-items: flex-end; overflow-y: auto; }
+  .welcome-copy { width: 100%; padding: 0 0 6px; }
+  .welcome-copy h1 { font-size: 52px; margin: 12px 0; }
+  .welcome-copy > p:not(.pk-eyebrow) { font-size: 13px; margin-bottom: 16px; }
+  .welcome-copy > .pk-eyebrow { font-size: 10px; }
+  .play-choices { max-width: 100%; gap: 8px; }
+  .play-choice.pk-btn { min-height: 60px; padding: 9px 16px; }
+  .play-choice b { font-size: 20px; }
+  .festival-art img { object-position: 65% 40%; }
+  .festival-art::after { background: linear-gradient(0deg, rgba(0,0,0,.85), rgba(0,0,0,.1)); }
+  .festival-caption { display: none; }
+  .menu-flow .info { top: 0; width: 100%; padding: 10px 12px; gap: 5px; background: rgba(0,0,0,.45); }
+  .menu-flow .info h1 { font-size: 26px; margin: 0; }
+  .menu-flow .info-head { position: absolute; right: 10px; top: 10px; }
+  .menu-flow .info-head .num, .menu-flow .info-head .pk-eyebrow, .menu-flow .info #stats { display: none; }
+  .menu-flow .info #car-blurb { max-width: calc(100% - 80px); font-size: 11px; }
+  .menu-flow .info p { display: block; }
+  .menu-flow .info .driver { font-size: 10px; }
+  .menu-flow .tools { left: 0; top: 110px; right: 0; justify-content: flex-start; gap: 5px; }
+  .menu-flow .tools .pk-btn { font-size: 11px; min-height: 34px; padding: 5px 9px; }
+  .menu-flow .tools .hint { display: none; }
+  .car-picker { left: 0; right: 0; gap: 4px; }
+  .car-tabs button { font-size: 12px; min-height: 36px; }
+  .car-tabs { align-self: center; }
+  .menu-footer #play { width: auto; flex: 1; min-height: 44px; font-size: 20px; }
+  .menu-flow .car-choice, .menu-flow .wheel-choice { min-width: 70px; flex-basis: 70px; max-width: 90px; }
+  .menu-flow .car-lineup, .menu-flow .wheel-lineup { gap: 6px; }
+  .menu-flow .wheel-info { padding: 3px 0; align-items: center; }
+  .menu-flow .wheel-info b { font-size: 13px; }
+  .menu-flow .wheel-info span { font-size: 10px; }
+  .track-page { overflow-y: auto; gap: 12px; }
+  .page-heading { display: block; }
+  .page-heading h1 { font-size: 30px; }
+  #track-authority { font-size: 11px; }
+  .track-layout { display: flex; flex-direction: column; gap: 14px; flex: none; }
+  .track-feature { height: 240px; flex: none; }
+  .circuit-caption { padding: 40px 12px 12px; }
+  .menu-flow .t-info b { font-size: 26px; }
+  .menu-flow .t-info span { font-size: 11px; -webkit-line-clamp: 2; }
+  .track-options { overflow: visible; padding: 0 0 12px; }
+  .format-picker > button img { height: 48px; }
+  .format-picker small { font-size: 9px; }
+  .format-picker b { font-size: 16px; }
+  #circuit-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .circuit-choice img { height: 70px; }
+  .ready-page { display: flex; flex-direction: column; gap: 18px; overflow-y: auto; }
+  .ready-art { min-height: 220px; flex: none; }
+  .ready-art > img { position: absolute; }
+  .ready-art > div { padding: 60px 18px 18px; }
+  .ready-art h1 { font-size: 34px; margin-bottom: 6px; }
+  .ready-art p { font-size: 12px; }
+  .ready-options { overflow: visible; flex: none; padding: 0 0 12px; gap: 16px; }
+  .ready-driver b { font-size: 24px; }
+  .menu-flow .setup .pk-seg > button { padding: 8px 14px; }
+}
+@media (max-height: 500px) and (min-width: 761px) {
+  .menu-flow .bar { height: 62px; }
+  .menu-pages { top: 68px; bottom: 64px; }
+  .menu-footer { height: 56px; }
+  .welcome-copy { padding: 0; }
+  .welcome-copy h1 { font-size: 42px; margin: 8px 0; }
+  .welcome-copy h1 br { display: none; }
+  .welcome-copy > p:not(.pk-eyebrow) { display: none; }
+  .welcome-copy > .pk-eyebrow { font-size: 9px; }
+  .play-choices { gap: 6px; }
+  .play-choice.pk-btn { min-height: 48px; padding: 6px 12px; }
+  .play-choice b { font-size: 18px; }
+  .play-choice small { font-size: 9px; }
+  .page-heading h1 { font-size: 26px; }
+  .page-heading .pk-eyebrow { display: none; }
+  .menu-flow .info { width: 220px; padding: 10px; }
+  .menu-flow .info-head .pk-eyebrow { display: none; }
+  .menu-flow .info-head .num { width: 32px; height: 32px; font-size: 18px; }
+  .menu-flow .info h1 { font-size: 28px; }
+  .menu-flow .info #stats { gap: 4px; }
+  .menu-flow .info p { font-size: 11px; }
+  .menu-footer #play { min-height: 40px; font-size: 22px; }
+  .menu-flow .info .driver { display: none; }
+  .menu-flow .tools { left: 240px; }
+  .menu-flow .tools .hint { display: none; }
+  .menu-flow .tools .pk-btn { font-size: 11px; min-height: 32px; }
+  .car-picker { left: 240px; }
+  .menu-flow .car-choice, .menu-flow .wheel-choice { max-width: 74px; }
+  .menu-flow .wheel-info { padding: 0; }
+  .ready-art h1 { font-size: 34px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .menu-flow *, .menu-flow *::before { transition: none !important; animation: none !important; }
+  .festival-layer { transform: none; }
+  .play-choice:hover { transform: none; }
+}
+@media (min-width: 560px) and (max-width: 760px) and (max-height: 500px) {
+  .menu-flow .bar { height: 56px; align-items: center; padding-top: 0; gap: 8px; }
+  .menu-flow .brand { font-size: 18px; }
+  .menu-flow .steps { position: static; padding: 3px; margin-left: auto; }
+  .menu-flow .step { font-size: 10px; padding: 6px; min-height: 32px; }
+  .menu-flow .step span { display: none; }
+  .menu-flow #settings { margin-left: 0; padding: 6px 10px; font-size: 11px; }
+  .menu-pages { top: 64px; bottom: 64px; }
+  .menu-footer { height: 56px; padding-top: 6px; padding-bottom: 6px; }
+  .menu-footer #play { flex: none; width: 50%; min-height: 40px; }
+  .welcome-copy { width: 50%; min-width: 290px; }
+  .welcome-copy h1 { font-size: 34px; margin: 8px 0; }
+  .welcome-copy h1 br { display: none; }
+  .welcome-copy > p:not(.pk-eyebrow) { display: none; }
+  .play-choice.pk-btn { min-height: 44px; padding: 5px 12px; gap: 10px; }
+  .play-choice b { font-size: 16px; }
+  .play-choice small { font-size: 9px; }
+  .play-choice svg { width: 24px; height: 24px; }
+  .play-choices { gap: 6px; }
+  .menu-flow .info { width: 180px; padding: 8px; gap: 5px; }
+  .menu-flow .info-head { position: static; }
+  .menu-flow .info .pick { margin-left: 0; }
+  .menu-flow .info h1 { font-size: 24px; }
+  .menu-flow .info #car-blurb { max-width: none; font-size: 10px; }
+  .menu-flow .info .driver { display: none; }
+  .menu-flow .info #stats { display: grid; gap: 4px; margin: 0; }
+  .menu-flow #stats div { grid-template-columns: 72px 1fr 16px; gap: 4px; }
+  .menu-flow #stats dt { font-size: 10px; }
+  .menu-flow #stats dd { height: 5px; }
+  .menu-flow .tools { left: 196px; top: 0; gap: 4px; }
+  .menu-flow .tools .pk-btn { font-size: 10px; padding: 5px 7px; min-height: 30px; }
+  .car-picker { left: 196px; }
+  .car-tabs { align-self: flex-start; }
+  .car-tabs button { min-height: 30px; font-size: 11px; padding: 6px 12px; }
+  .menu-flow .car-choice, .menu-flow .wheel-choice { min-width: 64px; max-width: 70px; flex-basis: 64px; }
+  .track-page { overflow: hidden; }
+  .page-heading .pk-eyebrow { display: none; }
+  .page-heading h1 { font-size: 26px; }
+  .track-layout { flex: 1; min-height: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .track-feature { height: auto; }
+  .track-options { overflow-y: auto; }
+  .format-picker > button img { height: 38px; }
+  .format-picker small { display: none; }
+  .format-picker b { font-size: 13px; }
+  .format-picker > button > span:not(.mode-trophy) { padding: 5px; }
+  .menu-flow .t-info b { font-size: 22px; }
+  .ready-page { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; overflow: hidden; }
+  .ready-art { min-height: 0; }
+  .ready-art > div { padding: 40px 12px 12px; }
+  .ready-art h1 { font-size: 28px; }
+  .ready-options { overflow-y: auto; }
+  .ready-driver { gap: 8px; }
+  .ready-driver > svg { display: none; }
+  .ready-driver b { font-size: 22px; }
+}
+
+/* Illustrated cup choices show the actual four stages of each competition. */
+.cup-collage{display:grid;grid-template-columns:1fr 1fr;width:100%;overflow:hidden}
+.format-picker .cup-collage img{height:100px}
+.format-picker .cup-route{display:grid;grid-template-columns:1fr 1fr;gap:4px 12px;margin-top:12px}
+.format-picker .cup-route small{font-size:12px;color:var(--pk-text)}
+.track-page.is-cup .track-layout{display:block;overflow:auto}
+.track-page.is-cup .track-feature,.track-page.is-cup .circuit-list{display:none}
+.track-page.is-cup .format-picker{grid-template-columns:repeat(3,minmax(0,1fr));gap:18px}
+.track-page.is-cup .cup-choice{grid-row:1;border-radius:24px}
+.track-page.is-cup .cup-collage img{height:clamp(90px,15vh,160px)}
+.track-page.is-cup .cup-choice>span:not(.mode-trophy){padding:20px}
+.track-page.is-cup .cup-choice b{font-size:30px}
+.track-page.is-cup .format-picker>button:not(.cup-choice){flex-direction:row;align-items:center;min-height:52px}
+.track-page.is-cup .format-picker>button:not(.cup-choice)>img{width:70px;height:52px}
+@media(max-width:700px){.track-page.is-cup .format-picker{grid-template-columns:1fr}.track-page.is-cup .cup-choice{grid-row:auto}.track-page.is-cup .cup-collage img{height:100px}.track-page.is-cup .cup-choice b{font-size:26px}.format-picker .cup-route small{display:block}}
+
+/* The Taller page opens with the panel docked (taller.js). While it is
+   open the left side is just the build's title, as in the showroom, and the
+   panel's Carro tab picks the car, so the strip waits until it is hidden. */
+.menu-flow .car-lineup { scroll-snap-type: x proximity; scroll-padding: 0 8px; }
+.menu-flow .car-choice { scroll-snap-align: start; }
+.menu-flow .info .info-eyebrow, .menu-flow .info .car-build { display: none; }
+body.shop-open .menu-flow .car-picker, body.shop-open .menu-flow #open-shop { display: none; }
+body.shop-open .menu-flow .info { background: none; border-color: transparent; box-shadow: none; padding: 4px 0 0; gap: 4px; width: min(360px, calc(100vw - 540px)); pointer-events: none; }
+body.shop-open .menu-flow .info > * { pointer-events: auto; }
+body.shop-open .menu-flow .info .info-head { order: 5; margin-top: 10px; }
+body.shop-open .menu-flow .info .pick { margin-left: 0; }
+body.shop-open .menu-flow .info .info-eyebrow { display: block; order: -1; margin: 6px 0 0; color: var(--taller-muted); letter-spacing: .16em; }
+body.shop-open .menu-flow .info h1 { font-size: clamp(34px, 4.2vw, 56px); line-height: .95; color: var(--taller-ink); text-shadow: 0 4px 0 rgba(0, 0, 0, .35); }
+body.shop-open .menu-flow .info .car-build { display: block; color: var(--taller-muted); font-size: 13px; font-weight: 700; }
+body.shop-open .menu-flow .info #stats, body.shop-open .menu-flow .info .num, body.shop-open .menu-flow .info-head > .pk-eyebrow, body.shop-open .menu-flow .info #car-blurb { display: none; }
+body.shop-open .menu-flow .tools { top: auto; bottom: 0; left: 0; right: auto; justify-content: flex-start; }
+body.shop-open .menu-flow .tools .hint { display: none; }
+@media (max-width: 899px) {
+  body.shop-open .menu-flow .info { width: 100%; padding: 0; }
+  body.shop-open .menu-flow .info .info-eyebrow, body.shop-open .menu-flow .info .car-build, body.shop-open .menu-flow .info .info-head { display: none; }
+  body.shop-open .menu-flow .info h1 { font-size: 28px; }
+  body.shop-open .menu-flow .tools { top: 64px; bottom: auto; }
+}
+
+/* The shared lobby already lists the room, its code and invite: from
+   Carreritas's room panel only the rivals switch and the status stay. Split
+   screen is for one computer: it shows while you are alone in the room. */
+.lobby-settings .lobby-head, .lobby-settings #lobby-roster { display: none; }
+/* The taller is the Taller page itself, so it has nothing to close. */
+#shop-close { display: none; }
+.lobby-settings .is-proxied, .lobby-settings .setup-row[hidden] { display: none; }
+.lobby-settings .setup-row { display: grid; grid-template-columns: 9.5em minmax(0, 1fr); align-items: center; gap: 12px; margin-bottom: 10px; }
+.lobby-settings .setup-row > .pk-seg { justify-self: start; }
+.lobby-settings .launch-note { margin: 0 0 12px; }

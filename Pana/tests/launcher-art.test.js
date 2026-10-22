@@ -10,7 +10,7 @@ const suiteSource = fs.readFileSync(path.join(web, 'tests', 'launcher.browser.js
 
 const art = `export const categories = ['Todos', 'Carreras', 'Mesa', 'Fiesta'];
 export const artwork = {
-  derrape: ['Carreras', 'derrape.jpg'], stop: ['Mesa'],
+  carreritas: ['Carreras', 'carreritas.jpg'], stop: ['Mesa'],
   domino: ['Mesa', 'domino.jpg'], stop: ['Fiesta', 'stop.jpg', 'stop-card.jpg'],
 };
 export const category = game => artwork[game.id]?.[0] || 'Fiesta';
@@ -47,7 +47,7 @@ test('outputSize matches the shipped sizes and never upscales', () => {
 test('parseArtwork keeps the last of a duplicated key, like JS does', () => {
   const { categories, artwork } = parseArtwork(art);
   assert.deepEqual(categories, ['Todos', 'Carreras', 'Mesa', 'Fiesta']);
-  assert.deepEqual([...artwork.keys()], ['derrape', 'domino', 'stop']);
+  assert.deepEqual([...artwork.keys()], ['carreritas', 'domino', 'stop']);
   assert.deepEqual(artwork.get('stop'), ['Fiesta', 'stop.jpg', 'stop-card.jpg']);
 });
 
@@ -57,7 +57,7 @@ test('registerArt adds a game with both files and keeps every other entry', asyn
   const url = `data:text/javascript,${encodeURIComponent(text)}`;
   const mod = await import(url);
   assert.deepEqual(mod.artwork.trifulca, ['Fiesta', 'trifulca.jpg', 'trifulca-card.jpg']);
-  assert.deepEqual(mod.artwork.derrape, ['Carreras', 'derrape.jpg']);
+  assert.deepEqual(mod.artwork.carreritas, ['Carreras', 'carreritas.jpg']);
   assert.deepEqual(mod.artwork.stop, ['Fiesta', 'stop.jpg', 'stop-card.jpg']);
   assert.equal(mod.category({ id: 'trifulca' }), 'Fiesta');
 });

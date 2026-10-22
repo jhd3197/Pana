@@ -27,7 +27,7 @@ try {
   check('hub settings save sound, resolution and hints');
 
   // A game picks them up on load.
-  await page.goto(`${base}/g/derrape/?debug&manual&track=estadio`);
+  await page.goto(`${base}/g/carreritas/?debug&manual&track=estadio`);
   await page.waitForFunction(() => window.garage?.car);
   assert.equal(await page.evaluate(() => renderer.getPixelRatio()), 1);
   assert.equal(await page.locator('.keys').isHidden(), true);

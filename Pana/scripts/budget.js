@@ -4,8 +4,8 @@
 // test enforces (Pana/tests/budgets.js).
 //
 //   npm run budget                       every game, tightest first
-//   npm run budget -- derrape            one game, plus its five heaviest imports
-//   npm run budget -- derrape --base dev the change since another commit
+//   npm run budget -- carreritas            one game, plus its five heaviest imports
+//   npm run budget -- carreritas --base dev the change since another commit
 //
 // The heaviest imports are game.js's direct static imports ranked by how many
 // first-load modules each one pulls in: the ones worth turning into import().
@@ -69,5 +69,5 @@ if (games.length === 1) {
   const heavy = [...new Set(direct)].filter(f => !dynamic.has(f)).map(f => ({ f, n: staticImports(f).files.size })).sort((a, b) => b.n - a.n).slice(0, 5);
   console.log('\nheaviest static imports (modules each pulls in; candidates for import()):');
   for (const { f, n } of heavy) console.log(`  ${String(n).padStart(3)}  ${path.relative(app, f).split(path.sep).join('/')}`);
-  console.log('\nlazy pattern: a stub on race/game state, swapped when import() lands (see docs/knowledge/derrape.md).');
+  console.log('\nlazy pattern: a stub on race/game state, swapped when import() lands (see docs/knowledge/carreritas.md).');
 }

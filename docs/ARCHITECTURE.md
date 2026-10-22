@@ -78,7 +78,7 @@ games/<game>/
 ```
 
 Anything a test can check without a browser goes in `rules.js` (or a sibling such
-as Derrape's `item-rules.js` and `online-rules.js`) with a `rules.test.js` beside
+as Carreritas's `item-rules.js` and `online-rules.js`) with a `rules.test.js` beside
 it. Rules use `engine/random.js` for seeded randomness (it has no Three.js). A single-player game (`players: 1`) has no `network.js`. Shared pieces live in
 `engine/`: room codes and invites (`invite.js`), rooms (`net.js`), the end screen
 (`results.js`), menu and settings (`ui.js`, `settings.js`), touch (`touch.js`).
@@ -108,7 +108,7 @@ Every game's online play runs on Colyseus rooms through one shared kit
 (`?room=<code>`), capped at 8. There is no persistence, no accounts, no database —
 sharing a link IS the lobby. Most games are host-simulated: the room's host runs
 the game and publishes snapshots while the room relays (`relay-room.js` +
-`engine/net.js` `HostRoom`). Derrape ships its own room, which owns phase, roster
+`engine/net.js` `HostRoom`). Carreritas ships its own room, which owns phase, roster
 and results while each client drives its own car. ¡Embuste! ships its own room
 that runs the whole game and sends each player a private view, because its
 roles must stay secret (`docs/knowledge/embuste.md`).
@@ -133,4 +133,4 @@ served (and never `engine/tests/`), so room code stays private. Rooms define
 `onUncaughtException`, so a handler that throws skips that message and is logged
 instead of ending the server. The room owns what must agree (phase, host, roster, start time, results)
 while clients may still simulate their own entities; see
-`docs/knowledge/derrape-online.md`.
+`docs/knowledge/carreritas-online.md`.

@@ -268,7 +268,7 @@ test('engine files other sites load stay at their paths', () => {
 
 // Without a bundler every static import is a request, and each level of imports
 // waits for the one above it. A game's first load stays small; worlds, maps and
-// minigames that aren't on screen yet load with import() (Derrape's tracks.js,
+// minigames that aren't on screen yet load with import() (Carreritas's tracks.js,
 // Bululú's minigames/index.js).
 test(`a game's first load is at most ${FIRST_LOAD_MODULES} modules`, () => {
   const problems = [];

@@ -6,7 +6,7 @@ export default [
     category: "Objetos",
     source: "/engine/models/props/plaza-buildings.js",
     factory: "house",
-    usedBy: ["Escondidas","Cocina","Derrape","Billar","Póquer","¡Pintura!"],
+    usedBy: ["Escondidas","Cocina","Carreritas","Billar","Póquer","¡Pintura!"],
     previewOptions: {style:"tejas",h:7.3},
     description: "Tejas de barro, puerta arqueada y contraventanas. Semillas deterministas; cuatro fachadas distintas.",
     pack: "plaza-buildings"
@@ -17,7 +17,7 @@ export default [
     ['house-terrace','Casa con terraza','terraza',0x8ba776],
   ].map(([id,name,style,color])=>({
     id,name,category:'Objetos',source:'/engine/models/props/plaza-buildings.js',factory:'house',
-    usedBy:['Escondidas','Cocina','Derrape','Billar','Póquer','¡Pintura!'],previewOptions:{style,color,h:7.8,seed:11},pack:'plaza-buildings',
+    usedBy:['Escondidas','Cocina','Carreritas','Billar','Póquer','¡Pintura!'],previewOptions:{style,color,h:7.8,seed:11},pack:'plaza-buildings',
   })),
   {
     id: "plaza-fountain",
@@ -25,7 +25,7 @@ export default [
     category: "Emblemas",
     source: "/engine/models/props/plaza-buildings.js",
     factory: "plazaFountain",
-    usedBy: ["Escondidas","Cocina","Derrape","Billar","Póquer"],
+    usedBy: ["Escondidas","Cocina","Carreritas","Billar","Póquer"],
     previewOptions: null,
     description: "Capibara coronado, mosaicos turquesa y chorros con ondas animadas.",
     tags: ["pana","fuente","agua","plaza"],

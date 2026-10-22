@@ -72,7 +72,7 @@ only `?room=`; never the sender's name, `debug`, `manual` or `lead` (an invitee 
 not become the party's lead). The hub builds its links with `playUrl()`.
 
 `orientation: 'horizontal' | 'vertical' | 'libre'` (default `libre`) is how the game
-wants a phone held. Racing games (Derrape, Galope) are horizontal; Cocina, Escondidas and
+wants a phone held. Racing games (Carreritas, Galope) are horizontal; Cocina, Escondidas and
 Reliquia, whose phone HUDs are built upright, are vertical. On touch screens Ajustes
 shows **Orientación** (Según el juego / Horizontal / Vertical, saved as
 `orientation` in settings.js). A phone held the other way gets a "Gira tu teléfono"
@@ -127,10 +127,10 @@ stays with the buttons. `createLookControls` turns the camera with the right
 stick, so first-person games need no `cursor`. `{ native: true, help }` is for
 a game that reads the pad itself (Trifulca): the menus still work, and `help`
 fills the "Con mando" list. The Controles tab lists each labelled key under
-"Con mando". Derrape is native too: controls.js drives the car, and the
+"Con mando". Carreritas is native too: controls.js drives the car, and the
 engine owns the garage menus and Start, so its own pad code no longer
 toggles the pause. Without a main button, a menu starts the pad on its
-biggest button, such as Derrape's "Un jugador" card rather than the step bar.
+biggest button, such as Carreritas's "Un jugador" card rather than the step bar.
 
 Trap: the menu imports `gamepad.js` only when `pad` is set, so a game's first
 load stays under the module budget (`tests/conventions.test.js`).
@@ -141,10 +141,10 @@ load stays under the module budget (`tests/conventions.test.js`).
   While it is open, keys never reach game handlers. Keys aimed at the menu stop
   at the dialog; the others stop at `window`. Games still get `keyup`, so clear
   held keys in `onOpen`.
-- **Pausing is the game's job.** Derrape skips fixed steps, Bululú feeds
+- **Pausing is the game's job.** Carreritas skips fixed steps, Bululú feeds
   `dt = 0` to its job/tween clock, and Cocina and Escondidas freeze only solo
   rounds. In multiplayer, `note()` must say the round continues.
-- **Game CSS styles bare elements** (`header`, `dl`, `dd`, `kbd`, …). Derrape
+- **Game CSS styles bare elements** (`header`, `dl`, `dd`, `kbd`, …). Carreritas
   even hides `dl` on phones. The menu therefore uses only classed `div`/`span`
   elements, and its button reset is wrapped in `:where()` so `.pana-*` rules
   win.
@@ -156,7 +156,7 @@ load stays under the module budget (`tests/conventions.test.js`).
   settings-only dialog.
 - The shared menu explicitly wraps Tab and Shift+Tab across visible, enabled
   controls. Native modal focus alone can still advance to browser chrome.
-  Browser checks must first reveal Derrape's final garage step before asserting
+  Browser checks must first reveal Carreritas's final garage step before asserting
   that closing the menu restores focus to its Play button.
 - Stable test IDs: `#pana-menu-dialog`, `#pana-resume`, `#pana-copy-room`,
   `#pana-set-sound`, `#pana-set-volume`, `#pana-set-quality`,

@@ -62,7 +62,7 @@ md+=section('Active models missing from individual Studio previews',uncataloged)
 md+=section('Scene assemblies, terrain, effects and embedded parts',assemblies)+'\n';
 md+=section('Older code with no current enabled placement',dormant)+'\n';
 md+=section('Replaced models and compatibility aliases',replaced)+'\n';
-md+='## Complete Studio registry\n\nThe following list is generated, not manually copied. “In use” is the catalog’s current declared consumer status; detailed native placement proof exists for the fauna and recent packs. Color/seed variants are not separate rows unless Studio explicitly registers them. The seated driver now declares Derrape and the forced chef preview declares Cocina; normal wardrobe options remain shared across games.\n\n';
+md+='## Complete Studio registry\n\nThe following list is generated, not manually copied. “In use” is the catalog’s current declared consumer status; detailed native placement proof exists for the fauna and recent packs. Color/seed variants are not separate rows unless Studio explicitly registers them. The seated driver now declares Carreritas and the forced chef preview declares Cocina; normal wardrobe options remain shared across games.\n\n';
 for(const category of Object.keys(counts).sort()){
   md+=`### ${category} (${counts[category]})\n\n`;
   md+=table(['Name / ID','Status / games','Source','Constructor'],assets.filter(a=>a.category===category).map(a=>[`${a.name} · ${a.id}`,a.status==='preview-only'?'Preview only':a.usedBy.filter(g=>g!=='Pana Studio').join(', '),codeLink(a.source),a.factory]))+'\n\n';

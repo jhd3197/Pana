@@ -1,6 +1,6 @@
 # Parapente
 
-`/g/parapente/` is a paragliding race over Galipán, the same map as Derrape's
+`/g/parapente/` is a paragliding race over Galipán, the same map as Carreritas's
 Galipán circuit (`tovar-galipan-maracaibo.md`). Up to 8 panas launch from a
 deck on the crest of El Ávila, fly five turnpoint beacons (La Cresta, El
 Pueblito, El Mirador, El Bosque, Los Girasoles) and land on the diana on
@@ -9,7 +9,7 @@ Boca de Tigre's plaza. Pilots from the cerro fill the deck.
 ## Files
 
 - `public/course.js` (pure): route in Galipán layout units scaled by 1.2 like
-  Derrape, `buildCourse(groundAt, { thermals })`, `airAt` (thermal lift),
+  Carreritas, `buildCourse(groundAt, { thermals })`, `airAt` (thermal lift),
   `remaining`, `outside`. Beacons are cylinders (r 30 m, any height), rings
   sit on an 11:1 glide line from the deck (never closer than 22 m to the
   ground), thermals are Gaussian columns (r 30 m, 6 m/s core, fading over the

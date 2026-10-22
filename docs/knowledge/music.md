@@ -8,14 +8,14 @@ recording that fails to load, falls back to the live WebAudio synth styles
 ## Player
 
 - `play(name, { fallback })`: start a song; `fallback` is the synth style used
-  when there is no recording. `preload(name)` fetches and decodes ahead (Derrape
+  when there is no recording. `preload(name)` fetches and decodes ahead (Carreritas
   calls it when the loading screen opens so the countdown starts on the beat).
 - Recordings loop with `AudioBufferSourceNode.loopStart/loopEnd`: the intro
   plays once, then `[loop[0], loop[1]]` repeats. Up to 4 decoded songs stay cached
   (a decoded 2-minute song is ~40 MB of floats, so do not raise this lightly).
 - `setTempo(t)` maps to playback rate `sqrt(t)`: the final-lap 1.14 becomes ~1.07
   (about +1 semitone). A straight 1.14 rate sounded chipmunk.
-- `muffle(on)` sweeps a low-pass to 700 Hz (Derrape: player spinning out).
+- `muffle(on)` sweeps a low-pass to 700 Hz (Carreritas: player spinning out).
 - `sting(name)` plays a one-shot (a song with `"loop": false`) over the music,
   ducking it to 25 % until the jingle ends.
 - Music goes through `sound.musicOut()`, a gain under the master volume, driven

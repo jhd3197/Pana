@@ -1,4 +1,4 @@
-// Scaffold a new Derrape circuit and register it everywhere it must appear:
+// Scaffold a new Carreritas circuit and register it everywhere it must appear:
 // the track list, the standalone list (not in a saved cup), the maps suite's
 // id list, its song and groove, and the README count. The three track files
 // are a plain placeholder loop that already loads and races; replace the
@@ -13,12 +13,12 @@
 //                   what the finished port shows)
 //   --style NAME    synth groove: joropo, gaita, calipso, tambor, andina, estadio
 //                   (default calipso)
-//   --song NAME     existing recorded song to borrow: derrape-<NAME> (default
+//   --song NAME     existing recorded song to borrow: carreritas-<NAME> (default
 //                   follows the style: calipso→bululu, tambor→selva, ...)
 //   --dry-run       print every change, write nothing
 //
 // It refuses an id that is already registered or already has track files.
-// Menu art comes after the port: npm run shots -- derrape --track <id> --menu
+// Menu art comes after the port: npm run shots -- carreritas --track <id> --menu
 import fs from 'node:fs';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
@@ -29,14 +29,14 @@ export const STYLES = ['joropo', 'gaita', 'calipso', 'tambor', 'andina', 'estadi
 export const STYLE_SONG = { joropo: 'llanos', gaita: 'plaza', calipso: 'bululu', tambor: 'selva', andina: 'paramo', estadio: 'estadio' };
 
 export const PATHS = {
-  definitions: 'Pana/games/derrape/public/track-definitions.js',
-  water: 'Pana/games/derrape/public/tracks/water-track-definitions.js',
-  cups: 'Pana/games/derrape/public/cup-definitions.js',
-  music: 'Pana/games/derrape/public/music.js',
-  maps: 'Pana/games/derrape/tests/maps.browser.js',
+  definitions: 'Pana/games/carreritas/public/track-definitions.js',
+  water: 'Pana/games/carreritas/public/tracks/water-track-definitions.js',
+  cups: 'Pana/games/carreritas/public/cup-definitions.js',
+  music: 'Pana/games/carreritas/public/music.js',
+  maps: 'Pana/games/carreritas/tests/maps.browser.js',
   readme: 'README.md',
   songs: 'Pana/scripts/music/songs.json',
-  tracks: 'Pana/games/derrape/public/tracks',
+  tracks: 'Pana/games/carreritas/public/tracks',
 };
 
 const ONES = ['zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten', 'eleven',
@@ -91,7 +91,7 @@ export function planTrack(root, { id, name, blurb, style = 'calipso', song }) {
   song ??= STYLE_SONG[style];
   const read = rel => fs.readFileSync(path.join(root, rel), 'utf8');
   const songs = JSON.parse(read(PATHS.songs)).songs.map(s => s.id);
-  if (!songs.includes(`derrape-${song}`)) throw new Error(`no recorded song derrape-${song} in ${PATHS.songs}`);
+  if (!songs.includes(`carreritas-${song}`)) throw new Error(`no recorded song carreritas-${song} in ${PATHS.songs}`);
 
   for (const file of [PATHS.definitions, PATHS.water]) {
     if (new RegExp(`id:\\s*'${id}'`).test(read(file))) throw new Error(`track '${id}' is already in ${file}`);
@@ -341,10 +341,10 @@ async function main(argv) {
   if (options.dryRun) { console.log('\nDry run: nothing written.'); return 0; }
   applyPlan(REPO, changes);
   console.log(`\nRegistered '${options.id}'. Next:
-  1. Port the scene into Pana/games/derrape/public/tracks/${options.id}-layout.js and -world.js.
-  2. npm run shots -- derrape --track ${options.id} --at 0.4     (look at it)
-  3. PANA_MAP_TEST_TRACKS=${options.id} npm run test:browser -- derrape/tests/maps.browser --fresh
-  4. npm run shots -- derrape --track ${options.id} --menu       (menu art + sources.json)
+  1. Port the scene into Pana/games/carreritas/public/tracks/${options.id}-layout.js and -world.js.
+  2. npm run shots -- carreritas --track ${options.id} --at 0.4     (look at it)
+  3. PANA_MAP_TEST_TRACKS=${options.id} npm run test:browser -- carreritas/tests/maps.browser --fresh
+  4. npm run shots -- carreritas --track ${options.id} --menu       (menu art + sources.json)
   5. CHANGELOG.md (Spanish, players' voice) and a docs/knowledge note.`);
   return 0;
 }

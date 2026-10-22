@@ -6,7 +6,7 @@ import { randomAvatar } from '../avatar.js';
 import { rng } from '../random.js';
 import { getSettings } from '../settings.js';
 
-// Background life around a table or a court: a pack of Derrape karts racing
+// Background life around a table or a court: a pack of Carreritas karts racing
 // past on a lane, panas strolling along the edge, macaws circling overhead.
 // Pure decoration, never in the play area, and driven only by absolute time,
 // so every peer, pause and replay shows the same pose for the same moment.

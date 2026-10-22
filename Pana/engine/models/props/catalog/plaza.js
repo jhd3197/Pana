@@ -3,7 +3,7 @@ import { PLAZA_PROPS } from '../plaza-definitions.js';
 export default [
   ...PLAZA_PROPS.map(p => ({
     id: p.id, name: p.label, category: 'Objetos', source: '/engine/models/props/plaza.js',
-    factory: p.id, usedBy: ['Escondidas', 'Cocina', 'Derrape', 'Billar', 'Caída', ...(['barrel', 'crate', 'cooler'].includes(p.id) ? ['¡Embuste!'] : []), ...(['barrel', 'crate'].includes(p.id) ? ['¡Pintura!'] : [])], previewOptions: null,
+    factory: p.id, usedBy: ['Escondidas', 'Cocina', 'Carreritas', 'Billar', 'Caída', ...(['barrel', 'crate', 'cooler'].includes(p.id) ? ['¡Embuste!'] : []), ...(['barrel', 'crate'].includes(p.id) ? ['¡Pintura!'] : [])], previewOptions: null,
     dimensions: [p.width, p.height, p.depth], pack: 'plaza',
   })),
   {
@@ -12,7 +12,7 @@ export default [
     category: "Objetos",
     source: "/engine/models/props/plaza.js",
     factory: "marketStall",
-    usedBy: ["Escondidas","Derrape","¡Pintura!","Billar","Caída"],
+    usedBy: ["Escondidas","Carreritas","¡Pintura!","Billar","Caída"],
     previewOptions: null,
     pack: "plaza"
   },
@@ -22,7 +22,7 @@ export default [
     category: "Objetos",
     source: "/engine/models/props/plaza.js",
     factory: "streetLamp",
-    usedBy: ["Escondidas","Cocina","Derrape","Billar","Póquer","¡Pintura!"],
+    usedBy: ["Escondidas","Cocina","Carreritas","Billar","Póquer","¡Pintura!"],
     previewOptions: null,
     pack: "plaza"
   },

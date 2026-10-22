@@ -1,4 +1,4 @@
-// The Pana cars: one builder per car, shared by Derrape's garage and Bululú's
+// The Pana cars: one builder per car, shared by Carreritas's garage and Bululú's
 // ¡Choque de carritos!. Shared parts live in car-kit.js; the
 // driver is the player's pana (see /engine/models/characters/pana/avatar-model.js).
 // Every car faces +Z, its left is +X, wheels touch y = 0.
@@ -15,7 +15,7 @@ import { dress, stock, RIMS } from './car-parts.js';
 import { TALLER_BUILDERS, TALLER_NUMBERS } from './taller-cars.js';
 
 // build(avatar, wheel?, cfg?) → { root, driver, … }. Names and stats live with
-// the game (Derrape's car-definitions.js), keyed by the same ids. cfg is the
+// the game (Carreritas's car-definitions.js), keyed by the same ids. cfg is the
 // garage's render config (car-parts.js); without it every car keeps its own
 // stock parts. A slot that asks for another part replaces the stock one.
 const CLASSICS = { chamo: buildChamo, lancha: buildLancha, machito: buildMachito, bala: buildBala, toro: buildToro, familiar: buildFamiliar, rumbera: buildRumbera, montanero: buildMontanero };

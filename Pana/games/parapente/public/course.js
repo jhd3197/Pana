@@ -1,6 +1,6 @@
 // The Galipán course, pure: no Three.js, so rules, bots and Node tests share it.
-// Points are authored in the Galipán layout's own units (the map Derrape
-// races on) and scaled to the world like Derrape does (GALIPAN_SCALE on x
+// Points are authored in the Galipán layout's own units (the map Carreritas
+// races on) and scaled to the world like Carreritas does (GALIPAN_SCALE on x
 // and z). Heights come from the ground function the caller passes in.
 import { clamp } from '../../../engine/random.js';
 
