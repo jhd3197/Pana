@@ -821,7 +821,9 @@ function disposeRacer(c) {
 
 function clearRace() {
   resetInput();
-  for (const v of vultures.values()) v.removeFromParent();
+  for (const v of vultures.values()) {
+    const geometries=new Set();v.traverse(o=>{if(o.geometry)geometries.add(o.geometry);});geometries.forEach(g=>g.dispose());v.removeFromParent();
+  }
   vultures.clear();
   race.cars.forEach(disposeRacer);
   race.cars = [];

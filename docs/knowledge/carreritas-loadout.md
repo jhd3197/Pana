@@ -38,6 +38,10 @@ bumps the crate and counts the wallet up. Enter/tap skips; reduced motion
 shows the completed 3D scene. Each ceremony disposes its renderer and owned
 geometries. Shared cached model materials are never disposed.
 
+Rescue birds also own geometry: removing their groups is insufficient.
+`clearRace` disposes those meshes while retaining shared cached materials;
+the rescue browser suite verifies disposal when returning to the garage.
+
 Browser proof: shop purchases/previews and repeat collection, menu-flow's two
 clients carrying a boat kit into the race, transform gates, cup-local and
 cup-lifetime. `resultClick` follows the real cash-in flow before a rematch.

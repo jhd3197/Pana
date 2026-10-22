@@ -8,6 +8,9 @@ becomes the GitHub release's notes.
 
 ## Unreleased
 
+- **Los zamuros de rescate liberan su geometría al terminar la carrera.**
+  Encadenar copas ya no conserva las mallas de los rescates anteriores.
+
 - **Los cables entre postes vuelven a verse en Pana Studio.**
   La vista previa respeta los dos extremos del cable al llamar su modelo.
 

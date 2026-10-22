@@ -72,6 +72,13 @@ try {
   });
   assert.ok(stuck.rescued, 'a stuck car is rescued');
   await page.screenshot({ path: join(output, 'rescue.png') });
+  const released=await page.evaluate(()=>{
+    const bird=race.scene.getObjectByName('rescue-zamuro'),geometries=new Set();let disposed=0;
+    bird.traverse(o=>{if(o.geometry)geometries.add(o.geometry);});
+    for(const geometry of geometries)geometry.addEventListener('dispose',()=>disposed++);
+    toGarage();return {owned:geometries.size,disposed,detached:!bird.parent};
+  });
+  assert.ok(released.owned>0&&released.detached&&released.disposed===released.owned,'returning to the garage frees rescue bird geometry');
   assert.deepEqual(errors, []);
   console.log('carreritas rescue: R, off-course and stuck pickups OK');
 } finally {
