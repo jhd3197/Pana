@@ -12,7 +12,7 @@ export function createRaceScreens({sound,taller}={}) {
   const personal = document.createElement('section'); personal.className = 'race-personal fin-me'; result.querySelector('.res-side').prepend(personal);
   const collect = document.createElement('button'); collect.id = 'collect-rewards'; collect.className = 'pk-btn pk-btn--primary'; collect.textContent = '¡A cobrar!'; result.querySelector('.res-coins').append(collect);
   const cash = document.createElement('section'); cash.id = 'cash-in'; cash.className = 'cash-in'; cash.hidden = true; cash.setAttribute('aria-label', '¡A cobrar!'); result.append(cash);
-  let vehiclePopup = null, inspectPanel = null, inspectGeneration = 0;
+  let vehiclePopup = null, inspectPanel = null, inspectGeneration = 0, previewGeneration = 0;
   const closeInspection = () => { inspectGeneration++; vehiclePopup?.close(); vehiclePopup = null; inspectPanel?.close(); };
   let receipt = null, lastPlayer = null, animation = null, stats = new WeakMap(), cashScene=null, cashGeneration=0,currentTrack=null,readyDone=null,readyFrame=0,cashedPlayer=null,pendingAction=null;
   const stat = c => { if(!stats.has(c)) stats.set(c,{peak:0,drift:0,lap:1,lapAt:0,best:null,rank:null,passes:0}); return stats.get(c); };
@@ -40,16 +40,17 @@ export function createRaceScreens({sound,taller}={}) {
   result.addEventListener('click',e=>{const button=e.target.closest('#again,#back');if(button&&receipt?.earned>0&&cashedPlayer!==receipt.player){e.preventDefault();e.stopImmediatePropagation();pendingAction=button;collect.click();}},true);
   const table=document.getElementById('result-board');const headings=document.createElement('div');headings.className='finish-columns';headings.innerHTML='<span></span><span></span><span>Corredor</span><span>Nivel</span><span>Tiempo</span><span>Dif.</span><span>Mejor vuelta</span><span>Vel. máx</span><span>Monedas</span>';table.before(headings);
   return {
-    prepare(cars,player,track,auto=false){
-      this.grid(cars,player,track);
+    async prepare(cars,player,track,auto=false){
+      await this.grid(cars,player,track,!auto);
+      if(grid.hidden)return;
       if(auto)return Promise.resolve();
       grid.classList.add('preparing');
-      const footer=grid.querySelector('footer'),button=document.createElement('button');button.type='button';button.className='grid-ready pk-btn--primary';button.textContent='¡Listo!';button.autofocus=true;footer.querySelector('.grid-status').innerHTML='Revisa tu kit · <b id="grid-count">10</b> s';footer.append(button);
+      const footer=grid.querySelector('footer'),button=document.createElement('button');button.type='button';button.className='grid-ready pk-btn--primary';button.textContent='¡Listo!';button.autofocus=true;footer.querySelector('.grid-status').innerHTML='Salida automática en <b id="grid-count">10</b> s · se pausa al inspeccionar';footer.append(button);
       return new Promise(resolve=>{
-        const end=performance.now()+10000;
+        let previous=performance.now(),remaining=10000;
         readyDone=()=>{cancelAnimationFrame(readyFrame);readyDone=null;footer.querySelector('.grid-status').textContent='Esperando a los panas…';button.disabled=true;button.textContent='Listo';resolve();};
         button.onclick=()=>readyDone?.();button.focus();
-        const tick=now=>{if(!readyDone)return;grid.querySelector('#grid-count').textContent=Math.max(0,Math.ceil((end-now)/1000));if(now>=end)readyDone();else readyFrame=requestAnimationFrame(tick);};readyFrame=requestAnimationFrame(tick);
+        const tick=now=>{if(!readyDone)return;if(!inspectPanel?.matches(':modal'))remaining-=now-previous;previous=now;grid.querySelector('#grid-count').textContent=Math.max(0,Math.ceil(remaining/1000));if(remaining<=0)readyDone();else readyFrame=requestAnimationFrame(tick);};readyFrame=requestAnimationFrame(tick);
       });
     },
     rows(cars,player) {
@@ -59,19 +60,20 @@ export function createRaceScreens({sound,taller}={}) {
         for(const [className,value] of [['finish-gap',c.done&&leader.done?(i?'+'+(c.time-leader.time).toFixed(1):'—'):'—'],['finish-lap',m.best==null?'—':m.best.toFixed(1)+' s'],['finish-speed',Math.round(m.peak)+' km/h'],['finish-coins',c.coinsCollected||0]]){const cell=document.createElement('span');cell.className=className;cell.textContent=value;row.append(cell);}
       }
     },
-    grid(cars, player, track) {
+    async grid(cars, player, track, previews=true) {
+      const previewRun = ++previewGeneration, images = new Map(); delete grid.dataset.previewsReady;
       closeInspection(); grid.classList.remove('preparing');
       cash.hidden = true; banner.hidden = true; stats=new WeakMap(); currentTrack=track; const use = trackPieces(track);for(const c of cars)c.kitLevel=pi(c,use);
-      grid.innerHTML = `<header><h1>La parrilla</h1><p>${esc(track.name)} · ${use.map(k => ({car:'carro',boat:'lancha',air:'avioneta'})[k]).join(' + ')}</p></header><ol>${cars.map((c,i) => `<li class="${c === player ? 'is-me' : ''}"><b>${i+1}</b><details><summary>${esc(c.name)} ${c === player ? '· Tú' : ''}</summary><p>${esc(c.def.name)} · ${esc(vesselById('boat',c.cosmetics?.boat).name)} · ${esc(vesselById('air',c.cosmetics?.air).name)}</p></details><span class="grid-pieces">${use.map(k=>esc(k==='car'?c.def.name:vesselById(k,c.cosmetics?.[k]).name)).join(' · ')}</span>${badge(pi(c,use))}</li>`).join('')}</ol><footer>Tu kit ${badge(pi(player,use))}<span class="grid-status">Salimos en <b id="grid-count">3</b></span></footer>`;
-      const ranking=[...cars].sort((a,b)=>pi(a,use)-pi(b,use));for(const [i,row] of [...grid.querySelectorAll('li')].entries()){row.style.setProperty('--reveal',`${ranking.indexOf(cars[i])*.16}s`);if(pi(cars[i],use)===pi(ranking.at(-1),use)){row.classList.add('strongest');row.querySelector('summary').insertAdjacentHTML('beforeend',' <em>¡OJO!</em>');}}
+      grid.innerHTML = `<header><div><h1>La parrilla</h1><p>${esc(track.name)} · ${use.map(k => ({car:'carro',boat:'lancha',air:'avioneta'})[k]).join(' + ')}</p></div><p class="grid-guide">Mira los carros de tus panas.<br><strong>Elige uno para ver sus piezas y guardar su kit.</strong></p></header><ol>${cars.map((c,i) => `<li class="${c === player ? 'is-me' : ''}"><details><summary aria-label="Ver kit de ${esc(c.name)}"><span class="grid-driver"><b>${esc(c.name)}${c === player ? ' · Tú' : ''}</b>${badge(pi(c,use))}</span><span class="grid-car-preview"><span class="grid-preview-status">Preparando carro…</span></span><span class="grid-car-name">${esc(c.def.name)}</span><span class="grid-inspect-action">Ver carro y kit</span></summary></details></li>`).join('')}</ol><footer><span>Tu kit ${badge(pi(player,use))}</span><span class="grid-status">Preparando los carros… <b id="grid-count">10</b></span></footer>`;
       const inspect=document.createElement('dialog');inspect.className='grid-inspect fin-me';inspect.setAttribute('aria-label','Kit del corredor');grid.append(inspect);inspectPanel=inspect;
       inspect.addEventListener('close',()=>{inspectGeneration++;vehiclePopup?.close();vehiclePopup=null;});
       inspect.addEventListener('click',e=>{const r=inspect.getBoundingClientRect();if(e.target===inspect&&(e.clientX<r.left||e.clientX>r.right||e.clientY<r.top||e.clientY>r.bottom))inspect.close();});
       const show=(c,modal=false)=>{
         if(modal){inspect.close();inspect.showModal();}
-        const own=pi(player,use),other=pi(c,use),average=Math.round(cars.reduce((n,v)=>n+pi(v,use),0)/cars.length);
+        const own=pi(player,use),other=pi(c,use);
         const pieces=[['Carro',c.def.name,c.tunes?.car??c.tune??c.def.tune,ICONS.kitWheel],['Lancha',vesselById('boat',c.cosmetics?.boat).name,c.tunes?.boat??vesselById('boat',c.cosmetics?.boat).tune,ICONS.kitHull],['Avioneta',vesselById('air',c.cosmetics?.air).name,c.tunes?.plane??vesselById('air',c.cosmetics?.air).tune,ICONS.kitWing]];
-        inspect.innerHTML=`<div class="grid-inspect-head"><b>${esc(c.name)}</b>${badge(other)}<button type="button" data-close aria-label="Cerrar kit">Cerrar</button></div><div class="grid-kit">${pieces.map(([kind,name,tune,icon],i)=>`<button type="button" data-vehicle="${['car','boat','air'][i]}"><small>${kind}</small>${icon}<b>${esc(name)}</b>${badge(nivelOf(tune))}</button>`).join('')}</div><p class="grid-inspect-hint">Toca un vehículo para verlo de cerca y copiar solo ese.</p><dl><div><dt>Tu kit</dt><dd>${badge(own)}</dd></div><div><dt>Media de la parrilla</dt><dd>${badge(average)}</dd></div><div><dt>Diferencia</dt><dd>${own-average>0?'+':''}${own-average}</dd></div></dl><div class="grid-distribution"><div><i>D</i><i>C</i><i>B</i><i>A</i><i>S</i></div>${cars.map(v=>`<b class="${v===player?'me':''}" title="${esc(v.name)} · ${pi(v,use)}" style="left:${Math.min(98,Math.max(2,(pi(v,use)-300)/500*100))}%;--c:${v.def.color}"></b>`).join('')}</div><p>¡Matagigantes! +5 mangos por cada rival de mayor nivel que dejes atrás.</p><div class="grid-copy">${c===player?'':`<button type="button" data-copy="kit">Copiar kit completo ${badge(other)}<small>${taller?.quoteKit(c)??0} mangos</small></button>`}</div><p class="grid-copy-note" role="status"></p>`;
+        inspect.innerHTML=`<div class="grid-inspect-head"><div><small>Kit de ${esc(c.name)}</small><b>${esc(c.def.name)}</b></div>${badge(other)}<button type="button" data-close aria-label="Cerrar kit">Volver a los carros</button></div><button type="button" class="grid-selected-preview" data-preview-car aria-label="Ver carro en 3D">${images.has(c)?`<img src="${images.get(c)}" alt="Carro de ${esc(c.name)} con sus piezas y pintura">`:''}<span>Ver carro en 3D · girar y acercar</span></button><div class="grid-kit">${pieces.map(([kind,name,tune,icon],i)=>`<button type="button" data-vehicle="${['car','boat','air'][i]}"><small>${kind}${use.includes(['car','boat','air'][i])?' · en esta pista':''}</small><b>${esc(name)}</b>${badge(nivelOf(tune))}</button>`).join('')}</div><p class="grid-inspect-hint">Elige un vehículo para ver sus piezas. Tu kit actual: ${badge(own)}</p><div class="grid-copy">${c===player?'':`<button type="button" data-copy="kit">Guardar kit para el taller<small>Piezas que te faltan: ${taller?.quoteKit(c)??0} mangos</small></button>`}</div><p class="grid-save-help">${c===player?'Este es el kit con el que vas a correr.':'Guarda una referencia para equiparla o comprar las piezas en el taller. No cambia tu carro en esta carrera.'}</p><p class="grid-copy-note" role="status"></p>`;
+        inspect.querySelector('[data-preview-car]').onclick=()=>inspect.querySelector('[data-vehicle=car]').click();
         inspect.querySelector('[data-close]').onclick=()=>inspect.close();
         const copy=inspect.querySelector('[data-copy=kit]');if(copy)copy.onclick=()=>{const price=taller?.recommend(c)??0,short=Math.max(0,price-(taller?.balance??0));inspect.querySelector('.grid-copy-note').textContent=`Kit de ${c.name} marcado en tu taller.${short?` Te faltan ${short} mangos para las piezas.`:' Listo para equipar o comprar.'}`;};
         for(const tile of inspect.querySelectorAll('[data-vehicle]'))tile.onclick=async()=>{
@@ -80,10 +82,25 @@ export function createRaceScreens({sound,taller}={}) {
           vehiclePopup=openVehicleDialog({racer:c,kind:tile.dataset.vehicle,own:c===player,used:use.includes(tile.dataset.vehicle),taller,onColors:()=>{const row=grid.querySelector('li.is-me');row.style.setProperty('--copied',paintOf(c.cosmetics,c.def.color));row.dataset.color=paintOf(c.cosmetics,c.def.color);}});
         }
       };
-      for(const [i,detail] of [...grid.querySelectorAll('details')].entries()) detail.querySelector('summary').addEventListener('click',event=>{event.preventDefault();show(cars[i],true);});show(player);if(matchMedia('(min-width: 801px)').matches)inspect.show();
+      for(const [i,detail] of [...grid.querySelectorAll('details')].entries()) detail.querySelector('summary').addEventListener('click',event=>{event.preventDefault();show(cars[i],true);});show(player);
       grid.hidden = false;
+      if(previews) {
+        try {
+          const {gridPreviews}=await import('./grid-previews.js');
+          if(previewRun!==previewGeneration||grid.hidden)return;
+          await gridPreviews(cars,async(c,src)=>{
+            images.set(c,src);
+            const target=grid.querySelectorAll('.grid-car-preview')[cars.indexOf(c)];
+            const img=new Image();img.src=src;img.alt=`${c.def.name} de ${c.name}: pintura y piezas reales`;await img.decode();if(previewRun===previewGeneration&&!grid.hidden)target.replaceChildren(img);
+          },()=>previewRun===previewGeneration&&!grid.hidden);
+          if(previewRun===previewGeneration)grid.dataset.previewsReady='true';
+        } catch(error) {
+          console.error('Grid previews failed',error);
+          for(const label of grid.querySelectorAll('.grid-preview-status'))label.textContent='Ver carro en 3D';
+        }
+      }
     },
-    tick(state, count, cars=[], dt=0, order=[], clock=0) { if(state==='off')readyDone?.(); if(state==='go') for(const c of cars){const v=stat(c),rank=order.indexOf(c);if(!c.done&&v.rank!=null&&rank<v.rank)v.passes+=v.rank-rank;v.rank=rank;v.peak=Math.max(v.peak,Math.abs(c.vf||0)*3.6);if(c.drift)v.drift+=Math.abs(c.vf||0)*dt;if(c.lap>v.lap){const lap=clock-v.lapAt;if(lap>0)v.best=Math.min(v.best??Infinity,lap);v.lap=c.lap;v.lapAt=clock;}} if(state!=='count'&&state!=='off')closeInspection(); grid.hidden = state !== 'count'; const el = grid.querySelector('#grid-count'); if (el) el.textContent = Math.max(1, Math.ceil(count)-1); if (state !== 'end') { if(!cash.hidden){++cashGeneration;cashScene?.dispose();cashScene=null;}cash.hidden = true; banner.hidden = true; lastPlayer = null; } },
+    tick(state, count, cars=[], dt=0, order=[], clock=0) { if(state==='off'){previewGeneration++;readyDone?.();} if(state==='go') for(const c of cars){const v=stat(c),rank=order.indexOf(c);if(!c.done&&v.rank!=null&&rank<v.rank)v.passes+=v.rank-rank;v.rank=rank;v.peak=Math.max(v.peak,Math.abs(c.vf||0)*3.6);if(c.drift)v.drift+=Math.abs(c.vf||0)*dt;if(c.lap>v.lap){const lap=clock-v.lapAt;if(lap>0)v.best=Math.min(v.best??Infinity,lap);v.lap=c.lap;v.lapAt=clock;}} closeInspection(); grid.hidden = true; const el = grid.querySelector('#grid-count'); if (el) el.textContent = Math.max(1, Math.ceil(count)-1); if (state !== 'end') { if(!cash.hidden){++cashGeneration;cashScene?.dispose();cashScene=null;}cash.hidden = true; banner.hidden = true; lastPlayer = null; } },
     finish(data) {
       closeInspection();grid.hidden=true;
       receipt = data;

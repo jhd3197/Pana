@@ -982,15 +982,16 @@ async function startRace(playerIndex, wheelId = garage.wheel, roster = null) {
     race.ended = false;
     race.paid = false;
     race.earned = 0; race.rewardDetail = null; race.lapRecord = false;
+    await screensReady; if (generation !== loadGeneration) return;
+    $('loading').classList.add('hidden'); $('garage').classList.add('hidden');
+    await race.screens.prepare(race.cars, race.player, T, AUTO || (roster && net.state.startAt > 0)); if (generation !== loadGeneration) return;
+    race.screens.tick('off', 0); $('loading').classList.remove('hidden');
     if (!await step('Preparando los gráficos…', 0.81)) return;
     renderer.toneMapping = THREE.NoToneMapping;
     updateRace(0);
     const { prepareRace } = await import('./prepare-race.js');
     if (generation !== loadGeneration) return;
     if (!await prepareRace(renderer, race.scene, race.p2 ? [race.camera, race.camera2] : race.camera, step)) return;
-    await screensReady; if (generation !== loadGeneration) return;
-    $('loading').classList.add('hidden'); $('garage').classList.add('hidden');
-    await race.screens.prepare(race.cars, race.player, T, AUTO || (roster && net.state.startAt > 0)); if (generation !== loadGeneration) return;
     if (roster) {
       // Everyone counts down together once every pana has loaded.
       net.loaded();
@@ -1004,7 +1005,7 @@ async function startRace(playerIndex, wheelId = garage.wheel, roster = null) {
     } else if (!await step('¡Listo!', 1)) return;
     if (race.cup && !roster) markRacing(race.cup.session);
     race.loadingRaceId = 0;
-    race.state = 'count'; race.screens.grid(race.cars, race.player, T);
+    race.state = 'count';
     music.play(songFor(T.id, race.mode), { fallback: TRACK_STYLE[T.id] });
     $('count').textContent = '3';
     $('garage').classList.add('hidden');
@@ -1163,7 +1164,7 @@ addEventListener('keydown', (e) => {
     if (e.code === 'Comma') race.items.select(race.p2);
     if (e.code === 'Backspace') { e.preventDefault(); rescue(race.p2); }
   }
-  if (k === 'escape' && mode === 'loading') toGarage();
+  if (k === 'escape' && mode === 'loading' && !document.querySelector('dialog:modal')) toGarage();
   if (k === 'h' && !e.repeat) {
     if (mode === 'race' && race.player) honk(race.player);
     else if (mode === 'garage') garageHonk();

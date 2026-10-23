@@ -16,6 +16,8 @@ Profile v3 retains v2 receipt keys and purchases, including migrated old saves.
 
 `race-screens.js` presents the grid before `net.loaded()`: players can inspect
 kits and confirm readiness, or the preview advances after ten seconds.
+The review precedes graphics warmup; its timer pauses while a rival kit dialog
+is open, so inspecting or copying never gets cut off by race entry.
 Autoplay and reconnects to a started race skip this preview. The room still
 owns the actual countdown. Kit-copy actions save a wishlist for the next
 workshop visit; color copying buys the known paint and saves it for the next

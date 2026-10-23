@@ -143,16 +143,18 @@ current parts and paint. Copied rival builds mark matching cards in the taller.
 
 ## Starting grid
 
-After the race scene compiles and renders its first frame, hide both `#loading`
-and `#garage` before showing La Parrilla. Otherwise the old Copa/Taller bar,
-settings and car strip leak through its translucent backdrop. The actual 3D
-starting grid remains behind the roster. La Parrilla owns controller focus
-through `data-pad-menu`, with ¡Listo! initially selected.
+La Parrilla opens after the racers are assembled but before graphics preparation
+and the first race frame. Its opaque background keeps the track and previous
+menu out of the review screen. It owns controller focus through `data-pad-menu`,
+with ¡Listo! initially selected. Select a roster row to open its kit dialog;
+leaving it closed initially keeps controller focus on readiness. Vehicle
+inspection and kit copying happen here. Escape belongs to the active modal
+dialog instead of cancelling the pending race.
 
-The kit review timer is distinct from the race countdown. Choosing ¡Listo!
-keeps the grid visible with a waiting status while the multiplayer load barrier
-settles; only the synchronized race countdown replaces it. A loading error
-closes the grid and restores the loading screen's retry/back controls.
+After review, close all inspection dialogs and restore the loading cover while
+textures, shaders and the first frame prepare. Keep that cover through the
+multiplayer load barrier. Entering the track shows only the synchronized 3–2–1;
+never rebuild La Parrilla during the countdown. Loading errors restore retry/back.
 
 ## Retired UI and compatibility
 
@@ -184,7 +186,7 @@ The Gran Sabana hero and shared sala backgrounds come from the supplied second
 HTML prototype; other tracks keep their map postcard over a blurred copy.
 
 The Parrilla side card uses native dialogs for nested close/focus behavior.
-On phones the card opens from a roster row instead of covering the ready action.
+The card opens from a roster row instead of covering the ready action.
 Its vehicle tiles lazily load `vehicle-inspect.js`: a clone of the actual race
 car, or the same boat/plane builders used by transform gates, in a perspective
 Three.js scene. Borrowed car geometry belongs to the race and is never disposed
@@ -196,3 +198,32 @@ three vehicles. Neither action silently buys or unlocks equipment. Copy colors
 checks ownership/unlocks, saves the source's exact factory color when needed,
 and updates the player's row immediately. `copiedPaint` is a validated optional
 hex color; old wallets without it retain their existing paint behavior.
+
+## Bounded workshop choices
+
+`taller.js` lays out the active part category as a paged grid. Categories
+are actual buttons; only the selected category and page are visible. Resize
+recalculates page capacity without discarding purchases or the active category.
+All cards remain in the DOM for thumbnails; browser interactions navigate the
+visible page controls (`chooseCar` does this for body choices).
+
+The drawer has no skew or scrolling strip. Straight Nunito labels, large color
+samples in a single paged row, an explicit equipped label and a yellow border separate paint from
+selection state. Corneta contains only horn sounds; flame colors are under
+Pintura y estilo. The Carreritas sala override removes transformed seat/settings
+bounds that produced horizontal overflow, without changing other games' layouts.
+
+The car-body picker also uses a single row: a larger thumbnail, name, equipped
+label and nivel. Descriptions and delta chips are omitted from these cards;
+hover/focus still compares the actual tune in the main stats panel.
+
+## Visual race roster
+
+La Parrilla renders entrant previews from clones of the assembled race cars,
+including their driver, paint and parts. `grid-previews.js` uses one temporary
+WebGL renderer and disposes it after producing the images; it never disposes
+borrowed race geometry. Cancellation invalidates pending previews. The review
+timer starts after previews finish, and remains paused in kit inspection.
+The roster is a gallery with explicit inspect actions. Its dialog shows the
+selected car and links to the existing rotating 3D vehicle inspector. Saving
+a kit marks the workshop wishlist, not a purchase or a change to this race.

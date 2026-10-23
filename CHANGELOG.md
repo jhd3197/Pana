@@ -13,6 +13,20 @@ becomes the GitHub release's notes.
   para quien quedó atrás. Aguacero y Chancleta no encadenan castigos sobre
   el mismo pana; los bots tardan en reaccionar y repetir una caja no mejora sus premios.
 
+- **Mira los carros de tus panas antes de guardar sus kits.**
+  La Parrilla muestra cada carro con su pintura y piezas reales; abre su
+  ficha para verlo en 3D o guardar una referencia para el taller.
+
+- **El taller de Carreritas muestra sus opciones sin tiras de desplazamiento.**
+  Carros y colores en una sola fila de tarjetas, sin descripciones por carro;
+  muestras grandes, etiquetas legibles y páginas de piezas; las cornetas
+  solo muestran sonidos y la llama del turbo está en Pintura y estilo.
+  La sala mantiene los asientos y ajustes dentro de la pantalla.
+
+- **Revisa y copia los kits antes de entrar a la carrera.**
+  La Parrilla aparece antes de preparar los gráficos; al llegar a la pista,
+  solo queda la cuenta de 3, 2, 1, sin paneles tapando la salida.
+
 - **El recorrido de Pana Studio sigue el peralte de las pistas.**
   La cámara conserva su altura en la curva inclinada de Plaza y sobre la laguna
   de Margarita; los puntos copiados incluyen la altura real del recorrido.

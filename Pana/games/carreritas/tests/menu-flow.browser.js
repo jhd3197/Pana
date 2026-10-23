@@ -186,13 +186,14 @@ try {
   await guest.screenshot({ path: `${output}/guest-room-320.png` });
   await host.locator('#play').click();
   await host.locator('#parrilla.preparing').waitFor({timeout:120000});
-  assert.equal(await host.locator('#loading').isVisible(),false,'the actual 3D race replaces the loading backdrop');
+  assert.equal(await host.locator('#loading').isVisible(),false,'kit review is a separate pre-race screen');
+  assert.equal(await host.locator('#parrilla').getAttribute('data-previews-ready'),'true');
+  assert.equal(await host.locator('#parrilla .grid-car-preview img').count(),4,'every entrant has an actual car preview');
+  assert.ok(await host.locator('#parrilla .grid-car-preview img').evaluateAll(images=>images.every(i=>i.complete&&i.naturalWidth===480)));
   assert.equal(await host.locator('#garage').isVisible(),false,'garage navigation and car choices stay out of the starting grid');
   assert.equal(await host.locator('#parrilla #grid-count').count(),1,'one presentation countdown');
   assert.equal(await host.locator('#parrilla').getAttribute('data-pad-menu'),'','controller focus stays inside the starting grid');
-  if(await host.locator('.grid-ready').isVisible())await host.locator('.grid-ready').click();
-  if(await guest.locator('.grid-ready').isVisible())await guest.locator('.grid-ready').click();
-  await Promise.all([host, guest].map(p => p.waitForFunction(() => race.cars.length === 4 && ['count', 'go'].includes(race.state), null, { timeout: 120000 })));
+  assert.equal(await host.locator('#race').isVisible(),false,'review happens before entering the race');
   await host.locator('#parrilla details summary').nth(1).click();
   await host.locator('#parrilla [data-copy=kit]').click();
   assert.ok(await host.evaluate(()=>JSON.parse(localStorage.getItem('carreritas:wishlist')).entries.length>=6),'the inspected kit is marked for the next workshop');
@@ -205,10 +206,15 @@ try {
   assert.equal(await host.evaluate(()=>JSON.parse(localStorage.getItem('carreritas:wishlist')).scope),'boat');
   await host.keyboard.press('Escape');assert.ok(await host.locator('.grid-inspect[open]').isVisible(),'first Escape returns to the kit');
   await host.keyboard.press('Escape');assert.equal(await host.locator('.grid-inspect[open]').count(),0,'second Escape closes the kit');
+  if(await host.locator('.grid-ready').isVisible())await host.locator('.grid-ready').click();
+  if(await guest.locator('.grid-ready').isVisible())await guest.locator('.grid-ready').click();
+  await Promise.all([host, guest].map(p => p.waitForFunction(() => race.cars.length === 4 && ['count', 'go'].includes(race.state), null, { timeout: 120000 })));
   assert.equal(await guest.evaluate(() => race.player.def.name), 'El Machito');
   const guestId=await guest.evaluate(()=>getNet().id);
   assert.equal(await host.evaluate(id=>race.cars.find(c=>c.netId===id).cosmetics.boat,guestId),'rayo','guest kit is carried to the host race');
-  assert.equal(await guest.locator('#parrilla').isVisible(),true,'manual countdown displays the starting grid');
+  assert.equal(await guest.locator('#parrilla').isVisible(),false,'kit review never covers the starting countdown');
+  assert.equal(await host.locator('#parrilla').isVisible(),false);
+  assert.equal(await guest.locator('#count').textContent(),'3');
   assert.ok(await guest.locator('#parrilla .nivel-badge').count()>=4);
 
   await host.close(); await guest.close();
