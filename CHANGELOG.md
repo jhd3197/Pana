@@ -8,6 +8,10 @@ becomes the GitHub release's notes.
 
 ## Unreleased
 
+- **Selva y Bululú enmarcan mejor sus curvas con grupos de árboles.**
+  Las copas de la meseta alternan tamaños y los cocoteros dejan una apertura
+  hacia el mar, conservando el espacio de la pista y sus referencias.
+
 - **Los carros acompañan la inclinación lateral de la pista.**
   El apoyo de ambos lados orienta el carro sobre las curvas inclinadas;
   los saltos conservan su giro en el aire.

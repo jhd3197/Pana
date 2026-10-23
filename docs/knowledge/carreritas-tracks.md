@@ -47,6 +47,15 @@ height checks and escape from overlaps. Static geometry is batched per map;
 the source buffers are released. `authored-sightlines.userData.sites` records
 the actual accepted placements, not just candidates.
 
+The Selva plateau and Bululú palm sites specify six candidate triples of
+along-road distance, setback and scale. Selva keeps six accepted trees with
+overlapping crowns; Bululú accepts five palms in two uneven groups with a
+central opening. Crown clearance is strictly greater than five metres beyond
+the road edge: a setback of exactly five rejects candidates. Keep the existing
+clearance and footprint guards when composing groups, and inspect accepted
+placements rather than counting the source array. These profiles reuse the
+existing models and batches without changing the route or terrain.
+
 Páramo's existing 2.25 M overview triangle limit remains unchanged. Its new
 roadside pine variants retain the shared library's opaque crown tiers but use
 a simple trunk instead of hidden internal branch tubes. Frailejón variants

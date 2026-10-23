@@ -13,6 +13,8 @@ try {
     for(const id of ['plaza','puerto','sarisarinama','galipan']){
       toGarage();buildTrack(id);await startRace(0);
       const T=getActiveTrack(),p=race.player;
+      const solids=[];
+      T.group.traverseVisible(o=>{if(o.isMesh&&[].concat(o.material).every(m=>!m.transparent))solids.push(o);});
       // Test the same renderer helper used by the game, with isolated camera
       // state so split, mirror and narrow-view scenarios cannot contaminate it.
       const state={mode:'race',mirror:false,shake:1,slowMo:{punch:4}};
@@ -26,6 +28,10 @@ try {
         const car=new THREE.Vector3(p.x,p.y+(p.flyLift||0)+1.4,p.z).project(cam);
         const values=[...cam.position.toArray(),...cam.quaternion.toArray(),cam.fov];
         if(!values.every(Number.isFinite)||Math.abs(car.x)>.7||Math.abs(car.y)>.8||car.z<0||car.z>1)failures.push(`${id}:${u}:car framing`);
+        T.group.updateMatrixWorld(true);
+        const target=new THREE.Vector3(p.x,p.y+(p.flyLift||0)+1.4,p.z);
+        const ray=new THREE.Raycaster(cam.position,target.clone().sub(cam.position).normalize(),0,cam.position.distanceTo(target)-.2);
+        if(ray.intersectObjects(solids,false).length)failures.push(`${id}:${u}:camera corridor`);
         const normal=cam.position.clone(),q=cam.quaternion.clone();
         state.mirror=true;state.first=null;
         for(let i=0;i<90;i++)follow(cam,'first',p,false,1/60);

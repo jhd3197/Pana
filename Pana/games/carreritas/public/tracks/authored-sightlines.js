@@ -107,7 +107,12 @@ function authoredSightlines(T) {
     }
     const rock=(i,color,size,moss=true)=>()=>mossRock({seed:seed+i,size,color,moss});
     const tree=(i,type='mango')=>()=>type==='gold'?araguaney({seed:seed+i,detail:'low',scale:.85}):type==='pine'?roadsidePine(seed+i,11+i%3):type==='moriche'?moriche({seed:seed+i,h:9+i%3,detail:'low',fruit:false}):type==='palm'?palm({seed:seed+i,h:11+i%3,detail:'low'}):mangoTree({seed:seed+i,h:(T.id==='plaza'?4.5:8)+i%3,fruit:false,detail:'low'});
-    const grove=type=>{for(let i=0;i<6;i++)put(tree(i,type),15+i*12,7+(i%2)*5,1,i*.63,false);};
+    // An authored grove may vary spacing, setback and height without changing
+    // its species or tree count. Full crown/road and footprint checks still run.
+    const grove=type=>{
+      const places=site.grove||Array.from({length:6},(_,i)=>[15+i*12,7+(i%2)*5,1]);
+      places.forEach(([along,setback,scale],i)=>put(tree(i,type),along,setback,scale,i*.63,false));
+    };
     if(['mango','gold','jungle','pines','moriche','palms'].includes(site.kind)) {
       grove(({gold:'gold',pines:'pine',moriche:'moriche',palms:'palm'})[site.kind]||'mango');
       if(site.kind==='jungle')for(let i=0;i<4;i++)put(()=>hibiscus({seed:seed+i,detail:'low'}),24+i*13,7,1.8,0,false);
