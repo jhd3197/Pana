@@ -8,6 +8,8 @@ becomes the GitHub release's notes.
 
 ## Unreleased
 
+## 0.6.0 - 2026-10-23
+
 - **Las migraciones grandes reparten sus pruebas entre varios ejecutores.**
   CI conserva cada prueba aprobada y muestra los errores al ocurrir, sin
   esperar al final de una cola que puede superar el límite de tiempo.
