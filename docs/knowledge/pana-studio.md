@@ -129,7 +129,7 @@ Static previews render on demand, avoiding continuous GPU work on large maps.
 
 ## Circuit walkthroughs
 
-Each of the eight circuit previews includes **Recorrer pista**. It plays one
+Each circuit preview includes **Recorrer pista**. It plays one
 lap from the actual starting line, using the same `makeTrack` route, elevation
 and ramps as the race. Other maps and props do not show the tour controls.
 `build()` returns the existing track runtime as `route`; this is live preview
@@ -153,13 +153,23 @@ is applied during the tour and the Studio atmosphere is restored on exit.
 Thumbnail work defers during playback. No car physics, multiplayer or race state
 is involved.
 
+Tour height includes `def.crossfall(s, 0, route)`: banking can raise even the
+centreline above `heightAtS` (Plaza's return curve does this). Apply that surface
+height to anticipation, look-ahead and copied road coordinates. For clearance
+checks, pass the route elevation as the height hint to `groundAt` and `offsetOf`
+so stacked roads are measured against their own deck.
+Open-water sections use the higher of this road height and the water surface:
+Margarita's lagoon route is submerged, while the camera follows the boat surface.
+
 Run `node Pana/web/studio/tests/track-tour.browser.js <playwright-package>` against
 the running server. It checks every route, road clearance, start/finish seam,
 UI playback/pause/scrub/copy/repeat, orbit, keyboard, visibility handling, switching
 to ordinary props, mobile layout and no automatic thumbnail generation. Screenshots and route
 metrics go to ignored `art/studio/tours/`.
+Set `PANA_TOUR_TEST_TRACKS` to comma-separated circuit IDs for focused reruns;
+without it the suite checks the whole catalog. Tests force low graphics quality.
 
-The tour suite checks all eight routes and a 390×844 expanded viewer, including
+The tour suite checks every registered route and a 390×844 expanded viewer, including
 direct circuit pages without catalog generation. Camera stability assertions allow
 1e-8 metres for OrbitControls' spherical-coordinate roundoff.
 Optional `PANA_QA_PROFILE` stores an isolated browser profile

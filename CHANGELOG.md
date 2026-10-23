@@ -8,6 +8,10 @@ becomes the GitHub release's notes.
 
 ## Unreleased
 
+- **El recorrido de Pana Studio sigue el peralte de las pistas.**
+  La cámara conserva su altura en la curva inclinada de Plaza y sobre la laguna
+  de Margarita; los puntos copiados incluyen la altura real del recorrido.
+
 - **Carreritas suma Cosmos, Mérida, Arrecife, Volcán, Nubes y Dulce.**
   Corre entre planetas, montañas, corales, lava, islas flotantes y dulces;
   cruza la laguna de Mérida en lancha y comparte los seis circuitos con tus panas.

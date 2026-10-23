@@ -3,12 +3,21 @@ import { Vector3, Color, Fog } from 'three';
 import { createSky } from '/engine/worlds/sky.js';
 
 export const TOUR_SPEED = 24; // metres per second at 1×
+// Banking can raise the centre of the road above its authored elevation.
+// Sample by route distance so stacked decks retain their own surface.
+function surfaceHeight(route, s) {
+  const height = route.heightAtS(s) + (route.def.crossfall?.(s, 0, route) || 0);
+  const p = route.pointAt(s);
+  // A boat follows the water surface, not the submerged road line.
+  const water = route.openWater?.surfaceAt(p.x, p.y, route.heightAtS(s));
+  return water == null ? height : Math.max(height, water);
+}
 // Road surface height at `s`, ramps included (the copied review point).
 function roadHeight(route, s) {
-  let height = route.heightAtS(s);
+  let height = surfaceHeight(route, s);
   for (const ramp of route.ramps || []) {
     const along = ((s - ramp.s0) % route.TOTAL + route.TOTAL) % route.TOTAL;
-    if (along <= ramp.len) height = Math.max(height, route.heightAtS(s) + ramp.h * along / ramp.len);
+    if (along <= ramp.len) height = Math.max(height, surfaceHeight(route, s) + ramp.h * along / ramp.len);
   }
   return height;
 }
@@ -31,11 +40,11 @@ export function tourPose(route, distance) {
     return rampLift(ramp, along > total / 2 ? along - total : along);
   }));
   // Follow the road's own rises a little early, without camera shake.
-  const road = Math.max(...[-12,-8,-4,0,4,8,12].map(offset => route.heightAtS(s + offset) - Math.abs(offset) * DECAY));
-  const height = Math.max(road, route.heightAtS(s) + lift(s));
+  const road = Math.max(...[-12,-8,-4,0,4,8,12].map(offset => surfaceHeight(route, s + offset) - Math.abs(offset) * DECAY));
+  const height = Math.max(road, surfaceHeight(route, s) + lift(s));
   return {
     position: new Vector3(p.x, height + 3.2, p.y),
-    target: new Vector3(ahead.x, route.heightAtS(s + 14) + lift(s + 14) + 2.6, ahead.y),
+    target: new Vector3(ahead.x, surfaceHeight(route, s + 14) + lift(s + 14) + 2.6, ahead.y),
   };
 }
 
