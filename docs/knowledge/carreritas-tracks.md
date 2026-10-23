@@ -88,6 +88,17 @@ again without advancing the simulation. This preserves lighting and particles.
 
 ## Plaza: Casas Botes return bank
 
+The return road now has a physical 16-degree crossfall on lap fractions
+0.530–0.569. `returnBank` in `plaza-layout.js` holds the inner (positive
+offset) edge at its former height and lifts the outer edge about 5.16 m.
+Smoothstep ramps reach full banking at .548–.556 and finish before the next
+left turn. The existing runtime generates the road, ground queries and
+kerb heights from this same crossfall; the nearby town terrain blends from
+that surface. This changes the road silhouette independently of camera roll.
+`banking.browser.js` probes rendered road/support agreement across the lane,
+limits transition grades, checks the outer/inner edges and verifies car roll
+in both driving directions.
+
 `plaza-town.js` adds a compact planted bank around `(478, 196)` beside the
 return bend, visible around 53–55% of the lap. Its height is part of the town's
 `groundAt`, so visible terrain, prop foundations and terrain queries agree.

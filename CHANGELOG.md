@@ -8,6 +8,10 @@ becomes the GitHub release's notes.
 
 ## Unreleased
 
+- **La curva de regreso de Casas Botes tiene una inclinación real en Plaza Pana.**
+  El borde exterior sube de forma gradual y vuelve a nivel antes del siguiente
+  giro; la carretera, el terreno y el apoyo del carro comparten el peralte.
+
 - **La loma de Plaza Pana comparte su altura real con el terreno y las plantas.**
   Los apoyos consultan los mismos triángulos que se dibujan, también
   en el borde de la loma, para evitar diferencias al salir de la pista.

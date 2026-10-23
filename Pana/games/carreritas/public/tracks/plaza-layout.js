@@ -4,6 +4,14 @@ import { MathUtils } from 'three';
 export const AVENUES = [-300, -190, -85, 85, 195, 295, 405];
 export const STREETS = [-310, -200, -85, 60, 165, 275];
 export const STREET_HALF = 9.6;
+// Casas Botes right-hand bend: keep the inside edge at its old height and
+// raise the outside through a 16-degree bank. Smooth ramps finish before
+// the following left turn; terrain and kerbs use this same road surface.
+export function returnBank(s, off, T) {
+  const u=((s/T.TOTAL)%1+1)%1;
+  const weight=MathUtils.smoothstep(u,.530,.548)*(1-MathUtils.smoothstep(u,.556,.569));
+  return weight*Math.tan(16*Math.PI/180)*(T.HW-MathUtils.clamp(off,-T.HW-4,T.HW+4));
+}
 export const ROUTE = [[-190,60],[-85,60],[85,60],[195,60],[195,165],[195,275],[190,355],
   [200,405],[260,405],[340,405],[420,405],[500,405],[580,405],[640,405],[675,350],
   [650,280],[530,245],[450,215],[405,165],[295,165],[295,60],[295,-85],

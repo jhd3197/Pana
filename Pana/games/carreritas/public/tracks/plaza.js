@@ -1,13 +1,14 @@
 import { withSightlines } from './authored-sightlines.js';
 import { TRACK_DEFINITIONS } from '../track-definitions.js';
 // A street race through a complete town, from the historic plaza to the hill.
-import { ROUTE, townHeight } from './plaza-layout.js';
+import { ROUTE, townHeight, returnBank } from './plaza-layout.js';
 import { createTown, raceEdges } from './plaza-town.js';
 
 export default withSightlines({
   ...TRACK_DEFINITIONS.find(track => track.id === 'plaza'),
   points: ROUTE, rounded: true, hw: 9, lineU: 0.075,
   elevation: townHeight,
+  crossfall: returnBank,
   previewBounds: [[-355, 0, -355], [720, 80, 490]],
   sectors: [[0, 'Casco histórico'], [0.2, 'Camino del lago'], [0.35, 'Puente de los panas'],
     [0.51, 'Casas Botes'], [0.7, 'Subida del mirador'], [0.88, 'La alameda']],
