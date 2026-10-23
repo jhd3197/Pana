@@ -25,6 +25,10 @@ camera/vehicle states and a local `motion.html` player. Playback is 20 frames
 per simulated second, independent of capture speed. Use identical options for
 comparisons; enabling motion consumes random state before the separate lap.
 It does not establish realtime performance or replace a full-lap check.
+Use `--poses .50,.53,.56` for a focused sector and `--camera legacy` or
+`--camera anticipation` for the debug comparison modes. The manifest records
+these choices. Source diffs include staged and unstaged tracked changes;
+stage newly added source files before capturing an uncommitted prototype.
 
 ## Twenty authored roadside compositions
 

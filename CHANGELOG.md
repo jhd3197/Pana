@@ -8,6 +8,11 @@ becomes the GitHub release's notes.
 
 ## Unreleased
 
+- **La cámara anticipa las curvas y ofrece un modo suave.**
+  Dinámica acompaña el camino con una inclinación leve; Suave elimina la
+  inclinación, las sacudidas y el zoom del turbo desde Ajustes → Carreritas.
+  La preferencia de movimiento reducido del sistema también activa ese confort.
+
 - **La revisión de pistas guarda vistas de conducción y comprueba una vuelta automática.**
   La herramienta de auditoría registra geometría, cámara y costes de dibujo
   por circuito para comparar mejoras con las mismas condiciones; también guarda

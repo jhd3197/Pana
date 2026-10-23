@@ -1,5 +1,33 @@
 # Carreritas driving and drift assistance
 
+## Driving camera
+
+`chase-camera.js` loads on race entry and owns presentation only. Its pure
+`camera-guidance.js` samples 8–24 m ahead according to forward speed, blends
+toward the road with a bounded 0.38 rad heading offset, and eases the offset
+at an exponential rate of 5/s. Roll is separate from road banking and capped
+at 0.025 rad (about 1.4 degrees). Slope anticipation moves the look target by
+at most 1.2 m; boats and lifted aircraft retain their own vertical framing.
+
+Projection includes vehicle height and rejects discontinuous route jumps.
+Lap wrap is cyclic; teleports, deck changes, track changes and look-back reset
+guidance. Off-road, wrong-way, reversing, rescue and battle states receive no
+new route pull. Each split-screen camera owns independent state, and mirror
+mode reflects both position and roll. Camera state never feeds driving rules.
+
+The existing Ajustes workspace's Carreritas category stores `carreritas:camera`.
+Dinámica uses anticipation and restrained roll. Suave retains anticipation,
+removes roll/shake and holds a 60-degree FOV. The system reduced-motion setting
+also enables this comfort behavior. Storage failure keeps a session preference.
+The camera modules are lazy so the garage stays within its 160-module limit.
+
+Debug-only `?debug&camera=legacy` and `camera=anticipation` support comparisons
+against the previous chase behavior and anticipation without roll. All modes
+retain the same random draws, including zero-shake draws, to keep seeded race
+events comparable. Unit guidance cases and `camera.browser.js` cover route
+continuity, framing, mirror/split state, look-back and the actual comfort UI;
+`comfort.browser.js` covers driving controls and live split-screen integration.
+
 The default drift is assisted for every driver and uses the same local physics
 online, with keyboard, touch and controllers. Hold the drift button and steer
 into a bend; countersteering opens the line, and releasing pays the earned turbo.

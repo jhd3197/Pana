@@ -859,6 +859,9 @@ async function startRace(playerIndex, wheelId = garage.wheel, roster = null) {
   };
   try {
     if (!await step('Preparando la pista…', 0.05)) return;
+    const cameraModule = await import('./chase-camera.js');
+    if (generation !== loadGeneration) return;
+    followCam ||= cameraModule.createChaseCamera(race, () => T, rand, () => cameraStyle);
     clearRace();
     await loadTrack(TRACKS[trackIndex].id);
     if (generation !== loadGeneration) return;
@@ -1074,9 +1077,13 @@ function toGarage() {
 // Esc pauses the race (or opens the settings in the garage). Paused races
 // keep their clock, items and AI frozen until the menu closes.
 let paused = false;
+let cameraStyle = 'dinamica';
+try { if (localStorage.getItem('carreritas:camera') === 'suave') cameraStyle = 'suave'; } catch { /* session preference */ }
 // The pad drives the car through controls.js; the engine works the garage and menus with it.
 const menu = createGameMenu({ pad: { native: true, playing: () => mode === 'race' && race.state !== 'end', help: [['RT / A', 'Acelerar'], ['LT / B', 'Frenar'], ['Stick izq. / Cruceta', 'Girar'], ['RB', 'Derrapar'], ['LB', 'Objeto adelante'], ['X', 'Objeto atrás'], ['Cruceta ↑', 'Cambiar objeto'], ['View / L3', 'Mirar atrás'], ['Y', 'Rescate']] },
   title: 'Carreritas', heading: 'Pausa', sound, orientation: 'horizontal',
+  options: [{ id: 'camera', label: 'Cámara', choices: [['dinamica', 'Dinámica'], ['suave', 'Suave · sin inclinación']], get: () => cameraStyle,
+    set(value) { if (!['dinamica', 'suave'].includes(value)) return; cameraStyle = value; try { localStorage.setItem('carreritas:camera', value); } catch { /* session preference */ } } }],
   note: () => mode === 'race' ? (race.state === 'end' ? 'La carrera terminó.' : race.netRace ? 'Carrera online: no se detiene.' : 'La carrera está en pausa.') : 'Estás en el garaje.',
   controls: [['W / ↑', 'Acelerar'], ['S / ↓', 'Frenar'], ['A D / ← →', 'Girar'], ['Shift / K', 'Saltar y derrapar · truco en el aire'], ['Espacio / E', 'Lanzar objeto adelante'],
     ['X', 'Lanzar objeto atrás'], ['1 2', 'Elegir objeto'], ['Q', 'Cambiar objeto'], ['R', 'Pedir rescate al zamuro'], ['C', 'Mirar atrás'], ['H', 'Claxon'], ['M', 'Sonido'], ['Esc', 'Pausa']],
@@ -1690,29 +1697,8 @@ function presentRace(dt) {
   race.sun.target.position.set(p.x, p.y, p.z);
 }
 
-// Chase camera with a bit of shake; holding look-back (C) turns it around.
-const camWant = new THREE.Vector3();
-function followCam(cam, key, p, look, dt) {
-  const fx = Math.sin(p.h), fz = Math.cos(p.h), back = look ? -1 : 1;
-  const dist = p.boost > 0 ? 12.1 : 11, py = p.y + (p.flyLift || 0);   // a flight (transform-gates.js) lifts the drawing, not the car
-  // Layered courses can descend below sea level. Follow the driving deck;
-  // clamping this camera to world y=5 puts it above an underwater tunnel.
-  const want = camWant.set(p.x - fx * dist * back, T.def.layered ? py + 5 : Math.max(5, py + 5), p.z - fz * dist * back);
-  if (!race[key] || look !== race[key + 'Look']) race[key] = want.clone();
-  race[key + 'Look'] = look;
-  race[key].lerp(want, Math.min(1, dt * (p.boost > 0 ? 5.5 : 4)));
-  const sh = p.isPlayer ? race.shake * 0.6 : 0;
-  // Mirror mode flips the whole scene on x; the camera follows in flipped space.
-  const mx = race.mirror ? -1 : 1, at = race[key];
-  const lead = p.boost > 0 ? 5.2 : 4;
-  cam.position.set(mx * at.x + rand(-sh, sh), at.y + rand(-sh, sh), at.z + rand(-sh, sh));
-  cam.lookAt(mx * (p.x + fx * lead * back), py + 1.4, p.z + fz * lead * back);
-  const fov = (p.boost > 0 ? 74 : 60) - (p.isPlayer ? race.slowMo.punch : 0);   // turbo stretches the view; a purple release pulls it in
-  if (Math.abs(cam.fov - fov) > 0.05) {
-    cam.fov += (fov - cam.fov) * Math.min(1, dt * 5);
-    cam.updateProjectionMatrix();
-  }
-}
+// Loaded on race entry so camera prototypes do not increase garage first load.
+let followCam;
 
 // Wrong way, incoming items and lap splits for the player.
 function readRoad(p, dt) {
