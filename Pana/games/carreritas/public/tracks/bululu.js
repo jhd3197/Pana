@@ -1,7 +1,7 @@
 import { withSightlines } from './authored-sightlines.js';
 import { TRACK_DEFINITIONS } from '../track-definitions.js';
 import { libraryForest } from './library-forest.js';
-import { groundPaint } from './ground-paint.js';
+import { coastalPaint, coastalRockMaterial } from './bululu-surface.js';
 // Los Roques-inspired racing island. The Bululú board-game world stays independent.
 import { THREE,M,box,sign,smooth,hill,terrain,sea,put,foundation,scatter,instances,clear,finish,edges } from './world-kit.js';
 import { palm } from '/engine/models/vegetation/palm.js';
@@ -23,6 +23,7 @@ import { navigationBeacon } from '/engine/models/props/navigation-beacon.js';
 import { cargoHandcart } from '/engine/models/props/cargo-handcart.js';
 import { SCALE,ROUTE,roadHeight,coastalBank,coastalLandform,roadStyle } from './bululu-layout.js';
 import { coastalComposition } from './bululu-composition.js';
+import { boostZone } from '../boost-zone.js';
 function baseHeight(x,z){
   const rise=coastalLandform(x,z);
   x/=SCALE;z/=SCALE;
@@ -39,13 +40,13 @@ export default withSightlines({
   ...TRACK_DEFINITIONS.find(track => track.id === 'bululu'),
   points:ROUTE,rounded:true,hw:9,lineU:.025,elevation:roadHeight,
   crossfall:coastalBank,roadStyle,
-  cameraHeight:4.4,
+  cameraHeight:4.4,drivingEffects:true,
   waterAt:(x,z,t,T)=>tideWetness(T,x,z,t),
   previewBounds:[[-420,0,-400],[590,75,340]],
   sectors:[[0,'Pueblo del faro'],[.10,'Subida del faro'],[.23,'Playa Pana'],[.39,'Mirador del cayo'],[.65,'Lengua de arena'],[.84,'Puerto de colores']],
-  items:{boxes:[.1,.29,.48,.67,.87],boxLanes:[-6,-2,2,6],pads:[{u:.18,off:0},{u:.37,off:-4},{u:.59,off:4},{u:.79,off:0},{u:.95,off:-4}]},
+  items:{padColor:'green',zoneModel:boostZone,boxes:[.1,.29,.48,.67,.87],boxLanes:[-6,-2,2,6],pads:[{u:.18,off:0},{u:.37,off:0,w:14,l:18,featured:true},{u:.59,off:4},{u:.79,off:0},{u:.95,off:-4}]},
   walls:false,chevrons:true,
-  palette:{skySeed:31,cloudCover:0.28,horizon:0xbff4ee,skyTop:0x0f95f2,halo:1.1,hemiSky:0xd0e8ff,hemiGround:0xc4b18b,hemiInt:1.3,sun:0xffe2b8,sunInt:2.5,ground:0xfbe2a0,track:0xe4c58b,dune:0,fog:[430,1500]},
+  palette:{sunDirection:new THREE.Vector3(.93,.32,-.18).normalize(),skySeed:31,cloudCover:0.28,horizon:0xbff4ee,skyTop:0x0f95f2,halo:1.1,hemiSky:0xd0e8ff,hemiGround:0xc4b18b,hemiInt:1.3,sun:0xffe2b8,sunInt:2.5,ground:0xfbe2a0,track:0xe4c58b,dune:0,fog:[430,1500]},
   // Coconut palms on the far cays, mangroves at the waterline, shade trees inland.
   forest:{plant:libraryForest,bounds:[-640,-540,740,490],count:1100,spacing:10,edge:62,minY:.4,clump:.55,seed:353,
     accept:(x,z)=>tideZone(x,z)<.2,
@@ -58,7 +59,8 @@ export default withSightlines({
         const channel=zone*smooth(off,T.HW+2,T.HW+19);return h*(1-channel)-3*channel;
       },
       color:(x,z,y)=>y<.8?0xf2e2b4:y<5?0xfbe9c4:y<15?meadow(x,z,0x93c45e):meadow(x,z,0x6fb065),
-      paint:groundPaint({tone:.12,moss:.25,verge:.35,vergeColor:0xc5ad83,keep:(x,z,y)=>y<1})});
+      paint:coastalPaint()});
+    world.land.material.dispose();world.land.material=coastalRockMaterial();
     group.add(sea(world.groundAt,{opacity:.68}),world.land);
     const village=new THREE.Group(),occupied=[];
     const colors=[0x55a7a5,0xd88b75,0xe2bc60,0x82a9c3,0xd5d1aa];
@@ -89,7 +91,7 @@ export default withSightlines({
     };
     const lighthouse=coastLand(coastalLighthouse,-130,222,4);
     lighthouse?.scale.setScalar(1.45);
-    coastLand(lifeguardTower,285,110,3.5,Math.PI);
+    coastLand(lifeguardTower,280,145,3.5,Math.PI);
     coastLand(beachVolleyball,260,20,10);
     coastLand(beachShower,230,60,1.4);
     coastLand(rescueRingStand,250,110,1.1,Math.PI);

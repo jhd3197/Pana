@@ -8,6 +8,11 @@ becomes the GitHub release's notes.
 
 ## Unreleased
 
+- **Bululú estrena laderas rocosas, luz de sol y una zona de turbo más visible.**
+  Las cimas conservan su vegetación; las flechas verdes anuncian el impulso
+  hacia el mirador y las líneas de velocidad acompañan la aceleración.
+  El modo de cámara suave desactiva las líneas y el resplandor de pantalla.
+
 - **Bululú enlaza el pueblo, el faro y la playa con subidas y curvas peraltadas.**
   Dos miradores, un faro más visible, grupos de palmeras y nuevos tramos de
   piedra dan ritmo a la vuelta; la cámara más baja acompaña las lomas y el

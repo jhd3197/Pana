@@ -80,3 +80,32 @@ Pale stone marks village/lookouts; warm sand remains on beach/tidal sections.
 Continuous parapets replace the outside rope only at the two lookouts.
 `cameraHeight: 4.4` lowers Bululu's chase viewpoint; the default stays 5 m on
 other maps, with existing comfort, mirror and split-camera behaviour retained.
+
+## Materials and driving feedback
+
+Bululu's two inland hills use irregular mesa profiles: flatter grassy caps and
+steeper limestone faces. Road elevation and crossfall stay independent of this
+scenery profile. Paint exposed slopes before natureSurface classifies grass;
+otherwise grass can grow over rock. Broad world-space erosion bands provide
+scale without downloaded textures. Recheck foundations after terrain changes:
+the lookout lifeguard tower belongs on the flat beach, not a tall slope plinth.
+
+The Bululu palette supplies one sun direction for the sky, local lighting and
+screen glow. The glow is a restrained directional overlay, not full-scene bloom.
+Terrain and road rays screen it; these rays must use the scene's world matrices,
+including mirroring. An occlusion test must start above the terrain: rays from
+inside a single-sided terrain mesh do not test an actual driver's sightline.
+
+`drivingEffects` opts a map into the shared presentation helper. One transparent
+draw provides peripheral streaks and sun glow. Each camera owns its state and
+the render callback selects the state for that viewport. Speed and boost control
+streak strength; the centre stays clear. Comfort, reduced motion and look-back
+disable both overlays. Low quality reduces streak count without removing the
+road's navigation cues. This does not establish real-device performance.
+
+Bululu's five pads use green arrows. The featured pad at .37 is 14 by 18 metres,
+subdivided to follow the bank, with six luminous roadside chevrons. Its trigger
+uses the same dimensions and local ground height; the turbo duration remains
+1.2 seconds. Other maps retain their pad colours, dimensions and height checks.
+Dispose pad geometry and marker resources when leaving a race. Compare actual
+boost activation in motion as well as fixed driver views at the approach.

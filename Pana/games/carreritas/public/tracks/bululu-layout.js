@@ -12,7 +12,12 @@ export function coastalRise(x,z){
   return dome(x,z,-110,250,190,120,14)+dome(x,z,365,65,120,180,11);
 }
 export function coastalLandform(x,z){
-  return coastalRise(x,z)+dome(x,z,-43,177,75,65,24)+dome(x,z,320,50,85,100,16);
+  const mesa=(cx,cz,rx,rz,h)=>{
+    const radius=Math.hypot((x-cx)/rx,(z-cz)/rz);
+    const rim=.035*Math.sin(x*.12)+.025*Math.sin(z*.18);
+    return h*(1-smooth(radius+rim,.48,.91));
+  };
+  return coastalRise(x,z)+mesa(-43,177,75,65,24)+mesa(320,50,85,100,19);
 }
 export function roadHeight(x,z){
   const dry=1-tideZone(x,z);

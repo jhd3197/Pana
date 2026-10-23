@@ -1693,7 +1693,8 @@ function presentRace(dt) {
   if (race.p2) followCam(race.camera2, 'camPos2', race.p2, playerInput(2).look, dt);
   const fx = Math.sin(p.h), fz = Math.cos(p.h);
   if (race.rain.lines.visible) race.rain.update(p.x + fx * 10, p.y, p.z + fz * 10, race.clock, dt);
-  race.sun.position.set(p.x - 30, p.y + 40, p.z + 25);
+  const sunlight=T.def.drivingEffects?T.def.palette?.sunDirection:null;
+  race.sun.position.set(p.x+(sunlight?.x??-.6)*50,p.y+(sunlight?.y??.8)*50,p.z+(sunlight?.z??.5)*50);
   race.sun.target.position.set(p.x, p.y, p.z);
 }
 

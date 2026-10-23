@@ -99,13 +99,13 @@ function makePeel() {
   return g;
 }
 
-function padTexture() {
+function padTexture(green = false) {
   const c = document.createElement('canvas');
   c.width = 64; c.height = 128;
   const g = c.getContext('2d');
-  g.fillStyle = '#ff7b1c';
+  g.fillStyle = green ? '#147b58' : '#ff7b1c';
   g.fillRect(0, 0, 64, 128);
-  g.fillStyle = '#ffe14d';
+  g.fillStyle = green ? '#bcffd0' : '#ffe14d';
   for (const y of [8, 72]) {        // two chevrons pointing up (= forward)
     g.beginPath();
     g.moveTo(32, y); g.lineTo(60, y + 30); g.lineTo(60, y + 48); g.lineTo(32, y + 18);
@@ -135,21 +135,25 @@ export function createItems(hooks) {
     return { x: p.x - tz / l * off, z: p.y + tx / l * off, y: T.heightAtS(s), h: Math.atan2(tx, tz) };
   };
   const fragments = new FragmentBurst(scene, groundAt);
-  const padTex = padTexture();
+  const padTex = padTexture(itemDef.padColor === 'green');
   const padGeo = new THREE.PlaneGeometry(PAD_W, PAD_L);
   padGeo.rotateX(-Math.PI / 2);
   padGeo.rotateY(Math.PI);
-  const padMat = new THREE.MeshStandardMaterial({ map: padTex, emissive: 0xff7b1c, emissiveIntensity: 0.35, roughness: 0.6 });
+  const padMat = new THREE.MeshStandardMaterial({ map: padTex, emissive: itemDef.padColor === 'green' ? 0x49ff96 : 0xff7b1c, emissiveIntensity: 0.35, roughness: 0.6 });
   const pads = (itemDef.pads || []).map(def => {
     const a = along(def.u * T.TOTAL, def.off);
-    const geo = padGeo.clone();
+    a.w=def.w??PAD_W;a.l=def.l??PAD_L;
+    a.terrain=itemDef.padColor==='green';if(a.terrain)a.y=groundAt(a.x,a.z,a.y);
+    const geo = def.featured ? new THREE.PlaneGeometry(a.w,a.l,8,12).rotateX(-Math.PI/2).rotateY(Math.PI) : padGeo.clone();
     geo.rotateY(a.h); geo.translate(a.x, 0, a.z);
     const pos = geo.attributes.position;
     for (let i = 0; i < pos.count; i++) pos.setY(i, groundAt(pos.getX(i), pos.getZ(i), a.y) + (T.def.environment ? 0.16 : 0.06));
     geo.computeVertexNormals();
     const m = new THREE.Mesh(geo, padMat);
     m.receiveShadow = true;
-    scene.add(m);
+    m.name=def.featured?'featured-boost-strip':'boost-pad';
+    scene.add(m);a.m=m;
+    if(def.featured&&itemDef.zoneModel){a.zone=itemDef.zoneModel(T,a,a.w,a.l);scene.add(a.zone);}
     return a;
   });
   padGeo.dispose();
@@ -213,6 +217,7 @@ export function createItems(hooks) {
     const peelMaterials = new Set();
     peel.traverse(o => { if (o.material) peelMaterials.add(o.material); });
     peelMaterials.forEach(m => m.dispose());
+    for(const p of pads){p.m.removeFromParent();p.m.geometry.dispose();p.zone?.removeFromParent();p.zone?.userData.dispose();}
     padTex.dispose(); padMat.dispose();
   }
 
@@ -697,7 +702,7 @@ export function createItems(hooks) {
         const dx = c.x - p.x, dz = c.z - p.z;
         const fwd = dx * Math.sin(p.h) + dz * Math.cos(p.h);
         const side = dx * Math.cos(p.h) - dz * Math.sin(p.h);
-        if (Math.abs(c.y-p.y)<2 && Math.abs(fwd) < PAD_L / 2 && Math.abs(side) < PAD_W / 2 + 0.6) {
+        if (Math.abs(fwd) < p.l / 2 && Math.abs(side) < p.w / 2 + 0.6 && Math.abs(c.y-(p.terrain?groundAt(c.x,c.z,p.y):p.y))<2) {
           if (c.boost < 0.5) sound.turbo();
           c.boost = Math.max(c.boost, 1.2);
         }

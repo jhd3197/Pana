@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { updateDrivingEffects } from './driving-effects.js';
 import { cameraGuidance } from './camera-guidance.js';
 
 const reducedMotion=matchMedia('(prefers-reduced-motion: reduce)');
@@ -33,5 +34,6 @@ export function createChaseCamera(race,track,random,preference=()=> 'dinamica') 
     if(!legacy)cam.rotateZ(guide.roll*mx);
     const fov=comfort?60:(p.boost>0?74:60)-(p.isPlayer?race.slowMo.punch:0);
     if(Math.abs(cam.fov-fov)>.05){cam.fov+=(fov-cam.fov)*Math.min(1,dt*5);cam.updateProjectionMatrix();}
+    updateDrivingEffects(T,cam,p,race,comfort,look,dt);
   };
 }
