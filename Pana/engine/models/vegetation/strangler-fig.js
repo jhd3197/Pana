@@ -17,7 +17,7 @@ const MATAPALO = {
     envelope: ellipsoid(0, 9.4 * s, 0, 7 * s, 3.1 * s, 7 * s),
   }),
   bark: { bark: 0x3f372e, barkLight: 0x5a5044, ridges: 5 },
-  foliage: { kind: 'leaf', size: 1.1, tints: [0x2b5e2f, 0x346a33, 0x3f7638], blades: 26, bladeLen: 0.45, bladeWidth: 0.4, flat: 0.55, along: 2, alongFrom: 2 },
+  foliage: { openCrown: true, kind: 'leaf', size: 1.1, tints: [0x2b5e2f, 0x346a33, 0x3f7638], blades: 26, bladeLen: 0.45, bladeWidth: 0.4, flat: 0.55, along: 2, alongFrom: 2 },
   fruit: (parts, r, skeleton, s) => figs(parts, r, skeleton, s),
 };
 

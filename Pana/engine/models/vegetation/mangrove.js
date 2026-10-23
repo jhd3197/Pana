@@ -13,7 +13,7 @@ const MANGLE = {
     wobble: 0.3, taper: 0.4, envelope: ellipsoid(0, 4.4 * s, 0, 3.6 * s, 1.9 * s, 3.6 * s),
   }),
   bark: { bark: 0x5a4636, barkLight: 0x7d6650, ridges: 6 },
-  foliage: { kind: 'leaf', size: 0.95, tints: [0x2d6234, 0x37703a, 0x2a5a30], blades: 26, bladeLen: 0.42, bladeWidth: 0.36, flat: 0.55, along: 2, alongFrom: 2 },
+  foliage: { openCrown: true, kind: 'leaf', size: 0.95, tints: [0x2d6234, 0x37703a, 0x2a5a30], blades: 26, bladeLen: 0.42, bladeWidth: 0.36, flat: 0.55, along: 2, alongFrom: 2 },
   fruit: (parts, r, skeleton, s, lite) => {
     for (const tip of skeleton.tips) if (r() < (lite ? 0.2 : 0.45)) {
       const len = (0.3 + r() * 0.25) * s, pod = new THREE.CylinderGeometry(0.012 * s, 0.02 * s, len, 5);

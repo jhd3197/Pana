@@ -42,7 +42,7 @@ const CACAO = {
     wobble: 0.22, taper: 0.4, envelope: ellipsoid(0, 3.4 * s, 0, 3.3 * s, 1.8 * s, 3.3 * s, 2.5 * s),
   }),
   bark: { bark: 0x6e5a48, barkLight: 0x8e7a63, ridges: 5, mossBand: 0.8 },
-  foliage: { kind: 'leaf', size: 0.75, tints: [0x2f5f2a, 0x3b6d30, 0x2a5426], blades: 20, bladeLen: 0.62, bladeWidth: 0.24, bladeBend: 0.6, flat: 0.5, lift: -0.1, along: 2, alongFrom: 1 },
+  foliage: { openCrown: true, kind: 'leaf', size: 0.75, tints: [0x2f5f2a, 0x3b6d30, 0x2a5426], blades: 20, bladeLen: 0.62, bladeWidth: 0.24, bladeBend: 0.6, flat: 0.5, lift: -0.1, along: 2, alongFrom: 1 },
   fruit: (parts, r, skeleton, s, lite) => {
     const spots = [];
     for (const b of skeleton.branches) if (b.depth <= 1) for (let i = 1; i < b.pts.length - 1; i++) if (b.pts[i].y > 0.35) spots.push({ p: b.pts[i], rad: b.rads[i] });
@@ -57,7 +57,7 @@ const CACAO = {
     }
   },
   extra: (group, parts, r, skeleton, s, o) => {   // a flush of young reddish leaves
-    if (o.leaves) dressCrown(parts, r, skeleton, { kind: 'leaf', size: 0.5 * s, tints: [0x9a4632, 0xb2603e, 0x8a5a3a], blades: 12, bladeLen: 0.6, bladeWidth: 0.24, bladeBend: 0.8, flat: 0.5, lift: -0.2, keep: 0.25, lite: o.lite, low: o.low, offset: 0.4 });
+    if (o.leaves) dressCrown(parts, r, skeleton, { openCrown: true, kind: 'leaf', size: 0.5 * s, tints: [0x9a4632, 0xb2603e, 0x8a5a3a], blades: 12, bladeLen: 0.6, bladeWidth: 0.24, bladeBend: 0.8, flat: 0.5, lift: -0.2, keep: 0.25, lite: o.lite, low: o.low, far: o.far, offset: 0.4 });
   },
 };
 

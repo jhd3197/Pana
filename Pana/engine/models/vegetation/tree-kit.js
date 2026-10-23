@@ -197,9 +197,45 @@ export function blade(length, width, bend, segments = 3) {
   return geo;
 }
 
+// Small folded leaves fill an irregular branch-end spray without a solid core.
+// Two triangles per leaf keep the far tier cheaper than its old core + blades.
+// Species opt in: the silhouette, palette and leaf proportions stay in the recipe.
+function leafSpray(parts, r, at, size, o) {
+  const count = o.far ? 20 : o.low ? 48 : o.lite ? Math.min(60, (o.blades ?? 14) * 2) : 100;
+  const pos = [], col = [], tint = new THREE.Color(), shade = new THREE.Color();
+  const phase = r() * TAU, flat = o.flat ?? 0.62;
+  for (let i = 0; i < count; i++) {
+    const y = 1 - 2 * (i + 0.5) / count, ring = Math.sqrt(1 - y * y);
+    const a = i * 2.39996 + phase, reach = 0.25 + r() * 0.48;
+    const center = at.clone().add(new THREE.Vector3(Math.cos(a) * ring, y * flat, Math.sin(a) * ring).multiplyScalar(size * reach));
+    const az = a + (r() - 0.5) * 1.5;
+    const along = new THREE.Vector3(Math.cos(az), (o.lift ?? 0.15) - 0.2 + (r() - 0.5) * 0.9, Math.sin(az)).normalize();
+    const across = new THREE.Vector3(-Math.sin(az), (r() - 0.5) * 0.8, Math.cos(az)).normalize();
+    const normal = new THREE.Vector3().crossVectors(across, along).normalize();
+    const length = size * (o.bladeLen ?? 0.6) * (0.55 + r() * 0.4) * (o.far ? 1.45 : 1);
+    const width = length * (o.bladeWidth ?? 0.24) * (1.1 + r() * 0.3);
+    const fold = width * (0.2 + r() * 0.3);
+    const vertices = [center.clone().addScaledVector(along, -length * 0.5),
+      center.clone().addScaledVector(across, width).addScaledVector(normal, -fold),
+      center.clone().addScaledVector(along, length * 0.5),
+      center.clone().addScaledVector(across, -width).addScaledVector(normal, -fold)];
+    tint.set(o.tints[Math.floor(r() * o.tints.length)]).multiplyScalar((0.55 + r() * 0.22 + Math.max(0, y) * 0.2) * (0.75 + (o.ao ?? 1) * 0.25));
+    shade.copy(tint).multiplyScalar(0.72);
+    for (const k of [0, 1, 2, 0, 2, 3]) {
+      const v = vertices[k], c = k === 3 ? shade : tint;
+      pos.push(v.x, v.y, v.z); col.push(c.r, c.g, c.b);
+    }
+  }
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+  geo.setAttribute('color', new THREE.Float32BufferAttribute(col, 3));
+  geo.computeVertexNormals(); parts.leaves.push(geo);
+}
+
 // A leaf clump: a lumpy core with blades sprouting out on a Fibonacci sphere.
 // Normals point outward from the clump, so it shades like one soft cushion.
 function leafClump(parts, r, at, size, o) {
+  if (o.openCrown) { leafSpray(parts, r, at, size, o); return; }
   const tint = new THREE.Color(o.tints[(r() * o.tints.length) | 0]).offsetHSL((r() - 0.5) * 0.03, 0, (r() - 0.5) * 0.06);
   const shade = tint.clone().multiplyScalar(o.shadeMul ?? 0.6), ao = o.ao ?? 1;
   if (o.core !== false) {
@@ -368,7 +404,13 @@ export function figs(parts, r, skeleton, s, { chance = 0.35, color = 0xd0592a } 
 export function branchPoints(skeleton, r, count, depth = 1) {
   const out = [];
   for (const b of skeleton.branches) if (b.depth === depth) for (let i = 2; i < b.pts.length - 1; i++) out.push({ p: b.pts[i], rad: b.rads[i], branch: b });
-  return out.sort(() => r() - 0.5).slice(0, count);
+  // A random sort comparator is inconsistent: engine sort optimizations can
+  // consume different draws and move vines between two builds of the same seed.
+  for (let i = out.length - 1; i > 0; i--) {
+    const j = Math.floor(r() * (i + 1));
+    [out[i], out[j]] = [out[j], out[i]];
+  }
+  return out.slice(0, count);
 }
 
 // ---- palms ----

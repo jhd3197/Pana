@@ -15,7 +15,7 @@ const GIGANTE = {
     trunkShape: buttress({ height: 0.15, count: 5, amp: 4.2, sharp: 12 }),
   }),
   bark: { bark: 0x9a9480, barkLight: 0xc0baa3, barkDark: 0.72, ridges: 4, mossBand: 2.5 },
-  foliage: { kind: 'leaf', size: 1.4, tints: [0x356f33, 0x427d39, 0x4f8a3e], blades: 24, bladeLen: 0.5, bladeWidth: 0.32, flat: 0.5, along: 2, alongFrom: 2, keep: 0.85 },
+  foliage: { openCrown: true, kind: 'leaf', size: 1.4, tints: [0x356f33, 0x427d39, 0x4f8a3e], blades: 24, bladeLen: 0.5, bladeWidth: 0.32, flat: 0.5, along: 2, alongFrom: 2, keep: 0.85 },
   extra: (group, parts, r, skeleton, s, o) => {
     const trunk = skeleton.branches[0];
     for (let i = 0; i < (o.lite ? 2 : 3); i++) spiralVine(group, r, trunk, { from: 0.06, to: 0.78 + r() * 0.15, turns: 1.2 + r() * 1.6, radius: (0.035 + r() * 0.02) * s, pad: 1 });

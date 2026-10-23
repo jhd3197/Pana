@@ -12,7 +12,7 @@ const MANGO = {
     trunkShape: (t, a) => 1 + Math.pow(1 - t, 7) * (0.45 + 0.8 * Math.max(0, Math.cos(a * 5)) ** 2),
   }),
   bark: { bark: 0x6b4f37, barkLight: 0x8a6c4f, ridges: 9 },
-  foliage: { kind: 'leaf', size: 1.05, tints: [0x2f6b2c, 0x3c7d33, 0x4c8c38], blades: 26, bladeLen: 0.6, bladeWidth: 0.22, flat: 0.62, along: 2, alongFrom: 2 },
+  foliage: { openCrown: true, kind: 'leaf', size: 1.05, tints: [0x2f6b2c, 0x3c7d33, 0x4c8c38], blades: 26, bladeLen: 0.6, bladeWidth: 0.22, flat: 0.62, along: 2, alongFrom: 2 },
   fruit: (parts, r, skeleton, s, lite) => hangingFruit(parts, r, skeleton, { count: lite ? 8 : 18, size: 0.11 * s, colors: [0x7aa63a, 0xf2b52c, 0xe0472b] }),
 };
 

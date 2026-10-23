@@ -8,6 +8,11 @@ becomes the GitHub release's notes.
 
 ## Unreleased
 
+- **Los mangos, bucares y árboles de la selva tienen follaje más natural.**
+  Nueve especies cambian las copas macizas por hojas y racimos abiertos,
+  con menos geometría en los mapas y sin texturas ni dibujos adicionales.
+  Los pinos y los árboles simples para el fondo conservan su aspecto.
+
 ## 0.6.0 - 2026-10-23
 
 - **Las migraciones grandes reparten sus pruebas entre varios ejecutores.**

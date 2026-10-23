@@ -33,7 +33,7 @@ try {
       group.traverse(o => o.geometry?.dispose());
       return { stats, hash };
     }
-    for (const bloom of ['gold', 'pink']) for (const detail of ['low', 'game']) for (let seed = 1; seed <= 24; seed++) {
+    for (const bloom of ['gold', 'pink', 'coral']) for (const detail of ['low', 'game']) for (let seed = 1; seed <= 24; seed++) {
       const options = { bloom, detail, seed }, a = measure(options), b = measure(options);
       check(a.hash === b.hash, 'Same seed changed the model');
       hashes.add(a.hash);
@@ -47,7 +47,7 @@ try {
     }
     return { maximum, unique: hashes.size };
   });
-  assert.equal(result.unique, 96);
+  assert.equal(result.unique, 144);
   assert.deepEqual(errors, []);
   console.log('PASS flowering trees: seeded geometry, budgets, tags, wind, tiers and leaf/flower toggles', result);
 } finally { await browser.close(); }

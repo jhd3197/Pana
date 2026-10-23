@@ -14,7 +14,7 @@ const SAMAN = {
     trunkShape: (t, a) => 1 + Math.pow(1 - t, 6) * (0.5 + 0.9 * Math.max(0, Math.cos(a * 4 + 1)) ** 3),
   }),
   bark: { bark: 0x5e4a38, barkLight: 0x86735e, ridges: 11, mossBand: 1.2 },
-  foliage: { kind: 'leaf', size: 1.15, tints: [0x3f7f34, 0x4f9139, 0x5d9c3f], blades: 28, bladeLen: 0.42, bladeWidth: 0.2, flat: 0.42, lift: 0.3, along: 2, alongFrom: 2 },
+  foliage: { openCrown: true, kind: 'leaf', size: 1.15, tints: [0x3f7f34, 0x4f9139, 0x5d9c3f], blades: 28, bladeLen: 0.42, bladeWidth: 0.2, flat: 0.42, lift: 0.3, along: 2, alongFrom: 2 },
   extra: (group, parts, r, skeleton, s, o) => {
     if (!o.leaves || !o.flowers) return;
     for (const tip of skeleton.tips) if (r() < 0.6) {

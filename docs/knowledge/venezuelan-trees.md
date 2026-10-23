@@ -31,18 +31,17 @@ The prototype had Completo and Ligero. Maps need two cheaper tiers, so
 
 | Caller passes | Tier | Use | Mango / ceiba triangles |
 |---|---|---|---|
-| `'full'` | full | Studio close-ups | 79 k / 42 k |
-| `'lite'` | lite | Hero trees near the camera | 26 k / 16 k |
-| nothing, `'game'` | low | Every map by default | 8.7 k / 7.9 k |
-| `'low'`, `'distant'` | far | Roadside rows, distant forests | 1.9 k / 1.8 k |
+| `'full'` | full | Studio close-ups | 45 k / 32 k |
+| `'lite'` | lite | Hero trees near the camera | 20 k / 12 k |
+| nothing, `'game'` | low | Every map by default | 7.0 k / 6.0 k |
+| `'low'`, `'distant'` | far | Roadside rows, distant forests | 1.2 k / 1.3 k |
 
-The low tier skips the clumps along the limbs but makes the tip clumps 1.3×
-bigger with a smooth (detail 1) icosahedron core, so the crown stays a soft
-cushion. Faceted detail-0 cores read as boulders; only far trees use them.
-Low also drops twig tubes under 2 cm and uses 3–6 sides per limb: bark was
-over half of a low mango before that. With these tiers every Carreritas map's
-whole-scene triangle count is at or below its pre-swap value (Chichi 4.73 M,
-Plaza 4.54 M, Llanos 3.01 M, Estadio 1.24 M).
+Counts are approximate for seed 7 at each factory's default scale. The map
+tiers skip foliage sites along the limbs and enlarge the terminal sprays;
+far leaves are 1.45× longer to retain coverage with fewer leaves. Low also
+drops twig tubes under 2 cm and uses fewer sides per limb. Avoid raising the
+tier merely to improve a silhouette: the open foliage recipes work at every
+tier and keep map geometry below the former solid-core versions.
 
 Tiers draw from the same seed but grow a different skeleton (fewer segments,
 one level less), so a tree's crown width can change between tiers: the far
@@ -51,16 +50,39 @@ map actually builds.
 
 ## Construction
 
-Araguaney and apamate use a species-owned `dressCrown` builder: folded two-triangle
+Araguaney, apamate and bucare use a species-owned `dressCrown` builder: folded two-triangle
 sprays distributed around and partway along the terminal branches, instead of
 solid ellipsoid cores. Far/game/lite/full use 45/80/100/160 sprays per tip.
 The far variants retain 24 tips and fit under 3,100 triangles per tree; the game
 variants fit under 6,000. They remain two opaque draws (bark and foliage), with
 no textures or per-frame buffer work. Flower colors, occasional green sprays
 and the all-green option share the foliage draw and its nature tag. Wind and
-Plaza bloom tint therefore use the same material path. Pine, bucare and the
-default crown builder are unchanged. `flowering-trees.browser.js` checks seed
+Plaza bloom tint therefore use the same material path. `flowering-trees.browser.js` checks seed
 repeatability, finite geometry, tiers, toggles, grounding and these budgets.
+
+Mango, samán, ceiba, mangle, jungle giant, emergent tree, strangler fig and cacao
+opt into `foliage.openCrown`. Their default crown placement now uses folded
+two-triangle leaves instead of an ellipsoid core. Each recipe retains its own
+leaf length, width, vertical spread, tint and branch structure. Cacao's reddish
+young leaves also opt in, including its far tier. Far/game use 20/48 leaves
+per site; lite uses twice the recipe's blade count (up to 60), full uses 100.
+Lite/full have additional foliage sites along limbs, so per-site counts alone
+do not describe the total detail. All leaves retain the shared opaque wind
+material and foliage tags; no textures or frame-time geometry updates are added.
+`broadleaf-trees.browser.js` covers the nine changed species, all tiers, seed
+repeatability with floating-point tolerance, leaf toggles and draw/triangle caps.
+`branchPoints` uses a seeded Fisher–Yates shuffle: the former random sort
+comparator could move emergent-tree vines between consecutive builds of seed
+19 at far detail, including on the unchanged baseline. Keep randomness out of
+sort comparators when selecting attachment sites.
+
+Same-seed gameplay comparisons reduced all nine species' geometry. Whole-map
+counts fell from 4.37 M to 4.26 M in Plaza, 3.11 M to 3.03 M in Llanos,
+4.78 M to 4.11 M in Chichi and 5.31 M to 5.08 M in Selva, without adding
+mesh batches. Both pines, all palms, yagrumo, tree fern, the dead tree,
+araguaney/apamate and all five separate broadleaf/gateway variants retained
+their geometry hashes. The solid third-row models remain available for distant
+scenery; do not replace those or the pines as part of an open-crown adjustment.
 
 - One species is data: `skeleton(scale)` for `growSkeleton` (children per
   level, golden-angle spiral, crown envelope that stops limbs), `bark`,
@@ -81,6 +103,12 @@ repeatability, finite geometry, tiers, toggles, grounding and these budgets.
 
 ## Notes for agents
 
+- Review species at the actual map tier, not only Studio's full tier. The old
+  solid-core builder reduced blades to 10% at far detail, exposing the core
+  as a visible blob; increasing detail smoothed the blob but did not remove it.
+- The Casas Botes approach in Plaza can be reproduced near lap fraction
+  `0.455`. The roadside araguaney turns green at bloom time 90 seconds; this
+  is the same flowering crown with a shader tint, not a separate green model.
 - Plant trees by factory name; never build a one-off tree in a track file.
 - Pass `detail: 'low'` for long roadside rows and `'distant'` for forests far
   from the road. Leave it out for normal scenery.
