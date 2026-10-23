@@ -155,8 +155,11 @@ one suite per eight CPU threads overloads software WebGL and makes suites time
 out. Refresh the timings with `--record`
 after adding or speeding up suites. CI runs `check`, `test` and the all-games
 smoke everywhere, plus the `--changed` suites on every push to `dev`: the suites a
-change touches within a ~20 min budget (`Pana/scripts/changed-suites.js`; docs,
-images and unit tests need none). PRs into `main` run only `check`, `test` and the
+change touches within a ~20 min optional-suite budget (`Pana/scripts/changed-suites.js`; docs,
+images and unit tests need none). Mandatory suites can exceed that budget; CI
+spreads changed suites across eight serial runners. Actions → Tests accepts
+`changed_base` to rerun a migration from its original base without selecting the
+full nightly set. PRs into `main` run only `check`, `test` and the
 smoke, since each commit already passed on `dev`. Every suite runs nightly on `dev`
 in four `--shard k/4` jobs, or by hand from Actions → Tests; it is never a merge
 gate. Every merge to `main` releases (`.github/workflows/release.yml`), then the

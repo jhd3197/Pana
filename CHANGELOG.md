@@ -8,6 +8,10 @@ becomes the GitHub release's notes.
 
 ## Unreleased
 
+- **Las migraciones grandes reparten sus pruebas entre varios ejecutores.**
+  CI conserva cada prueba aprobada y muestra los errores al ocurrir, sin
+  esperar al final de una cola que puede superar el límite de tiempo.
+
 - **En Trifulca el público sigue la pelea y celebra contigo.**
   Los panas del ring y los vecinos voltean hacia los golpes, se echan pa'
   trás con los trompones y saltan al final; cada quien se mece a su propio

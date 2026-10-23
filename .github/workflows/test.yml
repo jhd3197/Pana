@@ -7,6 +7,12 @@ on:
     branches: [dev, main]
   workflow_call:
   workflow_dispatch:
+    inputs:
+      changed_base:
+        description: 'Run changed browser suites from this Git ref (empty runs the full nightly set)'
+        required: false
+        default: ''
+        type: string
   # The full browser run, every night on dev (see browser-full).
   schedule:
     - cron: '0 7 * * *'
@@ -66,12 +72,17 @@ jobs:
           key: browser-passes-${{ github.job }}-${{ github.run_id }}-${{ github.run_attempt }}
 
   # The suites for what this push or PR into dev touched, within a ~20 min
-  # budget (Pana/scripts/changed-suites.js); two at a time on the 4-core runner.
+  # budget (Pana/scripts/changed-suites.js). Mandatory suites can exceed that
+  # budget on engine migrations, so distribute them across eight serial runners.
   # PRs into main skip it: every commit already ran it on its way into dev.
   browser-changed:
-    if: (github.event_name == 'push' && github.ref != 'refs/heads/main') || (github.event_name == 'pull_request' && github.base_ref == 'dev')
+    if: (github.event_name == 'push' && github.ref != 'refs/heads/main') || (github.event_name == 'pull_request' && github.base_ref == 'dev') || (github.event_name == 'workflow_dispatch' && inputs.changed_base != '')
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3, 4, 5, 6, 7, 8]
     steps:
       - uses: actions/checkout@v4
         with:
@@ -90,23 +101,27 @@ jobs:
         uses: actions/cache/restore@v4
         with:
           path: Pana/tests/.browser-passes.json
-          key: browser-passes-${{ github.job }}-${{ github.run_id }}
-          restore-keys: browser-passes-
+          key: browser-passes-${{ github.job }}-${{ matrix.shard }}-${{ github.run_id }}
+          restore-keys: |
+            browser-passes-${{ github.job }}-${{ matrix.shard }}-
+            browser-passes-
       - name: Suites for what changed
-        run: node Pana/scripts/test-browser.js --jobs 2 --changed=${{ github.event_name == 'pull_request' && format('origin/{0}', github.base_ref) || github.event.before }}
+        env:
+          CHANGED_BASE: ${{ inputs.changed_base || (github.event_name == 'pull_request' && format('origin/{0}', github.base_ref) || github.event.before) }}
+        run: node Pana/scripts/test-browser.js --jobs 1 --shard ${{ matrix.shard }}/8 --changed="$CHANGED_BASE"
       - name: Remember what passed
         if: always() && hashFiles('Pana/tests/.browser-passes.json') != ''
         uses: actions/cache/save@v4
         with:
           path: Pana/tests/.browser-passes.json
-          key: browser-passes-${{ github.job }}-${{ github.run_id }}-${{ github.run_attempt }}
+          key: browser-passes-${{ github.job }}-${{ matrix.shard }}-${{ github.run_id }}-${{ github.run_attempt }}
 
   # Every suite, split across four runners by Pana/tests/browser-timings.json
   # (refresh it with `npm run test:browser -- --record`). Nightly on dev and by
   # hand (Actions → Tests → Run workflow); never a merge gate, since a full run
   # takes most of an hour on hosted runners.
   browser-full:
-    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    if: github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.changed_base == '')
     continue-on-error: true
     runs-on: ubuntu-latest
     timeout-minutes: 60

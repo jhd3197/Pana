@@ -218,8 +218,8 @@ await Promise.all(Array.from({ length: Math.min(jobs, queue.length) }, async () 
   for (let suite; (suite = queue.shift());) {
     const result = await run(suite);
     results.set(suite.label, result);
-    if (result.ok || !retries) report(result);
-    else console.log(`retry ${suite.label} (failed after ${result.seconds.toFixed(1)}s, rerunning at the end)`);
+    report(result, !result.ok && retries ? '  · queued for retry' : '');
+    if (result.ok) savePasses();
   }
 }));
 
