@@ -1,5 +1,17 @@
 [
   {
+    "suite": "Pana/engine/tests/coastal.browser.js",
+    "match": "track-bululu missing lifeguard-tower",
+    "since": "2026-10-23",
+    "note": "The identical missing coastal placement assertion fails on pre-migration ba63e80 with --baseline."
+  },
+  {
+    "suite": "Pana/engine/tests/model-architecture.browser.js",
+    "match": "Moriche invalidated unrelated track-paramo",
+    "since": "2026-10-23",
+    "note": "The identical Studio fingerprint isolation assertion fails on pre-migration ba63e80 with --baseline."
+  },
+  {
     "suite": "Pana/games/carreritas/tests/cup-lifetime.browser.js",
     "match": "memory.textures<=last[1].memory.textures+2",
     "since": "2026-10-21",
