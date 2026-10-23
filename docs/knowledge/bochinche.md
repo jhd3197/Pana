@@ -55,6 +55,24 @@ camera each frame. Touch play uses the shared landscape guard.
 
 ## Combat presentation
 
+`/g/bochinche/lightning.html` is a local-only lightning practice lab, linked
+from the lobby. It uses the existing arena and saved avatar, a fresh two-fighter
+combat instance per cast, and `resolveAttackHit` for a fixed 12% strike. No room
+connects and normal attacks are unchanged. Charge poses are snapshot-only;
+they never create melee hitboxes. The baseline keeps damage/launch identical
+while switching off presentation and combat hit-stop. Settings latch at cast.
+The hit-stop slider specifies attacker frames (the engine adds one defender
+frame); turning it off explicitly clears both. Slow motion scales the 60 Hz
+accumulator. `scene.frame` accepts an optional before-draw camera hook for the
+lab's decaying shake; the camera is reframed before every hook, avoiding drift.
+Effects use bounded geometry and reduced motion disables shake and softens flash.
+Lightning uses tapered soft ribbons with a white core and blue corona, plus
+a procedural radial light texture. Midpoint subdivision keeps the main path
+coherent; branches narrow to a tip. Independent random offsets and solid
+cylinders made the earlier version look like purple scribbles. The shader
+bypasses tone mapping so the white core remains bright on the daytime stage.
+The lab does not implement chain damage or random critical hits.
+
 `arena.js` builds the collision-aligned island and reuses the shared mango and
 palm factories at game detail. Thin floor trim does not cast shadows: having
 both a grass cap and a path cast into nearly coplanar receivers created diagonal

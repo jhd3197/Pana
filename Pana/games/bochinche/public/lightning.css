@@ -1,0 +1,17 @@
+body{--pk-game:#ff8a3d;margin:0;background:var(--pk-bg,#faf5eb);color:var(--pk-ink,#26251f);font-family:var(--pk-font,system-ui)}
+header{height:64px;display:flex;align-items:center;justify-content:space-between;padding:0 20px;border-bottom:1px solid #d8d3c8}
+main{display:grid;grid-template-columns:minmax(0,1fr) 320px;min-height:calc(100dvh - 65px)}
+.arena{position:relative;min-width:0;overflow:hidden;min-height:420px;background:#c8e3df}
+#world{display:block;width:100%!important;height:100%!important;position:absolute;inset:0}
+.caption{position:absolute;top:24px;left:28px;pointer-events:none}.caption h1{font-size:clamp(24px,3vw,40px);margin:0;line-height:1.15}.caption p{margin:8px 0;font-size:15px}
+.readout{position:absolute;bottom:28px;left:28px;right:28px;display:flex;align-items:center;justify-content:space-between;font-size:18px}.readout b{font-size:42px;font-variant-numeric:tabular-nums}
+aside{padding:24px 20px;background:#faf5eb;border-left:1px solid #d8d3c8;display:flex;flex-direction:column;gap:16px}
+.intro{font-size:13px;margin:0;color:#656052}.actions{display:flex;gap:8px;flex-wrap:wrap}.actions .pk-btn{flex:1;font-size:13px;padding-inline:10px}
+fieldset{border:0;border-top:1px solid #d8d3c8;margin:4px 0 0;padding:16px 0 0}legend{font-weight:700;font-size:15px;padding:0 8px 0 0}
+fieldset label,.slow{display:flex;align-items:center;gap:9px;min-height:38px;font-size:14px;cursor:pointer}input[type=checkbox]{width:18px;height:18px;accent-color:#6744c4;flex-shrink:0}
+.slider{display:grid;grid-template-columns:1fr auto;gap:10px;font-size:13px}.slider input{grid-column:1/-1;width:100%;accent-color:#6744c4;min-height:24px}.slider output{font-variant-numeric:tabular-nums;color:#655b72}
+.hint,#motion-note{font-size:13px;line-height:1.5;margin:0;color:#655f52}.hint{margin-top:auto}#motion-note{color:#5d408e}
+.pk-btn--ghost{color:#5d408e}#cast{font-size:23px}.readout{background:#faf5ebdd;padding:8px 14px;border-radius:8px}
+#loading{position:absolute;inset:45% 0 auto;text-align:center;font-weight:700}button:focus-visible,a:focus-visible,input:focus-visible{outline:3px solid #6744c4;outline-offset:3px}
+@media(max-width:700px){header{padding-inline:12px;height:54px}main{grid-template-columns:1fr;min-height:0}.arena{height:54dvh;min-height:320px}.caption{left:18px;top:16px}.readout{left:18px;right:18px;bottom:12px}aside{border-left:0;border-top:1px solid #d8d3c8;padding:20px}.hint{margin-top:0}}
+@media(max-height:500px) and (min-width:701px){aside{padding:12px;gap:8px}.arena{min-height:360px}}

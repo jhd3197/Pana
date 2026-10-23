@@ -13,6 +13,12 @@ becomes the GitHub release's notes.
   para quien quedó atrás. Aguacero y Chancleta no encadenan castigos sobre
   el mismo pana; los bots tardan en reaccionar y repetir una caja no mejora sus premios.
 
+- **Prueba un rayo en la arena de Bochinche.**
+  El laboratorio local permite comparar chispas, destello, pausa de impacto
+  y sacudida de cámara, con cámara lenta y un golpe sin efectos.
+  Los rayos tienen un núcleo blanco, resplandor azul y ramificaciones finas;
+  el impacto usa una textura de luz suave y chispas.
+
 - **Mira los carros de tus panas antes de guardar sus kits.**
   La Parrilla muestra cada carro con su pintura y piezas reales; abre su
   ficha para verlo en 3D o guardar una referencia para el taller.
