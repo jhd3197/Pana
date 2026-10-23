@@ -276,6 +276,78 @@
       "source": "Derrape Race HUD (2) / Gran Sabana hero",
       "width": 1100,
       "bytes": 114334
+    },
+    {
+      "file": "cosmos.webp",
+      "source": "Native render: cosmos circuit",
+      "width": 1200,
+      "bytes": 76052
+    },
+    {
+      "file": "cosmos-thumb.webp",
+      "source": "Native render: cosmos circuit",
+      "width": 480,
+      "bytes": 13336
+    },
+    {
+      "file": "merida.webp",
+      "source": "Native render: merida circuit",
+      "width": 1200,
+      "bytes": 62640
+    },
+    {
+      "file": "merida-thumb.webp",
+      "source": "Native render: merida circuit",
+      "width": 480,
+      "bytes": 13910
+    },
+    {
+      "file": "arrecife.webp",
+      "source": "Native render: arrecife galleon approach, route anchor [340.6, -149.5], 57 m back, 8 m above road",
+      "width": 1200,
+      "bytes": 121032
+    },
+    {
+      "file": "arrecife-thumb.webp",
+      "source": "Native render: arrecife galleon approach, route anchor [340.6, -149.5], 57 m back, 8 m above road",
+      "width": 480,
+      "bytes": 30014
+    },
+    {
+      "file": "volcan.webp",
+      "source": "Native render: volcan circuit",
+      "width": 1200,
+      "bytes": 58822
+    },
+    {
+      "file": "volcan-thumb.webp",
+      "source": "Native render: volcan circuit",
+      "width": 480,
+      "bytes": 12890
+    },
+    {
+      "file": "nubes.webp",
+      "source": "Native render: nubes circuit",
+      "width": 1200,
+      "bytes": 88714
+    },
+    {
+      "file": "nubes-thumb.webp",
+      "source": "Native render: nubes circuit",
+      "width": 480,
+      "bytes": 22840
+    },
+    {
+      "file": "dulce.webp",
+      "source": "Native render: dulce circuit",
+      "width": 1200,
+      "bytes": 62394
+    },
+    {
+      "file": "dulce-thumb.webp",
+      "source": "Native render: dulce circuit",
+      "width": 480,
+      "bytes": 14958
     }
   ]
 }

@@ -3,6 +3,8 @@
 For the tested full-map improvement workflow and Bululu's coastal profile,
 see `carreritas-map-improvements.md`.
 
+For Cosmos, Mérida, Arrecife, Volcán, Nubes and Dulce, see `reference-circuits.md`.
+
 ## Repeatable map audit
 
 `node Pana/scripts/map-audit.js --out art/map-audit/baseline` audits the

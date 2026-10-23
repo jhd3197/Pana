@@ -8,6 +8,10 @@ becomes the GitHub release's notes.
 
 ## Unreleased
 
+- **Carreritas suma Cosmos, Mérida, Arrecife, Volcán, Nubes y Dulce.**
+  Corre entre planetas, montañas, corales, lava, islas flotantes y dulces;
+  cruza la laguna de Mérida en lancha y comparte los seis circuitos con tus panas.
+
 - **Los mangos, bucares y árboles de la selva tienen follaje más natural.**
   Nueve especies cambian las copas macizas por hojas y racimos abiertos,
   con menos geometría en los mapas y sin texturas ni dibujos adicionales.

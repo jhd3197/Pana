@@ -446,7 +446,7 @@ export function makeTrack(def) {
     return def.elevation(p.x, p.y);
   } : () => 0;
   T.surfaceAt = authoredHeight || def.elevation ? (x, z, height) => T.heightAtS(geo.paramOf(x, z, height)) : () => 0;
-  if(def.crossfall)T.surfaceAt=(x,z)=>{const s=geo.paramOf(x,z);return T.heightAtS(s)+def.crossfall(s,geo.offsetOf(x,z),T);};
+  if(def.crossfall)T.surfaceAt=(x,z,height)=>{const s=geo.paramOf(x,z,height);return T.heightAtS(s)+def.crossfall(s,geo.offsetOf(x,z,height),T);};
   T.terrainAt = (x, z) => terrainHeight(T, def.palette, x, z);
   // Shortcut plank roads: { from: [u, offset], to: [u, offset], w, arch }.
   const along = (u, off) => {
