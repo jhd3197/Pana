@@ -9,12 +9,17 @@ try {
     const THREE=await import('three');
     const {createChaseCamera}=await import('/g/carreritas/chase-camera.js');
     let preference='dinamica';
-    const failures=[],records=[];
-    for(const id of ['plaza','puerto','sarisarinama','galipan']){
+    const failures=[],records=[],collisions=[];
+    for(const id of ['bululu','plaza','puerto','sarisarinama','galipan']){
       toGarage();buildTrack(id);await startRace(0);
       const T=getActiveTrack(),p=race.player;
       const solids=[];
-      T.group.traverseVisible(o=>{if(o.isMesh&&[].concat(o.material).every(m=>!m.transparent))solids.push(o);});
+      T.group.traverseVisible(o=>{
+        // Collectible coins intentionally pass between the driver and camera.
+        // This guard checks opaque map geometry, not transient pickup overlap.
+        let pickup=false;for(let a=o;a&&a!==T.group;a=a.parent)if(a.name==='collectible-coin')pickup=true;
+        if(!pickup&&o.isMesh&&[].concat(o.material).every(m=>!m.transparent))solids.push(o);
+      });
       // Test the same renderer helper used by the game, with isolated camera
       // state so split, mirror and narrow-view scenarios cannot contaminate it.
       const state={mode:'race',mirror:false,shake:1,slowMo:{punch:4}};
@@ -31,7 +36,8 @@ try {
         T.group.updateMatrixWorld(true);
         const target=new THREE.Vector3(p.x,p.y+(p.flyLift||0)+1.4,p.z);
         const ray=new THREE.Raycaster(cam.position,target.clone().sub(cam.position).normalize(),0,cam.position.distanceTo(target)-.2);
-        if(ray.intersectObjects(solids,false).length)failures.push(`${id}:${u}:camera corridor`);
+        const hits=ray.intersectObjects(solids,false);
+        if(hits.length){collisions.push({id,u,camera:cam.position.toArray(),target:target.toArray(),hits:hits.slice(0,3).map(h=>({name:h.object.name,parent:h.object.parent?.name,point:h.point.toArray()}))});failures.push(`${id}:${u}:camera corridor`);}
         const normal=cam.position.clone(),q=cam.quaternion.clone();
         state.mirror=true;state.first=null;
         for(let i=0;i<90;i++)follow(cam,'first',p,false,1/60);
@@ -55,10 +61,10 @@ try {
       if(Math.abs(cam.fov-60)>.1)failures.push(`${id}:comfort zoom`);
       preference='dinamica';
     }
-    return {failures,samples:records.length};
+    return {failures,samples:records.length,collisions};
   });
   console.log(JSON.stringify(results));assert.deepEqual(results.failures,[]);
-  assert.equal(results.samples,28);assert.deepEqual(page.errors,[]);
+  assert.equal(results.samples,35);assert.deepEqual(page.errors,[]);
   // Exercise the real settings surface and the game's presentation wiring.
   await page.evaluate(()=>menu.open('settings'));
   await page.locator('.pana-settings-nav [aria-controls="pana-settings-game"]').click();

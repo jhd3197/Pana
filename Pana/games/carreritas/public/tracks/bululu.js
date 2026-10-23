@@ -21,10 +21,10 @@ import { iceCreamCart } from '/engine/models/props/ice-cream-cart.js';
 import { laundryCourtyard } from '/engine/models/props/laundry-courtyard.js';
 import { navigationBeacon } from '/engine/models/props/navigation-beacon.js';
 import { cargoHandcart } from '/engine/models/props/cargo-handcart.js';
-const SCALE=1.23;
-const ROUTE=[[-260,80],[-260,155],[-170,210],[-70,220],[10,170],[15,100],[65,60],[140,75],[220,130],[300,110],[335,35],[300,-35],[230,-70],[170,-130],[90,-195],[-5,-215],[-90,-175],[-120,-100],[-185,-65],[-255,-20]].map(([x,z])=>[x*SCALE,z*SCALE]);
-const roadHeight=(x,z)=>(3.2+hill(x,z,-270,-120,120,95,7))*(1-tideZone(x,z))+.48*tideZone(x,z);
+import { SCALE,ROUTE,roadHeight,coastalBank,coastalLandform,roadStyle } from './bululu-layout.js';
+import { coastalComposition } from './bululu-composition.js';
 function baseHeight(x,z){
+  const rise=coastalLandform(x,z);
   x/=SCALE;z/=SCALE;
   const a=Math.hypot((x+195)/140,(z-35)/205),b=Math.hypot((x-215)/157,(z-35)/117),c=Math.hypot((x+5)/150,(z+180)/72);
   const coast=Math.min(a,b,c);
@@ -33,17 +33,19 @@ function baseHeight(x,z){
   const lagoon=Math.hypot((x+95)/49,(z-40)/63);
   h=h*smooth(lagoon,.7,1.2)-4*(1-smooth(lagoon,.7,1.2));
   for(const [cx,cz,rx,rz] of [[250,235,90,18],[420,-50,60,25],[30,-300,120,15]])h=Math.max(h,1.4-15*smooth(Math.hypot((x-cx)/rx,(z-cz)/rz),.65,1.3));
-  return h;
+  return h+rise;
 }
 export default withSightlines({
   ...TRACK_DEFINITIONS.find(track => track.id === 'bululu'),
   points:ROUTE,rounded:true,hw:9,lineU:.025,elevation:roadHeight,
+  crossfall:coastalBank,roadStyle,
+  cameraHeight:4.4,
   waterAt:(x,z,t,T)=>tideWetness(T,x,z,t),
   previewBounds:[[-420,0,-400],[590,75,340]],
-  sectors:[[0,'Pueblo del faro'],[.23,'Playa Pana'],[.43,'Cayo de los panas'],[.65,'Lengua de arena'],[.84,'Puerto de colores']],
+  sectors:[[0,'Pueblo del faro'],[.10,'Subida del faro'],[.23,'Playa Pana'],[.39,'Mirador del cayo'],[.65,'Lengua de arena'],[.84,'Puerto de colores']],
   items:{boxes:[.1,.29,.48,.67,.87],boxLanes:[-6,-2,2,6],pads:[{u:.18,off:0},{u:.37,off:-4},{u:.59,off:4},{u:.79,off:0},{u:.95,off:-4}]},
   walls:false,chevrons:true,
-  palette:{skySeed:31,cloudCover:0.28,horizon:0xbff4ee,skyTop:0x0f95f2,halo:1.1,hemiSky:0xd0e8ff,hemiGround:0xe0c27e,hemiInt:1.6,sun:0xffd99c,sunInt:2.7,ground:0xfbe2a0,track:0xf0c88e,dune:0,fog:[600,2200]},
+  palette:{skySeed:31,cloudCover:0.28,horizon:0xbff4ee,skyTop:0x0f95f2,halo:1.1,hemiSky:0xd0e8ff,hemiGround:0xc4b18b,hemiInt:1.3,sun:0xffe2b8,sunInt:2.5,ground:0xfbe2a0,track:0xe4c58b,dune:0,fog:[430,1500]},
   // Coconut palms on the far cays, mangroves at the waterline, shade trees inland.
   forest:{plant:libraryForest,bounds:[-640,-540,740,490],count:1100,spacing:10,edge:62,minY:.4,clump:.55,seed:353,
     accept:(x,z)=>tideZone(x,z)<.2,
@@ -56,16 +58,17 @@ export default withSightlines({
         const channel=zone*smooth(off,T.HW+2,T.HW+19);return h*(1-channel)-3*channel;
       },
       color:(x,z,y)=>y<.8?0xf2e2b4:y<5?0xfbe9c4:y<15?meadow(x,z,0x93c45e):meadow(x,z,0x6fb065),
-      paint:groundPaint({tone:.09,moss:.2,keep:(x,z,y)=>y<5.5})});
+      paint:groundPaint({tone:.12,moss:.25,verge:.35,vergeColor:0xc5ad83,keep:(x,z,y)=>y<1})});
     group.add(sea(world.groundAt,{opacity:.68}),world.land);
     const village=new THREE.Group(),occupied=[];
     const colors=[0x55a7a5,0xd88b75,0xe2bc60,0x82a9c3,0xd5d1aa];
     let n=0;
-    for(const x of [-270,-240,-210])for(const z of [-5,28,61,94,127]){
+    for(const x of [-289,-240,-210])for(const z of [-5,28,61,94,127]){
       if(!clear(T,x,z,13)||world.groundAt(x,z)<1)continue;
       foundation(village,colonialHouse({seed:11+n,color:colors[n%colors.length]}),x,z,world.groundAt,{scale:1.65,radius:7,rotation:Math.PI/2});occupied.push([x,z]);n++;
     }
-    foundation(village,colonialChurch(),-211,166,world.groundAt,{radius:10,scale:1.8,rotation:Math.PI});
+    foundation(village,colonialChurch(),-259,166,world.groundAt,{radius:10,scale:1.8,rotation:Math.PI});
+    occupied.push([-259,166]);
     for(const [x,z] of [[-173,52],[-174,93]])if(clear(T,x,z,10))foundation(village,streetFoodKiosk(),x,z,world.groundAt,{radius:6,scale:1.6,rotation:Math.PI/2});
     group.add(village);village.name='roques-village';
     const details=new THREE.Group();details.name='roques-beach-details';group.add(details);
@@ -84,7 +87,8 @@ export default withSightlines({
       const object=foundation(coast,factory(),x,z,world.groundAt,{radius,rotation,color:0xd6c6a2});
       object.userData.footprintRadius=radius;occupied.push([x,z]);return object;
     };
-    coastLand(coastalLighthouse,-294,-155,2.7);
+    const lighthouse=coastLand(coastalLighthouse,-130,222,4);
+    lighthouse?.scale.setScalar(1.45);
     coastLand(lifeguardTower,285,110,3.5,Math.PI);
     coastLand(beachVolleyball,260,20,10);
     coastLand(beachShower,230,60,1.4);
@@ -117,14 +121,15 @@ export default withSightlines({
     }
     put(group,sign('ISLA BULULÚ',16,2.4,{background:'#317c82'}),-235,187,6.7,Math.PI);
     group.add(finish(fixed));
-    instances(group,palm({seed:32,h:10}),scatter(T,world.groundAt,{seed:1032,count:58,bounds:[-350,-210,420,240],margin:9,minY:1,accept:(x,z,y)=>y<9&&!occupied.some(([a,b])=>Math.hypot(x-a,z-b)<14)}),'island-palms');
+    instances(group,palm({seed:32,h:10}),scatter(T,world.groundAt,{seed:1032,count:32,bounds:[-350,-210,420,240],margin:9,minY:1,accept:(x,z,y)=>y<9&&!occupied.some(([a,b])=>Math.hypot(x-a,z-b)<14)}),'island-palms');
+    group.add(coastalComposition(T,world.groundAt,occupied));
     instances(group,mangrove({seed:17}),scatter(T,world.groundAt,{seed:701,count:35,bounds:[-145,-45,0,150],margin:6,minY:-1.5,accept:(x,z,y)=>y<3}),'lagoon-mangroves');
     const animateWater=waterAnimator(group),tide=tidalCrossing(T);group.add(tide.group);
     const coastalTicks=coast.children.filter(o=>o.userData.tick);
     return {group,groundAt:world.groundAt,update:t=>{animateWater(t);tide.update(t);kiosk?.userData.tick(t);schools.forEach(o=>o.userData.tick(t));coastalTicks.forEach(o=>o.userData.tick(t));}};
   },
   scenery(group,kit,T){
-    edges(group,kit,T,{style:'rope',step:7,skip:(s)=>{const p=T.pointAt(s);return tideZone(p.x,p.y)>.01;}});
+    edges(group,kit,T,{style:'rope',step:7,skip:(s,side)=>{const p=T.pointAt(s),u=s/T.TOTAL;return tideZone(p.x,p.y)>.01||side===1&&(u>=.105&&u<=.205||u>=.395&&u<=.505);}});
     // Beach carnival: toy palms, kiosks with striped umbrellas, balloons,
     // gull flocks and far green cays on the turquoise sea.
     festive(group,T,{seed:31,minY:1,accept:(x,z)=>tideZone(x,z)<.01,stand:'shade',stands:160,banners:420,bunting:200,balloons:120,flags:200,butterflies:16,

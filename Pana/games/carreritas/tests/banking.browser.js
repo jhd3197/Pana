@@ -5,7 +5,7 @@ const browser=await launch();
 try{
   const page=await openGame(browser,'carreritas',{query:'debug&manual&track=cata'});
   await waitFor(page,()=>window.getActiveTrack&&garage.car);
-  for(const id of ['plaza','cata','salinas','sarisarinama']){
+  for(const id of ['bululu','plaza','cata','salinas','sarisarinama']){
     const result=await page.evaluate(async id=>{
       toGarage();buildTrack(id);await startRace(0);race.state='audit';
       const T=getActiveTrack(),p=race.player;

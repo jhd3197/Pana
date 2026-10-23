@@ -8,6 +8,11 @@ becomes the GitHub release's notes.
 
 ## Unreleased
 
+- **Bululú enlaza el pueblo, el faro y la playa con subidas y curvas peraltadas.**
+  Dos miradores, un faro más visible, grupos de palmeras y nuevos tramos de
+  piedra dan ritmo a la vuelta; la cámara más baja acompaña las lomas y el
+  banco de arena conserva su marea y su paso abierto.
+
 - **La curva de regreso de Casas Botes tiene una inclinación real en Plaza Pana.**
   El borde exterior sube de forma gradual y vuelve a nivel antes del siguiente
   giro; la carretera, el terreno y el apoyo del carro comparten el peralte.

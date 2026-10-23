@@ -16,7 +16,8 @@ export function createChaseCamera(race,track,random,preference=()=> 'dinamica') 
       {look,comfort:comfort||prototype==='anticipation',disabled:race.mode==='battle'});
     const fx=Math.sin(guide.heading),fz=Math.cos(guide.heading),back=look?-1:1;
     const dist=p.boost>0?12.1:11,py=p.y+(p.flyLift||0);
-    want.set(p.x-fx*dist*back,T.def.layered?py+5:Math.max(5,py+5),p.z-fz*dist*back);
+    const height=THREE.MathUtils.clamp(T.def.cameraHeight??5,4,6);
+    want.set(p.x-fx*dist*back,T.def.layered?py+height:Math.max(height,py+height),p.z-fz*dist*back);
     // A respawn or teleport should establish a new view, not fly through the
     // intervening scenery. Each split-screen driver owns a separate state.
     if(!race[key]||look!==race[key+'Look']||(!legacy&&race[key].distanceTo(want)>45))race[key]=want.clone();
