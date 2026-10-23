@@ -2,6 +2,7 @@
 // held buttons (golpe, cubrirse) and press counters, so a tap shorter than a
 // tick still reaches the host. game.js turns the stick into a world direction.
 import { holdButton, drawIcons } from '/engine/touch.js';
+import { getSettings, inputAxis } from '/engine/settings.js';
 
 const KEYS = {
   up: ['w', 'arrowup'], down: ['s', 'arrowdown'], left: ['a', 'arrowleft'], right: ['d', 'arrowright'],
@@ -55,7 +56,7 @@ export function createControls({ paused = () => false, onBet = () => {} } = {}) 
     if (gamepad.buttons[14]?.pressed) held.add('left'); if (gamepad.buttons[15]?.pressed) held.add('right');
     for (const name of held) if (!padHeld.has(name)) press(name);
     padHeld = held;
-    const dead = (v) => Math.abs(v) > .2 ? v : 0;
+    const settings=getSettings(),dead = v => inputAxis(v,settings);
     return { x: dead(gamepad.axes[0] || 0), y: -dead(gamepad.axes[1] || 0), held };
   }
 

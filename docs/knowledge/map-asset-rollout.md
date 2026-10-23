@@ -41,7 +41,7 @@ footprint for the map-assets audit.
 | Map | Placement |
 | --- | --- |
 | Isla Bululú | Four on the beach rocks nearest the southern shore (rocks already avoid every tile's camera line), one on the lighthouse islet and one clinging to the lighthouse tower. Initial board view: +8 draw calls (+1.5%) and +0.2% triangles; three meshes per iguana measured +2.4%, so the eyes merged into the head. |
-| Desierto (Derrape) | One on Pana Gas's canopy roof, one clinging to the station wall beside the door, two on the scree boulders nearest the start line. |
+| Desierto (Carreritas) | One on Pana Gas's canopy roof, one clinging to the station wall beside the door, two on the scree boulders nearest the start line. |
 | Curiara | Two in the `perch` pose on bare limbs that lean out over the caño (s = 95 and 205), about 5 m above the water. |
 | Galope | Two on course-side ranch-fence posts (`perch`), one in each of two fence runs. |
 | Plaza (Escondidas, Cocina, Plaza circuit) | One clinging to the church's front wall above the PLAZA PANA sign, outside the playable bounds. |
@@ -92,9 +92,9 @@ Proof commands (running server, external Playwright package):
 $env:PANA_PLAYWRIGHT_PATH='C:/Users/Juan/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules/playwright'
 node Pana/engine/tests/farm-animals.browser.js
 node Pana/engine/tests/map-assets.browser.js
-node Pana/games/derrape/tests/maps.browser.js
-node Pana/games/derrape/tests/selva.browser.js
-node Pana/games/derrape/tests/selva-driving.browser.js
+node Pana/games/carreritas/tests/maps.browser.js
+node Pana/games/carreritas/tests/selva.browser.js
+node Pana/games/carreritas/tests/selva-driving.browser.js
 node Pana/web/studio/tests/studio.browser.js $env:PANA_PLAYWRIGHT_PATH
 $env:PANA_QA_TIMEOUT='90000'
 $env:PANA_QA_COMPACT='1'
@@ -121,7 +121,7 @@ screenshots there include both islands' fish through their actual water surfaces
 - Map asset proof passed for all eleven maps and both standalone fish previews.
   It checks actual placements, finite geometry, driving/play-area clearance and
   fish staying above the seabed and below the lowest wave over 90 seconds.
-- All eight Derrape circuits passed the existing driving regression, including
+- All eight Carreritas circuits passed the existing driving regression, including
   repeated builds of Plaza, Bululú and Estadio.
 - Selva's environment and driving suites passed: eighteen plant species,
   3,939,644 triangles, 721 draw calls, giant-tree collision and tunnel/chase-camera
@@ -131,7 +131,7 @@ screenshots there include both islands' fish through their actual water surfaces
 - Cocina's full integration suite passed with compact desktop views and a 390px
   phone: three-player late join, shared cooking/score, real touch movement and
   interaction, host migration, pause, replay, offline helpers and room isolation.
-  Its Escondidas/Derrape/Bululú startup and hub checks also passed, with no
+  Its Escondidas/Carreritas/Bululú startup and hub checks also passed, with no
   uncaught browser errors.
 - `npm run check` passed all 174 JavaScript files; `git diff --check` passed.
 

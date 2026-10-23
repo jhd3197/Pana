@@ -71,7 +71,7 @@ not guarantees of frame rate on all devices.
 $env:PANA_PLAYWRIGHT_PATH = '<absolute Playwright package path>'
 node Pana/engine/tests/farm-animals.browser.js
 $env:PANA_MAP_TEST_TRACKS = 'llanos'
-node Pana/games/derrape/tests/maps.browser.js
+node Pana/games/carreritas/tests/maps.browser.js
 node Pana/web/studio/tests/studio.browser.js $env:PANA_PLAYWRIGHT_PATH
 npm run check
 ```
@@ -95,7 +95,7 @@ No Cheoma code has been imported yet.
 | Selectively | `src/builder/roof.js` | Curved thatch shelters and tiled roof details | Reuse curve/instancing techniques after adaptation. The full module depends on Cheoma palettes, roof shells and ornament policy; its Korean silhouette is not a drop-in Venezuelan roof. |
 
 Start with adobe walls and raised porches. Port the geometry into the existing
-architecture kit, retain Cheoma's notice, verify against Pana's Three r160, then
+architecture kit, retain Cheoma's notice, verify against Pana's Three r186, then
 register and place the actual factories. Do not introduce the entire village
 runtime just to obtain these components.
 

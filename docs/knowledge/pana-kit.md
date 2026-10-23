@@ -158,5 +158,5 @@ Rows are built from text only, so names never become HTML. Row fields: `rank`,
 `className`. A game tunes the layer with `--pk-results-z`, `--pk-results-top` and
 `--pk-results-dim` instead of restyling it. A game that already opens its results as
 a modal `<dialog>` (Caída, Dominó) keeps the dialog and puts `pk-results-card` on
-the card. Derrape (podium) and Bululú (medals and portraits) keep their own layouts
+the card. Carreritas (podium) and Bululú (medals and portraits) keep their own layouts
 but follow the same order of pieces.

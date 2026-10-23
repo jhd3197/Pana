@@ -11,7 +11,7 @@ test('teams prevent friendly hits unless enabled; finite lives eliminate and sti
 test('weapons and fast reload change shots; active rounds lock configuration', () => {
   const g = game({ weapons: 'all', fastReload: true, lives: 0, duration: 300 });
   g.step(.05, new Map([[1, { fire: true, weapon: 'scatter' }]])); assert.equal(g.balls.length, 3);
-  g.step(.05, new Map([[1, { reload: true }]])); assert.equal(g.players[0].reload, .55); assert.ok(g.time > 299);
+  g.step(.05, new Map([[1, { reload: true }]])); assert.ok(Math.abs(g.players[0].reload - 1.8 * .55 / 1.3) < 1e-9); assert.ok(g.time > 299);
   assert.equal(g.configure({ lives: 3 }), false); assert.equal(new Arena().configure({ duration: -1 }), false);
   const pistol = game({ weapons: 'pistol' }); pistol.step(.05, new Map([[1, { fire: true, weapon: 'scatter' }]])); assert.equal(pistol.balls.length, 1);
 });

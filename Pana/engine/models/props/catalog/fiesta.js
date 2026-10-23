@@ -1,6 +1,6 @@
 // Geometry-free metadata; Studio previews the same factories used in the races.
 const entry = (id, name, factory, description, previewOptions = { seed: 3 }) => ({
-  id, name, category: 'Pueblo', source: '/engine/models/props/fiesta.js', factory, usedBy: ['Derrape'],
+  id, name, category: 'Pueblo', source: '/engine/models/props/fiesta.js', factory, usedBy: ['Carreritas'],
   previewOptions, description, tags: ['fiesta', 'feria', 'colores'], pack: 'fiesta',
 });
 export default [

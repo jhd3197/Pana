@@ -19,7 +19,7 @@ import { huntLayout } from './layout.js';
 import { RULES } from './rules.js';
 import { HuntRoom } from './network.js';
 import { elapsedClock } from '/engine/live-room.js';
-import { createLookControls, SENSITIVITY_CHOICES } from '/engine/play/first-person.js';
+import { createLookControls } from '/engine/play/first-person.js';
 import { createToast } from '/engine/hud.js';
 
 const $ = id => document.getElementById(id), show = (id, visible) => $(id).classList.toggle('hidden', !visible);
@@ -32,7 +32,7 @@ await Promise.race([document.fonts.load('900 64px Nunito'), new Promise(resolve 
 
 const renderer = new THREE.WebGLRenderer({ canvas: $('world'), antialias: true });
 renderer.setPixelRatio(pixelRatio(1.75)); renderer.setSize(innerWidth, innerHeight); bindRenderer(renderer, 1.75);
-renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFShadowMap;
 renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.13;
 const plaza = createPlaza({ environment: false }), { scene } = plaza;
 const environment = createHuntEnvironment(scene); environment.setMap('plaza');
@@ -90,8 +90,7 @@ const menu = createGameMenu({
     ['Q', 'Volver a pana'], ['E', 'Escondido: copiar el objeto cercano'], ['V', 'Ver tu disfraz desde atrás'], ['Tab', 'Ver la tabla'], ['M', 'Sonido'], ['Esc', 'Soltar el ratón y abrir el menú']],
   tips: ['Buscador: apunta al objeto sospechoso y haz clic. Si es un pana, lo pillaste a la primera. Si fallas, esperas 1,6 segundos.',
     'Escondido: pulsa V para ver tu disfraz desde atrás y comprobar que pasas desapercibido.'],
-  options: [{ id: 'view', label: 'Cámara', choices: [['primera', 'Primera persona'], ['tercera', 'Detrás de tu pana']], get: () => view, set: value => { view = value; } },
-    { id: 'mouse', label: 'Sensibilidad al mirar', choices: SENSITIVITY_CHOICES, get: () => looking.sensitivity, set: value => { looking.sensitivity = value; } }],
+  options: [{ id: 'view', label: 'Cámara', choices: [['primera', 'Primera persona'], ['tercera', 'Detrás de tu pana']], get: () => view, set: value => { view = value; } }],
   invite: () => inviteUrl(code),
   onOpen() { paused = true; keys.clear(); touch.clear(); drag = null; looking.release(); },
   onClose() { paused = false; },

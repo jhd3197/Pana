@@ -40,7 +40,7 @@ The low tier skips the clumps along the limbs but makes the tip clumps 1.3×
 bigger with a smooth (detail 1) icosahedron core, so the crown stays a soft
 cushion. Faceted detail-0 cores read as boulders; only far trees use them.
 Low also drops twig tubes under 2 cm and uses 3–6 sides per limb: bark was
-over half of a low mango before that. With these tiers every Derrape map's
+over half of a low mango before that. With these tiers every Carreritas map's
 whole-scene triangle count is at or below its pre-swap value (Chichi 4.73 M,
 Plaza 4.54 M, Llanos 3.01 M, Estadio 1.24 M).
 
@@ -50,6 +50,17 @@ samán is wider than the low one. Keep placement clearances on the tier the
 map actually builds.
 
 ## Construction
+
+Araguaney and apamate use a species-owned `dressCrown` builder: folded two-triangle
+sprays distributed around and partway along the terminal branches, instead of
+solid ellipsoid cores. Far/game/lite/full use 45/80/100/160 sprays per tip.
+The far variants retain 24 tips and fit under 3,100 triangles per tree; the game
+variants fit under 6,000. They remain two opaque draws (bark and foliage), with
+no textures or per-frame buffer work. Flower colors, occasional green sprays
+and the all-green option share the foliage draw and its nature tag. Wind and
+Plaza bloom tint therefore use the same material path. Pine, bucare and the
+default crown builder are unchanged. `flowering-trees.browser.js` checks seed
+repeatability, finite geometry, tiers, toggles, grounding and these budgets.
 
 - One species is data: `skeleton(scale)` for `growSkeleton` (children per
   level, golden-angle spiral, crown envelope that stops limbs), `bark`,

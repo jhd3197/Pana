@@ -2,6 +2,7 @@
 // node ui.browser.js [absolute-playwright-package] [browser-executable]
 import assert from 'node:assert/strict';
 import { createRequire } from 'node:module';
+import { leaveLobby, menuStep } from '../../games/carreritas/tests/menu-helpers.js';
 const { chromium } = createRequire(import.meta.url)(process.argv[2] || 'playwright');
 const browser = await chromium.launch({ headless: true, ...(process.argv[3] ? { executablePath: process.argv[3] } : {}) });
 const base = process.env.PANA_QA_URL || 'http://localhost:8461';
@@ -17,17 +18,24 @@ try {
   await page.goto(`${base}/`);
   await page.locator('#open-settings').click();
   await page.locator('#pana-menu-dialog[open]').waitFor();
+  await page.locator('.pana-settings-nav button', { hasText: 'Audio' }).click();
   await page.locator('#pana-set-sound').click();
+  await page.locator('.pana-settings-nav button', { hasText: 'Imagen' }).click();
   await page.locator('#pana-set-quality [data-value="baja"]').click();
+  await page.locator('.pana-settings-nav button', { hasText: 'Ratón y teclado' }).click();
+  await page.getByText('Opciones de las ayudas', { exact: true }).click();
   await page.locator('#pana-set-hints').click();
-  assert.deepEqual(await page.evaluate(() => JSON.parse(localStorage.getItem('pana:settings'))),
+  assert.deepEqual(await page.evaluate(() => {
+    const s=JSON.parse(localStorage.getItem('pana:settings'));
+    return Object.fromEntries(['sound','volume','music','quality','hints','orientation'].map(k=>[k,s[k]]));
+  }),
     { sound: false, volume: 0.8, music: 0.5, quality: 'baja', hints: false, orientation: 'juego' });
   await page.keyboard.press('Escape');
   assert.equal(await page.locator('#pana-menu-dialog').evaluate(d => d.open), false);
   check('hub settings save sound, resolution and hints');
 
   // A game picks them up on load.
-  await page.goto(`${base}/g/derrape/?debug&manual&track=estadio`);
+  await page.goto(`${base}/g/carreritas/?debug&manual&track=estadio`);
   await page.waitForFunction(() => window.garage?.car);
   assert.equal(await page.evaluate(() => renderer.getPixelRatio()), 1);
   assert.equal(await page.locator('.keys').isHidden(), true);
@@ -37,8 +45,8 @@ try {
   check('games apply saved settings and follow live changes');
 
   // Esc opens the menu with focus inside; Tab stays in the dialog; Esc returns focus.
-  // The current garage reveals Play only on the final setup step.
-  await page.locator('#garage [data-step="ready"]').click();
+  // The workshop is the final setup step and contains the race start action.
+  await leaveLobby(page); await menuStep(page, 'car');
   await page.locator('#play').focus();
   await page.keyboard.press('Escape');
   assert.equal(await page.evaluate(() => document.activeElement.id), 'pana-resume');

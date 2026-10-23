@@ -4,7 +4,7 @@
 // game-entry.js covers a game's start (and its lobby ↔ game switches); the
 // Mi pana editor covers its own.
 //
-//   const cover = showCover({ title: 'Derrape', image: '/images/launcher/derrape.jpg', text: 'Preparando la sala…' });
+//   const cover = showCover({ title: 'Carreritas', image: '/images/launcher/carreritas.jpg', text: 'Preparando la sala…' });
 //   cover.say('Calentando los motores…');
 //   cover.done();                                   // fades out after the next frame is painted
 //   cover.fail('No pudimos…', () => location.reload());

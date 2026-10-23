@@ -40,7 +40,7 @@ data and verifies legacy and multiplayer compatibility.
 
 The sculpt inspection page lives at `/character/reference.html`, inside Pana Studio. Its UI
 remains in `Pana/web/character/`, while the shared sculpt lives in
-`Pana/engine/models/characters/pana/`. It uses the existing Three.js **0.160.0** CDN
+`Pana/engine/models/characters/pana/`. It uses the existing Three.js **0.186.1** CDN
 import map and static web server. The explicit “Usar en los juegos” action
 saves the wardrobe to the existing avatar schema; `engine/models/characters/pana/avatar-model.js`
 adapts this same sculpt for every game. See `pana-studio.md` for the catalog.
@@ -290,3 +290,13 @@ when removing a character (detach shared carried props first).
 Characters stand on articulated legs by default. Pass `{ seated: true }` for
 vehicle drivers, `{ chef: true }` for cooking attire, and `walk` / `carry` /
 `run` in `update()` to animate the shared rig.
+
+Two opt-in cartoon impulses live on the built character: `bounce(strength)`
+squashes the body on a damped spring (volume-preserving scale, settles in
+~0.9 s) and `stagger(power, dir)` rocks the spine with head counter-rotation
+(decays in ~0.6 s). Both are post-update overlays: they re-apply after
+`sculpt.update` each frame and restore exactly when settled, so they compose
+with poses, seating and game-side joint overrides (Trifulca calls them from
+its own post-update animation; ambient walkers bounce at route turnarounds).
+They own `body.scale` and `neck.rotation.z` while active — don't write those
+channels game-side during an impulse.

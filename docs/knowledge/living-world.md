@@ -1,6 +1,6 @@
 # Living skies and pueblo
 
-`Pana/engine/worlds/sky.js` owns the outdoor sky used by Derrape's eight circuits,
+`Pana/engine/worlds/sky.js` owns the outdoor sky used by Carreritas's eight circuits,
 Galope, Escondidas, Cocina, the Bululú board/minigames and Studio circuit tours.
 It renders a gradient, sun glow, seeded cloud banks and high wisps in one draw.
 The vertex shader ignores camera translation and projects at far depth; camera
@@ -29,7 +29,7 @@ and pauses reproducible without inserting animated geometry into static batches.
 
 ## Background life at tables and courts
 
-`engine/worlds/ambient-life.js` adds a pack of Derrape karts crossing a lane every
+`engine/worlds/ambient-life.js` adds a pack of Carreritas karts crossing a lane every
 19 s (alternating direction), panas walking there-and-back paths and macaws
 circling overhead. `createArenaSlot` attaches it for `table` and `court` modes
 only, from the per-map `LIFE` routes in arenas.js (plaza: the lane runs in
@@ -49,7 +49,7 @@ removing a node during the arena's traversal throws mid-walk.
 - `node Pana/engine/tests/living-world.browser.js`: real WebGL, deterministic
   wind, fixed cable attachments, cloud rewind/camera translation, material cloning,
   house bounds, Galope desktop/mobile and Bululú day/night.
-- `node Pana/games/derrape/tests/plaza.browser.js <playwright-package>`: road
+- `node Pana/games/carreritas/tests/plaza.browser.js <playwright-package>`: road
   clearance, foundations, finite geometry, rendering budgets, actual race views.
 - `node Pana/web/studio/tests/track-tour.browser.js <playwright-package>`:
   route playback, pause/scrub/copy, overview/asset cleanup, mobile and warm cache.

@@ -6,7 +6,7 @@ export default [
     category: "Objetos",
     source: "/engine/models/props/mango.js",
     factory: "makeMango",
-    usedBy: ["Bululú","Derrape"],
+    usedBy: ["Bululú","Carreritas"],
     previewOptions: null,
     pack: "common"
   },
@@ -16,7 +16,7 @@ export default [
     category: "Objetos",
     source: "/engine/models/props/mango.js",
     factory: "makeMango",
-    usedBy: ["Bululú","Derrape"],
+    usedBy: ["Bululú","Carreritas"],
     previewOptions: {"gold":true},
     pack: "common"
   },

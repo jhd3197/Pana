@@ -1,6 +1,6 @@
 import { DEFAULT_AVATAR, wardrobeToAvatar } from '/engine/avatar.js';
-const shared = ['Bululú', 'Derrape', 'Escondidas', 'Cocina'];
-const character = (id, name, options = {}) => ({ id, name, category: 'Personajes', source: '/engine/models/characters/pana/avatar-model.js', factory: 'buildCharacter', usedBy: options.seated?['Derrape']:options.chef?['Cocina']:shared, previewOptions: options,
+const shared = ['Bululú', 'Carreritas', 'Escondidas', 'Cocina'];
+const character = (id, name, options = {}) => ({ id, name, category: 'Personajes', source: '/engine/models/characters/pana/avatar-model.js', factory: 'buildCharacter', usedBy: options.seated?['Carreritas']:options.chef?['Cocina']:shared, previewOptions: options,
   async build() { const { buildCharacter } = await import('/engine/models/characters/pana/avatar-model.js'); const model = buildCharacter(DEFAULT_AVATAR, { quality: 'studio', ...options }); return { group: model.group, update: (t, dt) => model.update(dt), dispose: () => model.dispose() }; },
 });
 

@@ -90,7 +90,7 @@ true when you change this area.
 Pueblo 011–020 lives in `engine/models/props/pueblo.js`; Páramo structures 052–060
 live in `engine/models/props/mountain.js`. Both use `engine/models/core/architecture-kit.js`.
 Frailejón (051) and mountain pine (057) are exported by their vegetation modules and
-stay in Vegetación. Several Pueblo and Páramo models now appear in Derrape;
+stay in Vegetación. Several Pueblo and Páramo models now appear in Carreritas;
 keep Studio consumer metadata aligned with actual placements.
 Mountain bridges span 6–40 m, guardrails 2–30 m; their long axis is X.
 Cliff end profiles must match across seeds. The clock and cable car use

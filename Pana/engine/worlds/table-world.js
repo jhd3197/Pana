@@ -20,7 +20,7 @@ const STAGE = {
 export function createTableWorld(canvas, options = {}) {
   const o = { ...STAGE, ...options, sun: { ...STAGE.sun, ...options.sun } };
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' });
-  renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFShadowMap;
   renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = o.exposure;
   const unbind = bindRenderer(renderer, 1.5, { fit: o.fit }), scene = new THREE.Scene();
   scene.background = new THREE.Color(o.background); scene.fog = new THREE.Fog(o.background, ...o.fog);

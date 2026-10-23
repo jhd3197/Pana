@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#2fa3e0">
+  <meta name="description" content="Salta del Ávila en parapente con tus panas: pasa las balizas sobre Galipán, sube en las térmicas, atraviesa los aros y aterriza en la diana de Boca de Tigre.">
+  <title>Parapente · Pana</title>
+  <link rel="stylesheet" href="/engine/kit.css">
+  <link rel="stylesheet" href="/engine/ui.css">
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="/engine/game-lobby.css">
+  <link rel="stylesheet" href="/engine/room-options.css">
+  <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.186.1/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.186.1/examples/jsm/"}}</script>
+</head>
+<body class="in-lobby">
+  <canvas id="world" aria-label="Galipán y El Ávila en tres dimensiones, con los parapentes en la rampa"></canvas>
+  <header class="topbar"><a class="pk-logo" href="/" aria-label="Volver a Pana">PANA</a><nav id="game-nav" aria-label="Opciones"></nav></header>
+  <section id="lobby" class="pk-lobby" aria-labelledby="lobby-title">
+    <span class="pk-ribbon">RAMPA DEL ÁVILA</span>
+    <h1 id="lobby-title" class="pk-title">Parapente</h1>
+    <p class="pk-copy" data-room-description>Salta desde la cresta, pasa las cinco balizas sobre Galipán y aterriza en la diana de Boca de Tigre. Las térmicas te suben; los aros te empujan.</p>
+    <ol id="roster" class="pk-roster" aria-label="Panas en la rampa" data-room-description></ol>
+    <button id="rules" class="pk-btn pk-btn--ghost" data-room-help>Cómo se vuela</button>
+    <div id="room-options"></div>
+    <div class="pk-lobby-foot"><button id="start" class="pk-btn pk-btn--primary pk-btn--lg" disabled>Conectando…</button></div>
+  </section>
+  <main id="hud" hidden>
+    <section class="race-panel pk-panel" aria-label="Tu vuelo">
+      <div class="race-place"><b id="place" class="pk-heading">—</b><span id="field">de 8</span></div>
+      <div class="race-time"><b id="timer" class="pk-heading">0:00.00</b><span id="next">Baliza 1</span></div>
+    </section>
+    <section class="flight-panel pk-panel" aria-label="Instrumentos">
+      <div><span class="pk-kicker">Altura</span><b id="altitude">0 m</b></div>
+      <div><span class="pk-kicker">Vario</span><b id="vario">0,0</b></div>
+      <div><span class="pk-kicker">Velocidad</span><b id="speed">0</b></div>
+      <div id="wing-state" class="wing-state">Vela en trim</div>
+    </section>
+    <ol id="leaderboard" class="leaderboard pk-panel" aria-label="Posiciones"></ol>
+    <p id="tip" class="tip" role="status"></p>
+    <div id="call" class="call" hidden></div>
+    <div id="countdown" class="countdown" hidden></div>
+    <div id="event" class="notice pk-toast" role="status" hidden></div>
+    <div id="touch" class="pk-touch-zone">
+      <div class="touch-steer"><button class="pk-touch" data-input="left" data-icon="left" aria-label="Girar a la izquierda"></button><button class="pk-touch" data-input="right" data-icon="right" aria-label="Girar a la derecha"></button></div>
+      <div class="touch-wing"><button class="pk-touch" data-input="ears">Orejas</button><button class="pk-touch" data-input="brake">Frenos</button><button class="pk-touch pk-touch--go" data-input="bar">Acelerador</button></div>
+    </div>
+  </main>
+  <div class="connection"><span id="connection" role="status">Conectando…</span><button id="practice" class="pk-btn pk-btn--sm" hidden>Volar en local</button></div>
+  <section id="results" class="pk-results" hidden aria-labelledby="result-title"><div class="pk-modal pk-results-card"><span class="pk-ribbon">ATERRIZAJE</span><h2 id="result-title" class="pk-title"></h2><p id="result-copy" class="pk-copy"></p><ol id="result-roster" class="pk-roster"></ol><button id="again" class="pk-btn pk-btn--primary pk-btn--block">Otro vuelo</button><a class="pk-back" href="/">Todos los juegos</a></div></section>
+  <div id="loading" class="pk-loading"><div class="pk-panel"><h2 class="pk-heading">Preparando Parapente</h2><p>Inflando las velas en la cresta…</p></div></div>
+  <script type="module" src="/engine/game-entry.js" data-pana-entry="./game.js"></script>
+</body>
+</html>

@@ -24,7 +24,7 @@ export function createPaintMarker({ color = '#f28b42' } = {}) {
 
 // The paint-battle look: glossy splats with drips and droplets. A white blob
 // on a transparent canvas, tinted by each material's colour.
-export function splatTexture(seed) {
+export function splatTexture(seed, pattern = 'splat') {
   const canvas = document.createElement('canvas'); canvas.width = canvas.height = 256;
   const g = canvas.getContext('2d'), r = rng(seed); g.fillStyle = g.strokeStyle = '#fff'; g.lineCap = 'round';
   g.beginPath(); g.arc(128, 128, 58, 0, Math.PI * 2); g.fill();
@@ -34,6 +34,7 @@ export function splatTexture(seed) {
     g.beginPath(); g.arc(x, y, size, 0, Math.PI * 2); g.fill();
   }
   for (let i = 0; i < 10; i++) { const a = r() * Math.PI * 2, d = 100 + r() * 24; g.beginPath(); g.arc(128 + Math.cos(a) * d, 128 + Math.sin(a) * d, 3 + r() * 6, 0, Math.PI * 2); g.fill(); }
+  if(pattern === 'stripe' || pattern === 'dots') { g.clearRect(0,0,256,256); for(let i=0;i<5;i++) { if(pattern==='stripe') {g.fillRect(32,40+i*36,192,18);} else {for(let j=0;j<5;j++){g.beginPath();g.arc(40+i*42,40+j*42,12,0,Math.PI*2);g.fill();}} } }
   const texture = new THREE.CanvasTexture(canvas); texture.colorSpace = THREE.SRGBColorSpace; return texture;
 }
 // Warm stone paving for the court, like the plaza's slabs.

@@ -10,7 +10,7 @@ page.on('pageerror',e=>errors.push(String(e)));
 try{
   await mkdir('art/water-worlds/models',{recursive:true});
   await page.goto(`${process.env.PANA_TEST_URL||'http://localhost:8461'}/studio/settings.html`);
-  await page.setContent('<style>body{margin:0;background:#22333c}</style><script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}</script>');
+  await page.setContent('<style>body{margin:0;background:#22333c}</style><script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.186.1/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.186.1/examples/jsm/"}}</script>');
   const ids=await page.evaluate(async()=>{
     const THREE=await import('three');window.__T=THREE;window.__renderer=new THREE.WebGLRenderer({antialias:true,preserveDrawingBuffer:true});__renderer.setSize(720,560);document.body.appendChild(__renderer.domElement);
     window.__assets=(await import('/studio/catalog.js')).ASSETS.filter(a=>a.pack==='water-worlds');return __assets.map(a=>a.id);

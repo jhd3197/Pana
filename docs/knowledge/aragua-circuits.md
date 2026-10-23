@@ -1,7 +1,7 @@
 # Aragua circuits
 
 Cata, Choroní and Chuao adapt the user-supplied standalone HTML scenes into
-Derrape's track registry. They are standalone races rather than changes to
+Carreritas's track registry. They are standalone races rather than changes to
 saved Grand Prix editions. Studio discovers them from the same registry;
 online track validation also derives from it. Menu pictures are renders of
 the actual scenes. Music reuses the coastal and jungle recordings.
@@ -102,7 +102,7 @@ disposed on switching tracks. Library vegetation materials remain shared.
 `maps.browser.js` covers route projection, grades, radii, scenery clearance,
 item rows and three completed laps. `aragua.browser.js` connects two real
 clients, selects each new circuit, waits for both to load and verifies actual
-driving movement. The full Derrape suites, Studio and all-games smoke cover
+driving movement. The full Carreritas suites, Studio and all-games smoke cover
 the shared road and registry changes.
 
 `forest-detail.browser.js` verifies unchanged near geometry, reduced distant

@@ -4,7 +4,8 @@ import { letter, whenFont } from '/engine/models/core/lettering.js';
 import * as THREE from 'three';
 import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
 import { M, mesh, box, tube, canvasMat } from '/engine/models/core/primitives.js';
-import { bake } from '/engine/models/core/static-batch.js';
+import { bake, finish } from '/engine/models/core/static-batch.js';
+export { finish } from '/engine/models/core/static-batch.js';
 
 export const palette = {
   cream: M(0xf0dfb9, { roughness: 0.9 }), iron: M(0x354d4d, { metalness: 0.35, roughness: 0.65 }),
@@ -12,18 +13,6 @@ export const palette = {
   stone: M(0x8d9488, { roughness: 1 }), dark: M(0x263c3c, { roughness: 0.85 }),
   brass: M(0xc5a35a, { metalness: 0.6, roughness: 0.4 }),
 };
-
-export function finish(group, name) {
-  const out = bake(group); out.name = name;
-  const geometry = new Set(), textures = new Set();
-  group.traverse(o => {
-    if (o.geometry) geometry.add(o.geometry);
-    if (o.material?.map?.isCanvasTexture) textures.add(o.material.map);
-  });
-  geometry.forEach(g => g.dispose());
-  if (textures.size) out.userData.dispose = () => textures.forEach(t => t.dispose());
-  return out;
-}
 
 export function paintFinish(group, name) {
   group.traverse(o => {

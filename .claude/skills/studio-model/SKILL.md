@@ -84,7 +84,7 @@ build fails them with its id.
 
 Then look at it: `.\dev.ps1 studio` opens `/studio/library`; open the asset,
 orbit it, check the side view, the thumbnail and the triangle/mesh numbers,
-and drive or tour each map that places it (`npm run shots -- derrape --track
+and drive or tour each map that places it (`npm run shots -- carreritas --track
 <id>` for a quick look from the real loop).
 
 ## 6. Finish

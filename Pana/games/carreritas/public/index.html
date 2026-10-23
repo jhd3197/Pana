@@ -1,0 +1,263 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Carreritas — un juego de Pana</title>
+  <link rel="stylesheet" href="/engine/kit.css">
+  <link rel="stylesheet" href="/engine/ui.css">
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="menu.css">
+  <link rel="stylesheet" href="loadout.css">
+  <link rel="stylesheet" href="/engine/game-lobby.css">
+  <script type="importmap">
+    { "imports": {
+      "three": "https://cdn.jsdelivr.net/npm/three@0.186.1/build/three.module.js",
+      "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.186.1/examples/jsm/"
+    } }
+  </script>
+  <link rel="stylesheet" href="race-screens.css">
+</head>
+<body>
+  <section id="menu-boot" class="menu-boot pk-loading" aria-busy="true" aria-label="Preparando Carreritas">
+    <img src="./images/menu/raceMaster.webp" alt="" fetchpriority="high">
+    <div><h1>CARRERITAS</h1><p role="status">Preparando el garaje…</p><a href="/" class="pk-btn pk-btn--sm">Volver al Hub</a></div>
+  </section>
+  <!-- ---------- the shared room lobby (engine/game-entry.js shows it) ----------
+       The host's start takes the room on to Copa and Taller (menu-flow.js);
+       the race options and Carreritas's room controls move in here. -->
+  <section id="room-lobby" class="pk-lobby" aria-labelledby="room-lobby-title">
+    <span class="pk-ribbon">Carreritas · Gran Premio</span>
+    <h1 id="room-lobby-title" class="pk-title">¡Arranquen, panas!</h1>
+    <p class="pk-copy" data-room-description>Reúnanse aquí. Cuando estén listos, el anfitrión arranca: eligen la copa, arman el carro en el taller y ¡vámonos!</p>
+    <div id="lobby-settings" class="lobby-settings"></div>
+    <div class="pk-lobby-foot"><button id="start" type="button" class="pk-btn pk-btn--primary pk-btn--lg">¡Arrancar!</button></div>
+  </section>
+  <!-- ---------- garage ---------- -->
+  <div id="garage" class="screen menu-pending">
+    <header class="bar">
+      <a class="pk-btn pk-btn--sm hub-link" href="/">‹ Hub</a>
+      <div class="brand">CARRERITAS <span>garaje</span></div>
+      <nav class="steps" aria-label="Pasos"></nav>
+    </header>
+
+    <section class="launch pk-panel pk-panel--solid" aria-label="Pista">
+      <div class="track-map">
+        <canvas id="track-map" width="588" height="252" aria-hidden="true"></canvas>
+        <span id="track-of" class="track-of"></span>
+      </div>
+      <div class="track-pick">
+        <button id="t-prev" class="pk-btn pk-btn--sm" aria-label="Pista anterior">‹</button>
+        <div class="t-info">
+          <b id="track-name"></b>
+          <span id="track-blurb"></span>
+        </div>
+        <button id="t-next" class="pk-btn pk-btn--sm" aria-label="Pista siguiente">›</button>
+      </div>
+      <section id="lobby" class="lobby" aria-label="Sala online" hidden>
+        <div class="lobby-head">
+          <span class="pk-eyebrow">Sala <b id="lobby-code"></b></span>
+          <button id="lobby-invite" type="button" class="pk-btn pk-btn--sm">Invitar panas</button>
+        </div>
+        <ol id="lobby-roster" class="pk-roster" aria-label="Panas en la sala"></ol>
+        <label class="lobby-bots"><input id="lobby-bots" type="checkbox" checked> Completar con rivales</label>
+        <p id="lobby-status" class="lobby-status" role="status" aria-live="polite"></p>
+      </section>
+      <section id="setup" class="setup" aria-label="Tipo de carrera">
+        <div class="setup-row">
+          <span class="pk-eyebrow">Modo</span>
+          <div id="mode-pick" class="pk-seg" role="group" aria-label="Modo de juego">
+            <button type="button" data-mode="race" aria-pressed="true">Carrera</button>
+            <button type="button" data-mode="pana" aria-pressed="false">Copa Pana</button>
+            <button type="button" data-mode="aventura" aria-pressed="false">Copa Aventura</button>
+            <button type="button" data-mode="agua" aria-pressed="false">Copa del Agua</button>
+            <button type="button" data-mode="battle" aria-pressed="false">Globos</button>
+          </div>
+        </div>
+        <div class="setup-row">
+          <span class="pk-eyebrow">Dificultad</span>
+          <div id="difficulty-pick" class="pk-seg" role="group" aria-label="Dificultad">
+            <button type="button" data-difficulty="facil" aria-pressed="false">Fácil</button>
+            <button type="button" data-difficulty="normal" aria-pressed="true">Normal</button>
+            <button type="button" data-difficulty="dificil" aria-pressed="false">Difícil</button>
+          </div>
+        </div>
+        <div class="setup-row">
+          <span class="pk-eyebrow">Vueltas</span>
+          <div id="laps-pick" class="pk-seg" role="group" aria-label="Vueltas">
+            <button type="button" data-laps="1" aria-pressed="false">1</button>
+            <button type="button" data-laps="2" aria-pressed="false">2</button>
+            <button type="button" data-laps="3" aria-pressed="true">3</button>
+            <button type="button" data-laps="4" aria-pressed="false">4</button>
+            <button type="button" data-laps="5" aria-pressed="false">5</button>
+          </div>
+          <label class="mirror-pick split-pick">2 jugadores <button id="split" type="button" class="pk-switch" role="switch" aria-checked="false" aria-label="Pantalla dividida para dos jugadores"></button></label>
+          <label class="mirror-pick">Espejo <button id="mirror" type="button" class="pk-switch" role="switch" aria-checked="false" aria-label="Modo espejo"></button></label>
+        </div>
+        <ol id="cup-stages" class="cup-stages" aria-label="Pistas de la copa" hidden></ol>
+        <p id="setup-note" class="setup-note"></p>
+      </section>
+      <p id="launch-note" class="launch-note"><span class="pk-dot"></span>Tú contra 3 rivales</p>
+      <button id="play" class="play pk-btn pk-btn--primary pk-btn--lg pk-btn--block">¡Vámonos!</button>
+      <button id="go-online" type="button" class="pk-btn pk-btn--block">Carrera online con panas</button>
+      <button id="lobby-solo" type="button" class="pk-btn pk-btn--sm lobby-solo" hidden>Salir de la sala · correr solo</button>
+    </section>
+  </div>
+
+  <section id="shop" class="shop tl-stage" role="region" aria-label="Taller de Panas" hidden>
+    <div class="tl-head"><small>TALLER DE PANAS</small><div class="tl-name"><button type="button" id="loadout-prev" class="tl-arr sk" aria-label="Vehículo anterior"></button><button type="button" id="loadout-name" class="tl-plate sk" aria-label="Abrir el garaje"></button><button type="button" id="loadout-next" class="tl-arr sk" aria-label="Vehículo siguiente"></button></div><button type="button" id="loadout-garage" class="tl-gbtn sk" data-tab="carro">Garaje <em id="loadout-count"></em><kbd>G</kbd></button></div>
+    <nav id="loadout-vehicles" class="tl-tabs" aria-label="Tu kit"><kbd>Q</kbd><button type="button" class="tl-tab sk" data-vehicle="car" aria-pressed="true">Carro</button><button type="button" class="tl-tab sk" data-vehicle="boat" aria-pressed="false">Lancha</button><button type="button" class="tl-tab sk" data-vehicle="air" aria-pressed="false">Avioneta</button><kbd>E</kbd></nav>
+    <p class="shop-wallet tl-coins sk" aria-label="Mangos disponibles"><span class="mango-symbol" aria-hidden="true"></span><b id="shop-coins">0</b></p>
+    <div class="tl-stats sk"><header class="shop-head hd"><h2 id="shop-title">Tu carro</h2><span id="shop-level"></span></header><dl id="shop-stats" class="shop-stats"></dl></div>
+    <div id="shop-tabs" class="shop-tabs tl-slots" role="tablist" aria-label="Piezas del kit"></div>
+    <dialog id="loadout-drawer" class="tl-drawer sk" aria-labelledby="loadout-drawer-title"><div class="hd"><button id="loadout-back" type="button" class="tl-back">‹ Atrás <kbd>Esc</kbd></button><b id="loadout-drawer-title"></b><small>Pasa por encima para comparar · clic para equipar</small></div><div id="shop-body" class="shop-body tl-opts"></div><p id="loadout-message" role="status"></p></dialog>
+  </section>
+
+  <!-- ---------- race ---------- -->
+  <div id="race" class="screen hidden">
+    <div class="hud-top">
+      <b id="pos" class="pk-place" aria-label="Posición">1<sup>º</sup></b>
+      <div class="readouts">
+        <div id="stage-pill" class="pill" hidden><span class="pk-eyebrow">Copa</span><b id="stage-readout" class="pk-num small">1/4</b></div>
+        <div class="pill main"><span id="lap-label" class="pk-eyebrow">Vuelta</span><b id="lap" class="pk-num">1/3</b></div>
+        <div class="pill main"><span class="pk-eyebrow">Tiempo</span><b id="time" class="pk-num">0.0</b></div>
+        <div id="best-pill" class="pill" hidden><span class="pk-eyebrow">Mejor</span><b id="lap-best" class="pk-num small">—</b></div>
+        <div id="ghost-pill" class="pill" hidden title="El fantasma de tu mejor vuelta corre contigo"><span class="pk-eyebrow">Fantasma</span><b id="ghost-time" class="pk-num small">—</b></div>
+        <div class="pill leader"><span class="pk-eyebrow">Líder</span><b id="leader" class="pk-num small">—</b></div>
+      </div>
+    </div>
+
+    <div class="hud-corner">
+      <div class="minimap">
+        <div class="mm-head"><b id="mm-track">El Estadio</b><small id="mm-sub">Circuito 1</small></div>
+        <canvas id="mm" width="300" height="196"></canvas>
+      </div>
+    </div>
+
+    <ol id="board" aria-label="Clasificación"></ol>
+
+    <div id="coins" class="coins" title="Cada moneda da +0,8% de velocidad, hasta 10. Al final de la carrera se cambian por mangos.">
+      <span class="coin-symbol" aria-hidden="true">I</span>
+      <div><small class="pk-eyebrow">Monedas</small><b id="coin-count">00</b><span class="coin-cap"> / 10</span><span id="coin-bonus">+0% velocidad</span></div>
+    </div>
+
+    <section id="item" class="item" aria-label="Objetos de carrera">
+      <div class="inventory pk-slots">
+        <button id="item-slot-0" class="slot pk-slot selected" aria-pressed="true" aria-label="Objeto 1 vacío">
+          <span class="slot-key">1</span><span id="item-icon-0" class="item-icon">+</span><i id="item-n-0"></i><small id="item-label-0">Vacío</small>
+        </button>
+        <button id="item-slot-1" class="slot pk-slot" aria-pressed="false" aria-label="Objeto 2 vacío">
+          <span class="slot-key">2</span><span id="item-icon-1" class="item-icon">+</span><i id="item-n-1"></i><small id="item-label-1">Vacío</small>
+        </button>
+        <button id="swap-item" class="swap" title="Cambiar objeto" aria-label="Cambiar objeto"><span aria-hidden="true">⇄</span><kbd class="pk-kbd">Q</kbd></button>
+      </div>
+      <p id="item-status" role="status" aria-live="polite"></p>
+      <div class="item-actions">
+        <button id="throw-front" class="pk-btn pk-btn--primary"><span>Adelante</span><kbd class="pk-kbd">Espacio</kbd></button>
+        <button id="throw-back" class="pk-btn"><span>Atrás</span><kbd class="pk-kbd">X</kbd></button>
+      </div>
+    </section>
+
+    <div id="speedo">
+      <svg class="gauge" viewBox="0 -6 120 96" aria-hidden="true">
+        <path d="M16.7 81A50 50 0 1 1 103.3 81" fill="none" stroke="#2e2558" stroke-width="14"/>
+        <path id="gauge-fill" d="M16.7 81A50 50 0 1 1 103.3 81" fill="none" stroke-width="14" stroke-dasharray="0 400"/>
+        <path d="M16.7 81A50 50 0 1 1 103.3 81" fill="none" stroke="#0e0b24" stroke-width="16" stroke-dasharray="2 15.45" stroke-dashoffset="-15.45"/>
+        <line id="gauge-peak" x1="60" y1="13" x2="60" y2="-2" stroke="#ff4b4b" stroke-width="5" stroke-linecap="round"/>
+        <line id="gauge-needle" x1="60" y1="56" x2="60" y2="16" stroke="#f3e9d7" stroke-width="5" stroke-linecap="round"/>
+        <circle cx="60" cy="56" r="7" fill="#f3e9d7" stroke="#16161a" stroke-width="3"/>
+      </svg>
+      <div id="boost"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+      <small id="drift-hint" hidden></small>
+    </div>
+
+    <div id="combo" hidden>
+      <small class="pk-eyebrow">Estilo</small>
+      <b class="combo-pts">0</b>
+      <span class="combo-mult">×1</span>
+    </div>
+
+    <div class="keys pk-hints" data-pana-hint>
+      <span><kbd class="pk-kbd">W</kbd> Acelerar</span>
+      <span><kbd class="pk-kbd">S</kbd> Frenar</span>
+      <span><kbd class="pk-kbd">A D</kbd> Girar</span>
+      <span><kbd class="pk-kbd">Shift</kbd> Derrape</span>
+      <span><kbd class="pk-kbd">H</kbd> Claxon</span>
+      <span><kbd class="pk-kbd">Esc</kbd> Pausa</span>
+    </div>
+
+    <div class="touch-drive pk-touch-zone" aria-label="Conducir">
+      <div class="touch-steer">
+        <button class="pk-touch pk-touch--lg" data-icon="left" data-drive="a" aria-label="Girar a la izquierda"></button>
+        <button class="pk-touch pk-touch--lg" data-icon="right" data-drive="d" aria-label="Girar a la derecha"></button>
+      </div>
+      <div class="touch-pedals">
+        <button class="pk-touch pk-touch--lg" data-drive="s" aria-label="Frenar">Freno</button>
+        <button class="pk-touch pk-touch--lg touch-drift" data-drive="shift" aria-label="Derrapar o saltar">Derrape</button>
+        <button class="pk-touch pk-touch--lg pk-touch--go" data-drive="w" aria-label="Acelerar">Gas</button>
+      </div>
+    </div>
+
+    <div id="count"></div>
+    <div id="toast" class="pk-toast" role="status" aria-live="polite"></div>
+    <div id="wrong-way" class="wrong-way" role="alert" hidden><svg class="ww-icon" viewBox="0 0 40 40" aria-hidden="true"><path d="M12 34V16a8 8 0 0 1 16 0v6" fill="none" stroke="#16161a" stroke-width="10" stroke-linecap="round"/><path d="M12 34V16a8 8 0 0 1 16 0v6" fill="none" stroke="#fff" stroke-width="5" stroke-linecap="round"/><path d="M20 20l8 10 8-10z" fill="#fff" stroke="#16161a" stroke-width="2.5" stroke-linejoin="round"/></svg>¡CONTRAMANO!</div>
+    <div id="incoming" class="incoming" role="status" hidden><span class="incoming-cell"><span id="incoming-arrow" class="incoming-arrow" aria-hidden="true"></span></span><b id="incoming-text"></b></div>
+    <div id="p2-hud" class="p2-hud" hidden>
+      <span class="pk-eyebrow">Jugador 2</span><b id="p2-pos" class="pk-place">1<sup>º</sup></b>
+      <span id="p2-lap"></span><span id="p2-item"></span>
+      <small class="p2-keys">Flechas · Shift der. derrapa · Enter objeto · Punto atrás · Coma cambia · Retroceso rescate</small>
+    </div>
+    <p id="net-status" class="net-status pk-panel" role="status" aria-live="polite" hidden></p>
+
+    <div id="result" class="result hidden" role="dialog" aria-labelledby="result-title">
+      <div class="res-main">
+        <h1 id="result-title" class="pk-title pk-title--yellow"></h1>
+        <p id="result-time"></p>
+      </div>
+      <div class="res-side">
+        <div class="res-table pk-panel pk-panel--solid">
+          <span class="pk-eyebrow">Clasificación</span>
+          <ol id="result-board" class="pk-roster"></ol>
+        </div>
+        <div id="cup-table" class="res-table pk-panel pk-panel--solid" hidden>
+          <span id="cup-title" class="pk-eyebrow">Copa</span>
+          <ol id="cup-board" class="pk-roster"></ol>
+          <p id="cup-next" class="cup-next"></p>
+        </div>
+        <div class="res-coins pk-panel"></div>
+        <div class="res-actions">
+          <button id="again" class="play pk-btn pk-btn--primary pk-btn--lg pk-btn--block">Otra vez</button>
+          <div class="row">
+            <button id="back" class="pk-btn">Garaje</button>
+            <a class="pk-btn" href="/">Volver al hub</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <section id="loading" class="loading pk-loading hidden" role="dialog" aria-modal="true" aria-labelledby="loading-title" aria-busy="false">
+    <img id="loading-art" alt="" decoding="async">
+    <div class="loading-main">
+      <div class="loading-copy">
+        <span id="loading-meta" class="pk-eyebrow">Carreritas</span>
+        <h1 id="loading-title" class="pk-title pk-title--yellow">Preparando la carrera</h1>
+        <p id="loading-blurb"></p>
+      </div>
+      <div class="loading-tip pk-panel pk-panel--solid">
+        <span id="loading-tip-icon" class="tip-icon" aria-hidden="true"></span>
+        <div><span class="pk-eyebrow">Consejo</span><p id="loading-tip"></p></div>
+      </div>
+    </div>
+    <div class="loading-bar">
+      <progress id="loading-progress" max="1" value="0" aria-label="Preparación de la carrera"></progress>
+      <b id="loading-pct">0%</b>
+    </div>
+    <div class="loading-foot">
+      <p id="loading-status" role="status">Preparando la pista…</p>
+      <button id="loading-back" class="pk-btn pk-btn--sm">Volver al garaje</button>
+    </div>
+  </section>
+  <script type="module" src="/engine/game-entry.js" data-pana-entry="./game.js"></script>
+</body>
+</html>

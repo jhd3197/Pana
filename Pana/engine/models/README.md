@@ -1,7 +1,7 @@
 # Shared 3D model library
 
 This is the canonical home for reusable geometry. Games place models; Studio
-previews the same factories. Browser ESM, Three.js 0.160.0, no build step.
+previews the same factories. Browser ESM, Three.js 0.186.1, no build step.
 
 | Location | Responsibility |
 | --- | --- |
@@ -70,7 +70,7 @@ For example, the existing macaw definition has this shape:
   category: 'Fauna',
   source: '/engine/models/fauna/birds/scarlet-macaw.js',
   factory: 'scarletMacaw',
-  usedBy: ['Derrape'],
+  usedBy: ['Carreritas'],
   previewOptions: { seed: 7 },
   pack: 'wildlife',
 }

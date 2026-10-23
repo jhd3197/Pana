@@ -130,9 +130,9 @@ function updateUI(){
   lastPhase=state.phase;drawMap(own);
 }
 ensureRiders();ready=true;$('loading').classList.add('hidden');room.connect();updateUI();
-const clock=new THREE.Clock();let elapsed=0,wasRemate=false;
+const clock=new THREE.Timer().reset();let elapsed=0,wasRemate=false;
 function frame(){
-  if(disposed)return;const dt=Math.min(clock.getDelta(),.08),frozen=paused&&room.members.size<=1;if(!frozen)elapsed+=dt;
+  if(disposed)return;const dt=Math.min(clock.update().getDelta(),.08),frozen=paused&&room.members.size<=1;if(!frozen)elapsed+=dt;
   const people=ensureRiders();
   // Your own horse where you predict it (RaceRoom's predict), not a round trip behind.
   for(const shown of people){const p=shown.id===room.id?room.predicted??shown:shown,r=riders.get(p.id),y=groundAt(p.x,p.z)+(p.jumpY||0),blend=1-Math.exp(-dt*18);

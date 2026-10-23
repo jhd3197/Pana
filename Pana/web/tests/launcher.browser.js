@@ -14,7 +14,7 @@ try {
   await page.locator('.game').last().waitFor();
   await page.locator('#feature-art img').evaluate(img => img.decode());
   await page.evaluate(() => document.fonts.ready);
-  assert.equal(await page.locator('#feature-name').textContent(), 'Derrape');
+  assert.equal(await page.locator('#feature-name').textContent(), 'Carreritas');
   assert.equal(await page.locator('#feature-art canvas').count(), 0);
   // Every tile shows its illustration, or its live card.js art while it has none (Trifulca).
   assert.equal(await page.locator('.game-art[src]').count() + await page.locator('canvas.game-art').count(), await page.locator('.game').count());
@@ -39,7 +39,7 @@ try {
   await page.getByRole('button', { name: 'Link copiado', exact: true }).waitFor();
   assert.equal(await page.evaluate(() => navigator.clipboard.readText()), await page.locator('#room-link').inputValue());
   await page.locator('#room-dialog [data-close-dialog]').click();
-  for (const game of ['tambor', 'stop', 'chapita']) {
+  for (const game of ['tambor', 'stop', 'chapita', 'parapente']) {
     if (!await page.locator(`[data-id="${game}"]`).count()) continue;
     const card = page.locator(`[data-id="${game}"] img`);
     assert.match(await card.getAttribute('src'), new RegExp(`${game}-card\\.jpg$`));

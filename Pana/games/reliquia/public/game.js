@@ -8,7 +8,7 @@ import { holdButton, drawIcons, isTouch } from '/engine/touch.js';
 import { shout } from '/engine/kit.js';
 import { createToast } from '/engine/hud.js';
 import { elapsedClock } from '/engine/live-room.js';
-import { createLookControls, SENSITIVITY_CHOICES } from '/engine/play/first-person.js';
+import { createLookControls } from '/engine/play/first-person.js';
 import { FIELDS, DEFAULT_OPTIONS } from './options.js';
 import { Expedition, BARKS, interaction } from './rules.js';
 import { ExpeditionRoom } from './network.js';
@@ -35,7 +35,6 @@ const menu = createGameMenu({
   pad: { move: 'wasd', look: 'Mirar', keys: { rt: ['Space', 'Usar lo de la mano derecha'], a: ['Space', 'Usar lo de la mano derecha'], lt: ['KeyF', 'Usar lo de la mano izquierda'], x: ['KeyE', 'Agarrar o abrir; mantén para girar'], b: ['KeyQ', 'Soltar'], y: ['KeyG', 'Lanzar'], rb: ['KeyR', 'Arrastrar a un pana'], lb: ['ShiftLeft', 'Correr'], ls: ['ShiftLeft', 'Correr'], view: ['Tab', 'Ver al equipo'] } },
   title: 'Reliquia', heading: 'Un respiro', resumeLabel: 'Volver a la mina', sound, notify,
   note: () => solo() ? 'La expedición está en pausa.' : 'Tus panas siguen en la mina.',
-  options: [{ id: 'mouse', label: 'Sensibilidad al mirar', choices: SENSITIVITY_CHOICES, get: () => looking.sensitivity, set: value => { looking.sensitivity = value; } }],
   controls: [['W A S D', 'Caminar hacia donde miras'], ['Ratón', 'Mirar (haz clic en la pantalla para capturarlo)'], ['Clic / Espacio', 'Usar lo de la mano derecha'], ['Clic derecho / F', 'Usar lo de la mano izquierda'],
     ['E', 'Agarrar, abrir; mantén para girar ruedas, levantar panas o atrapar lo que te lanzan'], ['Q', 'Soltar'], ['G', 'Lanzar lo que tienes en la mano'], ['R', 'Arrastrar a un pana caído'],
     ['Shift', 'Correr'], ['1 – 7', '¿Nos vamos ya? · ¡Una sala más! · y otros gritos'], ['Tab', 'Ver al equipo'], ['M', 'Sonido'], ['Esc', 'Soltar el ratón y abrir el menú']],

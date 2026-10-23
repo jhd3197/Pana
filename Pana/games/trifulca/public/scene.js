@@ -13,6 +13,8 @@ import { arenaOf, crowdSpot } from './fight-rules.js';
 import { createArena } from './arenas.js';
 import { createPana } from './fighters.js';
 import { motoHelmet, chancleta } from './set.js';
+import { gazeAt, midOf, npcLife, animateNpc } from './crowd-life.js';
+import { inkOutlines } from './toon.js';
 import { plasticChair, produceCrates } from '/engine/models/props/barrio.js';
 
 // The things lying around a trifulca libre, at the size a pana can swing.
@@ -27,6 +29,8 @@ const ringOf = (bodies = []) => bodies.filter(b => !b.bench && !b.out);
 const BOT_LOOKS = ['#2ad1b2', '#ffc629', '#3d7bf2', '#ff8a3d', '#9b5de5', '#6bbf59', '#ff6fae', '#ee3024'];
 const REF_LOOK = { outfit: 'franela', outfitColor: '#f3e9d7', hat: 'llanero', hatColor: '#7a5230', face: 'cool' };
 const v = (x = 0, y = 0, z = 0) => new THREE.Vector3(x, y, z);
+// Camera-side candidates when an arena doesn't declare its own (camSides).
+const CAM_SIDES = [v(0, 0, 1), v(0, 0, -1)];
 
 export function createTrifulcaScene(canvas, { me = () => null } = {}) {
   const stage = createTableWorld(canvas, { fit: 'window', arena: false, fov: 40 }), { renderer, scene, camera, sun } = stage;
@@ -37,6 +41,7 @@ export function createTrifulcaScene(canvas, { me = () => null } = {}) {
   const panas = new Map(), props = new Map();
   let arena = null, arenaId = null, npcs = [], lampLights = [], ref = null, current = null, time = 0;
   let camPerp = v(0, 0, 1), camPos = v(0, 4, 12), camLook = v(0, 1, 0), shake = 0, zoom = 1, zoomT = 0;
+  let sideIndex = 0, sideWant = -1, sideTimer = 0;
   const frames = [], replay = { on: false, frames: [], clock: 0 };
   let lastCaida = -1;
 
@@ -63,7 +68,7 @@ export function createTrifulcaScene(canvas, { me = () => null } = {}) {
       if (arena.hats && !spot.senora && i % 4 !== 3) Object.assign(look, { hat: 'llanero', hatColor: ['#7a5230', '#e9dcc0', '#3b2a1a'][i % 3] });
       const npc = buildCharacter(look, { seated: !!spot.seated });
       npc.group.position.set(spot.x, spot.y ?? 0, spot.z); npc.group.rotation.y = spot.face;
-      npc.phase = i * 1.7; npc.cheer = 0; own.add(npc.group); npcs.push(npc);
+      npc.phase = i * 1.7; npc.cheer = 0; npc.life = npcLife(i); own.add(npc.group); npcs.push(npc);
     });
     ref ||= Object.assign(buildCharacter(REF_LOOK), { pos: v(0, 0, -3) });
     own.add(ref.group);
@@ -79,7 +84,7 @@ export function createTrifulcaScene(canvas, { me = () => null } = {}) {
     setArena(state.arenaNow || state.options?.arena || 'calle');
     // Chairs, crates, helmets and chancletas of a trifulca libre.
     const liveProps = new Set((state.props || []).map(p => p.id));
-    for (const p of state.props || []) if (!props.has(p.id)) { const model = PROP_MODELS[p.kind]?.() || PROP_MODELS.caja(); own.add(model); props.set(p.id, { model, pos: v(p.x, 0, p.z), spin: 0 }); }
+    for (const p of state.props || []) if (!props.has(p.id)) { const model = inkOutlines(PROP_MODELS[p.kind]?.() || PROP_MODELS.caja()); own.add(model); props.set(p.id, { model, pos: v(p.x, 0, p.z), spin: 0 }); }
     for (const [id, entry] of props) if (!liveProps.has(id)) { entry.model.userData.dispose?.(); entry.model.removeFromParent(); props.delete(id); }
     const live = new Set();
     state.players.forEach((p, i) => {
@@ -100,21 +105,37 @@ export function createTrifulcaScene(canvas, { me = () => null } = {}) {
 
   // The fight's events: hits rock heads, the camera punches in, the arena answers.
   function react(e) {
-    const who = panas.get(e.id)?.pana, at = panas.get(e.id)?.pos;
-    if (e.type === 'hit' && who) { who.hit(e.counter ? 1 : .6); puffs.spawn(at.clone().add(v(0, 1.4 + floor(), 0)), { color: 0xfff1d0, count: 4, spread: .4, size: .5, rise: .6, life: .4 }); }
+    const entry = panas.get(e.id), who = entry?.pana, at = entry?.pos;
+    // Which side the blow came from, in the victim's facing frame (for stagger).
+    const side = (by) => {
+      const from = panas.get(by)?.pos;
+      if (!from || !at || !entry) return 0;
+      return Math.sign(Math.sin(entry.h) * (from.z - at.z) - Math.cos(entry.h) * (from.x - at.x));
+    };
+    if (e.type === 'hit' && who) { who.hit(e.counter ? 1 : .6, false, side(e.by)); puffs.spawn(at.clone().add(v(0, 1.4 + floor(), 0)), { color: 0xfff1d0, count: 4, spread: .4, size: .5, rise: .6, life: .4 }); }
     if (e.type === 'trompon' && who) {
-      who.hit(1.3, true); shake = .2; zoomT = .45;
+      who.hit(1.3, true, side(e.by)); shake = .2; zoomT = .45;
       rings.ring(at.clone().add(v(0, 1.4 + floor(), 0)), { color: 0xffd23f, maxRadius: 2.2, life: .35 });
       rings.sparkle(at.clone().add(v(0, 1.6 + floor(), 0)), { count: 8 });
     }
     if (e.type === 'block' && who) { who.blocked(); rings.sparkle(at.clone().add(v(0, 1.5 + floor(), 0)), { color: 0xffffff, count: 4, spread: .3 }); }
     if (e.type === 'caida') { shake = .18; zoomT = .5; lastCaida = time; if (at) puffs.spawn(at.clone().add(v(0, .2 + floor(), 0)), { color: 0xcab79a, count: 3, spread: .5, size: .45, rise: .4, life: .6 }); }
+    if (e.type === 'rise' && who) who.character.bounce?.(.8);
+    // A trompón connecting or a caída: the neighbours close by gasp.
+    if ((e.type === 'trompon' || e.type === 'caida') && at) {
+      for (const n of npcs) { const p = n.group.position; if (n.life && Math.abs(p.x - at.x) < 7 && Math.abs(p.z - at.z) < 7) n.life.gasp = 1; }
+    }
     if (e.type === 'shove' && who) who.hit(.8);
     if ((e.type === 'empujon' || e.type === 'empuja-aire' || e.type === 'agua') && panas.get(e.by)) panas.get(e.by).pana.shove();
     if (e.type === 'cheer' && panas.get(e.by)) panas.get(e.by).pana.cheer();
     if (['trompon', 'caida', 'fin', 'mano', 'moto', 'vecino'].includes(e.type)) {
       for (const n of npcs) if (Math.random() < .7) n.cheer = 1.6;
       for (const entry of panas.values()) if (!isFighter(entry.player?.id)) entry.pana.cheer();
+      // The end of a fight: everyone celebrates with a landing bounce.
+      if (e.type === 'fin') {
+        for (const n of npcs) n.bounce?.(.8);
+        for (const entry of panas.values()) entry.pana.character.bounce?.(.8);
+      }
     }
     if (e.type === 'intro') { arena?.reset(); frames.length = 0; replay.on = false; lastCaida = -1; for (const entry of panas.values()) entry.placed = false; }
     if (e.type === 'fin' && (e.how === 'ko' || e.how === 'cuenta') && lastCaida >= 0) {
@@ -145,10 +166,11 @@ export function createTrifulcaScene(canvas, { me = () => null } = {}) {
       }
     }
     let k = 0;
+    const mid = midOf(bodies); // the crowd faces the fight, not the centre mark
     for (const p of state.players) {
       if (out.has(p.id)) continue;
       const spot = state.phase === 'lobby' || state.phase === 'finished' ? crowdSpot(shape, (k++ / Math.max(1, state.players.length)) * Math.PI * 2 + .4) : crowdSpot(shape, p.angle);
-      const face = Math.atan2(-spot.x, -spot.z);
+      const face = gazeAt(spot.x, spot.z, mid);
       out.set(p.id, { x: spot.x, z: spot.z, y: 0, h: face, view: { act: state.phase === 'finished' && state.winner === p.id ? 'win' : 'crowd' }, corner: null });
     }
     return out;
@@ -191,6 +213,7 @@ export function createTrifulcaScene(canvas, { me = () => null } = {}) {
       n.cheer = Math.max(0, n.cheer - dt);
       n.update(dt, n.cheer > 0 ? { pose: 'wave' } : {});
       if (n.cheer > 0 && !n.seated) n.group.position.y = Math.abs(Math.sin(time * 9 + n.phase)) * .12;
+      animateNpc(n, dt, time, fightMid);
     }
     updateRef(dt);
     placeProps(dt, want);
@@ -246,9 +269,31 @@ export function createTrifulcaScene(canvas, { me = () => null } = {}) {
       const axis = b.clone().sub(a); axis.y = 0;
       const sep = fighters.length === 2 ? axis.length() : Math.max(...fighters.map(p => p.distanceTo(mid))) * 2;
       axis.normalize();
-      // Like a fighting game: one fixed side view (the fight runs along X, the
-      // red corner on the left), so right on the stick is right on screen.
-      const perp = v(0, 0, 1);
+      // Like a fighting game: a fixed side view (the fight runs along X, the
+      // red corner on the left), so right on the stick is right on screen. A
+      // chooser picks between the arena's candidate sides: each is scored by
+      // the fighters' depth spread along it, how far a fighter drifts toward
+      // the camera, and how far the camera position would overflow camBox.
+      // A switch needs a clearly better score held for 1.5 s, so a 1v1 on the
+      // z≈0 line never flips the screen; the chooser only earns its keep in
+      // trifulca libre and when a caída flings a body outward.
+      const sides = arena?.camSides?.length ? arena.camSides : CAM_SIDES;
+      const dist0 = Math.min(12, Math.max(7.2, 5.4 + sep * 1.35));
+      const scores = sides.map(s => {
+        let mn = Infinity, mx = -Infinity;
+        for (const p of fighters) { const d = (p.x - mid.x) * s.x + (p.z - mid.z) * s.z; if (d < mn) mn = d; if (d > mx) mx = d; }
+        let score = mx - mn + Math.max(0, mx) * 1.4;
+        if (arena?.camBox) { const [hx, hz] = arena.camBox; score += 2 * (Math.max(0, Math.abs(mid.x + s.x * dist0) - hx) + Math.max(0, Math.abs(mid.z + s.z * dist0) - hz)); }
+        return score;
+      });
+      let best = 0;
+      for (let i = 1; i < sides.length; i++) if (scores[i] < scores[best]) best = i;
+      if (best !== sideIndex && scores[sideIndex] - scores[best] > 1.2) {
+        if (sideWant !== best) { sideWant = best; sideTimer = 0; }
+        sideTimer += dt;
+        if (sideTimer > 1.5) { sideIndex = best; sideWant = -1; sideTimer = 0; }
+      } else { sideWant = -1; sideTimer = 0; }
+      const perp = sides[sideIndex];
       // Turn around the fight by the shortest way instead of cutting through it.
       const from = Math.atan2(camPerp.x, camPerp.z), to = Math.atan2(perp.x, perp.z);
       let turn = to - from; turn = Math.atan2(Math.sin(turn), Math.cos(turn));
@@ -302,6 +347,6 @@ export function createTrifulcaScene(canvas, { me = () => null } = {}) {
     npcs.forEach(n => n.dispose()); ref?.dispose(); arena?.dispose(); lampLights.forEach(l => l.removeFromParent());
     puffs.clear(); rings.clear(); stage.dispose();
   }
-  const api = { renderer, scene, camera, update, react, frame, stickBasis, dispose, debugCamera: null, get replaying() { return replay.on; }, get arenaId() { return arenaId; } };
+  const api = { renderer, scene, camera, update, react, frame, stickBasis, dispose, debugCamera: null, get replaying() { return replay.on; }, get arenaId() { return arenaId; }, get cameraSide() { return sideIndex; } };
   return api;
 }

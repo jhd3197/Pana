@@ -331,7 +331,7 @@ export function growTree(species, { seed = 1, detail = 'full', leaves = true, fl
     // distant green crowns may be faceted; a bloom stays round (it is the tree)
     const o = { lite, low, far, facet: far && !blossom, ...species.foliage, ...(blossom ? species.blossom : {}) };
     o.size = (blossom ? species.blossom.size ?? species.foliage.size : species.foliage.size) * s * (far ? 2 : low ? 1.7 : 1);
-    crown = dressCrown(parts, r, skeleton, o);
+    crown = (species.dressCrown || dressCrown)(parts, r, skeleton, o);
     if (blossom && species.blossom.mixLeaves && !far) dressCrown(parts, r, skeleton, { ...species.foliage, lite, low, size: species.foliage.size * s * 0.8, keep: species.blossom.mixLeaves, along: 0 });
   }
   if (fruit && species.fruit && !far) species.fruit(parts, r, skeleton, s, lite);

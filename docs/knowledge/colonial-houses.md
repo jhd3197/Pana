@@ -14,14 +14,14 @@ Every street house in every map is built by `colonialHouse()` in
 reaches all of them. The other entry points are thin adapters:
 
 - `house()` in `plaza-buildings.js` (the shared plaza in `engine/worlds/plaza.js`,
-  Derrape's Plaza circuit, Pintura): `style` picks the family and roof
+  Carreritas's Plaza circuit, Pintura): `style` picks the family and roof
   (`tejas` casa-baja, `balcon` casa-balcon or casa-remate, `tienda`
   casa-portal or casa-esquina, `terraza` casa-remate with azotea), `h` the
   floors, the seed the finish; `label` adds the shop sign. Still 5.4 deep,
   ground origin, baked to a few draws.
 - `colonialHouse()` in `pueblo.js` without a recipe: a 6.4 × 5.1 casa-baja
   (Bululú, Chichí, Plaza).
-- `canalVilla()` in Derrape's `world-landmarks.js`: a 9 × 7 casa-balcon.
+- `canalVilla()` in Carreritas's `world-landmarks.js`: a 9 × 7 casa-balcon.
 - Puerto calls the maker directly.
 
 `wallColor` repaints a recipe's walls with the map's colour without changing

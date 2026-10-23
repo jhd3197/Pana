@@ -3,9 +3,9 @@
 // instead of a full browser suite, for "does it look right?" questions.
 //
 //   npm run shots -- <game> [options]
-//   npm run shots -- derrape --track chuao --at gate-60 --shots 8 --every 250
-//   npm run shots -- derrape --track tovar,sabana --lap 0.1,0.4,0.7
-//   npm run shots -- derrape --track sabana --menu --view .9:.6:.8
+//   npm run shots -- carreritas --track chuao --at gate-60 --shots 8 --every 250
+//   npm run shots -- carreritas --track tovar,sabana --lap 0.1,0.4,0.7
+//   npm run shots -- carreritas --track sabana --menu --view .9:.6:.8
 //
 // Options (all games):
 //   --query a=b&c    extra URL query (debug is always on)
@@ -17,7 +17,7 @@
 //   --keys a,b       hold these keys (KeyboardEvent.key names) while shooting
 //   --out DIR        where the pictures go (default: a new temp folder)
 //   PANA_TEST_URL    reuse a running server instead of starting one
-// Derrape:
+// Carreritas:
 //   --track ID       circuit (default estadio); the race starts on autopilot,
 //                    unless --keys drives it (then the keys are the input)
 //   --at WHERE       drop the player there first: a route fraction (0.9),
@@ -29,7 +29,7 @@
 //   --menu           render the menu picture from the real scene, racers
 //                    hidden: <track>.webp (1200x800) and <track>-thumb.webp
 //                    (480x320) written straight into
-//                    games/derrape/public/images/menu with their sources.json
+//                    games/carreritas/public/images/menu with their sources.json
 //                    entries, unless --out points elsewhere
 //   --view Y:P:D     menu orbit: yaw and pitch in radians around the map
 //                    centre (default .6:.75); D scales the radius (default 1)
@@ -48,8 +48,8 @@ const game = argv[0];
 const opt = (name, fallback) => { const i = argv.indexOf(`--${name}`); return i > 0 && argv[i + 1] != null ? argv[i + 1] : fallback; };
 const shots = Number(opt('shots', 6)), every = Number(opt('every', 300)), wait = Number(opt('wait', 0));
 const menu = argv.includes('--menu'), lap = opt('lap', null);
-if ((menu || lap) && game !== 'derrape') { console.error('--menu and --lap are Derrape options'); process.exit(1); }
-const menuDir = path.resolve(import.meta.dirname, '../games/derrape/public/images/menu');
+if ((menu || lap) && game !== 'carreritas') { console.error('--menu and --lap are Carreritas options'); process.exit(1); }
+const menuDir = path.resolve(import.meta.dirname, '../games/carreritas/public/images/menu');
 const [width, height] = opt('size', lap ? '1280x720' : '960x600').split('x').map(Number);
 const out = path.resolve(opt('out', menu && !lap ? menuDir : fs.mkdtempSync(path.join(os.tmpdir(), `pana-shots-${game}-`))));
 fs.mkdirSync(out, { recursive: true });
@@ -72,14 +72,14 @@ if (errors.length) { console.error(`Page errors:\n${errors.join('\n')}${log ? `\
 async function burst() {
   const page = await browser.newPage({ viewport: { width, height } });
   page.on('pageerror', e => errors.push(String(e)));
-  const derrape = game === 'derrape';
+  const carreritas = game === 'carreritas';
   const keys = opt('keys', '').split(',').filter(Boolean);
-  const query = ['debug', derrape && !keys.length && 'auto', derrape && `track=${opt('track', 'estadio')}`, opt('query', '')].filter(Boolean).join('&');
+  const query = ['debug', carreritas && !keys.length && 'auto', carreritas && `track=${opt('track', 'estadio')}`, opt('query', '')].filter(Boolean).join('&');
   await page.goto(`${base}/g/${game}/?${query}`);
   await page.waitForFunction(() => window.PANA_PREPARED === true, null, { timeout: 180000 });
   let state = () => null;
-  if (derrape) {
-    const { menuClick } = await import('../games/derrape/tests/menu-helpers.js');
+  if (carreritas) {
+    const { menuClick } = await import('../games/carreritas/tests/menu-helpers.js');
     await menuClick(page, '#play');
     await page.waitForFunction(() => race.state === 'go', null, { timeout: 180000 });
     const at = opt('at', null);
@@ -110,7 +110,7 @@ async function burst() {
   }
 }
 
-// Derrape stills drive the debug globals directly: no menus, no race clock.
+// Carreritas stills drive the debug globals directly: no menus, no race clock.
 async function stills() {
   const page = await browser.newPage({ viewport: menu && !lap ? { width: 1200, height: 800 } : { width, height } });
   page.on('pageerror', e => errors.push(String(e)));
@@ -118,7 +118,7 @@ async function stills() {
     localStorage.setItem('pana:name', 'Shots');
     localStorage.setItem('pana:settings', JSON.stringify({ sound: false, music: false, quality: 'alta' }));
   });
-  await page.goto(`${base}/g/derrape/?debug&auto&track=estadio`);
+  await page.goto(`${base}/g/carreritas/?debug&auto&track=estadio`);
   await page.waitForFunction(() => window.getActiveTrack && garage.car, null, { timeout: 180000 });
   for (const id of opt('track', 'estadio').split(',')) {
     if (lap) for (const f of lap.split(',').map(Number)) {

@@ -1,5 +1,5 @@
 import { ARENAS,TABLE_ARENAS } from '/engine/worlds/arena-layouts.js';
-import { TRACK_DEFINITIONS } from '/g/derrape/track-definitions.js';
+import { TRACK_DEFINITIONS } from '/g/carreritas/track-definitions.js';
 import { STATIONS } from '/g/cocina/rules.js';
 
 export const MAPS = [
@@ -38,7 +38,7 @@ export const MAPS = [
   { id: 'lancha', name: 'Lancha · Sipapo y Orinoco', category: 'Mapas', source: '/engine/river/scene.js', dependencies: ['/g/lancha/course.js','/engine/river/river.js','/engine/river/landscape.js','/engine/models/props/amazonas.js','/engine/models/props/coastal.js','/engine/worlds/island-landscape.js'], factory: 'createRiverWorld', usedBy: ['Lancha'], game: '/g/lancha/', description: 'Río de 1827 m para lanchas: Caño del Sipapo con su igapó, los Raudales de Atures con saltos y el Orinoco abierto con boyas, toninas y caimanes hasta Puerto Ayacucho.',
     async build() { const { Box3, Vector3 } = await import('three'); const [{ createRiverWorld }, { RIVER }, { addLandscape }] = await Promise.all([import('/engine/river/scene.js'), import('/g/lancha/course.js'), import('/engine/river/landscape.js')]); const model = createRiverWorld(RIVER, { dress: addLandscape }), b = model.group.userData.bounds; return { ...model, groundAt: RIVER.groundAt, bounds: new Box3(new Vector3(b.minX + 60, 0, b.minZ + 60), new Vector3(b.maxX - 60, 30, b.maxZ - 60)) }; },
   },
-  { id: 'plaza', name: 'Plaza Pana', category: 'Mapas', source: '/engine/worlds/plaza.js', factory: 'createPlazaEnvironment', usedBy: ['Escondidas', 'Cocina', 'Derrape'], game: '/g/escondidas/',
+  { id: 'plaza', name: 'Plaza Pana', category: 'Mapas', source: '/engine/worlds/plaza.js', factory: 'createPlazaEnvironment', usedBy: ['Escondidas', 'Cocina', 'Carreritas'], game: '/g/escondidas/',
     async build() { const { Box3, Vector3, Scene } = await import('three'); const { createPlazaEnvironment } = await import('/engine/worlds/plaza.js'); return { ...createPlazaEnvironment(), bounds: new Box3(new Vector3(-28, 0, -24), new Vector3(28, 15, 28)) }; },
   },
   { id: 'cocina', name: 'Cocina de la plaza', category: 'Mapas', source: '/g/cocina/scene.js', factory: 'createKitchenScene', usedBy: ['Cocina'], game: '/g/cocina/',
@@ -56,6 +56,6 @@ export const MAPS = [
       return {group,groundAt:board.groundAt,bounds:new Box3(new Vector3(-155,-4,-145),new Vector3(170,70,145)),update:(t,dt)=>board.update(t,dt)};
     },
   },
-  ...TRACK_DEFINITIONS.map(track => ({ id: `track-${track.id}`, name: `Circuito · ${track.name}`, category: 'Mapas', source: `/g/derrape/tracks/${track.id}.js`, dependencies: ['/g/derrape/track-runtime.js'], factory: 'makeTrack(definition).build', usedBy: ['Derrape'], description: track.blurb, game: `/g/derrape/?track=${track.id}`,
-    async build() { const { Box3, Vector3, Scene } = await import('three'); const [{ makeTrack }, { default: definition }] = await Promise.all([import('/g/derrape/track-runtime.js'), import(`/g/derrape/tracks/${track.id}.js`)]); const model = makeTrack(definition); return { group: model.build(), groundAt:model.terrainAt, route:model, bounds: definition.previewBounds ? new Box3(new Vector3(...definition.previewBounds[0]), new Vector3(...definition.previewBounds[1])) : new Box3(new Vector3(-model.bounds.x - 20, 0, -model.bounds.z - 20), new Vector3(model.bounds.x + 20, 35, model.bounds.z + 20)), update: (t, dt) => model.animated.forEach(o => o.userData.tick?.(t, dt)) }; },
+  ...TRACK_DEFINITIONS.map(track => ({ id: `track-${track.id}`, name: `Circuito · ${track.name}`, category: 'Mapas', source: `/g/carreritas/tracks/${track.id}.js`, dependencies: ['/g/carreritas/track-runtime.js'], factory: 'makeTrack(definition).build', usedBy: track.id === 'galipan' ? ['Carreritas', 'Parapente'] : ['Carreritas'], description: track.blurb, game: `/g/carreritas/?track=${track.id}`,
+    async build() { const { Box3, Vector3, Scene } = await import('three'); const [{ makeTrack }, { default: definition }] = await Promise.all([import('/g/carreritas/track-runtime.js'), import(`/g/carreritas/tracks/${track.id}.js`)]); const model = makeTrack(definition); return { group: model.build(), groundAt:model.terrainAt, route:model, bounds: definition.previewBounds ? new Box3(new Vector3(...definition.previewBounds[0]), new Vector3(...definition.previewBounds[1])) : new Box3(new Vector3(-model.bounds.x - 20, 0, -model.bounds.z - 20), new Vector3(model.bounds.x + 20, 35, model.bounds.z + 20)), update: (t, dt) => model.animated.forEach(o => o.userData.tick?.(t, dt)) }; },
   })),];

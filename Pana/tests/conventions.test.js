@@ -36,6 +36,16 @@ function walkAll(dir, keep, out = []) {
 const pub = (id, file) => path.join(gamesDir, id, 'public', file);
 const meta = (id) => JSON.parse(read(path.join(gamesDir, id, 'game.json')));
 
+test('runtime, browser harnesses and scaffolds share the Three.js pin', () => {
+  const problems = [];
+  for (const file of walkAll(app, name => /\.(?:html|js|mjs|tmpl)$/.test(name))) {
+    for (const match of read(file).matchAll(/(?:cdn\.jsdelivr\.net\/npm|unpkg\.com)\/three@([\d.]+)/g)) {
+      if (match[1] !== '0.186.1') problems.push(`${rel(file)}: unexpected Three.js ${match[1]}`);
+    }
+  }
+  assert.deepEqual(problems, []);
+});
+
 test('shared room menus include their stylesheet and use pure validated option fields', () => {
   for (const id of games) {
     const source = read(pub(id, 'game.js'));
@@ -268,7 +278,7 @@ test('engine files other sites load stay at their paths', () => {
 
 // Without a bundler every static import is a request, and each level of imports
 // waits for the one above it. A game's first load stays small; worlds, maps and
-// minigames that aren't on screen yet load with import() (Derrape's tracks.js,
+// minigames that aren't on screen yet load with import() (Carreritas's tracks.js,
 // Bululú's minigames/index.js).
 test(`a game's first load is at most ${FIRST_LOAD_MODULES} modules`, () => {
   const problems = [];
@@ -303,7 +313,7 @@ test('every game page loads the shared UI, lobby and pinned Three.js', () => {
     const html = read(pub(id, 'index.html'));
     if (!/href=["']\/engine\/ui\.css["']/.test(html)) problems.push(`${id}: index.html does not link /engine/ui.css`);
     if (!OWN_MENU[id] && !/\/engine\/game-entry\.js["'][^>]*data-pana-entry/.test(html)) problems.push(`${id}: index.html does not load /engine/game-entry.js with data-pana-entry`);
-    if (!html.replace(/\s/g, '').includes('"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js"')) problems.push(`${id}: import map does not pin three@0.160.0`);
+    if (!html.replace(/\s/g, '').includes('"three":"https://cdn.jsdelivr.net/npm/three@0.186.1/build/three.module.js"')) problems.push(`${id}: import map does not pin three@0.186.1`);
   }
   assert.deepEqual(problems, []);
 });
@@ -389,4 +399,13 @@ test('no merge conflict markers in tracked files; the changelog lints clean', as
   assert.equal(hits.trim(), '', 'conflict markers left by a merge');
   const { lint } = await import('../scripts/changelog.js');
   assert.deepEqual(lint(fs.readFileSync(path.join(repo, 'CHANGELOG.md'), 'utf8')), []);
+});
+
+
+test('the shared side-menu sala is the default for every game', () => {
+  const entry = read(path.join(app, 'engine/game-entry.js'));
+  assert.ok(entry.includes("import('./sala.js')"));
+  assert.ok(!/\['carreritas', 'pintura'\]\.includes\(game\)/.test(entry), 'no game allowlist for the core layout');
+  const sala = read(path.join(app, 'engine/sala.js'));
+  assert.ok(sala.includes('if (!config)'), 'games without workshop metadata still receive the common layout');
 });

@@ -1,12 +1,12 @@
 # Complete circuit surroundings
 
 The October 2026 pass addresses visible world edges and empty surroundings in
-Derrape. It preserves the eight racing routes, elevations, widths and handling.
+Carreritas. It preserves the eight racing routes, elevations, widths and handling.
 It builds on the earlier living-sky and varied-house work.
 
 ## Continuous land and water
 
-`Pana/games/derrape/public/tracks/world-horizon.js` attaches one coarse landscape
+`Pana/engine/worlds/coastal/world-horizon.js` attaches one coarse landscape
 mesh to each original terrain mesh. The first ring copies the exact grid boundary
 positions, colors and normals. Eight further rings reach 3,800 m beyond that
 boundary, past the racing fog distance. Llanos has low rolling savanna; Estadio
@@ -60,15 +60,15 @@ tested starting view from 528 to 424 submissions without changing its geometry.
 
 Run from the app directory, with `PANA_PLAYWRIGHT_PATH` pointing to Playwright:
 
-- `games/derrape/tests/surroundings.browser.js`: all eight real map factories,
+- `games/carreritas/tests/surroundings.browser.js`: all eight real map factories,
   exact seams, outward ray coverage, placement-vs-mesh heights, closed river ends,
   shader errors, render budgets, overviews and three road-camera views per map.
   `PANA_SURROUNDINGS_BASELINE=1` captures a baseline without continuity assertions.
-- `games/derrape/tests/maps.browser.js`: actual three-lap races, pickups, route
+- `games/carreritas/tests/maps.browser.js`: actual three-lap races, pickups, route
   projection, slopes, obstacle rays and grounded cars across all eight circuits.
-- `games/derrape/tests/plaza.browser.js <playwright-path>`: foundations, streets,
+- `games/carreritas/tests/plaza.browser.js <playwright-path>`: foundations, streets,
   road clearance, town budgets and actual historic/uphill/downhill race views.
-- `games/derrape/tests/water.browser.js`: actual river depths, bridge channels,
+- `games/carreritas/tests/water.browser.js`: actual river depths, bridge channels,
   coastal tide/handling, shader clocks, preview ownership and disposal.
 - `engine/tests/map-assets.browser.js`, with `PANA_ASSET_TEST_MAPS` selecting
   `track-plaza,track-llanos,track-estadio`: real Studio materials, asset grounding,
@@ -106,7 +106,7 @@ world also places cows, horses and chickens. It now checks each of the ten
 required ranch IDs by name, while retaining positive-count checks for every
 additional asset.
 
-The festive roadside pass (`tracks/festive.js`, see `derrape-scenery.md`) adds
+The festive roadside pass (`tracks/festive.js`, see `carreritas-scenery.md`) adds
 about 75 k triangles to Plaza's starting view, from 3,493,683 to about 3.55 M.
 That view had only 6 k of headroom, so the driving-view guard is now 3.6 M
 triangles; the 900-draw guard is unchanged. Overview guards: Estadio 1.4 M (it

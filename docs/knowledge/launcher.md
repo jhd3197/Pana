@@ -61,7 +61,9 @@ and the shared avatar models are unchanged.
 
 ## Shared game-room lobby
 
-`engine/game-entry.js` owns the illustrated room shell used after choosing a
+`engine/game-entry.js` and `engine/sala.js` own the Carreritas side-settings
+room shell, now the standard for every pre-game menu. Game-specific HUDs
+remain unchanged during play. The shell appears after choosing a
 game. The header has the room code and the shared `#pana-lobby-invite` Copiar
 link button, using `inviteUrl()` so personal/debug/host parameters never leak
 into an invitation. Existing footer invite controls are hidden in this shell;
@@ -129,6 +131,6 @@ authenticated browser contexts, live party sockets and real Pana game rooms.
 It covers cancel/confirmed/failed exits, modified clicks, guest authorization,
 leader launches, portrait bubbles, hidden room buttons and leadership transfer.
 
-Derrape removes `lead` from its address immediately after passing it into
+Carreritas removes `lead` from its address immediately after passing it into
 `joinRace`. Verify the original navigation request and actual game host controls,
 not the final address bar, when testing party handoffs into that game.

@@ -27,6 +27,16 @@ try {
   await host.locator('[data-room-option="rounds"][data-value="3"]').click();
   await host.locator('#pana-room-done').click();
   await waitFor(guest, () => stopDebug.room.state.options.mode === 'rapido' && stopDebug.room.state.options.rounds === 3);
+  // Hold interactive fixtures before entering them: a slow renderer must not
+  // use up the writing/voting window between observing state and clicking.
+  await host.evaluate(() => {
+    const room = stopDebug.room, step = room.step;
+    room.step = function(dt) {
+      const g = this.game;
+      if (g.phase === 'write' || (g.phase === 'review' && g.review.index === 0 && g.review.stage === 'vote')) return false;
+      return step.call(this, dt);
+    };
+  });
   await click(host, '#start');
   await waitFor(guest, () => ['spin', 'letter', 'write'].includes(stopDebug.room.state.phase));
 
@@ -65,14 +75,12 @@ try {
   // The first category: the invented word goes to "¿Eso cuenta?"; the author
   // can't vote, the guest votes through the HUD.
   await waitFor(guest, () => stopDebug.room.state.review?.index === 0 && stopDebug.room.state.review.stage === 'vote');
-  // Hold the host's vote clock so a loaded machine can't close the vote before the click lands.
-  await host.evaluate(() => { stopDebug.room.game.phaseTime -= 30; });
   const group = await guest.evaluate((seat) => stopDebug.room.state.review.items[seat].group, hostSeat);
   assert.notEqual(group, null, 'an unknown word is yellow');
   assert.equal(await host.locator(`.card[data-seat="${hostSeat}"] .vote-yes`).evaluate(el => el.disabled), true, 'the author cannot vote');
   await guest.locator(`.card[data-seat="${hostSeat}"] .vote-yes`).evaluate(el => el.click());
   await waitFor(host, ([seat, g]) => stopDebug.room.state.review?.groups?.[g]?.votes?.[seat] === true || stopDebug.room.state.review?.index > 0, [guestSeat, group]);
-  await host.evaluate(() => { stopDebug.room.game.phaseTime += 30; });
+  await host.evaluate(() => { delete stopDebug.room.step; });
   await waitFor(host, () => stopDebug.room.state.review?.stage !== 'vote' || stopDebug.room.state.review.index > 0, undefined, 20_000);
   await waitFor(guest, () => stopDebug.room.state.review?.stage !== 'vote' || stopDebug.room.state.review.index > 0 || stopDebug.room.state.phase !== 'review', undefined, 20_000);
   const verdict = await host.evaluate(() => stopDebug.room.state.review?.index === 0 ? stopDebug.room.state.review.groups : null);

@@ -101,6 +101,23 @@ on wide screens. Do not bind this inset renderer with `bindRenderer`, whose
 viewport-wide resize overrides the canvas size: use `onSettings` and resize to
 the container. Camera picking intersects the court plane.
 
+## Rendering
+
+The four court planters use seven `Court planter` instanced material batches
+(count 4); the three lamps use two `Court lamp` batches (count 3). Their
+positions are fixed in `bolas-world.js`; no later code looks up or mutates those
+placements. The coolers and ball-filled crate remain independent. Court dressing
+falls from 117 to 22 meshes with the same 6,060 triangles. Against ordinary
+copies of the already batched factories, instancing changes 47 meshes to 22 and
+whole-court submissions from 239 to 214; mean CPU time around
+`renderer.render()` was 3.08 ms versus 2.89 ms in an alternating RTX 4090/D3D11
+check. The gain is modest, not a promised FPS ratio.
+
+`Pana/engine/tests/bolas-world.browser.js` renders the real court and checks all
+nine batches, exact instance translations, bounds and three leak-free world
+lifecycles. `Pana/engine/tests/props.browser.js` covers the seven batched Plaza
+factories, including independent geometry and planter vertex preservation.
+
 ## Proof
 
 `./dev.ps1 check` checks physics, scoring, rejected actions, bot completion and

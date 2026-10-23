@@ -90,12 +90,12 @@ reach every consumer on reload. Do not add a second tree implementation in a
 game folder or put game rules in an environment builder.
 
 Environment `clearance(x,z,radius)` uses local world units and returns true
-where scenery can stand. Derrape converts Plaza coordinates by its 2.0 scale
+where scenery can stand. Carreritas converts Plaza coordinates by its 2.0 scale
 and reserves the driving corridor before static batching. Bululú supplies its
 board-camera `inShot` rule; the racer leaves that rule off. Each game owns its
 lights and camera. Call the returned `update` once per frame; do not also tick
 the same environment's animated children. Keep instanced offshore vegetation
-out of `bake()`. Derrape batches individual shared trees before placement.
+out of `bake()`. Carreritas batches individual shared trees before placement.
 
 `createPlazaEnvironment({town:true, clearance})` opens the courtyard's side
 streets and front garden where the race passes. The default courtyard for the

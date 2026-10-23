@@ -33,7 +33,7 @@ const parseAvatar = (json) => { try { return normalizeAvatar(JSON.parse(json || 
 const isFull = (error) => error?.code === ROOM_FULL || error?.code === 4009 || /full|lleno|locked/i.test(String(error?.message));
 
 // options: { code, lead, name, avatar, resume = true, ...game join options }
-// resume: a reload rejoins the same seat (Derrape's own room tracks each car).
+// resume: a reload rejoins the same seat (Carreritas's own room tracks each car).
 // Host-run games pass false: a reloaded page counts its actions from zero again,
 // so it joins as a new pana, exactly as on the old relay.
 export async function joinRoom(game, { resume = true, ...options }) {

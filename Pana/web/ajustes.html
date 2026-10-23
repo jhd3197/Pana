@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#0d0b21">
+  <title>Ajustes · Pana</title>
+  <link rel="stylesheet" href="/engine/kit.css">
+  <style>body { margin: 0; background: #0d0b21; color: #f3e9d7; font-family: Nunito, sans-serif; } body > a { display: inline-block; margin: 32px; color: #ffc629; }</style>
+</head>
+<body>
+  <a href="/">Volver a Pana</a>
+  <script type="module">
+    import { createGameMenu } from '/engine/ui.js';
+    import { padControls } from '/engine/gamepad.js';
+    const menu = createGameMenu({ title: 'Pana · Ajustes', pause: false, hotkey: false, onClose: () => location.assign('/') });
+    padControls({ playing: () => false });
+    menu.open('settings');
+  </script>
+</body>
+</html>

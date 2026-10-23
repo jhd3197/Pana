@@ -94,8 +94,10 @@ export const RING = { floor: .6, half: 2.9 };
 export function tentRing({ seed = 1, tent = true } = {}) {
   const group = new THREE.Group(); group.name = 'Ring bajo toldo';
   const random = rng(seed), { floor, half } = RING;
-  part(group, new THREE.BoxGeometry(half * 2 + .6, floor - .04, half * 2 + .6), mat('#2b2d42', { roughness: .8 }), 0, (floor - .04) / 2, 0);
-  part(group, new THREE.BoxGeometry(half * 2 + .7, .1, half * 2 + .7), mat('#e9e2d0', { roughness: .95 }), 0, floor - .05, 0);
+  // userData.ink flags the pieces the ink-outline pilot outlines; thin stuff
+  // (ropes, truss, lamps) stays clean to keep the added draw calls modest.
+  part(group, new THREE.BoxGeometry(half * 2 + .6, floor - .04, half * 2 + .6), mat('#2b2d42', { roughness: .8 }), 0, (floor - .04) / 2, 0).userData.ink = true;
+  part(group, new THREE.BoxGeometry(half * 2 + .7, .1, half * 2 + .7), mat('#e9e2d0', { roughness: .95 }), 0, floor - .05, 0).userData.ink = true;
   // Painted canvas: a big ring of colour around a pale centre.
   const canvas = document.createElement('canvas'); canvas.width = canvas.height = 512;
   const ctx = canvas.getContext('2d');
@@ -107,12 +109,12 @@ export function tentRing({ seed = 1, tent = true } = {}) {
   const top = part(group, new THREE.PlaneGeometry(half * 2 + .55, half * 2 + .55), new THREE.MeshStandardMaterial({ map: texture, roughness: .9 }), 0, floor + .001, 0);
   top.rotation.x = -Math.PI / 2;
   // Skirt panels in the corner colours.
-  for (const [x, z, c] of [[0, half + .33, '#2f6fe0'], [0, -half - .33, '#e8443a']]) part(group, new THREE.BoxGeometry(half * 2 + .6, floor - .1, .02), mat(c), x, (floor - .1) / 2, z);
+  for (const [x, z, c] of [[0, half + .33, '#2f6fe0'], [0, -half - .33, '#e8443a']]) part(group, new THREE.BoxGeometry(half * 2 + .6, floor - .1, .02), mat(c), x, (floor - .1) / 2, z).userData.ink = true;
   // Corner posts with pads: red, blue and two neutral.
   const pads = { '-1,-1': '#e8443a', '1,1': '#2f6fe0', '-1,1': '#ffffff', '1,-1': '#ffffff' };
   for (const sx of [-1, 1]) for (const sz of [-1, 1]) {
-    part(group, new THREE.CylinderGeometry(.07, .07, 1.55, 10), mat('#c9ccd6', { metalness: .7, roughness: .3 }), sx * half, floor + .78, sz * half);
-    part(group, new RoundedBoxGeometry(.24, 1.05, .24, 2, .06), mat(pads[`${sx},${sz}`], { roughness: .4 }), sx * (half - .1), floor + .82, sz * (half - .1));
+    part(group, new THREE.CylinderGeometry(.07, .07, 1.55, 10), mat('#c9ccd6', { metalness: .7, roughness: .3 }), sx * half, floor + .78, sz * half).userData.ink = true;
+    part(group, new RoundedBoxGeometry(.24, 1.05, .24, 2, .06), mat(pads[`${sx},${sz}`], { roughness: .4 }), sx * (half - .1), floor + .82, sz * (half - .1)).userData.ink = true;
   }
   const ropes = new THREE.Group(); ropes.name = 'ropes'; group.add(ropes);
   const ropeMats = [mat('#e8443a', { roughness: .4 }), mat('#ffffff', { roughness: .4 }), mat('#2f6fe0', { roughness: .4 })];
@@ -124,7 +126,7 @@ export function tentRing({ seed = 1, tent = true } = {}) {
     });
   });
   // Steps up to the red corner.
-  for (let i = 0; i < 3; i++) part(group, new THREE.BoxGeometry(1, .2, .35), mat('#4a4e69'), -half - .8 + i * .0, .1 + i * .2, -half + 1.2 - i * .35).visible = true;
+  for (let i = 0; i < 3; i++) part(group, new THREE.BoxGeometry(1, .2, .35), mat('#4a4e69'), -half - .8 + i * .0, .1 + i * .2, -half + 1.2 - i * .35).userData.ink = true;
   const lamps = new THREE.Group(); lamps.name = 'lamps'; group.add(lamps);
   if (tent) {
     const truss = mat('#1f1f24', { metalness: .5, roughness: .45 }), T = 4.4, H = 5.2;
@@ -136,10 +138,11 @@ export function tentRing({ seed = 1, tent = true } = {}) {
       rope(group, a, b, .05, truss); rope(group, [a[0], a[1] - .3, a[2]], [b[0], b[1] - .3, b[2]], .04, truss);
     }
     const roof = part(group, new THREE.ConeGeometry(T * 1.5, 2.2, 4, 1, true), mat('#26262c', { roughness: .85, side: THREE.DoubleSide }), 0, H + 1.05, 0);
-    roof.rotation.y = Math.PI / 4;
+    roof.rotation.y = Math.PI / 4; roof.userData.ink = true;
     const colors = ['#ffc629', '#2ad1b2', '#ff6fae', '#ff8a3d', '#9b5de5', '#6bbf59'];
     for (let side = 0; side < 4; side++) for (let i = 0; i < 2; i++) {
       const banner = part(group, new THREE.BoxGeometry(2.6, .7, .04), mat(colors[(side * 2 + i + Math.floor(random() * 2)) % colors.length], { roughness: .7 }));
+      banner.userData.ink = true;
       const a = side * Math.PI / 2, along = (i ? 1.6 : -1.6);
       banner.position.set(Math.sin(a) * (T + .06) + Math.cos(a) * along, H - .75, Math.cos(a) * (T + .06) - Math.sin(a) * along);
       banner.rotation.y = a;

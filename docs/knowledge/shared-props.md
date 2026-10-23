@@ -24,6 +24,32 @@ dispose geometry when removing a prop, but retain shared materials. Mango body
 templates are cloned rather than mounted directly in scenes. Studio copies
 materials before changing wireframe or releasing previews.
 
+## Plaza market kit
+
+`static-batch.js` also owns `finish()`: it bakes a static factory and disposes the
+source geometry, while each returned model still owns independent geometry.
+`architecture-kit.js` re-export keeps the older import path working. The seven
+Plaza factories use this path without changing their materials, triangles or
+root-level behavior:
+
+| Factory | Meshes before | Meshes now |
+|---|---:|---:|
+| `barrel` | 34 | 4 |
+| `crate` | 32 | 3 |
+| `cooler` | 6 | 2 |
+| `planter` | 10 | 7 |
+| `bench` | 12 | 3 |
+| `marketStall` | 80 | 8 |
+| `streetLamp` | 9 | 2 |
+
+Batching converts indexed geometry to non-indexed geometry, so vertex memory can
+rise even while draw calls fall. Compare that tradeoff instead of assuming every
+merge is faster. Transformed positions and triangle counts stay unchanged.
+Rotated foliage can produce a tighter world AABB after merging: the old box came
+from transforming a local bounding box, while the new one encloses the actual
+merged vertices. The Plaza test compares unique transformed positions as well as
+bounds so this does not hide lost geometry.
+
 ## Budgets and verification
 
 For the Studio seed (7), the current triangle/material-batch counts are:
@@ -37,14 +63,15 @@ For the Studio seed (7), the current triangle/material-batch counts are:
 
 Run `node Pana/engine/tests/props.browser.js [absolute-playwright-package]
 [browser-executable]` against the local server. It checks finite geometry,
-determinism, independent disposable geometry, unchanged bounds after batching,
-several seeds, flower variants, dimension/triangle/draw-call budgets and actual
-Bululú, Escondidas and Cocina renders. Screenshots and metrics go into ignored
+determinism, independent disposable geometry, expected bounds and preserved
+transformed positions after batching, the seven Plaza factories, several seeds,
+flower variants, dimension/triangle/draw-call budgets and actual Bululú,
+Escondidas and Cocina renders. Screenshots and metrics go into ignored
 `art/studio/props/`. This is a geometry/render smoke test, not a replacement for
 multiplayer interaction suites.
 
 For changes affecting shared scenery footprint or fruit items, also run
-Derrape's `tests/maps.browser.js` and `tests/items.browser.js`, plus the repository
+Carreritas's `tests/maps.browser.js` and `tests/items.browser.js`, plus the repository
 `npm run check`. Reload Studio to refresh source-dependent local thumbnails.
 
 ## Additional vegetation
@@ -69,7 +96,7 @@ Derrape's `tests/maps.browser.js` and `tests/items.browser.js`, plus the reposit
 Each accepts `{seed}` (default 1), returns a grounded THREE.Group, and owns its
 geometry while sharing cached materials. Static detail is baked internally;
 it is safe to include the result in a larger spatial bake. Selva now consumes
-all twelve through `games/derrape/public/tracks/selva-flora.js`. Its sixteen
+all twelve through `games/carreritas/public/tracks/selva-flora.js`. Its sixteen
 species include the existing ceiba, palm, banana and bush. Other maps retain
 their existing composition; catalog registration alone does not populate them.
 
@@ -162,7 +189,7 @@ lowest vertex sits on the ground. The hollow log's lathe surface is
 double-sided, so its interior shows through the open ends (inner radius
 0.68 m). The waterfall sheet owns a canvas texture scrolled by
 `userData.tick`. Selva's in-race temple portal and waterfall remain game-local
-in Derrape and are unchanged. Registration does not place these into maps.
+in Carreritas and are unchanged. Registration does not place these into maps.
 
 `node Pana/engine/tests/landmarks.browser.js selva` checks all ten assets,
 including the palm, and writes renders to ignored `art/studio/jungle/`. Without an argument it
@@ -198,7 +225,7 @@ so pausing, scrubbing and thumbnail capture agree. Bridge spans accept 4–40 m;
 hollow logs accept 3–20 m. Keep their passages empty and ground origins stable.
 
 `engine/models/effects/water-surface.js` supplies animated oceans, directional rivers, canals
-and ponds to Derrape and Studio. Its depth textures use actual sampled terrain;
+and ponds to Carreritas and Studio. Its depth textures use actual sampled terrain;
 update the live shader material and dispose cloned uniform textures too.
 Environment owners compose `waterAnimator(group)` with their existing update;
 scenery water is already collected by the track runtime. Keep animated water

@@ -36,7 +36,7 @@ test('a new track is registered at every point and gets loadable stubs', () => {
   try {
     const before = read(root, PATHS.readme).match(/Toy-car racing on ([a-z-]+) circuits/)[1];
     const changes = planTrack(root, { id: 'morrocoy', name: "Cayo d'Agua", blurb: 'Cayos y manglares.', style: 'calipso' });
-    assert.match(describe(changes), /\+ new Pana\/games\/derrape\/public\/tracks\/morrocoy-world\.js/);
+    assert.match(describe(changes), /\+ new Pana\/games\/carreritas\/public\/tracks\/morrocoy-world\.js/);
     applyPlan(root, changes);
 
     assert.match(read(root, PATHS.definitions), /\{id:'morrocoy', name:'Cayo d\\'Agua', blurb:'Cayos y manglares\.'\},\r?\n\];/);

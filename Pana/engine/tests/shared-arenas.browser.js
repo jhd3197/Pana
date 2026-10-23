@@ -19,6 +19,18 @@ async function open(game, debug, room, mobile = false) {
   return page;
 }
 const state = (page, debug) => page.evaluate(debug => window[debug].room.state, debug);
+async function chooseMap(page, mapId) {
+  const picker = page.locator('#map-choice');
+  if (await picker.isVisible()) return picker.selectOption(mapId);
+  // Pepazo's sala exposes arrow buttons; its native select only stores state.
+  const count = await picker.locator('option').count();
+  for (let i = 0; i < count && await picker.inputValue() !== mapId; i++) {
+    const previous = await picker.inputValue();
+    await page.getByRole('button', { name: 'Mapa siguiente', exact: true }).click();
+    await wait(page, value => document.getElementById('map-choice').value !== value, previous);
+  }
+  assert.equal(await picker.inputValue(), mapId);
+}
 async function leave(page, debug) {
   // A context kill is a dropped transport and reserves the seat for reconnect.
   // Exercise an explicit departure before immediately filling a two-seat room.
@@ -43,7 +55,7 @@ try {
     const advancedMap = ['billar', 'caida'].includes(game);
     if (advancedMap) await a.locator('#pana-room-more').click();
     for (const mapId of maps) {
-      await a.selectOption('#map-choice', mapId);
+      await chooseMap(a, mapId);
       for (const page of [a, b]) await wait(page, ({ debug, mapId }) => {
         const d = window[debug]; return d.room.state.mapId === mapId && (d.world?.scene || d.scene)?.userData.mapId === mapId;
       }, { debug, mapId });
@@ -68,10 +80,10 @@ try {
     const mobile = await open(game, debug, `${code}-phone`, true);
     if (advancedMap) await mobile.locator('#pana-room-more').click();
     for (const mapId of maps) {
-      await mobile.selectOption('#map-choice', mapId);
+      await chooseMap(mobile, mapId);
       await wait(mobile, ({ debug, mapId }) => window[debug].room.state.mapId === mapId, { debug, mapId });
     }
-    await mobile.locator('#map-choice').scrollIntoViewIfNeeded();
+    await mobile.locator(game === 'pintura' ? '.sala-map' : '#map-choice').scrollIntoViewIfNeeded();
     assert.equal(await mobile.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
     await mobile.screenshot({ path: `${out}/${game}-phone-picker.png` });
     if (advancedMap) await mobile.locator('#pana-room-done').click();
@@ -84,7 +96,7 @@ try {
 
   const page = await browser.newPage({ viewport: { width: 1280, height: 800 } });
   page.on('pageerror', e => errors.push(e.message)); await page.goto(`${base}/studio/settings.html`);
-  await page.setContent('<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}</script><canvas id="view"></canvas>');
+  await page.setContent('<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.186.1/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.186.1/examples/jsm/"}}</script><canvas id="view"></canvas>');
   const proof = await page.evaluate(async () => {
     const THREE = await import('three'), { createArenaEnvironment } = await import('/engine/worlds/arenas.js');
     const { MAPS } = await import('/studio/catalog/maps.js');

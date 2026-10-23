@@ -8,7 +8,7 @@ import { rng } from '../random.js';
 import { PALETTE, BUNTING } from './look.js';
 
 // Estadio Pana for a court game: the court sits on the concourse in front of
-// the main grandstand, beside the straight where Derrape's race passes
+// the main grandstand, beside the straight where Carreritas's race passes
 // (ambient-life karts use the lane at x = 22.3). Court axis Z, camera from +Z.
 // Everything stays outside arenas.js's COURT_CLEAR.
 export function createEstadioEnvironment() {

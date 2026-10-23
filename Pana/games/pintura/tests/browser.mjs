@@ -18,11 +18,34 @@ try {
   const a = await open('Juan'), b = await open('María'); await wait(a, () => pinturaDebug.room.state.players.length === 2);
   assert.equal(await a.evaluate(() => pinturaDebug.world.camera.isPerspectiveCamera), true);
   assert.ok(await b.locator('#start').isDisabled()); await wait(a, () => pinturaDebug.world.avatars.size === 2);
+  // Guest-authored loadout travels through the real room and remains server-owned.
+  await b.locator('#open-armory').click();
+  await b.locator('[data-slot="weapon"]').click();
+  await b.locator('#armory-choices [data-id="rocket"]').click();
+  await b.locator('#armory-parts-back').click();
+  await b.locator('[data-slot="attachments"]').first().click();
+  await b.locator('#armory-choices [data-id="hopper"]').click();
+  await b.locator('#armory-choices [data-id="barrel"]').click();
+  assert.equal(await b.locator('#armory-choices [data-id="stock"]').isDisabled(),true);
+  await b.locator('#armory-parts-back').click();
+  await b.locator('[data-slot="armor"]').click();await b.locator('#armory-choices [data-id="padded"]').click();
+  await b.locator('#armory-parts-back').click();
+  await b.locator('[data-slot="grenade"]').click();await b.locator('#armory-choices [data-id="pegajosa"]').click();
+  await b.locator('#armory-close').click();
+  const guestId=await b.evaluate(()=>pinturaDebug.room.id);
+  await wait(a,id=>{const p=pinturaDebug.room.state.players.find(p=>p.id===id);return p.kit.weapon==='rocket' && p.kit.attachments.length===2 && p.kit.armor==='padded' && p.kit.grenade==='pegajosa';},guestId);
   await a.screenshot({ path: `${out}/lobby.png` }); await a.locator('#start').click(); await wait(b, () => pinturaDebug.room.state.phase === 'playing');
   assert.equal(await a.evaluate(() => pinturaDebug.world.view), 'primera');
+  await b.evaluate(()=>pinturaDebug.room.selectKit({weapon:'rapid',armor:'wind'}));
+  await b.locator('#world').focus();await b.keyboard.press('g');
+  await wait(a,id=>!pinturaDebug.room.state.players.find(p=>p.id===id).grenadeReady,guestId);
+  assert.equal(await a.evaluate(id=>pinturaDebug.room.state.players.find(p=>p.id===id).kit.weapon,guestId),'rocket','mid-round kit edit is rejected');
+  console.log('ok: armory choices replicate, two-attachment cap, one grenade and mid-round kit lock');
+
   // The guest crosses the court with the overview option (world-axis keys); the
   // host plays the default first-person view: turn, walk, then fire along the crosshair.
   await b.locator('#menu').click(); await b.locator('#pana-tab-settings').click();
+  await b.locator('.pana-settings-nav button', { hasText: 'Pepazo' }).click();
   await b.locator('#pana-opt-view').getByRole('radio', { name: 'Ver la cancha', exact: true }).click(); await b.keyboard.press('Escape');
   const mine = 'pinturaDebug.room.state.players.find(p => p.id === pinturaDebug.room.id)';
   await b.locator('#world').focus();

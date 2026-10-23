@@ -50,7 +50,7 @@ try{
   }
   // Exercise the actual Studio factories and retain a second instance on dispose.
   const p=await browser.newPage();await p.goto(`${base}/studio/settings.html`);
-  await p.setContent('<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}</script>');
+  await p.setContent('<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.186.1/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.186.1/examples/jsm/"}}</script>');
   const metrics=await p.evaluate(async()=>{
     const THREE=await import('three'),{MAPS}=await import('/studio/catalog/maps.js');const records=[];
     for(const id of ['guipuzcoana','san-carlos'])for(let cycle=0;cycle<2;cycle++){

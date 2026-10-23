@@ -14,6 +14,11 @@ try {
   await host.locator('[data-room-option="questions"][data-value="8"]').click();
   await host.locator('[data-room-option="seconds"][data-value="20"]').click();
   await waitFor(guest, () => qqsmpDebug.room.state.options.questions === 8 && qqsmpDebug.room.state.options.seconds === 20);
+  // Keep the first question open while both clients exercise its controls.
+  await host.evaluate(() => {
+    const step = qqsmpDebug.room.step;
+    qqsmpDebug.room.step = function(dt) { return this.game.phase === 'question' ? false : step.call(this, dt); };
+  });
   await host.locator('#start').click();
   await waitFor(guest, () => qqsmpDebug.room.state.phase === 'question');
 
@@ -32,9 +37,10 @@ try {
   });
   assert.equal(leaked, null, 'answers stay secret until the reveal');
   assert.equal(await guest.locator('#answers .answer.picked').count(), 1, 'the guest still sees their own pick');
+  await host.evaluate(() => { delete qqsmpDebug.room.step; });
 
   // Then both answer every question and bet on the final.
-  await waitFor(guest, () => qqsmpDebug.room.state.phase === 'reveal' && qqsmpDebug.room.state.reveal.done, undefined, 30_000);
+  await waitFor(guest, () => qqsmpDebug.room.state.phase === 'reveal' && qqsmpDebug.room.state.reveal.done);
   const copied = await guest.evaluate(() => qqsmpDebug.room.state.callouts.some(c => /Ana se copió de Bruno/.test(c.text)));
   assert.ok(copied, 'the reveal calls out who copied whom');
   for (const page of [host, guest]) {

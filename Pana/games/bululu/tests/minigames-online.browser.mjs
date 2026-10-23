@@ -8,7 +8,7 @@ const browser = await chromium.launch({ headless: true });
 try {
   const page = await browser.newPage();
   await page.goto(`${base}/api/health`);
-  await page.setContent(`<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}</script>`);
+  await page.setContent(`<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.186.1/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.186.1/examples/jsm/"}}</script>`);
   for (const id of ['atrapa', 'caigas', 'caida', 'momia', 'coleo', 'choque', 'embuste', 'remada', 'raudal', 'remolino', 'chinazo', 'criollas']) {
     const result = await page.evaluate(async id => {
       const { default: def } = await import(`/g/bululu/minigames/${id}.js`);

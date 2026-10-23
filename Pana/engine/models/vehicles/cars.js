@@ -1,4 +1,4 @@
-// The Pana cars: one builder per car, shared by Derrape's garage and Bululú's
+// The Pana cars: one builder per car, shared by Carreritas's garage and Bululú's
 // ¡Choque de carritos!. Shared parts live in car-kit.js; the
 // driver is the player's pana (see /engine/models/characters/pana/avatar-model.js).
 // Every car faces +Z, its left is +X, wheels touch y = 0.
@@ -15,7 +15,7 @@ import { dress, stock, RIMS } from './car-parts.js';
 import { TALLER_BUILDERS, TALLER_NUMBERS } from './taller-cars.js';
 
 // build(avatar, wheel?, cfg?) → { root, driver, … }. Names and stats live with
-// the game (Derrape's car-definitions.js), keyed by the same ids. cfg is the
+// the game (Carreritas's car-definitions.js), keyed by the same ids. cfg is the
 // garage's render config (car-parts.js); without it every car keeps its own
 // stock parts. A slot that asks for another part replaces the stock one.
 const CLASSICS = { chamo: buildChamo, lancha: buildLancha, machito: buildMachito, bala: buildBala, toro: buildToro, familiar: buildFamiliar, rumbera: buildRumbera, montanero: buildMontanero };
@@ -51,7 +51,7 @@ function buildChamo(avatar, wheel, cfg = {}) {
     roof: [[-1.72, 2.66], [0.38, 2.66], [0.28, 2.84], [-1.56, 2.88], [-1.82, 2.76]],
     width: 2.04, bPillar: -0.62, pillar: paint, roofMat: paint,
     interior: '#2b2b33', seat: '#18181d',
-    avatar, head: 0.5, seatY: 0.85, driverZ: -0.1, sill: 1.56,
+    avatar, seatY: 0.85, driverZ: -0.1, sill: 1.56,
     hanging(p) {   // little pine air freshener
       const tree = mesh(new THREE.ConeGeometry(0.09, 0.2, 4), M('#2fbf71'), 0, -0.32, 0);
       p.add(tree);
@@ -171,7 +171,7 @@ function buildLancha(avatar, wheel, cfg = {}) {
     roof: [[-1.08, 2.72], [0.2, 2.72], [0.1, 2.92], [-0.98, 2.94], [-1.18, 2.82]],
     width: 2.0, bPillar: -0.36, pillar: roof, roofMat: roof,
     interior: '#3b2a22', seat: '#7a4a2b',
-    avatar, head: 0.48, seatY: 0.58, driverZ: 0.02, sill: 1.38,
+    avatar, seatY: 0.58, driverZ: 0.02, sill: 1.38,
     hanging(p) {   // fuzzy dice
       for (const s of [1, -1]) {
         const die = box(0.13, 0.13, 0.13, M('#fbf8f0'), s * 0.07, -0.3 - (s > 0 ? 0 : 0.05), 0);
@@ -265,7 +265,7 @@ function buildMachito(avatar, wheel, cfg = {}) {
     glass:[[-1.9,1.64],[0.65,1.64],[0.45,2.73],[-1.88,2.73]],
     roof:[[-2,2.75],[0.5,2.75],[0.5,2.86],[-2,2.86]],
     width:2.05,bPillar:-0.62,pillar:paint,roofMat:trim,
-    interior:'#3b3c39',seat:'#494b44',avatar,head:0.47,seatY:0.94,driverZ:-0.2,sill:1.64,
+    interior:'#3b3c39',seat:'#494b44',avatar,seatY:0.94,driverZ:-0.2,sill:1.64,
   });
   // Continuous rain gutter and stamped door seams distinguish the hardtop.
   for(const side of [-1,1]) {
@@ -332,7 +332,7 @@ function buildBala(avatar, wheel, cfg = {}) {
     roof: [[-1.65, 2.44], [0.38, 2.44], [0.28, 2.62], [-1.5, 2.66], [-1.75, 2.56]],
     width: 2.0, bPillar: -0.55, pillar: paint, roofMat: paint,
     interior: '#22222a', seat: '#18181d',
-    avatar, head: 0.5, seatY: 0.85, driverZ: -0.05, sill: 1.4,
+    avatar, seatY: 0.85, driverZ: -0.05, sill: 1.4,
   });
   // the white center stripe, over the hood and the roof
   if (stock(cfg, 'franjas')) {
@@ -396,7 +396,7 @@ function buildToro(avatar, wheel, cfg = {}) {
     roof: [[-0.68, 2.5], [0.48, 2.5], [0.4, 2.7], [-0.62, 2.72]],
     width: 2.04, bPillar: -0.25, pillar: paint, roofMat: paint,
     interior: '#2b2b33', seat: '#7a4a2b',
-    avatar, head: 0.5, seatY: 0.9, driverZ: 0.15, sill: 1.48,
+    avatar, seatY: 0.9, driverZ: 0.15, sill: 1.48,
   });
   // the bed: side walls and a tailgate
   car.fit.bed = { zF: -0.66, zR: -2.2 };
@@ -475,7 +475,7 @@ function buildFamiliar(avatar, wheel, cfg = {}) {
     roof: [[-1.22, 2.58], [0.3, 2.58], [0.2, 2.76], [-1.12, 2.78], [-1.32, 2.68]],
     width: 2.0, bPillar: -0.4, pillar: paint, roofMat: paint,
     interior: '#3b2a22', seat: '#c9b38a',
-    avatar, head: 0.48, seatY: 0.62, driverZ: 0.05, sill: 1.36,
+    avatar, seatY: 0.62, driverZ: 0.05, sill: 1.36,
     hanging(p) {   // a rosary swinging from the mirror
       const bead = M('#7a4a2b');
       for (let i = 0; i < 8; i++) {
@@ -572,7 +572,7 @@ function buildRumbera(avatar, wheel, cfg = {}) {
     roof: [[-0.98, 2.38], [0.22, 2.38], [0.1, 2.56], [-0.4, 2.62], [-0.88, 2.56], [-1.06, 2.46]],
     width: 1.9, bPillar: -0.3, pillar: paint, roofMat: paint,
     interior: '#2b2b33', seat: '#f3e9d7',
-    avatar, head: 0.48, seatY: 0.75, driverZ: 0.0, sill: 1.46,
+    avatar, seatY: 0.75, driverZ: 0.0, sill: 1.46,
   });
   // bug eyes on the front fenders, a chrome nose line, flowers on the doors
   for (const s of [1, -1]) c.add(roundLamp(s * 0.78, 1.12, 2.1, 0.29, '#ffe59c'));
@@ -651,7 +651,7 @@ function buildMontanero(avatar, wheel, cfg = {}) {
     glass: [[-1.2, 1.38], [0.95, 1.38], [0.8, 2.15], [-1.2, 2.15]],
     width: 2.0, pillar: M('#1d1d23', { roughness: 0.5 }),
     interior: '#2b2b33', seat: '#3a3a30',
-    avatar, head: 0.5, seatY: 0.82, driverZ: -0.2, sill: 1.38,
+    avatar, seatY: 0.82, driverZ: -0.2, sill: 1.38,
   });
   // the roll cage; roof cargo rides on its top, spare stuff on the deck
   const cage = M('#1d1d23', { roughness: 0.5 });

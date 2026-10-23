@@ -10,7 +10,7 @@ try{
   const p=await browser.newPage({viewport:{width:1440,height:1000}}),errors=[];
   p.on('pageerror',e=>errors.push(e.message));
   await p.goto(`${process.env.PANA_TEST_URL||'http://localhost:8461'}/studio/settings.html`);
-  await p.setContent(`<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}</script><style>body{margin:0;background:#eef0ee;font:14px system-ui;color:#35423b}canvas{display:block}label{position:absolute;text-align:center;width:288px;pointer-events:none}</style><canvas></canvas><div id="labels"></div>`);
+  await p.setContent(`<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.186.1/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.186.1/examples/jsm/"}}</script><style>body{margin:0;background:#eef0ee;font:14px system-ui;color:#35423b}canvas{display:block}label{position:absolute;text-align:center;width:288px;pointer-events:none}</style><canvas></canvas><div id="labels"></div>`);
   const models=await p.evaluate(async()=>{
     const THREE=await import('three'),{ASSETS}=await import('/studio/catalog.js');
     const {createPreview,inspect,fitCamera,ownMaterials,release}=await import('/studio/preview.js');

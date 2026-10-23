@@ -1,4 +1,56 @@
 import { growTree, ellipsoid, treeDetail } from '/engine/models/vegetation/tree-kit.js';
+import * as THREE from 'three';
+
+// Open sprays, rather than solid ellipsoids on each twig. All sprays join the
+// existing foliage batch: no alpha texture, extra material or animation work.
+function floweringCrown(parts, r, skeleton, o) {
+  const tips = skeleton.tips, center = new THREE.Vector3();
+  for (const tip of tips) center.add(tip.p);
+  center.divideScalar(Math.max(1, tips.length));
+  const radius = Math.max(1, ...tips.map(t => t.p.distanceTo(center)));
+  const pos = [], normals = [], colors = [], up = new THREE.Vector3(0, 1, 0);
+  const tint = new THREE.Color(), shade = new THREE.Color();
+  const count = o.far ? 45 : o.low ? 80 : o.lite ? 100 : 160;
+  for (const tip of tips) {
+    const size = o.size * (o.far ? 0.82 : o.low ? 0.96 : 1.4);
+    const phase = r() * Math.PI * 2;
+    // A flattened, irregular branch-end spray. Interior layers overlap; the
+    // outer fans break up the edge while leaving small windows to the limbs.
+    for (let i = 0; i < count; i++) {
+      const y = 1 - 2 * (i + 0.5) / count, ring = Math.sqrt(1 - y * y);
+      const a = i * 2.39996 + phase, reach = 0.3 + r() * 0.65;
+      const normal = new THREE.Vector3(Math.cos(a) * ring, y * 0.8 + 0.45, Math.sin(a) * ring).normalize();
+      const at = tip.p.clone().lerp(tip.branch.pts[0], r() * 0.35).add(new THREE.Vector3(Math.cos(a) * ring * reach, y * 0.55 * reach, Math.sin(a) * ring * reach).multiplyScalar(size));
+      // Tilt each fan independently, so the underside is not a row of flat discs.
+      const axis = new THREE.Vector3().crossVectors(Math.abs(normal.y) > 0.95 ? new THREE.Vector3(1, 0, 0) : up, normal).normalize();
+      const across = new THREE.Vector3().crossVectors(normal, axis);
+      const width = size * (0.17 + r() * 0.12), spin = r() * Math.PI * 2;
+      const green = !o.flowers || (y < -0.15 && r() < o.greenMix);
+      const palette = green ? o.tints : o.flowers;
+      tint.set(palette[Math.floor(r() * palette.length)]);
+      tint.multiplyScalar(0.77 + 0.18 * r() + 0.12 * Math.max(0, y));
+      shade.copy(tint).multiplyScalar(green ? 0.65 : 0.8);
+      const edge = [];
+      for (let k = 0; k < 4; k++) {
+        const angle = spin + k * Math.PI / 2;
+        const w = width * (0.8 + r() * 0.3);
+        edge.push(at.clone().addScaledVector(axis, Math.cos(angle) * w)
+          .addScaledVector(across, Math.sin(angle) * w * (green ? 0.7 : 1))
+          .addScaledVector(normal, k % 2 ? -width * 0.25 : 0));
+      }
+      for (const k of [0, 1, 2, 0, 2, 3]) {
+        const v = edge[k], c = k % 2 ? tint : shade;
+        pos.push(v.x, v.y, v.z); normals.push(normal.x, normal.y, normal.z); colors.push(c.r, c.g, c.b);
+      }
+    }
+  }
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+  geo.setAttribute('normal', new THREE.Float32BufferAttribute(normals, 3));
+  geo.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+  parts.leaves.push(geo);
+  return { center, radius };
+}
 
 // The Tabebuia family in bloom. Araguaney, the national tree: a twisted trunk
 // opening into a cup-shaped crown, all gold. Apamate: taller and straighter,
@@ -36,10 +88,18 @@ const BUCARE = {
   petals: { color: 0xf47a42, radius: 3.4 },
 };
 const BLOOMS = { gold: ARAGUANEY, pink: APAMATE, coral: BUCARE };
+// Keep the bucare's separate recipe. Both green and flowering forms use the
+// same open crown structure; green sprays are included in that same draw.
+const OPEN_CROWNS = new Map([ARAGUANEY, APAMATE].map(species => [species, {
+  ...species, dressCrown: floweringCrown,
+  foliage: { ...species.foliage, greenMix: species.blossom.mixLeaves },
+  blossom: { ...species.blossom, mixLeaves: 0 },
+}]));
 
 // The default scale keeps the old ~5.5 m roadside size; scale 1 is full grown.
 export function araguaney({ seed = 1, detail = 'game', bloom = 'gold', leaves = true, flowers = true, scale = bloom === 'gold' ? 0.75 : 0.65 } = {}) {
-  return growTree(BLOOMS[bloom] || ARAGUANEY, { seed, detail: treeDetail(detail), leaves, flowers, scale });
+  const species = BLOOMS[bloom] || ARAGUANEY;
+  return growTree(OPEN_CROWNS.get(species) || species, { seed, detail: treeDetail(detail), leaves, flowers, scale });
 }
 
 export const apamate = (options = {}) => araguaney({ ...options, bloom: 'pink' });

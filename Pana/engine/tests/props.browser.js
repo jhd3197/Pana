@@ -10,7 +10,7 @@ try {
   const page = await browser.newPage({ viewport: { width: 1600, height: 610 }, deviceScaleFactor: 1 });
   const errors = []; page.on('pageerror', error => errors.push(error.message));
   await page.goto(`${base}/studio/settings.html`);
-  await page.setContent(`<html><head><script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}</script><style>body{margin:0;background:#eef0ee;color:#292e2b;font:16px system-ui}header{padding:25px 30px 0;font-weight:600}canvas{display:block;width:1600px;height:500px}.names{display:grid;grid-template-columns:repeat(5,1fr);text-align:center}.names span{display:block;font:12px monospace;color:#626a64;margin-top:8px}</style></head><body><header>Pana · Objetos compartidos</header><canvas></canvas><div class="names"></div></body></html>`);
+  await page.setContent(`<html><head><script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.186.1/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.186.1/examples/jsm/"}}</script><style>body{margin:0;background:#eef0ee;color:#292e2b;font:16px system-ui}header{padding:25px 30px 0;font-weight:600}canvas{display:block;width:1600px;height:500px}.names{display:grid;grid-template-columns:repeat(5,1fr);text-align:center}.names span{display:block;font:12px monospace;color:#626a64;margin-top:8px}</style></head><body><header>Pana · Objetos compartidos</header><canvas></canvas><div class="names"></div></body></html>`);
   const metrics = await page.evaluate(async () => {
     const THREE = await import('three');
     const { makeMango } = await import('/engine/models/props/mango.js');
@@ -94,12 +94,84 @@ try {
       await page.screenshot({ path: `${output}/${i === 0 ? 'mango' : 'casita'}-back.png` });
     }
   }
+  const plazaMetrics = await page.evaluate(async () => {
+    const { stage, inspect, fitCamera, release, THREE } = propPreview;
+    const { ownMaterials } = await import('/studio/preview.js');
+    const factories = await import('/engine/models/props/plaza.js');
+    propPreview.models.forEach(model => release(model));
+    stage.renderer.setScissorTest(false); stage.renderer.setViewport(0, 0, 1600, 500); stage.renderer.clear();
+    stage.renderer.setSize(1600, 500, false); stage.renderer.setScissorTest(true);
+    const shape = root => {
+      const values = []; root.updateMatrixWorld(true);
+      root.traverse(node => {
+        if (!node.isMesh) return;
+        for (const attr of Object.values(node.geometry.attributes)) for (const value of attr.array) if (!Number.isFinite(value)) throw new Error('Non-finite Plaza geometry');
+        values.push(...node.geometry.attributes.position.array, ...node.matrixWorld.elements);
+      });
+      let hash = 2166136261;
+      for (const value of values) { hash ^= Math.round(value * 10000); hash = Math.imul(hash, 16777619); }
+      return hash >>> 0;
+    };
+    const worldPoints = root => {
+      const points = new Set(), point = new THREE.Vector3(); root.updateMatrixWorld(true);
+      root.traverse(node => {
+        if (!node.isMesh) return;
+        const position = node.geometry.attributes.position;
+        for (let i = 0; i < position.count; i++) points.add(point.fromBufferAttribute(position, i).applyMatrix4(node.matrixWorld).toArray().map(n => Math.round(n * 10000)).join(','));
+      });
+      return [...points].sort();
+    };
+    const { banana } = await import('/engine/models/vegetation/banana.js');
+    const { bake } = await import('/engine/models/core/static-batch.js');
+    const plant = banana({ seed: 7 }); plant.scale.setScalar(0.43); plant.position.y = 0.91;
+    const bakedPlant = bake(plant);
+    if (JSON.stringify(worldPoints(plant)) !== JSON.stringify(worldPoints(bakedPlant))) throw new Error('Batching changed planter vertices');
+    plant.traverse(o => o.geometry?.dispose()); bakedPlant.traverse(o => o.geometry?.dispose());
+    const records = [];
+    for (const [i, name] of ['barrel', 'crate', 'cooler', 'planter', 'bench', 'marketStall', 'streetLamp'].entries()) {
+      const runtime = { group: factories[name]() }, duplicate = { group: factories[name]() };
+      const geometry = new Set(); runtime.group.traverse(o => { if (o.geometry) geometry.add(o.geometry); });
+      duplicate.group.traverse(o => { if (geometry.has(o.geometry)) throw new Error(`${name} shares disposable geometry`); });
+      if (shape(runtime.group) !== shape(duplicate.group)) throw new Error(`${name} is not deterministic`);
+      ownMaterials(runtime); ownMaterials(duplicate);
+      const measured = inspect(runtime), column = i % 4, row = Math.floor(i / 4);
+      stage.scene.add(runtime.group); stage.camera.aspect = 400 / 250;
+      stage.renderer.setViewport(column * 400, row * 250, 400, 250); stage.renderer.setScissor(column * 400, row * 250, 400, 250);
+      fitCamera(stage.camera, measured.bounds); stage.renderer.render(stage.scene, stage.camera);
+      records.push({ name, ...measured.stats, bounds: measured.bounds.min.toArray().concat(measured.bounds.max.toArray()), renderCalls: stage.renderer.info.render.calls });
+      release(runtime); release(duplicate);
+    }
+    stage.renderer.setScissorTest(false); stage.renderer.setViewport(0, 0, 1600, 500);
+    return records;
+  });
+  await page.screenshot({ path: `${output}/plaza.png` });
+  await writeFile(`${output}/plaza-metrics.json`, JSON.stringify(plazaMetrics, null, 2));
+  // r186 omits four zero-area triangles at the lamp roof cone tip.
+  const plazaExpected = {
+    barrel: { triangles: 1044, meshes: 4, bounds: [-0.755, 0, -0.755, 0.755, 1.824, 0.755] },
+    crate: { triangles: 384, meshes: 3, bounds: [-0.78, 0, -0.845, 0.78, 1.465, 0.845] },
+    cooler: { triangles: 72, meshes: 2, bounds: [-0.895, 0.01, -0.55, 0.895, 1.055, 0.575] },
+    planter: { triangles: 372, meshes: 7, bounds: [-1.033, 0.005, -1.172, 1.008, 2.103, 1.199] },
+    bench: { triangles: 144, meshes: 3, bounds: [-1.4, 0.005, -0.53, 1.4, 1.69, 0.48] },
+    marketStall: { triangles: 4020, meshes: 8, bounds: [-2.64, 0.005, -1.517, 2.64, 3.562, 1.535] },
+    streetLamp: { triangles: 144, meshes: 2, bounds: [-0.52, 0, -0.52, 0.52, 4.735, 0.52] },
+  };
+  for (const metric of plazaMetrics) {
+    const expected = plazaExpected[metric.name];
+    assert.equal(metric.triangles, expected.triangles, `${metric.name} triangle count`);
+    assert.ok(metric.meshes <= expected.meshes, `${metric.name}: ${metric.meshes} meshes`);
+    assert.ok(metric.renderCalls <= expected.meshes, `${metric.name}: ${metric.renderCalls} draw calls`);
+    assert.equal(metric.bounds.length, 6);
+    metric.bounds.forEach((value, i) => assert.ok(Math.abs(value - expected.bounds[i]) < 0.001, `${metric.name} bounds ${i}: ${value}`));
+  }
+
   // The same foliage/house factories are baked into all three shared environments.
   for (const game of ['bululu', 'escondidas', 'cocina']) {
     await page.goto(`${base}/g/${game}/?debug`);
     await page.waitForFunction(game => {
       const renderer = game === 'bululu' ? window.renderer : game === 'escondidas' ? window.hunt?.renderer : window.cocina?.renderer;
-      return renderer?.info.render.frame > 2;
+      // Prepared lobbies intentionally stop drawing the covered 3D world.
+      return window.PANA_PREPARED && renderer?.info.render.frame > 0;
     }, game, { timeout: 120000 });
     await page.screenshot({ path: `${output}/${game}.png` });
     console.log(`Shared-prop consumer rendered: ${game}`);

@@ -13,7 +13,7 @@ import { sunnyStage, rand, pick } from './stage.js';
 const TIME = 45;
 const R = 12, INNER = 8, WEDGES = 12;   // platform radius, the part that never falls, outer pieces
 const CRUMBLE = 15;                      // the outer ring falls during the last CRUMBLE seconds
-const SCALE = 0.72;                      // Derrape's cars are big for this arena
+const SCALE = 0.72;                      // Carreritas's cars are big for this arena
 const BODY = 1.25;                       // collision radius
 const TOP = 9, ACCEL = 16, TURN = 4.2;
 const BOOST = 17, BOOST_COOL = 3;

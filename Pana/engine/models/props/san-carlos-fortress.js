@@ -137,7 +137,8 @@ fort.add(wallQuad([Q,Q],[TUN_W/2,Q],0,H,stoneMat));fort.add(wallQuad([-TUN_W/2,Q
 /* gate: tunnel block, stucco portal, open doors */
 {
   const tb=mesh(new THREE.ExtrudeGeometry(archBlockShape(TUN_W,H-0.1,TUN_A,TUN_S),{depth:TUN_D,bevelEnabled:false}),stoneMatW);tb.position.set(0,0,Q);fort.add(tb);
-  const vault=mesh(new THREE.CylinderGeometry(TUN_A/2-0.05,TUN_A/2-0.05,TUN_D,24,1,true,-PI/2,PI),M({color:0xcfc2a6,side:THREE.BackSide}),false);
+  // After the X rotation, the negative-Z half forms the ceiling above the spring.
+  const vault=mesh(new THREE.CylinderGeometry(TUN_A/2-0.05,TUN_A/2-0.05,TUN_D,24,1,true,PI/2,PI),M({color:0xcfc2a6,side:THREE.BackSide}),false);
   vault.rotation.x=PI/2;vault.position.set(0,TUN_S,Q+TUN_D/2);fort.add(vault);
   const pz=Q+TUN_D; // portal front starts here
   const portal=mesh(new THREE.ExtrudeGeometry(archBlockShape(34,H+3,TUN_A,TUN_S),{depth:4,bevelEnabled:false}),stuccoMat);portal.position.set(0,0,pz-1);fort.add(portal);
@@ -185,7 +186,8 @@ function garita(){const g=new THREE.Group();
   const door=mesh(new THREE.ShapeGeometry(archShape(0.6,1.05)),darkMat,false);door.position.set(0,0.25,-0.81);door.rotation.y=PI;g.add(door);
   g.scale.setScalar(3.4);return g;}
 for(const k of [0,2,3]){const tip=outline[k*5+2],d=new THREE.Vector2(tip[0],tip[1]).normalize();
-  const g=garita();g.position.set(tip[0]-d.x*1.7,H+2.4,tip[1]-d.y*1.7);g.rotation.y=Math.atan2(d.x,d.y);fort.add(g);}
+  const g=garita();g.position.set(tip[0]-d.x*1.7,H+2.4,tip[1]-d.y*1.7);g.rotation.y=Math.atan2(d.x,d.y);
+  if(clearance(g.position.x*scale,g.position.z*scale,(H+7)*heightScale,3.4*scale))fort.add(g);}
 
 /* courtyard: casemate arches, ruins, well, plants */
 function archDoor(w,h){const g=new THREE.Group();

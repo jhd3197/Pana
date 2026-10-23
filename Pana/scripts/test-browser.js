@@ -209,7 +209,7 @@ function run({ file, args, label }) {
 
 const report = (result, note = '') => {
   console.log(`${result.ok ? 'ok  ' : 'FAIL'}  ${result.label}  (${result.seconds.toFixed(1)}s)${note}`);
-  if (!result.ok) console.log(result.log.trim().split('\n').slice(-15).map(line => `      ${line}`).join('\n'));
+  if (!result.ok) console.log(result.log.trim().split('\n').map(line => `      ${line}`).join('\n'));
 };
 
 const started = Date.now(), queue = [...suites], results = new Map();
@@ -218,8 +218,8 @@ await Promise.all(Array.from({ length: Math.min(jobs, queue.length) }, async () 
   for (let suite; (suite = queue.shift());) {
     const result = await run(suite);
     results.set(suite.label, result);
-    if (result.ok || !retries) report(result);
-    else console.log(`retry ${suite.label} (failed after ${result.seconds.toFixed(1)}s, rerunning at the end)`);
+    report(result, !result.ok && retries ? '  - queued for retry' : '');
+    if (result.ok) savePasses();
   }
 }));
 
@@ -233,6 +233,7 @@ await Promise.all(Array.from({ length: Math.min(Math.max(1, Math.floor(jobs / 2)
       if (result.ok) flaky.push(suite.label);
       results.set(suite.label, result);
       report(result, result.ok ? '  · passed on retry' : '');
+      if (result.ok) savePasses();
     }
   }
 }));
@@ -287,6 +288,9 @@ Baseline: rerunning ${failed.length} failure(s) on ${sha.slice(0, 7)} (merge-bas
         const verdict = !fs.existsSync(path.join(tree, r.label)) ? 'new suite' : out.status ? 'pre-existing' : 'REGRESSION';
         verdicts.set(r.label, verdict);
         console.log(`  ${verdict.padEnd(12)}  ${r.label}`);
+        // Preserve the actual baseline failure, not just its exit status: two
+        // different failures in one suite are not evidence of the same bug.
+        if (out.status) console.log((out.stdout + out.stderr).trim().split('\n').slice(-25).map(line => `      ${line}`).join('\n'));
       }
     } finally {
       // Unlink the junction first: removing the worktree must never reach the real node_modules.

@@ -93,7 +93,7 @@ test('street houses build through the colonial house maker', () => {
   for (const [file, name] of [
     ['engine/models/props/plaza-buildings.js', 'house'],
     ['engine/models/props/pueblo.js', 'colonialHouse'],
-    ['games/derrape/public/tracks/world-landmarks.js', 'canalVilla'],
+    ['games/carreritas/public/tracks/world-landmarks.js', 'canalVilla'],
   ]) {
     const code = body(file, name);
     assert.match(code, /\b(colonialHouse|recipeHouse)\(/, `${file} ${name}() uses the house maker`);

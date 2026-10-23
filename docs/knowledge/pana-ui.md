@@ -36,7 +36,7 @@ Every game and the hub use one pause menu and one settings store:
   `bindRenderer(renderer, max)` keep the fx.js sound and a renderer in step.
 - `engine/ui.js` — `createGameMenu(options)` builds a native modal `<dialog>`
   with the tabs Juego (resume, game actions, invite, exit), Ajustes (shared
-  settings plus game options) and Controles. It owns Esc, focus and input
+  settings, device instructions and game options). It owns Esc, focus and input
   blocking; the game only decides what pausing means.
 - `engine/ui.css` — scoped `.pana-*` styles. Pages link it before their own
   stylesheet; ui.js injects it if a page forgot.
@@ -72,15 +72,72 @@ only `?room=`; never the sender's name, `debug`, `manual` or `lead` (an invitee 
 not become the party's lead). The hub builds its links with `playUrl()`.
 
 `orientation: 'horizontal' | 'vertical' | 'libre'` (default `libre`) is how the game
-wants a phone held. Racing games (Derrape, Galope) are horizontal; Cocina, Escondidas and
+wants a phone held. Racing games (Carreritas, Galope) are horizontal; Cocina, Escondidas and
 Reliquia, whose phone HUDs are built upright, are vertical. On touch screens Ajustes
 shows **Orientación** (Según el juego / Horizontal / Vertical, saved as
 `orientation` in settings.js). A phone held the other way gets a "Gira tu teléfono"
 screen with "Jugar así" (and, where the browser can lock it, "Pantalla completa").
 `<html data-pana-orientation>` carries the wanted orientation for CSS. The game's
 landscape layout still has to work: test both with a touch emulator.
-Mark keyboard reminders with `data-pana-hint` so the "Ayudas de teclado"
+Mark keyboard reminders with `data-pana-hint` so the "Ayudas de controles"
 setting can hide them.
+
+## Shared input settings
+
+The menu occupies the viewport, keeping native dialog focus containment and
+each game's `onOpen` / `onClose` behavior. `settings-workspace.js` loads only
+when Ajustes opens. It moves the existing audio, image and game option nodes
+into categories, preserving IDs and handlers. `/ajustes.html` exposes the same
+workspace outside a game. Personal settings never change room rules.
+
+Device instructions and tuning share one category per device, initially the
+active device. There is no separate Controls tab or input landing page.
+Controller deadzone, movement and look sensitivity remain visible; other tuning and
+manual hint overrides live in disclosures. The live monitor appears only in
+Mando and names the connected hardware, even while a mouse adjusts it.
+Legacy `open('controls')` calls route to Ajustes.
+
+`pana:settings` stores independent `mouseSensitivity`, `mouseVertical`,
+`mouseInvertY`, `touchSensitivity`, `touchInvertY`, `padDeadzone`,
+`padMoveSensitivity`, `padLookSensitivity`, `padVertical`, `padInvertY`,
+`padCurve` (lineal/suave/rapida), `padCursorSpeed` and `padVibration`.
+`normalizeSettings` clamps persisted ranges; `resetInputSettings` preserves
+audio, image and hint visibility. First-person controls consume live values,
+including separate touch drag tuning. Legacy first-person mouse presets
+migrate when no numeric preference exists. Settings still work in memory when
+storage is unavailable, and storage events synchronize open tabs.
+
+`gamepad.js` exports `inputState()` and `onInputDevice(fn)`: `detected` is the
+last active physical device, while `device` follows the `inputHints` display
+override (auto/keyboard/gamepad/touch). Synthetic controller key/pointer events
+must never count as physical keyboard or mouse input. An idle controller must
+not take focus back after a real key press; held buttons or raw stick travel
+beyond the configured deadzone reactivate it, including slow or steady input.
+Mouse hover never changes the device; trusted clicks and key presses do.
+Disconnect releases translated keys. Window blur suspends the
+controller translator until focus returns.
+
+The root carries `data-pana-input` and `data-pana-pad-family`. Keyboard hint
+groups and legacy keycaps hide for controller/touch input; controller keycaps
+use `data-pad-key`. Gameplay controller prompts come from each game's real
+`pad` mapping. Device instructions remain visible in their own settings page
+even when another device navigates there. `padFamily` can
+override ID-based Xbox/PlayStation/Nintendo/generic labels without changing
+the browser's standard button indices. Controller navigation targets the
+lobby's start action before other primary buttons such as an armory button.
+
+Native controller readers must call `inputAxis(value, getSettings())`, as
+Carreritas and Trifulca do. `readPad` uses that same function; `kind: 'look'`
+scales full-travel camera speed, while movement stays bounded to one. Menu
+navigation deliberately uses normal movement sensitivity and a linear curve
+so a player's low gameplay setting cannot disable navigation. The live tester
+shows raw and shaped values; its explicit test mode consumes navigation until
+B/Start (or the finish button) ends the test. Vibration is optional browser
+support: failed probes show an unavailable message, not a successful effect.
+
+`settings.browser.js` measures actual mouse/touch look deltas, controller
+arbitration, tester behavior, persistence and responsive layout. The all-games
+smoke opens the real settings menu under each game's CSS, including phone width.
 
 ## Loading cover
 
@@ -126,14 +183,14 @@ starts from the big control nearest the bottom middle of the screen, and A
 stays with the buttons. `createLookControls` turns the camera with the right
 stick, so first-person games need no `cursor`. `{ native: true, help }` is for
 a game that reads the pad itself (Trifulca): the menus still work, and `help`
-fills the "Con mando" list. The Controles tab lists each labelled key under
-"Con mando". Derrape is native too: controls.js drives the car, and the
+fills the instructions in Ajustes → Mando. Carreritas is native too:
+controls.js drives the car, and the
 engine owns the garage menus and Start, so its own pad code no longer
 toggles the pause. Without a main button, a menu starts the pad on its
-biggest button, such as Derrape's "Un jugador" card rather than the step bar.
+biggest button, such as Carreritas's "Un jugador" card rather than the step bar.
 
-Trap: the menu imports `gamepad.js` only when `pad` is set, so a game's first
-load stays under the module budget (`tests/conventions.test.js`).
+The menu imports `gamepad.js` dynamically for device-aware help. The settings
+workspace is lazy too; neither adds to a game's static module budget.
 
 ## Rules and traps
 
@@ -141,10 +198,10 @@ load stays under the module budget (`tests/conventions.test.js`).
   While it is open, keys never reach game handlers. Keys aimed at the menu stop
   at the dialog; the others stop at `window`. Games still get `keyup`, so clear
   held keys in `onOpen`.
-- **Pausing is the game's job.** Derrape skips fixed steps, Bululú feeds
+- **Pausing is the game's job.** Carreritas skips fixed steps, Bululú feeds
   `dt = 0` to its job/tween clock, and Cocina and Escondidas freeze only solo
   rounds. In multiplayer, `note()` must say the round continues.
-- **Game CSS styles bare elements** (`header`, `dl`, `dd`, `kbd`, …). Derrape
+- **Game CSS styles bare elements** (`header`, `dl`, `dd`, `kbd`, …). Carreritas
   even hides `dl` on phones. The menu therefore uses only classed `div`/`span`
   elements, and its button reset is wrapped in `:where()` so `.pana-*` rules
   win.
@@ -156,7 +213,7 @@ load stays under the module budget (`tests/conventions.test.js`).
   settings-only dialog.
 - The shared menu explicitly wraps Tab and Shift+Tab across visible, enabled
   controls. Native modal focus alone can still advance to browser chrome.
-  Browser checks must first reveal Derrape's final garage step before asserting
+  Browser checks must first reveal Carreritas's final garage step before asserting
   that closing the menu restores focus to its Play button.
 - Stable test IDs: `#pana-menu-dialog`, `#pana-resume`, `#pana-copy-room`,
   `#pana-set-sound`, `#pana-set-volume`, `#pana-set-quality`,
@@ -267,3 +324,27 @@ checks its grouped roster before all six players take real shots.
 `node Pana/engine/tests/ui.browser.js [playwright-package] [browser]` against
 `npm start`. It covers hub → game persistence, live resolution changes, Esc,
 focus containment and return, input blocking, invite links and `M`.
+
+## Shared reference sala
+
+Every game uses `engine/sala.js`/`sala.css` after scene preparation.
+Carreritas and Pepazo additionally provide workshop metadata.
+Their original lobby exposes `panaSala.read()` with connection state, summary,
+real members and kit ratings; `openKit` opens the existing workshop/armory.
+The shared shell still owns membership, readiness, invite links and the start
+barrier. Clicking your own card uses that same readiness action; empty cards
+copy the room link. Carreritas opens its existing room connection before copying
+an invite when currently local. No prototype sample players are fabricated.
+
+Connection status and Reintentar occupy one place at the settings card's foot.
+Offline keeps a yellow local-play action; retry reloads the existing connection
+flow. Pepazo's actual team arrangement remains under Más ajustes so the eight
+sala cards stay in place. Other games use the same side-settings presentation while retaining their
+game-owned team seating and personal controls. Their start labels, handlers and
+host permissions are not replaced. No optional workshop metadata is required.
+
+Await the sala stylesheet before clearing `PANA_LOBBY_LOADING`; a game's own
+`PANA_PREPARED` can be true before the shell has docked its final controls.
+Browser readiness checks require both. `sala.browser.js` proves two-client
+readiness, host permissions, personal workshop persistence, kit ratings, team
+settings and offline retry; `lobby.browser.js` covers the generic shell.

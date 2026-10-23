@@ -17,7 +17,7 @@ try {
   const page=await browser.newPage(),errors=[];
   page.on('pageerror',e=>errors.push(e.message));
   await page.goto(`${process.env.PANA_TEST_URL||'http://localhost:8461'}/studio/settings.html`);
-  await page.setContent('<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}</script>');
+  await page.setContent('<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.186.1/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.186.1/examples/jsm/"}}</script>');
   const result=await page.evaluate(async aliases=>{
     const {ASSETS}=await import('/studio/catalog.js'),{MODEL_DEFINITIONS}=await import('/engine/models/catalog.js');
     const check=(value,message)=>{if(!value)throw Error(message);};
@@ -31,10 +31,10 @@ try {
       const old=await import(alias.old),canonical=await import(alias.target);
       for(const name of alias.names){check(old[name]!==undefined&&old[name]===canonical[name],`Broken alias ${alias.old}#${name}`);symbols++;}
     }
-    const registry = await import('/g/derrape/tracks.js'), runtime = await import('/g/derrape/track-runtime.js');
+    const registry = await import('/g/carreritas/tracks.js'), runtime = await import('/g/carreritas/track-runtime.js');
     await registry.loadTracks();
-    const { TRACK_DEFINITIONS } = await import('/g/derrape/track-definitions.js');
-    const { CARS } = await import('/g/derrape/cars.js'), { CAR_DEFINITIONS } = await import('/g/derrape/car-definitions.js');
+    const { TRACK_DEFINITIONS } = await import('/g/carreritas/track-definitions.js');
+    const { CARS } = await import('/g/carreritas/cars.js'), { CAR_DEFINITIONS } = await import('/g/carreritas/car-definitions.js');
     check(registry.makeTrack === runtime.makeTrack, 'Track runtime compatibility export changed identity');
     for (const definition of TRACK_DEFINITIONS) {
       const track = registry.TRACKS.find(track => track.id === definition.id);

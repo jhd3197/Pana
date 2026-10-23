@@ -40,7 +40,7 @@ The additional vegetation IDs are `araguaney`, `bamboo`, `fern`, `monstera`,
 `waterLily` (Nenúfar), `hibiscus` (Cayena), and `reeds` (Juncos). Their seeded constructors are
 defined in individual `/engine/models/vegetation/` modules
 (`/engine/models/vegetation/index.js` exports them all). They
-are all used by Derrape's Selva circuit, so `usedBy` lists Derrape.
+are all used by Carreritas's Selva circuit, so `usedBy` lists Carreritas.
 `tracks/selva-flora.js` owns habitat placement. Registering a future plant still
 does not change map placement or collision rules automatically.
 `jungleGiant` and `tropicalBush` now appear in Selva; `frailejon` and
@@ -262,7 +262,7 @@ only the latter does not prevent a 30-second Playwright click timeout.
 The character proportions suite verifies stable camera/body size across wardrobe
 changes. Cocina and Escondidas browser suites use real two-client sessions for
 movement, gameplay, host departure and mobile behavior; they also smoke test
-Derrape, Bululú and hub artwork. Preview screenshots are in ignored `art/studio/`.
+Carreritas, Bululú and hub artwork. Preview screenshots are in ignored `art/studio/`.
 
 `web/studio/tests/cache.browser.js` covers real routes, direct reload, browser
 history, missing IDs, no eager renderer/map imports, scoped cold/warm generation,
@@ -306,3 +306,8 @@ Escondidas, Pintura, Billar and Caída as consumers. See
 Browser checks must return through `#back-library` before using `#search` to
 select another resource. Legacy hash links open the dedicated asset page,
 where the library's search controls are hidden.
+
+Factories with positional arguments declare `previewArgs` in their catalog
+metadata. The object adapter spreads those arguments; ordinary factories keep
+using one `previewOptions` object. The cable-span preview uses this to pass its
+two endpoints. The model-library browser proof builds all 522 model snapshots.

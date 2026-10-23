@@ -11,11 +11,11 @@ try {
   page.on('pageerror',e=>errors.push(e.message));
   page.on('console',m=>{if(m.type()==='error')errors.push(m.text());});
   await page.goto(`${process.env.PANA_TEST_URL||'http://localhost:8461'}/studio/settings.html`);
-  await page.setContent('<style>body{margin:0}canvas{display:block}</style><canvas id="world"></canvas><script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}</script>');
+  await page.setContent('<style>body{margin:0}canvas{display:block}</style><canvas id="world"></canvas><script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.186.1/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.186.1/examples/jsm/"}}</script>');
   const result=await page.evaluate(async()=>{
     const THREE=await import('three'),{createPlaza}=await import('/engine/worlds/plaza.js'),{house}=await import('/engine/models/props/plaza-buildings.js');
     const renderer=new THREE.WebGLRenderer({canvas:document.querySelector('canvas'),antialias:true,preserveDrawingBuffer:true});
-    renderer.setSize(1280,760);renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;
+    renderer.setSize(1280,760);renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFShadowMap;
     const camera=new THREE.PerspectiveCamera(60,1280/760,.1,1500),plaza=createPlaza();
     camera.position.set(0,3.3,32);camera.lookAt(0,7,-18);
     const check=(b,m)=>{if(!b)throw Error(m);};

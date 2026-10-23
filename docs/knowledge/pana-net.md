@@ -112,13 +112,13 @@ Rules the base enforces, so games must not re-implement them:
   extras and late avatar changes arrive.
 - Snapshots up to 256 KB per message; keep them event-driven or ~20 Hz.
 
-## A game with its own room (Derrape)
+## A game with its own room (Carreritas)
 
 Ship `games/<game>/server/room.js` exporting a `PanaRoom` subclass. Build state
 with `roomState({ ...fields }, Member.extend({ ...memberFields }, 'Name'))`, call
 `super.onCreate(options)` first, and use the hooks `joined`, `dropped`, `returned`,
 `left`, `hostChanged` instead of overriding `onJoin`/`onLeave`. Browser side:
-`joinRoom('<game>', options)` and listen on the link. See `derrape-online.md`.
+`joinRoom('<game>', options)` and listen on the link. See `carreritas-online.md`.
 
 A room that runs the game itself (Póquer, Pintura, ¡Embuste!) uses the kit's
 helpers instead of its own: `seatOf(client)`, `connectedMembers()`,

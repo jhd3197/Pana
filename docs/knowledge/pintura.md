@@ -12,8 +12,10 @@ The host only starts rounds. Its departure cannot interrupt simulation.
 - Three minutes by default or ten knockouts; ties share victory. `toughness` (Aguante, default 3)
   pepazos knock a pana out for 2.5 seconds; `paint` counts hits taken and `stains` keeps
   their colours. After 4 s without a hit one pepazo washes off every 1.5 s; respawn clears both. Spawn protection lasts 1.5 seconds and firing cancels it.
-- Twelve paintballs, 0.25-second firing interval, 1.3-second reload. Empty
-  magazines reload automatically. Server ticks are 50 ms.
+- La Chispa starts with twelve paintballs, a 0.25-second firing interval and
+  1.3-second reload. Every marker has its own magazine, cadence, spread and
+  reload in `armory-data.js`. Empty magazines reload automatically. Server ticks
+  are 50 ms.
 - Movement is normalized and clamped server-side. Input expires after 350 ms,
   so a backgrounded or disconnected browser does not keep running or firing.
 - Projectile travel uses segment/AABB and segment/circle intersections. At
@@ -174,3 +176,47 @@ carried flag. Three captures win, or the clock/finite-life victory ends the
 round. Flags and team scores are authoritative snapshot data and have 3D meshes.
 
 Team and flag lobbies show the shared avatar roster, with four orange and four turquoise positions. Stable `player.seat` positions are separate from network IDs; team is seat parity. Any connected pana can move their own card, including swapping an occupied position; only the host can arrange other players. The server rejects live-round moves and preserves choices through start, rematch and host departure. With multiple humans, both teams need a player before starting; solo practice still fills bots. Reconnecting into a full arena cannot duplicate another player's position.
+
+## Armory and composed combat kits
+
+`armory-data.js` is the shared, pure source for four markers, two attachment
+slots, one armor slot, three grenades and cosmetics. `cleanKit` allowlists all
+IDs and deduplicates at most two attachments. `kitStats` composes real tradeoffs
+and still honors pistol-only, fast-reload and room toughness options.
+
+The server accepts `kit` only for the sender's seat before a round; clients
+cannot change armor/grenades mid-round. Weapon keys retain the existing weapon
+switch behavior, with reload debt and no refill of limited rocket reserve.
+Rocket splash and grenade blasts apply at most one hit per victim and respect
+cover, teams and spawn protection. Respawn restores one grenade. Sticky pools
+expire and slow opponents; Chispita bounces before its fuse expires.
+
+`armory.js` previews the actual marker and own pana, with hover comparisons for
+range, spread, cadence, capacity, reload, mobility and toughness. Its Probar
+range runs an independent `Arena` against a target, using the same rules as the
+server. It never spends ammo or emits shots into the multiplayer room.
+`paintball-kit.js` supplies the four visible marker meshes, cosmetic finishes,
+attachments and padded vest to both preview and gameplay. Studio registers
+those same models. Paint pattern changes are cosmetic and never change hits.
+
+The two-client browser proof picks a guest kit, verifies the host receives it,
+checks the attachment cap and grenade consumption, rejects a mid-round armor
+change, then proves real shooting, respawn, host departure and rematch. Mobile
+controls put reload and grenade beside a tall fire button without overflowing.
+
+## Calculated kit nivel
+
+`kitRating` in `armory-data.js` reads `kitStats` with current room options.
+It returns 100 + 700 times a weighted sum of bounded 0–1 components: range
+15%, precision 10%, sustained pellet rate including reload 20%, magazine plus
+reserve 10%, reload speed 10%, mobility 15%, toughness 15%, weapon spread-area
+coverage 2.5% and grenade radius per fuse second 2.5%. It is a build summary,
+not a player rank or combat modifier; special utility such as sticky pools is
+still explained on the grenade card rather than presented as extra damage.
+
+The sala and armory show the same integer with shared D/C/B/A/S display bands
+from `engine/kit-rating.js`. Hover previews the candidate rating; changed room
+rules refresh an open armory. Finishes, charms and patterns do not affect it.
+Unit tests cover bounds, cosmetics, attachments, armor, grenades and rule
+overrides; the two-client sala test checks that a guest's changed rating reaches
+the host and matches the armory.

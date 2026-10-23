@@ -52,6 +52,18 @@ export function bake(root, { cellSize = Infinity } = {}) {
   return out;
 }
 
+export function finish(group, name) {
+  const out = bake(group); out.name = name;
+  const geometry = new Set(), textures = new Set();
+  group.traverse(o => {
+    if (o.geometry) geometry.add(o.geometry);
+    if (o.material?.map?.isCanvasTexture) textures.add(o.material.map);
+  });
+  geometry.forEach(g => g.dispose());
+  if (textures.size) out.userData.dispose = () => textures.forEach(t => t.dispose());
+  return out;
+}
+
 // One baked prototype drawn at many placements ({x, y, z, rot, scale}). The
 // placements are bucketed into cells so distant groves cull on their own.
 // `source` is consumed: its geometry is baked and released.

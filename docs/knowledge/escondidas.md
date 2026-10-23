@@ -2,7 +2,7 @@
 
 Standalone game at `/g/escondidas/`, with metadata and live artwork discovered by
 the hub. No build step or additional production dependency. Tested on Three.js
-0.160.0 and the existing `ws` relay.
+0.186.1 and the existing `ws` relay.
 
 ## Rules and controls
 

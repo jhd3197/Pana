@@ -10,7 +10,7 @@ const configs = [
   ['escondidas', 'hunt', { rounds: 6, disguises: 'barrels', seekers: 2, hideSeconds: 45, hints: 'whistle', moveDisguised: false, seekerMap: true, huntSeconds: 240 }],
   ['cocina', 'cocina', { kitchen: 'playa', duration: 300, difficulty: 'chaos', orders: 'arepa', impatient: false, fire: 'fast', tips: false, switchKitchen: true, helpers: false }],
   ['pintura', 'pinturaDebug', { mode: 'teams', duration: 300, toughness: 5, lives: 1, paint: 'sticky', weapons: 'pistol', friendlyFire: true, fastReload: true, flag: true }],
-  ['reliquia', 'reliquia', { temple: 'tepuy', difficulty: 'hard', lightAllocation: 'each', mummies: 3, traps: 'many', revive: false, map: false, hints: false, lanterns: false }],
+  ['reliquia', 'reliquia', { difficulty: 'hard', greed: 'fierce', revive: false, wipeShare: 0, map: false, crude: true }],
 ];
 try {
   for (const [game, debug, values] of configs) {
@@ -36,7 +36,7 @@ try {
     const bounds = await guest.locator('#pana-room-dialog').boundingBox(); assert.ok(bounds.x >= 0 && bounds.x + bounds.width <= 391);
     await host.screenshot({ path: path.join(tmpdir(), `pana-${game}-options-desktop.png`) });
     await guest.screenshot({ path: path.join(tmpdir(), `pana-${game}-options-mobile.png`) });
-    await guest.evaluate(({ key, game }) => { const r = window[key].room; if (game === 'pintura') r.link.send('configure', { options: { duration: 180 } }); else r.action('configure', { options: { [game === 'escondidas' ? 'rounds' : game === 'cocina' ? 'duration' : 'mummies']: 1 } }); }, { key: debug, game });
+    await guest.evaluate(({ key, game }) => { const r = window[key].room; if (game === 'pintura') r.link.send('configure', { options: { duration: 180 } }); else r.action('configure', { options: { [game === 'escondidas' ? 'rounds' : game === 'cocina' ? 'duration' : 'wipeShare']: game === 'reliquia' ? 50 : 1 } }); }, { key: debug, game });
     await host.locator('#pana-room-reset').click();
     await waitFor(guest, ({ key, values }) => Object.entries(values).every(([k, v]) => window[key].room.state.options[k] === v), { key: debug, values: defaults });
     if (['escondidas', 'pintura'].includes(game)) await waitFor(guest, key => window[key].room.state.mapId === 'plaza', debug);
@@ -55,7 +55,7 @@ try {
     if (game === 'escondidas') assert.equal(await guest.evaluate(() => hunt.state.seekers.length), 2);
     if (game === 'cocina') assert.ok(await guest.evaluate(() => cocina.state.kitchen === 'playa' && cocina.state.orders.every(o => o.recipe === 'arepa') && cocina.state.remaining > 290));
     if (game === 'pintura') await waitFor(guest, () => pinturaDebug.world.scene.getObjectByName('Bandera 0')?.visible && pinturaDebug.room.state.flags.length === 2);
-    if (game === 'reliquia') { await waitFor(guest, () => reliquia.world.group.getObjectByName('Losas trampa')?.children.length === 9); assert.equal(await guest.locator('#minimap').isVisible(), false); assert.equal(await guest.locator('#mission-steps').isVisible(), false); }
+    if (game === 'reliquia') { assert.equal(await guest.locator('#minimap').isVisible(), false); assert.equal(await guest.evaluate(() => reliquia.state.options.wipeShare), 0); }
     await guest.screenshot({ path: path.join(tmpdir(), `pana-${game}-options-playing-mobile.png`) });
     assert.deepEqual(host.errors, []); assert.deepEqual(guest.errors, []);
     await guest.context().close(); console.log(`ok: ${game} options sync, reset, read-only guests, mobile modal and host migration`);

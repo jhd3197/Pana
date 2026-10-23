@@ -246,7 +246,7 @@
 .pk-slot.is-active { border-color: var(--pk-yellow); background: rgba(255, 198, 41, .1); }
 
 /* speech bubble over a seated pana: engine/play/seat-bubbles.js. The same white
-   comic bubble Derrape draws over its cars; short-lived, so it may cover the HUD. */
+   comic bubble Carreritas draws over its cars; short-lived, so it may cover the HUD. */
 .pk-bubble{position:absolute;z-index:5;transform:translate(-50%,-100%);max-width:220px;padding:7px 14px 5px;border:3px solid var(--pk-bubble-ink);border-radius:18px;background:var(--pk-bubble-paper);color:var(--pk-bubble-ink);font:20px/1.05 var(--pk-display);text-align:center;box-shadow:0 4px 0 rgba(0,0,0,.25);pointer-events:none}
 .pk-bubble::after{content:'';position:absolute;left:50%;bottom:-11px;width:16px;height:16px;border:solid var(--pk-bubble-ink);border-width:0 3px 3px 0;background:var(--pk-bubble-paper);transform:translateX(-50%) rotate(45deg)}
 .pk-bubble.below{transform:translate(-50%,0)}
@@ -476,3 +476,7 @@
   .pk-cover-bar i { width: 100%; opacity: .6; animation: none; }
 }
 .pk-nav-chevron { display:inline-block; width:1em; height:1em; vertical-align:-.12em; flex:none; }
+
+/* Shared build rating in the sala and loadout. */
+.pk-kit-level{display:inline-flex;align-items:stretch;flex:none;white-space:nowrap;background:var(--pk-deep);color:var(--pk-text);font:20px/1.2 var(--pk-display);transform:skew(-8deg)}
+.pk-kit-level>b{background:var(--nivel);padding:2px 7px;color:white}.pk-kit-level>span{padding:2px 7px}

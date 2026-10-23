@@ -7,7 +7,7 @@ const repo = path.resolve(import.meta.dirname, '..', '..');
 const suites = [
   'Pana/engine/tests/all-games.browser.js', 'Pana/engine/tests/lobby.browser.js', 'Pana/engine/tests/fx.browser.js',
   'Pana/games/domino/tests/browser.mjs', 'Pana/games/domino/tests/options.browser.js',
-  'Pana/games/derrape/tests/loading.browser.js', 'Pana/engine/tests/farm-animals.browser.js',
+  'Pana/games/carreritas/tests/loading.browser.js', 'Pana/engine/tests/farm-animals.browser.js',
   'Pana/web/studio/tests/studio.browser.js', 'Pana/web/tests/launcher.browser.js',
 ];
 const pick = files => suitesFor(repo, files, suites);
@@ -27,7 +27,7 @@ test("a game's code runs its main suite for sure and its others if the budget al
 });
 
 test('suites that load a game from elsewhere come along with it', () => {
-  assert.ok(pick(['Pana/games/derrape/public/tracks.js']).may.includes('Pana/engine/tests/farm-animals.browser.js'));
+  assert.ok(pick(['Pana/games/carreritas/public/tracks.js']).may.includes('Pana/engine/tests/farm-animals.browser.js'));
 });
 
 test('an engine module runs the smoke and the suites that name it', () => {

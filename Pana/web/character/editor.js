@@ -225,7 +225,7 @@ Ne.setPixelRatio(Math.min(devicePixelRatio, 2));
 Ne.toneMapping = ae.ACESFilmicToneMapping;
 Ne.toneMappingExposure = 1.05;
 Ne.shadowMap.enabled = !0;
-Ne.shadowMap.type = ae.PCFSoftShadowMap;
+Ne.shadowMap.type = ae.PCFShadowMap;
 gt.prepend(Ne.domElement);
 var Ce = new ae.Scene(),
   Jo = new ae.PMREMGenerator(Ne);
@@ -373,7 +373,7 @@ function en(e, t) {
   (Bt(t),
     Te.update(1e-4, { pose: "idle", manualArms: !1 }),
     t.face !== n.face && Te.setExpression(t.face, { immediate: !0 }),
-    ze.update(It.elapsedTime));
+    ze.update(It.getElapsed()));
   let c = Ko[e];
   (zt.position.set(...c.pos), zt.lookAt(...c.target));
   let s = Ce.environment;
@@ -856,12 +856,12 @@ function xo() {
 }
 const resizeObserver = new ResizeObserver(xo); resizeObserver.observe(gt);
 let animationFrame, disposed = false;
-var It = new ae.Clock(),
+var It = new ae.Timer().reset(),
   rn = matchMedia("(prefers-reduced-motion: reduce)").matches;
 function ko() {
   if (disposed) return;
-  let e = It.getDelta(),
-    t = It.elapsedTime;
+  let e = It.update().getDelta(),
+    t = It.getElapsed();
   if ($e) {
     let n = Math.min(1, (performance.now() - $e.start) / $e.ms),
       r = 1 - Math.pow(1 - n, 3);

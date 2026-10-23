@@ -17,8 +17,8 @@ export class PaintConnection {
       link.on('state', () => { if (!this.local) this.onState(this.state); });
       link.on('status', (text, failed) => { if (!this.local) { this.connected = !failed; this.onStatus(text || 'En línea con tus panas', !!failed); this.onState(this.state); } });
       link.on('left', () => { if (!this.local) { this.connected = false; this.onStatus('Se cortó la conexión. Recarga para volver o practica con bots.', true); this.onState(this.state); } });
-      this.onStatus('En línea con tus panas'); this.onState(this.state);
-    } catch (error) { if (!this.local && !this.disposed) this.onStatus(error.full ? 'Sala llena. Abre otra cancha desde Pana.' : 'Sin conexión. Puedes practicar con bots.', true); }
+      this.onStatus('En línea con tus panas'); if(this.kit) this.selectKit(this.kit); this.onState(this.state);
+    } catch (error) { if (!this.local && !this.disposed) { this.connected = false; this.onStatus(error.full ? 'Sala llena. Abre otra cancha desde Pana.' : 'Sin conexión. Puedes practicar con bots.', true); this.onState(this.state); } }
   }
   moveSeat(from, to) {
     if (!this.connected) return;
@@ -36,11 +36,13 @@ export class PaintConnection {
     if (this.local) { if (this.game.selectDifficulty(difficulty)) this.publish(); }
     else this.link.send('difficulty', { difficulty });
   }
+  selectKit(kit) { this.kit=kit; if(this.local) { if(this.game.selectKit(this.id,kit)) this.publish(); } else if(this.connected) this.link.send('kit',kit); }
   start() { if (this.local) { this.game.start(); this.publish(); } else if (this.connected) this.link.send('start'); }
   input(value) { this.current = cleanInput(value); if (!this.local && this.connected) this.link.send('input', this.current); }
   practice() {
     this.local = true; this.link?.leave(); this.connected = true; this.game = new Arena(this.state.mapId, this.state.difficulty, this.state.options);
     this.game.add(1, { name: this.name, avatar: this.avatar, bot: false });
+    if(this.kit) this.game.selectKit(1,this.kit);
     ['Coco', 'Lola', 'Cheo'].forEach((name, i) => this.game.add(1000 + i, { name, avatar: randomAvatar(), bot: true }));
     this.onStatus('Práctica con bots · a tu ritmo'); this.start();
   }

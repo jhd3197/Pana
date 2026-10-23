@@ -41,7 +41,7 @@ Studio's `release()` disposes cloned materials as well as factory-owned resource
 Registering a prop does not add collision, mud physics or driving controls.
 
 The rebuilt Los Llanos and Pana Desierto circuits each use all ten factories in
-their respective pack; all twenty entries now list Derrape as a consumer.
+their respective pack; all twenty entries now list Carreritas as a consumer.
 The ranch circuit has two hatos, an enclosed corral, pasture fences and three
 mud patches. Desierto groups its roadside props at Pana Gas and the oasis,
 with eight terrain-fitted dunes, two 25 m rock gateways and clustered spires.
@@ -57,7 +57,7 @@ and dune seams. Each model stays under 13k triangles and 22 meshes. Front/back
 contact sheets and individual previews are written to ignored `art/studio/`.
 The proof uses the real Studio renderer and shared constructors.
 
-Also run `games/derrape/tests/maps.browser.js` with
+Also run `games/carreritas/tests/maps.browser.js` with
 `PANA_MAP_TEST_TRACKS=llanos,desierto` for lane-clearance and three-lap checks,
 `web/studio/tests/studio.browser.js` for category/search/preview/mobile checks,
 and `.\dev.ps1 check` from the repository root. Browser suites accept the

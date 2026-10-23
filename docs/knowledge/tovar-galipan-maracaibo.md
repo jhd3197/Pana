@@ -5,7 +5,11 @@ Aragua circuits (`aragua-circuits.md`): a `<id>-layout.js` with the authored
 `MAP` and the sampled road and terrain, a `<id>-world.js` that builds the
 scene, and `<id>.js` that hands both to `coastalTrack`. They are standalone
 races, not Grand Prix stages. The recipe, checklist and pitfalls are the
-`derrape-map-port` skill (`.claude/skills/derrape-map-port/SKILL.md`).
+`carreritas-map-port` skill (`.claude/skills/carreritas-map-port/SKILL.md`).
+
+The shared helpers (`coastal-road`, `coastal-vegetation`, `forest-detail`,
+`world-horizon`) and Galipán's layout and world live in
+`engine/worlds/coastal/`, since Parapente flies over the same Galipán.
 
 `coastalTrack(id, layout, createWorld, options)` now takes `scale`, `palette`,
 `gripAt`, `previewBounds`, `items` and `def` (extra definition fields such as
@@ -14,7 +18,7 @@ races, not Grand Prix stages. The recipe, checklist and pitfalls are the
 | Circuit | Scale | Lap | Min radius | Max grade | Light |
 |---|---|---|---|---|---|
 | Colonia Tovar (`tovar`) | 1.3 | 2.49 km | 22.3 m | 0.100 | misty day, fog 220–1400 m |
-| Galipán (`galipan`) | 1.2 | 2.45 km | 22.0 m | 0.161 | night, daylight .12 |
+| Galipán (`galipan`) | 1.2 | 2.87 km | 18.6 m | 0.161 | night, daylight .12 |
 | Maracaibo (`maracaibo`) | 1.0 | 2.29 km | 26.4 m | 0.168 | night, daylight .15 |
 | Isla Margarita (`margarita`) | 1.4 | 2.85 km | 16.5 m | 0.117 | Caribbean day, sun halo |
 | Sarisariñama (`sarisarinama`) | 1.0 | 2.85 km | 16.3 m | 0.204 | misty midday, layered |
@@ -34,8 +38,10 @@ races, not Grand Prix stages. The recipe, checklist and pitfalls are the
   the race clock inside the world's `update`; they have no thunder sound.
 - Colonia Tovar's fog banks roll on the race clock and its reflector posts
   glow as they pass.
-- Galipán keeps the lit pueblito, Boca de Tigre, the sunflower terrace, the
-  cable car and the Caracas light carpet. Light-pool decals stay off graded
+- Galipán keeps the lit pueblito, Boca de Tigre, the sunflower house, the
+  cable car and the Caracas light carpet. In Carreritas the lap leaves Boca de
+  Tigre down el cañón and flies over Caracas as an avioneta (derrape.md,
+  flight gates) instead of the old girasoles road. Light-pool decals stay off graded
   road so they never sit above the driving surface.
 
 ## Margarita, Sarisariñama and Gran Sabana

@@ -3,6 +3,7 @@
 import * as THREE from 'three';
 import { M, mesh, box, tube, rng } from '/engine/models/core/primitives.js';
 import { banana } from '/engine/models/vegetation/banana.js';
+import { finish } from '/engine/models/core/static-batch.js';
 export { PLAZA_PROPS, propDefinition } from '/engine/models/props/plaza-definitions.js';
 
 const wood = M(0x96582e), woodLight = M(0xb57840), woodDark = M(0x694025);
@@ -23,7 +24,7 @@ export function barrel() {
   }
   g.add(mesh(new THREE.CylinderGeometry(0.59, 0.59, 0.07, 12), woodDark, 0, 1.77, 0));
   for (let i = -2; i <= 2; i++) g.add(box(1.02, 0.018, 0.18, woodLight, 0, 1.815, i * 0.2));
-  return g;
+  return finish(g);
 }
 
 export function crate() {
@@ -43,7 +44,7 @@ export function crate() {
     brace.rotation.z = s * 0.78;
     g.add(brace);
   }
-  return g;
+  return finish(g);
 }
 
 export function cooler({ color = 0xe74e4c } = {}) {
@@ -54,7 +55,7 @@ export function cooler({ color = 0xe74e4c } = {}) {
     g.add(box(0.13, 0.28, 0.42, M(0xf4eee1), s * 0.83, 0.68, 0));
     g.add(box(0.12, 0.27, 0.07, M(0xf4eee1), s * 0.47, 0.74, 0.54));
   }
-  return g;
+  return finish(g);
 }
 
 export function planter({ seed = 7 } = {}) {
@@ -66,7 +67,7 @@ export function planter({ seed = 7 } = {}) {
   plant.scale.setScalar(0.43);
   plant.position.y = 0.91;
   g.add(plant);
-  return g;
+  return finish(g);
 }
 
 export function bench() {
@@ -79,7 +80,7 @@ export function bench() {
     g.add(box(2.8, 0.14, 0.29, wood, 0, 0.85, -0.33 + i * 0.33));
     g.add(box(2.8, 0.22, 0.12, woodLight, 0, 1.08 + i * 0.25, -0.47));
   }
-  return g;
+  return finish(g);
 }
 
 export function marketStall({ seed = 1, colors = [0xd94f45, 0xf5bc3c] } = {}) {
@@ -102,7 +103,7 @@ export function marketStall({ seed = 1, colors = [0xd94f45, 0xf5bc3c] } = {}) {
         (bin - 1) * 1.5 + (random() - 0.5) * 1.04, 1.72 + random() * 0.18, (random() - 0.5) * 1.35));
     }
   }
-  return g;
+  return finish(g);
 }
 
 export function streetLamp() {
@@ -114,7 +115,7 @@ export function streetLamp() {
   for (const x of [-0.28, 0.28]) for (const z of [-0.28, 0.28]) g.add(box(0.07, 0.82, 0.07, iron, x, 4, z));
   g.add(mesh(new THREE.ConeGeometry(0.52, 0.35, 4), iron, 0, 4.56, 0));
   g.add(box(0.7, 0.12, 0.7, iron, 0, 3.57, 0));
-  return g;
+  return finish(g);
 }
 
 export const createPlazaProp = (id, options) => {

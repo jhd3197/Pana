@@ -11,7 +11,7 @@ try {
   const page=await browser.newPage({viewport:{width:1440,height:960}}),errors=[];
   page.on('pageerror',e=>errors.push(e.message));
   await page.goto(`${process.env.PANA_TEST_URL||'http://localhost:8461'}/studio/settings.html`);
-  await page.setContent('<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}</script><style>body{margin:0}canvas{display:block}</style><canvas></canvas>');
+  await page.setContent('<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.186.1/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.186.1/examples/jsm/"}}</script><style>body{margin:0}canvas{display:block}</style><canvas></canvas>');
   await page.evaluate(async()=>{
     const THREE=await import('three'),preview=await import('/studio/preview.js'),{ASSETS}=await import('/studio/catalog.js');
     const stage=preview.createPreview(document.querySelector('canvas'),true);stage.renderer.setSize(1440,960,false);stage.camera.aspect=1.5;
@@ -42,7 +42,7 @@ try {
       if(id==='track-llanos')check(counts['hato-cow']===8&&counts['llanero-horse']===3&&counts['yard-chicken']===8,'farm counts');
       if(id==='track-desierto'||id==='track-llanos')check(Object.keys(counts).length>=10,'incomplete regional pack');
       if(id.startsWith('track-')) {
-        const {TRACKS,makeTrack,loadTracks}=await import('/g/derrape/tracks.js');await loadTracks();const T=makeTrack(TRACKS.find(t=>`track-${t.id}`===id));
+        const {TRACKS,makeTrack,loadTracks}=await import('/g/carreritas/tracks.js');await loadTracks();const T=makeTrack(TRACKS.find(t=>`track-${t.id}`===id));
         for(const d of details)check(Math.abs(T.offsetOf(d.position[0],d.position[2]))>T.HW+d.radius+1.5,`${d.id} intrudes into the driving corridor`);
       }
       if(id==='plaza'||id==='cocina')for(const d of details)check(Math.abs(d.position[0])-d.radius>=22||Math.abs(d.position[2])-d.radius>=19,`${d.id} enters player movement bounds`);

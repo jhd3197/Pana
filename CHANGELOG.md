@@ -8,6 +8,236 @@ becomes the GitHub release's notes.
 
 ## Unreleased
 
+- **Las migraciones grandes reparten sus pruebas entre varios ejecutores.**
+  CI conserva cada prueba aprobada y muestra los errores al ocurrir, sin
+  esperar al final de una cola que puede superar el límite de tiempo.
+
+- **En Trifulca el público sigue la pelea y celebra contigo.**
+  Los panas del ring y los vecinos voltean hacia los golpes, se echan pa'
+  trás con los trompones y saltan al final; cada quien se mece a su propio
+  ritmo. Los golpes tambalean al que los recibe y los guantes, el toldo y
+  los props se ven con borde de tinta (`?ink=0` lo apaga). La cámara de TV
+  escoge sola el mejor lado cuando un peleador sale volando.
+
+- **Los panas se achatan y se mecen como caricatura.**
+  El personaje compartido tiene un resorte de squash and stretch:
+  `bounce()` para aterrizajes y celebraciones, `stagger()` para tambaleos.
+  Los caminantes del mundo ya lo usan al doblar; los juegos lo activan por
+  evento, sin cambios para quien no lo llame.
+
+- **Los sonidos ya no se montan unos encima de otros.**
+  Hay un cupo de voces con prioridades en el bus de efectos: en los
+  momentos cargados se oyen los golpes y la campana que importan en vez de
+  doce ruidos a la vez. La música no se toca.
+
+- **Los araguaneys y apamates tienen copas más abiertas y flores más finas.**
+  Las ramas se ven entre racimos irregulares; los árboles de la carretera
+  usan menos triángulos, sin texturas ni llamadas de dibujo adicionales.
+
+- **Los araguaneys y apamates de Plaza cambian de floración y sueltan pétalos.**
+  Las copas de la carretera alternan flores y verde por parches; los pétalos
+  caen desde cada árbol en calidad media y alta, también en pantalla dividida.
+
+- **Carreritas prepara los gráficos por etapas antes de la salida.**
+  Las texturas y el paisaje inicial se suben en tandas mientras la pantalla
+  de carga sigue respondiendo; las repeticiones reutilizan la preparación.
+
+- **En el Páramo caen copos que flotan con el viento y se asienta la nieve.**
+  La nieve cubre gradualmente las caras superiores del terreno, la vegetación,
+  las rocas y la cabaña; los copos se adaptan a cada cámara y nivel de calidad.
+
+- **Pana usa Three.js r186 en todos los juegos y el editor.**
+  El motor gráfico comparte la versión 0.186.1, con sombras y temporizadores
+  actualizados. Para jugar hace falta un navegador con WebGL 2.
+
+- **Todos los juegos comparten el menú lateral de Carreritas.**
+  La sala conserva sus ajustes, equipos y controles de listo en una misma
+  estructura; cada juego mantiene su propio marcador durante la partida.
+
+- **Bochinche reúne hasta seis panas en una pelea de plataformas 3D.**
+  Combate de Super Bash Folds con vidas, saltos, escudos, agarres y objetos;
+  juega por enlace con tu propio pana y tres estilos de pelea. Elige de 2 a 6
+  luchadores; los bots llenan los puestos vacíos y gana el último con vidas.
+  La arena tiene vegetación Pana, golpes con poses y efectos, cámara suave
+  y un marcador que separa daño, vidas y escudo; Pesado gana fuerza y aguante
+  a cambio de velocidad.
+
+- **El salto de San Carlos recibe el carro sobre la carretera.**
+  La recepción empieza antes y sigue la dirección de salida antes de doblar;
+  el hueco más corto evita caer al terreno debajo de la pista.
+
+- **Las franjas verdes de turbo tienen bordes definidos y luz en movimiento.**
+  Una textura pequeña compartida dibuja los bordes y las flechas; el material
+  anima la luz sin añadir modelos, descargas ni luces dinámicas.
+
+- **San Carlos te lanza por un cañón gigante hacia la bajada.**
+  La rampa baja de altura, alarga su entrada y alinea sus barandas con la pendiente;
+  el cañón abierto, sus luces y las flechas marcan el despegue y la recepción.
+  La garita que atravesaba el salto deja libre el corredor de vuelo.
+  Los lotes de contenedores junto al túnel tienen alturas y espacios distintos.
+
+- **La carrera deja la carretera libre de instrucciones permanentes.**
+  La guía completa de teclado y mando sigue disponible en el menú de pausa.
+
+- **La Guaira despeja la salida y coloca sus flechas dentro del túnel.**
+  Los letreros se montan sobre la cara visible de la pared; los objetos para
+  romper quedan en tramos del pueblo y las torres de luz salen de la carretera.
+  Un contenedor en movimiento y los peñeros meciéndose dan vida al puerto,
+  con más contenedores junto al túnel y un horizonte más abierto al Caribe.
+
+- **La Guaira abre su bajada al túnel y renueva el recorrido submarino.**
+  El muelle ya no cruza la entrada; cristales azules, arcos luminosos y una
+  franja verde de turbo acompañan la curva bajo el puerto.
+
+- **La entrada de San Carlos tiene su bóveda despejada.**
+  El techo curvo queda sobre el portón, sin atravesar el paso del castillo.
+
+- **Las cajas de objetos muestran un mango grande y claro por sus cuatro lados.**
+  Conservan la madera y su animación al romperse, con menos piezas y una sola
+  malla de colores compartida para reducir el trabajo de dibujo.
+
+- **Los carros se inclinan con la carretera desde el momento de colocarlos.**
+  Las vistas de revisión y las posiciones de salida respetan la pendiente y
+  el peralte sin necesitar que el carro avance primero.
+
+- **Bululú estrena laderas rocosas, luz de sol y una zona de turbo más visible.**
+  Las cimas conservan su vegetación; las flechas verdes anuncian el impulso
+  hacia el mirador y las líneas de velocidad acompañan la aceleración.
+  El modo de cámara suave desactiva las líneas y el resplandor de pantalla.
+
+- **Bululú enlaza el pueblo, el faro y la playa con subidas y curvas peraltadas.**
+  Dos miradores, un faro más visible, grupos de palmeras y nuevos tramos de
+  piedra dan ritmo a la vuelta; la cámara más baja acompaña las lomas y el
+  banco de arena conserva su marea y su paso abierto.
+
+- **La curva de regreso de Casas Botes tiene una inclinación real en Plaza Pana.**
+  El borde exterior sube de forma gradual y vuelve a nivel antes del siguiente
+  giro; la carretera, el terreno y el apoyo del carro comparten el peralte.
+
+- **La loma de Plaza Pana comparte su altura real con el terreno y las plantas.**
+  Los apoyos consultan los mismos triángulos que se dibujan, también
+  en el borde de la loma, para evitar diferencias al salir de la pista.
+
+- **Los bordes de Salinas se distinguen mejor del terreno claro.**
+  La franja de tierra rosada delimita la carretera sin añadir barreras
+  ni cambiar el paso por el agua y la mina.
+
+- **Selva y Bululú enmarcan mejor sus curvas con grupos de árboles.**
+  Las copas de la meseta alternan tamaños y los cocoteros dejan una apertura
+  hacia el mar, conservando el espacio de la pista y sus referencias.
+
+- **Los carros acompañan la inclinación lateral de la pista.**
+  El apoyo de ambos lados orienta el carro sobre las curvas inclinadas;
+  los saltos conservan su giro en el aire.
+
+- **La cámara anticipa las curvas y ofrece un modo suave.**
+  Dinámica acompaña el camino con una inclinación leve; Suave elimina la
+  inclinación, las sacudidas y el zoom del turbo desde Ajustes → Carreritas.
+  La preferencia de movimiento reducido del sistema también activa ese confort.
+
+- **La revisión de pistas guarda vistas de conducción y comprueba una vuelta automática.**
+  La herramienta de auditoría registra geometría, cámara y costes de dibujo
+  por circuito para comparar mejoras con las mismas condiciones; también guarda
+  secuencias de conducción con reproducción y avance por fotogramas.
+
+- **Veinte rincones de Derrape tienen nuevos jardines, árboles y referencias de camino.**
+  Plaza, Selva, Páramo, Bululú y Gran Sabana enmarcan curvas y vistas con
+  vegetación y rocas propias de cada paisaje, sin cambiar el trazado ni la cámara.
+
+- **La vuelta de Casas Botes en Plaza Pana revela el pueblo entre árboles.**
+  Una loma plantada con mangos enmarca la curva sin cambiar el trazado,
+  la cámara ni la visibilidad de los bordes de la pista.
+
+- **Carreritas y Pepazo comparten una sala con tus panas, kits y conexión a la vista.**
+  Tu tarjeta cambia Listo; los ajustes usan las mismas placas y puedes abrir
+  tu taller o kit antes de arrancar. Sin conexión puedes jugar en local o
+  reintentar. Pepazo calcula el nivel del kit con sus estadísticas reales.
+
+- **Elige entre 22 pistas, copas y globos, y revisa cada vehículo de la parrilla en 3D.**
+  El taller vuelve a Pistas; las copas muestran sus cuatro etapas y trofeos.
+  Abre un carro, lancha o avioneta para girarlo, verlo de cerca, guardar sus
+  piezas como recomendación o copiar sus colores. Los precios individuales
+  cuentan solo piezas que faltan, sin cobrar otra vez las que ya tienes.
+
+- **Carreritas carga el taller sin construir los menús que ya no se usan.**
+  El garaje conserva el diseño del nuevo taller, con sus vistas 3D y guardados.
+  Quitamos controles y dibujos ocultos, actualizamos los consejos de carga y
+  probamos las compras, los cauchos y los carros desde los controles visibles.
+
+- **Tu pana conserva sus proporciones al cambiar de carro.**
+  El asiento ajusta al personaje completo sin encogerle la cabeza ni alargarle
+  el cuello. Solo cuentan los accesorios que lleva puestos; cambiar de
+  cauchos ya no cambia el tamaño del piloto.
+
+- **El mando mantiene sus ayudas al conducir y los controles comparten Ajustes.**
+  Los sticks lentos y los botones sostenidos se detectan sin que mover el
+  ratón cambie las ayudas. Cada dispositivo reúne instrucciones y sensibilidad;
+  las opciones adicionales se despliegan cuando las necesitas.
+
+- **La Parrilla muestra la salida en 3D sin menús del garaje encima.**
+  Copa, Taller, Ajustes y la fila de carros se ocultan durante la preparación.
+  ¡Listo! espera a los panas sin dejar la pantalla vacía.
+
+- **Ajusta tus controles en una pantalla completa para todos los juegos.**
+  Pana sigue el ratón, teclado, mando o pantalla táctil que estés usando y
+  cambia las ayudas. Guarda sensibilidad por dispositivo, ejes verticales,
+  zona muerta, curva y vibración del mando; prueba sus sticks y botones en vivo.
+  Audio, imagen y opciones del juego comparten el mismo centro de ajustes.
+
+- **Los zamuros de rescate liberan su geometría al terminar la carrera.**
+  Encadenar copas ya no conserva las mallas de los rescates anteriores.
+
+- **Los cables entre postes vuelven a verse en Pana Studio.**
+  La vista previa respeta los dos extremos del cable al llamar su modelo.
+
+- **Arma tu kit de Carreritas con el carro, la lancha y la avioneta a la vista.**
+  El taller estrena ranuras, compras directas y comparaciones de nivel. La
+  parrilla revela los kits y deja copiarlos al taller; los resultados muestran
+  tu carrera y las monedas se convierten en mangos en una caja de verdad, en 3D.
+- **Pepazo estrena armería completa y un campo para probar tu kit.**
+  Elige Chispa, Trueno, Gemelas o Cohetón; combina dos accesorios, protección,
+  granada y estilo. Cada mejora tiene su costo en movilidad, recarga o control,
+  y los kits funcionan tanto con amigos como contra bots.
+
+- **Las lanchas y las avionetas ahora se manejan con sus propias estadísticas.**
+  Cuando tu carro se convierte en el agua o en el aire, la pieza del kit que
+  llevas manda: cada una tiene su punta, arranque, manejo, agarre y peso. Y
+  ya no todos cruzan en el mismo peñero: tus rivales estrenan curiaras,
+  lanchas de carreras, guacamayas y turpiales.
+- **Derrape ahora se llama Carreritas.** Mismo juego, nuevo nombre en el hub y
+  en la pantalla de carga: tus trofeos, mangos, carros, cauchos y fantasmas
+  vienen con el cambio. La dirección nueva es /g/carreritas/.
+- **El Aguacero de Derrape ahora moja a todos tus rivales.** Les cae a todos
+  casi a la vez, 5 segundos de pista mojada y resbalosa, y a cada uno se le
+  cae el ítem que tenía en la mano. Ves la lluvia en tu pantalla cuando te
+  toca a ti, en vez de una nube sobre cada carro.
+- **En Derrape, Galipán ahora también se corre por el aire.** Saliendo de
+  Boca de Tigre bajas por un cañón de roca hasta el borde del cerro, tu
+  carro se vuelve avioneta y das una vuelta sobre Caracas pasando por aros
+  dorados, con los mismos controles, hasta aterrizar en la terraza de los
+  girasoles con un turbo. Tierra, agua y aire en la misma carrera.
+- **Nuevo juego: Parapente. Salta del Ávila con tus panas y vuela sobre Galipán.**
+  Pasa las cinco balizas (la Cresta, el Pueblito, el Mirador, el Bosque y
+  los Girasoles), sube en las térmicas donde dan vueltas los zamuros,
+  atraviesa los aros dorados y aterriza en la diana de Boca de Tigre.
+  Acelerador, frenos y orejas en el teclado, el control o la pantalla;
+  hasta 8 pilotos y los del cerro completan la rampa.
+- **Las plazas y el Mercado se ven igual y cuestan menos trabajo de dibujado.**
+  Los puestos, bancos, barriles, cajas, cavas, matas y faroles comparten sus
+  superficies por material: los 26 puestos del Mercado bajan de 2.080 a 208
+  llamadas de dibujado. Bolas Criollas también instancia las matas y los
+  faroles repetidos de la cancha, sin moverlos ni cambiar la partida.
+- **Derrape estrena pantalla de carrera: letreros pintados en vez de cajas.**
+  Tu puesto va en una placa amarilla, la clasificación aparece solo cuando
+  pasas a alguien o te pasan, el velocímetro es una aguja con marca de pico
+  y los nombres sobre los carros son banderines con el puesto, que se
+  achican con la distancia. Vuelta final, vuelta rápida, derrapes y
+  contramano tienen avisos nuevos, y las teclas solo se ven al arrancar.
+- **En Derrape, la laguna de La Restinga y la del Delta se cruzan en lancha, por donde quieras.**
+  La carretera baja por una rampa al agua y desaparece: navegas libre entre
+  manglares e islotes, esquivas los peñeros de turistas (sus olas te hacen
+  saltar) y dos botes de chigüires pescando, y subes por la otra rampa.
+
 ## 0.5.0 - 2026-10-21
 
 - **Contributors get one-command scaffolds and safer checks.** `npm run

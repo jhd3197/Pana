@@ -12,7 +12,7 @@ const avatar = wardrobeToAvatar({ hat: 'casco', glasses: 'visor', top: 'hoodie',
   colors: { 'top:hoodie:main': '#2ad1b2', 'hat:casco:main': '#ff4b4b' } });
 
 // Games that keep their own pre-game menu instead of the shared lobby, and why.
-const OWN_MENU = { derrape: 'four-step garage menu (docs/knowledge/derrape-menu.md)' };
+const OWN_MENU = { carreritas: 'four-step garage menu (docs/knowledge/carreritas-menu.md)' };
 const only = process.env.PANA_SMOKE_GAMES?.split(',').filter(Boolean) || games;
 const browser = await launch();
 const failures = [];
@@ -23,13 +23,15 @@ try {
     try {
       page = await openGame(browser, game, { room: `smoke-${game}-${Date.now()}`, avatar, wait: false });
       await waitPrepared(page);
-      const view = await page.evaluate(() => ({
-        lobby: !!document.querySelector('#pana-lobby-shell'),
+      const view = await page.evaluate(async () => ({
+        revision: (await import('three')).REVISION,
+        lobby: !!document.querySelector('#pana-lobby-shell.pana-sala'),
         // A canvas already bound to WebGL refuses a 2D context; asking for WebGL
         // instead would create one on any spare canvas and always pass.
         webgl: [...document.querySelectorAll('canvas')].some(c => c.getContext('2d') === null),
         overflow: document.documentElement.scrollWidth > innerWidth + 1,
       }));
+      if (view.revision !== '186') failures.push(`${game}: expected Three.js r186, got ${view.revision}`);
       if (!view.lobby && !OWN_MENU[game]) failures.push(`${game}: no shared lobby (#pana-lobby-shell)`);
       if (!view.webgl) failures.push(`${game}: no WebGL canvas; every game is a 3D scene`);
       if (view.overflow) failures.push(`${game}: page scrolls sideways`);
@@ -46,7 +48,7 @@ try {
             if (!more || more.hidden) return ['missing Más ajustes'];
             const bottom = more.getBoundingClientRect().bottom;
             return [...settings.querySelectorAll('*')].filter(el =>
-              el !== more && !el.contains(more) && !more.contains(el) &&
+              !el.closest('.sala-connection') && el !== more && !el.contains(more) && !more.contains(el) &&
               el.checkVisibility({ checkOpacity: true, checkVisibilityCSS: true }) &&
               el.getClientRects().length && el.getBoundingClientRect().bottom > bottom + 1
             ).map(el => el.id || el.className || el.tagName);
@@ -54,6 +56,17 @@ try {
           if (leftovers.length) failures.push(`${game}: controls after Más ajustes: ${leftovers.join(', ')}`);
         }
       }
+      // The same settings room must remain usable under every game's CSS.
+      await page.setViewportSize({ width: 1280, height: 800 });
+      await page.keyboard.press('Escape');
+      await page.locator('.pana-menu[open]').waitFor();
+      await page.locator('#pana-tab-settings').click();
+      await page.locator('.pana-settings-workspace').waitFor();
+      await page.locator('.pana-settings-nav button', { hasText: 'Ratón y teclado' }).click();
+      assert.equal(await page.locator('#pana-input-mouseSensitivity').isVisible(), true, `${game}: shared input controls visible`);
+      await page.setViewportSize({ width: 390, height: 844 });
+      assert.equal(await page.locator('.pana-menu').evaluate(n => n.scrollWidth > n.clientWidth + 1), false, `${game}: settings fit a phone`);
+      await page.keyboard.press('Escape');
       failures.push(...page.errors);
       await page.context().close();
       console.log(`${failures.some(f => f.startsWith(game)) ? 'FAIL' : 'ok  '}  ${game}  (${((Date.now() - started) / 1000).toFixed(1)}s)`);
