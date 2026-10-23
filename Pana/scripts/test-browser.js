@@ -218,7 +218,7 @@ await Promise.all(Array.from({ length: Math.min(jobs, queue.length) }, async () 
   for (let suite; (suite = queue.shift());) {
     const result = await run(suite);
     results.set(suite.label, result);
-    report(result, !result.ok && retries ? '  · queued for retry' : '');
+    report(result, !result.ok && retries ? '  - queued for retry' : '');
     if (result.ok) savePasses();
   }
 }));
@@ -233,6 +233,7 @@ await Promise.all(Array.from({ length: Math.min(Math.max(1, Math.floor(jobs / 2)
       if (result.ok) flaky.push(suite.label);
       results.set(suite.label, result);
       report(result, result.ok ? '  Â· passed on retry' : '');
+      if (result.ok) savePasses();
     }
   }
 }));
