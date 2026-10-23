@@ -209,7 +209,7 @@ function run({ file, args, label }) {
 
 const report = (result, note = '') => {
   console.log(`${result.ok ? 'ok  ' : 'FAIL'}  ${result.label}  (${result.seconds.toFixed(1)}s)${note}`);
-  if (!result.ok) console.log(result.log.trim().split('\n').slice(-15).map(line => `      ${line}`).join('\n'));
+  if (!result.ok) console.log(result.log.trim().split('\n').map(line => `      ${line}`).join('\n'));
 };
 
 const started = Date.now(), queue = [...suites], results = new Map();
