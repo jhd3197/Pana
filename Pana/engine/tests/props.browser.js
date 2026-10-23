@@ -146,6 +146,7 @@ try {
   });
   await page.screenshot({ path: `${output}/plaza.png` });
   await writeFile(`${output}/plaza-metrics.json`, JSON.stringify(plazaMetrics, null, 2));
+  // r186 omits four zero-area triangles at the lamp roof cone tip.
   const plazaExpected = {
     barrel: { triangles: 1044, meshes: 4, bounds: [-0.755, 0, -0.755, 0.755, 1.824, 0.755] },
     crate: { triangles: 384, meshes: 3, bounds: [-0.78, 0, -0.845, 0.78, 1.465, 0.845] },
@@ -153,7 +154,7 @@ try {
     planter: { triangles: 372, meshes: 7, bounds: [-1.033, 0.005, -1.172, 1.008, 2.103, 1.199] },
     bench: { triangles: 144, meshes: 3, bounds: [-1.4, 0.005, -0.53, 1.4, 1.69, 0.48] },
     marketStall: { triangles: 4020, meshes: 8, bounds: [-2.64, 0.005, -1.517, 2.64, 3.562, 1.535] },
-    streetLamp: { triangles: 148, meshes: 2, bounds: [-0.52, 0, -0.52, 0.52, 4.735, 0.52] },
+    streetLamp: { triangles: 144, meshes: 2, bounds: [-0.52, 0, -0.52, 0.52, 4.735, 0.52] },
   };
   for (const metric of plazaMetrics) {
     const expected = plazaExpected[metric.name];
@@ -169,7 +170,8 @@ try {
     await page.goto(`${base}/g/${game}/?debug`);
     await page.waitForFunction(game => {
       const renderer = game === 'bululu' ? window.renderer : game === 'escondidas' ? window.hunt?.renderer : window.cocina?.renderer;
-      return renderer?.info.render.frame > 2;
+      // Prepared lobbies intentionally stop drawing the covered 3D world.
+      return window.PANA_PREPARED && renderer?.info.render.frame > 0;
     }, game, { timeout: 120000 });
     await page.screenshot({ path: `${output}/${game}.png` });
     console.log(`Shared-prop consumer rendered: ${game}`);

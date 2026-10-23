@@ -31,3 +31,10 @@ When upgrading again, update those assertions together and exercise water,
 particles, nature materials, characters and Studio previews as well as gameplay.
 
 Reference: https://github.com/mrdoob/three.js/wiki/Migration-Guide
+
+The r186 CylinderGeometry implementation omits zero-area triangles where a cone
+reaches radius zero: the plaza lamp has 144 triangles (formerly 148), and three
+court lamps reduce the dressing total to 6048. Bounds and placements are unchanged.
+WebGLRenderer also uploads a shared DFG LUT for PBR materials. Resource-leak tests
+warm it with an independent StandardMaterial mesh before capturing their baseline;
+each world must return to that baseline on every disposal, including cycle zero.

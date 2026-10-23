@@ -18,7 +18,16 @@ try {
     const canvas = document.querySelector('canvas');
     const renderer = new THREE.WebGLRenderer({ canvas, preserveDrawingBuffer: true });
     renderer.setSize(1200, 600, false);
+    // r186 uploads a renderer-owned DFG lookup texture on the first PBR draw.
+    // Warm it with an independent mesh so every court cycle must still release
+    // all of its own resources, including the very first cycle.
+    const warmScene = new THREE.Scene(), warmCamera = new THREE.PerspectiveCamera(45, 2, .1, 10);
+    warmCamera.position.z = 2;
+    const warmMesh = new THREE.Mesh(new THREE.BoxGeometry(), new THREE.MeshStandardMaterial());
+    warmScene.add(warmMesh); renderer.render(warmScene, warmCamera);
+    warmScene.clear(); warmMesh.geometry.dispose(); warmMesh.material.dispose(); renderer.renderLists.dispose();
     const baseline = { ...renderer.info.memory }, records = [];
+    if (baseline.geometries !== 0 || baseline.textures !== 1) throw new Error(`Unexpected PBR baseline: ${JSON.stringify(baseline)}`);
     let image = null;
     for (let cycle = 0; cycle < 3; cycle++) {
       const world = createBolasWorld({ aspect: 2 }); world.fit(2);
@@ -58,7 +67,7 @@ try {
     assert.equal(record.instances.filter(item => item.name === 'Court planter').length, 7);
     assert.equal(record.instances.filter(item => item.name === 'Court lamp').length, 2);
     for (const item of record.instances) assert.equal(item.count, item.name === 'Court planter' ? 4 : 3);
-    assert.equal(record.stats.triangles, 6060);
+    assert.equal(record.stats.triangles, 6048);
     assert.ok(record.stats.meshes <= 22, `Court dressing meshes: ${record.stats.meshes}`);
     record.bounds.forEach((value, i) => assert.ok(Math.abs(value - expectedBounds[i]) < 0.001, `Court bounds ${i}: ${value}`));
     for (const [name, expected] of Object.entries(expectedPlacements)) {
