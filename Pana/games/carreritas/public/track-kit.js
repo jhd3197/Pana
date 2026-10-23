@@ -141,7 +141,7 @@ function fenceRing(group, T, { off = T.HW + 3, every = 4.4, skip = [] } = {}) {
 }
 
 // Yellow/black chevron boards on the outside of bends, facing the driver.
-function chevrons(group, T, { minCurve = 0.017 } = {}) {
+function chevrons(group, T, { minCurve = 0.017, skip = () => false } = {}) {
   const N = Math.round(T.TOTAL / 2);
   const heads = [];
   for (let i = 0; i < N; i++) {
@@ -199,8 +199,11 @@ function chevrons(group, T, { minCurve = 0.017 } = {}) {
     const dir = bend.k > 0 ? 1 : -1;   // turn direction = where the arrows point
     const outside = dir > 0 ? -(T.HW + 2.6) : T.HW + 2.6;
     for (let j = 0; j < 3; j++) {
-      const p = placeOnTrack(T, bend.s0 - 10 + j * 4.5, outside);
-      at(group, board(dir), p, p.h + Math.PI);
+      const s=bend.s0-10+j*4.5;
+      if(skip(s))continue;
+      const p = placeOnTrack(T, s, outside);
+      const sign=board(dir);sign.name='bend-chevron-board';sign.userData.s=s;
+      at(group, sign, p, p.h + Math.PI);
     }
   }
 }

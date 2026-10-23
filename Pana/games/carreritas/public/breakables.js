@@ -66,10 +66,12 @@ export function placeProps(T) {
     if (runs.some(g => (s0 - g.s0 + T.TOTAL + 20) % T.TOTAL < g.len + 40)) continue;
     const side = k % 2 ? 1 : -1, kind = rand() < 0.5 ? 'barrel' : 'crate', count = 2 + Math.floor(rand() * 2);
     for (let i = 0; i < count; i++) {
-      const s = s0 + i * 2.4, p = T.pointAt(s), q = T.pointAt(s + 0.5);
+      const s = s0 + i * 2.4;
+      if(T.def.breakableAt && !T.def.breakableAt(s,T))continue;
+      const p = T.pointAt(s), q = T.pointAt(s + 0.5);
       const tx = q.x - p.x, tz = q.y - p.y, l = Math.hypot(tx, tz) || 1, off = side * (T.HW - 1.4 - (i % 2) * 1.2);
       const x = p.x - tz / l * off, z = p.y + tx / l * off;
-      props.push({ kind, x, z, y: T.groundAt(x, z), h: rand() * Math.PI * 2, radius: KINDS[kind].radius });
+      props.push({ kind, x, z, y: T.groundAt(x, z,T.heightAtS(s)), h: rand() * Math.PI * 2, radius: KINDS[kind].radius });
     }
   }
   return props;
@@ -127,7 +129,7 @@ export function createBreakables({ race, sound, track }) {
         p.vel.y -= GRAVITY * dt;
         m.position.addScaledVector(p.vel, dt);
         m.rotation.x += p.spin.x * dt; m.rotation.y += p.spin.y * dt; m.rotation.z += p.spin.z * dt;
-        const ground = t.groundAt(m.position.x, m.position.z);
+        const ground = t.groundAt(m.position.x, m.position.z,m.position.y);
         if (m.position.y < ground) { m.position.y = ground; p.vel.multiplyScalar(0.45); p.vel.y = Math.abs(p.vel.y); p.spin.multiplyScalar(0.5); }
         if (p.t > 2.5) m.visible = false;
         if (p.t > 2.5) flying.splice(i, 1);

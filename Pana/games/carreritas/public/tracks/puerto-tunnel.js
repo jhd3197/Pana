@@ -66,6 +66,23 @@ export function puertoTunnel(T){
       const footing=box(6,1.2,6,M(0x82978c),x,-24,z);solid.add(footing);
     }
   }
+  const signs=[];
+  // Flush wall boards are visible from inside; ordinary roadside posts are
+  // farther out than the shell and become half-buried in the concrete.
+  for(const u of [.008,.021,.038])for(const ds of [-9,0,9]){
+    const s=u*T.TOTAL+ds,p=T.pointAt(s),q=T.pointAt(s+.5),prev=T.pointAt(s-6),next=T.pointAt(s+6);
+    const h=Math.atan2(q.x-p.x,q.y-p.y),turn=(p.x-prev.x)*(next.y-p.y)-(p.y-prev.y)*(next.x-p.x);
+    const side=turn>0?1:-1,off=side*(half-.75),board=new THREE.Group();
+    board.position.set(p.x+Math.cos(h)*off,T.heightAtS(s)+3.1,p.y-Math.sin(h)*off);
+    board.rotation.y=h-side*Math.PI/2;
+    board.add(box(3.5,1.5,.08,trim,0,0,0));
+    const shape=new THREE.Shape([[-.65,-.5],[0,-.5],[.65,0],[0,.5],[-.65,.5],[0,0]].map(([x,y])=>new THREE.Vector2(x,y)));
+    // Local +X follows the road on one wall and opposes it on the other.
+    const arrow=mesh(new THREE.ShapeGeometry(shape),M(0xffd65a,{emissive:0x9c610b,emissiveIntensity:.4,side:THREE.DoubleSide}),0,0,.06);
+    arrow.scale.x=side;board.add(arrow);solid.add(board);
+    signs.push({s,side,x:board.position.x,y:board.position.y,z:board.position.z});
+  }
+  group.userData.wallSigns=signs;
   for(const [s,label]of[[T.tunnel.s0,'TÚNEL DEL PUERTO'],[T.tunnel.s1,'TERMINAL · LA GUAIRA']]){
     const p=T.pointAt(s),q=T.pointAt(s+.5),h=Math.atan2(q.x-p.x,q.y-p.y),y=T.heightAtS(s);
     for(const side of [-1,1])slab(2,height+2,2,trim,p.x-Math.cos(h)*side*(half+1),y+(height+2)/2,p.y+Math.sin(h)*side*(half+1),h);

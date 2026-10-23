@@ -8,6 +8,12 @@ becomes the GitHub release's notes.
 
 ## Unreleased
 
+- **La Guaira despeja la salida y coloca sus flechas dentro del túnel.**
+  Los letreros se montan sobre la cara visible de la pared; los objetos para
+  romper quedan en tramos del pueblo y las torres de luz salen de la carretera.
+  Un contenedor en movimiento y los peñeros meciéndose dan vida al puerto,
+  con más contenedores junto al túnel y un horizonte más abierto al Caribe.
+
 - **La Guaira abre su bajada al túnel y renueva el recorrido submarino.**
   El muelle ya no cruza la entrada; cristales azules, arcos luminosos y una
   franja verde de turbo acompañan la curva bajo el puerto.

@@ -168,3 +168,35 @@ San Carlos's half-cylinder vault uses the negative-Z half before its X rotation,
 placing the curved ceiling above the 6.5 m spring. The opposite half bent down
 into the gate. The native-model test checks the final baked vault vertices,
 which retain their identifying colour in the vertex-colour buffer.
+
+## Full-lap placement audit
+
+Puerto opts out of automatic chevrons, then calls the same bend builder with
+a tunnel exclusion. Nine geometric arrow boards sit 0.75 m inside the shell's
+centreline on its visible wall face. Their material is double-sided because
+mirroring the arrow before static baking reverses its triangle winding.
+The audit suite rays from the driving lane to every board, checks no ordinary
+posts remain inside the shell, and verifies the exact sign count.
+
+Random breakables are restricted through `def.breakableAt` to the waterfront
+and town return (u .15-.27 and .85-.95). The grid, tunnel, fort and jump stay
+clear. Placement and flying fragments use height hints to select the correct
+road deck. Other tracks retain their existing zone selection. Route-side lamps
+also test clearance against all road sections, plus supporting-terrain height.
+The audit probes all lamp meshes every 2 m across seven offsets including
+10.8 m from the centre, from the crane straight through the coastal climb.
+
+Four existing fishing boats bob and roll, and one off-road crane load rises
+and falls on the absolute race clock. Its four ropes are instanced, stretch
+from the existing spreader to the container, and update without rebuilding
+geometry. The load remains over the water, more than 30 m from the road.
+Distant peaks are fewer, smaller and less saturated to preserve the sea vista.
+
+The four large harbor floodlight towers are a separate asset from the town's
+83 street lamps. Two old fixed tower locations (-86,95) and (-86,245) fell
+inside the road bend; a sparse lane ray can miss their thin poles. Placement
+now reserves the complete four-metre light-head radius against the road and
+container stacks. Accepted tower coordinates are recorded on the harbor and
+tested independently. The tunnel approach has 46 additional instanced cargo
+containers in layered stacks, increasing the harbor count from 499 to 545
+while preserving the tunnel's central sightline and existing road setback.

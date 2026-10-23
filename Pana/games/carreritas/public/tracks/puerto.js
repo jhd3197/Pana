@@ -13,8 +13,9 @@ import { festive, meadow } from './festive.js';
 
 export default {
   ...TRACK_DEFINITIONS.find(t=>t.id==='puerto'),points:ROUTE,rounded:true,layered:true,hw:11.5,lineU:.085,roadStyle,
+  breakableAt:(s,T)=>{const u=s/T.TOTAL;return (u>.15&&u<.27)||(u>.85&&u<.95);},
   gripAt:(x,z)=>roadStyle(x,z)==='mud' ? .76 : 1,
-  previewBounds:[[-700,-26,-1250],[600,290,510]],walls:false,chevrons:true,
+  previewBounds:[[-700,-26,-1250],[600,290,510]],walls:false,chevrons:false,
   sectors:[[0,'Túnel del puerto'],[.07,'Las tres grúas'],[.12,'Patio de contenedores'],[.17,'Casa Guipuzcoana'],[.29,'Camino de barro'],[.39,'Mirador del Caribe'],[.47,'Puerta de San Carlos'],[.53,'Rampa del patio'],[.57,'Vuelta a los baluartes'],[.75,'Salto del castillo'],[.86,'Bajada del pueblo']],
   items:{padColor:'green',zoneModel:boostZone,boxes:[.045,.17,.28,.4,.52,.65,.71,.87,.95],boxLanes:[-6,-2,2,6],pads:[{u:.037,off:0,w:15,l:20,featured:true},{u:.09,off:0},{u:.26,off:-4},{u:.46,off:0},{u:.6,off:4},{u:.91,off:0}]},
   palette:{skySeed:71,cloudCover:.3,horizon:0xc3f1ec,skyTop:0x1592ee,halo:1,hemiSky:0xd2e6ff,hemiGround:0x7fae55,hemiInt:1.7,sun:0xffd79a,sunInt:2.6,ground:0x8cbc5c,track:0x736b78,dune:0,fog:[900,2900]},
@@ -53,6 +54,7 @@ export default {
     return {group,groundAt:world.groundAt,update:t=>{animateWater(t);harbor.update(t);tunnel.userData.tick(t);}};
   },
   scenery(group,kit,T){
+    kit.chevrons(group,T,{skip:s=>s>=T.tunnel.s0-15&&s<=T.tunnel.s1+15});
     edges(group,kit,T,{style:'kerb',step:5,cellSize:220,colors:[0xff4f5e,0xfffaf0,0x3ec1ff,0xfffaf0],skip:s=>{const p=T.pointAt(s);return roadStyle(p.x,p.y)!=='asphalt';}});
     edges(group,kit,T,{style:'rope',step:6,cellSize:220,skip:s=>{const p=T.pointAt(s);return !isMountain(p.x,p.y)||isFort(p.x,p.y);}});
     edges(group,kit,T,{style:'steel',step:8,cellSize:220,skip:s=>{const p=T.pointAt(s);return T.gapAt(s)||p.y>-175||isFort(p.x,p.y)||isMountain(p.x,p.y);}});
@@ -62,6 +64,6 @@ export default {
       trees:[['apamate',18,[1,18]],['araguaney',14,[1,18]],['bucare',8,[1,18]]],
       plants:[['hibiscus',30],['bromeliad',30,[0,6]]],
       birds:[{kind:'macaw',flocks:2,size:4}],
-      vista:{shape:'peak',radius:1700,hills:22,height:[220,380],colors:[0x5fa585,0x6cb092,0x7aa9b8],balloons:5}});
+      vista:{shape:'peak',radius:2200,hills:14,height:[100,240],colors:[0x71999c,0x87abb1,0x9bb9bd],balloons:5}});
   },
 };

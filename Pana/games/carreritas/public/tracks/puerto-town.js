@@ -92,11 +92,12 @@ export function puertoTown(T,world,sites) {
     if(p.y>30||p.y < -350)continue;
     for(const side of [-1,1]) {
       const x=p.x-Math.cos(h)*side*(T.HW+5),z=p.y+Math.sin(h)*side*(T.HW+5);
-      if(streetDistance(x,z)<8||occupied.some(([a,b,r])=>Math.hypot(x-a,z-b)<r))continue;
+      if(!T.clearOfRoad(x,z,3)||Math.abs(ground(x,z)-T.heightAtS(s))>3.5||streetDistance(x,z)<8||occupied.some(([a,b,r])=>Math.hypot(x-a,z-b)<r))continue;
       lamps.push({x,z,y:ground(x,z),rot:h,scale:1.4});
     }
   }
   instances(group,streetLamp(),lamps,'puerto-street-lamps',180);
+  group.userData.lamps=lamps;
   const accept=(x,z)=>streetDistance(x,z)>13&&!occupied.some(([a,b,r])=>Math.hypot(x-a,z-b)<r)&&z<25&&Math.hypot(x-FORT.x,z-FORT.z)>240;
   instances(group,palm({seed:71,h:10}),scatter(T,ground,{seed:711,count:32,bounds:[-470,-240,355,29],margin:9,scale:1.4,accept}),'puerto-town-palms',180);
   instances(group,mangoTree({seed:72,fruit:false}),scatter(T,ground,{seed:712,count:10,bounds:[-470,-420,385,-100],margin:15,scale:2.7,accept}),'puerto-hill-groves',200);

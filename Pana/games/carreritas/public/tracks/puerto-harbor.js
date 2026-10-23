@@ -53,6 +53,8 @@ export function puertoHarbor(T) {
     for(const z of [95,99.5,104,145,149.5,154,195,199.5,204,245,249.5,254])
       stack(x,z,3+Math.floor(n/3)%3);
   for(const x of [-590,-530])for(const z of [45,65,145,165,185,205])stack(x,z,4+n%2,0,1.5,true);
+  // Layered cargo shoulders frame the tunnel opening without closing its view.
+  for(const x of [-610,-590,-530,-510])for(const z of [35,55,85])stack(x,z,3+((Math.abs(x)+z)%3),0,1.5,true);
   for(const z of [90,110,130,150,170,190,210])stack(-121,z,4+n%2,0,1.5,true);
   const cargoDisposers=[];
   cargo.forEach((list,i)=>{const model=shippingContainer({color:colors[i]});cargoDisposers.push(model.userData.dispose);instances(group,model,list,`puerto-containers-${i}`,240);});
@@ -74,13 +76,32 @@ export function puertoHarbor(T) {
   }
   // Warehouse row and service lane along the landward side of the terminal.
   for(const x of [-420,-310,-200])if(clear(T,x,42,24))put(group,transitWarehouse(),x,42,top,Math.PI/2,1.1);
-  for(const [x,z,rot] of [[82,165,0],[82,194,0],[219,163,0],[219,195,.15]])put(group,fishingBoat({color:colors[n++%6]}),x,z,-.32,rot,1.7);
+  for(const [x,z,rot] of [[82,165,0],[82,194,0],[219,163,0],[219,195,.15]]){
+    const boat=put(group,fishingBoat({color:colors[n++%6]}),x,z,-.32,rot,1.7);
+    boat.name='puerto-moored-boat';boat.userData.tick=t=>{boat.position.y=-.32+Math.sin(t*.7+x)*.16;boat.rotation.z=Math.sin(t*.55+z)*.025;};live.push(boat);
+  }
+  // One operating crane gives the start straight a visible destination.
+  // Its load stays over the water, well outside the driving lane.
+  const load=put(group,shippingContainer({color:0xdfb647}),-335,374.4,12,0,1.8);
+  load.name='puerto-working-cargo';const ropes=new THREE.InstancedMesh(new THREE.BoxGeometry(.09,1,.09),ink,4);
+  ropes.name='puerto-hoist-ropes';group.add(ropes);const matrix=new THREE.Matrix4();
+  load.userData.tick=t=>{
+    const y=12+Math.sin(t*.23)*5;load.position.y=y;
+    let i=0;for(const dx of [-4.86,4.86])for(const dz of [-1.8,1.8]){
+      const length=24.26-(y+4.77);matrix.makeScale(1,length,1);matrix.setPosition(-335+dx,(24.26+y+4.77)/2,374.4+dz);ropes.setMatrixAt(i++,matrix);
+    }
+    ropes.instanceMatrix.needsUpdate=true;ropes.computeBoundingSphere();
+  };live.push(load);load.userData.tick(0);
   put(group,fishAuctionCanopy(),292,43,top,Math.PI,1.5);
   for(const x of [275,287,304])put(group,fishCrates(),x,48,top);
   put(group,navigationBeacon(),-8,449,top,0,1.6);
   for(const [x,z]of[[12,315],[90,310]]) { const buoy=put(group,channelBuoy(),x,z,0);live.push(buoy); }
   // Light towers, mooring bollards and painted cargo lanes.
-  for(const [x,z]of[[-428,92],[-428,235],[-86,95],[-86,245]]) {
+  const floodlights=[];
+  for(const [originalX,z]of[[-428,92],[-428,235],[-86,95],[-86,245]]) {
+    const x=[originalX,originalX+24,originalX+32,originalX-24].find(x=>clear(T,x,z,4)&&!stacks.some(s=>Math.hypot(s.x-x,s.z-z)<14));
+    if(x===undefined)continue;
+    floodlights.push({x,z,radius:4});
     fixed.add(tube([x,top,z],[x,29,z],.22,ink),box(8,.4,1,ink,x,29,z));
     for(const dx of [-3,-1,1,3])fixed.add(box(1.2,.5,1.2,white,x+dx,28.6,z));
   }
@@ -88,6 +109,7 @@ export function puertoHarbor(T) {
   const welcome=sign(['PUERTO','LA GUAIRA'],24,5,{background:'#2b6279'});welcome.position.set(-422,14,50);welcome.rotation.y=Math.PI/2;group.add(welcome);
   group.add(finish(fixed,400));group.userData.placements=placements;
   group.userData.containerCount=cargo.reduce((sum,list)=>sum+list.length,0);group.userData.stacks=stacks;
+  group.userData.floodlights=floodlights;
   group.userData.siloPassage={x:-560,z:105,width:2*T.HW+4,clearance:12.5};
   return {group,update:t=>live.forEach(o=>o.userData.tick?.(t))};
 }
