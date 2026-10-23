@@ -25,6 +25,7 @@ same room.
 
 | Game | What it is | Players |
 |---|---|---|
+| **Bochinche** | Six-player 3D platform fighter · stocks, items and CPU practice | 1–6 |
 | **Carreritas** | Toy-car racing on twenty-two circuits, including Chuao’s downhill quebrada, Galipán at night, the Maracaibo bridge and Sarisariñama’s sinkhole caves, and three four-race Grand Prix cups, with items, coins and swappable wheels | 1–8 online; local split screen |
 | **Bululú** | Island or harbor party board, with a minigame every round | 1–6, bots fill seats |
 | **Escondidas** | Prop hunt in a market plaza: hide as a barrel, crate or bench | 1–8, bots fill in |

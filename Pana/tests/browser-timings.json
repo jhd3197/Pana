@@ -35,6 +35,7 @@
   "Pana/engine/tests/wildlife.browser.js": 5,
   "Pana/games/billar/tests/browser.mjs": 260,
   "Pana/games/billar/tests/six-players.browser.mjs": 194,
+  "Pana/games/bochinche/tests/browser.mjs": 55,
   "Pana/games/bululu/tests/chinazo.browser.mjs": 192,
   "Pana/games/bululu/tests/criollas.browser.mjs": 51,
   "Pana/games/bululu/tests/dice.browser.mjs": 192,

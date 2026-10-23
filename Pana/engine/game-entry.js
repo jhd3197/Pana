@@ -15,7 +15,7 @@ const original = document.querySelector('.pk-lobby');
 const el = (name, cls, text) => { const node = document.createElement(name); if (cls) node.className = cls; if (text != null) node.textContent = text; return node; };
 let link, loaded = false, failed = false, ready = true, signature = '';
 let maxPlayers = 8, sala = null;
-const prototypeSala = ['carreritas', 'pintura'].includes(game);
+// Every game shares Carreritas' side settings and player cards.
 const docked = [];
 const root = el('section', 'pk-game-lobby'); root.id = 'pana-lobby-shell'; root.setAttribute('aria-label', 'Sala del juego');
 root.style.setProperty('--lobby-image', `url("/images/launcher/${game}.jpg")`);
@@ -39,9 +39,9 @@ if (original) { original.inert = true; settings.append(original); }
 // The entry shell only docks those controls; it never assigns players itself.
 function dockSeats() {
   if (!original) return;
-  const controls = prototypeSala ? [] : [...original.querySelectorAll('[data-pana-roster]')];
+  const controls = original.panaSala ? [] : [...original.querySelectorAll('[data-pana-roster]')];
   const showSeats = () => { roster.hidden = controls.some(node => !node.hidden && !node.classList.contains('hidden')); };
-  for (const node of [...controls, ...(prototypeSala ? [] : original.querySelectorAll('[data-room-personal]'))]) {
+  for (const node of [...controls, ...(original.panaSala ? [] : original.querySelectorAll('[data-room-personal]'))]) {
     const placeholder = document.createComment('roster control home'); node.before(placeholder);
     docked.push({ node, placeholder, target: rosterBox });
     new MutationObserver(showSeats).observe(node, { attributes: true, attributeFilter: ['class', 'hidden'] });
@@ -73,24 +73,24 @@ function portraitFor(person) {
 function renderRoster() {
   const players = link?.state.players.filter(p => p.connected !== false) || [{ id: 'local', name: loadName(), avatar: loadAvatar(), lobbyReady: ready, assetsReady: loaded }];
   const key = JSON.stringify(players.map(p => [p.id, p.name, p.avatar, p.lobbyReady, p.assetsReady])) + link?.state.host + loaded + (sala?.signature() || '');
-  roomCode.textContent = (link?.code || roomFromUrl() || (prototypeSala ? 'En local' : '')).toUpperCase();
-  invite.disabled = !roomCode.textContent && !prototypeSala;
+  roomCode.textContent = (link?.code || roomFromUrl() || 'En local').toUpperCase();
+  invite.disabled = !link && !roomFromUrl() && !original?.panaSala?.ensureRoom;
   if (key === signature) return; signature = key;
   rosterLabel.textContent = `Panas en la sala · ${players.length} / ${maxPlayers}`;
   roster.dataset.capacity = maxPlayers;
   roster.replaceChildren();
   for (const p of players) {
     const mine = p.id === (link?.id || 'local'), host = p.id === link?.state.host || !link;
-    const card = el(prototypeSala && mine ? 'button' : 'article', 'pk-game-lobby-player' + (host ? ' is-host' : ''));
+    const card = el(mine ? 'button' : 'article', 'pk-game-lobby-player' + (host ? ' is-host' : ''));
     if (host) card.append(el('span', 'pk-game-lobby-host', 'Anfitrión'));
     card.append(portraitFor(p), el('b', '', p.name + (mine ? ' (tú)' : '')));
     card.append(el('span', 'pk-game-lobby-state' + (p.assetsReady && p.lobbyReady ? ' is-ready' : ''), !p.assetsReady ? 'Cargando' : p.lobbyReady ? 'Listo' : 'Esperando'));
-    if (prototypeSala && mine) { card.type = 'button'; card.classList.add('is-own'); card.setAttribute('aria-label', `${p.name}: cambiar listo`); card.setAttribute('aria-pressed', String(p.lobbyReady)); card.onclick = () => readyButton.click(); card.disabled = !loaded; }
+    if (mine) { card.type = 'button'; card.classList.add('is-own'); card.setAttribute('aria-label', `${p.name}: cambiar listo`); card.setAttribute('aria-pressed', String(p.lobbyReady)); card.onclick = () => readyButton.click(); card.disabled = !loaded; }
     sala?.decorate(card, p, mine);
     roster.append(card);
   }
   for (let i = players.length; i < maxPlayers; i++) {
-    const empty = el('button', 'pk-game-lobby-empty', 'Invitar pana'); empty.type = 'button'; empty.prepend(icon('plus')); empty.addEventListener('click', () => invite.click()); empty.disabled = !roomCode.textContent && !prototypeSala; roster.append(empty);
+    const empty = el('button', 'pk-game-lobby-empty', 'Invitar pana'); empty.type = 'button'; empty.prepend(icon('plus')); empty.addEventListener('click', () => invite.click()); empty.disabled = invite.disabled; roster.append(empty);
   }
 }
 invite.addEventListener('click', async () => {
@@ -112,7 +112,7 @@ function updateReady() {
 document.addEventListener('pana:room-link', e => {
   link = e.detail; signature = '';
   link.on('state', () => { renderRoster(); updateReady(); });
-  if (prototypeSala) link.on('left', () => { link = null; signature = ''; renderRoster(); updateReady(); });
+  link.on('left', () => { link = null; signature = ''; renderRoster(); updateReady(); });
   link.send('lobby-ready', { ready, loaded });
   renderRoster(); updateReady();
 });
@@ -121,7 +121,7 @@ document.addEventListener('pana:room-link', e => {
 root.addEventListener('click', e => {
   const control = e.target.closest('#start, #play, #practice, #versus, #intro-start, #begin');
   if (!control) return;
-  const offline = prototypeSala && original?.panaSala?.read().connection === 'offline';
+  const offline = original?.panaSala?.read().connection === 'offline';
   const waiting = !offline && link?.state.players.some(p => p.connected !== false && (!p.assetsReady || !p.lobbyReady));
   if (!loaded || !ready || (!['practice', 'versus'].includes(control.id) && waiting)) {
     e.preventDefault(); e.stopImmediatePropagation();
@@ -194,13 +194,13 @@ try {
     const placeholder = document.createComment('lobby actions home'); actions.before(placeholder);
     docked.push({ node: actions, placeholder, target: actionTray });
   }
-  for (const id of prototypeSala ? ['menu', 'settings', 'sound'] : ['menu', 'sound']) {
+  for (const id of ['menu', 'settings', 'sound']) {
     const node = document.getElementById(id);
     if (!node || root.contains(node)) continue;
     const placeholder = document.createComment('lobby control home'); node.before(placeholder);
     docked.push({ node, placeholder, target: head });
   }
-  if (prototypeSala) { sala = await (await import('./sala.js')).createSala({ root, original, status, footer, actionTray, change, readyButton }); document.addEventListener('pana:sala-update', () => { renderRoster(); sala.refresh(); }); signature = ''; }
+  { sala = await (await import('./sala.js')).createSala({ root, original, status, footer, actionTray, change, readyButton }); document.addEventListener('pana:sala-update', () => { renderRoster(); sala.refresh(); }); signature = ''; }
   loaded = true; window.PANA_LOBBY_LOADING = false; window.PANA_PREPARED = true;
   if (original) original.inert = false;
   link?.send('lobby-ready', { ready, loaded: true });

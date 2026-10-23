@@ -25,7 +25,7 @@ try {
       await waitPrepared(page);
       const view = await page.evaluate(async () => ({
         revision: (await import('three')).REVISION,
-        lobby: !!document.querySelector('#pana-lobby-shell'),
+        lobby: !!document.querySelector('#pana-lobby-shell.pana-sala'),
         // A canvas already bound to WebGL refuses a 2D context; asking for WebGL
         // instead would create one on any spare canvas and always pass.
         webgl: [...document.querySelectorAll('canvas')].some(c => c.getContext('2d') === null),

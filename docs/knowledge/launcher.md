@@ -61,7 +61,9 @@ and the shared avatar models are unchanged.
 
 ## Shared game-room lobby
 
-`engine/game-entry.js` owns the illustrated room shell used after choosing a
+`engine/game-entry.js` and `engine/sala.js` own the Carreritas side-settings
+room shell, now the standard for every pre-game menu. Game-specific HUDs
+remain unchanged during play. The shell appears after choosing a
 game. The header has the room code and the shared `#pana-lobby-invite` Copiar
 link button, using `inviteUrl()` so personal/debug/host parameters never leak
 into an invitation. Existing footer invite controls are hidden in this shell;

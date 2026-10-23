@@ -1,10 +1,16 @@
-// Shared presentation for the Carreritas/Pepazo reference sala. The games retain
+// Shared pre-game presentation for every game. Games retain
 // every room action; game-entry owns membership, readiness and the start barrier.
 import { ratingBadge } from './kit-rating.js';
 export async function createSala({ root, original, status, footer, actionTray, change, readyButton }) {
   const config = original.panaSala;
   const style = document.createElement('link'); style.rel = 'stylesheet'; style.href = '/engine/sala.css'; const styled = new Promise(resolve => { style.onload = style.onerror = resolve; }); document.head.append(style);
-  root.classList.add('prototype-sala');
+  root.classList.add('prototype-sala', 'pana-sala');
+  root.dataset.customSala = String(Boolean(config));
+  // Most games need only the layout. Keep their real controls and start labels.
+  if (!config) {
+    await styled;
+    return { refresh() {}, signature: () => '', decorate() {} };
+  }
   const game = location.pathname.includes('/carreritas/') ? 'carreritas' : 'pepazo';
   root.style.setProperty('--lobby-image', `url('/images/sala/${game}.jpg')`);
   const settings = root.querySelector('.pk-game-lobby-settings');

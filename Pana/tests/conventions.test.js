@@ -400,3 +400,12 @@ test('no merge conflict markers in tracked files; the changelog lints clean', as
   const { lint } = await import('../scripts/changelog.js');
   assert.deepEqual(lint(fs.readFileSync(path.join(repo, 'CHANGELOG.md'), 'utf8')), []);
 });
+
+
+test('the shared side-menu sala is the default for every game', () => {
+  const entry = read(path.join(app, 'engine/game-entry.js'));
+  assert.ok(entry.includes("import('./sala.js')"));
+  assert.ok(!/\['carreritas', 'pintura'\]\.includes\(game\)/.test(entry), 'no game allowlist for the core layout');
+  const sala = read(path.join(app, 'engine/sala.js'));
+  assert.ok(sala.includes('if (!config)'), 'games without workshop metadata still receive the common layout');
+});
