@@ -8,6 +8,10 @@ becomes the GitHub release's notes.
 
 ## Unreleased
 
+- **La loma de Plaza Pana comparte su altura real con el terreno y las plantas.**
+  Los apoyos consultan los mismos triángulos que se dibujan, también
+  en el borde de la loma, para evitar diferencias al salir de la pista.
+
 - **Los bordes de Salinas se distinguen mejor del terreno claro.**
   La franja de tierra rosada delimita la carretera sin añadir barreras
   ni cambiar el paso por el agua y la mina.

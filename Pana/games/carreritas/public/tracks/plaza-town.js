@@ -1,5 +1,6 @@
 // A complete pueblo around a temporary street circuit.
 import { groundPaint } from './ground-paint.js';
+import { grassAt } from './grass-field.js';
 import { festive } from './festive.js';
 import * as THREE from 'three';
 import { natureSurface } from '/engine/models/core/nature-surface.js';
@@ -48,8 +49,12 @@ export function createTown(T) {
   const group=new THREE.Group(),ground=new THREE.Group(),buildings=new THREE.Group(),plants=new THREE.Group();
   const random=rng(391),placements=[],trees=[],clear=(x,z,r=0)=>Math.abs(T.offsetOf(x,z))>T.HW+r+2;
   // A level cross-section through the hill supports roads, paving and foundations.
-  let horizon;
+  let horizon, terrainMesh;
   function groundAt(x,z) {
+    // After building the heightfield, props and driving queries must follow
+    // its actual triangles, including the edge of the planted return bank.
+    const sampled=terrainMesh?.userData.grassGrid&&grassAt(terrainMesh,x,z);
+    if(sampled)return sampled.y;
     if(horizon&&(x<-650||x>850||z<-700||z>600))return horizon.heightAt(x,z)??waterfrontHeight(x,z,townHeight(x,z)-.3);
     const d=Math.abs(T.offsetOf(x,z)),blend=THREE.MathUtils.smoothstep(d,T.HW+8,T.HW+25);
     // A planted bank inside the Casas Botes return bend screens the distant
@@ -61,7 +66,7 @@ export function createTown(T) {
     const land=waterfrontHeight(x,z,townHeight(x,z)-0.3)+bank;
     return overWater(x,z)?land:THREE.MathUtils.lerp(T.surfaceAt(x,z)-0.3,land,blend);
   }
-  const land=surface(-650,-700,850,600,groundAt,0xffffff,5);
+  const land=terrainMesh=surface(-650,-700,850,600,groundAt,0xffffff,5);
   const p=land.geometry.attributes.position,colors=[],lawn=new THREE.Color(0x6cbb4a),dry=new THREE.Color(0xbcc65a);
   for(let i=0;i<p.count;i++) {
     const c=lawn.clone().lerp(dry,0.26+0.16*Math.sin(p.getX(i)*0.013)*Math.cos(p.getZ(i)*0.017));colors.push(c.r,c.g,c.b);

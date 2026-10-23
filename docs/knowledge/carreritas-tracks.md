@@ -91,6 +91,12 @@ again without advancing the simulation. This preserves lighting and particles.
 `plaza-town.js` adds a compact planted bank around `(478, 196)` beside the
 return bend, visible around 53–55% of the lap. Its height is part of the town's
 `groundAt`, so visible terrain, prop foundations and terrain queries agree.
+The analytic height builds the initial mesh; once its grass grid exists,
+`groundAt` samples the actual triangles through `grassAt`. This matters near
+the compact bank boundary, where smooth-formula heights differ from the
+five-metre mesh. Props, paving and off-road queries use the sampled surface.
+`plaza.browser.js` compares off-grid bank queries against independent terrain
+rays; `nature.browser.js` checks grass supports without relaxed tolerances.
 The mound fades outside an oriented ellipse and before road and side-street
 setbacks; it does not alter `townHeight`, route elevation or the chase camera.
 Five candidate mango placements use shared low-detail models, reject occupied

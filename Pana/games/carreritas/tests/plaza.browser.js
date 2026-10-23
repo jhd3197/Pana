@@ -35,7 +35,14 @@ try {
       }return false;
     });
     const terrain=group.getObjectByName('plaza-terrain'),ray=new THREE.Raycaster(new THREE.Vector3(),new THREE.Vector3(0,-1,0));
-    group.updateMatrixWorld(true);let intrusion=0;
+    group.updateMatrixWorld(true);let intrusion=0,terrainAgreement=0;
+    // Off-grid probes catch analytic hill heights disagreeing with the real
+    // triangular mesh, especially at the planted bank's compact boundary.
+    for(let x=410.3;x<540;x+=7.3)for(let z=140.7;z<250;z+=7.1){
+      ray.ray.origin.set(x,200,z);const hit=ray.intersectObject(terrain)[0];
+      if(!hit)throw Error('Missing planted-bank terrain');
+      terrainAgreement=Math.max(terrainAgreement,Math.abs(hit.point.y-T.terrainAt(x,z)));
+    }
     for(let s=0;s<T.TOTAL;s+=5) {
       const a=T.pointAt(s),b=T.pointAt(s+0.5),angle=Math.atan2(b.x-a.x,b.y-a.y);
       for(const off of [-7,0,7]) {
@@ -56,7 +63,7 @@ try {
     fitCamera(stage.camera,bounds,true);stage.renderer.render(stage.scene,stage.camera);
     window.townProof={stage,T,bounds,fitCamera,THREE};
     return {length:T.TOTAL,maxGrade,minHeight,maxHeight,minRadius,projectionError,homes:town.buildings.length,farHomes,
-      blocks:town.blocks.length,streets:town.avenues.length+town.streets.length,floating,blockedStreets,streetIntrusion,intrusion,finite,...inspect(model).stats,drawCalls:stage.renderer.info.render.calls};
+      blocks:town.blocks.length,streets:town.avenues.length+town.streets.length,floating,blockedStreets,streetIntrusion,intrusion,terrainAgreement,finite,...inspect(model).stats,drawCalls:stage.renderer.info.render.calls};
   });
   console.log(JSON.stringify(metrics,null,2));await writeFile(`${output}/metrics.json`,JSON.stringify(metrics,null,2));
   await page.screenshot({path:`${output}/overview.png`});
@@ -67,6 +74,7 @@ try {
     await page.screenshot({path:`${output}/${name}.png`});
   }
   assert.equal(metrics.finite,true);assert.ok(metrics.homes>180);assert.ok(metrics.farHomes>80);
+  assert.ok(metrics.terrainAgreement<1e-4,'terrain queries agree with the rendered bank triangles');
   assert.equal(metrics.blocks,30);assert.equal(metrics.streets,13);assert.deepEqual(metrics.floating,[]);
   assert.deepEqual(metrics.blockedStreets,[]);assert.ok(metrics.streetIntrusion<0.025,'terrain stays below side streets');
   assert.ok(metrics.maxHeight-metrics.minHeight>20);assert.ok(metrics.maxGrade<0.35);
