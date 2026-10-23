@@ -22,5 +22,11 @@
     "match": "llanos/water-pump-station: visible from the ordinary race camera",
     "since": "2026-10-22",
     "note": "Reproduced on unchanged 29ebaab with --baseline; the ordinary camera does not frame the Llanos water-pump station."
+  },
+  {
+    "suite": "Pana/games/carreritas/tests/surroundings.browser.js",
+    "match": "plaza bounded driving-view geometry",
+    "since": "2026-10-22",
+    "note": "Reproduced on unchanged c497250 with --baseline; Plaza exceeds the existing 3.6 M driving-view triangle cap."
   }
 ]
