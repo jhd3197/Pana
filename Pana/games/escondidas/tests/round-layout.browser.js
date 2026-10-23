@@ -93,7 +93,7 @@ try {
 
   const page = await browser.newPage(); page.on('pageerror', e => errors.push(e.message));
   await page.goto(`${base}/studio/settings.html`);
-  await page.setContent('<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}</script><canvas></canvas>');
+  await page.setContent('<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.186.1/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.186.1/examples/jsm/"}}</script><canvas></canvas>');
   await page.evaluate(async () => {
     const THREE = await import('three'), { createHuntEnvironment } = await import('/g/escondidas/scene.js');
     const scene = new THREE.Scene(), camera = new THREE.PerspectiveCamera(50, 1, .1, 200);

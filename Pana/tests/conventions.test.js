@@ -36,6 +36,16 @@ function walkAll(dir, keep, out = []) {
 const pub = (id, file) => path.join(gamesDir, id, 'public', file);
 const meta = (id) => JSON.parse(read(path.join(gamesDir, id, 'game.json')));
 
+test('runtime, browser harnesses and scaffolds share the Three.js pin', () => {
+  const problems = [];
+  for (const file of walkAll(app, name => /\.(?:html|js|mjs|tmpl)$/.test(name))) {
+    for (const match of read(file).matchAll(/(?:cdn\.jsdelivr\.net\/npm|unpkg\.com)\/three@([\d.]+)/g)) {
+      if (match[1] !== '0.186.1') problems.push(`${rel(file)}: unexpected Three.js ${match[1]}`);
+    }
+  }
+  assert.deepEqual(problems, []);
+});
+
 test('shared room menus include their stylesheet and use pure validated option fields', () => {
   for (const id of games) {
     const source = read(pub(id, 'game.js'));
@@ -303,7 +313,7 @@ test('every game page loads the shared UI, lobby and pinned Three.js', () => {
     const html = read(pub(id, 'index.html'));
     if (!/href=["']\/engine\/ui\.css["']/.test(html)) problems.push(`${id}: index.html does not link /engine/ui.css`);
     if (!OWN_MENU[id] && !/\/engine\/game-entry\.js["'][^>]*data-pana-entry/.test(html)) problems.push(`${id}: index.html does not load /engine/game-entry.js with data-pana-entry`);
-    if (!html.replace(/\s/g, '').includes('"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js"')) problems.push(`${id}: import map does not pin three@0.160.0`);
+    if (!html.replace(/\s/g, '').includes('"three":"https://cdn.jsdelivr.net/npm/three@0.186.1/build/three.module.js"')) problems.push(`${id}: import map does not pin three@0.186.1`);
   }
   assert.deepEqual(problems, []);
 });

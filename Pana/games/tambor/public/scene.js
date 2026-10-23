@@ -38,7 +38,7 @@ const wrap = (a) => Math.atan2(Math.sin(a), Math.cos(a));
 
 export function createTamborScene(canvas) {
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' });
-  renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap; renderer.toneMapping = THREE.ACESFilmicToneMapping;
+  renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFShadowMap; renderer.toneMapping = THREE.ACESFilmicToneMapping;
   const unbind = bindRenderer(renderer, 1.5, { fit: 'window' });
   const scene = new THREE.Scene(), camera = new THREE.PerspectiveCamera(40, 1, .1, 260);
   const sky = createSky(); scene.add(sky.mesh);

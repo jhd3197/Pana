@@ -191,10 +191,10 @@ function updateUI() {
 }
 ensureBoats(); ready = true; $('loading').classList.add('hidden'); room.connect(); updateUI();
 const look = new THREE.Vector3(), cameraGoal = new THREE.Vector3(), target = new THREE.Vector3(); let cameraReady = false, elapsed = 0, camH = 0;
-const frameClock = new THREE.Clock();
+const frameClock = new THREE.Timer().reset();
 function frame() {
   if (disposed) return;
-  const dt = Math.min(frameClock.getDelta(), .08), frozen = paused && room.members.size <= 1; if (!frozen) elapsed += dt;
+  const dt = Math.min(frameClock.update().getDelta(), .08), frozen = paused && room.members.size <= 1; if (!frozen) elapsed += dt;
   const boats = ensureBoats(), t = state.time + (state.phase === 'racing' && !frozen ? Math.min(.1, (performance.now() - snapshotAt) / 1000) : 0);
   for (const shown of boats) {
     // Your own lancha where you predict it (LanchaRoom's predict), not a round trip behind.

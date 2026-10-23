@@ -6,7 +6,7 @@ const browser=await chromium.launch({headless:true});
 try{
   const page=await browser.newPage();
   await page.goto(`${process.env.PANA_TEST_URL||'http://localhost:8461'}/studio/settings.html`);
-  await page.setContent('<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}</script>');
+  await page.setContent('<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.186.1/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.186.1/examples/jsm/"}}</script>');
   const result=await page.evaluate(async()=>{
     const THREE=await import('three'),{makeTrack}=await import('/g/carreritas/track-runtime.js');
     const {default:def}=await import('/g/carreritas/tracks/puerto.js'),{placeProps}=await import('/g/carreritas/breakables.js');

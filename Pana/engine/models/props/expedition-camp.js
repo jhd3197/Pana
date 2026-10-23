@@ -55,7 +55,7 @@ function kit() {
     BASKET: lathe([[0, 0], [0.32, 0], [0.42, 0.15], [0.5, 0.48], [0.52, 0.52], [0, 0.52]], 12),
     add(key, geo, mtx) {
       const m = new THREE.Mesh(geo, mat(key));
-      m.matrixAutoUpdate = false; m.matrix.copy(mtx);
+      m.matrixAutoUpdate = false; m.matrix.copy(mtx); m.matrixWorldNeedsUpdate = true;
       m.castShadow = !GLOW.has(key) && key !== 'glass'; m.receiveShadow = !GLOW.has(key);
       root.add(m); return m;
     },
@@ -320,7 +320,7 @@ export function investigationTable() {
   for (const s of [-1, 1]) stoolAt(k, P, s * 0.7, 0.95);
   for (const [px, pz] of [[-0.75, -0.4], [0.42, 0.4]]) k.cyl('stoneL', P, px + 0.1, 1.04, pz + 0.05, 0.05, 0.04, 0, 0, 0, k.CYL6);
   const map = new THREE.Mesh(new THREE.PlaneGeometry(1.25, 0.9), mapMaterial());
-  map.matrixAutoUpdate = false; map.matrix.copy(T(-0.15, 1.016, 0.02, -Math.PI / 2, 0, 0.06)); map.receiveShadow = true; k.root.add(map);
+  map.matrixAutoUpdate = false; map.matrix.copy(T(-0.15, 1.016, 0.02, -Math.PI / 2, 0, 0.06)); map.matrixWorldNeedsUpdate = true; map.receiveShadow = true; k.root.add(map);
   return done(k, 'InvestigationTable');
 }
 
@@ -490,7 +490,7 @@ export function logGateway({ text = 'CAMPAMENTO PERDIDO', seed = 8 } = {}) {
   const sign = new THREE.Mesh(new THREE.BoxGeometry(4.4, 0.82, 0.08), [
     ...Array(4).fill(mat('woodD')), new THREE.MeshStandardMaterial({ map: tex, roughness: 0.9 }), mat('woodD'),
   ]);
-  sign.matrixAutoUpdate = false; sign.matrix.copy(T(0, 4.0, 0.2)); sign.castShadow = sign.receiveShadow = true; k.root.add(sign);
+  sign.matrixAutoUpdate = false; sign.matrix.copy(T(0, 4.0, 0.2)); sign.matrixWorldNeedsUpdate = true; sign.castShadow = sign.receiveShadow = true; k.root.add(sign);
   const out = done(k, 'LogGateway');
   let disposed = false;
   out.userData.dispose = () => { if (!disposed) { disposed = true; tex.dispose(); sign.material[4].dispose(); } };

@@ -27,7 +27,7 @@ const EYE = 1.55, LOOK_UP = .55, LOOK_DOWN = -.7;
 
 export function createScene(canvas) {
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: true }); const unbind = bindRenderer(renderer, 1.5);
-  renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFShadowMap;
   renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.05;
   const scene = new THREE.Scene(); scene.background = new THREE.Color(WARM_DAY.background); scene.fog = new THREE.Fog(WARM_DAY.background, 90, 190);
   const sky = createSky(WARM_DAY.sky); scene.add(sky.mesh);

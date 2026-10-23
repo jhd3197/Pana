@@ -11,7 +11,7 @@ try {
   page.on('pageerror',e=>errors.push(e.message));
   page.on('console',m=>{if(m.type()==='error')errors.push(m.text());});
   await page.goto(`${process.env.PANA_TEST_URL||'http://localhost:8461'}/studio/settings.html`);
-  await page.setContent(`<html><head><script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}</script><style>body{margin:0;background:#eef0ee;font:18px system-ui;color:#303934}header{padding:20px 35px;height:60px;box-sizing:border-box}canvas{display:block}</style></head><body><header>PANA · Fauna del hato</header><canvas></canvas></body></html>`);
+  await page.setContent(`<html><head><script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.186.1/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.186.1/examples/jsm/"}}</script><style>body{margin:0;background:#eef0ee;font:18px system-ui;color:#303934}header{padding:20px 35px;height:60px;box-sizing:border-box}canvas{display:block}</style></head><body><header>PANA · Fauna del hato</header><canvas></canvas></body></html>`);
   const result=await page.evaluate(async()=>{
     const THREE=await import('three'),{ASSETS}=await import('/studio/catalog.js');
     const {createPreview,inspect,fitCamera,ownMaterials,release}=await import('/studio/preview.js');

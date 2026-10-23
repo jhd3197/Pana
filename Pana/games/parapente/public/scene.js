@@ -110,7 +110,7 @@ function courseMarkers(course) {
 
 export function createParapenteScene(canvas, { course: courseOf }) {
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
-  renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFShadowMap;
   renderer.outputColorSpace = THREE.SRGBColorSpace; renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.05;
   const scene = new THREE.Scene(); scene.fog = new THREE.Fog(PALETTE.horizon, ...PALETTE.fog);
   renderer.setClearColor(PALETTE.horizon);

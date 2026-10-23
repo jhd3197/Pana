@@ -29,10 +29,10 @@ export function mount(canvas) {
   build(loadAvatar());
   window.addEventListener('pana:avatar', (e) => build(e.detail));
 
-  const clock = new THREE.Clock();
+  const clock = new THREE.Timer().reset();
   let t = 0;
   (function frame() {
-    const dt = Math.min(clock.getDelta(), 0.1);
+    const dt = Math.min(clock.update().getDelta(), 0.1);
     t += dt;
     const w = canvas.clientWidth, h = canvas.clientHeight;
     if (canvas.width !== Math.round(w * renderer.getPixelRatio())) {

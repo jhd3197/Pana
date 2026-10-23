@@ -63,7 +63,7 @@ try{
   const preview=await browser.newPage({viewport:{width:1100,height:850}});
   preview.on('pageerror',e=>errors.push(e.message));preview.on('console',m=>{if(m.type()==='error'&&!m.text().includes('404'))errors.push(m.text());});
   await preview.goto(`${base}/studio/settings.html`);
-  await preview.setContent(`<html><head><script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}</script><style>body{margin:0}</style></head><body><canvas></canvas></body></html>`);
+  await preview.setContent(`<html><head><script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.186.1/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.186.1/examples/jsm/"}}</script><style>body{margin:0}</style></head><body><canvas></canvas></body></html>`);
   await preview.evaluate(async()=>{
     const THREE=await import('three'),module=await import('/studio/preview.js'),{ASSETS}=await import('/studio/catalog.js');
     const stage=module.createPreview(document.querySelector('canvas'),true);stage.renderer.setSize(1100,850,false);stage.camera.aspect=1100/850;

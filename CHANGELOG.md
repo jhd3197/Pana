@@ -8,6 +8,10 @@ becomes the GitHub release's notes.
 
 ## Unreleased
 
+- **Pana usa Three.js r186 en todos los juegos y el editor.**
+  El motor gráfico comparte la versión 0.186.1, con sombras y temporizadores
+  actualizados. Para jugar hace falta un navegador con WebGL 2.
+
 - **El salto de San Carlos recibe el carro sobre la carretera.**
   La recepción empieza antes y sigue la dirección de salida antes de doblar;
   el hueco más corto evita caer al terreno debajo de la pista.

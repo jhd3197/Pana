@@ -26,7 +26,7 @@ const url = new URL(location.href); url.searchParams.set('room', code); history.
 await Promise.race([document.fonts.load('900 48px Nunito'), new Promise(resolve => setTimeout(resolve, 1200))]);
 const avatar = loadAvatar(), name = loadName();
 const renderer = new THREE.WebGLRenderer({ canvas: $('world'), antialias: true });
-renderer.setPixelRatio(pixelRatio(1.6)); bindRenderer(renderer, 1.6); renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.setPixelRatio(pixelRatio(1.6)); bindRenderer(renderer, 1.6); renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFShadowMap;
 renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.12;
 const world = createKitchenScene(), { scene } = world;
 const camera = new THREE.OrthographicCamera(-20, 20, 15, -15, 0.1, 200);

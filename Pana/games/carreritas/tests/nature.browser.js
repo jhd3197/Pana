@@ -13,7 +13,7 @@ try {
   page.on('pageerror', e => errors.push(String(e)));
   page.on('console', m => { if (m.type() === 'error' && /THREE|WebGL/.test(m.text())) errors.push(m.text()); });
   await page.goto(`${origin}/studio/settings.html`);
-  await page.setContent('<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}</script><style>body{margin:0}canvas{display:block}</style><canvas></canvas>');
+  await page.setContent('<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.186.1/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.186.1/examples/jsm/"}}</script><style>body{margin:0}canvas{display:block}</style><canvas></canvas>');
   proof.fixture = await page.evaluate(async () => {
     const THREE = await import('three'), preview = await import('/studio/preview.js');
     const { natureSurface } = await import('/engine/models/core/nature-surface.js');

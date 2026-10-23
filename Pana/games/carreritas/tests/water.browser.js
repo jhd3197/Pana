@@ -88,7 +88,7 @@ try{
     worlds.push(result);await page.screenshot({path:`${output}/${id}-water.png`});
   }
   await page.goto(`${base}/studio/settings.html`);
-  await page.setContent(`<html><head><script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}</script><style>body{margin:0}</style></head><body><canvas></canvas></body></html>`);
+  await page.setContent(`<html><head><script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.186.1/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.186.1/examples/jsm/"}}</script><style>body{margin:0}</style></head><body><canvas></canvas></body></html>`);
   const ownership=await page.evaluate(async()=>{
     const THREE=await import('three'),{waterSurface,waterDepthMap,riverSurface,waterPool}=await import('/engine/models/effects/water-surface.js');
     const {createPreview,ownMaterials,release}=await import('/studio/preview.js'),stage=createPreview(document.querySelector('canvas'),true);

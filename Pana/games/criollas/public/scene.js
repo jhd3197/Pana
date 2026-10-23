@@ -13,7 +13,7 @@ export const VIEWS = [['calce', 'Detrás del lanzador'], ['arriba', 'Desde arrib
 export function createScene(canvas) {
   const world = createBolasWorld(), renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
   renderer.setPixelRatio(pixelRatio(1.5)); renderer.shadowMap.enabled = true;
-  renderer.shadowMap.type = THREE.PCFSoftShadowMap; renderer.outputColorSpace = THREE.SRGBColorSpace;
+  renderer.shadowMap.type = THREE.PCFShadowMap; renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.08;
   let view = 'calce', size = { w: 1, h: 1 }, previewKey = '', preview = null;
   function resize() {

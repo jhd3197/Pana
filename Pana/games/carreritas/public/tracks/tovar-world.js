@@ -547,7 +547,7 @@ export function createWorld(scene, layout, roadDistance, scale = 1.3) {
   { const g = new THREE.PlaneGeometry(1, 1, 1, 2); g.translate(0, 0.5, 0); const g2 = g.clone(); g2.rotateY(PI / 2); flush(inst.grass, mergeGeometries([g, g2]), windy(new THREE.MeshStandardMaterial({ color: col('#ffffff'), map: grassTex, alphaTest: 0.5, side: THREE.DoubleSide, roughness: 1 }), 0, 0.18), false); }
   flush(inst.post, (() => { const g = new THREE.BoxGeometry(1, 1, 1); g.translate(0, 0.5, 0); return g; })(), new THREE.MeshStandardMaterial({ color: col('#ffffff'), roughness: 0.6 }));
   const REFL = new THREE.MeshStandardMaterial({ color: col('#ffffff'), emissive: col('#ffffff'), emissiveIntensity: 0.2, roughness: 0.3 });
-  REFL.onBeforeCompile = sh => { sh.fragmentShader = sh.fragmentShader.replace('#include <emissivemap_fragment>', '#include <emissivemap_fragment>\n#ifdef USE_INSTANCING_COLOR\n totalEmissiveRadiance *= vColor;\n#endif'); };
+  REFL.onBeforeCompile = sh => { sh.fragmentShader = sh.fragmentShader.replace('#include <emissivemap_fragment>', '#include <emissivemap_fragment>\n#ifdef USE_INSTANCING_COLOR\n totalEmissiveRadiance *= vColor.rgb;\n#endif'); };
   flush(inst.reflector, new THREE.BoxGeometry(1, 1, 1), REFL, false);
   {
     const mats = { yellow: new THREE.MeshStandardMaterial({ color: col('#f2c41e'), roughness: 0.7 }), iron: new THREE.MeshStandardMaterial({ color: col('#1e1e20'), metalness: 0.5, roughness: 0.5 }), wood: new THREE.MeshStandardMaterial({ color: col('#5a3e26'), roughness: 0.9 }), white: new THREE.MeshStandardMaterial({ color: col('#eeeeea') }), walk: new THREE.MeshStandardMaterial({ color: col('#8a8a86'), roughness: 0.95 }), stone: new THREE.MeshStandardMaterial({ map: stoneTex, roughness: 0.95 }) };

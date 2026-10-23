@@ -91,7 +91,7 @@ renderer.setPixelRatio(pixelRatio(2));
 bindRenderer(renderer, 2);
 renderer.setSize(innerWidth, innerHeight);
 renderer.shadowMap.enabled = true;
-renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.shadowMap.type = THREE.PCFShadowMap;
 document.body.prepend(renderer.domElement);
 
 // ---------- board scene ----------
@@ -1201,11 +1201,11 @@ setInterval(() => {
 }, 50);
 
 // ======================================================================
-const clock = new THREE.Clock();
+const clock = new THREE.Timer().reset();
 let t = 0;
 function frame() {
-  const dt = paused && !online ? 0 : Math.min(clock.getDelta(), 0.1) * SPEED;
-  if (paused && !online) clock.getDelta();
+  const dt = paused && !online ? 0 : Math.min(clock.update().getDelta(), 0.1) * SPEED;
+  if (paused && !online) clock.reset();
   t += dt;
   if (!online) { time.step(dt * boardPace()); if (mini) updateMini(dt); }
   view.update(dt, t);
