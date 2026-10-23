@@ -117,7 +117,7 @@ export function createRiverWorld(river, { dress } = {}) {
 
 export function createRaceScene(canvas, river, options = {}) {
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
-  renderer.setClearColor(DAYLIGHT.horizon); renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  renderer.setClearColor(DAYLIGHT.horizon); renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFShadowMap;
   renderer.outputColorSpace = THREE.SRGBColorSpace; renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 1;
   // A longer course can push the fog out with `def.fog`.
   const fog = river.def.fog || DAYLIGHT.fog, scene = new THREE.Scene(); scene.fog = new THREE.Fog(DAYLIGHT.horizon, ...fog);

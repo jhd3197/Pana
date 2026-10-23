@@ -29,7 +29,7 @@ const faceEl = document.getElementById('pana-face');
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
 renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
 renderer.shadowMap.enabled = true;
-renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.shadowMap.type = THREE.PCFShadowMap;
 const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(30, 1, 0.1, 50);
 camera.position.set(0, 1.8, 6.0);
@@ -128,16 +128,16 @@ canvas.addEventListener('pointerup', () => {
   if (moved < 4) yell = 0.9;
 });
 
-const clock = new THREE.Clock();
+const clock = new THREE.Timer().reset();
 let t = 0;
 let wave = 3;   // seconds until the next wave
 function frame() {
   if (document.hidden || document.body.dataset.view !== 'mi-pana') {
-    clock.getDelta();
+    clock.reset();
     requestAnimationFrame(frame);
     return;
   }
-  const dt = Math.min(clock.getDelta(), 0.1);
+  const dt = Math.min(clock.update().getDelta(), 0.1);
   t += dt;
   resize();
   if (!dragging) {

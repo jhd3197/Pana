@@ -11,7 +11,7 @@ try {
   const page = await browser.newPage({ viewport: { width: 900, height: 700 } });
   page.on('pageerror', e => errors.push(e.message));
   await page.goto(`${base}/studio/settings.html`);
-  await page.setContent('<style>body{margin:0}</style><script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}</script>');
+  await page.setContent('<style>body{margin:0}</style><script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.186.1/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.186.1/examples/jsm/"}}</script>');
   const ids = ['pool-table', 'pool-ball', 'pool-cue', 'poker-table', 'poker-card', 'poker-chips', 'paint-marker'];
   for (const id of ids) {
     const result = await page.evaluate(async id => {

@@ -89,7 +89,7 @@ renderer.setPixelRatio(pixelRatio(2));
 bindRenderer(renderer, 2);
 renderer.setSize(innerWidth, innerHeight);
 renderer.shadowMap.enabled = true;
-renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.shadowMap.type = THREE.PCFShadowMap;
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
 renderer.toneMappingExposure = 1.22;
 document.body.prepend(renderer.domElement);
@@ -1013,7 +1013,7 @@ async function startRace(playerIndex, wheelId = garage.wheel, roster = null) {
     garage.controls.enabled = false;
     sound.startEngine();
     acc = 0;
-    clock.getDelta();
+    clock.reset();
     mode = 'race';
     $('garage').inert = $('race').inert = false;
     $('loading').classList.add('hidden');
@@ -1108,7 +1108,7 @@ const menu = createGameMenu({ pad: { native: true, playing: () => mode === 'race
     waterAmbience.stop(); race.audio.update(null, 0, false);   // no screech under the pause menu
     if (sound.engine) sound.engine.g.gain.setTargetAtTime(0, sound.ctx.currentTime, 0.05);
   },
-  onClose() { if (paused) music.resume(); paused = false; acc = 0; clock.getDelta(); },
+  onClose() { if (paused) music.resume(); paused = false; acc = 0; clock.reset(); },
 });
 $('race').querySelector('.hud-corner').append(menu.createButton({ id: 'pause', label: 'Pausa', className: 'pause-button pk-btn pk-btn--sm' }));
 $('garage').querySelector('.bar').append(menu.createButton({ id: 'settings', label: 'Ajustes', className: 'toggle pk-btn pk-btn--sm' }));
@@ -2177,13 +2177,13 @@ async function goOnline(code, lead) {
 
 // ======================================================================
 let mode = 'garage';
-const clock = new THREE.Clock();
+const clock = new THREE.Timer().reset();
 const STEP = 1 / 60, MAX_CATCHUP = 5 * STEP - 1e-9;
 let acc = 0;
 
 const FINE_POINTER = matchMedia('(pointer: fine)').matches;
 function frame() {
-  const dt = Math.min(clock.getDelta(), 0.25); menuFlow?.sync(mode);
+  const dt = Math.min(clock.update().getDelta(), 0.25); menuFlow?.sync(mode);
   if (mode === 'garage' && (!menuFlow || menuFlow.step === 'car')) {
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
     renderer.toneMappingExposure = 1.05;

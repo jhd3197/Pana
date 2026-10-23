@@ -11,7 +11,7 @@ try {
   page.on('pageerror', e => errors.push(e.message));
   page.on('console', m => { if (m.type() === 'error' && /THREE|WebGL/.test(m.text())) errors.push(m.text()); });
   await page.goto(`${base}/studio/settings.html`);
-  await page.setContent('<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}</script><style>body{margin:0}</style><canvas></canvas>');
+  await page.setContent('<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.186.1/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.186.1/examples/jsm/"}}</script><style>body{margin:0}</style><canvas></canvas>');
   const fixture = await page.evaluate(async () => {
     const THREE = await import('three'), preview = await import('/studio/preview.js');
     const { araguaney } = await import('/engine/models/vegetation/araguaney.js');

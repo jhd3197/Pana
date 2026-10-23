@@ -91,10 +91,10 @@ export function createWorld(scene, layout, roadDistance) {
       sh.uniforms.uFlash = uFlash;
       sh.fragmentShader = 'uniform float uFlash;\n' + sh.fragmentShader.replace('#include <emissivemap_fragment>', `#include <emissivemap_fragment>
         #ifdef USE_COLOR
-          totalEmissiveRadiance += vColor * (${k.toFixed(3)} + uFlash * 0.08);
+          totalEmissiveRadiance += vColor.rgb * (${k.toFixed(3)} + uFlash * 0.08);
         #endif`);
     };
-    mat.customProgramCacheKey = () => 'maracaibo-selfLit' + key;
+    mat.customProgramCacheKey = () => 'maracaibo-selfLit-r186-' + key;
     return mat;
   }
 

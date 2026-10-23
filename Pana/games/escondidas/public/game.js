@@ -32,7 +32,7 @@ await Promise.race([document.fonts.load('900 64px Nunito'), new Promise(resolve 
 
 const renderer = new THREE.WebGLRenderer({ canvas: $('world'), antialias: true });
 renderer.setPixelRatio(pixelRatio(1.75)); renderer.setSize(innerWidth, innerHeight); bindRenderer(renderer, 1.75);
-renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFShadowMap;
 renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.13;
 const plaza = createPlaza({ environment: false }), { scene } = plaza;
 const environment = createHuntEnvironment(scene); environment.setMap('plaza');

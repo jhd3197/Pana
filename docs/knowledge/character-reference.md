@@ -40,7 +40,7 @@ data and verifies legacy and multiplayer compatibility.
 
 The sculpt inspection page lives at `/character/reference.html`, inside Pana Studio. Its UI
 remains in `Pana/web/character/`, while the shared sculpt lives in
-`Pana/engine/models/characters/pana/`. It uses the existing Three.js **0.160.0** CDN
+`Pana/engine/models/characters/pana/`. It uses the existing Three.js **0.186.1** CDN
 import map and static web server. The explicit “Usar en los juegos” action
 saves the wardrobe to the existing avatar schema; `engine/models/characters/pana/avatar-model.js`
 adapts this same sculpt for every game. See `pana-studio.md` for the catalog.

@@ -45,7 +45,7 @@ const C = (P, L) => P.clone().multiply(L);
 // Add one unit primitive under `g`, positioned by an arbitrary matrix.
 function add(g, key, geo, mtx) {
   const m = new THREE.Mesh(GEO[geo](), mat(key));
-  m.matrixAutoUpdate = false; m.matrix.copy(mtx);
+  m.matrixAutoUpdate = false; m.matrix.copy(mtx); m.matrixWorldNeedsUpdate = true;
   m.castShadow = !GLOW.has(key); m.receiveShadow = !GLOW.has(key);
   g.add(m);
   return m;

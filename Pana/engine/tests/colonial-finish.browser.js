@@ -8,7 +8,7 @@ try {
   const page = await browser.newPage({ viewport: { width: 1800, height: 1100 } }), errors = [];
   page.on('pageerror', error => errors.push(error.message));
   await page.goto(`${process.env.PANA_TEST_URL || 'http://localhost:8461'}/studio/settings.html`);
-  await page.setContent('<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}</script><style>body{margin:0;background:#eef0ee;font:17px system-ui;color:#28362c}canvas{display:block}.label{position:absolute;top:22px;width:450px;text-align:center}</style><canvas></canvas>');
+  await page.setContent('<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.186.1/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.186.1/examples/jsm/"}}</script><style>body{margin:0;background:#eef0ee;font:17px system-ui;color:#28362c}canvas{display:block}.label{position:absolute;top:22px;width:450px;text-align:center}</style><canvas></canvas>');
   const result = await page.evaluate(async () => {
     const THREE = await import('three');
     const { colonialHouse } = await import('/engine/models/props/colonial-house.js');

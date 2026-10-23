@@ -11,7 +11,7 @@ try {
   const page=await browser.newPage({viewport:{width:1500,height:1000}});
   page.on('pageerror',e=>errors.push(e.message));
   await page.goto(`${origin}/studio/settings.html`);
-  await page.setContent('<style>body{margin:0}canvas{display:block}</style><canvas></canvas><script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}</script>');
+  await page.setContent('<style>body{margin:0}canvas{display:block}</style><canvas></canvas><script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.186.1/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.186.1/examples/jsm/"}}</script>');
   const result=await page.evaluate(async()=>{
     const THREE=await import('three'),{makeTrack}=await import('/g/carreritas/track-runtime.js'),{default:def}=await import('/g/carreritas/tracks/puerto.js');
     const {createSky}=await import('/engine/worlds/sky.js'),{inspect}=await import('/studio/preview.js');

@@ -8,7 +8,7 @@ try {
   const page = await browser.newPage(), errors = [];
   page.on('pageerror', e => errors.push(e.message));
   await page.goto(`${base}/studio/settings.html`);
-  await page.setContent('<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}</script>');
+  await page.setContent('<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.186.1/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.186.1/examples/jsm/"}}</script>');
   const result = await page.evaluate(async () => {
     const THREE = await import('three');
     const { araguaney } = await import('/engine/models/vegetation/araguaney.js');

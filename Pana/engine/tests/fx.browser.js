@@ -9,7 +9,7 @@ try {
   const errors = [];
   page.on('pageerror', e => errors.push(e.message));
   await page.goto(`${base}/studio/settings.html`);
-  await page.setContent('<style>body{margin:0}</style><script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}</script>');
+  await page.setContent('<style>body{margin:0}</style><script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.186.1/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.186.1/examples/jsm/"}}</script>');
   const puffs = await page.evaluate(async () => {
     const THREE = await import('three'), { Puffs } = await import('/engine/fx.js');
     const renderer = new THREE.WebGLRenderer(); renderer.setSize(640, 480); document.body.append(renderer.domElement);

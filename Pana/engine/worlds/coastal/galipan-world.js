@@ -82,10 +82,10 @@ export function createWorld(scene, layout, roadDistance) {
     mat.onBeforeCompile = sh => {
       sh.fragmentShader = sh.fragmentShader.replace('#include <emissivemap_fragment>', `#include <emissivemap_fragment>
         #ifdef USE_COLOR
-          totalEmissiveRadiance += vColor * ${k.toFixed(3)};
+          totalEmissiveRadiance += vColor.rgb * ${k.toFixed(3)};
         #endif`);
     };
-    mat.customProgramCacheKey = () => 'galipan-selfLit' + key;
+    mat.customProgramCacheKey = () => 'galipan-selfLit-r186-' + key;
     return mat;
   }
 
@@ -542,8 +542,8 @@ export function createWorld(scene, layout, roadDistance) {
   flush(inst.post, (() => { const g = new THREE.BoxGeometry(1, 1, 1); g.translate(0, 0.5, 0); return g; })(), selfLit(new THREE.MeshStandardMaterial({ color: col('#ffffff'), roughness: 0.6 }), 0.15, 'post'));
   {
     const RM = new THREE.MeshStandardMaterial({ color: col('#ffffff'), emissive: col('#ffffff'), emissiveIntensity: 2.4, roughness: 0.3 });
-    RM.onBeforeCompile = sh => { sh.fragmentShader = sh.fragmentShader.replace('#include <emissivemap_fragment>', '#include <emissivemap_fragment>\n#ifdef USE_COLOR\n totalEmissiveRadiance *= vColor;\n#endif'); };
-    RM.customProgramCacheKey = () => 'galipan-reflector';
+    RM.onBeforeCompile = sh => { sh.fragmentShader = sh.fragmentShader.replace('#include <emissivemap_fragment>', '#include <emissivemap_fragment>\n#ifdef USE_COLOR\n totalEmissiveRadiance *= vColor.rgb;\n#endif'); };
+    RM.customProgramCacheKey = () => 'galipan-reflector-r186';
     flush(inst.reflector, new THREE.BoxGeometry(1, 1, 1), RM, false);
   }
   {

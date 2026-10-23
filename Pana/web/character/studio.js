@@ -203,10 +203,10 @@ canvas.addEventListener('webglcontextlost', e => {
   e.preventDefault(); status.hidden = false; status.classList.add('error');
   status.textContent = 'La vista 3D se interrumpió. Vuelve a cargar la página para continuar.';
 });
-const clock = new THREE.Clock();
+const clock = new THREE.Timer().reset();
 function frame() {
   if (disposed) return;
-  const dt = Math.min(clock.getDelta(), 0.05);
+  const dt = Math.min(clock.update().getDelta(), 0.05);
   if (!document.hidden) {
     if (!paused) pana.update(dt);
     controls.update(); renderer.render(scene, camera);

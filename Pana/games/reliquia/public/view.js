@@ -41,7 +41,7 @@ const disposeSprite = s => { s.material.map.dispose(); s.material.dispose(); s.r
 export function createView(canvas, { seed = 1, depth = 1 } = {}) {
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
   renderer.setPixelRatio(pixelRatio(1.5)); const unbind = bindRenderer(renderer, 1.5);
-  renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap; renderer.toneMapping = THREE.ACESFilmicToneMapping;
+  renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFShadowMap; renderer.toneMapping = THREE.ACESFilmicToneMapping;
   const scene = new THREE.Scene(); scene.background = new THREE.Color(CAMP_LOOK.background); scene.fog = new THREE.Fog(CAMP_LOOK.background, ...CAMP_LOOK.fog);
   const camera = new THREE.PerspectiveCamera(74, 1, .05, 220); camera.rotation.order = 'YXZ'; scene.add(camera);
   const sky = createSky(WARM_DAY.sky); scene.add(sky.mesh);

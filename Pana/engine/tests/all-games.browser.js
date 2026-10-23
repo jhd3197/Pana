@@ -23,13 +23,15 @@ try {
     try {
       page = await openGame(browser, game, { room: `smoke-${game}-${Date.now()}`, avatar, wait: false });
       await waitPrepared(page);
-      const view = await page.evaluate(() => ({
+      const view = await page.evaluate(async () => ({
+        revision: (await import('three')).REVISION,
         lobby: !!document.querySelector('#pana-lobby-shell'),
         // A canvas already bound to WebGL refuses a 2D context; asking for WebGL
         // instead would create one on any spare canvas and always pass.
         webgl: [...document.querySelectorAll('canvas')].some(c => c.getContext('2d') === null),
         overflow: document.documentElement.scrollWidth > innerWidth + 1,
       }));
+      if (view.revision !== '186') failures.push(`${game}: expected Three.js r186, got ${view.revision}`);
       if (!view.lobby && !OWN_MENU[game]) failures.push(`${game}: no shared lobby (#pana-lobby-shell)`);
       if (!view.webgl) failures.push(`${game}: no WebGL canvas; every game is a 3D scene`);
       if (view.overflow) failures.push(`${game}: page scrolls sideways`);

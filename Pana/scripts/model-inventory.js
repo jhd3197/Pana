@@ -16,7 +16,7 @@ let assets;
 try{
   const page=await browser.newPage();
   await page.goto(`${server.base}/studio/settings.html`);
-  await page.setContent('<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}</script>');
+  await page.setContent('<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.186.1/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.186.1/examples/jsm/"}}</script>');
   assets=await page.evaluate(async()=>{
     const {ASSETS,sourcePath}=await import('/studio/catalog.js');
     return ASSETS.map(({id,name,category,source,factory,usedBy,previewOptions})=>({id,name,category,source:sourcePath(source),factory,usedBy,previewOptions,

@@ -9,7 +9,7 @@ try {
   const page=await browser.newPage({viewport:{width:1500,height:1000}}),errors=[];
   page.on('pageerror',e=>errors.push(e.message));
   await page.goto(`${process.env.PANA_TEST_URL||'http://localhost:8461'}/studio/settings.html`);
-  await page.setContent('<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}</script><style>body{margin:0;background:#eef0ee;font:15px system-ui;color:#334642}canvas{display:block}.label{position:absolute;width:300px;text-align:center;pointer-events:none}</style><canvas></canvas><div id="labels"></div>');
+  await page.setContent('<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.186.1/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.186.1/examples/jsm/"}}</script><style>body{margin:0;background:#eef0ee;font:15px system-ui;color:#334642}canvas{display:block}.label{position:absolute;width:300px;text-align:center;pointer-events:none}</style><canvas></canvas><div id="labels"></div>');
   const metrics=await page.evaluate(async()=>{
     const THREE=await import('three'),preview=await import('/studio/preview.js'),{ASSETS}=await import('/studio/catalog.js');
     const assets=ASSETS.filter(a=>a.pack==='coastal'),models=[],metrics=[];
