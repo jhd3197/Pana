@@ -8,6 +8,10 @@ becomes the GitHub release's notes.
 
 ## Unreleased
 
+- **Los bordes de Salinas se distinguen mejor del terreno claro.**
+  La franja de tierra rosada delimita la carretera sin añadir barreras
+  ni cambiar el paso por el agua y la mina.
+
 - **Selva y Bululú enmarcan mejor sus curvas con grupos de árboles.**
   Las copas de la meseta alternan tamaños y los cocoteros dejan una apertura
   hacia el mar, conservando el espacio de la pista y sus referencias.

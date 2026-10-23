@@ -32,6 +32,12 @@ stage newly added source files before capturing an uncommitted prototype.
 
 ## Twenty authored roadside compositions
 
+`roadStyle(T).shoulder` optionally supplies an explicit verge colour. Salinas
+uses dusty rose (`#b78f82`) to separate its pale sand road from the salt fields.
+Other maps retain their existing dust mix. This only colours the existing
+2.4-m sloping shoulder: it adds no texture, mesh or collision, and still skips
+water gaps, bridges and decks separated from terrain by more than two metres.
+
 Plaza, Selva, Páramo, Bululú and Sabana explicitly opt into
 `tracks/authored-sightlines.js` through `withSightlines`. Four sites per map
 are named in `sightline-sites.js`; their `u` values are reproducible driver-view

@@ -68,7 +68,7 @@ export const ROAD_STYLES = {
   salto: { surface: 'dirt', base: '#c79a6a' },
   delta: { surface: 'dirt', base: '#c59766', grass: true },
   bululu: { surface: 'sand', base: '#f0d8a2' },
-  salinas: { surface: 'sand', base: '#eccabf' },
+  salinas: { surface: 'sand', base: '#eccabf', shoulder: '#b78f82' },
   // Mixed surfaces tint per vertex (stone, mud): grain only, no paint.
   cuevas: { surface: 'grain' },
   puerto: { surface: 'grain' },

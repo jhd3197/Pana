@@ -19,7 +19,8 @@ export function roadShoulders(T) {
   }
   // Asphalt sits on pale gravel; earth roads fade into a lighter, dustier verge.
   const style = roadStyle(T), paved = style.surface === 'asphalt';
-  const dust = new THREE.Color(paved ? 0xb9ae96 : style.base ?? T.def.palette.track).lerp(new THREE.Color(0xc9b48c), paved ? .25 : .4);
+  const dust = style.shoulder ? new THREE.Color(style.shoulder)
+    : new THREE.Color(paved ? 0xb9ae96 : style.base ?? T.def.palette.track).lerp(new THREE.Color(0xc9b48c), paved ? .25 : .4);
   function edge(s, side, outside) {
     const p = T.pointAt(s), q = T.pointAt(s+.3), heading = Math.atan2(q.x-p.x,q.y-p.y);
     const off = side * (T.HW + (outside ? 2.4 : 0));
