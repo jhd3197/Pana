@@ -9,6 +9,8 @@ import { activeItem, addItem, consumeItem, selectItem, canBlock, isMango, isJuic
 import { isGhost } from './recovery-rules.js';
 import { makeRocket, makeChancleta, makeShield, makeTrap, ITEM_ICONS } from './item-art.js';
 import { loseCoins } from './drive-rules.js';
+import { rng } from '../../../engine/random.js';
+import { itemWeights, drawItem, pickupEligibility, incomingThreat, reactToThreat, reactionDelay, MAJOR_RECOVERY, isMajor } from './item-rules.js';
 
 const sparkTarget = new THREE.Vector3();   // scratch: sparks fly to their car every step
 
@@ -28,22 +30,6 @@ export const ITEMS = {
   trampa: { icon: ITEM_ICONS.trampa, name: 'Caja trampa', rarity: 'purple' },
   aguacero: { icon: ITEM_ICONS.aguacero, name: 'Aguacero', rarity: 'gold' },
 };
-
-// odds for the leader (k=0) and the last car (k=1): the back of the pack gets the good stuff
-const ODDS = {
-  mango: [3, 2],
-  mango3: [0, 2],
-  jugo: [1, 3],
-  jugo3: [0, 2],
-  concha: [4, 1],
-  trampa: [3, 1],
-  cohete: [1, 2],
-  chancleta: [0, 1.2],
-  totuma: [1.5, 1],
-  aguacero: [0, 1.2],
-};
-// Battle mode (balloons) has no leader to hunt and no laps to cut.
-const BATTLE_ODDS = { mango: [3, 3], mango3: [1, 1], concha: [2, 2], trampa: [2, 2], cohete: [2, 2], totuma: [1, 1], jugo: [1, 1] };
 
 const BOX_RESPAWN = 2.5;
 const COIN_RESPAWN = 8;
@@ -213,6 +199,9 @@ export function createItems(hooks) {
   const rainSeen = new Set();
   const byId = (id) => hooks.byId?.(id);
   const previous = new Map();
+  const pickupHistory = new Map(), reactions = new Map(), majorUntil = new Map(), majorSeen = new Set();
+  const itemSeed = hooks.itemSeed ?? Math.floor(Math.random() * 0x100000000);
+  let itemRandom = rng(itemSeed), raceTime = 0;
   let t = 0, seq = 0;
   const gone = new Set();   // projectile ids already burst here, so a late remote hit doesn't splat twice
   const emit = (kind, c, data) => hooks.emit?.(kind, c, data);
@@ -220,6 +209,8 @@ export function createItems(hooks) {
   const disposeGeometry = root => root.traverse(o => o.geometry?.dispose());
 
   function clear() {
+    pickupHistory.clear(); reactions.clear(); majorUntil.clear(); majorSeen.clear();
+    itemRandom = rng(itemSeed); raceTime = 0;
     rainQueue = []; rainSeen.clear();
     for (const entry of [...flying, ...peels, ...sparks]) entry.m.removeFromParent();
     for (const m of [...held.values(), ...shields.values()]) m.removeFromParent();
@@ -242,20 +233,14 @@ export function createItems(hooks) {
     padTex.dispose(); padMat.dispose();
   }
 
-  function roll(place, count) {
-    const k = count > 1 ? Math.max(0, Math.min(1, place / (count - 1))) : 0.5;
-    const bag = Object.entries(battling() ? BATTLE_ODDS : ODDS).map(([kind, [lead, last]]) => [kind, lead + (last - lead) * k]);
-    let r = Math.random() * bag.reduce((n, [, w]) => n + w, 0);
-    for (const [kind, w] of bag) if ((r -= w) <= 0) return kind;
-    return 'mango';
-  }
-
   function feedback(c, message, duration = 1.5) {
     if (c.isPlayer) { c.itemMessage = message; c.itemMessageT = duration; }
   }
 
-  function give(c, place, count) {
-    if (!addItem(c, roll(place, count))) return false;
+  function give(c, order, box) {
+    const eligible = pickupEligibility(c, T.TOTAL, pickupHistory, Math.cos(c.h - box.h) > 0.3);
+    const weights = itemWeights(c, order, T.TOTAL, { eligible, elapsed: raceTime, battle: battling() });
+    if (!addItem(c, drawItem(weights, itemRandom))) return false;
     c.useT = rand(0.8, 3.5) * (hooks.itemDelay?.() ?? 1);
     if (c.isPlayer) sound.pickup();
     return true;
@@ -381,11 +366,19 @@ export function createItems(hooks) {
   // inventories never diverge.
   function rainOn(v, time) {
     if (v.done || v.dns || v.retired || isGhost(v)) return;
+    if (majorProtected(v)) { feedback(v, '¡Un respiro del aguacero!'); return; }
+    majorUntil.set(v, raceTime + MAJOR_RECOVERY);
     v.cloud = Math.max(v.cloud || 0, time);
     if (v.remote) return;
     hooks.say(v, LINES.rain, 1);
     const lost = dropItem(v);
     if (lost) feedback(v, `¡Se mojó y se cayó: ${ITEMS[lost]?.name ?? 'tu ítem'}!`, 1.8);
+  }
+
+  // Resolve protection on the victim's client. Concurrent launches from other
+  // clients cannot chain major damage or repeatedly steal the reserve item.
+  function majorProtected(c) {
+    return !battling() && (majorUntil.get(c) ?? 0) > raceTime;
   }
 
   // A totuma soaks up one hit of any kind.
@@ -433,18 +426,21 @@ export function createItems(hooks) {
   }
 
   function aiThink(c, cars, dt) {
+    let reaction = reactions.get(c);
+    if (!reaction) { reaction = {}; reactions.set(c, reaction); }
+    const threat = flying.find(f => incomingThreat(c, f));
+    const danger = reactToThreat(reaction, threat?.id, dt, reactionDelay(hooks.itemDelay?.() ?? 1));
     let item = activeItem(c);
     if (!item || c.done || c.spin > 0) return;
     c.useT -= dt;
-    // A bot may equip its reserve mango in response to a nearby projectile.
-    const danger = flying.some(f => f.owner !== c && Math.hypot(f.m.position.x - c.x, f.m.position.z - c.z) < 13);
-    if (danger && !isMango(item) && isMango(c.inventory[1 - c.selected])) {
+    // Mangos defend only against mangos; recognising a threat takes time.
+    if (danger && threat.kind === 'mango' && !isMango(item) && isMango(c.inventory[1 - c.selected])) {
       select(c); item = activeItem(c);
     }
-    if (item.rolling > 0 || (danger && isMango(item))) return;
+    if (item.rolling > 0 || (danger && threat.kind === 'mango' && isMango(item))) return;
     const kind = item.kind;
     if (kind === 'jugo' || kind === 'jugo3') { if (c.useT <= 0) { use(c); c.useT = rand(0.6, 1.6); } return; }
-    if (kind === 'totuma') { if (danger || c.useT <= 0) use(c); return; }
+    if (kind === 'totuma') { if (danger || (!threat && c.useT <= 0)) use(c); return; }
     if (kind === 'chancleta' || kind === 'aguacero') {
       const order = hooks.standings();
       if (c.useT <= 0 && (kind === 'aguacero' || battling() || order.indexOf(c) > 0)) use(c);   // the downpour hits every rival, so the leader rains too
@@ -553,6 +549,11 @@ export function createItems(hooks) {
 
   // The victim's client resolved a hit: burst the mango where it landed there.
   function remoteHit(victim, d) {
+    if (isMajor(d.kind) && !d.blocked && !majorSeen.has(d.id)) {
+      majorUntil.set(victim, raceTime + MAJOR_RECOVERY);
+      majorSeen.add(d.id);
+      if (majorSeen.size > 64) majorSeen.delete(majorSeen.values().next().value);
+    }
     const f = flying.find(f => f.id === d.id);
     if (f) f.dead = true;
     const pos = f ? f.m.position.clone() : new THREE.Vector3(d.x, d.y, d.z);
@@ -645,6 +646,7 @@ export function createItems(hooks) {
       return true;
     });
     if (!racing) { for (const c of cars) { syncHeld(c); syncAuras(c); } return; }
+    raceTime += dt;
 
     for (const c of cars) c.rainIn = 0;
     rainQueue = rainQueue.filter(w => {
@@ -695,7 +697,7 @@ export function createItems(hooks) {
           if (c.isPlayer && !c.itemMessageT) feedback(c, 'Dos objetos: usa uno para abrir otra caja');
           continue;
         }
-        give(c, order.indexOf(c), cars.length);
+        give(c, order, b);
         breakCrate(b, c);
         if (c.isPlayer) sound.bonk(0.4);
       }
@@ -805,8 +807,11 @@ export function createItems(hooks) {
       // A remote rival's own client decides the hit; here the mango just bursts.
       if (c && !c.remote) {
         // A held mango can stop a mango, not a rocket or a chancleta.
-        const blocked = f.kind === 'mango' ? block(c, pos) : shielded(c, pos);
+        const recovered = f.kind === 'chancleta' && majorProtected(c);
+        const blocked = recovered || (f.kind === 'mango' ? block(c, pos) : shielded(c, pos));
+        if (recovered) feedback(c, '¡Un respiro de la chancleta!');
         if (!blocked) {
+          if (f.kind === 'chancleta') majorUntil.set(c, raceTime + MAJOR_RECOVERY);
           const side = Math.sign((pos.x - c.x) * -Math.cos(c.h) + (pos.z - c.z) * Math.sin(c.h)) || 1;
           hooks.crash(c, f.kind === 'chancleta' ? 20 : 16, -side);
           c.vx *= f.kind === 'chancleta' ? 0.2 : 0.4; c.vz *= f.kind === 'chancleta' ? 0.2 : 0.4; c.boost = 0;
@@ -844,13 +849,13 @@ export function createItems(hooks) {
     f.m.rotation.y += f.spin * dt;
     f.m.rotation.x = Math.sin(f.t * 7) * 0.5;
     if (!target || target.done || target.dns || target.retired || target.ghost) { f.dead = true; return; }
-    if (isGhost(target)) {
-      // Circle above a recovering target instead of wasting the item on the road.
-      pos.set(target.x + Math.sin(f.t * 4) * 4, target.y + 8, target.z + Math.cos(f.t * 4) * 4);
-      f.s = paramOf(target.x, target.z, target.y); f.diving = false;
+    const close = Math.hypot(target.x - pos.x, target.z - pos.z) < 16;
+    if (isGhost(target) && close) {
+      // Recovery is a real escape, not a postponed hit waiting over the racer.
+      f.dead = true;
+      if (!target.remote) emit('hit', target, { id: f.id, kind: f.kind, blocked: true, x: pos.x, y: pos.y, z: pos.z });
       return;
     }
-    const close = Math.hypot(target.x - pos.x, target.z - pos.z) < 16;
     if (f.diving || close) {
       f.diving = true;
       const dx = target.x - pos.x, dy = target.y + 1 - pos.y, dz = target.z - pos.z, d = Math.hypot(dx, dy, dz) || 1;

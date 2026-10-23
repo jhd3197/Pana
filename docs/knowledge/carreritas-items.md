@@ -1,5 +1,53 @@
 # Carreritas vehicles, crates and combat
 
+## Race balance
+
+`item-rules.js` owns pure item weights and threat/reaction rules. Race odds use
+the active field (excluding finished, retired, disconnected and DNS racers),
+lap-aware progress and a fixed 38 m/s reference pace. Comeback strength is
+25% normalized placement and 75% smoothed gap: gap assistance starts after
+1.5 estimated seconds and reaches its cap at 8. Distant racers receive more
+jugo, jarra and totuma, with fewer stationary traps. These are initial tuning
+values, not a measured human win-rate target.
+
+Chancleta and Aguacero cannot be drawn during the first 12 racing seconds,
+within a 3-second estimated lead gap, or by the leader. Their weights scale
+by `min(1, 4 / activeCount)` to limit pressure in larger fields. Ordinary
+supplies remain available while stopped or revisiting a crate; comeback odds
+require forward speed above 3 m/s, a forward road heading, no active rescue,
+and at least 35 m beyond the previous pickup's highest race progress. A new
+lap can qualify again. Battle keeps its position-independent item pool.
+
+Item draws use a separate seeded stream, independent of cosmetic random calls.
+`createItems({ itemSeed })` supports repeatable comparisons; normal play picks
+the seed when creating the item system. `clear()` resets that stream, pickup
+history, reaction state and recovery windows. This does not make the entire
+race deterministic or coordinate all clients' random streams.
+
+Each victim gets 10 seconds between damaging major attacks, shared between
+Aguacero and Chancleta. Repeated rain neither extends the cloud nor drops the
+new active item; a repeated chancleta bursts without damage or consuming a
+totuma. Ordinary mangoes, rockets, traps and collisions remain active. The
+existing feedback line explains a blocked major attack. The victim's client
+resolves chancleta protection and relays the blocked hit through the existing
+message; other clients remember successful major hits for bot ownership
+handoff. Unique rain waves retain their timestamp compensation and duplicate
+filter. This is victim recovery, not a server-wide launch lock. Two players
+can launch at once, but cannot bypass the target's local recovery window.
+
+Bots recognise approaching trajectories within 40 m and a 1.2-second closest
+approach, rejecting departing shots, wide misses and other decks. Reactions
+take 0.54 / 0.30 / 0.18 seconds on Fácil / Normal / Difícil. A different threat
+restarts the timer. Reserve mangoes defend only against mangoes; totumas wait
+for recognition when a shot is approaching. Driving pace and rewards are
+unchanged by these item rules.
+
+`item-balance.test.js` covers gap/lap/field eligibility, anti-farming, seeded
+distributions and frame-rate-independent reactions. `item-balance.browser.js`
+exercises real pickups, mixed major attacks, expiry, ordinary damage, rescue
+escape and defensive switching. `feedback-online.browser.js` covers distinct
+repeated rain and chancleta launches through two real room clients.
+
 ## Wooden supply crates
 
 `pickup-art.js` builds the visible crate as one indexed mesh with normalized
@@ -36,8 +84,8 @@ are per-model costs, not a whole-map FPS or total-memory guarantee.
   It never slows during pursuit; its dive also overtakes turboing cars. The
   old 16 s timeout is replaced by a route-aware safety lifetime of at least
   45 s. The target sees the warning from launch, even outside the usual 60 m
-  incoming-item radius. A temporarily protected target is orbited until vulnerable; finished,
-  retired or disconnected targets cancel the projectile.
+  incoming-item radius. It dissipates on approaching within 16 m of a temporarily
+  protected target; finished, retired or disconnected targets cancel the projectile.
 - `recovery-rules.js` separates temporary protection from disconnected ghosts.
   Launch and rescue grant 3 s; two distinct hard impacts within 3 s grant 2.5 s.
   Expiry waits for space around the car. Ghosts ignore cars, hazards, peels and

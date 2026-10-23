@@ -8,6 +8,11 @@ becomes the GitHub release's notes.
 
 ## Unreleased
 
+- **Carreritas da mejores oportunidades de remontar y un respiro entre ataques fuertes.**
+  Las cajas consideran la distancia y el puesto, con más jugo y protección
+  para quien quedó atrás. Aguacero y Chancleta no encadenan castigos sobre
+  el mismo pana; los bots tardan en reaccionar y repetir una caja no mejora sus premios.
+
 - **El recorrido de Pana Studio sigue el peralte de las pistas.**
   La cámara conserva su altura en la curva inclinada de Plaza y sobre la laguna
   de Margarita; los puntos copiados incluyen la altura real del recorrido.

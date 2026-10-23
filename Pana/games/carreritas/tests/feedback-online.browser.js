@@ -75,6 +75,24 @@ try {
   assert.deepEqual(rain.ids,launch.wave.map(w=>w.id));
   assert.equal(rain.caller,0);
 
+  // Another racer's distinct wave must not extend rain or steal the reserve.
+  await guest.evaluate(async()=>{
+    const {addItem}=await import('./item-rules.js');
+    race.player.inventory=[null,null];race.player.selected=0;
+    addItem(race.player,'jugo',0);
+  });
+  await host.evaluate(async()=>{
+    const {addItem}=await import('./item-rules.js');
+    const caster=race.cars.find(c=>c.bot&&!c.remote);
+    addItem(caster,'aguacero',0);race.items.use(caster);
+  });
+  await until(guest,()=>rainPackets.length===2&&race.items.rainQueue.length===3);
+  const repeatedRain=await guest.evaluate(()=>{
+    for(let i=0;i<120;i++)race.items.update(1/60,race.cars,true);
+    return {cloud:race.player.cloud,item:race.player.inventory[race.player.selected]?.kind};
+  });
+  assert.deepEqual(repeatedRain,{cloud:0,item:'jugo'});
+
   // A long-range chancleta reaches the owner of the target and its authoritative
   // hit returns to the thrower. No local duplicate crash on the thrower's screen.
   for(const p of [host,guest])await p.evaluate(({ownerId,victimId})=>{
@@ -96,6 +114,20 @@ try {
   }),true);
   await until(host,id=>race.items.projectiles.find(f=>f.id===id)?.dead,thrown);
   assert.equal(await host.evaluate(()=>race.cars.find(c=>!c.bot&&c.remote).dizzy),0);
+
+  await guest.evaluate(()=>{race.player.dizzy=0;race.player.shield=8;});
+  const repeatedThrow=await host.evaluate(async()=>{
+    const {addItem}=await import('./item-rules.js');addItem(race.player,'chancleta',0);
+    race.items.use(race.player);return race.items.projectiles.at(-1).id;
+  });
+  await until(guest,id=>race.items.projectiles.some(f=>f.id===id),repeatedThrow);
+  const repeatHit=await guest.evaluate(()=>{
+    for(let i=0;i<600&&race.items.projectiles.some(f=>!f.dead);i++)race.items.update(1/60,race.cars,true);
+    return {dizzy:race.player.dizzy,shield:race.player.shield};
+  });
+  assert.equal(repeatHit.dizzy,0);
+  assert.ok(repeatHit.shield>0,'major recovery blocks the repeat without consuming a shield');
+  await until(host,id=>race.items.projectiles.find(f=>f.id===id)?.dead,repeatedThrow);
 
   // Recovery is carried in the unchanged pose array, and clears remotely.
   // sendPoses() rate-limits by wall clock; manual steps can outrun that, so
