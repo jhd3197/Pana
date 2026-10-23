@@ -8,6 +8,10 @@ becomes the GitHub release's notes.
 
 ## Unreleased
 
+- **Los carros acompañan la inclinación lateral de la pista.**
+  El apoyo de ambos lados orienta el carro sobre las curvas inclinadas;
+  los saltos conservan su giro en el aire.
+
 - **La cámara anticipa las curvas y ofrece un modo suave.**
   Dinámica acompaña el camino con una inclinación leve; Suave elimina la
   inclinación, las sacudidas y el zoom del turbo desde Ajustes → Carreritas.

@@ -439,8 +439,11 @@ see [Carreritas scenery](carreritas-scenery.md).
 
 ### Optional crossfall
 
-Salinas alone supplies `def.crossfall(s, offset, T)`. `surfaceAt`, the road
-ribbon's center column and `placeOnTrack` use that same function. The outer
+Salinas supplies `def.crossfall(s, offset, T)` for its dry crossing line.
+The coastal-family adapter also supplies crossfall from its authored bank
+profile. Sarisarinama explicitly disables it to preserve height-disambiguated
+projection through its stacked spiral. `surfaceAt`, the generic road ribbon's
+center column and `placeOnTrack` use the same crossfall function. Salinas's outer
 positive lane rises up to 60 cm at the shallow crossing, preserving a dry line
 without changing other maps. Water depth gives the rendered road its existing
 13 cm clearance. `water-crossing.browser.js` checks 1,000 sections for a dry

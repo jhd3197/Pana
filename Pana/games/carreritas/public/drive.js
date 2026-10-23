@@ -171,7 +171,11 @@ export function createDriver({ race, track, say, popPart, progressOf, flameFor, 
         c.y = g;
         const ahead = groundAt(c.x + fx, c.z + fz,c.y), behind = groundAt(c.x - fx, c.z - fz,c.y);
         c.pitch += (-Math.atan2(ahead - behind, 2) - c.pitch) * Math.min(1, dt * 12);
-        c.roll += (0 - c.roll) * Math.min(1, dt * 10);
+        // Existing crossfall supports both sides of the car, independently of
+        // chase-camera roll. Keep boats, aircraft and flat/layered decks level.
+        const bank = T.def.crossfall && !c.boat && !c.flyLift
+          ? THREE.MathUtils.clamp(Math.atan2(groundAt(c.x-rx,c.z-rz,c.y)-groundAt(c.x+rx,c.z+rz,c.y),2),-.35,.35) : 0;
+        c.roll += (bank - c.roll) * Math.min(1, dt * 10);
       } else {
         c.onGround = false;   // drove off the ramp lip: fly!
         c.airTime = 0;

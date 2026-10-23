@@ -28,6 +28,14 @@ events comparable. Unit guidance cases and `camera.browser.js` cover route
 continuity, framing, mirror/split state, look-back and the actual comfort UI;
 `comfort.browser.js` covers driving controls and live split-screen integration.
 
+Grounded vehicle roll is independent of camera roll. On maps with existing
+`crossfall`, `drive.js` samples support one metre either side of the car's
+heading, eases toward that slope at 10/s and limits the target to .35 rad.
+It previously eased to zero even on a banked surface. Boats, lifted aircraft
+and maps without crossfall keep the existing level-roll behavior; airborne
+tumbles are unchanged. `banking.browser.js` checks forward/reverse support on
+Cata and Salinas, flat layered Sarisarinama and preserved airborne roll.
+
 The default drift is assisted for every driver and uses the same local physics
 online, with keyboard, touch and controllers. Hold the drift button and steer
 into a bend; countersteering opens the line, and releasing pays the earned turbo.
