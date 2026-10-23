@@ -30,13 +30,21 @@ Use `--poses .50,.53,.56` for a focused sector and `--camera legacy` or
 these choices. Source diffs include staged and unstaged tracked changes;
 stage newly added source files before capturing an uncommitted prototype.
 
-## Twenty authored roadside compositions
+## Surface contrast
 
 `roadStyle(T).shoulder` optionally supplies an explicit verge colour. Salinas
 uses dusty rose (`#b78f82`) to separate its pale sand road from the salt fields.
 Other maps retain their existing dust mix. This only colours the existing
 2.4-m sloping shoulder: it adds no texture, mesh or collision, and still skips
 water gaps, bridges and decks separated from terrain by more than two metres.
+
+Keep broad wear and edge cues legible before adding fine detail. A pale biome
+does not automatically need a darker road: Desierto's warm earth, dust verge
+and posts already separate the route. Preserve open horizons in Llanos,
+Bululú and Sabana, and free steering across Delta/Margarita lagoons. Local
+composition should frame a destination without becoming a continuous wall.
+
+## Twenty authored roadside compositions
 
 Plaza, Selva, Páramo, Bululú and Sabana explicitly opt into
 `tracks/authored-sightlines.js` through `withSightlines`. Four sites per map
