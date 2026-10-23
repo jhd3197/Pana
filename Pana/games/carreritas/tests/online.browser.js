@@ -1,22 +1,22 @@
-import { menuClick, resultClick } from './menu-helpers.js';
+import { menuClick, chooseCar, resultClick } from './menu-helpers.js';
 // Carreritas online: two real browser clients in one Colyseus room. Lobby sync,
 // host controls, shared countdown, live remote cars, relayed mango throws,
 // one finish order, reload-and-resume, and host handoff with the bots.
-// npm start, then: node games/carreritas/tests/online.browser.js [playwright path]
+// Run through scripts/test-browser.js with the carreritas/online filter.
 import assert from 'node:assert/strict';
-import { createRequire } from 'node:module';
-const require = createRequire(import.meta.url);
-const { chromium } = require(process.argv[2] || process.env.PANA_PLAYWRIGHT_PATH || 'playwright');
+import { launch } from '../../../tests/browser-kit.js';
 const origin = process.env.PANA_TEST_URL || 'http://localhost:8461';
-const browser = await chromium.launch({ headless: true,
-  ...(process.env.PANA_BROWSER_PATH ? { executablePath: process.env.PANA_BROWSER_PATH } : {}) });
+const browser = await launch();
 const errors = [];
 const code = 'test' + Math.random().toString(36).slice(2, 8);
 const step = (label) => console.log(`· ${label}`);
 
 async function player(name) {
   const context = await browser.newContext({ viewport: { width: 1100, height: 700 } });
-  await context.addInitScript((n) => localStorage.setItem('pana:name', n), name);
+  await context.addInitScript((n) => {
+    localStorage.setItem('pana:name', n);
+    localStorage.setItem('pana:settings', JSON.stringify({sound:false,music:false,quality:'baja'}));
+  }, name);
   const page = await context.newPage();
   page.on('pageerror', (e) => errors.push(`${name}: ${e}`));
   // Warm each independent garage before the room test.
@@ -65,9 +65,9 @@ try {
   step('lobby: both panas listed, the leader hosts');
 
   // Guest's car pick reaches the room; host's track pick reaches the guest.
-  await guest.evaluate(() => document.getElementById('next').click());
   await menuClick(host, '#t-next');
   await until(guest, () => getNet().state.track === 'desierto');
+  await chooseCar(guest, 1);
   await until(host, (id) => getNet().state.players.find(p => p.id === id)?.car === 1, g.id);
   assert.equal(await guest.evaluate(() => document.getElementById('track-name').textContent), 'Pana Desierto');
   assert.equal(await guest.isDisabled('#t-next'), true, 'guests cannot change the track');
