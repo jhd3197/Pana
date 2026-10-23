@@ -8,6 +8,18 @@ becomes the GitHub release's notes.
 
 ## Unreleased
 
+- **Todos los juegos comparten el menú lateral de Carreritas.**
+  La sala conserva sus ajustes, equipos y controles de listo en una misma
+  estructura; cada juego mantiene su propio marcador durante la partida.
+
+- **Bochinche reúne hasta seis panas en una pelea de plataformas 3D.**
+  Combate de Super Bash Folds con vidas, saltos, escudos, agarres y objetos;
+  juega por enlace con tu propio pana y tres estilos de pelea. Elige de 2 a 6
+  luchadores; los bots llenan los puestos vacíos y gana el último con vidas.
+  La arena tiene vegetación Pana, golpes con poses y efectos, cámara suave
+  y un marcador que separa daño, vidas y escudo; Pesado gana fuerza y aguante
+  a cambio de velocidad.
+
 - **El salto de San Carlos recibe el carro sobre la carretera.**
   La recepción empieza antes y sigue la dirección de salida antes de doblar;
   el hueco más corto evita caer al terreno debajo de la pista.

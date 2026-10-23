@@ -80,6 +80,11 @@ pause overlay, sound toggle or invite flow, or handle Escape in a game. Never se
 
 ## Conventions
 
+- Every pre-game menu uses the Carreritas side-settings layout from
+  `engine/game-entry.js` and `engine/sala.js`; keep game-specific controls,
+  teams and start permissions within this shared shell. In-game HUDs remain
+  game-specific.
+
 - Default port **8461** (env `PANA_PORT`). URLs: hub `/`, games `/g/<game>/`.
 - Game folders are lowercase Spanish words. Player-facing text is Spanish
   (Venezuelan flavour welcome); code, comments and commits are English.

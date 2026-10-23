@@ -327,7 +327,8 @@ focus containment and return, input blocking, invite links and `M`.
 
 ## Shared reference sala
 
-Carreritas and Pepazo opt into `engine/sala.js`/`sala.css` after scene preparation.
+Every game uses `engine/sala.js`/`sala.css` after scene preparation.
+Carreritas and Pepazo additionally provide workshop metadata.
 Their original lobby exposes `panaSala.read()` with connection state, summary,
 real members and kit ratings; `openKit` opens the existing workshop/armory.
 The shared shell still owns membership, readiness, invite links and the start
@@ -338,7 +339,9 @@ an invite when currently local. No prototype sample players are fabricated.
 Connection status and Reintentar occupy one place at the settings card's foot.
 Offline keeps a yellow local-play action; retry reloads the existing connection
 flow. Pepazo's actual team arrangement remains under Más ajustes so the eight
-sala cards stay in place. Other games retain their existing lobby presentation.
+sala cards stay in place. Other games use the same side-settings presentation while retaining their
+game-owned team seating and personal controls. Their start labels, handlers and
+host permissions are not replaced. No optional workshop metadata is required.
 
 Await the sala stylesheet before clearing `PANA_LOBBY_LOADING`; a game's own
 `PANA_PREPARED` can be true before the shell has docked its final controls.
