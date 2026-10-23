@@ -1,9 +1,9 @@
 # Puerto circuit and harbor models
 
 Puerto is a fictional La Guaira circuit, with sea at +Z and mountains at -Z.
-`tracks/puerto-layout.js` owns the approximately 6,603 m loop, independent town
+`tracks/puerto-layout.js` owns the approximately 6,757 m loop, independent town
 streets, dock footprints and hilltop terrace. The lap descends to -14 m under
-the sea and climbs to the 190.2 m battlements, with an 18.12 m minimum bend radius and a maximum base-road
+the sea and climbs to the 190.2 m battlements, with an 18.53 m minimum bend radius and a maximum base-road
 grade of .383. It remains a standalone circuit in `cup-definitions.js`.
 
 The route passes through a 355 m submerged tunnel under the original silo bank, through three gantry cranes,
@@ -23,7 +23,7 @@ tracks keep three laps; local players can explicitly choose another count.
 `lapsForTrack` reads the metadata default and the room uses it on selection and
 race start. Cup stages retain their own lap counts.
 
-The picker and ready screen show a **3:00–4:00 estimated whole race**, recalculated
+The picker and ready screen show a **3:15–4:15 estimated whole race**, recalculated
 when the lap count changes. This uses a 27–36 m/s planning band; it is not a human
 playtest average. `puerto-duration.proof.js` runs every current car with actual
 physics, normal AI steering, street tires, full player power, a standing start,
@@ -83,6 +83,8 @@ curve across the road width. Terrain is cut below the gap, and road furniture
 skips it. Its cubic rise t²(2−t) starts tangent to the road; both the road support
 and rendered mesh evaluate the same optional ramp profile. Keep the lip, gap and landing together when moving the route.
 Never test airborne clearance against the missing road's interpolated surface.
+The gap is 28 m; the receiving road stays at battlement height until it clears
+the castle footprint, then continues northwest before its return bend.
 
 ## Placement traps
 
@@ -138,7 +140,7 @@ Carreritas, Caída, Dominó and Póquer browser suites for gameplay regressions,
 Geometry proof checks radius/grade/projection, both decks, five lanes against
 actual scenery, foundations, street-facing entrances, the tunnel roof and ship waterline. Budgets
 remain 3.4 million scene triangles and 900 overview draws, not an FPS promise.
-The current full overview uses 2,686,636 triangles and 877 draws.
+The current full overview uses 2,693,322 triangles and 884 draws.
 Driving proof exercises both crossing levels, mud response and a moving jump
 with a landing. The general maps suite completes three laps and collects each
 item row. Native table proof uses two clients, host migration, rejected guest
@@ -227,3 +229,16 @@ ballistic flight; the barrel does not teleport or capture them.
 Native fortress garitas now consult the existing clearance callback with their
 full footprint. The race excludes the tower crossing the jump corridor; default
 Studio/table construction still retains every tower.
+
+
+## First touchdown is the landing criterion
+
+Ending a driving run onGround is insufficient: the old long gap allowed a car
+to land on terrain about 45-51 m below the road and recover afterwards. Driving
+proof now records the first touchdown and requires its height to match the road
+within 0.3 m and its lateral offset to stay below 9 m. Eighteen cases use speeds
+22/32/42 m/s, offsets -5/0/5 m and headings ±0.04 rad, with no airborne steering.
+The short gap and extended straight receiving deck pass these cases. The deck
+must stay at 190.2 m until outside the fort: lowering it sooner intersects the
+native battlement slab on the right lanes. Grounded proof cannot detect that
+rendered obstruction; the five-lane scenery-ray proof also remains required.

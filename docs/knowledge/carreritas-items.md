@@ -135,3 +135,16 @@ track browsing selects route metadata without building scenery. `startRace()`
 is asynchronous: await it in browser tests. `?debug&manual` stops only the game
 loop so deterministic tests can still paint loading steps. Keep the last map
 for replay, and preserve cancellation between `buildSteps()` stages.
+
+
+## Animated green boost strips
+
+Green pads share one procedurally painted 128 by 256 CanvasTexture, used for
+both colour and emission. Painted edge bevels and mint chevrons stay stationary;
+a shader pulse travels along the strip. Position-based phase offsets prevent
+all pads pulsing together. The existing item clock advances the effect and the
+existing boost-entry event drives a brief flash. No extra meshes, network image
+requests, real lights, bloom passes, timers or sprite-sheet frames are added.
+The existing plane follows the ground with its pad height hint. Orange pads
+retain their original scrolling texture. Boost dimensions, strength and grounded
+detection are unchanged. Disposal releases the shared texture and material once.

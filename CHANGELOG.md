@@ -8,6 +8,14 @@ becomes the GitHub release's notes.
 
 ## Unreleased
 
+- **El salto de San Carlos recibe el carro sobre la carretera.**
+  La recepción empieza antes y sigue la dirección de salida antes de doblar;
+  el hueco más corto evita caer al terreno debajo de la pista.
+
+- **Las franjas verdes de turbo tienen bordes definidos y luz en movimiento.**
+  Una textura pequeña compartida dibuja los bordes y las flechas; el material
+  anima la luz sin añadir modelos, descargas ni luces dinámicas.
+
 - **San Carlos te lanza por un cañón gigante hacia la bajada.**
   La rampa baja de altura, alarga su entrada y alinea sus barandas con la pendiente;
   el cañón abierto, sus luces y las flechas marcan el despegue y la recepción.

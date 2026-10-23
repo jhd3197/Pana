@@ -112,10 +112,22 @@ function padTexture(green = false) {
     g.lineTo(4, y + 48); g.lineTo(4, y + 30);
     g.fill();
   }
+  if(green){
+    c.width=128;c.height=256;
+    const panel=g.createLinearGradient(0,0,128,0);panel.addColorStop(0,'#285a47');panel.addColorStop(.12,'#102d24');panel.addColorStop(.88,'#183c2d');panel.addColorStop(1,'#527d56');
+    g.fillStyle=panel;g.fillRect(0,0,128,256);
+    g.strokeStyle='#7db895';g.lineWidth=3;g.strokeRect(3,3,122,250);
+    g.strokeStyle='#081f19';g.lineWidth=2;g.strokeRect(8,8,112,240);
+    for(const y of [22,98,174]){
+      const arrow=g.createLinearGradient(0,y,0,y+56);arrow.addColorStop(0,'#e3ffd1');arrow.addColorStop(.4,'#8cf1ac');arrow.addColorStop(1,'#3cbd80');g.fillStyle=arrow;
+      g.beginPath();g.moveTo(64,y);g.lineTo(112,y+29);g.lineTo(112,y+48);g.lineTo(64,y+19);g.lineTo(16,y+48);g.lineTo(16,y+29);g.closePath();g.fill();
+      g.strokeStyle='#b6f4b8';g.lineWidth=2;g.stroke();
+    }
+  }
   const tex = new THREE.CanvasTexture(c);
   tex.colorSpace = THREE.SRGBColorSpace;
   tex.wrapT = THREE.RepeatWrapping;
-  tex.repeat.set(1, 1.5);
+  tex.repeat.set(1, green?1:1.5);
   return tex;
 }
 
@@ -140,6 +152,15 @@ export function createItems(hooks) {
   padGeo.rotateX(-Math.PI / 2);
   padGeo.rotateY(Math.PI);
   const padMat = new THREE.MeshStandardMaterial({ map: padTex, emissive: itemDef.padColor === 'green' ? 0x49ff96 : 0xff7b1c, emissiveIntensity: 0.35, roughness: 0.6 });
+  const padClock={value:0},padHit={value:new THREE.Vector3(0,0,-100)};
+  if(itemDef.padColor==='green'){
+    padMat.emissiveMap=padTex;padMat.emissiveIntensity=.8;
+    padMat.onBeforeCompile=shader=>{
+      shader.uniforms.padClock=padClock;shader.uniforms.padHit=padHit;
+      shader.vertexShader='varying float padPhase; varying vec2 padWorld;\n'+shader.vertexShader.replace('#include <begin_vertex>','#include <begin_vertex>\n padPhase=position.x*.07+position.z*.03; padWorld=position.xz;');
+      shader.fragmentShader='uniform float padClock; uniform vec3 padHit; varying float padPhase; varying vec2 padWorld;\n'+shader.fragmentShader.replace('#include <emissivemap_fragment>','#include <emissivemap_fragment>\n float pulse=pow(.5+.5*sin(vMapUv.y*18.8496-padClock*7.0+padPhase),4.0); float hit=max(0.0,1.0-(padClock-padHit.z)*3.0)*(1.0-step(14.0,distance(padWorld,padHit.xy))); totalEmissiveRadiance*=.12+1.5*pulse+hit;');
+    };
+  }
   const pads = (itemDef.pads || []).map(def => {
     const a = along(def.u * T.TOTAL, def.off);
     a.w=def.w??PAD_W;a.l=def.l??PAD_L;
@@ -152,7 +173,7 @@ export function createItems(hooks) {
     const m = new THREE.Mesh(geo, padMat);
     m.receiveShadow = true;
     m.name=def.featured?'featured-boost-strip':'boost-pad';
-    scene.add(m);a.m=m;
+    scene.add(m);a.m=m;a.flash=0;
     if(def.featured&&itemDef.zoneModel){a.zone=itemDef.zoneModel(T,a,a.w,a.l);scene.add(a.zone);}
     return a;
   });
@@ -560,7 +581,8 @@ export function createItems(hooks) {
 
   function update(dt, cars, racing) {
     t += dt;
-    padTex.offset.y -= dt * 1.6;
+    if(itemDef.padColor!=='green')padTex.offset.y -= dt * 1.6;
+    padClock.value=t;for(const p of pads)p.flash=Math.max(0,p.flash-dt*3);
     fragments.update(dt);
     for (const b of boxes) {
       const wasDown = b.down > 0;
@@ -703,7 +725,7 @@ export function createItems(hooks) {
         const fwd = dx * Math.sin(p.h) + dz * Math.cos(p.h);
         const side = dx * Math.cos(p.h) - dz * Math.sin(p.h);
         if (Math.abs(fwd) < p.l / 2 && Math.abs(side) < p.w / 2 + 0.6 && Math.abs(c.y-(p.terrain?groundAt(c.x,c.z,p.y):p.y))<2) {
-          if (c.boost < 0.5) sound.turbo();
+          if (c.boost < 0.5) {sound.turbo();p.flash=1;padHit.value.set(p.x,p.z,t);}
           c.boost = Math.max(c.boost, 1.2);
         }
       }

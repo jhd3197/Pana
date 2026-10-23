@@ -10,7 +10,7 @@ try{
  await page.goto(`${base}/g/carreritas/?debug&manual&track=puerto`);await page.waitForFunction(()=>window.garage?.car,null,{timeout:90000});
  await menuStep(page,'track');
  assert.equal(await page.evaluate(()=>setup.laps),1,'Puerto starts as one adventure lap');
- assert.match(await page.locator('#track-blurb').textContent(),/3:00.*4:00.*1 vuelta/,'full-race estimate is visible before playing');
+ assert.match(await page.locator('#track-blurb').textContent(),/3:15.*4:15.*1 vuelta/,'full-race estimate is visible before playing');
  await menuClick(page,'[data-laps="3"]');assert.equal(await page.evaluate(()=>setup.laps),3,'explicit lap choice remains available');
  assert.match(await page.locator('#track-blurb').textContent(),/3 vueltas/);
  await menuStep(page,'track');await page.locator('[data-circuit="estadio"]').click();
@@ -19,22 +19,26 @@ try{
  const metrics=await page.evaluate(async()=>{
   const {placeOnTrack}=await import('/g/carreritas/track-kit.js');await startRace(0);race.state='go';race.count=0;
   const T=getActiveTrack(),c=race.player,wrap=d=>Math.atan2(Math.sin(d),Math.cos(d));
-  function reset(s,speed=28){const p=placeOnTrack(T,s,0);Object.assign(c,{x:p.x,z:p.z,y:p.y,h:p.h,vx:Math.sin(p.h)*speed,vz:Math.cos(p.h)*speed,vf:speed,vr:0,vy:0,onGround:true,pitch:0,roll:0,pitchV:0,rollV:0,steer:0,boost:0,spin:0,coins:0,lap:1,prog:(s-T.LINE+T.TOTAL)%T.TOTAL,drift:0,driftHeld:false,cloud:0,stall:0,rescueT:0,stuckT:0,outT:0,phaseT:0});}
-  function drive(s,frames=360,speed=28){reset(s,speed);let previous=s,maxStep=0,minY=Infinity,maxY=-Infinity,maxOffset=0,maxAir=0,airTime=0;
+  function reset(s,speed=28,off=0,yaw=0){const p=placeOnTrack(T,s,off);p.h+=yaw;Object.assign(c,{x:p.x,z:p.z,y:p.y,h:p.h,vx:Math.sin(p.h)*speed,vz:Math.cos(p.h)*speed,vf:speed,vr:0,vy:0,onGround:true,pitch:0,roll:0,pitchV:0,rollV:0,steer:0,boost:0,spin:0,coins:0,lap:1,prog:(s-T.LINE+T.TOTAL)%T.TOTAL,drift:0,driftHeld:false,cloud:0,stall:0,rescueT:0,stuckT:0,outT:0,phaseT:0});}
+  function drive(s,frames=360,speed=28,off=0,yaw=0,coastAir=false){reset(s,speed,off,yaw);let firstLanding=null,launched=false;let previous=s,maxStep=0,minY=Infinity,maxY=-Infinity,maxOffset=0,maxAir=0,airTime=0;
     for(let i=0;i<frames;i++){
       const along=T.paramOf(c.x,c.z,c.y),aim=placeOnTrack(T,along+13+Math.abs(c.vf)*.18,0),diff=wrap(Math.atan2(aim.x-c.x,aim.z-c.z)-c.h);
-      stepCar(c,{throttle:1,steer:Math.max(-1,Math.min(1,diff*3))},1/60);
+      stepCar(c,{throttle:1,steer:coastAir&&!c.onGround?0:Math.max(-1,Math.min(1,diff*3))},1/60);
+      if(!c.onGround)launched=true;
+      else if(launched&&firstLanding===null)firstLanding={offset:Math.abs(T.offsetOf(c.x,c.z,c.y)),heightError:Math.abs(c.y-T.surfaceAt(c.x,c.z,c.y)),speed:Math.hypot(c.vx,c.vz)};
       const next=T.paramOf(c.x,c.z,c.y);maxStep=Math.max(maxStep,Math.abs(next-previous));previous=next;
       minY=Math.min(minY,c.y);maxY=Math.max(maxY,c.y);maxOffset=Math.max(maxOffset,Math.abs(T.offsetOf(c.x,c.z,c.y)));
       maxAir=Math.max(maxAir,c.y-T.groundAt(c.x,c.z,c.y));if(!c.onGround)airTime+=1/60;
-    }return {minY,maxY,maxOffset,maxStep,maxAir,airTime,end:previous,travel:previous-s,landed:c.onGround,speed:Math.hypot(c.vx,c.vz)};
+    }return {firstLanding,minY,maxY,maxOffset,maxStep,maxAir,airTime,end:previous,travel:previous-s,landed:c.onGround,speed:Math.hypot(c.vx,c.vz)};
   }
   const lower=T.paramOf(-50,-640,142.2),upper=T.paramOf(-50,-640,190.2);
   const low=drive(lower-45,180),high=drive(upper-45,180),jump=drive(T.ramps[0].s0-35,420,33);
   const slowJump=drive(T.ramps[0].s0-12,540,18);
   const r=T.ramps[0],entryGrade=r.h*r.profile(.001)/(.001*r.len);
+  const landings=[];
+  for(const speed of [22,32,42])for(const off of [-5,0,5])for(const yaw of [-.04,.04])landings.push({launchSpeed:speed,off,yaw,...drive(T.gaps[0].s0-3,540,speed,off,yaw,true)});
   const asphalt=drive(T.TOTAL*.19,240,0),mud=drive(T.TOTAL*.34,240,0);
-  return {lower,upper,low,high,jump,slowJump,entryGrade,asphalt,mud};
+  return {lower,upper,low,high,jump,slowJump,entryGrade,landings,asphalt,mud};
  });
  await writeFile(`${out}/driving.json`,JSON.stringify(metrics,null,2));console.log(JSON.stringify(metrics));
  assert.ok(Math.abs(metrics.upper-metrics.lower)>700);
@@ -46,5 +50,6 @@ try{
  assert.ok(metrics.jump.maxStep<2&&metrics.jump.maxOffset<6,'airborne progress stays continuous and lands inside the lane');
  assert.ok(metrics.entryGrade<.001,'ramp starts tangent to the road');
  assert.ok(metrics.slowJump.landed&&metrics.slowJump.travel>150&&metrics.slowJump.maxOffset<6,'slower approach clears and lands in the lane');
+ for(const run of metrics.landings)assert.ok(run.firstLanding&&run.firstLanding.offset<9&&run.firstLanding.heightError<.3,`natural landing ${JSON.stringify(run)}`);
  assert.ok(metrics.mud.speed<metrics.asphalt.speed,'mud changes actual driving response');assert.deepEqual(errors,[]);
 }finally{await browser.close();}

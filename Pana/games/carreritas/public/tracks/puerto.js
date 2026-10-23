@@ -20,8 +20,8 @@ export default {
   items:{padColor:'green',zoneModel:boostZone,boxes:[.045,.17,.28,.4,.52,.65,.71,.87,.95],boxLanes:[-6,-2,2,6],pads:[{u:.037,off:0,w:15,l:20,featured:true},{u:.09,off:0},{u:.26,off:-4},{u:.46,off:0},{u:.6,off:4},{u:.91,off:0}]},
   palette:{skySeed:71,cloudCover:.3,horizon:0xc3f1ec,skyTop:0x1592ee,halo:1,hemiSky:0xd2e6ff,hemiGround:0x7fae55,hemiInt:1.7,sun:0xffd79a,sunInt:2.6,ground:0x8cbc5c,track:0x736b78,dune:0,fog:[900,2900]},
   environment(T){
-    const lip=T.paramOf(-346,-1076,190.2),landing=T.paramOf(-420,-1148,170);
-    T.gaps=[{s0:lip,len:landing-lip-8}];
+    const lip=T.paramOf(-346,-1076,190.2);
+    T.gaps=[{s0:lip,len:28}];
     T.ramps=[{s0:lip-80,len:80,h:18,hw:11.3,followRoad:true,profile:t=>t*t*(2-t)}];
     T.tunnel={s0:T.paramOf(-560,60,-10),s1:T.paramOf(-570,318,-1)};
     const sites=townSites(T),group=new THREE.Group(),world=terrain(T,{bounds:[-760,-1250,600,510],base:baseHeight,step:4,
