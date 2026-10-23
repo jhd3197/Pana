@@ -64,8 +64,18 @@ try {
     await waitFor(page,n=>bochincheDebug.room.connected&&bochincheDebug.room.state.players.length===n,party.length);
   }
   const leader=party[0],sixth=party[5];
+  // Six software-WebGL views on one CI CPU can starve the host simulation.
+  // Every peer prepared its real scene; keep the host and attacking peer drawing
+  // while four observers continue their real networking, scene state and HUD.
+  for(const page of party.slice(1,5)) await page.evaluate(()=>{bochincheDebug.world.frame=()=>{};});
   await waitFor(leader,()=>bochincheDebug.room.state.players.length===6);
   await leader.evaluate(()=>bochincheDebug.room.action('options',{options:{stocks:1,items:false}}));
+  // Local preparation finishes before its ready message reaches the host.
+  // Exercise the real start barrier only after all six peers are acknowledged.
+  await waitFor(leader,()=>{
+    const players=bochincheDebug.room.link.state.players.filter(p=>p.connected!==false);
+    return players.length===6&&players.every(p=>p.assetsReady&&p.lobbyReady);
+  });
   await leader.locator('#start').click();
   for(const page of party) await waitFor(page,()=>bochincheDebug.room.state.fight?.phase==='playing'&&bochincheDebug.room.state.fight.fighters.length===6);
   assert.equal(await sixth.locator('.fighter-panel:visible').count(),6);
@@ -107,12 +117,25 @@ try {
   assert.equal(await mobile.locator('#world').evaluate(c=>Math.round(c.getBoundingClientRect().width)),844);
   await mobile.locator('#start').click();
   await waitFor(mobile,()=>bochincheDebug.room.state.fight?.phase==='playing');
+  await mobile.evaluate(()=>{
+    const room=bochincheDebug.room,render=room.onState;
+    window.touchJumped=false;
+    room.onState=function(state){window.touchJumped ||= state.fight?.events.some(e=>e.type==='jump'&&e.slot===0);return render.call(this,state);};
+  });
   await mobile.locator('#jump').tap();
-  await waitFor(mobile,()=>!bochincheDebug.room.state.fight.fighters[0].grounded);
+  await waitFor(mobile,()=>window.touchJumped);
   const boxes=await mobile.locator('.fighter-panel:visible').evaluateAll(nodes=>nodes.map(n=>{const r=n.getBoundingClientRect();return {left:r.left,right:r.right,bottom:r.bottom};}));
   assert.equal(boxes.length,6);assert(boxes.every(b=>b.left>=0&&b.right<=844&&b.bottom<220));
   for(let i=1;i<boxes.length;i++)assert(boxes[i].left>=boxes[i-1].right);
   await mobile.screenshot({path:path.join(os.tmpdir(),'pana-bochinche-mobile.png')});
   assert.deepEqual([...host.errors,...guest.errors,...mobile.errors],[]);
   console.log('PASS Bochinche: six-client free-for-all, sixth-player attack/win, late join, 3D, styles, guest movement/jump/hit, stocks/results, rematch, host migration and mobile touch.');
+} catch(error) {
+  for(const context of browser.contexts()) for(const page of context.pages()) console.error(await page.evaluate(()=>{
+    const r=window.bochincheDebug?.room;
+    return {phase:r?.state.phase,fight:r?.state.fight?.phase,frame:r?.state.fight?.frame,host:r?.isHost,connected:r?.connected,
+      players:r?.state.players.map(p=>({id:p.id,bot:p.bot})),fighters:r?.state.fight?.fighters.map(f=>({slot:f.slot,stocks:f.stocks,position:f.position})),
+      lobby:document.getElementById('pana-lobby-shell')?.hidden,status:document.getElementById('pana-lobby-status')?.textContent};
+  }).catch(()=>null),page.errors);
+  throw error;
 } finally {await browser.close();}

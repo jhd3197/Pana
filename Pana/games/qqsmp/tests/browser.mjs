@@ -40,7 +40,7 @@ try {
   await host.evaluate(() => { delete qqsmpDebug.room.step; });
 
   // Then both answer every question and bet on the final.
-  await waitFor(guest, () => qqsmpDebug.room.state.phase === 'reveal' && qqsmpDebug.room.state.reveal.done, undefined, 30_000);
+  await waitFor(guest, () => qqsmpDebug.room.state.phase === 'reveal' && qqsmpDebug.room.state.reveal.done);
   const copied = await guest.evaluate(() => qqsmpDebug.room.state.callouts.some(c => /Ana se copió de Bruno/.test(c.text)));
   assert.ok(copied, 'the reveal calls out who copied whom');
   for (const page of [host, guest]) {
