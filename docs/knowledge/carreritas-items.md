@@ -1,5 +1,21 @@
 # Carreritas vehicles, crates and combat
 
+## Wooden supply crates
+
+`pickup-art.js` builds the visible crate as one indexed mesh with normalized
+byte vertex colours. Its three-board sides, dark corner posts and four painted
+mango silhouettes share a single rough material; no textures or UV attributes are
+needed. Outlined fruit and green leaves replace the diagonal braces that hid tiny stamps.
+Crate clones share this geometry, including the trap's underlying crate.
+
+The separate fracture template has 19 boards/posts. Keep that template separate
+from the merged visible mesh so pickups still break and respawn independently.
+The item suite checks pickup, inventory, fragments, respawn and shared geometry.
+An isolated normal render changed from six draws / 326 triangles to one draw /
+320 triangles. Unique visible geometry buffers decreased from 22,170 to 17,796
+bytes (positions, normals, colour/index and former UV buffers counted). These
+are per-model costs, not a whole-map FPS or total-memory guarantee.
+
 ## Friends playtest: waves, pursuit and recovery
 
 - Aguacero rains on every rival, not only those ahead: the order frozen at

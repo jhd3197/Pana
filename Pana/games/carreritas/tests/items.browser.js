@@ -75,6 +75,17 @@ try {
   });
   for (const name of ['two', 'opening', 'fullIntact', 'broken', 'respawn', 'onePickup', 'coinRespawn', 'guardVisible', 'independent']) assert.ok(pickups[name], name);
   assert.equal(pickups.coins, 10); assert.equal(pickups.total, 12);
+  const crateCost=await page.evaluate(async()=>{
+    const {crateArt}=await import('./pickup-art.js'),art=crateArt(),meshes=[];
+    art.visual.traverse(o=>{if(o.isMesh)meshes.push(o);});
+    const stats={meshes:meshes.length,triangles:meshes.reduce((n,m)=>n+(m.geometry.index?.count??m.geometry.attributes.position.count)/3,0),
+      fragments:art.pieces.children.length,shared:race.items.boxes[0].m.children[0].geometry===race.items.boxes[1].m.children[0].geometry};
+    for(const m of [...meshes,...art.pieces.children])m.geometry.dispose();return stats;
+  });
+  assert.equal(crateCost.meshes,1,'crate colours and mango badges share one draw');
+  assert.ok(crateCost.triangles<326&&crateCost.fragments<26,'less geometry than the former crate');
+  assert.ok(crateCost.shared,'supply rows share crate geometry');
+  console.log(JSON.stringify({crateCost}));
 
   const combat = await page.evaluate(async () => {
     const { addItem } = await import('./item-rules.js');

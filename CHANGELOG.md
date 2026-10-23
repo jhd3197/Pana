@@ -8,6 +8,10 @@ becomes the GitHub release's notes.
 
 ## Unreleased
 
+- **Las cajas de objetos muestran un mango grande y claro por sus cuatro lados.**
+  Conservan la madera y su animación al romperse, con menos piezas y una sola
+  malla de colores compartida para reducir el trabajo de dibujo.
+
 - **Los carros se inclinan con la carretera desde el momento de colocarlos.**
   Las vistas de revisión y las posiciones de salida respetan la pendiente y
   el peralte sin necesitar que el carro avance primero.
