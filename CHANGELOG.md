@@ -8,6 +8,10 @@ becomes the GitHub release's notes.
 
 ## Unreleased
 
+- **Los carros se inclinan con la carretera desde el momento de colocarlos.**
+  Las vistas de revisión y las posiciones de salida respetan la pendiente y
+  el peralte sin necesitar que el carro avance primero.
+
 - **Bululú estrena laderas rocosas, luz de sol y una zona de turbo más visible.**
   Las cimas conservan su vegetación; las flechas verdes anuncian el impulso
   hacia el mirador y las líneas de velocidad acompañan la aceleración.

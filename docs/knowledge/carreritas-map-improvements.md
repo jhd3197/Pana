@@ -10,7 +10,16 @@ chapters before generalising the method to the catalogue.
 Record the starting revision, quality, viewport, seed and capture method. Read
 the actual route, terrain, crossfall, water and scenery contracts. Capture
 driver views across the whole lap and moving sequences through the proposed
-changes. A static pose does not demonstrate car roll or camera smoothing.
+changes. A static pose demonstrates alignment, but not how roll or camera
+smoothing respond during driving.
+
+Placement must initialise grounded pitch and roll from the same surface sampler
+as physics. Presentation-only audit ticks do not run the driving update: leaving
+the initial angles at zero produced level cars on banked-road screenshots even
+though moving cars leaned correctly. Clear stale angular velocities on placement
+and test the rendered car's up vector against the actual road triangle, including
+opposite banks and off-centre lanes. Capture pitch, roll and grounded state with
+the pose metadata so this mismatch is visible in evidence, not only screenshots.
 
 When studying video, record timestamps and sampling density. A coarse scan of
 the full duration is not continuous viewing. Inspect selected sequences at

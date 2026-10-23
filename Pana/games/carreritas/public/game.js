@@ -16,7 +16,7 @@ import { activeItem, canBlock, COIN_SPEED, MAX_COINS, AIMED, isJuiced } from './
 import { TRACKS, getTrack, makeTrack, loadTrack, loadTracks, trackLoaded } from './tracks.js';
 import { createMinimap, drawTrackPreview } from './route-map.js';
 import { createRaceWorld } from './race-world.js';
-import { createDriver, G } from './drive.js';
+import { createDriver, groundAttitude, G } from './drive.js';
 import { createRemoteCars } from './remote-cars.js';
 import { START_GHOST_TIME, RESCUE_GHOST_TIME, isGhost, recordImpact, stepProtection } from './recovery-rules.js';
 import { loadAvatar, loadName, randomAvatar } from '/engine/avatar.js';
@@ -728,6 +728,7 @@ function placeRacer(c, lane, row) {
     sectors: ALL_SECTORS, outT: 0, stuckT: 0, rescueT: 0, phaseT: 0, phaseRemote: false, impacts: [],
   });
   c.y = groundAt(c.x, c.z, T.heightAtS(s));
+  Object.assign(c,groundAttitude(c,T),{onGround:true,pitchV:0,rollV:0});
   c.prog = progressOf(c);
   c.safe = { s, off: lane, back: false };
 }
@@ -738,6 +739,7 @@ function placeAlong(c, s, backwards) {
   const tx = p2.x - p.x, tz = p2.y - p.y;
   Object.assign(c, { x: p.x, z: p.y, h: Math.atan2(tx, tz) + (backwards ? Math.PI : 0), reverse: backwards && !c.isPlayer });
   c.y = groundAt(c.x, c.z, T.heightAtS(s));
+  Object.assign(c,groundAttitude(c,T),{onGround:true,pitchV:0,rollV:0});
   c.prog = progressOf(c);
   c.safe = { s, off: 0, back: backwards };
 }

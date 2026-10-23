@@ -14,6 +14,18 @@ import { isGhost, recordImpact } from './recovery-rules.js';
 
 export const G = 30;   // cartoon gravity: snappy jumps
 
+// Shared by grounded driving and placement. A grid/audit pose has no physics
+// tick to settle its attitude; sample the same supporting surface immediately.
+export function groundAttitude(c,T){
+  const fx=Math.sin(c.h),fz=Math.cos(c.h),rx=Math.cos(c.h),rz=-Math.sin(c.h);
+  const height=(dx,dz)=>T.groundAt(c.x+dx,c.z+dz,c.y);
+  return {
+    pitch:-Math.atan2(height(fx,fz)-height(-fx,-fz),2),
+    roll:T.def.crossfall&&!c.boat&&!c.flyLift
+      ?THREE.MathUtils.clamp(Math.atan2(height(rx,rz)-height(-rx,-rz),2),-.35,.35):0,
+  };
+}
+
 // track(): the active track runtime. say, popPart, progressOf and flameFor are
 // game.js's; lines are the racers' speech lines; auto drives the player too.
 export function createDriver({ race, track, say, popPart, progressOf, flameFor, lines: LINES, auto: AUTO }) {
@@ -169,13 +181,11 @@ export function createDriver({ race, track, say, popPart, progressOf, flameFor, 
       if (g >= c.y - 0.08 || (followingTerrain && Math.abs(g - c.y) < 1.2)) {
         c.vy = (g - c.y) / dt;
         c.y = g;
-        const ahead = groundAt(c.x + fx, c.z + fz,c.y), behind = groundAt(c.x - fx, c.z - fz,c.y);
-        c.pitch += (-Math.atan2(ahead - behind, 2) - c.pitch) * Math.min(1, dt * 12);
+        const attitude=groundAttitude(c,T);
+        c.pitch += (attitude.pitch - c.pitch) * Math.min(1, dt * 12);
         // Existing crossfall supports both sides of the car, independently of
         // chase-camera roll. Keep boats, aircraft and flat/layered decks level.
-        const bank = T.def.crossfall && !c.boat && !c.flyLift
-          ? THREE.MathUtils.clamp(Math.atan2(groundAt(c.x-rx,c.z-rz,c.y)-groundAt(c.x+rx,c.z+rz,c.y),2),-.35,.35) : 0;
-        c.roll += (bank - c.roll) * Math.min(1, dt * 10);
+        c.roll += (attitude.roll - c.roll) * Math.min(1, dt * 10);
       } else {
         c.onGround = false;   // drove off the ramp lip: fly!
         c.airTime = 0;

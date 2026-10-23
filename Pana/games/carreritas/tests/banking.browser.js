@@ -9,6 +9,26 @@ try{
     const result=await page.evaluate(async id=>{
       toGarage();buildTrack(id);await startRace(0);race.state='audit';
       const T=getActiveTrack(),p=race.player;
+      if(id==='bululu'){
+        const THREE=await import('three'),road=T.group.getObjectByName('track-road'),placed=[];
+        const ray=new THREE.Raycaster(new THREE.Vector3(),new THREE.Vector3(0,-1,0));
+        for(const u of [.15,.28,.43,.52])for(const lane of [0,5]){
+          Object.assign(p,{pitch:.8,roll:-.8,pitchV:3,rollV:2,onGround:false,spin:0,driftYaw:0});
+          placeRacer(p,lane,(T.LINE-9-u*T.TOTAL)/8);
+          // Match the fixed screenshot path: presentation only, no stepCar.
+          for(let i=0;i<60;i++)presentRace(1/60);
+          race.scene.updateMatrixWorld(true);
+          ray.ray.origin.set(p.x,p.y+20,p.z);const hit=ray.intersectObject(road)[0];
+          if(!hit)throw Error('Placed racer has no road beneath it');
+          const normal=hit.face.normal.clone().applyNormalMatrix(new THREE.Matrix3().getNormalMatrix(road.matrixWorld));
+          if(normal.y<0)normal.negate(); // double-sided road triangles may wind downwards
+          const up=new THREE.Vector3(0,1,0).applyQuaternion(p.car.tumble.getWorldQuaternion(new THREE.Quaternion()));
+          const alignment=up.dot(normal);
+          if(alignment<.998||!p.onGround||p.pitchV!==0||p.rollV!==0)throw Error(`Placed car does not align with rendered road at ${u}/${lane}: ${alignment}`);
+          placed.push({u,lane,pitch:p.pitch,roll:p.roll,alignment});
+        }
+        console.log(JSON.stringify({placed}));
+      }
       if(id==='plaza'){
         const THREE=await import('three'),road=race.scene.getObjectByName('track-road');
         race.scene.updateMatrixWorld(true);

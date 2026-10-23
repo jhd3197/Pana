@@ -82,7 +82,7 @@ try {
           for(let i=0;i<7;i++){const start=performance.now();renderer.render(race.scene,race.camera);gl.finish();if(i>=2)samples.push(performance.now()-start);}
           samples.sort((a,b)=>a-b);
           return {image:renderer.domElement.toDataURL('image/jpeg',.85),u,
-            pose:{x:p.x,y:p.y,z:p.z,h:p.h},camera:{position:race.camera.position.toArray(),quaternion:race.camera.quaternion.toArray(),fov:race.camera.fov},
+            pose:{x:p.x,y:p.y,z:p.z,h:p.h,pitch:p.pitch,roll:p.roll,grounded:p.onGround},camera:{position:race.camera.position.toArray(),quaternion:race.camera.quaternion.toArray(),fov:race.camera.fov},
             clock:race.clock,drawCalls:renderer.info.render.calls,triangles:renderer.info.render.triangles,
             memory:{...renderer.info.memory},synchronousRenderMs:{median:samples[2],max:samples[4],samples:5}};
         },u);
@@ -105,7 +105,7 @@ try {
             renderer.render(race.scene,race.camera);
             const p=race.player;
             return {image:renderer.domElement.toDataURL('image/jpeg',.82),clock:race.clock,
-              pose:{x:p.x,y:p.y,z:p.z,h:p.h,speed:p.vf},
+              pose:{x:p.x,y:p.y,z:p.z,h:p.h,speed:p.vf,pitch:p.pitch,roll:p.roll,grounded:p.onGround},
               camera:{position:race.camera.position.toArray(),quaternion:race.camera.quaternion.toArray(),fov:race.camera.fov}};
           });
           const file=`motion-${String(frame).padStart(4,'0')}.jpg`;
