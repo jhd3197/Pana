@@ -137,7 +137,8 @@ fort.add(wallQuad([Q,Q],[TUN_W/2,Q],0,H,stoneMat));fort.add(wallQuad([-TUN_W/2,Q
 /* gate: tunnel block, stucco portal, open doors */
 {
   const tb=mesh(new THREE.ExtrudeGeometry(archBlockShape(TUN_W,H-0.1,TUN_A,TUN_S),{depth:TUN_D,bevelEnabled:false}),stoneMatW);tb.position.set(0,0,Q);fort.add(tb);
-  const vault=mesh(new THREE.CylinderGeometry(TUN_A/2-0.05,TUN_A/2-0.05,TUN_D,24,1,true,-PI/2,PI),M({color:0xcfc2a6,side:THREE.BackSide}),false);
+  // After the X rotation, the negative-Z half forms the ceiling above the spring.
+  const vault=mesh(new THREE.CylinderGeometry(TUN_A/2-0.05,TUN_A/2-0.05,TUN_D,24,1,true,PI/2,PI),M({color:0xcfc2a6,side:THREE.BackSide}),false);
   vault.rotation.x=PI/2;vault.position.set(0,TUN_S,Q+TUN_D/2);fort.add(vault);
   const pz=Q+TUN_D; // portal front starts here
   const portal=mesh(new THREE.ExtrudeGeometry(archBlockShape(34,H+3,TUN_A,TUN_S),{depth:4,bevelEnabled:false}),stuccoMat);portal.position.set(0,0,pz-1);fort.add(portal);

@@ -18,7 +18,9 @@ export function puertoHarbor(T) {
       // Open the quay slab around the descending approach and tunnel exits.
       for(let px=x-w/2;px<x+w/2;px+=10)for(let pz=z-d/2;pz<z+d/2;pz+=10){
         const cx=px+5,cz=pz+5,s=T.paramOf(cx,cz);
-        if(s<T.tunnel.s1+200&&Math.abs(T.offsetOf(cx,cz))<T.HW+12)continue;
+        // The descending approach straddles the route's zero seam.
+        // Testing only low s left a solid quay block across the late-lap entry.
+        if((s<T.tunnel.s1+200||s>T.TOTAL-180)&&Math.abs(T.offsetOf(cx,cz))<T.HW+12)continue;
         fixed.add(box(10,6,10,concrete,cx,top-3,cz));
       }
     }else{const deck=box(w,6,d,concrete,x,top-3,z);deck.name=name;group.add(deck);}

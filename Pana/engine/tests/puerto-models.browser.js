@@ -23,5 +23,15 @@ try {
     metrics.push(result);await page.screenshot({path:`${out}/${id}.png`});
     await page.evaluate(()=>{proof.preview.release(proof.model);proof.stage.renderer.renderLists.dispose();});
   }
+  const vault=await page.evaluate(async()=>{
+    const THREE=await import('three'),{sanCarlosFortress}=await import('/engine/models/props/san-carlos-fortress.js');
+    const model=sanCarlosFortress();model.updateMatrixWorld(true);let min=Infinity,max=-Infinity,count=0;
+    const colour=new THREE.Color(0xcfc2a6);
+    model.traverse(o=>{if(!o.isMesh||o.material.side!==THREE.BackSide)return;
+      const p=o.geometry.attributes.position,c=o.geometry.attributes.color,v=new THREE.Vector3();
+      for(let i=0;i<p.count;i++){if(!c||Math.abs(c.getX(i)-colour.r)+Math.abs(c.getY(i)-colour.g)+Math.abs(c.getZ(i)-colour.b)>.001)continue;v.fromBufferAttribute(p,i).applyMatrix4(o.matrixWorld);min=Math.min(min,v.y);max=Math.max(max,v.y);count++;}});
+    model.traverse(o=>o.geometry?.dispose());model.userData.dispose?.();return {min,max,count};
+  });
+  assert.ok(vault.count>0&&vault.min>=6.49&&vault.max>13.4,'gate vault stays above its spring, never bowls down into the entrance');
   await writeFile(`${out}/metrics.json`,JSON.stringify(metrics,null,2));console.log('Nine Puerto models: catalog previews, finite geometry, independent ownership, deterministic construction and budgets passed.');
 }finally{await browser.close();}

@@ -48,6 +48,15 @@ try {
       ray.ray.origin.set(x,y+3.3,z);const hit=ray.intersectObjects(decor,false)[0];if(T.terrainAt(x,z)>y+.3)blocked.push({s,off,y:T.terrainAt(x,z)-y,name:'terrain'});if(hit)blocked.push({s,off,y:hit.point.y-y,name:hit.object.name});
     }
     const harbor=group.getObjectByName('puerto-harbor'),town=group.getObjectByName('puerto-colonial-town'),tunnel=group.getObjectByName('puerto-harbor-tunnel');
+    // The entrance crosses the lap seam: inspect the complete car/camera envelope,
+    // including slabs higher than the old three-metre downward probe.
+    const entranceBlocks=[],entryRay=new THREE.Raycaster(new THREE.Vector3(),new THREE.Vector3(0,-1,0),0,8);
+    for(let s=T.TOTAL-150;s<T.TOTAL+T.tunnel.s0+20;s+=2)for(const off of [-8,0,8]){
+      const p=T.pointAt(s),q=T.pointAt(s+.1),h=Math.atan2(q.x-p.x,q.y-p.y),y=T.heightAtS(s);
+      entryRay.ray.origin.set(p.x-Math.cos(h)*off,y+8,p.y+Math.sin(h)*off);
+      const hit=entryRay.intersectObject(harbor,true).find(hit=>hit.point.y>y+.3);
+      if(hit)entranceBlocks.push({s,off,height:hit.point.y-y});
+    }
     const {TOWN_STREETS}=await import('/g/carreritas/tracks/puerto-layout.js'),{pathDistance}=await import('/g/carreritas/tracks/world-kit.js');
     const streets=TOWN_STREETS.map(pathDistance),orientations=[...new Set(town.userData.houses.map(h=>h.rot))];
     const frontages=town.userData.houses.map(h=>Math.min(...streets.map(d=>d(h.x+Math.sin(h.rot)*20,h.z+Math.cos(h.rot)*20))));
@@ -71,7 +80,7 @@ try {
       const hit=roofRay.intersectObject(tunnel,true)[0];
       if(!hit||hit.point.y-y<11.8||hit.point.y-y>13.2)roofGaps.push({s,off,height:hit?hit.point.y-y:null});
     }
-    return {...metrics,length:T.TOTAL,radius,grade,elevation:max-min,projection,protrusion,crossings,crossingClearance,blocked,drawCalls:renderer.info.render.calls,containers:harbor.userData.containerCount,containerWalls:harbor.userData.stacks.filter(s=>s.wall&&s.height>=4).length,siloClearance,roofGaps,tunnelLength:tunnel.userData.length,tunnelWindows:tunnel.userData.windows,houses:town.userData.houses.length,orientations,frontages,streetGrade,streetMinZ:Math.min(...TOWN_STREETS.flat().map(p=>p[1])),foundations,shipWaterline};
+    return {...metrics,entranceBlocks,length:T.TOTAL,radius,grade,elevation:max-min,projection,protrusion,crossings,crossingClearance,blocked,drawCalls:renderer.info.render.calls,containers:harbor.userData.containerCount,containerWalls:harbor.userData.stacks.filter(s=>s.wall&&s.height>=4).length,siloClearance,roofGaps,tunnelLength:tunnel.userData.length,tunnelWindows:tunnel.userData.windows,houses:town.userData.houses.length,orientations,frontages,streetGrade,streetMinZ:Math.min(...TOWN_STREETS.flat().map(p=>p[1])),foundations,shipWaterline};
   });
   console.log(JSON.stringify(result));await writeFile(`${out}/metrics.json`,JSON.stringify(result,null,2));
   await page.screenshot({path:`${out}/overview.png`});
@@ -98,6 +107,7 @@ try {
   assert.ok(result.streetGrade.value<.65,`town streets avoid steep cliffs: ${JSON.stringify(result.streetGrade)}`);
   assert.ok(result.containerWalls>=10&&result.siloClearance>11&&result.siloClearance<14,'full-height tunnel beneath the original silo bank');
   assert.ok(result.tunnelLength>300&&result.tunnelWindows>50,'substantial submerged tunnel with sea windows');
+  assert.deepEqual(result.entranceBlocks,[],'quay stays out of the full descending entrance across the lap seam');
   assert.deepEqual(result.roofGaps,[],'continuous tunnel roof across bends and slopes');
   // +200 k for the festive roadside (library trees, props, flocks).
   assert.ok(result.triangles<3400000&&result.drawCalls<900,'map rendering budget');

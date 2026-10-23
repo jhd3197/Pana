@@ -147,3 +147,24 @@ and mid-game actions, late arrivals, phone practice and independent disposal.
 Ignored evidence lives in `art/studio/puerto/`. The menu WebPs are
 illustrated art (see `images/menu/sources.json`), not captures.
 Local plan 75 stays ignored and untracked.
+
+## Tunnel entrance and presentation
+
+The quay opening includes both the low-s tunnel and the final 180 m before
+the route seam. Ignoring the late-lap approach leaves a concrete slab across
+the descent. The geometry suite probes the harbor across that seam at three
+lane offsets with eight metres of vertical clearance; the shorter general
+road probe missed this obstruction.
+
+The submerged corridor uses blue glazing on the sea-facing walls and exposed
+roof, cyan chamfered ribs every 12 m, and continuous low edge lights. Joined
+roof panes preserve shared boundary vertices. Ribs remain outside the driving
+envelope and above the tested roof clearance across the driving lanes. The
+green 15 by 20 m strip at u=.037 is a real boost pad using the existing item
+system and featured-zone model. Geometry is statically batched; there are no
+new dynamic lights, downloaded textures or bloom passes.
+
+San Carlos's half-cylinder vault uses the negative-Z half before its X rotation,
+placing the curved ceiling above the 6.5 m spring. The opposite half bent down
+into the gate. The native-model test checks the final baked vault vertices,
+which retain their identifying colour in the vertex-colour buffer.

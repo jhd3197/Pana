@@ -8,6 +8,13 @@ becomes the GitHub release's notes.
 
 ## Unreleased
 
+- **La Guaira abre su bajada al túnel y renueva el recorrido submarino.**
+  El muelle ya no cruza la entrada; cristales azules, arcos luminosos y una
+  franja verde de turbo acompañan la curva bajo el puerto.
+
+- **La entrada de San Carlos tiene su bóveda despejada.**
+  El techo curvo queda sobre el portón, sin atravesar el paso del castillo.
+
 - **Las cajas de objetos muestran un mango grande y claro por sus cuatro lados.**
   Conservan la madera y su animación al romperse, con menos piezas y una sola
   malla de colores compartida para reducir el trabajo de dibujo.

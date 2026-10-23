@@ -8,6 +8,7 @@ import { puertoHarbor } from './puerto-harbor.js';
 import { puertoTown } from './puerto-town.js';
 import { puertoFort } from './puerto-fort.js';
 import { puertoTunnel } from './puerto-tunnel.js';
+import { boostZone } from '../boost-zone.js';
 import { festive, meadow } from './festive.js';
 
 export default {
@@ -15,7 +16,7 @@ export default {
   gripAt:(x,z)=>roadStyle(x,z)==='mud' ? .76 : 1,
   previewBounds:[[-700,-26,-1250],[600,290,510]],walls:false,chevrons:true,
   sectors:[[0,'Túnel del puerto'],[.07,'Las tres grúas'],[.12,'Patio de contenedores'],[.17,'Casa Guipuzcoana'],[.29,'Camino de barro'],[.39,'Mirador del Caribe'],[.47,'Puerta de San Carlos'],[.53,'Rampa del patio'],[.57,'Vuelta a los baluartes'],[.75,'Salto del castillo'],[.86,'Bajada del pueblo']],
-  items:{boxes:[.045,.17,.28,.4,.52,.65,.71,.87,.95],boxLanes:[-6,-2,2,6],pads:[{u:.09,off:0},{u:.26,off:-4},{u:.46,off:0},{u:.6,off:4},{u:.91,off:0}]},
+  items:{padColor:'green',zoneModel:boostZone,boxes:[.045,.17,.28,.4,.52,.65,.71,.87,.95],boxLanes:[-6,-2,2,6],pads:[{u:.037,off:0,w:15,l:20,featured:true},{u:.09,off:0},{u:.26,off:-4},{u:.46,off:0},{u:.6,off:4},{u:.91,off:0}]},
   palette:{skySeed:71,cloudCover:.3,horizon:0xc3f1ec,skyTop:0x1592ee,halo:1,hemiSky:0xd2e6ff,hemiGround:0x7fae55,hemiInt:1.7,sun:0xffd79a,sunInt:2.6,ground:0x8cbc5c,track:0x736b78,dune:0,fog:[900,2900]},
   environment(T){
     const lip=T.paramOf(-346,-1076,190.2),landing=T.paramOf(-420,-1148,170);
