@@ -288,6 +288,9 @@ Baseline: rerunning ${failed.length} failure(s) on ${sha.slice(0, 7)} (merge-bas
         const verdict = !fs.existsSync(path.join(tree, r.label)) ? 'new suite' : out.status ? 'pre-existing' : 'REGRESSION';
         verdicts.set(r.label, verdict);
         console.log(`  ${verdict.padEnd(12)}  ${r.label}`);
+        // Preserve the actual baseline failure, not just its exit status: two
+        // different failures in one suite are not evidence of the same bug.
+        if (out.status) console.log((out.stdout + out.stderr).trim().split('\n').slice(-25).map(line => `      ${line}`).join('\n'));
       }
     } finally {
       // Unlink the junction first: removing the worktree must never reach the real node_modules.

@@ -108,7 +108,11 @@ jobs:
       - name: Suites for what changed
         env:
           CHANGED_BASE: ${{ inputs.changed_base || (github.event_name == 'pull_request' && format('origin/{0}', github.base_ref) || github.event.before) }}
-        run: node Pana/scripts/test-browser.js --jobs 1 --shard ${{ matrix.shard }}/8 --changed="$CHANGED_BASE"
+          COMPARE_BASELINE: ${{ github.event_name == 'workflow_dispatch' }}
+        run: |
+          baseline=()
+          if [ "$COMPARE_BASELINE" = "true" ]; then baseline=("--baseline=$CHANGED_BASE"); fi
+          node Pana/scripts/test-browser.js --jobs 1 --shard ${{ matrix.shard }}/8 --changed="$CHANGED_BASE" "${baseline[@]}"
       - name: Remember what passed
         if: always() && hashFiles('Pana/tests/.browser-passes.json') != ''
         uses: actions/cache/save@v4
