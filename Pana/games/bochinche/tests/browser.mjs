@@ -22,8 +22,15 @@ try {
   await waitFor(host,()=>[...bochincheDebug.room.inputs.values()].every(i=>!i.held.length));
   // Movement can reach a ledge under software-WebGL load; jump from solid ground.
   await host.evaluate(()=>{const f=bochincheDebug.room.game.combat.fighters[1];f.position={x:150,y:f.definition.size.height/2};f.velocity={x:0,y:0};f.state='idle';f.grounded=true;f.ledge=null;});
+  // Catch-up ticks may complete a whole jump before Playwright polls again.
+  // Record its authoritative event while keeping the real render callback.
+  await host.evaluate(()=>{
+    const room=bochincheDebug.room, render=room.onState;
+    window.guestJumped=false;
+    room.onState=function(state){window.guestJumped ||= state.fight?.events.some(e=>e.type==='jump'&&e.slot===1);return render.call(this,state);};
+  });
   await guest.keyboard.press('Space');
-  await waitFor(host,()=>!bochincheDebug.room.state.fight.fighters[1].grounded);
+  await waitFor(host,()=>window.guestJumped);
   // Let jump/release inputs settle before arranging the independent hit check.
   await waitFor(host,()=>bochincheDebug.room.state.fight.fighters[1].grounded && [...bochincheDebug.room.inputs.values()].every(i=>!i.held.length));
   // Place both within jab range, then exercise the guest's actual keyboard.
