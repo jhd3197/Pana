@@ -51,6 +51,25 @@ try {
   assert.ok(guard.step >= 1, 'slow frames step the resolution down');
   if (guard.dpr > 1) assert.ok(guard.after < guard.before, `pixel ratio dropped (${guard.before} → ${guard.after})`);
   assert.equal(guard.reset, 0, 'picking a quality starts again at full resolution');
+
+  // Voice budget: a burst of low-priority one-shots stays under the cap, and a
+  // high-priority voice still gets in by cutting the lowest-priority one short.
+  const voices = await page.evaluate(async () => {
+    const { sound } = await import('/engine/fx.js');
+    sound.unlock();
+    for (let i = 0; i < 40; i++) sound.tick(i);
+    const crowded = sound.liveVoices();
+    sound.tone(220, 0, 0.4, 'sine', 0.1, 5);
+    const afterHigh = sound.liveVoices();
+    const highIn = sound.voices.some(v => v.priority === 5);
+    sound.tone(330, 0, 0.1);   // default priority: no room for it now
+    return { crowded, afterHigh, highIn, afterLow: sound.liveVoices(), dropped: sound.dropped, max: sound.maxVoices };
+  });
+  assert.ok(voices.crowded <= voices.max, `40 ticks stay under the cap (${voices.crowded} ≤ ${voices.max})`);
+  assert.ok(voices.dropped >= 40 - voices.max, 'the overflow was refused');
+  assert.ok(voices.highIn, 'a high-priority voice bumps the lowest one');
+  assert.ok(voices.afterHigh <= voices.max, 'the cap still holds after the bump');
+  assert.equal(voices.afterLow, voices.afterHigh, 'a default voice is refused while full');
   assert.deepEqual(errors, []);
-  console.log('PASS fx: puffs pooled and fading; the frame-rate guard steps down and resets');
+  console.log('PASS fx: puffs pooled and fading; the frame-rate guard steps down and resets; the voice budget caps one-shots');
 } finally { await browser.close(); }

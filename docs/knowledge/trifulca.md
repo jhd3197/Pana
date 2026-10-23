@@ -106,13 +106,25 @@ wins and the titles are handed out.
 
 ## Scene notes
 
-- One fixed side camera looking down −Z, like a fighting game: the red corner
-  starts on the left and right on the stick is right on screen. A one-on-one
-  stays on a line (rules pull each body's z back to 0 at 2.2/s except while
-  dodging), so the camera never ends up behind a fighter; chasing the fight
-  axis did. The crowd never stands within `CROWD_GAP` (1.15 rad) of the camera
-  side, and NPC neighbours on that side hide during a fight. The ref waits
-  outside the ring, 1.05 rad off the far side, and walks the edge to count.
+- One fixed side camera, like a fighting game: the red corner starts on the
+  left and right on the stick is right on screen. A chooser scores the
+  candidate sides (`arena.camSides`, default +Z and −Z) by the fighters'
+  depth spread along the side, how far a fighter drifts toward the camera and
+  how far the camera position would overflow `camBox`, and only switches when
+  another side stays clearly better for 1.5 s — a one-on-one keeps the
+  default side (rules pull each body's z back to 0 at 2.2/s except while
+  dodging, so both sides tie), while trifulca libre and caídas that fling a
+  body outward can flip it. `world.cameraSide` exposes the choice. The crowd
+  never stands within `CROWD_GAP` (1.15 rad) of the camera side, and NPC
+  neighbours on that side hide during a fight. The ref waits outside the
+  ring, 1.05 rad off the far side, and walks the edge to count. Crowd panas
+  and neighbours face the fight's middle rather than the centre mark, idle on
+  their own seeded rhythm (`crowd-life.js`, deterministic across peers) and
+  the neighbours near a landed trompón or a caída gasp; hits stagger the
+  engine character toward the blow's side and cheer landings and get-ups
+  bounce it. Props and the toldo's ring wear ink outlines (`toon.js`,
+  inverted hulls on regular meshes only — SkinnedMesh bodies are skipped;
+  `?ink=0` disables).
 - A caída sits the pana down dazed (tilt 0.62 of the full flop) with a small
   dust puff and a short zoom; the count is drawn at the side, not over it.
 - The replay records every render frame for 6 s and, on a K.O. or a count,

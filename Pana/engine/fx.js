@@ -11,6 +11,9 @@ export const sound = {
   engine: null,
   master: null,
   musicBus: null,
+  maxVoices: 12,
+  voices: [],
+  dropped: 0,
 
   unlock() {
     if (!this.ctx) this.ctx = new (window.AudioContext || window.webkitAudioContext)();
@@ -47,11 +50,46 @@ export const sound = {
     if (this.master) this.master.gain.setTargetAtTime(this.volume, this.ctx.currentTime, 0.02);
   },
 
-  tone(freq, start, dur, type = 'square', vol = 0.12) {
+  // One-shots share a voice budget: past maxVoices sounding at once, a new one
+  // gets in only by outranking the lowest-priority live voice, which fades out
+  // early. Keeps a pileup of ticks and bonks from smearing into mud; music and
+  // the engine hum ride their own nodes and never count here.
+  liveVoices() {
+    const now = this.ctx ? this.ctx.currentTime : 0;
+    this.voices = this.voices.filter(v => v.until > now);
+    return this.voices.reduce((n, v) => n + (v.start <= now ? 1 : 0), 0);
+  },
+
+  // Returns a slot for the caller to fill with its gain nodes, null if refused.
+  admit(priority, start, until) {
+    if (this.liveVoices() >= this.maxVoices) {
+      let low = -1;
+      for (let i = 0; i < this.voices.length; i++) {
+        const v = this.voices[i];
+        if (v.start <= this.ctx.currentTime && (low < 0 || v.priority < this.voices[low].priority)) low = i;
+      }
+      if (low < 0 || priority <= this.voices[low].priority) { this.dropped++; return null; }
+      const old = this.voices.splice(low, 1)[0];
+      const now = this.ctx.currentTime;
+      for (const g of old.gs) {
+        g.gain.cancelScheduledValues(now);
+        g.gain.setTargetAtTime(0, now, 0.015);
+      }
+      this.dropped++;
+    }
+    const v = { priority, start, until, gs: [] };
+    this.voices.push(v);
+    return v;
+  },
+
+  tone(freq, start, dur, type = 'square', vol = 0.12, priority = 1) {
     if (!this.ctx || this.muted) return;
     const t = this.ctx.currentTime + start;
+    const v = this.admit(priority, t, t + dur);
+    if (!v) return;
     const o = this.ctx.createOscillator();
     const g = this.ctx.createGain();
+    v.gs.push(g);
     o.type = type;
     o.frequency.setValueAtTime(freq, t);
     g.gain.setValueAtTime(0, t);
@@ -63,15 +101,15 @@ export const sound = {
     o.stop(t + dur + 0.02);
   },
 
-  horn(kind) {
+  horn(kind, priority = 1) {
     if (kind === 'cucaracha') {
       // la cu-ca-ra-cha, la cu-ca-ra-cha
       const notes = [[392, 0.11], [392, 0.11], [392, 0.11], [523, 0.28], [659, 0.3],
         [392, 0.11], [392, 0.11], [392, 0.11], [523, 0.28], [659, 0.4]];
       let t = 0;
       for (const [f, d] of notes) {
-        this.tone(f, t, d * 0.92, 'square', 0.08);
-        this.tone(f * 1.26, t, d * 0.92, 'square', 0.04);
+        this.tone(f, t, d * 0.92, 'square', 0.08, priority);
+        this.tone(f * 1.26, t, d * 0.92, 'square', 0.04, priority);
         t += d;
       }
       return 1.9;
@@ -79,8 +117,8 @@ export const sound = {
     if (kind === 'grave') {
       // big truck horn: two long low blasts
       for (const t of [0, 0.42]) {
-        this.tone(175, t, 0.34, 'sawtooth', 0.09);
-        this.tone(220, t, 0.34, 'square', 0.05);
+        this.tone(175, t, 0.34, 'sawtooth', 0.09, priority);
+        this.tone(220, t, 0.34, 'square', 0.05, priority);
       }
       return 0.8;
     }
@@ -89,23 +127,25 @@ export const sound = {
       const notes = [[523, 0.1], [659, 0.1], [784, 0.1], [1047, 0.12], [784, 0.1], [1047, 0.32]];
       let t = 0;
       for (const [f, d] of notes) {
-        this.tone(f, t, d * 0.9, 'square', 0.07);
-        this.tone(f / 2, t, d * 0.9, 'triangle', 0.06);
+        this.tone(f, t, d * 0.9, 'square', 0.07, priority);
+        this.tone(f / 2, t, d * 0.9, 'triangle', 0.06, priority);
         t += d;
       }
       return 0.9;
     }
-    this.tone(640, 0, 0.13, 'square', 0.1);
-    this.tone(860, 0, 0.13, 'square', 0.06);
-    this.tone(640, 0.18, 0.16, 'square', 0.1);
-    this.tone(860, 0.18, 0.16, 'square', 0.06);
+    this.tone(640, 0, 0.13, 'square', 0.1, priority);
+    this.tone(860, 0, 0.13, 'square', 0.06, priority);
+    this.tone(640, 0.18, 0.16, 'square', 0.1, priority);
+    this.tone(860, 0.18, 0.16, 'square', 0.06, priority);
     return 0.4;
   },
 
-  bonk(power = 1) {
+  bonk(power = 1, priority = 1) {
     if (!this.ctx || this.muted) return;
     const t = this.ctx.currentTime;
     const len = 0.25;
+    const v = this.admit(priority, t, t + 0.32);
+    if (!v) return;
     const buf = this.ctx.createBuffer(1, this.ctx.sampleRate * len, this.ctx.sampleRate);
     const d = buf.getChannelData(0);
     for (let i = 0; i < d.length; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / d.length, 3);
@@ -117,10 +157,12 @@ export const sound = {
     const g = this.ctx.createGain();
     g.gain.value = Math.min(0.5, 0.15 * power);
     src.connect(f).connect(g).connect(this.out());
+    v.gs.push(g);
     src.start(t);
     // cartoon "boing" thump
     const o = this.ctx.createOscillator();
     const og = this.ctx.createGain();
+    v.gs.push(og);
     o.type = 'sine';
     o.frequency.setValueAtTime(220, t);
     o.frequency.exponentialRampToValueAtTime(60, t + 0.25);
@@ -131,11 +173,14 @@ export const sound = {
     o.stop(t + 0.32);
   },
 
-  boing() {
+  boing(priority = 1) {
     if (!this.ctx || this.muted) return;
     const t = this.ctx.currentTime;
+    const v = this.admit(priority, t, t + 0.32);
+    if (!v) return;
     const o = this.ctx.createOscillator();
     const g = this.ctx.createGain();
+    v.gs.push(g);
     o.type = 'triangle';
     o.frequency.setValueAtTime(180, t);
     o.frequency.exponentialRampToValueAtTime(520, t + 0.18);
@@ -147,11 +192,14 @@ export const sound = {
   },
 
   // a pitch glide: slide whistles, whooshes, turbos
-  sweep(f0, f1, dur, type = 'sine', vol = 0.1) {
+  sweep(f0, f1, dur, type = 'sine', vol = 0.1, priority = 1) {
     if (!this.ctx || this.muted) return;
     const t = this.ctx.currentTime;
+    const v = this.admit(priority, t, t + dur);
+    if (!v) return;
     const o = this.ctx.createOscillator();
     const g = this.ctx.createGain();
+    v.gs.push(g);
     o.type = type;
     o.frequency.setValueAtTime(f0, t);
     o.frequency.exponentialRampToValueAtTime(f1, t + dur);
@@ -177,15 +225,18 @@ export const sound = {
     this.tone(base, 0, 0.032, 'square', 0.045);
   },
   whoosh() { this.sweep(720, 150, 0.28, 'triangle', 0.14); },
-  skid(power = 1) {
+  skid(power = 1, priority = 1) {
     if (!this.ctx || this.muted) return;
     const t = this.ctx.currentTime, len = 0.18;
+    const v = this.admit(priority, t, t + len);
+    if (!v) return;
     const buf = this.ctx.createBuffer(1, Math.floor(this.ctx.sampleRate * len), this.ctx.sampleRate);
     const d = buf.getChannelData(0);
     for (let i = 0; i < d.length; i++) d[i] = (Math.random() * 2 - 1) * Math.sin(i * 0.18) * (1 - i / d.length);
     const src = this.ctx.createBufferSource(); src.buffer = buf;
     const f = this.ctx.createBiquadFilter(); f.type = 'bandpass'; f.frequency.value = 1450; f.Q.value = 3.5;
     const g = this.ctx.createGain(); g.gain.value = Math.min(0.18, 0.08 * power);
+    v.gs.push(g);
     src.connect(f).connect(g).connect(this.out());
     src.start(t);
   },
@@ -199,13 +250,16 @@ export const sound = {
     this.bonk(0.8);
     this.sweep(420, 70, 0.22, 'square', 0.06);
   },
-  explode(power = 1) {
+  explode(power = 1, priority = 1) {
     if (!this.ctx || this.muted) return;
     const t = this.ctx.currentTime;
+    const v = this.admit(priority, t, t + 0.7);
+    if (!v) return;
     // Step 1: sharp high-frequency transient CRACK!
-    this.sweep(1800, 220, 0.07, 'sawtooth', Math.min(0.28, 0.16 * power));
+    this.sweep(1800, 220, 0.07, 'sawtooth', Math.min(0.28, 0.16 * power), priority);
     // Step 2: deep sub-bass BOOM!
     const o = this.ctx.createOscillator(), og = this.ctx.createGain();
+    v.gs.push(og);
     o.type = 'sine';
     o.frequency.setValueAtTime(155, t + 0.015);
     o.frequency.exponentialRampToValueAtTime(28, t + 0.62);
@@ -221,12 +275,15 @@ export const sound = {
     const src = this.ctx.createBufferSource(); src.buffer = buf;
     const f = this.ctx.createBiquadFilter(); f.type = 'lowpass'; f.frequency.setValueAtTime(620, t); f.frequency.exponentialRampToValueAtTime(110, t + len);
     const g = this.ctx.createGain(); g.gain.value = Math.min(0.45, 0.22 * power);
+    v.gs.push(g);
     src.connect(f).connect(g).connect(this.out());
     src.start(t);
   },
-  thunder(power = 1) {
+  thunder(power = 1, priority = 1) {
     if (!this.ctx || this.muted) return;
     const t = this.ctx.currentTime, len = 1.25;
+    const v = this.admit(priority, t, t + len);
+    if (!v) return;
     const buf = this.ctx.createBuffer(1, Math.floor(this.ctx.sampleRate * len), this.ctx.sampleRate);
     const d = buf.getChannelData(0);
     for (let i = 0; i < d.length; i++) {
@@ -237,15 +294,16 @@ export const sound = {
     const src = this.ctx.createBufferSource(); src.buffer = buf;
     const f = this.ctx.createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = 260;
     const g = this.ctx.createGain(); g.gain.value = Math.min(0.38, 0.2 * power);
+    v.gs.push(g);
     src.connect(f).connect(g).connect(this.out());
     src.start(t);
-    this.sweep(110, 32, 0.85, 'triangle', Math.min(0.22, 0.12 * power));
+    this.sweep(110, 32, 0.85, 'triangle', Math.min(0.22, 0.12 * power), priority);
   },
-  chestOpen(rarity = 'gold') {
+  chestOpen(rarity = 'gold', priority = 1) {
     if (!this.ctx || this.muted) return;
     // Creak + thump + ascending rarity jingle
-    this.sweep(190, 340, 0.11, 'sawtooth', 0.05);
-    this.bonk(0.65);
+    this.sweep(190, 340, 0.11, 'sawtooth', 0.05, priority);
+    this.bonk(0.65, priority);
     const scales = {
       blue: [523, 659, 784],
       purple: [523, 659, 784, 1047],
@@ -254,8 +312,8 @@ export const sound = {
     const notes = scales[rarity] || scales.gold;
     notes.forEach((f, i) => {
       const last = i === notes.length - 1;
-      this.tone(f, 0.1 + i * 0.065, last ? 0.26 : 0.09, 'triangle', 0.09);
-      this.tone(f * 1.5, 0.1 + i * 0.065, last ? 0.22 : 0.07, 'sine', 0.04);
+      this.tone(f, 0.1 + i * 0.065, last ? 0.26 : 0.09, 'triangle', 0.09, priority);
+      this.tone(f * 1.5, 0.1 + i * 0.065, last ? 0.22 : 0.07, 'sine', 0.04, priority);
     });
   },
 

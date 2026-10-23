@@ -52,6 +52,39 @@ export function buildCharacter(input, { head = 0.58, seated = false, chef = fals
     sculpt.body.position.set(0, 0, 0); sculpt.body.rotation.set(0, 0, 0);
   };
   if (seated) poseSeat();
+  // Squash-and-stretch / wobble overlay, applied after every sculpt.update.
+  // sculpt.update rewrites body position/rotation and head rotation each frame,
+  // so additive offsets on those channels need no restore. It never touches
+  // body.scale or neck.rotation, so the overlay owns them: set absolutely while
+  // an impulse is live, restored to identity/zero the frame the impulse settles.
+  let squash = 0, squashVel = 0; // squash spring: positive displacement compresses the body
+  let rockAge = Infinity, rockPower = 0, rockDir = 0; // wobble envelope
+  const applyOverlay = dt => {
+    dt = Math.min(0.1, dt);
+    if (squash !== 0 || squashVel !== 0) {
+      squashVel += (-110 * squash - 10 * squashVel) * dt; // damped spring, semi-implicit Euler
+      squash += squashVel * dt;
+      if (Math.abs(squash) < 1e-4 && Math.abs(squashVel) < 1e-3) {
+        squash = 0; squashVel = 0; sculpt.body.scale.set(1, 1, 1);
+      } else {
+        const sy = Math.min(1.15, Math.max(0.75, 1 - squash));
+        const sxz = Math.min(1.15, 1 / Math.sqrt(sy)); // volume-preserving feel
+        sculpt.body.scale.set(sxz, sy, sxz);
+      }
+    }
+    if (rockAge < 1) {
+      rockAge += dt;
+      const envelope = Math.exp(-rockAge * 6); // settled after ~0.6s
+      if (envelope < 0.01) { rockAge = Infinity; sculpt.neck.rotation.z = 0; }
+      else {
+        const rock = Math.sin(rockAge * 20) * envelope * rockPower * 0.35;
+        const rz = rock * Math.cos(rockDir), rx = rock * Math.sin(rockDir);
+        sculpt.body.rotation.z += rz; sculpt.body.rotation.x += rx;
+        sculpt.head.rotation.z -= rz * 0.7; // head counter-rotation
+        sculpt.neck.rotation.z = -rz * 0.4;
+      }
+    }
+  };
   let disposed = false;
   const result = { ...sculpt, group, avatar,
     update(dt, state = {}) {
@@ -61,9 +94,15 @@ export function buildCharacter(input, { head = 0.58, seated = false, chef = fals
       const locomotion = !seated && ('walk' in state || 'carry' in state || state.pose);
       sculpt.update(dt, { ...state, pose: state.pose || (state.carry ? 'carry' : state.walk ? state.run ? 'run' : 'walk' : 'idle'), manualArms: !locomotion, manualBody: seated });
       if (seated) poseSeat();
+      applyOverlay(dt);
       stars.visible = !!state.dizzy; stars.rotation.y += Math.min(0.1, dt) * 6;
       if (state.dizzy) sculpt.eyes.forEach(eye => { eye.scale.y *= 0.45; });
     },
+    // Squash-and-stretch impulse: the body squashes, then springs back with a small overshoot.
+    bounce(strength = 1) { squashVel += 3.2 * Math.max(0, strength); },
+    // Wobble: spine and head rock around the vertical axis, decaying over ~0.6s.
+    // dir (radians) tilts the rock from the sideways axis towards forward.
+    stagger(power = 1, dir = 0) { rockAge = 0; rockPower = Math.min(1, Math.max(0, power)); rockDir = dir; },
     dispose() {
       if (disposed) return; disposed = true;
       const materials = new Set(), textures = new Set();

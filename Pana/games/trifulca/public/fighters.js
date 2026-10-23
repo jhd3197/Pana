@@ -9,6 +9,8 @@ import { normalizeAvatar } from '/engine/avatar.js';
 import { createAccessories } from '/engine/models/characters/pana/accessories.js';
 import { boxingGlove, CORNER_COLORS, HELMET_COLORS } from './set.js';
 import { T } from './fight-rules.js';
+import { rhythm } from './crowd-life.js';
+import { inkOutlines } from './toon.js';
 
 const SCULPT = .6;   // buildCharacter's sculpt scale: bones live in sculpt units
 const ease = (a, b, k) => a + (b - a) * k;
@@ -37,7 +39,7 @@ export function createPana(avatar, { seed = 1, name = '', me = false } = {}) {
   const arms = [character.armL, character.armR], base = arms.map(a => a.position.clone());
   const gloves = arms.map((arm, i) => {
     const glove = boxingGlove({ side: i ? -1 : 1 }); glove.scale.setScalar(1 / SCULPT);
-    glove.position.set(0, -.86, .04); glove.visible = false; arm.add(glove); return glove;
+    glove.position.set(0, -.86, .04); glove.visible = false; inkOutlines(glove); arm.add(glove); return glove;
   });
   // The wardrobe's kart helmet goes on to fight; the pana's own hat comes off.
   const ownHats = character.head.children.filter(o => o.name.startsWith('hat:'));
@@ -50,9 +52,10 @@ export function createPana(avatar, { seed = 1, name = '', me = false } = {}) {
   const tag = name ? nameTag(me ? `${name} · tú` : name, { me }) : null;
   if (tag) { tag.position.y = 2.6; root.add(tag); }
   let tagShown = true;
-  let corner = null, wobble = 0, wobbleV = 0, sway = 0, swayV = 0, spin = 0, time = 0, shove = 0, cheer = 0, twist = 0;
+  let corner = null, wobble = 0, wobbleV = 0, sway = 0, swayV = 0, spin = 0, time = 0, shove = 0, cheer = 0, cheerWas = 0, twist = 0;
   let recoil = 0, recoilV = 0, jolt = 0;
   const pose = arms.map(() => ({ rx: -.04, rz: 0, s: 1, z: 0 })), bounce = seed * 1.7;
+  const idle = rhythm(seed); // the crowd pana's own sway, seeded so peers agree
   // Each punch, block, taunt and win picks its own style when it starts, so
   // a fight is never the same move twice: jabs alternate hands as rectos,
   // ganchos or uppers, the trompón is a volado, an upper or a molino.
@@ -79,11 +82,13 @@ export function createPana(avatar, { seed = 1, name = '', me = false } = {}) {
   }
 
   // An impulse from a hit: the head snaps back, the body sways and twists
-  // away, a different way every time.
-  function hit(power = 1, spinning = false) {
+  // away, a different way every time. The engine character adds a decaying
+  // spine/head stagger toward the hit's side when it has one.
+  function hit(power = 1, spinning = false, dir = 0) {
     wobbleV -= (4 + Math.random() * 5) * power; swayV += (Math.random() - .5) * 7 * power;
     recoilV += (Math.random() < .5 ? -1 : 1) * (3 + Math.random() * 3) * power;
     if (spinning) spin = Math.PI * 2;
+    character.stagger?.(power, dir);
   }
   // A punch landing on the guard knocks the gloves back into the face.
   const blocked = () => { jolt = 1; wobbleV -= 2; };
@@ -103,6 +108,8 @@ export function createPana(avatar, { seed = 1, name = '', me = false } = {}) {
     recoilV += (-recoil * 70 - recoilV * 8) * dt; recoil += recoilV * dt;
     spin = Math.max(0, spin - dt * 14); jolt = Math.max(0, jolt - dt * 5);
     shove = Math.max(0, shove - dt); cheer = Math.max(0, cheer - dt);
+    if (cheer === 0 && cheerWas > 0) character.bounce?.(.7); // landing after the hop
+    cheerWas = cheer;
     const targets = armTargets(act, at, view);
     const k = 1 - Math.exp(-dt * (['jab', 'trompon', 'grab'].includes(act) ? 30 : 14));
     arms.forEach((arm, i) => {
@@ -155,6 +162,8 @@ export function createPana(avatar, { seed = 1, name = '', me = false } = {}) {
     if (act === 'down') { fall = .62; lift = .12; }
     if (act === 'rise') { fall = .62 * Math.max(0, 1 - at / (T.rise * .8)); lift = .12 * fall / .62; }
     if (act === 'crowd' && cheer > 0) crouch = Math.abs(Math.sin(time * 10)) * .12;
+    // Off-beat idle: each crowd pana sways and shifts weight on its own rhythm.
+    if (act === 'crowd' && cheer <= 0) { leanZ = Math.sin(time * idle.pace + idle.phase) * .045; leanX = Math.sin(time * idle.pace * .53 + idle.shift) * .03; }
     twist = ease(twist, twistTo, kb);
     b.rotation.y = twist + recoil * .12; b.rotation.x = ease(b.rotation.x, leanX, kb) + sway * .05;
     b.rotation.z = ease(b.rotation.z, leanZ, kb) + sway * .1;

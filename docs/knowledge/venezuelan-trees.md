@@ -51,6 +51,17 @@ map actually builds.
 
 ## Construction
 
+Araguaney and apamate use a species-owned `dressCrown` builder: folded two-triangle
+sprays distributed around and partway along the terminal branches, instead of
+solid ellipsoid cores. Far/game/lite/full use 45/80/100/160 sprays per tip.
+The far variants retain 24 tips and fit under 3,100 triangles per tree; the game
+variants fit under 6,000. They remain two opaque draws (bark and foliage), with
+no textures or per-frame buffer work. Flower colors, occasional green sprays
+and the all-green option share the foliage draw and its nature tag. Wind and
+Plaza bloom tint therefore use the same material path. Pine, bucare and the
+default crown builder are unchanged. `flowering-trees.browser.js` checks seed
+repeatability, finite geometry, tiers, toggles, grounding and these budgets.
+
 - One species is data: `skeleton(scale)` for `growSkeleton` (children per
   level, golden-angle spiral, crown envelope that stops limbs), `bark`,
   `foliage`, optional `blossom`, `fruit(parts, r, skeleton, scale, lite)` and

@@ -46,7 +46,7 @@ export default withSightlines({
     const cables=[[40,lower.position.y+11,130],[15,85,40],[-10,125,-125],[-35,station.position.y+11,-275]];
     for(const [x,y,z] of cables.slice(1,-1))put(group,cableTower(y-world.groundAt(x,z)),x,z,world.groundAt(x,z));
     const lift=aerialLift(cables);group.add(lift);
-    foundation(group,mountainCabin({seed:52}),-100,120,world.groundAt,{scale:1.8,radius:9,rotation:-.4});
+    const cabin=foundation(group,mountainCabin({seed:52}),-100,120,world.groundAt,{scale:1.8,radius:9,rotation:-.4});
     foundation(group,stoneLookout(),125,-145,world.groundAt,{scale:1.4,radius:8,rotation:1.2});
     for(const [x,z] of [[-190,110],[-205,135],[-175,145]])if(clear(T,x,z,8))foundation(group,mountainTent(),x,z,world.groundAt,{scale:1.6,radius:5,rotation:x});
     const details=new THREE.Group();details.name='paramo-library-details';group.add(details);
@@ -60,6 +60,10 @@ export default withSightlines({
       const cliff=put(details,rockyCliff({seed:54+i,width:12,height:7,depth:4}),p.x,p.z,foot-.2,p.rot);
       cliff.userData.assetId='rocky-cliff';cliff.userData.footprintRadius=8;
     }
+    // Opt in only terrain, rocks and the cabin's opaque surfaces. Water,
+    // cable-car machinery, signs and untagged plant fruit retain their finish.
+    const snowy = [world.land, cabin, ...group.children.filter(o=>o.name==='paramo-rocks')];
+    for(const root of snowy)root.traverse(o=>{if(o.isMesh&&!o.material?.transparent)o.userData.snowSurface=true;});
     return {group,groundAt:world.groundAt,update:t=>{lift.userData.tick(t);lake.userData.tick(t);heritage?.userData.tick(t);}};
   },
   scenery(group,kit,T){

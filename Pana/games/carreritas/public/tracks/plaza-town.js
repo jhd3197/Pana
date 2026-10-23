@@ -26,6 +26,7 @@ import { iceCreamCart } from '/engine/models/props/ice-cream-cart.js';
 import { fruitDeliveryTruck } from '/engine/models/props/fruit-delivery-truck.js';
 import { laundryCourtyard } from '/engine/models/props/laundry-courtyard.js';
 import { streetMural } from '/engine/models/props/street-mural.js';
+import { plazaBloom } from './plaza-bloom.js';
 
 const COLORS=[0xedaf3f,0x35b4aa,0xeb7658,0x8ab34f,0xf2d38b,0x459fc6];
 const PAVING=0xd2bd95, ROAD=0x8b958c;
@@ -232,4 +233,5 @@ export function raceEdges(group,kit,T) {
     plants:[['trinitaria',14,[0,8],.8],['hibiscus',20],['bromeliad',30,[0,5]]],
     birds:[{kind:'macaw',flocks:2,size:4}],
     vista:{shape:'hill',radius:820,hills:24,height:[90,200],colors:[0x6fb86a,0x58a878,0x84c46a],balloons:6}});
+  plazaBloom(group);
 }

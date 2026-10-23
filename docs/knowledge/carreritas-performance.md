@@ -1,5 +1,47 @@
 # Garage and race loading
 
+## Staged GPU preparation
+
+`public/prepare-race.js` loads on race entry, keeping the garage's static graph
+at its existing cap. It decodes and uploads textures needed by the starting
+camera(s) or their sun-shadow casters, yields after an upload batch exceeds 6 ms,
+compiles the scene's shader variants, and warms visible geometry in batches of
+48 renderable objects. The final complete frame precedes the countdown. Progress
+labels describe those real stages; image failures retain the renderer fallback.
+
+Warming an entire circuit's offscreen forest increased cold loading in the
+initial experiment. Only the starting views and shadow casters belong on this
+critical path. A renderer-scoped WeakMap reuses preparation of unchanged objects
+on replay; material versions, replaced geometry and shadow-quality changes
+invalidate it. This does not promise that an individual large upload fits 6 ms
+or remove CPU stalls during world/car construction.
+
+Partial draws use layer masks rather than visibility: a mesh can parent another
+mesh, and hiding the parent would skip its children. Preserve hidden ancestors,
+restore masks/culling/scissor/shadow flags in `finally`, and restore everything
+before yielding. Cancellation can dispose racers or begin another load during
+any yield. Recheck cancellation after image decoding and shader compilation.
+The shared `engine/game-load.js` and garage preparation remain unchanged.
+
+The approach was informed by `billpwchan/sakura-fantasy`'s `src/main.js`
+warmup (reference commit `3d367e92331b70118cfaa728dc7b8bc4bb4da009`), adapted
+to Pana's Three.js r160, cancellation, split views and existing quality controls.
+No upstream renderer-private APIs or asset dependencies are used.
+
+`tests/snow-loading.browser.js` exercises real GPU preparation, cancellation,
+renderer failure, hidden objects, distant geometry exclusion and replay reuse.
+`tests/loading.browser.js` retains the full menu/retry/map lifecycle proof.
+
+An isolated local comparison used headless Chromium, 1280 × 800, Baja and the
+same snow-enabled Páramo scene, replacing only the preparation function with
+the former compile-and-single-render sequence. Cold total loading was 6.48 s
+for the single draw and 6.91 s for staged preparation; replay was 2.87 s and
+3.09 s. The final render-call CPU duration fell from 337 ms to 10 ms (replay:
+290 ms to 8 ms). These are single-run diagnostics of a smoother reveal, not
+GPU-completion timings, sustained FPS, or a total-loading speedup. The upload
+batches still contain occasional long tasks, and scene construction remains
+the largest uninterrupted work.
+
 ## First load and the frame loop
 
 Opening Carreritas loads 153 modules, down from 287: maps load on demand

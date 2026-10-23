@@ -44,7 +44,8 @@ export function createAmbientLife(routes = {}, { seed = 7 } = {}) {
   }
   const walkers = (routes.walks || []).slice(0, low ? 2 : 4).map((points, i) => {
     const pana = buildCharacter(randomAvatar(random)); group.add(pana.group);
-    return { pana, points, total: length(points), offset: random() * 100, speed: WALK_SPEED * (.85 + random() * .3) };
+    const total = length(points), offset = random() * 100, speed = WALK_SPEED * (.85 + random() * .3);
+    return { pana, points, total, offset, speed, leg: Math.floor(offset * speed / total) };
   });
   const birds = routes.sky ? Array.from({ length: low ? 1 : 2 }, (_, i) => { const b = scarletMacaw({ seed: seed + i }); b.scale.setScalar(.8); group.add(b); return { b, phase: i * 2.3 }; }) : [];
   function update(t, dt = 0) {
@@ -62,7 +63,8 @@ export function createAmbientLife(routes = {}, { seed = 7 } = {}) {
       }
     }
     for (const w of walkers) {
-      const d = (t + w.offset) * w.speed, lap = Math.floor(d / w.total) % 2, p = along(w.points, w.total, d);
+      const d = (t + w.offset) * w.speed, leg = Math.floor(d / w.total), lap = leg % 2, p = along(w.points, w.total, d);
+      if (leg !== w.leg) { w.leg = leg; w.pana.bounce(0.3); } // small hop when a route leg turns around
       w.pana.group.position.set(p.x, 0, p.z);
       w.pana.group.rotation.y = Math.atan2(lap ? -p.dx : p.dx, lap ? -p.dz : p.dz);
       w.pana.update(dt, { walk: 1 });

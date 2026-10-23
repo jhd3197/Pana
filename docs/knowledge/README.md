@@ -13,6 +13,7 @@ Written by whoever learned the lesson, human or AI, for whoever comes next.
 | Starting a game | `AGENTS.md`, then `.\dev.ps1 new-game <id> -Kind table\|live` (`Pana/scripts/templates/`) |
 | Hub and launcher | `launcher.md` |
 | Shared UI and look | `pana-kit.md` (kit, results, icons, colours, touch), `pana-ui.md` (menu, settings, invites); NPC barks come from `Pana/engine/play/frases.js` (dichos by mood, seeded `pickLine`, `crude` lines opt-in) and show in `engine/play/seat-bubbles.js` |
+| Sound and music | `fx.md` (SFX voice budget), `music.md` (songs) |
 | Online rooms | `pana-net.md` (room kit, `TableRoom`, `LiveRoom`), `carreritas-online.md` |
 | Who starts a table game | `quien-empieza.md` (the shared cacho mini game, its room option and flavours) |
 | Characters | `character-reference.md` |

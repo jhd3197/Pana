@@ -15,9 +15,11 @@ export function applyRaceQuality(renderer, race, quality) {
     shadow.needsUpdate = true;
   }
   race.rain?.lines.geometry.setDrawRange(0,q.rain*2);
+  if (race.rain?.snow) race.rain.snow.geometry.instanceCount = q.rain;
   race.trackGroup?.traverse(o => {
     if (o.userData.detailLevel != null) o.visible = o.userData.detailLevel <= q.detail;
     if (o.userData.grassField) o.count = q.detail === 2 ? o.userData.grassField.full : q.detail === 1 ? o.userData.grassField.medium : 0;
+    if (o.userData.petalField) o.geometry.instanceCount = q.detail === 2 ? o.userData.petalField.full : q.detail === 1 ? o.userData.petalField.medium : 0;
     for (const material of [].concat(o.material || [])) {
       if (material.userData.roadDetail) material.userData.roadDetail.value = q.detail / 2;
       if (material.userData.natureDetail) material.userData.natureDetail.value = q.detail;

@@ -8,7 +8,7 @@ export function natureStyle(id, seed = 73) {
   const random = rng(seed);
   const dry = ['llanos', 'desierto', 'salinas'].includes(id) ? 0.8 : id === 'selva' || id === 'delta' ? 0.12 : 0.4;
   return {
-    seed, offset: [random() * 300, random() * 100, random() * 300], dry,
+    seed, offset: [random() * 300, random() * 100, random() * 300], dry, snow: id === 'paramo',
     patch: id === 'estadio' ? 0.13 : id === 'llanos' ? 0.038 : 0.065,
     blade: id === 'estadio' ? 3.4 : id === 'paramo' ? 1.4 : 2.2,
   };
@@ -98,7 +98,7 @@ if (natureDetail > 0.0 && vNatureSurface > 0.001) {
 // keeps both the original cliff/wind hook and independent live quality uniforms
 // when Studio takes ownership of a preview's materials.
 class NatureMaterial extends THREE.MeshStandardMaterial {
-  constructor(source, style) {
+  constructor(source, style, snowAmount) {
     super();
     if (!source) return;
     super.copy(source);
@@ -106,6 +106,8 @@ class NatureMaterial extends THREE.MeshStandardMaterial {
     this.baseKey = source.customProgramCacheKey();
     this.style = structuredClone(style);
     this.userData.natureDetail = { value: 2 };
+    if (style.snow) this.userData.snowAmount = snowAmount;
+    if (style.bloom) this.userData.bloomTime = { value: 0 };
   }
   copy(source) {
     super.copy(source);
@@ -114,7 +116,7 @@ class NatureMaterial extends THREE.MeshStandardMaterial {
     this.style = structuredClone(source.style);
     return this;
   }
-  customProgramCacheKey() { return `${this.baseKey}|carreritas-nature-v1`; }
+  customProgramCacheKey() { return `${this.baseKey}|carreritas-nature-v3:${!!this.style?.tagged}:${!!this.style?.snow}:${!!this.style?.snowSurface}:${!!this.style?.bloom}`; }
   onBeforeCompile(shader, renderer) {
     this.baseCompile.call(this, shader, renderer);
     Object.assign(shader.uniforms, {
@@ -122,7 +124,7 @@ class NatureMaterial extends THREE.MeshStandardMaterial {
       natureOffset: { value: new THREE.Vector3(...this.style.offset) },
       naturePatch: { value: this.style.patch }, natureDry: { value: this.style.dry }, natureBlade: { value: this.style.blade },
     });
-    shader.vertexShader = `attribute float natureSurface;\nvarying float vNatureSurface;\nvarying vec3 vNaturePoint;\n${shader.vertexShader}`
+    shader.vertexShader = `${this.style.tagged ? 'attribute float natureSurface;' : ''}\nvarying float vNatureSurface;\nvarying vec3 vNaturePoint;\n${shader.vertexShader}`
       .replace('#include <project_vertex>', `#include <project_vertex>
         // Rest positions keep the pattern attached while the existing wind
         // deforms the vertex. Instance transforms still vary adjacent trees.
@@ -131,20 +133,58 @@ class NatureMaterial extends THREE.MeshStandardMaterial {
           naturePosition = instanceMatrix * naturePosition;
         #endif
         vNaturePoint = (modelMatrix * naturePosition).xyz;
-        vNatureSurface = natureSurface * 3.0;`);
+        vNatureSurface = ${this.style.tagged ? 'natureSurface * 3.0' : '0.0'};`);
     shader.fragmentShader = functions + shader.fragmentShader;
     shader.fragmentShader = shader.fragmentShader.replace('#include <color_fragment>', `#include <color_fragment>\n${shading}`);
+    if (this.style.bloom) {
+      shader.uniforms.bloomTime = this.userData.bloomTime;
+      shader.fragmentShader = `uniform float bloomTime;\n${shader.fragmentShader}`;
+      shader.fragmentShader = shader.fragmentShader.replace('#include <emissivemap_fragment>', `#include <emissivemap_fragment>
+        // Only opted-in flowering crowns: existing green leaves, bark and fruit
+        // keep their colors. Rest-space patches turn at different moments.
+        if (natureDetail > 0.0 && vNatureSurface > 1.5 && vNatureSurface < 2.5) {
+          float flower = smoothstep(1.12, 1.4, diffuseColor.r / max(diffuseColor.g, 0.001));
+          float bloom = 0.56 + 0.44 * cos(bloomTime * 0.034906585);
+          float bloomPatch = natureNoise((vNaturePoint + natureOffset) * 0.7);
+          float green = smoothstep(bloom - 0.16, bloom + 0.16, bloomPatch);
+          vec3 leaf = vec3(0.19, 0.37, 0.075) * (0.65 + max(diffuseColor.r, diffuseColor.g) * 0.65);
+          diffuseColor.rgb = mix(diffuseColor.rgb, leaf, green * flower);
+        }`);
+    }
+    if (this.style.snow) {
+      shader.uniforms.natureSnow = this.userData.snowAmount;
+      shader.fragmentShader = `uniform float natureSnow;\n${shader.fragmentShader}`;
+      // Use the lit surface normal (including instances and wind), not abs(y):
+      // undersides remain bare. Untagged fruit/trim in mixed batches stays bare.
+      shader.fragmentShader = shader.fragmentShader.replace('#include <emissivemap_fragment>', `#include <emissivemap_fragment>
+        if (natureDetail > 0.0 && ${this.style.snowSurface ? 'true' : 'vNatureSurface > 0.001'}) {
+          float snowUp = inverseTransformDirection(normal, viewMatrix).y;
+          float snowNoise = natureNoise((vNaturePoint + natureOffset) * 0.36);
+          float altitude = mix(0.35, 1.0, smoothstep(30.0, 150.0, vNaturePoint.y));
+          float settled = clamp(natureSnow, 0.0, 1.0) * altitude;
+          float snowCover = smoothstep(0.48 - settled * 0.22, 0.92 - settled * 0.18, snowUp + (snowNoise - 0.5) * 0.32)
+            * smoothstep(0.0, 0.65, settled + (snowNoise - 0.5) * 0.22) * smoothstep(0.0, 0.1, settled);
+          diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.83, 0.89, 0.96), snowCover);
+          roughnessFactor = mix(roughnessFactor, 0.88, snowCover);
+        }`);
+    }
   }
 }
 
 export function applyNatureMaterials(group, id, seed) {
   const style = natureStyle(id, seed), materials = new Map();
+  const snowAmount = { value: 0.28 };
+  if (style.snow) group.userData.snowAmount = snowAmount;
   group.traverse(o => {
-    if (!o.geometry?.attributes.natureSurface || !o.material) return;
+    const tagged = !!o.geometry?.attributes.natureSurface;
+    const snowSurface = style.snow && !!o.userData.snowSurface;
+    const bloom = id === 'plaza' && !!o.userData.bloom;
+    if ((!tagged && !snowSurface) || !o.material) return;
     const own = source => {
       if (!source.isMeshStandardMaterial || source.userData.natureDetail) return source;
-      if (!materials.has(source)) materials.set(source, new NatureMaterial(source, style));
-      return materials.get(source);
+      const key = `${source.uuid}:${tagged}:${snowSurface}:${bloom}`;
+      if (!materials.has(key)) materials.set(key, new NatureMaterial(source, { ...style, tagged, snowSurface, bloom }, snowAmount));
+      return materials.get(key);
     };
     o.material = Array.isArray(o.material) ? o.material.map(own) : own(o.material);
   });

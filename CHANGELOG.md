@@ -8,6 +8,40 @@ becomes the GitHub release's notes.
 
 ## Unreleased
 
+- **En Trifulca el público sigue la pelea y celebra contigo.**
+  Los panas del ring y los vecinos voltean hacia los golpes, se echan pa'
+  trás con los trompones y saltan al final; cada quien se mece a su propio
+  ritmo. Los golpes tambalean al que los recibe y los guantes, el toldo y
+  los props se ven con borde de tinta (`?ink=0` lo apaga). La cámara de TV
+  escoge sola el mejor lado cuando un peleador sale volando.
+
+- **Los panas se achatan y se mecen como caricatura.**
+  El personaje compartido tiene un resorte de squash and stretch:
+  `bounce()` para aterrizajes y celebraciones, `stagger()` para tambaleos.
+  Los caminantes del mundo ya lo usan al doblar; los juegos lo activan por
+  evento, sin cambios para quien no lo llame.
+
+- **Los sonidos ya no se montan unos encima de otros.**
+  Hay un cupo de voces con prioridades en el bus de efectos: en los
+  momentos cargados se oyen los golpes y la campana que importan en vez de
+  doce ruidos a la vez. La música no se toca.
+
+- **Los araguaneys y apamates tienen copas más abiertas y flores más finas.**
+  Las ramas se ven entre racimos irregulares; los árboles de la carretera
+  usan menos triángulos, sin texturas ni llamadas de dibujo adicionales.
+
+- **Los araguaneys y apamates de Plaza cambian de floración y sueltan pétalos.**
+  Las copas de la carretera alternan flores y verde por parches; los pétalos
+  caen desde cada árbol en calidad media y alta, también en pantalla dividida.
+
+- **Carreritas prepara los gráficos por etapas antes de la salida.**
+  Las texturas y el paisaje inicial se suben en tandas mientras la pantalla
+  de carga sigue respondiendo; las repeticiones reutilizan la preparación.
+
+- **En el Páramo caen copos que flotan con el viento y se asienta la nieve.**
+  La nieve cubre gradualmente las caras superiores del terreno, la vegetación,
+  las rocas y la cabaña; los copos se adaptan a cada cámara y nivel de calidad.
+
 - **El salto de San Carlos recibe el carro sobre la carretera.**
   La recepción empieza antes y sigue la dirección de salida antes de doblar;
   el hueco más corto evita caer al terreno debajo de la pista.

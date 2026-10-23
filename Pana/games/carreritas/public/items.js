@@ -481,7 +481,7 @@ export function createItems(hooks) {
     // A soaked rival drips; your own soaking is the rain on the screen.
     if (c.cloud > 0 && Math.random() < 0.35) puffs.spawn(new THREE.Vector3(c.x + rand(-1.4, 1.4), c.y + 2.2, c.z + rand(-1.4, 1.4)),
       { color: 0x7cc4ff, count: 1, size: 0.18, rise: -9, life: 0.4, spread: 0.2 });
-    if (c.isPlayer && !c.remote && rain) rain.lines.visible = c.cloud > 0 || !!T.def.rain;
+    if (c.isPlayer && !c.remote && rain) rain.lines.visible = c.cloud > 0 || (!!T.def.rain && T.id !== 'paramo');
   }
 
   function syncHeld(c) {

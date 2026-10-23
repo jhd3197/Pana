@@ -20,6 +20,8 @@ try {
   assert.deepEqual(await guest.evaluate(() => trifulcaDebug.room.state.bodies.map(b => b.id).sort()), await host.evaluate(() => trifulcaDebug.room.state.players.map(p => p.id).sort()));
   await host.evaluate(() => { trifulcaDebug.room.game.time = .05; });
   await waitFor(guest, () => trifulcaDebug.room.state.phase === 'fight');
+  // The side chooser keeps the default side while a 1v1 stays on its line.
+  assert.equal(await guest.evaluate(() => trifulcaDebug.world.cameraSide), 0, 'a 1v1 keeps the default camera side');
   const body = () => trifulcaDebug.room.state.bodies.find(b => b.id === trifulcaDebug.room.id);
   const start = await guest.evaluate(body);
   await guest.locator('#world').click({ position: { x: 640, y: 400 } });

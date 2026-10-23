@@ -1,5 +1,74 @@
 # Procedural grass and tree surfaces
 
+## Plaza flowering crowns and petals
+
+`tracks/plaza-bloom.js` opts only the existing `festive-araguaney` and
+`festive-apamate` instanced crowns into a cosmetic 180-second bloom cycle.
+`nature-material.js` blends their authored flower colors toward green in
+rest-space patches. The foliage tag plus explicit mesh opt-in exclude bark,
+fruit, other plant species and buildings; original green leaves keep their
+colors. It changes no geometry, opacity or shadow silhouette, and retains the
+factory wind hook. This is a stylized flowering cycle, not a calendar or a
+four-season climate applied to Venezuela.
+
+Petals originate at those same instance placements. One instanced draw holds
+36 quads per tree on Alta, 12 on Media, none on Baja; interleaved seeds preserve
+every emitter when reducing the count. Baja also bypasses the bloom tint.
+Shaders handle drift, tumble, fall/reset, near-camera and distance fades. No
+textures, tree clones or per-frame vertex-buffer uploads are needed. Bounds
+include the emitter heights and drift so loading, Studio framing and frustum
+culling see the field's real extent. Petals fade above the base rather than
+accumulating on the road; they have no collision or gameplay effect.
+
+The field's registered scenery tick writes absolute race time to the live crown
+and petal materials, including Studio-owned clones. Pause/rewind/replay therefore
+do not integrate a second clock. New tracks own new fields, and the existing
+track teardown releases geometry and an idempotent material disposer. The
+first-load graph stays unchanged because only Plaza imports this effect.
+
+Concept references: the patchwise crown coloring in `sakura-fantasy`'s
+`src/world/trees.js` and instanced fallers in `src/fx/fx.js`, commit
+`3d367e92331b70118cfaa728dc7b8bc4bb4da009`. The implementation uses Pana's own
+geometry, palette, shaders and r160 pipeline; no upstream assets are imported.
+`tests/bloom.browser.js` checks rendered transition/rewind pixels, falling
+petals, low-tier bypass, static buffers, stable shader count, clone ownership,
+live split/mirror cameras and disposal on track replacement.
+
+## Páramo snowfall and settled coverage
+
+`public/race-world.js#createSnow` draws seeded, camera-facing snow quads in one
+instanced draw, with wind/flutter and fades at the volume boundary and near the
+lens. The shader uses each draw's `cameraPosition`, so split-screen players each
+see flakes around their own camera. Only absolute race time changes; vertex and
+instance buffers stay static. Quality selects 280/700/1,400 flakes. Páramo's
+ordinary rain lines are disabled, but the Aguacero item can still enable them.
+
+Páramo's nature materials share `group.userData.snowAmount`. Coverage starts at
+0.28 and approaches 0.72 with a 45-second exponential time constant, derived
+from absolute race time. Rewinding/replaying resets it deterministically; pause
+does not advance it. This is cosmetic coverage, not snow depth or a traction
+change. The shader favors higher elevations and upward-facing normals, with
+broad noise breaking up the boundary. Media/Alta show it; Baja keeps the authored
+surface colors while retaining falling flakes.
+
+Existing nature tags admit grass/leaves/bark and exclude untagged fruit/trim in
+mixed batches. `paramo.js` additionally opts terrain, rocks and the cabin's
+opaque surfaces in through `userData.snowSurface`. Roads, water, avatars,
+cable-car machinery and signs are outside that opt-in. Materials with no nature
+attribute compile a constant zero tag rather than requiring a new vertex buffer.
+Snow changes color/roughness in existing draws, with no textures or triangles.
+It is a normal/altitude mask, not a roof-occlusion or physical deposition model.
+
+The material's clone contract preserves the snow shader and gives Studio its
+own uniform. Studio previews the initial settled state; live accumulation is
+owned by the race. `tests/snow-loading.browser.js` verifies rendered coverage,
+return to authored low-quality pixels, stable shader count, clone independence,
+time rewind, quality counts, split/mirror, mobile layout and track replacement.
+
+Concept references: `billpwchan/sakura-fantasy`'s `src/fx/fx.js` and
+`src/core/shared.js` at `3d367e92331b70118cfaa728dc7b8bc4bb4da009`.
+The Pana shaders retain its procedural surfaces and Three.js r160 pipeline.
+
 Carreritas's thirteen circuits opt into seeded surface detail at the end of
 `track-runtime.js` construction. Studio's circuit previews use the same build.
 Other games and standalone model previews keep their existing materials.

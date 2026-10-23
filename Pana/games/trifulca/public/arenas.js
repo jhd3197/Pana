@@ -26,6 +26,7 @@ import { rng } from '/engine/random.js';
 import { Puffs } from '/engine/fx.js';
 import { disposeModel } from '/engine/models/props/game-table.js';
 import { tentRing, avilaRidge, RING } from './set.js';
+import { inkOutlines } from './toon.js';
 
 const COLORS = [0xf2a65a, 0x7cc6a4, 0xf28bb0, 0xffd166, 0x8ecae6, 0xe76f51, 0xb5a1e0, 0xf4e285];
 const STYLES = ['balcon', 'terraza', 'tienda', 'balcon', 'tejas', 'terraza'];
@@ -219,7 +220,7 @@ function buildToldo(ctx) {
   const { group, random } = ctx;
   ground(group, 120, 120, 0xd9b48a);
   ground(group, 34, 34, 0xe7d3b3, .02);
-  const ring = tentRing({ seed: 3 }); group.add(ring); ctx.ropes = ring.getObjectByName('ropes');
+  const ring = tentRing({ seed: 3 }); inkOutlines(ring, { only: m => m.userData.ink }); group.add(ring); ctx.ropes = ring.getObjectByName('ropes');
   ctx.floor = RING.floor; ctx.camHeight = 2.5;
   ring.getObjectByName('lamps')?.children.forEach(l => { const p = new THREE.Vector3(); l.getWorldPosition(p); ctx.lamps.push(p); });
   const avila = avilaRidge({ width: 300, height: 52, depth: 70 }); avila.position.set(0, 0, -62); group.add(avila);

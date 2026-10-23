@@ -982,14 +982,12 @@ async function startRace(playerIndex, wheelId = garage.wheel, roster = null) {
     race.ended = false;
     race.paid = false;
     race.earned = 0; race.rewardDetail = null; race.lapRecord = false;
-    if (!await step('Todo listo. ¡A correr!', 0.9)) return;
+    if (!await step('Preparando los gráficos…', 0.81)) return;
     renderer.toneMapping = THREE.NoToneMapping;
     updateRace(0);
-    await renderer.compileAsync(race.scene, race.camera);
+    const { prepareRace } = await import('./prepare-race.js');
     if (generation !== loadGeneration) return;
-    // Upload geometry and draw once behind the loading panel. The countdown
-    // starts only after this first frame, never while compilation is running.
-    renderer.render(race.scene, race.camera);
+    if (!await prepareRace(renderer, race.scene, race.p2 ? [race.camera, race.camera2] : race.camera, step)) return;
     await screensReady; if (generation !== loadGeneration) return;
     $('loading').classList.add('hidden'); $('garage').classList.add('hidden');
     await race.screens.prepare(race.cars, race.player, T, AUTO || (roster && net.state.startAt > 0)); if (generation !== loadGeneration) return;
@@ -1694,7 +1692,7 @@ function presentRace(dt) {
   followCam(race.camera, 'camPos', p, playerInput(1).look, dt);
   if (race.p2) followCam(race.camera2, 'camPos2', race.p2, playerInput(2).look, dt);
   const fx = Math.sin(p.h), fz = Math.cos(p.h);
-  if (race.rain.lines.visible) race.rain.update(p.x + fx * 10, p.y, p.z + fz * 10, race.clock, dt);
+  if (race.rain.lines.visible || race.rain.snow.visible) race.rain.update(p.x + fx * 10, p.y, p.z + fz * 10, race.clock, dt);
   const sunlight=T.def.drivingEffects?T.def.palette?.sunDirection:null;
   race.sun.position.set(p.x+(sunlight?.x??-.6)*50,p.y+(sunlight?.y??.8)*50,p.z+(sunlight?.z??.5)*50);
   race.sun.target.position.set(p.x, p.y, p.z);
