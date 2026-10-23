@@ -485,7 +485,7 @@ export function makeTrack(def) {
     }
     for (const r of T.ramps) {
       const along = (s - r.s0 + T.TOTAL) % T.TOTAL;
-      if (along <= r.len && Math.abs(off) < r.hw) return base + r.h * along / r.len;
+      if (along <= r.len && Math.abs(off) < r.hw) return base + r.h * (r.profile ? r.profile(along / r.len) : along / r.len);
     }
     return base;
   };

@@ -43,18 +43,25 @@ export function puertoHarbor(T) {
   const cargo=Array.from({length:6},()=>[]),colors=[0xc9553e,0x398c99,0xdfb647,0x496f8f,0xe2dbbf,0x779465];
   let n=0;
   const stacks=[];
-  function stack(x,z,height,rot=Math.PI/2,scale=1.45,wall=false){
+  function stack(x,z,height,rot=Math.PI/2,scale=1.45,wall=false,palette=null){
     if(!clear(T,x,z,11))return;
-    for(let i=0;i<height;i++)cargo[(Math.imul(n+7,13)+i*5+Math.floor(n/5))%6].push({x,z,y:top+i*2.65*scale,rot,scale});
+    for(let i=0;i<height;i++)cargo[palette?palette[i%palette.length]:(Math.imul(n+7,13)+i*5+Math.floor(n/5))%6].push({x,z,y:top+i*2.65*scale,rot,scale});
     placements.push({asset:'shipping-container',x,z,y:top,radius:10});
     stacks.push({x,z,height,scale,wall});n++;
   }
   for(const x of [-421,-401,-381,-331,-311,-291,-241,-221,-201])
     for(const z of [95,99.5,104,145,149.5,154,195,199.5,204,245,249.5,254])
       stack(x,z,3+Math.floor(n/3)%3);
-  for(const x of [-590,-530])for(const z of [45,65,145,165,185,205])stack(x,z,4+n%2,0,1.5,true);
-  // Layered cargo shoulders frame the tunnel opening without closing its view.
-  for(const x of [-610,-590,-530,-510])for(const z of [35,55,85])stack(x,z,3+((Math.abs(x)+z)%3),0,1.5,true);
+  // Separate shipping lots: a tall west block, low east handling apron and
+  // a deeper east stack. Aligned boxes, deliberately unequal silhouettes.
+  for(const [x,z,height,palette] of [
+    [-610,35,4,[4,4,5,5]],[-590,45,3,[5,5,4]],[-610,55,5,[5,5,4,4,4]],
+    [-590,65,2,[0,0]],[-610,85,3,[4,5,5]],[-590,145,4,[0,0,3,3]],
+    [-590,165,4,[0,0,3,3]],[-590,205,2,[4,4]],
+    [-530,35,1,[1]],[-510,55,2,[1,1]],[-530,85,2,[2,2]],
+    [-510,145,5,[3,3,1,1,4]],[-530,165,3,[1,1,4]],
+    [-510,185,4,[3,3,1,4]],[-530,205,2,[2,2]],
+  ])stack(x,z,height,0,1.5,true,palette);
   for(const z of [90,110,130,150,170,190,210])stack(-121,z,4+n%2,0,1.5,true);
   const cargoDisposers=[];
   cargo.forEach((list,i)=>{const model=shippingContainer({color:colors[i]});cargoDisposers.push(model.userData.dispose);instances(group,model,list,`puerto-containers-${i}`,240);});

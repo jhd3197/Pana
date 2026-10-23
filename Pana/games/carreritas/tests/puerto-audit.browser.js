@@ -34,8 +34,15 @@ try{
       if(ray.intersectObjects(lights,false).length)lampHits.push({s,off});
     }
     const floodlights=harbor.userData.floodlights,floodlightViolations=floodlights.filter(p=>Math.abs(T.offsetOf(p.x,p.z))<T.HW+p.radius+4);
-    return {floodlights,floodlightViolations,lampMeshes:lights.length,lampCount:town.userData.lamps.length,lampViolations,lampHits,buriedSigns,hiddenSigns,signCount:tunnel.userData.wallSigns.length,propCount:props.length,strayProps,states,loadClearance:Math.abs(T.offsetOf(load.position.x,load.position.z)),boatCount:boats.length};
+    const cannon=group.getObjectByName('fort-launch-cannon'),cannonHits=[];
+    for(let s=T.ramps[0].s0;s<T.gaps[0].s0;s+=1)for(const off of [-10,-8,0,8,10]){
+      const p=T.pointAt(s),q=T.pointAt(s+.1),h=Math.atan2(q.x-p.x,q.y-p.y),x=p.x-Math.cos(h)*off,z=p.y+Math.sin(h)*off;
+      const y=T.groundAt(x,z,T.heightAtS(s));ray.set(new THREE.Vector3(x,y+8,z),new THREE.Vector3(0,-1,0));ray.far=7.8;
+      if(ray.intersectObject(cannon,true).length)cannonHits.push({s,off});
+    }
+    return {cannonHits,floodlights,floodlightViolations,lampMeshes:lights.length,lampCount:town.userData.lamps.length,lampViolations,lampHits,buriedSigns,hiddenSigns,signCount:tunnel.userData.wallSigns.length,propCount:props.length,strayProps,states,loadClearance:Math.abs(T.offsetOf(load.position.x,load.position.z)),boatCount:boats.length};
   });
+  assert.deepEqual(result.cannonHits,[],'cannon clears driving lanes and camera height');
   await mkdir('art/map-audit',{recursive:true});
   await writeFile('art/map-audit/puerto-clearance.json',JSON.stringify(result,null,2));
   console.log(JSON.stringify(result));

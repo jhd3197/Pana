@@ -8,6 +8,15 @@ becomes the GitHub release's notes.
 
 ## Unreleased
 
+- **San Carlos te lanza por un cañón gigante hacia la bajada.**
+  La rampa baja de altura, alarga su entrada y alinea sus barandas con la pendiente;
+  el cañón abierto, sus luces y las flechas marcan el despegue y la recepción.
+  La garita que atravesaba el salto deja libre el corredor de vuelo.
+  Los lotes de contenedores junto al túnel tienen alturas y espacios distintos.
+
+- **La carrera deja la carretera libre de instrucciones permanentes.**
+  La guía completa de teclado y mando sigue disponible en el menú de pausa.
+
 - **La Guaira despeja la salida y coloca sus flechas dentro del túnel.**
   Los letreros se montan sobre la cara visible de la pared; los objetos para
   romper quedan en tramos del pueblo y las torres de luz salen de la carretera.

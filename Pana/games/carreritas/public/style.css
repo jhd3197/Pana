@@ -520,3 +520,6 @@ body:has(#loading:not(.hidden)) #garage { visibility: hidden; }
 
 .mode-trophy { display: inline-block; width: 9px; height: 9px; margin-left: 5px; border-radius: 50%; background: var(--trophy); vertical-align: middle; }
 .mode-legacy { display: block; color: var(--pk-muted); font-size: 9px; }
+
+/* Full input reference belongs in the shared pause menu, not over the road. */
+body:has(#race:not(.hidden)) .pana-pad-prompts, #race .keys, #race .p2-keys { display: none !important; }

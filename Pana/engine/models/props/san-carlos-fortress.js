@@ -186,7 +186,8 @@ function garita(){const g=new THREE.Group();
   const door=mesh(new THREE.ShapeGeometry(archShape(0.6,1.05)),darkMat,false);door.position.set(0,0.25,-0.81);door.rotation.y=PI;g.add(door);
   g.scale.setScalar(3.4);return g;}
 for(const k of [0,2,3]){const tip=outline[k*5+2],d=new THREE.Vector2(tip[0],tip[1]).normalize();
-  const g=garita();g.position.set(tip[0]-d.x*1.7,H+2.4,tip[1]-d.y*1.7);g.rotation.y=Math.atan2(d.x,d.y);fort.add(g);}
+  const g=garita();g.position.set(tip[0]-d.x*1.7,H+2.4,tip[1]-d.y*1.7);g.rotation.y=Math.atan2(d.x,d.y);
+  if(clearance(g.position.x*scale,g.position.z*scale,(H+7)*heightScale,3.4*scale))fort.add(g);}
 
 /* courtyard: casemate arches, ruins, well, plants */
 function archDoor(w,h){const g=new THREE.Group();

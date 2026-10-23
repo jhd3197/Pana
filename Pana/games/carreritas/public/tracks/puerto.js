@@ -22,7 +22,7 @@ export default {
   environment(T){
     const lip=T.paramOf(-346,-1076,190.2),landing=T.paramOf(-420,-1148,170);
     T.gaps=[{s0:lip,len:landing-lip-8}];
-    T.ramps=[{s0:lip-55,len:55,h:35,hw:11.3,followRoad:true}];
+    T.ramps=[{s0:lip-80,len:80,h:18,hw:11.3,followRoad:true,profile:t=>t*t*(2-t)}];
     T.tunnel={s0:T.paramOf(-560,60,-10),s1:T.paramOf(-570,318,-1)};
     const sites=townSites(T),group=new THREE.Group(),world=terrain(T,{bounds:[-760,-1250,600,510],base:baseHeight,step:4,
       cut:(x,z,h)=>{

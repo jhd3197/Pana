@@ -9,8 +9,8 @@ grade of .383. It remains a standalone circuit in `cup-definitions.js`.
 The route passes through a 355 m submerged tunnel under the original silo bank, through three gantry cranes,
 along the waterfront and up the mud road. It enters San Carlos at courtyard
 level, climbs a viaduct, circles the battlements, jumps out northwest and
-descends through town. `puerto-harbor.js` places 499 containers in instanced
-cargo blocks and 15 taller walls, plus cranes, warehouses, boats and a ship.
+descends through town. `puerto-harbor.js` places containers in instanced
+cargo blocks and authored approach lots, plus cranes, warehouses, boats and a ship.
 `puerto-town.js` uses 70 houses from the existing six colonial families. Closed
 blocks have frontages in all four directions, shops, interior gardens, laundry
 patios and sidewalks. A connected civic plaza holds the kiosks and bus stop.
@@ -78,10 +78,10 @@ and caps have actual openings where the route exits; hiding props alone does
 not clear that geometry. The mountain approach stays outside the broader bastion.
 
 `T.gaps` removes the road ribbon across the castle exit and makes `groundAt`
-return terrain there. The 55 m ramp rises 35 m above its base and follows the
+return terrain there. The 80 m ramp rises 18 m above its base and follows the
 curve across the road width. Terrain is cut below the gap, and road furniture
-skips it. The ramp is intentionally steeper than the .4 limit for ordinary
-road grades. Keep the lip, gap and landing together when moving the route.
+skips it. Its cubic rise t²(2−t) starts tangent to the road; both the road support
+and rendered mesh evaluate the same optional ramp profile. Keep the lip, gap and landing together when moving the route.
 Never test airborne clearance against the missing road's interpolated surface.
 
 ## Placement traps
@@ -137,8 +137,8 @@ Carreritas, Caída, Dominó and Póquer browser suites for gameplay regressions,
 
 Geometry proof checks radius/grade/projection, both decks, five lanes against
 actual scenery, foundations, street-facing entrances, the tunnel roof and ship waterline. Budgets
-remain 3.2 million scene triangles and 900 overview draws, not an FPS promise.
-The current full overview uses 3,080,394 triangles and 888 draws.
+remain 3.4 million scene triangles and 900 overview draws, not an FPS promise.
+The current full overview uses 2,686,636 triangles and 877 draws.
 Driving proof exercises both crossing levels, mud response and a moving jump
 with a landing. The general maps suite completes three laps and collects each
 item row. Native table proof uses two clients, host migration, rejected guest
@@ -197,6 +197,33 @@ The four large harbor floodlight towers are a separate asset from the town's
 inside the road bend; a sparse lane ray can miss their thin poles. Placement
 now reserves the complete four-metre light-head radius against the road and
 container stacks. Accepted tower coordinates are recorded on the harbor and
-tested independently. The tunnel approach has 46 additional instanced cargo
-containers in layered stacks, increasing the harbor count from 499 to 545
-while preserving the tunnel's central sightline and existing road setback.
+tested independently. The tunnel approach uses authored cargo lots with unequal heights and open
+handling lanes, preserving its central sightline and existing road setback.
+
+
+## Castle jump presentation
+
+The launch ramp reuses the native fortress stone material with metre-scaled UVs.
+Curbs and parapet caps connect adjacent route samples in three dimensions rather
+than stacking horizontal boxes up a slope. Painted chevrons conform to the ramp
+and mark the landing road beyond the gap. The underlying gap and route remain
+unchanged. Driving proof covers normal and slower approaches, landing within the
+lane, continuous progress and a near-zero ramp entry grade.
+
+The tunnel entrance uses unequal cargo lots: a taller west block, a low east
+handling apron, and taller stacks deeper on the east. Colour runs group cargo
+by lot rather than alternating every box. Native container instancing and full
+road/floodlight clearance remain in use.
+
+
+The final ramp section passes through an open fortress cannon, built locally
+for the track. Its 32-segment bore, reinforcing hoops, carriage and guide lamps
+use shared materials without dynamic lights or textures. Orient its local +Z
+with yaw then pitch (YXZ); a minimal +Z-to-tangent quaternion can roll the bore
+on this heading and push its side into the road. The audit rays five lanes over
+the ramp to eight metres above the surface. Cars retain normal steering and
+ballistic flight; the barrel does not teleport or capture them.
+
+Native fortress garitas now consult the existing clearance callback with their
+full footprint. The race excludes the tower crossing the jump corridor; default
+Studio/table construction still retains every tower.

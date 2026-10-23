@@ -31,8 +31,10 @@ try{
   }
   const lower=T.paramOf(-50,-640,142.2),upper=T.paramOf(-50,-640,190.2);
   const low=drive(lower-45,180),high=drive(upper-45,180),jump=drive(T.ramps[0].s0-35,420,33);
+  const slowJump=drive(T.ramps[0].s0-12,540,18);
+  const r=T.ramps[0],entryGrade=r.h*r.profile(.001)/(.001*r.len);
   const asphalt=drive(T.TOTAL*.19,240,0),mud=drive(T.TOTAL*.34,240,0);
-  return {lower,upper,low,high,jump,asphalt,mud};
+  return {lower,upper,low,high,jump,slowJump,entryGrade,asphalt,mud};
  });
  await writeFile(`${out}/driving.json`,JSON.stringify(metrics,null,2));console.log(JSON.stringify(metrics));
  assert.ok(Math.abs(metrics.upper-metrics.lower)>700);
@@ -42,5 +44,7 @@ try{
  }
  assert.ok(metrics.jump.airTime>.3&&metrics.jump.maxAir>3,'castle exit launches a moving kart');assert.ok(metrics.jump.landed&&metrics.jump.travel>150,'jump lands and continues');
  assert.ok(metrics.jump.maxStep<2&&metrics.jump.maxOffset<6,'airborne progress stays continuous and lands inside the lane');
+ assert.ok(metrics.entryGrade<.001,'ramp starts tangent to the road');
+ assert.ok(metrics.slowJump.landed&&metrics.slowJump.travel>150&&metrics.slowJump.maxOffset<6,'slower approach clears and lands in the lane');
  assert.ok(metrics.mud.speed<metrics.asphalt.speed,'mud changes actual driving response');assert.deepEqual(errors,[]);
 }finally{await browser.close();}
