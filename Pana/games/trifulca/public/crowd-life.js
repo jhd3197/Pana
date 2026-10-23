@@ -42,6 +42,6 @@ export function animateNpc(npc, dt, time, mid) {
   life.yaw += (want - life.yaw) * (1 - Math.exp(-dt * life.rate));
   life.gasp = Math.max(0, life.gasp - dt * 2.4);
   npc.neck.rotation.y = life.yaw;
-  npc.neck.rotation.x -= life.gasp * .5;
-  npc.neck.rotation.z += Math.sin(time * life.idle.pace + life.idle.phase) * .06;
+  npc.neck.rotation.x = -life.gasp * .5;
+  npc.neck.rotation.z = Math.sin(time * life.idle.pace + life.idle.phase) * .06;
 }

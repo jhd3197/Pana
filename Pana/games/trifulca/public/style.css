@@ -152,3 +152,7 @@ body[data-phase="intro"] .role { bottom: 150px; }
 .tutorial-foot { display: flex; gap: 8px; justify-content: space-between; align-items: center; }
 @media (pointer: coarse) { .keys { display: none; } .tutorial { top: auto; bottom: 200px; right: 12px; } .prompt { font-size: 26px; top: 48%; } }
 @media (max-width: 700px) { .tutorial { top: auto; bottom: 200px; } }
+
+/* One control guide for the active device. */
+html[data-pana-input="gamepad"] #keys { display: none; }
+body:has(#bars:not([hidden])) .connection { display: none; }

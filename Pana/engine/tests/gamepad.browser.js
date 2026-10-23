@@ -61,6 +61,17 @@ try {
   await page.waitForFunction(() => !document.querySelector('dialog.pana-menu[open]'));
   console.log('PASS Start opens the menu, RB changes tab, B closes it');
   assert.deepEqual(page.errors, []);
+  await page.evaluate(async () => {
+    let resets = 0, pulses = 0;
+    __pad.vibrationActuator = { reset: async () => { resets++; }, playEffect: async () => { pulses++; } };
+    const { testVibration } = await import('/engine/gamepad.js');
+    await testVibration();
+    dispatchEvent(new Event('blur')); dispatchEvent(new Event('focus'));
+    if (pulses !== 1 || resets !== 1) throw new Error('Blur did not stop vibration');
+    dispatchEvent(new Event('pagehide'));
+    if (resets !== 2) throw new Error('Leaving did not stop vibration');
+
+  });
   await page.context().close();
 
   // First person: the right stick turns the camera (engine/play/first-person.js).

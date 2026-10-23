@@ -48,13 +48,13 @@ export function createControls({ paused = () => false, onBet = () => {} } = {}) 
   }
 
   function pad() {
-    const gamepad = [...(navigator.getGamepads?.() || [])].find(Boolean);
+    const gamepad = [...(navigator.getGamepads?.() || [])].find(p => p && p.connected !== false);
     if (!gamepad) { padHeld = new Set(); return { x: 0, y: 0, held: padHeld }; }
     const held = new Set();
     for (const [name, buttons] of Object.entries(PAD)) if (buttons.some(i => gamepad.buttons[i]?.pressed)) held.add(name);
     if (gamepad.buttons[12]?.pressed) held.add('up'); if (gamepad.buttons[13]?.pressed) held.add('down');
     if (gamepad.buttons[14]?.pressed) held.add('left'); if (gamepad.buttons[15]?.pressed) held.add('right');
-    for (const name of held) if (!padHeld.has(name)) press(name);
+    for (const name of held) if (!paused() && !padHeld.has(name)) press(name);
     padHeld = held;
     const settings=getSettings(),dead = v => inputAxis(v,settings);
     return { x: dead(gamepad.axes[0] || 0), y: -dead(gamepad.axes[1] || 0), held };
@@ -63,9 +63,9 @@ export function createControls({ paused = () => false, onBet = () => {} } = {}) 
   // { sx, sy } is the screen stick (right, up); g and b are held; counters count presses.
   function read() {
     const p = pad(), on = (name) => keys.has(name) || touch.has(name) || p.held.has(name) || mouse.has(name);
-    if (paused()) return { sx: 0, sy: 0, g: false, b: false, ...counts };
+    if (paused()) { keys.clear(); touch.clear(); mouse.clear(); return { sx: 0, sy: 0, g: false, b: false, ...counts }; }
     const sx = Number(on('right')) - Number(on('left')) + p.x, sy = Number(on('up')) - Number(on('down')) + p.y;
     return { sx: Math.max(-1, Math.min(1, sx)), sy: Math.max(-1, Math.min(1, sy)), g: on('golpe'), b: on('cubrir'), ...counts };
   }
-  return { read, press, clear: () => { keys.clear(); touch.clear(); } };
+  return { read, press, clear: () => { keys.clear(); touch.clear(); mouse.clear(); } };
 }

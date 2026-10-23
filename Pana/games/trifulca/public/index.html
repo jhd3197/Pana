@@ -9,6 +9,7 @@
   <link rel="stylesheet" href="/engine/kit.css">
   <link rel="stylesheet" href="/engine/ui.css">
   <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="hud-banderin.css">
   <link rel="stylesheet" href="/engine/game-lobby.css">
   <link rel="stylesheet" href="/engine/room-options.css">
   <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.186.1/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.186.1/examples/jsm/"}}</script>
@@ -31,6 +32,8 @@
       <div class="clock"><b id="clock" class="pk-num"></b><span id="fight-no"></span></div>
       <div id="bars-right" class="side side--right"></div>
     </section>
+    <div id="feedback-left" class="fight-feedback fight-feedback--left" hidden><b></b><span></span></div>
+    <div id="feedback-right" class="fight-feedback fight-feedback--right" hidden><b></b><span></span></div>
     <div id="call" class="call" role="status" aria-live="polite"></div>
     <div id="count" class="count pk-display" hidden></div>
     <div id="replay" class="replay pk-display" hidden>REPETICIÓN</div>
@@ -45,7 +48,7 @@
     </section>
     <section id="verdict" class="verdict pk-panel" hidden aria-label="Resultado de la pelea">
       <span id="verdict-how" class="pk-ribbon"></span><h2 id="verdict-title" class="pk-heading"></h2>
-      <p id="verdict-cards"></p><p id="verdict-pay"></p><p id="verdict-mano"></p>
+      <div id="verdict-stats"></div><p id="verdict-cards"></p><p id="verdict-pay"></p><p id="verdict-mano"></p>
     </section>
     <div class="me pk-panel"><b id="me-dolitas"></b><span id="me-queue"></span></div>
     <ul id="feed" class="feed" aria-label="Lo que pasa en el ring"></ul>
@@ -56,12 +59,14 @@
       <span data-key="cubrir"><kbd class="pk-kbd">K</kbd>Cubrirse</span>
       <span data-key="esquivar"><kbd class="pk-kbd">Espacio</kbd>Esquivar</span>
       <span data-key="agarrar"><kbd class="pk-kbd">L</kbd>Agarrar</span>
-      <span data-key="mover"><kbd class="pk-kbd">A</kbd><kbd class="pk-kbd">D</kbd>Moverte</span>
+      <span data-key="dale"><kbd class="pk-kbd">T</kbd>¡Dale!</span>
+      <span data-key="mover"><kbd class="pk-kbd">WASD</kbd>Moverte</span>
     </div>
     <section id="tutorial" class="tutorial pk-panel" hidden aria-live="polite">
       <span id="tutorial-step" class="pk-ribbon"></span>
       <h2 id="tutorial-title" class="pk-heading"></h2>
       <p id="tutorial-text"></p>
+      <small class="tutorial-rule">El mareo sube al recibir golpes. A 100, otro golpe limpio te tumba.</small>
       <div id="tutorial-keys" class="tutorial-keys"></div>
       <ol id="tutorial-dots" class="tutorial-dots" aria-hidden="true"></ol>
       <div class="tutorial-foot"><button id="tutorial-go" class="pk-btn pk-btn--primary" hidden>¡A pelear!</button><button id="tutorial-skip" class="pk-btn pk-btn--ghost pk-btn--sm">Saltar tutorial</button></div>

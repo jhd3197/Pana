@@ -24,7 +24,7 @@ const room = new TrifulcaRoom({ code, name: loadName(), avatar: loadAvatar(), on
 });
 const roomOptions = createRoomOptions($('room-options'), { title: 'Trifulca', fields: ROOM_OPTIONS,
   change: options => room.action('options', { options }), reset: () => room.action('options', { options: defaultOptions() }) });
-const menu = createGameMenu({ pad: { native: true, help: [['Stick izq. / Cruceta', 'Moverte'], ['A', "Golpe; mantén pa'l trompón"], ['B', 'Esquivar'], ['X', 'Agarrar'], ['Y', '¡Dale!'], ['LB / RB / LT / RT', 'Cubrirte']] }, title: 'Trifulca · Pana', sound, orientation: 'libre',
+const menu = createGameMenu({ pad: { native: true, playing: () => ['intro', 'fight', 'after'].includes(room.state.phase), help: [['Stick izq. / Cruceta', 'Moverte'], ['A', "Golpe; mantén pa'l trompón"], ['B', 'Esquivar'], ['X', 'Agarrar'], ['Y', '¡Dale!'], ['LB / RB / LT / RT', 'Cubrirte']] }, title: 'Trifulca · Pana', sound, orientation: 'libre',
   note: () => room.members.size > 1 ? 'La trifulca sigue mientras estás en el menú.' : 'La noche está en pausa.',
   controls: [['W A S D / flechas', 'Moverse: tú siempre a la izquierda, derecha es hacia tu rival'], ['J o clic izquierdo', 'Golpe: toque = jab, mantener = trompón'],
     ['K o clic derecho', 'Cubrirse'], ['Espacio', 'Esquivar (con dirección: paso al lado)'], ['L', 'Agarrar y empujar · en el público: ¡cálmate! · al final: mano de caballero'],
@@ -57,7 +57,7 @@ const showVoice = () => { voiceButton.textContent = voiceOn ? 'Voz: sí' : 'Voz:
 voiceButton.onclick = () => { voiceOn = !voiceOn; if (!voiceOn) hush(); try { localStorage.setItem(VOICE_KEY, voiceOn ? 'on' : 'off'); } catch { /* per-viewer nicety */ } showVoice(); };
 showVoice();
 
-const controls = createControls({ paused: () => menu.isOpen, onBet: bet });
+const controls = createControls({ paused: () => menu.isOpen || document.hidden || !!room.state.tutorial?.done, onBet: bet });
 addEventListener('keydown', (event) => { if (!menu.isOpen && event.key.toLowerCase() === 'm' && !event.repeat) toggleMute(); });
 addEventListener('pointerdown', () => sound.unlock(), { once: true });
 

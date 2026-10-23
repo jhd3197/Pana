@@ -11,6 +11,7 @@ import { rng } from '/engine/random.js';
 import { Puffs, Shockwaves } from '/engine/fx.js';
 import { arenaOf, crowdSpot } from './fight-rules.js';
 import { createArena } from './arenas.js';
+import { fighterLook } from './fighter-look.js';
 import { createPana } from './fighters.js';
 import { motoHelmet, chancleta } from './set.js';
 import { gazeAt, midOf, npcLife, animateNpc } from './crowd-life.js';
@@ -26,7 +27,7 @@ const PROP_MODELS = {
 };
 const ringOf = (bodies = []) => bodies.filter(b => !b.bench && !b.out);
 
-const BOT_LOOKS = ['#2ad1b2', '#ffc629', '#3d7bf2', '#ff8a3d', '#9b5de5', '#6bbf59', '#ff6fae', '#ee3024'];
+
 const REF_LOOK = { outfit: 'franela', outfitColor: '#f3e9d7', hat: 'llanero', hatColor: '#7a5230', face: 'cool' };
 const v = (x = 0, y = 0, z = 0) => new THREE.Vector3(x, y, z);
 // Camera-side candidates when an arena doesn't declare its own (camSides).
@@ -74,10 +75,6 @@ export function createTrifulcaScene(canvas, { me = () => null } = {}) {
     own.add(ref.group);
   }
 
-  function lookFor(p, i) {
-    if (!p.bot) return p.avatar;
-    return { outfitColor: BOT_LOOKS[i % BOT_LOOKS.length], face: 'feliz', fur: ['#cf7d22', '#d4914f', '#b06d3b', '#e0a463'][i % 4], hat: 'none', outfit: ['franela', 'deportivo', 'hoodie'][i % 3] };
-  }
 
   function update(state) {
     current = state;
@@ -89,7 +86,7 @@ export function createTrifulcaScene(canvas, { me = () => null } = {}) {
     const live = new Set();
     state.players.forEach((p, i) => {
       live.add(p.id);
-      const look = lookFor(p, i), key = JSON.stringify(look) + p.name;
+      const look = fighterLook(p, i), key = JSON.stringify(look) + p.name;
       let entry = panas.get(p.id);
       if (entry?.key !== key) {
         const pos = entry?.pos;

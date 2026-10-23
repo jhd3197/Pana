@@ -2,6 +2,8 @@
 // waits dimmed), the bell clock, the narrator's call, the ref's count, the
 // intro card, the bets, the verdict after each fight and a feed of what the
 // ring is doing.
+import { fighterPortrait, fightStats, createFightFeedback } from './hud-details.js';
+import { inputState, formatPadLabel } from '/engine/gamepad.js';
 import { fillRoster } from '/engine/results.js';
 import { lineFor, say } from './narrator.js';
 import { PAY, STAKE, INTRO, TUTORIAL } from './rules.js';
@@ -24,11 +26,20 @@ export const LESSONS = {
   agarrar: ['Agarrar', 'El Profe se cubre. Pégate y pulsa L: el agarre rompe la guardia y lo manda pa\'l público.', ['L']],
   pararse: ['¡Párate!', 'Te tumbaron. Machaca J (o cualquier botón) para pararte antes del diez.', ['J', 'J', 'J']],
 };
+const deviceText = text => {
+  const device = inputState().device;
+  if (device === 'keyboard') return text;
+  const touch = device === 'touch', keys = touch ? { Espacio: 'Esquivar', J: 'Golpe', K: 'Cubrir', L: 'Agarrar', T: '¡Dale!' } : { Espacio: 'B', J: 'A', K: 'LT / RT', L: 'X', T: 'Y' };
+  return text.replace(/ \(o clic (?:izquierdo|derecho)\)/g, '').replace(/D o la flecha derecha/g, touch ? 'el botón Derecha' : 'el stick izquierdo hacia la derecha')
+    .replace(/\b(?:Espacio|J|K|L|T)\b/g, key => touch ? keys[key] : formatPadLabel(keys[key]));
+};
 const el = (tag, className = '', text = '') => Object.assign(document.createElement(tag), { className, textContent: text });
 
 export function createHud({ me, voice = () => true }) {
   let state = null, callTimer = 0, feedItems = [], barsKey = '', betsKey = '';
-  const blocks = new Map();
+  const blocks = new Map(), feedback = createFightFeedback();
+  let verdictKey = '';
+
   const name = (id) => state?.players.find(p => p.id === id)?.name ?? 'Alguien';
   const player = (id) => state?.players.find(p => p.id === id);
   const names = (ids = []) => ids.map(name).join(' y ');
@@ -61,11 +72,12 @@ export function createHud({ me, voice = () => true }) {
       : e.type === 'dizzy' && foe(e.id) ? 'dizzy' : e.type === 'caida' && e.id === id ? 'caidaMe'
         : e.type === 'out' && e.id === id ? 'out' : e.type === 'dodged' && e.by === id ? 'dodged' : null;
     if (!key || tipped.has(key)) return;
-    tipped.add(key); setTimeout(() => feed(TIPS[key]), 900);
+    tipped.add(key); setTimeout(() => feed(deviceText(TIPS[key])), 900);
   }
 
   function react(e) {
     coach(e);
+    if (state) feedback.react(e, state);
     const line = lineFor(e, name, names);
     if (line) call(line.text, { big: line.big, ref: line.ref, speak: line.say });
     if (e.type === 'count') {
@@ -93,7 +105,7 @@ export function createHud({ me, voice = () => true }) {
       $(`intro-${side}`).replaceChildren(...list.map(b => {
         const p = player(b.id), card = el('div', `intro-side intro-side--${b.corner}${b.bench ? ' is-bench' : ''}`);
         if (!p) return card;
-        card.append(el('span', 'pk-display', p.nick), el('b', '', p.id === me() ? `${p.name} (tú)` : p.name), el('span', '', p.from), el('small', '', `${p.stats.wins} ganadas · ${p.dolitas} dolitas`));
+        card.append(fighterPortrait(p, state.players.indexOf(p)), el('span', 'pk-display', p.nick), el('b', '', p.id === me() ? `${p.name} (tú)` : p.name), el('span', '', p.from), el('small', '', `${p.stats.wins} ganadas · ${p.dolitas} dolitas`));
         return card;
       }));
     }
@@ -111,10 +123,13 @@ export function createHud({ me, voice = () => true }) {
         const block = el('div', `fighter fighter--${b.corner}`), top = el('div', 'fighter-name');
         const title = el('b'), nick = el('span'), mareo = el('div', 'meter meter--mareo'), low = el('div', 'fighter-low');
         const aguante = el('div', 'meter meter--aguante'), caidas = el('span', 'caidas');
-        mareo.append(el('i')); aguante.append(el('i')); low.append(aguante, caidas); top.append(title, nick);
-        block.append(top, mareo, low);
+        const lag = el('em'); mareo.append(lag, el('i')); aguante.append(el('i')); low.append(aguante);
+        const identity = el('div', 'fighter-identity'); identity.append(title, nick);
+        top.append(fighterPortrait(player(b.id), state.players.findIndex(p => p.id === b.id)), identity, caidas);
+        const labels = el('div', 'fighter-meters'), status = el('span'), energy = el('span');
+        labels.append(status, energy); block.append(top, labels, mareo, low);
         caidas.append(...Array.from({ length: KO_CAIDAS }, () => el('i')));
-        blocks.set(b.id, { block, title, nick, mareo, aguante, caidas });
+        blocks.set(b.id, { block, title, nick, mareo, aguante, caidas, status, energy, lag });
         return block;
       }));
     }
@@ -126,8 +141,15 @@ export function createHud({ me, voice = () => true }) {
     b.nick.textContent = body.bench ? 'en la esquina' : p?.nick ?? '';
     b.block.classList.toggle('is-bench', !!body.bench); b.block.classList.toggle('is-out', !!body.out);
     b.mareo.style.setProperty('--fill', `${Math.min(100, body.mareo)}%`);
+    b.lag.style.width = `${Math.min(100, body.mareo)}%`;
+    b.aguante.classList.toggle('is-empty', body.aguante <= 0);
     b.mareo.classList.toggle('is-danger', body.mareo >= MAREO_CALMA || body.act === 'dizzy');
     b.aguante.style.setProperty('--fill', `${body.aguante}%`);
+    b.status.textContent = body.act === 'down' ? '¡En el suelo!' : body.act === 'dizzy' ? '¡Mareado! Otro golpe te tumba' : `Mareo ${Math.round(body.mareo)}/100`;
+    b.energy.textContent = `Aguante ${Math.round(body.aguante)}%`;
+    b.mareo.title = 'Los golpes suben el mareo. A 100, otro golpe limpio te tumba.';
+    b.caidas.setAttribute('aria-label', `${body.caidas} de ${KO_CAIDAS} caídas; tres es K.O.`);
+    b.caidas.dataset.label = `Caídas ${body.caidas}/${KO_CAIDAS}`;
     [...b.caidas.children].forEach((pip, i) => pip.classList.toggle('is-down', i < body.caidas));
   }
 
@@ -150,7 +172,7 @@ export function createHud({ me, voice = () => true }) {
     $('tutorial').hidden = !t;
     if (!t) return;
     const lesson = t.done ? ['¡Listo, pana!', 'Ya sabes pelear: jab, trompón, cubrirse, esquivar, contragolpe y agarre. Ahora sube la escalera: cinco rivales del barrio, cada uno más bravo.', []] : LESSONS[TUTORIAL[t.step].id];
-    const key = `${t.step}:${t.done}`;
+    const key = `${t.step}:${t.done}:${inputState().device}:${inputState().family}`;
     $('tutorial-step').textContent = t.done ? 'TUTORIAL COMPLETO' : `PASO ${t.step + 1} DE ${TUTORIAL.length}`;
     $('tutorial-go').hidden = !t.done; $('tutorial-skip').hidden = t.done;
     // Once it is done, the card is a menu for a controller: A on ¡A pelear!
@@ -159,9 +181,14 @@ export function createHud({ me, voice = () => true }) {
       $('tutorial-text').dataset.count = t.count; return;
     }
     $('tutorial').dataset.key = key;
-    $('tutorial-title').textContent = lesson[0]; $('tutorial-text').textContent = lesson[1];
+    $('tutorial-title').textContent = lesson[0]; $('tutorial-text').textContent = deviceText(lesson[1]);
     const touch = matchMedia('(pointer: coarse)').matches, words = { J: 'Golpe', 'J mantener': 'Golpe mantener', K: 'Cubrir', Espacio: 'Esquivar', L: 'Agarrar', D: 'Derecha', '→': 'hacia él' };
-    $('tutorial-keys').replaceChildren(...lesson[2].map(k => el('kbd', 'pk-kbd', touch ? words[k] || k : k)));
+    const pad = inputState().device === 'gamepad';
+    $('tutorial-keys').replaceChildren(...lesson[2].map(k => {
+      const cap = el('kbd', 'pk-kbd', pad ? k === 'D' ? 'Stick izq.' : k === '→' ? 'Derecha' : deviceText(k) : touch ? words[k] || k : k);
+      if (pad) cap.dataset.padKey = '';
+      return cap;
+    }));
     $('tutorial-dots').replaceChildren(...TUTORIAL.map((_, i) => el('li', i < t.step || t.done ? 'is-done' : i === t.step ? 'is-now' : '')));
     $('tutorial').classList.remove('is-new'); void $('tutorial').offsetWidth; $('tutorial').classList.add('is-new');
   }
@@ -178,6 +205,7 @@ export function createHud({ me, voice = () => true }) {
       else if (foe?.act === 'dizzy') text = '¡Está mareado! ¡Dale!';
       else if (foe?.act === 'open') text = '¡Quedó abierto! J';
     }
+    text = deviceText(text);
     node.hidden = !text;
     if (text && node.textContent !== text) { node.textContent = text; node.classList.remove('is-on'); void node.offsetWidth; node.classList.add('is-on'); }
   }
@@ -185,12 +213,12 @@ export function createHud({ me, voice = () => true }) {
   // The key bar lights each button while it is pressed.
   function keys(c) {
     const bar = $('keys'); if (bar.hidden) return;
-    const on = { golpe: c.g || c.gp !== lastKeys.gp, cubrir: c.b, esquivar: c.e !== lastKeys.e, agarrar: c.a !== lastKeys.a, mover: !!(c.sx || c.sy) };
+    const on = { golpe: c.g || c.gp !== lastKeys.gp, cubrir: c.b, esquivar: c.e !== lastKeys.e, agarrar: c.a !== lastKeys.a, dale: c.t !== lastKeys.t, mover: !!(c.sx || c.sy) };
     for (const span of bar.children) {
       const k = span.dataset.key;
       if (on[k]) { span.classList.add('is-on'); clearTimeout(span._t); span._t = setTimeout(() => span.classList.remove('is-on'), c.g || c.b || k === 'mover' ? 90 : 220); }
     }
-    lastKeys = { gp: c.gp, e: c.e, a: c.a };
+    lastKeys = { gp: c.gp, e: c.e, a: c.a, t: c.t };
   }
   let lastKeys = {};
 
@@ -214,11 +242,12 @@ export function createHud({ me, voice = () => true }) {
     const key = fighting ? bodies.map(b => `${b.id}${b.corner}`).join() : '';
     if (key !== barsKey) { barsKey = key; buildBars(bodies); }
     bodies.forEach(bar);
+    $('clock').classList.toggle('is-low', phase === 'fight' && !state.tutorial && state.time <= 10);
     $('clock').textContent = phase === 'fight' ? Math.max(0, Math.ceil(state.time)) : phase === 'intro' ? 'VS' : '';
     const ladder = state.ladder;
     $('fight-no').textContent = !fighting ? '' : state.tutorial ? 'Tutorial' : state.fight?.stage ? STAGES[state.fight.stage]
       : ladder ? `Rival ${Math.min(ladder.step + 1, ladder.rivals.length)} de ${ladder.rivals.length} · vidas ${ladder.lives}` : `Pelea ${state.fightNo} de ${state.options.peleas}`;
-    if (state.tutorial) $('clock').textContent = '';
+    if (state.tutorial) $('clock').textContent = 'VS';
     $('intro-card').hidden = phase !== 'intro' || INTRO - state.time > 5.2;
     $('replay').hidden = !replaying;
     const mine = player(id), myBody = bodies.find(b => b.id === id), inFight = fighting && !!myBody;
@@ -228,14 +257,22 @@ export function createHud({ me, voice = () => true }) {
     const betting = phase === 'intro' && mine && !inFight;
     $('bets').hidden = !betting;
     if (betting) bets(mine, state.fight?.odds || {});
-    $('role').textContent = state.tutorial ? '' : roleText(phase, state.options.modo, fighting ? myBody : null, mine);
+    $('role').textContent = state.tutorial ? '' : deviceText(roleText(phase, state.options.modo, fighting ? myBody : null, mine));
     tutorialCard(state.tutorial);
+    const lessonAction = state.tutorial && !state.tutorial.done ? { mover: 'mover', jab: 'golpe', trompon: 'golpe', cubrir: 'cubrir', esquivar: 'esquivar', contra: 'golpe', agarrar: 'agarrar', pararse: 'golpe' }[TUTORIAL[state.tutorial.step].id] : '';
+    for (const cap of $('keys').children) cap.classList.toggle('is-lesson', cap.dataset.key === lessonAction);
+    const helpLabels = { mover: 'Moverte', golpe: 'Golpe', cubrir: 'Cubrirte', esquivar: 'Esquivar', agarrar: 'Agarrar' };
+    for (const cap of document.querySelectorAll('.pana-pad-prompts > span')) cap.classList.toggle('is-lesson', !!lessonAction && cap.textContent.includes(helpLabels[lessonAction]));
     prompt(myBody);
     $('keys').hidden = !(phase === 'fight' && myBody && !myBody.bench && !myBody.out);
     $('role').hidden = !$('keys').hidden && phase === 'fight';
     // The verdict after a fight.
     const verdict = phase === 'after' && state.result && !replaying;
     $('verdict').hidden = !verdict;
+    if (verdict && verdictKey !== `${state.fightNo}:${state.result.winner}`) {
+      verdictKey = `${state.fightNo}:${state.result.winner}`; fightStats($('verdict-stats'), state);
+    }
+    if (!verdict) verdictKey = '';
     if (verdict) {
       const r = state.result;
       $('verdict-how').textContent = HOW[r.how] || '';
@@ -258,6 +295,7 @@ export function createHud({ me, voice = () => true }) {
   }
 
   function tick(dt) {
+    if (state) feedback.tick(dt, state);
     if (callTimer > 0 && (callTimer -= dt) <= 0) $('call').classList.remove('is-on');
     if (feedItems.length) {
       feedItems.forEach(f => { f.t -= dt; });

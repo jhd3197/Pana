@@ -19,6 +19,12 @@ becomes the GitHub release's notes.
   Los rayos tienen un núcleo blanco, resplandor azul y ramificaciones finas;
   el impacto usa una textura de luz suave y chispas.
 
+- **Trifulca mantiene las cabezas estables y explica el estado de la pelea.**
+  Barras inclinadas, retratos de tus panas, presentación VS y estadísticas
+  reales al terminar. Mareo, aguante y caídas tienen etiquetas; el tutorial
+  sigue tu mando sin duplicar controles. El mando cancela la vibración al salir o cambiar
+  de ventana, y el enlace de salida no inicia otro pulso.
+
 - **Mira los carros de tus panas antes de guardar sus kits.**
   La Parrilla muestra cada carro con su pintura y piezas reales; abre su
   ficha para verlo en 3D o guardar una referencia para el taller.

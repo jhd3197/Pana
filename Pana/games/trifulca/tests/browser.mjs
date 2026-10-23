@@ -16,6 +16,7 @@ try {
   await waitFor(guest, () => trifulcaDebug.world.arenaId === 'mercado');
   await host.locator('#start').click();
   await waitFor(guest, () => trifulcaDebug.room.state.phase === 'intro');
+  await waitFor(guest, () => [...document.querySelectorAll('#intro-card .fighter-portrait')].length === 2 && [...document.querySelectorAll('#intro-card .fighter-portrait')].every(img => img.complete && img.naturalWidth > 0));
   // Two panas and no bots: they fight each other.
   assert.deepEqual(await guest.evaluate(() => trifulcaDebug.room.state.bodies.map(b => b.id).sort()), await host.evaluate(() => trifulcaDebug.room.state.players.map(p => p.id).sort()));
   await host.evaluate(() => { trifulcaDebug.room.game.time = .05; });
@@ -38,6 +39,8 @@ try {
   assert.deepEqual(verdict, await host.evaluate(() => trifulcaDebug.room.state.result));
   assert.ok(['puntos', 'publico'].includes(verdict.how));
   await waitFor(guest, () => !document.getElementById('verdict').hidden || trifulcaDebug.world.replaying);
+  await waitFor(guest, () => !document.getElementById('verdict').hidden);
+  assert.equal(await guest.locator('.fight-stats tbody tr').count(), 4, 'result shows the actual fight statistics');
   assert.deepEqual([...host.errors, ...guest.errors], []);
   console.log('PASS trifulca: two clients share the 3D barrio, the guest moves and jabs on the host, the bell gives both the same verdict.');
 } finally { await browser.close(); }

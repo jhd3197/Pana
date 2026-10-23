@@ -148,3 +148,23 @@ wins and the titles are handed out.
 - Arena reactions: `moto` (la calle) drives a moto through the fight;
   `out`/`vecino` near a row of parked motos topples it like dominoes (las
   motos) or tumbles the crate stacks (el mercado); `ropes` wobbles the ropes.
+
+### Head pose and controller feedback
+
+The shared character never resets `neck.rotation`; crowd gaze writes all three
+axes absolutely after `update`, never adds an idle or gasp offset each frame.
+Fighter recoil uses small integration steps and bounded neck angles. Heavy hits
+recoil without a full turn, keeping the opponent readable.
+HUD labels distinguish mareo (fills with damage) from aguante and caídas. Native
+controller input does not advance press counters while the menu is open. The
+shared controller guide replaces the keyboard strip and tutorial keys follow
+the active device.
+
+The Banderín HUD lives in `hud-banderin.css`; `hud-details.js` supplies shared
+3D avatar portraits, event-driven hit streaks (reset after 1.8 s or being hit)
+and the result table from each body's authoritative `score`. Portraits reuse
+`portrait-cache.js` and lazy-load `portrait.js`, never the reference's SVG faces.
+The reference's health/super/round-win mock values are not game state: the live
+bars remain mareo and aguante, diamonds count received knockdowns, and ¡Dale!
+remains a taunt. The shared controller strip is styled in-game rather than
+duplicated. Reduced motion disables HUD transitions, not gameplay messages.

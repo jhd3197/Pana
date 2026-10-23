@@ -87,7 +87,7 @@ export function createPana(avatar, { seed = 1, name = '', me = false } = {}) {
   function hit(power = 1, spinning = false, dir = 0) {
     wobbleV -= (4 + Math.random() * 5) * power; swayV += (Math.random() - .5) * 7 * power;
     recoilV += (Math.random() < .5 ? -1 : 1) * (3 + Math.random() * 3) * power;
-    if (spinning) spin = Math.PI * 2;
+    if (spinning) spin = .3; // A brief recoil, keeping the fighter facing the opponent.
     character.stagger?.(power, dir);
   }
   // A punch landing on the guard knocks the gloves back into the face.
@@ -97,15 +97,20 @@ export function createPana(avatar, { seed = 1, name = '', me = false } = {}) {
 
   // view: { act, at, moving, dodgeDir, guard } from the fight body, or a crowd pana.
   function update(dt, view = {}) {
+    dt = Math.min(.1, Math.max(0, dt));
     time += dt;
     const act = view.act || 'crowd', at = view.at || 0;
     if (act !== lastAct || at + 1e-4 < lastAt) startMove(act, lastAct);
     lastAct = act; lastAt = at;
     character.update(dt, { walk: (view.moving || 0) > .4 ? 1 : 0, dizzy: act === 'dizzy' || act === 'down', open: ['taunt', 'win', 'trompon', 'stun'].includes(act) || cheer > 0 });
     // Springs: head rock and body sway.
-    wobbleV += (-wobble * 90 - wobbleV * 9) * dt; wobble += wobbleV * dt;
-    swayV += (-sway * 60 - swayV * 7) * dt; sway += swayV * dt;
-    recoilV += (-recoil * 70 - recoilV * 8) * dt; recoil += recoilV * dt;
+    // Integrate small steps so low frame rates cannot amplify a hit into a spin.
+    for (let left = dt; left > 0;) {
+      const step = Math.min(left, 1 / 120); left -= step;
+      wobbleV += (-wobble * 90 - wobbleV * 9) * step; wobble += wobbleV * step;
+      swayV += (-sway * 60 - swayV * 7) * step; sway += swayV * step;
+      recoilV += (-recoil * 70 - recoilV * 8) * step; recoil += recoilV * step;
+    }
     spin = Math.max(0, spin - dt * 14); jolt = Math.max(0, jolt - dt * 5);
     shove = Math.max(0, shove - dt); cheer = Math.max(0, cheer - dt);
     if (cheer === 0 && cheerWas > 0) character.bounce?.(.7); // landing after the hop
@@ -170,7 +175,7 @@ export function createPana(avatar, { seed = 1, name = '', me = false } = {}) {
     b.position.y = ease(b.position.y, crouch / SCULPT, kb);
     tilt.rotation.x = ease(tilt.rotation.x, -fall * 1.5, 1 - Math.exp(-dt * (fall ? 9 : 5)));
     tilt.position.y = ease(tilt.position.y, lift, kb);
-    character.neck.rotation.x = wobble * .5; character.neck.rotation.z = sway * .3;
+    character.neck.rotation.x = THREE.MathUtils.clamp(wobble * .5, -.35, .35); character.neck.rotation.z = THREE.MathUtils.clamp(sway * .3, -.2, .2);
     character.group.rotation.y = spin;
     if (tag) tag.visible = tagShown && act !== 'down';
     warn.visible = act === 'wind'; if (warn.visible) warn.scale.set(.7 + Math.sin(time * 30) * .06, .175, 1);

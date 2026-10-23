@@ -348,3 +348,8 @@ Await the sala stylesheet before clearing `PANA_LOBBY_LOADING`; a game's own
 Browser readiness checks require both. `sala.browser.js` proves two-client
 readiness, host permissions, personal workshop persistence, kit ratings, team
 settings and offline retry; `lobby.browser.js` covers the generic shell.
+
+Controller menu links cancel rumble before navigating instead of starting a
+new pulse after the click. Buttons still respect the vibration preference.
+Actuator reset also runs on blur, pagehide and hidden visibility so feedback
+cannot linger after leaving the page.
