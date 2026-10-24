@@ -107,7 +107,16 @@ export function createTaller({ $, wallet, cars, getIndex, selectCar, getWheel, s
     } else wallet[kind] = id;
   }
 
-  function selectBody(index){const from=def(),next=cars[(index+cars.length)%cars.length];wallet.parts[next.id]={...equippedParts()};wallet.paint[next.id]=wallet.paint[from.id]??'fabrica';selectCar(cars.indexOf(next));save();}
+  function selectBody(index) {
+    const from = def(), next = cars[(index + cars.length) % cars.length];
+    // An explicit factory paint also marks a visited, intentionally stock car.
+    wallet.paint[from.id] ??= 'fabrica';
+    if (!Object.hasOwn(wallet.paint, next.id) && !Object.hasOwn(wallet.parts, next.id)) {
+      wallet.parts[next.id] = { ...equippedParts() };
+      wallet.paint[next.id] = wallet.paint[from.id];
+    }
+    selectCar(cars.indexOf(next)); save();
+  }
   function pick(kind, item) {
     hover = null;
     if (kind === 'car') { selectBody(cars.indexOf(item)); render(); return; }

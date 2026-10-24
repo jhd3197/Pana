@@ -1,4 +1,4 @@
-import { resultClick } from './menu-helpers.js';
+import { resultClick, chooseCar } from './menu-helpers.js';
 import { menuStep, menuClick } from './menu-helpers.js';
 // npm start, then node this file. The taller: a race pays into the wallet,
 // paint repaints the player's car on the turntable and in the race, horns
@@ -17,7 +17,8 @@ const output = process.env.PANA_TEST_ARTIFACTS || join(tmpdir(), 'carreritas-qa'
 await mkdir(output, { recursive: true });
 const errors = [];
 try {
-  const page = await browser.newPage({ viewport: { width: 1440, height: 900 } });
+  const browserContext = await browser.newContext({ viewport: { width: 1440, height: 900 } });
+  let page = await browserContext.newPage();
   page.on('pageerror', error => errors.push(String(error)));
   await page.goto(`${origin}/g/carreritas/?debug&manual&track=estadio`);
   await page.evaluate(() => { for (const k of ['carreritas:setup', 'carreritas:trophies', 'carreritas:wallet', 'carreritas:profile']) localStorage.removeItem(k); });
@@ -104,6 +105,35 @@ try {
   assert.ok(Math.abs(tuned.accel - 1.06) < 1e-9 && Math.abs(tuned.mass - 1.04) < 1e-9, `turbo tune ${JSON.stringify(tuned)}`);
   assert.deepEqual(tuned.parts, { motor: 'turbo' });
   await page.evaluate(() => toGarage());
+
+  // A second body keeps its own factory build; returning must not copy over it.
+  await chooseCar(page, 2);
+  await page.locator('[data-tab="motor"]').click();
+  await page.locator('#shop-motor [data-id="fabrica"]').click();
+  await page.locator('#loadout-back').click();
+  await page.locator('[data-tab="pintura"]').click();
+  await page.locator('#shop-paint [data-id="fabrica"]').click();
+  await page.locator('#loadout-back').click();
+  await chooseCar(page, 0);
+  assert.deepEqual(await page.evaluate(() => [getWallet().paint.chamo,getWallet().parts.chamo]), ['caribe',{motor:'turbo'}]);
+  await chooseCar(page, 2);
+  const expected=await page.evaluate(()=>({wallet:JSON.parse(JSON.stringify(getWallet())),setup:JSON.parse(JSON.stringify(setup))}));
+  assert.equal(expected.wallet.car,'machito');
+  assert.equal(expected.wallet.paint.machito,'fabrica');
+  assert.deepEqual(expected.wallet.parts.machito??{},{});
+  await page.reload();
+  await page.waitForFunction(()=>window.garage?.car);
+  assert.deepEqual(await page.evaluate(()=>[garage.index,getWallet().car]),[2,'machito']);
+  assert.deepEqual(await page.evaluate(()=>getWallet().parts.machito??{}),{});
+  assert.deepEqual(await page.evaluate(()=>setup),expected.setup);
+  // Closing the game and opening it again in the same browser keeps the choice.
+  const context=page.context();await page.close();page=await context.newPage();
+  page.on('pageerror',error=>errors.push(String(error)));
+  await page.goto(`${origin}/g/carreritas/?debug&manual&track=estadio`);
+  await page.waitForFunction(()=>window.garage?.car);
+  assert.deepEqual(await page.evaluate(()=>[garage.index,getWallet().car,getWallet().wheel,getWallet().horn]),[2,'machito',expected.wallet.wheel,expected.wallet.horn]);
+  await chooseCar(page,0);
+  assert.deepEqual(await page.evaluate(()=>[getWallet().paint.chamo,getWallet().parts.chamo]),['caribe',{motor:'turbo'}]);
 
   // Old saves: a bare 'carreritas:wheels' pick moves into the profile.
   await page.evaluate(() => { localStorage.removeItem('carreritas:profile'); localStorage.setItem('carreritas:wheels', 'barro'); });

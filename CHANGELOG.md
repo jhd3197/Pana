@@ -8,6 +8,10 @@ becomes the GitHub release's notes.
 
 ## Unreleased
 
+- **Carreritas recuerda tu carro y conserva los ajustes de cada carrocería.**
+  Al volver se abre el último carro elegido; cambiar de carro ya no reemplaza
+  la pintura ni las piezas de un vehículo que habías configurado.
+
 - **Rápida reduce los efectos de Cosmos, Nubes, Volcán y Arrecife.**
   Simplifica los cielos, nubes y lava, apaga las cáusticas submarinas y reduce
   partículas, transparencias y actualizaciones decorativas sin cambiar la pista.

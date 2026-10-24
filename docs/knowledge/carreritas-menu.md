@@ -145,7 +145,10 @@ The full build remains visible across six slots on cars (four performance,
 two style), five on boats and four on planes. Hovering previews the real model
 and composed stats without spending. Clicking buys/equips immediately; a short
 wallet leaves the equipped part untouched. Car body changes transfer the
-current parts and paint. Copied rival builds mark matching cards in the taller.
+current parts and paint only to a body with no saved build. Returning to a
+previous body restores its own paint and parts, including an intentionally
+factory setup. `wallet.car` stores a validated stable body ID and the garage
+restores it on startup; wheels, horn, flame and vessel choices remain driver-wide. Copied rival builds mark matching cards in the taller.
 
 ## Starting grid
 

@@ -167,6 +167,7 @@ function garageCar(index) {
 function showCar(i) {
   garage.index = (i + CARS.length) % CARS.length;
   const def = CARS[garage.index];
+  if (wallet.car !== def.id) { wallet.car = def.id; saveWallet(); }
   garage.turn.clear();
   // Bounded garage models; thumbnails borrow these same instances.
   // Race models stay independent because their parts can break off.
@@ -2243,7 +2244,7 @@ if (ROOM) goOnline(ROOM, QS.has('lead'));   // first: a reload reclaims its seat
 await Promise.all([featsReady, comboReady, ghostReady, gatesReady]);   // milestone toasts, the style score and the ghost are ready before any race can start
 if (DEBUG) await loadTracks();
 selectTrack(QS.get('track') || savedTrack);
-showCar(0);
+showCar(Math.max(0, CARS.findIndex(c => c.id === wallet.car)));
 frame();
 let lastGarageInput = performance.now();
 for (const event of ['pointerdown', 'wheel', 'keydown']) {

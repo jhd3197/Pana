@@ -47,3 +47,15 @@ the rescue browser suite verifies disposal when returning to the garage.
 Browser proof: shop purchases/previews and repeat collection, menu-flow's two
 clients carrying a boat kit into the race, transform gates, cup-local and
 cup-lifetime. `resultClick` follows the real cash-in flow before a rematch.
+
+## Saved garage selection
+
+The version-3 wallet also stores `car` as a validated body ID, with `chamo`
+as the fallback for old or invalid saves. Selecting a car saves immediately;
+startup restores that body before constructing the showroom. Each body's
+paint and parts survive switching to another configured body. A body never
+configured before can inherit the current kit, and an explicit factory paint
+marks a visited stock build even when normalization removes empty parts.
+These preferences live in this browser's `carreritas:profile`, not an account
+cloud save. Shop browser coverage buys a kit, creates a distinct stock kit,
+returns to each body, reloads, and closes/reopens the page in the same browser.
