@@ -185,6 +185,21 @@ world height once and tests each ray's slab in the proxy's own space, as
 `Mesh.raycast` does, so hits are identical (geometry fingerprints of 13
 avatars match) while a pana builds in ~137 ms instead of ~203 ms.
 
+Every pana has the same body, so most cloth fitting repeats exactly. Three
+caches keep it, keyed by the exact float bits of the inputs
+(`fingerprint` in geometry.js) rather than by avatar:
+
+- the sport and tropical tops' fitted points, collar, cuffs and hem
+  (outfits.js), keyed by garment points, skin weights and arm pose;
+- the chef neck strap's fitted points (chef.js); on a hit the ray proxies
+  and the fit geometry are never built;
+- the fur foundation's marching-cubes template per resolution: coat colour
+  only paints vertex colours from each vertex's stored paw blend.
+
+Normals are recomputed from the kept points as before. 24 seeded random
+avatars (all five outfits, both profiles) match the uncached build buffer
+for buffer; builds after the first take about half the time.
+
 ## Mouth expressions
 
 `mouth.js` creates a narrow closed smile, the open lining, tongue and retracting

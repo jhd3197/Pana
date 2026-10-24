@@ -306,6 +306,25 @@ barrels/crates ~20, and baked props kept one draw per paint colour.
   baked cards beyond. The smooth cars are ~35k triangles each without a
   driver, which had taken Estadio's overview from 1.23 M to 2.69 M.
 
+### Loading: where the seconds go
+
+CPU profiles of a race load (track build + `startRace`) on the reference
+desktop: Plaza 8.3 s, Selva 6.1 s, Llanos 5.5 s. Shader compiles that block
+the main thread were ~0.3 s once the driver's cache is warm; the rest is
+JavaScript building geometry:
+
+- `bake()` (static-batch.js) was 2.2 s of Plaza and 1.1 s of Selva, mostly
+  copies (clone, `toNonIndexed`, per-vertex `applyMatrix4`). It now unindexes
+  and transforms each mesh in one pass with the same arithmetic (Float32 data
+  through its own monomorphic loop) and still merges with `mergeGeometries`.
+  The output matches the old path byte for byte on all 420 Studio models
+  with and without `tint`. Plaza's track build 5.4 → 4.1 s, Selva 3.1 → 2.5 s.
+- The eight racers' panas were ~1 s of every load; see the cloth fitting
+  caches in character-reference.md.
+- A worker cannot help without a build step: module workers do not see the
+  page's import map (Chrome 153 and 156), so every model's `'three'` import
+  fails inside one.
+
 ### Sun shadows: still scenery cached
 
 The sun's shadow box (±40 m) follows the player, so three.js redrew every

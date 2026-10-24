@@ -1,10 +1,13 @@
 import * as THREE from 'three';
-import { curve, ellipsoid, mesh, ovalRing, patch, surface } from '/engine/models/characters/pana/geometry.js';
+import { curve, ellipsoid, fingerprint, mesh, ovalRing, patch, surface } from '/engine/models/characters/pana/geometry.js';
 import { gameDetail } from '/engine/models/characters/pana/detail.js';
 
 // Avatar colors do not change torso geometry. Reuse the expensive depth sample
 // per tessellation profile; each character still owns its meshes and skeleton.
 const depthGrids = new Map();
+// The neck strap's fit (rays around the torso) is likewise the same for every
+// pana of a profile; with it kept, the ray proxies are built only on a miss.
+const strapFits = new Map();
 
 // The apron follows the belly rather than sitting on a flat plane in front of it.
 function apronDepth(x, y) {
@@ -17,24 +20,29 @@ function apronDepth(x, y) {
 // Fit once against the actual fuller torso. A small depth grid is reused by
 // the apron, pocket and stitches, so no raycasting is needed during animation.
 function fitBody(body, foundation) {
-  const material = new THREE.MeshBasicMaterial({ side: THREE.DoubleSide });
-  const fitGeometry = foundation.createFitGeometry();
-  const proxies = [foundation.garment, body.getObjectByName('Continuous belly and legs'), body.getObjectByName('Neck')].map(source => {
-    const proxy = new THREE.Mesh(source === foundation.garment ? fitGeometry : source.geometry, material);
-    proxy.position.copy(source.position); proxy.quaternion.copy(source.quaternion);
-    proxy.updateMatrixWorld(true); return proxy;
-  });
+  let material = null, fitGeometry = null, proxies = null;
+  const proxiesOnce = () => {
+    if (proxies) return proxies;
+    material = new THREE.MeshBasicMaterial({ side: THREE.DoubleSide });
+    fitGeometry = foundation.createFitGeometry();
+    return proxies = [foundation.garment, body.getObjectByName('Continuous belly and legs'), body.getObjectByName('Neck')].map(source => {
+      const proxy = new THREE.Mesh(source === foundation.garment ? fitGeometry : source.geometry, material);
+      proxy.position.copy(source.position); proxy.quaternion.copy(source.quaternion);
+      proxy.updateMatrixWorld(true); return proxy;
+    });
+  };
   const profile = gameDetail() ? 'game' : 'studio';
   const ray = new THREE.Raycaster(), nx = 30, ny = 36, minX = -0.74, minY = 0.69, width = 1.48, height = 1.35, depths = depthGrids.get(profile) || [];
   if (!depths.length) for (let j = 0; j <= ny; j++) for (let i = 0; i <= nx; i++) {
     const x = minX + i / nx * width, y = minY + j / ny * height;
     ray.set(new THREE.Vector3(x, y, 2), new THREE.Vector3(0, 0, -1));
-    const hit = ray.intersectObjects(proxies, false).find(h => h.point.z > 0);
+    const hit = ray.intersectObjects(proxiesOnce(), false).find(h => h.point.z > 0);
     depths.push(hit ? hit.point.z : apronDepth(x, y) - 0.025);
   }
   depthGrids.set(profile, depths);
   let level = null;
   return {
+    profile,
     front(x, y) {
       const gx = THREE.MathUtils.clamp((x - minX) / width * nx, 0, nx - 0.00001);
       const gy = THREE.MathUtils.clamp((y - minY) / height * ny, 0, ny - 0.00001);
@@ -47,11 +55,11 @@ function fitBody(body, foundation) {
     around(x, y, z) {
       const direction = new THREE.Vector3(x, 0, z).normalize();
       ray.set(new THREE.Vector3(direction.x * 2, y, direction.z * 2), direction.clone().negate());
-      level ??= levelIndex(proxies);
+      level ??= levelIndex(proxiesOnce());
       const hit = level(ray.ray);
       return hit ? hit.addScaledVector(direction, 0.019) : new THREE.Vector3(x, y, z);
     },
-    dispose() { material.dispose(); fitGeometry.dispose(); },
+    dispose() { material?.dispose(); fitGeometry?.dispose(); },
   };
 }
 
@@ -146,12 +154,16 @@ export function createChefOutfit({ body, head, material, texture, foundation }) 
     [0.31, 1.94, -0.29], [0.43, 1.96, -0.01], [0.32, 1.94, 0.26],
     [0.285, 1.78, 0.34], [0.258, 1.60, 0.35],
   ], 0.105, cloth);
-  const strapPositions = neckStrap.geometry.attributes.position;
-  for (let i = 0; i < strapPositions.count; i++) {
-    const x = strapPositions.getX(i), y = strapPositions.getY(i), z = strapPositions.getZ(i);
-    const p = z > 0.2 ? new THREE.Vector3(x, y, fit.front(x, y) + 0.016) : fit.around(x, y, z);
-    strapPositions.setXYZ(i, p.x, p.y, p.z);
+  const strapPositions = neckStrap.geometry.attributes.position, strapKey = `${fit.profile}|${fingerprint(strapPositions.array)}`;
+  if (!strapFits.has(strapKey)) {
+    for (let i = 0; i < strapPositions.count; i++) {
+      const x = strapPositions.getX(i), y = strapPositions.getY(i), z = strapPositions.getZ(i);
+      const p = z > 0.2 ? new THREE.Vector3(x, y, fit.front(x, y) + 0.016) : fit.around(x, y, z);
+      strapPositions.setXYZ(i, p.x, p.y, p.z);
+    }
+    strapFits.set(strapKey, strapPositions.array.slice());
   }
+  strapPositions.array.set(strapFits.get(strapKey));
   neckStrap.geometry.computeVertexNormals();
   mesh(apron, 'Waist strap', surface((u, v) => {
     const a = u * Math.PI * 2, y = 1.17 + (0.5 - v) * 0.09;

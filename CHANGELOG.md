@@ -8,6 +8,10 @@ becomes the GitHub release's notes.
 
 ## Unreleased
 
+- **Los panas y los escenarios se preparan más rápido al entrar a jugar.**
+  La ropa reutiliza sus ajustes al cuerpo y los escenarios agrupan sus
+  piezas con menos copias, conservando sus formas y colores.
+
 - **Trifulca estrena patadas, barridas, volteos y golpes con más cuerpo.**
   I da una patada, U barre y O voltea al rival: gastan aguante y funcionan
   en línea, con botones táctiles y control. Nuevas poses y estallidos de

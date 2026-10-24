@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { curve, ovalRing } from '/engine/models/characters/pana/geometry.js';
+import { curve, fingerprint, ovalRing } from '/engine/models/characters/pana/geometry.js';
 import { shirtGeometry } from '/engine/models/characters/pana/garment.js';
 import { createChefOutfit } from '/engine/models/characters/pana/chef.js';
 import { createActionDetails } from '/engine/models/characters/pana/action-outfits.js';
@@ -8,6 +8,17 @@ import { createFurFoundation } from '/engine/models/characters/pana/foundation.j
 const DEFAULT_COLORS = { shirt: '#ee3024', chef: '#ee3024', hoodie: '#3479cb', tropical: '#3479cb', sport: '#ee3024' };
 const PRESET_HEADWEAR = { shirt: 'none', chef: 'chef', hoodie: 'cap', tropical: 'none', sport: 'band', base: 'none' };
 const DEFAULT_HEADWEAR_COLORS = { chef: '#ee3024', cap: '#3479cb', band: '#ee3024' };
+
+// Fitting a top to the fur repeats the same work for every pana: one body
+// shape, so the same garment, arm pose and surface give the same points. The
+// fitted points are kept, keyed by everything the fit reads; normals are
+// recomputed from them as before. Rivals and crowds build in a fraction.
+const fitted = new Map();
+const fitKey = (style, values, arms) => `${style}|${fingerprint([...values, ...arms.flatMap(a => [...a.position.toArray(), ...a.quaternion.toArray()])])}`;
+function fitOnce(key, fit) {
+  if (!fitted.has(key)) fitted.set(key, fit());
+  return fitted.get(key);
+}
 
 // Each top has one connected surface. The original shirt uses unchanged defaults.
 function createTop(style, { body, arms, material, texture, foundation }) {
@@ -18,14 +29,20 @@ function createTop(style, { body, arms, material, texture, foundation }) {
   const { geometry, collar, cuffs } = shirtGeometry(arms, { style });
   if (['sport', 'tropical'].includes(style)) {
     const positions = geometry.attributes.position, weights = geometry.attributes.skinWeight, point = new THREE.Vector3();
-    for (let i = 0; i < positions.count; i++) {
-      const armFit = style === 'tropical' ? THREE.MathUtils.smoothstep(weights.getY(i) + weights.getZ(i), 0.01, 0.2) : 0;
-      foundation.fitPoint(point.fromBufferAttribute(positions, i), 0.035, armFit);
-      positions.setXYZ(i, point.x, point.y, point.z);
-    }
+    const rims = [...collar, ...cuffs.flat()];
+    const key = fitKey(style, [...positions.array, ...weights.array, ...rims.flatMap(p => p.toArray())], arms);
+    const fit = fitOnce(key, () => {
+      for (let i = 0; i < positions.count; i++) {
+        const armFit = style === 'tropical' ? THREE.MathUtils.smoothstep(weights.getY(i) + weights.getZ(i), 0.01, 0.2) : 0;
+        foundation.fitPoint(point.fromBufferAttribute(positions, i), 0.035, armFit);
+        positions.setXYZ(i, point.x, point.y, point.z);
+      }
+      collar.forEach(point => foundation.fitPoint(point, 0.039));
+      cuffs.flat().forEach(point => foundation.fitPoint(point, 0.039, style === 'tropical' ? 1 : 0));
+      return { positions: positions.array.slice(), rims: rims.flatMap(p => p.toArray()) };
+    });
+    positions.array.set(fit.positions); rims.forEach((p, i) => p.fromArray(fit.rims, i * 3));
     geometry.computeVertexNormals();
-    collar.forEach(point => foundation.fitPoint(point, 0.039));
-    cuffs.flat().forEach(point => foundation.fitPoint(point, 0.039, style === 'tropical' ? 1 : 0));
   }
   const shoulders = arms.map((_, i) => {
     const bone = new THREE.Bone(); bone.name = `${style}:shoulder${i}`; body.add(bone); return bone;
@@ -46,10 +63,14 @@ function createTop(style, { body, arms, material, texture, foundation }) {
   const hem = ovalRing(group, 'Hem', trim, 0.794, 0.582, 1.017, style === 'hoodie' ? 0.028 : 0.016, -0.01);
   if (['sport', 'tropical'].includes(style)) {
     const positions = hem.geometry.attributes.position, point = new THREE.Vector3();
-    for (let i = 0; i < positions.count; i++) {
-      foundation.fitPoint(point.fromBufferAttribute(positions, i), 0.039);
-      positions.setXYZ(i, point.x, point.y, point.z);
-    }
+    const fit = fitOnce(fitKey(`${style}:hem`, positions.array, arms), () => {
+      for (let i = 0; i < positions.count; i++) {
+        foundation.fitPoint(point.fromBufferAttribute(positions, i), 0.039);
+        positions.setXYZ(i, point.x, point.y, point.z);
+      }
+      return positions.array.slice();
+    });
+    positions.array.set(fit);
     hem.geometry.computeVertexNormals();
   }
   curve(group, 'Neck binding', collar.map(p => p.toArray()), style === 'sport' ? 0.025 : 0.018, trim, true, 96);
