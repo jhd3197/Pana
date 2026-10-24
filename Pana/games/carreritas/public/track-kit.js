@@ -186,15 +186,11 @@ function chevrons(group, T, { minCurve = 0.017, skip = () => false } = {}) {
         }
       }));
     }
-    const g = new THREE.Group();
-    g.add(box(0.18, 1.5, 0.18, M(0x6b4226, { roughness: 0.9 }), -0.9, 0.75, 0));
-    g.add(box(0.18, 1.5, 0.18, M(0x6b4226, { roughness: 0.9 }), 0.9, 0.75, 0));
-    const b = mesh(new THREE.BoxGeometry(2.6, 1.15, 0.1), texCache.get(dir), 0, 1.9, 0);
-    const material=texCache.get(dir);
-    g.userData.dispose=()=>{if(material.userData.disposed)return;material.userData.disposed=true;material.map.dispose();material.dispose();};
-    g.add(b);
-    return g;
+    return texCache.get(dir);
   };
+  // Every sign is a named marker (puerto-audit reads them); posts and boards
+  // are instances, three draws for the map instead of three per sign.
+  const at0 = (x, y) => new THREE.Matrix4().makeTranslation(x, y, 0), posts = [], boards = new Map();
   for (const bend of bends.slice(0, 10)) {
     const dir = bend.k > 0 ? 1 : -1;   // turn direction = where the arrows point
     const outside = dir > 0 ? -(T.HW + 2.6) : T.HW + 2.6;
@@ -202,10 +198,23 @@ function chevrons(group, T, { minCurve = 0.017, skip = () => false } = {}) {
       const s=bend.s0-10+j*4.5;
       if(skip(s))continue;
       const p = placeOnTrack(T, s, outside);
-      const sign=board(dir);sign.name='bend-chevron-board';sign.userData.s=s;
-      at(group, sign, p, p.h + Math.PI);
+      const sign=new THREE.Object3D();sign.name='bend-chevron-board';sign.userData.s=s;
+      at(group, sign, p, p.h + Math.PI); sign.updateMatrix();
+      posts.push(sign.matrix.clone().multiply(at0(-0.9, 0.75)), sign.matrix.clone().multiply(at0(0.9, 0.75)));
+      board(dir); if (!boards.has(dir)) boards.set(dir, []); boards.get(dir).push(sign.matrix.clone().multiply(at0(0, 1.9)));
     }
   }
+  const instanced = [], plant = (geometry, material, list) => {
+    const im = new THREE.InstancedMesh(geometry, material, list.length);
+    list.forEach((m, i) => im.setMatrixAt(i, m)); im.computeBoundingSphere();
+    im.name = 'bend-chevron-boards'; im.castShadow = im.receiveShadow = true; group.add(im); instanced.push(im);
+  };
+  if (posts.length) plant(new THREE.BoxGeometry(0.18, 1.5, 0.18), M(0x6b4226, { roughness: 0.9 }), posts);
+  for (const [dir, list] of boards) plant(new THREE.BoxGeometry(2.6, 1.15, 0.1), texCache.get(dir), list);
+  if (instanced.length) instanced[0].userData.dispose = () => {
+    instanced.forEach(im => im.dispose());
+    for (const material of texCache.values()) { material.map.dispose(); material.dispose(); }
+  };
 }
 
 // Checkered start/finish line across the track.

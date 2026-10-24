@@ -13,8 +13,8 @@ import { rng } from '../../../engine/random.js';
 
 // Coins move, spin and hide through plain Object3D proxies, exactly as when
 // each was a mesh; their pieces draw as one InstancedMesh per part. Forty
-// five-piece coins were two hundred draw calls.
-function proxyInstances(scene, model, proxies) {
+// five-piece coins were two hundred draw calls. Breakables use it too.
+export function proxyInstances(scene, model, proxies) {
   model.updateMatrixWorld(true);
   const zero = new THREE.Matrix4().makeScale(0, 0, 0), m = new THREE.Matrix4(), parts = [];
   model.traverse(o => {

@@ -18,6 +18,7 @@ import { barrel, crate } from '/engine/models/props/plaza.js';
 import { statCount } from '/engine/stats.js';
 import { rng, seedOf } from '/engine/random.js';
 import { gateRuns } from './transform-gates.js';
+import { proxyInstances } from './items.js';
 
 const RESPAWN = 25, SCRUB = 0.9, GRAVITY = 22;
 const KINDS = {
@@ -44,7 +45,8 @@ function mergedParts(build, scale) {
 let templates = null;
 const template = (kind) => (templates ??= Object.fromEntries(Object.entries(KINDS).map(([k, d]) => [k, mergedParts(d.build, d.scale)])))[kind];
 
-function propMesh(kind) {
+// The kind's parts, as the model each prop's proxy draws through.
+function propModel(kind) {
   const group = new THREE.Group();
   for (const { geometry, material } of template(kind)) {
     const m = new THREE.Mesh(geometry, material);
@@ -78,7 +80,7 @@ export function placeProps(T) {
 }
 
 export function createBreakables({ race, sound, track }) {
-  let props = [], group = null;
+  let props = [], group = null, batches = [];
   const flying = [];
 
   function smash(p, c) {
@@ -98,17 +100,21 @@ export function createBreakables({ race, sound, track }) {
   return {
     setTrack(T) {
       props = []; flying.length = 0;
+      batches.forEach(b => b.dispose()); batches = [];
       group?.removeFromParent();
       group = new THREE.Group();
       group.name = 'breakables';
       if (T.def.breakables === false || T.def.oval) return;
       props = placeProps(T);
+      // Props move, tumble and hide through proxies; each kind's parts draw
+      // as instances (one draw per part instead of one per prop).
       for (const p of props) {
-        p.mesh = propMesh(p.kind);
+        p.mesh = new THREE.Object3D();
         p.mesh.position.set(p.x, p.y, p.z);
         p.mesh.rotation.y = p.h;
-        group.add(p.mesh);
       }
+      for (const kind of new Set(props.map(p => p.kind)))
+        batches.push(proxyInstances(group, propModel(kind), props.filter(p => p.kind === kind).map(p => p.mesh)));
       race.scene.add(group);
     },
     get props() { return props; },
@@ -139,6 +145,7 @@ export function createBreakables({ race, sound, track }) {
         p.down -= dt;
         if (p.down <= 0) { p.mesh.position.set(p.x, p.y, p.z); p.mesh.rotation.set(0, p.h, 0); p.mesh.visible = true; }
       }
+      batches.forEach(b => b.sync());
     },
   };
 }
