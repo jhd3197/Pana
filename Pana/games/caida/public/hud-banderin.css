@@ -1,0 +1,29 @@
+/* The live table remains WebGL; only its scoreboard and controls are reskinned. */
+.banderin .scoreboard { clip-path:var(--hud-angle); padding:14px 24px; min-width:240px; }
+.banderin .score-row { display:grid; grid-template-columns:minmax(45px,1fr) auto; align-items:center; gap:8px; max-width:none; }
+.banderin #scores { display:grid; width:100%; gap:6px; }
+.banderin .score-name { font-weight:900; }
+.banderin .score-target { font-size:10px; white-space:nowrap; align-self:start; text-transform:uppercase; }
+.banderin .table-info { padding:12px 20px; clip-path:var(--hud-angle); }
+.banderin .activity { position:fixed; right:20px; top:28%; width:240px; padding:14px 20px; clip-path:var(--hud-angle); }
+.banderin .panel-heading { font-size:10px; letter-spacing:.08em; }
+.banderin #history { font-size:11px; }
+.banderin .rack-help { background:var(--hud-panel); padding:12px; font-size:12px; }
+.banderin #turn-status { background:var(--pk-yellow); color:var(--pk-night); padding:10px 20px; font-family:var(--pk-display); box-shadow:4px 4px 0 var(--hud-edge); }
+.banderin .rack-actions { gap:10px; }
+.banderin #play { font:26px var(--pk-display); min-height:54px; }
+.banderin #result { width:min(1180px,96vw); max-width:none; max-height:94dvh; border:0; padding:0; background:repeating-linear-gradient(120deg,var(--pk-night) 0 80px,var(--hud-panel) 80px 155px); color:var(--pk-cream); }
+.banderin #result::backdrop { background:var(--pk-night); }
+.banderin .result-mark { display:none; }
+.banderin .result-race { display:grid; width:100%; gap:10px; margin:10px 0 24px; }
+.banderin .result-race label { display:grid; grid-template-columns:100px 1fr 55px; align-items:center; gap:16px; font-weight:900; }
+.banderin .result-race progress { width:100%; height:20px; accent-color:var(--pk-yellow); }
+.banderin .result-race b { color:var(--pk-yellow); }
+@media(max-width:1000px) { .banderin .activity { width:190px; right:12px; } .banderin .scoreboard { min-width:190px; } }
+@media(max-width:700px),(max-height:550px) {
+ .banderin .activity { position:static; width:auto; padding:8px; }
+ .banderin .scoreboard { min-width:0; padding:8px 16px; }
+ .banderin #play { min-height:44px; font-size:20px; }
+ .banderin #turn-status { padding:6px 10px; font-size:14px; }
+ .banderin .result-race label { grid-template-columns:70px 1fr 45px; gap:8px; }
+}

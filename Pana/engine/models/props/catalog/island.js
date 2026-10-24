@@ -6,7 +6,7 @@ export default [
     category: "Objetos",
     source: "/engine/models/props/island-house.js",
     factory: "casita",
-    usedBy: ["Bululú"],
+    usedBy: ["Bululú", "Bochinche"],
     previewOptions: {"seed":7},
     pack: "island"
   },

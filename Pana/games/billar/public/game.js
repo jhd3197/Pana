@@ -115,7 +115,7 @@ function chargeValid() { return ownTurn() && !room.state.ballInHand && charge?.r
 function cancelCharge() {
   charge = null; power = .65;
   $('power-bar').hidden = true; $('shoot').classList.remove('is-charging');
-  $('shoot').firstChild.textContent = room.state.ballInHand ? 'Colocar ' : 'Mantén para tirar ';
+  $('shoot').firstChild.textContent = room.state.ballInHand ? 'Colocar ' : 'Tirar ';
   for (const id of ['aim-left', 'aim-right', 'spin']) $(id).disabled = !ownTurn() || room.state.ballInHand;
   $('pocket').disabled = !ownTurn() || room.state.ballInHand;
 }
@@ -126,7 +126,7 @@ function beginCharge(source) {
   audio.unlock(); held = 0; drag = null;
   charge = { source, started: performance.now(), revision: room.state.revision, pocket: $('pocket').value === '' ? null : Number($('pocket').value) };
   $('power-bar').hidden = false; $('shoot').classList.add('is-charging');
-  $('shoot').firstChild.textContent = 'Suelta para tirar ';
+  $('shoot').firstChild.textContent = 'Soltar ';
   for (const id of ['aim-left', 'aim-right', 'spin']) $(id).disabled = true;
   $('pocket').disabled = true;
   updateCharge();
@@ -239,7 +239,7 @@ function render(state) {
   $('charge-tip').hidden = !active || state.ballInHand;
   for (const id of ['aim-left', 'aim-right', 'spin']) $(id).disabled = !active || state.ballInHand || !!charge;
   $('side-controls').hidden = lobby || ended; $('power-bar').hidden = !charge;
-  $('shoot').firstChild.textContent = state.ballInHand ? 'Colocar ' : charge ? 'Suelta para tirar ' : 'Mantén para tirar ';
+  $('shoot').firstChild.textContent = state.ballInHand ? 'Colocar ' : charge ? 'Soltar ' : 'Tirar ';
   if (state.revision !== lastRevision) {
     if (state.phase === 'rolling' && previousPhase !== 'rolling') audio.tone(360, 0, .06, 'triangle', .12);
     if (previousPhase === 'rolling' && state.phase !== 'rolling') { placement = null; $('pocket').value = ''; setSpin(0, 0); audio.tone(600, 0, .08, 'sine', .08); }

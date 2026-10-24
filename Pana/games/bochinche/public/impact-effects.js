@@ -1,3 +1,4 @@
+import { ATTACK_THEMES } from './artifact-attacks.js';
 // A bounded particle pool. Effects consume authoritative events exactly once.
 import * as THREE from 'three';
 import { rng } from '/engine/random.js';
@@ -21,7 +22,7 @@ export function createImpactEffects(root, scale) {
       const p=particles[cursor++%particles.length], angle=i/count*Math.PI*2;
       p.max=p.life=big?.8:jump?.3:.38;
       p.mesh.visible=true;p.mesh.position.set(x,y,.6);
-      p.mesh.material.color.set(shield?COLORS[event.slot??0]:big?COLORS[event.slot??0]:i%3?'#fff4cc':'#ff9d3c');
+      p.mesh.material.color.set(ATTACK_THEMES[event.move]?.color ?? (shield?COLORS[event.slot??0]:big?COLORS[event.slot??0]:i%3?'#fff4cc':'#ff9d3c'));
       p.size=big?.2:jump?.07:.11;
       const speed=big?4:jump?1.3:2.5+random()*2;
       p.vx=Math.cos(angle)*speed;p.vy=Math.sin(angle)*speed+(jump?.7:0);

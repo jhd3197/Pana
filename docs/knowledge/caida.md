@@ -223,3 +223,12 @@ identities. The six-client browser suite chooses Equipos before the other five
 players arrive and proves the table expands automatically. Shared table-seating
 proof covers self-swaps, host arrangement and round transitions using avatar
 cards rather than dropdowns.
+
+## Banderín HUD
+
+The supplied Caída HUD is adapted through `hud-banderin.css` and the opt-in
+shared `engine/banderin.css`: compact scores, right-hand activity, a yellow
+turn banner and a full-width reparto summary. Result progress bars read the
+actual team scores toward 24. Card meshes, accessible hand buttons, dealer
+ritual and the shared lobby remain functional. The narrow-screen layout moves
+activity back into the action area so it does not obscure the table.

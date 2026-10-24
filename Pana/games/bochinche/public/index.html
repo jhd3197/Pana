@@ -26,9 +26,11 @@
 
   <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.186.1/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.186.1/examples/jsm/"}}</script>
 
+<link rel="stylesheet" href="/engine/banderin.css">
+<link rel="stylesheet" href="hud-banderin.css">
 </head>
 
-<body class="in-lobby">
+<body class="in-lobby banderin">
 
   <canvas id="world" aria-label="La plaza de Bochinche en tres dimensiones"></canvas>
 
@@ -69,7 +71,7 @@
 
   <div class="connection"><span id="connection" role="status">Conectando…</span><button id="practice" class="pk-btn pk-btn--sm" hidden>Jugar en local</button></div>
 
-  <section id="results" class="pk-results" hidden aria-labelledby="result-title"><div class="pk-modal pk-results-card"><span class="pk-ribbon">FIN DE LA RONDA</span><h2 id="result-title" class="pk-title"></h2><ol id="result-roster" class="pk-roster"></ol><button id="again" class="pk-btn pk-btn--primary pk-btn--block">Revancha</button><button id="back-lobby" class="pk-btn pk-btn--block">Cambiar reglas</button><a class="pk-back" href="/">Todos los juegos</a></div></section>
+  <section id="results" class="pk-results" hidden aria-labelledby="result-title"><div class="pk-modal pk-results-card"><span class="pk-ribbon">FIN DE LA RONDA</span><h2 id="result-title" class="pk-title"></h2><img id="winner-portrait" class="winner-portrait" alt="Pana ganador" hidden><ol id="result-roster" class="pk-roster"></ol><button id="again" class="pk-btn pk-btn--primary pk-btn--block">Revancha</button><button id="back-lobby" class="pk-btn pk-btn--block">Cambiar reglas</button><a class="pk-back" href="/">Todos los juegos</a></div></section>
 
   <div id="loading" class="pk-loading"><div class="pk-panel"><h2 class="pk-heading">Preparando Bochinche</h2><p>Montando las plataformas y preparando los guantes…</p></div></div>
 

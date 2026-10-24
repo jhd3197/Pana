@@ -4,6 +4,23 @@ What changed in Pana, for the people who play it. Newest first. Every change
 that players, hosts or contributors will notice adds a line under
 `## Unreleased
 
+- **Los escenarios de Bochinche aprovechan los modelos de la biblioteca.**
+  Los Roques incorpora cocoteros y casitas detallados; Salto Ángel, vegetación
+  de selva; Catatumbo, mangles, redes, cajas de pesca y un peñero.
+
+- **Billar muestra controles de tiro más simples y legibles.**
+  Una sola indicación explica la carga; el mensaje de turno conserva su espacio
+  y el botón Tirar se adapta a escritorio y móvil.
+
+- **Los Roques llega a Bochinche y cuatro juegos estrenan HUD Banderín.**
+  Salta entre el cayo, el muelle, la balsa y el peñero. Bochinche, Caída,
+  Billar y Trifulca comparten placas, botones y resultados más claros; los
+  indicadores muestran tus panas, vidas y puntuaciones reales.
+
+- **Bochinche pelea en Salto Ángel y bajo los rayos del Catatumbo.**
+  Escoge escenario en la sala: curiara móvil, muelle con avisos de rayos y
+  ataques Rayo, Candela, Hielo y Jonrón con efectos y daño sincronizados.
+
 - **Los pepazos tumban a tu pana en la dirección del impacto.**
   Las caídas animan el personaje propio con física de partículas y colisión
   contra el suelo y la cobertura; reaparecer restaura la pose. El Cohetón tiene

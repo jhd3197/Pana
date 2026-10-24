@@ -1,8 +1,8 @@
 {
-  "date": "2026-10-21",
+  "date": "2026-10-24",
   "scope": "Current production 3D resource/model families; catalog variants and scene assemblies are counted separately. No primitive-mesh count or deleted-history total.",
   "counts": {
-    "catalog": 548,
+    "catalog": 565,
     "categories": {
       "Fauna": 25,
       "Vegetación": 50,
@@ -10,7 +10,7 @@
       "Vida llanera": 13,
       "Desierto": 10,
       "Termales": 5,
-      "Objetos": 148,
+      "Objetos": 153,
       "Emblemas": 9,
       "Pueblo": 34,
       "Páramo": 10,
@@ -23,8 +23,8 @@
       "Atmósfera": 12,
       "Vestuario": 6,
       "Personajes": 3,
-      "Vehículos": 26,
-      "Mapas": 37
+      "Vehículos": 32,
+      "Mapas": 43
     },
     "previewOnly": 142,
     "uncatalogedFamilies": 30,
@@ -39,7 +39,8 @@
       "source": "Pana/engine/models/fauna/birds/flamingo.js",
       "factory": "flamingo",
       "usedBy": [
-        "Carreritas"
+        "Carreritas",
+        "Bochinche"
       ],
       "previewOptions": {
         "pose": "stand",
@@ -98,7 +99,8 @@
       "source": "Pana/engine/models/fauna/birds/scarlet-macaw.js",
       "factory": "scarletMacaw",
       "usedBy": [
-        "Carreritas"
+        "Carreritas",
+        "Bochinche"
       ],
       "previewOptions": {
         "seed": 7
@@ -496,7 +498,8 @@
         "Billar",
         "Póquer",
         "¡Pintura!",
-        "Caída"
+        "Caída",
+        "Bochinche"
       ],
       "previewOptions": {
         "seed": 7
@@ -664,7 +667,8 @@
         "Escondidas",
         "¡Pintura!",
         "Billar",
-        "Caída"
+        "Caída",
+        "Bochinche"
       ],
       "previewOptions": {
         "seed": 7
@@ -692,7 +696,8 @@
       "source": "Pana/engine/models/vegetation/heliconia.js",
       "factory": "heliconia",
       "usedBy": [
-        "Carreritas"
+        "Carreritas",
+        "Bochinche"
       ],
       "previewOptions": {
         "seed": 7
@@ -720,7 +725,8 @@
       "source": "Pana/engine/models/vegetation/mangrove.js",
       "factory": "mangrove",
       "usedBy": [
-        "Carreritas"
+        "Carreritas",
+        "Bochinche"
       ],
       "previewOptions": {
         "seed": 7
@@ -1151,7 +1157,8 @@
       "source": "Pana/engine/models/vegetation/selva-palms.js",
       "factory": "treeFern",
       "usedBy": [
-        "Carreritas"
+        "Carreritas",
+        "Bochinche"
       ],
       "previewOptions": {
         "seed": 7
@@ -1907,7 +1914,8 @@
       "source": "Pana/engine/models/props/island-house.js",
       "factory": "casita",
       "usedBy": [
-        "Bululú"
+        "Bululú",
+        "Bochinche"
       ],
       "previewOptions": {
         "seed": 7
@@ -2434,7 +2442,8 @@
         "Escondidas",
         "¡Pintura!",
         "Billar",
-        "Caída"
+        "Caída",
+        "Bochinche"
       ],
       "previewOptions": null,
       "status": "in-use"
@@ -2518,7 +2527,8 @@
         "Escondidas",
         "¡Pintura!",
         "Billar",
-        "Caída"
+        "Caída",
+        "Bochinche"
       ],
       "previewOptions": null,
       "status": "in-use"
@@ -2531,7 +2541,8 @@
       "factory": "fishCrates",
       "usedBy": [
         "Bululú",
-        "Carreritas"
+        "Carreritas",
+        "Bochinche"
       ],
       "previewOptions": null,
       "status": "in-use"
@@ -3386,6 +3397,74 @@
       "factory": "createMoneda",
       "usedBy": [
         "¿Quién empieza?"
+      ],
+      "previewOptions": {},
+      "status": "in-use"
+    },
+    {
+      "id": "paint-chispa",
+      "name": "La Chispa",
+      "category": "Objetos",
+      "source": "Pana/engine/models/props/paintball-kit.js",
+      "factory": "createPaintKit",
+      "usedBy": [
+        "Pepazo"
+      ],
+      "previewOptions": {
+        "weapon": "pistol"
+      },
+      "status": "in-use"
+    },
+    {
+      "id": "paint-trueno",
+      "name": "El Trueno",
+      "category": "Objetos",
+      "source": "Pana/engine/models/props/paintball-kit.js",
+      "factory": "createPaintKit",
+      "usedBy": [
+        "Pepazo"
+      ],
+      "previewOptions": {
+        "weapon": "scatter"
+      },
+      "status": "in-use"
+    },
+    {
+      "id": "paint-gemelas",
+      "name": "Las Gemelas",
+      "category": "Objetos",
+      "source": "Pana/engine/models/props/paintball-kit.js",
+      "factory": "createPaintKit",
+      "usedBy": [
+        "Pepazo"
+      ],
+      "previewOptions": {
+        "weapon": "rapid"
+      },
+      "status": "in-use"
+    },
+    {
+      "id": "paint-coheton",
+      "name": "El Cohetón",
+      "category": "Objetos",
+      "source": "Pana/engine/models/props/paintball-kit.js",
+      "factory": "createPaintKit",
+      "usedBy": [
+        "Pepazo"
+      ],
+      "previewOptions": {
+        "weapon": "rocket"
+      },
+      "status": "in-use"
+    },
+    {
+      "id": "paint-acolchado",
+      "name": "El Acolchado",
+      "category": "Objetos",
+      "source": "Pana/engine/models/props/paintball-kit.js",
+      "factory": "createPaintVest",
+      "usedBy": [
+        "Pepazo"
       ],
       "previewOptions": {},
       "status": "in-use"
@@ -6352,6 +6431,72 @@
       "status": "in-use"
     },
     {
+      "id": "racing-avioneta",
+      "name": "Avioneta",
+      "category": "Vehículos",
+      "source": "Pana/engine/models/vehicles/avioneta.js",
+      "factory": "createAvioneta",
+      "usedBy": [
+        "Carreritas"
+      ],
+      "status": "in-use"
+    },
+    {
+      "id": "kit-curiara",
+      "name": "Curiara (kit)",
+      "category": "Vehículos",
+      "source": "Pana/engine/models/vehicles/lancha.js",
+      "factory": "createCuriaraRacer",
+      "usedBy": [
+        "Carreritas"
+      ],
+      "status": "in-use"
+    },
+    {
+      "id": "kit-rayo",
+      "name": "El Rayo (kit)",
+      "category": "Vehículos",
+      "source": "Pana/engine/models/vehicles/lancha.js",
+      "factory": "createRayo",
+      "usedBy": [
+        "Carreritas"
+      ],
+      "status": "in-use"
+    },
+    {
+      "id": "kit-guacamaya",
+      "name": "Guacamaya (kit)",
+      "category": "Vehículos",
+      "source": "Pana/engine/models/vehicles/avioneta.js",
+      "factory": "createGuacamaya",
+      "usedBy": [
+        "Carreritas"
+      ],
+      "status": "in-use"
+    },
+    {
+      "id": "kit-turpial",
+      "name": "Turpial (kit)",
+      "category": "Vehículos",
+      "source": "Pana/engine/models/vehicles/avioneta.js",
+      "factory": "createTurpial",
+      "usedBy": [
+        "Carreritas"
+      ],
+      "status": "in-use"
+    },
+    {
+      "id": "racing-parapente",
+      "name": "Parapente",
+      "category": "Vehículos",
+      "source": "Pana/engine/models/vehicles/parapente.js",
+      "factory": "createParapente",
+      "usedBy": [
+        "Parapente"
+      ],
+      "status": "in-use"
+    },
+    {
       "id": "wheel-calle",
       "name": "Cauchos de calle",
       "category": "Vehículos",
@@ -6813,7 +6958,8 @@
       "source": "Pana/games/carreritas/public/tracks/galipan.js",
       "factory": "makeTrack(definition).build",
       "usedBy": [
-        "Carreritas"
+        "Carreritas",
+        "Parapente"
       ],
       "status": "in-use"
     },
@@ -6855,6 +7001,72 @@
       "name": "Circuito · Gran Sabana",
       "category": "Mapas",
       "source": "Pana/games/carreritas/public/tracks/sabana.js",
+      "factory": "makeTrack(definition).build",
+      "usedBy": [
+        "Carreritas"
+      ],
+      "status": "in-use"
+    },
+    {
+      "id": "track-cosmos",
+      "name": "Circuito · Cosmos",
+      "category": "Mapas",
+      "source": "Pana/games/carreritas/public/tracks/cosmos.js",
+      "factory": "makeTrack(definition).build",
+      "usedBy": [
+        "Carreritas"
+      ],
+      "status": "in-use"
+    },
+    {
+      "id": "track-merida",
+      "name": "Circuito · Mérida",
+      "category": "Mapas",
+      "source": "Pana/games/carreritas/public/tracks/merida.js",
+      "factory": "makeTrack(definition).build",
+      "usedBy": [
+        "Carreritas"
+      ],
+      "status": "in-use"
+    },
+    {
+      "id": "track-arrecife",
+      "name": "Circuito · Arrecife",
+      "category": "Mapas",
+      "source": "Pana/games/carreritas/public/tracks/arrecife.js",
+      "factory": "makeTrack(definition).build",
+      "usedBy": [
+        "Carreritas"
+      ],
+      "status": "in-use"
+    },
+    {
+      "id": "track-volcan",
+      "name": "Circuito · Volcán",
+      "category": "Mapas",
+      "source": "Pana/games/carreritas/public/tracks/volcan.js",
+      "factory": "makeTrack(definition).build",
+      "usedBy": [
+        "Carreritas"
+      ],
+      "status": "in-use"
+    },
+    {
+      "id": "track-nubes",
+      "name": "Circuito · Nubes",
+      "category": "Mapas",
+      "source": "Pana/games/carreritas/public/tracks/nubes.js",
+      "factory": "makeTrack(definition).build",
+      "usedBy": [
+        "Carreritas"
+      ],
+      "status": "in-use"
+    },
+    {
+      "id": "track-dulce",
+      "name": "Circuito · Dulce",
+      "category": "Mapas",
+      "source": "Pana/games/carreritas/public/tracks/dulce.js",
       "factory": "makeTrack(definition).build",
       "usedBy": [
         "Carreritas"
@@ -7622,7 +7834,7 @@
       "anchor": "function rowboat",
       "where": "Selva; Llanos",
       "note": "Two active river boats. Keep shallow-water footprint when upgrading.",
-      "line": 447
+      "line": 450
     },
     {
       "name": "Canal/dive-village boat",
@@ -7686,7 +7898,7 @@
       "anchor": "function crateArt",
       "where": "All eight Carreritas races",
       "note": "Gameplay crate is distinct from the Plaza disguise crate.",
-      "line": 11
+      "line": 13
     },
     {
       "name": "Collectible coin",
@@ -7694,7 +7906,7 @@
       "anchor": "function coinArt",
       "where": "All eight Carreritas races",
       "note": "Coin trails and pickups.",
-      "line": 51
+      "line": 56
     },
     {
       "name": "Mango peel",
@@ -7702,7 +7914,7 @@
       "anchor": "function makePeel",
       "where": "Carreritas item use",
       "note": "Three peel strips and seed; not the whole mango.",
-      "line": 78
+      "line": 64
     },
     {
       "name": "Kitchen sign",
@@ -7792,7 +8004,7 @@
       "anchor": "function waterfall",
       "where": "Selva",
       "note": "Active older waterfall; separate from waterfallRocks in Chi Chi.",
-      "line": 293
+      "line": 296
     },
     {
       "name": "Pond and river wrappers",
@@ -7800,7 +8012,7 @@
       "anchor": "function waterPond",
       "where": "Selva",
       "note": "waterPond/waterRibbon wrap the shared water surface.",
-      "line": 283
+      "line": 286
     },
     {
       "name": "Country grass tufts",
@@ -7928,7 +8140,7 @@
       "anchor": "Low jetties",
       "where": "Bululú circuit",
       "note": "Inline harbor planks and pilings.",
-      "line": 106
+      "line": 113
     },
     {
       "name": "Plaza streets, gardens and mirador",
@@ -7936,7 +8148,7 @@
       "anchor": "function createTown",
       "where": "Plaza circuit",
       "note": "Street surfaces, block gardens, lookout terrace and stairs; shared houses/trees counted separately.",
-      "line": 47
+      "line": 49
     },
     {
       "name": "Plaza waterfront canals and docks",
@@ -7948,7 +8160,7 @@
     },
     {
       "name": "Continuous circuit surroundings",
-      "source": "Pana/games/carreritas/public/tracks/world-horizon.js",
+      "source": "Pana/engine/worlds/coastal/world-horizon.js",
       "anchor": "function extendTerrain",
       "where": "All eight Carreritas races",
       "note": "Exact grid-edge joins to coarser outer terrain; coastal water keeps its detailed near grid and gains a far apron.",
@@ -8056,7 +8268,7 @@
       "anchor": "function padTexture",
       "where": "Carreritas",
       "note": "Animated ground marker, separate from collectible item models.",
-      "line": 102
+      "line": 88
     },
     {
       "name": "Puffs, debris and speech bubbles",
@@ -8064,7 +8276,7 @@
       "anchor": "export class Puffs",
       "where": "Bululú; Carreritas",
       "note": "Particle/sprite effects, not scenery inventory counts.",
-      "line": 317
+      "line": 375
     },
     {
       "name": "Crate fragment bursts",
@@ -8106,7 +8318,7 @@
       "anchor": "function windmill",
       "where": "No current production callsite",
       "note": "Current Llanos uses ranch-props.waterWindmill.",
-      "line": 374
+      "line": 377
     },
     {
       "name": "Old arepa stand",
@@ -8114,7 +8326,7 @@
       "anchor": "function arepaStand",
       "where": "No current production callsite",
       "note": "Current maps use streetFoodKiosk.",
-      "line": 404
+      "line": 407
     },
     {
       "name": "Generic dock",
@@ -8122,7 +8334,7 @@
       "anchor": "function dock",
       "where": "No current production callsite",
       "note": "Maps now build docks against their shore/deck.",
-      "line": 434
+      "line": 437
     },
     {
       "name": "Generic sailboat",
@@ -8130,7 +8342,7 @@
       "anchor": "function sailboat",
       "where": "No current production callsite",
       "note": "No production caller; internally uses rowboat, which remains active.",
-      "line": 459
+      "line": 462
     },
     {
       "name": "Generic plank/rope bridge",
@@ -8138,7 +8350,7 @@
       "anchor": "function bridge",
       "where": "No current production callsite",
       "note": "Active crossings have road-specific decks or newer shared factories.",
-      "line": 318
+      "line": 321
     },
     {
       "name": "Distant mountain ring",
@@ -8146,7 +8358,7 @@
       "anchor": "function distantMountains",
       "where": "No current production callsite",
       "note": "Current maps use their own terrain or island-landscape.",
-      "line": 478
+      "line": 481
     },
     {
       "name": "Old route landscape scatter",
@@ -8154,7 +8366,7 @@
       "anchor": "function routeLandscape",
       "where": "No current production callsite",
       "note": "Current worlds supply habitat-specific planting.",
-      "line": 522
+      "line": 525
     },
     {
       "name": "Tire-wall generator",

@@ -60,7 +60,7 @@ export class Bash {
     const config = { players: this.players.map((p, slot) => ({ slot, name: p.name,
       fighter: STYLES[p.style], skin: '00', cpu: p.bot, cpuLevel: this.options.level })),
       stocks: this.options.stocks, timeLimitSeconds: this.options.seconds,
-      items: this.options.items, itemFrequency: 'medium', stage: 'verdant-grove' };
+      items: this.options.items, itemFrequency: 'medium', stage: this.options.stage ?? 'verdant-grove' };
     this.combat = new CombatGame(config, { seed: this.seed + ++this.round, countdownFrames: 180 });
     this.cpu = this.players.map((_, slot) => new CpuController(slot, this.options.level, this.seed + this.round));
     this.phase = 'playing'; this.winner = null; this.previous = {}; this.accumulator = 0;

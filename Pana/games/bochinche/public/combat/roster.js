@@ -1,3 +1,4 @@
+import { applyArtifactAttacks } from '../artifact-attacks.js';
 // Adapted from Super Bash Folds (MIT); see ../../SOURCE.md.
 import {
   FIGHTER_IDS,
@@ -18,7 +19,8 @@ export {
 /** Visual model height relative to the gameplay hurtbox height. */
 export const SPRITE_VISUAL_TO_BODY_HEIGHT_RATIO = 1.17;
 
-export const ROSTER                                       = OPEN_ROSTER;
+export const ROSTER = OPEN_ROSTER;
+applyArtifactAttacks(ROSTER);
 
 export function getFighterDefinition(id           )                    {
   return ROSTER[id];

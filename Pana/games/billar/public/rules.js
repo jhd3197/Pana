@@ -140,7 +140,7 @@ export function acceptAction(state, id, action, hostId) {
     const breaker = continuing ? state.options.breakPolicy === 'alternate' ? 1 - state.breaker : state.options.breakPolicy === 'winner' ? state.result.team : 1 - state.result.team : 0;
     Object.assign(state, fresh, { players: state.players, mapId: state.mapId, difficulty: state.difficulty, revision: state.revision + 1, round: state.round + 1,
       options: state.options, balls: rack(state.options.variant), activeSeats: occupiedSeats(state), scores: continuing ? state.scores : [0, 0], breaker,
-      phase: 'aiming', message: state.options.variant === 'nine' ? '¡A romper! Toca primero la bola de menor número y busca la nueve.' : state.practice ? 'Practica: mete las 15 bolas. Deja la ocho para el final.' : '¡A romper! La primera bola legal elige tu grupo.' });
+      phase: 'aiming', message: state.options.variant === 'nine' ? '¡A romper! Toca primero la bola de menor número y busca la nueve.' : state.practice ? 'Deja la ocho para el final.' : '¡A romper! La primera bola legal elige tu grupo.' });
     state.turn = nextShooter(state, breaker);
     if (state.options.variant === 'nine') state.message = 'Bola 9: toca primero la bola de menor número. La nueve gana la mesa.';
     if (continuing) return true;

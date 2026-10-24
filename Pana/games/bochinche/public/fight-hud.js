@@ -1,10 +1,12 @@
+import { cachedPortrait } from '/engine/portrait-cache.js';
+import { ATTACK_THEMES } from './artifact-attacks.js';
 import { STYLE_NAMES } from './rules.js';
 export function createFightHud() {
   const reduced=matchMedia('(prefers-reduced-motion: reduce)');
   const rows=[0,1,2,3,4,5].map(i=>{
     const root=document.getElementById('fighter-'+i);
-    root.innerHTML='<div class="fighter-label"><span class="fighter-name"></span><span class="fighter-style"></span></div><div class="fighter-vitals"><b class="damage">0<small>%</small></b><div class="fighter-reserves"><span class="stocks"></span><span class="shield-label">Escudo</span><span class="shield-track"><span></span></span></div></div>';
-    return {root,name:root.querySelector('.fighter-name'),style:root.querySelector('.fighter-style'),damage:root.querySelector('.damage'),stocks:root.querySelector('.stocks'),shield:root.querySelector('.shield-track span'),percent:0};
+    root.innerHTML='<img class="fighter-portrait" alt=""><div class="fighter-label"><span class="fighter-name"></span><span class="fighter-style"></span></div><div class="fighter-vitals"><b class="damage">0<small>%</small></b><div class="fighter-reserves"><span class="stocks"></span><span class="shield-label">Escudo</span><span class="shield-track"><span></span></span></div></div>';
+    return {root,portrait:root.querySelector('.fighter-portrait'),portraitKey:null,name:root.querySelector('.fighter-name'),style:root.querySelector('.fighter-style'),damage:root.querySelector('.damage'),stocks:root.querySelector('.stocks'),shield:root.querySelector('.shield-track span'),percent:0};
   });
   const call=document.getElementById('countdown');let round=-1,frame=-1,until=0,message='';
   return state=>{
@@ -12,10 +14,23 @@ export function createFightHud() {
     rows.forEach((row, i) => { row.root.hidden = !state.players[i]; });
     state.players.forEach((p,i)=>{
       const row=rows[i], f=state.fight?.fighters[i],percent=Math.round(f?.percent??0),stocks=f?.stocks??state.options.stocks;
+      const avatar=p.bot?{outfitColor:['#ffc629','#2ad1b2','#fa7467','#a798e8','#77b8ff','#f5a552'][i],face:'feliz'}:p.avatar;
+      const key=JSON.stringify(avatar);
+      if(key!==row.portraitKey){
+        row.portraitKey=key;row.portrait.removeAttribute('src');
+        const cached=cachedPortrait(avatar);
+        if(cached)row.portrait.src=cached;
+        else import('/engine/portrait.js').then(({portrait})=>portrait(avatar)).then(src=>{if(row.portraitKey===key)row.portrait.src=src;}).catch(()=>{});
+      }
       row.name.textContent=p.name;row.style.textContent=p.bot?'Bot · '+STYLE_NAMES[p.style]:STYLE_NAMES[p.style];
       if(row.percent!==percent){row.damage.innerHTML=percent+'<small>%</small>';if(percent>row.percent&&!reduced.matches)row.damage.animate([{transform:'scale(1.18)'},{transform:'scale(1)'}],{duration:190});row.percent=percent;}
       row.root.dataset.danger=percent>=100?'high':percent>=60?'medium':'low';
-      row.stocks.textContent=stocks>0?stocks+' '+(stocks===1?'vida':'vidas'):'Fuera';
+      const stockKey=stocks+':'+state.options.stocks;
+      if(row.stocks.dataset.value!==stockKey){
+        row.stocks.dataset.value=stockKey;row.stocks.replaceChildren();
+        row.stocks.setAttribute('aria-label',stocks+' vidas');
+        for(let life=0;life<state.options.stocks;life++){const pip=document.createElement('i');pip.className=life>=stocks?'is-lost':'';pip.setAttribute('aria-hidden','true');row.stocks.append(pip);}
+      }
       row.root.dataset.out=stocks===0;
       row.shield.style.transform=`scaleX(${f?Math.max(0,f.shield/f.maxShield):1})`;
       row.root.setAttribute('aria-label',`${p.name}: ${percent}% de daño, ${stocks} vidas`);
@@ -24,6 +39,7 @@ export function createFightHud() {
     if(fight&&fight.frame>frame){
       for(const e of fight.events){
         if(e.frame<=frame)continue;
+        if(e.type==='hit'&&ATTACK_THEMES[e.move]){message='¡'+ATTACK_THEMES[e.move].name+'!';until=now+500;}
         if(e.type==='ko'){message='¡Fuera!';until=now+1000;}
         if(e.type==='match-start'){message='¡Dale!';until=now+650;}
         if(e.type==='sudden-death'){message='Muerte súbita';until=now+1500;}

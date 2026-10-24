@@ -160,3 +160,17 @@ Rows are built from text only, so names never become HTML. Row fields: `rank`,
 a modal `<dialog>` (Caída, Dominó) keeps the dialog and puts `pk-results-card` on
 the card. Carreritas (podium) and Bululú (medals and portraits) keep their own layouts
 but follow the same order of pieces.
+
+## Opt-in Banderín presentation
+
+`engine/banderin.css` scopes the common angled panels, flat controls, lobby
+finishing and larger results to `body.banderin`. Bochinche, Caída, Billar and
+Trifulca opt in and load their own `hud-banderin.css` afterward for game-specific
+placement. This is a skin over kit/menu/sala, not a parallel lobby or pause
+implementation. The user-supplied HUD packages are design references; live
+state supplies all numbers, portraits, button permissions and result data.
+
+On phone layouts the Banderín lobby stacks the start action and local-play
+buttons. Keep these rows separate: an overflowing skewed start button can
+receive touch events intended for Billar's practice button even when its
+bounding box appears to fit the viewport.
