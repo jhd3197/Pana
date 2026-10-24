@@ -604,5 +604,9 @@ export function plankRoad(T, sc) {
     a.rotation.y = h + Math.PI;   // the shape's tip points along -z before turning
     g.add(a);
   }
-  return g;
+  // Driving reads the analytic plankAt, so the planks are only seen: merged
+  // by material they are ~4 draws instead of one per plank and post.
+  const out = bake(g); out.name = 'shortcut';
+  for (const geometry of [plank, pole, arrowGeo]) geometry.dispose();
+  return out;
 }
