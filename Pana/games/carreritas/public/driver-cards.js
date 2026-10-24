@@ -4,7 +4,7 @@
 // simply stay fully detailed.
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
-import { impostorPlacements } from '/engine/models/core/impostor.js';
+import { impostorPlacements, snapshot } from '/engine/models/core/impostor.js';
 
 export const DRIVER_CARD_FROM = 14;   // metres from a camera: closer, the real pana
 export const CAR_FAR_FROM = 35;       // metres from every camera: farther, one mesh
@@ -16,22 +16,7 @@ const FAR_MATERIAL = new THREE.MeshStandardMaterial({ vertexColors: true, roughn
 export function cardDriver(car) {
   const group = car.driver?.group, parent = group?.parent;
   if (!parent) return car;
-  parent.updateMatrixWorld(true);
-  const toParent = new THREE.Matrix4().copy(parent.matrixWorld).invert(), local = new THREE.Matrix4(), point = new THREE.Vector3();
-  const source = new THREE.Group();
-  group.traverse(o => {
-    if (!o.isMesh) return;
-    for (let p = o; p && p !== parent; p = p.parent) if (!p.visible) return;
-    const geometry = new THREE.BufferGeometry(), from = o.geometry.attributes.position, positions = new Float32Array(from.count * 3);
-    // Freeze skinned or morphed surfaces in their current (seated) pose.
-    for (let i = 0; i < from.count; i++) { o.getVertexPosition(i, point); point.toArray(positions, i * 3); }
-    geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-    if (o.geometry.attributes.color) geometry.setAttribute('color', o.geometry.attributes.color.clone());
-    if (o.geometry.index) geometry.setIndex(o.geometry.index.clone());
-    geometry.computeVertexNormals();
-    geometry.applyMatrix4(local.multiplyMatrices(toParent, o.matrixWorld));
-    source.add(new THREE.Mesh(geometry, o.material));
-  });
+  const source = snapshot(group, parent);
   if (!source.children.length) return car;
   const center = new THREE.Box3().setFromObject(source).getCenter(new THREE.Vector3());
   source.children.forEach(m => m.geometry.translate(-center.x, 0, -center.z));

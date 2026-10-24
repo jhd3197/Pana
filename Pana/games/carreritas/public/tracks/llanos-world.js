@@ -1,6 +1,7 @@
 import { festive, meadow } from './festive.js';
 import { groundPaint } from './ground-paint.js';
 import { THREE,M,mesh,box,tube,terrain,put,foundation,scatter,instances,clear,finish,smooth,placeOnTrack } from './world-kit.js';
+import { impostorLOD } from '/engine/models/core/impostor.js';
 import { llaneroRanchHouse, corralGate, hayBale, waterWindmill, horseStable, feedingTrough, ranchFence, oldTractor, mudPuddle, ranchWaterTower } from '/engine/models/props/ranch.js';
 import { palm } from '/engine/models/vegetation/palm.js';
 import { mangoTree } from '/engine/models/vegetation/mango-tree.js';
@@ -41,6 +42,9 @@ export function llanosEnvironment(T){
       :put(parent,factory(),x,z,world.groundAt(x,z)+.02,rotation,scale);
     if(animate)moving.push(model);return model;
   };
+  // Animals beyond 45 m of the camera are baked cards (impostor.js); their
+  // grazing only runs while the real model shows.
+  const herd=animal=>impostorLOD(animal,45);
   const ranch=new THREE.Group();
   add(ranch,'ranch-house',llaneroRanchHouse,-240,137,{scale:1.35,radius:6});
   add(ranch,'horse-stable',horseStable,-190,106,{rotation:-.5,scale:1.5,radius:7});
@@ -78,15 +82,15 @@ export function llanosEnvironment(T){
   const fauna=new THREE.Group();fauna.name='llanos-farm-animals';group.add(fauna);
   for(const [i,x,z]of [[0,-253,92],[1,-230,83],[2,-239,105],[3,240,-204],[4,258,-210],[5,216,-188],[6,-80,125],[7,-108,117]]){
     const animal=add(fauna,'hato-cow',()=>hatoCow({seed:41+i,coat:i%3?'pinto':'brown'}),x,z,{rotation:i*.9,scale:1.2,radius:3,animate:true});
-    animal.userData.footprintRadius=3;
+    animal.userData.footprintRadius=3;herd(animal);
   }
   for(const [seed,x,z,rotation,coat] of [[7,-198,116,-.6,'bay'],[11,-224,99,1.9,'palomino'],[19,263,-213,2.7,'grey']]){
     const animal=add(fauna,'llanero-horse',()=>llaneroHorse({seed,coat}),x,z,{rotation,scale:1.25,radius:3,animate:true});
-    animal.userData.footprintRadius=3;
+    animal.userData.footprintRadius=3;herd(animal);
   }
   for(const [i,x,z] of [[0,-234,129],[1,-231,127],[2,-228,130],[3,-233,124],[4,-226,126],[5,246,-227],[6,250,-226],[7,248,-224]]){
     const animal=add(fauna,'yard-chicken',()=>yardChicken({seed:31+i,coat:i%3?'red':'cream'}),x,z,{rotation:i*1.7,scale:1.2,radius:1,animate:true});
-    animal.userData.footprintRadius=1;
+    animal.userData.footprintRadius=1;herd(animal);
   }
   // One surface shares the terrain's grid and triangle split. Signed bed depth
   // clips the shader at the actual bank, including under both elevated bridges.
@@ -146,7 +150,7 @@ export function llanosEnvironment(T){
   instances(group,palm({seed:17,h:9}),scatter(T,world.groundAt,{seed:418,count:20,bounds:[-150,-340,360,280],margin:9,scale:1.1,accept:dry}),'savanna-palms',180);
   const landscape=llanosLandscape(T,world,occupied);group.add(landscape);group.userData.surroundings=landscape.userData.surroundings;
   group.userData.assetCounts=counts;const water=waterAnimator(group);
-  return {group,groundAt:world.groundAt,update:t=>{water(t);moving.forEach(o=>o.userData.tick?.(t));}};
+  return {group,groundAt:world.groundAt,update:t=>{water(t);moving.forEach(o=>{if(o.visible)o.userData.tick?.(t);});}};
 }
 
 export function llanosScenery(group,kit,T){

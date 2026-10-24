@@ -110,6 +110,42 @@ function bakeRecord(renderer, record) {
   record.baked = true;
 }
 
+// A static copy of what `root` shows right now: every visible mesh, skinned
+// or morphed surfaces frozen in their current pose, in the space of `frame`
+// (default: root itself). Materials are shared; geometry is new, for a bake.
+export function snapshot(root, frame = root) {
+  frame.updateMatrixWorld(true);
+  const toFrame = frame.matrixWorld.clone().invert(), local = new THREE.Matrix4(), point = new THREE.Vector3(), out = new THREE.Group();
+  root.traverse(o => {
+    if (!o.isMesh) return;
+    for (let p = o; p && p !== root.parent; p = p.parent) if (!p.visible) return;
+    const geometry = new THREE.BufferGeometry(), from = o.geometry.attributes.position, positions = new Float32Array(from.count * 3);
+    for (let i = 0; i < from.count; i++) { o.getVertexPosition(i, point); point.toArray(positions, i * 3); }
+    geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+    if (o.geometry.attributes.color) geometry.setAttribute('color', o.geometry.attributes.color.clone());
+    if (o.geometry.index) geometry.setIndex(o.geometry.index.clone());
+    geometry.computeVertexNormals();
+    geometry.applyMatrix4(local.multiplyMatrices(toFrame, o.matrixWorld));
+    out.add(new THREE.Mesh(geometry, o.material));
+  });
+  return out;
+}
+
+// Wraps a placed model in a THREE.LOD: the real model within `distance` of
+// the camera, its baked card beyond. The renderer picks the level each frame;
+// a hidden model's own animation can skip while `object.visible` is false.
+export function impostorLOD(object, distance, options = {}) {
+  const lod = new THREE.LOD(), { tick, ...meta } = object.userData;
+  lod.name = `${object.name || 'model'}-lod`; lod.userData = meta;   // placement checks read footprint and species
+  object.updateMatrix(); object.matrix.decompose(lod.position, lod.quaternion, lod.scale);
+  object.parent?.add(lod);
+  object.position.set(0, 0, 0); object.quaternion.identity(); object.scale.set(1, 1, 1);
+  const card = new THREE.Group();
+  impostorPlacements(card, snapshot(object), [{ x: 0, y: 0, z: 0 }], { tile: 128, ...options });
+  lod.addLevel(object, 0); lod.addLevel(card, distance);
+  return lod;
+}
+
 const blank = new THREE.DataTexture(new Uint8Array(4), 1, 1); blank.needsUpdate = true;
 function impostorMaterial(uniforms, { roughness = .85, emissive = 0x000000 } = {}) {
   const material = new THREE.MeshStandardMaterial({ roughness, metalness: 0, emissive, alphaTest: .5 });

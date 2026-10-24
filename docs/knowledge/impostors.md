@@ -40,6 +40,18 @@ silhouettes); a card of the detailed model looked airier and emptier than
 the current hills. Trees beyond `IMPOSTOR_FROM` (45 m from the route) become
 cards; passing cars never see one turn.
 
+## Animated models: snapshot and impostorLOD
+
+`snapshot(root, frame)` copies what a model shows right now (skinned and
+morphed surfaces frozen in their current pose) as static meshes in `frame`'s
+space, ready to bake; driver cards use it. `impostorLOD(object, distance)`
+wraps a placed model in a `THREE.LOD`: the real model near the camera, its
+card beyond. The LOD takes the object's transform and its userData (minus
+`tick`), so placement checks keep reading footprint and species from the
+group's children. Skip a model's animation while `object.visible` is false
+(the LOD hides it). Llanos' 19 animals use 45 m: 108–153 draws (with their
+shadows) became at most 19, and cards cast no shadow.
+
 ## Groves
 
 `coastalVegetation(..., { clump: n })` bakes each far-band card (beyond 70 m)
