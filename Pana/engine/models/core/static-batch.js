@@ -3,8 +3,11 @@ import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 
 // Merge every static mesh under `root` into one mesh per material.
 // Textured and transparent meshes stay separate. Vertex colors are retained
-// for foliage's top-to-bottom color variation.
-export function bake(root, { cellSize = Infinity } = {}) {
+// for foliage's top-to-bottom color variation. With `tint`, plain standard
+// materials that differ only in colour share one batch: each mesh's exact
+// linear colour moves into its vertices (as racer batching does), so a prop
+// of twenty paints is one draw. The new materials are in userData.tinted.
+export function bake(root, { cellSize = Infinity, tint = false } = {}) {
   root.updateMatrixWorld(true);
   const buckets = new Map();
   const keep = [];
@@ -29,16 +32,30 @@ export function bake(root, { cellSize = Infinity } = {}) {
     geo.applyMatrix4(m.matrixWorld);
     // same look = same bucket, even when two builders made separate materials
     const mt = m.material;
+    const tinted = tint && mt.isMeshStandardMaterial && !mt.isMeshPhysicalMaterial && !mt.map && !mt.transparent
+      && mt.onBeforeCompile === THREE.Material.prototype.onBeforeCompile && !geo.attributes.natureSurface;
+    if (tinted) {
+      const source = mt.vertexColors ? geo.attributes.color : null, count = geo.attributes.position.count, values = new Float32Array(count * 3);
+      for (let i = 0; i < count; i++) {
+        values[i * 3] = mt.color.r * (source ? source.getX(i) : 1);
+        values[i * 3 + 1] = mt.color.g * (source ? source.getY(i) : 1);
+        values[i * 3 + 2] = mt.color.b * (source ? source.getZ(i) : 1);
+      }
+      geo.setAttribute('color', new THREE.Float32BufferAttribute(values, 3));
+    }
     // Optional spatial buckets let large race environments cull distant
     // vegetation instead of submitting every tree in the world each frame.
     const cellX = Math.floor(m.matrixWorld.elements[12] / cellSize);
     const cellZ = Math.floor(m.matrixWorld.elements[14] / cellSize);
-    const key = [cellX, cellZ, mt.type, mt.color?.getHex(), mt.emissive?.getHex(), mt.emissiveIntensity, mt.roughness, mt.metalness, mt.side, mt.flatShading, mt.vertexColors, !!geo.attributes.color, m.castShadow, m.receiveShadow].join('|');
-    if (!buckets.has(key)) buckets.set(key, { mat: mt, geos: [], castShadow: m.castShadow, receiveShadow: m.receiveShadow });
+    const key = [cellX, cellZ, mt.type, tinted ? 'tint' : mt.color?.getHex(), mt.emissive?.getHex(), mt.emissiveIntensity, mt.roughness, mt.metalness, mt.side, mt.flatShading, tinted || mt.vertexColors, !!geo.attributes.color, m.castShadow, m.receiveShadow].join('|');
+    if (!buckets.has(key)) buckets.set(key, { mat: mt, geos: [], castShadow: m.castShadow, receiveShadow: m.receiveShadow, tinted });
     buckets.get(key).geos.push(geo);
   });
   const out = new THREE.Group();
-  for (const { mat, geos, castShadow, receiveShadow } of buckets.values()) {
+  out.userData.tinted = [];
+  for (const { mat: source, geos, castShadow, receiveShadow, tinted } of buckets.values()) {
+    let mat = source;
+    if (tinted) { mat = source.clone(); mat.color.set(0xffffff); mat.vertexColors = true; out.userData.tinted.push(mat); }
     if (geos.some(g => g.attributes.natureSurface)) for (const g of geos) {
       if (!g.attributes.natureSurface) g.setAttribute('natureSurface', new THREE.BufferAttribute(new Uint8Array(g.attributes.position.count), 1, true));
     }
