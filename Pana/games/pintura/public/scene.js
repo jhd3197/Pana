@@ -1,3 +1,4 @@
+import { createKnockout } from './knockout.js';
 import { createPaintKit, createPaintVest } from '/engine/models/props/paintball-kit.js';
 import { FINISHES } from './armory-data.js';
 import { createArenaEnvironment } from '/engine/worlds/arenas.js';
@@ -158,7 +159,7 @@ export function createScene(canvas) {
     while (avatar.stains.length < stains.length) {
       const blob = new THREE.Mesh(stainGeo), n = avatar.stainCount++, a = n * 2.4 + p.id * 1.3;
       blob.position.set(Math.sin(a) * .26, .7 + (n * .37) % .75, Math.cos(a) * .26); blob.rotation.y = a; blob.scale.set(1.2 + (n % 3) * .25, 1.4, .45);
-      avatar.group.add(blob); avatar.stains.push(blob);
+      avatar.group.add(blob); avatar.body.attach(blob); avatar.stains.push(blob);
     }
     avatar.stains.forEach((blob, i) => { blob.material = gloss(stains[i]); });
   }
@@ -219,15 +220,15 @@ export function createScene(canvas) {
         avatar.group.rotation.order = 'YXZ'; avatars.set(p.id, avatar);
       }
       // A pepazo makes the pana flinch; the last one bursts paint and topples them.
-      if ((p.paint || 0) > avatar.paint) { avatar.flinch = 1; if (p.id === id) shake = Math.max(shake, .8); }
+      if ((p.paint || 0) > avatar.paint) { avatar.flinch = 1; avatar.stagger(.8, Math.atan2(p.impact?.z || 0, p.impact?.x || 1) - Math.atan2(p.ax,p.az)); if (p.id === id) shake = Math.max(shake, .8); }
       avatar.paint = p.paint || 0;
       const down = p.respawn > 0 || p.eliminated;
       if (down && avatar.out === 0) {
-        avatar.out = 1e-6; if (p.id === id) shake = 1.2;
+        avatar.out = 1e-6; avatar.knockout = createKnockout(avatar, p.impact || {x: -p.ax, z: -p.az}, coverFor(state.mapId, state.variant || 0)); if (p.id === id) shake = 1.2;
         const color = p.stains?.at(-1) || p.color;
         puffs.spawn({ x: avatar.group.position.x, y: 1, z: avatar.group.position.z }, { color, count: 14, spread: 1, size: .7, rise: 2.4, life: .9 });
       }
-      if (!down) avatar.out = 0; else avatar.out += dt;
+      if (!down) { avatar.out = 0; avatar.knockout?.reset(); avatar.knockout = null; } else avatar.out += dt;
       syncStains(avatar, p);
       if (avatar.paintColor !== p.color || avatar.kitKey !== JSON.stringify(modelOptions(p))) {
         avatar.marker.removeFromParent(); avatar.marker.userData.dispose();
@@ -236,17 +237,18 @@ export function createScene(canvas) {
       if(!avatar.vest) {avatar.vest=createPaintVest();avatar.group.add(avatar.vest);}
       avatar.vest.visible=p.kit?.armor==='padded';
       avatar.ring.material.color.set(p.color);
-      const falling = down && avatar.out < .9;
+      const falling = down && avatar.out < 2.2;
       avatar.group.visible = p.connected && (!down || falling) && !(first && p.id === id);
       if (Math.hypot(avatar.group.position.x - p.x, avatar.group.position.z - p.z) > 6) avatar.group.position.set(p.x, 0, p.z);
       else avatar.group.position.lerp(new THREE.Vector3(p.x, 0, p.z), 1 - Math.exp(-dt * 20));
       avatar.flinch = Math.max(0, avatar.flinch - dt * 5);
-      const fall = falling ? Math.min(1, avatar.out / .45) : 0;
-      avatar.group.rotation.set(-avatar.flinch * .35 - fall * 1.35, Math.atan2(p.ax, p.az), Math.sin(avatar.out * 9) * fall * .2);
-      avatar.group.position.y = -fall * .25; avatar.ring.scale.setScalar(p.id === id ? 1.25 : 1); avatar.ring.visible = p.shield <= 0 || Math.floor(performance.now() / 140) % 2 === 0;
-      if (!falling) avatar.update(dt, { walk: p.walk, run: p.walk });
+      avatar.group.rotation.set(-avatar.flinch * .35, Math.atan2(p.ax, p.az), 0);
+      avatar.group.position.y = 0; avatar.ring.scale.setScalar(p.id === id ? 1.25 : 1); avatar.ring.visible = !down && (p.shield <= 0 || Math.floor(performance.now() / 140) % 2 === 0);
+      avatar.marker.visible = !down; avatar.vest.visible = !down && p.kit?.armor === 'padded';
+      if (falling && avatar.knockout) { avatar.group.rotation.set(0, Math.atan2(p.ax,p.az), 0); avatar.knockout.update(dt); }
+      else avatar.update(dt, { walk: p.walk, run: p.walk });
     }
-    for (const [id, avatar] of avatars) if (!state.players.some(p => p.id === id)) { avatar.marker.userData.dispose(); avatar.vest?.userData.dispose(); avatar.ring.removeFromParent(); avatar.ring.material.dispose(); avatar.dispose(); avatars.delete(id); }
+    for (const [id, avatar] of avatars) if (!state.players.some(p => p.id === id)) { avatar.marker.userData.dispose(); avatar.vest?.userData.dispose(); avatar.ring.removeFromParent(); avatar.ring.material.dispose(); avatar.stains.forEach(blob => blob.removeFromParent()); avatar.dispose(); avatars.delete(id); }
     camera.aspect = aspect;
     if (first) {
       const body = avatars.get(id).group.position;
@@ -311,6 +313,6 @@ export function createScene(canvas) {
     movement(x, z) { return cameraView === 'primera' ? { x: x * Math.cos(yaw) + z * Math.sin(yaw), z: -x * Math.sin(yaw) + z * Math.cos(yaw) } : { x, z }; },
     point(clientX, clientY) { const rect = canvas.getBoundingClientRect(); mouse.set((clientX - rect.left) / rect.width * 2 - 1, -(clientY - rect.top) / rect.height * 2 + 1); ray.setFromCamera(mouse, camera); return ray.ray.intersectPlane(plane, point)?.clone(); },
     screen(x, z) { const p = new THREE.Vector3(x, 1.1, z).project(camera), r = canvas.getBoundingClientRect(); return { x: r.left + (p.x + 1) / 2 * r.width, y: r.top + (1 - p.y) / 2 * r.height }; },
-    dispose() { unbind(); puffs.clear(); halos.forEach(m => m.dispose()); halo.dispose(); glossy.forEach(m => m.dispose()); stainGeo.dispose(); sky.dispose(); environment?.dispose(); disposeModel(defaultCourt); held?.userData.dispose(); kitObjects.forEach(o=>{o.geometry.dispose();o.material.dispose();}); hitMaterials.forEach(m => m.dispose()); hitTextures.forEach(t => t.dispose()); avatars.forEach(a => { a.marker.userData.dispose(); a.vest?.userData.dispose(); a.ring.removeFromParent(); a.ring.material.dispose(); a.dispose(); }); const geometries = new Set([ringGeo, ballGeo, splatGeo]), textures = new Set(); scene.traverse(o => { if (o.geometry) geometries.add(o.geometry); if (o.material?.map) textures.add(o.material.map); }); geometries.forEach(g => g.dispose()); textures.forEach(t => t.dispose()); materials.forEach(m => m.dispose()); aim.material.dispose(); renderer.dispose(); },
+    dispose() { unbind(); puffs.clear(); halos.forEach(m => m.dispose()); halo.dispose(); glossy.forEach(m => m.dispose()); stainGeo.dispose(); sky.dispose(); environment?.dispose(); disposeModel(defaultCourt); held?.userData.dispose(); kitObjects.forEach(o=>{o.geometry.dispose();o.material.dispose();}); hitMaterials.forEach(m => m.dispose()); hitTextures.forEach(t => t.dispose()); avatars.forEach(a => { a.marker.userData.dispose(); a.vest?.userData.dispose(); a.ring.removeFromParent(); a.ring.material.dispose(); a.stains.forEach(blob => blob.removeFromParent()); a.dispose(); }); const geometries = new Set([ringGeo, ballGeo, splatGeo]), textures = new Set(); scene.traverse(o => { if (o.geometry) geometries.add(o.geometry); if (o.material?.map) textures.add(o.material.map); }); geometries.forEach(g => g.dispose()); textures.forEach(t => t.dispose()); materials.forEach(m => m.dispose()); aim.material.dispose(); renderer.dispose(); },
   };
 }

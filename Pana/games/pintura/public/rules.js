@@ -200,7 +200,7 @@ export class Arena {
       if (earliest <= 1 || Math.abs(ball.x) > sizeFor(this.mapId) || Math.abs(ball.z) > sizeFor(this.mapId)) {
         ball.life = 0; this.splats.push({ id: ball.id, x: ball.x, z: ball.z, color: ball.color, life: 9, pattern: ball.pattern });
         if (ball.rocket) this.blast(ball,ball.splash);
-        else if (victim) this.hit(victim, this.players.find(p => p.id === ball.owner), ball.color);
+        else if (victim) this.hit(victim, this.players.find(p => p.id === ball.owner), ball.color, { x: ball.vx, z: ball.vz });
       }
     }
     for(const ball of this.balls) if(ball.rocket && ball.life<=0 && !ball.exploded) this.blast(ball,ball.splash);
@@ -222,7 +222,7 @@ export class Arena {
     const owner=this.players.find(p=>p.id===b.owner);
     for(const p of this.players) if(p.id!==b.owner && p.connected && !p.respawn && !p.eliminated && !p.shield
       && (this.options.friendlyFire || !this.sameTeam(p,owner)) && Math.hypot(p.x-b.x,p.z-b.z)<=radius
-      && !this.cover.some(o=>segmentBox(b.x,b.z,p.x-b.x,p.z-b.z,o,.01)!==null)) this.hit(p,owner,b.color);
+      && !this.cover.some(o=>segmentBox(b.x,b.z,p.x-b.x,p.z-b.z,o,.01)!==null)) this.hit(p,owner,b.color,{ x:p.x-b.x, z:p.z-b.z, blast:true });
     this.splats.push({id:++this.serial,x:b.x,z:b.z,color:b.color,life:9,radius,pattern:'splat'});
   }
   stepGrenades(dt) {
@@ -242,7 +242,10 @@ export class Arena {
     this.puddles=this.puddles.filter(p=>p.life>0);
   }
   // A pepazo stains the victim; the last one their aguante allows takes them out.
-  hit(victim, owner, color) {
+  hit(victim, owner, color, impact = {}) {
+    const dx = impact.x ?? (victim.x - (owner?.x ?? victim.x)), dz = impact.z ?? (victim.z - (owner?.z ?? victim.z));
+    const length = Math.hypot(dx, dz) || 1;
+    victim.impact = { x: dx / length, z: dz / length, zone: 'body', blast: !!impact.blast, n: this.eventSerial + 1 };
     const distance = owner ? Math.round(Math.hypot(owner.x - victim.x, owner.z - victim.z)) : 0;
     victim.paint++; victim.stains = [...victim.stains, color].slice(-5); victim.calm = 0;
     if (victim.paint < kitStats(victim.kit,this.options).toughness) { this.event('hit', owner, victim, distance); return; }
@@ -255,7 +258,7 @@ export class Arena {
     this.event('out', owner, victim, distance, { streak: rival ? owner.streak : 0, revenge });
   }
   event(type, owner, victim, distance, extra = {}) {
-    this.events = [...this.events, { n: ++this.eventSerial, type, owner: owner?.id ?? null, victim: victim.id, color: owner?.color || victim.color, distance, ...extra }].slice(-12);
+    this.events = [...this.events, { n: ++this.eventSerial, type, owner: owner?.id ?? null, victim: victim.id, color: owner?.color || victim.color, distance, impact: { ...victim.impact }, ...extra }].slice(-12);
   }
   updateFlags() {
     const reset = f => Object.assign(f, { x: f.homeX, z: f.homeZ, carrier: null });
@@ -282,7 +285,7 @@ export class Arena {
     const best = teams ? Math.max(...this.teamScores) : Math.max(...this.players.map(p => p.score));
     return this.players.filter(p => (teams ? this.teamScores[p.team] : p.score) === best).map(p => p.id);
   }
-  view() { return { winners: this.winners(), options: { ...this.options }, flags: this.flags.map(f => ({ ...f })), teamScores: [...this.teamScores], mapId: this.mapId, variant: this.variant, events: this.events.map(e => ({ ...e })), difficulty: this.difficulty, phase: this.phase, round: this.round, time: this.time, players: this.players.map(p => ({ ...p, stains: [...p.stains] })), grenades:this.grenades.map(g=>({...g})), puddles:this.puddles.map(p=>({...p})), balls: this.balls.map(b => ({ ...b })), splats: this.splats.map(s => ({ ...s })), message: this.message }; }
+  view() { return { winners: this.winners(), options: { ...this.options }, flags: this.flags.map(f => ({ ...f })), teamScores: [...this.teamScores], mapId: this.mapId, variant: this.variant, events: this.events.map(e => ({ ...e })), difficulty: this.difficulty, phase: this.phase, round: this.round, time: this.time, players: this.players.map(p => ({ ...p, impact: p.impact ? { ...p.impact } : null, stains: [...p.stains] })), grenades:this.grenades.map(g=>({...g})), puddles:this.puddles.map(p=>({...p})), balls: this.balls.map(b => ({ ...b })), splats: this.splats.map(s => ({ ...s })), message: this.message }; }
 }
 
 // Stable lobby positions are independent of member IDs and survive roster changes.

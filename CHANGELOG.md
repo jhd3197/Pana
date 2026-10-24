@@ -4,6 +4,11 @@ What changed in Pana, for the people who play it. Newest first. Every change
 that players, hosts or contributors will notice adds a line under
 `## Unreleased
 
+- **Los pepazos tumban a tu pana en la dirección del impacto.**
+  Las caídas animan el personaje propio con física de partículas y colisión
+  contra el suelo y la cobertura; reaparecer restaura la pose. El Cohetón tiene
+  un sonido sintetizado propio.
+
 - **Dominó verifica las jugadas recibidas y da personalidad a los bots.**
   La mesa reconstruye los cambios desde un registro de reglas, recupera
   segmentos perdidos y conserva la partida al cambiar de anfitrión. Los bots

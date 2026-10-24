@@ -135,6 +135,7 @@
   "Pana/games/ludo/tests/ludo.browser.js": 507,
   "Pana/games/parapente/tests/browser.mjs": 79,
   "Pana/games/pintura/tests/browser.mjs": 455,
+  "Pana/games/pintura/tests/knockout.browser.js": 38,
   "Pana/games/poquer/tests/browser.mjs": 112,
   "Pana/games/poquer/tests/options.browser.mjs": 246,
   "Pana/games/qqsmp/tests/browser.mjs": 332,

@@ -220,3 +220,22 @@ rules refresh an open armory. Finishes, charms and patterns do not affect it.
 Unit tests cover bounds, cosmetics, attachments, armor, grenades and rule
 overrides; the two-client sala test checks that a guest's changed rating reaches
 the host and matches the armory.
+
+## Directional knockout physics
+
+Hit metadata comes from the authoritative projectile velocity, or from the blast
+centre to the victim, and is replicated as `impact`. Pepazo still shoots level:
+all hits are body hits, with no cosmetic headshot damage bonus. `knockout.js`
+drives the own sculpt's body, neck, arm and skinned leg pivots from the pure
+`KnockoutPhysics` distance-constraint solver. It uses 120 Hz steps, bounded
+catch-up, floor and cover collision, and restores captured transforms on respawn.
+No bones are reparented and no replacement humanoid or physics dependency is
+loaded. Rest-world rotations preserve facing. Paint blobs attach to the torso
+and must detach before character disposal because their geometry and materials
+are shared across players. Markers and rings hide during the fall. Knockout simulation is cosmetic;
+server positions, scoring and respawn remain authoritative.
+
+The Cla-Go Verlet constraint approach is adapted under MIT (see
+`docs/licenses/cla-go.txt`). Its procedural humanoid is deliberately not used:
+the shared Studio sculpt preserves player appearance. Tests compare 30/60/120 Hz,
+cover collision, real sculpt hierarchy and restoration, and two-client impacts.

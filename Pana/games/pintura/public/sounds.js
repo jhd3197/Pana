@@ -19,6 +19,11 @@ function noise(duration, frequency, q, volume, start = 0) {
 export const sfx = {
   // Your marker, or another pana's quieter with distance (volume 0–1).
   shot(volume = 1, weapon = 'pistol') {
+    if (weapon === 'rocket') {
+      noise(.25, 350, .5, .3 * volume);
+      sound.sweep(130, 38, .3, 'triangle', .18 * volume);
+      return;
+    }
     const heavy = weapon === 'scatter' ? 1.5 : 1;
     noise(.07 * heavy, weapon === 'rapid' ? 2200 : 1600, .9, .22 * volume);
     sound.sweep(200 / heavy, 60, .09 * heavy, 'sine', .16 * volume);
