@@ -12,7 +12,7 @@ import { mangrove } from '/engine/models/vegetation/mangrove.js';
 import { saman } from '/engine/models/vegetation/saman.js';
 import { araguaney } from '/engine/models/vegetation/araguaney.js';
 import { frailejon } from '/engine/models/vegetation/frailejon.js';
-import { forestZone, prepareForestModel, denseForest } from './forest-detail.js';
+import { forestZone, prepareForestModel, denseForest, forestQuality } from './forest-detail.js';
 
 // Preserve the reference planting zones, but use Pana's native silhouettes.
 // Mountain canopy has neither fruit nor individual leaves; road trees do.
@@ -41,18 +41,21 @@ export function coastalVegetation(group, worldScale = 1, roadDistance, { cellSiz
     },
     flush() {
       const dense=denseForest([...batches.values()].flat(),20/worldScale);
-      for (const [key, positions] of batches) {
-        const [species, zone] = key.split(':');
-        const fronds=species==='palm'||species==='fern'||species==='moriche'||species==='cactus'||species==='frailejon', conifer=species==='pine'||species==='fir';
-        for(const crowded of zone==='far'&&!fronds&&!conifer?[true,false]:[false]) {
-          const points=zone==='far'&&!fronds&&!conifer?positions.filter(p=>dense.has(p)===crowded):positions;
-          if(!points.length)continue;
-          const model = factories[species]({ seed: 37, detail: zone === 'near' ? 'game' : 'far', fruit: zone === 'near' });
-          // A moriche is a bare pole once its few long fronds are clustered away.
-          prepareForestModel(model, species==='moriche'||whole.includes(species)?'near':zone, { fronds,pine:conifer,dense:crowded });
-          instancePlacements(group, model, points, { name: `coastal-${key}`, cellSize, castShadow: zone === 'near' });
+      forestQuality(group, (tier, detail) => {
+        for (const [key, positions] of batches) {
+          const [species, zone] = key.split(':');
+          const fronds=species==='palm'||species==='fern'||species==='moriche'||species==='cactus'||species==='frailejon', conifer=species==='pine'||species==='fir';
+          for(const crowded of zone==='far'&&!fronds&&!conifer?[true,false]:[false]) {
+            const points=zone==='far'&&!fronds&&!conifer?positions.filter(p=>dense.has(p)===crowded):positions;
+            if(!points.length)continue;
+            const effective = detail === 0 ? 'far' : detail === 1 && zone === 'near' ? 'middle' : zone;
+            const model = factories[species]({ seed: 37, detail: effective === 'near' ? 'game' : 'far', fruit: effective === 'near' });
+            // A moriche is a bare pole once its few long fronds are clustered away.
+            prepareForestModel(model, species==='moriche'||whole.includes(species)?'near':effective, { fronds,pine:conifer,dense:crowded });
+            instancePlacements(tier, model, points, { name: `coastal-${key}`, cellSize: detail === 0 ? Math.max(cellSize,240/worldScale) : cellSize, castShadow: zone === 'near' });
+          }
         }
-      }
+      });
       group.userData.libraryTrees = count;
       group.userData.forestZones = zones;
     },

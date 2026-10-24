@@ -8,6 +8,11 @@ becomes the GitHub release's notes.
 
 ## Unreleased
 
+- **Rápida aligera los bosques de Carreritas y mantiene el ritmo de carrera.**
+  Chuao y los demás circuitos con bosques compartidos usan árboles más simples
+  al bajar la calidad; los cuadros lentos ya no frenan el carro por debajo de
+  doce cuadros por segundo dentro del límite de recuperación de 250 ms.
+
 - **Trifulca, Bochinche y Parapente estrenan ilustraciones propias.**
   Sus tarjetas y portadas usan arte nuevo; quince circuitos de Carreritas
   muestran ilustraciones en el selector, las miniaturas y la carga.

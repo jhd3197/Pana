@@ -50,12 +50,23 @@ caps every game's first load at 160 static modules (`tests/import-graph.js`).
 
 `frame()` runs fixed 1/60 s physics steps with `updateRace(STEP, false)` and
 then `presentRace(dt)` once for the time they covered: poses, camera, scenery
-ticks, HUD and minimap. Catch-up stops after five steps, so a stall makes the
-race lose a little time instead of making the next frames late too. HUD text is
+ticks, HUD and minimap. `physicsFrame` consumes up to 250 ms of elapsed time
+in fixed steps and retains the fractional remainder. The former five-step
+cutoff discarded time below 12 FPS, slowing a struggling player's car.
+Frames from 4 through 144 FPS now cover the same simulation duration;
+longer stalls remain capped to avoid unbounded work after tab suspension.
+Online races bypass local slow-motion as before. HUD text is
 written only when it changes (`setText`). The minimap strokes its route once
 into an offscreen canvas (`route-map.js`). Car physics live in `drive.js`
 (`createDriver`), sky, sun and weather in `race-world.js`, and other panas'
 pose buffers in `remote-cars.js`.
+
+`DrivingSpring` substeps suspension/head motion at no more than 1/60 s so
+presenting a 250 ms frame cannot destabilize the former Euler springs.
+`frame-timing.test.js` compares simulation duration and spring motion across
+rates; `slow-frame.browser.js` injects 125 ms deltas into the real animation
+loop and checks driving and bounded suspension. It is a timing regression,
+not a measurement of device FPS.
 
 ## Shared quality now controls race detail
 
@@ -75,6 +86,33 @@ Quality updates apply live and after map loading. Replacing shadow size releases
 the old render target. Race-specific code does not alter global quality semantics
 for other games. This is not automatic internet-quality detection or an FPS
 guarantee. The prior hardware measurements below describe the previous revision.
+
+### Forest quality
+
+`forestQuality` in the coastal forest helper keeps one forest tier attached
+to the scene. Nítida preserves the authored near/middle/far geometry.
+Equilibrada uses the middle model for roadside trees; Rápida uses distant
+silhouettes throughout, with trunks retained outside dense distant stands.
+Fronds, conifers and species that cannot survive clustering retain their
+existing silhouette exceptions. All tiers keep the same tree transforms.
+Rápida also uses cells at least 240 world metres wide to reduce draw calls.
+This covers coastal vegetation, library forest recipes and background forests;
+individually authored landmark trees remain outside this policy.
+
+Tiers are built on first selection and cached for later switches. Only the
+active tier participates in scene traversal. Nature materials register a
+preparation callback for newly created tiers, reusing the track's shader and
+snow uniforms. Map teardown disposes inactive geometries explicitly while the
+normal teardown releases active geometry; model-library materials remain shared.
+Each tier's InstancedMeshes also emit their disposal event to release instance
+matrix buffers, including those in the active tier.
+The forest-quality browser suite checks tree transforms, geometry/draw reduction,
+live restoration, material coverage and all-tier disposal on map replacement.
+
+For a subset selected through `PANA_MAP_TEST_TRACKS` or `PANA_TOUR_TEST_TRACKS`,
+point `PANA_PASS_CACHE` at a temporary file. The normal suite fingerprint does
+not include those environment selectors; a partial run must not cache a full
+map or Studio tour pass.
 
 Road aggregate is generated in the existing road shader. Quality uses a uniform
 to scale or disable it without recompiling. No new texture is fetched or allocated.

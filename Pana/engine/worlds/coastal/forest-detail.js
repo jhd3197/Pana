@@ -117,4 +117,33 @@ export function simplifyCanopy(model, cell = 1.05, trunkCell = .12) {
   });
   return model;
 }
+// Keep only the active tier in the scene graph: hidden forests still cost
+// matrix traversal, and geometry audits should measure the selected forest.
+// Builders own geometry, but vegetation materials belong to the model library.
+export function forestQuality(parent, build) {
+  const root = new THREE.Group(), tiers = new Map();
+  root.name = 'forest-quality';
+  let active;
+  root.userData.setForestDetail = detail => {
+    if (active === detail) return;
+    if (!tiers.has(detail)) {
+      const tier = new THREE.Group(); tier.name = `forest-detail-${detail}`;
+      build(tier, detail); root.userData.prepareForestTier?.(tier); tiers.set(detail, tier);
+    }
+    root.clear(); root.add(tiers.get(detail)); active = detail;
+  };
+  root.userData.dispose = () => {
+    const geometries = new Set();
+    for (const [detail, tier] of tiers) {
+      tier.traverse(o => {
+        if (o.isInstancedMesh) o.dispose();
+        if (detail !== active && o.geometry) geometries.add(o.geometry);
+      });
+    }
+    geometries.forEach(g => g.dispose()); tiers.clear();
+  };
+  root.userData.setForestDetail(2);
+  parent.add(root);
+  return root;
+}
 

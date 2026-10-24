@@ -44,7 +44,7 @@ import { settleRace } from './cup-rewards.js';
 import { CLASSIFICATION_TEXT, approximateCupText, cupStandingsView, nextStageText, rankChangeText, tiebreakText } from './cup-ui.js';
 import { soaringVulture } from '/engine/models/fauna/birds/soaring-vulture.js';
 import { tickWind } from '/engine/models/vegetation/plant-kit.js';
-import { DRAFT_TIME, DRAFT_BOOST, DRIFT_LEVELS, driftLevel, startBoost, startCue, inSlipstream, loseCoins } from './drive-rules.js';
+import { DRAFT_TIME, DRAFT_BOOST, DRIFT_LEVELS, driftLevel, startBoost, startCue, inSlipstream, loseCoins, physicsFrame, DrivingSpring as Spring } from './drive-rules.js';
 
 const $ = (id) => document.getElementById(id), esc = (text) => String(text).replace(/[&<>"]/g, (ch) => `&#${ch.charCodeAt(0)};`);
 const rand = (a, b) => a + Math.random() * (b - a), pick = (list) => list[Math.floor(Math.random() * list.length)];
@@ -73,15 +73,6 @@ const LINES = {
   stall: ['¡Se me ahogó!', '¡Ay no, el motor!'],
   honk: { meep: '¡MEEP MEEP!', cucaracha: '♪ Cucaracha ♪', grave: '¡PAAAAN!', fiesta: '♪ ¡Rumba! ♪' },
 };
-
-class Spring {
-  constructor() { this.x = 0; this.v = 0; }
-  step(target, k, c, dt) {
-    this.v += (k * (target - this.x) - c * this.v) * dt;
-    this.x += this.v * dt;
-    return this.x;
-  }
-}
 
 // ---------- renderer ----------
 const renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -2179,7 +2170,7 @@ async function goOnline(code, lead) {
 // ======================================================================
 let mode = 'garage';
 const clock = new THREE.Timer().reset();
-const STEP = 1 / 60, MAX_CATCHUP = 5 * STEP - 1e-9;
+const STEP = 1 / 60;
 let acc = 0;
 
 const FINE_POINTER = matchMedia('(pointer: fine)').matches;
@@ -2198,14 +2189,12 @@ function frame() {
     pollPads();
     // fixed physics steps: same race speed at any frame rate
     race.slowMo.update(dt);
-    if (!paused) acc += dt * SPEED * (race.netRace ? 1 : race.slowMo.scale);   // online races never dilate: the room's clock is the room's
+    const budget = physicsFrame(acc, paused ? 0 : dt, SPEED, race.netRace ? 1 : race.slowMo.scale);
+    acc = budget.remainder;
     let stepped = 0;
-    while (acc >= STEP && mode === 'race') {
+    for (let i = 0; i < budget.steps && mode === 'race'; i++) {
       updateRace(STEP, false);
-      acc -= STEP; stepped += STEP;
-      // After a stall, run a few steps and let the race lose the rest: catching
-      // up fully would make this frame late too. ?speed scales it, or it would be lost.
-      if (stepped >= MAX_CATCHUP * SPEED) { acc = 0; break; }
+      stepped += STEP;
     }
     if (stepped && mode === 'race') presentRace(stepped);
     sendPoses();
