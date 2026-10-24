@@ -8,6 +8,10 @@ becomes the GitHub release's notes.
 
 ## Unreleased
 
+- **Ludo mueve las fichas sin decisiones y reduce las rachas sin salir.**
+  Los movimientos únicos y las salidas equivalentes son automáticos; la ayuda
+  opcional interviene tras tres a cinco intentos fallidos, igual para todos.
+
 - **Reliquia permite saltar con Espacio, control o toque.**
   El salto se comparte con tus panas; clic o V usa la mano derecha.
 

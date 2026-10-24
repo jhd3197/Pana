@@ -10,7 +10,6 @@ import { LudoRoom } from './network.js';
 import { HOME, COLORS, COLOR_NAMES, legalMoves, chooseMove, ranking } from './rules.js';
 import { createRoomOptions } from '/engine/room-options.js';
 import { LUDO_OPTIONS, defaultLudoOptions } from './options.js';
-
 const $=id=>document.getElementById(id),params=new URLSearchParams(location.search);
 const code=roomFromUrl()||newRoomCode();
 params.set('room',code);history.replaceState(null,'',`${location.pathname}?${params}`);
@@ -26,8 +25,10 @@ const menu=createGameMenu({ pad: { buttons: true, keys: { x: ['Space', 'Agitar e
   tips:[
     'Cada pana tiene cuatro fichas. Gana quien lleva las cuatro hasta el centro.',
     '¿Quién empieza? Todos sacuden el cacho a la vez y lo tapan: sale primero el dado más alto. Si hay empate arriba, solo los empatados sacuden otra vez. El anfitrión puede cambiarlo en Más ajustes.',
-    'Agita el dado manteniendo el botón o Espacio y suéltalo, o lánzalo arrastrando sobre la mesa. Cuanto más lo agitas, más fuerte vuela; el número sigue siendo suerte.',
+    'Agita el dado manteniendo el botón o Espacio y suéltalo, o lánzalo arrastrando sobre la mesa. Cuanto más lo agitas, más fuerte vuela; la fuerza no cambia el número.',
     'El anfitrión elige si sales con seis o con uno y seis. Al salir, la ficha queda en la casilla de salida.',
+    'Salida asistida: si todas tus fichas pendientes están en el patio, tras un límite aleatorio de tres a cinco intentos fallidos sale un seis. Se aplica a todos; la sala puede elegir azar clásico.',
+    'Un único movimiento legal se hace solo al caer el dado. Si solo puedes sacar fichas del patio, sale la primera automáticamente.',
     'Un seis permite volver a tirar. Si la sala activa la regla, el tercer seis seguido pierde ese lanzamiento y termina el turno; los movimientos anteriores se conservan.',
     'Las casillas con doble borde y un círculo son seguras: aquí no se come. En las demás, caer sobre fichas rivales las devuelve a su patio. La sala puede dar otra tirada al capturar.',
     'Las fichas pueden compartir casilla y no forman barreras. El pasillo de tu color es privado. Debes sacar el número exacto para llegar a casa.',
@@ -67,6 +68,7 @@ function render(state){
   roomOptions.update(state.options,lobby&&room.isHost);
   if(!lobby&&roomOptions.isOpen)roomOptions.close();
   document.querySelector('.rules-summary').textContent=state.options.entry==='six'?'Saca un seis para salir. Captura a tus rivales y lleva tus cuatro fichas al centro con el número exacto.':'Sal con uno o seis. Captura a tus rivales y lleva tus cuatro fichas al centro con el número exacto.';
+  if(state.options.assistedEntry)document.querySelector('.rules-summary').textContent+=' Salida asistida: ayuda tras un límite aleatorio de tres a cinco intentos sin salir.';
   document.body.classList.toggle('in-lobby',lobby);$('welcome').hidden=!lobby;$('hud').hidden=lobby;
   $('start').disabled=!world||!room.connected||!room.isHost;
   $('start').textContent=!world?'Preparando la mesa…':!room.connected?'Conectando…':room.isHost?'¡Jugar!':'Espera al anfitrión';
@@ -79,8 +81,9 @@ function render(state){
     scores[i].children[2].textContent=starter?`${COLOR_NAMES[i]} · ${rolled?`sacó ${rolled}`:'sacudiendo'}`:`${COLOR_NAMES[i]} · ${p.pieces.filter(v=>v===HOME).length}/4 en casa`;
   });
   const mine=ownTurn(),moves=legalMoves(state,seat);
-  $('turn').textContent=!room.connected?'Reconectando…':ended?'¡Partida terminada!':state.phase==='starter'?'¿Quién empieza?':mine?state.die?'Elige una ficha':'¡Te toca tirar!':`Turno de ${state.players[state.turn].name}`;
+  $('turn').textContent=!room.connected?'Reconectando…':ended?'¡Partida terminada!':state.phase==='starter'?'¿Quién empieza?':mine?state.die?state.autoMove?'La ficha se mueve sola…':'Elige una ficha':'¡Te toca tirar!':`Turno de ${state.players[state.turn].name}`;
   $('event').textContent=state.event;
+  if(state.options.assistedEntry&&state.phase==='playing'&&!state.die&&state.entryMisses?.[state.turn])$('event').textContent+=` Salida asistida: ${state.entryMisses[state.turn]} intentos sin salir. La ayuda evita rachas largas.`;
   $('die').textContent=state.lastDie||'—';$('die').setAttribute('aria-label',state.lastDie?`Último dado: ${state.lastDie}`:'Todavía no se ha tirado');
   $('roll').disabled=!mine||!!state.die;
   if($('roll').disabled)thrower.cancel();

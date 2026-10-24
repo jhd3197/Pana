@@ -109,3 +109,54 @@ test('200 seeded bot matches finish and preserve all sixteen pieces at every act
     assert.equal(g.phase,'finished',`seed ${seed}`);assert.ok(g.players[g.winner].pieces.every(v=>v===HOME));
   }
 });
+
+
+test('forced moves wait for the die, survive migration and execute only once',()=>{
+  const g=game();g.players[0].pieces=[8,-1,-1,-1];g.rng=seedFor([2]);g.roll();
+  assert.equal(g.autoMove.piece,0);assert.equal(g.stepAutomatic(.5),false);
+  const restored=LudoGame.restore(g.snapshot(),new Map());
+  assert.equal(restored.stepAutomatic(.7),true);assert.equal(restored.players[0].pieces[0],10);
+  assert.equal(restored.stepAutomatic(2),false);assert.equal(restored.turn,1);
+  g.move(0);assert.equal(g.autoMove,null);assert.equal(g.stepAutomatic(2),false);
+});
+
+test('entry is automatic but a six with a moving piece preserves the choice',()=>{
+  const g=game();g.rng=seedFor([6]);g.roll();assert.equal(g.autoMove.piece,0);
+  g.stepAutomatic(2);assert.equal(g.players[0].pieces[0],0);
+  g.rng=seedFor([6]);g.roll();assert.equal(g.autoMove,null);assert.equal(legalMoves(g).length,4);
+});
+
+test('assisted entry bounds droughts equally for every seat, including late-game yards',()=>{
+  for(let seat=0;seat<4;seat++){
+    const g=game();g.players[seat].pieces=[HOME,HOME,-1,-1];
+    g.entryLimits[seat]=3+seat%3;
+    for(let attempt=0;attempt<g.entryLimits[seat];attempt++){
+      g.turn=seat;g.rng=seedFor([2]);g.roll();assert.equal(g.lastDie,2);
+      assert.equal(g.entryMisses[seat],attempt+1);
+    }
+    const restored=LudoGame.restore(g.snapshot(),new Map());restored.turn=seat;restored.rng=seedFor([2]);restored.roll();
+    assert.equal(restored.lastDie,6);assert.match(restored.event,/Salida asistida/);
+    restored.stepAutomatic(2);assert.equal(restored.players[seat].pieces[2],0);
+    assert.equal(restored.entryMisses[seat],0);
+    restored.phase='finished';restored.start();assert.deepEqual(restored.entryMisses,[0,0,0,0]);
+  }
+});
+
+test('classic dice are unchanged and entry help does not alter moving or finishing rolls',()=>{
+  const g=game();g.options.assistedEntry=false;
+  for(let n=0;n<8;n++){g.turn=0;g.rng=seedFor([2]);g.roll();assert.equal(g.lastDie,2);}
+  g.options.assistedEntry=true;g.players[0].pieces=[55,HOME,HOME,HOME];g.turn=0;g.rng=seedFor([2]);g.roll();assert.equal(g.lastDie,2);
+  g.players[0].pieces=[5,-1,-1,-1];g.turn=0;g.rng=seedFor([2]);g.roll();assert.equal(g.lastDie,2);assert.equal(g.entryMisses[0],0);
+});
+
+
+test('entry assistance uses varied thresholds without changing ordinary random rolls',()=>{
+ const limits=new Set();
+ for(let seed=1;seed<=300;seed++){
+  const g=game();g.rng=seed;g.roll();
+  if(g.entryLimits[0])limits.add(g.entryLimits[0]);
+  const classic=game();classic.options.assistedEntry=false;classic.rng=seed;classic.roll();
+  assert.equal(g.lastDie,classic.lastDie,'no adjustment before a drought');
+ }
+ assert.deepEqual([...limits].sort(),[3,4,5]);
+});

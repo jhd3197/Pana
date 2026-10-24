@@ -22,7 +22,8 @@ is Spanish. The hub discovers `game.json` and categorizes it as Mesa.
 These variants are stated in the shared menu's Controles tab.
 
 The shared room panel also offers entry with one or six, an optional capture
-bonus roll and an optional third-six penalty. Defaults retain classic behavior.
+bonus roll and an optional third-six penalty. Entry, capture and third-six defaults retain classic behavior; the disclosed
+assisted-entry option limits yard droughts.
 Only the host changes them in the lobby; typed validation rejects an entire
 invalid patch. Snapshots, rematches and local fallback preserve the options.
 Ludo remains four players because its authored board has four private lanes and
@@ -91,3 +92,18 @@ to arrange pawns in a centered grid at one height, scaled to stay inside the
 cell even with sixteen pieces. Count occupants before assigning targets and
 refresh active hop endpoints when occupancy changes. Raycasts still hit each
 pawn mesh; the 1–4 buttons remain available for very crowded cells.
+
+## Playtest pacing
+
+The host schedules forced moves 1.1 s after a roll so the die lands first. A
+single legal move or a choice only between yard pieces needs no extra click;
+strategically different moves remain manual. Pending automatic moves travel in
+snapshots and manual moves cancel them.
+
+Salida asistida defaults on and is disclosed in the lobby and controls. Each
+stranded episode gets a seeded threshold of 3–5 failed entry rolls. The next
+roll is six if still stranded; natural entry resets the counter. Only players
+whose unfinished pieces are all in the yard qualify, including after captures
+and late in a match. Moving/finishing dice stay random; repeated numbers are
+allowed. Every seat uses the same rule, independently of name or score. Classic
+random dice remain a lobby option. Thresholds and counters survive migration.

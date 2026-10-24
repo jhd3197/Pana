@@ -16,6 +16,7 @@ export class LudoRoom extends TableRoom {
   step(dt) {
     const game = this.game;
     if (game.phase === 'starter') return game.stepStarter(dt);
+    if (game.autoMove) return game.stepAutomatic(dt);
     if (!this.botReady(dt, game.phase === 'playing' && game.players[game.turn].id === null, .85)) return false;
     game.die ? game.move(chooseMove(game)) : game.roll();
     return true;
