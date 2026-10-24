@@ -80,8 +80,9 @@ unchanged. Overdraw grows with the bigger cards: check GPU time.
 - Racers' ghost look clones every material; the card material's `clone`
   keeps its shader patch.
 - Each prototype costs two 768×768 RGBA atlases (≈ 6.3 MB with mips) at the
-  default 192 px tile; Rápida (`baja`) bakes 128 px views (≈ 2.8 MB) and
-  rival panas always use 128 px tiles. The card is sized to the
+  default 192 px tile; Carreritas bakes 128 px views on Rápida (`baja`,
+  ≈ 2.8 MB) through `prepareImpostors(renderer, { tile })` (models cannot
+  read settings), and rival panas always use 128 px tiles. The card is sized to the
   prototype's bounding sphere so no view angle clips it. Baking a map's
   prototypes takes well under 100 ms.
 

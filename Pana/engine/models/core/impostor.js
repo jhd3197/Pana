@@ -1,5 +1,4 @@
 import * as THREE from 'three';
-import { getSettings } from '/engine/settings.js';
 
 // Distant objects as baked billboards (impostors). A prototype is rendered
 // once from FRAMES directions around its vertical axis, at a low and a high
@@ -19,8 +18,10 @@ export const IMPOSTOR_FROM = 45;
 
 // Bake every impostor created since the last call. Called while a race loads;
 // any impostor drawn before that bakes them all from its first onBeforeRender.
-export function prepareImpostors(renderer) {
-  for (const record of [...pending]) bakeRecord(renderer, record);
+// `tile` sizes the views of cards that did not ask for one (a game's quality
+// setting decides it: models cannot read settings).
+export function prepareImpostors(renderer, { tile = TILE } = {}) {
+  for (const record of [...pending]) bakeRecord(renderer, record, tile);
 }
 
 const normalBake = new THREE.ShaderMaterial({
@@ -46,7 +47,7 @@ const normalBake = new THREE.ShaderMaterial({
   side: THREE.DoubleSide,
 });
 
-function bakeRecord(renderer, record) {
+function bakeRecord(renderer, record, fallbackTile = TILE) {
   pending.delete(record);
   const { source, frame } = record, scene = new THREE.Scene(), materials = [];
   source.updateMatrixWorld(true);
@@ -63,7 +64,7 @@ function bakeRecord(renderer, record) {
     normal.uniforms.crown.value.set(0, frame.crownY, 0, leaf ? .7 : 0);
     mesh.userData.albedo = o.material; mesh.userData.normal = normal; scene.add(mesh); materials.push(normal);
   });
-  const tileSize = record.tile, width = tileSize * COLS, height = tileSize * ROWS;
+  const tileSize = record.tile ?? fallbackTile, width = tileSize * COLS, height = tileSize * ROWS;
   const ambient = new THREE.AmbientLight(0xffffff, Math.PI); scene.add(ambient);
   // The targets are the atlases: mipmapped on the GPU, never read back. Views
   // render over a clear (0,0,0,0) with normal blending, so texels hold
@@ -232,9 +233,9 @@ function impostorMaterial(uniforms, { roughness = .85, emissive = 0x000000 } = {
 // Same contract as static-batch.js instancePlacements: one prototype drawn at
 // placements ({x, y, z, rot, scale}) bucketed into cells. `source` is consumed
 // once baked; its materials are only borrowed. `tile` is each view's pixel
-// size (Rápida bakes 128 px views: under half the memory, for phones),
-// `elevations` the low and high camera angles (radians) of the views.
-export function impostorPlacements(parent, source, placements, { name = source.name, cellSize = 240, tile = getSettings().quality === 'baja' ? 128 : TILE, elevations = ELEVATIONS } = {}) {
+// size (default: whatever prepareImpostors bakes), `elevations` the low and
+// high camera angles (radians) of the views.
+export function impostorPlacements(parent, source, placements, { name = source.name, cellSize = 240, tile = null, elevations = ELEVATIONS } = {}) {
   if (!placements.length) return [];
   source.updateMatrixWorld(true);
   let radius = 0, minY = Infinity, maxY = -Infinity, roughness = .85, emissive = 0x000000;
