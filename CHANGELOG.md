@@ -8,6 +8,9 @@ becomes the GitHub release's notes.
 
 ## Unreleased
 
+- **Bolas Criollas distingue la ventaja provisional de una victoria.**
+  El indicador dice quién va más cerca mientras quedan lanzamientos.
+
 - **Ludo distingue los seguros y muestra juntas las fichas que comparten casilla.**
   Un doble borde y una leyenda aclaran dónde no se captura; las fichas se
   distribuyen lado a lado dentro de la casilla, sin taparse en una torre.

@@ -135,3 +135,7 @@ verify `/api/health` before interpreting game load failures.
 The lobby uses the shared grouped avatar roster: red seats 0/2/4 and green seats 1/3/5. Panas can swap their own card with another human or bot; the host can arrange anyone. Revisioned swap actions are valid only in the lobby. The players array remains the authority for teams and turn order, so starting and host migration preserve the selected arrangement.
 
 Restablecer returns the venue, difficulty and rule values to their defaults in one revisioned options action.
+
+The live proximity label says “van más cerca”, not “ganan”: it is a provisional
+lead while balls remain, not a completed hand or match. Remaining throws can
+still change both the lead and the number of points awarded.

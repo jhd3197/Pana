@@ -166,7 +166,7 @@ function render(g) {
   const player = g.players[g.turn];
   $('turn').textContent = opening ? '¿Cara o sello? La moneda decide quién lanza el mingo' : g.phase === 'rolling' ? 'La bola está rodando…' : active ? `¡Tu turno! · ${TEAM_NAMES[g.turn % 2]}` : `Turno de ${player.name} · ${TEAM_NAMES[g.turn % 2]}`;
   const lead = measure(g.pitch), best = g.pitch.balls.find(b => b.id === lead.ids[0]);
-  $('measure').textContent = best ? `${TEAM_NAMES[lead.team]} ganan · ${distance(g.pitch, best).toFixed(2)} m del mingo` : 'El mingo está en juego';
+  $('measure').textContent = best ? `${TEAM_NAMES[lead.team]} van más cerca · ${distance(g.pitch, best).toFixed(2)} m del mingo` : 'El mingo está en juego';
   $('shoot').disabled = !active;
   for (const id of ['aim-left', 'aim-right']) $(id).disabled = !active || !!charge;
   $('shoot').classList.toggle('is-charging', !!charge);

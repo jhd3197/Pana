@@ -31,7 +31,13 @@ try {
   assert.equal(await guest.evaluate(() => criollasDebug.room.state.players[0].avatar.outfitColor), '#3d7bf2');
   await screenshot(host, 'lobby');
   // The host chooses the place and difficulty; the guest sees both and cannot change them.
-  await host.locator('#map-choice').selectOption('hato'); await host.locator('[data-room-option="difficulty"][data-value="dificil"]').click();
+  await wait(host,()=>window.PANA_PREPARED===true);
+  for(let i=0;await host.locator('#map-choice').inputValue()!=='hato';i++){
+    assert.ok(i<30,'Hato is offered by the visible map picker');
+    const before=await host.locator('#map-choice').inputValue();
+    await host.getByRole('button',{name:'Mapa siguiente',exact:true}).click();
+    await wait(host,value=>document.querySelector('#map-choice').value!==value,before);
+  } await host.locator('[data-room-option="difficulty"][data-value="dificil"]').click();
   await wait(guest, () => criollasDebug.room.state.mapId === 'hato' && criollasDebug.room.state.difficulty === 'dificil' && criollasDebug.world.venue === 'hato');
   assert.equal(await guest.locator('#map-choice').isDisabled(), true);
   assert.equal(await guest.locator('[data-room-option="difficulty"][data-value="facil"]').isDisabled(), true);
