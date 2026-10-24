@@ -127,11 +127,13 @@ function ride(group, hull, motor, pana, owned = []) {
   };
 }
 
-export function createLancha(avatar = {}, color = '#e2683c') {
+// Every boat takes an optional ready `pana` instead of sculpting one, as the
+// avioneta does (Carreritas rivals pass their card).
+export function createLancha(avatar = {}, color = '#e2683c', { pana: given } = {}) {
   const group = new THREE.Group(), hull = createLanchaHull(color), motor = hull.userData.motor;
   group.name = 'Lancha'; group.add(hull);
   // The pana sits aft, by the motor, one hand on the tiller.
-  const pana = buildCharacter(avatar, { seated: true }); pana.group.scale.setScalar(.62); pana.group.position.set(-.12, .62, LANCHA.seat); hull.add(pana.group);
+  const pana = given ?? buildCharacter(avatar, { seated: true }); pana.group.scale.setScalar(.62); pana.group.position.set(-.12, .62, LANCHA.seat); hull.add(pana.group);
   return { group, hull, motor, pana, ...ride(group, hull, motor, pana) };
 }
 
@@ -144,7 +146,7 @@ const CURIARA_HULL = {
   profile: [[.3, .04], [.8, .22], [1, .5]],
 };
 
-export function createCuriaraRacer(avatar = {}, color = '#3f9e7a') {
+export function createCuriaraRacer(avatar = {}, color = '#3f9e7a', { pana: given } = {}) {
   const group = new THREE.Group(), hull = new THREE.Group(), tint = new THREE.Color(color).getHex();
   group.name = 'Curiara'; group.add(hull);
   // A wooden dugout; the team colour goes on the gunwale band and the motor.
@@ -158,7 +160,7 @@ export function createCuriaraRacer(avatar = {}, color = '#3f9e7a') {
   for (const z of [-.9, .7]) hull.add(rounded(.8, .06, .24, wood, 0, .38, z));
   const motor = outboard(tint); motor.scale.setScalar(.7); motor.position.set(0, .4, -2.55); hull.add(motor);
   // The pana sits low in the dugout, aft by the little motor.
-  const pana = buildCharacter(avatar, { seated: true }); pana.group.scale.setScalar(.6); pana.group.position.set(-.08, .3, -1.35); hull.add(pana.group);
+  const pana = given ?? buildCharacter(avatar, { seated: true }); pana.group.scale.setScalar(.6); pana.group.position.set(-.08, .3, -1.35); hull.add(pana.group);
   return { group, hull, motor, pana, ...ride(group, hull, motor, pana) };
 }
 
@@ -171,7 +173,7 @@ const RAYO_HULL = {
   profile: [[.28, .05], [.78, .3], [1, .62]],
 };
 
-export function createRayo(avatar = {}, color = '#e8b93a') {
+export function createRayo(avatar = {}, color = '#e8b93a', { pana: given } = {}) {
   const group = new THREE.Group(), hull = new THREE.Group(), tint = new THREE.Color(color).getHex();
   group.name = 'El Rayo'; group.add(hull);
   const paint = M(tint, { side: THREE.DoubleSide, roughness: .4 }), inside = M(0x2d3a3e, { side: THREE.DoubleSide, roughness: .8 });
@@ -190,6 +192,6 @@ export function createRayo(avatar = {}, color = '#e8b93a') {
   const motor = outboard(tint); motor.scale.setScalar(1.25); motor.position.set(0, .5, -2.55); hull.add(motor);
   // A low bucket seat; the pana peers over the windscreen.
   hull.add(rounded(.5, .3, .5, dark, 0, .3, -1.15, .06));
-  const pana = buildCharacter(avatar, { seated: true }); pana.group.scale.setScalar(.6); pana.group.position.set(0, .42, -1.15); hull.add(pana.group);
+  const pana = given ?? buildCharacter(avatar, { seated: true }); pana.group.scale.setScalar(.6); pana.group.position.set(0, .42, -1.15); hull.add(pana.group);
   return { group, hull, motor, pana, ...ride(group, hull, motor, pana, [glassMat]) };
 }

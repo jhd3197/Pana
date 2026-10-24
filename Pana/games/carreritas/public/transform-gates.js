@@ -31,6 +31,7 @@ import { statCount } from '/engine/stats.js';
 import { shout } from '/engine/kit.js';
 import { createParticleField } from './particles.js';
 import { syncGhostAppearance } from './racer-render.js';
+import { cardStandIn } from './driver-cards.js';
 import { isGhost, recordImpact } from './recovery-rules.js';
 import { gateRuns, keepAfloat, bumpObstacle, inWake } from './course-rules.js';
 
@@ -115,14 +116,15 @@ export function createTransformGates({ race, sound, track }) {
   // Metres into a flight gate, wrapped round the lap.
   const alongGate = (c, g) => { const t = track(); return ((t.paramOf(c.x, c.z, c.y) - g.s0) % t.TOTAL + t.TOTAL) % t.TOTAL; };
   // Each car's lancha is the Lancha game's own model, painted in the car's
-  // colour with the racer's pana aboard. It is built hidden on the approach
-  // (so the crossing never hitches) and rides the car's tumble group, so
+  // colour with the racer's pana aboard. It is built hidden during loading
+  // (prebuild, so the crossing never hitches) and rides the car's tumble group, so
   // flips and tricks carry it. disposeRacer frees the car's driver; the
   // lancha piggybacks on that so it goes with the car.
   function lanchaFor(c) {
     if (c.car.lancha) return c.car.lancha;
     const paint = paintOf(c.cosmetics,c.def.color);
-    const lancha = (BOATS[c.cosmetics?.boat] ?? createLancha)(c.avatar || {}, paint);
+    // A rival rides its car's card; only real panas are sculpted.
+    const lancha = (BOATS[c.cosmetics?.boat] ?? createLancha)(c.avatar || {}, paint, { pana: cardStandIn(c.car) });
     lancha.group.position.y = -1 + 0.22;   // tumble space: the waterline just under the car's floor
     lancha.group.visible = false;
     lancha.group.scale.setScalar(0.001);
@@ -138,7 +140,7 @@ export function createTransformGates({ race, sound, track }) {
   function planeFor(c) {
     if (c.car.plane) return c.car.plane;
     const paint = paintOf(c.cosmetics,c.def.color);
-    const plane = (PLANES[c.cosmetics?.air] ?? createAvioneta)(c.avatar || {}, paint);
+    const plane = (PLANES[c.cosmetics?.air] ?? createAvioneta)(c.avatar || {}, paint, { pana: cardStandIn(c.car) });
     plane.group.position.y = -1;   // tumble space: the wheels where the car's were
     plane.group.visible = false;
     plane.group.scale.setScalar(0.001);

@@ -63,6 +63,12 @@ frame intervals per lap; a CPU profile of the long frames showing
 Chuao laps 1–3 have no frame over 50 ms (before: five 300–490 ms freezes on
 lap 1); a ~100 ms frame remains during the countdown.
 
+Rival vessels do not sculpt a pana at all: `cardStandIn(car)` re-hangs the
+car's driver card under a frame that undoes the car's seat transform, and
+the lancha/avioneta builders seat it through their optional `pana` option.
+Only the player's vessel builds a real pana (Chuao: 8 → 5 panas in the
+scene, ~300 ms less loading per rival on gate maps).
+
 ## First load and the frame loop
 
 Opening Carreritas loads 153 modules, down from 287: maps load on demand

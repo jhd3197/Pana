@@ -18,6 +18,8 @@ export function createAvioneta(avatar = {}, color = '#e8443a', opts = {}) {
   // The kit variants reshape the silhouette through `opts`: span/chord the
   // wing, tipColor the wingtips, bandColor the fuselage band and tail stripe,
   // and accentColor adds tail flashes (stabilizer caps and a fin cap).
+  // `pana` seats a ready driver instead of sculpting one (Carreritas rivals
+  // pass their card); it needs group, update, arms and dispose.
   const { span = AVIONETA.span, chord = 1.15, tipColor = color, bandColor = 0xfaf6ec, accentColor = null } = opts;
   const group = new THREE.Group(), body = new THREE.Group();
   group.name = 'Avioneta'; group.add(body);
@@ -60,7 +62,7 @@ export function createAvioneta(avatar = {}, color = '#e8443a', opts = {}) {
     body.add(mesh(new THREE.CylinderGeometry(.32, .32, .22, 16).rotateZ(Math.PI / 2), tyre, s * .82, .32, .8));
   }
   body.add(mesh(new THREE.CylinderGeometry(.12, .12, .08, 10).rotateZ(Math.PI / 2), tyre, 0, .14, -2.3), tube([0, .2, -2.3], [0, .9, -2.1], .03, steel));
-  const pana = buildCharacter(avatar, { seated: true }); pana.group.scale.setScalar(.62); pana.group.position.set(0, AVIONETA.seat, .05); body.add(pana.group);
+  const pana = opts.pana ?? buildCharacter(avatar, { seated: true }); pana.group.scale.setScalar(.62); pana.group.position.set(0, AVIONETA.seat, .05); body.add(pana.group);
   const glassMaterial = glass.material;
   let bank = 0, pitch = 0, spin = 0, disposed = false;
   return {
@@ -90,16 +92,16 @@ export function createAvioneta(avatar = {}, color = '#e8443a', opts = {}) {
 
 // Kit 'guacamaya' (Carreritas): a touch sleeker than the stock plane, with
 // the macaw's scarlet wingtips and blue tail flashes. Same interface.
-export function createGuacamaya(avatar = {}, color = '#e8443a') {
-  const model = createAvioneta(avatar, color, { span: 7.7, chord: 1.02, tipColor: 0xe23141, accentColor: 0x2b5fc7 });
+export function createGuacamaya(avatar = {}, color = '#e8443a', { pana } = {}) {
+  const model = createAvioneta(avatar, color, { pana, span: 7.7, chord: 1.02, tipColor: 0xe23141, accentColor: 0x2b5fc7 });
   model.group.name = 'Guacamaya';
   return model;
 }
 
 // Kit 'turpial' (Carreritas): a shorter, nervous wing in the turpial's
 // yellow-and-black suit. Same interface.
-export function createTurpial(avatar = {}, color = '#f2b632') {
-  const model = createAvioneta(avatar, color, { span: 6.2, chord: 1.05, tipColor: 0x20232a, bandColor: 0xf2c23a, accentColor: 0xf2c23a });
+export function createTurpial(avatar = {}, color = '#f2b632', { pana } = {}) {
+  const model = createAvioneta(avatar, color, { pana, span: 6.2, chord: 1.05, tipColor: 0x20232a, bandColor: 0xf2c23a, accentColor: 0xf2c23a });
   model.group.name = 'Turpial';
   return model;
 }

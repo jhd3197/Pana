@@ -37,6 +37,18 @@ export function cardDriver(car) {
   return car;
 }
 
+// A pana-shaped stand-in for a rival's lancha or avioneta: the car's card,
+// re-hung so the vessel's own seat position and scale apply, with no second
+// pana sculpted (~300 ms each). The card's atlas belongs to the car.
+export function cardStandIn(car) {
+  const card = car.driverCard, seat = car.driver?.group;
+  if (!card || !seat) return null;
+  const group = new THREE.Group(), frame = new THREE.Group();
+  seat.updateMatrix(); frame.matrixAutoUpdate = false; frame.matrix.copy(seat.matrix).invert();
+  frame.add(new THREE.Mesh(card.geometry, card.material)); group.add(frame);
+  return { group, arms: null, update() {}, dispose() {} };
+}
+
 // Every drawn frame: the real pana near any camera, the card beyond. Returns
 // whether the real one shows (and so needs animating).
 export function showDriver(car, c, cameras) {
