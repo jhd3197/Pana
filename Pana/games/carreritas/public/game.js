@@ -35,7 +35,7 @@ import { abandonCup, advanceStage, beginStage, createCupSession, cupTrophy, fina
 import { advanceLap, ALL_SECTORS, RESCUE_TIME, OUT_TIME, STUCK_TIME } from './course-rules.js';
 import { createHazards } from './hazards.js';
 import { createMusic, TRACK_STYLE, GARAGE_SONG, RESULTS_SONG, songFor, finishSting } from './music.js';
-import { batchRacer, repaintCar, addBalloons, setGhost, syncGhostAppearance } from './racer-render.js';
+import { batchRacer, rivalShadows, repaintCar, addBalloons, setGhost, syncGhostAppearance } from './racer-render.js';
 import { createWaterAmbience } from './water-ambience.js';
 import { padInput, pressed, keyInput, SPLIT_KEYS, wrongWayStep, WRONG_WAY_TIME, lapSplit } from './controls.js';
 import { PAINTS, paintOf, FLAMES, earnings, mirrorUnlocked, repaintHex } from './shop.js';
@@ -73,6 +73,8 @@ const LINES = {
   stall: ['¡Se me ahogó!', '¡Ay no, el motor!'],
   honk: { meep: '¡MEEP MEEP!', cucaracha: '♪ Cucaracha ♪', grave: '¡PAAAAN!', fiesta: '♪ ¡Rumba! ♪' },
 };
+
+let driverCards = null; import('./driver-cards.js').then(m => { driverCards = m; });   // rival panas as cards
 
 // ---------- renderer ----------
 const renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -655,6 +657,7 @@ function makeRacer(index, isPlayer, name, wheelId = 'calle', avatar = null, cosm
   const car = def.build(who.avatar, wheel.wheel ?? undefined, renderConfig(cosmetics.parts));
   repaintCar(car, def.color, paintOf(cosmetics));
   batchRacer(car,paintOf(cosmetics,def.color));
+  if (!isPlayer) { driverCards?.cardDriver(car); rivalShadows(car); }
   // Retain ownership even after a bumper detaches and expires from the scene.
   car.geometries = new Set();
   car.ownedMaterials = new Set();
@@ -1500,11 +1503,13 @@ function syncCar(c, dt) {
 
   // the driver: big head lags behind every bump and turn
   const d = car.driver;
-  d.neck.rotation.z = c.headLag.step(-lean * 0.5 + sr * 2, 90, 5, dt);
-  d.neck.rotation.x = -dive * 0.25 + c.heave.v * 0.01;
-  d.neck.rotation.y = c.steer * 0.45;
-  const open = c.scream > 0 || c.honkT > 0 || (!c.onGround && c.airTime > 0.3);
-  d.update(dt, { open, dizzy: c.dizzy > 0, look: c.steer });
+  if (!car.driverCard || driverCards.showDriver(car, c, [race.camera, race.p2 && race.camera2])) {
+    d.neck.rotation.z = c.headLag.step(-lean * 0.5 + sr * 2, 90, 5, dt);
+    d.neck.rotation.x = -dive * 0.25 + c.heave.v * 0.01;
+    d.neck.rotation.y = c.steer * 0.45;
+    const open = c.scream > 0 || c.honkT > 0 || (!c.onGround && c.airTime > 0.3);
+    d.update(dt, { open, dizzy: c.dizzy > 0, look: c.steer });
+  }
   for (const p of car.danglers) {
     p.rotation.z = p.rotation.z * 0.92 + lean * 0.5 + Math.sin(race.clock * 7) * 0.02;
     p.rotation.x = p.rotation.x * 0.92 + dive * 0.4;

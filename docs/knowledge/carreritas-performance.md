@@ -237,6 +237,26 @@ work on the reference desktop. The larger bounded cells retain the same seeds,
 placements and plant counts; they submit some extra off-screen triangles but
 fewer draw calls. Keep the 1.8M whole-environment triangle limit and ray tests.
 
+### Rival drivers: cards, trims and shadows
+
+The shared pana is sculpted for Studio close-ups: 31 meshes and ~39k
+triangles, 83 % of a racer, with centimetre catchlights and creases that
+each cost a draw and a shadow draw. A knockout test (hide one category,
+time the frame) showed cars, not trees, dominate the start grid: Selva went
+from 2,185 to 896 draws and 22 to 9 ms CPU with the cars hidden.
+
+- `trimDriver` (every racer): hides parts under 6 cm, lets only parts of
+  25 cm or more cast shadows, swaps MeshPhysicalMaterial for an equivalent
+  MeshStandardMaterial. −340 to −420 draws at an 8-car grid.
+- `driver-cards.js` (rivals only, loaded with `import()` so the impostor
+  baker stays out of the first load): the seated pose is baked as a 128 px
+  impostor riding the seat. The real pana returns within
+  `DRIVER_CARD_FROM` (14 m) of any camera, and the rig is not animated
+  while carded. The player's own pana is never carded, which keeps the
+  cockpit view possible. −160 to −280 draws, CPU −10 to −25 %.
+- `rivalShadows`: a rival's six largest pieces cast shadows. −160 to −200
+  draws at the grid; shadows look the same.
+
 ### Final reference measurement
 
 Source `bb7b838`, Windows, Ryzen 9 7950X, RTX 4090 via ANGLE/D3D11,

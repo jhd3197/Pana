@@ -10,7 +10,8 @@ becomes the GitHub release's notes.
 
 - **Carreritas corre más fluido sin cambiar su aspecto.**
   Las lanchas y avionetas se preparan en la pantalla de carga, sin tirones al
-  llegar al río, y los bosques lejanos son fotos de sus árboles.
+  llegar al río; los bosques lejanos y los panas rivales lejanos son fotos
+  de sí mismos, y las sombras de los rivales usan solo sus piezas grandes.
 
 - **Bolas Criollas permite bochar por el aire y ver dónde caerá la bola.**
   Ajusta la altura y sigue el arco hasta el aro de caída; otro blanco marca
