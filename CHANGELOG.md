@@ -8,6 +8,10 @@ becomes the GitHub release's notes.
 
 ## Unreleased
 
+- **QQSMP revela la respuesta al votar el último pana y la anuncia en voz alta.**
+  Puedes corregir tu elección mientras falte alguien; al completar los votos,
+  el animador dice la letra y la respuesta correcta sin esperar el reloj.
+
 - **QQSMP lee las opciones y permite cambiar o cancelar tu respuesta.**
   Escucha cada letra y respuesta en el orden de la pantalla; puedes corregir
   tu elección hasta que termine el tiempo, con el bono de tu última respuesta.

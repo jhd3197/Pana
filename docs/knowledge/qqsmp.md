@@ -26,8 +26,10 @@ Built on the shared table room (`engine/table-room.js`) and the plaza stage
 
 ## Rules decisions
 
-- Answers can be changed or cancelled until the full timer expires, even if
-  everyone has already answered. Repeating the same choice is a no-op.
+- Answers can be changed or cancelled while time remains and someone has not
+  answered. The final submission (including a copy or a bot) immediately
+  settles and shows the result; no more edits are accepted. Repeating the
+  same choice is a no-op.
   Cancelling clears the pick and timestamp, but never refunds a used comodín.
 - `snapshot()` hides `answer`, `copy` and (during the final) `bet` while the
   question or the pause is open. Each client remembers its own pick locally
@@ -89,6 +91,9 @@ Built on the shared table room (`engine/table-room.js`) and the plaza stage
   failure returns 503 for audio only and a later request retries.
 - `narration.js` queues the question followed by each letter and answer in
   displayed order. Shared label clips avoid recording every permutation.
+  Once the result settles, it announces «La respuesta correcta es», the letter
+  and the correct answer. Results last at least eight seconds to fit every
+  recorded announcement; tests check the measured durations.
   Escuchar pregunta replays it and provides a gesture if autoplay is blocked.
   Shared sound/volume settings apply; phase changes and teardown stop playback.
   A solo pause stops narration; returning rereads the question. The room clock

@@ -132,7 +132,7 @@ function renderQuestion(state, p) {
   }));
   let line = state.hostLine;
   if (p && phase === 'question' && p.locked) line = own.copy !== null ? `Te copiaste de ${state.players[own.copy].name}. ¡Ojalá no sea embuste!` : own.choice !== null ? `Marcaste la ${LETTERS[own.choice]}. Nadie más lo sabe… todavía.` : 'Respuesta marcada.';
-  if (p?.locked && phase === 'question') line += ' Puedes cambiarla o cancelarla mientras quede tiempo.';
+  if (p?.locked && phase === 'question') line += ' Puedes cambiarla o cancelarla mientras falte alguien por responder.';
   $('host-line').textContent = line;
   if (settled && p?.outcome) {
     const o = p.outcome;

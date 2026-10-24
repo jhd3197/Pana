@@ -16,7 +16,7 @@ export const TOP = LADDER.length - 1;
 export const SAFE = [4, 8];
 export const BETS = [0, .25, .5, 1];
 export const BET_LABELS = ['Nada', 'Un cuarto', 'La mitad', '¡Todo!'];
-export const TIMES = { pause: 2.4, revealStep: .85, result: 4.2, bet: 14, intro: 1.4 };
+export const TIMES = { pause: 2.4, revealStep: .85, result: 8, bet: 14, intro: 1.4 };
 export const SPEED_BONUS = 100;
 export const BOT_NAMES = ['Lola', 'Tito', 'Cheo', 'Nina', 'Toño', 'Mari'];
 const SKILL = { normal: .62, genios: .86, gafos: .36 };
@@ -190,7 +190,7 @@ export class QuizGame {
   answer(p, choice) {
     if (this.phase !== 'question' || this.timeLeft <= 0 || !Number.isInteger(choice) || choice < 0 || choice > 3 || p.half?.includes(choice)) return false;
     if (p.locked && p.copy === null && p.answer === choice) return false;
-    Object.assign(p, { answer: choice, copy: null, locked: true, lockedLeft: this.timeLeft }); this.revision++; return true;
+    Object.assign(p, { answer: choice, copy: null, locked: true, lockedLeft: this.timeLeft }); this.revision++; this.finishIfAnswered(); return true;
   }
   cancelAnswer(p) {
     if (this.phase !== 'question' || this.timeLeft <= 0 || !p.locked) return false;
@@ -200,7 +200,7 @@ export class QuizGame {
   copy(p, target) {
     if (this.phase !== 'question' || this.timeLeft <= 0 || p.locked || p.used.copy || !Number.isInteger(target) || target === p.seat || !this.players[target]) return false;
     Object.assign(p, { copy: target, locked: true, lockedLeft: this.timeLeft }); p.used.copy = true; p.stats.copied++;
-    this.revision++; return true;
+    this.revision++; this.finishIfAnswered(); return true;
   }
   // Two wrong answers disappear, only on this pana's screen.
   half(p) {
@@ -223,6 +223,10 @@ export class QuizGame {
     return true;
   }
 
+  finishIfAnswered() {
+    if (!this.players.every(p => p.locked)) return;
+    this.startReveal(); this.settle();
+  }
   pause() { this.phase = 'pause'; this.phaseTime = 0; this.hostLine = '¿Esa es su respuesta final?'; this.revision++; }
 
   startReveal() {
@@ -275,8 +279,8 @@ export class QuizGame {
     // The leader doesn't get comfortable: now and then the host roasts them.
     const top = ranking(this)[0];
     if (!this.final && this.index > 1 && top.outcome.right && seedOf(`${this.round}:${this.index}:roast`) % 4 === 0) lines(top.seat, `${top.name} va de cuarto bate… ¡pero cuidado que se cae!`);
-    this.callouts = said; this.hostLine = headline;
-    this.reveal.done = true; this.phaseTime = 0;
+    this.callouts = said; this.hostLine = `La respuesta correcta es ${L}: ${this.question.answers[correct]}. ${headline}`;
+    this.reveal.shown = this.players.length; this.reveal.done = true; this.phaseTime = 0;
     if (!this.final && this.index === Math.floor(this.total / 2) - 1) this.halfLast = [...ranking(this)].pop().seat;
     this.revision++;
   }

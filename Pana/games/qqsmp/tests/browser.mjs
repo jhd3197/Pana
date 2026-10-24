@@ -27,7 +27,7 @@ try {
   // Keep the first question open while both clients exercise its controls.
   await host.evaluate(() => {
     const step = qqsmpDebug.room.step;
-    qqsmpDebug.room.step = function(dt) { return this.game.phase === 'question' ? false : step.call(this, dt); };
+    qqsmpDebug.room.step = function(dt) { return this.game.index === 0 ? false : step.call(this, dt); };
   });
   await host.locator('#start').click();
   await waitFor(guest, () => qqsmpDebug.room.state.phase === 'question');
@@ -73,11 +73,30 @@ try {
       actual: quizAudioCalls.map(url => url.match(/([a-f0-9]+)\.mp3$/)[1]) };
   });
   assert.deepEqual(sequence.actual, sequence.expected, 'native playback reads the question and every displayed choice in order');
+  // Leave Bruno as the last undecided player, with the full timer still available.
+  await guest.locator('#cancel-answer').evaluate(el => el.click());
+  await waitFor(host, () => !qqsmpDebug.room.game.players.find(p => p.name === 'Bruno').locked);
+  await host.evaluate(() => {
+    const { room } = qqsmpDebug;
+    for (const p of room.game.players) if (p.id === null) room.game.answer(p, 0);
+    room.publish();
+  });
+  await guest.locator('#answers .answer[data-choice="3"]').evaluate(el => el.click());
+  await waitFor(guest, () => qqsmpDebug.room.state.phase === 'reveal' && qqsmpDebug.room.state.reveal.done);
+  assert.equal(await guest.evaluate(() => qqsmpDebug.room.state.timeLeft), 20, 'last vote skips the remaining timer');
+  assert.equal(await guest.locator('#answers .answer[data-choice="2"]').isDisabled(), true);
+  assert.equal(await guest.locator('#cancel-answer').isVisible(), false);
+  await waitFor(host, () => quizAudioCalls.length >= 12 && quizAudio.ended);
+  const resultVoice = await host.evaluate(async () => {
+    const { revealLines, voiceKey } = await import('./voice-key.js');
+    return { expected: revealLines(qqsmpDebug.room.state.question).map(voiceKey),
+      actual: quizAudioCalls.slice(9).map(url => url.match(/([a-f0-9]+)\.mp3$/)[1]) };
+  });
+  assert.deepEqual(resultVoice.actual, resultVoice.expected, 'announce only the correct displayed choice after the final vote');
+  assert.equal(await guest.evaluate(() => quizAudio.paused), true, 'muted clients stay silent during results');
   await host.evaluate(() => { delete qqsmpDebug.room.step; });
 
   // Then both answer every question and bet on the final.
-  await waitFor(guest, () => qqsmpDebug.room.state.phase === 'reveal' && qqsmpDebug.room.state.reveal.done);
-  assert.equal(await host.evaluate(() => quizAudio.paused), true, 'the recording stops outside the question phase');
   const copied = await guest.evaluate(() => qqsmpDebug.room.state.callouts.some(c => /Ana se copió de Bruno/.test(c.text)));
   assert.ok(copied, 'the reveal calls out who copied whom');
   for (const page of [host, guest]) {

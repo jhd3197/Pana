@@ -38,7 +38,7 @@ def record(text):
 
 
 def main():
-    source = "import {QUESTIONS} from './Pana/games/qqsmp/public/questions.js'; import {voiceKey, narrationLines} from './Pana/games/qqsmp/public/voice-key.js'; console.log(JSON.stringify([...new Set(Object.values(QUESTIONS).flat().flatMap(([text,...answers]) => narrationLines({text,answers})))].map(text => [voiceKey(text),text])));"
+    source = "import {QUESTIONS} from './Pana/games/qqsmp/public/questions.js'; import {voiceKey, narrationLines, CORRECT_INTRO} from './Pana/games/qqsmp/public/voice-key.js'; console.log(JSON.stringify([...new Set([CORRECT_INTRO, ...Object.values(QUESTIONS).flat().flatMap(([text,...answers]) => narrationLines({text,answers}))])].map(text => [voiceKey(text),text])));"
     lines = json.loads(subprocess.check_output(['node', '--input-type=module', '-e', source], cwd=ROOT))
     OUT.mkdir(parents=True, exist_ok=True)
     manifest = {'voice': VOICE, 'language': 'es', 'lines': {}}

@@ -1,5 +1,5 @@
 import { onSettings } from '/engine/settings.js';
-import { voiceKey, narrationLines } from './voice-key.js';
+import { voiceKey, narrationLines, revealLines } from './voice-key.js';
 
 // One local recording at a time. Audio never controls the shared room clock.
 export function createNarration(button) {
@@ -20,7 +20,7 @@ export function createNarration(button) {
   const play = () => {
     stop();
     if (!current || muted || disposed) return;
-    queue = narrationLines(current); index = 0; playClip();
+    queue = current; index = 0; playClip();
   };
   audio.onended = () => { index++; playClip(); };
   const unlock = () => { if (pending) playClip(); };
@@ -35,8 +35,10 @@ export function createNarration(button) {
   });
   return {
     update(state, paused = false) {
-      const next = state.phase === 'question' && !paused ? `${state.round}:${state.index}:${state.question.text}` : '';
-      current = next ? state.question : null;
+      const mode = !paused && (state.phase === 'question' ? 'question' : state.phase === 'reveal' && state.reveal?.done ? 'answer' : '');
+      const next = mode ? `${mode}:${state.round}:${state.index}:${state.question.text}` : '';
+      current = mode === 'question' ? narrationLines(state.question) : mode === 'answer' ? revealLines(state.question) : null;
+      button.textContent = mode === 'answer' ? 'Escuchar respuesta' : 'Escuchar pregunta';
       button.hidden = !current;
       button.disabled = muted || !current;
       if (next === key) return;

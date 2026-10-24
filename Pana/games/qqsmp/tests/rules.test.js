@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { QuizGame, SEATS, LADDER, TOP, TIMES, safeFloor, resolveAnswer, revealOrder, ranking, score, titles } from '../public/rules.js';
 import { QUESTIONS, CATEGORIES, PACKS } from '../public/questions.js';
 import fs from 'node:fs';
-import { voiceKey, narrationLines } from '../public/voice-key.js';
+import { voiceKey, narrationLines, revealLines, CORRECT_INTRO } from '../public/voice-key.js';
 
 let seq = 0;
 const act = (game, id, action, values = {}) => game.accept(id, { action, seq: ++seq, q: game.index, ...values }, 1);
@@ -85,7 +85,7 @@ test('the default timer leaves thirty seconds to listen and answer', () => {
 test('every question and its choices have Spanish recordings within the default timer', () => {
   const dir = new URL('../public/audio/', import.meta.url);
   const manifest = JSON.parse(fs.readFileSync(new URL('manifest.json', dir)));
-  const texts = [...new Set(Object.values(QUESTIONS).flat().flatMap(([text, ...answers]) => narrationLines({ text, answers })))];
+  const texts = [...new Set([CORRECT_INTRO, ...Object.values(QUESTIONS).flat().flatMap(([text, ...answers]) => narrationLines({ text, answers }))])];
   assert.equal(new Set(texts.map(voiceKey)).size, texts.length, 'no hash collisions');
   for (const text of texts) {
     const key = voiceKey(text), entry = manifest.lines[key];
@@ -94,6 +94,8 @@ test('every question and its choices have Spanish recordings within the default 
   }
   for (const [text, ...answers] of Object.values(QUESTIONS).flat()) {
     const seconds = narrationLines({ text, answers }).reduce((sum, line) => sum + manifest.lines[voiceKey(line)].seconds, 0);
+    const resultSeconds = revealLines({ text, answers, correct: 0 }).reduce((sum, line) => sum + manifest.lines[voiceKey(line)].seconds, 0);
+    assert.ok(resultSeconds < TIMES.result - .5, `complete reveal audio: ${text}`);
     assert.ok(seconds < 25, `time to answer after all choices: ${text} (${seconds}s)`);
   }
   const pack = JSON.parse(fs.readFileSync(new URL('pack.json', dir)));
@@ -112,15 +114,16 @@ test('answers stay secret in snapshots until the reveal, while allowing changes'
   assert.equal(act(game, 2, 'answer', { choice: 1, q: 99 }), false, 'answer for another question');
 });
 
-test('the full timer remains after everyone answers, then reveals and settles', () => {
+test('the last answer reveals and settles immediately, blocking further changes', () => {
   const game = humans(); game.start();
   for (let i = 1; i <= SEATS; i++) act(game, i, 'answer', { choice: i === 3 ? right(game) : wrong(game) });
-  assert.equal(game.phase, 'question');
-  game.tick(game.timeLeft);
-  assert.equal(game.phase, 'pause');
-  assert.equal(game.hostLine, '¿Esa es su respuesta final?');
-  run(game, g => g.phase === 'reveal');
-  assert.equal(game.reveal.shown, 1);
+  assert.equal(game.phase, 'reveal');
+  assert.equal(game.timeLeft, 30, 'no waiting for the remaining clock');
+  assert.equal(game.reveal.shown, SEATS, 'all podium answers appear immediately');
+  assert.equal(game.reveal.done, true);
+  assert.equal(act(game, SEATS, 'answer', { choice: right(game) }), false);
+  assert.equal(act(game, SEATS, 'cancel'), false);
+  assert.ok(game.hostLine.includes(game.question.answers[right(game)]));
   toReveal(game);
   assert.match(game.hostLine, /Solo P3 se la sabía/);
   assert.equal(game.players[2].step, 1);
@@ -241,9 +244,9 @@ test('a new host restores an open question and lets panas lock again', () => {
   assert.equal(copy.phase, 'pause');
 });
 
-test('the reveal waits a beat per name', () => {
+test('unanswered questions reach the deadline and reveal a beat per name', () => {
   const game = humans(); game.start();
-  for (let i = 1; i <= SEATS; i++) act(game, i, 'answer', { choice: 0 });
+  for (let i = 1; i < SEATS; i++) act(game, i, 'answer', { choice: 0 });
   run(game, g => g.phase === 'reveal');
   let ticks = 0; run(game, g => (ticks++, g.reveal.done));
   assert.ok(ticks * .05 >= TIMES.revealStep * (SEATS - 1));
@@ -293,4 +296,21 @@ test('replacing a copy follows the new choice and half still excludes hidden cho
   act(game, 1, 'cancel');
   assert.equal(act(game, 1, 'half'), false);
   assert.equal(act(game, 1, 'answer', { choice: p.half[0] }), false);
+});
+
+test('a final copy also ends voting, including bot submissions', () => {
+  const game = humans(); game.start();
+  for (let i = 1; i < SEATS; i++) act(game, i, 'answer', { choice: right(game) });
+  assert.equal(game.phase, 'question');
+  assert.ok(act(game, SEATS, 'copy', { target: 0 }));
+  assert.equal(game.phase, 'reveal'); assert.equal(game.reveal.done, true);
+  assert.equal(game.players[SEATS - 1].outcome.right, true);
+  const bots = new QuizGame(23); bots.start();
+  run(bots, g => g.phase === 'reveal');
+  assert.ok(bots.timeLeft > 0); assert.equal(bots.reveal.done, true);
+});
+
+test('the reveal announces the correct displayed letter and text', () => {
+  assert.deepEqual(revealLines({ answers: ['Guacamayo', 'Cardenal', 'Colibrí', 'Turpial'], correct: 3 }),
+    [CORRECT_INTRO, 'Opción D.', 'Turpial']);
 });

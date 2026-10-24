@@ -9,3 +9,8 @@ export function voiceKey(text) {
 export function narrationLines(question) {
   return [question.text, ...question.answers.flatMap((answer, i) => [`Opción ${'ABCD'[i]}.`, answer])];
 }
+
+export const CORRECT_INTRO = 'La respuesta correcta es:';
+export function revealLines(question) {
+  return [CORRECT_INTRO, `Opción ${'ABCD'[question.correct]}.`, question.answers[question.correct]];
+}
