@@ -52,8 +52,13 @@ const betButtons = BETS.map((_, i) => {
 const me = () => room.state.players[room.seat];
 const questionKey = (s = room.state) => `${s.round}:${s.index}:${s.final}`;
 const mine = () => picked.key === questionKey() ? picked : { choice: null, copy: null };
-const canAnswer = () => room.connected && room.state.phase === 'question' && me() && !me().locked && !menu.isOpen;
+const canAnswer = () => room.connected && room.state.phase === 'question' && room.state.timeLeft > 0 && me() && !menu.isOpen;
 
+$('cancel-answer').onclick = () => {
+  if (!canAnswer() || !me().locked) return;
+  if (room.action('cancel', { q: room.state.index })) picked = { key: questionKey(), choice: null, copy: null };
+  copying = false; render(room.state);
+};
 function answer(choice) {
   if (!canAnswer() || me().half?.includes(choice)) return;
   sound.unlock(); copying = false;
@@ -61,13 +66,13 @@ function answer(choice) {
   sound.clickDown(); render(room.state);
 }
 function comodin(kind) {
-  if (!canAnswer() || me().used[kind]) return;
+  if (!canAnswer() || me().locked || me().used[kind]) return;
   sound.unlock();
   if (kind === 'copy') { copying = !copying; return render(room.state); }
   room.action(kind, { q: room.state.index });
 }
 function copyFrom(target) {
-  if (!canAnswer()) return;
+  if (!canAnswer() || me().locked) return;
   if (room.action('copy', { target, q: room.state.index })) picked = { key: questionKey(), choice: null, copy: target };
   copying = false; render(room.state);
 }
@@ -106,7 +111,8 @@ function renderQuestion(state, p) {
     button.classList.toggle('wrong', !!settled && mineResolved === i && i !== q.correct);
     button.disabled = !canAnswer();
   });
-  $('answers').classList.toggle('locked', !!p?.locked);
+  $('cancel-answer').hidden = phase !== 'question' || !p?.locked;
+  $('cancel-answer').disabled = !canAnswer();
   betButtons.forEach((button, i) => {
     const stake = Math.round(score(p || { step: 0, bonus: 0, finalDelta: 0 }) * BETS[i]);
     button.firstChild.textContent = BET_LABELS[i]; button.lastChild.textContent = `${mangos(stake)} mangos`;
@@ -116,7 +122,7 @@ function renderQuestion(state, p) {
   document.querySelectorAll('[data-comodin]').forEach(button => {
     const kind = button.dataset.comodin, used = !p || p.used[kind];
     button.hidden = state.final && ['doble', 'plant'].includes(kind) || betting;
-    button.disabled = used || !canAnswer() || (kind === 'plant' && p.doble) || (kind === 'doble' && p.planted);
+    button.disabled = used || !canAnswer() || p.locked || (kind === 'plant' && p.doble) || (kind === 'doble' && p.planted);
     button.classList.toggle('on', kind === 'copy' ? copying : kind === 'doble' ? !!p?.doble : kind === 'plant' ? !!p?.planted : kind === 'half' && !!p?.half);
   });
   $('copy-list').hidden = !copying || !canAnswer();
@@ -125,7 +131,8 @@ function renderQuestion(state, p) {
     button.onclick = () => copyFrom(o.seat); return button;
   }));
   let line = state.hostLine;
-  if (p && phase === 'question' && p.locked) line = own.copy !== null ? `Te copiaste de ${state.players[own.copy].name}. ¡Ojalá no sea embuste!` : own.choice !== null ? `Marcaste la ${LETTERS[own.choice]}. Nadie más lo sabe… todavía.` : 'Tu respuesta está trancada.';
+  if (p && phase === 'question' && p.locked) line = own.copy !== null ? `Te copiaste de ${state.players[own.copy].name}. ¡Ojalá no sea embuste!` : own.choice !== null ? `Marcaste la ${LETTERS[own.choice]}. Nadie más lo sabe… todavía.` : 'Respuesta marcada.';
+  if (p?.locked && phase === 'question') line += ' Puedes cambiarla o cancelarla mientras quede tiempo.';
   $('host-line').textContent = line;
   if (settled && p?.outcome) {
     const o = p.outcome;

@@ -4,3 +4,8 @@ export function voiceKey(text) {
   for (const byte of new TextEncoder().encode(text)) hash = Math.imul(hash ^ byte, 16777619) >>> 0;
   return hash.toString(16).padStart(8, '0');
 }
+
+// Labels are separate recordings so shuffled answers always match the screen.
+export function narrationLines(question) {
+  return [question.text, ...question.answers.flatMap((answer, i) => [`Opción ${'ABCD'[i]}.`, answer])];
+}

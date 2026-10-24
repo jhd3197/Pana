@@ -8,6 +8,10 @@ becomes the GitHub release's notes.
 
 ## Unreleased
 
+- **QQSMP lee las opciones y permite cambiar o cancelar tu respuesta.**
+  Escucha cada letra y respuesta en el orden de la pantalla; puedes corregir
+  tu elección hasta que termine el tiempo, con el bono de tu última respuesta.
+
 - **Los botones de menú e invitación comparten el nuevo estilo del HUD.**
   Placas inclinadas y atajos legibles en todos los juegos, también en los
   controles de vista y detalles de Ludo.

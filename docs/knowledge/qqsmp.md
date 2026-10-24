@@ -26,7 +26,9 @@ Built on the shared table room (`engine/table-room.js`) and the plaza stage
 
 ## Rules decisions
 
-- Answers lock once; there is no changing your mind.
+- Answers can be changed or cancelled until the full timer expires, even if
+  everyone has already answered. Repeating the same choice is a no-op.
+  Cancelling clears the pick and timestamp, but never refunds a used comodín.
 - `snapshot()` hides `answer`, `copy` and (during the final) `bet` while the
   question or the pause is open. Each client remembers its own pick locally
   (`picked` in `game.js`) to highlight it. A host handoff mid-question
@@ -42,7 +44,8 @@ Built on the shared table room (`engine/table-room.js`) and the plaza stage
   as no answer. The reveal calls names in dependency order, so you always see
   the copied pana's letter before the copier's.
 - Speed bonus: up to 100 mangos per right answer (×2 with Doble), scaled by
-  the time left when you locked. Points = ladder value + bonus + final delta.
+  the time left at your latest changed answer.
+  Points = ladder value + bonus + final delta.
 - Reaching step 12 wins the Mango de oro immediately (`gold`); that pana ranks
   first whatever the final does, and the rest play the final for second.
 - Planted panas keep answering for the call-outs, but their step is frozen and
@@ -60,7 +63,7 @@ Built on the shared table room (`engine/table-room.js`) and the plaza stage
 
 ## Spanish narration and rematches
 
-- Every prompt has a Kokoro `em_alex` Spanish recording generated into `public/audio/`.
+- Every prompt, answer and option label has a Kokoro `em_alex` Spanish recording generated into `public/audio/`.
   `voice-key.js` hashes the prompt's UTF-8 text; changing a question requires
   regenerating its recording. The manifest records text and measured duration.
 - Generate with `python Pana/scripts/qqsmp-narrate.py` from the repository root.
@@ -74,7 +77,8 @@ Built on the shared table room (`engine/table-room.js`) and the plaza stage
   Keep older ZIPs available for older deployed versions. Do not replace a ZIP
   in place: its filename includes the content hash. Git tracks only the text
   manifest, pinned URL, SHA-256 and byte count, never recordings or ZIPs.
-  Players download only the current prompt; they do not contact Kokoro.
+  Players download only the current question and its choice clips;
+  they do not contact Kokoro.
 - `server/audio-pack.js` downloads and verifies the pinned ZIP on the first
   question-audio request, then serves it through the existing QQSMP audio URL.
   Extraction accepts only the manifest's flat MP3 names and publishes a complete
@@ -83,7 +87,8 @@ Built on the shared table room (`engine/table-room.js`) and the plaza stage
   temp directory. The source checkout can remain read-only.
   Other routes never wait on the download; a
   failure returns 503 for audio only and a later request retries.
-- `narration.js` reads the question (not the answer choices), once per question.
+- `narration.js` queues the question followed by each letter and answer in
+  displayed order. Shared label clips avoid recording every permutation.
   Escuchar pregunta replays it and provides a gesture if autoplay is blocked.
   Shared sound/volume settings apply; phase changes and teardown stop playback.
   A solo pause stops narration; returning rereads the question. The room clock

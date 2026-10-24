@@ -188,13 +188,19 @@ export class QuizGame {
   }
 
   answer(p, choice) {
-    if (this.phase !== 'question' || p.locked || !Number.isInteger(choice) || choice < 0 || choice > 3 || p.half?.includes(choice)) return false;
-    Object.assign(p, { answer: choice, locked: true, lockedLeft: this.timeLeft }); this.revision++; this.maybePause(); return true;
+    if (this.phase !== 'question' || this.timeLeft <= 0 || !Number.isInteger(choice) || choice < 0 || choice > 3 || p.half?.includes(choice)) return false;
+    if (p.locked && p.copy === null && p.answer === choice) return false;
+    Object.assign(p, { answer: choice, copy: null, locked: true, lockedLeft: this.timeLeft }); this.revision++; return true;
+  }
+  cancelAnswer(p) {
+    if (this.phase !== 'question' || this.timeLeft <= 0 || !p.locked) return false;
+    Object.assign(p, { answer: null, copy: null, locked: false, lockedLeft: 0 });
+    this.revision++; return true;
   }
   copy(p, target) {
-    if (this.phase !== 'question' || p.locked || p.used.copy || !Number.isInteger(target) || target === p.seat || !this.players[target]) return false;
+    if (this.phase !== 'question' || this.timeLeft <= 0 || p.locked || p.used.copy || !Number.isInteger(target) || target === p.seat || !this.players[target]) return false;
     Object.assign(p, { copy: target, locked: true, lockedLeft: this.timeLeft }); p.used.copy = true; p.stats.copied++;
-    this.revision++; this.maybePause(); return true;
+    this.revision++; return true;
   }
   // Two wrong answers disappear, only on this pana's screen.
   half(p) {
@@ -217,7 +223,6 @@ export class QuizGame {
     return true;
   }
 
-  maybePause() { if (this.players.every(p => p.locked)) this.pause(); }
   pause() { this.phase = 'pause'; this.phaseTime = 0; this.hostLine = '¿Esa es su respuesta final?'; this.revision++; }
 
   startReveal() {
@@ -347,6 +352,7 @@ export class QuizGame {
     if (!p) return false;
     if (data.action === 'bet') return this.placeBet(p, data.choice);
     if (data.q !== this.index || this.phase !== 'question') return false;
+    if (data.action === 'cancel') return this.cancelAnswer(p);
     if (data.action === 'answer') return this.answer(p, data.choice);
     if (data.action === 'copy') return this.copy(p, data.target);
     if (data.action === 'half') return this.half(p);

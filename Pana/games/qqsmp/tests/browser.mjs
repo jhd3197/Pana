@@ -58,6 +58,21 @@ try {
   });
   assert.equal(leaked, null, 'answers stay secret until the reveal');
   assert.equal(await guest.locator('#answers .answer.picked').count(), 1, 'the guest still sees their own pick');
+  await guest.locator('#answers .answer[data-choice="2"]').evaluate(el => el.click());
+  await waitFor(host, () => qqsmpDebug.room.game.players.find(p => p.name === 'Bruno').answer === 2);
+  assert.equal(await guest.locator('#answers .answer[data-choice="2"]').getAttribute('class').then(c => c.includes('picked')), true);
+  await guest.locator('#cancel-answer').evaluate(el => el.click());
+  await waitFor(host, () => !qqsmpDebug.room.state.players.find(p => p.name === 'Bruno').locked);
+  assert.equal(await guest.locator('#answers .answer.picked').count(), 0);
+  await guest.locator('#answers .answer[data-choice="3"]').evaluate(el => el.click());
+  await waitFor(host, () => qqsmpDebug.room.game.players.find(p => p.name === 'Bruno').answer === 3);
+  await waitFor(host, () => quizAudioCalls.length >= 9 && quizAudio.ended, undefined, 60_000);
+  const sequence = await host.evaluate(async () => {
+    const { narrationLines, voiceKey } = await import('./voice-key.js');
+    return { expected: narrationLines(qqsmpDebug.room.state.question).map(voiceKey),
+      actual: quizAudioCalls.map(url => url.match(/([a-f0-9]+)\.mp3$/)[1]) };
+  });
+  assert.deepEqual(sequence.actual, sequence.expected, 'native playback reads the question and every displayed choice in order');
   await host.evaluate(() => { delete qqsmpDebug.room.step; });
 
   // Then both answer every question and bet on the final.
@@ -73,7 +88,7 @@ try {
       if (s.phase === 'bet' && !p.betLocked) room.action('bet', { choice: 2 });
     }, 200));
   }
-  await waitFor(host, () => qqsmpDebug.room.state.phase === 'bet', undefined, 240_000);
+  await waitFor(host, () => qqsmpDebug.room.state.phase === 'bet', undefined, 360_000);
   await waitFor(host, () => qqsmpDebug.room.state.phase === 'finished', undefined, 120_000);
   await waitFor(guest, () => qqsmpDebug.room.state.phase === 'finished');
   assert.equal(await guest.evaluate(() => qqsmpDebug.room.state.winner), await host.evaluate(() => qqsmpDebug.room.state.winner));

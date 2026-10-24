@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { QuizGame, SEATS, LADDER, TOP, TIMES, safeFloor, resolveAnswer, revealOrder, ranking, score, titles } from '../public/rules.js';
 import { QUESTIONS, CATEGORIES, PACKS } from '../public/questions.js';
 import fs from 'node:fs';
-import { voiceKey } from '../public/voice-key.js';
+import { voiceKey, narrationLines } from '../public/voice-key.js';
 
 let seq = 0;
 const act = (game, id, action, values = {}) => game.accept(id, { action, seq: ++seq, q: game.index, ...values }, 1);
@@ -82,35 +82,41 @@ test('the default timer leaves thirty seconds to listen and answer', () => {
   game.tick(10); assert.equal(game.phase, 'pause');
 });
 
-test('every prompt has a matching Spanish recording that fits the default timer', () => {
+test('every question and its choices have Spanish recordings within the default timer', () => {
   const dir = new URL('../public/audio/', import.meta.url);
   const manifest = JSON.parse(fs.readFileSync(new URL('manifest.json', dir)));
-  const texts = Object.values(QUESTIONS).flat().map(q => q[0]);
+  const texts = [...new Set(Object.values(QUESTIONS).flat().flatMap(([text, ...answers]) => narrationLines({ text, answers })))];
   assert.equal(new Set(texts.map(voiceKey)).size, texts.length, 'no hash collisions');
   for (const text of texts) {
     const key = voiceKey(text), entry = manifest.lines[key];
     assert.equal(entry?.text, text);
     assert.ok(entry.seconds > 0 && entry.seconds < 15, `time to answer after ${text}`);
   }
+  for (const [text, ...answers] of Object.values(QUESTIONS).flat()) {
+    const seconds = narrationLines({ text, answers }).reduce((sum, line) => sum + manifest.lines[voiceKey(line)].seconds, 0);
+    assert.ok(seconds < 25, `time to answer after all choices: ${text} (${seconds}s)`);
+  }
   const pack = JSON.parse(fs.readFileSync(new URL('pack.json', dir)));
   assert.equal(pack.files, texts.length);
   assert.match(pack.sha256, /^[a-f0-9]{64}$/);
 });
 
-test('answers stay secret in snapshots until the reveal, and lock once', () => {
+test('answers stay secret in snapshots until the reveal, while allowing changes', () => {
   const game = humans(); game.start();
   assert.ok(act(game, 1, 'answer', { choice: 2 }));
-  assert.equal(act(game, 1, 'answer', { choice: 1 }), false, 'already locked');
+  assert.ok(act(game, 1, 'answer', { choice: 1 }));
   const snap = game.snapshot();
   assert.equal(snap.players[0].locked, true);
   assert.equal(snap.players[0].answer, null);
-  assert.equal(game.players[0].answer, 2);
+  assert.equal(game.players[0].answer, 1);
   assert.equal(act(game, 2, 'answer', { choice: 1, q: 99 }), false, 'answer for another question');
 });
 
-test('the question pauses when everyone locks, then reveals by name and settles', () => {
+test('the full timer remains after everyone answers, then reveals and settles', () => {
   const game = humans(); game.start();
   for (let i = 1; i <= SEATS; i++) act(game, i, 'answer', { choice: i === 3 ? right(game) : wrong(game) });
+  assert.equal(game.phase, 'question');
+  game.tick(game.timeLeft);
   assert.equal(game.phase, 'pause');
   assert.equal(game.hostLine, '¿Esa es su respuesta final?');
   run(game, g => g.phase === 'reveal');
@@ -241,4 +247,50 @@ test('the reveal waits a beat per name', () => {
   run(game, g => g.phase === 'reveal');
   let ticks = 0; run(game, g => (ticks++, g.reveal.done));
   assert.ok(ticks * .05 >= TIMES.revealStep * (SEATS - 1));
+});
+
+test('changing and cancelling use the latest timestamp and stop at the deadline', () => {
+  const game = humans(); game.start(); const p = game.players[0];
+  act(game, 1, 'answer', { choice: wrong(game) });
+  game.tick(10);
+  assert.ok(act(game, 1, 'answer', { choice: right(game) }));
+  assert.equal(p.lockedLeft, 20);
+  game.tick(5);
+  assert.equal(act(game, 1, 'answer', { choice: right(game) }), false);
+  assert.equal(p.lockedLeft, 20, 'repeated clicks do not change the bonus');
+  assert.ok(act(game, 1, 'cancel'));
+  assert.equal(p.locked, false); assert.equal(p.answer, null); assert.equal(p.lockedLeft, 0);
+  assert.equal(act(game, 1, 'cancel'), false);
+  assert.ok(act(game, 1, 'answer', { choice: right(game) }));
+  assert.equal(p.lockedLeft, 15);
+  game.tick(15);
+  assert.equal(act(game, 1, 'cancel'), false);
+  assert.equal(act(game, 1, 'answer', { choice: wrong(game) }), false);
+  toReveal(game); assert.equal(p.outcome.bonus, 50);
+});
+
+test('cancelling a copy spends the comodin but permits an independent answer', () => {
+  const game = humans(); game.start(); const p = game.players[0];
+  act(game, 1, 'copy', { target: 1 });
+  assert.ok(act(game, 1, 'cancel'));
+  assert.equal(p.copy, null); assert.equal(p.used.copy, true);
+  assert.equal(act(game, 1, 'copy', { target: 2 }), false);
+  assert.ok(act(game, 1, 'answer', { choice: right(game) }));
+  assert.equal(resolveAnswer(game.players, 0), right(game));
+});
+
+test('narration follows displayed order without exposing the right answer', () => {
+  assert.deepEqual(narrationLines({ text: 'Ave', answers: ['Guacamayo', 'Cardenal', 'Colibrí', 'Turpial'], correct: 3 }),
+    ['Ave', 'Opción A.', 'Guacamayo', 'Opción B.', 'Cardenal', 'Opción C.', 'Colibrí', 'Opción D.', 'Turpial']);
+});
+
+test('replacing a copy follows the new choice and half still excludes hidden choices', () => {
+  const game = humans(); game.start(); const p = game.players[0];
+  act(game, 1, 'half'); act(game, 1, 'copy', { target: 1 });
+  assert.equal(act(game, 1, 'answer', { choice: p.half[0] }), false);
+  assert.ok(act(game, 1, 'answer', { choice: right(game) }));
+  assert.equal(p.copy, null); assert.equal(p.used.copy, true);
+  act(game, 1, 'cancel');
+  assert.equal(act(game, 1, 'half'), false);
+  assert.equal(act(game, 1, 'answer', { choice: p.half[0] }), false);
 });

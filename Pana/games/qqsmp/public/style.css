@@ -35,7 +35,6 @@ body.in-lobby .world-label { display: none; }
 .answer.gone { visibility: hidden; }
 .answer.right { border-color: var(--qq-right); background: var(--qq-right-fill); }
 .answer.wrong { border-color: var(--qq-wrong); background: var(--qq-wrong-fill); }
-.answers.locked .answer:not(.picked):not(.right) { opacity: .5; }
 .bets .answer { justify-content: space-between; }
 .copy-list { display: flex; flex-wrap: wrap; gap: 6px; }
 .copy-list::before { content: '¿De quién te copias?'; width: 100%; color: var(--pk-muted); font-size: 13px; }
