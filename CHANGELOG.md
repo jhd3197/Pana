@@ -8,6 +8,8 @@ becomes the GitHub release's notes.
 
 ## Unreleased
 
+## 0.7.0 - 2026-10-24
+
 - **Los panas y los escenarios se preparan más rápido al entrar a jugar.**
   La ropa reutiliza sus ajustes al cuerpo y los escenarios agrupan sus
   piezas con menos copias, conservando sus formas y colores.
