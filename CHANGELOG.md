@@ -8,6 +8,9 @@ becomes the GitHub release's notes.
 
 ## Unreleased
 
+- **En Chuao la plaza ya no atraviesa la carretera junto a la iglesia.**
+  El patio de cemento y el cacao al sol terminan en el borde de la vía.
+
 - **Los 16 carros de Carreritas estrenan carrocería suave y cabina por dentro.**
   Faros, parrillas y adornos se apoyan en la carrocería curva, y cada carro
   trae tablero, asientos y volante alrededor de tu pana.

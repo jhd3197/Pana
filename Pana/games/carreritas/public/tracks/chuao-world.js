@@ -515,16 +515,32 @@ export function createWorld(scene, layout, roadDistance) {
       house(V3(x, 0, z), Math.round(yawOf(toRoad) / (PI / 2)) * (PI / 2), rr(7, 9.5), rr(7, 8.5), rr(3.4, 4.2), pick(HOUSE)); n++;
     }
     for (let k = 0; k < 40; k++) { const x = rr(TZ.xMin - 10, TZ.xMax + 10), z = rr(TZ.zMin, TZ.zMax + 20); if (nearPlaza(x, z, 2) || !freeOf(x, z, 2) || houses.some(hh => Math.hypot(hh.x - x, hh.z - z) < 7)) continue; mango(x, z); }
-    // the cement patio with the cacao drying in red-brown circles
-    const pave = new THREE.Mesh(new THREE.BoxGeometry(PL.w, 0.6, PL.d), new THREE.MeshStandardMaterial({ color: col('#dcd6c8'), roughness: 0.95 }));
-    pave.position.set(PL.x, plazaY - 0.18, PL.z); pave.receiveShadow = true; scene.add(pave);
-    for (let k = 0; k < 6; k++) addBox(V3(PL.x - PL.w / 2 + (k + 0.5) * PL.w / 6, plazaY + 0.13, PL.z), V3(0.12, 0.02, PL.d - 2), 0, '#b9b2a2');
-    for (let k = 0; k < 5; k++) addBox(V3(PL.x, plazaY + 0.13, PL.z - PL.d / 2 + (k + 0.5) * PL.d / 5), V3(PL.w - 2, 0.02, 0.12), 0, '#b9b2a2');
+    // the cement patio with the cacao drying in red-brown circles. The road's
+    // curve cuts the patio's corner, and the flat slab used to show through
+    // the sloping road there: the slab, its joints and the cacao stay clear.
+    const patioClear = (x, z, m = 0) => freeOf(x, z, m);
+    const top = [], quad = (x0, z0, x1, z1) => top.push(x0, 0, z0, x0, 0, z1, x1, 0, z1, x0, 0, z0, x1, 0, z1, x1, 0, z0);
+    for (let x = PL.x - PL.w / 2; x < PL.x + PL.w / 2 - 1e-6; x += 1) for (let z = PL.z - PL.d / 2; z < PL.z + PL.d / 2 - 1e-6; z += 1) {
+      const corners = [[x, z], [x + 1, z], [x, z + 1], [x + 1, z + 1]].filter(([cx, cz]) => patioClear(cx, cz)).length;
+      if (corners === 4) quad(x, z, x + 1, z + 1);
+      else if (corners) for (let i = 0; i < 4; i++) for (let j = 0; j < 4; j++) {
+        const sx = x + i / 4, sz = z + j / 4;
+        if (patioClear(sx + 0.125, sz + 0.125)) quad(sx, sz, sx + 0.25, sz + 0.25);
+      }
+    }
+    const patio = new THREE.BufferGeometry(); patio.setAttribute('position', new THREE.Float32BufferAttribute(top, 3)); patio.computeVertexNormals();
+    const pave = new THREE.Mesh(patio, new THREE.MeshStandardMaterial({ color: col('#dcd6c8'), roughness: 0.95 }));
+    pave.position.set(0, plazaY + 0.12, 0); pave.receiveShadow = true; scene.add(pave);
+    for (let k = 0; k < 6; k++) { const x = PL.x - PL.w / 2 + (k + 0.5) * PL.w / 6; for (let z = PL.z - PL.d / 2 + 1.5; z < PL.z + PL.d / 2 - 1; z += 1) if (patioClear(x, z, 0.3)) addBox(V3(x, plazaY + 0.13, z), V3(0.12, 0.02, 1), 0, '#b9b2a2'); }
+    for (let k = 0; k < 5; k++) { const z = PL.z - PL.d / 2 + (k + 0.5) * PL.d / 5; for (let x = PL.x - PL.w / 2 + 1.5; x < PL.x + PL.w / 2 - 1; x += 1) if (patioClear(x, z, 0.3)) addBox(V3(x, plazaY + 0.13, z), V3(1, 0.02, 0.12), 0, '#b9b2a2'); }
     const cols = 4, rows = Math.ceil(PL.circles / cols);
     for (let k = 0; k < PL.circles; k++) {
+      // Every random draw still happens so the rest of the valley keeps its layout.
       const cx = PL.x - PL.w / 2 + (k % cols + 0.5) * PL.w / cols + rr(-1.5, 1.5), cz = PL.z - PL.d / 2 + 8 + (Math.floor(k / cols) + 0.5) * (PL.d - 12) / rows + rr(-1, 1), r = rr(3.4, 4.6);
-      push(inst.disc, V3(cx, plazaY + 0.16, cz), qYaw(rand() * TAU), S.set(r, 1, r * rr(0.9, 1.1)), col('#5a2a1c').offsetHSL(rr(-0.015, 0.015), rr(-0.15, 0), rr(-0.04, 0.05)));
-      for (let j = 0; j < 4; j++) { const a = rand() * TAU, rd = r * rr(0.2, 0.8); push(inst.disc, V3(cx + Math.cos(a) * rd, plazaY + 0.17, cz + Math.sin(a) * rd), qYaw(rand() * TAU), S.set(r * 0.25, 1, r * 0.2), col('#3e1a12')); }
+      const clear = patioClear(cx, cz, r + 0.5);
+      const disc = [V3(cx, plazaY + 0.16, cz), qYaw(rand() * TAU), S.set(r, 1, r * rr(0.9, 1.1)).clone(), col('#5a2a1c').offsetHSL(rr(-0.015, 0.015), rr(-0.15, 0), rr(-0.04, 0.05))];
+      if (clear) push(inst.disc, ...disc);
+      for (let j = 0; j < 4; j++) { const a = rand() * TAU, rd = r * rr(0.2, 0.8), bean = [V3(cx + Math.cos(a) * rd, plazaY + 0.17, cz + Math.sin(a) * rd), qYaw(rand() * TAU), S.set(r * 0.25, 1, r * 0.2).clone(), col('#3e1a12')]; if (clear) push(inst.disc, ...bean); }
     }
     // the yellow church: arched door, pilasters, a curved gable with the bell
     const C = MAP.church, cy = plazaY - 0.3;
