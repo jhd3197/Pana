@@ -49,7 +49,9 @@ The shared 3D pana sits on the same chairs as Caída around a physical oval tabl
 in the plaza. `engine/models/props/poker.js` owns the table, textured cards and
 batched chip stacks, all registered in Studio. Community cards and dealt hands
 are meshes on the felt; the private hand also has a readable HUD copy. The
-community DOM representation remains available to assistive technology.
+community HUD copy is visible above the table, with large ranks and suits.
+It renders only `state.board`; private readouts still use the viewer’s own hand.
+Portrait and landscape camera framing reserves room below this readout.
 
 Only the player's private server view reaches the renderer. A `null` card
 creates a back texture, never a concealed face; folded hands leave the table.

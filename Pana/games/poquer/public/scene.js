@@ -70,7 +70,7 @@ export function createScene(canvas, { onStarter } = {}) {
     if (next !== version) { version = next; sync(state, me); }
     const { w, h } = stage.resize(), lobby = state.phase === 'lobby', short = h < 520 && w > h, mobile = w < 650;
     const safe = lobby ? w > 760 ? { x: 385, y: 80, width: w - 410, height: h - 105 } : { x: 14, y: 60, width: w - 28, height: Math.max(170, h - 480) }
-      : short ? { x: 22, y: 62, width: w - 340, height: h - 82 } : { x: mobile ? 30 : 55, y: mobile ? 113 : 100, width: w - (mobile ? 60 : 110), height: h - (mobile ? 380 : 320) };
+      : short ? { x: 22, y: 180, width: w - 340, height: h - 200 } : { x: mobile ? 30 : 55, y: mobile ? 205 : 100, width: w - (mobile ? 60 : 110), height: h - (mobile ? 472 : 332) };
     safe.width = Math.max(200, safe.width); safe.height = Math.max(160, safe.height);
     stage.frameCamera(bounds, [lobby ? .2 : 0, view === 'mesa' ? 2.2 : .8, 1], safe);
     for (const p of seats) { const avatar = avatars.get(p.id); avatar.update(dt, {}); avatar.neck.rotation.x = .15; avatar.arms.forEach(arm => arm.rotation.x = p.id === state.turn ? -.75 : -.5); }

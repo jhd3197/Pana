@@ -45,8 +45,11 @@ main { position: static; min-height: 0; }
 .lobby { position: fixed; top: 84px; bottom: 24px; left: 24px; width: 335px; margin: 0; padding: 24px; gap: 12px; }
 .board-area { top: 82px; left: 24px; transform: none; background: var(--pk-night); border-radius: 10px; padding: 9px 20px; }
 #pot { font-size: 23px; margin: 2px 0 0; } #street { font-size: 10px; }
-/* Community faces are on the 3D felt; retain their text for assistive technology. */
-#board { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+/* Readable HUD copy of the community meshes, using only the public board. */
+#board { position: static; width: auto; height: auto; margin: 10px 0 2px; gap: 8px; }
+#board .card { width: 56px; height: 76px; }
+#board .card b { font-size: 28px; }
+#board .card svg { width: 24px; height: 24px; }
 .in-lobby .board-area { display: none; }
 .controls { position: fixed; z-index: 3; bottom: max(16px, env(safe-area-inset-bottom)); left: 50%; transform: translateX(-50%); width: min(780px, calc(100% - 48px)); padding: 16px 22px; margin: 0; border-radius: 16px; background: var(--pk-night); gap: 24px; }
 .seat { width: 124px; font-size: 11px; padding: 5px 8px; background: var(--pk-night); }
@@ -84,3 +87,21 @@ main { position: static; min-height: 0; }
   .lobby .pk-btn--lg{padding:12px 16px;}
 }
 body.pana-starter .board-area { visibility: hidden; }
+
+/* Face-on readouts stay legible without zooming the 3D table. */
+.hand-area .card { width: 58px; height: 80px; }
+.hand-area .card b { font-size: 28px; }
+.hand-area .card svg { width: 25px; height: 25px; }
+@media (max-width: 760px) {
+  #board { gap: 6px; margin-top: 7px; }
+  #board .card { width: 46px; height: 62px; }
+  #board .card b, .hand-area .card b { font-size: 25px; }
+  #board .card svg, .hand-area .card svg { width: 21px; height: 21px; }
+  .hand-area .card { width: 46px; height: 62px; }
+}
+@media (max-height: 520px) and (orientation: landscape) {
+  #board { gap: 5px; margin-top: 6px; }
+  #board .card { width: 40px; height: 54px; }
+  #board .card b, .hand-area .card b { font-size: 23px; }
+  .hand-area .card { width: 42px; height: 58px; }
+}

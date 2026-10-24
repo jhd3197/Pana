@@ -8,6 +8,10 @@ becomes the GitHub release's notes.
 
 ## Unreleased
 
+- **Póquer muestra las cartas comunitarias en grande encima de la mesa.**
+  Los valores y palos se leen de frente; tus cartas también crecen y la cámara
+  deja espacio para la lectura en teléfonos, sin revelar manos ajenas.
+
 - **Chapita muestra las bases y facilita batear sin perder atrapadas en línea.**
   Las bases numeradas señalan a los corredores; el lanzamiento deja libre el
   plato y el bateo tiene una guía de tiempo y más margen. Las atrapadas esperan
