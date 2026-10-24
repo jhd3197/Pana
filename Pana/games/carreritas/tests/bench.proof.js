@@ -1,7 +1,7 @@
 // Carreritas benchmark: the working tree against a base commit on the same
 // machine, same seed, measurements interleaved so background load hits both.
 //
-//   npm run bench                         # base = main, six maps
+//   npm run bench                         # base = main, six maps (~4 min each)
 //   npm run bench -- --base 1ec0a26 --maps chuao,selva --throttle 4
 //
 // Per map: time to the first race frame; at three fixed points of the route
@@ -215,9 +215,8 @@ const pct = r => `${r < 1 ? '−' : '+'}${Math.abs((1 - r) * 100).toFixed(0)} %`
 const summary = Object.fromEntries(['draws', 'triangles', 'gpuMs', 'cpuMs'].map(k => [k, geo(ratios(k))]));
 summary.loadMs = geo(results.map(m => m.load.head / m.load.base));
 const freezes = side => results.reduce((s, m) => s + Object.values(m.drive).reduce((t, d) => t + d[side].freezes, 0), 0);
-console.log(`\n${sides.base.label} → ${sides.head.label}, ${results.length} maps, ${info0()}`);
+console.log(`\n${sides.base.label} → ${sides.head.label}, ${results.length} maps, ${results[0]?.renderer}, ${os.cpus()[0].model.trim()}`);
 for (const [k, r] of Object.entries(summary)) console.log(`  ${k.padEnd(10)} ${pct(r)}`);
 console.log(`  freezes   ${freezes('base')} → ${freezes('head')} (over 50 ms while driving)`);
 fs.writeFileSync(path.join(outDir, 'results.json'), JSON.stringify({ base: sides.base.label, head: sides.head.label, at: new Date().toISOString(), cpu: os.cpus()[0].model, maps: results, summary }, null, 2));
 console.log(`\nSaved ${path.relative(repo, outDir)} (results.json, side-by-side look sheets).`);
-function info0() { return `${results[0]?.renderer ?? 'no renderer'}, ${os.cpus()[0].model}`; }

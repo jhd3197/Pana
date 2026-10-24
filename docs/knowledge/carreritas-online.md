@@ -86,6 +86,8 @@ Catmull-Rom curve through the poses (tangents skip neighbours over 15 m away
 or 0.4 s stale), which trims the remaining pose-boundary spikes. Result:
 remote jerk p50 0.47, p95 1.24. Measure with two real clients and per-frame
 positions; message counts alone say nothing about smoothness.
+`tests/online-smoothness.proof.js` does exactly that on the hardware GPU
+(software WebGL stutters on its own and hides the signal).
 
 ## Notes for agents
 
