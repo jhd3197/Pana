@@ -13,7 +13,7 @@ try {
   const r = await page.evaluate(async () => {
     const THREE = await import('three'), { CARS } = await import('./cars.js');
     const { trimDriver, batchRacer } = await import('./racer-render.js'), cards = await import('./driver-cards.js');
-    const { prepareImpostors } = await import('/engine/models/core/impostor.js');
+    const { prepareImpostors, impostorPlacements } = await import('/engine/models/core/impostor.js');
     const scene = new THREE.Scene(), camera = new THREE.PerspectiveCamera(50, 1, .1, 200);
     scene.background = new THREE.Color(0x8fb8d8); scene.add(new THREE.HemisphereLight(0xffffff, 0x667788, 2));
     const sun = new THREE.DirectionalLight(0xffffff, 3); sun.position.set(8, 12, 10); scene.add(sun);
@@ -45,7 +45,18 @@ try {
     const backOn = !car.far.on && car.far.parts.every(p => p.visible);
     let farDifference = 0; for (let i = 0; i < whole.length; i += 4) for (let k = 0; k < 3; k++) farDifference += Math.abs(whole[i + k] - merged[i + k]);
     target.dispose();
+    // Identical sources share one bake, and the atlas outlives its cards so
+    // a map loaded again reuses it; a different source bakes its own.
+    const prop = color => { const g = new THREE.Group(); g.add(new THREE.Mesh(new THREE.ConeGeometry(1, 3, 7), new THREE.MeshStandardMaterial({ color }))); return g; };
+    const holder = new THREE.Group(), place = color => impostorPlacements(holder, prop(color), [{ x: 0, y: 0, z: 0 }], { name: 'cache-probe' })[0];
+    const one = place(0x2a8040), two = place(0x2a8040), other = place(0x804020); prepareImpostors(renderer);
+    const atlas = m => m.userData.atlas.targets.albedo, shared = atlas(one) === atlas(two) && atlas(one) !== atlas(other);
+    one.geometry.dispose(); two.geometry.dispose();
+    const again = place(0x2a8040); prepareImpostors(renderer);
+    const reused = atlas(again) === atlas(one) && !!renderer.properties.get(atlas(again).texture).__webglTexture;
+    again.geometry.dispose(); other.geometry.dispose();
     return {
+      shared, reused,
       shown: [before.length, after.length], physical: after.filter(o => o.material.isMeshPhysicalMaterial).length,
       size: size.toArray(), trimmed: trimmed.toArray(), carded: !!card, far, near, realVisible, cardVisible,
       baked: card.geometry.instanceCount === 1 && baked.width > 1 && texels.some((v, i) => i % 4 === 3 && v > 200), meanChannelDifference: difference / (256 * 256 * 3),
@@ -64,6 +75,7 @@ try {
   assert.equal(r.boating, false, 'a boat or plane phase keeps the real car');
   assert.ok(r.backOn, 'closer than 35 m the real parts return');
   assert.ok(r.farDifference < 1, `the merged car reads like the real one at 40 m: ${r.farDifference}`);
+  assert.ok(r.shared && r.reused, 'identical impostor sources share one kept bake');
   assert.deepEqual(errors, []);
   console.log('driver cards ok', JSON.stringify(r));
 } finally { await browser.close(); }

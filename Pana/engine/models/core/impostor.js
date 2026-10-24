@@ -12,6 +12,12 @@ const FRAMES = 8, COLS = 4, ROWS = 4, MAX_LOD = 3, TILE = 192;
 // road its lit top: views at both angles, blended by the camera's.
 const ELEVATIONS = [-14, 16].map(THREE.MathUtils.degToRad);
 const pending = new Set();
+// Atlases outlive their cards for the session, keyed by everything the photo
+// depends on: going back to a map, a species two maps share or a herd of
+// identical animals reuses a bake. Unused ones are dropped oldest first: to
+// 64 MB once a map has claimed what it reuses, to 128 MB when a map unloads.
+const kept = new Map(), KEEP_IDLE = 64 * 2 ** 20, KEEP_UNLOADING = 128 * 2 ** 20;
+let idleBytes = 0;
 // Metres from the route beyond which a map's trees are drawn as impostors:
 // far enough that passing cars never see a card turn.
 export const IMPOSTOR_FROM = 45;
@@ -22,6 +28,7 @@ export const IMPOSTOR_FROM = 45;
 // setting decides it: models cannot read settings).
 export function prepareImpostors(renderer, { tile = TILE } = {}) {
   for (const record of [...pending]) bakeRecord(renderer, record, tile);
+  trim(KEEP_IDLE);
 }
 
 const normalBake = new THREE.ShaderMaterial({
@@ -47,10 +54,72 @@ const normalBake = new THREE.ShaderMaterial({
   side: THREE.DoubleSide,
 });
 
+// A 32-bit FNV-1a pair over the bits of every value a bake reads, or null
+// when a texture has no stable identity (a canvas drawn at build time).
+function bakeKey(record, tile) {
+  let a = 0x811c9dc5, b = 0x01000193;
+  const word = w => { a = Math.imul(a ^ w, 0x01000193); b = Math.imul(b ^ (w >>> 7 | w << 25), 0x85ebca6b); };
+  const floats = new Float32Array(1), bits = new Uint32Array(floats.buffer);
+  const number = v => { floats[0] = v; word(bits[0]); };
+  const array = view => {
+    if (view.byteOffset % 4 || view.byteLength % 4) { word(view.length); for (let i = 0; i < view.length; i++) word(view[i]); return; }
+    const words = new Uint32Array(view.buffer, view.byteOffset, view.byteLength >> 2); word(words.length); for (let i = 0; i < words.length; i++) word(words[i]);
+  };
+  const text = t => { word(t.length); for (let i = 0; i < t.length; i++) word(t.charCodeAt(i)); };
+  [tile, record.frame.half, record.frame.centerY, record.frame.crownY, ...record.elevations].forEach(number);
+  let stable = true;
+  record.source.traverse(o => {
+    if (!o.isMesh || !o.geometry.attributes.position) return;
+    const g = o.geometry, m = [].concat(o.material)[0];
+    o.matrixWorld.elements.forEach(number);
+    for (const name of ['position', 'normal', 'color', 'uv']) {
+      const at = g.attributes[name];
+      if (at?.isInterleavedBufferAttribute) stable = false; else if (at) array(at.array); else word(0);
+    }
+    if (g.index) array(g.index.array);
+    text(m.type); text(m.customProgramCacheKey?.() ?? ''); word(m.side); word(m.vertexColors ? 1 : 0); [m.opacity, m.alphaTest, m.metalness ?? 0].forEach(number);
+    if (m.color) [m.color.r, m.color.g, m.color.b].forEach(number);
+    for (const map of [m.map, m.alphaMap]) {
+      if (!map) { word(0); continue; }
+      const src = map.userData.bakeKey ?? map.image?.src;
+      if (src) text(String(src)); else stable = false;
+    }
+  });
+  return stable ? `${(a >>> 0).toString(36)}.${(b >>> 0).toString(36)}` : null;
+}
+
+function keep(record, key, targets) {
+  const bytes = targets.albedo.width * targets.albedo.height * 4 * 4 / 3 * 2;
+  record.kept = { key, targets, users: 1, bytes }; kept.set(key, record.kept);
+}
+function reuse(record, entry) {
+  if (entry.users++ === 0) idleBytes -= entry.bytes;
+  kept.delete(entry.key); kept.set(entry.key, entry);   // most recently used last
+  record.kept = entry; record.targets = entry.targets;
+  record.uniforms.impAlbedo.value = entry.targets.albedo.texture; record.uniforms.impNormal.value = entry.targets.normal.texture;
+}
+function unkeep(entry) {
+  if (--entry.users > 0) return;
+  idleBytes += entry.bytes; trim(KEEP_UNLOADING);
+}
+function trim(limit) {
+  for (const [key, old] of kept) {
+    if (idleBytes <= limit) break;
+    if (old.users) continue;
+    kept.delete(key); idleBytes -= old.bytes; old.targets.albedo.dispose(); old.targets.normal.dispose();
+  }
+}
+
 function bakeRecord(renderer, record, fallbackTile = TILE) {
   pending.delete(record);
   const { source, frame } = record, scene = new THREE.Scene(), materials = [];
   source.updateMatrixWorld(true);
+  const tile = record.tile ?? fallbackTile, key = bakeKey(record, tile), hit = key && kept.get(key);
+  if (hit) {
+    reuse(record, hit); record.baked = true;
+    const used = new Set(); source.traverse(o => { if (o.geometry) used.add(o.geometry); }); used.forEach(g => g.dispose());
+    return;
+  }
   source.traverse(o => {
     if (!o.isMesh || !o.geometry.attributes.position) return;
     const m = [].concat(o.material)[0];
@@ -64,7 +133,7 @@ function bakeRecord(renderer, record, fallbackTile = TILE) {
     normal.uniforms.crown.value.set(0, frame.crownY, 0, leaf ? .7 : 0);
     mesh.userData.albedo = o.material; mesh.userData.normal = normal; scene.add(mesh); materials.push(normal);
   });
-  const tileSize = record.tile ?? fallbackTile, width = tileSize * COLS, height = tileSize * ROWS;
+  const tileSize = tile, width = tileSize * COLS, height = tileSize * ROWS;
   const ambient = new THREE.AmbientLight(0xffffff, Math.PI); scene.add(ambient);
   // The targets are the atlases: mipmapped on the GPU, never read back. Views
   // render over a clear (0,0,0,0) with normal blending, so texels hold
@@ -109,6 +178,7 @@ function bakeRecord(renderer, record, fallbackTile = TILE) {
     const used = new Set(); source.traverse(o => { if (o.geometry) used.add(o.geometry); }); used.forEach(g => g.dispose());
   }
   record.baked = true;
+  if (key) keep(record, key, targets);
 }
 
 // SkinnedMesh.getVertexPosition rebuilds bone.matrixWorld × boneInverse for
@@ -263,7 +333,8 @@ export function impostorPlacements(parent, source, placements, { name = source.n
   const release = () => {
     if (--record.users > 0) return;
     pending.delete(record); material.dispose();
-    if (record.baked) { record.targets.albedo.dispose(); record.targets.normal.dispose(); }
+    if (record.kept) unkeep(record.kept);
+    else if (record.baked) { record.targets.albedo.dispose(); record.targets.normal.dispose(); }
     else { const used = new Set(); source.traverse(o => { if (o.geometry) used.add(o.geometry); }); used.forEach(g => g.dispose()); }
   };
   for (const points of cells.values()) {

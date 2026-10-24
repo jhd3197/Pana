@@ -31,6 +31,15 @@ one camera-facing quad (two triangles); a cell is one draw.
   prototype from its first `onBeforeRender`.
 - Atlases are released when the last cell's geometry is disposed, so the
   normal geometry teardown (and `forestQuality`'s tier disposal) frees them.
+- Released atlases are kept for the session under a hash of everything the
+  bake reads: attribute and index bits, world matrices, material type,
+  colour, side and program key, texture `src` (or `texture.userData.bakeKey`),
+  view size and frame. A canvas texture without a key is never kept. Going
+  back to a map, a species two maps share (Selva and Llanos' mango) or
+  identical prototypes in one map reuse the bake: Selva's 11 tree atlases
+  hit on a revisit (80–235 ms of bakes per map). Unused atlases are trimmed
+  oldest first to 64 MB after each bake batch and to 128 MB while a map
+  unloads, so the next map claims its old atlases before anything is cut.
 
 ## Keeping the look
 
