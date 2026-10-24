@@ -33,6 +33,12 @@ parallax renderer and its four layer images have been removed; `sources.json`
 only lists served artwork. Missing optional map illustrations never gates Play.
 The small route canvas still draws actual track geometry.
 
+Cata, Choroní, Chuao, Tovar, Galipán, Maracaibo, Margarita, Sarisariñama,
+Sabana, Cosmos, Mérida, Arrecife, Volcán, Nubes and Dulce now use supplied
+illustrations in place of native scene captures. Their exports are 960px
+with 320px thumbnails. Sabana also keeps the matching `sabana-preview.jpg`
+used by the selected-circuit panel; update it with the two WebPs.
+
 The initial HTML shows the festival illustration while modules load.
 `createMenuFlow` removes it after the car thumbnail source and compiled garage
 shaders are ready. The `prepared` promise rejects into a visible retry action

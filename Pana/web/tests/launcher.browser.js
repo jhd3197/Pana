@@ -39,7 +39,7 @@ try {
   await page.getByRole('button', { name: 'Link copiado', exact: true }).waitFor();
   assert.equal(await page.evaluate(() => navigator.clipboard.readText()), await page.locator('#room-link').inputValue());
   await page.locator('#room-dialog [data-close-dialog]').click();
-  for (const game of ['tambor', 'stop', 'chapita', 'parapente']) {
+  for (const game of ['tambor', 'stop', 'chapita', 'parapente', 'trifulca', 'bochinche']) {
     if (!await page.locator(`[data-id="${game}"]`).count()) continue;
     const card = page.locator(`[data-id="${game}"] img`);
     assert.match(await card.getAttribute('src'), new RegExp(`${game}-card\\.jpg$`));

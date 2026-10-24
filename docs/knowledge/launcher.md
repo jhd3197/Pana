@@ -54,6 +54,11 @@ new row in `categories`) in `launcher-art.js`, and adds the game to the card
 checks and row counts in `web/tests/launcher.browser.js`. `--dry-run` reports
 sizes without writing. Only real supplied art goes through it.
 
+Trifulca, Bochinche and Parapente use separate supplied hero and card images.
+The hero compositions leave room on the left for launcher text; their centered
+action counterparts supply the 640px cards. Original PNGs are preserved in
+the sibling `pana-photos/generated` folder.
+
 Cards load images lazily. Only a game without an illustration loads `card.js`;
 switching a live hero loses the old WebGL context. The player's 3D editor imports
 `pana.js` on opening Mi pana and stops rendering while hidden. Real game scenes

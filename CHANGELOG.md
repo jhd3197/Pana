@@ -2,7 +2,15 @@
 
 What changed in Pana, for the people who play it. Newest first. Every change
 that players, hosts or contributors will notice adds a line under
-`## Unreleased
+`## Unreleased` in the same commit (see `AGENTS.md`). Each merge to `main` releases:
+the release workflow stamps Unreleased with the version and date, and that section
+becomes the GitHub release's notes.
+
+## Unreleased
+
+- **Trifulca, Bochinche y Parapente estrenan ilustraciones propias.**
+  Sus tarjetas y portadas usan arte nuevo; quince circuitos de Carreritas
+  muestran ilustraciones en el selector, las miniaturas y la carga.
 
 - **Los escenarios de Bochinche aprovechan los modelos de la biblioteca.**
   Los Roques incorpora cocoteros y casitas detallados; Salto Ángel, vegetación
@@ -35,11 +43,7 @@ that players, hosts or contributors will notice adds a line under
 - **Dominó verifica las jugadas recibidas y da personalidad a los bots.**
   La mesa reconstruye los cambios desde un registro de reglas, recupera
   segmentos perdidos y conserva la partida al cambiar de anfitrión. Los bots
-  tienen ritmos y preferencias propios, probados en diez mil manos.` in the same commit (see `AGENTS.md`). Each merge to `main` releases:
-the release workflow stamps Unreleased with the version and date, and that section
-becomes the GitHub release's notes.
-
-## Unreleased
+  tienen ritmos y preferencias propios, probados en diez mil manos.
 
 - **Carreritas da mejores oportunidades de remontar y un respiro entre ataques fuertes.**
   Las cajas consideran la distancia y el puesto, con más jugo y protección
