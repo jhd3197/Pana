@@ -8,6 +8,9 @@ becomes the GitHub release's notes.
 
 ## Unreleased
 
+- **En Carreritas en línea los carros de tus panas se ven fluidos.**
+  Ya no tiemblan al avanzar: se mueven tan suave como el tuyo.
+
 - **Chuao estrena un Chorrerón con cuerpo y la plaza ya no pisa la vía.**
   La cascada cae curva, con chorros, espuma y rocío; los cerros lucen más
   tupidos, y el patio de cemento y el cacao al sol terminan en el borde de

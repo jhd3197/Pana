@@ -72,6 +72,21 @@ server (`PANA_TEST_URL`), two real browser clients.
   A later snapshot of the live projectile array can miss a successful relay.
 - Pickups are per client; a remote car still hides crates/coins it drives through.
 
+## Smooth remote cars
+
+A two-client race (both clients 16.7 ms frames, no freezes, ~18 messages/s
+and 2–6 KB/s each way) showed other players' cars jerking ~10x more than the
+player's own (frame-to-frame velocity change p50 3.5, p95 ~11 against 0.35 /
+0.8). The cause was the interpolation clock, not the network: `net.now()` is
+`Date.now()` in whole milliseconds read wherever the frame runs, stepping
+13.5–20 ms between 16.7 ms frames. `applyRemote` now advances each car's
+clock (`c.at`) by the simulation `dt` and eases it 5 % per frame toward
+`net.now() - delay`, snapping past 250 ms. Positions follow a time-aware
+Catmull-Rom curve through the poses (tangents skip neighbours over 15 m away
+or 0.4 s stale), which trims the remaining pose-boundary spikes. Result:
+remote jerk p50 0.47, p95 1.24. Measure with two real clients and per-frame
+positions; message counts alone say nothing about smoothness.
+
 ## Notes for agents
 
 Rules that used to live in AGENTS.md (paths are relative to `Pana/`). Keep them

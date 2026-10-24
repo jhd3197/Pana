@@ -34,8 +34,14 @@ export function createRemoteCars({ race, link, popPart, lines: LINES }) {
       const net = link();
     const buf = c.buf;
     if (!buf.length) { c.vx = c.vz = 0; return; }   // still on its grid slot
-    const at = net.now() - c.delay;
-    while (buf.length > 2 && buf[1].t <= at) buf.shift();
+    // net.now() is Date.now() in whole milliseconds, read wherever this frame
+    // happens to run: it stepped 13.5–20 ms between 16.7 ms frames, and the
+    // car stuttered with it. The car's clock advances by the frame's own dt
+    // and eases 5 % per frame toward the network time (snapping after a stall).
+    const target = net.now() - c.delay;
+    c.at = c.at == null || Math.abs(target - c.at) > 250 ? target : c.at + dt * 1000 + (target - c.at - dt * 1000) * 0.05;
+    const at = c.at;
+    while (buf.length > 2 && buf[1].t <= at) c.before = buf.shift();
     const a = buf[0], b = buf[1] || a;
     const k = b === a ? 0 : Math.max(0, Math.min(1, (at - a.t) / (b.t - a.t)));
     // Past the newest pose (a late packet), coast briefly along its heading.
@@ -43,7 +49,20 @@ export function createRemoteCars({ race, link, popPart, lines: LINES }) {
     const P = a.p, Q = b.p;
     const lerp = (i) => P[i] + (Q[i] - P[i]) * k, turn = (i) => P[i] + wrapAngle(Q[i] - P[i]) * k;
     const h0 = c.h, vf0 = c.vf;
-    c.x = lerp(0); c.y = lerp(1); c.z = lerp(2); c.h = turn(3); c.pitch = turn(4); c.roll = turn(5);
+    // Positions follow a time-aware Catmull-Rom curve through the poses, so
+    // velocity no longer jumps at every 20 Hz pose: linear segments made other
+    // players' cars jitter with ~10x the jerk of the player's own. Tangents
+    // skip neighbours across a respawn (over 15 m) or a stale gap.
+    const prev = c.before && c.before.t < a.t && b.t - c.before.t < 400 ? c.before : null, next = buf[2];
+    const near = (u, v) => Math.hypot(u.p[0] - v.p[0], u.p[2] - v.p[2]) < 15, D = b.t - a.t;
+    const smooth = b !== a && D > 0 && near(a, b), k2 = k * k, k3 = k2 * k;
+    const curve = (i) => {
+      if (!smooth) return lerp(i);
+      const ma = prev && near(prev, a) ? (Q[i] - prev.p[i]) / (b.t - prev.t) * D : Q[i] - P[i];
+      const mb = next && near(b, next) ? (next.p[i] - P[i]) / (next.t - a.t) * D : Q[i] - P[i];
+      return (2 * k3 - 3 * k2 + 1) * P[i] + (k3 - 2 * k2 + k) * ma + (3 * k2 - 2 * k3) * Q[i] + (k3 - k2) * mb;
+    };
+    c.x = curve(0); c.y = curve(1); c.z = curve(2); c.h = turn(3); c.pitch = turn(4); c.roll = turn(5);
     c.vf = lerp(6); c.steer = lerp(7); c.spin = lerp(8); c.boost = Q[9];
     const f = Q[10];
     c.onGround = !!(f & FLAG.ground);
