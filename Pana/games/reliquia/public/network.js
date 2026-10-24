@@ -22,7 +22,17 @@ export class ExpeditionRoom extends LiveRoom {
     this.state = new Expedition().snapshot();
   }
   statusText() { return `Sala ${this.code} · ${this.members.size} pana${this.members.size === 1 ? '' : 's'}`; }
-  cleanInput(raw) { return { x: axis(raw?.x), z: axis(raw?.z), h: angle(raw?.h), pitch: Number.isFinite(raw?.pitch) ? Math.max(-1.2, Math.min(1.2, raw.pitch)) : 0, hold: !!raw?.hold, sprint: !!raw?.sprint }; }
+  cleanInput(raw) { return { x: axis(raw?.x), z: axis(raw?.z), h: angle(raw?.h), pitch: Number.isFinite(raw?.pitch) ? Math.max(-1.2, Math.min(1.2, raw.pitch)) : 0, jump: Number.isInteger(raw?.jump) ? raw.jump & 255 : 0, hold: !!raw?.hold, sprint: !!raw?.sprint }; }
+  ownInput(input) { return { ...this.cleanInput(input), jumpDelay: this.jumpDelay || 0 }; }
+  tick(dt, input, paused = false) {
+    // A background host may catch up a whole second. A newly received jump
+    // belongs near the end of that interval, not a second before it arrived.
+    const span = Math.min(this.live.maxCatchUp, dt), now = performance.now();
+    this.jumpDelay = Math.max(0, span - .05);
+    if (this.isHost) for (const [id, value] of this.inputs) if (id !== this.id)
+      value.jumpDelay = Math.max(0, span - Math.max(.05, (now - value.at) / 1000));
+    super.tick(dt, input, paused);
+  }
   // A new identity does not resurrect a stale expedition from a deleted room.
   entered(alone) { if (alone) this.state = new Expedition().snapshot(); }
   takeOver(previous) {

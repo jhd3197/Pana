@@ -24,7 +24,7 @@ export function stepExplorer(p, input, dt, world) {
   const L = layoutFor(world.seed, world.level);
   if (Number.isFinite(input.h)) p.h = input.h;
   if (Number.isFinite(input.pitch)) p.pitch = clamp(input.pitch, -1.2, 1.2);
-  if (p.grip != null || p.push != null || p.draggedBy != null || p.riding || p.downed || p.spectator) { p.moving = false; return; }
+  if (p.grip != null || p.push != null || p.draggedBy != null || p.riding || p.downed || p.spectator) { p.jumpPress = Number.isInteger(input.jump) ? input.jump & 255 : p.jumpPress || 0; p.jumpHeight = p.jumpVelocity = 0; p.jumpPending = false; if (!p.riding) p.y = L.groundAt(p.x,p.z); p.moving = false; return; }
   let ix = Number.isFinite(input.x) ? clamp(input.x, -1, 1) : 0, iz = Number.isFinite(input.z) ? clamp(input.z, -1, 1) : 0;
   if (p.reversed > 0) { ix = -ix; iz = -iz; }
   const length = Math.hypot(ix, iz), ux = length > 1 ? ix / length : ix, uz = length > 1 ? iz / length : iz;
@@ -38,7 +38,17 @@ export function stepExplorer(p, input, dt, world) {
   if (holds(p, 'sandals')) { const k = Math.min(1, dt * 2.2); p.vx += (ux * speed - p.vx) * k; p.vz += (uz * speed - p.vz) * k; }
   else { p.vx = ux * speed; p.vz = uz * speed; }
   L.moveBody(p, p.vx * dt, p.vz * dt, world, .42);
-  p.y = L.groundAt(p.x, p.z);
+  const jump = Number.isInteger(input.jump) ? input.jump & 255 : p.jumpPress || 0;
+  const pressed = jump !== (p.jumpPress || 0); p.jumpPress = jump;
+  let height = p.jumpHeight || 0, velocity = p.jumpVelocity || 0;
+  if (pressed && height <= 0 && p.stun <= 0) { p.jumpPending = true; p.jumpWait = Math.max(0, input.jumpDelay || 0); }
+  if (p.jumpPending) {
+    p.jumpWait -= dt;
+    if (p.jumpWait <= 1e-6) { if (height <= 0 && p.stun <= 0) velocity = 5; p.jumpPending = false; }
+  }
+  if (height > 0 || velocity > 0) { height += velocity * dt - .5 * GRAVITY * dt * dt; velocity -= GRAVITY * dt; }
+  p.jumpHeight = Math.max(0, height); p.jumpVelocity = height > 0 ? velocity : 0;
+  p.y = L.groundAt(p.x, p.z) + p.jumpHeight;
   p.moving = Math.hypot(p.vx, p.vz) > .4;
 }
 

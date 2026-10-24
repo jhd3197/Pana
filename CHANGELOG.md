@@ -8,6 +8,9 @@ becomes the GitHub release's notes.
 
 ## Unreleased
 
+- **Reliquia permite saltar con Espacio, control o toque.**
+  El salto se comparte con tus panas; clic o V usa la mano derecha.
+
 - **Trifulca responde a esquivar mientras preparas un golpe.**
   La esquiva cancela la carga inicial y el aviso aparece a tiempo para evitar
   el trompón, en vez de pedir una esquiva demasiado temprana.

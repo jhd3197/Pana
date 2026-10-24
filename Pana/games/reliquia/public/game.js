@@ -27,15 +27,17 @@ const avatar = loadAvatar(), name = qs.get('name')?.slice(0, 16) || loadName();
 const canvas = $('world'), view = createView(canvas), hud = createHud(), ambience = createAmbience();
 let state = new Expedition().snapshot(), phase = '', lastEvent = 0, failed = false, dead = false, myFloor = 0, uiAt = 0, last = performance.now();
 const keys = new Set(), touch = new Set();
+let jumpPress = 0;
+function jump(){if(playing())jumpPress=(jumpPress+1)&255;}
 function clearInput() { keys.clear(); touch.clear(); }
 const solo = () => room.offline || room.members.size === 1;
 const playing = () => state.phase === 'playing' && !menu.isOpen;
 
 const menu = createGameMenu({
-  pad: { move: 'wasd', look: 'Mirar', keys: { rt: ['Space', 'Usar lo de la mano derecha'], a: ['Space', 'Usar lo de la mano derecha'], lt: ['KeyF', 'Usar lo de la mano izquierda'], x: ['KeyE', 'Agarrar o abrir; mantén para girar'], b: ['KeyQ', 'Soltar'], y: ['KeyG', 'Lanzar'], rb: ['KeyR', 'Arrastrar a un pana'], lb: ['ShiftLeft', 'Correr'], ls: ['ShiftLeft', 'Correr'], view: ['Tab', 'Ver al equipo'] } },
+  pad: { move: 'wasd', look: 'Mirar', keys: { rt: ['KeyV', 'Usar lo de la mano derecha'], a: ['Space', 'Saltar'], lt: ['KeyF', 'Usar lo de la mano izquierda'], x: ['KeyE', 'Agarrar o abrir; mantén para girar'], b: ['KeyQ', 'Soltar'], y: ['KeyG', 'Lanzar'], rb: ['KeyR', 'Arrastrar a un pana'], lb: ['ShiftLeft', 'Correr'], ls: ['ShiftLeft', 'Correr'], view: ['Tab', 'Ver al equipo'] } },
   title: 'Reliquia', heading: 'Un respiro', resumeLabel: 'Volver a la mina', sound, notify,
   note: () => solo() ? 'La expedición está en pausa.' : 'Tus panas siguen en la mina.',
-  controls: [['W A S D', 'Caminar hacia donde miras'], ['Ratón', 'Mirar (haz clic en la pantalla para capturarlo)'], ['Clic / Espacio', 'Usar lo de la mano derecha'], ['Clic derecho / F', 'Usar lo de la mano izquierda'],
+  controls: [['W A S D', 'Caminar hacia donde miras'], ['Ratón', 'Mirar (haz clic en la pantalla para capturarlo)'], ['Espacio', 'Saltar'], ['Clic / V', 'Usar lo de la mano derecha'], ['Clic derecho / F', 'Usar lo de la mano izquierda'],
     ['E', 'Agarrar, abrir; mantén para girar ruedas, levantar panas o atrapar lo que te lanzan'], ['Q', 'Soltar'], ['G', 'Lanzar lo que tienes en la mano'], ['R', 'Arrastrar a un pana caído'],
     ['Shift', 'Correr'], ['1 – 7', '¿Nos vamos ya? · ¡Una sala más! · y otros gritos'], ['Tab', 'Ver al equipo'], ['M', 'Sonido'], ['Esc', 'Soltar el ratón y abrir el menú']],
   tips: ['Apunta con el punto del centro a lo que quieres usar: palancas, carrito, tesoros, la tienda.',
@@ -152,7 +154,7 @@ const pads = [];
 for (const button of document.querySelectorAll('[data-move]')) pads.push(holdButton(button, { paused: () => !playing(), down: () => touch.add(button.dataset.move), up: () => touch.delete(button.dataset.move) }));
 pads.push(holdButton($('t-grab'), { paused: () => !playing(), down: () => { touch.add('e'); act('interact'); }, up: () => touch.delete('e') }));
 let touchBark = 0;
-for (const [id, run] of [['t-use', () => act('use', { hand: 0 })], ['t-left', () => act('use', { hand: 1 })], ['t-throw', () => act('throw')], ['t-drop', () => act('drop')], ['t-bark', () => { act('bark', { line: touchBark }); touchBark = (touchBark + 1) % BARKS.length; }]])
+for (const [id, run] of [['t-jump', jump], ['t-use', () => act('use', { hand: 0 })], ['t-left', () => act('use', { hand: 1 })], ['t-throw', () => act('throw')], ['t-drop', () => act('drop')], ['t-bark', () => { act('bark', { line: touchBark }); touchBark = (touchBark + 1) % BARKS.length; }]])
   pads.push(holdButton($(id), { paused: () => !playing(), down: run }));
 addEventListener('keydown', e => {
   if (e.target instanceof HTMLInputElement || menu.isOpen) return;
@@ -161,7 +163,7 @@ addEventListener('keydown', e => {
   if ([' ', 'arrowup', 'arrowdown', 'arrowleft', 'arrowright', 'shift'].includes(key)) e.preventDefault();
   if (!playing()) return;
   keys.add(key); if (e.repeat) return;
-  if (key === ' ') act('use', { hand: 0 }); if (key === 'f') act('use', { hand: 1 });
+  if (key === ' ') jump(); if (key === 'v') act('use', { hand: 0 }); if (key === 'f') act('use', { hand: 1 });
   if (key === 'e') act('interact'); if (key === 'q') act('drop'); if (key === 'g') act('throw'); if (key === 'r') act('drag');
   if (/^[1-7]$/.test(key)) act('bark', { line: Number(key) - 1 });
   if (key === 'm') toggleMute();
@@ -172,7 +174,7 @@ function input() {
   if (!playing()) return { x: 0, z: 0, hold: false, h: view.heading, pitch: view.pitch };
   const k = name => keys.has(name) || touch.has(name);
   const x = +k('d') - +k('a'), z = +(k('s') || k('arrowdown')) - +(k('w') || k('arrowup'));
-  return { ...view.movement(x, z), h: view.heading, pitch: view.pitch, sprint: keys.has('shift'), hold: k('e') };
+  return { ...view.movement(x, z), h: view.heading, pitch: view.pitch, sprint: keys.has('shift'), hold: k('e'), jump: jumpPress };
 }
 // Real elapsed time: a host in a background tab gets timers once a second.
 const simClock = elapsedClock();

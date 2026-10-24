@@ -29,6 +29,12 @@ try {
   await b.keyboard.down('w'); await waitFor(b, z => reliquia.me.z < z - 1, z0); await b.keyboard.up('w');
   await waitFor(a, ({ id, z }) => reliquia.state.players.find(p => p.id === id).z < z - 1, { id: ids.b, z: z0 }); check('first-person W walks where the guest looks, on both screens');
 
+  await a.evaluate(id=>{window.jumpPeak=0;const previous=reliquia.room.onState;reliquia.room.onState=s=>{jumpPeak=Math.max(jumpPeak,s.players.find(p=>p.id===id)?.jumpHeight||0);previous(s);};},ids.b);
+  await b.keyboard.press('Space');
+  await waitFor(a, () => window.jumpPeak > .1);
+  await waitFor(b, () => reliquia.state.players.find(p => p.id === reliquia.room.id).jumpHeight === 0);
+  check('guest jump reaches the host and lands without another press');
+
   // The starting kit: a farol from the table with a real E press.
   const table = await a.evaluate(() => reliquia.view.world.run.loot.find(l => l.kind === 'farol'));
   await place(a, ids.b, table.x, table.z + 1.9, Math.PI); await settled(b, table.x, table.z + 1.9); await face(b, Math.PI);
