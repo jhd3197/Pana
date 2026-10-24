@@ -12,13 +12,14 @@ import { mangrove } from '/engine/models/vegetation/mangrove.js';
 import { saman } from '/engine/models/vegetation/saman.js';
 import { araguaney } from '/engine/models/vegetation/araguaney.js';
 import { frailejon } from '/engine/models/vegetation/frailejon.js';
+import { impostorPlacements, IMPOSTOR_FROM } from '/engine/models/core/impostor.js';
 import { forestZone, prepareForestModel, denseForest, forestQuality } from './forest-detail.js';
 
 // Preserve the reference planting zones, but use Pana's native silhouettes.
 // Mountain canopy has neither fruit nor individual leaves; road trees do.
 // `whole` lists species whose own far model is used unsimplified (thin cardones
 // otherwise cluster away to nothing).
-export function coastalVegetation(group, worldScale = 1, roadDistance, { cellSize = 120, whole = [] } = {}) {
+export function coastalVegetation(group, worldScale = 1, roadDistance, { cellSize = 120, whole = [], from = IMPOSTOR_FROM } = {}) {
   const batches = new Map();
   const factories = { tree: ceiba, mango: mangoTree, cacao, palm, fern: treeFern,
     pine: o => pine({ ...o, h: 9 }), fir: o => mountainPine({ seed: o.seed, h: 8 }), moriche, mangrove, cactus: o => cactus({ seed: o.seed }),
@@ -36,7 +37,7 @@ export function coastalVegetation(group, worldScale = 1, roadDistance, { cellSiz
       const zone = forestZone(worldDistance,8 * worldScale), key = `${species}:${zone}`;
       zones[zone]++;
       if (!batches.has(key)) batches.set(key, []);
-      batches.get(key).push({ x, z, y: y - .12, scale, rot: (x * 17.1 + z * 9.7) % (Math.PI * 2) });
+      batches.get(key).push({ x, z, y: y - .12, scale, rot: (x * 17.1 + z * 9.7) % (Math.PI * 2), d: worldDistance });
       count++;
     },
     flush() {
@@ -49,10 +50,17 @@ export function coastalVegetation(group, worldScale = 1, roadDistance, { cellSiz
             const points=zone==='far'&&!fronds&&!conifer?positions.filter(p=>dense.has(p)===crowded):positions;
             if(!points.length)continue;
             const effective = detail === 0 ? 'far' : detail === 1 && zone === 'near' ? 'middle' : zone;
-            const model = factories[species]({ seed: 37, detail: effective === 'near' ? 'game' : 'far', fruit: effective === 'near' });
-            // A moriche is a bare pole once its few long fronds are clustered away.
-            prepareForestModel(model, species==='moriche'||whole.includes(species)?'near':effective, { fronds,pine:conifer,dense:crowded });
-            instancePlacements(tier, model, points, { name: `coastal-${key}`, cellSize: detail === 0 ? Math.max(cellSize,240/worldScale) : cellSize, castShadow: zone === 'near' });
+            const model = () => {
+              const m = factories[species]({ seed: 37, detail: effective === 'near' ? 'game' : 'far', fruit: effective === 'near' });
+              // A moriche is a bare pole once its few long fronds are clustered away.
+              return prepareForestModel(m, species==='moriche'||whole.includes(species)?'near':effective, { fronds,pine:conifer,dense:crowded });
+            };
+            // Past `from` metres of the road a tree is a baked billboard of the
+            // very model this band draws: the same look at two triangles.
+            const flat = zone !== 'near' ? points.filter(p => p.d >= from * worldScale) : [];
+            const solid = flat.length ? points.filter(p => p.d < from * worldScale) : points;
+            if (solid.length) instancePlacements(tier, model(), solid, { name: `coastal-${key}`, cellSize: detail === 0 ? Math.max(cellSize,240/worldScale) : cellSize, castShadow: zone === 'near' });
+            if (flat.length) impostorPlacements(tier, model(), flat, { name: `coastal-${key}-impostor`, cellSize: Math.max(cellSize, 240 / worldScale) });
           }
         }
       });

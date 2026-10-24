@@ -1,4 +1,5 @@
 import {THREE,instances,finish,clear,put} from './world-kit.js';
+import { farGrove } from './far-grove.js';
 import {landPatch,landPath,grove} from './landscape-kit.js';
 import {ceiba} from '/engine/models/vegetation/ceiba.js';
 import {palm} from '/engine/models/vegetation/palm.js';
@@ -35,7 +36,7 @@ export function llanosLandscape(T,world,occupied) {
     [-40,-465,185,30,30],[560,-230,30,180,24]];
   for(const [i,[x,z,rx,rz]]of centers.entries())fixed.add(landPatch(T,groundAt,{x,z,rx,rz,color:0x7d9253,seed:i,step:5}));
   const trees=grove(T,groundAt,centers,{seed:612,scale:1.8,margin:13,accept:(x,z)=>dry(x,z)&&free(x,z)});
-  instances(group,ceiba({seed:2,detail:'distant'}),trees,'llanos-gallery-woodland',260);
+  farGrove(T,group,()=>ceiba({seed:2,detail:'distant'}),trees,'llanos-gallery-woodland',260);
   const palms=[],banks=[];
   // Follow the river, rather than scattering isolated palms across the prairie.
   for(let i=1;i<RIVER.length-1;i++){
@@ -47,7 +48,7 @@ export function llanosLandscape(T,world,occupied) {
       if(by>-.5&&by<3&&clear(T,bx,z,4))banks.push({x:bx,z,y:by,rot:i+j,scale:2});
     }
   }
-  instances(group,palm({seed:13,h:12}),palms,'llanos-river-morichal',240);
+  farGrove(T,group,()=>palm({seed:13,h:12}),palms,'llanos-river-morichal',240);
   instances(group,reeds({seed:8}),banks,'llanos-riverbank-reeds',240);
   instances(group,ranchFence({span:11.9}),fences,'llanos-pasture-boundaries',220);
   instances(group,hayBale(),hay,'llanos-harvest-bales',220);

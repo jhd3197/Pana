@@ -3,6 +3,7 @@ import * as THREE from 'three';
 import { rng } from '/engine/models/core/primitives.js';
 import * as flora from '/engine/models/vegetation/index.js';
 import { bake } from '/engine/models/core/static-batch.js';
+import { impostorPlacements, IMPOSTOR_FROM } from '/engine/models/core/impostor.js';
 import { placeOnTrack } from '../track-kit.js';
 import { RIVER_SAMPLES, riverDistance, TUNNEL, tunnelContains, jaguarCaveContains, legacyU as L } from './selva-layout.js';
 import { tunnelRoofHeight } from './selva-temple.js';
@@ -13,7 +14,9 @@ export const JUNGLE_ADDITIONS=['araguaney','bamboo','fern','monstera','heliconia
   'yagrumo','zancona','manaca','treeFern','cacao'];
 
 export function jungleFlora(T,groundAt,reservations) {
-  const r=rng(5721),source=new THREE.Group(),placements=[],templates=new Map();
+  const r=rng(5721),source=new THREE.Group(),placements=[],templates=new Map(),distant=new Map();
+  // Canopy this far from the route is drawn as baked billboards of its template.
+  const from=IMPOSTOR_FROM;
   for(const kind of ['ceiba','palm','banana','bush',...JUNGLE_ADDITIONS]) {
     templates.set(kind,Array.from({length:kind==='ceiba'?3:2},(_,i)=>{
       // the canopy ceibas stay narrow-crowned so the valley keeps its density
@@ -29,9 +32,15 @@ export function jungleFlora(T,groundAt,reservations) {
       if(reservations.some(p=>Math.hypot(x-p.x,z-p.z)<p.r+radius))return false;
       if(!water&&riverDistance(x,z)<12+radius)return false;
     }
-    const object=template.root.clone(true),height=y??groundAt(x,z)-0.12;
-    object.position.set(x,height,z);object.scale.setScalar(scale);object.rotation.y=r()*TAU;
-    source.add(object);placements.push({kind,zone,x,z,y:height,scale,radius});return true;
+    const height=y??groundAt(x,z)-0.12,rot=r()*TAU;
+    if(zone==='canopy'&&T.roadDistance(x,z)>=from){
+      if(!distant.has(template))distant.set(template,[]);
+      distant.get(template).push({x,y:height,z,rot,scale});
+    } else {
+      const object=template.root.clone(true);
+      object.position.set(x,height,z);object.scale.setScalar(scale);object.rotation.y=rot;source.add(object);
+    }
+    placements.push({kind,zone,x,z,y:height,scale,radius});return true;
   }
   // A continuous tall canopy across the valley, with a few gold crowns on sunny slopes.
   for(let z=-320;z<=560;z+=28)for(let x=-255;x<=520;x+=28) {
@@ -102,6 +111,10 @@ export function jungleFlora(T,groundAt,reservations) {
   }
   // Merge into spatial material batches; release all temporary/template geometry.
   const group=bake(source,{cellSize:140}),owned=new Set();
+  for(const [{root},points] of distant){
+    const copy=root.clone(true);copy.traverse(o=>{if(o.geometry)o.geometry=o.geometry.clone();});
+    impostorPlacements(group,copy,points,{name:'selva-canopy-impostor'});
+  }
   for(const variants of templates.values())for(const {root} of variants)root.traverse(o=>{if(o.geometry)owned.add(o.geometry);});
   owned.forEach(g=>g.dispose());group.name='selva-forest';
   return {group,placements};

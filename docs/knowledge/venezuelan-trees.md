@@ -112,6 +112,8 @@ scenery; do not replace those or the pines as part of an open-crown adjustment.
 - Plant trees by factory name; never build a one-off tree in a track file.
 - Pass `detail: 'low'` for long roadside rows and `'distant'` for forests far
   from the road. Leave it out for normal scenery.
+- Trees beyond 45 m of a Carreritas route are drawn as baked cards of the
+  same model; see [impostors.md](impostors.md).
 - Measure a placement change with the whole-scene triangle count against the
   map's budget in `venezuela.browser.js` before and after; trees are most of
   every map's triangles.

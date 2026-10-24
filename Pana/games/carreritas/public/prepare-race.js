@@ -1,12 +1,15 @@
 // Prepare GPU resources behind the loading cover, yielding between uploads.
 // Keep this race-local: the garage must not load or warm an entire circuit.
 import * as THREE from 'three';
+import { prepareImpostors } from '/engine/models/core/impostor.js';
 const prepared = new WeakMap();
 
 export async function prepareRace(renderer, scene, cameras, step) {
   cameras = [].concat(cameras); const camera = cameras[0];
   if (!prepared.has(renderer)) prepared.set(renderer, new WeakMap());
   const warmed = prepared.get(renderer);
+  // Bake impostor atlases (distant trees, rival panas) first so they upload like any texture.
+  prepareImpostors(renderer);
   const textures = new Set(), objects = [];
   scene.updateMatrixWorld(true);
   const frusta = cameras.map(view => {
