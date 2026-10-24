@@ -64,9 +64,9 @@ Built on the shared table room (`engine/table-room.js`) and the plaza stage
   `voice-key.js` hashes the prompt's UTF-8 text; changing a question requires
   regenerating its recording. The manifest records text and measured duration.
 - Generate with `python Pana/scripts/qqsmp-narrate.py` from the repository root.
-  Requires ffmpeg/ffprobe and the same Kokoro API as Torre: `KOKORO_URL`, default
-  `http://127.0.0.1:8880/v1`. The development container is `chess-kokoro`.
-  Recordings use Torre's silence trimming and -16 LUFS gain normalization.
+  Requires ffmpeg/ffprobe and a Kokoro API: `KOKORO_URL`, default
+  `http://127.0.0.1:8880/v1`.
+  Recordings use silence trimming and -16 LUFS gain normalization.
   The MP3s are ignored by Git. Run `python Pana/scripts/qqsmp-pack.py` to build
   a deterministic ZIP in ignored `dist/voice-packs/` and update `audio/pack.json`.
   Upload the ZIP to the `voice-packs` GitHub release before pushing the metadata:
@@ -80,8 +80,8 @@ Built on the shared table room (`engine/table-room.js`) and the plaza stage
   Extraction accepts only the manifest's flat MP3 names and publishes a complete
   cache directory atomically. Concurrent requests share one download. Cache:
   `PANA_VOICE_CACHE`, otherwise `DATA_ROOT/pana-voice-packs`, otherwise the system
-  temp directory. This works with pana.sh's writable data volume even when the
-  source checkout is read-only. Other routes never wait on the download; a
+  temp directory. The source checkout can remain read-only.
+  Other routes never wait on the download; a
   failure returns 503 for audio only and a later request retries.
 - `narration.js` reads the question (not the answer choices), once per question.
   Escuchar pregunta replays it and provides a gesture if autoplay is blocked.

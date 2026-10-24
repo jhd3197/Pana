@@ -9,32 +9,28 @@
 Default port is **8461** (override with `PANA_PORT` or `.\dev.ps1 -Port 9000`).
 Friends on the same network join via your LAN IP: `http://<tu-ip>:8461`.
 
-## Production (pana.sh)
+## Self-hosting
 
-One process serves everything (hub, games, API, WebSocket), so any Node host works.
-Fly.io or Railway are the simplest paths:
+These instructions run the open-source application on your own server.
 
-1. Deploy the repo root; start command is `npm start` (which runs `node server/src/index.js`).
-2. Set the port via env: the host gives you `PORT`, so map it — `PANA_PORT=$PORT`
-   or run with `PANA_PORT` set to the host's expected port.
-3. DNS: add a `CNAME` record for `pana.sh` (or the chosen subdomain) → your app's hostname.
-4. HTTPS terminates at the host; the client auto-switches to `wss://` when the page
-   is served over HTTPS, so no code change is needed.
+1. From the repository root, run `npm ci --omit=dev`, then `npm start`.
+   The entry point is `Pana/server/src/index.js`.
+2. Set `PANA_PORT` to the port your environment expects (default: **8461**).
+3. For HTTPS, configure your own reverse proxy to forward HTTP and WebSocket
+   connections. The browser uses secure WebSockets when the page uses HTTPS.
 
 ## Requirements
 
 Large images and textures use per-game ZIPs from the `asset-packs` release.
 Original URLs are preserved. The first request installs only that game's pinned
 pack, with archive and file checksum verification. Set `PANA_ASSET_CACHE` to a
-writable persistent directory, or use the default `DATA_ROOT/pana-asset-packs`
-(system temp when `DATA_ROOT` is unset). No checkout files need to be writable.
+writable persistent directory. No checkout files need to be writable.
 See `docs/knowledge/asset-packs.md` for editing and publishing packs.
 
 QQSMP narration is distributed separately in the GitHub `voice-packs` release.
 The first question-audio request downloads the pinned ZIP, verifies SHA-256,
 and caches it. No MP3s or ZIPs are committed to Git and no build step is needed.
-Set `PANA_VOICE_CACHE` to a writable persistent directory if desired; otherwise
-the cache uses `DATA_ROOT/pana-voice-packs` (pana.sh) or the system temp directory.
+Set `PANA_VOICE_CACHE` to a writable persistent directory for the audio cache.
 The host needs outbound HTTPS to GitHub for the first download. Cached packs
 work offline; an unavailable pack affects narration only, not gameplay.
 

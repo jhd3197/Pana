@@ -194,6 +194,9 @@ heights compared with a tolerance, low quality forced (`tests/browser-kit.js`).
   Only an explicit user request to track a specific plan overrides this rule.
   Scratch scripts and logs go to the system temp folder, not `docs/plans/`.
 - Update this file only when a rule here changes.
+- Public documentation covers the open-source app, its integration interfaces
+  and generic self-hosting. Keep private hosting infrastructure, deployment
+  procedures and private-repository paths out of this repository.
 
 ## Commits
 

@@ -114,7 +114,7 @@ Pana/
 ```
 
 - [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md): request flow, a game's files, rooms.
-- [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md): running it for real on pana.sh.
+- [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md): running your own server.
 - [docs/knowledge/](docs/knowledge/README.md): notes per game and per area.
 
 ## Contributing
