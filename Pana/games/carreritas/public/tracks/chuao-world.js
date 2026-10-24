@@ -2,6 +2,7 @@ import { rng, clamp, lerp, pick as pickRandom } from '/engine/random.js';
 import { extendTerrain } from '/engine/worlds/coastal/world-horizon.js';
 import * as THREE from 'three';
 import { coastalVegetation } from '/engine/worlds/coastal/coastal-vegetation.js';
+import { bake } from '/engine/models/core/static-batch.js';
 import { MAP } from './chuao-layout.js';
 export function createWorld(scene, layout, roadDistance) {
   // Far hills get three-tree groves per card: a fuller jungle for the same cost.
@@ -618,6 +619,12 @@ export function createWorld(scene, layout, roadDistance) {
     for (let k = 0; k < 6; k++) add(new THREE.CylinderGeometry(0.28, 0.32, 4.5, 10), wm, -8.4 + k * 3.36, 2.25, 5.6);
     add(new THREE.BoxGeometry(18.5, 0.6, 0.8), wm, 0, 4.6, 5.6);
     for (let k = 0; k < 10; k++) addBox(V3(SH.x + rr(-8, 8) * Math.cos(SH.rot), sy + 0.35 + (k % 3) * 0.6, SH.z - rr(-8, 8) * Math.sin(SH.rot) + 0) , V3(0.9, 0.55, 0.6), SH.rot + rr(-0.2, 0.2), '#a8784a');
+    // The church and the shop are 25 solid pieces: merged by look (paints
+    // move into vertex colours), the plaza costs a few draws instead.
+    for (const group of [church, shop]) {
+      scene.remove(group); scene.add(bake(group, { tint: true }));
+      group.traverse(o => o.geometry?.dispose());
+    }
     scene.userData.plaza = V3(PL.x, plazaY, PL.z);
   }
   // the hanging 'Bienvenido a Chuao' sign over the town street
