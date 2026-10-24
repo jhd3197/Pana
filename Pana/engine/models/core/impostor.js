@@ -45,27 +45,6 @@ const normalBake = new THREE.ShaderMaterial({
   side: THREE.DoubleSide,
 });
 
-// Fill transparent texels from opaque neighbours so mipmaps and bilinear
-// filtering never pull the cleared black into a crown's edge.
-function dilate(data, width, height, passes) {
-  const alpha = new Uint8Array(width * height);
-  for (let i = 0; i < alpha.length; i++) alpha[i] = data[i * 4 + 3] > 0 ? 1 : 0;
-  for (let pass = 0; pass < passes; pass++) {
-    const next = alpha.slice();
-    for (let y = 0; y < height; y++) for (let x = 0; x < width; x++) {
-      const i = y * width + x; if (alpha[i]) continue;
-      let r = 0, g = 0, b = 0, n = 0;
-      for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
-        const nx = x + dx, ny = y + dy; if (nx < 0 || ny < 0 || nx >= width || ny >= height) continue;
-        const j = ny * width + nx; if (!alpha[j]) continue;
-        r += data[j * 4]; g += data[j * 4 + 1]; b += data[j * 4 + 2]; n++;
-      }
-      if (n) { data[i * 4] = r / n; data[i * 4 + 1] = g / n; data[i * 4 + 2] = b / n; next[i] = 1; }
-    }
-    alpha.set(next);
-  }
-}
-
 function bakeRecord(renderer, record) {
   pending.delete(record);
   const { source, frame } = record, scene = new THREE.Scene(), materials = [];
@@ -85,8 +64,12 @@ function bakeRecord(renderer, record) {
   });
   const tileSize = record.tile, width = tileSize * COLS, height = tileSize * ROWS;
   const ambient = new THREE.AmbientLight(0xffffff, Math.PI); scene.add(ambient);
-  const targets = { albedo: new THREE.WebGLRenderTarget(width, height, { depthBuffer: true, colorSpace: THREE.SRGBColorSpace }),
-    normal: new THREE.WebGLRenderTarget(width, height, { depthBuffer: true }) };
+  // The targets are the atlases: mipmapped on the GPU, never read back. Views
+  // render over a clear (0,0,0,0) with normal blending, so texels hold
+  // premultiplied colour and the shader divides by the filtered alpha: edges
+  // never darken at any mip level, with no dilation pass.
+  const atlas = colorSpace => new THREE.WebGLRenderTarget(width, height, { depthBuffer: true, colorSpace, generateMipmaps: true, minFilter: THREE.LinearMipmapLinearFilter, magFilter: THREE.LinearFilter, anisotropy: 4 });
+  const targets = { albedo: atlas(THREE.SRGBColorSpace), normal: atlas(THREE.NoColorSpace) };
   const camera = new THREE.OrthographicCamera(-frame.half, frame.half, frame.half, -frame.half, .1, frame.half * 8);
   const previous = { target: renderer.getRenderTarget(), color: renderer.getClearColor(new THREE.Color()), alpha: renderer.getClearAlpha(),
     autoClear: renderer.autoClear, shadows: renderer.shadowMap.autoUpdate, scissor: renderer.getScissorTest() };
@@ -106,17 +89,12 @@ function bakeRecord(renderer, record) {
       target.viewport.set(x, y, tileSize, tileSize); target.scissor.set(x, y, tileSize, tileSize); renderer.setRenderTarget(target);
       renderer.render(scene, camera);
     }
-    const pixels = new Uint8Array(width * height * 4);
-    renderer.readRenderTargetPixels(target, 0, 0, width, height, pixels);
-    dilate(pixels, width, height, 8);
-    const texture = new THREE.DataTexture(pixels, width, height, THREE.RGBAFormat);
-    texture.generateMipmaps = true; texture.minFilter = THREE.LinearMipmapLinearFilter; texture.magFilter = THREE.LinearFilter;
-    texture.anisotropy = 4; texture.colorSpace = pass === 'albedo' ? THREE.SRGBColorSpace : THREE.NoColorSpace; texture.needsUpdate = true;
-    return texture;
+    return target.texture;
   };
   // Emissive glow stays on the billboard's own material, not in the photo.
   const glowing = new Map();
   scene.traverse(o => { for (const m of [].concat(o.material || [])) if (m.emissive && !glowing.has(m)) glowing.set(m, m.emissive.clone()); });
+  record.targets = targets;
   try {
     glowing.forEach((_, m) => m.emissive.set(0));
     try { record.uniforms.impAlbedo.value = read('albedo'); } finally { glowing.forEach((color, m) => m.emissive.copy(color)); }
@@ -125,7 +103,7 @@ function bakeRecord(renderer, record) {
     renderer.setRenderTarget(previous.target); renderer.setClearColor(previous.color, previous.alpha);
     renderer.autoClear = previous.autoClear; renderer.shadowMap.autoUpdate = previous.shadows; renderer.setScissorTest(previous.scissor);
     renderer.setViewport(viewport); renderer.setScissor(scissor);
-    targets.albedo.dispose(); targets.normal.dispose(); materials.forEach(m => m.dispose());
+    materials.forEach(m => m.dispose());
     const used = new Set(); source.traverse(o => { if (o.geometry) used.add(o.geometry); }); used.forEach(g => g.dispose());
   }
   record.baked = true;
@@ -176,10 +154,12 @@ function impostorMaterial(uniforms, { roughness = .85, emissive = 0x000000 } = {
         }`)
       .replace('#include <map_fragment>', `
         float impMip = impLod(vImpUvA);
-        diffuseColor *= impSample(impAlbedo, impMip);`)
+        vec4 impColor = impSample(impAlbedo, impMip);
+        diffuseColor *= vec4(impColor.rgb / max(impColor.a, 1e-4), impColor.a);`)
       .replace('#include <normal_fragment_begin>', `
         float faceDirection = 1.0;
-        vec3 impN = impSample(impNormal, impMip).xyz * 2.0 - 1.0;
+        vec4 impNormalTexel = impSample(impNormal, impMip);
+        vec3 impN = impNormalTexel.rgb / max(impNormalTexel.a, 1e-4) * 2.0 - 1.0;
         impN = vec3(impN.x * vImpRot.x + impN.z * vImpRot.y, impN.y, -impN.x * vImpRot.y + impN.z * vImpRot.x);
         vec3 normal = normalize((viewMatrix * vec4(impN, 0.0)).xyz);
         vec3 nonPerturbedNormal = normal;`);
@@ -226,7 +206,7 @@ export function impostorPlacements(parent, source, placements, { name = source.n
   const release = () => {
     if (--record.users > 0) return;
     pending.delete(record); material.dispose();
-    if (record.baked) { uniforms.impAlbedo.value.dispose(); uniforms.impNormal.value.dispose(); }
+    if (record.baked) { record.targets.albedo.dispose(); record.targets.normal.dispose(); }
     else { const used = new Set(); source.traverse(o => { if (o.geometry) used.add(o.geometry); }); used.forEach(g => g.dispose()); }
   };
   for (const points of cells.values()) {
@@ -247,7 +227,7 @@ export function impostorPlacements(parent, source, placements, { name = source.n
     geometry.addEventListener('dispose', release);
     const mesh = new THREE.Mesh(geometry, material);
     mesh.name = name; mesh.receiveShadow = true; mesh.castShadow = false;
-    mesh.userData.impostorCount = points.length; mesh.userData.atlas = uniforms;   // suites check the bake
+    mesh.userData.impostorCount = points.length; mesh.userData.atlas = record;   // suites read the baked targets
     mesh.onBeforeRender = renderer => { if (!record.baked) prepareImpostors(renderer); };
     record.users++; parent.add(mesh); out.push(mesh);
   }

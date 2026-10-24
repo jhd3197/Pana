@@ -28,7 +28,8 @@ try {
     camera.position.set(5, 5.5, -17); camera.lookAt(0, 1.4, 0); camera.updateMatrixWorld();
     const real = shot();
     cards.cardDriver(car); prepareImpostors(renderer);
-    const card = car.driverCard, atlas = card.userData.atlas.impAlbedo.value.image;
+    const card = car.driverCard, baked = card.userData.atlas.targets.albedo, texels = new Uint8Array(baked.width * baked.height * 4);
+    renderer.readRenderTargetPixels(baked, 0, 0, baked.width, baked.height, texels);
     const far = cards.showRival(car, { x: 0, z: 0 }, [camera]), photo = shot();
     camera.position.set(2, 2, -4); camera.updateMatrixWorld();
     const near = cards.showRival(car, { x: 0, z: 0 }, [camera]), realVisible = car.driver.group.visible, cardVisible = card.visible;
@@ -47,7 +48,7 @@ try {
     return {
       shown: [before.length, after.length], physical: after.filter(o => o.material.isMeshPhysicalMaterial).length,
       size: size.toArray(), trimmed: trimmed.toArray(), carded: !!card, far, near, realVisible, cardVisible,
-      baked: card.geometry.instanceCount === 1 && atlas.width > 1 && atlas.data.some((v, i) => i % 4 === 3 && v > 200), meanChannelDifference: difference / (256 * 256 * 3),
+      baked: card.geometry.instanceCount === 1 && baked.width > 1 && texels.some((v, i) => i % 4 === 3 && v > 200), meanChannelDifference: difference / (256 * 256 * 3),
       parts, farOn, boating, backOn, farDifference: farDifference / (256 * 256 * 3),
     };
   });

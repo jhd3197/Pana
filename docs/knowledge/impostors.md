@@ -52,14 +52,17 @@ cards; passing cars never see one turn.
 - Neighbouring views share the atlas. Mip levels average across tiles and
   show the quad's rectangle at a distance; the shader caps the level at 3
   and the bake pads each view by 12 %.
-- Transparent texels are dilated from opaque neighbours before upload, or
-  filtering pulls the cleared black into crown edges.
+- The bake's render targets are the atlases (GPU mipmaps, no readback). The
+  views draw over a clear (0,0,0,0) with normal blending, so texels hold
+  premultiplied colour; the shader divides the filtered colour by the
+  filtered alpha, so crown edges never darken at any mip level. A CPU
+  dilation pass did the same job and cost 1.4 s of Chuao's load.
 - Racers' ghost look clones every material; the card material's `clone`
   keeps its shader patch.
 - Each prototype costs two 768×768 RGBA atlases (≈ 6.3 MB with mips) at the
   default 192 px tile; rival panas use 128 px tiles. The card is sized to the
-  prototype's bounding sphere so no view angle clips it. Baking adds 0.2–1.3 s to
-  a map's load in Carreritas.
+  prototype's bounding sphere so no view angle clips it. Baking a map's
+  prototypes takes well under 100 ms.
 
 ## Measured (RTX 4090, 1280×800, Alta, 8 racers)
 
