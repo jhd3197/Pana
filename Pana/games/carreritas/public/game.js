@@ -35,7 +35,7 @@ import { abandonCup, advanceStage, beginStage, createCupSession, cupTrophy, fina
 import { advanceLap, ALL_SECTORS, RESCUE_TIME, OUT_TIME, STUCK_TIME } from './course-rules.js';
 import { createHazards } from './hazards.js';
 import { createMusic, TRACK_STYLE, GARAGE_SONG, RESULTS_SONG, songFor, finishSting } from './music.js';
-import { batchRacer, rivalShadows, repaintCar, addBalloons, setGhost, syncGhostAppearance } from './racer-render.js';
+import { batchRacer, trimDriver, rivalShadows, repaintCar, addBalloons, setGhost, syncGhostAppearance } from './racer-render.js';
 import { createWaterAmbience } from './water-ambience.js';
 import { padInput, pressed, keyInput, SPLIT_KEYS, wrongWayStep, WRONG_WAY_TIME, lapSplit } from './controls.js';
 import { PAINTS, paintOf, FLAMES, earnings, mirrorUnlocked, repaintHex } from './shop.js';
@@ -656,7 +656,7 @@ function makeRacer(index, isPlayer, name, wheelId = 'calle', avatar = null, cosm
   cosmetics=cleanCosmetics(cosmetics ?? (isPlayer ? raceStyle(index) : aiVessels(CARS[index].id)));
   const car = def.build(who.avatar, wheel.wheel ?? undefined, renderConfig(cosmetics.parts));
   repaintCar(car, def.color, paintOf(cosmetics));
-  batchRacer(car,paintOf(cosmetics,def.color));
+  batchRacer(car,paintOf(cosmetics,def.color)); trimDriver(car);
   if (!isPlayer) { driverCards?.cardDriver(car); rivalShadows(car); }
   // Retain ownership even after a bumper detaches and expires from the scene.
   car.geometries = new Set();

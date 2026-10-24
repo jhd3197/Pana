@@ -233,7 +233,7 @@ export function impostorPlacements(parent, source, placements, { name = source.n
     geometry.addEventListener('dispose', release);
     const mesh = new THREE.Mesh(geometry, material);
     mesh.name = name; mesh.receiveShadow = true; mesh.castShadow = false;
-    mesh.userData.impostorCount = points.length;
+    mesh.userData.impostorCount = points.length; mesh.userData.atlas = uniforms;   // suites check the bake
     mesh.onBeforeRender = renderer => { if (!record.baked) prepareImpostors(renderer); };
     record.users++; parent.add(mesh); out.push(mesh);
   }

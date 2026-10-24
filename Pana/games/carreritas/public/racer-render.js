@@ -97,7 +97,6 @@ export function rivalShadows(car, keep = 6) {
 }
 
 export function batchRacer(car, paint = null) {
-  trimDriver(car);
   const paintColor = paint == null ? null : new THREE.Color(paint);
   car.batchedMaterials ??= new Set();
   const protectedParts = new Set([car.flag, ...car.detachables, ...car.danglers]);
