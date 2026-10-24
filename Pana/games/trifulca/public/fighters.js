@@ -1,3 +1,4 @@
+import { attackExtension } from './attack-timing.js';
 // A pana in Trifulca: the player's own character with the corner's gloves and
 // the wardrobe's kart helmet when fighting, posed from the fight state (guard,
 // jab, trompón windup, block, dodge, dizzy, the flop of a caída) in a style
@@ -198,7 +199,7 @@ export function createPana(avatar, { seed = 1, name = '', me = false } = {}) {
       return out;
     }
     if (act === 'jab') {
-      const p = at < .1 ? at / .1 : at < .2 ? 1 : Math.max(0, 1 - (at - .2) / .16);
+      const p = attackExtension('jab', at);
       out[o] = cover(o);
       if (style === 'gancho') out[i] = { rx: ease(-1.85, -1.5, p), rz: inward(i) * ease(-.4, .95, p), s: 1.15 + .35 * p, z: .15 + .15 * p };
       else if (style === 'upper') out[i] = at < .05 ? { rx: -1.05, rz: inward(i) * .2, s: 1.05, z: .05 } : { rx: ease(-1.2, -2.45, p), rz: inward(i) * .15, s: 1.15 + .35 * p, z: .15 + .1 * p };
@@ -211,7 +212,7 @@ export function createPana(avatar, { seed = 1, name = '', me = false } = {}) {
       else out[i] = { rx: .75 + Math.sin(time * 46) * .14, rz: -inward(i) * .95, s: 1 };
     }
     if (act === 'trompon') {
-      const p = at < .12 ? at / .12 : Math.max(0, 1 - (at - .12) / .3);
+      const p = attackExtension('trompon', at);
       out[o] = cover(o);
       if (style === 'upper') out[i] = { rx: ease(.2, -2.65, p), rz: inward(i) * .1, s: 1 + .9 * p, z: .3 * p };
       else if (style === 'molino') out[i] = { rx: ease(-3.2, -1.5, p), rz: inward(i) * .2, s: 1 + .8 * p, z: .3 * p };
@@ -228,7 +229,7 @@ export function createPana(avatar, { seed = 1, name = '', me = false } = {}) {
       }
     }
     if (act === 'grab') {
-      const p = Math.min(1, at / .14);
+      const p = attackExtension('grab', at);
       for (const k of [0, 1]) out[k] = { rx: -1.55, rz: inward(k) * ease(.1, -.15, p), s: 1 + .45 * p, z: .25 * p };
     }
     if (act === 'stun' || act === 'open') for (const k of [0, 1]) out[k] = { rx: -.7 + Math.sin(time * 18 + k) * .3, rz: sign(k) * 1.1, s: 1 };

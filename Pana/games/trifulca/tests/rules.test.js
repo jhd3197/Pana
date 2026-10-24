@@ -3,6 +3,14 @@ import assert from 'node:assert/strict';
 import { Trifulca, cleanInput, INTRO, AFTER, STAKE, START_DOLITAS, titlesFor } from '../public/rules.js';
 import { T, edge, arenaOf } from '../public/fight-rules.js';
 
+test('counter practice gives a beginner time without extending ordinary counters',()=>{
+  const game=new Trifulca(1);game.addPlayer(1,'Ana',{});game.startTutorial(1);
+  game.tutorial.step=5;game.body(1).contra=T.contra;
+  game.tutorialEvent({type:'dodged',id:1,by:1000});assert.equal(game.body(1).contra,2);
+  game.tutorial=null;game.body(1).contra=T.contra;
+  game.tutorialEvent({type:'dodged',id:1,by:1000});assert.equal(game.body(1).contra,.8);
+});
+
 // A night between Ana (1) and Bruno (2) with no bots, already at the bell.
 function fight({ seconds = 60, arena = 'toldo' } = {}) {
   const game = new Trifulca(7);

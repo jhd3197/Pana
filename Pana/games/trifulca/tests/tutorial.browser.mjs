@@ -70,10 +70,20 @@ try {
     let attempts = 0;
     while ((await step()).step < target) {
       assert.ok(++attempts <= 15, `Tutorial step ${target} did not complete: ${JSON.stringify(await page.evaluate(() => ({ tutorial: trifulcaDebug.room.state.tutorial, bodies: trifulcaDebug.room.state.bodies })))}`);
-      await waitFor(page, target => trifulcaDebug.room.state.tutorial.step >= target || (trifulcaDebug.room.state.bodies[1].act === 'wind' && trifulcaDebug.room.state.bodies[1].at > .2), target, 20_000);
+      // Published snapshots can skip the end of windup during catch-up. An
+      // early, unlanded swing is still a valid cue to dodge before contact.
+      await waitFor(page, target => {
+        const state=trifulcaDebug.room.state, foe=state.bodies[1];
+        return state.tutorial.step>=target || (foe.act==='wind' && foe.at>=.25) || (foe.act==='trompon' && !foe.landed && foe.at<.1);
+      }, target, 20_000).catch(async error => {
+        throw new Error(`${error.message}: ${JSON.stringify(await page.evaluate(()=>({tutorial:trifulcaDebug.room.state.tutorial,bodies:trifulcaDebug.room.state.bodies,dialog:!!document.querySelector('dialog[open]'),input:trifulcaDebug.controls.read()})))}`);
+      });
       if ((await step()).step >= target) break;
       await page.keyboard.press(' ');
-      if (target === 6) { await waitFor(page, () => (trifulcaDebug.room.state.bodies[0].contra > 0 && trifulcaDebug.room.state.bodies[0].act === 'idle') || trifulcaDebug.room.state.tutorial.step >= 6, null, 5_000).catch(() => {}); await page.keyboard.press('j'); }
+      if (target === 6) {
+        await waitFor(page,()=>{const s=trifulcaDebug.room.state,b=s.bodies[0];return s.tutorial.step>=6 || (b.contra>0 && (b.act==='idle' || (b.act==='dodge' && b.at>=.3)));},null,5_000).catch(()=>{});
+        await page.keyboard.press('j');
+      }
       await waitFor(page, () => !['wind', 'trompon'].includes(trifulcaDebug.room.state.bodies[1].act));
     }
   }

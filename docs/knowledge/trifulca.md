@@ -69,7 +69,7 @@ wins and the titles are handed out.
   (mod 256). A tap shorter than a 50 ms tick still reaches the host as a
   counter change, and mashing after a caída is just the counter delta.
 - Golpe: a tap (released before `T.hold` = 0.16 s) is a jab; held past it is
-  the trompón's 0.55 s windup (`wind`, the glove shakes back), which fires on
+  the trompón's 0.43 s windup (`wind`, the glove shakes back), which fires on
   its own. A press while busy is buffered for 0.2 s.
 - Rock-paper-scissors: a jab landing on a `wind` interrupts it (+6 mareo
   counter); blocking from the front turns jabs into 1.5 chip; a dodge's
@@ -168,3 +168,37 @@ The reference's health/super/round-win mock values are not game state: the live
 bars remain mareo and aguante, diamonds count received knockdowns, and ¡Dale!
 remains a taunt. The shared controller strip is styled in-game rather than
 duplicated. Reduced motion disables HUD transitions, not gameplay messages.
+
+## Contact timing
+
+`attack-timing.js` supplies the same impact/release times to rules and procedural
+arm extension. A trompon now contacts at 0.12–0.18 s after its windup rather than
+at the first strike tick. Windup shortens to 0.43 s, preserving the original
+0.55 s total warning and dodge opportunity. The wind-to-swing transition carries
+sub-tick overshoot forward instead of dropping it, so server cadence cannot add
+an extra tick before contact; jab contact remains 0.10–0.18 s and grab 0.14–0.24 s.
+The pure `analyseImpact` sampler follows grandma-gta's maximum-extension idea
+to test authored pose curves; it is not a runtime animation-clip loader. Existing
+0.2 s input buffering, directional push, mareo, stars and mash-to-rise remain
+the combat core. A short filtered noise layer sharpens clean jab sounds through
+the shared sound context. Timing tests prove no early or repeated heavy damage.
+
+The counter lesson grants `TUTORIAL_COUNTER_WINDOW` (2 s) after a successful
+dodge, giving beginners time to read the cue and respond. Ordinary fights keep
+`T.contra` at 0.8 s. The browser tutorial observes late windup or an unlanded
+early swing because a published catch-up snapshot can skip the windup tail;
+it can buffer the counter near dodge recovery instead of waiting for one idle
+snapshot. This preserves real keyboard input and continuous 3D rendering.
+
+Trifulca caps `LiveRoom.maxCatchUp` at 0.1 s (two 50 ms ticks). The shared
+one-second default can advance an entire telegraph and punch between published
+snapshots after a rendering stall, leaving no visible chance to dodge. Under a
+slow host the fight slows rather than silently skipping its warning; normal
+20 Hz play is unchanged. A room-level test feeds a one-second hitch and proves
+the next snapshot still shows windup with no damage.
+
+The four-game Banderín update keeps Trifulca's established HUD, meter lag,
+portraits, controller prompts and intro/verdict presentation. It opts into
+`engine/banderin.css` for the shared lobby/button treatment and larger end-of-
+night results. The existing game-specific HUD stylesheet loads after that
+shared skin, preserving its compact mobile and reduced-motion rules.

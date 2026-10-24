@@ -21,6 +21,7 @@ export const TUTORIAL = [
   { id: 'mover', need: 1 }, { id: 'jab', need: 3 }, { id: 'trompon', need: 1 }, { id: 'cubrir', need: 2 },
   { id: 'esquivar', need: 2 }, { id: 'contra', need: 1 }, { id: 'agarrar', need: 1 }, { id: 'pararse', need: 1 },
 ];
+export const TUTORIAL_COUNTER_WINDOW = 2;
 // Nobody in the crowd stands between the camera and the fight.
 export const CROWD_GAP = 1.15;
 const clampCrowd = (a) => Math.abs(a) < CROWD_GAP ? Math.sign(a || 1) * CROWD_GAP : a;
@@ -215,6 +216,9 @@ export class Trifulca {
   tutorialEvent(e) {
     const t = this.tutorial; if (!t || t.done) return;
     const step = TUTORIAL[t.step], me = t.me;
+    if (step.id === 'contra' && e.type === 'dodged' && e.id === me) {
+      this.body(me).contra = TUTORIAL_COUNTER_WINDOW;
+    }
     const hit = (kind) => e.type === kind && e.by === me;
     const counts = { mover: false, jab: hit('hit') && !e.counter, trompon: hit('trompon'), cubrir: e.type === 'block' && e.id === me,
       esquivar: e.type === 'dodged' && e.id === me, contra: (e.type === 'hit' || e.type === 'trompon') && e.by === me && e.contra,

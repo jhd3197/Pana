@@ -9,6 +9,12 @@ that players, hosts or contributors will notice adds a line under
   contra el suelo y la cobertura; reaparecer restaura la pose. El Cohetón tiene
   un sonido sintetizado propio.
 
+- **Los trompones de Trifulca conectan cuando se extiende el guante.**
+  Golpes, agarres y poses comparten sus tiempos de contacto; los impactos
+  ligeros tienen una capa de sonido más definida. El tutorial da dos segundos
+  para practicar el contragolpe; las peleas conservan su ventana habitual.
+  Un tirón de rendimiento ya no salta de golpe todo el aviso de un ataque.
+
 - **Dominó verifica las jugadas recibidas y da personalidad a los bots.**
   La mesa reconstruye los cambios desde un registro de reglas, recupera
   segmentos perdidos y conserva la partida al cambiar de anfitrión. Los bots

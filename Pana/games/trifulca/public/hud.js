@@ -22,7 +22,7 @@ export const LESSONS = {
   trompon: ['El trompón', 'Mantén J un momento: el guante se va pa\' atrás temblando y sale el trompón. Lento pero pega duro.', ['J mantener']],
   cubrir: ['Cubrirse', 'El Profe te va a tirar jabs. Mantén K (o clic derecho) para cubrirte.', ['K']],
   esquivar: ['Esquivar', 'Cuando el Profe cargue el trompón verás ¡ESQUIVA! Pulsa Espacio justo ahí.', ['Espacio']],
-  contra: ['El contragolpe', 'Esquiva el trompón y pega J enseguida: el contragolpe atraviesa la guardia y pega más.', ['Espacio', 'J']],
+  contra: ['El contragolpe', 'Esquiva el trompón y pega J: atraviesa la guardia y pega más. Aquí tienes dos segundos para practicar; en la pelea responde enseguida.', ['Espacio', 'J']],
   agarrar: ['Agarrar', 'El Profe se cubre. Pégate y pulsa L: el agarre rompe la guardia y lo manda pa\'l público.', ['L']],
   pararse: ['¡Párate!', 'Te tumbaron. Machaca J (o cualquier botón) para pararte antes del diez.', ['J', 'J', 'J']],
 };

@@ -114,7 +114,7 @@ export const crowd = (power = 1) => noise(1.2 + power * .6, { freq: 1100, q: .5,
 export function sfx(e) {
   if (!sound.ctx || sound.muted) return;
   switch (e.type) {
-    case 'hit': sound.bonk(e.counter ? 1.6 : 1); break;
+    case 'hit': noise(.055, {freq:1450,q:1.1,vol:.09,attack:.004}); sound.bonk(e.counter ? 1.6 : 1); break;
     case 'trompon': sound.bonk(3); sound.sweep(260, 70, .3, 'sine', .2); crowd(1.2); break;
     case 'block': sound.tone(220, 0, .06, 'square', .05); break;
     case 'wind': sound.sweep(180, 420, .5, 'triangle', .05); break;

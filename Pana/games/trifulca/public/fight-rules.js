@@ -1,3 +1,4 @@
+import { ATTACK_TIMING } from './attack-timing.js';
 // Trifulca's fight: two bodies, four buttons, mareo, caídas and the ring.
 // Pure data (no DOM, no Three.js) so the host, the screen and Node tests share
 // it. rules.js owns the night around it: the queue, bets, dolitas, phases.
@@ -6,10 +7,10 @@ import { clamp } from '/engine/random.js';
 // Seconds and metres. Every attack shows its windup before it can land.
 export const T = {
   hold: .16,            // golpe held longer than this is a trompón
-  jab: { active: [.1, .18], total: .36, reach: 1.4, mareo: 9, push: 2, stun: .24 },
-  wind: .55,            // the trompón's visible windup
-  trompon: { active: [0, .12], total: .5, reach: 1.6, mareo: 28, push: 7.5, stun: .7, open: .4 },
-  grab: { active: [.14, .24], total: .55, reach: 1.3, mareo: 5, push: 7, stun: .55 },
+  jab: { active: [ATTACK_TIMING.jab.impact, ATTACK_TIMING.jab.release], total: .36, reach: 1.4, mareo: 9, push: 2, stun: .24 },
+  wind: .43,            // .43 windup + .12 extension preserves the .55 s warning
+  trompon: { active: [ATTACK_TIMING.trompon.impact, ATTACK_TIMING.trompon.release], total: .5, reach: 1.6, mareo: 28, push: 7.5, stun: .7, open: .4 },
+  grab: { active: [ATTACK_TIMING.grab.impact, ATTACK_TIMING.grab.release], total: .55, reach: 1.3, mareo: 5, push: 7, stun: .55 },
   dodge: { total: .42, safe: [.03, .34], speed: 4.6 },
   taunt: 1, rise: 1, dizzy: 2.1, counter: 6, contra: .8, contraMareo: 14,
   chip: { jab: 1.5, trompon: 6 }, guard: { jab: 12, trompon: 40 },
@@ -219,7 +220,11 @@ export function stepBodies(bodies, arena, dt, moves, emit) {
     }
     // Timed acts end on their own.
     const ends = { throw: .4, jab: T.jab.total, trompon: T.trompon.total, grab: T.grab.total, dodge: T.dodge.total, taunt: T.taunt, open: T.trompon.open, rise: T.rise };
-    if (self.act === 'wind' && self.at >= T.wind) { setAct(self, 'trompon'); emit({ type: 'swing', id: self.id }); }
+    if (self.act === 'wind' && self.at >= T.wind) {
+      const overshoot = self.at - T.wind;
+      setAct(self, 'trompon'); self.at = overshoot;
+      emit({ type: 'swing', id: self.id });
+    }
     else if (self.act === 'stun' && self.at >= self.stun) setAct(self, 'idle');
     else if (self.act === 'dizzy' && self.at >= T.dizzy) { setAct(self, 'idle'); self.mareo = 55; emit({ type: 'clear', id: self.id }); }
     else if (ends[self.act] && self.at >= ends[self.act]) setAct(self, 'idle');
