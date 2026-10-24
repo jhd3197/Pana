@@ -36,7 +36,6 @@ import { advanceLap, ALL_SECTORS, RESCUE_TIME, OUT_TIME, STUCK_TIME } from './co
 import { createHazards } from './hazards.js';
 import { createMusic, TRACK_STYLE, GARAGE_SONG, RESULTS_SONG, songFor, finishSting } from './music.js';
 import { batchRacer, trimDriver, rivalShadows, repaintCar, addBalloons, setGhost, syncGhostAppearance } from './racer-render.js';
-import { createWaterAmbience } from './water-ambience.js';
 import { padInput, pressed, keyInput, SPLIT_KEYS, wrongWayStep, WRONG_WAY_TIME, lapSplit } from './controls.js';
 import { PAINTS, paintOf, FLAMES, earnings, mirrorUnlocked, repaintHex } from './shop.js';
 import { createProfileStore, recordCupTrophy, trophyCredits } from './cup-profile.js';
@@ -304,7 +303,6 @@ function garageMusic() {
   if (mode === 'garage' && sound.ctx && music.song !== GARAGE_SONG) music.play(GARAGE_SONG, { fallback: 'calipso' });
 }
 for (const type of ['pointerdown', 'keydown']) addEventListener(type, () => setTimeout(garageMusic), true);
-const waterAmbience = createWaterAmbience(sound);
 
 const world = createRaceWorld({ scene: race.scene, cameras: [race.camera, race.camera2], puffs: race.puffs, shockwaves: race.shockwaves,
   sound, track: () => T, groundAt, racing: () => mode === 'race' });
@@ -317,6 +315,7 @@ race.debris = new Debris(race.scene);
 const lazyRace = (key, stub, load, make) => { race[key] = stub; return load.then(m => { race[key] = make(m); return m; }); };
 let driftFx = null;
 import('./drift-fx.js').then(m => { driftFx = m; });
+lazyRace('water', { update() {}, stop() {} }, import('./water-ambience.js'), m => m.createWaterAmbience(sound));   // river and sea sound
 lazyRace('skidMarks', { lay() {}, update() {}, clear() {} }, import('./skid-marks.js'), m => new m.SkidMarks(race.scene, { focus: () => race.player }));
 lazyRace('slowMo', { update() {}, trigger() {}, scale: 1, punch: 0 }, import('./slow-mo.js'), m => m.createSlowMo());
 lazyRace('glow', { boost() {}, impact() {}, coins() {} }, import('./race-fx.js'), m => m.createRaceFx(race.scene));   // turbo, hit and coin glow
@@ -846,7 +845,7 @@ async function startRace(playerIndex, wheelId = garage.wheel, roster = null) {
   $('play').disabled = true;
   sound.stopEngine();
   music.stop();
-  waterAmbience.stop();
+  race.water.stop();
   const step = async (label, progress) => {
     $('loading-status').textContent = label;
     $('loading-progress').value = progress;
@@ -1059,7 +1058,7 @@ function toGarage() {
   clearRace();
   sound.stopEngine();
   music.stop();
-  waterAmbience.stop();
+  race.water.stop();
   $('race').classList.add('hidden');
   $('garage').classList.remove('hidden');
   garage.controls.enabled = true;
@@ -1112,7 +1111,7 @@ const menu = createGameMenu({ pad: { native: true, playing: () => mode === 'race
     if (mode !== 'race' || race.netRace) return;
     paused = true;
     music.pause();
-    waterAmbience.stop(); race.audio.update(null, 0, false);   // no screech under the pause menu
+    race.water.stop(); race.audio.update(null, 0, false);   // no screech under the pause menu
     if (sound.engine) sound.engine.g.gain.setTargetAtTime(0, sound.ctx.currentTime, 0.05);
   },
   onClose() { if (paused) music.resume(); paused = false; acc = 0; clock.reset(); },
@@ -1614,7 +1613,7 @@ function presentRace(dt) {
   for (const o of T.animated) o.userData.tick(race.clock, dt);   // scenery: flags, windmills, birds…
   sound.setEngine(race.player.vf);
   race.audio.update(race.player, dt, race.state === 'go' && !paused);
-  waterAmbience.update(T,race.player.x,race.player.z);
+  race.water.update(T,race.player.x,race.player.z);
 
   // HUD
   const p = race.player;

@@ -71,13 +71,19 @@ Existing loading, modes, cup and online suites retain their gameplay assertions.
 
 ## The 16 cars, the Taller and the car kit
 
-- Sixteen cars: the eight classics in `engine/models/vehicles/cars.js` keep
-  their chunky low-poly bodies; the eight Taller bodies in `taller-cars.js`
-  (escarabajo, sedan, buseta, pickup, jeep, hatch, rustico, malibu, numbers
-  9–16) are data on the filleted kit. Their profiles are kept at 1:1 and
-  stretched to toy proportions on build (length ×1.12, body height ×1.3,
-  cabin height ×1.9 above the belt, wheels ×1.36), because the pana driver
-  needs a tall greenhouse and arches must stay under the belt line.
+- Sixteen cars, one smooth data-driven builder (`cars.js` specs): a lofted
+  lower body and greenhouse from `car-shell.js` (one quad grid each, arches
+  part of the grid, so surfaces shade smoothly), lamps, grilles and trim
+  raycast onto the real surface by `car-build.js`, and a full cabin
+  interior merged into one mesh ("cabin interior") around the seated pana.
+  The interior is one draw, so it stays on in races; it exists for the
+  cockpit view. Each car is ~58k visible triangles with its driver.
+- Trim placement casts hundreds of rays at the body. `surface()` bins the
+  triangles once (a 2D grid across each axis, height slabs for level rays)
+  and returns exactly Raycaster's hits, normalizing the direction twice as
+  `Mesh.raycast` does; brute force made a car take ~395 ms to build against
+  ~300 ms now (old cars: ~230 ms, mostly the pana itself). Check a change
+  here by fingerprinting all 16 cars' geometry before and after.
 - `car-kit.js` v2: `roundedPath` fillets a side profile, arches are cut from
   `axle`/`archR`/`sill`, `shellBody` builds two tapered side slabs and a tub
   (a pickup's bed is a lower tub) and returns a fit (`noseZ`, `tailZ`,
@@ -91,9 +97,8 @@ Existing loading, modes, cup and online suites retain their gameplay assertions.
   scoop, chrome blower), decals and stripes in the accent colour and the
   paint finish. Builders skip a stock part when its slot asks for another.
 - Wheels are lathe tires with tread blocks and six rim faces sharing one
-  metal look, so `batchRacer` merges a wheel into 2–3 draws. Batched race
-  bodies are 25–40 meshes for all 16 cars against a 133-mesh, 137k-triangle
-  driver. A bigger wheel or a wheel `lift` raises the body through `rig`'s
+  metal look, so `batchRacer` merges a wheel into 2–3 draws. In races the
+  driver is trimmed and rivals' panas are cards (`carreritas-performance.md`). A bigger wheel or a wheel `lift` raises the body through `rig`'s
   `lift` group, because `chassis.position.y` is the suspension.
 - `parts.js` is shared by garage, race and room. Parts change the tune only
   through `composeTune(tune, wheelProfile, partsProfile(parts))`, at most 10%

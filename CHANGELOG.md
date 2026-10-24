@@ -8,6 +8,10 @@ becomes the GitHub release's notes.
 
 ## Unreleased
 
+- **Los 16 carros de Carreritas estrenan carrocería suave y cabina por dentro.**
+  Faros, parrillas y adornos se apoyan en la carrocería curva, y cada carro
+  trae tablero, asientos y volante alrededor de tu pana.
+
 - **Carreritas corre más fluido sin cambiar su aspecto.**
   Las lanchas y avionetas se preparan en la pantalla de carga, sin tirones al
   llegar al río; los bosques lejanos y los panas rivales lejanos son fotos

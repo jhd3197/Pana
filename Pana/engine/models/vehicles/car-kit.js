@@ -4,6 +4,7 @@
 
 import * as THREE from 'three';
 import { mergeGeometries, toCreasedNormals } from 'three/addons/utils/BufferGeometryUtils.js';
+import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
 import { buildCharacter } from '/engine/models/characters/pana/avatar-model.js';
 import { venezuelaFlag } from '/engine/models/props/flags.js';
 import { clamp } from '../../random.js';
@@ -12,7 +13,7 @@ const mats = new Map();
 function M(color, extra = {}) {
   const key = color + JSON.stringify(extra);
   if (!mats.has(key)) {
-    mats.set(key, new THREE.MeshStandardMaterial({ color, flatShading: true, roughness: 0.65, ...extra }));
+    mats.set(key, new THREE.MeshStandardMaterial({ color, roughness: 0.6, ...extra }));
   }
   return mats.get(key);
 }
@@ -47,24 +48,78 @@ function bevelBox(w, h, d, material, x = 0, y = 0, z = 0, bevel = 0.05) {
 }
 
 // Batch rigid details only; steering, drivers and detachable groups stay free.
+// Geometries keep position + normal (+ uv when the material has a map) and
+// stay indexed, so mixed sources merge cleanly.
+function bakeGeometry(part, withUV) {
+  const g = new THREE.BufferGeometry();
+  const src = part.geometry;
+  g.setAttribute('position', src.attributes.position.clone());
+  if (src.attributes.normal) g.setAttribute('normal', src.attributes.normal.clone());
+  else { g.setAttribute('normal', src.attributes.position.clone()); }
+  if (withUV) g.setAttribute('uv', src.attributes.uv ? src.attributes.uv.clone() : new THREE.Float32BufferAttribute(new Float32Array(src.attributes.position.count * 2), 2));
+  if (src.index) g.setIndex(src.index.clone());
+  else g.setIndex([...Array(src.attributes.position.count).keys()]);
+  if (src.groups.length) {
+    // multi-group geometry with one material: keep only drawn ranges
+    const idx = g.index.array, keep = [];
+    for (const gr of src.groups) for (let i = gr.start; i < gr.start + gr.count; i++) keep.push(idx[i]);
+    g.setIndex(keep);
+  }
+  if (!src.attributes.normal) g.computeVertexNormals();
+  g.applyMatrix4(part.matrixWorld);
+  return g;
+}
 function batchParts(group) {
   group.updateMatrixWorld(true);
   const buckets = new Map(), originals = new Set();
   group.traverse(part => {
     if (!part.isMesh) return;
-    const g = part.geometry.index ? part.geometry.toNonIndexed() : part.geometry.clone();
-    g.applyMatrix4(part.matrixWorld);
     if (!buckets.has(part.material)) buckets.set(part.material, []);
-    buckets.get(part.material).push(g); originals.add(part.geometry);
+    buckets.get(part.material).push(bakeGeometry(part, !!part.material.map)); originals.add(part.geometry);
   });
   group.clear();
+  group.updateMatrixWorld(true);
+  const inv = group.matrixWorld.clone().invert();
   for (const [material, geos] of buckets) {
-    group.add(mesh(mergeGeometries(geos, false), material));
+    const merged = mergeGeometries(geos, false);
+    merged.applyMatrix4(inv);
+    group.add(mesh(merged, material));
     geos.forEach(g => g.dispose());
   }
-  originals.forEach(g => g.dispose());
+  originals.forEach(g => { if (!rbCacheHas(g)) g.dispose(); });
   return group;
 }
+// Merge the meshes sitting directly in a car's chassis by material: one draw
+// per material instead of one per bolt. Groups (detachables, danglers, the
+// driver) and anything in `keep` stay as they are.
+function batchStatic(parent, keep = new Set()) {
+  parent.updateMatrixWorld(true);
+  const inv = parent.matrixWorld.clone().invert();
+  const buckets = new Map();
+  // static groups (seats, gauges) are merged too; kept groups stay live
+  const visit = (node) => {
+    for (const child of [...node.children]) {
+      if (keep.has(child)) continue;
+      if (!child.isMesh) { if (child.children.length) visit(child); continue; }
+      if (child.material.transparent || Array.isArray(child.material)) continue;
+      if (!buckets.has(child.material)) buckets.set(child.material, []);
+      buckets.get(child.material).push(child);
+    }
+  };
+  visit(parent);
+  for (const [material, parts] of buckets) {
+    if (parts.length < 2) continue;
+    const geos = parts.map(p => { const g = bakeGeometry(p, !!material.map); g.applyMatrix4(inv); return g; });
+    const merged = mergeGeometries(geos, false);
+    if (!merged) continue;
+    parts.forEach(p => p.parent.remove(p));
+    const m = mesh(merged, material);
+    m.castShadow = parts.some(p => p.castShadow);
+    parent.add(m);
+    geos.forEach(g => g.dispose());
+  }
+}
+const rbCacheHas = g => rbCache && [...rbCache.values()].includes(g);
 
 function squareLamp(w, h, x, y, z) {
   const g = new THREE.Group();
@@ -77,7 +132,7 @@ function squareLamp(w, h, x, y, z) {
 function towLoop(x, y, z) {
   const g = new THREE.Group();
   g.add(bevelBox(0.22, 0.27, 0.16, M('#3b3e46'), x, y + 0.09, z));
-  g.add(mesh(new THREE.TorusGeometry(0.12, 0.045, 5, 8), CHROME(), x, y - 0.06, z + 0.11));
+  g.add(mesh(new THREE.TorusGeometry(0.12, 0.045, 10, 20), CHROME(), x, y - 0.06, z + 0.11));
   return g;
 }
 
@@ -137,7 +192,7 @@ function pane(p0, p1, width, mat) {
 
 function tube(a, b, r, mat) {
   const va = new THREE.Vector3(...a), vb = new THREE.Vector3(...b);
-  const m = mesh(new THREE.CylinderGeometry(r, r, va.distanceTo(vb), 8), mat);
+  const m = mesh(new THREE.CylinderGeometry(r, r, va.distanceTo(vb), r > 0.05 ? 18 : 12), mat);
   m.position.copy(va).add(vb).multiplyScalar(0.5);
   m.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), vb.clone().sub(va).normalize());
   return m;
@@ -229,16 +284,23 @@ function bothSides(group, make, x, y, z) {
   }
 }
 
+// An organic blob (camo patch, rust) with a wobbly outline.
+let spotSeed = 3;
 function spot(size, color) {
-  return new THREE.Mesh(new THREE.CircleGeometry(size, 7), M(color, DECAL));
+  const sh = new THREE.Shape(), n = 28, k = [1, 2, 3].map(() => ((spotSeed = spotSeed * 16807 % 2147483647) / 2147483647) * Math.PI * 2);
+  for (let i = 0; i <= n; i++) {
+    const a = i / n * Math.PI * 2, r = size * (1 + 0.16 * Math.sin(2 * a + k[0]) + 0.1 * Math.sin(3 * a + k[1]) + 0.06 * Math.sin(5 * a + k[2]));
+    if (i) sh.lineTo(Math.cos(a) * r, Math.sin(a) * r * 0.82); else sh.moveTo(Math.cos(a) * r, Math.sin(a) * r * 0.82);
+  }
+  return new THREE.Mesh(new THREE.ShapeGeometry(sh, 4), M(color, { roughness: 0.7, ...DECAL }));
 }
 
 // ---------- kit v2: filleted, tapered bodies ----------
 
 // Smooth-shaded materials for the filleted v2 parts (the low-poly helpers
 // above stay flat shaded). Paint gets a little sheen; acabado can change it.
-const S = (color, extra = {}) => M(color, { flatShading: false, roughness: 0.5, ...extra });
-const PAINT = (color) => S(color, { roughness: 0.36, metalness: 0.08 });
+const S = (color, extra = {}) => M(color, { roughness: 0.5, ...extra });
+const PAINT = (color) => S(color, { roughness: 0.3, metalness: 0.1 });
 
 // A closed (z, y) outline with a quadratic fillet of radius r at every
 // point [z, y, r]; r 0 keeps a sharp corner.
@@ -304,25 +366,17 @@ function crossings(poly, along, v) {
   return out;
 }
 
-// Rounded box: corner vertices pushed onto spheres, cached by size.
+// Rounded box (three's RoundedBoxGeometry: true fillets, smooth normals), cached by size.
 const rbCache = new Map();
 function RB(w, h, d, r = 0.05) {
   const key = [w, h, d, r].map(v => v.toFixed(3)).join(',');
   if (rbCache.has(key)) return rbCache.get(key);
-  r = Math.max(0.001, Math.min(r, w / 2 - 0.002, h / 2 - 0.002, d / 2 - 0.002));
-  const g = new THREE.BoxGeometry(w, h, d, 2, 2, 2), p = g.attributes.position, hh = [w / 2, h / 2, d / 2];
-  const v = [0, 0, 0];
-  for (let i = 0; i < p.count; i++) {
-    v[0] = p.getX(i); v[1] = p.getY(i); v[2] = p.getZ(i);
-    for (let k = 0; k < 3; k++) if (Math.abs(Math.abs(v[k]) - hh[k]) > 1e-5) v[k] = Math.sign(v[k]) * (hh[k] - r);
-    const inner = v.map((c, k) => clamp(c, -(hh[k] - r), hh[k] - r)), n = v.map((c, k) => c - inner[k]), L = Math.hypot(...n);
-    if (L > 1e-6) for (let k = 0; k < 3; k++) v[k] = inner[k] + n[k] / L * r;
-    p.setXYZ(i, v[0], v[1], v[2]);
-  }
-  const out = toCreasedNormals(g, 0.8);
-  g.dispose();
-  rbCache.set(key, out);
-  return out;
+  r = Math.max(0.002, Math.min(r, w / 2 - 0.001, h / 2 - 0.001, d / 2 - 0.001));
+  const segs = r > 0.07 ? 2 : 1;
+  const g = new RoundedBoxGeometry(w, h, d, segs, r);
+  g.deleteAttribute('uv');
+  rbCache.set(key, g);
+  return g;
 }
 const rbox = (w, h, d, mat, x = 0, y = 0, z = 0, r = 0.05) => mesh(RB(w, h, d, r), mat, x, y, z);
 
@@ -400,10 +454,10 @@ function archFlare(r, w, mat, lip = 0.16, drop = 0.12) {
 // A round lamp: bezel ring plus a domed lens, facing +z (dir -1 faces back).
 function domeLamp(r, lens, bezel = CHROME(), depth = 0.12) {
   const g = new THREE.Group();
-  const ring = mesh(new THREE.CylinderGeometry(r * 1.2, r * 1.26, depth, 14), bezel);
+  const ring = mesh(new THREE.CylinderGeometry(r * 1.2, r * 1.26, depth, 28), bezel);
   ring.rotation.x = Math.PI / 2;
   g.add(ring);
-  const dome = mesh(new THREE.SphereGeometry(r, 14, 6, 0, Math.PI * 2, 0, Math.PI / 2), lens, 0, 0, depth / 2 - 0.01);
+  const dome = mesh(new THREE.SphereGeometry(r, 28, 8, 0, Math.PI * 2, 0, Math.PI / 2), lens, 0, 0, depth / 2 - 0.01);
   dome.rotation.x = Math.PI / 2;
   dome.scale.y = 0.4;
   g.add(dome);
@@ -424,10 +478,21 @@ const TAIL = () => S('#ff3b3b', { emissive: '#d0101a', emissiveIntensity: 0.7, r
 // Lathe tires with a shoulder, merged tread blocks and a rim face. Old style
 // names keep working: spokes = cinco, steel = acero, hubcap = disco.
 const RIM_STYLE = { spokes: 'cinco', steel: 'acero', hubcap: 'disco' };
+// Round off a lathe profile's corners so the tire shoulder shades smoothly.
+function roundProfile(prof) {
+  const out = [prof[0]];
+  for (let i = 1; i < prof.length - 1; i++) {
+    const A = prof[i - 1], P = prof[i], B = prof[i + 1];
+    const a = [P[0] + (A[0] - P[0]) * 0.3, P[1] + (A[1] - P[1]) * 0.3], b = [P[0] + (B[0] - P[0]) * 0.3, P[1] + (B[1] - P[1]) * 0.3];
+    for (let k = 0; k <= 2; k++) { const t = k / 2, u = 1 - t; out.push([u * u * a[0] + 2 * u * t * P[0] + t * t * b[0], u * u * a[1] + 2 * u * t * P[1] + t * t * b[1]]); }
+  }
+  out.push(prof.at(-1));
+  return out;
+}
 function tireGeometry(r, w, rimR, sh) {
   const prof = [[rimR, -w * 0.44], [r - sh * 1.2, -w / 2], [r - sh * 0.3, -w / 2 + sh * 0.3], [r, -w / 2 + sh],
     [r, w / 2 - sh], [r - sh * 0.3, w / 2 - sh * 0.3], [r - sh * 1.2, w / 2], [rimR, w * 0.44]];
-  const g = new THREE.LatheGeometry(prof.map(([a, b]) => new THREE.Vector2(a, b)), 22);
+  const g = new THREE.LatheGeometry(roundProfile(prof).map(([a, b]) => new THREE.Vector2(a, b)), 30);
   g.rotateZ(Math.PI / 2);
   return g;
 }
@@ -459,13 +524,13 @@ function treadBlocks(g, kind, r, w, rubber) {
 // One metal look for every rim part, so a race car merges them into one draw.
 const METAL = (color) => S(color, { metalness: 0.55, roughness: 0.32 });
 function rimFace(face, design, rimR, r, rimMat, capMat) {
-  const disk = (rad, d, m, x, seg = 16) => {
+  const disk = (rad, d, m, x, seg = 32) => {
     const geo = new THREE.CylinderGeometry(rad, rad, d, seg);
     geo.rotateZ(Math.PI / 2);
     face.add(mesh(geo, m, x, 0, 0));
   };
   const lugs = (n, rad) => {
-    const geo = new THREE.CylinderGeometry(r * 0.035, r * 0.035, 0.06, 6);
+    const geo = new THREE.CylinderGeometry(r * 0.035, r * 0.035, 0.06, 10);
     geo.rotateZ(Math.PI / 2);
     for (let k = 0; k < n; k++) {
       const a = k / n * Math.PI * 2;
@@ -475,7 +540,7 @@ function rimFace(face, design, rimR, r, rimMat, capMat) {
   const spokes = (n, inner, outer, wide, thin, x = -0.02) => {
     const s = new THREE.Shape([new THREE.Vector2(-wide, inner), new THREE.Vector2(wide, inner),
       new THREE.Vector2(thin, outer), new THREE.Vector2(-thin, outer)]);
-    const geo = new THREE.ExtrudeGeometry(s, { depth: 0.07, bevelEnabled: true, bevelThickness: 0.015, bevelSize: 0.015, bevelSegments: 1 });
+    const geo = new THREE.ExtrudeGeometry(s, { depth: 0.07, bevelEnabled: true, bevelThickness: 0.015, bevelSize: 0.015, bevelSegments: 2 });
     geo.rotateY(Math.PI / 2);
     for (let k = 0; k < n; k++) {
       const m = mesh(geo, rimMat, x, 0, 0);
@@ -496,21 +561,21 @@ function rimFace(face, design, rimR, r, rimMat, capMat) {
       h.absarc(Math.cos(a) * rimR * 0.6, Math.sin(a) * rimR * 0.6, rimR * 0.15, 0, Math.PI * 2, true);
       s.holes.push(h);
     }
-    const dish = new THREE.ExtrudeGeometry(s, { depth: 0.04, bevelEnabled: true, bevelThickness: 0.02, bevelSize: 0.02, bevelSegments: 1, curveSegments: 6 });
+    const dish = new THREE.ExtrudeGeometry(s, { depth: 0.04, bevelEnabled: true, bevelThickness: 0.02, bevelSize: 0.02, bevelSegments: 2, curveSegments: 7 });
     dish.rotateY(Math.PI / 2);
     face.add(mesh(dish, rimMat, -0.03, 0, 0));
-    const dome = mesh(new THREE.SphereGeometry(rimR * 0.3, 12, 5, 0, Math.PI * 2, 0, Math.PI / 2), capMat, 0.02, 0, 0);
+    const dome = mesh(new THREE.SphereGeometry(rimR * 0.3, 24, 8, 0, Math.PI * 2, 0, Math.PI / 2), capMat, 0.02, 0, 0);
     dome.rotation.z = -Math.PI / 2;
     dome.scale.y = 0.5;
     face.add(dome);
     lugs(5, rimR * 0.42);
   } else if (design === 'disco') {
     const lip = new THREE.LatheGeometry([[rimR * 0.72, 0], [rimR * 0.76, 0.04], [rimR * 0.98, 0.06], [rimR * 1.02, 0.03], [rimR, -0.01]]
-      .map(([a, b]) => new THREE.Vector2(a, b)), 18);
+      .map(([a, b]) => new THREE.Vector2(a, b)), 40);
     lip.rotateZ(-Math.PI / 2);
     face.add(mesh(lip, METAL('#dfe2e8'), 0.02, 0, 0));
     disk(rimR * 0.76, 0.04, rimMat, -0.04);
-    const dome = mesh(new THREE.SphereGeometry(rimR * 0.36, 12, 5, 0, Math.PI * 2, 0, Math.PI / 2), METAL('#dfe2e8'), -0.02, 0, 0);
+    const dome = mesh(new THREE.SphereGeometry(rimR * 0.36, 28, 8, 0, Math.PI * 2, 0, Math.PI / 2), METAL('#dfe2e8'), -0.02, 0, 0);
     dome.rotation.z = -Math.PI / 2;
     dome.scale.y = 0.55;
     face.add(dome);
@@ -528,7 +593,7 @@ function rimFace(face, design, rimR, r, rimMat, capMat) {
     for (let k = 0; k < 12; k++) {
       const v = new THREE.Group();
       v.rotation.x = k / 12 * Math.PI * 2;
-      const vane = box(0.06, rimR * 0.52, r * 0.06, METAL('#8d919b'), 0, rimR * 0.62, 0);
+      const vane = rbox(0.06, rimR * 0.52, r * 0.07, METAL('#8d919b'), 0, rimR * 0.62, 0, 0.02);
       vane.rotation.y = 0.6;
       v.add(vane);
       face.add(v);
@@ -561,14 +626,14 @@ function makeWheel({ r, w, style = 'spokes', rim = '#c9ccd4', cap = '#d62828', t
   const rimMat = design === 'palo' ? S(rim, { roughness: 0.85 }) : METAL(rim);
   const capMat = METAL(cap);
   // barrel, brake disc and caliper show through the open designs
-  const barrel = new THREE.CylinderGeometry(rimR * 0.98, rimR * 0.98, w * 0.84, 16, 1, true);
+  const barrel = new THREE.CylinderGeometry(rimR * 0.98, rimR * 0.98, w * 0.84, 32, 1, true);
   barrel.rotateZ(Math.PI / 2);
   g.add(mesh(barrel, METAL('#4a4d55')));
   if (design !== 'palo') {
-    const lip = new THREE.TorusGeometry(rimR * 0.98, r * 0.045, 4, 18);
+    const lip = new THREE.TorusGeometry(rimR * 0.98, r * 0.045, 8, 40);
     lip.rotateY(Math.PI / 2);
     g.add(mesh(lip, rimMat, w * 0.42, 0, 0));
-    const disc = new THREE.CylinderGeometry(rimR * 0.68, rimR * 0.68, 0.05, 16);
+    const disc = new THREE.CylinderGeometry(rimR * 0.68, rimR * 0.68, 0.05, 28);
     disc.rotateZ(Math.PI / 2);
     g.add(mesh(disc, METAL('#7b7f88'), w * 0.08, 0, 0));
     const caliper = rbox(0.14, rimR * 0.36, rimR * 0.5, capMat, w * 0.18, rimR * 0.42, -rimR * 0.2, 0.03);
@@ -577,7 +642,7 @@ function makeWheel({ r, w, style = 'spokes', rim = '#c9ccd4', cap = '#d62828', t
   }
   if (design === 'disco') {
     // whitewall ring on the outer sidewall
-    const wall = new THREE.RingGeometry(rimR * 1.06, rimR + (r - rimR) * 0.6, 22);
+    const wall = new THREE.RingGeometry(rimR * 1.06, rimR + (r - rimR) * 0.6, 44);
     wall.rotateY(Math.PI / 2);
     g.add(mesh(wall, M('#f4f1e6', DECAL), w / 2 + 0.004, 0, 0));
   }
@@ -746,7 +811,7 @@ function cabin(car, o) {
   pana.armL.rotation.set(0.2, 0, 1.3);     // elbow out the open window
   pana.armR.rotation.set(-1.15, 0, 0.25);  // hand on the wheel
   const sy = pana.group.position.y;
-  const wheel = mesh(new THREE.TorusGeometry(0.24, 0.045, 6, 14), DARK(), 0.4, sy + 0.42, o.driverZ + 0.52);
+  const wheel = mesh(new THREE.TorusGeometry(0.24, 0.045, 10, 28), DARK(), 0.4, sy + 0.42, o.driverZ + 0.52);
   wheel.rotation.x = -0.45;
   c.add(wheel);
   c.add(tube([0.4, sy + 0.42, o.driverZ + 0.52], [0.4, fb[1] + 0.2, fb[0] - 0.2], 0.04, DARK()));
@@ -809,6 +874,7 @@ function flower(size) {
 }
 
 export {
+  batchStatic, batchParts, bakeGeometry,
   bevelBox, squareLamp, towLoop, bodyShell,
   S, PAINT, LENS, AMBER, TAIL, roundedPath, archedSide, extrudeX, crossings, RB, rbox, shellBody, archFlare, domeLamp, rectLamp, profileFit,
   M, DECAL, CHROME, DARK, mesh, box, profile, strut, pane, tube, canvasMat, roundel, plate, bothSides, spot, makeWheel, fender, rig, detachable, cabin, lightBar, spareWheel, roundLamp, venezuelaFlag, flower,
