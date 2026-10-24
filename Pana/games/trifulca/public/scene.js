@@ -1,3 +1,4 @@
+import { createCombatImpacts } from './combat-impact.js';
 // Trifulca's 3D world: the chosen arena, every pana (the two fighters in
 // gloves and helmets, the rest standing as the ring), NPC neighbours, the ref
 // in his llanero hat, and the boxing-TV camera: side-on to the fighters,
@@ -38,6 +39,7 @@ export function createTrifulcaScene(canvas, { me = () => null } = {}) {
   const hemi = scene.children.find(o => o.isHemisphereLight);
   const sky = scene.children.find(o => o.material?.uniforms?.daylight);
   const own = new THREE.Group(); scene.add(own);
+  const impacts = createCombatImpacts(scene);
   const puffs = new Puffs(scene), rings = new Shockwaves(scene);
   const panas = new Map(), props = new Map();
   let arena = null, arenaId = null, npcs = [], lampLights = [], ref = null, current = null, time = 0;
@@ -103,6 +105,7 @@ export function createTrifulcaScene(canvas, { me = () => null } = {}) {
   // The fight's events: hits rock heads, the camera punches in, the arena answers.
   function react(e) {
     const entry = panas.get(e.id), who = entry?.pana, at = entry?.pos;
+    if (at && ['hit', 'trompon', 'block'].includes(e.type)) impacts.spawn(at.clone().add(v(0, (e.move === 'sweep' ? .4 : 1.65) + floor(), 0)), e.type, e.move);
     // Which side the blow came from, in the victim's facing frame (for stagger).
     const side = (by) => {
       const from = panas.get(by)?.pos;
@@ -153,7 +156,7 @@ export function createTrifulcaScene(canvas, { me = () => null } = {}) {
     const t0 = replay.frames[0]?.t ?? 0;
     const replayFrame = replay.on && replay.clock >= 0 ? replay.frames.find(f => f.t - t0 >= replay.clock) || replay.frames.at(-1) : null;
     const bodies = replayFrame ? replayFrame.bodies : state.phase === 'lobby' || state.phase === 'finished' ? [] : state.bodies;
-    for (const b of bodies) out.set(b.id, { x: b.x, z: b.z, y: b.bench ? 0 : floor(), h: b.h, view: { act: b.bench ? 'bench' : b.act, at: b.at, moving: b.moving, dodgeDir: b.dodgeDir, holding: !!b.prop }, corner: b.corner });
+    for (const b of bodies) out.set(b.id, { x: b.x, z: b.z, y: b.bench ? 0 : floor(), h: b.h, view: { act: b.bench ? 'bench' : b.act, at: b.at, moving: b.moving, dodgeDir: b.dodgeDir, holding: !!b.prop, tumbleKind: b.tumbleKind, stun: b.stun, motion: b.motion }, corner: b.corner });
     // Mano de caballero: both fighters walk in for the glove bump and the hug.
     if (state.phase === 'after' && state.result?.mano && !replayFrame && state.bodies.length === 2) {
       const [a, b] = state.bodies, mx = (a.x + b.x) / 2, mz = (a.z + b.z) / 2;
@@ -174,6 +177,7 @@ export function createTrifulcaScene(canvas, { me = () => null } = {}) {
   }
 
   function frame(dt) {
+    impacts.update(dt, camera);
     time += dt; zoomT = Math.max(0, zoomT - dt); shake = Math.max(0, shake - dt * 1.4);
     if (replay.on && current?.phase === 'after') { replay.clock += dt * .4; if (replay.clock > replay.frames.at(-1).t - replay.frames[0].t) replay.on = false; }
     else if (current?.phase !== 'after') replay.on = false;
@@ -201,7 +205,7 @@ export function createTrifulcaScene(canvas, { me = () => null } = {}) {
     }
     // Record the fight for the replay.
     if (current?.phase === 'fight') {
-      frames.push({ t: time, bodies: current.bodies.map(b => ({ id: b.id, x: b.x, z: b.z, h: b.h, act: b.act, at: b.at, moving: b.moving, dodgeDir: b.dodgeDir, corner: b.corner, bench: b.bench, out: b.out })) });
+      frames.push({ t: time, bodies: current.bodies.map(b => ({ id: b.id, x: b.x, z: b.z, h: b.h, act: b.act, at: b.at, moving: b.moving, dodgeDir: b.dodgeDir, corner: b.corner, bench: b.bench, out: b.out, tumbleKind: b.tumbleKind, stun: b.stun, motion: b.motion })) });
       while (frames.length && frames[0].t < time - 6) frames.shift();
     }
     for (const n of npcs) {
@@ -339,6 +343,7 @@ export function createTrifulcaScene(canvas, { me = () => null } = {}) {
   }
 
   function dispose() {
+    impacts.dispose();
     for (const entry of panas.values()) entry.pana.dispose();
     for (const entry of props.values()) entry.model.userData.dispose?.();
     npcs.forEach(n => n.dispose()); ref?.dispose(); arena?.dispose(); lampLights.forEach(l => l.removeFromParent());

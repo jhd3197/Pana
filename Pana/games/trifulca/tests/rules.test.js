@@ -227,7 +227,7 @@ test('a restore drops panas who left; a fighter who leaves loses', () => {
 });
 
 test('junk input is a released stick and no presses', () => {
-  assert.deepEqual(cleanInput({ x: 9, z: 'up', g: 1, gp: 300, e: -1 }), { x: 1, z: 0, g: false, b: false, gp: 44, e: 255, a: 0, t: 0 });
+  assert.deepEqual(cleanInput({ x: 9, z: 'up', g: 1, gp: 300, e: -1 }), { x: 1, z: 0, g: false, b: false, gp: 44, e: 255, a: 0, t: 0, k: 0, s: 0, v: 0 });
   assert.equal(titlesFor([]).length, 0);
 });
 

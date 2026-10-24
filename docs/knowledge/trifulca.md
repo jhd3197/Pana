@@ -210,3 +210,38 @@ so a quick dodge press could disappear. Committed attacks retain recovery.
 The HUD warns “Está cargando” first and says “ESQUIVA” only when a fresh
 dodge can cover the upcoming heavy impact; prompting at windup start made an
 immediate correct-looking response expire before contact.
+
+
+## Authored combat motion and new moves
+
+`combat-motion.js` adapts the supplied capy motion study's cross, hook,
+uppercut, side kick, sweep and throw keyframes. `combat-rig.js` applies them
+in sculpt units to the existing player avatar, clothes, gloves and helmet.
+Authored contact poses are pinned to `attack-timing.js`; the contact hold
+never pauses host simulation. An authoritative `motion` counter selects the same punch style and hand on
+both clients and in replays. Local lunges are bounded because world-space
+movement and reach still belong to the host. Neck stabilization is bounded;
+leg planting relaxes for kicks and tumbles. Leaving an authored pose restores
+persistent scale, ear and leg channels before the crowd or prop poses resume.
+
+New controls are **I / RT** patada (`kick`), **U / LT** barrida (`sweep`),
+**O / RB** volteo (`toss`); **LB** now covers. Touch has dedicated buttons.
+All three use modulo-256 press counters (`k`, `s`, `v`) through LiveRoom,
+require free hands and an idle/guard stance, and cancel an uncommitted punch
+charge. Costs are 20/25/30 aguante, reach 1.9/1.45/1.1 m and mareo 19/13/17.
+Kick and sweep are blockable; the close throw beats guard. Dodging any of the
+three exposes its attacker and grants the ordinary counter window. Bots use
+the same inputs. Each clean new move earns two scorecard points.
+
+Sweep and throw reactions use `tumble`, with the source clip compressed into
+0.7/0.9 seconds of recovery. This is a brief trip, not a scored caída: only a
+clean hit on an already dizzy opponent starts the existing knockdown count.
+`tumbleKind` and `stun` travel in snapshots and replay frames. New moves cannot
+be cancelled by picking up props or tagging a partner during recovery.
+
+`combat-impact.js` pools eight camera-facing mesh bursts with canvas text
+textures; only actual host hit/block events create them. No reference PNG or
+bundled Three.js copy is served. Unit tests cover timing, recovery, guard,
+dodge, range, stamina, mirroring and restored state. The two-client suite
+sends I/U/O from the guest and observes the matching hit and score on both
+clients.

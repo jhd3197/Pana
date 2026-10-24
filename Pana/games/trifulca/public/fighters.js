@@ -1,3 +1,5 @@
+import { combatPose } from './combat-motion.js';
+import { createCombatRig } from './combat-rig.js';
 import { attackExtension } from './attack-timing.js';
 // A pana in Trifulca: the player's own character with the corner's gloves and
 // the wardrobe's kart helmet when fighting, posed from the fight state (guard,
@@ -42,6 +44,7 @@ export function createPana(avatar, { seed = 1, name = '', me = false } = {}) {
     const glove = boxingGlove({ side: i ? -1 : 1 }); glove.scale.setScalar(1 / SCULPT);
     glove.position.set(0, -.86, .04); glove.visible = false; inkOutlines(glove); arm.add(glove); return glove;
   });
+  const applyCombat = createCombatRig(character, gloves, base);
   // The wardrobe's kart helmet goes on to fight; the pana's own hat comes off.
   const ownHats = character.head.children.filter(o => o.name.startsWith('hat:'));
   const helmet = createAccessories(character, { hat: 'casco', glasses: null, neck: null, back: null, extras: {} });
@@ -64,7 +67,7 @@ export function createPana(avatar, { seed = 1, name = '', me = false } = {}) {
   const pick = (list) => list[Math.floor(Math.random() * list.length)];
   function startMove(act, previous) {
     if (act === 'jab') move = { hand: ++jabs % 2, style: pick(['recto', 'recto', 'gancho', 'upper']) };
-    else if (act === 'wind' || (act === 'trompon' && previous !== 'wind')) move = { hand: Math.random() < .7 ? 1 : 0, style: pick(['volado', 'upper', 'molino']) };
+    else if (act === 'wind' || (act === 'trompon' && previous !== 'wind')) move = { hand: Math.random() < .7 ? 1 : 0, style: pick(['recto', 'gancho', 'upper']) };
     else if (act === 'block') move = { style: pick(['alta', 'cruz', 'concha']) };
     else if (act === 'taunt') move = { style: pick(['ven', 'baile', 'pecho']) };
     else if (act === 'win') move = { style: pick(['arriba', 'flex', 'baile']) };
@@ -102,8 +105,11 @@ export function createPana(avatar, { seed = 1, name = '', me = false } = {}) {
     time += dt;
     const act = view.act || 'crowd', at = view.at || 0;
     if (act !== lastAct || at + 1e-4 < lastAt) startMove(act, lastAct);
+    if (Number.isInteger(view.motion) && ['jab', 'wind', 'trompon'].includes(act)) {
+      move = { style: ['recto', 'gancho', 'upper'][(Math.abs(seed) + view.motion) % 3], hand: view.motion % 2 };
+    }
     lastAct = act; lastAt = at;
-    character.update(dt, { walk: (view.moving || 0) > .4 ? 1 : 0, dizzy: act === 'dizzy' || act === 'down', open: ['taunt', 'win', 'trompon', 'stun'].includes(act) || cheer > 0 });
+    character.update(dt, { walk: (view.moving || 0) > .4 ? 1 : 0, dizzy: act === 'dizzy' || act === 'down', open: ['taunt', 'win', 'trompon', 'stun', 'kick', 'sweep', 'toss', 'tumble'].includes(act) || cheer > 0 });
     // Springs: head rock and body sway.
     // Integrate small steps so low frame rates cannot amplify a hit into a spin.
     for (let left = dt; left > 0;) {
@@ -178,8 +184,14 @@ export function createPana(avatar, { seed = 1, name = '', me = false } = {}) {
     tilt.position.y = ease(tilt.position.y, lift, kb);
     character.neck.rotation.x = THREE.MathUtils.clamp(wobble * .5, -.35, .35); character.neck.rotation.z = THREE.MathUtils.clamp(sway * .3, -.2, .2);
     character.group.rotation.y = spin;
+    const authored = view.holding ? null : combatPose(act, at, { ...move, windDuration: T.wind, tumbleKind: view.tumbleKind, stun: view.stun });
+    if (authored && act === 'idle') {
+      authored['body.y'] += Math.abs(Math.sin(time * 5.4 + bounce)) * .045;
+      authored['armL.rx'] += Math.sin(time * 10.8 + bounce) * .04;
+    }
+    applyCombat(authored, view.moving || 0);
     if (tag) tag.visible = tagShown && act !== 'down';
-    warn.visible = act === 'wind'; if (warn.visible) warn.scale.set(.7 + Math.sin(time * 30) * .06, .175, 1);
+    warn.visible = act === 'wind' || (['kick', 'sweep', 'toss'].includes(act) && at < T[act].active[0]); if (warn.visible) warn.scale.set(.7 + Math.sin(time * 30) * .06, .175, 1);
   }
 
   function armTargets(act, at, view) {

@@ -6,13 +6,13 @@ import { getSettings, inputAxis } from '/engine/settings.js';
 
 const KEYS = {
   up: ['w', 'arrowup'], down: ['s', 'arrowdown'], left: ['a', 'arrowleft'], right: ['d', 'arrowright'],
-  golpe: ['j', 'z'], cubrir: ['k', 'x'], esquivar: [' ', 'c'], agarrar: ['l', 'v'], dale: ['t'],
+  golpe: ['j', 'z'], cubrir: ['k', 'x'], esquivar: [' ', 'c'], agarrar: ['l', 'v'], dale: ['t'], patada: ['i'], barrida: ['u'], volteo: ['o'],
 };
-const PAD = { golpe: [0], esquivar: [1], agarrar: [2], dale: [3], cubrir: [4, 5, 6, 7] };
+const PAD = { golpe: [0], esquivar: [1], agarrar: [2], dale: [3], cubrir: [4], patada: [7], barrida: [6], volteo: [5] };
 
 export function createControls({ paused = () => false, onBet = () => {} } = {}) {
-  const keys = new Set(), touch = new Set(), counts = { gp: 0, e: 0, a: 0, t: 0 };
-  const COUNTER = { golpe: 'gp', esquivar: 'e', agarrar: 'a', dale: 't' };
+  const keys = new Set(), touch = new Set(), counts = { gp: 0, e: 0, a: 0, t: 0, k: 0, s: 0, v: 0 };
+  const COUNTER = { golpe: 'gp', esquivar: 'e', agarrar: 'a', dale: 't', patada: 'k', barrida: 's', volteo: 'v' };
   const press = (button) => { const k = COUNTER[button]; if (k) counts[k] = (counts[k] + 1) % 256; };
   const named = (key) => Object.keys(KEYS).find(name => KEYS[name].includes(key));
   let padHeld = new Set();
@@ -42,7 +42,7 @@ export function createControls({ paused = () => false, onBet = () => {} } = {}) 
   canvas?.addEventListener('contextmenu', (event) => event.preventDefault());
   addEventListener('blur', () => mouse.clear());
   drawIcons();
-  for (const id of ['up', 'down', 'left', 'right', 'golpe', 'cubrir', 'esquivar', 'agarrar', 'dale']) {
+  for (const id of ['up', 'down', 'left', 'right', 'golpe', 'cubrir', 'esquivar', 'agarrar', 'dale', 'patada', 'barrida', 'volteo']) {
     const button = document.getElementById(`touch-${id}`); if (!button) continue;
     holdButton(button, { down: () => { touch.add(id); press(id); }, up: () => touch.delete(id), paused });
   }

@@ -53,7 +53,7 @@ body:has(#tutorial:not([hidden])) .fight-feedback--right { top: 200px; }
 .tutorial-keys::before { content: 'Haz:'; font-weight: 900; font-size: 12px; }
 .tutorial-keys .pk-kbd { font-size: 14px; }
 .tutorial-foot button { border-radius: 0; }
-.keys, .pana-pad-prompts { bottom: 18px; background: var(--hud-plate); padding: 7px; gap: 6px; box-shadow: 5px 5px var(--hud-ink); flex-wrap: nowrap; max-width: calc(100vw - 260px); }
+.keys, .pana-pad-prompts { bottom: 18px; background: var(--hud-plate); padding: 7px; gap: 6px; box-shadow: 5px 5px var(--hud-ink); flex-wrap: wrap; width: max-content; max-width: calc(100vw - 40px); }
 .keys span, .pana-pad-prompts > span { border: 0; border-radius: 0; padding: 8px 12px; background: #ffffff0c; display: flex; flex-direction: column; justify-content: center; gap: 5px; font-size: 11px; font-weight: 900; text-align: center; }
 .keys span .pk-kbd, .pana-pad-prompts kbd { border-radius: 4px; padding: 5px 8px; background: var(--pk-text); color: var(--hud-ink); border: 0; min-width: 16px; text-align: center; }
 .keys [data-key='golpe'] kbd, .pana-pad-prompts > span:nth-child(2) kbd { background: var(--pad-a); }
@@ -108,7 +108,7 @@ body[data-phase='intro'] .bets, body[data-phase='intro'] .role { z-index: 7; }
 
 .caidas { position: relative; }
 .caidas::after { content: attr(data-label); position: absolute; top: 22px; right: 0; white-space: nowrap; font: 900 9px var(--pk-sans); color: var(--pk-text); text-shadow: 1px 1px var(--hud-ink); }
-.keys span { align-items: center; min-width: 65px; }
+.keys span { align-items: center; min-width: 55px; padding: 7px 9px; }
 .tutorial-dots li { background: #ffffff26; }
 .tutorial-dots li.is-done { background: var(--aguante); }.tutorial-dots li.is-now { background: var(--gold); }
 @media (max-width: 600px) { .caidas::after { top: -2px; left: 42px; right: auto; }.side--right .caidas::after { left: auto; right: 42px; } }

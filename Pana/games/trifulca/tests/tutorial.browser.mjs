@@ -21,6 +21,16 @@ try {
     const { createPana } = await import('/g/trifulca/fighters.js');
     const fighter = createPana({});
     try {
+      for (const act of ['kick', 'sweep', 'toss', 'tumble']) {
+        for (let at = 0; at < 1.2; at += .05) {
+          fighter.update(.05, { act, at, tumbleKind: 'toss', stun: .9 });
+          fighter.root.updateMatrixWorld(true);
+          fighter.root.traverse(o => { if (!o.matrixWorld.elements.every(Number.isFinite)) throw new Error('Invalid combat rig transform'); });
+        }
+        fighter.update(.016, { act: 'crowd' });
+        if (fighter.character.body.scale.y !== 1 || fighter.character.body.position.z !== 0
+          || fighter.character.legs.some(leg => leg.rotation.y !== 0 || leg.rotation.z !== 0 || leg.scale.y !== 1)) throw new Error('Combat pose leaked into crowd');
+      }
       for (let i = 0; i < 90; i++) {
         if (i % 5 === 0) fighter.hit(1.3, true);
         fighter.update(.2, { act: 'stun', at: .1 });
@@ -28,6 +38,23 @@ try {
         if (!Number.isFinite(neck.rotation.x) || Math.abs(neck.rotation.x) > .351 || Math.abs(neck.rotation.z) > .201) throw new Error('Unbounded hit reaction');
       }
     } finally { fighter.dispose(); }
+  });
+  await page.evaluate(() => {
+    const original = navigator.getGamepads;
+    const pad = { connected: true, axes: [0, 0, 0, 0], buttons: Array.from({ length: 16 }, () => ({ pressed: false })) };
+    navigator.getGamepads = () => [pad];
+    try {
+      for (const [button, counter] of [[7, 'k'], [6, 's'], [5, 'v']]) {
+        const before = trifulcaDebug.controls.read()[counter];
+        pad.buttons[button].pressed = true;
+        const input = trifulcaDebug.controls.read();
+        if (input[counter] !== (before + 1) % 256 || input.b) throw new Error('New pad move also blocked or missed its counter');
+        if (trifulcaDebug.controls.read()[counter] !== input[counter]) throw new Error('Held trigger repeated');
+        pad.buttons[button].pressed = false; trifulcaDebug.controls.read();
+      }
+      pad.buttons[4].pressed = true;
+      if (!trifulcaDebug.controls.read().b) throw new Error('LB did not guard');
+    } finally { navigator.getGamepads = original; trifulcaDebug.controls.read(); }
   });
   await page.locator('#start').click();   // first time alone: the tutorial
   await waitFor(page, () => trifulcaDebug.room.state.tutorial?.step === 0);

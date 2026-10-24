@@ -8,6 +8,11 @@ becomes the GitHub release's notes.
 
 ## Unreleased
 
+- **Trifulca estrena patadas, barridas, volteos y golpes con más cuerpo.**
+  I da una patada, U barre y O voltea al rival: gastan aguante y funcionan
+  en línea, con botones táctiles y control. Nuevas poses y estallidos de
+  cómic acompañan cada golpe.
+
 - **En Carreritas en línea los carros de tus panas se ven fluidos.**
   Ya no tiemblan al avanzar: se mueven tan suave como el tuyo.
 

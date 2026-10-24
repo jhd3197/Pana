@@ -1,6 +1,9 @@
 // Shared by the procedural pose and rules: the fist reaches its target at
 // impact, stays extended during contact, then returns to guard.
 export const ATTACK_TIMING = {
+  kick: { impact: .38, release: .46, total: 1.1 },
+  sweep: { impact: .4, release: .48, total: 1.2 },
+  toss: { impact: .28, release: .36, total: .9 },
   jab: { impact: .1, release: .18, total: .36 },
   trompon: { impact: .12, release: .18, total: .5 },
   grab: { impact: .14, release: .24, total: .55 },

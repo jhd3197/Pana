@@ -14,7 +14,7 @@ export function fightStats(target, state) {
   const table = node('table', 'fight-stats'), head = node('tr'), body = node('tbody');
   head.append(node('th', '', 'Esta pelea'), ...state.bodies.map(b => node('th', '', state.players.find(p => p.id === b.id)?.name || 'Pana')));
   const thead = node('thead'); thead.append(head); table.append(thead, body);
-  for (const [label, value] of [['Jabs acertados', b => b.score?.jabs || 0], ['Trompones acertados', b => b.score?.trompones || 0], ['Golpes cubiertos', b => b.score?.blocks || 0], ['Caídas provocadas', b => b.score?.caidas || 0]]) {
+  for (const [label, value] of [['Jabs acertados', b => b.score?.jabs || 0], ['Trompones acertados', b => b.score?.trompones || 0], ['Patadas / barridas / volteos', b => (b.score?.kicks || 0) + (b.score?.sweeps || 0) + (b.score?.tosses || 0)], ['Golpes cubiertos', b => b.score?.blocks || 0], ['Caídas provocadas', b => b.score?.caidas || 0]]) {
     const row = node('tr'); row.append(node('th', '', label), ...state.bodies.map(b => node('td', '', String(value(b))))); body.append(row);
   }
   target.replaceChildren(table);
@@ -28,7 +28,7 @@ export function createFightFeedback() {
       const prev = combos.get(event.by);
       combos.set(event.by, { count: (prev?.time > 0 ? prev.count : 0) + 1, time: 1.8 }); combos.delete(event.id);
     }
-    const word = { hit: event.contra ? '¡CONTRA!' : '¡PUM!', trompon: '¡TROMPÓN!', block: '¡CUBIERTO!', guardbreak: '¡SIN GUARDIA!', dodged: '¡ESQUIVA!' }[event.type];
+    const word = { hit: event.contra ? '¡CONTRA!' : ({ kick: '¡PATADA!', sweep: '¡BARRIDA!', toss: '¡VOLTEO!' }[event.move] || '¡PUM!'), trompon: '¡TROMPÓN!', block: '¡CUBIERTO!', guardbreak: '¡SIN GUARDIA!', dodged: '¡ESQUIVA!' }[event.type];
     if (word) flashes.set(side(state, event.id), { word, time: .8 });
   }
   function tick(dt, state) {

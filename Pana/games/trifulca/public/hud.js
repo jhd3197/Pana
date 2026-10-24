@@ -29,9 +29,9 @@ export const LESSONS = {
 const deviceText = text => {
   const device = inputState().device;
   if (device === 'keyboard') return text;
-  const touch = device === 'touch', keys = touch ? { Espacio: 'Esquivar', J: 'Golpe', K: 'Cubrir', L: 'Agarrar', T: '¡Dale!' } : { Espacio: 'B', J: 'A', K: 'LT / RT', L: 'X', T: 'Y' };
+  const touch = device === 'touch', keys = touch ? { Espacio: 'Esquivar', J: 'Golpe', K: 'Cubrir', L: 'Agarrar', T: '¡Dale!', I: 'Patada', U: 'Barrida', O: 'Volteo' } : { Espacio: 'B', J: 'A', K: 'LB', L: 'X', T: 'Y', I: 'RT', U: 'LT', O: 'RB' };
   return text.replace(/ \(o clic (?:izquierdo|derecho)\)/g, '').replace(/D o la flecha derecha/g, touch ? 'el botón Derecha' : 'el stick izquierdo hacia la derecha')
-    .replace(/\b(?:Espacio|J|K|L|T)\b/g, key => touch ? keys[key] : formatPadLabel(keys[key]));
+    .replace(/\b(?:Espacio|J|K|L|T|I|U|O)\b/g, key => touch ? keys[key] : formatPadLabel(keys[key]));
 };
 const el = (tag, className = '', text = '') => Object.assign(document.createElement(tag), { className, textContent: text });
 
@@ -214,12 +214,12 @@ export function createHud({ me, voice = () => true }) {
   // The key bar lights each button while it is pressed.
   function keys(c) {
     const bar = $('keys'); if (bar.hidden) return;
-    const on = { golpe: c.g || c.gp !== lastKeys.gp, cubrir: c.b, esquivar: c.e !== lastKeys.e, agarrar: c.a !== lastKeys.a, dale: c.t !== lastKeys.t, mover: !!(c.sx || c.sy) };
+    const on = { golpe: c.g || c.gp !== lastKeys.gp, cubrir: c.b, esquivar: c.e !== lastKeys.e, agarrar: c.a !== lastKeys.a, dale: c.t !== lastKeys.t, patada: c.k !== lastKeys.k, barrida: c.s !== lastKeys.s, volteo: c.v !== lastKeys.v, mover: !!(c.sx || c.sy) };
     for (const span of bar.children) {
       const k = span.dataset.key;
       if (on[k]) { span.classList.add('is-on'); clearTimeout(span._t); span._t = setTimeout(() => span.classList.remove('is-on'), c.g || c.b || k === 'mover' ? 90 : 220); }
     }
-    lastKeys = { gp: c.gp, e: c.e, a: c.a, t: c.t };
+    lastKeys = { gp: c.gp, e: c.e, a: c.a, t: c.t, k: c.k, s: c.s, v: c.v };
   }
   let lastKeys = {};
 
@@ -230,7 +230,7 @@ export function createHud({ me, voice = () => true }) {
       if (myBody.out) return 'Quedaste fuera: mira cómo termina';
       if (myBody.bench) return 'En la esquina: recuperas el aire. Tu pareja te toca con L';
       const extra = mode === 'libre' ? ' · L junto a una silla o caja: agarrarla, L otra vez: lanzarla' : mode === 'parejas' ? ' · L junto a tu pareja: relevo' : ' · L agarrar';
-      return `J golpe (mantén: trompón) · K cubrirse · Espacio esquivar${extra} · T ¡dale!`;
+      return `J golpe (mantén: trompón) · K cubrirse · Espacio esquivar${extra} · I patada · U barrida · O volteo`;
     }
     return phase === 'after' && myBody && !mine?.mano ? 'L: mano de caballero' : '';
   }

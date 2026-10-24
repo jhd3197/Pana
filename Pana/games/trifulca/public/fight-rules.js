@@ -6,6 +6,9 @@ import { clamp } from '/engine/random.js';
 
 // Seconds and metres. Every attack shows its windup before it can land.
 export const T = {
+  kick: { active: [ATTACK_TIMING.kick.impact, ATTACK_TIMING.kick.release], total: ATTACK_TIMING.kick.total, reach: 1.9, mareo: 19, push: 4, stun: .4, cost: 20 },
+  sweep: { active: [ATTACK_TIMING.sweep.impact, ATTACK_TIMING.sweep.release], total: ATTACK_TIMING.sweep.total, reach: 1.45, mareo: 13, push: 2.4, stun: .7, cost: 25 },
+  toss: { active: [ATTACK_TIMING.toss.impact, ATTACK_TIMING.toss.release], total: ATTACK_TIMING.toss.total, reach: 1.1, mareo: 17, push: 3, stun: .9, cost: 30 },
   hold: .16,            // golpe held longer than this is a trompón
   jab: { active: [ATTACK_TIMING.jab.impact, ATTACK_TIMING.jab.release], total: .36, reach: 1.4, mareo: 9, push: 2, stun: .24 },
   wind: .43,            // .43 windup + .12 extension preserves the .55 s warning
@@ -13,10 +16,14 @@ export const T = {
   grab: { active: [ATTACK_TIMING.grab.impact, ATTACK_TIMING.grab.release], total: .55, reach: 1.3, mareo: 5, push: 7, stun: .55 },
   dodge: { total: .42, safe: [.03, .34], speed: 4.6 },
   taunt: 1, rise: 1, dizzy: 2.1, counter: 6, contra: .8, contraMareo: 14,
-  chip: { jab: 1.5, trompon: 6 }, guard: { jab: 12, trompon: 40 },
+  chip: { jab: 1.5, trompon: 6, kick: 3, sweep: 2 }, guard: { jab: 12, trompon: 40, kick: 22, sweep: 18 },
 };
 // Cue only when a fresh dodge can still cover the heavy punch's impact.
-export const dodgeCue = b => b?.act === 'wind' ? b.at >= T.wind + T.trompon.active[0] - T.dodge.safe[1] + .04 : b?.act === 'trompon' && !b.landed && b.at < T.trompon.active[0];
+export const dodgeCue = b => {
+  if (b?.act === 'wind') return b.at >= T.wind + T.trompon.active[0] - T.dodge.safe[1] + .04;
+  if (!['trompon', 'kick', 'sweep', 'toss'].includes(b?.act) || b.landed) return false;
+  return b.at < T[b.act].active[0] && b.at >= Math.max(0, T[b.act].active[0] - T.dodge.safe[1] + .04);
+};
 export const SPEED = { forward: 2.7, back: 2.2, side: 2.4 };
 export const MAREO_MAX = 100, MAREO_CALMA = 75, KO_CAIDAS = 3, COUNT_STEP = .85;
 export const BODY_GAP = .85;
@@ -57,26 +64,29 @@ export function newBody(id, corner, arena, team = corner) {
   const a = CORNER_ANGLE[corner] ?? 0, start = arena.shape === 'square' ? 1.7 : 1.9;
   const x = Math.round(Math.sin(a) * start * 1000) / 1000, z = Math.round(Math.cos(a) * start * 1000) / 1000;
   return { id, corner, team, x, z, h: Math.atan2(-x, -z), vx: 0, vz: 0,
-    act: 'idle', at: 0, landed: false, charge: -1, buffer: 0, dodgeDir: 0,
+    act: 'idle', at: 0, motion: 0, landed: false, charge: -1, buffer: 0, dodgeDir: 0,
     mareo: 0, aguante: 100, stun: 0, caidas: 0, inv: 0, outside: 0,
     down: null, moving: 0, blockHit: 0, lastHit: 9, foe: null, prop: null, out: false, bench: false, downBy: null,
-    score: { jabs: 0, trompones: 0, caidas: 0, forward: 0, blocks: 0 }, thrown: 0 };
+    score: { kicks: 0, sweeps: 0, tosses: 0, jabs: 0, trompones: 0, caidas: 0, forward: 0, blocks: 0 }, thrown: 0 };
 }
 // Who is actually fighting now: not knocked out of a free-for-all, not
 // waiting on the apron for a tag.
 export const inRing = (b) => !b.out && !b.bench;
 
-const BUSY = new Set(['jab', 'wind', 'trompon', 'grab', 'dodge', 'stun', 'dizzy', 'down', 'rise', 'taunt', 'open', 'throw']);
+const BUSY = new Set(['kick', 'sweep', 'toss', 'tumble', 'jab', 'wind', 'trompon', 'grab', 'dodge', 'stun', 'dizzy', 'down', 'rise', 'taunt', 'open', 'throw']);
 const canAct = (b) => !BUSY.has(b.act);
-const setAct = (b, act) => { b.act = act; b.at = 0; b.landed = false; };
+const setAct = (b, act) => {
+  if (['jab', 'wind', 'kick', 'sweep', 'toss'].includes(act)) b.motion = (b.motion || 0) + 1;
+  b.act = act; b.at = 0; b.landed = false;
+};
 const facing = (b) => ({ fx: Math.sin(b.h), fz: Math.cos(b.h) });
 const shake = (b, pushX, pushZ) => { b.vx += pushX; b.vz += pushZ; };
 
 // The button edges a tick brings: counters that changed since last time.
 export function presses(last, input) {
   const delta = (k) => ((input[k] | 0) - (last[k] | 0) + 256) % 256;
-  const out = { gp: delta('gp'), e: delta('e'), a: delta('a'), t: delta('t') };
-  for (const k of ['gp', 'e', 'a', 't']) last[k] = input[k] | 0;
+  const out = { gp: delta('gp'), e: delta('e'), a: delta('a'), t: delta('t'), k: delta('k'), s: delta('s'), v: delta('v') };
+  for (const k of ['gp', 'e', 'a', 't', 'k', 's', 'v']) last[k] = input[k] | 0;
   return out;
 }
 
@@ -84,12 +94,17 @@ export function presses(last, input) {
 export function control(b, input, press, emit) {
   if (b.act === 'down') {
     // Mash anything to get up before ten.
-    b.down.mash += press.gp + press.e + press.a;
+    b.down.mash += (press.gp || 0) + (press.e || 0) + (press.a || 0) + (press.k || 0) + (press.s || 0) + (press.v || 0);
     return;
   }
   if (press.gp) b.buffer = .2;
   const free = canAct(b) || b.act === 'block';
   if (press.e && free) { b.charge = -1; b.buffer = 0; startDodge(b, input); emit({ type: 'dodge', id: b.id }); return; }
+  if (free && !b.prop) for (const [key, act] of [['k', 'kick'], ['s', 'sweep'], ['v', 'toss']]) {
+    if (!press[key] || b.aguante < T[act].cost) continue;
+    b.charge = -1; b.buffer = 0; b.aguante -= T[act].cost;
+    setAct(b, act); emit({ type: 'move', id: b.id, move: act }); return;
+  }
   if (b.charge >= 0) {
     b.charge += .05;
     if (!input.g && b.charge < T.hold + .05) { b.charge = -1; if (free) startJab(b, emit); }
@@ -138,7 +153,7 @@ const blocksFrom = (b, a) => {
 // One body's attack lands (or not) on the nearest foe it reaches.
 function strike(a, foes, emit) {
   if (a.landed) return;
-  const kind = a.act === 'jab' ? 'jab' : a.act === 'trompon' ? 'trompon' : a.act === 'grab' ? 'grab' : null;
+  const kind = a.act === 'jab' ? 'jab' : a.act === 'trompon' ? 'trompon' : a.act === 'grab' ? 'grab' : ['kick', 'sweep', 'toss'].includes(a.act) ? a.act : null;
   if (!kind) return;
   const spec = T[kind], armed = !!a.prop && kind !== 'grab', reach = spec.reach + (armed ? .35 : 0);
   if (!inWindow(a, spec.active)) return;
@@ -148,10 +163,10 @@ function strike(a, foes, emit) {
   const { fx, fz } = facing(a);
   if (b.act === 'dodge' && invulnerable(b)) {
     // Dodging a trompón opens a counter window: the next punch can't be blocked.
-    if (kind === 'trompon') { setAct(a, 'open'); b.contra = T.contra; emit({ type: 'dodged', id: b.id, by: a.id }); }
+    if (['trompon', 'kick', 'sweep', 'toss'].includes(kind)) { setAct(a, 'open'); b.contra = T.contra; emit({ type: 'dodged', id: b.id, by: a.id }); }
     return;
   }
-  const contra = a.contra > 0 && kind !== 'grab';
+  const contra = a.contra > 0 && kind !== 'grab' && kind !== 'toss';
   if (contra) a.contra = 0;
   if (invulnerable(b)) return;
   if (kind === 'grab') {
@@ -162,7 +177,7 @@ function strike(a, foes, emit) {
     emit({ type: 'shove', id: b.id, by: a.id, broke: wasBlocking });
     return;
   }
-  if (blocksFrom(b, a) && !armed && !contra) {
+  if (blocksFrom(b, a) && kind !== 'toss' && !armed && !contra) {
     addMareo(b, T.chip[kind], emit); b.aguante = Math.max(0, b.aguante - T.guard[kind]); b.score.blocks++;
     shake(b, fx * (kind === 'trompon' ? 4 : 1.2), fz * (kind === 'trompon' ? 4 : 1.2));
     b.blockHit = .25;
@@ -173,15 +188,16 @@ function strike(a, foes, emit) {
   // A clean hit. A jab into a trompón still winding up is a counter; a chair
   // or a crate in the hand goes through the guard and hits harder.
   const counter = kind === 'jab' && b.act === 'wind';
-  if (kind === 'jab') a.score.jabs++; else a.score.trompones++;
+  const scoreKey = { jab: 'jabs', trompon: 'trompones', kick: 'kicks', sweep: 'sweeps', toss: 'tosses' }[kind];
+  a.score[scoreKey] = (a.score[scoreKey] || 0) + 1;
   const wasDizzy = b.act === 'dizzy';
   b.lastHit = 0;
   const push = spec.push * (armed ? 1.3 : 1);
   shake(b, fx * push, fz * push);
-  emit({ type: kind === 'jab' ? 'hit' : 'trompon', id: b.id, by: a.id, counter, contra, armed, x: b.x, z: b.z });
+  emit({ type: kind === 'trompon' ? 'trompon' : 'hit', move: kind, id: b.id, by: a.id, counter, contra, armed, x: b.x, z: b.z });
   if (wasDizzy) { knockDown(b, a, emit); return; }
   addMareo(b, (spec.mareo + (counter ? T.counter : 0) + (contra ? T.contraMareo : 0)) * (armed ? 1.4 : 1), emit);
-  if (b.act !== 'dizzy') { setAct(b, 'stun'); b.stun = spec.stun + (counter ? .15 : 0); }
+  if (b.act !== 'dizzy') { setAct(b, kind === 'sweep' || kind === 'toss' ? 'tumble' : 'stun'); b.tumbleKind = kind; b.stun = spec.stun + (counter ? .15 : 0); }
 }
 
 function addMareo(b, amount, emit) {
@@ -221,13 +237,13 @@ export function stepBodies(bodies, arena, dt, moves, emit) {
       self.h += diff * Math.min(1, dt * (self.act === 'stun' ? 3 : 14));
     }
     // Timed acts end on their own.
-    const ends = { throw: .4, jab: T.jab.total, trompon: T.trompon.total, grab: T.grab.total, dodge: T.dodge.total, taunt: T.taunt, open: T.trompon.open, rise: T.rise };
+    const ends = { kick: T.kick.total, sweep: T.sweep.total, toss: T.toss.total, throw: .4, jab: T.jab.total, trompon: T.trompon.total, grab: T.grab.total, dodge: T.dodge.total, taunt: T.taunt, open: T.trompon.open, rise: T.rise };
     if (self.act === 'wind' && self.at >= T.wind) {
       const overshoot = self.at - T.wind;
       setAct(self, 'trompon'); self.at = overshoot;
       emit({ type: 'swing', id: self.id });
     }
-    else if (self.act === 'stun' && self.at >= self.stun) setAct(self, 'idle');
+    else if ((self.act === 'stun' || self.act === 'tumble') && self.at >= self.stun) setAct(self, 'idle');
     else if (self.act === 'dizzy' && self.at >= T.dizzy) { setAct(self, 'idle'); self.mareo = 55; emit({ type: 'clear', id: self.id }); }
     else if (ends[self.act] && self.at >= ends[self.act]) setAct(self, 'idle');
     const by = self.downBy ?? foe?.id ?? null;
@@ -286,7 +302,7 @@ export function stepBodies(bodies, arena, dt, moves, emit) {
 // The judges' card when the bell rings: clean hits, caídas and pressure.
 export function scorecard(body) {
   const s = body.score;
-  return Math.round((s.jabs + s.trompones * 3 + s.caidas * 6 + s.forward * .35 + s.blocks * .25) * 10) / 10;
+  return Math.round((s.jabs + s.trompones * 3 + (s.kicks || 0) * 2 + (s.sweeps || 0) * 2 + (s.tosses || 0) * 2 + s.caidas * 6 + s.forward * .35 + s.blocks * .25) * 10) / 10;
 }
 
 export { setAct, knockDown, addMareo, canAct, facing };
