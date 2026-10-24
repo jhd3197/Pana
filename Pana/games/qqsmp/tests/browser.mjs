@@ -21,6 +21,40 @@ try {
     };
     (await import('/engine/settings.js')).setSettings({ sound: true, volume: .4 });
   });
+  // Render the actual Web Audio graph, including the shared master gain.
+  const mix = await host.evaluate(async () => {
+    const { sound } = await import('/engine/fx.js');
+    const { createQuizSounds, QUIZ_CUES } = await import('./sounds.js');
+    async function render(cue, { volume = 1, muted = false, speaking = false, stop = false, paused = false } = {}) {
+      const synth = Object.create(sound);
+      synth.ctx = new OfflineAudioContext(1, 96000, 48000); synth.master = null;
+      synth.voices = []; synth.volume = volume; synth.muted = muted;
+      const audio = createQuizSounds(synth); audio.speaking(speaking); audio.play(cue);
+      if (stop) audio.dispose();
+      if (paused) audio.update({ round: 1, index: 0, phase: 'question', timeLeft: 30 }, 0, true);
+      const buffer = await synth.ctx.startRendering(), data = buffer.getChannelData(0);
+      if (!data.every(Number.isFinite)) throw Error('non-finite show audio');
+      const rms = Math.sqrt(data.reduce((sum, v) => sum + v * v, 0) / data.length);
+      const peak = data.reduce((max, v) => Math.max(max, Math.abs(v)), 0);
+      const tail = data.slice(4800).some(v => Math.abs(v) > .00001);
+      audio.dispose();
+      return { rms, peak, tail };
+    }
+    const cues = {};
+    for (const cue of Object.keys(QUIZ_CUES)) cues[cue] = await render(cue);
+    return { cues, quiet: await render('correct', { volume: .25 }),
+      ducked: await render('correct', { speaking: true }),
+      muted: await render('correct', { muted: true }), zero: await render('correct', { volume: 0 }),
+      stopped: await render('victory', { stop: true }), paused: await render('victory', { paused: true }) };
+  });
+  for (const [cue, levels] of Object.entries(mix.cues)) {
+    assert.ok(levels.rms > .0002 && levels.peak < .6, `${cue} is audible without clipping: ${JSON.stringify(levels)}`);
+  }
+  assert.ok(Math.abs(mix.quiet.rms / mix.cues.correct.rms - .25) < .01, 'shared volume scales the show mix');
+  assert.ok(mix.ducked.rms < mix.cues.correct.rms * .4, 'voice playback ducks the effects');
+  assert.equal(mix.muted.rms, 0); assert.equal(mix.zero.rms, 0);
+  assert.equal(mix.stopped.tail, false, 'teardown cancels scheduled fanfare notes');
+  assert.equal(mix.paused.tail, false, 'solo pause cancels scheduled fanfare notes');
   await host.locator('[data-room-option="questions"][data-value="8"]').click();
   await host.locator('[data-room-option="seconds"][data-value="20"]').click();
   await waitFor(guest, () => qqsmpDebug.room.state.options.questions === 8 && qqsmpDebug.room.state.options.seconds === 20);

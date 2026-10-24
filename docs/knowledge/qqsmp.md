@@ -103,3 +103,15 @@ Built on the shared table room (`engine/table-room.js`) and the plaza stage
   host handoff, and follows theme changes. Categories rotate among least-used
   questions so a pack is exhausted before repetition. A new room starts fresh.
   A deck never contains the same question twice, even at a bank-cycle boundary.
+
+## Game-show effects
+
+- `public/sounds.js` contains original short scores synthesized with bass drums,
+  filtered brass, snare rolls and bells. No recordings or external music assets.
+  It uses the shared `sound` context, master output and voice admission.
+- Snapshot keys trigger each question, countdown beat, reveal and victory once.
+  Correct/wrong stings depend on the local outcome only after settlement.
+  The last-vote reveal stays immediate: effects never delay game rules.
+- Narration signals active playback to duck the effects bus. Mute, zero volume,
+  hidden tabs, solo pause and teardown stop scheduled sources; resuming never
+  replays old cues. All source nodes disconnect when they end.

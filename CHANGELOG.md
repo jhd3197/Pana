@@ -8,6 +8,10 @@ becomes the GitHub release's notes.
 
 ## Unreleased
 
+- **QQSMP suena a concurso con redobles, suspense y fanfarrias originales.**
+  Cada pregunta, cuenta atrás, acierto, fallo y victoria tiene su sonido;
+  los efectos bajan de volumen mientras habla el animador.
+
 - **QQSMP revela la respuesta al votar el último pana y la anuncia en voz alta.**
   Puedes corregir tu elección mientras falte alguien; al completar los votos,
   el animador dice la letra y la respuesta correcta sin esperar el reloj.

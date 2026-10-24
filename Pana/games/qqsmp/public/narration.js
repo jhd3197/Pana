@@ -2,19 +2,21 @@ import { onSettings } from '/engine/settings.js';
 import { voiceKey, narrationLines, revealLines } from './voice-key.js';
 
 // One local recording at a time. Audio never controls the shared room clock.
-export function createNarration(button) {
+export function createNarration(button, { onSpeaking = () => {} } = {}) {
   const audio = new Audio();
   audio.preload = 'auto';
   let key = '', current = null, muted = false, disposed = false, pending = false;
   let queue = [], index = 0, generation = 0;
-  const stop = () => { generation++; pending = false; queue = []; audio.pause(); audio.removeAttribute('src'); audio.load(); };
+  const stop = () => { onSpeaking(false); generation++; pending = false; queue = []; audio.pause(); audio.removeAttribute('src'); audio.load(); };
   const playClip = () => {
     if (!current || muted || disposed || index >= queue.length) return;
     pending = false;
     const requested = ++generation;
     audio.src = `./audio/${voiceKey(queue[index])}.mp3`;
     audio.play().catch(error => {
-      if (requested === generation && !disposed && !muted && current && error.name === 'NotAllowedError') pending = true;
+      if (requested !== generation) return;
+      onSpeaking(false);
+      if (!disposed && !muted && current && error.name === 'NotAllowedError') pending = true;
     });
   };
   const play = () => {
@@ -22,7 +24,8 @@ export function createNarration(button) {
     if (!current || muted || disposed) return;
     queue = current; index = 0; playClip();
   };
-  audio.onended = () => { index++; playClip(); };
+  audio.onplaying = () => onSpeaking(true);
+  audio.onended = () => { index++; if (index >= queue.length) onSpeaking(false); else playClip(); };
   const unlock = () => { if (pending) playClip(); };
   addEventListener('pointerdown', unlock);
   addEventListener('keydown', unlock);

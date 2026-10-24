@@ -9,12 +9,18 @@ import { QqsmpRoom } from './network.js';
 import { createRoomOptions } from '/engine/room-options.js';
 import { ROOM_OPTIONS, defaultOptions } from './options.js';
 import { createNarration } from './narration.js';
+import { createQuizSounds } from './sounds.js';
+import { onSettings } from '/engine/settings.js';
 import { LADDER, TOP, SAFE, LETTERS, BETS, BET_LABELS, score, mangos, ranking, resolveAnswer, TITLE_TEXT } from './rules.js';
 
 const $ = (id) => document.getElementById(id), params = new URLSearchParams(location.search);
 const code = roomCode();
-const narration = createNarration($('read-question'));
-let world = null, copying = false, lastDone = '', lastPhase = '', lastClock = 0;
+const showSounds = createQuizSounds(sound, { audible: () => !document.hidden });
+const narration = createNarration($('read-question'), { onSpeaking: value => showSounds.speaking(value) });
+const unsubscribeSound = onSettings(settings => { if (!settings.sound || settings.volume === 0) showSounds.stop(); });
+const hideSounds = () => { if (document.hidden) showSounds.stop(); };
+document.addEventListener('visibilitychange', hideSounds);
+let world = null, copying = false, lastDone = '';
 // What you picked on this question. Snapshots hide everyone's answer until the
 // reveal, your own included, so the screen remembers it here.
 let picked = { key: '', choice: null, copy: null };
@@ -63,7 +69,8 @@ function answer(choice) {
   if (!canAnswer() || me().half?.includes(choice)) return;
   sound.unlock(); copying = false;
   if (room.action('answer', { choice, q: room.state.index })) picked = { key: questionKey(), choice, copy: null };
-  sound.clickDown(); render(room.state);
+  if (room.state.phase === 'question') showSounds.play('lock');
+  render(room.state);
 }
 function comodin(kind) {
   if (!canAnswer() || me().locked || me().used[kind]) return;
@@ -144,6 +151,7 @@ function renderQuestion(state, p) {
 }
 
 function render(state) {
+  showSounds.update(state, room.seat, menu.isOpen && room.members.size <= 1);
   narration.update(state, menu.isOpen && room.members.size <= 1);
   const lobby = state.phase === 'lobby', ended = state.phase === 'finished', p = state.players[room.seat];
   roomOptions.update(state.options, lobby && room.isHost);
@@ -157,13 +165,7 @@ function render(state) {
   // The host's call-outs pop over the podiums once the answer lights up.
   const done = state.phase === 'reveal' && state.reveal?.done ? `${state.round}:${state.index}:${state.final}` : '';
   if (done && done !== lastDone && world) state.callouts.forEach((c, i) => setTimeout(() => world?.say(c.seat, c.text, 3), 500 + i * 700));
-  if (done && done !== lastDone && p?.outcome) p.outcome.right ? sound.pickup(2) : sound.bonk(.6);
   lastDone = done || lastDone;
-  // The studio's sounds: the clock in its last seconds and the dramatic pause.
-  const clock = Math.ceil(state.timeLeft);
-  if (state.phase === 'question' && clock !== lastClock && clock <= 4 && clock > 0) sound.tick(4 - clock);
-  if (state.phase === 'pause' && lastPhase !== 'pause') sound.whoosh();
-  lastClock = clock; lastPhase = state.phase;
   $('results').hidden = !ended; $('again').disabled = !room.connected || !room.isHost;
   if (ended) {
     const winner = state.players[state.winner];
@@ -188,7 +190,7 @@ export const { sceneReady } = bootGame({
   load: async () => (await import('./scene.js')).createQqsmpScene($('world')),
   ready: (created) => { world = created; render(room.state); },
   tick: (dt) => room.tick(dt, menu.isOpen && room.members.size <= 1),
-  frame: (dt, scene) => { narration.update(room.state, menu.isOpen && room.members.size <= 1); scene.frame(dt); },
-  dispose: () => { narration.dispose(); room.dispose(); },
+  frame: (dt, scene) => { showSounds.update(room.state, room.seat, menu.isOpen && room.members.size <= 1); narration.update(room.state, menu.isOpen && room.members.size <= 1); scene.frame(dt); },
+  dispose: () => { narration.dispose(); showSounds.dispose(); unsubscribeSound(); document.removeEventListener('visibilitychange', hideSounds); room.dispose(); },
 });
 if (params.has('debug')) window.qqsmpDebug = { room, menu, get world() { return world; } };
