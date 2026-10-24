@@ -33,6 +33,7 @@ function fitBody(body, foundation) {
     depths.push(hit ? hit.point.z : apronDepth(x, y) - 0.025);
   }
   depthGrids.set(profile, depths);
+  let level = null;
   return {
     front(x, y) {
       const gx = THREE.MathUtils.clamp((x - minX) / width * nx, 0, nx - 0.00001);
@@ -46,10 +47,43 @@ function fitBody(body, foundation) {
     around(x, y, z) {
       const direction = new THREE.Vector3(x, 0, z).normalize();
       ray.set(new THREE.Vector3(direction.x * 2, y, direction.z * 2), direction.clone().negate());
-      const hit = ray.intersectObjects(proxies, false)[0];
-      return hit ? hit.point.addScaledVector(direction, 0.019) : new THREE.Vector3(x, y, z);
+      level ??= levelIndex(proxies);
+      const hit = level(ray.ray);
+      return hit ? hit.addScaledVector(direction, 0.019) : new THREE.Vector3(x, y, z);
     },
     dispose() { material.dispose(); fitGeometry.dispose(); },
+  };
+}
+
+// around() casts only level rays, hundreds per outfit: testing every proxy
+// triangle made the apron fit most of a pana's build. Triangles are binned
+// once by world height; each ray tests its slab in the proxy's own space, as
+// Mesh.raycast does, so hits match Raycaster's exactly (nearest, first wins).
+const SLAB = 0.02;
+function levelIndex(proxies) {
+  const slabs = new Map(), P = new THREE.Vector3(), Q = new THREE.Vector3(), R = new THREE.Vector3();
+  proxies.forEach((proxy, k) => {
+    const pos = proxy.geometry.attributes.position, idx = proxy.geometry.index, count = idx ? idx.count : pos.count;
+    for (let i = 0; i < count; i += 3) {
+      const a = idx ? idx.getX(i) : i, b = idx ? idx.getX(i + 1) : i + 1, c = idx ? idx.getX(i + 2) : i + 2;
+      P.fromBufferAttribute(pos, a).applyMatrix4(proxy.matrixWorld); Q.fromBufferAttribute(pos, b).applyMatrix4(proxy.matrixWorld); R.fromBufferAttribute(pos, c).applyMatrix4(proxy.matrixWorld);
+      for (let j = Math.floor(Math.min(P.y, Q.y, R.y) / SLAB); j <= Math.floor(Math.max(P.y, Q.y, R.y) / SLAB); j++) {
+        if (!slabs.has(j)) slabs.set(j, []); slabs.get(j).push([k, a, b, c]);
+      }
+    }
+  });
+  const inverse = proxies.map(p => p.matrixWorld.clone().invert()), local = new THREE.Ray(), A = new THREE.Vector3(), B = new THREE.Vector3(), C = new THREE.Vector3(), hit = new THREE.Vector3();
+  return ray => {
+    let best = null, nearest = Infinity;
+    for (const [k, a, b, c] of slabs.get(Math.floor(ray.origin.y / SLAB)) ?? []) {
+      const proxy = proxies[k], pos = proxy.geometry.attributes.position;
+      local.copy(ray).applyMatrix4(inverse[k]);
+      A.fromBufferAttribute(pos, a); B.fromBufferAttribute(pos, b); C.fromBufferAttribute(pos, c);
+      if (!local.intersectTriangle(A, B, C, proxy.material.side === THREE.FrontSide, hit)) continue;
+      const point = hit.clone().applyMatrix4(proxy.matrixWorld), distance = ray.origin.distanceTo(point);
+      if (distance < nearest) { nearest = distance; best = point; }
+    }
+    return best;
   };
 }
 

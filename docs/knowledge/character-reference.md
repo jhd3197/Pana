@@ -179,6 +179,12 @@ user's custom zoom/orbit. Desktop leaves room between feet and view controls;
 mobile keeps a dedicated stage above its controls. Future taller accessories
 must fit the common frame rather than zooming out when selected.
 
+Fitting the apron, pocket and ribbons casts hundreds of level rays at the
+body proxies (`around`). `levelIndex` in chef.js bins the proxy triangles by
+world height once and tests each ray's slab in the proxy's own space, as
+`Mesh.raycast` does, so hits are identical (geometry fingerprints of 13
+avatars match) while a pana builds in ~137 ms instead of ~203 ms.
+
 ## Mouth expressions
 
 `mouth.js` creates a narrow closed smile, the open lining, tongue and retracting
