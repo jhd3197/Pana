@@ -236,3 +236,8 @@ timer starts after previews finish, and remains paused in kit inspection.
 The roster is a gallery with explicit inspect actions. Its dialog shows the
 selected car and links to the existing rotating 3D vehicle inspector. Saving
 a kit marks the workshop wishlist, not a purchase or a change to this race.
+
+Workshop stat numbers have a 22 px minimum so scaling the garage to a short
+screen cannot shrink them below readable size. Race item action buttons remain
+visible on desktop as well as touch; rear throw is X (also controller X) and
+does not require braking. Mango impacts already slow the target.

@@ -8,6 +8,10 @@ becomes the GitHub release's notes.
 
 ## Unreleased
 
+- **Carreritas muestra números mayores y controles visibles para lanzar atrás.**
+  Las estadísticas conservan un tamaño legible; los botones de objetos también
+  aparecen en escritorio y recuerdan el control X para lanzar hacia atrás.
+
 - **Bolas Criollas distingue la ventaja provisional de una victoria.**
   El indicador dice quién va más cerca mientras quedan lanzamientos.
 

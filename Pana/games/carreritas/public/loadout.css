@@ -301,3 +301,8 @@ body.shop-open .menu-footer #play:disabled{white-space:normal;overflow-wrap:anyw
 #loadout-drawer .shop-item[data-kind=car] img{height:144px;object-fit:contain}
 #loadout-drawer .shop-item[data-kind=car] .shop-text{gap:8px}
 @media(max-height:540px){#loadout-drawer .shop-item[data-kind=car] img{height:80px}#loadout-drawer .shop-item[data-kind=car]{gap:6px}}
+
+/* Keep car ratings readable even when the workshop scales to a short screen. */
+#shop .shop-stats .n { font-size:clamp(22px,calc(30 * var(--u)),36px); }
+#shop .shop-stats > div { grid-template-columns:minmax(76px,calc(118 * var(--u))) 1fr minmax(30px,calc(44 * var(--u))); }
+#shop-level .nivel-badge > span { font-size:clamp(16px,calc(22 * var(--u)),26px); }
