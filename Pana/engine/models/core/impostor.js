@@ -1,12 +1,16 @@
 import * as THREE from 'three';
 
 // Distant objects as baked billboards (impostors). A prototype is rendered
-// once from FRAMES directions around its vertical axis into an albedo atlas
-// and an object-space normal atlas; every placement then draws one
-// camera-facing quad showing the two nearest directions blended, lit by the
-// scene's own sun, sky, shadows and fog. Two triangles per tree and one draw
-// per cell instead of thousands of leaves. See docs/knowledge/impostors.md.
-const FRAMES = 8, COLS = 4, ROWS = 2, MAX_LOD = 3, TILE = 256, ELEVATION = THREE.MathUtils.degToRad(8);
+// once from FRAMES directions around its vertical axis, at a low and a high
+// camera angle, into an albedo atlas and an object-space normal atlas; every
+// placement then draws one camera-facing quad blending the nearest views,
+// lit by the scene's own sun, sky, shadows and fog. Two triangles per tree
+// and one draw per cell instead of thousands of leaves. See
+// docs/knowledge/impostors.md.
+const FRAMES = 8, COLS = 4, ROWS = 4, MAX_LOD = 3, TILE = 192;
+// From below a hillside a crown shows its shaded underside, from a mountain
+// road its lit top: views at both angles, blended by the camera's.
+const ELEVATIONS = [-14, 16].map(THREE.MathUtils.degToRad);
 const pending = new Set();
 // Metres from the route beyond which a map's trees are drawn as impostors:
 // far enough that passing cars never see a card turn.
@@ -72,9 +76,10 @@ function bakeRecord(renderer, record) {
     // The albedo pass draws the real material (maps, vertex colours, prints)
     // under flat ambient light of intensity π, which returns its base colour.
     const mesh = new THREE.Mesh(o.geometry, o.material); mesh.matrixAutoUpdate = false; mesh.matrix.copy(o.matrixWorld);
-    // Only detailed leaf crowns: a low-poly hull keeps its own facets.
+    // Only detailed leaf crowns (game tier and up): the clustered middle
+    // crowns and far hulls keep their own facets, as they shade in 3D.
     const triangles = (o.geometry.index?.count ?? o.geometry.attributes.position.count) / 3;
-    const normal = normalBake.clone(), leaf = m.side === THREE.DoubleSide && triangles > 300;
+    const normal = normalBake.clone(), leaf = m.side === THREE.DoubleSide && triangles > 1500;
     normal.uniforms.crown.value.set(0, frame.crownY, 0, leaf ? .7 : 0);
     mesh.userData.albedo = o.material; mesh.userData.normal = normal; scene.add(mesh); materials.push(normal);
   });
@@ -91,12 +96,12 @@ function bakeRecord(renderer, record) {
     scene.children.forEach(mesh => { if (mesh.isMesh) mesh.material = mesh.userData[pass]; });
     renderer.setRenderTarget(target); renderer.setClearColor(0x000000, 0); renderer.autoClear = false; renderer.shadowMap.autoUpdate = false;
     renderer.setScissorTest(false); renderer.clear(true, true, true); renderer.setScissorTest(true);
-    for (let f = 0; f < FRAMES; f++) {
-      const angle = f / FRAMES * Math.PI * 2, distance = frame.half * 4;
-      const up = record.elevation;
+    for (let view = 0; view < FRAMES * 2; view++) {
+      const angle = view % FRAMES / FRAMES * Math.PI * 2, distance = frame.half * 4;
+      const up = record.elevations[Math.floor(view / FRAMES)];
       camera.position.set(Math.sin(angle) * Math.cos(up) * distance, frame.centerY + Math.sin(up) * distance, Math.cos(angle) * Math.cos(up) * distance);
       camera.lookAt(0, frame.centerY, 0); camera.updateMatrixWorld(true);
-      const x = (f % COLS) * tileSize, y = Math.floor(f / COLS) * tileSize;
+      const x = (view % COLS) * tileSize, y = Math.floor(view / COLS) * tileSize;
       // The renderer reads a target's viewport only when it is bound.
       target.viewport.set(x, y, tileSize, tileSize); target.scissor.set(x, y, tileSize, tileSize); renderer.setRenderTarget(target);
       renderer.render(scene, camera);
@@ -134,17 +139,22 @@ function impostorMaterial(uniforms, { roughness = .85, emissive = 0x000000 } = {
     shader.vertexShader = shader.vertexShader
       .replace('#include <common>', `#include <common>
         attribute vec3 iOffset; attribute vec2 iParams;
-        uniform float impHalf, impCenterY;
-        varying vec2 vImpUvA, vImpUvB, vImpRot; varying float vImpBlend;
-        vec2 impTile(float f, vec2 uv) { return (vec2(mod(f, ${COLS}.0), floor(f / ${COLS}.0)) + uv) / vec2(${COLS}.0, ${ROWS}.0); }`)
+        uniform float impHalf, impCenterY; uniform vec2 impElevations;
+        varying vec2 vImpUvA, vImpUvB, vImpUvC, vImpUvD, vImpRot; varying float vImpBlend, vImpRise;
+        vec2 impTile(float view, vec2 uv) { return (vec2(mod(view, ${COLS}.0), floor(view / ${COLS}.0)) + uv) / vec2(${COLS}.0, ${ROWS}.0); }`)
       .replace('#include <beginnormal_vertex>', `
-        vec2 impToCamera = (inverse(modelMatrix) * vec4(cameraPosition, 1.0)).xz - iOffset.xz;
+        vec3 impCamera = (inverse(modelMatrix) * vec4(cameraPosition, 1.0)).xyz;
+        vec2 impToCamera = impCamera.xz - iOffset.xz;
         vec2 impD = impToCamera / max(length(impToCamera), 1e-4);
+        float impAngle = atan(impCamera.y - iOffset.y - impCenterY * iParams.x, length(impToCamera));
+        vImpRise = clamp((impAngle - impElevations.x) / (impElevations.y - impElevations.x), 0.0, 1.0);
         float impFrame = fract((atan(impD.x, impD.y) - iParams.y) / 6.2831853) * ${FRAMES}.0;
         float impF0 = floor(impFrame);
         vImpBlend = impFrame - impF0;
         vec2 impUv = position.xy * .5 + .5;
-        vImpUvA = impTile(impF0, impUv); vImpUvB = impTile(mod(impF0 + 1.0, ${FRAMES}.0), impUv);
+        float impF1 = mod(impF0 + 1.0, ${FRAMES}.0);
+        vImpUvA = impTile(impF0, impUv); vImpUvB = impTile(impF1, impUv);
+        vImpUvC = impTile(impF0 + ${FRAMES}.0, impUv); vImpUvD = impTile(impF1 + ${FRAMES}.0, impUv);
         vImpRot = vec2(cos(iParams.y), sin(iParams.y));
         vec3 objectNormal = vec3(impD.x, 0.0, impD.y);`)
       .replace('#include <begin_vertex>', `
@@ -152,7 +162,7 @@ function impostorMaterial(uniforms, { roughness = .85, emissive = 0x000000 } = {
     shader.fragmentShader = shader.fragmentShader
       .replace('#include <common>', `#include <common>
         uniform sampler2D impAlbedo, impNormal;
-        varying vec2 vImpUvA, vImpUvB, vImpRot; varying float vImpBlend;
+        varying vec2 vImpUvA, vImpUvB, vImpUvC, vImpUvD, vImpRot; varying float vImpBlend, vImpRise;
         // Neighbouring frames share the atlas: cap the mip level before a
         // tile's texels would average with the next tile's.
         float impLod(vec2 uv) {
@@ -160,7 +170,9 @@ function impostorMaterial(uniforms, { roughness = .85, emissive = 0x000000 } = {
           return clamp(.5 * log2(max(dot(dFdx(texels), dFdx(texels)), dot(dFdy(texels), dFdy(texels)))), 0.0, ${MAX_LOD}.0);
         }
         vec4 impSample(sampler2D atlas, float lod) {
-          return mix(textureLod(atlas, vImpUvA, lod), textureLod(atlas, vImpUvB, lod), vImpBlend);
+          vec4 low = mix(textureLod(atlas, vImpUvA, lod), textureLod(atlas, vImpUvB, lod), vImpBlend);
+          vec4 high = mix(textureLod(atlas, vImpUvC, lod), textureLod(atlas, vImpUvD, lod), vImpBlend);
+          return mix(low, high, vImpRise);
         }`)
       .replace('#include <map_fragment>', `
         float impMip = impLod(vImpUvA);
@@ -185,8 +197,8 @@ function impostorMaterial(uniforms, { roughness = .85, emissive = 0x000000 } = {
 // Same contract as static-batch.js instancePlacements: one prototype drawn at
 // placements ({x, y, z, rot, scale}) bucketed into cells. `source` is consumed
 // once baked; its materials are only borrowed. `tile` is each view's pixel
-// size, `elevation` the camera's angle above the horizon while baking.
-export function impostorPlacements(parent, source, placements, { name = source.name, cellSize = 240, tile = TILE, elevation = ELEVATION } = {}) {
+// size, `elevations` the low and high camera angles (radians) of the views.
+export function impostorPlacements(parent, source, placements, { name = source.name, cellSize = 240, tile = TILE, elevations = ELEVATIONS } = {}) {
   if (!placements.length) return [];
   source.updateMatrixWorld(true);
   let radius = 0, minY = Infinity, maxY = -Infinity, roughness = .85, emissive = 0x000000;
@@ -201,9 +213,11 @@ export function impostorPlacements(parent, source, placements, { name = source.n
     // Leaves carry the crown's look; the trunk barely shows from afar.
     if (m.side === THREE.DoubleSide) { roughness = m.roughness ?? roughness; emissive = m.emissive?.getHex() ?? emissive; }
   });
-  const half = Math.max(radius, (maxY - minY) / 2) * 1.12;
-  const uniforms = { impAlbedo: { value: blank }, impNormal: { value: blank }, impHalf: { value: half }, impCenterY: { value: (minY + maxY) / 2 } };
-  const record = { source, uniforms, frame: { half, centerY: (minY + maxY) / 2, crownY: minY + (maxY - minY) * .62 }, baked: false, users: 0, tile, elevation };
+  // The bounding sphere fits the prototype from any view angle; the margin
+  // keeps a tile's edge clear for mip filtering.
+  const half = Math.hypot(radius, (maxY - minY) / 2) * 1.04;
+  const uniforms = { impAlbedo: { value: blank }, impNormal: { value: blank }, impHalf: { value: half }, impCenterY: { value: (minY + maxY) / 2 }, impElevations: { value: new THREE.Vector2(...elevations) } };
+  const record = { source, uniforms, frame: { half, centerY: (minY + maxY) / 2, crownY: minY + (maxY - minY) * .62 }, baked: false, users: 0, tile, elevations };
   pending.add(record);
   const material = impostorMaterial(uniforms, { roughness, emissive });
   const quad = [-1, -1, 0, 1, -1, 0, 1, 1, 0, -1, 1, 0];

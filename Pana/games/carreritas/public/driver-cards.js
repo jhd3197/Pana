@@ -32,7 +32,7 @@ export function cardDriver(car) {
   const center = new THREE.Box3().setFromObject(source).getCenter(new THREE.Vector3());
   source.children.forEach(m => m.geometry.translate(-center.x, 0, -center.z));
   const [card] = impostorPlacements(parent, source, [{ x: center.x, y: 0, z: center.z, rot: 0, scale: 1 }],
-    { name: 'driver-card', tile: 128, elevation: THREE.MathUtils.degToRad(20) });
+    { name: 'driver-card', tile: 128, elevations: [0, 35].map(THREE.MathUtils.degToRad) });
   group.visible = false; car.driverCard = card;
   return car;
 }
