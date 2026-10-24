@@ -287,6 +287,25 @@ from 2,185 to 896 draws and 22 to 9 ms CPU with the cars hidden.
   detachables, danglers, flag and glass stay separate. 0.5/255 per channel
   from the real car at 40 m.
 
+### Static props: instances, merges and colour batches
+
+Draws attributed by named group (main pass, `onBeforeRender` counts) found
+the props: Llanos' shortcut planks were 126 draws, bend boards up to 57,
+barrels/crates ~20, and baked props kept one draw per paint colour.
+
+- `plankRoad` merges with `bake` (driving reads the analytic `plankAt`).
+- `chevrons` keeps a named marker per sign (`bend-chevron-board`,
+  `userData.s`) and draws posts and boards as three instanced meshes.
+- Breakables move through Object3D proxies drawn by `proxyInstances`
+  (exported from items.js, as the coins).
+- `bake(root, { tint: true })` lets plain standard materials that differ
+  only in colour share a batch, with each mesh's linear colour in its
+  vertices; Carreritas' `finish` uses it. Scenery shots with it on and off
+  match to the pixel (Llanos' hacienda yard 61 → 26 draws, arepera 39 → 22).
+- Estadio's ~26 parked cars use `farGrove`: real within 45 m of the route,
+  baked cards beyond. The smooth cars are ~35k triangles each without a
+  driver, which had taken Estadio's overview from 1.23 M to 2.69 M.
+
 ### Final reference measurement
 
 Source `bb7b838`, Windows, Ryzen 9 7950X, RTX 4090 via ANGLE/D3D11,

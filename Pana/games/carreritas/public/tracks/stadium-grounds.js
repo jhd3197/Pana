@@ -6,6 +6,7 @@ import {palm} from '/engine/models/vegetation/palm.js';
 import {parkBench,streetFoodKiosk,busStopShelter} from '/engine/models/props/pueblo.js';
 import {CARS} from '../cars.js';
 import {DEFAULT_AVATAR} from '/engine/avatar.js';
+import {farGrove} from './far-grove.js';
 
 export function stadiumGrounds(T,groundAt) {
   const group=new THREE.Group(),fixed=new THREE.Group(),white=M(0xe5dec8,{polygonOffset:true,polygonOffsetFactor:-4,polygonOffsetUnits:-4}),teal=M(0x466d70),concrete=M(0xb9b59e);group.name='stadium-venue-grounds';
@@ -59,7 +60,10 @@ export function stadiumGrounds(T,groundAt) {
       }
       o.geometry.setAttribute('color',new THREE.Float32BufferAttribute(colors,3));o.material=paint;
     });
-    instances(group,car.root,cars[i],`stadium-parked-${id}`,420);
+    // Bays far from the route show baked cards of the same car (the smooth
+    // cars are ~35k triangles each without a driver); near bays stay real.
+    const copy=car.root.clone(true);copy.traverse(o=>{if(o.geometry)o.geometry=o.geometry.clone();});
+    const sources=[car.root,copy];farGrove(T,group,()=>sources.shift(),cars[i],`stadium-parked-${id}`,420);
   }
   // Two additional stands complete the northern and eastern race sectors.
   put(group,grandstand({length:90,rows:8,color:0x609a91}),-135,-272,1);
