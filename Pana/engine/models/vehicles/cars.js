@@ -132,7 +132,9 @@ function dressBody(ctx) {
     }
     if (D.mirror !== false) {
       const Mi = D.mirror ?? {}, z = Mi.z ?? (fit.cabin ? fit.cabin.zF - 0.16 : 0.5), y = Mi.y ?? belt - 0.04;
-      const h = surf.side(s, z, y);
+      // A mirror set high on the door frame misses the lower body: try the
+      // cabin, then the body's side at that height, rather than lose it.
+      const h = surf.side(s, z, y) ?? ctx.cabinSurf?.side(s, z, y) ?? { p: V(s * fit.halfW(z), y, z), n: V(s, 0, 0) };
       if (h) {
         const m = new THREE.Group(), out = V(s, 0, 0);
         const a = h.p.clone(), b = a.clone().add(V(s * 0.2, 0.14, -0.02));
