@@ -8,6 +8,11 @@ becomes the GitHub release's notes.
 
 ## Unreleased
 
+- **Chapita muestra las bases y facilita batear sin perder atrapadas en línea.**
+  Las bases numeradas señalan a los corredores; el lanzamiento deja libre el
+  plato y el bateo tiene una guía de tiempo y más margen. Las atrapadas esperan
+  la respuesta del defensor antes de conceder hits o carreras.
+
 - **Carreritas recuerda tu carro y conserva los ajustes de cada carrocería.**
   Al volver se abre el último carro elegido; cambiar de carro ya no reemplaza
   la pintura ni las piezas de un vehículo que habías configurado.

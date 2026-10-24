@@ -156,6 +156,7 @@ test('cuarto bate and Willy Mays change the at-bat', () => {
   game.lineup[0] = 3; game.newBatter(6);
   assert.equal(game.event.kind, 'cuarto');
   game.pitch = { kind: 'planea', side: 1, target: { x: 0, y: 1 } };
+  game.players[6].id = 2; // Compare two human batters.
   const wide = game.window(6), normal = game.window(0);
   assert(wide > normal, 'the fourth bat gets a bigger window');
   game.players[2].atBats = ['k', 'k']; game.newBatter(2);
@@ -195,4 +196,41 @@ test('a restored snapshot plays on the same way and drops departed panas to bots
   assert.equal(copy.revision, game.revision); assert.deepEqual(copy.teams, game.teams);
   const gone = ChapitaGame.restore(game.snapshot(), new Map());
   assert.equal(gone.players[0].id, null);
+});
+
+// A short flight used to score before the one-second network grace ended.
+test('a delayed human catch cannot award runs before its deadline', () => {
+  for (const caught of [true, false]) {
+    const game = setup('batter'); game.addPlayer(2, 'Bruno');
+    game.bases = [2, 4, 6]; game.phase = 'hit';
+    game.hit = { id: 77, at: game.clock, caught: null, chapazo: false,
+      chance: { seat: 1, t: 1, speed: 10, point: { x: 0, y: 1, d: 15 } },
+      end: { kind: 'sencillo', t: 1.1, point: { x: 0, y: 0, d: 16 } } };
+    game.advance(1.7);
+    assert.equal(game.phase, 'hit', 'wait beyond landing for the human response');
+    assert.equal(game.teams[0].runs, 0);
+    if (caught) {
+      assert(act(game, 2, 'catch', 1, { hit: 77, t: 1 }));
+      game.advance(.05);
+      assert.equal(game.result.kind, 'caught');
+      assert.equal(game.outs, 1);
+      assert.deepEqual(game.bases, [2, 4, 6]);
+      assert.equal(game.teams[0].runs, 0);
+      assert.equal(game.teams[0].hits, 0);
+      assert.equal(act(game, 2, 'catch', 2, { hit: 77, t: 1 }), false);
+    } else {
+      game.advance(.31); game.advance(.05);
+      assert.equal(game.result.kind, 'sencillo');
+      assert.equal(game.teams[0].runs, 1, 'a missed catch still resolves the hit');
+    }
+  }
+});
+
+test('human batting allows a readable timing margin but still rejects late swings', () => {
+  for (const [offset, contact] of [[.14, true], [-.14, true], [.3, false]]) {
+    const game = setup('batter');
+    game.throw({ kind: 'planea', row: 1, col: 1, side: 1, cap: 'plana' });
+    game.swingAt({ height: game.pitch.arrives, t: game.pitch.time + offset });
+    assert.equal(game.phase === 'hit', contact);
+  }
 });

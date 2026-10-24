@@ -12,7 +12,7 @@ export const SEATS = 8;
 export const TEAM_SIZE = 4;
 export const STRIKES = 3, BALLS = 4, OUTS = 3;
 export const DERBY_PITCHES = 10;
-export const SWING_WINDOW = .12;     // seconds either side of the arrival
+export const SWING_WINDOW = .18;     // seconds either side of the arrival
 export const CATCH_WINDOW = .16;
 export const PITCH_SECONDS = 15;     // a pana's time to pick a pitch
 export const BARRIOS = ['23 de Enero', 'Los Frailes', 'Catia', 'Lídice', 'Ruperto Lugo'];
@@ -164,7 +164,7 @@ export class ChapitaGame {
   // How wide the batter's timing window is for this pitch.
   window(seat = this.batter, pitch = this.pitch) {
     const p = this.players[seat], slot = this.derby ? -1 : teamSeats(p.team).indexOf(seat);
-    let w = SWING_WINDOW * (1 - .25 * Math.min(1, Math.abs(pitch.target.x) / .8));
+    let w = (p.id === null ? .12 : SWING_WINDOW) * (1 - .25 * Math.min(1, Math.abs(pitch.target.x) / .8));
     if (slot === 3) w *= 1.25;
     if (p.tuyuyo) w *= .85;
     if (pitch.kind === 'curva') w *= (pitch.side === (p.zurdo ? 1 : -1)) ? .85 : 1.12;   // breaking in on the hands is harder
@@ -411,7 +411,9 @@ export class ChapitaGame {
           hit.caught = false; this.revision++; return true;
         }
         if (!bot && this.clock >= hit.at + chance.t + 1) return this.catchTry(null);
-        if (this.clock < hit.at + hit.end.t) return false;
+        // Do not score a landing while the human catch is still in flight.
+        // The client starts its clock on receipt, so retain the full grace.
+        return false;
       }
       if (this.clock < hit.at + hit.end.t + .45) return false;
       return this.finishPlay();

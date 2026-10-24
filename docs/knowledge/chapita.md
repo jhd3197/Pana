@@ -46,7 +46,7 @@ scoring objects at these numbers; only the dressing differs.
 
 ## Tuning
 
-- Swing window 0,12 s either side, ×1,25 cuarto bate, ×0,85 tuyuyo, ×0,85 a
+- Human swing window 0,18 s either side (bots keep 0,12 s), ×1,25 cuarto bate, ×0,85 tuyuyo, ×0,85 a
   curve breaking in on the batter's hands (×1,12 away), narrower off-centre.
 - Exit speed `8 + 11,5·q^0,8` m/s (q = timing quality), +3,5 Willy Mays,
   −0,8 bent cap; 10 % pop-ups. All-bot 3-inning games run about 85 pitches
@@ -64,3 +64,14 @@ scoring objects at these numbers; only the dressing differs.
   `rotation.x = π/2 − 0,2` holds it up over the shoulder with the arm at −1,9.
 - Library models dispose themselves and leave their parent: collect the
   disposers before calling them (`street.js`), never call inside traverse.
+
+- A pending human catch must block `finishPlay()` until `chance.t + 1`,
+  even when the cap lands earlier. Otherwise a delayed valid catch loses to
+  scoring at `end.t + .45`. Test with loaded bases and a late network response.
+- Runner stations are shared `BASES` coordinates in field.js, shown as numbered
+  meshes on both maps. Panas stand beside the marker, which turns yellow when
+  occupied. These remain virtual bases, not a running/stealing simulation.
+- The canvas CSS dimensions must override the renderer's initial inline size;
+  otherwise a viewport resize crops the previous frame instead of reframing it.
+  The browser suite projects home plate on both maps at desktop and portrait
+  sizes and verifies that the pitching panel does not cover it.

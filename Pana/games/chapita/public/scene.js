@@ -8,7 +8,7 @@ import { buildCharacter } from '/engine/models/characters/pana/avatar-model.js';
 import { normalizeAvatar, randomAvatar } from '/engine/avatar.js';
 import { rng } from '/engine/random.js';
 import { CAR_BUILDERS } from '/engine/models/vehicles/cars.js';
-import { RELEASE, FIELDERS, pitchPoint, hitPoint } from './field.js';
+import { BASES, RELEASE, FIELDERS, pitchPoint, hitPoint } from './field.js';
 import { SEATS, teamSeats } from './rules.js';
 import { createField, crowdSpots } from './street.js';
 import { createChapita, createPalo, createTuyuyo, createApodo } from './studio-set.js';
@@ -18,7 +18,6 @@ const BOT_PALOS = ['escoba', 'coleto', 'teipe', 'tricolor', 'escoba', 'teipe', '
 const BRANDS = ['kolita', 'malta', 'uvita', 'tricolor'];
 const v3 = (p) => new THREE.Vector3(p.x, p.y, -p.d);
 const BENCH = (team, i) => ({ x: -3.9, z: -2.2 - i * 1.15, angle: Math.PI / 2 });
-const BASES = [{ x: 3.9, z: -2.5 }, { x: 3.9, z: -6 }, { x: 3.9, z: -9.4 }];
 const FAN = (seat) => ({ x: (seat % 2 ? 1 : -1) * (5.6 + (seat >> 1) * .9), z: -12 - (seat >> 1) * .3, angle: Math.PI });
 
 export function createChapitaScene(canvas) {
@@ -32,7 +31,7 @@ export function createChapitaScene(canvas) {
 
   // The chapita and its fading trail.
   let cap = createChapita({ brand: 'kolita' }), capBrand = 'kolita|plana';
-  cap.scale.setScalar(1.15); own.add(cap);
+  cap.scale.setScalar(1.8); own.add(cap);
   const trailGeometry = new THREE.BufferGeometry(), trailPoints = new Float32Array(3 * 24);
   trailGeometry.setAttribute('position', new THREE.BufferAttribute(trailPoints, 3));
   const trail = new THREE.Line(trailGeometry, new THREE.LineBasicMaterial({ color: '#ffffff', transparent: true, opacity: .55 }));
@@ -84,7 +83,7 @@ export function createChapitaScene(canvas) {
     const f = state.fielders?.indexOf(seat) ?? -1;
     if (f >= 0 && !state.derby) return { x: FIELDERS[f].x, z: -FIELDERS[f].d, angle: Math.atan2(-FIELDERS[f].x, FIELDERS[f].d) * .6 };
     const base = state.bases?.indexOf(seat) ?? -1;
-    if (base >= 0) return { ...BASES[base], angle: -Math.PI / 2 };
+    if (base >= 0) return { x: BASES[base].x + .85, z: BASES[base].z, angle: -Math.PI / 2 };
     if (!state.derby && p.team === state.half) return BENCH(p.team, teamSeats(p.team).indexOf(seat));
     return FAN(seat);
   }
@@ -94,12 +93,16 @@ export function createChapitaScene(canvas) {
     // A new game: everyone is already in place, nobody walks in from the lobby.
     if (before && before.round !== state.round) for (const s of panas) s.pos = null;
     setMap(state.options?.map || 'calle');
+    field.bases.forEach((marker, i) => {
+      marker.visible = !state.derby;
+      marker.material.color.set(state.bases?.[i] != null ? '#ffc629' : '#fffaf0');
+    });
     for (const p of state.players) dressPana(p.seat, p);
     // A new cap for each pitch: its brand, bent when doblada.
     const pitch = state.pitch, wanted = pitch ? `${BRANDS[pitch.id % BRANDS.length]}|${pitch.cap}` : capBrand;
     if (wanted !== capBrand) {
       cap.userData.dispose(); const [brand, kind] = wanted.split('|');
-      cap = createChapita({ brand, bent: kind === 'doblada' ? .8 : 0 }); cap.scale.setScalar(1.15); own.add(cap); capBrand = wanted;
+      cap = createChapita({ brand, bent: kind === 'doblada' ? .8 : 0 }); cap.scale.setScalar(1.8); own.add(cap); capBrand = wanted;
     }
     if (pitch && before?.pitch?.id !== pitch.id && state.phase === 'flight') { const s = panas[state.pitcher ?? -1]; if (s) s.throw = .45; history.length = 0; }
     if (state.swing && pitch && swungPitch !== pitch.id) { swungPitch = pitch.id; swing(state.batter); }
@@ -166,7 +169,7 @@ export function createChapitaScene(canvas) {
         slot.throw = Math.max(0, slot.throw - dt);
         const k = slot.throw > 0 ? slot.throw / .45 : 0;
         armR.rotation.set(state.phase === 'pitch' ? -2.6 : -2.6 * k - .4, 0, -.3); armL.rotation.set(-.8, 0, .4);
-      } else if (state.hit?.chance?.seat === p.seat && state.phase === 'hit') {
+      } else if (state.hit?.chance?.seat === p.seat && (state.hit.caught || (state.phase === 'hit' && state.hit.caught === null && clocks.hit && Math.abs((now - clocks.hit) / 1000 - state.hit.chance.t) < .25))) {
         armR.rotation.set(-2.4, 0, -.2); armL.rotation.set(-2.4, 0, .2);
       } else {
         const cheer = state.result && ['jonron', 'post', 'car'].includes(state.result.kind) && p.team === state.half && state.phase === 'result';
@@ -221,12 +224,12 @@ export function createChapitaScene(canvas) {
     } else {
       // Behind the plate, a step off the batter's side so they never hide the pitcher.
       const side = state.players[state.batter]?.zurdo ? -1 : 1;
-      wantPos.set(side * 1.1, 3, 5.4); wantLook.set(side * .2, 1, -8.5);
+      wantPos.set(side * 1.1, 4.2, 7.6); wantLook.set(side * .2, .6, -6.5);
     }
     if (debugView) { wantPos.set(...debugView[0]); wantLook.set(...debugView[1]); }
     const ease = debugView ? 1 : Math.min(1, dt * 3.2);
     camPos.lerp(wantPos, ease); lookAt.lerp(wantLook, ease);
-    camera.aspect = w / h; camera.position.copy(camPos); camera.lookAt(lookAt); camera.updateProjectionMatrix();
+    camera.fov = w < h ? 72 : 48; camera.aspect = w / h; camera.position.copy(camPos); camera.lookAt(lookAt); camera.updateProjectionMatrix();
     field?.update(time);
     stage.draw(dt);
   }
