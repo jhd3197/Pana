@@ -197,7 +197,7 @@ export function createBolasWorld({ aspect = 16 / 9, individual = false, venue = 
       }
       mesh.visible = !b.out;
       mesh.rotation.x += (b.z - mesh.position.z) / b.radius; mesh.rotation.z -= (b.x - mesh.position.x) / b.radius;
-      mesh.position.set(b.x, b.radius, b.z);
+      mesh.position.set(b.x, b.radius + (b.height || 0), b.z);
     }
     lastBallCount = pitch.nextId; lastPitch = pitch;
     const m = pitch.balls[0]; marker.visible = !m.out; marker.position.set(m.x, .035, m.z);

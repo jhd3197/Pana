@@ -3,29 +3,41 @@
 export const STEP = 1 / 120;
 export const COURT = Object.freeze({ halfWidth: 5.5, halfLength: 12, launchZ: 9.8, radius: .25, mingoRadius: .14, drag: 2.8 });
 export const TEAM_COLORS = ['#ed5949', '#299e72'];
+export const FLIGHT = Object.freeze({ gravity: 9.8, height: 2.5, retention: .32 });
 export const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
 export const copy = value => JSON.parse(JSON.stringify(value));
 
 export function createPitch(x = 0, z = -6) {
   return { balls: [{ id: 0, owner: -1, x, z, vx: 0, vz: 0, radius: COURT.mingoRadius, out: false }], nextId: 1 };
 }
-export const moving = pitch => pitch.balls.some(b => !b.out && Math.hypot(b.vx, b.vz) > 0);
+export const moving = pitch => pitch.balls.some(b => !b.out && (Math.hypot(b.vx, b.vz) > 0 || b.height > 0 || b.vy > 0));
 export function shotSpeed(power, mode = 'arrime') {
   return Math.sqrt(2 * COURT.drag * (3 + power * 21)) * (mode === 'boche' ? 1.32 : 1);
 }
-export function validShot({ angle, power, mode = 'arrime' } = {}) {
+export function validShot({ angle, power, mode = 'arrime', loft = FLIGHT.height } = {}) {
   return Number.isFinite(angle) && Math.abs(angle) <= .65 && Number.isFinite(power)
-    && power >= .1 && power <= 1 && ['arrime', 'boche'].includes(mode);
+    && power >= .1 && power <= 1 && ['arrime', 'boche', 'aire'].includes(mode)
+    && Number.isFinite(loft) && loft >= 1.2 && loft <= 4;
+}
+export function flightPath(shot, x = 0) {
+  if (shot.mode !== 'aire') return [];
+  const vy = Math.sqrt(2 * FLIGHT.gravity * (shot.loft ?? FLIGHT.height)), time = 2 * vy / FLIGHT.gravity;
+  const speed = shotSpeed(shot.power, shot.mode);
+  return Array.from({ length: 49 }, (_, i) => { const t = time * i / 48;
+    return { x: x + Math.sin(shot.angle) * speed * t, z: COURT.launchZ - Math.cos(shot.angle) * speed * t,
+      height: Math.max(0, vy * t - .5 * FLIGHT.gravity * t * t) }; });
 }
 export function throwBall(pitch, owner, shot, x = 0) {
   if (!validShot(shot) || !Number.isInteger(owner) || owner < 0 || !Number.isFinite(x) || Math.abs(x) > 4) return false;
   const speed = shotSpeed(shot.power, shot.mode);
   const b = { id: pitch.nextId++, owner, x, z: COURT.launchZ, vx: Math.sin(shot.angle) * speed,
     vz: -Math.cos(shot.angle) * speed, radius: COURT.radius, out: false };
+  if (shot.mode === 'aire') { b.height = 0; b.vy = Math.sqrt(2 * FLIGHT.gravity * (shot.loft ?? FLIGHT.height)); }
   pitch.balls.push(b); return b;
 }
 export function landing(shot, x = 0) {
-  const distance = shotSpeed(shot.power, shot.mode) ** 2 / (2 * COURT.drag);
+  const speed = shotSpeed(shot.power, shot.mode), air = flightPath(shot, x);
+  const distance = air.length ? Math.hypot(air.at(-1).x - x, air.at(-1).z - COURT.launchZ) + (speed * FLIGHT.retention) ** 2 / (2 * COURT.drag) : speed ** 2 / (2 * COURT.drag);
   return { x: x + Math.sin(shot.angle) * distance, z: COURT.launchZ - Math.cos(shot.angle) * distance };
 }
 export function aimAt(x, z, originX = 0, mode = 'arrime') {
@@ -35,16 +47,26 @@ export function aimAt(x, z, originX = 0, mode = 'arrime') {
 }
 function boundary(b) {
   if (Math.abs(b.x) + b.radius > COURT.halfWidth || Math.abs(b.z) + b.radius > COURT.halfLength) {
-    b.out = true; b.vx = b.vz = 0;
+    b.out = true; b.vx = b.vz = b.vy = 0;
   }
 }
 export function stepPitch(pitch) {
   for (const b of pitch.balls) {
     if (b.out) continue;
+    let rollTime = STEP;
+    if (b.height > 0 || b.vy > 0) {
+      const height = b.height || 0, vy = b.vy || 0;
+      const untilGround = (vy + Math.sqrt(vy * vy + 2 * FLIGHT.gravity * height)) / FLIGHT.gravity;
+      const dt = Math.min(STEP, untilGround);
+      b.x += b.vx * dt; b.z += b.vz * dt;
+      b.height = Math.max(0, height + vy * dt - .5 * FLIGHT.gravity * dt * dt); b.vy = vy - FLIGHT.gravity * dt;
+      rollTime -= dt;
+      if (untilGround <= STEP) { b.height = b.vy = 0; b.vx *= FLIGHT.retention; b.vz *= FLIGHT.retention; }
+    }
     const speed = Math.hypot(b.vx, b.vz);
-    if (speed) {
-      const next = Math.max(0, speed - COURT.drag * STEP), scale = next / speed;
-      b.x += b.vx * (1 + scale) * .5 * STEP; b.z += b.vz * (1 + scale) * .5 * STEP;
+    if (speed && rollTime > 0) {
+      const next = Math.max(0, speed - COURT.drag * rollTime), scale = next / speed;
+      b.x += b.vx * (1 + scale) * .5 * rollTime; b.z += b.vz * (1 + scale) * .5 * rollTime;
       b.vx *= scale; b.vz *= scale;
     }
     boundary(b);
@@ -52,18 +74,23 @@ export function stepPitch(pitch) {
   for (let i = 0; i < pitch.balls.length; i++) for (let j = i + 1; j < pitch.balls.length; j++) {
     const a = pitch.balls[i], b = pitch.balls[j];
     if (a.out || b.out) continue;
-    const dx = b.x - a.x, dz = b.z - a.z, d = Math.hypot(dx, dz), reach = a.radius + b.radius;
+    const airborne = a.height > 0 || b.height > 0;
+    const dx = b.x - a.x, dz = b.z - a.z, dy = airborne ? (b.height || 0) + b.radius - (a.height || 0) - a.radius : 0;
+    const d = Math.hypot(dx, dy, dz), reach = a.radius + b.radius;
     if (d >= reach) continue;
-    const nx = d > 1e-9 ? dx / d : 1, nz = d > 1e-9 ? dz / d : 0;
+    const nx = d > 1e-9 ? dx / d : 1, nz = d > 1e-9 ? dz / d : 0, ny = d > 1e-9 ? dy / d : 0;
     const ia = a.owner < 0 ? 3 : 1, ib = b.owner < 0 ? 3 : 1;
     const overlap = reach - d + .00001;
     a.x -= nx * overlap * ia / (ia + ib); a.z -= nz * overlap * ia / (ia + ib);
     b.x += nx * overlap * ib / (ia + ib); b.z += nz * overlap * ib / (ia + ib);
-    const approach = (b.vx - a.vx) * nx + (b.vz - a.vz) * nz;
+    if (airborne) { a.height = Math.max(0, (a.height || 0) - ny * overlap * ia / (ia + ib)); b.height = Math.max(0, (b.height || 0) + ny * overlap * ib / (ia + ib)); }
+    const approach = (b.vx - a.vx) * nx + (b.vz - a.vz) * nz + ((b.vy || 0) - (a.vy || 0)) * ny;
     if (approach < 0) {
       const impulse = -1.72 * approach / (ia + ib);
       a.vx -= impulse * ia * nx; a.vz -= impulse * ia * nz;
       b.vx += impulse * ib * nx; b.vz += impulse * ib * nz;
+      if (airborne) { a.vy = (a.vy || 0) - impulse * ia * ny; b.vy = (b.vy || 0) + impulse * ib * ny;
+        if (!a.height) a.vy = Math.max(0, a.vy); if (!b.height) b.vy = Math.max(0, b.vy); }
     }
     boundary(a); boundary(b);
   }
@@ -112,7 +139,7 @@ export function previewThrow(pitch, owner, shot, x = 0, { seconds = 9, every = 6
   const path = [];
   for (let n = 0; n < seconds / STEP && moving(copyPitch); n++) {
     stepPitch(copyPitch);
-    if (n % every === 0 && !thrown.out) path.push({ x: thrown.x, z: thrown.z });
+    if (n % every === 0 && !thrown.out) path.push({ x: thrown.x, z: thrown.z, height: thrown.height || 0 });
   }
   if (!thrown.out) path.push({ x: thrown.x, z: thrown.z });
   const moved = copyPitch.balls.filter(b => before.has(b.id) && Math.hypot(b.x - before.get(b.id).x, b.z - before.get(b.id).z) > .03)

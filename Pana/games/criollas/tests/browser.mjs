@@ -32,6 +32,7 @@ try {
   await screenshot(host, 'lobby');
   // The host chooses the place and difficulty; the guest sees both and cannot change them.
   await wait(host,()=>window.PANA_PREPARED===true);
+  if (await host.locator('#map-choice').isVisible()) await host.locator('#map-choice').selectOption('hato');
   for(let i=0;await host.locator('#map-choice').inputValue()!=='hato';i++){
     assert.ok(i<30,'Hato is offered by the visible map picker');
     const before=await host.locator('#map-choice').inputValue();
@@ -72,6 +73,9 @@ try {
   await host.locator('#shoot').click(); await wait(guest, () => criollasDebug.room.state.phase === 'rolling');
   await wait(guest, () => criollasDebug.room.state.phase === 'aiming' && criollasDebug.room.state.turn === 1);
   // Hold Space: the meter shows while the force rises, and letting go throws at that force.
+  await guest.locator('[data-mode=aire]').click();
+  await guest.locator('#loft').fill('3'); await guest.locator('#loft').dispatchEvent('input');
+  await guest.evaluate(() => { window.airPeak = 0; const r = criollasDebug.room, prior = r.onState; r.onState = s => { window.airPeak = Math.max(window.airPeak, s.pitch.balls.at(-1)?.height || 0); prior(s); }; });
   await guest.locator('#court').focus(); await guest.keyboard.down('Space');
   // Animation frames are stubbed here: the force is sampled from the hold time at release.
   await wait(guest, () => criollasDebug.charge && performance.now() - criollasDebug.charge.started > 400 && !document.querySelector('#power-bar').hidden);
@@ -80,6 +84,7 @@ try {
   assert.ok(await guest.evaluate(() => criollasDebug.shot.power) >= .3, 'the throw used the charged force');
   assert.equal(await host.evaluate(() => criollasDebug.room.state.pitch.balls.at(-1).owner), 1);
   await wait(host, () => criollasDebug.room.state.phase !== 'rolling');
+  assert.ok(await guest.evaluate(() => window.airPeak) > .5, 'guest sees the synchronized high throw');
   console.log('PASS real two-client throws, seat ownership and saved avatars');
   await guest.reload({ waitUntil: 'domcontentloaded' }); await wait(guest, () => window.criollasDebug?.room.connected && criollasDebug.room.state.hand === 1);
   assert(await guest.evaluate(() => criollasDebug.room.state.shots >= 2));
@@ -147,14 +152,27 @@ try {
   await solo.locator('#practice').click(); await wait(solo, () => criollasDebug.room.state.phase === 'aiming' && criollasDebug.room.state.turn === 0);
   // Behind the thrower by default: the camera stands past the calce, above head height.
   await frames(solo); assert(await solo.evaluate(() => { const c = criollasDebug.world.camera.position; return c.z > 15 && c.y > 3; }));
+  const target = await solo.evaluate(() => criollasDebug.world.guides.target);
+  assert.equal(target.visible, true); assert.equal(target.label, 'FRENA SIN CHOQUES');
+  await solo.evaluate(() => { criollasDebug.shot.power = .3; }); await frames(solo);
+  assert.ok(await solo.evaluate(() => criollasDebug.world.guides.target.range) < target.range);
+  await solo.evaluate(() => { criollasDebug.shot.power = 1; criollasDebug.shot.mode = 'boche'; }); await frames(solo);
+  assert.equal(await solo.evaluate(() => criollasDebug.world.guides.target.out), true);
+  await screenshot(solo, 'outside-preview');
+  await solo.evaluate(() => { criollasDebug.shot.power = .62; criollasDebug.shot.mode = 'arrime'; });
   await solo.evaluate(() => criollasDebug.room.action('difficulty', { difficulty: 'facil' }));
   await frames(solo); assert(await solo.evaluate(() => criollasDebug.room.state.difficulty === 'facil' && criollasDebug.world.guides.preview));
+  await solo.locator('[data-mode=aire]').click(); await frames(solo);
+  assert.ok(await solo.evaluate(() => criollasDebug.world.guides.target.flight.some(p => p.height > 1)));
+  await screenshot(solo, 'air-preview');
+  await solo.locator('[data-mode=arrime]').click(); await frames(solo);
   await screenshot(solo, 'facil');
   await solo.locator('#court').focus(); await solo.keyboard.press('c');
   await frames(solo); assert(await solo.evaluate(() => criollasDebug.world.view === 'arriba' && criollasDebug.world.camera.position.y > 20));
   await screenshot(solo, 'arriba');
   await solo.evaluate(() => criollasDebug.room.action('difficulty', { difficulty: 'experto' }));
   await frames(solo); assert.equal(await solo.evaluate(() => criollasDebug.world.guides.preview), false);
+  assert.equal(await solo.evaluate(() => criollasDebug.world.guides.target.visible), false);
   await solo.locator('#shoot').click(); await wait(solo, () => criollasDebug.room.state.shots >= 2);
   await solo.context().close();
   console.log('PASS thrower and overhead cameras, local difficulty changes and the Fácil preview');

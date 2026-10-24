@@ -8,6 +8,10 @@ becomes the GitHub release's notes.
 
 ## Unreleased
 
+- **Bolas Criollas permite bochar por el aire y ver dónde caerá la bola.**
+  Ajusta la altura y sigue el arco hasta el aro de caída; otro blanco marca
+  dónde frena. La guía sigue la fuerza y avisa cuando el tiro se va fuera.
+
 - **Ludo mueve las fichas sin decisiones y reduce las rachas sin salir.**
   Los movimientos únicos y las salidas equivalentes son automáticos; la ayuda
   opcional interviene tras tres a cinco intentos fallidos, igual para todos.
