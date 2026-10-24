@@ -144,3 +144,29 @@ clients, changes a live shared menu, checks double-twelve meshes, plays one turn
 from every human, then verifies chat, clock expiry and host migration.
 
 Restablecer also returns the table venue to Plaza in the same revisioned options action; it never races a second map action against the first snapshot.
+
+## Verified replay and bot personalities
+
+Protocol `domino-v4` adds a rule-operation journal around the existing TableRoom.
+Guests replay only the unseen tail against `DominoGame`, compare the resulting
+state, and reject unexplained score/deal changes, impossible actions, sequence
+gaps and direct bot moves on human seats. Rejected packets request a retained
+replay through the same relay; ordinary packets keep at most 256 operations, and
+recovery retains 8192. A peer farther behind must reconnect. Host migration starts
+a new epoch at the last verified state and records departed-seat bot takeover.
+
+This is transition validation, not cryptographic anti-cheat. A newcomer trusts
+its first checkpoint, the host can see hands, and the log cannot prove a human
+actually sent a claimed legal action or that reported clock time really elapsed.
+A malicious host can refuse service; repeated invalid recovery stays on the last
+verified state with a Spanish reconnect notice. No P2P stack or host election was
+added. The design follows Parlour's replay/claim-validation approach. New room
+mutations must go through recorded rule methods; directly changing game fields
+and publishing is intentionally rejected by guests, including in debug fixtures.
+
+`bot-personas.js` defines six fixed weights using only own tiles and public ends.
+Thinking takes 0.72–1.40 s, seeded by RNG state, revision and seat, so restore does
+not reroll the delay. The 10,000 seeded-hand gate checks completion, conservation
+and a 40–60% non-tied team win envelope: seeds 1–10000 yield 5151/4691 wins and
+158 ties with the current defaults. This is a regression gate for that fixture,
+not a claim of universal balance across all house rules.

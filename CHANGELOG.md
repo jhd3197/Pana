@@ -2,7 +2,12 @@
 
 What changed in Pana, for the people who play it. Newest first. Every change
 that players, hosts or contributors will notice adds a line under
-`## Unreleased` in the same commit (see `AGENTS.md`). Each merge to `main` releases:
+`## Unreleased
+
+- **Dominó verifica las jugadas recibidas y da personalidad a los bots.**
+  La mesa reconstruye los cambios desde un registro de reglas, recupera
+  segmentos perdidos y conserva la partida al cambiar de anfitrión. Los bots
+  tienen ritmos y preferencias propios, probados en diez mil manos.` in the same commit (see `AGENTS.md`). Each merge to `main` releases:
 the release workflow stamps Unreleased with the version and date, and that section
 becomes the GitHub release's notes.
 

@@ -1,3 +1,4 @@
+import { BOT_PERSONAS } from './bot-personas.js';
 import { FIELDS, cleanOptions, maxPip, groupOf, CHAT } from './options.js';
 import { applyRoomOptions } from '../../../engine/room-options-rules.js';
 import { validTableArena } from '../../../engine/worlds/arena-layouts.js';
@@ -28,13 +29,14 @@ export function legalMoves(state, seat = state.turn) {
 // Only this seat's hand and the public chain affect the bot's choice.
 export function chooseMove(state, seat = state.turn) {
   const hand = state.players[seat].hand;
+  const persona = BOT_PERSONAS[seat % BOT_PERSONAS.length];
   const frequency = Array(13).fill(0);
   hand.forEach(t => { frequency[t.a]++; frequency[t.b]++; });
   const score = move => {
     const tile = hand.find(t => t.id === move.tile);
     const end = state.chain.length ? (move.end === 'left' ? state.chain[0].a : state.chain.at(-1).b) : tile.a;
     const exposed = tile.a === end ? tile.b : tile.a;
-    return tile.a + tile.b + (tile.a === tile.b ? 3 : 0) + frequency[exposed] * 1.6;
+    return (tile.a + tile.b) * persona.pips + (tile.a === tile.b ? persona.doubles : 0) + frequency[exposed] * persona.frequency;
   };
   return legalMoves(state, seat).sort((a, b) => score(b) - score(a))[0] || null;
 }

@@ -24,7 +24,7 @@ try{
  await page.waitForFunction(count=>dominoDebug.room.state.chain.length>count,target.count);
  assert.ok(await page.evaluate(id=>dominoDebug.room.state.chain.some(t=>t.id===id),target.id));
  console.log('ok: clicking an actual 3D tile plays it through raycasting');
- await page.locator('#menu').click();await page.locator('#pana-tab-controls').click();assert.match(await page.locator('#pana-panel-controls').textContent(),/doble seis/);await page.keyboard.press('Escape');
+ await page.locator('#menu').click();await page.locator('#pana-tab-settings').click();await page.locator('.pana-settings-nav button',{hasText:'Ratón y teclado'}).click();await page.locator('.pana-settings-section:not([hidden]) summary',{hasText:'Consejos de juego'}).click();assert.match(await page.locator('#pana-panel-settings').textContent(),/doble seis/);await page.keyboard.press('Escape');
  await page.evaluate(()=>dominoDebug.room.practice());await page.setViewportSize({width:390,height:844});
  await page.locator('#start').click();
  for(let i=0;i<4;i++){if(await page.evaluate(()=>dominoDebug.room.state.turn===dominoDebug.room.seat))break;await page.evaluate(()=>dominoDebug.room.tick(2));}
