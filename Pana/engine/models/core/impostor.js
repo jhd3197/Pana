@@ -110,6 +110,23 @@ function bakeRecord(renderer, record) {
   record.baked = true;
 }
 
+// SkinnedMesh.getVertexPosition rebuilds bone.matrixWorld × boneInverse for
+// every influence of every vertex. The same products, formed once per bone in
+// the same order, give identical positions far faster (19 Llanos animals).
+function freezeSkin(mesh, out) {
+  const { bones, boneInverses } = mesh.skeleton, joint = mesh.geometry.attributes.skinIndex, weight = mesh.geometry.attributes.skinWeight;
+  const pos = mesh.geometry.attributes.position, matrices = bones.map((bone, i) => new THREE.Matrix4().multiplyMatrices(bone.matrixWorld, boneInverses[i]));
+  const base = new THREE.Vector3(), sum = new THREE.Vector3(), part = new THREE.Vector3();
+  for (let v = 0; v < pos.count; v++) {
+    base.fromBufferAttribute(pos, v).applyMatrix4(mesh.bindMatrix); sum.set(0, 0, 0);
+    for (let k = 0; k < 4; k++) {
+      const w = weight.getComponent(v, k);
+      if (w !== 0) sum.addScaledVector(part.copy(base).applyMatrix4(matrices[joint.getComponent(v, k)]), w);
+    }
+    sum.applyMatrix4(mesh.bindMatrixInverse).toArray(out, v * 3);
+  }
+}
+
 // A static copy of what `root` shows right now: every visible mesh, skinned
 // or morphed surfaces frozen in their current pose, in the space of `frame`
 // (default: root itself). Materials are shared; geometry is new, for a bake.
@@ -120,7 +137,8 @@ export function snapshot(root, frame = root) {
     if (!o.isMesh) return;
     for (let p = o; p && p !== root.parent; p = p.parent) if (!p.visible) return;
     const geometry = new THREE.BufferGeometry(), from = o.geometry.attributes.position, positions = new Float32Array(from.count * 3);
-    for (let i = 0; i < from.count; i++) { o.getVertexPosition(i, point); point.toArray(positions, i * 3); }
+    if (o.isSkinnedMesh && !o.geometry.morphAttributes.position) freezeSkin(o, positions);
+    else for (let i = 0; i < from.count; i++) { o.getVertexPosition(i, point); point.toArray(positions, i * 3); }
     geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
     if (o.geometry.attributes.color) geometry.setAttribute('color', o.geometry.attributes.color.clone());
     if (o.geometry.index) geometry.setIndex(o.geometry.index.clone());
