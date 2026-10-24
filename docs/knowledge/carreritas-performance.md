@@ -306,6 +306,29 @@ barrels/crates ~20, and baked props kept one draw per paint colour.
   baked cards beyond. The smooth cars are ~35k triangles each without a
   driver, which had taken Estadio's overview from 1.23 M to 2.69 M.
 
+### Sun shadows: still scenery cached
+
+The sun's shadow box (±40 m) follows the player, so three.js redrew every
+tree, house and rock into the shadow map each frame: 0.6–3.1 M triangles
+and 60–100 draws, 43 % of Chuao's triangles at the start. `shadow-cache.js`
+wraps `renderer.shadowMap.render`:
+
+- The light and its target step on an 8 m grid (moving both keeps the
+  sun's direction). Coverage ahead of the car shrinks by at most ~6 m.
+- Shadow-casting meshes under `race.trackGroup` (not skinned, no custom
+  depth material) render into a cached depth target only when the box
+  steps a cell or one of them changes; about one frame in ten at speed.
+- Every frame the cached depth is blitted into the real shadow map (inside
+  the shadow pass's own `clear`) and only the other casters are drawn over
+  it: cars, breakables, animals.
+- Each still caster's visibility, geometry, instance version and world
+  matrix are compared every frame. A moved one is drawn every frame from
+  then on; a shown or hidden one rebuilds the cache when it is inside the
+  shadow frustum, and after four flips it is treated as moving.
+
+Screenshots against plain three.js shadows at the same snapped centre match
+exactly. Chuao's start 7.20 → 4.43 M triangles, Selva 3.75 → 2.83 M.
+
 ### Final reference measurement
 
 Source `bb7b838`, Windows, Ryzen 9 7950X, RTX 4090 via ANGLE/D3D11,

@@ -322,6 +322,7 @@ lazyRace('glow', { boost() {}, impact() {}, coins() {} }, import('./race-fx.js')
 lazyRace('tags', { update() {}, clear() {} }, import('./name-tags.js'), m => m.createNameTags());   // names over nearby racers
 lazyRace('hud', { update() {}, reset() {} }, import('./race-hud.js'), m => m.createRaceHud());   // standings pop-in, speed gauge
 lazyRace('audio', { update() {} }, import('./drift-audio.js'), m => m.createDriftAudio(sound));   // drift screech, chimes, outboard
+lazyRace('shadowCache', null, import('./shadow-cache.js'), m => m.cacheShadows(renderer, () => race.trackGroup));   // still scenery cast once per cell
 lazyRace('props', { setTrack() {}, sync() {}, update() {} }, import('./breakables.js'), m => m.createBreakables({ race, sound, track: () => T }))
   .then(() => { if (T?.group) race.props.setTrack(T); });   // barrels and crates to smash
 const screensReady = lazyRace('screens', { grid() {}, finish() {}, tick() {} }, import('./race-screens.js'), m => m.createRaceScreens({sound,taller}));
