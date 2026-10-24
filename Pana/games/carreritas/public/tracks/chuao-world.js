@@ -193,15 +193,15 @@ export function createWorld(scene, layout, roadDistance) {
   { const g = new THREE.PlaneGeometry(9000, 9000, 1, 1); g.rotateX(-PI / 2); const m = new THREE.Mesh(g, SEA); m.renderOrder = 1; scene.add(m); }
 
   /* ---------------- rivers and the Chorrerón ---------------- */
-  function waterMaterial(speed, alpha = 0.85, fall = 0) {
+  function waterMaterial(speed, alpha = 0.85, fall = 0, tint = 1) {
     const m = new THREE.ShaderMaterial({
-      uniforms: THREE.UniformsUtils.merge([THREE.UniformsLib.fog, { uT: { value: 0 }, uSpeed: { value: speed }, uSun: { value: SUN_DIR }, uA: { value: alpha }, uFall: { value: fall } }]),
+      uniforms: THREE.UniformsUtils.merge([THREE.UniformsLib.fog, { uT: { value: 0 }, uSpeed: { value: speed }, uSun: { value: SUN_DIR }, uA: { value: alpha }, uFall: { value: fall }, uTint: { value: tint } }]),
       vertexShader: `attribute float foam; varying vec2 vUv; varying float vFoam; varying vec3 vW;
         #include <fog_pars_vertex>
         void main(){ vUv = uv; vFoam = foam; vW = (modelMatrix * vec4(position,1.0)).xyz; vec4 mvPosition = modelViewMatrix * vec4(position,1.0); gl_Position = projectionMatrix * mvPosition;
           #include <fog_vertex>
         }`,
-      fragmentShader: `uniform float uT; uniform float uSpeed; uniform vec3 uSun; uniform float uA; uniform float uFall; varying vec2 vUv; varying float vFoam; varying vec3 vW;
+      fragmentShader: `uniform float uT; uniform float uSpeed; uniform vec3 uSun; uniform float uA; uniform float uFall; uniform float uTint; varying vec2 vUv; varying float vFoam; varying vec3 vW;
         #include <fog_pars_fragment>
         void main(){
           float flow = vUv.y - uT * uSpeed * (1.0 + vFoam * 2.5);
@@ -216,8 +216,11 @@ export function createWorld(scene, layout, roadDistance) {
             float y = vUv.y * 1.6 - uT * 2.2;
             float s1 = sin(vUv.x * 70.0 + sin(vUv.x * 13.0) * 4.0), s2 = sin(vUv.x * 23.0 + y * 0.35) * sin(y * 1.7 + vUv.x * 9.0);
             float st = smoothstep(0.2, 0.95, s1 * 0.55 + s2 * 0.45);
-            c = mix(vec3(0.72, 0.86, 0.86), vec3(1.0), 0.45 + 0.55 * st);
-            alpha = uA * (0.55 + 0.45 * st) * smoothstep(0.0, 0.08, vUv.x) * smoothstep(1.0, 0.92, vUv.x);
+            // Streaks with darker gaps between them read as falling water;
+            // ragged sides keep the curtain from ending in a ruled edge.
+            float rag = 0.06 + 0.05 * sin(y * 0.9 + vUv.x * 3.0) * sin(y * 0.37);
+            c = mix(vec3(0.55, 0.74, 0.76), vec3(1.0), 0.3 + 0.7 * st) * uTint;
+            alpha = uA * (0.45 + 0.55 * st) * smoothstep(0.0, rag + 0.04, vUv.x) * smoothstep(1.0, 0.96 - rag, vUv.x);
           }
           gl_FragColor = vec4(c, alpha);
           #include <tonemapping_fragment>
@@ -251,10 +254,53 @@ export function createWorld(scene, layout, roadDistance) {
       }
       ribbon(rows, RIV);
     }
-    // the Chorrerón: a tall ribbon down the cliff into the plunge pool
+    // the Chorrerón: a curved curtain down the cliff into the plunge pool,
+    // bulging toward the road and spreading as it falls, over a darker,
+    // slower sheet that gives it depth instead of one flat strip
     const F = MAP.fall, topY = base(F.x, F.z - 4) - 0.5, side = V3(1, 0, 0), dir = V3(0, 0, 1), frows = [];
     for (let k = 0; k <= 30; k++) { const t = k / 30; frows.push({ c: V3(F.x, lerp(topY, POOL.y + 0.2, t * t), F.z + Math.sqrt(t) * (POOL.z - F.z) * 0.9), side, w: F.width * (0.6 + t * 0.6), foam: 1 }); }
-    ribbon(frows, waterMaterial(2.6, 0.96, 1));
+    const curtain = (rows, mat, bulge, segs = 10) => {
+      const pos = [], uv = [], foam = [], idx = [];
+      let dist = 0;
+      rows.forEach((r, i) => {
+        if (i) dist += r.c.distanceTo(rows[i - 1].c);
+        for (let j = 0; j <= segs; j++) {
+          const u = j / segs * 2 - 1, v = r.c.clone().addScaledVector(r.side, u * r.w).addScaledVector(dir, (1 - u * u) * r.w * bulge);
+          pos.push(v.x, v.y, v.z); uv.push((u + 1) / 2, dist * 0.22); foam.push(r.foam || 0);
+          if (i && j) { const a = (i - 1) * (segs + 1) + j - 1, b = a + segs + 1; idx.push(a, b, a + 1, a + 1, b, b + 1); }
+        }
+      });
+      const geo = new THREE.BufferGeometry();
+      geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); geo.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2)); geo.setAttribute('foam', new THREE.Float32BufferAttribute(foam, 1)); geo.setIndex(idx);
+      const m = new THREE.Mesh(geo, mat); m.renderOrder = 2; scene.add(m); return m;
+    };
+    curtain(frows.map(r => ({ ...r, c: r.c.clone().addScaledVector(dir, -1.4), w: r.w * 1.15 })), waterMaterial(1.5, 0.8, 1, 0.72), 0.22).renderOrder = 1;
+    curtain(frows, waterMaterial(2.6, 0.96, 1), 0.32);
+    // churning foam where it lands, rolling outward over the pool
+    const landing = frows[frows.length - 1].c, FOAM = new THREE.ShaderMaterial({
+      uniforms: THREE.UniformsUtils.merge([THREE.UniformsLib.fog, { uT: { value: 0 }, uR: { value: F.width * 1.3 } }]),
+      vertexShader: `varying vec2 vP;
+        #include <fog_pars_vertex>
+        void main(){ vP = position.xy; vec4 mvPosition = modelViewMatrix * vec4(position, 1.0); gl_Position = projectionMatrix * mvPosition;
+          #include <fog_vertex>
+        }`,
+      fragmentShader: `uniform float uT; uniform float uR; varying vec2 vP;
+        #include <fog_pars_fragment>
+        void main(){
+          float r = length(vP) / uR, a = atan(vP.y, vP.x);
+          float churn = 0.5 + 0.5 * sin(r * 26.0 - uT * 3.2 + sin(a * 5.0 + uT) * 1.5) * sin(a * 9.0 - r * 7.0 + uT * 0.7);
+          float alpha = smoothstep(1.0, 0.45, r) * (0.35 + 0.65 * smoothstep(0.35, 0.8, churn)) * 0.85;
+          gl_FragColor = vec4(vec3(0.96, 0.99, 0.98), alpha);
+          #include <tonemapping_fragment>
+          #include <colorspace_fragment>
+          #include <fog_fragment>
+        }`,
+      transparent: true, depthWrite: false, fog: true,
+    });
+    waterMats.push(FOAM);
+    const foamDisc = new THREE.Mesh(new THREE.CircleGeometry(F.width * 1.3, 40), FOAM);
+    foamDisc.rotation.x = -PI / 2; foamDisc.position.set(landing.x, POOL.y + 0.32, landing.z); foamDisc.renderOrder = 3; scene.add(foamDisc);
+    scene.userData.fallLanding = landing.clone();
     // the small stream that feeds it, over the top of the cliff
     const up = [];
     for (let k = 0; k <= 20; k++) { const z = F.z - 4 - k * 3; up.push({ c: V3(F.x + Math.sin(k * 0.5) * 3, base(F.x, z) - 0.4, z), side, w: F.width * 0.45, foam: 0.3 }); }
@@ -677,8 +723,31 @@ export function createWorld(scene, layout, roadDistance) {
     for (let k = 0; k < 50; k++) { const a = rr(PI * 0.9, PI * 2.1), r = rr(800, 1400), s = new THREE.Sprite(mat); s.position.set(Math.cos(a) * r, rr(160, 300), Math.sin(a) * r * 0.8 - 300); const sc = rr(160, 320); s.scale.set(sc, sc * 0.45, 1); scene.add(s); clouds.push(s); }
     const low = new THREE.SpriteMaterial({ map: cloudTex, color: col('#ffffff'), transparent: true, opacity: 0.35, depthWrite: false, fog: true });
     for (let k = 0; k < 10; k++) { const x = rr(-340, 340), z = rr(-340, -300), s = new THREE.Sprite(low); s.position.set(x, base(x, z) + rr(12, 30), z); const sc = rr(50, 100); s.scale.set(sc, sc * 0.4, 1); scene.add(s); clouds.push(s); }
-    const mm = new THREE.SpriteMaterial({ map: cloudTex, color: col('#ffffff'), transparent: true, opacity: 0.45, depthWrite: false, fog: true });
-    for (let k = 0; k < 22; k++) { const s = new THREE.Sprite(mm); s.position.set(POOL.x + rr(-14, 14), POOL.y + rr(1, 9), POOL.z + rr(-12, 6)); const sc = rr(6, 14); s.scale.set(sc, sc * 0.7, 1); s.userData = { y0: s.position.y, ph: rand() * TAU }; scene.add(s); mist.push(s); }
+    // Mist and spray at the falls as one particle cloud animated on the GPU
+    // (it was 22 sprites, 22 draws). The 22 slow mist puffs keep their
+    // original random draws, so the rest of the valley keeps its layout;
+    // the fast spray rising off the landing uses its own seed.
+    const puffs = [], spray = rng(4127), landing = scene.userData.fallLanding;
+    for (let k = 0; k < 22; k++) { const x = POOL.x + rr(-14, 14), y = POOL.y + rr(1, 9), z = POOL.z + rr(-12, 6), size = rr(6, 14); puffs.push([x, y, z, size, rand() * TAU, 0]); }
+    for (let k = 0; k < 140; k++) { const a = spray() * TAU, r = spray() * MAP.fall.width * 1.6; puffs.push([landing.x + Math.cos(a) * r, POOL.y + 0.5, landing.z + Math.sin(a) * r * 0.7, 1.5 + spray() * 3.5, spray(), 1]); }
+    const cloud = new THREE.BufferGeometry();
+    cloud.setAttribute('position', new THREE.Float32BufferAttribute(puffs.flatMap(p => p.slice(0, 3)), 3));
+    cloud.setAttribute('puff', new THREE.Float32BufferAttribute(puffs.flatMap(p => p.slice(3)), 3));
+    const mistUniforms = { uT: { value: 0 } };
+    const mm = new THREE.PointsMaterial({ map: cloudTex, color: col('#ffffff'), size: 1, sizeAttenuation: true, transparent: true, opacity: 0.55, depthWrite: false, fog: true });
+    mm.onBeforeCompile = shader => {
+      Object.assign(shader.uniforms, mistUniforms);
+      shader.vertexShader = shader.vertexShader
+        .replace('#include <common>', '#include <common>\nattribute vec3 puff; uniform float uT; varying float vFade;')
+        .replace('#include <begin_vertex>', `vec3 transformed = position; float grow = puff.x;
+          if (puff.z > 0.5) { float life = fract(uT * 0.45 + puff.y); transformed += vec3(sin(puff.y * 40.0) * 2.5 * life, life * 9.0, cos(puff.y * 31.0) * 2.0 * life); grow *= 0.5 + life * 1.6; vFade = sin(life * 3.14159); }
+          else { transformed.y += sin(uT * 0.6 + puff.y) * 1.2; vFade = 0.8; }`)
+        .replace('gl_PointSize = size;', 'gl_PointSize = size * grow;');
+      shader.fragmentShader = shader.fragmentShader
+        .replace('#include <common>', '#include <common>\nvarying float vFade;')
+        .replace('#include <alphatest_fragment>', 'diffuseColor.a *= vFade;\n#include <alphatest_fragment>');
+    };
+    const mistCloud = new THREE.Points(cloud, mm); mistCloud.frustumCulled = false; scene.add(mistCloud); mist.push(mistUniforms);
   }
 
   /* ---------------- flush instances ---------------- */
@@ -761,7 +830,7 @@ export function createWorld(scene, layout, roadDistance) {
       b.g.position.copy(p); b.g.lookAt(ahead); b.g.rotateZ(-0.3 * Math.sign(b.sp));
       const flap = Math.max(0, Math.sin(t * b.fl + b.ph)) * 0.5 - 0.1; b.wings.forEach(w => (w.pivot.rotation.z = w.s * flap));
     });
-    mist.forEach(s => { s.position.y = s.userData.y0 + Math.sin(t * 0.6 + s.userData.ph) * 1.2; s.material.rotation = t * 0.02; });
+    mist.forEach(u => { u.uT.value = t; });
   }
 
   const ownedMaterials = new Set(), ownedTextures = new Set();
