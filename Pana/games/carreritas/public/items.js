@@ -10,6 +10,29 @@ import { isGhost } from './recovery-rules.js';
 import { makeRocket, makeChancleta, makeShield, makeTrap, ITEM_ICONS } from './item-art.js';
 import { loseCoins } from './drive-rules.js';
 import { rng } from '../../../engine/random.js';
+
+// Coins move, spin and hide through plain Object3D proxies, exactly as when
+// each was a mesh; their pieces draw as one InstancedMesh per part. Forty
+// five-piece coins were two hundred draw calls.
+function proxyInstances(scene, model, proxies) {
+  model.updateMatrixWorld(true);
+  const zero = new THREE.Matrix4().makeScale(0, 0, 0), m = new THREE.Matrix4(), parts = [];
+  model.traverse(o => {
+    if (!o.isMesh) return;
+    const im = new THREE.InstancedMesh(o.geometry, o.material, proxies.length);
+    im.name = `${model.name}-instances`; im.frustumCulled = false; im.castShadow = o.castShadow; im.receiveShadow = o.receiveShadow;
+    scene.add(im); parts.push({ im, local: o.matrixWorld.clone() });
+  });
+  const sync = () => {
+    proxies.forEach((proxy, i) => {
+      proxy.updateMatrix();
+      for (const { im, local } of parts) im.setMatrixAt(i, proxy.visible ? m.multiplyMatrices(proxy.matrix, local) : zero);
+    });
+    for (const { im } of parts) im.instanceMatrix.needsUpdate = true;
+  };
+  sync();
+  return { sync, dispose: () => parts.forEach(({ im }) => { im.removeFromParent(); im.dispose(); }) };
+}
 import { itemWeights, drawItem, pickupEligibility, incomingThreat, reactToThreat, reactionDelay, MAJOR_RECOVERY, isMajor } from './item-rules.js';
 
 const sparkTarget = new THREE.Vector3();   // scratch: sparks fly to their car every step
@@ -165,7 +188,7 @@ export function createItems(hooks) {
   });
   padGeo.dispose();
 
-  const crate = crateArt(), coin = coinArt(), mango = makeMango(), peel = makePeel();
+  const crate = crateArt(), coin = coinArt(), coinModel = coin, mango = makeMango(), peel = makePeel();
   const rocket = makeRocket(), chancla = makeChancleta(), trap = makeTrap(crate.visual);
   const battling = () => !!hooks.battle?.();
   const boxes = [];
@@ -185,7 +208,7 @@ export function createItems(hooks) {
   trailStarts.forEach((u, row) => {
     for (let i = 0; i < 5; i++) {
       const off = [-3, 0, 3, 0][row % 4] + Math.sin(i / 4 * Math.PI) * (row % 2 ? -0.8 : 0.8);
-      const a = along(u * T.TOTAL + i * 5, off), m = coin.clone();
+      const a = along(u * T.TOTAL + i * 5, off), m = new THREE.Object3D();
       const y = groundAt(a.x, a.z, a.y);
       m.position.set(a.x, y + 1.3, a.z);
       scene.add(m);
@@ -193,6 +216,7 @@ export function createItems(hooks) {
     }
   });
 
+  const coinBatch = proxyInstances(scene, coin, coins.map(c => c.m));
   let flying = [], peels = [], sparks = [];
   const held = new Map(), shields = new Map();
   let rainQueue = [];
@@ -222,7 +246,7 @@ export function createItems(hooks) {
   }
 
   function dispose() {
-    clear();
+    clear(); coinBatch.dispose();
     // Materials on the four art templates are shared within their modules.
     for (const template of [crate.visual, crate.pieces, coin, mango, peel, rocket, chancla]) disposeGeometry(template);
     // Peel materials are created per item system; mango/wood/coin paints are cached.
@@ -634,6 +658,7 @@ export function createItems(hooks) {
       coin.m.position.y = coin.y + 1.3 + Math.sin(t * 3 + coin.phase) * 0.12;
       coin.m.rotation.y = t * 2.2 + coin.phase;
     }
+    coinBatch.sync();
     sparks = sparks.filter(s => {
       s.age += dt;
       if (s.age >= 0.34) { s.m.removeFromParent(); return false; }
@@ -706,13 +731,13 @@ export function createItems(hooks) {
         const coinTouch = touches(coin, 2.1) || Math.hypot(c.x - coin.m.position.x, c.z - coin.m.position.z) < 1.85;
         if (coin.down > 0 || !coinTouch) continue;
         const worldPos = coin.m.position.clone();
-        coin.down = COIN_RESPAWN; coin.m.visible = false;
+        coin.down = COIN_RESPAWN; coin.m.visible = false; coinBatch.sync();
         c.coins = Math.min(MAX_COINS, (c.coins || 0) + 1);
         c.coinsCollected = (c.coinsCollected || 0) + 1;
         c.coinFlash = 0.35;
         c.coinStreak = (c.coinStreak || 0) + 1;
         c.coinStreakT = 1.45;
-        const m = coin.m.clone(); m.visible = true; scene.add(m);
+        const m = coinModel.clone(); m.position.copy(coin.m.position); m.rotation.copy(coin.m.rotation); scene.add(m);
         sparks.push({ m, car: c, age: 0 });
         hooks.coinPicked?.(c, worldPos, c.coinStreak);
         if (c.isPlayer) {
