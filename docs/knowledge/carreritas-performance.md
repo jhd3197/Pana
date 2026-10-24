@@ -42,6 +42,27 @@ GPU-completion timings, sustained FPS, or a total-loading speedup. The upload
 batches still contain occasional long tasks, and scene construction remains
 the largest uninterrupted work.
 
+## First-lap hitches: vessels are built behind the cover
+
+On gate maps every racer's lancha or avioneta used to be built on the
+approach to its gate (`lanchaFor`/`planeFor`). Each vessel sculpts a whole
+new pana and compiles its shaders: 300–490 ms per racer on a Ryzen 9 7950X,
+so lap 1 of Chuao froze once per racer on the climb to the waterfall, then
+ran smoothly. `gatesApi.prebuild(c)` now builds them during loading; the
+start sequence keeps them in the scene (at their hidden 0.001 scale) while
+`prepareRace` warms them, then compiles again after restoring solid
+materials. Cars turn translucent at GO (start grace), which clones every
+material: those variants are compiled during loading too, by flagging every
+car as a ghost for the warm-up.
+
+These stalls are invisible to `renderer.info` (no new programs, geometry or
+textures that frame). Drive real autopilot laps (`?debug&auto`) and log
+frame intervals per lap; a CPU profile of the long frames showing
+`onFirstUse`/`getProgramInfoLog` marks a lazy shader compile, and
+`buildCharacter` under a frame marks lazy construction. After the change,
+Chuao laps 1–3 have no frame over 50 ms (before: five 300–490 ms freezes on
+lap 1); a ~100 ms frame remains during the countdown.
+
 ## First load and the frame loop
 
 Opening Carreritas loads 153 modules, down from 287: maps load on demand

@@ -8,6 +8,10 @@ becomes the GitHub release's notes.
 
 ## Unreleased
 
+- **Carreritas corre fluido desde la primera vuelta.**
+  Las lanchas y avionetas de cada pana se preparan en la pantalla de carga:
+  ya no hay tirones cuando los rivales llegan al río.
+
 - **Bolas Criollas permite bochar por el aire y ver dónde caerá la bola.**
   Ajusta la altura y sigue el arco hasta el aro de caída; otro blanco marca
   dónde frena. La guía sigue la fuerza y avisa cuando el tiro se va fuera.

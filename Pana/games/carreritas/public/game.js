@@ -983,7 +983,18 @@ async function startRace(playerIndex, wheelId = garage.wheel, roster = null) {
     updateRace(0);
     const { prepareRace } = await import('./prepare-race.js');
     if (generation !== loadGeneration) return;
-    if (!await prepareRace(renderer, race.scene, race.p2 ? [race.camera, race.camera2] : race.camera, step)) return;
+    // Each gate vessel sculpts its own pana (~300 ms): build and warm them
+    // behind the cover, not as each racer reaches the gate on lap one.
+    await gatesReady; const vessels = [];
+    for (const c of race.cars) { const built = gatesApi.prebuild(c); vessels.push(...built); if (built.length && !await step('Preparando los vehículos…', 0.81)) return; }
+    // Cars turn translucent at GO (start grace): compile that variant now too.
+    const solid = race.cars.filter(c => !c.ghost);
+    vessels.forEach(g => { g.visible = true; }); solid.forEach(c => { c.ghost = true; syncGhostAppearance(c); });
+    try {
+      try { if (!await prepareRace(renderer, race.scene, race.p2 ? [race.camera, race.camera2] : race.camera, step)) return; }
+      finally { solid.forEach(c => { c.ghost = false; syncGhostAppearance(c); }); }
+      await renderer.compileAsync(race.scene, race.camera);   // and their solid variants
+    } finally { vessels.forEach(g => { g.visible = false; }); }
     if (roster) {
       // Everyone counts down together once every pana has loaded.
       net.loaded();

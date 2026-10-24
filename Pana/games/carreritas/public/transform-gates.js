@@ -242,6 +242,13 @@ export function createTransformGates({ race, sound, track }) {
     // A new track: the scenery goes into its group and its tick into the
     // animated list. Cars of the previous race are already gone. Open water
     // holds boats inside its banks (after the track's own constraint).
+    // Building a vessel sculpts a whole new pana (~300 ms). Do it for every
+    // racer behind the loading cover; returns the hidden groups to warm.
+    prebuild(c) {
+      if (runs.some(g => !g.fly)) lanchaFor(c);
+      if (runs.some(g => g.fly)) planeFor(c);
+      return [c.car.lancha?.group, c.car.plane?.group].filter(Boolean);
+    },
     setTrack(t) {
       if (!t.def.transformGates?.length) { runs = []; return; }
       const built = buildGates(t);
