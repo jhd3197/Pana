@@ -14,7 +14,7 @@ import { LUDO_OPTIONS, defaultLudoOptions } from './options.js';
 const $=id=>document.getElementById(id),params=new URLSearchParams(location.search);
 const code=roomFromUrl()||newRoomCode();
 params.set('room',code);history.replaceState(null,'',`${location.pathname}?${params}`);
-let world=null,stopped=false,topView=false,lastRevision=-1,lastRound=0;
+let world=null,stopped=false,topView=false;
 const room=new LudoRoom({code,name:loadName(),avatar:loadAvatar(),onState:render,
   onStatus(text,failed=false){$('connection').textContent=text;$('practice').hidden=!failed;render(room.state);},
 });
@@ -82,9 +82,8 @@ function render(state){
     const ranked=ranking(state.players);
     fillRoster($('result-roster'),ranked.map((p,i)=>({rank:i+1,name:p.name,detail:COLOR_NAMES[p.seat],end:`${p.pieces.filter(v=>v===HOME).length}/4`,me:p.id===room.id})));
   }
-  if(lastRevision>=0&&state.revision!==lastRevision&&state.round===lastRound&&state.phase==='playing'&&!state.die)sound.tone(380,0,.07,'triangle',.06);
-  lastRevision=state.revision;lastRound=state.round;
   world?.update(state,room.connected?seat:-1);
+  if(ended)$('results').hidden=!!world?.celebrating;
   hud.update(state,room.connected?seat:-1,room.id,eventText);
   hud.frame(!!world?.tossing,thrower.shaking,thrower.power);
 
@@ -98,7 +97,7 @@ addEventListener('keydown',event=>{
 let previous=performance.now();
 const timer=setInterval(()=>{const now=performance.now();room.tick(Math.min(.2,(now-previous)/1000),menu.isOpen&&room.members.size<=1);previous=now;},100);
 let frameTime=performance.now();
-function frame(now){if(stopped)return;if(thrower.shaking)world?.shakeDie(thrower.power);world?.frame(Math.min(.05,(now-frameTime)/1000));hud.frame(!!world?.tossing,thrower.shaking,thrower.power);frameTime=now;requestAnimationFrame(frame);}
+function frame(now){if(stopped)return;if(thrower.shaking)world?.shakeDie(thrower.power);world?.frame(Math.min(.05,(now-frameTime)/1000));hud.frame(!!world?.tossing,thrower.shaking,thrower.power);if(room.state.phase==='finished')$('results').hidden=!!world?.celebrating;frameTime=now;requestAnimationFrame(frame);}
 requestAnimationFrame(frame);
 render(room.state);room.connect();
 export const sceneReady=import('./scene.js').then(async({createLudoScene})=>{

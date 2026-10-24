@@ -158,3 +158,33 @@ No demo background images, duplicate rules, sockets or menus are imported.
 large shared-cell stacks, hold/release dice input, Shift/blur/touch inspection
 and responsive desktop/portrait/landscape layouts. `hud.test.js` checks timing
 at every throw strength, move descriptions and migrated capture totals.
+
+## Sound cues
+
+`sounds.js` synthesizes short cues through the shared `engine/fx.js` sound
+object, voice budget and master volume. The scene triggers the result chime
+only when the die settles, steps on path crossings, and capture/home/victory
+on the moving pawn landing. Studio tricks have individual opening cues.
+There are no delayed JavaScript audio timers; hidden pages skip new cues.
+Shake cadence uses elapsed time, not frame counts. Initial snapshots and
+repeated room renders do not replay landing celebrations.
+
+## Extra Studio moments
+
+The eleven `moment-events.js` entries complement the ten camino tricks.
+`moments.js` derives intro/turn/suspense/no-moves/podium from state transitions,
+and safe/shared-square/near-miss reactions from real landings. Idle human turns
+can sleep after 18 seconds. `moment-visual.js` samples reversible visual offsets;
+the controller restores poses before both state updates and ordinary animation.
+A same-color stack raises a decorative wall (Bloqueo); it never rejects a legal
+move or bounces an opponent to another logical cell. Leap crosses a real occupied
+path cell; sprint is selected on entering the private home lane. Both use the
+same legal path and endpoint. The podium uses `ranking`, appears after the final
+landing and gives way to results after 2.6 seconds of elapsed time, so low FPS
+does not stretch the ceremony. Rematches remove its props.
+Initial/late-join snapshots do not replay the introduction or winning ceremony.
+All eleven have Studio catalog previews; all twenty-one have shared-volume cues.
+
+The match browser suite uses `tests/browser-kit.js` `launch`: its background
+timer flags are necessary for the hidden host to advance multiplayer turns.
+Its opening seed is fixed to avoid an accidental tie extending unrelated checks.

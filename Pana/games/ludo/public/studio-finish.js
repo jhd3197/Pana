@@ -79,7 +79,7 @@ export function poseFace(pawn, time, mood = 'idle', look = 0) {
   const blink = (time + face.seed*.37)%4.1 < .12 ? .08 : 1;
   const surprised = mood === 'surprised', happy = mood === 'happy';
   face.eyes.forEach((eye,i) => {
-    eye.scale.set(1, (surprised?1.3:happy?.35:1)*blink, 1);
+    eye.scale.set(1, (mood==='sleep'?.08:surprised?1.3:happy?.35:1)*blink, 1);
     face.pupils[i].position.set(THREE.MathUtils.clamp(look,-1,1)*.013,0,.024);
     face.pupils[i].scale.setScalar(surprised?.65:1);
   });

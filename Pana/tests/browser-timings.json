@@ -139,6 +139,8 @@
   "Pana/games/lancha/tests/browser.mjs": 95,
   "Pana/games/ludo/tests/hud.browser.js": 168,
   "Pana/games/ludo/tests/ludo.browser.js": 507,
+  "Pana/games/ludo/tests/moments.browser.js": 81,
+  "Pana/games/ludo/tests/sounds.browser.js": 6,
   "Pana/games/ludo/tests/studio-motion.browser.js": 44,
   "Pana/games/parapente/tests/browser.mjs": 79,
   "Pana/games/pintura/tests/browser.mjs": 455,

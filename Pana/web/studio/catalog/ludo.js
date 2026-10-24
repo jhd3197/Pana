@@ -11,3 +11,10 @@ for(const [style,name] of [['highfive','Chócala'],['slip','Resbalón'],['rollba
     source:'/g/ludo/studio-preview.js',factory:'createLudoMotionPreview',previewOptions:{style},
     dependencies:['/g/ludo/board-model.js','/g/ludo/rules.js','/g/ludo/studio-finish.js','/g/ludo/camino-motion.js','/g/ludo/motion-props.js','/g/ludo/motion-choice.js','/engine/models/props/game-table.js']}));
 }
+
+for(const [kind,name] of [['intro','Inicio de partida'],['turn','Tu turno'],['suspense','Dado en suspenso'],['safe','Casilla segura'],['block','Bloqueo'],['leap','Salto de rana'],['sprint','Recta final'],['nearmiss','¡Casi!'],['nomoves','Sin movimientos'],['sleep','A dormir'],['podium','Podio']]) {
+  LUDO.push(object({id:`ludo-${kind}`,name:`Ludo · ${name}`,category:'Objetos',usedBy:['Ludo'],
+    description:kind==='block'?'Reacción decorativa de fichas juntas. No bloquea las jugadas.':'Momento del estudio conectado a los eventos de la partida.',
+    source:'/g/ludo/studio-preview.js',factory:'createLudoMomentPreview',previewOptions:{kind},
+    dependencies:['/g/ludo/board-model.js','/g/ludo/rules.js','/g/ludo/moment-visual.js','/g/ludo/moment-events.js','/g/ludo/studio-finish.js','/g/ludo/camino-motion.js','/g/ludo/motion-props.js','/engine/models/props/game-table.js']}));
+}

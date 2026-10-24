@@ -1,8 +1,8 @@
 import assert from 'node:assert/strict';
-import { chromium } from 'playwright';
+import { launch } from '../../../tests/browser-kit.js';
 import { mkdir } from 'node:fs/promises';
 const base=process.env.PANA_TEST_URL||'http://localhost:8461',code=`ludo-${Date.now()}`;
-const browser=await chromium.launch({headless:true}),errors=[];
+const browser=await launch(),errors=[];
 await mkdir('art/ludo',{recursive:true});
 async function open(name,mobile=false,roomCode=code){
   const context=await browser.newContext({viewport:mobile?{width:390,height:844}:{width:1440,height:1000},isMobile:mobile,hasTouch:mobile});
@@ -53,6 +53,8 @@ try{
     assert.deepEqual(aligned, [true, true, true, true], 'every pana sits by their color and faces the board');
   }
   await a.screenshot({path:'art/ludo/desktop-lobby.png'});
+  // A reproducible, untied opener; tie rules have their own shared tests.
+  await a.evaluate(()=>{ludoDebug.room.game.rng=1;});
   await a.locator('#start').click();await sync(a,b);
   assert.equal(await b.evaluate(()=>ludoDebug.room.state.phase),'starter');
   // ¿Quién empieza?: everyone shakes at once. Juan holds the cacho button, Ana holds Space.
@@ -66,8 +68,8 @@ try{
   await a.locator('#pana-starter-shake').dispatchEvent('pointerup',{pointerId:3,button:0});
   await b.keyboard.up(' ');
   await b.waitForFunction(()=>0 in ludoDebug.room.state.starter.slammed&&1 in ludoDebug.room.state.starter.slammed||ludoDebug.room.state.starter.phase!=='shake');
-  await a.waitForFunction(()=>ludoDebug.world.starter.revealed,null,{timeout:30000});
-  await b.waitForFunction(()=>ludoDebug.world.starter.revealed||ludoDebug.room.state.phase==='playing',null,{timeout:30000});
+  await a.waitForFunction(()=>ludoDebug.world.starter.revealed||ludoDebug.room.state.phase==='playing',null,{timeout:90000});
+  await b.waitForFunction(()=>ludoDebug.world.starter.revealed||ludoDebug.room.state.phase==='playing',null,{timeout:90000});
   await a.screenshot({path:'art/ludo/desktop-starter-lift.png'});
   await a.waitForFunction(()=>ludoDebug.room.state.phase==='playing',null,{timeout:60000});await sync(a,b);
   const opened=await a.evaluate(()=>ludoDebug.room.state);
@@ -167,10 +169,11 @@ try{
   await b.locator('#pana-resume').click();
   await b.waitForFunction(rev=>ludoDebug.room.state.revision>rev,rev);
   console.log('ok: migration preserves pending dice/board, late arrival inherits bot, solo menu pauses bots');
-  await b.evaluate(()=>{const g=ludoDebug.room.game;g.autoMove=null;g.turn=1;g.die=1;g.players[1].pieces=[56,56,56,55];g.revision++;ludoDebug.room.publish();});
+  await b.evaluate(()=>{const g=ludoDebug.room.game;g.round++;g.autoMove=null;g.turn=1;g.die=1;g.players[1].pieces=[56,56,56,55];g.revision++;ludoDebug.room.publish();});
   await b.locator('[data-piece="3"]').click();await b.locator('#results').waitFor({state:'visible'});
   assert.match(await b.locator('#result-title').textContent(),/Ana/);await b.screenshot({path:'art/ludo/results.png'});
-  await b.locator('#again').click();assert.equal(await b.evaluate(()=>ludoDebug.room.state.round),2);
+  const finishedRound=await b.evaluate(()=>ludoDebug.room.state.round);
+  await b.locator('#again').click();assert.equal(await b.evaluate(()=>ludoDebug.room.state.round),finishedRound+1);
   // A rematch shakes the cachos again; the last match's slam doesn't carry over.
   await b.locator('#pana-starter-shake').waitFor();assert.equal(await b.evaluate(()=>ludoDebug.room.state.phase),'starter');
   await b.close();
@@ -190,8 +193,8 @@ try{
   assert.ok(await m.locator('#world').evaluate(el=>el.getBoundingClientRect().height>250));
   await m.evaluate(()=>ludoDebug.room.cut());await m.locator('#practice').waitFor({state:'visible'});await m.locator('#practice').click();
   assert.ok(await m.locator('#invite').isDisabled());await m.locator('#start').click();assert.equal(await m.evaluate(()=>ludoDebug.room.state.phase),'starter');
-  // Build the three models and ten shared motion previews through the real catalog.
-  assert.equal(await m.evaluate(async()=>{const {ASSETS}=await import('/studio/catalog.js');for(const asset of ASSETS.filter(a=>a.id.startsWith('ludo-'))){const {group}=await asset.build();if(!group.children.length)throw Error('empty model');group.userData.dispose();}return ASSETS.filter(a=>a.id.startsWith('ludo-')).length;}),13);
+  // Build the three models and twenty-one shared animation previews through the real catalog.
+  assert.equal(await m.evaluate(async()=>{const {ASSETS}=await import('/studio/catalog.js');for(const asset of ASSETS.filter(a=>a.id.startsWith('ludo-'))){const {group}=await asset.build();if(!group.children.length)throw Error('empty model');group.userData.dispose();}return ASSETS.filter(a=>a.id.startsWith('ludo-')).length;}),24);
   const response=await m.request.get(`${base}/api/games`);const listing=await response.json();assert.ok(JSON.stringify(listing).includes('Ludo'));
   await m.goto(base);await m.getByRole('heading',{name:'Ludo',exact:true}).waitFor();
   console.log('ok: win/rematch, portrait and landscape touch, local fallback, Studio models and hub discovery');

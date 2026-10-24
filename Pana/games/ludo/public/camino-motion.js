@@ -15,8 +15,8 @@ export function createCaminoMotion(root, pawn, path, style, color, partner=null)
   const canvas=document.createElement('canvas');canvas.width=512;canvas.height=128;
   const ctx=canvas.getContext('2d'),words=['¡Chócala!','¡Cambur!','¡A rodar!','¡Estilo!','¡BOING!','¡Matrix!','¡Arre!','¡Wiii!','¡Atajo!','¡Chicle!'];
   ctx.font='900 66px Nunito, sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';ctx.lineJoin='round';
-  ctx.lineWidth=12;ctx.strokeStyle='#2b2030';ctx.strokeText(words[CAMINO.indexOf(style)]||'¡Hop!',256,64);
-  ctx.fillStyle=style==='gum'?'#ff8fc8':'#fff1ae';ctx.fillText(words[CAMINO.indexOf(style)]||'¡Hop!',256,64);
+  ctx.lineWidth=12;ctx.strokeStyle='#2b2030';ctx.strokeText(words[CAMINO.indexOf(style)]||(style==='sprint'?'¡Recta final!':'¡Hop!'),256,64);
+  ctx.fillStyle=style==='gum'?'#ff8fc8':'#fff1ae';ctx.fillText(words[CAMINO.indexOf(style)]||(style==='sprint'?'¡Recta final!':'¡Hop!'),256,64);
   const map=new THREE.CanvasTexture(canvas);map.colorSpace=THREE.SRGBColorSpace;
   const label=new THREE.Sprite(new THREE.SpriteMaterial({map,transparent:true,depthWrite:false}));label.scale.set(1.3,.325,1);root.add(label);
   const end=path.length-1,base=path[0].y,at=new THREE.Vector3(),tangent=new THREE.Vector3();
@@ -32,7 +32,12 @@ export function createCaminoMotion(root, pawn, path, style, color, partner=null)
     point(t);pawn.position.copy(at);props.visible=false;
     label.visible=t>.18&&t<.82;
     let mood='happy';
-    if(style==='moonwalk') {
+    if(style==='leap') {
+      pawn.position.y+=1.05*arc(t);pawn.rotation.x=Math.PI*2*smooth(t);
+      if(partner){partner.scale.y*=1-.35*arc(t);poseFace(partner,time,'surprised');}
+    } else if(style==='sprint') {
+      point(Math.pow(t,1.3));pawn.position.copy(at);pawn.position.y+=.07*Math.abs(Math.sin(t*end*Math.PI*2));pawn.rotation.x=.38*arc(t);
+    } else if(style==='moonwalk') {
       pawn.rotation.set(-.12,yaw(t)+Math.PI*smooth(t/.12),Math.sin(t*Math.PI*12)*.12*arc(t));
       pawn.position.y+=Math.abs(Math.sin(t*Math.PI*12))*.012;
     } else if(style==='rollbarrel') {
