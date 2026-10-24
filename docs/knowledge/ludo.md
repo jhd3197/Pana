@@ -78,3 +78,16 @@ the visible board, and the in-game buttons remain below it.
   bot replacement, pause, finish/rematch, both mobile orientations, local
   fallback, Studio factories and hub discovery. Screenshots: `art/ludo/`.
 - `.\dev.ps1 check`: repository syntax, unit and convention checks.
+
+Chair angles use `-π/4 - seat·π/2` to follow `rotateCell`: red near-left,
+green far-left, yellow far-right and blue near-right. The same angle places
+starter cachos and dice throws. Reversing its sign swaps green and blue while
+leaving red and yellow apparently correct. The two-client suite checks every
+avatar against its yard center and verifies that it faces the board.
+
+Safe ring cells have contrasting double frames plus their central circle; the
+HUD explains that no capture happens there. Shared cells use `piece-layout.js`
+to arrange pawns in a centered grid at one height, scaled to stay inside the
+cell even with sixteen pieces. Count occupants before assigning targets and
+refresh active hop endpoints when occupancy changes. Raycasts still hit each
+pawn mesh; the 1–4 buttons remain available for very crowded cells.

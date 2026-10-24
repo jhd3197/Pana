@@ -8,6 +8,14 @@ becomes the GitHub release's notes.
 
 ## Unreleased
 
+- **Ludo distingue los seguros y muestra juntas las fichas que comparten casilla.**
+  Un doble borde y una leyenda aclaran dónde no se captura; las fichas se
+  distribuyen lado a lado dentro de la casilla, sin taparse en una torre.
+
+- **En Ludo cada pana se sienta junto al patio de su color.**
+  Verde y azul dejan de aparecer intercambiados; los cachos y lanzamientos
+  también salen del lado correcto de cada jugador.
+
 - **Póquer muestra las cartas comunitarias en grande encima de la mesa.**
   Los valores y palos se leen de frente; tus cartas también crecen y la cámara
   deja espacio para la lectura en teléfonos, sin revelar manos ajenas.

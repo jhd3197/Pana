@@ -29,7 +29,7 @@ const menu=createGameMenu({ pad: { buttons: true, keys: { x: ['Space', 'Agitar e
     'Agita el dado manteniendo el botón o Espacio y suéltalo, o lánzalo arrastrando sobre la mesa. Cuanto más lo agitas, más fuerte vuela; el número sigue siendo suerte.',
     'El anfitrión elige si sales con seis o con uno y seis. Al salir, la ficha queda en la casilla de salida.',
     'Un seis permite volver a tirar. Si la sala activa la regla, el tercer seis seguido pierde ese lanzamiento y termina el turno; los movimientos anteriores se conservan.',
-    'Las casillas con un círculo son seguras. En las demás, caer sobre fichas rivales las devuelve a su patio. La sala puede dar otra tirada al capturar.',
+    'Las casillas con doble borde y un círculo son seguras: aquí no se come. En las demás, caer sobre fichas rivales las devuelve a su patio. La sala puede dar otra tirada al capturar.',
     'Las fichas pueden compartir casilla y no forman barreras. El pasillo de tu color es privado. Debes sacar el número exacto para llegar a casa.',
     'Si no tienes movimiento, el turno pasa automáticamente. Los puestos vacíos juegan con bots; un pana que llega hereda las fichas de un bot.',
   ],invite:()=>room.offline?null:inviteUrl(code),

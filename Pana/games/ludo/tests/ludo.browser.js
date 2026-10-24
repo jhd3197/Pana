@@ -36,6 +36,22 @@ try{
   await b.waitForFunction(()=>ludoDebug.room.state.options.entry==='six'&&ludoDebug.room.state.options.threeSixes);
   assert.equal(await a.evaluate(()=>ludoDebug.world.characters[0].group.userData.characterVersion),'studio-v1');
   assert.equal(await a.evaluate(()=>ludoDebug.world.characters[0].avatar.hat),'gorra');
+  // Each player belongs beside their own yard, on both clients. In particular,
+  // green and blue must not be swapped by reversing the chair rotation.
+  for (const page of [a, b]) {
+    const aligned = await page.evaluate(async () => {
+      const { boardPoint } = await import('/g/ludo/board-model.js');
+      return ludoDebug.world.characters.map((character, seat) => {
+        const yard = Array.from({ length: 4 }, (_, piece) => boardPoint(seat, -1, piece));
+        const x = yard.reduce((sum, p) => sum + p[0], 0) / 4;
+        const z = yard.reduce((sum, p) => sum + p[1], 0) / 4;
+        const pos = character.group.position, angle = character.group.rotation.y;
+        return Math.sign(pos.x) === Math.sign(x) && Math.sign(pos.z) === Math.sign(z)
+          && (Math.sin(angle) * -pos.x + Math.cos(angle) * -pos.z) / Math.hypot(pos.x, pos.z) > .99;
+      });
+    });
+    assert.deepEqual(aligned, [true, true, true, true], 'every pana sits by their color and faces the board');
+  }
   await a.screenshot({path:'art/ludo/desktop-lobby.png'});
   await a.locator('#start').click();await sync(a,b);
   assert.equal(await b.evaluate(()=>ludoDebug.room.state.phase),'starter');
@@ -57,6 +73,28 @@ try{
   const opened=await a.evaluate(()=>ludoDebug.room.state);
   assert.equal(opened.turn,opened.starter.order[0]);assert.match(opened.event,/Empieza/);
   assert.equal(await b.evaluate(()=>ludoDebug.world.starter.active),false,'the cachos leave the table');
+  // Reproduce green and yellow sharing yellow's safe starting square.
+  await a.evaluate(()=>{
+    const g=ludoDebug.room.game;g.round++;g.phase='playing';g.turn=1;g.die=2;
+    g.players.forEach(p=>p.pieces=[-1,-1,-1,-1]);
+    g.players[1].pieces[0]=13;g.players[2].pieces[0]=0;g.revision++;ludoDebug.room.publish();
+  });await sync(a,b);
+  for(const page of [a,b]){
+    await page.waitForFunction(()=>ludoDebug.world.pawns.every(p=>!p.path&&!p.flight&&p.model.position.distanceTo(p.target)<.01)&&ludoDebug.world.pawns.find(p=>p.seat===1&&p.piece===0).model.scale.x<.5);
+    assert.equal(await page.evaluate(()=>{
+      const [green,yellow]=[1,2].map(seat=>ludoDebug.world.pawns.find(p=>p.seat===seat&&p.piece===0));
+      return Math.abs(green.model.position.y-yellow.model.position.y)<.001
+        &&green.model.position.distanceTo(yellow.model.position)>.14
+        &&green.model.scale.x<.5&&yellow.model.scale.x<.5;
+    }),true,'safe-square pieces are side by side, never stacked');
+    assert.equal(await page.evaluate(()=>[0,8,13,21,26,34,39,47].every(i=>ludoDebug.world.scene.getObjectByName(`safe-cell-${i}`)?.children.length===8)),true);
+  }
+  await b.screenshot({path:'art/ludo/shared-safe-square.png'});
+  const sharedPoint=await b.evaluate(()=>ludoDebug.world.projectPiece(1,0));
+  await b.mouse.click(sharedPoint.x,sharedPoint.y);
+  await a.waitForFunction(()=>ludoDebug.room.state.players[1].pieces[0]===15);
+  await a.waitForFunction(()=>{const p=ludoDebug.world.pawns.find(p=>p.seat===2&&p.piece===0);return p.model.scale.x>.99&&p.model.position.distanceTo(p.target)<.01;});
+  await a.evaluate(()=>{const g=ludoDebug.room.game;g.round--;g.revision++;ludoDebug.room.publish();});await sync(a,b);
   // Then Ludo's own die: a flick across the table throws hard.
   await a.evaluate(()=>{const g=ludoDebug.room.game;g.turn=0;g.die=0;g.revision++;ludoDebug.room.publish();});await sync(a,b);
   const box=await a.locator('#world').boundingBox(),cx=box.x+box.width/2,cy=box.y+box.height*.7;
