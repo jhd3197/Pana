@@ -1,5 +1,9 @@
 # Shared capybara and character editor
 
+Large front/three-quarter reference PNGs ship in the `shared-character` asset
+pack at their original URLs. Restore editable originals with
+`node Pana/scripts/asset-packs.js --restore shared-character`; see `asset-packs.md`.
+
 ## Mi pana wardrobe
 
 The player editor at `/personaje` uses `web/character/editor.js` and

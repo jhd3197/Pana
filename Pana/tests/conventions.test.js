@@ -343,6 +343,10 @@ test('no emoji or emoji-prone glyphs anywhere in engine/ or web/', () => {
 
 test('served images stay small (at most 600 KB)', () => {
   const problems = [];
+  const packs = JSON.parse(read(path.join(app, 'server/src/asset-packs.json')));
+  for (const pack of Object.values(packs)) for (const [name, entry] of Object.entries(pack.entries)) {
+    if (/^(web\/images\/|games\/)/.test(name) && entry.bytes > 600 * 1024) problems.push(`${name}: packed image exceeds 600 KB`);
+  }
   for (const dir of [path.join(app, 'web', 'images'), ...games.map(id => path.join(gamesDir, id, 'public'))]) {
     if (!fs.existsSync(dir)) continue;
     for (const file of walk(dir, n => /\.(png|jpe?g|webp|gif)$/i.test(n))) {
@@ -351,6 +355,21 @@ test('served images stay small (at most 600 KB)', () => {
     }
   }
   assert.deepEqual(problems, []);
+});
+
+test('large runtime raster assets belong to a release pack', () => {
+  const packs = JSON.parse(read(path.join(app, 'server/src/asset-packs.json')));
+  const enrolled = new Set(Object.values(packs).flatMap(pack => Object.keys(pack.entries)));
+  const directories = ['web/images', 'web/character/references', 'engine', ...games.map(id => `games/${id}/public`)];
+  const missing = [];
+  for (const dir of directories) {
+    const full = path.join(app, dir); if (!fs.existsSync(full)) continue;
+    for (const file of walk(full, name => /\.(png|jpe?g|webp|avif|gif|ktx2|hdr|exr)$/i.test(name))) {
+      if (rel(file).includes('/qa/')) continue;
+      if (fs.statSync(file).size >= 100 * 1024 && !enrolled.has(rel(file))) missing.push(rel(file));
+    }
+  }
+  assert.deepEqual(missing, [], 'Run the asset-packs tool; keep big runtime files out of Git');
 });
 
 // ---------- Tests and docs that agents keep rewriting ----------

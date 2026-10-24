@@ -8,6 +8,10 @@ becomes the GitHub release's notes.
 
 ## Unreleased
 
+- **Las imágenes grandes se distribuyen en paquetes separados por juego.**
+  Pana verifica y guarda cada paquete al necesitarlo; los iconos y miniaturas
+  siguen en Git, sin cambiar las ilustraciones ni sus direcciones.
+
 - **QQSMP lee las preguntas en español y te da más tiempo para responder.**
   Voz grabada para cada pregunta, 30 segundos por defecto y opción de 45;
   las revanchas recorren el banco antes de repetir preguntas.

@@ -7,6 +7,7 @@ import { config } from './config.js';
 import { handleApi } from './api.js';
 import { serveStatic } from './static.js';
 import { isColyseusPath } from './colyseus.js';
+import { servePackedAsset } from './packed-assets.js';
 
 function gamePublicDir(game) {
   if (!/^[a-z0-9-]+$/.test(game)) return null;
@@ -18,6 +19,7 @@ export function createRequestHandler(startedAt, colyseus) {
   return (req, res) => {
     const url = new URL(req.url, 'http://localhost');
     const pathname = url.pathname;
+    if (servePackedAsset(res, pathname)) return;
 
     if (isColyseusPath(pathname) && colyseus.handle) return colyseus.handle(req, res);
 

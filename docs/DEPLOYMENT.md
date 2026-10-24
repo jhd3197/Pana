@@ -23,6 +23,13 @@ Fly.io or Railway are the simplest paths:
 
 ## Requirements
 
+Large images and textures use per-game ZIPs from the `asset-packs` release.
+Original URLs are preserved. The first request installs only that game's pinned
+pack, with archive and file checksum verification. Set `PANA_ASSET_CACHE` to a
+writable persistent directory, or use the default `DATA_ROOT/pana-asset-packs`
+(system temp when `DATA_ROOT` is unset). No checkout files need to be writable.
+See `docs/knowledge/asset-packs.md` for editing and publishing packs.
+
 QQSMP narration is distributed separately in the GitHub `voice-packs` release.
 The first question-audio request downloads the pinned ZIP, verifies SHA-256,
 and caches it. No MP3s or ZIPs are committed to Git and no build step is needed.

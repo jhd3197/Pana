@@ -26,6 +26,10 @@ lazily, so a test scrolls a tile into view before decoding it.
 
 ## Art and rendering
 
+Large launcher illustrations are served from their game's release asset pack at
+the same URLs. Small card images remain in Git. Restore originals before editing
+and republish the pack after exporting; see `asset-packs.md`.
+
 Header, content and card rail use `--pk-page-width` / `--pk-page-gutter` from
 the kit; hosted social pages use the same values. Do not combine a larger
 `max-width` with an inherited smaller `width` on the header. The creator paints

@@ -1,0 +1,469 @@
+{
+  "billar": {
+    "url": "https://github.com/jhd3197/Pana/releases/download/asset-packs/billar-1a8d139fb3ebf773.zip",
+    "sha256": "1a8d139fb3ebf773f7f0a84f5c0afc4457f8abde04aeb0919bde2c16039bc9bf",
+    "bytes": 203716,
+    "files": 1,
+    "entries": {
+      "web/images/launcher/billar.jpg": {
+        "url": "/images/launcher/billar.jpg",
+        "bytes": 203558,
+        "sha256": "f503d8e1077847c841989109f535ef1f1ead306b28093e574e51cbbe2e756d77"
+      }
+    }
+  },
+  "bochinche": {
+    "url": "https://github.com/jhd3197/Pana/releases/download/asset-packs/bochinche-b5a12f38355e5183.zip",
+    "sha256": "b5a12f38355e51835ada0f3129ed2c713a6bd5d9d0326744b6a60c4fe3b078a7",
+    "bytes": 188324,
+    "files": 1,
+    "entries": {
+      "web/images/launcher/bochinche.jpg": {
+        "url": "/images/launcher/bochinche.jpg",
+        "bytes": 188160,
+        "sha256": "8e9f57b06cd43d6e9a3a34e4ba1863dde5abc3f1ccf303141f403a8e13dd0a76"
+      }
+    }
+  },
+  "bululu": {
+    "url": "https://github.com/jhd3197/Pana/releases/download/asset-packs/bululu-a66931de24726557.zip",
+    "sha256": "a66931de24726557fd6ba448e3556ee034572bda275f7e885176b56962f12c5f",
+    "bytes": 194847,
+    "files": 1,
+    "entries": {
+      "web/images/launcher/bululu.jpg": {
+        "url": "/images/launcher/bululu.jpg",
+        "bytes": 194689,
+        "sha256": "56f6e52d04a8986d28cb407283de26cf44861cb48816462863f7478fbc5cc028"
+      }
+    }
+  },
+  "caida": {
+    "url": "https://github.com/jhd3197/Pana/releases/download/asset-packs/caida-3f5f7c7d03f5bbf2.zip",
+    "sha256": "3f5f7c7d03f5bbf21c501e3966c63d7d6ffd07cd9552fbdb3670790d26255ff0",
+    "bytes": 195732,
+    "files": 1,
+    "entries": {
+      "web/images/launcher/caida.jpg": {
+        "url": "/images/launcher/caida.jpg",
+        "bytes": 195576,
+        "sha256": "97d3662c81b400d6d5dc50132fcee10d7a522f0bfbc5e94745f0a17755e9363e"
+      }
+    }
+  },
+  "carreritas": {
+    "url": "https://github.com/jhd3197/Pana/releases/download/asset-packs/carreritas-17ed412c9943cf6d.zip",
+    "sha256": "17ed412c9943cf6d5d9349b39a70029db9efa975a31a9fd35cbdc2f1b32bb506",
+    "bytes": 5665210,
+    "files": 31,
+    "entries": {
+      "games/carreritas/public/images/menu/arrecife.webp": {
+        "url": "/g/carreritas/images/menu/arrecife.webp",
+        "bytes": 148520,
+        "sha256": "68bb16f90c6c28cf130536e6ef6cd06161f5fcfd0f5041f6f22c890f5a725cb2"
+      },
+      "games/carreritas/public/images/menu/bululu.webp": {
+        "url": "/g/carreritas/images/menu/bululu.webp",
+        "bytes": 146748,
+        "sha256": "18248749bba675a3e37009f20d6e1028210868427ff96602106924ef5f7df541"
+      },
+      "games/carreritas/public/images/menu/cata.webp": {
+        "url": "/g/carreritas/images/menu/cata.webp",
+        "bytes": 223312,
+        "sha256": "dece9f7e0a5d90e6bc08aa2500d6dc1c9c07ee088dc632bc273de908d899a673"
+      },
+      "games/carreritas/public/images/menu/chichi.webp": {
+        "url": "/g/carreritas/images/menu/chichi.webp",
+        "bytes": 181924,
+        "sha256": "101845bcfb11fb5edf1b9707680fa1630df78dcd1df0b3d31b49e3d28926fc80"
+      },
+      "games/carreritas/public/images/menu/choroni.webp": {
+        "url": "/g/carreritas/images/menu/choroni.webp",
+        "bytes": 235790,
+        "sha256": "d6b6e61241d0e5ae4222b2704d6d0c30a4822fe6506512ba086f020e3fb1c8c2"
+      },
+      "games/carreritas/public/images/menu/chuao.webp": {
+        "url": "/g/carreritas/images/menu/chuao.webp",
+        "bytes": 255846,
+        "sha256": "e7f01b34a6a0b4451abf6e8fb382bfe8b0163601107c8e4e9fb87bc19fbfd4a5"
+      },
+      "games/carreritas/public/images/menu/cosmos.webp": {
+        "url": "/g/carreritas/images/menu/cosmos.webp",
+        "bytes": 149924,
+        "sha256": "0f9fcbdef181df9a30d8ee500bf1084c90dbbbde86f54f224740af426941f7b1"
+      },
+      "games/carreritas/public/images/menu/cuevas.webp": {
+        "url": "/g/carreritas/images/menu/cuevas.webp",
+        "bytes": 163656,
+        "sha256": "d4be47af94072634ffe7da6666dc542f99da495194ec131e2310182e6a4fd9c3"
+      },
+      "games/carreritas/public/images/menu/delta.webp": {
+        "url": "/g/carreritas/images/menu/delta.webp",
+        "bytes": 184886,
+        "sha256": "1c838eefcb51f64b2c5b1e066a1df3838680808abb5eb9bfe8b893814c00f339"
+      },
+      "games/carreritas/public/images/menu/desierto.webp": {
+        "url": "/g/carreritas/images/menu/desierto.webp",
+        "bytes": 120986,
+        "sha256": "47aa7521e74374fcbf773b23bb5df0f48f3dec15259d89416bb8d3b3c2073dbf"
+      },
+      "games/carreritas/public/images/menu/dulce.webp": {
+        "url": "/g/carreritas/images/menu/dulce.webp",
+        "bytes": 157314,
+        "sha256": "399f44e71ff3f144aeca3f0439e5df655b569bb9637abb5dde3c68a66ac96945"
+      },
+      "games/carreritas/public/images/menu/estadio.webp": {
+        "url": "/g/carreritas/images/menu/estadio.webp",
+        "bytes": 156682,
+        "sha256": "0b483965a5f974b71981d7d8b50a8b5dba9b8046857ff8395693a7c890d27bce"
+      },
+      "games/carreritas/public/images/menu/galipan.webp": {
+        "url": "/g/carreritas/images/menu/galipan.webp",
+        "bytes": 147464,
+        "sha256": "4c3c9cc48986940ed2896c800e14a4e8b12e1ac00b931219151830f44dfb81b0"
+      },
+      "games/carreritas/public/images/menu/llanos.webp": {
+        "url": "/g/carreritas/images/menu/llanos.webp",
+        "bytes": 230992,
+        "sha256": "e3cc22104c66f317839cc320768a8f99f2127601a01ba72b74c178d843b752e4"
+      },
+      "games/carreritas/public/images/menu/maracaibo.webp": {
+        "url": "/g/carreritas/images/menu/maracaibo.webp",
+        "bytes": 194048,
+        "sha256": "6cdcb16e4abf044ae82b8e4d13823692dc6b6cb8bec1ff9459e0b901157527b8"
+      },
+      "games/carreritas/public/images/menu/margarita.webp": {
+        "url": "/g/carreritas/images/menu/margarita.webp",
+        "bytes": 198328,
+        "sha256": "9777b027047fe06f9f02bbcafd1505228139d285e3b3cf631b1dba0a73a91508"
+      },
+      "games/carreritas/public/images/menu/merida.webp": {
+        "url": "/g/carreritas/images/menu/merida.webp",
+        "bytes": 194752,
+        "sha256": "7966ca3c8844458876c696a17483c117cf91272cadc3d8a8461cb1c808da1527"
+      },
+      "games/carreritas/public/images/menu/nubes.webp": {
+        "url": "/g/carreritas/images/menu/nubes.webp",
+        "bytes": 121052,
+        "sha256": "5fbdc0fd551d5018b108e1592b3a0bacfa514a37cbd75a83771b27b6f12cff4e"
+      },
+      "games/carreritas/public/images/menu/paramo.webp": {
+        "url": "/g/carreritas/images/menu/paramo.webp",
+        "bytes": 181920,
+        "sha256": "18fc517c6e1417b449fe786c84a49f363e2652ee13533820836502574d03c279"
+      },
+      "games/carreritas/public/images/menu/plaza.webp": {
+        "url": "/g/carreritas/images/menu/plaza.webp",
+        "bytes": 199244,
+        "sha256": "2b9bb6e178f9c1d415226f52c4548dd567238f166f505daf7918c456f87bb9e8"
+      },
+      "games/carreritas/public/images/menu/puerto.webp": {
+        "url": "/g/carreritas/images/menu/puerto.webp",
+        "bytes": 205124,
+        "sha256": "d4970c4a1262f09cf5d31fff448d3fe2e2b18c2bb27140cb62d1fd02a6198392"
+      },
+      "games/carreritas/public/images/menu/raceMaster.webp": {
+        "url": "/g/carreritas/images/menu/raceMaster.webp",
+        "bytes": 183300,
+        "sha256": "2df17343d25a9edad58e34ccfd6cbea9838e53c80a462a677cd3bc9f316c9d94"
+      },
+      "games/carreritas/public/images/menu/sabana-preview.jpg": {
+        "url": "/g/carreritas/images/menu/sabana-preview.jpg",
+        "bytes": 227801,
+        "sha256": "02761cb429be48718caa7127eca3ce4108c83f774cd118856283abe01369d91f"
+      },
+      "games/carreritas/public/images/menu/sabana.webp": {
+        "url": "/g/carreritas/images/menu/sabana.webp",
+        "bytes": 204398,
+        "sha256": "2b0942e25d441f7ed3c544aa0aa057523421db222a0674e461b622cf26e259c0"
+      },
+      "games/carreritas/public/images/menu/salinas.webp": {
+        "url": "/g/carreritas/images/menu/salinas.webp",
+        "bytes": 133448,
+        "sha256": "42eca991f3812f61c5d8245ab0e494ba244e33451bfd30850db1c13596c1c87b"
+      },
+      "games/carreritas/public/images/menu/salto.webp": {
+        "url": "/g/carreritas/images/menu/salto.webp",
+        "bytes": 152232,
+        "sha256": "014b6a13d88c29690f99599f8e65ac91e1b3a84f319b56701a58495b1ee2ea94"
+      },
+      "games/carreritas/public/images/menu/sarisarinama.webp": {
+        "url": "/g/carreritas/images/menu/sarisarinama.webp",
+        "bytes": 234686,
+        "sha256": "f8f6f35b9a5e3d2ec8cf39ed97f419b67c503b990399247b887890ec3141057f"
+      },
+      "games/carreritas/public/images/menu/selva.webp": {
+        "url": "/g/carreritas/images/menu/selva.webp",
+        "bytes": 193656,
+        "sha256": "900025654f1fa2988d5517ce75beafee49b276118ee6011d03dd98a0c90ed19a"
+      },
+      "games/carreritas/public/images/menu/tovar.webp": {
+        "url": "/g/carreritas/images/menu/tovar.webp",
+        "bytes": 200268,
+        "sha256": "71c1d92c38ceb9272a08edca0ee8107ff454b901209a9ea1e7487386d342ade9"
+      },
+      "games/carreritas/public/images/menu/volcan.webp": {
+        "url": "/g/carreritas/images/menu/volcan.webp",
+        "bytes": 132540,
+        "sha256": "18ba78ecdd832033c08aef1cb319e9bae44eec64d19fd3948bd79dc30ee99c18"
+      },
+      "web/images/launcher/carreritas.jpg": {
+        "url": "/images/launcher/carreritas.jpg",
+        "bytes": 199061,
+        "sha256": "167cbf3e2b0a388062f97ffd81b8d870143943ddebc863abca7719b741474019"
+      }
+    }
+  },
+  "chapita": {
+    "url": "https://github.com/jhd3197/Pana/releases/download/asset-packs/chapita-800a1353396d26d5.zip",
+    "sha256": "800a1353396d26d5b1aa7206ba468ddcb56bb2f117d9a1cd7ede2d89325d705c",
+    "bytes": 321445,
+    "files": 1,
+    "entries": {
+      "web/images/launcher/chapita.jpg": {
+        "url": "/images/launcher/chapita.jpg",
+        "bytes": 321285,
+        "sha256": "0890e53627bc4d85b9a284248177d6d718abb91295b5d8e2b546df89a07f2a8e"
+      }
+    }
+  },
+  "cocina": {
+    "url": "https://github.com/jhd3197/Pana/releases/download/asset-packs/cocina-eb1ec75b5b5980dd.zip",
+    "sha256": "eb1ec75b5b5980dde3fcb66131721e2d8ecdb2e2aff21be4fc0618bcafd44362",
+    "bytes": 183884,
+    "files": 1,
+    "entries": {
+      "web/images/launcher/cocina.jpg": {
+        "url": "/images/launcher/cocina.jpg",
+        "bytes": 183726,
+        "sha256": "9200c528c72a8c3780d727f16cacc6db9b3879d52897d78bd04bff74ed518f44"
+      }
+    }
+  },
+  "criollas": {
+    "url": "https://github.com/jhd3197/Pana/releases/download/asset-packs/criollas-800ff211a264b1cf.zip",
+    "sha256": "800ff211a264b1cff2d7797a58f382bfb55cf659611ca1477a04430b19e4c7f6",
+    "bytes": 248427,
+    "files": 1,
+    "entries": {
+      "web/images/launcher/criollas.jpg": {
+        "url": "/images/launcher/criollas.jpg",
+        "bytes": 248265,
+        "sha256": "e41c8b74dd0b58910a66ee01dc5fe350ba79812f2e4b207d44d27a55923bec3e"
+      }
+    }
+  },
+  "curiara": {
+    "url": "https://github.com/jhd3197/Pana/releases/download/asset-packs/curiara-5be1654d3682e41c.zip",
+    "sha256": "5be1654d3682e41c12817527240e2c023dba4855eaae56b4f5b84fc1b8054082",
+    "bytes": 258735,
+    "files": 1,
+    "entries": {
+      "web/images/launcher/curiara.jpg": {
+        "url": "/images/launcher/curiara.jpg",
+        "bytes": 258575,
+        "sha256": "f6f071d589c5b05621652d89ce7b36cbc7b0f3873773315997dfbeab107e3269"
+      }
+    }
+  },
+  "domino": {
+    "url": "https://github.com/jhd3197/Pana/releases/download/asset-packs/domino-3e7d4f1d288ea518.zip",
+    "sha256": "3e7d4f1d288ea5181da621489a813ade7243b6723f687d36c8a4625b4faf3e1c",
+    "bytes": 210258,
+    "files": 1,
+    "entries": {
+      "web/images/launcher/domino.jpg": {
+        "url": "/images/launcher/domino.jpg",
+        "bytes": 210100,
+        "sha256": "3933f70814f9d7a978a92816d014dea13206a5057eab54e818ab2f14f6f1c967"
+      }
+    }
+  },
+  "embuste": {
+    "url": "https://github.com/jhd3197/Pana/releases/download/asset-packs/embuste-0f70f03908a06518.zip",
+    "sha256": "0f70f03908a065187ee57889a785678acc84055b2142d36c8d718bb30c3128bf",
+    "bytes": 262320,
+    "files": 1,
+    "entries": {
+      "web/images/launcher/embuste.jpg": {
+        "url": "/images/launcher/embuste.jpg",
+        "bytes": 262160,
+        "sha256": "1a78257eb3a5ec770bede5e6dc0f31d6c6585b7b5431072b6d3befcbeaf09479"
+      }
+    }
+  },
+  "escondidas": {
+    "url": "https://github.com/jhd3197/Pana/releases/download/asset-packs/escondidas-c196ec23218e9a4c.zip",
+    "sha256": "c196ec23218e9a4c60032d81d4360710fb6856eddaa9efebb0e74389c5be8e28",
+    "bytes": 221801,
+    "files": 1,
+    "entries": {
+      "web/images/launcher/escondidas.jpg": {
+        "url": "/images/launcher/escondidas.jpg",
+        "bytes": 221635,
+        "sha256": "3c6b37d2bced4a0b9bbe5e3132e9fb7d0eca99a041918cdf46301863409f3a44"
+      }
+    }
+  },
+  "galope": {
+    "url": "https://github.com/jhd3197/Pana/releases/download/asset-packs/galope-7d8cd469773360f6.zip",
+    "sha256": "7d8cd469773360f6a1730efcd26ffce41f2147ff843bbf2fc1731aa194b70f61",
+    "bytes": 254558,
+    "files": 1,
+    "entries": {
+      "web/images/launcher/galope.jpg": {
+        "url": "/images/launcher/galope.jpg",
+        "bytes": 254400,
+        "sha256": "7a29d7b5942b9c197e7c4dc3804b804d5aaec2be8bc1c0ce90e136a120fe3db5"
+      }
+    }
+  },
+  "lancha": {
+    "url": "https://github.com/jhd3197/Pana/releases/download/asset-packs/lancha-b2f49b4a2d8b218c.zip",
+    "sha256": "b2f49b4a2d8b218ca5495019582261a7838333e75066f2cba52493f61932643b",
+    "bytes": 365382,
+    "files": 1,
+    "entries": {
+      "web/images/launcher/lancha.jpg": {
+        "url": "/images/launcher/lancha.jpg",
+        "bytes": 365224,
+        "sha256": "c66f86155d33987f0d35009fb5df84916d5f4ed1f47f073af410de2224f626d9"
+      }
+    }
+  },
+  "ludo": {
+    "url": "https://github.com/jhd3197/Pana/releases/download/asset-packs/ludo-6b812c6c11ea7f45.zip",
+    "sha256": "6b812c6c11ea7f45adaecce593b8c5cdc3ed621139baf448f504334ffa77b98d",
+    "bytes": 272577,
+    "files": 1,
+    "entries": {
+      "web/images/launcher/ludo.jpg": {
+        "url": "/images/launcher/ludo.jpg",
+        "bytes": 272423,
+        "sha256": "0527612730dbfbb7a4ff5913c4c2958fc26b3d2bfa71ae5ca5d734be9fdb9daa"
+      }
+    }
+  },
+  "parapente": {
+    "url": "https://github.com/jhd3197/Pana/releases/download/asset-packs/parapente-24cfb186ef0c61d0.zip",
+    "sha256": "24cfb186ef0c61d045795f4e87e7dc5bd77c05704187d38a8a2174d9d14c11dd",
+    "bytes": 234979,
+    "files": 1,
+    "entries": {
+      "web/images/launcher/parapente.jpg": {
+        "url": "/images/launcher/parapente.jpg",
+        "bytes": 234815,
+        "sha256": "42eac7238f21c434dea5a9d2b2e1bfab10157f7dc70608c4a54b7ecf39df6350"
+      }
+    }
+  },
+  "pintura": {
+    "url": "https://github.com/jhd3197/Pana/releases/download/asset-packs/pintura-3fc4f383869fdeb9.zip",
+    "sha256": "3fc4f383869fdeb9cf0f20b05b3318bec1bbdbf6fdbb9b6e7633c746a6a95547",
+    "bytes": 240373,
+    "files": 1,
+    "entries": {
+      "web/images/launcher/pintura.jpg": {
+        "url": "/images/launcher/pintura.jpg",
+        "bytes": 240213,
+        "sha256": "3dc032ae8086b17f7cc6f838863468caf38d4260d57e935bb64f4ea437caf00f"
+      }
+    }
+  },
+  "poquer": {
+    "url": "https://github.com/jhd3197/Pana/releases/download/asset-packs/poquer-15413007249a611d.zip",
+    "sha256": "15413007249a611db266b86e698b07ababdbb62b5a58381cc7f38433b5eca4d6",
+    "bytes": 222153,
+    "files": 1,
+    "entries": {
+      "web/images/launcher/poquer.jpg": {
+        "url": "/images/launcher/poquer.jpg",
+        "bytes": 221995,
+        "sha256": "e550866a8b13776fc742b08699c432692c13ac7de6968e20fd1f63ac408573d5"
+      }
+    }
+  },
+  "qqsmp": {
+    "url": "https://github.com/jhd3197/Pana/releases/download/asset-packs/qqsmp-7c8c660225fd77bd.zip",
+    "sha256": "7c8c660225fd77bda040b6eea11d6732c673605c49acb9a6bb39f1981ec90094",
+    "bytes": 259719,
+    "files": 1,
+    "entries": {
+      "web/images/launcher/qqsmp.jpg": {
+        "url": "/images/launcher/qqsmp.jpg",
+        "bytes": 259563,
+        "sha256": "14de534133213d3f452b161a68e5cd6ccb80859c4448691d6b21e389b88d6672"
+      }
+    }
+  },
+  "reliquia": {
+    "url": "https://github.com/jhd3197/Pana/releases/download/asset-packs/reliquia-7601a060cba585a4.zip",
+    "sha256": "7601a060cba585a48cad16b058badaffc32462da4fb30bee2b1191072efa44d0",
+    "bytes": 255424,
+    "files": 1,
+    "entries": {
+      "web/images/launcher/reliquia.jpg": {
+        "url": "/images/launcher/reliquia.jpg",
+        "bytes": 255262,
+        "sha256": "8322de6a963074c239e3550eb53320fbb245a8b4f461e907a344818bff5d7285"
+      }
+    }
+  },
+  "shared-character": {
+    "url": "https://github.com/jhd3197/Pana/releases/download/asset-packs/shared-character-9e460ce3cc6aee84.zip",
+    "sha256": "9e460ce3cc6aee840df01a845fd6aa7484527709562c01e1008c87b81456db89",
+    "bytes": 2840081,
+    "files": 2,
+    "entries": {
+      "web/character/references/front.png": {
+        "url": "/character/references/front.png",
+        "bytes": 1277987,
+        "sha256": "4756870bbd2203fa23728cd28b1df38e94ac6a60ddfb0e36d97328a7c32d5519"
+      },
+      "web/character/references/three-quarter.png": {
+        "url": "/character/references/three-quarter.png",
+        "bytes": 1561768,
+        "sha256": "28148f7b376a7f8748d21b1b6e7e28e6d73510b6cf2ae6acf1ebadf4d2b0a0ed"
+      }
+    }
+  },
+  "stop": {
+    "url": "https://github.com/jhd3197/Pana/releases/download/asset-packs/stop-4f7e31b1bc3a54d3.zip",
+    "sha256": "4f7e31b1bc3a54d3866e5ffca9ecb98270ffd3953f22558cb12f9585b51bfd7e",
+    "bytes": 219831,
+    "files": 1,
+    "entries": {
+      "web/images/launcher/stop.jpg": {
+        "url": "/images/launcher/stop.jpg",
+        "bytes": 219677,
+        "sha256": "ce3c40ac6d18e29d74826da86ea966b3a691c1a3cf53c2c67bb604c0e0bae0db"
+      }
+    }
+  },
+  "tambor": {
+    "url": "https://github.com/jhd3197/Pana/releases/download/asset-packs/tambor-b65db101161f3231.zip",
+    "sha256": "b65db101161f323148fe1809435bbab3aef371d255cad8a6a666335c6f65bf97",
+    "bytes": 221303,
+    "files": 1,
+    "entries": {
+      "web/images/launcher/tambor.jpg": {
+        "url": "/images/launcher/tambor.jpg",
+        "bytes": 221145,
+        "sha256": "e8a501b2dc683456d94777f5f79cc40371262663f36c77ef390edef156eda916"
+      }
+    }
+  },
+  "trifulca": {
+    "url": "https://github.com/jhd3197/Pana/releases/download/asset-packs/trifulca-c362f69a9b694886.zip",
+    "sha256": "c362f69a9b69488663091f5f9e39c857e37470b669dfcff113bd3d363c57d86f",
+    "bytes": 220355,
+    "files": 1,
+    "entries": {
+      "web/images/launcher/trifulca.jpg": {
+        "url": "/images/launcher/trifulca.jpg",
+        "bytes": 220193,
+        "sha256": "0150e8bdc778d0a69342623732c7bd30d21e0aabe48732258ce63ef1cb79c9ee"
+      }
+    }
+  }
+}

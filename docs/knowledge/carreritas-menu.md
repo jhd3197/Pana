@@ -23,6 +23,11 @@ writes setup independently.
 
 ## Artwork
 
+Large menu images now belong to the Carreritas release asset pack; small circuit
+thumbnails stay in Git. URLs and bytes are unchanged. Use
+`node Pana/scripts/asset-packs.js --restore carreritas` before editing originals,
+then rebuild and publish the pack as described in `asset-packs.md`.
+
 `public/images/menu/sources.json` maps the supplied PNG names to optimized
 WebP files. Original PNGs are local in the sibling `pana-photos/generated`
 folder; they are not needed to serve the game. These are prepared assets,

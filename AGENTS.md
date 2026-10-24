@@ -94,6 +94,9 @@ pause overlay, sound toggle or invite flow, or handle Escape in a game. Never se
 - `players: 1` in `game.json` means no rooms: no `network.js`, no `?room=` links.
 - Keep dependencies minimal: the Colyseus packages on the server only.
 - Served images stay under 600 KB (JPEG or WebP for illustrations).
+- Runtime images/textures at least 100 KiB ship in per-game release packs
+  (`docs/knowledge/asset-packs.md`). Keep small icons and thumbnails in Git;
+  publish and verify a pack before committing its catalog. Never commit its ZIP.
 - `npm test` checks most of these (`tests/conventions.test.js`). When it fails, fix
   the code, not the test, unless the rule itself is changing.
 - When you add something every game must do (a call, a file, a markup hook), add

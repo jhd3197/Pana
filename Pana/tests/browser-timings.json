@@ -161,6 +161,7 @@
   "Pana/web/studio/tests/house-maker.browser.js": 52,
   "Pana/web/studio/tests/studio.browser.js": 247,
   "Pana/web/studio/tests/track-tour.browser.js": 442,
+  "Pana/web/tests/asset-packs.browser.js": 14,
   "Pana/web/tests/creator.browser.js": 54,
   "Pana/web/tests/launcher.browser.js": 29
 }
