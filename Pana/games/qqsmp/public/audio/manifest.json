@@ -1,0 +1,694 @@
+{
+  "voice": "em_alex",
+  "language": "es",
+  "lines": {
+    "41de9dd8": {
+      "text": "«Ando limpio» significa…",
+      "seconds": 1.896
+    },
+    "ea458390": {
+      "text": "Si alguien es pichirre, es…",
+      "seconds": 1.8
+    },
+    "c31fd7dd": {
+      "text": "«Más salado que pescado en Semana Santa» es alguien…",
+      "seconds": 2.976
+    },
+    "e6e1cac5": {
+      "text": "Una ñapa es…",
+      "seconds": 1.272
+    },
+    "9a4ab739": {
+      "text": "Alguien que es «cuarto bate» es…",
+      "seconds": 1.992
+    },
+    "64748269": {
+      "text": "«Te quedaste sin el chivo y sin el mecate» quiere decir…",
+      "seconds": 3.096
+    },
+    "8f2bd3a0": {
+      "text": "Algo que es una ladilla es…",
+      "seconds": 1.92
+    },
+    "16c36821": {
+      "text": "Si tu pana dice «estoy arrecho», está…",
+      "seconds": 2.448
+    },
+    "80d99d83": {
+      "text": "Un sapo es…",
+      "seconds": 1.176
+    },
+    "a55b4953": {
+      "text": "Si alguien es gafo, es…",
+      "seconds": 1.704
+    },
+    "4bd8824e": {
+      "text": "Alguien pavoso…",
+      "seconds": 1.32
+    },
+    "3bb7f7e1": {
+      "text": "Un bululú es…",
+      "seconds": 1.272
+    },
+    "d89e4a0b": {
+      "text": "«Hacer una vaca» es…",
+      "seconds": 1.608
+    },
+    "888876ca": {
+      "text": "«Burda de bueno» significa…",
+      "seconds": 1.896
+    },
+    "ce9c9b13": {
+      "text": "«Ponerse las alpargatas» es…",
+      "seconds": 2.016
+    },
+    "7cd675fa": {
+      "text": "«Hacerse el Willy Mays» viene de…",
+      "seconds": 2.136
+    },
+    "6d75bf9e": {
+      "text": "La palabra «mecate» viene del…",
+      "seconds": 2.064
+    },
+    "46f68e73": {
+      "text": "«Ñapa» viene de «yapa», una palabra…",
+      "seconds": 2.256
+    },
+    "5304d2d4": {
+      "text": "Se dice que «arepa» viene de «erepa», que en lengua indígena significa…",
+      "seconds": 4.008
+    },
+    "d9d6b95d": {
+      "text": "Una teoría dice que «cotufa» viene del inglés…",
+      "seconds": 2.784
+    },
+    "f6511eec": {
+      "text": "«Guachimán» viene del inglés…",
+      "seconds": 1.848
+    },
+    "676665b5": {
+      "text": "Una teoría dice que «chamo» viene del inglés…",
+      "seconds": 2.64
+    },
+    "86fd5b87": {
+      "text": "«Bluyín» viene de…",
+      "seconds": 1.368
+    },
+    "a2e633bb": {
+      "text": "El pasapalo se llama así porque ayuda a…",
+      "seconds": 2.592
+    },
+    "68bb605b": {
+      "text": "Chuao es famoso por su…",
+      "seconds": 1.536
+    },
+    "39422c53": {
+      "text": "Del malecón de Puerto Colombia a Bahía de Cepe se va en…",
+      "seconds": 3.504
+    },
+    "bcf8a7c4": {
+      "text": "La Feria de La Chinita es en…",
+      "seconds": 2.016
+    },
+    "53eb8c9c": {
+      "text": "La Colonia Tovar la fundaron inmigrantes…",
+      "seconds": 2.688
+    },
+    "c8166a61": {
+      "text": "Los Médanos de Coro son…",
+      "seconds": 1.728
+    },
+    "599e7b9b": {
+      "text": "Mukumbarí, en Mérida, es…",
+      "seconds": 1.92
+    },
+    "8202b410": {
+      "text": "El Salto Ángel está en…",
+      "seconds": 1.848
+    },
+    "ebab428a": {
+      "text": "El Relámpago del Catatumbo se ve en…",
+      "seconds": 2.424
+    },
+    "9ca4c022": {
+      "text": "Choroní queda en el estado…",
+      "seconds": 1.776
+    },
+    "58a44fbe": {
+      "text": "Los Roques es…",
+      "seconds": 1.224
+    },
+    "b02fb93f": {
+      "text": "El Waraira Repano es el otro nombre de…",
+      "seconds": 2.568
+    },
+    "17835e8f": {
+      "text": "La montaña más alta de Venezuela es el…",
+      "seconds": 2.664
+    },
+    "06719b52": {
+      "text": "El sonido grave del furruco sale de…",
+      "seconds": 2.448
+    },
+    "6915da8e": {
+      "text": "La gaita es la música de…",
+      "seconds": 1.848
+    },
+    "bfd0c034": {
+      "text": "¿Cuántas cuerdas tiene el cuatro?",
+      "seconds": 2.112
+    },
+    "5625d88f": {
+      "text": "El joropo es el baile típico de…",
+      "seconds": 2.304
+    },
+    "23c1627f": {
+      "text": "La hora loca es…",
+      "seconds": 1.272
+    },
+    "c0b198fc": {
+      "text": "A «Alma llanera» le dicen…",
+      "seconds": 1.776
+    },
+    "9d812657": {
+      "text": "Los tambores de San Juan suenan fuerte en…",
+      "seconds": 2.64
+    },
+    "dd1ed57e": {
+      "text": "A Simón Díaz le decían…",
+      "seconds": 1.824
+    },
+    "4e8d9bbe": {
+      "text": "La charrasca de la gaita es un instrumento que…",
+      "seconds": 2.688
+    },
+    "a2095055": {
+      "text": "En diciembre, además de gaitas, se cantan…",
+      "seconds": 2.568
+    },
+    "741cc92a": {
+      "text": "En la chapita, el bate suele ser…",
+      "seconds": 2.136
+    },
+    "1213753d": {
+      "text": "En la chapita, la «pelota» es…",
+      "seconds": 1.872
+    },
+    "a62322ec": {
+      "text": "Una caimanera es…",
+      "seconds": 1.44
+    },
+    "6df90587": {
+      "text": "Las metras son…",
+      "seconds": 1.176
+    },
+    "497d64b2": {
+      "text": "Un papagayo es…",
+      "seconds": 1.44
+    },
+    "cf31f997": {
+      "text": "Para bailar el trompo se usa…",
+      "seconds": 1.992
+    },
+    "d48b205e": {
+      "text": "Los Navegantes del Magallanes juegan de local en…",
+      "seconds": 2.976
+    },
+    "7542c167": {
+      "text": "El primer venezolano en el Salón de la Fama del béisbol fue…",
+      "seconds": 3.744
+    },
+    "60453f27": {
+      "text": "Jugar «la ere» es…",
+      "seconds": 1.392
+    },
+    "f3c233a2": {
+      "text": "Pichar es…",
+      "seconds": 1.008
+    },
+    "9b53ff84": {
+      "text": "Un bateador ponchado…",
+      "seconds": 1.68
+    },
+    "635c2316": {
+      "text": "«¡La sacaste de jonrón!» quiere decir…",
+      "seconds": 2.328
+    },
+    "aa4ee6a7": {
+      "text": "La reina pepiada lleva…",
+      "seconds": 1.656
+    },
+    "1cf96552": {
+      "text": "El pabellón criollo lleva…",
+      "seconds": 1.92
+    },
+    "d6ecc663": {
+      "text": "Los tequeños son palitos de masa rellenos de…",
+      "seconds": 2.952
+    },
+    "1144f693": {
+      "text": "La hallaca se envuelve en…",
+      "seconds": 1.872
+    },
+    "34f56058": {
+      "text": "La cachapa se hace con…",
+      "seconds": 1.776
+    },
+    "cb3391c7": {
+      "text": "El papelón con limón se hace con…",
+      "seconds": 2.208
+    },
+    "79d4fb0b": {
+      "text": "Los golfeados son…",
+      "seconds": 1.44
+    },
+    "a8a7c158": {
+      "text": "La chicha venezolana se hace con…",
+      "seconds": 2.184
+    },
+    "4bbeeabd": {
+      "text": "La salsa oscura del asado negro viene del…",
+      "seconds": 2.736
+    },
+    "a732bcdc": {
+      "text": "El bienmesabe es un postre de…",
+      "seconds": 2.088
+    },
+    "a54857c9": {
+      "text": "El cachito típico va relleno de…",
+      "seconds": 2.256
+    },
+    "cbaf16dd": {
+      "text": "El pan de jamón lleva jamón, pasas y…",
+      "seconds": 2.496
+    },
+    "ee3ad364": {
+      "text": "Una tizana es…",
+      "seconds": 1.272
+    },
+    "fde9ba64": {
+      "text": "La independencia de Venezuela se firmó el…",
+      "seconds": 2.616
+    },
+    "0ba10f06": {
+      "text": "La Batalla de Carabobo fue en…",
+      "seconds": 2.016
+    },
+    "28805568": {
+      "text": "Simón Bolívar nació en…",
+      "seconds": 1.728
+    },
+    "4bc28746": {
+      "text": "Simón Rodríguez, el maestro de Bolívar, también usó el nombre…",
+      "seconds": 3.528
+    },
+    "10bcb461": {
+      "text": "A Francisco de Miranda le dicen…",
+      "seconds": 2.208
+    },
+    "2bc12c3b": {
+      "text": "Miranda izó por primera vez la bandera tricolor en…",
+      "seconds": 3.384
+    },
+    "5b3d5d55": {
+      "text": "Antonio José de Sucre ganó la batalla de…",
+      "seconds": 2.808
+    },
+    "d1ceb841": {
+      "text": "Luisa Cáceres de Arismendi es una heroína de…",
+      "seconds": 2.904
+    },
+    "fca8a797": {
+      "text": "El «¡Vuelvan caras!» de Las Queseras del Medio lo gritó…",
+      "seconds": 3.216
+    },
+    "6e7dccff": {
+      "text": "Guaicaipuro fue un cacique de los…",
+      "seconds": 2.232
+    },
+    "bd2cea02": {
+      "text": "Colón llegó a tierra firme venezolana en su…",
+      "seconds": 2.784
+    },
+    "d3a2832e": {
+      "text": "Se dice que el nombre «Venezuela» viene de…",
+      "seconds": 2.544
+    },
+    "75ce0dba": {
+      "text": "El himno nacional de Venezuela es…",
+      "seconds": 2.208
+    },
+    "83fd840c": {
+      "text": "La bandera de Venezuela tiene…",
+      "seconds": 1.944
+    },
+    "93796fec": {
+      "text": "José Gregorio Hernández fue un…",
+      "seconds": 2.064
+    },
+    "fb589a7c": {
+      "text": "El ave nacional de Venezuela es el…",
+      "seconds": 2.256
+    },
+    "9aac72c3": {
+      "text": "El árbol nacional de Venezuela es el…",
+      "seconds": 2.4
+    },
+    "d6b7d5ab": {
+      "text": "La flor nacional de Venezuela es la…",
+      "seconds": 2.376
+    },
+    "90d1c8ab": {
+      "text": "El río más largo de Venezuela es el…",
+      "seconds": 2.472
+    },
+    "e3e080a6": {
+      "text": "Los tepuyes son…",
+      "seconds": 1.248
+    },
+    "e55d6048": {
+      "text": "El Roraima está en la frontera con…",
+      "seconds": 2.328
+    },
+    "db6e4702": {
+      "text": "El chigüire, o capibara, es…",
+      "seconds": 2.064
+    },
+    "72c5e8ef": {
+      "text": "El moriche es una…",
+      "seconds": 1.488
+    },
+    "e29520b8": {
+      "text": "El cunaguaro es un…",
+      "seconds": 1.56
+    },
+    "dd9d52e1": {
+      "text": "El oso frontino vive en…",
+      "seconds": 1.848
+    },
+    "6fad12d5": {
+      "text": "La Cueva del Guácharo está en…",
+      "seconds": 2.088
+    },
+    "a8899d12": {
+      "text": "El guácharo es un…",
+      "seconds": 1.464
+    },
+    "17643051": {
+      "text": "El parque nacional más antiguo de Venezuela es el…",
+      "seconds": 3.12
+    },
+    "3065ae7c": {
+      "text": "La tonina del Orinoco es un…",
+      "seconds": 2.064
+    },
+    "5b4e14c4": {
+      "text": "El planeta más grande del sistema solar es…",
+      "seconds": 2.904
+    },
+    "ece5f5e4": {
+      "text": "Al «planeta rojo» se le dice a…",
+      "seconds": 2.04
+    },
+    "be70133a": {
+      "text": "¿Cuántos planetas tiene el sistema solar?",
+      "seconds": 2.592
+    },
+    "ba4d69e2": {
+      "text": "La fórmula del agua es…",
+      "seconds": 1.752
+    },
+    "631bd3d4": {
+      "text": "El gas que necesitamos respirar para vivir es el…",
+      "seconds": 2.904
+    },
+    "a947c2ad": {
+      "text": "El hueso más largo del cuerpo es el…",
+      "seconds": 2.496
+    },
+    "48b98960": {
+      "text": "¿Qué viaja más rápido?",
+      "seconds": 1.68
+    },
+    "6ba73578": {
+      "text": "Las plantas fabrican su alimento con la…",
+      "seconds": 2.616
+    },
+    "7d0a7492": {
+      "text": "El corazón humano tiene…",
+      "seconds": 1.728
+    },
+    "fe7f236f": {
+      "text": "El símbolo químico del oro es…",
+      "seconds": 2.16
+    },
+    "87b22054": {
+      "text": "Al nivel del mar, el agua hierve a…",
+      "seconds": 2.184
+    },
+    "037f83a5": {
+      "text": "La teoría de la relatividad es de…",
+      "seconds": 2.328
+    },
+    "5697e2ae": {
+      "text": "La capital de Japón es…",
+      "seconds": 1.824
+    },
+    "ddf7a6fa": {
+      "text": "El océano más grande es el…",
+      "seconds": 2.04
+    },
+    "df3db65d": {
+      "text": "El país más grande del mundo es…",
+      "seconds": 2.328
+    },
+    "b4992e6b": {
+      "text": "La capital de Australia es…",
+      "seconds": 2.016
+    },
+    "371f97a8": {
+      "text": "La Torre Eiffel está en…",
+      "seconds": 1.824
+    },
+    "aee7d0f1": {
+      "text": "El continente con más países es…",
+      "seconds": 2.208
+    },
+    "2247ea13": {
+      "text": "La montaña más alta del mundo es el…",
+      "seconds": 2.472
+    },
+    "61000f86": {
+      "text": "El desierto cálido más grande del mundo es el…",
+      "seconds": 2.976
+    },
+    "e8986d72": {
+      "text": "Machu Picchu está en…",
+      "seconds": 1.632
+    },
+    "9ac55fe2": {
+      "text": "La capital de Canadá es…",
+      "seconds": 1.872
+    },
+    "ad82ccd0": {
+      "text": "El Canal de Panamá une el océano Pacífico con el…",
+      "seconds": 3.072
+    },
+    "f8b6520c": {
+      "text": "El país con forma de bota es…",
+      "seconds": 2.088
+    },
+    "9dd709f6": {
+      "text": "Colón llegó a América en…",
+      "seconds": 1.824
+    },
+    "3ca6e2eb": {
+      "text": "El primer hombre en pisar la Luna fue…",
+      "seconds": 2.376
+    },
+    "8d90cba6": {
+      "text": "Las pirámides de Guiza están en…",
+      "seconds": 2.28
+    },
+    "1dfdfa2b": {
+      "text": "El Muro de Berlín cayó en…",
+      "seconds": 1.872
+    },
+    "8fa9ef7f": {
+      "text": "Donde estaba Tenochtitlan, la ciudad azteca, hoy está…",
+      "seconds": 3.312
+    },
+    "71d459a4": {
+      "text": "Juana de Arco es una heroína de…",
+      "seconds": 2.088
+    },
+    "27bd977f": {
+      "text": "La Revolución francesa comenzó en…",
+      "seconds": 2.4
+    },
+    "deda5de6": {
+      "text": "La imprenta de tipos móviles en Europa la inventó…",
+      "seconds": 3.024
+    },
+    "e297dfae": {
+      "text": "La Primera Guerra Mundial empezó en…",
+      "seconds": 2.52
+    },
+    "e556fae1": {
+      "text": "La capital del imperio inca era…",
+      "seconds": 2.16
+    },
+    "63d7b97a": {
+      "text": "Cleopatra fue reina de…",
+      "seconds": 1.752
+    },
+    "c6bd469f": {
+      "text": "La Gran Muralla está en…",
+      "seconds": 1.872
+    },
+    "53f223cc": {
+      "text": "En una cancha de fútbol, cada equipo tiene…",
+      "seconds": 2.616
+    },
+    "4700d274": {
+      "text": "Los Juegos Olímpicos de verano se hacen cada…",
+      "seconds": 2.904
+    },
+    "b79cd2af": {
+      "text": "El Mundial de fútbol de 2022 lo ganó…",
+      "seconds": 3.072
+    },
+    "8b7cf916": {
+      "text": "Usain Bolt es un velocista de…",
+      "seconds": 2.208
+    },
+    "91870219": {
+      "text": "La bandera olímpica tiene…",
+      "seconds": 1.848
+    },
+    "2b6b527f": {
+      "text": "En baloncesto, un tiro desde detrás de la línea larga vale…",
+      "seconds": 3.48
+    },
+    "794e73d9": {
+      "text": "Wimbledon se juega sobre…",
+      "seconds": 1.848
+    },
+    "ba366193": {
+      "text": "Michael Jordan es una leyenda del…",
+      "seconds": 2.28
+    },
+    "d5a5be81": {
+      "text": "Un maratón mide unos…",
+      "seconds": 1.728
+    },
+    "c25fc250": {
+      "text": "El Tour de Francia es una carrera de…",
+      "seconds": 2.448
+    },
+    "2c197189": {
+      "text": "En béisbol, el equipo que defiende tiene en el campo…",
+      "seconds": 2.976
+    },
+    "57d37c5f": {
+      "text": "«Jaque mate» se dice en el…",
+      "seconds": 1.848
+    },
+    "f88859be": {
+      "text": "El animal más grande del mundo es la…",
+      "seconds": 2.568
+    },
+    "b05436e7": {
+      "text": "El animal terrestre más rápido es el…",
+      "seconds": 2.448
+    },
+    "d68f3a31": {
+      "text": "El pingüino es…",
+      "seconds": 1.368
+    },
+    "b1725ad0": {
+      "text": "Las arañas tienen…",
+      "seconds": 1.416
+    },
+    "b933c3b1": {
+      "text": "El murciélago es…",
+      "seconds": 1.392
+    },
+    "19670f51": {
+      "text": "El pulpo tiene…",
+      "seconds": 1.272
+    },
+    "2ab25952": {
+      "text": "El canguro vive en…",
+      "seconds": 1.656
+    },
+    "0dfb5c6c": {
+      "text": "El oso panda come sobre todo…",
+      "seconds": 2.064
+    },
+    "cebc93ad": {
+      "text": "Las ballenas respiran con…",
+      "seconds": 1.92
+    },
+    "ac043518": {
+      "text": "El animal famoso por cambiar de color es el…",
+      "seconds": 2.856
+    },
+    "29e44bb4": {
+      "text": "El animal con trompa es el…",
+      "seconds": 1.92
+    },
+    "0e10221e": {
+      "text": "La cría de la vaca se llama…",
+      "seconds": 1.872
+    },
+    "c5385114": {
+      "text": "La Mona Lisa la pintó…",
+      "seconds": 1.608
+    },
+    "eac8413f": {
+      "text": "«Don Quijote de la Mancha» lo escribió…",
+      "seconds": 2.184
+    },
+    "0c296c27": {
+      "text": "«Cien años de soledad» es de…",
+      "seconds": 1.992
+    },
+    "234072b2": {
+      "text": "«Romeo y Julieta» la escribió…",
+      "seconds": 1.968
+    },
+    "52c939a6": {
+      "text": "¿Cuántas notas tiene la escala de do, re, mi…?",
+      "seconds": 2.688
+    },
+    "7f65933d": {
+      "text": "El instrumento con 88 teclas es el…",
+      "seconds": 2.928
+    },
+    "1b2a2b52": {
+      "text": "Harry Potter estudia magia en…",
+      "seconds": 2.112
+    },
+    "55ff30b1": {
+      "text": "Mario, el de los videojuegos, trabaja de…",
+      "seconds": 2.544
+    },
+    "01ca1020": {
+      "text": "«La noche estrellada» la pintó…",
+      "seconds": 1.992
+    },
+    "aa81525a": {
+      "text": "Los Beatles eran de…",
+      "seconds": 1.584
+    },
+    "eaa440e6": {
+      "text": "A Pinocho le crece la nariz cuando…",
+      "seconds": 2.256
+    },
+    "cf194739": {
+      "text": "«Doña Bárbara» la escribió…",
+      "seconds": 1.776
+    }
+  }
+}

@@ -2,6 +2,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { QuizGame, SEATS, LADDER, TOP, TIMES, safeFloor, resolveAnswer, revealOrder, ranking, score, titles } from '../public/rules.js';
 import { QUESTIONS, CATEGORIES, PACKS } from '../public/questions.js';
+import fs from 'node:fs';
+import { voiceKey } from '../public/voice-key.js';
 
 let seq = 0;
 const act = (game, id, action, values = {}) => game.accept(id, { action, seq: ++seq, q: game.index, ...values }, 1);
@@ -45,6 +47,54 @@ test('a game deals the planned number of distinct questions, rotating categories
   assert.equal(game.deck.length, 13);
   assert.equal(new Set(game.deck.map(d => d.join(':'))).size, 13);
   assert.equal(new Set(game.deck.slice(0, 6).map(d => d[0])).size, 6);
+});
+
+test('rematches exhaust each pack before reusing questions, including after handoff', () => {
+  for (const pack of Object.keys(PACKS)) {
+    let game = humans(); game.options.pack = pack;
+    const size = PACKS[pack].cats.reduce((n, cat) => n + QUESTIONS[cat].length, 0);
+    const seen = new Set();
+    for (let round = 0; round < 24; round++) {
+      game.start();
+      assert.equal(new Set(game.deck.map(d => d.join(':'))).size, game.deck.length);
+      for (const entry of game.deck) {
+        const key = entry.join(':');
+        if (seen.size < size) assert.ok(!seen.has(key), `${pack}: repeated ${key} before exhausting the bank`);
+        seen.add(key);
+      }
+      game = QuizGame.restore(game.snapshot(), new Map(game.players.map(p => [p.id, {}])));
+    }
+    assert.equal(seen.size, size);
+  }
+});
+
+test('switching from Venezuela to De todo uses fresh questions first', () => {
+  const game = humans(); game.start();
+  const seen = new Set(game.deck.map(d => d.join(':')));
+  game.options.pack = 'todo'; game.start();
+  assert.ok(game.deck.every(d => !seen.has(d.join(':'))));
+});
+
+test('the default timer leaves thirty seconds to listen and answer', () => {
+  const game = humans(); game.start();
+  assert.equal(game.timeLeft, 30);
+  game.tick(20); assert.equal(game.phase, 'question'); assert.equal(game.timeLeft, 10);
+  game.tick(10); assert.equal(game.phase, 'pause');
+});
+
+test('every prompt has a matching Spanish recording that fits the default timer', () => {
+  const dir = new URL('../public/audio/', import.meta.url);
+  const manifest = JSON.parse(fs.readFileSync(new URL('manifest.json', dir)));
+  const texts = Object.values(QUESTIONS).flat().map(q => q[0]);
+  assert.equal(new Set(texts.map(voiceKey)).size, texts.length, 'no hash collisions');
+  for (const text of texts) {
+    const key = voiceKey(text), entry = manifest.lines[key];
+    assert.equal(entry?.text, text);
+    assert.ok(entry.seconds > 0 && entry.seconds < 15, `time to answer after ${text}`);
+  }
+  const pack = JSON.parse(fs.readFileSync(new URL('pack.json', dir)));
+  assert.equal(pack.files, texts.length);
+  assert.match(pack.sha256, /^[a-f0-9]{64}$/);
 });
 
 test('answers stay secret in snapshots until the reveal, and lock once', () => {

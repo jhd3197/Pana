@@ -33,6 +33,20 @@ export function createRequestHandler(startedAt, colyseus) {
         res.writeHead(404).end('unknown game');
         return;
       }
+      if (game === 'qqsmp' && parts[0] === 'audio' && parts.at(-1)?.endsWith('.mp3')) {
+        // Lazy and game-specific: no voice download is needed to start Pana.
+        import('../../games/qqsmp/server/audio-pack.js').then(async ({ audioDirectory }) => {
+          const name = parts.length === 2 ? parts[1] : '';
+          const directory = await audioDirectory(name);
+          if (!directory) return res.writeHead(404).end('not found');
+          serveStatic(res, directory, name);
+        }).catch(error => {
+          console.warn('QQSMP voice pack:', error.message);
+          if (!res.headersSent) res.writeHead(503, { 'Cache-Control': 'no-store', 'Retry-After': '30' }).end('voice unavailable');
+          else res.destroy();
+        });
+        return;
+      }
       return serveStatic(res, baseDir, parts.join('/') || 'index.html');
     }
 

@@ -21,3 +21,7 @@ graphify-out/
 
 # Browser suites that passed, by fingerprint (Pana/scripts/suite-fingerprint.js)
 Pana/tests/.browser-passes.json
+
+# QQSMP voice recordings ship as a release asset, not Git objects.
+Pana/games/qqsmp/public/audio/*.mp3
+dist/voice-packs/

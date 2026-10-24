@@ -11,6 +11,16 @@ try {
   const guest = await openGame(browser, 'qqsmp', { name: 'Bruno', room, query: 'debug' });
   await waitFor(host, () => qqsmpDebug.room.state.players.filter(p => p.id !== null).length === 2);
   assert.equal(await host.evaluate(() => qqsmpDebug.world.camera.isPerspectiveCamera), true, 'the studio is a 3D scene');
+  assert.equal(await host.evaluate(() => qqsmpDebug.room.state.options.seconds), 30);
+  for (const page of [host, guest]) await page.evaluate(async () => {
+    window.quizAudioCalls = [];
+    const play = HTMLMediaElement.prototype.play;
+    HTMLMediaElement.prototype.play = function() {
+      window.quizAudio = this; window.quizAudioCalls.push(this.src);
+      return play.call(this);
+    };
+    (await import('/engine/settings.js')).setSettings({ sound: true, volume: .4 });
+  });
   await host.locator('[data-room-option="questions"][data-value="8"]').click();
   await host.locator('[data-room-option="seconds"][data-value="20"]').click();
   await waitFor(guest, () => qqsmpDebug.room.state.options.questions === 8 && qqsmpDebug.room.state.options.seconds === 20);
@@ -21,6 +31,17 @@ try {
   });
   await host.locator('#start').click();
   await waitFor(guest, () => qqsmpDebug.room.state.phase === 'question');
+  for (const page of [host, guest]) {
+    await waitFor(page, () => quizAudioCalls.length > 0 && quizAudio.readyState >= 2);
+    assert.match(await page.evaluate(() => quizAudio.src), /\/audio\/[a-f0-9]+\.mp3$/);
+    assert.equal(await page.evaluate(() => quizAudio.volume), .4);
+  }
+  await guest.locator('#read-question').focus();
+  await guest.keyboard.press('Enter');
+  await waitFor(guest, () => !quizAudio.paused);
+  await guest.evaluate(async () => (await import('/engine/settings.js')).setSettings({ sound: false }));
+  assert.equal(await guest.evaluate(() => quizAudio.paused), true, 'mute stops the narration immediately');
+  assert.equal(await guest.locator('#read-question').isDisabled(), true);
 
   // The guest locks an answer by clicking while the host copies the guest
   // (Copiarse); the host sees the lock, never the letter. The buttons' own
@@ -41,6 +62,7 @@ try {
 
   // Then both answer every question and bet on the final.
   await waitFor(guest, () => qqsmpDebug.room.state.phase === 'reveal' && qqsmpDebug.room.state.reveal.done);
+  assert.equal(await host.evaluate(() => quizAudio.paused), true, 'the recording stops outside the question phase');
   const copied = await guest.evaluate(() => qqsmpDebug.room.state.callouts.some(c => /Ana se copió de Bruno/.test(c.text)));
   assert.ok(copied, 'the reveal calls out who copied whom');
   for (const page of [host, guest]) {
@@ -57,6 +79,11 @@ try {
   assert.equal(await guest.evaluate(() => qqsmpDebug.room.state.winner), await host.evaluate(() => qqsmpDebug.room.state.winner));
   assert.ok(await guest.locator('#results').isVisible(), 'the results card shows');
   assert.ok((await guest.locator('#result-roster').textContent()).includes('Cuarto bate'), 'titles are on the results card');
+  const oldDeck = await host.evaluate(() => qqsmpDebug.room.state.deck.map(d => d.join(':')));
+  await host.locator('#again').evaluate(el => el.click());
+  await waitFor(guest, () => qqsmpDebug.room.state.round === 2);
+  const newDeck = await guest.evaluate(() => qqsmpDebug.room.state.deck.map(d => d.join(':')));
+  assert.ok(newDeck.every(key => !oldDeck.includes(key)), 'rematch questions are fresh for both clients');
   assert.deepEqual([...host.errors, ...guest.errors], []);
   console.log('PASS qqsmp: two clients answer in secret, copy, bet the final and agree on the Mango de oro.');
 } finally { await browser.close(); }

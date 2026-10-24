@@ -8,6 +8,11 @@ becomes the GitHub release's notes.
 
 ## Unreleased
 
+- **QQSMP lee las preguntas en español y te da más tiempo para responder.**
+  Voz grabada para cada pregunta, 30 segundos por defecto y opción de 45;
+  las revanchas recorren el banco antes de repetir preguntas.
+  Las grabaciones se descargan como un paquete aparte y no ocupan el historial de Git.
+
 ## 0.7.0 - 2026-10-24
 
 - **Los panas y los escenarios se preparan más rápido al entrar a jugar.**

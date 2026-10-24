@@ -71,6 +71,7 @@ export class QuizGame {
     this.gold = null; this.winner = null; this.halfLast = null; this.titles = null; this.round = 0;
     this.revision = 0; this.ledger = {};
     this.plans = [];
+    this.questionUses = {};
   }
 
   // Secrets stay on the host until the reveal: snapshots carry only the lock.
@@ -128,14 +129,20 @@ export class QuizGame {
       [cat, clamp(base + ((seedOf(`${this.round}:${seat}:${cat}`) % 1000) / 1000 - .5) * .3, .15, .97)]));
   }
 
-  // The pack's categories take turns, questions never repeat inside a game.
+  // Rotate categories among the least-used questions across rematches/packs.
   buildDeck(count) {
     const cats = [...(PACKS[this.options.pack] ?? PACKS.venezuela).cats], pools = Object.fromEntries(cats.map(c => [c, QUESTIONS[c].map((_, i) => i)]));
     for (let i = cats.length - 1; i > 0; i--) { const j = Math.floor(draw(this) * (i + 1)); [cats[i], cats[j]] = [cats[j], cats[i]]; }
     const deck = [];
-    for (let i = 0; deck.length < count; i++) {
-      const cat = cats[i % cats.length], pool = pools[cat]; if (!pool.length) continue;
-      deck.push([cat, pool.splice(Math.floor(draw(this) * pool.length), 1)[0]]);
+    const capacity = cats.reduce((n, cat) => n + pools[cat].length, 0);
+    for (let i = 0; deck.length < Math.min(count, capacity); i++) {
+      const least = Math.min(...cats.flatMap(c => pools[c].map(n => this.questionUses[`${c}:${n}`] || 0)));
+      const cat = cats[i % cats.length], pool = pools[cat];
+      const eligible = pool.filter(n => (this.questionUses[`${cat}:${n}`] || 0) === least);
+      if (!eligible.length) continue;
+      const n = eligible[Math.floor(draw(this) * eligible.length)];
+      pool.splice(pool.indexOf(n), 1); deck.push([cat, n]);
+      this.questionUses[`${cat}:${n}`] = (this.questionUses[`${cat}:${n}`] || 0) + 1;
     }
     return deck;
   }

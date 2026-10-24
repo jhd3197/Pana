@@ -8,10 +8,12 @@ import { roomCode, bootGame } from '/engine/game-shell.js';
 import { QqsmpRoom } from './network.js';
 import { createRoomOptions } from '/engine/room-options.js';
 import { ROOM_OPTIONS, defaultOptions } from './options.js';
+import { createNarration } from './narration.js';
 import { LADDER, TOP, SAFE, LETTERS, BETS, BET_LABELS, score, mangos, ranking, resolveAnswer, TITLE_TEXT } from './rules.js';
 
 const $ = (id) => document.getElementById(id), params = new URLSearchParams(location.search);
 const code = roomCode();
+const narration = createNarration($('read-question'));
 let world = null, copying = false, lastDone = '', lastPhase = '', lastClock = 0;
 // What you picked on this question. Snapshots hide everyone's answer until the
 // reveal, your own included, so the screen remembers it here.
@@ -135,6 +137,7 @@ function renderQuestion(state, p) {
 }
 
 function render(state) {
+  narration.update(state, menu.isOpen && room.members.size <= 1);
   const lobby = state.phase === 'lobby', ended = state.phase === 'finished', p = state.players[room.seat];
   roomOptions.update(state.options, lobby && room.isHost);
   if (!lobby && roomOptions.isOpen) roomOptions.close();
@@ -178,7 +181,7 @@ export const { sceneReady } = bootGame({
   load: async () => (await import('./scene.js')).createQqsmpScene($('world')),
   ready: (created) => { world = created; render(room.state); },
   tick: (dt) => room.tick(dt, menu.isOpen && room.members.size <= 1),
-  frame: (dt, scene) => scene.frame(dt),
-  dispose: () => room.dispose(),
+  frame: (dt, scene) => { narration.update(room.state, menu.isOpen && room.members.size <= 1); scene.frame(dt); },
+  dispose: () => { narration.dispose(); room.dispose(); },
 });
 if (params.has('debug')) window.qqsmpDebug = { room, menu, get world() { return world; } };

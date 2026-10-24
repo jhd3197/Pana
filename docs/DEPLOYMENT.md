@@ -23,6 +23,14 @@ Fly.io or Railway are the simplest paths:
 
 ## Requirements
 
+QQSMP narration is distributed separately in the GitHub `voice-packs` release.
+The first question-audio request downloads the pinned ZIP, verifies SHA-256,
+and caches it. No MP3s or ZIPs are committed to Git and no build step is needed.
+Set `PANA_VOICE_CACHE` to a writable persistent directory if desired; otherwise
+the cache uses `DATA_ROOT/pana-voice-packs` (pana.sh) or the system temp directory.
+The host needs outbound HTTPS to GitHub for the first download. Cached packs
+work offline; an unavailable pack affects narration only, not gameplay.
+
 - Node.js 22+ (Colyseus 0.18)
 - `@colyseus/core`, `@colyseus/ws-transport` and `@colyseus/schema`. `express` and `ws`
   arrive as the transport's own dependencies; nothing in Pana imports them.
