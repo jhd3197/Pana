@@ -353,3 +353,10 @@ Controller menu links cancel rumble before navigating instead of starting a
 new pulse after the click. Buttons still respect the vibration preference.
 Actuator reset also runs on blur, pagehide and hidden visibility so feedback
 cannot linger after leaving the page.
+
+## In-game navigation plates
+
+The menu, invite and sound button factories attach `.pana-hud-button`. Its
+angled background lives in a pseudo-element: text, hit areas and keyboard focus
+stay upright. Games retain positioning and can apply the same class to adjacent
+HUD controls. Keep the shared style in `engine/ui.css`, not per-game copies.

@@ -88,14 +88,17 @@ avatar against its yard center and verifies that it faces the board.
 
 Safe ring cells have contrasting double frames plus their central circle; the
 HUD explains that no capture happens there. Shared cells use `piece-layout.js`
-to arrange pawns in a centered grid at one height, scaled to stay inside the
-cell even with sixteen pieces. Count occupants before assigning targets and
+to stack up to four pawns at 90% size before adding columns for larger crowds.
+Both horizontal bounds and vertical clearance include the selectable pulse;
+even sixteen pieces stay inside the cell footprint. Count occupants before assigning targets and
 refresh active hop endpoints when occupancy changes. Raycasts still hit each
 pawn mesh; the 1–4 buttons remain available for very crowded cells.
 
 ## Playtest pacing
 
-The host schedules forced moves 1.1 s after a roll so the die lands first. A
+The host schedules forced moves after the actual toss duration plus 0.95 s
+to read the result (`dice-timing.js`, shared with the scene). The die uses wall
+time to avoid a low frame rate letting the host move before the visual lands. A
 single legal move or a choice only between yard pieces needs no extra click;
 strategically different moves remain manual. Pending automatic moves travel in
 snapshots and manual moves cancel them.
@@ -107,3 +110,51 @@ whose unfinished pieces are all in the yard qualify, including after captures
 and late in a match. Moving/finishing dice stay random; repeated numbers are
 allowed. Every seat uses the same rule, independently of name or score. Classic
 random dice remain a lobby option. Thresholds and counters survive migration.
+
+## Studio appearance and camino motions
+
+The playable scene, hub preview and Studio use the same textured board,
+lacquered numbered pawns with mesh faces, and rounded die factories.
+`studio-finish.js` owns the finishes and facial poses. Each board owns its
+procedural textures, so closing a Studio preview cannot dispose a game's maps.
+
+`camino-motion.js` adapts the ten authored camino ideas (Chócala, Resbalón,
+Rodar, Moonwalk, Resorte, Esquivar, Caballito, Paraguas, Túnel and Chicle) to
+actual rule paths. `motion-choice.js` selects from snapshot RNG/revision and
+pawn identity without consuming the dice RNG. Friend/rival tricks require a
+real nearby pawn; partners and endpoints come from logical cells, never a
+client's current animation time. A new board move settles existing tricks
+before selecting another, making eligibility consistent across clients.
+
+All tricks are cosmetic: they end at the awarded cell, including its crowd
+layout. Captures retain the timed hop and return flight, with the victim's
+old path cleared. A changed round, interrupted trick or teardown restores
+visibility and partner transforms and disposes temporary props and text maps.
+Studio's ten `ludo-<style>` pages use `studio-preview.js` and the exact live
+motion sampler; enable **Animación** to play their repeating demonstrations.
+
+`studio-motion.browser.js` scrubs all ten motions for all four seats, verifies
+crowded endpoints and cleanup, checks matching choices after a real host move
+on two clients, and renders every new Studio page. `ludo.browser.js` also
+covers capture flights, shared safe squares, rematches and mobile controls.
+
+## In-game HUD
+
+The action dock adapts the Banderín reference using kit fonts and colors over
+the live 3D scene. `hud-model.js` derives legal move previews, captures, safe
+cells, exact-home moves and recommendations from the real rules. `hud.js`
+shows the pip result after the physical throw settles; move inputs wait for
+that reveal, and holding the shake button never disables its release event.
+Capture totals live in rule snapshots and reset on rematch.
+
+The four corner progress plates are hidden by default. Hold either Shift key
+to inspect; releasing Shift, losing focus, hiding the page or opening the menu
+clears them. «Ver panas» toggles the same view for touch and keyboard users.
+V switches the existing camera view. The closer perspective frame reserves
+space measured from the actual action dock, including narrow landscape mode.
+No demo background images, duplicate rules, sockets or menus are imported.
+
+`hud.browser.js` proves two-client result visibility before automatic exit,
+large shared-cell stacks, hold/release dice input, Shift/blur/touch inspection
+and responsive desktop/portrait/landscape layouts. `hud.test.js` checks timing
+at every throw strength, move descriptions and migrated capture totals.

@@ -115,14 +115,15 @@ test('forced moves wait for the die, survive migration and execute only once',()
   const g=game();g.players[0].pieces=[8,-1,-1,-1];g.rng=seedFor([2]);g.roll();
   assert.equal(g.autoMove.piece,0);assert.equal(g.stepAutomatic(.5),false);
   const restored=LudoGame.restore(g.snapshot(),new Map());
-  assert.equal(restored.stepAutomatic(.7),true);assert.equal(restored.players[0].pieces[0],10);
+  assert.equal(restored.stepAutomatic(.7),false);
+  assert.equal(restored.stepAutomatic(restored.autoMove.remaining+.01),true);assert.equal(restored.players[0].pieces[0],10);
   assert.equal(restored.stepAutomatic(2),false);assert.equal(restored.turn,1);
   g.move(0);assert.equal(g.autoMove,null);assert.equal(g.stepAutomatic(2),false);
 });
 
 test('entry is automatic but a six with a moving piece preserves the choice',()=>{
   const g=game();g.rng=seedFor([6]);g.roll();assert.equal(g.autoMove.piece,0);
-  g.stepAutomatic(2);assert.equal(g.players[0].pieces[0],0);
+  g.stepAutomatic(g.autoMove.remaining+.01);assert.equal(g.players[0].pieces[0],0);
   g.rng=seedFor([6]);g.roll();assert.equal(g.autoMove,null);assert.equal(legalMoves(g).length,4);
 });
 
@@ -136,7 +137,7 @@ test('assisted entry bounds droughts equally for every seat, including late-game
     }
     const restored=LudoGame.restore(g.snapshot(),new Map());restored.turn=seat;restored.rng=seedFor([2]);restored.roll();
     assert.equal(restored.lastDie,6);assert.match(restored.event,/Salida asistida/);
-    restored.stepAutomatic(2);assert.equal(restored.players[seat].pieces[2],0);
+    restored.stepAutomatic(restored.autoMove.remaining+.01);assert.equal(restored.players[seat].pieces[2],0);
     assert.equal(restored.entryMisses[seat],0);
     restored.phase='finished';restored.start();assert.deepEqual(restored.entryMisses,[0,0,0,0]);
   }

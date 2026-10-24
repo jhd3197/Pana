@@ -1,3 +1,4 @@
+import { automaticMoveDelay } from './dice-timing.js';
 import { TableRoom } from '/engine/table-room.js';
 import { LudoGame, chooseMove } from './rules.js';
 
@@ -17,7 +18,7 @@ export class LudoRoom extends TableRoom {
     const game = this.game;
     if (game.phase === 'starter') return game.stepStarter(dt);
     if (game.autoMove) return game.stepAutomatic(dt);
-    if (!this.botReady(dt, game.phase === 'playing' && game.players[game.turn].id === null, .85)) return false;
+    if (!this.botReady(dt, game.phase === 'playing' && game.players[game.turn].id === null, game.die ? automaticMoveDelay(game.toss.power) : .85)) return false;
     game.die ? game.move(chooseMove(game)) : game.roll();
     return true;
   }

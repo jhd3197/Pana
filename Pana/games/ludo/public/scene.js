@@ -3,10 +3,13 @@ import { buildCharacter } from '/engine/models/characters/pana/avatar-model.js';
 import { normalizeAvatar } from '/engine/avatar.js';
 import { createTableWorld } from '/engine/worlds/table-world.js';
 import { createGameTable, createGameChair, disposeModel } from '/engine/models/props/game-table.js';
-import { createToss } from '/engine/play/dice-throw.js';
+import { createLudoToss } from './dice-timing.js';
 import { createStarterStage } from '/engine/play/quien-empieza.js';
 import { sound, Puffs, Shockwaves } from '/engine/fx.js';
 import { createLudoBoard, createLudoPawn, createLudoDie, boardPoint } from './board-model.js';
+import { createCaminoMotion } from './camino-motion.js';
+import { chooseMotion } from './motion-choice.js';
+import { poseFace } from './studio-finish.js';
 import { sharedCellLayout } from './piece-layout.js';
 import { COLORS, HOME, legalMoves } from './rules.js';
 
@@ -56,7 +59,7 @@ export function createLudoScene(canvas, { onPiece, onCapture, onStarter } = {}) 
     const {seat,power}=state.toss||{seat:state.turn,power:.5},a=seatAngle(seat),from=handFor(seat);
     const seed=state.rng>>>0,side=((seed>>>8&255)/255-.5)*1.1,reach=2.35-power*2.05;
     const to=new THREE.Vector3(Math.sin(a)*reach+Math.cos(a)*side,DIE_Y,Math.cos(a)*reach-Math.sin(a)*side);
-    toss={path:createToss({from:from.toArray(),to:to.toArray(),power,height:1.3,gravity:16,seed}),t:0,hit:0,power};
+    toss={path:createLudoToss({from:from.toArray(),to:to.toArray(),power,seed}),started:performance.now(),t:0,hit:0,power};
     final.setFromEuler(new THREE.Euler(...FACE_UP[state.lastDie])).premultiply(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0,1,0),(seed&1023)/1023*Math.PI*2));
     sound.whoosh();
   }
@@ -72,23 +75,32 @@ export function createLudoScene(canvas, { onPiece, onCapture, onStarter } = {}) 
     }
     // Moves since the last state: a pawn hops cell by cell; rivals it lands on fly home.
     const sameRound=state.round===lastRound,legal=legalMoves(state,ownSeat),occupancy=new Map(),hopping=[],eaten=[];
+    // Finish interrupted tricks before reading positions for the next action.
+    // A partner being captured/moved must never be restored to an old pose later.
+    const changed=new Set(pawns.filter(p=>state.players[p.seat].pieces[p.piece]!==p.progress));
+    for(const p of pawns)if(p.motion){
+      if(!sameRound||changed.size){
+        p.motion.sample(1,time,p.displayScale||1);p.motion.dispose();p.motion=null;p.path=null;
+      }
+    }
     for(const p of pawns){
       const progress=state.players[p.seat].pieces[p.piece],key=boardPoint(p.seat,progress,p.piece).join(',');
       if(!occupancy.has(key))occupancy.set(key,[]);occupancy.get(key).push(p);
     }
     for(const p of pawns){
       const progress=state.players[p.seat].pieces[p.piece],before=p.progress;
+      if(progress!==before||!sameRound)p.eats=null;
       if(p.initialized&&sameRound&&progress!==before){
         if(progress>=0&&(before<0||progress>before)){
           p.path=(before<0?[0]:Array.from({length:progress-before},(_,i)=>before+1+i)).map(v=>cell(p.seat,v,p.piece));
-          p.path.unshift(p.model.position.clone());p.hop=0;p.cell=undefined;p.flight=null;hopping.push(p);
-        } else if(progress<0)eaten.push(p);
+          p.path.unshift(p.target.clone());p.hop=0;p.cell=undefined;p.flight=null;hopping.push(p);
+        } else if(progress<0){p.path=null;eaten.push(p);}
       }
       p.progress=progress;
       let [x,z]=boardPoint(p.seat,progress,p.piece);
       const group=occupancy.get(`${x},${z}`),layout=sharedCellLayout(group.length,group.indexOf(p));
       p.displayScale=progress===HOME?1:layout.scale;
-      p.target.set(x+(progress===HOME?0:layout.x),PAWN_Y,z+(progress===HOME?0:layout.z));p.playable=p.seat===ownSeat&&legal.includes(p.piece);
+      p.target.set(x+(progress===HOME?0:layout.x),PAWN_Y+(progress===HOME?0:layout.y),z+(progress===HOME?0:layout.z));p.playable=p.seat===ownSeat&&legal.includes(p.piece);
       p.model.userData.halo.visible=p.playable;
       if(progress===HOME){p.target.x+=(p.piece%2-.5)*.2;p.target.z+=(Math.floor(p.piece/2)-.5)*.2;}
       if(!p.initialized||!sameRound){p.model.position.copy(p.target);p.model.rotation.set(0,0,0);p.path=p.flight=null;p.initialized=true;}
@@ -98,6 +110,18 @@ export function createLudoScene(canvas, { onPiece, onCapture, onStarter } = {}) 
       const mover=hopping[0],delay=mover?(mover.path.length-1)*HOP:0;
       if(mover)mover.eats={victims:eaten.map(p=>p.seat)};
       for(const p of eaten)p.flight={from:p.model.position.clone(),t:-delay,spin:(p.piece%2?1:-1)*(3+p.piece)};
+    }
+    for(const p of hopping){
+      const partners=pawns.filter(q=>q!==p&&!changed.has(q)&&q.progress>=0&&q.progress<HOME&&q.displayScale===1&&!pawns.some(a=>a.motion?.partner===q.model)&&p.path.some(at=>at.distanceTo(q.target)<.55));
+      const friend=partners.find(q=>q.seat===p.seat),rival=partners.find(q=>q.seat!==p.seat);
+      const style=chooseMotion({rng:state.rng,revision:state.revision,seat:p.seat,piece:p.piece,steps:p.path.length-1,friend:!!friend,rival:!!rival,capture:!!p.eats});
+      p.lastMotion=style;
+      if(style!=='hop'){
+        const partner=style==='highfive'||style==='piggy'?friend:style==='dodge'?rival:null;
+        if(partner){partner.path=partner.flight=null;partner.model.position.copy(partner.target);partner.model.scale.setScalar(partner.displayScale);}
+        p.motion=createCaminoMotion(own,p.model,p.path,style,COLORS[p.seat],partner?.model);
+        p.motionTime=0;p.motionDuration=Math.max(.9,(p.path.length-1)*.22);
+      }
     }
     lastRound=state.round;
     starter.update(state.phase==='starter'?state.starter:null,{ownSeat,names:state.players.map(p=>p.name)});
@@ -119,15 +143,25 @@ export function createLudoScene(canvas, { onPiece, onCapture, onStarter } = {}) 
     onCapture?.({by:p.seat,victims:p.eats.victims});p.eats=null;
   }
   // The table, chairs and seated panas, framed inside the canvas between the HUD bars.
-  const bounds=new THREE.Box3(new THREE.Vector3(-5.2,0,-5.2),new THREE.Vector3(5.2,2.6,5.2));
+  const bounds=new THREE.Box3(new THREE.Vector3(-3.65,.9,-3.65),new THREE.Vector3(3.65,2.65,3.65));
+  const focus=bounds.getCenter(new THREE.Vector3()),nearClearance=bounds.getSize(new THREE.Vector3()).length()/2+.5;
   let top=false;
+  const dock=document.querySelector('.action-panel');
   function frame(dt){
     if(disposed)return;time+=dt;
     const {w,h}=stage.resize(),margin=Math.min(24,w*.04);
-    stage.frameCamera(bounds,top?[0,6,.35]:[0,1.15,1],{x:margin,y:margin,width:Math.max(160,w-margin*2),height:Math.max(120,h-margin*2)});
+    const active=current?.phase==='playing',rect=active?dock?.getBoundingClientRect():null;
+    const landscape=active&&h<540&&w>700,topInset=active?104:margin;
+    const bottom=rect&&!landscape?Math.max(margin,h-rect.top+18):margin;
+    stage.frameCamera(bounds,top?[0,6,.35]:[0,1.4,1],{x:margin,y:topInset,width:Math.max(160,landscape?rect.left-margin*2:w-margin*2),height:Math.max(120,h-topInset-bottom)});
+    // Keep plaza decorations between the camera and the table out of the close view.
+    camera.near=Math.max(.1,camera.position.distanceTo(focus)-nearClearance);camera.updateProjectionMatrix();
     for(const p of pawns){
       const m=p.model;
-      if(p.flight){
+      poseFace(m,time,p.flight?'surprised':p.progress===HOME?'happy':'idle');
+      if(p.motion){
+        p.motionTime+=dt;
+      } else if(p.flight){
         // Knocked off the board: a high spinning arc back to the yard, a bounce, dust.
         const f=p.flight;f.t+=dt;const k=Math.min(1,Math.max(0,f.t/FLIGHT));
         if(f.t>0){
@@ -146,6 +180,11 @@ export function createLudoScene(canvas, { onPiece, onCapture, onStarter } = {}) 
       const size=p.displayScale||1;
       m.scale.set(size*pulse*(1+squash),size*pulse*(1-squash),size*pulse*(1+squash));
     }
+    // Sample after all ordinary pawns, so a partner pose cannot be overwritten.
+    for(const p of pawns)if(p.motion){
+      const t=Math.min(1,p.motionTime/p.motionDuration);p.motion.sample(t,time,p.displayScale||1);
+      if(t===1){p.motion.dispose();p.motion=null;p.path=null;p.model.position.copy(p.target);land(p);}
+    }
     characters.forEach((c,seat)=>{c.update(dt,{});const won=current?.winner===seat,mood=moods[seat];mood.t=Math.max(0,mood.t-dt);
       const cheer=won||mood.kind==='cheer'&&mood.t>0,mad=mood.kind==='mad'&&mood.t>0;
       c.arms.forEach((arm,j)=>arm.rotation.set(cheer?-1.8+Math.sin(time*(won?5:9)+j)*.25:mad?-1.25+Math.sin(time*14+j*Math.PI)*.45:-.55,0,(j?-1:1)*(mad?.5:.15)));
@@ -153,7 +192,7 @@ export function createLudoScene(canvas, { onPiece, onCapture, onStarter } = {}) 
     });
     if(toss){
       // In flight: the die follows the thrown arc and tumbles onto its face.
-      toss.t+=dt;const s=toss.path.at(toss.t);diePivot.position.fromArray(s.position);
+      toss.t=Math.max(toss.t+dt,(performance.now()-toss.started)/1000);const s=toss.path.at(toss.t);diePivot.position.fromArray(s.position);
       spin.setFromAxisAngle(axis.fromArray(s.axis),s.turn);diePivot.quaternion.copy(final).premultiply(spin);
       while(toss.hit<toss.path.impacts.length&&toss.t>=toss.path.impacts[toss.hit].t){
         const hit=toss.path.impacts[toss.hit++];sound.tone(170+hit.strength*120,0,.05,'square',.04+hit.strength*.05);
@@ -179,6 +218,6 @@ export function createLudoScene(canvas, { onPiece, onCapture, onStarter } = {}) 
   }
   function setView(value){top=!!value;}
   function projectPiece(seat,piece){const p=pawns.find(p=>p.seat===seat&&p.piece===piece),v=p.model.position.clone();v.y+=.2*p.model.scale.y;v.project(camera);const r=canvas.getBoundingClientRect();return{x:r.left+(v.x+1)*r.width/2,y:r.top+(1-v.y)*r.height/2};}
-  function dispose(){disposed=true;canvas.removeEventListener('click',click);canvas.removeEventListener('pointermove',hover);starter.dispose();characters.forEach(c=>c.dispose());puffs.clear();waves.clear();disposeModel(own);stage.dispose();}
+  function dispose(){disposed=true;canvas.removeEventListener('click',click);canvas.removeEventListener('pointermove',hover);starter.dispose();pawns.forEach(p=>p.motion?.dispose());characters.forEach(c=>c.dispose());puffs.clear();waves.clear();disposeModel(own);stage.dispose();}
   return {update,frame,setView,shakeDie,dispose,characters,pawns,starter,projectPiece,renderer,scene,camera,get die(){return diePivot;},get tossing(){return !!toss;}};
 }

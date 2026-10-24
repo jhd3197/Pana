@@ -51,7 +51,7 @@ export class LudoGame {
     this.phase = 'lobby'; this.turn = 0; this.die = 0; this.lastDie = 0;
     this.sixes = 0; this.winner = null; this.revision = 0; this.round = 0;
     this.starter = null; this.lastPlace = null; this.toss = { seat: 0, power: .5 };
-    this.entryMisses = [0, 0, 0, 0]; this.entryLimits = [0, 0, 0, 0]; this.autoMove = null;
+    this.entryMisses = [0, 0, 0, 0]; this.entryLimits = [0, 0, 0, 0]; this.autoMove = null; this.captures = [0, 0, 0, 0];
     this.ledger = {}; this.event = 'Invita a tus panas o juega con bots.';
   }
   snapshot() { return JSON.parse(JSON.stringify(this)); }
@@ -75,7 +75,7 @@ export class LudoGame {
     if (!['lobby', 'finished'].includes(this.phase)) return false;
     for (const p of this.players) p.pieces.fill(-1);
     this.phase = 'starter'; this.turn = 0; this.die = 0; this.lastDie = 0;
-    this.entryMisses = [0, 0, 0, 0]; this.entryLimits = [0, 0, 0, 0]; this.autoMove = null;
+    this.entryMisses = [0, 0, 0, 0]; this.entryLimits = [0, 0, 0, 0]; this.autoMove = null; this.captures = [0, 0, 0, 0];
     this.sixes = 0; this.winner = null; this.round++; this.revision++;
     // Its own seed, so the match's dice stream is the same with or without the cachos.
     this.starter = createStarter({ seats: [0, 1, 2, 3], need: 'first', seed: (this.rng ^ Math.imul(this.round, 0x9e3779b1)) >>> 0, option: this.options.starter, last: this.lastPlace });
@@ -123,8 +123,8 @@ export class LudoGame {
     const moves = legalMoves(this);
     // Choosing between identical yard pieces does not change the outcome.
     if (moves.length === 1 || moves.length && moves.every(i => pieces[i] < 0)) {
-      this.autoMove = { seat: this.turn, piece: moves[0], remaining: 1.1 };
-      this.event += ' Movimiento automático al caer el dado.';
+      this.autoMove = { seat: this.turn, piece: moves[0], remaining: automaticMoveDelay(this.toss.power) };
+      this.event += ' Movimiento automático después de ver el dado.';
     }
     this.revision++; return true;
   }
@@ -147,6 +147,7 @@ export class LudoGame {
         return v;
       });
     }
+    this.captures[this.turn] += captured;
     this.event = `${p.name} ${next === HOME ? 'llevó una ficha a casa' : from < 0 ? 'sacó una ficha' : `movió la ficha ${piece + 1}`}.${captured ? ` Capturó ${captured}.` : ''}`;
     if (p.pieces.every(v => v === HOME)) { this.phase = 'finished'; this.winner = this.turn; this.die = 0; this.lastPlace = ranking(this.players).at(-1).seat; }
     else if (this.die === 6 || captured && this.options.captureBonus) { this.die = 0; this.event += ' Vuelve a tirar.'; }
@@ -179,3 +180,5 @@ export class LudoGame {
 import { defaultLudoOptions, ludoOptions } from './options.js';
 import { createStarter, starterInput, stepStarter, starterDone, starterResult } from '../../../engine/play/quien-empieza-rules.js';
 import { cleanPower } from '../../../engine/play/dice-throw.js';
+
+import { automaticMoveDelay } from './dice-timing.js';

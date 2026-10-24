@@ -1,3 +1,4 @@
+import { createLudoHud } from './hud.js';
 import { loadName, loadAvatar } from '/engine/avatar.js';
 import { prepareScene } from '/engine/game-load.js';
 import { createGameMenu, toggleMute } from '/engine/ui.js';
@@ -49,12 +50,9 @@ const buttons=Array.from({length:4},(_,piece)=>{
   const button=document.createElement('button');button.className='pk-btn piece-button';button.dataset.piece=piece;
   button.onclick=()=>act('move',{piece});$('pieces').append(button);return button;
 });
-const scores=Array.from({length:4},(_,seat)=>{
-  const li=document.createElement('li');li.className='score';li.style.setProperty('--seat-color',COLORS[seat]);
-  li.append(document.createElement('i'),document.createElement('b'),document.createElement('small'));$('scoreboard').append(li);return li;
-});
+const hud=createLudoHud({buttons,canInspect:()=>!menu.isOpen});
 function ownTurn(){return !!world&&room.connected&&room.state.phase==='playing'&&room.seat===room.state.turn;}
-function canRoll(){return ownTurn()&&!menu.isOpen&&!room.state.die;}
+function canRoll(){return ownTurn()&&!menu.isOpen&&!room.state.die&&!world?.tossing;}
 // Eating a ficha: a callout for the panas involved, the plaza for everyone else.
 function capture({by,victims}){
   const mine=room.seat,names=victims.map(seat=>room.state.players[seat].name);
@@ -62,7 +60,7 @@ function capture({by,victims}){
   else if(victims.includes(mine))shout(`¡${room.state.players[by].name} te comió!`,{ms:1500});
   else shout(`¡${room.state.players[by].name} se comió a ${names.join(' y ')}!`,{tone:'yellow',ms:1400});
 }
-function act(action,values={}){if(menu.isOpen||!ownTurn())return;sound.unlock();room.action(action,values);}
+function act(action,values={}){if(menu.isOpen||!ownTurn()||action==='move'&&world?.tossing)return;sound.unlock();room.action(action,values);}
 function render(state){
   const lobby=state.phase==='lobby',ended=state.phase==='finished',seat=room.seat;
   roomOptions.update(state.options,lobby&&room.isHost);
@@ -74,26 +72,10 @@ function render(state){
   $('start').textContent=!world?'Preparando la mesa…':!room.connected?'Conectando…':room.isHost?'¡Jugar!':'Espera al anfitrión';
   $('invite').disabled=$('lobby-invite').disabled=!room.connected||room.offline;
   fillRoster($('lobby-roster'),state.players.map(p=>({rank:p.seat+1,name:p.id===room.id?`${p.name} · tú`:p.name,detail:COLOR_NAMES[p.seat],end:p.id===null?'Bot':'Listo',me:p.id===room.id})));
-  state.players.forEach((p,i)=>{
-    scores[i].classList.toggle('active',state.phase==='playing'&&state.turn===i);
-    scores[i].children[1].textContent=p.id===room.id?`${p.name} · tú`:p.name;
-    const rolled=state.starter?.rolls[i],starter=state.phase==='starter';
-    scores[i].children[2].textContent=starter?`${COLOR_NAMES[i]} · ${rolled?`sacó ${rolled}`:'sacudiendo'}`:`${COLOR_NAMES[i]} · ${p.pieces.filter(v=>v===HOME).length}/4 en casa`;
-  });
-  const mine=ownTurn(),moves=legalMoves(state,seat);
-  $('turn').textContent=!room.connected?'Reconectando…':ended?'¡Partida terminada!':state.phase==='starter'?'¿Quién empieza?':mine?state.die?state.autoMove?'La ficha se mueve sola…':'Elige una ficha':'¡Te toca tirar!':`Turno de ${state.players[state.turn].name}`;
-  $('event').textContent=state.event;
-  if(state.options.assistedEntry&&state.phase==='playing'&&!state.die&&state.entryMisses?.[state.turn])$('event').textContent+=` Salida asistida: ${state.entryMisses[state.turn]} intentos sin salir. La ayuda evita rachas largas.`;
-  $('die').textContent=state.lastDie||'—';$('die').setAttribute('aria-label',state.lastDie?`Último dado: ${state.lastDie}`:'Todavía no se ha tirado');
-  $('roll').disabled=!mine||!!state.die;
+  let eventText=state.event;
+  if(state.options.assistedEntry&&state.phase==='playing'&&!state.die&&state.entryMisses?.[state.turn])eventText+=` Salida asistida: ${state.entryMisses[state.turn]} intentos sin salir.`;
+  $('roll').disabled=!ownTurn()||!!state.die;
   if($('roll').disabled)thrower.cancel();
-  buttons.forEach((button,i)=>{
-    const value=state.players[seat]?.pieces[i];button.disabled=!mine||!moves.includes(i);
-    button.style.setProperty('--seat-color',COLORS[seat]||COLORS[0]);
-    const label=value===undefined?'Mirando':value<0?'Patio':value===HOME?'En casa':`${HOME-value} a casa`;
-    button.replaceChildren(document.createTextNode(String(i+1)));const small=document.createElement('small');small.textContent=label;button.append(small);
-    button.setAttribute('aria-label',`Ficha ${i+1}: ${label}`);
-  });
   $('results').hidden=!ended;$('again').disabled=!room.connected||!room.isHost;
   if(ended){
     $('result-title').textContent=`¡Ganó ${state.players[state.winner].name}!`;
@@ -103,20 +85,24 @@ function render(state){
   if(lastRevision>=0&&state.revision!==lastRevision&&state.round===lastRound&&state.phase==='playing'&&!state.die)sound.tone(380,0,.07,'triangle',.06);
   lastRevision=state.revision;lastRound=state.round;
   world?.update(state,room.connected?seat:-1);
+  hud.update(state,room.connected?seat:-1,room.id,eventText);
+  hud.frame(!!world?.tossing,thrower.shaking,thrower.power);
+
 }
 addEventListener('keydown',event=>{
   if(menu.isOpen||event.repeat||event.target.closest?.('input,textarea,select,[contenteditable]'))return;
   if(event.key.toLowerCase()==='m')toggleMute();
+  if(event.key.toLowerCase()==='v'&&!$('hud').hidden)$('view').click();
   if(/^[1-4]$/.test(event.key)){event.preventDefault();act('move',{piece:Number(event.key)-1});}
 });
 let previous=performance.now();
 const timer=setInterval(()=>{const now=performance.now();room.tick(Math.min(.2,(now-previous)/1000),menu.isOpen&&room.members.size<=1);previous=now;},100);
 let frameTime=performance.now();
-function frame(now){if(stopped)return;if(thrower.shaking)world?.shakeDie(thrower.power);world?.frame(Math.min(.05,(now-frameTime)/1000));frameTime=now;requestAnimationFrame(frame);}
+function frame(now){if(stopped)return;if(thrower.shaking)world?.shakeDie(thrower.power);world?.frame(Math.min(.05,(now-frameTime)/1000));hud.frame(!!world?.tossing,thrower.shaking,thrower.power);frameTime=now;requestAnimationFrame(frame);}
 requestAnimationFrame(frame);
 render(room.state);room.connect();
 export const sceneReady=import('./scene.js').then(async({createLudoScene})=>{
   if(stopped)return;world=createLudoScene($('world'),{onPiece:piece=>act('move',{piece}),onCapture:capture,onStarter:(kind,power)=>{if(!menu.isOpen){sound.unlock();room.action('starter',{cacho:kind,power});}}});await prepareScene(world);render(room.state);$('loading').hidden=true;
 }).catch(error=>{console.error(error);$('loading-copy').textContent='No pudimos abrir la mesa. Comprueba tu conexión y WebGL.';const button=document.createElement('button');button.className='pk-btn';button.textContent='Reintentar';button.onclick=()=>location.reload();$('loading').append(button);throw error;});
-addEventListener('pagehide',()=>{stopped=true;clearInterval(timer);thrower.dispose();room.dispose();world?.dispose();},{once:true});
+addEventListener('pagehide',()=>{stopped=true;clearInterval(timer);thrower.dispose();hud.dispose();room.dispose();world?.dispose();},{once:true});
 if(params.has('debug'))window.ludoDebug={room,menu,chooseMove,legalMoves,thrower,get world(){return world;}};

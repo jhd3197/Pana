@@ -8,6 +8,18 @@ becomes the GitHub release's notes.
 
 ## Unreleased
 
+- **Los botones de menú e invitación comparten el nuevo estilo del HUD.**
+  Placas inclinadas y atajos legibles en todos los juegos, también en los
+  controles de vista y detalles de Ludo.
+
+- **Ludo deja ver el dado antes de mover y acerca la mesa.**
+  Fichas compartidas más grandes, un HUD con pistas de cada jugada y detalles
+  de los panas al mantener Shift o tocar «Ver panas».
+
+- **Ludo estrena las fichas con caritas y los movimientos del estudio.**
+  Tablero texturizado, fichas brillantes, dado redondeado y diez animaciones
+  del camino en las partidas y en Studio, sin cambiar las reglas del dado.
+
 - **Las imágenes grandes se distribuyen en paquetes separados por juego.**
   Pana verifica y guarda cada paquete al necesitarlo; los iconos y miniaturas
   siguen en Git, sin cambiar las ilustraciones ni sus direcciones.

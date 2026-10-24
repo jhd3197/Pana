@@ -28,14 +28,18 @@
     <div class="pk-lobby-foot"><span id="lobby-room" class="pk-lobby-room"></span><button id="start" class="pk-btn pk-btn--primary pk-btn--lg" disabled>Preparando la mesa…</button><span id="lobby-invite-slot"></span></div>
   </section>
   <main id="hud" hidden>
-    <ol id="scoreboard" aria-label="Progreso de los jugadores"></ol>
+    <ol id="scoreboard" aria-label="Progreso de los jugadores" hidden></ol>
     <section class="action-panel pk-panel" aria-label="Tu turno">
+      <output id="die" aria-label="Último dado">—</output>
+      <div class="dock-content">
       <div class="turn-copy"><h2 id="turn" class="pk-heading" aria-live="polite"></h2><p id="event" role="status"></p></div>
-      <div class="play-controls"><output id="die" aria-label="Último dado">—</output><button id="roll" class="pk-btn pk-btn--primary" aria-describedby="roll-tip">Agita y suelta <kbd class="pk-kbd" data-pana-hint>Espacio</kbd></button><div id="pieces" aria-label="Elige una ficha"></div></div>
+      <div class="play-controls"><button id="roll" class="pk-btn pk-btn--primary" aria-describedby="roll-tip"><span id="roll-label">Agita y suelta</span> <kbd class="pk-kbd" data-pana-hint>Espacio</kbd></button><div id="pieces" aria-label="Elige una ficha"></div></div>
       <p id="roll-tip" class="roll-tip" data-pana-hint>Mantén el botón o Espacio para agitar el dado y suelta para tirar, o arrástralo y suéltalo sobre la mesa.</p>
+      </div>
     </section>
     <p class="safe-legend"><span aria-hidden="true"></span> Doble borde: seguro. Aquí no se come.</p>
-    <button id="view" class="pk-btn pk-btn--sm" aria-pressed="false">Vista desde arriba</button>
+    <button id="details" class="pk-btn pk-btn--sm pana-hud-button" aria-expanded="false" aria-controls="scoreboard">Ver panas <kbd class="pk-kbd">Shift</kbd></button>
+    <button id="view" class="pk-btn pk-btn--sm pana-hud-button" aria-pressed="false">Vista desde arriba</button>
   </main>
   <div class="connection"><span id="connection" role="status">Conectando…</span><button id="practice" class="pk-btn pk-btn--sm" hidden>Jugar en local</button></div>
   <section id="results" class="pk-results" hidden aria-labelledby="result-title"><div class="pk-modal pk-results-card"><span class="pk-ribbon">TODOS A CASA</span><h2 id="result-title" class="pk-title"></h2><p class="pk-copy">¡La revancha está servida!</p><ol id="result-roster" class="pk-roster"></ol><button id="again" class="pk-btn pk-btn--primary pk-btn--block">Otra partida</button><a class="pk-back" href="/">← Todos los juegos</a></div></section>

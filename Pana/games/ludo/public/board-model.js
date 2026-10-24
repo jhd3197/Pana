@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
 import { disposeModel } from '/engine/models/props/game-table.js';
 import { COLORS, RING, SAFE, rotateCell, cellFor } from './rules.js';
+import { finishBoard, finishPawn } from './studio-finish.js';
 
 export const STEP = .36;
 export const boardPoint = (seat, progress, piece) => cellFor(seat, progress, piece).map(v => (v - 7) * STEP);
@@ -52,6 +53,7 @@ export function createLudoBoard() {
       const ring = add(group,new THREE.TorusGeometry(.09,.018,6,24),start ? cream : ink,px,.16,pz); ring.rotation.x = -Math.PI/2;
     }
   });
+  finishBoard(group);
   return finish(group);
 }
 export function createLudoPawn({ seat = 0, number = 1 } = {}) {
@@ -66,7 +68,7 @@ export function createLudoPawn({ seat = 0, number = 1 } = {}) {
   const texture=new THREE.CanvasTexture(c);texture.colorSpace=THREE.SRGBColorSpace;
   const badge=add(group,new THREE.CircleGeometry(.085,24),new THREE.MeshBasicMaterial({map:texture,transparent:true}),0,.421);badge.rotation.x=-Math.PI/2;
   const halo=add(group,new THREE.TorusGeometry(.19,.025,8,32),material('#ffc629'),0,.018);halo.rotation.x=-Math.PI/2;halo.visible=false;
-  group.userData.halo=halo; return finish(group);
+  group.userData.halo=halo; finishPawn(group,seat*4+number); return finish(group);
 }
 function dieTexture(value) {
   const c=document.createElement('canvas');c.width=c.height=128;const ctx=c.getContext('2d');ctx.fillStyle='#fff6e2';ctx.fillRect(0,0,128,128);ctx.fillStyle='#302435';
@@ -76,6 +78,6 @@ function dieTexture(value) {
 }
 export function createLudoDie() {
   const group=new THREE.Group();group.name='Dado de Ludo';
-  add(group,new THREE.BoxGeometry(.43,.43,.43),[3,4,1,6,2,5].map(v=>new THREE.MeshStandardMaterial({map:dieTexture(v),roughness:.45})),0,.215);
+  add(group,new RoundedBoxGeometry(.43,.43,.43,3,.045),[3,4,1,6,2,5].map(v=>new THREE.MeshPhysicalMaterial({map:dieTexture(v),roughness:.35,clearcoat:1,clearcoatRoughness:.2})),0,.215);
   return finish(group);
 }

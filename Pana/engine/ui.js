@@ -302,13 +302,13 @@ export function createGameMenu({
 
   // ---------- buttons a game places in its own HUD ----------
   function createButton({ id: buttonId = id('open'), label = 'Menú', kbd = 'Esc', className = '' } = {}) {
-    const button = h('button', { type: 'button', id: buttonId, class: className || null, 'aria-haspopup': 'dialog', 'aria-controls': dialog.id },
+    const button = h('button', { type: 'button', id: buttonId, class: `pana-hud-button ${className}`, 'aria-haspopup': 'dialog', 'aria-controls': dialog.id },
       label, kbd && h('kbd', { text: kbd, 'data-pana-hint': true }));
     button.addEventListener('click', () => (pause ? toggle() : open()));
     return button;
   }
   function createSoundButton({ id: buttonId = id('sound'), className = '' } = {}) {
-    const button = h('button', { type: 'button', id: buttonId, class: className || null });
+    const button = h('button', { type: 'button', id: buttonId, class: `pana-hud-button ${className}` });
     button.addEventListener('click', () => soundSwitch.click());
     onSettings(s => {
       button.textContent = `Sonido: ${s.sound ? 'sí' : 'no'}`;
@@ -318,7 +318,7 @@ export function createGameMenu({
     return button;
   }
   function createInviteButton({ id: buttonId = id('invite'), label = 'Invitar panas', className = '' } = {}) {
-    return h('button', { type: 'button', id: buttonId, class: className || null, title: 'Copiar enlace de la sala', onclick: () => share() },
+    return h('button', { type: 'button', id: buttonId, class: `pana-hud-button ${className}`, title: 'Copiar enlace de la sala', onclick: () => share() },
       label, ' ', icon('share'));
   }
 

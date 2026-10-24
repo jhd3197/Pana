@@ -89,6 +89,7 @@ try{
     g.revision++;ludoDebug.room.publish();
   });await sync(a,b);await b.evaluate(()=>ludoDebug.room.action('roll',{power:.5}));
   await b.waitForFunction(()=>ludoDebug.room.state.lastDie===6&&ludoDebug.room.state.autoMove);
+  await b.waitForFunction(()=>!ludoDebug.world.tossing&&document.querySelector('#event').textContent.includes('Salida asistida'));
   assert.match(await b.locator('#event').textContent(),/Salida asistida/);
   await b.waitForFunction(()=>ludoDebug.room.state.players[1].pieces[2]===0);
   // Reproduce green and yellow sharing yellow's safe starting square.
@@ -98,13 +99,13 @@ try{
     g.players[1].pieces[0]=13;g.players[2].pieces[0]=0;g.revision++;ludoDebug.room.publish();
   });await sync(a,b);
   for(const page of [a,b]){
-    await page.waitForFunction(()=>ludoDebug.world.pawns.every(p=>!p.path&&!p.flight&&p.model.position.distanceTo(p.target)<.01)&&ludoDebug.world.pawns.find(p=>p.seat===1&&p.piece===0).model.scale.x<.5);
+    await page.waitForFunction(()=>ludoDebug.world.pawns.every(p=>!p.path&&!p.flight&&p.model.position.distanceTo(p.target)<.01)&&ludoDebug.world.pawns.find(p=>p.seat===1&&p.piece===0).model.scale.x>.85);
     assert.equal(await page.evaluate(()=>{
       const [green,yellow]=[1,2].map(seat=>ludoDebug.world.pawns.find(p=>p.seat===seat&&p.piece===0));
-      return Math.abs(green.model.position.y-yellow.model.position.y)<.001
+      return Math.abs(green.model.position.y-yellow.model.position.y)>.4
         &&green.model.position.distanceTo(yellow.model.position)>.14
-        &&green.model.scale.x<.5&&yellow.model.scale.x<.5;
-    }),true,'safe-square pieces are side by side, never stacked');
+        &&green.model.scale.x>.85&&yellow.model.scale.x>.85;
+    }),true,'small shared groups stack at near-full size');
     assert.equal(await page.evaluate(()=>[0,8,13,21,26,34,39,47].every(i=>ludoDebug.world.scene.getObjectByName(`safe-cell-${i}`)?.children.length===8)),true);
   }
   await b.screenshot({path:'art/ludo/shared-safe-square.png'});
@@ -189,8 +190,8 @@ try{
   assert.ok(await m.locator('#world').evaluate(el=>el.getBoundingClientRect().height>250));
   await m.evaluate(()=>ludoDebug.room.cut());await m.locator('#practice').waitFor({state:'visible'});await m.locator('#practice').click();
   assert.ok(await m.locator('#invite').isDisabled());await m.locator('#start').click();assert.equal(await m.evaluate(()=>ludoDebug.room.state.phase),'starter');
-  // Build all three Studio factories through the real catalog.
-  assert.equal(await m.evaluate(async()=>{const {ASSETS}=await import('/studio/catalog.js');for(const asset of ASSETS.filter(a=>a.id.startsWith('ludo-'))){const {group}=await asset.build();if(!group.children.length)throw Error('empty model');group.userData.dispose();}return ASSETS.filter(a=>a.id.startsWith('ludo-')).length;}),3);
+  // Build the three models and ten shared motion previews through the real catalog.
+  assert.equal(await m.evaluate(async()=>{const {ASSETS}=await import('/studio/catalog.js');for(const asset of ASSETS.filter(a=>a.id.startsWith('ludo-'))){const {group}=await asset.build();if(!group.children.length)throw Error('empty model');group.userData.dispose();}return ASSETS.filter(a=>a.id.startsWith('ludo-')).length;}),13);
   const response=await m.request.get(`${base}/api/games`);const listing=await response.json();assert.ok(JSON.stringify(listing).includes('Ludo'));
   await m.goto(base);await m.getByRole('heading',{name:'Ludo',exact:true}).waitFor();
   console.log('ok: win/rematch, portrait and landscape touch, local fallback, Studio models and hub discovery');
