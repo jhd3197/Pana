@@ -277,8 +277,9 @@ from 2,185 to 896 draws and 22 to 9 ms CPU with the cars hidden.
   `DRIVER_CARD_FROM` (14 m) of any camera, and the rig is not animated
   while carded. The player's own pana is never carded, which keeps the
   cockpit view possible. −160 to −280 draws, CPU −10 to −25 %.
-- `rivalShadows`: a rival's six largest pieces cast shadows. −160 to −200
-  draws at the grid; shadows look the same.
+- `trimShadows`: a rival's six largest pieces cast shadows, the player's car
+  twelve (its own shadow is always in view). −160 to −200 draws at the grid
+  for rivals, 40 → 12 shadow draws for the player; shadows look the same.
 - `farCar` (rivals): the body, cabin and wheels merged into one
   vertex-coloured mesh on the tumble's inner group, shown once every camera
   is more than `CAR_FAR_FROM` (35 m) away and the racer is on wheels. A

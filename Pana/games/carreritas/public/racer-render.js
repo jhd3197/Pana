@@ -82,9 +82,10 @@ export function trimDriver(car) {
   return car;
 }
 
-// A rival's shadow only needs its outline: the largest few pieces cast it,
-// the trims, lamps and bolts (60–90 shadow draws a car) do not.
-export function rivalShadows(car, keep = 6) {
+// A car's shadow only needs its outline: the largest pieces cast it, the
+// trims, lamps and bolts (40–90 shadow draws a car) do not. Rivals keep six;
+// the player's own car, whose shadow is always in view, keeps twelve.
+export function trimShadows(car, keep) {
   const casters = [], size = new THREE.Vector3();
   car.root.updateMatrixWorld(true);
   car.root.traverse(o => {
