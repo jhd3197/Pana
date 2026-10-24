@@ -69,7 +69,7 @@ wins and the titles are handed out.
   (mod 256). A tap shorter than a 50 ms tick still reaches the host as a
   counter change, and mashing after a caída is just the counter delta.
 - Golpe: a tap (released before `T.hold` = 0.16 s) is a jab; held past it is
-  the trompón's 0.55 s windup (`wind`, the glove shakes back), which fires on
+  the trompón's 0.43 s windup (`wind`, the glove shakes back), which fires on
   its own. A press while busy is buffered for 0.2 s.
 - Rock-paper-scissors: a jab landing on a `wind` interrupts it (+6 mareo
   counter); blocking from the front turns jabs into 1.5 chip; a dodge's
@@ -148,3 +148,100 @@ wins and the titles are handed out.
 - Arena reactions: `moto` (la calle) drives a moto through the fight;
   `out`/`vecino` near a row of parked motos topples it like dominoes (las
   motos) or tumbles the crate stacks (el mercado); `ropes` wobbles the ropes.
+
+### Head pose and controller feedback
+
+The shared character never resets `neck.rotation`; crowd gaze writes all three
+axes absolutely after `update`, never adds an idle or gasp offset each frame.
+Fighter recoil uses small integration steps and bounded neck angles. Heavy hits
+recoil without a full turn, keeping the opponent readable.
+HUD labels distinguish mareo (fills with damage) from aguante and caídas. Native
+controller input does not advance press counters while the menu is open. The
+shared controller guide replaces the keyboard strip and tutorial keys follow
+the active device.
+
+The Banderín HUD lives in `hud-banderin.css`; `hud-details.js` supplies shared
+3D avatar portraits, event-driven hit streaks (reset after 1.8 s or being hit)
+and the result table from each body's authoritative `score`. Portraits reuse
+`portrait-cache.js` and lazy-load `portrait.js`, never the reference's SVG faces.
+The reference's health/super/round-win mock values are not game state: the live
+bars remain mareo and aguante, diamonds count received knockdowns, and ¡Dale!
+remains a taunt. The shared controller strip is styled in-game rather than
+duplicated. Reduced motion disables HUD transitions, not gameplay messages.
+
+## Contact timing
+
+`attack-timing.js` supplies the same impact/release times to rules and procedural
+arm extension. A trompon now contacts at 0.12–0.18 s after its windup rather than
+at the first strike tick. Windup shortens to 0.43 s, preserving the original
+0.55 s total warning and dodge opportunity. The wind-to-swing transition carries
+sub-tick overshoot forward instead of dropping it, so server cadence cannot add
+an extra tick before contact; jab contact remains 0.10–0.18 s and grab 0.14–0.24 s.
+The pure `analyseImpact` sampler follows grandma-gta's maximum-extension idea
+to test authored pose curves; it is not a runtime animation-clip loader. Existing
+0.2 s input buffering, directional push, mareo, stars and mash-to-rise remain
+the combat core. A short filtered noise layer sharpens clean jab sounds through
+the shared sound context. Timing tests prove no early or repeated heavy damage.
+
+The counter lesson grants `TUTORIAL_COUNTER_WINDOW` (2 s) after a successful
+dodge, giving beginners time to read the cue and respond. Ordinary fights keep
+`T.contra` at 0.8 s. The browser tutorial observes late windup or an unlanded
+early swing because a published catch-up snapshot can skip the windup tail;
+it can buffer the counter near dodge recovery instead of waiting for one idle
+snapshot. This preserves real keyboard input and continuous 3D rendering.
+
+Trifulca caps `LiveRoom.maxCatchUp` at 0.1 s (two 50 ms ticks). The shared
+one-second default can advance an entire telegraph and punch between published
+snapshots after a rendering stall, leaving no visible chance to dodge. Under a
+slow host the fight slows rather than silently skipping its warning; normal
+20 Hz play is unchanged. A room-level test feeds a one-second hitch and proves
+the next snapshot still shows windup with no damage.
+
+The four-game Banderín update keeps Trifulca's established HUD, meter lag,
+portraits, controller prompts and intro/verdict presentation. It opts into
+`engine/banderin.css` for the shared lobby/button treatment and larger end-of-
+night results. The existing game-specific HUD stylesheet loads after that
+shared skin, preserving its compact mobile and reduced-motion rules.
+
+Dodge takes precedence over an uncommitted punch charge and clears its attack
+buffer. Previously the charge branch consumed that tick before checking dodge,
+so a quick dodge press could disappear. Committed attacks retain recovery.
+
+The HUD warns “Está cargando” first and says “ESQUIVA” only when a fresh
+dodge can cover the upcoming heavy impact; prompting at windup start made an
+immediate correct-looking response expire before contact.
+
+
+## Authored combat motion and new moves
+
+`combat-motion.js` adapts the supplied capy motion study's cross, hook,
+uppercut, side kick, sweep and throw keyframes. `combat-rig.js` applies them
+in sculpt units to the existing player avatar, clothes, gloves and helmet.
+Authored contact poses are pinned to `attack-timing.js`; the contact hold
+never pauses host simulation. An authoritative `motion` counter selects the same punch style and hand on
+both clients and in replays. Local lunges are bounded because world-space
+movement and reach still belong to the host. Neck stabilization is bounded;
+leg planting relaxes for kicks and tumbles. Leaving an authored pose restores
+persistent scale, ear and leg channels before the crowd or prop poses resume.
+
+New controls are **I / RT** patada (`kick`), **U / LT** barrida (`sweep`),
+**O / RB** volteo (`toss`); **LB** now covers. Touch has dedicated buttons.
+All three use modulo-256 press counters (`k`, `s`, `v`) through LiveRoom,
+require free hands and an idle/guard stance, and cancel an uncommitted punch
+charge. Costs are 20/25/30 aguante, reach 1.9/1.45/1.1 m and mareo 19/13/17.
+Kick and sweep are blockable; the close throw beats guard. Dodging any of the
+three exposes its attacker and grants the ordinary counter window. Bots use
+the same inputs. Each clean new move earns two scorecard points.
+
+Sweep and throw reactions use `tumble`, with the source clip compressed into
+0.7/0.9 seconds of recovery. This is a brief trip, not a scored caída: only a
+clean hit on an already dizzy opponent starts the existing knockdown count.
+`tumbleKind` and `stun` travel in snapshots and replay frames. New moves cannot
+be cancelled by picking up props or tagging a partner during recovery.
+
+`combat-impact.js` pools eight camera-facing mesh bursts with canvas text
+textures; only actual host hit/block events create them. No reference PNG or
+bundled Three.js copy is served. Unit tests cover timing, recovery, guard,
+dodge, range, stamina, mirroring and restored state. The two-client suite
+sends I/U/O from the guest and observes the matching hit and score on both
+clients.

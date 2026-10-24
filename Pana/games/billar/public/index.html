@@ -11,8 +11,10 @@
   <link rel="stylesheet" href="./style.css">
   <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.186.1/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.186.1/examples/jsm/"}}</script>
 <link rel="stylesheet" href="/engine/game-lobby.css">
+<link rel="stylesheet" href="/engine/banderin.css">
+<link rel="stylesheet" href="hud-banderin.css">
 </head>
-<body class="in-lobby">
+<body class="in-lobby banderin">
   <header class="game-header">
     <a class="pk-logo" href="/" aria-label="Pana, todos los juegos">PANA</a>
     <span class="game-name">BILLAR</span>
@@ -63,10 +65,9 @@
       <p id="shot-clock" class="shot-clock" hidden></p>
       <div class="shot-controls pk-touch-zone">
         <div class="fine-controls pk-touch-zone"><button id="aim-left" class="pk-touch pk-touch--sm" data-icon="left" aria-label="Apuntar a la izquierda"></button><button id="aim-right" class="pk-touch pk-touch--sm" data-icon="right" aria-label="Apuntar a la derecha"></button></div>
-        <button id="shoot" class="pk-btn pk-btn--primary pk-btn--lg" aria-describedby="charge-tip">Mantén para tirar <kbd class="pk-kbd" data-pana-hint>Espacio</kbd></button>
+        <button id="shoot" class="pk-btn pk-btn--primary pk-btn--lg" aria-describedby="charge-tip">Tirar <kbd class="pk-kbd" data-pana-hint>Espacio</kbd></button>
       </div>
-      <p id="charge-tip" class="charge-tip">Mantén pulsado: la fuerza sube y baja. Suelta para tirar.</p>
-      <p class="input-tip" data-pana-hint>Arrastra para girar · ← → afinar · Mantén Espacio y suelta</p>
+      <p id="charge-tip" class="charge-tip">Mantén para cargar; suelta para tirar.</p>
     </section>
     <div id="recovery" class="pk-panel" hidden><p id="recovery-copy" role="status"></p><button id="local-fallback" class="pk-btn pk-btn--primary">Practicar a solas</button></div>
   </main>

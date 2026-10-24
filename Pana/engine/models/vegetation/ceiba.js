@@ -15,7 +15,7 @@ const CEIBA = {
     trunkShape: (t, a) => 1 + Math.max(0, 1 - t / 0.2) ** 2.2 * (0.35 + 3.4 * Math.max(0, Math.cos(a * 5 + 0.4)) ** 10) + Math.sin(t * Math.PI) * 0.08,
   }),
   bark: { bark: 0x8e8a72, barkLight: 0xb3ab8c, barkDark: 0.7, ridges: 5, ridgeTwist: 0.2 },
-  foliage: { kind: 'leaf', size: 1.3, tints: [0x5b9841, 0x6ca947, 0x4b8a3b], blades: 16, bladeLen: 0.66, bladeWidth: 0.24, flat: 0.48, lift: 0.25, keep: 0.9, along: 3, alongFrom: 2 },
+  foliage: { openCrown: true, kind: 'leaf', size: 1.3, tints: [0x5b9841, 0x6ca947, 0x4b8a3b], blades: 16, bladeLen: 0.66, bladeWidth: 0.24, flat: 0.48, lift: 0.25, keep: 0.9, along: 3, alongFrom: 2 },
   fruit: (parts, r, skeleton, s, lite) => {
     const trunk = skeleton.branches[0];
     for (let i = 0; i < (lite ? 20 : 60); i++) {

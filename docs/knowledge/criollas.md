@@ -15,8 +15,12 @@ no balls, the other finishes. Count each winning-team ball closer than the
 best opponent. Surface gaps within 5 mm tie. Choose 12 or 24 points in the lobby.
 The host advances hands and starts rematches; there is no turn timeout.
 
-The mingo is automatically placed each hand. Only arrime and boche rastrero
-are implemented: the boche has 1.32 times the launch speed. Crossing the chalk
+The mingo is automatically placed each hand. Arrime, boche rastrero and boche por el aire are implemented. Rastrero
+has 1.32 times the launch speed. Air throws use adjustable 1.2–4 m apex
+height (2.5 m default), gravity 9.8 m/s² and retain 32% horizontal speed
+on landing before rolling. Airborne collisions use sphere height; ground
+collisions keep the existing planar rules. Height and vertical velocity
+are part of the authoritative snapshot, including host migration. Crossing the chalk
 boundary retires a ball; an out-of-bounds mingo voids the hand. These are explicit
 house rules, not a tournament implementation. Terminology and basic scoring
 were checked against the federation's
@@ -69,6 +73,16 @@ Guides: Normal draws the line to the stopping point with a ring. Fácil plays
 the throw out on a copy of the pitch (`previewThrow`, same fixed steps) and
 draws the real path with rest rings for every ball it moves; it is recomputed
 only when the aim changes. Difícil and Experto draw 40% and 14% of the line.
+
+The full game's `aim-marker.js` adds a dark-edged ribbon, a translucent ball,
+an enlarged target and a raised Spanish label. Normal explicitly says
+“Frena sin choques”; Fácil follows the physics preview. A throw beyond the
+court clips the target to the boundary and says “Fuera de cancha”. The HUD
+updates power and distance while charging. Por el aire adds a cyan 3D flight arc and a separate CAÍDA target; the
+yellow target indicates the stop after the remaining roll. Height is set
+before charging. Both preview and live motion use the same fixed-step physics. Hard modes still hide the stopping target.
+Bululú retains the shared world's original guides. All marker resources are
+owned by the scene and disposed with the world.
 
 Bots: `botThrow` uses `BOT_ERROR` (metres from the mingo per difficulty) for
 bots on a team without a human; a human's teammates always play Normal.
@@ -135,3 +149,7 @@ verify `/api/health` before interpreting game load failures.
 The lobby uses the shared grouped avatar roster: red seats 0/2/4 and green seats 1/3/5. Panas can swap their own card with another human or bot; the host can arrange anyone. Revisioned swap actions are valid only in the lobby. The players array remains the authority for teams and turn order, so starting and host migration preserve the selected arrangement.
 
 Restablecer returns the venue, difficulty and rule values to their defaults in one revisioned options action.
+
+The live proximity label says “van más cerca”, not “ganan”: it is a provisional
+lead while balls remain, not a completed hand or match. Remaining throws can
+still change both the lead and the number of points awarded.

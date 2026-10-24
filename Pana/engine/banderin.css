@@ -1,0 +1,38 @@
+/* Banderín: opt-in presentation for the four supplied HUD references.
+   Shared lobby/menu behavior and each game's data remain owned by their modules. */
+body.banderin { --hud-panel: #100d25; --hud-edge: #26213f; --hud-angle: polygon(3% 0,100% 0,97% 100%,0 100%); }
+.banderin :is(.pk-btn,.pk-panel,.pk-modal,.pk-ribbon) { border-radius: 2px; }
+.banderin .pk-btn { border-width: 0; box-shadow: 3px 4px 0 var(--hud-edge); font-weight: 900; }
+.banderin .pk-btn--primary { background: var(--pk-yellow); color: var(--pk-night); font-family: var(--pk-display); letter-spacing: .02em; }
+.banderin .pk-btn:focus-visible { outline: 3px solid var(--pk-teal); outline-offset: 4px; }
+.banderin .pk-ribbon { background: var(--pk-yellow); color: var(--pk-night); transform: skew(-9deg); padding: 8px 18px; }
+.banderin .pk-panel { background: var(--hud-panel); border: 0; box-shadow: 4px 5px 0 var(--hud-edge); }
+.banderin .pk-game-lobby-head>.pk-title { background: var(--pk-yellow); color: var(--pk-night); text-shadow: none; }
+.banderin .pk-game-lobby-player,.banderin .pk-game-lobby-empty { border-radius: 0; box-shadow: 4px 5px 0 var(--hud-edge); }
+.banderin .pk-game-lobby-settings { border-radius: 0; }
+.banderin .pk-results { padding: clamp(16px,3vw,40px); background: repeating-linear-gradient(120deg,var(--pk-night) 0 80px,var(--hud-panel) 80px 155px); overflow: auto; align-items: safe center; }
+.banderin .pk-results-card { width: min(1120px,100%); max-width: 1120px; min-height: min(640px,86dvh); display: flex; flex-wrap: wrap; align-content: start; gap: 18px; padding: clamp(20px,3vw,42px); border: 0; background: transparent; box-shadow: none; }
+.banderin .pk-results-card>.pk-ribbon { flex-basis: auto; align-self: start; }
+.banderin .pk-results-card>.pk-title { flex-basis: 100%; text-align: left; font-size: clamp(32px,5vw,68px); color: var(--pk-yellow); }
+.banderin .pk-results-card>:is(.pk-copy,.pk-roster) { flex-basis: 100%; width: 100%; }
+.banderin .pk-results-card>.pk-roster { background: var(--hud-panel); padding: 18px; border-radius: 0; }
+.banderin .pk-results-card>.pk-btn { width: auto; min-width: 180px; margin-top: 16px; }
+.banderin .pk-results-card>.pk-btn--primary { margin-left: auto; order: 3; }
+.banderin .pk-results-card>.pk-back { align-self: center; }
+.banderin .pk-roster-row { border-radius: 0; }
+.banderin :is(.connection,.key-guide) { color: var(--pk-cream); text-shadow: 0 1px 3px var(--pk-night); }
+@media(max-width:700px) {
+ .banderin .pk-results-card { min-height: 0; padding: 16px; gap: 12px; }
+ .banderin .pk-results-card>.pk-btn { flex: 1 1 42%; min-width: 0; font-size: 16px; }
+ .banderin .pk-results-card>.pk-roster { padding: 8px; }
+}
+@media(prefers-reduced-motion:reduce) { .banderin * { scroll-behavior: auto; } }
+@media(max-width:800px) {
+ .banderin .pk-game-lobby-room { min-width:0;overflow:hidden; }
+ .banderin .pk-game-lobby-room>div { min-width:0; }
+ .banderin .pk-game-lobby-code { display:block;max-width:100%;overflow:hidden;text-overflow:ellipsis; }
+ .banderin .pk-game-lobby-actions { min-width:0;width:100%; }
+ .banderin .pk-game-lobby-actions>.pk-lobby-foot { display:flex;flex-wrap:wrap;width:100%;gap:10px; }
+ .banderin .pk-game-lobby-actions .local-play { flex:1 1 100%;order:2;min-width:0; }
+ .banderin .pk-game-lobby-foot #start { flex:1 1 100%;width:100%;margin:0;transform:none; }
+}

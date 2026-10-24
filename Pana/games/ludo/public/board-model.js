@@ -40,7 +40,16 @@ export function createLudoBoard() {
     add(group,new THREE.BoxGeometry(.34,.035,.34),ink,px,.12,pz);
     add(group,new THREE.BoxGeometry(.315,.038,.315),mat,px,.128,pz);
     if (SAFE.includes(index)) {
-      const ring = add(group,new THREE.TorusGeometry(.085,.012,6,24),start ? cream : ink,px,.153,pz); ring.rotation.x = -Math.PI/2;
+      // A double contrasting frame stays visible around occupied safe cells.
+      const frame = new THREE.Group(); frame.name = `safe-cell-${index}`;
+      frame.position.set(px, .154, pz); group.add(frame);
+      for (const [extent, thickness, mat] of [[.16, .02, ink], [.14, .014, cream]]) {
+        for (const side of [-1, 1]) {
+          add(frame,new THREE.BoxGeometry(extent*2,.008,thickness),mat,0,0,side*extent);
+          add(frame,new THREE.BoxGeometry(thickness,.008,extent*2),mat,side*extent,0,0);
+        }
+      }
+      const ring = add(group,new THREE.TorusGeometry(.09,.018,6,24),start ? cream : ink,px,.16,pz); ring.rotation.x = -Math.PI/2;
     }
   });
   return finish(group);

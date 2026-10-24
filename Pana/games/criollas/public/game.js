@@ -23,7 +23,7 @@ await Promise.race([document.fonts.load('64px "Luckiest Guy"'), new Promise(reso
 const $ = id => document.getElementById(id), code = roomFromUrl() || newRoomCode();
 const notify = createToast($('toast'), { ms: 3500 });
 const params = new URLSearchParams(location.search), world = createScene($('court'));
-let shot = { angle: 0, power: .62, mode: 'arrime' }, charge = null, held = 0, stopped = false, connecting = false, view = 'calce', lastRevision = -1, previousPhase = 'lobby';
+let shot = { angle: 0, power: .62, mode: 'arrime', loft: 2.5 }, charge = null, held = 0, stopped = false, connecting = false, view = 'calce', lastRevision = -1, previousPhase = 'lobby';
 // The camera is a personal preference, remembered on this device.
 try { const saved = localStorage.getItem('pana:criollas:view'); if (VIEWS.some(([v]) => v === saved)) view = saved; } catch { /* storage may be blocked */ }
 function setView(value) {
@@ -45,13 +45,13 @@ const menu = createGameMenu({ pad: { move: 'arrows', moveLabel: 'Afinar la direc
   controls: [['Ratón / dedo', 'Toca la cancha para dirigir la bola'], ['← →', 'Afina la dirección'], ['Mantén Espacio / Enter', 'La fuerza sube y baja; suelta para lanzar'], ['C', 'Cambia la cámara'], ['M', 'Sonido'], ['Esc', 'Menú']],
   tips: [
     'Reglas de la casa: dos equipos de tres, rojos y verdes. Cada pana lanza dos o cuatro bolas; los bots cubren los puestos libres. Los compañeros rotan sus lanzamientos.',
-    'El mingo se coloca automáticamente al comenzar la mano. Arrima tu bola lo más cerca posible o usa un boche rastrero para desplazar las otras bolas. El mingo también se mueve con los golpes.',
+    'El mingo se coloca automáticamente al comenzar la mano. Arrima tu bola lo más cerca posible o usa un boche rastrero para desplazar las otras bolas. Por el aire permite superar una bola: ajusta Altura antes de cargar y mira el aro azul de caída. El mingo también se mueve con los golpes.',
     'Antes de la primera mano, una moneda decide qué equipo lanza el mingo: cara para los rojos, sello para los verdes. El anfitrión puede cambiarlo en Más ajustes: al azar, el orden de la mesa o que empiece el equipo que perdió la última partida.',
     'Juega el equipo que está más lejos del mingo. Si ya no le quedan bolas, juega el otro. Un empate de distancia alterna el equipo que lanza.',
     'Al gastar todas las bolas, el equipo más cercano suma un tanto por cada bola más cerca del mingo que la mejor del rival. A igual distancia, la mano no da tantos.',
     'Las bolas que cruzan la línea quedan fuera. Si sale el mingo, la mano es nula: nadie suma. El anfitrión abre la siguiente mano o la revancha.',
-    'Gana quien llegue a la meta elegida, 12 o 24 tantos. Esta versión casual usa una cancha compacta, mingo automático y boches por el suelo.',
-    'La línea de tiro indica dónde frenaría la bola si no chocara. En Fácil muestra también los choques y dónde quedan las bolas; en Difícil y Experto se acorta. Cambiar a boche aumenta la velocidad: suelta antes si quieres mantener la misma distancia.',
+    'Gana quien llegue a la meta elegida, 12 o 24 tantos. Esta versión casual usa una cancha compacta, mingo automático, boches rastreros y por el aire.',
+    'La línea de tiro indica dónde frenaría la bola si no chocara. En Fácil muestra también los choques y dónde quedan las bolas; en Difícil y Experto se acorta. Cambiar a rastrero aumenta la velocidad: suelta antes si quieres mantener la misma distancia.',
     'La dificultad también afina a los bots rivales: en Difícil y Experto sacan con boche las bolas que se pegan al mingo. Los bots de tu equipo juegan siempre en Normal.',
   ],
   invite: () => inviteUrl(code),
@@ -95,6 +95,7 @@ for (const button of $('shot-options').children) button.onclick = () => {
   if (!ownTurn() || charge) return; shot.mode = button.dataset.mode; render(room.state);
 };
 function ownTurn() { return room.connected && !menu.isOpen && room.state.phase === 'aiming' && room.seat === room.state.turn; }
+$('loft').oninput = () => { if (!ownTurn() || charge) return; shot.loft = Number($('loft').value); $('loft-value').textContent = `${shot.loft.toFixed(1)} m`; };
 // Like Billar: hold the button, Space or Enter and the force rises and falls;
 // letting go throws at that force. The rules never accept less than 10%.
 function updateCharge(now = performance.now()) {
@@ -157,17 +158,18 @@ function render(g) {
   // The court's surroundings follow the state, not the frame loop (hidden tabs don't draw).
   if (g.mapId && world.venue !== g.mapId) world.setVenue(g.mapId);
   mapPicker.update(g.mapId, lobby && (!room.connected || room.isHost));
-  $('guide-note').textContent = difficultyInfo(g.difficulty).note;
+  $('guide-note').textContent = g.difficulty === 'normal' ? 'El blanco indica dónde frena sin choques. Mantén y suelta para ajustar la distancia.' : difficultyInfo(g.difficulty).note;
   $('side-controls').hidden = lobby; $('power-bar').hidden = lobby || !charge;
   $('lobby-roster').hidden = !lobby;
   if (lobby) teamRoster.update(TEAM_NAMES.map((title, team) => ({ id: team, title, color: team ? '#299e72' : '#ed5949', seats: g.players.map((player, key) => ({ key, player: { ...player, bot: player.id === null } })).filter(s => s.key % 2 === team) })), { ownId: room.id, hostId: room.hostId, enabled: room.connected, canArrange: room.isHost, members: room.link?.state.players || [...room.members.values()] });
   for (let t = 0; t < 2; t++) { $(`score-${t}`).textContent = g.scores[t]; $(`left-${t}`).textContent = `${g.remaining.reduce((sum, n, i) => sum + (i % 2 === t ? n : 0), 0)} bolas por tirar`; }
   $('hand-number').textContent = `MANO ${g.hand}`; $('target-label').textContent = `A ${g.target} tantos`;
   const player = g.players[g.turn];
-  $('turn').textContent = opening ? '¿Cara o sello? La moneda decide quién lanza el mingo' : g.phase === 'rolling' ? 'La bola está rodando…' : active ? `¡Tu turno! · ${TEAM_NAMES[g.turn % 2]}` : `Turno de ${player.name} · ${TEAM_NAMES[g.turn % 2]}`;
+  $('turn').textContent = opening ? '¿Cara o sello? La moneda decide quién lanza el mingo' : g.phase === 'rolling' ? (g.pitch.balls.some(b => b.height > .05) ? 'La bola va por el aire…' : 'La bola está rodando…') : active ? `¡Tu turno! · ${TEAM_NAMES[g.turn % 2]}` : `Turno de ${player.name} · ${TEAM_NAMES[g.turn % 2]}`;
   const lead = measure(g.pitch), best = g.pitch.balls.find(b => b.id === lead.ids[0]);
-  $('measure').textContent = best ? `${TEAM_NAMES[lead.team]} ganan · ${distance(g.pitch, best).toFixed(2)} m del mingo` : 'El mingo está en juego';
+  $('measure').textContent = best ? `${TEAM_NAMES[lead.team]} van más cerca · ${distance(g.pitch, best).toFixed(2)} m del mingo` : 'El mingo está en juego';
   $('shoot').disabled = !active;
+  $('loft-control').hidden = shot.mode !== 'aire'; $('loft').disabled = !active || !!charge;
   for (const id of ['aim-left', 'aim-right']) $(id).disabled = !active || !!charge;
   $('shoot').classList.toggle('is-charging', !!charge);
   $('shoot').firstChild.textContent = charge ? 'Suelta para lanzar ' : 'Mantén para lanzar ';
@@ -195,7 +197,10 @@ function frame(now) {
   if (stopped) return; const dt = Math.min(.05, (now - frameTime) / 1000); frameTime = now;
   if (charge) { if (chargeValid()) updateCharge(now); else cancelCharge(); }
   if (ownTurn() && !charge) shot.angle = clamp(shot.angle + held * dt * .35, -.65, .65);
-  world.render(room.state, { dt, shot, active: ownTurn() }); requestAnimationFrame(frame);
+  world.render(room.state, { dt, shot, active: ownTurn() });
+  const target = world.guides.target;
+  if (target?.visible) $('guide-note').textContent = `${Math.round(shot.power * 100)}% de fuerza · ${target.out ? 'Se va fuera: reduce la fuerza o cambia la dirección' : `${target.range.toFixed(1)} m de recorrido${room.state.difficulty === 'normal' ? ' sin choques' : ' previsto'}`} · ${charge ? 'Suelta para lanzar' : 'Mantén para ajustar'}`;
+  requestAnimationFrame(frame);
 }
 if (roomFromUrl()) connecting = true;
 render(room.state); if (roomFromUrl()) room.connect(); requestAnimationFrame(frame);

@@ -1,0 +1,46 @@
+.banderin .game-name { background:var(--pk-yellow);color:var(--pk-night);font:26px var(--pk-display);padding:6px 16px;clip-path:var(--hud-angle);letter-spacing:0; }
+.banderin .player { width:300px;padding:0 16px 0 0;border:0;border-radius:0;min-height:76px; }
+.banderin .player img { width:64px;height:76px;background:var(--pk-yellow); }
+.banderin #player-1 img { background:var(--pk-teal); }
+.banderin .player.is-turn { outline:3px solid var(--pk-yellow);outline-offset:-3px; }
+.banderin .player b { font:19px var(--pk-display);max-width:210px; }
+.banderin .player span { font-size:10px; }
+.banderin .ball-track { gap:4px;height:22px; }
+.banderin .ball-track i { width:20px;height:20px; }
+.banderin .side-controls { border-radius:0;background:var(--hud-panel);box-shadow:4px 5px 0 var(--hud-edge);top:auto;bottom:70px;transform:none; }
+.banderin .pk-power { border-radius:0;background:var(--hud-panel);box-shadow:4px 5px 0 var(--hud-edge); }
+@media(max-width:1000px) {
+ .banderin .player { width:245px;min-height:64px; }.banderin .player img { width:50px;height:64px; }
+}
+@media(max-width:650px) {
+ .banderin .side-controls { bottom:205px; }
+ .banderin .players { gap:8px; }.banderin .player { width:46%;padding-right:7px; }.banderin .player img { width:32px; }
+ .banderin .player b { font-size:14px;max-width:110px; }.banderin .ball-track { gap:2px; }.banderin .ball-track i { width:13px;height:13px;font-size:8px; }
+}
+
+/* One status area, one action and one explanation of charging. */
+.banderin .play-controls { width:min(640px,calc(100% - 200px));padding:16px 20px;display:grid;grid-template-columns:minmax(0,1fr) 250px;gap:10px 24px;align-items:center;border-radius:0;background:var(--hud-panel);box-shadow:none; }
+.banderin .turn-copy { display:block;min-width:0;min-height:0;margin:0; }
+.banderin #turn-status { font:20px var(--pk-display);color:var(--pk-cream); }
+.banderin #message { margin:6px 0 0;font-size:13px;line-height:1.45; }
+.banderin .shot-controls { grid-column:2;grid-row:1;gap:10px;min-width:0; }
+.banderin .fine-controls { gap:6px; }
+.banderin .fine-controls .pk-touch { width:40px;height:44px;min-width:40px;border-radius:4px; }
+.banderin #shoot { min-width:0;min-height:48px;flex:1;padding:10px 14px;white-space:nowrap;font:20px var(--pk-display);box-shadow:none; }
+.banderin #shoot kbd { margin-left:10px;font:11px var(--pk-sans); }
+.banderin .charge-tip { grid-column:1 / -1;margin:0;text-align:right;font-size:12px;line-height:1.4;color:var(--pk-muted); }
+.banderin :is(.called-pocket,.shot-clock) { grid-column:1 / -1;margin:0; }
+@media(max-width:800px) {
+ .banderin .play-controls { width:calc(100% - 24px);grid-template-columns:1fr;gap:12px;padding:14px; }
+ .banderin .shot-controls { grid-column:1;grid-row:auto; }
+ .banderin .charge-tip { text-align:center; }
+}
+@media(max-height:520px) and (orientation:landscape) {
+ .banderin .player { width:auto;min-height:44px; }
+ .banderin .side-controls { bottom:12px; }
+ .banderin .play-controls { width:225px;display:flex;gap:12px;padding:14px; }
+ .banderin .shot-controls { width:100%;flex-wrap:nowrap; }
+ .banderin #shoot { font-size:18px;padding:10px; }
+ .banderin .fine-controls .pk-touch { width:32px;min-width:32px; }
+ .banderin .charge-tip { font-size:11px; }
+}

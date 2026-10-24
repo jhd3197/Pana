@@ -1,3 +1,4 @@
+import * as THREE from 'three';
 import { instancePlacements } from '/engine/models/core/static-batch.js';
 import { mangoTree } from '/engine/models/vegetation/mango-tree.js';
 import { ceiba } from '/engine/models/vegetation/ceiba.js';
@@ -12,13 +13,28 @@ import { mangrove } from '/engine/models/vegetation/mangrove.js';
 import { saman } from '/engine/models/vegetation/saman.js';
 import { araguaney } from '/engine/models/vegetation/araguaney.js';
 import { frailejon } from '/engine/models/vegetation/frailejon.js';
-import { forestZone, prepareForestModel, denseForest } from './forest-detail.js';
+import { impostorPlacements, IMPOSTOR_FROM } from '/engine/models/core/impostor.js';
+import { forestZone, prepareForestModel, denseForest, forestQuality } from './forest-detail.js';
 
 // Preserve the reference planting zones, but use Pana's native silhouettes.
 // Mountain canopy has neither fruit nor individual leaves; road trees do.
 // `whole` lists species whose own far model is used unsimplified (thin cardones
-// otherwise cluster away to nothing).
-export function coastalVegetation(group, worldScale = 1, roadDistance, { cellSize = 120, whole = [] } = {}) {
+// otherwise cluster away to nothing). `clump` > 1 bakes each far-band card as
+// a small grove of that many trees, so far hills read denser at the cost of
+// one card each; nearer bands keep their single trees.
+// One prototype holding `count` copies of a model around its crown's edge,
+// turned and sized apart so the grove has no repeating tree.
+function grove(model, count) {
+  const first = model(), radius = new THREE.Box3().setFromObject(first).getSize(new THREE.Vector3()).x * 0.4, out = new THREE.Group();
+  for (let k = 0; k < count; k++) {
+    const tree = k ? first.clone() : first, a = k / count * Math.PI * 2 + 0.6;
+    tree.position.set(Math.cos(a) * radius, 0, Math.sin(a) * radius); tree.rotation.y = k * 2.1; tree.scale.multiplyScalar(1 - (k % 3) * 0.12);
+    out.add(tree);
+  }
+  return out;
+}
+
+export function coastalVegetation(group, worldScale = 1, roadDistance, { cellSize = 120, whole = [], from = IMPOSTOR_FROM, clump = 1 } = {}) {
   const batches = new Map();
   const factories = { tree: ceiba, mango: mangoTree, cacao, palm, fern: treeFern,
     pine: o => pine({ ...o, h: 9 }), fir: o => mountainPine({ seed: o.seed, h: 8 }), moriche, mangrove, cactus: o => cactus({ seed: o.seed }),
@@ -36,23 +52,33 @@ export function coastalVegetation(group, worldScale = 1, roadDistance, { cellSiz
       const zone = forestZone(worldDistance,8 * worldScale), key = `${species}:${zone}`;
       zones[zone]++;
       if (!batches.has(key)) batches.set(key, []);
-      batches.get(key).push({ x, z, y: y - .12, scale, rot: (x * 17.1 + z * 9.7) % (Math.PI * 2) });
+      batches.get(key).push({ x, z, y: y - .12, scale, rot: (x * 17.1 + z * 9.7) % (Math.PI * 2), d: worldDistance });
       count++;
     },
     flush() {
       const dense=denseForest([...batches.values()].flat(),20/worldScale);
-      for (const [key, positions] of batches) {
-        const [species, zone] = key.split(':');
-        const fronds=species==='palm'||species==='fern'||species==='moriche'||species==='cactus'||species==='frailejon', conifer=species==='pine'||species==='fir';
-        for(const crowded of zone==='far'&&!fronds&&!conifer?[true,false]:[false]) {
-          const points=zone==='far'&&!fronds&&!conifer?positions.filter(p=>dense.has(p)===crowded):positions;
-          if(!points.length)continue;
-          const model = factories[species]({ seed: 37, detail: zone === 'near' ? 'game' : 'far', fruit: zone === 'near' });
-          // A moriche is a bare pole once its few long fronds are clustered away.
-          prepareForestModel(model, species==='moriche'||whole.includes(species)?'near':zone, { fronds,pine:conifer,dense:crowded });
-          instancePlacements(group, model, points, { name: `coastal-${key}`, cellSize, castShadow: zone === 'near' });
+      forestQuality(group, (tier, detail) => {
+        for (const [key, positions] of batches) {
+          const [species, zone] = key.split(':');
+          const fronds=species==='palm'||species==='fern'||species==='moriche'||species==='cactus'||species==='frailejon', conifer=species==='pine'||species==='fir';
+          for(const crowded of zone==='far'&&!fronds&&!conifer?[true,false]:[false]) {
+            const points=zone==='far'&&!fronds&&!conifer?positions.filter(p=>dense.has(p)===crowded):positions;
+            if(!points.length)continue;
+            const effective = detail === 0 ? 'far' : detail === 1 && zone === 'near' ? 'middle' : zone;
+            const model = () => {
+              const m = factories[species]({ seed: 37, detail: effective === 'near' ? 'game' : 'far', fruit: effective === 'near' });
+              // A moriche is a bare pole once its few long fronds are clustered away.
+              return prepareForestModel(m, species==='moriche'||whole.includes(species)?'near':effective, { fronds,pine:conifer,dense:crowded });
+            };
+            // Past `from` metres of the road a tree is a baked billboard of the
+            // very model this band draws: the same look at two triangles.
+            const flat = zone !== 'near' ? points.filter(p => p.d >= from * worldScale) : [];
+            const solid = flat.length ? points.filter(p => p.d < from * worldScale) : points;
+            if (solid.length) instancePlacements(tier, model(), solid, { name: `coastal-${key}`, cellSize: detail === 0 ? Math.max(cellSize,240/worldScale) : cellSize, castShadow: zone === 'near' });
+            if (flat.length) impostorPlacements(tier, zone === 'far' && clump > 1 ? grove(model, clump) : model(), flat, { name: `coastal-${key}-impostor`, cellSize: Math.max(cellSize, 240 / worldScale) });
+          }
         }
-      }
+      });
       group.userData.libraryTrees = count;
       group.userData.forestZones = zones;
     },

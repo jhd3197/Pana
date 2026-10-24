@@ -1,3 +1,4 @@
+import { advanceStage } from '../stage-rules.js';
 import { draw } from '../../../../engine/random.js';
 // Adapted from Super Bash Folds (MIT); see ../../SOURCE.md.
 
@@ -681,6 +682,7 @@ export class CombatGame {
       return this.getSnapshot();
     }
 
+    advanceStage(this);
     for (const fighter of this.fighters) this.updateFighter(fighter, inputs[fighter.slot], inputs);
     this.resolveFighterOverlap();
     this.resolveMeleeHits(inputs);
@@ -837,7 +839,7 @@ export class CombatGame {
   }
 
   spawnFor(slot, spawns = getStageDefinition(this.config.stage).spawns) {
-    if (this.config.players.length === 2) return spawns[slot];
+    if (this.config.stage === 'los-roques' || this.config.players.length === 2) return spawns[slot];
     return { x: -270 + slot * 540 / (this.config.players.length - 1), y: 0 };
   }
 

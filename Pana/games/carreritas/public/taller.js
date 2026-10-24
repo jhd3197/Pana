@@ -12,12 +12,12 @@ const TABS = [
   { id: 'motor', label: 'Motor', kinds: ['motor'] },
   { id: 'aleron', label: 'Alerón', kinds: ['aleron'] },
   { id: 'extras', label: 'Extras', kinds: ['frente', 'techo', 'jaula'] },
-  { id: 'pintura', label: 'Pintura', kinds: ['paint', 'acento', 'rin', 'acabado', 'calcomania', 'franjas'] },
-  { id: 'sonido', label: 'Corneta', kinds: ['horn', 'flame'] },
+  { id: 'pintura', label: 'Pintura y estilo', kinds: ['paint', 'acento', 'rin', 'acabado', 'calcomania', 'franjas', 'flame'] },
+  { id: 'sonido', label: 'Corneta', kinds: ['horn'] },
 ];
 const TITLES = { car: 'Carrocería', wheel: 'Ruedas', paint: 'Pintura', horn: 'Corneta', flame: 'Llama del turbo', ...Object.fromEntries(PART_SLOTS.map(s => [s.id, s.name])) };
 const PART_KINDS = new Set(PART_SLOTS.map(s => s.id));
-const SWATCHES = new Set(['paint', 'acento', 'rin']);
+const SWATCHES = new Set(['paint', 'acento', 'rin', 'flame']);
 const VISUAL = new Set(['paint', 'wheel', ...PART_KINDS]);
 const esc = (text) => String(text).replace(/[&<>"]/g, (ch) => `&#${ch.charCodeAt(0)};`);
 const MANGO = `<span class="mango-symbol" aria-hidden="true">${ICONS.mango}</span>`;
@@ -51,6 +51,7 @@ export function renderStatBars(root, tune, preview = null, labels = STATS.map(s=
 export function createTaller({ $, wallet, cars, getIndex, selectCar, getWheel, setWheel, trophies, save, refreshCar, onHorn, onTab, sound, carThumbnail, previewVessel = () => {}, getTrack = () => null, previewCar = () => {} }) {
   let vehicle = 'car', drawer = false, lastBand=null, wishlist=null;try{wishlist=JSON.parse(localStorage.getItem('carreritas:wishlist'));}catch{}
   let tab = 'carro', hover = null;
+  const optionPages = createOptionPages($('loadout-drawer'));
   const vesselSlot = kind => (VESSEL_SLOTS[vehicle] ?? []).some(s => s.id === kind);
   const vesselParts = () => ({ ...(wallet[vehicle + 'Parts']?.[current(vehicle)] ?? {}) });
   const tabs = () => vehicle === 'car' ? TABS : [{ id: 'carro', label: 'Garaje', kinds: [vehicle] }, ...VESSEL_SLOTS[vehicle].map(s => ({ id: s.id, label: s.name, kinds: [s.id] })), ...TABS.slice(-2)];
@@ -106,7 +107,16 @@ export function createTaller({ $, wallet, cars, getIndex, selectCar, getWheel, s
     } else wallet[kind] = id;
   }
 
-  function selectBody(index){const from=def(),next=cars[(index+cars.length)%cars.length];wallet.parts[next.id]={...equippedParts()};wallet.paint[next.id]=wallet.paint[from.id]??'fabrica';selectCar(cars.indexOf(next));save();}
+  function selectBody(index) {
+    const from = def(), next = cars[(index + cars.length) % cars.length];
+    // An explicit factory paint also marks a visited, intentionally stock car.
+    wallet.paint[from.id] ??= 'fabrica';
+    if (!Object.hasOwn(wallet.paint, next.id) && !Object.hasOwn(wallet.parts, next.id)) {
+      wallet.parts[next.id] = { ...equippedParts() };
+      wallet.paint[next.id] = wallet.paint[from.id];
+    }
+    selectCar(cars.indexOf(next)); save();
+  }
   function pick(kind, item) {
     hover = null;
     if (kind === 'car') { selectBody(cars.indexOf(item)); render(); return; }
@@ -130,12 +140,12 @@ export function createTaller({ $, wallet, cars, getIndex, selectCar, getWheel, s
     const tag = !open ? `<small>${esc(unlockText(item))}</small>`
       : isEquipped ? `<em class="tag">${isCar ? 'Tu carro' : 'Equipado'}</em>` : have ? (isCar ? '' : '<em class="tag">Tuyo</em>')
         : `<em class="price" aria-label="${mangos(item.cost)}">${MANGO}${item.cost}</em>`;
-    const color = kind === 'paint' ? item.color ?? def().color : kind === 'flame' ? '#' + item.colors[0].toString(16).padStart(6, '0')
+    const color = kind === 'paint' ? item.color ?? def().color : kind === 'flame' ? `linear-gradient(90deg,${item.colors.map(c=>'#'+c.toString(16).padStart(6,'0')).join(',')})`
       : kind === 'acento' || kind === 'rin' ? item.color ?? '#8a8496' : isCar ? item.color : null;
     const after = tuneWith(kind, item.id);
     // pills compare against what this slot holds now, so a downgrade reads as one
-    const pills = after && !isEquipped ? statPills(tuneWith(kind, equipped(kind)), after).map(p => `<span class="pill ${p.label === 'Peso' ? 'peso' : p.delta > 0 ? 'up' : 'down'}">${p.delta > 0 ? '+' : ''}${p.delta} ${p.label}</span>`).join('') : '';
-    const blurb = SWATCHES.has(kind) ? '' : item.blurb;
+    const pills = !isCar && after && !isEquipped ? statPills(tuneWith(kind, equipped(kind)), after).map(p => `<span class="pill ${p.label === 'Peso' ? 'peso' : p.delta > 0 ? 'up' : 'down'}">${p.delta > 0 ? '+' : ''}${p.delta} ${p.label}</span>`).join('') : '';
+    const blurb = isCar || SWATCHES.has(kind) ? '' : item.blurb;
     b.innerHTML = `${color ? `<span class="swatch" style="--swatch:${color}"></span>` : ''}<span class="shop-text"><b>${isCar ? `${item.num} · ` : ''}${esc(item.name)}</b>${blurb ? `<small>${esc(blurb)}</small>` : ''}${pills ? `<span class="pills">${pills}</span>` : ''}${tag}</span>`;
     if(isCar) { const thumb=carThumbnail(cars.indexOf(item)); if(thumb) b.prepend(thumb); const chip=document.createElement('span');chip.innerHTML=badge(carNivel(item,current('wheel'),equippedParts())); b.append(chip); }
     if (SWATCHES.has(kind)) b.title = item.name;
@@ -157,10 +167,10 @@ export function createTaller({ $, wallet, cars, getIndex, selectCar, getWheel, s
     $('loadout-drawer-title').textContent = tabs().find(t=>t.id===tab)?.label || 'Garaje';
     $('shop').classList.toggle('drawer-open', drawer);
     for (const b of $('shop-tabs').querySelectorAll('button')) b.setAttribute('aria-selected', String(drawer && b.dataset.tab === tab));
-    const body = $('shop-body'), scroll = body.scrollTop;
+    const body = $('shop-body');
     body.replaceChildren(...tabs().find(t => t.id === tab).kinds.map(kind => {
       const group = document.createElement('section');
-      group.className = 'shop-group';
+      group.className = 'shop-group'; group.dataset.kind = kind;
       const h = document.createElement('h3'); h.textContent = TITLES[kind] ?? VESSEL_SLOTS[vehicle]?.find(s => s.id === kind)?.name ?? (vehicle === 'boat' ? 'Lanchas' : 'Avionetas');
       const grid = document.createElement('div');
       grid.className = SWATCHES.has(kind) ? 'shop-grid shop-swatches' : 'shop-grid'; grid.id = `shop-${kind}`;
@@ -169,7 +179,7 @@ export function createTaller({ $, wallet, cars, getIndex, selectCar, getWheel, s
       return group;
     }));
     renderStats();
-    body.scrollTop = scroll;
+    optionPages.update(`${vehicle}:${tab}`);
   }
 
   function showVessel() { previewVessel(vehicle, hover?.[0]===vehicle?hover[1]:current(vehicle), paintOf({paint:hover?.[0]==='paint'?hover[1]:current('paint'),paintColor:hover?.[0]==='paint'?null:wallet.copiedPaint},def().color)); }
@@ -219,5 +229,65 @@ export function createTaller({ $, wallet, cars, getIndex, selectCar, getWheel, s
     get tab() { return tab; },
     open(kind) { if (kind) setTab(tabs().find(t => t.kinds.includes(kind))?.id ?? tab); else { drawer = false; render(); showVessel(); } },
     close() { if($('loadout-drawer').open)$('loadout-drawer').close(); hover = null; vehicle = 'car'; tab = 'carro'; drawer = false; for(const b of $('loadout-vehicles').querySelectorAll('button')) b.setAttribute('aria-pressed',String(b.dataset.vehicle==='car')); previewVessel('car'); },
+  };
+}
+
+// Keep every choice reachable without a horizontal strip or nested scrollbar.
+function createOptionPages(dialog) {
+  const body = dialog.querySelector('.shop-body');
+  const categories = document.createElement('nav');
+  categories.className = 'option-categories';
+  categories.setAttribute('aria-label', 'Categorías de piezas');
+  body.before(categories);
+  const pager = document.createElement('nav');
+  pager.className = 'option-pages';
+  pager.setAttribute('aria-label', 'Páginas de opciones');
+  const previous = document.createElement('button'), next = document.createElement('button'), status = document.createElement('span');
+  previous.type = next.type = 'button';
+  previous.textContent = 'Anterior'; next.textContent = 'Siguiente';
+  previous.dataset.page = 'previous'; next.dataset.page = 'next';
+  status.setAttribute('aria-live', 'polite');
+  pager.append(previous, status, next); body.after(pager);
+  let key = '', kind = '', page = 0;
+  function layout() {
+    const groups = [...body.children];
+    const active = groups.find(group => group.dataset.kind === kind) || groups[0];
+    if (!active) return;
+    kind = active.dataset.kind;
+    const width = dialog.clientWidth || innerWidth - 48;
+    const columns = Math.max(1, Math.min(6, Math.floor((width - 32) / 210)));
+    const rows = kind === 'car' || active.querySelector('.shop-swatches') ? 1 : innerHeight >= 850 ? 2 : 1;
+    const size = columns * rows;
+    const cards = [...active.querySelectorAll('.shop-item')];
+    const pages = Math.ceil(cards.length / size);
+    page = Math.max(0, Math.min(page, pages - 1));
+    for (const group of groups) group.hidden = group !== active;
+    for (const [index, card] of cards.entries()) card.hidden = Math.floor(index / size) !== page;
+    active.querySelector('.shop-grid').style.setProperty('--option-columns', Math.min(columns, cards.length));
+    for (const button of categories.children) button.setAttribute('aria-pressed', String(button.dataset.kind === kind));
+    status.textContent = `${page + 1} / ${pages}`;
+    previous.disabled = page === 0; next.disabled = page === pages - 1;
+    pager.hidden = pages <= 1;
+  }
+  function turn(delta) {
+    // A hovered/focused model must not survive after its card leaves the page.
+    const active = body.querySelector('.shop-group:not([hidden])');
+    active?.querySelectorAll('.shop-item:not([hidden])').forEach(card => card.dispatchEvent(new Event('pointerleave')));
+    page += delta; layout();
+  }
+  previous.onclick = () => turn(-1); next.onclick = () => turn(1);
+  new ResizeObserver(layout).observe(dialog);
+  return {
+    update(nextKey) {
+      if (key !== nextKey) { key = nextKey; kind = ''; page = 0; }
+      categories.replaceChildren(...[...body.children].map(group => {
+        const button = document.createElement('button'); button.type = 'button';
+        button.textContent = group.querySelector('h3').textContent; button.dataset.kind = group.dataset.kind;
+        button.onclick = () => { kind = group.dataset.kind; page = 0; layout(); };
+        return button;
+      }));
+      categories.hidden = body.children.length <= 1;
+      layout();
+    },
   };
 }

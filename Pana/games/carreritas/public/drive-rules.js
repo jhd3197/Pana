@@ -3,6 +3,28 @@
 // tests/drive-rules.test.js checks them. No Three.js, no DOM.
 
 import { clamp } from '../../../engine/random.js';
+
+// Consume elapsed time in fixed physics steps, including slow 4–12 FPS
+// frames. A suspended tab still cannot request an unbounded catch-up burst.
+export function physicsFrame(remainder, elapsed, speed = 1, scale = 1) {
+  const accumulated = remainder + clamp(elapsed, 0, .25) * speed * scale;
+  const steps = Math.floor(accumulated * 60 + 1e-9);
+  return { steps, remainder: Math.max(0, accumulated - steps / 60) };
+}
+
+// Suspension and head motion must not explode when presentation covers
+// several physics ticks. Substeps retain the existing 60 Hz spring response.
+export class DrivingSpring {
+  constructor() { this.x = 0; this.v = 0; }
+  step(target, k, c, dt) {
+    const steps = Math.max(1, Math.ceil(dt * 60)), h = dt / steps;
+    for (let i = 0; i < steps; i++) {
+      this.v += (k * (target - this.x) - c * this.v) * h;
+      this.x += this.v * h;
+    }
+    return this.x;
+  }
+}
 export const DRIFT_MIN_SPEED = 12;          // m/s needed to start (and keep) a drift
 export const DRIFT_LEVELS = [0.75, 2.1, 3.2]; // charge (s) for blue, orange, purple sparks
 export const DRIFT_BOOST = [0, 0.45, 0.8, 1.2];   // turbo seconds per level on release

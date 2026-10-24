@@ -1,7 +1,7 @@
 /* Carreritas on the Pana Kit (/engine/kit.css): tokens, fonts and HUD pieces
    come from the kit; this file places them over the 3D scene. */
 :root { color-scheme: dark; }
-body { --gain: #5fe08a; --loss: #ff5a5a; --bar-top: #ffd65c; --me-rank: #b5121b; --slot-bg: #2c263e; --slot-line: #514b65; --slot-on: #3b3040; --slot-key: #bab2ca; --swap: #e0d8ec; --shield: #ffe58b; --coin-line: #63552f; --coin-rim: #f8bd37; --coin-face: #d88a20; --coin-shine: #ffed9a; --mango: #ffb52e; --mango-ink: #2a1702; --taller-panel: rgba(21, 13, 37, .92); --taller-card: rgba(255, 255, 255, .045); --taller-card-on: rgba(255, 255, 255, .1); --taller-line: rgba(186, 160, 255, .16); --taller-accent: #ffb02e; --taller-ink: #f6f1ff; --taller-muted: #a99dc8; --taller-good: #55e08a; --taller-bad: #ff5a6e; --coin-label: #d7cba8; --coin-text: #ffdf72; --coin-cap: #aaa08c; --coin-full: #e3ae39; --boost: #4fb6ff; --hud-ink: #16161a; --rank-up: #0f7a66; --banner-teal-ink: #062a23; --trophy-oro: #ffc629; --trophy-plata: #c9ccd4; --trophy-bronce: #c47a3a; --drift-1: #4fb6ff; --drift-2: #ff9a1f; --drift-3: #c45bff; --rarity-blue: #4fb6ff; --rarity-purple: #c45bff; --rarity-gold: #ffc629; --pk-game: #ff4b4b; --pk-game-ink: #fff; --hud-edge: 2px solid rgba(255, 255, 255, .08); }
+body { --gain: #5fe08a; --loss: #ff5a5a; --bar-top: #ffd65c; --me-rank: #b5121b; --slot-bg: #2c263e; --slot-line: #514b65; --slot-on: #3b3040; --slot-key: #bab2ca; --swap: #e0d8ec; --shield: #ffe58b; --coin-line: #63552f; --coin-rim: #f8bd37; --coin-face: #d88a20; --coin-shine: #ffed9a; --mango: #ffb52e; --mango-ink: #2a1702; --taller-panel: rgba(21, 13, 37, .92); --taller-card: rgba(255, 255, 255, .045); --taller-card-on: rgba(255, 255, 255, .1); --taller-line: rgba(186, 160, 255, .16); --taller-accent: #ffb02e; --taller-ink: #f6f1ff; --taller-muted: #a99dc8; --taller-good: #8aefb0; --taller-bad: #ffaaaa; --coin-label: #d7cba8; --coin-text: #ffdf72; --coin-cap: #aaa08c; --coin-full: #e3ae39; --boost: #4fb6ff; --hud-ink: #16161a; --rank-up: #0f7a66; --banner-teal-ink: #062a23; --trophy-oro: #ffc629; --trophy-plata: #c9ccd4; --trophy-bronce: #c47a3a; --drift-1: #4fb6ff; --drift-2: #ff9a1f; --drift-3: #c45bff; --rarity-blue: #4fb6ff; --rarity-purple: #c45bff; --rarity-gold: #ffc629; --pk-game: #ff4b4b; --pk-game-ink: #fff; --hud-edge: 2px solid rgba(255, 255, 255, .08); }
 
 * { box-sizing: border-box; }
 
@@ -196,7 +196,7 @@ body:has(#loading:not(.hidden)) #garage { visibility: hidden; }
 #item-status { position: absolute; left: 0; bottom: calc(100% + 12px); margin: 0; padding: 7px 16px 5px; white-space: nowrap; font: 800 14px/1.2 var(--pk-sans); color: var(--pk-text); }
 #item-status:empty { display: none; }
 .protected #item-status { color: var(--shield); }
-.item-actions { display: none; gap: 8px; margin-top: 12px; }
+.item-actions { display: flex; gap: 8px; margin-top: 12px; }
 .item-actions .pk-btn { flex: 1; min-height: 40px; padding: 6px 10px; justify-content: space-between; gap: 6px; font: 800 13px var(--pk-sans); letter-spacing: 0; box-shadow: none; }
 .item-actions .pk-btn--primary { box-shadow: 0 3px 0 var(--pk-yellow-edge); }
 .item-actions .pk-kbd { min-width: 0; height: 20px; font-size: 10px; padding: 0 5px; }
@@ -523,3 +523,14 @@ body:has(#loading:not(.hidden)) #garage { visibility: hidden; }
 
 /* Full input reference belongs in the shared pause menu, not over the road. */
 body:has(#race:not(.hidden)) .pana-pad-prompts, #race .keys, #race .p2-keys { display: none !important; }
+
+/* Keep this game's eight seats and settings inside the shared sala columns. */
+#pana-lobby-shell.prototype-sala .pk-game-lobby-layout{min-width:0;grid-template-columns:minmax(0,1fr) minmax(300px,360px);margin:0;padding:0;overflow:visible}
+#pana-lobby-shell.prototype-sala .pk-game-lobby-roster{min-width:0;padding:0;margin:0;overflow:visible}
+#pana-lobby-shell.prototype-sala .pk-game-lobby-settings{transform:none;min-width:0;overflow:visible;box-sizing:border-box}
+#pana-lobby-shell.prototype-sala .pk-game-lobby-settings>*{transform:none}
+#pana-lobby-shell.prototype-sala .pk-game-lobby-player,#pana-lobby-shell.prototype-sala .pk-game-lobby-empty{transform:none;box-shadow:none;height:clamp(130px,20vh,180px)}
+#pana-lobby-shell.prototype-sala .pk-game-lobby-player>*{transform:none}
+#pana-lobby-shell.prototype-sala .pk-game-lobby-head{min-width:0;flex-wrap:wrap}
+#pana-lobby-shell.prototype-sala .pk-game-lobby-players{min-width:0}
+@media(min-width:801px){#pana-lobby-shell.prototype-sala .pk-game-lobby-layout{flex:1 1 auto}#pana-lobby-shell.prototype-sala .pk-game-lobby-settings{padding:18px}#pana-lobby-shell.prototype-sala .pk-game-lobby-foot{flex-wrap:wrap}}

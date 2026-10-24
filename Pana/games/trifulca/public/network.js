@@ -7,7 +7,9 @@ import { Trifulca, cleanInput } from './rules.js';
 // joiners land in the crowd and at the back of the queue.
 export class TrifulcaRoom extends LiveRoom {
   constructor(options) {
-    super({ ...options, game: 'trifulca', protocol: 'trifulca-v1' }, { valid: (state) => Array.isArray(state?.players) && Array.isArray(state?.events) });
+    // A one-second catch-up can hide an entire windup and strike between
+    // snapshots. Two ticks keep combat tells observable after a rendering hitch.
+    super({ ...options, game: 'trifulca', protocol: 'trifulca-v1' }, { maxCatchUp: .1, valid: (state) => Array.isArray(state?.players) && Array.isArray(state?.events) });
     this.state = new Trifulca().snapshot();
   }
   cleanInput(raw) { return cleanInput(raw); }

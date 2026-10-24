@@ -3,7 +3,7 @@ export default [
   {
     id: 'flamingo', name: 'Flamenco de las salinas', category: 'Fauna',
     source: '/engine/models/fauna/birds/flamingo.js', factory: 'flamingo',
-    usedBy: ['Carreritas'], previewOptions: {pose:'stand',seed:7}, pack: 'wildlife',
+    usedBy: ['Carreritas', 'Bochinche'], previewOptions: {pose:'stand',seed:7}, pack: 'wildlife',
     description: 'Ave rosada de patas largas, cuello curvo y pico negro; poses de descanso y alimentación para colonias en aguas someras.',
     tags: ['animal','fauna','ave','salinas','costa'],
   },
@@ -49,7 +49,7 @@ export default [
     category: "Fauna",
     source: "/engine/models/fauna/birds/scarlet-macaw.js",
     factory: "scarletMacaw",
-    usedBy: ["Carreritas"],
+    usedBy: ["Carreritas", 'Bochinche'],
     previewOptions: {"seed":7},
     description: "Selva: alas rojas, amarillas y azules, cara clara, pico curvo y cola larga.",
     tags: ["animal","fauna","ave","animado"],

@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Prueba de rayos · Bochinche</title>
+  <link rel="stylesheet" href="/engine/kit.css">
+  <link rel="stylesheet" href="/engine/ui.css">
+  <link rel="stylesheet" href="lightning.css">
+  <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.186.1/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.186.1/examples/jsm/"}}</script>
+</head>
+<body>
+  <header><a class="pk-btn pk-btn--ghost" href="./">Volver a Bochinche</a><div id="menu-slot"></div></header>
+  <main>
+    <section class="arena" aria-label="Prueba de combate en 3D">
+      <canvas id="world" aria-label="Tu pana lanza un rayo a un rival de práctica"></canvas>
+      <div class="caption"><h1>Prueba de rayos</h1><p>Mismo golpe. Tú decides cómo se siente.</p></div>
+      <div id="loading" role="status">Preparando la arena…</div>
+      <div class="readout"><span id="phase" role="status">Listo</span><b id="damage">0%</b></div>
+    </section>
+    <aside aria-label="Ajustes del prototipo">
+      <p class="intro">Práctica local · 12% por impacto</p>
+      <button id="cast" class="pk-btn pk-btn--primary pk-btn--lg" disabled>Lanzar rayo · K</button>
+      <div class="actions"><button id="baseline" class="pk-btn">Golpe sin efectos</button><button id="reset" class="pk-btn pk-btn--ghost">Reiniciar</button></div>
+      <fieldset><legend>Capas del impacto</legend>
+        <label><input id="lightning" type="checkbox" checked> Rayo y chispas de carga</label>
+        <label><input id="flash" type="checkbox" checked> Destello al contacto</label>
+        <label><input id="stop" type="checkbox" checked> Pausa de impacto (hit-stop)</label>
+        <label><input id="shake" type="checkbox" checked> Sacudida de cámara</label>
+      </fieldset>
+      <label class="slider" for="stopFrames">Duración de la pausa <output id="stop-value">83 ms</output><input id="stopFrames" type="range" min="1" max="10" value="5"></label>
+      <label class="slider" for="shakeStrength">Fuerza de la sacudida <output id="shake-value">Media</output><input id="shakeStrength" type="range" min="0" max="24" value="12"></label>
+      <label class="slow"><input id="slow" type="checkbox"> Cámara lenta · ¼ de velocidad</label>
+      <p id="motion-note" hidden>Movimiento reducido: sin sacudida y con destello suave.</p>
+      <p class="hint">Cada lanzamiento coloca a los panas en el mismo sitio. Cambia una capa y vuelve a probar. Los ajustes se aplican al siguiente golpe.</p>
+    </aside>
+  </main>
+  <script type="module" src="lightning-lab.js"></script>
+</body>
+</html>

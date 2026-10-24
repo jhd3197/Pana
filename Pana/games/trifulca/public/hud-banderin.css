@@ -1,0 +1,131 @@
+/* Adapted from the player's Trifulca HUD reference, over the live 3D barrio. */
+body { --hud-ink: #16161a; --hud-plate: #0e0b24ed; --pad-a: #4cc96a; --pad-b: #ff6b6b; --pad-x: #4fa3ff; --pad-y: #ffd23f; }
+#hud::before { content: ''; position: fixed; inset: 0 0 auto; height: 240px; background: linear-gradient(#0e0b2470, transparent); pointer-events: none; }
+.topbar { z-index: 12; }
+#bars { top: 76px; width: calc(100vw - 64px); max-width: 1800px; grid-template-columns: minmax(0,1fr) 110px minmax(0,1fr); gap: 24px; }
+.fighter { padding: 0; background: none; border-radius: 0; gap: 7px; }
+.fighter-name { min-width: 0; gap: 12px; align-items: center; }
+.fighter-portrait { width: 56px; height: 56px; object-fit: contain; background: var(--corner, var(--pk-game)); box-shadow: 4px 4px var(--hud-ink); transform: skewX(-8deg); }
+.fighter-identity { min-width: 0; display: grid; gap: 3px; }
+.fighter-name b { color: var(--pk-text); font-size: clamp(18px, 2vw, 32px); line-height: 1.1; text-transform: uppercase; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; paint-order: stroke fill; -webkit-text-stroke: 4px var(--hud-ink); }
+.fighter-name span { color: var(--corner); font-size: 11px; font-weight: 900; text-transform: uppercase; letter-spacing: .08em; text-shadow: 0 2px 2px var(--hud-ink), 0 -1px var(--hud-ink); }
+.side--right .fighter-name { flex-direction: row-reverse; }
+.side--right .fighter-identity { text-align: right; }
+.caidas { margin-left: auto; gap: 7px; flex-shrink: 0; }
+.side--right .caidas { margin-left: 0; margin-right: auto; }
+.caidas::before { display: none; }
+.caidas i { width: 15px; height: 15px; border: 2px solid var(--hud-ink); border-radius: 0; transform: rotate(45deg); background: var(--hud-plate); box-shadow: 2px 2px var(--hud-ink); }
+.caidas i.is-down { background: var(--mareo-hot); }
+.fighter-meters { display: flex; justify-content: space-between; gap: 8px; font-size: 11px; background: var(--hud-plate); padding: 3px 8px; font-weight: 900; }
+.meter { height: clamp(22px, 2.3vw, 36px); transform: skewX(-16deg); border: 0; border-radius: 0; background: var(--hud-plate); box-shadow: 4px 4px var(--hud-ink); }
+.side--right .meter { transform: skewX(16deg); }
+.meter i { background: var(--corner); transition: width .2s .12s ease-out; }
+.meter em { position: absolute; inset: 0 auto 0 0; background: var(--pk-text); transition: width .08s ease-out; }
+.side--right .meter em { inset: 0 0 0 auto; }
+.meter--mareo::after { content: ''; position: absolute; inset: 0 0 auto; height: 32%; background: #ffffff24; }
+.meter--mareo.is-danger i { background: var(--mareo-hot); }
+.meter--aguante { height: 9px; flex: 0 1 74%; box-shadow: none; }
+.meter--aguante i { background: var(--aguante); }
+.meter--aguante.is-empty { outline: 2px solid var(--mareo-hot); }
+.fighter-low { justify-content: flex-end; margin-top: 1px; }
+.side--right .fighter-low { justify-content: flex-start; }
+.side .fighter + .fighter .meter--mareo { height: 18px; }
+.side .fighter + .fighter .fighter-portrait { width: 32px; height: 32px; }
+.clock { padding: 0; background: none; border: 0; border-radius: 0; box-shadow: none; min-width: 0; }
+.clock b { width: 100px; height: 86px; background: var(--hud-plate); color: var(--pk-text); display: grid; place-items: center; font: 400 52px/1 var(--pk-display); clip-path: polygon(12% 0,88% 0,100% 50%,88% 100%,12% 100%,0 50%); }
+.clock b.is-low { color: var(--mareo-hot); }
+.clock span { margin-top: -3px; padding: 5px 8px; background: var(--gold); color: var(--hud-ink); font-size: 10px; font-weight: 900; text-align: center; white-space: normal; }
+.call { top: 225px; padding: 8px 20px 3px; background: var(--hud-plate); box-shadow: 5px 5px var(--hud-ink); color: var(--gold); text-shadow: none; font-size: clamp(20px,2.4vw,34px); max-width: min(650px,70vw); }
+.call.is-big { font-size: clamp(26px,3vw,44px); }
+.fight-feedback { position: fixed; top: 240px; display: grid; gap: 5px; pointer-events: none; text-shadow: 3px 3px var(--hud-ink), -2px -2px var(--hud-ink); }
+.fight-feedback--left { left: 32px; }.fight-feedback--right { right: 32px; text-align: right; }
+.fight-feedback b { font: 400 clamp(25px,3vw,46px)/1 var(--pk-display); color: var(--gold); }
+.fight-feedback span { font: 400 23px/1 var(--pk-display); color: var(--pk-text); }
+body:has(#tutorial:not([hidden])) .fight-feedback--right { top: 200px; }
+.tutorial { top: 255px; right: 24px; width: clamp(260px,26vw,350px); box-sizing: border-box; border: 0; border-radius: 0; background: var(--hud-plate); box-shadow: 6px 6px var(--hud-ink); padding: 18px 20px; gap: 10px; }
+.tutorial .pk-ribbon { background: none; padding: 0; color: var(--pk-muted); font: 900 11px var(--pk-sans); letter-spacing: .12em; }
+.tutorial h2 { color: var(--gold); font-size: 28px; }
+.tutorial p { font-size: 14px; line-height: 1.4; }
+.tutorial-rule { color: var(--pk-muted); font-size: 11px; line-height: 1.4; }
+.tutorial-dots { grid-row: 1; margin: 0 0 3px; }
+.tutorial-dots li { flex: 1; width: auto; height: 6px; border-radius: 0; transform: skewX(-16deg); }
+.tutorial-keys { background: #2ad1b218; color: var(--aguante); padding: 9px 10px; align-items: center; }
+.tutorial-keys::before { content: 'Haz:'; font-weight: 900; font-size: 12px; }
+.tutorial-keys .pk-kbd { font-size: 14px; }
+.tutorial-foot button { border-radius: 0; }
+.keys, .pana-pad-prompts { bottom: 18px; background: var(--hud-plate); padding: 7px; gap: 6px; box-shadow: 5px 5px var(--hud-ink); flex-wrap: wrap; width: max-content; max-width: calc(100vw - 40px); }
+.keys span, .pana-pad-prompts > span { border: 0; border-radius: 0; padding: 8px 12px; background: #ffffff0c; display: flex; flex-direction: column; justify-content: center; gap: 5px; font-size: 11px; font-weight: 900; text-align: center; }
+.keys span .pk-kbd, .pana-pad-prompts kbd { border-radius: 4px; padding: 5px 8px; background: var(--pk-text); color: var(--hud-ink); border: 0; min-width: 16px; text-align: center; }
+.keys [data-key='golpe'] kbd, .pana-pad-prompts > span:nth-child(2) kbd { background: var(--pad-a); }
+.keys [data-key='esquivar'] kbd, .pana-pad-prompts > span:nth-child(3) kbd { background: var(--pad-b); }
+.keys [data-key='agarrar'] kbd, .pana-pad-prompts > span:nth-child(4) kbd { background: var(--pad-x); }
+.pana-pad-prompts > span:nth-child(5) kbd { background: var(--pad-y); }
+.keys span.is-lesson, .pana-pad-prompts > span.is-lesson { box-shadow: inset 0 0 0 2px var(--aguante); background: #2ad1b21c; }
+.me { border: 0; border-radius: 0; background: var(--hud-plate); box-shadow: 4px 4px var(--hud-ink); }
+body:has(#bars:not([hidden])) .me { bottom: 18px; }
+.me b { font: 400 20px var(--pk-display); }.me span { font-size: 11px; }
+body[data-phase='intro'] #bars, body[data-phase='intro'] .call { visibility: hidden; }
+.intro { inset: 62px 0 0; width: auto; max-width: none; transform: none; grid-template-columns: 1fr 100px 1fr; gap: 0; align-items: stretch; z-index: 5; pointer-events: none; background: var(--hud-plate); }
+.intro-team { display: flex; flex-direction: column; justify-content: center; gap: 0; }
+.intro-side { border-radius: 0; box-shadow: none; padding: 24px 40px; display: grid; justify-items: start; gap: 10px; background: repeating-linear-gradient(-62deg,var(--corner-deep) 0 50px,var(--corner) 50px 100px); min-height: 0; }
+.intro-team--right .intro-side { justify-items: end; background: repeating-linear-gradient(-62deg,var(--corner) 0 50px,var(--corner-deep) 50px 100px); }
+.intro-side .fighter-portrait { width: clamp(100px,20vw,280px); height: clamp(100px,20vw,280px); background: none; box-shadow: none; transform: none; filter: drop-shadow(6px 6px #16161a66); }
+.intro-side .pk-display { font-size: 22px; background: var(--hud-ink); color: var(--gold); padding: 5px 12px; }
+.intro-side b { font: 400 clamp(28px,4vw,60px)/1 var(--pk-display); color: var(--pk-text); text-shadow: 4px 4px var(--hud-ink); }
+.intro-vs { align-self: center; font-size: clamp(60px,9vw,140px); line-height: 1; z-index: 1; text-shadow: 6px 6px var(--hud-ink); }
+.intro-vs small { font-size: 11px; max-width: 180px; white-space: normal; background: var(--hud-ink); padding: 8px; text-align: center; }
+body[data-phase='intro'] .bets, body[data-phase='intro'] .role { z-index: 7; }
+.verdict { width: min(800px,calc(100vw - 48px)); box-sizing: border-box; border: 0; border-radius: 0; box-shadow: 8px 8px var(--hud-ink); padding: 26px; background: var(--hud-plate); gap: 12px; }
+.verdict h2 { font-size: clamp(28px,4vw,48px); color: var(--gold); }
+#verdict-stats { width: 100%; overflow-x: auto; }
+.fight-stats { border-collapse: collapse; width: 100%; text-align: right; }
+.fight-stats th, .fight-stats td { padding: 10px 8px; border-bottom: 1px solid var(--pk-line); }
+.fight-stats th:first-child { text-align: left; color: var(--pk-muted); font: 800 13px var(--pk-sans); }
+.fight-stats thead th { font: 900 13px var(--pk-sans); }.fight-stats td { font: 400 24px var(--pk-display); }
+#results .pk-results-card { border-radius: 0; box-shadow: 8px 8px var(--hud-ink); }#results .pk-title { color: var(--gold); }
+@media (max-width: 900px) {
+ #bars { width: calc(100vw - 32px); gap: 12px; grid-template-columns: minmax(0,1fr) 72px minmax(0,1fr); }
+ .clock b { width: 70px; height: 64px; font-size: 38px; }.fighter-portrait { width: 40px; height: 40px; }.caidas { gap: 5px; }.caidas i { width: 10px; height: 10px; }
+ .fighter-name { gap: 7px; }.keys,.pana-pad-prompts { max-width: 96vw; }.pana-pad-prompts > span { padding: 6px; font-size: 10px; }.me { display: none; }
+ .tutorial { width: 260px; padding: 12px 14px; }.tutorial p { font-size: 12px; }.tutorial h2 { font-size: 23px; }
+}
+@media (max-width: 600px) {
+ #bars { top: 64px; grid-template-columns: minmax(0,1fr) 52px minmax(0,1fr); gap: 8px; }.fighter-portrait { width: 32px; height: 32px; }.fighter-name { flex-wrap: wrap; }.fighter-name b { font-size: 14px; }.fighter-name span { display: none; }
+ .fighter-identity { flex: 1; }.caidas { width: 100%; margin: 2px 0; }.side--right .caidas { justify-content: flex-end; }.caidas i { display: block; width: 8px; height: 8px; }
+ .fighter-meters { display: grid; font-size: 9px; gap: 1px; padding: 3px; }.clock b { width: 52px; height: 52px; font-size: 30px; }.clock span { font-size: 8px; padding: 4px; }
+ .tutorial { top: auto; bottom: 195px; right: 12px; width: min(270px,calc(100vw - 24px)); gap: 6px; }.tutorial-rule { font-size: 10px; }.call { top: 228px; max-width: 85vw; width: max-content; font-size: 19px; }.call.is-big { font-size: 24px; }
+ .fight-feedback { top: 225px; }.fight-feedback--left { left: 14px; }.fight-feedback--right { right: 14px; }.fight-feedback b { font-size: 22px; }.fight-feedback span { font-size: 15px; }
+ .intro { grid-template-columns: 1fr 40px 1fr; inset: 62px 0 0; }.intro-side { padding: 15px; }.intro-side b { font-size: 28px; }.intro-side .pk-display { font-size: 15px; }.intro-side small { font-size: 11px; }.intro-vs { font-size: 55px; }.intro-vs small { max-width: 100px; font-size: 9px; }
+ .verdict { padding: 16px; }.fight-stats th,.fight-stats td { padding: 8px 4px; }.fight-stats th:first-child { font-size: 11px; }.fight-stats td { font-size: 20px; }
+ .pana-pad-prompts { flex-wrap: wrap; gap: 3px; padding: 4px; }.pana-pad-prompts > span { flex-direction: row; font-size: 9px; }
+}
+@media (max-height: 600px) and (min-width: 601px) {
+ #bars { top: 58px; }.fighter-portrait { width: 30px; height: 30px; }.fighter-name b { font-size: 16px; }.meter { height: 18px; }.clock b { height: 55px; font-size: 34px; }.tutorial { top: 190px; padding: 10px; gap: 4px; }.tutorial-rule { display: none; }.tutorial h2 { font-size: 20px; }.tutorial p { font-size: 11px; }.tutorial-keys { padding: 4px; }.call { top: 170px; }.fight-feedback { top: 175px; }.intro-side .fighter-portrait { width: 100px; height: 100px; }
+}
+@media (prefers-reduced-motion: reduce) {
+ .meter i,.meter em,.call,.intro-side,.prompt,.tutorial { animation: none !important; transition: none !important; }
+}
+
+.caidas { position: relative; }
+.caidas::after { content: attr(data-label); position: absolute; top: 22px; right: 0; white-space: nowrap; font: 900 9px var(--pk-sans); color: var(--pk-text); text-shadow: 1px 1px var(--hud-ink); }
+.keys span { align-items: center; min-width: 55px; padding: 7px 9px; }
+.tutorial-dots li { background: #ffffff26; }
+.tutorial-dots li.is-done { background: var(--aguante); }.tutorial-dots li.is-now { background: var(--gold); }
+@media (max-width: 600px) { .caidas::after { top: -2px; left: 42px; right: auto; }.side--right .caidas::after { left: auto; right: 42px; } }
+
+body:has(#verdict:not([hidden])) .call { visibility: hidden; }
+.verdict { background: var(--pk-night); }
+.intro-team { background: var(--hud-plate); }
+@media (max-width: 600px) {
+ .keys { max-width: 96vw; width: 96vw; gap: 3px; box-sizing: border-box; }
+ .keys span { min-width: 0; flex: 1; padding: 6px 3px; font-size: 10px; }
+ .keys span .pk-kbd { font-size: 10px; padding: 5px; }
+ .keys span small { font-size: 9px; }
+ .topbar { left: 12px; right: 12px; top: 10px; }.topbar .pk-logo { font-size: 24px; }
+ #game-nav { gap: 4px; }#game-nav .pk-btn { padding: 8px; font-size: 11px; }#voice { max-width: 42px; }
+}
+
+.keys [data-key="dale"] kbd { background: var(--pad-y); }
+
+.fighter-meters span:first-child { color: var(--mareo); }
+.fighter-meters span:last-child { color: var(--aguante); }

@@ -62,9 +62,15 @@ try {
   await wait(a, () => /Pintaste|pintada/.test(document.getElementById('toast').textContent));
   await wait(a, `${mine}.score > 0`); await a.keyboard.up(' ');
   await wait(b, `${mine}.hits > 0`);
+  await wait(a, id => !!pinturaDebug.world.avatars.get(id)?.knockout, guest.id);
+  assert.equal(await a.evaluate(id => pinturaDebug.world.avatars.get(id).knockout.physics.points.every(p => Number.isFinite(p.x+p.y+p.z)), guest.id), true);
+  const impact = await b.evaluate(() => pinturaDebug.room.state.players.find(p=>p.id===pinturaDebug.room.id).impact);
+  assert.ok(Math.abs(Math.hypot(impact.x,impact.z)-1)<1e-6);
+  console.log('ok: authoritative impact drives finite own-pana knockout physics');
   console.log('ok: real guest movement and first-person host aim/fire produce a server-confirmed hit on both clients, with the feat toast');
   await a.screenshot({ path: `${out}/playing.png` });
   await wait(b, () => !pinturaDebug.room.state.players.find(p => p.id === pinturaDebug.room.id).respawn);
+  assert.equal(await b.evaluate(() => pinturaDebug.world.avatars.get(pinturaDebug.room.id).knockout), null);
   await a.close(); await wait(b, () => pinturaDebug.room.isHost); const before = await b.evaluate(() => pinturaDebug.room.state.time); await b.waitForTimeout(700); assert.ok(await b.evaluate(() => pinturaDebug.room.state.time) < before);
   const c = await open('Luis'); await wait(c, () => pinturaDebug.room.state.phase === 'playing'); assert.equal(await c.evaluate(() => pinturaDebug.room.state.round), 1);
   console.log('ok: respawn, host departure and late arrival preserve the running round');

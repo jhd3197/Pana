@@ -110,6 +110,7 @@ export function acceptAction(state, id, action, hostId) {
     return true;
   }
   if (action.action === 'swap') {
+    if (state.options.format === 'duel' && (action.from > 1 || action.to > 1)) return false;
     if (state.phase !== 'lobby' || !canMoveSeats(state.players, action.from, action.to, id, hostId)) return false;
     [state.players[action.from], state.players[action.to]] = [state.players[action.to], state.players[action.from]];
     state.revision++; return true;
@@ -117,6 +118,9 @@ export function acceptAction(state, id, action, hostId) {
   if (action.action === 'options') {
     if (id !== hostId || !['lobby', 'finished'].includes(state.phase)) return false;
     const options = poolOptions(state.options, action.options); if (!options) return false;
+    if (options.format !== state.options.format && state.phase !== 'lobby') return false;
+    if (options.format === 'duel' && occupiedSeats(state).length > 2) return false;
+    if (options.format === 'duel' && state.phase === 'lobby') state.players.sort((a,b) => Number(b.id !== null) - Number(a.id !== null));
     state.options = options; state.scores = [0, 0]; if (state.result) state.result.matchFinished = true;
     if (state.phase === 'lobby') state.balls = rack(options.variant);
     state.revision++; return true;
@@ -140,7 +144,7 @@ export function acceptAction(state, id, action, hostId) {
     const breaker = continuing ? state.options.breakPolicy === 'alternate' ? 1 - state.breaker : state.options.breakPolicy === 'winner' ? state.result.team : 1 - state.result.team : 0;
     Object.assign(state, fresh, { players: state.players, mapId: state.mapId, difficulty: state.difficulty, revision: state.revision + 1, round: state.round + 1,
       options: state.options, balls: rack(state.options.variant), activeSeats: occupiedSeats(state), scores: continuing ? state.scores : [0, 0], breaker,
-      phase: 'aiming', message: state.options.variant === 'nine' ? '¡A romper! Toca primero la bola de menor número y busca la nueve.' : state.practice ? 'Practica: mete las 15 bolas. Deja la ocho para el final.' : '¡A romper! La primera bola legal elige tu grupo.' });
+      phase: 'aiming', message: state.options.variant === 'nine' ? '¡A romper! Toca primero la bola de menor número y busca la nueve.' : state.practice ? 'Deja la ocho para el final.' : '¡A romper! La primera bola legal elige tu grupo.' });
     state.turn = nextShooter(state, breaker);
     if (state.options.variant === 'nine') state.message = 'Bola 9: toca primero la bola de menor número. La nueve gana la mesa.';
     if (continuing) return true;

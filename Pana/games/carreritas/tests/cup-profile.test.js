@@ -109,3 +109,18 @@ test('blocked storage still supports play and one-time receipts in memory', () =
   assert.equal(store.load().wallet.coins, 12);
   assert.equal(store.load().receipts[key], true);
 });
+
+test('selected car survives profile reload and invalid IDs fall back safely', () => {
+  const values = new Map(), storage = { getItem: key => values.get(key), setItem: (key,value) => values.set(key,value) };
+  const store = createProfileStore(storage), profile = store.load();
+  profile.wallet.car = 'machito';
+  profile.wallet.paint.machito = 'caribe';
+  profile.wallet.parts.machito = { motor: 'turbo' };
+  store.save(profile);
+  const restored = createProfileStore(storage).load();
+  assert.equal(restored.wallet.car, 'machito');
+  assert.deepEqual(restored.wallet.parts, profile.wallet.parts);
+  assert.deepEqual(restored.wallet.paint, profile.wallet.paint);
+  restored.wallet.car = 'missing-car';store.save(restored);
+  assert.equal(createProfileStore(storage).load().wallet.car, 'chamo');
+});

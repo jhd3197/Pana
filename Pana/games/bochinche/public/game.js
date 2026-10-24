@@ -26,7 +26,7 @@ const roomOptions = createRoomOptions($('room-options'), { title: 'Bochinche', f
 const menu = createGameMenu({ title: 'Bochinche · Pana', sound, orientation: 'horizontal',
   pad: { move: 'wasd', keys: { a: ['Space', 'Saltar'], x: ['KeyJ', 'Golpe'], b: ['KeyK', 'Especial'], y: ['KeyL', 'Agarre'], lb: ['ShiftLeft', 'Escudo'] } },
   note: () => room.members.size > 1 ? 'La ronda sigue mientras estás en el menú.' : 'La ronda está en pausa.',
-  controls: [['A D / flechas', 'Moverse'], ['Espacio', 'Saltar · dos saltos'], ['J + dirección', 'Golpe / ataque aéreo'], ['K + dirección', 'Especial · arriba para volver'], ['Shift + dirección', 'Escudo / esquivar'], ['L', 'Agarrar · dirección para lanzar'], ['I', 'Agarrar objetos']],
+  controls: [['A D / flechas', 'Moverse'], ['Espacio', 'Saltar · dos saltos'], ['J + dirección', 'Golpe / ataque aéreo'], ['K', 'Rayo'], ['K + lado', 'Candela'], ['K + abajo', 'Hielo'], ['K + arriba', 'Volver al escenario'], ['J + toque lateral', 'Jonrón'], ['Shift + dirección', 'Escudo / esquivar'], ['L', 'Agarrar · dirección para lanzar'], ['I', 'Agarrar objetos']],
   tips: ['Cuanto más daño acumulas, más lejos te mandan los golpes.', 'Gana quien conserve vidas. Si empatan al sonar la campana, hay muerte súbita.', 'Escoge tu estilo en la sala; tu pana conserva su aspecto.'],
   invite: () => room.offline ? null : inviteUrl(code),
 });
@@ -75,7 +75,10 @@ function render(state) {
   $('results').hidden = !ended; $('again').disabled = !room.connected || !room.isHost;
   if (ended) {
     $('result-title').textContent = `¡Ganó ${state.players.find(p => p.id === state.winner)?.name ?? 'nadie'}!`;
-    fillRoster($('result-roster'), rows);
+    fillRoster($('result-roster'), rows);
+    const winnerSlot=state.players.findIndex(p=>p.id===state.winner), portrait=document.querySelector('#fighter-'+winnerSlot+' .fighter-portrait');
+    $('winner-portrait').hidden=!portrait?.getAttribute('src');
+    if(portrait?.getAttribute('src'))$('winner-portrait').src=portrait.src;
   }
   world?.update(state);
 }

@@ -51,6 +51,7 @@ export class LudoGame {
     this.phase = 'lobby'; this.turn = 0; this.die = 0; this.lastDie = 0;
     this.sixes = 0; this.winner = null; this.revision = 0; this.round = 0;
     this.starter = null; this.lastPlace = null; this.toss = { seat: 0, power: .5 };
+    this.entryMisses = [0, 0, 0, 0]; this.entryLimits = [0, 0, 0, 0]; this.autoMove = null;
     this.ledger = {}; this.event = 'Invita a tus panas o juega con bots.';
   }
   snapshot() { return JSON.parse(JSON.stringify(this)); }
@@ -74,6 +75,7 @@ export class LudoGame {
     if (!['lobby', 'finished'].includes(this.phase)) return false;
     for (const p of this.players) p.pieces.fill(-1);
     this.phase = 'starter'; this.turn = 0; this.die = 0; this.lastDie = 0;
+    this.entryMisses = [0, 0, 0, 0]; this.entryLimits = [0, 0, 0, 0]; this.autoMove = null;
     this.sixes = 0; this.winner = null; this.round++; this.revision++;
     // Its own seed, so the match's dice stream is the same with or without the cachos.
     this.starter = createStarter({ seats: [0, 1, 2, 3], need: 'first', seed: (this.rng ^ Math.imul(this.round, 0x9e3779b1)) >>> 0, option: this.options.starter, last: this.lastPlace });
@@ -100,20 +102,42 @@ export class LudoGame {
   roll(power) {
     if (this.phase !== 'playing' || this.die) return false;
     this.rng = (Math.imul(this.rng, 1664525) + 1013904223) >>> 0;
-    const value = 1 + Math.floor(this.rng / 4294967296 * 6);
+    const pieces = this.players[this.turn].pieces;
+    const stranded = pieces.some(p => p < 0) && pieces.every(p => p < 0 || p === HOME);
+    // Pick a seeded threshold per drought, never by identity or score.
+    if (stranded && !this.entryLimits[this.turn]) this.entryLimits[this.turn] = 3 + ((this.rng >>> 8) % 3);
+    const assisted = this.options.assistedEntry && stranded && this.entryMisses[this.turn] >= this.entryLimits[this.turn];
+    const value = assisted ? 6 : 1 + Math.floor(this.rng / 4294967296 * 6);
+    const exits = value === 6 || value === 1 && this.options.entry === 'one-six';
+    this.entryMisses[this.turn] = stranded && !exits ? this.entryMisses[this.turn] + 1 : 0;
+    if (!stranded || exits) this.entryLimits[this.turn] = 0;
     this.toss = { seat: this.turn, power: cleanPower(power, .35 + (this.rng & 255) / 255 * .6) };
     this.die = value; this.lastDie = this.die;
     this.sixes = this.die === 6 ? this.sixes + 1 : 0;
-    this.event = `${this.players[this.turn].name} sacó ${this.die}.`;
+    this.event = `${this.players[this.turn].name} sacó ${this.die}.${assisted ? ' Salida asistida tras varios intentos sin salir.' : ''}`;
     if (this.sixes === 3 && this.options.threeSixes) { this.event += ' Tres seis seguidos: pierde el turno.'; this.nextTurn(); }
     else if (!legalMoves(this).length) {
       this.event += ' Sin movimientos.';
       if (this.die === 6) this.die = 0; else this.nextTurn();
     }
+    const moves = legalMoves(this);
+    // Choosing between identical yard pieces does not change the outcome.
+    if (moves.length === 1 || moves.length && moves.every(i => pieces[i] < 0)) {
+      this.autoMove = { seat: this.turn, piece: moves[0], remaining: 1.1 };
+      this.event += ' Movimiento automático al caer el dado.';
+    }
     this.revision++; return true;
+  }
+  stepAutomatic(dt) {
+    if (!this.autoMove || this.phase !== 'playing') return false;
+    this.autoMove.remaining -= Math.max(0, dt);
+    if (this.autoMove.remaining > 0) return false;
+    const { seat, piece } = this.autoMove; this.autoMove = null;
+    return seat === this.turn && this.move(piece);
   }
   move(piece) {
     if (!Number.isInteger(piece) || !legalMoves(this).includes(piece)) return false;
+    this.autoMove = null;
     const p = this.players[this.turn], from = p.pieces[piece];
     const next = from < 0 ? 0 : from + this.die; p.pieces[piece] = next;
     let captured = 0;

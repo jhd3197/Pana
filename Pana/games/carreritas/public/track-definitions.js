@@ -31,4 +31,10 @@ export const TRACK_DEFINITIONS = [
   {id:'margarita', kitPieces:['car','boat'], name:'Isla Margarita', blurb:'Del castillo de Pampatar a Playa El Agua, por los manglares de La Restinga hasta Juan Griego.'},
   {id:'sarisarinama', name:'Sarisariñama', blurb:'Baja en espiral por la sima del tepuy, cruza las cuevas por debajo y sube a la luz por la otra.'},
   {id:'sabana', name:'Gran Sabana', blurb:'Corre por la sabana con los tepuyes al fondo, pasa la Quebrada de Jaspe y el Salto Kama antes del aguacero.'},
+  {id:'cosmos', name:'Cosmos', defaultLaps:1, blurb:'De la base lunar a los anillos de Araguaney y el túnel del cosmos.'},
+  {id:'merida', kitPieces:['car','boat'], name:'Mérida', blurb:'Del pueblo andino al teleférico: curvas de montaña y una travesía por la laguna.'},
+  {id:'arrecife', name:'Arrecife', blurb:'Corre bajo el mar entre corales, un galeón y las luces de la fosa.'},
+  {id:'volcan', name:'Volcán', defaultLaps:1, blurb:'Sube al cráter entre ceniza, puentes de basalto y ríos de lava.'},
+  {id:'nubes', name:'Nubes', blurb:'Salta de isla en isla por puentes colgantes y una carretera de arcoíris.'},
+  {id:'dulce', name:'Dulce', blurb:'Una vuelta entre quesillo, chocolate, caramelos y montañas de merengue.'},
 ];

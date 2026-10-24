@@ -27,3 +27,24 @@ included as `ITEM-PROVENANCE.md`.
 Pana extends the original duel simulation to up to six fighters: pairwise
 collisions, multi-target melee/items, nearest-enemy CPU/projectile targeting,
 last-survivor results and sudden death restricted to tied stock leaders.
+
+## User-supplied Bochinche prototypes
+
+Salto Ángel and Catatumbo scene modules are adapted from the user's downloaded
+`bochinche-salto-angel.html` and `bochinche-catatumbo.html` artifacts, supplied
+for integration in October 2026. Their procedural geometry, textures and
+ambient animations are retained, with the standalone renderer/UI removed.
+`bochinche-golpes (1).html` supplies the Rayo, Candela, Hielo and Jonrón concepts,
+colors, damage targets and anticipation/impact presentation. Combat timings,
+networking, player models and bounded effects use Pana's implementation.
+These additions are separate from the upstream MIT combat-engine adaptation;
+no additional third-party license claim is inferred for the supplied artifacts.
+
+Los Roques is adapted from the supplied `bochinche-los-roques.html` using
+the same scene integration approach. The four HUDs reference the supplied
+Bochinche HUD, Caída HUD, Billar HUD and Trifulca HUD ZIP packages. Their
+mock background screenshots and invented result rewards are not shipped.
+
+The authored stage dressing now reuses Pana's canonical vegetation, island
+houses, coastal fishing props, macaws and flamingos. Collision-bearing
+platforms and environmental hazards retain the authored layout.

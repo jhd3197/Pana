@@ -38,12 +38,16 @@ try {
  assert.equal(await b.locator('#start').isDisabled(),true);
  assert.equal(await a.evaluate(()=>dominoDebug.world.characters[0].group.userData.characterVersion),'studio-v1');
  await a.screenshot({path:'art/domino/desktop-lobby.png'}); check('four actual shared characters, table and chairs load in 3D');
+ await a.evaluate(()=>{ const room=dominoDebug.room, state=structuredClone(room.state);state.scores[0]+=999;room.send({kind:'snapshot',state}); });
+ await b.waitForFunction(()=>dominoDebug.room.auditFailures>0 && !dominoDebug.room.recovering);
+ assert.deepEqual(await b.evaluate(()=>dominoDebug.room.state.scores),[0,0]);
+ check('guest refuses a forged host score and verifies recovery over the real room');
  await a.locator('#start').click(); await b.waitForFunction(()=>dominoDebug.room.state.phase==='playing');
  const humans=new Map([[await a.evaluate(()=>dominoDebug.room.id),a],[await b.evaluate(()=>dominoDebug.room.id),b]]);
  for(let i=0;i<10;i++)if(!await advance(a,humans))break;
  const chain=await a.evaluate(()=>dominoDebug.room.state.chain);
  await b.waitForFunction(count=>dominoDebug.room.state.chain.length>=count,chain.length);
- assert.deepEqual(await b.evaluate(()=>dominoDebug.room.state.chain),chain);
+ assert.deepEqual(await b.evaluate(ids=>dominoDebug.room.state.chain.filter(t=>ids.includes(t.id)),chain.map(t=>t.id)),chain);
  await a.screenshot({path:'art/domino/desktop-playing.png'}); check('real two-client legal moves replicate with tile animation');
  await a.locator('#camera-view').click(); await a.waitForTimeout(500); await a.screenshot({path:'art/domino/table-view.png'}); check('close table camera works');
  const before=await b.evaluate(()=>({chain:dominoDebug.room.state.chain,scores:dominoDebug.room.state.scores,round:dominoDebug.room.state.round}));

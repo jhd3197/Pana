@@ -3,6 +3,7 @@
 // unlocks trophies give.
 // Plain data and math; game.js keeps it in localStorage and paints the cars.
 
+import { CAR_DEFINITIONS } from './car-definitions.js';
 import { canonicalCupId } from './cup-definitions.js';
 import { PARTS, cleanParts } from './parts.js';
 import { WHEEL_DEFINITIONS } from './wheel-definitions.js';
@@ -43,7 +44,7 @@ export const CATALOG = { paint: PAINTS, horn: HORNS, flame: FLAMES, wheel: WHEEL
 
 // paint and parts are per car ({ carId: ... }); horn, flame and the cauchos
 // are the driver's. Owned keys are 'kind:id' and free items count as owned.
-export const newWallet = () => ({ coins: 0, owned: ['paint:fabrica', 'horn:propio', 'flame:fuego'], paint: {}, copiedPaint: null, parts: {}, horn: 'propio', flame: 'fuego', wheel: 'calle', boat: 'penero', air: 'zamuro', boatParts: {}, airParts: {} });
+export const newWallet = () => ({ car: 'chamo', coins: 0, owned: ['paint:fabrica', 'horn:propio', 'flame:fuego'], paint: {}, copiedPaint: null, parts: {}, horn: 'propio', flame: 'fuego', wheel: 'calle', boat: 'penero', air: 'zamuro', boatParts: {}, airParts: {} });
 export const owns = (wallet, kind, id) => wallet.owned.includes(`${kind}:${id}`) || CATALOG[kind]?.find(i => i.id === id)?.cost === 0;
 const ownsWheel = (owned, id) => owned.includes(`wheel:${id}`) || !(WHEEL_DEFINITIONS.find(w => w.id === id)?.cost);
 
@@ -57,6 +58,7 @@ export function cleanWallet(w) {
     ? Object.fromEntries(Object.entries(value).map(([id, parts]) => [id, cleanVesselParts(kind, parts)]).filter(([id, parts]) => Object.keys(parts).length && (kind === 'boat' ? BOAT_DEFINITIONS : AIR_DEFINITIONS).some(v => v.id === id)))
     : {};
   return {
+    car: CAR_DEFINITIONS.some(c => c.id === w.car) ? w.car : 'chamo',
     coins: Number.isFinite(w.coins) && w.coins > 0 ? Math.floor(w.coins) : 0,
     owned: [...new Set([...base.owned, ...owned])],
     copiedPaint: /^#[0-9a-f]{6}$/i.test(w.copiedPaint) ? w.copiedPaint : null,

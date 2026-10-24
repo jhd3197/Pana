@@ -9,8 +9,8 @@ import { roomCode, bootGame } from '/engine/game-shell.js';
 import { createRoomOptions } from '/engine/room-options.js';
 import { ChapitaRoom } from './network.js';
 import { ROOM_OPTIONS, defaultOptions } from './options.js';
-import { roleOf } from './rules.js';
-import { ROWS } from './field.js';
+import { ChapitaGame, roleOf } from './rules.js';
+import { HEIGHT_TEXT, ROWS } from './field.js';
 import { renderScoreboard, renderLobbyRoster, renderResults, matchupText, shout, SHOUTS } from './hud.js';
 
 const $ = (id) => document.getElementById(id), params = new URLSearchParams(location.search);
@@ -154,6 +154,19 @@ function hudFrame() {
     const left = Math.max(0, (pitchDeadline - now) / 1000);
     $('pitch-clock').textContent = s.hold ? '¡Tiempo!' : `${Math.ceil(left)} s`;
     $('pitch-clock').classList.toggle('hurry', left < 5);
+  }
+  if (!$('bat-panel').hidden) {
+    const flying = s.phase === 'flight' && clocks.pitch && swungFor !== s.pitch?.id;
+    $('bat-timing').hidden = !flying;
+    if (flying) {
+      const elapsed = (now - clocks.pitch) / 1000, pitch = s.pitch;
+      const window = ChapitaGame.prototype.window.call(s, s.batter, pitch), duration = pitch.time + window;
+      $('bat-timing').style.setProperty('--zone-start', `${(pitch.time - window) / duration * 100}%`);
+      $('bat-timing').style.setProperty('--zone-width', `${2 * window / duration * 100}%`);
+      $('bat-timing').style.setProperty('--progress', `${Math.min(99, elapsed / duration * 100)}%`);
+      const cue = Math.abs(elapsed - pitch.time) <= window ? '¡Ahora!' : elapsed < pitch.time ? 'Prepárate' : 'Se pasó';
+      $('bat-cue').textContent = pitch.arrives ? `${cue} · palo ${HEIGHT_TEXT[pitch.arrives].toLowerCase()}` : 'Fuera de zona: déjala pasar';
+    } else $('bat-cue').textContent = s.phase === 'pitch' ? 'Espera el lanzamiento' : 'Batazo enviado';
   }
   if (!$('catch-panel').hidden && s.hit?.chance && clocks.hit) {
     const left = s.hit.chance.t - (now - clocks.hit) / 1000;

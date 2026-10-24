@@ -94,17 +94,18 @@ body[data-phase="intro"] .role { bottom: 150px; }
 .titles li { display: flex; justify-content: space-between; gap: 12px; padding: 6px 10px; border-radius: 10px; background: var(--pk-deep); }
 .titles b { color: var(--gold); }
 
-/* Touch: a stick on the left, four buttons on the right. */
+/* Touch: a stick on the left, combat buttons on the right. */
 #touch { display: none; }
 @media (pointer: coarse) {
   #touch { display: block; }
   .pk-dpad { position: fixed; left: 12px; bottom: 28px; --pk-touch: 50px; }
-  .touch-buttons { position: fixed; right: 12px; bottom: 26px; display: grid; grid-template-columns: repeat(2, 78px); grid-template-areas: "dale cubrir" "agarrar golpe" "esquivar golpe"; gap: 8px; align-items: stretch; }
+  .touch-buttons { position: fixed; right: 12px; bottom: 26px; display: grid; grid-template-columns: repeat(2, 78px); grid-template-areas: "patada barrida" "volteo cubrir" "agarrar golpe" "esquivar dale"; gap: 8px; align-items: stretch; }
   .touch-buttons .pk-touch { --pk-touch: 50px; min-width: 0; width: 100%; padding: 0 6px; font-size: 14px; }
   #touch-golpe { grid-area: golpe; height: auto; font-size: 18px; }
+  #touch-patada { grid-area: patada; } #touch-barrida { grid-area: barrida; } #touch-volteo { grid-area: volteo; }
   #touch-cubrir { grid-area: cubrir; } #touch-esquivar { grid-area: esquivar; } #touch-agarrar { grid-area: agarrar; } #touch-dale { grid-area: dale; }
   .role, .feed { display: none; }
-  .bets { bottom: 210px; }
+  .bets { bottom: 270px; }
   body:has(#bars:not([hidden])) .me { display: none; }
   .connection { bottom: 2px; }
 }
@@ -150,5 +151,9 @@ body[data-phase="intro"] .role { bottom: 150px; }
 .tutorial-dots li.is-done { background: var(--aguante); }
 .tutorial-dots li.is-now { background: var(--gold); }
 .tutorial-foot { display: flex; gap: 8px; justify-content: space-between; align-items: center; }
-@media (pointer: coarse) { .keys { display: none; } .tutorial { top: auto; bottom: 200px; right: 12px; } .prompt { font-size: 26px; top: 48%; } }
-@media (max-width: 700px) { .tutorial { top: auto; bottom: 200px; } }
+@media (pointer: coarse) { .keys { display: none; } .tutorial { top: auto; bottom: 270px; right: 12px; } .prompt { font-size: 26px; top: 48%; } }
+@media (max-width: 700px) { .tutorial { top: auto; bottom: 270px; } }
+
+/* One control guide for the active device. */
+html[data-pana-input="gamepad"] #keys { display: none; }
+body:has(#bars:not([hidden])) .connection { display: none; }

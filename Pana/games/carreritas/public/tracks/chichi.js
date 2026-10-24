@@ -4,6 +4,7 @@ import { groundPaint } from './ground-paint.js';
 import { mossRock } from '/engine/models/vegetation/moss-rock.js';
 // Chi Chi: a long coastal mountain journey, with fictional thermal springs.
 import { THREE,M,box,terrain,sea,stream,finish,put,foundation,scatter,instances,edges,smooth } from './world-kit.js';
+import { farGrove } from './far-grove.js';
 import { festive, meadow } from './festive.js';
 
 import { palm } from '/engine/models/vegetation/palm.js';
@@ -46,13 +47,13 @@ export default {
     const falls=put(group,waterfallRocks({seed:137}),-245,-8,world.groundAt(-245,-8)-.2,-.45,3.6);falls.name='forest-waterfall';
     const occupied=[...village.occupied,[-290,-550,29],[-182,-550,27],[-245,-8,27]];
     const accept=(x,z)=>z<coast(x)-30&&riverDistance(x,z)>19&&Math.hypot(x-THERMAL.x,z-THERMAL.z)>94&&!occupied.some(([a,b,r])=>Math.hypot(x-a,z-b)<r);
-    instances(group,mangoTree({seed:21,h:7,fruit:false}),scatter(T,world.groundAt,{seed:789,count:280,bounds:[-450,-460,430,270],margin:14,scale:2.7,accept}),'chichi-forest',220);
-    instances(group,ceiba({seed:7}),scatter(T,world.groundAt,{seed:799,count:95,bounds:[-360,-240,260,240],margin:20,scale:3.3,accept}),'chichi-canopy',220);
+    farGrove(T,group,()=>mangoTree({seed:21,h:7,fruit:false}),scatter(T,world.groundAt,{seed:789,count:280,bounds:[-450,-460,430,270],margin:14,scale:2.7,accept}),'chichi-forest',220);
+    farGrove(T,group,()=>ceiba({seed:7}),scatter(T,world.groundAt,{seed:799,count:95,bounds:[-360,-240,260,240],margin:20,scale:3.3,accept}),'chichi-canopy',220);
     instances(group,fern({seed:32}),scatter(T,world.groundAt,{seed:824,count:90,bounds:[-360,-280,350,200],margin:9,scale:2.5,accept}),'chichi-undergrowth',220);
     const rocks=scatter(T,world.groundAt,{seed:834,count:105,bounds:[-540,-680,500,240],margin:9,scale:1.7,
       accept:(x,z)=>accept(x,z)&&Math.abs(world.groundAt(x+4,z)-world.groundAt(x-4,z))<4&&Math.abs(world.groundAt(x,z+4)-world.groundAt(x,z-4))<4});
     instances(group,mossRock({seed:29,size:2.6}),rocks.map(p=>({...p,y:p.y-p.scale*.3})),'chichi-boulders',600);
-    instances(group,palm({seed:4,h:11}),scatter(T,world.groundAt,{seed:749,count:65,bounds:[-330,210,370,430],margin:9,accept:(x,z,y)=>y<33&&accept(x,z)}),'chichi-coast-palms',220);
+    farGrove(T,group,()=>palm({seed:4,h:11}),scatter(T,world.groundAt,{seed:749,count:65,bounds:[-330,210,370,430],margin:9,accept:(x,z,y)=>y<33&&accept(x,z)}),'chichi-coast-palms',220);
     // Stone retaining toes reveal the stacked mountain road in the valley view.
     const retaining=new THREE.Group(),stone=M(0x7e8b7c);
     for(let s=0;s<T.TOTAL;s+=8){

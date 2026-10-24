@@ -18,6 +18,7 @@ FAST (seconds to ~2 min total):
   npm test -- feats rules       union of several filters (seconds)
   npm test -- catalog-registry  Studio catalog ids, sources, factory exports (seconds)
   npm run budget [-- carreritas]   first-load modules and game.js lines vs their caps
+  npm run bench -- --base 1ec0a26   Carreritas before/after: draws, GPU/CPU ms, freezes, load, look sheets
 
 BROWSER (minutes PER SUITE — never run the whole set locally):
   npm run test:browser -- carreritas          only suites matching "carreritas"

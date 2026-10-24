@@ -64,6 +64,13 @@ function publishInput(force=false){
 function activate(device){if(detected!==device){detected=device;publishInput();}}
 const FAMILIES={playstation:{A:'Cruz',B:'Círculo',X:'Cuadrado',Y:'Triángulo',LB:'L1',RB:'R1',LT:'L2',RT:'R2',Start:'Options',View:'Share'},nintendo:{A:'B',B:'A',X:'Y',Y:'X',LB:'L',RB:'R',LT:'ZL',RT:'ZR',Start:'Más',View:'Menos'}};
 export function formatPadLabel(text,family=inputState().family){return text.replace(/\b(LB|RB|LT|RT|Start|View|A|B|X|Y)\b/g,key=>FAMILIES[family]?.[key]??key);}
+// Actuators can outlive a page. Cancel explicitly when focus or navigation leaves it.
+export function stopVibration(){
+  for(const pad of globalThis.navigator?.getGamepads?.() || []){
+    const actuator=pad?.vibrationActuator??pad?.hapticActuators?.[0];
+    try { const result=actuator?.reset ? actuator.reset() : actuator?.pulse?.(0, 0); result?.catch?.(()=>{}); } catch { /* disconnected device */ }
+  }
+}
 export async function testVibration(){
   const pad=firstPad(),actuator=pad?.vibrationActuator??pad?.hapticActuators?.[0];
   if(!actuator)return false;
@@ -182,7 +189,7 @@ function menuStep(scope, dx, dy) {
 function menuPress(scope) {
   const all = targets(scope), now = document.activeElement;
   if (!all.includes(now)) { focusTarget(startTarget(scope, all)); return; }
-  if (!now.matches('input[type=range], input[type=text], input:not([type]), textarea, select')) {now.click();if(getSettings().padVibration)testVibration();}
+  if (!now.matches('input[type=range], input[type=text], input:not([type]), textarea, select')) {if(now.matches('a[href]'))stopVibration();else if(getSettings().padVibration)testVibration();now.click();}
 }
 function menuBack(scope) {
   if (scope.matches('dialog')) { sendKey('keydown', 'Escape', scope); if (scope.open && !scope.classList.contains('pana-menu')) scope.close?.(); return; }
@@ -331,7 +338,9 @@ if (globalThis.document) {
     toast('Mando conectado');activate('gamepad');publishInput(true);start();
   });
   addEventListener('gamepaddisconnected', () => { if (!firstPad()) toast('Mando desconectado'); });
-  addEventListener('blur', ()=>{suspended=true;release();});
+  addEventListener('blur', ()=>{suspended=true;release();stopVibration();});
+  addEventListener('pagehide', stopVibration);
+  document.addEventListener('visibilitychange', ()=>{if(document.hidden)stopVibration();});
   addEventListener('focus', ()=>{suspended=false;if(firstPad())start();});
   // The mouse takes over from the pad's highlight.
   addEventListener('pointerdown', e => { if (e.isTrusted) {clearMark();lastPointer=e.pointerType==='touch'?'touch':'keyboard';activate(lastPointer);} }, true);

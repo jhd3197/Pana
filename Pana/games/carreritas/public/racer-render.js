@@ -53,6 +53,50 @@ export function repaintCar(car, from, to) {
   return car;
 }
 
+// The shared pana is sculpted for Studio close-ups. From the chase camera its
+// centimetre details (catchlights, creases, nostrils) are sub-pixel yet each
+// costs a draw and a shadow draw, and sheen/clearcoat buy nothing at racing
+// distance. Race drivers keep their silhouette, colours and fur bump.
+const tiny = new THREE.Vector3();
+export function trimDriver(car) {
+  if (!car.driver?.group) return car;
+  car.batchedMaterials ??= new Set();
+  const swapped = new Map();
+  car.driver.group.updateMatrixWorld(true);
+  car.driver.group.traverse(o => {
+    if (!o.isMesh) return;
+    const g = o.geometry; if (!g.boundingSphere) g.computeBoundingSphere();
+    const radius = g.boundingSphere.radius * o.getWorldScale(tiny).x;
+    if (radius < .06 && !o.isSkinnedMesh) { o.visible = false; return; }
+    if (radius < .25) o.castShadow = false;
+    const m = o.material;
+    if (!m?.isMeshPhysicalMaterial) return;
+    if (!swapped.has(m)) {
+      const plain = new THREE.MeshStandardMaterial();
+      for (const key of ['name', 'color', 'roughness', 'metalness', 'map', 'bumpMap', 'bumpScale', 'normalMap', 'emissive', 'emissiveIntensity', 'emissiveMap', 'vertexColors', 'side', 'transparent', 'opacity', 'alphaTest', 'flatShading', 'skinning'])
+        if (key in m && key in plain) plain[key]?.copy && m[key]?.copy ? plain[key].copy(m[key]) : plain[key] = m[key];
+      swapped.set(m, plain); car.batchedMaterials.add(plain);
+    }
+    o.material = swapped.get(m);
+  });
+  return car;
+}
+
+// A car's shadow only needs its outline: the largest pieces cast it, the
+// trims, lamps and bolts (40–90 shadow draws a car) do not. Rivals keep six;
+// the player's own car, whose shadow is always in view, keeps twelve.
+export function trimShadows(car, keep) {
+  const casters = [], size = new THREE.Vector3();
+  car.root.updateMatrixWorld(true);
+  car.root.traverse(o => {
+    if (!o.isMesh || !o.castShadow) return;
+    const g = o.geometry; if (!g.boundingSphere) g.computeBoundingSphere();
+    casters.push([g.boundingSphere.radius * o.getWorldScale(size).x, o]);
+  });
+  casters.sort((a, b) => b[0] - a[0]).slice(keep).forEach(([, o]) => { o.castShadow = false; });
+  return car;
+}
+
 export function batchRacer(car, paint = null) {
   const paintColor = paint == null ? null : new THREE.Color(paint);
   car.batchedMaterials ??= new Set();

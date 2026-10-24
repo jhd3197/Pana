@@ -13,7 +13,7 @@ import { CAR_BUILDERS } from '/engine/models/vehicles/cars.js';
 import { randomAvatar } from '/engine/avatar.js';
 import { rng } from '/engine/random.js';
 import { disposeModel } from '/engine/models/props/game-table.js';
-import { FIELD } from './field.js';
+import { BASES, FIELD } from './field.js';
 import { createStreetGround, createBlockCourt, createSenoraWindow, createChainFence, createBleachers, createSuperbloque } from './studio-set.js';
 
 const COLORS = [0xf2a65a, 0x7cc6a4, 0xf28bb0, 0xffd166, 0x8ecae6, 0xe76f51, 0xb5a1e0, 0xf4e285];
@@ -62,8 +62,19 @@ export function createField(map = 'calle') {
   [[-34, -78, .2], [6, -92, -.1], [42, -74, -.35], [-62, -48, .9], [64, -40, -1]].forEach(([x, z, a], i) => {
     placed(group, createSuperbloque({ floors: 10 + i % 3 * 2 }), x, z, a, 4 + i % 2 * 3);
   });
+  // Numbered physical markers make the virtual runner stations readable.
+  const bases = BASES.map((spot, i) => {
+    const marker = new THREE.Mesh(new THREE.BoxGeometry(.95, .08, .95), new THREE.MeshStandardMaterial({ color: '#fffaf0', roughness: 1 }));
+    marker.name = `base-${i + 1}`; marker.position.set(spot.x, .09, spot.z); group.add(marker);
+    const canvas = document.createElement('canvas'); canvas.width = canvas.height = 128;
+    const ctx = canvas.getContext('2d'); ctx.fillStyle = '#0e0b24'; ctx.font = 'bold 92px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(String(i + 1), 64, 68);
+    const texture = new THREE.CanvasTexture(canvas); texture.colorSpace = THREE.SRGBColorSpace;
+    const label = new THREE.Mesh(new THREE.PlaneGeometry(.8, .8), new THREE.MeshBasicMaterial({ map: texture, transparent: true, depthWrite: false }));
+    label.rotation.x = -Math.PI / 2; label.position.y = .045; marker.add(label);
+    return marker;
+  });
   return {
-    group, animated,
+    group, animated, bases,
     senora: { x: windowX, z: wallZ + .4, y: .25 },
     update(t) { for (const a of animated) a(t); },
     dispose() {

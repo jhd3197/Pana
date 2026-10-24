@@ -12,6 +12,9 @@ let context;
 try {
   const options = { viewport: { width: 1440, height: 1000 }, reducedMotion: 'reduce', permissions: ['clipboard-read','clipboard-write'] };
   context = browser ? await browser.newContext(options) : await chromium.launchPersistentContext(process.env.PANA_QA_PROFILE, { ...options, headless: true });
+  await context.addInitScript(() => {
+    localStorage.setItem('pana:settings', JSON.stringify({ sound: false, music: false, quality: 'baja' }));
+  });
   const page = await context.newPage(); page.on('pageerror', e => errors.push(e.message));
   await page.goto(`${base}/studio.html#track-desierto`);
   await page.locator('#startup').waitFor({ state: 'hidden', timeout: 300000 });
@@ -22,7 +25,10 @@ try {
     await page.waitForFunction(id => panaLibrary.selected === id && document.querySelector('#preview-status').hidden, id, { timeout: 90000 });
   };
   const seek = async value => page.locator('#tour-progress').evaluate((input, value) => { input.value = String(value); input.dispatchEvent(new Event('input', { bubbles: true })); }, value);
-  const ids = await page.evaluate(() => panaLibrary.assets.filter(a => a.id.startsWith('track-')).map(a => a.id));
+  const selected = process.env.PANA_TOUR_TEST_TRACKS?.split(',').map(id => 'track-' + id);
+  const ids = (await page.evaluate(() => panaLibrary.assets.filter(a => a.id.startsWith('track-')).map(a => a.id)))
+    .filter(id => !selected || selected.includes(id));
+  if (selected) assert.deepEqual([...ids].sort(), [...selected].sort(), 'requested circuits exist');
   for (const id of ids) {
     await choose(id);
     assert.equal(await page.locator('#track-tour').isVisible(), true);
@@ -41,10 +47,10 @@ try {
           const over = p.y - T.heightAtS(at);
           if (over < 2.9 || over > 12 + lip) fail(`camera gap clearance ${over}`);
         } else {
-          const height = p.y - T.groundAt(p.x, p.z); maxHeight = Math.max(maxHeight, height);
+          const height = p.y - T.groundAt(p.x, p.z, T.heightAtS(at)); maxHeight = Math.max(maxHeight, height);
           if (height < 2.9 || height > 12) fail(`camera road clearance ${height}`);
         }
-        if (Math.abs(T.offsetOf(p.x, p.z)) > .05) fail('camera left centreline');
+        if (Math.abs(T.offsetOf(p.x, p.z, T.heightAtS(at))) > .05) fail('camera left centreline');
         if (previous) maxStep = Math.max(maxStep, p.distanceTo(previous));
         previous = p;
       }
@@ -121,5 +127,5 @@ try {
   await page.waitForFunction(() => panaLibrary.current && document.querySelector('#preview-status').hidden, null, { timeout: 90000 });
   assert.equal(await page.evaluate(() => panaLibrary.tour.playing), false);
   assert.deepEqual(errors, []); await writeFile(`${output}/routes.json`, JSON.stringify(records,null,2));
-  console.log('PASS: eight routes, playback, pause, scrub, copy, completion, orbit, keyboard, visibility, asset switch, mobile and warm cache');
+  console.log(`PASS: ${ids.length} routes, playback, pause, scrub, copy, completion, orbit, keyboard, visibility, asset switch, mobile and warm cache`);
 } finally { await context?.close(); await browser?.close(); }

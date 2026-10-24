@@ -16,9 +16,10 @@ export const smooth=THREE.MathUtils.smoothstep, mix=THREE.MathUtils.lerp;
 export const hill=(x,z,cx,cz,rx,rz,h)=>h*Math.exp(-(((x-cx)/rx)**2)-((z-cz)/rz)**2);
 
 export function finish(root,cellSize=110) {
-  const out=bake(root,{cellSize}),geos=new Set(),textures=new Set(),materials=new Set();
+  // Solid-colour props share batches through vertex colours (bake's tint).
+  const out=bake(root,{cellSize,tint:true}),geos=new Set(),textures=new Set(),materials=new Set(out.userData.tinted);
   root.traverse(o=>{if(o.geometry)geos.add(o.geometry);for(const m of [].concat(o.material||[]))if(m.map?.isCanvasTexture){textures.add(m.map);materials.add(m);}});
-  geos.forEach(g=>g.dispose());if(textures.size)out.userData.dispose=()=>{textures.forEach(t=>t.dispose());materials.forEach(m=>m.dispose());};return out;
+  geos.forEach(g=>g.dispose());if(materials.size)out.userData.dispose=()=>{textures.forEach(t=>t.dispose());materials.forEach(m=>m.dispose());};return out;
 }
 
 // Keep prototypes out of the live scene; each spatial cell owns its buffers.

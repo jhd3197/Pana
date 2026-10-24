@@ -17,7 +17,7 @@ try {
       T.group.traverseVisible(o=>{
         // Collectible coins intentionally pass between the driver and camera.
         // This guard checks opaque map geometry, not transient pickup overlap.
-        let pickup=false;for(let a=o;a&&a!==T.group;a=a.parent)if(a.name==='collectible-coin')pickup=true;
+        let pickup=false;for(let a=o;a&&a!==T.group;a=a.parent)if(a.name?.startsWith('collectible-coin'))pickup=true;
         if(!pickup&&o.isMesh&&[].concat(o.material).every(m=>!m.transparent))solids.push(o);
       });
       // Test the same renderer helper used by the game, with isolated camera

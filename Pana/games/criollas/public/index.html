@@ -40,10 +40,11 @@
     <section id="controls" class="pk-panel" hidden aria-label="Lanzamiento">
       <div class="turn-info"><b id="turn" aria-live="polite"></b><span id="measure"></span></div>
       <div class="shot-row">
-        <div class="pk-seg" id="shot-options"><button data-mode="arrime" aria-pressed="true">Arrime</button><button data-mode="boche" aria-pressed="false">Boche rastrero</button></div>
+        <div class="pk-seg" id="shot-options"><button data-mode="arrime" aria-pressed="true">Arrime</button><button data-mode="boche" aria-pressed="false">Rastrero</button><button data-mode="aire" aria-pressed="false">Por el aire</button></div>
         <div class="fine-controls pk-touch-zone"><button id="aim-left" class="pk-touch pk-touch--sm" data-icon="left" aria-label="Apuntar a la izquierda"></button><button id="aim-right" class="pk-touch pk-touch--sm" data-icon="right" aria-label="Apuntar a la derecha"></button></div>
         <button id="shoot" class="pk-btn pk-btn--primary">Mantén para lanzar <kbd class="pk-kbd" data-pana-hint>Espacio</kbd></button>
       </div>
+      <label id="loft-control" hidden>Altura <input id="loft" type="range" min="1.2" max="4" step="0.1" value="2.5"><output id="loft-value">2.5 m</output></label>
       <p class="control-hint" data-pana-hint>Toca la cancha para apuntar · ← → dirección · Mantén Espacio: la fuerza sube y baja, suelta para lanzar</p>
       <p id="guide-note" class="guide-note"></p>
     </section>

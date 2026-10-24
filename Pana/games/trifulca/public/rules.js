@@ -21,6 +21,7 @@ export const TUTORIAL = [
   { id: 'mover', need: 1 }, { id: 'jab', need: 3 }, { id: 'trompon', need: 1 }, { id: 'cubrir', need: 2 },
   { id: 'esquivar', need: 2 }, { id: 'contra', need: 1 }, { id: 'agarrar', need: 1 }, { id: 'pararse', need: 1 },
 ];
+export const TUTORIAL_COUNTER_WINDOW = 2;
 // Nobody in the crowd stands between the camera and the fight.
 export const CROWD_GAP = 1.15;
 const clampCrowd = (a) => Math.abs(a) < CROWD_GAP ? Math.sign(a || 1) * CROWD_GAP : a;
@@ -41,11 +42,11 @@ export function cleanInput(raw) {
   const axis = (v) => Number.isFinite(v) ? clamp(v, -1, 1) : 0;
   const count = (v) => Number.isInteger(v) ? ((v % 256) + 256) % 256 : 0;
   return { x: axis(raw?.x), z: axis(raw?.z), g: raw?.g === true, b: raw?.b === true,
-    gp: count(raw?.gp), e: count(raw?.e), a: count(raw?.a), t: count(raw?.t) };
+    gp: count(raw?.gp), e: count(raw?.e), a: count(raw?.a), t: count(raw?.t), k: count(raw?.k), s: count(raw?.s), v: count(raw?.v) };
 }
 
 const stats = () => ({ wins: 0, streak: 0, best: 0, kos: 0, caidas: 0, trompones: 0, manos: 0, skipped: 0, betWon: 0, shoves: 0, calmas: 0, agua: 0, fights: 0, throws: 0 });
-const NO_PRESS = { gp: 0, e: 0, a: 0, t: 0 };
+const NO_PRESS = { gp: 0, e: 0, a: 0, t: 0, k: 0, s: 0, v: 0 };
 
 export class Trifulca {
   constructor(seed = Date.now()) {
@@ -215,8 +216,11 @@ export class Trifulca {
   tutorialEvent(e) {
     const t = this.tutorial; if (!t || t.done) return;
     const step = TUTORIAL[t.step], me = t.me;
+    if (step.id === 'contra' && e.type === 'dodged' && e.id === me) {
+      this.body(me).contra = TUTORIAL_COUNTER_WINDOW;
+    }
     const hit = (kind) => e.type === kind && e.by === me;
-    const counts = { mover: false, jab: hit('hit') && !e.counter, trompon: hit('trompon'), cubrir: e.type === 'block' && e.id === me,
+    const counts = { mover: false, jab: hit('hit') && (!e.move || e.move === 'jab') && !e.counter, trompon: hit('trompon'), cubrir: e.type === 'block' && e.id === me,
       esquivar: e.type === 'dodged' && e.id === me, contra: (e.type === 'hit' || e.type === 'trompon') && e.by === me && e.contra,
       agarrar: e.type === 'shove' && e.by === me, pararse: e.type === 'rise' && e.id === me }[step.id];
     if (counts) this.tutorialCount();
@@ -374,7 +378,7 @@ export class Trifulca {
   tag(b) {
     if (this.mode !== 'parejas') return false;
     const partner = this.bodies.find(o => o.team === b.team && o.bench && !o.out);
-    if (!partner || Math.hypot(partner.x - b.x, partner.z - b.z) > 2.2 || ['down', 'dizzy', 'rise'].includes(b.act)) return false;
+    if (!partner || Math.hypot(partner.x - b.x, partner.z - b.z) > 2.2 || ['down', 'dizzy', 'rise', 'kick', 'sweep', 'toss', 'tumble'].includes(b.act)) return false;
     const { x, z, h } = b;
     partner.bench = false; Object.assign(partner, { x: x * .85, z: z * .85, h, act: 'idle', at: 0, inv: .5 });
     b.bench = true; b.charge = -1; this.benchSpot(b);
@@ -385,7 +389,7 @@ export class Trifulca {
   // Trifulca libre: agarrar picks up a chair or a crate within reach, or
   // throws the one in your hands. Returns false when it does neither.
   useProp(b) {
-    if (this.mode !== 'libre' || ['down', 'dizzy', 'stun', 'rise'].includes(b.act)) return false;
+    if (this.mode !== 'libre' || ['down', 'dizzy', 'stun', 'rise', 'kick', 'sweep', 'toss', 'tumble'].includes(b.act)) return false;
     if (b.prop) {
       const prop = this.props.find(p => p.id === b.prop);
       b.prop = null;

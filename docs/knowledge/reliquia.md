@@ -72,7 +72,7 @@ between panas carrying a big treasure.
   Holding E with a free hand catches a thrown hand item.
 - Going down drops both hands.
 
-Click / Space uses the right hand, right click / F the left: machete
+Click / V uses the right hand, right click / F the left: machete
 30 damage, fists 12, any treasure 15 (a melee bonk), honda fires glowing
 paint (6 damage, stuns mummies 1.2 s, splats stay on walls and floors), the
 botiquín heals 50 or instantly revives a pana in front, miche drinks.
@@ -219,3 +219,14 @@ With `?debug`, `window.reliquia` exposes `room`, `view`, `state`, `me`,
 
 Idle panas (no tool, no light) last about 50 s on floor 1 and 45 s deeper;
 a group of five on floor 1 often holds two minutes.
+
+Space (gamepad A) jumps; click/V (RT) uses the right hand. Touch has a Saltar
+button. A counter carries short taps through the live room and prediction; a
+5 m/s impulse with gravity 14 lands in about 0.7 s, with no double jumps.
+Existing horizontal collisions still protect pits, shafts and sealed walls.
+Heavy carrying, pushing, riding and downed states do not jump.
+
+When a background host catches up a second, newly received jumps are delayed
+within that simulation interval to their receive time. Otherwise a full short
+jump could take off and land before a single snapshot reached the other panas.
+The host assigns this delay; clients cannot supply it.

@@ -49,7 +49,7 @@ mango, cacao, coconut palm and tree fern. Planting zones retain thousands of
 placements. `forest-detail.js` assigns three fixed zones by distance from the
 nearest racing route in world metres (including each map's horizontal scale):
 
-- Within 2.75 road half-widths: unchanged game-detail models, fruit and shadows.
+- Within 2.75 road half-widths at Nítida: unchanged game-detail models, fruit and shadows.
   This preserves the prior 22 m source-space roadside band (35.2 m in Cata,
   28.6 m in Choroní and 22 m in Chuao).
 - Beyond that band up to 70 m (70.4 m in Cata): simplified native foliage
@@ -76,6 +76,14 @@ Across all tree instances, measured reductions are 38.1% in Cata
 in Choroní (4,841,319 to 2,951,599), and 31.5% in Chuao (9,543,933 to 6,533,023).
 Tree counts stay at 5,767, 5,325 and 8,922, including the same detailed roadside
 bands of 561, 388 and 698 trees respectively.
+
+Those bands now also respond to Carreritas quality: Equilibrada uses the middle
+models at the roadside, while Rápida uses the cheap distant models with visible
+trunks. Placement counts remain unchanged. In the current forest-quality proof,
+Chuao's forest falls from 6,454,283 to 1,184,247 triangles and 569 to 202 batches;
+Cata from 3,349,833 to 849,321 triangles, and Choroní from 2,922,507 to 798,437.
+These whole-forest geometry counts are not device FPS. See
+`carreritas-performance.md` for live tier switching and resource ownership.
 
 The source road-distance raster stops at 44 m: it cannot distinguish middle
 forest from distant hills. Use the runtime's uncapped `T.roadDistance` for the

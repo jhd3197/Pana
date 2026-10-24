@@ -16,7 +16,7 @@ const CAUCHO = {
     trunkShape: (t, a) => 1 + 0.2 * Math.max(0, Math.cos(a * 4 + t * 6)) ** 2 + Math.pow(1 - t, 8) * 0.9,
   }),
   bark: { bark: 0x77705f, barkLight: 0x9a9380, ridges: 8, ridgeTwist: 2.5 },
-  foliage: { kind: 'leaf', size: 1.1, tints: [0x2a5c2e, 0x336a34, 0x3b7238], blades: 24, bladeLen: 0.42, bladeWidth: 0.42, flat: 0.55, along: 2, alongFrom: 2 },
+  foliage: { openCrown: true, kind: 'leaf', size: 1.1, tints: [0x2a5c2e, 0x336a34, 0x3b7238], blades: 24, bladeLen: 0.42, bladeWidth: 0.42, flat: 0.55, along: 2, alongFrom: 2 },
   fruit: (parts, r, skeleton, s) => figs(parts, r, skeleton, s, { chance: 0.3, color: 0xb8432c }),
   extra: (group, parts, r, skeleton, s) => {
     const dark = new THREE.Color(0x857d6b), light = new THREE.Color(0x9f9884);

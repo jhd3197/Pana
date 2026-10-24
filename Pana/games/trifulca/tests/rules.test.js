@@ -1,7 +1,15 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { Trifulca, cleanInput, INTRO, AFTER, STAKE, START_DOLITAS, titlesFor } from '../public/rules.js';
-import { T, edge, arenaOf } from '../public/fight-rules.js';
+import { T, edge, arenaOf, control, newBody, dodgeCue } from '../public/fight-rules.js';
+
+test('counter practice gives a beginner time without extending ordinary counters',()=>{
+  const game=new Trifulca(1);game.addPlayer(1,'Ana',{});game.startTutorial(1);
+  game.tutorial.step=5;game.body(1).contra=T.contra;
+  game.tutorialEvent({type:'dodged',id:1,by:1000});assert.equal(game.body(1).contra,2);
+  game.tutorial=null;game.body(1).contra=T.contra;
+  game.tutorialEvent({type:'dodged',id:1,by:1000});assert.equal(game.body(1).contra,.8);
+});
 
 // A night between Ana (1) and Bruno (2) with no bots, already at the bell.
 function fight({ seconds = 60, arena = 'toldo' } = {}) {
@@ -219,7 +227,7 @@ test('a restore drops panas who left; a fighter who leaves loses', () => {
 });
 
 test('junk input is a released stick and no presses', () => {
-  assert.deepEqual(cleanInput({ x: 9, z: 'up', g: 1, gp: 300, e: -1 }), { x: 1, z: 0, g: false, b: false, gp: 44, e: 255, a: 0, t: 0 });
+  assert.deepEqual(cleanInput({ x: 9, z: 'up', g: 1, gp: 300, e: -1 }), { x: 1, z: 0, g: false, b: false, gp: 44, e: 255, a: 0, t: 0, k: 0, s: 0, v: 0 });
   assert.equal(titlesFor([]).length, 0);
 });
 
@@ -345,4 +353,23 @@ test('the tutorial walks through every move and nobody loses', () => {
   assert.ok(game.events.some(e => e.type === 'tutorial-fin'));
   run(game, 30, {});
   assert.equal(game.phase, 'fight', 'no bell in the tutorial');
+});
+
+
+test('a dodge press cancels an uncommitted punch charge instead of disappearing',()=>{
+ const b=newBody(1,'red',arenaOf('toldo')),events=[];
+ b.charge=.05;b.buffer=.2;
+ control(b,{g:true},{e:1,gp:0,a:0,t:0},e=>events.push(e));
+ assert.equal(b.act,'dodge');assert.equal(b.charge,-1);assert.equal(b.buffer,0);
+ assert.equal(events[0].type,'dodge');
+ b.act='trompon';control(b,{g:true},{e:1,gp:0,a:0,t:0},()=>{});
+ assert.equal(b.act,'trompon','committed attacks still have recovery');
+});
+
+
+test('dodge prompt waits until its safe window covers the heavy hit',()=>{
+ assert.equal(dodgeCue({act:'wind',at:0}),false);
+ assert.equal(dodgeCue({act:'wind',at:.25}),true);
+ assert.equal(dodgeCue({act:'trompon',at:.05,landed:false}),true);
+ assert.equal(dodgeCue({act:'trompon',at:.2,landed:true}),false);
 });

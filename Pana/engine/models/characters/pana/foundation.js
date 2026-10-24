@@ -3,7 +3,9 @@ import { gameDetail } from '/engine/models/characters/pana/detail.js';
 import { MarchingCubes } from 'three/addons/objects/MarchingCubes.js';
 
 // A small CPU template cache avoids resampling identical bodies for every player.
-// Instances clone buffers so disposal and later edits remain independent.
+// Instances clone buffers so disposal and later edits remain independent. The
+// shape is the same for every coat colour: the template keeps each vertex's
+// paw blend and every pana paints its own colours from it.
 const templates = new Map();
 
 // A continuous exposed body using the franela's broad chest and shoulders.
@@ -57,9 +59,14 @@ export function createFurFoundation({ body, arms, material, texture, fur }) {
     for (let side = 0; side < 2; side++) d = union(d, armDistance(x, y, z, side, rotation), 0.12);
     return d;
   };
-  const cacheKey = `${resolution}/${fur.color.getHexString()}`;
-  let geometry = templates.get(cacheKey)?.clone();
-  if (!geometry) {
+  const cacheKey = `${resolution}`, brown = new THREE.Color('#643215');
+  const paint = (geometry, paws) => {
+    const colors = []; for (const paw of paws) colors.push(...fur.color.clone().lerp(brown, paw).toArray());
+    geometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+  };
+  let geometry = templates.get(cacheKey)?.geometry.clone();
+  if (geometry) paint(geometry, templates.get(cacheKey).paws);
+  else {
     const mc = new MarchingCubes(resolution, cloth, false, false, 50000); mc.isolation = 0;
     for (let z = 0; z < resolution; z++) for (let y = 0; y < resolution; y++) for (let x = 0; x < resolution; x++) {
       const px = (x - half) / half * extent.x, py = (y - half) / half * extent.y + 1, pz = (z - half) / half * extent.z;
@@ -69,9 +76,8 @@ export function createFurFoundation({ body, arms, material, texture, fur }) {
     const count = mc.geometry.drawRange.count; geometry = new THREE.BufferGeometry();
     geometry.setAttribute('position', new THREE.Float32BufferAttribute(mc.geometry.attributes.position.array.slice(0, count * 3), 3));
     geometry.setAttribute('normal', new THREE.Float32BufferAttribute(mc.geometry.attributes.normal.array.slice(0, count * 3), 3));
-    const p = geometry.attributes.position, n = geometry.attributes.normal, colors = [], weights = [], indices = [], uvs = [];
+    const p = geometry.attributes.position, n = geometry.attributes.normal, paws = [], weights = [], indices = [], uvs = [];
     const normal = new THREE.Vector3();
-    const brown = new THREE.Color('#643215');
     for (let i = 0; i < p.count; i++) {
       const x = p.getX(i) * extent.x, y = p.getY(i) * extent.y + 1, z = p.getZ(i) * extent.z;
       p.setXYZ(i, x, y, z);
@@ -86,16 +92,16 @@ export function createFurFoundation({ body, arms, material, texture, fur }) {
       indices.push(0, side + 1, side + 3, 0);
       const boundary = -0.70 + Math.sin(armX * 16) * 0.015;
       const paw = (1 - smooth(armY, boundary - 0.065, boundary + 0.065)) * smooth(torsoD - armD, -0.02, 0.06);
-      colors.push(...fur.color.clone().lerp(brown, paw).toArray());
+      paws.push(paw);
       uvs.push(Math.atan2(z, x) / (Math.PI * 2) + 0.5, y / 2);
     }
-    geometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+    paint(geometry, paws);
     geometry.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2));
     geometry.setAttribute('skinIndex', new THREE.Uint16BufferAttribute(indices, 4));
     geometry.setAttribute('skinWeight', new THREE.Float32BufferAttribute(weights, 4));
     mc.geometry.dispose();
-    if (templates.size >= 4) { const key = templates.keys().next().value; templates.get(key).dispose(); templates.delete(key); }
-    templates.set(cacheKey, geometry.clone());
+    if (templates.size >= 4) { const key = templates.keys().next().value; templates.get(key).geometry.dispose(); templates.delete(key); }
+    templates.set(cacheKey, { geometry: geometry.clone(), paws });
   }
   const p = geometry.attributes.position;
   const group = new THREE.Group(); group.name = 'Fuller exposed body'; body.add(group);

@@ -154,6 +154,12 @@ function renderResult(state) {
     className: 'result-detail', me: room.seat >= 0 && team === teamOf(state, room.seat), end: `${score} / 24`, score: true,
     name: state.players.filter(p => teamOf(state, p.seat) === team).map(p => p.name).join(' + '),
     detail: `${state.result.counts[team] || 0} cartas${state.result.bonuses.length ? ` · +${state.result.bonuses[team]} al contar` : ''}` })));
+  $('result-race').replaceChildren(...state.scores.map((score,team)=>{
+    const row=document.createElement('label'),name=document.createElement('span'),bar=document.createElement('progress'),value=document.createElement('b');
+    name.textContent=state.players.filter(p=>teamOf(state,p.seat)===team).map(p=>p.name).join(' + ');
+    bar.max=24;bar.value=score;bar.setAttribute('aria-label',name.textContent+': '+score+' de 24 puntos');value.textContent=score+' / 24';
+    row.append(name,bar,value);return row;
+  }));
   const canStart = room.isHost || (state.phase === 'round-over' && room.seat === nextDealer(state));
   $('next-round').disabled = !canStart || !room.connected;
   $('next-round').textContent = !canStart ? state.phase === 'finished' ? 'El anfitrión abre la revancha' : `Ahora reparte ${state.players[nextDealer(state)].name}` : state.phase === 'finished' ? 'Jugar la revancha →' : 'Preparar siguiente reparto →';

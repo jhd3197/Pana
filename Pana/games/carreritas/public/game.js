@@ -35,8 +35,7 @@ import { abandonCup, advanceStage, beginStage, createCupSession, cupTrophy, fina
 import { advanceLap, ALL_SECTORS, RESCUE_TIME, OUT_TIME, STUCK_TIME } from './course-rules.js';
 import { createHazards } from './hazards.js';
 import { createMusic, TRACK_STYLE, GARAGE_SONG, RESULTS_SONG, songFor, finishSting } from './music.js';
-import { batchRacer, repaintCar, addBalloons, setGhost, syncGhostAppearance } from './racer-render.js';
-import { createWaterAmbience } from './water-ambience.js';
+import { batchRacer, trimDriver, trimShadows, repaintCar, addBalloons, setGhost, syncGhostAppearance } from './racer-render.js';
 import { padInput, pressed, keyInput, SPLIT_KEYS, wrongWayStep, WRONG_WAY_TIME, lapSplit } from './controls.js';
 import { PAINTS, paintOf, FLAMES, earnings, mirrorUnlocked, repaintHex } from './shop.js';
 import { createProfileStore, recordCupTrophy, trophyCredits } from './cup-profile.js';
@@ -44,7 +43,7 @@ import { settleRace } from './cup-rewards.js';
 import { CLASSIFICATION_TEXT, approximateCupText, cupStandingsView, nextStageText, rankChangeText, tiebreakText } from './cup-ui.js';
 import { soaringVulture } from '/engine/models/fauna/birds/soaring-vulture.js';
 import { tickWind } from '/engine/models/vegetation/plant-kit.js';
-import { DRAFT_TIME, DRAFT_BOOST, DRIFT_LEVELS, driftLevel, startBoost, startCue, inSlipstream, loseCoins } from './drive-rules.js';
+import { DRAFT_TIME, DRAFT_BOOST, DRIFT_LEVELS, driftLevel, startBoost, startCue, inSlipstream, loseCoins, physicsFrame, DrivingSpring as Spring } from './drive-rules.js';
 
 const $ = (id) => document.getElementById(id), esc = (text) => String(text).replace(/[&<>"]/g, (ch) => `&#${ch.charCodeAt(0)};`);
 const rand = (a, b) => a + Math.random() * (b - a), pick = (list) => list[Math.floor(Math.random() * list.length)];
@@ -74,14 +73,7 @@ const LINES = {
   honk: { meep: '¡MEEP MEEP!', cucaracha: '♪ Cucaracha ♪', grave: '¡PAAAAN!', fiesta: '♪ ¡Rumba! ♪' },
 };
 
-class Spring {
-  constructor() { this.x = 0; this.v = 0; }
-  step(target, k, c, dt) {
-    this.v += (k * (target - this.x) - c * this.v) * dt;
-    this.x += this.v * dt;
-    return this.x;
-  }
-}
+let driverCards = null; import('./driver-cards.js').then(m => { driverCards = m; });   // rival panas as cards
 
 // ---------- renderer ----------
 const renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -176,6 +168,7 @@ function garageCar(index) {
 function showCar(i) {
   garage.index = (i + CARS.length) % CARS.length;
   const def = CARS[garage.index];
+  if (wallet.car !== def.id) { wallet.car = def.id; saveWallet(); }
   garage.turn.clear();
   // Bounded garage models; thumbnails borrow these same instances.
   // Race models stay independent because their parts can break off.
@@ -310,7 +303,6 @@ function garageMusic() {
   if (mode === 'garage' && sound.ctx && music.song !== GARAGE_SONG) music.play(GARAGE_SONG, { fallback: 'calipso' });
 }
 for (const type of ['pointerdown', 'keydown']) addEventListener(type, () => setTimeout(garageMusic), true);
-const waterAmbience = createWaterAmbience(sound);
 
 const world = createRaceWorld({ scene: race.scene, cameras: [race.camera, race.camera2], puffs: race.puffs, shockwaves: race.shockwaves,
   sound, track: () => T, groundAt, racing: () => mode === 'race' });
@@ -323,12 +315,14 @@ race.debris = new Debris(race.scene);
 const lazyRace = (key, stub, load, make) => { race[key] = stub; return load.then(m => { race[key] = make(m); return m; }); };
 let driftFx = null;
 import('./drift-fx.js').then(m => { driftFx = m; });
+lazyRace('water', { update() {}, stop() {} }, import('./water-ambience.js'), m => m.createWaterAmbience(sound));   // river and sea sound
 lazyRace('skidMarks', { lay() {}, update() {}, clear() {} }, import('./skid-marks.js'), m => new m.SkidMarks(race.scene, { focus: () => race.player }));
 lazyRace('slowMo', { update() {}, trigger() {}, scale: 1, punch: 0 }, import('./slow-mo.js'), m => m.createSlowMo());
 lazyRace('glow', { boost() {}, impact() {}, coins() {} }, import('./race-fx.js'), m => m.createRaceFx(race.scene));   // turbo, hit and coin glow
 lazyRace('tags', { update() {}, clear() {} }, import('./name-tags.js'), m => m.createNameTags());   // names over nearby racers
 lazyRace('hud', { update() {}, reset() {} }, import('./race-hud.js'), m => m.createRaceHud());   // standings pop-in, speed gauge
 lazyRace('audio', { update() {} }, import('./drift-audio.js'), m => m.createDriftAudio(sound));   // drift screech, chimes, outboard
+lazyRace('shadowCache', null, import('./shadow-cache.js'), m => m.cacheShadows(renderer, () => race.trackGroup));   // still scenery cast once per cell
 lazyRace('props', { setTrack() {}, sync() {}, update() {} }, import('./breakables.js'), m => m.createBreakables({ race, sound, track: () => T }))
   .then(() => { if (T?.group) race.props.setTrack(T); });   // barrels and crates to smash
 const screensReady = lazyRace('screens', { grid() {}, finish() {}, tick() {} }, import('./race-screens.js'), m => m.createRaceScreens({sound,taller}));
@@ -662,7 +656,9 @@ function makeRacer(index, isPlayer, name, wheelId = 'calle', avatar = null, cosm
   cosmetics=cleanCosmetics(cosmetics ?? (isPlayer ? raceStyle(index) : aiVessels(CARS[index].id)));
   const car = def.build(who.avatar, wheel.wheel ?? undefined, renderConfig(cosmetics.parts));
   repaintCar(car, def.color, paintOf(cosmetics));
-  batchRacer(car,paintOf(cosmetics,def.color));
+  batchRacer(car,paintOf(cosmetics,def.color)); trimDriver(car);
+  if (!isPlayer) { driverCards?.cardDriver(car); driverCards?.farCar(car); }
+  trimShadows(car, isPlayer ? 12 : 6);
   // Retain ownership even after a bumper detaches and expires from the scene.
   car.geometries = new Set();
   car.ownedMaterials = new Set();
@@ -851,7 +847,7 @@ async function startRace(playerIndex, wheelId = garage.wheel, roster = null) {
   $('play').disabled = true;
   sound.stopEngine();
   music.stop();
-  waterAmbience.stop();
+  race.water.stop();
   const step = async (label, progress) => {
     $('loading-status').textContent = label;
     $('loading-progress').value = progress;
@@ -982,15 +978,27 @@ async function startRace(playerIndex, wheelId = garage.wheel, roster = null) {
     race.ended = false;
     race.paid = false;
     race.earned = 0; race.rewardDetail = null; race.lapRecord = false;
+    await screensReady; if (generation !== loadGeneration) return;
+    $('loading').classList.add('hidden'); $('garage').classList.add('hidden');
+    await race.screens.prepare(race.cars, race.player, T, AUTO || (roster && net.state.startAt > 0)); if (generation !== loadGeneration) return;
+    race.screens.tick('off', 0); $('loading').classList.remove('hidden');
     if (!await step('Preparando los gráficos…', 0.81)) return;
     renderer.toneMapping = THREE.NoToneMapping;
     updateRace(0);
     const { prepareRace } = await import('./prepare-race.js');
     if (generation !== loadGeneration) return;
-    if (!await prepareRace(renderer, race.scene, race.p2 ? [race.camera, race.camera2] : race.camera, step)) return;
-    await screensReady; if (generation !== loadGeneration) return;
-    $('loading').classList.add('hidden'); $('garage').classList.add('hidden');
-    await race.screens.prepare(race.cars, race.player, T, AUTO || (roster && net.state.startAt > 0)); if (generation !== loadGeneration) return;
+    // Each gate vessel sculpts its own pana (~300 ms): build and warm them
+    // behind the cover, not as each racer reaches the gate on lap one.
+    await gatesReady; const vessels = [];
+    for (const c of race.cars) { const built = gatesApi.prebuild(c); vessels.push(...built); if (built.length && !await step('Preparando los vehículos…', 0.81)) return; }
+    // Cars turn translucent at GO (start grace): compile that variant now too.
+    const solid = race.cars.filter(c => !c.ghost);
+    vessels.forEach(g => { g.visible = true; }); solid.forEach(c => { c.ghost = true; syncGhostAppearance(c); });
+    try {
+      try { if (!await prepareRace(renderer, race.scene, race.p2 ? [race.camera, race.camera2] : race.camera, step)) return; }
+      finally { solid.forEach(c => { c.ghost = false; syncGhostAppearance(c); }); }
+      await renderer.compileAsync(race.scene, race.camera);   // and their solid variants
+    } finally { vessels.forEach(g => { g.visible = false; }); }
     if (roster) {
       // Everyone counts down together once every pana has loaded.
       net.loaded();
@@ -1004,7 +1012,7 @@ async function startRace(playerIndex, wheelId = garage.wheel, roster = null) {
     } else if (!await step('¡Listo!', 1)) return;
     if (race.cup && !roster) markRacing(race.cup.session);
     race.loadingRaceId = 0;
-    race.state = 'count'; race.screens.grid(race.cars, race.player, T);
+    race.state = 'count';
     music.play(songFor(T.id, race.mode), { fallback: TRACK_STYLE[T.id] });
     $('count').textContent = '3';
     $('garage').classList.add('hidden');
@@ -1052,7 +1060,7 @@ function toGarage() {
   clearRace();
   sound.stopEngine();
   music.stop();
-  waterAmbience.stop();
+  race.water.stop();
   $('race').classList.add('hidden');
   $('garage').classList.remove('hidden');
   garage.controls.enabled = true;
@@ -1105,7 +1113,7 @@ const menu = createGameMenu({ pad: { native: true, playing: () => mode === 'race
     if (mode !== 'race' || race.netRace) return;
     paused = true;
     music.pause();
-    waterAmbience.stop(); race.audio.update(null, 0, false);   // no screech under the pause menu
+    race.water.stop(); race.audio.update(null, 0, false);   // no screech under the pause menu
     if (sound.engine) sound.engine.g.gain.setTargetAtTime(0, sound.ctx.currentTime, 0.05);
   },
   onClose() { if (paused) music.resume(); paused = false; acc = 0; clock.reset(); },
@@ -1163,7 +1171,7 @@ addEventListener('keydown', (e) => {
     if (e.code === 'Comma') race.items.select(race.p2);
     if (e.code === 'Backspace') { e.preventDefault(); rescue(race.p2); }
   }
-  if (k === 'escape' && mode === 'loading') toGarage();
+  if (k === 'escape' && mode === 'loading' && !document.querySelector('dialog:modal')) toGarage();
   if (k === 'h' && !e.repeat) {
     if (mode === 'race' && race.player) honk(race.player);
     else if (mode === 'garage') garageHonk();
@@ -1496,11 +1504,13 @@ function syncCar(c, dt) {
 
   // the driver: big head lags behind every bump and turn
   const d = car.driver;
-  d.neck.rotation.z = c.headLag.step(-lean * 0.5 + sr * 2, 90, 5, dt);
-  d.neck.rotation.x = -dive * 0.25 + c.heave.v * 0.01;
-  d.neck.rotation.y = c.steer * 0.45;
-  const open = c.scream > 0 || c.honkT > 0 || (!c.onGround && c.airTime > 0.3);
-  d.update(dt, { open, dizzy: c.dizzy > 0, look: c.steer });
+  if (!(car.driverCard || car.far) || driverCards.showRival(car, c, [race.camera, race.p2 && race.camera2])) {
+    d.neck.rotation.z = c.headLag.step(-lean * 0.5 + sr * 2, 90, 5, dt);
+    d.neck.rotation.x = -dive * 0.25 + c.heave.v * 0.01;
+    d.neck.rotation.y = c.steer * 0.45;
+    const open = c.scream > 0 || c.honkT > 0 || (!c.onGround && c.airTime > 0.3);
+    d.update(dt, { open, dizzy: c.dizzy > 0, look: c.steer });
+  }
   for (const p of car.danglers) {
     p.rotation.z = p.rotation.z * 0.92 + lean * 0.5 + Math.sin(race.clock * 7) * 0.02;
     p.rotation.x = p.rotation.x * 0.92 + dive * 0.4;
@@ -1605,7 +1615,7 @@ function presentRace(dt) {
   for (const o of T.animated) o.userData.tick(race.clock, dt);   // scenery: flags, windmills, birds…
   sound.setEngine(race.player.vf);
   race.audio.update(race.player, dt, race.state === 'go' && !paused);
-  waterAmbience.update(T,race.player.x,race.player.z);
+  race.water.update(T,race.player.x,race.player.z);
 
   // HUD
   const p = race.player;
@@ -2178,7 +2188,7 @@ async function goOnline(code, lead) {
 // ======================================================================
 let mode = 'garage';
 const clock = new THREE.Timer().reset();
-const STEP = 1 / 60, MAX_CATCHUP = 5 * STEP - 1e-9;
+const STEP = 1 / 60;
 let acc = 0;
 
 const FINE_POINTER = matchMedia('(pointer: fine)').matches;
@@ -2197,14 +2207,12 @@ function frame() {
     pollPads();
     // fixed physics steps: same race speed at any frame rate
     race.slowMo.update(dt);
-    if (!paused) acc += dt * SPEED * (race.netRace ? 1 : race.slowMo.scale);   // online races never dilate: the room's clock is the room's
+    const budget = physicsFrame(acc, paused ? 0 : dt, SPEED, race.netRace ? 1 : race.slowMo.scale);
+    acc = budget.remainder;
     let stepped = 0;
-    while (acc >= STEP && mode === 'race') {
+    for (let i = 0; i < budget.steps && mode === 'race'; i++) {
       updateRace(STEP, false);
-      acc -= STEP; stepped += STEP;
-      // After a stall, run a few steps and let the race lose the rest: catching
-      // up fully would make this frame late too. ?speed scales it, or it would be lost.
-      if (stepped >= MAX_CATCHUP * SPEED) { acc = 0; break; }
+      stepped += STEP;
     }
     if (stepped && mode === 'race') presentRace(stepped);
     sendPoses();
@@ -2253,7 +2261,7 @@ if (ROOM) goOnline(ROOM, QS.has('lead'));   // first: a reload reclaims its seat
 await Promise.all([featsReady, comboReady, ghostReady, gatesReady]);   // milestone toasts, the style score and the ghost are ready before any race can start
 if (DEBUG) await loadTracks();
 selectTrack(QS.get('track') || savedTrack);
-showCar(0);
+showCar(Math.max(0, CARS.findIndex(c => c.id === wallet.car)));
 frame();
 let lastGarageInput = performance.now();
 for (const event of ['pointerdown', 'wheel', 'keydown']) {

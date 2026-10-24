@@ -121,3 +121,15 @@ test('host can return to room settings after results without losing players or o
   assert.deepEqual(s.players, players); assert.deepEqual(s.options, options);
   assert.deepEqual(s.scores, [0, 0]); assert.equal(s.balls.filter(b => !b.pocketed).length, 10);
 });
+
+
+test('individual tables seat two friends opposite each other and reject team-sized rosters',()=>{
+ const s=createGame();s.players[0].id=10;s.players[2].id=11;
+ assert.ok(act(s,'options',{options:{format:'duel',variant:'nine',starter:'anfitrion'}},10));
+ assert.deepEqual(s.players.slice(0,2).map(p=>p.id),[10,11]);
+ assert.equal(act(s,'swap',{from:1,to:2},11),false);
+ assert.ok(act(s,'start',{},10));assert.deepEqual(s.activeSeats,[0,1]);
+ outcome(s);assert.equal(s.turn,1);outcome(s);assert.equal(s.turn,0);
+ const group=createGame();for(let i=0;i<3;i++)group.players[i].id=10+i;
+ assert.equal(act(group,'options',{options:{format:'duel'}},10),false);
+});

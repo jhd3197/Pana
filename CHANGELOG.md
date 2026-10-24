@@ -8,6 +8,168 @@ becomes the GitHub release's notes.
 
 ## Unreleased
 
+- **Los panas y los escenarios se preparan más rápido al entrar a jugar.**
+  La ropa reutiliza sus ajustes al cuerpo y los escenarios agrupan sus
+  piezas con menos copias, conservando sus formas y colores.
+
+- **Trifulca estrena patadas, barridas, volteos y golpes con más cuerpo.**
+  I da una patada, U barre y O voltea al rival: gastan aguante y funcionan
+  en línea, con botones táctiles y control. Nuevas poses y estallidos de
+  cómic acompañan cada golpe.
+
+- **En Carreritas en línea los carros de tus panas se ven fluidos.**
+  Ya no tiemblan al avanzar: se mueven tan suave como el tuyo.
+
+- **Chuao estrena un Chorrerón con cuerpo y la plaza ya no pisa la vía.**
+  La cascada cae curva, con chorros, espuma y rocío; los cerros lucen más
+  tupidos, y el patio de cemento y el cacao al sol terminan en el borde de
+  la carretera junto a la iglesia.
+
+- **Los 16 carros de Carreritas estrenan carrocería suave y cabina por dentro.**
+  Faros, parrillas y adornos se apoyan en la carrocería curva, y cada carro
+  trae tablero, asientos y volante alrededor de tu pana.
+
+- **Carreritas corre más fluido sin cambiar su aspecto.**
+  Las lanchas y avionetas se preparan en la pantalla de carga, sin tirones al
+  llegar al río; los bosques lejanos y los panas rivales lejanos son fotos
+  de sí mismos, y las sombras de los rivales usan solo sus piezas grandes.
+
+- **Bolas Criollas permite bochar por el aire y ver dónde caerá la bola.**
+  Ajusta la altura y sigue el arco hasta el aro de caída; otro blanco marca
+  dónde frena. La guía sigue la fuerza y avisa cuando el tiro se va fuera.
+
+- **Ludo mueve las fichas sin decisiones y reduce las rachas sin salir.**
+  Los movimientos únicos y las salidas equivalentes son automáticos; la ayuda
+  opcional interviene tras tres a cinco intentos fallidos, igual para todos.
+
+- **Reliquia permite saltar con Espacio, control o toque.**
+  El salto se comparte con tus panas; clic o V usa la mano derecha.
+
+- **Trifulca responde a esquivar mientras preparas un golpe.**
+  La esquiva cancela la carga inicial y el aviso aparece a tiempo para evitar
+  el trompón, en vez de pedir una esquiva demasiado temprana.
+
+- **Billar ofrece una mesa individual de uno contra uno.**
+  Bola 8 y Bola 9 permiten elegir rivales individuales o mantener los equipos.
+
+- **Carreritas muestra números mayores y controles visibles para lanzar atrás.**
+  Las estadísticas conservan un tamaño legible; los botones de objetos también
+  aparecen en escritorio y recuerdan el control X para lanzar hacia atrás.
+
+- **Bolas Criollas distingue la ventaja provisional de una victoria.**
+  El indicador dice quién va más cerca mientras quedan lanzamientos.
+
+- **Ludo distingue los seguros y muestra juntas las fichas que comparten casilla.**
+  Un doble borde y una leyenda aclaran dónde no se captura; las fichas se
+  distribuyen lado a lado dentro de la casilla, sin taparse en una torre.
+
+- **En Ludo cada pana se sienta junto al patio de su color.**
+  Verde y azul dejan de aparecer intercambiados; los cachos y lanzamientos
+  también salen del lado correcto de cada jugador.
+
+- **Póquer muestra las cartas comunitarias en grande encima de la mesa.**
+  Los valores y palos se leen de frente; tus cartas también crecen y la cámara
+  deja espacio para la lectura en teléfonos, sin revelar manos ajenas.
+
+- **Chapita muestra las bases y facilita batear sin perder atrapadas en línea.**
+  Las bases numeradas señalan a los corredores; el lanzamiento deja libre el
+  plato y el bateo tiene una guía de tiempo y más margen. Las atrapadas esperan
+  la respuesta del defensor antes de conceder hits o carreras.
+
+- **Carreritas recuerda tu carro y conserva los ajustes de cada carrocería.**
+  Al volver se abre el último carro elegido; cambiar de carro ya no reemplaza
+  la pintura ni las piezas de un vehículo que habías configurado.
+
+- **Rápida reduce los efectos de Cosmos, Nubes, Volcán y Arrecife.**
+  Simplifica los cielos, nubes y lava, apaga las cáusticas submarinas y reduce
+  partículas, transparencias y actualizaciones decorativas sin cambiar la pista.
+
+- **Rápida aligera los bosques de Carreritas y mantiene el ritmo de carrera.**
+  Chuao y los demás circuitos con bosques compartidos usan árboles más simples
+  al bajar la calidad; los cuadros lentos ya no frenan el carro por debajo de
+  doce cuadros por segundo dentro del límite de recuperación de 250 ms.
+
+- **Trifulca, Bochinche y Parapente estrenan ilustraciones propias.**
+  Sus tarjetas y portadas usan arte nuevo; quince circuitos de Carreritas
+  muestran ilustraciones en el selector, las miniaturas y la carga.
+
+- **Los escenarios de Bochinche aprovechan los modelos de la biblioteca.**
+  Los Roques incorpora cocoteros y casitas detallados; Salto Ángel, vegetación
+  de selva; Catatumbo, mangles, redes, cajas de pesca y un peñero.
+
+- **Billar muestra controles de tiro más simples y legibles.**
+  Una sola indicación explica la carga; el mensaje de turno conserva su espacio
+  y el botón Tirar se adapta a escritorio y móvil.
+
+- **Los Roques llega a Bochinche y cuatro juegos estrenan HUD Banderín.**
+  Salta entre el cayo, el muelle, la balsa y el peñero. Bochinche, Caída,
+  Billar y Trifulca comparten placas, botones y resultados más claros; los
+  indicadores muestran tus panas, vidas y puntuaciones reales.
+
+- **Bochinche pelea en Salto Ángel y bajo los rayos del Catatumbo.**
+  Escoge escenario en la sala: curiara móvil, muelle con avisos de rayos y
+  ataques Rayo, Candela, Hielo y Jonrón con efectos y daño sincronizados.
+
+- **Los pepazos tumban a tu pana en la dirección del impacto.**
+  Las caídas animan el personaje propio con física de partículas y colisión
+  contra el suelo y la cobertura; reaparecer restaura la pose. El Cohetón tiene
+  un sonido sintetizado propio.
+
+- **Los trompones de Trifulca conectan cuando se extiende el guante.**
+  Golpes, agarres y poses comparten sus tiempos de contacto; los impactos
+  ligeros tienen una capa de sonido más definida. El tutorial da dos segundos
+  para practicar el contragolpe; las peleas conservan su ventana habitual.
+  Un tirón de rendimiento ya no salta de golpe todo el aviso de un ataque.
+
+- **Dominó verifica las jugadas recibidas y da personalidad a los bots.**
+  La mesa reconstruye los cambios desde un registro de reglas, recupera
+  segmentos perdidos y conserva la partida al cambiar de anfitrión. Los bots
+  tienen ritmos y preferencias propios, probados en diez mil manos.
+
+- **Carreritas da mejores oportunidades de remontar y un respiro entre ataques fuertes.**
+  Las cajas consideran la distancia y el puesto, con más jugo y protección
+  para quien quedó atrás. Aguacero y Chancleta no encadenan castigos sobre
+  el mismo pana; los bots tardan en reaccionar y repetir una caja no mejora sus premios.
+
+- **Prueba un rayo en la arena de Bochinche.**
+  El laboratorio local permite comparar chispas, destello, pausa de impacto
+  y sacudida de cámara, con cámara lenta y un golpe sin efectos.
+  Los rayos tienen un núcleo blanco, resplandor azul y ramificaciones finas;
+  el impacto usa una textura de luz suave y chispas.
+
+- **Trifulca mantiene las cabezas estables y explica el estado de la pelea.**
+  Barras inclinadas, retratos de tus panas, presentación VS y estadísticas
+  reales al terminar. Mareo, aguante y caídas tienen etiquetas; el tutorial
+  sigue tu mando sin duplicar controles. El mando cancela la vibración al salir o cambiar
+  de ventana, y el enlace de salida no inicia otro pulso.
+
+- **Mira los carros de tus panas antes de guardar sus kits.**
+  La Parrilla muestra cada carro con su pintura y piezas reales; abre su
+  ficha para verlo en 3D o guardar una referencia para el taller.
+
+- **El taller de Carreritas muestra sus opciones sin tiras de desplazamiento.**
+  Carros y colores en una sola fila de tarjetas, sin descripciones por carro;
+  muestras grandes, etiquetas legibles y páginas de piezas; las cornetas
+  solo muestran sonidos y la llama del turbo está en Pintura y estilo.
+  La sala mantiene los asientos y ajustes dentro de la pantalla.
+
+- **Revisa y copia los kits antes de entrar a la carrera.**
+  La Parrilla aparece antes de preparar los gráficos; al llegar a la pista,
+  solo queda la cuenta de 3, 2, 1, sin paneles tapando la salida.
+
+- **El recorrido de Pana Studio sigue el peralte de las pistas.**
+  La cámara conserva su altura en la curva inclinada de Plaza y sobre la laguna
+  de Margarita; los puntos copiados incluyen la altura real del recorrido.
+
+- **Carreritas suma Cosmos, Mérida, Arrecife, Volcán, Nubes y Dulce.**
+  Corre entre planetas, montañas, corales, lava, islas flotantes y dulces;
+  cruza la laguna de Mérida en lancha y comparte los seis circuitos con tus panas.
+
+- **Los mangos, bucares y árboles de la selva tienen follaje más natural.**
+  Nueve especies cambian las copas macizas por hojas y racimos abiertos,
+  con menos geometría en los mapas y sin texturas ni dibujos adicionales.
+  Los pinos y los árboles simples para el fondo conservan su aspecto.
+
 ## 0.6.0 - 2026-10-23
 
 - **Las migraciones grandes reparten sus pruebas entre varios ejecutores.**

@@ -1,3 +1,7 @@
+import { createArena as roques } from './arena-los-roques.js';
+import { createAttackEffects } from './attack-effects.js';
+import { createArena as salto } from './arena-salto-angel.js';
+import { createArena as catatumbo } from './arena-catatumbo.js';
 // Verdant Grove's collision layout, rebuilt as a floating 3D arena.
 import * as THREE from 'three';
 import { createTableWorld } from '/engine/worlds/table-world.js';
@@ -9,10 +13,26 @@ import { createImpactEffects } from './impact-effects.js';
 import { animateFighter } from './fighter-animation.js';
 import { getFighterDefinition } from './combat/roster.js';
 const SCALE = .014, COLORS = ['#ffc629', '#2ad1b2', '#fa7467', '#a798e8', '#77b8ff', '#f5a552'];
-export function createBochincheScene(canvas) {
+export function createBochincheScene(canvas, { practice = false } = {}) {
   const stage = createTableWorld(canvas, { fit: 'window', arena: false, sky: false, background: '#c8e3df', fog: [48, 115], sun: { box: 23, far: 90 } });
   const { scene, camera, renderer } = stage, own = new THREE.Group(); scene.add(own);
-  const scenery = dressArena(own, SCALE), effects = createImpactEffects(own, SCALE);
+  let arenaRoot = new THREE.Group(); own.add(arenaRoot);
+  let scenery = dressArena(arenaRoot, SCALE), authored = null, arenaId='verdant-grove', fightTime=0, arenaRound=-1;
+  const lights=scene.children.filter(o=>o.isLight), effects = createImpactEffects(own, SCALE);
+  function setArena(id, round) {
+    if(id===arenaId&&(id==='verdant-grove'||round===arenaRound))return;
+    arenaRound=round;
+    authored?.dispose(); authored=null;disposeModel(arenaRoot);arenaRoot.removeFromParent();
+    arenaRoot=new THREE.Group();own.add(arenaRoot);arenaId=id;
+    const custom=id!=='verdant-grove';
+    lights.forEach(l=>l.visible=!custom); camera.far=custom?4000:150;
+    scene.fog.near=custom?100:48;scene.fog.far=custom?1000:115;
+    scene.fog.color.set(id==='catatumbo'?'#141030':'#c8e3df');
+    renderer.toneMappingExposure=1;
+    if(custom) {authored=(id==='salto-angel'?salto:id==='los-roques'?roques:catatumbo)(scene,renderer,camera);scenery=()=>{};}
+    else scenery=dressArena(arenaRoot,SCALE);
+  }
+  const attacks=createAttackEffects(own);let fighters=[];
   const material = color => new THREE.MeshStandardMaterial({color,roughness:.65});
   const panas = new Map(), objects = new Map(), textures = new Map();
   const loader = new THREE.TextureLoader();
@@ -21,9 +41,16 @@ export function createBochincheScene(canvas) {
     return textures.get(kind);
   }
   let time = 0;
-  const framed = new THREE.Box3(new THREE.Vector3(-7,-.5,-1),new THREE.Vector3(7,5,1));
+  const baseBounds = () => practice
+    ? new THREE.Box3(new THREE.Vector3(-4,-.1,-1),new THREE.Vector3(4,2.5,1))
+    : arenaId==='los-roques' ? new THREE.Box3(new THREE.Vector3(-15,-.5,-1),new THREE.Vector3(22,10,1))
+    : arenaId!=='verdant-grove' ? new THREE.Box3(new THREE.Vector3(-10.5,-.5,-1),new THREE.Vector3(10.5,8,1))
+    : new THREE.Box3(new THREE.Vector3(-7,-.5,-1),new THREE.Vector3(7,5,1));
+  const framed = baseBounds();
   function update(state) {
-    effects.update(state);
+    setArena(state.fight?.stage.id ?? state.options?.stage ?? 'verdant-grove',state.round);
+    fightTime=(state.fight?.frame??0)/60;
+    effects.update(state); fighters=state.fight?.fighters??[];
     const live = new Set();
     state.players.forEach((p, slot) => {
       live.add(p.id);
@@ -50,14 +77,14 @@ export function createBochincheScene(canvas) {
     const shown = new Set();
     for (const o of entities) {
       shown.add(o.key); let m = objects.get(o.key);
-      if (!m) { m = new THREE.Mesh(o.item ? new THREE.BoxGeometry(1.6,1.6,1.6) : new THREE.SphereGeometry(1,12,8), o.item ? new THREE.MeshStandardMaterial({map:itemTexture(o.kind),color:'#ffffff'}) : material(COLORS[o.owner])); own.add(m); objects.set(o.key,m); }
+      if (!m) { m = new THREE.Mesh(o.item ? new THREE.BoxGeometry(1.6,1.6,1.6) : new THREE.SphereGeometry(1,12,8), o.item ? new THREE.MeshStandardMaterial({map:itemTexture(o.kind),color:'#ffffff'}) : material(o.kind==='fireball'?'#ff6a2a':COLORS[o.owner])); own.add(m); objects.set(o.key,m); }
       m.position.set(o.position.x*SCALE,o.position.y*SCALE,.1); m.scale.setScalar(Math.max(.14,o.radius*SCALE));
     }
     for (const [id,m] of objects) if (!shown.has(id)) { disposeModel(m); m.removeFromParent(); objects.delete(id); }
   }
-  function frame(dt) {
-    time += dt; scenery(time);
-    const {w,h} = stage.resize(), bounds = new THREE.Box3(new THREE.Vector3(-7,-.5,-1),new THREE.Vector3(7,5,1));
+  function frame(dt, beforeDraw) {
+    time += dt; attacks.update(fighters,time); scenery(time); authored?.frame(fightTime,dt);
+    const {w,h} = stage.resize(), bounds = baseBounds();
     for (const e of panas.values()) {
       const f=e.target, pos=new THREE.Vector3(f.position.x*SCALE,(f.position.y-f.size.height/2)*SCALE,.2);
       if (!e.initialized || f.state==='respawn') {e.root.position.copy(pos);e.initialized=true;}
@@ -89,11 +116,12 @@ export function createBochincheScene(canvas) {
     }
     const touch = matchMedia('(pointer: coarse)').matches;
     framed.min.lerp(bounds.min,1-Math.exp(-dt*6)); framed.max.lerp(bounds.max,1-Math.exp(-dt*6));
-    stage.frameCamera(framed,[0,.14,1],{x:16,y:touch?105:100,width:Math.max(160,w-32),height:Math.max(100,h-(touch?185:245))});
+    stage.frameCamera(framed,[0,.14,1],{x:16,y:practice?80:touch?105:100,width:Math.max(160,w-32),height:Math.max(100,h-(practice?145:touch?185:245))});
     for (const m of objects.values()) m.rotation.y+=dt*2;
     effects.frame(dt,camera);
+    beforeDraw?.(camera);
     stage.draw(dt);
   }
-  function dispose() { panas.forEach(e=>e.character.dispose()); disposeModel(own); textures.forEach(t=>t.dispose()); stage.dispose(); }
+  function dispose() { authored?.dispose(); panas.forEach(e=>e.character.dispose()); disposeModel(own); textures.forEach(t=>t.dispose()); stage.dispose(); }
   return {renderer,scene,camera,update,frame,dispose,effects};
 }

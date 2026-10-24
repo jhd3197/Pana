@@ -24,11 +24,11 @@ const room = new TrifulcaRoom({ code, name: loadName(), avatar: loadAvatar(), on
 });
 const roomOptions = createRoomOptions($('room-options'), { title: 'Trifulca', fields: ROOM_OPTIONS,
   change: options => room.action('options', { options }), reset: () => room.action('options', { options: defaultOptions() }) });
-const menu = createGameMenu({ pad: { native: true, help: [['Stick izq. / Cruceta', 'Moverte'], ['A', "Golpe; mantén pa'l trompón"], ['B', 'Esquivar'], ['X', 'Agarrar'], ['Y', '¡Dale!'], ['LB / RB / LT / RT', 'Cubrirte']] }, title: 'Trifulca · Pana', sound, orientation: 'libre',
+const menu = createGameMenu({ pad: { native: true, playing: () => ['intro', 'fight', 'after'].includes(room.state.phase), help: [['Stick izq. / Cruceta', 'Moverte'], ['A', "Golpe; mantén pa'l trompón"], ['B', 'Esquivar'], ['X', 'Agarrar'], ['Y', '¡Dale!'], ['LB', 'Cubrirte'], ['RT', 'Patada'], ['LT', 'Barrida'], ['RB', 'Volteo']] }, title: 'Trifulca · Pana', sound, orientation: 'libre',
   note: () => room.members.size > 1 ? 'La trifulca sigue mientras estás en el menú.' : 'La noche está en pausa.',
   controls: [['W A S D / flechas', 'Moverse: tú siempre a la izquierda, derecha es hacia tu rival'], ['J o clic izquierdo', 'Golpe: toque = jab, mantener = trompón'],
     ['K o clic derecho', 'Cubrirse'], ['Espacio', 'Esquivar (con dirección: paso al lado)'], ['L', 'Agarrar y empujar · en el público: ¡cálmate! · al final: mano de caballero'],
-    ['T', '¡Dale! (el público se prende, quedas abierto)'], ['1 / 2', 'Apostar al rojo o al azul antes de la campana'], ['Control', 'A golpe · B esquivar · X agarrar · Y ¡dale! · gatillos cubrirse'], ['M', 'Activar o silenciar el sonido']],
+    ['I / U / O', 'Patada / Barrida / Volteo (gastan aguante; manos libres)'], ['T', '¡Dale! (el público se prende, quedas abierto)'], ['1 / 2', 'Apostar al rojo o al azul antes de la campana'], ['Control', 'A golpe · B esquivar · X agarrar · Y ¡dale! · LB cubrirse · RT patada · LT barrida · RB volteo'], ['M', 'Activar o silenciar el sonido']],
   tips: ['Jab le gana al trompón que todavía carga; cubrirse le gana al jab; esquivar le gana al trompón; agarrar le gana a cubrirse.',
     'Sin barra de vida: los golpes llenan tu mareo. Mareado, un golpe limpio te tumba. Tres caídas es K.O.',
     'Si no estás peleando eres el ring: empuja al que se sale pa\' dentro y gana dolitas.', 'Ganador se queda: el que gana sigue, el que pierde va a la cola.'],
@@ -57,7 +57,7 @@ const showVoice = () => { voiceButton.textContent = voiceOn ? 'Voz: sí' : 'Voz:
 voiceButton.onclick = () => { voiceOn = !voiceOn; if (!voiceOn) hush(); try { localStorage.setItem(VOICE_KEY, voiceOn ? 'on' : 'off'); } catch { /* per-viewer nicety */ } showVoice(); };
 showVoice();
 
-const controls = createControls({ paused: () => menu.isOpen, onBet: bet });
+const controls = createControls({ paused: () => menu.isOpen || document.hidden || !!room.state.tutorial?.done, onBet: bet });
 addEventListener('keydown', (event) => { if (!menu.isOpen && event.key.toLowerCase() === 'm' && !event.repeat) toggleMute(); });
 addEventListener('pointerdown', () => sound.unlock(), { once: true });
 
@@ -65,7 +65,7 @@ addEventListener('pointerdown', () => sound.unlock(), { once: true });
 function input() {
   const c = controls.read(), basis = world?.stickBasis();
   const x = basis ? basis.right.x * c.sx + basis.forward.x * c.sy : c.sx, z = basis ? basis.right.z * c.sx + basis.forward.z * c.sy : -c.sy;
-  return { x, z, g: c.g, b: c.b, gp: c.gp, e: c.e, a: c.a, t: c.t };
+  return { x, z, g: c.g, b: c.b, gp: c.gp, e: c.e, a: c.a, t: c.t, k: c.k, s: c.s, v: c.v };
 }
 
 hud = createHud({ me: () => room.id, voice: () => voiceOn });

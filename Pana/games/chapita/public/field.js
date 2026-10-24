@@ -5,6 +5,9 @@
 // scene puts d on -Z). The plate is at d = 0, the pitcher at d = 10.5.
 import { clamp } from '/engine/random.js';
 
+// Virtual runner stations along the sidewalk; shared by markers and panas.
+export const BASES = [{ x: 2.5, z: -3.5 }, { x: 2.5, z: -6.8 }, { x: 2.5, z: -10 }];
+
 export const RELEASE = { x: 0, y: 1.55, d: 10.5 };
 export const ROWS = ['alto', 'medio', 'bajo'];
 export const ROW_Y = [1.42, 1.0, 0.6];

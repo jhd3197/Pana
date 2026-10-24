@@ -14,6 +14,7 @@
     "test:browser": "node Pana/scripts/test-browser.js",
     "shots": "node Pana/scripts/shots.js",
     "budget": "node Pana/scripts/budget.js",
+    "bench": "node Pana/games/carreritas/tests/bench.proof.js",
     "launcher-art": "node Pana/scripts/launcher-art.js",
     "inventory": "node Pana/scripts/model-inventory.js",
     "tidy": "node Pana/scripts/tidy.js",

@@ -56,7 +56,7 @@ export const CAR_DEFINITIONS = [
     tune: { top: 36.5, accel: 22, turn: 2.4, mass: 1.05, grip: 6.5, offroadResist: 0.12, trickBoost: 1.65 },
     horn: 'grave',
   },
-  // The Taller bodies (engine/models/vehicles/taller-cars.js).
+  // The Taller bodies, numbers 9–16 (same smooth builder as the classics).
   {
     id: 'escarabajo', num: 9, name: 'La Pulga', color: '#f5b82e',
     blurb: 'Chiquita, liviana y saltarina: dobla en una moneda. Su turbo de derrape carga un 15% más rápido.',

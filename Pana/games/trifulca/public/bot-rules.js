@@ -6,12 +6,12 @@ import { edge, crowdSpot, inRing } from './fight-rules.js';
 import { INTRO, AFTER, TUTORIAL } from './rules.js';
 
 const AFTER_MANO = { min: .8, spread: 2 };
-const bump = (ai, key) => (ai[key] = (ai[key] + 1) % 256);
+const bump = (ai, key) => (ai[key] = ((ai[key] || 0) + 1) % 256);
 
 export function botInput(game, p, dt) {
   const ai = p.ai ||= { think: 0, hold: 0, block: 0, plan: 0, side: 1, mash: 0, gp: 0, e: 0, a: 0, t: 0,
     betAt: 1 + draw(game) * 3, manoAt: AFTER_MANO.min + draw(game) * AFTER_MANO.spread };
-  const out = { x: 0, z: 0, g: false, b: false, gp: ai.gp, e: ai.e, a: ai.a, t: ai.t };
+  const out = { x: 0, z: 0, g: false, b: false, gp: ai.gp, e: ai.e, a: ai.a, t: ai.t, k: ai.k || 0, s: ai.s || 0, v: ai.v || 0 };
   const level = p.level ?? game.options.nivel, body = game.body(p.id);
   if (game.tutorial && body) return profe(game, body, ai, out, dt);
   if (game.phase === 'after') {
@@ -52,8 +52,16 @@ export function botInput(game, p, dt) {
     else if (d < 1.5) {
       ai.plan = roll < .5 ? 'jab' : roll < .66 ? 'trompon' : roll < .74 ? 'grab' : roll < .86 ? 'block' : roll < .93 ? 'dodge' : roll < .96 ? 'taunt' : 0;
     }
+    if (!body.prop && body.aguante > 35 && ['jab', 'grab'].includes(ai.plan) && roll > .22) {
+      if (d < 1.1 && other.act === 'block') ai.plan = 'toss';
+      else if (roll < .36) ai.plan = 'kick';
+      else if (roll < .43) ai.plan = 'sweep';
+    }
     if (draw(game) < .25) ai.side = -ai.side;
     if (body.mareo > 75 && draw(game) < .6 && ai.plan !== 'grab') ai.plan = ai.plan === 'jab' ? 'jab' : 0;
+    if (ai.plan === 'kick') out.k = bump(ai, 'k');
+    if (ai.plan === 'sweep') out.s = bump(ai, 's');
+    if (ai.plan === 'toss') out.v = bump(ai, 'v');
     if (ai.plan === 'jab') out.gp = bump(ai, 'gp');
     if (ai.plan === 'trompon') { out.gp = bump(ai, 'gp'); ai.hold = .3; }
     if (ai.plan === 'dodge') out.e = bump(ai, 'e');

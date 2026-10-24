@@ -56,7 +56,16 @@ export async function menuClick(page, selector) {
 export async function chooseCar(page, index) {
   await menuStep(page, 'car');
   await page.locator('#loadout-garage').click();
-  await page.locator('#shop-car .shop-item').nth(index).click();
+  const choice = page.locator('#shop-car .shop-item').nth(index);
+  // The drawer remembers its last page; returning to an earlier car must
+  // paginate backward too (the item suite visits every car, then selects 0).
+  while (!await choice.isVisible()) {
+    const first = await page.locator('#shop-car .shop-item').evaluateAll(items => items.findIndex(item => !item.hidden));
+    const button = page.locator(`[data-page=${index < first ? 'previous' : 'next'}]`);
+    if (await button.isDisabled()) throw new Error(`Car ${index} is not reachable from the current page`);
+    await button.click();
+  }
+  await choice.click();
   await page.locator('#loadout-back').click();
 }
 

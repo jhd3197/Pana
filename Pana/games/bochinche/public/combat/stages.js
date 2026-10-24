@@ -1,3 +1,4 @@
+import { PANA_STAGES } from '../stage-rules.js';
 // Adapted from Super Bash Folds (MIT); see ../../SOURCE.md.
 
 import {
@@ -6,7 +7,7 @@ import {
   OPEN_STAGE_PACKS,
 } from "./generated/openStageRegistry.js";
 
-export const STAGE_IDS = [...OPEN_STAGE_IDS]                             ;
+export const STAGE_IDS = [...OPEN_STAGE_IDS, ...PANA_STAGES.map(s=>s.id)]                             ;
 
 export const DEFAULT_STAGE_ID          = STAGE_IDS[0] ?? DEFAULT_OPEN_STAGE_ID;
 
@@ -39,7 +40,7 @@ const openStageDefinitions = generatedStagePacks.map((pack)                  => 
 }));
 
 export const STAGE_DEFINITIONS = Object.fromEntries(
-  openStageDefinitions.map((definition) => [definition.id, definition]),
+  [...openStageDefinitions, ...PANA_STAGES].map((definition) => [definition.id, definition]),
 )                                              ;
 
 export const getStageDefinition = (id         )                  =>

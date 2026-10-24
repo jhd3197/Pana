@@ -16,6 +16,7 @@ try {
   await waitFor(guest, () => trifulcaDebug.world.arenaId === 'mercado');
   await host.locator('#start').click();
   await waitFor(guest, () => trifulcaDebug.room.state.phase === 'intro');
+  await waitFor(guest, () => [...document.querySelectorAll('#intro-card .fighter-portrait')].length === 2 && [...document.querySelectorAll('#intro-card .fighter-portrait')].every(img => img.complete && img.naturalWidth > 0));
   // Two panas and no bots: they fight each other.
   assert.deepEqual(await guest.evaluate(() => trifulcaDebug.room.state.bodies.map(b => b.id).sort()), await host.evaluate(() => trifulcaDebug.room.state.players.map(p => p.id).sort()));
   await host.evaluate(() => { trifulcaDebug.room.game.time = .05; });
@@ -31,6 +32,26 @@ try {
   // One quick tap is still a jab on the host.
   await guest.keyboard.press('j');
   await waitFor(host, (id) => trifulcaDebug.room.state.events.some(e => e.type === 'jab' && e.id === id), start.id);
+  // Real guest key presses: each new move must land on the host and appear
+  // with the same move identity and score in the guest snapshot.
+  for (const [move, key, score] of [['kick', 'i', 'kicks'], ['sweep', 'u', 'sweeps'], ['toss', 'o', 'tosses']]) {
+    await host.evaluate(() => {
+      const game = trifulcaDebug.room.game;
+      game.time = game.fight.time = 90; game.fight.motoDone = true;
+      game.bodies.forEach((b, i) => Object.assign(b, {
+        x: i ? .46 : -.46, z: 0, h: i ? -Math.PI / 2 : Math.PI / 2,
+        act: 'idle', at: 0, charge: -1, buffer: 0, vx: 0, vz: 0,
+        aguante: 100, mareo: 0, inv: 0, contra: 0, moving: 0,
+      }));
+      trifulcaDebug.room.publish();
+    });
+    await waitFor(guest, () => trifulcaDebug.room.state.bodies.every(b => b.act === 'idle' && b.mareo === 0 && Math.abs(b.x) < .6));
+    await guest.keyboard.press(key);
+    await waitFor(host, ({ move, id }) => trifulcaDebug.room.state.events.some(e => e.type === 'hit' && e.move === move && e.by === id), { move, id: start.id });
+    await waitFor(guest, ({ move, id, score }) => trifulcaDebug.room.state.events.some(e => e.type === 'hit' && e.move === move && e.by === id)
+      && trifulcaDebug.room.state.bodies.find(b => b.id === id).score[score] === 1, { move, id: start.id, score });
+    await waitFor(host, () => trifulcaDebug.room.state.bodies.every(b => b.act === 'idle'));
+  }
   // The host owns the clock: ring the bell now.
   await host.evaluate(() => { trifulcaDebug.room.game.time = .01; });
   await waitFor(guest, () => trifulcaDebug.room.state.phase === 'after');
@@ -38,6 +59,8 @@ try {
   assert.deepEqual(verdict, await host.evaluate(() => trifulcaDebug.room.state.result));
   assert.ok(['puntos', 'publico'].includes(verdict.how));
   await waitFor(guest, () => !document.getElementById('verdict').hidden || trifulcaDebug.world.replaying);
+  await waitFor(guest, () => !document.getElementById('verdict').hidden);
+  assert.equal(await guest.locator('.fight-stats tbody tr').count(), 5, 'result shows the actual fight statistics');
   assert.deepEqual([...host.errors, ...guest.errors], []);
-  console.log('PASS trifulca: two clients share the 3D barrio, the guest moves and jabs on the host, the bell gives both the same verdict.');
+  console.log('PASS trifulca: two clients share the 3D barrio, the guest moves, jabs, kicks, sweeps and throws on the host, the bell gives both the same verdict.');
 } finally { await browser.close(); }

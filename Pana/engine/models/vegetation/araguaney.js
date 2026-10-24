@@ -88,9 +88,9 @@ const BUCARE = {
   petals: { color: 0xf47a42, radius: 3.4 },
 };
 const BLOOMS = { gold: ARAGUANEY, pink: APAMATE, coral: BUCARE };
-// Keep the bucare's separate recipe. Both green and flowering forms use the
+// Keep each species' palette. Both green and flowering forms use the
 // same open crown structure; green sprays are included in that same draw.
-const OPEN_CROWNS = new Map([ARAGUANEY, APAMATE].map(species => [species, {
+const OPEN_CROWNS = new Map([ARAGUANEY, APAMATE, BUCARE].map(species => [species, {
   ...species, dressCrown: floweringCrown,
   foliage: { ...species.foliage, greenMix: species.blossom.mixLeaves },
   blossom: { ...species.blossom, mixLeaves: 0 },

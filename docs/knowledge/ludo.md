@@ -22,7 +22,8 @@ is Spanish. The hub discovers `game.json` and categorizes it as Mesa.
 These variants are stated in the shared menu's Controles tab.
 
 The shared room panel also offers entry with one or six, an optional capture
-bonus roll and an optional third-six penalty. Defaults retain classic behavior.
+bonus roll and an optional third-six penalty. Entry, capture and third-six defaults retain classic behavior; the disclosed
+assisted-entry option limits yard droughts.
 Only the host changes them in the lobby; typed validation rejects an entire
 invalid patch. Snapshots, rematches and local fallback preserve the options.
 Ludo remains four players because its authored board has four private lanes and
@@ -78,3 +79,31 @@ the visible board, and the in-game buttons remain below it.
   bot replacement, pause, finish/rematch, both mobile orientations, local
   fallback, Studio factories and hub discovery. Screenshots: `art/ludo/`.
 - `.\dev.ps1 check`: repository syntax, unit and convention checks.
+
+Chair angles use `-π/4 - seat·π/2` to follow `rotateCell`: red near-left,
+green far-left, yellow far-right and blue near-right. The same angle places
+starter cachos and dice throws. Reversing its sign swaps green and blue while
+leaving red and yellow apparently correct. The two-client suite checks every
+avatar against its yard center and verifies that it faces the board.
+
+Safe ring cells have contrasting double frames plus their central circle; the
+HUD explains that no capture happens there. Shared cells use `piece-layout.js`
+to arrange pawns in a centered grid at one height, scaled to stay inside the
+cell even with sixteen pieces. Count occupants before assigning targets and
+refresh active hop endpoints when occupancy changes. Raycasts still hit each
+pawn mesh; the 1–4 buttons remain available for very crowded cells.
+
+## Playtest pacing
+
+The host schedules forced moves 1.1 s after a roll so the die lands first. A
+single legal move or a choice only between yard pieces needs no extra click;
+strategically different moves remain manual. Pending automatic moves travel in
+snapshots and manual moves cancel them.
+
+Salida asistida defaults on and is disclosed in the lobby and controls. Each
+stranded episode gets a seeded threshold of 3–5 failed entry rolls. The next
+roll is six if still stranded; natural entry resets the counter. Only players
+whose unfinished pieces are all in the yard qualify, including after captures
+and late in a match. Moving/finishing dice stay random; repeated numbers are
+allowed. Every seat uses the same rule, independently of name or score. Classic
+random dice remain a lobby option. Thresholds and counters survive migration.

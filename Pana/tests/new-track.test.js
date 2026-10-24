@@ -35,12 +35,13 @@ test('a new track is registered at every point and gets loadable stubs', () => {
   const root = sandbox();
   try {
     const before = read(root, PATHS.readme).match(/Toy-car racing on ([a-z-]+) circuits/)[1];
+    const standaloneBefore = read(root, PATHS.cups).match(/STANDALONE_TRACKS = \[([^\]]*)\]/)[1];
     const changes = planTrack(root, { id: 'morrocoy', name: "Cayo d'Agua", blurb: 'Cayos y manglares.', style: 'calipso' });
     assert.match(describe(changes), /\+ new Pana\/games\/carreritas\/public\/tracks\/morrocoy-world\.js/);
     applyPlan(root, changes);
 
     assert.match(read(root, PATHS.definitions), /\{id:'morrocoy', name:'Cayo d\\'Agua', blurb:'Cayos y manglares\.'\},\r?\n\];/);
-    assert.match(read(root, PATHS.cups), /STANDALONE_TRACKS = \[[^\]]*'sabana', 'morrocoy'\]/);
+    assert.equal(read(root, PATHS.cups).match(/STANDALONE_TRACKS = \[([^\]]*)\]/)[1], `${standaloneBefore}, 'morrocoy'`);
     assert.match(read(root, PATHS.maps), /assert\.deepEqual\(ids, \[[^\]]*, 'morrocoy'\]\)/);
     const music = read(root, PATHS.music);
     assert.match(music, /TRACK_STYLE = \{ morrocoy: 'calipso', /);

@@ -4,6 +4,18 @@ import { gameDetail, segments } from '/engine/models/characters/pana/detail.js';
 export const signedPower = (v, power) => Math.sign(v) * Math.abs(v) ** power;
 
 // Smooth, indexed surfaces with consistent winding, including their UV seam.
+// A short key for a run of numbers, exact to the float bits: fitted cloth is
+// kept under it, so identical inputs reuse the fit and any change refits.
+const floatBits = new Float32Array(1), floatWords = new Uint32Array(floatBits.buffer);
+export function fingerprint(values) {
+  let a = 0x811c9dc5, b = 0x01000193;
+  for (const v of values) {
+    floatBits[0] = v; const w = floatWords[0];
+    a = Math.imul(a ^ w, 0x01000193); b = Math.imul(b ^ (w >>> 7 | w << 25), 0x85ebca6b);
+  }
+  return `${values.length}.${(a >>> 0).toString(36)}.${(b >>> 0).toString(36)}`;
+}
+
 export function surface(fn, columns = 64, rows = 40) {
   const positions = [], uvs = [], indices = [];
   for (let j = 0; j <= rows; j++) for (let i = 0; i <= columns; i++) {

@@ -96,3 +96,8 @@ button:focus-visible, a:focus-visible { outline: 3px solid var(--pk-yellow); out
   #view { top: auto; bottom: 29px; right: auto; left: 12px; font-size: 11px; }
 }
 body.pana-starter .action-panel { visibility: hidden; }
+
+.safe-legend { position: fixed; left: 20px; top: 150px; margin: 0; padding: 8px 10px; background: var(--pk-night); color: var(--pk-text); border-radius: var(--pk-r-sm); font-size: 12px; display: flex; align-items: center; gap: 8px; pointer-events: none; }
+.safe-legend span { width: 20px; height: 20px; border: 4px double var(--pk-text); flex: none; }
+@media (max-width: 650px) { .safe-legend { left: 10px; top: 155px; font-size: 11px; padding: 5px 8px; } }
+@media (max-height: 520px) and (orientation: landscape) { .safe-legend { top: 65px; left: 10px; font-size: 10px; } }

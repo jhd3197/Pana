@@ -55,6 +55,24 @@ camera each frame. Touch play uses the shared landscape guard.
 
 ## Combat presentation
 
+`/g/bochinche/lightning.html` is a local-only lightning practice lab, linked
+from the lobby. It uses the existing arena and saved avatar, a fresh two-fighter
+combat instance per cast, and `resolveAttackHit` for a fixed 12% strike. No room
+connects and normal attacks are unchanged. Charge poses are snapshot-only;
+they never create melee hitboxes. The baseline keeps damage/launch identical
+while switching off presentation and combat hit-stop. Settings latch at cast.
+The hit-stop slider specifies attacker frames (the engine adds one defender
+frame); turning it off explicitly clears both. Slow motion scales the 60 Hz
+accumulator. `scene.frame` accepts an optional before-draw camera hook for the
+lab's decaying shake; the camera is reframed before every hook, avoiding drift.
+Effects use bounded geometry and reduced motion disables shake and softens flash.
+Lightning uses tapered soft ribbons with a white core and blue corona, plus
+a procedural radial light texture. Midpoint subdivision keeps the main path
+coherent; branches narrow to a tip. Independent random offsets and solid
+cylinders made the earlier version look like purple scribbles. The shader
+bypasses tone mapping so the white core remains bright on the daytime stage.
+The lab does not implement chain damage or random critical hits.
+
 `arena.js` builds the collision-aligned island and reuses the shared mango and
 palm factories at game detail. Thin floor trim does not cast shadows: having
 both a grass cap and a path cast into nearly coplanar receivers created diagonal
@@ -104,3 +122,71 @@ among that frame's contenders, never somebody eliminated earlier.
 The pre-game lobby uses the shared Carreritas side settings; style selection
 is personal and stays with the roster. Six colors identify fighters in the
 world and HUD; the camera follows all living fighters.
+
+## Authored Venezuelan stages and attacks
+
+The host selects La arboleda, Salto Ángel or Catatumbo through shared room
+options. The latter two port the user-supplied standalone scene geometry,
+textures and environmental animation. Artifact metres map to 30 simulation
+units and .42 render units. Six-player capacity and saved panas remain intact.
+The shared world owns the camera, renderer, loop and teardown; prototype
+camera controls, HUD, renderer and bloom composer are not imported.
+
+The Salto Ángel canoe follows an 11-second curve in authoritative fixed frames.
+Grounded riders move by its delta before normal integration. Its deck stays
+level so its visible top matches the horizontal collision surface. Catatumbo
+warns for 96 frames before each 660-frame strike; the fixed spot sequence is
+shared with the visual prototype. Strikes deal 18 damage near the dock and
+respect invulnerability. Stage state is included in the existing checkpoint;
+recreating authored scenery per round clears old warning and scorch state.
+
+Prueba de golpes supplies the four match themes: neutral special Rayo (14),
+side special Candela (12), down special Hielo (10 with escapable freeze), and
+forward smash Jonrón (30 balanced, 26 fast, 34 heavy before charge scaling).
+Up-special keeps each style's recovery. Prototype cinematic freezes become
+short combat-frame hit-stop; the match camera never cuts away from opponents.
+The authored attacks use normal hit resolution, shielding and network inputs.
+Particles, charge meshes and announcements consume existing snapshots/events.
+Reduced motion suppresses the storm lighting flash and existing impact shake.
+
+`artifacts.test.js` covers canoe riders, hazard warning/impact and invulnerability,
+checkpoint continuation, attack damage and ice escape. `arenas.browser.mjs`
+opens two real clients on each arena and exercises movement and host handoff.
+
+Los Roques extends the authored arenas with two solid shores, four elevated
+platforms, a drifting raft and a bobbing fishing boat plus its cabin roof.
+`roquesAt` uses combat frames; rider and ledge deltas update before integration.
+The six authored spawns land on island/pier solids, not the gap between them.
+The prototype's eight-player caption does not change the six-player room cap.
+Water shader sampling converts the scaled world coordinates back to artifact
+metres, keeping the depth texture aligned to the island geometry.
+
+The Banderín HUD uses the shared portrait cache for each saved avatar, live
+stock pips with accessible counts, and a winner portrait at results. Its color
+tabs follow the world fighter colors. The room keeps shared side settings and
+the current three styles; the HUD reference's mock specials/rewards are not
+new gameplay rules.
+
+## Shared scenery on authored stages
+
+Los Roques uses canonical coconut palms (full detail near the fighting lane,
+far detail on distant cays), six island casitas and coastal fishing props.
+Salto Ángel uses ferns, heliconias and tree ferns; tall plants stay behind the
+fighting plane and foreground ferns use reduced scale. Catatumbo uses shared
+fish crates, a fishing-net rack, a keel-origin fishing boat and four mangroves.
+The authored lighthouse balconies, floating platform boat, raft, roofs and
+canoe retain their collision-matched geometry. These are decorative placements;
+no combat platforms or hazards change.
+
+`arena-assets.js` clones cached model materials per arena and retains shader
+callbacks, so arena disposal does not dispose canonical cached materials or
+lose foliage wind. The scene owns the factory geometry. Each authored frame
+ticks the shared wind clock; the Catatumbo boat bobs around water minus .32m.
+
+Salto Ángel's flocks use the shared scarlet macaw flight rig at low detail;
+Los Roques' distant flamingos use the shared standing/feeding model. Bird
+rig updates use absolute combat time and remain separate from static scenery.
+
+Browser attack checks use synchronized damage after a reset, not a second
+poll of the two-second event history: rendering delays can expire that history
+after the attack-start wait even though the hit reached both clients.

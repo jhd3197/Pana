@@ -4,7 +4,7 @@ import { instancePlacements } from '/engine/models/core/static-batch.js';
 import { mangoTree } from '/engine/models/vegetation/mango-tree.js';
 import { palm } from '/engine/models/vegetation/palm.js';
 import { mountainPine } from '/engine/models/vegetation/mountain-pine.js';
-import { forestZone, prepareForestModel, denseForest } from '/engine/worlds/coastal/forest-detail.js';
+import { forestZone, prepareForestModel, denseForest, forestQuality } from '/engine/worlds/coastal/forest-detail.js';
 
 // Dense silhouettes belong in natural surroundings, not inside towns, caves,
 // salt pans or the desert. Near-road vegetation remains authored per map.
@@ -30,15 +30,18 @@ export function backgroundForest(T) {
   }
   const pine=T.id==='paramo', fronds=['bululu','delta','llanos'].includes(T.id), zones={near:0,middle:0,far:0};
   const dense=denseForest(placements);
-  for(const zone of ['middle','far']) for(const crowded of zone==='far'&&!pine&&!fronds?[true,false]:[false]) {
-    const points=placements.filter(p=>p.zone===zone&&(zone!=='far'||pine||fronds||dense.has(p)===crowded));zones[zone]+=points.length;
-    if(!points.length)continue;
-    const source = pine ? mountainPine({seed:17,h:8})
-      : fronds ? palm({seed:17,detail:'far',fruit:false})
-      : mangoTree({seed:17,h:6,detail:'far',fruit:false});
-    prepareForestModel(source,zone,{pine,fronds,dense:crowded});
-    instancePlacements(group,source,points,{name:`mountain-canopy-${zone}`,cellSize:180,castShadow:false});
-  }
+  for (const p of placements) zones[p.zone]++;
+  forestQuality(group, (tier, detail) => {
+    for(const zone of ['middle','far']) for(const crowded of zone==='far'&&!pine&&!fronds?[true,false]:[false]) {
+      const points=placements.filter(p=>p.zone===zone&&(zone!=='far'||pine||fronds||dense.has(p)===crowded));
+      if(!points.length)continue;
+      const source = pine ? mountainPine({seed:17,h:8})
+        : fronds ? palm({seed:17,detail:'far',fruit:false})
+        : mangoTree({seed:17,h:6,detail:'far',fruit:false});
+      prepareForestModel(source,detail===0?'far':zone,{pine,fronds,dense:crowded});
+      instancePlacements(tier,source,points,{name:`mountain-canopy-${zone}`,cellSize:detail===0?240:180,castShadow:false});
+    }
+  });
   group.userData.treeCount = placements.length;
   group.userData.forestZones = zones;
   return group;

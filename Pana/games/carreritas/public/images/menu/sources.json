@@ -1,5 +1,5 @@
 {
-  "note": "User-provided artwork. Original PNGs are preserved in the sibling pana-photos/generated folder. Map art is illustrative; track-map draws the actual route. Aragua, Colonia Tovar, Galipán, Maracaibo, Margarita, Sarisariñama and Gran Sabana previews are native renders of the playable circuit scenes, adapted from user-provided HTML maps.",
+  "note": "User-provided artwork. Original PNGs are preserved in the sibling pana-photos/generated folder. Map art is illustrative; track-map draws the actual playable route.",
   "images": [
     {
       "file": "salinas.webp",
@@ -165,117 +165,189 @@
     },
     {
       "file": "cata.webp",
-      "source": "Native render: cata circuit",
-      "width": 1200,
-      "bytes": 87500
+      "source": "Bahía de Cata coastal switchbacks.png",
+      "width": 960,
+      "bytes": 223312
     },
     {
       "file": "cata-thumb.webp",
-      "source": "Native render: cata circuit",
-      "width": 480,
-      "bytes": 21892
+      "source": "Bahía de Cata coastal switchbacks.png",
+      "width": 320,
+      "bytes": 39454
     },
     {
       "file": "choroni.webp",
-      "source": "Native render: choroni circuit",
-      "width": 1200,
-      "bytes": 89224
+      "source": "Tropical Island Mountain Road Diorama.png",
+      "width": 960,
+      "bytes": 235790
     },
     {
       "file": "choroni-thumb.webp",
-      "source": "Native render: choroni circuit",
-      "width": 480,
-      "bytes": 22592
+      "source": "Tropical Island Mountain Road Diorama.png",
+      "width": 320,
+      "bytes": 39620
     },
     {
       "file": "chuao.webp",
-      "source": "Native render: chuao circuit",
-      "width": 1200,
-      "bytes": 104234
+      "source": "Chuao La Quebrada_ Cacao Valley Run.png",
+      "width": 960,
+      "bytes": 255846
     },
     {
       "file": "chuao-thumb.webp",
-      "source": "Native render: chuao circuit",
-      "width": 480,
-      "bytes": 25502
+      "source": "Chuao La Quebrada_ Cacao Valley Run.png",
+      "width": 320,
+      "bytes": 42574
     },
     {
       "file": "tovar.webp",
-      "source": "Native render: tovar circuit",
-      "width": 1200,
-      "bytes": 143810
+      "source": "Alpine Village Racetrack in Bloom.png",
+      "width": 960,
+      "bytes": 200268
     },
     {
       "file": "tovar-thumb.webp",
-      "source": "Native render: tovar circuit",
-      "width": 480,
-      "bytes": 33096
+      "source": "Alpine Village Racetrack in Bloom.png",
+      "width": 320,
+      "bytes": 39100
     },
     {
       "file": "galipan.webp",
-      "source": "Native render: galipan circuit",
-      "width": 1200,
-      "bytes": 94550
+      "source": "Moonlit Mountain Road Adventure.png",
+      "width": 960,
+      "bytes": 147464
     },
     {
       "file": "galipan-thumb.webp",
-      "source": "Native render: galipan circuit",
-      "width": 480,
-      "bytes": 16880
+      "source": "Moonlit Mountain Road Adventure.png",
+      "width": 320,
+      "bytes": 28754
     },
     {
       "file": "maracaibo.webp",
-      "source": "Native render: maracaibo circuit",
-      "width": 1200,
-      "bytes": 58562
+      "source": "Neon Storm Over Coastal City.png",
+      "width": 960,
+      "bytes": 194048
     },
     {
       "file": "maracaibo-thumb.webp",
-      "source": "Native render: maracaibo circuit",
-      "width": 480,
-      "bytes": 14528
+      "source": "Neon Storm Over Coastal City.png",
+      "width": 320,
+      "bytes": 33266
     },
     {
       "file": "margarita.webp",
-      "source": "Native render: margarita circuit",
-      "width": 1200,
-      "bytes": 69694
+      "source": "Tropical Island Resort Map.png",
+      "width": 960,
+      "bytes": 198328
     },
     {
       "file": "margarita-thumb.webp",
-      "source": "Native render: margarita circuit",
-      "width": 480,
-      "bytes": 16294
+      "source": "Tropical Island Resort Map.png",
+      "width": 320,
+      "bytes": 35744
     },
     {
       "file": "sarisarinama.webp",
-      "source": "Native render: sarisarinama circuit",
-      "width": 1200,
-      "bytes": 99934
+      "source": "Sarisariñama Twin Sinkhole Plateau.png",
+      "width": 960,
+      "bytes": 234686
     },
     {
       "file": "sarisarinama-thumb.webp",
-      "source": "Native render: sarisarinama circuit",
-      "width": 480,
-      "bytes": 19408
+      "source": "Sarisariñama Twin Sinkhole Plateau.png",
+      "width": 320,
+      "bytes": 39776
     },
     {
       "file": "sabana.webp",
-      "source": "Native render: sabana circuit",
-      "width": 1200,
-      "bytes": 85448
+      "source": "Savanna Tepui Rally Adventure.png",
+      "width": 960,
+      "bytes": 204398
     },
     {
       "file": "sabana-thumb.webp",
-      "source": "Native render: sabana circuit",
-      "width": 480,
-      "bytes": 22226
+      "source": "Savanna Tepui Rally Adventure.png",
+      "width": 320,
+      "bytes": 37856
     },
     {
       "file": "sabana-preview.jpg",
-      "source": "Derrape Race HUD (2) / Gran Sabana hero",
-      "width": 1100,
-      "bytes": 114334
+      "source": "Savanna Tepui Rally Adventure.png",
+      "width": 960,
+      "bytes": 227801
+    },
+    {
+      "file": "cosmos.webp",
+      "source": "Cosmic Ringworld Kart Circuit.png",
+      "width": 960,
+      "bytes": 149924
+    },
+    {
+      "file": "cosmos-thumb.webp",
+      "source": "Cosmic Ringworld Kart Circuit.png",
+      "width": 320,
+      "bytes": 30308
+    },
+    {
+      "file": "merida.webp",
+      "source": "Alpine Village Mountain Roadscape.png",
+      "width": 960,
+      "bytes": 194752
+    },
+    {
+      "file": "merida-thumb.webp",
+      "source": "Alpine Village Mountain Roadscape.png",
+      "width": 320,
+      "bytes": 38016
+    },
+    {
+      "file": "arrecife.webp",
+      "source": "Underwater Reef Racetrack Adventure.png",
+      "width": 960,
+      "bytes": 148520
+    },
+    {
+      "file": "arrecife-thumb.webp",
+      "source": "Underwater Reef Racetrack Adventure.png",
+      "width": 320,
+      "bytes": 31300
+    },
+    {
+      "file": "volcan.webp",
+      "source": "Volcán_ Molten road at dusk.png",
+      "width": 960,
+      "bytes": 132540
+    },
+    {
+      "file": "volcan-thumb.webp",
+      "source": "Volcán_ Molten road at dusk.png",
+      "width": 320,
+      "bytes": 26654
+    },
+    {
+      "file": "nubes.webp",
+      "source": "Nubes floating island circuit.png",
+      "width": 960,
+      "bytes": 121052
+    },
+    {
+      "file": "nubes-thumb.webp",
+      "source": "Nubes floating island circuit.png",
+      "width": 320,
+      "bytes": 26406
+    },
+    {
+      "file": "dulce.webp",
+      "source": "Dulce Candy Circuit.png",
+      "width": 960,
+      "bytes": 157314
+    },
+    {
+      "file": "dulce-thumb.webp",
+      "source": "Dulce Candy Circuit.png",
+      "width": 320,
+      "bytes": 33068
     }
   ]
 }

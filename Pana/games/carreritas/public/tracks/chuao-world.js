@@ -2,9 +2,11 @@ import { rng, clamp, lerp, pick as pickRandom } from '/engine/random.js';
 import { extendTerrain } from '/engine/worlds/coastal/world-horizon.js';
 import * as THREE from 'three';
 import { coastalVegetation } from '/engine/worlds/coastal/coastal-vegetation.js';
+import { bake } from '/engine/models/core/static-batch.js';
 import { MAP } from './chuao-layout.js';
 export function createWorld(scene, layout, roadDistance) {
-  const vegetation = coastalVegetation(scene, 1, roadDistance);
+  // Far hills get three-tree groves per card: a fuller jungle for the same cost.
+  const vegetation = coastalVegetation(scene, 1, roadDistance, { clump: 3 });
   let horizon = null;
   const PI = Math.PI, TAU = PI * 2, UP = new THREE.Vector3(0, 1, 0);
   const rand = rng(MAP.seed);
@@ -193,15 +195,15 @@ export function createWorld(scene, layout, roadDistance) {
   { const g = new THREE.PlaneGeometry(9000, 9000, 1, 1); g.rotateX(-PI / 2); const m = new THREE.Mesh(g, SEA); m.renderOrder = 1; scene.add(m); }
 
   /* ---------------- rivers and the Chorrerón ---------------- */
-  function waterMaterial(speed, alpha = 0.85, fall = 0) {
+  function waterMaterial(speed, alpha = 0.85, fall = 0, tint = 1) {
     const m = new THREE.ShaderMaterial({
-      uniforms: THREE.UniformsUtils.merge([THREE.UniformsLib.fog, { uT: { value: 0 }, uSpeed: { value: speed }, uSun: { value: SUN_DIR }, uA: { value: alpha }, uFall: { value: fall } }]),
+      uniforms: THREE.UniformsUtils.merge([THREE.UniformsLib.fog, { uT: { value: 0 }, uSpeed: { value: speed }, uSun: { value: SUN_DIR }, uA: { value: alpha }, uFall: { value: fall }, uTint: { value: tint } }]),
       vertexShader: `attribute float foam; varying vec2 vUv; varying float vFoam; varying vec3 vW;
         #include <fog_pars_vertex>
         void main(){ vUv = uv; vFoam = foam; vW = (modelMatrix * vec4(position,1.0)).xyz; vec4 mvPosition = modelViewMatrix * vec4(position,1.0); gl_Position = projectionMatrix * mvPosition;
           #include <fog_vertex>
         }`,
-      fragmentShader: `uniform float uT; uniform float uSpeed; uniform vec3 uSun; uniform float uA; uniform float uFall; varying vec2 vUv; varying float vFoam; varying vec3 vW;
+      fragmentShader: `uniform float uT; uniform float uSpeed; uniform vec3 uSun; uniform float uA; uniform float uFall; uniform float uTint; varying vec2 vUv; varying float vFoam; varying vec3 vW;
         #include <fog_pars_fragment>
         void main(){
           float flow = vUv.y - uT * uSpeed * (1.0 + vFoam * 2.5);
@@ -216,8 +218,11 @@ export function createWorld(scene, layout, roadDistance) {
             float y = vUv.y * 1.6 - uT * 2.2;
             float s1 = sin(vUv.x * 70.0 + sin(vUv.x * 13.0) * 4.0), s2 = sin(vUv.x * 23.0 + y * 0.35) * sin(y * 1.7 + vUv.x * 9.0);
             float st = smoothstep(0.2, 0.95, s1 * 0.55 + s2 * 0.45);
-            c = mix(vec3(0.72, 0.86, 0.86), vec3(1.0), 0.45 + 0.55 * st);
-            alpha = uA * (0.55 + 0.45 * st) * smoothstep(0.0, 0.08, vUv.x) * smoothstep(1.0, 0.92, vUv.x);
+            // Streaks with darker gaps between them read as falling water;
+            // ragged sides keep the curtain from ending in a ruled edge.
+            float rag = 0.06 + 0.05 * sin(y * 0.9 + vUv.x * 3.0) * sin(y * 0.37);
+            c = mix(vec3(0.55, 0.74, 0.76), vec3(1.0), 0.3 + 0.7 * st) * uTint;
+            alpha = uA * (0.45 + 0.55 * st) * smoothstep(0.0, rag + 0.04, vUv.x) * smoothstep(1.0, 0.96 - rag, vUv.x);
           }
           gl_FragColor = vec4(c, alpha);
           #include <tonemapping_fragment>
@@ -251,10 +256,53 @@ export function createWorld(scene, layout, roadDistance) {
       }
       ribbon(rows, RIV);
     }
-    // the Chorrerón: a tall ribbon down the cliff into the plunge pool
+    // the Chorrerón: a curved curtain down the cliff into the plunge pool,
+    // bulging toward the road and spreading as it falls, over a darker,
+    // slower sheet that gives it depth instead of one flat strip
     const F = MAP.fall, topY = base(F.x, F.z - 4) - 0.5, side = V3(1, 0, 0), dir = V3(0, 0, 1), frows = [];
     for (let k = 0; k <= 30; k++) { const t = k / 30; frows.push({ c: V3(F.x, lerp(topY, POOL.y + 0.2, t * t), F.z + Math.sqrt(t) * (POOL.z - F.z) * 0.9), side, w: F.width * (0.6 + t * 0.6), foam: 1 }); }
-    ribbon(frows, waterMaterial(2.6, 0.96, 1));
+    const curtain = (rows, mat, bulge, segs = 10) => {
+      const pos = [], uv = [], foam = [], idx = [];
+      let dist = 0;
+      rows.forEach((r, i) => {
+        if (i) dist += r.c.distanceTo(rows[i - 1].c);
+        for (let j = 0; j <= segs; j++) {
+          const u = j / segs * 2 - 1, v = r.c.clone().addScaledVector(r.side, u * r.w).addScaledVector(dir, (1 - u * u) * r.w * bulge);
+          pos.push(v.x, v.y, v.z); uv.push((u + 1) / 2, dist * 0.22); foam.push(r.foam || 0);
+          if (i && j) { const a = (i - 1) * (segs + 1) + j - 1, b = a + segs + 1; idx.push(a, b, a + 1, a + 1, b, b + 1); }
+        }
+      });
+      const geo = new THREE.BufferGeometry();
+      geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); geo.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2)); geo.setAttribute('foam', new THREE.Float32BufferAttribute(foam, 1)); geo.setIndex(idx);
+      const m = new THREE.Mesh(geo, mat); m.renderOrder = 2; scene.add(m); return m;
+    };
+    curtain(frows.map(r => ({ ...r, c: r.c.clone().addScaledVector(dir, -1.4), w: r.w * 1.15 })), waterMaterial(1.5, 0.8, 1, 0.72), 0.22).renderOrder = 1;
+    curtain(frows, waterMaterial(2.6, 0.96, 1), 0.32);
+    // churning foam where it lands, rolling outward over the pool
+    const landing = frows[frows.length - 1].c, FOAM = new THREE.ShaderMaterial({
+      uniforms: THREE.UniformsUtils.merge([THREE.UniformsLib.fog, { uT: { value: 0 }, uR: { value: F.width * 1.3 } }]),
+      vertexShader: `varying vec2 vP;
+        #include <fog_pars_vertex>
+        void main(){ vP = position.xy; vec4 mvPosition = modelViewMatrix * vec4(position, 1.0); gl_Position = projectionMatrix * mvPosition;
+          #include <fog_vertex>
+        }`,
+      fragmentShader: `uniform float uT; uniform float uR; varying vec2 vP;
+        #include <fog_pars_fragment>
+        void main(){
+          float r = length(vP) / uR, a = atan(vP.y, vP.x);
+          float churn = 0.5 + 0.5 * sin(r * 26.0 - uT * 3.2 + sin(a * 5.0 + uT) * 1.5) * sin(a * 9.0 - r * 7.0 + uT * 0.7);
+          float alpha = smoothstep(1.0, 0.45, r) * (0.35 + 0.65 * smoothstep(0.35, 0.8, churn)) * 0.85;
+          gl_FragColor = vec4(vec3(0.96, 0.99, 0.98), alpha);
+          #include <tonemapping_fragment>
+          #include <colorspace_fragment>
+          #include <fog_fragment>
+        }`,
+      transparent: true, depthWrite: false, fog: true,
+    });
+    waterMats.push(FOAM);
+    const foamDisc = new THREE.Mesh(new THREE.CircleGeometry(F.width * 1.3, 40), FOAM);
+    foamDisc.rotation.x = -PI / 2; foamDisc.position.set(landing.x, POOL.y + 0.32, landing.z); foamDisc.renderOrder = 3; scene.add(foamDisc);
+    scene.userData.fallLanding = landing.clone();
     // the small stream that feeds it, over the top of the cliff
     const up = [];
     for (let k = 0; k <= 20; k++) { const z = F.z - 4 - k * 3; up.push({ c: V3(F.x + Math.sin(k * 0.5) * 3, base(F.x, z) - 0.4, z), side, w: F.width * 0.45, foam: 0.3 }); }
@@ -515,16 +563,32 @@ export function createWorld(scene, layout, roadDistance) {
       house(V3(x, 0, z), Math.round(yawOf(toRoad) / (PI / 2)) * (PI / 2), rr(7, 9.5), rr(7, 8.5), rr(3.4, 4.2), pick(HOUSE)); n++;
     }
     for (let k = 0; k < 40; k++) { const x = rr(TZ.xMin - 10, TZ.xMax + 10), z = rr(TZ.zMin, TZ.zMax + 20); if (nearPlaza(x, z, 2) || !freeOf(x, z, 2) || houses.some(hh => Math.hypot(hh.x - x, hh.z - z) < 7)) continue; mango(x, z); }
-    // the cement patio with the cacao drying in red-brown circles
-    const pave = new THREE.Mesh(new THREE.BoxGeometry(PL.w, 0.6, PL.d), new THREE.MeshStandardMaterial({ color: col('#dcd6c8'), roughness: 0.95 }));
-    pave.position.set(PL.x, plazaY - 0.18, PL.z); pave.receiveShadow = true; scene.add(pave);
-    for (let k = 0; k < 6; k++) addBox(V3(PL.x - PL.w / 2 + (k + 0.5) * PL.w / 6, plazaY + 0.13, PL.z), V3(0.12, 0.02, PL.d - 2), 0, '#b9b2a2');
-    for (let k = 0; k < 5; k++) addBox(V3(PL.x, plazaY + 0.13, PL.z - PL.d / 2 + (k + 0.5) * PL.d / 5), V3(PL.w - 2, 0.02, 0.12), 0, '#b9b2a2');
+    // the cement patio with the cacao drying in red-brown circles. The road's
+    // curve cuts the patio's corner, and the flat slab used to show through
+    // the sloping road there: the slab, its joints and the cacao stay clear.
+    const patioClear = (x, z, m = 0) => freeOf(x, z, m);
+    const top = [], quad = (x0, z0, x1, z1) => top.push(x0, 0, z0, x0, 0, z1, x1, 0, z1, x0, 0, z0, x1, 0, z1, x1, 0, z0);
+    for (let x = PL.x - PL.w / 2; x < PL.x + PL.w / 2 - 1e-6; x += 1) for (let z = PL.z - PL.d / 2; z < PL.z + PL.d / 2 - 1e-6; z += 1) {
+      const corners = [[x, z], [x + 1, z], [x, z + 1], [x + 1, z + 1]].filter(([cx, cz]) => patioClear(cx, cz)).length;
+      if (corners === 4) quad(x, z, x + 1, z + 1);
+      else if (corners) for (let i = 0; i < 4; i++) for (let j = 0; j < 4; j++) {
+        const sx = x + i / 4, sz = z + j / 4;
+        if (patioClear(sx + 0.125, sz + 0.125)) quad(sx, sz, sx + 0.25, sz + 0.25);
+      }
+    }
+    const patio = new THREE.BufferGeometry(); patio.setAttribute('position', new THREE.Float32BufferAttribute(top, 3)); patio.computeVertexNormals();
+    const pave = new THREE.Mesh(patio, new THREE.MeshStandardMaterial({ color: col('#dcd6c8'), roughness: 0.95 }));
+    pave.position.set(0, plazaY + 0.12, 0); pave.receiveShadow = true; scene.add(pave);
+    for (let k = 0; k < 6; k++) { const x = PL.x - PL.w / 2 + (k + 0.5) * PL.w / 6; for (let z = PL.z - PL.d / 2 + 1.5; z < PL.z + PL.d / 2 - 1; z += 1) if (patioClear(x, z, 0.3)) addBox(V3(x, plazaY + 0.13, z), V3(0.12, 0.02, 1), 0, '#b9b2a2'); }
+    for (let k = 0; k < 5; k++) { const z = PL.z - PL.d / 2 + (k + 0.5) * PL.d / 5; for (let x = PL.x - PL.w / 2 + 1.5; x < PL.x + PL.w / 2 - 1; x += 1) if (patioClear(x, z, 0.3)) addBox(V3(x, plazaY + 0.13, z), V3(1, 0.02, 0.12), 0, '#b9b2a2'); }
     const cols = 4, rows = Math.ceil(PL.circles / cols);
     for (let k = 0; k < PL.circles; k++) {
+      // Every random draw still happens so the rest of the valley keeps its layout.
       const cx = PL.x - PL.w / 2 + (k % cols + 0.5) * PL.w / cols + rr(-1.5, 1.5), cz = PL.z - PL.d / 2 + 8 + (Math.floor(k / cols) + 0.5) * (PL.d - 12) / rows + rr(-1, 1), r = rr(3.4, 4.6);
-      push(inst.disc, V3(cx, plazaY + 0.16, cz), qYaw(rand() * TAU), S.set(r, 1, r * rr(0.9, 1.1)), col('#5a2a1c').offsetHSL(rr(-0.015, 0.015), rr(-0.15, 0), rr(-0.04, 0.05)));
-      for (let j = 0; j < 4; j++) { const a = rand() * TAU, rd = r * rr(0.2, 0.8); push(inst.disc, V3(cx + Math.cos(a) * rd, plazaY + 0.17, cz + Math.sin(a) * rd), qYaw(rand() * TAU), S.set(r * 0.25, 1, r * 0.2), col('#3e1a12')); }
+      const clear = patioClear(cx, cz, r + 0.5);
+      const disc = [V3(cx, plazaY + 0.16, cz), qYaw(rand() * TAU), S.set(r, 1, r * rr(0.9, 1.1)).clone(), col('#5a2a1c').offsetHSL(rr(-0.015, 0.015), rr(-0.15, 0), rr(-0.04, 0.05))];
+      if (clear) push(inst.disc, ...disc);
+      for (let j = 0; j < 4; j++) { const a = rand() * TAU, rd = r * rr(0.2, 0.8), bean = [V3(cx + Math.cos(a) * rd, plazaY + 0.17, cz + Math.sin(a) * rd), qYaw(rand() * TAU), S.set(r * 0.25, 1, r * 0.2).clone(), col('#3e1a12')]; if (clear) push(inst.disc, ...bean); }
     }
     // the yellow church: arched door, pilasters, a curved gable with the bell
     const C = MAP.church, cy = plazaY - 0.3;
@@ -555,6 +619,12 @@ export function createWorld(scene, layout, roadDistance) {
     for (let k = 0; k < 6; k++) add(new THREE.CylinderGeometry(0.28, 0.32, 4.5, 10), wm, -8.4 + k * 3.36, 2.25, 5.6);
     add(new THREE.BoxGeometry(18.5, 0.6, 0.8), wm, 0, 4.6, 5.6);
     for (let k = 0; k < 10; k++) addBox(V3(SH.x + rr(-8, 8) * Math.cos(SH.rot), sy + 0.35 + (k % 3) * 0.6, SH.z - rr(-8, 8) * Math.sin(SH.rot) + 0) , V3(0.9, 0.55, 0.6), SH.rot + rr(-0.2, 0.2), '#a8784a');
+    // The church and the shop are 25 solid pieces: merged by look (paints
+    // move into vertex colours), the plaza costs a few draws instead.
+    for (const group of [church, shop]) {
+      scene.remove(group); scene.add(bake(group, { tint: true }));
+      group.traverse(o => o.geometry?.dispose());
+    }
     scene.userData.plaza = V3(PL.x, plazaY, PL.z);
   }
   // the hanging 'Bienvenido a Chuao' sign over the town street
@@ -661,8 +731,31 @@ export function createWorld(scene, layout, roadDistance) {
     for (let k = 0; k < 50; k++) { const a = rr(PI * 0.9, PI * 2.1), r = rr(800, 1400), s = new THREE.Sprite(mat); s.position.set(Math.cos(a) * r, rr(160, 300), Math.sin(a) * r * 0.8 - 300); const sc = rr(160, 320); s.scale.set(sc, sc * 0.45, 1); scene.add(s); clouds.push(s); }
     const low = new THREE.SpriteMaterial({ map: cloudTex, color: col('#ffffff'), transparent: true, opacity: 0.35, depthWrite: false, fog: true });
     for (let k = 0; k < 10; k++) { const x = rr(-340, 340), z = rr(-340, -300), s = new THREE.Sprite(low); s.position.set(x, base(x, z) + rr(12, 30), z); const sc = rr(50, 100); s.scale.set(sc, sc * 0.4, 1); scene.add(s); clouds.push(s); }
-    const mm = new THREE.SpriteMaterial({ map: cloudTex, color: col('#ffffff'), transparent: true, opacity: 0.45, depthWrite: false, fog: true });
-    for (let k = 0; k < 22; k++) { const s = new THREE.Sprite(mm); s.position.set(POOL.x + rr(-14, 14), POOL.y + rr(1, 9), POOL.z + rr(-12, 6)); const sc = rr(6, 14); s.scale.set(sc, sc * 0.7, 1); s.userData = { y0: s.position.y, ph: rand() * TAU }; scene.add(s); mist.push(s); }
+    // Mist and spray at the falls as one particle cloud animated on the GPU
+    // (it was 22 sprites, 22 draws). The 22 slow mist puffs keep their
+    // original random draws, so the rest of the valley keeps its layout;
+    // the fast spray rising off the landing uses its own seed.
+    const puffs = [], spray = rng(4127), landing = scene.userData.fallLanding;
+    for (let k = 0; k < 22; k++) { const x = POOL.x + rr(-14, 14), y = POOL.y + rr(1, 9), z = POOL.z + rr(-12, 6), size = rr(6, 14); puffs.push([x, y, z, size, rand() * TAU, 0]); }
+    for (let k = 0; k < 140; k++) { const a = spray() * TAU, r = spray() * MAP.fall.width * 1.6; puffs.push([landing.x + Math.cos(a) * r, POOL.y + 0.5, landing.z + Math.sin(a) * r * 0.7, 1.5 + spray() * 3.5, spray(), 1]); }
+    const cloud = new THREE.BufferGeometry();
+    cloud.setAttribute('position', new THREE.Float32BufferAttribute(puffs.flatMap(p => p.slice(0, 3)), 3));
+    cloud.setAttribute('puff', new THREE.Float32BufferAttribute(puffs.flatMap(p => p.slice(3)), 3));
+    const mistUniforms = { uT: { value: 0 } };
+    const mm = new THREE.PointsMaterial({ map: cloudTex, color: col('#ffffff'), size: 1, sizeAttenuation: true, transparent: true, opacity: 0.55, depthWrite: false, fog: true });
+    mm.onBeforeCompile = shader => {
+      Object.assign(shader.uniforms, mistUniforms);
+      shader.vertexShader = shader.vertexShader
+        .replace('#include <common>', '#include <common>\nattribute vec3 puff; uniform float uT; varying float vFade;')
+        .replace('#include <begin_vertex>', `vec3 transformed = position; float grow = puff.x;
+          if (puff.z > 0.5) { float life = fract(uT * 0.45 + puff.y); transformed += vec3(sin(puff.y * 40.0) * 2.5 * life, life * 9.0, cos(puff.y * 31.0) * 2.0 * life); grow *= 0.5 + life * 1.6; vFade = sin(life * 3.14159); }
+          else { transformed.y += sin(uT * 0.6 + puff.y) * 1.2; vFade = 0.8; }`)
+        .replace('gl_PointSize = size;', 'gl_PointSize = size * grow;');
+      shader.fragmentShader = shader.fragmentShader
+        .replace('#include <common>', '#include <common>\nvarying float vFade;')
+        .replace('#include <alphatest_fragment>', 'diffuseColor.a *= vFade;\n#include <alphatest_fragment>');
+    };
+    const mistCloud = new THREE.Points(cloud, mm); mistCloud.frustumCulled = false; scene.add(mistCloud); mist.push(mistUniforms);
   }
 
   /* ---------------- flush instances ---------------- */
@@ -745,7 +838,7 @@ export function createWorld(scene, layout, roadDistance) {
       b.g.position.copy(p); b.g.lookAt(ahead); b.g.rotateZ(-0.3 * Math.sign(b.sp));
       const flap = Math.max(0, Math.sin(t * b.fl + b.ph)) * 0.5 - 0.1; b.wings.forEach(w => (w.pivot.rotation.z = w.s * flap));
     });
-    mist.forEach(s => { s.position.y = s.userData.y0 + Math.sin(t * 0.6 + s.userData.ph) * 1.2; s.material.rotation = t * 0.02; });
+    mist.forEach(u => { u.uT.value = t; });
   }
 
   const ownedMaterials = new Set(), ownedTextures = new Set();

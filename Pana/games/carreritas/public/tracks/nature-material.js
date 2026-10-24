@@ -175,7 +175,8 @@ export function applyNatureMaterials(group, id, seed) {
   const style = natureStyle(id, seed), materials = new Map();
   const snowAmount = { value: 0.28 };
   if (style.snow) group.userData.snowAmount = snowAmount;
-  group.traverse(o => {
+  const paint = o => {
+    if (o.userData.setForestDetail) o.userData.prepareForestTier = tier => tier.traverse(paint);
     const tagged = !!o.geometry?.attributes.natureSurface;
     const snowSurface = style.snow && !!o.userData.snowSurface;
     const bloom = id === 'plaza' && !!o.userData.bloom;
@@ -187,7 +188,8 @@ export function applyNatureMaterials(group, id, seed) {
       return materials.get(key);
     };
     o.material = Array.isArray(o.material) ? o.material.map(own) : own(o.material);
-  });
+  };
+  group.traverse(paint);
   const dispose = group.userData.dispose;
   let released = false;
   group.userData.dispose = () => {

@@ -2,8 +2,8 @@
 // Recorded songs are `carreritas-<track>`; TRACK_STYLE is the synth groove a
 // circuit falls back to while its recording loads or if it is missing.
 export { STYLES, SONGS, noteFor, createMusic } from '/engine/music.js';
-export const TRACK_STYLE = { margarita: 'calipso', sarisarinama: 'tambor', sabana: 'tambor', tovar: 'andina', galipan: 'andina', maracaibo: 'gaita', cata: 'calipso', choroni: 'tambor', chuao: 'tambor', estadio: 'estadio', desierto: 'tambor', llanos: 'joropo', chichi: 'calipso', selva: 'tambor', paramo: 'andina', plaza: 'gaita', bululu: 'calipso', salto:'tambor',delta:'calipso',cuevas:'andina',salinas:'gaita',puerto:'calipso' };
+export const TRACK_STYLE = { dulce: 'gaita', nubes: 'joropo', volcan: 'tambor', arrecife: 'calipso', merida: 'andina', cosmos: 'estadio', margarita: 'calipso', sarisarinama: 'tambor', sabana: 'tambor', tovar: 'andina', galipan: 'andina', maracaibo: 'gaita', cata: 'calipso', choroni: 'tambor', chuao: 'tambor', estadio: 'estadio', desierto: 'tambor', llanos: 'joropo', chichi: 'calipso', selva: 'tambor', paramo: 'andina', plaza: 'gaita', bululu: 'calipso', salto:'tambor',delta:'calipso',cuevas:'andina',salinas:'gaita',puerto:'calipso' };
 export const GARAGE_SONG = 'carreritas-garaje', RESULTS_SONG = 'carreritas-podio';
-export const songFor = (trackId, mode) => mode === 'battle' ? 'carreritas-batalla' : `carreritas-${({cata:'chichi',choroni:'selva',chuao:'selva',tovar:'paramo',galipan:'paramo',maracaibo:'plaza',margarita:'bululu',sarisarinama:'selva',sabana:'salto'})[trackId] || trackId}`;
+export const songFor = (trackId, mode) => mode === 'battle' ? 'carreritas-batalla' : `carreritas-${({cata:'chichi',choroni:'selva',chuao:'selva',tovar:'paramo',galipan:'paramo',maracaibo:'plaza',margarita:'bululu',sarisarinama:'selva',sabana:'salto',cosmos:'estadio',merida:'paramo',arrecife:'bululu',volcan:'selva',nubes:'llanos',dulce:'plaza'})[trackId] || trackId}`;
 // The jingle over the results: a fanfare for first, a friendly one otherwise.
 export const finishSting = (won) => won ? 'carreritas-gana' : 'carreritas-meta';
