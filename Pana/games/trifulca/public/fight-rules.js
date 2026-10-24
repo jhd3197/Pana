@@ -15,6 +15,8 @@ export const T = {
   taunt: 1, rise: 1, dizzy: 2.1, counter: 6, contra: .8, contraMareo: 14,
   chip: { jab: 1.5, trompon: 6 }, guard: { jab: 12, trompon: 40 },
 };
+// Cue only when a fresh dodge can still cover the heavy punch's impact.
+export const dodgeCue = b => b?.act === 'wind' ? b.at >= T.wind + T.trompon.active[0] - T.dodge.safe[1] + .04 : b?.act === 'trompon' && !b.landed && b.at < T.trompon.active[0];
 export const SPEED = { forward: 2.7, back: 2.2, side: 2.4 };
 export const MAREO_MAX = 100, MAREO_CALMA = 75, KO_CAIDAS = 3, COUNT_STEP = .85;
 export const BODY_GAP = .85;
@@ -87,6 +89,7 @@ export function control(b, input, press, emit) {
   }
   if (press.gp) b.buffer = .2;
   const free = canAct(b) || b.act === 'block';
+  if (press.e && free) { b.charge = -1; b.buffer = 0; startDodge(b, input); emit({ type: 'dodge', id: b.id }); return; }
   if (b.charge >= 0) {
     b.charge += .05;
     if (!input.g && b.charge < T.hold + .05) { b.charge = -1; if (free) startJab(b, emit); }
@@ -95,7 +98,6 @@ export function control(b, input, press, emit) {
     return;
   }
   if (!free) return;
-  if (press.e) { startDodge(b, input); emit({ type: 'dodge', id: b.id }); return; }
   if (press.a) { setAct(b, 'grab'); emit({ type: 'grab', id: b.id }); return; }
   if (press.t && b.act !== 'block') { setAct(b, 'taunt'); emit({ type: 'taunt', id: b.id, corner: b.corner }); return; }
   if (b.buffer > 0) {

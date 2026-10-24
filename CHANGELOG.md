@@ -8,6 +8,10 @@ becomes the GitHub release's notes.
 
 ## Unreleased
 
+- **Trifulca responde a esquivar mientras preparas un golpe.**
+  La esquiva cancela la carga inicial y el aviso aparece a tiempo para evitar
+  el trompón, en vez de pedir una esquiva demasiado temprana.
+
 - **Billar ofrece una mesa individual de uno contra uno.**
   Bola 8 y Bola 9 permiten elegir rivales individuales o mantener los equipos.
 

@@ -202,3 +202,11 @@ portraits, controller prompts and intro/verdict presentation. It opts into
 `engine/banderin.css` for the shared lobby/button treatment and larger end-of-
 night results. The existing game-specific HUD stylesheet loads after that
 shared skin, preserving its compact mobile and reduced-motion rules.
+
+Dodge takes precedence over an uncommitted punch charge and clears its attack
+buffer. Previously the charge branch consumed that tick before checking dodge,
+so a quick dodge press could disappear. Committed attacks retain recovery.
+
+The HUD warns “Está cargando” first and says “ESQUIVA” only when a fresh
+dodge can cover the upcoming heavy impact; prompting at windup start made an
+immediate correct-looking response expire before contact.

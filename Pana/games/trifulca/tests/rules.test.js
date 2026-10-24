@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { Trifulca, cleanInput, INTRO, AFTER, STAKE, START_DOLITAS, titlesFor } from '../public/rules.js';
-import { T, edge, arenaOf } from '../public/fight-rules.js';
+import { T, edge, arenaOf, control, newBody, dodgeCue } from '../public/fight-rules.js';
 
 test('counter practice gives a beginner time without extending ordinary counters',()=>{
   const game=new Trifulca(1);game.addPlayer(1,'Ana',{});game.startTutorial(1);
@@ -353,4 +353,23 @@ test('the tutorial walks through every move and nobody loses', () => {
   assert.ok(game.events.some(e => e.type === 'tutorial-fin'));
   run(game, 30, {});
   assert.equal(game.phase, 'fight', 'no bell in the tutorial');
+});
+
+
+test('a dodge press cancels an uncommitted punch charge instead of disappearing',()=>{
+ const b=newBody(1,'red',arenaOf('toldo')),events=[];
+ b.charge=.05;b.buffer=.2;
+ control(b,{g:true},{e:1,gp:0,a:0,t:0},e=>events.push(e));
+ assert.equal(b.act,'dodge');assert.equal(b.charge,-1);assert.equal(b.buffer,0);
+ assert.equal(events[0].type,'dodge');
+ b.act='trompon';control(b,{g:true},{e:1,gp:0,a:0,t:0},()=>{});
+ assert.equal(b.act,'trompon','committed attacks still have recovery');
+});
+
+
+test('dodge prompt waits until its safe window covers the heavy hit',()=>{
+ assert.equal(dodgeCue({act:'wind',at:0}),false);
+ assert.equal(dodgeCue({act:'wind',at:.25}),true);
+ assert.equal(dodgeCue({act:'trompon',at:.05,landed:false}),true);
+ assert.equal(dodgeCue({act:'trompon',at:.2,landed:true}),false);
 });

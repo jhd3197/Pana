@@ -7,7 +7,7 @@ import { inputState, formatPadLabel } from '/engine/gamepad.js';
 import { fillRoster } from '/engine/results.js';
 import { lineFor, say } from './narrator.js';
 import { PAY, STAKE, INTRO, TUTORIAL } from './rules.js';
-import { MAREO_CALMA, KO_CAIDAS } from './fight-rules.js';
+import { MAREO_CALMA, KO_CAIDAS, dodgeCue } from './fight-rules.js';
 
 const $ = (id) => document.getElementById(id);
 const HOW = { ko: 'K.O.', cuenta: 'Cuenta de diez', puntos: 'Por puntos', publico: 'Decidió el público', calma: '¡Cálmate!', abandono: 'Abandono' };
@@ -201,7 +201,8 @@ export function createHud({ me, voice = () => true }) {
       const foe = bodies.find(b => b.id === myBody.foe);
       if (myBody.act === 'down') text = '¡Machaca J pa\' pararte!';
       else if (myBody.contra > 0) text = '¡CONTRA! J';
-      else if (foe?.act === 'wind' && Math.hypot(foe.x - myBody.x, foe.z - myBody.z) < 2.6) text = '¡ESQUIVA! Espacio';
+      else if (dodgeCue(foe) && Math.hypot(foe.x - myBody.x, foe.z - myBody.z) < 2.6) text = '¡ESQUIVA! Espacio';
+      else if (foe?.act === 'wind') text = '¡Ojo! Está cargando…';
       else if (foe?.act === 'dizzy') text = '¡Está mareado! ¡Dale!';
       else if (foe?.act === 'open') text = '¡Quedó abierto! J';
     }
