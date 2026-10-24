@@ -9,8 +9,9 @@ becomes the GitHub release's notes.
 ## Unreleased
 
 - **Chuao estrena un Chorrerón con cuerpo y la plaza ya no pisa la vía.**
-  La cascada cae curva, con chorros, espuma y rocío; el patio de cemento y
-  el cacao al sol terminan en el borde de la carretera junto a la iglesia.
+  La cascada cae curva, con chorros, espuma y rocío; los cerros lucen más
+  tupidos, y el patio de cemento y el cacao al sol terminan en el borde de
+  la carretera junto a la iglesia.
 
 - **Los 16 carros de Carreritas estrenan carrocería suave y cabina por dentro.**
   Faros, parrillas y adornos se apoyan en la carrocería curva, y cada carro

@@ -40,6 +40,14 @@ silhouettes); a card of the detailed model looked airier and emptier than
 the current hills. Trees beyond `IMPOSTOR_FROM` (45 m from the route) become
 cards; passing cars never see one turn.
 
+## Groves
+
+`coastalVegetation(..., { clump: n })` bakes each far-band card (beyond 70 m)
+as a grove of n copies of the band's model, turned and sized apart, so far
+hills read n times denser for the same number of cards. It is opt-in per
+map (Chuao uses 3); nearer bands keep single trees so passing scenery is
+unchanged. Overdraw grows with the bigger cards: check GPU time.
+
 ## Traps
 
 - Judge a change with scenery-only screenshots against the commit before it

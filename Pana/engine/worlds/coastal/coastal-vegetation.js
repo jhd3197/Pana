@@ -1,3 +1,4 @@
+import * as THREE from 'three';
 import { instancePlacements } from '/engine/models/core/static-batch.js';
 import { mangoTree } from '/engine/models/vegetation/mango-tree.js';
 import { ceiba } from '/engine/models/vegetation/ceiba.js';
@@ -18,8 +19,22 @@ import { forestZone, prepareForestModel, denseForest, forestQuality } from './fo
 // Preserve the reference planting zones, but use Pana's native silhouettes.
 // Mountain canopy has neither fruit nor individual leaves; road trees do.
 // `whole` lists species whose own far model is used unsimplified (thin cardones
-// otherwise cluster away to nothing).
-export function coastalVegetation(group, worldScale = 1, roadDistance, { cellSize = 120, whole = [], from = IMPOSTOR_FROM } = {}) {
+// otherwise cluster away to nothing). `clump` > 1 bakes each far-band card as
+// a small grove of that many trees, so far hills read denser at the cost of
+// one card each; nearer bands keep their single trees.
+// One prototype holding `count` copies of a model around its crown's edge,
+// turned and sized apart so the grove has no repeating tree.
+function grove(model, count) {
+  const first = model(), radius = new THREE.Box3().setFromObject(first).getSize(new THREE.Vector3()).x * 0.4, out = new THREE.Group();
+  for (let k = 0; k < count; k++) {
+    const tree = k ? first.clone() : first, a = k / count * Math.PI * 2 + 0.6;
+    tree.position.set(Math.cos(a) * radius, 0, Math.sin(a) * radius); tree.rotation.y = k * 2.1; tree.scale.multiplyScalar(1 - (k % 3) * 0.12);
+    out.add(tree);
+  }
+  return out;
+}
+
+export function coastalVegetation(group, worldScale = 1, roadDistance, { cellSize = 120, whole = [], from = IMPOSTOR_FROM, clump = 1 } = {}) {
   const batches = new Map();
   const factories = { tree: ceiba, mango: mangoTree, cacao, palm, fern: treeFern,
     pine: o => pine({ ...o, h: 9 }), fir: o => mountainPine({ seed: o.seed, h: 8 }), moriche, mangrove, cactus: o => cactus({ seed: o.seed }),
@@ -60,7 +75,7 @@ export function coastalVegetation(group, worldScale = 1, roadDistance, { cellSiz
             const flat = zone !== 'near' ? points.filter(p => p.d >= from * worldScale) : [];
             const solid = flat.length ? points.filter(p => p.d < from * worldScale) : points;
             if (solid.length) instancePlacements(tier, model(), solid, { name: `coastal-${key}`, cellSize: detail === 0 ? Math.max(cellSize,240/worldScale) : cellSize, castShadow: zone === 'near' });
-            if (flat.length) impostorPlacements(tier, model(), flat, { name: `coastal-${key}-impostor`, cellSize: Math.max(cellSize, 240 / worldScale) });
+            if (flat.length) impostorPlacements(tier, zone === 'far' && clump > 1 ? grove(model, clump) : model(), flat, { name: `coastal-${key}-impostor`, cellSize: Math.max(cellSize, 240 / worldScale) });
           }
         }
       });

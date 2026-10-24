@@ -4,7 +4,8 @@ import * as THREE from 'three';
 import { coastalVegetation } from '/engine/worlds/coastal/coastal-vegetation.js';
 import { MAP } from './chuao-layout.js';
 export function createWorld(scene, layout, roadDistance) {
-  const vegetation = coastalVegetation(scene, 1, roadDistance);
+  // Far hills get three-tree groves per card: a fuller jungle for the same cost.
+  const vegetation = coastalVegetation(scene, 1, roadDistance, { clump: 3 });
   let horizon = null;
   const PI = Math.PI, TAU = PI * 2, UP = new THREE.Vector3(0, 1, 0);
   const rand = rng(MAP.seed);
