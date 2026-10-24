@@ -1,13 +1,14 @@
 import { rng, pick as pickRandom } from '/engine/random.js';
 import * as THREE from 'three';
 import { MAP } from './nubes-layout.js';
-import { ownReferenceWorld } from './reference-world.js';
+import { ownReferenceWorld, referenceDetail } from './reference-world.js';
 
 export function createWorld(scene, layout) {
   const { PI, TAU, UP, DEG, clamp, sstep, lerp, col, V3, d, uTime, ih, noise2, fbm2, CTRL, roadCurve, ROAD_LEN, NR, RP, SEG, hwA, HW0, wrap, roadY, bank, roadFrame, roadAt, idxNear, i0, GC, grid, gkey, roadDist3, roadDistAt } = layout;
   const rand = rng(MAP.seed), rr = (a,b) => a + rand() * (b-a);
   const pick = values => pickRandom(values, rand);
   const createdTextures = [];
+  const mapDetail = { value: 2 };
   /* ---------------- sunset sky, sun, warm haze ---------------- */
   const SUN_DIR = new THREE.Vector3(...MAP.sun.dir).normalize();
   {
@@ -370,7 +371,7 @@ export function createWorld(scene, layout) {
       fragmentShader: `uniform float uT; uniform vec3 uSun; varying vec3 vW;
         float h(vec2 p){ return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
         float n(vec2 p){ vec2 i = floor(p), f = fract(p); f = f * f * (3.0 - 2.0 * f); return mix(mix(h(i), h(i + vec2(1,0)), f.x), mix(h(i + vec2(0,1)), h(i + vec2(1,1)), f.x), f.y); }
-        float fbm(vec2 p){ float s = 0.0, a = 0.5; for (int i = 0; i < 5; i++){ s += a * n(p); p *= 2.03; a *= 0.5; } return s; }
+        float fbm(vec2 p){ if (uMapDetail < 0.5) return n(p); float s = 0.0, a = 0.5; for (int i = 0; i < 5; i++){ s += a * n(p); p *= 2.03; a *= 0.5; } return s; }
         #include <fog_pars_fragment>
         void main(){
           vec2 p = vW.xz * 0.006 + vec2(uT * 0.004, uT * 0.002);
@@ -428,5 +429,5 @@ export function createWorld(scene, layout) {
   }
 
 
-  return ownReferenceWorld(scene, (x,z) => groundH(x,z) ?? -300, update, createdTextures);
+  return ownReferenceWorld(scene, (x,z) => groundH(x,z) ?? -300, referenceDetail(scene, update, mapDetail), createdTextures);
 }

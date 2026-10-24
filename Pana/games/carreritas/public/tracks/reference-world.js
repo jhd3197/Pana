@@ -64,3 +64,36 @@ export function referenceTrack(id, layout, world, options) {
   def.points = RP.filter((_, i) => i % 4 === 0).map((p, j) => [p.x * scale, p.z * scale, roadY[j * 4]]);
   return def;
 }
+
+// Only decorative effects use this clock; driving and network updates stay at full rate.
+export function referenceDetail(group, update, detail) {
+  const particles = [], sprites = [], shaders = new Set();
+  group.traverse(o => {
+    if (o.isPoints) particles.push({ object: o, full: o.geometry.attributes.position.count });
+    if (o.isSprite) sprites.push(o);
+    for (const m of [].concat(o.material || [])) if (m.isShaderMaterial && !shaders.has(m)) {
+      shaders.add(m);
+      m.uniforms.uMapDetail = detail;
+      m.fragmentShader = 'uniform float uMapDetail;\n' + m.fragmentShader;
+    }
+  });
+  // Animation may change a sprite's visibility. A separate parent keeps the
+  // quality mask independent from eruption/blink/opacity animation state.
+  const masks = sprites.map(o => {
+    const mask = new THREE.Group(); o.parent.add(mask); mask.add(o); return mask;
+  });
+  let last = -Infinity;
+  group.userData.setMapDetail = value => {
+    detail.value = value; last = -Infinity;
+    const stride = value === 0 ? 8 : value === 1 ? 2 : 1;
+    masks.forEach((o, i) => { o.visible = i % stride === 0; });
+    particles.forEach(({ object, full }) => object.geometry.setDrawRange(0,
+      Math.ceil(full * (value === 0 ? .1 : value === 1 ? .5 : 1))));
+  };
+  group.userData.setMapDetail(2);
+  return (t, dt, racerS) => {
+    const interval = detail.value === 0 ? 1 / 15 : detail.value === 1 ? 1 / 30 : 0;
+    if (t >= last && t - last < interval) return;
+    last = t; update(t, dt, racerS);
+  };
+}

@@ -78,3 +78,24 @@ These software-WebGL checks do not establish physical-device frame rates.
 For visual redesigns, keep using `carreritas-map-improvements.md`: Bululú's road
 composition and Puerto's layered-road lessons apply, but their palette, camera
 height and banking angles are not a universal recipe.
+
+## Fast effect quality
+
+Cosmos, Nubes, Volcán and Arrecife opt into `referenceDetail`. Rápida bypasses
+Cosmos's layered sky/planet noise, reduces cloud-sea and lava noise to one
+sample, replaces lava cellular noise with a cheap pattern, and disables reef
+caustics. These are uniform switches; Nítida restores the original shaders.
+The adapter supplies uniforms once per material, including shared materials.
+
+Decorative Points draw 10% / 50% / 100% of their seeded buffers across
+Rápida / Equilibrada / Nítida. Their CPU position updates skip inactive entries.
+Sprite effects retain one in eight / one in two / all sprites. Identity parent
+masks preserve local transforms and prevent animated visibility from overriding
+quality. Only scenery updates are capped at 15 / 30 / unrestricted Hz; roads,
+physics, multiplayer, cars and race presentation retain their existing cadence.
+Absolute race time keeps animation phase consistent and resets correctly on replay.
+
+The reference-quality suite checks live restoration, unchanged road geometry and
+player position, particle/sprite reductions, decorative clock rates and repeated
+Cosmos loading. Reference-support and reference-circuits retain road and real
+two-client proof. These reductions are not measured FPS on a player's device.

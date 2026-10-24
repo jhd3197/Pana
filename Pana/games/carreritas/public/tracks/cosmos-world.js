@@ -1,13 +1,14 @@
 import { rng, pick as pickRandom } from '/engine/random.js';
 import * as THREE from 'three';
 import { MAP } from './cosmos-layout.js';
-import { ownReferenceWorld } from './reference-world.js';
+import { ownReferenceWorld, referenceDetail } from './reference-world.js';
 
 export function createWorld(scene, layout) {
   const { PI, TAU, UP, DEG, clamp, sstep, lerp, col, V3, d, uTime, hash1, O, polar, ih, noise3, fbm3, NOISE_GLSL, CTRL, roadCurve, ROAD_LEN, NR, RP, SEG, hwA, HW0, roadY, bank, wrap, roadFrame, roadAt, idxNear, segRange, GC, grid, gkey, roadDist3, i0, startFrame, atBase, MO, MC, MR, PATCH, PH, craters, craterH, sphereTop, moonNatural, GR, CELL, X0, Z0, R2, sampleR, moonH, cMoon, cMare, cRim, cDust, moonColor } = layout;
   const rand = rng(MAP.seed), rr = (a,b) => a + rand() * (b-a);
   const pick = values => pickRandom(values, rand);
   const createdTextures = [];
+  const mapDetail = { value: 2 };
   /* ---------------- sky: deep space, the Turpial nebula (orange and black), stars, the sun ---------------- */
   const SUN_DIR = new THREE.Vector3(...MAP.sun.dir).normalize();
   const FOGS = Object.fromEntries(Object.entries(MAP.fog).map(([k, f]) => [k, { color: col(f.color), near: f.near, far: f.far }]));
@@ -596,7 +597,7 @@ export function createWorld(scene, layout) {
     rockMesh.instanceMatrix.needsUpdate = true;
     storm.update(t);
     // wormhole streaks
-    { const p = wormhole.motes.geometry.attributes.position, span = w1 - w0; wormhole.seeds.forEach((s, k) => { const u = (s.u + t * s.sp) % 1, i = w0 + Math.floor(u * span), f = roadFrame(i), c = roadAt(i, 0, 5); p.setXYZ(k, c.x + f.n.x * Math.cos(s.a + t) * s.r, c.y + Math.sin(s.a + t) * s.r * 0.8, c.z + f.n.z * Math.cos(s.a + t) * s.r); }); p.needsUpdate = true; }
+    { const p = wormhole.motes.geometry.attributes.position, span = w1 - w0; wormhole.seeds.forEach((s, k) => { if (k >= wormhole.motes.geometry.drawRange.count) return; const u = (s.u + t * s.sp) % 1, i = w0 + Math.floor(u * span), f = roadFrame(i), c = roadAt(i, 0, 5); p.setXYZ(k, c.x + f.n.x * Math.cos(s.a + t) * s.r, c.y + Math.sin(s.a + t) * s.r * 0.8, c.z + f.n.z * Math.cos(s.a + t) * s.r); }); p.needsUpdate = true; }
     wormhole.portals.forEach((g, k) => (g.children[1].rotation.z = t * (k ? -0.6 : 0.6)));
 
 
@@ -617,5 +618,5 @@ export function createWorld(scene, layout) {
   }
 
 
-  return ownReferenceWorld(scene, moonH, update, createdTextures);
+  return ownReferenceWorld(scene, moonH, referenceDetail(scene, update, mapDetail), createdTextures);
 }

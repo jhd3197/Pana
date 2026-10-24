@@ -1,13 +1,14 @@
 import { rng, pick as pickRandom } from '/engine/random.js';
 import * as THREE from 'three';
 import { MAP } from './arrecife-layout.js';
-import { ownReferenceWorld } from './reference-world.js';
+import { ownReferenceWorld, referenceDetail } from './reference-world.js';
 
 export function createWorld(scene, layout) {
   const { PI, TAU, UP, clamp, sstep, lerp, col, V3, d, uTime, W0, CX, CZ, SIZE, HALF, SEA, SURF, SB, ih, noise2, fbm2, TRP, trenchQ, natural, CTRL, roadCurve, ROAD_LEN, NR, RP, SEG, hwA, HW0, wrap, roadY, bank, roadFrame, roadAt, idxNear, segRange, i0, GR, CELL, X0, Z0, GN, vIdx, NAT, HGT, DMIN, NEAR, inSquare, gridH, groundH, roadDist, GC, grid, gkey, roadDist3 } = layout;
   const rand = rng(MAP.seed), rr = (a,b) => a + rand() * (b-a);
   const pick = values => pickRandom(values, rand);
   const createdTextures = [];
+  const mapDetail = { value: 2 };
   /* ---------------- sky above, sun, fog ---------------- */
   const SUN_DIR = new THREE.Vector3(...MAP.sun.dir).normalize();
   const sky = new THREE.Mesh(new THREE.SphereGeometry(9000, 32, 16), new THREE.ShaderMaterial({
@@ -68,6 +69,7 @@ export function createWorld(scene, layout) {
   // sunlight caustics rippling over the seabed and the road, strongest in shallow water
   const CAUSTIC_GLSL = `
     float causticAt(vec3 w, float t){
+      if (uMapDetail < 0.5) return 0.0;
       vec2 q = w.xz * 0.34;
       vec2 a = q + vec2(sin(q.y * 1.7 + t * 0.9), cos(q.x * 1.3 - t * 0.7)) * 0.9;
       vec2 b = q * 1.43 + vec2(cos(q.y * 2.1 - t * 1.1), sin(q.x * 1.9 + t * 0.8)) * 0.9;
@@ -79,14 +81,14 @@ export function createWorld(scene, layout) {
     const prev = mat.onBeforeCompile;
     mat.onBeforeCompile = (sh, r) => {
       if (prev) prev(sh, r);
-      sh.uniforms.uTimeC = uTime;
+      sh.uniforms.uTimeC = uTime; sh.uniforms.uMapDetail = mapDetail;
       sh.vertexShader = 'varying vec3 vWorldC;\n' + sh.vertexShader.replace('#include <project_vertex>', `#include <project_vertex>
         vec4 wcp = vec4(transformed, 1.0);
         #ifdef USE_INSTANCING
           wcp = instanceMatrix * wcp;
         #endif
         vWorldC = (modelMatrix * wcp).xyz;`);
-      sh.fragmentShader = 'uniform float uTimeC;\nvarying vec3 vWorldC;\n' + CAUSTIC_GLSL + '\n' + sh.fragmentShader.replace('#include <emissivemap_fragment>', `#include <emissivemap_fragment>
+      sh.fragmentShader = 'uniform float uMapDetail; uniform float uTimeC;\nvarying vec3 vWorldC;\n' + CAUSTIC_GLSL + '\n' + sh.fragmentShader.replace('#include <emissivemap_fragment>', `#include <emissivemap_fragment>
         totalEmissiveRadiance += vec3(0.75, 0.95, 1.0) * causticAt(vWorldC, uTimeC) * ${strength.toFixed(2)} * (0.35 + 0.65 * max(normal.y, 0.0));`);
     };
     return mat;
@@ -452,12 +454,12 @@ export function createWorld(scene, layout) {
     jellies.forEach((j, k) => { const pulse = 1 + 0.18 * Math.sin(t * 2.2 + j.ph); tmpV.copy(j.p).add(V3(Math.sin(t * 0.2 + j.ph) * 2, Math.sin(t * 0.5 + j.ph) * 1.5, Math.cos(t * 0.17 + j.ph) * 2)); m4.compose(tmpV, Q, sc3.set(j.s * pulse, j.s / pulse, j.s * pulse)); jellyMesh.setMatrixAt(k, m4); });
     jellyMesh.instanceMatrix.needsUpdate = true;
     // bubbles rise and pop at the surface; snow drifts down
-    { const p = bubbles.m.geometry.attributes.position; bubbles.seeds.forEach((b, k) => { const y = b.y0 + ((t * b.sp + b.ph) % Math.max(4, SURF - b.y0)); p.setXYZ(k, b.x + Math.sin(t * 2 + b.ph) * 0.3, y, b.z + Math.cos(t * 1.7 + b.ph) * 0.3); }); p.needsUpdate = true; }
-    { const p = snow.m.geometry.attributes.position; snow.seeds.forEach((s, k) => { const y = SURF - 2 - (((SURF - 2 - s.y) + t * 0.4) % (SURF + 28)); p.setXYZ(k, s.x + Math.sin(t * 0.3 + s.ph) * 1.5, y, s.z + Math.cos(t * 0.25 + s.ph) * 1.5); }); p.needsUpdate = true; }
+    { const p = bubbles.m.geometry.attributes.position; bubbles.seeds.forEach((b, k) => { if (k >= bubbles.m.geometry.drawRange.count) return; const y = b.y0 + ((t * b.sp + b.ph) % Math.max(4, SURF - b.y0)); p.setXYZ(k, b.x + Math.sin(t * 2 + b.ph) * 0.3, y, b.z + Math.cos(t * 1.7 + b.ph) * 0.3); }); p.needsUpdate = true; }
+    { const p = snow.m.geometry.attributes.position; snow.seeds.forEach((s, k) => { if (k >= snow.m.geometry.drawRange.count) return; const y = SURF - 2 - (((SURF - 2 - s.y) + t * 0.4) % (SURF + 28)); p.setXYZ(k, s.x + Math.sin(t * 0.3 + s.ph) * 1.5, y, s.z + Math.cos(t * 0.25 + s.ph) * 1.5); }); p.needsUpdate = true; }
     scene.userData.boat.position.y = SURF + 0.2 + Math.sin(t * 1.2) * 0.15; scene.userData.boat.rotation.z = Math.sin(t * 0.9) * 0.04;
 
   }
 
 
-  return ownReferenceWorld(scene, groundH, update, createdTextures);
+  return ownReferenceWorld(scene, groundH, referenceDetail(scene, update, mapDetail), createdTextures);
 }

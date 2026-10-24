@@ -1,13 +1,14 @@
 import { rng, pick as pickRandom } from '/engine/random.js';
 import * as THREE from 'three';
 import { MAP } from './volcan-layout.js';
-import { ownReferenceWorld } from './reference-world.js';
+import { ownReferenceWorld, referenceDetail } from './reference-world.js';
 
 export function createWorld(scene, layout) {
   const { PI, TAU, UP, DEG, clamp, sstep, lerp, col, V3, d, uTime, hash1, W0, CX, CZ, SIZE, HALF, VO, VX, VZ, ih, noise2, fbm2, NOISE_GLSL, RV, riverPts, riverQuery, LL, lakeE, volR, baseNat, natural, CTRL, roadCurve, ROAD_LEN, NR, RP, SEG, hwA, HW0, wrap, roadY, bank, roadFrame, roadAt, idxNear, segRange, isBridge, i0, GR, CELL, X0, Z0, GN, vIdx, NAT, HGT, DMIN, NEAR, inSquare, gridH, groundH, roadDist } = layout;
   const rand = rng(MAP.seed), rr = (a,b) => a + rand() * (b-a);
   const pick = values => pickRandom(values, rand);
   const createdTextures = [];
+  const mapDetail = { value: 2 };
   /* ---------------- dusk sky glowing red, moonlight, smoky haze ---------------- */
   const SUN_DIR = new THREE.Vector3(...MAP.sun.dir).normalize();
   {
@@ -305,8 +306,8 @@ export function createWorld(scene, layout) {
       const sc = 30 + u * 240; s.s.scale.set(sc, sc, 1); s.s.material.color.setRGB(lerp(0.75, 0.2, Math.min(1, u * 4)), lerp(0.3, 0.16, Math.min(1, u * 4)), lerp(0.15, 0.15, u)); s.s.material.opacity = 0.75 * (1 - u) * Math.min(1, u * 10);
     });
     steam.forEach(s => { const u = (t * 0.12 + s.ph) % 1; s.s.position.set(s.x + u * 4, s.y + 1 + u * 22, s.z); const sc = 3 + u * 14; s.s.scale.set(sc, sc, 1); s.s.material.opacity = 0.4 * (1 - u); });
-    { const p = embers.m.geometry.attributes.position; embers.seeds.forEach((e, k) => { const u = ((t * e.sp + e.ph) % e.h); p.setXYZ(k, e.x + Math.sin(t + k) * u * 0.15, e.y + u, e.z + Math.cos(t * 0.8 + k) * u * 0.15); }); p.needsUpdate = true; }
-    { const p = ash.m.geometry.attributes.position; ash.seeds.forEach((a, k) => { const y = 160 - ((160 - a.y + t * 2.5) % 160); p.setXYZ(k, a.x + Math.sin(t * 0.3 + a.ph) * 3 + t * 1.2 % 40, y, a.z + Math.cos(t * 0.25 + a.ph) * 3); }); p.needsUpdate = true; }
+    { const p = embers.m.geometry.attributes.position; embers.seeds.forEach((e, k) => { if (k >= embers.m.geometry.drawRange.count) return; const u = ((t * e.sp + e.ph) % e.h); p.setXYZ(k, e.x + Math.sin(t + k) * u * 0.15, e.y + u, e.z + Math.cos(t * 0.8 + k) * u * 0.15); }); p.needsUpdate = true; }
+    { const p = ash.m.geometry.attributes.position; ash.seeds.forEach((a, k) => { if (k >= ash.m.geometry.drawRange.count) return; const y = 160 - ((160 - a.y + t * 2.5) % 160); p.setXYZ(k, a.x + Math.sin(t * 0.3 + a.ph) * 3 + t * 1.2 % 40, y, a.z + Math.cos(t * 0.25 + a.ph) * 3); }); p.needsUpdate = true; }
     // lava bombs: each slot of the clock launches one, so every screen sees the same eruption
     const base = Math.floor(t / ER.every);
     bombs.forEach((b, k) => {
@@ -319,5 +320,5 @@ export function createWorld(scene, layout) {
   }
 
 
-  return ownReferenceWorld(scene, groundH, update, createdTextures);
+  return ownReferenceWorld(scene, groundH, referenceDetail(scene, update, mapDetail), createdTextures);
 }

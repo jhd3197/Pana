@@ -63,8 +63,8 @@ export function createLayout() {
   const NOISE_GLSL = `
     float h2(vec2 p){ return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
     float n2(vec2 p){ vec2 i = floor(p), f = fract(p); f = f * f * (3.0 - 2.0 * f); return mix(mix(h2(i), h2(i + vec2(1,0)), f.x), mix(h2(i + vec2(0,1)), h2(i + vec2(1,1)), f.x), f.y); }
-    float fbm(vec2 p){ float s = 0.0, a = 0.5; for (int i = 0; i < 5; i++){ s += a * n2(p); p = p * 2.03 + 1.7; a *= 0.5; } return s; }
-    vec2 cellular(vec2 p){ vec2 i = floor(p), f = fract(p); float d1 = 8.0, d2 = 8.0;
+    float fbm(vec2 p){ if (uMapDetail < 0.5) return n2(p); float s = 0.0, a = 0.5; for (int i = 0; i < 5; i++){ s += a * n2(p); p = p * 2.03 + 1.7; a *= 0.5; } return s; }
+    vec2 cellular(vec2 p){ if (uMapDetail < 0.5) return vec2(0.0, abs(sin(p.x) * cos(p.y)) * 0.5); vec2 i = floor(p), f = fract(p); float d1 = 8.0, d2 = 8.0;
       for (int y = -1; y <= 1; y++) for (int x = -1; x <= 1; x++){ vec2 g = vec2(float(x), float(y)); vec2 o = vec2(h2(i + g), h2(i + g + 17.3)); float d = length(g + o - f); if (d < d1){ d2 = d1; d1 = d; } else if (d < d2) d2 = d; }
       return vec2(d1, d2); }`;
 

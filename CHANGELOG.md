@@ -8,6 +8,10 @@ becomes the GitHub release's notes.
 
 ## Unreleased
 
+- **Rápida reduce los efectos de Cosmos, Nubes, Volcán y Arrecife.**
+  Simplifica los cielos, nubes y lava, apaga las cáusticas submarinas y reduce
+  partículas, transparencias y actualizaciones decorativas sin cambiar la pista.
+
 - **Rápida aligera los bosques de Carreritas y mantiene el ritmo de carrera.**
   Chuao y los demás circuitos con bosques compartidos usan árboles más simples
   al bajar la calidad; los cuadros lentos ya no frenan el carro por debajo de
