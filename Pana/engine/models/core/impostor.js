@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { getSettings } from '/engine/settings.js';
 
 // Distant objects as baked billboards (impostors). A prototype is rendered
 // once from FRAMES directions around its vertical axis, at a low and a high
@@ -177,8 +178,9 @@ function impostorMaterial(uniforms, { roughness = .85, emissive = 0x000000 } = {
 // Same contract as static-batch.js instancePlacements: one prototype drawn at
 // placements ({x, y, z, rot, scale}) bucketed into cells. `source` is consumed
 // once baked; its materials are only borrowed. `tile` is each view's pixel
-// size, `elevations` the low and high camera angles (radians) of the views.
-export function impostorPlacements(parent, source, placements, { name = source.name, cellSize = 240, tile = TILE, elevations = ELEVATIONS } = {}) {
+// size (Rápida bakes 128 px views: under half the memory, for phones),
+// `elevations` the low and high camera angles (radians) of the views.
+export function impostorPlacements(parent, source, placements, { name = source.name, cellSize = 240, tile = getSettings().quality === 'baja' ? 128 : TILE, elevations = ELEVATIONS } = {}) {
   if (!placements.length) return [];
   source.updateMatrixWorld(true);
   let radius = 0, minY = Infinity, maxY = -Infinity, roughness = .85, emissive = 0x000000;
