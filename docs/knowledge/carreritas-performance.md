@@ -262,6 +262,12 @@ from 2,185 to 896 draws and 22 to 9 ms CPU with the cars hidden.
   cockpit view possible. −160 to −280 draws, CPU −10 to −25 %.
 - `rivalShadows`: a rival's six largest pieces cast shadows. −160 to −200
   draws at the grid; shadows look the same.
+- `farCar` (rivals): the body, cabin and wheels merged into one
+  vertex-coloured mesh on the tumble's inner group, shown once every camera
+  is more than `CAR_FAR_FROM` (35 m) away and the racer is on wheels. A
+  rival's ~20 visible parts become one draw and one shadow caster; the card,
+  detachables, danglers, flag and glass stay separate. 0.5/255 per channel
+  from the real car at 40 m.
 
 ### Final reference measurement
 

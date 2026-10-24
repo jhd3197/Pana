@@ -656,7 +656,7 @@ function makeRacer(index, isPlayer, name, wheelId = 'calle', avatar = null, cosm
   const car = def.build(who.avatar, wheel.wheel ?? undefined, renderConfig(cosmetics.parts));
   repaintCar(car, def.color, paintOf(cosmetics));
   batchRacer(car,paintOf(cosmetics,def.color)); trimDriver(car);
-  if (!isPlayer) { driverCards?.cardDriver(car); rivalShadows(car); }
+  if (!isPlayer) { driverCards?.cardDriver(car); driverCards?.farCar(car); rivalShadows(car); }
   // Retain ownership even after a bumper detaches and expires from the scene.
   car.geometries = new Set();
   car.ownedMaterials = new Set();
@@ -1502,7 +1502,7 @@ function syncCar(c, dt) {
 
   // the driver: big head lags behind every bump and turn
   const d = car.driver;
-  if (!car.driverCard || driverCards.showDriver(car, c, [race.camera, race.p2 && race.camera2])) {
+  if (!(car.driverCard || car.far) || driverCards.showRival(car, c, [race.camera, race.p2 && race.camera2])) {
     d.neck.rotation.z = c.headLag.step(-lean * 0.5 + sr * 2, 90, 5, dt);
     d.neck.rotation.x = -dive * 0.25 + c.heave.v * 0.01;
     d.neck.rotation.y = c.steer * 0.45;

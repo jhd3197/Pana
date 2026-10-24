@@ -1,6 +1,7 @@
 // Race drivers: trimDriver keeps the pana's shape while shedding studio
 // detail; a rival's card replaces it with a baked photograph that looks like
-// it at racing distance, and the real pana returns close to a camera.
+// it at racing distance, and the real pana returns close to a camera. A far
+// rival's car is one merged mesh that looks like the real one at 40 m.
 import assert from 'node:assert/strict';
 import { createRequire } from 'node:module';
 const { chromium } = createRequire(import.meta.url)(process.env.PANA_PLAYWRIGHT_PATH || 'playwright');
@@ -28,15 +29,26 @@ try {
     const real = shot();
     cards.cardDriver(car); prepareImpostors(renderer);
     const card = car.driverCard, atlas = card.userData.atlas.impAlbedo.value.image;
-    const far = cards.showDriver(car, { x: 0, z: 0 }, [camera]), photo = shot();
+    const far = cards.showRival(car, { x: 0, z: 0 }, [camera]), photo = shot();
     camera.position.set(2, 2, -4); camera.updateMatrixWorld();
-    const near = cards.showDriver(car, { x: 0, z: 0 }, [camera]);
+    const near = cards.showRival(car, { x: 0, z: 0 }, [camera]), realVisible = car.driver.group.visible, cardVisible = card.visible;
     let difference = 0; for (let i = 0; i < real.length; i += 4) for (let k = 0; k < 3; k++) difference += Math.abs(real[i + k] - photo[i + k]);
+    // The distant car: 40 m away, real parts against the merged mesh.
+    cards.farCar(car);
+    const parts = car.far.parts.length;
+    camera.position.set(8, 8, -39); camera.lookAt(0, 1, 0); camera.fov = 12; camera.updateProjectionMatrix(); camera.updateMatrixWorld();
+    cards.showRival(car, { x: 0, z: 0 }, [camera]); const merged = shot(), farOn = car.far.on && car.far.mesh.visible && car.far.parts.every(p => !p.visible);
+    car.far.on = false; car.far.mesh.visible = false; car.far.parts.forEach(p => { p.visible = true; }); const whole = shot();
+    const boating = (cards.showRival(car, { x: 0, z: 0, boat: true }, [camera]), car.far.on);
+    camera.position.set(3, 3, -20); camera.updateMatrixWorld(); cards.showRival(car, { x: 0, z: 0 }, [camera]);
+    const backOn = !car.far.on && car.far.parts.every(p => p.visible);
+    let farDifference = 0; for (let i = 0; i < whole.length; i += 4) for (let k = 0; k < 3; k++) farDifference += Math.abs(whole[i + k] - merged[i + k]);
     target.dispose();
     return {
       shown: [before.length, after.length], physical: after.filter(o => o.material.isMeshPhysicalMaterial).length,
-      size: size.toArray(), trimmed: trimmed.toArray(), carded: !!card, far, near, realVisible: car.driver.group.visible, cardVisible: card.visible,
+      size: size.toArray(), trimmed: trimmed.toArray(), carded: !!card, far, near, realVisible, cardVisible,
       baked: card.geometry.instanceCount === 1 && atlas.width > 1 && atlas.data.some((v, i) => i % 4 === 3 && v > 200), meanChannelDifference: difference / (256 * 256 * 3),
+      parts, farOn, boating, backOn, farDifference: farDifference / (256 * 256 * 3),
     };
   });
   assert.ok(r.shown[1] < r.shown[0], `trim hides studio details: ${r.shown}`);
@@ -47,6 +59,10 @@ try {
   assert.ok(r.near && r.realVisible && !r.cardVisible, 'a close camera sees the real pana again');
   // The card only differs inside the driver's few hundred pixels at this distance.
   assert.ok(r.meanChannelDifference < .25, `the card reads like the pana at racing distance: ${r.meanChannelDifference}`);
+  assert.ok(r.parts > 8 && r.farOn, `beyond 35 m the rival is one mesh instead of ${r.parts} parts`);
+  assert.equal(r.boating, false, 'a boat or plane phase keeps the real car');
+  assert.ok(r.backOn, 'closer than 35 m the real parts return');
+  assert.ok(r.farDifference < 1, `the merged car reads like the real one at 40 m: ${r.farDifference}`);
   assert.deepEqual(errors, []);
   console.log('driver cards ok', JSON.stringify(r));
 } finally { await browser.close(); }
