@@ -110,6 +110,7 @@ export function acceptAction(state, id, action, hostId) {
     return true;
   }
   if (action.action === 'swap') {
+    if (state.options.format === 'duel' && (action.from > 1 || action.to > 1)) return false;
     if (state.phase !== 'lobby' || !canMoveSeats(state.players, action.from, action.to, id, hostId)) return false;
     [state.players[action.from], state.players[action.to]] = [state.players[action.to], state.players[action.from]];
     state.revision++; return true;
@@ -117,6 +118,9 @@ export function acceptAction(state, id, action, hostId) {
   if (action.action === 'options') {
     if (id !== hostId || !['lobby', 'finished'].includes(state.phase)) return false;
     const options = poolOptions(state.options, action.options); if (!options) return false;
+    if (options.format !== state.options.format && state.phase !== 'lobby') return false;
+    if (options.format === 'duel' && occupiedSeats(state).length > 2) return false;
+    if (options.format === 'duel' && state.phase === 'lobby') state.players.sort((a,b) => Number(b.id !== null) - Number(a.id !== null));
     state.options = options; state.scores = [0, 0]; if (state.result) state.result.matchFinished = true;
     if (state.phase === 'lobby') state.balls = rack(options.variant);
     state.revision++; return true;

@@ -3,6 +3,7 @@ import { STARTER_FIELD } from '../../../engine/play/quien-empieza-rules.js';
 
 export const POOL_OPTIONS = [
   { id: 'variant', label: 'Modo', default: 'eight', choices: [['eight', 'Bola 8'], ['nine', 'Bola 9']] },
+  { id: 'format', label: 'Jugadores', default: 'teams', choices: [['duel', 'Individual · 1 contra 1'], ['teams', 'Por equipos']] },
   { id: 'venue', label: 'Mesa', default: 'plaza', choices: [['plaza', 'Plaza'], ['cafe', 'Café']] },
   { id: 'guide', label: 'Ayuda de tiro', default: 'difficulty', choices: [['difficulty', 'Según dificultad'], ['long', 'Larga'], ['short', 'Corta'], ['none', 'Sin ayuda']] },
   { id: 'breakPolicy', label: 'Saque', default: 'alternate', advanced: true, choices: [['alternate', 'Alterno'], ['winner', 'Ganador'], ['loser', 'Perdedor']] },
@@ -20,7 +21,7 @@ export const playingSeats = state => state.activeSeats?.length ? state.activeSea
 export function canStartPool(state) {
   if (state.practice) return state.players[0].id !== null;
   const seats = occupiedSeats(state), a = seats.filter(i => teamOf(i) === 0).length;
-  return a > 0 && a * 2 === seats.length;
+  return a > 0 && a * 2 === seats.length && (state.options.format !== 'duel' || seats.length === 2);
 }
 export const poolConnected = state => state.practice || playingSeats(state).length >= 2 && playingSeats(state).every(i => state.players[i].id !== null);
 export function nextShooter(state, team) {

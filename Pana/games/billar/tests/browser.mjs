@@ -74,6 +74,9 @@ try {
   const c = await open('Tercero', code, false, true);
   await wait(c, () => billarDebug.room.connected && billarDebug.room.seat === 2);
   await c.close(); await wait(a, () => billarDebug.room.members.size === 2); check('third client joins the same room and can leave before a duel');
+  await a.locator('[data-room-option="format"][data-value="duel"]').click();
+  await wait(b, () => billarDebug.room.state.options.format === 'duel');
+  assert.equal(await b.locator('#seating').innerText().then(t => t.includes('Equipo A')), false);
   // ¿Quién rompe?: both panas shake at once, Juan on the button and María on Space.
   await a.locator('#start').click(); await wait(b, () => billarDebug.room.state.phase === 'starter');
   await a.locator('#pana-starter-shake').waitFor(); await b.locator('#pana-starter-shake').waitFor();

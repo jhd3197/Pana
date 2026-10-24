@@ -8,6 +8,9 @@ becomes the GitHub release's notes.
 
 ## Unreleased
 
+- **Billar ofrece una mesa individual de uno contra uno.**
+  Bola 8 y Bola 9 permiten elegir rivales individuales o mantener los equipos.
+
 - **Carreritas muestra números mayores y controles visibles para lanzar atrás.**
   Las estadísticas conservan un tamaño legible; los botones de objetos también
   aparecen en escritorio y recuerdan el control X para lanzar hacia atrás.

@@ -23,7 +23,7 @@ export class PoolRoom extends TableRoom {
     for (const m of this.members.values()) {
       const p = this.game.players.find(p => p.id === m.id)
         || this.game.activeSeats.map(i => this.game.players[i]).find(p => p.id === null)
-        || this.game.players.find(p => p.id === null);
+        || this.game.players.slice(0, this.game.options.format === 'duel' ? 2 : 6).find(p => p.id === null);
       if (p) Object.assign(p, { id: m.id, name: m.name, avatar: m.avatar || {} });
     }
   }

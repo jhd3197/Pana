@@ -189,3 +189,8 @@ The shot strip has one charging hint and a short Tirar/Soltar action label.
 Below 800px it stacks status and controls; desktop gives the action a fixed
 250px column so the status cannot collapse into a one-word column. Keep the
 optional called-pocket and shot-clock rows spanning both columns.
+
+The explicit Individual · 1 contra 1 format seats two occupied slots opposite
+one another, hides team panels and restricts joining/seating to two players.
+Switching into it with more than two seated players is rejected. Both Bola 8
+and Bola 9 retain the same shot rules; Por equipos keeps the six-seat layout.
