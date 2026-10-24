@@ -42,6 +42,23 @@ GPU-completion timings, sustained FPS, or a total-loading speedup. The upload
 batches still contain occasional long tasks, and scene construction remains
 the largest uninterrupted work.
 
+## Benchmark: before/after on one machine
+
+`npm run bench -- --base <ref> [--maps a,b] [--throttle 4] [--drive 40]`
+(`tests/bench.proof.js`) serves the base commit from a temporary worktree
+and the working tree side by side, then per map measures the time to the
+first race frame; at route fractions 0, .33 and .62 with an 8-car grid the
+draw calls, triangles, GPU time (timer query) and CPU submit time, in
+alternating rounds so background load hits both; an autopilot drive's p95,
+worst frame and freezes over 50 ms (optionally with the CPU throttled);
+and scenery-only screenshots (cars and HUD hidden, since base and head may
+pick different rivals) compared per pixel. Results and side-by-side look
+sheets go to `art/bench/<time>/`.
+
+Quote draws, triangles and freezes as the portable numbers; milliseconds
+compare only within one run. The machine here usually carries other load:
+always compare base and head from the same run, never across runs.
+
 ## First-lap hitches: vessels are built behind the cover
 
 On gate maps every racer's lancha or avioneta used to be built on the
