@@ -355,7 +355,7 @@ test('served images stay small (at most 600 KB)', () => {
   const problems = [];
   const packs = JSON.parse(read(path.join(app, 'server/src/asset-packs.json')));
   for (const pack of Object.values(packs)) for (const [name, entry] of Object.entries(pack.entries)) {
-    if (/^(web\/images\/|games\/)/.test(name) && entry.bytes > 600 * 1024) problems.push(`${name}: packed image exceeds 600 KB`);
+    if (/^(web\/images\/|games\/)/.test(name) && /\.(png|jpe?g|webp|avif|gif)$/i.test(name) && entry.bytes > 600 * 1024) problems.push(`${name}: packed image exceeds 600 KB`);
   }
   for (const dir of [path.join(app, 'web', 'images'), ...games.map(id => path.join(gamesDir, id, 'public'))]) {
     if (!fs.existsSync(dir)) continue;

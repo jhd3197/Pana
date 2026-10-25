@@ -18,13 +18,21 @@ export function createMomentVisual(kind,color='#ffc629') {
     const sprite=new THREE.Sprite(new THREE.SpriteMaterial({map,depthWrite:false})),width=Math.min(2.4,Math.max(.65,canvas.width/200));sprite.scale.set(width,width*100/canvas.width,1);return sprite;
   }
   const text=kind==='block'?'¡Juntos!':kind==='sleep'?'Z z z':kind==='suspense'?'…':kind==='podium'?'¡Campeón!':MOMENT_NAMES[MOMENTS.indexOf(kind)];
-  const label=textSprite(text);root.add(label);
+  const label=textSprite(text);label.name='moment-caption';if(kind==='nomoves')label.scale.multiplyScalar(.65);root.add(label);
   const props=new THREE.Group();root.add(props);
   const mat=new THREE.MeshStandardMaterial({color,roughness:.5});
   function mesh(geometry,material=mat){const m=new THREE.Mesh(geometry,material);props.add(m);return m;}
   if(kind==='safe')mesh(new THREE.SphereGeometry(.36,20,12),new THREE.MeshStandardMaterial({color:'#7fd7ff',transparent:true,opacity:.25,roughness:.15,depthWrite:false}));
   if(kind==='block')for(let i=0;i<6;i++){const m=mesh(new THREE.BoxGeometry(.15,.10,.08));m.position.set((i%3-1)*.16,.05+Math.floor(i/3)*.11,-.22);}
-  if(kind==='nomoves')for(let i=0;i<5;i++){const m=mesh(new THREE.SphereGeometry(.14,12,8),new THREE.MeshStandardMaterial({color:'#777387'}));m.position.set((i-2)*.12,.9+Math.sin(i)*.04,0);}
+  if(kind==='nomoves'){
+    const cloudMaterial=new THREE.MeshStandardMaterial({color:'#c4ccdc',roughness:1});
+    const lobes=[[-.29,.73,.01,.16],[-.11,.82,0,.21],[.14,.8,.015,.19],[.31,.72,0,.15],[0,.68,.03,.21]];
+    for(const [x,y,z,radius] of lobes){
+      const puff=mesh(new THREE.SphereGeometry(radius,16,12),cloudMaterial);
+      puff.name='rain-cloud';puff.position.set(x,y,z);
+      puff.scale.set(y<.7?1.8:1.05,y<.7?.6:1,.9);
+    }
+  }
   const droplets=[];
   if(kind==='nomoves'||kind==='nearmiss')for(let i=0;i<10;i++){
     const drop=mesh(new THREE.SphereGeometry(.018,6,4),new THREE.MeshStandardMaterial({color:'#6ec3ff'}));drop.scale.y=2;droplets.push(drop);
@@ -34,11 +42,11 @@ export function createMomentVisual(kind,color='#ffc629') {
   function sample(t,actors,time=0) {
     t=clamp(t);const envelope=Math.sin(t*Math.PI),center=new THREE.Vector3();
     actors.forEach(p=>center.add(p.position));if(actors.length)center.divideScalar(actors.length);
-    root.visible=t<1;props.position.copy(center);label.position.copy(center).add(new THREE.Vector3(0,1.05,0));
+    root.visible=t<1;props.position.copy(center);label.position.copy(center).add(new THREE.Vector3(0,kind==='nomoves'?.95:1.05,kind==='nomoves'?-.55:0));
     label.material.opacity=Math.min(1,t*8,(1-t)*8);
     if(kind==='podium'){props.position.set(0,center.y,0);label.position.set(0,center.y+1.3,0);}
     if(kind==='safe')props.position.y+=.2;
-    droplets.forEach((drop,i)=>{const fall=(time*1.5+i*.17)%1;drop.position.set(Math.sin(i*3.7)*.3,(kind==='nomoves'?.85:.5)-fall*.65,Math.cos(i*2.3)*.2);});
+    droplets.forEach((drop,i)=>{const fall=(time*1.5+i*.17)%1;drop.position.set(Math.sin(i*3.7)*.3,(kind==='nomoves'?.68:.5)-fall*.65,Math.cos(i*2.3)*.2);});
     props.scale.setScalar(Math.max(.001,Math.min(1,t*8,(1-t)*8)));
     for(let i=0;i<actors.length;i++){
       const p=actors[i],wave=clamp((t-i*.035)/.7),hop=Math.sin(wave*Math.PI);

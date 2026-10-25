@@ -161,8 +161,11 @@ at every throw strength, move descriptions and migrated capture totals.
 
 ## Sound cues
 
-`sounds.js` synthesizes short cues through the shared `engine/fx.js` sound
-object, voice budget and master volume. The scene triggers the result chime
+`sounds.js` plays recorded hop, whoosh, squish and swish cues through the shared
+`engine/fx.js` AudioContext, voice budget and master volume. The Ludo asset ZIP
+contains the recordings; `public/audio/CREDITS.md` records source licenses.
+Fetch and decode are asynchronous; late loads never replay an old action.
+Hidden pages, mute and teardown stop live samples. The scene triggers the result chime
 only when the die settles, steps on path crossings, and capture/home/victory
 on the moving pawn landing. Studio tricks have individual opening cues.
 There are no delayed JavaScript audio timers; hidden pages skip new cues.
@@ -203,3 +206,7 @@ the scene lighting under a soft local pool, fades back to the original
 intensities, and never runs for
 an opponent or the scene's first snapshot. Live turn rings are suppressed;
 Studio still exposes the authored turn reaction.
+
+Yard cells are symmetric around the colored panel center (2.5, 11.5 before
+rotation). The cloud caption sits above the full canopy, separately from the
+raindrops and pawn faces; the live scene and Studio use the same visual.

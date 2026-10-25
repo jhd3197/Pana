@@ -1,4 +1,4 @@
-"""Build deterministic release packs for runtime images/textures >= 100 KiB.
+"""Build deterministic release packs for audio and images/textures >= 100 KiB.
 
 python Pana/scripts/asset-packs.py [--game carreritas]
 Upload new ZIPs from dist/asset-packs to the asset-packs GitHub release before
@@ -15,7 +15,8 @@ import zipfile
 ROOT = Path(__file__).resolve().parents[2]
 CATALOG = ROOT / 'Pana/server/src/asset-packs.json'
 OUT = ROOT / 'dist/asset-packs'
-EXTENSIONS = {'.png', '.jpg', '.jpeg', '.webp', '.avif', '.gif', '.ktx2', '.hdr', '.exr'}
+AUDIO = {'.mp3', '.ogg', '.wav'}
+EXTENSIONS = AUDIO | {'.png', '.jpg', '.jpeg', '.webp', '.avif', '.gif', '.ktx2', '.hdr', '.exr'}
 
 
 def placement(name):
@@ -50,14 +51,14 @@ def main():
             raise SystemExit('Missing packed originals. Run: node Pana/scripts/asset-packs.js --restore ' + group[0])
         if source.suffix.lower() not in EXTENSIONS or not source.is_file():
             continue
-        if not group or (source.stat().st_size < 100 * 1024 and name not in enrolled):
+        if not group or (source.stat().st_size < 100 * 1024 and name not in enrolled and source.suffix.lower() not in AUDIO):
             continue
         game, url = group
         if args.game and game != args.game:
             continue
         groups.setdefault(game, []).append((name, url))
     if args.game and args.game not in groups:
-        raise SystemExit(f'No large runtime images found for {args.game}')
+        raise SystemExit(f'No packable runtime assets found for {args.game}')
     OUT.mkdir(parents=True, exist_ok=True)
     for game, files in sorted(groups.items()):
         target = OUT / f'{game}.zip'

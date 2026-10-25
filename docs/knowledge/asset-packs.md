@@ -1,6 +1,6 @@
 # Large runtime asset packs
 
-Runtime images and textures of at least 100 KiB ship as deterministic ZIP release
+Runtime audio, plus images and textures of at least 100 KiB, ship as deterministic ZIP release
 assets, grouped by game. Small icons, thumbnails and documentation screenshots
 stay in Git. Launcher hero art belongs to its game's pack; character reference
 art belongs to `shared-character`. Shared engine textures can use `shared-world`.

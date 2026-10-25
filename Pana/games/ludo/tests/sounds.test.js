@@ -1,10 +1,13 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createLudoSounds } from '../public/sounds.js';
-
+import { createLudoSounds, SAMPLES } from '../public/sounds.js';
 function fixture() {
-  const calls=[], sound={muted:false,volume:1,tone:(...args)=>calls.push(['tone',...args]),sweep:(...args)=>calls.push(['sweep',...args])};
-  return {sound,calls};
+  const calls=[], requests=[], gain=()=>({gain:{setValueAtTime(){},linearRampToValueAtTime(){}},connect(){return this;},disconnect(){}});
+  const sound={muted:false,volume:1,admit:()=>({gs:[]}),out:()=>({}),ctx:{currentTime:0,
+    decodeAudioData:async()=>({duration:.15}),createGain:gain,
+    createBufferSource(){const s={playbackRate:{value:1},connect(){return gain();},disconnect(){},start(t){calls.push({rate:s.playbackRate.value,t});},stop(){}};return s;}}};
+  const audio=createLudoSounds(sound,{events:null,fetchAudio:async url=>{requests.push(url);return {ok:true,arrayBuffer:async()=>new ArrayBuffer(8)};}});
+  return {sound,audio,calls,requests};
 }
 function all(audio) {
   audio.shake(.8);audio.throw(.8);audio.bounce(1);audio.result(6);audio.step(3);
@@ -13,22 +16,21 @@ function all(audio) {
   for(const kind of ['intro','turn','suspense','safe','block','leap','sprint','nearmiss','nomoves','sleep','podium'])audio.moment(kind);
   for(const style of ['highfive','slip','rollbarrel','moonwalk','spring','dodge','piggy','umbrella','tunnel','gum'])audio.trick(style);
 }
-test('every Ludo cue respects mute, zero volume and hidden pages',()=>{
-  for(const mode of ['muted','silent','hidden']) {
-    const {sound,calls}=fixture();sound.muted=mode==='muted';sound.volume=mode==='silent'?0:1;
-    all(createLudoSounds(sound,{audible:()=>mode!=='hidden'}));assert.equal(calls.length,0,mode);
+test('recordings load once and use the shared voice budget and master output',async()=>{
+  const {sound,audio,calls,requests}=fixture();await audio.prepare();await audio.prepare();
+  assert.equal(requests.length,SAMPLES.length);all(audio);assert.ok(calls.length>20);
+  assert.ok(calls.every(c=>Number.isFinite(c.rate)&&c.rate>=.6&&c.rate<=2&&c.t>=0&&c.t<1));
+  calls.length=0;sound.admit=()=>null;all(audio);assert.equal(calls.length,0);audio.dispose();
+});
+test('mute, zero volume and disposal suppress recorded cues',async()=>{
+  for(const mode of ['muted','silent','disposed']){
+    const {sound,audio,calls}=fixture();await audio.prepare();
+    if(mode==='disposed')audio.dispose();else if(mode==='muted')sound.muted=true;else sound.volume=0;
+    all(audio);assert.equal(calls.length,0,mode);audio.dispose();
   }
 });
-test('Ludo cues use finite short voices and a modest peak level',()=>{
-  const {sound,calls}=fixture();all(createLudoSounds(sound));assert.ok(calls.length>20);
-  for(const [kind,a,b,duration,type,volume] of calls) {
-    assert.ok([a,b,duration,volume].every(Number.isFinite));assert.ok(duration>=.04&&duration<=.4);
-    assert.ok(volume>0&&volume<=.07);assert.ok(['triangle','sine'].includes(type));
-    if(kind==='tone')assert.ok(b>=0&&b+duration<1);
-  }
-});
-test('six and victory have distinct celebrations without stacking home cues',()=>{
-  const {sound,calls}=fixture(),audio=createLudoSounds(sound);
-  audio.result(2);const ordinary=calls.length;calls.length=0;audio.result(6);assert.ok(calls.length>ordinary);
-  calls.length=0;audio.land({win:true,home:true});const win=[...calls];calls.length=0;audio.land({win:true});assert.deepEqual(calls,win);
+test('late downloads do not replay old steps and victory does not stack home cues',async()=>{
+  const {audio,calls}=fixture();audio.step();await audio.prepare();assert.equal(calls.length,0);
+  audio.land({win:true,home:true});const win=[...calls];calls.length=0;audio.land({win:true});assert.deepEqual(calls,win);
+  audio.dispose();
 });

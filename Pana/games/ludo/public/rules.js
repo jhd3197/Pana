@@ -21,7 +21,7 @@ export function rotateCell([x, z], seat) {
 }
 export const ringIndex = (seat, progress) => (seat * 13 + progress) % 52;
 export function cellFor(seat, progress, piece = 0) {
-  if (progress < 0) return rotateCell([2 + piece % 2 * 2, 10 + Math.floor(piece / 2) * 2], seat);
+  if (progress < 0) return rotateCell([1.5 + piece % 2 * 2, 10.5 + Math.floor(piece / 2) * 2], seat);
   if (progress <= 50) return RING[ringIndex(seat, progress)];
   return rotateCell([7, 64 - progress], seat);
 }

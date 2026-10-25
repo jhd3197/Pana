@@ -161,6 +161,7 @@ export function createLudoScene(canvas, { onPiece, onCapture, onStarter } = {}) 
   let top=false;
   const dock=document.querySelector('.action-panel');
   function frame(dt){
+    audio.update();
     if(disposed)return;moments.restore();time+=dt;
     const {w,h}=stage.resize(),margin=Math.min(24,w*.04);
     const active=current?.phase==='playing'||current?.phase==='finished',rect=active?dock?.getBoundingClientRect():null;
@@ -238,6 +239,6 @@ export function createLudoScene(canvas, { onPiece, onCapture, onStarter } = {}) 
   }
   function setView(value){top=!!value;}
   function projectPiece(seat,piece){const p=pawns.find(p=>p.seat===seat&&p.piece===piece),v=p.model.position.clone();v.y+=.2*p.model.scale.y;v.project(camera);const r=canvas.getBoundingClientRect();return{x:r.left+(v.x+1)*r.width/2,y:r.top+(1-v.y)*r.height/2};}
-  function dispose(){disposed=true;spotlight.dispose();moments.dispose();canvas.removeEventListener('click',click);canvas.removeEventListener('pointermove',hover);starter.dispose();pawns.forEach(p=>p.motion?.dispose());characters.forEach(c=>c.dispose());puffs.clear();waves.clear();disposeModel(own);stage.dispose();}
+  function dispose(){disposed=true;audio.dispose();spotlight.dispose();moments.dispose();canvas.removeEventListener('click',click);canvas.removeEventListener('pointermove',hover);starter.dispose();pawns.forEach(p=>p.motion?.dispose());characters.forEach(c=>c.dispose());puffs.clear();waves.clear();disposeModel(own);stage.dispose();}
   return {moments,spotlight,get celebrating(){return moments.celebrating;},update,frame,setView,shakeDie,dispose,characters,pawns,starter,projectPiece,renderer,scene,camera,get die(){return diePivot;},get moving(){return pawns.some(p=>p.path||p.flight||p.motion);},get tossing(){return !!toss;}};
 }

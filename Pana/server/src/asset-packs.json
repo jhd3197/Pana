@@ -332,11 +332,36 @@
     }
   },
   "ludo": {
-    "url": "https://github.com/jhd3197/Pana/releases/download/asset-packs/ludo-6b812c6c11ea7f45.zip",
-    "sha256": "6b812c6c11ea7f45adaecce593b8c5cdc3ed621139baf448f504334ffa77b98d",
-    "bytes": 272577,
-    "files": 1,
+    "url": "https://github.com/jhd3197/Pana/releases/download/asset-packs/ludo-14edd3e7718d660b.zip",
+    "sha256": "14edd3e7718d660b1ad66daf0fb96e820ee2a758d90a0dfc7e27107b40939e98",
+    "bytes": 317840,
+    "files": 6,
     "entries": {
+      "games/ludo/public/audio/hop.mp3": {
+        "url": "/g/ludo/audio/hop.mp3",
+        "bytes": 2238,
+        "sha256": "ba0e53b36c3ce784bcb722b17c74a5a9a3dc69005dad1034ea0f2ef3ad2013e5"
+      },
+      "games/ludo/public/audio/splat.mp3": {
+        "url": "/g/ludo/audio/splat.mp3",
+        "bytes": 9761,
+        "sha256": "7eb382a3439ddb2bfe547e9b8b46018dbda3365d326c8655ba7c1182722a08d9"
+      },
+      "games/ludo/public/audio/squish.mp3": {
+        "url": "/g/ludo/audio/squish.mp3",
+        "bytes": 12269,
+        "sha256": "da135c446a1b7ee3708fcf0215d7b37a6952413f9bad91f8a036509f0e9560c0"
+      },
+      "games/ludo/public/audio/swish.mp3": {
+        "url": "/g/ludo/audio/swish.mp3",
+        "bytes": 8330,
+        "sha256": "a845f79f35eac056b78b005936511384f098970069b1cc0f962b1ca6a437f0a3"
+      },
+      "games/ludo/public/audio/whoosh.mp3": {
+        "url": "/g/ludo/audio/whoosh.mp3",
+        "bytes": 11955,
+        "sha256": "c894fe5368086ccb3e04719860ead280f6d83bc578b434680504ea27778debbc"
+      },
       "web/images/launcher/ludo.jpg": {
         "url": "/images/launcher/ludo.jpg",
         "bytes": 272423,

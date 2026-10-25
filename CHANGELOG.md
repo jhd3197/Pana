@@ -8,6 +8,10 @@ becomes the GitHub release's notes.
 
 ## Unreleased
 
+- **Ludo centra sus fichas y suena con efectos grabados.**
+  Los saltos, vuelos y golpes usan muestras acreditadas en el paquete del
+  juego; la nube de lluvia deja espacio para el mensaje y las fichas.
+
 - **Ludo deja terminar cada jugada antes de anunciar el siguiente turno.**
   Los dados, movimientos y capturas tienen pausas legibles; al llegar tu
   turno, un foco ilumina tu esquina y oscurece el resto de la mesa.

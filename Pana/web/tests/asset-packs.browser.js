@@ -25,6 +25,15 @@ try {
         }, entry.url);
         assert.ok(dimensions.every(size => size > 0), entry.url);
       }
+      if (/\.(mp3|ogg|wav)$/i.test(entry.url)) {
+        assert.match(response.headers()['content-type'], /^audio\//);
+        const duration = await page.evaluate(async url => {
+          const context = new AudioContext();
+          try { const data = await (await fetch(url)).arrayBuffer(); return (await context.decodeAudioData(data)).duration; }
+          finally { await context.close(); }
+        }, entry.url);
+        assert.ok(duration > 0, entry.url);
+      }
       const cached = await page.request.get(`${base}${entry.url}`, { headers: { 'If-None-Match': response.headers().etag } });
       assert.equal(cached.status(), 304, 'normal HTTP caching survives packing');
       count++;

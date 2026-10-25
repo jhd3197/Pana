@@ -161,3 +161,16 @@ test('entry assistance uses varied thresholds without changing ordinary random r
  }
  assert.deepEqual([...limits].sort(),[3,4,5]);
 });
+
+
+test('each yard has a centered symmetric two-by-two set of pieces', async () => {
+  const {cellFor,rotateCell}=await import('../public/rules.js');
+  for(let seat=0;seat<4;seat++) {
+    const points=Array.from({length:4},(_,piece)=>cellFor(seat,-1,piece));
+    const center=rotateCell([2.5,11.5],seat);
+    for(let axis=0;axis<2;axis++) {
+      assert.equal(points.reduce((sum,p)=>sum+p[axis],0)/4,center[axis]);
+      assert.deepEqual([...new Set(points.map(p=>p[axis]-center[axis]))].sort(),[-1,1]);
+    }
+  }
+});

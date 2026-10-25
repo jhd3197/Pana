@@ -74,7 +74,7 @@ test('the catalog preserves exact URLs, separates game packs, and excludes small
     assert.equal(pack.files, Object.keys(pack.entries).length);
     assert.match(pack.sha256, /^[a-f0-9]{64}$/);
     for (const [name, entry] of Object.entries(pack.entries)) {
-      assert.ok(entry.bytes >= 100 * 1024); assert.ok(!/\.svg$|\/icons\//.test(name));
+      assert.ok(entry.bytes > 0 && (/\.(mp3|ogg|wav)$/i.test(name) || entry.bytes >= 100 * 1024)); assert.ok(!/\.svg$|\/icons\//.test(name));
       assert.ok(!urls.has(entry.url)); urls.add(entry.url);
       assert.match(entry.sha256, /^[a-f0-9]{64}$/);
       if (name.startsWith('games/')) assert.ok(name.startsWith(`games/${id}/public/`));

@@ -139,6 +139,7 @@
   "Pana/games/galope/tests/water-fx.browser.mjs": 14,
   "Pana/games/lancha/tests/browser.mjs": 95,
   "Pana/games/ludo/tests/hud.browser.js": 168,
+  "Pana/games/ludo/tests/layout-sounds.browser.js": 27,
   "Pana/games/ludo/tests/ludo.browser.js": 507,
   "Pana/games/ludo/tests/moments.browser.js": 81,
   "Pana/games/ludo/tests/pacing.browser.js": 91,

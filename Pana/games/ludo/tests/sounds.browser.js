@@ -9,10 +9,10 @@ try {
     const levels=[], synth=Object.create(sound);
     for(const volume of [1,.25,0]) {
       synth.ctx=new OfflineAudioContext(1,48000,48000);synth.master=null;synth.voices=[];synth.muted=false;synth.volume=volume;
-      const audio=createLudoSounds(synth);audio.result(6);audio.land({capture:true});
+      const audio=createLudoSounds(synth);await audio.prepare();audio.result(6);audio.land({capture:true});
       const buffer=await synth.ctx.startRendering(),samples=buffer.getChannelData(0);
       if(!samples.every(Number.isFinite))throw Error('non-finite audio');
-      levels.push(Math.sqrt(samples.reduce((sum,v)=>sum+v*v,0)/samples.length));
+      levels.push(Math.sqrt(samples.reduce((sum,v)=>sum+v*v,0)/samples.length));audio.dispose();
     }
     synth.ctx=null;synth.master=null;synth.voices=[];synth.muted=true;
     return levels;
