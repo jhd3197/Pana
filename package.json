@@ -15,6 +15,7 @@
     "shots": "node Pana/scripts/shots.js",
     "budget": "node Pana/scripts/budget.js",
     "bench": "node Pana/games/carreritas/tests/bench.proof.js",
+    "perf": "node Pana/scripts/perf.js",
     "launcher-art": "node Pana/scripts/launcher-art.js",
     "inventory": "node Pana/scripts/model-inventory.js",
     "tidy": "node Pana/scripts/tidy.js",

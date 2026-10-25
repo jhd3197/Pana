@@ -13,6 +13,9 @@ becomes the GitHub release's notes.
   FPS y tiempo de cuadro en pantalla, apagar el ajuste automático, y en
   partida la página avisa cuando un cambio necesita recargar. Parapente
   ya respeta la resolución elegida.
+- **Para quien desarrolla: `npm run perf -- <juego>` mide cualquier juego por calidad.**
+  Con `--tiers` mide cada ajuste por separado y con `--base` compara contra
+  otro commit; los ajustes también van en el enlace (`?pana-shadows=off&pana-stats`).
 - **Stop estrena categorías Variadas: profesión, deporte, cuerpo, casa, planta y película.**
   Más de 750 palabras nuevas que el juego reconoce solo, Mezcla reparte de
   los tres grupos, y «Pedro Pérez» o «Verde manzana» ya cuentan.
