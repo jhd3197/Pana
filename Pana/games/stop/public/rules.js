@@ -73,7 +73,9 @@ export function judge(answer, category, letter, { criollo = false, dictionary = 
   return { status: 'green', reason: found.how === 'typo' ? 'typo' : 'known', ...base };
 }
 
-export const ranking = (state) => [...state.players].sort((a, b) => b.total - a.total || a.seat - b.seat);
+// "Solo panas" leaves empty chairs empty: no bot spins, writes, votes or ranks.
+export const seated = (state) => state.players.filter(p => p.id !== null || state.options?.withBots !== false);
+export const ranking = (state) => seated(state).sort((a, b) => b.total - a.total || a.seat - b.seat);
 
 export class StopGame {
   constructor(seed = Date.now()) {
@@ -103,6 +105,7 @@ export class StopGame {
     const game = Object.assign(new StopGame(), JSON.parse(JSON.stringify(state)));
     for (const p of game.players) if (p.id !== null && !members.has(p.id)) Object.assign(p, { id: null, name: BOT_NAMES[p.seat], avatar: {} });
     if (SECRET.includes(game.phase)) for (const p of game.players) Object.assign(p, { sheet: null, submitted: false });
+    if (game.options.withBots === false && game.phase === 'review') for (const p of game.players) if (p.id === null) game.leaveEmpty(p);
     game.plans = [];
     if (['write', 'basta', 'collect'].includes(game.phase)) game.planWriting(true);
     if (game.phase === 'collect') game.collectBots();
@@ -113,7 +116,9 @@ export class StopGame {
   addPlayer(id, name, avatar = {}) {
     const p = this.players.find(p => p.id === id) || this.players.find(p => p.id === null);
     if (!p || (p.id === id && p.name === name && JSON.stringify(p.avatar) === JSON.stringify(avatar))) return false;
-    const was = p.id; Object.assign(p, { id, name, avatar });
+    const was = p.id, empty = was === null && this.options.withBots === false;
+    Object.assign(p, { id, name, avatar });
+    if (empty) Object.assign(p, { total: 0, round: 0, filled: 0, submitted: false, sheet: null, stats: freshStats() });
     // A pana sitting in a bot's chair mid-round writes their own sheet.
     if (was === null && SECRET.includes(this.phase)) { this.plans[p.seat] = null; p.filled = 0; p.submitted = false; p.sheet = null; }
     this.revision++; return true;
@@ -123,9 +128,22 @@ export class StopGame {
     const p = this.players.find(p => p.id === id); if (!p) return;
     Object.assign(p, { id: null, name: BOT_NAMES[p.seat], avatar: {} });
     if (this.phase === 'spin' && p.seat === this.spinner) this.plans[p.seat] = { spinAt: this.phaseTime + 1.5 };
-    if (['write', 'basta'].includes(this.phase)) this.planBot(p, true);
+    if (this.options.withBots === false) this.leaveEmpty(p);
+    else if (['write', 'basta'].includes(this.phase)) this.planBot(p, true);
     if (this.phase === 'collect' && !p.submitted) { this.collectBot(p); this.maybeReview(); }
     this.revision++;
+  }
+
+  // A chair emptied mid-review stops counting: its answers and pending votes go.
+  leaveEmpty(p) {
+    if (this.phase === 'collect') { Object.assign(p, { submitted: true }); this.maybeReview(); }
+    const r = this.review;
+    if (this.phase !== 'review' || !r) return;
+    r.items = r.items.filter(i => i.seat !== p.seat);
+    if (r.stage === 'vote') {
+      for (const g of r.groups) { g.authors = g.authors.filter(s => s !== p.seat); delete g.votes[p.seat]; }
+      if (r.groups.every(x => this.voters(x).every(v => v.seat in x.votes))) this.resolveVotes();
+    }
   }
 
   get count() { return this.categories.length; }
@@ -141,7 +159,8 @@ export class StopGame {
   }
 
   nextRound() {
-    this.round++; this.spinner = (this.spinFrom + this.round - 1) % SEATS;
+    const turn = seated(this).length ? seated(this) : this.players;
+    this.round++; this.spinner = turn[(this.spinFrom + this.round - 1) % turn.length].seat;
     for (const p of this.players) Object.assign(p, { round: 0, filled: 0, submitted: false, sheet: null });
     Object.assign(this, { phase: 'spin', phaseTime: 0, timeLeft: 0, letter: null, stopper: null, review: null });
     this.plans = []; this.plans[this.spinner] = { spinAt: between(this, [1.2, 2.6]) };
@@ -167,7 +186,7 @@ export class StopGame {
   }
 
   // What each bot writes and when, decided on the host and never published.
-  planWriting(resume) { for (const p of this.players) if (p.id === null) this.planBot(p, resume); }
+  planWriting(resume) { for (const p of seated(this)) if (p.id === null) this.planBot(p, resume); }
   planBot(p, resume) {
     const level = LEVEL[this.options.bots] || LEVEL.normales, creative = PERSONALITY[p.seat] === 'creativo';
     const answers = this.categories.map(cat => {
@@ -203,7 +222,7 @@ export class StopGame {
     this.stopper = p.seat; this.phase = 'basta'; this.phaseTime = 0; this.timeLeft = TIMES.basta;
     this.hostLine = '¡Basta! 3… 2… 1…';
     this.bark(p.seat, '¡STOP!');
-    const caught = this.players.filter(o => o.seat !== p.seat && o.filled < this.count).slice(0, 2);
+    const caught = seated(this).filter(o => o.seat !== p.seat && o.filled < this.count).slice(0, 2);
     caught.forEach(o => this.bark(o.seat, '¡Me agarró fuera de base!'));
     this.revision++; return true;
   }
@@ -214,7 +233,7 @@ export class StopGame {
     else this.hostLine = `¡Lápices abajo! ${this.players[this.stopper].name} gritó ¡STOP!`;
     this.collectBots(); this.revision++; this.maybeReview();
   }
-  collectBots() { for (const p of this.players) if (p.id === null && !p.submitted) this.collectBot(p); }
+  collectBots() { for (const p of seated(this)) if (p.id === null && !p.submitted) this.collectBot(p); }
   collectBot(p) { if (!this.plans[p.seat]?.answers) this.planBot(p, true); Object.assign(p, { sheet: this.botSheet(p), submitted: true }); }
 
   // A pana's sheet at pencils-down (or again, after a host handoff).
@@ -223,7 +242,7 @@ export class StopGame {
     p.sheet = cleanSheet(sheet, this.count); p.submitted = true; p.filled = p.sheet.filter(Boolean).length;
     this.revision++; this.maybeReview(); return true;
   }
-  maybeReview() { if (this.phase === 'collect' && this.players.every(p => p.submitted)) this.startReview(); }
+  maybeReview() { if (this.phase === 'collect' && seated(this).every(p => p.submitted)) this.startReview(); }
 
   startReview() {
     for (const p of this.players) if (!p.sheet) p.sheet = cleanSheet([], this.count);
@@ -234,7 +253,7 @@ export class StopGame {
   // grouped by word so the table votes once per word.
   showCategory(index) {
     const cat = this.categories[index], groups = [];
-    const items = this.players.map(p => {
+    const items = seated(this).map(p => {
       const answer = p.sheet[index] || '', verdict = judge(answer, cat, this.letter, { criollo: this.options.criollo, dictionary: this.dictionary });
       const item = { seat: p.seat, answer, ...verdict, points: 0, group: null, creative: false };
       if (verdict.status === 'yellow') {
@@ -260,7 +279,7 @@ export class StopGame {
   }
 
   // Who may vote on a word: everyone at the table except its authors.
-  voters(group) { return this.players.filter(p => !group.authors.includes(p.seat)); }
+  voters(group) { return seated(this).filter(p => !group.authors.includes(p.seat)); }
   planVotes() {
     const r = this.review; this.plans = [];
     r.groups.forEach((g, gi) => {
@@ -313,7 +332,7 @@ export class StopGame {
 
   nextCategory() {
     if (this.review.index + 1 < this.count) return this.showCategory(this.review.index + 1);
-    const best = [...this.players].sort((a, b) => b.round - a.round || a.seat - b.seat)[0];
+    const best = seated(this).sort((a, b) => b.round - a.round || a.seat - b.seat)[0];
     this.phase = 'tally'; this.phaseTime = 0; this.review = { ...this.review, stage: 'done' };
     this.hostLine = `Ronda ${this.round}: ${best.name} sacó ${best.round} puntos.`;
     this.revision++;
@@ -351,7 +370,7 @@ export class StopGame {
       if (this.timeLeft <= 0) this.pencilsDown();
     } else if (this.phase === 'collect') {
       if (this.phaseTime >= TIMES.collect) {
-        for (const p of this.players) if (!p.submitted) Object.assign(p, { sheet: cleanSheet([], this.count), submitted: true });
+        for (const p of seated(this)) if (!p.submitted) Object.assign(p, { sheet: cleanSheet([], this.count), submitted: true });
         this.startReview();
       }
     } else if (this.phase === 'review') {
@@ -398,7 +417,7 @@ export class StopGame {
 export function titles(state) {
   const out = Object.fromEntries(state.players.map(p => [p.seat, []]));
   const most = (key) => {
-    const best = [...state.players].sort((a, b) => b.stats[key] - a.stats[key] || b.total - a.total || a.seat - b.seat)[0];
+    const best = seated(state).sort((a, b) => b.stats[key] - a.stats[key] || b.total - a.total || a.seat - b.seat)[0];
     return best && best.stats[key] > 0 ? best.seat : null;
   };
   const give = (seat, title) => { if (seat !== null) out[seat].push(title); };

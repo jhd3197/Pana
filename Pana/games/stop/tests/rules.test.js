@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { StopGame, SEATS, TIMES, POINTS, HARD, CLASICAS, CRIOLLAS, MAX_ANSWER, PERSONALITY, cleanAnswer, cleanSheet, judge, lettersFor,
-  pickCategories, ranking, titles, verdictText } from '../public/rules.js';
+  pickCategories, ranking, seated, titles, verdictText } from '../public/rules.js';
 import { letterOf } from '/engine/play/saber-match.js';
 
 let seq = 0;
@@ -347,4 +347,37 @@ test('a pana who sits in a bot chair mid-round writes their own sheet', () => {
   game.addPlayer(7, 'Nueva');
   const p = game.players.find(x => x.id === 7);
   assert.equal(p.filled, 0); assert.equal(game.plans[p.seat], null);
+});
+
+test('Solo panas: empty chairs never spin, write, vote or rank', () => {
+  const game = humans(2);
+  assert.ok(act(game, 1, 'options', { options: { withBots: false } }));
+  assert.deepEqual(seated(game).map(p => p.id), [1, 2]);
+  for (let round = 0; round < 6; round++) {
+    if (round === 0) game.start(); else game.nextRound();
+    assert.ok(seated(game).some(p => p.seat === game.spinner), 'only a pana spins');
+  }
+  writing(game);
+  run(game, g => g.phase !== 'write', 1000);
+  assert.equal(game.phase, 'write', 'no bot shouts STOP');
+  handIn(game, { 1: ['Caracas', 'Caimán', 'Café'], 2: ['Cumaná', 'Conejo', 'Celeste'] });
+  assert.deepEqual(game.review.items.map(i => i.seat).sort(), seated(game).map(p => p.seat).sort());
+  assert.equal(game.plans.filter(Boolean).length, 0, 'no bot votes planned');
+  assert.deepEqual(ranking(game).map(p => p.id).sort(), [1, 2]);
+  assert.ok(Object.values(titles(game)).flat().length > 0);
+});
+
+test('Solo panas: a pana leaving mid-vote drops their answers and the vote can still finish', () => {
+  const game = humans(3);
+  act(game, 1, 'options', { options: { withBots: false } });
+  writing(game, { categories: ['color'] });
+  handIn(game, { 1: ['Celeste'], 2: ['Crema'], 3: ['Cxzq'] });
+  game.removePlayer(3);
+  assert.ok(!game.review.items.some(i => i.seat === seatOf({ players: game.players }, null)));
+  assert.equal(seated(game).length, 2);
+  run(game, g => g.phase === 'tally' || g.phase === 'spin');
+  assert.ok(['tally', 'spin'].includes(game.phase));
+  const fresh = humans(2); act(fresh, 1, 'options', { options: { withBots: false } });
+  fresh.start(); fresh.addPlayer(9, 'Nuevo');
+  assert.equal(fresh.players.find(p => p.id === 9).total, 0);
 });

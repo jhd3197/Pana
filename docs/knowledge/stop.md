@@ -20,7 +20,7 @@ purple slang wall. Source: the C4B9Vk6L9kK reel (Hormiga as a color, Oreo for
 - `public/options.js`: Partida (Normal / Stop rápido: 3 categories, 30 s),
   Categorías (Clásicas / Criollas / Mezcla / Al azar), and in Más ajustes:
   rounds, how many categories (6–10), writing time, hard letters, Más
-  criollo, bot level.
+  criollo, Jugar con (Panas y bots / Solo panas), bot level.
 - `public/network.js`: the room. `step(dt)` is the host's clock (`game.tick`).
 - `public/sheet.js`: your notebook page (inputs, Enter to the next box, the
   ¡STOP! button). `public/review.js`: the review cards and thumbs.
@@ -83,6 +83,13 @@ purple slang wall. Source: the C4B9Vk6L9kK reel (Hormiga as a color, Oreo for
   (unknown). Bots never write crude words.
 - The spinner rotates through every seat; a bot stops the wheel after
   1.2–2.6 s, a pana who doesn't press is helped after 9 s.
+- Jugar con: Solo panas (`withBots: false`) leaves empty chairs empty.
+  `seated()` in rules.js is the list everything iterates: spinner turns,
+  bot plans, pencils-down, review items, voters, ranking and titles. Review
+  `items` then has fewer entries than seats, so clients look an answer up by
+  `item.seat`, never `items[seat]`. A pana who leaves mid-round takes their
+  answers and pending votes with them (`leaveEmpty`); one who sits down
+  starts at zero.
 
 ## El Saber (engine/play/saber.js)
 

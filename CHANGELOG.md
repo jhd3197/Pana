@@ -8,6 +8,9 @@ becomes the GitHub release's notes.
 
 ## Unreleased
 
+- **¡Stop! se juega solo entre panas: apaga los bots desde el lobby.**
+  Con «Jugar con: Solo panas» las sillas vacías quedan vacías: nadie más gira
+  la rueda, escribe, vota ni sale en la tabla.
 - **El Mango de oro siempre trae cuatro opciones y la narración no se corta.**
   Una pregunta sin exactamente cuatro respuestas distintas nunca llega al
   tablero, un audio que falla salta al siguiente en vez de callar el resto,

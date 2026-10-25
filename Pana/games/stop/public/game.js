@@ -8,7 +8,7 @@ import { roomCode, bootGame } from '/engine/game-shell.js';
 import { createRoomOptions } from '/engine/room-options.js';
 import { StopRoom } from './network.js';
 import { ROOM_OPTIONS, defaultOptions } from './options.js';
-import { ranking, TITLE_TEXT } from './rules.js';
+import { ranking, seated, TITLE_TEXT } from './rules.js';
 import { createSheet } from './sheet.js';
 import { createReview } from './review.js';
 import { renderBoard, renderWheelPanel, renderTally, shout, botDetail, clockText } from './hud.js';
@@ -103,7 +103,7 @@ function sounds(state, p) {
   else if (phase === 'write' && clock !== lastClock && clock <= 5 && clock > 0) sound.tick(5 - clock);
   const r = state.review, stage = r ? `${state.round}:${r.index}:${r.stage}` : '';
   if (phase === 'review' && stage !== lastStage && r.stage !== 'vote' && p) {
-    const item = r.items[p.seat];
+    const item = r.items.find(i => i.seat === p.seat);
     if (item?.creative) sound.pickup(3); else if (item?.points) sound.pickup(0); else if (item?.status === 'yellow') sound.bonk(.5);
   }
   if (state.hostLine !== lastLine && /Ni lo sueñes/.test(state.hostLine)) sound.boing();
@@ -120,7 +120,7 @@ function render(state) {
   document.body.classList.toggle('in-lobby', lobby); $('lobby').hidden = !lobby; $('hud').hidden = lobby || ended;
   $('start').disabled = !world || !room.connected || !room.isHost;
   $('start').textContent = !room.connected ? 'Conectando…' : room.isHost ? '¡Saca la libreta!' : 'Espera al anfitrión';
-  fillRoster($('roster'), state.players.map((o, i) => ({ rank: i + 1, name: o.id === room.id ? `${o.name} · tú` : o.name, detail: botDetail(o), me: o.id === room.id })));
+  fillRoster($('roster'), seated(state).map((o, i) => ({ rank: i + 1, name: o.id === room.id ? `${o.name} · tú` : o.name, detail: botDetail(o), me: o.id === room.id })));
   if (!lobby && !ended) {
     renderBoard(state, room.id);
     $('host-line').textContent = state.hostLine;

@@ -2,7 +2,7 @@
 // every pana's progress or points), the wheel panel, the round tally and the
 // big shouts (¡STOP!, ¡Basta! 3… 2… 1…). Text only, never HTML from names.
 import { fillRoster } from '/engine/results.js';
-import { PERSONALITY, PERSONALITY_TEXT, ranking } from './rules.js';
+import { PERSONALITY, PERSONALITY_TEXT, ranking, seated } from './rules.js';
 import { SEAT_COLORS } from './seats.js';
 
 const $ = (id) => document.getElementById(id);
@@ -17,7 +17,7 @@ export function renderBoard(state, meId) {
   const timed = ['write', 'basta'].includes(state.phase);
   $('clock').textContent = timed ? clockText(state.timeLeft) : '';
   $('clock').classList.toggle('hurry', timed && state.timeLeft <= 10);
-  const rows = state.players.map(p => {
+  const rows = seated(state).map(p => {
     const li = el('li', p.id !== null && p.id === meId ? 'is-me' : '');
     li.style.setProperty('--seat', SEAT_COLORS[p.seat]);
     li.append(el('i', 'seat-dot'), el('span', 'board-name', p.name));
@@ -41,7 +41,7 @@ export function renderWheelPanel(state, mySeat, connected) {
 }
 
 export function renderTally(state, meId) {
-  const best = [...state.players].sort((a, b) => b.round - a.round || a.seat - b.seat)[0];
+  const best = seated(state).sort((a, b) => b.round - a.round || a.seat - b.seat)[0];
   $('tally-step').textContent = `Ronda ${state.round} de ${state.rounds} · letra ${state.letter}`;
   $('tally-title').textContent = state.round >= state.rounds ? '¡Última ronda!' : `${best.name} la sacó de jonrón`;
   fillRoster($('tally-roster'), ranking(state).map((p, i) => ({ rank: i + 1, name: p.id !== null && p.id === meId ? `${p.name} · tú` : p.name,
