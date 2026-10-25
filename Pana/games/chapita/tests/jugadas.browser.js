@@ -40,6 +40,21 @@ try {
   assert(['miss', 'helicopter'].includes(picked), picked);
   for (const page of [host, guest]) await waitFor(page, (id) => chapitaDebug.world.jugada.main === id, picked);
 
+  // The batter's timing ring: it closes on the plate and turns green right
+  // when the chapita arrives; the palo picks the height by itself.
+  const ring = await host.evaluate(() => {
+    const r = chapitaDebug.room, g = r.game, c = chapitaDebug.clocks;
+    g.newBatter(0); g.phase = 'flight';
+    g.pitch = { id: 903, kind: 'planea', row: 1, col: 1, side: 1, cap: 'plana', miss: [0, 0], wobble: { a: 0, f: 3, ph: 0, tilt: 0 }, time: 1.2, at: g.clock, target: { x: 0, y: 1 }, arrives: 'medio', flavor: 'globito' };
+    r.publish(); chapitaDebug.world.update(r.state, c, r.seat);
+    const at = (u) => { c.pitchId = 903; c.pitch = performance.now() - u * 1200; chapitaDebug.world.frame(0); return chapitaDebug.world.aim; };
+    return [at(.4), at(1)];
+  });
+  assert.equal(ring[0].visible, true, 'the batter sees the ring');
+  assert(ring[0].scale > 2, 'the approach ring starts wide');
+  assert.equal(ring[1].scale, 1); assert.equal(ring[1].color, '#8dff8a', 'green on arrival');
+  assert.equal(await host.evaluate(() => chapitaDebug.world.scene.getObjectByName('Diamante de tiza')?.children.length >= 4), true, 'a chalk diamond');
+
   // Every jugada plays live on the guest, then every Studio page builds.
   for (const name of ALL) {
     await guest.evaluate(n => chapitaDebug.world.playJugada(n), name);

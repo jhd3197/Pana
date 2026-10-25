@@ -5,8 +5,11 @@
 // scene puts d on -Z). The plate is at d = 0, the pitcher at d = 10.5.
 import { clamp } from '/engine/random.js';
 
-// Virtual runner stations along the sidewalk; shared by markers and panas.
-export const BASES = [{ x: 2.5, z: -3.5 }, { x: 2.5, z: -6.8 }, { x: 2.5, z: -10 }];
+// The runner stations: a chalk diamond with home at the plate, 1st and 3rd
+// just inside the curbs and 2nd up on the acera behind the pitcher (scene z,
+// not d; y is the surface it sits on). Still virtual: runners move base to
+// base on the scorecard; markers and panas share these.
+export const BASES = [{ x: 2.85, z: -6, y: .03 }, { x: 0, z: -12, y: .15 }, { x: -2.85, z: -6, y: .03 }];
 
 export const RELEASE = { x: 0, y: 1.55, d: 10.5 };
 export const ROWS = ['alto', 'medio', 'bajo'];

@@ -23,6 +23,27 @@ host runs every timer in `advance(dt)`.
 - `public/scene.js`, `public/hud.js`, `public/game.js`, `tests/browser.mjs`,
   `tests/jugadas.test.js`, `tests/jugadas.browser.js`.
 
+## Batting aids and the diamond
+
+- The local batter sees two rings at the plate (scene.js `drawAim`): the
+  aim at medium height, sliding to the real `pitch.target` between 60 % and
+  80 % of the flight, and an approach ring scaled `1 + 3·(T − t)/T` that
+  meets it at the arrival. Green inside `window()`, red when late or when the
+  pitch leaves the zone. `world.aim` exposes it for the browser suite.
+- The palo height follows `pitch.arrives` unless the batter pressed W/S for
+  that pitch (`manualFor` in game.js), so timing is the skill. Three ticks
+  land at T − 0,5, T − 0,25 and T. After a swing, `swingFeedback` shows
+  ¡Perfecto! (within 35 % of the window), ¡Bien!, ¡Temprano! or ¡Tarde!
+- Headless WebGL in the suites renders about one frame a second, so timing
+  checks drive `world.frame(0)` with a shifted `clocks.pitch` instead of
+  waiting on real frames.
+- `BASES` form a diamond (1st and 3rd at x ±2,85, z −6; 2nd on the acera at
+  z −12, y 0,15). The asphalt top is y 0,03 and sidewalks 0,15: chalk drawn
+  lower is hidden. Runners queue every bag on the way (`slot.route`) and run
+  home through the rest when they score, instead of cutting across.
+- Swing and throw sounds are CC0 bamboo swishes (`public/audio/`, see
+  `SOURCE.md`); the synth covers them until they decode.
+
 ## Jugadas locas
 
 The Studio workbench's 21 plays run in matches, each tied to a real outcome:

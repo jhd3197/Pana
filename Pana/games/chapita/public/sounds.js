@@ -1,7 +1,34 @@
-// The jugadas' tiny synth, from the Studio workbench: no files, every sound
-// built from an oscillator or a burst of filtered noise on the engine's own
-// audio graph, so the volume slider and mute apply.
+// The jugadas' sounds: real bamboo-stick swishes for the swing and the throw
+// (audio/, CC0, see audio/SOURCE.md) and the Studio workbench's tiny synth for
+// everything else, all on the engine's own audio graph so the volume slider
+// and mute apply. Until a swish has loaded, the synth plays instead.
 import { sound } from '/engine/fx.js';
+
+const SAMPLES = { swish: [1, 2, 3, 4, 5, 6].map(n => `swish-${n}`), big: ['swish-big-1', 'swish-big-2'] };
+const buffers = new Map();
+let loading = null;
+function load() {
+  if (loading || !sound.ctx) return;
+  loading = Promise.all(Object.values(SAMPLES).flat().map(async name => {
+    try {
+      const response = await fetch(new URL(`./audio/${name}.mp3`, import.meta.url));
+      buffers.set(name, await sound.ctx.decodeAudioData(await response.arrayBuffer()));
+    } catch { /* the synth covers it */ }
+  }));
+}
+// A random take from a set, slightly re-pitched so repeats never sound canned.
+function sample(set, { vol = .5, rate = 1, delay = 0 } = {}) {
+  load();
+  const c = sound.ctx, takes = SAMPLES[set].filter(n => buffers.has(n));
+  if (!c || sound.muted || !takes.length) return false;
+  const t = c.currentTime + delay, buffer = buffers.get(takes[Math.floor(Math.random() * takes.length)]);
+  const slot = sound.admit(2, t, t + buffer.duration); if (!slot) return true;
+  const s = c.createBufferSource(), g = c.createGain(); slot.gs.push(g);
+  s.buffer = buffer; s.playbackRate.value = rate * (.92 + Math.random() * .16); g.gain.value = vol;
+  s.connect(g).connect(sound.out()); s.start(t);
+  return true;
+}
+export const preloadSounds = load;
 
 function tone({ f0 = 400, f1 = 800, dur = .15, type = 'sine', vol = .2, delay = 0 }) {
   const c = sound.ctx; if (!c || sound.muted) return;
@@ -23,8 +50,9 @@ function noise({ dur = .08, vol = .25, freq = 1800, q = 1, delay = 0 }) {
 }
 
 export const SFX = {
-  throw: () => noise({ dur: .25, vol: .18, freq: 1100, q: .7 }),
-  swoosh: () => noise({ dur: .22, vol: .3, freq: 700, q: .6 }),
+  throw: () => sample('swish', { vol: .22, rate: 1.25 }) || noise({ dur: .25, vol: .18, freq: 1100, q: .7 }),
+  swoosh: () => sample('swish', { vol: .6 }) || noise({ dur: .22, vol: .3, freq: 700, q: .6 }),
+  bigSwoosh: () => sample('big', { vol: .65 }) || noise({ dur: .4, vol: .35, freq: 600, q: .6 }),
   hit: () => { noise({ dur: .06, vol: .7, freq: 2600, q: 1.2 }); tone({ f0: 900, f1: 300, dur: .12, type: 'square', vol: .08 }); },
   home: () => { SFX.hit(); [523, 659, 784, 1047, 1319].forEach((f, i) => tone({ f0: f, f1: f * 1.01, dur: .22, type: 'triangle', vol: .12, delay: .15 + i * .08 })); },
   crack: () => { noise({ dur: .12, vol: .7, freq: 1500, q: 2 }); noise({ dur: .08, vol: .4, freq: 3500, q: 3, delay: .04 }); },
@@ -39,7 +67,7 @@ export const SFX = {
   honk: () => { tone({ f0: 420, f1: 410, dur: .22, type: 'square', vol: .07 }); tone({ f0: 420, f1: 410, dur: .3, type: 'square', vol: .07, delay: .28 }); },
   bark: () => { for (const d of [0, .22]) { noise({ dur: .07, vol: .4, freq: 700, q: 1.5, delay: d }); tone({ f0: 520, f1: 280, dur: .1, type: 'sawtooth', vol: .06, delay: d }); } },
   ping: () => { tone({ f0: 1300, f1: 1750, dur: .09, type: 'square', vol: .06 }); tone({ f0: 2600, f1: 2600, dur: .08, vol: .08, delay: .05 }); },
-  whirr: () => { tone({ f0: 85, f1: 120, dur: .7, type: 'sawtooth', vol: .07 }); noise({ dur: .7, vol: .12, freq: 200, q: .5 }); },
+  whirr: () => { sample('big', { vol: .5, rate: .8 }) || tone({ f0: 85, f1: 120, dur: .7, type: 'sawtooth', vol: .07 }); noise({ dur: .7, vol: .08, freq: 200, q: .5 }); },
   cricket: () => { for (let i = 0; i < 8; i++) tone({ f0: 4300, f1: 4200, dur: .03, vol: .05, delay: i * .06 + (i > 3 ? .25 : 0) }); },
   clink: () => tone({ f0: 2400, f1: 2100, dur: .12, type: 'triangle', vol: .12 }),
   plop: () => { noise({ dur: .08, vol: .5, freq: 900, q: 1 }); tone({ f0: 700, f1: 160, dur: .14, vol: .25 }); },

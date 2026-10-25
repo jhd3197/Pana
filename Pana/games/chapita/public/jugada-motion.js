@@ -126,7 +126,7 @@ export function createJugadas(root, { fx, sfx = () => {}, k = .6 } = {}) {
     },
     // Strikeout swinging, the other way: the swing lifts the pana off the floor.
     helicopter(a) {
-      const b = keep(c.batter), p = keep(c.pitcher); c.cue('swoosh', 0); c.cue('whirr', .13); c.cue('whirr', .38); c.cue('land', .74);
+      const b = keep(c.batter), p = keep(c.pitcher); c.cue('bigSwoosh', 0); c.cue('whirr', .13); c.cue('whirr', .38); c.cue('land', .74);
       const lift = a < .58 ? smooth((a - .13) / .3) : 1 - easeIn((a - .58) / .16), home = feet(b);
       b.body.rotation.y = a < .74 ? a * a * 6 + a * 4 : 0; b.group.position.y += 1.5 * k * lift;
       if (a < .74) { face(b, { open: .4, mouth: 'smile' }); for (let j = 0; j < 8; j++) { const an = a * 9 + j * Math.PI / 4; fx.puff(home.clone().add(new V3(Math.cos(an) * 1.4 * k, .12, Math.sin(an) * 1.4 * k)), .5, .35 * lift + .1, '#efe4d0'); } }
