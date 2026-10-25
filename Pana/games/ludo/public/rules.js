@@ -52,6 +52,7 @@ export class LudoGame {
     this.sixes = 0; this.winner = null; this.revision = 0; this.round = 0;
     this.starter = null; this.lastPlace = null; this.toss = { seat: 0, power: .5 };
     this.entryMisses = [0, 0, 0, 0]; this.entryLimits = [0, 0, 0, 0]; this.autoMove = null; this.captures = [0, 0, 0, 0];
+    this.turnPause = null;
     this.ledger = {}; this.event = 'Invita a tus panas o juega con bots.';
   }
   snapshot() { return JSON.parse(JSON.stringify(this)); }
@@ -74,6 +75,7 @@ export class LudoGame {
   start() {
     if (!['lobby', 'finished'].includes(this.phase)) return false;
     for (const p of this.players) p.pieces.fill(-1);
+    this.turnPause = null;
     this.phase = 'starter'; this.turn = 0; this.die = 0; this.lastDie = 0;
     this.entryMisses = [0, 0, 0, 0]; this.entryLimits = [0, 0, 0, 0]; this.autoMove = null; this.captures = [0, 0, 0, 0];
     this.sixes = 0; this.winner = null; this.round++; this.revision++;
@@ -101,6 +103,7 @@ export class LudoGame {
   // power only changes how the die flies on screen; bots throw with a varied arm.
   roll(power) {
     if (this.phase !== 'playing' || this.die) return false;
+    this.turnPause = null;
     this.rng = (Math.imul(this.rng, 1664525) + 1013904223) >>> 0;
     const pieces = this.players[this.turn].pieces;
     const stranded = pieces.some(p => p < 0) && pieces.every(p => p < 0 || p === HOME);
@@ -120,6 +123,7 @@ export class LudoGame {
       this.event += ' Sin movimientos.';
       if (this.die === 6) this.die = 0; else this.nextTurn();
     }
+    if (!this.die) this.turnPause = {seat:this.toss.seat, kind:'roll', remaining:automaticMoveDelay(this.toss.power)};
     const moves = legalMoves(this);
     // Choosing between identical yard pieces does not change the outcome.
     if (moves.length === 1 || moves.length && moves.every(i => pieces[i] < 0)) {
@@ -127,6 +131,12 @@ export class LudoGame {
       this.event += ' Movimiento automático después de ver el dado.';
     }
     this.revision++; return true;
+  }
+  stepPause(dt) {
+    if (!this.turnPause) return false;
+    this.turnPause.remaining -= Math.max(0, dt);
+    if (this.turnPause.remaining > 0) return false;
+    this.turnPause = null; this.revision++; return true;
   }
   stepAutomatic(dt) {
     if (!this.autoMove || this.phase !== 'playing') return false;
@@ -147,6 +157,7 @@ export class LudoGame {
         return v;
       });
     }
+    this.turnPause = {seat:p.seat, kind:'move', remaining:movePause(from < 0 ? 1 : next-from, captured)};
     this.captures[this.turn] += captured;
     this.event = `${p.name} ${next === HOME ? 'llevó una ficha a casa' : from < 0 ? 'sacó una ficha' : `movió la ficha ${piece + 1}`}.${captured ? ` Capturó ${captured}.` : ''}`;
     if (p.pieces.every(v => v === HOME)) { this.phase = 'finished'; this.winner = this.turn; this.die = 0; this.lastPlace = ranking(this.players).at(-1).seat; }
@@ -165,6 +176,7 @@ export class LudoGame {
       return ok;
     }
     if (data.revision !== this.revision) return false;
+    if (this.turnPause && ['roll', 'move'].includes(data.action)) return false;
     let ok = false;
     if (data.action === 'options' && id === hostId && this.phase === 'lobby') {
       const next = ludoOptions(this.options, data.options);
@@ -181,4 +193,4 @@ import { defaultLudoOptions, ludoOptions } from './options.js';
 import { createStarter, starterInput, stepStarter, starterDone, starterResult } from '../../../engine/play/quien-empieza-rules.js';
 import { cleanPower } from '../../../engine/play/dice-throw.js';
 
-import { automaticMoveDelay } from './dice-timing.js';
+import { automaticMoveDelay, movePause } from './dice-timing.js';

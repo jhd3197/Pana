@@ -1,3 +1,4 @@
+import { presentedState } from './dice-timing.js';
 import { createLudoHud } from './hud.js';
 import { loadName, loadAvatar } from '/engine/avatar.js';
 import { prepareScene } from '/engine/game-load.js';
@@ -51,7 +52,7 @@ const buttons=Array.from({length:4},(_,piece)=>{
   button.onclick=()=>act('move',{piece});$('pieces').append(button);return button;
 });
 const hud=createLudoHud({buttons,canInspect:()=>!menu.isOpen});
-function ownTurn(){return !!world&&room.connected&&room.state.phase==='playing'&&room.seat===room.state.turn;}
+function ownTurn(){return !!world&&room.connected&&room.state.phase==='playing'&&!room.state.turnPause&&!world.moving&&room.seat===room.state.turn;}
 function canRoll(){return ownTurn()&&!menu.isOpen&&!room.state.die&&!world?.tossing;}
 // Eating a ficha: a callout for the panas involved, the plaza for everyone else.
 function capture({by,victims}){
@@ -61,7 +62,8 @@ function capture({by,victims}){
   else shout(`¡${room.state.players[by].name} se comió a ${names.join(' y ')}!`,{tone:'yellow',ms:1400});
 }
 function act(action,values={}){if(menu.isOpen||!ownTurn()||action==='move'&&world?.tossing)return;sound.unlock();room.action(action,values);}
-function render(state){
+function render(rawState){
+  const state=presentedState(rawState);
   const lobby=state.phase==='lobby',ended=state.phase==='finished',seat=room.seat;
   roomOptions.update(state.options,lobby&&room.isHost);
   if(!lobby&&roomOptions.isOpen)roomOptions.close();

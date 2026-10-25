@@ -9,7 +9,7 @@ try{
   const b=await openGame(browser,'ludo',{room,query:'debug',name:'Ana'});
   await a.waitForFunction(()=>ludoDebug.room.members.size===2);
   const revision=await a.evaluate(()=>{
-    const g=ludoDebug.room.game;g.round++;g.phase='playing';g.turn=0;g.die=0;g.autoMove=null;
+    const g=ludoDebug.room.game;g.turnPause=null;g.round++;g.phase='playing';g.turn=0;g.die=0;g.autoMove=null;
     g.players.forEach(p=>p.pieces=[-1,-1,-1,-1]);g.entryMisses[0]=g.entryLimits[0]=3;g.revision++;ludoDebug.room.publish();return g.revision;
   });
   await b.waitForFunction(rev=>ludoDebug.room.state.revision>=rev,revision);
@@ -35,7 +35,7 @@ try{
   for(const result of checks){assert.equal(result.sawFlight,true);assert.ok(result.delay>550,`result was readable for ${result.delay}ms`);assert.equal(result.pips,6);}
   // The shared safe cell holds near-full size pieces with separated heights.
   await a.evaluate(()=>{
-    const g=ludoDebug.room.game;g.round++;g.turn=0;g.die=0;g.autoMove=null;g.players.forEach(p=>p.pieces=[-1,-1,-1,-1]);
+    const g=ludoDebug.room.game;g.turnPause=null;g.round++;g.turn=0;g.die=0;g.autoMove=null;g.players.forEach(p=>p.pieces=[-1,-1,-1,-1]);
     g.players[1].pieces[0]=13;g.players[2].pieces[0]=0;g.revision++;ludoDebug.room.publish();
   });
   await a.waitForFunction(()=>{const p=ludoDebug.world.pawns;return p[4].progress===13&&p[8].progress===0&&p[4].model.scale.x>.85&&p[8].model.position.y-p[4].model.position.y>.4;});

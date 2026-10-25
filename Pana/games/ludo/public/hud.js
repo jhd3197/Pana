@@ -38,8 +38,8 @@ export function createLudoHud({buttons,canInspect=()=>true}) {
   }
   function paint(){
     if(!state)return;
-    const mine=state.phase==='playing'&&state.turn===seat,player=state.players[state.turn];
-    $('turn').textContent=state.phase==='finished'?'¡Partida terminada!':state.phase==='starter'?'¿Quién empieza?':rolling?'¡Ahí va el dado!':mine?state.die?state.autoMove?state.die===6?'¡Seis!':`Salió ${state.die}`:'Elige una ficha':'¡Te toca tirar!':`Turno de ${player.name}`;
+    const mine=state.phase==='playing'&&state.turn===seat&&!state.turnPause,player=state.players[state.turn];
+    $('turn').textContent=state.phase==='finished'?'¡Partida terminada!':state.phase==='starter'?'¿Quién empieza?':rolling?'¡Ahí va el dado!':state.turnPause?state.turnPause.kind==='move'?`${player.name} mueve su ficha`:`${player.name}: ${state.lastDie}`:mine?state.die?state.autoMove?state.die===6?'¡Seis!':`Salió ${state.die}`:'Elige una ficha':'¡Te toca tirar!':`Turno de ${player.name}`;
     $('event').textContent=rolling?'Espera a que caiga…':eventText;
     $('roll-label').textContent=rolling?'Rodando…':mine?'Agita y suelta':`Juega ${player.name}`;
     $('die').classList.toggle('rolling',rolling);die(rolling?0:state.lastDie);
@@ -73,7 +73,7 @@ export function createLudoHud({buttons,canInspect=()=>true}) {
   function frame(tossing,shaking,power){
     const next=tossing||shaking;
     if(next!==rolling){rolling=next;shownDie=-1;paint();}
-    if(state)$('roll').disabled=tossing||state.phase!=='playing'||state.turn!==seat||!!state.die;
+    if(state)$('roll').disabled=tossing||!!state.turnPause||state.phase!=='playing'||state.turn!==seat||!!state.die;
     $('roll').style.setProperty('--charge',`${Math.round(power*100)}%`);
     if(!canInspect()&&(held||latched))clear();
   }

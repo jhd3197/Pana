@@ -8,6 +8,10 @@ becomes the GitHub release's notes.
 
 ## Unreleased
 
+- **Ludo deja terminar cada jugada antes de anunciar el siguiente turno.**
+  Los dados, movimientos y capturas tienen pausas legibles; al llegar tu
+  turno, un foco ilumina tu esquina y oscurece el resto de la mesa.
+
 - **Los ajustes usan los mismos nombres en todos los juegos.**
   «Jugar con» distingue «Solo panas» de «Panas y bots»; el nivel de bots
   usa Fácil, Normal y Difícil. Galope y Curiara comparten esa elección con

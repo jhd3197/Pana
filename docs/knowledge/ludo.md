@@ -96,7 +96,7 @@ pawn mesh; the 1–4 buttons remain available for very crowded cells.
 
 ## Playtest pacing
 
-The host schedules forced moves after the actual toss duration plus 0.95 s
+The host schedules forced moves after the actual toss duration plus 1.2 s
 to read the result (`dice-timing.js`, shared with the scene). The die uses wall
 time to avoid a low frame rate letting the host move before the visual lands. A
 single legal move or a choice only between yard pieces needs no extra click;
@@ -172,7 +172,7 @@ repeated room renders do not replay landing celebrations.
 ## Extra Studio moments
 
 The eleven `moment-events.js` entries complement the ten camino tricks.
-`moments.js` derives intro/turn/suspense/no-moves/podium from state transitions,
+`moments.js` derives intro/suspense/no-moves/podium from state transitions,
 and safe/shared-square/near-miss reactions from real landings. Idle human turns
 can sleep after 18 seconds. `moment-visual.js` samples reversible visual offsets;
 the controller restores poses before both state updates and ordinary animation.
@@ -188,3 +188,18 @@ All eleven have Studio catalog previews; all twenty-one have shared-volume cues.
 The match browser suite uses `tests/browser-kit.js` `launch`: its background
 timer flags are necessary for the hidden host to advance multiplayer turns.
 Its opening seed is fixed to avoid an accidental tie extending unrelated checks.
+
+Turn pacing stores `turnPause` (actor, kind, remaining seconds) in snapshots.
+Rules resolve the next logical seat immediately; `presentedState` keeps the HUD
+and scene on the actor until the host clears the pause. Network actions and
+bots respect that lock, including missed rolls and third-six forfeits. Move
+pauses cover the longest trick or capture return plus a landing beat. Pawn
+motions use elapsed wall time, like the die, to finish consistently at low FPS.
+Manual browser fixtures must clear `turnPause` when replacing a position.
+
+The local turn cue is a 3.2-second real spotlight centered on the four fixed
+yard cells, not the average position of travelling pawns. It retains 40% of
+the scene lighting under a soft local pool, fades back to the original
+intensities, and never runs for
+an opponent or the scene's first snapshot. Live turn rings are suppressed;
+Studio still exposes the authored turn reaction.

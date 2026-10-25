@@ -37,7 +37,7 @@ try {
   });assert.equal(checked,40);
   // A real host action drives the same cosmetic choice on two network clients.
   await a.evaluate(()=>{
-    const g=ludoDebug.room.game;g.round++;g.phase='playing';g.turn=0;g.die=5;g.autoMove=null;
+    const g=ludoDebug.room.game;g.turnPause=null;g.round++;g.phase='playing';g.turn=0;g.die=5;g.autoMove=null;
     g.players.forEach(p=>p.pieces=[-1,-1,-1,-1]);g.players[0].pieces[0]=8;g.revision++;ludoDebug.room.publish();
   });
   await b.waitForFunction(()=>ludoDebug.room.state.players[0].pieces[0]===8);
@@ -47,14 +47,14 @@ try {
   assert.equal(styles[0],styles[1]);assert.notEqual(styles[0],'hop');
   // A new round arriving mid-trick must clear props and restore every pawn.
   await a.evaluate(()=>{
-    const g=ludoDebug.room.game;g.round++;g.phase='lobby';g.die=0;g.autoMove=null;
+    const g=ludoDebug.room.game;g.turnPause=null;g.round++;g.phase='lobby';g.die=0;g.autoMove=null;
     g.players.forEach(p=>p.pieces=[-1,-1,-1,-1]);g.revision++;ludoDebug.room.publish();
   });
   for(const page of [a,b]){
     await page.waitForFunction(()=>ludoDebug.world.pawns.every(p=>p.progress===-1&&!p.motion&&!p.path&&!p.flight&&p.model.visible&&p.model.position.distanceTo(p.target)<.001));
     assert.equal(await page.evaluate(()=>ludoDebug.world.pawns.every(p=>p.model.userData.face?.eyes.length===2)),true);
   }
-  await a.evaluate(()=>{const g=ludoDebug.room.game;g.phase='playing';g.turn=0;g.revision++;ludoDebug.room.publish();});
+  await a.evaluate(()=>{const g=ludoDebug.room.game;g.turnPause=null;g.phase='playing';g.turn=0;g.revision++;ludoDebug.room.publish();});
   await a.locator('#pana-lobby-shell').waitFor({state:'hidden'});
   await a.waitForFunction(()=>!document.querySelector('.pk-cover')&&window.PANA_PREPARED);
   await a.screenshot({path:'art/ludo/studio-live-board.png'});
