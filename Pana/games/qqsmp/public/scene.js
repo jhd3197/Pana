@@ -10,6 +10,7 @@ import { makeMango } from '/engine/models/props/mango.js';
 import { disposeModel } from '/engine/models/props/game-table.js';
 import { createQuizStage, createQuizPodium, createHostDesk, createQuizScreen, createStageSpotlight, GOLD, NIGHT } from './studio-set.js';
 import { SEATS, LETTERS, TOP, score, mangos, resolveAnswer, ranking, participants } from './rules.js';
+import { createQuizAnimations } from './animations.js';
 
 export const SEAT_COLORS = ['#ff4b4b', '#2ad1b2', '#ffc629', '#3d7bf2', '#ff8a1f', '#8e4de8'];
 const BOT_LOOKS = [
@@ -108,7 +109,7 @@ function paintPlate(ctx, w, h, s, p, color) {
   ctx.fillText(note || `${mangos(score(p))} mangos${p.planted ? ' · plantado' : ''}`, w / 2, h - 40);
 }
 
-export function createQqsmpScene(canvas) {
+export function createQqsmpScene(canvas, { onAnimationCue } = {}) {
   const stage = createTableWorld(canvas, { fit: 'window', exposure: .95, background: '#0b0820', fog: [34, 90], sky: false, fov: 40, plazaScale: .9,
     hemi: ['#7a78e0', '#1a1030', 1.1], sun: { color: '#a9b8ff', intensity: .9, position: [-10, 20, 14], box: 14, far: 60, bias: -.0002 } });
   const { renderer, scene, camera } = stage, own = new THREE.Group(); scene.add(own);
@@ -135,6 +136,7 @@ export function createQqsmpScene(canvas) {
   const bounds = new THREE.Box3(new THREE.Vector3(-8.6, .3, -5.3), new THREE.Vector3(8.6, 8.4, 2.6));
   const projected = new THREE.Vector3(), aim = new THREE.Vector3();
   let current = null, time = 0, screenKey = '', bottom = 220, measured = 0, pointing = -1, hostTalk = 0;
+  const animations = createQuizAnimations(own, host, podiums, onAnimationCue);
 
   function syncCharacter(seat, p) {
     const look = normalizeAvatar(p.id === null ? BOT_LOOKS[seat] : p.avatar), key = JSON.stringify(look), slot = podiums[seat];
@@ -169,6 +171,7 @@ export function createQqsmpScene(canvas) {
     pointing = state.phase === 'reveal' && !state.reveal.done ? state.reveal.order[state.reveal.shown - 1] ?? -1 : state.phase === 'finished' ? state.winner : -1;
     if (state.hostLine && state.hostLine !== previous?.hostLine && state.phase !== 'lobby') { bubbles.say(HOST, state.hostLine, Math.min(4, 1.6 + state.hostLine.length * .035)); hostTalk = 1.2; }
     goldMango.visible = state.gold === null || state.phase === 'lobby';
+    animations.update(state);
   }
 
   function placeTag(el, position, seat) {
@@ -178,7 +181,8 @@ export function createQqsmpScene(canvas) {
     bubbles.place(seat, x, y);
   }
 
-  function frame(dt) {
+  function frame(dt, paused = false) {
+    animations.reset();
     time += dt; bubbles.tick(dt); hostTalk = Math.max(0, hostTalk - dt);
     // Keep the stage clear of the question panel (the HUD's children are fixed,
     // so the panel itself is measured).
@@ -208,20 +212,37 @@ export function createQqsmpScene(canvas) {
       else if (slot.mood === 'tense') { left.rotation.set(-1.1, 0, -.5); right.rotation.set(-1.1, 0, .5); }
       else { left.rotation.set(-.15, 0, .14); right.rotation.set(-.15, 0, -.14); }
       c.neck.rotation.y = Math.sin(time * .5 + seat * 2) * .15; c.neck.rotation.x = slot.mood === 'lose' ? .3 : 0;
-      const head = c.group.position.clone(); head.y += 2.25; placeTag(tags[seat], head, seat);
       if (p) tags[seat].textContent = `${p.name}${p.seat === current.gold ? ' · Mango de oro' : ''}`;
     });
     host.update(dt, {});
     const [hl, hr] = host.arms, talk = hostTalk > 0 ? Math.sin(time * 9) * .25 : 0;
     hr.rotation.set(pointing >= 0 ? -1.6 : -.5 + talk, 0, pointing >= 0 ? -.3 : -.2); hl.rotation.set(-.6 - talk, 0, .25);
     host.neck.rotation.y = pointing >= 0 ? THREE.MathUtils.clamp(Math.atan2(podiums[pointing].podium.position.x - host.group.position.x, podiums[pointing].podium.position.z - host.group.position.z) - host.group.rotation.y, -.8, .8) : Math.sin(time * .7) * .2;
+    animations.frame(dt, paused);
+    // Once answers are public, give each reaction a TV close-up above the HUD.
+    // Keep the full board framed while anyone can still choose an answer.
+    const reaction = animations.current;
+    const closeup = phase === 'reveal' && current.reveal?.done && reaction;
+    if (closeup) {
+      const slot = podiums[reaction.seat], p = slot.podium.position;
+      const shot = new THREE.Box3(new THREE.Vector3(p.x - 1.5, .2 + slot.height, p.z - .8), new THREE.Vector3(p.x + 1.5, slot.height + 3.8, p.z + 1.1));
+      stage.frameCamera(shot, [.14, .15, 1], { x: margin, y: top, width: Math.max(160, w - margin * 2), height: Math.max(140, h - top - bottom) });
+      bubbles.hide(HOST);
+    }
+    podiums.forEach((slot, seat) => {
+      if (!slot.podium.visible || !slot.character) return;
+      tags[seat].hidden = !!closeup;
+      if (closeup) bubbles.hide(seat);
+      const head = slot.character.head.getWorldPosition(new THREE.Vector3()); head.y += .8; placeTag(tags[seat], head, seat);
+    });
     const hostHead = host.group.position.clone(); hostHead.y += 2.3; placeTag(null, hostHead, HOST);
     stage.draw(dt);
   }
 
   function dispose() {
+    animations.dispose();
     podiums.forEach(slot => slot.character?.dispose()); host.dispose(); tags.forEach(t => t.remove()); bubbles.dispose();
     disposeModel(goldMango); disposeModel(own); stage.dispose();
   }
-  return { renderer, scene, camera, update, frame, dispose, say: bubbles.say, podiums };
+  return { renderer, scene, camera, update, frame, dispose, say: bubbles.say, podiums, animations };
 }

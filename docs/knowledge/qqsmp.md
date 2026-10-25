@@ -116,6 +116,25 @@ Built on the shared table room (`engine/table-room.js`) and the plaza stage
 
 ## Game-show effects
 
+- `animation-catalog.js`, `animation-events.js`, `animations.js` and
+  `animation-choreography.js` adapt the supplied quiz workbench: 23 core takes
+  and 14 special scenes, using the real player wardrobe and existing stage.
+  Variants rotate by round, question and stable seat; no private answer is read.
+  Thinking/locking happens while voting; settlement immediately replaces it
+  with each active player's reaction within the existing result window.
+  Correct/wrong scenes skip their demo suspense lead-in once results are public.
+- The 50:50 animation follows its actual use. Copy jokes follow public results;
+  the phone and audience scenes are visual jokes, not additional lifelines or
+  real audience votes. Winning cycles through the mango, rain, hug, dance and
+  faint scenes. Empty seats never join choreography, including mango rain.
+- The choreography owns pooled particles and temporary props, never screen
+  answers, podium scores or game clocks. Restore poses, podium positions and
+  cloned tint materials before the next frame; use the avatar adapter's outer
+  scale of 1 (the sculpt already applies 0.6 internally). Props and textures
+  dispose with the scene. Reduced motion disables the new choreography, and
+  solo pause freezes its clock. The shared sound controller handles accents,
+  including narration ducking, mute, visibility and teardown.
+
 - `public/sounds.js` contains original short scores synthesized with bass drums,
   filtered brass, snare rolls and bells. No recordings or external music assets.
   It uses the shared `sound` context, master output and voice admission.

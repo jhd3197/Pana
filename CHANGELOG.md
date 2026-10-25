@@ -8,6 +8,11 @@ becomes the GitHub release's notes.
 
 ## Unreleased
 
+- **Los panas de QQSMP piensan, celebran y se equivocan con nuevas animaciones.**
+  Veintitrés variantes alternan bailes, lágrimas de alegría, mortales,
+  berrinches y más; el concurso suma botones, accesorios, confeti y escenas
+  cómicas, con efectos de sonido y respeto por el movimiento reducido.
+
 - **QQSMP permite jugar solo con panas y ajusta las tarjetas de la sala.**
   Elige «Solo panas» para quitar los bots; los puestos vacíos no votan ni
   puntúan, y las tarjetas caben sin la barra de desplazamiento horizontal.

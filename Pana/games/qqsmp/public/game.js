@@ -16,9 +16,11 @@ import { LADDER, TOP, SAFE, LETTERS, BETS, BET_LABELS, participants, score, mang
 const $ = (id) => document.getElementById(id), params = new URLSearchParams(location.search);
 const code = roomCode();
 const showSounds = createQuizSounds(sound, { audible: () => !document.hidden });
-const narration = createNarration($('read-question'), { onSpeaking: value => showSounds.speaking(value) });
-const unsubscribeSound = onSettings(settings => { if (!settings.sound || settings.volume === 0) showSounds.stop(); });
-const hideSounds = () => { if (document.hidden) showSounds.stop(); };
+const animationSounds = createQuizSounds(sound, { audible: () => !document.hidden });
+const narration = createNarration($('read-question'), { onSpeaking: value => { showSounds.speaking(value); animationSounds.speaking(value); } });
+const stopSounds = () => { showSounds.stop(); animationSounds.stop(); };
+const unsubscribeSound = onSettings(settings => { if (!settings.sound || settings.volume === 0) stopSounds(); });
+const hideSounds = () => { if (document.hidden) stopSounds(); };
 document.addEventListener('visibilitychange', hideSounds);
 let world = null, copying = false, lastDone = '';
 // What you picked on this question. Snapshots hide everyone's answer until the
@@ -187,10 +189,12 @@ addEventListener('keydown', (event) => {
 
 render(room.state); room.connect();
 export const { sceneReady } = bootGame({
-  load: async () => (await import('./scene.js')).createQqsmpScene($('world')),
+  load: async () => (await import('./scene.js')).createQqsmpScene($('world'), { onAnimationCue: cue => {
+    if (['pop', 'boing', 'bonk', 'land', 'poof', 'ring', 'hangup', 'fall'].includes(cue)) animationSounds.play(cue);
+  } }),
   ready: (created) => { world = created; render(room.state); },
   tick: (dt) => room.tick(dt, menu.isOpen && room.members.size <= 1),
-  frame: (dt, scene) => { showSounds.update(room.state, room.seat, menu.isOpen && room.members.size <= 1); narration.update(room.state, menu.isOpen && room.members.size <= 1); scene.frame(dt); },
-  dispose: () => { narration.dispose(); showSounds.dispose(); unsubscribeSound(); document.removeEventListener('visibilitychange', hideSounds); room.dispose(); },
+  frame: (dt, scene) => { const paused = menu.isOpen && room.members.size <= 1; if (paused) animationSounds.stop(); showSounds.update(room.state, room.seat, paused); narration.update(room.state, paused); scene.frame(dt, paused); },
+  dispose: () => { narration.dispose(); showSounds.dispose(); animationSounds.dispose(); unsubscribeSound(); document.removeEventListener('visibilitychange', hideSounds); room.dispose(); },
 });
 if (params.has('debug')) window.qqsmpDebug = { room, menu, get world() { return world; } };

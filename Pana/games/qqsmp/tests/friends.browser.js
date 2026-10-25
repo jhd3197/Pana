@@ -33,6 +33,11 @@ try {
   for (const page of [host, guest]) {
     assert.equal(await page.evaluate(() => qqsmpDebug.world.podiums.filter(p => p.podium.visible).length), 2);
     assert.equal(await page.evaluate(() => qqsmpDebug.world.podiums.filter(p => p.character?.group.visible).length), 2);
+    assert.equal(await page.evaluate(() => {
+      qqsmpDebug.world.frame(0);
+      const event = qqsmpDebug.world.animations.current;
+      return !event || qqsmpDebug.room.state.players[event.seat].id !== null;
+    }), true, 'comedy scenes only select active friends');
   }
   await host.locator('[data-comodin="copy"]').evaluate(el => el.click());
   assert.equal(await host.locator('#copy-list button').count(), 1, 'only the other pana can be copied');

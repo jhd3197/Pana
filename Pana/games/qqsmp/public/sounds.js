@@ -4,6 +4,14 @@ import { rng } from '../../../engine/random.js';
 const note = (pitch, at, duration, instrument = 'brass', gain = .065) => ({ pitch, at, duration, instrument, gain });
 const roll = (length = .48) => Array.from({ length: 7 }, (_, i) => note(0, i * length / 7, .09, 'snare', .025 + i * .006));
 export const QUIZ_CUES = {
+  pop: [note(79, 0, .09, 'bell', .025)],
+  boing: [note(43, 0, .12, 'bass', .055), note(67, .08, .2, 'bell', .025)],
+  bonk: [note(47, 0, .13, 'bass', .06), note(0, 0, .07, 'snare', .025)],
+  land: [note(38, 0, .16, 'bass', .055)],
+  poof: [note(0, 0, .12, 'snare', .035)],
+  ring: [note(81, 0, .07, 'bell', .025), note(86, .08, .07, 'bell', .025)],
+  hangup: [note(68, 0, .15, 'bell', .02), note(68, .25, .15, 'bell', .02)],
+  fall: [note(81, 0, .1, 'bell', .02), note(74, .1, .1, 'bell', .02), note(62, .2, .2, 'bell', .02)],
   question: [note(38, 0, .45, 'bass', .12), note(62, .05, .16), note(69, .21, .28, 'bell', .065)],
   lock: [note(50, 0, .18, 'bass', .09), note(74, .03, .13, 'bell', .04)],
   tick: [note(38, 0, .14, 'bass', .085), note(81, .02, .06, 'bell', .02)],
