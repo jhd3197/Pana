@@ -1,6 +1,7 @@
 {
   "Pana/engine/tests/all-games.browser.js": 100,
   "Pana/engine/tests/bolas-world.browser.js": 11,
+  "Pana/engine/tests/bot-settings.browser.js": 170,
   "Pana/engine/tests/broadleaf-trees.browser.js": 5,
   "Pana/engine/tests/cloth-front.browser.js": 16,
   "Pana/engine/tests/coastal.browser.js": 26,

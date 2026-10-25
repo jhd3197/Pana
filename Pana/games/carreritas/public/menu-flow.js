@@ -103,7 +103,7 @@ export function createMenuFlow({ tracks, getState, pickTrack, prepared, openTall
     });
   }
   const switched = id => () => $(id).getAttribute('aria-checked') === 'true';
-  choiceRow('lobby-grid', 'Parrilla', [[true, 'Con rivales'], [false, 'Solo panas']], $('lobby-bots'), () => $('lobby-bots').checked,
+  choiceRow('lobby-grid', 'Jugar con', [[false, 'Solo panas'], [true, 'Panas y bots']], $('lobby-bots'), () => $('lobby-bots').checked,
     on => { $('lobby-bots').checked = on; $('lobby-bots').dispatchEvent(new Event('change')); });
   choiceRow('lobby-split', 'En esta pantalla', [[false, '1 pana'], [true, '2 panas']], $('split'), switched('split'), () => $('split').click());
   choiceRow('lobby-mirror', 'Pista', [[false, 'Normal'], [true, 'Espejo']], $('mirror'), switched('mirror'), () => $('mirror').click());

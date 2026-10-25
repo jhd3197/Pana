@@ -36,7 +36,7 @@ try {
   await a.waitForFunction(() => cocina.room.members.size === 2); await b.waitForFunction(() => cocina.state.players.length === 2);
   assert.equal(await b.locator('#start').isDisabled(), true); check('two browsers share a lobby; only host can start');
   if (output) await a.screenshot({ path: path.join(output, 'cocina-lobby.png') });
-  await a.locator('#pana-room-more').click(); await a.locator('[data-room-option="helpers"][data-value="false"]').click(); await a.locator('#pana-room-done').click(); await a.locator('#start').click(); await b.waitForFunction(() => cocina.state.phase === 'playing');
+  await a.locator('[data-room-option="helpers"][data-value="false"]').click(); await a.locator('#start').click(); await b.waitForFunction(() => cocina.state.phase === 'playing');
   // Three software-rendered clients can outlast the normal three-minute round.
   // Keep this interaction fixture alive; the results check below ends it explicitly.
   await a.evaluate(() => { cocina.room.game.remaining = 600; cocina.room.publish(); });
@@ -104,7 +104,7 @@ try {
   // the fallback. Chromium's HTTP offline emulation does not block all WS reconnects.
   await b.evaluate(() => { cocina.room.cut(); });
   await b.waitForFunction(() => !cocina.room.connected); await b.locator('#menu').click(); await b.locator('#offline').click();
-  await b.waitForFunction(() => cocina.room.offline && cocina.state.phase === 'lobby'); await b.locator('#pana-room-more').click(); await b.locator('[data-room-option="helpers"][data-value="true"]').click(); await b.locator('#pana-room-done').click(); await b.locator('#start').click();
+  await b.waitForFunction(() => cocina.room.offline && cocina.state.phase === 'lobby'); await b.locator('[data-room-option="helpers"][data-value="true"]').click(); await b.locator('#start').click();
   await b.waitForFunction(() => cocina.state.players.filter(p => p.bot).length === 2); await b.evaluate(() => cocina.step(45));
   assert.ok(await b.evaluate(() => cocina.state.served) > 0);
   if (output) await b.screenshot({ path: path.join(output, 'cocina-gameplay.png') }); check('disconnection fallback starts a playable local kitchen with working helpers');

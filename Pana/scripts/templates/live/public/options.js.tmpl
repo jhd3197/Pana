@@ -1,6 +1,6 @@
 import { optionDefaults, applyRoomOptions } from '/engine/room-options-rules.js';
 export const ROOM_OPTIONS = [
-  { id: 'seconds', label: 'Duración', default: 60, choices: [[30, '30 s'], [60, '60 s'], [90, '90 s']] },
+  { id: 'seconds', label: 'Tiempo por ronda', default: 60, choices: [[30, '30 s'], [60, '60 s'], [90, '90 s']] },
   { id: 'mangos', label: 'Mangos en la plaza', default: 6, advanced: true, choices: [[3, 'Pocos'], [6, 'Normal'], [12, 'Muchos']] },
 ];
 export const defaultOptions = () => optionDefaults(ROOM_OPTIONS);

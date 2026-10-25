@@ -1,8 +1,10 @@
+import { botParticipation } from '../../../engine/room-option-fields.js';
 import { normalizeRoomOptions } from '../../../engine/room-options-rules.js';
 import { LENGTH, JUMPS, at, angle, wrap } from './course.js';
 
 const field = (id, label, choices, value = choices[0][0], advanced = false) => ({ id, label, choices, default: value, advanced });
 export const FIELDS = [
+  botParticipation(),
   field('course', 'Recorrido', [['llanos', 'Llanos'], ['morichal', 'Morichal · inverso']]),
   field('jumps', 'Saltos', [['normal', 'Normales'], ['crazy', 'Locos']]),
   field('laps', 'Vueltas', [[2, '2'], [3, '3']]),

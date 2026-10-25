@@ -72,7 +72,7 @@ export class Race {
     Object.assign(p,{x:q.x,z:q.z,h:q.h,s:q.s,progress:start,checkpoint:0,speed:0,stamina:100,exhausted:false,jumpY:0,vy:0,jumpHeld:false,resetHeld:false,resetCooldown:0,stun:0,hits:0,finish:null,water:0});
   }
   removePlayer(id){this.players=this.players.filter(p=>p.id!==id);}
-  start(bots=true,seed=this.raceId+1) {
+  start(bots=this.options.bots,seed=this.raceId+1) {
     this.players=this.players.filter(p=>!p.bot);
     if(bots)while(this.players.length<6){const i=this.players.length;this.players.push({id:`bot-${i}`,name:BOT_NAMES[i%7],avatar:{hat:'llanero',hatColor:'#e6c691',outfitColor:['#d66c49','#578c85','#e3b349'][i%3]},coat:COATS[i%3],bot:true});}
     const random=rng(seed);this.players.forEach((p,i)=>{p.spectator=false;if(this.options.horse==='random')p.coat=COATS[Math.floor(random()*COATS.length)];this.grid(p,i);});

@@ -155,7 +155,7 @@ export function createGameMenu({
     orientationGroup && orientationGroup.node,
     h('div', { class: 'pana-row' }, h('span', { id: id('set-hints-label'), text: 'Ayudas de controles en pantalla' }), hintsSwitch),
     gameOptions.map(o => o.node),
-    h('p', { class: 'pana-fine', text: 'Los ajustes se guardan en este navegador y valen para todos los juegos de Pana.' }),
+    h('p', { class: 'pana-fine', text: 'Audio, imagen y controles se guardan en este navegador para todos tus juegos. Las opciones del juego solo afectan tu vista.' }),
     !pause && h('button', { type: 'button', id: id('done'), class: 'pana-primary', text: 'Listo', onclick: () => close() }));
 
   function choiceGroup(groupId, label, choices, get, set) {
@@ -184,12 +184,12 @@ export function createGameMenu({
   const keyboardRows = keyList(controls);
   const touchHelp = h('p', { class: 'pana-tip', hidden: true, text: 'Usa los controles táctiles del juego. Puedes ajustar la cámara y la orientación en Ajustes.' });
   // ---------- dialog ----------
-  const tabs = [pause && ['game', 'Juego', gamePanel], ['settings', 'Ajustes', settingsPanel]].filter(Boolean);
+  const tabs = [pause && ['game', 'Juego', gamePanel], ['settings', 'Mis ajustes', settingsPanel]].filter(Boolean);
   const tabButtons = tabs.map(([key, label]) => h('button', { type: 'button', role: 'tab', id: id(`tab-${key}`), 'aria-controls': id(`panel-${key}`), 'data-tab': key, text: label, onclick: () => showTab(key) }));
   const noteNode = h('p', { class: 'pana-menu-note', id: id('menu-note') });
   const dialog = h('dialog', { class: 'pana-menu', id: id('menu-dialog'), 'aria-labelledby': id('menu-title') },
     h('div', { class: 'pana-menu-head' },
-      h('small', { text: title }), h('h2', { id: id('menu-title'), text: pause ? heading : 'Ajustes' }), noteNode, padHint,
+      h('small', { text: title }), h('h2', { id: id('menu-title'), text: pause ? heading : 'Mis ajustes' }), noteNode, padHint,
       h('button', { type: 'button', class: 'pana-close', 'aria-label': 'Cerrar menú', text: 'Volver', onclick: () => close() })),
     tabs.length > 1 && h('div', { class: 'pana-tabs', role: 'tablist', 'aria-label': 'Secciones del menú' }, tabButtons,
       h('span', { class: 'pana-tabs-hint', 'data-pana-hint': true }, keycaps('Esc'), ' cerrar')),

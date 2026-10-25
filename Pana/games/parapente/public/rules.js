@@ -2,7 +2,7 @@
 // and predict their own wing with the same fly(). The course (course.js) owns
 // beacons, thermals, rings and the ground under them.
 import { clamp } from '../../../engine/random.js';
-import { defaultOptions, roomOptions } from './options.js';
+import { defaultOptions, roomOptions, migrateRivals } from './options.js';
 import { airAt, targetOf, remaining, outside } from './course.js';
 
 // Airspeed in m/s and sink in m/s for each control. Brakes sink least and turn
@@ -99,6 +99,7 @@ export class Race {
   static restore(state, members, course) {
     const race = Object.assign(new Race(course), JSON.parse(JSON.stringify(state)));
     race.course = course;
+    race.options = { ...defaultOptions(), ...migrateRivals(race.options) };
     race.players = race.players.filter(p => members.has(p.id));
     race.pilots = race.pilots.filter(p => p.bot || members.has(p.id));
     return race;
@@ -123,7 +124,7 @@ export class Race {
     if (!this.course || !this.players.length || this.players.length > SLOTS) return false;
     const random = seeded(this.seed + this.raceId * 977);
     this.pilots = this.players.map((p, i) => this.pilot(i, p));
-    const rivals = RIVALS[this.options.rivals];
+    const rivals = this.options.bots !== false && RIVALS[this.options.rivals];
     for (let i = this.pilots.length, k = Math.floor(random() * BOT_NAMES.length); rivals && i < SLOTS; i++, k++) {
       const [lo, hi] = rivals.skill, skill = lo + random() * (hi - lo);
       const avatar = { fur: BOT_FUR[i % BOT_FUR.length], outfitColor: COLORS[i % COLORS.length], face: 'feliz' };

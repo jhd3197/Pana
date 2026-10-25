@@ -87,7 +87,7 @@ export class Race {
     flat.forEach((p, index) => { if (p) p.seat = { boat: Math.floor(index / 2), pos: index % 2 }; });
     return true;
   }
-  start(bots = true, seed = Math.floor(Math.random() * 1e9)) {
+  start(bots = this.options.bots, seed = Math.floor(Math.random() * 1e9)) {
     if(!this.canStart())return false;
     this.seed = seed;
     const grid = this.crews(), seats = FORMATS[this.format].seats;

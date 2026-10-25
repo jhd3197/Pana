@@ -5,7 +5,7 @@ export const FIELDS=[
  field('mode','Modo',[['teams','Equipos'],['individual','Individual']]),
  field('seats','Puestos',[[4,'4'],[6,'6']],4,true),
  field('target','Meta',[[100,'100'],[200,'200']]),
- field('turnSeconds','Tiempo por jugada',[[15,'15 s'],[30,'30 s'],[0,'Sin límite']],0),
+ field('turnSeconds','Tiempo por turno',[[15,'15 s'],[30,'30 s'],[0,'Sin límite']],0),
  field('opener','Salida',[['double6','Doble seis'],['winner','Ganador anterior'],['random','Al azar']],'winner',true),
  // Who opens the first mano: Salida's own rule, or ¿Quién empieza? (the cachos and friends).
  {...STARTER_FIELD,default:'regla',choices:[['regla','Según la salida'],...STARTER_FIELD.choices]},

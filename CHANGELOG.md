@@ -8,6 +8,12 @@ becomes the GitHub release's notes.
 
 ## Unreleased
 
+- **Los ajustes usan los mismos nombres en todos los juegos.**
+  «Jugar con» distingue «Solo panas» de «Panas y bots»; el nivel de bots
+  usa Fácil, Normal y Difícil. Galope y Curiara comparten esa elección con
+  la sala, Lancha y Parapente la separan del nivel, y los ajustes personales
+  quedan separados de las reglas del anfitrión. Los tiempos indican qué miden.
+
 - **Los panas de QQSMP piensan, celebran y se equivocan con nuevas animaciones.**
   Veintitrés variantes alternan bailes, lágrimas de alegría, mortales,
   berrinches y más; el concurso suma botones, accesorios, confeti y escenas

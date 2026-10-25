@@ -1,6 +1,6 @@
 import { prepareScene } from '/engine/game-load.js';
 import { createMapPicker } from '/engine/play/map-picker.js';
-import { createDifficultyPicker, DIFFICULTIES } from '/engine/play/difficulty.js';
+import { createDifficultyPicker } from '/engine/play/difficulty.js';
 import { loadName, loadAvatar } from '/engine/avatar.js';
 import { inviteUrl, newRoomCode, roomFromUrl } from '/engine/invite.js';
 import { createGameMenu, toggleMute } from '/engine/ui.js';
@@ -69,10 +69,7 @@ const menu = createGameMenu({
     'Si alguien sale, su puesto queda libre para otro pana. La mesa conserva las bolas y el turno. El anfitrión empieza la revancha.',
   ],
   invite: () => inviteUrl(code), onOpen() { clearInput(); render(room.state); },
-  options: [{ id: 'view', label: 'Cámara', choices: VIEWS, get: () => cameraView, set: setCamera },
-    // Local tables change difficulty any time; an online match keeps the host's choice.
-    { id: 'difficulty', label: 'Dificultad', choices: DIFFICULTIES.map(d => [d.id, d.label]), get: () => room.state.difficulty,
-      set: value => { if (!room.action('difficulty', { difficulty: value })) notify('En una partida online la dificultad la elige el anfitrión antes de empezar.'); } }],
+  options: [{ id: 'view', label: 'Cámara', choices: VIEWS, get: () => cameraView, set: setCamera }],
   onClose() { if (room.state.phase !== 'finished') render(room.state); },
   canOpen: () => room.state.phase !== 'finished',
 });

@@ -36,6 +36,16 @@ function walkAll(dir, keep, out = []) {
 const pub = (id, file) => path.join(gamesDir, id, 'public', file);
 const meta = (id) => JSON.parse(read(path.join(gamesDir, id, 'game.json')));
 
+test('room settings and scaffolds use shared bot and mode vocabulary', () => {
+  const files = games.map(id => pub(id, 'options.js')).filter(file => fs.existsSync(file));
+  files.push(...walk(path.join(app, 'scripts', 'templates'), name => name === 'options.js.tmpl'));
+  const obsolete = /["']?label["']?\s*:\s*['"](?:Velocidad CPU|Nivel de los bots|Los bots|Pilotos del cerro|Lanchas del río|Partida|Juego)['"]/;
+  assert.deepEqual(files.filter(file => obsolete.test(read(file))).map(rel), []);
+  for (const id of ['galope', 'curiara']) {
+    assert.ok(!/id=["']bots["']/.test(read(pub(id, 'index.html'))), `${id}: bot participation belongs to shared room options, not a local checkbox`);
+  }
+});
+
 test('runtime, browser harnesses and scaffolds share the Three.js pin', () => {
   const problems = [];
   for (const file of walkAll(app, name => /\.(?:html|js|mjs|tmpl)$/.test(name))) {

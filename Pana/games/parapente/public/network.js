@@ -37,5 +37,5 @@ export class ParapenteRoom extends LiveRoom {
     if (data.action === 'options' && this.game.configure(data.options)) { this.game.course = galipanCourse(this.game.options); this.publish(); }
     if (data.action === 'start' && ['lobby', 'finished'].includes(this.game.phase) && this.game.start()) this.publish();
   }
-  practice() { const local = new Race(); local.configure(this.state.options); this.state = local.snapshot(); super.practice('Vuelo local · tú y los pilotos del cerro'); }
+  practice() { const local = new Race(); local.configure(this.state.options); this.state = local.snapshot(); super.practice('Vuelo local'); }
 }

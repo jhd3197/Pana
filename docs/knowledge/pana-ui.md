@@ -1,5 +1,29 @@
 # Shared game UI: pause menu and settings
 
+## Settings vocabulary and ownership
+
+Use `engine/room-option-fields.js` for optional bot participation (`Jugar con`,
+`Solo panas` / `Panas y bots`) and bot skill (`Nivel de bots`, `Fácil`, `Normal`,
+`Difícil`). Keep existing serialized values; labels do not change balance.
+Pacing is `Velocidad de bots`, not difficulty. Fixed tables/teams keep their
+required seats; do not offer Solo panas unless the rules support empty seats.
+World difficulty and combined aim-assistance/bot difficulty remain `Dificultad`.
+Use `Modo` for rule variants and explicit `Tiempo por turno/pregunta/ronda`
+labels for clocks. Domain-specific phases can name the phase instead.
+
+`visibleWhen: { optionId: [allowedValues] }` hides irrelevant room fields and
+excludes them from the advanced count, without erasing their saved choice.
+Hosts still own changes; visibility is presentation, not authority or validation.
+Bot filling in Galope/Curiara is part of the options snapshot, so guests and a
+replacement host inherit it. Lancha/Parapente migrate legacy `rivals: 'none'`
+to separate participation and normal skill on restore/configuration.
+
+`Mis ajustes` contains personal controls, audio, image and camera. Shared rules
+belong only in `Ajustes de la sala`; `Restablecer sala` resets those rules.
+Billar/Criollas difficulty is shared (it also changes aim assistance), while
+Dominó's camera belongs in the personal game page. New scaffolds use the same
+vocabulary; do not add fake bot controls to a scaffold without bot rules.
+
 ## Illustrated loading lobbies and portraits
 
 Games with the shared `.pk-lobby` load `engine/game-entry.js` using

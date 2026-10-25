@@ -5,7 +5,7 @@ import { createGameMenu, toggleMute } from '/engine/ui.js';
 import { holdButton } from '/engine/touch.js';
 import { ICONS } from '/engine/icons.js';
 import { createMapPicker } from '/engine/play/map-picker.js';
-import { difficultyInfo, DIFFICULTIES } from '/engine/play/difficulty.js';
+import { difficultyInfo } from '/engine/play/difficulty.js';
 import { createRoomOptions } from '/engine/room-options.js';
 import { optionDefaults } from '/engine/room-options-rules.js';
 import { CRIOLLAS_OPTIONS, criollasOptions } from './options.js';
@@ -55,8 +55,7 @@ const menu = createGameMenu({ pad: { move: 'arrows', moveLabel: 'Afinar la direc
     'La dificultad también afina a los bots rivales: en Difícil y Experto sacan con boche las bolas que se pegan al mingo. Los bots de tu equipo juegan siempre en Normal.',
   ],
   invite: () => inviteUrl(code),
-  options: [{ id: 'view', label: 'Cámara', choices: VIEWS, get: () => view, set: setView },
-    { id: 'difficulty', label: 'Dificultad', choices: DIFFICULTIES.map(d => [d.id, d.label]), get: () => room.state.difficulty, set: setDifficulty }],
+  options: [{ id: 'view', label: 'Cámara', choices: VIEWS, get: () => view, set: setView }],
   onOpen() { clearInput(); render(room.state); }, onClose() { render(room.state); },
 });
 $('menu-slot').append(menu.createButton({ id: 'menu', className: 'pk-btn' }));
@@ -71,7 +70,6 @@ function setting(action, key, value) {
   if (room.connected) { if (!room.action(action, { [key]: value })) notify('Solo el anfitrión lo cambia, antes de la mano.'); }
   else { room.state[key] = value; render(room.state); }
 }
-function setDifficulty(value) { setting('difficulty', 'difficulty', value); }
 const mapPicker = createMapPicker($('map-picker'), mapId => setting('map', 'mapId', mapId), { courts: true });
 function changeOptions(patch, resetMap = false) {
   if (room.connected) room.action('options', { options: patch, resetMap });

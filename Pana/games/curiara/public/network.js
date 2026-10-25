@@ -60,6 +60,6 @@ export class RiverRoom extends LiveRoom {
   }
   configure(patch) { if(this.isHost && this.game?.configure(patch))this.publish(); }
   setFormat(format) { if (this.isHost && this.game) { this.game.setFormat(format); this.seat = null; this.publish(); } }
-  start(bots = true) { if (this.isHost && this.connected && ['lobby', 'finished'].includes(this.game.phase)) { if(!this.game.canStart()){this.onNotice('Hay más panas que puestos. Elige cuatro parejas o Solo.');return;}this.game.start(bots); this.publish(); } }
-  practice() { const local = new Race(); local.configure(this.state.options); this.state = local.snapshot(); this.clocks.clear(); super.practice('Carrera local · tú y los remeros del río'); }
+  start(bots = this.state.options.bots) { if (this.isHost && this.connected && ['lobby', 'finished'].includes(this.game.phase)) { if(!this.game.canStart()){this.onNotice('Hay más panas que puestos. Elige cuatro parejas o Individual.');return;}this.game.start(bots); this.publish(); } }
+  practice() { const local = new Race(); local.configure(this.state.options); this.state = local.snapshot(); this.clocks.clear(); super.practice('Carrera local'); }
 }

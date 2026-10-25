@@ -50,5 +50,5 @@ export class LanchaRoom extends LiveRoom {
     if (data.action === 'options' && this.game.configure(data.options)) this.publish();
     if (data.action === 'start' && ['lobby', 'finished'].includes(this.game.phase) && this.game.start()) this.publish();
   }
-  practice() { const local = new Race(); local.configure(this.state.options); this.state = local.snapshot(); super.practice('Carrera local · tú y las lanchas del río'); }
+  practice() { const local = new Race(); local.configure(this.state.options); this.state = local.snapshot(); super.practice('Carrera local'); }
 }

@@ -42,6 +42,7 @@ export function createSettingsWorkspace(root, legacy) {
   }
   function choose(key) {
     category = key;
+    saved.textContent = key === 'game' ? 'Solo para ti en este juego' : 'Se guarda al cambiar · En todos tus juegos';
     for (const [id, p] of pages) { p.section.hidden = id !== key; p.link.setAttribute('aria-current', String(id === key)); }
     main.scrollTop = 0;
     aside.hidden = key !== 'pad';
@@ -107,7 +108,7 @@ export function createSettingsWorkspace(root, legacy) {
   toggle(touch, 'touchInvertY', 'Invertir eje vertical', 'Arrastra hacia abajo para mirar arriba.'); touch.append(...legacy.touch);
   const image = page('image', 'Imagen', 'Elige nitidez o rendimiento. La resolución se adapta al instante; las sombras se actualizan al cargar la siguiente escena.'); image.append(...legacy.image);
   const audio = page('audio', 'Audio', 'El volumen general controla todo el sonido. La música se mezcla por debajo de ese nivel.'); audio.append(...legacy.audio);
-  if (legacy.game.length) page('game', legacy.title, 'Opciones propias de este juego.').append(...legacy.game);
+  if (legacy.game.length) page('game', legacy.title, 'Opciones personales de este juego. No cambian los ajustes de la sala.').append(...legacy.game);
   for (const [key, section] of [['keyboard', mouse], ['gamepad', pad], ['touch', touch]]) {
     const help = legacy.help?.[key];
     if (help) {

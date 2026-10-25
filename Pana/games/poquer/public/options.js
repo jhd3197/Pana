@@ -4,7 +4,7 @@ import { STARTER_FIELD } from '../../../engine/play/quien-empieza-rules.js';
 export const OPTION_FIELDS = [
   { id: 'stack', label: 'Fichas', default: 1000, choices: [[1000, '1.000'], [5000, '5.000']] },
   { id: 'blinds', label: 'Ciegas', default: 20, choices: [[20, '10/20'], [100, '50/100']] },
-  { id: 'turnSeconds', label: 'Turno', default: 20, choices: [[20, '20 s'], [40, '40 s']] },
+  { id: 'turnSeconds', label: 'Tiempo por turno', default: 20, choices: [[20, '20 s'], [40, '40 s']] },
   { id: 'variant', label: 'Variante', default: 'texas', choices: [['texas', 'Texas'], ['omaha', 'Omaha']], advanced: true },
   { id: 'blindMinutes', label: 'Subida de ciegas', default: 0, choices: [[5, 'Cada 5 min'], [10, 'Cada 10 min'], [0, 'Nunca']], advanced: true },
   { id: 'rebuy', label: 'Recompras', default: true, choices: [[true, 'Sí'], [false, 'No']], advanced: true },

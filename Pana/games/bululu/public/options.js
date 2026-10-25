@@ -3,7 +3,7 @@ import { optionDefaults, normalizeRoomOptions, applyRoomOptions } from '../../..
 import { STARTER_FIELD } from '../../../engine/play/quien-empieza-rules.js';
 export const OPTION_FIELDS = [
   // Solo minijuegos skips the board: `rounds` minigames back to back, +10 a win.
-  { id: 'mode', label: 'Partida', default: 'board', choices: [['board', 'Con tablero'], ['minis', 'Solo minijuegos']] },
+  { id: 'mode', label: 'Modo', default: 'board', choices: [['board', 'Con tablero'], ['minis', 'Solo minijuegos']] },
   { id: 'board', label: 'Tablero', default: 'isla', choices: [['isla', 'Isla del Mango'], ['muelle', 'Muelle']] },
   { id: 'rounds', label: 'Rondas', default: 10, choices: [[5, '5'], [10, '10'], [15, '15'], [20, '20']] },
   { id: 'minigames', label: 'Minijuegos', default: 'all', choices: [['all', 'Todos'], ['calm', 'Tranquilos']] },
@@ -12,7 +12,7 @@ export const OPTION_FIELDS = [
   { id: 'stealing', label: 'Robar mangos', default: true, choices: [[true, 'Sí'], [false, 'No']], advanced: true },
   { id: 'finalBonus', label: 'Bonus final', default: true, choices: [[true, 'Sí'], [false, 'No']], advanced: true },
   { id: 'dice', label: 'Dados', default: 2, choices: [[1, '1'], [2, '2']], advanced: true },
-  { id: 'cpu', label: 'Velocidad CPU', default: 'normal', choices: [['normal', 'Normal'], ['fast', 'Rápida']], advanced: true },
+  { id: 'cpu', label: 'Velocidad de bots', default: 'normal', choices: [['normal', 'Normal'], ['fast', 'Rápida']], advanced: true },
   STARTER_FIELD,
 ];
 export const DEFAULT_OPTIONS = Object.freeze(optionDefaults(OPTION_FIELDS));

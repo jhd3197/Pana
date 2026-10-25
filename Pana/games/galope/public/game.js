@@ -23,7 +23,7 @@ let coat='bay';try{coat=['bay','palomino','grey'].includes(localStorage.getItem(
 const code=roomFromUrl()||newRoomCode();params.set('room',code);history.replaceState(null,'',`${location.pathname}?${params}`);
 const keys=new Set(),touch=new Set(),riders=new Map();let paused=false,state,world,ready=false,lastPhase='',lastCountdown='',lastRace=0,hoofClock=0,drawClock=0,disposed=false;
 const room=new RaceRoom({code,name,avatar,coat,onState:s=>{state=s;},onStatus:(message,error=false)=>{$('connection').textContent=message;$('practice').classList.toggle('hidden',!error);if(error)showNotice(message);}});state=room.state;
-const roomOptions=createRoomOptions($('room-options'),{title:'Galope',fields:FIELDS,change:patch=>room.configure(patch),reset:()=>{$('bots').checked=true;room.configure(cleanOptions());}});
+const roomOptions=createRoomOptions($('room-options'),{title:'Galope',fields:FIELDS,change:patch=>room.configure(patch),reset:()=>{room.configure(cleanOptions());}});
 const touchButtons=[];
 function clearInput(){keys.clear();for(const b of touchButtons)b.release();touch.clear();}
 const menu=createGameMenu({ pad: { move: 'wasd', keys: { rt: ['KeyW', 'Avanzar'], lt: ['KeyS', 'Frenar'], a: ['Space', 'Saltar troncos'], rb: ['ShiftLeft', 'Remate'], ls: ['ShiftLeft', 'Remate'], y: ['KeyR', 'Volver al camino'] } },title:'Galope',sound,orientation:'horizontal',note:()=>room.members.size>1?'La carrera sigue mientras abres el menú.':'La carrera está en pausa.',
@@ -57,7 +57,7 @@ function input(){if(paused)return {};return {throttle:keys.has('KeyS')||keys.has
 function choose(value){coat=value;for(const b of document.querySelectorAll('[data-coat]'))b.setAttribute('aria-pressed',String(b.dataset.coat===value));try{localStorage.setItem('galope:coat',value);}catch{}room.choose(value);}
 for(const b of document.querySelectorAll('[data-coat]'))b.onclick=()=>choose(b.dataset.coat);
 choose(coat);
-$('start').onclick=$('again').onclick=()=>{unlock();room.start($('bots').checked);};
+$('start').onclick=$('again').onclick=()=>{unlock();room.start();};
 $('practice').onclick=()=>{room.practice();$('practice').classList.add('hidden');};
 // Let the loading state paint before the shared procedural models are constructed.
 await new Promise(resolve=>requestAnimationFrame(()=>setTimeout(resolve,30)));
@@ -95,7 +95,6 @@ function drawMap(player){
 }
 function updateUI(){
   roomOptions.update(state.options||cleanOptions(),room.isHost&&room.connected&&state.phase==='lobby');
-  $('bots').disabled = !room.connected || !room.isHost;
   course.setOptions(state.options);$('map-length').textContent=`${(LENGTH*state.options.laps/1000).toFixed(1).replace('.',',')} KM`;
   document.querySelector('.pk-stats .pk-stat b').textContent=state.options.laps;document.querySelectorAll('.pk-stats .pk-stat b')[1].textContent=raceJumps(state.options).length;
   for(const b of document.querySelectorAll('[data-coat]'))b.disabled=state.options.horse==='random';

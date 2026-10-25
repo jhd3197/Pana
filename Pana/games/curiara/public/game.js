@@ -36,7 +36,7 @@ const room = new RiverRoom({ code, name, avatar, onState: s => { state = s; snap
 state = room.state;
 const crewRoster = createLobbyRoster($('seats'), { onMove: (from, to) => room.moveSeat(from, to) });
 
-const roomOptions=createRoomOptions($('room-options'),{title:'Curiara',fields:FIELDS,change:patch=>{if(patch.crew){format=patch.crew;store.set('curiara:format',format);}room.configure(patch);},reset:()=>{$('bots').checked=true;room.configure(cleanOptions());}});
+const roomOptions=createRoomOptions($('room-options'),{title:'Curiara',fields:FIELDS,change:patch=>{if(patch.crew){format=patch.crew;store.set('curiara:format',format);}room.configure(patch);},reset:()=>{room.configure(cleanOptions());}});
 for(const button of document.querySelectorAll('[data-room-option=crew]'))button.dataset.format=button.dataset.value;
 // Strokes keep the pana's own clock; the host maps them onto race time.
 const strokes = [], local = { seq: 0, last: null, side: 0, splash: 0, streak: 0, mash: 0 };
@@ -117,7 +117,7 @@ function drawSeats() {
   crewRoster.update(crewGrid(state.players, state.format).map((crew, boat) => ({ id: boat, title: `Curiara ${boat + 1}`, color: COLORS[boat], seats: crew.map((player, pos) => ({ key: boat * 2 + pos, player, label: pos ? 'Popa · timón' : 'Proa · remo' })) })),
     { ownId: room.id, hostId: room.hostId, enabled: room.connected && ['lobby', 'finished'].includes(state.phase), canArrange: room.isHost, members: room.link?.state.players || [...room.members.values()] });
 }
-$('start').onclick = $('again').onclick = () => { unlock(); room.start($('bots').checked); };
+$('start').onclick = $('again').onclick = () => { unlock(); room.start(); };
 $('practice').onclick = () => goLocal();
 
 await new Promise(resolve => requestAnimationFrame(() => setTimeout(resolve, 30)));
@@ -212,7 +212,6 @@ function crewName(b) { return b.crew.filter(c => !c.empty).map(c => c.name).join
 function updateUI() {
   applyRiverOptions();
   roomOptions.update(state.options||cleanOptions(),room.isHost&&room.connected&&state.phase==='lobby');
-  $('bots').disabled = !room.connected || !room.isHost;
   const lobby = state.phase === 'lobby', done = state.phase === 'finished', playing = !lobby && !done;
   document.body.classList.toggle('in-lobby', lobby); $('lobby').classList.toggle('hidden', !lobby); $('hud').classList.toggle('hidden', !playing); $('results').classList.toggle('hidden', !done);
   $('start').disabled = !room.connected || !room.isHost || !ready || state.players.filter(p=>!p.bot).length>FORMATS[state.format].boats*FORMATS[state.format].seats; $('start').firstChild.textContent = !room.connected ? 'Conectando… ' : room.isHost ? '¡Al agua! ' : 'Esperando al anfitrión… ';

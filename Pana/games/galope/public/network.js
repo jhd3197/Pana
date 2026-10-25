@@ -28,6 +28,6 @@ export class RaceRoom extends LiveRoom {
   memberHello(id,m){if(this.isHost){this.game.addPlayer(id,m.name,m.avatar,m.coat);this.publish();}}
   choose(coat){this.coat=coat;const m=this.members.get(this.id);if(m)m.coat=coat;if(this.isHost){this.game.addPlayer(this.id,this.name,this.avatar,coat);this.publish();}else this.send({kind:'hello',avatar:this.avatar,coat});}
   configure(patch){if(this.isHost&&this.game?.configure(patch))this.publish();}
-  start(bots=true){if(this.isHost&&this.connected&&['lobby','finished'].includes(this.game.phase)){this.game.start(bots);this.publish();}}
+  start(bots=this.state.options.bots){if(this.isHost&&this.connected&&['lobby','finished'].includes(this.game.phase)){this.game.start(bots);this.publish();}}
   practice(){const local=new Race();local.configure(this.state.options);this.state=local.snapshot();super.practice('Carrera local · tú y los jinetes');}
 }
