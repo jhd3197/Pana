@@ -8,6 +8,9 @@ becomes the GitHub release's notes.
 
 ## Unreleased
 
+- **El servidor cuenta lo que pasa en cada sala, para que los anfitriones vean qué falló.**
+  Una línea por sala creada, pana que entra, se cae, vuelve o se va, cambio de
+  anfitrión y cierre; `PANA_ROOM_LOG=0` la apaga.
 - **¡Stop! se juega solo entre panas: apaga los bots desde el lobby.**
   Con «Jugar con: Solo panas» las sillas vacías quedan vacías: nadie más gira
   la rueda, escribe, vota ni sale en la tabla.

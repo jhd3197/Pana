@@ -81,6 +81,16 @@ export function roomState(fields = {}, memberClass = Member, name = 'PanaState')
   return schema({ host: t.string().default(''), players: t.map(memberClass), ...fields }, name);
 }
 
+// One line per room event on stdout (the hosted gateway keeps it in its log):
+// "[room] carreritas:kcsvnm join seat=3 name=Neeu lead=0 members=3/3".
+// PANA_ROOM_LOG=0 silences it.
+export function roomLog(room, event, details = {}) {
+  if (process.env.PANA_ROOM_LOG === '0') return;
+  const fields = Object.entries(details).filter(([, v]) => v !== undefined && v !== '')
+    .map(([k, v]) => `${k}=${typeof v === 'string' && /\s/.test(v) ? JSON.stringify(v) : v}`);
+  console.log(['[room]', `${room.roomName}:${room.code || room.roomId}`, event, ...fields].join(' '));
+}
+
 // One live room per game and code in this process. joinOrCreate would
 // otherwise open a second room under the same code once the first is full.
 const open = new Map();
@@ -93,11 +103,13 @@ export class PanaRoom extends Room {
   onCreate(options = {}) {
     this.code = cleanCode(options.code);
     const key = `${this.roomName}:${this.code}`;
-    if (this.code && open.has(key)) throw new ServerError(ROOM_FULL, 'full');
+    if (this.code && open.has(key)) { roomLog(this, 'refused', { reason: 'code-taken' }); throw new ServerError(ROOM_FULL, 'full'); }
     if (this.code) { open.set(key, this.roomId); this.openKey = key; }
     this.lead = '';
     this.createdAt = Date.now();
     this.nextSeat = 1;
+    this.peak = 0;
+    roomLog(this, 'create', { id: this.roomId });
     this.onMessage('me', (client, m) => {
       const p = this.state.players.get(client.sessionId);
       if (!p || !m || typeof m !== 'object') return;
@@ -115,7 +127,10 @@ export class PanaRoom extends Room {
     this.updateMetadata();
   }
 
-  onDispose() { this.releaseCode(); }
+  onDispose() {
+    roomLog(this, 'dispose', { lived: `${Math.round((Date.now() - this.createdAt) / 1000)}s`, peak: this.peak });
+    this.releaseCode();
+  }
 
   releaseCode() {
     if (this.openKey && open.get(this.openKey) === this.roomId) open.delete(this.openKey);
@@ -150,12 +165,20 @@ export class PanaRoom extends Room {
       this.setHost(client.sessionId);
     } else if (!this.state.host) this.setHost(client.sessionId);
     this.joined?.(client, member, options);
+    this.peak = Math.max(this.peak, this.state.players.size);
+    roomLog(this, 'join', { seat: member.seat, name: member.name, lead: options.lead ? 1 : 0, host: this.state.host === client.sessionId ? 1 : 0, ...this.counts() });
     this.updateMetadata();
+  }
+
+  counts() {
+    const all = [...this.state.players.values()];
+    return { members: `${all.filter(p => p.connected).length}/${all.length}` };
   }
 
   onDrop(client, code) {
     const member = this.state.players.get(client.sessionId);
     if (member) member.connected = false;
+    roomLog(this, 'drop', { seat: member?.seat, code, ...this.counts() });
     // Whatever the host runs must keep running while their tab reconnects.
     if (this.state.host === client.sessionId) this.setHost(this.nextHost(client.sessionId));
     this.dropped?.(client, member);
@@ -166,13 +189,15 @@ export class PanaRoom extends Room {
   onReconnect(client) {
     const member = this.state.players.get(client.sessionId);
     if (member) member.connected = true;
+    roomLog(this, 'reconnect', { seat: member?.seat, ...this.counts() });
     if (!this.state.host) this.setHost(client.sessionId);
     this.returned?.(client, member);
   }
 
-  onLeave(client) {
+  onLeave(client, code) {
     const id = client.sessionId, member = this.state.players.get(id);
     this.state.players.delete(id);
+    roomLog(this, 'leave', { seat: member?.seat, code, ...this.counts() });
     if (this.lead === id) this.lead = '';
     this.left?.(client, member);
     if (this.state.host === id || !this.state.players.has(this.state.host)) this.setHost(this.nextHost(id));
@@ -198,8 +223,12 @@ export class PanaRoom extends Room {
 
   setHost(id) {
     const changed = this.state.host !== (id || '');
+    const from = this.state.players.get(this.state.host)?.seat;
     this.state.host = id || '';
-    if (changed) this.hostChanged?.(this.state.host);
+    if (changed) {
+      if (this.createdAt) roomLog(this, 'host', { from, to: this.state.players.get(this.state.host)?.seat ?? 'none' });
+      this.hostChanged?.(this.state.host);
+    }
   }
 
   memberBySeat(seat) {

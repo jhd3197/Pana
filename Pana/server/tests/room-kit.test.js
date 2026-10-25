@@ -39,6 +39,22 @@ test('the first arrival hosts, the lead takes over while the room is new, a drop
   t.room.onDispose();
 });
 
+test('every room event leaves one log line: create, join, drop, reconnect, host, leave, dispose', () => {
+  const lines = [], log = console.log;
+  console.log = (...args) => lines.push(args.join(' '));
+  try {
+    const t = createTestRoom(PlainRoom, { code: 'log-1' });
+    const a = t.join('a', { name: 'Ana', lead: true }), b = t.join('b', { name: 'Bruno Díaz' });
+    t.drop(a.client); t.reconnect(a.client); t.leave(b.client);
+    t.room.onDispose();
+  } finally { console.log = log; }
+  const events = lines.filter(l => l.startsWith('[room] test:log-1')).map(l => l.split(' ')[2]);
+  assert.deepEqual(events, ['create', 'host', 'join', 'join', 'drop', 'host', 'reconnect', 'leave', 'host', 'dispose']);
+  assert.ok(lines.some(l => /join seat=1 name=Ana lead=1 host=1 members=1\/1/.test(l)), lines.join(String.fromCharCode(10)));
+  assert.ok(lines.some(l => l.includes('name="Bruno Díaz"')), 'names with spaces stay one field');
+  assert.ok(lines.some(l => /host from=1 to=2/.test(l)));
+});
+
 test('a second room under the same code is refused until the first is gone', () => {
   const first = createTestRoom(PlainRoom, { code: 'dup-1' });
   assert.throws(() => createTestRoom(PlainRoom, { code: 'dup-1' }), e => e instanceof ServerError && e.code === ROOM_FULL);
