@@ -8,6 +8,9 @@ becomes the GitHub release's notes.
 
 ## Unreleased
 
+- **Colonia Tovar y Sarisariñama corren más livianos.**
+  La niebla, el mar de nubes y la brisa se dibujan de una vez y el paisaje
+  se recorta por zonas: Tovar pinta la mitad de triángulos y ya no se traba.
 - **Stop recuerda las palabras que la mesa aceptó y deja elegir las letras.**
   Lo que se votó que sí cuenta solo en la próxima partida, las letras no se
   repiten entre partidas de la misma sala, y Letras: Fáciles, Normales o Todas.

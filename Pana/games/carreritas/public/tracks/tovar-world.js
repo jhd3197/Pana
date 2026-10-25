@@ -4,6 +4,7 @@ import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { extendTerrain } from '/engine/worlds/coastal/world-horizon.js';
 import { coastalVegetation } from '/engine/worlds/coastal/coastal-vegetation.js';
 import { MAP, noise } from './tovar-layout.js';
+import { cellInstances, billboardCloud } from './scenery-batch.js';
 
 // Colonia Tovar: the German town in the clouds. Hydrangea climbs, the
 // strawberry market, a fog-filled forest of hairpins and the mirador ridge.
@@ -154,7 +155,7 @@ export function createWorld(scene, layout, roadDistance, scale = 1.3) {
     _bm.makeBasis(_bx, dir, _bz); d.quaternion.setFromRotationMatrix(_bm); d.position.copy(a).addScaledVector(dir, len / 2); d.scale.set(tx, len, tz); d.updateMatrix(); return d.matrix.clone();
   };
   const beams = { yellow: [], iron: [], wood: [], white: [], walk: [], stone: [] };
-  const inst = { box: [], timber: [], roof: [], trunk: [], hyd: [], hydLeaf: [], cyl: [], sphere: [], umbrella: [], fruit: [], crowdBody: [], crowdHead: [], grass: [], post: [], reflector: [] };
+  const inst = { box: [], timber: [], roof: [], trunk: [], hyd: [], hydLeaf: [], cyl: [], sphere: [], flower: [], umbrella: [], fruit: [], crowdBody: [], crowdHead: [], grass: [], post: [], reflector: [] };
   const push = (list, pos, quat, scale, color) => { d.position.copy(pos); d.quaternion.copy(quat); d.scale.copy(scale); d.updateMatrix(); list.push({ m: d.matrix.clone(), c: color }); };
   const Q = new THREE.Quaternion(), S = new THREE.Vector3();
   const qYaw = a => new THREE.Quaternion().setFromAxisAngle(UP, a);
@@ -228,7 +229,7 @@ export function createWorld(scene, layout, roadDistance, scale = 1.3) {
       const fp = p.clone().addScaledVector(fwd, k * 0.25 + 0.28).addScaledVector(right, o * (w + k * 0.5)).setY(y + 1.2 + fh * k + fh * 0.3 - 0.1);
       if (k === 0 && o === 0.2 && rand() < 0.5) continue;
       push(inst.box, fp, q, S.set(0.22 * (w + k * 0.5), 0.3, 0.45), col('#6a3a1e'));
-      for (let j = 0; j < 5; j++) push(inst.sphere, fp.clone().addScaledVector(right, (j - 2) * 0.042 * (w + k * 0.5)).setY(fp.y + 0.28), Q, S.set(0.24, 0.2, 0.24), pick([col('#e8303a'), col('#ff5a7a'), col('#ffffff'), col('#ff8a2a'), col('#d82a6a')]));
+      for (let j = 0; j < 5; j++) push(inst.flower, fp.clone().addScaledVector(right, (j - 2) * 0.042 * (w + k * 0.5)).setY(fp.y + 0.28), Q, S.set(0.24, 0.2, 0.24), pick([col('#e8303a'), col('#ff5a7a'), col('#ffffff'), col('#ff8a2a'), col('#d82a6a')]));
     }
     if (floors > 1 && rand() < 0.4) { const bp = p.clone().addScaledVector(fwd, 0.9).setY(y + 1.2 + fh + 0.1); push(inst.box, bp, q, S.set(w * 0.6, 0.18, 1.2), col('#4a2e1c')); for (let k = -6; k <= 6; k++) push(inst.box, bp.clone().addScaledVector(right, k * w * 0.048).addScaledVector(fwd, 0.55).setY(bp.y + 0.5), q, S.set(0.08, 1.0, 0.08), col('#4a2e1c')); }
     take(back.x, back.z, Math.max(w, dpt) * 0.6);
@@ -510,36 +511,40 @@ export function createWorld(scene, layout, roadDistance, scale = 1.3) {
   });
 
   /* ---------------- fog: banks that sit low in the hollows and roll in and out on the race clock ---------------- */
-  const FOG = MAP.fog, fogSprites = [];
+  const FOG = MAP.fog;
   const fPh = [PI / 2, 0.4];
   const roll = t => clamp(0.55 + 0.35 * Math.sin(t * TAU / FOG.roll.periods[0] + fPh[0]) + 0.2 * Math.sin(t * TAU / FOG.roll.periods[1] + fPh[1]), FOG.roll.min, 1);
+  // Two banks, one draw each: the fog follows the roll, the sea of cloud stays at 0.8.
+  let fogBank, seaBank;
   {
-    const mat = () => new THREE.SpriteMaterial({ map: cloudTex, color: col('#f2f4f5'), transparent: true, opacity: 0, depthWrite: false, fog: false });
-    const strong = FOG.patches.filter(q => q[3] >= 0.5);
+    const cloud = { map: cloudTex, color: col('#f2f4f5'), fog: false, gain: 0.42, max: 0.5, motion: { drift: 0.05, bob: 0.2 } };
+    const strong = FOG.patches.filter(q => q[3] >= 0.5), banks = [];
     for (let k = 0; k < FOG.sprites; k++) {
       const P = pick(strong), a = rand() * TAU, r = Math.sqrt(rand()) * P[2] * 0.85, x = P[0] + Math.cos(a) * r, z = P[1] + Math.sin(a) * r;
-      const s = new THREE.Sprite(mat()); s.position.set(x, groundH(x, z) + rr(3, 16), z); const sc = rr(28, 60); s.scale.set(sc / scale, sc * 0.5, 1); s.userData = { k: P[3] * Math.exp(-(r * r) / (P[2] * P[2]) * 1.2), ph: rand() * TAU, y0: s.position.y, x0: x };
-      scene.add(s); fogSprites.push(s);
+      const y = groundH(x, z) + rr(3, 16), sc = rr(28, 60);
+      banks.push({ x, y, z, w: sc / scale, h: sc * 0.5, k: P[3] * Math.exp(-(r * r) / (P[2] * P[2]) * 1.2), ph: rand() * TAU, drift: 6, bob: 1.5 });
     }
+    fogBank = billboardCloud(scene, banks, { ...cloud, level: 0 });
     // a sea of cloud far below the mirador
-    for (let k = 0; k < 40; k++) { const s = new THREE.Sprite(mat()); s.position.set(rr(-900, 900), rr(-200, -150), rr(420, 1000)); const sc = rr(160, 320); s.scale.set(sc / scale, sc * 0.35, 1); s.userData = { k: 0.9, ph: rand() * TAU, y0: s.position.y, x0: s.position.x, sea: true }; scene.add(s); fogSprites.push(s); }
+    const sea = [];
+    for (let k = 0; k < 40; k++) { const x = rr(-900, 900), y = rr(-200, -150), z = rr(420, 1000), sc = rr(160, 320); sea.push({ x, y, z, w: sc / scale, h: sc * 0.35, k: 0.9, ph: rand() * TAU, drift: 6, bob: 1.5 }); }
+    seaBank = billboardCloud(scene, sea, { ...cloud, level: 0.8 });
   }
 
   /* ---------------- flush instances ---------------- */
-  function flush(list, geo, mat, cast = true) {
-    if (!list.length) return null;
-    const im = new THREE.InstancedMesh(geo, mat, list.length);
-    list.forEach((it, i) => { im.setMatrixAt(i, it.m); im.setColorAt(i, it.c || col('#ffffff')); });
-    im.castShadow = cast; im.receiveShadow = true; scene.add(im); return im;
-  }
+  // Per map cell, so the frustum skips the slopes behind the car.
+  function flush(list, geo, mat, cast = true) { return cellInstances(scene, list, geo, mat, { cast, cell: 200 }); }
+  // A 20-triangle ball with round normals: hydrangea heads and window flowers are
+  // thousands of small balls, where 80- or 160-triangle spheres were ~1.7 M triangles.
+  const ball = () => { const g = new THREE.IcosahedronGeometry(1, 0); g.setAttribute('normal', g.attributes.position.clone()); return g; };
   { const g = new THREE.CylinderGeometry(0.55, 1, 1, 7, 2); g.translate(0, 0.5, 0); flush(inst.trunk, g, new THREE.MeshStandardMaterial({ color: col('#ffffff'), roughness: 1, flatShading: true })); }
   flush(inst.hydLeaf, new THREE.IcosahedronGeometry(1, 0), new THREE.MeshStandardMaterial({ color: col('#ffffff'), roughness: 0.9, flatShading: true }));
-  flush(inst.hyd, new THREE.IcosahedronGeometry(1, 1), new THREE.MeshStandardMaterial({ color: col('#ffffff'), roughness: 0.8, emissive: col('#202040'), emissiveIntensity: 0.25 }), false);
+  flush(inst.hyd, ball(), new THREE.MeshStandardMaterial({ color: col('#ffffff'), roughness: 0.8, emissive: col('#202040'), emissiveIntensity: 0.25 }), false);
   flush(inst.box, new THREE.BoxGeometry(1, 1, 1), new THREE.MeshStandardMaterial({ color: col('#ffffff'), roughness: 0.8 }));
   flush(inst.timber, new THREE.BoxGeometry(1, 1, 1), new THREE.MeshStandardMaterial({ color: col('#ffffff'), map: timberTex, roughness: 0.85 }));
   { const s = new THREE.Shape(); s.moveTo(-0.5, 0); s.lineTo(0.5, 0); s.lineTo(0, 1); s.closePath(); const g = new THREE.ExtrudeGeometry(s, { depth: 1, bevelEnabled: false }); g.translate(0, 0, -0.5); flush(inst.roof, g, new THREE.MeshStandardMaterial({ color: col('#ffffff'), roughness: 0.8, side: THREE.DoubleSide })); }
   { const g = new THREE.CylinderGeometry(1, 1, 1, 8); g.translate(0, 0.5, 0); flush(inst.cyl, g, new THREE.MeshStandardMaterial({ color: col('#ffffff'), roughness: 0.6, metalness: 0.3 })); }
-  flush(inst.sphere, new THREE.SphereGeometry(1, 10, 8), new THREE.MeshStandardMaterial({ color: col('#ffffff'), roughness: 0.7, emissive: col('#ffe8b0'), emissiveIntensity: 0.15 }), false);
+  { const m = new THREE.MeshStandardMaterial({ color: col('#ffffff'), roughness: 0.7, emissive: col('#ffe8b0'), emissiveIntensity: 0.15 }); flush(inst.sphere, new THREE.SphereGeometry(1, 10, 8), m, false); flush(inst.flower, ball(), m, false); }
   { const g = new THREE.ConeGeometry(1, 1, 12, 1, true); flush(inst.umbrella, g, new THREE.MeshStandardMaterial({ color: col('#ffffff'), roughness: 0.75, side: THREE.DoubleSide })); }
   flush(inst.fruit, new THREE.SphereGeometry(1, 8, 6), new THREE.MeshStandardMaterial({ color: col('#ffffff'), roughness: 0.5 }), false);
   flush(inst.crowdBody, new THREE.SphereGeometry(1, 10, 8), new THREE.MeshStandardMaterial({ color: col('#ffffff'), roughness: 0.8 }), false);
@@ -562,7 +567,7 @@ export function createWorld(scene, layout, roadDistance, scale = 1.3) {
     const R = roll(t);
     // Reflectors glow brighter as the fog rolls in.
     REFL.emissiveIntensity = 0.25 + 2.4 * sstep(0.45, 1, R);
-    fogSprites.forEach(s => { const u = s.userData; s.material.opacity = clamp(u.k * (u.sea ? 0.8 : R) * 0.42, 0, 0.5); s.position.y = u.y0 + Math.sin(t * 0.2 + u.ph) * 1.5; s.position.x = u.x0 + Math.sin(t * 0.05 + u.ph) * 6; });
+    fogBank.uniforms.uLevel.value = R; fogBank.uniforms.uT.value = seaBank.uniforms.uT.value = t;
     gliders.forEach(G => { const a = t / G.period * TAU + G.ph, x = G.c[0] + Math.cos(a) * G.r, z = G.c[1] + Math.sin(a) * G.r; G.g.position.set(x, G.h + Math.sin(t * 0.3 + G.ph) * 8, z); G.g.rotation.set(0, -a, 0.25); });
   }
 

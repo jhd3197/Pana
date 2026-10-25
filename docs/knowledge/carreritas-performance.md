@@ -378,3 +378,21 @@ All declared geometry/draw/effect/resource limits pass. The initial sustained
 Keep that performance target open; do not call these measurements locked 60 FPS
 or present the phone waiver as waiving the desktop target. A trial removing
 tiny shadow casters did not improve timings reliably and was not retained.
+
+## Mountain worlds: cells and cloud banks (Tovar, Sarisariñama)
+
+`tracks/scenery-batch.js` holds two helpers for the hand-built mountain
+worlds. `cellInstances` splits each scenery kind into one InstancedMesh per
+200 m cell, so the frustum skips what is behind the car; a single map-wide
+batch (or `frustumCulled = false`) is never culled. `billboardCloud` draws a
+whole bank of fog, mist, sea-of-clouds or spray cards in one draw: hundreds
+of Sprites were one draw and one material update each. Every card in a bank
+shares one colour, so the unsorted blend matches the sorted sprites; drift,
+orbit and spray run in the vertex shader on `uniforms.uT`. Hydrangea heads
+and window flowers are a 20-face icosahedron instead of a sphere.
+Measured on the same machine against the sprite and per-kind version:
+Tovar triangles fell from 2.9–4.5M to 1.2–2.9M per view and its 117 ms
+freeze while driving went away; Sarisariñama dropped 11–17 % of its
+triangles and up to 60 draws; the scenery-only screenshots differ in under
+2.5 % of pixels. The four cave PointLights stay: GPU time did not point at
+them and the cave reads by their colour.

@@ -2,6 +2,7 @@ import { rng, clamp, lerp, pick as pickRandom } from '/engine/random.js';
 import * as THREE from 'three';
 import { coastalVegetation } from '/engine/worlds/coastal/coastal-vegetation.js';
 import { MAP } from './sarisarinama-layout.js';
+import { cellInstances, billboardCloud } from './scenery-batch.js';
 
 // Sarisariñama: a spiral road down the wall of a tepuy sinkhole, the lost
 // jungle at its floor, galleries with a lake and rimstone pools under the
@@ -729,22 +730,30 @@ export function createWorld(scene, layout, roadDistance) {
   })();
 
   /* ---------------- mist on the top, sea of clouds below the tepuy, spray ---------------- */
-  const mist = [], spray = [];
+  // Each bank is one draw (scenery-batch.js); drift, orbit and spray run on uT.
+  const banks = [];
   {
-    const fogMat = new THREE.SpriteMaterial({ map: cloudTex, color: col('#eef3f0'), transparent: true, opacity: 0.32, depthWrite: false, fog: true });
+    const mist = [];
     for (let k = 0; k < 100; k++) {
-      const x = rr(X0 - 200, X0 + SIZE + 200), z = rr(Z0 - 200, Z0 + SIZE + 200), y = rr(TOP + 4, TOP + 30);
-      const s = new THREE.Sprite(fogMat); s.position.set(x, y, z); const sc = rr(40, 90); s.scale.set(sc, sc * 0.45, 1); scene.add(s); mist.push({ s, x0: x, z0: z, y0: y, ph: rand() * TAU });
+      const x = rr(X0 - 200, X0 + SIZE + 200), z = rr(Z0 - 200, Z0 + SIZE + 200), y = rr(TOP + 4, TOP + 30), sc = rr(40, 90);
+      mist.push({ x, y, z, w: sc, h: sc * 0.45, ph: rand() * TAU, drift: 30, bob: 2 });
     }
-    const holeMat = new THREE.SpriteMaterial({ map: cloudTex, color: col('#e8f0e8'), transparent: true, opacity: 0.2, depthWrite: false, fog: true });
-    for (let k = 0; k < 40; k++) { const big = k < 30, C = big ? C1 : C2, a = rand() * TAU, r = rr(10, big ? 80 : 40), y = rr(big ? 55 : 45, TOP + 6); const s = new THREE.Sprite(holeMat); s.position.set(C.x + Math.cos(a) * r, y, C.z + Math.sin(a) * r); const sc = rr(20, 45); s.scale.set(sc, sc * 0.5, 1); scene.add(s); mist.push({ s, y0: y, ph: rand() * TAU, orbit: { C, r, a } }); }
-    const sea = new THREE.SpriteMaterial({ map: cloudTex, color: col('#f4f6f4'), transparent: true, opacity: 0.85, depthWrite: false, fog: false });
+    banks.push(billboardCloud(scene, mist, { map: cloudTex, color: col('#eef3f0'), gain: 0.32, motion: { drift: 0.03, bob: 0.2 } }));
+    const holes = [];
+    for (let k = 0; k < 40; k++) {
+      const big = k < 30, C = big ? C1 : C2, a = rand() * TAU, r = rr(10, big ? 80 : 40), y = rr(big ? 55 : 45, TOP + 6), sc = rr(20, 45);
+      holes.push({ x: C.x, y, z: C.z, w: sc, h: sc * 0.5, ph: rand() * TAU, bob: 2, orbit: { x: C.x, z: C.z, r, a } });
+    }
+    banks.push(billboardCloud(scene, holes, { map: cloudTex, color: col('#e8f0e8'), gain: 0.2, motion: { bob: 0.2, orbit: 0.01 } }));
+    const sea = [];
     for (let k = 0; k < 70; k++) {
-      const a = rand() * TAU, e = rr(1.15, 2.6), x = E.center[0] + Math.cos(a) * E.rx * e, z = E.center[1] + Math.sin(a) * E.rz * e;
-      const s = new THREE.Sprite(sea); s.position.set(x, rr(-120, -30), z); const sc = rr(260, 520); s.scale.set(sc, sc * 0.32, 1); scene.add(s);
+      const a = rand() * TAU, e = rr(1.15, 2.6), y = rr(-120, -30), sc = rr(260, 520);
+      sea.push({ x: E.center[0] + Math.cos(a) * E.rx * e, y, z: E.center[1] + Math.sin(a) * E.rz * e, w: sc, h: sc * 0.32 });
     }
-    const sm = new THREE.SpriteMaterial({ map: cloudTex, color: col('#ffffff'), transparent: true, opacity: 0.55, depthWrite: false });
-    for (const p of [...sprayAt, ...gourSpray]) for (let k = 0; k < 2; k++) { const s = new THREE.Sprite(sm.clone()); s.position.copy(p).add(V3(rr(-1.5, 1.5), 0, rr(-1.5, 1.5))); const sc = rr(1.2, 2.6); s.scale.set(sc, sc, 1); s.userData = { y0: p.y, ph: rand() * TAU, sp: rr(1.2, 2.4) }; scene.add(s); spray.push(s); }
+    banks.push(billboardCloud(scene, sea, { map: cloudTex, color: col('#f4f6f4'), fog: false, gain: 0.85 }));
+    const spray = [];
+    for (const p of [...sprayAt, ...gourSpray]) for (let k = 0; k < 2; k++) { const x = p.x + rr(-1.5, 1.5), z = p.z + rr(-1.5, 1.5), sc = rr(1.2, 2.6); spray.push({ x, y: p.y, z, w: sc, h: sc, ph: rand() * TAU, drift: rr(1.2, 2.4), k: 0.5 }); }
+    banks.push(billboardCloud(scene, spray, { map: cloudTex, color: col('#ffffff'), motion: { spray: true } }));
     // falls off the other tepuyes
     const FAR_FALL = flowMaterial({ alpha: 0.85 });
     for (const m of MAP.landscape.mesas) {
@@ -759,13 +768,9 @@ export function createWorld(scene, layout, roadDistance) {
   scene.traverse(o => { if (o.isSprite) o.raycast = () => {}; });
 
   /* ---------------- flush instances ---------------- */
-  function flush(list, geo, mat, cast = true) {
-    if (!list.length) return null;
-    const im = new THREE.InstancedMesh(geo, mat, list.length);
-    list.forEach((it, i) => { im.setMatrixAt(i, it.m); im.setColorAt(i, it.c || col('#ffffff')); });
-    im.castShadow = cast; im.receiveShadow = true; im.frustumCulled = false; scene.add(im);
-    return im;
-  }
+  // Per map cell with frustum culling on: map-wide batches with culling off drew
+  // every frond, rock and blade of grass on the tepuy every frame.
+  function flush(list, geo, mat, cast = true) { return cellInstances(scene, list, geo, mat, { cast, cell: 200 }); }
   flush(inst.bushBlob, new THREE.IcosahedronGeometry(1, 0), CANOPY);
   flush(inst.frond, frondGeo, FROND);
   flush(inst.grass, grassGeo, GRASS, false);
@@ -776,7 +781,7 @@ export function createWorld(scene, layout, roadDistance) {
   { const g = new THREE.CylinderGeometry(1, 1, 1, 5); g.translate(0, 0.5, 0); flush(inst.vine, g, VINE, false); }
   { const g = new THREE.ConeGeometry(1, 1, 7); g.rotateX(PI); g.translate(0, -0.5, 0); flush(inst.drip, g, new THREE.MeshStandardMaterial({ color: col('#ffffff'), roughness: 0.55, emissive: col('#1a3a40'), emissiveIntensity: 0.5 }), false); }
   { const g = new THREE.ConeGeometry(1, 1, 8); g.translate(0, 0.5, 0); flush(inst.mite, g, new THREE.MeshStandardMaterial({ color: col('#ffffff'), roughness: 0.6, emissive: col('#14282c'), emissiveIntensity: 0.5 }), false); }
-  { const g = new THREE.TorusGeometry(1, 0.1, 6, 36); g.rotateX(PI / 2); const im = flush(inst.rim, g, new THREE.MeshStandardMaterial({ color: col('#ffffff'), roughness: 0.7, emissive: col('#2a2618'), emissiveIntensity: 0.4 }), false); if (im) noRay(im); }
+  { const g = new THREE.TorusGeometry(1, 0.1, 6, 36); g.rotateX(PI / 2); flush(inst.rim, g, new THREE.MeshStandardMaterial({ color: col('#ffffff'), roughness: 0.7, emissive: col('#2a2618'), emissiveIntensity: 0.4 }), false).forEach(noRay); }
 
   /* ---------------- birds over the simas: swifts that nest behind the falls, a few guacamayas ---------------- */
   const birds = [];
@@ -914,11 +919,7 @@ export function createWorld(scene, layout, roadDistance) {
       const flap = Math.max(0, Math.sin(t * b.fl + b.ph)) * 0.6 - 0.12; b.wings.forEach(w => (w.pivot.rotation.z = w.s * flap));
     });
     bats.update(t);
-    mist.forEach(m => {
-      if (m.orbit) { const a = m.orbit.a + t * 0.01; m.s.position.set(m.orbit.C.x + Math.cos(a) * m.orbit.r, m.y0 + Math.sin(t * 0.2 + m.ph) * 2, m.orbit.C.z + Math.sin(a) * m.orbit.r); }
-      else { m.s.position.x = m.x0 + Math.sin(t * 0.03 + m.ph) * 30; m.s.position.y = m.y0 + Math.sin(t * 0.2 + m.ph) * 2; }
-    });
-    spray.forEach(s => { const k = (t * s.userData.sp * 0.5 + s.userData.ph) % 1; s.position.y = s.userData.y0 + k * 1.6; s.material.opacity = 0.5 * (1 - k); });
+    banks.forEach(b => (b.uniforms.uT.value = t));
     { const p = banner.geometry.attributes.position, base0 = banner.userData.base; for (let i = 0; i < p.count; i++) p.setZ(i, Math.sin(t * 3 + base0[i * 3] * 0.6) * 0.18); p.needsUpdate = true; }
   }
 
