@@ -8,6 +8,9 @@ becomes the GitHub release's notes.
 
 ## Unreleased
 
+- **Stop recuerda las palabras que la mesa aceptó y deja elegir las letras.**
+  Lo que se votó que sí cuenta solo en la próxima partida, las letras no se
+  repiten entre partidas de la misma sala, y Letras: Fáciles, Normales o Todas.
 - **En Stop una sola letra ya no cuenta, y tras ¡STOP! hay 5 segundos.**
   «P», «P.» o «Ppp» salen en rojo sin votación y no dejan gritar ¡STOP!;
   los demás tienen 5 s para cerrar la palabra, y Chrome no tapa la hoja.

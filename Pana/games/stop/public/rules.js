@@ -11,7 +11,11 @@ import { defaultOptions, roomOptions } from './options.js';
 
 export const SEATS = 8;
 export const ALPHABET = 'ABCDEFGHIJKLMNÑOPQRSTUVWXYZ'.split('');
+// Letter levels by how many words the categories have for them: easy letters
+// fill every box, medium ones leave a few blank, hard ones leave most empty.
+export const EASY = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'L', 'M', 'N', 'P', 'R', 'S', 'T'];
 export const HARD = ['Ñ', 'Q', 'W', 'X', 'Y', 'Z'];
+export const MEDIUM = ALPHABET.filter(l => !EASY.includes(l) && !HARD.includes(l));
 export const CLASICAS = ['nombre', 'apellido', 'pais', 'ciudad', 'animal', 'fruta', 'color', 'cosa'];
 export const CRIOLLAS = ['estado', 'comida', 'palabra', 'dicho', 'pelotero', 'musica', 'lugar', 'marca', 'carinoso'];
 // ¡Basta! gives the rest 5 s: at 3 s panas mid-word lost answers they were typing.
@@ -44,7 +48,12 @@ export function tooShort(answer) {
 export const cleanSheet = (sheet, count) => Array.from({ length: count }, (_, i) => cleanAnswer(Array.isArray(sheet) ? sheet[i] : ''));
 
 // The letters the wheel can land on for these options.
-export const lettersFor = (options) => ALPHABET.filter(l => options.hard || !HARD.includes(l));
+// faciles: easy only; normales: easy and medium; todas: every letter. Rooms
+// saved before the levels carry `hard` instead.
+export function lettersFor(options) {
+  const level = options.letters || (options.hard ? 'todas' : 'normales');
+  return ALPHABET.filter(l => level === 'todas' || EASY.includes(l) || (level === 'normales' && MEDIUM.includes(l)));
+}
 
 // This game's categories: the set's own list first, then the rest.
 export function pickCategories(state, options) {
@@ -58,6 +67,20 @@ export function pickCategories(state, options) {
   } else if (options.set === 'azar') order = shuffle([...CLASICAS, ...CRIOLLAS]);
   else order = [...(options.mode === 'rapido' ? shuffle(CLASICAS) : CLASICAS), ...shuffle(CRIOLLAS)];
   return order.slice(0, count);
+}
+
+// Words tables voted in, kept in the browser so the next game counts them
+// on its own (judge's "mesa"). Only clean entries for real categories; the
+// newest MESA_LIMIT stay.
+export const MESA_LIMIT = 300;
+export function rememberWords(dictionary, saved) {
+  const out = [], seen = new Set();
+  for (const d of [...(Array.isArray(dictionary) ? dictionary : []), ...(Array.isArray(saved) ? saved : [])]) {
+    const word = cleanAnswer(d?.word), key = `${d?.category}:${soundKey(word)}`;
+    if (![...CLASICAS, ...CRIOLLAS].includes(d?.category) || tooShort(word) || seen.has(key)) continue;
+    seen.add(key); out.push({ category: d.category, word });
+  }
+  return out.slice(-MESA_LIMIT);
 }
 
 // How the game reads one box. status: green (counts), red (doesn't), yellow
@@ -160,7 +183,8 @@ export class StopGame {
     this.rounds = this.options.rounds; this.limit = this.options.mode === 'rapido' ? TIMES.rapido : this.options.seconds;
     this.categories = pickCategories(this, this.options);
     for (const p of this.players) Object.assign(p, { total: 0, round: 0, filled: 0, submitted: false, sheet: null, stats: freshStats() });
-    Object.assign(this, { round: 0, used: [], winner: null, titles: null, review: null, stopper: null, letter: null });
+    // `used` carries over: the next game starts with the letters this room hasn't played.
+    Object.assign(this, { round: 0, winner: null, titles: null, review: null, stopper: null, letter: null });
     this.spinFrom = Math.floor(draw(this) * SEATS); this.games++;
     this.nextRound();
   }
@@ -175,7 +199,8 @@ export class StopGame {
     this.revision++;
   }
 
-  // ¡Para!: the wheel lands on a letter nobody has played this game.
+  // ¡Para!: the wheel lands on a letter this room hasn't played yet; once
+  // every letter came out, the bag refills.
   para(p) {
     if (this.phase !== 'spin' || (p && p.seat !== this.spinner)) return false;
     const all = lettersFor(this.options); let pool = all.filter(l => !this.used.includes(l));

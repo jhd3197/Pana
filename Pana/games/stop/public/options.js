@@ -8,7 +8,7 @@ export const ROOM_OPTIONS = [
   { id: 'rounds', label: 'Rondas', default: 5, advanced: true, choices: [[3, '3 rondas'], [5, '5 rondas'], [7, '7 rondas']] },
   { id: 'count', label: 'Cuántas categorías', default: 8, advanced: true, choices: [[6, '6'], [7, '7'], [8, '8'], [9, '9'], [10, '10']] },
   { id: 'seconds', label: 'Tiempo para escribir', default: 90, advanced: true, choices: [[60, '60 s'], [90, '90 s'], [120, '2 min']] },
-  { id: 'hard', label: 'Letras difíciles (Ñ, Q, W, X, Y, Z)', default: false, advanced: true, choices: [[false, 'Fuera'], [true, 'Adentro']] },
+  { id: 'letters', label: 'Letras', default: 'normales', choices: [['faciles', 'Fáciles'], ['normales', 'Normales'], ['todas', 'Todas (con Ñ, Q, X…)']] },
   { id: 'criollo', label: 'Más criollo', default: false, advanced: true, choices: [[false, 'Apto para todos'], [true, 'Sin filtro']] },
   botLevel('bots', 'faciles', 'normales', 'dificiles', { advanced: true, visibleWhen: { withBots: [true] } }),
 ];

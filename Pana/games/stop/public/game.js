@@ -8,7 +8,7 @@ import { roomCode, bootGame } from '/engine/game-shell.js';
 import { createRoomOptions } from '/engine/room-options.js';
 import { StopRoom } from './network.js';
 import { ROOM_OPTIONS, defaultOptions } from './options.js';
-import { ranking, seated, TITLE_TEXT } from './rules.js';
+import { ranking, seated, rememberWords, TITLE_TEXT } from './rules.js';
 import { createSheet } from './sheet.js';
 import { createReview } from './review.js';
 import { renderBoard, renderWheelPanel, renderTally, shout, botDetail, clockText } from './hud.js';
@@ -30,6 +30,7 @@ const menu = createGameMenu({ pad: { buttons: true, keys: { x: ['Space', '¡Para
     'El primero que llena todo grita ¡STOP! y los demás tienen 5 segundos. Si nadie termina, se acaba el tiempo.',
     'Lo que el juego conoce cuenta solo (verde). Lo que no empieza con la letra, no (rojo). Lo dudoso se vota: «¿Eso cuenta?».',
     '100 puntos si nadie más la puso, 50 si alguien la repitió. Una dudosa que la mesa acepta con dos tercios suma +50 de Creatividad.',
+    'Lo que la mesa acepta se queda: en la próxima partida cuenta solo.',
     'Con «Más criollo» las groserías van a votación; sin eso, la libreta las tacha sola.',
   ],
   invite: () => room.offline ? null : inviteUrl(code),
@@ -95,11 +96,11 @@ function sounds(state, p) {
     if (phase === 'spin') sound.whoosh();
     if (phase === 'letter') { shout(`¡Salió la ${state.letter}!`, 'yellow', 1700); sound.pickup(1); }
     if (phase === 'write' && lastPhase === 'letter') shout('¡A escribir!', 'teal', 900);
-    if (phase === 'basta') { shout('¡Basta! 3…', 'red', 950); sound.bonk(.9); if (p && state.stopper !== p.seat && sheet.filled() < state.categories.length) $('event').textContent = '¡Me agarró fuera de base!'; }
+    if (phase === 'basta') { shout('¡Basta!', 'red', 950); sound.bonk(.9); if (p && state.stopper !== p.seat && sheet.filled() < state.categories.length) $('event').textContent = '¡Me agarró fuera de base!'; }
     if (phase === 'collect') { shout('¡Lápices abajo!', 'red', 1100); sheet.blur(); }
     if (phase === 'review') shout('¡A revisar!', 'yellow', 1000);
     if (phase !== 'basta' && phase !== 'write') $('event').textContent = '';
-  } else if (phase === 'basta' && clock !== lastClock && clock > 0) { shout(`${clock}…`, 'red', 900); sound.tick(3 - clock); }
+  } else if (phase === 'basta' && clock !== lastClock && clock > 0) { shout(`${clock}…`, 'red', 900); sound.tick(5 - clock); }
   else if (phase === 'write' && clock !== lastClock && clock <= 5 && clock > 0) sound.tick(5 - clock);
   const r = state.review, stage = r ? `${state.round}:${r.index}:${r.stage}` : '';
   if (phase === 'review' && stage !== lastStage && r.stage !== 'vote' && p) {
@@ -110,11 +111,25 @@ function sounds(state, p) {
   lastStage = stage; lastClock = clock; lastLine = state.hostLine;
 }
 
+// Words the table voted in outlive the room: every pana's browser keeps them,
+// and whoever hosts brings theirs to the next table.
+const MESA_KEY = 'pana.stop.mesa';
+let mesaSeeded = false, mesaSaved = -1;
+function keepMesa(state) {
+  try {
+    const saved = () => JSON.parse(localStorage.getItem(MESA_KEY) || '[]');
+    if (room.isHost && room.game && !mesaSeeded) { mesaSeeded = true; room.game.dictionary = rememberWords(room.game.dictionary, saved()); queueMicrotask(() => room.publish()); }
+    const n = state.dictionary?.length || 0;
+    if (n && n !== mesaSaved) { mesaSaved = n; localStorage.setItem(MESA_KEY, JSON.stringify(rememberWords(saved(), state.dictionary))); }
+  } catch { /* storage may be blocked: the words last this room only */ }
+}
+
 // One title explains itself; several are listed by name.
 const titleLine = (list) => list.length === 1 ? `${list[0]}: ${TITLE_TEXT[list[0]]}` : list.join(' · ');
 
 function render(state) {
   const phase = state.phase, lobby = phase === 'lobby', ended = phase === 'finished', p = state.players[room.seat];
+  keepMesa(state);
   roomOptions.update(state.options, lobby && room.isHost);
   if (!lobby && roomOptions.isOpen) roomOptions.close();
   document.body.classList.toggle('in-lobby', lobby); $('lobby').hidden = !lobby; $('hud').hidden = lobby || ended;

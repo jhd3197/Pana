@@ -18,9 +18,9 @@ purple slang wall. Source: the C4B9Vk6L9kK reel (Hormiga as a color, Oreo for
 - `public/rules.js`: pure rules (`StopGame`, `judge()`, scoring, bots,
   titles), tested by `tests/rules.test.js`.
 - `public/options.js`: Partida (Normal / Stop rápido: 3 categories, 30 s),
-  Categorías (Clásicas / Criollas / Mezcla / Al azar), and in Más ajustes:
-  rounds, how many categories (6–10), writing time, hard letters, Más
-  criollo, Jugar con (Panas y bots / Solo panas), bot level.
+  Categorías (Clásicas / Criollas / Mezcla / Al azar), Letras (Fáciles /
+  Normales / Todas, `lettersFor`), and in Más ajustes:
+  rounds, how many categories (6–10), writing time, Más criollo, Jugar con (Panas y bots / Solo panas), bot level.
 - `public/network.js`: the room. `step(dt)` is the host's clock (`game.tick`).
 - `public/sheet.js`: your notebook page (inputs, Enter to the next box, the
   ¡STOP! button). `public/review.js`: the review cards and thumbs.
@@ -57,21 +57,30 @@ purple slang wall. Source: the C4B9Vk6L9kK reel (Hormiga as a color, Oreo for
 
 - `judge()` order: empty → red; fewer than two different letters ("P",
   "P.", "Ppp", `tooShort`) → red ("Eso no es una palabra"), never a vote,
-  since an unanswered vote is a tie and a tie favours the author; first letter ≠ round letter → red ("¡Iron
+  since an unanswered vote is a tie and a tie favours the author; first
+  letter ≠ round letter → red ("¡Iron
   Man se escribe con I!"); crude (a word in `CRUDE_WORDS` or a crude entry)
   without Más criollo → red ("Eso no se dice en esta mesa"); a word this
   table accepted earlier → green; a doubtful or crude entry → yellow; a match
   whose spelling starts with another letter → yellow ("Varinas" in the V
   round is "¿Barinas?"); a known word → green; unknown → yellow.
 - Ñ is its own letter (Ñame is not an N word). Accents never matter.
+- Letter levels come from how many `saber.js` words each letter has across
+  the categories: `EASY` (A B C D E F G L M N P R S T) fill every box,
+  `MEDIUM` (H I J K O U V) leave some blank, `HARD` (Ñ Q W X Y Z) leave most
+  empty. `used` is the room's letter bag: it carries into the next game
+  and refills only when every letter of the level came out.
 - Yellow answers are grouped by sound, so the table votes once per word and
   every author of it is barred from that vote. 10 s; the vote closes early
   when every eligible voter voted. yes ≥ no accepts (a tie favors the
   author); yes ≥ 2/3 of the votes cast adds +50 Creatividad.
 - 100 for a valid answer nobody else wrote, 50 when someone shares it (same
   sound key, so Kabra and Cabra are "the same"), 0 otherwise.
-- Accepted words join `state.dictionary` (this room, this session, kept
-  across "Otra partida") and are green from then on in that category.
+- Accepted words join `state.dictionary` (kept across "Otra partida") and
+  are green from then on in that category. Every pana's browser also keeps
+  them (`localStorage` `pana.stop.mesa`, `rememberWords`: cleaned, real
+  categories only, newest 300); whoever hosts seeds the next table with
+  theirs. Guests never send theirs, so a guest can't inject words.
 - Oreo (`joke: 'oreo'`): the host line says "200 puntos" for 1.4 s, then a
   "¡Ni lo sueñes!" stamp; it counts like any doubtful word.
 
@@ -115,8 +124,8 @@ purple slang wall. Source: the C4B9Vk6L9kK reel (Hormiga as a color, Oreo for
 
 ## Not built yet
 
-- A server-side global dictionary: today accepted words live only in the
-  room's state. The spec's idea is that a word accepted at several different
+- A server-side global dictionary: today accepted words live in the room's
+  state and the panas' browsers. The spec's idea is that a word accepted at several different
   tables becomes a candidate, then official, so one table of trolls can't
   make "El coño 'e la madre" a valid place for everyone. That needs a small
   server store (counts per category + word + distinct room codes) and an

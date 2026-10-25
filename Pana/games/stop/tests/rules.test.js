@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { StopGame, SEATS, TIMES, POINTS, HARD, CLASICAS, CRIOLLAS, MAX_ANSWER, PERSONALITY, cleanAnswer, cleanSheet, judge, lettersFor,
-  pickCategories, ranking, seated, titles, verdictText } from '../public/rules.js';
+import { StopGame, SEATS, TIMES, POINTS, EASY, MEDIUM, HARD, ALPHABET, CLASICAS, CRIOLLAS, MAX_ANSWER, PERSONALITY, cleanAnswer, cleanSheet, judge, lettersFor,
+  pickCategories, ranking, rememberWords, MESA_LIMIT, seated, titles, verdictText } from '../public/rules.js';
 import { letterOf } from '/engine/play/saber-match.js';
 
 let seq = 0;
@@ -391,4 +391,29 @@ test('a lone letter is never an answer, even when the table would wave it throug
   handIn(game, { 1: ['Caracas', 'Caimán', 'Café'], 2: ['C', 'C', 'C'] });
   assert.ok(game.review.items.filter(i => i.seat === seatOf(game, 2)).every(i => i.status === 'red' && i.reason === 'short'));
   assert.equal(game.review.groups.length, 0, 'nothing for the table to vote on');
+});
+
+test('words a table voted in carry over to the next table, cleaned and capped', () => {
+  const kept = rememberWords([{ category: 'cosa', word: 'Cachivache' }], [
+    { category: 'cosa', word: 'cachivache' }, { category: 'nope', word: 'Cosa' }, { category: 'animal', word: 'C' },
+    { category: 'animal', word: '  Cunaguaro <b> ' }, null, 'Cuchara']);
+  assert.deepEqual(kept, [{ category: 'cosa', word: 'Cachivache' }, { category: 'animal', word: 'Cunaguaro b' }]);
+  const game = writing(humans(2));
+  game.dictionary = kept;
+  assert.equal(judge('Cachivache', 'cosa', 'C', { dictionary: game.dictionary }).reason, 'mesa');
+  const many = Array.from({ length: MESA_LIMIT + 20 }, (_, i) => ({ category: 'cosa', word: `Cosa ${'ab'.repeat(1 + i % 9)}${i}` }));
+  assert.equal(rememberWords([], many).length, MESA_LIMIT);
+});
+
+test('letter levels: easy, easy and medium, or every letter; the bag carries into the next game', () => {
+  assert.deepEqual(lettersFor({ letters: 'faciles' }), EASY);
+  assert.deepEqual(lettersFor({ letters: 'normales' }), lettersFor({ hard: false }));
+  assert.deepEqual(lettersFor({ letters: 'todas' }), ALPHABET);
+  assert.equal(EASY.length + MEDIUM.length + HARD.length, ALPHABET.length);
+  const game = humans(SEATS); game.options.letters = 'faciles'; game.start();
+  const seen = [];
+  for (let i = 0; i < 8; i++) { game.phase = 'spin'; game.para(null); seen.push(game.letter); }
+  game.start();
+  for (let i = 0; i < 6; i++) { game.phase = 'spin'; game.para(null); seen.push(game.letter); }
+  assert.equal(new Set(seen).size, EASY.length, 'a new game in the same room plays the letters not yet seen');
 });
