@@ -58,3 +58,12 @@ body.in-lobby .world-label { display: none; }
   .answer { min-height: 40px; font-size: 14px; }
   .quiz-panel { bottom: 24px; gap: 6px; padding: 10px; }
 }
+
+/* The 212px cards skew 6deg: reserve their corners, shadow and focus outline. */
+body .pana-sala .pk-game-lobby-roster { padding-inline: 20px; }
+body .pana-sala .pk-game-lobby-roster, body .pana-sala .pk-game-lobby-settings, body .pk-room-dialog { box-sizing: border-box; min-width: 0; }
+@media (max-width: 800px) {
+  body .pana-sala .pk-game-lobby-foot #start { white-space: normal; font-size: clamp(20px, 5.5vw, 28px); }
+  body .pana-sala .pk-game-lobby-room-details { min-width: 0; flex: 1; }
+  body .pana-sala .pk-game-lobby-code { white-space: normal; overflow-wrap: anywhere; }
+}

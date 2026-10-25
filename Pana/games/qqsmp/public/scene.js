@@ -9,7 +9,7 @@ import { createSeatBubbles } from '/engine/play/seat-bubbles.js';
 import { makeMango } from '/engine/models/props/mango.js';
 import { disposeModel } from '/engine/models/props/game-table.js';
 import { createQuizStage, createQuizPodium, createHostDesk, createQuizScreen, createStageSpotlight, GOLD, NIGHT } from './studio-set.js';
-import { SEATS, LETTERS, TOP, score, mangos, resolveAnswer, ranking } from './rules.js';
+import { SEATS, LETTERS, TOP, score, mangos, resolveAnswer, ranking, participants } from './rules.js';
 
 export const SEAT_COLORS = ['#ff4b4b', '#2ad1b2', '#ffc629', '#3d7bf2', '#ff8a1f', '#8e4de8'];
 const BOT_LOOKS = [
@@ -58,7 +58,7 @@ function paintScreen(ctx, w, h, s) {
   ctx.fillText(s.final ? `PREGUNTA FINAL · ${s.question.category}` : `${s.question.category} · Pregunta ${s.index + 1} de ${s.total}`, w / 2, 66);
   if (s.phase === 'bet') {
     title('¿Cuántos mangos', h * .36, 100); title('te juegas?', h * .52, 100);
-    title(`${s.players.filter(p => p.betLocked).length} de ${s.players.length} ya apostaron`, h * .74, 48, '#c9c2ff');
+    title(`${participants(s).filter(p => p.betLocked).length} de ${participants(s).length} ya apostaron`, h * .74, 48, '#c9c2ff');
     return;
   }
   ctx.font = '800 58px system-ui, sans-serif';
@@ -144,9 +144,17 @@ export function createQqsmpScene(canvas) {
 
   function update(state) {
     const previous = current; current = state;
+    const active = participants(state);
     for (const p of state.players) {
+      const visible = active.includes(p), slot = podiums[p.seat];
+      slot.podium.visible = visible; tags[p.seat].hidden = !visible;
+      if (slot.character) slot.character.group.visible = visible;
+      if (!visible) { bubbles.hide(p.seat); continue; }
+      const x = (active.indexOf(p) - (active.length - 1) / 2) * 2.45;
+      slot.podium.position.set(x, .3, -.6 - Math.abs(x) * .14); slot.podium.rotation.y = -x * .035;
       syncCharacter(p.seat, p);
-      const slot = podiums[p.seat], plate = JSON.stringify([state.phase, p.name, p.step, p.bonus, p.finalDelta, p.locked, p.betLocked, p.planted, state.reveal, p.copy, p.answer, p.outcome?.right]);
+      slot.character.group.visible = true;
+      const plate = JSON.stringify([state.phase, p.name, p.step, p.bonus, p.finalDelta, p.locked, p.betLocked, p.planted, state.reveal, p.copy, p.answer, p.outcome?.right]);
       if (plate !== slot.plate) { slot.plate = plate; slot.podium.userData.paint((ctx, w, h) => paintPlate(ctx, w, h, state, p, SEAT_COLORS[p.seat])); }
       const r = state.reveal, idx = r ? r.order.indexOf(p.seat) : -1;
       slot.podium.userData.setLight(state.gold === p.seat ? 'gold'
@@ -188,6 +196,7 @@ export function createQqsmpScene(canvas) {
     });
     goldMango.rotation.y += dt * .8; goldMango.position.y = 8.55 + Math.sin(time * 2) * .08;
     podiums.forEach((slot, seat) => {
+      if (!slot.podium.visible) return;
       const p = current?.players[seat], target = podiumHeight(p ? (current.phase === 'reveal' && !current.reveal.done ? p.outcome?.from ?? p.step : p.step) : 0);
       slot.height = THREE.MathUtils.lerp(slot.height, target, 1 - Math.exp(-dt * 2.5)); slot.podium.userData.setHeight(slot.height);
       const c = slot.character; if (!c) return;

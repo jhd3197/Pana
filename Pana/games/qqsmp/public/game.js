@@ -11,7 +11,7 @@ import { ROOM_OPTIONS, defaultOptions } from './options.js';
 import { createNarration } from './narration.js';
 import { createQuizSounds } from './sounds.js';
 import { onSettings } from '/engine/settings.js';
-import { LADDER, TOP, SAFE, LETTERS, BETS, BET_LABELS, score, mangos, ranking, resolveAnswer, TITLE_TEXT } from './rules.js';
+import { LADDER, TOP, SAFE, LETTERS, BETS, BET_LABELS, participants, score, mangos, ranking, resolveAnswer, TITLE_TEXT } from './rules.js';
 
 const $ = (id) => document.getElementById(id), params = new URLSearchParams(location.search);
 const code = roomCode();
@@ -129,11 +129,11 @@ function renderQuestion(state, p) {
   document.querySelectorAll('[data-comodin]').forEach(button => {
     const kind = button.dataset.comodin, used = !p || p.used[kind];
     button.hidden = state.final && ['doble', 'plant'].includes(kind) || betting;
-    button.disabled = used || !canAnswer() || p.locked || (kind === 'plant' && p.doble) || (kind === 'doble' && p.planted);
+    button.disabled = used || !canAnswer() || p.locked || (kind === 'copy' && participants(state).length < 2) || (kind === 'plant' && p.doble) || (kind === 'doble' && p.planted);
     button.classList.toggle('on', kind === 'copy' ? copying : kind === 'doble' ? !!p?.doble : kind === 'plant' ? !!p?.planted : kind === 'half' && !!p?.half);
   });
   $('copy-list').hidden = !copying || !canAnswer();
-  if (copying) $('copy-list').replaceChildren(...state.players.filter(o => o.seat !== room.seat).map(o => {
+  if (copying) $('copy-list').replaceChildren(...participants(state).filter(o => o.seat !== room.seat).map(o => {
     const button = Object.assign(document.createElement('button'), { className: 'pk-btn pk-btn--sm', textContent: `Lo mismo que ${o.name}` });
     button.onclick = () => copyFrom(o.seat); return button;
   }));
@@ -159,7 +159,7 @@ function render(state) {
   document.body.classList.toggle('in-lobby', lobby); $('lobby').hidden = !lobby; $('hud').hidden = lobby || ended;
   $('start').disabled = !world || !room.connected || !room.isHost;
   $('start').textContent = !room.connected ? 'Conectando…' : room.isHost ? '¡Que empiece el show!' : 'Espera al anfitrión';
-  fillRoster($('roster'), state.players.map((o, i) => ({ rank: i + 1, name: o.id === room.id ? `${o.name} · tú` : o.name, detail: o.id === null ? 'Bot' : 'Pana', me: o.id === room.id })));
+  fillRoster($('roster'), participants(state).map((o, i) => ({ rank: i + 1, name: o.id === room.id ? `${o.name} · tú` : o.name, detail: o.id === null ? 'Bot' : 'Pana', me: o.id === room.id })));
   if (!lobby && state.question) { renderQuestion(state, p); renderLadder(p); }
   if (state.phase !== 'question') copying = false;
   // The host's call-outs pop over the podiums once the answer lights up.

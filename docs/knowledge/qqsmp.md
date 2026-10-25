@@ -26,6 +26,11 @@ Built on the shared table room (`engine/table-room.js`) and the plaza stage
 
 ## Rules decisions
 
+- **Jugar con** offers **Panas y bots** (default) and **Solo panas**. The latter
+  keeps stable seat indices but excludes empty seats from voting, betting,
+  scoring, titles, copying and the stage. `participants(state)` is the shared
+  filter; never compact the seat array because copy targets are seat IDs.
+  Departures leave empty seats; newcomers start with fresh scores.
 - Answers can be changed or cancelled while time remains and someone has not
   answered. The final submission (including a copy or a bot) immediately
   settles and shows the result; no more edits are accepted. Repeating the
@@ -62,6 +67,11 @@ Built on the shared table room (`engine/table-room.js`) and the plaza stage
   steps don't miss the question.
 - `#hud` holds only fixed-position children, so its own rect is 0 px tall.
   The camera measures `.quiz-panel` to keep the podiums above it.
+
+- The QQSMP lobby roster reserves 20px of horizontal padding for its 6-degree
+  card skew, shadow and focus outline. The previous 8px left a horizontal
+  scrollbar even at wide desktop sizes. Roster, settings and dialog widths
+  include their padding; long start labels and room codes wrap on mobile.
 
 ## Spanish narration and rematches
 

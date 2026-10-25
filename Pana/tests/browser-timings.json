@@ -148,6 +148,7 @@
   "Pana/games/poquer/tests/browser.mjs": 112,
   "Pana/games/poquer/tests/options.browser.mjs": 246,
   "Pana/games/qqsmp/tests/browser.mjs": 332,
+  "Pana/games/qqsmp/tests/friends.browser.js": 45,
   "Pana/games/reliquia/tests/browser.mjs": 330,
   "Pana/games/reliquia/tests/studio.browser.mjs": 63,
   "Pana/games/stop/tests/browser.mjs": 209,

@@ -8,6 +8,10 @@ becomes the GitHub release's notes.
 
 ## Unreleased
 
+- **QQSMP permite jugar solo con panas y ajusta las tarjetas de la sala.**
+  Elige «Solo panas» para quitar los bots; los puestos vacíos no votan ni
+  puntúan, y las tarjetas caben sin la barra de desplazamiento horizontal.
+
 - **QQSMP suena a concurso con redobles, suspense y fanfarrias originales.**
   Cada pregunta, cuenta atrás, acierto, fallo y victoria tiene su sonido;
   los efectos bajan de volumen mientras habla el animador.

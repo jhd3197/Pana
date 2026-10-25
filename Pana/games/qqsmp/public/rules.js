@@ -29,7 +29,8 @@ const bot = (seat) => ({ seat, id: null, name: BOT_NAMES[seat], avatar: {}, ...f
 
 export const safeFloor = (step) => step >= 8 ? 8 : step >= 4 ? 4 : 0;
 export const score = (p) => LADDER[p.step] + p.bonus + p.finalDelta;
-export const ranking = (state) => [...state.players].sort((a, b) =>
+export const participants = (state) => state.players.filter(p => state.options?.mode !== 'panas' || p.id !== null);
+export const ranking = (state) => participants(state).sort((a, b) =>
   (b.seat === state.gold) - (a.seat === state.gold) || score(b) - score(a) || b.step - a.step || a.seat - b.seat);
 export const mangos = (n) => n.toLocaleString('es-VE');
 
@@ -44,12 +45,12 @@ export function resolveAnswer(players, seat, seen = new Set()) {
 
 // The order the host calls names in: own answers first, then whoever copied,
 // each after the pana they copied.
-export function revealOrder(players) {
+export function revealOrder(players, active = players) {
   const depth = (seat, seen = new Set()) => {
     const p = players[seat]; if (p.copy === null || seen.has(seat)) return 0;
     seen.add(seat); return 1 + depth(p.copy, seen);
   };
-  return players.map(p => p.seat).sort((a, b) => depth(a) - depth(b) || a - b);
+  return active.map(p => p.seat).sort((a, b) => depth(a) - depth(b) || a - b);
 }
 
 // What the host says as the k-th name is revealed.
@@ -89,7 +90,8 @@ export class QuizGame {
   // never published, so an open question gets a few more seconds to re-lock.
   static restore(state, members) {
     const game = Object.assign(new QuizGame(), JSON.parse(JSON.stringify(state)));
-    for (const p of game.players) if (p.id !== null && !members.has(p.id)) Object.assign(p, { id: null, name: BOT_NAMES[p.seat], avatar: {} });
+    for (const p of game.players) if (p.id !== null && !members.has(p.id)) Object.assign(p, { id: null, name: game.options.mode === 'panas' ? p.name : BOT_NAMES[p.seat], avatar: {} });
+    if (game.options.mode === 'panas' && game.players[game.gold]?.id === null) game.gold = null;
     if (['question', 'pause'].includes(game.phase)) {
       for (const p of game.players) { p.answer = null; p.copy = null; p.locked = false; }
       game.phase = 'question'; game.phaseTime = Math.max(0, game.options.seconds - 6); game.timeLeft = game.options.seconds - game.phaseTime;
@@ -106,17 +108,31 @@ export class QuizGame {
   addPlayer(id, name, avatar = {}) {
     const p = this.players.find(p => p.id === id) || this.players.find(p => p.id === null);
     if (!p || (p.id === id && p.name === name && JSON.stringify(p.avatar) === JSON.stringify(avatar))) return false;
+    if (p.id === null && this.options.mode === 'panas') Object.assign(p, fresh());
     Object.assign(p, { id, name, avatar }); this.revision++; return true;
   }
-  // A pana who leaves hands their podium, ladder and all, to a bot.
+  // Empty seats become bots only when the room allows them.
   removePlayer(id) {
     const p = this.players.find(p => p.id === id);
-    if (p) { Object.assign(p, { id: null, name: BOT_NAMES[p.seat], avatar: {} }); this.revision++; }
+    if (p) {
+      Object.assign(p, { id: null, name: this.options.mode === 'panas' ? p.name : BOT_NAMES[p.seat], avatar: {} });
+      if (this.options.mode === 'panas') {
+        Object.assign(p, fresh());
+        if (this.gold === p.seat) this.gold = null;
+        if (this.reveal) {
+          this.reveal.order = this.reveal.order.filter(seat => seat !== p.seat);
+          this.reveal.shown = Math.min(this.reveal.shown, this.reveal.order.length);
+        }
+        if (this.phase === 'question') this.finishIfAnswered();
+        if (this.phase === 'bet' && participants(this).length && participants(this).every(q => q.betLocked)) this.ask();
+      }
+      this.revision++;
+    }
   }
 
   start() {
     this.total = this.options.questions;
-    for (const p of this.players) Object.assign(p, fresh(), { skill: this.skills(p.seat) });
+    for (const p of this.players) Object.assign(p, fresh(), { name: p.id === null ? BOT_NAMES[p.seat] : p.name, skill: this.skills(p.seat) });
     Object.assign(this, { index: 0, final: false, gold: null, winner: null, halfLast: null, titles: null, reveal: null, callouts: [] });
     this.deck = this.buildDeck(this.total + 1);
     this.round++; this.ask();
@@ -160,7 +176,7 @@ export class QuizGame {
 
   // What each bot will do this question, decided up front on the host.
   plan() {
-    if (!['question', 'bet'].includes(this.phase) || !this.question) { this.plans = []; return; }
+    if (!['question', 'bet'].includes(this.phase) || !this.question || !participants(this).length) { this.plans = []; return; }
     const leader = ranking(this)[0];
     this.plans = this.players.map(p => {
       const at = this.phase === 'bet' ? 1 + draw(this) * 5 : TIMES.intro + draw(this) * this.options.seconds * .62;
@@ -198,7 +214,7 @@ export class QuizGame {
     this.revision++; return true;
   }
   copy(p, target) {
-    if (this.phase !== 'question' || this.timeLeft <= 0 || p.locked || p.used.copy || !Number.isInteger(target) || target === p.seat || !this.players[target]) return false;
+    if (this.phase !== 'question' || this.timeLeft <= 0 || p.locked || p.used.copy || !Number.isInteger(target) || target === p.seat || !participants(this).some(p => p.seat === target)) return false;
     Object.assign(p, { copy: target, locked: true, lockedLeft: this.timeLeft }); p.used.copy = true; p.stats.copied++;
     this.revision++; this.finishIfAnswered(); return true;
   }
@@ -219,18 +235,19 @@ export class QuizGame {
   placeBet(p, choice) {
     if (this.phase !== 'bet' || p.betLocked || !Number.isInteger(choice) || choice < 0 || choice >= BETS.length) return false;
     Object.assign(p, { bet: choice, betLocked: true }); this.revision++;
-    if (this.players.every(q => q.betLocked)) this.ask();
+    if (participants(this).every(q => q.betLocked)) this.ask();
     return true;
   }
 
   finishIfAnswered() {
-    if (!this.players.every(p => p.locked)) return;
+    const active = participants(this);
+    if (!active.length || this.phase !== 'question' || !active.every(p => p.locked)) return;
     this.startReveal(); this.settle();
   }
   pause() { this.phase = 'pause'; this.phaseTime = 0; this.hostLine = '¿Esa es su respuesta final?'; this.revision++; }
 
   startReveal() {
-    this.reveal = { order: revealOrder(this.players), shown: 1, done: false };
+    this.reveal = { order: revealOrder(this.players, participants(this)), shown: 1, done: false };
     this.phase = 'reveal'; this.phaseTime = 0; this.hostLine = revealLine(this, 0); this.revision++;
   }
 
@@ -239,7 +256,7 @@ export class QuizGame {
     const { correct } = this.question, seconds = this.options.seconds, said = [], L = LETTERS[correct];
     const lines = (seat, text) => said.push({ seat, text });
     const before = this.players.map(score);
-    for (const p of this.players) {
+    for (const p of participants(this)) {
       const got = resolveAnswer(this.players, p.seat), right = got === correct, from = p.step;
       p.outcome = { answer: got, right, from, to: from, bonus: 0, delta: 0 };
       p.stats[right ? 'right' : 'wrong']++;
@@ -263,24 +280,24 @@ export class QuizGame {
       if (p.step === TOP && this.gold === null) { this.gold = p.seat; p.crowned = true; lines(p.seat, `¡${p.name} se lleva el Mango de oro!`); }
       else if (p.step === TOP) p.crowned = true;
     }
-    for (const p of this.players) {
+    for (const p of participants(this)) {
       if (p.copy === null) continue;
       const target = this.players[p.copy], theirs = resolveAnswer(this.players, p.copy);
       if (theirs !== correct) {
-        target.stats.betrayed++;
+        if (participants(this).includes(target)) target.stats.betrayed++;
         lines(p.seat, `${p.name} se copió de ${target.name}… ¡y ${target.name} ${theirs === null ? 'no marcó nada' : `puso la ${LETTERS[theirs]}`}!`);
       } else lines(p.seat, `${p.name} se copió de ${target.name} y le salió bien. ¡Sapo!`);
     }
-    const rights = this.players.filter(p => p.outcome.right);
+    const rights = participants(this).filter(p => p.outcome.right);
     const headline = rights.length === 1 ? `¡Solo ${rights[0].name} se la sabía!`
       : rights.length === 0 ? '¡Me agarró fuera de base! Nadie se la sabía.'
-      : rights.length === SEATS ? '¡Palo! Todos se la sabían.'
+      : rights.length === participants(this).length ? '¡Palo! Todos se la sabían.'
       : `La correcta era la ${L}. ${pickLine('aplauso', `${this.round}:${this.index}`)}`;
     // The leader doesn't get comfortable: now and then the host roasts them.
     const top = ranking(this)[0];
     if (!this.final && this.index > 1 && top.outcome.right && seedOf(`${this.round}:${this.index}:roast`) % 4 === 0) lines(top.seat, `${top.name} va de cuarto bate… ¡pero cuidado que se cae!`);
     this.callouts = said; this.hostLine = `La respuesta correcta es ${L}: ${this.question.answers[correct]}. ${headline}`;
-    this.reveal.shown = this.players.length; this.reveal.done = true; this.phaseTime = 0;
+    this.reveal.shown = this.reveal.order.length; this.reveal.done = true; this.phaseTime = 0;
     if (!this.final && this.index === Math.floor(this.total / 2) - 1) this.halfLast = [...ranking(this)].pop().seat;
     this.revision++;
   }
@@ -296,7 +313,7 @@ export class QuizGame {
     this.hostLine = 'Pregunta final: ¿cuántos mangos te juegas?';
     this.question = { ...this.question, cat: this.deck[this.index][0], category: CATEGORIES[this.deck[this.index][0]] };
     this.revision++; this.plan();
-    if (this.players.every(p => p.betLocked)) this.ask();
+    if (participants(this).every(p => p.betLocked)) this.ask();
   }
 
   finish() {
@@ -308,16 +325,16 @@ export class QuizGame {
 
   // Host clock. Returns true when something on screen changed.
   tick(dt) {
-    if (!['question', 'pause', 'reveal', 'bet'].includes(this.phase)) return false;
+    if (!participants(this).length || !['question', 'pause', 'reveal', 'bet'].includes(this.phase)) return false;
     this.phaseTime += dt;
     const shown = Math.ceil(this.timeLeft), rev = this.revision;
     if (this.phase === 'question' || this.phase === 'bet') {
       const limit = this.phase === 'bet' ? TIMES.bet : this.options.seconds;
       this.timeLeft = Math.max(0, limit - this.phaseTime);
-      for (const p of this.players) if (p.id === null) this.bot(p);
+      for (const p of participants(this)) if (p.id === null) this.bot(p);
       if (this.phase === 'question') {
         if (this.timeLeft <= 4 && this.timeLeft > 0 && !this.hostLine.startsWith('Échale')) this.hostLine = 'Échale coco…';
-        else if (this.phaseTime > limit * .55 && this.players.filter(p => p.locked).length < SEATS / 2 && !/coco|mocho/.test(this.hostLine)) this.hostLine = 'Más aburrido que mocho en piñata…';
+        else if (this.phaseTime > limit * .55 && participants(this).filter(p => p.locked).length < participants(this).length / 2 && !/coco|mocho/.test(this.hostLine)) this.hostLine = 'Más aburrido que mocho en piñata…';
         if (this.timeLeft <= 0) this.pause();
       } else if (this.phase === 'bet' && this.timeLeft <= 0) {
         for (const p of this.players) if (!p.betLocked) Object.assign(p, { bet: 0, betLocked: true });
@@ -349,7 +366,7 @@ export class QuizGame {
       this.options = next; this.revision++; return true;
     }
     if (data.action === 'start') {
-      if (id !== hostId || !['lobby', 'finished'].includes(this.phase)) return false;
+      if (id !== hostId || !participants(this).length || !['lobby', 'finished'].includes(this.phase)) return false;
       this.start(); return true;
     }
     const p = this.players.find(p => p.id === id);
@@ -368,9 +385,9 @@ export class QuizGame {
 
 // The end-of-game titles on the results card; one pana can earn several.
 export function titles(state) {
-  const out = Object.fromEntries(state.players.map(p => [p.seat, []]));
+  const out = Object.fromEntries(participants(state).map(p => [p.seat, []]));
   const most = (key, min = 1) => {
-    const best = [...state.players].sort((a, b) => b.stats[key] - a.stats[key] || a.seat - b.seat)[0];
+    const best = participants(state).sort((a, b) => b.stats[key] - a.stats[key] || a.seat - b.seat)[0];
     return best && best.stats[key] >= min ? best.seat : null;
   };
   const order = ranking(state), give = (seat, title) => { if (seat !== null && seat !== undefined) out[seat].push(title); };

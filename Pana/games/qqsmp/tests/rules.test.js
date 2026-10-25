@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { QuizGame, SEATS, LADDER, TOP, TIMES, safeFloor, resolveAnswer, revealOrder, ranking, score, titles } from '../public/rules.js';
+import { QuizGame, SEATS, LADDER, TOP, TIMES, safeFloor, resolveAnswer, revealOrder, ranking, score, titles, participants } from '../public/rules.js';
 import { QUESTIONS, CATEGORIES, PACKS } from '../public/questions.js';
 import fs from 'node:fs';
 import { voiceKey, narrationLines, revealLines, CORRECT_INTRO } from '../public/voice-key.js';
@@ -313,4 +313,65 @@ test('a final copy also ends voting, including bot submissions', () => {
 test('the reveal announces the correct displayed letter and text', () => {
   assert.deepEqual(revealLines({ answers: ['Guacamayo', 'Cardenal', 'Colibrí', 'Turpial'], correct: 3 }),
     [CORRECT_INTRO, 'Opción D.', 'Turpial']);
+});
+
+test('Solo panas only counts connected humans for answers, scores and titles', () => {
+  const game = humans(2);
+  assert.equal(act(game, 2, 'options', { options: { mode: 'panas' } }), false);
+  assert.ok(act(game, 1, 'options', { options: { mode: 'panas' } }));
+  game.start();
+  assert.equal(participants(game).length, 2);
+  assert.equal(act(game, 1, 'copy', { target: 2 }), false, 'empty podium is not a copy target');
+  act(game, 1, 'answer', { choice: wrong(game) });
+  assert.ok(act(game, 1, 'cancel'));
+  act(game, 1, 'answer', { choice: right(game) });
+  assert.equal(game.phase, 'question');
+  game.tick(5);
+  assert.ok(game.players.slice(2).every(p => !p.locked), 'no hidden bot votes');
+  act(game, 2, 'answer', { choice: right(game) });
+  assert.equal(game.phase, 'reveal'); assert.equal(game.reveal.done, true);
+  assert.deepEqual(game.reveal.order, [0, 1]);
+  assert.ok(game.players.slice(2).every(p => p.outcome === null && p.stats.wrong === 0 && p.step === 0));
+  assert.deepEqual(ranking(game).map(p => p.seat).sort(), [0, 1]);
+  assert.deepEqual(Object.keys(titles(game)), ['0', '1']);
+});
+
+test('Solo panas runs a complete solo game and final without waiting for empty seats', () => {
+  const game = humans(1); game.options.mode = 'panas'; game.options.questions = 8; game.start();
+  for (let i = 0; i < 20000 && game.phase !== 'finished'; i++) {
+    if (game.phase === 'question') act(game, 1, 'answer', { choice: right(game) });
+    if (game.phase === 'bet') act(game, 1, 'bet', { choice: 2 });
+    game.tick(.05);
+  }
+  assert.equal(game.phase, 'finished'); assert.equal(game.winner, 0);
+  assert.equal(game.players[0].stats.right, 9);
+  assert.equal(ranking(game).length, 1);
+});
+
+test('Solo panas preserves seat indices across departures, joins and host handoff', () => {
+  const game = humans(3); game.options.mode = 'panas'; game.start();
+  game.players[0].step = 8;
+  game.removePlayer(1);
+  assert.deepEqual(participants(game).map(p => p.seat), [1, 2]);
+  act(game, 2, 'answer', { choice: right(game) });
+  act(game, 3, 'copy', { target: 1 });
+  assert.deepEqual(game.reveal.order, [1, 2], 'copy ordering uses stable seat indices');
+  game.addPlayer(4, 'New pana');
+  assert.equal(game.players[0].step, 0, 'a newcomer does not inherit a departed score');
+  const restored = QuizGame.restore(game.snapshot(), new Map([[2, {}], [4, {}]]));
+  assert.deepEqual(participants(restored).map(p => p.id), [4, 2]);
+  restored.ask(); act(restored, 2, 'answer', { choice: right(restored) });
+  restored.removePlayer(4);
+  assert.equal(restored.phase, 'reveal', 'departure releases the unanswered seat');
+  assert.deepEqual(restored.reveal.order, [1]);
+});
+
+test('copying a departing pana never substitutes a bot or scores the empty seat', () => {
+  const game = humans(3); game.options.mode = 'panas'; game.start();
+  act(game, 1, 'copy', { target: 1 }); game.removePlayer(2);
+  act(game, 3, 'answer', { choice: right(game) });
+  assert.equal(game.reveal.done, true);
+  assert.ok(game.callouts.some(c => c.text.includes('P1 se copió de P2')));
+  assert.equal(game.players[1].stats.betrayed, 0);
+  assert.equal(game.players[1].outcome, null);
 });
