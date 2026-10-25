@@ -82,5 +82,5 @@ export function shout(text, tone = '', ms = 1400) {
 export const SHOUTS = {
   jonron: ['¡JONRÓN!', 'gold'], post: ['¡TRIPLE!', 'gold'], car: ['¡DOBLE!', ''], sencillo: ['¡SENCILLO!', ''], wall: ['¡SENCILLO!', ''],
   caught: ['¡ATRAPADA!', 'red'], chapazo: ['¡CHAPAZO!', 'red'], short: ['¡NI A LA ACERA!', 'red'], window: ['¡LA VENTANA!', 'red'],
-  azotea: ['¡A LA AZOTEA!', 'red'], cuarto: ['¡CUARTO BATE!', 'gold'], willy: ['¡WILLY MAYS!', 'gold'], tiempo: ['¡TIEMPO!', ''], cambio: ['¡CAMBIO!', ''],
+  azotea: ['¡A LA AZOTEA!', 'red'], hbp: ['¡CHAPAZO!', 'red'], cuarto: ['¡CUARTO BATE!', 'gold'], willy: ['¡WILLY MAYS!', 'gold'], tiempo: ['¡TIEMPO!', ''], cambio: ['¡CAMBIO!', ''],
 };

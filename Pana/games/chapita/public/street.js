@@ -14,7 +14,11 @@ import { randomAvatar } from '/engine/avatar.js';
 import { rng } from '/engine/random.js';
 import { disposeModel } from '/engine/models/props/game-table.js';
 import { BASES, FIELD } from './field.js';
-import { createStreetGround, createBlockCourt, createSenoraWindow, createChainFence, createBleachers, createSuperbloque } from './studio-set.js';
+import { createStreetGround, createBlockCourt, createSenoraWindow, createChainFence, createBleachers, createSuperbloque, createAlcantarilla } from './studio-set.js';
+
+// Where the jugadas happen: the storm drain by the right curb and the door
+// a pana runs home through when the señora calls them to eat.
+export const DRAIN = { x: 3.3, z: -7.2 }, DOOR = { x: -4.3, z: 2.2 };
 
 const COLORS = [0xf2a65a, 0x7cc6a4, 0xf28bb0, 0xffd166, 0x8ecae6, 0xe76f51, 0xb5a1e0, 0xf4e285];
 const wallZ = -FIELD.wall;
@@ -58,6 +62,7 @@ export function createField(map = 'calle') {
   placed(group, car.root, (c.x0 + c.x1) / 2, -(c.d0 + c.d1) / 2, Math.PI / 2);
   placed(group, streetlightPole(), FIELD.post.x, -FIELD.post.d, Math.PI);
   const win = createSenoraWindow(); win.position.set(windowX, window.y0 - 1.35, wallZ + .02); group.add(win);
+  placed(group, createAlcantarilla(), DRAIN.x, DRAIN.z, 0, .005);
   // Superbloques on the hills behind, the Caracas skyline of the reel.
   [[-34, -78, .2], [6, -92, -.1], [42, -74, -.35], [-62, -48, .9], [64, -40, -1]].forEach(([x, z, a], i) => {
     placed(group, createSuperbloque({ floors: 10 + i % 3 * 2 }), x, z, a, 4 + i % 2 * 3);

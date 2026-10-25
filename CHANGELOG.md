@@ -8,6 +8,12 @@ becomes the GitHub release's notes.
 
 ## Unreleased
 
+- **Chapita se llena de jugadas locas: el perro, el abuelo, la alcantarilla y más.**
+  Veinte animaciones del estudio salen de jugadas reales (jonrón con bat
+  flip, ¡PONCHAO!, la ventana con ¡CORRAN!, pinball contra el poste, ¡A
+  comer!), con letras de cómic, sonidos y tomas de cámara. Un lanzamiento
+  alto y pegado es un chapazo que te manda a primera; la opción «Pelota y
+  bate» cambia el equipo, y Studio muestra cada jugada en bucle.
 - **Ludo centra sus fichas y suena con efectos grabados.**
   Los saltos, vuelos y golpes usan muestras acreditadas en el paquete del
   juego; la nube de lluvia deja espacio para el mensaje y las fichas.

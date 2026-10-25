@@ -4,6 +4,7 @@ export const ROOM_OPTIONS = [
   { id: 'innings', label: 'Entradas', default: 3, choices: [[3, '3 entradas'], [5, '5 entradas'], [7, '7 entradas']] },
   { id: 'map', label: 'Campo', default: 'calle', choices: [['calle', 'La calle del barrio'], ['cancha', 'La cancha del bloque']] },
   { id: 'houseRules', label: 'Reglas de la casa', default: 'ruleta', choices: [['ruleta', 'Ruleta'], ['ninguna', 'Sin reglas extra']] },
+  { id: 'equipo', label: 'Equipo', default: 'chapita', choices: [['chapita', 'Chapita y escoba'], ['pelota', 'Pelota y bate']] },
   { id: 'caps', label: 'Chapitas', default: 'libre', advanced: true, choices: [['libre', 'Elige el pitcher'], ['plana', 'Solo planas'], ['doblada', 'Solo dobladas']] },
   { id: 'cpuSeconds', label: 'Velocidad de bots', default: 1.2, advanced: true, choices: [[1.2, 'Normal'], [.5, 'Rápida']] },
 ];

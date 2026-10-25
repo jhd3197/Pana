@@ -1,7 +1,9 @@
 // The street set for Chapita: the bottle cap itself (flat or bent, with
 // invented soda and malta brands, tricolor and gold), the sticks you bat with,
 // the señora's window, the street and the block court floors, a chain-link
-// fence, bleachers, the red-and-white superbloque and the tuyuyo bump.
+// fence, bleachers, the red-and-white superbloque, the tuyuyo bump and the
+// jugadas' extras (a dog, a storm drain, the abuelo's paper, a tumbleweed,
+// a broken palo, a ball and a bat).
 // Registered in Pana Studio (web/studio/catalog/chapita.js). Each factory
 // returns a group whose userData.dispose frees what it built; ground at y = 0,
 // fronts face +Z unless a comment says otherwise.
@@ -265,5 +267,116 @@ export function createTuyuyo({ size = .16 } = {}) {
   part(group, new THREE.SphereGeometry(size, 16, 10, 0, Math.PI * 2, 0, Math.PI / 2), mat('#ff7a9a', { roughness: .3 }), 0, 0, 0);
   part(group, new THREE.SphereGeometry(size * .25, 8, 6), mat('#ffffff', { roughness: .1, emissive: '#ffffff', emissiveIntensity: .4 }), -size * .3, size * .7, size * .2);
   group.userData.previewBounds = [[-.2, 0, -.2], [.2, .2, .2]];
+  return owned(group);
+}
+
+// ---------- the jugadas' extras ----------
+// Props for the jugadas locas (jugada-motion.js), sized for the game's panas.
+
+// The broken palo: the grip half (origin at the grip, along +Y) and the loose
+// top half (origin at the break), both splintered. userData.low / .top.
+export const PALO_BREAK = .7;
+export function createPaloPartido({ kind = 'escoba' } = {}) {
+  const k = PALOS[kind] || PALOS.escoba, group = new THREE.Group(); group.name = `${k.label} partido`;
+  const r = .028, m = mat(k.color, { roughness: .55 }), splinter = new THREE.ConeGeometry(r, .07, 6);
+  const low = new THREE.Group(), top = new THREE.Group(); group.add(low, top);
+  part(low, new THREE.CylinderGeometry(r, r, PALO_BREAK, 14), m, 0, PALO_BREAK / 2, 0);
+  part(low, splinter, m, 0, PALO_BREAK + .03, 0);
+  part(top, new THREE.CylinderGeometry(r, r, k.length - PALO_BREAK, 14), m, 0, (k.length - PALO_BREAK) / 2, 0);
+  part(top, splinter, m, 0, -.03, 0).rotation.x = Math.PI;
+  part(top, new THREE.SphereGeometry(r, 12, 8), m, 0, k.length - PALO_BREAK, 0);
+  top.position.set(.12, PALO_BREAK + .05, 0); top.rotation.z = -.35;
+  Object.assign(group.userData, { low, top, previewBounds: [[-.3, 0, -.3], [.4, 1.35, .3]] });
+  return owned(group);
+}
+
+// The other equipment: a stitched ball and a wooden bat (origin at the knob,
+// along +Y, as long as a palo), for the Pelota y bate option.
+export function createPelota({ radius = .065 } = {}) {
+  const group = new THREE.Group(); group.name = 'Pelota';
+  part(group, new THREE.SphereGeometry(radius, 24, 16), mat('#fff4dd', { roughness: .7 }));
+  const stitch = new THREE.MeshBasicMaterial({ color: '#bd3d31' });
+  for (const sign of [-1, 1]) {
+    const pts = Array.from({ length: 49 }, (_, i) => { const a = i / 48 * Math.PI * 2; return new THREE.Vector3(sign * radius * .5, radius * .87 * Math.sin(a), radius * .87 * Math.cos(a)); });
+    group.add(new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts, true), 48, radius * .04, 5, true), stitch));
+  }
+  group.userData.previewBounds = [[-.08, -.08, -.08], [.08, .08, .08]];
+  return owned(group);
+}
+export function createBate({ length = 1.25 } = {}) {
+  const group = new THREE.Group(), k = length / 1.7; group.name = 'Bate de madera';
+  const shape = [[.045, 0], [.055, .06], [.035, .1], [.04, .45], [.085, 1.05], [.09, 1.6], [.065, 1.68], [0, 1.7]].map(([r, y]) => new THREE.Vector2(r * k, y * k));
+  part(group, new THREE.LatheGeometry(shape, 24), mat('#b77d42', { roughness: .5 }));
+  group.userData.previewBounds = [[-.3, 0, -.3], [.3, 1.35, .3]];
+  return owned(group);
+}
+
+// A street dog, caramel coloured, about knee high on a pana. Faces +Z.
+// userData.pose(phase, running, wag) moves its legs, body and tail;
+// userData.mouth is where it carries the chapita.
+export function createPerro() {
+  const group = new THREE.Group(); group.name = 'Perro callejero';
+  const fur = mat('#c98a4b', { roughness: .9 }), light = mat('#e7b27a', { roughness: .9 }), dark = mat('#6b4226', { roughness: .9 }), black = mat('#1b1410', { roughness: .3 });
+  const S = .5, rig = new THREE.Group(); rig.scale.setScalar(S); group.add(rig);
+  const body = new THREE.Group(); body.position.y = .62; rig.add(body);
+  part(body, new THREE.SphereGeometry(.38, 20, 14), fur).scale.set(.75, .72, 1.35);
+  const head = new THREE.Group(); head.position.set(0, .32, .5); body.add(head);
+  part(head, new THREE.SphereGeometry(.26, 18, 14), fur);
+  part(head, new THREE.SphereGeometry(.14, 14, 10), light, 0, -.07, .24).scale.set(.95, .75, 1.2);
+  part(head, new THREE.SphereGeometry(.05, 10, 8), black, 0, -.02, .41);
+  for (const s of [-1, 1]) {
+    part(head, new THREE.SphereGeometry(.035, 8, 6), black, s * .11, .08, .21);
+    const ear = part(head, new THREE.SphereGeometry(.12, 12, 8), dark, s * .22, .04, -.02); ear.scale.set(.4, 1, .7); ear.rotation.z = s * .5;
+  }
+  const mouth = new THREE.Object3D(); mouth.position.set(0, -.14, .36); head.add(mouth);
+  const legs = [[.17, .33], [-.17, .33], [.17, -.33], [-.17, -.33]].map(([x, z]) => {
+    const leg = new THREE.Group(); leg.position.set(x, -.05, z); body.add(leg);
+    part(leg, new THREE.CylinderGeometry(.06, .05, .5, 10), fur, 0, -.27, 0);
+    part(leg, new THREE.SphereGeometry(.07, 10, 8), dark, 0, -.53, .03);
+    return leg;
+  });
+  const tail = new THREE.Group(); tail.position.set(0, .12, -.48); tail.rotation.x = -.8; body.add(tail);
+  part(tail, new THREE.CylinderGeometry(.035, .02, .42, 8), fur, 0, .2, 0);
+  Object.assign(group.userData, { body, head, mouth, legs, tail,
+    pose(phase = 0, running = false, wag = 0) {
+      legs.forEach((leg, i) => { leg.rotation.x = running ? Math.sin(phase + (i % 2 ? Math.PI : 0) + (i > 1 ? Math.PI / 2 : 0)) * .8 : 0; });
+      body.position.y = .62 + (running ? Math.abs(Math.sin(phase)) * .06 : 0);
+      tail.rotation.z = Math.sin(wag * 18) * .6; head.rotation.x = 0;
+    },
+    previewBounds: [[-.3, 0, -.4], [.3, .55, .5]] });
+  return owned(group);
+}
+
+// A storm drain grate set in the street, 0,55 × 0,85 m, flush with the ground.
+export function createAlcantarilla() {
+  const group = new THREE.Group(); group.name = 'Alcantarilla';
+  part(group, new THREE.BoxGeometry(.62, .03, .92), mat('#8d8a82', { roughness: .95 }), 0, .015, 0);
+  part(group, new THREE.BoxGeometry(.55, .035, .85), mat('#1e2228', { roughness: .9 }), 0, .02, 0);
+  const bar = mat('#6d737c', { metalness: .4, roughness: .5 });
+  for (let i = -3; i <= 3; i++) part(group, new THREE.BoxGeometry(.5, .025, .04), bar, 0, .04, i * .11);
+  group.userData.previewBounds = [[-.4, 0, -.5], [.4, .1, .5]];
+  return owned(group);
+}
+
+// The abuelo's newspaper, open wide: El Barrio, 0,8 × 0,56 m, facing +Z.
+export function createPeriodico() {
+  const map = painted(256, 180, (ctx, w, h) => {
+    ctx.fillStyle = '#f4f1e8'; ctx.fillRect(0, 0, w, h); ctx.fillStyle = '#1d1d1d';
+    ctx.font = '900 30px Georgia, serif'; ctx.textAlign = 'center'; ctx.fillText('EL BARRIO', w / 2, 34); ctx.fillRect(10, 42, w - 20, 3);
+    ctx.fillStyle = '#9a9a9a'; ctx.fillRect(14, 54, 100, 70);
+    for (let i = 0; i < 9; i++) { ctx.fillStyle = '#b5b0a4'; ctx.fillRect(126, 56 + i * 12, w - 140, 5); ctx.fillRect(14, 132 + i % 4 * 12, 100, 5); }
+  });
+  const group = new THREE.Group(); group.name = 'Periódico El Barrio';
+  part(group, new THREE.PlaneGeometry(.8, .56), new THREE.MeshStandardMaterial({ map, side: THREE.DoubleSide, roughness: .9 }));
+  group.userData.previewBounds = [[-.45, -.3, -.1], [.45, .3, .1]];
+  return owned(group);
+}
+
+// A tumbleweed of dry twigs for when the street goes quiet. Radius 0,25 m.
+export function createBolaDePaja({ radius = .25 } = {}) {
+  const group = new THREE.Group(); group.name = 'Bola de paja';
+  group.add(new THREE.Mesh(new THREE.IcosahedronGeometry(radius, 1), new THREE.MeshBasicMaterial({ color: '#9b7a4a', wireframe: true })));
+  group.add(new THREE.Mesh(new THREE.IcosahedronGeometry(radius * .7, 1), new THREE.MeshBasicMaterial({ color: '#7d5f36', wireframe: true })));
+  group.userData.previewBounds = [[-.3, -.3, -.3], [.3, .3, .3]];
   return owned(group);
 }
