@@ -6,6 +6,7 @@ import { createPaintKit, createPaintVest } from '/engine/models/props/paintball-
 import { MARKERS, ATTACHMENTS, ARMOR, GRENADES, FINISHES, CHARMS, PATTERNS, cleanKit, kitStats, kitRating } from './armory-data.js';
 import { Arena } from './rules.js';
 import { ICONS } from '/engine/icons.js';
+import { pixelRatio } from '/engine/settings.js';
 const esc=s=>String(s).replace(/[&<>"']/g,c=>`&#${c.charCodeAt(0)};`);
 export function createArmory({room,onPick}) {
  let kit=cleanKit();try{kit=cleanKit(JSON.parse(localStorage.getItem('pintura:kit')));}catch{}
@@ -49,7 +50,7 @@ export function createArmory({room,onPick}) {
   vest.visible=look.armor==='padded';
  }
  function init(){
-  if(renderer)return;renderer=new THREE.WebGLRenderer({canvas:document.getElementById('armory-view'),antialias:true,alpha:true});renderer.setPixelRatio(Math.min(devicePixelRatio,1.5));
+  if(renderer)return;renderer=new THREE.WebGLRenderer({canvas:document.getElementById('armory-view'),antialias:true,alpha:true});renderer.setPixelRatio(pixelRatio(1.5));
   scene=new THREE.Scene();camera=new THREE.PerspectiveCamera(35,1,.1,50);camera.position.set(4,2.7,5);camera.lookAt(0,1.2,0);
   scene.add(new THREE.HemisphereLight(0xfff5df,0x444466,2));const light=new THREE.DirectionalLight(0xffffff,3);light.position.set(3,6,4);scene.add(light);
   avatar=buildCharacter(loadAvatar());avatar.group.position.set(-2.2,0,-.7);avatar.group.rotation.y=.5;scene.add(avatar.group);vest=createPaintVest();avatar.group.add(vest);target=buildCharacter({...loadAvatar(),outfitColor:'#29c5cd'});target.group.position.set(1.8,0,-2);target.group.visible=false;scene.add(target.group);rebuild();

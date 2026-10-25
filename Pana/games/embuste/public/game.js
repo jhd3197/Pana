@@ -8,7 +8,7 @@ import { createGameMenu, toggleMute } from '/engine/ui.js';
 import { inviteUrl, newRoomCode, roomFromUrl } from '/engine/invite.js';
 import { holdButton } from '/engine/touch.js';
 import { shout } from '/engine/kit.js';
-import { pixelRatio, bindRenderer } from '/engine/settings.js';
+import { pixelRatio, bindRenderer, rendererOptions } from '/engine/settings.js';
 import { OnlineNight, PracticeNight } from './network.js';
 import { createCampWorld, groundAt } from './scene.js';
 import { SEATS, zoneAt, zoneById, FIRE, ZONES, BOUNDS, STATIONS, REACH, BELL, VENTS, HIDES, FIXES, stationById, ventById, hideById, distance } from './layout.js';
@@ -33,7 +33,7 @@ const noRender = qs.has('norender');   // browser suites: many pages on a softwa
 const colors = ['#ffb36b', '#81c8c4', '#d2a0a0', '#a3bc74', '#f2d16b', '#b7a8ce', '#6ea6d0', '#e58fb6', '#c1c5a6'];
 
 // ---------- renderer ----------
-const renderer = new THREE.WebGLRenderer({ canvas: $('world'), antialias: true });
+const renderer = new THREE.WebGLRenderer(rendererOptions({ canvas: $('world'), antialias: true }));
 renderer.setPixelRatio(pixelRatio(1.5)); const unbind = bindRenderer(renderer, 1.5);
 renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.1;
 const scene = new THREE.Scene(); scene.background = new THREE.Color(0x0b0d22); scene.fog = new THREE.FogExp2(0x0b0d22, 0.018);

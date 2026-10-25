@@ -43,5 +43,5 @@ export function saltoWorld(T) {
   group.add(finish(camp));
   group.userData.assetCounts={waterfall:1,rockyCliff:geology.children.length-1,mountainTent:camp.children.length};
   const animate=waterAnimator(group);
-  return {group,groundAt:world.groundAt,update:t=>{animate(t);fall.userData.setReduced(getSettings().quality==='baja');fall.userData.tick(t);}};
+  return {group,groundAt:world.groundAt,update:t=>{animate(t);fall.userData.setReduced(getSettings().detail==='baja');fall.userData.tick(t);}};
 }

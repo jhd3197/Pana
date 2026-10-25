@@ -1,9 +1,10 @@
 import * as THREE from 'three';
 import { createGameTable } from '/engine/models/props/game-table.js';
 import { createSpanishCard, createScoreToken } from '/engine/models/props/spanish-cards.js';
+import { pixelRatio } from '/engine/settings.js';
 
 export function mount(canvas) {
-  const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true }); renderer.setPixelRatio(Math.min(devicePixelRatio, 1.5)); renderer.toneMapping = THREE.ACESFilmicToneMapping;
+  const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true }); renderer.setPixelRatio(pixelRatio(1.5)); renderer.toneMapping = THREE.ACESFilmicToneMapping;
   const scene = new THREE.Scene(), camera = new THREE.PerspectiveCamera(32, 1, .1, 40); camera.position.set(4, 9, 9); camera.lookAt(0, 1.4, 0);
   scene.add(new THREE.HemisphereLight('#fff2d1', '#557b63', 2.6)); const sun = new THREE.DirectionalLight('#ffe2af', 3); sun.position.set(-3, 8, 4); scene.add(sun);
   const table = createGameTable({ caption: 'CAÍDA · ENTRE PANAS' }); scene.add(table); const pieces = [];

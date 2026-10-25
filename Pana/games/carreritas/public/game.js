@@ -25,7 +25,7 @@ import { inviteUrl, newRoomCode, roomFromUrl } from '/engine/invite.js';
 import { fillRoster } from '/engine/results.js';
 import { ICONS as SVG } from '/engine/icons.js';
 import { holdButton } from '/engine/touch.js';
-import { pixelRatio, bindRenderer, getSettings, onSettings } from '/engine/settings.js';
+import { pixelRatio, bindRenderer, getSettings, onSettings, rendererOptions } from '/engine/settings.js';
 import { applyRaceQuality } from './quality.js';
 import { shout } from '/engine/kit.js';
 import { LAPS, lapsForTrack, RIVALS, AI_WHEELS, POSE_HZ, FINISH_GRACE_MS, GP_GRID, GP_INTERMISSION_MS, GP_MIN_READ_MS, gridSlot, cleanCosmetics, aiVessels, kitTunes } from './online-rules.js';
@@ -76,7 +76,7 @@ const LINES = {
 let driverCards = null; import('./driver-cards.js').then(m => { driverCards = m; });   // rival panas as cards
 
 // ---------- renderer ----------
-const renderer = new THREE.WebGLRenderer({ antialias: true });
+const renderer = new THREE.WebGLRenderer(rendererOptions({ antialias: true }));
 renderer.setPixelRatio(pixelRatio(2));
 bindRenderer(renderer, 2);
 renderer.setSize(innerWidth, innerHeight);
@@ -587,7 +587,7 @@ function finishTrack() {
     emit: (kind, c, data) => { if (race.netRace && !c.remote) net.fx(c.netId, kind, data); },
   });
   race.hazards = createHazards(T, race.trackGroup);
-  applyRaceQuality(renderer, race, getSettings().quality);
+  applyRaceQuality(renderer, race, getSettings());
   $('mm-track').textContent = T.name;
   $('mm-sub').textContent = `${(T.TOTAL / 1000).toFixed(2)} km por vuelta`;
   minimap.build(T);
@@ -2203,7 +2203,7 @@ function frame() {
     updateGarage(dt);
     // A soft bloom on lamps and the ring, unless the quality is set low.
     // Phones skip it: their high pixel ratio smears the glow.
-    if (getSettings().quality !== 'baja' && FINE_POINTER) (garage.bloom ??= garageBloom(renderer, garage.scene, garage.camera)).render();
+    if (getSettings().detail !== 'baja' && FINE_POINTER) (garage.bloom ??= garageBloom(renderer, garage.scene, garage.camera)).render();
     else renderer.render(garage.scene, garage.camera);
   } else if (mode === 'race') {
     renderer.toneMapping = THREE.NoToneMapping;
@@ -2291,4 +2291,4 @@ menuFlow = createMenuFlow({
   },
 });
 markBooted(); export const sceneReady = Promise.race([menuFlow.ready, new Promise(go => { const t = setInterval(() => { if (mode !== 'garage') { clearInterval(t); go(); } }, 200); })]);   // the shared lobby waits for the garage, or a race rejoined after a reload
-onSettings((s, changed) => { if (changed.includes('quality')) applyRaceQuality(renderer, race, s.quality); });
+onSettings((s, changed) => { if (changed.includes('detail') || changed.includes('shadows')) applyRaceQuality(renderer, race, s); });

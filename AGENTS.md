@@ -62,6 +62,7 @@ Then add the game to `README.md`, `docs/knowledge/README.md` and `CHANGELOG.md`.
 | Loading, loops, teardown, room code in the URL | `engine/game-shell.js` (`bootGame`, `roomCode`) | |
 | Table stage, camera framing | `engine/worlds/table-world.js` (`createTableWorld`) | |
 | Pause menu, settings, invite button | `engine/ui.js`, `engine/settings.js` | `docs/knowledge/pana-ui.md` |
+| Main renderer, picture settings, frame stats | `engine/settings.js` (`rendererOptions`, `bindRenderer`, `shadowSize`), `engine/perf.js`, `npm run perf -- <game>` | pana-kit.md, "Picture settings" |
 | Room codes and invite links | `engine/invite.js` (`inviteUrl`, `roomFromUrl`, `newRoomCode`) | |
 | Turn-based online room | `engine/table-room.js` (`TableRoom`) | `docs/knowledge/pana-net.md` |
 | Real-time online room | `engine/live-room.js` (`LiveRoom`, `elapsedClock`, `axis`; `predict` for your own character) | `docs/knowledge/pana-net.md` |

@@ -116,7 +116,7 @@ async function stills() {
   page.on('pageerror', e => errors.push(String(e)));
   await page.addInitScript(() => {
     localStorage.setItem('pana:name', 'Shots');
-    localStorage.setItem('pana:settings', JSON.stringify({ sound: false, music: false, quality: 'alta' }));
+    localStorage.setItem('pana:settings', JSON.stringify({ sound: false, music: false, quality: 'alta', autoScale: false }));
   });
   await page.goto(`${base}/g/carreritas/?debug&auto&track=estadio`);
   await page.waitForFunction(() => window.getActiveTrack && garage.car, null, { timeout: 180000 });

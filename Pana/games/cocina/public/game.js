@@ -12,7 +12,7 @@ import { fillRoster } from '/engine/results.js';
 import { inviteUrl, newRoomCode, roomFromUrl } from '/engine/invite.js';
 import { holdButton } from '/engine/touch.js';
 import { shout } from '/engine/kit.js';
-import { pixelRatio, bindRenderer } from '/engine/settings.js';
+import { pixelRatio, bindRenderer, rendererOptions } from '/engine/settings.js';
 import { Kitchen, RECIPES, STATIONS, recipe, nearestStation } from './rules.js';
 import { KitchenRoom } from './network.js';
 import { elapsedClock } from '/engine/live-room.js';
@@ -25,7 +25,7 @@ const qs = new URLSearchParams(location.search), code = roomFromUrl() || newRoom
 const url = new URL(location.href); url.searchParams.set('room', code); history.replaceState(null, '', url);
 await Promise.race([document.fonts.load('900 48px Nunito'), new Promise(resolve => setTimeout(resolve, 1200))]);
 const avatar = loadAvatar(), name = loadName();
-const renderer = new THREE.WebGLRenderer({ canvas: $('world'), antialias: true });
+const renderer = new THREE.WebGLRenderer(rendererOptions({ canvas: $('world'), antialias: true }));
 renderer.setPixelRatio(pixelRatio(1.6)); bindRenderer(renderer, 1.6); renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFShadowMap;
 renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.12;
 const world = createKitchenScene(), { scene } = world;

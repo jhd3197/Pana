@@ -10,7 +10,7 @@ import { createGameMenu, toggleMute } from '/engine/ui.js';
 import { fillRoster } from '/engine/results.js';
 import { inviteUrl, newRoomCode, roomFromUrl } from '/engine/invite.js';
 import { holdButton } from '/engine/touch.js';
-import { pixelRatio, bindRenderer } from '/engine/settings.js';
+import { pixelRatio, bindRenderer, rendererOptions } from '/engine/settings.js';
 import { createPlaza } from './plaza.js';
 import { createHuntEnvironment } from './scene.js';
 import { createMapPicker } from '/engine/play/map-picker.js';
@@ -30,7 +30,7 @@ const url = new URL(location.href); url.searchParams.set('room', code); history.
 const avatar = loadAvatar(), name = loadName();
 await Promise.race([document.fonts.load('900 64px Nunito'), new Promise(resolve => setTimeout(resolve, 1600))]);
 
-const renderer = new THREE.WebGLRenderer({ canvas: $('world'), antialias: true });
+const renderer = new THREE.WebGLRenderer(rendererOptions({ canvas: $('world'), antialias: true }));
 renderer.setPixelRatio(pixelRatio(1.75)); renderer.setSize(innerWidth, innerHeight); bindRenderer(renderer, 1.75);
 renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFShadowMap;
 renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.13;

@@ -9,7 +9,7 @@ import { glowTexture } from '/engine/models/props/glow-paintball.js';
 import { disposeModel } from '/engine/models/props/game-table.js';
 import * as THREE from 'three';
 import { buildCharacter } from '/engine/models/characters/pana/avatar-model.js';
-import { bindRenderer, shadowSize } from '/engine/settings.js';
+import { bindRenderer, shadowSize, rendererOptions } from '/engine/settings.js';
 import { createSky } from '/engine/worlds/sky.js';
 import { house, church } from '/engine/models/props/plaza-buildings.js';
 import { crate, barrel, marketStall, streetLamp } from '/engine/models/props/plaza.js';
@@ -27,7 +27,7 @@ import { SIZE, SPREAD, coverFor } from './rules.js';
 const EYE = 1.55, LOOK_UP = .55, LOOK_DOWN = -.7;
 
 export function createScene(canvas) {
-  const renderer = new THREE.WebGLRenderer({ canvas, antialias: true }); const unbind = bindRenderer(renderer, 1.5);
+  const renderer = new THREE.WebGLRenderer(rendererOptions({ canvas, antialias: true })); const unbind = bindRenderer(renderer, 1.5);
   renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFShadowMap;
   renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.05;
   const scene = new THREE.Scene(); scene.background = new THREE.Color(WARM_DAY.background); scene.fog = new THREE.Fog(WARM_DAY.background, 90, 190);

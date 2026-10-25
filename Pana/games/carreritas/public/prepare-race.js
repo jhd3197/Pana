@@ -11,7 +11,7 @@ export async function prepareRace(renderer, scene, cameras, step) {
   const warmed = prepared.get(renderer);
   // Bake impostor atlases (distant trees, rival panas) first so they upload
   // like any texture. Rápida bakes 128 px views: under half the memory.
-  prepareImpostors(renderer, { tile: getSettings().quality === 'baja' ? 128 : undefined });
+  prepareImpostors(renderer, { tile: getSettings().detail === 'baja' ? 128 : undefined });
   const textures = new Set(), objects = [];
   scene.updateMatrixWorld(true);
   const frusta = cameras.map(view => {

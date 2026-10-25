@@ -241,6 +241,25 @@ test('every game is a 3D scene with the player\'s pana', () => {
   assert.deepEqual(problems, []);
 });
 
+// Resolution, shadows, the FPS cap and stats reach a renderer through
+// bindRenderer; smoothing through rendererOptions (docs/knowledge/pana-kit.md,
+// "Picture settings"). Menu cards and previews only read pixelRatio.
+test('every game\'s main renderer follows the picture settings', () => {
+  const problems = [];
+  const engineFiles = walk(path.join(app, 'engine'), n => n.endsWith('.js')).filter(f => !/[\\/]tests[\\/]/.test(f));
+  for (const id of games) {
+    const files = walk(path.join(gamesDir, id, 'public'), n => n.endsWith('.js')).filter(f => !/[\\/](card|preview)\.js$/.test(f));
+    if (!files.some(f => /bindRenderer\(|createTableWorld\(/.test(read(f)))) problems.push(`${id}: main renderer is never bound (bindRenderer or createTableWorld)`);
+  }
+  for (const file of [...engineFiles, ...games.flatMap(id => walk(path.join(gamesDir, id, 'public'), n => n.endsWith('.js')))]) {
+    const code = read(file);
+    for (const [, name] of code.matchAll(/bindRenderer\(\s*([\w.]+)/g)) {
+      if (new RegExp(`\\b${name.replace('.', '\\.')}\\s*=\\s*new\\s+THREE\\.WebGLRenderer\\((?!rendererOptions\\()`).test(code)) problems.push(`${rel(file)}: ${name} is bound but its options skip rendererOptions (/engine/settings.js)`);
+    }
+  }
+  assert.deepEqual(problems, []);
+});
+
 // ---------- The file split (docs/ARCHITECTURE.md, "A game's files") ----------
 test('rules files are pure: no DOM, no Three.js, no browser storage', () => {
   const problems = [];

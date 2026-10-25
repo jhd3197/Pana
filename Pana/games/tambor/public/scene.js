@@ -6,7 +6,7 @@
 // they move.
 import * as THREE from 'three';
 import { createSky } from '/engine/worlds/sky.js';
-import { bindRenderer, shadowSize } from '/engine/settings.js';
+import { bindRenderer, shadowSize, rendererOptions } from '/engine/settings.js';
 import { buildCharacter } from '/engine/models/characters/pana/avatar-model.js';
 import { normalizeAvatar, randomAvatar } from '/engine/avatar.js';
 import { disposeModel } from '/engine/models/props/game-table.js';
@@ -37,7 +37,7 @@ const facing = (x, z, tx = 0, tz = 0) => Math.atan2(tx - x, tz - z);
 const wrap = (a) => Math.atan2(Math.sin(a), Math.cos(a));
 
 export function createTamborScene(canvas) {
-  const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' });
+  const renderer = new THREE.WebGLRenderer(rendererOptions({ canvas, antialias: true, powerPreference: 'high-performance' }));
   renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFShadowMap; renderer.toneMapping = THREE.ACESFilmicToneMapping;
   const unbind = bindRenderer(renderer, 1.5, { fit: 'window' });
   const scene = new THREE.Scene(), camera = new THREE.PerspectiveCamera(40, 1, .1, 260);

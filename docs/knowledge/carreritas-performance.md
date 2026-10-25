@@ -119,10 +119,12 @@ reuse existing draws, bypass detail on Baja, and filter fine patterns by pixel
 footprint. See [nature-surfaces.md](nature-surfaces.md) for geometry tags, material
 ownership and Studio cloning.
 
-The game-local `quality.js` listens to the existing shared settings. Alta uses
-2048-square sun shadows, 1,400 weather streaks and all optional race detail;
-Media uses 1024-square shadows, 700 streaks and road wear; Baja disables shadows,
-uses 280 streaks and hides optional road wear/pennants. Weather CPU iteration
+The game-local `quality.js` listens to the shared `detail` and `shadows`
+settings separately (pana-kit.md, "Picture settings"). Detail alta keeps 1,400
+weather streaks and all optional race detail; media keeps 700 streaks and road
+wear; baja uses 280 streaks and hides optional road wear/pennants. Shadows Altas
+use a 2048-square sun shadow, Medias 1024; Bajas and off disable the sun shadow
+in races, as Rápida did before the knobs were split. Weather CPU iteration
 and splash frequency scale with the active streak count. Gameplay surfaces,
 colliders, item positions, physics ticks and the 20 Hz pose cadence do not change.
 

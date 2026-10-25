@@ -4,7 +4,7 @@
 // on the crest) and every pana under its wing.
 import * as THREE from 'three';
 import { createSky } from '/engine/worlds/sky.js';
-import { shadowSize } from '/engine/settings.js';
+import { shadowSize, pixelRatio, bindRenderer, rendererOptions } from '/engine/settings.js';
 import { createParapente, PARAPENTE } from '/engine/models/vehicles/parapente.js';
 import { soaringVulture } from '/engine/models/fauna/birds/soaring-vulture.js';
 import { orbitBird } from '/engine/models/animation/orbit-bird.js';
@@ -109,7 +109,8 @@ function courseMarkers(course) {
 }
 
 export function createParapenteScene(canvas, { course: courseOf }) {
-  const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+  const renderer = new THREE.WebGLRenderer(rendererOptions({ canvas, antialias: true }));
+  renderer.setPixelRatio(pixelRatio(1.5)); const unbind = bindRenderer(renderer, 1.5, { fit: 'canvas' });
   renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFShadowMap;
   renderer.outputColorSpace = THREE.SRGBColorSpace; renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.05;
   const scene = new THREE.Scene(); scene.fog = new THREE.Fog(PALETTE.horizon, ...PALETTE.fog);
@@ -199,7 +200,7 @@ export function createParapenteScene(canvas, { course: courseOf }) {
   }
 
   function dispose() {
-    removeEventListener('resize', resize);
+    removeEventListener('resize', resize); unbind();
     for (const entry of pilots.values()) entry.model.dispose();
     markers?.dispose(); world.group.userData.dispose?.(); sky.dispose(); renderer.dispose();
   }

@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { createBolasWorld } from '/engine/worlds/bolas-world.js';
 import { previewThrow } from '/engine/play/bolas-criollas.js';
 import { difficultyInfo } from '/engine/play/difficulty.js';
-import { bindRenderer, pixelRatio } from '/engine/settings.js';
+import { bindRenderer, pixelRatio, rendererOptions } from '/engine/settings.js';
 import { createStarterStage } from '/engine/play/quien-empieza.js';
 import { TEAM_NAMES } from './rules.js';
 import { createAimMarker } from './aim-marker.js';
@@ -12,7 +12,7 @@ import { createAimMarker } from './aim-marker.js';
 export const VIEWS = [['calce', 'Detrás del lanzador'], ['arriba', 'Desde arriba'], ['cancha', 'Vista de la cancha']];
 
 export function createScene(canvas) {
-  const world = createBolasWorld(), renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+  const world = createBolasWorld(), renderer = new THREE.WebGLRenderer(rendererOptions({ canvas, antialias: true }));
   renderer.setPixelRatio(pixelRatio(1.5)); renderer.shadowMap.enabled = true;
   renderer.shadowMap.type = THREE.PCFShadowMap; renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.08;

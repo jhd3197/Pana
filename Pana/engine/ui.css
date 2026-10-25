@@ -220,7 +220,7 @@
 .pana-device-help .pana-keys-title { display: none; }
 .pana-menu [data-settings-help][hidden] { display: block !important; }
 [data-pana-input] .pana-menu [data-settings-help=keyboard] kbd { display: inline-flex !important; }
-.pana-settings-nav { display: flex; flex-direction: column; align-items: stretch; gap: 6px; padding: 12px 0; overflow: auto; }
+.pana-settings-nav { display: flex; flex-direction: column; align-items: stretch; gap: 6px; padding: 12px 4px; overflow: hidden auto; }
 .pana-settings-nav button { flex: none; min-height: 48px; padding: 12px 14px; border: 0; border-radius: 0; background: transparent; color: var(--pm-muted); font: 900 16px Nunito,sans-serif; text-align: left; cursor: pointer; }
 .pana-settings-nav button[aria-current=true] { background: var(--pm-yellow); color: #141021; transform: skew(-6deg); }
 .pana-settings-nav button:hover { color: var(--pm-text); background: var(--pm-raised); }
@@ -228,6 +228,10 @@
 .pana-menu-pad-hint { margin: 12px 0 0; color: var(--pm-yellow); font-size: 12px; word-spacing: 3px; }
 .pana-settings-main { overflow: auto; padding: 8px 8px 32px 0; overscroll-behavior: contain; scrollbar-color: var(--pm-line) transparent; }
 .pana-settings-section h3 { margin: 4px 0 6px; font: 32px var(--pm-display); color: var(--pm-yellow); }
+.pana-reload-note { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px 24px; margin-top: 8px; padding: 16px 0; border-top: 1px solid var(--pm-yellow); }
+.pana-reload-note[hidden] { display: none; }
+.pana-reload-note p { flex: 1 1 260px; margin: 0; color: var(--pm-text); }
+.pana-image-status { margin: 0 0 20px; max-width: 650px; font-size: 14px; color: var(--pm-text); line-height: 1.5; }
 .pana-category-description { margin: 0 0 28px; max-width: 650px; font-size: 15px; color: var(--pm-muted); line-height: 1.6; }
 .pana-setting-line { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 16px 24px; padding: 20px 0; border-top: 1px solid var(--pm-line); }
 .pana-setting-copy { flex: 1 1 210px; }
@@ -280,7 +284,7 @@
   .pana-settings-panel { overflow: auto; }
   .pana-settings-workspace { height: auto; min-height: 100%; grid-template-columns: minmax(0,1fr) 250px; grid-template-rows: auto 1fr auto; }
   .pana-settings-workspace.without-monitor { grid-template-columns: minmax(0,1fr); }
-  .pana-settings-nav { grid-column: 1/-1; flex-direction: row; gap: 6px; padding: 4px 3px 16px; }
+  .pana-settings-nav { grid-column: 1/-1; flex-direction: row; gap: 6px; padding: 4px 3px 16px; overflow: auto hidden; }
   .pana-settings-nav button { min-height: 42px; padding: 10px 14px; font-size: 14px; }
   .pana-settings-main { overflow: visible; }
   .pana-settings-foot { flex-wrap: wrap; }

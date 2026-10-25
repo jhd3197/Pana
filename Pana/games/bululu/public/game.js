@@ -22,7 +22,7 @@ import { createInput, IDLE_AIM } from './input.js';
 import { bindDiceThrow, cleanPower } from '/engine/play/dice-throw.js';
 import { createDiceTable } from './dice-table.js';
 import { createBululuStarter } from './starter.js';
-import { pixelRatio, bindRenderer } from '/engine/settings.js';
+import { pixelRatio, bindRenderer, rendererOptions } from '/engine/settings.js';
 import { inviteUrl, newRoomCode, roomFromUrl } from '/engine/invite.js';
 import { BululuRoom } from './network.js';
 import { IDLE_INPUT, seeded, withRandom } from './online-rules.js';
@@ -86,7 +86,7 @@ const isHuman = (p) => p.human && !AUTO;
 let order = players.map((p) => p.i), lastPlace = null;
 
 // ---------- renderer ----------
-const renderer = new THREE.WebGLRenderer({ antialias: true });
+const renderer = new THREE.WebGLRenderer(rendererOptions({ antialias: true }));
 renderer.setPixelRatio(pixelRatio(2));
 bindRenderer(renderer, 2);
 renderer.setSize(innerWidth, innerHeight);

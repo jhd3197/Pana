@@ -3,11 +3,12 @@ import { crateArt, coinArt } from './pickup-art.js';
 import { makeMango } from '/engine/models/props/mango.js';
 import { buildCharacter } from '/engine/models/characters/pana/avatar-model.js';
 import { loadAvatar } from '/engine/avatar.js';
+import { pixelRatio } from '/engine/settings.js';
 
 // The same meshes as race pickups, with presentation-only accounting.
 export function createCashScene(canvas, { earned, awards=[earned], sound, progress, complete }) {
   const renderer = new THREE.WebGLRenderer({canvas,alpha:true,antialias:true});
-  renderer.setPixelRatio(Math.min(devicePixelRatio,1.5));renderer.shadowMap.enabled=true;
+  renderer.setPixelRatio(pixelRatio(1.5));renderer.shadowMap.enabled=true;
   const scene=new THREE.Scene(),camera=new THREE.PerspectiveCamera(36,1,.1,100);
   camera.position.set(8,6,12);camera.lookAt(0,1,0);
   scene.add(new THREE.HemisphereLight(0xfff2d2,0x35305f,2.5));

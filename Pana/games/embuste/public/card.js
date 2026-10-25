@@ -2,8 +2,9 @@
 import * as THREE from 'three';
 import { mummy, sunRelic } from '/engine/models/props/reliquia.js';
 import { campfire } from '/engine/models/props/llano-life.js';
+import { pixelRatio } from '/engine/settings.js';
 export function mount(canvas) {
-  const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true }); renderer.setPixelRatio(Math.min(devicePixelRatio, 1.5)); renderer.toneMapping = THREE.ACESFilmicToneMapping;
+  const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true }); renderer.setPixelRatio(pixelRatio(1.5)); renderer.toneMapping = THREE.ACESFilmicToneMapping;
   const scene = new THREE.Scene(), camera = new THREE.PerspectiveCamera(34, 1, 0.1, 40); camera.position.set(0.6, 3.2, 8); camera.lookAt(0, 1.1, 0);
   scene.add(new THREE.HemisphereLight(0x5c6bb8, 0x101024, 1.1));
   const glow = new THREE.PointLight(0xffa04a, 30, 12, 1.6); glow.position.set(0, 1.2, 0.6); scene.add(glow);

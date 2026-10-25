@@ -1,8 +1,9 @@
 import * as THREE from 'three';
 import { createLudoBoard, createLudoPawn, boardPoint } from './board-model.js';
 import { disposeModel } from '/engine/models/props/game-table.js';
+import { pixelRatio } from '/engine/settings.js';
 export function mount(canvas){
-  const renderer=new THREE.WebGLRenderer({canvas,antialias:true,alpha:true});renderer.setPixelRatio(Math.min(devicePixelRatio,1.5));
+  const renderer=new THREE.WebGLRenderer({canvas,antialias:true,alpha:true});renderer.setPixelRatio(pixelRatio(1.5));
   renderer.toneMapping=THREE.ACESFilmicToneMapping;
   const scene=new THREE.Scene(),camera=new THREE.PerspectiveCamera(38,1,.1,40);camera.position.set(6,10,9);camera.lookAt(0,0,0);
   scene.add(new THREE.HemisphereLight('#fff6df','#60745f',3));const sun=new THREE.DirectionalLight('#ffffff',3);sun.position.set(-3,9,5);scene.add(sun);

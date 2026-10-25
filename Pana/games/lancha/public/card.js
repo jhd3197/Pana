@@ -1,10 +1,11 @@
 import * as THREE from 'three';
 import { loadAvatar } from '/engine/avatar.js';
 import { createLancha } from '/engine/models/vehicles/lancha.js';
+import { pixelRatio } from '/engine/settings.js';
 
 // Hub tile: the saved pana at the tiller of the same lancha as the race.
 export function mount(canvas) {
-  const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true }); renderer.setPixelRatio(Math.min(devicePixelRatio, 1.5));
+  const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true }); renderer.setPixelRatio(pixelRatio(1.5));
   const scene = new THREE.Scene(), camera = new THREE.PerspectiveCamera(34, 1, .1, 60);
   camera.position.set(6.4, 3.4, 6.2); camera.lookAt(0, .7, 0);
   scene.add(new THREE.HemisphereLight(0xfff4e6, 0x3f6a5a, 2.3)); const sun = new THREE.DirectionalLight(0xffe3b0, 2); sun.position.set(-3, 7, 4); scene.add(sun);

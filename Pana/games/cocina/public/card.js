@@ -3,8 +3,9 @@ import { buildCharacter } from '/engine/models/characters/pana/avatar-model.js';
 import { loadAvatar } from '/engine/avatar.js';
 import { food, kitchenStation } from '/engine/models/props/kitchen.js';
 import { bake } from '/engine/models/core/static-batch.js';
+import { pixelRatio } from '/engine/settings.js';
 export function mount(canvas) {
-  const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true }); renderer.setPixelRatio(Math.min(devicePixelRatio, 1.5));
+  const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true }); renderer.setPixelRatio(pixelRatio(1.5));
   const scene = new THREE.Scene(), camera = new THREE.PerspectiveCamera(36, 1, 0.1, 40); camera.position.set(4, 3.5, 6); camera.lookAt(0, 1.2, 0);
   scene.add(new THREE.HemisphereLight(0xffffff, 0xbb8543, 2.5)); const sun = new THREE.DirectionalLight(0xffe2b6, 2.5); sun.position.set(-3, 5, 4); scene.add(sun);
   const stove = bake(kitchenStation({ type: 'stove', w: 2.7, d: 2.2 })); stove.position.set(1.3, 0, -0.8); stove.scale.setScalar(0.8); scene.add(stove);

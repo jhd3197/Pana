@@ -131,7 +131,7 @@ export function createGameMenu({
   const volume = h('input', { type: 'range', id: id('set-volume'), min: 0, max: 100, step: 5, 'aria-label': 'Volumen' });
   const music = h('input', { type: 'range', id: id('set-music'), min: 0, max: 100, step: 5, 'aria-label': 'Música' });
   const hintsSwitch = h('button', { type: 'button', role: 'switch', id: id('set-hints'), class: 'pana-switch', 'aria-labelledby': id('set-hints-label') });
-  const qualityGroup = choiceGroup(id('set-quality'), 'Resolución', Object.entries(QUALITY).map(([v, q]) => [v, q.label]),
+  const qualityGroup = choiceGroup(id('set-quality'), 'Calidad', Object.entries(QUALITY).map(([v, q]) => [v, q.label]),
     () => getSettings().quality, value => setSettings({ quality: value }));
   const gameOptions = options.map(o => choiceGroup(id(`opt-${o.id}`), o.label, o.choices, o.get, o.set));
   // Phones only: how to hold it. "Según el juego" names this game's own default.

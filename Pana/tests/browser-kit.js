@@ -6,7 +6,7 @@
 //   const page = await openGame(browser, 'domino', { name: 'Ana', room: 'qa-1' });
 //
 // Rules (AGENTS.md, "Checks"): wait on state (prepared, revision, phase, an event
-// id), never on wall-clock time; force low quality; compare positions and heights
+// id), never on wall-clock time; force low quality with the frame-rate guard off; compare positions and heights
 // with a tolerance.
 import fs from 'node:fs';
 import path from 'node:path';
@@ -44,7 +44,7 @@ export async function openGame(browser, game, { name = 'Pana', avatar, room, mob
   await context.addInitScript(({ name, avatar }) => {
     localStorage.setItem('pana:name', name);
     if (avatar) localStorage.setItem('pana:avatar', JSON.stringify(avatar));
-    localStorage.setItem('pana:settings', JSON.stringify({ sound: false, music: false, quality: 'baja' }));
+    localStorage.setItem('pana:settings', JSON.stringify({ sound: false, music: false, quality: 'baja', autoScale: false }));
   }, { name, avatar });
   const page = await context.newPage();
   page.errors = [];

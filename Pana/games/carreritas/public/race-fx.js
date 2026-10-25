@@ -14,7 +14,7 @@ const HOT = [0xffffff, 0xfff1b8, 0xffb347, 0xff7a1a];
 
 export function createRaceFx(scene) {
   const glow = createParticleField(scene, { capacity: 1600, additive: true, core: 0.85, name: 'race-glow' });
-  const low = () => getSettings().quality === 'baja';
+  const low = () => getSettings().detail === 'baja';
   const pick = list => list[Math.floor(Math.random() * list.length)];
   return {
     // Turbo exhaust: flame-coloured embers off both tailpipes, carried with

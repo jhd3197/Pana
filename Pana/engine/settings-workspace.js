@@ -1,6 +1,6 @@
 // Loaded only when Ajustes opens. Existing audio/video/game controls are moved
 // here, retaining their handlers, IDs and each game's pause lifecycle.
-import { getSettings, setSettings, onSettings, INPUT_RANGES, resetInputSettings } from './settings.js';
+import { getSettings, setSettings, onSettings, INPUT_RANGES, resetInputSettings, RESOLUTIONS, SHADOWS, DETAIL, FPS_CAPS, boundRenderers, renderStep, renderScaleNow, urlSettings } from './settings.js';
 import { onInputDevice, inputState, activePad, readPad, formatPadLabel, testVibration, NAMES } from './gamepad.js';
 
 function el(tag, className, text) {
@@ -48,6 +48,7 @@ export function createSettingsWorkspace(root, legacy) {
     aside.hidden = key !== 'pad';
     workspace.classList.toggle('without-monitor', key !== 'pad');
     if (key !== 'pad') setTesting(false);
+    if (key === 'image') describePicture();
   }
   function row(parent, label, detail, control) {
     const node = el('div', 'pana-setting-line');
@@ -72,13 +73,13 @@ export function createSettingsWorkspace(root, legacy) {
   function choices(parent, key, label, detail, values) {
     const group = el('div', 'pana-segments'); group.setAttribute('role', 'radiogroup'); group.setAttribute('aria-label', label);
     const buttons = values.map(([value, name]) => {
-      const b = button(name, () => setSettings({ [key]: value })); b.setAttribute('role', 'radio'); b.dataset.value = value; group.append(b); return b;
+      const b = button(name, () => setSettings({ [key]: value })); b.setAttribute('role', 'radio'); b.dataset.value = String(value); group.append(b); return b;
     });
     group.onkeydown = event => {
       const step = { ArrowRight: 1, ArrowDown: 1, ArrowLeft: -1, ArrowUp: -1 }[event.key]; if (!step) return;
       event.preventDefault(); const next = buttons[(buttons.indexOf(document.activeElement) + step + buttons.length) % buttons.length]; next.click(); next.focus();
     };
-    refreshers.push(s => buttons.forEach(b => { const on = b.dataset.value === s[key]; b.setAttribute('aria-checked', String(on)); b.tabIndex = on ? 0 : -1; }));
+    refreshers.push(s => buttons.forEach(b => { const on = b.dataset.value === String(s[key]); b.setAttribute('aria-checked', String(on)); b.tabIndex = on ? 0 : -1; }));
     row(parent, label, detail, group);
   }
 
@@ -106,7 +107,40 @@ export function createSettingsWorkspace(root, legacy) {
   const touch = page('touch', 'Pantalla táctil', 'La sensibilidad se aplica al arrastrar para mirar. Los botones y joysticks de cada juego mantienen sus acciones.');
   range(touch, 'touchSensitivity', 'Sensibilidad al arrastrar', 'Velocidad de la cámara al deslizar el dedo.');
   toggle(touch, 'touchInvertY', 'Invertir eje vertical', 'Arrastra hacia abajo para mirar arriba.'); touch.append(...legacy.touch);
-  const image = page('image', 'Imagen', 'Elige nitidez o rendimiento. La resolución se adapta al instante; las sombras se actualizan al cargar la siguiente escena.'); image.append(...legacy.image);
+  const image = page('image', 'Imagen', 'Elige un punto de partida y afina cada opción. Todo cambia al instante salvo lo que se indica.');
+  // The preset row keeps its id from the pause menu; Personalizada is shown, not picked.
+  const presets = legacy.image[0].querySelector('.pana-segments'); presets.removeAttribute('aria-labelledby'); presets.setAttribute('aria-label', 'Calidad');
+  const presetCopy = row(image, 'Calidad', '', presets).querySelector('small');
+  refreshers.push(s => { presetCopy.textContent = s.quality === 'custom' ? 'Personalizada: cambiaste alguna opción de abajo. Elige una calidad para volver a sus valores.' : 'Nítida, Equilibrada y Rápida ajustan las opciones de abajo.'; });
+  const dpr = Math.round((globalThis.devicePixelRatio || 1) * 100) / 100;
+  choices(image, 'resolution', 'Resolución', `Puntos dibujados por cada punto de la pantalla. La tuya llega a ×${dpr}; por encima no gana nitidez.`, RESOLUTIONS);
+  choices(image, 'shadows', 'Sombras', 'Las sombras pesan mucho en móviles. Apagarlas es inmediato; su tamaño cambia al volver a cargar el juego.', Object.entries(SHADOWS).map(([k, v]) => [k, v.label]));
+  choices(image, 'detail', 'Detalle del mundo', 'Hierba, árboles lejanos, lluvia y efectos en los juegos con mundos grandes.', Object.entries(DETAIL));
+  choices(image, 'fpsCap', 'Límite de FPS', 'Ahorra batería y calor. El juego va igual de rápido; solo se dibuja menos veces.', FPS_CAPS);
+  toggle(image, 'antialias', 'Suavizado de bordes', 'Quita los dientes de sierra. Se aplica al volver a abrir el juego.');
+  toggle(image, 'autoScale', 'Ajuste automático', 'Si el juego va lento, baja la resolución sola hasta que vaya fluido.');
+  toggle(image, 'perfOverlay', 'Mostrar rendimiento', 'FPS, tiempo de cuadro, llamadas de dibujo y resolución en una esquina.');
+  // In a game, smoothing and shadow size wait for the next load: say so and offer it.
+  const loaded = getSettings(), reload = el('div', 'pana-reload-note'); reload.hidden = true;
+  reload.setAttribute('role', 'status');
+  reload.append(el('p', '', 'El suavizado y el tamaño de las sombras se aplican al volver a cargar el juego. Recargar ahora reinicia la partida en curso.'),
+    button('Recargar ahora', () => location.reload(), 'pana-test-button'));
+  image.append(reload);
+  refreshers.push(s => {
+    reload.hidden = !boundRenderers().length || (s.antialias === loaded.antialias && SHADOWS[s.shadows].scale === SHADOWS[loaded.shadows].scale);
+  });
+  const picture = el('p', 'pana-image-status'); picture.setAttribute('role', 'status'); image.insertBefore(picture, image.children[2]);
+  function describePicture() {
+    const s = getSettings(), canvas = boundRenderers().map(r => r.domElement).sort((a, b) => b.width * b.height - a.width * a.height)[0];
+    const w = canvas?.clientWidth || innerWidth, h = canvas?.clientHeight || innerHeight;
+    const ratio = canvas ? canvas.width / Math.max(1, w) : Math.max(Math.min(1, dpr, s.resolution), Math.min(dpr, s.resolution) * renderScaleNow());
+    const lines = [`Pantalla de ${w}×${h} puntos: se dibuja a ${Math.round(w * ratio)}×${Math.round(h * ratio)}.`];
+    if (renderStep()) lines.push(`El ajuste automático bajó la resolución al ${Math.round(renderScaleNow() * 100)} % porque iba lento. Elegir una resolución lo reinicia.`);
+    const fixed = Object.keys(urlSettings()).filter(k => k in { resolution: 1, shadows: 1, detail: 1, fpsCap: 1, autoScale: 1, antialias: 1, perfOverlay: 1 });
+    if (fixed.length) lines.push('El enlace de esta página fija parte de la imagen; no se guarda.');
+    picture.textContent = lines.join(' ');
+  }
+  refreshers.push(describePicture);
   const audio = page('audio', 'Audio', 'El volumen general controla todo el sonido. La música se mezcla por debajo de ese nivel.'); audio.append(...legacy.audio);
   if (legacy.game.length) page('game', legacy.title, 'Opciones personales de este juego. No cambian los ajustes de la sala.').append(...legacy.game);
   for (const [key, section] of [['keyboard', mouse], ['gamepad', pad], ['touch', touch]]) {
@@ -131,7 +165,8 @@ export function createSettingsWorkspace(root, legacy) {
   for (const row of [...pad.children]) if (row.matches('.pana-setting-line,.pana-vibration-test') && !row.querySelector('#pana-input-padDeadzone,#pana-input-padMoveSensitivity,#pana-input-padLookSensitivity')) advancedPad.append(row);
   pad.append(advancedPad);
   // One shared disclosure follows whichever device page is selected.
-  const movePreferences = () => pages.get(category)?.section.append(input);
+  // Imagen, Audio and the game's page keep it where it was.
+  const movePreferences = () => { if (['mouse', 'pad', 'touch'].includes(category)) pages.get(category).section.append(input); };
 
   // The tester uses the same shaping as gameplay, with raw input underneath.
   aside.append(el('small', 'pana-monitor-eyebrow', 'ENTRADA EN VIVO'), device, status, connected);

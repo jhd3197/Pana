@@ -19,6 +19,7 @@
   "Pana/engine/tests/map-assets.browser.js": 19,
   "Pana/engine/tests/model-architecture.browser.js": 6,
   "Pana/engine/tests/model-library.browser.js": 47,
+  "Pana/engine/tests/picture.browser.js": 22,
   "Pana/engine/tests/props.browser.js": 68,
   "Pana/engine/tests/puerto-models.browser.js": 11,
   "Pana/engine/tests/puerto-tables.browser.js": 163,

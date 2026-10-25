@@ -2,11 +2,12 @@ import * as THREE from 'three';
 import { buildCharacter } from '/engine/models/characters/pana/avatar-model.js';
 import { loadAvatar } from '/engine/avatar.js';
 import { createDominoTable, createDominoChair, createDominoTile } from './table-model.js';
+import { pixelRatio } from '/engine/settings.js';
 
 // The hub previews the actual game table, pieces and saved Pana sculpt.
 export function mount(canvas) {
   const renderer = new THREE.WebGLRenderer({canvas,antialias:true,alpha:true});
-  renderer.setPixelRatio(Math.min(devicePixelRatio,1.5)); renderer.toneMapping=THREE.ACESFilmicToneMapping;
+  renderer.setPixelRatio(pixelRatio(1.5)); renderer.toneMapping=THREE.ACESFilmicToneMapping;
   const scene=new THREE.Scene(), camera=new THREE.PerspectiveCamera(34,1,.1,40);
   camera.position.set(8,10,12); camera.lookAt(0,.6,0);
   scene.add(new THREE.HemisphereLight('#fff3d1','#557b63',2.5));

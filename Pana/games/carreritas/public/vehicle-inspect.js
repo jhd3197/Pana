@@ -3,6 +3,7 @@ import { createLancha, createCuriaraRacer, createRayo } from '/engine/models/veh
 import { createAvioneta, createGuacamaya, createTurpial } from '/engine/models/vehicles/avioneta.js';
 import { badge, nivelOf, vesselById, VESSEL_SLOTS, PART_SLOTS } from './parts.js';
 import { CATALOG, paintOf } from './shop.js';
+import { pixelRatio } from '/engine/settings.js';
 const esc = value => String(value ?? '').replace(/[&<>"']/g, c => `&#${c.charCodeAt(0)};`);
 const builders = { penero:createLancha, curiara:createCuriaraRacer, rayo:createRayo, zamuro:createAvioneta, guacamaya:createGuacamaya, turpial:createTurpial };
 const labels = { car:'Carro', boat:'Lancha', air:'Avioneta' };
@@ -28,7 +29,7 @@ export function openVehicleDialog({ racer, kind, own, used, taller, onColors }) 
   const copy=dialog.querySelector('[data-copy]');if(copy)copy.onclick=()=>{taller?.recommend(racer,kind);message.textContent=`${def.name} quedó marcado en tu taller.${short?` Te faltan ${short} mangos para las piezas.`:' Listo para equipar o comprar.'}`;};
   const colors=dialog.querySelector('[data-colors]');if(colors)colors.onclick=()=>{const ok=taller?.copyColors(racer);message.textContent=ok?'Colores guardados para todo tu kit.':'Te faltan mangos o el trofeo para esta pintura.';if(ok)onColors?.();};
   try {
-    const canvas=dialog.querySelector('canvas');renderer=new THREE.WebGLRenderer({canvas,alpha:true,antialias:true});renderer.setPixelRatio(Math.min(devicePixelRatio,1.5));
+    const canvas=dialog.querySelector('canvas');renderer=new THREE.WebGLRenderer({canvas,alpha:true,antialias:true});renderer.setPixelRatio(pixelRatio(1.5));
     const scene=new THREE.Scene(),camera=new THREE.PerspectiveCamera(35,1,.01,200);
     scene.add(new THREE.HemisphereLight(0xfff3db,0x393354,3));const sun=new THREE.DirectionalLight(0xfff3dd,4);sun.position.set(-5,8,5);scene.add(sun);const rim=new THREE.DirectionalLight(0x94adff,2);rim.position.set(5,3,-5);scene.add(rim);
     const color=paintOf(racer.cosmetics,racer.def.color);

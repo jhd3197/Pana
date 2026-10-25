@@ -6,10 +6,11 @@ import { buildCharacter } from '/engine/models/characters/pana/avatar-model.js';
 import { loadAvatar } from '/engine/avatar.js';
 import { createAccessories } from '/engine/models/characters/pana/accessories.js';
 import { boxingGlove } from './set.js';
+import { pixelRatio } from '/engine/settings.js';
 
 export function mount(canvas) {
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
-  renderer.setPixelRatio(Math.min(devicePixelRatio, 1.5)); renderer.toneMapping = THREE.ACESFilmicToneMapping;
+  renderer.setPixelRatio(pixelRatio(1.5)); renderer.toneMapping = THREE.ACESFilmicToneMapping;
   const scene = new THREE.Scene(), camera = new THREE.PerspectiveCamera(30, 1, .1, 30);
   camera.position.set(0, 1.4, 5.6); camera.lookAt(0, .95, 0);
   scene.add(new THREE.HemisphereLight('#fff6df', '#6d5a48', 3));

@@ -31,7 +31,7 @@ function along(points, total, d) {
 
 export function createAmbientLife(routes = {}, { seed = 7 } = {}) {
   const group = new THREE.Group(); group.name = 'Ambient life';
-  const low = getSettings().quality === 'baja', random = rng(seed), actors = [];
+  const low = getSettings().detail === 'baja', random = rng(seed), actors = [];
   // Karts: one pack crosses the lane every PACK_EVERY seconds, alternating directions.
   const karts = [];
   if (routes.lane) {

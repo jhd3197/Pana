@@ -14,7 +14,7 @@ import { splatTexture } from '/engine/models/props/paintball.js';
 import { createSky } from '/engine/worlds/sky.js';
 import { WARM_DAY } from '/engine/worlds/look.js';
 import { Puffs, Shockwaves } from '/engine/fx.js';
-import { pixelRatio, bindRenderer, shadowSize } from '/engine/settings.js';
+import { pixelRatio, bindRenderer, shadowSize, rendererOptions } from '/engine/settings.js';
 import { createExpeditionWorld, itemModel } from './scene.js';
 import { floorOf, HEIGHT } from './deck.js';
 import { ITEMS } from './items.js';
@@ -39,7 +39,7 @@ function label(text, color, { bubble = false } = {}) {
 const disposeSprite = s => { s.material.map.dispose(); s.material.dispose(); s.removeFromParent(); };
 
 export function createView(canvas, { seed = 1, depth = 1 } = {}) {
-  const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+  const renderer = new THREE.WebGLRenderer(rendererOptions({ canvas, antialias: true }));
   renderer.setPixelRatio(pixelRatio(1.5)); const unbind = bindRenderer(renderer, 1.5);
   renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFShadowMap; renderer.toneMapping = THREE.ACESFilmicToneMapping;
   const scene = new THREE.Scene(); scene.background = new THREE.Color(CAMP_LOOK.background); scene.fog = new THREE.Fog(CAMP_LOOK.background, ...CAMP_LOOK.fog);

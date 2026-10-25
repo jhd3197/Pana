@@ -8,6 +8,11 @@ becomes the GitHub release's notes.
 
 ## Unreleased
 
+- **Ajustes > Imagen ahora separa resolución, sombras, detalle, límite de FPS y suavizado.**
+  Nítida, Equilibrada y Rápida siguen como punto de partida; puedes ver
+  FPS y tiempo de cuadro en pantalla, apagar el ajuste automático, y en
+  partida la página avisa cuando un cambio necesita recargar. Parapente
+  ya respeta la resolución elegida.
 - **Stop estrena categorías Variadas: profesión, deporte, cuerpo, casa, planta y película.**
   Más de 750 palabras nuevas que el juego reconoce solo, Mezcla reparte de
   los tres grupos, y «Pedro Pérez» o «Verde manzana» ya cuentan.

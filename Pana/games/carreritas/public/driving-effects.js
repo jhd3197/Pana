@@ -29,7 +29,7 @@ function create(T){
     const s=states.get(cam);
     uniforms.speed.value=s?.T===T?s.speed:0;uniforms.glare.value=s?.T===T?s.glare:0;
     uniforms.time.value=s?.time||0;uniforms.aspect.value=cam.aspect;
-    uniforms.density.value=getSettings().quality==='baja'?3:5;
+    uniforms.density.value=getSettings().detail==='baja'?3:5;
     if(s)uniforms.sun.value.copy(s.sun);
   };
   T.group.add(mesh);return mesh;

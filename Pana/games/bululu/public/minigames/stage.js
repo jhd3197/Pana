@@ -9,7 +9,7 @@ import { makeBubble } from '/engine/fx.js';
 import { palm } from '/engine/models/vegetation/palm.js';
 import { M, mesh, rng } from '/engine/models/core/primitives.js';
 import { rock } from '/engine/models/props/rock.js';
-import { getSettings } from '/engine/settings.js';
+import { shadowSize } from '/engine/settings.js';
 
 export const rand = (a, b) => a + random() * (b - a);
 export const pick = (list) => list[Math.floor(random() * list.length)];
@@ -25,9 +25,8 @@ export function sunnyStage(scene, { ground = 0xd9a46c, grass = true, sky = 0x7cc
   const sun = new THREE.DirectionalLight(0xfff0d6, 2.2);
   sun.position.set(-12, 26, 18);
   sun.castShadow = true;
-  // Baja quality draws a quarter of the shadow texels: minigames used to ask
-  // for 2048² on every device.
-  const shadow = getSettings().quality === 'baja' ? 1024 : 2048;
+  // Minigames used to ask for 2048² on every device; the shadow setting scales it.
+  const shadow = shadowSize(2048);
   sun.shadow.mapSize.set(shadow, shadow);
   Object.assign(sun.shadow.camera, { left: -25, right: 25, top: 25, bottom: -25, near: 1, far: 80 });
   sun.shadow.bias = -0.0005;

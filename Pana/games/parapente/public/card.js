@@ -4,10 +4,11 @@
 import * as THREE from 'three';
 import { createParapente } from '/engine/models/vehicles/parapente.js';
 import { loadAvatar } from '/engine/avatar.js';
+import { pixelRatio } from '/engine/settings.js';
 
 export function mount(canvas) {
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
-  renderer.setPixelRatio(Math.min(devicePixelRatio, 1.5)); renderer.toneMapping = THREE.ACESFilmicToneMapping;
+  renderer.setPixelRatio(pixelRatio(1.5)); renderer.toneMapping = THREE.ACESFilmicToneMapping;
   const scene = new THREE.Scene(), camera = new THREE.PerspectiveCamera(34, 1, .1, 60);
   camera.position.set(0, 4.2, 15); camera.lookAt(0, 3.4, 0);
   scene.add(new THREE.HemisphereLight('#fff6df', '#6d5a48', 3));

@@ -75,7 +75,7 @@ async function open(b, url, query) {
   page.errors = [];
   page.on('pageerror', e => page.errors.push(String(e)));
   await page.addInitScript(seed => {
-    localStorage.setItem('pana:settings', JSON.stringify({ quality: 'alta', sound: false }));
+    localStorage.setItem('pana:settings', JSON.stringify({ quality: 'alta', sound: false, autoScale: false }));
     let s = seed; Math.random = () => { s ^= s << 13; s ^= s >>> 17; s ^= s << 5; return (s >>> 0) / 4294967296; };
   }, SEED);
   await page.goto(`${url}/g/carreritas/?${query}`);

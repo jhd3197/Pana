@@ -53,7 +53,7 @@ export function driftSparks(puffs, c, dt) {
 // Sparks off both rear tyres: thrown back and to the outside of the slide,
 // a little up, inheriting some of the car's speed; gravity pulls them down.
 function emitSparks(sparks, c, level, dt, fx, fz, rx, rz) {
-  const low = getSettings().quality === 'baja';
+  const low = getSettings().detail === 'baja';
   const warn = !c.remote && overheatWarn(c.driftT);
   c.sparkCarry = (c.sparkCarry || 0) + RATE[level] * (low ? 0.5 : 1) * dt;
   const n = Math.floor(c.sparkCarry);
@@ -78,7 +78,7 @@ function emitSparks(sparks, c, level, dt, fx, fz, rx, rz) {
 // they fade, pale and tinted by the charge, so a held drift reads as
 // escalating smoke. Half rate on quality baja.
 function driftSmoke(smoke, c, level, fx, fz, rx, rz) {
-  const low = getSettings().quality === 'baja', carry = 0.35 * (c.vf || 0);
+  const low = getSettings().detail === 'baja', carry = 0.35 * (c.vf || 0);
   tint.set(SPARKS[level]).lerp(white, level ? 0.55 : 0.2);
   const color = tint.getHex();
   for (const side of [-1, 1]) for (let i = 0; i < (low ? 1 : 2); i++) {
