@@ -18,7 +18,9 @@ purple slang wall. Source: the C4B9Vk6L9kK reel (Hormiga as a color, Oreo for
 - `public/rules.js`: pure rules (`StopGame`, `judge()`, scoring, bots,
   titles), tested by `tests/rules.test.js`.
 - `public/options.js`: Partida (Normal / Stop rápido: 3 categories, 30 s),
-  Categorías (Clásicas / Criollas / Mezcla / Al azar), Letras (Fáciles /
+  Categorías (Clásicas / Criollas / Variadas / Mezcla / Al azar; Variadas
+  is profesión, deporte, cuerpo, casa, planta, película; Mezcla deals from
+  the three sets in turn), Letras (Fáciles /
   Normales / Todas, `lettersFor`), and in Más ajustes:
   rounds, how many categories (6–10), writing time, Más criollo, Jugar con (Panas y bots / Solo panas), bot level.
 - `public/network.js`: the room. `step(dt)` is the host's clock (`game.tick`).
@@ -65,6 +67,9 @@ purple slang wall. Source: the C4B9Vk6L9kK reel (Hormiga as a color, Oreo for
   whose spelling starts with another letter → yellow ("Varinas" in the V
   round is "¿Barinas?"); a known word → green; unknown → yellow.
 - Ñ is its own letter (Ñame is not an N word). Accents never matter.
+- Nombre, Apellido and Color accept a known first word with more after it
+  (Pedro Pérez, Verde manzana) as that word, same key; other categories
+  need the whole answer to match.
 - Letter levels come from how many `saber.js` words each letter has across
   the categories: `EASY` (A B C D E F G L M N P R S T) fill every box,
   `MEDIUM` (H I J K O U V) leave some blank, `HARD` (Ñ Q W X Y Z) leave most

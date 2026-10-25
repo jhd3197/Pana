@@ -4,7 +4,7 @@ import { optionDefaults, applyRoomOptions } from '/engine/room-options-rules.js'
 export const ROOM_OPTIONS = [
   botParticipation('withBots'),
   { id: 'mode', label: 'Modo', default: 'normal', choices: [['normal', 'Normal'], ['rapido', 'Stop rápido']] },
-  { id: 'set', label: 'Categorías', default: 'clasicas', choices: [['clasicas', 'Clásicas'], ['criollas', 'Criollas'], ['mezcla', 'Mezcla'], ['azar', 'Al azar']] },
+  { id: 'set', label: 'Categorías', default: 'clasicas', choices: [['clasicas', 'Clásicas'], ['criollas', 'Criollas'], ['variadas', 'Variadas'], ['mezcla', 'Mezcla'], ['azar', 'Al azar']] },
   { id: 'rounds', label: 'Rondas', default: 5, advanced: true, choices: [[3, '3 rondas'], [5, '5 rondas'], [7, '7 rondas']] },
   { id: 'count', label: 'Cuántas categorías', default: 8, advanced: true, choices: [[6, '6'], [7, '7'], [8, '8'], [9, '9'], [10, '10']] },
   { id: 'seconds', label: 'Tiempo para escribir', default: 90, advanced: true, choices: [[60, '60 s'], [90, '90 s'], [120, '2 min']] },

@@ -8,6 +8,9 @@ becomes the GitHub release's notes.
 
 ## Unreleased
 
+- **Stop estrena categorías Variadas: profesión, deporte, cuerpo, casa, planta y película.**
+  Más de 750 palabras nuevas que el juego reconoce solo, Mezcla reparte de
+  los tres grupos, y «Pedro Pérez» o «Verde manzana» ya cuentan.
 - **En Póquer, si te sales y vuelves, recuperas tus fichas.**
   Volver con el mismo nombre te devuelve tu pila; salirse ya no regala una
   pila nueva de 1.000 a quien iba perdiendo.

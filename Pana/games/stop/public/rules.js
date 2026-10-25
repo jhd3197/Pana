@@ -18,6 +18,7 @@ export const HARD = ['Ñ', 'Q', 'W', 'X', 'Y', 'Z'];
 export const MEDIUM = ALPHABET.filter(l => !EASY.includes(l) && !HARD.includes(l));
 export const CLASICAS = ['nombre', 'apellido', 'pais', 'ciudad', 'animal', 'fruta', 'color', 'cosa'];
 export const CRIOLLAS = ['estado', 'comida', 'palabra', 'dicho', 'pelotero', 'musica', 'lugar', 'marca', 'carinoso'];
+export const VARIADAS = ['profesion', 'deporte', 'cuerpo', 'casa', 'planta', 'pelicula'];
 // ¡Basta! gives the rest 5 s: at 3 s panas mid-word lost answers they were typing.
 export const TIMES = { letter: 2.8, basta: 5, collect: 6, show: 3.4, vote: 10, result: 3, tally: 5.5, spinAuto: 9, rapido: 30 };
 export const POINTS = { unique: 100, shared: 50, creative: 50 };
@@ -61,10 +62,11 @@ export function pickCategories(state, options) {
   const count = options.mode === 'rapido' ? 3 : options.count;
   let order;
   if (options.set === 'criollas') order = [...shuffle(CRIOLLAS), ...shuffle(CLASICAS)];
+  else if (options.set === 'variadas') order = [...shuffle(VARIADAS), ...shuffle(CLASICAS)];
   else if (options.set === 'mezcla') {
-    const a = shuffle(CLASICAS), b = shuffle(CRIOLLAS); order = [];
-    while (a.length || b.length) { if (a.length) order.push(a.shift()); if (b.length) order.push(b.shift()); }
-  } else if (options.set === 'azar') order = shuffle([...CLASICAS, ...CRIOLLAS]);
+    const sets = [shuffle(CLASICAS), shuffle(CRIOLLAS), shuffle(VARIADAS)]; order = [];
+    while (sets.some(x => x.length)) for (const x of sets) if (x.length) order.push(x.shift());
+  } else if (options.set === 'azar') order = shuffle([...CLASICAS, ...CRIOLLAS, ...VARIADAS]);
   else order = [...(options.mode === 'rapido' ? shuffle(CLASICAS) : CLASICAS), ...shuffle(CRIOLLAS)];
   return order.slice(0, count);
 }
@@ -77,11 +79,13 @@ export function rememberWords(dictionary, saved) {
   const out = [], seen = new Set();
   for (const d of [...(Array.isArray(dictionary) ? dictionary : []), ...(Array.isArray(saved) ? saved : [])]) {
     const word = cleanAnswer(d?.word), key = `${d?.category}:${soundKey(word)}`;
-    if (![...CLASICAS, ...CRIOLLAS].includes(d?.category) || tooShort(word) || seen.has(key)) continue;
+    if (![...CLASICAS, ...CRIOLLAS, ...VARIADAS].includes(d?.category) || tooShort(word) || seen.has(key)) continue;
     seen.add(key); out.push({ category: d.category, word });
   }
   return out.slice(-MESA_LIMIT);
 }
+
+const LEAD_WORD = ['nombre', 'apellido', 'color'];
 
 // How the game reads one box. status: green (counts), red (doesn't), yellow
 // (the table votes). reason: empty, short, letter, crude, known, typo, mesa,
@@ -93,7 +97,9 @@ export function judge(answer, category, letter, { criollo = false, dictionary = 
   if (tooShort(text)) return { status: 'red', reason: 'short', key: own };
   if (first !== letter) return { status: 'red', reason: 'letter', first, key: own };
   const mesa = dictionary.length ? findEntry(category, text, { extra: dictionary, base: false }) : null;
-  const found = mesa || findEntry(category, text);
+  // A name with its surname (Pedro Pérez) or a colour with its shade (Verde
+  // manzana) is the known first word plus more: it counts as that word.
+  const found = mesa || findEntry(category, text) || (LEAD_WORD.includes(category) && text.includes(' ') ? findEntry(category, text.split(' ')[0]) : null);
   if ((isCrude(text) || found?.entry.crude) && !criollo) return { status: 'red', reason: 'crude', key: own };
   if (!found) return { status: 'yellow', reason: 'unknown', key: own };
   const { entry } = found, key = `${category}:${soundKey(entry.word)}`, base = { word: entry.word, explain: entry.explain || '', key };

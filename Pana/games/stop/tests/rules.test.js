@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { StopGame, SEATS, TIMES, POINTS, EASY, MEDIUM, HARD, ALPHABET, CLASICAS, CRIOLLAS, MAX_ANSWER, PERSONALITY, cleanAnswer, cleanSheet, judge, lettersFor,
+import { StopGame, SEATS, TIMES, POINTS, EASY, MEDIUM, HARD, ALPHABET, CLASICAS, CRIOLLAS, VARIADAS, MAX_ANSWER, PERSONALITY, cleanAnswer, cleanSheet, judge, lettersFor,
   pickCategories, ranking, rememberWords, MESA_LIMIT, seated, titles, verdictText } from '../public/rules.js';
 import { letterOf } from '/engine/play/saber-match.js';
 
@@ -45,7 +45,7 @@ test('room options are host-only and validated, and Stop rápido plays three cat
   assert.equal(act(game, 2, 'start'), false, 'only the host starts');
 });
 
-test('category sets: Clásicas, Criollas, Mezcla and Al azar, 6 to 10 of them', () => {
+test('category sets: Clásicas, Criollas, Variadas, Mezcla and Al azar, 6 to 10 of them', () => {
   const state = { seed: 4 };
   assert.deepEqual(pickCategories(state, { set: 'clasicas', count: 8, mode: 'normal' }), CLASICAS);
   const criollas = pickCategories(state, { set: 'criollas', count: 8, mode: 'normal' });
@@ -53,7 +53,7 @@ test('category sets: Clásicas, Criollas, Mezcla and Al azar, 6 to 10 of them', 
   const ten = pickCategories(state, { set: 'clasicas', count: 10, mode: 'normal' });
   assert.equal(ten.length, 10); assert.equal(new Set(ten).size, 10); assert.deepEqual(ten.slice(0, 8), CLASICAS);
   const mix = pickCategories(state, { set: 'mezcla', count: 6, mode: 'normal' });
-  assert.equal(mix.filter(c => CLASICAS.includes(c)).length, 3);
+  assert.equal(mix.filter(c => CLASICAS.includes(c)).length, 2, 'two from each of the three sets');
   const azar = pickCategories(state, { set: 'azar', count: 9, mode: 'normal' });
   assert.equal(new Set(azar).size, 9);
 });
@@ -416,4 +416,21 @@ test('letter levels: easy, easy and medium, or every letter; the bag carries int
   game.start();
   for (let i = 0; i < 6; i++) { game.phase = 'spin'; game.para(null); seen.push(game.letter); }
   assert.equal(new Set(seen).size, EASY.length, 'a new game in the same room plays the letters not yet seen');
+});
+
+test('a known first word with more after it counts for names and colours', () => {
+  assert.equal(judge('Pedro Pérez', 'nombre', 'P').status, 'green');
+  assert.equal(judge('Verde manzana', 'color', 'V').status, 'green');
+  assert.equal(judge('Verde manzana', 'color', 'V').key, judge('Verde', 'color', 'V').key, 'same as the plain colour');
+  assert.equal(judge('Puerto Cabello', 'ciudad', 'P').status, 'green');
+  assert.notEqual(judge('Perú Bonito', 'pais', 'P').reason, 'known', 'other categories need the whole answer');
+});
+
+test('Variadas plays the new categories first, and Mezcla deals from all three sets', () => {
+  const game = new StopGame(4);
+  const variadas = pickCategories(game, { set: 'variadas', count: 8 });
+  assert.deepEqual([...variadas.slice(0, VARIADAS.length)].sort(), [...VARIADAS].sort());
+  const mezcla = pickCategories(game, { set: 'mezcla', count: 9 });
+  for (const set of [CLASICAS, CRIOLLAS, VARIADAS]) assert.equal(mezcla.filter(c => set.includes(c)).length, 3);
+  for (const cat of VARIADAS) assert.equal(judge({ profesion: 'Médico', deporte: 'Béisbol', cuerpo: 'Brazo', casa: 'Licuadora', planta: 'Orquídea', pelicula: 'Coco' }[cat], cat, { profesion: 'M', deporte: 'B', cuerpo: 'B', casa: 'L', planta: 'O', pelicula: 'C' }[cat]).status, 'green', cat);
 });
