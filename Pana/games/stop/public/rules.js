@@ -14,7 +14,8 @@ export const ALPHABET = 'ABCDEFGHIJKLMNÑOPQRSTUVWXYZ'.split('');
 export const HARD = ['Ñ', 'Q', 'W', 'X', 'Y', 'Z'];
 export const CLASICAS = ['nombre', 'apellido', 'pais', 'ciudad', 'animal', 'fruta', 'color', 'cosa'];
 export const CRIOLLAS = ['estado', 'comida', 'palabra', 'dicho', 'pelotero', 'musica', 'lugar', 'marca', 'carinoso'];
-export const TIMES = { letter: 2.8, basta: 3, collect: 6, show: 3.4, vote: 10, result: 3, tally: 5.5, spinAuto: 9, rapido: 30 };
+// ¡Basta! gives the rest 5 s: at 3 s panas mid-word lost answers they were typing.
+export const TIMES = { letter: 2.8, basta: 5, collect: 6, show: 3.4, vote: 10, result: 3, tally: 5.5, spinAuto: 9, rapido: 30 };
 export const POINTS = { unique: 100, shared: 50, creative: 50 };
 export const MAX_ANSWER = 32;
 export const BOT_NAMES = ['Coco', 'Lola', 'Cheo', 'Nena', 'Toño', 'Mari', 'Pepe', 'Cuqui'];
@@ -34,6 +35,11 @@ const between = (state, [a, b]) => a + draw(state) * (b - a);
 export function cleanAnswer(value) {
   if (typeof value !== 'string') return '';
   return [...value.replace(/[\u0000-\u001f\u007f-\u009f<>]/g, ' ').replace(/\s+/g, ' ').trim()].slice(0, MAX_ANSWER).join('').trim();
+}
+// "P", "P." or "Ppp" fills a box without an answer, only to call ¡STOP!
+// first: a real answer has at least two different letters.
+export function tooShort(answer) {
+  return new Set(cleanAnswer(answer).toLowerCase().normalize('NFD').replace(/[^\p{L}]/gu, '')).size < 2;
 }
 export const cleanSheet = (sheet, count) => Array.from({ length: count }, (_, i) => cleanAnswer(Array.isArray(sheet) ? sheet[i] : ''));
 
@@ -55,12 +61,13 @@ export function pickCategories(state, options) {
 }
 
 // How the game reads one box. status: green (counts), red (doesn't), yellow
-// (the table votes). reason: empty, letter, crude, known, typo, mesa,
+// (the table votes). reason: empty, short, letter, crude, known, typo, mesa,
 // doubtful, close, unknown. key: what makes two answers "the same".
 export function judge(answer, category, letter, { criollo = false, dictionary = [] } = {}) {
   const text = cleanAnswer(answer);
   if (!text) return { status: 'red', reason: 'empty', key: '' };
   const first = letterOf(text), own = `${category}:${soundKey(text)}`;
+  if (tooShort(text)) return { status: 'red', reason: 'short', key: own };
   if (first !== letter) return { status: 'red', reason: 'letter', first, key: own };
   const mesa = dictionary.length ? findEntry(category, text, { extra: dictionary, base: false }) : null;
   const found = mesa || findEntry(category, text);
@@ -213,14 +220,14 @@ export class StopGame {
     p.filled = filled; this.revision++; return true;
   }
 
-  // ¡STOP!: only a full sheet may stop the round; it travels with the call.
+  // ¡STOP!: only a full sheet of real answers may stop the round; it travels with the call.
   stop(p, sheet) {
     if (this.phase !== 'write') return false;
     const clean = cleanSheet(sheet, this.count);
-    if (clean.some(a => !a)) return false;
+    if (clean.some(a => !a || tooShort(a))) return false;
     Object.assign(p, { sheet: clean, submitted: true, filled: this.count }); p.stats.stops++;
     this.stopper = p.seat; this.phase = 'basta'; this.phaseTime = 0; this.timeLeft = TIMES.basta;
-    this.hostLine = '¡Basta! 3… 2… 1…';
+    this.hostLine = '¡Basta! 5 segundos…';
     this.bark(p.seat, '¡STOP!');
     const caught = seated(this).filter(o => o.seat !== p.seat && o.filled < this.count).slice(0, 2);
     caught.forEach(o => this.bark(o.seat, '¡Me agarró fuera de base!'));
@@ -442,6 +449,7 @@ export const TITLE_TEXT = {
 // What the card says under an answer in the review.
 export function verdictText(item, group) {
   if (item.reason === 'empty') return 'En blanco';
+  if (item.reason === 'short') return 'Eso no es una palabra';
   if (item.reason === 'letter') return `Se escribe con ${item.first}`;
   if (item.reason === 'crude') return 'Eso no se dice en esta mesa';
   if (item.reason === 'mesa') return 'La aceptó esta mesa';

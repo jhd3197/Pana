@@ -111,12 +111,13 @@ test('sheets stay secret in snapshots until the review; only progress travels', 
   assert.deepEqual(snap.players[seatOf(game, 2)].sheet, ['Coro', '', 'Celeste'], 'the review shows every sheet');
 });
 
-test('¡STOP! needs a full sheet, gives the rest 3 seconds, and only then pencils go down', () => {
+test('¡STOP! needs a full sheet, gives the rest 5 seconds, and only then pencils go down', () => {
   const game = writing(humans(2));
   assert.equal(act(game, 1, 'stop', { sheet: ['Caracas', '', 'Café'] }), false, 'an empty box');
+  assert.equal(act(game, 1, 'stop', { sheet: ['C', 'C.', 'Ccc'] }), false, 'lone letters are not answers');
   assert.equal(act(game, 1, 'stop', { sheet: ['Caracas', 'Caimán', 'Café'], round: 99 }), false, 'another round');
   assert.ok(act(game, 1, 'stop', { sheet: ['Caracas', 'Caimán', 'Café'] }));
-  assert.equal(game.phase, 'basta'); assert.equal(game.hostLine, '¡Basta! 3… 2… 1…');
+  assert.equal(game.phase, 'basta'); assert.equal(game.hostLine, '¡Basta! 5 segundos…');
   assert.equal(act(game, 2, 'stop', { sheet: ['Coro', 'Cabra', 'Crema'] }), false, 'one STOP per round');
   assert.ok(act(game, 2, 'progress', { filled: 3 }), 'the others keep writing');
   run(game, g => g.phase !== 'basta');
@@ -380,4 +381,14 @@ test('Solo panas: a pana leaving mid-vote drops their answers and the vote can s
   const fresh = humans(2); act(fresh, 1, 'options', { options: { withBots: false } });
   fresh.start(); fresh.addPlayer(9, 'Nuevo');
   assert.equal(fresh.players.find(p => p.id === 9).total, 0);
+});
+
+test('a lone letter is never an answer, even when the table would wave it through', () => {
+  for (const answer of ['C', 'c.', 'C C', 'Ccc', 'Ç']) assert.deepEqual([judge(answer, 'cosa', 'C').status, judge(answer, 'cosa', 'C').reason], ['red', 'short'], answer);
+  for (const answer of ['Ca', 'Col', 'Caracas']) assert.notEqual(judge(answer, 'ciudad', 'C').reason, 'short', answer);
+  assert.equal(verdictText({ reason: 'short', answer: 'C' }), 'Eso no es una palabra');
+  const game = writing(humans(2));
+  handIn(game, { 1: ['Caracas', 'Caimán', 'Café'], 2: ['C', 'C', 'C'] });
+  assert.ok(game.review.items.filter(i => i.seat === seatOf(game, 2)).every(i => i.status === 'red' && i.reason === 'short'));
+  assert.equal(game.review.groups.length, 0, 'nothing for the table to vote on');
 });

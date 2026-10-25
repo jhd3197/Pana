@@ -8,6 +8,9 @@ becomes the GitHub release's notes.
 
 ## Unreleased
 
+- **En Stop una sola letra ya no cuenta, y tras ¡STOP! hay 5 segundos.**
+  «P», «P.» o «Ppp» salen en rojo sin votación y no dejan gritar ¡STOP!;
+  los demás tienen 5 s para cerrar la palabra, y Chrome no tapa la hoja.
 - **El servidor cuenta lo que pasa en cada sala, para que los anfitriones vean qué falló.**
   Una línea por sala creada, pana que entra, se cae, vuelve o se va, cambio de
   anfitrión y cierre; `PANA_ROOM_LOG=0` la apaga.

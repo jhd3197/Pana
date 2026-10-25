@@ -3,8 +3,8 @@
 The Venezuelan notebook word game ("Stop" / "Basta") for up to eight panas,
 bots in the empty chairs. A round: the turn pana stops the letter wheel with
 ¡Para!, everyone fills a secret notebook page (one word per category with
-that letter), the first full sheet yells ¡STOP! and the rest get 3 s
-("¡Basta! 3… 2… 1…"), then the table reviews one category at a time and votes
+that letter), the first full sheet yells ¡STOP! and the rest get 5 s
+("¡Basta! 5 segundos…"; at 3 s panas lost the word they were typing), then the table reviews one category at a time and votes
 on the answers the game doesn't know ("¿Eso cuenta?"). Five rounds by
 default; the highest total wins. The hub card shows `tileName` ("STOP").
 
@@ -26,6 +26,8 @@ purple slang wall. Source: the C4B9Vk6L9kK reel (Hormiga as a color, Oreo for
   ¡STOP! button). `public/review.js`: the review cards and thumbs.
   `public/hud.js`: board, wheel panel, tally, shouts. `public/seats.js`:
   chair colours and bot looks. `public/game.js`: wiring.
+  Boxes carry `autocomplete="stop-answer"`: Chrome ignores `off` on boxes
+  labelled Nombre, País or Ciudad and drops saved addresses over the sheet.
 - `public/studio-set.js`: table, letter wheel, notebook, pencil, plastic
   chair and slang wall, registered in Pana Studio (`web/studio/catalog/stop.js`).
   Canvas-painted faces live there because `scene.js` may not use a 2D canvas.
@@ -53,7 +55,9 @@ purple slang wall. Source: the C4B9Vk6L9kK reel (Hormiga as a color, Oreo for
 
 ## Judging and scoring
 
-- `judge()` order: empty → red; first letter ≠ round letter → red ("¡Iron
+- `judge()` order: empty → red; fewer than two different letters ("P",
+  "P.", "Ppp", `tooShort`) → red ("Eso no es una palabra"), never a vote,
+  since an unanswered vote is a tie and a tie favours the author; first letter ≠ round letter → red ("¡Iron
   Man se escribe con I!"); crude (a word in `CRUDE_WORDS` or a crude entry)
   without Más criollo → red ("Eso no se dice en esta mesa"); a word this
   table accepted earlier → green; a doubtful or crude entry → yellow; a match

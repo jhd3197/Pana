@@ -27,7 +27,7 @@ const menu = createGameMenu({ pad: { buttons: true, keys: { x: ['Space', '¡Para
   controls: [['Tab / Enter', 'Pasar a la siguiente casilla'], ['Espacio', '¡Para! cuando te toca la rueda'], ['Ratón / toque', '¡STOP! y los votos'], ['M', 'Activar o silenciar el sonido']],
   tips: [
     'Sale una letra y escribes una palabra por categoría que empiece con ella. Nadie ve tu hoja hasta la revisión.',
-    'El primero que llena todo grita ¡STOP! y los demás tienen 3 segundos. Si nadie termina, se acaba el tiempo.',
+    'El primero que llena todo grita ¡STOP! y los demás tienen 5 segundos. Si nadie termina, se acaba el tiempo.',
     'Lo que el juego conoce cuenta solo (verde). Lo que no empieza con la letra, no (rojo). Lo dudoso se vota: «¿Eso cuenta?».',
     '100 puntos si nadie más la puso, 50 si alguien la repitió. Una dudosa que la mesa acepta con dos tercios suma +50 de Creatividad.',
     'Con «Más criollo» las groserías van a votación; sin eso, la libreta las tacha sola.',
@@ -85,8 +85,8 @@ function renderSheet(state, p) {
   const n = state.categories.length, mine = sheet.filled();
   $('sheet-note').textContent = !p ? 'Estás mirando: la mesa está llena.'
     : phase === 'collect' ? 'Lápices abajo. Entregando las hojas…'
-    : phase === 'basta' ? (stopped ? '¡Gritaste STOP! Los demás tienen 3 segundos.' : `¡${state.players[state.stopper].name} gritó STOP! ¡Apúrate!`)
-    : mine === n ? '¡Todo lleno! Grita ¡STOP!' : `${mine} de ${n} casillas. Nadie ve tu hoja.`;
+    : phase === 'basta' ? (stopped ? '¡Gritaste STOP! Los demás tienen 5 segundos.' : `¡${state.players[state.stopper].name} gritó STOP! ¡Apúrate!`)
+    : mine === n ? (sheet.full() ? '¡Todo lleno! Grita ¡STOP!' : 'Una sola letra no vale: escribe la palabra.') : `${mine} de ${n} casillas. Nadie ve tu hoja.`;
 }
 
 function sounds(state, p) {

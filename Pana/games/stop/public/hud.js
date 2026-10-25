@@ -1,6 +1,6 @@
 // The table's HUD around the 3D scene: the board (round, letter, clock and
 // every pana's progress or points), the wheel panel, the round tally and the
-// big shouts (¡STOP!, ¡Basta! 3… 2… 1…). Text only, never HTML from names.
+// big shouts (¡STOP!, ¡Basta!). Text only, never HTML from names.
 import { fillRoster } from '/engine/results.js';
 import { PERSONALITY, PERSONALITY_TEXT, ranking, seated } from './rules.js';
 import { SEAT_COLORS } from './seats.js';
