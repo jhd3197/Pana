@@ -26,6 +26,7 @@ try {
   await wait(a, () => poquerDebug.world.avatars.size === 2); await a.screenshot({ path: `${out}/lobby.png` });
   // ¿Quién empieza?: both panas shake their cacho at once; the highest takes the button.
   await a.locator('#start').click(); await wait(b, () => poquerDebug.room.state.phase === 'starter');
+  await wait(b, () => poquerDebug.world.starter.active);
   assert.ok(await b.evaluate(() => poquerDebug.world.starter.active), 'the cachos are on the table');
   const seatOf = p => p.evaluate(() => poquerDebug.room.state.players.findIndex(q => q.id === poquerDebug.room.id));
   const [seatA, seatB] = [await seatOf(a), await seatOf(b)];
