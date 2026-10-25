@@ -8,6 +8,9 @@ becomes the GitHub release's notes.
 
 ## Unreleased
 
+- **En Póquer, si te sales y vuelves, recuperas tus fichas.**
+  Volver con el mismo nombre te devuelve tu pila; salirse ya no regala una
+  pila nueva de 1.000 a quien iba perdiendo.
 - **Colonia Tovar y Sarisariñama corren más livianos.**
   La niebla, el mar de nubes y la brisa se dibujan de una vez y el paisaje
   se recorta por zonas: Tovar pinta la mitad de triángulos y ya no se traba.

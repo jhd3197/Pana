@@ -113,3 +113,19 @@ test('room options: al azar deals at once; revancha gives the button to whoever 
   g.setup(); assert.equal(g.lastPlace, loser);
   g.options.starter = 'revancha'; g.start(); assert.equal(g.phase, 'preflop'); assert.equal(g.players[g.dealer].id, loser);
 });
+
+test('leaving and coming back keeps your stack instead of a fresh one', () => {
+  const g = table(3), ana = g.players.find(p => p.id === 1);
+  ana.chips = 140;
+  g.drop(1); g.add(9, { name: 'Pana 1', avatar: {}, bot: false });
+  assert.equal(g.players.find(p => p.id === 9).chips, 140, 'chair still listed: the stack moves to the new seat');
+  assert.equal(ana.chips, 0);
+  const bruno = g.players.find(p => p.id === 2); bruno.chips = 0;
+  g.drop(2); g.prune(p => p.connected);
+  g.add(12, { name: ' pana 2 ', avatar: {}, bot: false });
+  assert.equal(g.players.find(p => p.id === 12).chips, 0, 'a busted pana does not refill by rejoining');
+  g.add(13, { name: 'Nueva', avatar: {}, bot: false });
+  assert.equal(g.players.find(p => p.id === 13).chips, g.options.stack, 'a new name starts with the table stack');
+  g.configure({ stack: g.options.stack * 2 });
+  assert.deepEqual(g.banked, {});
+});

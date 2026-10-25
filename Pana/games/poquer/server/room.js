@@ -17,7 +17,7 @@ export default class PokerRoom extends PanaRoom {
       if (!['lobby', 'finished'].includes(this.game.phase)) return;
       const humans = this.connectedMembers().length;
       // Panas who left stay listed only until the next hand deals.
-      this.game.players = this.game.players.filter(p => p.bot ? humans === 1 : p.connected);
+      this.game.prune(p => p.bot ? humans === 1 : p.connected);
       if (humans === 1) fillBots(3, (seat, info) => this.game.add(seat, info));
       this.game.start(); this.publish();
     });

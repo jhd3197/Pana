@@ -75,7 +75,13 @@ try {
   await act(caller, '#call'); await same(b, c); assert.equal(await b.evaluate(() => poquerDebug.room.state.phase), 'finished'); assert.equal(await c.evaluate(() => poquerDebug.room.state.board.length), 5);
   assert.equal(await b.evaluate(() => poquerDebug.room.state.players.reduce((n, p) => n + p.chips, 0)), bankroll);
   console.log('ok: online all-in and call run out the board and conserve both stacks');
-  await b.close(); await c.close();
+  // Leaving and coming back keeps your stack (after the all-in: 0, 1000 on a split, or 2000), not a fresh one.
+  const stack = await b.evaluate(() => poquerDebug.room.state.players.find(p => p.name === 'Luis').chips);
+  await c.close(); await wait(b, () => !poquerDebug.room.state.players.find(p => p.name === 'Luis')?.connected);
+  const back = await open('Luis'); await wait(b, () => poquerDebug.room.state.players.some(p => p.name === 'Luis' && p.connected));
+  assert.equal(await b.evaluate(() => poquerDebug.room.state.players.find(p => p.name === 'Luis' && p.connected).chips), stack, 'not a fresh stack');
+  console.log('ok: a pana who leaves and rejoins keeps their stack');
+  await b.close(); await back.close();
   const m = await open('Móvil', `${code}-mobile`, true); await m.screenshot({ path: `${out}/mobile-lobby.png` });
   // Practice opens with the cachos too: a finger on the table shakes, lifting it slams.
   await m.locator('#practice').tap(); await m.locator('#pana-starter-shake').waitFor();

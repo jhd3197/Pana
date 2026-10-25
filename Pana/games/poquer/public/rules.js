@@ -4,6 +4,7 @@ import { DEFAULT_OPTIONS, changeOptions } from './options.js';
 import { createStarter, starterInput, stepStarter, starterDone, starterResult, joinStarter } from '../../../engine/play/quien-empieza-rules.js';
 // Pure Texas Hold'em and Omaha with selectable betting limits. Cards are integers: suit * 13 + rank (deuce = 0).
 export const SMALL = 10, BIG = 20, STACK = 1000;
+const nameKey = (name) => String(name || '').trim().toLowerCase();
 export const HANDS = ['Carta alta', 'Pareja', 'Doble pareja', 'Trío', 'Escalera', 'Color', 'Full', 'Póquer', 'Escalera de color'];
 export const rank = card => card % 13 + 2;
 export const suit = card => Math.floor(card / 13);
@@ -77,11 +78,11 @@ export function settle(players, board, dealer, variant = 'texas') {
 }
 
 export class Poker {
-  constructor() { this.options = { ...DEFAULT_OPTIONS }; this.blindStartedAt = null; this.smallBlind = SMALL; this.bigBlind = BIG; this.streetBets = 0; this.mapId = 'plaza'; this.players = []; this.phase = 'lobby'; this.hand = 0; this.revision = 0; this.dealer = -1; this.board = []; this.turn = null; this.message = 'Invita a tus panas o juega con bots.'; this.result = null; this.starter = null; this.busted = []; this.lastPlace = null; }
+  constructor() { this.options = { ...DEFAULT_OPTIONS }; this.blindStartedAt = null; this.smallBlind = SMALL; this.bigBlind = BIG; this.streetBets = 0; this.mapId = 'plaza'; this.players = []; this.phase = 'lobby'; this.hand = 0; this.revision = 0; this.dealer = -1; this.board = []; this.turn = null; this.message = 'Invita a tus panas o juega con bots.'; this.result = null; this.starter = null; this.busted = []; this.lastPlace = null; this.banked = {}; }
   configure(patch, mapId) {
     if (this.phase !== 'lobby' || (mapId !== undefined && !validTableArena(mapId))) return false;
     const next = changeOptions(this.options, patch); if (!next) return false;
-    if (next.stack !== this.options.stack) for (const p of this.players) p.chips = next.stack;
+    if (next.stack !== this.options.stack) { for (const p of this.players) p.chips = next.stack; this.banked = {}; }
     if (next.blinds !== this.options.blinds || next.blindMinutes !== this.options.blindMinutes) {
       this.blindStartedAt = null; this.smallBlind = next.blinds / 2; this.bigBlind = next.blinds;
     }
@@ -107,13 +108,27 @@ export class Poker {
     for (const p of this.players) Object.assign(p, { hole: [], bet: 0, total: 0, folded: true, allin: false, actedAt: null, action: '' });
     this.revision++; return true;
   }
+  // A pana who leaves and comes back (a new seat in the room) gets their own
+  // stack back, not a fresh one: leaving never refills a short or busted stack.
+  // Matched by name, from a chair still listed or one cleared at the next deal.
   add(id, info) {
     this.revision++;
     let p = this.players.find(p => p.id === id);
     if (p) { Object.assign(p, info, { connected: true }); return p; }
-    p = { id, ...info, connected: true, chips: this.options.stack, hole: [], bet: 0, total: 0, folded: true, allin: false, actedAt: null };
+    let chips = this.options.stack;
+    const key = nameKey(info.name);
+    const before = !info.bot && this.players.find(q => !q.connected && !q.bot && nameKey(q.name) === key);
+    if (before) { chips = before.chips; before.chips = 0; }
+    else if (!info.bot && key in this.banked) { chips = this.banked[key]; delete this.banked[key]; }
+    p = { id, ...info, connected: true, chips, hole: [], bet: 0, total: 0, folded: true, allin: false, actedAt: null };
     this.players.push(p); if (this.phase === 'starter') joinStarter(this.starter, this.players.length - 1);
     return p;
+  }
+  // Clears chairs from the table, remembering each departed pana's stack.
+  prune(keep) {
+    const stays = this.players.filter(keep), seated = new Set(stays.filter(p => !p.bot).map(p => nameKey(p.name)));
+    for (const p of this.players) if (!keep(p) && !p.bot && !seated.has(nameKey(p.name))) this.banked[nameKey(p.name)] = p.chips;
+    this.players = stays;
   }
   get live() { return this.players.filter(p => !p.folded); }
   get active() { return this.live.filter(p => !p.allin); }
@@ -124,7 +139,7 @@ export class Poker {
   start(random = Math.random, now = Date.now()) {
     if (!['lobby', 'finished'].includes(this.phase) || this.funded.length < 2) return false;
     if (this.phase === 'finished') return this.deal(random, now);
-    this.players = this.players.filter(p => p.connected); this.busted = [];
+    this.prune(p => p.connected); this.busted = [];
     const last = this.players.findIndex(p => p.id === this.lastPlace);
     this.starter = createStarter({ seats: this.players.map((p, i) => i), need: 'first', seed: Math.floor(random() * 2 ** 32), option: this.options.starter, last: last < 0 ? null : last });
     this.phase = 'starter'; this.revision++; this.message = '¿Quién empieza? El dado más alto reparte primero.';
@@ -153,7 +168,7 @@ export class Poker {
   deal(random = Math.random, now = Date.now(), dealerId = null) {
     const firstDealer = this.players.find(p => p.id === dealerId && p.connected && (p.chips > 0 || this.options.rebuy));
     const nextDealer = firstDealer?.id ?? this.players[this.next(this.dealer, p => p.connected && (p.chips > 0 || this.options.rebuy))]?.id;
-    this.players = this.players.filter(p => p.connected);
+    this.prune(p => p.connected);
     this.dealer = this.players.findIndex(p => p.id === nextDealer);
     this.blindStartedAt ??= now;
     const level = this.options.blindMinutes ? Math.min(20, Math.max(0, Math.floor((now - this.blindStartedAt) / (this.options.blindMinutes * 60000)))) : 0;
