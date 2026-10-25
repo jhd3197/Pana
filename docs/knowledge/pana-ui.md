@@ -115,8 +115,11 @@ category, tab and row (choice, range or toggle) against `settings.js` keys,
 and game options against their own `get`/`set`. `/ajustes.html` shows the same
 workspace outside a game. Personal settings never change room rules.
 
-Layout: an icon rail (`.pana-settings-nav`, labels visible below 900 px),
-tabs inside each category (`role=tab`, so LB / RB walk them), one row per
+Layout: full screen on the striped purple backdrop, an icon rail flush
+with the left edge (`.pana-settings-nav`, labels as hover tips; a labelled
+row below 900 px), tabs inside each category with Q / E caps either side
+(Q and E switch tabs anywhere in Ajustes; on a pad LB / RB walk the
+innermost tab row and LT / RT the rail, `[data-pad-pages]`), one row per
 setting, and a detail panel that explains the row under the pointer or the
 focus. Choices are cyclers: the arrows step, and the pips are the options
 themselves (`role=radio`, `data-value`), so tests, a pad and screen readers

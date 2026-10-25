@@ -96,17 +96,28 @@ export function createSettingsWorkspace(root, legacy) {
   // Game options live in the game, not in settings.js: nothing announces them, so redraw here.
   const apply = (row, v) => { assign(row, v); if (row.set) redraw(); };
   const workspace = el('div', 'pana-settings-workspace');
-  const nav = el('nav', 'pana-settings-nav'); nav.setAttribute('aria-label', 'Categorías de ajustes');
+  const nav = el('nav', 'pana-settings-nav'); nav.setAttribute('aria-label', 'Categorías de ajustes'); nav.dataset.padPages = '';
   const main = el('div', 'pana-settings-main');
   const detail = el('aside', 'pana-settings-detail');
   const foot = el('div', 'pana-settings-foot');
-  const saved = el('span', 'pana-saved', 'Se guarda solo · En todos tus juegos');
+  const saved = el('span', 'pana-saved', 'Se guarda solo');
   const count = el('span', 'pana-changed-count');
-  const reset = button('Restablecer pestaña', () => {
+  // Button hints, like the games' HUD: each is the key (or pad button) and what it does.
+  const hint = (keys, pad, label, action, className = '') => {
+    const node = action ? button('', action, `pana-hint-button ${className}`) : el('span', `pana-hint-button ${className}`);
+    for (const key of keys) node.append(el('kbd', '', key));
+    for (const key of pad) { const k = el('kbd', 'pana-pad-cap', formatPadLabel(key, inputState().family)); k.dataset.padKey = key; node.append(k); }
+    node.append(label); return node;
+  };
+  const back = hint(['Esc'], ['B'], 'Atrás', () => root.closest('dialog')?.querySelector('.pana-close')?.click());
+  const tabsHint = hint(['Q', 'E'], ['LB', 'RB'], 'Pestañas', null);
+  const pagesHint = hint([], ['LT', 'RT'], 'Categorías', null, 'pana-pad-only');
+  const reset = hint([], [], 'Restablecer pestaña', () => {
     for (const row of current().rows || []) if (defaultOf(row) !== undefined) apply(row, defaultOf(row));
-    saved.textContent = 'Pestaña restablecida';
+    count.textContent = 'Pestaña restablecida';
   }, 'pana-reset');
-  foot.append(saved, count, reset);
+  foot.append(back, tabsHint, pagesHint, reset, count);
+  let stepper = null;
   let state = { cat: { keyboard: 'mouse', gamepad: 'pad', touch: 'touch' }[inputState().detected] || 'image', tab: 0, row: null };
   const rowRefreshers = [], railRefreshers = [];
   const current = () => categories.find(c => c.key === state.cat).tabs[state.tab];
@@ -129,7 +140,7 @@ export function createSettingsWorkspace(root, legacy) {
     state = { cat: key, tab, row: null };
     const c = categories.find(x => x.key === key);
     railButtons.forEach((b, i) => b.setAttribute('aria-current', String(categories[i].key === key)));
-    saved.textContent = c.note || 'Se guarda solo · En todos tus juegos';
+    saved.textContent = c.note || 'Se guarda solo';
     pageNode.id = `pana-settings-${key}`; pageNode.dataset.settingsCategory = key;
     const heading = el('h3', '', c.label); heading.id = `pana-category-${key}`;
     pageNode.setAttribute('aria-labelledby', heading.id);
@@ -138,12 +149,18 @@ export function createSettingsWorkspace(root, legacy) {
       const b = button(t.title, () => { state.tab = i; renderTab(); }, 'pana-setting-tab');
       b.setAttribute('role', 'tab'); tabs.append(b);
     });
+    // Q / E (LB / RB on a pad) step through the tabs, shown either side of them.
+    const stepTab = d => { const all = [...tabs.children]; all[(state.tab + d + all.length) % all.length]?.click(); };
+    stepper = c.tabs.length > 1 ? stepTab : null;
+    const steps = c.tabs.length > 1 ? [hint(['Q'], ['LB'], '', () => stepTab(-1), 'pana-tab-step'), hint(['E'], ['RB'], '', () => stepTab(1), 'pana-tab-step')] : [];
+    steps.forEach((b, i) => b.setAttribute('aria-label', i ? 'Pestaña siguiente' : 'Pestaña anterior'));
+    tabsHint.hidden = !steps.length;
     tabs.onkeydown = event => {
       const step = { ArrowRight: 1, ArrowLeft: -1 }[event.key]; if (!step) return;
       event.preventDefault(); const all = [...tabs.children], next = all[(state.tab + step + all.length) % all.length]; next.click(); next.focus();
     };
     const list = el('div', 'pana-setting-list'); list.setAttribute('role', 'tabpanel'); list.setAttribute('aria-labelledby', heading.id);
-    const head = el('div', 'pana-setting-head'); head.append(heading, tabs);
+    const head = el('div', 'pana-setting-head'); head.append(heading, ...(steps.length ? [steps[0], tabs, steps[1]] : [tabs]));
     pageNode.replaceChildren(head, list);
     function renderTab() {
       [...tabs.children].forEach((b, i) => { b.setAttribute('aria-selected', String(i === state.tab)); b.tabIndex = i === state.tab ? 0 : -1; });
@@ -350,6 +367,7 @@ export function createSettingsWorkspace(root, legacy) {
     status.textContent = s.connected ? 'Mando conectado' : 'Sin mando conectado';
     connected.textContent = s.id || 'Conecta tu mando y pulsa un botón para que el navegador lo reconozca.';
     caps.forEach((cap, index) => { cap.textContent = formatPadLabel(names[index], s.family); });
+    for (const k of workspace.querySelectorAll('kbd[data-pad-key]')) k.textContent = formatPadLabel(k.dataset.padKey, s.family);
     test.disabled = !s.connected;
     if (!s.connected) setTesting(false);
   });
@@ -366,7 +384,14 @@ export function createSettingsWorkspace(root, legacy) {
   // A change redraws what the panel says about the row (current option, curve).
   function redraw() { refresh(); if (state.row) { const row = state.row; state.row = null; describe(row); } }
   onSettings(() => redraw());
-  workspace.append(nav, main, detail, foot); root.replaceChildren(workspace); root.classList.add('pana-settings-panel');
+  workspace.append(nav, main, detail, foot, saved); root.replaceChildren(workspace); root.classList.add('pana-settings-panel');
+  // Q and E change tabs from anywhere in Ajustes, as LB and RB do on a pad.
+  workspace.addEventListener('keydown', event => {
+    if (event.ctrlKey || event.metaKey || event.altKey || !stepper || event.target.matches('input:not([type=range]), textarea')) return;
+    const d = { KeyQ: -1, KeyE: 1 }[event.code]; if (!d) return;
+    event.preventDefault(); stepper(d);
+    workspace.querySelector('.pana-setting-tab[aria-selected=true]')?.focus();
+  });
   choose(state.cat);
   let ticking = false;
   function tick() {

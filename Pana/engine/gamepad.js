@@ -221,7 +221,10 @@ function menuBack(scope) {
   (targets(scope).find(n => n.matches('.pana-close')) || [...document.querySelectorAll('[data-pad-back]')].find(shown))?.click();
 }
 function menuTab(scope, step) {
-  const tabs = [...scope.querySelectorAll('[role=tab]')].filter(shown);
+  // The innermost row of tabs on screen wins: inside Ajustes, LB / RB walk
+  // the category's own tabs; elsewhere the menu's.
+  const rows = [...scope.querySelectorAll('[role=tablist]')].map(list => [...list.querySelectorAll('[role=tab]')].filter(shown)).filter(row => row.length > 1);
+  const tabs = rows.at(-1) ?? [...scope.querySelectorAll('[role=tab]')].filter(shown);
   if (!tabs.length) return;
   const i = tabs.findIndex(t => t.getAttribute('aria-selected') === 'true');
   const next = tabs[(Math.max(0, i) + step + tabs.length) % tabs.length];
@@ -295,6 +298,16 @@ function menu(scope, pad, now, edge, hud) {
   if (edge('b')) menuBack(scope);
   if (edge('lb')) menuTab(scope, -1);
   if (edge('rb')) menuTab(scope, 1);
+  if (edge('lt')) menuPages(scope, -1);
+  if (edge('rt')) menuPages(scope, 1);
+}
+// LT / RT step through a menu's pages ([data-pad-pages], e.g. Ajustes' categories).
+function menuPages(scope, step) {
+  const pages = [...(scope.querySelector('[data-pad-pages]')?.children || [])].filter(shown);
+  if (pages.length < 2) return;
+  const i = pages.findIndex(p => p.getAttribute('aria-current') === 'true');
+  const next = pages[(Math.max(0, i) + step + pages.length) % pages.length];
+  next.click(); focusTarget(next);
 }
 
 function frame(now) {

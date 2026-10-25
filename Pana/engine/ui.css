@@ -210,24 +210,28 @@
 .pana-panel:not(.pana-settings-panel) > :is(.pana-primary,.pana-secondary,.pana-link,.pana-exit,.pana-share) { max-width: 680px; border-radius: 0; }
 .pana-panel:not(.pana-settings-panel) > .pana-keys { max-width: 1100px; }
 .pana-keys { gap: 20px 28px; }
-.pana-settings-panel { padding: 16px 4vw 0; overflow: hidden; }
+.pana-settings-panel { padding: 16px 2.5vw 0 0; overflow: hidden; }
+.pana-menu[data-tab=settings] { background: repeating-linear-gradient(-62deg, rgba(255, 255, 255, .025) 0 60px, transparent 60px 120px), radial-gradient(ellipse at 75% 40%, #2b2160, #120e2c 60%, #0b0920); }
+.pana-menu[data-tab=settings] .pana-tabs { border-bottom-color: rgba(255, 255, 255, .1); }
+.pana-menu[data-tab=settings] .pana-close { height: 48px; border: 0; background: #0e0b24; box-shadow: 4px 4px 0 #16161a; }
 /* Ajustes: rail | rows | detail, in the Banderín look of the games' HUDs. */
 .pana-menu[data-tab=settings] .pana-menu-head h2 { position: relative; isolation: isolate; display: inline-block; padding: 10px 26px 4px; color: #16161a; font-size: clamp(30px, 3.4vw, 46px); }
 .pana-menu[data-tab=settings] .pana-menu-head h2::before { content: ""; position: absolute; inset: 0; z-index: -1; background: var(--pm-yellow); box-shadow: 6px 6px 0 #16161a; transform: skewX(-10deg); }
-.pana-settings-workspace { height: 100%; display: grid; grid-template-columns: 76px minmax(0, 1fr) minmax(300px, 32%); grid-template-rows: minmax(0, 1fr) auto; gap: 0 28px; }
-.pana-settings-nav { display: flex; flex-direction: column; gap: 8px; padding: 4px 6px 8px 0; overflow: hidden auto; }
-.pana-rail-button { position: relative; flex: none; width: 70px; height: 64px; display: grid; place-items: center; border: 0; background: rgba(14, 11, 36, .85); color: var(--pm-muted); cursor: pointer; transition: background 150ms, color 150ms; }
+.pana-settings-workspace { height: 100%; display: grid; grid-template-columns: 86px minmax(0, 1fr) minmax(320px, 34%); grid-template-rows: minmax(0, 1fr) auto; gap: 0 clamp(24px, 3vw, 54px); }
+.pana-settings-nav { display: flex; flex-direction: column; gap: 8px; padding: 2px 10px 8px 0; overflow: visible; }
+.pana-rail-button { position: relative; flex: none; width: 76px; height: 64px; display: grid; place-items: center; border: 0; background: rgba(14, 11, 36, .85); color: var(--pm-muted); cursor: pointer; transition: background 150ms, color 150ms, width 150ms; }
 .pana-rail-button .pk-ico { width: 30px; height: 30px; }
 .pana-rail-button:hover { color: var(--pm-text); background: var(--pm-raised); }
-.pana-rail-button[aria-current=true] { background: var(--pm-yellow); color: #16161a; box-shadow: 4px 4px 0 #16161a; }
-.pana-rail-label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+.pana-rail-button[aria-current=true] { width: 86px; background: var(--pm-yellow); color: #16161a; box-shadow: 4px 4px 0 #16161a; }
+.pana-rail-label { position: absolute; left: calc(100% + 10px); top: 50%; z-index: 4; padding: 6px 10px; background: #16161a; color: #fff; font: 900 13px/1 Nunito, sans-serif; white-space: nowrap; transform: translateY(-50%); opacity: 0; pointer-events: none; transition: opacity 120ms; }
+.pana-rail-button:is(:hover, :focus-visible) .pana-rail-label { opacity: 1; }
 .pana-changed-dot { position: absolute; right: 7px; top: 7px; width: 9px; height: 9px; border-radius: 50%; background: var(--pm-teal); }
 .pana-changed-dot[hidden] { display: none; }
 .pana-settings-main { min-height: 0; overflow: auto; padding: 0 10px 24px 4px; overscroll-behavior: contain; scrollbar-color: var(--pm-line) transparent; }
-.pana-setting-head { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 18px; margin: 4px 0 16px; }
-.pana-setting-head h3 { margin: 0; font: 34px/1 var(--pm-display); color: #fff; letter-spacing: .02em; }
+.pana-setting-head { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; margin: 0 0 18px; }
+.pana-setting-head h3 { margin: 0 14px 0 0; font: 36px/1 var(--pm-display); color: #fff; letter-spacing: .02em; }
 .pana-setting-tabs { display: flex; flex-wrap: wrap; gap: 4px; }
-.pana-setting-tab { padding: 10px 14px 8px; border: 0; border-bottom: 3px solid transparent; background: none; color: var(--pm-muted); font: 900 14px Nunito, sans-serif; letter-spacing: .06em; text-transform: uppercase; cursor: pointer; }
+.pana-setting-tab { padding: 12px 18px 9px; border: 0; border-bottom: 3px solid transparent; background: none; color: var(--pm-muted); font: 900 16px Nunito, sans-serif; letter-spacing: .06em; text-transform: uppercase; cursor: pointer; }
 .pana-setting-tab:hover { color: var(--pm-text); }
 .pana-setting-tab[aria-selected=true] { color: var(--pm-yellow); border-bottom-color: var(--pm-yellow); }
 .pana-setting-row { position: relative; display: grid; grid-template-columns: minmax(0, 1fr) minmax(250px, 370px); align-items: center; min-height: 58px; margin-bottom: 6px; background: rgba(14, 11, 36, .75); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .06); transition: background 120ms, box-shadow 120ms; }
@@ -290,12 +294,23 @@
 .pana-menu [data-settings-help][hidden] { display: block !important; }
 [data-pana-input] .pana-menu [data-settings-help=keyboard] kbd { display: inline-flex !important; }
 .pana-menu-pad-hint { margin: 12px 0 0; color: var(--pm-yellow); font-size: 12px; word-spacing: 3px; }
-.pana-settings-foot { grid-column: 1 / -1; display: flex; flex-wrap: wrap; align-items: center; gap: 10px 18px; padding: 14px 0; border-top: 1px solid var(--pm-line); font: 800 13px Nunito, sans-serif; color: var(--pm-muted); }
-.pana-saved { display: flex; align-items: center; gap: 8px; color: var(--pm-teal); }
+.pana-hint-button { display: inline-flex; align-items: center; gap: 7px; padding: 8px 14px 7px; border: 0; background: rgba(14, 11, 36, .85); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .1); color: var(--pm-text); font: 900 14px/1 Nunito, sans-serif; }
+button.pana-hint-button { cursor: pointer; }
+button.pana-hint-button:hover { background: rgba(46, 37, 88, .95); }
+.pana-hint-button[hidden] { display: none; }
+.pana-hint-button kbd { min-width: 24px; height: 24px; display: inline-grid; place-items: center; padding: 0 6px; border-radius: 4px; background: #fff; color: #16161a; font: 900 12px/1 Nunito, sans-serif; }
+.pana-hint-button kbd.pana-pad-cap { border-radius: 12px; background: var(--pm-yellow); }
+.pana-tab-step { padding: 5px; background: transparent; box-shadow: none; }
+.pana-tab-step kbd { background: transparent; color: var(--pm-muted); box-shadow: inset 0 0 0 2px var(--pm-muted); }
+.pana-tab-step:hover kbd { color: #fff; box-shadow: inset 0 0 0 2px #fff; }
+.pana-settings-workspace kbd[data-pad-key], .pana-pad-only { display: none !important; }
+[data-pana-input=gamepad] .pana-settings-workspace kbd[data-pad-key] { display: inline-grid !important; }
+[data-pana-input=gamepad] .pana-settings-workspace .pana-pad-only:not([hidden]) { display: inline-flex !important; }
+[data-pana-input=touch] .pana-settings-workspace :is(span.pana-hint-button, .pana-tab-step) { display: none; }
+.pana-settings-foot { grid-column: 1 / -1; display: flex; flex-wrap: wrap; align-items: center; gap: 10px; padding: 14px 0 18px 2.5vw; border-top: 1px solid rgba(255, 255, 255, .1); font: 800 13px Nunito, sans-serif; color: var(--pm-muted); }
+.pana-saved { position: absolute; top: 50px; right: calc(4vw + 130px); display: flex; align-items: center; gap: 8px; color: var(--pm-teal); font: 800 14px/1 Nunito, sans-serif; }
 .pana-saved::before { content: ""; width: 10px; height: 10px; border-radius: 50%; background: var(--pm-teal); }
 .pana-changed-count { margin-left: auto; }
-.pana-reset { padding: 10px 16px; border: 0; background: rgba(14, 11, 36, .85); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .12); color: var(--pm-text); font: 900 14px Nunito, sans-serif; cursor: pointer; }
-.pana-reset:hover { background: var(--pm-raised); }
 .pana-input-monitor { padding: 18px 16px; background: #15112d; border-top: 3px solid var(--pm-yellow); }
 .pana-monitor-eyebrow { color: var(--pm-muted); font-size: 11px; font-weight: 900; letter-spacing: .12em; }
 .pana-device-name { margin: 8px 0; font: 25px var(--pm-display); }
@@ -324,7 +339,7 @@
 .pana-pad-prompts > span { display: inline-flex; align-items: center; gap: 6px; }
 .pana-pad-prompts kbd { color: #ffc629; font: 900 11px Nunito,sans-serif; border: 1px solid #67577f; padding: 3px 5px; }
 @media (max-width: 1150px) {
-  .pana-settings-workspace { grid-template-columns: 70px minmax(0, 1fr) minmax(260px, 30%); gap: 0 18px; }
+  .pana-settings-workspace { grid-template-columns: 86px minmax(0, 1fr) minmax(260px, 30%); gap: 0 18px; }
   .pana-setting-row { grid-template-columns: minmax(0, 1fr) minmax(220px, 300px); }
   .pana-settings-detail { padding-left: 18px; }
 }
@@ -334,7 +349,11 @@
   .pana-settings-nav { position: sticky; top: -16px; z-index: 2; flex-direction: row; gap: 6px; padding: 4px 0 12px; overflow: auto hidden; background: var(--pm-bg); }
   .pana-rail-button { width: auto; height: 46px; grid-auto-flow: column; gap: 8px; padding: 0 14px; }
   .pana-rail-button .pk-ico { width: 22px; height: 22px; }
-  .pana-rail-label { position: static; width: auto; height: auto; overflow: visible; clip-path: none; font: 900 14px Nunito, sans-serif; }
+  .pana-rail-label { position: static; padding: 0; background: none; color: inherit; font: 900 14px Nunito, sans-serif; transform: none; opacity: 1; }
+  .pana-rail-button[aria-current=true] { width: auto; }
+  .pana-settings-panel { padding-left: 4vw; padding-right: 4vw; }
+  .pana-settings-foot { padding-left: 0; }
+  .pana-saved { position: static; order: 9; }
   .pana-settings-main { overflow: visible; padding: 0 0 12px; }
   .pana-settings-detail { overflow: visible; padding: 18px 0 8px; border-left: 0; border-top: 1px solid rgba(255, 255, 255, .12); }
 }
@@ -348,6 +367,7 @@
   .pana-panel { padding: 20px; }
   .pana-settings-panel { padding-bottom: 0; }
   .pana-setting-head h3 { font-size: 28px; }
+  .pana-tab-step { display: none; }
   .pana-setting-row { grid-template-columns: minmax(0, 1fr); }
   .pana-setting-row.is-child { margin-left: 14px; }
   .pana-setting-row.is-child::before { left: -10px; width: 6px; }

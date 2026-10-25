@@ -32,6 +32,10 @@ try {
   await page.locator('.pana-settings-nav button', { hasText: 'Imagen' }).click();
   assert.equal(await page.getByRole('tab', { name: 'Ayudas', exact: true }).count(), 0, 'input hints stay on the device pages');
   assert.match(await page.locator('.pana-image-status').innerText(), /se dibuja a \d+×\d+/);
+  // Q / E step through the category's tabs from anywhere in Ajustes.
+  const selected = () => page.locator('.pana-setting-tab[aria-selected=true]').innerText();
+  await page.keyboard.press('KeyE'); assert.match(await selected(), /rendimiento/i);
+  await page.keyboard.press('KeyQ'); assert.match(await selected(), /calidad/i);
   await page.getByRole('radiogroup', { name: 'Sombras' }).getByRole('radio', { name: 'Bajas' }).click();
   const after = await page.evaluate(async () => {
     const s = await import('/engine/settings.js'), perf = await import('/engine/perf.js');
