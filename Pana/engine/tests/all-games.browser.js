@@ -63,6 +63,7 @@ try {
       await page.locator('#pana-tab-settings').click();
       await page.locator('.pana-settings-workspace').waitFor();
       await page.locator('.pana-settings-nav button', { hasText: 'Ratón y teclado' }).click();
+      await page.getByRole('tab', { name: 'Ratón', exact: true }).click();
       assert.equal(await page.locator('#pana-input-mouseSensitivity').isVisible(), true, `${game}: shared input controls visible`);
       await page.setViewportSize({ width: 390, height: 844 });
       assert.equal(await page.locator('.pana-menu').evaluate(n => n.scrollWidth > n.clientWidth + 1), false, `${game}: settings fit a phone`);

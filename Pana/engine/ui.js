@@ -201,10 +201,10 @@ export function createGameMenu({
     if (workspace) { workspace.refresh(); return; }
     workspaceLoading ??= import('./settings-workspace.js').then(({ createSettingsWorkspace }) => {
       workspace = createSettingsWorkspace(settingsPanel, {
-        audio: [soundSwitch, volume, music].map(n => n.closest('.pana-row')),
-        image: [qualityGroup.node], touch: orientationGroup ? [orientationGroup.node] : [],
-        hints: hintsSwitch.closest('.pana-row'), game: gameOptions.map(o => o.node), title,
-        help: { keyboard: keyboardRows, gamepad: padRows, touch: touchHelp }, tips,
+        sound, options, title, tips,
+        orientation: orientationGroup ? [['juego', ownWay], ...Object.entries(ORIENTATIONS)] : null,
+        // The hub has no game to explain: no Cómo se juega tabs there.
+        help: pause ? { keyboard: controls.length ? keyboardRows : null, gamepad: padRows, touch: touchHelp } : {},
       });
       workspace.refresh();
     }).catch(() => { workspaceLoading = null; defaultNotify('No se pudieron cargar los controles. Vuelve a abrir Ajustes.'); });
@@ -212,7 +212,7 @@ export function createGameMenu({
 
   function showTab(key) {
     if (key === 'controls') key = 'settings';
-    tab = key;
+    tab = key; dialog.dataset.tab = key;
     for (const [k, , panel] of tabs) panel.hidden = k !== key;
     for (const b of tabButtons) { const on = b.dataset.tab === key; b.setAttribute('aria-selected', String(on)); b.tabIndex = on ? 0 : -1; }
     dialog.querySelector('h2').textContent = key === 'settings' ? 'A tu manera' : heading;

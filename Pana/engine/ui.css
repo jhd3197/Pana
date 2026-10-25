@@ -210,65 +210,112 @@
 .pana-panel:not(.pana-settings-panel) > :is(.pana-primary,.pana-secondary,.pana-link,.pana-exit,.pana-share) { max-width: 680px; border-radius: 0; }
 .pana-panel:not(.pana-settings-panel) > .pana-keys { max-width: 1100px; }
 .pana-keys { gap: 20px 28px; }
-.pana-settings-panel { padding: 20px 4vw 0; overflow: hidden; }
-.pana-settings-workspace { height: 100%; display: grid; grid-template-columns: 190px minmax(0,1fr) 280px; grid-template-rows: minmax(0,1fr) auto; gap: 0 36px; }
-.pana-settings-workspace.without-monitor { grid-template-columns: 190px minmax(0,1fr); }
-.pana-input-advanced { margin-top: 26px; border-top: 1px solid var(--pm-line); padding-top: 18px; }
-.pana-input-advanced summary { cursor: pointer; color: var(--pm-muted); }
-.pana-device-help { margin: 16px 0 24px; padding-top: 20px; border-top: 1px solid var(--pm-line); }
-.pana-device-help h4 { margin: 0 0 18px; font: 24px var(--pm-display); color: var(--pm-yellow); }
+.pana-settings-panel { padding: 16px 4vw 0; overflow: hidden; }
+/* Ajustes: rail | rows | detail, in the Banderín look of the games' HUDs. */
+.pana-menu[data-tab=settings] .pana-menu-head h2 { position: relative; isolation: isolate; display: inline-block; padding: 10px 26px 4px; color: #16161a; font-size: clamp(30px, 3.4vw, 46px); }
+.pana-menu[data-tab=settings] .pana-menu-head h2::before { content: ""; position: absolute; inset: 0; z-index: -1; background: var(--pm-yellow); box-shadow: 6px 6px 0 #16161a; transform: skewX(-10deg); }
+.pana-settings-workspace { height: 100%; display: grid; grid-template-columns: 76px minmax(0, 1fr) minmax(300px, 32%); grid-template-rows: minmax(0, 1fr) auto; gap: 0 28px; }
+.pana-settings-nav { display: flex; flex-direction: column; gap: 8px; padding: 4px 6px 8px 0; overflow: hidden auto; }
+.pana-rail-button { position: relative; flex: none; width: 70px; height: 64px; display: grid; place-items: center; border: 0; background: rgba(14, 11, 36, .85); color: var(--pm-muted); cursor: pointer; transition: background 150ms, color 150ms; }
+.pana-rail-button .pk-ico { width: 30px; height: 30px; }
+.pana-rail-button:hover { color: var(--pm-text); background: var(--pm-raised); }
+.pana-rail-button[aria-current=true] { background: var(--pm-yellow); color: #16161a; box-shadow: 4px 4px 0 #16161a; }
+.pana-rail-label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+.pana-changed-dot { position: absolute; right: 7px; top: 7px; width: 9px; height: 9px; border-radius: 50%; background: var(--pm-teal); }
+.pana-changed-dot[hidden] { display: none; }
+.pana-settings-main { min-height: 0; overflow: auto; padding: 0 10px 24px 4px; overscroll-behavior: contain; scrollbar-color: var(--pm-line) transparent; }
+.pana-setting-head { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 18px; margin: 4px 0 16px; }
+.pana-setting-head h3 { margin: 0; font: 34px/1 var(--pm-display); color: #fff; letter-spacing: .02em; }
+.pana-setting-tabs { display: flex; flex-wrap: wrap; gap: 4px; }
+.pana-setting-tab { padding: 10px 14px 8px; border: 0; border-bottom: 3px solid transparent; background: none; color: var(--pm-muted); font: 900 14px Nunito, sans-serif; letter-spacing: .06em; text-transform: uppercase; cursor: pointer; }
+.pana-setting-tab:hover { color: var(--pm-text); }
+.pana-setting-tab[aria-selected=true] { color: var(--pm-yellow); border-bottom-color: var(--pm-yellow); }
+.pana-setting-row { position: relative; display: grid; grid-template-columns: minmax(0, 1fr) minmax(250px, 370px); align-items: center; min-height: 58px; margin-bottom: 6px; background: rgba(14, 11, 36, .75); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .06); transition: background 120ms, box-shadow 120ms; }
+.pana-setting-row:is(:hover, :focus-within) { background: linear-gradient(90deg, rgba(255, 198, 41, .22), rgba(255, 198, 41, .06)); box-shadow: inset 0 0 0 3px var(--pm-yellow); }
+.pana-setting-row.is-child { margin-left: 26px; }
+.pana-setting-row.is-child::before { content: ""; position: absolute; left: -16px; top: 0; bottom: 50%; width: 10px; border-left: 2px solid rgba(255, 255, 255, .2); border-bottom: 2px solid rgba(255, 255, 255, .2); }
+.pana-setting-name { display: flex; align-items: center; gap: 10px; padding: 12px 18px 12px 22px; font: 800 17px/1.25 Nunito, sans-serif; color: var(--pm-text); }
+.pana-setting-name .pana-changed-dot { position: static; flex: none; width: 8px; height: 8px; }
+.pana-setting-value { display: flex; align-items: center; gap: 12px; align-self: stretch; min-width: 0; padding: 0 14px; border-left: 1px solid rgba(255, 255, 255, .08); font: 800 16px Nunito, sans-serif; color: #fff; }
+.pana-setting-row :focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
+.pana-switch-state { flex: 1; }
+.pana-setting-number { min-width: 64px; padding: 7px 8px; background: rgba(0, 0, 0, .35); text-align: right; font-variant-numeric: tabular-nums; }
+.pana-setting-value input[type=range] { --fill: 0%; --default: -10%; flex: 1; min-width: 80px; height: 26px; margin: 0; appearance: none; cursor: ew-resize;
+  background: linear-gradient(90deg, transparent calc(var(--default) - 1px), rgba(255, 255, 255, .55) calc(var(--default) - 1px) calc(var(--default) + 1px), transparent calc(var(--default) + 1px)) center / 100% 18px no-repeat; }
+.pana-setting-value input[type=range]::-webkit-slider-runnable-track { height: 6px; background: linear-gradient(90deg, var(--pm-yellow) var(--fill), rgba(255, 255, 255, .15) var(--fill)); }
+.pana-setting-value input[type=range]::-webkit-slider-thumb { appearance: none; width: 16px; height: 16px; margin-top: -5px; border: 0; background: #fff; transform: rotate(45deg); box-shadow: 0 0 0 3px #16161a; }
+.pana-setting-value input[type=range]::-moz-range-track { height: 6px; background: rgba(255, 255, 255, .15); }
+.pana-setting-value input[type=range]::-moz-range-progress { height: 6px; background: var(--pm-yellow); }
+.pana-setting-value input[type=range]::-moz-range-thumb { width: 14px; height: 14px; border: 0; border-radius: 0; background: #fff; transform: rotate(45deg); box-shadow: 0 0 0 3px #16161a; }
+.pana-cycler { flex: 1; display: flex; align-items: center; gap: 6px; min-width: 0; height: 100%; }
+.pana-cycler-arrow { flex: none; width: 32px; height: 32px; display: grid; place-items: center; border: 0; background: none; color: var(--pm-yellow); cursor: pointer; }
+.pana-cycler-arrow .pk-ico { width: 16px; height: 16px; }
+.pana-cycler-arrow:hover { background: rgba(255, 255, 255, .1); }
+.pana-cycler-middle { flex: 1; min-width: 0; display: grid; justify-items: center; gap: 4px; padding: 8px 0; text-align: center; }
+.pana-cycler-value { font: 800 16px/1.15 Nunito, sans-serif; }
+.pana-pips { display: flex; flex-wrap: wrap; justify-content: center; gap: 2px; }
+.pana-pips [role=radio] { position: relative; width: 20px; height: 14px; padding: 0; border: 0; background: none; cursor: pointer; }
+.pana-pips [role=radio]::before { content: ""; position: absolute; left: 3px; right: 3px; top: 5px; height: 4px; background: rgba(255, 255, 255, .22); }
+.pana-pips [role=radio][aria-checked=true]::before { background: var(--pm-yellow); }
+.pana-settings-detail { min-height: 0; overflow: auto; display: flex; flex-direction: column; gap: 12px; padding: 4px 4px 24px 28px; border-left: 1px solid rgba(255, 255, 255, .12); }
+.pana-settings-detail > h3 { margin: 0; font: 36px/1 var(--pm-display); color: #fff; letter-spacing: .02em; }
+.pana-detail-copy { margin: 0; font: 700 16px/1.45 Nunito, sans-serif; color: #d9d3f0; }
+.pana-detail-options { display: grid; gap: 7px; }
+.pana-detail-options p { margin: 0; font: 700 14px/1.4 Nunito, sans-serif; color: #c9c3e6; }
+.pana-detail-options b { color: var(--pm-teal); font-weight: 900; }
+.pana-detail-options .is-current b { color: var(--pm-yellow); }
+.pana-detail-note { margin: 0; padding: 10px 12px; background: rgba(255, 255, 255, .06); font: 700 14px/1.4 Nunito, sans-serif; color: var(--pm-muted); }
+.pana-detail-note:empty { display: none; }
+.pana-detail-preview { margin-top: 6px; }
+.pana-detail-preview h4 { margin: 0 0 8px; font: 900 12px/1 Nunito, sans-serif; letter-spacing: .14em; color: var(--pm-muted); text-transform: uppercase; }
+.pana-curve { display: block; width: 100%; height: auto; background: rgba(255, 255, 255, .03); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .1); }
+.pana-curve text { font: 800 11px Nunito, sans-serif; fill: var(--pm-muted); }
+.pana-curve-dead { fill: rgba(255, 75, 75, .2); }
+.pana-curve-axis { fill: none; stroke: rgba(255, 255, 255, .25); }
+.pana-curve-even { stroke: rgba(255, 255, 255, .15); stroke-dasharray: 4 4; }
+.pana-curve-line { fill: none; stroke: var(--pm-yellow); stroke-width: 4; }
+.pana-meter { --meter: var(--pm-teal); position: relative; height: 22px; margin: 2px 0 10px; background: repeating-linear-gradient(90deg, rgba(255, 255, 255, .25) 0 2px, transparent 2px 5px); }
+.pana-meter[data-level=fair] { --meter: var(--pm-yellow); }
+.pana-meter[data-level=low] { --meter: var(--pm-coral); }
+.pana-meter i { position: absolute; inset: 0 auto 0 0; width: var(--at); background: repeating-linear-gradient(90deg, var(--meter) 0 2px, transparent 2px 5px); }
+.pana-meter u { position: absolute; top: -6px; bottom: -4px; left: calc(60 / 144 * 100%); width: 3px; background: #fff; }
+.pana-image-status { margin: 0; font: 700 14px/1.5 Nunito, sans-serif; color: var(--pm-text); }
+.pana-reload-note { display: grid; gap: 10px; padding: 12px; box-shadow: inset 0 0 0 2px var(--pm-yellow); }
+.pana-reload-note[hidden] { display: none; }
+.pana-reload-note p { margin: 0; color: var(--pm-text); font-size: 14px; }
+.pana-reload-note .pana-test-button { margin: 0; }
+.pana-device-help { margin: 0; }
 .pana-device-help .pana-keys-title { display: none; }
+.pana-tips-title { margin: 26px 0 0; font: 20px/1 var(--pm-display); color: var(--pm-muted); letter-spacing: .04em; }
 .pana-menu [data-settings-help][hidden] { display: block !important; }
 [data-pana-input] .pana-menu [data-settings-help=keyboard] kbd { display: inline-flex !important; }
-.pana-settings-nav { display: flex; flex-direction: column; align-items: stretch; gap: 6px; padding: 12px 4px; overflow: hidden auto; }
-.pana-settings-nav button { flex: none; min-height: 48px; padding: 12px 14px; border: 0; border-radius: 0; background: transparent; color: var(--pm-muted); font: 900 16px Nunito,sans-serif; text-align: left; cursor: pointer; }
-.pana-settings-nav button[aria-current=true] { background: var(--pm-yellow); color: #141021; transform: skew(-6deg); }
-.pana-settings-nav button:hover { color: var(--pm-text); background: var(--pm-raised); }
-.pana-settings-nav button[aria-current=true]:hover { background: var(--pm-yellow); color: #141021; }
 .pana-menu-pad-hint { margin: 12px 0 0; color: var(--pm-yellow); font-size: 12px; word-spacing: 3px; }
-.pana-settings-main { overflow: auto; padding: 8px 8px 32px 0; overscroll-behavior: contain; scrollbar-color: var(--pm-line) transparent; }
-.pana-settings-section h3 { margin: 4px 0 6px; font: 32px var(--pm-display); color: var(--pm-yellow); }
-.pana-reload-note { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px 24px; margin-top: 8px; padding: 16px 0; border-top: 1px solid var(--pm-yellow); }
-.pana-reload-note[hidden] { display: none; }
-.pana-reload-note p { flex: 1 1 260px; margin: 0; color: var(--pm-text); }
-.pana-image-status { margin: 0 0 20px; max-width: 650px; font-size: 14px; color: var(--pm-text); line-height: 1.5; }
-.pana-category-description { margin: 0 0 28px; max-width: 650px; font-size: 15px; color: var(--pm-muted); line-height: 1.6; }
-.pana-setting-line { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 16px 24px; padding: 20px 0; border-top: 1px solid var(--pm-line); }
-.pana-setting-copy { flex: 1 1 210px; }
-.pana-setting-label { display: block; font-size: 16px; font-weight: 900; }
-.pana-setting-copy small { display: block; margin-top: 5px; color: var(--pm-muted); font-size: 13px; font-weight: 600; line-height: 1.5; }
-.pana-setting-range { display: flex; align-items: center; gap: 16px; flex: 1 1 240px; max-width: 350px; }
-.pana-setting-range input { width: 100%; min-width: 80px; height: 32px; accent-color: var(--pm-yellow); cursor: pointer; }
-.pana-setting-range output { min-width: 58px; color: var(--pm-yellow); text-align: right; font-variant-numeric: tabular-nums; font-weight: 900; }
-.pana-settings-workspace .pana-row { margin: 0; border: 0; border-top: 1px solid var(--pm-line); padding: 20px 0; border-radius: 0; background: transparent; }
-.pana-settings-workspace .pana-segments { flex-wrap: wrap; border: 0; border-radius: 0; background: #080719; gap: 3px; padding: 4px; }
-.pana-settings-workspace .pana-segments button { min-height: 40px; border-radius: 0; }
-.pana-settings-workspace .pana-segments button[aria-checked=true] { background: var(--pm-yellow); color: #141021; }
-.pana-settings-note { margin: 28px 0 0; color: var(--pm-muted); font-size: 14px; line-height: 1.7; }
-.pana-settings-foot { grid-column: 1 / -1; display: flex; justify-content: space-between; align-items: center; gap: 16px; padding: 16px 0; border-top: 1px solid var(--pm-line); font-size: 13px; color: var(--pm-muted); }
-.pana-reset { background: transparent; border: 1px solid var(--pm-line); padding: 10px 16px; color: var(--pm-text); cursor: pointer; }
-.pana-input-monitor { align-self: start; min-height: 0; max-height: 100%; margin: 8px 0; padding: 22px 18px; background: #15112d; border-top: 3px solid var(--pm-yellow); overflow: auto; }
+.pana-settings-foot { grid-column: 1 / -1; display: flex; flex-wrap: wrap; align-items: center; gap: 10px 18px; padding: 14px 0; border-top: 1px solid var(--pm-line); font: 800 13px Nunito, sans-serif; color: var(--pm-muted); }
+.pana-saved { display: flex; align-items: center; gap: 8px; color: var(--pm-teal); }
+.pana-saved::before { content: ""; width: 10px; height: 10px; border-radius: 50%; background: var(--pm-teal); }
+.pana-changed-count { margin-left: auto; }
+.pana-reset { padding: 10px 16px; border: 0; background: rgba(14, 11, 36, .85); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .12); color: var(--pm-text); font: 900 14px Nunito, sans-serif; cursor: pointer; }
+.pana-reset:hover { background: var(--pm-raised); }
+.pana-input-monitor { padding: 18px 16px; background: #15112d; border-top: 3px solid var(--pm-yellow); }
 .pana-monitor-eyebrow { color: var(--pm-muted); font-size: 11px; font-weight: 900; letter-spacing: .12em; }
 .pana-device-name { margin: 8px 0; font: 25px var(--pm-display); }
 .pana-device-status { margin: 0; color: var(--pm-yellow); font-size: 13px; }
 .pana-device-detail { color: var(--pm-muted); font-size: 12px; line-height: 1.5; overflow-wrap: anywhere; margin: 8px 0 14px; }
-.pana-stick-pair { display: flex; justify-content: space-between; gap: 10px; margin: 22px 0 18px; }
+.pana-stick-pair { display: flex; justify-content: space-around; gap: 10px; margin: 22px 0 18px; }
 .pana-stick-block { text-align: center; font-size: 11px; color: var(--pm-muted); }
 .pana-stick-disc { position: relative; height: 104px; width: 104px; border: 1px solid #52466e; border-radius: 50%; margin: 8px 0; background: linear-gradient(transparent calc(50% - .5px),#52466e 50%,transparent calc(50% + .5px)),linear-gradient(90deg,transparent calc(50% - .5px),#52466e 50%,transparent calc(50% + .5px)); }
 .pana-stick-disc span { position: absolute; left: 50%; top: 50%; border-radius: 50%; }
-.pana-stick-deadzone { translate: -50% -50%; background: #a49cc81c; border: 1px dashed #a49cc8; }
-.pana-stick-disc .pana-stick-deadzone { border-radius: 0; }
+.pana-stick-deadzone { translate: -50% -50%; background: rgba(255, 75, 75, .2); border: 2px solid var(--pm-coral); }
 .pana-stick-raw { width: 9px; height: 9px; margin: -4.5px; background: #fff; opacity: .6; }
 .pana-stick-dot { width: 11px; height: 11px; margin: -5.5px; border: 2px solid #ffc629; background: #ffc62955; }
 .pana-stick-values { font-variant-numeric: tabular-nums; }
 .pana-pad-buttons { display: grid; grid-template-columns: repeat(4,1fr); gap: 5px; }
 .pana-test-cap { display: grid; place-items: center; min-height: 29px; border: 1px solid #403553; font-size: 10px; color: var(--pm-muted); background: linear-gradient(0deg,#ffc62933 var(--pressure,0%),transparent 0); }
 .pana-test-cap.pressed { background: #ffc629; color: #141021; border-color: #ffc629; }
-.pana-test-button { width: 100%; padding: 12px 10px; margin: 16px 0 0; background: transparent; border: 1px solid var(--pm-yellow); color: var(--pm-yellow); font: 900 13px Nunito,sans-serif; cursor: pointer; }
-.pana-test-button[aria-pressed=true] { background: var(--pm-yellow); color: #141021; }
+.pana-test-button { align-self: flex-start; padding: 10px 16px 8px; margin: 4px 0 0; border: 0; background: var(--pm-teal); color: #16161a; box-shadow: 3px 3px 0 #16161a; font: 900 14px Nunito, sans-serif; cursor: pointer; }
+.pana-input-monitor .pana-test-button { width: 100%; margin-top: 16px; }
+.pana-test-button[aria-pressed=true] { background: var(--pm-yellow); }
 .pana-test-button:disabled { opacity: .4; cursor: default; }
-.pana-vibration-test { max-width: 400px; }
-.pana-vibration-test > span { display: block; margin-top: 8px; color: var(--pm-muted); font-size: 12px; }
 /* Keyboard reminders include legacy unmarked keycaps. Pad labels opt out. */
 :is([data-pana-input=gamepad],[data-pana-input=touch]) :is([data-pana-hint],kbd:not([data-pad-key])) { display: none !important; }
 [data-pana-input=gamepad] :is(.pk-touch,.pk-dpad) { display: none !important; }
@@ -277,41 +324,44 @@
 .pana-pad-prompts > span { display: inline-flex; align-items: center; gap: 6px; }
 .pana-pad-prompts kbd { color: #ffc629; font: 900 11px Nunito,sans-serif; border: 1px solid #67577f; padding: 3px 5px; }
 @media (max-width: 1150px) {
-  .pana-settings-workspace { grid-template-columns: 155px minmax(0,1fr) 250px; gap: 0 20px; }
-  .pana-input-monitor { padding: 18px 12px; }
+  .pana-settings-workspace { grid-template-columns: 70px minmax(0, 1fr) minmax(260px, 30%); gap: 0 18px; }
+  .pana-setting-row { grid-template-columns: minmax(0, 1fr) minmax(220px, 300px); }
+  .pana-settings-detail { padding-left: 18px; }
 }
 @media (max-width: 900px) {
   .pana-settings-panel { overflow: auto; }
-  .pana-settings-workspace { height: auto; min-height: 100%; grid-template-columns: minmax(0,1fr) 250px; grid-template-rows: auto 1fr auto; }
-  .pana-settings-workspace.without-monitor { grid-template-columns: minmax(0,1fr); }
-  .pana-settings-nav { grid-column: 1/-1; flex-direction: row; gap: 6px; padding: 4px 3px 16px; overflow: auto hidden; }
-  .pana-settings-nav button { min-height: 42px; padding: 10px 14px; font-size: 14px; }
-  .pana-settings-main { overflow: visible; }
-  .pana-settings-foot { flex-wrap: wrap; }
+  .pana-settings-workspace { display: flex; flex-direction: column; height: auto; min-height: 100%; }
+  .pana-settings-nav { position: sticky; top: -16px; z-index: 2; flex-direction: row; gap: 6px; padding: 4px 0 12px; overflow: auto hidden; background: var(--pm-bg); }
+  .pana-rail-button { width: auto; height: 46px; grid-auto-flow: column; gap: 8px; padding: 0 14px; }
+  .pana-rail-button .pk-ico { width: 22px; height: 22px; }
+  .pana-rail-label { position: static; width: auto; height: auto; overflow: visible; clip-path: none; font: 900 14px Nunito, sans-serif; }
+  .pana-settings-main { overflow: visible; padding: 0 0 12px; }
+  .pana-settings-detail { overflow: visible; padding: 18px 0 8px; border-left: 0; border-top: 1px solid rgba(255, 255, 255, .12); }
 }
 @media (max-width: 620px) {
   .pana-menu-head { padding: 20px 20px 14px; }
   .pana-menu-head h2 { font-size: 36px; padding-right: 65px; }
+  .pana-menu[data-tab=settings] .pana-menu-head h2 { font-size: 28px; }
   .pana-close { right: 20px; top: 23px; min-width: 66px; padding: 0 10px; font-size: 13px; }
   .pana-tabs { margin: 0 20px; gap: 3px; }
   .pana-tabs [role=tab] { min-width: 0; padding: 10px 14px 7px; font-size: 18px; }
   .pana-panel { padding: 20px; }
   .pana-settings-panel { padding-bottom: 0; }
-  .pana-settings-workspace { display: flex; flex-direction: column; }
-  .pana-settings-nav { position: sticky; top: -20px; flex: none; background: #0d0b21; z-index: 2; padding-top: 8px; }
-  .pana-settings-main { flex: 1; padding: 8px 0 28px; }
-  .pana-settings-section h3 { font-size: 28px; }
-  .pana-setting-range { max-width: none; flex-basis: 100%; }
-  .pana-input-monitor { width: 100%; display: grid; grid-template-columns: minmax(0,1fr) minmax(0,1fr); gap: 0 16px; padding: 20px; }
-  .pana-input-monitor > :is(small,h3,p,.pana-test-button) { grid-column: 1/-1; }
+  .pana-setting-head h3 { font-size: 28px; }
+  .pana-setting-row { grid-template-columns: minmax(0, 1fr); }
+  .pana-setting-row.is-child { margin-left: 14px; }
+  .pana-setting-row.is-child::before { left: -10px; width: 6px; }
+  .pana-setting-name { padding: 12px 14px 4px; }
+  .pana-setting-value { min-height: 50px; padding: 0 10px 4px; border-left: 0; }
+  .pana-settings-detail > h3 { font-size: 28px; }
   .pana-stick-pair { flex-wrap: wrap; justify-content: center; margin: 10px 0; }
-  .pana-pad-buttons { align-content: center; grid-template-columns: repeat(2,1fr); }
-  .pana-settings-foot { margin-top: 20px; padding-bottom: max(20px,env(safe-area-inset-bottom)); }
+  .pana-settings-foot { padding-bottom: max(20px, env(safe-area-inset-bottom)); }
+  .pana-changed-count { margin-left: 0; }
 }
 @media (max-height: 650px) and (min-width: 901px) {
-  .pana-input-monitor { max-height: 100%; overflow: auto; }
   .pana-menu-head { padding-top: 16px; padding-bottom: 12px; }
   .pana-close { top: 20px; }
+  .pana-rail-button { height: 52px; }
 }
 
 /* Shared in-game navigation: upright labels on the same angled plates as the HUD.

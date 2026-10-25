@@ -30,7 +30,7 @@ try {
   await page.locator('#pana-tab-settings').click();
   await page.locator('.pana-settings-workspace').waitFor();
   await page.locator('.pana-settings-nav button', { hasText: 'Imagen' }).click();
-  assert.equal(await page.getByText('Opciones de las ayudas', { exact: true }).isVisible(), false, 'input hints stay on the device pages');
+  assert.equal(await page.getByRole('tab', { name: 'Ayudas', exact: true }).count(), 0, 'input hints stay on the device pages');
   assert.match(await page.locator('.pana-image-status').innerText(), /se dibuja a \d+×\d+/);
   await page.getByRole('radiogroup', { name: 'Sombras' }).getByRole('radio', { name: 'Bajas' }).click();
   const after = await page.evaluate(async () => {

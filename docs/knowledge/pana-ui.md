@@ -110,16 +110,27 @@ setting can hide them.
 
 The menu occupies the viewport, keeping native dialog focus containment and
 each game's `onOpen` / `onClose` behavior. `settings-workspace.js` loads only
-when Ajustes opens. It moves the existing audio, image and game option nodes
-into categories, preserving IDs and handlers. `/ajustes.html` exposes the same
+when Ajustes opens and builds the page from data: `catalog()` lists every
+category, tab and row (choice, range or toggle) against `settings.js` keys,
+and game options against their own `get`/`set`. `/ajustes.html` shows the same
 workspace outside a game. Personal settings never change room rules.
 
-Device instructions and tuning share one category per device, initially the
-active device. There is no separate Controls tab or input landing page.
-Controller deadzone, movement and look sensitivity remain visible; other tuning and
-manual hint overrides live in disclosures. The live monitor appears only in
-Mando and names the connected hardware, even while a mouse adjusts it.
-Legacy `open('controls')` calls route to Ajustes.
+Layout: an icon rail (`.pana-settings-nav`, labels visible below 900 px),
+tabs inside each category (`role=tab`, so LB / RB walk them), one row per
+setting, and a detail panel that explains the row under the pointer or the
+focus. Choices are cyclers: the arrows step, and the pips are the options
+themselves (`role=radio`, `data-value`), so tests, a pad and screen readers
+keep working. A teal dot marks a value changed from `DEFAULTS` (on the row
+and its rail icon). **Restablecer pestaña** resets only the tab on screen.
+Previews are real or absent: the stick response comes from `inputAxis`, the
+Mando monitor reads the connected pad, and Imagen measures the running
+scene with `engine/perf.js`. Nothing is estimated.
+
+Inside a game, each device category opens on **Cómo se juega** (that
+device's controls and the game's tips), then its tuning tabs and **Ayudas**
+(hint device and visibility). The hub has no help tabs. The category
+initially shown follows the active device. Legacy `open('controls')` calls
+route to Ajustes.
 
 `pana:settings` stores independent `mouseSensitivity`, `mouseVertical`,
 `mouseInvertY`, `touchSensitivity`, `touchInvertY`, `padDeadzone`,

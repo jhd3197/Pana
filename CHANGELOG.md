@@ -8,6 +8,9 @@ becomes the GitHub release's notes.
 
 ## Unreleased
 
+- **Ajustes tiene cara nueva: categorías a un lado, una fila por ajuste y la explicación al lado.**
+  Las flechas cambian cada opción, un punto verde marca lo que tocaste, y el
+  panel muestra la curva del stick, el mando en vivo o lo que cuesta la imagen.
 - **Ajustes > Imagen ahora separa resolución, sombras, detalle, límite de FPS y suavizado.**
   Nítida, Equilibrada y Rápida siguen como punto de partida; puedes ver
   FPS y tiempo de cuadro en pantalla, apagar el ajuste automático, y en
