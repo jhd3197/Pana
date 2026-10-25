@@ -33,6 +33,9 @@ becomes the GitHub release's notes.
   Una pregunta sin exactamente cuatro respuestas distintas nunca llega al
   tablero, un audio que falla salta al siguiente en vez de callar el resto,
   y la respuesta correcta ya no viaja a los invitados antes de revelarla.
+- **El mando que conectas es el que juega, aunque el PC tenga otros aparatos.**
+  Un mando Bluetooth recién emparejado toma el control, y luego manda el
+  último mando que tocaste; audífonos, hubs o volantes ya no se lo roban.
 - **Batear en Chapita ya no es suerte: un aro en el plato te marca el momento.**
   Otro aro se cierra y se pone verde cuando llega la chapita, con tres tics
   de ritmo, el palo busca la altura solo (W/S si quieres elegirla) y cada

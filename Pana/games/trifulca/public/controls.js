@@ -3,6 +3,7 @@
 // tick still reaches the host. game.js turns the stick into a world direction.
 import { holdButton, drawIcons } from '/engine/touch.js';
 import { getSettings, inputAxis } from '/engine/settings.js';
+import { activePad } from '/engine/gamepad.js';
 
 const KEYS = {
   up: ['w', 'arrowup'], down: ['s', 'arrowdown'], left: ['a', 'arrowleft'], right: ['d', 'arrowright'],
@@ -48,7 +49,7 @@ export function createControls({ paused = () => false, onBet = () => {} } = {}) 
   }
 
   function pad() {
-    const gamepad = [...(navigator.getGamepads?.() || [])].find(p => p && p.connected !== false);
+    const gamepad = activePad();
     if (!gamepad) { padHeld = new Set(); return { x: 0, y: 0, held: padHeld }; }
     const held = new Set();
     for (const [name, buttons] of Object.entries(PAD)) if (buttons.some(i => gamepad.buttons[i]?.pressed)) held.add(name);

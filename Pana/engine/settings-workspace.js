@@ -1,7 +1,7 @@
 // Loaded only when Ajustes opens. Existing audio/video/game controls are moved
 // here, retaining their handlers, IDs and each game's pause lifecycle.
 import { getSettings, setSettings, onSettings, INPUT_RANGES, resetInputSettings } from './settings.js';
-import { onInputDevice, inputState, firstPad, readPad, formatPadLabel, testVibration, NAMES } from './gamepad.js';
+import { onInputDevice, inputState, activePad, readPad, formatPadLabel, testVibration, NAMES } from './gamepad.js';
 
 function el(tag, className, text) {
   const node = document.createElement(tag);
@@ -170,7 +170,7 @@ export function createSettingsWorkspace(root, legacy) {
   function tick() {
     ticking = false;
     if (!root.getClientRects().length || document.hidden) { setTesting(false); return; }
-    const raw = firstPad(), tuned = readPad(raw);
+    const raw = activePad(), tuned = readPad(raw);
     stickNodes.forEach((n, i) => {
       const xy = tuned?.[i ? 'right' : 'left'] || { x: 0, y: 0 };
       n.raw.style.transform = `translate(${(raw?.axes[i * 2] || 0) * 48}px, ${(raw?.axes[i * 2 + 1] || 0) * 48}px)`;

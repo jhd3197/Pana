@@ -1219,9 +1219,12 @@ function playerInput(n = 1) {
 }
 
 // Game controllers: poll each frame, fire item / rescue / pause on presses.
-let padsBefore = [null, null];
+let padsBefore = [null, null], pads = null;
+// game-entry.js has already loaded it: not a first-load module of its own.
+import('/engine/gamepad.js').then(m => { pads = m; });
 function pollPads() {
-  const list = navigator.getGamepads?.() || [];
+  // Alone, the pad in use drives; split screen hands out the controllers in order.
+  const list = !pads ? [] : race.p2 ? pads.padList() : [pads.activePad()];
   race.pads = [padInput(list[0],getSettings()), padInput(list[1],getSettings())];
   race.pads.forEach((pad, i) => {
     const hit = pressed(pad, padsBefore[i]);

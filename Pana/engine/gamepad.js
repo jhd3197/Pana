@@ -72,7 +72,7 @@ export function stopVibration(){
   }
 }
 export async function testVibration(){
-  const pad=firstPad(),actuator=pad?.vibrationActuator??pad?.hapticActuators?.[0];
+  const pad=activePad(),actuator=pad?.vibrationActuator??pad?.hapticActuators?.[0];
   if(!actuator)return false;
   try{if(actuator.playEffect)await actuator.playEffect('dual-rumble',{duration:140,strongMagnitude:.25,weakMagnitude:.4});else if(actuator.pulse)await actuator.pulse(.4,140);else return false;return true;}catch{return false;}
 }
@@ -88,7 +88,30 @@ export function readPad(pad, settings=getSettings()) {
   const stick = (x, y, kind) => ({x:inputAxis(x,settings,kind),y:inputAxis(y,settings,kind)});
   return { held, left: stick(ax[0] || 0, ax[1] || 0,'move'), right: stick(ax[2] || 0, ax[3] || 0,'look') };
 }
-export const firstPad = () => [...(globalThis.navigator?.getGamepads?.() || [])].find(p => p && p.connected !== false && p.buttons?.length);
+// Windows lists more than controllers: headsets, wheels, virtual pads, an
+// RGB hub. Slot 0 is often one of those, so the pad in use is the last one a
+// player touched (a fresh press, or a stick away from where it rested),
+// else the one just connected, else the first with the standard layout.
+const usable = p => !!p && p.connected !== false && !!p.buttons?.length;
+const seen = new Map();   // index → { id, rest axes, buttons held last look }
+let activeIndex = -1;
+function touched(p) {
+  const was = seen.get(p.index), held = p.buttons.map(pressedOf);
+  if (!was || was.id !== p.id) { seen.set(p.index, { id: p.id, rest: [...(p.axes || [])], held }); return false; }
+  const hit = held.some((h, i) => h && !was.held[i]) || (p.axes || []).some((v, i) => Math.abs(v - (was.rest[i] ?? 0)) > .5);
+  was.held = held;
+  return hit;
+}
+export function padList() {
+  const all = [...(globalThis.navigator?.getGamepads?.() || [])].filter(usable);
+  return [...all.filter(p => p.mapping === 'standard'), ...all.filter(p => p.mapping !== 'standard')];
+}
+export function activePad() {
+  const all = padList(), standard = all.filter(p => p.mapping === 'standard');
+  // A jittery device without the standard layout never takes over from a real controller.
+  for (const p of standard.length ? standard : all) if (touched(p)) { activeIndex = p.index; break; }
+  return all.find(p => p.index === activeIndex) || all[0];
+}
 
 // The keys a pad frame holds down during play, as a set of codes.
 export function playKeys(pad, { move, keys = {}, buttons } = {}) {
@@ -254,7 +277,7 @@ function toast(text) {
 }
 
 function menu(scope, pad, now, edge, hud) {
-  const held = pad.held, raw=firstPad(), nav=readPad(raw,{...getSettings(),padMoveSensitivity:1,padCurve:'lineal'});
+  const held = pad.held, raw=activePad(), nav=readPad(raw,{...getSettings(),padMoveSensitivity:1,padCurve:'lineal'});
   const x = nav.left.x || (held.right - held.left), y = nav.left.y || (held.down - held.up);
   // A new menu on screen gets the focus on its main button, and keeps
   // following it (a start button enabled late) until the player moves.
@@ -276,7 +299,7 @@ function menu(scope, pad, now, edge, hud) {
 
 function frame(now) {
   const dt = Math.min(.1, (now - last) / 1000); last = now;
-  const raw=firstPad(),pad = readPad(raw);
+  const raw=activePad(),pad = readPad(raw);
   if (!pad) { release(); before = null; running = false;connected=false;padId='';activate(lastPointer);publishInput(true);if(promptNode)promptNode.hidden=true;return; }
   if(!connected||padId!==(raw.id||'')){connected=true;padId=raw.id||'';publishInput(true);}
   if(suspended||document.hidden){release();before=null;requestAnimationFrame(frame);return;}
@@ -333,22 +356,28 @@ function start() {
 }
 if (globalThis.document) {
   onSettings(()=>publishInput(true));
-  addEventListener('gamepadconnected', () => {
-    const pad=firstPad(); connected=!!pad;padId=pad?.id||'';
+  addEventListener('gamepadconnected', e => {
+    // A controller just paired is the one wanted; another device announcing
+    // itself only takes over when nothing is in use yet.
+    const added=e.gamepad;if(usable(added)&&(added.mapping==='standard'||activeIndex<0))activeIndex=added.index;
+    const pad=activePad(); connected=!!pad;padId=pad?.id||'';
     toast('Mando conectado');activate('gamepad');publishInput(true);start();
   });
-  addEventListener('gamepaddisconnected', () => { if (!firstPad()) toast('Mando desconectado'); });
+  addEventListener('gamepaddisconnected', e => {
+    seen.delete(e.gamepad?.index);if(e.gamepad?.index===activeIndex)activeIndex=-1;
+    if (!activePad()) toast('Mando desconectado');
+  });
   addEventListener('blur', ()=>{suspended=true;release();stopVibration();});
   addEventListener('pagehide', stopVibration);
   document.addEventListener('visibilitychange', ()=>{if(document.hidden)stopVibration();});
-  addEventListener('focus', ()=>{suspended=false;if(firstPad())start();});
+  addEventListener('focus', ()=>{suspended=false;if(activePad())start();});
   // The mouse takes over from the pad's highlight.
   addEventListener('pointerdown', e => { if (e.isTrusted) {clearMark();lastPointer=e.pointerType==='touch'?'touch':'keyboard';activate(lastPointer);} }, true);
   // Hovering is not a device choice: controllers and desktop overlays can
   // generate mouse motion. A real click or key press switches back explicitly.
   addEventListener('keydown', e=>{if(e.isTrusted&&!e.repeat){clearMark();lastPointer='keyboard';activate('keyboard');}},true);
   // A pad connected before the page loaded is listed once the page sees a press.
-  if (firstPad()) start();
+  if (activePad()) start();
 }
 
 // "Mando" lines for the Controles tab: [[buttons, what it does], …].
