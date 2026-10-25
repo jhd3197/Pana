@@ -14,6 +14,9 @@ Built on the shared table room (`engine/table-room.js`) and the plaza stage
 - `public/rules.js`: pure rules (`QuizGame`), tested by `tests/rules.test.js`.
 - `public/questions.js`: the question bank, one list per category. The first
   answer is the right one; `ask()` shuffles the four. New questions only go here.
+  `playable()` in `rules.js` is the gate: a prompt plus exactly four distinct,
+  non-empty answers. `buildDeck` skips anything else, so a bank served from
+  elsewhere can never put three, five or an ordering list on the board.
   `PACKS` groups the categories for the Tema option: Venezuela (eight
   categories), Cultura general (six) and De todo (all of them).
 - `public/network.js`: the room. `step(dt)` is the host's clock (`game.tick`).
@@ -108,6 +111,8 @@ Built on the shared table room (`engine/table-room.js`) and the plaza stage
   Shared sound/volume settings apply; phase changes and teardown stop playback.
   A solo pause stops narration; returning rereads the question. The room clock
   never depends on a client's audio loading, playback, or mute setting.
+  A clip that 404s or fails to decode skips to the next line (`onerror`);
+  before that, one missing clip silenced the rest of the question.
 - Default time is 30 seconds; 45 seconds is available alongside the old presets.
 - `questionUses` counts dealt questions in room state, survives rematches and
   host handoff, and follows theme changes. Categories rotate among least-used

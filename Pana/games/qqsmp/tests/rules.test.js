@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { QuizGame, SEATS, LADDER, TOP, TIMES, safeFloor, resolveAnswer, revealOrder, ranking, score, titles, participants } from '../public/rules.js';
+import { QuizGame, SEATS, LADDER, TOP, TIMES, safeFloor, resolveAnswer, revealOrder, ranking, score, titles, participants, playable } from '../public/rules.js';
 import { QUESTIONS, CATEGORIES, PACKS } from '../public/questions.js';
 import fs from 'node:fs';
 import { voiceKey, narrationLines, revealLines, CORRECT_INTRO } from '../public/voice-key.js';
@@ -40,6 +40,26 @@ test('room options are host-only and validated', () => {
   assert.ok(act(game, 1, 'start'));
   assert.equal(game.total, 8);
   assert.equal(act(game, 1, 'options', { options: { seconds: 15 } }), false, 'locked once playing');
+});
+
+test('a question without exactly four distinct answers never reaches the board', () => {
+  assert.equal(playable(['¿Uno?', 'a', 'b', 'c', 'd']), true);
+  for (const bad of [['¿Tres?', 'a', 'b', 'c'], ['¿Cinco?', 'a', 'b', 'c', 'd', 'e'], ['¿Repetida?', 'a', 'A ', 'c', 'd'],
+    ['¿Vacía?', 'a', '', 'c', 'd'], { text: '¿Ordena?', answers: ['a', 'b', 'c', 'd'] }]) assert.equal(playable(bad), false, JSON.stringify(bad));
+  const cat = PACKS.venezuela.cats[0], before = QUESTIONS[cat].length;
+  QUESTIONS[cat].push(['¿Tres?', 'a', 'b', 'c'], ['¿Cinco?', 'a', 'b', 'c', 'd', 'e']);
+  try {
+    let game = humans();
+    for (let round = 0; round < 12; round++) {
+      game.start();
+      for (game.index = 0; game.index < game.deck.length; game.index++) {
+        game.ask();
+        assert.equal(game.question.answers.length, 4);
+        assert.ok(game.question.answers.every(Boolean));
+      }
+      assert.ok(game.deck.every(([c, n]) => c !== cat || n < before));
+    }
+  } finally { QUESTIONS[cat].length = before; }
 });
 
 test('a game deals the planned number of distinct questions, rotating categories', () => {
@@ -112,6 +132,17 @@ test('answers stay secret in snapshots until the reveal, while allowing changes'
   assert.equal(snap.players[0].answer, null);
   assert.equal(game.players[0].answer, 1);
   assert.equal(act(game, 2, 'answer', { choice: 1, q: 99 }), false, 'answer for another question');
+});
+
+test('the answer key never leaves the host before the reveal, and a new host recovers it', () => {
+  const game = humans(); game.start();
+  const key = game.question.correct, snap = game.snapshot();
+  assert.equal(snap.question.correct, null);
+  assert.equal(game.question.correct, key, 'the host keeps its own copy');
+  const next = QuizGame.restore(snap, new Map(game.players.map(p => [p.id, {}])));
+  assert.equal(next.question.correct, key);
+  toReveal(game);
+  assert.equal(game.snapshot().question.correct, key, 'published with the reveal');
 });
 
 test('the last answer reveals and settles immediately, blocking further changes', () => {

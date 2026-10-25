@@ -8,6 +8,10 @@ becomes the GitHub release's notes.
 
 ## Unreleased
 
+- **El Mango de oro siempre trae cuatro opciones y la narración no se corta.**
+  Una pregunta sin exactamente cuatro respuestas distintas nunca llega al
+  tablero, un audio que falla salta al siguiente en vez de callar el resto,
+  y la respuesta correcta ya no viaja a los invitados antes de revelarla.
 - **Batear en Chapita ya no es suerte: un aro en el plato te marca el momento.**
   Otro aro se cierra y se pone verde cuando llega la chapita, con tres tics
   de ritmo, el palo busca la altura solo (W/S si quieres elegirla) y cada

@@ -26,6 +26,8 @@ export function createNarration(button, { onSpeaking = () => {} } = {}) {
   };
   audio.onplaying = () => onSpeaking(true);
   audio.onended = () => { index++; if (index >= queue.length) onSpeaking(false); else playClip(); };
+  // A missing or broken clip skips ahead; the rest of the question still plays.
+  audio.onerror = () => { if (audio.getAttribute('src')) audio.onended(); };
   const unlock = () => { if (pending) playClip(); };
   addEventListener('pointerdown', unlock);
   addEventListener('keydown', unlock);

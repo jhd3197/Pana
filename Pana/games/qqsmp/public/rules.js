@@ -18,6 +18,13 @@ export const BETS = [0, .25, .5, 1];
 export const BET_LABELS = ['Nada', 'Un cuarto', 'La mitad', '¡Todo!'];
 export const TIMES = { pause: 2.4, revealStep: .85, result: 8, bet: 14, intro: 1.4 };
 export const SPEED_BONUS = 100;
+
+// A question is a prompt plus exactly four distinct answers, the right one
+// first. Anything else (three, five, an ordering list) never reaches the board.
+export function playable(q) {
+  if (!Array.isArray(q) || q.length !== 1 + LETTERS.length || !q.every(s => typeof s === 'string' && s.trim())) return false;
+  return new Set(q.slice(1).map(s => s.trim().toLowerCase())).size === LETTERS.length;
+}
 export const BOT_NAMES = ['Lola', 'Tito', 'Cheo', 'Nina', 'Toño', 'Mari'];
 const SKILL = { normal: .62, genios: .86, gafos: .36 };
 
@@ -83,6 +90,8 @@ export class QuizGame {
       if (hide) { p.answer = null; p.copy = null; }
       if (hideBets) p.bet = null;
     }
+    // The key stays on the host until the reveal; guests can't read it early.
+    if (hide && out.question) out.question.correct = null;
     return out;
   }
 
@@ -92,6 +101,10 @@ export class QuizGame {
     const game = Object.assign(new QuizGame(), JSON.parse(JSON.stringify(state)));
     for (const p of game.players) if (p.id !== null && !members.has(p.id)) Object.assign(p, { id: null, name: game.options.mode === 'panas' ? p.name : BOT_NAMES[p.seat], avatar: {} });
     if (game.options.mode === 'panas' && game.players[game.gold]?.id === null) game.gold = null;
+    if (game.question?.correct === null) {
+      const [cat, n] = game.deck[game.index], right = QUESTIONS[cat]?.[n]?.[1];
+      game.question.correct = game.question.answers.indexOf(right);
+    }
     if (['question', 'pause'].includes(game.phase)) {
       for (const p of game.players) { p.answer = null; p.copy = null; p.locked = false; }
       game.phase = 'question'; game.phaseTime = Math.max(0, game.options.seconds - 6); game.timeLeft = game.options.seconds - game.phaseTime;
@@ -146,8 +159,10 @@ export class QuizGame {
   }
 
   // Rotate categories among the least-used questions across rematches/packs.
+  // Banks served from elsewhere (the hosted edition) pass the same playable() gate.
   buildDeck(count) {
-    const cats = [...(PACKS[this.options.pack] ?? PACKS.venezuela).cats], pools = Object.fromEntries(cats.map(c => [c, QUESTIONS[c].map((_, i) => i)]));
+    const cats = [...(PACKS[this.options.pack] ?? PACKS.venezuela).cats].filter(c => QUESTIONS[c]?.some(playable));
+    const pools = Object.fromEntries(cats.map(c => [c, QUESTIONS[c].flatMap((q, i) => playable(q) ? [i] : [])]));
     for (let i = cats.length - 1; i > 0; i--) { const j = Math.floor(draw(this) * (i + 1)); [cats[i], cats[j]] = [cats[j], cats[i]]; }
     const deck = [];
     const capacity = cats.reduce((n, cat) => n + pools[cat].length, 0);
