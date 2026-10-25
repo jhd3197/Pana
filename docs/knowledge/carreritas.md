@@ -41,8 +41,9 @@ largest game and uses the shared lobby followed by Copa and the full-screen Tall
 - Dev ghost: `public/ghosts/<trackId>.json` ships a signed lap
   (`{ by, car, avatar, lap, poses }`); `pickGhost` races it while it beats
   your own best (ghost-recorder.js). To ship one: race the track with
-  `?debug`, then run `exportGhost()` in the console and drop the file in
-  `public/ghosts/`. The ghost also turns lancha on river runs.
+  `?debug`, then run `exportGhost()` in the console, drop the file in
+  `public/ghosts/` and add the track id to `SHIPPED_GHOSTS` (only listed
+  tracks are fetched). The ghost also turns lancha on river runs.
 - Race glow: `public/race-fx.js` (lazy; `race.glow` stub until it loads)
   draws the turbo exhaust (`drive.js`, every boosting step), impact sparks
   (wall hits in `drive.js`, `crash()` in game.js) and coin sparkles (pickup
