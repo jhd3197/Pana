@@ -753,5 +753,7 @@
   "Vuelta": "Lap",
   "Vueltas": "Laps",
   "WASD": "WASD",
-  "Zona muerta": "Deadzone"
+  "Zona muerta": "Deadzone",
+  "Tambor": "Drum",
+  "Alcance": "Reach"
 }

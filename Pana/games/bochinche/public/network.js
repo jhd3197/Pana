@@ -23,6 +23,7 @@ export class BochincheRoom extends LiveRoom {
   memberLeft(id) { super.memberLeft(id); if (this.isHost) { this.game.removePlayer(id); this.publish(); } }
   handle(id, data) {
     if (data.action === 'style' && this.game.choose(id, data.style)) this.publish();
+    if (data.action === 'pana' && this.game.choosePana(id, data.pana, data.traje)) this.publish();
     if (data.action === 'lobby' && id === this.hostId) { this.game.lobby(); this.syncRoster(); this.publish(); }
     if (data.action === 'options' && id === this.hostId && this.game.configure(data.options)) this.publish();
     if (data.action === 'start' && id === this.hostId && this.game.phase !== 'playing') { this.game.phase = 'lobby'; this.syncRoster(); this.game.start(); this.publish(); }
