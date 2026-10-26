@@ -1,4 +1,4 @@
-import { ATTACK_THEMES } from './artifact-attacks.js';
+import { attackTheme } from './artifact-attacks.js';
 // A bounded particle pool. Effects consume authoritative events exactly once.
 import * as THREE from 'three';
 import { rng } from '/engine/random.js';
@@ -12,6 +12,7 @@ export function createImpactEffects(root, scale) {
     particles.push({mesh,life:0,max:1,vx:0,vy:0});
   }
   let cursor=0,lastFrame=-1,round=-1,shake=0,time=0, bursts=0;
+  let fighters=[];
   function burst(event) {
     if(!event.position)return;
     const big=event.type==='ko', shield=event.type==='shield-hit', jump=['jump','land','double-jump'].includes(event.type);
@@ -22,7 +23,7 @@ export function createImpactEffects(root, scale) {
       const p=particles[cursor++%particles.length], angle=i/count*Math.PI*2;
       p.max=p.life=big?.8:jump?.3:.38;
       p.mesh.visible=true;p.mesh.position.set(x,y,.6);
-      p.mesh.material.color.set(ATTACK_THEMES[event.move]?.color ?? (shield?COLORS[event.slot??0]:big?COLORS[event.slot??0]:i%3?'#fff4cc':'#ff9d3c'));
+      p.mesh.material.color.set(attackTheme(fighters[event.slot]?.fighter,event.move)?.color ?? (shield?COLORS[event.slot??0]:big?COLORS[event.slot??0]:i%3?'#fff4cc':'#ff9d3c'));
       p.size=big?.2:jump?.07:.11;
       const speed=big?4:jump?1.3:2.5+random()*2;
       p.vx=Math.cos(angle)*speed;p.vy=Math.sin(angle)*speed+(jump?.7:0);
@@ -33,7 +34,7 @@ export function createImpactEffects(root, scale) {
   return {
     update(state) {
       if(state.round!==round){round=state.round;lastFrame=-1;particles.forEach(p=>{p.life=0;p.mesh.visible=false;});shake=0;}
-      const fight=state.fight;if(!fight||fight.frame<=lastFrame)return;
+      const fight=state.fight;if(!fight||fight.frame<=lastFrame)return;fighters=fight.fighters;
       for(const event of fight.events)if(event.frame>lastFrame&&['hit','shield-hit','ko','jump','double-jump','land'].includes(event.type))burst(event);
       lastFrame=fight.frame;
     },
