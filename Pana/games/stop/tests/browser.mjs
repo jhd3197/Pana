@@ -112,6 +112,7 @@ try {
   assert.deepEqual(await totals(guest), await totals(host));
   assert.ok(await guest.locator('#results').isVisible(), 'the results card shows');
   assert.ok((await guest.locator('#result-roster').textContent()).includes('Cuarto bate'), 'titles are on the results card');
+  assert.equal(await guest.locator('#recap li').count(), 3, 'Lo mejor de la noche lists every round');
   // Words the table voted in stay in both browsers, and the host's next
   // table (a new room, same browser) counts them from the start.
   const voted = await host.evaluate(() => stopDebug.room.state.dictionary.map(d => d.word));

@@ -11,17 +11,25 @@ import { ROOM_OPTIONS, defaultOptions } from './options.js';
 import { ranking, seated, rememberWords, TITLE_TEXT } from './rules.js';
 import { createSheet } from './sheet.js';
 import { createReview } from './review.js';
+import { createPackPicker, createCategoriesDialog, renderRecap, summaryText } from './libreta.js';
 import { renderBoard, renderWheelPanel, renderTally, shout, botDetail, clockText } from './hud.js';
 
 const $ = (id) => document.getElementById(id), params = new URLSearchParams(location.search);
 const code = roomCode();
-let world = null, lastPhase = '', lastClock = 0, lastSent = 0, lastStage = '', lastLine = '';
+let world = null, lastPhase = '', lastClock = 0, lastSent = 0, lastStage = '', lastLine = '', failed = false, lastSala = '';
 const room = new StopRoom({ code, name: loadName(), avatar: loadAvatar(), onState: render,
   onNotice: (text) => { $('event').textContent = text; },
-  onStatus(text, failed = false) { $('connection').textContent = text; $('practice').hidden = !failed; render(room.state); },
+  onStatus(text, down = false) { failed = down; $('connection').textContent = text; $('practice').hidden = !down; render(room.state); },
 });
-const roomOptions = createRoomOptions($('room-options'), { title: '¡Stop!', fields: ROOM_OPTIONS,
-  change: options => room.action('options', { options }), reset: () => room.action('options', { options: defaultOptions() }) });
+// The pack has its own picker, so the shared panel leaves it out.
+const roomOptions = createRoomOptions($('room-options'), { title: '¡Stop!', fields: ROOM_OPTIONS.filter(f => f.id !== 'set'),
+  change: options => room.action('options', { options }), reset: () => { room.action('options', { options: defaultOptions() }); room.action('custom', { list: [] }); } });
+const packs = createPackPicker($('pack-pick'), { change: set => room.action('options', { options: { set } }) });
+const categories = createCategoriesDialog($('libreta'), { save: list => room.action('custom', { list }) });
+const connection = () => room.offline ? 'local' : room.connected ? 'online' : failed ? 'offline' : 'connecting';
+// The shared sala (engine/sala.js): summary, connection and the Categorías button.
+$('lobby').panaSala = { kitLabel: 'Categorías', openKit: () => categories.open(), image: null, startLabel: '¡Saca la libreta!',
+  read: () => ({ connection: connection(), players: [], local: null, summary: summaryText(room.state) }) };
 const menu = createGameMenu({ pad: { buttons: true, keys: { x: ['Space', '¡Para! la rueda'] } }, title: '¡Stop! · Pana', sound, orientation: 'libre',
   note: () => room.members.size > 1 ? 'La ronda sigue mientras estás en el menú.' : 'La partida está en pausa. Los bots te esperan.',
   controls: [['Tab / Enter', 'Pasar a la siguiente casilla'], ['Espacio', '¡Para! cuando te toca la rueda'], ['Ratón / toque', '¡STOP! y los votos'], ['M', 'Activar o silenciar el sonido']],
@@ -32,6 +40,8 @@ const menu = createGameMenu({ pad: { buttons: true, keys: { x: ['Space', '¡Para
     '100 puntos si nadie más la puso, 50 si alguien la repitió. Una dudosa que la mesa acepta con dos tercios suma +50 de Creatividad.',
     'Lo que la mesa acepta se queda: en la próxima partida cuenta solo.',
     'Con «Más criollo» las groserías van a votación; sin eso, la libreta las tacha sola.',
+    "En «Pa' reírse», «Confiesa» e «Inventa» no hay respuesta correcta: la mesa vota todo y gana el más ocurrido.",
+    'El anfitrión puede poner hasta tres categorías propias en «Categorías». Siempre se votan.',
   ],
   invite: () => room.offline ? null : inviteUrl(code),
 });
@@ -131,10 +141,16 @@ function render(state) {
   const phase = state.phase, lobby = phase === 'lobby', ended = phase === 'finished', p = state.players[room.seat];
   keepMesa(state);
   roomOptions.update(state.options, lobby && room.isHost);
+  packs.update(state.options, lobby && room.isHost);
+  categories.update(state, lobby && room.isHost);
   if (!lobby && roomOptions.isOpen) roomOptions.close();
+  if (!lobby && categories.isOpen) $('libreta').close();
+  const sala = connection() + summaryText(state);
+  if (sala !== lastSala) { lastSala = sala; document.dispatchEvent(new Event('pana:sala-update')); }
   document.body.classList.toggle('in-lobby', lobby); $('lobby').hidden = !lobby; $('hud').hidden = lobby || ended;
   $('start').disabled = !world || !room.connected || !room.isHost;
-  $('start').textContent = !room.connected ? 'Conectando…' : room.isHost ? '¡Saca la libreta!' : 'Espera al anfitrión';
+  // Local and offline labels belong to the sala ("… en local").
+  if (!room.offline && !failed) $('start').textContent = !room.connected ? 'Conectando…' : room.isHost ? '¡Saca la libreta!' : 'Espera al anfitrión';
   fillRoster($('roster'), seated(state).map((o, i) => ({ rank: i + 1, name: o.id === room.id ? `${o.name} · tú` : o.name, detail: botDetail(o), me: o.id === room.id })));
   if (!lobby && !ended) {
     renderBoard(state, room.id);
@@ -158,6 +174,7 @@ function render(state) {
     fillRoster($('result-roster'), ranking(state).map((o, i) => ({ rank: i + 1, name: o.id === room.id ? `${o.name} · tú` : o.name,
       detail: titleLine(state.titles?.[o.seat] || []) || `${o.stats.stops} ¡STOP! · ${o.stats.creative} ${o.stats.creative === 1 ? "creativa" : "creativas"}`,
       end: o.total, score: true, me: o.id === room.id })));
+    renderRecap($('recap'), state);
   }
   world?.update(state, room.id);
 }

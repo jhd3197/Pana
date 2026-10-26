@@ -3,7 +3,7 @@
 // Authors can't vote on their own word. Text only: names and answers never
 // become HTML.
 import { ICONS } from '/engine/icons.js';
-import { categoryLabel } from '/engine/play/saber-match.js';
+import { label as categoryLabel } from './categories.js';
 import { verdictText } from './rules.js';
 
 const el = (tag, className, text) => { const node = document.createElement(tag); if (className) node.className = className; if (text != null) node.textContent = text; return node; };
@@ -57,7 +57,7 @@ export function createReview(root, { onVote }) {
       root.querySelector('#review-title').textContent = `${categoryLabel(r.category)} con ${state.letter}`;
       const voting = r.stage === 'vote';
       root.querySelector('#review-clock').textContent = voting ? Math.ceil(state.timeLeft) : '';
-      root.querySelector('#review-timer').style.setProperty('--pk-value', voting ? String(state.timeLeft / 10) : '0');
+      root.querySelector('#review-timer').style.setProperty('--pk-value', voting ? String(state.timeLeft / (r.voteTime || 10)) : '0');
       root.querySelector('#review-timer').hidden = !voting;
       root.classList.toggle('is-voting', voting);
       const next = JSON.stringify([state.round, r.index, r.stage, r.groups.map(g => [g.votes, g.accepted]), mySeat, state.hostLine.includes('200'), state.players.map(p => p.name)]);

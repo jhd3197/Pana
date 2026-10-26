@@ -8,7 +8,7 @@ export class StopRoom extends TableRoom {
   constructor(options) {
     super({ ...options, game: 'stop', protocol: 'stop-v1',
       texts: { connecting: 'Conectando con la mesa…', practice: 'Mesa local · tú y siete bots', handoff: 'Cambió el anfitrión. La libreta sigue.' } }, {
-      fresh: prev => ({ ...new StopGame().snapshot(), ...(prev?.options ? { options: { ...prev.options } } : {}) }),
+      fresh: prev => ({ ...new StopGame().snapshot(), ...(prev?.options ? { options: { ...prev.options } } : {}), ...(Array.isArray(prev?.custom) ? { custom: [...prev.custom] } : {}) }),
       restore: (state, members) => StopGame.restore(state, members),
       snapshot: (game) => game.snapshot(),
       accept: (game, id, data, hostId) => game.accept(id, data, hostId),

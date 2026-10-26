@@ -11,16 +11,19 @@ export async function createSala({ root, original, status, footer, actionTray, c
     await styled;
     return { refresh() {}, signature: () => '', decorate() {} };
   }
+  // `image: null` keeps the launcher art; games without a sala picture of their own pass it.
   const game = location.pathname.includes('/carreritas/') ? 'carreritas' : 'pepazo';
-  root.style.setProperty('--lobby-image', `url('/images/sala/${game}.jpg')`);
+  const image = config.image === undefined ? `/images/sala/${game}.jpg` : config.image;
+  if (image) root.style.setProperty('--lobby-image', `url('${image}')`);
+  const startLabel = config.startLabel || (game === 'carreritas' ? '¡Arrancar!' : '¡A pepear!');
   const settings = root.querySelector('.pk-game-lobby-settings');
   const summary = document.createElement('p'); summary.className = 'sala-summary'; settings.querySelector('h2').after(summary);
   const note = document.createElement('p'); note.className = 'sala-mirror-note'; settings.append(note);
   const connection = document.createElement('div'); connection.className = 'sala-connection'; connection.setAttribute('role', 'status');
   const message = document.createElement('span'), retry = document.createElement('button'); retry.type = 'button'; retry.textContent = 'Reintentar'; retry.onclick = () => location.reload(); connection.append(message, retry); settings.append(connection);
-  const kit = document.getElementById('open-armory') || document.createElement('button'); kit.type = 'button'; kit.className = 'pk-btn sala-kit'; kit.id ||= 'sala-kit'; kit.textContent = config.kitLabel;
+  const armory = document.getElementById('open-armory'), kit = armory || document.createElement('button'); kit.type = 'button'; kit.className = 'pk-btn sala-kit'; kit.id ||= 'sala-kit'; kit.textContent = config.kitLabel;
   // Preserve the armory's existing handler when moving its real button.
-  if (game === 'carreritas') kit.onclick = config.openKit;
+  if (!armory) kit.onclick = config.openKit;
   footer.insertBefore(kit, actionTray); footer.insertBefore(change, kit);
   const teams = document.getElementById('team-roster');
   if (teams) { document.querySelector('#pana-room-dialog .pk-room-extras').prepend(teams); }
@@ -46,9 +49,9 @@ export async function createSala({ root, original, status, footer, actionTray, c
     retry.hidden = state !== 'offline';
     const mirror = document.getElementById('mirror'); setText(note, mirror?.disabled ? 'Gana un trofeo en una copa para desbloquear el espejo.' : ''); note.hidden = !note.textContent;
     const start = document.getElementById('start');
-    if (state === 'offline' || state === 'local') { const label = game === 'carreritas' ? '¡Arrancar!' : '¡A pepear!'; if (start.textContent !== label + ' en local') { const suffix = document.createElement('small'); suffix.textContent = ' en local'; start.replaceChildren(document.createTextNode(label), suffix); } }
+    if (state === 'offline' || state === 'local') { const label = startLabel; if (start.textContent !== label + ' en local') { const suffix = document.createElement('small'); suffix.textContent = ' en local'; start.replaceChildren(document.createTextNode(label), suffix); } }
     else if (state === 'connecting') setText(start, 'Conectando…');
-    else if (!start.disabled) setText(start, game === 'carreritas' ? '¡Arrancar!' : '¡A pepear!');
+    else if (!start.disabled) setText(start, startLabel);
     const personal = document.getElementById('pana-lobby-roster')?.querySelector('.is-own');
     if (personal) personal.setAttribute('aria-pressed', readyButton.getAttribute('aria-pressed') || 'true');
     // Team arrangement is a room setting; all eight pana cards keep their place.
@@ -60,7 +63,7 @@ export async function createSala({ root, original, status, footer, actionTray, c
     signature: () => JSON.stringify(read().players) + JSON.stringify(read().local),
     decorate(card, player, mine) {
       const state = read(); const meta = state.players?.find(p => p.id === player.id) || (mine ? state.local : null);
-      if (!meta) return;
+      if (!meta?.kit) return;
       card.style.setProperty('--pana-color', meta.color || '#ffc629');
       const kitLine = document.createElement('span'); kitLine.className = 'sala-player-kit'; kitLine.textContent = meta.kit;
       kitLine.insertAdjacentHTML('beforeend', ratingBadge(meta.level));

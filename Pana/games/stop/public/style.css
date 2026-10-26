@@ -145,6 +145,36 @@ body[data-phase="write"] .shout, body[data-phase="basta"] .shout, body[data-phas
 
 /* Phones and narrow windows: the board is one line, the sheet and the
    review rise from the bottom and the table stays visible above. */
+/* Lobby: the pack picker (‹ name ›, like Carreritas' map), the Categorías
+   dialog with the host's own categories, and the recap on the results card. */
+.pack-pick { display: grid; grid-template-columns: 100px minmax(0, 1fr); align-items: center; gap: 6px 12px; margin: 0 0 12px; }
+.pack-pick > .pk-eyebrow { font: 800 11px/1.3 var(--pk-sans); letter-spacing: .06em; text-transform: uppercase; color: var(--pk-muted); }
+.pack-nav button { display: grid; place-items: center; min-height: 34px; }
+.pack-nav button svg { width: 18px; height: 18px; }
+.pack-nav button:disabled { opacity: .45; }
+.pack-nav > b { text-align: center; font-size: 20px; }
+.pack-note { grid-column: 2; margin: 0; font: 700 12px/1.4 var(--pk-sans); color: var(--pk-muted); }
+.libreta-dialog { width: min(760px, calc(100vw - 32px)); }
+.libreta-list { display: flex; flex-wrap: wrap; gap: 8px; margin: 14px 0 22px; padding: 0; list-style: none; }
+.libreta-chip { display: inline-flex; align-items: baseline; gap: 6px; padding: 7px 12px; background: var(--pk-raised); font-weight: 800; font-size: 14px; }
+.libreta-chip small { font-size: 11px; color: var(--pk-yellow); text-transform: uppercase; letter-spacing: .05em; }
+.libreta-chip.is-cep { color: var(--pk-teal); }
+.libreta-own { padding: 18px; border-radius: 22px; background: var(--pk-raised); }
+.libreta-own .pk-heading { margin: 0 0 4px; }
+.libreta-own .pk-copy { margin: 0 0 12px; font-size: 14px; }
+.libreta-inputs { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+.libreta-input { min-width: 0; padding: 11px 12px; border: 2px solid var(--pk-line); border-radius: var(--pk-r-sm); background: var(--pk-deep); color: var(--pk-text); font: 800 15px var(--pk-sans); }
+.libreta-input:focus-visible { outline: 3px solid var(--pk-yellow); outline-offset: 2px; }
+.libreta-input:read-only { opacity: .7; }
+.recap-box { margin: 14px 0 6px; text-align: left; }
+.recap-box > .pk-eyebrow { margin: 0 0 8px; }
+.recap { display: grid; gap: 6px; max-height: 26vh; overflow-y: auto; margin: 0; padding: 0; list-style: none; }
+.recap-round { display: grid; grid-template-columns: 34px minmax(0, 1fr); gap: 10px; align-items: start; padding: 8px 10px; border-radius: var(--pk-r-sm); background: var(--pk-raised); }
+.recap-letter { display: grid; place-items: center; width: 32px; height: 32px; border-radius: 50%; background: var(--stop-paper); color: var(--pk-game); font: 400 20px/1 var(--pk-display); padding-top: 3px; box-sizing: border-box; }
+.recap-body { display: grid; gap: 2px; min-width: 0; font-size: 13px; line-height: 1.35; }
+.recap-top { font-weight: 900; }
+.recap-best { color: var(--pk-yellow); font-weight: 800; }
+.recap-debate { color: var(--pk-muted); font-weight: 700; }
 @media (max-width: 760px) {
   .topbar { top: 10px; left: 10px; right: 10px; }
   .board { left: 8px; right: 8px; top: 58px; width: auto; padding: 6px 10px; box-sizing: border-box; }
@@ -164,6 +194,7 @@ body[data-phase="write"] .shout, body[data-phase="basta"] .shout, body[data-phas
   .sheet-foot { padding: 8px 12px 10px 74px; }
   body:not(.in-lobby) #connection { display: none; }
   .stop-btn { width: 78px; height: 78px; font-size: 18px; }
+  .libreta-inputs { grid-template-columns: 1fr; }
   .review { left: 8px; right: 8px; bottom: 8px; width: auto; transform: none; max-height: 60vh; padding: 10px; }
   .review-cards { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
   .card { min-height: 64px; padding: 6px 8px 8px; }

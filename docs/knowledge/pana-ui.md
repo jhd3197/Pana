@@ -366,9 +366,13 @@ focus containment and return, input blocking, invite links and `M`.
 ## Shared reference sala
 
 Every game uses `engine/sala.js`/`sala.css` after scene preparation.
-Carreritas and Pepazo additionally provide workshop metadata.
+Carreritas, Pepazo and ¡Stop! additionally provide workshop metadata.
 Their original lobby exposes `panaSala.read()` with connection state, summary,
 real members and kit ratings; `openKit` opens the existing workshop/armory.
+`image` sets the sala picture (`null` keeps the launcher art) and `startLabel`
+the start button's text, including its "… en local" form. A member without a
+`kit` gets no kit line, so ¡Stop! passes `players: []` and its "Categorías"
+button as the kit. On phones (≤ 480 px) the start button takes its own row.
 The shared shell still owns membership, readiness, invite links and the start
 barrier. Clicking your own card uses that same readiness action; empty cards
 copy the room link. Carreritas opens its existing room connection before copying

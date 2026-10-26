@@ -18,11 +18,15 @@ purple slang wall. Source: the C4B9Vk6L9kK reel (Hormiga as a color, Oreo for
 - `public/rules.js`: pure rules (`StopGame`, `judge()`, scoring, bots,
   titles), tested by `tests/rules.test.js`.
 - `public/options.js`: Partida (Normal / Stop rápido: 3 categories, 30 s),
-  Categorías (Clásicas / Criollas / Variadas / Mezcla / Al azar; Variadas
-  is profesión, deporte, cuerpo, casa, planta, película; Mezcla deals from
-  the three sets in turn), Letras (Fáciles /
-  Normales / Todas, `lettersFor`), and in Más ajustes:
-  rounds, how many categories (6–10), writing time, Más criollo, Jugar con (Panas y bots / Solo panas), bot level.
+  Categorías (the pack, `set`), Letras (Fáciles / Normales / Todas,
+  `lettersFor`), and in Más ajustes: rounds, how many categories (6–10),
+  writing time, Ciudad, estado y país (apart / one box, `cep`), Más criollo,
+  Jugar con (Panas y bots / Solo panas), bot level.
+- `public/categories.js`: packs, free prompts with the bots' answer pools,
+  `CEP`, own categories (`+Texto`), `label/short/kindOf` and `arrange` (the
+  one dealing rule rules.js and the lobby share).
+- `public/libreta.js`: the lobby's pack picker (‹ name ›), the Categorías
+  dialog, the sala summary and the results card's recap.
 - `public/network.js`: the room. `step(dt)` is the host's clock (`game.tick`).
 - `public/sheet.js`: your notebook page (inputs, Enter to the next box, the
   ¡STOP! button). `public/review.js`: the review cards and thumbs.
@@ -35,7 +39,8 @@ purple slang wall. Source: the C4B9Vk6L9kK reel (Hormiga as a color, Oreo for
   Canvas-painted faces live there because `scene.js` may not use a 2D canvas.
 - `public/scene.js`: the table, the panas' moods (write, panic, slam, plead,
   laugh, cross, win, sad), pencils that follow the right hand, the wheel.
-- `tests/browser.mjs`: two real clients (`npm run test:browser -- stop`).
+- `tests/browser.mjs`: two real clients (`npm run test:browser -- stop`);
+  `tests/libreta.browser.mjs`: pack picker, own categories and their vote.
 - Shared: `engine/play/saber.js` (El Saber, data) and `engine/play/saber-match.js`
   (lookup), tested by `engine/tests/saber.test.js`.
 
@@ -126,6 +131,35 @@ purple slang wall. Source: the C4B9Vk6L9kK reel (Hormiga as a color, Oreo for
   3 sound letters or fewer need the exact sound (Oso is not Osa).
 - `wordsFor(category, letter)` gives bots clean, non-doubtful words and the
   spelling that starts with the letter.
+
+## Packs, free prompts and own categories
+
+- Packs: Clásicas (fixed order), Criollas, Variadas, Pa' los chamos,
+  Geografía, Farándula, Pa' reírse, Confiesa, Inventa (each `deal` shuffled,
+  topped up from `fill`), Mezcla and Al azar (their own dealing). `set` keeps
+  its old ids, so saved rooms still work. The lobby shows the pack as a
+  picker (`#pack-pick`, `data-room-primary`); the shared options panel gets
+  the fields without `set`.
+- Free prompts (`kindOf` → `libre`: "Lo que hay en la nevera", "Mi suegra
+  es…") have no right answers. `judge` sends every clean answer with the
+  letter to a vote (reason `libre`), unless this table already accepted it
+  (green `mesa`). Crude words stay red without Más criollo; `criollo`
+  prompts (Una muerte absurda, Motivo de divorcio) are dealt only with it.
+  Bots answer from the prompt's pool when it has a word with the letter
+  (every pool covers at least 7 easy letters) and vote yes 70 %.
+- Own categories: the host's `custom` action, lobby only, at most 3,
+  cleaned (`cleanCustom`: 28 characters, deduped by sound, crude out without
+  Más criollo). Dealt first as `+Texto`, always voted, bots leave them blank,
+  never saved to `pana.stop.mesa`. "Restablecer sala" clears them.
+- Ciudad, estado o país (`cep`): any of the three Saber categories counts,
+  taking the closest match (Carabobo is the state, not the city Calabozo one
+  typo away); the key is `cep:…`. `arrange` never deals it beside one of its
+  parts; with the `cep` option it replaces them. Pa' los chamos always has it.
+- A vote lasts 10 s plus 1.5 s per extra word on the table, at most 18 s
+  (`review.voteTime`): a free prompt puts up to eight words to a vote.
+- Recap: each round's `history` entry keeps the letter, the top scorer, the
+  best-voted creative answer and the closest vote (at least two votes). The
+  results card lists it as "Lo mejor de la noche".
 
 ## Not built yet
 

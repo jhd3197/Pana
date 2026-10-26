@@ -8,6 +8,10 @@ becomes the GitHub release's notes.
 
 ## Unreleased
 
+- **Stop trae paquetes de categorías, preguntas pa' reírse y categorías propias.**
+  Elige entre once paquetes con flechas (Pa' los chamos, Geografía, Pa' reírse,
+  Confiesa, Inventa…), escribe hasta tres categorías tuyas, junta Ciudad,
+  estado o país en una casilla, y al final mira «Lo mejor de la noche».
 - **Carreritas recuerda tu carro también al volver a una sala con tus panas.**
   Antes, entrar por el enlace de la sala te ponía El Chamo; y el acabado
   Camuflaje vuelve a pintar toda la carrocería, no solo el alerón.

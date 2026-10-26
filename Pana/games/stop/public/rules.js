@@ -6,8 +6,10 @@
 // snapshots before the review: each client keeps its own and sends it at
 // pencils-down.
 import { draw } from '/engine/random.js';
-import { findEntry, wordsFor, letterOf, soundKey, isCrude, categoryLabel } from '/engine/play/saber-match.js';
+import { findEntry, wordsFor, letterOf, soundKey, isCrude } from '/engine/play/saber-match.js';
 import { defaultOptions, roomOptions } from './options.js';
+import { CLASICAS, CRIOLLAS, VARIADAS, CEP, REMEMBERED, CUSTOM_MAX, CUSTOM_LENGTH, packOf, kindOf, freePrompt, customId, label, arrange } from './categories.js';
+export { CLASICAS, CRIOLLAS, VARIADAS };
 
 export const SEATS = 8;
 export const ALPHABET = 'ABCDEFGHIJKLMNÑOPQRSTUVWXYZ'.split('');
@@ -16,11 +18,10 @@ export const ALPHABET = 'ABCDEFGHIJKLMNÑOPQRSTUVWXYZ'.split('');
 export const EASY = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'L', 'M', 'N', 'P', 'R', 'S', 'T'];
 export const HARD = ['Ñ', 'Q', 'W', 'X', 'Y', 'Z'];
 export const MEDIUM = ALPHABET.filter(l => !EASY.includes(l) && !HARD.includes(l));
-export const CLASICAS = ['nombre', 'apellido', 'pais', 'ciudad', 'animal', 'fruta', 'color', 'cosa'];
-export const CRIOLLAS = ['estado', 'comida', 'palabra', 'dicho', 'pelotero', 'musica', 'lugar', 'marca', 'carinoso'];
-export const VARIADAS = ['profesion', 'deporte', 'cuerpo', 'casa', 'planta', 'pelicula'];
 // ¡Basta! gives the rest 5 s: at 3 s panas mid-word lost answers they were typing.
-export const TIMES = { letter: 2.8, basta: 5, collect: 6, show: 3.4, vote: 10, result: 3, tally: 5.5, spinAuto: 9, rapido: 30 };
+// A vote gets 10 s, plus 1.5 s per extra word on the table (free prompts put
+// every answer to a vote), at most 18 s.
+export const TIMES = { letter: 2.8, basta: 5, collect: 6, show: 3.4, vote: 10, voteEach: 1.5, voteMax: 18, result: 3, tally: 5.5, spinAuto: 9, rapido: 30 };
 export const POINTS = { unique: 100, shared: 50, creative: 50 };
 export const MAX_ANSWER = 32;
 export const BOT_NAMES = ['Coco', 'Lola', 'Cheo', 'Nena', 'Toño', 'Mari', 'Pepe', 'Cuqui'];
@@ -56,19 +57,31 @@ export function lettersFor(options) {
   return ALPHABET.filter(l => level === 'todas' || EASY.includes(l) || (level === 'normales' && MEDIUM.includes(l)));
 }
 
-// This game's categories: the set's own list first, then the rest.
+// This game's categories: the host's own first, then the pack's list, then
+// its fill, as `arrange` deals them.
 export function pickCategories(state, options) {
   const shuffle = (list) => { const out = [...list]; for (let i = out.length - 1; i > 0; i--) { const j = Math.floor(draw(state) * (i + 1)); [out[i], out[j]] = [out[j], out[i]]; } return out; };
-  const count = options.mode === 'rapido' ? 3 : options.count;
+  const count = options.mode === 'rapido' ? 3 : options.count, pack = packOf(options.set);
   let order;
-  if (options.set === 'criollas') order = [...shuffle(CRIOLLAS), ...shuffle(CLASICAS)];
-  else if (options.set === 'variadas') order = [...shuffle(VARIADAS), ...shuffle(CLASICAS)];
-  else if (options.set === 'mezcla') {
+  if (pack.id === 'mezcla') {
     const sets = [shuffle(CLASICAS), shuffle(CRIOLLAS), shuffle(VARIADAS)]; order = [];
     while (sets.some(x => x.length)) for (const x of sets) if (x.length) order.push(x.shift());
-  } else if (options.set === 'azar') order = shuffle([...CLASICAS, ...CRIOLLAS, ...VARIADAS]);
-  else order = [...(options.mode === 'rapido' ? shuffle(CLASICAS) : CLASICAS), ...shuffle(CRIOLLAS)];
-  return order.slice(0, count);
+  } else if (pack.id === 'azar') order = shuffle([...CLASICAS, ...CRIOLLAS, ...VARIADAS]);
+  else order = [...(pack.fixed && options.mode !== 'rapido' ? pack.deal : shuffle(pack.deal)), ...shuffle(pack.fill)];
+  return arrange([...(state.custom || []).map(customId), ...order], options).slice(0, count);
+}
+
+// The host's own categories: at most CUSTOM_MAX short, clean, different
+// names; crude ones only with Más criollo. null when it isn't a list.
+export function cleanCustom(list, { criollo = false } = {}) {
+  if (!Array.isArray(list) || list.length > CUSTOM_MAX * 2) return null;
+  const out = [], seen = new Set();
+  for (const raw of list) {
+    const text = [...cleanAnswer(raw)].slice(0, CUSTOM_LENGTH).join('').trim(), key = soundKey(text);
+    if (!text || tooShort(text) || seen.has(key) || (isCrude(text) && !criollo)) continue;
+    seen.add(key); out.push(text);
+  }
+  return out.slice(0, CUSTOM_MAX);
 }
 
 // Words tables voted in, kept in the browser so the next game counts them
@@ -79,7 +92,7 @@ export function rememberWords(dictionary, saved) {
   const out = [], seen = new Set();
   for (const d of [...(Array.isArray(dictionary) ? dictionary : []), ...(Array.isArray(saved) ? saved : [])]) {
     const word = cleanAnswer(d?.word), key = `${d?.category}:${soundKey(word)}`;
-    if (![...CLASICAS, ...CRIOLLAS, ...VARIADAS].includes(d?.category) || tooShort(word) || seen.has(key)) continue;
+    if (!REMEMBERED.includes(d?.category) || tooShort(word) || seen.has(key)) continue;
     seen.add(key); out.push({ category: d.category, word });
   }
   return out.slice(-MESA_LIMIT);
@@ -89,17 +102,26 @@ const LEAD_WORD = ['nombre', 'apellido', 'color'];
 
 // How the game reads one box. status: green (counts), red (doesn't), yellow
 // (the table votes). reason: empty, short, letter, crude, known, typo, mesa,
-// doubtful, close, unknown. key: what makes two answers "the same".
+// doubtful, close, unknown, libre. key: what makes two answers "the same".
+// Free prompts and the host's own categories have no right answers: every
+// clean one goes to a vote unless this table already accepted it.
 export function judge(answer, category, letter, { criollo = false, dictionary = [] } = {}) {
   const text = cleanAnswer(answer);
   if (!text) return { status: 'red', reason: 'empty', key: '' };
-  const first = letterOf(text), own = `${category}:${soundKey(text)}`;
+  const first = letterOf(text), own = `${category}:${soundKey(text)}`, kind = kindOf(category);
   if (tooShort(text)) return { status: 'red', reason: 'short', key: own };
   if (first !== letter) return { status: 'red', reason: 'letter', first, key: own };
   const mesa = dictionary.length ? findEntry(category, text, { extra: dictionary, base: false }) : null;
+  if (kind === 'libre' || kind === 'propia') {
+    if (isCrude(text) && !criollo) return { status: 'red', reason: 'crude', key: own };
+    return mesa ? { status: 'green', reason: 'mesa', word: mesa.entry.word, explain: '', key: `${category}:${soundKey(mesa.entry.word)}` } : { status: 'yellow', reason: 'libre', key: own };
+  }
+  // Ciudad, estado o país: the closest match in its three categories, so the
+  // state Carabobo beats the city Calabozo one typo away.
+  const lookup = (word) => kind === 'cep' ? CEP.parts.map(part => findEntry(part, word)).filter(Boolean).sort((a, b) => a.distance - b.distance)[0] || null : findEntry(category, word);
   // A name with its surname (Pedro Pérez) or a colour with its shade (Verde
   // manzana) is the known first word plus more: it counts as that word.
-  const found = mesa || findEntry(category, text) || (LEAD_WORD.includes(category) && text.includes(' ') ? findEntry(category, text.split(' ')[0]) : null);
+  const found = mesa || lookup(text) || (LEAD_WORD.includes(category) && text.includes(' ') ? lookup(text.split(' ')[0]) : null);
   if ((isCrude(text) || found?.entry.crude) && !criollo) return { status: 'red', reason: 'crude', key: own };
   if (!found) return { status: 'yellow', reason: 'unknown', key: own };
   const { entry } = found, key = `${category}:${soundKey(entry.word)}`, base = { word: entry.word, explain: entry.explain || '', key };
@@ -123,6 +145,7 @@ export class StopGame {
     this.phaseTime = 0; this.timeLeft = 0; this.writeTime = 0; this.stopper = null; this.review = null;
     this.dictionary = []; this.hostLine = '¡Bienvenidos a la mesa de ¡Stop!!'; this.barks = []; this.barkId = 0;
     this.winner = null; this.titles = null; this.games = 0;
+    this.custom = []; this.history = []; this.notes = { best: null, debate: null };
     this.revision = 0; this.ledger = {};
     this.plans = [];
   }
@@ -190,7 +213,7 @@ export class StopGame {
     this.categories = pickCategories(this, this.options);
     for (const p of this.players) Object.assign(p, { total: 0, round: 0, filled: 0, submitted: false, sheet: null, stats: freshStats() });
     // `used` carries over: the next game starts with the letters this room hasn't played.
-    Object.assign(this, { round: 0, winner: null, titles: null, review: null, stopper: null, letter: null });
+    Object.assign(this, { round: 0, winner: null, titles: null, review: null, stopper: null, letter: null, history: [] });
     this.spinFrom = Math.floor(draw(this) * SEATS); this.games++;
     this.nextRound();
   }
@@ -199,7 +222,7 @@ export class StopGame {
     const turn = seated(this).length ? seated(this) : this.players;
     this.round++; this.spinner = turn[(this.spinFrom + this.round - 1) % turn.length].seat;
     for (const p of this.players) Object.assign(p, { round: 0, filled: 0, submitted: false, sheet: null });
-    Object.assign(this, { phase: 'spin', phaseTime: 0, timeLeft: 0, letter: null, stopper: null, review: null });
+    Object.assign(this, { phase: 'spin', phaseTime: 0, timeLeft: 0, letter: null, stopper: null, review: null, notes: { best: null, debate: null } });
     this.plans = []; this.plans[this.spinner] = { spinAt: between(this, [1.2, 2.6]) };
     this.hostLine = `Ronda ${this.round} de ${this.rounds}: ${this.players[this.spinner].name} gira la rueda. ¡Grítale «¡Para!»!`;
     this.revision++;
@@ -229,9 +252,14 @@ export class StopGame {
     const level = LEVEL[this.options.bots] || LEVEL.normales, creative = PERSONALITY[p.seat] === 'creativo';
     const answers = this.categories.map(cat => {
       if (draw(this) > level.fill) return '';
-      const jokes = creative ? wordsFor(cat, this.letter, { doubtful: true }) : [];
+      // Bots leave the host's own categories blank and answer free prompts from their pool.
+      const kind = kindOf(cat);
+      if (kind === 'propia') return '';
+      if (kind === 'libre') { const words = freePrompt(cat).words.filter(w => letterOf(w) === this.letter); return words.length ? pick(this, words) : ''; }
+      const parts = kind === 'cep' ? CEP.parts : [cat];
+      const jokes = creative ? parts.flatMap(c => wordsFor(c, this.letter, { doubtful: true })) : [];
       if (jokes.length && draw(this) < .35) return pick(this, jokes).form;
-      const words = wordsFor(cat, this.letter);
+      const words = parts.flatMap(c => wordsFor(c, this.letter));
       return words.length ? pick(this, words).form : '';
     });
     const finish = this.limit * between(this, level.finish), filled = answers.filter(Boolean).length;
@@ -302,16 +330,18 @@ export class StopGame {
       if (verdict.reason === 'empty') p.stats.empty++;
       return item;
     });
-    this.review = { index, category: cat, items, groups, stage: groups.length ? 'vote' : 'show' };
-    this.phaseTime = 0; this.timeLeft = groups.length ? TIMES.vote : 0;
+    const voteTime = Math.min(TIMES.voteMax, TIMES.vote + TIMES.voteEach * Math.max(0, groups.length - 1));
+    this.review = { index, category: cat, items, groups, stage: groups.length ? 'vote' : 'show', voteTime };
+    this.phaseTime = 0; this.timeLeft = groups.length ? voteTime : 0;
     const wrong = items.find(i => i.reason === 'letter'), crude = items.find(i => i.reason === 'crude');
     if (groups.length) {
       const oreo = groups.find(g => g.joke === 'oreo'), movie = groups.find(g => /pel[ií]cula|Disney|Pok/.test(g.explain));
-      this.hostLine = oreo ? `¡${oreo.word}: 200 puntos!` : movie ? '¡Ya te estás abusando! ¿Eso cuenta?' : '¿Eso cuenta?';
+      const open = ['libre', 'propia'].includes(kindOf(cat));
+      this.hostLine = oreo ? `¡${oreo.word}: 200 puntos!` : movie ? '¡Ya te estás abusando! ¿Eso cuenta?' : open ? `${label(cat)}: ¿cuáles cuentan?` : '¿Eso cuenta?';
       this.planVotes();
     } else {
       this.score();
-      this.hostLine = wrong ? `¡${wrong.answer} se escribe con ${wrong.first}!` : crude ? 'Eso no se dice en esta mesa.' : `${categoryLabel(cat)} con ${this.letter}.`;
+      this.hostLine = wrong ? `¡${wrong.answer} se escribe con ${wrong.first}!` : crude ? 'Eso no se dice en esta mesa.' : `${label(cat)} con ${this.letter}.`;
     }
     this.revision++;
   }
@@ -323,7 +353,7 @@ export class StopGame {
     r.groups.forEach((g, gi) => {
       for (const p of this.voters(g)) {
         if (p.id !== null || p.seat in g.votes) continue;
-        const kind = PERSONALITY[p.seat], odds = { doubtful: .5, close: .6, unknown: .35 }[g.reason] ?? .5;
+        const kind = PERSONALITY[p.seat], odds = { doubtful: .5, close: .6, unknown: .35, libre: .7 }[g.reason] ?? .5;
         const yes = kind === 'estricto' ? false : kind === 'creativo' ? true : draw(this) < odds;
         (this.plans[p.seat] ||= []).push({ group: gi, at: between(this, [1.2, 6]), yes });
       }
@@ -350,10 +380,22 @@ export class StopGame {
       const voter = Object.keys(g.votes).map(Number).find(seat => g.votes[seat] === g.accepted);
       if (voter !== undefined) this.bark(voter, g.creative ? '¡Pedazo de loco!' : g.accepted ? 'Bueno, pasa…' : g.joke === 'oreo' ? '¡Ni lo sueñes!' : '¡Ya te estás abusando!');
     }
-    this.score();
+    this.score(); this.note(r);
     const best = r.groups.find(g => g.creative), out = r.groups.find(g => !g.accepted);
     this.hostLine = r.groups.some(g => g.joke === 'oreo' && !g.creative) ? '¡Ni lo sueñes!' : best ? `¡Pedazo de loco! «${best.word}» cuenta y suma Creatividad.` : out ? `«${out.word}» no cuenta.` : 'La mesa lo aceptó.';
     r.stage = 'result'; this.phaseTime = 0; this.timeLeft = 0; this.plans = []; this.revision++;
+  }
+
+  // The round's recap: the best-voted creative answer and the closest vote.
+  note(r) {
+    const notes = this.notes ||= { best: null, debate: null };
+    for (const g of r.groups) {
+      const votes = Object.values(g.votes), yes = votes.filter(Boolean).length, no = votes.length - yes;
+      const line = { word: g.word, category: r.category, seat: g.authors[0] ?? null, yes, no, accepted: g.accepted };
+      if (g.creative && (!notes.best || yes > notes.best.yes)) notes.best = line;
+      const old = notes.debate, gap = Math.abs(yes - no), oldGap = old && Math.abs(old.yes - old.no);
+      if (votes.length >= 2 && (!old || gap < oldGap || (gap === oldGap && votes.length > old.yes + old.no))) notes.debate = line;
+    }
   }
 
   // 100 for a valid answer nobody else wrote, 50 when shared, +50 Creatividad.
@@ -372,6 +414,7 @@ export class StopGame {
     if (this.review.index + 1 < this.count) return this.showCategory(this.review.index + 1);
     const best = seated(this).sort((a, b) => b.round - a.round || a.seat - b.seat)[0];
     this.phase = 'tally'; this.phaseTime = 0; this.review = { ...this.review, stage: 'done' };
+    (this.history ||= []).push({ round: this.round, letter: this.letter, top: { seat: best.seat, points: best.round }, best: this.notes?.best || null, debate: this.notes?.debate || null });
     this.hostLine = `Ronda ${this.round}: ${best.name} sacó ${best.round} puntos.`;
     this.revision++;
   }
@@ -414,7 +457,7 @@ export class StopGame {
     } else if (this.phase === 'review') {
       const r = this.review;
       if (r.stage === 'vote') {
-        this.timeLeft = Math.max(0, TIMES.vote - this.phaseTime);
+        this.timeLeft = Math.max(0, (r.voteTime || TIMES.vote) - this.phaseTime);
         for (const p of this.players) for (const v of (p.id === null && this.plans[p.seat]) || []) if (!v.done && this.phaseTime >= v.at) { v.done = true; this.vote(p, v.group, v.yes); if (this.review.stage !== 'vote') break; }
         if (r.stage === 'vote' && r.groups.some(g => g.joke === 'oreo') && this.phaseTime >= 1.4 && this.hostLine.includes('200')) { this.hostLine = '¡Ni lo sueñes! Cuenta como cualquier otra. ¿Eso cuenta?'; this.revision++; }
         if (r.stage === 'vote' && this.timeLeft <= 0) this.resolveVotes();
@@ -435,6 +478,10 @@ export class StopGame {
     if (data.action === 'options' && id === hostId && this.phase === 'lobby') {
       const next = roomOptions(this.options, data.options); if (!next) return false;
       this.options = next; this.revision++; return true;
+    }
+    if (data.action === 'custom' && id === hostId && this.phase === 'lobby') {
+      const next = cleanCustom(data.list, { criollo: this.options.criollo }); if (!next) return false;
+      this.custom = next; this.revision++; return true;
     }
     if (data.action === 'start') {
       if (id !== hostId || !['lobby', 'finished'].includes(this.phase)) return false;
